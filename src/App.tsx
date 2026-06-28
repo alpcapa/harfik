@@ -114,7 +114,7 @@ export default function App() {
         <Board state={state} onCellClick={handleCellClick} />
       </div>
 
-      <div className="w-full max-w-[460px] px-3 pb-3 pt-1 flex flex-col gap-1.5 shrink-0">
+      <div className="w-full max-w-[680px] px-3 pb-3 pt-1 flex flex-col gap-1.5 shrink-0">
         <div
           className={`text-[11px] font-mono text-center min-h-[15px] py-0.5 ${
             MESSAGE_COLORS[state.messageType]

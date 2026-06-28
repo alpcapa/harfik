@@ -11,7 +11,7 @@ export function GameHeader({ state }: GameHeaderProps) {
   const { players, current } = state;
   const bagCount = state.bag.length;
   return (
-    <header className="w-full max-w-[460px] flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border">
+    <header className="w-full max-w-[680px] flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border">
       <div className="font-mono text-lg font-bold text-accent tracking-[2px] shrink-0">
         HARFİK
       </div>
