@@ -5,6 +5,7 @@
 // Çevrimiçi sürüm anlamları Supabase'ten (word_meaning RPC) de çekebilir;
 // bu yerel veri çevrimdışı yedek olarak kullanılır.
 import meaningsUrl from './meanings.json?url';
+import { trLower } from '../utils/turkish';
 
 export interface WordMeaning {
   /** Sözcük türü kısaltması (TDK), örn. "a.", "sf.", "-i". */
@@ -35,11 +36,6 @@ async function loadAll(): Promise<MeaningMap> {
       });
   }
   return loading;
-}
-
-/** Türkçe küçük harfe çevirir (I→ı, İ→i). */
-function trLower(s: string): string {
-  return s.replace(/İ/g, 'i').replace(/I/g, 'ı').toLowerCase();
 }
 
 /**

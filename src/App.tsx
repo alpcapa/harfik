@@ -10,6 +10,7 @@ import { MeaningModal } from './components/MeaningModal';
 import { createInitialState, gameReducer } from './game/gameReducer';
 import { calcScore } from './utils/validator';
 import { key } from './utils/board';
+import { trUpper } from './utils/turkish';
 import { PLAYER_COLORS } from './game/constants';
 import { fetchMeaning } from './lib/api';
 import type { WordMeaning } from './lib/database.types';
@@ -88,7 +89,7 @@ export default function App() {
     const sel = state.selectedTile !== null ? me.rack[state.selectedTile] : null;
     if (sel && sel.letter === '?') {
       const l = window.prompt('Joker hangi harf olsun? (Türkçe)');
-      wildLetter = (l || 'A').toUpperCase();
+      wildLetter = trUpper(l || 'A');
     }
     dispatch({ type: 'PLACE_TILE', r, c, wildLetter });
   };

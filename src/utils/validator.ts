@@ -2,6 +2,7 @@
 import { BINGO_BONUS, SIZE, inCorner, regionOf } from '../game/constants';
 import type { BonusType, Player, ValidationResult } from '../game/types';
 import { WORD_SET } from '../data/words';
+import { trLower } from './turkish';
 import {
   getFormedWords,
   key,
@@ -134,7 +135,7 @@ export function validatePlacement(
   }
 
   for (const { word } of formed) {
-    if (!WORD_SET.has(word.toLowerCase())) {
+    if (!WORD_SET.has(trLower(word))) {
       return { valid: false, reason: `"${word}" geçerli bir kelime değil.` };
     }
   }

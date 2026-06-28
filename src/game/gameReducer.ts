@@ -9,6 +9,7 @@ import {
 import type { GameState, Owner, Player, Tile } from './types';
 import { buildBag, drawTiles } from '../utils/bag';
 import { shuffle } from '../utils/random';
+import { trUpper } from '../utils/turkish';
 import {
   createEmptyBoard,
   getFormedWords,
@@ -228,7 +229,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
       const source = me.rack[state.selectedTile];
       const tile: Tile = { ...source, owner: state.current };
       if (tile.letter === '?') {
-        const wl = (action.wildLetter || 'A').toUpperCase();
+        const wl = trUpper(action.wildLetter || 'A');
         tile.wild = true;
         tile.wildLetter = wl;
       }

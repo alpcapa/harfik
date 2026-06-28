@@ -8,6 +8,7 @@ import type { AIMove, BonusType, Placement, Tile } from '../game/types';
 import { WORD_SET } from '../data/words';
 import { letterPoints } from '../data/tiles';
 import { canSpell, calcScore, cellAllowed } from './validator';
+import { trLower, trUpper } from './turkish';
 import { getFormedWords, key, tileLetter, type Board } from './board';
 
 /**
@@ -53,7 +54,7 @@ export function findAIMove(
   const rackLetters = rack.map((t) => t.letter);
   const candidates = [...WORD_SET]
     .filter((w) => w.length >= 2 && w.length <= 7)
-    .map((w) => w.toUpperCase())
+    .map((w) => trUpper(w))
     .filter((w) => canSpell(w, rackLetters));
 
   let best: AIMove | null = null;
@@ -63,7 +64,7 @@ export function findAIMove(
     for (const p of placements) placed[key(p.r, p.c)] = p.tile;
     // Oluşan tüm kelimeler (çapraz dahil) sözlükte olmalı.
     for (const fw of getFormedWords(board, placed)) {
-      if (!WORD_SET.has(fw.word.toLowerCase())) return;
+      if (!WORD_SET.has(trLower(fw.word))) return;
     }
     const score = calcScore(board, placed, bonuses);
     if (!best || score > best.score) best = { word, score, placements };
