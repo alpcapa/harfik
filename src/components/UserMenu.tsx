@@ -10,23 +10,10 @@ import { AuthModal } from './AuthModal';
 import { ScoreCard } from './ScoreCard';
 import { AccountSettingsModal } from './AccountSettingsModal';
 import { Leaderboard } from './Leaderboard';
-import { RemainingTilesModal } from './RemainingTilesModal';
-import type { GameState } from '../game/types';
 
-type ActiveModal =
-  | 'auth'
-  | 'account'
-  | 'score'
-  | 'leaderboard'
-  | 'tiles'
-  | null;
+type ActiveModal = 'auth' | 'account' | 'score' | 'leaderboard' | null;
 
-interface UserMenuProps {
-  /** Oyun sürüyorsa "Kalan Taşlar" için durum; kurulumda verilmez. */
-  game?: GameState;
-}
-
-export function UserMenu({ game }: UserMenuProps) {
+export function UserMenu() {
   const { user, profile, configured, loading } = useAuth();
   const [open, setOpen] = useState(false);
   const [modal, setModal] = useState<ActiveModal>(null);
@@ -121,17 +108,6 @@ export function UserMenu({ game }: UserMenuProps) {
             >
               <span aria-hidden>📊</span> Skor Kartı
             </button>
-            {game && (
-              <button
-                className={item}
-                onClick={() => {
-                  setModal('tiles');
-                  setOpen(false);
-                }}
-              >
-                <span aria-hidden>🎟️</span> Kalan Taşlar
-              </button>
-            )}
             <button
               className={item}
               onClick={() => {
@@ -166,9 +142,6 @@ export function UserMenu({ game }: UserMenuProps) {
       )}
       {modal === 'leaderboard' && (
         <Leaderboard onClose={() => setModal(null)} />
-      )}
-      {modal === 'tiles' && game && (
-        <RemainingTilesModal state={game} onClose={() => setModal(null)} />
       )}
     </>
   );
