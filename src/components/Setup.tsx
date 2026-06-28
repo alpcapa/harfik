@@ -67,7 +67,11 @@ export function Setup({ onStart }: SetupProps) {
           {([2, 4] as const).map((n) => (
             <button
               key={n}
-              onClick={() => setCount(n)}
+              onClick={() => {
+                setCount(n);
+                // Varsayılan: 1. oyuncu sen (kişi), kalan tüm oyuncular YZ.
+                setAi(Array.from({ length: 4 }, (_, idx) => idx > 0 && idx < n));
+              }}
               className={[
                 'flex-1 py-3 rounded-md font-sans text-sm font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97]',
                 count === n
