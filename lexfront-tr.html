@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LexFront</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg: #080C10;
+  --panel: #0D1318;
+  --border: #1E2D3D;
+  --text: #C8D8E8;
+  --muted: #3A5068;
+  --accent: #00C8FF;
+  --ai-color: #FF4060;
+  --player-color: #00C8FF;
+  --tile-bg: #0F1C26;
+  --tile-border: #1E3A52;
+  --tile-letter: #C8E8FF;
+  --tile-pts: #3A6888;
+  --bonus-dw: #1A3A1A;
+  --bonus-dw-text: #40C840;
+  --bonus-tw: #3A1A00;
+  --bonus-tw-text: #FF8000;
+  --bonus-dl: #001A3A;
+  --bonus-dl-text: #40A0FF;
+  --bonus-tl: #1A0030;
+  --bonus-tl-text: #C040FF;
+  --crack: #1A1000;
+  --void: #050708;
+  --green: #00C870;
+  --red: #FF4060;
+  --gold: #FFD040;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Grotesk', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+}
+
+header {
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.logo {
+  font-family: 'Space Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 2px;
+}
+.logo span { color: var(--ai-color); }
+
+.hud { display: flex; gap: 14px; align-items: center; }
+.hud-score { text-align: center; }
+.hud-label {
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+}
+.hud-val {
+  font-family: 'Space Mono', monospace;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+.hud-val.p { color: var(--player-color); }
+.hud-val.a { color: var(--ai-color); }
+.hud-divider { width: 1px; height: 32px; background: var(--border); }
+
+.turn-strip {
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px;
+  font-size: 10px;
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 1px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.turn-strip .active-turn { color: var(--accent); font-weight: 700; }
+
+.board-wrap { width: 100%; max-width: 460px; padding: 8px; }
+#board {
+  width: 100%;
+  aspect-ratio: 1;
+  display: grid;
+  grid-template-columns: repeat(13, 1fr);
+  gap: 2px;
+  background: #060A0D;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 0 40px rgba(0,200,255,0.04), 0 0 80px rgba(255,64,96,0.04);
+}
+
+.cell {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(5px, 1.4vw, 8px);
+  font-weight: 700;
+  font-family: 'Space Mono', monospace;
+  cursor: pointer;
+  transition: background 0.3s, opacity 0.3s;
+  user-select: none;
+  background: #0A1218;
+  border: 1px solid #0F1E2A;
+}
+.cell.dw { background: var(--bonus-dw); color: var(--bonus-dw-text); border-color: #1A4A1A; }
+.cell.tw { background: var(--bonus-tw); color: var(--bonus-tw-text); border-color: #5A2A00; }
+.cell.dl { background: var(--bonus-dl); color: var(--bonus-dl-text); border-color: #003A7A; }
+.cell.tl { background: var(--bonus-tl); color: var(--bonus-tl-text); border-color: #4A0080; }
+.cell.crack { background: var(--crack); border-color: #3A2800; border-style: dashed; }
+.cell.void { background: var(--void); border-color: #080808; cursor: not-allowed; opacity: 0.3; }
+.cell.p-zone { box-shadow: inset 0 0 0 1px rgba(0,200,255,0.15); }
+.cell.a-zone { box-shadow: inset 0 0 0 1px rgba(255,64,96,0.15); }
+.cell.has-tile { background: transparent; border-color: transparent; cursor: default; }
+.crack-icon { font-size: clamp(6px,1.6vw,10px); opacity: 0.5; }
+
+.board-tile {
+  width: 100%; height: 100%;
+  border-radius: 3px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.board-tile.player-tile { background: #0A2030; border: 1px solid var(--player-color); box-shadow: 0 0 6px rgba(0,200,255,0.3); }
+.board-tile.ai-tile { background: #2A0A10; border: 1px solid var(--ai-color); box-shadow: 0 0 6px rgba(255,64,96,0.3); }
+.board-tile.placed-tile { background: #0A1A28; border: 1px solid var(--accent); box-shadow: 0 0 8px rgba(0,200,255,0.5); animation: pulse 1s infinite alternate; }
+@keyframes pulse { from{box-shadow:0 0 4px rgba(0,200,255,0.3)}to{box-shadow:0 0 10px rgba(0,200,255,0.7)} }
+.board-tile .t-letter { font-family:'Space Mono',monospace; font-size:clamp(7px,1.8vw,12px); font-weight:700; color:var(--tile-letter); line-height:1; }
+.board-tile .t-pts { font-size:clamp(4px,0.9vw,6px); color:var(--tile-pts); line-height:1; }
+
+.bottom-panel { width:100%; max-width:460px; padding:0 8px 12px; display:flex; flex-direction:column; gap:8px; }
+
+#msg-bar { font-size:11px; font-family:'Space Mono',monospace; color:var(--muted); text-align:center; min-height:15px; padding:2px; transition:color 0.2s; }
+#msg-bar.ok { color:var(--green); }
+#msg-bar.err { color:var(--red); }
+#msg-bar.warn { color:var(--gold); }
+
+.rack-wrap { background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:8px; }
+.rack-header { font-size:8px; text-transform:uppercase; letter-spacing:2px; color:var(--muted); font-family:'Space Mono',monospace; margin-bottom:6px; display:flex; justify-content:space-between; }
+#rack { display:flex; justify-content:center; gap:5px; flex-wrap:wrap; min-height:50px; }
+
+.rack-tile {
+  width:38px; height:46px;
+  background:var(--tile-bg); border:1px solid var(--tile-border);
+  border-radius:4px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  cursor:pointer; user-select:none;
+  transition:transform 0.1s, border-color 0.1s, box-shadow 0.1s;
+  flex-shrink:0;
+}
+.rack-tile:active { transform:scale(1.06); }
+.rack-tile.selected { transform:translateY(-7px); border-color:var(--accent); box-shadow:0 4px 12px rgba(0,200,255,0.4); }
+.rack-tile .t-letter { font-family:'Space Mono',monospace; font-size:17px; font-weight:700; color:var(--tile-letter); line-height:1; }
+.rack-tile .t-pts { font-size:8px; color:var(--tile-pts); }
+
+.actions { display:flex; gap:6px; }
+.btn { flex:1; padding:10px 6px; border:none; border-radius:6px; font-family:'Space Grotesk',sans-serif; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.2px; cursor:pointer; transition:opacity 0.15s, transform 0.1s; }
+.btn:active { transform:scale(0.97); }
+.btn-play { background:var(--accent); color:#060A0D; }
+.btn-recall { background:var(--panel); color:var(--text); border:1px solid var(--border); }
+.btn-pass { background:var(--panel); color:var(--muted); border:1px solid var(--border); }
+.btn:disabled { opacity:0.35; cursor:not-allowed; }
+
+.legend { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; padding:4px 0; }
+.legend-item { font-size:8px; font-family:'Space Mono',monospace; display:flex; align-items:center; gap:3px; color:var(--muted); }
+.legend-dot { width:8px; height:8px; border-radius:1px; }
+
+#game-over { display:none; position:fixed; inset:0; background:rgba(6,10,13,0.93); z-index:100; align-items:center; justify-content:center; flex-direction:column; gap:18px; padding:24px; }
+#game-over.show { display:flex; }
+.go-title { font-family:'Space Mono',monospace; font-size:32px; font-weight:700; letter-spacing:3px; text-align:center; }
+.go-title.win { color:var(--player-color); }
+.go-title.lose { color:var(--ai-color); }
+.go-title.tie { color:var(--gold); }
+.go-scores { background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:20px 36px; text-align:center; display:flex; flex-direction:column; gap:10px; }
+.go-row { font-size:15px; display:flex; justify-content:space-between; gap:32px; }
+.go-row .val { font-family:'Space Mono',monospace; font-size:22px; font-weight:700; }
+.btn-restart { background:var(--accent); color:#060A0D; border:none; border-radius:8px; padding:14px 36px; font-size:13px; font-weight:700; letter-spacing:2px; text-transform:uppercase; cursor:pointer; font-family:'Space Grotesk',sans-serif; }
+
+#evolve-toast { position:fixed; top:60px; left:50%; transform:translateX(-50%) translateY(-20px); background:var(--gold); color:#060A0D; font-family:'Space Mono',monospace; font-size:11px; font-weight:700; letter-spacing:1px; padding:8px 18px; border-radius:20px; opacity:0; transition:opacity 0.3s, transform 0.3s; pointer-events:none; z-index:200; text-transform:uppercase; }
+#evolve-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">LEX<span>FRONT</span></div>
+  <div class="hud">
+    <div class="hud-score">
+      <div class="hud-label">Sen</div>
+      <div class="hud-val p" id="score-player">0</div>
+    </div>
+    <div class="hud-divider"></div>
+    <div class="hud-score">
+      <div class="hud-label">YZ</div>
+      <div class="hud-val a" id="score-ai">0</div>
+    </div>
+    <div class="hud-divider"></div>
+    <div class="hud-score">
+      <div class="hud-label">Torba</div>
+      <div class="hud-val" style="color:var(--muted);font-size:16px" id="bag-count">0</div>
+    </div>
+  </div>
+</header>
+
+<div class="turn-strip">
+  <div id="turn-label" class="active-turn">Senin sıran</div>
+  <div id="evolve-label">Tahta <span id="evolve-count">3</span> hamlede değişir</div>
+</div>
+
+<div class="board-wrap">
+  <div id="board"></div>
+</div>
+
+<div class="bottom-panel">
+  <div id="msg-bar">Bir harf seç, sonra tahtaya yerleştir.</div>
+
+  <div class="rack-wrap">
+    <div class="rack-header">
+      <span>Rafın</span>
+      <span id="rack-count"></span>
+    </div>
+    <div id="rack"></div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#1A3A1A;border:1px solid #40C840"></div>2×K</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#3A1A00;border:1px solid #FF8000"></div>3×K</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#001A3A;border:1px solid #40A0FF"></div>2×H</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1A0030;border:1px solid #C040FF"></div>3×H</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#1A1000;border:1px dashed #5A3A00"></div>Çatlıyor</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#050708;border:1px solid #111"></div>Boşluk</div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-play" id="btn-play">Oyna</button>
+    <button class="btn btn-recall" id="btn-recall">Geri Al</button>
+    <button class="btn btn-pass" id="btn-pass">Pas</button>
+  </div>
+</div>
+
+<div id="game-over">
+  <div class="go-title" id="go-title">Oyun Bitti</div>
+  <div class="go-scores" id="go-scores"></div>
+  <button class="btn-restart" onclick="initGame()">Tekrar Oyna</button>
+</div>
+
+<div id="evolve-toast">⚡ Tahta Değişiyor!</div>
+
+<script>
+// ── TURKISH WORD LIST ─────────────────────────────────────────────────────────
+// Common Turkish words — uses Turkish alphabet including Ç,Ğ,İ,Ö,Ş,Ü
+const WORD_SET = new Set(`
+!board[r][c];});
+"${move.word}"
+${check.words.join(',
+${cls}`;
+${move.score}
+&
+')}
+')}`,'ok');
+'?':{pts:0,cnt:2}
+'A':{pts:1,cnt:12},
+'B':{pts:3,cnt:2},
+'C':{pts:4,cnt:2},
+'D':{pts:3,cnt:2},
+'E':{pts:1,cnt:8},
+'F':{pts:7,cnt:1},
+'G':{pts:5,cnt:1},
+'H':{pts:5,cnt:1},
+'I':{pts:2,cnt:4},
+'J':{pts:10,cnt:1},
+'K':{pts:1,cnt:7},
+'L':{pts:1,cnt:7},
+'M':{pts:2,cnt:4},
+'N':{pts:1,cnt:5},
+'O':{pts:2,cnt:3},
+'P':{pts:5,cnt:1},
+'R':{pts:1,cnt:6},
+'S':{pts:2,cnt:3},
+'T':{pts:1,cnt:5},
+'U':{pts:2,cnt:3},
+'V':{pts:7,cnt:1},
+'Y':{pts:3,cnt:2},
+'Z':{pts:4,cnt:2},
+'Ç':{pts:3,cnt:2},
+'Ö':{pts:7,cnt:1},
+'Ü':{pts:3,cnt:2},
+'Ğ':{pts:8,cnt:1},
+'İ':{pts:1,cnt:7},
+'Ş':{pts:4,cnt:2},
+(A-Z
+(Kelime
+(sc===0||!board[r][sc-1])&&(sc+w.length===SIZE||!board[r][sc+w.length])){
+(sr===0||!board[sr-1]?.[c])&&(sr+w.length===SIZE||!board[sr+w.length]?.[c])){
+)
+);
+//
+13;
+</body>
+</html>
+</script>
+<div
+=
+AI
+Array.from({length:SIZE},()=>Array(SIZE).fill(null));
+BOARD
+BONUS_LABELS
+Based
+DISTRIBUTION
+EVOLUTION
+INTERACTION
+KAZANDI':'BERABERE';
+Object.entries(TILE_DATA))
+Object.entries(cellState)){
+Object.entries(placed))
+Object.entries(placed)){
+Oyna'ya
+Oyunu)
+PLAY
+RENDER
+SIZE
+STATE
+Scrabble
+Set();
+Set(coords.map(c=>c[0]))];
+Set(coords.map(c=>c[1]))];
+TILE
+TILE_DATA
+TURKISH
+Turkish
+Türkçe
+Türkçe):')?.toUpperCase()||'A';
+VALIDATION
+[...ws];
+[[0,0],[0,12],[12,0],[12,12],[3,6],[6,3],[6,9],[9,6]].forEach(([r,c])=>b[`${r},${c}`]='tw');
+[[0,3],[0,9],[3,0],[9,0],[3,12],[9,12],[12,3],[12,9],[2,2],[2,10],[10,2],[10,10]].forEach(([r,c])=>b[`${r},${c}`]='tl');
+[[1,1],[1,11],[11,1],[11,11],[3,4],[4,3],[3,8],[4,9],[8,3],[9,4],[8,9],[9,8],[6,6]].forEach(([r,c])=>b[`${r},${c}`]='dl');
+[[1,4],[4,1],[1,8],[4,11],[8,1],[11,4],[8,11],[11,8],[5,5],[5,7],[7,5],[7,7]].forEach(([r,c])=>b[`${r},${c}`]='dw');
+[[r-1,c],[r+1,c],[r,c-1],[r,c+1]].some(([nr,nc])=>
+[key,state]
+[key,tile]
+[l,{pts,cnt}]
+[r,c]
+[r,c]=k.split(',').map(Number);return
+[r,c]=key.split(',').map(Number);
+[r,c]=key.split(',').map(Number);if(!board[r][c])cellState[key]='void';}
+`.trim().split(/\s+/).filter(w=>w.length>=2));
+`;
+a;}
+aa
+ab
+aba
+abacı
+abdal
+abdest
+abece
+abi
+abide
+abla
+ablak
+abluka
+abone
+abuk
+abur
+ac
+acele
+acemi
+acil
+acun
+acur
+acı
+acıma
+ad
+ada
+adadur
+adak
+adalet
+adalı
+adam
+adamak
+adap
+adavet
+aday
+adaş
+adbilimi
+added=0;
+adet
+adil
+adim
+adlar
+adlaşma
+adli
+adlı
+ado
+adres
+adsal
+adsız
+advanceTurn();
+advanceTurn(){
+advokat
+adı
+adım
+adına
+aerobik
+af
+afa
+afacan
+afal
+aferin
+afet
+affet
+afil
+afiyet
+afiş
+afyon
+ag
+agel
+agnostik
+agroni
+agul
+ah
+aha
+ahi
+ahlak
+ahu
+ahududu
+ahı
+ahır
+ahşap
+ai
+aiPlay(){
+aiRack
+aiRack.push(...drawTiles(7-aiRack.length));
+aiRack.splice(idx,1);
+aiRack;
+aiScore+=move.score;
+aiScore,
+aiScore=0;
+aiScore=Math.max(0,aiScore-aiRack.reduce((s,t)=>s+t.pts,0));
+aiZone(r,c)
+aidat
+aile
+ajan
+ajanda
+ak
+aka
+akademi
+akademik
+akaju
+akal
+akala
+akamber
+akan
+akar
+akarsu
+akaç
+akbaba
+akbalık
+akbaş
+akciğer
+akdiken
+akdoğan
+akgün
+akide
+akil
+akim
+akis
+akit
+akkor
+aklan
+akma
+akne
+akort
+akraba
+akran
+akrep
+akrilik
+akrobasi
+akrobat
+akrofobi
+akrostiş
+aksak
+aksama
+aksan
+aksarı
+akseki
+aksi
+aksiseda
+aksiyon
+aksona
+aksırmak
+aktar
+aktarım
+aktif
+aktrist
+aktör
+aktüel
+akua
+akvarel
+akvaryum
+akçe
+akçıl
+akü
+akı
+akıl
+akıllı
+akım
+akın
+akıntı
+akış
+akşam
+al
+ala
+alabalık
+alabora
+alaca
+alacak
+alaka
+alakart
+alam
+alaminüt
+alan
+alana
+alarak
+alarga
+alarm
+alav
+alay
+alaz
+alaçam
+aldatmak
+aldı
+aldırt
+alet
+alev
+algı
+ali
+allEmpty=board.every(row=>row.every(c=>!c));
+alm
+alma
+almak
+almaç
+almaş
+almaşık
+alpaka
+alpinist
+alpinizm
+alt
+altmış
+altyapı
+altüst
+altı
+altıgen
+altılık
+altın
+altında
+alçak
+alçı
+alı
+alık
+alım
+alın
+alındı.','');
+alış
+alışkan
+am
+ama
+ambalaj
+ambar
+ambargo
+amca
+amel
+ameliye
+amen
+amfi
+amfibi
+amnezi
+amonyak
+ampul
+an
+ana
+anacık
+anahtar
+anamal
+anaokul
+anarşi
+anayasa
+anaçlık
+anban
+anca
+ancak
+ance
+anchor=board[r][c].letter;
+and
+anda
+andaç
+andezit
+andırma
+andız
+anemik
+anemon
+anestezi
+anlam
+anlatı
+anlayış
+anlaşma
+anma
+anne
+anonim
+anons
+ant
+antik
+antlaşma
+antre
+antrekot
+antrenör
+antrepo
+anı
+anıl
+anım
+anın
+anıt
+apel
+aperitif
+apiko
+aplik
+apre
+aptal
+aptalca
+apış
+ar
+ara
+araba
+aracı
+arak
+araka
+aralar
+arama
+arasın
+arasında
+arazi
+araç
+arka
+arkadaş
+arke
+armağan
+armoni
+armonik
+arpa
+arsa
+arsenik
+arsız
+art
+artan
+artist
+artma
+artı
+artık
+artış
+aruz
+arzu
+arı
+arık
+arıklık
+arılık
+arım
+arın
+arına
+arıt
+arız
+arış
+arş
+arşiv
+arşın
+as
+asabi
+asak
+asalak
+asalet
+asalı
+asansör
+asgari
+asistan
+asker
+askı
+aslan
+asma
+asmak
+asman
+asna
+ast
+astar
+astık
+asya
+asık
+asıl
+asım
+asır
+asıt
+at
+ata
+atak
+atalet
+atama
+ataç
+ateş
+atlas
+atlet
+atlı
+atma
+atmak
+atol
+atom
+atölyesi
+atı
+atık
+atıl
+atılgan
+atım
+atış
+av
+ava
+avail.splice(i,1);
+avail=[...rack];
+avantaj
+avara
+avcı
+avdet
+avlan
+avlu
+avrat
+avukat
+avun
+avuntı
+avuç
+ay
+ayak
+ayal
+ayar
+ayaz
+aydın
+aykırı
+aylar
+aylık
+ayma
+ayna
+ayraç
+ayrı
+ayrılık
+ayrım
+ayrıt
+ayva
+ayı
+ayık
+ayım
+ayın
+ayıp
+ayır
+az
+azal
+azalı
+azap
+azar
+azat
+azim
+aziz
+azlık
+azot
+azık
+azılı
+azın
+aç
+açma
+açı
+açık
+açıl
+açım
+açış
+ağ
+ağa
+ağaç
+ağla
+ağrı
+ağu
+ağustos
+ağı
+ağıl
+ağım
+ağın
+ağır
+ağıt
+ağız
+aş
+aşevi
+aşk
+aşure
+aşı
+aşım
+aşın
+aşır
+b
+b.push({letter:l,pts});
+b;
+b=[];
+b=bonuses[`${r},${c}`];
+b=bonuses[key];
+baba
+babam
+baca
+bacak
+bag
+bag,
+bahane
+bahar
+bahis
+bahçe
+bakan
+bakiye
+baklava
+baktım
+bakı
+bakım
+bakır
+bakış
+bal
+bala
+balaj
+balans
+balcı
+baldız
+balet
+bali
+balk
+balkon
+balo
+balon
+baloz
+balta
+balya
+balçık
+balık
+bam
+bambu
+bamya
+ban
+bana
+banka
+bant
+banyo
+bar
+baraj
+baran
+barat
+baraz
+baret
+bariyer
+bariz
+barkod
+barmen
+baro
+barok
+barut
+barış
+bas`,'ok');
+basa
+basit
+basket
+baskı
+baskın
+basmak
+basık
+basım
+basın
+basınç
+bat
+batak
+batı
+batık
+bavul
+bayat
+bayrak
+bayram
+bağ
+bağcı
+bağlı
+bağı
+bağıl
+bağım
+bağır
+bağırsak
+bağış
+baş
+başlamalı.'};
+başlık
+bedel
+beden
+bel
+belge
+belirsiz
+bellek
+bencil
+beni
+benim
+beraber
+berber
+best
+best;
+best=null;
+best={word:w,score,placements};
+beyin
+bez
+bezgin
+beğen
+bikini
+bile
+bilet
+bilge
+bilgi
+bilim
+bilinç
+bilmece
+bilmek
+bir
+biraz
+birbir
+birikim
+birleşik
+birlik
+bit
+bitmek
+bitmez
+bitmiş
+bize
+biçim
+biçki
+blok
+board
+board,
+board.every(row=>row.every(c=>!c));}
+board[r][c].wild?board[r][c].wildLetter:board[r][c].letter;
+board[r][c]=tile;
+board[r][c]={...tile,owner:'ai'};
+boca
+bodrum
+bodur
+bonuses
+bonuses,
+bonuses[key]=types[Math.floor(Math.random()*types.length)];added++;
+bonuses[pick];
+bora
+borç
+boya
+boyar
+boyun
+boyut
+boyutu
+boza
+bozuk
+boğaz
+boşluk
+break;
+brüt
+bu
+bugün
+buildBag()
+buildBag();
+buildInitialBonuses()
+buildInitialBonuses();
+bulaşık
+bulgu
+bulut
+buluş
+bunun
+burun
+burç
+buçuk
+buğday
+böbrek
+böcek
+bölen
+böyle
+bükme
+bütün
+büyük
+büyüme
+c=0;c<SIZE;c++)
+c=0;c<SIZE;c++){
+c=minC;c<=maxC;c++)
+c=startC+i;
+cadde
+calcScore(){
+cam
+canSpell(word,rack){
+candidates){
+candidates=[...WORD_SET].filter(w=>w.length>=2&&w.length<=7&&canSpell(w.toUpperCase(),rackLetters));
+canlı
+cc=sc+i,key=`${r},${cc}`;
+cd=horiz?[1,0]:[0,1];
+ceket
+cell.addEventListener('click',()=>cellClick(r,c));
+cell.addEventListener('click',()=>recallCell(r,c));
+cell.appendChild(makeTileEl(board[r][c],board[r][c].owner==='player'?'player-tile':'ai-tile'));
+cell.appendChild(makeTileEl(placed[key],'placed-tile'));
+cell.classList.add('a-zone');
+cell.classList.add('has-tile');
+cell.classList.add('p-zone');
+cell.className='cell';
+cell=document.createElement('div');
+cellClick(r,c){
+cellState
+cellState,
+cellState[`${empties[i][0]},${empties[i][1]}`]='crack';
+cep
+cer
+ch
+check=validatePlacement();
+checkGameEnd(){
+cilt
+class="crack-icon">⚡</span>';}
+class="go-row"><span>Senin
+class="go-row"><span>Toplam
+class="go-row"><span>YZ
+class="t-letter">${tile.letter}</div><div
+class="t-letter">${tile.wild?tile.wildLetter:tile.letter}</div><div
+class="t-pts">${tile.pts}</div>`;
+class="val"
+cls=playerScore>aiScore?'win':playerScore<aiScore?'lose':'tie';
+col=cols[0];
+cols=[...new
+connects=coords.some(([r,c])=>
+consecutivePasses++;
+consecutivePasses,
+consecutivePasses=0;
+const
+continue;
+coords){const
+coords=Object.keys(placed).map(k=>k.split(',').map(Number));
+coords=keys.map(k=>k.split(',').map(Number));
+currentBonusKeys=Object.keys(bonuses).filter(k=>{const
+cw=getFullWordAt(r,c,cd[0],cd[1]);if(cw.length>=2)ws.add(cw);}
+d.addEventListener('click',()=>selectTile(i));
+d.className='rack-tile'+(selectedTile===i?'
+d.className=`board-tile
+d.innerHTML=`<div
+d;
+d;}
+d=[];for(let
+d=document.createElement('div');
+da
+dal
+dalga
+dam
+damar
+damga
+dane
+dans
+davar
+dağ
+de
+dede
+defne
+dek
+delete
+delim
+dem
+demek
+demir
+denge
+deniz
+deper
+deprem
+dergi
+deri
+dert
+destek
+devir
+devlet
+devrim
+değil.`};
+dikiz
+dikkat
+dilek
+dilim
+dip
+dizgi
+dizi
+dizin
+diş
+document.getElementById('bag-count').textContent=bag.length;
+document.getElementById('btn-pass').addEventListener('click',()=>{
+document.getElementById('btn-pass').disabled=!on;
+document.getElementById('btn-play').addEventListener('click',()=>{
+document.getElementById('btn-play').disabled=!on;
+document.getElementById('btn-recall').addEventListener('click',()=>{
+document.getElementById('btn-recall').disabled=!on;
+document.getElementById('evolve-count').textContent=turnsUntilEvolve;
+document.getElementById('game-over').classList.add('show');
+document.getElementById('game-over').classList.remove('show');
+document.getElementById('go-scores').innerHTML=`
+document.getElementById('go-title').className=`go-title
+document.getElementById('go-title').textContent=winner;
+document.getElementById('rack-count').textContent=`${playerRack.length}
+document.getElementById('score-ai').textContent=aiScore;
+document.getElementById('score-player').textContent=playerScore;
+dolayı
+dolgu
+dolma
+dolum
+donuk
+dost
+dostu
+doğal
+doğru
+doğu
+doğum
+dr=horiz?0:1,dc=horiz?1:0;
+drawTiles(7);
+drawTiles(n){const
+duman
+durak
+dönem
+dönüş
+dönüşüm
+dörtlü
+döviz
+döşek
+dümen
+dünya
+düz
+düzen
+düğün
+düşünüyor…');
+efendi
+ekin
+ekip
+ekmek
+eksen
+eksik
+ekstra
+el
+el.appendChild(cell);
+el.appendChild(d);
+el.innerHTML='';
+el=document.getElementById('board');
+el=document.getElementById('msg-bar');el.textContent=t;el.className=type||'';}
+el=document.getElementById('rack');
+elden
+ellik
+else
+else{const
+else{if(b==='dw'||b==='tw')wm*=(b==='tw'?3:2);sum+=pts;}
+elçi
+em
+emek
+emekli
+empati
+empties.push([r,c]);
+empties=[];
+en
+enableActions(false);
+enableActions(on){
+enableActions(true);
+endGame(){
+enerji
+engel
+enli
+er
+erim
+eriş
+erkek
+ertesi
+es
+et
+etken
+etki
+etnik
+ev
+evLbl.style.color='var(--gold)';
+evLbl.style.color='var(--muted)';
+evLbl.style.color='var(--red)';
+evLbl=document.getElementById('evolve-label');
+evlat
+evolveBoard(){
+evren
+ey
+eylül
+ez
+ezgi
+ezkaza
+eğer
+eğitim
+eğlence
+faiz
+fakir
+false;
+false;}
+fare
+farklı
+fazla
+felek
+fikir
+filo
+final
+findAIMove(){
+firar
+first=isEmpty();
+fiyat
+for(const
+for(let
+frequencies
+function
+fıkra
+fırın
+fısıltı
+garaj
+gece
+gelir
+gemi
+genel
+gençlik
+geri
+gerçek
+getFormedWords()){
+getFormedWords(){
+getFullWordAt(r,c,dr,dc){
+getLetterAt(r,c){
+geçerli
+geçti.','warn');
+geçtin.','warn');
+gi
+gibi
+gir
+giyim
+go
+gu
+görev
+görüş
+gözlük
+göçmen
+gündüz
+güneş
+güven
+haber
+hafif
+haklı
+halka
+halı
+ham
+hamal
+hamle</span><span
+hamur
+hane
+hanım
+haraç
+harcama
+hareket
+harf
+harf`;
+harflere
+hasat
+hava
+havuz
+hayal
+hayat
+haz
+hektar
+hikaye
+hitap
+horiz=rows.length===1;
+horiz=rows.length===1||coords.length===1;
+horizontal
+hoşça
+hız
+hızlı
+i=0;i<Math.min(2,currentBonusKeys.length);i++){
+i=0;i<cnt;i++)
+i=0;i<n&&bag.length>0;i++)d.push(bag.pop());return
+i=0;i<toCrack;i++)
+i=0;i<w.length;i++){
+i=a.length-1;i>0;i--){const
+i=avail.indexOf(ch);
+id
+idx=aiRack.findIndex(t=>t.letter===tile.letter);
+idx=w.indexOf(anchor);
+if(!WORD_SET.has(w.toLowerCase()))
+if(!best||score>best.score)
+if(!board[r][c]&&!cellState[`${r},${c}`]&&!(r>=10&&c<=2)&&!(r<=2&&c>=10))
+if(!board[r][c])
+if(!bonuses[key]&&!board[r][c]&&cellState[key]!=='void'&&cellState[key]!=='crack'){
+if(!check.valid)
+if(!check.valid){setMsg(check.reason,'err');return;}
+if(!connects)
+if(!horiz&&!vert)
+if(!inZone)
+if(!keys.length)
+if(!move){
+if(!placed[`${row},${c}`]&&!board[row][c])
+if(!placed[`${r},${col}`]&&!board[r][col])
+if(!placed[key])
+if(!playerTurn)
+if(!playerTurn||isGameOver)
+if(!words.length)
+if((playerRack.length===0||aiRack.length===0)&&bag.length===0){endGame();return
+if(added>=2)
+if(aiZone(r,c))
+if(allEmpty){
+if(b==='dl')
+if(b==='dw')
+if(b==='tl')
+if(b==='tw')
+if(board[r][c])
+if(board[r][c]){
+if(board[r][c].letter!==w[i]){valid=false;break;}
+if(board[r][c]||placed[key]||cellState[key]==='void')
+if(board[r][cc]){if(board[r][cc].letter!==w[i]){valid=false;break;}}
+if(board[rr][c]){if(board[rr][c].letter!==w[i]){valid=false;break;}}
+if(bonuses[key]){cell.classList.add(bonuses[key]);cell.textContent=BONUS_LABELS[bonuses[key]];}
+if(c>=SIZE){valid=false;break;}
+if(cellState[key]==='void'||cellState[key]==='crack'){valid=false;break;}
+if(check.valid&&check.words.length)
+if(checkGameEnd())
+if(consecutivePasses>=4){endGame();return;}
+if(coords.length>=7)
+if(currentBonusKeys.length>0){
+if(first){
+if(horiz){
+if(i>=0)
+if(idx<0)
+if(idx>=0)
+if(mw.length>=2)
+if(placed[`${r},${c}`])
+if(placed[key]){
+if(playerZone(r,c))
+if(sc>=0&&sc+w.length<=SIZE){
+if(selectedTile!==null)
+if(selectedTile===null){setMsg('Önce
+if(sr>=0&&sr+w.length<=SIZE){
+if(state==='crack'){cell.classList.add('crack');cell.innerHTML='<span
+if(state==='crack'){const
+if(state==='void'){cell.classList.add('void');el.appendChild(cell);continue;}
+if(tile.letter==='?'){
+if(turnsUntilEvolve<=0){evolveBoard();turnsUntilEvolve=3;showEvolveToast();}
+if(turnsUntilEvolve<=1)
+if(turnsUntilEvolve<=2)
+if(valid&&placements.length>0&&placements.length<=rackLetters.length&&
+if(valid&&placements.length>0){
+ikmal
+il
+ileri
+ilham
+im
+imar
+imge
+in
+inZone=coords.some(([r,c])=>r>=8&&c<=4);
+inanç
+ince
+inci
+initGame()
+initGame();
+inkar
+ip
+ipek
+ir
+is
+isEmpty(){return
+isGameOver;
+isGameOver=false;
+isGameOver=true;
+it
+iz
+izin
+izleme
+iç
+içeri
+iğ
+iş
+işaret
+işgal
+işlem
+j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return
+jandarma
+jeton
+jilet
+kadar
+kafa
+kafes
+kale
+kalkış
+kalıp
+kamu
+kanal
+kanat
+kanca
+kapat
+karar
+karmaşık
+karşı
+kasap
+kaset
+katman
+katı
+kavga
+kaya
+kayış
+kaza
+kazan
+kaç
+kaçış
+kağıt
+kaş
+kebap
+kel
+kelebek
+kelime
+kelimesini
+kemik
+kent
+kesim
+key=`${rr},${rc}`;
+key=`${r},${c}`;
+keys=Object.keys(placed);
+kez
+keşif
+kitap
+koca
+kodeks
+komşu
+konu
+konut
+kopya
+koç
+kulak
+kural
+kuruluş
+kurum
+kuzey
+kuzu
+köpek
+körpe
+köy
+köşeden
+küme
+kütük
+küçük
+kı
+kıl
+kılıç
+kın
+kınal
+kırık
+kısa
+kıta
+kıvıl
+kış
+kışla
+l=prompt('Joker
+la
+laf
+lafı
+lakap
+lamba
+lazım
+le
+lehçe
+leke
+let
+letter
+li
+liman
+limon
+lisan
+liste
+litre
+lo
+lu
+lügat
+macera
+madde
+maden
+mahalle
+mahkeme
+makam
+makeTileEl(tile,cls){
+mal
+maliye
+mana
+mantar
+masa
+maxC=Math.max(...coords.map(c=>c[1]));
+maxR=Math.max(...coords.map(c=>c[0]));
+meclis
+mektup
+merdiven
+mesai
+mesaj
+metal
+mevcut
+meydana
+mezarlık
+mi
+millet
+minC=Math.min(...coords.map(c=>c[1]));
+minR=Math.min(...coords.map(c=>c[0]));
+miras
+misafir
+miting
+move.placements){
+move=findAIMove();
+mu
+mucit
+muhalif
+mw=getFullWordAt(coords[0][0],coords[0][1],horiz?0:1,horiz?1:0);
+müzik
+mısır
+nakit
+namaz
+namus
+nasıl
+ne
+neden
+nehir
+nem
+ni
+nihayet
+niyet
+nişan
+nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE&&board[nr][nc]
+nu
+null;
+nüfus
+ocak
+of
+okul
+okuma
+olamaz.'};
+olmalı.'};
+oluşum
+on
+onlar
+ordu
+orman
+orta
+ova
+oynadı
+oynak
+oyun
+palto
+para
+park
+parka
+partisi
+parça
+pas
+pasta
+pazar
+pedagoji
+pencere
+perhiz
+petek
+pick=currentBonusKeys[Math.floor(Math.random()*currentBonusKeys.length)];
+pilav
+placed,
+placed={};
+placed[`${r},${c}`].wild?placed[`${r},${c}`].wildLetter:placed[`${r},${c}`].letter;
+placed[key];
+placed[key]=tile;
+placements){
+placements.push({r,c,tile:{letter:w[i],pts:TILE_DATA[w[i]]?.pts||0}});
+placements.push({r,c:cc,tile:{letter:w[i],pts:TILE_DATA[w[i]]?.pts||0}});
+placements.push({r:rr,c,tile:{letter:w[i],pts:TILE_DATA[w[i]]?.pts||0}});
+placements=[];let
+plan
+playerRack
+playerRack,
+playerRack.forEach((tile,i)=>{
+playerRack.push(...drawTiles(7-playerRack.length));
+playerRack.push({letter:t.wild?'?':t.letter,pts:t.pts});
+playerRack.push({letter:tile.wild?'?':tile.letter,pts:tile.pts});
+playerRack.splice(selectedTile,1);
+playerScore+=pts;
+playerScore,
+playerScore=0;
+playerScore=Math.max(0,playerScore-playerRack.reduce((s,t)=>s+t.pts,0));
+playerTurn;
+playerTurn=false;
+playerTurn=true;
+playerZone(r,c)
+polis
+pozisyon
+pratik
+pts*=2;
+pts*=3;
+pts=calcScore();
+pts=placed[key]?.pts||board[rr]?.[rc]?.pts||0;
+pts=tile.pts;
+puan
+puan!
+puan.`,'');
+puanı</span><span
+puanın</span><span
+quickAIScore(placements){
+r<=3&&c>=9;
+r=0;r<SIZE;r++)
+r=0;r<SIZE;r++){
+r=1,startC=9;
+r=minR;r<=maxR;r++)
+r>=9&&c<=3;
+rackLetters=aiRack.map(t=>t.letter);
+rafından
+rakam
+rapor
+recallCell(r,c){
+renderBoard()
+renderBoard();
+renderRack();
+renderRack(){
+renk
+resim
+resmi
+return
+return;
+reçel
+rivayet
+row=rows[0];
+rows=[...new
+rr+=dr;rc+=dc;
+rr=sr+i,key=`${rr},${c}`;
+rr=sr,rc=sc;
+rüya
+rüzgar
+saat
+sahne
+sakar
+salça
+samimi
+sanayi
+sandık
+satır/sütunda
+savunma
+saçma
+sc=c-idx;
+score=quickAIScore(placements);
+selectTile(i){
+selected':'');
+selectedTile,
+selectedTile=(selectedTile===i)?null:i;
+selectedTile=null;
+sentez
+seri
+setMsg('Bir
+setMsg('Harf
+setMsg('Harfler
+setMsg('Pas
+setMsg('YZ
+setMsg(`"${playerRack[selectedTile].letter}"
+setMsg(`+${pts}
+setMsg(`Kelimeler:
+setMsg(`YZ
+setMsg(check.reason,'err');
+setMsg(t,type){const
+setTimeout(()=>t.classList.remove('show'),2000);
+setTimeout(aiPlay,1400);
+setTurn('Senin
+setTurn('YZ
+setTurn(t){document.getElementById('turn-label').textContent=t;}
+sevgi
+seç,
+seç.','');
+seç.','err');return;}
+seçildi
+seçim
+showEvolveToast(){
+shuffle([...empties])){
+shuffle(a){for(let
+shuffle(b);
+shuffle(empties);
+silah
+sistem
+siyasi
+sokak
+sol
+sonra
+soru
+sorun
+sosyal
+sr=coords[0][0],sc=coords[0][1];
+sr=r,sc=c;
+sr=r-idx;
+state=cellState[key];
+style="color:var(--ai-color)">${aiScore}</span></div>
+style="color:var(--muted)">${turnCount}</span></div>
+style="color:var(--player-color)">${playerScore}</span></div>
+sulh
+sultan
+sum*wm;
+sum+=pts*2;
+sum+=pts*3;
+sum+=pts;
+sum=0,wm=1;
+suçlama
+söz
+sözleşme
+sürpriz
+sıkıntı
+sınav
+sınır
+sıran');
+t.classList.add('show');
+t=document.getElementById('evolve-toast');
+t=placed[key];
+tabak
+taban
+tahtaya
+talep
+talih
+tamamlamak
+tane
+taraf
+tarih
+tasarım
+tatil
+tayin
+tebrik
+tek
+telefon
+temel
+tencere
+tepsi
+tercih
+test
+tile.owner='player';
+tile.wild=true;
+tile.wildLetter=l;
+tile={...playerRack[selectedTile]};
+tiyatro
+toCrack=Math.min(4+Math.floor(turnCount/4),empties.length,6);
+tokat
+toprak
+total+=50;
+total+=sum*wm;
+total;
+total=0;
+true;
+true;}
+turnCount++;
+turnCount,
+turnCount=0;
+turnsUntilEvolve--;
+turnsUntilEvolve;
+turnsUntilEvolve=3;
+tuz
+types=['dw','dw','tw','dl','dl','tl'];
+tören
+tüfek
+tünel
+türlü
+ucuz
+ulusal
+umut
+unvan
+updateHUD();
+updateHUD(){
+uygulama
+uzak
+uzman
+uçak
+vadi
+vakit
+vali
+valid=true;
+validatePlacement(){
+values
+vapur
+vatan
+vazgeçme
+ve
+verim
+vert=cols.length===1;
+vertical
+vesile
+veya
+viral
+w
+w=word.toUpperCase();
+while(rr>=0&&rc>=0&&rr<SIZE&&rc<SIZE&&getLetterAt(rr,rc)){
+while(rr>=0&&rc>=0&&rr<SIZE&&rc<SIZE&&getLetterAt(rr,rc)){word+=getLetterAt(rr,rc);rr+=dr;rc+=dc;}
+while(sr-dr>=0&&sc-dc>=0&&getLetterAt(sr-dr,sc-dc)){sr-=dr;sc-=dc;}
+while(sr-dr>=0&&sc-dc>=0&&sr-dr<SIZE&&sc-dc<SIZE&&getLetterAt(sr-dr,sc-dc)){sr-=dr;sc-=dc;}
+wi=avail.indexOf('?');if(wi>=0)avail.splice(wi,1);else
+winner=playerScore>aiScore?'KAZANDIN':playerScore<aiScore?'YZ
+wm*=2;
+wm*=3;
+word
+word){
+word;
+word='',rr=sr,rc=sc;
+words)
+words=getFormedWords();
+ws.add(mw);
+ws=new
+ya
+yabancı
+yardım
+yazı
+yazılı
+ye
+yemin
+yerleştir.','');
+yerleştir.`,'');
+yerleştirilmedi.'};
+yetki
+yi
+yo
+yok.'};
+yoksul
+yol
+yu
+yurt
+yönetim
+yük
+yüksek
+yüz
+yüzde
+yıl
+zafer
+zaman
+zaten
+zemin
+zeytin
+ziyaret
+zorlu
+zümrüt
+{
+{r,c,tile}
+{tw:'3K',dw:'2K',tl:'3H',dl:'2H'};
+{valid:false,reason:'Harf
+{valid:false,reason:'Harfler
+{valid:false,reason:'Kelime
+{valid:false,reason:'Tamamlanmış
+{valid:false,reason:'İlk
+{valid:false,reason:`"${w}"
+{valid:true,words};
+{};
+}
+});
+};
+çaba
+çabuk
+çak
+çal
+çalı
+çalım
+çalış
+çam
+çan
+çaput
+çark
+çarpık
+çarşı
+çatı
+çağrı
+çek
+çeker
+çelik
+çene
+çerçeve
+çevir
+çeviri
+çevre
+çeşit
+çilek
+çivi
+çiz
+çiçek
+çocuk
+çok
+çorap
+çorum
+çukur
+çul
+çözüm
+çünkü
+çıkar
+çıkış
+çılgın
+çınla
+çığ
+çığır
+ön
+öp
+ör
+öt
+öz
+özgür
+öğle
+öğrenci
+üç
+şahin
+şair
+şaşır
+şehir
+şeker
+şekil
+şen
+şiir
+şişe
+şu
+şöyle
+şükran
+—
+──
+─────────────────────────────────────────────────
+───────────────────────────────────────────────────────────
+───────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────────
+─────────────────────────────────────────────────────────────────────
+──────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────────────
+
