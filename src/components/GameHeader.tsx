@@ -20,6 +20,12 @@ export function GameHeader({ state }: GameHeaderProps) {
         {players.map((p, i) => {
           const col = PLAYER_COLORS[p.colorIndex];
           const active = i === current;
+          // Başlıkta dar alan için YZ oyuncusu kısaca "YZ" (4 kişilikse "YZ 2").
+          const label = p.isAI
+            ? players.length === 2
+              ? 'YZ'
+              : `YZ ${i + 1}`
+            : p.name;
           return (
             <div
               key={i}
@@ -33,7 +39,7 @@ export function GameHeader({ state }: GameHeaderProps) {
                 className="text-[8px] uppercase tracking-[1px] font-mono truncate max-w-[72px]"
                 style={{ color: col.base }}
               >
-                {p.name}
+                {label}
               </div>
               <div
                 className="font-mono text-lg font-bold leading-none"
