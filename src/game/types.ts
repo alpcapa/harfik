@@ -34,8 +34,17 @@ export interface Player {
   corner: number;
   /** Renk paleti indeksi (PLAYER_COLORS). */
   colorIndex: number;
+  /** Bu oyuncuyu yapay zekâ mı oynuyor? */
+  isAI: boolean;
   rack: Tile[];
   score: number;
+}
+
+/** YZ'nin bulduğu hamle. */
+export interface AIMove {
+  word: string;
+  score: number;
+  placements: Placement[];
 }
 
 export interface GameState {

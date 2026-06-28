@@ -1,5 +1,5 @@
 // Harfik — ana uygulama: kurulum, çok oyunculu sıra akışı ve düzen
-import { useReducer, useState } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import { GameHeader } from './components/GameHeader';
 import { Board } from './components/Board';
 import { Rack } from './components/Rack';
@@ -15,6 +15,8 @@ import { PLAYER_COLORS } from './game/constants';
 import { useAuth } from './hooks/useAuth';
 import { fetchMeaning } from './lib/api';
 import type { WordMeaning } from './lib/database.types';
+
+const AI_THINK_MS = 1100;
 
 const MESSAGE_COLORS: Record<string, string> = {
   ok: 'text-green',
@@ -51,11 +53,22 @@ export default function App() {
     });
   };
 
+  // YZ sırası: kısa bir düşünme gecikmesiyle otomatik oyna.
+  const aiTurn =
+    state.phase === 'play' &&
+    !state.isGameOver &&
+    !!state.players[state.current]?.isAI;
+  useEffect(() => {
+    if (!aiTurn) return;
+    const t = setTimeout(() => dispatch({ type: 'AI_PLAY' }), AI_THINK_MS);
+    return () => clearTimeout(t);
+  }, [aiTurn, state.current, state.turnCount]);
+
   // ── Kurulum ekranı ─────────────────────────────────────────────────────────
   if (state.phase === 'setup') {
     return (
       <div className="min-h-screen w-full flex flex-col items-center overflow-x-hidden">
-        <Setup onStart={(names) => dispatch({ type: 'START', names })} />
+        <Setup onStart={(players) => dispatch({ type: 'START', players })} />
         <AccountBar />
       </div>
     );
@@ -73,7 +86,7 @@ export default function App() {
       openMeaning(lw.word);
       return;
     }
-    if (state.isGameOver) return;
+    if (state.isGameOver || me.isAI) return;
     if (state.placed[k]) {
       dispatch({ type: 'RECALL_CELL', r, c });
       return;
@@ -89,7 +102,7 @@ export default function App() {
     dispatch({ type: 'PLACE_TILE', r, c, wildLetter });
   };
 
-  const canAct = !state.isGameOver;
+  const canAct = !state.isGameOver && !me.isAI;
 
   const placedCount = Object.keys(state.placed).length;
   const potentialScore =
@@ -108,6 +121,7 @@ export default function App() {
       <div className="w-full max-w-[460px] flex items-center justify-center px-3.5 py-1.5 text-[10px] font-mono tracking-[1px] uppercase">
         <span className="font-bold" style={{ color: myColor.base }}>
           Sıra: {me.name}
+          {me.isAI && ' (düşünüyor…)'}
         </span>
       </div>
 
@@ -131,8 +145,8 @@ export default function App() {
         <Rack
           tiles={me.rack}
           selectedTile={state.selectedTile}
-          onSelect={(i) => dispatch({ type: 'SELECT_TILE', index: i })}
-          title={me.name}
+          onSelect={(i) => !me.isAI && dispatch({ type: 'SELECT_TILE', index: i })}
+          title={me.isAI ? `${me.name} (YZ)` : me.name}
           color={myColor}
         />
 

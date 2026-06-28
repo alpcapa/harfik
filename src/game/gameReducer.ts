@@ -20,16 +20,24 @@ import {
   computeOpenCorners,
   validatePlacement,
 } from '../utils/validator';
+import { findAIMove } from '../utils/ai';
+
+/** Kurulumda bir oyuncunun ayarı. */
+export interface PlayerSetup {
+  name: string;
+  isAI: boolean;
+}
 
 export type Action =
   | { type: 'INIT' }
-  | { type: 'START'; names: string[] }
+  | { type: 'START'; players: PlayerSetup[] }
   | { type: 'SELECT_TILE'; index: number }
   | { type: 'PLACE_TILE'; r: number; c: number; wildLetter?: string }
   | { type: 'RECALL_CELL'; r: number; c: number }
   | { type: 'RECALL_ALL' }
   | { type: 'PLAY' }
-  | { type: 'PASS' };
+  | { type: 'PASS' }
+  | { type: 'AI_PLAY' };
 
 /** Kurulum (oyuncu seçimi) ekranıyla başlayan boş durum. */
 export function createInitialState(): GameState {
@@ -51,15 +59,16 @@ export function createInitialState(): GameState {
   };
 }
 
-/** İsim listesinden (2 ya da 4) oyunu kurar ve ilk taşları dağıtır. */
-function startGame(names: string[]): GameState {
-  const count = names.length;
+/** Oyuncu ayarlarından (2 ya da 4) oyunu kurar ve ilk taşları dağıtır. */
+function startGame(setup: PlayerSetup[]): GameState {
+  const count = setup.length;
   const corners = cornersFor(count);
   const bag = buildBag();
-  const players: Player[] = names.map((name, i) => ({
-    name: name.trim() || `Oyuncu ${i + 1}`,
+  const players: Player[] = setup.map((s, i) => ({
+    name: s.name.trim() || (s.isAI ? `YZ ${i + 1}` : `Oyuncu ${i + 1}`),
     corner: corners[i],
     colorIndex: i % PLAYER_COLORS.length,
+    isAI: s.isAI,
     rack: drawTiles(bag, RACK_SIZE),
     score: 0,
   }));
@@ -172,8 +181,8 @@ export function gameReducer(state: GameState, action: Action): GameState {
       return createInitialState();
 
     case 'START': {
-      if (action.names.length !== 2 && action.names.length !== 4) return state;
-      return startGame(action.names);
+      if (action.players.length !== 2 && action.players.length !== 4) return state;
+      return startGame(action.players);
     }
 
     case 'SELECT_TILE': {
@@ -313,6 +322,71 @@ export function gameReducer(state: GameState, action: Action): GameState {
       if (consecutivePasses >= state.players.length * MAX_PASS_ROUNDS) {
         return endGame(moved);
       }
+      return advanceTurn(moved);
+    }
+
+    case 'AI_PLAY': {
+      if (state.phase !== 'play' || state.isGameOver) return state;
+      const me = state.players[state.current];
+      if (!me.isAI) return state;
+
+      const open = computeOpenCorners(state.board, state.players);
+      const move = findAIMove(
+        state.board,
+        me.rack,
+        state.bonuses,
+        state.current,
+        me.corner,
+        open,
+        isFirstMove(state),
+      );
+
+      // Geçerli hamle yoksa YZ pas geçer.
+      if (!move) {
+        const consecutivePasses = state.consecutivePasses + 1;
+        const moved: GameState = {
+          ...state,
+          consecutivePasses,
+          message: `${me.name} pas geçti.`,
+          messageType: 'warn',
+        };
+        if (consecutivePasses >= state.players.length * MAX_PASS_ROUNDS) {
+          return endGame(moved);
+        }
+        return advanceTurn(moved);
+      }
+
+      // Hamledeki taşları tahtaya işle ve raftan düş.
+      const placedMap: Record<string, Tile> = {};
+      for (const p of move.placements) placedMap[key(p.r, p.c)] = p.tile;
+      const formed = getFormedWords(state.board, placedMap);
+
+      const board = state.board.map((row) => [...row]);
+      const rack = [...me.rack];
+      for (const p of move.placements) {
+        board[p.r][p.c] = { ...p.tile, owner: state.current };
+        const idx = p.tile.wild
+          ? rack.findIndex((t) => t.letter === '?')
+          : rack.findIndex((t) => t.letter === p.tile.letter);
+        if (idx >= 0) rack.splice(idx, 1);
+      }
+      const bag = [...state.bag];
+      rack.push(...drawTiles(bag, RACK_SIZE - rack.length));
+
+      const players = state.players.map((p, i) =>
+        i === state.current ? { ...p, rack, score: p.score + move.score } : p,
+      );
+
+      const moved: GameState = {
+        ...state,
+        board,
+        bag,
+        players,
+        consecutivePasses: 0,
+        lastWords: setLastWords(state.lastWords, formed, state.current),
+        message: `${me.name} "${move.word}" oynadı. +${move.score} puan.`,
+        messageType: 'ok',
+      };
       return advanceTurn(moved);
     }
 
