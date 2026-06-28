@@ -35,7 +35,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
           </li>
           {rows.map((r, i) => {
             const me = user && r.user_id === user.id;
-            const name = r.display_name || r.username || 'Anonim';
+            const name = r.username || r.display_name || 'Anonim';
             return (
               <li
                 key={r.user_id}

@@ -17,7 +17,7 @@ export function StatsModal({ onClose }: StatsModalProps) {
     fetchPlayerStats().then(setStats);
   }, []);
 
-  const name = profile?.display_name || profile?.username || user?.email || 'Oyuncu';
+  const name = profile?.username || profile?.display_name || user?.email || 'Oyuncu';
 
   const cells: { label: string; value: number | string; cls?: string }[] = stats
     ? [

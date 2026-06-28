@@ -14,7 +14,7 @@ export function AccountBar() {
 
   if (!configured) return null;
 
-  const name = profile?.display_name || profile?.username || user?.email || 'Hesabım';
+  const name = profile?.username || profile?.display_name || user?.email || 'Hesabım';
   const btn =
     'font-mono text-[10px] uppercase tracking-[1px] px-3 py-1.5 rounded-md border active:scale-[0.97] transition-transform';
 

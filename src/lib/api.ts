@@ -108,7 +108,7 @@ export async function signUp(email: string, password: string, username?: string)
   return supabase.auth.signUp({
     email,
     password,
-    options: { data: username ? { username } : undefined },
+    options: { data: username ? { username, display_name: username } : undefined },
   });
 }
 
