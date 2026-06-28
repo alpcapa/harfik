@@ -1,14 +1,16 @@
 // Harfik — ana uygulama: durum, sıra akışı ve düzen
-import { useEffect, useReducer, useRef } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { GameHeader } from './components/GameHeader';
 import { Board } from './components/Board';
 import { Rack } from './components/Rack';
 import { GameOver } from './components/GameOver';
 import { AccountBar } from './components/AccountBar';
+import { MeaningModal } from './components/MeaningModal';
 import { createInitialState, gameReducer } from './game/gameReducer';
 import { key } from './utils/board';
 import { useAuth } from './hooks/useAuth';
-import { saveGame } from './lib/api';
+import { fetchMeaning, saveGame } from './lib/api';
+import type { WordMeaning } from './lib/database.types';
 
 const AI_THINK_MS = 1400;
 const TOAST_MS = 2000;
@@ -33,6 +35,23 @@ export default function App() {
   const [state, dispatch] = useReducer(gameReducer, undefined, createInitialState);
   const { user } = useAuth();
   const savedRef = useRef(false);
+
+  // Oynanan bir kelimeye tıklanınca gösterilen anlam penceresi.
+  const [meaning, setMeaning] = useState<{
+    word: string;
+    data: WordMeaning | null;
+    loading: boolean;
+  } | null>(null);
+
+  const openMeaning = (word: string) => {
+    setMeaning({ word, data: null, loading: true });
+    void fetchMeaning(word).then((data) => {
+      // Tıklama sırası değişmiş olabilir; yalnızca güncel kelimeyi güncelle.
+      setMeaning((cur) =>
+        cur && cur.word === word ? { word, data, loading: false } : cur,
+      );
+    });
+  };
 
   // Oyun bitince (oturum açıksa) sonucu bir kez kaydet.
   useEffect(() => {
@@ -74,8 +93,15 @@ export default function App() {
   }, [state.evolveToast]);
 
   const handleCellClick = (r: number, c: number) => {
-    if (!state.playerTurn || state.isGameOver) return;
     const k = key(r, c);
+    // Son oynanan kelimenin harfine tıklanırsa anlamını göster (sırasından
+    // bağımsız; o oyuncu yeni hamle yapana kadar tıklanabilir kalır).
+    const lw = state.lastWords[k];
+    if (lw) {
+      openMeaning(lw.word);
+      return;
+    }
+    if (!state.playerTurn || state.isGameOver) return;
     if (state.placed[k]) {
       dispatch({ type: 'RECALL_CELL', r, c });
       return;
@@ -181,6 +207,15 @@ export default function App() {
         <div className="fixed top-[60px] left-1/2 -translate-x-1/2 z-[200] bg-gold text-[#060A0D] font-mono text-[11px] font-bold tracking-[1px] px-[18px] py-2 rounded-full uppercase pointer-events-none">
           ⚡ Tahta Değişiyor!
         </div>
+      )}
+
+      {meaning && (
+        <MeaningModal
+          word={meaning.word}
+          data={meaning.data}
+          loading={meaning.loading}
+          onClose={() => setMeaning(null)}
+        />
       )}
 
       <GameOver

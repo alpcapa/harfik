@@ -17,7 +17,7 @@ const BONUS_CLASSES: Record<string, string> = {
 };
 
 export function Board({ state, onCellClick }: BoardProps) {
-  const { board, placed, bonuses, cellState } = state;
+  const { board, placed, bonuses, cellState, lastWords } = state;
   const cells = [];
 
   for (let r = 0; r < SIZE; r++) {
@@ -35,10 +35,18 @@ export function Board({ state, onCellClick }: BoardProps) {
         'transition-[background,opacity] duration-300 border',
       ];
 
+      const isLastWord = !!lastWords[k];
+
       if (st === 'void') {
         classes.push('bg-void border-[#080808] opacity-30 cursor-not-allowed');
       } else if (boardTile) {
-        classes.push('bg-transparent border-transparent cursor-default');
+        // Son oynanan kelimenin harfleri tıklanınca anlam gösterir; ipucu
+        // olarak hafif bir altın halka ve işaretçi imleci eklenir.
+        classes.push(
+          isLastWord
+            ? 'bg-transparent border-transparent cursor-pointer rounded-[3px] ring-1 ring-gold/50'
+            : 'bg-transparent border-transparent cursor-default',
+        );
         content = (
           <Tile tile={boardTile} variant={boardTile.owner === 'ai' ? 'ai' : 'player'} />
         );

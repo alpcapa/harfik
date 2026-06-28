@@ -61,6 +61,12 @@ export interface GameState {
   turnLabel: string;
   /** Evrim bildirimi görünür mü? */
   evolveToast: boolean;
+  /**
+   * Son kabul edilen hamlede oluşan kelimeler (hücre → kelime + oynayan).
+   * Bu hücrelere tıklayınca kelimenin anlamı gösterilir. Her oyuncunun
+   * kaydı, o oyuncu yeni bir hamle yapana kadar durur.
+   */
+  lastWords: Record<CellKey, { word: string; by: Owner }>;
 }
 
 export interface ValidationResult {

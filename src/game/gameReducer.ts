@@ -5,9 +5,15 @@ import {
   RACK_SIZE,
   buildInitialBonuses,
 } from './constants';
-import type { GameState, Tile } from './types';
+import type { GameState, Owner, Tile } from './types';
 import { buildBag, drawTiles } from '../utils/bag';
-import { createEmptyBoard, key } from '../utils/board';
+import {
+  createEmptyBoard,
+  getFormedWords,
+  key,
+  type FormedWord,
+  type Placed,
+} from '../utils/board';
 import { validatePlacement, calcScore } from '../utils/validator';
 import { findAIMove } from '../utils/ai';
 import { evolveBoard } from '../utils/boardEvolution';
@@ -48,7 +54,30 @@ export function createInitialState(): GameState {
     messageType: '',
     turnLabel: 'Senin sıran',
     evolveToast: false,
+    lastWords: {},
   };
+}
+
+/**
+ * Son hamlede oluşan kelimeleri `lastWords`'e yazar. Aynı oyuncunun önceki
+ * kayıtları temizlenir; böylece her oyuncunun anlamı, o oyuncu yeni hamle
+ * yapana kadar tıklanabilir kalır.
+ */
+function setLastWords(
+  prev: GameState['lastWords'],
+  formed: FormedWord[],
+  by: Owner,
+): GameState['lastWords'] {
+  const next = { ...prev };
+  for (const k of Object.keys(next)) {
+    if (next[k].by === by) delete next[k];
+  }
+  for (const fw of formed) {
+    for (const [r, c] of fw.coords) {
+      next[key(r, c)] = { word: fw.word, by };
+    }
+  }
+  return next;
 }
 
 /** Kalan raf puanlarını düşerek oyunu bitirir. */
@@ -205,6 +234,9 @@ export function gameReducer(state: GameState, action: Action): GameState {
       }
       const pts = calcScore(state.board, state.placed, state.bonuses);
 
+      // Oluşan kelimeleri (koordinatlarıyla) anlam tıklaması için sakla.
+      const formed = getFormedWords(state.board, state.placed);
+
       // Yerleştirmeleri tahtaya işle.
       const board = state.board.map((row) => [...row]);
       for (const [k, tile] of Object.entries(state.placed)) {
@@ -233,6 +265,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         consecutivePasses: 0,
         selectedTile: null,
         bestWord: longest,
+        lastWords: setLastWords(state.lastWords, formed, 'player'),
         message: `+${pts} puan! Kelimeler: ${check.words!.join(', ')}`,
         messageType: 'ok',
       };
@@ -278,6 +311,11 @@ export function gameReducer(state: GameState, action: Action): GameState {
         return advanceTurn(moved, true);
       }
 
+      // Oluşan kelimeleri (koordinatlarıyla) anlam tıklaması için hesapla.
+      const aiPlaced: Placed = {};
+      for (const p of move.placements) aiPlaced[key(p.r, p.c)] = p.tile;
+      const formed = getFormedWords(state.board, aiPlaced);
+
       const board = state.board.map((row) => [...row]);
       const aiRack = [...state.aiRack];
       for (const p of move.placements) {
@@ -297,6 +335,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         aiRack,
         aiScore: state.aiScore + move.score,
         consecutivePasses: 0,
+        lastWords: setLastWords(state.lastWords, formed, 'ai'),
         message: `YZ "${move.word}" oynadı. +${move.score} puan.`,
         messageType: '',
       };

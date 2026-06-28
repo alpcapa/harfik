@@ -109,9 +109,11 @@ export async function isValidWordRemote(word: string): Promise<boolean | null> {
  * düşer. Hiçbir yerde bulunamazsa null döner.
  */
 export async function fetchMeaning(word: string): Promise<WordMeaning | null> {
+  // Tahtadaki harfler büyük olabilir; Türkçe kurallarıyla küçült (İ→i, I→ı).
+  const norm = word.toLocaleLowerCase('tr');
   if (supabase) {
     const { data, error } = await supabase.rpc('word_meaning', {
-      p_word: word,
+      p_word: norm,
     });
     if (error) {
       console.error('[Harfik] fetchMeaning hatası:', error.message);
@@ -125,9 +127,9 @@ export async function fetchMeaning(word: string): Promise<WordMeaning | null> {
     }
   }
   // Yerel yedek.
-  const local = await getLocalMeaning(word);
+  const local = await getLocalMeaning(norm);
   if (local) {
-    return { word: word.toLowerCase(), pos: local.pos, meanings: local.meanings };
+    return { word: norm, pos: local.pos, meanings: local.meanings };
   }
   return null;
 }
