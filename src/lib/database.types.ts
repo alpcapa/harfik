@@ -31,6 +31,13 @@ export type NewGame = Pick<
   best_word?: string | null;
 };
 
+/** Bir kelimenin sözlük kaydı (word_meaning RPC çıktısı). */
+export interface WordMeaning {
+  word: string;
+  pos: string | null;
+  meanings: string[];
+}
+
 export interface LeaderboardRow {
   user_id: string;
   username: string | null;
