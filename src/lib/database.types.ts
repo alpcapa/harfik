@@ -7,6 +7,7 @@ export interface Profile {
   id: string;
   username: string | null;
   display_name: string | null;
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -42,6 +43,7 @@ export interface LeaderboardRow {
   user_id: string;
   username: string | null;
   display_name: string | null;
+  avatar_url: string | null;
   best_score: number;
   games_played: number;
   wins: number;

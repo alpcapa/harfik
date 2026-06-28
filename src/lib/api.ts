@@ -155,4 +155,64 @@ export async function signOut() {
   await supabase.auth.signOut();
 }
 
+// ── Profil güncelleme ────────────────────────────────────────────────────────
+
+/** Oturum açan oyuncunun profilini günceller ve güncel kaydı döner. */
+export async function updateProfile(
+  patch: Partial<Pick<Profile, 'username' | 'display_name' | 'avatar_url'>>,
+): Promise<Profile | null> {
+  if (!supabase) throw new Error('Supabase yapılandırılmadı.');
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Oturum açık değil.');
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(patch)
+    .eq('id', user.id)
+    .select('*')
+    .single();
+  if (error) throw error;
+  return data as Profile;
+}
+
+/** Oturum açan kullanıcının e-postasını değiştirir (doğrulama gerekebilir). */
+export async function updateEmail(email: string) {
+  if (!supabase) throw new Error('Supabase yapılandırılmadı.');
+  return supabase.auth.updateUser({ email });
+}
+
+/** Oturum açan kullanıcının şifresini değiştirir. */
+export async function updatePassword(password: string) {
+  if (!supabase) throw new Error('Supabase yapılandırılmadı.');
+  return supabase.auth.updateUser({ password });
+}
+
+/**
+ * Profil fotoğrafını `avatars` depolama kovasına yükler, profildeki
+ * avatar_url'i günceller ve genel (public) URL'i döner.
+ */
+export async function uploadAvatar(file: File): Promise<string> {
+  if (!supabase) throw new Error('Supabase yapılandırılmadı.');
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Oturum açık değil.');
+
+  const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+  const path = `${user.id}/avatar.${ext}`;
+
+  const { error: upErr } = await supabase.storage
+    .from('avatars')
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (upErr) throw upErr;
+
+  const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+  // Önbelleği atlamak için sürüm parametresi ekle (aynı yol üzerine yazılır).
+  const url = `${data.publicUrl}?v=${Date.now()}`;
+  await updateProfile({ avatar_url: url });
+  return url;
+}
+
 export { isSupabaseConfigured };

@@ -1,6 +1,7 @@
 // Harfik — liderlik tablosu
 import { useEffect, useState } from 'react';
 import { Modal } from './Modal';
+import { Avatar } from './Avatar';
 import { fetchLeaderboard } from '../lib/api';
 import type { LeaderboardRow } from '../lib/database.types';
 import { useAuth } from '../hooks/useAuth';
@@ -52,6 +53,12 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                 >
                   {i + 1}
                 </span>
+                <Avatar
+                  url={r.avatar_url}
+                  name={name}
+                  size={22}
+                  className="mr-2 shrink-0"
+                />
                 <span className="flex-1 truncate text-text">{name}</span>
                 <span className="w-10 text-right text-muted">{r.wins}</span>
                 <span className="w-12 text-right font-bold text-accent">
