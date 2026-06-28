@@ -102,7 +102,7 @@ export default function App() {
         : 'text-muted';
 
   return (
-    <div className="min-h-screen flex flex-col items-center overflow-x-hidden">
+    <div className="min-h-screen w-full flex flex-col items-center overflow-x-hidden">
       <GameHeader
         playerScore={state.playerScore}
         aiScore={state.aiScore}
