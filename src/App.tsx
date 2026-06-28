@@ -84,7 +84,7 @@ export default function App() {
       openMeaning(lw.word);
       return;
     }
-    if (state.isGameOver || me.isAI) return;
+    if (state.isGameOver || me.isAI || state.swapMode) return;
     if (state.placed[k]) {
       dispatch({ type: 'RECALL_CELL', r, c });
       return;
@@ -130,9 +130,15 @@ export default function App() {
         <Rack
           tiles={me.rack}
           selectedTile={state.selectedTile}
-          onSelect={(i) => !me.isAI && dispatch({ type: 'SELECT_TILE', index: i })}
+          onSelect={(i) => {
+            if (me.isAI) return;
+            if (state.swapMode) dispatch({ type: 'TOGGLE_SWAP_TILE', index: i });
+            else dispatch({ type: 'SELECT_TILE', index: i });
+          }}
           title={me.isAI ? `${me.name} (YZ)` : me.name}
           color={myColor}
+          swapMode={state.swapMode}
+          swapSelection={state.swapSelection}
         />
 
         <div className="flex gap-2 justify-center flex-wrap py-1">
@@ -150,29 +156,66 @@ export default function App() {
           ))}
         </div>
 
-        <div className="flex gap-1.5">
-          <button
-            disabled={!canAct}
-            onClick={() => dispatch({ type: 'PLAY' })}
-            className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-          >
-            Oyna
-          </button>
-          <button
-            disabled={!canAct}
-            onClick={() => dispatch({ type: 'RECALL_ALL' })}
-            className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-          >
-            Geri Al
-          </button>
-          <button
-            disabled={!canAct}
-            onClick={() => dispatch({ type: 'PASS' })}
-            className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-muted border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-          >
-            Pas
-          </button>
-        </div>
+        {state.swapMode ? (
+          <div className="flex gap-1.5">
+            <button
+              disabled={!canAct || state.swapSelection.length === 0}
+              onClick={() => dispatch({ type: 'CONFIRM_SWAP' })}
+              className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-gold text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              Değiştir{state.swapSelection.length > 0 ? ` (${state.swapSelection.length})` : ''}
+            </button>
+            <button
+              disabled={!canAct}
+              onClick={() => dispatch({ type: 'TOGGLE_SWAP_MODE' })}
+              className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-muted border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              Vazgeç
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex gap-1.5">
+              <button
+                disabled={!canAct}
+                onClick={() => dispatch({ type: 'PLAY' })}
+                className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+              >
+                Oyna
+              </button>
+              <button
+                disabled={!canAct}
+                onClick={() => dispatch({ type: 'RECALL_ALL' })}
+                className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+              >
+                Geri Al
+              </button>
+              <button
+                disabled={!canAct}
+                onClick={() => dispatch({ type: 'PASS' })}
+                className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-muted border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+              >
+                Pas
+              </button>
+            </div>
+            <div className="flex gap-1.5">
+              <button
+                disabled={!canAct}
+                onClick={() => dispatch({ type: 'SHUFFLE_RACK' })}
+                className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+              >
+                Karıştır
+              </button>
+              <button
+                disabled={!canAct || state.bag.length === 0}
+                onClick={() => dispatch({ type: 'TOGGLE_SWAP_MODE' })}
+                className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+              >
+                Taş Değiştir
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {meaning && (
