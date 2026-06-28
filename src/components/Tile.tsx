@@ -40,7 +40,7 @@ export function Tile({ tile, variant, color, selected = false, onClick }: TilePr
       onClick={onClick}
       style={style}
       className={[
-        'flex flex-col items-center justify-center select-none transition-transform',
+        'relative flex items-center justify-center select-none transition-transform',
         'cursor-pointer flex-shrink-0',
         sizeClass,
         selected
@@ -48,18 +48,23 @@ export function Tile({ tile, variant, color, selected = false, onClick }: TilePr
           : '',
       ].join(' ')}
     >
+      {/* Harf — büyük ve kalın (Space Mono 700 + ince kontur). */}
       <span
+        style={{ WebkitTextStrokeWidth: isRack ? '0.7px' : '0.35px' }}
         className={[
-          'font-mono font-bold leading-none',
-          isRack ? 'text-[17px] text-tile-letter' : 'text-[clamp(7px,1.8vw,12px)]',
+          'font-mono font-bold leading-none [-webkit-text-stroke-color:currentColor]',
+          isRack ? 'text-[24px] text-tile-letter' : 'text-[clamp(9px,2.4vw,15px)]',
         ].join(' ')}
       >
         {display}
       </span>
+      {/* Puan — harfin sağ üstünde üst simge gibi, mavi. */}
       <span
         className={[
-          'leading-none',
-          isRack ? 'text-[8px] text-tile-pts' : 'text-[clamp(4px,0.9vw,6px)] opacity-70',
+          'absolute font-mono font-bold leading-none text-accent',
+          isRack
+            ? 'top-[3px] right-[4px] text-[10px]'
+            : 'top-[1px] right-[1.5px] text-[clamp(5px,1.2vw,8px)]',
         ].join(' ')}
       >
         {tile.pts}
