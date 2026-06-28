@@ -58,6 +58,7 @@ export function createInitialState(): GameState {
     swapMode: false,
     swapSelection: [],
     turnCount: 0,
+    consecutivePasses: 0,
     isGameOver: false,
     message: '',
     messageType: '',
@@ -77,7 +78,6 @@ function startGame(setup: PlayerSetup[]): GameState {
     isAI: s.isAI,
     rack: drawTiles(bag, RACK_SIZE),
     score: 0,
-    passes: 0,
   }));
 
   return {
@@ -92,6 +92,7 @@ function startGame(setup: PlayerSetup[]): GameState {
     swapMode: false,
     swapSelection: [],
     turnCount: 0,
+    consecutivePasses: 0,
     isGameOver: false,
     message: `${players[0].name}, kendi köşenden bir kelime kur.`,
     messageType: '',
@@ -183,19 +184,6 @@ function recallAll(state: GameState): GameState {
 /** Aktif oyuncunun rafından bir taş çıkararak oyuncular dizisini günceller. */
 function withRack(state: GameState, rack: Tile[]): Player[] {
   return state.players.map((p, i) => (i === state.current ? { ...p, rack } : p));
-}
-
-/** Aktif oyuncunun pas sayacını bir artırır. */
-function registerPass(state: GameState): GameState {
-  const players = state.players.map((p, i) =>
-    i === state.current ? { ...p, passes: p.passes + 1 } : p,
-  );
-  return { ...state, players };
-}
-
-/** Her oyuncu MAX_PASS_ROUNDS kez pas geçtiyse true. */
-function allPassedOut(players: Player[]): boolean {
-  return players.every((p) => p.passes >= MAX_PASS_ROUNDS);
 }
 
 export function gameReducer(state: GameState, action: Action): GameState {
@@ -375,6 +363,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         selectedTile: null,
         swapMode: false,
         swapSelection: [],
+        consecutivePasses: 0,
         message: `${me.name} ${returned.length} taş değiştirdi ve sırasını kullandı.`,
         messageType: 'warn',
       };
@@ -420,6 +409,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         bag,
         placed: {},
         players,
+        consecutivePasses: 0,
         selectedTile: null,
         lastWords: setLastWords(state.lastWords, formed, state.current),
         message: `${me.name}: +${pts} puan! Kelimeler: ${check.words!.join(', ')}`,
@@ -430,14 +420,16 @@ export function gameReducer(state: GameState, action: Action): GameState {
 
     case 'PASS': {
       if (state.phase !== 'play' || state.isGameOver) return state;
-      const recalled = registerPass(recallAll(state));
+      const recalled = recallAll(state);
+      const consecutivePasses = state.consecutivePasses + 1;
       const moved: GameState = {
         ...recalled,
+        consecutivePasses,
         message: `${state.players[state.current].name} pas geçti.`,
         messageType: 'warn',
       };
-      // Her oyuncu MAX_PASS_ROUNDS kez pas geçtiyse oyun biter.
-      if (allPassedOut(moved.players)) {
+      // Tüm oyuncular üst üste MAX_PASS_ROUNDS tur pas geçtiyse oyun biter.
+      if (consecutivePasses >= state.players.length * MAX_PASS_ROUNDS) {
         return endGame(moved);
       }
       return advanceTurn(moved);
@@ -461,12 +453,14 @@ export function gameReducer(state: GameState, action: Action): GameState {
 
       // Geçerli hamle yoksa YZ pas geçer.
       if (!move) {
+        const consecutivePasses = state.consecutivePasses + 1;
         const moved: GameState = {
-          ...registerPass(state),
+          ...state,
+          consecutivePasses,
           message: `${me.name} pas geçti.`,
           messageType: 'warn',
         };
-        if (allPassedOut(moved.players)) {
+        if (consecutivePasses >= state.players.length * MAX_PASS_ROUNDS) {
           return endGame(moved);
         }
         return advanceTurn(moved);
@@ -498,6 +492,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         board,
         bag,
         players,
+        consecutivePasses: 0,
         lastWords: setLastWords(state.lastWords, formed, state.current),
         message: `${me.name} "${move.word}" oynadı. +${move.score} puan.`,
         messageType: 'ok',

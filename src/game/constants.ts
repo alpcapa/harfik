@@ -7,7 +7,7 @@ export const SIZE = 13;
 /** Köşe bölgelerinin kenar uzunluğu (5x5). */
 export const CORNER = 5;
 
-/** Her oyuncu bu kadar pas geçtiğinde (oyuncu başına toplam) oyun biter. */
+/** Tüm oyuncular üst üste bu kadar tur pas geçtiğinde oyun biter. */
 export const MAX_PASS_ROUNDS = 2;
 
 /** Tüm rafı kullanan hamleye verilen bonus puan. */

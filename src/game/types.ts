@@ -38,8 +38,6 @@ export interface Player {
   isAI: boolean;
   rack: Tile[];
   score: number;
-  /** Bu oyuncunun toplam kaç kez pas geçtiği. */
-  passes: number;
 }
 
 /** YZ'nin bulduğu hamle. */
@@ -71,6 +69,8 @@ export interface GameState {
   /** Taş değiştirme modunda seçilen raf taşı indeksleri. */
   swapSelection: number[];
   turnCount: number;
+  /** Tüm oyuncular tarafından üst üste atılan toplam pas sayısı. */
+  consecutivePasses: number;
   isGameOver: boolean;
   /** Durum çubuğu mesajı. */
   message: string;
