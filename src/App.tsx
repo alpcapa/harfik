@@ -158,7 +158,7 @@ export default function App() {
                 if (state.swapMode) dispatch({ type: 'TOGGLE_SWAP_TILE', index: i });
                 else dispatch({ type: 'SELECT_TILE', index: i });
               }}
-              title={me.isAI ? `${me.name} (YZ)` : me.name}
+              title={me.name}
               color={myColor}
               swapMode={state.swapMode}
               swapSelection={state.swapSelection}
