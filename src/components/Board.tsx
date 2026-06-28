@@ -30,7 +30,7 @@ export function Board({ state, onCellClick }: BoardProps) {
 
       let content: React.ReactNode = null;
       const classes = [
-        'aspect-square rounded-[2px] flex items-center justify-center',
+        'min-w-0 min-h-0 rounded-[2px] flex items-center justify-center',
         'font-mono font-bold text-[clamp(5px,1.4vw,8px)] select-none',
         'transition-[background,opacity] duration-300 border',
       ];
@@ -78,7 +78,10 @@ export function Board({ state, onCellClick }: BoardProps) {
     <div className="w-full px-2 py-2 max-w-[460px] mx-auto">
       <div
         className="w-full aspect-square grid gap-[2px] bg-[#060A0D] border border-border rounded-lg p-1 shadow-[0_0_40px_rgba(0,200,255,0.04),0_0_80px_rgba(255,64,96,0.04)]"
-        style={{ gridTemplateColumns: `repeat(${SIZE}, 1fr)` }}
+        style={{
+          gridTemplateColumns: `repeat(${SIZE}, 1fr)`,
+          gridTemplateRows: `repeat(${SIZE}, 1fr)`,
+        }}
       >
         {cells}
       </div>
