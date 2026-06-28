@@ -24,7 +24,9 @@ const VARIANT_CLASSES: Record<TileVariant, string> = {
 
 export function Tile({ tile, variant, selected = false, onClick }: TileProps) {
   const isRack = variant === 'rack';
-  const display = tileLetter(tile) || tile.letter;
+  const raw = tileLetter(tile) || tile.letter;
+  // Joker (?) rafta yıldız olarak görünür; oynanınca seçilen harfe döner.
+  const display = raw === '?' ? '★' : raw;
 
   return (
     <div
