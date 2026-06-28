@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background: theme('colors.bg');
+    color: theme('colors.text');
+    font-family: theme('fontFamily.sans');
+    min-height: 100vh;
+    /* Mobil: dokunmayla istemsiz kaydırma/zoom'u engelle. */
+    touch-action: manipulation;
+    overflow-x: hidden;
+  }
+
+  #root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+}
