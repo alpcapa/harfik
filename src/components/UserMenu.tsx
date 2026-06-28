@@ -61,7 +61,7 @@ export function UserMenu({ game }: UserMenuProps) {
           onClick={() => setModal('auth')}
           className="font-mono text-[10px] uppercase tracking-[1px] px-3 py-1.5 rounded-md border bg-accent border-accent text-white font-bold active:scale-[0.97] transition-transform"
         >
-          Giriş / Kayıt
+          Giriş
         </button>
         {modal === 'auth' && <AuthModal onClose={() => setModal(null)} />}
       </>

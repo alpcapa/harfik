@@ -11,19 +11,35 @@ interface RackProps {
   title: string;
   /** Aktif oyuncunun rengi. */
   color: PlayerColor;
+  /** Taş değiştirme modu aktif mi? */
+  swapMode?: boolean;
+  /** Değiştirmek için seçilen taş indeksleri. */
+  swapSelection?: number[];
 }
 
-export function Rack({ tiles, selectedTile, onSelect, title, color }: RackProps) {
+export function Rack({
+  tiles,
+  selectedTile,
+  onSelect,
+  title,
+  color,
+  swapMode = false,
+  swapSelection = [],
+}: RackProps) {
   return (
     <div
       className="bg-panel rounded-lg p-2 border"
-      style={{ borderColor: color.base }}
+      style={{ borderColor: swapMode ? '#D97706' : color.base }}
     >
       <div className="flex justify-between text-[9px] uppercase tracking-[1.5px] font-mono mb-1.5">
-        <span className="font-bold" style={{ color: color.base }}>
-          {title} — rafın
+        <span className="font-bold" style={{ color: swapMode ? '#D97706' : color.base }}>
+          {swapMode ? `${title} — değiştirilecek taşları seç` : `${title} — rafın`}
         </span>
-        <span className="text-muted">{tiles.length} harf</span>
+        <span className="text-muted">
+          {swapMode
+            ? `${swapSelection.length} seçili`
+            : `${tiles.length} harf`}
+        </span>
       </div>
       <div className="flex justify-center gap-[5px] flex-wrap min-h-[50px]">
         {tiles.map((tile, i) => (
@@ -31,7 +47,7 @@ export function Rack({ tiles, selectedTile, onSelect, title, color }: RackProps)
             key={`${tile.letter}-${i}`}
             tile={tile}
             variant="rack"
-            selected={selectedTile === i}
+            selected={swapMode ? swapSelection.includes(i) : selectedTile === i}
             onClick={() => onSelect(i)}
           />
         ))}

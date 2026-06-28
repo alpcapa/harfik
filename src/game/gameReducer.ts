@@ -8,6 +8,7 @@ import {
 } from './constants';
 import type { GameState, Owner, Player, Tile } from './types';
 import { buildBag, drawTiles } from '../utils/bag';
+import { shuffle } from '../utils/random';
 import {
   createEmptyBoard,
   getFormedWords,
@@ -35,6 +36,10 @@ export type Action =
   | { type: 'PLACE_TILE'; r: number; c: number; wildLetter?: string }
   | { type: 'RECALL_CELL'; r: number; c: number }
   | { type: 'RECALL_ALL' }
+  | { type: 'SHUFFLE_RACK' }
+  | { type: 'TOGGLE_SWAP_MODE' }
+  | { type: 'TOGGLE_SWAP_TILE'; index: number }
+  | { type: 'CONFIRM_SWAP' }
   | { type: 'PLAY' }
   | { type: 'PASS' }
   | { type: 'AI_PLAY' };
@@ -50,6 +55,8 @@ export function createInitialState(): GameState {
     players: [],
     current: 0,
     selectedTile: null,
+    swapMode: false,
+    swapSelection: [],
     turnCount: 0,
     consecutivePasses: 0,
     isGameOver: false,
@@ -82,6 +89,8 @@ function startGame(setup: PlayerSetup[]): GameState {
     players,
     current: 0,
     selectedTile: null,
+    swapMode: false,
+    swapSelection: [],
     turnCount: 0,
     consecutivePasses: 0,
     isGameOver: false,
@@ -148,6 +157,8 @@ function advanceTurn(state: GameState): GameState {
     turnCount: state.turnCount + 1,
     current: next,
     selectedTile: null,
+    swapMode: false,
+    swapSelection: [],
   };
 
   // Bir oyuncunun rafı boşaldıysa ve torba bittiyse oyun biter.
@@ -260,6 +271,105 @@ export function gameReducer(state: GameState, action: Action): GameState {
       };
     }
 
+    case 'SHUFFLE_RACK': {
+      if (state.phase !== 'play' || state.isGameOver) return state;
+      const me = state.players[state.current];
+      if (me.isAI) return state;
+      const rack = shuffle([...me.rack]);
+      return {
+        ...state,
+        players: withRack(state, rack),
+        selectedTile: null,
+        message: 'Harfler karıştırıldı.',
+        messageType: '',
+      };
+    }
+
+    case 'TOGGLE_SWAP_MODE': {
+      if (state.phase !== 'play' || state.isGameOver) return state;
+      const me = state.players[state.current];
+      if (me.isAI) return state;
+      // Modu kapat.
+      if (state.swapMode) {
+        return {
+          ...state,
+          swapMode: false,
+          swapSelection: [],
+          message: '',
+          messageType: '',
+        };
+      }
+      // Torba boşsa değiştirilecek taş yok.
+      if (state.bag.length === 0) {
+        return {
+          ...state,
+          message: 'Torba boş — taş değiştirilemez.',
+          messageType: 'err',
+        };
+      }
+      // Önce tahtaya konan geçici taşları rafa geri al.
+      const recalled = recallAll(state);
+      return {
+        ...recalled,
+        swapMode: true,
+        swapSelection: [],
+        message: 'Değiştireceğin taşları seç, sonra "Değiştir"e bas.',
+        messageType: 'warn',
+      };
+    }
+
+    case 'TOGGLE_SWAP_TILE': {
+      if (state.phase !== 'play' || state.isGameOver || !state.swapMode) {
+        return state;
+      }
+      const swapSelection = state.swapSelection.includes(action.index)
+        ? state.swapSelection.filter((i) => i !== action.index)
+        : [...state.swapSelection, action.index];
+      return { ...state, swapSelection };
+    }
+
+    case 'CONFIRM_SWAP': {
+      if (state.phase !== 'play' || state.isGameOver || !state.swapMode) {
+        return state;
+      }
+      const me = state.players[state.current];
+      if (state.swapSelection.length === 0) {
+        return {
+          ...state,
+          message: 'En az bir taş seçmelisin.',
+          messageType: 'err',
+        };
+      }
+      // Seçilen taşları torbaya geri koy, yerine yeni taş çek.
+      const selected = new Set(state.swapSelection);
+      const returned: Tile[] = [];
+      const kept: Tile[] = [];
+      me.rack.forEach((t, i) => {
+        if (selected.has(i)) {
+          returned.push({ letter: t.wild ? '?' : t.letter, pts: t.pts });
+        } else {
+          kept.push(t);
+        }
+      });
+      const bag = shuffle([...state.bag, ...returned]);
+      const drawn = drawTiles(bag, returned.length);
+      const rack = [...kept, ...drawn];
+
+      const moved: GameState = {
+        ...state,
+        bag,
+        players: withRack(state, rack),
+        placed: {},
+        selectedTile: null,
+        swapMode: false,
+        swapSelection: [],
+        consecutivePasses: 0,
+        message: `${me.name} ${returned.length} taş değiştirdi ve sırasını kullandı.`,
+        messageType: 'warn',
+      };
+      return advanceTurn(moved);
+    }
+
     case 'PLAY': {
       if (state.phase !== 'play' || state.isGameOver) return state;
       const me = state.players[state.current];
@@ -318,7 +428,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         message: `${state.players[state.current].name} pas geçti.`,
         messageType: 'warn',
       };
-      // Herkes üst üste birkaç tur pas geçtiyse oyun biter.
+      // Tüm oyuncular üst üste MAX_PASS_ROUNDS tur pas geçtiyse oyun biter.
       if (consecutivePasses >= state.players.length * MAX_PASS_ROUNDS) {
         return endGame(moved);
       }

@@ -64,7 +64,12 @@ export interface GameState {
   current: number;
   /** Raftaki seçili taşın indeksi. */
   selectedTile: number | null;
+  /** Taş değiştirme modunda mı? (Aktif oyuncu taşlarını değiştirmek istiyor.) */
+  swapMode: boolean;
+  /** Taş değiştirme modunda seçilen raf taşı indeksleri. */
+  swapSelection: number[];
   turnCount: number;
+  /** Tüm oyuncular tarafından üst üste atılan toplam pas sayısı. */
   consecutivePasses: number;
   isGameOver: boolean;
   /** Durum çubuğu mesajı. */

@@ -23,13 +23,6 @@ const MESSAGE_COLORS: Record<string, string> = {
   '': 'text-muted',
 };
 
-const LEGEND = [
-  { label: '2×K', bg: '#E4F6EA', border: '1px solid #16A34A' },
-  { label: '3×K', bg: '#FCEBDC', border: '1px solid #D97706' },
-  { label: '2×H', bg: '#E1ECFD', border: '1px solid #2563EB' },
-  { label: '3×H', bg: '#F0E6FB', border: '1px solid #7C3AED' },
-];
-
 export default function App() {
   const [state, dispatch] = useReducer(gameReducer, undefined, createInitialState);
 
@@ -63,7 +56,7 @@ export default function App() {
   // ── Kurulum ekranı ─────────────────────────────────────────────────────────
   if (state.phase === 'setup') {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center overflow-x-hidden">
+      <div className="min-h-[100dvh] w-full flex flex-col items-center overflow-x-hidden">
         <div className="w-full max-w-[460px] flex items-center justify-end px-3.5 pt-3">
           <UserMenu />
         </div>
@@ -84,7 +77,7 @@ export default function App() {
       openMeaning(lw.word);
       return;
     }
-    if (state.isGameOver || me.isAI) return;
+    if (state.isGameOver || me.isAI || state.swapMode) return;
     if (state.placed[k]) {
       dispatch({ type: 'RECALL_CELL', r, c });
       return;
@@ -102,17 +95,32 @@ export default function App() {
 
   const canAct = !state.isGameOver && !me.isAI;
 
+  // Pas, sırayı tümüyle harcadığı için onay ister.
+  const handlePass = () => {
+    const placed = Object.keys(state.placed).length > 0;
+    const msg = placed
+      ? 'Pas geçilsin mi? Tahtaya koyduğun taşlar rafa geri alınır ve sıran geçer.'
+      : 'Pas geçmek istediğine emin misin? Sıran karşı tarafa geçer.';
+    if (window.confirm(msg)) dispatch({ type: 'PASS' });
+  };
+
   const placedCount = Object.keys(state.placed).length;
   const potentialScore =
     placedCount > 0 ? calcScore(state.board, state.placed, state.bonuses) : 0;
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center overflow-x-hidden">
+    <div className="h-[100dvh] w-full flex flex-col items-center overflow-hidden">
       <GameHeader state={state} />
 
-      <Board state={state} onCellClick={handleCellClick} />
+      <div className="flex-1 min-h-0 w-full flex items-center justify-center">
+        <Board
+          state={state}
+          onCellClick={handleCellClick}
+          potentialScore={placedCount > 0 ? potentialScore : null}
+        />
+      </div>
 
-      <div className="w-full max-w-[460px] px-2 pb-3 flex flex-col gap-2">
+      <div className="w-full max-w-[680px] px-3 pb-3 pt-1 flex flex-col gap-1.5 shrink-0">
         <div
           className={`text-[11px] font-mono text-center min-h-[15px] py-0.5 ${
             MESSAGE_COLORS[state.messageType]
@@ -121,58 +129,80 @@ export default function App() {
           {state.message}
         </div>
 
-        {placedCount > 0 && (
-          <div className="text-center font-mono text-[12px] text-gold tracking-[0.5px]">
-            Potansiyel puan: <span className="font-bold">+{potentialScore}</span>
-          </div>
-        )}
-
         <Rack
           tiles={me.rack}
           selectedTile={state.selectedTile}
-          onSelect={(i) => !me.isAI && dispatch({ type: 'SELECT_TILE', index: i })}
+          onSelect={(i) => {
+            if (me.isAI) return;
+            if (state.swapMode) dispatch({ type: 'TOGGLE_SWAP_TILE', index: i });
+            else dispatch({ type: 'SELECT_TILE', index: i });
+          }}
           title={me.isAI ? `${me.name} (YZ)` : me.name}
           color={myColor}
+          swapMode={state.swapMode}
+          swapSelection={state.swapSelection}
         />
 
-        <div className="flex gap-2 justify-center flex-wrap py-1">
-          {LEGEND.map((item) => (
-            <div
-              key={item.label}
-              className="text-[8px] font-mono flex items-center gap-[3px] text-muted"
+        {state.swapMode ? (
+          <div className="flex gap-1.5">
+            <button
+              disabled={!canAct || state.swapSelection.length === 0}
+              onClick={() => dispatch({ type: 'CONFIRM_SWAP' })}
+              className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-gold text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
             >
-              <span
-                className="w-2 h-2 rounded-[1px]"
-                style={{ background: item.bg, border: item.border }}
-              />
-              {item.label}
+              Değiştir{state.swapSelection.length > 0 ? ` (${state.swapSelection.length})` : ''}
+            </button>
+            <button
+              disabled={!canAct}
+              onClick={() => dispatch({ type: 'TOGGLE_SWAP_MODE' })}
+              className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-muted border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              Vazgeç
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex gap-1.5">
+              <button
+                disabled={!canAct}
+                onClick={() => dispatch({ type: 'PLAY' })}
+                className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+              >
+                Oyna
+              </button>
+              <button
+                disabled={!canAct}
+                onClick={() => dispatch({ type: 'RECALL_ALL' })}
+                className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+              >
+                Geri Al
+              </button>
+              <button
+                disabled={!canAct}
+                onClick={handlePass}
+                className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-muted border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+              >
+                Pas
+              </button>
             </div>
-          ))}
-        </div>
-
-        <div className="flex gap-1.5">
-          <button
-            disabled={!canAct}
-            onClick={() => dispatch({ type: 'PLAY' })}
-            className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-          >
-            Oyna
-          </button>
-          <button
-            disabled={!canAct}
-            onClick={() => dispatch({ type: 'RECALL_ALL' })}
-            className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-          >
-            Geri Al
-          </button>
-          <button
-            disabled={!canAct}
-            onClick={() => dispatch({ type: 'PASS' })}
-            className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-muted border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-          >
-            Pas
-          </button>
-        </div>
+            <div className="flex gap-1.5">
+              <button
+                disabled={!canAct}
+                onClick={() => dispatch({ type: 'SHUFFLE_RACK' })}
+                className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+              >
+                Karıştır
+              </button>
+              <button
+                disabled={!canAct || state.bag.length === 0}
+                onClick={() => dispatch({ type: 'TOGGLE_SWAP_MODE' })}
+                className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+              >
+                Taş Değiştir
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {meaning && (
