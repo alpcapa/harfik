@@ -60,7 +60,8 @@ export function Board({ state, onCellClick }: BoardProps) {
         classes.push(BONUS_CLASSES[bonus], 'cursor-pointer');
         content = BONUS_LABELS[bonus];
       } else {
-        classes.push('bg-[#0A1218] border-[#0F1E2A] cursor-pointer');
+        // Standart kare (bonussuz): beyaz çerçeve.
+        classes.push('bg-[#0A1218] border-white/70 cursor-pointer');
       }
 
       // Bölge vurguları (boş karelerde).
