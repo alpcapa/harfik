@@ -33,7 +33,7 @@ export function Rack({
     >
       <div className="flex justify-between text-[9px] uppercase tracking-[1.5px] font-mono mb-1.5">
         <span className="font-bold" style={{ color: swapMode ? '#D97706' : color.base }}>
-          {swapMode ? `${title} — değiştirilecek taşları seç` : `${title} — rafın`}
+          {swapMode ? `${title} — değiştirilecek taşları seç` : title}
         </span>
         <span className="text-muted">
           {swapMode
