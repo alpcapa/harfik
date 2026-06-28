@@ -8,7 +8,7 @@
 - **Tahta evrimi** — Her birkaç hamlede tahta değişir: boş kareler çatlar, çatlamış kareler "boşluğa" dönüşerek oynanamaz hâle gelir ve yeni bonuslar belirir.
 - **Bölgeler** — Oyuncu sol-alt köşeden, YZ sağ-üst köşeden başlar.
 - **Akıllı YZ** — Rafından heceleyebildiği, sözlükçe geçerli en yüksek puanlı hamleyi arar; çapraz kelimeleri de doğrular.
-- **Tam sözlük** — TDK Güncel Türkçe Sözlük (12. baskı) kaynaklı **63.101 oynanabilir kelime**, anlamlarıyla birlikte.
+- **Tam sözlük** — TDK Güncel Türkçe Sözlük (12. baskı) kaynaklı **92.771 oynanabilir kelime**, anlamlarıyla birlikte.
 - **Türkçe alfabe** — Ç, Ğ, İ, Ö, Ş, Ü dahil tam harf dağılımı ve puanlar. Joker (`?`) desteklenir.
 - **Dokunmatik** — Mobil öncelikli düzen; harf seç → kareye dokun → **Oyna**.
 
@@ -44,7 +44,7 @@ src/
 │   ├── constants.ts   # tahta boyutu, bonus yerleşimi, bölgeler
 │   └── gameReducer.ts # useReducer ile durum yönetimi
 ├── data/
-│   ├── words.ts       # Türkçe kelime listesi (63.101 kelime, üretilmiş)
+│   ├── words.ts       # Türkçe kelime listesi (92.771 kelime, üretilmiş)
 │   ├── meanings.json  # kelime → anlamlar (tembel yüklenir, ~6 MB)
 │   ├── meanings.ts    # anlam yükleyici (getLocalMeaning)
 │   └── tiles.ts       # Türkçe harf dağılımı ve puanlar
@@ -75,7 +75,7 @@ src/
 - `20260628090000_init.sql` — `profiles`, `games`, `words` tabloları; `leaderboard` & `player_stats` view'ları; RLS politikaları; auth trigger'ı; `is_valid_word` RPC.
 - `20260628090100_seed_words.sql` — başlangıçtaki çekirdek kelime listesini `words` tablosuna yükler.
 - `20260628090200_add_word_meanings.sql` — `words` tablosuna `pos` (sözcük türü) ve `meanings` (jsonb) sütunları ile `word_meaning` RPC ekler.
-- `20260628090300_seed_dictionary.sql` — TDK Güncel Türkçe Sözlük'ten 63.101 kelimeyi **anlamlarıyla** yükler (üretilmiştir).
+- `20260628090300_seed_dictionary.sql` — TDK Güncel Türkçe Sözlük'ten 92.771 kelimeyi **anlamlarıyla** yükler (üretilmiştir).
 
 **Migration'ları uygulama**
 
@@ -101,9 +101,10 @@ Veri erişimi `src/lib/` altında: `supabase.ts` (istemci), `api.ts` (saveGame, 
 
 Kelimeler ve anlamları **TDK Güncel Türkçe Sözlük (12. baskı)** kaynaklıdır;
 açık veri olarak [ogun/guncel-turkce-sozluk](https://github.com/ogun/guncel-turkce-sozluk)
-(MIT lisansı) üzerinden alınmıştır. Ham döküm (99.236 madde), yalnızca Türk
-alfabesi harfleri içeren tek sözcüklü maddelere indirgenerek **63.101 oynanabilir
-kelimeye** süzülür.
+(MIT lisansı) üzerinden alınmıştır. Ham dökümdeki (99.236 madde) çok sözcüklü
+maddeler boşlukları kaldırılarak tek tokena birleştirilir
+("dulavrat otu" → "dulavratotu"); ardından yalnızca Türk alfabesi harfleri içeren
+2–25 harfli tokenlar tutularak **92.771 oynanabilir kelimeye** süzülür.
 
 Üretilen dosyalar (`src/data/words.ts`, `src/data/meanings.json`,
 `supabase/migrations/20260628090300_seed_dictionary.sql`) repoda tutulur;

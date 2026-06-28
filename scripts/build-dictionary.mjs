@@ -4,8 +4,11 @@
 //   https://github.com/ogun/guncel-turkce-sozluk  (sozluk/v12/v12.gts.json.tar.gz)
 //
 // Bu betik, 99.236 maddelik NDJSON sözlük dökümünü alıp Harfik'in
-// oynanabilir kelime kümesine indirger (yalnızca Türk alfabesi harfleri
-// içeren, tek sözcüklü, 2–25 harfli maddeler) ve şu çıktıları üretir:
+// oynanabilir kelime kümesine indirger ve şu çıktıları üretir.
+// Çok sözcüklü maddeler boşlukları kaldırılarak tek tokena birleştirilir
+// ("dulavrat otu" -> "dulavratotu"); ardından yalnızca Türk alfabesi
+// harfleri içeren, 2–25 harfli tokenlar tutulur (noktalama/şapkalı ünlü
+// içeren atasözü vb. maddeler birleştirme sonrası da elenir).
 //
 //   src/data/words.ts       — oyun doğrulaması için sıralı kelime listesi
 //                             (WORD_LIST / WORD_SET)
@@ -71,8 +74,10 @@ for await (const line of rl) {
     continue;
   }
 
-  const word = trLower(entry.madde || '').trim();
-  // Tek sözcük + yalnızca oynanabilir harfler + 2–25 uzunluk.
+  // Çok sözcüklü maddeleri tek tokena birleştir: tüm boşlukları kaldır
+  // ("dulavrat otu" -> "dulavratotu").
+  const word = trLower(entry.madde || '').replace(/\s+/g, '');
+  // Yalnızca oynanabilir harfler + 2–25 uzunluk.
   if (!word || word.length < 2 || word.length > 25) {
     dropped++;
     continue;
@@ -106,9 +111,13 @@ for await (const line of rl) {
   }
   if (meanings.length === 0) continue;
 
+  // Birleştirme, despaced bir bileşiğin var olan tek sözcükle çakışmasına
+  // yol açabilir; anlamları tekrarsız birleştir.
   const existing = dict.get(word);
   if (existing) {
-    existing.meanings.push(...meanings);
+    for (const m of meanings) {
+      if (!existing.meanings.includes(m)) existing.meanings.push(m);
+    }
     if (!existing.pos) existing.pos = pos;
   } else {
     dict.set(word, { pos, meanings });
