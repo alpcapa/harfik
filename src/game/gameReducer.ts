@@ -1,67 +1,109 @@
-// Harfik — useReducer ile oyun durumu yönetimi
+// Harfik — useReducer ile çok oyunculu (yerel) oyun durumu yönetimi
 import {
-  EVOLVE_INTERVAL,
-  MAX_CONSECUTIVE_PASSES,
+  MAX_PASS_ROUNDS,
+  PLAYER_COLORS,
   RACK_SIZE,
   buildInitialBonuses,
+  cornersFor,
 } from './constants';
-import type { GameState, Owner, Tile } from './types';
+import type { GameState, Owner, Player, Tile } from './types';
 import { buildBag, drawTiles } from '../utils/bag';
 import {
   createEmptyBoard,
   getFormedWords,
   key,
   type FormedWord,
-  type Placed,
 } from '../utils/board';
-import { validatePlacement, calcScore } from '../utils/validator';
+import {
+  cellAllowed,
+  calcScore,
+  computeOpenCorners,
+  validatePlacement,
+} from '../utils/validator';
 import { findAIMove } from '../utils/ai';
-import { evolveBoard } from '../utils/boardEvolution';
+
+/** Kurulumda bir oyuncunun ayarı. */
+export interface PlayerSetup {
+  name: string;
+  isAI: boolean;
+}
 
 export type Action =
   | { type: 'INIT' }
+  | { type: 'START'; players: PlayerSetup[] }
   | { type: 'SELECT_TILE'; index: number }
   | { type: 'PLACE_TILE'; r: number; c: number; wildLetter?: string }
   | { type: 'RECALL_CELL'; r: number; c: number }
   | { type: 'RECALL_ALL' }
   | { type: 'PLAY' }
   | { type: 'PASS' }
-  | { type: 'AI_PLAY' }
-  | { type: 'DISMISS_TOAST' };
+  | { type: 'AI_PLAY' };
 
+/** Kurulum (oyuncu seçimi) ekranıyla başlayan boş durum. */
 export function createInitialState(): GameState {
-  const bag = buildBag();
-  const playerRack = drawTiles(bag, RACK_SIZE);
-  const aiRack = drawTiles(bag, RACK_SIZE);
   return {
+    phase: 'setup',
     board: createEmptyBoard(),
-    bag,
-    bonuses: buildInitialBonuses(),
-    cellState: {},
+    bag: [],
+    bonuses: {},
     placed: {},
-    playerRack,
-    aiRack,
-    playerScore: 0,
-    aiScore: 0,
-    playerTurn: true,
+    players: [],
+    current: 0,
     selectedTile: null,
     turnCount: 0,
-    turnsUntilEvolve: EVOLVE_INTERVAL,
     consecutivePasses: 0,
     isGameOver: false,
-    bestWord: '',
-    message: 'Bir harf seç, sonra tahtaya yerleştir.',
+    message: '',
     messageType: '',
-    turnLabel: 'Senin sıran',
-    evolveToast: false,
     lastWords: {},
   };
 }
 
+/** Oyuncu ayarlarından (2 ya da 4) oyunu kurar ve ilk taşları dağıtır. */
+function startGame(setup: PlayerSetup[]): GameState {
+  const count = setup.length;
+  const corners = cornersFor(count);
+  const bag = buildBag();
+  const players: Player[] = setup.map((s, i) => ({
+    name: s.name.trim() || (s.isAI ? `YZ ${i + 1}` : `Oyuncu ${i + 1}`),
+    corner: corners[i],
+    colorIndex: i % PLAYER_COLORS.length,
+    isAI: s.isAI,
+    rack: drawTiles(bag, RACK_SIZE),
+    score: 0,
+  }));
+
+  return {
+    phase: 'play',
+    board: createEmptyBoard(),
+    bag,
+    bonuses: buildInitialBonuses(),
+    placed: {},
+    players,
+    current: 0,
+    selectedTile: null,
+    turnCount: 0,
+    consecutivePasses: 0,
+    isGameOver: false,
+    message: `${players[0].name}, kendi köşenden bir kelime kur.`,
+    messageType: '',
+    lastWords: {},
+  };
+}
+
+/** Aktif oyuncunun tahtada hiç taşı yoksa true (ilk hamlesi). */
+function isFirstMove(state: GameState): boolean {
+  for (const row of state.board) {
+    for (const t of row) {
+      if (t && t.owner === state.current) return false;
+    }
+  }
+  return true;
+}
+
 /**
  * Son hamlede oluşan kelimeleri `lastWords`'e yazar. Aynı oyuncunun önceki
- * kayıtları temizlenir; böylece her oyuncunun anlamı, o oyuncu yeni hamle
- * yapana kadar tıklanabilir kalır.
+ * kayıtları temizlenir.
  */
 function setLastWords(
   prev: GameState['lastWords'],
@@ -80,79 +122,57 @@ function setLastWords(
   return next;
 }
 
-/** Kalan raf puanlarını düşerek oyunu bitirir. */
+/** Kalan raf puanlarını her oyuncudan düşerek oyunu bitirir. */
 function endGame(state: GameState): GameState {
-  const playerScore = Math.max(
-    0,
-    state.playerScore - state.playerRack.reduce((s, t) => s + t.pts, 0),
-  );
-  const aiScore = Math.max(
-    0,
-    state.aiScore - state.aiRack.reduce((s, t) => s + t.pts, 0),
-  );
+  const players = state.players.map((p) => ({
+    ...p,
+    score: Math.max(0, p.score - p.rack.reduce((s, t) => s + t.pts, 0)),
+  }));
   return {
     ...state,
-    playerScore,
-    aiScore,
+    players,
     isGameOver: true,
-    playerTurn: false,
-    turnLabel: 'Oyun bitti',
-    evolveToast: false,
+    message: 'Oyun bitti.',
+    messageType: '',
   };
 }
 
 /**
- * Tur sayacını ilerletir; gerektiğinde tahtayı evrimleştirir; raf+torba
- * tükendiyse oyunu bitirir; sırayı `nextPlayerTurn` tarafına geçirir.
- * Çağrıldığında `state` zaten hamle sonrası güncel olmalıdır.
+ * Tur sayacını ilerletir; bir raf+torba tükendiyse oyunu bitirir; sırayı
+ * sonraki oyuncuya geçirir.
  */
-function advanceTurn(state: GameState, nextPlayerTurn: boolean): GameState {
-  let turnsUntilEvolve = state.turnsUntilEvolve - 1;
-  let cellState = state.cellState;
-  let bonuses = state.bonuses;
-  let evolveToast = false;
-
-  if (turnsUntilEvolve <= 0) {
-    const res = evolveBoard(
-      state.board,
-      state.cellState,
-      state.bonuses,
-      state.turnCount,
-    );
-    cellState = res.cellState;
-    bonuses = res.bonuses;
-    turnsUntilEvolve = EVOLVE_INTERVAL;
-    evolveToast = true;
-  }
-
-  const next: GameState = {
+function advanceTurn(state: GameState): GameState {
+  const next = (state.current + 1) % state.players.length;
+  const nextState: GameState = {
     ...state,
-    cellState,
-    bonuses,
-    turnsUntilEvolve,
     turnCount: state.turnCount + 1,
-    evolveToast,
-    playerTurn: nextPlayerTurn,
-    turnLabel: nextPlayerTurn ? 'Senin sıran' : 'YZ düşünüyor…',
+    current: next,
+    selectedTile: null,
   };
 
-  // Bir raf boşaldıysa ve torba bittiyse oyun biter.
-  if (
-    (next.playerRack.length === 0 || next.aiRack.length === 0) &&
-    next.bag.length === 0
-  ) {
-    return endGame(next);
+  // Bir oyuncunun rafı boşaldıysa ve torba bittiyse oyun biter.
+  const someoneEmpty = state.players.some((p) => p.rack.length === 0);
+  if (someoneEmpty && nextState.bag.length === 0) {
+    return endGame(nextState);
   }
-  return next;
+  return nextState;
 }
 
-/** Geçici yerleştirilen taşları rafa geri toplar. */
+/** Geçici yerleştirilen taşları aktif oyuncunun rafına geri toplar. */
 function recallAll(state: GameState): GameState {
-  const playerRack = [...state.playerRack];
+  const rack = [...state.players[state.current].rack];
   for (const tile of Object.values(state.placed)) {
-    playerRack.push({ letter: tile.wild ? '?' : tile.letter, pts: tile.pts });
+    rack.push({ letter: tile.wild ? '?' : tile.letter, pts: tile.pts });
   }
-  return { ...state, playerRack, placed: {}, selectedTile: null };
+  const players = state.players.map((p, i) =>
+    i === state.current ? { ...p, rack } : p,
+  );
+  return { ...state, players, placed: {}, selectedTile: null };
+}
+
+/** Aktif oyuncunun rafından bir taş çıkararak oyuncular dizisini günceller. */
+function withRack(state: GameState, rack: Tile[]): Player[] {
+  return state.players.map((p, i) => (i === state.current ? { ...p, rack } : p));
 }
 
 export function gameReducer(state: GameState, action: Action): GameState {
@@ -160,43 +180,52 @@ export function gameReducer(state: GameState, action: Action): GameState {
     case 'INIT':
       return createInitialState();
 
+    case 'START': {
+      if (action.players.length !== 2 && action.players.length !== 4) return state;
+      return startGame(action.players);
+    }
+
     case 'SELECT_TILE': {
-      if (!state.playerTurn || state.isGameOver) return state;
+      if (state.phase !== 'play' || state.isGameOver) return state;
       const selectedTile =
         state.selectedTile === action.index ? null : action.index;
       return { ...state, selectedTile };
     }
 
     case 'PLACE_TILE': {
-      if (!state.playerTurn || state.isGameOver) return state;
+      if (state.phase !== 'play' || state.isGameOver) return state;
       if (state.selectedTile === null) {
-        return {
-          ...state,
-          message: 'Önce bir harf seç.',
-          messageType: '',
-        };
+        return { ...state, message: 'Önce bir harf seç.', messageType: '' };
       }
       const { r, c } = action;
       const k = key(r, c);
-      const st = state.cellState[k];
-      if (state.board[r][c] || state.placed[k] || st === 'void' || st === 'crack') {
-        return state; // dolu ya da oynanamaz kare
+      if (state.board[r][c] || state.placed[k]) {
+        return state; // dolu kare
       }
-      const source = state.playerRack[state.selectedTile];
-      const tile: Tile = { ...source, owner: 'player' };
+
+      // Bölge kuralı: kendi köşen, merkez ya da açılmış bir köşe olmalı.
+      const me = state.players[state.current];
+      const open = computeOpenCorners(state.board, state.players);
+      if (!cellAllowed(me.corner, open, r, c)) {
+        return {
+          ...state,
+          message: 'Burası başka bir oyuncunun köşesi — henüz oraya oynayamazsın.',
+          messageType: 'err',
+        };
+      }
+
+      const source = me.rack[state.selectedTile];
+      const tile: Tile = { ...source, owner: state.current };
       if (tile.letter === '?') {
         const wl = (action.wildLetter || 'A').toUpperCase();
         tile.wild = true;
         tile.wildLetter = wl;
       }
-      const playerRack = state.playerRack.filter(
-        (_, i) => i !== state.selectedTile,
-      );
+      const rack = me.rack.filter((_, i) => i !== state.selectedTile);
       return {
         ...state,
-        board: state.board,
         placed: { ...state.placed, [k]: tile },
-        playerRack,
+        players: withRack(state, rack),
         selectedTile: null,
         message: 'Oyna tuşuyla kelimeyi onayla.',
         messageType: '',
@@ -204,21 +233,26 @@ export function gameReducer(state: GameState, action: Action): GameState {
     }
 
     case 'RECALL_CELL': {
-      if (!state.playerTurn || state.isGameOver) return state;
+      if (state.phase !== 'play' || state.isGameOver) return state;
       const k = key(action.r, action.c);
       const tile = state.placed[k];
       if (!tile) return state;
       const placed = { ...state.placed };
       delete placed[k];
-      const playerRack = [
-        ...state.playerRack,
+      const rack = [
+        ...state.players[state.current].rack,
         { letter: tile.wild ? '?' : tile.letter, pts: tile.pts },
       ];
-      return { ...state, placed, playerRack, selectedTile: null };
+      return {
+        ...state,
+        placed,
+        players: withRack(state, rack),
+        selectedTile: null,
+      };
     }
 
     case 'RECALL_ALL': {
-      if (!state.playerTurn || state.isGameOver) return state;
+      if (state.phase !== 'play' || state.isGameOver) return state;
       return {
         ...recallAll(state),
         message: 'Taşlar rafa geri alındı.',
@@ -227,32 +261,36 @@ export function gameReducer(state: GameState, action: Action): GameState {
     }
 
     case 'PLAY': {
-      if (!state.playerTurn || state.isGameOver) return state;
-      const check = validatePlacement(state.board, state.placed, state.cellState);
+      if (state.phase !== 'play' || state.isGameOver) return state;
+      const me = state.players[state.current];
+      const open = computeOpenCorners(state.board, state.players);
+      const check = validatePlacement(
+        state.board,
+        state.placed,
+        me.corner,
+        open,
+        isFirstMove(state),
+      );
       if (!check.valid) {
         return { ...state, message: check.reason!, messageType: 'err' };
       }
       const pts = calcScore(state.board, state.placed, state.bonuses);
-
-      // Oluşan kelimeleri (koordinatlarıyla) anlam tıklaması için sakla.
       const formed = getFormedWords(state.board, state.placed);
 
       // Yerleştirmeleri tahtaya işle.
       const board = state.board.map((row) => [...row]);
       for (const [k, tile] of Object.entries(state.placed)) {
         const [r, c] = k.split(',').map(Number);
-        board[r][c] = { ...tile, owner: 'player' };
+        board[r][c] = { ...tile, owner: state.current };
       }
 
       // Rafı doldur.
       const bag = [...state.bag];
-      const playerRack = [...state.playerRack];
-      playerRack.push(...drawTiles(bag, RACK_SIZE - playerRack.length));
+      const rack = [...me.rack];
+      rack.push(...drawTiles(bag, RACK_SIZE - rack.length));
 
-      // En uzun oynanan kelimeyi istatistik için izle.
-      const longest = check.words!.reduce(
-        (best, w) => (w.length > best.length ? w : best),
-        state.bestWord,
+      const players = state.players.map((p, i) =>
+        i === state.current ? { ...p, rack, score: p.score + pts } : p,
       );
 
       const moved: GameState = {
@@ -260,90 +298,97 @@ export function gameReducer(state: GameState, action: Action): GameState {
         board,
         bag,
         placed: {},
-        playerRack,
-        playerScore: state.playerScore + pts,
+        players,
         consecutivePasses: 0,
         selectedTile: null,
-        bestWord: longest,
-        lastWords: setLastWords(state.lastWords, formed, 'player'),
-        message: `+${pts} puan! Kelimeler: ${check.words!.join(', ')}`,
+        lastWords: setLastWords(state.lastWords, formed, state.current),
+        message: `${me.name}: +${pts} puan! Kelimeler: ${check.words!.join(', ')}`,
         messageType: 'ok',
       };
-      return advanceTurn(moved, false);
+      return advanceTurn(moved);
     }
 
     case 'PASS': {
-      if (!state.playerTurn || state.isGameOver) return state;
+      if (state.phase !== 'play' || state.isGameOver) return state;
       const recalled = recallAll(state);
       const consecutivePasses = state.consecutivePasses + 1;
       const moved: GameState = {
         ...recalled,
         consecutivePasses,
-        message: 'Pas geçtin.',
+        message: `${state.players[state.current].name} pas geçti.`,
         messageType: 'warn',
       };
-      if (consecutivePasses >= MAX_CONSECUTIVE_PASSES) {
+      // Herkes üst üste birkaç tur pas geçtiyse oyun biter.
+      if (consecutivePasses >= state.players.length * MAX_PASS_ROUNDS) {
         return endGame(moved);
       }
-      return advanceTurn(moved, false);
+      return advanceTurn(moved);
     }
 
     case 'AI_PLAY': {
-      if (state.playerTurn || state.isGameOver) return state;
+      if (state.phase !== 'play' || state.isGameOver) return state;
+      const me = state.players[state.current];
+      if (!me.isAI) return state;
+
+      const open = computeOpenCorners(state.board, state.players);
       const move = findAIMove(
         state.board,
-        state.aiRack,
-        state.cellState,
+        me.rack,
         state.bonuses,
+        state.current,
+        me.corner,
+        open,
+        isFirstMove(state),
       );
 
+      // Geçerli hamle yoksa YZ pas geçer.
       if (!move) {
         const consecutivePasses = state.consecutivePasses + 1;
         const moved: GameState = {
           ...state,
           consecutivePasses,
-          message: 'YZ pas geçti.',
+          message: `${me.name} pas geçti.`,
           messageType: 'warn',
         };
-        if (consecutivePasses >= MAX_CONSECUTIVE_PASSES) {
+        if (consecutivePasses >= state.players.length * MAX_PASS_ROUNDS) {
           return endGame(moved);
         }
-        return advanceTurn(moved, true);
+        return advanceTurn(moved);
       }
 
-      // Oluşan kelimeleri (koordinatlarıyla) anlam tıklaması için hesapla.
-      const aiPlaced: Placed = {};
-      for (const p of move.placements) aiPlaced[key(p.r, p.c)] = p.tile;
-      const formed = getFormedWords(state.board, aiPlaced);
+      // Hamledeki taşları tahtaya işle ve raftan düş.
+      const placedMap: Record<string, Tile> = {};
+      for (const p of move.placements) placedMap[key(p.r, p.c)] = p.tile;
+      const formed = getFormedWords(state.board, placedMap);
 
       const board = state.board.map((row) => [...row]);
-      const aiRack = [...state.aiRack];
+      const rack = [...me.rack];
       for (const p of move.placements) {
-        board[p.r][p.c] = { ...p.tile, owner: 'ai' };
+        board[p.r][p.c] = { ...p.tile, owner: state.current };
         const idx = p.tile.wild
-          ? aiRack.findIndex((t) => t.letter === '?')
-          : aiRack.findIndex((t) => t.letter === p.tile.letter);
-        if (idx >= 0) aiRack.splice(idx, 1);
+          ? rack.findIndex((t) => t.letter === '?')
+          : rack.findIndex((t) => t.letter === p.tile.letter);
+        if (idx >= 0) rack.splice(idx, 1);
       }
       const bag = [...state.bag];
-      aiRack.push(...drawTiles(bag, RACK_SIZE - aiRack.length));
+      rack.push(...drawTiles(bag, RACK_SIZE - rack.length));
+
+      const players = state.players.map((p, i) =>
+        i === state.current ? { ...p, rack, score: p.score + move.score } : p,
+      );
 
       const moved: GameState = {
         ...state,
         board,
         bag,
-        aiRack,
-        aiScore: state.aiScore + move.score,
+        players,
         consecutivePasses: 0,
-        lastWords: setLastWords(state.lastWords, formed, 'ai'),
-        message: `YZ "${move.word}" oynadı. +${move.score} puan.`,
-        messageType: '',
+        lastWords: setLastWords(state.lastWords, formed, state.current),
+        message: `${me.name} "${move.word}" oynadı. +${move.score} puan.`,
+        messageType: 'ok',
       };
-      return advanceTurn(moved, true);
+      return advanceTurn(moved);
     }
-
-    case 'DISMISS_TOAST':
-      return state.evolveToast ? { ...state, evolveToast: false } : state;
 
     default:
       return state;

@@ -1,12 +1,11 @@
-// Harfik — hesap & sıralama kontrol çubuğu
-// Yalnızca Supabase yapılandırıldığında görünür.
+// Harfik — hesap kontrol çubuğu (giriş / istatistik)
+// Yalnızca Supabase yapılandırıldığında görünür. Sıralama düğmesi başlığa taşındı.
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { AuthModal } from './AuthModal';
-import { Leaderboard } from './Leaderboard';
 import { StatsModal } from './StatsModal';
 
-type OpenModal = 'auth' | 'leaderboard' | 'stats' | null;
+type OpenModal = 'auth' | 'stats' | null;
 
 export function AccountBar() {
   const { user, profile, configured, loading } = useAuth();
@@ -20,14 +19,7 @@ export function AccountBar() {
 
   return (
     <>
-      <div className="w-full max-w-[460px] flex items-center justify-between px-3.5 py-1.5 gap-2">
-        <button
-          onClick={() => setOpen('leaderboard')}
-          className={`${btn} bg-panel border-border text-accent`}
-        >
-          🏆 Sıralama
-        </button>
-
+      <div className="w-full max-w-[460px] flex items-center justify-end px-3.5 py-1.5 gap-2">
         {loading ? (
           <span className="text-muted text-[10px] font-mono">…</span>
         ) : user ? (
@@ -40,7 +32,7 @@ export function AccountBar() {
         ) : (
           <button
             onClick={() => setOpen('auth')}
-            className={`${btn} bg-accent border-accent text-[#060A0D] font-bold`}
+            className={`${btn} bg-accent border-accent text-white font-bold`}
           >
             Giriş
           </button>
@@ -48,7 +40,6 @@ export function AccountBar() {
       </div>
 
       {open === 'auth' && <AuthModal onClose={() => setOpen(null)} />}
-      {open === 'leaderboard' && <Leaderboard onClose={() => setOpen(null)} />}
       {open === 'stats' && <StatsModal onClose={() => setOpen(null)} />}
     </>
   );

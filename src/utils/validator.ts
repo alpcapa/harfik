@@ -1,10 +1,9 @@
-// Harfik — kelime doğrulama ve puanlama
-import { BINGO_BONUS, SIZE, playerZone } from '../game/constants';
-import type { BonusType, ValidationResult } from '../game/types';
+// Harfik — kelime doğrulama, bölge kuralları ve puanlama
+import { BINGO_BONUS, SIZE, inCorner, regionOf } from '../game/constants';
+import type { BonusType, Player, ValidationResult } from '../game/types';
 import { WORD_SET } from '../data/words';
 import {
   getFormedWords,
-  isEmpty,
   key,
   type Board,
   type Placed,
@@ -27,13 +26,59 @@ export function canSpell(word: string, rack: string[]): boolean {
 }
 
 /**
- * Oyuncunun bu turdaki yerleştirmesini doğrular: hizalama, bölge/bağlantı,
- * geçersiz hücreler ve sözlük kontrolü. Geçerliyse oluşan kelimeleri döndürür.
+ * Hangi köşelerin "açıldığını" hesaplar. Bir köşe, sahibi kendi 5×5'inin
+ * dışına taş taşırdığında (yani bölgesinden çıktığında) açılır; açılınca
+ * diğer oyuncular da o köşeye ekleme yapabilir.
+ */
+export function computeOpenCorners(board: Board, players: Player[]): boolean[] {
+  const open = [false, false, false, false];
+  // Hiçbir oyuncuya ait olmayan köşeler (örn. 2 kişilik oyunda) baştan açıktır.
+  const owned = new Set(players.map((p) => p.corner));
+  for (let i = 0; i < 4; i++) if (!owned.has(i)) open[i] = true;
+
+  players.forEach((p, idx) => {
+    // Bu oyuncunun, kendi köşesi dışında tahtaya koyduğu bir taşı var mı?
+    for (let r = 0; r < SIZE && !open[p.corner]; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const t = board[r][c];
+        if (t && t.owner === idx && !inCorner(p.corner, r, c)) {
+          open[p.corner] = true;
+          break;
+        }
+      }
+    }
+  });
+  return open;
+}
+
+/**
+ * Sırası gelen oyuncu (r,c) hücresine taş koyabilir mi? Bölge kuralı:
+ *  - Merkez (köşe dışı) hücreler herkese açık.
+ *  - Kendi köşen her zaman açık.
+ *  - Başka bir köşeye yalnızca o köşe "açıldıysa" oynanabilir.
+ */
+export function cellAllowed(
+  ownCorner: number,
+  openCorners: boolean[],
+  r: number,
+  c: number,
+): boolean {
+  const region = regionOf(r, c);
+  if (region === -1) return true; // merkez
+  if (region === ownCorner) return true; // kendi köşen
+  return openCorners[region]; // yabancı köşe yalnızca açıksa
+}
+
+/**
+ * Oyuncunun bu turdaki yerleştirmesini doğrular: hizalama, bölge kuralları,
+ * bağlantı, geçersiz hücreler ve sözlük. Geçerliyse oluşan kelimeleri döndürür.
  */
 export function validatePlacement(
   board: Board,
   placed: Placed,
-  cellState: Record<string, string>,
+  ownCorner: number,
+  openCorners: boolean[],
+  isFirstMove: boolean,
 ): ValidationResult {
   const keys = Object.keys(placed);
   if (keys.length === 0) {
@@ -49,20 +94,21 @@ export function validatePlacement(
     return { valid: false, reason: 'Harfler aynı satır ya da sütunda olmalı.' };
   }
 
-  // Geçersiz hücre kontrolü (boşluk/çatlak üstüne oynanamaz).
+  // Bölge kuralı: her yeni taş izinli bir hücreye konmalı.
   for (const [r, c] of coords) {
-    const st = cellState[key(r, c)];
-    if (st === 'void' || st === 'crack') {
-      return { valid: false, reason: 'Çatlamış ya da boş kareye oynanamaz.' };
+    if (!cellAllowed(ownCorner, openCorners, r, c)) {
+      return {
+        valid: false,
+        reason: 'O bölge henüz açılmadı — önce kendi köşenden çıkıp ona ulaşmalısın.',
+      };
     }
   }
 
-  const first = isEmpty(board);
-  if (first) {
-    // İlk kelime oyuncunun bölgesinden (sol-alt) başlamalı.
-    const inZone = coords.some(([r, c]) => playerZone(r, c));
-    if (!inZone) {
-      return { valid: false, reason: 'İlk kelime sol-alt köşeden başlamalı.' };
+  if (isFirstMove) {
+    // İlk hamlede en az bir taş kendi köşenin içinde olmalı.
+    const startsHome = coords.some(([r, c]) => inCorner(ownCorner, r, c));
+    if (!startsHome) {
+      return { valid: false, reason: 'İlk kelimen kendi köşenden başlamalı.' };
     }
   } else {
     // Sonraki hamleler mevcut bir taşa değmeli.

@@ -1,14 +1,14 @@
-// Harfik — tahta boyutu, bonus yerleşimi ve etiketler
+// Harfik — tahta boyutu, bölgeler, oyuncu renkleri, bonus yerleşimi
 import type { BonusType, CellKey } from './types';
 
 /** Tahta 13x13. */
 export const SIZE = 13;
 
-/** Tahta evriminin tetiklendiği hamle aralığı. */
-export const EVOLVE_INTERVAL = 3;
+/** Köşe bölgelerinin kenar uzunluğu (5x5). */
+export const CORNER = 5;
 
-/** Üst üste pas sayısı bu değere ulaşınca oyun biter. */
-export const MAX_CONSECUTIVE_PASSES = 4;
+/** Üst üste pas sayısı bu değere ulaşınca oyun biter (oyuncu başına). */
+export const MAX_PASS_ROUNDS = 2;
 
 /** Tüm rafı kullanan hamleye verilen bonus puan. */
 export const BINGO_BONUS = 50;
@@ -24,7 +24,73 @@ export const BONUS_LABELS: Record<BonusType, string> = {
   dl: '2H',
 };
 
-// Başlangıç bonus yerleşimi (LexFront prototipinden).
+// ── Oyuncu renkleri ──────────────────────────────────────────────────────────
+// Beyaz zemin üzerinde okunur, birbirinden net ayrılan renkler. Her oyuncu
+// kendi köşesini bu renge göre tanır.
+
+export interface PlayerColor {
+  /** Ana çizgi/çerçeve rengi. */
+  base: string;
+  /** Köşe bölgesi ve taş arka planı için açık ton. */
+  tint: string;
+  /** Bölge vurgusu için daha da soluk ton. */
+  zone: string;
+  /** Renk üzerinde okunan koyu metin. */
+  text: string;
+}
+
+export const PLAYER_COLORS: PlayerColor[] = [
+  { base: '#2563EB', tint: '#DBE6FF', zone: '#EEF3FF', text: '#11317A' }, // mavi
+  { base: '#DC2626', tint: '#FBDADA', zone: '#FDEFEF', text: '#7A1414' }, // kırmızı
+  { base: '#16A34A', tint: '#D6F3E1', zone: '#EDFAF1', text: '#0B5128' }, // yeşil
+  { base: '#D97706', tint: '#FCEAD0', zone: '#FEF6EA', text: '#7A4408' }, // turuncu
+];
+
+// ── Köşe bölgeleri ───────────────────────────────────────────────────────────
+// 0 = sol-üst, 1 = sağ-üst, 2 = sol-alt, 3 = sağ-alt. Her biri CORNER×CORNER.
+
+/** Köşe indeksinin satır/sütun aralığını döndürür. */
+export function cornerBounds(corner: number): {
+  r0: number;
+  r1: number;
+  c0: number;
+  c1: number;
+} {
+  const top = corner === 0 || corner === 1;
+  const left = corner === 0 || corner === 2;
+  return {
+    r0: top ? 0 : SIZE - CORNER,
+    r1: top ? CORNER - 1 : SIZE - 1,
+    c0: left ? 0 : SIZE - CORNER,
+    c1: left ? CORNER - 1 : SIZE - 1,
+  };
+}
+
+/** Bir hücrenin hangi köşe bölgesinde olduğunu döndürür; merkez için -1. */
+export function regionOf(r: number, c: number): number {
+  for (let i = 0; i < 4; i++) {
+    const b = cornerBounds(i);
+    if (r >= b.r0 && r <= b.r1 && c >= b.c0 && c <= b.c1) return i;
+  }
+  return -1;
+}
+
+/** Verilen hücre, bu köşe bölgesinin içinde mi? */
+export function inCorner(corner: number, r: number, c: number): boolean {
+  const b = cornerBounds(corner);
+  return r >= b.r0 && r <= b.r1 && c >= b.c0 && c <= b.c1;
+}
+
+/**
+ * Oyuncu sayısına göre köşe ataması.
+ *  - 2 oyuncu: çapraz köşeler (sol-üst, sağ-alt).
+ *  - 4 oyuncu: dört köşe.
+ */
+export function cornersFor(playerCount: number): number[] {
+  return playerCount === 2 ? [0, 3] : [0, 1, 2, 3];
+}
+
+// ── Başlangıç bonus yerleşimi (LexFront prototipinden) ───────────────────────
 const TW: [number, number][] = [
   [0, 0], [0, 12], [12, 0], [12, 12], [3, 6], [6, 3], [6, 9], [9, 6],
 ];
@@ -35,7 +101,6 @@ const TL: [number, number][] = [
 const DL: [number, number][] = [
   [1, 1], [1, 11], [11, 1], [11, 11], [3, 4], [4, 3], [3, 8], [4, 9],
   [8, 3], [9, 4], [8, 9], [9, 8], [6, 6],
-  // Her kenarın orta karesi: 2H (üst, alt, sol, sağ).
   [0, 6], [12, 6], [6, 0], [6, 12],
 ];
 const DW: [number, number][] = [
@@ -50,14 +115,4 @@ export function buildInitialBonuses(): Record<CellKey, BonusType> {
   DL.forEach(([r, c]) => (b[`${r},${c}`] = 'dl'));
   DW.forEach(([r, c]) => (b[`${r},${c}`] = 'dw'));
   return b;
-}
-
-/** Oyuncu bölgesi: sol-alt köşe. İlk hamle buradan başlamalı. */
-export function playerZone(r: number, c: number): boolean {
-  return r >= 9 && c <= 3;
-}
-
-/** YZ bölgesi: sağ-üst köşe. */
-export function aiZone(r: number, c: number): boolean {
-  return r <= 3 && c >= 9;
 }

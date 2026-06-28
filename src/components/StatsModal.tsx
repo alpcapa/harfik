@@ -25,7 +25,7 @@ export function StatsModal({ onClose }: StatsModalProps) {
         { label: 'Galibiyet', value: stats.wins, cls: 'text-green' },
         { label: 'Mağlubiyet', value: stats.losses, cls: 'text-red' },
         { label: 'Berabere', value: stats.ties, cls: 'text-gold' },
-        { label: 'En İyi Skor', value: stats.best_score, cls: 'text-player' },
+        { label: 'En İyi Skor', value: stats.best_score, cls: 'text-accent' },
         { label: 'Ortalama', value: stats.avg_score },
       ]
     : [];
