@@ -24,7 +24,7 @@ const BONUS_CLASSES: Record<string, string> = {
 };
 
 export function Board({ state, onCellClick }: BoardProps) {
-  const { board, placed, bonuses, cellState, lastWords, players, current } = state;
+  const { board, placed, bonuses, lastWords, players, current } = state;
 
   // Köşe bölgesi -> o köşenin sahibinin rengi (boş kareleri renklendirmek için).
   const cornerColor: (PlayerColor | undefined)[] = [
@@ -47,7 +47,6 @@ export function Board({ state, onCellClick }: BoardProps) {
       const k = key(r, c);
       const boardTile = board[r][c];
       const placedTile = placed[k];
-      const st = cellState[k];
       const bonus = bonuses[k];
       const region = regionOf(r, c);
       const zone = region >= 0 ? cornerColor[region] : undefined;
@@ -62,9 +61,7 @@ export function Board({ state, onCellClick }: BoardProps) {
 
       const isLastWord = !!lastWords[k];
 
-      if (st === 'void') {
-        classes.push('bg-void border-[#DDE1E6] opacity-60 cursor-not-allowed');
-      } else if (boardTile) {
+      if (boardTile) {
         classes.push(
           isLastWord
             ? 'bg-transparent border-transparent cursor-pointer rounded-[3px] ring-2 ring-gold/60'
@@ -74,9 +71,6 @@ export function Board({ state, onCellClick }: BoardProps) {
       } else if (placedTile) {
         classes.push('bg-transparent border-transparent');
         content = <Tile tile={placedTile} variant="placed" color={currentColor} />;
-      } else if (st === 'crack') {
-        classes.push('bg-[#FBF3E0] border-[#EAD9A8] border-dashed cursor-pointer');
-        content = <span className="text-[clamp(6px,1.6vw,10px)] opacity-50">⚡</span>;
       } else if (bonus) {
         classes.push(BONUS_CLASSES[bonus], 'cursor-pointer');
         content = BONUS_LABELS[bonus];
@@ -92,13 +86,12 @@ export function Board({ state, onCellClick }: BoardProps) {
         classes.push('bg-white border-[#E3E7EC] cursor-pointer');
       }
 
-      const clickable = st !== 'void';
       cells.push(
         <div
           key={k}
           className={classes.join(' ')}
           style={style}
-          onClick={clickable ? () => onCellClick(r, c) : undefined}
+          onClick={() => onCellClick(r, c)}
         >
           {content}
         </div>,

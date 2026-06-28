@@ -1,5 +1,5 @@
 // Harfik — ana uygulama: kurulum, çok oyunculu sıra akışı ve düzen
-import { useEffect, useReducer, useState } from 'react';
+import { useReducer, useState } from 'react';
 import { GameHeader } from './components/GameHeader';
 import { Board } from './components/Board';
 import { Rack } from './components/Rack';
@@ -16,8 +16,6 @@ import { useAuth } from './hooks/useAuth';
 import { fetchMeaning } from './lib/api';
 import type { WordMeaning } from './lib/database.types';
 
-const TOAST_MS = 2000;
-
 const MESSAGE_COLORS: Record<string, string> = {
   ok: 'text-green',
   err: 'text-red',
@@ -30,8 +28,6 @@ const LEGEND = [
   { label: '3×K', bg: '#FCEBDC', border: '1px solid #D97706' },
   { label: '2×H', bg: '#E1ECFD', border: '1px solid #2563EB' },
   { label: '3×H', bg: '#F0E6FB', border: '1px solid #7C3AED' },
-  { label: 'Çatlıyor', bg: '#FBF3E0', border: '1px dashed #EAD9A8' },
-  { label: 'Boşluk', bg: '#E8EBEF', border: '1px solid #DDE1E6' },
 ];
 
 export default function App() {
@@ -54,14 +50,6 @@ export default function App() {
       );
     });
   };
-
-  // Evrim bildirimi otomatik kapansın.
-  useEffect(() => {
-    if (state.evolveToast) {
-      const t = setTimeout(() => dispatch({ type: 'DISMISS_TOAST' }), TOAST_MS);
-      return () => clearTimeout(t);
-    }
-  }, [state.evolveToast]);
 
   // ── Kurulum ekranı ─────────────────────────────────────────────────────────
   if (state.phase === 'setup') {
@@ -107,13 +95,6 @@ export default function App() {
   const potentialScore =
     placedCount > 0 ? calcScore(state.board, state.placed, state.bonuses) : 0;
 
-  const evolveColor =
-    state.turnsUntilEvolve <= 1
-      ? 'text-red'
-      : state.turnsUntilEvolve <= 2
-        ? 'text-gold'
-        : 'text-muted';
-
   return (
     <div className="min-h-screen w-full flex flex-col items-center overflow-x-hidden">
       <GameHeader
@@ -124,12 +105,9 @@ export default function App() {
         onLeaderboard={() => setShowLeaderboard(true)}
       />
 
-      <div className="w-full max-w-[460px] flex items-center justify-between px-3.5 py-1.5 text-[10px] font-mono tracking-[1px] uppercase">
+      <div className="w-full max-w-[460px] flex items-center justify-center px-3.5 py-1.5 text-[10px] font-mono tracking-[1px] uppercase">
         <span className="font-bold" style={{ color: myColor.base }}>
           Sıra: {me.name}
-        </span>
-        <span className={evolveColor}>
-          Tahta {state.turnsUntilEvolve} hamlede değişir
         </span>
       </div>
 
@@ -197,12 +175,6 @@ export default function App() {
           </button>
         </div>
       </div>
-
-      {state.evolveToast && (
-        <div className="fixed top-[60px] left-1/2 -translate-x-1/2 z-[200] bg-gold text-white font-mono text-[11px] font-bold tracking-[1px] px-[18px] py-2 rounded-full uppercase pointer-events-none">
-          ⚡ Tahta Değişiyor!
-        </div>
-      )}
 
       {meaning && (
         <MeaningModal

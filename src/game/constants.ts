@@ -7,9 +7,6 @@ export const SIZE = 13;
 /** Köşe bölgelerinin kenar uzunluğu (5x5). */
 export const CORNER = 5;
 
-/** Tahta evriminin tetiklendiği hamle aralığı. */
-export const EVOLVE_INTERVAL = 3;
-
 /** Üst üste pas sayısı bu değere ulaşınca oyun biter (oyuncu başına). */
 export const MAX_PASS_ROUNDS = 2;
 

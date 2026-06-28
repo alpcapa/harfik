@@ -1,6 +1,5 @@
 // Harfik — useReducer ile çok oyunculu (yerel) oyun durumu yönetimi
 import {
-  EVOLVE_INTERVAL,
   MAX_PASS_ROUNDS,
   PLAYER_COLORS,
   RACK_SIZE,
@@ -21,7 +20,6 @@ import {
   computeOpenCorners,
   validatePlacement,
 } from '../utils/validator';
-import { evolveBoard } from '../utils/boardEvolution';
 
 export type Action =
   | { type: 'INIT' }
@@ -31,8 +29,7 @@ export type Action =
   | { type: 'RECALL_CELL'; r: number; c: number }
   | { type: 'RECALL_ALL' }
   | { type: 'PLAY' }
-  | { type: 'PASS' }
-  | { type: 'DISMISS_TOAST' };
+  | { type: 'PASS' };
 
 /** Kurulum (oyuncu seçimi) ekranıyla başlayan boş durum. */
 export function createInitialState(): GameState {
@@ -41,18 +38,15 @@ export function createInitialState(): GameState {
     board: createEmptyBoard(),
     bag: [],
     bonuses: {},
-    cellState: {},
     placed: {},
     players: [],
     current: 0,
     selectedTile: null,
     turnCount: 0,
-    turnsUntilEvolve: EVOLVE_INTERVAL,
     consecutivePasses: 0,
     isGameOver: false,
     message: '',
     messageType: '',
-    evolveToast: false,
     lastWords: {},
   };
 }
@@ -75,18 +69,15 @@ function startGame(names: string[]): GameState {
     board: createEmptyBoard(),
     bag,
     bonuses: buildInitialBonuses(),
-    cellState: {},
     placed: {},
     players,
     current: 0,
     selectedTile: null,
     turnCount: 0,
-    turnsUntilEvolve: EVOLVE_INTERVAL,
     consecutivePasses: 0,
     isGameOver: false,
     message: `${players[0].name}, kendi köşenden bir kelime kur.`,
     messageType: '',
-    evolveToast: false,
     lastWords: {},
   };
 }
@@ -134,41 +125,18 @@ function endGame(state: GameState): GameState {
     isGameOver: true,
     message: 'Oyun bitti.',
     messageType: '',
-    evolveToast: false,
   };
 }
 
 /**
- * Tur sayacını ilerletir; gerektiğinde tahtayı evrimleştirir; bir raf+torba
- * tükendiyse oyunu bitirir; sırayı sonraki oyuncuya geçirir.
+ * Tur sayacını ilerletir; bir raf+torba tükendiyse oyunu bitirir; sırayı
+ * sonraki oyuncuya geçirir.
  */
 function advanceTurn(state: GameState): GameState {
-  let turnsUntilEvolve = state.turnsUntilEvolve - 1;
-  let cellState = state.cellState;
-  let bonuses = state.bonuses;
-  let evolveToast = false;
-
-  if (turnsUntilEvolve <= 0) {
-    const res = evolveBoard(
-      state.board,
-      state.cellState,
-      state.bonuses,
-      state.turnCount,
-    );
-    cellState = res.cellState;
-    bonuses = res.bonuses;
-    turnsUntilEvolve = EVOLVE_INTERVAL;
-    evolveToast = true;
-  }
-
   const next = (state.current + 1) % state.players.length;
   const nextState: GameState = {
     ...state,
-    cellState,
-    bonuses,
-    turnsUntilEvolve,
     turnCount: state.turnCount + 1,
-    evolveToast,
     current: next,
     selectedTile: null,
   };
@@ -222,9 +190,8 @@ export function gameReducer(state: GameState, action: Action): GameState {
       }
       const { r, c } = action;
       const k = key(r, c);
-      const st = state.cellState[k];
-      if (state.board[r][c] || state.placed[k] || st === 'void' || st === 'crack') {
-        return state; // dolu ya da oynanamaz kare
+      if (state.board[r][c] || state.placed[k]) {
+        return state; // dolu kare
       }
 
       // Bölge kuralı: kendi köşen, merkez ya da açılmış bir köşe olmalı.
@@ -291,7 +258,6 @@ export function gameReducer(state: GameState, action: Action): GameState {
       const check = validatePlacement(
         state.board,
         state.placed,
-        state.cellState,
         me.corner,
         open,
         isFirstMove(state),
@@ -349,9 +315,6 @@ export function gameReducer(state: GameState, action: Action): GameState {
       }
       return advanceTurn(moved);
     }
-
-    case 'DISMISS_TOAST':
-      return state.evolveToast ? { ...state, evolveToast: false } : state;
 
     default:
       return state;

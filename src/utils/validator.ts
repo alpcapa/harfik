@@ -76,7 +76,6 @@ export function cellAllowed(
 export function validatePlacement(
   board: Board,
   placed: Placed,
-  cellState: Record<string, string>,
   ownCorner: number,
   openCorners: boolean[],
   isFirstMove: boolean,
@@ -93,14 +92,6 @@ export function validatePlacement(
   const vert = cols.length === 1;
   if (!horiz && !vert) {
     return { valid: false, reason: 'Harfler aynı satır ya da sütunda olmalı.' };
-  }
-
-  // Geçersiz hücre kontrolü (boşluk/çatlak üstüne oynanamaz).
-  for (const [r, c] of coords) {
-    const st = cellState[key(r, c)];
-    if (st === 'void' || st === 'crack') {
-      return { valid: false, reason: 'Çatlamış ya da boş kareye oynanamaz.' };
-    }
   }
 
   // Bölge kuralı: her yeni taş izinli bir hücreye konmalı.

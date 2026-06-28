@@ -6,9 +6,6 @@ export type Owner = number;
 /** Bonus kare türleri: 2K/3K kelime, 2H/3H harf çarpanı. */
 export type BonusType = 'dw' | 'tw' | 'dl' | 'tl';
 
-/** Özel hücre durumu: çatlamış (yakında boşluk) veya boşluk (oynanamaz). */
-export type CellState = 'crack' | 'void';
-
 export interface Tile {
   /** Raftaki/torbadaki ham harf ('?' joker olabilir). */
   letter: string;
@@ -50,8 +47,6 @@ export interface GameState {
   bag: Tile[];
   /** Bonus kareler: "r,c" -> BonusType. */
   bonuses: Record<CellKey, BonusType>;
-  /** Özel hücre durumları: "r,c" -> CellState. */
-  cellState: Record<CellKey, CellState>;
   /** Bu turda aktif oyuncunun geçici yerleştirdiği taşlar. */
   placed: Record<CellKey, Tile>;
   /** Tüm oyuncular. */
@@ -61,15 +56,11 @@ export interface GameState {
   /** Raftaki seçili taşın indeksi. */
   selectedTile: number | null;
   turnCount: number;
-  /** Tahta evrimine kalan hamle sayısı. */
-  turnsUntilEvolve: number;
   consecutivePasses: number;
   isGameOver: boolean;
   /** Durum çubuğu mesajı. */
   message: string;
   messageType: '' | 'ok' | 'err' | 'warn';
-  /** Evrim bildirimi görünür mü? */
-  evolveToast: boolean;
   /**
    * Son kabul edilen hamlede oluşan kelimeler (hücre → kelime + oynayan).
    * Bu hücrelere tıklayınca kelimenin anlamı gösterilir.
