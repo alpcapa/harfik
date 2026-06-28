@@ -114,13 +114,6 @@ export default function App() {
         bagCount={state.bag.length}
       />
 
-      <div className="w-full max-w-[460px] flex items-center justify-center px-3.5 py-1.5 text-[10px] font-mono tracking-[1px] uppercase">
-        <span className="font-bold" style={{ color: myColor.base }}>
-          Sıra: {me.name}
-          {me.isAI && ' (düşünüyor…)'}
-        </span>
-      </div>
-
       <Board state={state} onCellClick={handleCellClick} />
 
       <div className="w-full max-w-[460px] px-2 pb-3 flex flex-col gap-2">
