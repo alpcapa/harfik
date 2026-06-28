@@ -1,15 +1,15 @@
 // Harfik — başlık: skorlar, torba ve hesap menüsü
 import { PLAYER_COLORS } from '../game/constants';
-import type { Player } from '../game/types';
+import type { GameState } from '../game/types';
 import { UserMenu } from './UserMenu';
 
 interface GameHeaderProps {
-  players: Player[];
-  current: number;
-  bagCount: number;
+  state: GameState;
 }
 
-export function GameHeader({ players, current, bagCount }: GameHeaderProps) {
+export function GameHeader({ state }: GameHeaderProps) {
+  const { players, current } = state;
+  const bagCount = state.bag.length;
   return (
     <header className="w-full max-w-[460px] flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border">
       <div className="font-mono text-lg font-bold text-accent tracking-[2px] shrink-0">
@@ -54,7 +54,7 @@ export function GameHeader({ players, current, bagCount }: GameHeaderProps) {
           </div>
         </div>
 
-        <UserMenu />
+        <UserMenu game={state} />
       </div>
     </header>
   );

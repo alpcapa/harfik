@@ -108,11 +108,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center overflow-x-hidden">
-      <GameHeader
-        players={state.players}
-        current={state.current}
-        bagCount={state.bag.length}
-      />
+      <GameHeader state={state} />
 
       <Board state={state} onCellClick={handleCellClick} />
 
