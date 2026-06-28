@@ -4,15 +4,13 @@ import { GameHeader } from './components/GameHeader';
 import { Board } from './components/Board';
 import { Rack } from './components/Rack';
 import { GameOver } from './components/GameOver';
-import { AccountBar } from './components/AccountBar';
+import { UserMenu } from './components/UserMenu';
 import { Setup } from './components/Setup';
-import { Leaderboard } from './components/Leaderboard';
 import { MeaningModal } from './components/MeaningModal';
 import { createInitialState, gameReducer } from './game/gameReducer';
 import { calcScore } from './utils/validator';
 import { key } from './utils/board';
 import { PLAYER_COLORS } from './game/constants';
-import { useAuth } from './hooks/useAuth';
 import { fetchMeaning } from './lib/api';
 import type { WordMeaning } from './lib/database.types';
 
@@ -34,8 +32,6 @@ const LEGEND = [
 
 export default function App() {
   const [state, dispatch] = useReducer(gameReducer, undefined, createInitialState);
-  const { configured } = useAuth();
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   // Oynanan bir kelimeye tıklanınca gösterilen anlam penceresi.
   const [meaning, setMeaning] = useState<{
@@ -68,8 +64,10 @@ export default function App() {
   if (state.phase === 'setup') {
     return (
       <div className="min-h-screen w-full flex flex-col items-center overflow-x-hidden">
+        <div className="w-full max-w-[460px] flex items-center justify-end px-3.5 pt-3">
+          <UserMenu />
+        </div>
         <Setup onStart={(players) => dispatch({ type: 'START', players })} />
-        <AccountBar />
       </div>
     );
   }
@@ -114,8 +112,6 @@ export default function App() {
         players={state.players}
         current={state.current}
         bagCount={state.bag.length}
-        showLeaderboard={configured}
-        onLeaderboard={() => setShowLeaderboard(true)}
       />
 
       <div className="w-full max-w-[460px] flex items-center justify-center px-3.5 py-1.5 text-[10px] font-mono tracking-[1px] uppercase">
@@ -198,8 +194,6 @@ export default function App() {
           onClose={() => setMeaning(null)}
         />
       )}
-
-      {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
 
       <GameOver
         show={state.isGameOver}

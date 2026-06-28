@@ -1,23 +1,15 @@
-// Harfik — başlık: skorlar, torba ve sıralama düğmesi
+// Harfik — başlık: skorlar, torba ve hesap menüsü
 import { PLAYER_COLORS } from '../game/constants';
 import type { Player } from '../game/types';
+import { UserMenu } from './UserMenu';
 
 interface GameHeaderProps {
   players: Player[];
   current: number;
   bagCount: number;
-  /** Sıralama tablosu açılabilir mi? (Supabase yapılandırılmışsa) */
-  showLeaderboard: boolean;
-  onLeaderboard: () => void;
 }
 
-export function GameHeader({
-  players,
-  current,
-  bagCount,
-  showLeaderboard,
-  onLeaderboard,
-}: GameHeaderProps) {
+export function GameHeader({ players, current, bagCount }: GameHeaderProps) {
   return (
     <header className="w-full max-w-[460px] flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border">
       <div className="font-mono text-lg font-bold text-accent tracking-[2px] shrink-0">
@@ -62,15 +54,7 @@ export function GameHeader({
           </div>
         </div>
 
-        {showLeaderboard && (
-          <button
-            onClick={onLeaderboard}
-            title="Sıralama"
-            className="font-mono text-base px-2 py-1.5 rounded-md border border-border bg-panel active:scale-95 transition-transform"
-          >
-            🏆
-          </button>
-        )}
+        <UserMenu />
       </div>
     </header>
   );
