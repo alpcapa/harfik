@@ -3,7 +3,7 @@
 // Her birkaç hamlede bir tahta "evrilir": önceden çatlamış boş kareler
 // boşluğa (oynanamaz) dönüşür, yeni boş kareler çatlar ve birkaç yeni bonus
 // kare belirir. Köşe bölgeleri (oyuncu/YZ başlangıçları) çatlamadan korunur.
-import { SIZE } from '../game/constants';
+import { SIZE, regionOf } from '../game/constants';
 import type { BonusType, CellKey, CellState } from '../game/types';
 import { key, type Board } from './board';
 import { pick, shuffle } from './random';
@@ -17,7 +17,7 @@ export interface EvolveResult {
 
 /** Hücre, başlangıç köşe bölgelerinden birinde mi? (çatlamadan korunur) */
 function isProtected(r: number, c: number): boolean {
-  return (r >= 10 && c <= 2) || (r <= 2 && c >= 10);
+  return regionOf(r, c) !== -1;
 }
 
 export function evolveBoard(

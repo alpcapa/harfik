@@ -4,22 +4,20 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: '#080C10',
-        panel: '#0D1318',
-        border: '#1E2D3D',
-        text: '#C8D8E8',
-        muted: '#3A5068',
-        accent: '#00C8FF',
-        ai: '#FF4060',
-        player: '#00C8FF',
-        gold: '#FFD040',
-        green: '#00C870',
-        red: '#FF4060',
-        'tile-bg': '#0F1C26',
-        'tile-border': '#1E3A52',
-        'tile-letter': '#C8E8FF',
-        'tile-pts': '#3A6888',
-        void: '#050708',
+        bg: '#FFFFFF',
+        panel: '#F5F7FA',
+        border: '#DCE2EA',
+        text: '#1B2430',
+        muted: '#8A93A2',
+        accent: '#2563EB',
+        gold: '#B7791F',
+        green: '#16A34A',
+        red: '#DC2626',
+        'tile-bg': '#FFFFFF',
+        'tile-border': '#C7D0DC',
+        'tile-letter': '#1B2430',
+        'tile-pts': '#8A93A2',
+        void: '#E8EBEF',
       },
       fontFamily: {
         sans: ['"Space Grotesk"', 'sans-serif'],
@@ -27,8 +25,8 @@ export default {
       },
       keyframes: {
         pulse: {
-          from: { boxShadow: '0 0 4px rgba(0,200,255,0.3)' },
-          to: { boxShadow: '0 0 10px rgba(0,200,255,0.7)' },
+          from: { boxShadow: '0 0 0 1px rgba(37,99,235,0.25)' },
+          to: { boxShadow: '0 0 0 2px rgba(37,99,235,0.55)' },
         },
       },
       animation: {

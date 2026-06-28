@@ -1,19 +1,21 @@
-// Harfik — ana uygulama: durum, sıra akışı ve düzen
-import { useEffect, useReducer, useRef, useState } from 'react';
+// Harfik — ana uygulama: kurulum, çok oyunculu sıra akışı ve düzen
+import { useEffect, useReducer, useState } from 'react';
 import { GameHeader } from './components/GameHeader';
 import { Board } from './components/Board';
 import { Rack } from './components/Rack';
 import { GameOver } from './components/GameOver';
 import { AccountBar } from './components/AccountBar';
+import { Setup } from './components/Setup';
+import { Leaderboard } from './components/Leaderboard';
 import { MeaningModal } from './components/MeaningModal';
 import { createInitialState, gameReducer } from './game/gameReducer';
 import { calcScore } from './utils/validator';
 import { key } from './utils/board';
+import { PLAYER_COLORS } from './game/constants';
 import { useAuth } from './hooks/useAuth';
-import { fetchMeaning, saveGame } from './lib/api';
+import { fetchMeaning } from './lib/api';
 import type { WordMeaning } from './lib/database.types';
 
-const AI_THINK_MS = 1400;
 const TOAST_MS = 2000;
 
 const MESSAGE_COLORS: Record<string, string> = {
@@ -24,18 +26,18 @@ const MESSAGE_COLORS: Record<string, string> = {
 };
 
 const LEGEND = [
-  { label: '2×K', bg: '#1A3A1A', border: '1px solid #40C840' },
-  { label: '3×K', bg: '#3A1A00', border: '1px solid #FF8000' },
-  { label: '2×H', bg: '#001A3A', border: '1px solid #40A0FF' },
-  { label: '3×H', bg: '#1A0030', border: '1px solid #C040FF' },
-  { label: 'Çatlıyor', bg: '#1A1000', border: '1px dashed #5A3A00' },
-  { label: 'Boşluk', bg: '#050708', border: '1px solid #111' },
+  { label: '2×K', bg: '#E4F6EA', border: '1px solid #16A34A' },
+  { label: '3×K', bg: '#FCEBDC', border: '1px solid #D97706' },
+  { label: '2×H', bg: '#E1ECFD', border: '1px solid #2563EB' },
+  { label: '3×H', bg: '#F0E6FB', border: '1px solid #7C3AED' },
+  { label: 'Çatlıyor', bg: '#FBF3E0', border: '1px dashed #EAD9A8' },
+  { label: 'Boşluk', bg: '#E8EBEF', border: '1px solid #DDE1E6' },
 ];
 
 export default function App() {
   const [state, dispatch] = useReducer(gameReducer, undefined, createInitialState);
-  const { user } = useAuth();
-  const savedRef = useRef(false);
+  const { configured } = useAuth();
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   // Oynanan bir kelimeye tıklanınca gösterilen anlam penceresi.
   const [meaning, setMeaning] = useState<{
@@ -47,43 +49,11 @@ export default function App() {
   const openMeaning = (word: string) => {
     setMeaning({ word, data: null, loading: true });
     void fetchMeaning(word).then((data) => {
-      // Tıklama sırası değişmiş olabilir; yalnızca güncel kelimeyi güncelle.
       setMeaning((cur) =>
         cur && cur.word === word ? { word, data, loading: false } : cur,
       );
     });
   };
-
-  // Oyun bitince (oturum açıksa) sonucu bir kez kaydet.
-  useEffect(() => {
-    if (!state.isGameOver) {
-      savedRef.current = false;
-      return;
-    }
-    if (savedRef.current || !user) return;
-    savedRef.current = true;
-    const result =
-      state.playerScore > state.aiScore
-        ? 'win'
-        : state.playerScore < state.aiScore
-          ? 'lose'
-          : 'tie';
-    void saveGame({
-      player_score: state.playerScore,
-      ai_score: state.aiScore,
-      result,
-      turn_count: state.turnCount,
-      best_word: state.bestWord || null,
-    });
-  }, [state.isGameOver, user, state.playerScore, state.aiScore, state.turnCount, state.bestWord]);
-
-  // YZ sırası: kısa bir düşünme gecikmesiyle hamle yap.
-  useEffect(() => {
-    if (!state.playerTurn && !state.isGameOver) {
-      const t = setTimeout(() => dispatch({ type: 'AI_PLAY' }), AI_THINK_MS);
-      return () => clearTimeout(t);
-    }
-  }, [state.playerTurn, state.isGameOver]);
 
   // Evrim bildirimi otomatik kapansın.
   useEffect(() => {
@@ -93,16 +63,29 @@ export default function App() {
     }
   }, [state.evolveToast]);
 
+  // ── Kurulum ekranı ─────────────────────────────────────────────────────────
+  if (state.phase === 'setup') {
+    return (
+      <div className="min-h-screen w-full flex flex-col items-center overflow-x-hidden">
+        <Setup onStart={(names) => dispatch({ type: 'START', names })} />
+        <AccountBar />
+      </div>
+    );
+  }
+
+  // ── Oyun ekranı ──────────────────────────────────────────────────────────────
+  const me = state.players[state.current];
+  const myColor = PLAYER_COLORS[me.colorIndex];
+
   const handleCellClick = (r: number, c: number) => {
     const k = key(r, c);
-    // Son oynanan kelimenin harfine tıklanırsa anlamını göster (sırasından
-    // bağımsız; o oyuncu yeni hamle yapana kadar tıklanabilir kalır).
+    // Son oynanan kelimenin harfine tıklanırsa anlamını göster.
     const lw = state.lastWords[k];
     if (lw) {
       openMeaning(lw.word);
       return;
     }
-    if (!state.playerTurn || state.isGameOver) return;
+    if (state.isGameOver) return;
     if (state.placed[k]) {
       dispatch({ type: 'RECALL_CELL', r, c });
       return;
@@ -110,8 +93,7 @@ export default function App() {
     if (state.board[r][c]) return;
 
     let wildLetter: string | undefined;
-    const sel =
-      state.selectedTile !== null ? state.playerRack[state.selectedTile] : null;
+    const sel = state.selectedTile !== null ? me.rack[state.selectedTile] : null;
     if (sel && sel.letter === '?') {
       const l = window.prompt('Joker hangi harf olsun? (Türkçe)');
       wildLetter = (l || 'A').toUpperCase();
@@ -119,10 +101,8 @@ export default function App() {
     dispatch({ type: 'PLACE_TILE', r, c, wildLetter });
   };
 
-  const canAct = state.playerTurn && !state.isGameOver;
+  const canAct = !state.isGameOver;
 
-  // Yerleştirilen taşların potansiyel puanı (kelime geçerli olmasa da
-  // gösterilir); oluşan tüm kelimeler + bonuslar üzerinden hesaplanır.
   const placedCount = Object.keys(state.placed).length;
   const potentialScore =
     placedCount > 0 ? calcScore(state.board, state.placed, state.bonuses) : 0;
@@ -137,18 +117,18 @@ export default function App() {
   return (
     <div className="min-h-screen w-full flex flex-col items-center overflow-x-hidden">
       <GameHeader
-        playerScore={state.playerScore}
-        aiScore={state.aiScore}
+        players={state.players}
+        current={state.current}
         bagCount={state.bag.length}
+        showLeaderboard={configured}
+        onLeaderboard={() => setShowLeaderboard(true)}
       />
 
-      <AccountBar />
-
       <div className="w-full max-w-[460px] flex items-center justify-between px-3.5 py-1.5 text-[10px] font-mono tracking-[1px] uppercase">
-        <span className={state.playerTurn ? 'text-accent font-bold' : 'text-muted'}>
-          {state.turnLabel}
+        <span className="font-bold" style={{ color: myColor.base }}>
+          Sıra: {me.name}
         </span>
-        <span className={`${evolveColor}`}>
+        <span className={evolveColor}>
           Tahta {state.turnsUntilEvolve} hamlede değişir
         </span>
       </div>
@@ -166,15 +146,16 @@ export default function App() {
 
         {placedCount > 0 && (
           <div className="text-center font-mono text-[12px] text-gold tracking-[0.5px]">
-            Potansiyel puan:{' '}
-            <span className="font-bold">+{potentialScore}</span>
+            Potansiyel puan: <span className="font-bold">+{potentialScore}</span>
           </div>
         )}
 
         <Rack
-          tiles={state.playerRack}
+          tiles={me.rack}
           selectedTile={state.selectedTile}
           onSelect={(i) => dispatch({ type: 'SELECT_TILE', index: i })}
+          title={me.name}
+          color={myColor}
         />
 
         <div className="flex gap-2 justify-center flex-wrap py-1">
@@ -196,7 +177,7 @@ export default function App() {
           <button
             disabled={!canAct}
             onClick={() => dispatch({ type: 'PLAY' })}
-            className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-accent text-[#060A0D] active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+            className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
           >
             Oyna
           </button>
@@ -218,7 +199,7 @@ export default function App() {
       </div>
 
       {state.evolveToast && (
-        <div className="fixed top-[60px] left-1/2 -translate-x-1/2 z-[200] bg-gold text-[#060A0D] font-mono text-[11px] font-bold tracking-[1px] px-[18px] py-2 rounded-full uppercase pointer-events-none">
+        <div className="fixed top-[60px] left-1/2 -translate-x-1/2 z-[200] bg-gold text-white font-mono text-[11px] font-bold tracking-[1px] px-[18px] py-2 rounded-full uppercase pointer-events-none">
           ⚡ Tahta Değişiyor!
         </div>
       )}
@@ -232,10 +213,11 @@ export default function App() {
         />
       )}
 
+      {showLeaderboard && <Leaderboard onClose={() => setShowLeaderboard(false)} />}
+
       <GameOver
         show={state.isGameOver}
-        playerScore={state.playerScore}
-        aiScore={state.aiScore}
+        players={state.players}
         turnCount={state.turnCount}
         onRestart={() => dispatch({ type: 'INIT' })}
       />

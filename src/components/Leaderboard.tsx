@@ -41,7 +41,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                 key={r.user_id}
                 className={[
                   'flex items-center text-sm font-mono rounded-md px-2 py-1.5',
-                  me ? 'bg-[#0A2030] border border-player' : 'bg-bg',
+                  me ? 'bg-accent/10 border border-accent' : 'bg-bg',
                 ].join(' ')}
               >
                 <span
@@ -54,7 +54,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                 </span>
                 <span className="flex-1 truncate text-text">{name}</span>
                 <span className="w-10 text-right text-muted">{r.wins}</span>
-                <span className="w-12 text-right font-bold text-player">
+                <span className="w-12 text-right font-bold text-accent">
                   {r.best_score}
                 </span>
               </li>
