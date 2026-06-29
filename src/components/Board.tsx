@@ -48,10 +48,10 @@ const BONUS_STYLES: Record<string, React.CSSProperties> = {
 
 // Tahtanın hemen altında gösterilen bonus açıklaması.
 const LEGEND = [
-  { label: 'K2', bg: 'linear-gradient(135deg, #B8ECC8, #C8F0D4)', border: 'none' },
-  { label: 'K3', bg: 'linear-gradient(135deg, #FAC890, #FBD8A8)', border: 'none' },
-  { label: 'H2', bg: 'linear-gradient(135deg, #9EC8FA, #B0D4FC)', border: 'none' },
-  { label: 'H3', bg: 'linear-gradient(135deg, #CEB4FA, #DCC8FC)', border: 'none' },
+  { label: 'K2', desc: '2× kelime', bg: 'linear-gradient(135deg, #B8ECC8, #C8F0D4)', border: 'none' },
+  { label: 'K3', desc: '3× kelime', bg: 'linear-gradient(135deg, #FAC890, #FBD8A8)', border: 'none' },
+  { label: 'H2', desc: '2× harf',   bg: 'linear-gradient(135deg, #9EC8FA, #B0D4FC)', border: 'none' },
+  { label: 'H3', desc: '3× harf',   bg: 'linear-gradient(135deg, #CEB4FA, #DCC8FC)', border: 'none' },
 ];
 
 /** Her köşenin merkeze bakan 2 iç kenarına (L şeklinde) renk çizgisi ekler. */
@@ -243,7 +243,8 @@ export function Board({ state, onCellClick, potentialScore }: BoardProps) {
                 className="w-2 h-2 rounded-[1px]"
                 style={{ background: item.bg, border: item.border }}
               />
-              {item.label}
+              <span className="font-bold">{item.label}</span>
+              <span className="text-muted/70">{item.desc}</span>
             </div>
           ))}
         </div>
