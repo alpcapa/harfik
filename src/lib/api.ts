@@ -273,7 +273,7 @@ export async function uploadAvatar(file: File): Promise<string> {
   const { error: upErr } = await supabase.storage
     .from('avatars')
     .upload(path, file, { upsert: true, contentType: file.type });
-  if (upErr) throw upErr;
+  if (upErr) throw new Error(upErr.message);
 
   const { data } = supabase.storage.from('avatars').getPublicUrl(path);
   // Önbelleği atlamak için sürüm parametresi ekle (aynı yol üzerine yazılır).

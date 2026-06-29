@@ -54,7 +54,8 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
       await refreshProfile();
       setInfo('Profil fotoğrafı güncellendi.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Yükleme başarısız.');
+      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
+      setError(msg || 'Yükleme başarısız.');
     } finally {
       setUploading(false);
     }

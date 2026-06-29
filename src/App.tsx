@@ -16,6 +16,7 @@ import { PLAYER_COLORS } from './game/constants';
 import { fetchMeaning, saveGame } from './lib/api';
 import type { WordMeaning } from './lib/database.types';
 import { useAuth } from './hooks/useAuth';
+import { AddToHomeScreen } from './components/AddToHomeScreen';
 
 const AI_THINK_MS = 1100;
 
@@ -100,6 +101,7 @@ export default function App() {
           <UserMenu />
         </div>
         <Setup onStart={(players) => dispatch({ type: 'START', players })} />
+        <AddToHomeScreen />
       </div>
     );
   }
