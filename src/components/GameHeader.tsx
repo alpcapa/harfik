@@ -11,24 +11,12 @@ interface GameHeaderProps {
 export function GameHeader({ state, onLogoClick }: GameHeaderProps) {
   const { players, current } = state;
   return (
-    <header className="w-full max-w-[680px] flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border">
-      <button
-        onClick={onLogoClick}
-        className="shrink-0 flex flex-col items-center leading-none active:opacity-70 transition-opacity"
-        style={{ fontFamily: "'Caveat', cursive", fontSize: 28, fontWeight: 700, color: '#2563EB', letterSpacing: 3 }}
-        aria-label="Oyundan çık"
-      >
-        harfik
-        <svg width="64" height="6" viewBox="0 0 64 6" fill="none">
-          <path d="M2 3 Q16 1 32 3 Q48 5 62 3" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" fill="none" />
-        </svg>
-      </button>
-
-      <div className="flex gap-2 items-center flex-wrap justify-end">
+    <header className="w-full max-w-[680px] grid grid-cols-[1fr_auto_1fr] items-center px-3 py-2.5 border-b border-border">
+      {/* Sol: skorlar */}
+      <div className="flex gap-2 items-center flex-wrap">
         {players.map((p, i) => {
           const col = PLAYER_COLORS[p.colorIndex];
           const active = i === current;
-          // Başlıkta dar alan için YZ oyuncusu kısaca "YZ" (4 kişilikse "YZ 2").
           const label = p.isAI
             ? players.length === 2
               ? 'YZ'
@@ -58,7 +46,23 @@ export function GameHeader({ state, onLogoClick }: GameHeaderProps) {
             </div>
           );
         })}
+      </div>
 
+      {/* Orta: logo */}
+      <button
+        onClick={onLogoClick}
+        className="flex flex-col items-center leading-none active:opacity-70 transition-opacity"
+        style={{ fontFamily: "'Caveat', cursive", fontSize: 28, fontWeight: 700, color: '#2563EB', letterSpacing: 3 }}
+        aria-label="Oyundan çık"
+      >
+        harfik
+        <svg width="64" height="6" viewBox="0 0 64 6" fill="none">
+          <path d="M2 3 Q16 1 32 3 Q48 5 62 3" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" fill="none" />
+        </svg>
+      </button>
+
+      {/* Sağ: kullanıcı menüsü */}
+      <div className="flex justify-end">
         <UserMenu />
       </div>
     </header>
