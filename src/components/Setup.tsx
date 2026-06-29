@@ -4,7 +4,6 @@ import { PLAYER_COLORS } from '../game/constants';
 import type { PlayerSetup } from '../game/gameReducer';
 import { useAuth } from '../hooks/useAuth';
 import { Avatar } from './Avatar';
-import { LogoOptions } from './LogoOptions';
 
 interface SetupProps {
   onStart: (players: PlayerSetup[]) => void;
@@ -50,17 +49,18 @@ export function Setup({ onStart }: SetupProps) {
 
   return (
     <div className="w-full max-w-[460px] px-4 py-6 flex flex-col gap-5">
-      <div className="text-center">
-        <div className="font-mono text-2xl font-bold text-accent tracking-[3px]">
-          HARFİK
+      <div className="text-center flex flex-col items-center gap-1">
+        <div style={{ fontFamily: "'Caveat', cursive", fontSize: 52, fontWeight: 700, color: '#2563EB', letterSpacing: 4, lineHeight: 1 }}>
+          harfik
         </div>
+        <svg width="100" height="8" viewBox="0 0 100 8" fill="none">
+          <path d="M4 4 Q25 1 50 4 Q75 7 96 4" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+        </svg>
         <p className="text-muted text-xs font-mono mt-1">
           Her oyuncu kendi köşesinden başlar. 5×5 köşenden çıkmadan
           diğerlerine ulaşamazsın.
         </p>
       </div>
-
-      <LogoOptions />
 
       <div className="flex flex-col gap-2">
         <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
