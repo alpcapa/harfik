@@ -72,10 +72,11 @@ export function cellAllowed(
 }
 
 /**
- * Oyuncunun bu turdaki yerleştirmesini doğrular: hizalama, bölge kuralları,
- * bağlantı, geçersiz hücreler ve sözlük. Geçerliyse oluşan kelimeleri döndürür.
+ * Yapısal doğrulama — hizalama, bölge kuralları, bağlantı, kelime varlığı;
+ * sözlük kontrolü yapılmaz. Geçerliyse oluşan kelimeleri döner.
+ * Sunucu doğrulaması yaparken önce bu çağrılır, ardından kelimeler RPC'ye gönderilir.
  */
-export function validatePlacement(
+export function validatePlacementStructural(
   board: Board,
   placed: Placed,
   ownCorner: number,
@@ -115,7 +116,6 @@ export function validatePlacement(
     return region !== -1 && region !== ownCorner;
   });
   if (foreignZoneCoords.length > 0) {
-    // Hedef köşelerde önceden yerleştirilmiş taş var mı?
     const foreignZones = new Set(foreignZoneCoords.map(([r, c]) => regionOf(r, c) as number));
     const allZonesAlreadyEntered = [...foreignZones].every((zone) => {
       const b = cornerBounds(zone);
@@ -158,13 +158,11 @@ export function validatePlacement(
   }
 
   if (isFirstMove) {
-    // İlk hamlede en az bir taş kendi köşenin içinde olmalı.
     const startsHome = coords.some(([r, c]) => inCorner(ownCorner, r, c));
     if (!startsHome) {
       return { valid: false, reason: 'İlk kelimen kendi köşenden başlamalı.' };
     }
   } else {
-    // Sonraki hamleler mevcut bir taşa değmeli.
     const connects = coords.some(([r, c]) =>
       [
         [r - 1, c],
@@ -186,13 +184,30 @@ export function validatePlacement(
     return { valid: false, reason: 'Geçerli kelime oluşmadı.' };
   }
 
+  return { valid: true, words: formed.map((f) => f.word) };
+}
+
+/**
+ * Oyuncunun bu turdaki yerleştirmesini doğrular: hizalama, bölge kuralları,
+ * bağlantı ve yerel sözlük. Geçerliyse oluşan kelimeleri döndürür.
+ */
+export function validatePlacement(
+  board: Board,
+  placed: Placed,
+  ownCorner: number,
+  openCorners: boolean[],
+  isFirstMove: boolean,
+): ValidationResult {
+  const structural = validatePlacementStructural(board, placed, ownCorner, openCorners, isFirstMove);
+  if (!structural.valid) return structural;
+
+  const formed = getFormedWords(board, placed);
   for (const { word } of formed) {
     if (!WORD_SET.has(trLower(word))) {
       return { valid: false, reason: `"${word}" geçerli bir kelime değil.` };
     }
   }
-
-  return { valid: true, words: formed.map((f) => f.word) };
+  return structural;
 }
 
 /**

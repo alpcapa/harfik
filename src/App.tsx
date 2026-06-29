@@ -1,5 +1,5 @@
 // Harfik — ana uygulama: kurulum, çok oyunculu sıra akışı ve düzen
-import { useEffect, useReducer, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { GameHeader } from './components/GameHeader';
 import { Board } from './components/Board';
 import { Rack } from './components/Rack';
@@ -8,12 +8,12 @@ import { UserMenu } from './components/UserMenu';
 import { Setup } from './components/Setup';
 import { MeaningModal } from './components/MeaningModal';
 import { RemainingTilesModal } from './components/RemainingTilesModal';
-import { createInitialState, gameReducer } from './game/gameReducer';
-import { calcScore } from './utils/validator';
+import { createInitialState, gameReducer, isFirstMove } from './game/gameReducer';
+import { calcScore, computeBreachedCorners, validatePlacementStructural } from './utils/validator';
 import { key } from './utils/board';
-import { trUpper } from './utils/turkish';
+import { trUpper, trLower } from './utils/turkish';
 import { PLAYER_COLORS, regionOf } from './game/constants';
-import { fetchMeaning, saveGame } from './lib/api';
+import { fetchMeaning, isValidWordRemote, isSupabaseConfigured, saveGame } from './lib/api';
 import type { WordMeaning } from './lib/database.types';
 import { useAuth } from './hooks/useAuth';
 import { AddToHomeScreen } from './components/AddToHomeScreen';
@@ -48,6 +48,11 @@ export default function App() {
     ownerName: string;
     ownerPts: number;
   } | null>(null);
+
+  // Sunucu kelime doğrulaması sırasında true — butonu devre dışı bırakır.
+  const [validating, setValidating] = useState(false);
+  // Sunucu doğrulaması başarılıysa true; reducer'a skipWordCheck iletilir.
+  const pendingSkipWordCheck = useRef(false);
 
   const openMeaning = (words: string[]) => {
     const unique = [...new Set(words)];
@@ -170,22 +175,60 @@ export default function App() {
 
   const canAct = !state.isGameOver && !me.isAI;
 
-  const handlePlay = () => {
+  const handlePlay = async () => {
+    // Rakip köşeye giriş tespiti.
+    let invasion: { ownerName: string; ownerPts: number } | null = null;
     for (const k of Object.keys(state.placed)) {
       const [r, c] = k.split(',').map(Number);
       const region = regionOf(r, c);
       if (region !== -1 && region !== me.corner) {
         const owner = state.players.find((p) => p.corner === region);
         if (owner) {
-          setInvasionConfirm({
-            ownerName: owner.name,
-            ownerPts: Math.round(potentialScore / 2),
-          });
-          return;
+          invasion = { ownerName: owner.name, ownerPts: Math.round(potentialScore / 2) };
+          break;
         }
       }
     }
-    dispatch({ type: 'PLAY' });
+
+    // Sunucu kelime doğrulaması (Supabase yapılandırılmışsa).
+    if (isSupabaseConfigured) {
+      const open = computeBreachedCorners(state.board, state.players);
+      const structural = validatePlacementStructural(
+        state.board,
+        state.placed,
+        me.corner,
+        open,
+        isFirstMove(state),
+      );
+      if (structural.valid && structural.words && structural.words.length > 0) {
+        setValidating(true);
+        try {
+          for (const word of structural.words) {
+            const result = await isValidWordRemote(trLower(word));
+            if (result === false) {
+              dispatch({
+                type: 'SET_MESSAGE',
+                message: `"${word}" geçerli bir kelime değil.`,
+                messageType: 'err',
+              });
+              return;
+            }
+            // null → ağ hatası, yerel sözlüğe düşülür
+          }
+          // Tüm kelimeler sunucuda onaylandı.
+          pendingSkipWordCheck.current = true;
+          if (invasion) { setInvasionConfirm(invasion); return; }
+          dispatch({ type: 'PLAY', skipWordCheck: true });
+          return;
+        } finally {
+          setValidating(false);
+        }
+      }
+    }
+
+    // Supabase yoksa veya yapısal kontrol başarısızsa yerel doğrulama (reducer).
+    pendingSkipWordCheck.current = false;
+    if (invasion) { setInvasionConfirm(invasion); } else { dispatch({ type: 'PLAY' }); }
   };
 
   // Pas, sırayı tümüyle harcadığı için onay ister.
@@ -241,11 +284,11 @@ export default function App() {
           </div>
           {!state.swapMode && (
             <button
-              disabled={!canAct}
-              onClick={handlePlay}
+              disabled={!canAct || validating}
+              onClick={() => { void handlePlay(); }}
               className="shrink-0 px-5 rounded-lg font-sans text-[12px] font-bold uppercase tracking-[1.2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
             >
-              Oyna
+              {validating ? 'Kontrol…' : 'Oyna'}
             </button>
           )}
         </div>
@@ -318,7 +361,12 @@ export default function App() {
             </p>
             <div className="flex gap-2 mt-1">
               <button
-                onClick={() => { setInvasionConfirm(null); dispatch({ type: 'PLAY' }); }}
+                onClick={() => {
+                  const skip = pendingSkipWordCheck.current;
+                  pendingSkipWordCheck.current = false;
+                  setInvasionConfirm(null);
+                  dispatch({ type: 'PLAY', skipWordCheck: skip });
+                }}
                 className="flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
               >
                 Oyna
