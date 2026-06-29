@@ -1,6 +1,7 @@
 // Harfik — oyun sonu ekranı (çok oyunculu)
 import { PLAYER_COLORS } from '../game/constants';
 import type { Player } from '../game/types';
+import { trUpper } from '../utils/turkish';
 
 interface GameOverProps {
   show: boolean;
@@ -25,7 +26,7 @@ export function GameOver({ show, players, turnCount, onRestart }: GameOverProps)
         className="font-mono text-[30px] font-bold tracking-[2px] text-center"
         style={{ color: tie ? '#B7791F' : winColor.base }}
       >
-        {tie ? 'BERABERE' : `${top.p.name.toUpperCase()} KAZANDI`}
+        {tie ? 'BERABERE' : `${trUpper(top.p.name)} KAZANDI`}
       </div>
 
       <div className="bg-panel border border-border rounded-[10px] px-7 py-5 text-center flex flex-col gap-2.5 min-w-[240px]">

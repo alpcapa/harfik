@@ -1,6 +1,7 @@
 // Harfik — oynanan kelime(ler)in sözlük anlamı açılır penceresi
 import { Modal } from './Modal';
 import type { WordMeaning } from '../lib/database.types';
+import { trUpper } from '../utils/turkish';
 
 interface MeaningEntry {
   /** Görüntülenen kelime. */
@@ -40,7 +41,7 @@ function Meanings({ entry }: { entry: MeaningEntry }) {
 }
 
 export function MeaningModal({ entries, onClose }: MeaningModalProps) {
-  const title = entries[0]?.word.toLocaleUpperCase('tr') ?? '';
+  const title = entries[0] ? trUpper(entries[0].word) : '';
   return (
     <Modal title={title} onClose={onClose}>
       <div className="flex flex-col gap-4">
@@ -48,7 +49,7 @@ export function MeaningModal({ entries, onClose }: MeaningModalProps) {
           <div key={entry.word} className="flex flex-col gap-3">
             {idx > 0 && (
               <h3 className="font-mono text-xs font-bold tracking-[1.5px] uppercase text-accent border-t border-border pt-4">
-                {entry.word.toLocaleUpperCase('tr')}
+                {trUpper(entry.word)}
               </h3>
             )}
             <Meanings entry={entry} />

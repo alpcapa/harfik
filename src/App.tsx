@@ -93,6 +93,7 @@ export default function App() {
       best_move_score: human.bestMoveScore || null,
       longest_word: human.longestWord || null,
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.isGameOver]);
 
   // Oyun devam ederken giriş yapılırsa 1. oyuncunun adını güncelle.
@@ -143,13 +144,12 @@ export default function App() {
     // oluşan tüm kelimeleri (tıklanan önce gelir) listele.
     const lw = state.lastWords[k];
     if (lw) {
-      const words = [
-        lw.word,
-        ...Object.values(state.lastWords)
-          .filter((w) => w.by === lw.by)
-          .map((w) => w.word),
-      ];
-      openMeaning(words);
+      const words = Object.values(state.lastWords)
+        .filter((w) => w.by === lw.by)
+        .map((w) => w.word);
+      // Tıklanan kelimeyi listeye birinci sıraya taşı.
+      const sorted = [lw.word, ...words.filter((w) => w !== lw.word)];
+      openMeaning(sorted);
       return;
     }
     if (state.isGameOver || me.isAI || state.swapMode) return;
@@ -338,9 +338,7 @@ export default function App() {
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-sm bg-panel rounded-2xl shadow-2xl p-6 flex flex-col gap-4">
             <p className="text-sm text-text font-sans leading-relaxed">
-              {user && !isAIOnlyGame
-                ? 'Bu oyundan çıkmak mı istiyorsun? Eğer çıkarsan kazandığın tüm puanlar silinecek ve ceza olarak toplam puanından 500 puan düşülecek.'
-                : 'Bu oyundan çıkmak istediğinizden emin misiniz?'}
+              {'Bu oyundan çıkmak istediğine emin misin? Oyun kaydedilmez ve mevcut ilerleme silinir.'}
             </p>
             <div className="flex gap-2 mt-1">
               <button

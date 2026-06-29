@@ -1,5 +1,5 @@
 // Harfik — kelime doğrulama, bölge kuralları ve puanlama
-import { BINGO_BONUS, SIZE, inCorner, isZoneBoundaryCell, regionOf } from '../game/constants';
+import { BINGO_BONUS, SIZE, cornerBounds, inCorner, isZoneBoundaryCell, regionOf } from '../game/constants';
 import type { BonusType, Player, ValidationResult } from '../game/types';
 import { WORD_SET } from '../data/words';
 import { trLower } from './turkish';
@@ -106,38 +106,54 @@ export function validatePlacement(
     }
   }
 
-  // Rakip köşeye giriş kuralı: en az bir yeni taş, o köşenin iç sınır
-  // karesinin yanında (veya üzerinde) olmalı.
+  // Rakip köşeye giriş kuralı: bu köşeye ilk kez giriliyorsa en az bir yeni
+  // taş, o köşenin iç sınır karesinde veya yanında (ve sınır karesi dolu)
+  // olmalıdır. Köşe içinde zaten taş varsa (daha önce girilmiş) bu kural
+  // uygulanmaz; bağlantı kuralı yeterlidir.
   const foreignZoneCoords = coords.filter(([r, c]) => {
     const region = regionOf(r, c);
     return region !== -1 && region !== ownCorner;
   });
   if (foreignZoneCoords.length > 0) {
-    const touchesBoundary = foreignZoneCoords.some(([r, c]) => {
-      const zone = regionOf(r, c) as number;
-      if (isZoneBoundaryCell(zone, r, c)) return true;
-      return (
-        [
-          [r - 1, c],
-          [r + 1, c],
-          [r, c - 1],
-          [r, c + 1],
-        ] as [number, number][]
-      ).some(
-        ([nr, nc]) =>
-          nr >= 0 &&
-          nr < SIZE &&
-          nc >= 0 &&
-          nc < SIZE &&
-          isZoneBoundaryCell(zone, nr, nc) &&
-          board[nr][nc] !== null,
-      );
+    // Hedef köşelerde önceden yerleştirilmiş taş var mı?
+    const foreignZones = new Set(foreignZoneCoords.map(([r, c]) => regionOf(r, c) as number));
+    const allZonesAlreadyEntered = [...foreignZones].every((zone) => {
+      const b = cornerBounds(zone);
+      for (let r = b.r0; r <= b.r1; r++) {
+        for (let c = b.c0; c <= b.c1; c++) {
+          if (board[r][c] && !isZoneBoundaryCell(zone, r, c)) return true;
+        }
+      }
+      return false;
     });
-    if (!touchesBoundary) {
-      return {
-        valid: false,
-        reason: 'Rakip köşesine girerken sınır karesindeki bir taşa değmelisin.',
-      };
+
+    if (!allZonesAlreadyEntered) {
+      const touchesBoundary = foreignZoneCoords.some(([r, c]) => {
+        const zone = regionOf(r, c) as number;
+        if (isZoneBoundaryCell(zone, r, c)) return true;
+        return (
+          [
+            [r - 1, c],
+            [r + 1, c],
+            [r, c - 1],
+            [r, c + 1],
+          ] as [number, number][]
+        ).some(
+          ([nr, nc]) =>
+            nr >= 0 &&
+            nr < SIZE &&
+            nc >= 0 &&
+            nc < SIZE &&
+            isZoneBoundaryCell(zone, nr, nc) &&
+            board[nr][nc] !== null,
+        );
+      });
+      if (!touchesBoundary) {
+        return {
+          valid: false,
+          reason: 'Rakip köşesine girerken sınır karesindeki bir taşa değmelisin.',
+        };
+      }
     }
   }
 
