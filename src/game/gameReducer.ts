@@ -87,6 +87,8 @@ function startGame(setup: PlayerSetup[]): GameState {
     isAI: s.isAI,
     rack: drawTiles(bag, RACK_SIZE),
     score: 0,
+    bestMoveScore: 0,
+    longestWord: '',
   }));
 
   return {
@@ -422,8 +424,14 @@ export function gameReducer(state: GameState, action: Action): GameState {
       const rack = [...me.rack];
       rack.push(...drawTiles(bag, RACK_SIZE - rack.length));
 
+      const newLongestWord = formed.reduce(
+        (best, fw) => (fw.word.length > best.length ? fw.word : best),
+        me.longestWord,
+      );
       const players = state.players.map((p, i) =>
-        i === state.current ? { ...p, rack, score: p.score + pts } : p,
+        i === state.current
+          ? { ...p, rack, score: p.score + pts, bestMoveScore: Math.max(p.bestMoveScore, pts), longestWord: newLongestWord }
+          : p,
       );
 
       const moved: GameState = {
@@ -506,8 +514,14 @@ export function gameReducer(state: GameState, action: Action): GameState {
       const bag = [...state.bag];
       rack.push(...drawTiles(bag, RACK_SIZE - rack.length));
 
+      const aiLongestWord = formed.reduce(
+        (best, fw) => (fw.word.length > best.length ? fw.word : best),
+        me.longestWord,
+      );
       const players = state.players.map((p, i) =>
-        i === state.current ? { ...p, rack, score: p.score + move.score } : p,
+        i === state.current
+          ? { ...p, rack, score: p.score + move.score, bestMoveScore: Math.max(p.bestMoveScore, move.score), longestWord: aiLongestWord }
+          : p,
       );
 
       const moved: GameState = {

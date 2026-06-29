@@ -13,7 +13,7 @@ import { calcScore } from './utils/validator';
 import { key } from './utils/board';
 import { trUpper } from './utils/turkish';
 import { PLAYER_COLORS } from './game/constants';
-import { fetchMeaning } from './lib/api';
+import { fetchMeaning, saveGame } from './lib/api';
 import type { WordMeaning } from './lib/database.types';
 import { useAuth } from './hooks/useAuth';
 
@@ -62,6 +62,24 @@ export default function App() {
       });
     }
   };
+
+  // Oyun bitince giriş yapmış kullanıcının sonucunu kaydet (insan vs YZ oyunları).
+  useEffect(() => {
+    if (!state.isGameOver || state.phase !== 'play') return;
+    const human = state.players.find((p) => !p.isAI);
+    const ai = state.players.find((p) => p.isAI);
+    if (!human || !ai) return; // yalnızca insan vs YZ oyunları kaydedilir
+    const result =
+      human.score > ai.score ? 'win' : human.score < ai.score ? 'lose' : 'tie';
+    void saveGame({
+      player_score: human.score,
+      ai_score: ai.score,
+      result,
+      turn_count: state.turnCount,
+      best_move_score: human.bestMoveScore || null,
+      longest_word: human.longestWord || null,
+    });
+  }, [state.isGameOver]);
 
   // YZ sırası: kısa bir düşünme gecikmesiyle otomatik oyna.
   const aiTurn =

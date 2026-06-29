@@ -23,6 +23,8 @@ export interface Game {
   result: GameResult;
   turn_count: number;
   best_word: string | null;
+  best_move_score: number | null;
+  longest_word: string | null;
   created_at: string;
 }
 
@@ -33,6 +35,8 @@ export type NewGame = Pick<
 > & {
   user_id?: string | null;
   best_word?: string | null;
+  best_move_score?: number | null;
+  longest_word?: string | null;
 };
 
 /** Bir kelimenin sözlük kaydı (word_meaning RPC çıktısı). */
@@ -66,4 +70,6 @@ export interface PlayerStats {
   ties: number;
   best_score: number;
   avg_score: number;
+  best_move_score: number | null;
+  longest_word: string | null;
 }
