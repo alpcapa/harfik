@@ -3950,7 +3950,7 @@ export const WORD_LIST: readonly string[] = [
   "öğretilmek", "öğretim", "öğretimbilgisi", "öğretimelemanı", "öğretimgörevlisi", "öğretimprogramı", "öğretimüyesi", "öğretimyardımcılığı", "öğretimyardımcısı", "öğretimyılı", "öğretiş", "öğretme", "öğretmek", "öğretmen", "öğretmenevi", "öğretmenlik",
   "öğün", "öğür", "öğüreceğigelmek", "öğürleşme", "öğürleşmek", "öğürlük", "öğürme", "öğürmek", "öğürolmak", "öğürtleme", "öğürtlemek", "öğürtme", "öğürtmek", "öğürtü", "öğürüş", "öğüt",
   "öğütçü", "öğütçülük", "öğütebilme", "öğütebilmek", "öğütleme", "öğütlemek", "öğütleyebilme", "öğütleyebilmek", "öğütme", "öğütmehaznesi", "öğütmek", "öğütücü", "öğütücüdiş", "öğütücülük", "öğütülme", "öğütülmek",
-  "öğütülüş", "öğütüş", "öğütvermek", "öhö", "ökçe", "ökçeçene", "ökçeli", "ökçesiz", "öke", "ökelik", "ökse", "ökseçubuğu", "öksekuşu", "ökseleme", "ökselemek", "ökseme",
+  "öğütülüş", "öğütüş", "öğütvermek", "öhö", "ök", "ökçe", "ökçeçene", "ökçeli", "ökçesiz", "öke", "ökelik", "ökse", "ökseçubuğu", "öksekuşu", "ökseleme", "ökselemek", "ökseme",
   "öksemek", "ökseotu", "ökseotugiller", "ökseyebasmak", "öksürme", "öksürmek", "öksürtme", "öksürtmek", "öksürük", "öksürüklü", "öksürüklütıksırıklı", "öksürükolmak", "öksürükotu", "öksürüktıksırık", "öksürüktutmak", "öksürüptıksırmak",
   "öksürüş", "öksüz", "öksüzanası", "öksüzbabası", "öksüzdoyuran", "öksüzkalmak", "öksüzleşme", "öksüzleşmek", "öksüzlük", "öksüzsevindiren", "öküz", "öküzarabası", "öküzarabasıgibi", "öküzbalığı", "öküzburnu", "öküzdamı",
   "öküzdili", "öküzgibi", "öküzgibibakmak", "öküzgözü", "öküzkafalı", "öküzkafalılık", "öküzlük", "öküzsoğuğu", "öküzünaltındabuzağıaramak", "ölçebilme", "ölçebilmek", "ölçek", "ölçekçizgisi", "ölçekleme", "ölçeklemek", "ölçeklendirilme",
