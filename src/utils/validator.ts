@@ -1,5 +1,5 @@
 // Harfik — kelime doğrulama, bölge kuralları ve puanlama
-import { BINGO_BONUS, SIZE, inCorner, regionOf } from '../game/constants';
+import { BINGO_BONUS, SIZE, inCorner, isZoneBoundaryCell, regionOf } from '../game/constants';
 import type { BonusType, Player, ValidationResult } from '../game/types';
 import { WORD_SET } from '../data/words';
 import { trLower } from './turkish';
@@ -27,47 +27,48 @@ export function canSpell(word: string, rack: string[]): boolean {
 }
 
 /**
- * Hangi köşelerin "açıldığını" hesaplar. Bir köşe, sahibi kendi 5×5'inin
- * dışına taş taşırdığında (yani bölgesinden çıktığında) açılır; açılınca
- * diğer oyuncular da o köşeye ekleme yapabilir.
+ * Hangi köşelerin "ihlal edildiğini" hesaplar.
+ * Kural: Köşe sahibi bölgesinin iç sınır karesine taş koyduğunda bölge ihlal
+ * edilmiş sayılır; yalnızca o andan itibaren rakipler bu köşeye girebilir.
+ * Hiçbir oyuncuya ait olmayan köşeler baştan ihlal edilmiş (açık) kabul edilir.
  */
-export function computeOpenCorners(board: Board, players: Player[]): boolean[] {
-  const open = [false, false, false, false];
-  // Hiçbir oyuncuya ait olmayan köşeler (örn. 2 kişilik oyunda) baştan açıktır.
+export function computeBreachedCorners(board: Board, players: Player[]): boolean[] {
+  const breached = [false, false, false, false];
   const owned = new Set(players.map((p) => p.corner));
-  for (let i = 0; i < 4; i++) if (!owned.has(i)) open[i] = true;
+  for (let i = 0; i < 4; i++) if (!owned.has(i)) breached[i] = true;
 
-  players.forEach((p, idx) => {
-    // Bu oyuncunun, kendi köşesi dışında tahtaya koyduğu bir taşı var mı?
-    for (let r = 0; r < SIZE && !open[p.corner]; r++) {
-      for (let c = 0; c < SIZE; c++) {
-        const t = board[r][c];
-        if (t && t.owner === idx && !inCorner(p.corner, r, c)) {
-          open[p.corner] = true;
-          break;
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (!board[r][c]) continue;
+      for (let corner = 0; corner < 4; corner++) {
+        if (!breached[corner] && isZoneBoundaryCell(corner, r, c)) {
+          breached[corner] = true;
         }
       }
     }
-  });
-  return open;
+  }
+  return breached;
 }
 
+/** @deprecated Yeni kod computeBreachedCorners kullanmalı. */
+export const computeOpenCorners = computeBreachedCorners;
+
 /**
- * Sırası gelen oyuncu (r,c) hücresine taş koyabilir mi? Bölge kuralı:
- *  - Merkez (köşe dışı) hücreler herkese açık.
+ * Sırası gelen oyuncu (r,c) hücresine taş koyabilir mi?
+ *  - Merkez hücreler herkese açık.
  *  - Kendi köşen her zaman açık.
- *  - Başka bir köşeye yalnızca o köşe "açıldıysa" oynanabilir.
+ *  - Rakip köşe yalnızca ihlal edilmişse (breached) erişilebilir.
  */
 export function cellAllowed(
   ownCorner: number,
-  openCorners: boolean[],
+  breachedCorners: boolean[],
   r: number,
   c: number,
 ): boolean {
   const region = regionOf(r, c);
-  if (region === -1) return true; // merkez
-  if (region === ownCorner) return true; // kendi köşen
-  return openCorners[region]; // yabancı köşe yalnızca açıksa
+  if (region === -1) return true;
+  if (region === ownCorner) return true;
+  return breachedCorners[region];
 }
 
 /**
@@ -100,7 +101,42 @@ export function validatePlacement(
     if (!cellAllowed(ownCorner, openCorners, r, c)) {
       return {
         valid: false,
-        reason: 'O bölge henüz açılmadı — önce kendi köşenden çıkıp ona ulaşmalısın.',
+        reason: 'Bu köşe henüz ihlal edilmedi — sahip sınır karesine oynamadan girilemiyor.',
+      };
+    }
+  }
+
+  // Rakip köşeye giriş kuralı: en az bir yeni taş, o köşenin iç sınır
+  // karesinin yanında (veya üzerinde) olmalı.
+  const foreignZoneCoords = coords.filter(([r, c]) => {
+    const region = regionOf(r, c);
+    return region !== -1 && region !== ownCorner;
+  });
+  if (foreignZoneCoords.length > 0) {
+    const touchesBoundary = foreignZoneCoords.some(([r, c]) => {
+      const zone = regionOf(r, c) as number;
+      if (isZoneBoundaryCell(zone, r, c)) return true;
+      return (
+        [
+          [r - 1, c],
+          [r + 1, c],
+          [r, c - 1],
+          [r, c + 1],
+        ] as [number, number][]
+      ).some(
+        ([nr, nc]) =>
+          nr >= 0 &&
+          nr < SIZE &&
+          nc >= 0 &&
+          nc < SIZE &&
+          isZoneBoundaryCell(zone, nr, nc) &&
+          board[nr][nc] !== null,
+      );
+    });
+    if (!touchesBoundary) {
+      return {
+        valid: false,
+        reason: 'Rakip köşesine girerken sınır karesindeki bir taşa değmelisin.',
       };
     }
   }

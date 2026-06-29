@@ -40,7 +40,7 @@ export interface PlayerColor {
 }
 
 export const PLAYER_COLORS: PlayerColor[] = [
-  { base: '#2563EB', tint: '#DBE6FF', zone: '#EEF3FF', text: '#11317A' }, // mavi
+  { base: '#2563EB', tint: '#AABFFF', zone: '#EEF3FF', text: '#11317A' }, // mavi
   { base: '#DC2626', tint: '#FBDADA', zone: '#FDEFEF', text: '#7A1414' }, // kırmızı
   { base: '#16A34A', tint: '#D6F3E1', zone: '#EDFAF1', text: '#0B5128' }, // yeşil
   { base: '#D97706', tint: '#FCEAD0', zone: '#FEF6EA', text: '#7A4408' }, // turuncu
@@ -79,6 +79,20 @@ export function regionOf(r: number, c: number): number {
 export function inCorner(corner: number, r: number, c: number): boolean {
   const b = cornerBounds(corner);
   return r >= b.r0 && r <= b.r1 && c >= b.c0 && c <= b.c1;
+}
+
+/**
+ * Verilen hücre, köşe bölgesinin "iç sınır" karesinde mi?
+ * İç sınır = merkeze bakan kenar satırı/sütunu (5×5'in iç çevresi).
+ * Sahip burada oynayınca bölge "ihlal edilmiş" sayılır.
+ */
+export function isZoneBoundaryCell(corner: number, r: number, c: number): boolean {
+  if (!inCorner(corner, r, c)) return false;
+  const b = cornerBounds(corner);
+  // İç sınır: merkeze en yakın satır VEYA sütun.
+  const innerRow = corner <= 1 ? b.r1 : b.r0; // üst köşeler → en alt satır; alt köşeler → en üst satır
+  const innerCol = corner === 0 || corner === 2 ? b.c1 : b.c0; // sol köşeler → en sağ sütun; sağ köşeler → en sol sütun
+  return r === innerRow || c === innerCol;
 }
 
 /**

@@ -3,7 +3,7 @@
 // YZ, rafından heceleyebildiği kelimeler arasından, bölge kurallarına uyan
 // ve sözlükçe geçerli en yüksek puanlı hamleyi arar. İlk hamlesini kendi
 // köşesinden başlatır; sonra mevcut taşları çapa alarak yeni kelimeler kurar.
-import { SIZE, cornerBounds, inCorner } from '../game/constants';
+import { SIZE, cornerBounds, inCorner, isZoneBoundaryCell, regionOf } from '../game/constants';
 import type { AIMove, BonusType, Placement, Tile } from '../game/types';
 import { WORD_SET } from '../data/words';
 import { letterPoints } from '../data/tiles';
@@ -48,7 +48,7 @@ export function findAIMove(
   bonuses: Record<string, BonusType>,
   owner: number,
   corner: number,
-  openCorners: boolean[],
+  breachedCorners: boolean[],
   isFirstMove: boolean,
 ): AIMove | null {
   const rackLetters = rack.map((t) => t.letter);
@@ -66,13 +66,41 @@ export function findAIMove(
     for (const fw of getFormedWords(board, placed)) {
       if (!WORD_SET.has(trLower(fw.word))) return;
     }
+    // Rakip köşeye giriş: sınır karesindeki bir taşa değmelisin.
+    const foreignPlacements = placements.filter((p) => {
+      const region = regionOf(p.r, p.c);
+      return region !== -1 && region !== corner;
+    });
+    if (foreignPlacements.length > 0) {
+      const touchesBoundary = foreignPlacements.some((p) => {
+        const zone = regionOf(p.r, p.c) as number;
+        if (isZoneBoundaryCell(zone, p.r, p.c)) return true;
+        return (
+          [
+            [p.r - 1, p.c],
+            [p.r + 1, p.c],
+            [p.r, p.c - 1],
+            [p.r, p.c + 1],
+          ] as [number, number][]
+        ).some(
+          ([nr, nc]) =>
+            nr >= 0 &&
+            nr < SIZE &&
+            nc >= 0 &&
+            nc < SIZE &&
+            isZoneBoundaryCell(zone, nr, nc) &&
+            board[nr][nc] !== null,
+        );
+      });
+      if (!touchesBoundary) return;
+    }
     const score = calcScore(board, placed, bonuses);
     if (!best || score > best.score) best = { word, score, placements };
   };
 
   // Yeni konacak tüm hücreler bölge kurallarına uymalı.
   const allowed = (r: number, c: number) =>
-    cellAllowed(corner, openCorners, r, c);
+    cellAllowed(corner, breachedCorners, r, c);
 
   // ── İlk hamle: kendi köşesinden başla ───────────────────────────────────────
   if (isFirstMove) {

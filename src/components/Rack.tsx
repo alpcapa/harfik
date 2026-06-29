@@ -28,8 +28,10 @@ export function Rack({
 }: RackProps) {
   return (
     <div
-      className="bg-panel rounded-lg p-2 border"
-      style={{ borderColor: swapMode ? '#D97706' : color.base }}
+      className="bg-[#DDE4EE] rounded-[16px] p-3"
+      style={{
+        boxShadow: '5px 5px 14px rgba(163,177,198,0.65), -3px -3px 10px rgba(255,255,255,0.9)',
+      }}
     >
       <div className="flex justify-between text-[9px] uppercase tracking-[1.5px] font-mono mb-1.5">
         <span className="font-bold" style={{ color: swapMode ? '#D97706' : color.base }}>

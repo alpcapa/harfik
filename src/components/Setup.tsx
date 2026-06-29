@@ -4,17 +4,18 @@ import { PLAYER_COLORS } from '../game/constants';
 import type { PlayerSetup } from '../game/gameReducer';
 import { useAuth } from '../hooks/useAuth';
 import { Avatar } from './Avatar';
+import { AuthModal } from './AuthModal';
 
 interface SetupProps {
   onStart: (players: PlayerSetup[]) => void;
 }
 
 export function Setup({ onStart }: SetupProps) {
-  const { user, profile } = useAuth();
+  const { user, profile, loading } = useAuth();
   // Oturum açıldıysa 1. oyuncu her zaman hesap sahibidir.
   const accountName =
-    profile?.username ||
     profile?.display_name ||
+    profile?.first_name ||
     (user?.email ? user.email.split('@')[0] : null);
 
   const [count, setCount] = useState<2 | 4>(2);
@@ -22,12 +23,15 @@ export function Setup({ onStart }: SetupProps) {
   // 2. oyuncu varsayılan olarak YZ — klasik "YZ'ye karşı" deneyimi.
   const [ai, setAi] = useState<boolean[]>([false, true, false, false]);
 
+  const [showWarningPopup, setShowWarningPopup] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
   const setName = (i: number, v: string) =>
     setNames((cur) => cur.map((n, idx) => (idx === i ? v : n)));
   const setAiAt = (i: number, v: boolean) =>
     setAi((cur) => cur.map((a, idx) => (idx === i ? v : a)));
 
-  const handleStart = () => {
+  const doStart = () => {
     const list: PlayerSetup[] = Array.from({ length: count }, (_, i) => {
       // 1. oyuncu giriş yapan kişidir (insan, hesap adıyla).
       if (i === 0 && accountName) {
@@ -47,7 +51,43 @@ export function Setup({ onStart }: SetupProps) {
     onStart(list);
   };
 
+  const handleStart = () => {
+    if (!loading && !user) {
+      setShowWarningPopup(true);
+    } else {
+      doStart();
+    }
+  };
+
   return (
+    <>
+    {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
+
+    {showWarningPopup && (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 px-4">
+        <div className="w-full max-w-sm bg-panel rounded-2xl shadow-2xl p-6 flex flex-col gap-4">
+          <p className="text-sm text-text font-sans leading-relaxed">
+            Giriş yapmadan sadece yapay zeka ile oynayabilirsiniz. Ayrıca, elde ettiğiniz
+            puanlar ve istatistikler tutulmaz, lider tablosunda yer almaz.
+          </p>
+          <div className="flex gap-2 mt-1">
+            <button
+              onClick={() => { setShowWarningPopup(false); setShowAuthModal(true); }}
+              className="flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+            >
+              Giriş Yap
+            </button>
+            <button
+              onClick={() => { setShowWarningPopup(false); doStart(); }}
+              className="flex-1 py-2.5 rounded-md border border-border text-muted text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+            >
+              Devam
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     <div className="w-full max-w-[460px] px-4 py-6 flex flex-col gap-5">
       <div className="text-center flex flex-col items-center gap-1">
         <div style={{ fontFamily: "'Caveat', cursive", fontSize: 52, fontWeight: 700, color: '#2563EB', letterSpacing: 4, lineHeight: 1 }}>
@@ -104,7 +144,7 @@ export function Setup({ onStart }: SetupProps) {
             >
               {isAccount ? (
                 <Avatar
-                  url={profile?.avatar_url}
+                  url={profile?.photo_url}
                   name={accountName}
                   size={20}
                   className="shrink-0"
@@ -179,5 +219,6 @@ export function Setup({ onStart }: SetupProps) {
         Oyunu Başlat
       </button>
     </div>
+    </>
   );
 }

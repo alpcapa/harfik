@@ -18,20 +18,40 @@ interface BoardProps {
   potentialScore: number | null;
 }
 
-// Beyaz zemine uyumlu bonus kareleri (kısaltma rengi + arka plan).
+// Nömorfik bonus kareleri: sadece yazı rengi (arkaplan style ile verilir).
 const BONUS_CLASSES: Record<string, string> = {
-  dw: 'bg-[#E4F6EA] text-[#16A34A] border-[#BEE6CC]',
-  tw: 'bg-[#FCEBDC] text-[#D97706] border-[#F2D2B0]',
-  dl: 'bg-[#E1ECFD] text-[#2563EB] border-[#C4D8FA]',
-  tl: 'bg-[#F0E6FB] text-[#7C3AED] border-[#DCC8F4]',
+  dw: 'text-[#0D6B28]',
+  tw: 'text-[#8B4200]',
+  dl: 'text-[#0A3A90]',
+  tl: 'text-[#4A1A90]',
+};
+
+// Nömorfik bonus kareleri inline stilleri.
+const BONUS_STYLES: Record<string, React.CSSProperties> = {
+  dw: {
+    background: 'linear-gradient(135deg, #B8ECC8, #C8F0D4)',
+    boxShadow: 'inset 2px 2px 5px rgba(100,180,120,0.3), inset -1px -1px 3px rgba(255,255,255,0.8), 0 2px 4px rgba(100,180,120,0.2)',
+  },
+  tw: {
+    background: 'linear-gradient(135deg, #FAC890, #FBD8A8)',
+    boxShadow: 'inset 2px 2px 5px rgba(200,120,40,0.25), inset -1px -1px 3px rgba(255,255,255,0.8), 0 2px 4px rgba(200,120,40,0.15)',
+  },
+  dl: {
+    background: 'linear-gradient(135deg, #9EC8FA, #B0D4FC)',
+    boxShadow: 'inset 2px 2px 5px rgba(40,100,200,0.25), inset -1px -1px 3px rgba(255,255,255,0.8), 0 2px 4px rgba(40,100,200,0.15)',
+  },
+  tl: {
+    background: 'linear-gradient(135deg, #CEB4FA, #DCC8FC)',
+    boxShadow: 'inset 2px 2px 5px rgba(120,60,220,0.25), inset -1px -1px 3px rgba(255,255,255,0.8), 0 2px 4px rgba(120,60,220,0.15)',
+  },
 };
 
 // Tahtanın hemen altında gösterilen bonus açıklaması.
 const LEGEND = [
-  { label: '2×K', bg: '#E4F6EA', border: '1px solid #16A34A' },
-  { label: '3×K', bg: '#FCEBDC', border: '1px solid #D97706' },
-  { label: '2×H', bg: '#E1ECFD', border: '1px solid #2563EB' },
-  { label: '3×H', bg: '#F0E6FB', border: '1px solid #7C3AED' },
+  { label: '2×K', bg: 'linear-gradient(135deg, #B8ECC8, #C8F0D4)', border: 'none' },
+  { label: '3×K', bg: 'linear-gradient(135deg, #FAC890, #FBD8A8)', border: 'none' },
+  { label: '2×H', bg: 'linear-gradient(135deg, #9EC8FA, #B0D4FC)', border: 'none' },
+  { label: '3×H', bg: 'linear-gradient(135deg, #CEB4FA, #DCC8FC)', border: 'none' },
 ];
 
 export function Board({ state, onCellClick, potentialScore }: BoardProps) {
@@ -77,9 +97,9 @@ export function Board({ state, onCellClick, potentialScore }: BoardProps) {
       let content: React.ReactNode = null;
       let style: React.CSSProperties | undefined;
       const classes = [
-        'min-w-0 min-h-0 rounded-[2px] flex items-center justify-center',
+        'min-w-0 min-h-0 rounded-[5px] flex items-center justify-center',
         'font-mono font-bold text-[clamp(5px,1.4vw,8px)] select-none',
-        'transition-[background,opacity] duration-300 border',
+        'transition-[background,box-shadow,opacity] duration-300',
       ];
 
       const isLastWord = !!lastWords[k];
@@ -87,26 +107,29 @@ export function Board({ state, onCellClick, potentialScore }: BoardProps) {
       if (boardTile) {
         classes.push(
           isLastWord
-            ? 'bg-transparent border-transparent cursor-pointer rounded-[3px] ring-2 ring-gold/60'
-            : 'bg-transparent border-transparent cursor-default',
+            ? 'bg-transparent cursor-pointer rounded-[5px] ring-2 ring-gold/60'
+            : 'bg-transparent cursor-default',
         );
         content = <Tile tile={boardTile} variant="board" color={colorOf(boardTile.owner)} />;
       } else if (placedTile) {
-        classes.push('bg-transparent border-transparent');
+        classes.push('bg-transparent');
         content = <Tile tile={placedTile} variant="placed" color={currentColor} />;
       } else if (bonus) {
         classes.push(BONUS_CLASSES[bonus], 'cursor-pointer');
         content = BONUS_LABELS[bonus];
-        // Bonus, bir oyuncu köşesindeyse o köşenin rengiyle ince çerçeve.
-        if (zone) classes.push('ring-1 ring-inset');
-        if (zone) style = { boxShadow: `inset 0 0 0 1px ${zone.base}33` };
+        style = { ...BONUS_STYLES[bonus] };
+        if (zone) style = { ...style, outline: `1.5px solid ${zone.base}44` };
       } else if (zone) {
-        // Bir oyuncunun köşesindeki boş kare: o oyuncunun açık tonu.
+        // Bir oyuncunun köşesindeki boş kare: nömorfik içe gömülü + oyuncu tonu.
         classes.push('cursor-pointer');
-        style = { background: zone.zone, border: `1px solid ${zone.base}55` };
+        style = {
+          background: zone.tint,
+          boxShadow: `inset 2px 2px 5px ${zone.base}22, inset -1px -1px 3px rgba(255,255,255,0.6)`,
+        };
       } else {
-        // Merkez (tarafsız) boş kare.
-        classes.push('bg-white border-[#E3E7EC] cursor-pointer');
+        // Merkez (tarafsız) boş kare: nömorfik içe gömülü.
+        classes.push('bg-[#DDE4EE] cursor-pointer');
+        style = { boxShadow: 'inset 3px 3px 6px rgba(163,177,198,0.6), inset -2px -2px 5px rgba(255,255,255,0.8)' };
       }
 
       cells.push(
@@ -123,12 +146,13 @@ export function Board({ state, onCellClick, potentialScore }: BoardProps) {
   }
 
   return (
-    <div className="w-full max-w-[680px] mx-auto px-3 pt-2 pb-1 flex flex-col items-center">
+    <div className="w-full max-w-[680px] mx-auto px-3 pt-2 pb-3 flex flex-col items-center">
       <div
-        className="relative grid gap-[1px] bg-panel border border-border rounded-lg p-1 shadow-[0_2px_16px_rgba(27,36,48,0.08)] w-full aspect-square"
+        className="relative grid gap-[3px] bg-[#DDE4EE] rounded-[18px] p-[10px] w-full aspect-square"
         style={{
           gridTemplateColumns: `repeat(${SIZE}, 1fr)`,
           gridTemplateRows: `repeat(${SIZE}, 1fr)`,
+          boxShadow: '8px 8px 20px rgba(163,177,198,0.7), -4px -4px 14px rgba(255,255,255,0.9), 0 20px 60px rgba(163,177,198,0.5)',
         }}
       >
         {cells}
@@ -154,7 +178,7 @@ export function Board({ state, onCellClick, potentialScore }: BoardProps) {
                   right: left ? 'auto' : 0,
                   color: col.base,
                   opacity: 0.13,
-                  fontSize: 'clamp(34px, 15vw, 88px)',
+                  fontSize: 'clamp(80px, 32vw, 220px)',
                 }}
               >
                 {num}

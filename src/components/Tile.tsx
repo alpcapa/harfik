@@ -20,20 +20,26 @@ export function Tile({ tile, variant, color, selected = false, onClick }: TilePr
   // Joker (?) rafta yıldız olarak görünür; oynanınca seçilen harfe döner.
   const display = raw === '?' ? '★' : raw;
 
-  // Renkli varyantlarda (tahta/yerleştirme) sahibinin paleti kullanılır.
+  // Renkli varyantlarda (tahta/yerleştirme) sahibinin paleti; rafta altın nömorfik.
   const style: React.CSSProperties = color
     ? {
         background: color.tint,
         border: `1px solid ${color.base}`,
         color: color.text,
       }
+    : isRack
+    ? {
+        background: 'linear-gradient(150deg, #FFF0A0 0%, #FFD800 60%, #F0C000 100%)',
+        boxShadow: '4px 4px 10px rgba(163,130,0,0.55), -2px -2px 6px rgba(255,250,200,0.8), 0 6px 14px rgba(163,130,0,0.35)',
+        color: '#5A3800',
+      }
     : {};
 
   const sizeClass = isRack
-    ? 'w-full h-full bg-tile-bg border border-tile-border rounded text-tile-letter active:scale-105'
+    ? 'w-full h-full rounded-[10px] active:scale-105'
     : variant === 'placed'
-      ? 'w-full h-full rounded-[3px] animate-tile-pulse'
-      : 'w-full h-full rounded-[3px]';
+      ? 'w-full h-full rounded-[5px] animate-tile-pulse'
+      : 'w-full h-full rounded-[5px]';
 
   return (
     <div
@@ -44,7 +50,7 @@ export function Tile({ tile, variant, color, selected = false, onClick }: TilePr
         'cursor-pointer flex-shrink-0',
         sizeClass,
         selected
-          ? '!-translate-y-[7px] !border-accent shadow-[0_4px_12px_rgba(37,99,235,0.35)]'
+          ? '!-translate-y-[7px] shadow-[0_8px_20px_rgba(163,130,0,0.6)]'
           : '',
       ].join(' ')}
     >
@@ -53,18 +59,18 @@ export function Tile({ tile, variant, color, selected = false, onClick }: TilePr
         style={{ WebkitTextStrokeWidth: isRack ? '0.7px' : '0.35px' }}
         className={[
           'font-mono font-bold leading-none [-webkit-text-stroke-color:currentColor]',
-          isRack ? 'text-[24px] text-tile-letter' : 'text-[clamp(9px,2.4vw,15px)]',
+          isRack ? 'text-[24px]' : 'text-[clamp(14px,3.8vw,24px)] text-tile-letter',
         ].join(' ')}
       >
         {display}
       </span>
-      {/* Puan — harfin sağ üstünde üst simge gibi, mavi. */}
+      {/* Puan — harfin sağ üstünde üst simge gibi. */}
       <span
         className={[
-          'absolute font-mono font-bold leading-none text-accent',
+          'absolute font-mono font-bold leading-none',
           isRack
-            ? 'top-[3px] right-[4px] text-[10px]'
-            : 'top-[1px] right-[1.5px] text-[clamp(5px,1.2vw,8px)]',
+            ? 'top-[3px] right-[4px] text-[10px] text-[#8B5E00]'
+            : 'top-[1px] right-[1.5px] text-[clamp(6px,1.6vw,10px)] text-accent',
         ].join(' ')}
       >
         {tile.pts}

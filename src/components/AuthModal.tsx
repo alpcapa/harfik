@@ -1,24 +1,32 @@
 // Harfik — giriş / kayıt ekranı
 import { useState } from 'react';
 import { Modal } from './Modal';
-import { signIn, signUp } from '../lib/api';
+import { signIn, signUp, sendPasswordReset } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
 
 interface AuthModalProps {
   onClose: () => void;
 }
 
-type Mode = 'login' | 'signup';
+type Mode = 'login' | 'signup' | 'forgot';
 
 export function AuthModal({ onClose }: AuthModalProps) {
   const { refreshProfile } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [nickname, setNickname] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+
+  const switchMode = (next: Mode) => {
+    setMode(next);
+    setError(null);
+    setInfo(null);
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,16 +39,27 @@ export function AuthModal({ onClose }: AuthModalProps) {
         if (error) throw error;
         await refreshProfile();
         onClose();
+      } else if (mode === 'forgot') {
+        const { error } = await sendPasswordReset(email);
+        if (error) throw error;
+        setInfo('Şifre sıfırlama bağlantısı e-postana gönderildi.');
       } else {
-        const { data, error } = await signUp(email, password, username || undefined);
+        if (!firstName.trim()) throw new Error('Ad zorunludur.');
+        if (!lastName.trim()) throw new Error('Soyad zorunludur.');
+        const { data, error } = await signUp(
+          email,
+          password,
+          firstName.trim(),
+          lastName.trim(),
+          nickname.trim() || undefined,
+        );
         if (error) throw error;
         if (data.session) {
           await refreshProfile();
           onClose();
         } else {
-          // E-posta doğrulaması açıksa oturum hemen oluşmaz.
           setInfo('Hesap oluşturuldu. E-postanı doğrulayıp giriş yap.');
-          setMode('login');
+          switchMode('login');
         }
       }
     } catch (err) {
@@ -53,18 +72,41 @@ export function AuthModal({ onClose }: AuthModalProps) {
   const inputCls =
     'w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors';
 
+  const title = mode === 'login' ? 'Giriş' : mode === 'signup' ? 'Kayıt' : 'Şifremi Unuttum';
+
   return (
-    <Modal title={mode === 'login' ? 'Giriş' : 'Kayıt'} onClose={onClose}>
+    <Modal title={title} onClose={onClose}>
       <form onSubmit={submit} className="flex flex-col gap-3">
         {mode === 'signup' && (
-          <input
-            className={inputCls}
-            placeholder="Kullanıcı adı"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoComplete="username"
-          />
+          <>
+            <div className="flex gap-2">
+              <input
+                className={inputCls}
+                placeholder="Ad"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                autoComplete="given-name"
+                required
+              />
+              <input
+                className={inputCls}
+                placeholder="Soyad"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                autoComplete="family-name"
+                required
+              />
+            </div>
+            <input
+              className={inputCls}
+              placeholder="Takma isim (isteğe bağlı)"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              autoComplete="nickname"
+            />
+          </>
         )}
+
         <input
           className={inputCls}
           type="email"
@@ -74,16 +116,25 @@ export function AuthModal({ onClose }: AuthModalProps) {
           required
           autoComplete="email"
         />
-        <input
-          className={inputCls}
-          type="password"
-          placeholder="Şifre"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          minLength={6}
-          autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-        />
+
+        {mode !== 'forgot' && (
+          <input
+            className={inputCls}
+            type="password"
+            placeholder="Şifre"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+          />
+        )}
+
+        {mode === 'forgot' && (
+          <p className="text-xs text-muted font-mono">
+            E-posta adresini gir, sıfırlama bağlantısı gönderelim.
+          </p>
+        )}
 
         {error && <p className="text-red text-xs font-mono">{error}</p>}
         {info && <p className="text-gold text-xs font-mono">{info}</p>}
@@ -93,22 +144,50 @@ export function AuthModal({ onClose }: AuthModalProps) {
           disabled={busy}
           className="bg-accent text-white rounded-md py-2.5 text-xs font-bold uppercase tracking-[1.5px] active:scale-[0.97] transition-transform disabled:opacity-50"
         >
-          {busy ? '...' : mode === 'login' ? 'Giriş Yap' : 'Kayıt Ol'}
+          {busy
+            ? '...'
+            : mode === 'login'
+              ? 'Giriş Yap'
+              : mode === 'signup'
+                ? 'Kayıt Ol'
+                : 'Bağlantı Gönder'}
         </button>
       </form>
 
-      <button
-        onClick={() => {
-          setMode(mode === 'login' ? 'signup' : 'login');
-          setError(null);
-          setInfo(null);
-        }}
-        className="mt-3 w-full text-center text-xs text-muted font-mono hover:text-accent transition-colors"
-      >
-        {mode === 'login'
-          ? 'Hesabın yok mu? Kayıt ol'
-          : 'Zaten hesabın var mı? Giriş yap'}
-      </button>
+      <div className="mt-3 flex flex-col gap-1.5">
+        {mode === 'login' && (
+          <>
+            <button
+              onClick={() => switchMode('forgot')}
+              className="w-full text-center text-xs text-muted font-mono hover:text-accent transition-colors"
+            >
+              Şifremi unuttum
+            </button>
+            <button
+              onClick={() => switchMode('signup')}
+              className="w-full text-center text-xs text-muted font-mono hover:text-accent transition-colors"
+            >
+              Hesabın yok mu? Kayıt ol
+            </button>
+          </>
+        )}
+        {mode === 'signup' && (
+          <button
+            onClick={() => switchMode('login')}
+            className="w-full text-center text-xs text-muted font-mono hover:text-accent transition-colors"
+          >
+            Zaten hesabın var mı? Giriş yap
+          </button>
+        )}
+        {mode === 'forgot' && (
+          <button
+            onClick={() => switchMode('login')}
+            className="w-full text-center text-xs text-muted font-mono hover:text-accent transition-colors"
+          >
+            Giriş ekranına dön
+          </button>
+        )}
+      </div>
     </Modal>
   );
 }
