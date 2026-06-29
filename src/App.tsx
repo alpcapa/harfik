@@ -12,7 +12,7 @@ import { createInitialState, gameReducer } from './game/gameReducer';
 import { calcScore } from './utils/validator';
 import { key } from './utils/board';
 import { trUpper } from './utils/turkish';
-import { PLAYER_COLORS } from './game/constants';
+import { PLAYER_COLORS, regionOf } from './game/constants';
 import { fetchMeaning, saveGame } from './lib/api';
 import type { WordMeaning } from './lib/database.types';
 import { useAuth } from './hooks/useAuth';
@@ -42,6 +42,12 @@ export default function App() {
 
   // Oyundan çıkış onay popup'ı.
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+
+  // Rakip köşeye giriş onay popup'ı.
+  const [invasionConfirm, setInvasionConfirm] = useState<{
+    ownerName: string;
+    ownerPts: number;
+  } | null>(null);
 
   const openMeaning = (words: string[]) => {
     const unique = [...new Set(words)];
@@ -164,6 +170,24 @@ export default function App() {
 
   const canAct = !state.isGameOver && !me.isAI;
 
+  const handlePlay = () => {
+    for (const k of Object.keys(state.placed)) {
+      const [r, c] = k.split(',').map(Number);
+      const region = regionOf(r, c);
+      if (region !== -1 && region !== me.corner) {
+        const owner = state.players.find((p) => p.corner === region);
+        if (owner) {
+          setInvasionConfirm({
+            ownerName: owner.name,
+            ownerPts: Math.round(potentialScore / 2),
+          });
+          return;
+        }
+      }
+    }
+    dispatch({ type: 'PLAY' });
+  };
+
   // Pas, sırayı tümüyle harcadığı için onay ister.
   const handlePass = () => {
     const placed = Object.keys(state.placed).length > 0;
@@ -218,7 +242,7 @@ export default function App() {
           {!state.swapMode && (
             <button
               disabled={!canAct}
-              onClick={() => dispatch({ type: 'PLAY' })}
+              onClick={handlePlay}
               className="shrink-0 px-5 rounded-lg font-sans text-[12px] font-bold uppercase tracking-[1.2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
             >
               Oyna
@@ -282,6 +306,33 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {invasionConfirm && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-sm bg-panel rounded-2xl shadow-2xl p-6 flex flex-col gap-4">
+            <p className="text-sm text-text font-sans leading-relaxed">
+              Dikkat, rakip köşesinde oynuyorsun. Bu hamleden kazanacağın{' '}
+              <strong>{potentialScore} puanın yarısını ({invasionConfirm.ownerPts} puan)</strong>{' '}
+              <strong>{invasionConfirm.ownerName}</strong> kapacak.
+              Devam etmek istiyor musun?
+            </p>
+            <div className="flex gap-2 mt-1">
+              <button
+                onClick={() => { setInvasionConfirm(null); dispatch({ type: 'PLAY' }); }}
+                className="flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Oyna
+              </button>
+              <button
+                onClick={() => setInvasionConfirm(null)}
+                className="flex-1 py-2.5 rounded-md border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Vazgeç
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showExitConfirm && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 px-4">
