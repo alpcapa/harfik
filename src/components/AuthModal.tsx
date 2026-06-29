@@ -58,6 +58,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
           firstName.trim(),
           lastName.trim(),
           nickname.trim() || undefined,
+          termsAccepted,
         );
         if (error) throw error;
         if (data.session) {

@@ -10,6 +10,7 @@ export interface Profile {
   last_name: string;
   display_name: string | null;
   avatar_url: string | null;
+  agreed_to_terms: boolean;
   created_at: string;
   updated_at: string;
 }

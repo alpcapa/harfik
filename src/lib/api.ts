@@ -155,6 +155,7 @@ export async function signUp(
   firstName: string,
   lastName: string,
   nickname?: string,
+  termsAccepted = false,
 ) {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
   // sharedxp_pending_profile formatı trigger tarafından okunur (camelCase).
@@ -166,15 +167,18 @@ export async function signUp(
         sharedxp_pending_profile: {
           firstName,
           lastName,
+          agreedToTerms: termsAccepted,
         },
       },
     },
   });
-  // Oturum hemen açıldıysa (e-posta doğrulaması kapalı) takma ismi kaydet.
-  if (!result.error && result.data.session && nickname) {
+  // Oturum hemen açıldıysa (e-posta doğrulaması kapalı) profili güncelle.
+  if (!result.error && result.data.session) {
+    const patch: Record<string, unknown> = { agreed_to_terms: termsAccepted };
+    if (nickname) patch.display_name = nickname;
     await supabase
       .from('profiles')
-      .update({ display_name: nickname })
+      .update(patch)
       .eq('id', result.data.session.user.id);
   }
   return result;
