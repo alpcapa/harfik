@@ -7,7 +7,7 @@
   display: none;
 }
 
-@media screen and (orientation: landscape) and (hover: none) {
+@media screen and (orientation: landscape) and (pointer: coarse) {
   #root {
     display: none !important;
   }
