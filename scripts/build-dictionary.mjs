@@ -74,12 +74,6 @@ for await (const line of rl) {
     continue;
   }
 
-  // Özel isimler (ozel_mi=1) ve büyük harfli maddeler (element simgeleri vb.)
-  // kelime oyununda geçerli sayılmaz; kısaltmalar dahildir.
-  if (entry.ozel_mi === '1') { dropped++; continue; }
-  const maddeOrijinal = (entry.madde || '').replace(/\s+/g, '');
-  if (maddeOrijinal !== trLower(maddeOrijinal)) { dropped++; continue; }
-
   // Çok sözcüklü maddeleri tek tokena birleştir: tüm boşlukları kaldır
   // ("dulavrat otu" -> "dulavratotu").
   const word = trLower(entry.madde || '').replace(/\s+/g, '');
