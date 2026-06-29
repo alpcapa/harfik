@@ -147,7 +147,7 @@ export function Board({ state, onCellClick, potentialScore }: BoardProps) {
         classes.push('bg-transparent');
         content = <Tile tile={placedTile} variant="placed" color={currentColor} />;
       } else if (bonus) {
-        classes.push(BONUS_CLASSES[bonus], 'cursor-pointer');
+        classes.push(BONUS_CLASSES[bonus], 'cursor-pointer', 'text-[clamp(7px,1.9vw,12px)]');
         content = BONUS_LABELS[bonus];
         style = { ...BONUS_STYLES[bonus] };
         if (zone) style = { ...style, outline: `1.5px solid ${zone.base}44` };
