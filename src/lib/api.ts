@@ -136,13 +136,35 @@ export async function fetchMeaning(word: string): Promise<WordMeaning | null> {
 
 // ── Auth yardımcıları ───────────────────────────────────────────────────────
 
-export async function signUp(email: string, password: string, username?: string) {
+export async function signUp(
+  email: string,
+  password: string,
+  firstName: string,
+  lastName: string,
+  nickname?: string,
+) {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
-  return supabase.auth.signUp({
+  // sharedxp_pending_profile formatı trigger tarafından okunur (camelCase).
+  const result = await supabase.auth.signUp({
     email,
     password,
-    options: { data: username ? { username, display_name: username } : undefined },
+    options: {
+      data: {
+        sharedxp_pending_profile: {
+          firstName,
+          lastName,
+        },
+      },
+    },
   });
+  // Oturum hemen açıldıysa (e-posta doğrulaması kapalı) takma ismi kaydet.
+  if (!result.error && result.data.session && nickname) {
+    await supabase
+      .from('profiles')
+      .update({ display_name: nickname })
+      .eq('id', result.data.session.user.id);
+  }
+  return result;
 }
 
 export async function signIn(email: string, password: string) {
@@ -159,7 +181,7 @@ export async function signOut() {
 
 /** Oturum açan oyuncunun profilini günceller ve güncel kaydı döner. */
 export async function updateProfile(
-  patch: Partial<Pick<Profile, 'username' | 'display_name' | 'avatar_url'>>,
+  patch: { first_name?: string; last_name?: string; display_name?: string | null; photo_url?: string },
 ): Promise<Profile | null> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
   const {
@@ -211,7 +233,7 @@ export async function uploadAvatar(file: File): Promise<string> {
   const { data } = supabase.storage.from('avatars').getPublicUrl(path);
   // Önbelleği atlamak için sürüm parametresi ekle (aynı yol üzerine yazılır).
   const url = `${data.publicUrl}?v=${Date.now()}`;
-  await updateProfile({ avatar_url: url });
+  await updateProfile({ photo_url: url });
   return url;
 }
 

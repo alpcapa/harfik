@@ -13,8 +13,8 @@ export function Setup({ onStart }: SetupProps) {
   const { user, profile } = useAuth();
   // Oturum açıldıysa 1. oyuncu her zaman hesap sahibidir.
   const accountName =
-    profile?.username ||
     profile?.display_name ||
+    profile?.first_name ||
     (user?.email ? user.email.split('@')[0] : null);
 
   const [count, setCount] = useState<2 | 4>(2);
@@ -104,7 +104,7 @@ export function Setup({ onStart }: SetupProps) {
             >
               {isAccount ? (
                 <Avatar
-                  url={profile?.avatar_url}
+                  url={profile?.photo_url}
                   name={accountName}
                   size={20}
                   className="shrink-0"

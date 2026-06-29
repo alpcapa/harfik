@@ -36,7 +36,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
           </li>
           {rows.map((r, i) => {
             const me = user && r.user_id === user.id;
-            const name = r.username || r.display_name || 'Anonim';
+            const name = r.display_name || r.first_name || 'Anonim';
             return (
               <li
                 key={r.user_id}
@@ -54,7 +54,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                   {i + 1}
                 </span>
                 <Avatar
-                  url={r.avatar_url}
+                  url={r.photo_url}
                   name={name}
                   size={22}
                   className="mr-2 shrink-0"

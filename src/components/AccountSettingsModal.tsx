@@ -18,8 +18,9 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
   const { user, profile, refreshProfile } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [username, setUsername] = useState(profile?.username ?? '');
-  const [displayName, setDisplayName] = useState(profile?.display_name ?? '');
+  const [firstName, setFirstName] = useState(profile?.first_name ?? '');
+  const [lastName, setLastName] = useState(profile?.last_name ?? '');
+  const [nickname, setNickname] = useState(profile?.display_name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [password, setPassword] = useState('');
 
@@ -28,7 +29,7 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
-  const name = username || displayName || user?.email || 'Oyuncu';
+  const name = nickname || firstName || user?.email || 'Oyuncu';
 
   const onPickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -63,13 +64,18 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
     setBusy(true);
     const notes: string[] = [];
     try {
-      // Profil (kullanıcı adı / görünen ad) değiştiyse güncelle.
-      const profilePatch: { username?: string | null; display_name?: string | null } =
-        {};
-      if (username.trim() !== (profile?.username ?? ''))
-        profilePatch.username = username.trim() || null;
-      if (displayName.trim() !== (profile?.display_name ?? ''))
-        profilePatch.display_name = displayName.trim() || null;
+      // Profil değiştiyse güncelle.
+      const profilePatch: {
+        first_name?: string;
+        last_name?: string;
+        display_name?: string | null;
+      } = {};
+      if (firstName.trim() !== (profile?.first_name ?? ''))
+        profilePatch.first_name = firstName.trim();
+      if (lastName.trim() !== (profile?.last_name ?? ''))
+        profilePatch.last_name = lastName.trim();
+      if (nickname.trim() !== (profile?.display_name ?? ''))
+        profilePatch.display_name = nickname.trim() || null;
       if (Object.keys(profilePatch).length > 0) {
         await updateProfile(profilePatch);
         await refreshProfile();
@@ -109,7 +115,7 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
     <Modal title="Hesap Ayarları" onClose={onClose}>
       {/* Profil fotoğrafı */}
       <div className="flex items-center gap-3 mb-4">
-        <Avatar url={profile?.avatar_url} name={name} size={56} />
+        <Avatar url={profile?.photo_url} name={name} size={56} />
         <div>
           <button
             type="button"
@@ -131,24 +137,37 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
       </div>
 
       <form onSubmit={save} className="flex flex-col gap-3">
-        <div>
-          <label className={labelCls}>Kullanıcı adı</label>
-          <input
-            className={inputCls}
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="kullanici_adi"
-            autoComplete="username"
-          />
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <label className={labelCls}>Ad</label>
+            <input
+              className={inputCls}
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="Adın"
+              autoComplete="given-name"
+            />
+          </div>
+          <div className="flex-1">
+            <label className={labelCls}>Soyad</label>
+            <input
+              className={inputCls}
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Soyadın"
+              autoComplete="family-name"
+            />
+          </div>
         </div>
 
         <div>
-          <label className={labelCls}>Görünen ad</label>
+          <label className={labelCls}>Takma isim</label>
           <input
             className={inputCls}
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Görünen adın"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            placeholder="Girilmezse oyunda sadece adın görünür"
+            autoComplete="nickname"
           />
         </div>
 
