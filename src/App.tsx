@@ -135,7 +135,7 @@ export default function App() {
     <div className="h-[100dvh] w-full flex flex-col items-center overflow-hidden">
       <GameHeader state={state} />
 
-      <div className="flex-1 min-h-0 w-full flex items-center justify-center">
+      <div className="flex-1 min-h-0 w-full flex items-start justify-center">
         <Board
           state={state}
           onCellClick={handleCellClick}

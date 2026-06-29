@@ -41,15 +41,16 @@ export function Rack({
             : `${tiles.length} harf`}
         </span>
       </div>
-      <div className="flex justify-center gap-[5px] flex-wrap min-h-[50px]">
+      <div className="flex gap-[3px] min-h-[46px]">
         {tiles.map((tile, i) => (
-          <Tile
-            key={`${tile.letter}-${i}`}
-            tile={tile}
-            variant="rack"
-            selected={swapMode ? swapSelection.includes(i) : selectedTile === i}
-            onClick={() => onSelect(i)}
-          />
+          <div key={`${tile.letter}-${i}`} className="flex-1 min-w-0 max-w-[38px] h-[46px]">
+            <Tile
+              tile={tile}
+              variant="rack"
+              selected={swapMode ? swapSelection.includes(i) : selectedTile === i}
+              onClick={() => onSelect(i)}
+            />
+          </div>
         ))}
       </div>
     </div>

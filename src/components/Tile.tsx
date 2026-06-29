@@ -30,7 +30,7 @@ export function Tile({ tile, variant, color, selected = false, onClick }: TilePr
     : {};
 
   const sizeClass = isRack
-    ? 'w-[38px] h-[46px] bg-tile-bg border border-tile-border rounded text-tile-letter active:scale-105'
+    ? 'w-full h-full bg-tile-bg border border-tile-border rounded text-tile-letter active:scale-105'
     : variant === 'placed'
       ? 'w-full h-full rounded-[3px] animate-tile-pulse'
       : 'w-full h-full rounded-[3px]';
