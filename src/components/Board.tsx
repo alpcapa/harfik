@@ -125,7 +125,7 @@ export function Board({ state, onCellClick, potentialScore }: BoardProps) {
   return (
     <div className="w-full h-full max-w-[680px] mx-auto px-3 pt-2.5 pb-1 flex flex-col items-center justify-center [container-type:size]">
       <div
-        className="relative grid gap-[2px] bg-panel border border-border rounded-lg p-1 shadow-[0_2px_16px_rgba(27,36,48,0.08)]"
+        className="relative grid gap-[1px] bg-panel border border-border rounded-lg p-1 shadow-[0_2px_16px_rgba(27,36,48,0.08)]"
         style={{
           width: 'min(100cqw, calc(100cqh - 24px))',
           height: 'min(100cqw, calc(100cqh - 24px))',
