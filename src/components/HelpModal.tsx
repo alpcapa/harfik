@@ -75,7 +75,7 @@ export function HelpModal({ onClose }: HelpModalProps) {
           </P>
           <P>
             <strong>İlk hamle:</strong> İlk kelimende en az bir harf kendi köşe bölgene
-            düşmelidir. Koyduğun kelime bölgenin dışındaki alana taşarsan veya sınıra değerse
+            düşmelidir. Koyduğun kelime bölgenin dışındaki alana taşarsa veya sınıra değerse
             hemen bir oyuncu buraya ekleme yapıp %50 daha fazla puan alabilir. O nedenle, mümkün
             oldukça ilk başlarda bölgenin sınırlarına yaklaşma. Böylece, her oyuncu kendi
             bölgesinde elindeki taşlarla maksimum puanı alıp sonra dışarıya doğru açılmalıdır.
@@ -98,7 +98,7 @@ export function HelpModal({ onClose }: HelpModalProps) {
           <P>
             Sınır ihlal edilmeden diğer oyuncular orada oynayamaz. İhlal gerçekleştiği anda
             sınıra değen kelime üzerine istediğin gibi bağlantı yapabilirsin. Sınıra değen bir
-            kelime olduğu sürece alanın içine doğru da hamle yapılabilir.
+            kelime olduğu sürece bölgenin içine doğru da hamle yapılabilir.
           </P>
           <P>
             <strong>Köşe bonusu:</strong> Rakip köşesine giren bir kelime için %50 ek puan
