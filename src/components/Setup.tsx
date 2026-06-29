@@ -23,17 +23,15 @@ export function Setup({ onStart }: SetupProps) {
   // 2. oyuncu varsayılan olarak YZ — klasik "YZ'ye karşı" deneyimi.
   const [ai, setAi] = useState<boolean[]>([false, true, false, false]);
 
-  // Giriş yapmamış kullanıcı için uyarı durumu
-  const [warningDismissed, setWarningDismissed] = useState(false);
+  const [showWarningPopup, setShowWarningPopup] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const showWarning = !loading && !user && !warningDismissed;
 
   const setName = (i: number, v: string) =>
     setNames((cur) => cur.map((n, idx) => (idx === i ? v : n)));
   const setAiAt = (i: number, v: boolean) =>
     setAi((cur) => cur.map((a, idx) => (idx === i ? v : a)));
 
-  const handleStart = () => {
+  const doStart = () => {
     const list: PlayerSetup[] = Array.from({ length: count }, (_, i) => {
       // 1. oyuncu giriş yapan kişidir (insan, hesap adıyla).
       if (i === 0 && accountName) {
@@ -53,32 +51,44 @@ export function Setup({ onStart }: SetupProps) {
     onStart(list);
   };
 
+  const handleStart = () => {
+    if (!loading && !user) {
+      setShowWarningPopup(true);
+    } else {
+      doStart();
+    }
+  };
+
   return (
     <>
     {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
-    <div className="w-full max-w-[460px] px-4 py-6 flex flex-col gap-5">
-      {showWarning && (
-        <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-4 flex flex-col gap-3">
-          <p className="text-xs text-amber-900 font-mono leading-relaxed">
+
+    {showWarningPopup && (
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 px-4">
+        <div className="w-full max-w-sm bg-panel rounded-2xl shadow-2xl p-6 flex flex-col gap-4">
+          <p className="text-sm text-text font-sans leading-relaxed">
             Giriş yapmadan sadece yapay zeka ile oynayabilirsiniz. Ayrıca, elde ettiğiniz
             puanlar ve istatistikler tutulmaz, lider tablosunda yer almaz.
           </p>
-          <div className="flex gap-2">
+          <div className="flex gap-2 mt-1">
             <button
-              onClick={() => setShowAuthModal(true)}
-              className="flex-1 py-2 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              onClick={() => { setShowWarningPopup(false); setShowAuthModal(true); }}
+              className="flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
             >
               Giriş Yap
             </button>
             <button
-              onClick={() => setWarningDismissed(true)}
-              className="flex-1 py-2 rounded-md border border-amber-300 text-amber-800 text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              onClick={() => { setShowWarningPopup(false); doStart(); }}
+              className="flex-1 py-2.5 rounded-md border border-border text-muted text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
             >
               Devam
             </button>
           </div>
         </div>
-      )}
+      </div>
+    )}
+
+    <div className="w-full max-w-[460px] px-4 py-6 flex flex-col gap-5">
       <div className="text-center flex flex-col items-center gap-1">
         <div style={{ fontFamily: "'Caveat', cursive", fontSize: 52, fontWeight: 700, color: '#2563EB', letterSpacing: 4, lineHeight: 1 }}>
           harfik
