@@ -16,7 +16,7 @@ export function Setup({ onStart }: SetupProps) {
   // Oturum açıldıysa 1. oyuncu her zaman hesap sahibidir.
   const accountName =
     profile?.username ||
-    [profile?.first_name, profile?.last_name].filter(Boolean).join(' ').trim() ||
+    profile?.first_name ||
     (user?.email ? user.email.split('@')[0] : null);
 
   const [count, setCount] = useState<2 | 4>(2);
