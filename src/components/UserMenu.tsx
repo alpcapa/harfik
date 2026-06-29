@@ -44,10 +44,17 @@ export function UserMenu() {
     user?.email ||
     'Hesabım';
 
-  // ── Oturum yok: Giriş / Kayıt düğmesi ──────────────────────────────────────
+  // ── Oturum yok: Giriş / Kayıt + yardım düğmeleri ───────────────────────────
   if (!loading && !user) {
     return (
       <>
+        <button
+          onClick={() => setModal('help')}
+          className="font-mono text-[10px] uppercase tracking-[1px] px-2.5 py-1.5 rounded-md border border-border text-muted font-bold active:scale-[0.97] transition-transform"
+          aria-label="Nasıl oynanır?"
+        >
+          ?
+        </button>
         <button
           onClick={() => setModal('auth')}
           className="font-mono text-[10px] uppercase tracking-[1px] px-3 py-1.5 rounded-md border bg-accent border-accent text-white font-bold active:scale-[0.97] transition-transform"
@@ -55,6 +62,7 @@ export function UserMenu() {
           Giriş
         </button>
         {modal === 'auth' && <AuthModal onClose={() => setModal(null)} />}
+        {modal === 'help' && <HelpModal onClose={() => setModal(null)} />}
       </>
     );
   }
