@@ -74,6 +74,13 @@ for await (const line of rl) {
     continue;
   }
 
+  // Element simgeleri (büyük harfli, ozel_mi=0): kelime oyununda geçersiz.
+  const maddeOrijinal = (entry.madde || '').replace(/\s+/g, '');
+  if (maddeOrijinal !== trLower(maddeOrijinal) && entry.ozel_mi !== '1') {
+    dropped++;
+    continue;
+  }
+
   // Çok sözcüklü maddeleri tek tokena birleştir: tüm boşlukları kaldır
   // ("dulavrat otu" -> "dulavratotu").
   const word = trLower(entry.madde || '').replace(/\s+/g, '');
