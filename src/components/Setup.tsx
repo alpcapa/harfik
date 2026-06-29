@@ -4,13 +4,14 @@ import { PLAYER_COLORS } from '../game/constants';
 import type { PlayerSetup } from '../game/gameReducer';
 import { useAuth } from '../hooks/useAuth';
 import { Avatar } from './Avatar';
+import { AuthModal } from './AuthModal';
 
 interface SetupProps {
   onStart: (players: PlayerSetup[]) => void;
 }
 
 export function Setup({ onStart }: SetupProps) {
-  const { user, profile } = useAuth();
+  const { user, profile, loading } = useAuth();
   // Oturum açıldıysa 1. oyuncu her zaman hesap sahibidir.
   const accountName =
     profile?.display_name ||
@@ -21,6 +22,11 @@ export function Setup({ onStart }: SetupProps) {
   const [names, setNames] = useState<string[]>(['', '', '', '']);
   // 2. oyuncu varsayılan olarak YZ — klasik "YZ'ye karşı" deneyimi.
   const [ai, setAi] = useState<boolean[]>([false, true, false, false]);
+
+  // Giriş yapmamış kullanıcı için uyarı durumu
+  const [warningDismissed, setWarningDismissed] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const showWarning = !loading && !user && !warningDismissed;
 
   const setName = (i: number, v: string) =>
     setNames((cur) => cur.map((n, idx) => (idx === i ? v : n)));
@@ -48,7 +54,31 @@ export function Setup({ onStart }: SetupProps) {
   };
 
   return (
+    <>
+    {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
     <div className="w-full max-w-[460px] px-4 py-6 flex flex-col gap-5">
+      {showWarning && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-4 flex flex-col gap-3">
+          <p className="text-xs text-amber-900 font-mono leading-relaxed">
+            Giriş yapmadan sadece yapay zeka ile oynayabilirsiniz. Ayrıca, elde ettiğiniz
+            puanlar ve istatistikler tutulmaz, lider tablosunda yer almaz.
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="flex-1 py-2 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+            >
+              Giriş Yap
+            </button>
+            <button
+              onClick={() => setWarningDismissed(true)}
+              className="flex-1 py-2 rounded-md border border-amber-300 text-amber-800 text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+            >
+              Devam
+            </button>
+          </div>
+        </div>
+      )}
       <div className="text-center flex flex-col items-center gap-1">
         <div style={{ fontFamily: "'Caveat', cursive", fontSize: 52, fontWeight: 700, color: '#2563EB', letterSpacing: 4, lineHeight: 1 }}>
           harfik
@@ -179,5 +209,6 @@ export function Setup({ onStart }: SetupProps) {
         Oyunu Başlat
       </button>
     </div>
+    </>
   );
 }
