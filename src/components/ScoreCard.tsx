@@ -36,6 +36,8 @@ export function ScoreCard({ onClose, onLeaderboard }: ScoreCardProps) {
         { label: 'Kazanma Oranı', value: winRatio, cls: 'text-accent' },
         { label: 'En Yüksek', value: stats.best_score, cls: 'text-gold' },
         { label: 'Beraberlik', value: stats.ties, cls: 'text-muted' },
+        { label: 'En İyi Hamle', value: stats.best_move_score ?? '—', cls: 'text-accent' },
+        { label: 'En Uzun Kelime', value: stats.longest_word ?? '—', cls: 'text-text' },
       ]
     : [];
 

@@ -177,7 +177,7 @@ export function Board({ state, onCellClick, potentialScore }: BoardProps) {
                   left: left ? 0 : 'auto',
                   right: left ? 'auto' : 0,
                   color: col.base,
-                  opacity: 0.13,
+                  opacity: 0.20,
                   fontSize: 'clamp(80px, 32vw, 220px)',
                 }}
               >

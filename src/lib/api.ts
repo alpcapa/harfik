@@ -5,6 +5,7 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import type {
   LeaderboardRow,
+  MyLeaderboardRank,
   NewGame,
   PlayerStats,
   Profile,
@@ -32,19 +33,31 @@ export async function saveGame(game: NewGame): Promise<string | null> {
   return data?.id ?? null;
 }
 
-/** Liderlik tablosunu döner (en yüksek skorlar). */
-export async function fetchLeaderboard(limit = 20): Promise<LeaderboardRow[]> {
+/** Liderlik tablosunu döner (toplam puana göre ilk 10). */
+export async function fetchLeaderboard(limit = 10): Promise<LeaderboardRow[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('leaderboard')
     .select('*')
-    .order('best_score', { ascending: false })
+    .order('total_score', { ascending: false })
     .limit(limit);
   if (error) {
     console.error('[Harfik] fetchLeaderboard hatası:', error.message);
     return [];
   }
   return (data as LeaderboardRow[]) ?? [];
+}
+
+/** Oturum açan kullanıcının toplam puana göre sırasını döner. */
+export async function fetchMyLeaderboardRank(userId: string): Promise<MyLeaderboardRank | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('my_leaderboard_rank', { p_user_id: userId });
+  if (error) {
+    console.error('[Harfik] fetchMyLeaderboardRank hatası:', error.message);
+    return null;
+  }
+  const row = Array.isArray(data) ? data[0] : null;
+  return row ? { rank: Number(row.rank), total_score: Number(row.total_score) } : null;
 }
 
 /** Oturum açan oyuncunun istatistik özetini döner. */

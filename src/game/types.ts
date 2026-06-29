@@ -38,6 +38,10 @@ export interface Player {
   isAI: boolean;
   rack: Tile[];
   score: number;
+  /** Bu oyundaki en yüksek tek hamle puanı. */
+  bestMoveScore: number;
+  /** Bu oyunda oluşturulan en uzun kelime. */
+  longestWord: string;
 }
 
 /** YZ'nin bulduğu hamle. */
