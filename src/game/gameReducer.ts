@@ -404,14 +404,21 @@ export function gameReducer(state: GameState, action: Action): GameState {
       const basePts = calcScore(state.board, state.placed, state.bonuses);
       const formed = getFormedWords(state.board, state.placed);
 
-      // Rakip köşesine giriş bonusu: %50 fazla puan.
-      const invadedZone = Object.keys(state.placed).some((k) => {
+      // Rakip köşeye giriş: kazanılan puanın yarısı o köşenin sahibine aktarılır.
+      let invadedOwnerIdx = -1;
+      for (const k of Object.keys(state.placed)) {
         const [r, c] = k.split(',').map(Number);
         const region = regionOf(r, c);
-        return region !== -1 && region !== me.corner;
-      });
-      const pts = invadedZone ? Math.round(basePts * 1.5) : basePts;
-      const bonusNote = invadedZone ? ' (+%50 köşe bonusu!)' : '';
+        if (region !== -1 && region !== me.corner) {
+          const idx = state.players.findIndex((p) => p.corner === region);
+          if (idx >= 0) { invadedOwnerIdx = idx; break; }
+        }
+      }
+      const ownerBonus = invadedOwnerIdx >= 0 ? Math.round(basePts / 2) : 0;
+      const pts = basePts - ownerBonus;
+      const bonusNote = invadedOwnerIdx >= 0
+        ? ` (${ownerBonus} puan ${state.players[invadedOwnerIdx].name}'a gitti)`
+        : '';
 
       // Yerleştirmeleri tahtaya işle.
       const board = state.board.map((row) => [...row]);
@@ -429,11 +436,15 @@ export function gameReducer(state: GameState, action: Action): GameState {
         (best, fw) => (fw.word.length > best.length ? fw.word : best),
         me.longestWord,
       );
-      const players = state.players.map((p, i) =>
-        i === state.current
-          ? { ...p, rack, score: p.score + pts, bestMoveScore: Math.max(p.bestMoveScore, pts), longestWord: newLongestWord }
-          : p,
-      );
+      const players = state.players.map((p, i) => {
+        if (i === state.current) {
+          return { ...p, rack, score: p.score + pts, bestMoveScore: Math.max(p.bestMoveScore, pts), longestWord: newLongestWord };
+        }
+        if (i === invadedOwnerIdx) {
+          return { ...p, score: p.score + ownerBonus };
+        }
+        return p;
+      });
 
       const moved: GameState = {
         ...state,
@@ -519,12 +530,31 @@ export function gameReducer(state: GameState, action: Action): GameState {
         (best, fw) => (fw.word.length > best.length ? fw.word : best),
         me.longestWord,
       );
-      const players = state.players.map((p, i) =>
-        i === state.current
-          ? { ...p, rack, score: p.score + move.score, bestMoveScore: Math.max(p.bestMoveScore, move.score), longestWord: aiLongestWord }
-          : p,
-      );
 
+      let aiInvadedOwnerIdx = -1;
+      for (const p of move.placements) {
+        const region = regionOf(p.r, p.c);
+        if (region !== -1 && region !== me.corner) {
+          const idx = state.players.findIndex((pl) => pl.corner === region);
+          if (idx >= 0) { aiInvadedOwnerIdx = idx; break; }
+        }
+      }
+      const aiOwnerBonus = aiInvadedOwnerIdx >= 0 ? Math.round(move.score / 2) : 0;
+      const aiPts = move.score - aiOwnerBonus;
+
+      const players = state.players.map((p, i) => {
+        if (i === state.current) {
+          return { ...p, rack, score: p.score + aiPts, bestMoveScore: Math.max(p.bestMoveScore, aiPts), longestWord: aiLongestWord };
+        }
+        if (i === aiInvadedOwnerIdx) {
+          return { ...p, score: p.score + aiOwnerBonus };
+        }
+        return p;
+      });
+
+      const aiInvasionNote = aiOwnerBonus > 0
+        ? ` ${state.players[aiInvadedOwnerIdx].name} +${aiOwnerBonus} puan aldı.`
+        : '';
       const moved: GameState = {
         ...state,
         board,
@@ -532,7 +562,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         players,
         consecutivePasses: 0,
         lastWords: setLastWords(state.lastWords, formed, state.current),
-        message: `${me.name} "${move.word}" oynadı. +${move.score} puan.`,
+        message: `${me.name} "${move.word}" oynadı. +${aiPts} puan.${aiInvasionNote}`,
         messageType: 'ok',
       };
       return advanceTurn(moved);
