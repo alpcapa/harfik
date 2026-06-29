@@ -28,7 +28,7 @@ const MESSAGE_COLORS: Record<string, string> = {
 };
 
 export default function App() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [state, dispatch] = useReducer(gameReducer, undefined, createInitialState);
 
   // Oynanan kelime(ler)e tıklanınca gösterilen anlam penceresi. Bir hamlede
@@ -88,6 +88,20 @@ export default function App() {
       longest_word: human.longestWord || null,
     });
   }, [state.isGameOver]);
+
+  // Oyun devam ederken giriş yapılırsa 1. oyuncunun adını güncelle.
+  useEffect(() => {
+    if (state.phase !== 'play') return;
+    const accountName =
+      profile?.display_name ||
+      profile?.first_name ||
+      (user?.email ? user.email.split('@')[0] : null);
+    if (!accountName) return;
+    const p0 = state.players[0];
+    if (p0 && !p0.isAI && p0.name !== accountName) {
+      dispatch({ type: 'RENAME_PLAYER', index: 0, name: accountName });
+    }
+  }, [user, profile, state.phase]);
 
   // YZ sırası: kısa bir düşünme gecikmesiyle otomatik oyna.
   const aiTurn =
