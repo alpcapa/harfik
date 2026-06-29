@@ -214,7 +214,7 @@ export function Setup({ onStart }: SetupProps) {
 
       {accountName && ai.slice(1, count).every(Boolean) && (
         <p className="text-[11px] font-mono text-muted text-center leading-relaxed px-1">
-          Sadece yapay zekaya karşı oynanan oyunlar lider tablosuna kaydedilmez.
+          Sadece yapay zekaya karşı oynanan oyunların hiçbir kaydı tutulmaz.
         </p>
       )}
 
