@@ -45,7 +45,8 @@ export type Action =
   | { type: 'CONFIRM_SWAP' }
   | { type: 'PLAY' }
   | { type: 'PASS' }
-  | { type: 'AI_PLAY' };
+  | { type: 'AI_PLAY' }
+  | { type: 'RENAME_PLAYER'; index: number; name: string };
 
 /** Kurulum (oyuncu seçimi) ekranıyla başlayan boş durum. */
 export function createInitialState(): GameState {
@@ -535,6 +536,14 @@ export function gameReducer(state: GameState, action: Action): GameState {
         messageType: 'ok',
       };
       return advanceTurn(moved);
+    }
+
+    case 'RENAME_PLAYER': {
+      if (state.phase !== 'play') return state;
+      const players = state.players.map((p, i) =>
+        i === action.index ? { ...p, name: action.name } : p,
+      );
+      return { ...state, players };
     }
 
     default:
