@@ -81,7 +81,7 @@ export function ScoreCard({ onClose, onLeaderboard }: ScoreCardProps) {
         onClick={onLeaderboard}
         className="mt-5 w-full bg-accent text-white rounded-md py-2.5 text-xs font-bold uppercase tracking-[1.5px] active:scale-[0.97] transition-transform"
       >
-        🏆 Sıralamayı Gör
+        🏆 Lider Tablosu
       </button>
     </Modal>
   );
