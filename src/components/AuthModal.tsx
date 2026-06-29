@@ -63,7 +63,8 @@ export function AuthModal({ onClose }: AuthModalProps) {
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
+      setError(msg || 'Bir hata oluştu.');
     } finally {
       setBusy(false);
     }

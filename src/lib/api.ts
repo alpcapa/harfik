@@ -192,7 +192,7 @@ export async function signOut() {
 
 // ── Profil güncelleme ────────────────────────────────────────────────────────
 
-/** Oturum açan oyuncunun profilini günceller ve güncel kaydı döner. */
+/** Oturum açan oyuncunun profilini günceller. Profil yoksa oluşturur. */
 export async function updateProfile(
   patch: { first_name?: string; last_name?: string; display_name?: string | null; photo_url?: string },
 ): Promise<Profile | null> {
@@ -206,10 +206,26 @@ export async function updateProfile(
     .from('profiles')
     .update(patch)
     .eq('id', user.id)
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data as Profile;
+    .select('id');
+  if (error) throw new Error(error.message);
+
+  // Profil satırı henüz oluşturulmamışsa kayıt aç.
+  if (!data || data.length === 0) {
+    const firstName = patch.first_name ?? '';
+    const lastName = patch.last_name ?? '';
+    const { error: createErr } = await supabase.from('profiles').insert({
+      id: user.id,
+      email: user.email ?? '',
+      first_name: firstName,
+      last_name: lastName,
+      full_name: [firstName, lastName].filter(Boolean).join(' '),
+      display_name: patch.display_name ?? null,
+      photo_url: patch.photo_url ?? '',
+    });
+    if (createErr) throw new Error(createErr.message);
+  }
+
+  return null;
 }
 
 /** Oturum açan kullanıcının e-postasını değiştirir (doğrulama gerekebilir). */
