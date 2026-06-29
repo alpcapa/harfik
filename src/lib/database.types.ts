@@ -48,8 +48,14 @@ export interface LeaderboardRow {
   display_name: string | null;
   photo_url: string | null;
   best_score: number;
+  total_score: number;
   games_played: number;
   wins: number;
+}
+
+export interface MyLeaderboardRank {
+  rank: number;
+  total_score: number;
 }
 
 export interface PlayerStats {
