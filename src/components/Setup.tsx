@@ -5,6 +5,7 @@ import type { PlayerSetup } from '../game/gameReducer';
 import { useAuth } from '../hooks/useAuth';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
+import { HelpModal } from './HelpModal';
 
 interface SetupProps {
   onStart: (players: PlayerSetup[]) => void;
@@ -25,6 +26,7 @@ export function Setup({ onStart }: SetupProps) {
 
   const [showWarningPopup, setShowWarningPopup] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const setName = (i: number, v: string) =>
     setNames((cur) => cur.map((n, idx) => (idx === i ? v : n)));
@@ -62,6 +64,7 @@ export function Setup({ onStart }: SetupProps) {
   return (
     <>
     {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
+    {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
 
     {showWarningPopup && (
       <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 px-4">
@@ -100,6 +103,12 @@ export function Setup({ onStart }: SetupProps) {
           Her oyuncu kendi köşesinden başlar. 5×5 köşenden çıkmadan
           diğerlerine ulaşamazsın.
         </p>
+        <button
+          onClick={() => setShowHelp(true)}
+          className="mt-1 font-mono text-[10px] uppercase tracking-[1px] text-accent hover:underline active:opacity-70 transition-opacity"
+        >
+          Nasıl oynanır?
+        </button>
       </div>
 
       <div className="flex flex-col gap-2">

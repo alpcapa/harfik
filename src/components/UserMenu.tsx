@@ -10,8 +10,9 @@ import { AuthModal } from './AuthModal';
 import { ScoreCard } from './ScoreCard';
 import { AccountSettingsModal } from './AccountSettingsModal';
 import { Leaderboard } from './Leaderboard';
+import { HelpModal } from './HelpModal';
 
-type ActiveModal = 'auth' | 'account' | 'score' | 'leaderboard' | null;
+type ActiveModal = 'auth' | 'account' | 'score' | 'leaderboard' | 'help' | null;
 
 export function UserMenu() {
   const { user, profile, configured, loading } = useAuth();
@@ -43,10 +44,17 @@ export function UserMenu() {
     user?.email ||
     'Hesabım';
 
-  // ── Oturum yok: Giriş / Kayıt düğmesi ──────────────────────────────────────
+  // ── Oturum yok: Giriş / Kayıt + yardım düğmeleri ───────────────────────────
   if (!loading && !user) {
     return (
       <>
+        <button
+          onClick={() => setModal('help')}
+          className="font-mono text-[10px] uppercase tracking-[1px] px-2.5 py-1.5 rounded-md border border-border text-muted font-bold active:scale-[0.97] transition-transform"
+          aria-label="Nasıl oynanır?"
+        >
+          ?
+        </button>
         <button
           onClick={() => setModal('auth')}
           className="font-mono text-[10px] uppercase tracking-[1px] px-3 py-1.5 rounded-md border bg-accent border-accent text-white font-bold active:scale-[0.97] transition-transform"
@@ -54,6 +62,7 @@ export function UserMenu() {
           Giriş
         </button>
         {modal === 'auth' && <AuthModal onClose={() => setModal(null)} />}
+        {modal === 'help' && <HelpModal onClose={() => setModal(null)} />}
       </>
     );
   }
@@ -120,6 +129,15 @@ export function UserMenu() {
             >
               <span aria-hidden>🏆</span> Lider Tablosu
             </button>
+            <button
+              className={item}
+              onClick={() => {
+                setModal('help');
+                setOpen(false);
+              }}
+            >
+              <span aria-hidden>❓</span> Nasıl Oynanır?
+            </button>
 
             <button
               className={`${item} border-t border-border hover:text-red`}
@@ -145,6 +163,9 @@ export function UserMenu() {
       )}
       {modal === 'leaderboard' && (
         <Leaderboard onClose={() => setModal(null)} />
+      )}
+      {modal === 'help' && (
+        <HelpModal onClose={() => setModal(null)} />
       )}
     </>
   );
