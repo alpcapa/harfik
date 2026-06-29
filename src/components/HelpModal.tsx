@@ -108,10 +108,10 @@ export function HelpModal({ onClose }: HelpModalProps) {
 
         <Section title="Bonus Kareler">
           <div className="flex flex-col gap-1.5 mt-0.5">
-            <Pill label="3K" color="#DC2626" desc="Üç kat kelime puanı" />
-            <Pill label="2K" color="#D97706" desc="İki kat kelime puanı" />
-            <Pill label="3H" color="#2563EB" desc="Üç kat harf puanı" />
-            <Pill label="2H" color="#16A34A" desc="İki kat harf puanı" />
+            <Pill label="K3" color="#DC2626" desc="Üç kat kelime puanı" />
+            <Pill label="K2" color="#D97706" desc="İki kat kelime puanı" />
+            <Pill label="H3" color="#2563EB" desc="Üç kat harf puanı" />
+            <Pill label="H2" color="#16A34A" desc="İki kat harf puanı" />
           </div>
           <P>Bonuslar yalnızca o tura yeni konan taşa uygulanır.</P>
         </Section>

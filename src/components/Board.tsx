@@ -48,10 +48,10 @@ const BONUS_STYLES: Record<string, React.CSSProperties> = {
 
 // Tahtanın hemen altında gösterilen bonus açıklaması.
 const LEGEND = [
-  { label: '2×K', bg: 'linear-gradient(135deg, #B8ECC8, #C8F0D4)', border: 'none' },
-  { label: '3×K', bg: 'linear-gradient(135deg, #FAC890, #FBD8A8)', border: 'none' },
-  { label: '2×H', bg: 'linear-gradient(135deg, #9EC8FA, #B0D4FC)', border: 'none' },
-  { label: '3×H', bg: 'linear-gradient(135deg, #CEB4FA, #DCC8FC)', border: 'none' },
+  { label: 'K2', bg: 'linear-gradient(135deg, #B8ECC8, #C8F0D4)', border: 'none' },
+  { label: 'K3', bg: 'linear-gradient(135deg, #FAC890, #FBD8A8)', border: 'none' },
+  { label: 'H2', bg: 'linear-gradient(135deg, #9EC8FA, #B0D4FC)', border: 'none' },
+  { label: 'H3', bg: 'linear-gradient(135deg, #CEB4FA, #DCC8FC)', border: 'none' },
 ];
 
 /** Her köşenin merkeze bakan 2 iç kenarına (L şeklinde) renk çizgisi ekler. */

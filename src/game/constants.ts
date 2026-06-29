@@ -16,12 +16,12 @@ export const BINGO_BONUS = 50;
 /** Rafta tutulan taş sayısı. */
 export const RACK_SIZE = 7;
 
-/** Bonus kare kısa etiketleri (3K = üç kat kelime vb.). */
+/** Bonus kare kısa etiketleri (K3 = üç kat kelime vb.). */
 export const BONUS_LABELS: Record<BonusType, string> = {
-  tw: '3K',
-  dw: '2K',
-  tl: '3H',
-  dl: '2H',
+  tw: 'K3',
+  dw: 'K2',
+  tl: 'H3',
+  dl: 'H2',
 };
 
 // ── Oyuncu renkleri ──────────────────────────────────────────────────────────
