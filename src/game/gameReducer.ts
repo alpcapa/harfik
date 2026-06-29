@@ -33,6 +33,7 @@ export interface PlayerSetup {
 
 export type Action =
   | { type: 'INIT' }
+  | { type: 'ABANDON' }
   | { type: 'START'; players: PlayerSetup[] }
   | { type: 'SELECT_TILE'; index: number }
   | { type: 'PLACE_TILE'; r: number; c: number; wildLetter?: string }
@@ -197,6 +198,11 @@ function withRack(state: GameState, rack: Tile[]): Player[] {
 export function gameReducer(state: GameState, action: Action): GameState {
   switch (action.type) {
     case 'INIT':
+      return createInitialState();
+
+    case 'ABANDON':
+      // Oyundan çıkış: -500 ceza skoru setup ekranına dönmeden önce uygulanır.
+      // Skor yalnızca görsel (kalıcı istatistiklere kaydedilmez).
       return createInitialState();
 
     case 'START': {

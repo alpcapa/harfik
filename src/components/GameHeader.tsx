@@ -5,18 +5,24 @@ import { UserMenu } from './UserMenu';
 
 interface GameHeaderProps {
   state: GameState;
+  onLogoClick?: () => void;
 }
 
-export function GameHeader({ state }: GameHeaderProps) {
+export function GameHeader({ state, onLogoClick }: GameHeaderProps) {
   const { players, current } = state;
   return (
     <header className="w-full max-w-[680px] flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border">
-      <div className="shrink-0 flex flex-col items-center leading-none" style={{ fontFamily: "'Caveat', cursive", fontSize: 28, fontWeight: 700, color: '#2563EB', letterSpacing: 3 }}>
+      <button
+        onClick={onLogoClick}
+        className="shrink-0 flex flex-col items-center leading-none active:opacity-70 transition-opacity"
+        style={{ fontFamily: "'Caveat', cursive", fontSize: 28, fontWeight: 700, color: '#2563EB', letterSpacing: 3 }}
+        aria-label="Oyundan çık"
+      >
         harfik
         <svg width="64" height="6" viewBox="0 0 64 6" fill="none">
           <path d="M2 3 Q16 1 32 3 Q48 5 62 3" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" fill="none" />
         </svg>
-      </div>
+      </button>
 
       <div className="flex gap-2 items-center flex-wrap justify-end">
         {players.map((p, i) => {

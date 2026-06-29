@@ -37,6 +37,9 @@ export default function App() {
   // Torba (kalan taşlar) penceresi.
   const [showTiles, setShowTiles] = useState(false);
 
+  // Oyundan çıkış onay popup'ı.
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+
   const openMeaning = (words: string[]) => {
     const unique = [...new Set(words)];
     if (unique.length === 0) return;
@@ -133,7 +136,10 @@ export default function App() {
 
   return (
     <div className="min-h-[100dvh] w-full flex flex-col items-center overflow-x-hidden">
-      <GameHeader state={state} />
+      <GameHeader
+        state={state}
+        onLogoClick={() => setShowExitConfirm(true)}
+      />
 
       <Board
         state={state}
@@ -233,6 +239,31 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {showExitConfirm && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-sm bg-panel rounded-2xl shadow-2xl p-6 flex flex-col gap-4">
+            <p className="text-sm text-text font-sans leading-relaxed">
+              Bu oyundan çıkmak mı istiyorsun? Eğer çıkarsan kazandığın tüm puanlar
+              silinecek ve ceza olarak toplam puanından 500 puan düşülecek.
+            </p>
+            <div className="flex gap-2 mt-1">
+              <button
+                onClick={() => { setShowExitConfirm(false); dispatch({ type: 'ABANDON' }); }}
+                className="flex-1 py-2.5 rounded-md bg-red text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Çık
+              </button>
+              <button
+                onClick={() => setShowExitConfirm(false)}
+                className="flex-1 py-2.5 rounded-md border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Vazgeç
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {meaning && (
         <MeaningModal entries={meaning.entries} onClose={() => setMeaning(null)} />
