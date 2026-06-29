@@ -75,7 +75,7 @@ export function HelpModal({ onClose }: HelpModalProps) {
           </P>
           <P>
             <strong>İlk hamle:</strong> İlk kelimende en az bir harf kendi köşe bölgene
-            düşmelidir. Koyduğun kelime bölgenin dışındaki alana taşarsan veya sınıra değerse
+            düşmelidir. Koyduğun kelime bölgenin dışındaki alana taşarsa veya sınıra değerse
             hemen bir oyuncu buraya ekleme yapıp %50 daha fazla puan alabilir. O nedenle, mümkün
             oldukça ilk başlarda bölgenin sınırlarına yaklaşma. Böylece, her oyuncu kendi
             bölgesinde elindeki taşlarla maksimum puanı alıp sonra dışarıya doğru açılmalıdır.
@@ -98,7 +98,7 @@ export function HelpModal({ onClose }: HelpModalProps) {
           <P>
             Sınır ihlal edilmeden diğer oyuncular orada oynayamaz. İhlal gerçekleştiği anda
             sınıra değen kelime üzerine istediğin gibi bağlantı yapabilirsin. Sınıra değen bir
-            kelime olduğu sürece alanın içine doğru da hamle yapılabilir.
+            kelime olduğu sürece bölgenin içine doğru da hamle yapılabilir.
           </P>
           <P>
             <strong>Köşe bonusu:</strong> Rakip köşesine giren bir kelime için %50 ek puan
@@ -108,10 +108,10 @@ export function HelpModal({ onClose }: HelpModalProps) {
 
         <Section title="Bonus Kareler">
           <div className="flex flex-col gap-1.5 mt-0.5">
-            <Pill label="3K" color="#DC2626" desc="Üç kat kelime puanı" />
-            <Pill label="2K" color="#D97706" desc="İki kat kelime puanı" />
-            <Pill label="3H" color="#2563EB" desc="Üç kat harf puanı" />
-            <Pill label="2H" color="#16A34A" desc="İki kat harf puanı" />
+            <Pill label="K3" color="#DC2626" desc="Üç kat kelime puanı" />
+            <Pill label="K2" color="#D97706" desc="İki kat kelime puanı" />
+            <Pill label="H3" color="#2563EB" desc="Üç kat harf puanı" />
+            <Pill label="H2" color="#16A34A" desc="İki kat harf puanı" />
           </div>
           <P>Bonuslar yalnızca o tura yeni konan taşa uygulanır.</P>
         </Section>

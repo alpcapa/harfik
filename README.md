@@ -1,15 +1,16 @@
 # Harfik
 
-**Harfik**, evrilen bir tahtaya ve akıllı bir yapay zekâ rakibe sahip, mobil öncelikli bir **Türkçe kelime oyunudur**. Tek dosyalık `LexFront` HTML prototipi; Vite + React + TypeScript + Tailwind CSS ile modern bir web projesine dönüştürülmüştür.
+**Harfik**, köşe bölgeleri ve akıllı yapay zekâ rakiple oynanan, mobil öncelikli **Türkçe kelime oyunudur**. Vite + React + TypeScript + Tailwind CSS ile geliştirilmiştir.
 
 ## Oyun
 
-- **13×13 tahta** — Scrabble benzeri kelime yerleştirme, harf/kelime bonusları (2H, 3H, 2K, 3K).
-- **Tahta evrimi** — Her birkaç hamlede tahta değişir: boş kareler çatlar, çatlamış kareler "boşluğa" dönüşerek oynanamaz hâle gelir ve yeni bonuslar belirir.
-- **Bölgeler** — Oyuncu sol-alt köşeden, YZ sağ-üst köşeden başlar.
+- **13×13 tahta** — Scrabble benzeri kelime yerleştirme, harf/kelime bonusları (H2, H3, K2, K3).
+- **Köşe bölgeleri** — Her oyuncu 5×5'lik bir köşeden başlar. 2 kişilik oyunda çapraz köşeler (sol-üst ↔ sağ-alt), 4 kişilik oyunda dört köşe kullanılır. Kendi köşen korunmuştur; rakipler ancak sen sınır karesine taş koyduktan sonra girebilir.
+- **Köşe bonusu** — Rakip köşesine giren hamle için puan ×1.5.
 - **Akıllı YZ** — Rafından heceleyebildiği, sözlükçe geçerli en yüksek puanlı hamleyi arar; çapraz kelimeleri de doğrular.
 - **Tam sözlük** — TDK Güncel Türkçe Sözlük (12. baskı) kaynaklı **92.771 oynanabilir kelime**, anlamlarıyla birlikte.
-- **Türkçe alfabe** — Ç, Ğ, İ, Ö, Ş, Ü dahil tam harf dağılımı ve puanlar. Joker (`?`) desteklenir.
+- **Türkçe alfabe** — Ç, Ğ, İ, Ö, Ş, Ü dahil tam harf dağılımı ve puanlar. Joker (`?`) desteklenir. Toplam 186 taş.
+- **Bingo bonusu** — 7 taşın tamamını tek hamlede kullanınca +50 puan.
 - **Dokunmatik** — Mobil öncelikli düzen; harf seç → kareye dokun → **Oyna**.
 
 ## Teknoloji
@@ -17,6 +18,7 @@
 - [Vite 5](https://vitejs.dev/)
 - [React 18](https://react.dev/) + TypeScript
 - [Tailwind CSS](https://tailwindcss.com/)
+- [Supabase](https://supabase.com/) — opsiyonel (auth, lider tablosu, istatistikler)
 - [Vercel](https://vercel.com/) ile dağıtım
 
 ## Geliştirme
@@ -33,60 +35,65 @@ npm run lint     # TypeScript tip kontrolü
 
 ```
 src/
-├── components/        # React bileşenleri
-│   ├── Board.tsx      # 13×13 oyun tahtası
-│   ├── Rack.tsx       # oyuncunun harf rafı
-│   ├── Tile.tsx       # tek harf bileşeni
-│   ├── GameHeader.tsx # skor, sıra, torba sayısı
-│   └── GameOver.tsx   # oyun sonu ekranı
+├── components/
+│   ├── Board.tsx                # 13×13 oyun tahtası (köşe renkleri, bonus kareler)
+│   ├── Rack.tsx                 # oyuncunun harf kutusu
+│   ├── Tile.tsx                 # tek harf bileşeni
+│   ├── GameHeader.tsx           # skor, sıra göstergesi
+│   ├── GameOver.tsx             # oyun sonu ekranı
+│   ├── Setup.tsx                # oyun başlangıç / oyuncu kurulum ekranı
+│   ├── UserMenu.tsx             # hesap menüsü (giriş / profil / lider tablosu)
+│   ├── HelpModal.tsx            # nasıl oynanır sayfası
+│   ├── AuthModal.tsx            # giriş / kayıt / şifre sıfırlama
+│   ├── AccountSettingsModal.tsx # profil düzenleme (avatar, kullanıcı adı)
+│   ├── ScoreCard.tsx            # oyuncu istatistikleri
+│   ├── Leaderboard.tsx          # lider tablosu
+│   ├── MeaningModal.tsx         # kelime anlamı penceresi
+│   ├── RemainingTilesModal.tsx  # torbada kalan taşlar
+│   ├── Modal.tsx                # paylaşılan modal kabuğu
+│   ├── Avatar.tsx               # profil fotoğrafı bileşeni
+│   └── AddToHomeScreen.tsx      # PWA ana ekrana ekle
 ├── game/
-│   ├── types.ts       # paylaşılan tipler
-│   ├── constants.ts   # tahta boyutu, bonus yerleşimi, bölgeler
-│   └── gameReducer.ts # useReducer ile durum yönetimi
+│   ├── types.ts       # GameState, Player, Tile tipleri
+│   ├── constants.ts   # tahta sabitleri, köşe hesapları, bonus konumları
+│   └── gameReducer.ts # useReducer ile oyun durum makinesi
 ├── data/
 │   ├── words.ts       # Türkçe kelime listesi (92.771 kelime, üretilmiş)
 │   ├── meanings.json  # kelime → anlamlar (tembel yüklenir, ~6 MB)
-│   ├── meanings.ts    # anlam yükleyici (getLocalMeaning)
-│   └── tiles.ts       # Türkçe harf dağılımı ve puanlar
-└── utils/
-    ├── validator.ts      # kelime doğrulama ve puanlama
-    ├── ai.ts             # YZ oyuncu mantığı
-    ├── boardEvolution.ts # tahta evrim mantığı
-    ├── board.ts          # tahta yardımcıları
-    ├── bag.ts            # taş torbası
-    └── random.ts         # karıştırma / rastgele seçim
+│   ├── meanings.ts    # anlam yükleyici
+│   └── tiles.ts       # Türkçe harf dağılımı ve puanlar (186 taş)
+├── utils/
+│   ├── validator.ts   # kelime doğrulama, bölge kuralları, puanlama
+│   ├── ai.ts          # YZ oyuncu mantığı
+│   ├── board.ts       # tahta yardımcıları (kelime bulma, hücre key)
+│   ├── bag.ts         # taş torbası (buildBag, drawTiles)
+│   ├── turkish.ts     # trUpper / trLower (i/İ, ı/I dönüşümü)
+│   └── random.ts      # karıştırma
+├── hooks/
+│   └── useAuth.tsx    # Supabase auth context
+└── lib/
+    ├── supabase.ts        # Supabase istemcisi
+    ├── api.ts             # saveGame, fetchLeaderboard, auth, fetchMeaning
+    └── database.types.ts  # şema tipleri
 ```
 
-## Renk Paleti
+## Supabase (opsiyonel)
 
-| Amaç      | Renk      |
-| --------- | --------- |
-| Arka plan | `#080C10` |
-| Accent    | `#00C8FF` |
-| YZ rengi  | `#FF4060` |
-| Altın     | `#FFD040` |
-
-## Supabase (veritabanı)
-
-Çevrimiçi özellikler (kullanıcı hesapları, liderlik tablosu, istatistikler, DB'deki kelime listesi) Supabase ile sağlanır. Anahtarlar ayarlı değilse oyun **çevrimdışı/yerel** olarak sorunsuz çalışır.
+Çevrimiçi özellikler (kullanıcı hesapları, lider tablosu, istatistikler, kelime anlamları) Supabase ile sağlanır. Anahtarlar ayarlı değilse oyun **çevrimdışı** olarak sorunsuz çalışır.
 
 **Şema** `supabase/migrations/` altındadır:
 
 - `20260628090000_init.sql` — `profiles`, `games`, `words` tabloları; `leaderboard` & `player_stats` view'ları; RLS politikaları; auth trigger'ı; `is_valid_word` RPC.
-- `20260628090100_seed_words.sql` — başlangıçtaki çekirdek kelime listesini `words` tablosuna yükler.
-- `20260628090200_add_word_meanings.sql` — `words` tablosuna `pos` (sözcük türü) ve `meanings` (jsonb) sütunları ile `word_meaning` RPC ekler.
-- `20260628090300_seed_dictionary.sql` — TDK Güncel Türkçe Sözlük'ten 92.771 kelimeyi **anlamlarıyla** yükler (üretilmiştir).
+- `20260628090100_seed_words.sql` — başlangıçtaki çekirdek kelime listesi.
+- `20260628090200_add_word_meanings.sql` — `pos` ve `meanings` sütunları ile `word_meaning` RPC.
+- `20260628090300_seed_dictionary.sql` — TDK Güncel Türkçe Sözlük'ten 92.771 kelimeyi anlamlarıyla yükler.
 
-**Migration'ları uygulama**
-
-Supabase CLI ile:
+**Migration'ları uygulama:**
 
 ```bash
 supabase link --project-ref xvqlizifakkkoqahaxsg
 supabase db push
 ```
-
-veya her `.sql` dosyasını Supabase panelindeki **SQL Editor**'da çalıştırarak.
 
 **İstemci yapılandırması** — `.env.example` dosyasını `.env` olarak kopyalayıp doldurun:
 
@@ -95,23 +102,15 @@ VITE_SUPABASE_URL=https://xvqlizifakkkoqahaxsg.supabase.co
 VITE_SUPABASE_ANON_KEY=sb_publishable_...   # Project Settings → API
 ```
 
-Veri erişimi `src/lib/` altında: `supabase.ts` (istemci), `api.ts` (saveGame, fetchLeaderboard, fetchPlayerStats, auth, `isValidWordRemote`, `fetchMeaning`), `database.types.ts` (şema tipleri).
-
-## Sözlük verisi
+## Sözlük Verisi
 
 Kelimeler ve anlamları **TDK Güncel Türkçe Sözlük (12. baskı)** kaynaklıdır;
-açık veri olarak [ogun/guncel-turkce-sozluk](https://github.com/ogun/guncel-turkce-sozluk)
-(MIT lisansı) üzerinden alınmıştır. Ham dökümdeki (99.236 madde) çok sözcüklü
-maddeler boşlukları kaldırılarak tek tokena birleştirilir
-("dulavrat otu" → "dulavratotu"); ardından yalnızca Türk alfabesi harfleri içeren
-2–25 harfli tokenlar tutularak **92.771 oynanabilir kelimeye** süzülür.
+[ogun/guncel-turkce-sozluk](https://github.com/ogun/guncel-turkce-sozluk) (MIT lisansı) üzerinden alınmıştır. Ham dökümdeki çok sözcüklü maddeler birleştirilir ("dulavrat otu" → "dulavratotu"); ardından yalnızca Türk alfabesi harfleri içeren 2–25 harfli tokenlar tutularak **92.771 oynanabilir kelimeye** süzülür.
 
-Üretilen dosyalar (`src/data/words.ts`, `src/data/meanings.json`,
-`supabase/migrations/20260628090300_seed_dictionary.sql`) repoda tutulur;
-yeniden üretmek için:
+Üretilen dosyaları yeniden oluşturmak için:
 
 ```bash
-# 1) Kaynağı indir ve aç (~100 MB açılmış NDJSON)
+# 1) Kaynağı indir ve aç
 curl -sSL -o gts.json.tar.gz \
   https://raw.githubusercontent.com/ogun/guncel-turkce-sozluk/master/sozluk/v12/v12.gts.json.tar.gz
 tar xzf gts.json.tar.gz
@@ -122,13 +121,8 @@ GTS_JSON=./gts.json npm run build:dict
 
 ## Dağıtım
 
-Depo Vercel'e bağlanıp doğrudan dağıtılabilir; `vercel.json` Vite ön ayarlarını içerir.
-
-```bash
-npm i -g vercel
-vercel
-```
+Depo Vercel'e bağlanıp doğrudan dağıtılabilir; `vercel.json` Vite ön ayarlarını içerir. Main branch'e merge otomatik deploy tetikler.
 
 ---
 
-Türkçe kelimelerin tadını çıkar. İyi oyunlar! ⚡
+İyi oyunlar!

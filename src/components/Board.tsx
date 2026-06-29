@@ -48,10 +48,10 @@ const BONUS_STYLES: Record<string, React.CSSProperties> = {
 
 // Tahtanın hemen altında gösterilen bonus açıklaması.
 const LEGEND = [
-  { label: '2×K', bg: 'linear-gradient(135deg, #B8ECC8, #C8F0D4)', border: 'none' },
-  { label: '3×K', bg: 'linear-gradient(135deg, #FAC890, #FBD8A8)', border: 'none' },
-  { label: '2×H', bg: 'linear-gradient(135deg, #9EC8FA, #B0D4FC)', border: 'none' },
-  { label: '3×H', bg: 'linear-gradient(135deg, #CEB4FA, #DCC8FC)', border: 'none' },
+  { label: 'K2', desc: 'kelime x2', bg: 'linear-gradient(135deg, #B8ECC8, #C8F0D4)', border: 'none' },
+  { label: 'K3', desc: 'kelime x3', bg: 'linear-gradient(135deg, #FAC890, #FBD8A8)', border: 'none' },
+  { label: 'H2', desc: 'harf x2',   bg: 'linear-gradient(135deg, #9EC8FA, #B0D4FC)', border: 'none' },
+  { label: 'H3', desc: 'harf x3',   bg: 'linear-gradient(135deg, #CEB4FA, #DCC8FC)', border: 'none' },
 ];
 
 /** Her köşenin merkeze bakan 2 iç kenarına (L şeklinde) renk çizgisi ekler. */
@@ -147,7 +147,7 @@ export function Board({ state, onCellClick, potentialScore }: BoardProps) {
         classes.push('bg-transparent');
         content = <Tile tile={placedTile} variant="placed" color={currentColor} />;
       } else if (bonus) {
-        classes.push(BONUS_CLASSES[bonus], 'cursor-pointer');
+        classes.push(BONUS_CLASSES[bonus], 'cursor-pointer', 'text-[clamp(7px,1.9vw,12px)]');
         content = BONUS_LABELS[bonus];
         style = { ...BONUS_STYLES[bonus] };
         if (zone) style = { ...style, outline: `1.5px solid ${zone.base}44` };
@@ -243,7 +243,8 @@ export function Board({ state, onCellClick, potentialScore }: BoardProps) {
                 className="w-2 h-2 rounded-[1px]"
                 style={{ background: item.bg, border: item.border }}
               />
-              {item.label}
+              <span className="font-bold">{item.label}</span>
+              <span className="text-muted/70">{item.desc}</span>
             </div>
           ))}
         </div>
