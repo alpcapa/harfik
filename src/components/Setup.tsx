@@ -37,7 +37,9 @@ export function Setup({ onStart }: SetupProps) {
         name: names[i].trim()
           ? names[i].trim()
           : ai[i]
-            ? `YZ ${i + 1}`
+            ? count === 2
+              ? 'Yapay Zeka'
+              : `Yapay Zeka ${i + 1}`
             : `Oyuncu ${i + 1}`,
         isAI: ai[i],
       };
@@ -65,7 +67,11 @@ export function Setup({ onStart }: SetupProps) {
           {([2, 4] as const).map((n) => (
             <button
               key={n}
-              onClick={() => setCount(n)}
+              onClick={() => {
+                setCount(n);
+                // Varsayılan: 1. oyuncu sen (kişi), kalan tüm oyuncular YZ.
+                setAi(Array.from({ length: 4 }, (_, idx) => idx > 0 && idx < n));
+              }}
               className={[
                 'flex-1 py-3 rounded-md font-sans text-sm font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97]',
                 count === n
@@ -117,7 +123,13 @@ export function Setup({ onStart }: SetupProps) {
                 <input
                   value={names[i]}
                   onChange={(e) => setName(i, e.target.value)}
-                  placeholder={ai[i] ? `YZ ${i + 1}` : `Oyuncu ${i + 1}`}
+                  placeholder={
+                    ai[i]
+                      ? count === 2
+                        ? 'Yapay Zeka'
+                        : `Yapay Zeka ${i + 1}`
+                      : `Oyuncu ${i + 1}`
+                  }
                   maxLength={14}
                   className="flex-1 min-w-0 bg-transparent outline-none font-sans text-sm text-text placeholder:text-muted"
                 />

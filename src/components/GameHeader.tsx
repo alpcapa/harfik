@@ -1,4 +1,4 @@
-// Harfik — başlık: skorlar, torba ve hesap menüsü
+// Harfik — başlık: skorlar ve hesap menüsü
 import { PLAYER_COLORS } from '../game/constants';
 import type { GameState } from '../game/types';
 import { UserMenu } from './UserMenu';
@@ -9,7 +9,6 @@ interface GameHeaderProps {
 
 export function GameHeader({ state }: GameHeaderProps) {
   const { players, current } = state;
-  const bagCount = state.bag.length;
   return (
     <header className="w-full max-w-[680px] flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border">
       <div className="font-mono text-lg font-bold text-accent tracking-[2px] shrink-0">
@@ -20,6 +19,12 @@ export function GameHeader({ state }: GameHeaderProps) {
         {players.map((p, i) => {
           const col = PLAYER_COLORS[p.colorIndex];
           const active = i === current;
+          // Başlıkta dar alan için YZ oyuncusu kısaca "YZ" (4 kişilikse "YZ 2").
+          const label = p.isAI
+            ? players.length === 2
+              ? 'YZ'
+              : `YZ ${i + 1}`
+            : p.name;
           return (
             <div
               key={i}
@@ -33,7 +38,7 @@ export function GameHeader({ state }: GameHeaderProps) {
                 className="text-[8px] uppercase tracking-[1px] font-mono truncate max-w-[72px]"
                 style={{ color: col.base }}
               >
-                {p.name}
+                {label}
               </div>
               <div
                 className="font-mono text-lg font-bold leading-none"
@@ -45,16 +50,7 @@ export function GameHeader({ state }: GameHeaderProps) {
           );
         })}
 
-        <div className="text-center px-1">
-          <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono">
-            Torba
-          </div>
-          <div className="font-mono text-sm font-bold leading-none text-muted">
-            {bagCount}
-          </div>
-        </div>
-
-        <UserMenu game={state} />
+        <UserMenu />
       </div>
     </header>
   );

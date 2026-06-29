@@ -7,9 +7,11 @@ import { GameOver } from './components/GameOver';
 import { UserMenu } from './components/UserMenu';
 import { Setup } from './components/Setup';
 import { MeaningModal } from './components/MeaningModal';
+import { RemainingTilesModal } from './components/RemainingTilesModal';
 import { createInitialState, gameReducer } from './game/gameReducer';
 import { calcScore } from './utils/validator';
 import { key } from './utils/board';
+import { trUpper } from './utils/turkish';
 import { PLAYER_COLORS } from './game/constants';
 import { fetchMeaning } from './lib/api';
 import type { WordMeaning } from './lib/database.types';
@@ -26,20 +28,34 @@ const MESSAGE_COLORS: Record<string, string> = {
 export default function App() {
   const [state, dispatch] = useReducer(gameReducer, undefined, createInitialState);
 
-  // Oynanan bir kelimeye tıklanınca gösterilen anlam penceresi.
+  // Oynanan kelime(ler)e tıklanınca gösterilen anlam penceresi. Bir hamlede
+  // birden fazla kelime oluştuysa hepsi listelenir.
   const [meaning, setMeaning] = useState<{
-    word: string;
-    data: WordMeaning | null;
-    loading: boolean;
+    entries: { word: string; data: WordMeaning | null; loading: boolean }[];
   } | null>(null);
 
-  const openMeaning = (word: string) => {
-    setMeaning({ word, data: null, loading: true });
-    void fetchMeaning(word).then((data) => {
-      setMeaning((cur) =>
-        cur && cur.word === word ? { word, data, loading: false } : cur,
-      );
+  // Torba (kalan taşlar) penceresi.
+  const [showTiles, setShowTiles] = useState(false);
+
+  const openMeaning = (words: string[]) => {
+    const unique = [...new Set(words)];
+    if (unique.length === 0) return;
+    setMeaning({
+      entries: unique.map((word) => ({ word, data: null, loading: true })),
     });
+    for (const word of unique) {
+      void fetchMeaning(word).then((data) => {
+        setMeaning((cur) =>
+          cur
+            ? {
+                entries: cur.entries.map((e) =>
+                  e.word === word ? { ...e, data, loading: false } : e,
+                ),
+              }
+            : cur,
+        );
+      });
+    }
   };
 
   // YZ sırası: kısa bir düşünme gecikmesiyle otomatik oyna.
@@ -71,10 +87,17 @@ export default function App() {
 
   const handleCellClick = (r: number, c: number) => {
     const k = key(r, c);
-    // Son oynanan kelimenin harfine tıklanırsa anlamını göster.
+    // Son oynanan kelimenin harfine tıklanırsa anlamını göster. Aynı hamlede
+    // oluşan tüm kelimeleri (tıklanan önce gelir) listele.
     const lw = state.lastWords[k];
     if (lw) {
-      openMeaning(lw.word);
+      const words = [
+        lw.word,
+        ...Object.values(state.lastWords)
+          .filter((w) => w.by === lw.by)
+          .map((w) => w.word),
+      ];
+      openMeaning(words);
       return;
     }
     if (state.isGameOver || me.isAI || state.swapMode) return;
@@ -88,7 +111,7 @@ export default function App() {
     const sel = state.selectedTile !== null ? me.rack[state.selectedTile] : null;
     if (sel && sel.letter === '?') {
       const l = window.prompt('Joker hangi harf olsun? (Türkçe)');
-      wildLetter = (l || 'A').toUpperCase();
+      wildLetter = trUpper(l || 'A');
     }
     dispatch({ type: 'PLACE_TILE', r, c, wildLetter });
   };
@@ -129,19 +152,32 @@ export default function App() {
           {state.message}
         </div>
 
-        <Rack
-          tiles={me.rack}
-          selectedTile={state.selectedTile}
-          onSelect={(i) => {
-            if (me.isAI) return;
-            if (state.swapMode) dispatch({ type: 'TOGGLE_SWAP_TILE', index: i });
-            else dispatch({ type: 'SELECT_TILE', index: i });
-          }}
-          title={me.isAI ? `${me.name} (YZ)` : me.name}
-          color={myColor}
-          swapMode={state.swapMode}
-          swapSelection={state.swapSelection}
-        />
+        <div className="flex gap-1.5 items-stretch">
+          <div className="flex-1 min-w-0">
+            <Rack
+              tiles={me.rack}
+              selectedTile={state.selectedTile}
+              onSelect={(i) => {
+                if (me.isAI) return;
+                if (state.swapMode) dispatch({ type: 'TOGGLE_SWAP_TILE', index: i });
+                else dispatch({ type: 'SELECT_TILE', index: i });
+              }}
+              title={me.name}
+              color={myColor}
+              swapMode={state.swapMode}
+              swapSelection={state.swapSelection}
+            />
+          </div>
+          {!state.swapMode && (
+            <button
+              disabled={!canAct}
+              onClick={() => dispatch({ type: 'PLAY' })}
+              className="shrink-0 px-5 rounded-lg font-sans text-[12px] font-bold uppercase tracking-[1.2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              Oyna
+            </button>
+          )}
+        </div>
 
         {state.swapMode ? (
           <div className="flex gap-1.5">
@@ -161,57 +197,51 @@ export default function App() {
             </button>
           </div>
         ) : (
-          <>
-            <div className="flex gap-1.5">
-              <button
-                disabled={!canAct}
-                onClick={() => dispatch({ type: 'PLAY' })}
-                className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-              >
-                Oyna
-              </button>
-              <button
-                disabled={!canAct}
-                onClick={() => dispatch({ type: 'RECALL_ALL' })}
-                className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-              >
-                Geri Al
-              </button>
-              <button
-                disabled={!canAct}
-                onClick={handlePass}
-                className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-muted border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-              >
-                Pas
-              </button>
-            </div>
-            <div className="flex gap-1.5">
-              <button
-                disabled={!canAct}
-                onClick={() => dispatch({ type: 'SHUFFLE_RACK' })}
-                className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-              >
-                Karıştır
-              </button>
-              <button
-                disabled={!canAct || state.bag.length === 0}
-                onClick={() => dispatch({ type: 'TOGGLE_SWAP_MODE' })}
-                className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-              >
-                Taş Değiştir
-              </button>
-            </div>
-          </>
+          <div className="flex gap-1.5">
+            <button
+              disabled={!canAct}
+              onClick={() => dispatch({ type: 'RECALL_ALL' })}
+              className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              Geri Al
+            </button>
+            <button
+              disabled={!canAct}
+              onClick={handlePass}
+              className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              Pas Geç
+            </button>
+            <button
+              disabled={!canAct}
+              onClick={() => dispatch({ type: 'SHUFFLE_RACK' })}
+              className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              Karıştır
+            </button>
+            <button
+              disabled={!canAct || state.bag.length === 0}
+              onClick={() => dispatch({ type: 'TOGGLE_SWAP_MODE' })}
+              className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              Değiştir
+            </button>
+            <button
+              onClick={() => setShowTiles(true)}
+              className="flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform"
+            >
+              Torba <span className="text-[13px] text-accent">{state.bag.length}</span>
+            </button>
+          </div>
         )}
       </div>
 
       {meaning && (
-        <MeaningModal
-          word={meaning.word}
-          data={meaning.data}
-          loading={meaning.loading}
-          onClose={() => setMeaning(null)}
-        />
+        <MeaningModal entries={meaning.entries} onClose={() => setMeaning(null)} />
+      )}
+
+      {showTiles && (
+        <RemainingTilesModal state={state} onClose={() => setShowTiles(false)} />
       )}
 
       <GameOver

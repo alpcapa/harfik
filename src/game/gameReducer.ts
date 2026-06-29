@@ -9,6 +9,7 @@ import {
 import type { GameState, Owner, Player, Tile } from './types';
 import { buildBag, drawTiles } from '../utils/bag';
 import { shuffle } from '../utils/random';
+import { trUpper } from '../utils/turkish';
 import {
   createEmptyBoard,
   getFormedWords,
@@ -72,7 +73,13 @@ function startGame(setup: PlayerSetup[]): GameState {
   const corners = cornersFor(count);
   const bag = buildBag();
   const players: Player[] = setup.map((s, i) => ({
-    name: s.name.trim() || (s.isAI ? `YZ ${i + 1}` : `Oyuncu ${i + 1}`),
+    name:
+      s.name.trim() ||
+      (s.isAI
+        ? count === 2
+          ? 'Yapay Zeka'
+          : `Yapay Zeka ${i + 1}`
+        : `Oyuncu ${i + 1}`),
     corner: corners[i],
     colorIndex: i % PLAYER_COLORS.length,
     isAI: s.isAI,
@@ -228,7 +235,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
       const source = me.rack[state.selectedTile];
       const tile: Tile = { ...source, owner: state.current };
       if (tile.letter === '?') {
-        const wl = (action.wildLetter || 'A').toUpperCase();
+        const wl = trUpper(action.wildLetter || 'A');
         tile.wild = true;
         tile.wildLetter = wl;
       }
