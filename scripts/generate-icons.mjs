@@ -76,6 +76,28 @@ await page.waitForTimeout(200);
 const screenshot = await page.screenshot({ type: 'png' });
 await browser.close();
 
+// Trim the white canvas to the exact content bounds, then extend with
+// equal padding on all four sides so the logo is perfectly centred.
+const ICON_PADDING = 56; // px padding at 512px output
+
+const trimmedPng = await sharp(screenshot)
+  .trim({ background: '#ffffff', threshold: 10 })
+  .png()
+  .toBuffer();
+
+const { width: tw, height: th } = await sharp(trimmedPng).metadata();
+// Make the padded canvas square based on the longer dimension.
+const inner = Math.max(tw, th);
+const canvas = inner + ICON_PADDING * 2;
+const left = Math.round((canvas - tw) / 2);
+const top  = Math.round((canvas - th) / 2);
+
+const centred = await sharp(trimmedPng)
+  .extend({ top, bottom: canvas - th - top, left, right: canvas - tw - left,
+            background: { r: 255, g: 255, b: 255, alpha: 1 } })
+  .png()
+  .toBuffer();
+
 const targets = [
   { size: 512, name: 'icon-512.png' },
   { size: 192, name: 'icon-192.png' },
@@ -83,8 +105,8 @@ const targets = [
 ];
 
 for (const { size, name } of targets) {
-  await sharp(screenshot)
-    .resize(size, size, { fit: 'cover', kernel: 'lanczos3' })
+  await sharp(centred)
+    .resize(size, size, { kernel: 'lanczos3' })
     .png()
     .toFile(join(__dirname, '../public', name));
   console.log(`✓ ${name} (${size}×${size})`);
