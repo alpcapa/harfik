@@ -64,12 +64,19 @@ export default function App() {
     }
   };
 
-  // Oyun bitince giriş yapmış kullanıcının sonucunu kaydet (insan vs YZ oyunları).
+  // Sadece AI ile oynanan oyunlar (rakiplerin tamamı AI) lider tablosuna kaydedilmez.
+  const isAIOnlyGame =
+    state.phase === 'play' &&
+    state.players.length > 0 &&
+    state.players.slice(1).every((p) => p.isAI);
+
+  // Oyun bitince giriş yapmış kullanıcının sonucunu kaydet (en az bir insan rakip gerekli).
   useEffect(() => {
     if (!state.isGameOver || state.phase !== 'play') return;
+    if (isAIOnlyGame) return; // AI-only oyunlar kaydedilmez
     const human = state.players.find((p) => !p.isAI);
     const ai = state.players.find((p) => p.isAI);
-    if (!human || !ai) return; // yalnızca insan vs YZ oyunları kaydedilir
+    if (!human || !ai) return;
     const result =
       human.score > ai.score ? 'win' : human.score < ai.score ? 'lose' : 'tie';
     void saveGame({
@@ -266,9 +273,9 @@ export default function App() {
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-sm bg-panel rounded-2xl shadow-2xl p-6 flex flex-col gap-4">
             <p className="text-sm text-text font-sans leading-relaxed">
-              {user
+              {user && !isAIOnlyGame
                 ? 'Bu oyundan çıkmak mı istiyorsun? Eğer çıkarsan kazandığın tüm puanlar silinecek ve ceza olarak toplam puanından 500 puan düşülecek.'
-                : 'Oyundan çıkmak istediğinizden emin misiniz?'}
+                : 'Bu oyundan çıkmak istediğinizden emin misiniz?'}
             </p>
             <div className="flex gap-2 mt-1">
               <button

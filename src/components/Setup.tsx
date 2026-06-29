@@ -212,6 +212,12 @@ export function Setup({ onStart }: SetupProps) {
         })}
       </div>
 
+      {accountName && ai.slice(1, count).every(Boolean) && (
+        <p className="text-[11px] font-mono text-muted text-center leading-relaxed px-1">
+          Sadece yapay zekaya karşı oynanan oyunlar lider tablosuna kaydedilmez.
+        </p>
+      )}
+
       <button
         onClick={handleStart}
         className="py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform"
