@@ -15,6 +15,7 @@ import { trUpper } from './utils/turkish';
 import { PLAYER_COLORS } from './game/constants';
 import { fetchMeaning } from './lib/api';
 import type { WordMeaning } from './lib/database.types';
+import { useAuth } from './hooks/useAuth';
 
 const AI_THINK_MS = 1100;
 
@@ -26,6 +27,7 @@ const MESSAGE_COLORS: Record<string, string> = {
 };
 
 export default function App() {
+  const { user } = useAuth();
   const [state, dispatch] = useReducer(gameReducer, undefined, createInitialState);
 
   // Oynanan kelime(ler)e tıklanınca gösterilen anlam penceresi. Bir hamlede
@@ -244,8 +246,9 @@ export default function App() {
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-sm bg-panel rounded-2xl shadow-2xl p-6 flex flex-col gap-4">
             <p className="text-sm text-text font-sans leading-relaxed">
-              Bu oyundan çıkmak mı istiyorsun? Eğer çıkarsan kazandığın tüm puanlar
-              silinecek ve ceza olarak toplam puanından 500 puan düşülecek.
+              {user
+                ? 'Bu oyundan çıkmak mı istiyorsun? Eğer çıkarsan kazandığın tüm puanlar silinecek ve ceza olarak toplam puanından 500 puan düşülecek.'
+                : 'Oyundan çıkmak istediğinizden emin misiniz?'}
             </p>
             <div className="flex gap-2 mt-1">
               <button
