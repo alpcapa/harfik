@@ -202,6 +202,7 @@ export default function App() {
       );
       if (structural.valid && structural.words && structural.words.length > 0) {
         setValidating(true);
+        let serverOk = true;
         try {
           for (const word of structural.words) {
             const result = await isValidWordRemote(trLower(word));
@@ -213,15 +214,21 @@ export default function App() {
               });
               return;
             }
-            // null → ağ hatası, yerel sözlüğe düşülür
+            if (result === null) {
+              // Sunucu hatası — yerel sözlüğe düş.
+              serverOk = false;
+              break;
+            }
           }
-          // Tüm kelimeler sunucuda onaylandı.
+        } finally {
+          setValidating(false);
+        }
+        if (serverOk) {
+          // Tüm kelimeler sunucuda onaylandı, yerel kontrol atla.
           pendingSkipWordCheck.current = true;
           if (invasion) { setInvasionConfirm(invasion); return; }
           dispatch({ type: 'PLAY', skipWordCheck: true });
           return;
-        } finally {
-          setValidating(false);
         }
       }
     }
