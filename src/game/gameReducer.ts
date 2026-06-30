@@ -22,6 +22,7 @@ import {
   calcScore,
   computeBreachedCorners,
   validatePlacement,
+  validatePlacementStructural,
 } from '../utils/validator';
 import { findAIMove } from '../utils/ai';
 
@@ -43,7 +44,8 @@ export type Action =
   | { type: 'TOGGLE_SWAP_MODE' }
   | { type: 'TOGGLE_SWAP_TILE'; index: number }
   | { type: 'CONFIRM_SWAP' }
-  | { type: 'PLAY' }
+  | { type: 'PLAY'; skipWordCheck?: boolean }
+  | { type: 'SET_MESSAGE'; message: string; messageType: GameState['messageType'] }
   | { type: 'PASS' }
   | { type: 'AI_PLAY' }
   | { type: 'RENAME_PLAYER'; index: number; name: string };
@@ -113,7 +115,7 @@ function startGame(setup: PlayerSetup[]): GameState {
 }
 
 /** Aktif oyuncunun tahtada hiç taşı yoksa true (ilk hamlesi). */
-function isFirstMove(state: GameState): boolean {
+export function isFirstMove(state: GameState): boolean {
   for (const row of state.board) {
     for (const t of row) {
       if (t && t.owner === state.current) return false;
@@ -387,17 +389,17 @@ export function gameReducer(state: GameState, action: Action): GameState {
       return advanceTurn(moved);
     }
 
+    case 'SET_MESSAGE': {
+      return { ...state, message: action.message, messageType: action.messageType };
+    }
+
     case 'PLAY': {
       if (state.phase !== 'play' || state.isGameOver) return state;
       const me = state.players[state.current];
       const open = computeBreachedCorners(state.board, state.players);
-      const check = validatePlacement(
-        state.board,
-        state.placed,
-        me.corner,
-        open,
-        isFirstMove(state),
-      );
+      const check = action.skipWordCheck
+        ? validatePlacementStructural(state.board, state.placed, me.corner, open, isFirstMove(state))
+        : validatePlacement(state.board, state.placed, me.corner, open, isFirstMove(state));
       if (!check.valid) {
         return { ...state, message: check.reason!, messageType: 'err' };
       }

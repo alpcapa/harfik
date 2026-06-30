@@ -100,8 +100,9 @@ export function Setup({ onStart }: SetupProps) {
           <path d="M4 4 Q25 1 50 4 Q75 7 96 4" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" fill="none" />
         </svg>
         <p className="text-muted text-xs font-mono mt-1">
-          Çok farklı bir kelime oyunu sizlerle. Her oyuncu kendi köşesinden
-          başlar. Köşenden çıkmadan diğerlerine ulaşamazsın. Hemen dene ve gör.
+          Çok farklı bir kelime oyunu sizlerle. Her oyuncunun köşesi onun
+          kalesi gibidir. Oyuna köşenden başlayıp ilerlersin. Köşene giren
+          olursa cezayı keser puanın yarısını alırsın. Haydi sen de dene ve gör.
         </p>
         <button
           onClick={() => setShowHelp(true)}

@@ -12,6 +12,7 @@ import type {
   WordMeaning,
 } from './database.types';
 import { getLocalMeaning } from '../data/meanings';
+import { trLower } from '../utils/turkish';
 
 /** Tamamlanan bir oyunu kaydeder (oturum açıksa). Eklenen kaydın id'sini döner. */
 export async function saveGame(game: NewGame): Promise<string | null> {
@@ -123,7 +124,7 @@ export async function isValidWordRemote(word: string): Promise<boolean | null> {
  */
 export async function fetchMeaning(word: string): Promise<WordMeaning | null> {
   // Tahtadaki harfler büyük olabilir; Türkçe kurallarıyla küçült (İ→i, I→ı).
-  const norm = word.toLocaleLowerCase('tr');
+  const norm = trLower(word);
   if (supabase) {
     const { data, error } = await supabase.rpc('word_meaning', {
       p_word: norm,
@@ -199,7 +200,7 @@ export async function signOut() {
 /** Oturum açan oyuncunun profilini günceller. Profil yoksa oluşturur. */
 export async function updateProfile(
   patch: { first_name?: string; last_name?: string; display_name?: string | null; avatar_url?: string },
-): Promise<Profile | null> {
+): Promise<void> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
   const {
     data: { user },
@@ -227,8 +228,6 @@ export async function updateProfile(
     });
     if (createErr) throw new Error(createErr.message);
   }
-
-  return null;
 }
 
 /** Oturum açan kullanıcının e-postasını değiştirir (doğrulama gerekebilir). */

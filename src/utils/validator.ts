@@ -1,5 +1,5 @@
 // Harfik — kelime doğrulama, bölge kuralları ve puanlama
-import { BINGO_BONUS, SIZE, inCorner, isZoneBoundaryCell, regionOf } from '../game/constants';
+import { BINGO_BONUS, SIZE, cornerBounds, inCorner, isZoneBoundaryCell, regionOf } from '../game/constants';
 import type { BonusType, Player, ValidationResult } from '../game/types';
 import { WORD_SET } from '../data/words';
 import { trLower } from './turkish';
@@ -72,10 +72,11 @@ export function cellAllowed(
 }
 
 /**
- * Oyuncunun bu turdaki yerleştirmesini doğrular: hizalama, bölge kuralları,
- * bağlantı, geçersiz hücreler ve sözlük. Geçerliyse oluşan kelimeleri döndürür.
+ * Yapısal doğrulama — hizalama, bölge kuralları, bağlantı, kelime varlığı;
+ * sözlük kontrolü yapılmaz. Geçerliyse oluşan kelimeleri döner.
+ * Sunucu doğrulaması yaparken önce bu çağrılır, ardından kelimeler RPC'ye gönderilir.
  */
-export function validatePlacement(
+export function validatePlacementStructural(
   board: Board,
   placed: Placed,
   ownCorner: number,
@@ -106,49 +107,62 @@ export function validatePlacement(
     }
   }
 
-  // Rakip köşeye giriş kuralı: en az bir yeni taş, o köşenin iç sınır
-  // karesinin yanında (veya üzerinde) olmalı.
+  // Rakip köşeye giriş kuralı: bu köşeye ilk kez giriliyorsa en az bir yeni
+  // taş, o köşenin iç sınır karesinde veya yanında (ve sınır karesi dolu)
+  // olmalıdır. Köşe içinde zaten taş varsa (daha önce girilmiş) bu kural
+  // uygulanmaz; bağlantı kuralı yeterlidir.
   const foreignZoneCoords = coords.filter(([r, c]) => {
     const region = regionOf(r, c);
     return region !== -1 && region !== ownCorner;
   });
   if (foreignZoneCoords.length > 0) {
-    const touchesBoundary = foreignZoneCoords.some(([r, c]) => {
-      const zone = regionOf(r, c) as number;
-      if (isZoneBoundaryCell(zone, r, c)) return true;
-      return (
-        [
-          [r - 1, c],
-          [r + 1, c],
-          [r, c - 1],
-          [r, c + 1],
-        ] as [number, number][]
-      ).some(
-        ([nr, nc]) =>
-          nr >= 0 &&
-          nr < SIZE &&
-          nc >= 0 &&
-          nc < SIZE &&
-          isZoneBoundaryCell(zone, nr, nc) &&
-          board[nr][nc] !== null,
-      );
+    const foreignZones = new Set(foreignZoneCoords.map(([r, c]) => regionOf(r, c) as number));
+    const allZonesAlreadyEntered = [...foreignZones].every((zone) => {
+      const b = cornerBounds(zone);
+      for (let r = b.r0; r <= b.r1; r++) {
+        for (let c = b.c0; c <= b.c1; c++) {
+          if (board[r][c] && !isZoneBoundaryCell(zone, r, c)) return true;
+        }
+      }
+      return false;
     });
-    if (!touchesBoundary) {
-      return {
-        valid: false,
-        reason: 'Rakip köşesine girerken sınır karesindeki bir taşa değmelisin.',
-      };
+
+    if (!allZonesAlreadyEntered) {
+      const touchesBoundary = foreignZoneCoords.some(([r, c]) => {
+        const zone = regionOf(r, c) as number;
+        if (isZoneBoundaryCell(zone, r, c)) return true;
+        return (
+          [
+            [r - 1, c],
+            [r + 1, c],
+            [r, c - 1],
+            [r, c + 1],
+          ] as [number, number][]
+        ).some(
+          ([nr, nc]) =>
+            nr >= 0 &&
+            nr < SIZE &&
+            nc >= 0 &&
+            nc < SIZE &&
+            isZoneBoundaryCell(zone, nr, nc) &&
+            board[nr][nc] !== null,
+        );
+      });
+      if (!touchesBoundary) {
+        return {
+          valid: false,
+          reason: 'Rakip köşesine girerken sınır karesindeki bir taşa değmelisin.',
+        };
+      }
     }
   }
 
   if (isFirstMove) {
-    // İlk hamlede en az bir taş kendi köşenin içinde olmalı.
     const startsHome = coords.some(([r, c]) => inCorner(ownCorner, r, c));
     if (!startsHome) {
       return { valid: false, reason: 'İlk kelimen kendi köşenden başlamalı.' };
     }
   } else {
-    // Sonraki hamleler mevcut bir taşa değmeli.
     const connects = coords.some(([r, c]) =>
       [
         [r - 1, c],
@@ -170,13 +184,30 @@ export function validatePlacement(
     return { valid: false, reason: 'Geçerli kelime oluşmadı.' };
   }
 
+  return { valid: true, words: formed.map((f) => f.word) };
+}
+
+/**
+ * Oyuncunun bu turdaki yerleştirmesini doğrular: hizalama, bölge kuralları,
+ * bağlantı ve yerel sözlük. Geçerliyse oluşan kelimeleri döndürür.
+ */
+export function validatePlacement(
+  board: Board,
+  placed: Placed,
+  ownCorner: number,
+  openCorners: boolean[],
+  isFirstMove: boolean,
+): ValidationResult {
+  const structural = validatePlacementStructural(board, placed, ownCorner, openCorners, isFirstMove);
+  if (!structural.valid) return structural;
+
+  const formed = getFormedWords(board, placed);
   for (const { word } of formed) {
     if (!WORD_SET.has(trLower(word))) {
       return { valid: false, reason: `"${word}" geçerli bir kelime değil.` };
     }
   }
-
-  return { valid: true, words: formed.map((f) => f.word) };
+  return structural;
 }
 
 /**
