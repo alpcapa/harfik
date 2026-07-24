@@ -225,103 +225,110 @@ export function GrowthChart<T extends { bucket: string }>({
           </table>
         </div>
       ) : (
-        <div
-          ref={wrapRef}
-          className="relative w-full select-none"
-          style={{ aspectRatio: `${W} / ${H}` }}
-          onPointerMove={handlePointerMove}
-          onPointerLeave={() => setHoverIndex(null)}
-        >
-          <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
-            {yTicks.map((t) => (
-              <g key={t}>
+        <div className="relative w-full select-none">
+          {/* Safari, bir aspect-ratio kutusu tablo görünümünden geri
+              takılınca içinde bulunduğu overflow-y-auto panelin yüksekliğini
+              yanlış hesaplayıp alttaki kardeşleri (Ziyaretçi Kaynağı vb.)
+              görünümden düşürüyordu — aspect-ratio yerine tüm tarayıcılarda
+              güvenilir çalışan klasik padding-top yüzdesi tekniği kullanılıyor. */}
+          <div style={{ paddingTop: `${(H / W) * 100}%` }} />
+          <div
+            ref={wrapRef}
+            className="absolute inset-0"
+            onPointerMove={handlePointerMove}
+            onPointerLeave={() => setHoverIndex(null)}
+          >
+            <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+              {yTicks.map((t) => (
+                <g key={t}>
+                  <line
+                    x1={leftPad}
+                    x2={W - rightPad}
+                    y1={y(t)}
+                    y2={y(t)}
+                    stroke="#DCE2EA"
+                    strokeWidth={1}
+                  />
+                  <text x={leftPad - 6} y={y(t)} textAnchor="end" dominantBaseline="middle" fontSize={13} fill="#8A93A2">
+                    {formatValue(t)}
+                  </text>
+                </g>
+              ))}
+
+              <text x={leftPad} y={H - 4} textAnchor="start" fontSize={12} fill="#8A93A2">
+                {fmtShortDate(data[0].bucket, granularity)}
+              </text>
+              {n > 2 && (
+                <text x={x(Math.floor((n - 1) / 2))} y={H - 4} textAnchor="middle" fontSize={12} fill="#8A93A2">
+                  {fmtShortDate(data[Math.floor((n - 1) / 2)].bucket, granularity)}
+                </text>
+              )}
+              <text x={x(n - 1)} y={H - 4} textAnchor="end" fontSize={12} fill="#8A93A2">
+                {fmtShortDate(data[n - 1].bucket, granularity)}
+              </text>
+
+              {hoverIndex !== null && (
                 <line
-                  x1={leftPad}
-                  x2={W - rightPad}
-                  y1={y(t)}
-                  y2={y(t)}
-                  stroke="#DCE2EA"
+                  x1={x(hoverIndex)}
+                  x2={x(hoverIndex)}
+                  y1={PAD.top}
+                  y2={PAD.top + PLOT_H}
+                  stroke="#8A93A2"
                   strokeWidth={1}
                 />
-                <text x={leftPad - 6} y={y(t)} textAnchor="end" dominantBaseline="middle" fontSize={13} fill="#8A93A2">
-                  {formatValue(t)}
-                </text>
-              </g>
-            ))}
+              )}
 
-            <text x={leftPad} y={H - 4} textAnchor="start" fontSize={12} fill="#8A93A2">
-              {fmtShortDate(data[0].bucket, granularity)}
-            </text>
-            {n > 2 && (
-              <text x={x(Math.floor((n - 1) / 2))} y={H - 4} textAnchor="middle" fontSize={12} fill="#8A93A2">
-                {fmtShortDate(data[Math.floor((n - 1) / 2)].bucket, granularity)}
-              </text>
+              {paths.map((p) => (
+                <path key={p.key} d={p.d} fill="none" stroke={p.color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+              ))}
+
+              {activeSeries.map((s) => (
+                <circle
+                  key={s.key}
+                  cx={x(n - 1)}
+                  cy={y(valueOf(data[n - 1], s.key) ?? 0)}
+                  r={4}
+                  fill={s.color}
+                  stroke="#FFFFFF"
+                  strokeWidth={2}
+                />
+              ))}
+
+              {endLabels.map((l) => (
+                <g key={l.key}>
+                  {Math.abs(l.rawY - y(l.value)) > 0.5 && (
+                    <line x1={x(n - 1) + 5} x2={x(n - 1) + 10} y1={y(l.value)} y2={l.rawY} stroke="#DCE2EA" strokeWidth={1} />
+                  )}
+                  <text x={x(n - 1) + 12} y={l.rawY} dominantBaseline="middle" fontSize={13} fontWeight={700} fill="#1B2430">
+                    {formatValue(l.value)}
+                  </text>
+                </g>
+              ))}
+            </svg>
+
+            {hover && hoverPct && (
+              <div
+                className="absolute top-0 -translate-x-1/2 pointer-events-none bg-panel border border-border rounded-md shadow-[0_4px_12px_rgba(15,23,42,0.15)] px-2.5 py-1.5 text-[10px] font-mono whitespace-nowrap"
+                style={{
+                  left: hoverPct.left,
+                  marginLeft: hoverIndex === 0 ? 8 : hoverIndex === n - 1 ? -8 : 0,
+                  transform: hoverIndex === 0 ? 'translateX(0)' : hoverIndex === n - 1 ? 'translateX(-100%)' : 'translateX(-50%)',
+                }}
+              >
+                <div className="text-muted mb-1">{fmtFullDate(hover.bucket, granularity)}</div>
+                {activeSeries.map((s) => {
+                  const v = valueOf(hover, s.key);
+                  return (
+                    <div key={s.key} className="flex items-center gap-1.5">
+                      <span className="inline-block w-2.5 h-[2px] rounded-full" style={{ background: s.color }} />
+                      <span className="font-bold text-text text-[12px]">{v == null ? '—' : formatValue(v)}</span>
+                      <span className="text-muted">{s.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
             )}
-            <text x={x(n - 1)} y={H - 4} textAnchor="end" fontSize={12} fill="#8A93A2">
-              {fmtShortDate(data[n - 1].bucket, granularity)}
-            </text>
-
-            {hoverIndex !== null && (
-              <line
-                x1={x(hoverIndex)}
-                x2={x(hoverIndex)}
-                y1={PAD.top}
-                y2={PAD.top + PLOT_H}
-                stroke="#8A93A2"
-                strokeWidth={1}
-              />
-            )}
-
-            {paths.map((p) => (
-              <path key={p.key} d={p.d} fill="none" stroke={p.color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-            ))}
-
-            {activeSeries.map((s) => (
-              <circle
-                key={s.key}
-                cx={x(n - 1)}
-                cy={y(valueOf(data[n - 1], s.key) ?? 0)}
-                r={4}
-                fill={s.color}
-                stroke="#FFFFFF"
-                strokeWidth={2}
-              />
-            ))}
-
-            {endLabels.map((l) => (
-              <g key={l.key}>
-                {Math.abs(l.rawY - y(l.value)) > 0.5 && (
-                  <line x1={x(n - 1) + 5} x2={x(n - 1) + 10} y1={y(l.value)} y2={l.rawY} stroke="#DCE2EA" strokeWidth={1} />
-                )}
-                <text x={x(n - 1) + 12} y={l.rawY} dominantBaseline="middle" fontSize={13} fontWeight={700} fill="#1B2430">
-                  {formatValue(l.value)}
-                </text>
-              </g>
-            ))}
-          </svg>
-
-          {hover && hoverPct && (
-            <div
-              className="absolute top-0 -translate-x-1/2 pointer-events-none bg-panel border border-border rounded-md shadow-[0_4px_12px_rgba(15,23,42,0.15)] px-2.5 py-1.5 text-[10px] font-mono whitespace-nowrap"
-              style={{
-                left: hoverPct.left,
-                marginLeft: hoverIndex === 0 ? 8 : hoverIndex === n - 1 ? -8 : 0,
-                transform: hoverIndex === 0 ? 'translateX(0)' : hoverIndex === n - 1 ? 'translateX(-100%)' : 'translateX(-50%)',
-              }}
-            >
-              <div className="text-muted mb-1">{fmtFullDate(hover.bucket, granularity)}</div>
-              {activeSeries.map((s) => {
-                const v = valueOf(hover, s.key);
-                return (
-                  <div key={s.key} className="flex items-center gap-1.5">
-                    <span className="inline-block w-2.5 h-[2px] rounded-full" style={{ background: s.color }} />
-                    <span className="font-bold text-text text-[12px]">{v == null ? '—' : formatValue(v)}</span>
-                    <span className="text-muted">{s.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          </div>
         </div>
       )}
     </div>

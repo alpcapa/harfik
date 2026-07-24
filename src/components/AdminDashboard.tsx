@@ -422,7 +422,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
           </div>
         </div>
 
-        <div className="overflow-y-auto px-5 pt-4 pb-5 flex flex-col gap-4">
+        <div className="overflow-y-auto min-h-0 px-5 pt-4 pb-5 flex flex-col gap-4">
           {error && <div className="text-xs font-mono text-red">{error}</div>}
 
           {tab === 'members' && (
