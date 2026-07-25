@@ -21,6 +21,7 @@ import { rankPlayers } from './utils/ranking';
 import { loadGameState, saveGameState, clearGameState, takePendingAbandonedGame } from './utils/gameStorage';
 import { markQuickStartSeen } from './utils/onboarding';
 import { getFormedWords, getFullWordAt, key } from './utils/board';
+import { serializeBoardSnapshot } from './utils/boardSnapshot';
 import type { Tile as TileModel } from './game/types';
 import { Tile } from './components/Tile';
 import { trLower } from './utils/turkish';
@@ -343,6 +344,7 @@ export default function App() {
       move_points_sum: human.moveScoreSum || null,
       surrendered,
       players,
+      board_snapshot: serializeBoardSnapshot(state.board),
     };
   };
 

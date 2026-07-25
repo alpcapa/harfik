@@ -12,9 +12,11 @@ interface TileProps {
   color?: PlayerColor;
   selected?: boolean;
   onClick?: () => void;
+  /** Küçük salt-okunur önizlemeler için (bkz. `GameBoardPreview`) — harf daha küçük, puan üst simgesi hiç gösterilmez. */
+  compact?: boolean;
 }
 
-export function Tile({ tile, variant, color, selected = false, onClick }: TileProps) {
+export function Tile({ tile, variant, color, selected = false, onClick, compact = false }: TileProps) {
   const isRack = variant === 'rack';
   const raw = tileLetter(tile) || tile.letter;
   // Joker (?) rafta yıldız olarak görünür; oynanınca seçilen harfe döner.
@@ -59,22 +61,28 @@ export function Tile({ tile, variant, color, selected = false, onClick }: TilePr
         style={{ WebkitTextStrokeWidth: isRack ? '0.7px' : '0.35px' }}
         className={[
           'font-tile font-extrabold leading-none [-webkit-text-stroke-color:currentColor]',
-          isRack ? 'text-[24px]' : 'text-[clamp(14px,3.8vw,24px)] text-tile-letter',
+          isRack
+            ? 'text-[24px]'
+            : compact
+              ? 'text-[clamp(8px,2.4vw,14px)] text-tile-letter'
+              : 'text-[clamp(14px,3.8vw,24px)] text-tile-letter',
         ].join(' ')}
       >
         {display}
       </span>
-      {/* Puan — harfin sağ üstünde üst simge gibi. */}
-      <span
-        className={[
-          'absolute font-mono font-bold leading-none',
-          isRack
-            ? 'top-[3px] right-[4px] text-[10px] text-[#8B5E00]'
-            : 'top-[1px] right-[1.5px] text-[clamp(6px,1.6vw,10px)] text-accent',
-        ].join(' ')}
-      >
-        {tile.pts}
-      </span>
+      {/* Puan — harfin sağ üstünde üst simge gibi. Compact (önizleme) varyantında hiç gösterilmez. */}
+      {!compact && (
+        <span
+          className={[
+            'absolute font-mono font-bold leading-none',
+            isRack
+              ? 'top-[3px] right-[4px] text-[10px] text-[#8B5E00]'
+              : 'top-[1px] right-[1.5px] text-[clamp(6px,1.6vw,10px)] text-accent',
+          ].join(' ')}
+        >
+          {tile.pts}
+        </span>
+      )}
     </div>
   );
 }

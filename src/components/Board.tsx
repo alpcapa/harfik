@@ -41,6 +41,10 @@ interface BoardProps {
   onTilePointerMove?: (e: React.PointerEvent<HTMLDivElement>) => void;
   onTilePointerUp?: (e: React.PointerEvent<HTMLDivElement>) => void;
   onTilePointerCancel?: (e: React.PointerEvent<HTMLDivElement>) => void;
+  /** Alt bilgi şeridini (Oyun Geçmişi linki + X2/X3 açıklaması) gizler — salt-okunur önizlemelerde (bkz. `GameBoardPreview`). */
+  hideFooter?: boolean;
+  /** Taşları küçük/puan göstermeden çizer — salt-okunur önizlemelerde (bkz. `GameBoardPreview`). */
+  compact?: boolean;
 }
 
 // Merkezdeki x2 bonus bölgesi altın rengi — nömorfik, diğer köşe tonlarıyla
@@ -88,6 +92,8 @@ export function Board({
   onTilePointerMove,
   onTilePointerUp,
   onTilePointerCancel,
+  hideFooter = false,
+  compact = false,
 }: BoardProps) {
   const online = useOnlineStatus();
   const { board, placed, bonuses, players, current } = state;
@@ -207,6 +213,7 @@ export function Board({
           <Tile
             tile={boardTile}
             variant="board"
+            compact={compact}
             color={
               isLastMove && tileColor
                 ? { ...tileColor, tint: darken(tileColor.tint, 0.14), base: darken(tileColor.base, 0.12) }
@@ -223,7 +230,7 @@ export function Board({
         // hücre bunun dışında, turuncu zemin + kendi X3 etiketiyle öne çıkar.
         classes.push('cursor-pointer');
         style = bonus ? { ...CENTER_ZONE_STYLE } : { ...GOLD_ZONE_STYLE };
-        if (bonus) {
+        if (bonus && !compact) {
           classes.push(CENTER_TEXT, 'text-[clamp(7px,1.9vw,12px)]');
           content = BONUS_LABELS[bonus];
         }
@@ -421,87 +428,94 @@ export function Board({
             köşelerde filigranı hücre alanının üstüne, alt köşelerde
             altına kaydırıyordu (ölçüldü: üstte -3.3px, altta +2.9px —
             toplam ~6px, tam da 10-4 farkı). */}
-        <div className="pointer-events-none absolute inset-[10px]">
-          {[0, 1, 2, 3].map((i) => {
-            const col = cornerColor[i];
-            const num = cornerNumber[i];
-            if (!col || !num) return null;
-            const top = i === 0 || i === 1;
-            const left = i === 0 || i === 2;
-            return (
-              <div
-                key={i}
-                className="absolute flex items-center justify-center font-mono font-bold leading-none"
-                style={{
-                  width: cornerFrac,
-                  height: cornerFrac,
-                  top: top ? 0 : 'auto',
-                  bottom: top ? 'auto' : 0,
-                  left: left ? 0 : 'auto',
-                  right: left ? 'auto' : 0,
-                  color: col.base,
-                  opacity: 0.20,
-                  fontSize: 'clamp(80px, 32vw, 220px)',
-                }}
-              >
-                {num}
-              </div>
-            );
-          })}
-        </div>
+        {!compact && (
+          <div className="pointer-events-none absolute inset-[10px]">
+            {[0, 1, 2, 3].map((i) => {
+              const col = cornerColor[i];
+              const num = cornerNumber[i];
+              if (!col || !num) return null;
+              const top = i === 0 || i === 1;
+              const left = i === 0 || i === 2;
+              return (
+                <div
+                  key={i}
+                  className="absolute flex items-center justify-center font-mono font-bold leading-none"
+                  style={{
+                    width: cornerFrac,
+                    height: cornerFrac,
+                    top: top ? 0 : 'auto',
+                    bottom: top ? 'auto' : 0,
+                    left: left ? 0 : 'auto',
+                    right: left ? 'auto' : 0,
+                    color: col.base,
+                    opacity: 0.20,
+                    fontSize: 'clamp(80px, 32vw, 220px)',
+                  }}
+                >
+                  {num}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Merkezdeki x2 bonus bölgesinin arkasına yazılan büyük "X2" filigranı.
             inset-[10px]: yukarıdaki köşe filigranı notuyla aynı sebep — grid'in
-            kendi p-[10px] dolgusuyla eşleşmesi gerekiyor. */}
-        <div className="pointer-events-none absolute inset-[10px]">
-          <div
-            className="absolute flex items-center justify-center font-mono font-bold leading-none"
-            style={{
-              width: zoneFrac,
-              height: zoneFrac,
-              top: zoneTop,
-              left: zoneLeft,
-              color: '#92660A',
-              opacity: 0.28,
-              fontSize: 'clamp(60px, 24vw, 165px)',
-            }}
-          >
-            X2
+            kendi p-[10px] dolgusuyla eşleşmesi gerekiyor. Compact (önizleme)
+            varyantında köşe numaralarıyla birlikte hiç gösterilmez. */}
+        {!compact && (
+          <div className="pointer-events-none absolute inset-[10px]">
+            <div
+              className="absolute flex items-center justify-center font-mono font-bold leading-none"
+              style={{
+                width: zoneFrac,
+                height: zoneFrac,
+                top: zoneTop,
+                left: zoneLeft,
+                color: '#92660A',
+                opacity: 0.28,
+                fontSize: 'clamp(60px, 24vw, 165px)',
+              }}
+            >
+              X2
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Alt bilgi şeridi (Oyun Geçmişi / X2-X3 açıklaması) — kartın kendi
           zemini ve gölgesiyle bütünleşik bir alt bölüm; ayrı, asılı kalan
           bir beyaz şerit değil. */}
-      <div className="relative z-10 flex items-center justify-between gap-2 shrink-0 px-[10px] pb-[10px] pt-1 w-full">
-        <button
-          onClick={onOpenHistory}
-          className="text-[13px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
-        >
-          Oyun Geçmişi
-        </button>
-        <div className="flex gap-2 justify-end flex-wrap">
-          {!online && (
-            <div className="text-[8px] font-mono font-bold text-red flex items-center">
-              Çevrimdışı
-            </div>
-          )}
-          {LEGEND.map((item) => (
-            <div
-              key={item.label}
-              className="text-[8px] font-mono flex items-center gap-[3px] text-muted"
-            >
-              <span
-                className="w-2 h-2 rounded-[1px]"
-                style={{ background: item.bg, border: item.border }}
-              />
-              <span className="font-bold">{item.label}</span>
-              <span className="text-muted/70">{item.desc}</span>
-            </div>
-          ))}
+      {!hideFooter && (
+        <div className="relative z-10 flex items-center justify-between gap-2 shrink-0 px-[10px] pb-[10px] pt-1 w-full">
+          <button
+            onClick={onOpenHistory}
+            className="text-[13px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
+          >
+            Oyun Geçmişi
+          </button>
+          <div className="flex gap-2 justify-end flex-wrap">
+            {!online && (
+              <div className="text-[8px] font-mono font-bold text-red flex items-center">
+                Çevrimdışı
+              </div>
+            )}
+            {LEGEND.map((item) => (
+              <div
+                key={item.label}
+                className="text-[8px] font-mono flex items-center gap-[3px] text-muted"
+              >
+                <span
+                  className="w-2 h-2 rounded-[1px]"
+                  style={{ background: item.bg, border: item.border }}
+                />
+                <span className="font-bold">{item.label}</span>
+                <span className="text-muted/70">{item.desc}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
       </div>
     </div>
   );

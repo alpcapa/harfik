@@ -50,7 +50,8 @@ src/
 │   ├── ResetPasswordModal.tsx   # şifre sıfırlama e-postasındaki bağlantıdan sonra yeni şifre belirleme
 │   ├── AccountSettingsModal.tsx # profil düzenleme (avatar, kullanıcı adı)
 │   ├── ScoreCard.tsx            # oyuncu istatistikleri
-│   ├── GameHistoryModal.tsx     # geçmiş oyunların listesi
+│   ├── GameHistoryModal.tsx     # geçmiş oyunların listesi (kalp ikonu: favori, karta tıkla: tahta önizlemesi), Tümü/Favoriler filtresi
+│   ├── GameBoardPreview.tsx     # bir oyunun bitiş anındaki tahtasının salt-okunur önizlemesi
 │   ├── MoveHistoryModal.tsx     # oyun geçmişi (hamle hamle)
 │   ├── Leaderboard.tsx          # lider tablosu
 │   ├── MeaningModal.tsx         # kelime anlamı penceresi
@@ -63,6 +64,8 @@ src/
 │   ├── PrivacyModal.tsx         # gizlilik politikası
 │   ├── TermsModal.tsx           # kullanım koşulları
 │   ├── Modal.tsx                # paylaşılan modal kabuğu
+│   ├── ActionSheet.tsx          # iOS tarzı alttan açılan aksiyon menüsü (ör. tahta önizlemesi → Paylaş/Kapat)
+│   ├── SharedGamePage.tsx       # herkese açık /game/:id sayfası (girişsiz de erişilebilir)
 │   ├── Avatar.tsx               # profil fotoğrafı bileşeni
 │   ├── PlayerBadge.tsx          # renkli oyuncu sıra/koltuk rozeti
 │   ├── ErrorBoundary.tsx        # kök seviye React crash yakalayıcı
@@ -81,6 +84,7 @@ src/
 │   ├── validator.ts    # kelime doğrulama, bölge kuralları, puanlama
 │   ├── ai.ts           # YZ oyuncu mantığı
 │   ├── board.ts        # tahta yardımcıları (kelime bulma, hücre key)
+│   ├── boardSnapshot.ts # oyun sonu tahtasının games.board_snapshot JSON'una serileştirilmesi/geri yüklenmesi
 │   ├── bag.ts          # taş torbası (buildBag, drawTiles)
 │   ├── outline.ts      # bölge/bonus dış hat SVG path üretimi
 │   ├── turkish.ts      # trUpper / trLower (i/İ, ı/I dönüşümü)
@@ -90,7 +94,8 @@ src/
 │   ├── gameSync.ts      # bitmiş oyunlar için çevrimdışı/misafir kuyruğu
 │   ├── feedbackSync.ts # geri bildirim formu için çevrimdışı kuyruk
 │   ├── onboarding.ts   # ilk açılış hızlı başlangıç ipucu bayrağı
-│   └── visitTracking.ts # anonim misafir ziyaret kimliği, cihaz/standalone tespiti, UTM kaynağı
+│   ├── visitTracking.ts # anonim misafir ziyaret kimliği, cihaz/standalone tespiti, UTM kaynağı
+│   └── shareBoardImage.ts # bir DOM düğümünü (tahta önizlemesi) paylaşılabilir PNG'ye çevirir (html-to-image)
 ├── hooks/
 │   ├── useAuth.tsx        # Supabase auth context
 │   ├── useModalA11y.ts    # modal odak hapsi, Escape, dialog yığını
