@@ -1,14 +1,39 @@
 // Kelimeki — oturum açan kullanıcının geçmiş tüm oyunlarının listesi (lazy load)
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal } from './Modal';
-import { fetchMyGames, fetchGameBoardSnapshot, toggleGameFavorite, markGameShared } from '../lib/api';
-import type { BoardSnapshotTile, GameHistoryEntry, GamePlayerSnapshot } from '../lib/database.types';
+import {
+  fetchMyGames,
+  fetchGameBoardSnapshot,
+  fetchGameLikers,
+  toggleGameLike,
+  markGameShared,
+} from '../lib/api';
+import type { BoardSnapshotTile, GameHistoryEntry, GameLiker, GamePlayerSnapshot } from '../lib/database.types';
 import { useAuth } from '../hooks/useAuth';
 import { PLAYER_COLORS } from '../game/constants';
 import { PlayerBadge } from './PlayerBadge';
 import { GameBoardPreview } from './GameBoardPreview';
 import { ActionSheet } from './ActionSheet';
+import { Avatar } from './Avatar';
+import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
 import { captureNodeAsPng } from '../utils/shareBoardImage';
+
+/** Beğenenler listesindeki bir satırı `PlayerScoreCard` açabilecek şekle çevirir. */
+function likerToPlayerSummary(l: GameLiker): PlayerSummary {
+  return {
+    id: l.user_id,
+    username: null,
+    first_name: l.first_name,
+    last_name: null,
+    display_name: l.display_name,
+    avatar_url: l.avatar_url,
+  };
+}
+
+/** `Leaderboard`/`PlayerScoreCard`'daki aynı kısa kimlik kuralı: soyad hiç gösterilmez. */
+function likerName(l: GameLiker): string {
+  return l.display_name || l.first_name || 'Oyuncu';
+}
 
 interface GameHistoryModalProps {
   playerCount: number;
@@ -114,8 +139,13 @@ function seatIndexFor(p: GamePlayerSnapshot, positionIndex: number, isSnapshot: 
   return m ? Math.max(0, parseInt(m[1], 10) - 1) : positionIndex;
 }
 
-/** Paylaş aksiyonunun sabit metni — skor/tarih artık görselin kendisinde (bkz. aşağı). */
-const SHARE_MESSAGE = "Kelimeki'de oynadığım bu oyun çok iyidi.";
+/**
+ * Paylaş aksiyonunun sabit metni — skor/tarih artık görselin kendisinde
+ * (bkz. aşağı). Bilerek birinci şahıstan ("oynadığım oyun") jenerik üçüncü
+ * şahsa çevrildi: paylaşan kişi artık her zaman oyunun sahibi olmayabilir
+ * (herkes herkesin oyununu paylaşabiliyor, bkz. `set_game_shared` RPC'si).
+ */
+const SHARE_MESSAGE = "Kelimeki'deki şu oyunu görmeni istedim.";
 
 /** Herkese açık paylaşım sayfası — bkz. `SharedGamePage`/`main.tsx`'teki path kontrolü. */
 function buildShareUrl(gameId: string): string {
@@ -213,6 +243,24 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
   // (expandedId tek bir id) paylaş için görseli buradan yakalıyoruz — tek ref yeterli.
   const boardCaptureRef = useRef<HTMLDivElement | null>(null);
 
+  // Beğeni sayısına dokununca açılan "Beğenenler" listesi. `likersByGame`
+  // bir kez çekilen listeyi önbellekte tutar (snapshot'lardaki `fetchedIds`
+  // deseniyle aynı mantık) — tekrar aç/kapa yapınca ağa tekrar gitmez.
+  const [likersGameId, setLikersGameId] = useState<string | null>(null);
+  const [likersByGame, setLikersByGame] = useState<Record<string, GameLiker[]>>({});
+  const [likersLoading, setLikersLoading] = useState(false);
+  const [selectedLiker, setSelectedLiker] = useState<PlayerSummary | null>(null);
+
+  const handleShowLikers = useCallback((gameId: string) => {
+    setLikersGameId(gameId);
+    if (likersByGame[gameId]) return;
+    setLikersLoading(true);
+    void fetchGameLikers(gameId).then((rows) => {
+      setLikersByGame((cur) => ({ ...cur, [gameId]: rows }));
+      setLikersLoading(false);
+    });
+  }, [likersByGame]);
+
   const handleShare = useCallback(async (entry: GameHistoryEntry) => {
     const text = SHARE_MESSAGE;
     const shared = await markGameShared(entry.id);
@@ -259,12 +307,26 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
     });
   }, []);
 
-  const handleToggleFavorite = useCallback((gameId: string) => {
-    setGames((cur) => cur.map((g) => (g.id === gameId ? { ...g, favorited: !g.favorited } : g)));
-    void toggleGameFavorite(gameId).then((result) => {
+  const flipLike = (g: GameHistoryEntry) => ({
+    ...g,
+    liked_by_me: !g.liked_by_me,
+    like_count: g.like_count + (g.liked_by_me ? -1 : 1),
+  });
+
+  const handleToggleLike = useCallback((gameId: string) => {
+    setGames((cur) => cur.map((g) => (g.id === gameId ? flipLike(g) : g)));
+    // Beğenenler listesi önbellekte kalmışsa artık güncel değil — bir dahaki
+    // açılışta yeniden çekilsin diye siliniyor.
+    setLikersByGame((cur) => {
+      if (!(gameId in cur)) return cur;
+      const next = { ...cur };
+      delete next[gameId];
+      return next;
+    });
+    void toggleGameLike(gameId).then((result) => {
       if (result === null) {
         // İstek başarısız oldu (ör. çevrimdışı) — iyimser güncellemeyi geri al.
-        setGames((cur) => cur.map((g) => (g.id === gameId ? { ...g, favorited: !g.favorited } : g)));
+        setGames((cur) => cur.map((g) => (g.id === gameId ? flipLike(g) : g)));
       }
     });
   }, []);
@@ -284,6 +346,7 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
     setExpandedId(null);
     setSnapshots({});
     setBoardSheetId(null);
+    setLikersGameId(null);
     fetchedIds.current.clear();
     void fetchMyGames(playerCount, 0, PAGE_SIZE, userId, favoritesOnly).then(({ games: page, hasMore: more }) => {
       if (cancelled) return;
@@ -350,7 +413,11 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
         <p className="text-muted text-xs font-mono text-center py-4">Yükleniyor…</p>
       ) : games.length === 0 ? (
         <p className="text-muted text-[10px] font-mono text-center py-4">
-          {favoritesOnly ? 'Henüz favori işaretlediğin bir oyun yok.' : 'Bu kategoride henüz kayıtlı oyun yok.'}
+          {favoritesOnly
+            ? userId
+              ? 'Bu oyuncunun henüz favori işaretlediği bir oyun yok.'
+              : 'Henüz favori işaretlediğin bir oyun yok.'
+            : 'Bu kategoride henüz kayıtlı oyun yok.'}
         </p>
       ) : (
         <div ref={scrollRef} className="flex flex-col gap-2 max-h-[65vh] overflow-y-auto pr-1">
@@ -378,16 +445,30 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                 >
                   <div className="flex items-center justify-between gap-2 text-[9px] font-mono text-muted uppercase tracking-[0.5px]">
                     <span className="flex items-center gap-1.5">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleFavorite(entry.id);
-                        }}
-                        aria-label={entry.favorited ? 'Favoriden çıkar' : 'Favoriye ekle'}
-                        className={entry.favorited ? 'text-red' : 'text-muted'}
-                      >
-                        <HeartIcon filled={entry.favorited} size={13} />
-                      </button>
+                      <span className="flex items-center gap-0.5">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleLike(entry.id);
+                          }}
+                          aria-label={entry.liked_by_me ? 'Favoriden çıkar' : 'Favoriye ekle'}
+                          className={entry.liked_by_me ? 'text-red' : 'text-muted'}
+                        >
+                          <HeartIcon filled={entry.liked_by_me} size={13} />
+                        </button>
+                        {entry.like_count > 0 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleShowLikers(entry.id);
+                            }}
+                            aria-label="Beğenenleri göster"
+                            className="text-muted underline underline-offset-2"
+                          >
+                            {entry.like_count}
+                          </button>
+                        )}
+                      </span>
                       {formatDateTime(entry.created_at)}
                     </span>
                     <span className="flex items-center gap-2 shrink-0">
@@ -490,6 +571,35 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
             </div>
           )}
         </div>
+      )}
+
+      {likersGameId && (
+        <Modal title="Beğenenler" onClose={() => setLikersGameId(null)}>
+          {likersLoading ? (
+            <p className="text-muted text-xs font-mono text-center py-4">Yükleniyor…</p>
+          ) : (
+            <ul className="flex flex-col gap-1">
+              {(likersByGame[likersGameId] ?? []).map((liker) => {
+                const name = likerName(liker);
+                return (
+                  <li key={liker.user_id}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedLiker(likerToPlayerSummary(liker))}
+                      className="w-full flex items-center gap-2 text-sm font-mono rounded-md px-2 py-1.5 text-left bg-bg active:opacity-70 transition-opacity"
+                    >
+                      <Avatar url={liker.avatar_url} name={name} size={22} className="shrink-0" />
+                      <span className="flex-1 truncate text-text">{name}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Modal>
+      )}
+      {selectedLiker && (
+        <PlayerScoreCard member={selectedLiker} onClose={() => setSelectedLiker(null)} />
       )}
     </Modal>
   );

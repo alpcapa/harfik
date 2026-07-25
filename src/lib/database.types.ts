@@ -81,8 +81,6 @@ export interface Game {
    * durum oluşmaz) null.
    */
   board_snapshot: BoardSnapshotTile[] | null;
-  /** Kullanıcı bu oyunu favoriye eklemiş mi (`toggle_game_favorite` RPC'si ile değişir). */
-  favorited: boolean;
   /** Herkese açık `/game/:id` linkiyle görülebilir mi (`set_game_shared` RPC'si ile bir kere true olur, geri alınamaz). */
   shared: boolean;
   created_at: string;
@@ -141,8 +139,29 @@ export type GameHistoryEntry = Pick<
   | 'ai_score'
   | 'rank'
   | 'surrendered'
-  | 'favorited'
->;
+> & {
+  /**
+   * Bu isteği yapan (oturum açan) kullanıcının bu oyunu beğenip beğenmediği —
+   * `game_likes` tablosu üzerinden, hedef kullanıcıdan (kartı görüntülenen
+   * kişi) bağımsız hesaplanır. Bkz. `fetchMyGames`.
+   */
+  liked_by_me: boolean;
+  /** Bu oyunu toplam kaç kullanıcının beğendiği (`game_like_stats` RPC'si). */
+  like_count: number;
+};
+
+/**
+ * Bir oyunu beğenen kullanıcılardan biri (`game_likers` RPC çıktısı, en yeni
+ * beğeni önce). `GameHistoryModal`'da beğeni sayısına dokununca gösterilen
+ * listede kullanılır — satıra tıklanınca `PlayerScoreCard` açılabilsin diye
+ * `PlayerSummary`'ye çevrilir (bkz. `gameLikerToPlayerSummary`).
+ */
+export interface GameLiker {
+  user_id: string;
+  display_name: string | null;
+  first_name: string | null;
+  avatar_url: string | null;
+}
 
 /** Bir kelimenin sözlük kaydı (word_meaning RPC çıktısı). */
 export interface WordMeaning {
