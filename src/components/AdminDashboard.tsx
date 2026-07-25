@@ -24,7 +24,7 @@ import type {
   AdminFeedbackRow,
   FeedbackSource,
 } from '../lib/database.types';
-import { AdminPlayerDetail } from './AdminPlayerDetail';
+import { PlayerScoreCard } from './PlayerScoreCard';
 import { GrowthChart, type ChartSeriesDef } from './GrowthChart';
 import { trLower } from '../utils/turkish';
 import { useModalA11y } from '../hooks/useModalA11y';
@@ -734,7 +734,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       </div>
 
       {selectedMember && (
-        <AdminPlayerDetail member={selectedMember} onClose={() => setSelectedMember(null)} />
+        <PlayerScoreCard member={selectedMember} onClose={() => setSelectedMember(null)} />
       )}
 
       {feedbackToDelete && (

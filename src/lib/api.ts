@@ -16,6 +16,7 @@ import type {
   BoardSnapshotTile,
   FeedbackSource,
   GameHistoryEntry,
+  Gender,
   LeaderboardRow,
   MyLeaderboardRank,
   NewGame,
@@ -133,14 +134,18 @@ export async function logGuestVisit(
   }
 }
 
-/** Liderlik tablosunu döner (toplam puana göre ilk 10). */
-export async function fetchLeaderboard(limit = 10): Promise<LeaderboardRow[]> {
+/**
+ * Liderlik tablosunu sayfalı biçimde döner (toplam puana göre azalan).
+ * `Leaderboard` bileşeni önce ilk 10'u, sonra kaydırdıkça `offset`'i
+ * artırarak listenin sonuna kadar lazy-load ile devam eder.
+ */
+export async function fetchLeaderboard(limit = 10, offset = 0): Promise<LeaderboardRow[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('leaderboard')
     .select('*')
     .order('total_score', { ascending: false })
-    .limit(limit);
+    .range(offset, offset + limit - 1);
   if (error) {
     console.error('[Kelimeki] fetchLeaderboard hatası:', error.message);
     return [];
@@ -584,7 +589,14 @@ export async function signOut() {
 
 /** Oturum açan oyuncunun profilini günceller. Profil yoksa oluşturur. */
 export async function updateProfile(
-  patch: { first_name?: string; last_name?: string; display_name?: string | null; avatar_url?: string },
+  patch: {
+    first_name?: string;
+    last_name?: string;
+    display_name?: string | null;
+    avatar_url?: string;
+    gender?: Gender | null;
+    birth_date?: string | null;
+  },
 ): Promise<void> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
   const {
@@ -619,23 +631,6 @@ export async function updateProfile(
 export async function updateEmail(email: string) {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
   return supabase.auth.updateUser({ email });
-}
-
-/**
- * Oturum açan kullanıcının şifresini değiştirir.
- * Eski şifreyi doğrulamak için önce yeniden giriş yapılır.
- */
-export async function updatePassword(oldPassword: string, newPassword: string) {
-  if (!supabase) throw new Error('Supabase yapılandırılmadı.');
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user?.email) throw new Error('Oturum açık değil.');
-  // Eski şifreyi doğrula.
-  const { error: authErr } = await supabase.auth.signInWithPassword({
-    email: user.email,
-    password: oldPassword,
-  });
-  if (authErr) throw new Error('Mevcut şifre hatalı.');
-  return supabase.auth.updateUser({ password: newPassword });
 }
 
 /** Şifre sıfırlama e-postası gönderir. Bağlantı tıklanınca uygulamanın köküne döner. */

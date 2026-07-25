@@ -1,22 +1,53 @@
 // Kelimeki — liderlik tablosu
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
 import { fetchLeaderboard, fetchMyLeaderboardRank } from '../lib/api';
 import type { LeaderboardRow, MyLeaderboardRank } from '../lib/database.types';
 import { useAuth } from '../hooks/useAuth';
+import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
 
 interface LeaderboardProps {
   onClose: () => void;
 }
 
+// İlk açılışta gösterilen sıra sayısı (istenen "ilk 10"); kaydırdıkça
+// sonraki sayfalar bundan daha büyük bir adımla (PAGE_SIZE) lazy-load edilir.
+const INITIAL_PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
+
+// Herkese açık bir sıralama olduğundan tam ad/soyad değil, nickname yoksa
+// sadece isim gösterilir (oyun içindeki aynı kısa kimlik kuralı).
+function rowName(r: LeaderboardRow): string {
+  return r.display_name || r.first_name || 'Anonim';
+}
+
+function rowToPlayerSummary(r: LeaderboardRow): PlayerSummary {
+  return {
+    id: r.user_id,
+    username: r.username,
+    first_name: r.first_name,
+    last_name: r.last_name,
+    display_name: r.display_name,
+    avatar_url: r.avatar_url,
+  };
+}
+
 export function Leaderboard({ onClose }: LeaderboardProps) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [rows, setRows] = useState<LeaderboardRow[] | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [myRank, setMyRank] = useState<MyLeaderboardRank | null>(null);
+  const [selected, setSelected] = useState<PlayerSummary | null>(null);
+  const scrollRef = useRef<HTMLOListElement | null>(null);
+  const sentinelRef = useRef<HTMLLIElement | null>(null);
 
   useEffect(() => {
-    fetchLeaderboard(10).then(setRows);
+    fetchLeaderboard(INITIAL_PAGE_SIZE, 0).then((r) => {
+      setRows(r);
+      setHasMore(r.length === INITIAL_PAGE_SIZE);
+    });
   }, []);
 
   useEffect(() => {
@@ -24,8 +55,37 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
     fetchMyLeaderboardRank(user.id).then(setMyRank);
   }, [user]);
 
-  // Giriş yapmış kullanıcı ilk 10'da mı?
-  const meInTop = user && rows ? rows.some((r) => r.user_id === user.id) : false;
+  // Kaydırıldıkça listenin sonuna kadar devam eden lazy load.
+  const loadMore = useCallback(() => {
+    if (rows === null) return;
+    setLoadingMore((already) => {
+      if (already) return already;
+      void fetchLeaderboard(PAGE_SIZE, rows.length).then((page) => {
+        setRows((cur) => [...(cur ?? []), ...page]);
+        setHasMore(page.length === PAGE_SIZE);
+        setLoadingMore(false);
+      });
+      return true;
+    });
+  }, [rows]);
+
+  useEffect(() => {
+    if (!hasMore || rows === null) return;
+    const sentinel = sentinelRef.current;
+    const root = scrollRef.current;
+    if (!sentinel || !root) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMore();
+      },
+      { root, rootMargin: '80px' },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, rows, loadMore]);
+
+  // Giriş yapmış kullanıcı şu ana kadar yüklenen satırlarda mı?
+  const meInList = user && rows ? rows.some((r) => r.user_id === user.id) : false;
 
   return (
     <Modal title="🏆 Sanal Lig" onClose={onClose}>
@@ -36,73 +96,97 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
         <p className="text-muted text-xs font-mono text-center py-6">Yükleniyor…</p>
       ) : (
         <div className="flex flex-col gap-2">
-          <ol className="flex flex-col gap-1">
-            <li className="flex items-center text-[9px] uppercase tracking-[1px] text-muted font-mono px-2 pb-1 gap-1">
-              <span className="w-6">Sıra</span>
-              <span className="flex-1">Oyuncu</span>
-              <span className="w-12 text-right">Puan</span>
-            </li>
-            {rows.length === 0 ? (
-              <li className="text-muted text-xs font-mono text-center py-4">
-                Henüz skor yok. İlk sen ol!
-              </li>
-            ) : (
-              rows.map((r, i) => {
+          <div className="flex items-center text-[9px] uppercase tracking-[1px] text-muted font-mono px-2 pb-1 gap-1">
+            <span className="w-6">Sıra</span>
+            <span className="flex-1">Oyuncu</span>
+            <span className="w-12 text-right">Puan</span>
+          </div>
+          {rows.length === 0 ? (
+            <p className="text-muted text-xs font-mono text-center py-4">
+              Henüz skor yok. İlk sen ol!
+            </p>
+          ) : (
+            <ol ref={scrollRef} className="flex flex-col gap-1 max-h-[50vh] overflow-y-auto pr-1">
+              {rows.map((r, i) => {
                 const me = user && r.user_id === user.id;
-                const name =
-                  r.display_name ||
-                  r.username ||
-                  [r.first_name, r.last_name].filter(Boolean).join(' ').trim() ||
-                  'Anonim';
+                const name = rowName(r);
                 return (
-                  <li
-                    key={r.user_id}
-                    className={[
-                      'flex items-center gap-1 text-sm font-mono rounded-md px-2 py-1.5',
-                      me ? 'bg-accent/10 border border-accent' : 'bg-bg',
-                    ].join(' ')}
-                  >
-                    <span
+                  <li key={r.user_id}>
+                    <button
+                      type="button"
+                      onClick={() => setSelected(rowToPlayerSummary(r))}
                       className={[
-                        'w-6 font-bold shrink-0',
-                        i === 0 ? 'text-gold' : i < 3 ? 'text-accent' : 'text-muted',
+                        'w-full flex items-center gap-1 text-sm font-mono rounded-md px-2 py-1.5 text-left active:opacity-70 transition-opacity',
+                        me ? 'bg-accent/10 border border-accent' : 'bg-bg',
                       ].join(' ')}
                     >
-                      {i + 1}
-                    </span>
-                    <Avatar
-                      url={r.avatar_url}
-                      name={name}
-                      size={22}
-                      className="mr-1 shrink-0"
-                    />
-                    <span className="flex-1 truncate text-text">{name}</span>
-                    <span className="w-12 text-right font-bold text-accent shrink-0">
-                      {r.total_score?.toLocaleString('tr-TR') ?? '—'}
-                    </span>
+                      <span
+                        className={[
+                          'w-6 font-bold shrink-0',
+                          i === 0 ? 'text-gold' : i < 3 ? 'text-accent' : 'text-muted',
+                        ].join(' ')}
+                      >
+                        {i + 1}
+                      </span>
+                      <Avatar
+                        url={r.avatar_url}
+                        name={name}
+                        size={22}
+                        className="mr-1 shrink-0"
+                      />
+                      <span className="flex-1 truncate text-text">{name}</span>
+                      <span className="w-12 text-right font-bold text-accent shrink-0">
+                        {r.total_score?.toLocaleString('tr-TR') ?? '—'}
+                      </span>
+                    </button>
                   </li>
                 );
-              })
-            )}
-          </ol>
+              })}
+              {hasMore && (
+                <li ref={sentinelRef} className="py-2 text-center">
+                  <span className="text-muted text-[10px] font-mono">
+                    {loadingMore ? 'Yükleniyor…' : ''}
+                  </span>
+                </li>
+              )}
+            </ol>
+          )}
 
-          {user && !meInTop && myRank && (
+          {user && !meInList && myRank && (
             <>
               <div className="flex items-center gap-2 px-2">
                 <div className="flex-1 border-t border-dashed border-border" />
                 <span className="text-[9px] text-muted font-mono uppercase tracking-[1px]">senin sıran</span>
                 <div className="flex-1 border-t border-dashed border-border" />
               </div>
-              <div className="flex items-center gap-1 text-sm font-mono rounded-md px-2 py-1.5 bg-accent/10 border border-accent">
+              <button
+                type="button"
+                onClick={() =>
+                  user &&
+                  setSelected({
+                    id: user.id,
+                    username: profile?.username ?? null,
+                    first_name: profile?.first_name ?? null,
+                    last_name: profile?.last_name ?? null,
+                    display_name: profile?.display_name ?? null,
+                    avatar_url: profile?.avatar_url ?? null,
+                  })
+                }
+                className="w-full flex items-center gap-1 text-sm font-mono rounded-md px-2 py-1.5 text-left bg-accent/10 border border-accent active:opacity-70 transition-opacity"
+              >
                 <span className="w-6 font-bold text-muted shrink-0">{myRank.rank}</span>
                 <span className="flex-1 text-text">Sen</span>
                 <span className="w-12 text-right font-bold text-accent shrink-0">
                   {myRank.total_score.toLocaleString('tr-TR')}
                 </span>
-              </div>
+              </button>
             </>
           )}
         </div>
+      )}
+
+      {selected && (
+        <PlayerScoreCard member={selected} onClose={() => setSelected(null)} />
       )}
     </Modal>
   );
