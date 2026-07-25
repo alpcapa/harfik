@@ -5,6 +5,8 @@ import {
   fetchAdminMembers,
   fetchAdminUserActivitySeries,
   fetchAdminGameActivitySeries,
+  fetchAdminEngagementActivitySeries,
+  fetchAdminEngagementTotals,
   fetchAdminGuestSourceBreakdown,
   fetchAdminGuestDeviceBreakdown,
   fetchAdminGuestStandaloneBreakdown,
@@ -17,6 +19,8 @@ import type {
   AdminUserActivityPoint,
   AdminGameActivityPoint,
   AdminGameScope,
+  AdminEngagementActivityPoint,
+  AdminEngagementTotals,
   AdminGuestSourceRow,
   AdminGuestDeviceRow,
   AdminGuestStandaloneRow,
@@ -85,6 +89,10 @@ const DURATION_SERIES: ChartSeriesDef[] = [
   { key: 'avg_duration_seconds', label: 'Genel', color: '#7c3aed' },
   { key: 'avg_duration_same_session_seconds', label: 'Aynı Oturum', color: '#0891B2' },
   { key: 'avg_duration_multi_session_seconds', label: 'Çok Oturumlu', color: '#DC2626' },
+];
+const ENGAGEMENT_SERIES: ChartSeriesDef[] = [
+  { key: 'likes', label: 'Beğeni', color: '#DC2626' },
+  { key: 'shares', label: 'Paylaşma', color: '#2a78d6' },
 ];
 
 const selectCls =
@@ -244,6 +252,8 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [gamePeriod, setGamePeriod] = useState<number>(30);
   const [gameScope, setGameScope] = useState<AdminGameScope>('total');
   const [gamePlayerCount, setGamePlayerCount] = useState<GameSubTab>('total');
+  const [engagementActivity, setEngagementActivity] = useState<AdminEngagementActivityPoint[] | null>(null);
+  const [engagementTotals, setEngagementTotals] = useState<AdminEngagementTotals | null>(null);
   const [memberSearch, setMemberSearch] = useState('');
   const [sortKey, setSortKey] = useState<MemberSortKey>('created_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
@@ -260,6 +270,9 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       .catch((e) => setError(String(e)));
     fetchAdminFeedback()
       .then(setFeedback)
+      .catch((e) => setError(String(e)));
+    fetchAdminEngagementTotals()
+      .then(setEngagementTotals)
       .catch((e) => setError(String(e)));
   }, []);
 
@@ -302,6 +315,13 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       .then(setGameActivity)
       .catch((e) => setError(String(e)));
   }, [gamePeriod, gameGranularity, gameScope, gamePlayerCount]);
+
+  useEffect(() => {
+    setEngagementActivity(null);
+    fetchAdminEngagementActivitySeries(gamePeriod, gameGranularity)
+      .then(setEngagementActivity)
+      .catch((e) => setError(String(e)));
+  }, [gamePeriod, gameGranularity]);
 
   function selectUserGranularity(g: AdminActivityGranularity) {
     setUserGranularity(g);
@@ -586,6 +606,25 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
               {growthSubTab === 'game' && (
                 <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center">
+                      <div className="font-mono text-xl font-bold text-text">
+                        {engagementTotals === null ? '…' : engagementTotals.total_likes}
+                      </div>
+                      <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
+                        Toplam Beğeni
+                      </div>
+                    </div>
+                    <div className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center">
+                      <div className="font-mono text-xl font-bold text-text">
+                        {engagementTotals === null ? '…' : engagementTotals.total_shared_games}
+                      </div>
+                      <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
+                        Toplam Paylaşılan Oyun
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex items-center flex-wrap gap-2">
                     <select
                       value={gameScope}
@@ -650,6 +689,18 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         controls={<span className={sectionTitleCls}>Ortalama Oyun Süresi</span>}
                       />
                     </>
+                  )}
+
+                  {engagementActivity === null ? (
+                    <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>
+                  ) : (
+                    <GrowthChart
+                      data={engagementActivity}
+                      granularity={gameGranularity}
+                      series={ENGAGEMENT_SERIES}
+                      defaultActiveKeys={['likes', 'shares']}
+                      controls={<span className={sectionTitleCls}>Beğeni / Paylaşma</span>}
+                    />
                   )}
                 </>
               )}
