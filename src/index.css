@@ -9,39 +9,6 @@
   color-scheme: light;
 }
 
-/* Portrait-only lock for touch devices */
-#landscape-block {
-  display: none;
-}
-
-/* max-width: 1024px — yalnızca telefon boyutundaki ekranları kapsar (en
-   geniş telefon: iPhone Pro Max yatayda ~932px). iPad'ler (en darı yatayda
-   ~1133px) bu eşiğin üstünde kalır ve hiç bloke edilmez — hem fiziksel
-   klavye kullanan hem kullanmayan iPad kullanıcıları yatay modda uygulamayı
-   sorunsuz kullanabilir; tahta da o genişlikte zaten sığıyor. */
-@media screen and (orientation: landscape) and (pointer: coarse) and (max-width: 1024px) {
-  #root {
-    display: none !important;
-  }
-
-  #landscape-block {
-    display: flex;
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    background: #ffffff;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    font-family: 'Space Grotesk', sans-serif;
-    color: #1B2430;
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-  }
-}
-
 @layer components {
   /* Nömorfik kabartma gölgesi — dolgulu/çerçeveli tüm butonlarda ortak dil.
      Renk ailesine göre (mavi/nötr/kırmızı/altın) ayrı varyant; basılınca

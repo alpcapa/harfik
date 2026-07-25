@@ -7,6 +7,7 @@ import { GameOver } from './components/GameOver';
 import { UserMenu } from './components/UserMenu';
 import { Setup } from './components/Setup';
 import { AddToHomeScreen } from './components/AddToHomeScreen';
+import { LandscapeHint } from './components/LandscapeHint';
 import { MeaningModal } from './components/MeaningModal';
 import { RemainingTilesModal } from './components/RemainingTilesModal';
 import { MoveHistoryModal } from './components/MoveHistoryModal';
@@ -466,6 +467,7 @@ export default function App() {
           />
         </main>
         <AddToHomeScreen />
+        <LandscapeHint />
       </div>
     );
   }
@@ -1109,6 +1111,7 @@ export default function App() {
           }}
         />
       )}
+      <LandscapeHint />
     </div>
   );
 }
