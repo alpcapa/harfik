@@ -12,39 +12,35 @@ const GENDER_OPTIONS: { value: Gender; label: string }[] = [
   { value: 'unspecified', label: 'Belirtmek istemiyorum' },
 ];
 
-/** `birth_date` (ISO yyyy-mm-dd) sütununu üç ayrı gün/ay/yıl alanına böler. */
-function splitIsoDate(iso: string | null | undefined): { day: string; month: string; year: string } {
-  const [y, m, d] = (iso ?? '').split('-');
-  return { day: d ?? '', month: m ?? '', year: y ?? '' };
+/**
+ * `birth_date` (ISO yyyy-mm-dd) sütununu "gg/aa/yyyy" gösterim biçimine
+ * çevirir — tek bir metin alanında düzenlenir. Native `<input type="date">`
+ * kullanılmıyor çünkü iOS Safari'de boş bir tarih alanına dokunup seçim
+ * yapmadan bırakmak, tekerleğin o anki konumunu (bugünün tarihi) sessizce
+ * değere yazıyordu, üstelik cihazın kendi yerel biçiminde gösteriyordu.
+ */
+function isoToTrDate(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
 }
 
-/**
- * Gün/ay/yıl alanlarını `date` sütununa uygun ISO (yyyy-mm-dd) dizgeye
- * çevirir. Üçü de boşsa (doğum tarihi hiç girilmemiş) null döner. Native
- * `<input type="date">` yerine bunun kullanılmasının nedeni: iOS Safari'de
- * boş bir tarih alanına dokunup açık bırakmak (seçim yapılmadan), tarayıcı
- * tekerleğinin o anki konumunu (bugünün tarihi) sessizce değere yazıyordu —
- * kullanıcı hiç tarih seçmemiş olsa bile alan "bugün" ile doluyordu, ayrıca
- * görüntü cihazın kendi yerel biçimine düşüyordu (istenen GG/AA/YYYY değil).
- * Üç ayrı metin alanı hem bu sessiz varsayılanı hem de biçim sorununu
- * ortadan kaldırıyor.
- */
-function buildBirthDateIso(day: string, month: string, year: string): string | null {
-  const d = day.trim();
-  const m = month.trim();
-  const y = year.trim();
-  if (!d && !m && !y) return null;
-  if (!d || !m || !y) throw new Error('Doğum tarihini gün/ay/yıl olarak eksiksiz gir.');
-  const dn = Number(d);
-  const mn = Number(m);
-  const yn = Number(y);
-  if (yn < 1900 || yn > new Date().getFullYear()) throw new Error('Doğum yılı geçersiz.');
-  if (mn < 1 || mn > 12) throw new Error('Doğum ayı geçersiz.');
-  const date = new Date(yn, mn - 1, dn);
-  if (date.getFullYear() !== yn || date.getMonth() !== mn - 1 || date.getDate() !== dn) {
+/** "gg/aa/yyyy" kullanıcı girdisini `date` sütununa uygun ISO dizgeye çevirir. */
+function trDateToIso(input: string): string | null {
+  const s = input.trim();
+  if (!s) return null;
+  const m = /^(\d{1,2})[./](\d{1,2})[./](\d{4})$/.exec(s);
+  if (!m) throw new Error('Doğum tarihini GG/AA/YYYY biçiminde gir.');
+  const d = Number(m[1]);
+  const mo = Number(m[2]);
+  const y = Number(m[3]);
+  if (y < 1900 || y > new Date().getFullYear()) throw new Error('Doğum yılı geçersiz.');
+  if (mo < 1 || mo > 12) throw new Error('Doğum ayı geçersiz.');
+  const date = new Date(y, mo - 1, d);
+  if (date.getFullYear() !== y || date.getMonth() !== mo - 1 || date.getDate() !== d) {
     throw new Error('Geçersiz doğum tarihi.');
   }
-  return `${String(yn).padStart(4, '0')}-${String(mn).padStart(2, '0')}-${String(dn).padStart(2, '0')}`;
+  return `${String(y).padStart(4, '0')}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
 interface AccountSettingsModalProps {
@@ -60,10 +56,7 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
   const [nickname, setNickname] = useState(profile?.display_name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [gender, setGender] = useState<Gender | ''>(profile?.gender ?? '');
-  const initialBirth = splitIsoDate(profile?.birth_date);
-  const [birthDay, setBirthDay] = useState(initialBirth.day);
-  const [birthMonth, setBirthMonth] = useState(initialBirth.month);
-  const [birthYear, setBirthYear] = useState(initialBirth.year);
+  const [birthDate, setBirthDate] = useState(isoToTrDate(profile?.birth_date));
 
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -113,7 +106,7 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
     }
     let birthDateIso: string | null;
     try {
-      birthDateIso = buildBirthDateIso(birthDay, birthMonth, birthYear);
+      birthDateIso = trDateToIso(birthDate);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Doğum tarihi geçersiz.');
       return;
@@ -239,57 +232,32 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
           />
         </div>
 
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <label className={labelCls}>Cinsiyet</label>
-            <select
-              className={inputCls}
-              value={gender}
-              onChange={(e) => setGender(e.target.value as Gender | '')}
-            >
-              <option value="">Belirtilmedi</option>
-              {GENDER_OPTIONS.map((g) => (
-                <option key={g.value} value={g.value}>
-                  {g.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex-1">
-            <label className={labelCls}>Doğum Tarihi (GG/AA/YYYY)</label>
-            <div className="flex gap-1.5">
-              <input
-                className={`${inputCls} w-12 text-center`}
-                type="text"
-                inputMode="numeric"
-                maxLength={2}
-                value={birthDay}
-                onChange={(e) => setBirthDay(e.target.value.replace(/\D/g, ''))}
-                placeholder="GG"
-                autoComplete="bday-day"
-              />
-              <input
-                className={`${inputCls} w-12 text-center`}
-                type="text"
-                inputMode="numeric"
-                maxLength={2}
-                value={birthMonth}
-                onChange={(e) => setBirthMonth(e.target.value.replace(/\D/g, ''))}
-                placeholder="AA"
-                autoComplete="bday-month"
-              />
-              <input
-                className={`${inputCls} flex-1 text-center`}
-                type="text"
-                inputMode="numeric"
-                maxLength={4}
-                value={birthYear}
-                onChange={(e) => setBirthYear(e.target.value.replace(/\D/g, ''))}
-                placeholder="YYYY"
-                autoComplete="bday-year"
-              />
-            </div>
-          </div>
+        <div>
+          <label className={labelCls}>Cinsiyet</label>
+          <select
+            className={inputCls}
+            value={gender}
+            onChange={(e) => setGender(e.target.value as Gender | '')}
+          >
+            <option value="">Belirtilmedi</option>
+            {GENDER_OPTIONS.map((g) => (
+              <option key={g.value} value={g.value}>
+                {g.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className={labelCls}>Doğum Tarihi (GG/AA/YYYY)</label>
+          <input
+            className={inputCls}
+            type="text"
+            value={birthDate}
+            onChange={(e) => setBirthDate(e.target.value)}
+            placeholder="GG/AA/YYYY"
+            autoComplete="bday"
+          />
         </div>
 
         <button
