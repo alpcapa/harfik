@@ -16,6 +16,7 @@ import type {
   BoardSnapshotTile,
   FeedbackSource,
   GameHistoryEntry,
+  GameLiker,
   Gender,
   LeaderboardRow,
   MyLeaderboardRank,
@@ -309,6 +310,23 @@ export async function toggleGameLike(gameId: string): Promise<boolean | null> {
     return null;
   }
   return data as boolean;
+}
+
+/**
+ * Bir oyunu beğenen kullanıcıları (en yeni önce) döner — `GameHistoryModal`'da
+ * beğeni sayısına dokununca açılan "Beğenenler" listesi için (`game_likers`
+ * RPC'si, security definer: `profiles` tablosunun kendi SELECT RLS'i
+ * başkalarının adını okumaya izin vermediğinden gerekiyor, tıpkı
+ * `leaderboard` view'ının aynı sebeple RLS'i bypass etmesi gibi).
+ */
+export async function fetchGameLikers(gameId: string): Promise<GameLiker[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('game_likers', { p_game_id: gameId });
+  if (error) {
+    console.error('[Kelimeki] fetchGameLikers hatası:', error.message);
+    return [];
+  }
+  return (data as GameLiker[]) ?? [];
 }
 
 /**

@@ -150,6 +150,19 @@ export type GameHistoryEntry = Pick<
   like_count: number;
 };
 
+/**
+ * Bir oyunu beğenen kullanıcılardan biri (`game_likers` RPC çıktısı, en yeni
+ * beğeni önce). `GameHistoryModal`'da beğeni sayısına dokununca gösterilen
+ * listede kullanılır — satıra tıklanınca `PlayerScoreCard` açılabilsin diye
+ * `PlayerSummary`'ye çevrilir (bkz. `gameLikerToPlayerSummary`).
+ */
+export interface GameLiker {
+  user_id: string;
+  display_name: string | null;
+  first_name: string | null;
+  avatar_url: string | null;
+}
+
 /** Bir kelimenin sözlük kaydı (word_meaning RPC çıktısı). */
 export interface WordMeaning {
   word: string;
