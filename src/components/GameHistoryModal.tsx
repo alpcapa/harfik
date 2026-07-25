@@ -1,10 +1,11 @@
 // Kelimeki — oturum açan kullanıcının geçmiş tüm oyunlarının listesi (lazy load)
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal } from './Modal';
-import { fetchMyGames } from '../lib/api';
-import type { GameHistoryEntry, GamePlayerSnapshot } from '../lib/database.types';
+import { fetchMyGames, fetchGameBoardSnapshot } from '../lib/api';
+import type { BoardSnapshotTile, GameHistoryEntry, GamePlayerSnapshot } from '../lib/database.types';
 import { useAuth } from '../hooks/useAuth';
 import { PlayerBadge } from './PlayerBadge';
+import { GameBoardPreview } from './GameBoardPreview';
 
 interface GameHistoryModalProps {
   playerCount: number;
@@ -132,12 +133,34 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
+  // Tahta önizlemesi bir oyuna tıklanınca lazy çekilir (liste sorgusuna dahil
+  // değil, bkz. `fetchGameBoardSnapshot`) ve tekrar tıklanana kadar önbellekte
+  // tutulur. `fetchedIds`, aynı oyunu aç/kapa yaparken tekrar ağa gitmemek için.
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [snapshots, setSnapshots] = useState<Record<string, BoardSnapshotTile[] | null>>({});
+  const [snapshotLoadingId, setSnapshotLoadingId] = useState<string | null>(null);
+  const fetchedIds = useRef<Set<string>>(new Set());
+
+  const toggleBoard = useCallback((gameId: string) => {
+    setExpandedId((cur) => (cur === gameId ? null : gameId));
+    if (fetchedIds.current.has(gameId)) return;
+    fetchedIds.current.add(gameId);
+    setSnapshotLoadingId(gameId);
+    void fetchGameBoardSnapshot(gameId).then((snap) => {
+      setSnapshots((c) => ({ ...c, [gameId]: snap }));
+      setSnapshotLoadingId((id) => (id === gameId ? null : id));
+    });
+  }, []);
+
   // Sekme (oyuncu sayısı) değişince listeyi baştan yükle.
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setGames([]);
     setHasMore(true);
+    setExpandedId(null);
+    setSnapshots({});
+    fetchedIds.current.clear();
     void fetchMyGames(playerCount, 0, PAGE_SIZE, userId).then(({ games: page, hasMore: more }) => {
       if (cancelled) return;
       setGames(page);
@@ -194,10 +217,20 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
             const unknownCount = fallback?.unknownCount ?? 0;
             const meIndex = hasSnapshot ? findMeIndex(entry, players) : fallback!.meIndex;
             const ranks = computeRanks(players);
+            const expanded = expandedId === entry.id;
             return (
               <div
                 key={entry.id}
-                className="shadow-raised bg-bg border border-border rounded-md py-2 px-2.5 flex flex-col gap-1.5"
+                role="button"
+                tabIndex={0}
+                onClick={() => toggleBoard(entry.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleBoard(entry.id);
+                  }
+                }}
+                className="shadow-raised bg-bg border border-border rounded-md py-2 px-2.5 flex flex-col gap-1.5 cursor-pointer text-left"
               >
                 <div className="flex items-center justify-between gap-2 text-[9px] font-mono text-muted uppercase tracking-[0.5px]">
                   <span>{formatDateTime(entry.created_at)}</span>
@@ -247,6 +280,23 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                     </div>
                   )}
                 </div>
+                {expanded && (
+                  <div className="pt-1" onClick={(e) => e.stopPropagation()}>
+                    {snapshotLoadingId === entry.id ? (
+                      <p className="text-muted text-[10px] font-mono text-center py-3">Yükleniyor…</p>
+                    ) : snapshots[entry.id] ? (
+                      <GameBoardPreview
+                        snapshot={snapshots[entry.id]!}
+                        playerCount={entry.player_count}
+                        players={players}
+                      />
+                    ) : (
+                      <p className="text-muted text-[10px] font-mono text-center py-3">
+                        Bu oyun için tahta görüntüsü kaydedilmemiş.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}

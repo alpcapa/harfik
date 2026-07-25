@@ -32,6 +32,23 @@ export interface GamePlayerSnapshot {
   colorIndex?: number;
 }
 
+/**
+ * `games.board_snapshot`'taki tek bir dolu hücre — bkz. `src/utils/boardSnapshot.ts`
+ * (üretim: `serializeBoardSnapshot`, geri yükleme: `buildSnapshotGameState`).
+ * Boş hücreler hiç tutulmaz; bonus bölgesi/köşe düzeni sabitlerden
+ * (`game/constants.ts`) türetildiğinden ayrıca saklanmaz.
+ */
+export interface BoardSnapshotTile {
+  r: number;
+  c: number;
+  /** Görünen harf (joker ise oynanırken seçilen harf). */
+  l: string;
+  /** Sahibinin koltuk/renk indeksi (`GamePlayerSnapshot.colorIndex`). */
+  o: number;
+  /** Joker olarak mı oynandı? Değilse alan hiç yok (false yazılmaz). */
+  w?: boolean;
+}
+
 export interface Game {
   id: string;
   user_id: string | null;
@@ -51,6 +68,14 @@ export interface Game {
   surrendered: boolean;
   /** Final sıralamasına göre tüm oyuncular ve puanları. Eski kayıtlarda null. */
   players: GamePlayerSnapshot[] | null;
+  /**
+   * Oyunun bittiği andaki tahtanın kompakt anlık görüntüsü — `GameHistoryModal`'da
+   * bir oyuna tıklanınca (`fetchGameBoardSnapshot`) lazy olarak çekilip
+   * `GameBoardPreview` ile render edilir. Bu sütun eklenmeden önceki kayıtlarda
+   * (ve terk edilip hiç bitmemiş oyunlarda zaten hiç kayıt olmadığından bu
+   * durum oluşmaz) null.
+   */
+  board_snapshot: BoardSnapshotTile[] | null;
   created_at: string;
 }
 
@@ -80,6 +105,7 @@ export type NewGame = Pick<
   move_points_sum?: number | null;
   surrendered?: boolean;
   players?: GamePlayerSnapshot[];
+  board_snapshot?: BoardSnapshotTile[];
 };
 
 /** Oyun geçmişi listesinde gösterilecek alanlar. */

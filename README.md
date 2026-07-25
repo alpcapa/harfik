@@ -50,7 +50,8 @@ src/
 │   ├── ResetPasswordModal.tsx   # şifre sıfırlama e-postasındaki bağlantıdan sonra yeni şifre belirleme
 │   ├── AccountSettingsModal.tsx # profil düzenleme (avatar, kullanıcı adı)
 │   ├── ScoreCard.tsx            # oyuncu istatistikleri
-│   ├── GameHistoryModal.tsx     # geçmiş oyunların listesi
+│   ├── GameHistoryModal.tsx     # geçmiş oyunların listesi (tıklayınca bitiş tahtası önizlemesi)
+│   ├── GameBoardPreview.tsx     # bir oyunun bitiş anındaki tahtasının salt-okunur önizlemesi
 │   ├── MoveHistoryModal.tsx     # oyun geçmişi (hamle hamle)
 │   ├── Leaderboard.tsx          # lider tablosu
 │   ├── MeaningModal.tsx         # kelime anlamı penceresi
@@ -81,6 +82,7 @@ src/
 │   ├── validator.ts    # kelime doğrulama, bölge kuralları, puanlama
 │   ├── ai.ts           # YZ oyuncu mantığı
 │   ├── board.ts        # tahta yardımcıları (kelime bulma, hücre key)
+│   ├── boardSnapshot.ts # oyun sonu tahtasının games.board_snapshot JSON'una serileştirilmesi/geri yüklenmesi
 │   ├── bag.ts          # taş torbası (buildBag, drawTiles)
 │   ├── outline.ts      # bölge/bonus dış hat SVG path üretimi
 │   ├── turkish.ts      # trUpper / trLower (i/İ, ı/I dönüşümü)

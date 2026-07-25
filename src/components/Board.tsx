@@ -41,6 +41,8 @@ interface BoardProps {
   onTilePointerMove?: (e: React.PointerEvent<HTMLDivElement>) => void;
   onTilePointerUp?: (e: React.PointerEvent<HTMLDivElement>) => void;
   onTilePointerCancel?: (e: React.PointerEvent<HTMLDivElement>) => void;
+  /** Alt bilgi şeridini (Oyun Geçmişi linki + X2/X3 açıklaması) gizler — salt-okunur önizlemelerde (bkz. `GameBoardPreview`). */
+  hideFooter?: boolean;
 }
 
 // Merkezdeki x2 bonus bölgesi altın rengi — nömorfik, diğer köşe tonlarıyla
@@ -88,6 +90,7 @@ export function Board({
   onTilePointerMove,
   onTilePointerUp,
   onTilePointerCancel,
+  hideFooter = false,
 }: BoardProps) {
   const online = useOnlineStatus();
   const { board, placed, bonuses, players, current } = state;
@@ -474,34 +477,36 @@ export function Board({
       {/* Alt bilgi şeridi (Oyun Geçmişi / X2-X3 açıklaması) — kartın kendi
           zemini ve gölgesiyle bütünleşik bir alt bölüm; ayrı, asılı kalan
           bir beyaz şerit değil. */}
-      <div className="relative z-10 flex items-center justify-between gap-2 shrink-0 px-[10px] pb-[10px] pt-1 w-full">
-        <button
-          onClick={onOpenHistory}
-          className="text-[13px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
-        >
-          Oyun Geçmişi
-        </button>
-        <div className="flex gap-2 justify-end flex-wrap">
-          {!online && (
-            <div className="text-[8px] font-mono font-bold text-red flex items-center">
-              Çevrimdışı
-            </div>
-          )}
-          {LEGEND.map((item) => (
-            <div
-              key={item.label}
-              className="text-[8px] font-mono flex items-center gap-[3px] text-muted"
-            >
-              <span
-                className="w-2 h-2 rounded-[1px]"
-                style={{ background: item.bg, border: item.border }}
-              />
-              <span className="font-bold">{item.label}</span>
-              <span className="text-muted/70">{item.desc}</span>
-            </div>
-          ))}
+      {!hideFooter && (
+        <div className="relative z-10 flex items-center justify-between gap-2 shrink-0 px-[10px] pb-[10px] pt-1 w-full">
+          <button
+            onClick={onOpenHistory}
+            className="text-[13px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
+          >
+            Oyun Geçmişi
+          </button>
+          <div className="flex gap-2 justify-end flex-wrap">
+            {!online && (
+              <div className="text-[8px] font-mono font-bold text-red flex items-center">
+                Çevrimdışı
+              </div>
+            )}
+            {LEGEND.map((item) => (
+              <div
+                key={item.label}
+                className="text-[8px] font-mono flex items-center gap-[3px] text-muted"
+              >
+                <span
+                  className="w-2 h-2 rounded-[1px]"
+                  style={{ background: item.bg, border: item.border }}
+                />
+                <span className="font-bold">{item.label}</span>
+                <span className="text-muted/70">{item.desc}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
       </div>
     </div>
   );

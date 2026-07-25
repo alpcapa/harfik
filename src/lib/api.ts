@@ -13,6 +13,7 @@ import type {
   AdminGuestStandaloneRow,
   AdminMember,
   AdminUserActivityPoint,
+  BoardSnapshotTile,
   FeedbackSource,
   GameHistoryEntry,
   LeaderboardRow,
@@ -228,6 +229,27 @@ export async function fetchMyGames(
   }
   const rows = (data as GameHistoryEntry[]) ?? [];
   return { games: rows.slice(0, limit), hasMore: rows.length > limit };
+}
+
+/**
+ * Tek bir oyunun bitişteki tahta anlık görüntüsünü döner — `fetchMyGames`'in
+ * liste sorgusuna DAHİL EDİLMEZ (satır başına birkaç KB'a varabildiğinden
+ * sayfa yükünü şişirmesin diye); yalnızca `GameHistoryModal`'da bir oyuna
+ * tıklanıp genişletildiğinde ayrıca çekilir. Bu sütun eklenmeden önceki
+ * kayıtlarda null.
+ */
+export async function fetchGameBoardSnapshot(gameId: string): Promise<BoardSnapshotTile[] | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('games')
+    .select('board_snapshot')
+    .eq('id', gameId)
+    .maybeSingle();
+  if (error) {
+    console.error('[Kelimeki] fetchGameBoardSnapshot hatası:', error.message);
+    return null;
+  }
+  return (data?.board_snapshot as BoardSnapshotTile[] | null) ?? null;
 }
 
 /** Oturum açan oyuncunun profilini döner. */
