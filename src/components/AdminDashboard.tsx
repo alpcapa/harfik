@@ -515,7 +515,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
           {tab === 'growth' && (
             <>
-              <div className="sticky top-0 z-10 -mt-4 pt-4 bg-panel pb-3 flex flex-col gap-2 border-b border-border">
+              <div className="sticky top-0 z-10 -mt-4 pt-1.5 bg-panel pb-3 flex flex-col gap-2 border-b border-border">
                 <div className="flex gap-1.5">
                   <button className={tabBtn(growthSubTab === 'user')} onClick={() => setGrowthSubTab('user')}>
                     Kullanıcı
