@@ -4,6 +4,7 @@ import { Modal } from './Modal';
 import { fetchMyGames, fetchGameBoardSnapshot, toggleGameFavorite, markGameShared } from '../lib/api';
 import type { BoardSnapshotTile, GameHistoryEntry, GamePlayerSnapshot } from '../lib/database.types';
 import { useAuth } from '../hooks/useAuth';
+import { PLAYER_COLORS } from '../game/constants';
 import { PlayerBadge } from './PlayerBadge';
 import { GameBoardPreview } from './GameBoardPreview';
 import { SwipeableGameCard } from './SwipeableGameCard';
@@ -136,6 +137,50 @@ function EyeIcon() {
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
       <circle cx="12" cy="12" r="3" />
     </svg>
+  );
+}
+
+/**
+ * Tahta önizlemesinin üstünde tek satır skor kutuları — `GameHeader`'daki
+ * oyun içi skor kutularıyla aynı görsel dil (renk = zone.tint dolgu +
+ * base çerçeve, üstte isim, altta puan), yalnızca burada dört kutu da
+ * eşit genişlikte (flex-1) tek satıra sığacak şekilde küçültülmüş.
+ */
+function ScoreBoxRow({
+  players,
+  hasSnapshot,
+  meIndex,
+  myCurrentName,
+}: {
+  players: GamePlayerSnapshot[];
+  hasSnapshot: boolean;
+  meIndex: number;
+  myCurrentName: string | null;
+}) {
+  return (
+    <div className="flex gap-1.5">
+      {players.map((p, i) => {
+        const col = PLAYER_COLORS[seatIndexFor(p, i, hasSnapshot)];
+        const label = i === meIndex && myCurrentName ? myCurrentName : p.name;
+        return (
+          <div
+            key={i}
+            className="flex-1 min-w-0 shadow-raised text-center rounded-md py-1 px-1"
+            style={{ background: col.tint, boxShadow: `inset 0 0 0 1.5px ${col.base}` }}
+          >
+            <div
+              className="uppercase tracking-[0.5px] font-mono font-bold truncate text-[7px]"
+              style={{ color: col.base }}
+            >
+              {label}
+            </div>
+            <div className="font-mono font-bold leading-none text-[13px]" style={{ color: col.base }}>
+              {p.score}
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -421,20 +466,12 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                     ) : snapshots[entry.id] ? (
                       <>
                         <div ref={boardCaptureRef} className="flex flex-col gap-1.5">
-                          <div className="shadow-raised bg-bg border border-border rounded-md py-2 px-2.5 flex flex-col gap-0.5">
-                            {players.map((p, i) => (
-                              <div key={i} className="flex items-center justify-between gap-2 text-[12px] font-mono">
-                                <span className="flex items-center gap-1.5 min-w-0">
-                                  <span className="w-3 text-right text-muted shrink-0">{ranks[i]}.</span>
-                                  <PlayerBadge index={seatIndexFor(p, i, hasSnapshot)} size={14} />
-                                  <span className="truncate text-text font-bold">
-                                    {i === meIndex && myCurrentName ? myCurrentName : p.name}
-                                  </span>
-                                </span>
-                                <span className="font-bold text-gold shrink-0">{p.score}</span>
-                              </div>
-                            ))}
-                          </div>
+                          <ScoreBoxRow
+                            players={players}
+                            hasSnapshot={hasSnapshot}
+                            meIndex={meIndex}
+                            myCurrentName={myCurrentName}
+                          />
                           <GameBoardPreview
                             snapshot={snapshots[entry.id]!}
                             playerCount={entry.player_count}
