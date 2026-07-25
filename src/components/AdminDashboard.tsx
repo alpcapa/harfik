@@ -606,25 +606,6 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
               {growthSubTab === 'game' && (
                 <>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center">
-                      <div className="font-mono text-xl font-bold text-text">
-                        {engagementTotals === null ? '…' : engagementTotals.total_likes}
-                      </div>
-                      <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
-                        Toplam Beğeni
-                      </div>
-                    </div>
-                    <div className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center">
-                      <div className="font-mono text-xl font-bold text-text">
-                        {engagementTotals === null ? '…' : engagementTotals.total_shared_games}
-                      </div>
-                      <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
-                        Toplam Paylaşılan Oyun
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="flex items-center flex-wrap gap-2">
                     <select
                       value={gameScope}
@@ -702,6 +683,25 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       controls={<span className={sectionTitleCls}>Beğeni / Paylaşma</span>}
                     />
                   )}
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center">
+                      <div className="font-mono text-xl font-bold text-text">
+                        {engagementTotals === null ? '…' : engagementTotals.total_likes}
+                      </div>
+                      <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
+                        Toplam Beğeni
+                      </div>
+                    </div>
+                    <div className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center">
+                      <div className="font-mono text-xl font-bold text-text">
+                        {engagementTotals === null ? '…' : engagementTotals.total_shared_games}
+                      </div>
+                      <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
+                        Toplam Paylaşılan Oyun
+                      </div>
+                    </div>
+                  </div>
                 </>
               )}
             </>
