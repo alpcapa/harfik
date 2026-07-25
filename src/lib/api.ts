@@ -198,13 +198,16 @@ export async function fetchPlayerStats(
  * sayısındaki oyunlarını sayfalı biçimde döner (en yeni önce),
  * `GameHistoryModal`'ın kaydırdıkça yüklemesi (lazy load) için. `hasMore`,
  * bir sonraki sayfanın olup olmadığını bildirir. `userId` verilirse (admin
- * panelindeki oyuncu detayı) o kullanıcının geçmişi döner.
+ * panelindeki oyuncu detayı) o kullanıcının geçmişi döner. `favoritesOnly`
+ * verilirse yalnızca `favorited=true` olan oyunlar döner (bkz. `GameHistoryModal`'daki
+ * "Tümü / Favoriler" filtresi).
  */
 export async function fetchMyGames(
   playerCount: number,
   offset: number,
   limit = 20,
   userId?: string,
+  favoritesOnly = false,
 ): Promise<{ games: GameHistoryEntry[]; hasMore: boolean }> {
   if (!supabase) return { games: [], hasMore: false };
   let uid = userId;
@@ -216,11 +219,13 @@ export async function fetchMyGames(
     uid = user.id;
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('games')
-    .select('id, created_at, player_count, players, player_score, ai_score, rank, surrendered')
+    .select('id, created_at, player_count, players, player_score, ai_score, rank, surrendered, favorited')
     .eq('user_id', uid)
-    .eq('player_count', playerCount)
+    .eq('player_count', playerCount);
+  if (favoritesOnly) query = query.eq('favorited', true);
+  const { data, error } = await query
     .order('created_at', { ascending: false })
     .range(offset, offset + limit); // limit+1 satır: sonraki sayfa var mı anlamak için
   if (error) {
@@ -229,6 +234,24 @@ export async function fetchMyGames(
   }
   const rows = (data as GameHistoryEntry[]) ?? [];
   return { games: rows.slice(0, limit), hasMore: rows.length > limit };
+}
+
+/**
+ * Bir oyunun favori durumunu tersine çevirir (`toggle_game_favorite` RPC'si —
+ * yalnızca `favorited` sütununu değiştiren dar/sahiplik kontrollü bir
+ * fonksiyon; `games` tablosunda genel bir UPDATE izni bilerek açılmıyor çünkü
+ * bu, kullanıcının kendi skorunu/oyuncu listesini de değiştirebilmesine kapı
+ * aralardı). Başarısızsa (ör. çevrimdışı) `null` döner — çağıran iyimser
+ * güncellemeyi geri almalı.
+ */
+export async function toggleGameFavorite(gameId: string): Promise<boolean | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('toggle_game_favorite', { p_game_id: gameId });
+  if (error) {
+    console.error('[Kelimeki] toggleGameFavorite hatası:', error.message);
+    return null;
+  }
+  return data as boolean;
 }
 
 /**

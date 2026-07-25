@@ -1,11 +1,12 @@
 // Kelimeki — oturum açan kullanıcının geçmiş tüm oyunlarının listesi (lazy load)
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal } from './Modal';
-import { fetchMyGames, fetchGameBoardSnapshot } from '../lib/api';
+import { fetchMyGames, fetchGameBoardSnapshot, toggleGameFavorite } from '../lib/api';
 import type { BoardSnapshotTile, GameHistoryEntry, GamePlayerSnapshot } from '../lib/database.types';
 import { useAuth } from '../hooks/useAuth';
 import { PlayerBadge } from './PlayerBadge';
 import { GameBoardPreview } from './GameBoardPreview';
+import { SwipeableGameCard } from './SwipeableGameCard';
 
 interface GameHistoryModalProps {
   playerCount: number;
@@ -111,6 +112,23 @@ function seatIndexFor(p: GamePlayerSnapshot, positionIndex: number, isSnapshot: 
   return m ? Math.max(0, parseInt(m[1], 10) - 1) : positionIndex;
 }
 
+function HeartIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
 export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHistoryModalProps) {
   const { user, profile, profileLoading } = useAuth();
   // Her oyunun `players` jsonb'si o oyun bittiği andaki ismi donmuş halde
@@ -130,10 +148,11 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
-  // Tahta önizlemesi bir oyuna tıklanınca lazy çekilir (liste sorgusuna dahil
+  // Tahta önizlemesi göz ikonuna tıklanınca lazy çekilir (liste sorgusuna dahil
   // değil, bkz. `fetchGameBoardSnapshot`) ve tekrar tıklanana kadar önbellekte
   // tutulur. `fetchedIds`, aynı oyunu aç/kapa yaparken tekrar ağa gitmemek için.
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -141,7 +160,12 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
   const [snapshotLoadingId, setSnapshotLoadingId] = useState<string | null>(null);
   const fetchedIds = useRef<Set<string>>(new Set());
 
-  const toggleBoard = useCallback((gameId: string) => {
+  // Sola kaydırılıp aksiyonları (favori/gör) açık olan tek kart — aynı anda
+  // yalnızca biri açık olabilir.
+  const [openSwipeId, setOpenSwipeId] = useState<string | null>(null);
+
+  const handleViewBoard = useCallback((gameId: string) => {
+    setOpenSwipeId(null);
     setExpandedId((cur) => (cur === gameId ? null : gameId));
     if (fetchedIds.current.has(gameId)) return;
     fetchedIds.current.add(gameId);
@@ -152,7 +176,18 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
     });
   }, []);
 
-  // Sekme (oyuncu sayısı) değişince listeyi baştan yükle.
+  const handleToggleFavorite = useCallback((gameId: string) => {
+    setOpenSwipeId(null);
+    setGames((cur) => cur.map((g) => (g.id === gameId ? { ...g, favorited: !g.favorited } : g)));
+    void toggleGameFavorite(gameId).then((result) => {
+      if (result === null) {
+        // İstek başarısız oldu (ör. çevrimdışı) — iyimser güncellemeyi geri al.
+        setGames((cur) => cur.map((g) => (g.id === gameId ? { ...g, favorited: !g.favorited } : g)));
+      }
+    });
+  }, []);
+
+  // Sekme (oyuncu sayısı) ya da "Tümü/Favoriler" filtresi değişince listeyi baştan yükle.
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -160,8 +195,9 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
     setHasMore(true);
     setExpandedId(null);
     setSnapshots({});
+    setOpenSwipeId(null);
     fetchedIds.current.clear();
-    void fetchMyGames(playerCount, 0, PAGE_SIZE, userId).then(({ games: page, hasMore: more }) => {
+    void fetchMyGames(playerCount, 0, PAGE_SIZE, userId, favoritesOnly).then(({ games: page, hasMore: more }) => {
       if (cancelled) return;
       setGames(page);
       setHasMore(more);
@@ -170,19 +206,19 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
     return () => {
       cancelled = true;
     };
-  }, [playerCount, userId]);
+  }, [playerCount, userId, favoritesOnly]);
 
   const loadMore = useCallback(() => {
     setLoadingMore((already) => {
       if (already) return already;
-      void fetchMyGames(playerCount, games.length, PAGE_SIZE, userId).then(({ games: page, hasMore: more }) => {
+      void fetchMyGames(playerCount, games.length, PAGE_SIZE, userId, favoritesOnly).then(({ games: page, hasMore: more }) => {
         setGames((cur) => [...cur, ...page]);
         setHasMore(more);
         setLoadingMore(false);
       });
       return true;
     });
-  }, [playerCount, games.length, userId]);
+  }, [playerCount, games.length, userId, favoritesOnly]);
 
   // Liste kaydırılıp en alttaki sentinel göründüğünde bir sonraki sayfayı yükler.
   useEffect(() => {
@@ -202,11 +238,31 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
 
   return (
     <Modal title={title ?? `Tüm Oyunlar · ${playerCount} Oyunculu`} onClose={onClose}>
+      {/* Tümü / Favoriler filtresi */}
+      <div className="flex gap-1.5 mb-3 shrink-0">
+        {([
+          { key: false, label: 'Tümü' },
+          { key: true, label: 'Favoriler' },
+        ] as const).map((tab) => (
+          <button
+            key={String(tab.key)}
+            onClick={() => setFavoritesOnly(tab.key)}
+            className={`flex-1 text-[11px] font-mono font-bold uppercase tracking-[0.5px] py-1.5 rounded-md transition-colors ${
+              favoritesOnly === tab.key
+                ? 'bg-accent text-white'
+                : 'bg-panel text-muted border border-border'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <p className="text-muted text-xs font-mono text-center py-4">Yükleniyor…</p>
       ) : games.length === 0 ? (
         <p className="text-muted text-[10px] font-mono text-center py-4">
-          Bu kategoride henüz kayıtlı oyun yok.
+          {favoritesOnly ? 'Henüz favori işaretlediğin bir oyun yok.' : 'Bu kategoride henüz kayıtlı oyun yok.'}
         </p>
       ) : (
         <div ref={scrollRef} className="flex flex-col gap-2 max-h-[65vh] overflow-y-auto pr-1">
@@ -219,69 +275,89 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
             const ranks = computeRanks(players);
             const expanded = expandedId === entry.id;
             return (
-              <div
-                key={entry.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => toggleBoard(entry.id)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    toggleBoard(entry.id);
-                  }
-                }}
-                className="shadow-raised bg-bg border border-border rounded-md py-2 px-2.5 flex flex-col gap-1.5 cursor-pointer text-left"
-              >
-                <div className="flex items-center justify-between gap-2 text-[9px] font-mono text-muted uppercase tracking-[0.5px]">
-                  <span>{formatDateTime(entry.created_at)}</span>
-                  <span className="flex items-center gap-2 shrink-0">
-                    <span className="w-9 text-right">Puan</span>
-                    <span className="w-6 text-right">SL</span>
-                  </span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  {players.map((p, i) => {
-                    const points = leaguePoints(ranks[i], entry.player_count, p.surrendered);
-                    return (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between gap-2 text-[12px] font-mono"
+              <div key={entry.id} className="flex flex-col gap-1.5">
+                <SwipeableGameCard
+                  open={openSwipeId === entry.id}
+                  onOpenChange={(open) => setOpenSwipeId(open ? entry.id : null)}
+                  actions={
+                    <>
+                      <button
+                        onClick={() => handleToggleFavorite(entry.id)}
+                        aria-label={entry.favorited ? 'Favoriden çıkar' : 'Favoriye ekle'}
+                        className="flex-1 flex items-center justify-center bg-red text-white active:opacity-80"
                       >
-                        <span className="flex items-center gap-1.5 min-w-0">
-                          <span className="w-3 text-right text-muted shrink-0">{ranks[i]}.</span>
-                          <PlayerBadge index={seatIndexFor(p, i, hasSnapshot)} size={14} />
-                          <span className={`truncate ${i === meIndex ? 'text-text font-bold' : 'text-muted'}`}>
-                            {i === meIndex && myCurrentName ? myCurrentName : p.name}
+                        <HeartIcon filled={entry.favorited} />
+                      </button>
+                      <button
+                        onClick={() => handleViewBoard(entry.id)}
+                        aria-label="Tahtayı gör"
+                        className="flex-1 flex items-center justify-center bg-accent text-white active:opacity-80"
+                      >
+                        <EyeIcon />
+                      </button>
+                    </>
+                  }
+                >
+                  <div className="shadow-raised bg-bg border border-border rounded-md py-2 px-2.5 flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between gap-2 text-[9px] font-mono text-muted uppercase tracking-[0.5px]">
+                      <span className="flex items-center gap-1">
+                        {entry.favorited && (
+                          <span className="text-red">
+                            <HeartIcon filled />
                           </span>
-                          {p.surrendered && (
-                            <span className="text-[8px] font-bold uppercase tracking-[0.5px] text-red border border-red/40 bg-red/10 rounded px-1 py-[1px] shrink-0">
-                              Teslim Oldu
-                            </span>
-                          )}
-                        </span>
-                        <span className="flex items-center gap-2 shrink-0">
-                          <span
-                            className={`font-bold w-9 text-right ${i === meIndex ? 'text-gold' : 'text-muted'}`}
-                          >
-                            {p.score}
-                          </span>
-                          <span
-                            className={`font-bold w-6 text-right ${points > 0 ? 'text-green' : points < 0 ? 'text-red' : 'text-muted'}`}
-                          >
-                            {formatLeaguePoints(points)}
-                          </span>
-                        </span>
-                      </div>
-                    );
-                  })}
-                  {unknownCount > 0 && (
-                    <div className="text-[10px] font-mono text-muted italic pt-0.5">
-                      +{unknownCount} diğer oyuncu (bu eski kayıtta bilinmiyor)
+                        )}
+                        {formatDateTime(entry.created_at)}
+                      </span>
+                      <span className="flex items-center gap-2 shrink-0">
+                        <span className="w-9 text-right">Puan</span>
+                        <span className="w-6 text-right">SL</span>
+                      </span>
                     </div>
-                  )}
-                </div>
+                    <div className="flex flex-col gap-0.5">
+                      {players.map((p, i) => {
+                        const points = leaguePoints(ranks[i], entry.player_count, p.surrendered);
+                        return (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between gap-2 text-[12px] font-mono"
+                          >
+                            <span className="flex items-center gap-1.5 min-w-0">
+                              <span className="w-3 text-right text-muted shrink-0">{ranks[i]}.</span>
+                              <PlayerBadge index={seatIndexFor(p, i, hasSnapshot)} size={14} />
+                              <span className={`truncate ${i === meIndex ? 'text-text font-bold' : 'text-muted'}`}>
+                                {i === meIndex && myCurrentName ? myCurrentName : p.name}
+                              </span>
+                              {p.surrendered && (
+                                <span className="text-[8px] font-bold uppercase tracking-[0.5px] text-red border border-red/40 bg-red/10 rounded px-1 py-[1px] shrink-0">
+                                  Teslim Oldu
+                                </span>
+                              )}
+                            </span>
+                            <span className="flex items-center gap-2 shrink-0">
+                              <span
+                                className={`font-bold w-9 text-right ${i === meIndex ? 'text-gold' : 'text-muted'}`}
+                              >
+                                {p.score}
+                              </span>
+                              <span
+                                className={`font-bold w-6 text-right ${points > 0 ? 'text-green' : points < 0 ? 'text-red' : 'text-muted'}`}
+                              >
+                                {formatLeaguePoints(points)}
+                              </span>
+                            </span>
+                          </div>
+                        );
+                      })}
+                      {unknownCount > 0 && (
+                        <div className="text-[10px] font-mono text-muted italic pt-0.5">
+                          +{unknownCount} diğer oyuncu (bu eski kayıtta bilinmiyor)
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </SwipeableGameCard>
                 {expanded && (
-                  <div className="pt-1" onClick={(e) => e.stopPropagation()}>
+                  <div>
                     {snapshotLoadingId === entry.id ? (
                       <p className="text-muted text-[10px] font-mono text-center py-3">Yükleniyor…</p>
                     ) : snapshots[entry.id] ? (

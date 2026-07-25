@@ -76,6 +76,8 @@ export interface Game {
    * durum oluşmaz) null.
    */
   board_snapshot: BoardSnapshotTile[] | null;
+  /** Kullanıcı bu oyunu favoriye eklemiş mi (`toggle_game_favorite` RPC'si ile değişir). */
+  favorited: boolean;
   created_at: string;
 }
 
@@ -119,6 +121,7 @@ export type GameHistoryEntry = Pick<
   | 'ai_score'
   | 'rank'
   | 'surrendered'
+  | 'favorited'
 >;
 
 /** Bir kelimenin sözlük kaydı (word_meaning RPC çıktısı). */
