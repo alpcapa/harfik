@@ -16,20 +16,46 @@ export function SwipeableGameCard({ open, onOpenChange, actions, children }: Swi
   const moved = useRef(false);
   const startX = useRef(0);
   const startOffset = useRef(0);
-  const [offset, setOffset] = useState(open ? -SWIPE_ACTIONS_WIDTH : 0);
+  // `offset` state render'ı tetikler; `offsetRef` aynı değeri anlık (senkron)
+  // tutar — hem pointer hem wheel (trackpad) olayları setState'in gecikmeli
+  // uygulanmasını beklemeden en güncel konumu okuyabilsin diye (ör. bırakma
+  // anında hangi tarafa "snap" edileceğine karar verirken).
+  const offsetRef = useRef(open ? -SWIPE_ACTIONS_WIDTH : 0);
+  const [offset, setOffset] = useState(offsetRef.current);
+  const wheelTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const setPos = (next: number) => {
+    const clamped = Math.min(0, Math.max(-SWIPE_ACTIONS_WIDTH, next));
+    offsetRef.current = clamped;
+    setOffset(clamped);
+  };
 
   // Başka bir kart açılıp bu kart dıştan kapatıldığında (ya da tersi) — sürükleme
   // sırasında değilsek anlık pozisyonu prop'a senkronize et.
   useEffect(() => {
     if (dragging.current) return;
-    setOffset(open ? -SWIPE_ACTIONS_WIDTH : 0);
+    setPos(open ? -SWIPE_ACTIONS_WIDTH : 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  useEffect(() => {
+    return () => {
+      if (wheelTimeout.current) clearTimeout(wheelTimeout.current);
+    };
+  }, []);
+
+  const commit = () => {
+    const shouldOpen = offsetRef.current < -SWIPE_ACTIONS_WIDTH / 2;
+    setPos(shouldOpen ? -SWIPE_ACTIONS_WIDTH : 0);
+    if (shouldOpen !== open) onOpenChange(shouldOpen);
+  };
+
+  // Fare/dokunmatik kalem/parmak — hepsi PointerEvent üzerinden aynı akışla.
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     dragging.current = true;
     moved.current = false;
     startX.current = e.clientX;
-    startOffset.current = offset;
+    startOffset.current = offsetRef.current;
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
@@ -41,15 +67,28 @@ export function SwipeableGameCard({ open, onOpenChange, actions, children }: Swi
     if (!dragging.current) return;
     const dx = e.clientX - startX.current;
     if (Math.abs(dx) > 4) moved.current = true;
-    setOffset(Math.min(0, Math.max(-SWIPE_ACTIONS_WIDTH, startOffset.current + dx)));
+    setPos(startOffset.current + dx);
   };
 
   const endDrag = () => {
     if (!dragging.current) return;
     dragging.current = false;
-    const shouldOpen = offset < -SWIPE_ACTIONS_WIDTH / 2;
-    setOffset(shouldOpen ? -SWIPE_ACTIONS_WIDTH : 0);
-    if (shouldOpen !== open) onOpenChange(shouldOpen);
+    commit();
+  };
+
+  // Trackpad'in iki parmakla yatay kaydırması (Mac'te yaygın) pointer olayı
+  // DEĞİL, yatay deltaX'li bir wheel olayı üretir — bu yüzden ayrıca ele
+  // alınması gerekiyor. Dikey scroll'a (liste kaydırma) dokunmuyoruz.
+  const onWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+    e.preventDefault();
+    dragging.current = true;
+    setPos(offsetRef.current - e.deltaX);
+    if (wheelTimeout.current) clearTimeout(wheelTimeout.current);
+    wheelTimeout.current = setTimeout(() => {
+      dragging.current = false;
+      commit();
+    }, 120);
   };
 
   // Sürüklemeden (gerçek bir tıklamadan) sonra gelen click'i yutar; kart açıkken
@@ -77,16 +116,19 @@ export function SwipeableGameCard({ open, onOpenChange, actions, children }: Swi
         {actions}
       </div>
       <div
-        className="relative"
+        className="relative cursor-grab active:cursor-grabbing"
         style={{
           transform: `translateX(${offset}px)`,
           transition: dragging.current ? 'none' : 'transform 0.2s ease',
           touchAction: 'pan-y',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
         }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
+        onWheel={onWheel}
         onClickCapture={onClickCapture}
       >
         {children}

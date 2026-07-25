@@ -7,6 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import { PlayerBadge } from './PlayerBadge';
 import { GameBoardPreview } from './GameBoardPreview';
 import { SwipeableGameCard } from './SwipeableGameCard';
+import { ActionSheet } from './ActionSheet';
 
 interface GameHistoryModalProps {
   playerCount: number;
@@ -112,6 +113,16 @@ function seatIndexFor(p: GamePlayerSnapshot, positionIndex: number, isSnapshot: 
   return m ? Math.max(0, parseInt(m[1], 10) - 1) : positionIndex;
 }
 
+/**
+ * Paylaş aksiyonu için düz metin özet — henüz görsel/link paylaşımı yok
+ * (bilinçli olarak ertelendi, bkz. CLAUDE.md), yalnızca sonucu metin olarak
+ * paylaşır/panoya kopyalar.
+ */
+function buildShareText(entry: GameHistoryEntry, players: GamePlayerSnapshot[], ranks: number[]): string {
+  const lines = players.map((p, i) => `${ranks[i]}. ${p.name} — ${p.score}`);
+  return `Kelimeki'de oynadığım bir oyun (${formatDateTime(entry.created_at)}):\n${lines.join('\n')}`;
+}
+
 function HeartIcon({ filled }: { filled: boolean }) {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -164,6 +175,29 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
   // yalnızca biri açık olabilir.
   const [openSwipeId, setOpenSwipeId] = useState<string | null>(null);
 
+  // Tahta önizlemesine tıklanınca açılan Kapat/Paylaş aksiyon menüsü.
+  const [boardSheetId, setBoardSheetId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const copiedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleShare = useCallback(async (entry: GameHistoryEntry, players: GamePlayerSnapshot[], ranks: number[]) => {
+    const text = buildShareText(entry, players, ranks);
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Kelimeki', text });
+      } catch {
+        // Kullanıcı paylaşım sayfasını iptal etti — sessizce geç.
+      }
+      return;
+    }
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(entry.id);
+      if (copiedTimeout.current) clearTimeout(copiedTimeout.current);
+      copiedTimeout.current = setTimeout(() => setCopiedId(null), 1800);
+    }
+  }, []);
+
   const handleViewBoard = useCallback((gameId: string) => {
     setOpenSwipeId(null);
     setExpandedId((cur) => (cur === gameId ? null : gameId));
@@ -187,6 +221,12 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
     });
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (copiedTimeout.current) clearTimeout(copiedTimeout.current);
+    };
+  }, []);
+
   // Sekme (oyuncu sayısı) ya da "Tümü/Favoriler" filtresi değişince listeyi baştan yükle.
   useEffect(() => {
     let cancelled = false;
@@ -196,6 +236,7 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
     setExpandedId(null);
     setSnapshots({});
     setOpenSwipeId(null);
+    setBoardSheetId(null);
     fetchedIds.current.clear();
     void fetchMyGames(playerCount, 0, PAGE_SIZE, userId, favoritesOnly).then(({ games: page, hasMore: more }) => {
       if (cancelled) return;
@@ -361,17 +402,34 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                     {snapshotLoadingId === entry.id ? (
                       <p className="text-muted text-[10px] font-mono text-center py-3">Yükleniyor…</p>
                     ) : snapshots[entry.id] ? (
-                      <GameBoardPreview
-                        snapshot={snapshots[entry.id]!}
-                        playerCount={entry.player_count}
-                        players={players}
-                      />
+                      <>
+                        <GameBoardPreview
+                          snapshot={snapshots[entry.id]!}
+                          playerCount={entry.player_count}
+                          players={players}
+                          onClick={() => setBoardSheetId(entry.id)}
+                        />
+                        {copiedId === entry.id && (
+                          <p className="text-muted text-[10px] font-mono text-center pt-1.5">
+                            Panoya kopyalandı
+                          </p>
+                        )}
+                      </>
                     ) : (
                       <p className="text-muted text-[10px] font-mono text-center py-3">
                         Bu oyun için tahta görüntüsü kaydedilmemiş.
                       </p>
                     )}
                   </div>
+                )}
+                {boardSheetId === entry.id && (
+                  <ActionSheet
+                    onClose={() => setBoardSheetId(null)}
+                    actions={[
+                      { label: 'Paylaş', onSelect: () => void handleShare(entry, players, ranks) },
+                      { label: 'Kapat', onSelect: () => setExpandedId(null) },
+                    ]}
+                  />
                 )}
               </div>
             );

@@ -43,6 +43,8 @@ interface BoardProps {
   onTilePointerCancel?: (e: React.PointerEvent<HTMLDivElement>) => void;
   /** Alt bilgi şeridini (Oyun Geçmişi linki + X2/X3 açıklaması) gizler — salt-okunur önizlemelerde (bkz. `GameBoardPreview`). */
   hideFooter?: boolean;
+  /** Taşları küçük/puan göstermeden çizer — salt-okunur önizlemelerde (bkz. `GameBoardPreview`). */
+  compact?: boolean;
 }
 
 // Merkezdeki x2 bonus bölgesi altın rengi — nömorfik, diğer köşe tonlarıyla
@@ -91,6 +93,7 @@ export function Board({
   onTilePointerUp,
   onTilePointerCancel,
   hideFooter = false,
+  compact = false,
 }: BoardProps) {
   const online = useOnlineStatus();
   const { board, placed, bonuses, players, current } = state;
@@ -210,6 +213,7 @@ export function Board({
           <Tile
             tile={boardTile}
             variant="board"
+            compact={compact}
             color={
               isLastMove && tileColor
                 ? { ...tileColor, tint: darken(tileColor.tint, 0.14), base: darken(tileColor.base, 0.12) }
