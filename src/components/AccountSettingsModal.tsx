@@ -2,7 +2,7 @@
 import { useRef, useState } from 'react';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
-import { updateProfile, updateEmail, uploadAvatar } from '../lib/api';
+import { updateProfile, updateEmail, uploadAvatar, sendPasswordReset } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
 import type { Gender } from '../lib/database.types';
 
@@ -221,6 +221,26 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
             />
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={async () => {
+            if (!user?.email) return;
+            setError(null);
+            setInfo(null);
+            try {
+              const { error } = await sendPasswordReset(user.email);
+              if (error) throw error;
+              setInfo('Şifre sıfırlama bağlantısı e-postana gönderildi.');
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
+              setError(msg || 'Bir hata oluştu.');
+            }
+          }}
+          className="text-left text-[10px] text-accent font-mono hover:underline"
+        >
+          Şifremi değiştir — sıfırlama e-postası gönder
+        </button>
 
         {error && <p className="text-red text-xs font-mono">{error}</p>}
         {info && <p className="text-green text-xs font-mono">{info}</p>}
