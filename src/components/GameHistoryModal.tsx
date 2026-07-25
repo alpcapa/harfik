@@ -114,11 +114,8 @@ function seatIndexFor(p: GamePlayerSnapshot, positionIndex: number, isSnapshot: 
   return m ? Math.max(0, parseInt(m[1], 10) - 1) : positionIndex;
 }
 
-/** Paylaş aksiyonu için düz metin özet — görselin/linkin yanına eklenir. */
-function buildShareText(entry: GameHistoryEntry, players: GamePlayerSnapshot[], ranks: number[]): string {
-  const lines = players.map((p, i) => `${ranks[i]}. ${p.name} — ${p.score}`);
-  return `Kelimeki'de oynadığım bir oyun (${formatDateTime(entry.created_at)}):\n${lines.join('\n')}`;
-}
+/** Paylaş aksiyonunun sabit metni — skor/tarih artık görselin kendisinde (bkz. aşağı). */
+const SHARE_MESSAGE = "Kelimeki'de oynadığım bu oyun çok iyidi.";
 
 /** Herkese açık paylaşım sayfası — bkz. `SharedGamePage`/`main.tsx`'teki path kontrolü. */
 function buildShareUrl(gameId: string): string {
@@ -185,8 +182,8 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
   // (expandedId tek bir id) paylaş için görseli buradan yakalıyoruz — tek ref yeterli.
   const boardCaptureRef = useRef<HTMLDivElement | null>(null);
 
-  const handleShare = useCallback(async (entry: GameHistoryEntry, players: GamePlayerSnapshot[], ranks: number[]) => {
-    const text = buildShareText(entry, players, ranks);
+  const handleShare = useCallback(async (entry: GameHistoryEntry) => {
+    const text = SHARE_MESSAGE;
     const shared = await markGameShared(entry.id);
     const url = shared ? buildShareUrl(entry.id) : undefined;
     const node = boardCaptureRef.current;
@@ -423,7 +420,21 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                       <p className="text-muted text-[10px] font-mono text-center py-3">Yükleniyor…</p>
                     ) : snapshots[entry.id] ? (
                       <>
-                        <div ref={boardCaptureRef}>
+                        <div ref={boardCaptureRef} className="flex flex-col gap-1.5">
+                          <div className="shadow-raised bg-bg border border-border rounded-md py-2 px-2.5 flex flex-col gap-0.5">
+                            {players.map((p, i) => (
+                              <div key={i} className="flex items-center justify-between gap-2 text-[12px] font-mono">
+                                <span className="flex items-center gap-1.5 min-w-0">
+                                  <span className="w-3 text-right text-muted shrink-0">{ranks[i]}.</span>
+                                  <PlayerBadge index={seatIndexFor(p, i, hasSnapshot)} size={14} />
+                                  <span className="truncate text-text font-bold">
+                                    {i === meIndex && myCurrentName ? myCurrentName : p.name}
+                                  </span>
+                                </span>
+                                <span className="font-bold text-gold shrink-0">{p.score}</span>
+                              </div>
+                            ))}
+                          </div>
                           <GameBoardPreview
                             snapshot={snapshots[entry.id]!}
                             playerCount={entry.player_count}
@@ -448,7 +459,7 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                   <ActionSheet
                     onClose={() => setBoardSheetId(null)}
                     actions={[
-                      { label: 'Paylaş', onSelect: () => void handleShare(entry, players, ranks) },
+                      { label: 'Paylaş', onSelect: () => void handleShare(entry) },
                       { label: 'Kapat', onSelect: () => setExpandedId(null) },
                     ]}
                   />
