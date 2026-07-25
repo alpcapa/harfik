@@ -218,7 +218,9 @@ export async function fetchPlayerStats(
  * Her satırdaki `liked_by_me`, hedef kullanıcıdan BAĞIMSIZ olarak, bu isteği
  * yapan (oturum açan) kullanıcının o oyunu beğenip beğenmediğini gösterir —
  * böylece başka birinin kartına bakarken bile kalp ikonu kendi beğeni
- * durumunu yansıtır ve tıklanabilir kalır.
+ * durumunu yansıtır ve tıklanabilir kalır. `like_count`, o oyunu toplam kaç
+ * kullanıcının beğendiğini gösterir (`game_like_stats` RPC'si, tek sorguda
+ * her ikisini birden döner).
  */
 export async function fetchMyGames(
   playerCount: number,
@@ -235,7 +237,7 @@ export async function fetchMyGames(
   if (!targetUid) return { games: [], hasMore: false };
 
   const cols = 'id, created_at, player_count, players, player_score, ai_score, rank, surrendered';
-  type Row = Omit<GameHistoryEntry, 'liked_by_me'>;
+  type Row = Omit<GameHistoryEntry, 'liked_by_me' | 'like_count'>;
   let rows: Row[];
   let hasMore: boolean;
 
@@ -271,21 +273,22 @@ export async function fetchMyGames(
     hasMore = all.length > limit;
   }
 
-  let likedIds = new Set<string>();
+  const stats = new Map<string, { likeCount: number; likedByMe: boolean }>();
   if (viewer && rows.length > 0) {
-    const { data: myLikes } = await supabase
-      .from('game_likes')
-      .select('game_id')
-      .eq('user_id', viewer.id)
-      .in(
-        'game_id',
-        rows.map((r) => r.id),
-      );
-    likedIds = new Set((myLikes ?? []).map((r) => r.game_id as string));
+    const { data: likeStats } = await supabase.rpc('game_like_stats', {
+      p_game_ids: rows.map((r) => r.id),
+    });
+    for (const s of (likeStats as { game_id: string; like_count: number; liked_by_me: boolean }[]) ?? []) {
+      stats.set(s.game_id, { likeCount: Number(s.like_count), likedByMe: s.liked_by_me });
+    }
   }
 
   return {
-    games: rows.map((r) => ({ ...r, liked_by_me: likedIds.has(r.id) })),
+    games: rows.map((r) => ({
+      ...r,
+      liked_by_me: stats.get(r.id)?.likedByMe ?? false,
+      like_count: stats.get(r.id)?.likeCount ?? 0,
+    })),
     hasMore,
   };
 }

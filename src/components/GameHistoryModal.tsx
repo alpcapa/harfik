@@ -264,12 +264,18 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
     });
   }, []);
 
+  const flipLike = (g: GameHistoryEntry) => ({
+    ...g,
+    liked_by_me: !g.liked_by_me,
+    like_count: g.like_count + (g.liked_by_me ? -1 : 1),
+  });
+
   const handleToggleLike = useCallback((gameId: string) => {
-    setGames((cur) => cur.map((g) => (g.id === gameId ? { ...g, liked_by_me: !g.liked_by_me } : g)));
+    setGames((cur) => cur.map((g) => (g.id === gameId ? flipLike(g) : g)));
     void toggleGameLike(gameId).then((result) => {
       if (result === null) {
         // İstek başarısız oldu (ör. çevrimdışı) — iyimser güncellemeyi geri al.
-        setGames((cur) => cur.map((g) => (g.id === gameId ? { ...g, liked_by_me: !g.liked_by_me } : g)));
+        setGames((cur) => cur.map((g) => (g.id === gameId ? flipLike(g) : g)));
       }
     });
   }, []);
@@ -393,9 +399,10 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                           handleToggleLike(entry.id);
                         }}
                         aria-label={entry.liked_by_me ? 'Favoriden çıkar' : 'Favoriye ekle'}
-                        className={entry.liked_by_me ? 'text-red' : 'text-muted'}
+                        className={`flex items-center gap-0.5 ${entry.liked_by_me ? 'text-red' : 'text-muted'}`}
                       >
                         <HeartIcon filled={entry.liked_by_me} size={13} />
+                        {entry.like_count > 0 && <span>{entry.like_count}</span>}
                       </button>
                       {formatDateTime(entry.created_at)}
                     </span>

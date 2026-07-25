@@ -146,6 +146,8 @@ export type GameHistoryEntry = Pick<
    * kişi) bağımsız hesaplanır. Bkz. `fetchMyGames`.
    */
   liked_by_me: boolean;
+  /** Bu oyunu toplam kaç kullanıcının beğendiği (`game_like_stats` RPC'si). */
+  like_count: number;
 };
 
 /** Bir kelimenin sözlük kaydı (word_meaning RPC çıktısı). */
