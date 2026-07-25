@@ -25,13 +25,11 @@ interface PlayerScoreCardProps {
 
 const TABS = [2, 4] as const;
 
+// Skor kartı herkese açık olduğundan (Sanal Lig'den herkes başkasının
+// kartını açabilir) tam ad/soyad değil, oyun içindekiyle aynı kısa kimlik
+// gösterilir — nickname yoksa sadece isim, soyadı hiç kullanılmaz.
 function memberDisplayName(m: PlayerSummary) {
-  return (
-    m.display_name ||
-    [m.first_name, m.last_name].filter(Boolean).join(' ').trim() ||
-    m.username ||
-    'Oyuncu'
-  );
+  return m.display_name || m.first_name || 'Oyuncu';
 }
 
 export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {

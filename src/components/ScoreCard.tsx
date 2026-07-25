@@ -37,10 +37,12 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
     fetchMyLeaderboardRank(user.id).then(setMyRank);
   }, [user]);
 
+  // Skor kartı herkese açık olabildiğinden (Sanal Lig üzerinden başkaları da
+  // görebilir) tam ad/soyad değil, oyun içindeki aynı kısa kimlik gösterilir
+  // (bkz. Setup/App.tsx'teki accountName) — nickname yoksa sadece isim.
   const name =
     profile?.display_name ||
-    profile?.username ||
-    [profile?.first_name, profile?.last_name].filter(Boolean).join(' ').trim() ||
+    profile?.first_name ||
     user?.email ||
     'Oyuncu';
 

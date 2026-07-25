@@ -16,13 +16,10 @@ interface LeaderboardProps {
 const INITIAL_PAGE_SIZE = 10;
 const PAGE_SIZE = 20;
 
+// Herkese açık bir sıralama olduğundan tam ad/soyad değil, nickname yoksa
+// sadece isim gösterilir (oyun içindeki aynı kısa kimlik kuralı).
 function rowName(r: LeaderboardRow): string {
-  return (
-    r.display_name ||
-    r.username ||
-    [r.first_name, r.last_name].filter(Boolean).join(' ').trim() ||
-    'Anonim'
-  );
+  return r.display_name || r.first_name || 'Anonim';
 }
 
 function rowToPlayerSummary(r: LeaderboardRow): PlayerSummary {
