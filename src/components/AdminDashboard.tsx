@@ -5,6 +5,8 @@ import {
   fetchAdminMembers,
   fetchAdminUserActivitySeries,
   fetchAdminGameActivitySeries,
+  fetchAdminEngagementActivitySeries,
+  fetchAdminEngagementTotals,
   fetchAdminGuestSourceBreakdown,
   fetchAdminGuestDeviceBreakdown,
   fetchAdminGuestStandaloneBreakdown,
@@ -17,6 +19,8 @@ import type {
   AdminUserActivityPoint,
   AdminGameActivityPoint,
   AdminGameScope,
+  AdminEngagementActivityPoint,
+  AdminEngagementTotals,
   AdminGuestSourceRow,
   AdminGuestDeviceRow,
   AdminGuestStandaloneRow,
@@ -28,6 +32,7 @@ import { PlayerScoreCard } from './PlayerScoreCard';
 import { GrowthChart, type ChartSeriesDef } from './GrowthChart';
 import { trLower } from '../utils/turkish';
 import { useModalA11y } from '../hooks/useModalA11y';
+import { downloadCsv } from '../utils/csvExport';
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -86,12 +91,25 @@ const DURATION_SERIES: ChartSeriesDef[] = [
   { key: 'avg_duration_same_session_seconds', label: 'Aynı Oturum', color: '#0891B2' },
   { key: 'avg_duration_multi_session_seconds', label: 'Çok Oturumlu', color: '#DC2626' },
 ];
+const ENGAGEMENT_SERIES: ChartSeriesDef[] = [
+  { key: 'likes', label: 'Beğeni', color: '#DC2626' },
+  { key: 'shares', label: 'Paylaşma', color: '#2a78d6' },
+];
 
 const selectCls =
   'w-auto shrink-0 py-1.5 px-2 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1px] bg-panel text-text border border-border';
 
 /** GrowthChart'ın `controls` satırına konan bölüm başlığı — Tablo Görünümü linkiyle aynı hizada. */
-const sectionTitleCls = 'text-[10px] font-mono font-bold uppercase tracking-[1px] text-muted';
+const sectionTitleCls = 'text-[10px] font-mono font-bold uppercase tracking-[1px] text-accent';
+
+/** "CSV İndir"/"Tablo Görünümü" gibi küçük alt çizgili aksiyon linkleri için ortak stil. */
+const csvLinkCls =
+  'text-[9px] font-mono uppercase tracking-[0.5px] text-muted underline underline-offset-2 active:opacity-70 transition-opacity shrink-0';
+
+/** CSV dosya adına (uzantısız temel isim) bugünün tarihini ekler — ör. "kelimeki-uyeler-2026-07-25.csv". */
+function csvFilename(baseName: string): string {
+  return `${baseName}-${new Date().toISOString().slice(0, 10)}.csv`;
+}
 
 /**
  * Büyüme > Kullanıcı altındaki "Kaynak/Cihaz/Ana Ekrana Ekleme" gibi tek
@@ -104,12 +122,14 @@ function GuestBreakdownTable<T extends { visitors: number }>({
   rows,
   getKey,
   getLabel,
+  csvBaseName,
 }: {
   columnLabel: string;
   emptyLabel: string;
   rows: T[] | null;
   getKey: (row: T) => string;
   getLabel: (row: T) => string;
+  csvBaseName: string;
 }) {
   if (rows === null) {
     return <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>;
@@ -118,33 +138,55 @@ function GuestBreakdownTable<T extends { visitors: number }>({
     return <div className="text-xs font-mono text-muted text-center py-6">{emptyLabel}</div>;
   }
   const totalVisitors = rows.reduce((sum, row) => sum + row.visitors, 0);
+  const visibleRows = rows;
+
+  function handleExportCsv() {
+    downloadCsv(
+      csvFilename(csvBaseName),
+      [columnLabel, 'Ziyaretçi', '%'],
+      [
+        ...visibleRows.map((row) => [
+          getLabel(row),
+          row.visitors,
+          totalVisitors > 0 ? ((row.visitors / totalVisitors) * 100).toFixed(2) : '0.00',
+        ]),
+        ['TOPLAM', totalVisitors, '100.00'],
+      ],
+    );
+  }
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-auto text-[11px] font-mono border-collapse">
-        <thead>
-          <tr className="text-left text-muted border-b border-border">
-            <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px]">{columnLabel}</th>
-            <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Ziyaretçi</th>
-            <th className="py-1.5 font-bold uppercase tracking-[1px] text-center">%</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={getKey(row)} className="border-b border-border/50">
-              <td className="py-1.5 pr-8 text-text whitespace-nowrap">{getLabel(row)}</td>
-              <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">{row.visitors}</td>
-              <td className="py-1.5 text-muted whitespace-nowrap text-center">
-                {totalVisitors > 0 ? ((row.visitors / totalVisitors) * 100).toFixed(2) : '0.00'}%
-              </td>
+    <div className="flex flex-col gap-1.5">
+      <button type="button" onClick={handleExportCsv} className={`${csvLinkCls} self-end`}>
+        CSV İndir
+      </button>
+      <div className="overflow-x-auto">
+        <table className="w-auto text-[11px] font-mono border-collapse">
+          <thead>
+            <tr className="text-left text-muted border-b border-border">
+              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px]">{columnLabel}</th>
+              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Ziyaretçi</th>
+              <th className="py-1.5 font-bold uppercase tracking-[1px] text-center">%</th>
             </tr>
-          ))}
-          <tr className="border-b border-border/50">
-            <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap">TOPLAM</td>
-            <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">{totalVisitors}</td>
-            <td className="py-1.5 text-text font-bold whitespace-nowrap text-center">100.00%</td>
-          </tr>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={getKey(row)} className="border-b border-border/50">
+                <td className="py-1.5 pr-8 text-text whitespace-nowrap">{getLabel(row)}</td>
+                <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">{row.visitors}</td>
+                <td className="py-1.5 text-muted whitespace-nowrap text-center">
+                  {totalVisitors > 0 ? ((row.visitors / totalVisitors) * 100).toFixed(2) : '0.00'}%
+                </td>
+              </tr>
+            ))}
+            <tr className="border-b border-border/50">
+              <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap">TOPLAM</td>
+              <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">{totalVisitors}</td>
+              <td className="py-1.5 text-text font-bold whitespace-nowrap text-center">100.00%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -228,7 +270,7 @@ function memberSortValue(m: AdminMember, key: MemberSortKey): string | number {
 }
 
 export function AdminDashboard({ onClose }: AdminDashboardProps) {
-  const [tab, setTab] = useState<Tab>('members');
+  const [tab, setTab] = useState<Tab>('growth');
   const [members, setMembers] = useState<AdminMember[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedMember, setSelectedMember] = useState<AdminMember | null>(null);
@@ -244,6 +286,8 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [gamePeriod, setGamePeriod] = useState<number>(30);
   const [gameScope, setGameScope] = useState<AdminGameScope>('total');
   const [gamePlayerCount, setGamePlayerCount] = useState<GameSubTab>('total');
+  const [engagementActivity, setEngagementActivity] = useState<AdminEngagementActivityPoint[] | null>(null);
+  const [engagementTotals, setEngagementTotals] = useState<AdminEngagementTotals | null>(null);
   const [memberSearch, setMemberSearch] = useState('');
   const [sortKey, setSortKey] = useState<MemberSortKey>('created_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
@@ -260,6 +304,9 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       .catch((e) => setError(String(e)));
     fetchAdminFeedback()
       .then(setFeedback)
+      .catch((e) => setError(String(e)));
+    fetchAdminEngagementTotals()
+      .then(setEngagementTotals)
       .catch((e) => setError(String(e)));
   }, []);
 
@@ -302,6 +349,13 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       .then(setGameActivity)
       .catch((e) => setError(String(e)));
   }, [gamePeriod, gameGranularity, gameScope, gamePlayerCount]);
+
+  useEffect(() => {
+    setEngagementActivity(null);
+    fetchAdminEngagementActivitySeries(gamePeriod, gameGranularity)
+      .then(setEngagementActivity)
+      .catch((e) => setError(String(e)));
+  }, [gamePeriod, gameGranularity]);
 
   function selectUserGranularity(g: AdminActivityGranularity) {
     setUserGranularity(g);
@@ -359,6 +413,23 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       active ? 'bg-accent text-white' : 'bg-panel text-muted border border-border'
     }`;
 
+  function exportMembersCsv() {
+    if (!filteredMembers || filteredMembers.length === 0) return;
+    downloadCsv(
+      csvFilename('kelimeki-uyeler'),
+      ['İsim', 'Nickname', 'E-posta', 'Kanal', 'Katılma', 'Son Giriş', 'Rol'],
+      filteredMembers.map((m) => [
+        memberName(m),
+        memberNickname(m),
+        m.email ?? '',
+        memberChannelLabel(m),
+        fmtDate(m.created_at),
+        fmtDate(m.last_sign_in_at),
+        m.is_admin ? 'Admin' : 'Üye',
+      ]),
+    );
+  }
+
   const unhandledFeedbackCount = feedback?.filter((f) => !f.handled).length ?? 0;
   const filteredFeedback = useMemo(
     () =>
@@ -367,6 +438,25 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
         : feedback?.filter((f) => f.source === feedbackSourceFilter) ?? null,
     [feedback, feedbackSourceFilter],
   );
+
+  function exportFeedbackCsv() {
+    if (!filteredFeedback || filteredFeedback.length === 0) return;
+    downloadCsv(
+      csvFilename('kelimeki-geri-bildirim'),
+      ['Gönderen', 'E-posta', 'Kaynak', 'Tarih', 'Okundu', 'Mesaj'],
+      filteredFeedback.map((f) => {
+        const sender = f.user_id ? members?.find((m) => m.id === f.user_id) : null;
+        return [
+          sender ? memberName(sender) : f.email || 'Anonim',
+          f.email ?? '',
+          f.source === 'game_end' ? 'Oyun Sonu' : 'Genel',
+          fmtDate(f.created_at),
+          f.handled ? 'Evet' : 'Hayır',
+          f.message,
+        ];
+      }),
+    );
+  }
 
   function toggleFeedbackHandled(f: AdminFeedbackRow) {
     const next = !f.handled;
@@ -420,6 +510,91 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
               Geri Bildirim{unhandledFeedbackCount > 0 ? ` (${unhandledFeedbackCount})` : ''}
             </button>
           </div>
+
+          {tab === 'growth' && (
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-1.5">
+                <button className={tabBtn(growthSubTab === 'user')} onClick={() => setGrowthSubTab('user')}>
+                  Kullanıcı
+                </button>
+                <button className={tabBtn(growthSubTab === 'game')} onClick={() => setGrowthSubTab('game')}>
+                  Oyun
+                </button>
+              </div>
+
+              {growthSubTab === 'user' && (
+                <div className="flex items-center flex-wrap gap-2">
+                  <select
+                    value={userGranularity}
+                    onChange={(e) => selectUserGranularity(e.target.value as AdminActivityGranularity)}
+                    className={selectCls}
+                  >
+                    <option value="day">Günlük</option>
+                    <option value="week">Haftalık</option>
+                    <option value="month">Aylık</option>
+                    <option value="year">Yıllık</option>
+                  </select>
+                  <select
+                    value={userPeriod}
+                    onChange={(e) => setUserPeriod(Number(e.target.value))}
+                    className={selectCls}
+                  >
+                    {PERIOD_OPTIONS[userGranularity].map((p) => (
+                      <option key={p} value={p}>
+                        Son {p} {PERIOD_UNIT_LABEL[userGranularity]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {growthSubTab === 'game' && (
+                <div className="flex items-center flex-wrap gap-2">
+                  <select
+                    value={gameScope}
+                    onChange={(e) => setGameScope(e.target.value as AdminGameScope)}
+                    className={selectCls}
+                  >
+                    <option value="total">Toplam</option>
+                    <option value="registered">Kayıtlı</option>
+                    <option value="guest">Misafir</option>
+                  </select>
+                  <select
+                    value={gamePlayerCount}
+                    onChange={(e) =>
+                      setGamePlayerCount(e.target.value === 'total' ? 'total' : (Number(e.target.value) as 2 | 4))
+                    }
+                    className={selectCls}
+                  >
+                    <option value="total">Toplam</option>
+                    <option value={2}>2 Kişilik</option>
+                    <option value={4}>4 Kişilik</option>
+                  </select>
+                  <select
+                    value={gameGranularity}
+                    onChange={(e) => selectGameGranularity(e.target.value as AdminActivityGranularity)}
+                    className={selectCls}
+                  >
+                    <option value="day">Günlük</option>
+                    <option value="week">Haftalık</option>
+                    <option value="month">Aylık</option>
+                    <option value="year">Yıllık</option>
+                  </select>
+                  <select
+                    value={gamePeriod}
+                    onChange={(e) => setGamePeriod(Number(e.target.value))}
+                    className={selectCls}
+                  >
+                    {PERIOD_OPTIONS[gameGranularity].map((p) => (
+                      <option key={p} value={p}>
+                        Son {p} {PERIOD_UNIT_LABEL[gameGranularity]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="overflow-y-auto min-h-0 px-5 pt-4 pb-5 flex flex-col gap-4">
@@ -485,25 +660,25 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                   </table>
                 </div>
               )}
-              <div className="text-[10px] font-mono text-muted text-right">
-                {memberSearch.trim() && members
-                  ? `${filteredMembers?.length ?? 0} / ${members.length} üye`
-                  : `Toplam ${members?.length ?? 0} üye`}
+              <div className="flex items-center justify-between gap-2">
+                {filteredMembers && filteredMembers.length > 0 ? (
+                  <button type="button" onClick={exportMembersCsv} className={csvLinkCls}>
+                    CSV İndir
+                  </button>
+                ) : (
+                  <span />
+                )}
+                <div className="text-[10px] font-mono text-muted text-right">
+                  {memberSearch.trim() && members
+                    ? `${filteredMembers?.length ?? 0} / ${members.length} üye`
+                    : `Toplam ${members?.length ?? 0} üye`}
+                </div>
               </div>
             </>
           )}
 
           {tab === 'growth' && (
             <>
-              <div className="flex gap-1.5">
-                <button className={tabBtn(growthSubTab === 'user')} onClick={() => setGrowthSubTab('user')}>
-                  Kullanıcı
-                </button>
-                <button className={tabBtn(growthSubTab === 'game')} onClick={() => setGrowthSubTab('game')}>
-                  Oyun
-                </button>
-              </div>
-
               {growthSubTab === 'user' &&
                 (userActivity === null ? (
                   <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>
@@ -513,31 +688,8 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                     granularity={userGranularity}
                     series={USER_SERIES}
                     defaultActiveKeys={['signups']}
-                    controls={
-                      <>
-                        <select
-                          value={userGranularity}
-                          onChange={(e) => selectUserGranularity(e.target.value as AdminActivityGranularity)}
-                          className={selectCls}
-                        >
-                          <option value="day">Günlük</option>
-                          <option value="week">Haftalık</option>
-                          <option value="month">Aylık</option>
-                          <option value="year">Yıllık</option>
-                        </select>
-                        <select
-                          value={userPeriod}
-                          onChange={(e) => setUserPeriod(Number(e.target.value))}
-                          className={selectCls}
-                        >
-                          {PERIOD_OPTIONS[userGranularity].map((p) => (
-                            <option key={p} value={p}>
-                              Son {p} {PERIOD_UNIT_LABEL[userGranularity]}
-                            </option>
-                          ))}
-                        </select>
-                      </>
-                    }
+                    controls={<span className={sectionTitleCls}>Yeni Üye / Ziyaret</span>}
+                    csvBaseName="kelimeki-yeni-uye-ziyaret"
                   />
                 ))}
 
@@ -553,6 +705,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       rows={guestSources}
                       getKey={(row) => row.source}
                       getLabel={(row) => row.source}
+                      csvBaseName="kelimeki-ziyaretci-kaynagi"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -567,6 +720,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       getLabel={(row) =>
                         row.device_type === 'mobile' ? 'Mobil' : row.device_type === 'desktop' ? 'Masaüstü' : 'Bilinmiyor'
                       }
+                      csvBaseName="kelimeki-cihaz"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -579,6 +733,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       rows={guestStandalone}
                       getKey={(row) => String(row.is_standalone)}
                       getLabel={(row) => (row.is_standalone ? 'App' : 'Browser')}
+                      csvBaseName="kelimeki-ana-ekrana-ekleme"
                     />
                   </div>
                 </div>
@@ -586,50 +741,6 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
               {growthSubTab === 'game' && (
                 <>
-                  <div className="flex items-center flex-wrap gap-2">
-                    <select
-                      value={gameScope}
-                      onChange={(e) => setGameScope(e.target.value as AdminGameScope)}
-                      className={selectCls}
-                    >
-                      <option value="total">Toplam</option>
-                      <option value="registered">Kayıtlı</option>
-                      <option value="guest">Misafir</option>
-                    </select>
-                    <select
-                      value={gamePlayerCount}
-                      onChange={(e) =>
-                        setGamePlayerCount(e.target.value === 'total' ? 'total' : (Number(e.target.value) as 2 | 4))
-                      }
-                      className={selectCls}
-                    >
-                      <option value="total">Toplam</option>
-                      <option value={2}>2 Kişilik</option>
-                      <option value={4}>4 Kişilik</option>
-                    </select>
-                    <select
-                      value={gameGranularity}
-                      onChange={(e) => selectGameGranularity(e.target.value as AdminActivityGranularity)}
-                      className={selectCls}
-                    >
-                      <option value="day">Günlük</option>
-                      <option value="week">Haftalık</option>
-                      <option value="month">Aylık</option>
-                      <option value="year">Yıllık</option>
-                    </select>
-                    <select
-                      value={gamePeriod}
-                      onChange={(e) => setGamePeriod(Number(e.target.value))}
-                      className={selectCls}
-                    >
-                      {PERIOD_OPTIONS[gameGranularity].map((p) => (
-                        <option key={p} value={p}>
-                          Son {p} {PERIOD_UNIT_LABEL[gameGranularity]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
                   {gameActivity === null ? (
                     <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>
                   ) : (
@@ -640,6 +751,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         series={GAME_COUNT_SERIES}
                         defaultActiveKeys={['games_finished_same_session']}
                         controls={<span className={sectionTitleCls}>Oyun Sayısı</span>}
+                        csvBaseName="kelimeki-oyun-sayisi"
                       />
                       <GrowthChart
                         data={gameActivity}
@@ -648,9 +760,42 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         defaultActiveKeys={['avg_duration_same_session_seconds']}
                         formatValue={formatDuration}
                         controls={<span className={sectionTitleCls}>Ortalama Oyun Süresi</span>}
+                        csvBaseName="kelimeki-ortalama-oyun-suresi"
                       />
                     </>
                   )}
+
+                  {engagementActivity === null ? (
+                    <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>
+                  ) : (
+                    <GrowthChart
+                      data={engagementActivity}
+                      granularity={gameGranularity}
+                      series={ENGAGEMENT_SERIES}
+                      defaultActiveKeys={['likes', 'shares']}
+                      controls={<span className={sectionTitleCls}>Beğeni / Paylaşma</span>}
+                      csvBaseName="kelimeki-begeni-paylasma"
+                    />
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center">
+                      <div className="font-mono text-xl font-bold text-text">
+                        {engagementTotals === null ? '…' : engagementTotals.total_likes}
+                      </div>
+                      <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
+                        Toplam Beğeni
+                      </div>
+                    </div>
+                    <div className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center">
+                      <div className="font-mono text-xl font-bold text-text">
+                        {engagementTotals === null ? '…' : engagementTotals.total_shared_games}
+                      </div>
+                      <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
+                        Toplam Paylaşılan Oyun
+                      </div>
+                    </div>
+                  </div>
                 </>
               )}
             </>
@@ -658,15 +803,22 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
           {tab === 'feedback' && (
             <>
-              <select
-                value={feedbackSourceFilter}
-                onChange={(e) => setFeedbackSourceFilter(e.target.value as 'all' | FeedbackSource)}
-                className={selectCls}
-              >
-                <option value="all">Tüm</option>
-                <option value="game_end">Oyun Sonu</option>
-                <option value="general">Genel</option>
-              </select>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <select
+                  value={feedbackSourceFilter}
+                  onChange={(e) => setFeedbackSourceFilter(e.target.value as 'all' | FeedbackSource)}
+                  className={selectCls}
+                >
+                  <option value="all">Tüm</option>
+                  <option value="game_end">Oyun Sonu</option>
+                  <option value="general">Genel</option>
+                </select>
+                {filteredFeedback && filteredFeedback.length > 0 && (
+                  <button type="button" onClick={exportFeedbackCsv} className={csvLinkCls}>
+                    CSV İndir
+                  </button>
+                )}
+              </div>
 
               {feedback === null ? (
                 <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>

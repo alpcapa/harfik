@@ -318,6 +318,32 @@ export interface AdminGameActivityPoint {
   avg_duration_multi_session_seconds: number | null;
 }
 
+/**
+ * admin_engagement_activity_series RPC çıktısındaki tek kova (Büyüme > Oyun
+ * grafiği). `likes`, o kovada atılan beğeni sayısı (`game_likes.created_at`).
+ * `shares`, o kovada İLK KEZ paylaşılan oyun sayısı (`games.shared_at`) —
+ * `shared_at` bu RPC'nin eklendiği migration'dan (25 Temmuz 2026) önce
+ * paylaşılmış oyunlarda null olduğundan, o eski paylaşımlar hiçbir kovaya
+ * girmez (ama `admin_engagement_totals`'taki toplam paylaşılan oyun sayısına
+ * dahildir). Bucket'lar diğer admin_*_activity_series fonksiyonlarıyla aynı
+ * şekilde İstanbul yerel gününe göre kesilir.
+ */
+export interface AdminEngagementActivityPoint {
+  bucket: string;
+  likes: number;
+  shares: number;
+}
+
+/**
+ * admin_engagement_totals RPC çıktısı (Büyüme > Oyun) — tüm zamanların
+ * toplam beğeni sayısı ve toplam paylaşılan oyun sayısı (`shared_at`'ten
+ * bağımsız, migration öncesi paylaşımlar dahil).
+ */
+export interface AdminEngagementTotals {
+  total_likes: number;
+  total_shared_games: number;
+}
+
 /** "Görüş Bildir" formunun hangi bağlamdan gönderildiği. */
 export type FeedbackSource = 'game_end' | 'general';
 

@@ -95,7 +95,8 @@ src/
 │   ├── feedbackSync.ts # geri bildirim formu için çevrimdışı kuyruk
 │   ├── onboarding.ts   # ilk açılış hızlı başlangıç ipucu bayrağı
 │   ├── visitTracking.ts # anonim misafir ziyaret kimliği, cihaz/standalone tespiti, UTM kaynağı
-│   └── shareBoardImage.ts # bir DOM düğümünü (tahta önizlemesi) paylaşılabilir PNG'ye çevirir (html-to-image)
+│   ├── shareBoardImage.ts # bir DOM düğümünü (tahta önizlemesi) paylaşılabilir PNG'ye çevirir (html-to-image)
+│   └── csvExport.ts    # admin paneli tabloları/grafikleri için CSV indirme yardımcısı
 ├── hooks/
 │   ├── useAuth.tsx        # Supabase auth context
 │   ├── useModalA11y.ts    # modal odak hapsi, Escape, dialog yığını

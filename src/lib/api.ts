@@ -5,6 +5,8 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import type {
   AdminActivityGranularity,
+  AdminEngagementActivityPoint,
+  AdminEngagementTotals,
   AdminFeedbackRow,
   AdminGameActivityPoint,
   AdminGameScope,
@@ -508,6 +510,43 @@ export async function fetchAdminGameActivitySeries(
     return [];
   }
   return (data as AdminGameActivityPoint[]) ?? [];
+}
+
+/**
+ * Son `periods` kova için beğeni (game_likes) ve paylaşma (games.shared_at —
+ * yalnızca ilk paylaşım anı) sayılarını döner (yalnızca admin — Büyüme >
+ * Oyun). `shared_at` eklenmeden önce paylaşılmış oyunlar bu seride hiçbir
+ * kovaya girmez (bkz. `fetchAdminEngagementTotals`).
+ */
+export async function fetchAdminEngagementActivitySeries(
+  periods: number,
+  granularity: AdminActivityGranularity,
+): Promise<AdminEngagementActivityPoint[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('admin_engagement_activity_series', {
+    p_periods: periods,
+    p_granularity: granularity,
+  });
+  if (error) {
+    console.error('[Kelimeki] fetchAdminEngagementActivitySeries hatası:', error.message);
+    return [];
+  }
+  return (data as AdminEngagementActivityPoint[]) ?? [];
+}
+
+/**
+ * Tüm zamanların toplam beğeni sayısını ve toplam paylaşılan oyun sayısını
+ * döner (yalnızca admin — Büyüme > Oyun).
+ */
+export async function fetchAdminEngagementTotals(): Promise<AdminEngagementTotals | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('admin_engagement_totals');
+  if (error) {
+    console.error('[Kelimeki] fetchAdminEngagementTotals hatası:', error.message);
+    return null;
+  }
+  const row = (data as AdminEngagementTotals[] | null)?.[0];
+  return row ?? null;
 }
 
 /**
