@@ -15,16 +15,20 @@
 }
 
 /* max-width sınırı kasıtlı olarak yok — ayrım ekran genişliği değil
-   `pointer: coarse` (dokunmatik birincil işaretleyici). Trackpad/mouse'lu
-   bir klavye kılıfı (ör. Magic Keyboard) takılı iPad'lerde birincil
-   işaretleyici `fine`'a döner ve bu kural hiç tetiklenmez — sadece
-   dokunmatik-only (klavyesiz ya da trackpad'siz klavyeli) iPad'ler yatayda
-   bu bloğu görür. 25 Temmuz 2026'ya kadar burada bir `max-width: 1024px`
-   sınırı vardı (yalnızca telefonları kapsıyordu, iPad'ler genişliğe
-   bakılmaksızın hiç bloke edilmiyordu); iPad'de yatay modda tahtanın
-   ekranı doldurmayıp ortada dar bir sütun halinde kalması ("kesik" gibi
-   görünmesi) üzerine kaldırıldı. */
-@media screen and (orientation: landscape) and (pointer: coarse) {
+   işaretleyici türü. `not (any-pointer: fine)` kullanılıyor, `pointer:
+   coarse` DEĞİL: iPadOS, trackpad'li bir klavye kılıfı (Magic Keyboard
+   gibi) takılıyken bile BİRİNCİL işaretleyiciyi kasıtlı olarak `coarse`
+   (dokunmatik) raporluyor — imleç dokunmatik-öncelikli sitelerle uyumluluk
+   için parmak gibi davranıyor. Trackpad'in varlığı yalnızca `any-pointer:
+   fine`'da görünüyor. Önce `pointer: coarse` kullanılmıştı (25 Temmuz 2026)
+   ve gerçek bir iPad'de test edilince trackpad'li klavye TAKILIYKEN de
+   bloğun tetiklendiği ortaya çıktı — `pointer` her zaman `coarse` kaldığı
+   için. `not (any-pointer: fine)` yalnızca hiçbir fare/trackpad mevcut
+   değilse tetiklenir, trackpad çıkarılmadıkça blok görünmez. max-width
+   sınırı da aynı gün kaldırıldı (yalnızca telefonları kapsıyordu, iPad'ler
+   genişliğe bakılmaksızın hiç bloke edilmiyordu ama tahta ekranı
+   doldurmayıp ortada dar bir sütun halinde kalıyordu). */
+@media screen and (orientation: landscape) and (not (any-pointer: fine)) {
   #root {
     display: none !important;
   }
