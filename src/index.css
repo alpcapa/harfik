@@ -9,48 +9,6 @@
   color-scheme: light;
 }
 
-/* Portrait-only lock for touch devices */
-#landscape-block {
-  display: none;
-}
-
-/* max-width sınırı kasıtlı olarak yok — ayrım ekran genişliği değil
-   işaretleyici türü. `not (any-pointer: fine)` kullanılıyor, `pointer:
-   coarse` DEĞİL: iPadOS, trackpad'li bir klavye kılıfı (Magic Keyboard
-   gibi) takılıyken bile BİRİNCİL işaretleyiciyi kasıtlı olarak `coarse`
-   (dokunmatik) raporluyor — imleç dokunmatik-öncelikli sitelerle uyumluluk
-   için parmak gibi davranıyor. Trackpad'in varlığı yalnızca `any-pointer:
-   fine`'da görünüyor. Önce `pointer: coarse` kullanılmıştı (25 Temmuz 2026)
-   ve gerçek bir iPad'de test edilince trackpad'li klavye TAKILIYKEN de
-   bloğun tetiklendiği ortaya çıktı — `pointer` her zaman `coarse` kaldığı
-   için. `not (any-pointer: fine)` yalnızca hiçbir fare/trackpad mevcut
-   değilse tetiklenir, trackpad çıkarılmadıkça blok görünmez. max-width
-   sınırı da aynı gün kaldırıldı (yalnızca telefonları kapsıyordu, iPad'ler
-   genişliğe bakılmaksızın hiç bloke edilmiyordu ama tahta ekranı
-   doldurmayıp ortada dar bir sütun halinde kalıyordu). */
-@media screen and (orientation: landscape) and (not (any-pointer: fine)) {
-  #root {
-    display: none !important;
-  }
-
-  #landscape-block {
-    display: flex;
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    background: #ffffff;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    font-family: 'Space Grotesk', sans-serif;
-    color: #1B2430;
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-  }
-}
-
 @layer components {
   /* Nömorfik kabartma gölgesi — dolgulu/çerçeveli tüm butonlarda ortak dil.
      Renk ailesine göre (mavi/nötr/kırmızı/altın) ayrı varyant; basılınca
