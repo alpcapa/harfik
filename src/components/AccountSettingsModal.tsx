@@ -9,7 +9,6 @@ import type { Gender } from '../lib/database.types';
 const GENDER_OPTIONS: { value: Gender; label: string }[] = [
   { value: 'female', label: 'Kadın' },
   { value: 'male', label: 'Erkek' },
-  { value: 'unspecified', label: 'Belirtmek istemiyorum' },
 ];
 
 /**

@@ -14,6 +14,17 @@ interface ScoreCardProps {
 
 const TABS = [2, 4] as const;
 
+function calculateAge(birthDate: string): number {
+  const today = new Date();
+  const born = new Date(birthDate);
+  let age = today.getFullYear() - born.getFullYear();
+  const monthDiff = today.getMonth() - born.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < born.getDate())) {
+    age--;
+  }
+  return age;
+}
+
 export function ScoreCard({ onClose }: ScoreCardProps) {
   const { user, profile } = useAuth();
   const [statsByCount, setStatsByCount] = useState<
@@ -45,6 +56,8 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
     profile?.first_name ||
     user?.email ||
     'Oyuncu';
+
+  const age = profile?.birth_date ? calculateAge(profile.birth_date) : null;
 
   const stats = statsByCount[tab];
 
@@ -121,6 +134,9 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
         <Avatar url={profile?.avatar_url} name={name} size={44} />
         <div className="min-w-0 flex-1">
           <div className="text-base font-bold text-text truncate">{name}</div>
+          {age !== null && (
+            <div className="text-xs font-mono text-muted">Yaş: {age}</div>
+          )}
         </div>
         <button
           type="button"

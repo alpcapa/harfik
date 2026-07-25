@@ -12,6 +12,7 @@ export function ResetPasswordModal({ onDone }: ResetPasswordModalProps) {
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +29,7 @@ export function ResetPasswordModal({ onDone }: ResetPasswordModalProps) {
     try {
       const { error } = await setNewPassword(password);
       if (error) throw error;
-      onDone();
+      setDone(true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
       setError(msg || 'Bir hata oluştu.');
@@ -39,6 +40,27 @@ export function ResetPasswordModal({ onDone }: ResetPasswordModalProps) {
 
   const inputCls =
     'w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors';
+
+  // Sıfırlama bağlantısı tıklandığında zaten bir recovery oturumu (useAuth'taki
+  // `user`) açılmış oluyor — burada ayrıca bir "giriş yap" adımı yok, "Kapat"a
+  // basılınca onDone() recovery ekranını kapatır ve uygulama o mevcut oturumla
+  // (giriş yapılmış olarak) render edilir.
+  if (done) {
+    return (
+      <Modal title="Yeni Şifre Belirle" onClose={onDone}>
+        <div className="flex flex-col gap-3">
+          <p className="text-green text-sm font-mono">Şifren başarıyla değiştirildi.</p>
+          <button
+            type="button"
+            onClick={onDone}
+            className="btn-raised bg-accent text-white rounded-md py-2.5 text-xs font-bold uppercase tracking-[1.5px] active:scale-[0.97] transition-transform"
+          >
+            Kapat
+          </button>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal title="Yeni Şifre Belirle" onClose={onDone}>
