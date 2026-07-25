@@ -14,12 +14,17 @@
   display: none;
 }
 
-/* max-width: 1024px — yalnızca telefon boyutundaki ekranları kapsar (en
-   geniş telefon: iPhone Pro Max yatayda ~932px). iPad'ler (en darı yatayda
-   ~1133px) bu eşiğin üstünde kalır ve hiç bloke edilmez — hem fiziksel
-   klavye kullanan hem kullanmayan iPad kullanıcıları yatay modda uygulamayı
-   sorunsuz kullanabilir; tahta da o genişlikte zaten sığıyor. */
-@media screen and (orientation: landscape) and (pointer: coarse) and (max-width: 1024px) {
+/* max-width sınırı kasıtlı olarak yok — ayrım ekran genişliği değil
+   `pointer: coarse` (dokunmatik birincil işaretleyici). Trackpad/mouse'lu
+   bir klavye kılıfı (ör. Magic Keyboard) takılı iPad'lerde birincil
+   işaretleyici `fine`'a döner ve bu kural hiç tetiklenmez — sadece
+   dokunmatik-only (klavyesiz ya da trackpad'siz klavyeli) iPad'ler yatayda
+   bu bloğu görür. 25 Temmuz 2026'ya kadar burada bir `max-width: 1024px`
+   sınırı vardı (yalnızca telefonları kapsıyordu, iPad'ler genişliğe
+   bakılmaksızın hiç bloke edilmiyordu); iPad'de yatay modda tahtanın
+   ekranı doldurmayıp ortada dar bir sütun halinde kalması ("kesik" gibi
+   görünmesi) üzerine kaldırıldı. */
+@media screen and (orientation: landscape) and (pointer: coarse) {
   #root {
     display: none !important;
   }
