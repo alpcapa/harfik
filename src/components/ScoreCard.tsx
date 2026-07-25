@@ -135,7 +135,7 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
         <div className="min-w-0 flex-1">
           <div className="text-base font-bold text-text truncate">{name}</div>
           {age !== null && (
-            <div className="text-xs font-mono text-muted mt-0.5">Yaş: {age}</div>
+            <div className="text-xs font-mono text-muted">Yaş: {age}</div>
           )}
         </div>
         <button
