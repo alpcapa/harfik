@@ -120,7 +120,7 @@ function seatIndexFor(p: GamePlayerSnapshot, positionIndex: number, isSnapshot: 
  * şahsa çevrildi: paylaşan kişi artık her zaman oyunun sahibi olmayabilir
  * (herkes herkesin oyununu paylaşabiliyor, bkz. `set_game_shared` RPC'si).
  */
-const SHARE_MESSAGE = "Kelimeki'deki bu oyun çok iyimiş.";
+const SHARE_MESSAGE = "Kelimeki'deki şu oyunu görmeni istedim.";
 
 /** Herkese açık paylaşım sayfası — bkz. `SharedGamePage`/`main.tsx`'teki path kontrolü. */
 function buildShareUrl(gameId: string): string {
