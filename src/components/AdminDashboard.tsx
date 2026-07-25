@@ -32,6 +32,7 @@ import { PlayerScoreCard } from './PlayerScoreCard';
 import { GrowthChart, type ChartSeriesDef } from './GrowthChart';
 import { trLower } from '../utils/turkish';
 import { useModalA11y } from '../hooks/useModalA11y';
+import { downloadCsv } from '../utils/csvExport';
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -101,6 +102,15 @@ const selectCls =
 /** GrowthChart'ın `controls` satırına konan bölüm başlığı — Tablo Görünümü linkiyle aynı hizada. */
 const sectionTitleCls = 'text-[10px] font-mono font-bold uppercase tracking-[1px] text-accent';
 
+/** "CSV İndir"/"Tablo Görünümü" gibi küçük alt çizgili aksiyon linkleri için ortak stil. */
+const csvLinkCls =
+  'text-[9px] font-mono uppercase tracking-[0.5px] text-muted underline underline-offset-2 active:opacity-70 transition-opacity shrink-0';
+
+/** CSV dosya adına (uzantısız temel isim) bugünün tarihini ekler — ör. "kelimeki-uyeler-2026-07-25.csv". */
+function csvFilename(baseName: string): string {
+  return `${baseName}-${new Date().toISOString().slice(0, 10)}.csv`;
+}
+
 /**
  * Büyüme > Kullanıcı altındaki "Kaynak/Cihaz/Ana Ekrana Ekleme" gibi tek
  * boyutlu ziyaretçi dökümlerini (satır başına {label, visitors}) ortak bir
@@ -112,12 +122,14 @@ function GuestBreakdownTable<T extends { visitors: number }>({
   rows,
   getKey,
   getLabel,
+  csvBaseName,
 }: {
   columnLabel: string;
   emptyLabel: string;
   rows: T[] | null;
   getKey: (row: T) => string;
   getLabel: (row: T) => string;
+  csvBaseName: string;
 }) {
   if (rows === null) {
     return <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>;
@@ -126,33 +138,55 @@ function GuestBreakdownTable<T extends { visitors: number }>({
     return <div className="text-xs font-mono text-muted text-center py-6">{emptyLabel}</div>;
   }
   const totalVisitors = rows.reduce((sum, row) => sum + row.visitors, 0);
+  const visibleRows = rows;
+
+  function handleExportCsv() {
+    downloadCsv(
+      csvFilename(csvBaseName),
+      [columnLabel, 'Ziyaretçi', '%'],
+      [
+        ...visibleRows.map((row) => [
+          getLabel(row),
+          row.visitors,
+          totalVisitors > 0 ? ((row.visitors / totalVisitors) * 100).toFixed(2) : '0.00',
+        ]),
+        ['TOPLAM', totalVisitors, '100.00'],
+      ],
+    );
+  }
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-auto text-[11px] font-mono border-collapse">
-        <thead>
-          <tr className="text-left text-muted border-b border-border">
-            <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px]">{columnLabel}</th>
-            <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Ziyaretçi</th>
-            <th className="py-1.5 font-bold uppercase tracking-[1px] text-center">%</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={getKey(row)} className="border-b border-border/50">
-              <td className="py-1.5 pr-8 text-text whitespace-nowrap">{getLabel(row)}</td>
-              <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">{row.visitors}</td>
-              <td className="py-1.5 text-muted whitespace-nowrap text-center">
-                {totalVisitors > 0 ? ((row.visitors / totalVisitors) * 100).toFixed(2) : '0.00'}%
-              </td>
+    <div className="flex flex-col gap-1.5">
+      <button type="button" onClick={handleExportCsv} className={`${csvLinkCls} self-end`}>
+        CSV İndir
+      </button>
+      <div className="overflow-x-auto">
+        <table className="w-auto text-[11px] font-mono border-collapse">
+          <thead>
+            <tr className="text-left text-muted border-b border-border">
+              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px]">{columnLabel}</th>
+              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Ziyaretçi</th>
+              <th className="py-1.5 font-bold uppercase tracking-[1px] text-center">%</th>
             </tr>
-          ))}
-          <tr className="border-b border-border/50">
-            <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap">TOPLAM</td>
-            <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">{totalVisitors}</td>
-            <td className="py-1.5 text-text font-bold whitespace-nowrap text-center">100.00%</td>
-          </tr>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={getKey(row)} className="border-b border-border/50">
+                <td className="py-1.5 pr-8 text-text whitespace-nowrap">{getLabel(row)}</td>
+                <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">{row.visitors}</td>
+                <td className="py-1.5 text-muted whitespace-nowrap text-center">
+                  {totalVisitors > 0 ? ((row.visitors / totalVisitors) * 100).toFixed(2) : '0.00'}%
+                </td>
+              </tr>
+            ))}
+            <tr className="border-b border-border/50">
+              <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap">TOPLAM</td>
+              <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">{totalVisitors}</td>
+              <td className="py-1.5 text-text font-bold whitespace-nowrap text-center">100.00%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -379,6 +413,23 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       active ? 'bg-accent text-white' : 'bg-panel text-muted border border-border'
     }`;
 
+  function exportMembersCsv() {
+    if (!filteredMembers || filteredMembers.length === 0) return;
+    downloadCsv(
+      csvFilename('kelimeki-uyeler'),
+      ['İsim', 'Nickname', 'E-posta', 'Kanal', 'Katılma', 'Son Giriş', 'Rol'],
+      filteredMembers.map((m) => [
+        memberName(m),
+        memberNickname(m),
+        m.email ?? '',
+        memberChannelLabel(m),
+        fmtDate(m.created_at),
+        fmtDate(m.last_sign_in_at),
+        m.is_admin ? 'Admin' : 'Üye',
+      ]),
+    );
+  }
+
   const unhandledFeedbackCount = feedback?.filter((f) => !f.handled).length ?? 0;
   const filteredFeedback = useMemo(
     () =>
@@ -387,6 +438,25 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
         : feedback?.filter((f) => f.source === feedbackSourceFilter) ?? null,
     [feedback, feedbackSourceFilter],
   );
+
+  function exportFeedbackCsv() {
+    if (!filteredFeedback || filteredFeedback.length === 0) return;
+    downloadCsv(
+      csvFilename('kelimeki-geri-bildirim'),
+      ['Gönderen', 'E-posta', 'Kaynak', 'Tarih', 'Okundu', 'Mesaj'],
+      filteredFeedback.map((f) => {
+        const sender = f.user_id ? members?.find((m) => m.id === f.user_id) : null;
+        return [
+          sender ? memberName(sender) : f.email || 'Anonim',
+          f.email ?? '',
+          f.source === 'game_end' ? 'Oyun Sonu' : 'Genel',
+          fmtDate(f.created_at),
+          f.handled ? 'Evet' : 'Hayır',
+          f.message,
+        ];
+      }),
+    );
+  }
 
   function toggleFeedbackHandled(f: AdminFeedbackRow) {
     const next = !f.handled;
@@ -590,10 +660,19 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                   </table>
                 </div>
               )}
-              <div className="text-[10px] font-mono text-muted text-right">
-                {memberSearch.trim() && members
-                  ? `${filteredMembers?.length ?? 0} / ${members.length} üye`
-                  : `Toplam ${members?.length ?? 0} üye`}
+              <div className="flex items-center justify-between gap-2">
+                {filteredMembers && filteredMembers.length > 0 ? (
+                  <button type="button" onClick={exportMembersCsv} className={csvLinkCls}>
+                    CSV İndir
+                  </button>
+                ) : (
+                  <span />
+                )}
+                <div className="text-[10px] font-mono text-muted text-right">
+                  {memberSearch.trim() && members
+                    ? `${filteredMembers?.length ?? 0} / ${members.length} üye`
+                    : `Toplam ${members?.length ?? 0} üye`}
+                </div>
               </div>
             </>
           )}
@@ -610,6 +689,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                     series={USER_SERIES}
                     defaultActiveKeys={['signups']}
                     controls={<span className={sectionTitleCls}>Yeni Üye / Ziyaret</span>}
+                    csvBaseName="kelimeki-yeni-uye-ziyaret"
                   />
                 ))}
 
@@ -625,6 +705,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       rows={guestSources}
                       getKey={(row) => row.source}
                       getLabel={(row) => row.source}
+                      csvBaseName="kelimeki-ziyaretci-kaynagi"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -639,6 +720,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       getLabel={(row) =>
                         row.device_type === 'mobile' ? 'Mobil' : row.device_type === 'desktop' ? 'Masaüstü' : 'Bilinmiyor'
                       }
+                      csvBaseName="kelimeki-cihaz"
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -651,6 +733,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       rows={guestStandalone}
                       getKey={(row) => String(row.is_standalone)}
                       getLabel={(row) => (row.is_standalone ? 'App' : 'Browser')}
+                      csvBaseName="kelimeki-ana-ekrana-ekleme"
                     />
                   </div>
                 </div>
@@ -668,6 +751,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         series={GAME_COUNT_SERIES}
                         defaultActiveKeys={['games_finished_same_session']}
                         controls={<span className={sectionTitleCls}>Oyun Sayısı</span>}
+                        csvBaseName="kelimeki-oyun-sayisi"
                       />
                       <GrowthChart
                         data={gameActivity}
@@ -676,6 +760,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         defaultActiveKeys={['avg_duration_same_session_seconds']}
                         formatValue={formatDuration}
                         controls={<span className={sectionTitleCls}>Ortalama Oyun Süresi</span>}
+                        csvBaseName="kelimeki-ortalama-oyun-suresi"
                       />
                     </>
                   )}
@@ -689,6 +774,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       series={ENGAGEMENT_SERIES}
                       defaultActiveKeys={['likes', 'shares']}
                       controls={<span className={sectionTitleCls}>Beğeni / Paylaşma</span>}
+                      csvBaseName="kelimeki-begeni-paylasma"
                     />
                   )}
 
@@ -717,15 +803,22 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
           {tab === 'feedback' && (
             <>
-              <select
-                value={feedbackSourceFilter}
-                onChange={(e) => setFeedbackSourceFilter(e.target.value as 'all' | FeedbackSource)}
-                className={selectCls}
-              >
-                <option value="all">Tüm</option>
-                <option value="game_end">Oyun Sonu</option>
-                <option value="general">Genel</option>
-              </select>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <select
+                  value={feedbackSourceFilter}
+                  onChange={(e) => setFeedbackSourceFilter(e.target.value as 'all' | FeedbackSource)}
+                  className={selectCls}
+                >
+                  <option value="all">Tüm</option>
+                  <option value="game_end">Oyun Sonu</option>
+                  <option value="general">Genel</option>
+                </select>
+                {filteredFeedback && filteredFeedback.length > 0 && (
+                  <button type="button" onClick={exportFeedbackCsv} className={csvLinkCls}>
+                    CSV İndir
+                  </button>
+                )}
+              </div>
 
               {feedback === null ? (
                 <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>

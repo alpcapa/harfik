@@ -1,6 +1,7 @@
 // Kelimeki — admin paneli: genel amaçlı zaman serisi çizgi grafiği (kullanıcı/oyun/süre)
 import { useMemo, useRef, useState } from 'react';
 import type { AdminActivityGranularity } from '../lib/database.types';
+import { downloadCsv } from '../utils/csvExport';
 
 export interface ChartSeriesDef {
   key: string;
@@ -18,6 +19,8 @@ interface GrowthChartProps<T extends { bucket: string }> {
   controls?: React.ReactNode;
   /** Eksen/tooltip/tablo değerlerini biçimlendirir (örn. saniyeyi "dk" olarak) — verilmezse ham sayı. */
   formatValue?: (v: number) => string;
+  /** Verilirse "CSV İndir" linki gösterilir — dosya adının (uzantısız) temeli, tarih otomatik eklenir. */
+  csvBaseName?: string;
 }
 
 /** Satırdan dinamik bir seri anahtarının değerini okur — T'nin tam alan kümesi statik olarak bilinmez. */
@@ -65,6 +68,7 @@ export function GrowthChart<T extends { bucket: string }>({
   defaultActiveKeys,
   controls,
   formatValue = (v) => String(v),
+  csvBaseName,
 }: GrowthChartProps<T>) {
   const [showTable, setShowTable] = useState(false);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
@@ -155,17 +159,36 @@ export function GrowthChart<T extends { bucket: string }>({
   const hover = hoverIndex !== null ? data[hoverIndex] : null;
   const hoverPct = hoverIndex !== null ? { left: `${(x(hoverIndex) / W) * 100}%` } : null;
 
+  function handleExportCsv() {
+    downloadCsv(
+      `${csvBaseName}-${new Date().toISOString().slice(0, 10)}.csv`,
+      ['Tarih', ...series.map((s) => s.label)],
+      data.map((row) => [fmtFullDate(row.bucket, granularity), ...series.map((s) => valueOf(row, s.key) ?? '')]),
+    );
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center flex-wrap gap-x-2 gap-y-1.5">
         {controls}
-        <button
-          type="button"
-          onClick={() => setShowTable((v) => !v)}
-          className="text-[9px] font-mono uppercase tracking-[0.5px] text-muted underline underline-offset-2 active:opacity-70 transition-opacity shrink-0 ml-auto"
-        >
-          {showTable ? 'Grafik Görünümü' : 'Tablo Görünümü'}
-        </button>
+        <div className="flex items-center gap-2 ml-auto shrink-0">
+          {csvBaseName && n > 0 && (
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              className="text-[9px] font-mono uppercase tracking-[0.5px] text-muted underline underline-offset-2 active:opacity-70 transition-opacity"
+            >
+              CSV İndir
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setShowTable((v) => !v)}
+            className="text-[9px] font-mono uppercase tracking-[0.5px] text-muted underline underline-offset-2 active:opacity-70 transition-opacity"
+          >
+            {showTable ? 'Grafik Görünümü' : 'Tablo Görünümü'}
+          </button>
+        </div>
       </div>
 
       {series.length > 1 && (
