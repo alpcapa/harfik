@@ -7,6 +7,7 @@ import type { GamePlayerSnapshot, SharedGameData } from '../lib/database.types';
 import { LogoMark } from './LogoMark';
 import { GameBoardPreview } from './GameBoardPreview';
 import { PlayerBadge } from './PlayerBadge';
+import { leaguePoints, formatLeaguePoints, computeRanks } from '../utils/leaguePoints';
 
 interface SharedGamePageProps {
   gameId: string;
@@ -31,6 +32,7 @@ export function SharedGamePage({ gameId }: SharedGamePageProps) {
   }, [gameId]);
 
   const players: GamePlayerSnapshot[] = data?.players ?? [];
+  const ranks = computeRanks(players);
 
   return (
     <div className="min-h-screen bg-panel flex flex-col items-center px-4 py-8 gap-6">
@@ -47,20 +49,39 @@ export function SharedGamePage({ gameId }: SharedGamePageProps) {
       ) : (
         <div className="w-full max-w-[400px] flex flex-col gap-3">
           <div className="shadow-raised bg-bg border border-border rounded-md py-2 px-2.5 flex flex-col gap-1.5">
-            <div className="text-[9px] font-mono text-muted uppercase tracking-[0.5px]">
-              {formatDateTime(data.created_at)} · {data.player_count} Oyunculu
+            <div className="flex items-center justify-between gap-2 text-[9px] font-mono text-muted uppercase tracking-[0.5px]">
+              <span>{formatDateTime(data.created_at)} · {data.player_count} Oyunculu</span>
+              <span className="flex items-center gap-2 shrink-0">
+                <span className="w-9 text-right">Puan</span>
+                <span className="w-6 text-right">SL</span>
+              </span>
             </div>
             <div className="flex flex-col gap-0.5">
-              {players.map((p, i) => (
-                <div key={i} className="flex items-center justify-between gap-2 text-[12px] font-mono">
-                  <span className="flex items-center gap-1.5 min-w-0">
-                    <span className="w-3 text-right text-muted shrink-0">{i + 1}.</span>
-                    <PlayerBadge index={p.colorIndex ?? i} size={14} />
-                    <span className="truncate text-text font-bold">{p.name}</span>
-                  </span>
-                  <span className="font-bold text-gold">{p.score}</span>
-                </div>
-              ))}
+              {players.map((p, i) => {
+                const points = leaguePoints(ranks[i], data.player_count, p.surrendered);
+                return (
+                  <div key={i} className="flex items-center justify-between gap-2 text-[12px] font-mono">
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <span className="w-3 text-right text-muted shrink-0">{ranks[i]}.</span>
+                      <PlayerBadge index={p.colorIndex ?? i} size={14} />
+                      <span className="truncate text-text font-bold">{p.name}</span>
+                      {p.surrendered && (
+                        <span className="text-[8px] font-bold uppercase tracking-[0.5px] text-red border border-red/40 bg-red/10 rounded px-1 py-[1px] shrink-0">
+                          Teslim Oldu
+                        </span>
+                      )}
+                    </span>
+                    <span className="flex items-center gap-2 shrink-0">
+                      <span className="font-bold w-9 text-right text-gold">{p.score}</span>
+                      <span
+                        className={`font-bold w-6 text-right ${points > 0 ? 'text-green' : points < 0 ? 'text-red' : 'text-muted'}`}
+                      >
+                        {formatLeaguePoints(points)}
+                      </span>
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

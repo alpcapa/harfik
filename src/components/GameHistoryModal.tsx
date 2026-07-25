@@ -17,6 +17,7 @@ import { ActionSheet } from './ActionSheet';
 import { Avatar } from './Avatar';
 import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
 import { captureNodeAsPng } from '../utils/shareBoardImage';
+import { leaguePoints, formatLeaguePoints, computeRanks } from '../utils/leaguePoints';
 
 /** Beğenenler listesindeki bir satırı `PlayerScoreCard` açabilecek şekle çevirir. */
 function likerToPlayerSummary(l: GameLiker): PlayerSummary {
@@ -51,44 +52,6 @@ function formatDateTime(iso: string): string {
   const date = d.toLocaleDateString('tr-TR');
   const time = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
   return `${date} · ${time}`;
-}
-
-/**
- * Bir oyuncunun bu oyundan kazandığı Sanal Lig puanı — leaderboard/
- * player_stats view'larıyla aynı formül: teslim → -2, 1. → +2, 2. (yalnızca
- * 2 kişilik değilse) → +1, diğerleri 0.
- */
-function leaguePoints(rank: number, playerCount: number, surrendered?: boolean): number {
-  if (surrendered) return -2;
-  if (rank === 1) return 2;
-  if (rank === 2 && playerCount !== 2) return 1;
-  return 0;
-}
-
-function formatLeaguePoints(points: number): string {
-  return points > 0 ? `+${points}` : points < 0 ? `${points}` : '-';
-}
-
-/**
- * `players` zaten final sıralamasına göre (aktifler puana göre azalan,
- * teslim olanlar en sonda) diziliymiş durumda — burada yalnızca eşit
- * puanlı (ve aynı teslim durumundaki) bitişik oyunculara aynı sırayı
- * vererek gerçek "rank"i (dizideki ham pozisyon değil) çıkarıyoruz.
- * Aksi halde beraberlikte 2. sıradaki oyuncu, 1.yle aynı puanı almasına
- * rağmen SL sütununda 0 gösteriyordu.
- */
-function computeRanks(players: GamePlayerSnapshot[]): number[] {
-  let rank = 1;
-  let prevScore: number | null = null;
-  let prevSurrendered = false;
-  return players.map((p, i) => {
-    if (prevScore === null || p.score !== prevScore || !!p.surrendered !== prevSurrendered) {
-      rank = i + 1;
-    }
-    prevScore = p.score;
-    prevSurrendered = !!p.surrendered;
-    return rank;
-  });
 }
 
 /**
@@ -165,6 +128,11 @@ function HeartIcon({ filled, size = 18 }: { filled: boolean; size?: number }) {
  * oyun içi skor kutularıyla aynı görsel dil (renk = zone.tint dolgu +
  * base çerçeve, üstte isim, altta puan), yalnızca burada dört kutu da
  * eşit genişlikte (flex-1) tek satıra sığacak şekilde küçültülmüş.
+ * Çerçeve `GameHeader`'daki gibi inset box-shadow DEĞİL, gerçek bir CSS
+ * `border` — bu düğüm `captureNodeAsPng` ile PNG'ye yakalandığından
+ * (paylaşım görseli), html-to-image inset box-shadow'u köşe yuvarlaklığıyla
+ * güvenilir yakalamıyor (25 Temmuz 2026'da fark edildi: çerçeve neredeyse
+ * hiç görünmüyor, kutunun sağında rastgele ince bir çizgi artığı kalıyordu).
  */
 function ScoreBoxRow({
   players,
@@ -185,8 +153,8 @@ function ScoreBoxRow({
         return (
           <div
             key={i}
-            className="flex-1 min-w-0 shadow-raised text-center rounded-md py-1 px-1"
-            style={{ background: col.tint, boxShadow: `inset 0 0 0 1.5px ${col.base}` }}
+            className="flex-1 min-w-0 text-center rounded-md py-1 px-1 border-[1.5px] border-solid"
+            style={{ background: col.tint, borderColor: col.base }}
           >
             <div
               className="uppercase tracking-[0.5px] font-mono font-bold truncate text-[7px]"
