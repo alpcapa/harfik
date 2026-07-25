@@ -535,6 +535,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                     defaultActiveKeys={['signups']}
                     controls={
                       <>
+                        <span className={sectionTitleCls}>Yeni Üye / Ziyaret</span>
                         <select
                           value={userGranularity}
                           onChange={(e) => selectUserGranularity(e.target.value as AdminActivityGranularity)}
