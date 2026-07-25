@@ -3,6 +3,8 @@
 
 export type GameResult = 'win' | 'lose' | 'tie';
 
+export type Gender = 'female' | 'male' | 'unspecified';
+
 export interface Profile {
   id: string;
   username: string;
@@ -14,6 +16,9 @@ export interface Profile {
   is_admin: boolean;
   created_at: string;
   updated_at: string;
+  gender: Gender | null;
+  /** ISO tarih (yyyy-mm-dd) — `<input type="date">`'in doğal formatı. */
+  birth_date: string | null;
 }
 
 /** Bir oyunun bitişindeki tek bir oyuncu satırı (final sıralamasında). */

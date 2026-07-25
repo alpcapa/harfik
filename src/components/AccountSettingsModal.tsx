@@ -1,15 +1,16 @@
-// Kelimeki — hesap ayarları: profil fotoğrafı, kullanıcı adı, e-posta, şifre
+// Kelimeki — hesap ayarları: profil fotoğrafı, kullanıcı adı, e-posta, cinsiyet, doğum tarihi
 import { useRef, useState } from 'react';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
-import {
-  updateProfile,
-  updateEmail,
-  updatePassword,
-  uploadAvatar,
-  sendPasswordReset,
-} from '../lib/api';
+import { updateProfile, updateEmail, uploadAvatar } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
+import type { Gender } from '../lib/database.types';
+
+const GENDER_OPTIONS: { value: Gender; label: string }[] = [
+  { value: 'female', label: 'Kadın' },
+  { value: 'male', label: 'Erkek' },
+  { value: 'unspecified', label: 'Belirtmek istemiyorum' },
+];
 
 interface AccountSettingsModalProps {
   onClose: () => void;
@@ -23,9 +24,8 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
   const [lastName, setLastName] = useState(profile?.last_name ?? '');
   const [nickname, setNickname] = useState(profile?.display_name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
-  const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [gender, setGender] = useState<Gender | ''>(profile?.gender ?? '');
+  const [birthDate, setBirthDate] = useState(profile?.birth_date ?? '');
 
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -81,6 +81,8 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
         first_name?: string;
         last_name?: string;
         display_name?: string | null;
+        gender?: Gender | null;
+        birth_date?: string | null;
       } = {};
       if (firstName.trim() !== (profile?.first_name ?? ''))
         profilePatch.first_name = firstName.trim();
@@ -88,6 +90,10 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
         profilePatch.last_name = lastName.trim();
       if (nickname.trim() !== (profile?.display_name ?? ''))
         profilePatch.display_name = nickname.trim() || null;
+      if (gender !== (profile?.gender ?? ''))
+        profilePatch.gender = gender || null;
+      if (birthDate !== (profile?.birth_date ?? ''))
+        profilePatch.birth_date = birthDate || null;
       if (Object.keys(profilePatch).length > 0) {
         await updateProfile(profilePatch);
         await refreshProfile();
@@ -99,20 +105,6 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
         const { error } = await updateEmail(email.trim());
         if (error) throw error;
         notes.push('E-posta değişikliği için onay bağlantısı gönderildi.');
-      }
-
-      // Şifre girildiyse güncelle.
-      if (oldPassword || newPassword || confirmPassword) {
-        if (!oldPassword) throw new Error('Mevcut şifrenizi girin.');
-        if (!newPassword) throw new Error('Yeni şifre boş olamaz.');
-        if (newPassword.length < 6) throw new Error('Yeni şifre en az 6 karakter olmalı.');
-        if (newPassword !== confirmPassword) throw new Error('Yeni şifreler eşleşmiyor.');
-        const { error } = await updatePassword(oldPassword, newPassword);
-        if (error) throw error;
-        setOldPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-        notes.push('Şifre güncellendi.');
       }
 
       setInfo(notes.length ? notes.join(' ') : 'Değişiklik yok.');
@@ -202,59 +194,32 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
           />
         </div>
 
-        <div className="border-t border-border pt-3 flex flex-col gap-2.5">
-          <div className="text-[9px] uppercase tracking-[1.5px] text-muted font-mono">Şifre Değiştir</div>
-          <div>
-            <label className={labelCls}>Mevcut şifre</label>
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <label className={labelCls}>Cinsiyet</label>
+            <select
+              className={inputCls}
+              value={gender}
+              onChange={(e) => setGender(e.target.value as Gender | '')}
+            >
+              <option value="">Belirtilmedi</option>
+              {GENDER_OPTIONS.map((g) => (
+                <option key={g.value} value={g.value}>
+                  {g.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex-1">
+            <label className={labelCls}>Doğum Tarihi (GG/AA/YYYY)</label>
             <input
               className={inputCls}
-              type="password"
-              value={oldPassword}
-              onChange={(e) => setOldPassword(e.target.value)}
-              placeholder="Mevcut şifreniz"
-              autoComplete="current-password"
+              type="date"
+              value={birthDate}
+              onChange={(e) => setBirthDate(e.target.value)}
+              autoComplete="bday"
             />
           </div>
-          <div>
-            <label className={labelCls}>Yeni şifre</label>
-            <input
-              className={inputCls}
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="En az 6 karakter"
-              minLength={6}
-              autoComplete="new-password"
-            />
-          </div>
-          <div>
-            <label className={labelCls}>Yeni şifre (tekrar)</label>
-            <input
-              className={inputCls}
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Yeni şifreyi tekrar girin"
-              autoComplete="new-password"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={async () => {
-              if (!user?.email) return;
-              try {
-                const { error } = await sendPasswordReset(user.email);
-                if (error) throw error;
-                setInfo('Şifre sıfırlama bağlantısı e-postana gönderildi.');
-              } catch (err) {
-                const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
-                setError(msg || 'Bir hata oluştu.');
-              }
-            }}
-            className="text-left text-[10px] text-accent font-mono hover:underline"
-          >
-            Şifremi unuttum — sıfırlama e-postası gönder
-          </button>
         </div>
 
         {error && <p className="text-red text-xs font-mono">{error}</p>}
