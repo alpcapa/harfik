@@ -236,7 +236,7 @@ function memberSortValue(m: AdminMember, key: MemberSortKey): string | number {
 }
 
 export function AdminDashboard({ onClose }: AdminDashboardProps) {
-  const [tab, setTab] = useState<Tab>('members');
+  const [tab, setTab] = useState<Tab>('growth');
   const [members, setMembers] = useState<AdminMember[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedMember, setSelectedMember] = useState<AdminMember | null>(null);
