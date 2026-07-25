@@ -66,6 +66,7 @@ src/
 │   ├── TermsModal.tsx           # kullanım koşulları
 │   ├── Modal.tsx                # paylaşılan modal kabuğu
 │   ├── ActionSheet.tsx          # iOS tarzı alttan açılan aksiyon menüsü (ör. tahta önizlemesi → Paylaş/Kapat)
+│   ├── SharedGamePage.tsx       # herkese açık /game/:id sayfası (girişsiz de erişilebilir)
 │   ├── Avatar.tsx               # profil fotoğrafı bileşeni
 │   ├── PlayerBadge.tsx          # renkli oyuncu sıra/koltuk rozeti
 │   ├── ErrorBoundary.tsx        # kök seviye React crash yakalayıcı
@@ -94,7 +95,8 @@ src/
 │   ├── gameSync.ts      # bitmiş oyunlar için çevrimdışı/misafir kuyruğu
 │   ├── feedbackSync.ts # geri bildirim formu için çevrimdışı kuyruk
 │   ├── onboarding.ts   # ilk açılış hızlı başlangıç ipucu bayrağı
-│   └── visitTracking.ts # anonim misafir ziyaret kimliği, cihaz/standalone tespiti, UTM kaynağı
+│   ├── visitTracking.ts # anonim misafir ziyaret kimliği, cihaz/standalone tespiti, UTM kaynağı
+│   └── shareBoardImage.ts # bir DOM düğümünü (tahta önizlemesi) paylaşılabilir PNG'ye çevirir (html-to-image)
 ├── hooks/
 │   ├── useAuth.tsx        # Supabase auth context
 │   ├── useModalA11y.ts    # modal odak hapsi, Escape, dialog yığını

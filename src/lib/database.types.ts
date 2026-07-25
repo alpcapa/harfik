@@ -78,6 +78,21 @@ export interface Game {
   board_snapshot: BoardSnapshotTile[] | null;
   /** Kullanıcı bu oyunu favoriye eklemiş mi (`toggle_game_favorite` RPC'si ile değişir). */
   favorited: boolean;
+  /** Herkese açık `/game/:id` linkiyle görülebilir mi (`set_game_shared` RPC'si ile bir kere true olur, geri alınamaz). */
+  shared: boolean;
+  created_at: string;
+}
+
+/**
+ * `get_shared_game` RPC'sinin döndürdüğü, herkese açık (girişsiz dahil)
+ * `/game/:id` sayfasının ihtiyaç duyduğu minimum alan seti — skor/kelime
+ * gibi başka hiçbir kişisel veri yok. `shared=true` olmayan ya da var
+ * olmayan bir id için RPC boş döner (bkz. `fetchSharedGame`, `SharedGamePage`).
+ */
+export interface SharedGameData {
+  board_snapshot: BoardSnapshotTile[] | null;
+  players: GamePlayerSnapshot[] | null;
+  player_count: number;
   created_at: string;
 }
 

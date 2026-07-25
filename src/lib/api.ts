@@ -21,6 +21,7 @@ import type {
   NewGame,
   PlayerStats,
   Profile,
+  SharedGameData,
   WordMeaning,
 } from './database.types';
 import { getLocalMeaning } from '../data/meanings';
@@ -273,6 +274,40 @@ export async function fetchGameBoardSnapshot(gameId: string): Promise<BoardSnaps
     return null;
   }
   return (data?.board_snapshot as BoardSnapshotTile[] | null) ?? null;
+}
+
+/**
+ * Bir oyunu herkese açık `/game/:id` linkiyle görülebilir işaretler
+ * (`set_game_shared` RPC'si — yalnızca kendi oyununu paylaşabilen sahiplik
+ * kontrollü, geri alınamaz bir bayrak). "Paylaş" aksiyonuna her basışta
+ * çağrılır; idempotent olduğundan zaten paylaşılmış bir oyunda zararsızdır.
+ */
+export async function markGameShared(gameId: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.rpc('set_game_shared', { p_game_id: gameId });
+  if (error) {
+    console.error('[Kelimeki] markGameShared hatası:', error.message);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Herkese açık `/game/:id` sayfası (bkz. `SharedGamePage`) için bir oyunun
+ * paylaşılan verisini döner — `get_shared_game` RPC'si yalnızca
+ * `shared=true` olan bir oyun için veri döner (RLS'i security-definer içinde
+ * kendi kontrolüyle bypass eder), girişsiz de çağrılabilir. Paylaşılmamış ya
+ * da var olmayan bir id için `null`.
+ */
+export async function fetchSharedGame(gameId: string): Promise<SharedGameData | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('get_shared_game', { p_game_id: gameId });
+  if (error) {
+    console.error('[Kelimeki] fetchSharedGame hatası:', error.message);
+    return null;
+  }
+  const row = Array.isArray(data) ? data[0] : null;
+  return (row as SharedGameData | null) ?? null;
 }
 
 /** Oturum açan oyuncunun profilini döner. */

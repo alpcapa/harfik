@@ -1,13 +1,14 @@
 // Kelimeki — oturum açan kullanıcının geçmiş tüm oyunlarının listesi (lazy load)
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal } from './Modal';
-import { fetchMyGames, fetchGameBoardSnapshot, toggleGameFavorite } from '../lib/api';
+import { fetchMyGames, fetchGameBoardSnapshot, toggleGameFavorite, markGameShared } from '../lib/api';
 import type { BoardSnapshotTile, GameHistoryEntry, GamePlayerSnapshot } from '../lib/database.types';
 import { useAuth } from '../hooks/useAuth';
 import { PlayerBadge } from './PlayerBadge';
 import { GameBoardPreview } from './GameBoardPreview';
 import { SwipeableGameCard } from './SwipeableGameCard';
 import { ActionSheet } from './ActionSheet';
+import { captureNodeAsPng } from '../utils/shareBoardImage';
 
 interface GameHistoryModalProps {
   playerCount: number;
@@ -113,14 +114,15 @@ function seatIndexFor(p: GamePlayerSnapshot, positionIndex: number, isSnapshot: 
   return m ? Math.max(0, parseInt(m[1], 10) - 1) : positionIndex;
 }
 
-/**
- * Paylaş aksiyonu için düz metin özet — henüz görsel/link paylaşımı yok
- * (bilinçli olarak ertelendi, bkz. CLAUDE.md), yalnızca sonucu metin olarak
- * paylaşır/panoya kopyalar.
- */
+/** Paylaş aksiyonu için düz metin özet — görselin/linkin yanına eklenir. */
 function buildShareText(entry: GameHistoryEntry, players: GamePlayerSnapshot[], ranks: number[]): string {
   const lines = players.map((p, i) => `${ranks[i]}. ${p.name} — ${p.score}`);
   return `Kelimeki'de oynadığım bir oyun (${formatDateTime(entry.created_at)}):\n${lines.join('\n')}`;
+}
+
+/** Herkese açık paylaşım sayfası — bkz. `SharedGamePage`/`main.tsx`'teki path kontrolü. */
+function buildShareUrl(gameId: string): string {
+  return `${window.location.origin}/game/${gameId}`;
 }
 
 function HeartIcon({ filled }: { filled: boolean }) {
@@ -179,19 +181,37 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
   const [boardSheetId, setBoardSheetId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const copiedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Aynı anda yalnızca bir oyunun tahtası genişletilmiş olabildiğinden
+  // (expandedId tek bir id) paylaş için görseli buradan yakalıyoruz — tek ref yeterli.
+  const boardCaptureRef = useRef<HTMLDivElement | null>(null);
 
   const handleShare = useCallback(async (entry: GameHistoryEntry, players: GamePlayerSnapshot[], ranks: number[]) => {
     const text = buildShareText(entry, players, ranks);
+    const shared = await markGameShared(entry.id);
+    const url = shared ? buildShareUrl(entry.id) : undefined;
+    const node = boardCaptureRef.current;
+    const blob = node ? await captureNodeAsPng(node) : null;
+    const file = blob ? new File([blob], 'kelimeki.png', { type: 'image/png' }) : null;
+
+    if (file && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'Kelimeki', text, url });
+        return;
+      } catch {
+        // Kullanıcı paylaşım sayfasını iptal etti — sessizce geç.
+        return;
+      }
+    }
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'Kelimeki', text });
+        await navigator.share({ title: 'Kelimeki', text, url });
       } catch {
         // Kullanıcı paylaşım sayfasını iptal etti — sessizce geç.
       }
       return;
     }
     if (navigator.clipboard) {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(url ? `${text}\n${url}` : text);
       setCopiedId(entry.id);
       if (copiedTimeout.current) clearTimeout(copiedTimeout.current);
       copiedTimeout.current = setTimeout(() => setCopiedId(null), 1800);
@@ -403,12 +423,14 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                       <p className="text-muted text-[10px] font-mono text-center py-3">Yükleniyor…</p>
                     ) : snapshots[entry.id] ? (
                       <>
-                        <GameBoardPreview
-                          snapshot={snapshots[entry.id]!}
-                          playerCount={entry.player_count}
-                          players={players}
-                          onClick={() => setBoardSheetId(entry.id)}
-                        />
+                        <div ref={boardCaptureRef}>
+                          <GameBoardPreview
+                            snapshot={snapshots[entry.id]!}
+                            playerCount={entry.player_count}
+                            players={players}
+                            onClick={() => setBoardSheetId(entry.id)}
+                          />
+                        </div>
                         {copiedId === entry.id && (
                           <p className="text-muted text-[10px] font-mono text-center pt-1.5">
                             Panoya kopyalandı

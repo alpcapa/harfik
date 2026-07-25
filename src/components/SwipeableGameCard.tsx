@@ -91,20 +91,15 @@ export function SwipeableGameCard({ open, onOpenChange, actions, children }: Swi
     }, 120);
   };
 
-  // Sürüklemeden (gerçek bir tıklamadan) sonra gelen click'i yutar; kart açıkken
-  // içeriğe düz tıklama kartı kapatır (aksiyon butonları bu katmanın dışında
-  // olduğundan burada yakalanmaz).
+  // Sürüklemeden sonra gelen click'i yutar; gerçek bir tıklama (dokunma/fare)
+  // ise kartın aç/kapa durumunu tersine çevirir — sürükleme kadar düz
+  // tıklama/dokunma da swipe'ı tetikler (aksiyon butonları bu katmanın
+  // dışında olduğundan burada yakalanmaz).
   const onClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (moved.current) {
-      e.stopPropagation();
-      e.preventDefault();
-      return;
-    }
-    if (open) {
-      e.stopPropagation();
-      e.preventDefault();
-      onOpenChange(false);
-    }
+    e.stopPropagation();
+    e.preventDefault();
+    if (moved.current) return;
+    onOpenChange(!open);
   };
 
   return (
