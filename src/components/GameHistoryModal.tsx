@@ -1,7 +1,7 @@
 // Kelimeki — oturum açan kullanıcının geçmiş tüm oyunlarının listesi (lazy load)
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal } from './Modal';
-import { fetchMyGames, fetchGameBoardSnapshot, toggleGameFavorite, markGameShared } from '../lib/api';
+import { fetchMyGames, fetchGameBoardSnapshot, toggleGameLike, markGameShared } from '../lib/api';
 import type { BoardSnapshotTile, GameHistoryEntry, GamePlayerSnapshot } from '../lib/database.types';
 import { useAuth } from '../hooks/useAuth';
 import { PLAYER_COLORS } from '../game/constants';
@@ -114,8 +114,13 @@ function seatIndexFor(p: GamePlayerSnapshot, positionIndex: number, isSnapshot: 
   return m ? Math.max(0, parseInt(m[1], 10) - 1) : positionIndex;
 }
 
-/** Paylaş aksiyonunun sabit metni — skor/tarih artık görselin kendisinde (bkz. aşağı). */
-const SHARE_MESSAGE = "Kelimeki'de oynadığım bu oyun çok iyidi.";
+/**
+ * Paylaş aksiyonunun sabit metni — skor/tarih artık görselin kendisinde
+ * (bkz. aşağı). Bilerek birinci şahıstan ("oynadığım oyun") jenerik üçüncü
+ * şahsa çevrildi: paylaşan kişi artık her zaman oyunun sahibi olmayabilir
+ * (herkes herkesin oyununu paylaşabiliyor, bkz. `set_game_shared` RPC'si).
+ */
+const SHARE_MESSAGE = "Kelimeki'deki bu oyun çok iyimiş.";
 
 /** Herkese açık paylaşım sayfası — bkz. `SharedGamePage`/`main.tsx`'teki path kontrolü. */
 function buildShareUrl(gameId: string): string {
@@ -259,12 +264,12 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
     });
   }, []);
 
-  const handleToggleFavorite = useCallback((gameId: string) => {
-    setGames((cur) => cur.map((g) => (g.id === gameId ? { ...g, favorited: !g.favorited } : g)));
-    void toggleGameFavorite(gameId).then((result) => {
+  const handleToggleLike = useCallback((gameId: string) => {
+    setGames((cur) => cur.map((g) => (g.id === gameId ? { ...g, liked_by_me: !g.liked_by_me } : g)));
+    void toggleGameLike(gameId).then((result) => {
       if (result === null) {
         // İstek başarısız oldu (ör. çevrimdışı) — iyimser güncellemeyi geri al.
-        setGames((cur) => cur.map((g) => (g.id === gameId ? { ...g, favorited: !g.favorited } : g)));
+        setGames((cur) => cur.map((g) => (g.id === gameId ? { ...g, liked_by_me: !g.liked_by_me } : g)));
       }
     });
   }, []);
@@ -350,7 +355,11 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
         <p className="text-muted text-xs font-mono text-center py-4">Yükleniyor…</p>
       ) : games.length === 0 ? (
         <p className="text-muted text-[10px] font-mono text-center py-4">
-          {favoritesOnly ? 'Henüz favori işaretlediğin bir oyun yok.' : 'Bu kategoride henüz kayıtlı oyun yok.'}
+          {favoritesOnly
+            ? userId
+              ? 'Bu oyuncunun henüz favori işaretlediği bir oyun yok.'
+              : 'Henüz favori işaretlediğin bir oyun yok.'
+            : 'Bu kategoride henüz kayıtlı oyun yok.'}
         </p>
       ) : (
         <div ref={scrollRef} className="flex flex-col gap-2 max-h-[65vh] overflow-y-auto pr-1">
@@ -381,12 +390,12 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleToggleFavorite(entry.id);
+                          handleToggleLike(entry.id);
                         }}
-                        aria-label={entry.favorited ? 'Favoriden çıkar' : 'Favoriye ekle'}
-                        className={entry.favorited ? 'text-red' : 'text-muted'}
+                        aria-label={entry.liked_by_me ? 'Favoriden çıkar' : 'Favoriye ekle'}
+                        className={entry.liked_by_me ? 'text-red' : 'text-muted'}
                       >
-                        <HeartIcon filled={entry.favorited} size={13} />
+                        <HeartIcon filled={entry.liked_by_me} size={13} />
                       </button>
                       {formatDateTime(entry.created_at)}
                     </span>

@@ -204,9 +204,21 @@ export async function fetchPlayerStats(
  * sayısındaki oyunlarını sayfalı biçimde döner (en yeni önce),
  * `GameHistoryModal`'ın kaydırdıkça yüklemesi (lazy load) için. `hasMore`,
  * bir sonraki sayfanın olup olmadığını bildirir. `userId` verilirse (admin
- * panelindeki oyuncu detayı) o kullanıcının geçmişi döner. `favoritesOnly`
- * verilirse yalnızca `favorited=true` olan oyunlar döner (bkz. `GameHistoryModal`'daki
- * "Tümü / Favoriler" filtresi).
+ * panelindeki ya da Sanal Lig'den açılan oyuncu detayı) o kullanıcının
+ * geçmişi döner — `games` tablosunun SELECT politikası herhangi bir girişli
+ * kullanıcıya açık olduğundan (herkes herkesin oyununu görüp beğenebilsin/
+ * paylaşabilsin diye) bu ekstra bir yetki gerektirmez.
+ *
+ * `favoritesOnly` verilirse dönen liste artık hedef kullanıcının SAHİP
+ * OLDUĞU oyunlar değil, hedef kullanıcının BEĞENDİĞİ oyunlardır (`game_likes`
+ * tablosu üzerinden — sahiplik fark etmez, kendi oyunu da başkasının oyunu
+ * da olabilir; `GameHistoryModal` zaten oyuncu isimlerini gösterdiğinden bu
+ * ayrım oradan belli olur). Sıralama bu durumda beğenilme anına göredir.
+ *
+ * Her satırdaki `liked_by_me`, hedef kullanıcıdan BAĞIMSIZ olarak, bu isteği
+ * yapan (oturum açan) kullanıcının o oyunu beğenip beğenmediğini gösterir —
+ * böylece başka birinin kartına bakarken bile kalp ikonu kendi beğeni
+ * durumunu yansıtır ve tıklanabilir kalır.
  */
 export async function fetchMyGames(
   playerCount: number,
@@ -216,45 +228,81 @@ export async function fetchMyGames(
   favoritesOnly = false,
 ): Promise<{ games: GameHistoryEntry[]; hasMore: boolean }> {
   if (!supabase) return { games: [], hasMore: false };
-  let uid = userId;
-  if (!uid) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return { games: [], hasMore: false };
-    uid = user.id;
+  const {
+    data: { user: viewer },
+  } = await supabase.auth.getUser();
+  const targetUid = userId ?? viewer?.id;
+  if (!targetUid) return { games: [], hasMore: false };
+
+  const cols = 'id, created_at, player_count, players, player_score, ai_score, rank, surrendered';
+  type Row = Omit<GameHistoryEntry, 'liked_by_me'>;
+  let rows: Row[];
+  let hasMore: boolean;
+
+  if (favoritesOnly) {
+    const { data, error } = await supabase
+      .from('game_likes')
+      .select(`created_at, games!inner(${cols})`)
+      .eq('user_id', targetUid)
+      .eq('games.player_count', playerCount)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit); // limit+1 satır: sonraki sayfa var mı anlamak için
+    if (error) {
+      console.error('[Kelimeki] fetchMyGames (favoriler) hatası:', error.message);
+      return { games: [], hasMore: false };
+    }
+    const liked = (data as unknown as { games: Row }[]) ?? [];
+    rows = liked.slice(0, limit).map((r) => r.games);
+    hasMore = liked.length > limit;
+  } else {
+    const { data, error } = await supabase
+      .from('games')
+      .select(cols)
+      .eq('user_id', targetUid)
+      .eq('player_count', playerCount)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit);
+    if (error) {
+      console.error('[Kelimeki] fetchMyGames hatası:', error.message);
+      return { games: [], hasMore: false };
+    }
+    const all = (data as Row[]) ?? [];
+    rows = all.slice(0, limit);
+    hasMore = all.length > limit;
   }
 
-  let query = supabase
-    .from('games')
-    .select('id, created_at, player_count, players, player_score, ai_score, rank, surrendered, favorited')
-    .eq('user_id', uid)
-    .eq('player_count', playerCount);
-  if (favoritesOnly) query = query.eq('favorited', true);
-  const { data, error } = await query
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit); // limit+1 satır: sonraki sayfa var mı anlamak için
-  if (error) {
-    console.error('[Kelimeki] fetchMyGames hatası:', error.message);
-    return { games: [], hasMore: false };
+  let likedIds = new Set<string>();
+  if (viewer && rows.length > 0) {
+    const { data: myLikes } = await supabase
+      .from('game_likes')
+      .select('game_id')
+      .eq('user_id', viewer.id)
+      .in(
+        'game_id',
+        rows.map((r) => r.id),
+      );
+    likedIds = new Set((myLikes ?? []).map((r) => r.game_id as string));
   }
-  const rows = (data as GameHistoryEntry[]) ?? [];
-  return { games: rows.slice(0, limit), hasMore: rows.length > limit };
+
+  return {
+    games: rows.map((r) => ({ ...r, liked_by_me: likedIds.has(r.id) })),
+    hasMore,
+  };
 }
 
 /**
- * Bir oyunun favori durumunu tersine çevirir (`toggle_game_favorite` RPC'si —
- * yalnızca `favorited` sütununu değiştiren dar/sahiplik kontrollü bir
- * fonksiyon; `games` tablosunda genel bir UPDATE izni bilerek açılmıyor çünkü
- * bu, kullanıcının kendi skorunu/oyuncu listesini de değiştirebilmesine kapı
- * aralardı). Başarısızsa (ör. çevrimdışı) `null` döner — çağıran iyimser
- * güncellemeyi geri almalı.
+ * Bir oyunu oturum açan kullanıcı için beğenip beğenmediğini tersine çevirir
+ * (`toggle_game_like` RPC'si — `game_likes` tablosunda yalnızca çağıranın
+ * kendi satırını ekleyip/silen bir fonksiyon; beğenme sahiplik oyunun
+ * kendisiyle değil beğenen kişiyle ilgili olduğundan HERHANGİ bir oyun
+ * üzerinde çalışır, yalnızca kendi oyunlarınla sınırlı değil). Başarısızsa
+ * (ör. çevrimdışı) `null` döner — çağıran iyimser güncellemeyi geri almalı.
  */
-export async function toggleGameFavorite(gameId: string): Promise<boolean | null> {
+export async function toggleGameLike(gameId: string): Promise<boolean | null> {
   if (!supabase) return null;
-  const { data, error } = await supabase.rpc('toggle_game_favorite', { p_game_id: gameId });
+  const { data, error } = await supabase.rpc('toggle_game_like', { p_game_id: gameId });
   if (error) {
-    console.error('[Kelimeki] toggleGameFavorite hatası:', error.message);
+    console.error('[Kelimeki] toggleGameLike hatası:', error.message);
     return null;
   }
   return data as boolean;
@@ -283,9 +331,10 @@ export async function fetchGameBoardSnapshot(gameId: string): Promise<BoardSnaps
 
 /**
  * Bir oyunu herkese açık `/game/:id` linkiyle görülebilir işaretler
- * (`set_game_shared` RPC'si — yalnızca kendi oyununu paylaşabilen sahiplik
- * kontrollü, geri alınamaz bir bayrak). "Paylaş" aksiyonuna her basışta
- * çağrılır; idempotent olduğundan zaten paylaşılmış bir oyunda zararsızdır.
+ * (`set_game_shared` RPC'si — artık sahiplik gerektirmiyor, herhangi bir
+ * girişli kullanıcı gördüğü herhangi bir oyunu paylaşabilir; geri alınamaz
+ * bir bayrak). "Paylaş" aksiyonuna her basışta çağrılır; idempotent
+ * olduğundan zaten paylaşılmış bir oyunda zararsızdır.
  */
 export async function markGameShared(gameId: string): Promise<boolean> {
   if (!supabase) return false;
