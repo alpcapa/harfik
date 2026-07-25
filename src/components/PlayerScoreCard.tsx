@@ -1,30 +1,40 @@
-// Kelimeki — admin paneli: seçili üyenin oyun bazlı istatistikleri (ScoreCard'ın salt-okunur admin görünümü)
+// Kelimeki — herhangi bir oyuncunun salt-okunur skor kartı (Admin Paneli >
+// Üyeler ve Sanal Lig'de bir satıra tıklanınca açılır)
 import { useEffect, useState } from 'react';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
 import { GameHistoryModal } from './GameHistoryModal';
 import { Leaderboard } from './Leaderboard';
 import { fetchPlayerStats, fetchMyLeaderboardRank } from '../lib/api';
-import type { AdminMember, MyLeaderboardRank, PlayerStats } from '../lib/database.types';
+import type { MyLeaderboardRank, PlayerStats } from '../lib/database.types';
 
-interface AdminPlayerDetailProps {
-  member: AdminMember;
+/** Bir skor kartı çizmek için gereken asgari oyuncu kimliği. */
+export interface PlayerSummary {
+  id: string;
+  username: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  display_name: string | null;
+  avatar_url?: string | null;
+}
+
+interface PlayerScoreCardProps {
+  member: PlayerSummary;
   onClose: () => void;
 }
 
 const TABS = [2, 4] as const;
 
-function memberDisplayName(m: AdminMember) {
+function memberDisplayName(m: PlayerSummary) {
   return (
     m.display_name ||
     [m.first_name, m.last_name].filter(Boolean).join(' ').trim() ||
     m.username ||
-    m.email ||
     'Oyuncu'
   );
 }
 
-export function AdminPlayerDetail({ member, onClose }: AdminPlayerDetailProps) {
+export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
   const [statsByCount, setStatsByCount] = useState<
     Record<number, PlayerStats | null | undefined>
   >({ 2: undefined, 4: undefined });
@@ -111,12 +121,9 @@ export function AdminPlayerDetail({ member, onClose }: AdminPlayerDetailProps) {
   return (
     <Modal title="Oyuncu Detayı" onClose={onClose}>
       <div className="mb-4 flex items-center gap-3">
-        <Avatar name={name} size={44} />
+        <Avatar url={member.avatar_url ?? undefined} name={name} size={44} />
         <div className="min-w-0 flex-1">
           <div className="text-base font-bold text-text truncate">{name}</div>
-          {member.email && (
-            <div className="text-[11px] font-mono text-muted truncate">{member.email}</div>
-          )}
         </div>
         <button
           type="button"

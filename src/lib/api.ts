@@ -133,14 +133,18 @@ export async function logGuestVisit(
   }
 }
 
-/** Liderlik tablosunu döner (toplam puana göre ilk 10). */
-export async function fetchLeaderboard(limit = 10): Promise<LeaderboardRow[]> {
+/**
+ * Liderlik tablosunu sayfalı biçimde döner (toplam puana göre azalan).
+ * `Leaderboard` bileşeni önce ilk 10'u, sonra kaydırdıkça `offset`'i
+ * artırarak listenin sonuna kadar lazy-load ile devam eder.
+ */
+export async function fetchLeaderboard(limit = 10, offset = 0): Promise<LeaderboardRow[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('leaderboard')
     .select('*')
     .order('total_score', { ascending: false })
-    .limit(limit);
+    .range(offset, offset + limit - 1);
   if (error) {
     console.error('[Kelimeki] fetchLeaderboard hatası:', error.message);
     return [];
