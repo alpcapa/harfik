@@ -50,8 +50,7 @@ src/
 │   ├── ResetPasswordModal.tsx   # şifre sıfırlama e-postasındaki bağlantıdan sonra yeni şifre belirleme
 │   ├── AccountSettingsModal.tsx # profil düzenleme (avatar, kullanıcı adı)
 │   ├── ScoreCard.tsx            # oyuncu istatistikleri
-│   ├── GameHistoryModal.tsx     # geçmiş oyunların listesi (sola kaydır: favori/gör), Tümü/Favoriler filtresi
-│   ├── SwipeableGameCard.tsx    # sola kaydırınca sağda aksiyon ikonları açılan kart sarmalayıcısı
+│   ├── GameHistoryModal.tsx     # geçmiş oyunların listesi (kalp ikonu: favori, karta tıkla: tahta önizlemesi), Tümü/Favoriler filtresi
 │   ├── GameBoardPreview.tsx     # bir oyunun bitiş anındaki tahtasının salt-okunur önizlemesi
 │   ├── MoveHistoryModal.tsx     # oyun geçmişi (hamle hamle)
 │   ├── Leaderboard.tsx          # lider tablosu

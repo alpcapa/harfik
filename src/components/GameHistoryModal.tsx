@@ -7,7 +7,6 @@ import { useAuth } from '../hooks/useAuth';
 import { PLAYER_COLORS } from '../game/constants';
 import { PlayerBadge } from './PlayerBadge';
 import { GameBoardPreview } from './GameBoardPreview';
-import { SwipeableGameCard } from './SwipeableGameCard';
 import { ActionSheet } from './ActionSheet';
 import { captureNodeAsPng } from '../utils/shareBoardImage';
 
@@ -123,19 +122,10 @@ function buildShareUrl(gameId: string): string {
   return `${window.location.origin}/game/${gameId}`;
 }
 
-function HeartIcon({ filled }: { filled: boolean }) {
+function HeartIcon({ filled, size = 18 }: { filled: boolean; size?: number }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-    </svg>
-  );
-}
-
-function EyeIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
     </svg>
   );
 }
@@ -215,10 +205,6 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
   const [snapshotLoadingId, setSnapshotLoadingId] = useState<string | null>(null);
   const fetchedIds = useRef<Set<string>>(new Set());
 
-  // Sola kaydırılıp aksiyonları (favori/gör) açık olan tek kart — aynı anda
-  // yalnızca biri açık olabilir.
-  const [openSwipeId, setOpenSwipeId] = useState<string | null>(null);
-
   // Tahta önizlemesine tıklanınca açılan Kapat/Paylaş aksiyon menüsü.
   const [boardSheetId, setBoardSheetId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -260,8 +246,9 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
     }
   }, []);
 
-  const handleViewBoard = useCallback((gameId: string) => {
-    setOpenSwipeId(null);
+  // Karta (aksiyon menüsü/kalp dışındaki herhangi bir yerine) tıklanınca
+  // tahta önizlemesini aç/kapa çevirir — tekrar tıklamak kapatır.
+  const handleToggleBoard = useCallback((gameId: string) => {
     setExpandedId((cur) => (cur === gameId ? null : gameId));
     if (fetchedIds.current.has(gameId)) return;
     fetchedIds.current.add(gameId);
@@ -273,7 +260,6 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
   }, []);
 
   const handleToggleFavorite = useCallback((gameId: string) => {
-    setOpenSwipeId(null);
     setGames((cur) => cur.map((g) => (g.id === gameId ? { ...g, favorited: !g.favorited } : g)));
     void toggleGameFavorite(gameId).then((result) => {
       if (result === null) {
@@ -297,7 +283,6 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
     setHasMore(true);
     setExpandedId(null);
     setSnapshots({});
-    setOpenSwipeId(null);
     setBoardSheetId(null);
     fetchedIds.current.clear();
     void fetchMyGames(playerCount, 0, PAGE_SIZE, userId, favoritesOnly).then(({ games: page, hasMore: more }) => {
@@ -379,86 +364,79 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
             const expanded = expandedId === entry.id;
             return (
               <div key={entry.id} className="flex flex-col gap-1.5">
-                <SwipeableGameCard
-                  open={openSwipeId === entry.id}
-                  onOpenChange={(open) => setOpenSwipeId(open ? entry.id : null)}
-                  actions={
-                    <>
-                      <button
-                        onClick={() => handleToggleFavorite(entry.id)}
-                        aria-label={entry.favorited ? 'Favoriden çıkar' : 'Favoriye ekle'}
-                        className="flex-1 flex items-center justify-center bg-red text-white active:opacity-80"
-                      >
-                        <HeartIcon filled={entry.favorited} />
-                      </button>
-                      <button
-                        onClick={() => handleViewBoard(entry.id)}
-                        aria-label="Tahtayı gör"
-                        className="flex-1 flex items-center justify-center bg-accent text-white active:opacity-80"
-                      >
-                        <EyeIcon />
-                      </button>
-                    </>
-                  }
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleToggleBoard(entry.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleToggleBoard(entry.id);
+                    }
+                  }}
+                  className="shadow-raised bg-bg border border-border rounded-md py-2 px-2.5 flex flex-col gap-1.5 cursor-pointer text-left"
                 >
-                  <div className="shadow-raised bg-bg border border-border rounded-md py-2 px-2.5 flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between gap-2 text-[9px] font-mono text-muted uppercase tracking-[0.5px]">
-                      <span className="flex items-center gap-1">
-                        {entry.favorited && (
-                          <span className="text-red">
-                            <HeartIcon filled />
-                          </span>
-                        )}
-                        {formatDateTime(entry.created_at)}
-                      </span>
-                      <span className="flex items-center gap-2 shrink-0">
-                        <span className="w-9 text-right">Puan</span>
-                        <span className="w-6 text-right">SL</span>
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      {players.map((p, i) => {
-                        const points = leaguePoints(ranks[i], entry.player_count, p.surrendered);
-                        return (
-                          <div
-                            key={i}
-                            className="flex items-center justify-between gap-2 text-[12px] font-mono"
-                          >
-                            <span className="flex items-center gap-1.5 min-w-0">
-                              <span className="w-3 text-right text-muted shrink-0">{ranks[i]}.</span>
-                              <PlayerBadge index={seatIndexFor(p, i, hasSnapshot)} size={14} />
-                              <span className={`truncate ${i === meIndex ? 'text-text font-bold' : 'text-muted'}`}>
-                                {i === meIndex && myCurrentName ? myCurrentName : p.name}
-                              </span>
-                              {p.surrendered && (
-                                <span className="text-[8px] font-bold uppercase tracking-[0.5px] text-red border border-red/40 bg-red/10 rounded px-1 py-[1px] shrink-0">
-                                  Teslim Oldu
-                                </span>
-                              )}
-                            </span>
-                            <span className="flex items-center gap-2 shrink-0">
-                              <span
-                                className={`font-bold w-9 text-right ${i === meIndex ? 'text-gold' : 'text-muted'}`}
-                              >
-                                {p.score}
-                              </span>
-                              <span
-                                className={`font-bold w-6 text-right ${points > 0 ? 'text-green' : points < 0 ? 'text-red' : 'text-muted'}`}
-                              >
-                                {formatLeaguePoints(points)}
-                              </span>
-                            </span>
-                          </div>
-                        );
-                      })}
-                      {unknownCount > 0 && (
-                        <div className="text-[10px] font-mono text-muted italic pt-0.5">
-                          +{unknownCount} diğer oyuncu (bu eski kayıtta bilinmiyor)
-                        </div>
-                      )}
-                    </div>
+                  <div className="flex items-center justify-between gap-2 text-[9px] font-mono text-muted uppercase tracking-[0.5px]">
+                    <span className="flex items-center gap-1.5">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleFavorite(entry.id);
+                        }}
+                        aria-label={entry.favorited ? 'Favoriden çıkar' : 'Favoriye ekle'}
+                        className={entry.favorited ? 'text-red' : 'text-muted'}
+                      >
+                        <HeartIcon filled={entry.favorited} size={13} />
+                      </button>
+                      {formatDateTime(entry.created_at)}
+                    </span>
+                    <span className="flex items-center gap-2 shrink-0">
+                      <span className="w-9 text-right">Puan</span>
+                      <span className="w-6 text-right">SL</span>
+                    </span>
                   </div>
-                </SwipeableGameCard>
+                  <div className="flex flex-col gap-0.5">
+                    {players.map((p, i) => {
+                      const points = leaguePoints(ranks[i], entry.player_count, p.surrendered);
+                      return (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between gap-2 text-[12px] font-mono"
+                        >
+                          <span className="flex items-center gap-1.5 min-w-0">
+                            <span className="w-3 text-right text-muted shrink-0">{ranks[i]}.</span>
+                            <PlayerBadge index={seatIndexFor(p, i, hasSnapshot)} size={14} />
+                            <span className={`truncate ${i === meIndex ? 'text-text font-bold' : 'text-muted'}`}>
+                              {i === meIndex && myCurrentName ? myCurrentName : p.name}
+                            </span>
+                            {p.surrendered && (
+                              <span className="text-[8px] font-bold uppercase tracking-[0.5px] text-red border border-red/40 bg-red/10 rounded px-1 py-[1px] shrink-0">
+                                Teslim Oldu
+                              </span>
+                            )}
+                          </span>
+                          <span className="flex items-center gap-2 shrink-0">
+                            <span
+                              className={`font-bold w-9 text-right ${i === meIndex ? 'text-gold' : 'text-muted'}`}
+                            >
+                              {p.score}
+                            </span>
+                            <span
+                              className={`font-bold w-6 text-right ${points > 0 ? 'text-green' : points < 0 ? 'text-red' : 'text-muted'}`}
+                            >
+                              {formatLeaguePoints(points)}
+                            </span>
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {unknownCount > 0 && (
+                      <div className="text-[10px] font-mono text-muted italic pt-0.5">
+                        +{unknownCount} diğer oyuncu (bu eski kayıtta bilinmiyor)
+                      </div>
+                    )}
+                  </div>
+                </div>
                 {expanded && (
                   <div>
                     {snapshotLoadingId === entry.id ? (
