@@ -515,13 +515,87 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
           {tab === 'growth' && (
             <>
-              <div className="flex gap-1.5">
-                <button className={tabBtn(growthSubTab === 'user')} onClick={() => setGrowthSubTab('user')}>
-                  Kullanıcı
-                </button>
-                <button className={tabBtn(growthSubTab === 'game')} onClick={() => setGrowthSubTab('game')}>
-                  Oyun
-                </button>
+              <div className="sticky top-0 z-10 bg-panel pb-3 flex flex-col gap-2 border-b border-border">
+                <div className="flex gap-1.5">
+                  <button className={tabBtn(growthSubTab === 'user')} onClick={() => setGrowthSubTab('user')}>
+                    Kullanıcı
+                  </button>
+                  <button className={tabBtn(growthSubTab === 'game')} onClick={() => setGrowthSubTab('game')}>
+                    Oyun
+                  </button>
+                </div>
+
+                {growthSubTab === 'user' && (
+                  <div className="flex items-center flex-wrap gap-2">
+                    <select
+                      value={userGranularity}
+                      onChange={(e) => selectUserGranularity(e.target.value as AdminActivityGranularity)}
+                      className={selectCls}
+                    >
+                      <option value="day">Günlük</option>
+                      <option value="week">Haftalık</option>
+                      <option value="month">Aylık</option>
+                      <option value="year">Yıllık</option>
+                    </select>
+                    <select
+                      value={userPeriod}
+                      onChange={(e) => setUserPeriod(Number(e.target.value))}
+                      className={selectCls}
+                    >
+                      {PERIOD_OPTIONS[userGranularity].map((p) => (
+                        <option key={p} value={p}>
+                          Son {p} {PERIOD_UNIT_LABEL[userGranularity]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {growthSubTab === 'game' && (
+                  <div className="flex items-center flex-wrap gap-2">
+                    <select
+                      value={gameScope}
+                      onChange={(e) => setGameScope(e.target.value as AdminGameScope)}
+                      className={selectCls}
+                    >
+                      <option value="total">Toplam</option>
+                      <option value="registered">Kayıtlı</option>
+                      <option value="guest">Misafir</option>
+                    </select>
+                    <select
+                      value={gamePlayerCount}
+                      onChange={(e) =>
+                        setGamePlayerCount(e.target.value === 'total' ? 'total' : (Number(e.target.value) as 2 | 4))
+                      }
+                      className={selectCls}
+                    >
+                      <option value="total">Toplam</option>
+                      <option value={2}>2 Kişilik</option>
+                      <option value={4}>4 Kişilik</option>
+                    </select>
+                    <select
+                      value={gameGranularity}
+                      onChange={(e) => selectGameGranularity(e.target.value as AdminActivityGranularity)}
+                      className={selectCls}
+                    >
+                      <option value="day">Günlük</option>
+                      <option value="week">Haftalık</option>
+                      <option value="month">Aylık</option>
+                      <option value="year">Yıllık</option>
+                    </select>
+                    <select
+                      value={gamePeriod}
+                      onChange={(e) => setGamePeriod(Number(e.target.value))}
+                      className={selectCls}
+                    >
+                      {PERIOD_OPTIONS[gameGranularity].map((p) => (
+                        <option key={p} value={p}>
+                          Son {p} {PERIOD_UNIT_LABEL[gameGranularity]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
               {growthSubTab === 'user' &&
@@ -533,32 +607,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                     granularity={userGranularity}
                     series={USER_SERIES}
                     defaultActiveKeys={['signups']}
-                    controls={
-                      <>
-                        <span className={sectionTitleCls}>Yeni Üye / Ziyaret</span>
-                        <select
-                          value={userGranularity}
-                          onChange={(e) => selectUserGranularity(e.target.value as AdminActivityGranularity)}
-                          className={selectCls}
-                        >
-                          <option value="day">Günlük</option>
-                          <option value="week">Haftalık</option>
-                          <option value="month">Aylık</option>
-                          <option value="year">Yıllık</option>
-                        </select>
-                        <select
-                          value={userPeriod}
-                          onChange={(e) => setUserPeriod(Number(e.target.value))}
-                          className={selectCls}
-                        >
-                          {PERIOD_OPTIONS[userGranularity].map((p) => (
-                            <option key={p} value={p}>
-                              Son {p} {PERIOD_UNIT_LABEL[userGranularity]}
-                            </option>
-                          ))}
-                        </select>
-                      </>
-                    }
+                    controls={<span className={sectionTitleCls}>Yeni Üye / Ziyaret</span>}
                   />
                 ))}
 
@@ -607,50 +656,6 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
               {growthSubTab === 'game' && (
                 <>
-                  <div className="flex items-center flex-wrap gap-2">
-                    <select
-                      value={gameScope}
-                      onChange={(e) => setGameScope(e.target.value as AdminGameScope)}
-                      className={selectCls}
-                    >
-                      <option value="total">Toplam</option>
-                      <option value="registered">Kayıtlı</option>
-                      <option value="guest">Misafir</option>
-                    </select>
-                    <select
-                      value={gamePlayerCount}
-                      onChange={(e) =>
-                        setGamePlayerCount(e.target.value === 'total' ? 'total' : (Number(e.target.value) as 2 | 4))
-                      }
-                      className={selectCls}
-                    >
-                      <option value="total">Toplam</option>
-                      <option value={2}>2 Kişilik</option>
-                      <option value={4}>4 Kişilik</option>
-                    </select>
-                    <select
-                      value={gameGranularity}
-                      onChange={(e) => selectGameGranularity(e.target.value as AdminActivityGranularity)}
-                      className={selectCls}
-                    >
-                      <option value="day">Günlük</option>
-                      <option value="week">Haftalık</option>
-                      <option value="month">Aylık</option>
-                      <option value="year">Yıllık</option>
-                    </select>
-                    <select
-                      value={gamePeriod}
-                      onChange={(e) => setGamePeriod(Number(e.target.value))}
-                      className={selectCls}
-                    >
-                      {PERIOD_OPTIONS[gameGranularity].map((p) => (
-                        <option key={p} value={p}>
-                          Son {p} {PERIOD_UNIT_LABEL[gameGranularity]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
                   {gameActivity === null ? (
                     <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>
                   ) : (
