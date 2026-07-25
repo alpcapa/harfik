@@ -440,6 +440,91 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
               Geri Bildirim{unhandledFeedbackCount > 0 ? ` (${unhandledFeedbackCount})` : ''}
             </button>
           </div>
+
+          {tab === 'growth' && (
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-1.5">
+                <button className={tabBtn(growthSubTab === 'user')} onClick={() => setGrowthSubTab('user')}>
+                  Kullanıcı
+                </button>
+                <button className={tabBtn(growthSubTab === 'game')} onClick={() => setGrowthSubTab('game')}>
+                  Oyun
+                </button>
+              </div>
+
+              {growthSubTab === 'user' && (
+                <div className="flex items-center flex-wrap gap-2">
+                  <select
+                    value={userGranularity}
+                    onChange={(e) => selectUserGranularity(e.target.value as AdminActivityGranularity)}
+                    className={selectCls}
+                  >
+                    <option value="day">Günlük</option>
+                    <option value="week">Haftalık</option>
+                    <option value="month">Aylık</option>
+                    <option value="year">Yıllık</option>
+                  </select>
+                  <select
+                    value={userPeriod}
+                    onChange={(e) => setUserPeriod(Number(e.target.value))}
+                    className={selectCls}
+                  >
+                    {PERIOD_OPTIONS[userGranularity].map((p) => (
+                      <option key={p} value={p}>
+                        Son {p} {PERIOD_UNIT_LABEL[userGranularity]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {growthSubTab === 'game' && (
+                <div className="flex items-center flex-wrap gap-2">
+                  <select
+                    value={gameScope}
+                    onChange={(e) => setGameScope(e.target.value as AdminGameScope)}
+                    className={selectCls}
+                  >
+                    <option value="total">Toplam</option>
+                    <option value="registered">Kayıtlı</option>
+                    <option value="guest">Misafir</option>
+                  </select>
+                  <select
+                    value={gamePlayerCount}
+                    onChange={(e) =>
+                      setGamePlayerCount(e.target.value === 'total' ? 'total' : (Number(e.target.value) as 2 | 4))
+                    }
+                    className={selectCls}
+                  >
+                    <option value="total">Toplam</option>
+                    <option value={2}>2 Kişilik</option>
+                    <option value={4}>4 Kişilik</option>
+                  </select>
+                  <select
+                    value={gameGranularity}
+                    onChange={(e) => selectGameGranularity(e.target.value as AdminActivityGranularity)}
+                    className={selectCls}
+                  >
+                    <option value="day">Günlük</option>
+                    <option value="week">Haftalık</option>
+                    <option value="month">Aylık</option>
+                    <option value="year">Yıllık</option>
+                  </select>
+                  <select
+                    value={gamePeriod}
+                    onChange={(e) => setGamePeriod(Number(e.target.value))}
+                    className={selectCls}
+                  >
+                    {PERIOD_OPTIONS[gameGranularity].map((p) => (
+                      <option key={p} value={p}>
+                        Son {p} {PERIOD_UNIT_LABEL[gameGranularity]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="overflow-y-auto min-h-0 px-5 pt-4 pb-5 flex flex-col gap-4">
@@ -515,89 +600,6 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
           {tab === 'growth' && (
             <>
-              <div className="sticky top-0 z-10 -mt-4 pt-1.5 bg-panel pb-3 flex flex-col gap-2 border-b border-border">
-                <div className="flex gap-1.5">
-                  <button className={tabBtn(growthSubTab === 'user')} onClick={() => setGrowthSubTab('user')}>
-                    Kullanıcı
-                  </button>
-                  <button className={tabBtn(growthSubTab === 'game')} onClick={() => setGrowthSubTab('game')}>
-                    Oyun
-                  </button>
-                </div>
-
-                {growthSubTab === 'user' && (
-                  <div className="flex items-center flex-wrap gap-2">
-                    <select
-                      value={userGranularity}
-                      onChange={(e) => selectUserGranularity(e.target.value as AdminActivityGranularity)}
-                      className={selectCls}
-                    >
-                      <option value="day">Günlük</option>
-                      <option value="week">Haftalık</option>
-                      <option value="month">Aylık</option>
-                      <option value="year">Yıllık</option>
-                    </select>
-                    <select
-                      value={userPeriod}
-                      onChange={(e) => setUserPeriod(Number(e.target.value))}
-                      className={selectCls}
-                    >
-                      {PERIOD_OPTIONS[userGranularity].map((p) => (
-                        <option key={p} value={p}>
-                          Son {p} {PERIOD_UNIT_LABEL[userGranularity]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {growthSubTab === 'game' && (
-                  <div className="flex items-center flex-wrap gap-2">
-                    <select
-                      value={gameScope}
-                      onChange={(e) => setGameScope(e.target.value as AdminGameScope)}
-                      className={selectCls}
-                    >
-                      <option value="total">Toplam</option>
-                      <option value="registered">Kayıtlı</option>
-                      <option value="guest">Misafir</option>
-                    </select>
-                    <select
-                      value={gamePlayerCount}
-                      onChange={(e) =>
-                        setGamePlayerCount(e.target.value === 'total' ? 'total' : (Number(e.target.value) as 2 | 4))
-                      }
-                      className={selectCls}
-                    >
-                      <option value="total">Toplam</option>
-                      <option value={2}>2 Kişilik</option>
-                      <option value={4}>4 Kişilik</option>
-                    </select>
-                    <select
-                      value={gameGranularity}
-                      onChange={(e) => selectGameGranularity(e.target.value as AdminActivityGranularity)}
-                      className={selectCls}
-                    >
-                      <option value="day">Günlük</option>
-                      <option value="week">Haftalık</option>
-                      <option value="month">Aylık</option>
-                      <option value="year">Yıllık</option>
-                    </select>
-                    <select
-                      value={gamePeriod}
-                      onChange={(e) => setGamePeriod(Number(e.target.value))}
-                      className={selectCls}
-                    >
-                      {PERIOD_OPTIONS[gameGranularity].map((p) => (
-                        <option key={p} value={p}>
-                          Son {p} {PERIOD_UNIT_LABEL[gameGranularity]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-
               {growthSubTab === 'user' &&
                 (userActivity === null ? (
                   <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>
