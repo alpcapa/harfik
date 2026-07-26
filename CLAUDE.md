@@ -138,7 +138,7 @@ Kullanıcılar "karşılıklı/canlı oyun" istiyor — bunun ön koşulu olarak
 
 `search_users_for_friend`/`list_friends`/`list_incoming_friend_requests` RPC'leri `security definer` — `profiles.select` RLS'i `lock_down_profiles_games_select` migration'ından beri owner-or-admin'e kilitli olduğundan (`game_likers`/`leaderboard` ile aynı gerekçe) başka kullanıcıların adını okumak için gerekiyor; **e-posta hiçbir zaman döndürülmez** (projenin genel ilkesi, bkz. Skor Kartı notundaki e-posta gizliliği).
 
-**Kapsam dışı (henüz yok):** oyun daveti/kurma, senkron oynanış, gerçek zamanlı state paylaşımı, zaman aşımı/oto-teslim — bunlar sıradaki fazlar.
+**Kapsam dışı (henüz yok):** oyun daveti/kurma, senkron oynanış, gerçek zamanlı state paylaşımı, zaman aşımı/oto-teslim — bunlar sıradaki fazlar. Henüz canlı oyun olmadığından arkadaş eklemenin tek somut faydası şu an: `FriendsModal`'ın "Arkadaşlarım" sekmesinde bir kişiye tıklayınca `PlayerScoreCard`'ı (Sanal Lig'deki aynı salt-okunur skor kartı) açması — `Leaderboard`/`GameHistoryModal`'daki `likerToPlayerSummary` ile aynı desende bir `friendToPlayerSummary` adaptörü kullanır.
 
 ## Türkçe Dil Notu
 

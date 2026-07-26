@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
+import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
 import {
   createFriendInviteLink,
   fetchFriends,
@@ -15,6 +16,20 @@ import {
   sendFriendRequest,
 } from '../lib/api';
 import type { FriendRow, FriendSearchResult, IncomingFriendRequest } from '../lib/database.types';
+
+/** Bir arkadaşı `PlayerScoreCard` açabilecek şekle çevirir — henüz canlı oyun
+ * olmadığından arkadaş eklemenin somut faydası şu an bu: kişinin skor
+ * kartına bakabilmek. */
+function friendToPlayerSummary(f: FriendRow): PlayerSummary {
+  return {
+    id: f.friend_id,
+    username: null,
+    first_name: null,
+    last_name: null,
+    display_name: f.name,
+    avatar_url: f.avatar_url,
+  };
+}
 
 interface FriendsModalProps {
   onClose: () => void;
@@ -44,6 +59,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
   const [searching, setSearching] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [inviteStatus, setInviteStatus] = useState<'idle' | 'busy' | 'copied'>('idle');
+  const [selectedFriend, setSelectedFriend] = useState<PlayerSummary | null>(null);
 
   const reloadFriends = () => void fetchFriends().then(setFriends);
   const reloadRequests = () => void fetchIncomingFriendRequests().then(setRequests);
@@ -182,8 +198,14 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
             ) : (
               friends.map((f) => (
                 <div key={f.friend_id} className={rowCls}>
-                  <Avatar url={f.avatar_url} name={f.name} size={32} />
-                  <span className={nameCls}>{f.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFriend(friendToPlayerSummary(f))}
+                    className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:opacity-70 transition-opacity"
+                  >
+                    <Avatar url={f.avatar_url} name={f.name} size={32} />
+                    <span className={nameCls}>{f.name}</span>
+                  </button>
                   <button
                     className={`${smallBtn} btn-raised-neutral bg-panel border border-border text-muted hover:text-red`}
                     disabled={busyId === f.friend_id}
@@ -284,6 +306,9 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
           </div>
         )}
       </div>
+      {selectedFriend && (
+        <PlayerScoreCard member={selectedFriend} onClose={() => setSelectedFriend(null)} />
+      )}
     </Modal>
   );
 }
