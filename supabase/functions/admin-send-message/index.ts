@@ -22,7 +22,7 @@ function jsonResponse(body: unknown, status = 200): Response {
 
 function buildMessageHtml(message: string, feedbackId: string): string {
   return `
-    <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
+    <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0; color: #1a1a1a;">
       <p style="white-space: pre-wrap;">${escapeHtml(message)}</p>
       <p style="font-size: 13px; color: #555; margin-top: 20px;">Saygılarımızla,<br/>Kelimeki Müşteri Hizmetleri</p>
       ${buildNoreplyNoticeHtml(feedbackId)}

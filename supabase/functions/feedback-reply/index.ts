@@ -30,7 +30,7 @@ function buildReplyHtml(
 ): string {
   const greeting = recipientName ? `Merhaba ${escapeHtml(recipientName)},` : 'Merhaba,';
   return `
-    <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
+    <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0; color: #1a1a1a;">
       <p>${greeting}</p>
       <p>Bizimle iletişime geçtiğin için çok teşekkürler. Cevabımız aşağıdaki gibidir:</p>
       <blockquote style="margin: 12px 0; padding: 10px 14px; border-left: 3px solid #ddd; color: #555; white-space: pre-wrap;">${escapeHtml(reply)}</blockquote>

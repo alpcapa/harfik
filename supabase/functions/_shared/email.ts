@@ -33,7 +33,7 @@ export function buildNoreplyNoticeHtml(threadId?: string): string {
     : 'https://kelimeki.com/?contact=1';
   return `
     <p style="margin-top: 20px; padding-top: 12px; border-top: 1px solid #eee; font-size: 11px; color: #999; font-style: italic;">
-      Bu e-posta noreply adresinden gönderilmiştir. Cevap için <a href="${url}" style="color: #2f6fed; text-decoration: underline;">tıklayın</a>.
+      Bu e-posta noreply adresinden gönderilmiştir. Cevap vermek için <a href="${url}" style="color: #2f6fed; text-decoration: underline;">tıklayın</a>.
     </p>
   `;
 }
