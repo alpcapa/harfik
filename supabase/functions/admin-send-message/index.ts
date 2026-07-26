@@ -20,9 +20,11 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-function buildMessageHtml(message: string, feedbackId: string): string {
+function buildMessageHtml(message: string, feedbackId: string, toName?: string): string {
+  const greeting = toName ? `Sayın ${escapeHtml(toName)},` : 'Merhaba,';
   return `
     <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0; color: #1a1a1a;">
+      <p>${greeting}</p>
       <p style="white-space: pre-wrap;">${escapeHtml(message)}</p>
       <p style="font-size: 13px; color: #555; margin-top: 20px;">Saygılarımızla,<br/>Kelimeki Müşteri Hizmetleri</p>
       ${buildNoreplyNoticeHtml(feedbackId)}
@@ -101,7 +103,7 @@ Deno.serve(async (req: Request) => {
   const brevoRes = await sendBrevoEmail(BREVO_API_KEY, {
     to: { email: toEmail, name: toName },
     subject,
-    htmlContent: buildMessageHtml(message, inserted.id),
+    htmlContent: buildMessageHtml(message, inserted.id, toName),
   });
 
   if (!brevoRes.ok) {

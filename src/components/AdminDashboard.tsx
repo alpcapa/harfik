@@ -1050,6 +1050,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
           toEmail={messageTarget.email}
           toName={memberName(messageTarget)}
           onClose={() => setMessageTarget(null)}
+          onSent={() => fetchAdminFeedback().then(setFeedback).catch((e) => setError(String(e)))}
         />
       )}
 

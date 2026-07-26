@@ -9,9 +9,10 @@ interface MemberMessageModalProps {
   toEmail: string;
   toName: string;
   onClose: () => void;
+  onSent?: () => void;
 }
 
-export function MemberMessageModal({ toUserId, toEmail, toName, onClose }: MemberMessageModalProps) {
+export function MemberMessageModal({ toUserId, toEmail, toName, onClose, onSent }: MemberMessageModalProps) {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -26,6 +27,7 @@ export function MemberMessageModal({ toUserId, toEmail, toName, onClose }: Membe
     try {
       await sendMemberMessage(toUserId, toEmail, toName, subject.trim(), message.trim());
       setSent(true);
+      onSent?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
