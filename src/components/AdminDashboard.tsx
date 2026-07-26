@@ -13,6 +13,7 @@ import {
   fetchAdminFeedback,
   markFeedbackHandled,
   deleteFeedback,
+  sendFeedbackReply,
 } from '../lib/api';
 import type {
   AdminMember,
@@ -294,6 +295,10 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [feedback, setFeedback] = useState<AdminFeedbackRow[] | null>(null);
   const [feedbackSourceFilter, setFeedbackSourceFilter] = useState<'all' | FeedbackSource>('all');
   const [feedbackToDelete, setFeedbackToDelete] = useState<AdminFeedbackRow | null>(null);
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [replyOpenId, setReplyOpenId] = useState<string | null>(null);
+  const [replySendingId, setReplySendingId] = useState<string | null>(null);
+  const [replyError, setReplyError] = useState<string | null>(null);
 
   const panelRef = useModalA11y(true, onClose);
   const feedbackDeleteRef = useModalA11y(!!feedbackToDelete, () => setFeedbackToDelete(null));
@@ -443,7 +448,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     if (!filteredFeedback || filteredFeedback.length === 0) return;
     downloadCsv(
       csvFilename('kelimeki-geri-bildirim'),
-      ['Gönderen', 'E-posta', 'Kaynak', 'Tarih', 'Okundu', 'Mesaj'],
+      ['Gönderen', 'E-posta', 'Kaynak', 'Tarih', 'Okundu', 'Mesaj', 'Yanıt'],
       filteredFeedback.map((f) => {
         const sender = f.user_id ? members?.find((m) => m.id === f.user_id) : null;
         return [
@@ -453,6 +458,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
           fmtDate(f.created_at),
           f.handled ? 'Evet' : 'Hayır',
           f.message,
+          f.reply ?? '',
         ];
       }),
     );
@@ -470,6 +476,34 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     setFeedbackToDelete(null);
     setFeedback((prev) => prev?.filter((x) => x.id !== f.id) ?? prev);
     deleteFeedback(f.id).catch((e) => setError(String(e)));
+  }
+
+  async function submitFeedbackReply(f: AdminFeedbackRow) {
+    const reply = (replyDrafts[f.id] ?? '').trim();
+    if (!reply) return;
+    setReplyError(null);
+    setReplySendingId(f.id);
+    try {
+      await sendFeedbackReply(f.id, reply);
+      setFeedback(
+        (prev) =>
+          prev?.map((x) =>
+            x.id === f.id
+              ? { ...x, reply, replied_at: new Date().toISOString() }
+              : x,
+          ) ?? prev,
+      );
+      setReplyDrafts((prev) => {
+        const next = { ...prev };
+        delete next[f.id];
+        return next;
+      });
+      setReplyOpenId(null);
+    } catch (e) {
+      setReplyError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setReplySendingId(null);
+    }
   }
 
   return createPortal(
@@ -853,13 +887,38 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                           <span className="shrink-0">{fmtDate(f.created_at)}</span>
                         </div>
                         <p className="text-xs text-text whitespace-pre-wrap">{f.message}</p>
+                        {f.reply && (
+                          <div className="bg-panel border border-border rounded-md p-2 flex flex-col gap-0.5">
+                            <span className="text-[9px] uppercase tracking-[0.5px] text-muted font-mono">
+                              Yanıtın ({fmtDate(f.replied_at ?? f.created_at)})
+                            </span>
+                            <p className="text-xs text-text whitespace-pre-wrap">{f.reply}</p>
+                          </div>
+                        )}
                         <div className="flex items-center justify-between gap-2">
-                          <button
-                            onClick={() => toggleFeedbackHandled(f)}
-                            className="text-[10px] font-mono text-accent hover:underline"
-                          >
-                            {f.handled ? 'Okunmadı işaretle' : 'Okundu işaretle'}
-                          </button>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => toggleFeedbackHandled(f)}
+                              className="text-[10px] font-mono text-accent hover:underline"
+                            >
+                              {f.handled ? 'Okunmadı işaretle' : 'Okundu işaretle'}
+                            </button>
+                            {!f.reply && (
+                              f.email ? (
+                                <button
+                                  onClick={() => {
+                                    setReplyError(null);
+                                    setReplyOpenId((prev) => (prev === f.id ? null : f.id));
+                                  }}
+                                  className="text-[10px] font-mono text-accent hover:underline"
+                                >
+                                  {replyOpenId === f.id ? 'Vazgeç' : 'Yanıtla'}
+                                </button>
+                              ) : (
+                                <span className="text-[10px] font-mono text-muted">E-posta yok, yanıtlanamaz</span>
+                              )
+                            )}
+                          </div>
                           <button
                             onClick={() => setFeedbackToDelete(f)}
                             aria-label="Sil"
@@ -875,6 +934,33 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                             </svg>
                           </button>
                         </div>
+                        {replyOpenId === f.id && (
+                          <div className="flex flex-col gap-1.5 pt-1 border-t border-border">
+                            <textarea
+                              className="w-full bg-panel border border-border rounded-md px-2 py-1.5 text-xs text-text outline-none focus:border-accent transition-colors resize-none"
+                              rows={3}
+                              maxLength={5000}
+                              placeholder={`${f.email} adresine yanıt yaz...`}
+                              value={replyDrafts[f.id] ?? ''}
+                              onChange={(e) =>
+                                setReplyDrafts((prev) => ({ ...prev, [f.id]: e.target.value }))
+                              }
+                              autoFocus
+                            />
+                            {replyError && (
+                              <p className="text-red text-[10px] font-mono">{replyError}</p>
+                            )}
+                            <button
+                              onClick={() => submitFeedbackReply(f)}
+                              disabled={
+                                replySendingId === f.id || !(replyDrafts[f.id] ?? '').trim()
+                              }
+                              className="self-end btn-raised bg-accent text-white rounded-md py-1.5 px-4 text-[10px] font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+                            >
+                              {replySendingId === f.id ? '...' : 'Gönder'}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

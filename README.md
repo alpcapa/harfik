@@ -137,6 +137,10 @@ VITE_SUPABASE_URL=https://xvqlizifakkkoqahaxsg.supabase.co
 VITE_SUPABASE_ANON_KEY=sb_publishable_...   # Project Settings → API
 ```
 
+**Edge Functions** (`supabase/functions/`) — Supabase MCP (`deploy_edge_function`) ile deploy edilir, `supabase functions deploy` CLI akışı kullanılmaz. Şu an tek fonksiyon:
+
+- `feedback-reply/` — admin panelinden bir görüş bildirimine yanıt gönderildiğinde çağrılır; Brevo'nun Transactional Email API'siyle (SMTP değil, ayrı bir `BREVO_API_KEY` Edge Function secret'ı ile) yanıtı gönderenin e-postasına iletir ve `feedback.reply`/`replied_at`/`replied_by` alanlarını günceller.
+
 ## Sözlük Verisi
 
 Kelimeler ve anlamları **TDK Güncel Türkçe Sözlük (12. baskı)** kaynaklıdır;

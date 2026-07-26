@@ -356,4 +356,7 @@ export interface AdminFeedbackRow {
   handled: boolean;
   created_at: string;
   source: FeedbackSource;
+  reply: string | null;
+  replied_at: string | null;
+  replied_by: string | null;
 }

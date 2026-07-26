@@ -2,6 +2,7 @@
 //
 // Tüm fonksiyonlar Supabase yapılandırılmamışsa güvenli biçimde boş/no-op
 // döner, böylece oyun çevrimdışı da çalışır.
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './supabase';
 import type {
   AdminActivityGranularity,
@@ -598,7 +599,7 @@ export async function fetchAdminFeedback(): Promise<AdminFeedbackRow[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('feedback')
-    .select('id, user_id, email, message, handled, created_at, source')
+    .select('id, user_id, email, message, handled, created_at, source, reply, replied_at, replied_by')
     .order('created_at', { ascending: false });
   if (error) {
     console.error('[Kelimeki] fetchAdminFeedback hatası:', error.message);
@@ -619,6 +620,32 @@ export async function deleteFeedback(id: string): Promise<void> {
   if (!supabase) return;
   const { error } = await supabase.from('feedback').delete().eq('id', id);
   if (error) throw new Error(error.message);
+}
+
+/**
+ * Bir geri bildirime yanıt gönderir — `feedback-reply` Edge Function'ı
+ * çağırır, bu da yanıtı Brevo Transactional API ile gönderenin e-postasına
+ * iletir ve başarılıysa `feedback.reply`/`replied_at`/`replied_by`'ı kaydeder
+ * (yalnızca admin; e-postası olmayan geri bildirimler yanıtlanamaz).
+ */
+export async function sendFeedbackReply(feedbackId: string, reply: string): Promise<void> {
+  if (!supabase) throw new Error('Supabase yapılandırılmadı.');
+  const { data, error } = await supabase.functions.invoke('feedback-reply', {
+    body: { feedback_id: feedbackId, reply },
+  });
+  if (error) {
+    if (error instanceof FunctionsHttpError) {
+      let detail: string | undefined;
+      try {
+        detail = (await error.context.json())?.error;
+      } catch {
+        // gövde JSON değilse yoksay, aşağıda generic mesaj kullanılır
+      }
+      throw new Error(detail || error.message);
+    }
+    throw new Error(error.message);
+  }
+  if (data?.error) throw new Error(data.error);
 }
 
 // ── Geri bildirim ───────────────────────────────────────────────────────────
