@@ -295,6 +295,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [feedback, setFeedback] = useState<AdminFeedbackRow[] | null>(null);
   const [feedbackSourceFilter, setFeedbackSourceFilter] = useState<'all' | FeedbackSource>('all');
   const [feedbackToDelete, setFeedbackToDelete] = useState<AdminFeedbackRow | null>(null);
+  const [expandedFeedbackId, setExpandedFeedbackId] = useState<string | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [replyOpenId, setReplyOpenId] = useState<string | null>(null);
   const [replySendingId, setReplySendingId] = useState<string | null>(null);
@@ -484,7 +485,9 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     setReplyError(null);
     setReplySendingId(f.id);
     try {
-      await sendFeedbackReply(f.id, reply);
+      const sender = f.user_id ? members?.find((m) => m.id === f.user_id) : null;
+      const recipientName = sender?.display_name || sender?.first_name || undefined;
+      await sendFeedbackReply(f.id, reply, recipientName);
       setFeedback(
         (prev) =>
           prev?.map((x) =>
@@ -869,10 +872,14 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                   {filteredFeedback?.map((f) => {
                     const sender = f.user_id ? members?.find((m) => m.id === f.user_id) : null;
                     const senderLabel = sender ? memberName(sender) : (f.email || 'Anonim');
+                    const isExpanded = expandedFeedbackId === f.id;
                     return (
                       <div
                         key={f.id}
-                        className={`bg-bg border border-border rounded-lg p-3 flex flex-col gap-1.5 ${
+                        onClick={() =>
+                          setExpandedFeedbackId((prev) => (prev === f.id ? null : f.id))
+                        }
+                        className={`bg-bg border border-border rounded-lg p-3 flex flex-col gap-1.5 cursor-pointer ${
                           f.handled ? 'opacity-60' : ''
                         }`}
                       >
@@ -881,85 +888,103 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                             {senderLabel}
                             {sender && f.email ? ` · ${f.email}` : ''}
                           </span>
+                          {f.reply && (
+                            <span className="shrink-0 px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[9px] uppercase tracking-[0.5px]">
+                              Yanıtlandı
+                            </span>
+                          )}
                           <span className="shrink-0 px-1.5 py-0.5 rounded bg-panel border border-border text-[9px] uppercase tracking-[0.5px]">
                             {f.source === 'game_end' ? 'Oyun Sonu' : 'Genel'}
                           </span>
                           <span className="shrink-0">{fmtDate(f.created_at)}</span>
                         </div>
-                        <p className="text-xs text-text whitespace-pre-wrap">{f.message}</p>
-                        {f.reply && (
-                          <div className="bg-panel border border-border rounded-md p-2 flex flex-col gap-0.5">
-                            <span className="text-[9px] uppercase tracking-[0.5px] text-muted font-mono">
-                              Yanıtın ({fmtDate(f.replied_at ?? f.created_at)})
-                            </span>
-                            <p className="text-xs text-text whitespace-pre-wrap">{f.reply}</p>
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-3">
-                            <button
-                              onClick={() => toggleFeedbackHandled(f)}
-                              className="text-[10px] font-mono text-accent hover:underline"
+
+                        {!isExpanded ? (
+                          <p className="text-xs text-muted truncate">{f.message}</p>
+                        ) : (
+                          <>
+                            <p className="text-xs text-text whitespace-pre-wrap">{f.message}</p>
+                            {f.reply && (
+                              <div className="bg-panel border border-border rounded-md p-2 flex flex-col gap-0.5">
+                                <span className="text-[9px] uppercase tracking-[0.5px] text-muted font-mono">
+                                  Yanıtın ({fmtDate(f.replied_at ?? f.created_at)})
+                                </span>
+                                <p className="text-xs text-text whitespace-pre-wrap">{f.reply}</p>
+                              </div>
+                            )}
+                            <div
+                              className="flex items-center justify-between gap-2"
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              {f.handled ? 'Okunmadı işaretle' : 'Okundu işaretle'}
-                            </button>
-                            {!f.reply && (
-                              f.email ? (
+                              <div className="flex items-center gap-3">
                                 <button
-                                  onClick={() => {
-                                    setReplyError(null);
-                                    setReplyOpenId((prev) => (prev === f.id ? null : f.id));
-                                  }}
+                                  onClick={() => toggleFeedbackHandled(f)}
                                   className="text-[10px] font-mono text-accent hover:underline"
                                 >
-                                  {replyOpenId === f.id ? 'Vazgeç' : 'Yanıtla'}
+                                  {f.handled ? 'Okunmadı işaretle' : 'Okundu işaretle'}
                                 </button>
-                              ) : (
-                                <span className="text-[10px] font-mono text-muted">E-posta yok, yanıtlanamaz</span>
-                              )
+                                {!f.reply && (
+                                  f.email ? (
+                                    <button
+                                      onClick={() => {
+                                        setReplyError(null);
+                                        setReplyOpenId((prev) => (prev === f.id ? null : f.id));
+                                      }}
+                                      className="text-[10px] font-mono text-accent hover:underline"
+                                    >
+                                      {replyOpenId === f.id ? 'Vazgeç' : 'Yanıtla'}
+                                    </button>
+                                  ) : (
+                                    <span className="text-[10px] font-mono text-muted">E-posta yok, yanıtlanamaz</span>
+                                  )
+                                )}
+                              </div>
+                              <button
+                                onClick={() => setFeedbackToDelete(f)}
+                                aria-label="Sil"
+                                title="Sil"
+                                className="shrink-0 text-muted hover:text-red transition-colors"
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                                  <polyline points="3 6 5 6 21 6" />
+                                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                  <path d="M10 11v6" />
+                                  <path d="M14 11v6" />
+                                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                                </svg>
+                              </button>
+                            </div>
+                            {replyOpenId === f.id && (
+                              <div
+                                className="flex flex-col gap-1.5 pt-1 border-t border-border"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <textarea
+                                  className="w-full bg-panel border border-border rounded-md px-2 py-1.5 text-xs text-text outline-none focus:border-accent transition-colors resize-none"
+                                  rows={3}
+                                  maxLength={5000}
+                                  placeholder={`${f.email} adresine yanıt yaz...`}
+                                  value={replyDrafts[f.id] ?? ''}
+                                  onChange={(e) =>
+                                    setReplyDrafts((prev) => ({ ...prev, [f.id]: e.target.value }))
+                                  }
+                                  autoFocus
+                                />
+                                {replyError && (
+                                  <p className="text-red text-[10px] font-mono">{replyError}</p>
+                                )}
+                                <button
+                                  onClick={() => submitFeedbackReply(f)}
+                                  disabled={
+                                    replySendingId === f.id || !(replyDrafts[f.id] ?? '').trim()
+                                  }
+                                  className="self-end btn-raised bg-accent text-white rounded-md py-1.5 px-4 text-[10px] font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+                                >
+                                  {replySendingId === f.id ? '...' : 'Gönder'}
+                                </button>
+                              </div>
                             )}
-                          </div>
-                          <button
-                            onClick={() => setFeedbackToDelete(f)}
-                            aria-label="Sil"
-                            title="Sil"
-                            className="shrink-0 text-muted hover:text-red transition-colors"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                              <path d="M10 11v6" />
-                              <path d="M14 11v6" />
-                              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                            </svg>
-                          </button>
-                        </div>
-                        {replyOpenId === f.id && (
-                          <div className="flex flex-col gap-1.5 pt-1 border-t border-border">
-                            <textarea
-                              className="w-full bg-panel border border-border rounded-md px-2 py-1.5 text-xs text-text outline-none focus:border-accent transition-colors resize-none"
-                              rows={3}
-                              maxLength={5000}
-                              placeholder={`${f.email} adresine yanıt yaz...`}
-                              value={replyDrafts[f.id] ?? ''}
-                              onChange={(e) =>
-                                setReplyDrafts((prev) => ({ ...prev, [f.id]: e.target.value }))
-                              }
-                              autoFocus
-                            />
-                            {replyError && (
-                              <p className="text-red text-[10px] font-mono">{replyError}</p>
-                            )}
-                            <button
-                              onClick={() => submitFeedbackReply(f)}
-                              disabled={
-                                replySendingId === f.id || !(replyDrafts[f.id] ?? '').trim()
-                              }
-                              className="self-end btn-raised bg-accent text-white rounded-md py-1.5 px-4 text-[10px] font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
-                            >
-                              {replySendingId === f.id ? '...' : 'Gönder'}
-                            </button>
-                          </div>
+                          </>
                         )}
                       </div>
                     );

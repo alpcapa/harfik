@@ -628,10 +628,14 @@ export async function deleteFeedback(id: string): Promise<void> {
  * iletir ve başarılıysa `feedback.reply`/`replied_at`/`replied_by`'ı kaydeder
  * (yalnızca admin; e-postası olmayan geri bildirimler yanıtlanamaz).
  */
-export async function sendFeedbackReply(feedbackId: string, reply: string): Promise<void> {
+export async function sendFeedbackReply(
+  feedbackId: string,
+  reply: string,
+  recipientName?: string,
+): Promise<void> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
   const { data, error } = await supabase.functions.invoke('feedback-reply', {
-    body: { feedback_id: feedbackId, reply },
+    body: { feedback_id: feedbackId, reply, recipient_name: recipientName },
   });
   if (error) {
     if (error instanceof FunctionsHttpError) {

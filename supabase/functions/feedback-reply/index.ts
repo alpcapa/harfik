@@ -25,11 +25,12 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function buildReplyHtml(originalMessage: string, reply: string): string {
+function buildReplyHtml(originalMessage: string, reply: string, recipientName?: string): string {
+  const greeting = recipientName ? `Merhaba ${escapeHtml(recipientName)},` : 'Merhaba,';
   return `
     <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
-      <p>Merhaba,</p>
-      <p>Kelimeki'ye gönderdiğin görüş/geri bildirime yanıt verdik:</p>
+      <p>${greeting}</p>
+      <p>Bizimle iletişime geçtiğin için çok teşekkürler. Cevabımız aşağıdaki gibidir:</p>
       <blockquote style="margin: 12px 0; padding: 10px 14px; border-left: 3px solid #ddd; color: #555; white-space: pre-wrap;">${escapeHtml(reply)}</blockquote>
       <p style="font-size: 12px; color: #888; margin-top: 24px;">Gönderdiğin mesaj:<br/><em style="white-space: pre-wrap;">${escapeHtml(originalMessage)}</em></p>
       <p style="font-size: 12px; color: #888;">— Kelimeki Ekibi</p>
@@ -62,7 +63,7 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Bu işlem için yetkin yok.' }, 403);
   }
 
-  let body: { feedback_id?: string; reply?: string };
+  let body: { feedback_id?: string; reply?: string; recipient_name?: string };
   try {
     body = await req.json();
   } catch {
@@ -71,6 +72,7 @@ Deno.serve(async (req: Request) => {
 
   const feedbackId = body.feedback_id;
   const replyText = body.reply?.trim();
+  const recipientName = body.recipient_name?.trim() || undefined;
 
   if (!feedbackId || !replyText || replyText.length > 5000) {
     return jsonResponse({ error: 'Geçersiz yanıt metni.' }, 400);
@@ -106,7 +108,7 @@ Deno.serve(async (req: Request) => {
       sender: { name: 'Kelimeki', email: 'noreply@kelimeki.com' },
       to: [{ email: row.email }],
       subject: 'Kelimeki — Geri bildiriminize yanıt',
-      htmlContent: buildReplyHtml(row.message, replyText),
+      htmlContent: buildReplyHtml(row.message, replyText, recipientName),
     }),
   });
 
