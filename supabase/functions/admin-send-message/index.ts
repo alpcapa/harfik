@@ -26,7 +26,7 @@ function buildMessageHtml(message: string, feedbackId: string, toName?: string):
     <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0; color: #1a1a1a;">
       <p>${greeting}</p>
       <p style="white-space: pre-wrap;">${escapeHtml(message)}</p>
-      <p style="font-size: 13px; color: #555; margin-top: 20px;">Saygılarımızla,<br/>Kelimeki Müşteri Hizmetleri</p>
+      <p style="font-size: 14px; color: #555; margin-top: 20px;">Saygılarımızla,<br/><span style="display: inline-block; margin-top: 4px;">Kelimeki Müşteri Hizmetleri</span></p>
       ${buildNoreplyNoticeHtml(feedbackId)}
     </div>
   `;

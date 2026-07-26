@@ -36,7 +36,7 @@ function buildReplyHtml(
       <blockquote style="margin: 12px 0; padding: 10px 14px; border-left: 3px solid #ddd; color: #555; white-space: pre-wrap;">${escapeHtml(reply)}</blockquote>
       ${buildNoreplyNoticeHtml(feedbackId)}
       <p style="font-size: 12px; color: #888; margin-top: 20px;">Gönderdiğin mesaj:<br/><em style="white-space: pre-wrap;">${escapeHtml(originalMessage)}</em></p>
-      <p style="font-size: 12px; color: #888;">Saygılarımızla,<br/>Kelimeki Müşteri Hizmetleri</p>
+      <p style="font-size: 13px; color: #888;">Saygılarımızla,<br/><span style="display: inline-block; margin-top: 4px;">Kelimeki Müşteri Hizmetleri</span></p>
     </div>
   `;
 }
