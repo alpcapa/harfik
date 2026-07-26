@@ -1,0 +1,289 @@
+// Kelimeki — Arkadaşlar modalı: mevcut kullanıcıyı arayıp ekleme (e-postasız,
+// uygulama içi istek/kabul) + kalıcı davet linkini WhatsApp/SMS/DM gibi
+// kanallardan paylaşarak henüz üye olmayanları da davet etme (asıl büyüme
+// mekanizması — bkz. CLAUDE.md "Arkadaşlık Sistemi").
+import { useEffect, useState } from 'react';
+import { Modal } from './Modal';
+import { Avatar } from './Avatar';
+import {
+  createFriendInviteLink,
+  fetchFriends,
+  fetchIncomingFriendRequests,
+  removeFriend,
+  respondFriendRequest,
+  searchUsersForFriend,
+  sendFriendRequest,
+} from '../lib/api';
+import type { FriendRow, FriendSearchResult, IncomingFriendRequest } from '../lib/database.types';
+
+interface FriendsModalProps {
+  onClose: () => void;
+  /** İlk açılışta hangi sekmenin görüneceği — `UserMenu`'den bir bekleyen istek rozetine tıklanınca "requests" ile açılır. */
+  initialTab?: Tab;
+}
+
+type Tab = 'friends' | 'requests' | 'search';
+
+function buildInviteUrl(token: string): string {
+  return `${window.location.origin}/davet/${token}`;
+}
+
+const INVITE_SHARE_TEXT = "Kelimeki'de birlikte kelime oyunu oynayalım!";
+
+const rowCls = 'flex items-center gap-2.5 py-2';
+const nameCls = 'flex-1 min-w-0 text-sm text-text font-bold truncate';
+const smallBtn =
+  'shrink-0 btn-raised rounded-md py-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.5px] active:scale-[0.97] transition-transform disabled:opacity-50';
+
+export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalProps) {
+  const [tab, setTab] = useState<Tab>(initialTab);
+  const [friends, setFriends] = useState<FriendRow[] | null>(null);
+  const [requests, setRequests] = useState<IncomingFriendRequest[] | null>(null);
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<FriendSearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [inviteStatus, setInviteStatus] = useState<'idle' | 'busy' | 'copied'>('idle');
+
+  const reloadFriends = () => void fetchFriends().then(setFriends);
+  const reloadRequests = () => void fetchIncomingFriendRequests().then(setRequests);
+
+  useEffect(() => {
+    reloadFriends();
+    reloadRequests();
+  }, []);
+
+  // Arama girdisini hafifçe geciktir (her tuş vuruşunda RPC çağırmamak için).
+  useEffect(() => {
+    if (query.trim().length < 2) {
+      setResults([]);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    const t = setTimeout(() => {
+      void searchUsersForFriend(query.trim()).then((r) => {
+        setResults(r);
+        setSearching(false);
+      });
+    }, 350);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const handleSend = async (id: string) => {
+    setBusyId(id);
+    try {
+      await sendFriendRequest(id);
+      setResults((r) => r.map((u) => (u.id === id ? { ...u, relation: 'pending_outgoing' } : u)));
+    } catch (err) {
+      console.error('[Kelimeki] arkadaşlık isteği hatası:', err);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleRespond = async (requesterId: string, accept: boolean) => {
+    setBusyId(requesterId);
+    try {
+      await respondFriendRequest(requesterId, accept);
+      reloadRequests();
+      if (accept) reloadFriends();
+    } catch (err) {
+      console.error('[Kelimeki] istek yanıtlama hatası:', err);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleRemove = async (friendId: string) => {
+    setBusyId(friendId);
+    try {
+      await removeFriend(friendId);
+      reloadFriends();
+    } catch (err) {
+      console.error('[Kelimeki] arkadaş çıkarma hatası:', err);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleInvite = async () => {
+    setInviteStatus('busy');
+    const token = await createFriendInviteLink();
+    if (!token) {
+      setInviteStatus('idle');
+      return;
+    }
+    const url = buildInviteUrl(token);
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Kelimeki', text: INVITE_SHARE_TEXT, url });
+      } catch {
+        // Kullanıcı paylaşım sayfasını iptal etti — sessizce geç.
+      }
+      setInviteStatus('idle');
+      return;
+    }
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(`${INVITE_SHARE_TEXT}\n${url}`);
+      setInviteStatus('copied');
+      setTimeout(() => setInviteStatus('idle'), 1800);
+      return;
+    }
+    setInviteStatus('idle');
+  };
+
+  const tabBtn = (t: Tab, label: string, badge?: number) => (
+    <button
+      onClick={() => setTab(t)}
+      className={`flex-1 py-2 text-[11px] font-mono font-bold uppercase tracking-[0.5px] rounded-md transition-colors flex items-center justify-center gap-1.5 ${
+        tab === t ? 'bg-accent text-white' : 'text-muted hover:text-text'
+      }`}
+    >
+      {label}
+      {!!badge && (
+        <span className="min-w-[16px] h-4 px-1 rounded-full bg-red text-white text-[9px] font-bold flex items-center justify-center leading-none">
+          {badge}
+        </span>
+      )}
+    </button>
+  );
+
+  return (
+    <Modal title="Arkadaşlar" onClose={onClose}>
+      <div className="flex flex-col gap-3">
+        <button
+          onClick={handleInvite}
+          disabled={inviteStatus === 'busy'}
+          className="btn-raised bg-accent text-white rounded-md py-2.5 text-xs font-bold uppercase tracking-[1.5px] active:scale-[0.97] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          <span aria-hidden>🔗</span>
+          {inviteStatus === 'copied' ? 'Link Kopyalandı!' : 'Arkadaşını Davet Et'}
+        </button>
+        <p className="text-[10px] text-muted font-mono text-center -mt-1">
+          Kelimeki'de henüz üye olmayan arkadaşların için de çalışır.
+        </p>
+
+        <div className="flex gap-1 bg-bg border border-border rounded-md p-1">
+          {tabBtn('friends', 'Arkadaşlarım', 0)}
+          {tabBtn('requests', 'İstekler', requests?.length ?? 0)}
+          {tabBtn('search', 'Ara & Ekle')}
+        </div>
+
+        {tab === 'friends' && (
+          <div className="flex flex-col divide-y divide-border">
+            {friends === null ? (
+              <p className="text-muted text-xs font-mono py-4 text-center">Yükleniyor…</p>
+            ) : friends.length === 0 ? (
+              <p className="text-muted text-xs font-mono py-4 text-center">
+                Henüz arkadaşın yok — "Ara & Ekle" sekmesinden ya da yukarıdaki davet linkiyle ekleyebilirsin.
+              </p>
+            ) : (
+              friends.map((f) => (
+                <div key={f.friend_id} className={rowCls}>
+                  <Avatar url={f.avatar_url} name={f.name} size={32} />
+                  <span className={nameCls}>{f.name}</span>
+                  <button
+                    className={`${smallBtn} btn-raised-neutral bg-panel border border-border text-muted hover:text-red`}
+                    disabled={busyId === f.friend_id}
+                    onClick={() => handleRemove(f.friend_id)}
+                  >
+                    Çıkar
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {tab === 'requests' && (
+          <div className="flex flex-col divide-y divide-border">
+            {requests === null ? (
+              <p className="text-muted text-xs font-mono py-4 text-center">Yükleniyor…</p>
+            ) : requests.length === 0 ? (
+              <p className="text-muted text-xs font-mono py-4 text-center">Bekleyen istek yok.</p>
+            ) : (
+              requests.map((r) => (
+                <div key={r.requester_id} className={rowCls}>
+                  <Avatar url={r.avatar_url} name={r.name} size={32} />
+                  <span className={nameCls}>{r.name}</span>
+                  <div className="flex gap-1.5 shrink-0">
+                    <button
+                      className={`${smallBtn} bg-accent text-white`}
+                      disabled={busyId === r.requester_id}
+                      onClick={() => handleRespond(r.requester_id, true)}
+                    >
+                      Kabul Et
+                    </button>
+                    <button
+                      className={`${smallBtn} btn-raised-neutral bg-panel border border-border text-muted`}
+                      disabled={busyId === r.requester_id}
+                      onClick={() => handleRespond(r.requester_id, false)}
+                    >
+                      Reddet
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {tab === 'search' && (
+          <div className="flex flex-col gap-2">
+            <input
+              className="w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors"
+              type="text"
+              placeholder="İsim ya da takma ad ara…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              autoFocus
+            />
+            <div className="flex flex-col divide-y divide-border min-h-[40px]">
+              {searching ? (
+                <p className="text-muted text-xs font-mono py-4 text-center">Aranıyor…</p>
+              ) : query.trim().length >= 2 && results.length === 0 ? (
+                <p className="text-muted text-xs font-mono py-4 text-center">
+                  Kimse bulunamadı — Kelimeki'de değilse yukarıdaki davet linkini gönderebilirsin.
+                </p>
+              ) : (
+                results.map((u) => (
+                  <div key={u.id} className={rowCls}>
+                    <Avatar url={u.avatar_url} name={u.name} size={32} />
+                    <span className={nameCls}>{u.name}</span>
+                    {u.relation === 'accepted' ? (
+                      <span className="shrink-0 text-[10px] font-mono text-muted uppercase tracking-[0.5px]">
+                        Arkadaşsınız
+                      </span>
+                    ) : u.relation === 'pending_outgoing' ? (
+                      <span className="shrink-0 text-[10px] font-mono text-muted uppercase tracking-[0.5px]">
+                        İstek Gönderildi
+                      </span>
+                    ) : u.relation === 'pending_incoming' ? (
+                      <button
+                        className={`${smallBtn} bg-accent text-white`}
+                        disabled={busyId === u.id}
+                        onClick={() => handleRespond(u.id, true)}
+                      >
+                        Kabul Et
+                      </button>
+                    ) : (
+                      <button
+                        className={`${smallBtn} bg-accent text-white`}
+                        disabled={busyId === u.id}
+                        onClick={() => handleSend(u.id)}
+                      >
+                        Ekle
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
