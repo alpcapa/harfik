@@ -21,7 +21,7 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 function buildMessageHtml(message: string, feedbackId: string, toName?: string): string {
-  const greeting = toName ? `Sayın ${escapeHtml(toName)},` : 'Merhaba,';
+  const greeting = toName ? `Merhaba ${escapeHtml(toName)},` : 'Merhaba,';
   return `
     <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0; color: #1a1a1a;">
       <p>${greeting}</p>
