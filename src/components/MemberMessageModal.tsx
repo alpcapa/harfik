@@ -5,12 +5,13 @@ import { Modal } from './Modal';
 import { sendMemberMessage } from '../lib/api';
 
 interface MemberMessageModalProps {
+  toUserId: string;
   toEmail: string;
   toName: string;
   onClose: () => void;
 }
 
-export function MemberMessageModal({ toEmail, toName, onClose }: MemberMessageModalProps) {
+export function MemberMessageModal({ toUserId, toEmail, toName, onClose }: MemberMessageModalProps) {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -23,7 +24,7 @@ export function MemberMessageModal({ toEmail, toName, onClose }: MemberMessageMo
     setError(null);
     setBusy(true);
     try {
-      await sendMemberMessage(toEmail, toName, subject.trim(), message.trim());
+      await sendMemberMessage(toUserId, toEmail, toName, subject.trim(), message.trim());
       setSent(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

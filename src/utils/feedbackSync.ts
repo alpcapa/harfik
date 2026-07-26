@@ -11,6 +11,7 @@ interface PendingFeedback {
   message: string;
   email: string | null;
   source: FeedbackSource;
+  relatedTo: string | null;
   created_at: string;
 }
 
@@ -36,7 +37,8 @@ function readQueue(): PendingFeedback[] {
     if (fresh.length !== parsed.length) writeQueue(fresh);
     // Rebrand öncesi kuyruklanmış eski kayıtlarda `source` yoktu — o zaman
     // tek form (oyun sonu) vardı, bu yüzden geriye dönük varsayılan 'game_end'.
-    return fresh.map((f) => ({ ...f, source: f.source ?? 'game_end' }));
+    // relatedTo da sonradan eklendi — eski kayıtlarda yok, varsayılan null.
+    return fresh.map((f) => ({ ...f, source: f.source ?? 'game_end', relatedTo: f.relatedTo ?? null }));
   } catch {
     return [];
   }
@@ -61,7 +63,7 @@ function enqueue(item: PendingFeedback): void {
 async function trySubmit(item: PendingFeedback): Promise<boolean> {
   if (!navigator.onLine) return false;
   try {
-    await submitFeedback(item.message, item.email ?? undefined, item.source);
+    await submitFeedback(item.message, item.email ?? undefined, item.source, item.relatedTo);
     return true;
   } catch {
     return false;
@@ -77,11 +79,13 @@ export async function submitFeedbackDurable(
   message: string,
   email: string | undefined,
   source: FeedbackSource,
+  relatedTo?: string | null,
 ): Promise<void> {
   const item: PendingFeedback = {
     message,
     email: email?.trim() || null,
     source,
+    relatedTo: relatedTo ?? null,
     created_at: new Date().toISOString(),
   };
   const ok = await trySubmit(item);

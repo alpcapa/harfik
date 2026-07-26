@@ -9,7 +9,7 @@
 // → Edge Functions → Secrets üzerinden elle eklenmiş bir custom secret'tır
 // (SMTP kimlik bilgilerinden farklı, Brevo'nun HTTP API'si için).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { escapeHtml, NOREPLY_NOTICE_HTML, sendBrevoEmail } from '../_shared/email.ts';
+import { escapeHtml, buildNoreplyNoticeHtml, sendBrevoEmail } from '../_shared/email.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -22,14 +22,19 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-function buildReplyHtml(originalMessage: string, reply: string, recipientName?: string): string {
+function buildReplyHtml(
+  originalMessage: string,
+  reply: string,
+  feedbackId: string,
+  recipientName?: string,
+): string {
   const greeting = recipientName ? `Merhaba ${escapeHtml(recipientName)},` : 'Merhaba,';
   return `
     <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
       <p>${greeting}</p>
       <p>Bizimle iletişime geçtiğin için çok teşekkürler. Cevabımız aşağıdaki gibidir:</p>
       <blockquote style="margin: 12px 0; padding: 10px 14px; border-left: 3px solid #ddd; color: #555; white-space: pre-wrap;">${escapeHtml(reply)}</blockquote>
-      ${NOREPLY_NOTICE_HTML}
+      ${buildNoreplyNoticeHtml(feedbackId)}
       <p style="font-size: 12px; color: #888; margin-top: 20px;">Gönderdiğin mesaj:<br/><em style="white-space: pre-wrap;">${escapeHtml(originalMessage)}</em></p>
       <p style="font-size: 12px; color: #888;">Saygılarımızla,<br/>Kelimeki Müşteri Hizmetleri</p>
     </div>
@@ -98,7 +103,7 @@ Deno.serve(async (req: Request) => {
   const brevoRes = await sendBrevoEmail(BREVO_API_KEY, {
     to: { email: row.email },
     subject: 'Kelimeki — Geri bildiriminize yanıt',
-    htmlContent: buildReplyHtml(row.message, replyText, recipientName),
+    htmlContent: buildReplyHtml(row.message, replyText, feedbackId, recipientName),
   });
 
   if (!brevoRes.ok) {

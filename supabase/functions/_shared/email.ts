@@ -11,12 +11,20 @@ export function escapeHtml(s: string): string {
 
 // kelimeki.com'daki ?contact=1 parametresini App.tsx okuyup genel "Görüş
 // Bildir" formunu (source: 'general') otomatik açar — bkz. App.tsx'teki
-// showContactFeedback effect'i.
-export const NOREPLY_NOTICE_HTML = `
-  <p style="margin-top: 20px; padding-top: 12px; border-top: 1px solid #eee; font-size: 11px; color: #999; font-style: italic;">
-    Bu e-posta noreply adresinden gönderilmiştir. Cevap için <a href="https://kelimeki.com/?contact=1" style="color: #2f6fed; text-decoration: underline;">tıklayın</a>.
-  </p>
-`;
+// showContactFeedback effect'i. threadId verilirse ?re=<id> olarak eklenir;
+// App.tsx bunu okuyup yeni gönderilen mesajı feedback.related_to ile bu
+// mesaja bağlar (tam bir e-posta thread'i değil ama en azından admin
+// panelinde "bu, şu mesaja cevaben geldi" bağlantısını kurar).
+export function buildNoreplyNoticeHtml(threadId?: string): string {
+  const url = threadId
+    ? `https://kelimeki.com/?contact=1&re=${encodeURIComponent(threadId)}`
+    : 'https://kelimeki.com/?contact=1';
+  return `
+    <p style="margin-top: 20px; padding-top: 12px; border-top: 1px solid #eee; font-size: 11px; color: #999; font-style: italic;">
+      Bu e-posta noreply adresinden gönderilmiştir. Cevap için <a href="${url}" style="color: #2f6fed; text-decoration: underline;">tıklayın</a>.
+    </p>
+  `;
+}
 
 export async function sendBrevoEmail(
   apiKey: string,

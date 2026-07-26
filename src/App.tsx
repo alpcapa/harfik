@@ -165,13 +165,18 @@ export default function App() {
 
   // Admin'in gönderdiği e-postalardaki ("noreply — cevap için tıklayın")
   // linkten (?contact=1) açılan genel "Görüş Bildir" formu — oyun fazından
-  // bağımsız (bkz. supabase/functions/_shared/email.ts, NOREPLY_NOTICE_HTML).
+  // bağımsız (bkz. supabase/functions/_shared/email.ts, buildNoreplyNoticeHtml).
+  // Link'e gömülü ?re=<id> varsa (hangi mesaja cevaben geldiği), yeni geri
+  // bildirim o mesaja bağlanabilsin diye contactRelatedTo'da tutulur.
   const [showContactFeedback, setShowContactFeedback] = useState(false);
+  const [contactRelatedTo, setContactRelatedTo] = useState<string | null>(null);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('contact') !== '1') return;
     setShowContactFeedback(true);
+    setContactRelatedTo(params.get('re'));
     params.delete('contact');
+    params.delete('re');
     const rest = params.toString();
     window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : ''));
   }, []);
@@ -482,7 +487,11 @@ export default function App() {
         <AddToHomeScreen />
         <LandscapeHint />
         {showContactFeedback && (
-          <FeedbackModal source="general" onClose={() => setShowContactFeedback(false)} />
+          <FeedbackModal
+            source="general"
+            relatedTo={contactRelatedTo}
+            onClose={() => setShowContactFeedback(false)}
+          />
         )}
       </div>
     );
@@ -1120,7 +1129,11 @@ export default function App() {
       )}
 
       {showContactFeedback && (
-        <FeedbackModal source="general" onClose={() => setShowContactFeedback(false)} />
+        <FeedbackModal
+          source="general"
+          relatedTo={contactRelatedTo}
+          onClose={() => setShowContactFeedback(false)}
+        />
       )}
 
       {showPostStartTutorial && (

@@ -885,8 +885,10 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
               ) : (
                 <div className="flex flex-col gap-2">
                   {filteredFeedback?.map((f) => {
-                    const sender = f.user_id ? members?.find((m) => m.id === f.user_id) : null;
-                    const senderLabel = sender ? memberName(sender) : (f.email || 'Anonim');
+                    const relatedMember = f.user_id ? members?.find((m) => m.id === f.user_id) : null;
+                    const relatedLabel = relatedMember ? memberName(relatedMember) : (f.email || 'Anonim');
+                    const headerLabel = f.origin === 'admin' ? `→ ${relatedLabel}` : relatedLabel;
+                    const parent = f.related_to ? feedback?.find((x) => x.id === f.related_to) : null;
                     const isExpanded = expandedFeedbackId === f.id;
                     return (
                       <div
@@ -900,9 +902,19 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       >
                         <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-muted">
                           <span className="truncate min-w-0 flex-1">
-                            {senderLabel}
-                            {sender && f.email ? ` · ${f.email}` : ''}
+                            {headerLabel}
+                            {relatedMember && f.email ? ` · ${f.email}` : ''}
                           </span>
+                          {f.origin === 'admin' && (
+                            <span className="shrink-0 px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[9px] uppercase tracking-[0.5px]">
+                              Gönderilen
+                            </span>
+                          )}
+                          {f.related_to && (
+                            <span className="shrink-0 px-1.5 py-0.5 rounded bg-panel border border-border text-[9px] uppercase tracking-[0.5px]">
+                              ↳ Cevaben
+                            </span>
+                          )}
                           {f.reply && (
                             <span className="shrink-0 px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[9px] uppercase tracking-[0.5px]">
                               Yanıtlandı
@@ -915,9 +927,23 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         </div>
 
                         {!isExpanded ? (
-                          <p className="text-xs text-muted truncate">{f.message}</p>
+                          <p className="text-xs text-muted truncate">
+                            {f.subject ? `${f.subject} — ${f.message}` : f.message}
+                          </p>
                         ) : (
                           <>
+                            {parent && (
+                              <div className="bg-panel border border-border rounded-md p-2 flex flex-col gap-0.5">
+                                <span className="text-[9px] uppercase tracking-[0.5px] text-muted font-mono">
+                                  ↳ Şu mesaja cevaben ({fmtDate(parent.created_at)})
+                                </span>
+                                <p className="text-xs text-muted whitespace-pre-wrap truncate">
+                                  {parent.subject ? `${parent.subject}: ` : ''}
+                                  {parent.reply || parent.message}
+                                </p>
+                              </div>
+                            )}
+                            {f.subject && <p className="text-xs font-bold text-text">{f.subject}</p>}
                             <p className="text-xs text-text whitespace-pre-wrap">{f.message}</p>
                             {f.reply && (
                               <div className="bg-panel border border-border rounded-md p-2 flex flex-col gap-0.5">
@@ -938,7 +964,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                                 >
                                   {f.handled ? 'Okunmadı işaretle' : 'Okundu işaretle'}
                                 </button>
-                                {!f.reply && (
+                                {f.origin === 'user' && !f.reply && (
                                   f.email ? (
                                     <button
                                       onClick={() => {
@@ -1017,6 +1043,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
       {messageTarget?.email && (
         <MemberMessageModal
+          toUserId={messageTarget.id}
           toEmail={messageTarget.email}
           toName={memberName(messageTarget)}
           onClose={() => setMessageTarget(null)}

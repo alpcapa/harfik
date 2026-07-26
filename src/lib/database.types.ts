@@ -347,6 +347,9 @@ export interface AdminEngagementTotals {
 /** "Görüş Bildir" formunun hangi bağlamdan gönderildiği. */
 export type FeedbackSource = 'game_end' | 'general';
 
+/** "user": kullanıcının gönderdiği geri bildirim; "admin": admin panelinden (Mesaj Gönder) başlatılan mesaj. */
+export type FeedbackOrigin = 'user' | 'admin';
+
 /** feedback tablosundaki tek satır (admin panelinden okunur). */
 export interface AdminFeedbackRow {
   id: string;
@@ -359,4 +362,7 @@ export interface AdminFeedbackRow {
   reply: string | null;
   replied_at: string | null;
   replied_by: string | null;
+  origin: FeedbackOrigin;
+  subject: string | null;
+  related_to: string | null;
 }

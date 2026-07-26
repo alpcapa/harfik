@@ -1,10 +1,13 @@
 // Kelimeki — admin panelindeki Üyeler tablosundan tek bir üyeye elle
 // yazılan mesajı (konu + gövde admin tarafından girilir) Brevo Transactional
-// API ile gönderir. feedback-reply'dan farkı: bir feedback kaydına bağlı
-// değil, herhangi bir üyeye serbest metin gönderir — bu yüzden DB'ye bir şey
-// yazmaz, yalnızca gönderir.
+// API ile gönderir. feedback-reply'dan farkı: bir feedback kaydına yanıt
+// vermiyor, YENİ bir tane açıyor (origin: 'admin') — böylece "kime ne
+// yazıldığı" admin panelinin Geri Bildirim sekmesinde kalıcı olarak görünür.
+// Kayıt e-postadan ÖNCE oluşturuluyor çünkü mail içindeki "cevap için
+// tıklayın" linkine bu kaydın id'si (?re=<id>) gömülüyor — Brevo gönderimi
+// başarısız olursa önceden oluşturulan kayıt geri alınır (silinir).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { escapeHtml, NOREPLY_NOTICE_HTML, sendBrevoEmail } from '../_shared/email.ts';
+import { escapeHtml, buildNoreplyNoticeHtml, sendBrevoEmail } from '../_shared/email.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -17,12 +20,12 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-function buildMessageHtml(message: string): string {
+function buildMessageHtml(message: string, feedbackId: string): string {
   return `
     <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; color: #1a1a1a;">
       <p style="white-space: pre-wrap;">${escapeHtml(message)}</p>
       <p style="font-size: 13px; color: #555; margin-top: 20px;">Saygılarımızla,<br/>Kelimeki Müşteri Hizmetleri</p>
-      ${NOREPLY_NOTICE_HTML}
+      ${buildNoreplyNoticeHtml(feedbackId)}
     </div>
   `;
 }
@@ -52,13 +55,14 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Bu işlem için yetkin yok.' }, 403);
   }
 
-  let body: { to_email?: string; to_name?: string; subject?: string; message?: string };
+  let body: { to_user_id?: string; to_email?: string; to_name?: string; subject?: string; message?: string };
   try {
     body = await req.json();
   } catch {
     return jsonResponse({ error: 'Geçersiz istek.' }, 400);
   }
 
+  const toUserId = body.to_user_id?.trim() || undefined;
   const toEmail = body.to_email?.trim();
   const toName = body.to_name?.trim() || undefined;
   const subject = body.subject?.trim();
@@ -73,15 +77,34 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'E-posta gönderim yapılandırması eksik.' }, 500);
   }
 
+  const { data: inserted, error: insertError } = await supabase
+    .from('feedback')
+    .insert({
+      user_id: toUserId ?? null,
+      email: toEmail,
+      subject,
+      message,
+      origin: 'admin',
+      handled: true,
+    })
+    .select('id')
+    .single();
+
+  if (insertError || !inserted) {
+    console.error('[admin-send-message] Kayıt oluşturma hatası:', insertError?.message);
+    return jsonResponse({ error: 'Mesaj kaydedilemedi, gönderilmedi.' }, 500);
+  }
+
   const brevoRes = await sendBrevoEmail(BREVO_API_KEY, {
     to: { email: toEmail, name: toName },
     subject,
-    htmlContent: buildMessageHtml(message),
+    htmlContent: buildMessageHtml(message, inserted.id),
   });
 
   if (!brevoRes.ok) {
     const detail = await brevoRes.text();
     console.error('[admin-send-message] Brevo hatası:', brevoRes.status, detail);
+    await supabase.from('feedback').delete().eq('id', inserted.id);
     return jsonResponse({ error: 'E-posta gönderilemedi.' }, 502);
   }
 

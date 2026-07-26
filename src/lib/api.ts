@@ -599,7 +599,9 @@ export async function fetchAdminFeedback(): Promise<AdminFeedbackRow[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('feedback')
-    .select('id, user_id, email, message, handled, created_at, source, reply, replied_at, replied_by')
+    .select(
+      'id, user_id, email, message, handled, created_at, source, reply, replied_at, replied_by, origin, subject, related_to',
+    )
     .order('created_at', { ascending: false });
   if (error) {
     console.error('[Kelimeki] fetchAdminFeedback hatası:', error.message);
@@ -664,16 +666,19 @@ export async function sendFeedbackReply(
 /**
  * Admin panelinin Üyeler tablosundan bir üyeye serbest metinli mesaj
  * gönderir — `admin-send-message` Edge Function'ı, konu/gövdeyi Brevo
- * Transactional API ile iletir (yalnızca admin). Bir feedback kaydına bağlı
- * olmadığından DB'ye bir şey yazmaz.
+ * Transactional API ile iletir (yalnızca admin) ve `feedback` tablosuna
+ * `origin: 'admin'` olarak kaydeder (kime ne yazıldığı Geri Bildirim
+ * sekmesinde görünsün diye).
  */
 export async function sendMemberMessage(
+  toUserId: string,
   toEmail: string,
   toName: string,
   subject: string,
   message: string,
 ): Promise<void> {
   await invokeAdminFunction('admin-send-message', {
+    to_user_id: toUserId,
     to_email: toEmail,
     to_name: toName,
     subject,
@@ -683,11 +688,16 @@ export async function sendMemberMessage(
 
 // ── Geri bildirim ───────────────────────────────────────────────────────────
 
-/** Kullanıcıdan gelen görüş/şikayet mesajını kaydeder (girişli ya da anonim). */
+/**
+ * Kullanıcıdan gelen görüş/şikayet mesajını kaydeder (girişli ya da anonim).
+ * `relatedTo`, e-postadaki "cevap için tıklayın" linkine gömülü bir referans
+ * (?contact=1&re=<id>) varsa bu yeni mesajı önceki mesaja bağlar.
+ */
 export async function submitFeedback(
   message: string,
   email: string | undefined,
   source: FeedbackSource,
+  relatedTo?: string | null,
 ): Promise<void> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
   const {
@@ -698,6 +708,7 @@ export async function submitFeedback(
     email: email?.trim() || user?.email || null,
     message: message.trim(),
     source,
+    related_to: relatedTo ?? null,
   });
   if (error) throw new Error(error.message);
 }

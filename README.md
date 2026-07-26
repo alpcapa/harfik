@@ -144,7 +144,7 @@ VITE_SUPABASE_ANON_KEY=sb_publishable_...   # Project Settings → API
 - `feedback-reply/` — admin panelinden bir görüş bildirimine yanıt gönderildiğinde çağrılır; Brevo'nun Transactional Email API'siyle (SMTP değil, ayrı bir `BREVO_API_KEY` Edge Function secret'ı ile) yanıtı gönderenin e-postasına iletir ve `feedback.reply`/`replied_at`/`replied_by` alanlarını günceller.
 - `admin-send-message/` — admin panelinin Üyeler tablosundan bir üyeye elle yazılan serbest metinli mesajı (konu + gövde) aynı Brevo API'siyle gönderir; bir feedback kaydına bağlı olmadığından DB'ye bir şey yazmaz.
 
-İkisi de `noreply@kelimeki.com` adresinden gönderiyor (tek yönlü — gerçek bir `destek@` gelen kutusu henüz kurulmadı, bilinçli olarak ertelendi). Bu yüzden her iki e-postanın altında da "Bu e-posta noreply adresinden gönderilmiştir. Cevap için tıklayın" notu var — link `kelimeki.com/?contact=1`'e gider, `App.tsx`'teki bir effect bu parametreyi okuyup genel "Görüş Bildir" formunu (`FeedbackModal`, `source="general"`) otomatik açar.
+İkisi de `noreply@kelimeki.com` adresinden gönderiyor (tek yönlü — gerçek bir `destek@` gelen kutusu henüz kurulmadı, bilinçli olarak ertelendi). Bu yüzden her iki e-postanın altında da "Bu e-posta noreply adresinden gönderilmiştir. Cevap için tıklayın" notu var — link `kelimeki.com/?contact=1&re=<id>`'e gider (`<id>`, cevaben geldiği mesajın kaydı), `App.tsx`'teki bir effect bu parametreleri okuyup genel "Görüş Bildir" formunu (`FeedbackModal`, `source="general"`) otomatik açar ve yeni gönderilen mesajı `feedback.related_to` ile önceki mesaja bağlar. `admin-send-message` artık kendi gönderdiği mesajı da `feedback`'e (`origin: 'admin'`) yazıyor — admin panelinde "kime ne yazıldığı" kalıcı olarak görünür.
 
 ## Sözlük Verisi
 
