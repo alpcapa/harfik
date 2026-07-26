@@ -416,7 +416,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   }
 
   const tabBtn = (active: boolean) =>
-    `flex-1 py-2.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1px] transition-colors ${
+    `flex-1 py-2.5 px-3 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1px] transition-colors ${
       active ? 'bg-accent text-white' : 'bg-panel text-muted border border-border'
     }`;
 
@@ -1050,6 +1050,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
           toEmail={messageTarget.email}
           toName={memberName(messageTarget)}
           onClose={() => setMessageTarget(null)}
+          onSent={() => fetchAdminFeedback().then(setFeedback).catch((e) => setError(String(e)))}
         />
       )}
 
