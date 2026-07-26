@@ -622,21 +622,12 @@ export async function deleteFeedback(id: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-/**
- * Bir geri bildirime yanıt gönderir — `feedback-reply` Edge Function'ı
- * çağırır, bu da yanıtı Brevo Transactional API ile gönderenin e-postasına
- * iletir ve başarılıysa `feedback.reply`/`replied_at`/`replied_by`'ı kaydeder
- * (yalnızca admin; e-postası olmayan geri bildirimler yanıtlanamaz).
- */
-export async function sendFeedbackReply(
-  feedbackId: string,
-  reply: string,
-  recipientName?: string,
-): Promise<void> {
+/** Admin Edge Function'larını (feedback-reply, admin-send-message) çağırır — hata
+ * durumunda Edge Function'ın döndürdüğü JSON gövdesini okuyup gerçek mesajı fırlatır
+ * (supabase-js `functions.invoke` bunu otomatik yapmıyor). */
+async function invokeAdminFunction(name: string, body: Record<string, unknown>): Promise<void> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
-  const { data, error } = await supabase.functions.invoke('feedback-reply', {
-    body: { feedback_id: feedbackId, reply, recipient_name: recipientName },
-  });
+  const { data, error } = await supabase.functions.invoke(name, { body });
   if (error) {
     if (error instanceof FunctionsHttpError) {
       let detail: string | undefined;
@@ -650,6 +641,44 @@ export async function sendFeedbackReply(
     throw new Error(error.message);
   }
   if (data?.error) throw new Error(data.error);
+}
+
+/**
+ * Bir geri bildirime yanıt gönderir — `feedback-reply` Edge Function'ı
+ * çağırır, bu da yanıtı Brevo Transactional API ile gönderenin e-postasına
+ * iletir ve başarılıysa `feedback.reply`/`replied_at`/`replied_by`'ı kaydeder
+ * (yalnızca admin; e-postası olmayan geri bildirimler yanıtlanamaz).
+ */
+export async function sendFeedbackReply(
+  feedbackId: string,
+  reply: string,
+  recipientName?: string,
+): Promise<void> {
+  await invokeAdminFunction('feedback-reply', {
+    feedback_id: feedbackId,
+    reply,
+    recipient_name: recipientName,
+  });
+}
+
+/**
+ * Admin panelinin Üyeler tablosundan bir üyeye serbest metinli mesaj
+ * gönderir — `admin-send-message` Edge Function'ı, konu/gövdeyi Brevo
+ * Transactional API ile iletir (yalnızca admin). Bir feedback kaydına bağlı
+ * olmadığından DB'ye bir şey yazmaz.
+ */
+export async function sendMemberMessage(
+  toEmail: string,
+  toName: string,
+  subject: string,
+  message: string,
+): Promise<void> {
+  await invokeAdminFunction('admin-send-message', {
+    to_email: toEmail,
+    to_name: toName,
+    subject,
+    message,
+  });
 }
 
 // ── Geri bildirim ───────────────────────────────────────────────────────────

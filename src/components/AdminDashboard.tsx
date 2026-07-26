@@ -30,6 +30,7 @@ import type {
   FeedbackSource,
 } from '../lib/database.types';
 import { PlayerScoreCard } from './PlayerScoreCard';
+import { MemberMessageModal } from './MemberMessageModal';
 import { GrowthChart, type ChartSeriesDef } from './GrowthChart';
 import { trLower } from '../utils/turkish';
 import { useModalA11y } from '../hooks/useModalA11y';
@@ -295,6 +296,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [feedback, setFeedback] = useState<AdminFeedbackRow[] | null>(null);
   const [feedbackSourceFilter, setFeedbackSourceFilter] = useState<'all' | FeedbackSource>('all');
   const [feedbackToDelete, setFeedbackToDelete] = useState<AdminFeedbackRow | null>(null);
+  const [messageTarget, setMessageTarget] = useState<AdminMember | null>(null);
   const [expandedFeedbackId, setExpandedFeedbackId] = useState<string | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [replyOpenId, setReplyOpenId] = useState<string | null>(null);
@@ -668,7 +670,8 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         <SortHeader label="Kanal" sortKeyFor="signup_channel" />
                         <SortHeader label="Katılma" sortKeyFor="created_at" />
                         <SortHeader label="Son Giriş" sortKeyFor="last_sign_in_at" />
-                        <SortHeader label="Rol" sortKeyFor="is_admin" className="pr-0" />
+                        <SortHeader label="Rol" sortKeyFor="is_admin" />
+                        <th className="py-2 pl-3 text-left font-normal"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -684,11 +687,23 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                           <td className="py-2 pr-3 text-muted whitespace-nowrap">{memberChannelLabel(m)}</td>
                           <td className="py-2 pr-3 text-muted whitespace-nowrap">{fmtDate(m.created_at)}</td>
                           <td className="py-2 pr-3 text-muted whitespace-nowrap">{fmtDate(m.last_sign_in_at)}</td>
-                          <td className="py-2 whitespace-nowrap">
+                          <td className="py-2 pr-3 whitespace-nowrap">
                             {m.is_admin ? (
                               <span className="text-accent font-bold">Admin</span>
                             ) : (
                               <span className="text-muted">Üye</span>
+                            )}
+                          </td>
+                          <td className="py-2 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            {m.email ? (
+                              <button
+                                onClick={() => setMessageTarget(m)}
+                                className="text-[10px] font-mono text-accent hover:underline"
+                              >
+                                Mesaj Gönder
+                              </button>
+                            ) : (
+                              <span className="text-[10px] font-mono text-muted">—</span>
                             )}
                           </td>
                         </tr>
@@ -998,6 +1013,14 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
       {selectedMember && (
         <PlayerScoreCard member={selectedMember} onClose={() => setSelectedMember(null)} />
+      )}
+
+      {messageTarget?.email && (
+        <MemberMessageModal
+          toEmail={messageTarget.email}
+          toName={memberName(messageTarget)}
+          onClose={() => setMessageTarget(null)}
+        />
       )}
 
       {feedbackToDelete && (

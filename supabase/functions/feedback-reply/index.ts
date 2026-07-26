@@ -9,6 +9,7 @@
 // → Edge Functions → Secrets üzerinden elle eklenmiş bir custom secret'tır
 // (SMTP kimlik bilgilerinden farklı, Brevo'nun HTTP API'si için).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { escapeHtml, NOREPLY_NOTICE_HTML, sendBrevoEmail } from '../_shared/email.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -21,10 +22,6 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
 function buildReplyHtml(originalMessage: string, reply: string, recipientName?: string): string {
   const greeting = recipientName ? `Merhaba ${escapeHtml(recipientName)},` : 'Merhaba,';
   return `
@@ -32,8 +29,9 @@ function buildReplyHtml(originalMessage: string, reply: string, recipientName?: 
       <p>${greeting}</p>
       <p>Bizimle iletişime geçtiğin için çok teşekkürler. Cevabımız aşağıdaki gibidir:</p>
       <blockquote style="margin: 12px 0; padding: 10px 14px; border-left: 3px solid #ddd; color: #555; white-space: pre-wrap;">${escapeHtml(reply)}</blockquote>
-      <p style="font-size: 12px; color: #888; margin-top: 24px;">Gönderdiğin mesaj:<br/><em style="white-space: pre-wrap;">${escapeHtml(originalMessage)}</em></p>
-      <p style="font-size: 12px; color: #888;">— Kelimeki Ekibi</p>
+      ${NOREPLY_NOTICE_HTML}
+      <p style="font-size: 12px; color: #888; margin-top: 20px;">Gönderdiğin mesaj:<br/><em style="white-space: pre-wrap;">${escapeHtml(originalMessage)}</em></p>
+      <p style="font-size: 12px; color: #888;">Saygılarımızla,<br/>Kelimeki Müşteri Hizmetleri</p>
     </div>
   `;
 }
@@ -97,19 +95,10 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'E-posta gönderim yapılandırması eksik.' }, 500);
   }
 
-  const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: {
-      'api-key': BREVO_API_KEY,
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    body: JSON.stringify({
-      sender: { name: 'Kelimeki', email: 'noreply@kelimeki.com' },
-      to: [{ email: row.email }],
-      subject: 'Kelimeki — Geri bildiriminize yanıt',
-      htmlContent: buildReplyHtml(row.message, replyText, recipientName),
-    }),
+  const brevoRes = await sendBrevoEmail(BREVO_API_KEY, {
+    to: { email: row.email },
+    subject: 'Kelimeki — Geri bildiriminize yanıt',
+    htmlContent: buildReplyHtml(row.message, replyText, recipientName),
   });
 
   if (!brevoRes.ok) {
