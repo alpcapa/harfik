@@ -7,7 +7,7 @@
 // tıklayın" linkine bu kaydın id'si (?re=<id>) gömülüyor — Brevo gönderimi
 // başarısız olursa önceden oluşturulan kayıt geri alınır (silinir).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { escapeHtml, buildNoreplyNoticeHtml, sendBrevoEmail } from '../_shared/email.ts';
+import { CORS_HEADERS, escapeHtml, buildNoreplyNoticeHtml, sendBrevoEmail } from '../_shared/email.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -16,7 +16,7 @@ const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
   });
 }
 
@@ -31,6 +31,9 @@ function buildMessageHtml(message: string, feedbackId: string): string {
 }
 
 Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: CORS_HEADERS });
+  }
   if (req.method !== 'POST') {
     return jsonResponse({ error: 'Method not allowed' }, 405);
   }

@@ -5,6 +5,18 @@
 // notu paylaşırlar.
 export const KELIMEKI_SENDER = { name: 'Kelimeki', email: 'noreply@kelimeki.com' };
 
+// Tarayıcı, Authorization + Content-Type: application/json header'ları içeren
+// bir isteği "basit istek" saymadığından önce bir OPTIONS preflight'ı gönderir;
+// bu header'lar olmadan preflight 403/405 döner ve supabase-js bunu asıl
+// isteği hiç göndermeden "Failed to send a request to the Edge Function"
+// (fetch-level hata) olarak fırlatır. Her iki fonksiyon da hem OPTIONS'a hem
+// gerçek yanıtlara bu header'ları eklemeli.
+export const CORS_HEADERS: Record<string, string> = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
 export function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
