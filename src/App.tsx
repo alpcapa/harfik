@@ -163,6 +163,24 @@ export default function App() {
   // Oyun bitince GameOver ekranından açılabilen "Görüş Bildir" formu.
   const [showFeedback, setShowFeedback] = useState(false);
 
+  // Admin'in gönderdiği e-postalardaki ("noreply — cevap için tıklayın")
+  // linkten (?contact=1) açılan genel "Görüş Bildir" formu — oyun fazından
+  // bağımsız (bkz. supabase/functions/_shared/email.ts, buildNoreplyNoticeHtml).
+  // Link'e gömülü ?re=<id> varsa (hangi mesaja cevaben geldiği), yeni geri
+  // bildirim o mesaja bağlanabilsin diye contactRelatedTo'da tutulur.
+  const [showContactFeedback, setShowContactFeedback] = useState(false);
+  const [contactRelatedTo, setContactRelatedTo] = useState<string | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('contact') !== '1') return;
+    setShowContactFeedback(true);
+    setContactRelatedTo(params.get('re'));
+    params.delete('contact');
+    params.delete('re');
+    const rest = params.toString();
+    window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : ''));
+  }, []);
+
   // Oyun sonu ekranı kapatıldı mı (X'e basıldı mı) — board'u görmek için.
   const [gameOverDismissed, setGameOverDismissed] = useState(false);
   useEffect(() => {
@@ -468,6 +486,13 @@ export default function App() {
         </main>
         <AddToHomeScreen />
         <LandscapeHint />
+        {showContactFeedback && (
+          <FeedbackModal
+            source="general"
+            relatedTo={contactRelatedTo}
+            onClose={() => setShowContactFeedback(false)}
+          />
+        )}
       </div>
     );
   }
@@ -1101,6 +1126,14 @@ export default function App() {
 
       {showFeedback && (
         <FeedbackModal onClose={() => setShowFeedback(false)} source="game_end" />
+      )}
+
+      {showContactFeedback && (
+        <FeedbackModal
+          source="general"
+          relatedTo={contactRelatedTo}
+          onClose={() => setShowContactFeedback(false)}
+        />
       )}
 
       {showPostStartTutorial && (

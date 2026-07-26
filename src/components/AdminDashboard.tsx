@@ -13,6 +13,7 @@ import {
   fetchAdminFeedback,
   markFeedbackHandled,
   deleteFeedback,
+  sendFeedbackReply,
 } from '../lib/api';
 import type {
   AdminMember,
@@ -26,9 +27,9 @@ import type {
   AdminGuestStandaloneRow,
   AdminActivityGranularity,
   AdminFeedbackRow,
-  FeedbackSource,
 } from '../lib/database.types';
 import { PlayerScoreCard } from './PlayerScoreCard';
+import { MemberMessageModal } from './MemberMessageModal';
 import { GrowthChart, type ChartSeriesDef } from './GrowthChart';
 import { trLower } from '../utils/turkish';
 import { useModalA11y } from '../hooks/useModalA11y';
@@ -292,8 +293,14 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [sortKey, setSortKey] = useState<MemberSortKey>('created_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [feedback, setFeedback] = useState<AdminFeedbackRow[] | null>(null);
-  const [feedbackSourceFilter, setFeedbackSourceFilter] = useState<'all' | FeedbackSource>('all');
+  const [feedbackOriginFilter, setFeedbackOriginFilter] = useState<'all' | 'user' | 'admin'>('all');
   const [feedbackToDelete, setFeedbackToDelete] = useState<AdminFeedbackRow | null>(null);
+  const [messageTarget, setMessageTarget] = useState<AdminMember | null>(null);
+  const [expandedFeedbackId, setExpandedFeedbackId] = useState<string | null>(null);
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [replyOpenId, setReplyOpenId] = useState<string | null>(null);
+  const [replySendingId, setReplySendingId] = useState<string | null>(null);
+  const [replyError, setReplyError] = useState<string | null>(null);
 
   const panelRef = useModalA11y(true, onClose);
   const feedbackDeleteRef = useModalA11y(!!feedbackToDelete, () => setFeedbackToDelete(null));
@@ -433,26 +440,27 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const unhandledFeedbackCount = feedback?.filter((f) => !f.handled).length ?? 0;
   const filteredFeedback = useMemo(
     () =>
-      feedbackSourceFilter === 'all'
+      feedbackOriginFilter === 'all'
         ? feedback
-        : feedback?.filter((f) => f.source === feedbackSourceFilter) ?? null,
-    [feedback, feedbackSourceFilter],
+        : feedback?.filter((f) => f.origin === feedbackOriginFilter) ?? null,
+    [feedback, feedbackOriginFilter],
   );
 
   function exportFeedbackCsv() {
     if (!filteredFeedback || filteredFeedback.length === 0) return;
     downloadCsv(
       csvFilename('kelimeki-geri-bildirim'),
-      ['Gönderen', 'E-posta', 'Kaynak', 'Tarih', 'Okundu', 'Mesaj'],
+      ['Gönderen', 'E-posta', 'Kaynak', 'Tarih', 'Okundu', 'Mesaj', 'Yanıt'],
       filteredFeedback.map((f) => {
         const sender = f.user_id ? members?.find((m) => m.id === f.user_id) : null;
         return [
           sender ? memberName(sender) : f.email || 'Anonim',
           f.email ?? '',
-          f.source === 'game_end' ? 'Oyun Sonu' : 'Genel',
+          f.origin === 'admin' ? 'Gönderilen' : f.source === 'game_end' ? 'Oyun Sonu' : 'Genel',
           fmtDate(f.created_at),
           f.handled ? 'Evet' : 'Hayır',
           f.message,
+          f.reply ?? '',
         ];
       }),
     );
@@ -470,6 +478,36 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     setFeedbackToDelete(null);
     setFeedback((prev) => prev?.filter((x) => x.id !== f.id) ?? prev);
     deleteFeedback(f.id).catch((e) => setError(String(e)));
+  }
+
+  async function submitFeedbackReply(f: AdminFeedbackRow) {
+    const reply = (replyDrafts[f.id] ?? '').trim();
+    if (!reply) return;
+    setReplyError(null);
+    setReplySendingId(f.id);
+    try {
+      const sender = f.user_id ? members?.find((m) => m.id === f.user_id) : null;
+      const recipientName = sender?.display_name || sender?.first_name || undefined;
+      await sendFeedbackReply(f.id, reply, recipientName);
+      setFeedback(
+        (prev) =>
+          prev?.map((x) =>
+            x.id === f.id
+              ? { ...x, reply, replied_at: new Date().toISOString() }
+              : x,
+          ) ?? prev,
+      );
+      setReplyDrafts((prev) => {
+        const next = { ...prev };
+        delete next[f.id];
+        return next;
+      });
+      setReplyOpenId(null);
+    } catch (e) {
+      setReplyError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setReplySendingId(null);
+    }
   }
 
   return createPortal(
@@ -631,7 +669,8 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         <SortHeader label="Kanal" sortKeyFor="signup_channel" />
                         <SortHeader label="Katılma" sortKeyFor="created_at" />
                         <SortHeader label="Son Giriş" sortKeyFor="last_sign_in_at" />
-                        <SortHeader label="Rol" sortKeyFor="is_admin" className="pr-0" />
+                        <SortHeader label="Rol" sortKeyFor="is_admin" />
+                        <th className="py-2 pl-3 text-left font-normal"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -647,11 +686,23 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                           <td className="py-2 pr-3 text-muted whitespace-nowrap">{memberChannelLabel(m)}</td>
                           <td className="py-2 pr-3 text-muted whitespace-nowrap">{fmtDate(m.created_at)}</td>
                           <td className="py-2 pr-3 text-muted whitespace-nowrap">{fmtDate(m.last_sign_in_at)}</td>
-                          <td className="py-2 whitespace-nowrap">
+                          <td className="py-2 pr-3 whitespace-nowrap">
                             {m.is_admin ? (
                               <span className="text-accent font-bold">Admin</span>
                             ) : (
                               <span className="text-muted">Üye</span>
+                            )}
+                          </td>
+                          <td className="py-2 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            {m.email ? (
+                              <button
+                                onClick={() => setMessageTarget(m)}
+                                className="text-[10px] font-mono text-accent hover:underline"
+                              >
+                                Mesaj Gönder
+                              </button>
+                            ) : (
+                              <span className="text-[10px] font-mono text-muted">—</span>
                             )}
                           </td>
                         </tr>
@@ -804,15 +855,17 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
           {tab === 'feedback' && (
             <>
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <select
-                  value={feedbackSourceFilter}
-                  onChange={(e) => setFeedbackSourceFilter(e.target.value as 'all' | FeedbackSource)}
-                  className={selectCls}
-                >
-                  <option value="all">Tüm</option>
-                  <option value="game_end">Oyun Sonu</option>
-                  <option value="general">Genel</option>
-                </select>
+                <div className="flex gap-1.5">
+                  <button className={tabBtn(feedbackOriginFilter === 'all')} onClick={() => setFeedbackOriginFilter('all')}>
+                    Tümü
+                  </button>
+                  <button className={tabBtn(feedbackOriginFilter === 'user')} onClick={() => setFeedbackOriginFilter('user')}>
+                    Gelen
+                  </button>
+                  <button className={tabBtn(feedbackOriginFilter === 'admin')} onClick={() => setFeedbackOriginFilter('admin')}>
+                    Gönderilen
+                  </button>
+                </div>
                 {filteredFeedback && filteredFeedback.length > 0 && (
                   <button type="button" onClick={exportFeedbackCsv} className={csvLinkCls}>
                     CSV İndir
@@ -833,48 +886,150 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
               ) : (
                 <div className="flex flex-col gap-2">
                   {filteredFeedback?.map((f) => {
-                    const sender = f.user_id ? members?.find((m) => m.id === f.user_id) : null;
-                    const senderLabel = sender ? memberName(sender) : (f.email || 'Anonim');
+                    const relatedMember = f.user_id ? members?.find((m) => m.id === f.user_id) : null;
+                    const relatedLabel = relatedMember ? memberName(relatedMember) : (f.email || 'Anonim');
+                    const headerLabel = f.origin === 'admin' ? `→ ${relatedLabel}` : relatedLabel;
+                    const parent = f.related_to ? feedback?.find((x) => x.id === f.related_to) : null;
+                    const isExpanded = expandedFeedbackId === f.id;
                     return (
                       <div
                         key={f.id}
-                        className={`bg-bg border border-border rounded-lg p-3 flex flex-col gap-1.5 ${
+                        onClick={() =>
+                          setExpandedFeedbackId((prev) => (prev === f.id ? null : f.id))
+                        }
+                        className={`bg-bg border border-border rounded-lg p-3 flex flex-col gap-1.5 cursor-pointer ${
                           f.handled ? 'opacity-60' : ''
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-muted">
                           <span className="truncate min-w-0 flex-1">
-                            {senderLabel}
-                            {sender && f.email ? ` · ${f.email}` : ''}
+                            {headerLabel}
+                            {relatedMember && f.email ? ` · ${f.email}` : ''}
                           </span>
-                          <span className="shrink-0 px-1.5 py-0.5 rounded bg-panel border border-border text-[9px] uppercase tracking-[0.5px]">
-                            {f.source === 'game_end' ? 'Oyun Sonu' : 'Genel'}
-                          </span>
+                          {f.origin === 'admin' && (
+                            <span className="shrink-0 px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[9px] uppercase tracking-[0.5px]">
+                              Gönderilen
+                            </span>
+                          )}
+                          {f.related_to && (
+                            <span className="shrink-0 px-1.5 py-0.5 rounded bg-panel border border-border text-[9px] uppercase tracking-[0.5px]">
+                              ↳ Cevaben
+                            </span>
+                          )}
+                          {f.reply && (
+                            <span className="shrink-0 px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[9px] uppercase tracking-[0.5px]">
+                              Yanıtlandı
+                            </span>
+                          )}
+                          {f.origin !== 'admin' && (
+                            <span className="shrink-0 px-1.5 py-0.5 rounded bg-panel border border-border text-[9px] uppercase tracking-[0.5px]">
+                              {f.source === 'game_end' ? 'Oyun Sonu' : 'Genel'}
+                            </span>
+                          )}
                           <span className="shrink-0">{fmtDate(f.created_at)}</span>
                         </div>
-                        <p className="text-xs text-text whitespace-pre-wrap">{f.message}</p>
-                        <div className="flex items-center justify-between gap-2">
-                          <button
-                            onClick={() => toggleFeedbackHandled(f)}
-                            className="text-[10px] font-mono text-accent hover:underline"
-                          >
-                            {f.handled ? 'Okunmadı işaretle' : 'Okundu işaretle'}
-                          </button>
-                          <button
-                            onClick={() => setFeedbackToDelete(f)}
-                            aria-label="Sil"
-                            title="Sil"
-                            className="shrink-0 text-muted hover:text-red transition-colors"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                              <path d="M10 11v6" />
-                              <path d="M14 11v6" />
-                              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                            </svg>
-                          </button>
-                        </div>
+
+                        {!isExpanded ? (
+                          <p className="text-xs text-muted truncate">
+                            {f.subject ? `${f.subject} — ${f.message}` : f.message}
+                          </p>
+                        ) : (
+                          <>
+                            {parent && (
+                              <div className="bg-panel border border-border rounded-md p-2 flex flex-col gap-0.5">
+                                <span className="text-[9px] uppercase tracking-[0.5px] text-muted font-mono">
+                                  ↳ Şu mesaja cevaben ({fmtDate(parent.created_at)})
+                                </span>
+                                <p className="text-xs text-muted whitespace-pre-wrap truncate">
+                                  {parent.subject ? `${parent.subject}: ` : ''}
+                                  {parent.reply || parent.message}
+                                </p>
+                              </div>
+                            )}
+                            {f.subject && <p className="text-xs font-bold text-text">{f.subject}</p>}
+                            <p className="text-xs text-text whitespace-pre-wrap">{f.message}</p>
+                            {f.reply && (
+                              <div className="bg-panel border border-border rounded-md p-2 flex flex-col gap-0.5">
+                                <span className="text-[9px] uppercase tracking-[0.5px] text-muted font-mono">
+                                  Yanıtın ({fmtDate(f.replied_at ?? f.created_at)})
+                                </span>
+                                <p className="text-xs text-text whitespace-pre-wrap">{f.reply}</p>
+                              </div>
+                            )}
+                            <div
+                              className="flex items-center justify-between gap-2"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => toggleFeedbackHandled(f)}
+                                  className="text-[10px] font-mono text-accent hover:underline"
+                                >
+                                  {f.handled ? 'Okunmadı işaretle' : 'Okundu işaretle'}
+                                </button>
+                                {f.origin === 'user' && !f.reply && (
+                                  f.email ? (
+                                    <button
+                                      onClick={() => {
+                                        setReplyError(null);
+                                        setReplyOpenId((prev) => (prev === f.id ? null : f.id));
+                                      }}
+                                      className="text-[10px] font-mono text-accent hover:underline"
+                                    >
+                                      {replyOpenId === f.id ? 'Vazgeç' : 'Yanıtla'}
+                                    </button>
+                                  ) : (
+                                    <span className="text-[10px] font-mono text-muted">E-posta yok, yanıtlanamaz</span>
+                                  )
+                                )}
+                              </div>
+                              <button
+                                onClick={() => setFeedbackToDelete(f)}
+                                aria-label="Sil"
+                                title="Sil"
+                                className="shrink-0 text-muted hover:text-red transition-colors"
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                                  <polyline points="3 6 5 6 21 6" />
+                                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                  <path d="M10 11v6" />
+                                  <path d="M14 11v6" />
+                                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                                </svg>
+                              </button>
+                            </div>
+                            {replyOpenId === f.id && (
+                              <div
+                                className="flex flex-col gap-1.5 pt-1 border-t border-border"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <textarea
+                                  className="w-full bg-panel border border-border rounded-md px-2 py-1.5 text-xs text-text outline-none focus:border-accent transition-colors resize-none"
+                                  rows={3}
+                                  maxLength={5000}
+                                  placeholder={`${f.email} adresine yanıt yaz...`}
+                                  value={replyDrafts[f.id] ?? ''}
+                                  onChange={(e) =>
+                                    setReplyDrafts((prev) => ({ ...prev, [f.id]: e.target.value }))
+                                  }
+                                  autoFocus
+                                />
+                                {replyError && (
+                                  <p className="text-red text-[10px] font-mono">{replyError}</p>
+                                )}
+                                <button
+                                  onClick={() => submitFeedbackReply(f)}
+                                  disabled={
+                                    replySendingId === f.id || !(replyDrafts[f.id] ?? '').trim()
+                                  }
+                                  className="self-end btn-raised bg-accent text-white rounded-md py-1.5 px-4 text-[10px] font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+                                >
+                                  {replySendingId === f.id ? '...' : 'Gönder'}
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
                     );
                   })}
@@ -887,6 +1042,15 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
       {selectedMember && (
         <PlayerScoreCard member={selectedMember} onClose={() => setSelectedMember(null)} />
+      )}
+
+      {messageTarget?.email && (
+        <MemberMessageModal
+          toUserId={messageTarget.id}
+          toEmail={messageTarget.email}
+          toName={memberName(messageTarget)}
+          onClose={() => setMessageTarget(null)}
+        />
       )}
 
       {feedbackToDelete && (

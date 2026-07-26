@@ -9,6 +9,9 @@ import type { FeedbackSource } from '../lib/database.types';
 interface FeedbackModalProps {
   onClose: () => void;
   source: FeedbackSource;
+  // E-postadaki "cevap için tıklayın" linkine gömülü bir referans (?contact=1&re=<id>)
+  // varsa, gönderilen yeni mesajı o önceki mesaja bağlamak için.
+  relatedTo?: string | null;
 }
 
 // Basit bot/spam koruması: sunucu tarafı doğrulaması olmadığı için (henüz
@@ -40,7 +43,7 @@ function recordSubmission(): void {
   }
 }
 
-export function FeedbackModal({ onClose, source }: FeedbackModalProps) {
+export function FeedbackModal({ onClose, source, relatedTo }: FeedbackModalProps) {
   const { user } = useAuth();
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState(user?.email ?? '');
@@ -73,7 +76,7 @@ export function FeedbackModal({ onClose, source }: FeedbackModalProps) {
 
     setBusy(true);
     try {
-      await submitFeedbackDurable(message, email, source);
+      await submitFeedbackDurable(message, email, source, relatedTo);
       recordSubmission();
       setSent(true);
     } catch (err) {

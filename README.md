@@ -59,6 +59,7 @@ src/
 │   ├── WildcardModal.tsx        # joker taşı harf seçimi
 │   ├── FeedbackModal.tsx        # görüş/şikayet bildirme formu
 │   ├── AdminDashboard.tsx       # admin paneli: üyeler, oyunlar, büyüme grafiği, geri bildirim (yalnızca is_admin)
+│   ├── MemberMessageModal.tsx   # admin panelinden bir üyeye serbest metinli mesaj gönderme compose modalı
 │   ├── AdminPlayerDetail.tsx    # admin panelinden bir üyenin ScoreCard'ının salt-okunur görünümü
 │   ├── GrowthChart.tsx          # admin büyüme grafiği (generic zaman serisi çizgi grafiği)
 │   ├── PrivacyModal.tsx         # gizlilik politikası
@@ -136,6 +137,14 @@ supabase db push
 VITE_SUPABASE_URL=https://xvqlizifakkkoqahaxsg.supabase.co
 VITE_SUPABASE_ANON_KEY=sb_publishable_...   # Project Settings → API
 ```
+
+**Edge Functions** (`supabase/functions/`) — Supabase MCP (`deploy_edge_function`) ile deploy edilir, `supabase functions deploy` CLI akışı kullanılmaz. Şu anki fonksiyonlar:
+
+- `_shared/email.ts` — gerçek bir fonksiyon değil, aşağıdaki iki fonksiyonun paylaştığı ortak kod (Brevo çağrısı, HTML escape, tek yönlü noreply notu). Her deploy çağrısında ilgili fonksiyonun `files` listesine ayrıca eklenir (Supabase her fonksiyonu kendi bağımsız paket olarak dağıttığından).
+- `feedback-reply/` — admin panelinden bir görüş bildirimine yanıt gönderildiğinde çağrılır; Brevo'nun Transactional Email API'siyle (SMTP değil, ayrı bir `BREVO_API_KEY` Edge Function secret'ı ile) yanıtı gönderenin e-postasına iletir ve `feedback.reply`/`replied_at`/`replied_by` alanlarını günceller.
+- `admin-send-message/` — admin panelinin Üyeler tablosundan bir üyeye elle yazılan serbest metinli mesajı (konu + gövde) aynı Brevo API'siyle gönderir; bir feedback kaydına bağlı olmadığından DB'ye bir şey yazmaz.
+
+İkisi de `noreply@kelimeki.com` adresinden gönderiyor (tek yönlü — gerçek bir `destek@` gelen kutusu henüz kurulmadı, bilinçli olarak ertelendi). Bu yüzden her iki e-postanın altında da "Bu e-posta noreply adresinden gönderilmiştir. Cevap için tıklayın" notu var — link `kelimeki.com/?contact=1&re=<id>`'e gider (`<id>`, cevaben geldiği mesajın kaydı), `App.tsx`'teki bir effect bu parametreleri okuyup genel "Görüş Bildir" formunu (`FeedbackModal`, `source="general"`) otomatik açar ve yeni gönderilen mesajı `feedback.related_to` ile önceki mesaja bağlar. `admin-send-message` artık kendi gönderdiği mesajı da `feedback`'e (`origin: 'admin'`) yazıyor — admin panelinde "kime ne yazıldığı" kalıcı olarak görünür.
 
 ## Sözlük Verisi
 
