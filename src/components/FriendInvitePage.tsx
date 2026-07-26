@@ -19,7 +19,7 @@ export function FriendInvitePage({ token }: FriendInvitePageProps) {
   const { user, loading: authLoading } = useAuth();
   const [inviterName, setInviterName] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>('loading');
-  const [showAuth, setShowAuth] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup' | null>(null);
 
   // Sayfaya her düşüşte token'ı sakla — e-posta doğrulaması açıkken bir
   // kayıt, doğrulama linkine tıklanana kadar burada oturum açmaz ve o link
@@ -81,12 +81,20 @@ export function FriendInvitePage({ token }: FriendInvitePageProps) {
             {user ? (
               <p className="text-xs text-muted font-mono">İşleniyor…</p>
             ) : (
-              <button
-                onClick={() => setShowAuth(true)}
-                className="px-6 py-3 rounded-md bg-accent text-white font-mono font-bold text-sm tracking-[0.5px] shadow-raised active:scale-95 transition-transform"
-              >
-                Giriş Yap / Kayıt Ol
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setAuthMode('login')}
+                  className="px-5 py-3 rounded-md bg-panel border border-border text-text font-mono font-bold text-sm tracking-[0.5px] shadow-raised active:scale-95 transition-transform"
+                >
+                  Giriş Yap
+                </button>
+                <button
+                  onClick={() => setAuthMode('signup')}
+                  className="px-5 py-3 rounded-md bg-accent text-white font-mono font-bold text-sm tracking-[0.5px] shadow-raised active:scale-95 transition-transform"
+                >
+                  Kayıt Ol
+                </button>
+              </div>
             )}
           </>
         )}
@@ -112,7 +120,7 @@ export function FriendInvitePage({ token }: FriendInvitePageProps) {
         )}
       </div>
 
-      {showAuth && <AuthModal initialMode="signup" onClose={() => setShowAuth(false)} />}
+      {authMode && <AuthModal initialMode={authMode} onClose={() => setAuthMode(null)} />}
     </div>
   );
 }
