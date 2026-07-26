@@ -27,7 +27,6 @@ import type {
   AdminGuestStandaloneRow,
   AdminActivityGranularity,
   AdminFeedbackRow,
-  FeedbackSource,
 } from '../lib/database.types';
 import { PlayerScoreCard } from './PlayerScoreCard';
 import { MemberMessageModal } from './MemberMessageModal';
@@ -294,7 +293,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [sortKey, setSortKey] = useState<MemberSortKey>('created_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [feedback, setFeedback] = useState<AdminFeedbackRow[] | null>(null);
-  const [feedbackSourceFilter, setFeedbackSourceFilter] = useState<'all' | FeedbackSource>('all');
+  const [feedbackOriginFilter, setFeedbackOriginFilter] = useState<'all' | 'user' | 'admin'>('all');
   const [feedbackToDelete, setFeedbackToDelete] = useState<AdminFeedbackRow | null>(null);
   const [messageTarget, setMessageTarget] = useState<AdminMember | null>(null);
   const [expandedFeedbackId, setExpandedFeedbackId] = useState<string | null>(null);
@@ -441,10 +440,10 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const unhandledFeedbackCount = feedback?.filter((f) => !f.handled).length ?? 0;
   const filteredFeedback = useMemo(
     () =>
-      feedbackSourceFilter === 'all'
+      feedbackOriginFilter === 'all'
         ? feedback
-        : feedback?.filter((f) => f.source === feedbackSourceFilter) ?? null,
-    [feedback, feedbackSourceFilter],
+        : feedback?.filter((f) => f.origin === feedbackOriginFilter) ?? null,
+    [feedback, feedbackOriginFilter],
   );
 
   function exportFeedbackCsv() {
@@ -856,15 +855,17 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
           {tab === 'feedback' && (
             <>
               <div className="flex items-center justify-between gap-2 flex-wrap">
-                <select
-                  value={feedbackSourceFilter}
-                  onChange={(e) => setFeedbackSourceFilter(e.target.value as 'all' | FeedbackSource)}
-                  className={selectCls}
-                >
-                  <option value="all">Tüm</option>
-                  <option value="game_end">Oyun Sonu</option>
-                  <option value="general">Genel</option>
-                </select>
+                <div className="flex gap-1.5">
+                  <button className={tabBtn(feedbackOriginFilter === 'all')} onClick={() => setFeedbackOriginFilter('all')}>
+                    Tümü
+                  </button>
+                  <button className={tabBtn(feedbackOriginFilter === 'user')} onClick={() => setFeedbackOriginFilter('user')}>
+                    Gelen
+                  </button>
+                  <button className={tabBtn(feedbackOriginFilter === 'admin')} onClick={() => setFeedbackOriginFilter('admin')}>
+                    Gönderilen
+                  </button>
+                </div>
                 {filteredFeedback && filteredFeedback.length > 0 && (
                   <button type="button" onClick={exportFeedbackCsv} className={csvLinkCls}>
                     CSV İndir
