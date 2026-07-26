@@ -457,7 +457,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
         return [
           sender ? memberName(sender) : f.email || 'Anonim',
           f.email ?? '',
-          f.source === 'game_end' ? 'Oyun Sonu' : 'Genel',
+          f.origin === 'admin' ? 'Gönderilen' : f.source === 'game_end' ? 'Oyun Sonu' : 'Genel',
           fmtDate(f.created_at),
           f.handled ? 'Evet' : 'Hayır',
           f.message,
@@ -920,9 +920,11 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                               Yanıtlandı
                             </span>
                           )}
-                          <span className="shrink-0 px-1.5 py-0.5 rounded bg-panel border border-border text-[9px] uppercase tracking-[0.5px]">
-                            {f.source === 'game_end' ? 'Oyun Sonu' : 'Genel'}
-                          </span>
+                          {f.origin !== 'admin' && (
+                            <span className="shrink-0 px-1.5 py-0.5 rounded bg-panel border border-border text-[9px] uppercase tracking-[0.5px]">
+                              {f.source === 'game_end' ? 'Oyun Sonu' : 'Genel'}
+                            </span>
+                          )}
                           <span className="shrink-0">{fmtDate(f.created_at)}</span>
                         </div>
 
