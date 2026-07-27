@@ -149,16 +149,16 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
           {friends === null ? (
             <p className="text-muted text-xs font-mono py-4 text-center">Yükleniyor…</p>
           ) : friends.length === 0 ? (
-            <button
-              type="button"
-              onClick={() => setShowFriendsModal(true)}
-              className="text-xs font-mono text-center py-4 px-2 active:opacity-70 transition-opacity"
-            >
-              <span className="text-muted">Henüz hiç arkadaşın yok. </span>
-              <span className="text-accent font-bold underline underline-offset-2">
-                Arkadaş eklemek ve davet etmek için tıkla.
-              </span>
-            </button>
+            <div className="flex flex-col items-center gap-2.5 py-4">
+              <p className="text-muted text-xs font-mono text-center">Henüz hiç arkadaşın yok.</p>
+              <button
+                type="button"
+                onClick={() => setShowFriendsModal(true)}
+                className="btn-raised bg-accent text-white rounded-md py-2 px-4 text-[11px] font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Arkadaş Ekle / Davet Et
+              </button>
+            </div>
           ) : (
             <>
               {friends.map((f) => {
