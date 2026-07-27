@@ -56,6 +56,27 @@ export interface FriendSearchResult {
   relation: FriendRelation | null;
 }
 
+// ── Canlı oyun (Faz 2 — davet/kabul) ────────────────────────────────────────
+
+/** `online_games.slots` dizisindeki tek koltuk — index 0 her zaman kurucu. */
+export type OnlineGameSlot = { type: 'human'; user_id: string } | { type: 'ai' };
+
+export type OnlineGameStatus = 'pending' | 'active' | 'finished' | 'abandoned';
+
+/** `list_my_online_games` RPC çıktısındaki tek satır. */
+export interface OnlineGame {
+  id: string;
+  created_by: string;
+  player_count: 2 | 4;
+  status: OnlineGameStatus;
+  slots: OnlineGameSlot[];
+  created_at: string;
+  /** Çağıran kurucu mu yoksa davetli mi. */
+  my_role: 'creator' | 'invitee';
+  /** Çağıran davetliyse kendi davet durumu; kurucuysa null. */
+  my_invite_status: 'pending' | 'accepted' | 'declined' | null;
+}
+
 /** Bir oyunun bitişindeki tek bir oyuncu satırı (final sıralamasında). */
 export interface GamePlayerSnapshot {
   name: string;

@@ -30,6 +30,8 @@ import type {
   LeaderboardRow,
   MyLeaderboardRank,
   NewGame,
+  OnlineGame,
+  OnlineGameSlot,
   PlayerStats,
   Profile,
   SharedGameData,
@@ -589,6 +591,58 @@ export async function acceptFriendInvite(token: string): Promise<string | null> 
   }
   const row = Array.isArray(data) ? data[0] : null;
   return row?.inviter_name ?? null;
+}
+
+// ── Canlı oyun (Faz 2 — davet/kabul) ────────────────────────────────────────
+
+/**
+ * Yeni bir Canlı oyun kurar (`create_online_game` RPC'si). `slots`, index
+ * 0'ı çağıranın kendisi olacak şekilde tam koltuk kompozisyonunu taşır —
+ * insan koltukları için gerçek (ve zaten arkadaş olunan) bir `user_id`, YZ
+ * koltukları için sadece `{type:'ai'}`. İnsan koltuklarındaki her arkadaş
+ * için sunucu tarafında bir `game_invites` satırı açılır; hiç insan
+ * davetlisi yoksa oyun beklemeden doğrudan `active` olur. Oluşan oyunun
+ * id'sini döner.
+ */
+export async function createOnlineGame(
+  playerCount: 2 | 4,
+  slots: OnlineGameSlot[]
+): Promise<string> {
+  if (!supabase) throw new Error('Supabase yapılandırılmadı.');
+  const { data, error } = await supabase.rpc('create_online_game', {
+    p_player_count: playerCount,
+    p_slots: slots,
+  });
+  if (error) throw new Error(error.message);
+  return data as string;
+}
+
+/**
+ * Oturum açan kullanıcının taraf olduğu (kurduğu ya da davet edildiği) tüm
+ * Canlı oyunları döner (`list_my_online_games` RPC'si) — en yeni önce.
+ */
+export async function listMyOnlineGames(): Promise<OnlineGame[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('list_my_online_games');
+  if (error) {
+    console.error('[Kelimeki] listMyOnlineGames hatası:', error.message);
+    return [];
+  }
+  return (data as OnlineGame[]) ?? [];
+}
+
+/**
+ * Bana gelen bir Canlı oyun davetini kabul/red eder
+ * (`respond_to_game_invite` RPC'si). Kabul edilince, o oyundaki tüm
+ * davetler artık kabul edilmişse oyun sunucu tarafında `active`'e geçer.
+ */
+export async function respondToGameInvite(inviteId: string, accept: boolean): Promise<void> {
+  if (!supabase) throw new Error('Supabase yapılandırılmadı.');
+  const { error } = await supabase.rpc('respond_to_game_invite', {
+    p_invite_id: inviteId,
+    p_accept: accept,
+  });
+  if (error) throw new Error(error.message);
 }
 
 /**
