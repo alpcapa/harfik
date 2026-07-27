@@ -18,9 +18,13 @@ import type {
   AdminUserActivityPoint,
   BoardSnapshotTile,
   FeedbackSource,
+  FriendRelation,
+  FriendRow,
+  FriendSearchResult,
   GameHistoryEntry,
   GameLiker,
   Gender,
+  IncomingFriendRequest,
   LeaderboardRow,
   MyLeaderboardRank,
   NewGame,
@@ -408,6 +412,183 @@ export async function fetchMyProfile(): Promise<Profile | null> {
   return (data as Profile) ?? null;
 }
 
+// ── Arkadaşlık sistemi ───────────────────────────────────────────────────────
+
+/**
+ * Nickname/ad ile mevcut Kelimeki kullanıcılarını arar (en az 2 karakter,
+ * en fazla 20 sonuç) — `search_users_for_friend` RPC'si (security definer,
+ * `profiles`'ın kendi kilitli SELECT RLS'ini bypass eder, tıpkı
+ * `game_likers`/`leaderboard` gibi). E-posta hiçbir zaman dönmez. Her
+ * sonuçtaki `relation`, UI'ın doğru butonu (Ekle/İstek Gönderildi/Kabul Et/
+ * Arkadaşsınız) gösterebilmesi için mevcut ilişkiyi bildirir.
+ */
+export async function searchUsersForFriend(query: string): Promise<FriendSearchResult[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('search_users_for_friend', { p_query: query });
+  if (error) {
+    console.error('[Kelimeki] searchUsersForFriend hatası:', error.message);
+    return [];
+  }
+  return (data as FriendSearchResult[]) ?? [];
+}
+
+/**
+ * Bir kullanıcıya arkadaşlık isteği gönderir (doğrudan tablo insert'i —
+ * `friend_requests_insert_self` RLS politikası yalnızca kendi adına eklemeye
+ * izin verir). Karşı taraftan zaten bekleyen bir istek varsa sunucudaki
+ * `handle_friend_request_insert` trigger'ı bunu otomatik olarak karşılıklı
+ * kabule çevirir. Hiçbir e-posta bildirimi gönderilmez — yalnızca uygulama
+ * içi (in-app) görünür, maliyet/gürültü yaratmasın diye.
+ */
+export async function sendFriendRequest(targetId: string): Promise<void> {
+  if (!supabase) throw new Error('Supabase yapılandırılmadı.');
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Oturum açık değil.');
+  const { error } = await supabase
+    .from('friend_requests')
+    .insert({ user_id: user.id, friend_id: targetId });
+  if (error) throw new Error(error.message);
+}
+
+/** Bana gelen bir isteği kabul eder (`accepted`'a çeker) ya da reddeder (satırı siler). */
+export async function respondFriendRequest(requesterId: string, accept: boolean): Promise<void> {
+  if (!supabase) throw new Error('Supabase yapılandırılmadı.');
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Oturum açık değil.');
+
+  if (accept) {
+    const { error } = await supabase
+      .from('friend_requests')
+      .update({ status: 'accepted', responded_at: new Date().toISOString() })
+      .eq('user_id', requesterId)
+      .eq('friend_id', user.id);
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabase
+      .from('friend_requests')
+      .delete()
+      .eq('user_id', requesterId)
+      .eq('friend_id', user.id);
+    if (error) throw new Error(error.message);
+  }
+}
+
+/** Arkadaşlıktan çıkarır (kabul edilmiş satırı siler — her iki taraf da çağırabilir). */
+export async function removeFriend(friendId: string): Promise<void> {
+  if (!supabase) throw new Error('Supabase yapılandırılmadı.');
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Oturum açık değil.');
+  const { error } = await supabase
+    .from('friend_requests')
+    .delete()
+    .or(`and(user_id.eq.${user.id},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${user.id})`);
+  if (error) throw new Error(error.message);
+}
+
+/** Kabul edilmiş arkadaş listesini döner (en son kabul edilen önce). */
+export async function fetchFriends(): Promise<FriendRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('list_friends');
+  if (error) {
+    console.error('[Kelimeki] fetchFriends hatası:', error.message);
+    return [];
+  }
+  return (data as FriendRow[]) ?? [];
+}
+
+/**
+ * Oturum açan kullanıcı ile verilen kullanıcı arasındaki arkadaşlık ilişkisini
+ * döner — `PlayerScoreCard`'daki arkadaş ekle/çıkar simgesi için. RPC değil,
+ * `friend_requests` tablosunu doğrudan sorgular: `friend_requests_select_own`
+ * RLS politikası zaten yalnızca ilişkinin taraflarından biri (auth.uid())
+ * olunca satırı görmeye izin veriyor, sorgu her zaman çağıranı içerdiğinden
+ * bu koşul otomatik sağlanır. Kendi kartına bakarken ya da girişsizken null.
+ */
+export async function fetchFriendRelation(targetId: string): Promise<FriendRelation | null> {
+  if (!supabase) return null;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || user.id === targetId) return null;
+
+  const { data, error } = await supabase
+    .from('friend_requests')
+    .select('user_id, status')
+    .or(`and(user_id.eq.${user.id},friend_id.eq.${targetId}),and(user_id.eq.${targetId},friend_id.eq.${user.id})`)
+    .maybeSingle();
+  if (error) {
+    console.error('[Kelimeki] fetchFriendRelation hatası:', error.message);
+    return null;
+  }
+  if (!data) return null;
+  if (data.status === 'accepted') return 'accepted';
+  return data.user_id === user.id ? 'pending_outgoing' : 'pending_incoming';
+}
+
+/** Bana gelen, henüz cevaplanmamış arkadaşlık isteklerini döner (`UserMenu` rozeti bu sayıyı kullanır). */
+export async function fetchIncomingFriendRequests(): Promise<IncomingFriendRequest[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('list_incoming_friend_requests');
+  if (error) {
+    console.error('[Kelimeki] fetchIncomingFriendRequests hatası:', error.message);
+    return [];
+  }
+  return (data as IncomingFriendRequest[]) ?? [];
+}
+
+/**
+ * Oturum açan kullanıcının kalıcı/reusable davet linkinin token'ını döner —
+ * ilk çağrıda oluşturur, sonrakilerde aynı token'ı geri verir
+ * (`create_friend_invite_link` RPC'si). Bu link WhatsApp/SMS/DM gibi
+ * kanallardan paylaşılabilir; henüz Kelimeki üyesi olmayan biri de
+ * tıklayıp kayıt olduktan sonra otomatik arkadaş olur — asıl kullanıcı
+ * kazanım (büyüme) mekanizması bu.
+ */
+export async function createFriendInviteLink(): Promise<string | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('create_friend_invite_link');
+  if (error) {
+    console.error('[Kelimeki] createFriendInviteLink hatası:', error.message);
+    return null;
+  }
+  return (data as string) ?? null;
+}
+
+/** `/davet/:token` sayfasının girişsiz de gösterebileceği önizleme bilgisi ("X seni davet ediyor"). */
+export async function fetchFriendInviteInfo(token: string): Promise<string | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('get_friend_invite_info', { p_token: token });
+  if (error) {
+    console.error('[Kelimeki] fetchFriendInviteInfo hatası:', error.message);
+    return null;
+  }
+  const row = Array.isArray(data) ? data[0] : null;
+  return row?.inviter_name ?? null;
+}
+
+/**
+ * Bir davet linkini kabul eder — çağıran girişli olmalı. Arkadaşlığı
+ * doğrudan `accepted` olarak açar (link tıklaması zaten bilinçli bir onay,
+ * pending beklemeye gerek yok), linkin `use_count`'unu artırır ve ilk kezse
+ * `profiles.invited_by`'ı doldurur. Davet edenin adını döner.
+ */
+export async function acceptFriendInvite(token: string): Promise<string | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('accept_friend_invite', { p_token: token });
+  if (error) {
+    console.error('[Kelimeki] acceptFriendInvite hatası:', error.message);
+    throw new Error(error.message);
+  }
+  const row = Array.isArray(data) ? data[0] : null;
+  return row?.inviter_name ?? null;
+}
+
 /**
  * Kelimeyi sunucu tarafında doğrular (is_valid_word RPC). Supabase
  * yapılandırılmamışsa null döner; çağıran yerel sözlüğe düşmelidir.
@@ -723,6 +904,8 @@ export async function signUp(
   nickname?: string,
   termsAccepted = false,
   channel: 'direct' | 'form' = 'direct',
+  gender?: Gender | null,
+  birthDate?: string | null,
 ) {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
   // sharedxp_pending_profile formatı trigger tarafından okunur (camelCase).
@@ -730,6 +913,8 @@ export async function signUp(
   // raw_user_meta_data->>'display_name' olarak okuyor (e-posta doğrulaması
   // açıkken signUp() session döndürmez, bu yüzden aşağıdaki update'e
   // güvenilemez — nickname'in kaybolmaması için metadata'da baştan olmalı).
+  // gender/birthDate de aynı sebeple burada (trigger tarafında,
+  // handle_new_user), oturum açılmasını bekleyen bir update'te değil.
   const result = await supabase.auth.signUp({
     email,
     password,
@@ -739,6 +924,8 @@ export async function signUp(
           firstName,
           lastName,
           agreedToTerms: termsAccepted,
+          gender: gender || null,
+          birthDate: birthDate || null,
         },
         signup_channel: channel,
         ...(nickname ? { display_name: nickname } : {}),

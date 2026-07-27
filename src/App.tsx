@@ -27,9 +27,10 @@ import type { Tile as TileModel } from './game/types';
 import { Tile } from './components/Tile';
 import { trLower } from './utils/turkish';
 import { PLAYER_COLORS } from './game/constants';
-import { fetchMeaning, isValidWordRemote, isSupabaseConfigured, logGameFinish, logGuestVisit } from './lib/api';
+import { fetchMeaning, isValidWordRemote, isSupabaseConfigured, logGameFinish, logGuestVisit, acceptFriendInvite } from './lib/api';
 import { saveGameDurable, flushPendingGames } from './utils/gameSync';
 import { flushPendingFeedback } from './utils/feedbackSync';
+import { takePendingInviteToken } from './utils/friendInvite';
 import {
   getOrCreateAnonId,
   visitAlreadyLoggedToday,
@@ -123,6 +124,19 @@ export default function App() {
     void flushPendingGames();
     window.addEventListener('online', flushPendingGames);
     return () => window.removeEventListener('online', flushPendingGames);
+  }, [user]);
+
+  // Bir arkadaşlık davet linkinden (/davet/:token, FriendInvitePage.tsx)
+  // gelip oturum açan kullanıcı için bekleyen bir davet token'ı varsa burada
+  // işler — normalde FriendInvitePage bunu kendisi kabul eder, ama e-posta
+  // doğrulaması açıkken taze bir kayıt doğrulama linkine tıklanana kadar
+  // oturum açmaz ve o link genelde /davet/:token'a değil uygulamanın köküne
+  // döner; bu fallback o durumda daveti yine de kaybetmemeyi sağlar (bkz.
+  // friendInvite.ts'teki read-then-clear kuyruk).
+  useEffect(() => {
+    if (!user) return;
+    const token = takePendingInviteToken();
+    if (token) void acceptFriendInvite(token).catch(() => {});
   }, [user]);
 
   // Offline nedeniyle gönderilemeyip kuyruğa alınmış "Görüş Bildir" mesajlarını

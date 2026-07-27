@@ -4,7 +4,7 @@
 // Yalnızca Supabase yapılandırıldığında görünür.
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { signOut, fetchMyLeaderboardRank } from '../lib/api';
+import { signOut, fetchMyLeaderboardRank, fetchIncomingFriendRequests } from '../lib/api';
 import type { MyLeaderboardRank } from '../lib/database.types';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
@@ -13,8 +13,9 @@ import { AccountSettingsModal } from './AccountSettingsModal';
 import { HelpModal } from './HelpModal';
 import { Leaderboard } from './Leaderboard';
 import { AdminDashboard } from './AdminDashboard';
+import { FriendsModal } from './FriendsModal';
 
-type ActiveModal = 'auth' | 'account' | 'score' | 'help' | 'league' | 'admin' | null;
+type ActiveModal = 'auth' | 'account' | 'score' | 'help' | 'league' | 'admin' | 'friends' | null;
 
 // GameHeader'daki skor kutularıyla aynı akıcı ölçek (bkz. GameHeader.tsx'teki
 // PLAYER_BOX_WIDTH vb. yorumu, 465'in neden 430 değil seçildiğine dair
@@ -31,12 +32,18 @@ export function UserMenu() {
   const [open, setOpen] = useState(false);
   const [modal, setModal] = useState<ActiveModal>(null);
   const [myRank, setMyRank] = useState<MyLeaderboardRank | null>(null);
+  const [incomingRequestCount, setIncomingRequestCount] = useState(0);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!user) return;
     fetchMyLeaderboardRank(user.id).then(setMyRank);
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    fetchIncomingFriendRequests().then((r) => setIncomingRequestCount(r.length));
+  }, [user, modal]);
 
   // Dışarı tıklayınca / Esc ile menüyü kapat.
   useEffect(() => {
@@ -139,6 +146,20 @@ export function UserMenu() {
             <button
               className={item}
               onClick={() => {
+                setModal('friends');
+                setOpen(false);
+              }}
+            >
+              <span aria-hidden>👥</span> Arkadaşlar
+              {incomingRequestCount > 0 && (
+                <span className="ml-auto min-w-[16px] h-4 px-1 rounded-full bg-red text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                  {incomingRequestCount}
+                </span>
+              )}
+            </button>
+            <button
+              className={item}
+              onClick={() => {
                 setModal('account');
                 setOpen(false);
               }}
@@ -198,6 +219,7 @@ export function UserMenu() {
         <HelpModal onClose={() => setModal(null)} />
       )}
       {modal === 'admin' && <AdminDashboard onClose={() => setModal(null)} />}
+      {modal === 'friends' && <FriendsModal onClose={() => setModal(null)} />}
     </>
   );
 }

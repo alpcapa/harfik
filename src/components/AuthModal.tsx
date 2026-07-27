@@ -5,6 +5,8 @@ import { TermsModal } from './TermsModal';
 import { PrivacyModal } from './PrivacyModal';
 import { signIn, signUp, sendPasswordReset } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
+import { GENDER_OPTIONS, formatTrDateInput, trDateToIso } from '../utils/profileFields';
+import type { Gender } from '../lib/database.types';
 
 interface AuthModalProps {
   onClose: () => void;
@@ -29,6 +31,8 @@ export function AuthModal({
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [nickname, setNickname] = useState('');
+  const [gender, setGender] = useState<Gender | ''>('');
+  const [birthDate, setBirthDate] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -63,6 +67,7 @@ export function AuthModal({
         if (!firstName.trim()) throw new Error('Ad zorunludur.');
         if (!lastName.trim()) throw new Error('Soyad zorunludur.');
         if (!termsAccepted) throw new Error('Kullanım Koşulları ve Gizlilik Politikası\'nı kabul etmelisiniz.');
+        const birthDateIso = trDateToIso(birthDate);
         const { data, error } = await signUp(
           email,
           password,
@@ -71,6 +76,8 @@ export function AuthModal({
           nickname.trim() || undefined,
           termsAccepted,
           signupChannel,
+          gender || null,
+          birthDateIso,
         );
         if (error) throw error;
         if (data.session) {
@@ -92,6 +99,8 @@ export function AuthModal({
 
   const inputCls =
     'w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors';
+  const labelCls = 'text-[9px] uppercase tracking-[1.5px] text-muted font-mono mb-1 block';
+  const required = <span className="text-red">*</span>;
 
   const title = mode === 'login' ? 'Giriş' : mode === 'signup' ? 'Kayıt' : 'Şifremi Unuttum';
 
@@ -102,54 +111,107 @@ export function AuthModal({
         {mode === 'signup' && (
           <>
             <div className="flex gap-2">
+              <div className="flex-1">
+                <label className={labelCls}>Ad {required}</label>
+                <input
+                  className={inputCls}
+                  placeholder="Adın"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  autoComplete="given-name"
+                  required
+                />
+              </div>
+              <div className="flex-1">
+                <label className={labelCls}>Soyad {required}</label>
+                <input
+                  className={inputCls}
+                  placeholder="Soyadın"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  autoComplete="family-name"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className={labelCls}>Takma isim</label>
+              {/* Boşluk kabul edilmiyor (tek kelime, özel karakterler serbest) —
+                  aksi halde biri buraya gerçek adını yazarsa (ör. "İsim Soyad")
+                  skor kartlarında nickname değil tam ad gibi görünüyordu. */}
               <input
                 className={inputCls}
-                placeholder="Ad"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                autoComplete="given-name"
-                required
-              />
-              <input
-                className={inputCls}
-                placeholder="Soyad"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                autoComplete="family-name"
-                required
+                placeholder="Herkese görünen ismin"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value.replace(/\s+/g, ''))}
+                autoComplete="nickname"
               />
             </div>
-            <input
-              className={inputCls}
-              placeholder="Takma isim (isteğe bağlı)"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              autoComplete="nickname"
-            />
           </>
         )}
 
-        <input
-          className={inputCls}
-          type="email"
-          placeholder="E-posta"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          autoComplete="email"
-        />
-
-        {mode !== 'forgot' && (
+        <div>
+          {mode === 'signup' && <label className={labelCls}>E-posta {required}</label>}
           <input
             className={inputCls}
-            type="password"
-            placeholder="Şifre"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            type="email"
+            placeholder={mode === 'signup' ? 'Doğrulama linki gönderilir' : 'E-posta'}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
-            minLength={6}
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            autoComplete="email"
           />
+        </div>
+
+        {mode === 'signup' && (
+          <>
+            <div>
+              <label className={labelCls}>Cinsiyet</label>
+              <select
+                className={inputCls}
+                value={gender}
+                onChange={(e) => setGender(e.target.value as Gender | '')}
+              >
+                <option value="">Belirtilmedi</option>
+                {GENDER_OPTIONS.map((g) => (
+                  <option key={g.value} value={g.value}>
+                    {g.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className={labelCls}>Doğum Tarihi (GG/AA/YYYY)</label>
+              <input
+                className={inputCls}
+                type="text"
+                inputMode="numeric"
+                value={birthDate}
+                onChange={(e) => setBirthDate(formatTrDateInput(e.target.value))}
+                placeholder="GG/AA/YYYY"
+                autoComplete="bday"
+                maxLength={10}
+              />
+            </div>
+          </>
+        )}
+
+        {mode !== 'forgot' && (
+          <div>
+            {mode === 'signup' && <label className={labelCls}>Şifre {required}</label>}
+            <input
+              className={inputCls}
+              type="password"
+              placeholder="Şifre"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            />
+          </div>
         )}
 
         {mode === 'forgot' && (
@@ -185,6 +247,10 @@ export function AuthModal({
               'nı okudum ve kabul ediyorum.
             </span>
           </label>
+        )}
+
+        {mode === 'signup' && (
+          <p className="text-[9px] text-muted font-mono">{required} Zorunlu alan</p>
         )}
 
         {error && <p className="text-red text-xs font-mono">{error}</p>}

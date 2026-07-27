@@ -67,6 +67,8 @@ src/
 │   ├── Modal.tsx                # paylaşılan modal kabuğu
 │   ├── ActionSheet.tsx          # iOS tarzı alttan açılan aksiyon menüsü (ör. tahta önizlemesi → Paylaş/Kapat)
 │   ├── SharedGamePage.tsx       # herkese açık /game/:id sayfası (girişsiz de erişilebilir)
+│   ├── FriendsModal.tsx         # arkadaş arama/ekleme, gelen istekler, kalıcı davet linki paylaşımı
+│   ├── FriendInvitePage.tsx     # herkese açık /davet/:token sayfası (girişsiz de erişilebilir)
 │   ├── Avatar.tsx               # profil fotoğrafı bileşeni
 │   ├── PlayerBadge.tsx          # renkli oyuncu sıra/koltuk rozeti
 │   ├── ErrorBoundary.tsx        # kök seviye React crash yakalayıcı
@@ -97,6 +99,7 @@ src/
 │   ├── onboarding.ts   # ilk açılış hızlı başlangıç ipucu bayrağı
 │   ├── visitTracking.ts # anonim misafir ziyaret kimliği, cihaz/standalone tespiti, UTM kaynağı
 │   ├── shareBoardImage.ts # bir DOM düğümünü (tahta önizlemesi) paylaşılabilir PNG'ye çevirir (html-to-image)
+│   ├── friendInvite.ts # bekleyen arkadaşlık davet token'ı için tek seferlik localStorage kuyruğu
 │   └── csvExport.ts    # admin paneli tabloları/grafikleri için CSV indirme yardımcısı
 ├── hooks/
 │   ├── useAuth.tsx        # Supabase auth context

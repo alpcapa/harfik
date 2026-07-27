@@ -4,6 +4,7 @@ import App from './App';
 import { AuthProvider } from './hooks/useAuth';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SharedGamePage } from './components/SharedGamePage';
+import { FriendInvitePage } from './components/FriendInvitePage';
 
 // Kendi sunucumuzdan servis edilen yazı tipleri (Google'a gidip gelmek yok).
 // Türkçe için yalnızca latin + latin-ext alt kümeleri yüklenir.
@@ -32,17 +33,22 @@ setupPwaUpdates();
 // hemen indirmeye başlar — ilk render'ı bloklamaz (bkz. wordSetLoader.ts).
 void preloadWordSet();
 
-// Projede genel bir router yok — tek bir herkese açık route (/game/:id,
-// paylaşılan oyun sayfası) için ayrı bir kütüphane eklemek yerine burada
-// hafif bir path kontrolü yeterli. vercel.json'daki genel SPA rewrite'ı
-// bu path'i de index.html'e yönlendiriyor.
+// Projede genel bir router yok — herkese açık route'lar (/game/:id paylaşılan
+// oyun sayfası, /davet/:token arkadaşlık davet linki) için ayrı bir kütüphane
+// eklemek yerine burada hafif bir path kontrolü yeterli. vercel.json'daki
+// genel SPA rewrite'ı bu path'leri de index.html'e yönlendiriyor.
 const sharedGameMatch = window.location.pathname.match(/^\/game\/([0-9a-fA-F-]{36})\/?$/);
+const friendInviteMatch = window.location.pathname.match(/^\/davet\/([0-9a-fA-F]{10,64})\/?$/);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
       {sharedGameMatch ? (
         <SharedGamePage gameId={sharedGameMatch[1]} />
+      ) : friendInviteMatch ? (
+        <AuthProvider>
+          <FriendInvitePage token={friendInviteMatch[1]} />
+        </AuthProvider>
       ) : (
         <AuthProvider>
           <App />

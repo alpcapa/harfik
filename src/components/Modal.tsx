@@ -35,10 +35,14 @@ export function Modal({ title, onClose, children, headerLink }: ModalProps) {
             <h2 id={titleId} className="font-mono text-sm font-bold tracking-[1.5px] uppercase text-accent">
               {title}
             </h2>
+            {/* Çoğu modalda headerLink olmadığından bu, DOM'daki ilk odaklanabilir
+                öğe oluyor — useModalA11y açılışta buraya otomatik odaklanıyor,
+                bu yüzden tarayıcının varsayılan mavi focus halkası her modal
+                açılışında görünür oluyordu. */}
             <button
               onClick={onClose}
               aria-label="Kapat"
-              className="text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
+              className="text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform focus:outline-none"
             >
               ✕
             </button>

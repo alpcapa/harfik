@@ -19,6 +19,41 @@ export interface Profile {
   gender: Gender | null;
   /** ISO tarih (yyyy-mm-dd) — `<input type="date">`'in doğal formatı. */
   birth_date: string | null;
+  /** Bir arkadaş davet linkiyle katıldıysa, linki oluşturan kullanıcı (ilk temas, değişmez). */
+  invited_by: string | null;
+}
+
+// ── Arkadaşlık sistemi ──────────────────────────────────────────────────────
+
+/** `list_friends` RPC çıktısındaki tek satır (kabul edilmiş arkadaşlık). */
+export interface FriendRow {
+  friend_id: string;
+  name: string;
+  avatar_url: string | null;
+  since: string | null;
+}
+
+/** `list_incoming_friend_requests` RPC çıktısındaki tek satır (bana gelen, bekleyen istek). */
+export interface IncomingFriendRequest {
+  requester_id: string;
+  name: string;
+  avatar_url: string | null;
+  created_at: string;
+}
+
+/** İki kullanıcı arasındaki mevcut arkadaşlık ilişkisi — bkz. `fetchFriendRelation`. */
+export type FriendRelation = 'accepted' | 'pending_outgoing' | 'pending_incoming';
+
+/**
+ * `search_users_for_friend` RPC çıktısındaki tek satır. `relation`, aranan
+ * kişiyle aramızdaki mevcut ilişkiyi gösterir — UI bu duruma göre "Ekle" /
+ * "İstek Gönderildi" / "Kabul Et" / "Arkadaşsınız" gösterir.
+ */
+export interface FriendSearchResult {
+  id: string;
+  name: string;
+  avatar_url: string | null;
+  relation: FriendRelation | null;
 }
 
 /** Bir oyunun bitişindeki tek bir oyuncu satırı (final sıralamasında). */
