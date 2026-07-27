@@ -45,7 +45,8 @@ function buildInviteUrl(token: string): string {
 
 const INVITE_SHARE_TEXT = "Kelimeki'de birlikte kelime oyunu oynayalım!";
 
-const rowCls = 'flex items-center gap-2.5 py-2';
+const rowCls = 'flex items-center gap-2.5 bg-bg rounded-md px-2.5 py-2';
+const listCls = 'flex flex-col gap-1.5';
 const nameCls = 'flex-1 min-w-0 text-sm text-text font-bold truncate';
 const smallBtn =
   'shrink-0 btn-raised rounded-md py-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.5px] active:scale-[0.97] transition-transform disabled:opacity-50';
@@ -188,7 +189,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
         </div>
 
         {tab === 'friends' && (
-          <div className="flex flex-col divide-y divide-border">
+          <div className={listCls}>
             {friends === null ? (
               <p className="text-muted text-xs font-mono py-4 text-center">Yükleniyor…</p>
             ) : friends.length === 0 ? (
@@ -220,7 +221,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
         )}
 
         {tab === 'requests' && (
-          <div className="flex flex-col divide-y divide-border">
+          <div className={listCls}>
             {requests === null ? (
               <p className="text-muted text-xs font-mono py-4 text-center">Yükleniyor…</p>
             ) : requests.length === 0 ? (
@@ -262,7 +263,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
               onChange={(e) => setQuery(e.target.value)}
               autoFocus
             />
-            <div className="flex flex-col divide-y divide-border min-h-[40px]">
+            <div className={`${listCls} min-h-[40px]`}>
               {searching ? (
                 <p className="text-muted text-xs font-mono py-4 text-center">Aranıyor…</p>
               ) : query.trim().length >= 2 && results.length === 0 ? (
