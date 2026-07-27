@@ -156,6 +156,18 @@ export function GrowthChart<T extends { bucket: string }>({
     setHoverIndex(Math.min(n - 1, Math.max(0, idx)));
   }
 
+  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    // Dokunmatik sürüklemede parmak birkaç piksel kayınca tarayıcı bunu bir
+    // "pan/scroll" jesti sanıp pointer'ı bu elemandan alıp sayfaya
+    // devrediyordu — bu da pointerleave gibi davranıp veri penceresini
+    // titretip sürüklerken kayboluyordu (tek noktalı grafikte sürükleme hiç
+    // gerekmediğinden fark edilmiyordu). setPointerCapture, parmak elemanın
+    // dışına çıksa bile pointermove olaylarının bu elemana gelmeye devam
+    // etmesini garantiliyor.
+    e.currentTarget.setPointerCapture(e.pointerId);
+    handlePointerMove(e);
+  }
+
   const hover = hoverIndex !== null ? data[hoverIndex] : null;
   const hoverPct = hoverIndex !== null ? { left: `${(x(hoverIndex) / W) * 100}%` } : null;
 
@@ -258,6 +270,8 @@ export function GrowthChart<T extends { bucket: string }>({
           <div
             ref={wrapRef}
             className="absolute inset-0"
+            style={{ touchAction: 'none' }}
+            onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerLeave={() => setHoverIndex(null)}
           >

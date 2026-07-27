@@ -3,9 +3,11 @@
 // kanallardan paylaşarak henüz üye olmayanları da davet etme (asıl büyüme
 // mekanizması — bkz. CLAUDE.md "Arkadaşlık Sistemi").
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
 import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
+import { useModalA11y } from '../hooks/useModalA11y';
 import {
   createFriendInviteLink,
   fetchFriends,
@@ -45,7 +47,8 @@ function buildInviteUrl(token: string): string {
 
 const INVITE_SHARE_TEXT = "Kelimeki'de birlikte kelime oyunu oynayalım!";
 
-const rowCls = 'flex items-center gap-2.5 py-2';
+const rowCls = 'flex items-center gap-2.5 bg-bg rounded-md px-2.5 py-2';
+const listCls = 'flex flex-col gap-1.5';
 const nameCls = 'flex-1 min-w-0 text-sm text-text font-bold truncate';
 const smallBtn =
   'shrink-0 btn-raised rounded-md py-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.5px] active:scale-[0.97] transition-transform disabled:opacity-50';
@@ -60,6 +63,18 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
   const [busyId, setBusyId] = useState<string | null>(null);
   const [inviteStatus, setInviteStatus] = useState<'idle' | 'busy' | 'copied'>('idle');
   const [selectedFriend, setSelectedFriend] = useState<PlayerSummary | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState<FriendRow | null>(null);
+  const [removeResultMsg, setRemoveResultMsg] = useState<string | null>(null);
+  const confirmRemoveRef = useModalA11y(!!confirmRemove, () => setConfirmRemove(null));
+  const removeResultRef = useModalA11y(!!removeResultMsg, () => setRemoveResultMsg(null));
+  const [confirmReject, setConfirmReject] = useState<IncomingFriendRequest | null>(null);
+  const [rejectResultMsg, setRejectResultMsg] = useState<string | null>(null);
+  const confirmRejectRef = useModalA11y(!!confirmReject, () => setConfirmReject(null));
+  const rejectResultRef = useModalA11y(!!rejectResultMsg, () => setRejectResultMsg(null));
+  const [confirmCancel, setConfirmCancel] = useState<FriendSearchResult | null>(null);
+  const [cancelResultMsg, setCancelResultMsg] = useState<string | null>(null);
+  const confirmCancelRef = useModalA11y(!!confirmCancel, () => setConfirmCancel(null));
+  const cancelResultRef = useModalA11y(!!cancelResultMsg, () => setCancelResultMsg(null));
 
   const reloadFriends = () => void fetchFriends().then(setFriends);
   const reloadRequests = () => void fetchIncomingFriendRequests().then(setRequests);
@@ -111,15 +126,51 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
     }
   };
 
-  const handleRemove = async (friendId: string) => {
+  const handleConfirmRemove = async () => {
+    if (!confirmRemove) return;
+    const friendId = confirmRemove.friend_id;
     setBusyId(friendId);
     try {
       await removeFriend(friendId);
       reloadFriends();
+      setRemoveResultMsg('Arkadaşlıktan çıkarıldı.');
     } catch (err) {
       console.error('[Kelimeki] arkadaş çıkarma hatası:', err);
     } finally {
       setBusyId(null);
+      setConfirmRemove(null);
+    }
+  };
+
+  const handleConfirmReject = async () => {
+    if (!confirmReject) return;
+    const requesterId = confirmReject.requester_id;
+    setBusyId(requesterId);
+    try {
+      await respondFriendRequest(requesterId, false);
+      reloadRequests();
+      setRejectResultMsg('İstek reddedildi.');
+    } catch (err) {
+      console.error('[Kelimeki] istek reddetme hatası:', err);
+    } finally {
+      setBusyId(null);
+      setConfirmReject(null);
+    }
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!confirmCancel) return;
+    const id = confirmCancel.id;
+    setBusyId(id);
+    try {
+      await removeFriend(id); // gönderilen isteği iptal et
+      setResults((r) => r.map((u) => (u.id === id ? { ...u, relation: null } : u)));
+      setCancelResultMsg('Arkadaşlık isteği iptal edildi.');
+    } catch (err) {
+      console.error('[Kelimeki] istek iptal hatası:', err);
+    } finally {
+      setBusyId(null);
+      setConfirmCancel(null);
     }
   };
 
@@ -188,7 +239,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
         </div>
 
         {tab === 'friends' && (
-          <div className="flex flex-col divide-y divide-border">
+          <div className={listCls}>
             {friends === null ? (
               <p className="text-muted text-xs font-mono py-4 text-center">Yükleniyor…</p>
             ) : friends.length === 0 ? (
@@ -209,7 +260,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
                   <button
                     className={`${smallBtn} btn-raised-neutral bg-panel border border-border text-muted hover:text-red`}
                     disabled={busyId === f.friend_id}
-                    onClick={() => handleRemove(f.friend_id)}
+                    onClick={() => setConfirmRemove(f)}
                   >
                     Çıkar
                   </button>
@@ -220,7 +271,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
         )}
 
         {tab === 'requests' && (
-          <div className="flex flex-col divide-y divide-border">
+          <div className={listCls}>
             {requests === null ? (
               <p className="text-muted text-xs font-mono py-4 text-center">Yükleniyor…</p>
             ) : requests.length === 0 ? (
@@ -241,7 +292,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
                     <button
                       className={`${smallBtn} btn-raised-neutral bg-panel border border-border text-muted`}
                       disabled={busyId === r.requester_id}
-                      onClick={() => handleRespond(r.requester_id, false)}
+                      onClick={() => setConfirmReject(r)}
                     >
                       Reddet
                     </button>
@@ -262,7 +313,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
               onChange={(e) => setQuery(e.target.value)}
               autoFocus
             />
-            <div className="flex flex-col divide-y divide-border min-h-[40px]">
+            <div className={`${listCls} min-h-[40px]`}>
               {searching ? (
                 <p className="text-muted text-xs font-mono py-4 text-center">Aranıyor…</p>
               ) : query.trim().length >= 2 && results.length === 0 ? (
@@ -279,9 +330,14 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
                         Arkadaşsınız
                       </span>
                     ) : u.relation === 'pending_outgoing' ? (
-                      <span className="shrink-0 text-[10px] font-mono text-muted uppercase tracking-[0.5px]">
+                      <button
+                        type="button"
+                        className="shrink-0 text-[10px] font-mono text-muted uppercase tracking-[0.5px] underline underline-offset-2 active:opacity-70 transition-opacity"
+                        disabled={busyId === u.id}
+                        onClick={() => setConfirmCancel(u)}
+                      >
                         İstek Gönderildi
-                      </span>
+                      </button>
                     ) : u.relation === 'pending_incoming' ? (
                       <button
                         className={`${smallBtn} bg-accent text-white`}
@@ -309,6 +365,204 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
       {selectedFriend && (
         <PlayerScoreCard member={selectedFriend} onClose={() => setSelectedFriend(null)} />
       )}
+
+      {confirmRemove &&
+        createPortal(
+          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+            <div
+              ref={confirmRemoveRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Arkadaşlıktan Çıkar"
+              tabIndex={-1}
+              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none"
+            >
+              <p className="text-base font-bold text-text font-sans">Arkadaşlıktan Çıkar</p>
+              <p className="text-sm text-text font-sans leading-relaxed">
+                {confirmRemove.name} ile arkadaşsınız. Arkadaşlıktan çıkmak mı istiyorsunuz?
+              </p>
+              <div className="flex gap-2 mt-1">
+                <button
+                  onClick={handleConfirmRemove}
+                  disabled={busyId === confirmRemove.friend_id}
+                  className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+                >
+                  {busyId === confirmRemove.friend_id ? '...' : 'Çıkar'}
+                </button>
+                <button
+                  onClick={() => setConfirmRemove(null)}
+                  disabled={busyId === confirmRemove.friend_id}
+                  className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+                >
+                  Vazgeç
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {removeResultMsg &&
+        createPortal(
+          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+            <div
+              ref={removeResultRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Arkadaşlık durumu"
+              tabIndex={-1}
+              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none relative"
+            >
+              <button
+                onClick={() => setRemoveResultMsg(null)}
+                aria-label="Kapat"
+                className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
+              >
+                ✕
+              </button>
+              <p className="text-sm text-text font-sans leading-relaxed pr-6">{removeResultMsg}</p>
+              <button
+                onClick={() => setRemoveResultMsg(null)}
+                className="btn-raised py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Tamam
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {confirmReject &&
+        createPortal(
+          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+            <div
+              ref={confirmRejectRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="İsteği Reddet"
+              tabIndex={-1}
+              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none"
+            >
+              <p className="text-base font-bold text-text font-sans">İsteği Reddet</p>
+              <p className="text-sm text-text font-sans leading-relaxed">
+                {confirmReject.name} oyuncusunun arkadaşlık isteğini reddetmek mi istiyorsunuz?
+              </p>
+              <div className="flex gap-2 mt-1">
+                <button
+                  onClick={handleConfirmReject}
+                  disabled={busyId === confirmReject.requester_id}
+                  className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+                >
+                  {busyId === confirmReject.requester_id ? '...' : 'Reddet'}
+                </button>
+                <button
+                  onClick={() => setConfirmReject(null)}
+                  disabled={busyId === confirmReject.requester_id}
+                  className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+                >
+                  Vazgeç
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {rejectResultMsg &&
+        createPortal(
+          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+            <div
+              ref={rejectResultRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Arkadaşlık durumu"
+              tabIndex={-1}
+              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none relative"
+            >
+              <button
+                onClick={() => setRejectResultMsg(null)}
+                aria-label="Kapat"
+                className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
+              >
+                ✕
+              </button>
+              <p className="text-sm text-text font-sans leading-relaxed pr-6">{rejectResultMsg}</p>
+              <button
+                onClick={() => setRejectResultMsg(null)}
+                className="btn-raised py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Tamam
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {confirmCancel &&
+        createPortal(
+          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+            <div
+              ref={confirmCancelRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="İsteği İptal Et"
+              tabIndex={-1}
+              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none"
+            >
+              <p className="text-base font-bold text-text font-sans">İsteği İptal Et</p>
+              <p className="text-sm text-text font-sans leading-relaxed">
+                {confirmCancel.name} oyuncusuna gönderdiğin arkadaşlık isteğini iptal etmek istiyor musun?
+              </p>
+              <div className="flex gap-2 mt-1">
+                <button
+                  onClick={handleConfirmCancel}
+                  disabled={busyId === confirmCancel.id}
+                  className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+                >
+                  {busyId === confirmCancel.id ? '...' : 'İptal Et'}
+                </button>
+                <button
+                  onClick={() => setConfirmCancel(null)}
+                  disabled={busyId === confirmCancel.id}
+                  className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+                >
+                  Vazgeç
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {cancelResultMsg &&
+        createPortal(
+          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+            <div
+              ref={cancelResultRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Arkadaşlık durumu"
+              tabIndex={-1}
+              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none relative"
+            >
+              <button
+                onClick={() => setCancelResultMsg(null)}
+                aria-label="Kapat"
+                className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
+              >
+                ✕
+              </button>
+              <p className="text-sm text-text font-sans leading-relaxed pr-6">{cancelResultMsg}</p>
+              <button
+                onClick={() => setCancelResultMsg(null)}
+                className="btn-raised py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Tamam
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
     </Modal>
   );
 }

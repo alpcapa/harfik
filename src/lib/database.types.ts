@@ -379,6 +379,35 @@ export interface AdminEngagementTotals {
   total_shared_games: number;
 }
 
+/**
+ * admin_friend_activity_series RPC çıktısındaki tek kova (Büyüme > Kullanıcı).
+ * `requests_sent`, o kovada gönderilen arkadaşlık isteği sayısı
+ * (`friend_requests.created_at`) — karşılıklı istek durumunda otomatik kabul
+ * olan satırlar da burada bir "istek" olarak sayılır. `friendships_formed`,
+ * o kovada `accepted` durumuna geçen (`responded_at`) satır sayısı — yani o
+ * dönemde kurulan yeni arkadaşlık sayısı. Bucket'lar diğer
+ * admin_*_activity_series fonksiyonlarıyla aynı şekilde İstanbul yerel
+ * gününe göre kesilir.
+ */
+export interface AdminFriendActivityPoint {
+  bucket: string;
+  requests_sent: number;
+  friendships_formed: number;
+}
+
+/**
+ * admin_friend_totals RPC çıktısı (Büyüme > Kullanıcı) — tüm zamanların
+ * arkadaşlık/istek/davet linki sayıları. `total_invite_signups`,
+ * `profiles.invited_by` dolu olan (bir arkadaş davet linkiyle katılmış)
+ * kullanıcı sayısı — "arkadaş daveti ile gelen kayıt" metriği.
+ */
+export interface AdminFriendTotals {
+  total_friendships: number;
+  total_pending_requests: number;
+  total_invite_links: number;
+  total_invite_signups: number;
+}
+
 /** "Görüş Bildir" formunun hangi bağlamdan gönderildiği. */
 export type FeedbackSource = 'game_end' | 'general';
 
