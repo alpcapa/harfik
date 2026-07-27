@@ -1,22 +1,57 @@
 // Kelimeki — Canlı sekmesi: davet bekleyen/rakip bekleyen/aktif Canlı
-// oyunların listesi + "+ Yeni Canlı Oyun" ile kurulum formuna geçiş
-// (bkz. src/App.tsx'teki mainView tab'ı, src/components/LiveGameCreateForm.tsx).
+// oyunların listesi, gelen davetlerde Kabul/Reddet + "+ Yeni Canlı Oyun" ile
+// kurulum formuna geçiş (bkz. src/App.tsx'teki mainView tab'ı,
+// src/components/LiveGameCreateForm.tsx).
 import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { listMyOnlineGames } from '../lib/api';
-import type { OnlineGame } from '../lib/database.types';
+import { fetchFriends, listMyOnlineGames, respondToGameInvite } from '../lib/api';
+import type { FriendRow, OnlineGame } from '../lib/database.types';
 import { AuthModal } from './AuthModal';
 import { LiveGameCreateForm } from './LiveGameCreateForm';
 
 function statusLabel(game: OnlineGame): string {
-  if (game.my_role === 'invitee' && game.my_invite_status === 'pending') return 'Davet bekliyor';
   if (game.status === 'active') return 'Aktif — oynanış yakında';
   if (game.status === 'pending') return 'Rakip bekleniyor';
   if (game.status === 'finished') return 'Bitti';
   return 'Terk edildi';
 }
 
-function GameRow({ game }: { game: OnlineGame }) {
+interface GameRowProps {
+  game: OnlineGame;
+  inviterName?: string;
+  onRespond?: (accept: boolean) => void;
+  busy?: boolean;
+}
+
+function GameRow({ game, inviterName, onRespond, busy }: GameRowProps) {
+  const isPendingInvite = game.my_role === 'invitee' && game.my_invite_status === 'pending';
+
+  if (isPendingInvite && onRespond) {
+    return (
+      <div className="shadow-raised flex flex-col gap-2 rounded-md px-2.5 py-2.5 border border-border bg-panel">
+        <span className="font-sans text-sm font-bold text-text leading-snug">
+          {inviterName ?? 'Bir arkadaşın'} seni {game.player_count} kişilik oyuna davet etti
+        </span>
+        <div className="flex gap-1.5">
+          <button
+            onClick={() => onRespond(true)}
+            disabled={busy}
+            className="flex-1 btn-raised bg-accent text-white rounded-md py-1.5 text-[10px] font-bold uppercase tracking-[0.5px] active:scale-[0.97] transition-transform disabled:opacity-50"
+          >
+            Kabul Et
+          </button>
+          <button
+            onClick={() => onRespond(false)}
+            disabled={busy}
+            className="flex-1 btn-raised-neutral bg-panel border border-border text-muted rounded-md py-1.5 text-[10px] font-bold uppercase tracking-[0.5px] active:scale-[0.97] transition-transform disabled:opacity-50"
+          >
+            Reddet
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel">
       <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
@@ -47,8 +82,13 @@ export function LiveGamesTab() {
   const { user, loading: authLoading } = useAuth();
   // null = henüz çekilmedi (yükleniyor), [] = çekildi ama hiç oyun yok.
   const [games, setGames] = useState<OnlineGame[] | null>(null);
+  // Davet satırlarında kurucunun adını göstermek için — davet edenler zaten
+  // her zaman arkadaş olmak zorunda (create_online_game RPC'sinin kuralı),
+  // bu yüzden ayrı bir isim-arama RPC'sine gerek yok.
+  const [friends, setFriends] = useState<FriendRow[]>([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [busyInviteId, setBusyInviteId] = useState<string | null>(null);
 
   const reload = () => {
     listMyOnlineGames().then(setGames);
@@ -62,6 +102,9 @@ export function LiveGamesTab() {
     let cancelled = false;
     listMyOnlineGames().then((rows) => {
       if (!cancelled) setGames(rows);
+    });
+    fetchFriends().then((rows) => {
+      if (!cancelled) setFriends(rows);
     });
     return () => {
       cancelled = true;
@@ -101,6 +144,18 @@ export function LiveGamesTab() {
     );
   }
 
+  const handleRespond = async (inviteId: string, accept: boolean) => {
+    setBusyInviteId(inviteId);
+    try {
+      await respondToGameInvite(inviteId, accept);
+      reload();
+    } catch (err) {
+      console.error('[Kelimeki] respondToGameInvite hatası:', err);
+    } finally {
+      setBusyInviteId(null);
+    }
+  };
+
   const invites = (games ?? []).filter((g) => g.my_role === 'invitee' && g.my_invite_status === 'pending');
   const active = (games ?? []).filter((g) => g.status === 'active');
   const waiting = (games ?? []).filter((g) => g.my_role === 'creator' && g.status === 'pending');
@@ -122,7 +177,24 @@ export function LiveGamesTab() {
         </p>
       ) : (
         <>
-          <Section title="Davet Bekliyor" games={invites} />
+          {invites.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
+                Davet Bekliyor
+              </div>
+              <div className="flex flex-col gap-2">
+                {invites.map((g) => (
+                  <GameRow
+                    key={g.id}
+                    game={g}
+                    inviterName={friends.find((f) => f.friend_id === g.created_by)?.name}
+                    onRespond={(accept) => g.my_invite_id && handleRespond(g.my_invite_id, accept)}
+                    busy={busyInviteId === g.my_invite_id}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
           <Section title="Aktif" games={active} />
           <Section title="Rakip Bekleniyor" games={waiting} />
         </>

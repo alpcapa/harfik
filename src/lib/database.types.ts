@@ -75,6 +75,8 @@ export interface OnlineGame {
   my_role: 'creator' | 'invitee';
   /** Çağıran davetliyse kendi davet durumu; kurucuysa null. */
   my_invite_status: 'pending' | 'accepted' | 'declined' | null;
+  /** Çağıran davetliyse `game_invites.id` (respond_to_game_invite'a geçilir); kurucuysa null. */
+  my_invite_id: string | null;
 }
 
 /** Bir oyunun bitişindeki tek bir oyuncu satırı (final sıralamasında). */
