@@ -330,43 +330,43 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       .catch((e) => setError(String(e)));
   }, []);
 
+  // Not: period/granülerlik değişince önceki veriyi `null`'a çekip
+  // "Yükleniyor…" göstermiyoruz — bu, o anda ekranda kaç grafik/tablo varsa
+  // hepsini aynı anda küçük bir yer tutucuya küçültüp scroll konumunu (ör.
+  // en alttaki Arkadaşlık bölümünü) kaybettiriyordu (kullanıcı geri bildirimi,
+  // 27 Temmuz 2026). Yeni veri gelene kadar eski veri ekranda kalıp üzerine
+  // yazılıyor — düzen boyutu sabit kaldığından scroll konumu korunuyor.
   useEffect(() => {
-    setUserActivity(null);
     fetchAdminUserActivitySeries(userPeriod, userGranularity)
       .then(setUserActivity)
       .catch((e) => setError(String(e)));
   }, [userPeriod, userGranularity]);
 
   useEffect(() => {
-    setGuestSources(null);
     fetchAdminGuestSourceBreakdown(userPeriod * GRANULARITY_TO_DAYS[userGranularity])
       .then(setGuestSources)
       .catch((e) => setError(String(e)));
   }, [userPeriod, userGranularity]);
 
   useEffect(() => {
-    setGuestDevices(null);
     fetchAdminGuestDeviceBreakdown(userPeriod * GRANULARITY_TO_DAYS[userGranularity])
       .then(setGuestDevices)
       .catch((e) => setError(String(e)));
   }, [userPeriod, userGranularity]);
 
   useEffect(() => {
-    setGuestStandalone(null);
     fetchAdminGuestStandaloneBreakdown(userPeriod * GRANULARITY_TO_DAYS[userGranularity])
       .then(setGuestStandalone)
       .catch((e) => setError(String(e)));
   }, [userPeriod, userGranularity]);
 
   useEffect(() => {
-    setFriendActivity(null);
     fetchAdminFriendActivitySeries(userPeriod, userGranularity)
       .then(setFriendActivity)
       .catch((e) => setError(String(e)));
   }, [userPeriod, userGranularity]);
 
   useEffect(() => {
-    setGameActivity(null);
     fetchAdminGameActivitySeries(
       gamePeriod,
       gameGranularity,
@@ -378,7 +378,6 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   }, [gamePeriod, gameGranularity, gameScope, gamePlayerCount]);
 
   useEffect(() => {
-    setEngagementActivity(null);
     fetchAdminEngagementActivitySeries(gamePeriod, gameGranularity)
       .then(setEngagementActivity)
       .catch((e) => setError(String(e)));
