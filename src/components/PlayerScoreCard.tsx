@@ -87,7 +87,9 @@ export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
   const [relation, setRelation] = useState<FriendRelation | null | undefined>(undefined);
   const [showFriendConfirm, setShowFriendConfirm] = useState(false);
   const [friendBusy, setFriendBusy] = useState(false);
+  const [friendResultMsg, setFriendResultMsg] = useState<string | null>(null);
   const friendConfirmRef = useModalA11y(showFriendConfirm, () => setShowFriendConfirm(false));
+  const friendResultRef = useModalA11y(!!friendResultMsg, () => setFriendResultMsg(null));
 
   useEffect(() => {
     for (const count of TABS) {
@@ -117,14 +119,22 @@ export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
   const handleFriendAction = async () => {
     setFriendBusy(true);
     try {
-      if (relation === 'accepted' || relation === 'pending_outgoing') {
-        await removeFriend(member.id); // arkadaşlıktan çıkar / gönderilen isteği iptal et
+      let resultMsg = '';
+      if (relation === 'accepted') {
+        await removeFriend(member.id); // arkadaşlıktan çıkar
+        resultMsg = 'Arkadaşlıktan çıkarıldı.';
+      } else if (relation === 'pending_outgoing') {
+        await removeFriend(member.id); // gönderilen isteği iptal et
+        resultMsg = 'Arkadaşlık isteği iptal edildi.';
       } else if (relation === 'pending_incoming') {
         await respondFriendRequest(member.id, true); // kabul et
+        resultMsg = 'Arkadaş oldunuz.';
       } else {
         await sendFriendRequest(member.id);
+        resultMsg = 'Arkadaşlık isteğiniz iletilmiştir.';
       }
       setRelation(await fetchFriendRelation(member.id));
+      setFriendResultMsg(resultMsg);
     } catch (err) {
       console.error('[Kelimeki] arkadaşlık aksiyonu hatası:', err);
     } finally {
@@ -352,6 +362,36 @@ export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
               </div>
             );
           })(),
+          document.body,
+        )}
+
+      {friendResultMsg &&
+        createPortal(
+          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+            <div
+              ref={friendResultRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Arkadaşlık durumu"
+              tabIndex={-1}
+              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none relative"
+            >
+              <button
+                onClick={() => setFriendResultMsg(null)}
+                aria-label="Kapat"
+                className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
+              >
+                ✕
+              </button>
+              <p className="text-sm text-text font-sans leading-relaxed pr-6">{friendResultMsg}</p>
+              <button
+                onClick={() => setFriendResultMsg(null)}
+                className="btn-raised py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Tamam
+              </button>
+            </div>
+          </div>,
           document.body,
         )}
     </Modal>
