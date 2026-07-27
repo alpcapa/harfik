@@ -58,8 +58,23 @@ export interface FriendSearchResult {
 
 // ── Canlı oyun (Faz 2 — davet/kabul) ────────────────────────────────────────
 
-/** `online_games.slots` dizisindeki tek koltuk — index 0 her zaman kurucu. */
-export type OnlineGameSlot = { type: 'human'; user_id: string } | { type: 'ai' };
+/**
+ * `online_games.slots` dizisindeki tek koltuk — index 0 her zaman kurucu.
+ * `name`/`avatar_url`/`relation`, yalnızca `list_my_online_games` RPC'sinin
+ * döndürdüğü (sunucu tarafında zenginleştirilmiş) satırlarda dolu olur —
+ * `createOnlineGame`'e giden istemci tarafı `slots`'ta bu alanlar hiç yok.
+ * `relation`, `search_users_for_friend`'daki aynı sözlüğü kullanır, artı
+ * çağıranın kendi koltuğu için `'self'`.
+ */
+export type OnlineGameSlot =
+  | {
+      type: 'human';
+      user_id: string;
+      name?: string;
+      avatar_url?: string | null;
+      relation?: FriendRelation | 'self' | null;
+    }
+  | { type: 'ai' };
 
 export type OnlineGameStatus = 'pending' | 'active' | 'finished' | 'abandoned';
 
