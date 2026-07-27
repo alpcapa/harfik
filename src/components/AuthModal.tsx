@@ -5,7 +5,7 @@ import { TermsModal } from './TermsModal';
 import { PrivacyModal } from './PrivacyModal';
 import { signIn, signUp, sendPasswordReset } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
-import { GENDER_OPTIONS, trDateToIso } from '../utils/profileFields';
+import { GENDER_OPTIONS, formatTrDateInput, trDateToIso } from '../utils/profileFields';
 import type { Gender } from '../lib/database.types';
 
 interface AuthModalProps {
@@ -142,7 +142,7 @@ export function AuthModal({
                   skor kartlarında nickname değil tam ad gibi görünüyordu. */}
               <input
                 className={inputCls}
-                placeholder="Herkese görünen"
+                placeholder="Herkese görünen ismin"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value.replace(/\s+/g, ''))}
                 autoComplete="nickname"
@@ -187,10 +187,12 @@ export function AuthModal({
               <input
                 className={inputCls}
                 type="text"
+                inputMode="numeric"
                 value={birthDate}
-                onChange={(e) => setBirthDate(e.target.value)}
+                onChange={(e) => setBirthDate(formatTrDateInput(e.target.value))}
                 placeholder="GG/AA/YYYY"
                 autoComplete="bday"
+                maxLength={10}
               />
             </div>
           </>

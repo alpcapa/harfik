@@ -20,6 +20,18 @@ export function isoToTrDate(iso: string | null | undefined): string {
   return `${d}/${m}/${y}`;
 }
 
+/**
+ * Doğum tarihi metin alanına yazarken "/" ayırıcılarını otomatik ekler
+ * (ör. "01011990" yazılırken "01/01/1990" görünür) — kullanıcı sadece
+ * rakam girer, ayırıcıları kendisi yazmak zorunda kalmaz.
+ */
+export function formatTrDateInput(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  if (digits.length > 4) return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+  if (digits.length > 2) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return digits;
+}
+
 /** "gg/aa/yyyy" kullanıcı girdisini `date` sütununa uygun ISO dizgeye çevirir. */
 export function trDateToIso(input: string): string | null {
   const s = input.trim();

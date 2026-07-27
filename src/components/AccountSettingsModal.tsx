@@ -5,7 +5,7 @@ import { Avatar } from './Avatar';
 import { updateProfile, updateEmail, uploadAvatar, sendPasswordReset } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
 import type { Gender } from '../lib/database.types';
-import { GENDER_OPTIONS, isoToTrDate, trDateToIso } from '../utils/profileFields';
+import { GENDER_OPTIONS, formatTrDateInput, isoToTrDate, trDateToIso } from '../utils/profileFields';
 
 interface AccountSettingsModalProps {
   onClose: () => void;
@@ -220,10 +220,12 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
           <input
             className={inputCls}
             type="text"
+            inputMode="numeric"
             value={birthDate}
-            onChange={(e) => setBirthDate(e.target.value)}
+            onChange={(e) => setBirthDate(formatTrDateInput(e.target.value))}
             placeholder="GG/AA/YYYY"
             autoComplete="bday"
+            maxLength={10}
           />
         </div>
 
