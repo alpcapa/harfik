@@ -152,13 +152,11 @@ export function AuthModal({
         )}
 
         <div>
-          {mode === 'signup' && (
-            <label className={labelCls}>E-posta {required} (Doğrulama linki gider)</label>
-          )}
+          {mode === 'signup' && <label className={labelCls}>E-posta {required}</label>}
           <input
             className={inputCls}
             type="email"
-            placeholder="E-posta"
+            placeholder={mode === 'signup' ? 'Doğrulama linki gönderilir' : 'E-posta'}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
