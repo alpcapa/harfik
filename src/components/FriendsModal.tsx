@@ -71,6 +71,10 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
   const [rejectResultMsg, setRejectResultMsg] = useState<string | null>(null);
   const confirmRejectRef = useModalA11y(!!confirmReject, () => setConfirmReject(null));
   const rejectResultRef = useModalA11y(!!rejectResultMsg, () => setRejectResultMsg(null));
+  const [confirmCancel, setConfirmCancel] = useState<FriendSearchResult | null>(null);
+  const [cancelResultMsg, setCancelResultMsg] = useState<string | null>(null);
+  const confirmCancelRef = useModalA11y(!!confirmCancel, () => setConfirmCancel(null));
+  const cancelResultRef = useModalA11y(!!cancelResultMsg, () => setCancelResultMsg(null));
 
   const reloadFriends = () => void fetchFriends().then(setFriends);
   const reloadRequests = () => void fetchIncomingFriendRequests().then(setRequests);
@@ -151,6 +155,22 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
     } finally {
       setBusyId(null);
       setConfirmReject(null);
+    }
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!confirmCancel) return;
+    const id = confirmCancel.id;
+    setBusyId(id);
+    try {
+      await removeFriend(id); // gönderilen isteği iptal et
+      setResults((r) => r.map((u) => (u.id === id ? { ...u, relation: null } : u)));
+      setCancelResultMsg('Arkadaşlık isteği iptal edildi.');
+    } catch (err) {
+      console.error('[Kelimeki] istek iptal hatası:', err);
+    } finally {
+      setBusyId(null);
+      setConfirmCancel(null);
     }
   };
 
@@ -310,9 +330,14 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
                         Arkadaşsınız
                       </span>
                     ) : u.relation === 'pending_outgoing' ? (
-                      <span className="shrink-0 text-[10px] font-mono text-muted uppercase tracking-[0.5px]">
+                      <button
+                        type="button"
+                        className="shrink-0 text-[10px] font-mono text-muted uppercase tracking-[0.5px] underline underline-offset-2 active:opacity-70 transition-opacity"
+                        disabled={busyId === u.id}
+                        onClick={() => setConfirmCancel(u)}
+                      >
                         İstek Gönderildi
-                      </span>
+                      </button>
                     ) : u.relation === 'pending_incoming' ? (
                       <button
                         className={`${smallBtn} bg-accent text-white`}
@@ -464,6 +489,72 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
               <p className="text-sm text-text font-sans leading-relaxed pr-6">{rejectResultMsg}</p>
               <button
                 onClick={() => setRejectResultMsg(null)}
+                className="btn-raised py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Tamam
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {confirmCancel &&
+        createPortal(
+          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+            <div
+              ref={confirmCancelRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="İsteği İptal Et"
+              tabIndex={-1}
+              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none"
+            >
+              <p className="text-base font-bold text-text font-sans">İsteği İptal Et</p>
+              <p className="text-sm text-text font-sans leading-relaxed">
+                {confirmCancel.name} oyuncusuna gönderdiğin arkadaşlık isteğini iptal etmek istiyor musun?
+              </p>
+              <div className="flex gap-2 mt-1">
+                <button
+                  onClick={handleConfirmCancel}
+                  disabled={busyId === confirmCancel.id}
+                  className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+                >
+                  {busyId === confirmCancel.id ? '...' : 'İptal Et'}
+                </button>
+                <button
+                  onClick={() => setConfirmCancel(null)}
+                  disabled={busyId === confirmCancel.id}
+                  className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+                >
+                  Vazgeç
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {cancelResultMsg &&
+        createPortal(
+          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+            <div
+              ref={cancelResultRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Arkadaşlık durumu"
+              tabIndex={-1}
+              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none relative"
+            >
+              <button
+                onClick={() => setCancelResultMsg(null)}
+                aria-label="Kapat"
+                className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
+              >
+                ✕
+              </button>
+              <p className="text-sm text-text font-sans leading-relaxed pr-6">{cancelResultMsg}</p>
+              <button
+                onClick={() => setCancelResultMsg(null)}
                 className="btn-raised py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
               >
                 Tamam
