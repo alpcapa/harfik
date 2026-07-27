@@ -11,6 +11,7 @@ import { preloadWordSet, isWordSetReady } from '../data/wordSetLoader';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
 import { HelpModal } from './HelpModal';
+import { LiveGamesTab } from './LiveGamesTab';
 import { LogoMark } from './LogoMark';
 import { PlayerBadge } from './PlayerBadge';
 import { TermsModal } from './TermsModal';
@@ -20,9 +21,14 @@ interface SetupProps {
   // showTutorial: oyun ekranı açıldığında Tutorial (HelpModal) daha önce
   // görülmediyse gösterilsin mi — App.tsx bunu oyun ekranı render'ında kullanır.
   onStart: (players: PlayerSetup[], showTutorial: boolean) => void;
+  // "Oyun Tipi" seçimi (Yapay Zeka ile / Arkadaşınla) — App.tsx'te tutulur,
+  // çünkü Canlı oyun tamamen ayrı bir veri kaynağından (Supabase) besleniyor;
+  // Setup burada yalnızca seçiciyi gösterip görünümü değiştirir.
+  mainView: 'local' | 'live';
+  onMainViewChange: (view: 'local' | 'live') => void;
 }
 
-export function Setup({ onStart }: SetupProps) {
+export function Setup({ onStart, mainView, onMainViewChange }: SetupProps) {
   const { user, profile, loading, profileLoading } = useAuth();
   // Oturum açıldıysa 1. oyuncu her zaman hesap sahibidir. Profil henüz
   // çekilmediyse (profileLoading) e-posta önekine düşmüyoruz — aksi halde
@@ -231,89 +237,120 @@ export function Setup({ onStart }: SetupProps) {
 
       <div className="flex flex-col gap-2">
         <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
-          Oyuncu sayısı
+          Oyun Tipi
         </div>
         <div className="flex gap-2">
-          {([2, 4] as const).map((n) => (
+          {([
+            { key: 'local' as const, label: 'Yapay Zeka ile' },
+            { key: 'live' as const, label: 'Arkadaşınla' },
+          ]).map((tab) => (
             <button
-              key={n}
-              onClick={() => setCount(n)}
+              key={tab.key}
+              onClick={() => onMainViewChange(tab.key)}
               className={[
                 'flex-1 py-3 rounded-md font-sans text-sm font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97]',
-                count === n
+                mainView === tab.key
                   ? 'btn-raised bg-accent text-white border-accent'
                   : 'btn-raised-neutral bg-panel text-text border-border',
               ].join(' ')}
             >
-              {n} Oyunculu
+              {tab.label}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="flex flex-col gap-2.5">
-        <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
-          Oyuncular
-        </div>
-        {Array.from({ length: count }, (_, i) => {
-          const col = PLAYER_COLORS[i];
-          // 1. oyuncu giriş yapan hesaptır: kilitli isim + avatar, YZ olamaz.
-          const isAccount = i === 0 && !!accountName;
-          const isPending = i === 0 && accountPending;
-          return (
-            <div
-              key={i}
-              className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border"
-              style={{ background: col.tint, borderColor: col.base }}
-            >
-              {isAccount ? (
-                <Avatar
-                  url={profile?.avatar_url}
-                  name={accountName}
-                  size={20}
-                  className="shrink-0"
-                />
-              ) : isPending ? (
-                <span className="w-5 h-5 rounded-full bg-panel border border-border shrink-0 animate-pulse" />
-              ) : (
-                <PlayerBadge index={i} />
-              )}
-
-              {isAccount ? (
-                <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
-                  {accountName}
-                  {accountTotalScore !== undefined && (
-                    <span className="font-mono font-normal text-muted"> ({accountTotalScore})</span>
-                  )}
-                </span>
-              ) : isPending ? (
-                <span className="flex-1 min-w-0 font-sans text-sm font-bold text-muted truncate animate-pulse">
-                  Yükleniyor…
-                </span>
-              ) : (
-                <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
-                  {i === 0 ? 'Misafir' : `Yapay Zeka ${i + 1}`}
-                </span>
-              )}
-
-              <span
-                className="text-[9px] font-mono uppercase tracking-[1px] shrink-0 px-1"
-                style={{ color: col.base }}
-              >
-                {i === 0 ? 'Sen' : `YZ${i + 1}`}
-              </span>
+      {mainView === 'live' ? (
+        <LiveGamesTab />
+      ) : (
+        <>
+          <div className="flex flex-col gap-2">
+            <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
+              Oyuncu sayısı
             </div>
-          );
-        })}
-      </div>
+            <div className="flex gap-2">
+              {([2, 4] as const).map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setCount(n)}
+                  className={[
+                    'flex-1 py-3 rounded-md font-sans text-sm font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97]',
+                    count === n
+                      ? 'btn-raised bg-accent text-white border-accent'
+                      : 'btn-raised-neutral bg-panel text-text border-border',
+                  ].join(' ')}
+                >
+                  {n} Oyunculu
+                </button>
+              ))}
+            </div>
+          </div>
 
-      <button
-        onClick={handleStart}
-        disabled={!wordsReady}
-        className="btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-      >
-        {wordsReady ? 'Oyunu Başlat' : 'Hazırlanıyor…'}
-      </button>
+          <div className="flex flex-col gap-2.5">
+            <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
+              Oyuncular
+            </div>
+            {Array.from({ length: count }, (_, i) => {
+              const col = PLAYER_COLORS[i];
+              // 1. oyuncu giriş yapan hesaptır: kilitli isim + avatar, YZ olamaz.
+              const isAccount = i === 0 && !!accountName;
+              const isPending = i === 0 && accountPending;
+              return (
+                <div
+                  key={i}
+                  className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border"
+                  style={{ background: col.tint, borderColor: col.base }}
+                >
+                  {isAccount ? (
+                    <Avatar
+                      url={profile?.avatar_url}
+                      name={accountName}
+                      size={20}
+                      className="shrink-0"
+                    />
+                  ) : isPending ? (
+                    <span className="w-5 h-5 rounded-full bg-panel border border-border shrink-0 animate-pulse" />
+                  ) : (
+                    <PlayerBadge index={i} />
+                  )}
+
+                  {isAccount ? (
+                    <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
+                      {accountName}
+                      {accountTotalScore !== undefined && (
+                        <span className="font-mono font-normal text-muted"> ({accountTotalScore})</span>
+                      )}
+                    </span>
+                  ) : isPending ? (
+                    <span className="flex-1 min-w-0 font-sans text-sm font-bold text-muted truncate animate-pulse">
+                      Yükleniyor…
+                    </span>
+                  ) : (
+                    <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
+                      {i === 0 ? 'Misafir' : `Yapay Zeka ${i + 1}`}
+                    </span>
+                  )}
+
+                  <span
+                    className="text-[9px] font-mono uppercase tracking-[1px] shrink-0 px-1"
+                    style={{ color: col.base }}
+                  >
+                    {i === 0 ? 'Sen' : `YZ${i + 1}`}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={handleStart}
+            disabled={!wordsReady}
+            className="btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+          >
+            {wordsReady ? 'Oyunu Başlat' : 'Hazırlanıyor…'}
+          </button>
+        </>
+      )}
 
       <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-muted">
         <button onClick={() => setShowTerms(true)} className="hover:underline active:opacity-70 transition-opacity">
