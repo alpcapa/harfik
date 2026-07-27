@@ -3,9 +3,11 @@
 // kanallardan paylaşarak henüz üye olmayanları da davet etme (asıl büyüme
 // mekanizması — bkz. CLAUDE.md "Arkadaşlık Sistemi").
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
 import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
+import { useModalA11y } from '../hooks/useModalA11y';
 import {
   createFriendInviteLink,
   fetchFriends,
@@ -61,6 +63,10 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
   const [busyId, setBusyId] = useState<string | null>(null);
   const [inviteStatus, setInviteStatus] = useState<'idle' | 'busy' | 'copied'>('idle');
   const [selectedFriend, setSelectedFriend] = useState<PlayerSummary | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState<FriendRow | null>(null);
+  const [removeResultMsg, setRemoveResultMsg] = useState<string | null>(null);
+  const confirmRemoveRef = useModalA11y(!!confirmRemove, () => setConfirmRemove(null));
+  const removeResultRef = useModalA11y(!!removeResultMsg, () => setRemoveResultMsg(null));
 
   const reloadFriends = () => void fetchFriends().then(setFriends);
   const reloadRequests = () => void fetchIncomingFriendRequests().then(setRequests);
@@ -112,15 +118,19 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
     }
   };
 
-  const handleRemove = async (friendId: string) => {
+  const handleConfirmRemove = async () => {
+    if (!confirmRemove) return;
+    const friendId = confirmRemove.friend_id;
     setBusyId(friendId);
     try {
       await removeFriend(friendId);
       reloadFriends();
+      setRemoveResultMsg('Arkadaşlıktan çıkarıldı.');
     } catch (err) {
       console.error('[Kelimeki] arkadaş çıkarma hatası:', err);
     } finally {
       setBusyId(null);
+      setConfirmRemove(null);
     }
   };
 
@@ -210,7 +220,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
                   <button
                     className={`${smallBtn} btn-raised-neutral bg-panel border border-border text-muted hover:text-red`}
                     disabled={busyId === f.friend_id}
-                    onClick={() => handleRemove(f.friend_id)}
+                    onClick={() => setConfirmRemove(f)}
                   >
                     Çıkar
                   </button>
@@ -310,6 +320,72 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
       {selectedFriend && (
         <PlayerScoreCard member={selectedFriend} onClose={() => setSelectedFriend(null)} />
       )}
+
+      {confirmRemove &&
+        createPortal(
+          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+            <div
+              ref={confirmRemoveRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Arkadaşlıktan Çıkar"
+              tabIndex={-1}
+              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none"
+            >
+              <p className="text-base font-bold text-text font-sans">Arkadaşlıktan Çıkar</p>
+              <p className="text-sm text-text font-sans leading-relaxed">
+                {confirmRemove.name} ile arkadaşsınız. Arkadaşlıktan çıkmak mı istiyorsunuz?
+              </p>
+              <div className="flex gap-2 mt-1">
+                <button
+                  onClick={handleConfirmRemove}
+                  disabled={busyId === confirmRemove.friend_id}
+                  className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+                >
+                  {busyId === confirmRemove.friend_id ? '...' : 'Çıkar'}
+                </button>
+                <button
+                  onClick={() => setConfirmRemove(null)}
+                  disabled={busyId === confirmRemove.friend_id}
+                  className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+                >
+                  Vazgeç
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {removeResultMsg &&
+        createPortal(
+          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+            <div
+              ref={removeResultRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Arkadaşlık durumu"
+              tabIndex={-1}
+              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none relative"
+            >
+              <button
+                onClick={() => setRemoveResultMsg(null)}
+                aria-label="Kapat"
+                className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
+              >
+                ✕
+              </button>
+              <p className="text-sm text-text font-sans leading-relaxed pr-6">{removeResultMsg}</p>
+              <button
+                onClick={() => setRemoveResultMsg(null)}
+                className="btn-raised py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Tamam
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
     </Modal>
   );
 }
