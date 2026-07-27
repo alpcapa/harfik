@@ -500,8 +500,8 @@ export default function App() {
         <main className="w-full flex flex-col items-center">
           <div className="w-full max-w-[460px] px-4 pt-1 flex gap-2">
             {([
-              { key: 'local' as const, label: 'Yerel Oyun' },
-              { key: 'live' as const, label: 'Canlı' },
+              { key: 'local' as const, label: 'Yapay Zeka ile' },
+              { key: 'live' as const, label: 'Arkadaşınla' },
             ]).map((tab) => (
               <button
                 key={tab.key}
