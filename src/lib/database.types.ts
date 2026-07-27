@@ -60,11 +60,15 @@ export interface FriendSearchResult {
 
 /**
  * `online_games.slots` dizisindeki tek koltuk — index 0 her zaman kurucu.
- * `name`/`avatar_url`/`relation`, yalnızca `list_my_online_games` RPC'sinin
- * döndürdüğü (sunucu tarafında zenginleştirilmiş) satırlarda dolu olur —
- * `createOnlineGame`'e giden istemci tarafı `slots`'ta bu alanlar hiç yok.
+ * `name`/`avatar_url`/`relation`/`invite_status`, yalnızca
+ * `list_my_online_games` RPC'sinin döndürdüğü (sunucu tarafında
+ * zenginleştirilmiş) satırlarda dolu olur — `createOnlineGame`'e giden
+ * istemci tarafı `slots`'ta bu alanlar hiç yok.
  * `relation`, `search_users_for_friend`'daki aynı sözlüğü kullanır, artı
  * çağıranın kendi koltuğu için `'self'`.
+ * `invite_status`, o koltuktaki kişinin kendi `game_invites` durumu —
+ * kurucunun koltuğunda hiç davet satırı olmadığından her zaman `null`dur
+ * (o koltuk `user_id === game.created_by` ile ayırt edilir).
  */
 export type OnlineGameSlot =
   | {
@@ -73,6 +77,7 @@ export type OnlineGameSlot =
       name?: string;
       avatar_url?: string | null;
       relation?: FriendRelation | 'self' | null;
+      invite_status?: 'pending' | 'accepted' | 'declined' | null;
     }
   | { type: 'ai' };
 

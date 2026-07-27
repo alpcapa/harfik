@@ -4,15 +4,11 @@
 // src/App.tsx'teki mainView tab'ı, src/components/LiveGameCreateForm.tsx).
 import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import {
-  listMyOnlineGames,
-  respondFriendRequest,
-  respondToGameInvite,
-  sendFriendRequest,
-} from '../lib/api';
+import { listMyOnlineGames, respondToGameInvite } from '../lib/api';
 import type { OnlineGame, OnlineGameSlot } from '../lib/database.types';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
+import { FriendSuggestModal } from './FriendSuggestModal';
 import { LiveGameCreateForm } from './LiveGameCreateForm';
 
 type HumanSlot = Extract<OnlineGameSlot, { type: 'human' }>;
@@ -24,45 +20,27 @@ function statusLabel(game: OnlineGame): string {
   return 'Terk edildi';
 }
 
-interface ParticipantRowProps {
-  slot: HumanSlot;
-  onFriendAction: (userId: string, action: 'add' | 'accept') => void;
-  busy: boolean;
+// Bir davet satırındaki tek katılımcının, o oyundaki rolüne göre etiketi —
+// "kim arkadaşım" değil "kim ne durumda" sorusuna cevap verir (relation
+// tabanlı +/✓ göstergesi kafa karıştırdığı için kaldırıldı).
+function participantLabel(slot: HumanSlot, game: OnlineGame): string {
+  if (slot.user_id === game.created_by) return 'Davet gönderen';
+  if (slot.relation === 'self') return 'Sen';
+  if (slot.invite_status === 'accepted') return 'Kabul etti';
+  if (slot.invite_status === 'declined') return 'Reddetti';
+  return 'Bekliyor';
 }
 
-function ParticipantRow({ slot, onFriendAction, busy }: ParticipantRowProps) {
+function ParticipantRow({ slot, game }: { slot: HumanSlot; game: OnlineGame }) {
   return (
     <div className="flex items-center gap-2">
       <Avatar url={slot.avatar_url} name={slot.name} size={22} />
       <span className="flex-1 min-w-0 text-xs text-text truncate">
         {slot.relation === 'self' ? 'Sen' : (slot.name ?? 'Oyuncu')}
       </span>
-      {slot.relation === 'self' ? null : slot.relation === 'accepted' ? (
-        <span className="text-green text-xs" aria-label="Arkadaşsınız">
-          ✓
-        </span>
-      ) : slot.relation === 'pending_incoming' ? (
-        <button
-          type="button"
-          onClick={() => onFriendAction(slot.user_id, 'accept')}
-          disabled={busy}
-          className="text-[9px] font-mono uppercase tracking-[0.5px] text-accent underline underline-offset-2 active:opacity-70 transition-opacity disabled:opacity-50"
-        >
-          Kabul Et
-        </button>
-      ) : slot.relation === 'pending_outgoing' ? (
-        <span className="text-[9px] font-mono uppercase tracking-[0.5px] text-muted">İstek Gönderildi</span>
-      ) : (
-        <button
-          type="button"
-          onClick={() => onFriendAction(slot.user_id, 'add')}
-          disabled={busy}
-          aria-label="Arkadaş ekle"
-          className="w-5 h-5 rounded-full bg-accent text-white text-xs leading-none flex items-center justify-center active:scale-90 transition-transform disabled:opacity-50"
-        >
-          +
-        </button>
-      )}
+      <span className="text-[9px] font-mono uppercase tracking-[0.5px] text-muted shrink-0">
+        {participantLabel(slot, game)}
+      </span>
     </div>
   );
 }
@@ -71,11 +49,9 @@ interface GameRowProps {
   game: OnlineGame;
   onRespond?: (accept: boolean) => void;
   busy?: boolean;
-  onFriendAction?: (userId: string, action: 'add' | 'accept') => void;
-  busyFriendId?: string | null;
 }
 
-function GameRow({ game, onRespond, busy, onFriendAction, busyFriendId }: GameRowProps) {
+function GameRow({ game, onRespond, busy }: GameRowProps) {
   const isPendingInvite = game.my_role === 'invitee' && game.my_invite_status === 'pending';
 
   if (isPendingInvite && onRespond) {
@@ -91,12 +67,7 @@ function GameRow({ game, onRespond, busy, onFriendAction, busyFriendId }: GameRo
         <div className="flex flex-col gap-1.5">
           <div className="text-[9px] uppercase tracking-[1px] text-muted font-mono">Kiminle Oynayacaksın</div>
           {humanSlots.map((slot) => (
-            <ParticipantRow
-              key={slot.user_id}
-              slot={slot}
-              onFriendAction={onFriendAction ?? (() => {})}
-              busy={busyFriendId === slot.user_id}
-            />
+            <ParticipantRow key={slot.user_id} slot={slot} game={game} />
           ))}
           {hasAi && (
             <div className="flex items-center gap-2">
@@ -163,7 +134,9 @@ export function LiveGamesTab() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [busyInviteId, setBusyInviteId] = useState<string | null>(null);
-  const [busyFriendId, setBusyFriendId] = useState<string | null>(null);
+  // Bir daveti kabul ettikten sonra, o oyundaki henüz arkadaş olunmayan
+  // katılımcılara toplu istek gönderme önerisi (bkz. FriendSuggestModal).
+  const [suggestCandidates, setSuggestCandidates] = useState<HumanSlot[] | null>(null);
 
   const reload = () => {
     listMyOnlineGames().then(setGames);
@@ -216,31 +189,22 @@ export function LiveGamesTab() {
     );
   }
 
-  const handleRespond = async (inviteId: string, accept: boolean) => {
-    setBusyInviteId(inviteId);
+  const handleRespond = async (game: OnlineGame, accept: boolean) => {
+    if (!game.my_invite_id) return;
+    setBusyInviteId(game.my_invite_id);
     try {
-      await respondToGameInvite(inviteId, accept);
+      await respondToGameInvite(game.my_invite_id, accept);
+      if (accept) {
+        const candidates = game.slots.filter(
+          (s): s is HumanSlot => s.type === 'human' && s.relation !== 'self' && s.relation !== 'accepted',
+        );
+        if (candidates.length > 0) setSuggestCandidates(candidates);
+      }
       reload();
     } catch (err) {
       console.error('[Kelimeki] respondToGameInvite hatası:', err);
     } finally {
       setBusyInviteId(null);
-    }
-  };
-
-  const handleFriendAction = async (userId: string, action: 'add' | 'accept') => {
-    setBusyFriendId(userId);
-    try {
-      if (action === 'add') {
-        await sendFriendRequest(userId);
-      } else {
-        await respondFriendRequest(userId, true);
-      }
-      reload();
-    } catch (err) {
-      console.error('[Kelimeki] arkadaşlık işlemi hatası:', err);
-    } finally {
-      setBusyFriendId(null);
     }
   };
 
@@ -250,6 +214,10 @@ export function LiveGamesTab() {
 
   return (
     <div className="w-full max-w-[460px] px-4 py-6 flex flex-col gap-5">
+      {suggestCandidates && (
+        <FriendSuggestModal candidates={suggestCandidates} onDone={() => setSuggestCandidates(null)} />
+      )}
+
       <button
         onClick={() => setCreating(true)}
         className="btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform"
@@ -275,10 +243,8 @@ export function LiveGamesTab() {
                   <GameRow
                     key={g.id}
                     game={g}
-                    onRespond={(accept) => g.my_invite_id && handleRespond(g.my_invite_id, accept)}
+                    onRespond={(accept) => handleRespond(g, accept)}
                     busy={busyInviteId === g.my_invite_id}
-                    onFriendAction={handleFriendAction}
-                    busyFriendId={busyFriendId}
                   />
                 ))}
               </div>

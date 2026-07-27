@@ -1,14 +1,20 @@
--- list_my_online_games'i iki şekilde genişletir:
--- 1) my_invite_id — 5. adımdaki Kabul/Reddet akışı respond_to_game_invite'ı
---    çağırmak için game_invites.id'ye ihtiyaç duyuyor, önceki sürüm bunu
---    döndürmüyordu.
--- 2) slots içindeki her insan koltuğu artık ad/avatar/arkadaşlık ilişkisiyle
---    zenginleştiriliyor (name, avatar_url, relation) — davet edilen kişi
---    kiminle oynayacağını (yalnızca daveti gönderenle değil, diğer davetli
---    oyuncularla da) görebilsin, ve henüz arkadaş olmadığı biri varsa
---    doğrudan davet satırından "+" ile arkadaşlık isteği gönderebilsin.
+-- list_my_online_games'i genişletir:
+-- 1) my_invite_id — Kabul/Reddet akışı respond_to_game_invite'ı çağırmak
+--    için game_invites.id'ye ihtiyaç duyuyor, önceki sürüm bunu döndürmüyordu.
+-- 2) slots içindeki her insan koltuğu ad/avatar/arkadaşlık ilişkisi VE o
+--    koltuğun kendi davet durumuyla zenginleştiriliyor (name, avatar_url,
+--    relation, invite_status) — davet edilen kişi kiminle oynayacağını
+--    (yalnızca daveti gönderenle değil, diğer davetli oyuncularla da) ve
+--    onların daveti kabul edip etmediğini görebilsin. `relation` ayrıca
+--    davet kabul edildikten sonra "bu kişileri arkadaş eklemek ister
+--    misin?" önerisinde henüz arkadaş olunmayanları filtrelemek için
+--    istemci tarafında kullanılıyor.
 -- `relation` değerleri search_users_for_friend'daki aynı sözlük:
 -- 'self' | 'accepted' | 'pending_outgoing' | 'pending_incoming' | null.
+-- `invite_status`, o koltuktaki kişinin KENDİ game_invites satırının
+-- durumu ('pending'|'accepted'|'declined'); kurucunun kendi koltuğu için
+-- hiç davet satırı olmadığından null'dur (istemci bunu created_by ile
+-- karşılaştırıp "Davet gönderen" olarak gösterir).
 -- profiles.select RLS'i owner-or-admin'e kilitli olduğundan (diğer
 -- security-definer RPC'lerle aynı gerekçe) bu fonksiyon da security
 -- definer olmak zorunda; slots zaten yalnızca bu oyunun tarafı olan
@@ -54,7 +60,8 @@ as $$
                 when fr.user_id = auth.uid() then 'pending_outgoing'
                 when fr.friend_id = auth.uid() then 'pending_incoming'
                 else null
-              end
+              end,
+              'invite_status', gi_slot.status
             )
           else elem.slot
         end
@@ -67,6 +74,10 @@ as $$
         on (elem.slot ->> 'type') = 'human'
         and ((fr.user_id = auth.uid() and fr.friend_id = (elem.slot ->> 'user_id')::uuid)
           or (fr.user_id = (elem.slot ->> 'user_id')::uuid and fr.friend_id = auth.uid()))
+      left join public.game_invites gi_slot
+        on (elem.slot ->> 'type') = 'human'
+        and gi_slot.online_game_id = og.id
+        and gi_slot.invitee_id = (elem.slot ->> 'user_id')::uuid
     ) as slots,
     og.created_at,
     case when og.created_by = auth.uid() then 'creator' else 'invitee' end as my_role,
