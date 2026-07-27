@@ -22,6 +22,27 @@ comment on column public.online_games.slots is 'player_count uzunluğunda dizi: 
 
 create index online_games_created_by_idx on public.online_games (created_by);
 
+-- RLS bu bölümün sonunda, game_invites de oluşturulduktan sonra etkinleştiriliyor
+-- (online_games'in select politikası game_invites'a referans veriyor).
+
+-- ── GAME_INVITES ─────────────────────────────────────────────────────────────
+create table public.game_invites (
+  id             uuid primary key default gen_random_uuid (),
+  online_game_id uuid not null references public.online_games (id) on delete cascade,
+  invitee_id     uuid not null references auth.users (id) on delete cascade,
+  status         text not null default 'pending' check (status in ('pending', 'accepted', 'declined')),
+  created_at     timestamptz not null default now(),
+  responded_at   timestamptz,
+  unique (online_game_id, invitee_id)
+);
+
+comment on table public.game_invites is 'Bir online_games satırındaki her insan koltuğu için ayrı davet satırı. friend_requests''teki istek/kabul deseniyle tutarlı.';
+
+create index game_invites_invitee_id_idx on public.game_invites (invitee_id);
+
+-- ── RLS — her iki tablo için (online_games'in select politikası game_invites'a
+-- referans verdiğinden ikisi de var olduktan sonra ekleniyor) ──────────────────
+
 alter table public.online_games enable row level security;
 
 create policy online_games_select_party on public.online_games
@@ -44,21 +65,6 @@ create policy online_games_update_creator on public.online_games
 
 create policy online_games_delete_creator on public.online_games
   for delete using (auth.uid() = created_by);
-
--- ── GAME_INVITES ─────────────────────────────────────────────────────────────
-create table public.game_invites (
-  id             uuid primary key default gen_random_uuid (),
-  online_game_id uuid not null references public.online_games (id) on delete cascade,
-  invitee_id     uuid not null references auth.users (id) on delete cascade,
-  status         text not null default 'pending' check (status in ('pending', 'accepted', 'declined')),
-  created_at     timestamptz not null default now(),
-  responded_at   timestamptz,
-  unique (online_game_id, invitee_id)
-);
-
-comment on table public.game_invites is 'Bir online_games satırındaki her insan koltuğu için ayrı davet satırı. friend_requests''teki istek/kabul deseniyle tutarlı.';
-
-create index game_invites_invitee_id_idx on public.game_invites (invitee_id);
 
 alter table public.game_invites enable row level security;
 
