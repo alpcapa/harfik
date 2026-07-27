@@ -124,7 +124,7 @@ export function AuthModal({
                 skor kartlarında nickname değil tam ad gibi görünüyordu. */}
             <input
               className={inputCls}
-              placeholder="Takma isim (isteğe bağlı, boşluksuz)"
+              placeholder="Takma isim (isteğe bağlı, herkese görünen, boşluksuz)"
               value={nickname}
               onChange={(e) => setNickname(e.target.value.replace(/\s+/g, ''))}
               autoComplete="nickname"
