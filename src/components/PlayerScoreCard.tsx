@@ -51,25 +51,25 @@ function friendDialogCopy(relation: FriendRelation | null, name: string) {
     case 'accepted':
       return {
         title: 'Arkadaşlıktan Çıkar',
-        message: `${name} kişisiyle arkadaşlığı sonlandırmak istediğine emin misin?`,
+        message: `${name} ile arkadaşsınız. Arkadaşlıktan çıkmak mı istiyorsunuz?`,
         action: 'Çıkar',
       };
     case 'pending_outgoing':
       return {
         title: 'İsteği İptal Et',
-        message: `${name} kişisine gönderdiğin arkadaşlık isteğini iptal etmek istiyor musun?`,
+        message: `${name} oyuncusuna gönderdiğin arkadaşlık isteğini iptal etmek istiyor musun?`,
         action: 'İptal Et',
       };
     case 'pending_incoming':
       return {
         title: 'Arkadaşlık İsteği',
-        message: `${name} kişisi sana arkadaşlık isteği gönderdi. Kabul etmek istiyor musun?`,
+        message: `${name} oyuncusu sana arkadaşlık isteği gönderdi. Kabul etmek istiyor musun?`,
         action: 'Kabul Et',
       };
     default:
       return {
         title: 'Arkadaş Ekle',
-        message: `${name} kişisini arkadaş olarak eklemek istiyor musun?`,
+        message: `${name} oyuncusunu arkadaş olarak eklemek istiyor musun?`,
         action: 'Ekle',
       };
   }
@@ -200,7 +200,7 @@ export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
   ];
 
   return (
-    <Modal title="Oyuncu Detayı" onClose={onClose}>
+    <Modal title="Skor Kartı" onClose={onClose}>
       <div className="mb-4 flex items-center gap-3">
         <Avatar url={member.avatar_url ?? undefined} name={name} size={44} />
         <div className="min-w-0 flex-1 flex items-center gap-2">
