@@ -7,6 +7,8 @@ import {
   fetchAdminGameActivitySeries,
   fetchAdminEngagementActivitySeries,
   fetchAdminEngagementTotals,
+  fetchAdminFriendActivitySeries,
+  fetchAdminFriendTotals,
   fetchAdminGuestSourceBreakdown,
   fetchAdminGuestDeviceBreakdown,
   fetchAdminGuestStandaloneBreakdown,
@@ -22,6 +24,8 @@ import type {
   AdminGameScope,
   AdminEngagementActivityPoint,
   AdminEngagementTotals,
+  AdminFriendActivityPoint,
+  AdminFriendTotals,
   AdminGuestSourceRow,
   AdminGuestDeviceRow,
   AdminGuestStandaloneRow,
@@ -95,6 +99,10 @@ const DURATION_SERIES: ChartSeriesDef[] = [
 const ENGAGEMENT_SERIES: ChartSeriesDef[] = [
   { key: 'likes', label: 'Beğeni', color: '#DC2626' },
   { key: 'shares', label: 'Paylaşma', color: '#2a78d6' },
+];
+const FRIEND_SERIES: ChartSeriesDef[] = [
+  { key: 'requests_sent', label: 'Gönderilen İstek', color: '#2a78d6' },
+  { key: 'friendships_formed', label: 'Kurulan Arkadaşlık', color: '#008300' },
 ];
 
 const selectCls =
@@ -282,6 +290,8 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [guestSources, setGuestSources] = useState<AdminGuestSourceRow[] | null>(null);
   const [guestDevices, setGuestDevices] = useState<AdminGuestDeviceRow[] | null>(null);
   const [guestStandalone, setGuestStandalone] = useState<AdminGuestStandaloneRow[] | null>(null);
+  const [friendActivity, setFriendActivity] = useState<AdminFriendActivityPoint[] | null>(null);
+  const [friendTotals, setFriendTotals] = useState<AdminFriendTotals | null>(null);
   const [gameActivity, setGameActivity] = useState<AdminGameActivityPoint[] | null>(null);
   const [gameGranularity, setGameGranularity] = useState<AdminActivityGranularity>('day');
   const [gamePeriod, setGamePeriod] = useState<number>(30);
@@ -315,6 +325,9 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     fetchAdminEngagementTotals()
       .then(setEngagementTotals)
       .catch((e) => setError(String(e)));
+    fetchAdminFriendTotals()
+      .then(setFriendTotals)
+      .catch((e) => setError(String(e)));
   }, []);
 
   useEffect(() => {
@@ -342,6 +355,13 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     setGuestStandalone(null);
     fetchAdminGuestStandaloneBreakdown(userPeriod * GRANULARITY_TO_DAYS[userGranularity])
       .then(setGuestStandalone)
+      .catch((e) => setError(String(e)));
+  }, [userPeriod, userGranularity]);
+
+  useEffect(() => {
+    setFriendActivity(null);
+    fetchAdminFriendActivitySeries(userPeriod, userGranularity)
+      .then(setFriendActivity)
       .catch((e) => setError(String(e)));
   }, [userPeriod, userGranularity]);
 
@@ -786,6 +806,54 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       getLabel={(row) => (row.is_standalone ? 'App' : 'Browser')}
                       csvBaseName="kelimeki-ana-ekrana-ekleme"
                     />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {friendActivity === null ? (
+                      <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>
+                    ) : (
+                      <GrowthChart
+                        data={friendActivity}
+                        granularity={userGranularity}
+                        series={FRIEND_SERIES}
+                        defaultActiveKeys={['requests_sent', 'friendships_formed']}
+                        controls={<span className={sectionTitleCls}>Arkadaşlık</span>}
+                        csvBaseName="kelimeki-arkadaslik"
+                      />
+                    )}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center">
+                        <div className="font-mono text-xl font-bold text-text">
+                          {friendTotals === null ? '…' : friendTotals.total_friendships}
+                        </div>
+                        <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
+                          Toplam Arkadaşlık
+                        </div>
+                      </div>
+                      <div className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center">
+                        <div className="font-mono text-xl font-bold text-text">
+                          {friendTotals === null ? '…' : friendTotals.total_pending_requests}
+                        </div>
+                        <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
+                          Bekleyen İstek
+                        </div>
+                      </div>
+                      <div className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center">
+                        <div className="font-mono text-xl font-bold text-text">
+                          {friendTotals === null ? '…' : friendTotals.total_invite_links}
+                        </div>
+                        <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
+                          Oluşturulan Davet Linki
+                        </div>
+                      </div>
+                      <div className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center">
+                        <div className="font-mono text-xl font-bold text-text">
+                          {friendTotals === null ? '…' : friendTotals.total_invite_signups}
+                        </div>
+                        <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
+                          Davetle Katılan Üye
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

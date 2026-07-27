@@ -9,6 +9,8 @@ import type {
   AdminEngagementActivityPoint,
   AdminEngagementTotals,
   AdminFeedbackRow,
+  AdminFriendActivityPoint,
+  AdminFriendTotals,
   AdminGameActivityPoint,
   AdminGameScope,
   AdminGuestSourceRow,
@@ -728,6 +730,41 @@ export async function fetchAdminEngagementTotals(): Promise<AdminEngagementTotal
     return null;
   }
   const row = (data as AdminEngagementTotals[] | null)?.[0];
+  return row ?? null;
+}
+
+/**
+ * Son `periods` kova için gönderilen arkadaşlık isteği ve kurulan
+ * arkadaşlık sayılarını döner (yalnızca admin — Büyüme > Kullanıcı).
+ */
+export async function fetchAdminFriendActivitySeries(
+  periods: number,
+  granularity: AdminActivityGranularity,
+): Promise<AdminFriendActivityPoint[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('admin_friend_activity_series', {
+    p_periods: periods,
+    p_granularity: granularity,
+  });
+  if (error) {
+    console.error('[Kelimeki] fetchAdminFriendActivitySeries hatası:', error.message);
+    return [];
+  }
+  return (data as AdminFriendActivityPoint[]) ?? [];
+}
+
+/**
+ * Tüm zamanların arkadaşlık/istek/davet linki sayılarını döner (yalnızca
+ * admin — Büyüme > Kullanıcı).
+ */
+export async function fetchAdminFriendTotals(): Promise<AdminFriendTotals | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('admin_friend_totals');
+  if (error) {
+    console.error('[Kelimeki] fetchAdminFriendTotals hatası:', error.message);
+    return null;
+  }
+  const row = (data as AdminFriendTotals[] | null)?.[0];
   return row ?? null;
 }
 
