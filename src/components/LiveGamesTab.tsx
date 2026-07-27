@@ -1,11 +1,12 @@
 // Kelimeki — Canlı sekmesi: davet bekleyen/rakip bekleyen/aktif Canlı
-// oyunların listesi (Faz 2 iskeleti — kurulum/davet gönderme henüz yok,
-// bkz. src/App.tsx'teki mainView tab'ı).
+// oyunların listesi + "+ Yeni Canlı Oyun" ile kurulum formuna geçiş
+// (bkz. src/App.tsx'teki mainView tab'ı, src/components/LiveGameCreateForm.tsx).
 import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { listMyOnlineGames } from '../lib/api';
 import type { OnlineGame } from '../lib/database.types';
 import { AuthModal } from './AuthModal';
+import { LiveGameCreateForm } from './LiveGameCreateForm';
 
 function statusLabel(game: OnlineGame): string {
   if (game.my_role === 'invitee' && game.my_invite_status === 'pending') return 'Davet bekliyor';
@@ -47,6 +48,11 @@ export function LiveGamesTab() {
   // null = henüz çekilmedi (yükleniyor), [] = çekildi ama hiç oyun yok.
   const [games, setGames] = useState<OnlineGame[] | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+
+  const reload = () => {
+    listMyOnlineGames().then(setGames);
+  };
 
   useEffect(() => {
     if (!user) {
@@ -63,6 +69,18 @@ export function LiveGamesTab() {
   }, [user]);
 
   if (authLoading) return null;
+
+  if (creating) {
+    return (
+      <LiveGameCreateForm
+        onCancel={() => setCreating(false)}
+        onCreated={() => {
+          setCreating(false);
+          reload();
+        }}
+      />
+    );
+  }
 
   if (!user) {
     return (
@@ -90,9 +108,8 @@ export function LiveGamesTab() {
   return (
     <div className="w-full max-w-[460px] px-4 py-6 flex flex-col gap-5">
       <button
-        disabled
-        title="Yakında"
-        className="btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white opacity-35 cursor-not-allowed"
+        onClick={() => setCreating(true)}
+        className="btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform"
       >
         + Yeni Canlı Oyun
       </button>
