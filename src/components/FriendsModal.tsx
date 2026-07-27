@@ -229,7 +229,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
           {inviteStatus === 'copied' ? 'Link Kopyalandı!' : 'Arkadaşını Davet Et'}
         </button>
         <p className="text-[10px] text-muted font-mono text-center -mt-1">
-          Kelimeki'de henüz üye olmayan arkadaşların için de çalışır.
+          Kelimeki'de henüz olmayan arkadaşlarını davet et
         </p>
 
         <div className="flex gap-1 bg-bg border border-border rounded-md p-1">
