@@ -152,7 +152,9 @@ export function AuthModal({
         )}
 
         <div>
-          {mode === 'signup' && <label className={labelCls}>E-posta {required}</label>}
+          {mode === 'signup' && (
+            <label className={labelCls}>E-posta {required} (Doğrulama linki gider)</label>
+          )}
           <input
             className={inputCls}
             type="email"
