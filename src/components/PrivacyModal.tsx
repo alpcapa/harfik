@@ -28,7 +28,7 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
       <div className="flex flex-col gap-5">
         <P>
           Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, hangi verileri topladığımızı,
-          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: Temmuz 2026.
+          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 27 Temmuz 2026.
         </P>
 
         <Section title="1. Veri Sorumlusu">
@@ -48,7 +48,14 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             <li>Ad ve soyad</li>
             <li>E-posta adresi</li>
             <li>Takma isim (isteğe bağlı)</li>
+            <li>Cinsiyet (isteğe bağlı)</li>
+            <li>Doğum tarihi (isteğe bağlı)</li>
+            <li>Profil fotoğrafı (isteğe bağlı)</li>
             <li>Oyun istatistikleri (oynanan oyunlar, kazanma/kaybetme, puan geçmişi)</li>
+            <li>
+              Arkadaşlık bağlantıları (kiminle arkadaş olduğunuz, gönderdiğiniz/aldığınız
+              arkadaşlık istekleri, davet linkinizin kullanım verisi)
+            </li>
           </ul>
         </Section>
 
@@ -75,6 +82,14 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             güvencelerin sağlanması gibi) şartlara uygun şekilde yapılır. Yasal zorunluluk halinde
             yetkili makamlarla paylaşım yapılabilir.
           </P>
+          <P>
+            Bunun yanında, adınız/takma isminiz, profil fotoğrafınız ve oyun istatistikleriniz
+            Sanal Lig (lider tablosu) ve arkadaşlık arama özelliği aracılığıyla diğer KAYITLI
+            kullanıcılara görünür olur; e-posta adresiniz hiçbir zaman başka bir kullanıcıya
+            gösterilmez. Bir oyunu paylaşmayı seçerseniz, o oyunun tahtası ve oyuncu
+            isimleri/puanları giriş yapmamış ziyaretçiler dahil herkese açık bir bağlantı
+            üzerinden görülebilir hale gelir; bu paylaşım geri alınamaz.
+          </P>
         </Section>
 
         <Section title="5. Veri Saklama Süresi">
@@ -92,10 +107,15 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             sunucularımıza otomatik gönderilmez. İstisna: misafir (girişsiz) oynadığınız bir
             oyunun sonucu, bağlantı yoksa ya da henüz hesabınız yoksa geçici olarak bu yerel
             depoda bekletilir; aynı cihazda daha sonra giriş yapar ya da kayıt olursanız bu
-            bekleyen sonuçlar otomatik olarak hesabınıza aktarılıp sunucuya gönderilir. Analitik,
-            reklam veya pazarlama amaçlı herhangi bir çerez ya da izleme teknolojisi
-            kullanılmamaktadır. Yazı tipleri de dahil tüm statik içerikler kendi
-            sunucularımızdan sağlanır; üçüncü taraf (ör. Google Fonts) çağrısı yapılmaz.
+            bekleyen sonuçlar otomatik olarak hesabınıza aktarılıp sunucuya gönderilir. Reklam
+            veya pazarlama amaçlı herhangi bir çerez ya da izleme teknolojisi kullanılmamaktadır.
+            Girişsiz (misafir) ziyaretlerde, kaç benzersiz ziyaretçimiz olduğunu anlayabilmek
+            için cihazınızda rastgele, kimliğinizle hiçbir şekilde ilişkilendirilmeyen anonim bir
+            kod üretilir; bu kodla birlikte yalnızca kaba cihaz tipi (mobil/masaüstü) ve varsa bir
+            paylaşım linkindeki kaynak etiketi sunucuya iletilir — bu veri hiçbir üçüncü tarafla
+            paylaşılmaz ve hesabınızla asla eşleştirilmez. Yazı tipleri de dahil tüm statik
+            içerikler kendi sunucularımızdan sağlanır; üçüncü taraf (ör. Google Fonts) çağrısı
+            yapılmaz.
           </P>
         </Section>
 
