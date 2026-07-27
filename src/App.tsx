@@ -6,6 +6,7 @@ import { Rack } from './components/Rack';
 import { GameOver } from './components/GameOver';
 import { UserMenu } from './components/UserMenu';
 import { Setup } from './components/Setup';
+import { LiveGamesTab } from './components/LiveGamesTab';
 import { AddToHomeScreen } from './components/AddToHomeScreen';
 import { LandscapeHint } from './components/LandscapeHint';
 import { MeaningModal } from './components/MeaningModal';
@@ -215,6 +216,12 @@ export default function App() {
   // Setup ekranında "Oyunu Başlat" tıklandığında Tutorial ilk kez
   // görülmemişse, oyun ekranı açılır açılmaz burada gösterilir.
   const [showPostStartTutorial, setShowPostStartTutorial] = useState(false);
+
+  // Kurulum ekranındaki üst sekme: yerel (2/4 kişilik, anında başlar) ya da
+  // Canlı (arkadaş daveti/kabulü — Faz 2). Bilinçli olarak Setup'ın kendi
+  // 2/4 kişilik seçicisinin içine değil, onun yanına ayrı bir sekme olarak
+  // eklendi — iki mod farklı zihinsel modeller taşıyor (bkz. proje notları).
+  const [mainView, setMainView] = useState<'local' | 'live'>('local');
 
   // Rakip köşeye giriş onay popup'ı.
   const [invasionConfirm, setInvasionConfirm] = useState<
@@ -491,12 +498,35 @@ export default function App() {
           <UserMenu />
         </div>
         <main className="w-full flex flex-col items-center">
-          <Setup
-            onStart={(players, showTutorial) => {
-              dispatch({ type: 'START', players });
-              if (showTutorial) setShowPostStartTutorial(true);
-            }}
-          />
+          <div className="w-full max-w-[460px] px-4 pt-1 flex gap-2">
+            {([
+              { key: 'local' as const, label: 'Yerel Oyun' },
+              { key: 'live' as const, label: 'Canlı' },
+            ]).map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setMainView(tab.key)}
+                className={[
+                  'flex-1 py-2 rounded-md font-sans text-xs font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97]',
+                  mainView === tab.key
+                    ? 'btn-raised bg-accent text-white border-accent'
+                    : 'btn-raised-neutral bg-panel text-text border-border',
+                ].join(' ')}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          {mainView === 'local' ? (
+            <Setup
+              onStart={(players, showTutorial) => {
+                dispatch({ type: 'START', players });
+                if (showTutorial) setShowPostStartTutorial(true);
+              }}
+            />
+          ) : (
+            <LiveGamesTab />
+          )}
         </main>
         <AddToHomeScreen />
         <LandscapeHint />
