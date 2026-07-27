@@ -12,6 +12,7 @@ import { useModalA11y } from '../hooks/useModalA11y';
 import { createOnlineGame, fetchFriends } from '../lib/api';
 import type { FriendRow, OnlineGameSlot } from '../lib/database.types';
 import { Avatar } from './Avatar';
+import { FriendsModal } from './FriendsModal';
 
 interface LiveGameCreateFormProps {
   onCancel: () => void;
@@ -49,11 +50,16 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
   const [showAiConfirm, setShowAiConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showFriendsModal, setShowFriendsModal] = useState(false);
 
   const aiConfirmRef = useModalA11y(showAiConfirm, () => setShowAiConfirm(false));
 
-  useEffect(() => {
+  const reloadFriends = () => {
     fetchFriends().then(setFriends);
+  };
+
+  useEffect(() => {
+    reloadFriends();
   }, []);
 
   // 2↔4 arası kural tamamen farklı (YZ izni yok / var) — sekme değişince
@@ -113,6 +119,15 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
 
   return (
     <div className="w-full max-w-[460px] px-4 py-6 flex flex-col gap-5">
+      {showFriendsModal && (
+        <FriendsModal
+          initialTab="search"
+          onClose={() => {
+            setShowFriendsModal(false);
+            reloadFriends();
+          }}
+        />
+      )}
       <button
         onClick={onCancel}
         className="self-start text-xs font-mono text-muted hover:text-text active:opacity-70 transition-opacity"
@@ -141,9 +156,16 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
           {friends === null ? (
             <p className="text-muted text-xs font-mono py-4 text-center">Yükleniyor…</p>
           ) : friends.length === 0 ? (
-            <p className="text-muted text-xs font-mono py-4 text-center">
-              Henüz arkadaşın yok — önce Arkadaşlar'dan birini ekle.
-            </p>
+            <div className="flex flex-col items-center gap-2.5 py-4">
+              <p className="text-muted text-xs font-mono text-center">Henüz arkadaşın yok.</p>
+              <button
+                type="button"
+                onClick={() => setShowFriendsModal(true)}
+                className="btn-raised bg-accent text-white rounded-md py-2 px-4 text-[11px] font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Arkadaşlar'ı Aç
+              </button>
+            </div>
           ) : (
             friends.map((f) => {
               const isSelected = selected.includes(f.friend_id);
