@@ -67,6 +67,10 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
   const [removeResultMsg, setRemoveResultMsg] = useState<string | null>(null);
   const confirmRemoveRef = useModalA11y(!!confirmRemove, () => setConfirmRemove(null));
   const removeResultRef = useModalA11y(!!removeResultMsg, () => setRemoveResultMsg(null));
+  const [confirmReject, setConfirmReject] = useState<IncomingFriendRequest | null>(null);
+  const [rejectResultMsg, setRejectResultMsg] = useState<string | null>(null);
+  const confirmRejectRef = useModalA11y(!!confirmReject, () => setConfirmReject(null));
+  const rejectResultRef = useModalA11y(!!rejectResultMsg, () => setRejectResultMsg(null));
 
   const reloadFriends = () => void fetchFriends().then(setFriends);
   const reloadRequests = () => void fetchIncomingFriendRequests().then(setRequests);
@@ -131,6 +135,22 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
     } finally {
       setBusyId(null);
       setConfirmRemove(null);
+    }
+  };
+
+  const handleConfirmReject = async () => {
+    if (!confirmReject) return;
+    const requesterId = confirmReject.requester_id;
+    setBusyId(requesterId);
+    try {
+      await respondFriendRequest(requesterId, false);
+      reloadRequests();
+      setRejectResultMsg('İstek reddedildi.');
+    } catch (err) {
+      console.error('[Kelimeki] istek reddetme hatası:', err);
+    } finally {
+      setBusyId(null);
+      setConfirmReject(null);
     }
   };
 
@@ -252,7 +272,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
                     <button
                       className={`${smallBtn} btn-raised-neutral bg-panel border border-border text-muted`}
                       disabled={busyId === r.requester_id}
-                      onClick={() => handleRespond(r.requester_id, false)}
+                      onClick={() => setConfirmReject(r)}
                     >
                       Reddet
                     </button>
@@ -378,6 +398,72 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
               <p className="text-sm text-text font-sans leading-relaxed pr-6">{removeResultMsg}</p>
               <button
                 onClick={() => setRemoveResultMsg(null)}
+                className="btn-raised py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Tamam
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {confirmReject &&
+        createPortal(
+          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+            <div
+              ref={confirmRejectRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="İsteği Reddet"
+              tabIndex={-1}
+              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none"
+            >
+              <p className="text-base font-bold text-text font-sans">İsteği Reddet</p>
+              <p className="text-sm text-text font-sans leading-relaxed">
+                {confirmReject.name} oyuncusunun arkadaşlık isteğini reddetmek mi istiyorsunuz?
+              </p>
+              <div className="flex gap-2 mt-1">
+                <button
+                  onClick={handleConfirmReject}
+                  disabled={busyId === confirmReject.requester_id}
+                  className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+                >
+                  {busyId === confirmReject.requester_id ? '...' : 'Reddet'}
+                </button>
+                <button
+                  onClick={() => setConfirmReject(null)}
+                  disabled={busyId === confirmReject.requester_id}
+                  className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+                >
+                  Vazgeç
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
+
+      {rejectResultMsg &&
+        createPortal(
+          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+            <div
+              ref={rejectResultRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Arkadaşlık durumu"
+              tabIndex={-1}
+              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none relative"
+            >
+              <button
+                onClick={() => setRejectResultMsg(null)}
+                aria-label="Kapat"
+                className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
+              >
+                ✕
+              </button>
+              <p className="text-sm text-text font-sans leading-relaxed pr-6">{rejectResultMsg}</p>
+              <button
+                onClick={() => setRejectResultMsg(null)}
                 className="btn-raised py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
               >
                 Tamam
