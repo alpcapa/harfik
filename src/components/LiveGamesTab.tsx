@@ -174,7 +174,7 @@ export function LiveGamesTab() {
     return (
       <>
         {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
-        <div className="w-full max-w-[460px] px-4 py-10 flex flex-col items-center gap-4 text-center">
+        <div className="w-full flex flex-col items-center gap-4 text-center py-4">
           <p className="text-sm text-muted font-sans">
             Canlı oyun oynamak için giriş yapmalısın.
           </p>
@@ -213,7 +213,7 @@ export function LiveGamesTab() {
   const waiting = (games ?? []).filter((g) => g.my_role === 'creator' && g.status === 'pending');
 
   return (
-    <div className="w-full max-w-[460px] px-4 py-6 flex flex-col gap-5">
+    <div className="w-full flex flex-col gap-5">
       {suggestCandidates && (
         <FriendSuggestModal candidates={suggestCandidates} onDone={() => setSuggestCandidates(null)} />
       )}

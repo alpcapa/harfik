@@ -118,7 +118,7 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
   };
 
   return (
-    <div className="w-full max-w-[460px] px-4 py-6 flex flex-col gap-5">
+    <div className="w-full flex flex-col gap-5">
       {showFriendsModal && (
         <FriendsModal
           initialTab="search"
