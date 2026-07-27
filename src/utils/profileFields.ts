@@ -1,0 +1,39 @@
+// Kelimeki — cinsiyet/doğum tarihi alanları için paylaşılan sabit ve
+// yardımcılar (AuthModal'ın kayıt formu ve AccountSettingsModal arasında ortak).
+import type { Gender } from '../lib/database.types';
+
+export const GENDER_OPTIONS: { value: Gender; label: string }[] = [
+  { value: 'female', label: 'Kadın' },
+  { value: 'male', label: 'Erkek' },
+];
+
+/**
+ * `birth_date` (ISO yyyy-mm-dd) sütununu "gg/aa/yyyy" gösterim biçimine
+ * çevirir — tek bir metin alanında düzenlenir. Native `<input type="date">`
+ * kullanılmıyor çünkü iOS Safari'de boş bir tarih alanına dokunup seçim
+ * yapmadan bırakmak, tekerleğin o anki konumunu (bugünün tarihi) sessizce
+ * değere yazıyordu, üstelik cihazın kendi yerel biçiminde gösteriyordu.
+ */
+export function isoToTrDate(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+/** "gg/aa/yyyy" kullanıcı girdisini `date` sütununa uygun ISO dizgeye çevirir. */
+export function trDateToIso(input: string): string | null {
+  const s = input.trim();
+  if (!s) return null;
+  const m = /^(\d{1,2})[./](\d{1,2})[./](\d{4})$/.exec(s);
+  if (!m) throw new Error('Doğum tarihini GG/AA/YYYY biçiminde gir.');
+  const d = Number(m[1]);
+  const mo = Number(m[2]);
+  const y = Number(m[3]);
+  if (y < 1900 || y > new Date().getFullYear()) throw new Error('Doğum yılı geçersiz.');
+  if (mo < 1 || mo > 12) throw new Error('Doğum ayı geçersiz.');
+  const date = new Date(y, mo - 1, d);
+  if (date.getFullYear() !== y || date.getMonth() !== mo - 1 || date.getDate() !== d) {
+    throw new Error('Geçersiz doğum tarihi.');
+  }
+  return `${String(y).padStart(4, '0')}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}

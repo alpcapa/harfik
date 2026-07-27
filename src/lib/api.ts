@@ -904,6 +904,8 @@ export async function signUp(
   nickname?: string,
   termsAccepted = false,
   channel: 'direct' | 'form' = 'direct',
+  gender?: Gender | null,
+  birthDate?: string | null,
 ) {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
   // sharedxp_pending_profile formatı trigger tarafından okunur (camelCase).
@@ -911,6 +913,8 @@ export async function signUp(
   // raw_user_meta_data->>'display_name' olarak okuyor (e-posta doğrulaması
   // açıkken signUp() session döndürmez, bu yüzden aşağıdaki update'e
   // güvenilemez — nickname'in kaybolmaması için metadata'da baştan olmalı).
+  // gender/birthDate de aynı sebeple burada (trigger tarafında,
+  // handle_new_user), oturum açılmasını bekleyen bir update'te değil.
   const result = await supabase.auth.signUp({
     email,
     password,
@@ -920,6 +924,8 @@ export async function signUp(
           firstName,
           lastName,
           agreedToTerms: termsAccepted,
+          gender: gender || null,
+          birthDate: birthDate || null,
         },
         signup_channel: channel,
         ...(nickname ? { display_name: nickname } : {}),
