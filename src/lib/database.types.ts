@@ -41,6 +41,9 @@ export interface IncomingFriendRequest {
   created_at: string;
 }
 
+/** İki kullanıcı arasındaki mevcut arkadaşlık ilişkisi — bkz. `fetchFriendRelation`. */
+export type FriendRelation = 'accepted' | 'pending_outgoing' | 'pending_incoming';
+
 /**
  * `search_users_for_friend` RPC çıktısındaki tek satır. `relation`, aranan
  * kişiyle aramızdaki mevcut ilişkiyi gösterir — UI bu duruma göre "Ekle" /
@@ -50,7 +53,7 @@ export interface FriendSearchResult {
   id: string;
   name: string;
   avatar_url: string | null;
-  relation: 'accepted' | 'pending_outgoing' | 'pending_incoming' | null;
+  relation: FriendRelation | null;
 }
 
 /** Bir oyunun bitişindeki tek bir oyuncu satırı (final sıralamasında). */

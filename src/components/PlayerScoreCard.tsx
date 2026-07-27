@@ -1,12 +1,22 @@
 // Kelimeki — herhangi bir oyuncunun salt-okunur skor kartı (Admin Paneli >
 // Üyeler ve Sanal Lig'de bir satıra tıklanınca açılır)
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
 import { GameHistoryModal } from './GameHistoryModal';
 import { Leaderboard } from './Leaderboard';
-import { fetchPlayerStats, fetchMyLeaderboardRank } from '../lib/api';
-import type { MyLeaderboardRank, PlayerStats } from '../lib/database.types';
+import { useAuth } from '../hooks/useAuth';
+import { useModalA11y } from '../hooks/useModalA11y';
+import {
+  fetchFriendRelation,
+  fetchMyLeaderboardRank,
+  fetchPlayerStats,
+  removeFriend,
+  respondFriendRequest,
+  sendFriendRequest,
+} from '../lib/api';
+import type { FriendRelation, MyLeaderboardRank, PlayerStats } from '../lib/database.types';
 
 /** Bir skor kartı çizmek için gereken asgari oyuncu kimliği. */
 export interface PlayerSummary {
@@ -32,7 +42,41 @@ function memberDisplayName(m: PlayerSummary) {
   return m.display_name || m.first_name || 'Oyuncu';
 }
 
+// Henüz canlı oyun olmadığından arkadaş eklemenin somut bir faydası yok —
+// bu yüzden Sanal Lig'den herhangi birinin kartını görünce arkadaş
+// ekleyebilmek önemli: arkadaşsa yeşil ✓ (dokununca çıkarma onayı), değilse
+// + (dokununca duruma göre ekleme/kabul/iptal onayı) gösterir.
+function friendDialogCopy(relation: FriendRelation | null, name: string) {
+  switch (relation) {
+    case 'accepted':
+      return {
+        title: 'Arkadaşlıktan Çıkar',
+        message: `${name} kişisiyle arkadaşlığı sonlandırmak istediğine emin misin?`,
+        action: 'Çıkar',
+      };
+    case 'pending_outgoing':
+      return {
+        title: 'İsteği İptal Et',
+        message: `${name} kişisine gönderdiğin arkadaşlık isteğini iptal etmek istiyor musun?`,
+        action: 'İptal Et',
+      };
+    case 'pending_incoming':
+      return {
+        title: 'Arkadaşlık İsteği',
+        message: `${name} kişisi sana arkadaşlık isteği gönderdi. Kabul etmek istiyor musun?`,
+        action: 'Kabul Et',
+      };
+    default:
+      return {
+        title: 'Arkadaş Ekle',
+        message: `${name} kişisini arkadaş olarak eklemek istiyor musun?`,
+        action: 'Ekle',
+      };
+  }
+}
+
 export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
+  const { user } = useAuth();
   const [statsByCount, setStatsByCount] = useState<
     Record<number, PlayerStats | null | undefined>
   >({ 2: undefined, 4: undefined });
@@ -40,6 +84,10 @@ export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
   const [showAllGames, setShowAllGames] = useState(false);
   const [showLeague, setShowLeague] = useState(false);
   const [rank, setRank] = useState<MyLeaderboardRank | null>(null);
+  const [relation, setRelation] = useState<FriendRelation | null | undefined>(undefined);
+  const [showFriendConfirm, setShowFriendConfirm] = useState(false);
+  const [friendBusy, setFriendBusy] = useState(false);
+  const friendConfirmRef = useModalA11y(showFriendConfirm, () => setShowFriendConfirm(false));
 
   useEffect(() => {
     for (const count of TABS) {
@@ -49,6 +97,41 @@ export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
     }
     fetchMyLeaderboardRank(member.id).then(setRank);
   }, [member.id]);
+
+  useEffect(() => {
+    if (!user || user.id === member.id) {
+      setRelation(null);
+      return;
+    }
+    let cancelled = false;
+    fetchFriendRelation(member.id).then((r) => {
+      if (!cancelled) setRelation(r);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, member.id]);
+
+  const showFriendButton = !!user && user.id !== member.id && relation !== undefined;
+
+  const handleFriendAction = async () => {
+    setFriendBusy(true);
+    try {
+      if (relation === 'accepted' || relation === 'pending_outgoing') {
+        await removeFriend(member.id); // arkadaşlıktan çıkar / gönderilen isteği iptal et
+      } else if (relation === 'pending_incoming') {
+        await respondFriendRequest(member.id, true); // kabul et
+      } else {
+        await sendFriendRequest(member.id);
+      }
+      setRelation(await fetchFriendRelation(member.id));
+    } catch (err) {
+      console.error('[Kelimeki] arkadaşlık aksiyonu hatası:', err);
+    } finally {
+      setFriendBusy(false);
+      setShowFriendConfirm(false);
+    }
+  };
 
   const name = memberDisplayName(member);
   const stats = statsByCount[tab];
@@ -120,8 +203,22 @@ export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
     <Modal title="Oyuncu Detayı" onClose={onClose}>
       <div className="mb-4 flex items-center gap-3">
         <Avatar url={member.avatar_url ?? undefined} name={name} size={44} />
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 flex items-center gap-2">
           <div className="text-base font-bold text-text truncate">{name}</div>
+          {showFriendButton && (
+            <button
+              type="button"
+              onClick={() => setShowFriendConfirm(true)}
+              aria-label={relation === 'accepted' ? 'Arkadaşlık durumunu yönet' : 'Arkadaş ekle'}
+              className={`shrink-0 w-6 h-6 rounded-full border flex items-center justify-center text-sm font-bold leading-none active:scale-90 transition-transform ${
+                relation === 'accepted'
+                  ? 'bg-green/15 text-green border-green/40'
+                  : 'bg-accent/15 text-accent border-accent/40'
+              }`}
+            >
+              {relation === 'accepted' ? '✓' : '+'}
+            </button>
+          )}
         </div>
         <button
           type="button"
@@ -217,6 +314,46 @@ export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
         />
       )}
       {showLeague && <Leaderboard onClose={() => setShowLeague(false)} />}
+
+      {showFriendConfirm &&
+        relation !== undefined &&
+        createPortal(
+          (() => {
+            const copy = friendDialogCopy(relation, name);
+            return (
+              <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+                <div
+                  ref={friendConfirmRef}
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={copy.title}
+                  tabIndex={-1}
+                  className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none"
+                >
+                  <p className="text-base font-bold text-text font-sans">{copy.title}</p>
+                  <p className="text-sm text-text font-sans leading-relaxed">{copy.message}</p>
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={handleFriendAction}
+                      disabled={friendBusy}
+                      className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+                    >
+                      {friendBusy ? '...' : copy.action}
+                    </button>
+                    <button
+                      onClick={() => setShowFriendConfirm(false)}
+                      disabled={friendBusy}
+                      className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+                    >
+                      Vazgeç
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })(),
+          document.body,
+        )}
     </Modal>
   );
 }

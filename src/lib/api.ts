@@ -18,6 +18,7 @@ import type {
   AdminUserActivityPoint,
   BoardSnapshotTile,
   FeedbackSource,
+  FriendRelation,
   FriendRow,
   FriendSearchResult,
   GameHistoryEntry,
@@ -499,6 +500,35 @@ export async function fetchFriends(): Promise<FriendRow[]> {
     return [];
   }
   return (data as FriendRow[]) ?? [];
+}
+
+/**
+ * Oturum açan kullanıcı ile verilen kullanıcı arasındaki arkadaşlık ilişkisini
+ * döner — `PlayerScoreCard`'daki arkadaş ekle/çıkar simgesi için. RPC değil,
+ * `friend_requests` tablosunu doğrudan sorgular: `friend_requests_select_own`
+ * RLS politikası zaten yalnızca ilişkinin taraflarından biri (auth.uid())
+ * olunca satırı görmeye izin veriyor, sorgu her zaman çağıranı içerdiğinden
+ * bu koşul otomatik sağlanır. Kendi kartına bakarken ya da girişsizken null.
+ */
+export async function fetchFriendRelation(targetId: string): Promise<FriendRelation | null> {
+  if (!supabase) return null;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || user.id === targetId) return null;
+
+  const { data, error } = await supabase
+    .from('friend_requests')
+    .select('user_id, status')
+    .or(`and(user_id.eq.${user.id},friend_id.eq.${targetId}),and(user_id.eq.${targetId},friend_id.eq.${user.id})`)
+    .maybeSingle();
+  if (error) {
+    console.error('[Kelimeki] fetchFriendRelation hatası:', error.message);
+    return null;
+  }
+  if (!data) return null;
+  if (data.status === 'accepted') return 'accepted';
+  return data.user_id === user.id ? 'pending_outgoing' : 'pending_incoming';
 }
 
 /** Bana gelen, henüz cevaplanmamış arkadaşlık isteklerini döner (`UserMenu` rozeti bu sayıyı kullanır). */
