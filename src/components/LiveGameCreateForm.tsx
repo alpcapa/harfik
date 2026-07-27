@@ -128,13 +128,6 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
           }}
         />
       )}
-      <button
-        onClick={onCancel}
-        className="self-start text-xs font-mono text-muted hover:text-text active:opacity-70 transition-opacity"
-      >
-        ← Geri
-      </button>
-
       <div className="flex flex-col gap-2">
         <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
           Oyuncu Sayısı
@@ -167,21 +160,36 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
               </span>
             </button>
           ) : (
-            friends.map((f) => {
-              const isSelected = selected.includes(f.friend_id);
-              return (
-                <button
-                  key={f.friend_id}
-                  type="button"
-                  onClick={() => toggleFriend(f.friend_id)}
-                  className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel text-left transition-transform active:scale-[0.99]"
+            <>
+              {friends.map((f) => {
+                const isSelected = selected.includes(f.friend_id);
+                return (
+                  <button
+                    key={f.friend_id}
+                    type="button"
+                    onClick={() => toggleFriend(f.friend_id)}
+                    className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel text-left transition-transform active:scale-[0.99]"
+                  >
+                    <Avatar url={f.avatar_url} name={f.name} size={28} />
+                    <span className="flex-1 min-w-0 text-sm font-bold text-text truncate">{f.name}</span>
+                    <CheckMark checked={isSelected} />
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => setShowFriendsModal(true)}
+                className="flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-dashed border-border text-left transition-transform active:scale-[0.99]"
+              >
+                <span
+                  className="w-7 h-7 rounded-full border border-dashed border-border flex items-center justify-center text-accent text-base leading-none shrink-0"
+                  aria-hidden
                 >
-                  <Avatar url={f.avatar_url} name={f.name} size={28} />
-                  <span className="flex-1 min-w-0 text-sm font-bold text-text truncate">{f.name}</span>
-                  <CheckMark checked={isSelected} />
-                </button>
-              );
-            })
+                  +
+                </span>
+                <span className="text-sm font-bold text-accent">Arkadaş Ekle</span>
+              </button>
+            </>
           )}
           {playerCount === 4 && showAiRow && (
             <button
@@ -206,13 +214,22 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
 
       {error && <p className="text-xs text-red font-mono text-center">{error}</p>}
 
-      <button
-        onClick={handleSubmit}
-        disabled={!canSubmit || busy}
-        className="btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-      >
-        {busy ? 'Gönderiliyor…' : 'Davet Gönder'}
-      </button>
+      <div className="flex gap-2">
+        <button
+          onClick={handleSubmit}
+          disabled={!canSubmit || busy}
+          className="flex-1 btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+        >
+          {busy ? 'Gönderiliyor…' : 'Davet Gönder'}
+        </button>
+        <button
+          onClick={onCancel}
+          disabled={busy}
+          className="flex-1 btn-raised-neutral py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-void border border-border text-text active:scale-[0.97] transition-transform disabled:opacity-50"
+        >
+          Vazgeç
+        </button>
+      </div>
 
       {showAiConfirm &&
         createPortal(

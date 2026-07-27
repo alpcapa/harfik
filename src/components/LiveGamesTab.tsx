@@ -176,7 +176,7 @@ export function LiveGamesTab() {
         {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
         <div className="w-full max-w-[460px] px-4 py-10 flex flex-col items-center gap-4 text-center">
           <p className="text-sm text-muted font-sans">
-            Canlı oyun oynamak (arkadaşlarınla davet/kabul ile) için giriş yapmalısın.
+            Canlı oyun oynamak için giriş yapmalısın.
           </p>
           <button
             onClick={() => setShowAuthModal(true)}
