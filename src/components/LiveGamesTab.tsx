@@ -22,10 +22,12 @@ function statusLabel(game: OnlineGame): string {
 
 // Bir davet satırındaki tek katılımcının, o oyundaki rolüne göre etiketi —
 // "kim arkadaşım" değil "kim ne durumda" sorusuna cevap verir (relation
-// tabanlı +/✓ göstergesi kafa karıştırdığı için kaldırıldı).
+// tabanlı +/✓ göstergesi kafa karıştırdığı için kaldırıldı). Çağıranın
+// kendi koltuğu da özel bir "Sen" etiketi almıyor — o da diğer davetliler
+// gibi kendi gerçek adıyla ve invite_status'una göre gösterilir (bu
+// listede zaten her zaman 'pending'dir, yani "Bekliyor" çıkar).
 function participantLabel(slot: HumanSlot, game: OnlineGame): string {
   if (slot.user_id === game.created_by) return 'Davet gönderen';
-  if (slot.relation === 'self') return 'Sen';
   if (slot.invite_status === 'accepted') return 'Kabul etti';
   if (slot.invite_status === 'declined') return 'Reddetti';
   return 'Bekliyor';
@@ -35,9 +37,7 @@ function ParticipantRow({ slot, game }: { slot: HumanSlot; game: OnlineGame }) {
   return (
     <div className="flex items-center gap-2">
       <Avatar url={slot.avatar_url} name={slot.name} size={22} />
-      <span className="flex-1 min-w-0 text-xs text-text truncate">
-        {slot.relation === 'self' ? 'Sen' : (slot.name ?? 'Oyuncu')}
-      </span>
+      <span className="flex-1 min-w-0 text-xs text-text truncate">{slot.name ?? 'Oyuncu'}</span>
       <span className="text-[9px] font-mono uppercase tracking-[0.5px] text-muted shrink-0">
         {participantLabel(slot, game)}
       </span>
