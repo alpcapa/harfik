@@ -11,6 +11,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useModalA11y } from '../hooks/useModalA11y';
 import { createOnlineGame, fetchFriends } from '../lib/api';
 import type { FriendRow, OnlineGameSlot } from '../lib/database.types';
+import { trLower } from '../utils/turkish';
 import { Avatar } from './Avatar';
 import { FriendsModal } from './FriendsModal';
 
@@ -51,6 +52,7 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showFriendsModal, setShowFriendsModal] = useState(false);
+  const [query, setQuery] = useState('');
 
   const aiConfirmRef = useModalA11y(showAiConfirm, () => setShowAiConfirm(false));
 
@@ -145,66 +147,81 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
         <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
           {playerCount === 2 ? 'Arkadaşını Seç' : `Arkadaşlarını Seç (${selected.length}/3)`}
         </div>
-        <div className="flex flex-col gap-1.5">
-          {friends === null ? (
-            <p className="text-muted text-xs font-mono py-4 text-center">Yükleniyor…</p>
-          ) : friends.length === 0 ? (
-            <div className="flex flex-col items-center gap-2.5 py-4">
-              <p className="text-muted text-xs font-mono text-center">Henüz hiç arkadaşın yok.</p>
-              <button
-                type="button"
-                onClick={() => setShowFriendsModal(true)}
-                className="btn-raised bg-accent text-white rounded-md py-2 px-4 text-[11px] font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
-              >
-                Arkadaş Ekle / Davet Et
-              </button>
-            </div>
-          ) : (
-            <>
-              {friends.map((f) => {
-                const isSelected = selected.includes(f.friend_id);
-                return (
-                  <button
-                    key={f.friend_id}
-                    type="button"
-                    onClick={() => toggleFriend(f.friend_id)}
-                    className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel text-left transition-transform active:scale-[0.99]"
-                  >
-                    <Avatar url={f.avatar_url} name={f.name} size={28} />
-                    <span className="flex-1 min-w-0 text-sm font-bold text-text truncate">{f.name}</span>
-                    <CheckMark checked={isSelected} />
-                  </button>
-                );
-              })}
-              <button
-                type="button"
-                onClick={() => setShowFriendsModal(true)}
-                className="flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-dashed border-border text-left transition-transform active:scale-[0.99]"
-              >
-                <span
-                  className="w-7 h-7 rounded-full border border-dashed border-border flex items-center justify-center text-accent text-base leading-none shrink-0"
-                  aria-hidden
-                >
-                  +
-                </span>
-                <span className="text-sm font-bold text-accent">Arkadaş Ekle</span>
-              </button>
-            </>
-          )}
-          {playerCount === 4 && showAiRow && (
+        {friends === null ? (
+          <p className="text-muted text-xs font-mono py-4 text-center">Yükleniyor…</p>
+        ) : friends.length === 0 ? (
+          <div className="flex flex-col items-center gap-2.5 py-4">
+            <p className="text-muted text-xs font-mono text-center">Henüz hiç arkadaşın yok.</p>
             <button
               type="button"
-              onClick={() => setAiSelected((v) => !v)}
-              className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel text-left transition-transform active:scale-[0.99]"
+              onClick={() => setShowFriendsModal(true)}
+              className="btn-raised bg-accent text-white rounded-md py-2 px-4 text-[11px] font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
             >
-              <span className="w-7 h-7 rounded-full bg-void border border-border flex items-center justify-center text-sm shrink-0" aria-hidden>
-                🤖
-              </span>
-              <span className="flex-1 min-w-0 text-sm font-bold text-text truncate">Yapay Zeka</span>
-              <CheckMark checked={aiSelected} />
+              Arkadaş Ekle / Davet Et
             </button>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="İsim ya da takma ad ara…"
+              className="w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors"
+            />
+            <div className="flex flex-col gap-1.5 max-h-[280px] overflow-y-auto pr-0.5">
+              {(() => {
+                const filtered = friends.filter((f) => trLower(f.name).includes(trLower(query.trim())));
+                if (filtered.length === 0) {
+                  return (
+                    <p className="text-muted text-xs font-mono py-4 text-center">Kimse bulunamadı.</p>
+                  );
+                }
+                return filtered.map((f) => {
+                  const isSelected = selected.includes(f.friend_id);
+                  return (
+                    <button
+                      key={f.friend_id}
+                      type="button"
+                      onClick={() => toggleFriend(f.friend_id)}
+                      className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel text-left transition-transform active:scale-[0.99] shrink-0"
+                    >
+                      <Avatar url={f.avatar_url} name={f.name} size={28} />
+                      <span className="flex-1 min-w-0 text-sm font-bold text-text truncate">{f.name}</span>
+                      <CheckMark checked={isSelected} />
+                    </button>
+                  );
+                });
+              })()}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowFriendsModal(true)}
+              className="flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-dashed border-border text-left transition-transform active:scale-[0.99]"
+            >
+              <span
+                className="w-7 h-7 rounded-full border border-dashed border-border flex items-center justify-center text-accent text-base leading-none shrink-0"
+                aria-hidden
+              >
+                +
+              </span>
+              <span className="text-sm font-bold text-accent">Arkadaş Ekle</span>
+            </button>
+            {playerCount === 4 && showAiRow && (
+              <button
+                type="button"
+                onClick={() => setAiSelected((v) => !v)}
+                className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel text-left transition-transform active:scale-[0.99]"
+              >
+                <span className="w-7 h-7 rounded-full bg-void border border-border flex items-center justify-center text-sm shrink-0" aria-hidden>
+                  🤖
+                </span>
+                <span className="flex-1 min-w-0 text-sm font-bold text-text truncate">Yapay Zeka</span>
+                <CheckMark checked={aiSelected} />
+              </button>
+            )}
+          </div>
+        )}
         {playerCount === 4 && (
           <p className="text-[10px] text-muted font-mono">
             En az 2 arkadaş gerekir — 3'ten azsa kalan koltuk Yapay Zeka ile dolar.
