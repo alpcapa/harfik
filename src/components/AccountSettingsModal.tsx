@@ -211,11 +211,14 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
 
         <div>
           <label className={labelCls}>Takma isim</label>
+          {/* Boşluk kabul edilmiyor (tek kelime, özel karakterler serbest) —
+              aksi halde biri buraya gerçek adını yazarsa (ör. "İsim Soyad")
+              skor kartlarında nickname değil tam ad gibi görünüyordu. */}
           <input
             className={inputCls}
             value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
-            placeholder="Girilmezse oyunda sadece adın görünür"
+            onChange={(e) => setNickname(e.target.value.replace(/\s+/g, ''))}
+            placeholder="Girilmezse oyunda sadece adın görünür (boşluksuz)"
             autoComplete="nickname"
           />
         </div>

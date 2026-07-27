@@ -119,11 +119,14 @@ export function AuthModal({
                 required
               />
             </div>
+            {/* Boşluk kabul edilmiyor (tek kelime, özel karakterler serbest) —
+                aksi halde biri buraya gerçek adını yazarsa (ör. "İsim Soyad")
+                skor kartlarında nickname değil tam ad gibi görünüyordu. */}
             <input
               className={inputCls}
-              placeholder="Takma isim (isteğe bağlı)"
+              placeholder="Takma isim (isteğe bağlı, boşluksuz)"
               value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
+              onChange={(e) => setNickname(e.target.value.replace(/\s+/g, ''))}
               autoComplete="nickname"
             />
           </>
