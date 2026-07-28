@@ -771,7 +771,7 @@ export function subscribeOnlineGameState(gameId: string, onChange: () => void): 
  * (`play-ai-turn` Edge Function'ı, Faz 3 Adım 5). YZ'nin gerçek rafı bu
  * çağrıda hiçbir zaman tarayıcıya dönmez — hamle tamamen sunucuda
  * hesaplanır, yanıt yalnızca başarı/durum bilgisi taşır (bkz.
- * src/utils/onlineAiTurn.ts, CLAUDE.md "Canlı Oyun — Faz 3").
+ * `OnlineGameScreen.tsx`'teki `refresh()`, CLAUDE.md "Canlı Oyun — Faz 3").
  */
 export async function triggerAiTurn(gameId: string): Promise<{ played: boolean }> {
   if (!supabase) return { played: false };

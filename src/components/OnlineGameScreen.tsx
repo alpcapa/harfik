@@ -164,17 +164,19 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     [game.slots, myUserId],
   );
 
-  // App.tsx'teki `triggerPendingAiTurns` yalnızca uygulama açılışında ([user]
-  // değiştiğinde) bir kez çalışır — bu ekranda oturup insan turlarını art
-  // arda oynarken sıra bir YZ koltuğuna geldiğinde onu tetikleyen başka
-  // hiçbir şey yoktu (aynı katılımcı yeniden mount olmadığı sürece), YZ'nin
-  // sırası "oynaması bekleniyor" banner'ında sonsuza dek asılı kalıyordu.
-  // Bu yüzden her `refresh()`'te sıradaki koltuk YZ ise `triggerAiTurn`
-  // burada da çağrılır — birden fazla istemci aynı anda tetiklese de
-  // `submit_move`'un satır kilidi çifte oynamayı zaten engelliyor
-  // (bkz. onlineAiTurn.ts), `aiTriggeringRef` yalnızca bu sekmenin kendi
-  // ardışık refresh'lerinin (focus/visibility gibi) aynı YZ turunu
-  // gereksiz yere tekrar tekrar tetiklemesini önlüyor.
+  // YZ turunu tetiklemenin TEK yolu burası — bilinçli olarak uygulama
+  // açılışına/mount'a bağlı ayrı bir arka plan taraması YOK (eski
+  // `App.tsx`'teki `triggerPendingAiTurns`, `src/utils/onlineAiTurn.ts,
+  // kaldırıldı): sıra bir YZ koltuğuna geçtiği an, o değişikliği yapan
+  // insan oyuncunun kendi bu ekranı zaten `online_game_states`'e abone
+  // olduğundan (`subscribeOnlineGameState`), kendi hamlesinin Realtime
+  // yankısı `refresh()`'i hemen tetikler — YZ'nin sırası "uygulama tekrar
+  // açılana kadar" değil, 3. oyuncunun hamlesinin hemen ardından otomatik
+  // oynanır. Birden fazla istemci (ör. başka bir katılımcının ekranı da
+  // açıksa) aynı anda tetiklese de `submit_move`'un satır kilidi çifte
+  // oynamayı zaten engelliyor; `aiTriggeringRef` yalnızca bu sekmenin kendi
+  // ardışık refresh'lerinin (focus/visibility gibi) henüz sonuçlanmamış
+  // aynı YZ turunu gereksiz yere tekrar tetiklemesini önlüyor.
   const aiTriggeringRef = useRef(false);
 
   useEffect(() => {
