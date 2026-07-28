@@ -379,17 +379,24 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
 
   // Sunucu/doğrulama hatası bir SET_MESSAGE ile burada anlık olarak
   // (bir sonraki senkrona kadar) `state.message`'a yazılır — doluysa o,
-  // yukarıdaki hesaplanan son-hamle mesajının önüne geçer.
+  // yukarıdaki hesaplanan son-hamle mesajının önüne geçer. Oyun bittiyse
+  // (endGame'in yerel karşılığı) gameReducer.ts'teki `endGame()` gibi bu her
+  // şeyin önüne geçip kesin olarak "Oyun bitti." gösterir — son hamlenin
+  // sonucu değil (o GameOver ekranının arkasında kalır).
   const liveMessage = moveStatus && !moveStatus.valid && moveStatus.reason
     ? moveStatus.reason
-    : state.message || lastMoveMessage.message;
+    : state.isGameOver
+      ? 'Oyun bitti.'
+      : state.message || lastMoveMessage.message;
   const liveMessageType = moveStatus && !moveStatus.valid && moveStatus.reason
     ? 'err'
     : moveStatus?.valid
       ? 'ok'
-      : state.message
-        ? state.messageType
-        : lastMoveMessage.messageType;
+      : state.isGameOver
+        ? ''
+        : state.message
+          ? state.messageType
+          : lastMoveMessage.messageType;
 
   const handlePlay = async () => {
     if (!wordsReady || !canAct || busy || !me) return;
