@@ -264,6 +264,13 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   const invites = (games ?? []).filter((g) => g.my_role === 'invitee' && g.my_invite_status === 'pending');
   const active = (games ?? []).filter((g) => g.status === 'active');
   const waiting = (games ?? []).filter((g) => g.my_role === 'creator' && g.status === 'pending');
+  // Daveti kabul ettin ama oyun (4 kişilikte diğer davetliler henüz
+  // kabul etmediğinden) hâlâ 'pending' — `invites`/`active`/`waiting`
+  // hiçbirine düşmediğinden bir kategori eksikti, oyun listede hiç
+  // görünmüyordu (kabul ettikten sonra "kayboluyor" gibi görünüyordu).
+  const acceptedWaiting = (games ?? []).filter(
+    (g) => g.my_role === 'invitee' && g.my_invite_status === 'accepted' && g.status === 'pending',
+  );
 
   return (
     <div className="w-full flex flex-col gap-5">
@@ -304,6 +311,7 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
             </div>
           )}
           <Section title="Aktif" games={active} onOpenGame={onOpenGame} turns={turns} />
+          <Section title="Kabul Ettin — Diğerleri Bekleniyor" games={acceptedWaiting} />
           <Section title="Rakip Bekleniyor" games={waiting} />
         </>
       )}
