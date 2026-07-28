@@ -181,9 +181,24 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     const unsubscribe = subscribeOnlineGameState(game.id, () => {
       void refresh();
     });
+    // Ekran kilitlenip/sekme arka plana alınınca Realtime websocket'i
+    // askıya alınabiliyor (özellikle iOS Safari'de) — o sırada gelen bir
+    // hamle olayı sessizce kaçırılır (postgres_changes canlı bir akıştır,
+    // kaçırılan olay tekrar oynatılmaz). Ön plana/çevrimiçi'ye dönüldüğünde
+    // emniyet için elle bir kez daha senkronize ediyoruz — önceden bunun
+    // tek yolu sekmeden çıkıp tekrar girmekti.
+    const onForeground = () => {
+      if (document.visibilityState === 'visible') void refresh();
+    };
+    document.addEventListener('visibilitychange', onForeground);
+    window.addEventListener('focus', onForeground);
+    window.addEventListener('online', onForeground);
     return () => {
       cancelled = true;
       unsubscribe();
+      document.removeEventListener('visibilitychange', onForeground);
+      window.removeEventListener('focus', onForeground);
+      window.removeEventListener('online', onForeground);
     };
   }, [game.id, mySlotIndex]);
 
