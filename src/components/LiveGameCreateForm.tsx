@@ -224,7 +224,7 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
         )}
         {playerCount === 4 && (
           <p className="text-[10px] text-muted font-mono">
-            En az 2 arkadaş gerekir — 3'ten azsa kalan koltuk Yapay Zeka ile dolar.
+            En az 2 arkadaş seçmelisin. 3. oyuncuyu seçmeden Davet Gönder'e basarsan 4. oyuncu Yapay Zeka olur.
           </p>
         )}
       </div>
