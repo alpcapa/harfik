@@ -192,6 +192,30 @@ function Section({
   );
 }
 
+// Bu oyunda hâlâ yanıt vermemiş (kurucu hariç, kabul/reddetmemiş) insan
+// koltuklarının isimleri — "Rakip Bekleniyor" gibi jenerik bir başlık yerine
+// kartın kendisinde doğrudan KİMİN bekleniyor olduğunu göstermek için.
+function pendingParticipantNames(game: OnlineGame): string[] {
+  return game.slots
+    .filter(
+      (s): s is HumanSlot =>
+        s.type === 'human' && s.user_id !== game.created_by && s.invite_status === 'pending',
+    )
+    .map((s) => s.name ?? 'Oyuncu');
+}
+
+// Tek kişi bekleniyorsa (2 kişilik oyunlarda her zaman, 4 kişilikte çoğu
+// zaman) doğrudan "{isim} bekleniyor" gösterir — Türkçe iyelik/çekim eki
+// gerektirmeyen aynı kalıp (bkz. "Sıra: {isim}" notu, OnlineGameScreen).
+// Birden fazla kişi bekleniyorsa isimler virgülle listelenir; hiç kimse
+// (teorik olarak olmaması gereken bir durum) beklenmiyorsa oyuncu sayısına
+// düşülür.
+function pendingCardTitle(game: OnlineGame): string {
+  const names = pendingParticipantNames(game);
+  if (names.length === 0) return `${game.player_count} Kişilik Canlı Oyun`;
+  return `${names.join(', ')} bekleniyor`;
+}
+
 // "Kabul Ettin — Diğerleri Bekleniyor"/"Rakip Bekleniyor" için: her oyunu
 // tek satırlık bir özet yerine tam "Kiminle Oynayacaksın" detay kartıyla
 // gösterir — bu iki bölümde asıl merak edilen şey zaten "hangi arkadaşım
@@ -204,7 +228,7 @@ function PendingSection({ title, games }: { title: string; games: OnlineGame[] }
       <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">{title}</div>
       <div className="flex flex-col gap-2">
         {games.map((g) => (
-          <PendingGameCard key={g.id} game={g} title={`${g.player_count} Kişilik Canlı Oyun`} />
+          <PendingGameCard key={g.id} game={g} title={pendingCardTitle(g)} />
         ))}
       </div>
     </div>
