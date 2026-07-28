@@ -8,17 +8,18 @@
 // Auth: çağıranın kendi JWT'siyle bir client oluşturulur (feedback-reply
 // ile aynı desen) — hem katılımcı olduğunu doğrulamak hem de (rafı OKUMAK
 // için değil, yalnızca) hamleyi submit_move'a GÖNDERMEK için kullanılır;
-// submit_move'un kendi 'ai' dalı (bkz. 20260728170000 migration'ı) böylece
+// submit_move'un kendi 'ai' dalı (bkz. 20260728172716 migration'ı) böylece
 // herhangi bir katılımcının YZ adına gönderebilmesine izin verir. Rafı
 // okumak için AYRI bir service-role client kullanılır (online_game_secrets
 // hiçbir client rolüne grant edilmemiştir, yalnızca service role erişebilir).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { CORS_HEADERS } from '../_shared/email.ts';
-import { cornersFor } from './_game/constants.ts';
-import { findAIMove } from './_game/ai.ts';
-import { calcWordRawScores, computeInvasionSplit } from './_game/validator.ts';
-import { getFormedWords, key } from './_game/board.ts';
-import type { Board, Player, Tile } from './_game/types.ts';
+import { cornersFor } from '../_game/constants.ts';
+import { findAIMove } from '../_game/ai.ts';
+import { calcWordRawScores, computeInvasionSplit } from '../_game/validator.ts';
+import { getFormedWords, key } from '../_game/board.ts';
+import { loadWordSet } from '../_game/wordSet.ts';
+import type { Board, Player, Tile } from '../_game/types.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
@@ -122,13 +123,15 @@ Deno.serve(async (req: Request) => {
   }
 
   // Rafı yalnızca burada, service role ile okuyoruz — bu response'a hiçbir
-  // zaman dahil edilmez, yalnızca aşağıdaki findAIMove'a girdi olarak kullanılır.
+  // zaman dahil edilmez, yalnızca aşağıdaki findAIMove'a girdi olarak
+  // kullanılır. Kelime listesi de aynı service role ile `words` tablosundan
+  // (RLS'i bypass ederek) paralel çekilir — bkz. wordSet.ts.
   const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-  const { data: secrets, error: secretsError } = await serviceClient
-    .from('online_game_secrets')
-    .select('racks')
-    .eq('online_game_id', gameId)
-    .single();
+  const [secretsResult] = await Promise.all([
+    serviceClient.from('online_game_secrets').select('racks').eq('online_game_id', gameId).single(),
+    loadWordSet(serviceClient),
+  ]);
+  const { data: secrets, error: secretsError } = secretsResult;
   if (secretsError || !secrets) {
     console.error('[play-ai-turn] secrets okunamadı:', secretsError?.message);
     return jsonResponse({ error: 'Oyun verisi okunamadı.' }, 500);
