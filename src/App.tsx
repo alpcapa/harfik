@@ -31,6 +31,7 @@ import { fetchMeaning, isValidWordRemote, isSupabaseConfigured, logGameFinish, l
 import { saveGameDurable, flushPendingGames } from './utils/gameSync';
 import { flushPendingFeedback } from './utils/feedbackSync';
 import { takePendingInviteToken } from './utils/friendInvite';
+import { triggerPendingAiTurns } from './utils/onlineAiTurn';
 import {
   getOrCreateAnonId,
   visitAlreadyLoggedToday,
@@ -131,6 +132,16 @@ export default function App() {
     void flushPendingGames();
     window.addEventListener('online', flushPendingGames);
     return () => window.removeEventListener('online', flushPendingGames);
+  }, [user]);
+
+  // Kendi aktif Canlı oyunlarından herhangi birinde sıranın bir YZ
+  // koltuğunda olup olmadığını arka planda kontrol eder; varsa YZ'nin
+  // hamlesini sunucuda (play-ai-turn Edge Function) oynatır (Faz 3, Adım 5
+  // — bkz. src/utils/onlineAiTurn.ts, CLAUDE.md). Dedike bir sunucu süreci
+  // olmadığından bu, uygulamayı her açan katılımcının cihazında tetiklenir.
+  useEffect(() => {
+    if (!user) return;
+    void triggerPendingAiTurns();
   }, [user]);
 
   // Bir arkadaşlık davet linkinden (/davet/:token, FriendInvitePage.tsx)

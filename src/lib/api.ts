@@ -767,6 +767,25 @@ export function subscribeOnlineGameState(gameId: string, onChange: () => void): 
 }
 
 /**
+ * Sırası bir YZ koltuğunda olan bir Canlı oyunu bir tur ilerletir
+ * (`play-ai-turn` Edge Function'ı, Faz 3 Adım 5). YZ'nin gerçek rafı bu
+ * çağrıda hiçbir zaman tarayıcıya dönmez — hamle tamamen sunucuda
+ * hesaplanır, yanıt yalnızca başarı/durum bilgisi taşır (bkz.
+ * src/utils/onlineAiTurn.ts, CLAUDE.md "Canlı Oyun — Faz 3").
+ */
+export async function triggerAiTurn(gameId: string): Promise<{ played: boolean }> {
+  if (!supabase) return { played: false };
+  const { data, error } = await supabase.functions.invoke('play-ai-turn', {
+    body: { game_id: gameId },
+  });
+  if (error) {
+    console.error('[Kelimeki] triggerAiTurn hatası:', error.message);
+    return { played: false };
+  }
+  return { played: !!(data as { played?: boolean } | null)?.played };
+}
+
+/**
  * Kelimeyi sunucu tarafında doğrular (is_valid_word RPC). Supabase
  * yapılandırılmamışsa null döner; çağıran yerel sözlüğe düşmelidir.
  */

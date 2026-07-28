@@ -1,67 +1,25 @@
 -- Canlı (online) oyun — 3. faz, 5. adım: YZ turunu tetikleme.
 --
--- Dedike bir sunucu süreci yok (CLAUDE.md'deki plan) — bunun yerine
--- herhangi bir katılımcının cihazı sırası bir YZ koltuğunda olan bir oyun
--- bulursa, ai.ts'teki findAIMove'u (yerel YZ oyunuyla birebir aynı mantık,
--- src/utils/onlineAiTurn.ts) çalıştırıp submit_move'u o YZ adına çağırır.
--- Bunun için iki değişiklik gerekiyor:
+-- YZ'nin hamlesi bu migration'la HİÇBİR ŞEKİLDE tarayıcıya gönderilmiyor —
+-- ilk tasarımda ayrı bir get_ai_online_rack RPC'si vardı ama bu, YZ'nin
+-- gerçek raf harflerini oyunun HERHANGİ bir katılımcısının tarayıcısına
+-- ifşa ediyordu (arayüzde gösterilmese bile ağ isteğinde görülebilirdi) —
+-- bu bilgiyle torbada kalan taşlar çıkarsanabileceğinden gerçek bir haksız
+-- avantaj olurdu. Doğru çözüm: YZ'nin hamlesi tamamen sunucuda, yeni
+-- `play-ai-turn` Edge Function'ında hesaplanıyor (rafı yalnızca service
+-- role ile okuyor, hiçbir client'a dönmüyor) — bkz.
+-- supabase/functions/play-ai-turn/. Burada tek değişiklik gerekiyor:
 --
---   1) get_ai_online_rack — bir YZ koltuğunun rafını okumak için (bir
---      insanın rafı gibi gizli değil; hiçbir insan oyuncu "sahibi"
---      olmadığından, oyunun katılımcısı olan HERKES okuyabilir — bu bilgi
---      kimseye rakibine karşı haksız bir avantaj sağlamıyor, YZ zaten
---      elindeki en iyi hamleyi oynuyor).
---   2) submit_move'un sıra kontrolü — önceden yalnızca "koltuk human VE
---      auth.uid() o koltuğun user_id'siyle eşleşiyor" ise izin veriyordu;
---      artık koltuk 'ai' ise (ve çağıran gerçekten bu oyunun katılımcısıysa)
---      HERHANGİ bir katılımcının göndermesine izin veriyor. Aynı YZ turunu
---      birden fazla istemci aynı anda tetiklerse bu fonksiyonun zaten
---      sahip olduğu `for update` satır kilidi + `current`in her başarılı
---      hamleden sonra ilerlemesi çifte gönderimi doğal olarak engelliyor.
-
-create or replace function public.get_ai_online_rack(p_game_id uuid, p_slot_index int)
-returns jsonb
-language plpgsql
-security definer
-set search_path = public
-stable
-as $$
-declare
-  v_uid uuid := auth.uid();
-  v_slots jsonb;
-  v_racks jsonb;
-begin
-  if v_uid is null then
-    raise exception 'Oturum açık değil.';
-  end if;
-  if not public.is_online_game_participant(p_game_id, v_uid) then
-    raise exception 'Bu oyunun katılımcısı değilsin.';
-  end if;
-
-  select slots into v_slots from public.online_games where id = p_game_id;
-  if v_slots is null then
-    raise exception 'Oyun bulunamadı.';
-  end if;
-  if p_slot_index is null or p_slot_index < 0 or p_slot_index >= jsonb_array_length(v_slots) then
-    raise exception 'Geçersiz koltuk.';
-  end if;
-  if (v_slots -> p_slot_index ->> 'type') <> 'ai' then
-    raise exception 'Bu koltuk Yapay Zeka değil.';
-  end if;
-
-  select racks -> p_slot_index into v_racks
-  from public.online_game_secrets
-  where online_game_id = p_game_id;
-
-  return coalesce(v_racks, '[]'::jsonb);
-end;
-$$;
-
-revoke all on function public.get_ai_online_rack(uuid, int) from public, anon;
-grant execute on function public.get_ai_online_rack(uuid, int) to authenticated;
-
--- submit_move: yalnızca sıra kontrolündeki dal değişiyor, geri kalan
--- gövde (hamle doğrulama/uygulama) birebir aynı — bkz. 20260728084604.
+--   submit_move'un sıra kontrolü — önceden yalnızca "koltuk human VE
+--   auth.uid() o koltuğun user_id'siyle eşleşiyor" ise izin veriyordu;
+--   artık koltuk 'ai' ise (ve çağıran gerçekten bu oyunun katılımcısıysa)
+--   HERHANGİ bir katılımcının (play-ai-turn'ü tetikleyen kişinin kendi
+--   oturumuyla) göndermesine izin veriyor. Aynı YZ turunu birden fazla
+--   istemci aynı anda tetiklerse bu fonksiyonun zaten sahip olduğu
+--   `for update` satır kilidi + `current`in her başarılı hamleden sonra
+--   ilerlemesi çifte gönderimi doğal olarak engelliyor.
+--
+-- Geri kalan gövde (hamle doğrulama/uygulama) birebir aynı — bkz. 20260728084604.
 create or replace function public.submit_move(
   p_game_id uuid,
   p_action text,
@@ -165,7 +123,7 @@ begin
     end if;
   elsif (v_current_slot ->> 'type') = 'ai' then
     -- YZ'nin sırası: kimse "sahibi" olmadığından, oyunun herhangi bir
-    -- katılımcısı YZ adına gönderebilir (bkz. src/utils/onlineAiTurn.ts).
+    -- katılımcısı YZ adına gönderebilir (bkz. supabase/functions/play-ai-turn/).
     if not public.is_online_game_participant(p_game_id, v_uid) then
       raise exception 'Bu oyunun katılımcısı değilsin.';
     end if;
