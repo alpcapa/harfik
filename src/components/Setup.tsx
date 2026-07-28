@@ -221,7 +221,7 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, sav
             ✕
           </button>
           <p className="text-sm text-text font-sans leading-relaxed pr-6">
-            Oyunların istatistiklerini tutmak ve Sanal Lig puanları için lütfen giriş yapın.
+            Oyunların istatistikleri, Sanal Lig ve arkadaşınla canlı oyun için lütfen giriş yapın.
           </p>
           <div className="flex gap-2 mt-1">
             <button
