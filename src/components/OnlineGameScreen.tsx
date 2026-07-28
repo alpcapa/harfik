@@ -504,11 +504,19 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
         />
 
         <div className="w-full max-w-[680px] px-3 pb-3 pt-1 flex flex-col gap-1.5">
-          <div
-            className={`text-[11px] font-mono font-bold text-center min-h-[15px] py-0.5 ${MESSAGE_COLORS[liveMessageType]}`}
-          >
-            {canAct ? liveMessage : state.isGameOver ? '' : 'Rakibinin sırası…'}
-          </div>
+          {!canAct && !state.isGameOver ? (
+            <div className="shadow-raised flex items-center justify-center rounded-md border border-border bg-panel px-4 py-3">
+              <span className="font-mono text-[11px] font-bold uppercase tracking-[1px] text-muted">
+                Sıra: {state.players[state.current]?.name ?? 'Rakip'} — oynaması bekleniyor
+              </span>
+            </div>
+          ) : (
+            <div
+              className={`text-[11px] font-mono font-bold text-center min-h-[15px] py-0.5 ${MESSAGE_COLORS[liveMessageType]}`}
+            >
+              {liveMessage}
+            </div>
+          )}
 
           <div className="flex gap-1.5 items-stretch">
             <div className="flex-1 min-w-0">

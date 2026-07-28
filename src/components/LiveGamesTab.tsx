@@ -4,7 +4,7 @@
 // src/App.tsx'teki mainView tab'ı, src/components/LiveGameCreateForm.tsx).
 import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { listMyOnlineGames, respondToGameInvite } from '../lib/api';
+import { fetchOnlineGameTurns, listMyOnlineGames, respondToGameInvite } from '../lib/api';
 import type { OnlineGame, OnlineGameSlot } from '../lib/database.types';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
@@ -13,8 +13,13 @@ import { LiveGameCreateForm } from './LiveGameCreateForm';
 
 type HumanSlot = Extract<OnlineGameSlot, { type: 'human' }>;
 
-function statusLabel(game: OnlineGame): string {
-  if (game.status === 'active') return 'Aktif — girmek için dokun';
+/** `game.slots`teki, çağıranın kendi koltuğunun indeksi (`relation==='self'`). */
+function mySlotIndex(game: OnlineGame): number {
+  return game.slots.findIndex((s) => s.type === 'human' && s.relation === 'self');
+}
+
+function statusLabel(game: OnlineGame, isMyTurn?: boolean): string {
+  if (game.status === 'active') return isMyTurn ? 'Sıra sende — girmek için dokun' : 'Rakibin sırası';
   if (game.status === 'pending') return 'Rakip bekleniyor';
   if (game.status === 'finished') return 'Bitti';
   return 'Terk edildi';
@@ -51,9 +56,11 @@ interface GameRowProps {
   busy?: boolean;
   /** Yalnızca `status==='active'` oyunlarda verilir — satıra tıklanınca gerçek oyun ekranını açar. */
   onOpen?: () => void;
+  /** `status==='active'` oyunlarda: sıra şu an çağırandaysa `true`. */
+  isMyTurn?: boolean;
 }
 
-function GameRow({ game, onRespond, busy, onOpen }: GameRowProps) {
+function GameRow({ game, onRespond, busy, onOpen, isMyTurn }: GameRowProps) {
   const isPendingInvite = game.my_role === 'invitee' && game.my_invite_status === 'pending';
 
   if (isPendingInvite && onRespond) {
@@ -115,8 +122,12 @@ function GameRow({ game, onRespond, busy, onOpen }: GameRowProps) {
       <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
         {game.player_count} Kişilik Canlı Oyun
       </span>
-      <span className="text-[9px] font-mono uppercase tracking-[1px] text-muted shrink-0">
-        {statusLabel(game)}
+      <span
+        className={`text-[9px] font-mono uppercase tracking-[1px] shrink-0 ${
+          isMyTurn ? 'text-accent font-bold' : 'text-muted'
+        }`}
+      >
+        {statusLabel(game, isMyTurn)}
       </span>
     </Wrapper>
   );
@@ -126,10 +137,12 @@ function Section({
   title,
   games,
   onOpenGame,
+  turns,
 }: {
   title: string;
   games: OnlineGame[];
   onOpenGame?: (game: OnlineGame) => void;
+  turns?: Record<string, number>;
 }) {
   if (games.length === 0) return null;
   return (
@@ -137,7 +150,12 @@ function Section({
       <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">{title}</div>
       <div className="flex flex-col gap-2">
         {games.map((g) => (
-          <GameRow key={g.id} game={g} onOpen={onOpenGame ? () => onOpenGame(g) : undefined} />
+          <GameRow
+            key={g.id}
+            game={g}
+            onOpen={onOpenGame ? () => onOpenGame(g) : undefined}
+            isMyTurn={turns ? turns[g.id] === mySlotIndex(g) : undefined}
+          />
         ))}
       </div>
     </div>
@@ -153,6 +171,8 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   const { user, loading: authLoading } = useAuth();
   // null = henüz çekilmedi (yükleniyor), [] = çekildi ama hiç oyun yok.
   const [games, setGames] = useState<OnlineGame[] | null>(null);
+  // gameId -> sırası gelen koltuk indeksi ("Sıra sende" rozeti için).
+  const [turns, setTurns] = useState<Record<string, number>>({});
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [busyInviteId, setBusyInviteId] = useState<string | null>(null);
@@ -161,7 +181,11 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   const [suggestCandidates, setSuggestCandidates] = useState<HumanSlot[] | null>(null);
 
   const reload = () => {
-    listMyOnlineGames().then(setGames);
+    listMyOnlineGames().then((rows) => {
+      setGames(rows);
+      const activeIds = rows.filter((g) => g.status === 'active').map((g) => g.id);
+      if (activeIds.length > 0) fetchOnlineGameTurns(activeIds).then(setTurns);
+    });
   };
 
   useEffect(() => {
@@ -171,7 +195,14 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
     }
     let cancelled = false;
     listMyOnlineGames().then((rows) => {
-      if (!cancelled) setGames(rows);
+      if (cancelled) return;
+      setGames(rows);
+      const activeIds = rows.filter((g) => g.status === 'active').map((g) => g.id);
+      if (activeIds.length > 0) {
+        fetchOnlineGameTurns(activeIds).then((map) => {
+          if (!cancelled) setTurns(map);
+        });
+      }
     });
     return () => {
       cancelled = true;
@@ -272,7 +303,7 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
               </div>
             </div>
           )}
-          <Section title="Aktif" games={active} onOpenGame={onOpenGame} />
+          <Section title="Aktif" games={active} onOpenGame={onOpenGame} turns={turns} />
           <Section title="Rakip Bekleniyor" games={waiting} />
         </>
       )}

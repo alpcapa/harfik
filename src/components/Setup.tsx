@@ -5,7 +5,7 @@ import { PLAYER_COLORS } from '../game/constants';
 import type { PlayerSetup } from '../game/gameReducer';
 import { useAuth } from '../hooks/useAuth';
 import { useModalA11y } from '../hooks/useModalA11y';
-import { fetchPlayerStats } from '../lib/api';
+import { fetchOnlineGameTurns, fetchPlayerStats, listMyOnlineGames } from '../lib/api';
 import { hasSeenQuickStart, markQuickStartSeen } from '../utils/onboarding';
 import { preloadWordSet, isWordSetReady } from '../data/wordSetLoader';
 import { Avatar } from './Avatar';
@@ -69,6 +69,40 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame }: S
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+
+  // "Arkadaşınla" sekmesindeki rozet: bekleyen davetler + sırası çağıranda
+  // olan aktif Canlı oyunlar — kullanıcı sekmeye hiç girmeden kaç şeyin
+  // dikkatini beklediğini görsün diye. `mainView`e bağlı: Live sekmesinden
+  // (davet kabul/hamle sonrası) Local'e dönülünce sayı tazelensin diye.
+  const [liveActionCount, setLiveActionCount] = useState(0);
+  useEffect(() => {
+    if (!user) {
+      setLiveActionCount(0);
+      return;
+    }
+    let cancelled = false;
+    listMyOnlineGames().then((rows) => {
+      if (cancelled) return;
+      const inviteCount = rows.filter((g) => g.my_role === 'invitee' && g.my_invite_status === 'pending').length;
+      const activeIds = rows.filter((g) => g.status === 'active').map((g) => g.id);
+      if (activeIds.length === 0) {
+        setLiveActionCount(inviteCount);
+        return;
+      }
+      fetchOnlineGameTurns(activeIds).then((turns) => {
+        if (cancelled) return;
+        const myTurnCount = rows.filter((g) => {
+          if (g.status !== 'active') return false;
+          const idx = g.slots.findIndex((s) => s.type === 'human' && s.relation === 'self');
+          return turns[g.id] === idx;
+        }).length;
+        setLiveActionCount(inviteCount + myTurnCount);
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, mainView]);
 
   // "Giriş Yap" / "Devam" ikisi de anlamlı birer karar, gerçek bir "vazgeç"
   // değil — bu yüzden Escape/X, oyunu misafir olarak başlatmadan ("Devam"
@@ -259,6 +293,7 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame }: S
               ].join(' ')}
             >
               {tab.label}
+              {tab.key === 'live' && liveActionCount > 0 ? ` (${liveActionCount})` : ''}
             </button>
           ))}
         </div>

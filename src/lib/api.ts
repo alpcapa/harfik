@@ -666,6 +666,30 @@ export async function fetchOnlineGameState(gameId: string): Promise<OnlineGameSt
   return (data as OnlineGameStatePublic) ?? null;
 }
 
+/**
+ * Verilen aktif Canlı oyunların her biri için "sırası kimde" (`current`
+ * koltuk indeksi) bilgisini tek sorguda döner — `LiveGamesTab`'ın "Sıra
+ * sende" rozetini ve `Setup`'taki "Arkadaşınla" sekmesindeki bekleyen
+ * sayısını hesaplamak için kullanılır. `online_game_states`e doğrudan okuma
+ * (RPC değil) — RLS zaten yalnızca katılımcının erişebileceği satırları döner.
+ */
+export async function fetchOnlineGameTurns(gameIds: string[]): Promise<Record<string, number>> {
+  if (!supabase || gameIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from('online_game_states')
+    .select('online_game_id, current')
+    .in('online_game_id', gameIds);
+  if (error) {
+    console.error('[Kelimeki] fetchOnlineGameTurns hatası:', error.message);
+    return {};
+  }
+  const map: Record<string, number> = {};
+  for (const row of (data ?? []) as { online_game_id: string; current: number }[]) {
+    map[row.online_game_id] = row.current;
+  }
+  return map;
+}
+
 /** Çağıranın KENDİ rafı (`get_my_online_rack` RPC'si) — başka hiçbir oyuncununki hiçbir zaman döndürülmez. */
 export async function getMyOnlineRack(gameId: string): Promise<Tile[]> {
   if (!supabase) return [];
