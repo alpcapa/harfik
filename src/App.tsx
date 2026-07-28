@@ -23,7 +23,7 @@ import { loadGameState, saveGameState, clearGameState, takePendingAbandonedGame 
 import { markQuickStartSeen } from './utils/onboarding';
 import { getFormedWords, getFullWordAt, key } from './utils/board';
 import { serializeBoardSnapshot } from './utils/boardSnapshot';
-import type { Tile as TileModel } from './game/types';
+import type { GameState, Tile as TileModel } from './game/types';
 import { Tile } from './components/Tile';
 import { trLower } from './utils/turkish';
 import { PLAYER_COLORS } from './game/constants';
@@ -66,11 +66,14 @@ const MESSAGE_COLORS: Record<string, string> = {
 
 export default function App() {
   const { user, profile, profileLoading, loading: authLoading, passwordRecovery, clearPasswordRecovery } = useAuth();
-  const [state, dispatch] = useReducer(
-    gameReducer,
-    undefined,
-    () => loadGameState() ?? createInitialState(),
-  );
+  const [state, dispatch] = useReducer(gameReducer, undefined, createInitialState);
+
+  // Yarım kalan yerel (YZ) oyun — artık otomatik açılmıyor (bkz. Setup.tsx'teki
+  // "Devam Eden Oyun" satırı): Setup her zaman ilk görülen ekran olsun ki
+  // oyuncu Arkadaşınla sekmesindeki bekleyen davetleri/sırasını da görebilsin.
+  // Kayıt burada ayrı bir state'te tutulup Setup'a iletilir; RESUME_SAVED
+  // dispatch edilene kadar `state`'e hiç dokunmaz.
+  const [savedGame, setSavedGame] = useState<GameState | null>(() => loadGameState());
 
   // Kelime listesi main.tsx'te tetiklenen ayrı chunk'tan yükleniyor —
   // hazır olana kadar hamle doğrulama/YZ turu tetiklenmemeli (bkz.
@@ -107,14 +110,17 @@ export default function App() {
   // Devam eden oyunu (phase==='play', bitmemiş) her değişiklikte
   // localStorage'a yaz — sekme/uygulama kapatılıp açılınca kaldığı yerden
   // devam edilebilsin. Oyun bitince ya da kurulum ekranına dönülünce kayıt
-  // silinir.
+  // silinir. `savedGame` doluyken (henüz RESUME_SAVED ile açılmamış bir
+  // kayıt Setup'ta bekliyorken) clearGameState() ÇAĞIRILMAZ — aksi halde bu
+  // effect ilk render'da (state.phase henüz 'setup') kaydı kullanıcı hiç
+  // görmeden anında silerdi.
   useEffect(() => {
     if (state.phase === 'play' && !state.isGameOver) {
       saveGameState(state);
-    } else {
+    } else if (!savedGame) {
       clearGameState();
     }
-  }, [state]);
+  }, [state, savedGame]);
 
   // Offline nedeniyle sunucuya kaydedilemeyip kuyruğa alınmış bitmiş oyun
   // sonuçlarını (bkz. gameSync.ts) bağlantı geri gelir gelmez tekrar
@@ -216,6 +222,15 @@ export default function App() {
   // Setup ekranında "Oyunu Başlat" tıklandığında Tutorial ilk kez
   // görülmemişse, oyun ekranı açılır açılmaz burada gösterilir.
   const [showPostStartTutorial, setShowPostStartTutorial] = useState(false);
+
+  // Setup'taki "Devam Eden Oyun" satırına tıklanınca: kaydı reducer'a
+  // uygulayıp `savedGame`'i temizler — bundan sonra yukarıdaki save/clear
+  // effect'i tamamen `state`e göre çalışır (bkz. o effect'teki not).
+  const handleResumeSavedGame = () => {
+    if (!savedGame) return;
+    dispatch({ type: 'RESUME_SAVED', state: savedGame });
+    setSavedGame(null);
+  };
 
   // Kurulum ekranındaki üst sekme: yerel (2/4 kişilik, anında başlar) ya da
   // Canlı (arkadaş daveti/kabulü — Faz 2). Bilinçli olarak Setup'ın kendi
@@ -514,6 +529,8 @@ export default function App() {
             mainView={mainView}
             onMainViewChange={setMainView}
             onOpenLiveGame={setOnlineGame}
+            savedGame={savedGame}
+            onResumeGame={handleResumeSavedGame}
             onStart={(players, showTutorial) => {
               dispatch({ type: 'START', players });
               if (showTutorial) setShowPostStartTutorial(true);

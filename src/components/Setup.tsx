@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { SETUP_BG_WATERMARK_URL } from '../assets/setupBgWatermark';
 import { PLAYER_COLORS } from '../game/constants';
 import type { PlayerSetup } from '../game/gameReducer';
+import type { GameState } from '../game/types';
 import { useAuth } from '../hooks/useAuth';
 import { useModalA11y } from '../hooks/useModalA11y';
 import { fetchOnlineGameTurns, fetchPlayerStats, listMyOnlineGames } from '../lib/api';
@@ -30,9 +31,15 @@ interface SetupProps {
   // "Aktif" bir Canlı oyuna tıklanınca (LiveGamesTab), gerçek oyun ekranını
   // açmak için App.tsx'e iletilir (Faz 3, 4. adım).
   onOpenLiveGame: (game: OnlineGame) => void;
+  // Yarım kalan yerel (YZ) oyun (localStorage'dan, App.tsx'te tutulur) — varsa
+  // "Yapay Zeka ile" sekmesinde normal kurulum formu yerine tek bir "Devam
+  // Eden Oyun" satırı gösterilir; yeni bir yerel oyun bu kayıt bitene/teslim
+  // olunana kadar başlatılamaz (bkz. CLAUDE.md "Devam eden oyunun kalıcılığı").
+  savedGame: GameState | null;
+  onResumeGame: () => void;
 }
 
-export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame }: SetupProps) {
+export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, savedGame, onResumeGame }: SetupProps) {
   const { user, profile, loading, profileLoading } = useAuth();
   // Oturum açıldıysa 1. oyuncu her zaman hesap sahibidir. Profil henüz
   // çekilmediyse (profileLoading) e-posta önekine düşmüyoruz — aksi halde
@@ -301,6 +308,32 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame }: S
 
       {mainView === 'live' ? (
         <LiveGamesTab onOpenGame={onOpenLiveGame} />
+      ) : savedGame ? (
+        <div className="flex flex-col gap-2">
+          <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
+            Devam Eden Oyun
+          </div>
+          <button
+            onClick={onResumeGame}
+            className="shadow-raised flex items-center gap-2.5 rounded-md px-3 py-3 border border-border bg-panel w-full text-left active:scale-[0.99] transition-transform"
+          >
+            <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+              <span className="font-sans text-sm font-bold text-text truncate">
+                {savedGame.players.length} Kişilik Yapay Zeka Oyunu
+              </span>
+              <span className="font-mono text-[10px] text-muted truncate">
+                Sıra: {savedGame.players[savedGame.current]?.name ?? '—'}
+              </span>
+            </span>
+            <span className="text-[9px] font-mono uppercase tracking-[1px] text-accent font-bold shrink-0">
+              Devam Et →
+            </span>
+          </button>
+          <p className="text-[11px] text-muted font-mono leading-relaxed">
+            Yeni bir Yapay Zeka oyunu başlatmak için önce bu oyunu bitirmen ya
+            da oyun içindeki "Çık" ile teslim olman gerekir.
+          </p>
+        </div>
       ) : (
         <>
           <div className="flex flex-col gap-2">

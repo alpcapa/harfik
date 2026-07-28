@@ -56,7 +56,8 @@ export type Action =
       publicState: OnlineGameStatePublic;
       myRack: Tile[];
       mySlotIndex: number;
-    };
+    }
+  | { type: 'RESUME_SAVED'; state: GameState };
 
 /** Kurulum (oyuncu seçimi) ekranıyla başlayan boş durum. */
 export function createInitialState(): GameState {
@@ -264,6 +265,12 @@ export function gameReducer(state: GameState, action: Action): GameState {
       if (action.players.length !== 2 && action.players.length !== 4) return state;
       return startGame(action.players);
     }
+
+    case 'RESUME_SAVED':
+      // localStorage'dan yüklenen yarım kalan yerel oyun (bkz. gameStorage.ts)
+      // zaten tamamen geçerli/tamamlanmış bir GameState — App.tsx bunu Setup
+      // ekranındaki "Devam Eden Oyun" satırına tıklanınca dispatch eder.
+      return action.state;
 
     case 'SELECT_TILE': {
       if (state.phase !== 'play' || state.isGameOver) return state;
