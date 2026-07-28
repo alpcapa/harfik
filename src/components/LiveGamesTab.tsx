@@ -124,7 +124,7 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn }: GameRowProps) {
       </span>
       <span
         className={`text-[9px] font-mono uppercase tracking-[1px] shrink-0 ${
-          isMyTurn ? 'text-accent font-bold' : 'text-muted'
+          isMyTurn ? 'text-green font-bold' : 'text-muted'
         }`}
       >
         {statusLabel(game, isMyTurn)}
