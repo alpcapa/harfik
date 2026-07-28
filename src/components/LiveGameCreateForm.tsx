@@ -32,8 +32,8 @@ function CheckMark({ checked }: { checked: boolean }) {
   return (
     <span
       className={[
-        'w-4 h-4 rounded border shrink-0 flex items-center justify-center text-[10px] leading-none',
-        checked ? 'bg-accent border-accent text-white' : 'border-border text-transparent',
+        'w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center text-[10px] leading-none',
+        checked ? 'bg-accent border-accent text-white' : 'bg-bg border-muted text-transparent',
       ].join(' ')}
     >
       ✓
