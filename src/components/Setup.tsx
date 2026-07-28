@@ -339,6 +339,7 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, sav
                 {remainingDays(savedGame.savedAt) <= 0
                   ? 'Bugün silinecek'
                   : `${remainingDays(savedGame.savedAt)} gün içinde silinir`}
+                {savedGame.state.turnCount >= 2 ? ' — teslim sayılır (-2)' : ''}
               </span>
             </span>
             <span className="text-[9px] font-mono uppercase tracking-[1px] text-accent font-bold shrink-0">
