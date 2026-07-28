@@ -50,46 +50,48 @@ function ParticipantRow({ slot, game }: { slot: HumanSlot; game: OnlineGame }) {
   );
 }
 
-interface GameRowProps {
+// Bir davetin (yanıt bekleyen) ya da henüz `pending` bir oyunun (kabul
+// ettin/kurdun ama diğerleri henüz tamamlanmadı) "kiminle oynayacaksın"
+// detayı — katılımcı listesi hem yanıt bekleyen davetlerde hem de
+// aşağıdaki "Kabul Ettin — Diğerleri Bekleniyor"/"Rakip Bekleniyor"
+// bölümlerinde aynı görünür, çünkü ikisinde de asıl soru aynı: bu oyunda
+// kim var, kim ne durumda. Yalnızca `onRespond` verildiğinde Kabul/Reddet
+// butonları eklenir.
+function PendingGameCard({
+  game,
+  title,
+  onRespond,
+  busy,
+}: {
   game: OnlineGame;
+  title: string;
   onRespond?: (accept: boolean) => void;
   busy?: boolean;
-  /** Yalnızca `status==='active'` oyunlarda verilir — satıra tıklanınca gerçek oyun ekranını açar. */
-  onOpen?: () => void;
-  /** `status==='active'` oyunlarda: sıra şu an çağırandaysa `true`. */
-  isMyTurn?: boolean;
-}
+}) {
+  const humanSlots = game.slots.filter((s): s is HumanSlot => s.type === 'human');
+  const hasAi = game.slots.some((s) => s.type === 'ai');
 
-function GameRow({ game, onRespond, busy, onOpen, isMyTurn }: GameRowProps) {
-  const isPendingInvite = game.my_role === 'invitee' && game.my_invite_status === 'pending';
-
-  if (isPendingInvite && onRespond) {
-    const humanSlots = game.slots.filter((s): s is HumanSlot => s.type === 'human');
-    const hasAi = game.slots.some((s) => s.type === 'ai');
-    const inviterName = humanSlots.find((s) => s.user_id === game.created_by)?.name;
-
-    return (
-      <div className="shadow-raised flex flex-col gap-2.5 rounded-md px-2.5 py-2.5 border border-border bg-panel">
-        <span className="font-sans text-sm font-bold text-text leading-snug">
-          {inviterName ?? 'Bir arkadaşın'} seni {game.player_count} kişilik oyuna davet etti
-        </span>
-        <div className="flex flex-col gap-1.5">
-          <div className="text-[9px] uppercase tracking-[1px] text-muted font-mono">Kiminle Oynayacaksın</div>
-          {humanSlots.map((slot) => (
-            <ParticipantRow key={slot.user_id} slot={slot} game={game} />
-          ))}
-          {hasAi && (
-            <div className="flex items-center gap-2">
-              <span
-                className="w-[22px] h-[22px] rounded-full bg-void border border-border flex items-center justify-center text-xs shrink-0"
-                aria-hidden
-              >
-                🤖
-              </span>
-              <span className="flex-1 min-w-0 text-xs text-text truncate">Yapay Zeka</span>
-            </div>
-          )}
-        </div>
+  return (
+    <div className="shadow-raised flex flex-col gap-2.5 rounded-md px-2.5 py-2.5 border border-border bg-panel">
+      <span className="font-sans text-sm font-bold text-text leading-snug">{title}</span>
+      <div className="flex flex-col gap-1.5">
+        <div className="text-[9px] uppercase tracking-[1px] text-muted font-mono">Kiminle Oynayacaksın</div>
+        {humanSlots.map((slot) => (
+          <ParticipantRow key={slot.user_id} slot={slot} game={game} />
+        ))}
+        {hasAi && (
+          <div className="flex items-center gap-2">
+            <span
+              className="w-[22px] h-[22px] rounded-full bg-void border border-border flex items-center justify-center text-xs shrink-0"
+              aria-hidden
+            >
+              🤖
+            </span>
+            <span className="flex-1 min-w-0 text-xs text-text truncate">Yapay Zeka</span>
+          </div>
+        )}
+      </div>
+      {onRespond && (
         <div className="flex gap-1.5">
           <button
             onClick={() => onRespond(true)}
@@ -106,7 +108,35 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn }: GameRowProps) {
             Reddet
           </button>
         </div>
-      </div>
+      )}
+    </div>
+  );
+}
+
+interface GameRowProps {
+  game: OnlineGame;
+  onRespond?: (accept: boolean) => void;
+  busy?: boolean;
+  /** Yalnızca `status==='active'` oyunlarda verilir — satıra tıklanınca gerçek oyun ekranını açar. */
+  onOpen?: () => void;
+  /** `status==='active'` oyunlarda: sıra şu an çağırandaysa `true`. */
+  isMyTurn?: boolean;
+}
+
+function GameRow({ game, onRespond, busy, onOpen, isMyTurn }: GameRowProps) {
+  const isPendingInvite = game.my_role === 'invitee' && game.my_invite_status === 'pending';
+
+  if (isPendingInvite && onRespond) {
+    const humanSlots = game.slots.filter((s): s is HumanSlot => s.type === 'human');
+    const inviterName = humanSlots.find((s) => s.user_id === game.created_by)?.name;
+
+    return (
+      <PendingGameCard
+        game={game}
+        title={`${inviterName ?? 'Bir arkadaşın'} seni ${game.player_count} kişilik oyuna davet etti`}
+        onRespond={onRespond}
+        busy={busy}
+      />
     );
   }
 
@@ -156,6 +186,25 @@ function Section({
             onOpen={onOpenGame ? () => onOpenGame(g) : undefined}
             isMyTurn={turns ? turns[g.id] === mySlotIndex(g) : undefined}
           />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// "Kabul Ettin — Diğerleri Bekleniyor"/"Rakip Bekleniyor" için: her oyunu
+// tek satırlık bir özet yerine tam "Kiminle Oynayacaksın" detay kartıyla
+// gösterir — bu iki bölümde asıl merak edilen şey zaten "hangi arkadaşım
+// henüz kabul etmedi", o yüzden `Section`'ın kompakt `GameRow`'u yerine
+// doğrudan `PendingGameCard` kullanılır (bkz. yukarıdaki davet kartı).
+function PendingSection({ title, games }: { title: string; games: OnlineGame[] }) {
+  if (games.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">{title}</div>
+      <div className="flex flex-col gap-2">
+        {games.map((g) => (
+          <PendingGameCard key={g.id} game={g} title={`${g.player_count} Kişilik Canlı Oyun`} />
         ))}
       </div>
     </div>
@@ -311,8 +360,8 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
             </div>
           )}
           <Section title="Aktif" games={active} onOpenGame={onOpenGame} turns={turns} />
-          <Section title="Kabul Ettin — Diğerleri Bekleniyor" games={acceptedWaiting} />
-          <Section title="Rakip Bekleniyor" games={waiting} />
+          <PendingSection title="Kabul Ettin — Diğerleri Bekleniyor" games={acceptedWaiting} />
+          <PendingSection title="Rakip Bekleniyor" games={waiting} />
         </>
       )}
     </div>
