@@ -252,6 +252,15 @@ export default function App() {
   // ağacının yerine OnlineGameScreen render edilir (aşağıya bkz.).
   const [onlineGame, setOnlineGame] = useState<OnlineGame | null>(null);
 
+  // Kullanıcı değişince (çıkış/farklı hesapla giriş — aynı sekmede hesap
+  // değiştirme testlerinde ortaya çıktı) açık kalan bir Canlı oyun ekranı
+  // otomatik kapanmalı; aksi halde yeni oturum açan kişi, eski kullanıcının
+  // o an içinde olduğu oyuna (o oyunun katılımcısıysa) doğrudan düşüyordu —
+  // Setup/Canlı sekmesi hiç görünmeden.
+  useEffect(() => {
+    setOnlineGame(null);
+  }, [user?.id]);
+
   // Rakip köşeye giriş onay popup'ı.
   const [invasionConfirm, setInvasionConfirm] = useState<
     { ownerName: string; ownerPts: number }[] | null
