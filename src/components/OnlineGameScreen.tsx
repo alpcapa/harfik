@@ -194,7 +194,12 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   // Raftan bir taş ya da tahtaya bu tur konmuş bir taş sürüklenmeye başlanır.
   const beginDrag = (source: DragSource, e: React.PointerEvent) => {
     if (!canAct || state.swapMode) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Bazı tarayıcılarda desteklenmeyebilir/hata verebilir — sürükleme
+      // yakalama olmadan da (elementFromPoint tabanlı hedef tespitiyle) çalışır.
+    }
     dragRef.current = { source, startX: e.clientX, startY: e.clientY, moved: false };
   };
 
