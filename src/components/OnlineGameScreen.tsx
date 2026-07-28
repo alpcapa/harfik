@@ -6,13 +6,13 @@
 // RPC'sini (src/lib/api.ts) çağırması, ve tahtanın/skorların yerelden değil
 // `online_game_states`'ten (Realtime abonelikle) gelmesi.
 //
-// Bilinçli v1 kapsam dışı bırakmalar (CLAUDE.md'de belgelenmeli):
-//   - Taş sürükleyerek yeniden konumlandırma yok — bu turda yerleştirilmiş
-//     bir taşa dokunmak onu doğrudan rafa geri alır (App.tsx'teki tam
-//     sürükle-bırak sistemi yerine basitleştirilmiş "dokunma = geri al").
-//   - Teslim olma (surrender) henüz yok — üstteki "←" yalnızca Canlı
-//     listesine döner, oyunu bitirmez.
-import { useEffect, useMemo, useReducer, useState } from 'react';
+// Taş sürükleme (fare + dokunmatik) App.tsx'teki sistemin birebir aynısı —
+// bkz. oradaki "Taş sürükleme" bölümündeki yorumlar, burada tekrarlanmadı.
+//
+// Bilinçli kapsam dışı bırakma (CLAUDE.md'de belgelendi): Teslim olma
+// (surrender) henüz yok — üstteki logo yalnızca Canlı listesine döner,
+// oyunu bitirmez.
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Board } from './Board';
 import { Rack } from './Rack';
 import { GameHeader } from './GameHeader';
@@ -22,6 +22,7 @@ import { RemainingTilesModal } from './RemainingTilesModal';
 import { MoveHistoryModal } from './MoveHistoryModal';
 import { WildcardModal } from './WildcardModal';
 import { FeedbackModal } from './FeedbackModal';
+import { Tile as TileComponent } from './Tile';
 import { createInitialState, gameReducer, isFirstMove } from '../game/gameReducer';
 import { isWordSetReady } from '../data/wordSetLoader';
 import { PLAYER_COLORS } from '../game/constants';
@@ -33,7 +34,7 @@ import {
   validatePlacement,
   validatePlacementStructural,
 } from '../utils/validator';
-import { getFormedWords, getFullWordAt } from '../utils/board';
+import { getFormedWords, getFullWordAt, key } from '../utils/board';
 import { trLower } from '../utils/turkish';
 import {
   fetchMeaning,
@@ -45,7 +46,7 @@ import {
   submitMove,
   subscribeOnlineGameState,
 } from '../lib/api';
-import type { HistoryEntry } from '../game/types';
+import type { HistoryEntry, Tile as TileModel } from '../game/types';
 import type { OnlineGame, OnlineMoveRow, WordMeaning } from '../lib/database.types';
 
 interface OnlineGameScreenProps {
@@ -60,6 +61,14 @@ const MESSAGE_COLORS: Record<string, string> = {
   warn: 'text-gold',
   '': 'text-muted',
 };
+
+// App.tsx'teki DRAG_THRESHOLD/DRAG_LIFT ile aynı değerler.
+const DRAG_THRESHOLD = 6;
+const DRAG_LIFT = 30;
+
+type DragSource =
+  | { kind: 'rack'; index: number; tile: TileModel }
+  | { kind: 'placed'; r: number; c: number; tile: TileModel };
 
 /** online_game_moves satırlarını GameState.moveHistory ile aynı şekle çevirir (appendMoveHistory, gameReducer.ts, ile birebir aynı desen). */
 function buildMoveHistory(rows: OnlineMoveRow[]): HistoryEntry[] {
@@ -93,8 +102,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   const [showFeedback, setShowFeedback] = useState(false);
   const [gameOverDismissed, setGameOverDismissed] = useState(false);
   const [showPassConfirm, setShowPassConfirm] = useState(false);
-  const [pendingWild, setPendingWild] = useState<{ r: number; c: number } | null>(null);
-  const [pendingRecall, setPendingRecall] = useState<{ r: number; c: number } | null>(null);
+  const [pendingWild, setPendingWild] = useState<{ r: number; c: number; rackIndex?: number } | null>(null);
   const [invasionConfirm, setInvasionConfirm] = useState<{
     list: { ownerName: string; ownerPts: number }[];
     score: number;
@@ -103,6 +111,52 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   const [meaning, setMeaning] = useState<{ entries: { word: string; data: WordMeaning | null; loading: boolean }[] } | null>(
     null,
   );
+
+  // ── Taş sürükleme (App.tsx'teki sistemle birebir aynı) ─────────────────
+  const dragRef = useRef<{ source: DragSource; startX: number; startY: number; moved: boolean } | null>(null);
+  const [ghost, setGhost] = useState<{
+    x: number;
+    y: number;
+    source: DragSource;
+    overKey: string | null;
+    overValid: boolean;
+  } | null>(null);
+  const suppressClickRef = useRef(false);
+
+  useEffect(() => {
+    const swallow = (e: MouseEvent) => {
+      if (suppressClickRef.current) {
+        suppressClickRef.current = false;
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    };
+    document.addEventListener('click', swallow, true);
+    return () => document.removeEventListener('click', swallow, true);
+  }, []);
+
+  useEffect(() => {
+    const preventScrollWhileDragging = (e: TouchEvent) => {
+      if (dragRef.current) e.preventDefault();
+    };
+    document.addEventListener('touchmove', preventScrollWhileDragging, { passive: false });
+    return () => document.removeEventListener('touchmove', preventScrollWhileDragging);
+  }, []);
+
+  useEffect(() => {
+    const clearStuckDrag = () => {
+      if (dragRef.current) {
+        dragRef.current = null;
+        setGhost(null);
+      }
+    };
+    document.addEventListener('visibilitychange', clearStuckDrag);
+    window.addEventListener('blur', clearStuckDrag);
+    return () => {
+      document.removeEventListener('visibilitychange', clearStuckDrag);
+      window.removeEventListener('blur', clearStuckDrag);
+    };
+  }, []);
 
   const mySlotIndex = useMemo(
     () => game.slots.findIndex((s) => s.type === 'human' && s.user_id === myUserId),
@@ -137,6 +191,100 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   const me = state.players[mySlotIndex];
   const canAct = loaded && !state.isGameOver && state.current === mySlotIndex && !!me;
 
+  // Raftan bir taş ya da tahtaya bu tur konmuş bir taş sürüklenmeye başlanır.
+  const beginDrag = (source: DragSource, e: React.PointerEvent) => {
+    if (!canAct || state.swapMode) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { source, startX: e.clientX, startY: e.clientY, moved: false };
+  };
+
+  const dropTargetsAt = (x: number, y: number) => {
+    const el = document.elementFromPoint(x, y);
+    const cellEl = el?.closest('[data-cell]') as HTMLElement | null;
+    const rackEl = el?.closest('[data-rack]') as HTMLElement | null;
+    return { cellEl, rackEl };
+  };
+
+  const liftedPoint = (clientY: number) => {
+    const topRowEl = document.querySelector('[data-cell="0,0"]') as HTMLElement | null;
+    const minY = topRowEl ? topRowEl.getBoundingClientRect().top + 1 : -Infinity;
+    return Math.max(clientY - DRAG_LIFT, minY);
+  };
+
+  const isCellFreeFor = (source: DragSource, r: number, c: number) => {
+    if (source.kind === 'placed' && source.r === r && source.c === c) return false;
+    return !state.board[r][c] && !state.placed[key(r, c)];
+  };
+
+  const moveDrag = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d) return;
+    if (!d.moved) {
+      const dist = Math.hypot(e.clientX - d.startX, e.clientY - d.startY);
+      if (dist < DRAG_THRESHOLD) return;
+      d.moved = true;
+    }
+    const liftedY = liftedPoint(e.clientY);
+    const { cellEl } = dropTargetsAt(e.clientX, liftedY);
+    let overKey: string | null = null;
+    let overValid = false;
+    if (cellEl?.dataset.cell) {
+      const [r, c] = cellEl.dataset.cell.split(',').map(Number);
+      overKey = key(r, c);
+      overValid = isCellFreeFor(d.source, r, c);
+    }
+    setGhost({ x: e.clientX, y: liftedY, source: d.source, overKey, overValid });
+  };
+
+  const endDrag = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    dragRef.current = null;
+    setGhost(null);
+    if (!d) return;
+    try {
+      (e.target as Element).releasePointerCapture?.(e.pointerId);
+    } catch {
+      // yakalama zaten bırakılmış olabilir — yok sayılır.
+    }
+
+    if (!d.moved) {
+      if (d.source.kind === 'rack') {
+        dispatch({ type: 'SELECT_TILE', index: d.source.index });
+      } else {
+        dispatch({ type: 'RECALL_CELL', r: d.source.r, c: d.source.c });
+      }
+      return;
+    }
+
+    suppressClickRef.current = true;
+    setTimeout(() => {
+      suppressClickRef.current = false;
+    }, 0);
+
+    const { cellEl, rackEl } = dropTargetsAt(e.clientX, liftedPoint(e.clientY));
+    if (cellEl?.dataset.cell) {
+      const [r, c] = cellEl.dataset.cell.split(',').map(Number);
+      if (isCellFreeFor(d.source, r, c)) {
+        if (d.source.kind === 'rack') {
+          if (d.source.tile.letter === '?') {
+            setPendingWild({ r, c, rackIndex: d.source.index });
+          } else {
+            dispatch({ type: 'PLACE_TILE', r, c, rackIndex: d.source.index });
+          }
+        } else {
+          dispatch({ type: 'MOVE_PLACED_TILE', from: { r: d.source.r, c: d.source.c }, to: { r, c } });
+        }
+      }
+    } else if (rackEl && d.source.kind === 'placed') {
+      dispatch({ type: 'RECALL_CELL', r: d.source.r, c: d.source.c });
+    }
+  };
+
+  const cancelDrag = () => {
+    dragRef.current = null;
+    setGhost(null);
+  };
+
   const openMeaning = (words: string[]) => {
     const unique = [...new Set(words)];
     if (unique.length === 0) return;
@@ -168,9 +316,6 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     dispatch({ type: 'PLACE_TILE', r, c });
   };
 
-  // v1: tam sürükle-bırak yerine basitleştirilmiş etkileşim — bu turda
-  // konmuş bir taşa dokunmak (bırakınca hareket olsun olmasın) onu rafa
-  // geri alır. Yeniden konumlandırmak için önce geri al, sonra yeniden yerleştir.
   const moveStatus = useMemo(() => {
     const placedKeys = Object.keys(state.placed);
     if (placedKeys.length === 0 || !wordsReady || !me) return null;
@@ -331,6 +476,8 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
 
   const historyState = { ...state, moveHistory: buildMoveHistory(moveRows) };
   const tilesState = { ...state, current: mySlotIndex };
+  const dragHiddenKey = ghost && ghost.source.kind === 'placed' ? key(ghost.source.r, ghost.source.c) : null;
+  const dragHiddenIndex = ghost && ghost.source.kind === 'rack' ? ghost.source.index : null;
 
   return (
     <div className="min-h-[100dvh] w-full flex flex-col items-center overflow-x-hidden">
@@ -342,14 +489,13 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
           onCellClick={handleCellClick}
           moveStatus={moveStatus}
           onOpenHistory={() => setShowHistory(true)}
-          onTilePointerDown={(r, c) => setPendingRecall({ r, c })}
-          onTilePointerUp={() => {
-            if (pendingRecall) {
-              dispatch({ type: 'RECALL_CELL', r: pendingRecall.r, c: pendingRecall.c });
-              setPendingRecall(null);
-            }
-          }}
-          onTilePointerCancel={() => setPendingRecall(null)}
+          dragHiddenKey={dragHiddenKey}
+          dragOverKey={ghost?.overKey ?? null}
+          dragOverValid={ghost?.overValid ?? false}
+          onTilePointerDown={(r, c, e) => beginDrag({ kind: 'placed', r, c, tile: state.placed[key(r, c)] }, e)}
+          onTilePointerMove={moveDrag}
+          onTilePointerUp={endDrag}
+          onTilePointerCancel={cancelDrag}
         />
 
         <div className="w-full max-w-[680px] px-3 pb-3 pt-1 flex flex-col gap-1.5">
@@ -371,6 +517,12 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
                 }}
                 title={me.name}
                 color={PLAYER_COLORS[me.colorIndex]}
+                draggable={canAct}
+                dragHiddenIndex={dragHiddenIndex}
+                onTilePointerDown={(i, e) => beginDrag({ kind: 'rack', index: i, tile: me.rack[i] }, e)}
+                onTilePointerMove={moveDrag}
+                onTilePointerUp={endDrag}
+                onTilePointerCancel={cancelDrag}
                 swapMode={state.swapMode}
                 swapSelection={state.swapSelection}
               />
@@ -524,11 +676,37 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       {pendingWild && (
         <WildcardModal
           onSelect={(letter) => {
-            dispatch({ type: 'PLACE_TILE', r: pendingWild.r, c: pendingWild.c, wildLetter: letter });
+            dispatch({
+              type: 'PLACE_TILE',
+              r: pendingWild.r,
+              c: pendingWild.c,
+              wildLetter: letter,
+              rackIndex: pendingWild.rackIndex,
+            });
             setPendingWild(null);
           }}
           onClose={() => setPendingWild(null)}
         />
+      )}
+
+      {ghost && (
+        <div
+          className="fixed z-[300] pointer-events-none"
+          style={{
+            left: ghost.x,
+            top: ghost.y,
+            width: 46,
+            height: 46,
+            transform: 'translate(-50%, -50%) scale(1.1)',
+            filter: 'drop-shadow(0 10px 16px rgba(0,0,0,0.35))',
+          }}
+        >
+          <TileComponent
+            tile={ghost.source.tile}
+            variant={ghost.source.kind === 'rack' ? 'rack' : 'placed'}
+            color={ghost.source.kind === 'placed' && me ? PLAYER_COLORS[me.colorIndex] : undefined}
+          />
+        </div>
       )}
 
       <GameOver
