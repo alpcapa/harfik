@@ -25,7 +25,7 @@ import { FeedbackModal } from './FeedbackModal';
 import { Tile as TileComponent } from './Tile';
 import { createInitialState, gameReducer, isFirstMove } from '../game/gameReducer';
 import { isWordSetReady } from '../data/wordSetLoader';
-import { PLAYER_COLORS } from '../game/constants';
+import { PLAYER_COLORS, jokerFinishBonus } from '../game/constants';
 import {
   calcScore,
   calcWordRawScores,
@@ -338,12 +338,58 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.placed, state.board, state.players, state.current, wordsReady]);
 
-  const liveMessage = moveStatus && !moveStatus.valid && moveStatus.reason ? moveStatus.reason : state.message;
+  // `online_game_states` mesaj/messageType taşımaz (bkz. dosya başı yorumu) —
+  // SYNC_ONLINE_STATE her senkronda bunları '' yapar. Yerel oyundaki gibi
+  // ("Ironman, ilk hamleni köşenden yap" / "X: +9 puan Kelimeler: ...")
+  // anlamlı bir mesaj göstermek için son hamleyi (moveRows) aynı
+  // gameReducer.ts şablonlarıyla burada yeniden metne çeviriyoruz — henüz hiç
+  // hamle yoksa (oyunun ilk turu) startGame'deki köşe uyarısının birebir aynısı.
+  const lastMoveMessage = useMemo((): { message: string; messageType: '' | 'ok' | 'warn' | 'err' } => {
+    if (moveRows.length === 0) {
+      const starter = state.players[0]?.name ?? '';
+      return { message: `${starter}, kendi köşenden bir kelime kur.`, messageType: '' };
+    }
+    const row = moveRows[moveRows.length - 1];
+    const moverName = state.players[row.player_index]?.name ?? 'Oyuncu';
+    if (row.action === 'pass') {
+      return { message: `${moverName} pas geçti.`, messageType: 'warn' };
+    }
+    if (row.action === 'exchange') {
+      return {
+        message: `${moverName} ${row.tile_count} taş değiştirdi ve sırasını kullandı.`,
+        messageType: 'warn',
+      };
+    }
+    if (row.action === 'surrender') {
+      return { message: `${moverName} teslim oldu.`, messageType: 'warn' };
+    }
+    const finishBonus = jokerFinishBonus(row.finish_joker_count);
+    const finishBonusNote = finishBonus > 0 ? ` (jokerli bitiş bonusu +${finishBonus})` : '';
+    const shares = row.lost_shares ?? [];
+    const bonusNote =
+      shares.length > 0
+        ? ` (${shares.map((s) => `${s.amount} puanı ${state.players[s.to]?.name ?? 'Oyuncu'} kaptı`).join(', ')})`
+        : '';
+    const pts = row.points - finishBonus;
+    return {
+      message: `${moverName}: +${pts} puan${bonusNote}${finishBonusNote} Kelimeler: ${row.words.join(', ')}`,
+      messageType: 'ok',
+    };
+  }, [moveRows, state.players]);
+
+  // Sunucu/doğrulama hatası bir SET_MESSAGE ile burada anlık olarak
+  // (bir sonraki senkrona kadar) `state.message`'a yazılır — doluysa o,
+  // yukarıdaki hesaplanan son-hamle mesajının önüne geçer.
+  const liveMessage = moveStatus && !moveStatus.valid && moveStatus.reason
+    ? moveStatus.reason
+    : state.message || lastMoveMessage.message;
   const liveMessageType = moveStatus && !moveStatus.valid && moveStatus.reason
     ? 'err'
     : moveStatus?.valid
       ? 'ok'
-      : state.messageType;
+      : state.message
+        ? state.messageType
+        : lastMoveMessage.messageType;
 
   const handlePlay = async () => {
     if (!wordsReady || !canAct || busy || !me) return;
