@@ -233,6 +233,11 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   const wordsReady = isWordSetReady();
   const me = state.players[mySlotIndex];
   const canAct = loaded && !state.isGameOver && state.current === mySlotIndex && !!me;
+  // Sıra bir YZ koltuğundaysa hamle sunucuda (play-ai-turn Edge Function,
+  // kelime listesini önbelleğe almadıysa birkaç saniye sürebilir) hesaplanıyor
+  // olabilir — aşağıdaki banner'da bunu bir insanın sırasını beklemekten
+  // ayırt etmek için kullanılıyor (bkz. o banner'daki not).
+  const isAiTurn = !canAct && !state.isGameOver && game.slots[state.current]?.type === 'ai';
 
   // Raftan bir taş ya da tahtaya bu tur konmuş bir taş sürüklenmeye başlanır.
   const beginDrag = (source: DragSource, e: React.PointerEvent) => {
@@ -601,9 +606,14 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
 
         <div className="w-full max-w-[680px] px-3 pb-3 pt-1 flex flex-col gap-1.5">
           {!canAct && !state.isGameOver ? (
-            <div className="shadow-raised flex items-center justify-center rounded-md border border-red/40 bg-red/10 px-4 py-3">
+            <div className="shadow-raised flex items-center justify-center gap-2 rounded-md border border-red/40 bg-red/10 px-4 py-3">
+              {isAiTurn && (
+                <span className="w-2 h-2 rounded-full bg-red animate-pulse shrink-0" aria-hidden />
+              )}
               <span className="font-mono text-[11px] font-bold uppercase tracking-[1px] text-red">
-                Sıra: {state.players[state.current]?.name ?? 'Rakip'} — oynaması bekleniyor
+                {isAiTurn
+                  ? `${state.players[state.current]?.name ?? 'Yapay Zeka'} hamlesini hesaplıyor…`
+                  : `Sıra: ${state.players[state.current]?.name ?? 'Rakip'} — oynaması bekleniyor`}
               </span>
             </div>
           ) : (
