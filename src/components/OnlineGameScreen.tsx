@@ -45,6 +45,7 @@ import {
   isValidWordRemote,
   submitMove,
   subscribeOnlineGameState,
+  triggerAiTurn,
 } from '../lib/api';
 import type { HistoryEntry, Tile as TileModel } from '../game/types';
 import type { OnlineGame, OnlineMoveRow, WordMeaning } from '../lib/database.types';
@@ -163,6 +164,19 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     [game.slots, myUserId],
   );
 
+  // App.tsx'teki `triggerPendingAiTurns` yalnızca uygulama açılışında ([user]
+  // değiştiğinde) bir kez çalışır — bu ekranda oturup insan turlarını art
+  // arda oynarken sıra bir YZ koltuğuna geldiğinde onu tetikleyen başka
+  // hiçbir şey yoktu (aynı katılımcı yeniden mount olmadığı sürece), YZ'nin
+  // sırası "oynaması bekleniyor" banner'ında sonsuza dek asılı kalıyordu.
+  // Bu yüzden her `refresh()`'te sıradaki koltuk YZ ise `triggerAiTurn`
+  // burada da çağrılır — birden fazla istemci aynı anda tetiklese de
+  // `submit_move`'un satır kilidi çifte oynamayı zaten engelliyor
+  // (bkz. onlineAiTurn.ts), `aiTriggeringRef` yalnızca bu sekmenin kendi
+  // ardışık refresh'lerinin (focus/visibility gibi) aynı YZ turunu
+  // gereksiz yere tekrar tekrar tetiklemesini önlüyor.
+  const aiTriggeringRef = useRef(false);
+
   useEffect(() => {
     if (mySlotIndex < 0) return;
     let cancelled = false;
@@ -176,6 +190,18 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       dispatch({ type: 'SYNC_ONLINE_STATE', publicState, myRack, mySlotIndex });
       setMoveRows(rows);
       setLoaded(true);
+
+      if (!publicState.is_game_over && !aiTriggeringRef.current) {
+        const currentSlot = game.slots[publicState.current];
+        if (currentSlot?.type === 'ai') {
+          aiTriggeringRef.current = true;
+          triggerAiTurn(game.id)
+            .catch((err) => console.error('[Kelimeki] triggerAiTurn (OnlineGameScreen) hatası:', err))
+            .finally(() => {
+              aiTriggeringRef.current = false;
+            });
+        }
+      }
     };
     void refresh();
     const unsubscribe = subscribeOnlineGameState(game.id, () => {
