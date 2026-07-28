@@ -18,12 +18,11 @@ import { ResetPasswordModal } from './components/ResetPasswordModal';
 import { createInitialState, gameReducer, isFirstMove } from './game/gameReducer';
 import { preloadWordSet, isWordSetReady } from './data/wordSetLoader';
 import { calcScore, computeInvasionSplit, formatInvalidWordsReason, validatePlacement, validatePlacementStructural } from './utils/validator';
-import { rankPlayers } from './utils/ranking';
 import { loadGameState, saveGameState, clearGameState, takePendingAbandonedGame } from './utils/gameStorage';
 import type { SavedGame } from './utils/gameStorage';
+import { buildGameRecord } from './utils/gameRecord';
 import { markQuickStartSeen } from './utils/onboarding';
 import { getFormedWords, getFullWordAt, key } from './utils/board';
-import { serializeBoardSnapshot } from './utils/boardSnapshot';
 import type { Tile as TileModel } from './game/types';
 import { Tile } from './components/Tile';
 import { trLower } from './utils/turkish';
@@ -41,7 +40,7 @@ import {
   getDeviceType,
   isStandaloneDisplay,
 } from './utils/visitTracking';
-import type { GameResult, OnlineGame, WordMeaning } from './lib/database.types';
+import type { OnlineGame, WordMeaning } from './lib/database.types';
 import { OnlineGameScreen } from './components/OnlineGameScreen';
 import { useAuth } from './hooks/useAuth';
 import { useModalA11y } from './hooks/useModalA11y';
@@ -166,6 +165,15 @@ export default function App() {
     const pending = takePendingAbandonedGame();
     if (pending) {
       void logGameFinish(pending.playerCount, pending.durationSeconds, pending.multiSession, false);
+      // Oyun gerçekten başlamışsa (aşağıdaki gameStarted'la aynı eşik:
+      // turnCount>=2) bu, hesap sahibi için gecikmeli bir teslim sayılır —
+      // oyun içindeki "Çık" ile aynı -2 Sanal Lig cezası uygulanır. Misafirse
+      // (o an giriş yoksa) saveGameDurable normal bitişteki gibi kaydı
+      // offline kuyruğa alır, kişi ileride giriş/kayıt olursa hesabına işlenir.
+      if (pending.state && pending.state.turnCount >= 2) {
+        const record = buildGameRecord(pending.state, true, 0);
+        if (record) void saveGameDurable(record);
+      }
     }
   }, []);
 
@@ -350,64 +358,6 @@ export default function App() {
     }
   };
 
-  // İnsan oyuncunun (her zaman 1. oyuncu — hesap sahibi) oyun sonu kaydını
-  // oluşturur — hem oyun normal bittiğinde hem de oyuncu bitmeden teslim
-  // olduğunda kullanılır. Sıralama, teslim olan oyuncuları puanlarından
-  // bağımsız olarak her zaman en sona koyan `rankPlayers`e göre yapılır —
-  // böylece kademeli teslimlerin sonunda tek kalan oyuncu, ayrılanların
-  // dondurulmuş puanı ne olursa olsun 1. sırayı alır.
-  const buildGameRecord = (surrendered: boolean, surrenderingIndex?: number) => {
-    // Anlık kendi teslim olma akışında bu, SURRENDER dispatch edilmeden HEMEN
-    // önce (hâlâ eski state ile) çağrılır — o yüzden teslim olacak oyuncu
-    // burada elle surrendered:true/score:0 olarak işaretlenir, yoksa
-    // rankPlayers onu hâlâ aktifmiş gibi puanına göre sıralar.
-    const effectivePlayers =
-      surrenderingIndex != null
-        ? state.players.map((p, i) =>
-            i === surrenderingIndex ? { ...p, surrendered: true, score: 0 } : p,
-          )
-        : state.players;
-    const human = effectivePlayers[0];
-    if (!human || human.isAI) return null;
-    const opponents = effectivePlayers.slice(1);
-    if (opponents.length === 0) return null;
-    const bestOpponentScore = Math.max(...opponents.map((p) => p.score));
-    const ranked = rankPlayers(effectivePlayers);
-    const humanEntry = ranked.find((r) => r.index === 0)!;
-    const rank = humanEntry.rank;
-    const tiedForFirst = ranked.filter((r) => r.rank === 1).length;
-    const result: GameResult = surrendered
-      ? 'lose'
-      : rank > 1
-        ? 'lose'
-        : tiedForFirst > 1
-          ? 'tie'
-          : 'win';
-    const players = ranked.map((r) => ({
-      name: r.player.name,
-      score: r.player.score,
-      is_ai: r.player.isAI,
-      surrendered: r.player.surrendered,
-      colorIndex: r.player.colorIndex,
-    }));
-    return {
-      id: crypto.randomUUID(),
-      created_at: new Date().toISOString(),
-      player_score: human.score,
-      ai_score: bestOpponentScore,
-      result,
-      rank,
-      turn_count: state.turnCount,
-      player_count: state.players.length,
-      move_count: human.moveCount || null,
-      best_move_score: human.bestMoveScore || null,
-      longest_word: human.longestWord || null,
-      move_points_sum: human.moveScoreSum || null,
-      surrendered,
-      players,
-      board_snapshot: serializeBoardSnapshot(state.board),
-    };
-  };
 
   // Oyun bitince giriş yapmış kullanıcının sonucunu kaydet (YZ'ye karşı oyunlar
   // dahil). 1. oyuncu zaten teslim olarak ayrıldıysa kaydı o an tutulmuştur —
@@ -415,7 +365,7 @@ export default function App() {
   useEffect(() => {
     if (!state.isGameOver || state.phase !== 'play') return;
     if (state.players[0]?.surrendered) return;
-    const record = buildGameRecord(false);
+    const record = buildGameRecord(state, false);
     if (record) void saveGameDurable(record);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.isGameOver]);
@@ -1063,7 +1013,7 @@ export default function App() {
                     return;
                   }
                   if (exitTargetIndex === 0) {
-                    const record = buildGameRecord(true, 0);
+                    const record = buildGameRecord(state, true, 0);
                     if (record) void saveGameDurable(record);
                   }
                   dispatch({ type: 'SURRENDER', index: exitTargetIndex });
