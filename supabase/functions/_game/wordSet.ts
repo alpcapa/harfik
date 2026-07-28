@@ -14,11 +14,30 @@ import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
 
 let cached: ReadonlySet<string> | undefined;
 
+// PostgREST tek bir `select()`i, `range()` verilmese bile projenin
+// `db-max-rows` ayarına (varsayılan 1000) sessizce kırpar — 63.890 satırlık
+// `words` tablosunda bu, kelime havuzunun ~%98'inin hiç yüklenmediği anlamına
+// geliyordu (bulundu: YZ ilk hamlesinde art arda iki kez, aslında geçerli
+// köşe-değen kelimeler mevcutken taş değiştirmeye zorlanmıştı — rastgele
+// 1000 kelimelik bir alt kümede 7 harften bir eşleşme bulma ihtimali çok
+// düşük). Düzeltme: son sayfa PAGE_SIZE'tan az satır dönene kadar `range()`
+// ile sayfalı çekiyoruz — sayfa boyutunu bilinen/güvenli varsayılanın
+// altında tutmak, sunucunun gerçek üst sınırından bağımsız çalışmayı sağlıyor.
+const PAGE_SIZE = 1000;
+
 export async function loadWordSet(serviceClient: SupabaseClient): Promise<ReadonlySet<string>> {
   if (cached) return cached;
-  const { data, error } = await serviceClient.from('words').select('word');
-  if (error) throw new Error(`Kelime listesi okunamadı: ${error.message}`);
-  cached = new Set((data ?? []).map((r: { word: string }) => r.word));
+  const words = new Set<string>();
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await serviceClient
+      .from('words')
+      .select('word')
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(`Kelime listesi okunamadı: ${error.message}`);
+    for (const r of data ?? []) words.add((r as { word: string }).word);
+    if (!data || data.length < PAGE_SIZE) break;
+  }
+  cached = words;
   return cached;
 }
 
