@@ -15,7 +15,9 @@ const STORAGE_VERSION = 1;
 // düşer. Süre son KAYIT anından itibaren sayılır (oyunun başladığı andan
 // değil) — yoksa gerçekten günler süren çok-oturumlu bir oyunu da hatalı
 // biçimde terk edilmiş sayardık.
-const ABANDON_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000;
+// Setup'taki "Devam Eden Oyun" satırında kalan gün sayısını göstermek için
+// (bkz. App.tsx/Setup.tsx) dışa da açık.
+export const ABANDON_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000;
 
 const PENDING_ABANDON_KEY = 'kelimeki:pending-abandoned-game';
 
@@ -30,6 +32,12 @@ export interface PendingAbandonedGame {
   playerCount: number;
   durationSeconds: number;
   multiSession: boolean;
+}
+
+export interface SavedGame {
+  state: GameState;
+  /** Bu kaydın en son yazıldığı an (epoch ms) — kalan gün sayısını göstermek için. */
+  savedAt: number;
 }
 
 /** Devam eden oyunu kaydeder. localStorage kapalı/dolu olabilir — sessizce yok sayılır. */
@@ -51,7 +59,7 @@ export function clearGameState(): void {
 }
 
 /** Bitmemiş bir oyun varsa geri yükler; yoksa, bittiyse ya da bozuksa null döner. */
-export function loadGameState(): GameState | null {
+export function loadGameState(): SavedGame | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
@@ -89,7 +97,7 @@ export function loadGameState(): GameState | null {
     // localStorage'dan kaldığı yerden devam ettiği anlamına gelir — bu oyun
     // artık "çok oturumlu" sayılır, geri dönüşü yoktur.
     state.multiSession = true;
-    return state;
+    return { state, savedAt };
   } catch {
     return null;
   }

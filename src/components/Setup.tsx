@@ -3,11 +3,11 @@ import { useEffect, useState } from 'react';
 import { SETUP_BG_WATERMARK_URL } from '../assets/setupBgWatermark';
 import { PLAYER_COLORS } from '../game/constants';
 import type { PlayerSetup } from '../game/gameReducer';
-import type { GameState } from '../game/types';
 import { useAuth } from '../hooks/useAuth';
 import { useModalA11y } from '../hooks/useModalA11y';
 import { fetchOnlineGameTurns, fetchPlayerStats, listMyOnlineGames } from '../lib/api';
 import { hasSeenQuickStart, markQuickStartSeen } from '../utils/onboarding';
+import { ABANDON_TIMEOUT_MS, type SavedGame } from '../utils/gameStorage';
 import { preloadWordSet, isWordSetReady } from '../data/wordSetLoader';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
@@ -18,6 +18,13 @@ import { PlayerBadge } from './PlayerBadge';
 import { TermsModal } from './TermsModal';
 import { PrivacyModal } from './PrivacyModal';
 import type { OnlineGame } from '../lib/database.types';
+
+// "Devam Eden Oyun" satırındaki kalan gün sayısı — gameStorage.ts'teki
+// ABANDON_TIMEOUT_MS (7 gün) ile aynı terk-silme kuralına göre, son kayıt
+// (savedAt) anından itibaren.
+function remainingDays(savedAt: number): number {
+  return Math.floor((savedAt + ABANDON_TIMEOUT_MS - Date.now()) / (24 * 60 * 60 * 1000));
+}
 
 interface SetupProps {
   // showTutorial: oyun ekranı açıldığında Tutorial (HelpModal) daha önce
@@ -35,7 +42,7 @@ interface SetupProps {
   // "Yapay Zeka ile" sekmesinde normal kurulum formu yerine tek bir "Devam
   // Eden Oyun" satırı gösterilir; yeni bir yerel oyun bu kayıt bitene/teslim
   // olunana kadar başlatılamaz (bkz. CLAUDE.md "Devam eden oyunun kalıcılığı").
-  savedGame: GameState | null;
+  savedGame: SavedGame | null;
   onResumeGame: () => void;
 }
 
@@ -319,10 +326,19 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, sav
           >
             <span className="flex-1 min-w-0 flex flex-col gap-0.5">
               <span className="font-sans text-sm font-bold text-text truncate">
-                {savedGame.players.length} Kişilik Yapay Zeka Oyunu
+                {savedGame.state.players.length} Kişilik Yapay Zeka Oyunu
               </span>
               <span className="font-mono text-[10px] text-muted truncate">
-                Sıra: {savedGame.players[savedGame.current]?.name ?? '—'}
+                Sıra: {savedGame.state.players[savedGame.state.current]?.name ?? '—'}
+              </span>
+              <span
+                className={`font-mono text-[10px] truncate ${
+                  remainingDays(savedGame.savedAt) <= 1 ? 'text-red font-bold' : 'text-muted'
+                }`}
+              >
+                {remainingDays(savedGame.savedAt) <= 0
+                  ? 'Bugün silinecek'
+                  : `${remainingDays(savedGame.savedAt)} gün içinde silinir`}
               </span>
             </span>
             <span className="text-[9px] font-mono uppercase tracking-[1px] text-accent font-bold shrink-0">

@@ -20,10 +20,11 @@ import { preloadWordSet, isWordSetReady } from './data/wordSetLoader';
 import { calcScore, computeInvasionSplit, formatInvalidWordsReason, validatePlacement, validatePlacementStructural } from './utils/validator';
 import { rankPlayers } from './utils/ranking';
 import { loadGameState, saveGameState, clearGameState, takePendingAbandonedGame } from './utils/gameStorage';
+import type { SavedGame } from './utils/gameStorage';
 import { markQuickStartSeen } from './utils/onboarding';
 import { getFormedWords, getFullWordAt, key } from './utils/board';
 import { serializeBoardSnapshot } from './utils/boardSnapshot';
-import type { GameState, Tile as TileModel } from './game/types';
+import type { Tile as TileModel } from './game/types';
 import { Tile } from './components/Tile';
 import { trLower } from './utils/turkish';
 import { PLAYER_COLORS } from './game/constants';
@@ -73,7 +74,7 @@ export default function App() {
   // oyuncu Arkadaşınla sekmesindeki bekleyen davetleri/sırasını da görebilsin.
   // Kayıt burada ayrı bir state'te tutulup Setup'a iletilir; RESUME_SAVED
   // dispatch edilene kadar `state`'e hiç dokunmaz.
-  const [savedGame, setSavedGame] = useState<GameState | null>(() => loadGameState());
+  const [savedGame, setSavedGame] = useState<SavedGame | null>(() => loadGameState());
 
   // Kelime listesi main.tsx'te tetiklenen ayrı chunk'tan yükleniyor —
   // hazır olana kadar hamle doğrulama/YZ turu tetiklenmemeli (bkz.
@@ -228,7 +229,7 @@ export default function App() {
   // effect'i tamamen `state`e göre çalışır (bkz. o effect'teki not).
   const handleResumeSavedGame = () => {
     if (!savedGame) return;
-    dispatch({ type: 'RESUME_SAVED', state: savedGame });
+    dispatch({ type: 'RESUME_SAVED', state: savedGame.state });
     setSavedGame(null);
   };
 
