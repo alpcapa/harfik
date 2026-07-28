@@ -113,7 +113,7 @@ export function UserMenu() {
               …
             </span>
           ) : (
-            <Avatar url={profile?.avatar_url} name={name} size={32} />
+            <Avatar url={profile?.avatar_url} name={name} size={32} dot={incomingRequestCount > 0} />
           )}
         </button>
 
