@@ -16,6 +16,7 @@ import { LogoMark } from './LogoMark';
 import { PlayerBadge } from './PlayerBadge';
 import { TermsModal } from './TermsModal';
 import { PrivacyModal } from './PrivacyModal';
+import type { OnlineGame } from '../lib/database.types';
 
 interface SetupProps {
   // showTutorial: oyun ekranı açıldığında Tutorial (HelpModal) daha önce
@@ -26,9 +27,12 @@ interface SetupProps {
   // Setup burada yalnızca seçiciyi gösterip görünümü değiştirir.
   mainView: 'local' | 'live';
   onMainViewChange: (view: 'local' | 'live') => void;
+  // "Aktif" bir Canlı oyuna tıklanınca (LiveGamesTab), gerçek oyun ekranını
+  // açmak için App.tsx'e iletilir (Faz 3, 4. adım).
+  onOpenLiveGame: (game: OnlineGame) => void;
 }
 
-export function Setup({ onStart, mainView, onMainViewChange }: SetupProps) {
+export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame }: SetupProps) {
   const { user, profile, loading, profileLoading } = useAuth();
   // Oturum açıldıysa 1. oyuncu her zaman hesap sahibidir. Profil henüz
   // çekilmediyse (profileLoading) e-posta önekine düşmüyoruz — aksi halde
@@ -261,7 +265,7 @@ export function Setup({ onStart, mainView, onMainViewChange }: SetupProps) {
       </div>
 
       {mainView === 'live' ? (
-        <LiveGamesTab />
+        <LiveGamesTab onOpenGame={onOpenLiveGame} />
       ) : (
         <>
           <div className="flex flex-col gap-2">

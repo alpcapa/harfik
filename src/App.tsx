@@ -40,7 +40,8 @@ import {
   getDeviceType,
   isStandaloneDisplay,
 } from './utils/visitTracking';
-import type { GameResult, WordMeaning } from './lib/database.types';
+import type { GameResult, OnlineGame, WordMeaning } from './lib/database.types';
+import { OnlineGameScreen } from './components/OnlineGameScreen';
 import { useAuth } from './hooks/useAuth';
 import { useModalA11y } from './hooks/useModalA11y';
 
@@ -221,6 +222,11 @@ export default function App() {
   // 2/4 kişilik seçicisinin içine değil, onun yanına ayrı bir sekme olarak
   // eklendi — iki mod farklı zihinsel modeller taşıyor (bkz. proje notları).
   const [mainView, setMainView] = useState<'local' | 'live'>('local');
+
+  // Açık olan Canlı oyun (Faz 3, 4. adım) — Setup/LiveGamesTab'daki "Aktif"
+  // bir oyuna dokununca dolar; doluyken tüm normal kurulum/yerel oyun
+  // ağacının yerine OnlineGameScreen render edilir (aşağıya bkz.).
+  const [onlineGame, setOnlineGame] = useState<OnlineGame | null>(null);
 
   // Rakip köşeye giriş onay popup'ı.
   const [invasionConfirm, setInvasionConfirm] = useState<
@@ -489,6 +495,13 @@ export default function App() {
     );
   }
 
+  // ── Canlı oyun ekranı (Faz 3, 4. adım) ────────────────────────────────────
+  // Kurulum/yerel oyun ağacının tamamen önüne geçer — Canlı oyunun state'i
+  // Supabase'te yaşıyor, yerel `state`/`dispatch`'le hiç ilgisi yok.
+  if (onlineGame && user) {
+    return <OnlineGameScreen game={onlineGame} myUserId={user.id} onBack={() => setOnlineGame(null)} />;
+  }
+
   // ── Kurulum ekranı ─────────────────────────────────────────────────────────
   if (state.phase === 'setup') {
     return (
@@ -500,6 +513,7 @@ export default function App() {
           <Setup
             mainView={mainView}
             onMainViewChange={setMainView}
+            onOpenLiveGame={setOnlineGame}
             onStart={(players, showTutorial) => {
               dispatch({ type: 'START', players });
               if (showTutorial) setShowPostStartTutorial(true);

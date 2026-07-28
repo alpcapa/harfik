@@ -1,6 +1,8 @@
 // Kelimeki — Supabase şema tipleri (elle yazıldı; MCP erişimi açılınca
 // `generate_typescript_types` ile otomatik üretilebilir).
 
+import type { BonusType, Tile } from '../game/types';
+
 export type GameResult = 'win' | 'lose' | 'tie';
 
 export type Gender = 'female' | 'male' | 'unspecified';
@@ -97,6 +99,73 @@ export interface OnlineGame {
   my_invite_status: 'pending' | 'accepted' | 'declined' | null;
   /** Çağıran davetliyse `game_invites.id` (respond_to_game_invite'a geçilir); kurucuysa null. */
   my_invite_id: string | null;
+}
+
+// ── Canlı oyun (Faz 3 — gerçek zamanlı senkron oynanış) ─────────────────────
+
+/**
+ * `online_game_states.players` dizisindeki tek oyuncu — src/game/types.ts'teki
+ * `Player` ile aynı alanlar, ama `rack: Tile[]` yerine `rackCount: number`.
+ * Rakibin elindeki harfler bu satırdan ASLA okunamaz (bkz. online_game_secrets,
+ * ayrı ve tamamen kilitli bir tablo).
+ */
+export interface OnlinePlayerPublic {
+  name: string;
+  corners: number[];
+  colorIndex: number;
+  isAI: boolean;
+  surrendered: boolean;
+  rackCount: number;
+  score: number;
+  bestMoveScore: number;
+  longestWord: string;
+  moveCount: number;
+  moveScoreSum: number;
+}
+
+/** `online_game_states` tablosundaki satır — bir Canlı oyunun herkese (katılımcılara) açık anlık state'i. */
+export interface OnlineGameStatePublic {
+  online_game_id: string;
+  board: (Tile | null)[][];
+  bonuses: Record<string, BonusType>;
+  players: OnlinePlayerPublic[];
+  current: number;
+  turn_count: number;
+  consecutive_passes: number;
+  is_game_over: boolean;
+  end_reason: 'normal' | 'surrender' | null;
+  last_move_cells: [number, number][];
+  bag_count: number;
+  started_at: string;
+  updated_at: string;
+}
+
+/** `online_game_moves` tablosundaki tek satır (audit log / hamle geçmişi). */
+export interface OnlineMoveRow {
+  id: string;
+  online_game_id: string;
+  turn: number;
+  player_index: number;
+  player_user_id: string | null;
+  action: 'play' | 'pass' | 'exchange' | 'surrender';
+  words: string[];
+  word_scores: { word: string; score: number; x2: boolean; x3: boolean }[] | null;
+  points: number;
+  lost_shares: { to: number; amount: number }[] | null;
+  tile_count: number;
+  placements: { r: number; c: number; letter: string; wild?: boolean; wildLetter?: string }[] | null;
+  finish_joker_count: number;
+  bingo: boolean;
+  created_at: string;
+}
+
+/** Bir oyuncu için, submit_move'a gönderilecek tek taş yerleştirmesi. */
+export interface OnlineMovePlacement {
+  r: number;
+  c: number;
+  letter: string;
+  wild?: boolean;
+  wildLetter?: string;
 }
 
 /** Bir oyunun bitişindeki tek bir oyuncu satırı (final sıralamasında). */

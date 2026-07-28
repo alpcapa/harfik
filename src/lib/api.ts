@@ -32,6 +32,9 @@ import type {
   NewGame,
   OnlineGame,
   OnlineGameSlot,
+  OnlineGameStatePublic,
+  OnlineMovePlacement,
+  OnlineMoveRow,
   PlayerStats,
   Profile,
   SharedGameData,
@@ -39,6 +42,7 @@ import type {
 } from './database.types';
 import { getLocalMeaning } from '../data/meanings';
 import { trLower } from '../utils/turkish';
+import type { Tile } from '../game/types';
 
 /**
  * Tamamlanan bir oyunu kaydeder (oturum açıksa). Eklenen kaydın id'sini döner.
@@ -643,6 +647,99 @@ export async function respondToGameInvite(inviteId: string, accept: boolean): Pr
     p_accept: accept,
   });
   if (error) throw new Error(error.message);
+}
+
+// ── Canlı oyun (Faz 3 — gerçek zamanlı senkron oynanış) ─────────────────────
+
+/** Bir Canlı oyunun katılımcılara açık anlık state'i (`online_game_states`). */
+export async function fetchOnlineGameState(gameId: string): Promise<OnlineGameStatePublic | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('online_game_states')
+    .select('*')
+    .eq('online_game_id', gameId)
+    .maybeSingle();
+  if (error) {
+    console.error('[Kelimeki] fetchOnlineGameState hatası:', error.message);
+    return null;
+  }
+  return (data as OnlineGameStatePublic) ?? null;
+}
+
+/** Çağıranın KENDİ rafı (`get_my_online_rack` RPC'si) — başka hiçbir oyuncununki hiçbir zaman döndürülmez. */
+export async function getMyOnlineRack(gameId: string): Promise<Tile[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('get_my_online_rack', { p_game_id: gameId });
+  if (error) throw new Error(error.message);
+  return (data as Tile[]) ?? [];
+}
+
+/** Bir Canlı oyunun tüm hamle geçmişi, en eskiden en yeniye (`online_game_moves`). */
+export async function fetchOnlineGameMoves(gameId: string): Promise<OnlineMoveRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('online_game_moves')
+    .select('*')
+    .eq('online_game_id', gameId)
+    .order('turn', { ascending: true })
+    .order('created_at', { ascending: true });
+  if (error) {
+    console.error('[Kelimeki] fetchOnlineGameMoves hatası:', error.message);
+    return [];
+  }
+  return (data as OnlineMoveRow[]) ?? [];
+}
+
+export interface SubmitMovePayload {
+  action: 'play' | 'pass' | 'exchange';
+  placements?: OnlineMovePlacement[];
+  exchangeLetters?: string[];
+  words?: string[];
+  wordScores?: { word: string; score: number; x2: boolean; x3: boolean }[];
+  basePoints?: number;
+  lostShares?: { to: number; amount: number }[];
+}
+
+/**
+ * Sırası gelen oyuncunun hamlesini gönderir (`submit_move` RPC'si). Sunucu
+ * sırayı ve taş sahipliğini kendisi doğrular, puan hesabına (basePoints/
+ * words/wordScores/lostShares) client'ın hesapladığı gibi güvenir — bkz.
+ * CLAUDE.md "Canlı Oyun — Faz 3" bölümündeki mimari not.
+ */
+export async function submitMove(gameId: string, payload: SubmitMovePayload): Promise<void> {
+  if (!supabase) throw new Error('Supabase yapılandırılmadı.');
+  const { error } = await supabase.rpc('submit_move', {
+    p_game_id: gameId,
+    p_action: payload.action,
+    p_placements: payload.placements ?? null,
+    p_exchange_letters: payload.exchangeLetters ?? null,
+    p_words: payload.words ?? [],
+    p_word_scores: payload.wordScores ?? null,
+    p_base_points: payload.basePoints ?? 0,
+    p_lost_shares: payload.lostShares ?? [],
+  });
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * `online_game_states` satırındaki her değişiklikte `onChange`'i tetikler
+ * (Realtime). Dönen fonksiyon aboneliği iptal eder — bileşen unmount
+ * olduğunda çağrılmalı. Supabase yapılandırılmamışsa no-op.
+ */
+export function subscribeOnlineGameState(gameId: string, onChange: () => void): () => void {
+  if (!supabase) return () => {};
+  const client = supabase;
+  const channel = client
+    .channel(`online_game_state_${gameId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'online_game_states', filter: `online_game_id=eq.${gameId}` },
+      onChange,
+    )
+    .subscribe();
+  return () => {
+    void client.removeChannel(channel);
+  };
 }
 
 /**

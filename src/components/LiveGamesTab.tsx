@@ -14,7 +14,7 @@ import { LiveGameCreateForm } from './LiveGameCreateForm';
 type HumanSlot = Extract<OnlineGameSlot, { type: 'human' }>;
 
 function statusLabel(game: OnlineGame): string {
-  if (game.status === 'active') return 'Aktif — oynanış yakında';
+  if (game.status === 'active') return 'Aktif — girmek için dokun';
   if (game.status === 'pending') return 'Rakip bekleniyor';
   if (game.status === 'finished') return 'Bitti';
   return 'Terk edildi';
@@ -49,9 +49,11 @@ interface GameRowProps {
   game: OnlineGame;
   onRespond?: (accept: boolean) => void;
   busy?: boolean;
+  /** Yalnızca `status==='active'` oyunlarda verilir — satıra tıklanınca gerçek oyun ekranını açar. */
+  onOpen?: () => void;
 }
 
-function GameRow({ game, onRespond, busy }: GameRowProps) {
+function GameRow({ game, onRespond, busy, onOpen }: GameRowProps) {
   const isPendingInvite = game.my_role === 'invitee' && game.my_invite_status === 'pending';
 
   if (isPendingInvite && onRespond) {
@@ -101,33 +103,53 @@ function GameRow({ game, onRespond, busy }: GameRowProps) {
     );
   }
 
+  const Wrapper = onOpen ? 'button' : 'div';
   return (
-    <div className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel">
+    <Wrapper
+      type={onOpen ? 'button' : undefined}
+      onClick={onOpen}
+      className={`shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel w-full text-left ${
+        onOpen ? 'active:scale-[0.99] transition-transform' : ''
+      }`}
+    >
       <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
         {game.player_count} Kişilik Canlı Oyun
       </span>
       <span className="text-[9px] font-mono uppercase tracking-[1px] text-muted shrink-0">
         {statusLabel(game)}
       </span>
-    </div>
+    </Wrapper>
   );
 }
 
-function Section({ title, games }: { title: string; games: OnlineGame[] }) {
+function Section({
+  title,
+  games,
+  onOpenGame,
+}: {
+  title: string;
+  games: OnlineGame[];
+  onOpenGame?: (game: OnlineGame) => void;
+}) {
   if (games.length === 0) return null;
   return (
     <div className="flex flex-col gap-2">
       <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">{title}</div>
       <div className="flex flex-col gap-2">
         {games.map((g) => (
-          <GameRow key={g.id} game={g} />
+          <GameRow key={g.id} game={g} onOpen={onOpenGame ? () => onOpenGame(g) : undefined} />
         ))}
       </div>
     </div>
   );
 }
 
-export function LiveGamesTab() {
+interface LiveGamesTabProps {
+  /** `status==='active'` bir oyuna tıklanınca gerçek oyun ekranını açmak için (Faz 3, 4. adım). */
+  onOpenGame: (game: OnlineGame) => void;
+}
+
+export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   const { user, loading: authLoading } = useAuth();
   // null = henüz çekilmedi (yükleniyor), [] = çekildi ama hiç oyun yok.
   const [games, setGames] = useState<OnlineGame[] | null>(null);
@@ -250,7 +272,7 @@ export function LiveGamesTab() {
               </div>
             </div>
           )}
-          <Section title="Aktif" games={active} />
+          <Section title="Aktif" games={active} onOpenGame={onOpenGame} />
           <Section title="Rakip Bekleniyor" games={waiting} />
         </>
       )}
