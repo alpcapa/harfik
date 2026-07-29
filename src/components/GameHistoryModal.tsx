@@ -433,25 +433,25 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                               handleShowLikers(entry.id);
                             }}
                             aria-label="Beğenenleri göster"
-                            className="text-muted underline underline-offset-2 normal-case py-1 whitespace-nowrap shrink-0"
+                            className="text-muted underline underline-offset-2 py-1 px-0.5 whitespace-nowrap shrink-0"
                           >
-                            {entry.like_count} beğeni
+                            {entry.like_count}
                           </button>
                         )}
                       </span>
                       <span className="whitespace-nowrap shrink-0">{formatDateTime(entry.created_at)}</span>
                       {isOnline && (
-                        <span className="text-green font-bold normal-case border border-green/40 bg-green/10 rounded px-1 py-[1px] whitespace-nowrap shrink-0">
+                        <span className="text-green font-bold normal-case border border-green/40 bg-green/10 rounded px-[3px] py-0 text-[7px] leading-[10px] whitespace-nowrap shrink-0">
                           Canlı
                         </span>
                       )}
                       {isVsAi && (
-                        <span className="text-accent font-bold normal-case border border-accent/40 bg-accent/10 rounded px-1 py-[1px] whitespace-nowrap shrink-0">
+                        <span className="text-accent font-bold normal-case border border-accent/40 bg-accent/10 rounded px-[3px] py-0 text-[7px] leading-[10px] whitespace-nowrap shrink-0">
                           Yapay Zeka
                         </span>
                       )}
                     </span>
-                    <span className="flex items-center gap-2 shrink-0">
+                    <span className="flex items-center gap-2 shrink-0 ml-auto">
                       <span className="w-9 text-right">Puan</span>
                       <span className="w-6 text-right">SL</span>
                     </span>
