@@ -397,6 +397,8 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
             const meIndex = hasSnapshot ? findMeIndex(entry, players) : fallback!.meIndex;
             const ranks = computeRanks(players);
             const expanded = expandedId === entry.id;
+            const isOnline = !!entry.online_game_id;
+            const isVsAi = !isOnline && hasSnapshot && players.some((p) => p.is_ai);
             return (
               <div key={entry.id} className="flex flex-col gap-1.5">
                 <div
@@ -431,13 +433,23 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                               handleShowLikers(entry.id);
                             }}
                             aria-label="Beğenenleri göster"
-                            className="text-muted underline underline-offset-2"
+                            className="text-muted underline underline-offset-2 normal-case py-1"
                           >
-                            {entry.like_count}
+                            {entry.like_count} beğeni
                           </button>
                         )}
                       </span>
-                      {formatDateTime(entry.created_at)}
+                      <span>{formatDateTime(entry.created_at)}</span>
+                      {isOnline && (
+                        <span className="text-accent font-bold normal-case border border-accent/40 bg-accent/10 rounded px-1 py-[1px] shrink-0">
+                          Canlı
+                        </span>
+                      )}
+                      {isVsAi && (
+                        <span className="text-muted font-bold normal-case border border-border rounded px-1 py-[1px] shrink-0">
+                          Yapay Zeka
+                        </span>
+                      )}
                     </span>
                     <span className="flex items-center gap-2 shrink-0">
                       <span className="w-9 text-right">Puan</span>
