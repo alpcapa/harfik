@@ -348,9 +348,9 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, sav
             </span>
           </button>
           <p className="text-[11px] text-muted font-mono leading-relaxed">
-            Yeni bir Yapay Zeka oyunu başlatmak için önce bu oyunu bitirmen
-            gerekir — yukarıdaki karta dokunup devam edebilirsin, hiç
-            dönmezsen süresi dolunca otomatik teslim sayılıp silinir.
+            Yeni bir Yapay Zeka oyunu başlatabilmen için önce bu oyunu
+            bitirmen gerekir. Süre dolduğunda oyun otomatik biter ve teslim
+            olmuş kabul edilirsin; ayrıca, lig puanından 2 puan düşülür.
           </p>
         </div>
       ) : (
