@@ -1,6 +1,8 @@
 // Kelimeki — Supabase şema tipleri (elle yazıldı; MCP erişimi açılınca
 // `generate_typescript_types` ile otomatik üretilebilir).
 
+import type { BonusType, Tile } from '../game/types';
+
 export type GameResult = 'win' | 'lose' | 'tie';
 
 export type Gender = 'female' | 'male' | 'unspecified';
@@ -21,6 +23,10 @@ export interface Profile {
   birth_date: string | null;
   /** Bir arkadaş davet linkiyle katıldıysa, linki oluşturan kullanıcı (ilk temas, değişmez). */
   invited_by: string | null;
+  /** Pazarlama iletişimi almayı kabul etti mi — kayıt formundaki opsiyonel ikinci onay kutusu. */
+  marketing_consent: boolean;
+  /** `marketing_consent` true olduğu andaki (kayıt anındaki) sunucu zaman damgası — false ise null. */
+  marketing_consent_at: string | null;
 }
 
 // ── Arkadaşlık sistemi ──────────────────────────────────────────────────────
@@ -54,6 +60,116 @@ export interface FriendSearchResult {
   name: string;
   avatar_url: string | null;
   relation: FriendRelation | null;
+}
+
+// ── Canlı oyun (Faz 2 — davet/kabul) ────────────────────────────────────────
+
+/**
+ * `online_games.slots` dizisindeki tek koltuk — index 0 her zaman kurucu.
+ * `name`/`avatar_url`/`relation`/`invite_status`, yalnızca
+ * `list_my_online_games` RPC'sinin döndürdüğü (sunucu tarafında
+ * zenginleştirilmiş) satırlarda dolu olur — `createOnlineGame`'e giden
+ * istemci tarafı `slots`'ta bu alanlar hiç yok.
+ * `relation`, `search_users_for_friend`'daki aynı sözlüğü kullanır, artı
+ * çağıranın kendi koltuğu için `'self'`.
+ * `invite_status`, o koltuktaki kişinin kendi `game_invites` durumu —
+ * kurucunun koltuğunda hiç davet satırı olmadığından her zaman `null`dur
+ * (o koltuk `user_id === game.created_by` ile ayırt edilir).
+ */
+export type OnlineGameSlot =
+  | {
+      type: 'human';
+      user_id: string;
+      name?: string;
+      avatar_url?: string | null;
+      relation?: FriendRelation | 'self' | null;
+      invite_status?: 'pending' | 'accepted' | 'declined' | null;
+    }
+  | { type: 'ai' };
+
+export type OnlineGameStatus = 'pending' | 'active' | 'finished' | 'abandoned';
+
+/** `list_my_online_games` RPC çıktısındaki tek satır. */
+export interface OnlineGame {
+  id: string;
+  created_by: string;
+  player_count: 2 | 4;
+  status: OnlineGameStatus;
+  slots: OnlineGameSlot[];
+  created_at: string;
+  /** Çağıran kurucu mu yoksa davetli mi. */
+  my_role: 'creator' | 'invitee';
+  /** Çağıran davetliyse kendi davet durumu; kurucuysa null. */
+  my_invite_status: 'pending' | 'accepted' | 'declined' | null;
+  /** Çağıran davetliyse `game_invites.id` (respond_to_game_invite'a geçilir); kurucuysa null. */
+  my_invite_id: string | null;
+}
+
+// ── Canlı oyun (Faz 3 — gerçek zamanlı senkron oynanış) ─────────────────────
+
+/**
+ * `online_game_states.players` dizisindeki tek oyuncu — src/game/types.ts'teki
+ * `Player` ile aynı alanlar, ama `rack: Tile[]` yerine `rackCount: number`.
+ * Rakibin elindeki harfler bu satırdan ASLA okunamaz (bkz. online_game_secrets,
+ * ayrı ve tamamen kilitli bir tablo).
+ */
+export interface OnlinePlayerPublic {
+  name: string;
+  corners: number[];
+  colorIndex: number;
+  isAI: boolean;
+  surrendered: boolean;
+  rackCount: number;
+  score: number;
+  bestMoveScore: number;
+  longestWord: string;
+  moveCount: number;
+  moveScoreSum: number;
+}
+
+/** `online_game_states` tablosundaki satır — bir Canlı oyunun herkese (katılımcılara) açık anlık state'i. */
+export interface OnlineGameStatePublic {
+  online_game_id: string;
+  board: (Tile | null)[][];
+  bonuses: Record<string, BonusType>;
+  players: OnlinePlayerPublic[];
+  current: number;
+  turn_count: number;
+  consecutive_passes: number;
+  is_game_over: boolean;
+  end_reason: 'normal' | 'surrender' | null;
+  last_move_cells: [number, number][];
+  bag_count: number;
+  started_at: string;
+  updated_at: string;
+}
+
+/** `online_game_moves` tablosundaki tek satır (audit log / hamle geçmişi). */
+export interface OnlineMoveRow {
+  id: string;
+  online_game_id: string;
+  turn: number;
+  player_index: number;
+  player_user_id: string | null;
+  action: 'play' | 'pass' | 'exchange' | 'surrender';
+  words: string[];
+  word_scores: { word: string; score: number; x2: boolean; x3: boolean }[] | null;
+  points: number;
+  lost_shares: { to: number; amount: number }[] | null;
+  tile_count: number;
+  placements: { r: number; c: number; letter: string; wild?: boolean; wildLetter?: string }[] | null;
+  finish_joker_count: number;
+  bingo: boolean;
+  created_at: string;
+}
+
+/** Bir oyuncu için, submit_move'a gönderilecek tek taş yerleştirmesi. */
+export interface OnlineMovePlacement {
+  r: number;
+  c: number;
+  letter: string;
+  wild?: boolean;
+  wildLetter?: string;
 }
 
 /** Bir oyunun bitişindeki tek bir oyuncu satırı (final sıralamasında). */
@@ -118,6 +234,14 @@ export interface Game {
   board_snapshot: BoardSnapshotTile[] | null;
   /** Herkese açık `/game/:id` linkiyle görülebilir mi (`set_game_shared` RPC'si ile bir kere true olur, geri alınamaz). */
   shared: boolean;
+  /**
+   * Doluysa bu kayıt bir Canlı (çok hesaplı, `online_games`) oyundan geldi —
+   * `submit_move` RPC'si oyun bitince her insan katılımcı için sunucu
+   * tarafında yazar, client hiç insert etmez (bkz. NewGame'in bunu
+   * içermemesi). `GameHistoryModal` bu kartları görsel olarak ayırt etmek
+   * için kullanır.
+   */
+  online_game_id: string | null;
   created_at: string;
 }
 
@@ -174,6 +298,7 @@ export type GameHistoryEntry = Pick<
   | 'ai_score'
   | 'rank'
   | 'surrendered'
+  | 'online_game_id'
 > & {
   /**
    * Bu isteği yapan (oturum açan) kullanıcının bu oyunu beğenip beğenmediği —

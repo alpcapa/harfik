@@ -1,0 +1,11 @@
+-- Canlı (online) oyun — 3. faz, 4. adım: OnlineGameScreen'in Realtime
+-- aboneliğinin çalışması için online_game_states'i supabase_realtime
+-- publication'ına ekler. Bu olmadan submit_move sonrası rakibin ekranı
+-- yalnızca sayfa yenilenince/tekrar açılınca güncellenirdi.
+--
+-- Yalnızca online_game_states eklendi — online_game_secrets zaten hiçbir
+-- role grant edilmediğinden (Adım 1) Realtime'a hiç dahil edilemez/edilmemeli
+-- (rakibin rafı asla yayınlanmamalı). online_game_moves'a şimdilik gerek
+-- yok; OnlineGameScreen her state değişikliğinde hamle geçmişini zaten
+-- ayrıca fetch ediyor (bkz. fetchOnlineGameMoves, src/lib/api.ts).
+alter publication supabase_realtime add table public.online_game_states;

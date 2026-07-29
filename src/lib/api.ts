@@ -30,6 +30,11 @@ import type {
   LeaderboardRow,
   MyLeaderboardRank,
   NewGame,
+  OnlineGame,
+  OnlineGameSlot,
+  OnlineGameStatePublic,
+  OnlineMovePlacement,
+  OnlineMoveRow,
   PlayerStats,
   Profile,
   SharedGameData,
@@ -37,6 +42,7 @@ import type {
 } from './database.types';
 import { getLocalMeaning } from '../data/meanings';
 import { trLower } from '../utils/turkish';
+import type { Tile } from '../game/types';
 
 /**
  * Tamamlanan bir oyunu kaydeder (oturum açıksa). Eklenen kaydın id'sini döner.
@@ -177,13 +183,20 @@ export async function fetchMyLeaderboardRank(userId: string): Promise<MyLeaderbo
 
 /**
  * Belirli bir oyuncunun (varsayılan: oturum açan kullanıcı) belirli oyuncu
- * sayısındaki istatistik özetini döner. `userId` verilirse (admin panelindeki
- * oyuncu detay görünümü) o kullanıcının istatistiği döner — `player_stats`
- * view'ı `games` tablosundaki herkese-açık select politikasını (leaderboard
- * için) miras aldığından bu ekstra bir yetki gerektirmez.
+ * sayısındaki istatistik özetini döner. `playerCount='all'` verilirse (Skor
+ * Kartı'ndaki "Genel" sekmesi) 2 ve 4 kişilik TÜM oyunların toplamı
+ * `player_stats_overall` view'ından gelir — bu ayrı bir view, çünkü
+ * `avg_move_score` (ağırlıklı ortalama) ve `longest_word` gibi alanlar iki
+ * ayrı (player_count bazlı) satırdan client-side doğru birleştirilemez, ham
+ * `games` satırlarından yeniden hesaplanmaları gerekir; dönen nesnede
+ * `player_count` alanı anlamsız olduğundan `0` ile dolduruluyor (UI hiçbir
+ * yerde okumuyor). `userId` verilirse (admin panelindeki oyuncu detay
+ * görünümü) o kullanıcının istatistiği döner — her iki view de `games`
+ * tablosundaki herkese-açık select politikasını (leaderboard için) miras
+ * aldığından bu ekstra bir yetki gerektirmez.
  */
 export async function fetchPlayerStats(
-  playerCount: number,
+  playerCount: number | 'all',
   userId?: string,
 ): Promise<PlayerStats | null> {
   if (!supabase) return null;
@@ -194,6 +207,19 @@ export async function fetchPlayerStats(
     } = await supabase.auth.getUser();
     if (!user) return null;
     uid = user.id;
+  }
+
+  if (playerCount === 'all') {
+    const { data, error } = await supabase
+      .from('player_stats_overall')
+      .select('*')
+      .eq('user_id', uid)
+      .maybeSingle();
+    if (error) {
+      console.error('[Kelimeki] fetchPlayerStats (all) hatası:', error.message);
+      return null;
+    }
+    return data ? ({ ...data, player_count: 0 } as PlayerStats) : null;
   }
 
   const { data, error } = await supabase
@@ -233,7 +259,7 @@ export async function fetchPlayerStats(
  * her ikisini birden döner).
  */
 export async function fetchMyGames(
-  playerCount: number,
+  playerCount: number | null,
   offset: number,
   limit = 20,
   userId?: string,
@@ -246,17 +272,21 @@ export async function fetchMyGames(
   const targetUid = userId ?? viewer?.id;
   if (!targetUid) return { games: [], hasMore: false };
 
-  const cols = 'id, created_at, player_count, players, player_score, ai_score, rank, surrendered';
+  const cols = 'id, created_at, player_count, players, player_score, ai_score, rank, surrendered, online_game_id';
   type Row = Omit<GameHistoryEntry, 'liked_by_me' | 'like_count'>;
   let rows: Row[];
   let hasMore: boolean;
 
+  // playerCount===null: Skor Kartı'ndaki "Genel" sekmesinden "Tüm Oyunları
+  // Gör" — 2/4 kişilik fark etmeksizin tüm oyunları listeler, `.eq` filtresi
+  // hiç uygulanmaz.
   if (favoritesOnly) {
-    const { data, error } = await supabase
+    let query = supabase
       .from('game_likes')
       .select(`created_at, games!inner(${cols})`)
-      .eq('user_id', targetUid)
-      .eq('games.player_count', playerCount)
+      .eq('user_id', targetUid);
+    if (playerCount !== null) query = query.eq('games.player_count', playerCount);
+    const { data, error } = await query
       .order('created_at', { ascending: false })
       .range(offset, offset + limit); // limit+1 satır: sonraki sayfa var mı anlamak için
     if (error) {
@@ -267,11 +297,9 @@ export async function fetchMyGames(
     rows = liked.slice(0, limit).map((r) => r.games);
     hasMore = liked.length > limit;
   } else {
-    const { data, error } = await supabase
-      .from('games')
-      .select(cols)
-      .eq('user_id', targetUid)
-      .eq('player_count', playerCount)
+    let query = supabase.from('games').select(cols).eq('user_id', targetUid);
+    if (playerCount !== null) query = query.eq('player_count', playerCount);
+    const { data, error } = await query
       .order('created_at', { ascending: false })
       .range(offset, offset + limit);
     if (error) {
@@ -589,6 +617,248 @@ export async function acceptFriendInvite(token: string): Promise<string | null> 
   }
   const row = Array.isArray(data) ? data[0] : null;
   return row?.inviter_name ?? null;
+}
+
+// ── Canlı oyun (Faz 2 — davet/kabul) ────────────────────────────────────────
+
+/**
+ * Yeni bir Canlı oyun kurar (`create_online_game` RPC'si). `slots`, index
+ * 0'ı çağıranın kendisi olacak şekilde tam koltuk kompozisyonunu taşır —
+ * insan koltukları için gerçek (ve zaten arkadaş olunan) bir `user_id`, YZ
+ * koltukları için sadece `{type:'ai'}`. İnsan koltuklarındaki her arkadaş
+ * için sunucu tarafında bir `game_invites` satırı açılır; hiç insan
+ * davetlisi yoksa oyun beklemeden doğrudan `active` olur. Oluşan oyunun
+ * id'sini döner.
+ */
+export async function createOnlineGame(
+  playerCount: 2 | 4,
+  slots: OnlineGameSlot[]
+): Promise<string> {
+  if (!supabase) throw new Error('Supabase yapılandırılmadı.');
+  const { data, error } = await supabase.rpc('create_online_game', {
+    p_player_count: playerCount,
+    p_slots: slots,
+  });
+  if (error) throw new Error(error.message);
+  return data as string;
+}
+
+/**
+ * Oturum açan kullanıcının taraf olduğu (kurduğu ya da davet edildiği) tüm
+ * Canlı oyunları döner (`list_my_online_games` RPC'si) — en yeni önce.
+ */
+export async function listMyOnlineGames(): Promise<OnlineGame[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('list_my_online_games');
+  if (error) {
+    console.error('[Kelimeki] listMyOnlineGames hatası:', error.message);
+    return [];
+  }
+  return (data as OnlineGame[]) ?? [];
+}
+
+/**
+ * Bana gelen bir Canlı oyun davetini kabul/red eder
+ * (`respond_to_game_invite` RPC'si). Kabul edilince, o oyundaki tüm
+ * davetler artık kabul edilmişse oyun sunucu tarafında `active`'e geçer.
+ */
+export async function respondToGameInvite(inviteId: string, accept: boolean): Promise<void> {
+  if (!supabase) throw new Error('Supabase yapılandırılmadı.');
+  const { error } = await supabase.rpc('respond_to_game_invite', {
+    p_invite_id: inviteId,
+    p_accept: accept,
+  });
+  if (error) throw new Error(error.message);
+}
+
+// ── Canlı oyun (Faz 3 — gerçek zamanlı senkron oynanış) ─────────────────────
+
+/** Bir Canlı oyunun katılımcılara açık anlık state'i (`online_game_states`). */
+export async function fetchOnlineGameState(gameId: string): Promise<OnlineGameStatePublic | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('online_game_states')
+    .select('*')
+    .eq('online_game_id', gameId)
+    .maybeSingle();
+  if (error) {
+    console.error('[Kelimeki] fetchOnlineGameState hatası:', error.message);
+    return null;
+  }
+  return (data as OnlineGameStatePublic) ?? null;
+}
+
+/**
+ * Verilen aktif Canlı oyunların her biri için "sırası kimde" (`current`
+ * koltuk indeksi) bilgisini tek sorguda döner — `LiveGamesTab`'ın "Sıra
+ * sende" rozetini ve `Setup`'taki "Arkadaşınla" sekmesindeki bekleyen
+ * sayısını hesaplamak için kullanılır. `online_game_states`e doğrudan okuma
+ * (RPC değil) — RLS zaten yalnızca katılımcının erişebileceği satırları döner.
+ */
+export async function fetchOnlineGameTurns(gameIds: string[]): Promise<Record<string, number>> {
+  if (!supabase || gameIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from('online_game_states')
+    .select('online_game_id, current')
+    .in('online_game_id', gameIds);
+  if (error) {
+    console.error('[Kelimeki] fetchOnlineGameTurns hatası:', error.message);
+    return {};
+  }
+  const map: Record<string, number> = {};
+  for (const row of (data ?? []) as { online_game_id: string; current: number }[]) {
+    map[row.online_game_id] = row.current;
+  }
+  return map;
+}
+
+/**
+ * Verilen aktif Canlı oyunların her biri için sırası gelen oyuncunun son
+ * hamle tarihini (`turn_deadline`) döner — `LiveGamesTab`'ın "kalan süre"
+ * göstergesi için. Süre dolan bir koltuk `check_turn_timeout` çağrılana
+ * kadar otomatik teslim olmaz (bkz. `checkOnlineGameTurnTimeout`), bu
+ * fonksiyon yalnızca OKUR, hiçbir şeyi tetiklemez.
+ */
+export async function fetchOnlineGameDeadlines(gameIds: string[]): Promise<Record<string, string | null>> {
+  if (!supabase || gameIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from('online_game_states')
+    .select('online_game_id, turn_deadline')
+    .in('online_game_id', gameIds);
+  if (error) {
+    console.error('[Kelimeki] fetchOnlineGameDeadlines hatası:', error.message);
+    return {};
+  }
+  const map: Record<string, string | null> = {};
+  for (const row of (data ?? []) as { online_game_id: string; turn_deadline: string | null }[]) {
+    map[row.online_game_id] = row.turn_deadline;
+  }
+  return map;
+}
+
+/**
+ * Sırası gelen oyuncunun 48 saatlik süresi dolduysa onu otomatik teslim
+ * eder (`check_turn_timeout` RPC'si) — süre dolmadıysa no-op. Cron/arka
+ * plan job'u yok (bkz. CLAUDE.md "Canlı Oyun — Faz 3.6"), bu yüzden
+ * herhangi bir katılımcının istemcisi (LiveGamesTab listeyi her açtığında,
+ * OnlineGameScreen her refresh'te) bunu çağırarak "hafif" bir tarama
+ * yapar — submit_move'un satır kilidiyle aynı desende olduğundan birden
+ * fazla istemcinin aynı anda çağırması zararsız.
+ */
+export async function checkOnlineGameTurnTimeout(gameId: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.rpc('check_turn_timeout', { p_game_id: gameId });
+  if (error) console.error('[Kelimeki] checkOnlineGameTurnTimeout hatası:', error.message);
+}
+
+/**
+ * Bir Canlı oyun hâlâ `pending` durumundayken (en az bir davet
+ * yanıtlanmamışken) 7 gün geçtiyse oyunu tamamen iptal eder
+ * (`online_games.status='abandoned'`) — süre dolmadıysa no-op. Yerel
+ * oyundaki `ABANDON_TIMEOUT_MS` ile aynı süre/gerekçe; kimseye ceza
+ * uygulanmaz, oyun sadece listeden kalkar. `check_turn_timeout` ile aynı
+ * "hafif" desen: herhangi bir tarafın istemcisi (kurucu ya da davetli,
+ * yanıtlamış olsun olmasın) tetikleyebilir.
+ */
+export async function checkInviteExpiry(gameId: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.rpc('check_invite_expiry', { p_game_id: gameId });
+  if (error) console.error('[Kelimeki] checkInviteExpiry hatası:', error.message);
+}
+
+/** Çağıranın KENDİ rafı (`get_my_online_rack` RPC'si) — başka hiçbir oyuncununki hiçbir zaman döndürülmez. */
+export async function getMyOnlineRack(gameId: string): Promise<Tile[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('get_my_online_rack', { p_game_id: gameId });
+  if (error) throw new Error(error.message);
+  return (data as Tile[]) ?? [];
+}
+
+/** Bir Canlı oyunun tüm hamle geçmişi, en eskiden en yeniye (`online_game_moves`). */
+export async function fetchOnlineGameMoves(gameId: string): Promise<OnlineMoveRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('online_game_moves')
+    .select('*')
+    .eq('online_game_id', gameId)
+    .order('turn', { ascending: true })
+    .order('created_at', { ascending: true });
+  if (error) {
+    console.error('[Kelimeki] fetchOnlineGameMoves hatası:', error.message);
+    return [];
+  }
+  return (data as OnlineMoveRow[]) ?? [];
+}
+
+export interface SubmitMovePayload {
+  action: 'play' | 'pass' | 'exchange';
+  placements?: OnlineMovePlacement[];
+  exchangeLetters?: string[];
+  words?: string[];
+  wordScores?: { word: string; score: number; x2: boolean; x3: boolean }[];
+  basePoints?: number;
+  lostShares?: { to: number; amount: number }[];
+}
+
+/**
+ * Sırası gelen oyuncunun hamlesini gönderir (`submit_move` RPC'si). Sunucu
+ * sırayı ve taş sahipliğini kendisi doğrular, puan hesabına (basePoints/
+ * words/wordScores/lostShares) client'ın hesapladığı gibi güvenir — bkz.
+ * CLAUDE.md "Canlı Oyun — Faz 3" bölümündeki mimari not.
+ */
+export async function submitMove(gameId: string, payload: SubmitMovePayload): Promise<void> {
+  if (!supabase) throw new Error('Supabase yapılandırılmadı.');
+  const { error } = await supabase.rpc('submit_move', {
+    p_game_id: gameId,
+    p_action: payload.action,
+    p_placements: payload.placements ?? null,
+    p_exchange_letters: payload.exchangeLetters ?? null,
+    p_words: payload.words ?? [],
+    p_word_scores: payload.wordScores ?? null,
+    p_base_points: payload.basePoints ?? 0,
+    p_lost_shares: payload.lostShares ?? [],
+  });
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * `online_game_states` satırındaki her değişiklikte `onChange`'i tetikler
+ * (Realtime). Dönen fonksiyon aboneliği iptal eder — bileşen unmount
+ * olduğunda çağrılmalı. Supabase yapılandırılmamışsa no-op.
+ */
+export function subscribeOnlineGameState(gameId: string, onChange: () => void): () => void {
+  if (!supabase) return () => {};
+  const client = supabase;
+  const channel = client
+    .channel(`online_game_state_${gameId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'online_game_states', filter: `online_game_id=eq.${gameId}` },
+      onChange,
+    )
+    .subscribe();
+  return () => {
+    void client.removeChannel(channel);
+  };
+}
+
+/**
+ * Sırası bir YZ koltuğunda olan bir Canlı oyunu bir tur ilerletir
+ * (`play-ai-turn` Edge Function'ı, Faz 3 Adım 5). YZ'nin gerçek rafı bu
+ * çağrıda hiçbir zaman tarayıcıya dönmez — hamle tamamen sunucuda
+ * hesaplanır, yanıt yalnızca başarı/durum bilgisi taşır (bkz.
+ * `OnlineGameScreen.tsx`'teki `refresh()`, CLAUDE.md "Canlı Oyun — Faz 3").
+ */
+export async function triggerAiTurn(gameId: string): Promise<{ played: boolean }> {
+  if (!supabase) return { played: false };
+  const { data, error } = await supabase.functions.invoke('play-ai-turn', {
+    body: { game_id: gameId },
+  });
+  if (error) {
+    console.error('[Kelimeki] triggerAiTurn hatası:', error.message);
+    return { played: false };
+  }
+  return { played: !!(data as { played?: boolean } | null)?.played };
 }
 
 /**
@@ -943,6 +1213,7 @@ export async function signUp(
   channel: 'direct' | 'form' = 'direct',
   gender?: Gender | null,
   birthDate?: string | null,
+  marketingConsent = false,
 ) {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
   // sharedxp_pending_profile formatı trigger tarafından okunur (camelCase).
@@ -950,8 +1221,11 @@ export async function signUp(
   // raw_user_meta_data->>'display_name' olarak okuyor (e-posta doğrulaması
   // açıkken signUp() session döndürmez, bu yüzden aşağıdaki update'e
   // güvenilemez — nickname'in kaybolmaması için metadata'da baştan olmalı).
-  // gender/birthDate de aynı sebeple burada (trigger tarafında,
-  // handle_new_user), oturum açılmasını bekleyen bir update'te değil.
+  // gender/birthDate/marketingConsent de aynı sebeple burada (trigger
+  // tarafında, handle_new_user), oturum açılmasını bekleyen bir update'te
+  // değil — marketing_consent_at'in doğru (kayıt anındaki) zaman damgasını
+  // taşıması için de bu şart, aksi halde e-posta doğrulaması açıkken hiç
+  // yazılmayan agreed_to_terms'ün aynı eksikliğini tekrarlardık.
   const result = await supabase.auth.signUp({
     email,
     password,
@@ -963,6 +1237,7 @@ export async function signUp(
           agreedToTerms: termsAccepted,
           gender: gender || null,
           birthDate: birthDate || null,
+          marketingConsent,
         },
         signup_channel: channel,
         ...(nickname ? { display_name: nickname } : {}),
@@ -1000,6 +1275,13 @@ export async function updateProfile(
     avatar_url?: string;
     gender?: Gender | null;
     birth_date?: string | null;
+    /**
+     * `marketing_consent_at` burada YOK — kasıtlı: `trg_set_marketing_consent_at`
+     * (marketing_consent_toggle_trigger migration'ı) bu alanı `marketing_consent`
+     * geçişine göre sunucu tarafında (`now()`) otomatik yazıyor, client'ın
+     * göndereceği herhangi bir değeri zaten yok sayardı.
+     */
+    marketing_consent?: boolean;
   },
 ): Promise<void> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');

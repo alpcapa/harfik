@@ -37,7 +37,8 @@ function likerName(l: GameLiker): string {
 }
 
 interface GameHistoryModalProps {
-  playerCount: number;
+  /** `null` — Skor Kartı'ndaki "Genel" sekmesi: oyuncu sayısından bağımsız tüm oyunlar. */
+  playerCount: number | null;
   onClose: () => void;
   /** Verilirse (admin panelindeki oyuncu detayı) oturum sahibi yerine bu kullanıcının geçmişi gösterilir. */
   userId?: string;
@@ -356,7 +357,7 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
   }, [hasMore, loading, loadMore]);
 
   return (
-    <Modal title={title ?? `Tüm Oyunlar · ${playerCount} Oyunculu`} onClose={onClose}>
+    <Modal title={title ?? (playerCount === null ? 'Tüm Oyunlar' : `Tüm Oyunlar · ${playerCount} Oyunculu`)} onClose={onClose}>
       {/* Tümü / Favoriler filtresi */}
       <div className="flex gap-1.5 mb-3 shrink-0">
         {([
@@ -397,6 +398,8 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
             const meIndex = hasSnapshot ? findMeIndex(entry, players) : fallback!.meIndex;
             const ranks = computeRanks(players);
             const expanded = expandedId === entry.id;
+            const isOnline = !!entry.online_game_id;
+            const isVsAi = !isOnline && hasSnapshot && players.some((p) => p.is_ai);
             return (
               <div key={entry.id} className="flex flex-col gap-1.5">
                 <div
@@ -409,18 +412,18 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                       handleToggleBoard(entry.id);
                     }
                   }}
-                  className="shadow-raised bg-bg border border-border rounded-md py-2 px-2.5 flex flex-col gap-1.5 cursor-pointer text-left"
+                  className={`shadow-raised ${entry.online_game_id ? 'bg-panel' : 'bg-bg'} border border-border rounded-md py-2 px-2.5 flex flex-col gap-1.5 cursor-pointer text-left`}
                 >
-                  <div className="flex items-center justify-between gap-2 text-[9px] font-mono text-muted uppercase tracking-[0.5px]">
-                    <span className="flex items-center gap-1.5">
-                      <span className="flex items-center gap-0.5">
+                  <div className="flex items-center justify-between gap-x-2 gap-y-1 flex-wrap text-[9px] font-mono text-muted uppercase tracking-[0.5px]">
+                    <span className="flex items-center gap-1.5 flex-wrap">
+                      <span className="flex items-center gap-0.5 shrink-0">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleToggleLike(entry.id);
                           }}
                           aria-label={entry.liked_by_me ? 'Favoriden çıkar' : 'Favoriye ekle'}
-                          className={entry.liked_by_me ? 'text-red' : 'text-muted'}
+                          className={`shrink-0 ${entry.liked_by_me ? 'text-red' : 'text-muted'}`}
                         >
                           <HeartIcon filled={entry.liked_by_me} size={13} />
                         </button>
@@ -431,15 +434,25 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                               handleShowLikers(entry.id);
                             }}
                             aria-label="Beğenenleri göster"
-                            className="text-muted underline underline-offset-2"
+                            className="text-muted underline underline-offset-2 py-1 px-0.5 whitespace-nowrap shrink-0"
                           >
                             {entry.like_count}
                           </button>
                         )}
                       </span>
-                      {formatDateTime(entry.created_at)}
+                      <span className="whitespace-nowrap shrink-0">{formatDateTime(entry.created_at)}</span>
+                      {isOnline && (
+                        <span className="text-green font-bold normal-case border border-green/40 bg-green/10 rounded px-[3px] py-0 text-[7px] leading-[10px] whitespace-nowrap shrink-0">
+                          Canlı
+                        </span>
+                      )}
+                      {isVsAi && (
+                        <span className="text-accent font-bold normal-case border border-accent/40 bg-accent/10 rounded px-[3px] py-0 text-[7px] leading-[10px] whitespace-nowrap shrink-0">
+                          Yapay Zeka
+                        </span>
+                      )}
                     </span>
-                    <span className="flex items-center gap-2 shrink-0">
+                    <span className="flex items-center gap-2 shrink-0 ml-auto">
                       <span className="w-9 text-right">Puan</span>
                       <span className="w-6 text-right">SL</span>
                     </span>

@@ -1,7 +1,10 @@
 // Kelimeki — devam eden oyunu (phase==='play') localStorage'a otomatik kaydeder.
 // Tarayıcı/uygulama kapatılıp yeniden açıldığında kaldığı yerden devam
 // edilebilsin diye: aksi halde biri kaybetmek üzereyken sekmeyi kapatıp
-// "teslim ol"un -2 cezasından kaçabilirdi (bkz. proje notları).
+// "teslim ol"un -2 cezasından kaçabilirdi (bkz. proje notları). 7 gün boyunca
+// hiç dönülmezse oyun burada terk edilmiş sayılıp silinir — App.tsx bu
+// durumda da (oyun gerçekten başlamışsa) aynı -2 cezasını uygular, yani
+// kapat-aç-hiç-dönme de bir kaçış yolu değildir.
 import type { GameState } from '../game/types';
 
 const STORAGE_KEY = 'kelimeki:game-state';
@@ -15,7 +18,9 @@ const STORAGE_VERSION = 1;
 // düşer. Süre son KAYIT anından itibaren sayılır (oyunun başladığı andan
 // değil) — yoksa gerçekten günler süren çok-oturumlu bir oyunu da hatalı
 // biçimde terk edilmiş sayardık.
-const ABANDON_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000;
+// Setup'taki "Devam Eden Oyun" satırında kalan gün sayısını göstermek için
+// (bkz. App.tsx/Setup.tsx) dışa da açık.
+export const ABANDON_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000;
 
 const PENDING_ABANDON_KEY = 'kelimeki:pending-abandoned-game';
 
@@ -30,6 +35,21 @@ export interface PendingAbandonedGame {
   playerCount: number;
   durationSeconds: number;
   multiSession: boolean;
+  /**
+   * Terk edilip silinen tam GameState — App.tsx bunu, oyun gerçekten
+   * başlamışsa (`turnCount>=2`, mevcut "Çık" akışındaki `gameStarted` ile
+   * aynı eşik) hesap sahibi için bir teslim kaydı (-2 Sanal Lig cezası)
+   * oluşturmak için kullanır. `saveGameState` her zaman bunu doldurur —
+   * yalnızca çok eski (bu alan eklenmeden önceki) bir kayıt hâlâ
+   * localStorage'da bekliyorsa teorik olarak eksik olabilir.
+   */
+  state?: GameState;
+}
+
+export interface SavedGame {
+  state: GameState;
+  /** Bu kaydın en son yazıldığı an (epoch ms) — kalan gün sayısını göstermek için. */
+  savedAt: number;
 }
 
 /** Devam eden oyunu kaydeder. localStorage kapalı/dolu olabilir — sessizce yok sayılır. */
@@ -51,7 +71,7 @@ export function clearGameState(): void {
 }
 
 /** Bitmemiş bir oyun varsa geri yükler; yoksa, bittiyse ya da bozuksa null döner. */
-export function loadGameState(): GameState | null {
+export function loadGameState(): SavedGame | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
@@ -80,6 +100,7 @@ export function loadGameState(): GameState | null {
         playerCount: state.players.length,
         durationSeconds: Math.max(0, Math.round((savedAt - Date.parse(state.startedAt)) / 1000)),
         multiSession: state.multiSession,
+        state,
       });
       clearGameState();
       return null;
@@ -89,7 +110,7 @@ export function loadGameState(): GameState | null {
     // localStorage'dan kaldığı yerden devam ettiği anlamına gelir — bu oyun
     // artık "çok oturumlu" sayılır, geri dönüşü yoktur.
     state.multiSession = true;
-    return state;
+    return { state, savedAt };
   } catch {
     return null;
   }
@@ -107,7 +128,11 @@ function queuePendingAbandonedGame(record: PendingAbandonedGame): void {
  * Bir önceki `loadGameState()` çağrısı 7 gün hareketsizlik yüzünden bir
  * oyunu terk edilmiş sayıp sildiyse, o oyunun kaydı burada tek seferlik
  * okunup temizlenir — çağıran (App.tsx) bunu `logGameFinish(..., completed:
- * false)` ile sunucuya bildirir. Kuyruk boşsa null döner.
+ * false)` ile sunucuya bildirir, ve oyun gerçekten başlamışsa (bkz.
+ * `PendingAbandonedGame.state`) hesap sahibi için bir teslim kaydı (-2 Sanal
+ * Lig cezası, `buildGameRecord`/`saveGameDurable`) oluşturur — tıpkı oyun
+ * içindeki "Çık" ile teslim olmak gibi, yalnızca gecikmeli/örtük. Kuyruk
+ * boşsa null döner.
  */
 export function takePendingAbandonedGame(): PendingAbandonedGame | null {
   try {

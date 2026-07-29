@@ -60,7 +60,7 @@ src/
 │   ├── FeedbackModal.tsx        # görüş/şikayet bildirme formu
 │   ├── AdminDashboard.tsx       # admin paneli: üyeler, oyunlar, büyüme grafiği, geri bildirim (yalnızca is_admin)
 │   ├── MemberMessageModal.tsx   # admin panelinden bir üyeye serbest metinli mesaj gönderme compose modalı
-│   ├── AdminPlayerDetail.tsx    # admin panelinden bir üyenin ScoreCard'ının salt-okunur görünümü
+│   ├── PlayerScoreCard.tsx      # bir oyuncunun ScoreCard'ının salt-okunur görünümü (admin panelinden ve Sanal Lig'den açılır)
 │   ├── GrowthChart.tsx          # admin büyüme grafiği (generic zaman serisi çizgi grafiği)
 │   ├── PrivacyModal.tsx         # gizlilik politikası
 │   ├── TermsModal.tsx           # kullanım koşulları
@@ -69,8 +69,13 @@ src/
 │   ├── SharedGamePage.tsx       # herkese açık /game/:id sayfası (girişsiz de erişilebilir)
 │   ├── FriendsModal.tsx         # arkadaş arama/ekleme, gelen istekler, kalıcı davet linki paylaşımı
 │   ├── FriendInvitePage.tsx     # herkese açık /davet/:token sayfası (girişsiz de erişilebilir)
+│   ├── LiveGamesTab.tsx         # Canlı sekmesi: davet bekleyen/aktif/rakip bekleyen oyun listesi + Kabul/Reddet
+│   ├── LiveGameCreateForm.tsx   # Canlı oyun kurulumu: oyuncu sayısı + arkadaş seçici + davet gönderme
+│   ├── FriendSuggestModal.tsx   # bir Canlı davet kabul edildikten sonra, henüz arkadaş olunmayan katılımcılara toplu istek gönderme önerisi
+│   ├── OnlineGameScreen.tsx     # gerçek Canlı oyun ekranı — Board/Rack/GameHeader'ı Supabase state'ine (Realtime) bağlar
 │   ├── Avatar.tsx               # profil fotoğrafı bileşeni
 │   ├── PlayerBadge.tsx          # renkli oyuncu sıra/koltuk rozeti
+│   ├── LandscapeHint.tsx        # yatay modda gösterilen kapatılabilir dikey-mod önerisi banner'ı
 │   ├── ErrorBoundary.tsx        # kök seviye React crash yakalayıcı
 │   └── AddToHomeScreen.tsx      # PWA ana ekrana ekle
 ├── game/
@@ -100,7 +105,9 @@ src/
 │   ├── visitTracking.ts # anonim misafir ziyaret kimliği, cihaz/standalone tespiti, UTM kaynağı
 │   ├── shareBoardImage.ts # bir DOM düğümünü (tahta önizlemesi) paylaşılabilir PNG'ye çevirir (html-to-image)
 │   ├── friendInvite.ts # bekleyen arkadaşlık davet token'ı için tek seferlik localStorage kuyruğu
-│   └── csvExport.ts    # admin paneli tabloları/grafikleri için CSV indirme yardımcısı
+│   ├── csvExport.ts    # admin paneli tabloları/grafikleri için CSV indirme yardımcısı
+│   ├── leaguePoints.ts # Sanal Lig puanı hesaplama (GameHistoryModal ve SharedGamePage ortak)
+│   └── profileFields.ts # cinsiyet seçenekleri, GG/AA/YYYY ↔ ISO tarih dönüşümü (AuthModal ve AccountSettingsModal ortak)
 ├── hooks/
 │   ├── useAuth.tsx        # Supabase auth context
 │   ├── useModalA11y.ts    # modal odak hapsi, Escape, dialog yığını

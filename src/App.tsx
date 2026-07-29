@@ -18,11 +18,11 @@ import { ResetPasswordModal } from './components/ResetPasswordModal';
 import { createInitialState, gameReducer, isFirstMove } from './game/gameReducer';
 import { preloadWordSet, isWordSetReady } from './data/wordSetLoader';
 import { calcScore, computeInvasionSplit, formatInvalidWordsReason, validatePlacement, validatePlacementStructural } from './utils/validator';
-import { rankPlayers } from './utils/ranking';
 import { loadGameState, saveGameState, clearGameState, takePendingAbandonedGame } from './utils/gameStorage';
+import type { SavedGame } from './utils/gameStorage';
+import { buildGameRecord } from './utils/gameRecord';
 import { markQuickStartSeen } from './utils/onboarding';
 import { getFormedWords, getFullWordAt, key } from './utils/board';
-import { serializeBoardSnapshot } from './utils/boardSnapshot';
 import type { Tile as TileModel } from './game/types';
 import { Tile } from './components/Tile';
 import { trLower } from './utils/turkish';
@@ -40,7 +40,8 @@ import {
   getDeviceType,
   isStandaloneDisplay,
 } from './utils/visitTracking';
-import type { GameResult, WordMeaning } from './lib/database.types';
+import type { OnlineGame, WordMeaning } from './lib/database.types';
+import { OnlineGameScreen } from './components/OnlineGameScreen';
 import { useAuth } from './hooks/useAuth';
 import { useModalA11y } from './hooks/useModalA11y';
 
@@ -65,11 +66,14 @@ const MESSAGE_COLORS: Record<string, string> = {
 
 export default function App() {
   const { user, profile, profileLoading, loading: authLoading, passwordRecovery, clearPasswordRecovery } = useAuth();
-  const [state, dispatch] = useReducer(
-    gameReducer,
-    undefined,
-    () => loadGameState() ?? createInitialState(),
-  );
+  const [state, dispatch] = useReducer(gameReducer, undefined, createInitialState);
+
+  // Yarım kalan yerel (YZ) oyun — artık otomatik açılmıyor (bkz. Setup.tsx'teki
+  // "Devam Eden Oyun" satırı): Setup her zaman ilk görülen ekran olsun ki
+  // oyuncu Arkadaşınla sekmesindeki bekleyen davetleri/sırasını da görebilsin.
+  // Kayıt burada ayrı bir state'te tutulup Setup'a iletilir; RESUME_SAVED
+  // dispatch edilene kadar `state`'e hiç dokunmaz.
+  const [savedGame, setSavedGame] = useState<SavedGame | null>(() => loadGameState());
 
   // Kelime listesi main.tsx'te tetiklenen ayrı chunk'tan yükleniyor —
   // hazır olana kadar hamle doğrulama/YZ turu tetiklenmemeli (bkz.
@@ -106,14 +110,17 @@ export default function App() {
   // Devam eden oyunu (phase==='play', bitmemiş) her değişiklikte
   // localStorage'a yaz — sekme/uygulama kapatılıp açılınca kaldığı yerden
   // devam edilebilsin. Oyun bitince ya da kurulum ekranına dönülünce kayıt
-  // silinir.
+  // silinir. `savedGame` doluyken (henüz RESUME_SAVED ile açılmamış bir
+  // kayıt Setup'ta bekliyorken) clearGameState() ÇAĞIRILMAZ — aksi halde bu
+  // effect ilk render'da (state.phase henüz 'setup') kaydı kullanıcı hiç
+  // görmeden anında silerdi.
   useEffect(() => {
     if (state.phase === 'play' && !state.isGameOver) {
       saveGameState(state);
-    } else {
+    } else if (!savedGame) {
       clearGameState();
     }
-  }, [state]);
+  }, [state, savedGame]);
 
   // Offline nedeniyle sunucuya kaydedilemeyip kuyruğa alınmış bitmiş oyun
   // sonuçlarını (bkz. gameSync.ts) bağlantı geri gelir gelmez tekrar
@@ -158,6 +165,18 @@ export default function App() {
     const pending = takePendingAbandonedGame();
     if (pending) {
       void logGameFinish(pending.playerCount, pending.durationSeconds, pending.multiSession, false);
+      // Oyun gerçekten başlamışsa (turnCount>=2 — en az bir tam hamle
+      // alışverişi) bu, hesap sahibi için gecikmeli bir teslim sayılır — -2
+      // Sanal Lig cezası uygulanır. Bu artık hesap sahibinin -2 alabileceği
+      // TEK yol: logo tıklaması artık anlık teslim istemiyor (bkz.
+      // handleLogoClick), yalnızca bu 7 günlük terk edilme kuralı devreye
+      // giriyor. Misafirse (o an giriş yoksa) saveGameDurable normal
+      // bitişteki gibi kaydı offline kuyruğa alır, kişi ileride giriş/kayıt
+      // olursa hesabına işlenir.
+      if (pending.state && pending.state.turnCount >= 2) {
+        const record = buildGameRecord(pending.state, true, 0);
+        if (record) void saveGameDurable(record);
+      }
     }
   }, []);
 
@@ -206,9 +225,6 @@ export default function App() {
     { r: number; c: number; rackIndex?: number } | null
   >(null);
 
-  // Oyundan çıkış onay popup'ı.
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
-
   // Pas geçme onay popup'ı.
   const [showPassConfirm, setShowPassConfirm] = useState(false);
 
@@ -216,15 +232,60 @@ export default function App() {
   // görülmemişse, oyun ekranı açılır açılmaz burada gösterilir.
   const [showPostStartTutorial, setShowPostStartTutorial] = useState(false);
 
+  // Setup'taki "Devam Eden Oyun" satırına tıklanınca: kaydı reducer'a
+  // uygulayıp `savedGame`'i temizler — bundan sonra yukarıdaki save/clear
+  // effect'i tamamen `state`e göre çalışır (bkz. o effect'teki not).
+  const handleResumeSavedGame = () => {
+    if (!savedGame) return;
+    dispatch({ type: 'RESUME_SAVED', state: savedGame.state });
+    setSavedGame(null);
+  };
+
+  // Logo tıklaması artık her durumda (onay sorulmadan) doğrudan Setup'a
+  // döner — Canlı oyundaki "←"in aynısı (bkz. OnlineGameScreen.tsx). Oyun
+  // sürüyorsa mevcut `state`, aynen `loadGameState()`'in ürettiği şekle
+  // (`SavedGame`) sarılıp `savedGame`'e yazılır — bu, save/clear effect'inin
+  // (yukarı) `clearGameState()` çağırmasını engeller (savedGame artık dolu)
+  // VE Setup'ta "Devam Eden Oyun" satırını hemen gösterir; `handleResumeSavedGame`
+  // tıklanınca kaldığı yerden aynen devam eder. Hesap sahibi hiç dönmezse
+  // 7 günlük terk edilme kuralı (gameStorage.ts) gecikmeli -2 cezasını
+  // zaten otomatik uyguluyor — burada ayrı bir "Çık" onayına/anlık teslime
+  // gerek yok.
+  const handleLogoClick = () => {
+    if (state.phase === 'play' && !state.isGameOver) {
+      setSavedGame({ state, savedAt: Date.now() });
+    }
+    dispatch({ type: 'ABANDON' });
+  };
+
+  // Kurulum ekranındaki üst sekme: yerel (2/4 kişilik, anında başlar) ya da
+  // Canlı (arkadaş daveti/kabulü — Faz 2). Bilinçli olarak Setup'ın kendi
+  // 2/4 kişilik seçicisinin içine değil, onun yanına ayrı bir sekme olarak
+  // eklendi — iki mod farklı zihinsel modeller taşıyor (bkz. proje notları).
+  const [mainView, setMainView] = useState<'local' | 'live'>('local');
+
+  // Açık olan Canlı oyun (Faz 3, 4. adım) — Setup/LiveGamesTab'daki "Aktif"
+  // bir oyuna dokununca dolar; doluyken tüm normal kurulum/yerel oyun
+  // ağacının yerine OnlineGameScreen render edilir (aşağıya bkz.).
+  const [onlineGame, setOnlineGame] = useState<OnlineGame | null>(null);
+
+  // Kullanıcı değişince (çıkış/farklı hesapla giriş — aynı sekmede hesap
+  // değiştirme testlerinde ortaya çıktı) açık kalan bir Canlı oyun ekranı
+  // otomatik kapanmalı; aksi halde yeni oturum açan kişi, eski kullanıcının
+  // o an içinde olduğu oyuna (o oyunun katılımcısıysa) doğrudan düşüyordu —
+  // Setup/Canlı sekmesi hiç görünmeden.
+  useEffect(() => {
+    setOnlineGame(null);
+  }, [user?.id]);
+
   // Rakip köşeye giriş onay popup'ı.
   const [invasionConfirm, setInvasionConfirm] = useState<
     { ownerName: string; ownerPts: number }[] | null
   >(null);
 
-  // Bu üç dahili onay popup'ı Modal.tsx'i kullanmıyor (kendi basit
+  // Bu iki dahili onay popup'ı Modal.tsx'i kullanmıyor (kendi basit
   // işaretlemeleri var) ama aynı odak hapsi/Escape/geri-dönüş davranışını
   // paylaşıyor.
-  const exitConfirmRef = useModalA11y(showExitConfirm, () => setShowExitConfirm(false));
   const passConfirmRef = useModalA11y(showPassConfirm, () => setShowPassConfirm(false));
   const invasionConfirmRef = useModalA11y(!!invasionConfirm, () => setInvasionConfirm(null));
 
@@ -322,64 +383,6 @@ export default function App() {
     }
   };
 
-  // İnsan oyuncunun (her zaman 1. oyuncu — hesap sahibi) oyun sonu kaydını
-  // oluşturur — hem oyun normal bittiğinde hem de oyuncu bitmeden teslim
-  // olduğunda kullanılır. Sıralama, teslim olan oyuncuları puanlarından
-  // bağımsız olarak her zaman en sona koyan `rankPlayers`e göre yapılır —
-  // böylece kademeli teslimlerin sonunda tek kalan oyuncu, ayrılanların
-  // dondurulmuş puanı ne olursa olsun 1. sırayı alır.
-  const buildGameRecord = (surrendered: boolean, surrenderingIndex?: number) => {
-    // Anlık kendi teslim olma akışında bu, SURRENDER dispatch edilmeden HEMEN
-    // önce (hâlâ eski state ile) çağrılır — o yüzden teslim olacak oyuncu
-    // burada elle surrendered:true/score:0 olarak işaretlenir, yoksa
-    // rankPlayers onu hâlâ aktifmiş gibi puanına göre sıralar.
-    const effectivePlayers =
-      surrenderingIndex != null
-        ? state.players.map((p, i) =>
-            i === surrenderingIndex ? { ...p, surrendered: true, score: 0 } : p,
-          )
-        : state.players;
-    const human = effectivePlayers[0];
-    if (!human || human.isAI) return null;
-    const opponents = effectivePlayers.slice(1);
-    if (opponents.length === 0) return null;
-    const bestOpponentScore = Math.max(...opponents.map((p) => p.score));
-    const ranked = rankPlayers(effectivePlayers);
-    const humanEntry = ranked.find((r) => r.index === 0)!;
-    const rank = humanEntry.rank;
-    const tiedForFirst = ranked.filter((r) => r.rank === 1).length;
-    const result: GameResult = surrendered
-      ? 'lose'
-      : rank > 1
-        ? 'lose'
-        : tiedForFirst > 1
-          ? 'tie'
-          : 'win';
-    const players = ranked.map((r) => ({
-      name: r.player.name,
-      score: r.player.score,
-      is_ai: r.player.isAI,
-      surrendered: r.player.surrendered,
-      colorIndex: r.player.colorIndex,
-    }));
-    return {
-      id: crypto.randomUUID(),
-      created_at: new Date().toISOString(),
-      player_score: human.score,
-      ai_score: bestOpponentScore,
-      result,
-      rank,
-      turn_count: state.turnCount,
-      player_count: state.players.length,
-      move_count: human.moveCount || null,
-      best_move_score: human.bestMoveScore || null,
-      longest_word: human.longestWord || null,
-      move_points_sum: human.moveScoreSum || null,
-      surrendered,
-      players,
-      board_snapshot: serializeBoardSnapshot(state.board),
-    };
-  };
 
   // Oyun bitince giriş yapmış kullanıcının sonucunu kaydet (YZ'ye karşı oyunlar
   // dahil). 1. oyuncu zaten teslim olarak ayrıldıysa kaydı o an tutulmuştur —
@@ -387,7 +390,7 @@ export default function App() {
   useEffect(() => {
     if (!state.isGameOver || state.phase !== 'play') return;
     if (state.players[0]?.surrendered) return;
-    const record = buildGameRecord(false);
+    const record = buildGameRecord(state, false);
     if (record) void saveGameDurable(record);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.isGameOver]);
@@ -483,6 +486,13 @@ export default function App() {
     );
   }
 
+  // ── Canlı oyun ekranı (Faz 3, 4. adım) ────────────────────────────────────
+  // Kurulum/yerel oyun ağacının tamamen önüne geçer — Canlı oyunun state'i
+  // Supabase'te yaşıyor, yerel `state`/`dispatch`'le hiç ilgisi yok.
+  if (onlineGame && user) {
+    return <OnlineGameScreen game={onlineGame} myUserId={user.id} onBack={() => setOnlineGame(null)} />;
+  }
+
   // ── Kurulum ekranı ─────────────────────────────────────────────────────────
   if (state.phase === 'setup') {
     return (
@@ -492,6 +502,11 @@ export default function App() {
         </div>
         <main className="w-full flex flex-col items-center">
           <Setup
+            mainView={mainView}
+            onMainViewChange={setMainView}
+            onOpenLiveGame={setOnlineGame}
+            savedGame={savedGame}
+            onResumeGame={handleResumeSavedGame}
             onStart={(players, showTutorial) => {
               dispatch({ type: 'START', players });
               if (showTutorial) setShowPostStartTutorial(true);
@@ -742,42 +757,6 @@ export default function App() {
 
   const potentialScore = moveStatus?.score ?? 0;
 
-  // Logodaki "Çık" onayının kimi teslim edeceği: önce sırası gelen (hâlâ
-  // oyunda olan) insan oyuncu — hotseat'te herkes kendi sırasında teslim
-  // olabilsin diye. Sırası AI'daysa ya da o oyuncu zaten teslim olduysa,
-  // hesap sahibi (1. oyuncu, hâlâ oyundaysa) hedeflenir. İkisi de uygun
-  // değilse (ör. herkes zaten ayrıldı) artık teslim edilecek biri yok —
-  // buton yalnızca anasayfaya döner.
-  const exitTargetIndex = (() => {
-    const cur = state.players[state.current];
-    if (cur && !cur.isAI && !cur.surrendered) return state.current;
-    const p0 = state.players[0];
-    if (p0 && !p0.isAI && !p0.surrendered) return 0;
-    return null;
-  })();
-  const exitTargetPlayer = exitTargetIndex !== null ? state.players[exitTargetIndex] : null;
-  // Bu teslimden sonra en az 2 oyuncu hâlâ oyunda kalacaksa (yoksa oyun anında biter).
-  const othersWillContinue =
-    state.players.filter((p) => !p.surrendered).length - 1 > 1;
-  // Oyun "başlamış" sayılır: hesap sahibi (her zaman ilk hamleyi yapan 0.
-  // oyuncu) ilk hamlesini yapmış VE bir sonraki oyuncu (genelde YZ) buna
-  // cevap vermiş — yani en az 2 yarım-hamle oynanmış. Bundan önce (hiç
-  // hamle yokken ya da hesap sahibi ilk hamlesini yapıp karşı taraf henüz
-  // cevap vermemişken) logodan çıkmak, girişsiz kullanıcının çıkışıyla
-  // aynı şekilde puansız/kayıtsız olmalı — henüz gerçek bir oyun olmadı.
-  const gameStarted = state.turnCount >= 2;
-  // Çıkış onay popup'ının başlığı. Hotseat dalı (insan olmayan hesap sahibi
-  // dışında bir oyuncunun teslim olması) şu an hiç tetiklenmediğinden
-  // (bkz. Setup.tsx — 1. oyuncu dışında herkes her zaman YZ) başlıksız bırakıldı.
-  const exitDialogTitle =
-    state.isGameOver || !exitTargetPlayer
-      ? 'Oyun Bitti!'
-      : !user || (exitTargetIndex === 0 && !gameStarted)
-        ? 'Çıkış!'
-        : exitTargetIndex === 0
-          ? 'Teslim Oluyorsun!'
-          : null;
-
   const dragHiddenKey = ghost && ghost.source.kind === 'placed'
     ? key(ghost.source.r, ghost.source.c)
     : null;
@@ -787,7 +766,7 @@ export default function App() {
     <div className="min-h-[100dvh] w-full flex flex-col items-center overflow-x-hidden">
       <GameHeader
         state={state}
-        onLogoClick={() => setShowExitConfirm(true)}
+        onLogoClick={handleLogoClick}
         exitDisabled={spectating}
       />
 
@@ -973,67 +952,6 @@ export default function App() {
               </button>
               <button
                 onClick={() => setInvasionConfirm(null)}
-                className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
-              >
-                Vazgeç
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showExitConfirm && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
-          <div
-            ref={exitConfirmRef}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Çıkış onayı"
-            tabIndex={-1}
-            className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none"
-          >
-            {exitDialogTitle && (
-              <p className="text-base font-bold text-text font-sans">{exitDialogTitle}</p>
-            )}
-            <p className="text-sm text-text font-sans leading-relaxed">
-              {state.isGameOver || !exitTargetPlayer
-                ? 'Anasayfaya dönmek istediğinden emin misin?'
-                : !user || (exitTargetIndex === 0 && !gameStarted)
-                  ? 'Bu oyundan çıkmak istediğine emin misin?'
-                  : exitTargetIndex === 0
-                    ? 'Emin misin? Teslim olursan oyun bu şekilde kaydedilir ve Sanal Lig puanından 2 puan düşülür.'
-                    : `${exitTargetPlayer.name} teslim olmak istediğine emin misin?${othersWillContinue ? ' Oyuna diğer oyuncular devam edebilir.' : ''}`}
-            </p>
-            <div className="flex gap-2 mt-1">
-              <button
-                onClick={() => {
-                  setShowExitConfirm(false);
-                  // Giriş yapılmamışsa hiçbir oyun tipi için kayıt tutulmadığından
-                  // (kademeli teslim/oyun sonu ekranının anlamı olmadığından)
-                  // doğrudan kurulum ekranına dön — oyun kaç kişilik olursa olsun.
-                  // Aynı şekilde, hesap sahibi henüz gerçek bir hamle alışverişi
-                  // olmadan (bkz. gameStarted) çıkarsa da ceza/kayıt yok.
-                  if (
-                    state.isGameOver ||
-                    exitTargetIndex === null ||
-                    !user ||
-                    (exitTargetIndex === 0 && !gameStarted)
-                  ) {
-                    dispatch({ type: 'ABANDON' });
-                    return;
-                  }
-                  if (exitTargetIndex === 0) {
-                    const record = buildGameRecord(true, 0);
-                    if (record) void saveGameDurable(record);
-                  }
-                  dispatch({ type: 'SURRENDER', index: exitTargetIndex });
-                }}
-                className="btn-raised-red flex-1 py-2.5 rounded-md bg-red text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
-              >
-                Çık
-              </button>
-              <button
-                onClick={() => setShowExitConfirm(false)}
                 className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
               >
                 Vazgeç

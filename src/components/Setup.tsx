@@ -5,24 +5,48 @@ import { PLAYER_COLORS } from '../game/constants';
 import type { PlayerSetup } from '../game/gameReducer';
 import { useAuth } from '../hooks/useAuth';
 import { useModalA11y } from '../hooks/useModalA11y';
-import { fetchPlayerStats } from '../lib/api';
+import { fetchOnlineGameTurns, fetchPlayerStats, listMyOnlineGames } from '../lib/api';
 import { hasSeenQuickStart, markQuickStartSeen } from '../utils/onboarding';
+import { ABANDON_TIMEOUT_MS, type SavedGame } from '../utils/gameStorage';
 import { preloadWordSet, isWordSetReady } from '../data/wordSetLoader';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
 import { HelpModal } from './HelpModal';
+import { LiveGamesTab } from './LiveGamesTab';
 import { LogoMark } from './LogoMark';
 import { PlayerBadge } from './PlayerBadge';
 import { TermsModal } from './TermsModal';
 import { PrivacyModal } from './PrivacyModal';
+import type { OnlineGame } from '../lib/database.types';
+
+// "Devam Eden Oyun" satırındaki kalan gün sayısı — gameStorage.ts'teki
+// ABANDON_TIMEOUT_MS (7 gün) ile aynı terk-silme kuralına göre, son kayıt
+// (savedAt) anından itibaren.
+function remainingDays(savedAt: number): number {
+  return Math.floor((savedAt + ABANDON_TIMEOUT_MS - Date.now()) / (24 * 60 * 60 * 1000));
+}
 
 interface SetupProps {
   // showTutorial: oyun ekranı açıldığında Tutorial (HelpModal) daha önce
   // görülmediyse gösterilsin mi — App.tsx bunu oyun ekranı render'ında kullanır.
   onStart: (players: PlayerSetup[], showTutorial: boolean) => void;
+  // "Oyun Tipi" seçimi (Yapay Zeka ile / Arkadaşınla) — App.tsx'te tutulur,
+  // çünkü Canlı oyun tamamen ayrı bir veri kaynağından (Supabase) besleniyor;
+  // Setup burada yalnızca seçiciyi gösterip görünümü değiştirir.
+  mainView: 'local' | 'live';
+  onMainViewChange: (view: 'local' | 'live') => void;
+  // "Aktif" bir Canlı oyuna tıklanınca (LiveGamesTab), gerçek oyun ekranını
+  // açmak için App.tsx'e iletilir (Faz 3, 4. adım).
+  onOpenLiveGame: (game: OnlineGame) => void;
+  // Yarım kalan yerel (YZ) oyun (localStorage'dan, App.tsx'te tutulur) — varsa
+  // "Yapay Zeka ile" sekmesinde normal kurulum formu yerine tek bir "Devam
+  // Eden Oyun" satırı gösterilir; yeni bir yerel oyun bu kayıt bitene/teslim
+  // olunana kadar başlatılamaz (bkz. CLAUDE.md "Devam eden oyunun kalıcılığı").
+  savedGame: SavedGame | null;
+  onResumeGame: () => void;
 }
 
-export function Setup({ onStart }: SetupProps) {
+export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, savedGame, onResumeGame }: SetupProps) {
   const { user, profile, loading, profileLoading } = useAuth();
   // Oturum açıldıysa 1. oyuncu her zaman hesap sahibidir. Profil henüz
   // çekilmediyse (profileLoading) e-posta önekine düşmüyoruz — aksi halde
@@ -59,6 +83,40 @@ export function Setup({ onStart }: SetupProps) {
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+
+  // "Arkadaşınla" sekmesindeki rozet: bekleyen davetler + sırası çağıranda
+  // olan aktif Canlı oyunlar — kullanıcı sekmeye hiç girmeden kaç şeyin
+  // dikkatini beklediğini görsün diye. `mainView`e bağlı: Live sekmesinden
+  // (davet kabul/hamle sonrası) Local'e dönülünce sayı tazelensin diye.
+  const [liveActionCount, setLiveActionCount] = useState(0);
+  useEffect(() => {
+    if (!user) {
+      setLiveActionCount(0);
+      return;
+    }
+    let cancelled = false;
+    listMyOnlineGames().then((rows) => {
+      if (cancelled) return;
+      const inviteCount = rows.filter((g) => g.my_role === 'invitee' && g.my_invite_status === 'pending').length;
+      const activeIds = rows.filter((g) => g.status === 'active').map((g) => g.id);
+      if (activeIds.length === 0) {
+        setLiveActionCount(inviteCount);
+        return;
+      }
+      fetchOnlineGameTurns(activeIds).then((turns) => {
+        if (cancelled) return;
+        const myTurnCount = rows.filter((g) => {
+          if (g.status !== 'active') return false;
+          const idx = g.slots.findIndex((s) => s.type === 'human' && s.relation === 'self');
+          return turns[g.id] === idx;
+        }).length;
+        setLiveActionCount(inviteCount + myTurnCount);
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, mainView]);
 
   // "Giriş Yap" / "Devam" ikisi de anlamlı birer karar, gerçek bir "vazgeç"
   // değil — bu yüzden Escape/X, oyunu misafir olarak başlatmadan ("Devam"
@@ -170,7 +228,7 @@ export function Setup({ onStart }: SetupProps) {
             ✕
           </button>
           <p className="text-sm text-text font-sans leading-relaxed pr-6">
-            Oyunların istatistiklerini tutmak ve Sanal Lig puanları için lütfen giriş yapın.
+            Oyunların istatistikleri, Sanal Lig ve arkadaşınla canlı oyun için lütfen giriş yapın.
           </p>
           <div className="flex gap-2 mt-1">
             <button
@@ -231,89 +289,159 @@ export function Setup({ onStart }: SetupProps) {
 
       <div className="flex flex-col gap-2">
         <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
-          Oyuncu sayısı
+          Oyun Tipi
         </div>
         <div className="flex gap-2">
-          {([2, 4] as const).map((n) => (
+          {([
+            { key: 'local' as const, label: 'Yapay Zeka ile' },
+            { key: 'live' as const, label: 'Arkadaşınla' },
+          ]).map((tab) => (
             <button
-              key={n}
-              onClick={() => setCount(n)}
+              key={tab.key}
+              onClick={() => onMainViewChange(tab.key)}
               className={[
                 'flex-1 py-3 rounded-md font-sans text-sm font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97]',
-                count === n
+                mainView === tab.key
                   ? 'btn-raised bg-accent text-white border-accent'
                   : 'btn-raised-neutral bg-panel text-text border-border',
               ].join(' ')}
             >
-              {n} Oyunculu
+              {tab.label}
+              {tab.key === 'live' && liveActionCount > 0 ? ` (${liveActionCount})` : ''}
+              {tab.key === 'local' && savedGame ? ' (1)' : ''}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="flex flex-col gap-2.5">
-        <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
-          Oyuncular
-        </div>
-        {Array.from({ length: count }, (_, i) => {
-          const col = PLAYER_COLORS[i];
-          // 1. oyuncu giriş yapan hesaptır: kilitli isim + avatar, YZ olamaz.
-          const isAccount = i === 0 && !!accountName;
-          const isPending = i === 0 && accountPending;
-          return (
-            <div
-              key={i}
-              className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border"
-              style={{ background: col.tint, borderColor: col.base }}
-            >
-              {isAccount ? (
-                <Avatar
-                  url={profile?.avatar_url}
-                  name={accountName}
-                  size={20}
-                  className="shrink-0"
-                />
-              ) : isPending ? (
-                <span className="w-5 h-5 rounded-full bg-panel border border-border shrink-0 animate-pulse" />
-              ) : (
-                <PlayerBadge index={i} />
-              )}
-
-              {isAccount ? (
-                <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
-                  {accountName}
-                  {accountTotalScore !== undefined && (
-                    <span className="font-mono font-normal text-muted"> ({accountTotalScore})</span>
-                  )}
-                </span>
-              ) : isPending ? (
-                <span className="flex-1 min-w-0 font-sans text-sm font-bold text-muted truncate animate-pulse">
-                  Yükleniyor…
-                </span>
-              ) : (
-                <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
-                  {i === 0 ? 'Misafir' : `Yapay Zeka ${i + 1}`}
-                </span>
-              )}
-
-              <span
-                className="text-[9px] font-mono uppercase tracking-[1px] shrink-0 px-1"
-                style={{ color: col.base }}
-              >
-                {i === 0 ? 'Sen' : `YZ${i + 1}`}
+      {mainView === 'live' ? (
+        <LiveGamesTab onOpenGame={onOpenLiveGame} />
+      ) : savedGame ? (
+        <div className="flex flex-col gap-2">
+          <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
+            Devam Eden Oyun
+          </div>
+          <button
+            onClick={onResumeGame}
+            className="shadow-raised flex items-center gap-2.5 rounded-md px-3 py-3 border border-border bg-panel w-full text-left active:scale-[0.99] transition-transform"
+          >
+            <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+              <span className="font-sans text-sm font-bold text-text truncate">
+                {savedGame.state.players.length} Kişilik Yapay Zeka Oyunu
               </span>
+              <span className="font-mono text-[10px] text-muted truncate">
+                Sıra: {savedGame.state.players[savedGame.state.current]?.name ?? '—'}
+              </span>
+              <span
+                className={`font-mono text-[10px] truncate ${
+                  remainingDays(savedGame.savedAt) <= 1 ? 'text-red font-bold' : 'text-muted'
+                }`}
+              >
+                {remainingDays(savedGame.savedAt) <= 0
+                  ? 'Bugün silinecek'
+                  : `${remainingDays(savedGame.savedAt)} gün içinde silinir`}
+                {savedGame.state.turnCount >= 2 ? ' — teslim sayılır (-2)' : ''}
+              </span>
+            </span>
+            <span className="text-[9px] font-mono uppercase tracking-[1px] text-accent font-bold shrink-0">
+              Devam Et →
+            </span>
+          </button>
+          <p className="text-[11px] text-muted font-mono leading-relaxed">
+            Yeni bir Yapay Zeka oyunu başlatabilmen için önce bu oyunu
+            bitirmen gerekir. Süre dolduğunda oyun otomatik biter ve teslim
+            olmuş kabul edilirsin; ayrıca, lig puanından 2 puan düşülür.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-col gap-2">
+            <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
+              Oyuncu sayısı
             </div>
-          );
-        })}
-      </div>
+            <div className="flex gap-2">
+              {([2, 4] as const).map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setCount(n)}
+                  className={[
+                    'flex-1 py-3 rounded-md font-sans text-sm font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97]',
+                    count === n
+                      ? 'btn-raised bg-accent text-white border-accent'
+                      : 'btn-raised-neutral bg-panel text-text border-border',
+                  ].join(' ')}
+                >
+                  {n} Oyunculu
+                </button>
+              ))}
+            </div>
+          </div>
 
-      <button
-        onClick={handleStart}
-        disabled={!wordsReady}
-        className="btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-      >
-        {wordsReady ? 'Oyunu Başlat' : 'Hazırlanıyor…'}
-      </button>
+          <div className="flex flex-col gap-2.5">
+            <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
+              Oyuncular
+            </div>
+            {Array.from({ length: count }, (_, i) => {
+              const col = PLAYER_COLORS[i];
+              // 1. oyuncu giriş yapan hesaptır: kilitli isim + avatar, YZ olamaz.
+              const isAccount = i === 0 && !!accountName;
+              const isPending = i === 0 && accountPending;
+              return (
+                <div
+                  key={i}
+                  className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border"
+                  style={{ background: col.tint, borderColor: col.base }}
+                >
+                  {isAccount ? (
+                    <Avatar
+                      url={profile?.avatar_url}
+                      name={accountName}
+                      size={20}
+                      className="shrink-0"
+                    />
+                  ) : isPending ? (
+                    <span className="w-5 h-5 rounded-full bg-panel border border-border shrink-0 animate-pulse" />
+                  ) : (
+                    <PlayerBadge index={i} />
+                  )}
+
+                  {isAccount ? (
+                    <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
+                      {accountName}
+                      {accountTotalScore !== undefined && (
+                        <span className="font-mono font-normal text-muted"> ({accountTotalScore})</span>
+                      )}
+                    </span>
+                  ) : isPending ? (
+                    <span className="flex-1 min-w-0 font-sans text-sm font-bold text-muted truncate animate-pulse">
+                      Yükleniyor…
+                    </span>
+                  ) : (
+                    <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
+                      {i === 0 ? 'Misafir' : `Yapay Zeka ${i + 1}`}
+                    </span>
+                  )}
+
+                  <span
+                    className="text-[9px] font-mono uppercase tracking-[1px] shrink-0 px-1"
+                    style={{ color: col.base }}
+                  >
+                    {i === 0 ? 'Sen' : `YZ${i + 1}`}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={handleStart}
+            disabled={!wordsReady}
+            className="btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+          >
+            {wordsReady ? 'Oyunu Başlat' : 'Hazırlanıyor…'}
+          </button>
+        </>
+      )}
 
       <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-muted">
         <button onClick={() => setShowTerms(true)} className="hover:underline active:opacity-70 transition-opacity">

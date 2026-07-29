@@ -108,26 +108,57 @@ export function GameHeader({ state, onLogoClick, exitDisabled }: GameHeaderProps
                   // territory hücre dolgusu ve buildOutline çağrısı). Sıra
                   // kimdeyse onu ayırt etmek için tek fark çerçeve kalınlığı —
                   // renk her oyuncuda aynı mantıkla (kendi base'i) belirleniyor.
+                  // Sırası olmayanların çevresi bilinçli olarak İNCE tutuluyor
+                  // (28 Temmuz 2026'da 1.5px'ten önce 0.75px'e düşürüldü, sonra
+                  // gerçek bir `border`a çevrildi) — `boxShadow: inset` alt
+                  // piksel (0.75px gibi) kalınlıklarda kenarlar arasında
+                  // asimetrik render ediyordu (sol/üst kenarlar sağ/alttan
+                  // kalın görünüyordu, kullanıcı gerçek cihazda fark etti) —
+                  // `ScoreBoxRow`taki (GameHistoryModal.tsx) aynı inset
+                  // box-shadow güvenilmezliği dersiyle tutarlı, oradaki gibi
+                  // gerçek bir CSS `border`a geçildi, bu piksel ızgarasına
+                  // tutarlı hizalanıyor.
                   background: col.tint,
-                  boxShadow: `inset 0 0 0 ${active ? 2.5 : 1.5}px ${col.base}`,
+                  border: `${active ? 2 : 0.5}px solid ${col.base}`,
                   opacity: p.surrendered ? 0.45 : 1,
+                  // Çerçeve kalınlığı tek başına yeterince ayrışmadığından
+                  // (28 Temmuz 2026, kullanıcı geri bildirimi) sırası gelen
+                  // kutu ayrıca kendi rengiyle uyumlu bir parıltı kazanıyor.
+                  // İlk denemede `transform: scale` + `filter: drop-shadow`
+                  // kullanılmıştı ama bu kutuyu üst şeridin (`overflow-x-auto`
+                  // — CSS'in "bir eksen auto ise diğerini de auto say" kuralı
+                  // yüzünden dikeyde de kırpıyor, bkz. UserMenu ile ilgili
+                  // yukarıdaki not) sınırlarının dışına taşırıp KESİYORDU, ve
+                  // drop-shadow'un yayılımı komşu kutuya kadar uzanıyordu.
+                  // Düzeltme: `transform`/`filter` tamamen kaldırıldı; bunun
+                  // yerine `shadow-raised` class'ının katmanları BURADA aynen
+                  // tekrarlanıp (inline `boxShadow` class'ınkini komple ezdiği
+                  // için) üzerine dar bir (4px bulanıklık, hiç yayılım yok)
+                  // parıltı katmanı EKLENİYOR — BOX_GAP'in (min 6px) altında
+                  // kalacak kadar dar tutulduğundan komşu kutuya değmiyor.
+                  boxShadow: active
+                    ? `2px 2px 6px rgba(163, 177, 198, 0.5), -2px -2px 5px rgba(255, 255, 255, 0.85), 0 0 4px 0px ${col.base}80`
+                    : undefined,
                 }}
               >
                 <div
                   className="uppercase tracking-[1px] font-mono font-bold truncate"
-                  style={{
-                    fontSize: LABEL_FONT_SIZE,
-                    color: col.base,
-                    textDecoration: p.surrendered ? 'line-through' : 'none',
-                  }}
+                  style={{ fontSize: LABEL_FONT_SIZE, color: col.base }}
                 >
-                  {p.surrendered ? 'Teslim' : label}
+                  {label}
                 </div>
                 <div
-                  className="font-mono font-bold leading-none"
-                  style={{ fontSize: SCORE_FONT_SIZE, color: col.base }}
+                  className={
+                    p.surrendered
+                      ? 'font-mono font-bold uppercase tracking-[1px] leading-none truncate'
+                      : 'font-mono font-bold leading-none truncate'
+                  }
+                  style={{
+                    fontSize: p.surrendered ? LABEL_FONT_SIZE : SCORE_FONT_SIZE,
+                    color: col.base,
+                  }}
                 >
-                  {p.score}
+                  {p.surrendered ? 'Teslim' : p.score}
                 </div>
               </div>
             );

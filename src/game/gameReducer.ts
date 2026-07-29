@@ -8,6 +8,7 @@ import {
   jokerFinishBonus,
 } from './constants';
 import type { GameState, HistoryEntry, Owner, Player, Tile } from './types';
+import type { OnlineGameStatePublic } from '../lib/database.types';
 import { buildBag, drawTiles } from '../utils/bag';
 import { shuffle } from '../utils/random';
 import { trUpper } from '../utils/turkish';
@@ -49,7 +50,14 @@ export type Action =
   | { type: 'PASS' }
   | { type: 'AI_PLAY' }
   | { type: 'RENAME_PLAYER'; index: number; name: string }
-  | { type: 'SURRENDER'; index: number };
+  | { type: 'SURRENDER'; index: number }
+  | {
+      type: 'SYNC_ONLINE_STATE';
+      publicState: OnlineGameStatePublic;
+      myRack: Tile[];
+      mySlotIndex: number;
+    }
+  | { type: 'RESUME_SAVED'; state: GameState };
 
 /** Kurulum (oyuncu seçimi) ekranıyla başlayan boş durum. */
 export function createInitialState(): GameState {
@@ -257,6 +265,12 @@ export function gameReducer(state: GameState, action: Action): GameState {
       if (action.players.length !== 2 && action.players.length !== 4) return state;
       return startGame(action.players);
     }
+
+    case 'RESUME_SAVED':
+      // localStorage'dan yüklenen yarım kalan yerel oyun (bkz. gameStorage.ts)
+      // zaten tamamen geçerli/tamamlanmış bir GameState — App.tsx bunu Setup
+      // ekranındaki "Devam Eden Oyun" satırına tıklanınca dispatch eder.
+      return action.state;
 
     case 'SELECT_TILE': {
       if (state.phase !== 'play' || state.isGameOver) return state;
@@ -787,6 +801,52 @@ export function gameReducer(state: GameState, action: Action): GameState {
         return advanceTurn(withSurrender);
       }
       return withSurrender;
+    }
+
+    // Faz 3 — Canlı oyun: sunucudan (online_game_states + get_my_online_rack)
+    // gelen otoriter state'i yerel state'e uygular. `players[i].rack`
+    // yalnızca `mySlotIndex`te gerçek (raftaki taşlar); diğer oyuncularınki
+    // hiçbir zaman client'a gönderilmediğinden sahte/dolgu taşlarla
+    // dolduruluyor — Board/GameHeader bunlara hiç bakmıyor, yalnızca
+    // `Rack` bileşeni (her zaman kendi rafımızı gösterdiğimizden) gerçek
+    // veriyle çalışıyor. Bu turda yerel olarak yerleştirilmiş taşlar
+    // (`placed`) sunucudaki hamleyle her zaman ya onaylanmış ya da hâlâ
+    // gönderilmemiş olduğundan sıfırlanır — sunucu tek doğruluk kaynağı.
+    case 'SYNC_ONLINE_STATE': {
+      const players: Player[] = action.publicState.players.map((p, i) => ({
+        name: p.name,
+        corners: p.corners,
+        colorIndex: p.colorIndex,
+        isAI: p.isAI,
+        surrendered: p.surrendered,
+        rack: i === action.mySlotIndex ? action.myRack : new Array(p.rackCount).fill({ letter: 'A', pts: 1 }),
+        score: p.score,
+        bestMoveScore: p.bestMoveScore,
+        longestWord: p.longestWord,
+        moveCount: p.moveCount,
+        moveScoreSum: p.moveScoreSum,
+      }));
+      return {
+        ...state,
+        phase: 'play',
+        startedAt: action.publicState.started_at,
+        endReason: action.publicState.end_reason ?? 'normal',
+        board: action.publicState.board,
+        bag: new Array(action.publicState.bag_count).fill({ letter: 'A', pts: 1 }),
+        bonuses: action.publicState.bonuses,
+        placed: {},
+        players,
+        current: action.publicState.current,
+        selectedTile: null,
+        swapMode: false,
+        swapSelection: [],
+        turnCount: action.publicState.turn_count,
+        consecutivePasses: action.publicState.consecutive_passes,
+        isGameOver: action.publicState.is_game_over,
+        message: '',
+        messageType: '',
+        lastMoveCells: action.publicState.last_move_cells,
+      };
     }
 
     default:

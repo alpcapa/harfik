@@ -27,8 +27,9 @@ export function RemainingTilesModal({ state, onClose }: RemainingTilesModalProps
           return (
             <div key={r.letter} className={['relative h-12', out ? 'opacity-30' : ''].join(' ')}>
               <Tile tile={{ letter: r.letter, pts: r.pts }} variant="rack" />
-              {/* Kalan adet — sağ altta, taşın puan rozetiyle çakışmaz. */}
-              <span className="absolute bottom-[2px] right-[4px] font-mono font-bold text-[11px] text-[#8B5E00] leading-none">
+              {/* Kalan adet — taşın içinde, harfin tam altında (puan rozeti
+                  sağ üstte olduğundan çakışmıyor). */}
+              <span className="absolute bottom-[3px] left-1/2 -translate-x-1/2 font-mono font-bold text-[10px] text-[#8B5E00] leading-none">
                 ×{r.count}
               </span>
             </div>
