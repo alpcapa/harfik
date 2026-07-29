@@ -121,6 +121,17 @@ export function GameHeader({ state, onLogoClick, exitDisabled }: GameHeaderProps
                   background: col.tint,
                   border: `${active ? 2 : 1}px solid ${col.base}`,
                   opacity: p.surrendered ? 0.45 : 1,
+                  // Çerçeve kalınlığı tek başına yeterince ayrışmadığından
+                  // (28 Temmuz 2026, kullanıcı geri bildirimi) sırası gelen
+                  // kutu ayrıca hafifçe büyüyüp (`scale`) kendi rengiyle
+                  // uyumlu bir dış parıltı kazanıyor — `filter: drop-shadow`
+                  // kullanıldı, `box-shadow` (shadow-raised class'ı) ile
+                  // ÇAKIŞMIYOR çünkü ayrı bir CSS özelliği, ikisi üst üste
+                  // render oluyor. `transform`'un komşu kutulara taşmaması
+                  // için ölçek küçük (1.04) tutuldu, z-index ile üstte kalıyor.
+                  transform: active ? 'scale(1.04)' : undefined,
+                  zIndex: active ? 1 : undefined,
+                  filter: active ? `drop-shadow(0 2px 5px ${col.base}99)` : undefined,
                 }}
               >
                 <div
