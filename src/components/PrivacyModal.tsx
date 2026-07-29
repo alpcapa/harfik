@@ -80,9 +80,9 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             Kişisel verileriniz üçüncü taraflara satış amacıyla kullanılmaz. Kayıt formundaki
             "Pazarlama iletişimi almayı kabul ediyorum" kutusunu işaretlerseniz, size pazarlama/
             tanıtım amaçlı iletişim gönderilebilir — bu kutu isteğe bağlıdır, işaretlemeseniz de
-            hizmeti eksiksiz kullanabilirsiniz; bu onayı 8. bölümdeki başvuru yöntemiyle
-            istediğiniz zaman geri çekebilirsiniz. Altyapı hizmeti olarak Supabase kullanılmaktadır;
-            bu kapsamda veriler
+            hizmeti eksiksiz kullanabilirsiniz; bu onayı Hesap Ayarları'ndaki aynı onay kutusundan
+            istediğiniz zaman verebilir ya da geri çekebilirsiniz. Altyapı hizmeti olarak Supabase
+            kullanılmaktadır; bu kapsamda veriler
             Supabase'in sunucularında saklanır ve bu sunucular yurt dışında bulunabilir. Böyle bir
             durumda aktarım, KVKK m.9'da aranan (yeterli korumanın bulunduğu ülke veya uygun
             güvencelerin sağlanması gibi) şartlara uygun şekilde yapılır. Yasal zorunluluk halinde

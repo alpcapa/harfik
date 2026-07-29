@@ -21,6 +21,7 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
   const [email, setEmail] = useState(user?.email ?? '');
   const [gender, setGender] = useState<Gender | ''>(profile?.gender ?? '');
   const [birthDate, setBirthDate] = useState(isoToTrDate(profile?.birth_date));
+  const [marketingConsent, setMarketingConsent] = useState(profile?.marketing_consent ?? false);
 
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -85,6 +86,7 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
         display_name?: string | null;
         gender?: Gender | null;
         birth_date?: string | null;
+        marketing_consent?: boolean;
       } = {};
       if (firstName.trim() !== (profile?.first_name ?? ''))
         profilePatch.first_name = firstName.trim();
@@ -96,6 +98,8 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
         profilePatch.gender = gender || null;
       if (birthDateIso !== (profile?.birth_date ?? null))
         profilePatch.birth_date = birthDateIso;
+      if (marketingConsent !== (profile?.marketing_consent ?? false))
+        profilePatch.marketing_consent = marketingConsent;
       if (Object.keys(profilePatch).length > 0) {
         await updateProfile(profilePatch);
         await refreshProfile();
@@ -228,6 +232,24 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
             maxLength={10}
           />
         </div>
+
+        <label className="flex items-start gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={marketingConsent}
+            onChange={(e) => setMarketingConsent(e.target.checked)}
+            className="mt-0.5 shrink-0 accent-accent"
+          />
+          <span className="text-xs font-sans text-muted leading-relaxed">
+            Pazarlama iletişimi almayı kabul ediyorum.
+            {profile?.marketing_consent && profile.marketing_consent_at && (
+              <span className="block text-[9px] font-mono text-muted mt-0.5">
+                Kabul tarihi: {new Date(profile.marketing_consent_at).toLocaleDateString('tr-TR')}{' '}
+                {new Date(profile.marketing_consent_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+          </span>
+        </label>
 
         <button
           type="button"

@@ -1275,6 +1275,13 @@ export async function updateProfile(
     avatar_url?: string;
     gender?: Gender | null;
     birth_date?: string | null;
+    /**
+     * `marketing_consent_at` burada YOK — kasıtlı: `trg_set_marketing_consent_at`
+     * (marketing_consent_toggle_trigger migration'ı) bu alanı `marketing_consent`
+     * geçişine göre sunucu tarafında (`now()`) otomatik yazıyor, client'ın
+     * göndereceği herhangi bir değeri zaten yok sayardı.
+     */
+    marketing_consent?: boolean;
   },
 ): Promise<void> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
