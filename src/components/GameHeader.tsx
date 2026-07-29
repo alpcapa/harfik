@@ -123,15 +123,22 @@ export function GameHeader({ state, onLogoClick, exitDisabled }: GameHeaderProps
                   opacity: p.surrendered ? 0.45 : 1,
                   // Çerçeve kalınlığı tek başına yeterince ayrışmadığından
                   // (28 Temmuz 2026, kullanıcı geri bildirimi) sırası gelen
-                  // kutu ayrıca hafifçe büyüyüp (`scale`) kendi rengiyle
-                  // uyumlu bir dış parıltı kazanıyor — `filter: drop-shadow`
-                  // kullanıldı, `box-shadow` (shadow-raised class'ı) ile
-                  // ÇAKIŞMIYOR çünkü ayrı bir CSS özelliği, ikisi üst üste
-                  // render oluyor. `transform`'un komşu kutulara taşmaması
-                  // için ölçek küçük (1.04) tutuldu, z-index ile üstte kalıyor.
-                  transform: active ? 'scale(1.04)' : undefined,
-                  zIndex: active ? 1 : undefined,
-                  filter: active ? `drop-shadow(0 2px 5px ${col.base}99)` : undefined,
+                  // kutu ayrıca kendi rengiyle uyumlu bir parıltı kazanıyor.
+                  // İlk denemede `transform: scale` + `filter: drop-shadow`
+                  // kullanılmıştı ama bu kutuyu üst şeridin (`overflow-x-auto`
+                  // — CSS'in "bir eksen auto ise diğerini de auto say" kuralı
+                  // yüzünden dikeyde de kırpıyor, bkz. UserMenu ile ilgili
+                  // yukarıdaki not) sınırlarının dışına taşırıp KESİYORDU, ve
+                  // drop-shadow'un yayılımı komşu kutuya kadar uzanıyordu.
+                  // Düzeltme: `transform`/`filter` tamamen kaldırıldı; bunun
+                  // yerine `shadow-raised` class'ının katmanları BURADA aynen
+                  // tekrarlanıp (inline `boxShadow` class'ınkini komple ezdiği
+                  // için) üzerine dar bir (4px bulanıklık, hiç yayılım yok)
+                  // parıltı katmanı EKLENİYOR — BOX_GAP'in (min 6px) altında
+                  // kalacak kadar dar tutulduğundan komşu kutuya değmiyor.
+                  boxShadow: active
+                    ? `2px 2px 6px rgba(163, 177, 198, 0.5), -2px -2px 5px rgba(255, 255, 255, 0.85), 0 0 4px 0px ${col.base}80`
+                    : undefined,
                 }}
               >
                 <div
