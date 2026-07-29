@@ -152,10 +152,17 @@ export function GameHeader({ state, onLogoClick, exitDisabled }: GameHeaderProps
                   {p.surrendered ? 'Teslim' : label}
                 </div>
                 <div
-                  className="font-mono font-bold leading-none"
-                  style={{ fontSize: SCORE_FONT_SIZE, color: col.base }}
+                  className={
+                    p.surrendered
+                      ? 'font-mono font-bold uppercase tracking-[1px] leading-none truncate'
+                      : 'font-mono font-bold leading-none truncate'
+                  }
+                  style={{
+                    fontSize: p.surrendered ? LABEL_FONT_SIZE : SCORE_FONT_SIZE,
+                    color: col.base,
+                  }}
                 >
-                  {p.score}
+                  {p.surrendered ? 'Teslim' : p.score}
                 </div>
               </div>
             );

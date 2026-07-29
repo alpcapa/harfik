@@ -38,7 +38,7 @@ function statusLabel(game: OnlineGame, isMyTurn?: boolean): string {
 function remainingTimeLabel(deadline: string | null | undefined): { text: string; urgent: boolean } | null {
   if (!deadline) return null;
   const ms = new Date(deadline).getTime() - Date.now();
-  if (ms <= 0) return { text: 'Süresi doldu', urgent: true };
+  if (ms <= 0) return { text: 'Süresi doldu - teslim oldu', urgent: true };
   const hours = Math.ceil(ms / (60 * 60 * 1000));
   const text = hours <= 1 ? '1 saatten az kaldı' : `${hours} saat kaldı`;
   return { text, urgent: hours <= 6 };
