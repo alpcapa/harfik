@@ -441,12 +441,12 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                       </span>
                       <span>{formatDateTime(entry.created_at)}</span>
                       {isOnline && (
-                        <span className="text-accent font-bold normal-case border border-accent/40 bg-accent/10 rounded px-1 py-[1px] shrink-0">
+                        <span className="text-green font-bold normal-case border border-green/40 bg-green/10 rounded px-1 py-[1px] shrink-0">
                           Canlı
                         </span>
                       )}
                       {isVsAi && (
-                        <span className="text-muted font-bold normal-case border border-border rounded px-1 py-[1px] shrink-0">
+                        <span className="text-accent font-bold normal-case border border-accent/40 bg-accent/10 rounded px-1 py-[1px] shrink-0">
                           Yapay Zeka
                         </span>
                       )}
