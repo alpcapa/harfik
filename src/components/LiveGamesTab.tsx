@@ -4,7 +4,13 @@
 // src/App.tsx'teki mainView tab'ı, src/components/LiveGameCreateForm.tsx).
 import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { fetchOnlineGameTurns, listMyOnlineGames, respondToGameInvite } from '../lib/api';
+import {
+  checkOnlineGameTurnTimeout,
+  fetchOnlineGameDeadlines,
+  fetchOnlineGameTurns,
+  listMyOnlineGames,
+  respondToGameInvite,
+} from '../lib/api';
 import type { OnlineGame, OnlineGameSlot } from '../lib/database.types';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
@@ -23,6 +29,19 @@ function statusLabel(game: OnlineGame, isMyTurn?: boolean): string {
   if (game.status === 'pending') return 'Rakip bekleniyor';
   if (game.status === 'finished') return 'Bitti';
   return 'Terk edildi';
+}
+
+// Sırası gelen oyuncunun 48 saatlik zaman aşımına kalan süresi — Setup'taki
+// "Devam Eden Oyun" satırının remainingDays'iyle aynı ilke (kalan süre
+// düşükse kırmızı/kalın), burada saat cinsinden çünkü pencere gün değil
+// saat mertebesinde (bkz. CLAUDE.md "Canlı Oyun — Faz 3.6").
+function remainingTimeLabel(deadline: string | null | undefined): { text: string; urgent: boolean } | null {
+  if (!deadline) return null;
+  const ms = new Date(deadline).getTime() - Date.now();
+  if (ms <= 0) return { text: 'Süresi doldu', urgent: true };
+  const hours = Math.ceil(ms / (60 * 60 * 1000));
+  const text = hours <= 1 ? '1 saatten az kaldı' : `${hours} saat kaldı`;
+  return { text, urgent: hours <= 6 };
 }
 
 // Bir davet satırındaki tek katılımcının, o oyundaki rolüne göre etiketi —
@@ -121,9 +140,11 @@ interface GameRowProps {
   onOpen?: () => void;
   /** `status==='active'` oyunlarda: sıra şu an çağırandaysa `true`. */
   isMyTurn?: boolean;
+  /** `status==='active'` oyunlarda: sırası gelen oyuncunun zaman aşımı son tarihi. */
+  deadline?: string | null;
 }
 
-function GameRow({ game, onRespond, busy, onOpen, isMyTurn }: GameRowProps) {
+function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowProps) {
   const isPendingInvite = game.my_role === 'invitee' && game.my_invite_status === 'pending';
 
   if (isPendingInvite && onRespond) {
@@ -140,6 +161,7 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn }: GameRowProps) {
     );
   }
 
+  const remaining = remainingTimeLabel(deadline);
   const Wrapper = onOpen ? 'button' : 'div';
   return (
     <Wrapper
@@ -152,12 +174,23 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn }: GameRowProps) {
       <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
         {game.player_count} Kişilik Canlı Oyun
       </span>
-      <span
-        className={`text-[9px] font-mono uppercase tracking-[1px] shrink-0 ${
-          isMyTurn ? 'text-green font-bold' : 'text-muted'
-        }`}
-      >
-        {statusLabel(game, isMyTurn)}
+      <span className="flex flex-col items-end gap-0.5 shrink-0">
+        <span
+          className={`text-[9px] font-mono uppercase tracking-[1px] ${
+            isMyTurn ? 'text-green font-bold' : 'text-muted'
+          }`}
+        >
+          {statusLabel(game, isMyTurn)}
+        </span>
+        {remaining && (
+          <span
+            className={`text-[8px] font-mono uppercase tracking-[0.5px] ${
+              remaining.urgent ? 'text-red font-bold' : 'text-muted'
+            }`}
+          >
+            {remaining.text}
+          </span>
+        )}
       </span>
     </Wrapper>
   );
@@ -168,11 +201,13 @@ function Section({
   games,
   onOpenGame,
   turns,
+  deadlines,
 }: {
   title: string;
   games: OnlineGame[];
   onOpenGame?: (game: OnlineGame) => void;
   turns?: Record<string, number>;
+  deadlines?: Record<string, string | null>;
 }) {
   if (games.length === 0) return null;
   return (
@@ -185,6 +220,7 @@ function Section({
             game={g}
             onOpen={onOpenGame ? () => onOpenGame(g) : undefined}
             isMyTurn={turns ? turns[g.id] === mySlotIndex(g) : undefined}
+            deadline={deadlines ? deadlines[g.id] : undefined}
           />
         ))}
       </div>
@@ -222,6 +258,8 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   const [games, setGames] = useState<OnlineGame[] | null>(null);
   // gameId -> sırası gelen koltuk indeksi ("Sıra sende" rozeti için).
   const [turns, setTurns] = useState<Record<string, number>>({});
+  // gameId -> sırası gelen oyuncunun zaman aşımı son tarihi ("kalan süre" için).
+  const [deadlines, setDeadlines] = useState<Record<string, string | null>>({});
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [busyInviteId, setBusyInviteId] = useState<string | null>(null);
@@ -229,12 +267,56 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   // katılımcılara toplu istek gönderme önerisi (bkz. FriendSuggestModal).
   const [suggestCandidates, setSuggestCandidates] = useState<HumanSlot[] | null>(null);
 
-  const reload = () => {
-    listMyOnlineGames().then((rows) => {
-      setGames(rows);
-      const activeIds = rows.filter((g) => g.status === 'active').map((g) => g.id);
-      if (activeIds.length > 0) fetchOnlineGameTurns(activeIds).then(setTurns);
+  // Listeyi çeker, aktif oyunların sırasını/son tarihini yükler; süresi
+  // ZATEN dolmuş bir sıra varsa `check_turn_timeout`'u tetikleyip (no-op
+  // değilse otomatik teslim uygulanır) listeyi bir kez daha tazeler —
+  // böylece asılı kalmış bir Canlı oyun, kullanıcı bu sekmeyi her açtığında
+  // kendiliğinden çözülür (bkz. CLAUDE.md "Canlı Oyun — Faz 3.6").
+  const loadGames = async (cancelledRef?: { current: boolean }) => {
+    const rows = await listMyOnlineGames();
+    if (cancelledRef?.current) return;
+    setGames(rows);
+    const activeIds = rows.filter((g) => g.status === 'active').map((g) => g.id);
+    if (activeIds.length === 0) {
+      setTurns({});
+      setDeadlines({});
+      return;
+    }
+    const [turnMap, deadlineMap] = await Promise.all([
+      fetchOnlineGameTurns(activeIds),
+      fetchOnlineGameDeadlines(activeIds),
+    ]);
+    if (cancelledRef?.current) return;
+    setTurns(turnMap);
+    setDeadlines(deadlineMap);
+
+    const expired = activeIds.filter((id) => {
+      const d = deadlineMap[id];
+      return d && new Date(d).getTime() <= Date.now();
     });
+    if (expired.length === 0) return;
+    await Promise.all(expired.map((id) => checkOnlineGameTurnTimeout(id)));
+    if (cancelledRef?.current) return;
+    const rows2 = await listMyOnlineGames();
+    if (cancelledRef?.current) return;
+    setGames(rows2);
+    const activeIds2 = rows2.filter((g) => g.status === 'active').map((g) => g.id);
+    if (activeIds2.length === 0) {
+      setTurns({});
+      setDeadlines({});
+      return;
+    }
+    const [turnMap2, deadlineMap2] = await Promise.all([
+      fetchOnlineGameTurns(activeIds2),
+      fetchOnlineGameDeadlines(activeIds2),
+    ]);
+    if (cancelledRef?.current) return;
+    setTurns(turnMap2);
+    setDeadlines(deadlineMap2);
+  };
+
+  const reload = () => {
+    void loadGames();
   };
 
   useEffect(() => {
@@ -242,19 +324,10 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
       setGames(null);
       return;
     }
-    let cancelled = false;
-    listMyOnlineGames().then((rows) => {
-      if (cancelled) return;
-      setGames(rows);
-      const activeIds = rows.filter((g) => g.status === 'active').map((g) => g.id);
-      if (activeIds.length > 0) {
-        fetchOnlineGameTurns(activeIds).then((map) => {
-          if (!cancelled) setTurns(map);
-        });
-      }
-    });
+    const cancelledRef = { current: false };
+    void loadGames(cancelledRef);
     return () => {
-      cancelled = true;
+      cancelledRef.current = true;
     };
   }, [user]);
 
@@ -359,7 +432,7 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
               </div>
             </div>
           )}
-          <Section title="Aktif Oyunlar" games={active} onOpenGame={onOpenGame} turns={turns} />
+          <Section title="Aktif Oyunlar" games={active} onOpenGame={onOpenGame} turns={turns} deadlines={deadlines} />
           <PendingSection title="Kabul Ettin — Diğerleri Bekleniyor" games={acceptedWaiting} />
           <PendingSection title="Rakip Bekleniyor" games={waiting} />
         </>

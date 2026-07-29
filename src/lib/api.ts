@@ -690,6 +690,45 @@ export async function fetchOnlineGameTurns(gameIds: string[]): Promise<Record<st
   return map;
 }
 
+/**
+ * Verilen aktif Canlı oyunların her biri için sırası gelen oyuncunun son
+ * hamle tarihini (`turn_deadline`) döner — `LiveGamesTab`'ın "kalan süre"
+ * göstergesi için. Süre dolan bir koltuk `check_turn_timeout` çağrılana
+ * kadar otomatik teslim olmaz (bkz. `checkOnlineGameTurnTimeout`), bu
+ * fonksiyon yalnızca OKUR, hiçbir şeyi tetiklemez.
+ */
+export async function fetchOnlineGameDeadlines(gameIds: string[]): Promise<Record<string, string | null>> {
+  if (!supabase || gameIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from('online_game_states')
+    .select('online_game_id, turn_deadline')
+    .in('online_game_id', gameIds);
+  if (error) {
+    console.error('[Kelimeki] fetchOnlineGameDeadlines hatası:', error.message);
+    return {};
+  }
+  const map: Record<string, string | null> = {};
+  for (const row of (data ?? []) as { online_game_id: string; turn_deadline: string | null }[]) {
+    map[row.online_game_id] = row.turn_deadline;
+  }
+  return map;
+}
+
+/**
+ * Sırası gelen oyuncunun 48 saatlik süresi dolduysa onu otomatik teslim
+ * eder (`check_turn_timeout` RPC'si) — süre dolmadıysa no-op. Cron/arka
+ * plan job'u yok (bkz. CLAUDE.md "Canlı Oyun — Faz 3.6"), bu yüzden
+ * herhangi bir katılımcının istemcisi (LiveGamesTab listeyi her açtığında,
+ * OnlineGameScreen her refresh'te) bunu çağırarak "hafif" bir tarama
+ * yapar — submit_move'un satır kilidiyle aynı desende olduğundan birden
+ * fazla istemcinin aynı anda çağırması zararsız.
+ */
+export async function checkOnlineGameTurnTimeout(gameId: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.rpc('check_turn_timeout', { p_game_id: gameId });
+  if (error) console.error('[Kelimeki] checkOnlineGameTurnTimeout hatası:', error.message);
+}
+
 /** Çağıranın KENDİ rafı (`get_my_online_rack` RPC'si) — başka hiçbir oyuncununki hiçbir zaman döndürülmez. */
 export async function getMyOnlineRack(gameId: string): Promise<Tile[]> {
   if (!supabase) return [];

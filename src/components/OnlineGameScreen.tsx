@@ -9,9 +9,11 @@
 // Taş sürükleme (fare + dokunmatik) App.tsx'teki sistemin birebir aynısı —
 // bkz. oradaki "Taş sürükleme" bölümündeki yorumlar, burada tekrarlanmadı.
 //
-// Bilinçli kapsam dışı bırakma (CLAUDE.md'de belgelendi): Teslim olma
-// (surrender) henüz yok — üstteki logo yalnızca Canlı listesine döner,
-// oyunu bitirmez.
+// Teslim olma manuel değil, zaman aşımlı: üstteki logo hâlâ yalnızca
+// Canlı listesine döner, oyunu bitirmez — sırası gelen oyuncu 48 saat
+// içinde hamle yapmazsa `check_turn_timeout` RPC'si onu otomatik teslim
+// eder (bkz. CLAUDE.md "Canlı Oyun — Faz 3.6", checkOnlineGameTurnTimeout
+// aşağıdaki refresh() döngüsünden çağrılır).
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Board } from './Board';
 import { Rack } from './Rack';
@@ -37,6 +39,7 @@ import {
 import { getFormedWords, getFullWordAt, key } from '../utils/board';
 import { trLower } from '../utils/turkish';
 import {
+  checkOnlineGameTurnTimeout,
   fetchMeaning,
   fetchOnlineGameMoves,
   fetchOnlineGameState,
@@ -178,6 +181,9 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   // ardışık refresh'lerinin (focus/visibility gibi) henüz sonuçlanmamış
   // aynı YZ turunu gereksiz yere tekrar tetiklemesini önlüyor.
   const aiTriggeringRef = useRef(false);
+  // check_turn_timeout no-op'tur süre dolmadıysa — burada da aynı "kendi
+  // ardışık refresh'lerini üst üste bindirme" korumasını taşıyor.
+  const timeoutCheckingRef = useRef(false);
 
   useEffect(() => {
     if (mySlotIndex < 0) return;
@@ -204,6 +210,19 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
             });
         }
       }
+
+      // Sırası gelen oyuncunun 48 saatlik süresi dolduysa otomatik teslim
+      // eder (no-op'tur dolmadıysa) — herhangi bir katılımcının ekranı
+      // açıkken bu taramayı yapması, oyunun kalıcı olarak asılı kalmasını
+      // önler (bkz. CLAUDE.md "Canlı Oyun — Faz 3.6").
+      if (!publicState.is_game_over && !timeoutCheckingRef.current) {
+        timeoutCheckingRef.current = true;
+        checkOnlineGameTurnTimeout(game.id)
+          .catch((err) => console.error('[Kelimeki] checkOnlineGameTurnTimeout (OnlineGameScreen) hatası:', err))
+          .finally(() => {
+            timeoutCheckingRef.current = false;
+          });
+      }
     };
     void refresh();
     const unsubscribe = subscribeOnlineGameState(game.id, () => {
@@ -221,12 +240,18 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     document.addEventListener('visibilitychange', onForeground);
     window.addEventListener('focus', onForeground);
     window.addEventListener('online', onForeground);
+    // Ekran açık kalıp hiçbir hamle/foreground olayı gerçekleşmezse (ör.
+    // biri bekleme ekranını saatlerce açık bırakırsa) zaman aşımı hiç
+    // taranmaz — bu periyodik tarama (foreground/realtime yoksa bile) o
+    // süreyi kısaltır. 48 saatlik pencereye göre sık olması gerekmiyor.
+    const intervalId = window.setInterval(() => void refresh(), 10 * 60 * 1000);
     return () => {
       cancelled = true;
       unsubscribe();
       document.removeEventListener('visibilitychange', onForeground);
       window.removeEventListener('focus', onForeground);
       window.removeEventListener('online', onForeground);
+      window.clearInterval(intervalId);
     };
   }, [game.id, mySlotIndex]);
 
