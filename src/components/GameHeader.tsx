@@ -143,13 +143,9 @@ export function GameHeader({ state, onLogoClick, exitDisabled }: GameHeaderProps
               >
                 <div
                   className="uppercase tracking-[1px] font-mono font-bold truncate"
-                  style={{
-                    fontSize: LABEL_FONT_SIZE,
-                    color: col.base,
-                    textDecoration: p.surrendered ? 'line-through' : 'none',
-                  }}
+                  style={{ fontSize: LABEL_FONT_SIZE, color: col.base }}
                 >
-                  {p.surrendered ? 'Teslim' : label}
+                  {label}
                 </div>
                 <div
                   className={
