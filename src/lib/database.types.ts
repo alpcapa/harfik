@@ -230,6 +230,14 @@ export interface Game {
   board_snapshot: BoardSnapshotTile[] | null;
   /** Herkese açık `/game/:id` linkiyle görülebilir mi (`set_game_shared` RPC'si ile bir kere true olur, geri alınamaz). */
   shared: boolean;
+  /**
+   * Doluysa bu kayıt bir Canlı (çok hesaplı, `online_games`) oyundan geldi —
+   * `submit_move` RPC'si oyun bitince her insan katılımcı için sunucu
+   * tarafında yazar, client hiç insert etmez (bkz. NewGame'in bunu
+   * içermemesi). `GameHistoryModal` bu kartları görsel olarak ayırt etmek
+   * için kullanır.
+   */
+  online_game_id: string | null;
   created_at: string;
 }
 
@@ -286,6 +294,7 @@ export type GameHistoryEntry = Pick<
   | 'ai_score'
   | 'rank'
   | 'surrendered'
+  | 'online_game_id'
 > & {
   /**
    * Bu isteği yapan (oturum açan) kullanıcının bu oyunu beğenip beğenmediği —

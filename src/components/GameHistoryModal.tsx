@@ -409,7 +409,7 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                       handleToggleBoard(entry.id);
                     }
                   }}
-                  className="shadow-raised bg-bg border border-border rounded-md py-2 px-2.5 flex flex-col gap-1.5 cursor-pointer text-left"
+                  className={`shadow-raised ${entry.online_game_id ? 'bg-panel' : 'bg-bg'} border border-border rounded-md py-2 px-2.5 flex flex-col gap-1.5 cursor-pointer text-left`}
                 >
                   <div className="flex items-center justify-between gap-2 text-[9px] font-mono text-muted uppercase tracking-[0.5px]">
                     <span className="flex items-center gap-1.5">

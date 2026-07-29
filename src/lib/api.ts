@@ -252,7 +252,7 @@ export async function fetchMyGames(
   const targetUid = userId ?? viewer?.id;
   if (!targetUid) return { games: [], hasMore: false };
 
-  const cols = 'id, created_at, player_count, players, player_score, ai_score, rank, surrendered';
+  const cols = 'id, created_at, player_count, players, player_score, ai_score, rank, surrendered, online_game_id';
   type Row = Omit<GameHistoryEntry, 'liked_by_me' | 'like_count'>;
   let rows: Row[];
   let hasMore: boolean;
