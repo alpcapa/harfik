@@ -183,13 +183,20 @@ export async function fetchMyLeaderboardRank(userId: string): Promise<MyLeaderbo
 
 /**
  * Belirli bir oyuncunun (varsayılan: oturum açan kullanıcı) belirli oyuncu
- * sayısındaki istatistik özetini döner. `userId` verilirse (admin panelindeki
- * oyuncu detay görünümü) o kullanıcının istatistiği döner — `player_stats`
- * view'ı `games` tablosundaki herkese-açık select politikasını (leaderboard
- * için) miras aldığından bu ekstra bir yetki gerektirmez.
+ * sayısındaki istatistik özetini döner. `playerCount='all'` verilirse (Skor
+ * Kartı'ndaki "Genel" sekmesi) 2 ve 4 kişilik TÜM oyunların toplamı
+ * `player_stats_overall` view'ından gelir — bu ayrı bir view, çünkü
+ * `avg_move_score` (ağırlıklı ortalama) ve `longest_word` gibi alanlar iki
+ * ayrı (player_count bazlı) satırdan client-side doğru birleştirilemez, ham
+ * `games` satırlarından yeniden hesaplanmaları gerekir; dönen nesnede
+ * `player_count` alanı anlamsız olduğundan `0` ile dolduruluyor (UI hiçbir
+ * yerde okumuyor). `userId` verilirse (admin panelindeki oyuncu detay
+ * görünümü) o kullanıcının istatistiği döner — her iki view de `games`
+ * tablosundaki herkese-açık select politikasını (leaderboard için) miras
+ * aldığından bu ekstra bir yetki gerektirmez.
  */
 export async function fetchPlayerStats(
-  playerCount: number,
+  playerCount: number | 'all',
   userId?: string,
 ): Promise<PlayerStats | null> {
   if (!supabase) return null;
@@ -200,6 +207,19 @@ export async function fetchPlayerStats(
     } = await supabase.auth.getUser();
     if (!user) return null;
     uid = user.id;
+  }
+
+  if (playerCount === 'all') {
+    const { data, error } = await supabase
+      .from('player_stats_overall')
+      .select('*')
+      .eq('user_id', uid)
+      .maybeSingle();
+    if (error) {
+      console.error('[Kelimeki] fetchPlayerStats (all) hatası:', error.message);
+      return null;
+    }
+    return data ? ({ ...data, player_count: 0 } as PlayerStats) : null;
   }
 
   const { data, error } = await supabase
@@ -239,7 +259,7 @@ export async function fetchPlayerStats(
  * her ikisini birden döner).
  */
 export async function fetchMyGames(
-  playerCount: number,
+  playerCount: number | null,
   offset: number,
   limit = 20,
   userId?: string,
@@ -257,12 +277,16 @@ export async function fetchMyGames(
   let rows: Row[];
   let hasMore: boolean;
 
+  // playerCount===null: Skor Kartı'ndaki "Genel" sekmesinden "Tüm Oyunları
+  // Gör" — 2/4 kişilik fark etmeksizin tüm oyunları listeler, `.eq` filtresi
+  // hiç uygulanmaz.
   if (favoritesOnly) {
-    const { data, error } = await supabase
+    let query = supabase
       .from('game_likes')
       .select(`created_at, games!inner(${cols})`)
-      .eq('user_id', targetUid)
-      .eq('games.player_count', playerCount)
+      .eq('user_id', targetUid);
+    if (playerCount !== null) query = query.eq('games.player_count', playerCount);
+    const { data, error } = await query
       .order('created_at', { ascending: false })
       .range(offset, offset + limit); // limit+1 satır: sonraki sayfa var mı anlamak için
     if (error) {
@@ -273,11 +297,9 @@ export async function fetchMyGames(
     rows = liked.slice(0, limit).map((r) => r.games);
     hasMore = liked.length > limit;
   } else {
-    const { data, error } = await supabase
-      .from('games')
-      .select(cols)
-      .eq('user_id', targetUid)
-      .eq('player_count', playerCount)
+    let query = supabase.from('games').select(cols).eq('user_id', targetUid);
+    if (playerCount !== null) query = query.eq('player_count', playerCount);
+    const { data, error } = await query
       .order('created_at', { ascending: false })
       .range(offset, offset + limit);
     if (error) {

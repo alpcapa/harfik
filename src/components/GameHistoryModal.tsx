@@ -37,7 +37,8 @@ function likerName(l: GameLiker): string {
 }
 
 interface GameHistoryModalProps {
-  playerCount: number;
+  /** `null` — Skor Kartı'ndaki "Genel" sekmesi: oyuncu sayısından bağımsız tüm oyunlar. */
+  playerCount: number | null;
   onClose: () => void;
   /** Verilirse (admin panelindeki oyuncu detayı) oturum sahibi yerine bu kullanıcının geçmişi gösterilir. */
   userId?: string;
@@ -356,7 +357,7 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
   }, [hasMore, loading, loadMore]);
 
   return (
-    <Modal title={title ?? `Tüm Oyunlar · ${playerCount} Oyunculu`} onClose={onClose}>
+    <Modal title={title ?? (playerCount === null ? 'Tüm Oyunlar' : `Tüm Oyunlar · ${playerCount} Oyunculu`)} onClose={onClose}>
       {/* Tümü / Favoriler filtresi */}
       <div className="flex gap-1.5 mb-3 shrink-0">
         {([

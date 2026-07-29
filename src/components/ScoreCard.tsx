@@ -12,7 +12,12 @@ interface ScoreCardProps {
   onClose: () => void;
 }
 
-const TABS = [2, 4] as const;
+type TabKey = 'all' | 2 | 4;
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'all', label: 'Genel' },
+  { key: 2, label: '2 Oyunculu' },
+  { key: 4, label: '4 Oyunculu' },
+];
 
 function calculateAge(birthDate: string): number {
   const today = new Date();
@@ -27,18 +32,18 @@ function calculateAge(birthDate: string): number {
 
 export function ScoreCard({ onClose }: ScoreCardProps) {
   const { user, profile } = useAuth();
-  const [statsByCount, setStatsByCount] = useState<
-    Record<number, PlayerStats | null | undefined>
-  >({ 2: undefined, 4: undefined });
-  const [tab, setTab] = useState<(typeof TABS)[number]>(2);
+  const [statsByTab, setStatsByTab] = useState<
+    Record<TabKey, PlayerStats | null | undefined>
+  >({ all: undefined, 2: undefined, 4: undefined });
+  const [tab, setTab] = useState<TabKey>('all');
   const [showAllGames, setShowAllGames] = useState(false);
   const [showLeague, setShowLeague] = useState(false);
   const [myRank, setMyRank] = useState<MyLeaderboardRank | null>(null);
 
   useEffect(() => {
-    for (const count of TABS) {
-      fetchPlayerStats(count).then((s) =>
-        setStatsByCount((cur) => ({ ...cur, [count]: s })),
+    for (const { key } of TABS) {
+      fetchPlayerStats(key).then((s) =>
+        setStatsByTab((cur) => ({ ...cur, [key]: s })),
       );
     }
   }, []);
@@ -59,16 +64,18 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
 
   const age = profile?.birth_date ? calculateAge(profile.birth_date) : null;
 
-  const stats = statsByCount[tab];
+  const stats = statsByTab[tab];
 
-  const totalScore = TABS.reduce((sum, count) => sum + (statsByCount[count]?.total_score ?? 0), 0);
+  const totalScore = statsByTab.all?.total_score ?? 0;
 
   const pct = (n: number) =>
     stats && stats.games_played > 0 ? `%${Math.round((n / stats.games_played) * 100)}` : '%0';
 
-  // 4 kişilikte ikincilik hâlâ +1 puan getirdiğinden ödüllü bir stat olarak
-  // gösterilir; 2 kişilikte 2. olmak = kaybetmek olduğundan (artık lig puanı
-  // getirmiyor) bu stat hiç gösterilmez.
+  // "Genel" sekmesi tablo yapısı olarak 4 kişilikle aynı (kullanıcı isteği)
+  // — ikisi de aynı cells düzenini kullanır. 2 kişilikte 2. olmak = kaybetmek
+  // olduğundan (lig puanı getirmiyor) "İkincilik" hücresi yalnızca o sekmede
+  // hiç gösterilmez.
+  const useWideLayout = tab === 4 || tab === 'all';
   const secondCellValue = stats?.second_places ?? 0;
 
   const cells: {
@@ -93,7 +100,7 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
       rate: pct(stats?.first_places ?? 0),
       cls: 'text-gold',
     },
-    ...(tab === 4
+    ...(useWideLayout
       ? [
           {
             label: 'İkincilik',
@@ -123,8 +130,8 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
       label: 'En Uzun Kelime',
       value: stats?.longest_word ?? '—',
       cls: 'text-text',
-      wide: tab !== 4,
-      span2: tab === 4,
+      wide: !useWideLayout,
+      span2: useWideLayout,
     },
   ];
 
@@ -164,21 +171,21 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
       </div>
 
       <div className="mb-3 flex gap-2">
-        {TABS.map((count) => (
+        {TABS.map(({ key, label }) => (
           <button
-            key={count}
+            key={key}
             type="button"
-            onClick={() => setTab(count)}
+            onClick={() => setTab(key)}
             className={[
               'flex-1 py-2 rounded-md font-sans text-sm font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97] flex flex-col items-center',
-              tab === count
+              tab === key
                 ? 'btn-raised bg-accent text-white border-accent'
                 : 'btn-raised-neutral bg-panel text-text border-border',
             ].join(' ')}
           >
-            <span className="leading-none">{count} Oyunculu</span>
+            <span className="leading-none">{label}</span>
             <span className="text-[10px] font-normal normal-case leading-none mt-0.5">
-              ({statsByCount[count]?.total_score ?? 0} puan)
+              ({statsByTab[key]?.total_score ?? 0} puan)
             </span>
           </button>
         ))}
@@ -190,7 +197,7 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
         <>
           {!stats && (
             <p className="text-muted text-[10px] font-mono text-center pb-2">
-              Henüz {tab} oyunculu oyun kaydın yok.
+              {tab === 'all' ? 'Henüz hiç oyun kaydın yok.' : `Henüz ${tab} oyunculu oyun kaydın yok.`}
             </p>
           )}
           <div className="grid grid-cols-3 gap-2">
@@ -224,7 +231,7 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
       </div>
 
       {showAllGames && (
-        <GameHistoryModal playerCount={tab} onClose={() => setShowAllGames(false)} />
+        <GameHistoryModal playerCount={tab === 'all' ? null : tab} onClose={() => setShowAllGames(false)} />
       )}
       {showLeague && <Leaderboard onClose={() => setShowLeague(false)} />}
     </Modal>
