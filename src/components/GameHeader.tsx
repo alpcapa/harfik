@@ -119,7 +119,7 @@ export function GameHeader({ state, onLogoClick, exitDisabled }: GameHeaderProps
                   // gerçek bir CSS `border`a geçildi, bu piksel ızgarasına
                   // tutarlı hizalanıyor.
                   background: col.tint,
-                  border: `${active ? 2 : 1}px solid ${col.base}`,
+                  border: `${active ? 2 : 0.5}px solid ${col.base}`,
                   opacity: p.surrendered ? 0.45 : 1,
                   // Çerçeve kalınlığı tek başına yeterince ayrışmadığından
                   // (28 Temmuz 2026, kullanıcı geri bildirimi) sırası gelen
