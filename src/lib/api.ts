@@ -467,8 +467,13 @@ export async function searchUsersForFriend(query: string): Promise<FriendSearchR
  * `friend_requests_insert_self` RLS politikası yalnızca kendi adına eklemeye
  * izin verir). Karşı taraftan zaten bekleyen bir istek varsa sunucudaki
  * `handle_friend_request_insert` trigger'ı bunu otomatik olarak karşılıklı
- * kabule çevirir. Hiçbir e-posta bildirimi gönderilmez — yalnızca uygulama
- * içi (in-app) görünür, maliyet/gürültü yaratmasın diye.
+ * kabule çevirir. 29 Temmuz 2026'ya kadar bu tamamen uygulama-içi (in-app)
+ * kalıyordu — hiç e-posta gönderilmiyordu (maliyet/gürültü kaygısı,
+ * `friends_system` migration'ı). Kullanıcı geri bildirimiyle bu karardan
+ * dönüldü: alıcı uygulamayı hiç açmazsa istekten habersiz kalıyordu. Artık,
+ * insert karşılıklı otomatik kabulle SONUÇLANMADIYSA (hâlâ 'pending'),
+ * `notify-friend-request` Edge Function'ı ile alıcıya işlemsel bir e-posta
+ * bildirimi gönderilir (`marketing_consent`'e bağlı değil — bkz. CLAUDE.md).
  */
 export async function sendFriendRequest(targetId: string): Promise<void> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
@@ -476,10 +481,30 @@ export async function sendFriendRequest(targetId: string): Promise<void> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error('Oturum açık değil.');
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('friend_requests')
-    .insert({ user_id: user.id, friend_id: targetId });
+    .insert({ user_id: user.id, friend_id: targetId })
+    .select('status')
+    .single();
   if (error) throw new Error(error.message);
+  if (data?.status === 'pending') {
+    void notifyFriendRequest(targetId);
+  }
+}
+
+/**
+ * `sendFriendRequest`'in az önce açtığı isteği alıcıya e-posta ile bildirir
+ * (`notify-friend-request` Edge Function'ı). Best-effort/fire-and-forget:
+ * istek zaten gönderilmiş olduğundan bir e-posta hatası kullanıcıya hiç
+ * yansıtılmaz, yalnızca loglanır.
+ */
+async function notifyFriendRequest(friendId: string): Promise<void> {
+  if (!supabase) return;
+  try {
+    await invokeEdgeFunction('notify-friend-request', { friend_id: friendId });
+  } catch (err) {
+    console.error('[Kelimeki] notifyFriendRequest hatası:', (err as Error).message);
+  }
 }
 
 /** Bana gelen bir isteği kabul eder (`accepted`'a çeker) ya da reddeder (satırı siler). */
@@ -628,7 +653,11 @@ export async function acceptFriendInvite(token: string): Promise<string | null> 
  * koltukları için sadece `{type:'ai'}`. İnsan koltuklarındaki her arkadaş
  * için sunucu tarafında bir `game_invites` satırı açılır; hiç insan
  * davetlisi yoksa oyun beklemeden doğrudan `active` olur. Oluşan oyunun
- * id'sini döner.
+ * id'sini döner. 29 Temmuz 2026'dan beri açılan her davetliye ayrıca
+ * `notify-game-invite` Edge Function'ı ile işlemsel bir e-posta bildirimi
+ * de gönderilir (bkz. `sendFriendRequest`'teki aynı gerekçe) — 7 günlük
+ * davet zaman aşımından (`online_game_invite_expiry`) önce davetlinin
+ * uygulamayı hiç açmadan davetten habersiz kalmasını önlemek için.
  */
 export async function createOnlineGame(
   playerCount: 2 | 4,
@@ -640,7 +669,24 @@ export async function createOnlineGame(
     p_slots: slots,
   });
   if (error) throw new Error(error.message);
-  return data as string;
+  const gameId = data as string;
+  void notifyGameInvite(gameId);
+  return gameId;
+}
+
+/**
+ * `createOnlineGame`'in az önce açtığı davetleri e-posta ile bildirir
+ * (`notify-game-invite` Edge Function'ı). Best-effort/fire-and-forget —
+ * oyun zaten kurulmuş olduğundan bir e-posta hatası kullanıcıya hiç
+ * yansıtılmaz, yalnızca loglanır.
+ */
+async function notifyGameInvite(gameId: string): Promise<void> {
+  if (!supabase) return;
+  try {
+    await invokeEdgeFunction('notify-game-invite', { online_game_id: gameId });
+  } catch (err) {
+    console.error('[Kelimeki] notifyGameInvite hatası:', (err as Error).message);
+  }
 }
 
 /**
@@ -1112,10 +1158,12 @@ export async function deleteFeedback(id: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-/** Admin Edge Function'larını (feedback-reply, admin-send-message) çağırır — hata
- * durumunda Edge Function'ın döndürdüğü JSON gövdesini okuyup gerçek mesajı fırlatır
- * (supabase-js `functions.invoke` bunu otomatik yapmıyor). */
-async function invokeAdminFunction(name: string, body: Record<string, unknown>): Promise<void> {
+/** Bir Edge Function'ı çağırır — hata durumunda Edge Function'ın döndürdüğü
+ * JSON gövdesini okuyup gerçek mesajı fırlatır (supabase-js `functions.invoke`
+ * bunu otomatik yapmıyor). Yalnızca admin fonksiyonlarına (feedback-reply,
+ * admin-send-message) özgü değil — notify-friend-request/notify-game-invite
+ * gibi herhangi bir kullanıcının çağırabileceği fonksiyonlarda da kullanılır. */
+async function invokeEdgeFunction(name: string, body: Record<string, unknown>): Promise<void> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
   const { data, error } = await supabase.functions.invoke(name, { body });
   if (error) {
@@ -1144,7 +1192,7 @@ export async function sendFeedbackReply(
   reply: string,
   recipientName?: string,
 ): Promise<void> {
-  await invokeAdminFunction('feedback-reply', {
+  await invokeEdgeFunction('feedback-reply', {
     feedback_id: feedbackId,
     reply,
     recipient_name: recipientName,
@@ -1165,7 +1213,7 @@ export async function sendMemberMessage(
   subject: string,
   message: string,
 ): Promise<void> {
-  await invokeAdminFunction('admin-send-message', {
+  await invokeEdgeFunction('admin-send-message', {
     to_user_id: toUserId,
     to_email: toEmail,
     to_name: toName,

@@ -28,7 +28,7 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
       <div className="flex flex-col gap-5">
         <P>
           Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, hangi verileri topladığımızı,
-          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 27 Temmuz 2026.
+          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 29 Temmuz 2026.
         </P>
 
         <Section title="1. Veri Sorumlusu">
@@ -71,6 +71,11 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             <li>Lider tablosu ve skor kartı gösterimi</li>
             <li>Oyun deneyiminin kişiselleştirilmesi</li>
             <li>Hesap güvenliği ve destek hizmetleri</li>
+            <li>
+              Bir arkadaşlık isteği ya da Canlı oyun daveti aldığınızda size e-posta ile bildirim
+              gönderilmesi — bu, hizmetin işleyişine dair işlemsel bir bildirimdir, pazarlama onayı
+              gerektirmez ve pazarlama onayınızdan bağımsız olarak gönderilir
+            </li>
             <li>Yalnızca ayrıca onay verdiyseniz: pazarlama/tanıtım amaçlı iletişim</li>
           </ul>
         </Section>
