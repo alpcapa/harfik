@@ -25,10 +25,12 @@ export function RemainingTilesModal({ state, onClose }: RemainingTilesModalProps
         {rows.map((r) => {
           const out = r.count === 0;
           return (
-            <div key={r.letter} className={['relative h-12', out ? 'opacity-30' : ''].join(' ')}>
-              <Tile tile={{ letter: r.letter, pts: r.pts }} variant="rack" />
-              {/* Kalan adet — sağ altta, taşın puan rozetiyle çakışmaz. */}
-              <span className="absolute bottom-[2px] right-[4px] font-mono font-bold text-[11px] text-[#8B5E00] leading-none">
+            <div key={r.letter} className={['flex flex-col items-center gap-1', out ? 'opacity-30' : ''].join(' ')}>
+              <div className="h-12 w-full">
+                <Tile tile={{ letter: r.letter, pts: r.pts }} variant="rack" />
+              </div>
+              {/* Kalan adet — artık taşın ÜZERİNDE değil altında, puan rozetiyle çakışmaz. */}
+              <span className="font-mono font-bold text-[11px] text-[#8B5E00] leading-none">
                 ×{r.count}
               </span>
             </div>
