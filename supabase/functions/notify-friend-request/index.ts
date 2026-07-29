@@ -1,0 +1,134 @@
+// Kelimeki — bir arkadaşlık isteği gönderildiğinde alıcıya e-posta bildirimi
+// yollar (`sendFriendRequest`, src/lib/api.ts, insert başarılı olup istek
+// hâlâ 'pending' ise hemen ardından tetikler). Bu işlemsel bir bildirimdir
+// (marketing_consent'e bağlı DEĞİL) — kayıt formundaki pazarlama onayı yalnızca
+// Kelimeki'nin kendi tanıtım içeriği içindir, burada ise alıcının kendi
+// hesabına gelen somut bir isteği bildiriyoruz.
+//
+// Eklenme gerekçesi (29 Temmuz 2026): Arkadaşlık istekleri öncesinde
+// bilinçli olarak hiç e-posta göndermiyordu (bkz. friends_system migration'ı,
+// maliyet/gürültü kaygısı) — yalnızca UserMenu'deki rozet vardı. Kullanıcı
+// uygulamayı hiç açmazsa isteğin varlığından habersiz kalıyordu; bu Edge
+// Function o boşluğu dolduruyor.
+//
+// Auth: çağıranın kendi JWT'siyle bir client oluşturulur (feedback-reply ile
+// aynı desen) — hem kimliğini doğrulamak hem de RLS'in
+// (friend_requests_select_own) yalnızca ilişkinin taraflarına izin vermesi
+// sayesinde "gerçekten böyle bir istek var mı" kontrolü için kullanılır;
+// böylece keyfi bir alıcıya mail atılamaz. Alıcının e-postası (auth.users,
+// hiçbir client rolüne hiç açılmaz) ve isimler ayrı bir service-role
+// client'la okunur — play-ai-turn'deki aynı ayrım.
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { CORS_HEADERS, escapeHtml, sendBrevoEmail } from '../_shared/email.ts';
+
+const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+  });
+}
+
+function buildHtml(inviterName: string, recipientName?: string): string {
+  const greeting = recipientName ? `Merhaba ${escapeHtml(recipientName)},` : 'Merhaba,';
+  return `
+    <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0; color: #1a1a1a;">
+      <p>${greeting}</p>
+      <p><strong>${escapeHtml(inviterName)}</strong> seni Kelimeki'de arkadaş olarak eklemek istiyor.</p>
+      <p style="margin-top: 16px;">
+        <a href="https://kelimeki.com" style="display: inline-block; padding: 10px 18px; background: #2f6fed; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Kelimeki'yi Aç</a>
+      </p>
+      <p style="font-size: 13px; color: #888; margin-top: 20px;">Uygulamayı açtığında hesap menündeki arkadaşlık rozetinden isteği kabul edebilir ya da reddedebilirsin.</p>
+    </div>
+  `;
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: CORS_HEADERS });
+  }
+  if (req.method !== 'POST') {
+    return jsonResponse({ error: 'Method not allowed' }, 405);
+  }
+
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) {
+    return jsonResponse({ error: 'Yetkisiz.' }, 401);
+  }
+  const jwt = authHeader.replace('Bearer ', '');
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: authHeader } },
+  });
+
+  const { data: userData, error: userError } = await supabase.auth.getUser(jwt);
+  if (userError || !userData?.user) {
+    return jsonResponse({ error: 'Yetkisiz.' }, 401);
+  }
+
+  let body: { friend_id?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return jsonResponse({ error: 'Geçersiz istek.' }, 400);
+  }
+
+  const friendId = body.friend_id;
+  if (!friendId) {
+    return jsonResponse({ error: 'friend_id gerekli.' }, 400);
+  }
+
+  // Satırın gerçekten var olması VE hâlâ 'pending' olması, isteğin gerçekten
+  // gönderildiğini ve karşılıklı otomatik kabul (handle_friend_request_insert
+  // trigger'ı) ile sonuçlanmadığını doğrular.
+  const { data: reqRow, error: reqError } = await supabase
+    .from('friend_requests')
+    .select('status')
+    .eq('user_id', userData.user.id)
+    .eq('friend_id', friendId)
+    .maybeSingle();
+
+  if (reqError || !reqRow || reqRow.status !== 'pending') {
+    return jsonResponse({ ok: true, sent: false, reason: 'not_pending' });
+  }
+
+  if (!BREVO_API_KEY) {
+    console.error('[notify-friend-request] BREVO_API_KEY tanımlı değil.');
+    return jsonResponse({ ok: true, sent: false, reason: 'no_api_key' });
+  }
+
+  const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const [{ data: authUser }, { data: profiles }] = await Promise.all([
+    serviceClient.auth.admin.getUserById(friendId),
+    serviceClient.from('profiles').select('id, display_name, first_name').in('id', [userData.user.id, friendId]),
+  ]);
+
+  const recipientEmail = authUser?.user?.email;
+  if (!recipientEmail) {
+    console.error('[notify-friend-request] Alıcının e-postası bulunamadı:', friendId);
+    return jsonResponse({ ok: true, sent: false, reason: 'no_email' });
+  }
+
+  const inviterProfile = profiles?.find((p) => p.id === userData.user.id);
+  const recipientProfile = profiles?.find((p) => p.id === friendId);
+  const inviterName = inviterProfile?.display_name || inviterProfile?.first_name || 'Bir kullanıcı';
+  const recipientName = recipientProfile?.display_name || recipientProfile?.first_name || undefined;
+
+  const brevoRes = await sendBrevoEmail(BREVO_API_KEY, {
+    to: { email: recipientEmail, name: recipientName },
+    subject: `Kelimeki — ${inviterName} sana arkadaşlık isteği gönderdi`,
+    htmlContent: buildHtml(inviterName, recipientName),
+  });
+
+  if (!brevoRes.ok) {
+    const detail = await brevoRes.text();
+    console.error('[notify-friend-request] Brevo hatası:', brevoRes.status, detail);
+    return jsonResponse({ ok: true, sent: false, reason: 'brevo_error' });
+  }
+
+  return jsonResponse({ ok: true, sent: true });
+});
