@@ -243,16 +243,22 @@ export default function App() {
 
   // Logo tıklaması artık her durumda (onay sorulmadan) doğrudan Setup'a
   // döner — Canlı oyundaki "←"in aynısı (bkz. OnlineGameScreen.tsx). Oyun
-  // sürüyorsa mevcut `state`, aynen `loadGameState()`'in ürettiği şekle
-  // (`SavedGame`) sarılıp `savedGame`'e yazılır — bu, save/clear effect'inin
-  // (yukarı) `clearGameState()` çağırmasını engeller (savedGame artık dolu)
-  // VE Setup'ta "Devam Eden Oyun" satırını hemen gösterir; `handleResumeSavedGame`
+  // gerçekten "başlamışsa" (turnCount>=2 — en az bir tam hamle alışverişi;
+  // eski "Çık" akışındaki gameStarted eşiğiyle AYNI, bilerek korundu),
+  // mevcut `state` aynen `loadGameState()`'in ürettiği şekle (`SavedGame`)
+  // sarılıp `savedGame`'e yazılır — bu, save/clear effect'inin (yukarı)
+  // `clearGameState()` çağırmasını engeller (savedGame artık dolu) VE
+  // Setup'ta "Devam Eden Oyun" satırını hemen gösterir; `handleResumeSavedGame`
   // tıklanınca kaldığı yerden aynen devam eder. Hesap sahibi hiç dönmezse
   // 7 günlük terk edilme kuralı (gameStorage.ts) gecikmeli -2 cezasını
-  // zaten otomatik uyguluyor — burada ayrı bir "Çık" onayına/anlık teslime
-  // gerek yok.
+  // zaten otomatik uyguluyor. Henüz başlamamışsa (hiç hamle yokken ya da
+  // hesap sahibi ilk hamlesini yapıp karşı taraf henüz cevap vermemişken)
+  // `savedGame` hiç doldurulmaz — save/clear effect bu durumda ABANDON
+  // sonrası `clearGameState()`'i çağırıp localStorage'daki autosave
+  // kaydını da temizler, yani Setup'ta hiçbir "Devam Eden Oyun" izi
+  // kalmaz ve gecikmeli ceza da hiç devreye girmez.
   const handleLogoClick = () => {
-    if (state.phase === 'play' && !state.isGameOver) {
+    if (state.phase === 'play' && !state.isGameOver && state.turnCount >= 2) {
       setSavedGame({ state, savedAt: Date.now() });
     }
     dispatch({ type: 'ABANDON' });
