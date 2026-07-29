@@ -9,7 +9,7 @@
 // → Edge Functions → Secrets üzerinden elle eklenmiş bir custom secret'tır
 // (SMTP kimlik bilgilerinden farklı, Brevo'nun HTTP API'si için).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { CORS_HEADERS, escapeHtml, buildNoreplyNoticeHtml, sendBrevoEmail } from '../_shared/email.ts';
+import { CORS_HEADERS, escapeHtml, buildNoreplyNoticeHtml, sendBrevoEmail, buildBrandedEmailHtml } from '../_shared/email.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -29,16 +29,15 @@ function buildReplyHtml(
   recipientName?: string,
 ): string {
   const greeting = recipientName ? `Merhaba ${escapeHtml(recipientName)},` : 'Merhaba,';
-  return `
-    <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0; color: #1a1a1a;">
-      <p>${greeting}</p>
-      <p>Bizimle iletişime geçtiğin için çok teşekkürler. Cevabımız aşağıdaki gibidir:</p>
-      <blockquote style="margin: 12px 0; padding: 10px 14px; border-left: 3px solid #ddd; color: #555; white-space: pre-wrap;">${escapeHtml(reply)}</blockquote>
-      ${buildNoreplyNoticeHtml(feedbackId)}
-      <p style="font-size: 12px; color: #888; margin-top: 20px;">Gönderdiğin mesaj:<br/><em style="white-space: pre-wrap;">${escapeHtml(originalMessage)}</em></p>
-      <p style="font-size: 13px; color: #888;">Saygılarımızla,<br/><span style="display: inline-block; margin-top: 4px;">Kelimeki Müşteri Hizmetleri</span></p>
-    </div>
+  const body = `
+    <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#1B2430;">${greeting}</p>
+    <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#1B2430;">Bizimle iletişime geçtiğin için çok teşekkürler. Cevabımız aşağıdaki gibidir:</p>
+    <blockquote style="margin:0 0 16px 0;padding:10px 14px;border-left:3px solid #DCE2EA;color:#1B2430;font-size:15px;line-height:1.6;white-space:pre-wrap;">${escapeHtml(reply)}</blockquote>
+    ${buildNoreplyNoticeHtml(feedbackId)}
+    <p style="font-size:12px;color:#8A93A2;margin-top:20px;">Gönderdiğin mesaj:<br/><em style="white-space: pre-wrap;">${escapeHtml(originalMessage)}</em></p>
+    <p style="font-size:13px;color:#8A93A2;margin-top:12px;">Saygılarımızla,<br/><span style="display: inline-block; margin-top: 4px;">Kelimeki Müşteri Hizmetleri</span></p>
   `;
+  return buildBrandedEmailHtml('Geri bildiriminize yanıt', body);
 }
 
 Deno.serve(async (req: Request) => {
