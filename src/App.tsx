@@ -165,11 +165,14 @@ export default function App() {
     const pending = takePendingAbandonedGame();
     if (pending) {
       void logGameFinish(pending.playerCount, pending.durationSeconds, pending.multiSession, false);
-      // Oyun gerçekten başlamışsa (aşağıdaki gameStarted'la aynı eşik:
-      // turnCount>=2) bu, hesap sahibi için gecikmeli bir teslim sayılır —
-      // oyun içindeki "Çık" ile aynı -2 Sanal Lig cezası uygulanır. Misafirse
-      // (o an giriş yoksa) saveGameDurable normal bitişteki gibi kaydı
-      // offline kuyruğa alır, kişi ileride giriş/kayıt olursa hesabına işlenir.
+      // Oyun gerçekten başlamışsa (turnCount>=2 — en az bir tam hamle
+      // alışverişi) bu, hesap sahibi için gecikmeli bir teslim sayılır — -2
+      // Sanal Lig cezası uygulanır. Bu artık hesap sahibinin -2 alabileceği
+      // TEK yol: logo tıklaması artık anlık teslim istemiyor (bkz.
+      // handleLogoClick), yalnızca bu 7 günlük terk edilme kuralı devreye
+      // giriyor. Misafirse (o an giriş yoksa) saveGameDurable normal
+      // bitişteki gibi kaydı offline kuyruğa alır, kişi ileride giriş/kayıt
+      // olursa hesabına işlenir.
       if (pending.state && pending.state.turnCount >= 2) {
         const record = buildGameRecord(pending.state, true, 0);
         if (record) void saveGameDurable(record);
@@ -222,9 +225,6 @@ export default function App() {
     { r: number; c: number; rackIndex?: number } | null
   >(null);
 
-  // Oyundan çıkış onay popup'ı.
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
-
   // Pas geçme onay popup'ı.
   const [showPassConfirm, setShowPassConfirm] = useState(false);
 
@@ -239,6 +239,23 @@ export default function App() {
     if (!savedGame) return;
     dispatch({ type: 'RESUME_SAVED', state: savedGame.state });
     setSavedGame(null);
+  };
+
+  // Logo tıklaması artık her durumda (onay sorulmadan) doğrudan Setup'a
+  // döner — Canlı oyundaki "←"in aynısı (bkz. OnlineGameScreen.tsx). Oyun
+  // sürüyorsa mevcut `state`, aynen `loadGameState()`'in ürettiği şekle
+  // (`SavedGame`) sarılıp `savedGame`'e yazılır — bu, save/clear effect'inin
+  // (yukarı) `clearGameState()` çağırmasını engeller (savedGame artık dolu)
+  // VE Setup'ta "Devam Eden Oyun" satırını hemen gösterir; `handleResumeSavedGame`
+  // tıklanınca kaldığı yerden aynen devam eder. Hesap sahibi hiç dönmezse
+  // 7 günlük terk edilme kuralı (gameStorage.ts) gecikmeli -2 cezasını
+  // zaten otomatik uyguluyor — burada ayrı bir "Çık" onayına/anlık teslime
+  // gerek yok.
+  const handleLogoClick = () => {
+    if (state.phase === 'play' && !state.isGameOver) {
+      setSavedGame({ state, savedAt: Date.now() });
+    }
+    dispatch({ type: 'ABANDON' });
   };
 
   // Kurulum ekranındaki üst sekme: yerel (2/4 kişilik, anında başlar) ya da
@@ -266,10 +283,9 @@ export default function App() {
     { ownerName: string; ownerPts: number }[] | null
   >(null);
 
-  // Bu üç dahili onay popup'ı Modal.tsx'i kullanmıyor (kendi basit
+  // Bu iki dahili onay popup'ı Modal.tsx'i kullanmıyor (kendi basit
   // işaretlemeleri var) ama aynı odak hapsi/Escape/geri-dönüş davranışını
   // paylaşıyor.
-  const exitConfirmRef = useModalA11y(showExitConfirm, () => setShowExitConfirm(false));
   const passConfirmRef = useModalA11y(showPassConfirm, () => setShowPassConfirm(false));
   const invasionConfirmRef = useModalA11y(!!invasionConfirm, () => setInvasionConfirm(null));
 
@@ -741,42 +757,6 @@ export default function App() {
 
   const potentialScore = moveStatus?.score ?? 0;
 
-  // Logodaki "Çık" onayının kimi teslim edeceği: önce sırası gelen (hâlâ
-  // oyunda olan) insan oyuncu — hotseat'te herkes kendi sırasında teslim
-  // olabilsin diye. Sırası AI'daysa ya da o oyuncu zaten teslim olduysa,
-  // hesap sahibi (1. oyuncu, hâlâ oyundaysa) hedeflenir. İkisi de uygun
-  // değilse (ör. herkes zaten ayrıldı) artık teslim edilecek biri yok —
-  // buton yalnızca anasayfaya döner.
-  const exitTargetIndex = (() => {
-    const cur = state.players[state.current];
-    if (cur && !cur.isAI && !cur.surrendered) return state.current;
-    const p0 = state.players[0];
-    if (p0 && !p0.isAI && !p0.surrendered) return 0;
-    return null;
-  })();
-  const exitTargetPlayer = exitTargetIndex !== null ? state.players[exitTargetIndex] : null;
-  // Bu teslimden sonra en az 2 oyuncu hâlâ oyunda kalacaksa (yoksa oyun anında biter).
-  const othersWillContinue =
-    state.players.filter((p) => !p.surrendered).length - 1 > 1;
-  // Oyun "başlamış" sayılır: hesap sahibi (her zaman ilk hamleyi yapan 0.
-  // oyuncu) ilk hamlesini yapmış VE bir sonraki oyuncu (genelde YZ) buna
-  // cevap vermiş — yani en az 2 yarım-hamle oynanmış. Bundan önce (hiç
-  // hamle yokken ya da hesap sahibi ilk hamlesini yapıp karşı taraf henüz
-  // cevap vermemişken) logodan çıkmak, girişsiz kullanıcının çıkışıyla
-  // aynı şekilde puansız/kayıtsız olmalı — henüz gerçek bir oyun olmadı.
-  const gameStarted = state.turnCount >= 2;
-  // Çıkış onay popup'ının başlığı. Hotseat dalı (insan olmayan hesap sahibi
-  // dışında bir oyuncunun teslim olması) şu an hiç tetiklenmediğinden
-  // (bkz. Setup.tsx — 1. oyuncu dışında herkes her zaman YZ) başlıksız bırakıldı.
-  const exitDialogTitle =
-    state.isGameOver || !exitTargetPlayer
-      ? 'Oyun Bitti!'
-      : !user || (exitTargetIndex === 0 && !gameStarted)
-        ? 'Çıkış!'
-        : exitTargetIndex === 0
-          ? 'Teslim Oluyorsun!'
-          : null;
-
   const dragHiddenKey = ghost && ghost.source.kind === 'placed'
     ? key(ghost.source.r, ghost.source.c)
     : null;
@@ -786,7 +766,7 @@ export default function App() {
     <div className="min-h-[100dvh] w-full flex flex-col items-center overflow-x-hidden">
       <GameHeader
         state={state}
-        onLogoClick={() => setShowExitConfirm(true)}
+        onLogoClick={handleLogoClick}
         exitDisabled={spectating}
       />
 
@@ -972,67 +952,6 @@ export default function App() {
               </button>
               <button
                 onClick={() => setInvasionConfirm(null)}
-                className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
-              >
-                Vazgeç
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showExitConfirm && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
-          <div
-            ref={exitConfirmRef}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Çıkış onayı"
-            tabIndex={-1}
-            className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none"
-          >
-            {exitDialogTitle && (
-              <p className="text-base font-bold text-text font-sans">{exitDialogTitle}</p>
-            )}
-            <p className="text-sm text-text font-sans leading-relaxed">
-              {state.isGameOver || !exitTargetPlayer
-                ? 'Anasayfaya dönmek istediğinden emin misin?'
-                : !user || (exitTargetIndex === 0 && !gameStarted)
-                  ? 'Bu oyundan çıkmak istediğine emin misin?'
-                  : exitTargetIndex === 0
-                    ? 'Emin misin? Teslim olursan oyun bu şekilde kaydedilir ve Sanal Lig puanından 2 puan düşülür.'
-                    : `${exitTargetPlayer.name} teslim olmak istediğine emin misin?${othersWillContinue ? ' Oyuna diğer oyuncular devam edebilir.' : ''}`}
-            </p>
-            <div className="flex gap-2 mt-1">
-              <button
-                onClick={() => {
-                  setShowExitConfirm(false);
-                  // Giriş yapılmamışsa hiçbir oyun tipi için kayıt tutulmadığından
-                  // (kademeli teslim/oyun sonu ekranının anlamı olmadığından)
-                  // doğrudan kurulum ekranına dön — oyun kaç kişilik olursa olsun.
-                  // Aynı şekilde, hesap sahibi henüz gerçek bir hamle alışverişi
-                  // olmadan (bkz. gameStarted) çıkarsa da ceza/kayıt yok.
-                  if (
-                    state.isGameOver ||
-                    exitTargetIndex === null ||
-                    !user ||
-                    (exitTargetIndex === 0 && !gameStarted)
-                  ) {
-                    dispatch({ type: 'ABANDON' });
-                    return;
-                  }
-                  if (exitTargetIndex === 0) {
-                    const record = buildGameRecord(state, true, 0);
-                    if (record) void saveGameDurable(record);
-                  }
-                  dispatch({ type: 'SURRENDER', index: exitTargetIndex });
-                }}
-                className="btn-raised-red flex-1 py-2.5 rounded-md bg-red text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
-              >
-                Çık
-              </button>
-              <button
-                onClick={() => setShowExitConfirm(false)}
                 className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
               >
                 Vazgeç

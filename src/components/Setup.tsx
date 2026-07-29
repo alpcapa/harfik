@@ -308,6 +308,7 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, sav
             >
               {tab.label}
               {tab.key === 'live' && liveActionCount > 0 ? ` (${liveActionCount})` : ''}
+              {tab.key === 'local' && savedGame ? ' (1)' : ''}
             </button>
           ))}
         </div>
@@ -347,8 +348,9 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, sav
             </span>
           </button>
           <p className="text-[11px] text-muted font-mono leading-relaxed">
-            Yeni bir Yapay Zeka oyunu başlatmak için önce bu oyunu bitirmen ya
-            da oyun içindeki "Çık" ile teslim olman gerekir.
+            Yeni bir Yapay Zeka oyunu başlatmak için önce bu oyunu bitirmen
+            gerekir — yukarıdaki karta dokunup devam edebilirsin, hiç
+            dönmezsen süresi dolunca otomatik teslim sayılıp silinir.
           </p>
         </div>
       ) : (

@@ -5,12 +5,14 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import {
+  checkInviteExpiry,
   checkOnlineGameTurnTimeout,
   fetchOnlineGameDeadlines,
   fetchOnlineGameTurns,
   listMyOnlineGames,
   respondToGameInvite,
 } from '../lib/api';
+import { ABANDON_TIMEOUT_MS } from '../utils/gameStorage';
 import type { OnlineGame, OnlineGameSlot } from '../lib/database.types';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
@@ -42,6 +44,15 @@ function remainingTimeLabel(deadline: string | null | undefined): { text: string
   const hours = Math.ceil(ms / (60 * 60 * 1000));
   const text = hours <= 1 ? '1 saatten az kaldı' : `${hours} saat kaldı`;
   return { text, urgent: hours <= 6 };
+}
+
+// Bekleyen bir davetin/oyunun 7 günlük iptal süresine kalan gün sayısı —
+// Setup'taki "Devam Eden Oyun" satırının remainingDays'iyle aynı ilke ve
+// aynı süre (ABANDON_TIMEOUT_MS), oluşturulma anından itibaren.
+function remainingInviteDays(createdAt: string): { text: string; urgent: boolean } {
+  const days = Math.floor((Date.parse(createdAt) + ABANDON_TIMEOUT_MS - Date.now()) / (24 * 60 * 60 * 1000));
+  if (days <= 0) return { text: 'Bugün iptal edilir', urgent: true };
+  return { text: `${days} gün içinde iptal edilir`, urgent: days <= 1 };
 }
 
 // Bir davet satırındaki tek katılımcının, o oyundaki rolüne göre etiketi —
@@ -89,10 +100,20 @@ function PendingGameCard({
 }) {
   const humanSlots = game.slots.filter((s): s is HumanSlot => s.type === 'human');
   const hasAi = game.slots.some((s) => s.type === 'ai');
+  const remaining = remainingInviteDays(game.created_at);
 
   return (
     <div className="shadow-raised flex flex-col gap-2.5 rounded-md px-2.5 py-2.5 border border-border bg-panel">
-      <span className="font-sans text-sm font-bold text-text leading-snug">{title}</span>
+      <div className="flex flex-col gap-0.5">
+        <span className="font-sans text-sm font-bold text-text leading-snug">{title}</span>
+        <span
+          className={`text-[9px] font-mono uppercase tracking-[0.5px] ${
+            remaining.urgent ? 'text-red font-bold' : 'text-muted'
+          }`}
+        >
+          {remaining.text}
+        </span>
+      </div>
       <div className="flex flex-col gap-1.5">
         <div className="text-[9px] uppercase tracking-[1px] text-muted font-mono">Kiminle Oynayacaksın</div>
         {humanSlots.map((slot) => (
@@ -268,34 +289,44 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   const [suggestCandidates, setSuggestCandidates] = useState<HumanSlot[] | null>(null);
 
   // Listeyi çeker, aktif oyunların sırasını/son tarihini yükler; süresi
-  // ZATEN dolmuş bir sıra varsa `check_turn_timeout`'u tetikleyip (no-op
-  // değilse otomatik teslim uygulanır) listeyi bir kez daha tazeler —
-  // böylece asılı kalmış bir Canlı oyun, kullanıcı bu sekmeyi her açtığında
-  // kendiliğinden çözülür (bkz. CLAUDE.md "Canlı Oyun — Faz 3.6").
+  // ZATEN dolmuş bir sıra varsa `check_turn_timeout`'u (no-op değilse
+  // otomatik teslim uygulanır), 7 gündür yanıtlanmamış bir davet/oyun varsa
+  // `check_invite_expiry`'yi (no-op değilse oyun iptal edilir) tetikleyip
+  // listeyi bir kez daha tazeler — böylece asılı kalmış bir Canlı oyun,
+  // kullanıcı bu sekmeyi her açtığında kendiliğinden çözülür (bkz. CLAUDE.md
+  // "Canlı Oyun — Faz 3.6").
   const loadGames = async (cancelledRef?: { current: boolean }) => {
     const rows = await listMyOnlineGames();
     if (cancelledRef?.current) return;
     setGames(rows);
+
+    const expiredInviteIds = rows
+      .filter((g) => g.status === 'pending' && Date.parse(g.created_at) + ABANDON_TIMEOUT_MS <= Date.now())
+      .map((g) => g.id);
     const activeIds = rows.filter((g) => g.status === 'active').map((g) => g.id);
-    if (activeIds.length === 0) {
+    if (activeIds.length === 0 && expiredInviteIds.length === 0) {
       setTurns({});
       setDeadlines({});
       return;
     }
-    const [turnMap, deadlineMap] = await Promise.all([
-      fetchOnlineGameTurns(activeIds),
-      fetchOnlineGameDeadlines(activeIds),
-    ]);
+
+    const [turnMap, deadlineMap] =
+      activeIds.length > 0
+        ? await Promise.all([fetchOnlineGameTurns(activeIds), fetchOnlineGameDeadlines(activeIds)])
+        : [{}, {}];
     if (cancelledRef?.current) return;
     setTurns(turnMap);
     setDeadlines(deadlineMap);
 
-    const expired = activeIds.filter((id) => {
+    const expiredTurns = activeIds.filter((id) => {
       const d = deadlineMap[id];
       return d && new Date(d).getTime() <= Date.now();
     });
-    if (expired.length === 0) return;
-    await Promise.all(expired.map((id) => checkOnlineGameTurnTimeout(id)));
+    if (expiredTurns.length === 0 && expiredInviteIds.length === 0) return;
+    await Promise.all([
+      ...expiredTurns.map((id) => checkOnlineGameTurnTimeout(id)),
+      ...expiredInviteIds.map((id) => checkInviteExpiry(id)),
+    ]);
     if (cancelledRef?.current) return;
     const rows2 = await listMyOnlineGames();
     if (cancelledRef?.current) return;

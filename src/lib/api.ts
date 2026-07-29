@@ -729,6 +729,21 @@ export async function checkOnlineGameTurnTimeout(gameId: string): Promise<void> 
   if (error) console.error('[Kelimeki] checkOnlineGameTurnTimeout hatası:', error.message);
 }
 
+/**
+ * Bir Canlı oyun hâlâ `pending` durumundayken (en az bir davet
+ * yanıtlanmamışken) 7 gün geçtiyse oyunu tamamen iptal eder
+ * (`online_games.status='abandoned'`) — süre dolmadıysa no-op. Yerel
+ * oyundaki `ABANDON_TIMEOUT_MS` ile aynı süre/gerekçe; kimseye ceza
+ * uygulanmaz, oyun sadece listeden kalkar. `check_turn_timeout` ile aynı
+ * "hafif" desen: herhangi bir tarafın istemcisi (kurucu ya da davetli,
+ * yanıtlamış olsun olmasın) tetikleyebilir.
+ */
+export async function checkInviteExpiry(gameId: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.rpc('check_invite_expiry', { p_game_id: gameId });
+  if (error) console.error('[Kelimeki] checkInviteExpiry hatası:', error.message);
+}
+
 /** Çağıranın KENDİ rafı (`get_my_online_rack` RPC'si) — başka hiçbir oyuncununki hiçbir zaman döndürülmez. */
 export async function getMyOnlineRack(gameId: string): Promise<Tile[]> {
   if (!supabase) return [];
