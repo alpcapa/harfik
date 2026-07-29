@@ -53,6 +53,7 @@ export function AuthModal({
   const [info, setInfo] = useState<string | null>(null);
   const [infoTone, setInfoTone] = useState<'gold' | 'red'>('gold');
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
 
@@ -93,6 +94,7 @@ export function AuthModal({
           signupChannel,
           gender || null,
           birthDateIso,
+          marketingConsent,
         );
         if (error) throw error;
         if (data.session) {
@@ -270,6 +272,20 @@ export function AuthModal({
                 Gizlilik Politikası
               </button>
               'nı okudum ve kabul ediyorum.
+            </span>
+          </label>
+        )}
+
+        {mode === 'signup' && (
+          <label className="flex items-start gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={marketingConsent}
+              onChange={(e) => setMarketingConsent(e.target.checked)}
+              className="mt-0.5 shrink-0 accent-accent"
+            />
+            <span className="text-xs font-sans text-muted leading-relaxed">
+              Pazarlama iletişimi almayı kabul ediyorum. (opsiyonel)
             </span>
           </label>
         )}

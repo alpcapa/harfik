@@ -23,6 +23,10 @@ export interface Profile {
   birth_date: string | null;
   /** Bir arkadaş davet linkiyle katıldıysa, linki oluşturan kullanıcı (ilk temas, değişmez). */
   invited_by: string | null;
+  /** Pazarlama iletişimi almayı kabul etti mi — kayıt formundaki opsiyonel ikinci onay kutusu. */
+  marketing_consent: boolean;
+  /** `marketing_consent` true olduğu andaki (kayıt anındaki) sunucu zaman damgası — false ise null. */
+  marketing_consent_at: string | null;
 }
 
 // ── Arkadaşlık sistemi ──────────────────────────────────────────────────────

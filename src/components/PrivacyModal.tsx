@@ -51,6 +51,7 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             <li>Cinsiyet (isteğe bağlı)</li>
             <li>Doğum tarihi (isteğe bağlı)</li>
             <li>Profil fotoğrafı (isteğe bağlı)</li>
+            <li>Pazarlama iletişimi onayı ve onay tarihi (isteğe bağlı)</li>
             <li>Oyun istatistikleri (oynanan oyunlar, kazanma/kaybetme, puan geçmişi)</li>
             <li>
               Arkadaşlık bağlantıları (kiminle arkadaş olduğunuz, gönderdiğiniz/aldığınız
@@ -70,13 +71,18 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             <li>Lider tablosu ve skor kartı gösterimi</li>
             <li>Oyun deneyiminin kişiselleştirilmesi</li>
             <li>Hesap güvenliği ve destek hizmetleri</li>
+            <li>Yalnızca ayrıca onay verdiyseniz: pazarlama/tanıtım amaçlı iletişim</li>
           </ul>
         </Section>
 
         <Section title="4. Veri Paylaşımı ve Aktarım">
           <P>
-            Kişisel verileriniz; reklam, pazarlama veya üçüncü taraflara satış amacıyla
-            kullanılmaz. Altyapı hizmeti olarak Supabase kullanılmaktadır; bu kapsamda veriler
+            Kişisel verileriniz üçüncü taraflara satış amacıyla kullanılmaz. Kayıt formundaki
+            "Pazarlama iletişimi almayı kabul ediyorum" kutusunu işaretlerseniz, size pazarlama/
+            tanıtım amaçlı iletişim gönderilebilir — bu kutu isteğe bağlıdır, işaretlemeseniz de
+            hizmeti eksiksiz kullanabilirsiniz; bu onayı 8. bölümdeki başvuru yöntemiyle
+            istediğiniz zaman geri çekebilirsiniz. Altyapı hizmeti olarak Supabase kullanılmaktadır;
+            bu kapsamda veriler
             Supabase'in sunucularında saklanır ve bu sunucular yurt dışında bulunabilir. Böyle bir
             durumda aktarım, KVKK m.9'da aranan (yeterli korumanın bulunduğu ülke veya uygun
             güvencelerin sağlanması gibi) şartlara uygun şekilde yapılır. Yasal zorunluluk halinde
