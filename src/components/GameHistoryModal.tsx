@@ -413,16 +413,16 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                   }}
                   className={`shadow-raised ${entry.online_game_id ? 'bg-panel' : 'bg-bg'} border border-border rounded-md py-2 px-2.5 flex flex-col gap-1.5 cursor-pointer text-left`}
                 >
-                  <div className="flex items-center justify-between gap-2 text-[9px] font-mono text-muted uppercase tracking-[0.5px]">
-                    <span className="flex items-center gap-1.5">
-                      <span className="flex items-center gap-0.5">
+                  <div className="flex items-center justify-between gap-x-2 gap-y-1 flex-wrap text-[9px] font-mono text-muted uppercase tracking-[0.5px]">
+                    <span className="flex items-center gap-1.5 flex-wrap">
+                      <span className="flex items-center gap-0.5 shrink-0">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleToggleLike(entry.id);
                           }}
                           aria-label={entry.liked_by_me ? 'Favoriden çıkar' : 'Favoriye ekle'}
-                          className={entry.liked_by_me ? 'text-red' : 'text-muted'}
+                          className={`shrink-0 ${entry.liked_by_me ? 'text-red' : 'text-muted'}`}
                         >
                           <HeartIcon filled={entry.liked_by_me} size={13} />
                         </button>
@@ -433,20 +433,20 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                               handleShowLikers(entry.id);
                             }}
                             aria-label="Beğenenleri göster"
-                            className="text-muted underline underline-offset-2 normal-case py-1"
+                            className="text-muted underline underline-offset-2 normal-case py-1 whitespace-nowrap shrink-0"
                           >
                             {entry.like_count} beğeni
                           </button>
                         )}
                       </span>
-                      <span>{formatDateTime(entry.created_at)}</span>
+                      <span className="whitespace-nowrap shrink-0">{formatDateTime(entry.created_at)}</span>
                       {isOnline && (
-                        <span className="text-green font-bold normal-case border border-green/40 bg-green/10 rounded px-1 py-[1px] shrink-0">
+                        <span className="text-green font-bold normal-case border border-green/40 bg-green/10 rounded px-1 py-[1px] whitespace-nowrap shrink-0">
                           Canlı
                         </span>
                       )}
                       {isVsAi && (
-                        <span className="text-accent font-bold normal-case border border-accent/40 bg-accent/10 rounded px-1 py-[1px] shrink-0">
+                        <span className="text-accent font-bold normal-case border border-accent/40 bg-accent/10 rounded px-1 py-[1px] whitespace-nowrap shrink-0">
                           Yapay Zeka
                         </span>
                       )}
