@@ -108,8 +108,12 @@ export function GameHeader({ state, onLogoClick, exitDisabled }: GameHeaderProps
                   // territory hücre dolgusu ve buildOutline çağrısı). Sıra
                   // kimdeyse onu ayırt etmek için tek fark çerçeve kalınlığı —
                   // renk her oyuncuda aynı mantıkla (kendi base'i) belirleniyor.
+                  // Sırası olmayanların çevresi bilinçli olarak İNCE tutuluyor
+                  // (28 Temmuz 2026'da 1.5px'ten 0.75px'e düşürüldü) — 1.5px
+                  // aktif oyuncunun 2.5px'ine yeterince yakın kalıp göze pek
+                  // ayrışmıyordu, sırası gelen kutu artık daha net öne çıkıyor.
                   background: col.tint,
-                  boxShadow: `inset 0 0 0 ${active ? 2.5 : 1.5}px ${col.base}`,
+                  boxShadow: `inset 0 0 0 ${active ? 2.5 : 0.75}px ${col.base}`,
                   opacity: p.surrendered ? 0.45 : 1,
                 }}
               >
