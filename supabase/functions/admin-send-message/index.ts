@@ -7,7 +7,7 @@
 // tıklayın" linkine bu kaydın id'si (?re=<id>) gömülüyor — Brevo gönderimi
 // başarısız olursa önceden oluşturulan kayıt geri alınır (silinir).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { CORS_HEADERS, escapeHtml, buildNoreplyNoticeHtml, sendBrevoEmail } from '../_shared/email.ts';
+import { CORS_HEADERS, escapeHtml, buildNoreplyNoticeHtml, sendBrevoEmail, buildBrandedEmailHtml } from '../_shared/email.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -20,16 +20,15 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-function buildMessageHtml(message: string, feedbackId: string, toName?: string): string {
+function buildMessageHtml(message: string, feedbackId: string, subject: string, toName?: string): string {
   const greeting = toName ? `Merhaba ${escapeHtml(toName)},` : 'Merhaba,';
-  return `
-    <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0; color: #1a1a1a;">
-      <p>${greeting}</p>
-      <p style="white-space: pre-wrap;">${escapeHtml(message)}</p>
-      <p style="font-size: 14px; color: #555; margin-top: 20px;">Saygılarımızla,<br/><span style="display: inline-block; margin-top: 4px;">Kelimeki Müşteri Hizmetleri</span></p>
-      ${buildNoreplyNoticeHtml(feedbackId)}
-    </div>
+  const body = `
+    <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#1B2430;">${greeting}</p>
+    <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#1B2430;white-space:pre-wrap;">${escapeHtml(message)}</p>
+    <p style="font-size:13px;color:#8A93A2;margin-top:20px;">Saygılarımızla,<br/><span style="display: inline-block; margin-top: 4px;">Kelimeki Müşteri Hizmetleri</span></p>
+    ${buildNoreplyNoticeHtml(feedbackId)}
   `;
+  return buildBrandedEmailHtml(subject, body);
 }
 
 Deno.serve(async (req: Request) => {
@@ -103,7 +102,7 @@ Deno.serve(async (req: Request) => {
   const brevoRes = await sendBrevoEmail(BREVO_API_KEY, {
     to: { email: toEmail, name: toName },
     subject,
-    htmlContent: buildMessageHtml(message, inserted.id, toName),
+    htmlContent: buildMessageHtml(message, inserted.id, subject, toName),
   });
 
   if (!brevoRes.ok) {

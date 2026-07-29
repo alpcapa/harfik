@@ -21,6 +21,45 @@ export function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// Supabase Auth mailleri (supabase/email-templates/*.html — reset-password,
+// confirm-signup, change-email) ile aynı kart/logo görünümü. Auth şablonları
+// Dashboard'da yaşadığından bu HTML'i otomatik paylaşamıyorlar — bu yüzden
+// aynı yapı (logo + beyaz kart + footer) burada elle tekrarlanıyor; ikisi
+// görsel olarak birbirinden sapmasın diye reset-password.html değişirse bu
+// wrapper da elle senkronize edilmeli.
+export function buildBrandedEmailHtml(title: string, bodyHtml: string): string {
+  return `
+<body style="margin:0;padding:0;background-color:#F5F7FA;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F5F7FA;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;background-color:#FFFFFF;border:1px solid #DCE2EA;border-radius:16px;overflow:hidden;">
+          <tr>
+            <td align="center" style="padding:32px 32px 8px 32px;">
+              <img src="https://kelimeki.com/email-logo.png" width="140" height="56" alt="Kelimeki" style="display:block;border:0;outline:none;text-decoration:none;color:#2563EB;font-size:22px;font-weight:700;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 32px 32px 32px;">
+              <h1 style="margin:0 0 16px 0;font-size:20px;line-height:1.4;color:#1B2430;">${escapeHtml(title)}</h1>
+              ${bodyHtml}
+            </td>
+          </tr>
+        </table>
+        <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;">
+          <tr>
+            <td align="center" style="padding:20px 32px;">
+              <span style="font-size:12px;color:#8A93A2;">© Kelimeki · kelimeki.com</span>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+  `;
+}
+
 // kelimeki.com'daki ?contact=1 parametresini App.tsx okuyup genel "Görüş
 // Bildir" formunu (source: 'general') otomatik açar — bkz. App.tsx'teki
 // showContactFeedback effect'i. threadId verilirse ?re=<id> olarak eklenir;
@@ -32,8 +71,8 @@ export function buildNoreplyNoticeHtml(threadId?: string): string {
     ? `https://kelimeki.com/?contact=1&re=${encodeURIComponent(threadId)}`
     : 'https://kelimeki.com/?contact=1';
   return `
-    <p style="margin-top: 20px; padding-top: 12px; border-top: 1px solid #eee; font-size: 12px; color: #999; font-style: italic;">
-      Bu e-posta noreply adresinden gönderilmiştir. Cevap vermek için <a href="${url}" style="color: #2f6fed; text-decoration: underline;">tıklayın</a>.
+    <p style="margin: 24px 0 0 0; padding-top: 12px; border-top: 1px solid #DCE2EA; font-size: 12px; color: #8A93A2; font-style: italic;">
+      Bu e-posta noreply adresinden gönderilmiştir. Cevap vermek için <a href="${url}" style="color: #2563EB; text-decoration: underline;">tıklayın</a>.
     </p>
   `;
 }

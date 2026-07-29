@@ -16,7 +16,7 @@
 // isimleri ayrı bir service-role client'la okunur (play-ai-turn'deki aynı
 // ayrım — bu bilgiler hiçbir zaman client rolüne açılmaz).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { CORS_HEADERS, escapeHtml, sendBrevoEmail } from '../_shared/email.ts';
+import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml } from '../_shared/email.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -32,16 +32,15 @@ function jsonResponse(body: unknown, status = 200): Response {
 
 function buildHtml(inviterName: string, playerCount: number, recipientName?: string): string {
   const greeting = recipientName ? `Merhaba ${escapeHtml(recipientName)},` : 'Merhaba,';
-  return `
-    <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0; color: #1a1a1a;">
-      <p>${greeting}</p>
-      <p><strong>${escapeHtml(inviterName)}</strong> seni ${playerCount} kişilik bir Canlı Kelimeki oyununa davet etti.</p>
-      <p style="margin-top: 16px;">
-        <a href="https://kelimeki.com" style="display: inline-block; padding: 10px 18px; background: #2f6fed; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600;">Daveti Gör</a>
-      </p>
-      <p style="font-size: 13px; color: #888; margin-top: 20px;">Uygulamayı açıp "Arkadaşınla" sekmesinden kabul edebilir ya da reddedebilirsin. Davet 7 gün içinde yanıtlanmazsa kendiliğinden iptal olur.</p>
-    </div>
+  const body = `
+    <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#1B2430;">${greeting}</p>
+    <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#1B2430;"><strong>${escapeHtml(inviterName)}</strong> seni ${playerCount} kişilik bir Canlı Kelimeki oyununa davet etti.</p>
+    <p style="margin:0 0 24px 0;">
+      <a href="https://kelimeki.com" style="display:inline-block;background-color:#2563EB;color:#FFFFFF;font-size:15px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:8px;">Daveti Gör</a>
+    </p>
+    <p style="margin:24px 0 0 0;padding-top:12px;border-top:1px solid #DCE2EA;font-size:13px;line-height:1.6;color:#8A93A2;">Uygulamayı açıp "Arkadaşınla" sekmesinden kabul edebilir ya da reddedebilirsin. Davet 7 gün içinde yanıtlanmazsa kendiliğinden iptal olur.</p>
   `;
+  return buildBrandedEmailHtml('Canlı oyun daveti', body);
 }
 
 Deno.serve(async (req: Request) => {
