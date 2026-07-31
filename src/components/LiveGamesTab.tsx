@@ -37,8 +37,7 @@ function statusLabel(game: OnlineGame, isMyTurn?: boolean): string {
 // "Devam Eden Oyun" satırının remainingDays'iyle aynı ilke (kalan süre
 // düşükse kırmızı/kalın), burada saat cinsinden çünkü pencere gün değil
 // saat mertebesinde (bkz. CLAUDE.md "Canlı Oyun — Faz 3.6"). Kırmızı/kalın
-// yalnızca kalan süre 1 saatin altına inip mesaj yalnızca dakika
-// gösterdiğinde (`hours===0`) devreye giriyor.
+// kalan süre 24 saatin altına inince devreye giriyor.
 function remainingTimeLabel(deadline: string | null | undefined): { text: string; urgent: boolean } | null {
   if (!deadline) return null;
   const ms = new Date(deadline).getTime() - Date.now();
@@ -50,7 +49,7 @@ function remainingTimeLabel(deadline: string | null | undefined): { text: string
     hours > 0
       ? `${hours} saat ${minutes} dakika sonra teslim sayılacak`
       : `${minutes} dakika sonra teslim sayılacak`;
-  return { text, urgent: hours === 0 };
+  return { text, urgent: totalMinutes < 24 * 60 };
 }
 
 // Bekleyen bir davetin/oyunun 7 günlük iptal süresine kalan süre — Setup'taki
