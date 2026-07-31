@@ -16,6 +16,7 @@ import { GameBoardPreview } from './GameBoardPreview';
 import { ActionSheet } from './ActionSheet';
 import { Avatar } from './Avatar';
 import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
+import { GameChatHistoryModal } from './GameChatHistoryModal';
 import { captureNodeAsPng } from '../utils/shareBoardImage';
 import { leaguePoints, formatLeaguePoints, computeRanks } from '../utils/leaguePoints';
 
@@ -124,6 +125,15 @@ function HeartIcon({ filled, size = 18 }: { filled: boolean; size?: number }) {
   );
 }
 
+/** Oyun İçi Mesajlaşma — Faz 1: Canlı/Yapay Zeka rozetlerinin yanındaki sohbet rozeti. */
+function ChatBubbleIcon({ size = 12 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
 /**
  * Tahta önizlemesinin üstünde tek satır skor kutuları — `GameHeader`'daki
  * oyun içi skor kutularıyla aynı görsel dil (renk = zone.tint dolgu +
@@ -219,6 +229,10 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
   const [likersByGame, setLikersByGame] = useState<Record<string, GameLiker[]>>({});
   const [likersLoading, setLikersLoading] = useState(false);
   const [selectedLiker, setSelectedLiker] = useState<PlayerSummary | null>(null);
+
+  // Oyun İçi Mesajlaşma — Faz 1: bir oyun kartındaki sohbet rozetine
+  // tıklanınca o oyunun tüm sohbet geçmişini gösteren modal.
+  const [selectedChatGameId, setSelectedChatGameId] = useState<string | null>(null);
 
   const handleShowLikers = useCallback((gameId: string) => {
     setLikersGameId(gameId);
@@ -451,6 +465,19 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                           Yapay Zeka
                         </span>
                       )}
+                      {entry.message_count > 0 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedChatGameId(entry.id);
+                          }}
+                          aria-label="Sohbet geçmişini göster"
+                          className="flex items-center gap-0.5 text-muted shrink-0"
+                        >
+                          <ChatBubbleIcon />
+                          {entry.message_count}
+                        </button>
+                      )}
                     </span>
                     <span className="flex items-center gap-2 shrink-0 ml-auto">
                       <span className="w-9 text-right">Puan</span>
@@ -581,6 +608,9 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
       )}
       {selectedLiker && (
         <PlayerScoreCard member={selectedLiker} onClose={() => setSelectedLiker(null)} />
+      )}
+      {selectedChatGameId && (
+        <GameChatHistoryModal gameId={selectedChatGameId} onClose={() => setSelectedChatGameId(null)} />
       )}
     </Modal>
   );

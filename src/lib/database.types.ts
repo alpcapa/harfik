@@ -188,6 +188,36 @@ export interface OnlineMovePlacement {
   wildLetter?: string;
 }
 
+/**
+ * `online_game_messages` tablosundaki tek satır — bir Canlı oyunun devam eden
+ * (henüz bitmemiş) grup sohbetindeki tek mesaj. Yalnızca katılımcılar select
+ * edebilir (`is_online_game_participant`); yazma da RPC'siz doğrudan RLS ile
+ * (`sender_user_id = auth.uid()` + katılımcılık). Oyun İçi Mesajlaşma — Faz 1,
+ * yalnızca Canlı (online) oyunlarda kullanılır.
+ */
+export interface OnlineGameMessageRow {
+  id: string;
+  online_game_id: string;
+  sender_user_id: string;
+  message: string;
+  created_at: string;
+}
+
+/**
+ * `games.messages` jsonb'sindeki tek, dondurulmuş sohbet satırı —
+ * `_finish_online_game_records` bir Canlı oyun bitince `online_game_messages`
+ * tablosundaki tüm mesajları bu şekle indirgeyip her insan katılımcının
+ * kendi `games` satırına aynen kopyalar (board_snapshot ile aynı desen).
+ * `sender_user_id` bilerek YOK — board_snapshot'taki oyuncu isimleri gibi bu
+ * da o andaki ismi dondurur, kimliğe geri bağlanmaz.
+ */
+export interface GameChatMessage {
+  name: string;
+  colorIndex: number;
+  message: string;
+  created_at: string;
+}
+
 /** Bir oyunun bitişindeki tek bir oyuncu satırı (final sıralamasında). */
 export interface GamePlayerSnapshot {
   name: string;
@@ -258,6 +288,17 @@ export interface Game {
    * için kullanır.
    */
   online_game_id: string | null;
+  /**
+   * Bu oyunun (yalnızca Canlı oyunlarda dolu olur) dondurulmuş grup sohbeti —
+   * `_finish_online_game_records` tarafından bitişte `online_game_messages`
+   * tablosundan bir kerelik kopyalanır. Yerel/YZ oyunlarında her zaman null
+   * (Oyun İçi Mesajlaşma — Faz 1 kapsam dışı). `GameHistoryModal`'ın liste
+   * sorgusuna DAHİL EDİLMEZ (bkz. `message_count`), yalnızca sohbet rozetine
+   * tıklanınca `fetchGameMessages` ile lazy çekilir.
+   */
+  messages: GameChatMessage[] | null;
+  /** `messages` dizisinin uzunluğu (generated sütun) — liste sorgusunu şişirmeden sohbet rozetinin gösterilip gösterilmeyeceğine karar vermek için. */
+  message_count: number;
   created_at: string;
 }
 
@@ -315,6 +356,7 @@ export type GameHistoryEntry = Pick<
   | 'rank'
   | 'surrendered'
   | 'online_game_id'
+  | 'message_count'
 > & {
   /**
    * Bu isteği yapan (oturum açan) kullanıcının bu oyunu beğenip beğenmediği —

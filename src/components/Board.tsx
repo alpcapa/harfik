@@ -28,8 +28,17 @@ interface BoardProps {
   onCellClick: (r: number, c: number) => void;
   /** Oyna'ya basmadan önceki anlık geçerlilik/puan çerçevesi; taş yoksa null. */
   moveStatus: MoveStatus | null;
-  /** "Oyun Geçmişi" linkine tıklanınca çağrılır. */
+  /** "Hamleler" linkine tıklanınca çağrılır. */
   onOpenHistory: () => void;
+  /**
+   * "Mesajlaşma" butonuna tıklanınca çağrılır — yalnızca Canlı (online
+   * multiplayer) oyun ekranı (`OnlineGameScreen.tsx`) geçirir; verilmezse
+   * (yerel/YZ oyun ekranı) buton hiç render edilmez (Oyun İçi Mesajlaşma —
+   * Faz 1, YZ'ye karşı yerel oyunlarda kapsam dışı).
+   */
+  onOpenMessaging?: () => void;
+  /** `onOpenMessaging` butonunun üstünde küçük bir kırmızı nokta gösterir — sohbet kapalıyken okunmamış mesaj geldiğini belli etmek için. */
+  hasUnreadMessage?: boolean;
   /** Şu an sürüklenmekte olan, bu tur yerleştirilmiş taşın hücre anahtarı — o hücre boşmuş gibi çizilir. */
   dragHiddenKey?: string | null;
   /** Sürükleme sırasında işaretçinin üzerinde olduğu hücre (bırakma hedefi vurgusu). */
@@ -41,7 +50,7 @@ interface BoardProps {
   onTilePointerMove?: (e: React.PointerEvent<HTMLDivElement>) => void;
   onTilePointerUp?: (e: React.PointerEvent<HTMLDivElement>) => void;
   onTilePointerCancel?: (e: React.PointerEvent<HTMLDivElement>) => void;
-  /** Alt bilgi şeridini (Oyun Geçmişi linki + X2/X3 açıklaması) gizler — salt-okunur önizlemelerde (bkz. `GameBoardPreview`). */
+  /** Alt bilgi şeridini (Hamleler linki + Mesajlaşma butonu + X2/X3 açıklaması) gizler — salt-okunur önizlemelerde (bkz. `GameBoardPreview`). */
   hideFooter?: boolean;
   /** Taşları küçük/puan göstermeden çizer — salt-okunur önizlemelerde (bkz. `GameBoardPreview`). */
   compact?: boolean;
@@ -80,11 +89,33 @@ function HomeMark({ color }: { color: PlayerColor }) {
   );
 }
 
+/** "Hamleler" linkinin başındaki küçük döküman ikonu. */
+function DocumentIcon({ size = 12 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="M9 13h6M9 17h6" />
+    </svg>
+  );
+}
+
+/** "Mesajlaşma" butonunun başındaki küçük konuşma balonu ikonu. */
+function ChatBubbleIcon({ size = 12 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
 export function Board({
   state,
   onCellClick,
   moveStatus,
   onOpenHistory,
+  onOpenMessaging,
+  hasUnreadMessage = false,
   dragHiddenKey = null,
   dragOverKey = null,
   dragOverValid = false,
@@ -483,18 +514,34 @@ export function Board({
         )}
       </div>
 
-      {/* Alt bilgi şeridi (Oyun Geçmişi / X2-X3 açıklaması) — kartın kendi
-          zemini ve gölgesiyle bütünleşik bir alt bölüm; ayrı, asılı kalan
-          bir beyaz şerit değil. */}
+      {/* Alt bilgi şeridi (Hamleler / Mesajlaşma / X2-X3 açıklaması) — kartın
+          kendi zemini ve gölgesiyle bütünleşik bir alt bölüm; ayrı, asılı
+          kalan bir beyaz şerit değil. */}
       {!hideFooter && (
         <div className="relative z-10 flex items-center justify-between gap-2 shrink-0 px-[10px] pb-[10px] pt-1 w-full">
           <button
             onClick={onOpenHistory}
-            className="text-[13px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
+            className="flex items-center gap-1 text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
           >
-            Oyun Geçmişi
+            <DocumentIcon />
+            Hamleler
           </button>
-          <div className="flex gap-2 justify-end flex-wrap">
+          <div className="flex items-center gap-2 justify-end flex-wrap">
+            {onOpenMessaging && (
+              <button
+                onClick={onOpenMessaging}
+                className="relative flex items-center gap-1 text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
+              >
+                <ChatBubbleIcon />
+                Mesajlaşma
+                {hasUnreadMessage && (
+                  <span
+                    className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red"
+                    aria-hidden
+                  />
+                )}
+              </button>
+            )}
             {!online && (
               <div className="text-[8px] font-mono font-bold text-red flex items-center">
                 Çevrimdışı

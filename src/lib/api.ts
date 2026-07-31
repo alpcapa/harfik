@@ -23,6 +23,7 @@ import type {
   FriendRelation,
   FriendRow,
   FriendSearchResult,
+  GameChatMessage,
   GameHistoryEntry,
   GameLiker,
   Gender,
@@ -32,6 +33,7 @@ import type {
   MyLeaderboardRank,
   NewGame,
   OnlineGame,
+  OnlineGameMessageRow,
   OnlineGameSlot,
   OnlineGameStatePublic,
   OnlineMovePlacement,
@@ -273,7 +275,7 @@ export async function fetchMyGames(
   const targetUid = userId ?? viewer?.id;
   if (!targetUid) return { games: [], hasMore: false };
 
-  const cols = 'id, created_at, player_count, players, player_score, ai_score, rank, surrendered, online_game_id';
+  const cols = 'id, created_at, player_count, players, player_score, ai_score, rank, surrendered, online_game_id, message_count';
   type Row = Omit<GameHistoryEntry, 'liked_by_me' | 'like_count'>;
   let rows: Row[];
   let hasMore: boolean;
@@ -386,6 +388,27 @@ export async function fetchGameBoardSnapshot(gameId: string): Promise<BoardSnaps
     return null;
   }
   return (data?.board_snapshot as BoardSnapshotTile[] | null) ?? null;
+}
+
+/**
+ * Bitmiş bir Canlı oyunun dondurulmuş sohbet kaydını döner —
+ * `fetchGameBoardSnapshot` ile birebir aynı desen: `fetchMyGames`'in liste
+ * sorgusuna dahil edilmez (bkz. `message_count`), yalnızca `GameHistoryModal`
+ * (sohbet rozetine tıklanınca `GameChatHistoryModal`) lazy çeker. Yerel/YZ
+ * oyunlarında (Oyun İçi Mesajlaşma — Faz 1 kapsam dışı) her zaman boş döner.
+ */
+export async function fetchGameMessages(gameId: string): Promise<GameChatMessage[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('games')
+    .select('messages')
+    .eq('id', gameId)
+    .maybeSingle();
+  if (error) {
+    console.error('[Kelimeki] fetchGameMessages hatası:', error.message);
+    return [];
+  }
+  return (data?.messages as GameChatMessage[] | null) ?? [];
 }
 
 /**
@@ -882,6 +905,75 @@ export function subscribeOnlineGameState(gameId: string, onChange: () => void): 
       'postgres_changes',
       { event: '*', schema: 'public', table: 'online_game_states', filter: `online_game_id=eq.${gameId}` },
       onChange,
+    )
+    .subscribe();
+  return () => {
+    void client.removeChannel(channel);
+  };
+}
+
+/**
+ * Bir Canlı oyunun devam eden grup sohbetindeki tüm mesajları en eskiden en
+ * yeniye döner (`online_game_messages`) — `OnlineGameScreen`'in ilk yüklemesi
+ * için. Oyun İçi Mesajlaşma — Faz 1, yalnızca Canlı oyunlarda kullanılır.
+ */
+export async function fetchOnlineGameMessages(gameId: string): Promise<OnlineGameMessageRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('online_game_messages')
+    .select('*')
+    .eq('online_game_id', gameId)
+    .order('created_at', { ascending: true });
+  if (error) {
+    console.error('[Kelimeki] fetchOnlineGameMessages hatası:', error.message);
+    return [];
+  }
+  return (data as OnlineGameMessageRow[]) ?? [];
+}
+
+/**
+ * Bir Canlı oyunun grup sohbetine yeni bir mesaj gönderir — RPC yok, doğrudan
+ * RLS ile (`online_game_messages_insert_self`: gönderen kendi user_id'siyle
+ * ve oyunun katılımcısı olarak insert edebilir). Sunucu tarafında 1-200
+ * karakter kısıtı zaten zorlanıyor (`online_game_messages_len` check'i);
+ * burada da aynı sınır tekrarlanır ki hata kullanıcıya sunucuya gitmeden
+ * anında gösterilebilsin.
+ */
+export async function sendOnlineGameMessage(gameId: string, message: string): Promise<void> {
+  if (!supabase) throw new Error('Supabase yapılandırılmadı.');
+  const trimmed = message.trim();
+  if (trimmed.length === 0 || trimmed.length > 200) {
+    throw new Error('Mesaj 1-200 karakter arasında olmalı.');
+  }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Oturum açık değil.');
+  const { error } = await supabase
+    .from('online_game_messages')
+    .insert({ online_game_id: gameId, sender_user_id: user.id, message: trimmed });
+  if (error) throw new Error(error.message);
+}
+
+/**
+ * `online_game_messages`'a yeni bir satır eklendiğinde `onInsert`'i tetikler
+ * (Realtime) — `subscribeOnlineGameState`'in birebir aynı deseni, ayrı bir
+ * tablo/kanal üzerinde. Yalnızca INSERT dinlenir (mesajlar düzenlenmiyor/
+ * silinmiyor, bkz. Faz 1 kapsam dışı notu). Dönen fonksiyon aboneliği iptal
+ * eder — bileşen unmount olduğunda çağrılmalı.
+ */
+export function subscribeOnlineGameMessages(
+  gameId: string,
+  onInsert: (row: OnlineGameMessageRow) => void,
+): () => void {
+  if (!supabase) return () => {};
+  const client = supabase;
+  const channel = client
+    .channel(`online_game_messages_${gameId}`)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'online_game_messages', filter: `online_game_id=eq.${gameId}` },
+      (payload) => onInsert(payload.new as OnlineGameMessageRow),
     )
     .subscribe();
   return () => {
