@@ -41,9 +41,14 @@ function remainingTimeLabel(deadline: string | null | undefined): { text: string
   if (!deadline) return null;
   const ms = new Date(deadline).getTime() - Date.now();
   if (ms <= 0) return { text: 'Süresi doldu - teslim oldu', urgent: true };
-  const hours = Math.ceil(ms / (60 * 60 * 1000));
-  const text = hours <= 1 ? '1 saatten az kaldı' : `${hours} saat kaldı`;
-  return { text, urgent: hours <= 6 };
+  const totalMinutes = Math.ceil(ms / (60 * 1000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const text =
+    hours > 0
+      ? `${hours} saat ${minutes} dakika sonra teslim sayılacak`
+      : `${minutes} dakika sonra teslim sayılacak`;
+  return { text, urgent: totalMinutes <= 6 * 60 };
 }
 
 // Bekleyen bir davetin/oyunun 7 günlük iptal süresine kalan süre — Setup'taki
