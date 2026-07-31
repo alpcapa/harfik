@@ -100,15 +100,6 @@ export default function App() {
   // döner ki bir sonraki oyun yeni bir id alsın.
   const activeSaveIdRef = useRef<string | null>(null);
 
-  // Bir "Devam Eden Oyun" gerçekten geri yüklendiğinde (savedGame.savedAt ya
-  // da cloud save'in updated_at'i + ABANDON_TIMEOUT_MS) ne zaman terk edilmiş
-  // sayılacağını sabit olarak tutar — sürekli tazelenen autosave zaman
-  // damgasından BİLEREK ayrı: amaç, oyunu tam da terk edilmeden hemen önce
-  // açan hesap sahibine (Canlı oyundaki `deadlineWarning`, OnlineGameScreen.tsx,
-  // ile aynı mantıkla) bir uyarı gösterebilmek. Yeni bir oyun başlatılınca
-  // (`onStart`) ya da terk edilince (`handleLogoClick`) null'a döner.
-  const resumeDeadlineRef = useRef<number | null>(null);
-
   // Girişli kullanıcının cloudSaves listesini sunucudan tazeler; bu arada 7
   // gün hareketsiz kalmış (ABANDON_TIMEOUT_MS) kayıtları da atomik olarak
   // "iddia edip" (claimAbandonedLocalGameSave) siler ve — tıpkı localStorage'daki
@@ -352,7 +343,6 @@ export default function App() {
   // effect'i tamamen `state`e göre çalışır (bkz. o effect'teki not).
   const handleResumeSavedGame = () => {
     if (!savedGame) return;
-    resumeDeadlineRef.current = savedGame.savedAt + ABANDON_TIMEOUT_MS;
     dispatch({ type: 'RESUME_SAVED', state: savedGame.state });
     setSavedGame(null);
   };
@@ -363,7 +353,6 @@ export default function App() {
   // güncellemeye devam etsin — sonra reducer'a uygulanır ve listeden çıkarılır.
   const handleResumeCloudSave = (save: LocalGameSave) => {
     activeSaveIdRef.current = save.id;
-    resumeDeadlineRef.current = Date.parse(save.updated_at) + ABANDON_TIMEOUT_MS;
     dispatch({ type: 'RESUME_SAVED', state: save.state });
     setCloudSaves((prev) => (prev ? prev.filter((s) => s.id !== save.id) : prev));
   };
@@ -388,7 +377,6 @@ export default function App() {
     if (state.phase === 'play' && !state.isGameOver && state.turnCount >= 2) {
       setSavedGame({ state, savedAt: Date.now() });
     }
-    resumeDeadlineRef.current = null;
     dispatch({ type: 'ABANDON' });
   };
 
@@ -609,19 +597,6 @@ export default function App() {
       ? 'ok'
       : state.messageType;
 
-  // Bir "Devam Eden Oyun" 7 günlük terk edilme süresine 24 saatten az kala
-  // geri yüklendiyse uyarı — Canlı oyundaki `deadlineWarning`
-  // (OnlineGameScreen.tsx) ile aynı mantık, yalnızca sırası kendisinde
-  // (account sahibi, 0. oyuncu) olan hesap sahibine gösterilir.
-  const localDeadlineWarning = (() => {
-    if (state.phase !== 'play' || state.isGameOver || state.current !== 0) return null;
-    const deadline = resumeDeadlineRef.current;
-    if (!deadline) return null;
-    const ms = deadline - Date.now();
-    if (ms <= 0 || ms >= 24 * 60 * 60 * 1000) return null;
-    return `Bu ${state.players.length} kişilik oyunda 24 saat içinde hamle yapmazsan teslim olmuş sayılırsın ve lig puanından 2 puan düşülür.`;
-  })();
-
   // ── Şifre sıfırlama ────────────────────────────────────────────────────────
   // Sıfırlama e-postasındaki bağlantı tıklanıp bu sekmede recovery oturumu
   // açıldıysa, yeni şifre belirlenene kadar kurulum/oyun ekranlarının önüne geçer.
@@ -657,7 +632,6 @@ export default function App() {
             cloudSaves={user ? cloudSaves : null}
             onResumeCloudSave={handleResumeCloudSave}
             onStart={(players, showTutorial) => {
-              resumeDeadlineRef.current = null;
               dispatch({ type: 'START', players });
               if (showTutorial) setShowPostStartTutorial(true);
             }}
@@ -938,21 +912,13 @@ export default function App() {
       />
 
       <div className="w-full max-w-[680px] px-3 pb-3 pt-1 flex flex-col gap-1.5">
-        {localDeadlineWarning ? (
-          <div className="shadow-raised flex items-center justify-center rounded-md border border-red/40 bg-red/10 px-4 py-3">
-            <span className="font-mono text-[11px] font-bold text-red text-center leading-relaxed">
-              {localDeadlineWarning}
-            </span>
-          </div>
-        ) : (
-          <div
-            className={`text-[11px] font-mono font-bold text-center min-h-[15px] py-0.5 ${
-              MESSAGE_COLORS[liveMessageType]
-            }`}
-          >
-            {liveMessage}
-          </div>
-        )}
+        <div
+          className={`text-[11px] font-mono font-bold text-center min-h-[15px] py-0.5 ${
+            MESSAGE_COLORS[liveMessageType]
+          }`}
+        >
+          {liveMessage}
+        </div>
 
         {spectating ? (
           <div className="shadow-raised flex items-center justify-between gap-2 rounded-md border border-border bg-panel px-4 py-3">
