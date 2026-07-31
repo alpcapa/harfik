@@ -1,5 +1,5 @@
 // Kelimeki — oyun kurulum ekranı: oyuncu sayısı (2/4) seçimi
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PLAYER_COLORS } from '../game/constants';
 import type { PlayerSetup } from '../game/gameReducer';
 import { useAuth } from '../hooks/useAuth';
@@ -235,12 +235,28 @@ export function Setup({
   // Realtime'ı, LiveGamesTab'daki aynı desen) + foreground/visibility
   // dinleyicileri sayesinde artık sekme hiç değişmeden de kendiliğinden
   // güncelleniyor.
+  //
+  // Kişi login olduğunda Canlı'da hamle bekleyen (sırası kendisinde olan
+  // aktif) bir oyunu varsa "Arkadaşınla" sekmesi otomatik açık gelsin —
+  // yalnızca BİR KEZ (bu ref sayesinde) uygulanır, yoksa kullanıcı elle
+  // "Yapay Zeka ile"ye dönse bile aşağıdaki effect'in refresh()'i (Realtime/
+  // foreground tetiklemeleriyle tekrar tekrar çağrıldığında) onu tekrar
+  // Live'a geri çekerdi.
+  const appliedLoginDefaultRef = useRef(false);
   useEffect(() => {
     if (!user) {
       setLiveActionCount(0);
       return;
     }
     let cancelled = false;
+    // Yalnızca bu ref'in (kullanıcı için) İLK başarılı sonucunda bir kez
+    // uygulanır — refresh() sonraki her tetiklenmede (Realtime/foreground)
+    // tekrar çağrılsa da ref zaten dolu olduğundan bir daha zorlanmaz.
+    const applyLoginDefaultOnce = (myTurnCount: number) => {
+      if (appliedLoginDefaultRef.current) return;
+      appliedLoginDefaultRef.current = true;
+      if (myTurnCount > 0) onMainViewChange('live');
+    };
     const refresh = () => {
       listMyOnlineGames().then((rows) => {
         if (cancelled) return;
@@ -248,6 +264,7 @@ export function Setup({
         const activeIds = rows.filter((g) => g.status === 'active').map((g) => g.id);
         if (activeIds.length === 0) {
           setLiveActionCount(inviteCount);
+          applyLoginDefaultOnce(0);
           return;
         }
         fetchOnlineGameTurns(activeIds).then((turns) => {
@@ -258,6 +275,7 @@ export function Setup({
             return turns[g.id] === idx;
           }).length;
           setLiveActionCount(inviteCount + myTurnCount);
+          applyLoginDefaultOnce(myTurnCount);
         });
       });
     };
@@ -276,7 +294,7 @@ export function Setup({
       window.removeEventListener('focus', onForeground);
       window.removeEventListener('online', onForeground);
     };
-  }, [user]);
+  }, [user, onMainViewChange]);
 
   // "Giriş Yap" / "Devam" ikisi de anlamlı birer karar, gerçek bir "vazgeç"
   // değil — bu yüzden Escape/X, oyunu misafir olarak başlatmadan ("Devam"
