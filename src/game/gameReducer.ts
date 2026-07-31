@@ -823,9 +823,16 @@ export function gameReducer(state: GameState, action: Action): GameState {
     // dolduruluyor — Board/GameHeader bunlara hiç bakmıyor, yalnızca
     // `Rack` bileşeni (her zaman kendi rafımızı gösterdiğimizden) gerçek
     // veriyle çalışıyor. Bu turda yerel olarak yerleştirilmiş taşlar
-    // (`placed`) sunucudaki hamleyle her zaman ya onaylanmış ya da hâlâ
-    // gönderilmemiş olduğundan sıfırlanır — sunucu tek doğruluk kaynağı.
+    // (`placed`) sunucuda GERÇEKTEN yeni bir hamle işlendiyse (turn_count
+    // ilerlediyse) sıfırlanır — sunucu artık farklı bir board temsil
+    // ediyordur, eski deneme taşları geçersiz olabilir. Turn_count aynıysa
+    // (ör. sekme odağa döndüğü/periyodik yenileme tetiklendiği için gelen,
+    // hiçbir gerçek hamle taşımayan bir senkron) korunur — sıra kendisinde
+    // değilken egzersiz amaçlı yerleştirdiği taşların (bkz. OnlineGameScreen)
+    // ya da sırası kendisindeyken henüz "Oyna"ya basmadığı taslak hamlesinin
+    // arka plandaki bir yenilemeyle sebepsiz kaybolmaması için.
     case 'SYNC_ONLINE_STATE': {
+      const turnAdvanced = action.publicState.turn_count !== state.turnCount;
       const players: Player[] = action.publicState.players.map((p, i) => ({
         name: p.name,
         corners: p.corners,
@@ -847,10 +854,10 @@ export function gameReducer(state: GameState, action: Action): GameState {
         board: action.publicState.board,
         bag: new Array(action.publicState.bag_count).fill({ letter: 'A', pts: 1 }),
         bonuses: action.publicState.bonuses,
-        placed: {},
+        placed: turnAdvanced ? {} : state.placed,
         players,
         current: action.publicState.current,
-        selectedTile: null,
+        selectedTile: turnAdvanced ? null : state.selectedTile,
         swapMode: false,
         swapSelection: [],
         turnCount: action.publicState.turn_count,

@@ -27,7 +27,7 @@ import { FeedbackModal } from './FeedbackModal';
 import { ChatModal, type ChatParticipant } from './ChatModal';
 import { Avatar } from './Avatar';
 import { Tile as TileComponent } from './Tile';
-import { createInitialState, gameReducer, isFirstMove } from '../game/gameReducer';
+import { createInitialState, gameReducer, isFirstMove, type Action } from '../game/gameReducer';
 import { isWordSetReady } from '../data/wordSetLoader';
 import { PLAYER_COLORS, jokerFinishBonus } from '../game/constants';
 import {
@@ -56,7 +56,7 @@ import {
   subscribeOnlineGameState,
   triggerAiTurn,
 } from '../lib/api';
-import type { HistoryEntry, Tile as TileModel } from '../game/types';
+import type { GameState, HistoryEntry, Tile as TileModel } from '../game/types';
 import type { OnlineGame, OnlineGameMessageRow, OnlineGameSlot, OnlineMoveRow, WordMeaning } from '../lib/database.types';
 
 interface OnlineGameScreenProps {
@@ -102,7 +102,41 @@ function buildMoveHistory(rows: OnlineMoveRow[]): HistoryEntry[] {
 }
 
 export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenProps) {
-  const [state, dispatch] = useReducer(gameReducer, undefined, createInitialState);
+  // Sarmalayıcı reducer'dan (aşağıda) önce lazım — sade bir hesap
+  // olduğundan (`game.slots` en fazla 4 öğe) useMemo'ya gerek yok.
+  const mySlotIndex = game.slots.findIndex((s) => s.type === 'human' && s.user_id === myUserId);
+  const mySlotIndexRef = useRef(mySlotIndex);
+  mySlotIndexRef.current = mySlotIndex;
+
+  // gameReducer.ts'teki PLACE_TILE/RECALL_CELL/RECALL_ALL/SHUFFLE_RACK gibi
+  // salt yerel düzenleme action'ları hep `state.current`'ın (SIRASI GELEN
+  // oyuncunun) rafı üzerinden işler — yerel hotseat/YZ oyununda bu doğru
+  // varsayım, çünkü UI zaten yalnızca sırası gelen oyuncunun düzenleme
+  // yapmasına izin verir. Online'da ise sıra bende olmasa bile (rakibi/
+  // YZ'yi beklerken egzersiz amaçlı taş yerleştirme, bkz. `canEdit`)
+  // düzenleme yapabildiğimden, gameReducer'ı bu action'lar için `current`'ı
+  // geçici olarak KENDİ koltuğuma (mySlotIndex) sabitleyerek çağırıp,
+  // sonucun `current` alanını gerçek sunucu sırasına geri yüklüyoruz —
+  // aksi halde PLACE_TILE gibi bir action, benim değil SIRASI GELEN
+  // oyuncunun (sahte/dolgu) rafından taş düşürmeye çalışırdı. Tek istisna
+  // `SYNC_ONLINE_STATE`: `current`'ı GERÇEKTEN sunucudan gelen değere göre
+  // belirleyen tek action, ona hiç dokunulmuyor. `PLAY`/`PASS`/
+  // `CONFIRM_SWAP` gibi sırayı gerçekten ilerleten action'lar bu ekrandan
+  // hiç dispatch edilmiyor (`submitMove` RPC'si kullanılıyor, bkz. dosya
+  // başı yorumu) — yani bu sarmalama yalnızca yukarıdaki düzenleme
+  // action'ları için anlamlı, `current`'ı asıl değiştiren hiçbir action
+  // burada bu yoldan geçmiyor. Ref üzerinden okunuyor ki `useReducer`'a
+  // geçilen fonksiyon referansı hep sabit kalsın.
+  const onlineGameReducerRef = useRef((state: GameState, action: Action): GameState => {
+    const idx = mySlotIndexRef.current;
+    if (action.type === 'SYNC_ONLINE_STATE' || idx < 0 || state.current === idx) {
+      return gameReducer(state, action);
+    }
+    const next = gameReducer({ ...state, current: idx }, action);
+    return { ...next, current: state.current };
+  });
+
+  const [state, dispatch] = useReducer(onlineGameReducerRef.current, undefined, createInitialState);
   const [moveRows, setMoveRows] = useState<OnlineMoveRow[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -176,11 +210,6 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       window.removeEventListener('blur', clearStuckDrag);
     };
   }, []);
-
-  const mySlotIndex = useMemo(
-    () => game.slots.findIndex((s) => s.type === 'human' && s.user_id === myUserId),
-    [game.slots, myUserId],
-  );
 
   // YZ turunu tetiklemenin TEK yolu burası — bilinçli olarak uygulama
   // açılışına/mount'a bağlı ayrı bir arka plan taraması YOK (eski
@@ -300,6 +329,15 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   const wordsReady = isWordSetReady();
   const me = state.players[mySlotIndex];
   const canAct = loaded && !state.isGameOver && state.current === mySlotIndex && !!me;
+  // Sıra kendisinde olmasa bile (rakibi/YZ'yi beklerken) taş yerleştirip
+  // kelime doğrulaması deneyebilsin diye — "Oyna"/"Pas Geç"/"Değiştir" gibi
+  // sunucuya GÖNDERİM yapan eylemler hâlâ yalnızca `canAct` (gerçek sırası)
+  // ile açılıyor, ama taş yerleştirme/geri alma/karıştırma gibi salt yerel
+  // düzenleme eylemleri oyun bitmediği ve katılımcı olduğu sürece her zaman
+  // serbest. Rakip oynayıp sıra değiştiğinde (`SYNC_ONLINE_STATE`'in
+  // `turnAdvanced` dalı, gameReducer.ts) yerel deneme taşları otomatik
+  // rafa döner ve `canAct` (dolayısıyla "Oyna") yeniden hesaplanır.
+  const canEdit = loaded && !state.isGameOver && !!me;
   // Sıra bir YZ koltuğundaysa hamle sunucuda (play-ai-turn Edge Function,
   // kelime listesini önbelleğe almadıysa birkaç saniye sürebilir) hesaplanıyor
   // olabilir — aşağıdaki banner'da bunu bir insanın sırasını beklemekten
@@ -308,7 +346,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
 
   // Raftan bir taş ya da tahtaya bu tur konmuş bir taş sürüklenmeye başlanır.
   const beginDrag = (source: DragSource, e: React.PointerEvent) => {
-    if (!canAct || state.swapMode) return;
+    if (!canEdit || state.swapMode) return;
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
@@ -429,7 +467,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       openMeaning(words);
       return;
     }
-    if (!canAct || state.swapMode) return;
+    if (!canEdit || state.swapMode) return;
     const sel = state.selectedTile !== null ? me.rack[state.selectedTile] : null;
     if (sel && sel.letter === '?') {
       setPendingWild({ r, c });
@@ -441,7 +479,15 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   const moveStatus = useMemo(() => {
     const placedKeys = Object.keys(state.placed);
     if (placedKeys.length === 0 || !wordsReady || !me) return null;
-    const result = validatePlacement(state.board, state.placed, state.current, me.corners, isFirstMove(state));
+    // Sıra kendisinde olmasa bile (egzersiz amaçlı deneme) doğru
+    // sonuç için köşe/ilk-hamle kontrolleri `state.current`'a (o an
+    // asıl sırası gelen oyuncu, ben olmayabilirim) değil HER ZAMAN
+    // `mySlotIndex`e göre yapılmalı — `isFirstMove` da `state.current`'a
+    // bakan genel bir yardımcı olduğundan burada `current`'ı geçici olarak
+    // `mySlotIndex`e sabitleyen bir kopya üzerinden çağrılıyor (aynı desen
+    // `tilesState`'te de kullanılıyor, aşağıda).
+    const myTurnState = { ...state, current: mySlotIndex };
+    const result = validatePlacement(state.board, state.placed, mySlotIndex, me.corners, isFirstMove(myTurnState));
     const formed = getFormedWords(state.board, state.placed);
     const cells = formed.length > 0
       ? formed.flatMap((f) => f.coords)
@@ -702,7 +748,13 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
         />
 
         <div className="w-full max-w-[680px] px-3 pb-3 pt-1 flex flex-col gap-1.5">
-          {!canAct && !state.isGameOver ? (
+          {/* Sıra kendisinde değilken taş yerleştirmeye başlayınca (egzersiz/
+              deneme, bkz. `canEdit`) bu banner yerine aşağıdaki mesaj satırı
+              devreye giriyor — Board'daki geçerlilik/skor rozetiyle birlikte
+              tıpkı sıra kendisindeymiş gibi anlık geri bildirim veriyor.
+              Henüz hiç taş yerleştirmediyse (`!moveStatus`) banner kalıyor,
+              böylece kimin sırası olduğu her zaman net kalıyor. */}
+          {!canAct && !state.isGameOver && !moveStatus ? (
             <div className="shadow-raised flex items-center justify-center gap-2 rounded-md border border-red/40 bg-red/10 px-4 py-3">
               {isAiTurn && (
                 <span className="w-2 h-2 rounded-full bg-red animate-pulse shrink-0" aria-hidden />
@@ -727,13 +779,17 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
                 tiles={me.rack}
                 selectedTile={state.selectedTile}
                 onSelect={(i) => {
-                  if (!canAct) return;
-                  if (state.swapMode) dispatch({ type: 'TOGGLE_SWAP_TILE', index: i });
-                  else dispatch({ type: 'SELECT_TILE', index: i });
+                  if (state.swapMode) {
+                    if (!canAct) return;
+                    dispatch({ type: 'TOGGLE_SWAP_TILE', index: i });
+                  } else {
+                    if (!canEdit) return;
+                    dispatch({ type: 'SELECT_TILE', index: i });
+                  }
                 }}
                 title={me.name}
                 color={PLAYER_COLORS[me.colorIndex]}
-                draggable={canAct}
+                draggable={canEdit}
                 dragHiddenIndex={dragHiddenIndex}
                 onTilePointerDown={(i, e) => beginDrag({ kind: 'rack', index: i, tile: me.rack[i] }, e)}
                 onTilePointerMove={moveDrag}
@@ -797,14 +853,14 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
                 Değiştir
               </button>
               <button
-                disabled={!canAct}
+                disabled={!canEdit}
                 onClick={() => dispatch({ type: 'SHUFFLE_RACK' })}
                 className="btn-raised-neutral flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
               >
                 Karıştır
               </button>
               <button
-                disabled={!canAct}
+                disabled={!canEdit}
                 onClick={() => dispatch({ type: 'RECALL_ALL' })}
                 className="btn-raised-neutral flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
               >
