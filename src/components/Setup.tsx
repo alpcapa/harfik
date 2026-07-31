@@ -21,15 +21,19 @@ import type { OnlineGame } from '../lib/database.types';
 
 // "Devam Eden Oyun" satırındaki kalan süre — gameStorage.ts'teki
 // ABANDON_TIMEOUT_MS (7 gün) ile aynı terk-silme kuralına göre, son kayıt
-// (savedAt) anından itibaren. "N gün M saat kaldı" biçiminde (gün kalmadıysa
-// yalnızca saat) — LiveGamesTab.tsx'teki remainingInviteDays ile aynı ilke.
-function remainingTime(savedAt: number): { text: string; urgent: boolean } {
+// (savedAt) anından itibaren. `willSurrender` true ise (turnCount>=2 — en az
+// bir tam tur oynanmış, gerçek -2 teslim cezası uygulanır, bkz. CLAUDE.md
+// "Terk edilen oyunun otomatik temizliği") "teslim sayılacak", değilse
+// (henüz hiç hamle yok, ceza yok) "silinecek" metni kullanılır.
+function remainingTime(savedAt: number, willSurrender: boolean): { text: string; urgent: boolean } {
+  const verb = willSurrender ? 'teslim sayılacak' : 'silinecek';
   const ms = savedAt + ABANDON_TIMEOUT_MS - Date.now();
-  if (ms <= 0) return { text: 'Bugün silinecek', urgent: true };
+  if (ms <= 0) return { text: `Bugün ${verb}`, urgent: true };
   const totalHours = Math.ceil(ms / (60 * 60 * 1000));
   const days = Math.floor(totalHours / 24);
   const hours = totalHours % 24;
-  const text = days > 0 ? `${days} gün ${hours} saat kaldı` : `${hours} saat kaldı`;
+  const text =
+    days > 0 ? `${days} gün ${hours} saat sonra ${verb}` : `${hours} saat sonra ${verb}`;
   return { text, urgent: days < 1 };
 }
 
@@ -334,7 +338,7 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, sav
           >
             <span className="flex-1 min-w-0 flex flex-col gap-0.5">
               <span className="font-sans text-sm font-bold text-text truncate">
-                {savedGame.state.players.length} Kişilik Yapay Zeka Oyunu
+                {savedGame.state.players.length} Kişilik Oyun
               </span>
               <span className="text-[9px] font-mono text-muted truncate">
                 Sıra: {savedGame.state.players[savedGame.state.current]?.name ?? '—'}
@@ -344,14 +348,19 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, sav
               <span className="text-[9px] font-mono uppercase tracking-[1px] text-accent font-bold">
                 Devam Et
               </span>
-              <span
-                className={`text-[8px] font-mono uppercase tracking-[0.5px] ${
-                  remainingTime(savedGame.savedAt).urgent ? 'text-red font-bold' : 'text-muted'
-                }`}
-              >
-                {remainingTime(savedGame.savedAt).text}
-                {savedGame.state.turnCount >= 2 ? ' — teslim (-2)' : ''}
-              </span>
+              {(() => {
+                const remaining = remainingTime(savedGame.savedAt, savedGame.state.turnCount >= 2);
+                return (
+                  <span
+                    className={`text-[8px] font-mono uppercase tracking-[0.5px] ${
+                      remaining.urgent ? 'text-red font-bold' : 'text-muted'
+                    }`}
+                  >
+                    {remaining.text}
+                    {savedGame.state.turnCount >= 2 ? ' (-2)' : ''}
+                  </span>
+                );
+              })()}
             </span>
           </button>
           <p className="text-[11px] text-muted font-mono leading-relaxed">
