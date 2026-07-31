@@ -169,6 +169,14 @@ export function Setup({
   // (0 ya da 1), girişli kullanıcıda `cloudSaves`'in gerçek uzunluğu (birden
   // fazla olabilir, bkz. CLAUDE.md).
   const localSaveCount = user ? (cloudSaves?.length ?? 0) : savedGame ? 1 : 0;
+
+  // Girişli kullanıcı için "Yapay Zeka ile" sekmesi varsayılan olarak listeyi
+  // gösterir (Canlı'daki "Aktif Oyunlar" listesiyle aynı görsel/etkileşim
+  // deseni) — kurulum formu "+ Yeni Yapay Zeka Oyunu" butonuna tıklanınca
+  // açılır (`LiveGamesTab`'daki "+ Yeni Canlı Oyun" → `LiveGameCreateForm`
+  // akışıyla BİREBİR AYNI desen). Misafirde bu buton hiç yok — tek slot
+  // olduğundan form zaten doğrudan gösteriliyor (aşağıya bkz.).
+  const [creatingLocal, setCreatingLocal] = useState(false);
   useEffect(() => {
     if (!user) {
       setLiveActionCount(0);
@@ -416,12 +424,25 @@ export function Setup({
             olmuş kabul edilirsin; ayrıca, lig puanından 2 puan düşülür.
           </p>
         </div>
-      ) : (
+      ) : user && !creatingLocal ? (
+        // Girişli kullanıcı — cihazlar arası senkron olduğundan (bkz.
+        // CLAUDE.md) çoklu oyun mümkün: `LiveGamesTab`'daki "+ Yeni Canlı
+        // Oyun" ile BİREBİR AYNI desen — liste varsayılan görünüm, kurulum
+        // formu yalnızca butona tıklanınca açılır.
         <>
-          {/* Girişli kullanıcı — cihazlar arası senkron olduğundan (bkz.
-              CLAUDE.md) yeni oyun hiç engellenmez; varsa devam eden oyunlar
-              formun üstünde ayrıca listelenir. */}
-          {!!user && !!cloudSaves?.length && (
+          <button
+            onClick={() => setCreatingLocal(true)}
+            className="btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform"
+          >
+            + Yeni Yapay Zeka Oyunu
+          </button>
+          {cloudSaves === null ? (
+            <p className="text-center text-xs text-muted font-mono py-8">Yükleniyor…</p>
+          ) : cloudSaves.length === 0 ? (
+            <p className="text-center text-xs text-muted font-mono py-8">
+              Henüz bir Yapay Zeka oyunun yok.
+            </p>
+          ) : (
             <div className="flex flex-col gap-2">
               <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
                 Devam Eden Oyunlar
@@ -437,6 +458,17 @@ export function Setup({
                 />
               ))}
             </div>
+          )}
+        </>
+      ) : (
+        <>
+          {user && (
+            <button
+              onClick={() => setCreatingLocal(false)}
+              className="self-start text-[11px] font-mono text-muted hover:underline active:opacity-70 transition-opacity"
+            >
+              ← Geri
+            </button>
           )}
           <div className="flex flex-col gap-2">
             <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
