@@ -6,17 +6,20 @@
    altındaysa sayfayı otomatik yakınlaştırıyor — modal kapanınca bu yakınlaştırma
    kendiliğinden geri açılmıyor, kullanıcı elle uzaklaştırmak zorunda kalıyor
    (oyun sonrası "Görüş Bildir" formunda bildirildi, ama tüm formlardaki
-   text-sm/text-xs (14px/12px) input'lar aynı riski taşıyordu). Bilerek
-   @layer DIŞINDA (unlayered) yazıldı — Tailwind'in kendi @tailwind base/
-   components/utilities katmanları CSS Cascade Layers'a göre her zaman bu
-   katmansız kuraldan daha düşük öncelikli sayılır, yani buradaki 16px, aynı
-   elemana uygulanan `text-sm`/`text-xs` gibi utility class'ların üzerine
-   (specificity'den bağımsız olarak) yazar; @layer base içine konsaydı
-   utilities katmanındaki text-sm/text-xs onu ezerdi. */
+   text-sm/text-xs (14px/12px) input'lar aynı riski taşıyordu). `!important`
+   gerekiyor: Tailwind v3'ün `@tailwind base/components/utilities` çıktısı,
+   ilk denemede varsayıldığının aksine hiç native CSS `@layer` bloğu ÜRETMİYOR
+   (derlenmiş CSS'te doğrulandı, 0 `@layer` bulundu) — yani "unlayered kural
+   katmanlı kuralları ezer" mantığı burada hiç geçerli değildi. Gerçek sebep
+   düz CSS specificity: bir class selector (`.text-sm`, 0,1,0) bir element
+   selector'dan (`input`, 0,0,1) her zaman daha yüksek specificity'ye sahip,
+   kaynak sırasından bağımsız olarak kazanır — `text-sm`/`text-xs` class'lı
+   inputlar ilk sürümde hâlâ 14px/12px'te kalıyordu, iOS zoom bug'ı devam
+   ediyordu. `!important` ile specificity yarışı devre dışı bırakıldı. */
 input,
 textarea,
 select {
-  font-size: 16px;
+  font-size: 16px !important;
 }
 
 /* Uygulama yalnızca açık tema için tasarlandı — bu olmadan Android
