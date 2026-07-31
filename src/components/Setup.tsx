@@ -330,26 +330,28 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, sav
           </div>
           <button
             onClick={onResumeGame}
-            className="shadow-raised flex items-center gap-2.5 rounded-md px-3 py-3 border border-border bg-panel w-full text-left active:scale-[0.99] transition-transform"
+            className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel w-full text-left active:scale-[0.99] transition-transform"
           >
             <span className="flex-1 min-w-0 flex flex-col gap-0.5">
               <span className="font-sans text-sm font-bold text-text truncate">
                 {savedGame.state.players.length} Kişilik Yapay Zeka Oyunu
               </span>
-              <span className="font-mono text-[10px] text-muted truncate">
+              <span className="text-[9px] font-mono text-muted truncate">
                 Sıra: {savedGame.state.players[savedGame.state.current]?.name ?? '—'}
               </span>
+            </span>
+            <span className="flex flex-col items-end gap-0.5 shrink-0">
+              <span className="text-[9px] font-mono uppercase tracking-[1px] text-accent font-bold">
+                Devam Et
+              </span>
               <span
-                className={`font-mono text-[10px] truncate ${
+                className={`text-[8px] font-mono uppercase tracking-[0.5px] ${
                   remainingTime(savedGame.savedAt).urgent ? 'text-red font-bold' : 'text-muted'
                 }`}
               >
                 {remainingTime(savedGame.savedAt).text}
-                {savedGame.state.turnCount >= 2 ? ' — teslim sayılır (-2)' : ''}
+                {savedGame.state.turnCount >= 2 ? ' — teslim (-2)' : ''}
               </span>
-            </span>
-            <span className="text-[9px] font-mono uppercase tracking-[1px] text-accent font-bold shrink-0">
-              Devam Et →
             </span>
           </button>
           <p className="text-[11px] text-muted font-mono leading-relaxed">
