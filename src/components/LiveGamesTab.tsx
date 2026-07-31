@@ -35,9 +35,9 @@ function statusLabel(game: OnlineGame, isMyTurn?: boolean): string {
 
 // Sırası gelen oyuncunun 48 saatlik zaman aşımına kalan süresi — Setup'taki
 // "Devam Eden Oyun" satırının remainingDays'iyle aynı ilke (kalan süre
-// düşükse kırmızı/kalın), burada saat cinsinden çünkü pencere gün değil
-// saat mertebesinde (bkz. CLAUDE.md "Canlı Oyun — Faz 3.6"). Kırmızı/kalın
-// kalan süre 24 saatin altına inince devreye giriyor.
+// düşükse kırmızı, kalın değil), burada saat cinsinden çünkü pencere gün
+// değil saat mertebesinde (bkz. CLAUDE.md "Canlı Oyun — Faz 3.6"). Kırmızı
+// (kalın değil) kalan süre 24 saatin altına inince devreye giriyor.
 function remainingTimeLabel(deadline: string | null | undefined): { text: string; urgent: boolean } | null {
   if (!deadline) return null;
   const ms = new Date(deadline).getTime() - Date.now();
@@ -233,7 +233,7 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
         {remaining && (
           <span
             className={`text-[8px] font-mono uppercase tracking-[0.5px] ${
-              remaining.urgent ? 'text-red font-bold' : 'text-muted'
+              remaining.urgent ? 'text-red' : 'text-muted'
             }`}
           >
             {remaining.text}
