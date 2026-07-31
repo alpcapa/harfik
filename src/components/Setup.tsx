@@ -357,7 +357,6 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, sav
                     }`}
                   >
                     {remaining.text}
-                    {savedGame.state.turnCount >= 2 ? ' (-2)' : ''}
                   </span>
                 );
               })()}
