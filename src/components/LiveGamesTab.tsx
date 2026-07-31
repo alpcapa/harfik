@@ -27,7 +27,7 @@ function mySlotIndex(game: OnlineGame): number {
 }
 
 function statusLabel(game: OnlineGame, isMyTurn?: boolean): string {
-  if (game.status === 'active') return isMyTurn ? 'Sıra sende — girmek için dokun' : 'Rakibin sırası';
+  if (game.status === 'active') return isMyTurn ? 'Sıra Sende! — Hemen oyna' : 'Rakibin Sırası — Hamlesi bekleniyor';
   if (game.status === 'pending') return 'Rakip bekleniyor';
   if (game.status === 'finished') return 'Bitti';
   return 'Terk edildi';
@@ -198,7 +198,11 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
       <span className="flex flex-col items-end gap-0.5 shrink-0">
         <span
           className={`text-[9px] font-mono uppercase tracking-[1px] ${
-            isMyTurn ? 'text-green font-bold' : 'text-muted'
+            game.status === 'active'
+              ? isMyTurn
+                ? 'text-green font-bold'
+                : 'text-red font-bold'
+              : 'text-muted'
           }`}
         >
           {statusLabel(game, isMyTurn)}
