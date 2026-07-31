@@ -27,7 +27,7 @@ function mySlotIndex(game: OnlineGame): number {
 }
 
 function statusLabel(game: OnlineGame, isMyTurn?: boolean): string {
-  if (game.status === 'active') return isMyTurn ? 'Sıra Sende! — Hemen oyna' : 'Rakibin Sırası — Hamlesi bekleniyor';
+  if (game.status === 'active') return isMyTurn ? 'Senin Hamlen Bekleniyor' : 'Rakibin hamlesi bekleniyor';
   if (game.status === 'pending') return 'Rakip bekleniyor';
   if (game.status === 'finished') return 'Bitti';
   return 'Terk edildi';
@@ -36,27 +36,37 @@ function statusLabel(game: OnlineGame, isMyTurn?: boolean): string {
 // Sırası gelen oyuncunun 48 saatlik zaman aşımına kalan süresi — Setup'taki
 // "Devam Eden Oyun" satırının remainingDays'iyle aynı ilke (kalan süre
 // düşükse kırmızı/kalın), burada saat cinsinden çünkü pencere gün değil
-// saat mertebesinde (bkz. CLAUDE.md "Canlı Oyun — Faz 3.6").
+// saat mertebesinde (bkz. CLAUDE.md "Canlı Oyun — Faz 3.6"). Kırmızı/kalın
+// kalan süre 24 saatin altına inince devreye giriyor.
 function remainingTimeLabel(deadline: string | null | undefined): { text: string; urgent: boolean } | null {
   if (!deadline) return null;
   const ms = new Date(deadline).getTime() - Date.now();
   if (ms <= 0) return { text: 'Süresi doldu - teslim oldu', urgent: true };
-  const hours = Math.ceil(ms / (60 * 60 * 1000));
-  const text = hours <= 1 ? '1 saatten az kaldı' : `${hours} saat kaldı`;
-  return { text, urgent: hours <= 6 };
+  const totalMinutes = Math.ceil(ms / (60 * 1000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const text =
+    hours > 0
+      ? `${hours} saat ${minutes} dakika sonra teslim sayılacak`
+      : `${minutes} dakika sonra teslim sayılacak`;
+  return { text, urgent: totalMinutes < 24 * 60 };
 }
 
 // Bekleyen bir davetin/oyunun 7 günlük iptal süresine kalan süre — Setup'taki
 // "Devam Eden Oyun" satırının remainingTime'ıyla aynı ilke ve aynı süre
 // (ABANDON_TIMEOUT_MS), oluşturulma anından itibaren. "N gün M saat kaldı"
-// biçiminde (gün kalmadıysa yalnızca saat).
+// biçiminde (24 saatin altına düşünce dakika hassasiyetinde saate geçer,
+// aynı zamanda kırmızı/kalın olur — remainingTimeLabel'daki aynı mantık).
 function remainingInviteDays(createdAt: string): { text: string; urgent: boolean } {
   const ms = Date.parse(createdAt) + ABANDON_TIMEOUT_MS - Date.now();
   if (ms <= 0) return { text: 'Bugün iptal edilir', urgent: true };
-  const totalHours = Math.ceil(ms / (60 * 60 * 1000));
+  const totalMinutes = Math.ceil(ms / (60 * 1000));
+  const totalHours = Math.floor(totalMinutes / 60);
   const days = Math.floor(totalHours / 24);
   const hours = totalHours % 24;
-  const text = days > 0 ? `${days} gün ${hours} saat kaldı` : `${hours} saat kaldı`;
+  const minutes = totalMinutes % 60;
+  const text =
+    days > 0 ? `${days} gün ${hours} saat kaldı` : `${hours} saat ${minutes} dakika kaldı`;
   return { text, urgent: days < 1 };
 }
 
