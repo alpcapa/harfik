@@ -933,7 +933,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         data={gameActivity}
                         granularity={gameGranularity}
                         series={GAME_COUNT_SERIES}
-                        defaultActiveKeys={['games_finished_same_session']}
+                        defaultActiveKeys={['games_finished']}
                         controls={<span className={sectionTitleCls}>Oyun Sayısı</span>}
                         csvBaseName="kelimeki-oyun-sayisi"
                       />
@@ -941,7 +941,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         data={gameActivity}
                         granularity={gameGranularity}
                         series={DURATION_SERIES}
-                        defaultActiveKeys={['avg_duration_same_session_seconds']}
+                        defaultActiveKeys={DURATION_SERIES.map((s) => s.key)}
                         formatValue={formatDuration}
                         controls={<span className={sectionTitleCls}>Ortalama Oyun Süresi</span>}
                         csvBaseName="kelimeki-ortalama-oyun-suresi"
