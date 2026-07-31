@@ -250,10 +250,16 @@ export async function fetchPlayerStats(
  * paylaşabilsin diye) bu ekstra bir yetki gerektirmez.
  *
  * `favoritesOnly` verilirse dönen liste artık hedef kullanıcının SAHİP
- * OLDUĞU oyunlar değil, hedef kullanıcının BEĞENDİĞİ oyunlardır (`game_likes`
- * tablosu üzerinden — sahiplik fark etmez, kendi oyunu da başkasının oyunu
- * da olabilir; `GameHistoryModal` zaten oyuncu isimlerini gösterdiğinden bu
- * ayrım oradan belli olur). Sıralama bu durumda beğenilme anına göredir.
+ * OLDUĞU oyunlar değil, hedef kullanıcının BEĞENDİĞİ oyunlardır (`list_liked_games`
+ * RPC'si — sahiplik fark etmez, kendi oyunu da başkasının oyunu da olabilir;
+ * `GameHistoryModal` zaten oyuncu isimlerini gösterdiğinden bu ayrım oradan
+ * belli olur). Sıralama bu durumda beğenilme anına göredir. Bir Canlı oyunda
+ * (`online_game_id` dolu) her insan katılımcı için AYRI bir `games` satırı
+ * olduğundan (bkz. CLAUDE.md "Canlı Oyun — Faz 3"), RPC beğenilen satır
+ * hangisi olursa olsun hedef kullanıcının KENDİ katılımcı satırını (varsa)
+ * tercih ederek döner — aksi halde `GameHistoryModal`'daki "bu satır benim"
+ * varsayımı (meIndex/güncel takma isim ikamesi) başka birinin satırını
+ * gösterirken yanlış oyuncuyu "ben" sanabilirdi.
  *
  * Her satırdaki `liked_by_me`, hedef kullanıcıdan BAĞIMSIZ olarak, bu isteği
  * yapan (oturum açan) kullanıcının o oyunu beğenip beğenmediğini gösterir —
@@ -276,7 +282,8 @@ export async function fetchMyGames(
   const targetUid = userId ?? viewer?.id;
   if (!targetUid) return { games: [], hasMore: false };
 
-  const cols = 'id, created_at, player_count, players, player_score, ai_score, rank, surrendered, online_game_id, message_count';
+  const cols =
+    'id, created_at, player_count, players, player_score, ai_score, rank, surrendered, online_game_id, message_count, user_id';
   type Row = Omit<GameHistoryEntry, 'liked_by_me' | 'like_count'>;
   let rows: Row[];
   let hasMore: boolean;
@@ -285,20 +292,18 @@ export async function fetchMyGames(
   // Gör" — 2/4 kişilik fark etmeksizin tüm oyunları listeler, `.eq` filtresi
   // hiç uygulanmaz.
   if (favoritesOnly) {
-    let query = supabase
-      .from('game_likes')
-      .select(`created_at, games!inner(${cols})`)
-      .eq('user_id', targetUid);
-    if (playerCount !== null) query = query.eq('games.player_count', playerCount);
-    const { data, error } = await query
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit); // limit+1 satır: sonraki sayfa var mı anlamak için
+    const { data, error } = await supabase.rpc('list_liked_games', {
+      p_user_id: targetUid,
+      p_player_count: playerCount,
+      p_offset: offset,
+      p_limit: limit,
+    });
     if (error) {
       console.error('[Kelimeki] fetchMyGames (favoriler) hatası:', error.message);
       return { games: [], hasMore: false };
     }
-    const liked = (data as unknown as { games: Row }[]) ?? [];
-    rows = liked.slice(0, limit).map((r) => r.games);
+    const liked = (data as (Row & { liked_at: string })[]) ?? [];
+    rows = liked.slice(0, limit);
     hasMore = liked.length > limit;
   } else {
     let query = supabase.from('games').select(cols).eq('user_id', targetUid);

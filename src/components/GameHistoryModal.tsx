@@ -406,7 +406,14 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
             const fallback = hasSnapshot ? null : fallbackPlayers(entry);
             const players = hasSnapshot ? entry.players! : fallback!.known;
             const unknownCount = fallback?.unknownCount ?? 0;
-            const meIndex = hasSnapshot ? findMeIndex(entry, players) : fallback!.meIndex;
+            // Favoriler listesinde bir satır, oturum açan kullanıcının SAHİP
+            // OLMADIĞI bir oyuna (başkasının kartından beğenilmiş) ait olabilir
+            // — bu durumda `entry.rank`/`entry.player_score` o satırın gerçek
+            // sahibine ait olduğundan "meIndex" hesaplamak ve myCurrentName ile
+            // ikame etmek yanlış oyuncuyu "ben" gibi gösterirdi (bkz. list_liked_games
+            // notu, src/lib/api.ts). Yalnızca satır GERÇEKTEN bana aitse hesapla.
+            const isMyRow = !!user && entry.user_id === user.id;
+            const meIndex = isMyRow ? (hasSnapshot ? findMeIndex(entry, players) : fallback!.meIndex) : -1;
             const ranks = computeRanks(players);
             const expanded = expandedId === entry.id;
             const isOnline = !!entry.online_game_id;
