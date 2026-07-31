@@ -160,15 +160,6 @@ export function UserMenu() {
             <button
               className={item}
               onClick={() => {
-                setModal('account');
-                setOpen(false);
-              }}
-            >
-              <span aria-hidden>⚙️</span> Hesap Ayarları
-            </button>
-            <button
-              className={item}
-              onClick={() => {
                 setModal('score');
                 setOpen(false);
               }}
@@ -183,6 +174,15 @@ export function UserMenu() {
               }}
             >
               <span aria-hidden>❓</span> Nasıl Oynanır?
+            </button>
+            <button
+              className={item}
+              onClick={() => {
+                setModal('account');
+                setOpen(false);
+              }}
+            >
+              <span aria-hidden>⚙️</span> Hesap Ayarları
             </button>
 
             {profile?.is_admin && (

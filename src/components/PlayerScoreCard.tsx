@@ -229,10 +229,10 @@ export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
               type="button"
               onClick={() => setShowFriendConfirm(true)}
               aria-label={relation === 'accepted' ? 'Arkadaşlık durumunu yönet' : 'Arkadaş ekle'}
-              className={`shrink-0 w-6 h-6 rounded-full border flex items-center justify-center text-sm font-bold leading-none active:scale-90 transition-transform ${
+              className={`shrink-0 w-6 h-6 rounded-full border flex items-center justify-center font-bold leading-none active:scale-90 transition-transform ${
                 relation === 'accepted'
-                  ? 'bg-green/15 text-green border-green/40'
-                  : 'bg-accent/15 text-accent border-accent/40'
+                  ? 'bg-green/15 text-green border-green/40 text-sm'
+                  : 'bg-accent/15 text-accent border-accent/40 text-lg'
               }`}
             >
               {relation === 'accepted' ? '✓' : '+'}

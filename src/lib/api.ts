@@ -487,6 +487,27 @@ export async function searchUsersForFriend(query: string): Promise<FriendSearchR
 }
 
 /**
+ * Arama kutusu boşken "Ara & Ekle" sekmesinde gösterilen, tüm üyelerin
+ * alfabetik/sayfalı listesi — `list_users_for_friend` RPC'si (security
+ * definer, `search_users_for_friend` ile aynı şekli/gerekçeyi paylaşır ama
+ * bilerek ayrı bir fonksiyon: arama en az 2 karakter/20 sonuç kısıtını
+ * korurken bu, `Leaderboard`'daki lazy-load deseniyle (offset/limit)
+ * kaydırdıkça tüm üyelere ulaşabiliyor).
+ */
+export async function listUsersForFriend(offset: number, limit: number): Promise<FriendSearchResult[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('list_users_for_friend', {
+    p_offset: offset,
+    p_limit: limit,
+  });
+  if (error) {
+    console.error('[Kelimeki] listUsersForFriend hatası:', error.message);
+    return [];
+  }
+  return (data as FriendSearchResult[]) ?? [];
+}
+
+/**
  * Bir kullanıcıya arkadaşlık isteği gönderir (doğrudan tablo insert'i —
  * `friend_requests_insert_self` RLS politikası yalnızca kendi adına eklemeye
  * izin verir). Karşı taraftan zaten bekleyen bir istek varsa sunucudaki
