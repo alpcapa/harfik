@@ -200,8 +200,13 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
         onOpen ? 'active:scale-[0.99] transition-transform' : ''
       }`}
     >
-      <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
-        {game.player_count} Kişilik Oyun - {creatorName ?? 'Bir arkadaşın'} açtı
+      <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+        <span className="font-sans text-sm font-bold text-text truncate">
+          {game.player_count} Kişilik Oyun
+        </span>
+        <span className="text-[9px] font-mono text-muted truncate">
+          {creatorName ?? 'Bir arkadaşın'} açtı
+        </span>
       </span>
       <span className="flex flex-col items-end gap-0.5 shrink-0">
         <span
