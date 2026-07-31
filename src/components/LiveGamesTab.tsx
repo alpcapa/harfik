@@ -27,7 +27,7 @@ function mySlotIndex(game: OnlineGame): number {
 }
 
 function statusLabel(game: OnlineGame, isMyTurn?: boolean): string {
-  if (game.status === 'active') return isMyTurn ? 'Sıra Sende! — Hemen oyna' : 'Rakibin Sırası — Hamlesi bekleniyor';
+  if (game.status === 'active') return isMyTurn ? 'Senin Hamlen Bekleniyor' : 'Rakibin hamlesi bekleniyor';
   if (game.status === 'pending') return 'Rakip bekleniyor';
   if (game.status === 'finished') return 'Bitti';
   return 'Terk edildi';
