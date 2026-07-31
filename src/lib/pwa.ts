@@ -1,5 +1,12 @@
 import { registerSW } from 'virtual:pwa-register';
-import { loadGameState } from '../utils/gameStorage';
+
+// App.tsx bu bayrağı, kullanıcı GERÇEKTEN o an bir oyun ekranında (yerel
+// 'play' fazında ya da bir Canlı oyun ekranında) iken true'ya çekiyor —
+// bkz. aşağıdaki `tryApplyUpdate` notu.
+let activelyPlaying = false;
+export function setActivelyPlaying(v: boolean): void {
+  activelyPlaying = v;
+}
 
 // Tarayıcı service worker dosyasını normalde günde en fazla bir kez kontrol
 // eder. Bu yüzden bir deploy'dan hemen sonra bile çoğunlukla eski,
@@ -12,11 +19,23 @@ import { loadGameState } from '../utils/gameStorage';
 // sayfayı kendiliğinden yenilemiyoruz — bu, tam oyun sırasında (özellikle
 // aşağı çekme hareketinin tetiklediği visibilitychange/pageshow olaylarında)
 // devam eden bir oyunu habersizce kesintiye uğratıyordu. Bunun yerine
-// güncellemeyi yalnızca ortada bitmemiş bir oyun yokken (loadGameState null
-// dönüyorsa) ve bu sayfa bir auth-redirect (ör. şifre sıfırlama) ile
-// açılmamışsa uyguluyoruz; hazır bekleyen güncelleme, o durum ortadan
-// kalkınca (oyun biter/sayfa normal şekilde tekrar açılır) bir sonraki
-// kontrolde devreye girer.
+// güncellemeyi yalnızca kullanıcı O AN gerçekten bir oyun ekranında
+// değilken (bkz. `setActivelyPlaying`, `App.tsx`) ve bu sayfa bir
+// auth-redirect (ör. şifre sıfırlama) ile açılmamışsa uyguluyoruz; hazır
+// bekleyen güncelleme, o durum ortadan kalkınca (oyun biter/Setup'a
+// dönülür) bir sonraki kontrolde devreye girer.
+// **31 Temmuz 2026'da düzeltilen bir hata:** İlk sürüm burada `loadGameState()
+// !== null` (yani localStorage'da HERHANGİ bir kaydedilmiş/yarım oyun var mı)
+// kontrol ediyordu — ama bu, "şu an bu oyunu OYNUYOR muyum" sorusunun kaba
+// bir vekiliydi: kullanıcı Setup ekranında dursa, hatta uygulamayı hiç
+// açmasa bile, yarım bıraktığı bir Yapay Zeka oyunu varlığını sürdürdüğü
+// (bkz. "Devam eden oyunun kalıcılığı" — bu tasarım gereği günlerce/haftalarca
+// sürebilir) sürece güncelleme SONSUZA DEK ertelenip hiç uygulanmıyordu.
+// Sonuç: gerçek bir kullanıcı (yarım kalmış oyunu olan herkes) haftalar
+// sonra bile 23 Temmuz'daki `color-scheme` düzeltmesi gibi kritik
+// güncellemeleri hiç almıyordu. Artık koşul gerçekten "bu sekmede şu an
+// aktif oynanıyor mu" (`activelyPlaying`) — yarım kalmış ama şu an
+// görüntülenmeyen bir kayıt artık güncellemeyi bloklamıyor.
 export function setupPwaUpdates(): void {
   if (!('serviceWorker' in navigator)) return;
 
@@ -46,7 +65,7 @@ export function setupPwaUpdates(): void {
   });
 
   const tryApplyUpdate = () => {
-    if (!applyUpdate || isAuthRedirect || loadGameState()) return;
+    if (!applyUpdate || isAuthRedirect || activelyPlaying) return;
     const apply = applyUpdate;
     applyUpdate = null;
     apply();
