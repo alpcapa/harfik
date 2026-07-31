@@ -730,7 +730,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                 value={memberSearch}
                 onChange={(e) => setMemberSearch(e.target.value)}
                 placeholder="İsim ya da nickname ara…"
-                className="w-full bg-bg border border-border rounded-md px-3 py-2 text-[11px] font-mono text-text outline-none focus:border-accent transition-colors"
+                className="w-full bg-bg border border-border rounded-md px-2.5 py-1.5 text-[11px] font-mono text-text outline-none focus:border-accent transition-colors"
               />
 
               {members === null ? (
