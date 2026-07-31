@@ -5,7 +5,7 @@ import { Avatar } from './Avatar';
 import { GameHistoryModal } from './GameHistoryModal';
 import { Leaderboard } from './Leaderboard';
 import { fetchPlayerStats, fetchMyLeaderboardRank } from '../lib/api';
-import type { PlayerStats, MyLeaderboardRank } from '../lib/database.types';
+import type { PlayerStats, MyLeaderboardRank, Gender } from '../lib/database.types';
 import { useAuth } from '../hooks/useAuth';
 
 interface ScoreCardProps {
@@ -28,6 +28,16 @@ function calculateAge(birthDate: string): number {
     age--;
   }
   return age;
+}
+
+// "Yaş: 59" yerine "Y/C: 59/E" — yaş (Y) ve cinsiyet (C, Erkek/Kadın) tek
+// satırda, yalnızca girilmiş olanlar gösterilir; ikisi de yoksa boş.
+function formatAgeGender(age: number | null, gender: Gender | null | undefined): string {
+  const genderLetter = gender === 'male' ? 'E' : gender === 'female' ? 'K' : null;
+  if (age !== null && genderLetter) return `Y/C: ${age}/${genderLetter}`;
+  if (age !== null) return `Y: ${age}`;
+  if (genderLetter) return `C: ${genderLetter}`;
+  return '';
 }
 
 export function ScoreCard({ onClose }: ScoreCardProps) {
@@ -63,6 +73,7 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
     'Oyuncu';
 
   const age = profile?.birth_date ? calculateAge(profile.birth_date) : null;
+  const ageGenderLabel = formatAgeGender(age, profile?.gender);
 
   const stats = statsByTab[tab];
 
@@ -141,8 +152,8 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
         <Avatar url={profile?.avatar_url} name={name} size={44} />
         <div className="min-w-0 flex-1">
           <div className="text-base font-bold text-text truncate">{name}</div>
-          {age !== null && (
-            <div className="text-xs font-mono text-muted">Yaş: {age}</div>
+          {ageGenderLabel && (
+            <div className="text-xs font-mono text-muted">{ageGenderLabel}</div>
           )}
         </div>
         <button
