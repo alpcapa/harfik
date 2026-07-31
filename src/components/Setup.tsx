@@ -19,11 +19,22 @@ import { TermsModal } from './TermsModal';
 import { PrivacyModal } from './PrivacyModal';
 import type { OnlineGame } from '../lib/database.types';
 
-// "Devam Eden Oyun" satırındaki kalan gün sayısı — gameStorage.ts'teki
+// "Devam Eden Oyun" satırındaki kalan süre — gameStorage.ts'teki
 // ABANDON_TIMEOUT_MS (7 gün) ile aynı terk-silme kuralına göre, son kayıt
-// (savedAt) anından itibaren.
-function remainingDays(savedAt: number): number {
-  return Math.floor((savedAt + ABANDON_TIMEOUT_MS - Date.now()) / (24 * 60 * 60 * 1000));
+// (savedAt) anından itibaren. `willSurrender` true ise (turnCount>=2 — en az
+// bir tam tur oynanmış, gerçek -2 teslim cezası uygulanır, bkz. CLAUDE.md
+// "Terk edilen oyunun otomatik temizliği") "teslim sayılacak", değilse
+// (henüz hiç hamle yok, ceza yok) "silinecek" metni kullanılır.
+function remainingTime(savedAt: number, willSurrender: boolean): { text: string; urgent: boolean } {
+  const verb = willSurrender ? 'teslim sayılacak' : 'silinecek';
+  const ms = savedAt + ABANDON_TIMEOUT_MS - Date.now();
+  if (ms <= 0) return { text: `Bugün ${verb}`, urgent: true };
+  const totalHours = Math.ceil(ms / (60 * 60 * 1000));
+  const days = Math.floor(totalHours / 24);
+  const hours = totalHours % 24;
+  const text =
+    days > 0 ? `${days} gün ${hours} saat sonra ${verb}` : `${hours} saat sonra ${verb}`;
+  return { text, urgent: days < 1 };
 }
 
 interface SetupProps {
@@ -323,28 +334,32 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, sav
           </div>
           <button
             onClick={onResumeGame}
-            className="shadow-raised flex items-center gap-2.5 rounded-md px-3 py-3 border border-border bg-panel w-full text-left active:scale-[0.99] transition-transform"
+            className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel w-full text-left active:scale-[0.99] transition-transform"
           >
             <span className="flex-1 min-w-0 flex flex-col gap-0.5">
               <span className="font-sans text-sm font-bold text-text truncate">
-                {savedGame.state.players.length} Kişilik Yapay Zeka Oyunu
+                {savedGame.state.players.length} Kişilik Oyun
               </span>
-              <span className="font-mono text-[10px] text-muted truncate">
+              <span className="text-[9px] font-mono text-muted truncate">
                 Sıra: {savedGame.state.players[savedGame.state.current]?.name ?? '—'}
               </span>
-              <span
-                className={`font-mono text-[10px] truncate ${
-                  remainingDays(savedGame.savedAt) <= 1 ? 'text-red font-bold' : 'text-muted'
-                }`}
-              >
-                {remainingDays(savedGame.savedAt) <= 0
-                  ? 'Bugün silinecek'
-                  : `${remainingDays(savedGame.savedAt)} gün içinde silinir`}
-                {savedGame.state.turnCount >= 2 ? ' — teslim sayılır (-2)' : ''}
-              </span>
             </span>
-            <span className="text-[9px] font-mono uppercase tracking-[1px] text-accent font-bold shrink-0">
-              Devam Et →
+            <span className="flex flex-col items-end gap-0.5 shrink-0">
+              <span className="text-[9px] font-mono uppercase tracking-[1px] text-accent font-bold">
+                Devam Et
+              </span>
+              {(() => {
+                const remaining = remainingTime(savedGame.savedAt, savedGame.state.turnCount >= 2);
+                return (
+                  <span
+                    className={`text-[8px] font-mono uppercase tracking-[0.5px] ${
+                      remaining.urgent ? 'text-red font-bold' : 'text-muted'
+                    }`}
+                  >
+                    {remaining.text}
+                  </span>
+                );
+              })()}
             </span>
           </button>
           <p className="text-[11px] text-muted font-mono leading-relaxed">
