@@ -1004,6 +1004,33 @@ export function subscribeOnlineGameMessages(
 }
 
 /**
+ * `online_games`/`game_invites`'taki HERHANGİ bir değişiklikte `onChange`'i
+ * tetikler (Realtime) — LiveGamesTab'ın liste/rozet verisini (davet
+ * gönderildi/kabul edildi/reddedildi, oyun active'e geçti vb.) yeniden
+ * çekmesi için. `subscribeOnlineGameState`'in aynı deseni, ama tek bir
+ * oyuna değil çağıranın TARAF OLDUĞU tüm oyunlara bağlı olduğundan bir
+ * `filter` verilmiyor — RLS (`online_games_select_party`/
+ * `game_invites_select_party`) zaten yalnızca kendi satırlarını yayınlar,
+ * postgres_changes bunu normal select gibi uyguluyor. Dönen fonksiyon
+ * aboneliği iptal eder — bileşen unmount olduğunda çağrılmalı. Setup ve
+ * LiveGamesTab bunu AYNI ANDA (biri diğerinin çocuğu olarak) çağırabildiğinden
+ * kanal adı her seferinde benzersiz üretiliyor — sabit bir isim iki
+ * abonelik aynı topic'i paylaşırdı.
+ */
+export function subscribeMyOnlineGames(onChange: () => void): () => void {
+  if (!supabase) return () => {};
+  const client = supabase;
+  const channel = client
+    .channel(`my_online_games_${crypto.randomUUID()}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'online_games' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'game_invites' }, onChange)
+    .subscribe();
+  return () => {
+    void client.removeChannel(channel);
+  };
+}
+
+/**
  * Sırası bir YZ koltuğunda olan bir Canlı oyunu bir tur ilerletir
  * (`play-ai-turn` Edge Function'ı, Faz 3 Adım 5). YZ'nin gerçek rafı bu
  * çağrıda hiçbir zaman tarayıcıya dönmez — hamle tamamen sunucuda

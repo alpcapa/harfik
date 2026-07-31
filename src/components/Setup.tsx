@@ -5,7 +5,7 @@ import { PLAYER_COLORS } from '../game/constants';
 import type { PlayerSetup } from '../game/gameReducer';
 import { useAuth } from '../hooks/useAuth';
 import { useModalA11y } from '../hooks/useModalA11y';
-import { fetchOnlineGameTurns, fetchPlayerStats, listMyOnlineGames } from '../lib/api';
+import { fetchOnlineGameTurns, fetchPlayerStats, listMyOnlineGames, subscribeMyOnlineGames } from '../lib/api';
 import { hasSeenQuickStart, markQuickStartSeen } from '../utils/onboarding';
 import { ABANDON_TIMEOUT_MS, type SavedGame } from '../utils/gameStorage';
 import { preloadWordSet, isWordSetReady } from '../data/wordSetLoader';
@@ -214,8 +214,7 @@ export function Setup({
 
   // "Arkadaşınla" sekmesindeki rozet: bekleyen davetler + sırası çağıranda
   // olan aktif Canlı oyunlar — kullanıcı sekmeye hiç girmeden kaç şeyin
-  // dikkatini beklediğini görsün diye. `mainView`e bağlı: Live sekmesinden
-  // (davet kabul/hamle sonrası) Local'e dönülünce sayı tazelensin diye.
+  // dikkatini beklediğini görsün diye.
   const [liveActionCount, setLiveActionCount] = useState(0);
 
   // "Yapay Zeka ile" sekmesindeki rozet — misafirde tekil localStorage kaydı
@@ -230,34 +229,55 @@ export function Setup({
   // akışıyla BİREBİR AYNI desen). Misafirde bu buton hiç yok — tek slot
   // olduğundan form zaten doğrudan gösteriliyor (aşağıya bkz.).
   const [creatingLocal, setCreatingLocal] = useState(false);
+  // Rozet artık `mainView`e (tab değişimine) bağlı DEĞİL — önceden bir davet
+  // kabul edilip Canlı sekmesinden hiç çıkılmazsa (mainView 'live' olarak
+  // sabit kalırsa) sayı asla tazelenmiyordu, yalnızca Local'e geçip geri
+  // dönmek düzeltiyordu. `subscribeMyOnlineGames` (online_games/game_invites
+  // Realtime'ı, LiveGamesTab'daki aynı desen) + foreground/visibility
+  // dinleyicileri sayesinde artık sekme hiç değişmeden de kendiliğinden
+  // güncelleniyor.
   useEffect(() => {
     if (!user) {
       setLiveActionCount(0);
       return;
     }
     let cancelled = false;
-    listMyOnlineGames().then((rows) => {
-      if (cancelled) return;
-      const inviteCount = rows.filter((g) => g.my_role === 'invitee' && g.my_invite_status === 'pending').length;
-      const activeIds = rows.filter((g) => g.status === 'active').map((g) => g.id);
-      if (activeIds.length === 0) {
-        setLiveActionCount(inviteCount);
-        return;
-      }
-      fetchOnlineGameTurns(activeIds).then((turns) => {
+    const refresh = () => {
+      listMyOnlineGames().then((rows) => {
         if (cancelled) return;
-        const myTurnCount = rows.filter((g) => {
-          if (g.status !== 'active') return false;
-          const idx = g.slots.findIndex((s) => s.type === 'human' && s.relation === 'self');
-          return turns[g.id] === idx;
-        }).length;
-        setLiveActionCount(inviteCount + myTurnCount);
+        const inviteCount = rows.filter((g) => g.my_role === 'invitee' && g.my_invite_status === 'pending').length;
+        const activeIds = rows.filter((g) => g.status === 'active').map((g) => g.id);
+        if (activeIds.length === 0) {
+          setLiveActionCount(inviteCount);
+          return;
+        }
+        fetchOnlineGameTurns(activeIds).then((turns) => {
+          if (cancelled) return;
+          const myTurnCount = rows.filter((g) => {
+            if (g.status !== 'active') return false;
+            const idx = g.slots.findIndex((s) => s.type === 'human' && s.relation === 'self');
+            return turns[g.id] === idx;
+          }).length;
+          setLiveActionCount(inviteCount + myTurnCount);
+        });
       });
-    });
+    };
+    refresh();
+    const unsubscribe = subscribeMyOnlineGames(refresh);
+    const onForeground = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    document.addEventListener('visibilitychange', onForeground);
+    window.addEventListener('focus', onForeground);
+    window.addEventListener('online', onForeground);
     return () => {
       cancelled = true;
+      unsubscribe();
+      document.removeEventListener('visibilitychange', onForeground);
+      window.removeEventListener('focus', onForeground);
+      window.removeEventListener('online', onForeground);
     };
-  }, [user, mainView]);
+  }, [user]);
 
   // "Giriş Yap" / "Devam" ikisi de anlamlı birer karar, gerçek bir "vazgeç"
   // değil — bu yüzden Escape/X, oyunu misafir olarak başlatmadan ("Devam"
