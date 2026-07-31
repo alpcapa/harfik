@@ -60,7 +60,7 @@ function remainingTime(savedAt: number, willSurrender: boolean): { text: string;
 // de çıkıyor); girişli kullanıcı "+ Yeni Yapay Zeka Oyunu" formunu açtığında
 // (aynı `else` dalına düşse de) `!user` koşuluyla gizli kalır.
 const MEMBERSHIP_PERKS = [
-  'Arkadaşınla canlı oyun oynama',
+  'Arkadaşlarınla çoklu canlı oyun oynama',
   'Skor takibi ve Sanal Lig sıralaması',
   'Aynı anda birden fazla Yapay Zeka oyunu oynama',
   'Cihazlar arası kesintisiz devam etme',
