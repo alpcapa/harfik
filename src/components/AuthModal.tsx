@@ -5,6 +5,7 @@ import { TermsModal } from './TermsModal';
 import { PrivacyModal } from './PrivacyModal';
 import { signIn, signUp, sendPasswordReset } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
+import { useNicknameAvailability } from '../hooks/useNicknameAvailability';
 import { GENDER_OPTIONS, formatTrDateInput, trDateToIso } from '../utils/profileFields';
 import type { Gender } from '../lib/database.types';
 
@@ -57,6 +58,8 @@ export function AuthModal({
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
 
+  const nicknameStatus = useNicknameAvailability(nickname, mode === 'signup');
+
   const switchMode = (next: Mode) => {
     setMode(next);
     setError(null);
@@ -82,6 +85,9 @@ export function AuthModal({
       } else {
         if (!firstName.trim()) throw new Error('Ad zorunludur.');
         if (!lastName.trim()) throw new Error('Soyad zorunludur.');
+        if (!nickname.trim()) throw new Error('Takma isim zorunludur.');
+        if (nicknameStatus === 'checking') throw new Error('Takma isim kontrol ediliyor, birazdan tekrar dene.');
+        if (nicknameStatus === 'taken') throw new Error('Bu takma isim zaten kullanılıyor.');
         if (!termsAccepted) throw new Error('Kullanım Koşulları ve Gizlilik Politikası\'nı kabul etmelisiniz.');
         const birthDateIso = trDateToIso(birthDate);
         const { data, error } = await signUp(
@@ -89,7 +95,7 @@ export function AuthModal({
           password,
           firstName.trim(),
           lastName.trim(),
-          nickname.trim() || undefined,
+          nickname.trim(),
           termsAccepted,
           signupChannel,
           gender || null,
@@ -153,17 +159,31 @@ export function AuthModal({
             </div>
 
             <div>
-              <label className={labelCls}>Takma isim</label>
+              <label className={labelCls}>Takma isim {required}</label>
               {/* Boşluk kabul edilmiyor (tek kelime, özel karakterler serbest) —
                   aksi halde biri buraya gerçek adını yazarsa (ör. "İsim Soyad")
-                  skor kartlarında nickname değil tam ad gibi görünüyordu. */}
+                  skor kartlarında nickname değil tam ad gibi görünüyordu.
+                  Benzersiz olmak zorunda (profiles_display_name_tr_lower_key,
+                  Türkçe'ye duyarlı büyük/küçük harf duyarsız) — iki kişinin
+                  aynı görünen isimle ayrı hesap açması (ör. iki "deniz")
+                  arkadaş aramasında/skor kartlarında ayırt edilemez oluyordu. */}
               <input
                 className={inputCls}
                 placeholder="Herkese görünen ismin"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value.replace(/\s+/g, ''))}
                 autoComplete="nickname"
+                required
               />
+              {nicknameStatus === 'checking' && (
+                <p className="text-[10px] text-muted font-mono mt-1">Kontrol ediliyor…</p>
+              )}
+              {nicknameStatus === 'available' && (
+                <p className="text-[10px] text-green font-mono mt-1">✓ Kullanılabilir</p>
+              )}
+              {nicknameStatus === 'taken' && (
+                <p className="text-[10px] text-red font-mono mt-1">Bu takma isim kullanımda.</p>
+              )}
             </div>
           </>
         )}
@@ -303,7 +323,9 @@ export function AuthModal({
 
         <button
           type="submit"
-          disabled={busy}
+          disabled={
+            busy || (mode === 'signup' && (nicknameStatus === 'checking' || nicknameStatus === 'taken'))
+          }
           className="btn-raised bg-accent text-white rounded-md py-2.5 text-xs font-bold uppercase tracking-[1.5px] active:scale-[0.97] transition-transform disabled:opacity-50"
         >
           {busy
