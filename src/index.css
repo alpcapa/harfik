@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* iOS Safari, odaklanılan bir input/textarea/select'in font-size'ı 16px'in
+   altındaysa sayfayı otomatik yakınlaştırıyor — modal kapanınca bu yakınlaştırma
+   kendiliğinden geri açılmıyor, kullanıcı elle uzaklaştırmak zorunda kalıyor
+   (oyun sonrası "Görüş Bildir" formunda bildirildi, ama tüm formlardaki
+   text-sm/text-xs (14px/12px) input'lar aynı riski taşıyordu). Bilerek
+   @layer DIŞINDA (unlayered) yazıldı — Tailwind'in kendi @tailwind base/
+   components/utilities katmanları CSS Cascade Layers'a göre her zaman bu
+   katmansız kuraldan daha düşük öncelikli sayılır, yani buradaki 16px, aynı
+   elemana uygulanan `text-sm`/`text-xs` gibi utility class'ların üzerine
+   (specificity'den bağımsız olarak) yazar; @layer base içine konsaydı
+   utilities katmanındaki text-sm/text-xs onu ezerdi. */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+
 /* Uygulama yalnızca açık tema için tasarlandı — bu olmadan Android
    Chrome'un otomatik karanlık tema özelliği sayfayı zorla karartabiliyor
    (bkz. index.html'deki color-scheme meta etiketi, aynı gerekçe). */
