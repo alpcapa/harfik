@@ -30,14 +30,14 @@ function calculateAge(birthDate: string): number {
   return age;
 }
 
-// "Yaş: 59" yerine "Y/C: 59/E" — yaş (Y) ve cinsiyet (C, Erkek/Kadın) tek
+// "Yaş: 59" yerine "Y:59/C:E" — yaş (Y) ve cinsiyet (C, Erkek/Kadın) tek
 // satırda, yalnızca girilmiş olanlar gösterilir; ikisi de yoksa boş.
 function formatAgeGender(age: number | null, gender: Gender | null | undefined): string {
   const genderLetter = gender === 'male' ? 'E' : gender === 'female' ? 'K' : null;
-  if (age !== null && genderLetter) return `Y/C: ${age}/${genderLetter}`;
-  if (age !== null) return `Y: ${age}`;
-  if (genderLetter) return `C: ${genderLetter}`;
-  return '';
+  const parts: string[] = [];
+  if (age !== null) parts.push(`Y:${age}`);
+  if (genderLetter) parts.push(`C:${genderLetter}`);
+  return parts.join('/');
 }
 
 export function ScoreCard({ onClose }: ScoreCardProps) {
