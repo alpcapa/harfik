@@ -107,7 +107,7 @@ const FRIEND_SERIES: ChartSeriesDef[] = [
 ];
 
 const selectCls =
-  'w-auto shrink-0 py-1.5 px-2 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1px] bg-panel text-text border border-border';
+  'admin-select w-auto shrink-0 py-1 pl-2 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1px] bg-panel text-text border border-border';
 
 /** GrowthChart'ın `controls` satırına konan bölüm başlığı — Tablo Görünümü linkiyle aynı hizada. */
 const sectionTitleCls = 'text-[10px] font-mono font-bold uppercase tracking-[1px] text-accent';
