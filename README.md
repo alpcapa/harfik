@@ -111,7 +111,8 @@ src/
 ├── hooks/
 │   ├── useAuth.tsx        # Supabase auth context
 │   ├── useModalA11y.ts    # modal odak hapsi, Escape, dialog yığını
-│   └── useOnlineStatus.ts # çevrimiçi/çevrimdışı durumu izler
+│   ├── useOnlineStatus.ts # çevrimiçi/çevrimdışı durumu izler
+│   └── useNicknameAvailability.ts # takma isim uygunluğu (debounce'lu RPC kontrolü, AuthModal + AccountSettingsModal ortak)
 └── lib/
     ├── supabase.ts        # Supabase istemcisi
     ├── api.ts             # saveGame, fetchLeaderboard, auth, fetchMeaning

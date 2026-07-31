@@ -4,6 +4,7 @@ import { Modal } from './Modal';
 import { Avatar } from './Avatar';
 import { updateProfile, updateEmail, uploadAvatar, sendPasswordReset } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
+import { useNicknameAvailability } from '../hooks/useNicknameAvailability';
 import type { Gender } from '../lib/database.types';
 import { GENDER_OPTIONS, formatTrDateInput, isoToTrDate, trDateToIso } from '../utils/profileFields';
 
@@ -29,6 +30,7 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
   const [info, setInfo] = useState<string | null>(null);
 
   const name = nickname || firstName || user?.email || 'Oyuncu';
+  const nicknameStatus = useNicknameAvailability(nickname, true, profile?.display_name ?? undefined);
 
   const onPickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -69,6 +71,20 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
       setError('Soyad zorunludur.');
       return;
     }
+    if (!nickname.trim()) {
+      setError('Takma isim zorunludur.');
+      return;
+    }
+    if (nickname.trim() !== (profile?.display_name ?? '')) {
+      if (nicknameStatus === 'checking') {
+        setError('Takma isim kontrol ediliyor, birazdan tekrar dene.');
+        return;
+      }
+      if (nicknameStatus === 'taken') {
+        setError('Bu takma isim zaten kullanılıyor.');
+        return;
+      }
+    }
     let birthDateIso: string | null;
     try {
       birthDateIso = trDateToIso(birthDate);
@@ -93,7 +109,7 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
       if (lastName.trim() !== (profile?.last_name ?? ''))
         profilePatch.last_name = lastName.trim();
       if (nickname.trim() !== (profile?.display_name ?? ''))
-        profilePatch.display_name = nickname.trim() || null;
+        profilePatch.display_name = nickname.trim();
       if (gender !== (profile?.gender ?? ''))
         profilePatch.gender = gender || null;
       if (birthDateIso !== (profile?.birth_date ?? null))
@@ -182,14 +198,25 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
           <label className={labelCls}>Takma isim</label>
           {/* Boşluk kabul edilmiyor (tek kelime, özel karakterler serbest) —
               aksi halde biri buraya gerçek adını yazarsa (ör. "İsim Soyad")
-              skor kartlarında nickname değil tam ad gibi görünüyordu. */}
+              skor kartlarında nickname değil tam ad gibi görünüyordu.
+              Benzersiz olmak zorunda (bkz. AuthModal'daki aynı not). */}
           <input
             className={inputCls}
             value={nickname}
             onChange={(e) => setNickname(e.target.value.replace(/\s+/g, ''))}
-            placeholder="Girilmezse oyunda sadece adın görünür (boşluksuz)"
+            placeholder="Herkese görünen ismin (boşluksuz)"
             autoComplete="nickname"
+            required
           />
+          {nicknameStatus === 'checking' && (
+            <p className="text-[10px] text-muted font-mono mt-1">Kontrol ediliyor…</p>
+          )}
+          {nicknameStatus === 'available' && (
+            <p className="text-[10px] text-green font-mono mt-1">✓ Kullanılabilir</p>
+          )}
+          {nicknameStatus === 'taken' && (
+            <p className="text-[10px] text-red font-mono mt-1">Bu takma isim kullanımda.</p>
+          )}
         </div>
 
         <div>
@@ -276,7 +303,7 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
 
         <button
           type="submit"
-          disabled={busy}
+          disabled={busy || nicknameStatus === 'checking' || nicknameStatus === 'taken'}
           className="btn-raised bg-accent text-white rounded-md py-2.5 text-xs font-bold uppercase tracking-[1.5px] active:scale-[0.97] transition-transform disabled:opacity-50"
         >
           {busy ? '...' : 'Kaydet'}

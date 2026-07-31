@@ -1251,12 +1251,37 @@ export async function submitFeedback(
 
 // ── Auth yardımcıları ───────────────────────────────────────────────────────
 
+/**
+ * Takma ismin (Türkçe'ye duyarlı, büyük/küçük harf duyarsız) uygunluğunu
+ * kontrol eder — `check_nickname_available` RPC'si oturum açıksa çağıranın
+ * kendi mevcut ismini otomatik hariç tutar. Yalnızca canlı UX geri bildirimi
+ * içindir; asıl doğruluk kaynağı `profiles_display_name_tr_lower_key` unique
+ * index'i — bu kontrolü atlatan bir yarış durumu olsa bile kayıt sırasında
+ * gerçek kısıt devreye girer.
+ */
+export async function checkNicknameAvailable(nickname: string): Promise<boolean> {
+  if (!supabase) throw new Error('Supabase yapılandırılmadı.');
+  const { data, error } = await supabase.rpc('check_nickname_available', {
+    p_nickname: nickname,
+  });
+  if (error) throw new Error(error.message);
+  return data === true;
+}
+
+/** Postgres'in unique-violation hatasını takma isim için okunur bir mesaja çevirir. */
+function friendlyNicknameError(message: string | undefined): Error | null {
+  if (message && /profiles_display_name_tr_lower_key|display_name/i.test(message) && /duplicate key|unique/i.test(message)) {
+    return new Error('Bu takma isim zaten kullanılıyor. Farklı bir tane dene.');
+  }
+  return null;
+}
+
 export async function signUp(
   email: string,
   password: string,
   firstName: string,
   lastName: string,
-  nickname?: string,
+  nickname: string,
   termsAccepted = false,
   channel: 'direct' | 'form' = 'direct',
   gender?: Gender | null,
@@ -1288,7 +1313,7 @@ export async function signUp(
           marketingConsent,
         },
         signup_channel: channel,
-        ...(nickname ? { display_name: nickname } : {}),
+        display_name: nickname,
       },
     },
   });
@@ -1299,6 +1324,11 @@ export async function signUp(
       .update({ agreed_to_terms: termsAccepted })
       .eq('id', result.data.session.user.id);
   }
+  // AuthModal kayıttan önce checkNicknameAvailable ile kontrol ediyor; bu
+  // yalnızca eşzamanlı bir yarış durumunda (iki kişi aynı anda aynı ismi
+  // kapmaya çalışırsa) devreye giren bir güvenlik ağı.
+  const friendlyErr = result.error ? friendlyNicknameError(result.error.message) : null;
+  if (friendlyErr) return { ...result, error: friendlyErr } as typeof result;
   return result;
 }
 
@@ -1343,21 +1373,23 @@ export async function updateProfile(
     .update(patch)
     .eq('id', user.id)
     .select('id');
-  if (error) throw new Error(error.message);
+  if (error) throw friendlyNicknameError(error.message) ?? new Error(error.message);
 
-  // Profil satırı henüz oluşturulmamışsa kayıt aç.
+  // Profil satırı henüz oluşturulmamışsa kayıt aç. display_name NOT NULL
+  // olduğundan (nickname artık zorunlu) patch'te yoksa e-posta önekine düşer.
   if (!data || data.length === 0) {
     const firstName = patch.first_name ?? '';
     const lastName = patch.last_name ?? '';
+    const fallbackNickname = user.email ? user.email.split('@')[0] : user.id;
     const { error: createErr } = await supabase.from('profiles').insert({
       id: user.id,
-      username: user.email ? user.email.split('@')[0] : user.id,
+      username: fallbackNickname,
       first_name: firstName,
       last_name: lastName,
-      display_name: patch.display_name ?? null,
+      display_name: patch.display_name ?? fallbackNickname,
       avatar_url: patch.avatar_url ?? null,
     });
-    if (createErr) throw new Error(createErr.message);
+    if (createErr) throw friendlyNicknameError(createErr.message) ?? new Error(createErr.message);
   }
 }
 
