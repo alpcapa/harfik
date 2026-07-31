@@ -2,7 +2,7 @@
 // uygulama içi istek/kabul) + kalıcı davet linkini WhatsApp/SMS/DM gibi
 // kanallardan paylaşarak henüz üye olmayanları da davet etme (asıl büyüme
 // mekanizması — bkz. CLAUDE.md "Arkadaşlık Sistemi").
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
@@ -12,6 +12,7 @@ import {
   createFriendInviteLink,
   fetchFriends,
   fetchIncomingFriendRequests,
+  listUsersForFriend,
   removeFriend,
   respondFriendRequest,
   searchUsersForFriend,
@@ -47,6 +48,10 @@ function buildInviteUrl(token: string): string {
 
 const INVITE_SHARE_TEXT = "Kelimeki'de birlikte kelime oyunu oynayalım!";
 
+// Arama kutusu boşken gösterilen tüm-üyeler listesinin sayfa boyutu —
+// `Leaderboard`'daki PAGE_SIZE ile aynı lazy-load deseni.
+const ALL_USERS_PAGE_SIZE = 20;
+
 const rowCls = 'flex items-center gap-2.5 bg-bg rounded-md px-2.5 py-2';
 const listCls = 'flex flex-col gap-1.5';
 const nameCls = 'flex-1 min-w-0 text-sm text-text font-bold truncate';
@@ -76,6 +81,14 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
   const confirmCancelRef = useModalA11y(!!confirmCancel, () => setConfirmCancel(null));
   const cancelResultRef = useModalA11y(!!cancelResultMsg, () => setCancelResultMsg(null));
 
+  // Arama kutusu boşken gösterilen, tüm üyelerin alfabetik/sayfalı listesi —
+  // `Leaderboard`'daki IntersectionObserver tabanlı lazy-load deseniyle aynı.
+  const [allUsers, setAllUsers] = useState<FriendSearchResult[] | null>(null);
+  const [allUsersHasMore, setAllUsersHasMore] = useState(true);
+  const [allUsersLoadingMore, setAllUsersLoadingMore] = useState(false);
+  const allUsersScrollRef = useRef<HTMLDivElement | null>(null);
+  const allUsersSentinelRef = useRef<HTMLDivElement | null>(null);
+
   const reloadFriends = () => void fetchFriends().then(setFriends);
   const reloadRequests = () => void fetchIncomingFriendRequests().then(setRequests);
 
@@ -101,11 +114,57 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
     return () => clearTimeout(t);
   }, [query]);
 
+  // "Ara & Ekle" sekmesi ilk açıldığında (arama kutusu henüz boşken) tüm
+  // üyeler listesinin ilk sayfasını çek.
+  useEffect(() => {
+    if (tab !== 'search' || allUsers !== null) return;
+    void listUsersForFriend(0, ALL_USERS_PAGE_SIZE).then((page) => {
+      setAllUsers(page);
+      setAllUsersHasMore(page.length === ALL_USERS_PAGE_SIZE);
+    });
+  }, [tab, allUsers]);
+
+  const loadMoreAllUsers = useCallback(() => {
+    if (allUsers === null) return;
+    setAllUsersLoadingMore((already) => {
+      if (already) return already;
+      void listUsersForFriend(allUsers.length, ALL_USERS_PAGE_SIZE).then((page) => {
+        setAllUsers((cur) => [...(cur ?? []), ...page]);
+        setAllUsersHasMore(page.length === ALL_USERS_PAGE_SIZE);
+        setAllUsersLoadingMore(false);
+      });
+      return true;
+    });
+  }, [allUsers]);
+
+  useEffect(() => {
+    if (tab !== 'search' || query.trim().length >= 2 || !allUsersHasMore || allUsers === null) return;
+    const sentinel = allUsersSentinelRef.current;
+    const root = allUsersScrollRef.current;
+    if (!sentinel || !root) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMoreAllUsers();
+      },
+      { root, rootMargin: '80px' },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [tab, query, allUsersHasMore, allUsers, loadMoreAllUsers]);
+
+  // Bir kullanıcının ilişki durumu değiştiğinde (istek gönderildi/iptal
+  // edildi/kabul edildi) hem arama sonuçları hem tüm-üyeler listesi güncel
+  // kalsın — hangisi o an ekranda görünüyorsa görünsün.
+  const patchRelation = (id: string, relation: FriendSearchResult['relation']) => {
+    setResults((r) => r.map((u) => (u.id === id ? { ...u, relation } : u)));
+    setAllUsers((r) => (r ? r.map((u) => (u.id === id ? { ...u, relation } : u)) : r));
+  };
+
   const handleSend = async (id: string) => {
     setBusyId(id);
     try {
       await sendFriendRequest(id);
-      setResults((r) => r.map((u) => (u.id === id ? { ...u, relation: 'pending_outgoing' } : u)));
+      patchRelation(id, 'pending_outgoing');
     } catch (err) {
       console.error('[Kelimeki] arkadaşlık isteği hatası:', err);
     } finally {
@@ -117,6 +176,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
     setBusyId(requesterId);
     try {
       await respondFriendRequest(requesterId, accept);
+      patchRelation(requesterId, accept ? 'accepted' : null);
       reloadRequests();
       if (accept) reloadFriends();
     } catch (err) {
@@ -164,7 +224,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
     setBusyId(id);
     try {
       await removeFriend(id); // gönderilen isteği iptal et
-      setResults((r) => r.map((u) => (u.id === id ? { ...u, relation: null } : u)));
+      patchRelation(id, null);
       setCancelResultMsg('Arkadaşlık isteği iptal edildi.');
     } catch (err) {
       console.error('[Kelimeki] istek iptal hatası:', err);
@@ -200,6 +260,45 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
     }
     setInviteStatus('idle');
   };
+
+  // Arama sonuçlarında ve tüm-üyeler listesinde birebir aynı satır — ilişki
+  // durumuna göre Ekle/İstek Gönderildi/Kabul Et/Arkadaşsınız gösterir.
+  const renderFriendRow = (u: FriendSearchResult) => (
+    <div key={u.id} className={rowCls}>
+      <Avatar url={u.avatar_url} name={u.name} size={32} />
+      <span className={nameCls}>{u.name}</span>
+      {u.relation === 'accepted' ? (
+        <span className="shrink-0 text-[10px] font-mono text-muted uppercase tracking-[0.5px]">
+          Arkadaşsınız
+        </span>
+      ) : u.relation === 'pending_outgoing' ? (
+        <button
+          type="button"
+          className="shrink-0 text-[10px] font-mono text-muted uppercase tracking-[0.5px] underline underline-offset-2 active:opacity-70 transition-opacity"
+          disabled={busyId === u.id}
+          onClick={() => setConfirmCancel(u)}
+        >
+          İstek Gönderildi
+        </button>
+      ) : u.relation === 'pending_incoming' ? (
+        <button
+          className={`${smallBtn} bg-accent text-white`}
+          disabled={busyId === u.id}
+          onClick={() => handleRespond(u.id, true)}
+        >
+          Kabul Et
+        </button>
+      ) : (
+        <button
+          className={`${smallBtn} bg-accent text-white`}
+          disabled={busyId === u.id}
+          onClick={() => handleSend(u.id)}
+        >
+          Ekle
+        </button>
+      )}
+    </div>
+  );
 
   const tabBtn = (t: Tab, label: string, badge?: number) => (
     <button
@@ -313,52 +412,44 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
               onChange={(e) => setQuery(e.target.value)}
               autoFocus
             />
-            <div className={`${listCls} min-h-[40px]`}>
-              {searching ? (
-                <p className="text-muted text-xs font-mono py-4 text-center">Aranıyor…</p>
-              ) : query.trim().length >= 2 && results.length === 0 ? (
-                <p className="text-muted text-xs font-mono py-4 text-center">
-                  Kimse bulunamadı — Kelimeki'de değilse yukarıdaki davet linkini gönderebilirsin.
+            {query.trim().length >= 2 ? (
+              <div className={`${listCls} min-h-[40px]`}>
+                {searching ? (
+                  <p className="text-muted text-xs font-mono py-4 text-center">Aranıyor…</p>
+                ) : results.length === 0 ? (
+                  <p className="text-muted text-xs font-mono py-4 text-center">
+                    Kimse bulunamadı — Kelimeki'de değilse yukarıdaki davet linkini gönderebilirsin.
+                  </p>
+                ) : (
+                  results.map((u) => renderFriendRow(u))
+                )}
+              </div>
+            ) : (
+              <>
+                <p className="text-[9px] uppercase tracking-[1px] text-muted font-mono px-0.5">
+                  Tüm Üyeler
                 </p>
-              ) : (
-                results.map((u) => (
-                  <div key={u.id} className={rowCls}>
-                    <Avatar url={u.avatar_url} name={u.name} size={32} />
-                    <span className={nameCls}>{u.name}</span>
-                    {u.relation === 'accepted' ? (
-                      <span className="shrink-0 text-[10px] font-mono text-muted uppercase tracking-[0.5px]">
-                        Arkadaşsınız
-                      </span>
-                    ) : u.relation === 'pending_outgoing' ? (
-                      <button
-                        type="button"
-                        className="shrink-0 text-[10px] font-mono text-muted uppercase tracking-[0.5px] underline underline-offset-2 active:opacity-70 transition-opacity"
-                        disabled={busyId === u.id}
-                        onClick={() => setConfirmCancel(u)}
-                      >
-                        İstek Gönderildi
-                      </button>
-                    ) : u.relation === 'pending_incoming' ? (
-                      <button
-                        className={`${smallBtn} bg-accent text-white`}
-                        disabled={busyId === u.id}
-                        onClick={() => handleRespond(u.id, true)}
-                      >
-                        Kabul Et
-                      </button>
-                    ) : (
-                      <button
-                        className={`${smallBtn} bg-accent text-white`}
-                        disabled={busyId === u.id}
-                        onClick={() => handleSend(u.id)}
-                      >
-                        Ekle
-                      </button>
+                {allUsers === null ? (
+                  <p className="text-muted text-xs font-mono py-4 text-center">Yükleniyor…</p>
+                ) : allUsers.length === 0 ? (
+                  <p className="text-muted text-xs font-mono py-4 text-center">Henüz başka üye yok.</p>
+                ) : (
+                  <div
+                    ref={allUsersScrollRef}
+                    className={`${listCls} max-h-[50vh] overflow-y-auto pr-1`}
+                  >
+                    {allUsers.map((u) => renderFriendRow(u))}
+                    {allUsersHasMore && (
+                      <div ref={allUsersSentinelRef} className="py-2 text-center">
+                        <span className="text-muted text-[10px] font-mono">
+                          {allUsersLoadingMore ? 'Yükleniyor…' : ''}
+                        </span>
+                      </div>
                     )}
                   </div>
-                ))
-              )}
-            </div>
+                )}
+              </>
+            )}
           </div>
         )}
       </div>
