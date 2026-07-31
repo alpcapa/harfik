@@ -112,7 +112,9 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   const [showFeedback, setShowFeedback] = useState(false);
   const [gameOverDismissed, setGameOverDismissed] = useState(false);
   const [showPassConfirm, setShowPassConfirm] = useState(false);
-  const [pendingWild, setPendingWild] = useState<{ r: number; c: number; rackIndex?: number } | null>(null);
+  const [pendingWild, setPendingWild] = useState<
+    { r: number; c: number; rackIndex?: number; editing?: boolean } | null
+  >(null);
   const [invasionConfirm, setInvasionConfirm] = useState<{
     list: { ownerName: string; ownerPts: number }[];
     score: number;
@@ -368,6 +370,8 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     if (!d.moved) {
       if (d.source.kind === 'rack') {
         dispatch({ type: 'SELECT_TILE', index: d.source.index });
+      } else if (d.source.tile.wild) {
+        setPendingWild({ r: d.source.r, c: d.source.c, editing: true });
       } else {
         dispatch({ type: 'RECALL_CELL', r: d.source.r, c: d.source.c });
       }
@@ -944,16 +948,29 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
 
       {pendingWild && (
         <WildcardModal
+          title={pendingWild.editing ? 'Jokeri Hangi Harfe Çevir?' : undefined}
           onSelect={(letter) => {
-            dispatch({
-              type: 'PLACE_TILE',
-              r: pendingWild.r,
-              c: pendingWild.c,
-              wildLetter: letter,
-              rackIndex: pendingWild.rackIndex,
-            });
+            if (pendingWild.editing) {
+              dispatch({ type: 'SET_WILD_LETTER', r: pendingWild.r, c: pendingWild.c, wildLetter: letter });
+            } else {
+              dispatch({
+                type: 'PLACE_TILE',
+                r: pendingWild.r,
+                c: pendingWild.c,
+                wildLetter: letter,
+                rackIndex: pendingWild.rackIndex,
+              });
+            }
             setPendingWild(null);
           }}
+          onRecall={
+            pendingWild.editing
+              ? () => {
+                  dispatch({ type: 'RECALL_CELL', r: pendingWild.r, c: pendingWild.c });
+                  setPendingWild(null);
+                }
+              : undefined
+          }
           onClose={() => setPendingWild(null)}
         />
       )}
