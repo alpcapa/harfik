@@ -490,7 +490,7 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
               </div>
             </div>
           )}
-          <Section title="Aktif Oyunlar" games={active} onOpenGame={onOpenGame} turns={turns} deadlines={deadlines} />
+          <Section title="Devam Eden Oyunlar" games={active} onOpenGame={onOpenGame} turns={turns} deadlines={deadlines} />
           <PendingSection title="Kabul Ettin — Diğerleri Bekleniyor" games={acceptedWaiting} />
           <PendingSection title="Bekleyen Oyunlar" games={waiting} />
         </>
