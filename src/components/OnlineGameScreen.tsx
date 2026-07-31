@@ -24,6 +24,8 @@ import { RemainingTilesModal } from './RemainingTilesModal';
 import { MoveHistoryModal } from './MoveHistoryModal';
 import { WildcardModal } from './WildcardModal';
 import { FeedbackModal } from './FeedbackModal';
+import { ChatModal, type ChatParticipant } from './ChatModal';
+import { Avatar } from './Avatar';
 import { Tile as TileComponent } from './Tile';
 import { createInitialState, gameReducer, isFirstMove } from '../game/gameReducer';
 import { isWordSetReady } from '../data/wordSetLoader';
@@ -38,20 +40,24 @@ import {
 } from '../utils/validator';
 import { getFormedWords, getFullWordAt, key } from '../utils/board';
 import { trLower } from '../utils/turkish';
+import { hasSeenChatIntro, markChatIntroSeen } from '../utils/onboarding';
 import {
   checkOnlineGameTurnTimeout,
   fetchMeaning,
+  fetchOnlineGameMessages,
   fetchOnlineGameMoves,
   fetchOnlineGameState,
   getMyOnlineRack,
   isSupabaseConfigured,
   isValidWordRemote,
+  sendOnlineGameMessage,
   submitMove,
+  subscribeOnlineGameMessages,
   subscribeOnlineGameState,
   triggerAiTurn,
 } from '../lib/api';
 import type { HistoryEntry, Tile as TileModel } from '../game/types';
-import type { OnlineGame, OnlineMoveRow, WordMeaning } from '../lib/database.types';
+import type { OnlineGame, OnlineGameMessageRow, OnlineGameSlot, OnlineMoveRow, WordMeaning } from '../lib/database.types';
 
 interface OnlineGameScreenProps {
   game: OnlineGame;
@@ -115,6 +121,13 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   const [meaning, setMeaning] = useState<{ entries: { word: string; data: WordMeaning | null; loading: boolean }[] } | null>(
     null,
   );
+
+  // Oyun İçi Mesajlaşma — Faz 1 (yalnızca Canlı oyunlar).
+  const [chatMessages, setChatMessages] = useState<OnlineGameMessageRow[]>([]);
+  const [showChat, setShowChat] = useState(false);
+  const [showChatIntro, setShowChatIntro] = useState(false);
+  const [newMessagePopup, setNewMessagePopup] = useState<OnlineGameMessageRow | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // ── Taş sürükleme (App.tsx'teki sistemle birebir aynı) ─────────────────
   const dragRef = useRef<{ source: DragSource; startX: number; startY: number; moved: boolean } | null>(null);
@@ -252,6 +265,33 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       window.removeEventListener('focus', onForeground);
       window.removeEventListener('online', onForeground);
       window.clearInterval(intervalId);
+    };
+  }, [game.id, mySlotIndex]);
+
+  // Oyun İçi Mesajlaşma — Faz 1: online_game_states'in Realtime aboneliğinden
+  // BAĞIMSIZ ayrı bir effect/kanal (farklı tablo) — ilk yükte tüm sohbeti
+  // çeker, sonrasında yeni mesajları INSERT olayıyla dinler. Sohbet penceresi
+  // kapalıyken gelen bir mesaj hem "yeni mesaj" popup'ını tetikler hem de
+  // Mesajlaşma butonundaki okunmamış rozetini artırır.
+  useEffect(() => {
+    if (mySlotIndex < 0) return;
+    let cancelled = false;
+    void fetchOnlineGameMessages(game.id).then((rows) => {
+      if (!cancelled) setChatMessages(rows);
+    });
+    const unsubscribe = subscribeOnlineGameMessages(game.id, (row) => {
+      setChatMessages((cur) => (cur.some((m) => m.id === row.id) ? cur : [...cur, row]));
+      setShowChat((open) => {
+        if (!open) {
+          setNewMessagePopup(row);
+          setUnreadCount((n) => n + 1);
+        }
+        return open;
+      });
+    });
+    return () => {
+      cancelled = true;
+      unsubscribe();
     };
   }, [game.id, mySlotIndex]);
 
@@ -610,6 +650,32 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   const dragHiddenKey = ghost && ghost.source.kind === 'placed' ? key(ghost.source.r, ghost.source.c) : null;
   const dragHiddenIndex = ghost && ghost.source.kind === 'rack' ? ghost.source.index : null;
 
+  // Oyun İçi Mesajlaşma — Faz 1: gönderen user_id'sini isim/avatar/renge
+  // çevirmek için — isim/avatar `game.slots`'un zenginleştirilmiş halinden
+  // (list_my_online_games), renk sunucudaki güncel `state.players`'tan
+  // (koltuk indeksi `game.slots` ile `state.players` arasında AYNIDIR).
+  const chatParticipants: ChatParticipant[] = game.slots
+    .map((s, seatIdx) => ({ s, seatIdx }))
+    .filter((x): x is { s: Extract<OnlineGameSlot, { type: 'human' }>; seatIdx: number } => x.s.type === 'human')
+    .map(({ s, seatIdx }) => ({
+      userId: s.user_id,
+      name: s.name ?? 'Oyuncu',
+      avatarUrl: s.avatar_url ?? null,
+      colorIndex: state.players[seatIdx]?.colorIndex ?? seatIdx,
+    }));
+  const chatSender = newMessagePopup
+    ? chatParticipants.find((p) => p.userId === newMessagePopup.sender_user_id)
+    : null;
+
+  const handleOpenMessaging = () => {
+    if (hasSeenChatIntro()) {
+      setShowChat(true);
+      setUnreadCount(0);
+    } else {
+      setShowChatIntro(true);
+    }
+  };
+
   return (
     <div className="min-h-[100dvh] w-full flex flex-col items-center overflow-x-hidden">
       <GameHeader state={state} onLogoClick={onBack} />
@@ -620,6 +686,8 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
           onCellClick={handleCellClick}
           moveStatus={moveStatus}
           onOpenHistory={() => setShowHistory(true)}
+          onOpenMessaging={handleOpenMessaging}
+          hasUnreadMessage={unreadCount > 0}
           dragHiddenKey={dragHiddenKey}
           dragOverKey={ghost?.overKey ?? null}
           dragOverValid={ghost?.overValid ?? false}
@@ -816,6 +884,63 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       {meaning && <MeaningModal entries={meaning.entries} onClose={() => setMeaning(null)} />}
       {showTiles && <RemainingTilesModal state={tilesState} onClose={() => setShowTiles(false)} />}
       {showHistory && <MoveHistoryModal state={historyState} onClose={() => setShowHistory(false)} />}
+
+      {showChatIntro && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+          <div className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none">
+            <p className="text-base font-bold text-text font-sans">Oyun içi mesajlaşmaya hoşgeldiniz!</p>
+            <p className="text-sm text-text font-sans leading-relaxed">
+              Buradan gruba mesaj atabilirsiniz. Mesaj herkesin ekranında popup şeklinde gözükür. Haydi, ilk mesajını gönder!
+            </p>
+            <button
+              onClick={() => {
+                markChatIntroSeen();
+                setShowChatIntro(false);
+                setShowChat(true);
+                setUnreadCount(0);
+              }}
+              className="btn-raised py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+            >
+              Devam
+            </button>
+          </div>
+        </div>
+      )}
+
+      {newMessagePopup && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+          <div className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none relative">
+            <button
+              onClick={() => setNewMessagePopup(null)}
+              aria-label="Kapat"
+              className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
+            >
+              ✕
+            </button>
+            <div className="flex items-center gap-2">
+              <Avatar url={chatSender?.avatarUrl} name={chatSender?.name ?? 'Oyuncu'} size={28} />
+              <p className="text-sm font-bold text-text font-sans">{chatSender?.name ?? 'Oyuncu'}</p>
+            </div>
+            <p className="text-sm text-text font-sans leading-relaxed break-words">{newMessagePopup.message}</p>
+            <button
+              onClick={() => setNewMessagePopup(null)}
+              className="btn-raised-neutral py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+            >
+              Kapat
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showChat && (
+        <ChatModal
+          messages={chatMessages}
+          participants={chatParticipants}
+          myUserId={myUserId}
+          onSend={(text) => sendOnlineGameMessage(game.id, text)}
+          onClose={() => setShowChat(false)}
+        />
+      )}
 
       {pendingWild && (
         <WildcardModal

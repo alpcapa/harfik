@@ -16,6 +16,7 @@ import { GameBoardPreview } from './GameBoardPreview';
 import { ActionSheet } from './ActionSheet';
 import { Avatar } from './Avatar';
 import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
+import { GameChatHistoryModal } from './GameChatHistoryModal';
 import { captureNodeAsPng } from '../utils/shareBoardImage';
 import { leaguePoints, formatLeaguePoints, computeRanks } from '../utils/leaguePoints';
 
@@ -48,11 +49,8 @@ interface GameHistoryModalProps {
 
 const PAGE_SIZE = 20;
 
-function formatDateTime(iso: string): string {
-  const d = new Date(iso);
-  const date = d.toLocaleDateString('tr-TR');
-  const time = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-  return `${date} · ${time}`;
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('tr-TR');
 }
 
 /**
@@ -120,6 +118,15 @@ function HeartIcon({ filled, size = 18 }: { filled: boolean; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+  );
+}
+
+/** Oyun İçi Mesajlaşma — Faz 1: Canlı/Yapay Zeka rozetlerinin yanındaki sohbet rozeti. */
+function ChatBubbleIcon({ size = 12 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
   );
 }
@@ -219,6 +226,10 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
   const [likersByGame, setLikersByGame] = useState<Record<string, GameLiker[]>>({});
   const [likersLoading, setLikersLoading] = useState(false);
   const [selectedLiker, setSelectedLiker] = useState<PlayerSummary | null>(null);
+
+  // Oyun İçi Mesajlaşma — Faz 1: bir oyun kartındaki sohbet rozetine
+  // tıklanınca o oyunun tüm sohbet geçmişini gösteren modal.
+  const [selectedChatGameId, setSelectedChatGameId] = useState<string | null>(null);
 
   const handleShowLikers = useCallback((gameId: string) => {
     setLikersGameId(gameId);
@@ -440,7 +451,7 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                           </button>
                         )}
                       </span>
-                      <span className="whitespace-nowrap shrink-0">{formatDateTime(entry.created_at)}</span>
+                      <span className="whitespace-nowrap shrink-0">{formatDate(entry.created_at)}</span>
                       {isOnline && (
                         <span className="text-green font-bold normal-case border border-green/40 bg-green/10 rounded px-[3px] py-0 text-[7px] leading-[10px] whitespace-nowrap shrink-0">
                           Canlı
@@ -450,6 +461,19 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                         <span className="text-accent font-bold normal-case border border-accent/40 bg-accent/10 rounded px-[3px] py-0 text-[7px] leading-[10px] whitespace-nowrap shrink-0">
                           Yapay Zeka
                         </span>
+                      )}
+                      {entry.message_count > 0 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedChatGameId(entry.id);
+                          }}
+                          aria-label="Sohbet geçmişini göster"
+                          className="flex items-center gap-0.5 text-muted shrink-0"
+                        >
+                          <ChatBubbleIcon />
+                          {entry.message_count}
+                        </button>
                       )}
                     </span>
                     <span className="flex items-center gap-2 shrink-0 ml-auto">
@@ -581,6 +605,9 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
       )}
       {selectedLiker && (
         <PlayerScoreCard member={selectedLiker} onClose={() => setSelectedLiker(null)} />
+      )}
+      {selectedChatGameId && (
+        <GameChatHistoryModal gameId={selectedChatGameId} onClose={() => setSelectedChatGameId(null)} />
       )}
     </Modal>
   );

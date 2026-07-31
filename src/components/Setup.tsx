@@ -74,8 +74,8 @@ function SavedGameRow({
         <span className="text-[9px] font-mono text-muted truncate">{subtitle}</span>
       </span>
       <span className="flex flex-col items-end gap-0.5 shrink-0">
-        <span className="text-[9px] font-mono uppercase tracking-[1px] text-accent font-bold">
-          Devam Et
+        <span className="text-[9px] font-mono uppercase tracking-[1px] text-green font-bold">
+          Senin Hamlen Bekleniyor
         </span>
         <span
           className={`text-[8px] font-mono uppercase tracking-[0.5px] ${
@@ -98,8 +98,8 @@ interface SetupProps {
   // Setup burada yalnızca seçiciyi gösterip görünümü değiştirir.
   mainView: 'local' | 'live';
   onMainViewChange: (view: 'local' | 'live') => void;
-  // "Aktif" bir Canlı oyuna tıklanınca (LiveGamesTab), gerçek oyun ekranını
-  // açmak için App.tsx'e iletilir (Faz 3, 4. adım).
+  // "Devam Eden" bir Canlı oyuna tıklanınca (LiveGamesTab), gerçek oyun
+  // ekranını açmak için App.tsx'e iletilir (Faz 3, 4. adım).
   onOpenLiveGame: (game: OnlineGame) => void;
   // Yarım kalan yerel (YZ) oyun (localStorage'dan, App.tsx'te tutulur) —
   // yalnızca MİSAFİR (girişsiz) kullanıcı için anlamlıdır: varsa "Yapay Zeka
@@ -178,7 +178,7 @@ export function Setup({
   const localSaveCount = user ? (cloudSaves?.length ?? 0) : savedGame ? 1 : 0;
 
   // Girişli kullanıcı için "Yapay Zeka ile" sekmesi varsayılan olarak listeyi
-  // gösterir (Canlı'daki "Aktif Oyunlar" listesiyle aynı görsel/etkileşim
+  // gösterir (Canlı'daki "Devam Eden Oyunlar" listesiyle aynı görsel/etkileşim
   // deseni) — kurulum formu "+ Yeni Yapay Zeka Oyunu" butonuna tıklanınca
   // açılır (`LiveGamesTab`'daki "+ Yeni Canlı Oyun" → `LiveGameCreateForm`
   // akışıyla BİREBİR AYNI desen). Misafirde bu buton hiç yok — tek slot
@@ -547,13 +547,27 @@ export function Setup({
             })}
           </div>
 
-          <button
-            onClick={handleStart}
-            disabled={!wordsReady}
-            className="btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-          >
-            {wordsReady ? 'Oyunu Başlat' : 'Hazırlanıyor…'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleStart}
+              disabled={!wordsReady}
+              className="flex-1 btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              {wordsReady ? 'Oyunu Başlat' : 'Hazırlanıyor…'}
+            </button>
+            {/* Yalnızca girişli kullanıcı için (creatingLocal) — LiveGameCreateForm'un
+                "Vazgeç" butonuyla BİREBİR AYNI, Devam Eden Oyunlar listesine
+                dönmeyi sağlar. Misafirde bu form zaten tek/koşulsuz gösterilen
+                yol olduğundan (dönülecek bir liste yok) hiç render edilmez. */}
+            {creatingLocal && (
+              <button
+                onClick={() => setCreatingLocal(false)}
+                className="flex-1 btn-raised-neutral py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-void border border-border text-text active:scale-[0.97] transition-transform"
+              >
+                Vazgeç
+              </button>
+            )}
+          </div>
         </>
       )}
 

@@ -17,3 +17,23 @@ export function markQuickStartSeen(): void {
     // yoksay
   }
 }
+
+// Oyun İçi Mesajlaşma — Faz 1: Canlı oyun ekranındaki "Mesajlaşma" butonuna
+// ilk kez basıldığında gösterilen hoşgeldin popup'ı, aynı bire bir desen.
+const CHAT_INTRO_KEY = 'kelimeki:seen-chat-intro';
+
+export function hasSeenChatIntro(): boolean {
+  try {
+    return localStorage.getItem(CHAT_INTRO_KEY) === '1';
+  } catch {
+    return true;
+  }
+}
+
+export function markChatIntroSeen(): void {
+  try {
+    localStorage.setItem(CHAT_INTRO_KEY, '1');
+  } catch {
+    // yoksay
+  }
+}

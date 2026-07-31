@@ -386,8 +386,8 @@ export default function App() {
   // eklendi — iki mod farklı zihinsel modeller taşıyor (bkz. proje notları).
   const [mainView, setMainView] = useState<'local' | 'live'>('local');
 
-  // Açık olan Canlı oyun (Faz 3, 4. adım) — Setup/LiveGamesTab'daki "Aktif"
-  // bir oyuna dokununca dolar; doluyken tüm normal kurulum/yerel oyun
+  // Açık olan Canlı oyun (Faz 3, 4. adım) — Setup/LiveGamesTab'daki "Devam
+  // Eden" bir oyuna dokununca dolar; doluyken tüm normal kurulum/yerel oyun
   // ağacının yerine OnlineGameScreen render edilir (aşağıya bkz.).
   const [onlineGame, setOnlineGame] = useState<OnlineGame | null>(null);
 

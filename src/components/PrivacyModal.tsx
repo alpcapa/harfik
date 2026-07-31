@@ -28,7 +28,7 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
       <div className="flex flex-col gap-5">
         <P>
           Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, hangi verileri topladığımızı,
-          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 29 Temmuz 2026.
+          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 31 Temmuz 2026.
         </P>
 
         <Section title="1. Veri Sorumlusu">
@@ -57,6 +57,7 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
               Arkadaşlık bağlantıları (kiminle arkadaş olduğunuz, gönderdiğiniz/aldığınız
               arkadaşlık istekleri, davet linkinizin kullanım verisi)
             </li>
+            <li>Canlı oyunlarda gönderdiğiniz oyun içi sohbet mesajları</li>
           </ul>
         </Section>
 
@@ -99,7 +100,11 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             kullanıcılara görünür olur; e-posta adresiniz hiçbir zaman başka bir kullanıcıya
             gösterilmez. Bir oyunu paylaşmayı seçerseniz, o oyunun tahtası ve oyuncu
             isimleri/puanları giriş yapmamış ziyaretçiler dahil herkese açık bir bağlantı
-            üzerinden görülebilir hale gelir; bu paylaşım geri alınamaz.
+            üzerinden görülebilir hale gelir; bu paylaşım geri alınamaz. Canlı oyunlarda
+            gönderdiğiniz oyun içi sohbet mesajları o oyundaki diğer katılımcılara gerçek
+            zamanlı olarak görünür ve oyun bittikten sonra oyun kaydının bir parçası olarak
+            (mevcut skor/tahta görünürlüğüyle aynı şekilde, tüm kayıtlı kullanıcılara açık)
+            saklanır.
           </P>
         </Section>
 
