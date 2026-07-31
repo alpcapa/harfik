@@ -98,7 +98,7 @@ src/
 │   ├── turkish.ts      # trUpper / trLower (i/İ, ı/I dönüşümü)
 │   ├── random.ts       # karıştırma
 │   ├── ranking.ts      # oyun sonu sıralama (teslim olanlar en sona)
-│   ├── gameStorage.ts  # devam eden oyunun localStorage kalıcılığı + terk temizliği
+│   ├── gameStorage.ts  # devam eden oyunun localStorage kalıcılığı + terk temizliği (yalnızca misafir/girişsiz kullanıcı — girişli kullanıcı sunucudaki local_game_saves'i kullanır, cihazlar arası + çoklu oyun, bkz. lib/api.ts)
 │   ├── gameSync.ts      # bitmiş oyunlar için çevrimdışı/misafir kuyruğu
 │   ├── feedbackSync.ts # geri bildirim formu için çevrimdışı kuyruk
 │   ├── onboarding.ts   # ilk açılış hızlı başlangıç ipucu bayrağı

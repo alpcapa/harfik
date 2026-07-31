@@ -1,7 +1,7 @@
 // Kelimeki — Supabase şema tipleri (elle yazıldı; MCP erişimi açılınca
 // `generate_typescript_types` ile otomatik üretilebilir).
 
-import type { BonusType, Tile } from '../game/types';
+import type { BonusType, GameState, Tile } from '../game/types';
 
 export type GameResult = 'win' | 'lose' | 'tie';
 
@@ -103,6 +103,22 @@ export interface OnlineGame {
   my_invite_status: 'pending' | 'accepted' | 'declined' | null;
   /** Çağıran davetliyse `game_invites.id` (respond_to_game_invite'a geçilir); kurucuysa null. */
   my_invite_id: string | null;
+}
+
+// ── Yerel (YZ) oyun — sunucu kaydı (girişli kullanıcılar, cihazlar arası) ───
+
+/**
+ * `local_game_saves` tablosundaki satır — girişli bir kullanıcının devam eden
+ * bir yerel (YZ) oyununun tam kaydı. Misafirler bu tabloya hiç yazmaz
+ * (bkz. src/utils/gameStorage.ts, localStorage tabanlı tekil-slot kaydı).
+ */
+export interface LocalGameSave {
+  id: string;
+  user_id: string;
+  state: GameState;
+  player_count: number;
+  created_at: string;
+  updated_at: string;
 }
 
 // ── Canlı oyun (Faz 3 — gerçek zamanlı senkron oynanış) ─────────────────────

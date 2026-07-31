@@ -18,7 +18,7 @@ import { ResetPasswordModal } from './components/ResetPasswordModal';
 import { createInitialState, gameReducer, isFirstMove } from './game/gameReducer';
 import { preloadWordSet, isWordSetReady } from './data/wordSetLoader';
 import { calcScore, computeInvasionSplit, formatInvalidWordsReason, validatePlacement, validatePlacementStructural } from './utils/validator';
-import { loadGameState, saveGameState, clearGameState, takePendingAbandonedGame } from './utils/gameStorage';
+import { loadGameState, saveGameState, clearGameState, takePendingAbandonedGame, ABANDON_TIMEOUT_MS } from './utils/gameStorage';
 import type { SavedGame } from './utils/gameStorage';
 import { buildGameRecord } from './utils/gameRecord';
 import { markQuickStartSeen } from './utils/onboarding';
@@ -27,7 +27,18 @@ import type { Tile as TileModel } from './game/types';
 import { Tile } from './components/Tile';
 import { trLower } from './utils/turkish';
 import { PLAYER_COLORS } from './game/constants';
-import { fetchMeaning, isValidWordRemote, isSupabaseConfigured, logGameFinish, logGuestVisit, acceptFriendInvite } from './lib/api';
+import {
+  fetchMeaning,
+  isValidWordRemote,
+  isSupabaseConfigured,
+  logGameFinish,
+  logGuestVisit,
+  acceptFriendInvite,
+  listLocalGameSaves,
+  upsertLocalGameSave,
+  deleteLocalGameSave,
+  claimAbandonedLocalGameSave,
+} from './lib/api';
 import { saveGameDurable, flushPendingGames } from './utils/gameSync';
 import { flushPendingFeedback } from './utils/feedbackSync';
 import { takePendingInviteToken } from './utils/friendInvite';
@@ -40,7 +51,7 @@ import {
   getDeviceType,
   isStandaloneDisplay,
 } from './utils/visitTracking';
-import type { OnlineGame, WordMeaning } from './lib/database.types';
+import type { LocalGameSave, OnlineGame, WordMeaning } from './lib/database.types';
 import { OnlineGameScreen } from './components/OnlineGameScreen';
 import { useAuth } from './hooks/useAuth';
 import { useModalA11y } from './hooks/useModalA11y';
@@ -75,6 +86,76 @@ export default function App() {
   // dispatch edilene kadar `state`'e hiç dokunmaz.
   const [savedGame, setSavedGame] = useState<SavedGame | null>(() => loadGameState());
 
+  // Girişli kullanıcının devam eden YZ oyunları — `local_game_saves`
+  // tablosundan (bkz. src/lib/api.ts). Yukarıdaki `savedGame`'in aksine
+  // (misafir/localStorage, tek slot) burada birden fazla oyun aynı anda
+  // "devam eden" sayılabilir ve herhangi bir cihazdan erişilebilir. Misafir
+  // kullanıcılar için her zaman null kalır — Setup bu durumda mevcut tekil
+  // (savedGame) davranışı aynen kullanmaya devam eder.
+  const [cloudSaves, setCloudSaves] = useState<LocalGameSave[] | null>(null);
+  // Şu an reducer'da oynanmakta olan oyunun sunucudaki `local_game_saves.id`si
+  // — girişli bir kullanıcı için doludur (yeni oyunda ilk state değişiminde
+  // tembelce üretilir, sunucudan devam edilen bir oyunda ise handleResumeCloudSave
+  // tarafından dispatch'ten ÖNCE atanır). Oyun bitince/terk edilince null'a
+  // döner ki bir sonraki oyun yeni bir id alsın.
+  const activeSaveIdRef = useRef<string | null>(null);
+
+  // Girişli kullanıcının cloudSaves listesini sunucudan tazeler; bu arada 7
+  // gün hareketsiz kalmış (ABANDON_TIMEOUT_MS) kayıtları da atomik olarak
+  // "iddia edip" (claimAbandonedLocalGameSave) siler ve — tıpkı localStorage'daki
+  // terk edilme akışıyla (aşağıdaki mount effect'i) BİREBİR AYNI mantıkla —
+  // gerçekten başlamış (turnCount>=2) olanlar için gecikmeli bir teslim kaydı
+  // (-2 Sanal Lig cezası) oluşturur. `state === 'setup'` her göründüğünde
+  // (App.tsx'teki phase effect'i) tetiklenir.
+  const refreshCloudSaves = async () => {
+    if (!user || !isSupabaseConfigured) {
+      setCloudSaves(null);
+      return;
+    }
+    const saves = await listLocalGameSaves();
+    const cutoffMs = Date.now() - ABANDON_TIMEOUT_MS;
+    const cutoffIso = new Date(cutoffMs).toISOString();
+    const stillActive: LocalGameSave[] = [];
+    for (const save of saves) {
+      // Güvenlik ağı: normalde bir oyun bitince (isGameOver) aynı anda
+      // sunucudaki satırı da silen autosave effect'i (aşağıda) devreye
+      // girer — ama o silme isteği (ör. sekme kapanınca) hiç ulaşmamış
+      // olabilir. Böyle yarım kalmış "bitmiş ama hâlâ orada duran" bir kayıt
+      // varsa fırsatçı biçimde temizlenir, listeye hiç girmez.
+      if (save.state.phase !== 'play' || save.state.isGameOver) {
+        void deleteLocalGameSave(save.id);
+        continue;
+      }
+      if (Date.parse(save.updated_at) > cutoffMs) {
+        stillActive.push(save);
+        continue;
+      }
+      // Süresi dolmuş — bu cihaz (ya da aynı anda başka bir cihaz) "iddia"
+      // etmeyi dener. Başka biri zaten silmişse claimed null döner, listeye
+      // hiç eklenmez.
+      const claimedState = await claimAbandonedLocalGameSave(save.id, cutoffIso);
+      if (!claimedState) continue;
+      const durationSeconds = Math.max(
+        0,
+        Math.round((Date.parse(save.updated_at) - Date.parse(claimedState.startedAt)) / 1000),
+      );
+      void logGameFinish(claimedState.players.length, durationSeconds, claimedState.multiSession, false);
+      if (claimedState.turnCount >= 2) {
+        const record = buildGameRecord(claimedState, true, 0);
+        if (record) void saveGameDurable(record);
+      }
+    }
+    setCloudSaves(stillActive);
+  };
+
+  // Setup ekranı her göründüğünde (ilk açılış ya da bir oyundan ABANDON ile
+  // dönüldüğünde) listeyi tazele — LiveGamesTab'ın kendi mount'ında yaptığı
+  // süpürmeyle aynı "hafif" desen (bkz. CLAUDE.md "Canlı Oyun — Faz 3.6").
+  useEffect(() => {
+    if (state.phase === 'setup') void refreshCloudSaves();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase, user?.id]);
+
   // Kelime listesi main.tsx'te tetiklenen ayrı chunk'tan yükleniyor —
   // hazır olana kadar hamle doğrulama/YZ turu tetiklenmemeli (bkz.
   // wordSetLoader.ts). Setup ekranında kuruluma harcanan birkaç saniye
@@ -107,20 +188,45 @@ export default function App() {
     void logGuestVisit(anonId, getStoredUtmSource(), getDeviceType(), isStandaloneDisplay());
   }, [authLoading, user]);
 
-  // Devam eden oyunu (phase==='play', bitmemiş) her değişiklikte
-  // localStorage'a yaz — sekme/uygulama kapatılıp açılınca kaldığı yerden
-  // devam edilebilsin. Oyun bitince ya da kurulum ekranına dönülünce kayıt
-  // silinir. `savedGame` doluyken (henüz RESUME_SAVED ile açılmamış bir
-  // kayıt Setup'ta bekliyorken) clearGameState() ÇAĞIRILMAZ — aksi halde bu
-  // effect ilk render'da (state.phase henüz 'setup') kaydı kullanıcı hiç
-  // görmeden anında silerdi.
+  // Devam eden oyunu (phase==='play', bitmemiş) her değişiklikte kaydeder.
+  // Girişli kullanıcı için hedef `local_game_saves` (sunucu — cihazlar arası,
+  // çoklu oyun); misafir için (ya da Supabase yapılandırılmamışsa) mevcut
+  // localStorage tekil-slot davranışı AYNEN kalır. Girişli kullanıcıda
+  // localStorage'a hiç yazılmaz — sunucu tek doğruluk kaynağı olduğundan iki
+  // ayrı yerde aynı oyunun mükerrer terk-edilme cezasına yol açması
+  // engellenir; olası bir eski (giriş öncesi) localStorage kaydı da burada
+  // temizlenir. `savedGame` doluyken (misafir, henüz RESUME_SAVED ile
+  // açılmamış bir kayıt Setup'ta bekliyorken) clearGameState() ÇAĞIRILMAZ —
+  // aksi halde bu effect ilk render'da kaydı kullanıcı hiç görmeden anında
+  // silerdi.
   useEffect(() => {
     if (state.phase === 'play' && !state.isGameOver) {
-      saveGameState(state);
-    } else if (!savedGame) {
-      clearGameState();
+      if (user && isSupabaseConfigured) {
+        clearGameState();
+        if (!activeSaveIdRef.current) activeSaveIdRef.current = crypto.randomUUID();
+        void upsertLocalGameSave(activeSaveIdRef.current, user.id, state);
+      } else {
+        saveGameState(state);
+      }
+      return;
     }
-  }, [state, savedGame]);
+    if (state.isGameOver) {
+      // Oyun gerçekten bitti — sunucudaki devam-eden kaydı (varsa) sil.
+      if (activeSaveIdRef.current) {
+        void deleteLocalGameSave(activeSaveIdRef.current);
+        activeSaveIdRef.current = null;
+      }
+      if (!savedGame) clearGameState();
+      return;
+    }
+    // Kurulum ekranına dönüldü (ABANDON). Girişli kullanıcı için sunucudaki
+    // kayıt BİLEREK silinmez — "Devam Eden Oyun" listesinde kalmaya devam
+    // eder; yalnızca bir sonraki oyunun yeni bir id alması için ref
+    // sıfırlanır. Misafir için mevcut davranış aynen korunur: `savedGame`
+    // doluysa (henüz Setup'ta gösterilmemiş bir kayıt) localStorage silinmez.
+    activeSaveIdRef.current = null;
+    if (!savedGame) clearGameState();
+  }, [state, savedGame, user]);
 
   // Offline nedeniyle sunucuya kaydedilemeyip kuyruğa alınmış bitmiş oyun
   // sonuçlarını (bkz. gameSync.ts) bağlantı geri gelir gelmez tekrar
@@ -239,6 +345,16 @@ export default function App() {
     if (!savedGame) return;
     dispatch({ type: 'RESUME_SAVED', state: savedGame.state });
     setSavedGame(null);
+  };
+
+  // Girişli kullanıcının `cloudSaves` listesindeki bir satıra tıklanınca:
+  // `activeSaveIdRef`'i (dispatch'ten ÖNCE) bu kaydın id'sine sabitler ki
+  // yukarıdaki autosave effect'i yeni bir satır açmak yerine AYNI satırı
+  // güncellemeye devam etsin — sonra reducer'a uygulanır ve listeden çıkarılır.
+  const handleResumeCloudSave = (save: LocalGameSave) => {
+    activeSaveIdRef.current = save.id;
+    dispatch({ type: 'RESUME_SAVED', state: save.state });
+    setCloudSaves((prev) => (prev ? prev.filter((s) => s.id !== save.id) : prev));
   };
 
   // Logo tıklaması artık her durumda (onay sorulmadan) doğrudan Setup'a
@@ -513,6 +629,8 @@ export default function App() {
             onOpenLiveGame={setOnlineGame}
             savedGame={savedGame}
             onResumeGame={handleResumeSavedGame}
+            cloudSaves={user ? cloudSaves : null}
+            onResumeCloudSave={handleResumeCloudSave}
             onStart={(players, showTutorial) => {
               dispatch({ type: 'START', players });
               if (showTutorial) setShowPostStartTutorial(true);

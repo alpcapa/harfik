@@ -28,6 +28,7 @@ import type {
   Gender,
   IncomingFriendRequest,
   LeaderboardRow,
+  LocalGameSave,
   MyLeaderboardRank,
   NewGame,
   OnlineGame,
@@ -42,7 +43,7 @@ import type {
 } from './database.types';
 import { getLocalMeaning } from '../data/meanings';
 import { trLower } from '../utils/turkish';
-import type { Tile } from '../game/types';
+import type { GameState, Tile } from '../game/types';
 
 /**
  * Tamamlanan bir oyunu kaydeder (oturum açıksa). Eklenen kaydın id'sini döner.
@@ -1441,6 +1442,79 @@ export async function uploadAvatar(file: File): Promise<string> {
   const url = `${data.publicUrl}?v=${Date.now()}`;
   await updateProfile({ avatar_url: url });
   return url;
+}
+
+// ── Yerel (YZ) oyun — sunucu kaydı (girişli kullanıcılar, cihazlar arası) ───
+//
+// Misafirler hâlâ yalnızca localStorage (gameStorage.ts) kullanır — bu
+// bölüm yalnızca girişli kullanıcıların devam eden YZ oyunlarını `local_game_saves`
+// tablosunda tutar, böylece hangi cihazdan girerlerse girsin aynı oyuna devam
+// edebilir ve aynı anda birden fazla oyun açık tutabilirler (bkz. CLAUDE.md).
+
+/** Çağıranın tüm devam eden yerel (YZ) oyun kayıtları, en son güncellenen önce. */
+export async function listLocalGameSaves(): Promise<LocalGameSave[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('local_game_saves')
+    .select('*')
+    .order('updated_at', { ascending: false });
+  if (error) {
+    console.error('[Kelimeki] listLocalGameSaves hatası:', error.message);
+    return [];
+  }
+  return (data as LocalGameSave[]) ?? [];
+}
+
+/**
+ * Bir yerel oyunu sunucuya kaydeder (id yeni ise ekler, varsa günceller —
+ * `upsert`). `id` her oyun için App.tsx'te bir kez üretilip aynı oyun
+ * bitene/terk edilene kadar sabit kalır, böylece art arda gelen her hamle
+ * aynı satırı günceller.
+ */
+export async function upsertLocalGameSave(id: string, userId: string, state: GameState): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from('local_game_saves').upsert({
+    id,
+    user_id: userId,
+    state,
+    player_count: state.players.length,
+  });
+  if (error) console.error('[Kelimeki] upsertLocalGameSave hatası:', error.message);
+}
+
+/** Bir yerel oyun kaydını siler — oyun normal biçimde bitince ya da 7 günlük terk edilme süpürmesi tarafından çağrılır. */
+export async function deleteLocalGameSave(id: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from('local_game_saves').delete().eq('id', id);
+  if (error) console.error('[Kelimeki] deleteLocalGameSave hatası:', error.message);
+}
+
+/**
+ * Bir yerel oyun kaydı `updatedBeforeIso`'dan daha eski (7 gün hareketsiz)
+ * kalmışsa onu ATOMİK olarak siler ve silinen kaydın state'ini döner — hâlâ
+ * güncel çıkarsa (ör. başka bir cihaz o arada oynadıysa) ya da başka bir
+ * cihaz aynı anda zaten "iddia edip" silmişse `null` döner. Bu, `.delete()
+ * .lt('updated_at', ...)` tek bir atomik sorgu olduğundan (satır kilidi)
+ * ayrı bir RPC/kilitleme mekanizması gerekmez — `check_turn_timeout` ile
+ * aynı "hafif" felsefe (bkz. CLAUDE.md "Canlı Oyun — Faz 3.6").
+ */
+export async function claimAbandonedLocalGameSave(
+  id: string,
+  updatedBeforeIso: string,
+): Promise<GameState | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('local_game_saves')
+    .delete()
+    .eq('id', id)
+    .lt('updated_at', updatedBeforeIso)
+    .select('state')
+    .maybeSingle();
+  if (error) {
+    console.error('[Kelimeki] claimAbandonedLocalGameSave hatası:', error.message);
+    return null;
+  }
+  return (data?.state as GameState) ?? null;
 }
 
 export { isSupabaseConfigured };

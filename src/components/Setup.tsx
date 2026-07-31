@@ -17,7 +17,7 @@ import { LogoMark } from './LogoMark';
 import { PlayerBadge } from './PlayerBadge';
 import { TermsModal } from './TermsModal';
 import { PrivacyModal } from './PrivacyModal';
-import type { OnlineGame } from '../lib/database.types';
+import type { LocalGameSave, OnlineGame } from '../lib/database.types';
 
 // "Devam Eden Oyun" satırındaki kalan süre — gameStorage.ts'teki
 // ABANDON_TIMEOUT_MS (7 gün) ile aynı terk-silme kuralına göre, son kayıt
@@ -37,6 +37,51 @@ function remainingTime(savedAt: number, willSurrender: boolean): { text: string;
   return { text, urgent: days < 1 };
 }
 
+/**
+ * "Devam Eden Oyun" satırı — misafirin tekil localStorage kaydında (bkz.
+ * `savedGame` prop'u) ve girişli kullanıcının `cloudSaves` listesindeki her
+ * satırda AYNI görsel/etkileşim deseni kullanılsın diye ortak bileşene
+ * çıkarıldı.
+ */
+function SavedGameRow({
+  title,
+  subtitle,
+  savedAtMs,
+  willSurrender,
+  onClick,
+}: {
+  title: string;
+  subtitle: string;
+  savedAtMs: number;
+  willSurrender: boolean;
+  onClick: () => void;
+}) {
+  const remaining = remainingTime(savedAtMs, willSurrender);
+  return (
+    <button
+      onClick={onClick}
+      className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel w-full text-left active:scale-[0.99] transition-transform"
+    >
+      <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+        <span className="font-sans text-sm font-bold text-text truncate">{title}</span>
+        <span className="text-[9px] font-mono text-muted truncate">{subtitle}</span>
+      </span>
+      <span className="flex flex-col items-end gap-0.5 shrink-0">
+        <span className="text-[9px] font-mono uppercase tracking-[1px] text-accent font-bold">
+          Devam Et
+        </span>
+        <span
+          className={`text-[8px] font-mono uppercase tracking-[0.5px] ${
+            remaining.urgent ? 'text-red font-bold' : 'text-muted'
+          }`}
+        >
+          {remaining.text}
+        </span>
+      </span>
+    </button>
+  );
+}
+
 interface SetupProps {
   // showTutorial: oyun ekranı açıldığında Tutorial (HelpModal) daha önce
   // görülmediyse gösterilsin mi — App.tsx bunu oyun ekranı render'ında kullanır.
@@ -49,15 +94,34 @@ interface SetupProps {
   // "Aktif" bir Canlı oyuna tıklanınca (LiveGamesTab), gerçek oyun ekranını
   // açmak için App.tsx'e iletilir (Faz 3, 4. adım).
   onOpenLiveGame: (game: OnlineGame) => void;
-  // Yarım kalan yerel (YZ) oyun (localStorage'dan, App.tsx'te tutulur) — varsa
-  // "Yapay Zeka ile" sekmesinde normal kurulum formu yerine tek bir "Devam
-  // Eden Oyun" satırı gösterilir; yeni bir yerel oyun bu kayıt bitene/teslim
-  // olunana kadar başlatılamaz (bkz. CLAUDE.md "Devam eden oyunun kalıcılığı").
+  // Yarım kalan yerel (YZ) oyun (localStorage'dan, App.tsx'te tutulur) —
+  // yalnızca MİSAFİR (girişsiz) kullanıcı için anlamlıdır: varsa "Yapay Zeka
+  // ile" sekmesinde normal kurulum formu yerine tek bir "Devam Eden Oyun"
+  // satırı gösterilir, yeni bir yerel oyun bu kayıt bitene/teslim olunana
+  // kadar başlatılamaz (bkz. CLAUDE.md "Devam eden oyunun kalıcılığı").
+  // Girişli kullanıcı için bunun yerine `cloudSaves` kullanılır.
   savedGame: SavedGame | null;
   onResumeGame: () => void;
+  // Girişli kullanıcının `local_game_saves`'teki devam eden YZ oyunları
+  // (App.tsx, cihazlar arası + çoklu oyun) — null: misafir ya da henüz
+  // çekilmedi, []: girişli ama hiç devam eden oyunu yok. Doluysa/boşsa fark
+  // etmeksizin, girişli kullanıcı için normal kurulum formu HER ZAMAN
+  // gösterilir (misafirin aksine yeni oyun engellenmez) — liste varsa
+  // formun üstünde ayrıca gösterilir.
+  cloudSaves: LocalGameSave[] | null;
+  onResumeCloudSave: (save: LocalGameSave) => void;
 }
 
-export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, savedGame, onResumeGame }: SetupProps) {
+export function Setup({
+  onStart,
+  mainView,
+  onMainViewChange,
+  onOpenLiveGame,
+  savedGame,
+  onResumeGame,
+  cloudSaves,
+  onResumeCloudSave,
+}: SetupProps) {
   const { user, profile, loading, profileLoading } = useAuth();
   // Oturum açıldıysa 1. oyuncu her zaman hesap sahibidir. Profil henüz
   // çekilmediyse (profileLoading) e-posta önekine düşmüyoruz — aksi halde
@@ -100,6 +164,11 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, sav
   // dikkatini beklediğini görsün diye. `mainView`e bağlı: Live sekmesinden
   // (davet kabul/hamle sonrası) Local'e dönülünce sayı tazelensin diye.
   const [liveActionCount, setLiveActionCount] = useState(0);
+
+  // "Yapay Zeka ile" sekmesindeki rozet — misafirde tekil localStorage kaydı
+  // (0 ya da 1), girişli kullanıcıda `cloudSaves`'in gerçek uzunluğu (birden
+  // fazla olabilir, bkz. CLAUDE.md).
+  const localSaveCount = user ? (cloudSaves?.length ?? 0) : savedGame ? 1 : 0;
   useEffect(() => {
     if (!user) {
       setLiveActionCount(0);
@@ -319,7 +388,7 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, sav
             >
               {tab.label}
               {tab.key === 'live' && liveActionCount > 0 ? ` (${liveActionCount})` : ''}
-              {tab.key === 'local' && savedGame ? ' (1)' : ''}
+              {tab.key === 'local' && localSaveCount > 0 ? ` (${localSaveCount})` : ''}
             </button>
           ))}
         </div>
@@ -327,41 +396,20 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, sav
 
       {mainView === 'live' ? (
         <LiveGamesTab onOpenGame={onOpenLiveGame} />
-      ) : savedGame ? (
+      ) : !user && savedGame ? (
+        // Misafir, tekil localStorage kaydı — yeni oyun bu bitene/teslim
+        // olunana kadar engellenir (cihaza özel, cihazlar arası senkron yok).
         <div className="flex flex-col gap-2">
           <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
             Devam Eden Oyun
           </div>
-          <button
+          <SavedGameRow
+            title={`${savedGame.state.players.length} Kişilik Oyun`}
+            subtitle={`Sıra: ${savedGame.state.players[savedGame.state.current]?.name ?? '—'}`}
+            savedAtMs={savedGame.savedAt}
+            willSurrender={savedGame.state.turnCount >= 2}
             onClick={onResumeGame}
-            className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel w-full text-left active:scale-[0.99] transition-transform"
-          >
-            <span className="flex-1 min-w-0 flex flex-col gap-0.5">
-              <span className="font-sans text-sm font-bold text-text truncate">
-                {savedGame.state.players.length} Kişilik Oyun
-              </span>
-              <span className="text-[9px] font-mono text-muted truncate">
-                Sıra: {savedGame.state.players[savedGame.state.current]?.name ?? '—'}
-              </span>
-            </span>
-            <span className="flex flex-col items-end gap-0.5 shrink-0">
-              <span className="text-[9px] font-mono uppercase tracking-[1px] text-accent font-bold">
-                Devam Et
-              </span>
-              {(() => {
-                const remaining = remainingTime(savedGame.savedAt, savedGame.state.turnCount >= 2);
-                return (
-                  <span
-                    className={`text-[8px] font-mono uppercase tracking-[0.5px] ${
-                      remaining.urgent ? 'text-red font-bold' : 'text-muted'
-                    }`}
-                  >
-                    {remaining.text}
-                  </span>
-                );
-              })()}
-            </span>
-          </button>
+          />
           <p className="text-[11px] text-muted font-mono leading-relaxed">
             Yeni bir Yapay Zeka oyunu başlatabilmen için önce bu oyunu
             bitirmen gerekir. Süre dolduğunda oyun otomatik biter ve teslim
@@ -370,6 +418,26 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, sav
         </div>
       ) : (
         <>
+          {/* Girişli kullanıcı — cihazlar arası senkron olduğundan (bkz.
+              CLAUDE.md) yeni oyun hiç engellenmez; varsa devam eden oyunlar
+              formun üstünde ayrıca listelenir. */}
+          {!!user && !!cloudSaves?.length && (
+            <div className="flex flex-col gap-2">
+              <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
+                Devam Eden Oyunlar
+              </div>
+              {cloudSaves.map((save) => (
+                <SavedGameRow
+                  key={save.id}
+                  title={`${save.state.players.length} Kişilik Oyun`}
+                  subtitle={`Sıra: ${save.state.players[save.state.current]?.name ?? '—'}`}
+                  savedAtMs={Date.parse(save.updated_at)}
+                  willSurrender={save.state.turnCount >= 2}
+                  onClick={() => onResumeCloudSave(save)}
+                />
+              ))}
+            </div>
+          )}
           <div className="flex flex-col gap-2">
             <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
               Oyuncu sayısı
