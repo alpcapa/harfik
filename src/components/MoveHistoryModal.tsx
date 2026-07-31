@@ -51,7 +51,7 @@ function StarBadge({ jokerCount }: { jokerCount: number }) {
       className="text-[8px] font-mono font-bold uppercase tracking-[0.5px] rounded px-1 py-[1px] border shrink-0 text-accent border-accent/40 bg-accent/10"
       title={`Jokerli bitiş bonusu +${jokerFinishBonus(jokerCount)}`}
     >
-      {jokerCount >= 2 ? '★★' : '★'}
+      <span className="inline-block scale-150">{jokerCount >= 2 ? '★★' : '★'}</span>
     </span>
   );
 }
