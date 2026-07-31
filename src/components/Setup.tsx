@@ -56,7 +56,7 @@ const MEMBERSHIP_PERKS = [
   'Skor takibi ve Sanal Lig sıralaması',
   'Aynı anda birden fazla Yapay Zeka oyunu oynama',
   'Cihazlar arası kesintisiz devam etme',
-  'Oyun geçmişini kalıcı saklama, beğenme ve paylaşma',
+  'Oyun geçmişini saklama, beğenme ve paylaşma',
   'Arkadaş ekleyip listende tutma',
 ];
 
