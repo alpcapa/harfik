@@ -519,29 +519,34 @@ export function Board({
           kalan bir beyaz şerit değil. */}
       {!hideFooter && (
         <div className="relative z-10 flex items-center justify-between gap-2 shrink-0 px-[10px] pb-[10px] pt-1 w-full">
-          <button
-            onClick={onOpenHistory}
-            className="flex items-center gap-1 text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
-          >
-            <DocumentIcon />
-            Hamleler
-          </button>
-          <div className="flex items-center gap-2 justify-end flex-wrap">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={onOpenHistory}
+              className="flex items-center gap-1 text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
+            >
+              <DocumentIcon />
+              Hamleler
+            </button>
             {onOpenMessaging && (
-              <button
-                onClick={onOpenMessaging}
-                className="relative flex items-center gap-1 text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
-              >
-                <ChatBubbleIcon />
-                Mesajlaşma
-                {hasUnreadMessage && (
-                  <span
-                    className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red"
-                    aria-hidden
-                  />
-                )}
-              </button>
+              <>
+                <span className="text-muted text-[12px] shrink-0">·</span>
+                <button
+                  onClick={onOpenMessaging}
+                  className="relative flex items-center gap-1 text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
+                >
+                  <ChatBubbleIcon />
+                  Mesajlaşma
+                  {hasUnreadMessage && (
+                    <span
+                      className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red"
+                      aria-hidden
+                    />
+                  )}
+                </button>
+              </>
             )}
+          </div>
+          <div className="flex items-center gap-2 justify-end flex-wrap">
             {!online && (
               <div className="text-[8px] font-mono font-bold text-red flex items-center">
                 Çevrimdışı
