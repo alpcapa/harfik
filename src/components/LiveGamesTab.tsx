@@ -184,6 +184,9 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
 
   const remaining = remainingTimeLabel(deadline);
   const Wrapper = onOpen ? 'button' : 'div';
+  const creatorName = game.slots.find(
+    (s): s is HumanSlot => s.type === 'human' && s.user_id === game.created_by,
+  )?.name;
   return (
     <Wrapper
       type={onOpen ? 'button' : undefined}
@@ -193,7 +196,7 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
       }`}
     >
       <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
-        {game.player_count} Kişilik Canlı Oyun
+        {game.player_count} Kişilik Oyun - {creatorName ?? 'Bir arkadaşın'} açtı
       </span>
       <span className="flex flex-col items-end gap-0.5 shrink-0">
         <span
@@ -265,7 +268,7 @@ function PendingSection({ title, games }: { title: string; games: OnlineGame[] }
       <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">{title}</div>
       <div className="flex flex-col gap-2">
         {games.map((g) => (
-          <PendingGameCard key={g.id} game={g} title={`${g.player_count} Kişilik Canlı Oyun`} />
+          <PendingGameCard key={g.id} game={g} title={`${g.player_count} Kişilik Oyun`} />
         ))}
       </div>
     </div>
