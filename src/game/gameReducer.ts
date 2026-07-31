@@ -40,6 +40,7 @@ export type Action =
   | { type: 'PLACE_TILE'; r: number; c: number; wildLetter?: string; rackIndex?: number }
   | { type: 'MOVE_PLACED_TILE'; from: { r: number; c: number }; to: { r: number; c: number } }
   | { type: 'RECALL_CELL'; r: number; c: number }
+  | { type: 'SET_WILD_LETTER'; r: number; c: number; wildLetter: string }
   | { type: 'RECALL_ALL' }
   | { type: 'SHUFFLE_RACK' }
   | { type: 'TOGGLE_SWAP_MODE' }
@@ -323,6 +324,18 @@ export function gameReducer(state: GameState, action: Action): GameState {
       delete placed[fromKey];
       placed[toKey] = tile;
       return { ...state, placed, selectedTile: null };
+    }
+
+    case 'SET_WILD_LETTER': {
+      if (state.phase !== 'play' || state.isGameOver) return state;
+      const k = key(action.r, action.c);
+      const tile = state.placed[k];
+      if (!tile || !tile.wild) return state;
+      const wl = trUpper(action.wildLetter);
+      return {
+        ...state,
+        placed: { ...state.placed, [k]: { ...tile, wildLetter: wl } },
+      };
     }
 
     case 'RECALL_CELL': {

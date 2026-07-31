@@ -326,9 +326,11 @@ export default function App() {
     if (state.isGameOver) setGameOverDismissed(false);
   }, [state.isGameOver]);
 
-  // Joker taş konurken hangi harfe dönüşeceğini seçme penceresi.
+  // Joker taş konurken hangi harfe dönüşeceğini seçme penceresi. `editing`
+  // doluyken taş rafta değil tahtada zaten duruyor — seçim rafa yeni bir
+  // PLACE_TILE değil, mevcut hücrenin wildLetter'ını güncelleyen SET_WILD_LETTER'a gider.
   const [pendingWild, setPendingWild] = useState<
-    { r: number; c: number; rackIndex?: number } | null
+    { r: number; c: number; rackIndex?: number; editing?: boolean } | null
   >(null);
 
   // Pas geçme onay popup'ı.
@@ -737,6 +739,11 @@ export default function App() {
       // Hareket yok: sıradan bir dokunuş/tık — eski davranış korunur.
       if (d.source.kind === 'rack') {
         dispatch({ type: 'SELECT_TILE', index: d.source.index });
+      } else if (d.source.tile.wild) {
+        // Tahtaya konmuş bir joker: geri almak yerine harfi değiştirme
+        // penceresi açılır — geri alma hâlâ sürükleyerek ya da modaldeki
+        // "Geri Al" butonuyla mümkün.
+        setPendingWild({ r: d.source.r, c: d.source.c, editing: true });
       } else {
         dispatch({ type: 'RECALL_CELL', r: d.source.r, c: d.source.c });
       }
@@ -1130,16 +1137,29 @@ export default function App() {
 
       {pendingWild && (
         <WildcardModal
+          title={pendingWild.editing ? 'Jokeri Hangi Harfe Çevir?' : undefined}
           onSelect={(letter) => {
-            dispatch({
-              type: 'PLACE_TILE',
-              r: pendingWild.r,
-              c: pendingWild.c,
-              wildLetter: letter,
-              rackIndex: pendingWild.rackIndex,
-            });
+            if (pendingWild.editing) {
+              dispatch({ type: 'SET_WILD_LETTER', r: pendingWild.r, c: pendingWild.c, wildLetter: letter });
+            } else {
+              dispatch({
+                type: 'PLACE_TILE',
+                r: pendingWild.r,
+                c: pendingWild.c,
+                wildLetter: letter,
+                rackIndex: pendingWild.rackIndex,
+              });
+            }
             setPendingWild(null);
           }}
+          onRecall={
+            pendingWild.editing
+              ? () => {
+                  dispatch({ type: 'RECALL_CELL', r: pendingWild.r, c: pendingWild.c });
+                  setPendingWild(null);
+                }
+              : undefined
+          }
           onClose={() => setPendingWild(null)}
         />
       )}
