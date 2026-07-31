@@ -49,11 +49,8 @@ interface GameHistoryModalProps {
 
 const PAGE_SIZE = 20;
 
-function formatDateTime(iso: string): string {
-  const d = new Date(iso);
-  const date = d.toLocaleDateString('tr-TR');
-  const time = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-  return `${date} · ${time}`;
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('tr-TR');
 }
 
 /**
@@ -454,7 +451,7 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
                           </button>
                         )}
                       </span>
-                      <span className="whitespace-nowrap shrink-0">{formatDateTime(entry.created_at)}</span>
+                      <span className="whitespace-nowrap shrink-0">{formatDate(entry.created_at)}</span>
                       {isOnline && (
                         <span className="text-green font-bold normal-case border border-green/40 bg-green/10 rounded px-[3px] py-0 text-[7px] leading-[10px] whitespace-nowrap shrink-0">
                           Canlı
