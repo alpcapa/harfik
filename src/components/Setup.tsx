@@ -462,14 +462,6 @@ export function Setup({
         </>
       ) : (
         <>
-          {user && (
-            <button
-              onClick={() => setCreatingLocal(false)}
-              className="self-start text-[11px] font-mono text-muted hover:underline active:opacity-70 transition-opacity"
-            >
-              ← Geri
-            </button>
-          )}
           <div className="flex flex-col gap-2">
             <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
               Oyuncu sayısı
