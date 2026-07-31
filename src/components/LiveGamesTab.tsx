@@ -109,10 +109,10 @@ function PendingGameCard({
 
   return (
     <div className="shadow-raised flex flex-col gap-2.5 rounded-md px-2.5 py-2.5 border border-border bg-panel">
-      <div className="flex flex-col gap-0.5">
-        <span className="font-sans text-sm font-bold text-text leading-snug">{title}</span>
+      <div className="flex items-start gap-2">
+        <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text leading-snug">{title}</span>
         <span
-          className={`text-[9px] font-mono uppercase tracking-[0.5px] ${
+          className={`shrink-0 text-[9px] font-mono uppercase tracking-[0.5px] whitespace-nowrap ${
             remaining.urgent ? 'text-red font-bold' : 'text-muted'
           }`}
         >
