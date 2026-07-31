@@ -71,7 +71,7 @@ const MEMBERSHIP_PERKS = [
 function MembershipPerksBox({ onSignup, className = '' }: { onSignup: () => void; className?: string }) {
   return (
     <div className={`shadow-raised flex flex-col gap-2.5 rounded-md px-3.5 py-3 border border-accent/30 bg-accent/5 ${className}`}>
-      <div className="font-sans text-sm font-bold text-text">Neden Üye Olmalıyım?</div>
+      <div className="font-sans text-sm font-bold text-text">Neden Ücretsiz Üye Olmalıyım?</div>
       <ul className="flex flex-col gap-1.5">
         {MEMBERSHIP_PERKS.map((perk) => (
           <li key={perk} className="flex items-start gap-2 text-[11px] font-mono text-muted leading-snug">
