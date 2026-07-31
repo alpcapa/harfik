@@ -21,14 +21,22 @@ import type { LocalGameSave, OnlineGame } from '../lib/database.types';
 
 // "Devam Eden Oyun" satırındaki kalan süre — gameStorage.ts'teki
 // ABANDON_TIMEOUT_MS (7 gün) ile aynı terk-silme kuralına göre, son kayıt
-// (savedAt) anından itibaren. `willSurrender` true ise (turnCount>=2 — en az
-// bir tam tur oynanmış, gerçek -2 teslim cezası uygulanır, bkz. CLAUDE.md
-// "Terk edilen oyunun otomatik temizliği") "teslim sayılacak", değilse
-// (henüz hiç hamle yok, ceza yok) "silinecek" metni kullanılır. Kırmızı (kalın
-// değil — 31 Temmuz 2026'da kullanıcı isteğiyle font-bold kaldırıldı) kalan
-// süre 24 saatin altına inince devreye giriyor — o noktadan itibaren metin de
-// "gün" yerine dakika hassasiyetinde saat gösterir (LiveGamesTab'daki aktif
-// Canlı oyun kalan-süre etiketiyle aynı mantık/stil).
+// (savedAt) anından itibaren. `willSurrender` yalnızca GİRİŞLİ kullanıcının
+// bulut kaydı için anlamlı: true ise (turnCount>=2 — en az bir tam tur
+// oynanmış) süre dolunca hesabına GERÇEKTEN/hemen -2 teslim cezası uygulanır
+// (bkz. CLAUDE.md "Terk edilen oyunun otomatik temizliği"), "teslim
+// sayılacak" gösterilir; false ise (henüz hiç hamle yok, ceza yok) "silinecek"
+// metni kullanılır. Misafirin (girişsiz) tekil kaydı için bu her zaman
+// `false` geçilir — misafirin bir hesabı olmadığından hiçbir puan hemen
+// düşmez; süre dolunca o kaydın kesin/garanti sonucu yalnızca localStorage'dan
+// silinmesidir (turnCount>=2 ise ayrıca bir teslim kaydı sessizce kuyruğa
+// alınır ama bu yalnızca kişi AYNI cihazda 7 gün içinde üye olursa devreye
+// girer — koşullu bir iç detay, misafire "teslim sayılacaksın" demek
+// yanıltıcı olurdu). Kırmızı (kalın değil — 31 Temmuz 2026'da kullanıcı
+// isteğiyle font-bold kaldırıldı) kalan süre 24 saatin altına inince devreye
+// giriyor — o noktadan itibaren metin de "gün" yerine dakika hassasiyetinde
+// saat gösterir (LiveGamesTab'daki aktif Canlı oyun kalan-süre etiketiyle
+// aynı mantık/stil).
 function remainingTime(savedAt: number, willSurrender: boolean): { text: string; urgent: boolean } {
   const verb = willSurrender ? 'teslim sayılacak' : 'silinecek';
   const ms = savedAt + ABANDON_TIMEOUT_MS - Date.now();
@@ -60,9 +68,9 @@ const MEMBERSHIP_PERKS = [
   'Arkadaş ekleyip listende tutma',
 ];
 
-function MembershipPerksBox({ onSignup }: { onSignup: () => void }) {
+function MembershipPerksBox({ onSignup, className = '' }: { onSignup: () => void; className?: string }) {
   return (
-    <div className="shadow-raised flex flex-col gap-2.5 rounded-md px-3.5 py-3 border border-accent/30 bg-accent/5">
+    <div className={`shadow-raised flex flex-col gap-2.5 rounded-md px-3.5 py-3 border border-accent/30 bg-accent/5 ${className}`}>
       <div className="font-sans text-sm font-bold text-text">Neden Üye Olmalıyım?</div>
       <ul className="flex flex-col gap-1.5">
         {MEMBERSHIP_PERKS.map((perk) => (
@@ -460,14 +468,15 @@ export function Setup({
             title={`${savedGame.state.players.length} Kişilik Oyun`}
             subtitle={`Sıra: ${savedGame.state.players[savedGame.state.current]?.name ?? '—'}`}
             savedAtMs={savedGame.savedAt}
-            willSurrender={savedGame.state.turnCount >= 2}
+            willSurrender={false}
             onClick={onResumeGame}
           />
           <p className="text-[11px] text-muted font-mono leading-relaxed">
-            Yeni bir Yapay Zeka oyunu başlatabilmen için önce bu oyunu
-            bitirmen gerekir. Süre dolduğunda oyun otomatik biter ve teslim
-            olmuş kabul edilirsin; ayrıca, lig puanından 2 puan düşülür.
+            Bu oyun 7 gün boyunca cihazınızın hafızasında saklanır ve bir
+            sonraki gelişinizde devam edilebilir. Üye değilseniz bu oyunu
+            bitirmeden yeni oyun açamazsınız.
           </p>
+          <MembershipPerksBox onSignup={() => setShowAuthModal(true)} className="mt-2" />
         </div>
       ) : user && !creatingLocal ? (
         // Girişli kullanıcı — cihazlar arası senkron olduğundan (bkz.

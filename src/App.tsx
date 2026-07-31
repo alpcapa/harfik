@@ -99,6 +99,9 @@ export default function App() {
   // tarafından dispatch'ten ÖNCE atanır). Oyun bitince/terk edilince null'a
   // döner ki bir sonraki oyun yeni bir id alsın.
   const activeSaveIdRef = useRef<string | null>(null);
+  // Misafirin yarıda bırakılmış `savedGame`'ini girişten sonra hesaba
+  // taşıyan effect'in (aşağıda) StrictMode/mükerrer-çalışma kilidi.
+  const migratingSavedGameRef = useRef(false);
 
   // Girişli kullanıcının cloudSaves listesini sunucudan tazeler; bu arada 7
   // gün hareketsiz kalmış (ABANDON_TIMEOUT_MS) kayıtları da atomik olarak
@@ -155,6 +158,41 @@ export default function App() {
     if (state.phase === 'setup') void refreshCloudSaves();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase, user?.id]);
+
+  // Misafirken (girişsiz) yarıda bırakılmış (localStorage'daki tekil
+  // `savedGame` slotu) bir YZ oyunu, kişi AYNI cihazda sonradan giriş/kayıt
+  // olursa hesabına taşınır — kullanıcının "üye olursa oyunları altına
+  // alınır" beklentisiyle örtüşsün diye. Öncesinde bu migrasyon hiç yoktu:
+  // yalnızca BİTMİŞ oyunlar `gameSync.ts`'teki çevrimdışı kuyrukla hesaba
+  // işleniyordu (bkz. "Bitmiş oyunların offline/misafir kuyruğu") — hâlâ
+  // devam eden/bitmemiş bir misafir kaydı için hiçbir yol yoktu, giriş
+  // yapılınca kayıt sessizce görünmez oluyordu (Setup'ın misafir dalı
+  // `!user`, girişli dalı ise yalnızca `cloudSaves`'i okuduğundan). Artık
+  // `user` dolduğunda (girişsizken zaten mevcut olan) `savedGame`
+  // `local_game_saves`'e yeni bir satır olarak yükleniyor, localStorage'daki
+  // eski kayıt silinip `savedGame` temizleniyor (bir sonraki oyunun kendi
+  // sunucu satırını normal akıştan almasına engel olmasın diye) ve
+  // `cloudSaves` listesi tazelenip "Devam Eden Oyunlar"da anında görünür
+  // hâle geliyor. `migratingSavedGameRef`, StrictMode'un dev'de bu effect'i
+  // art arda iki kez çalıştırmasında (`upsertLocalGameSave`'e her seferinde
+  // YENİ bir rastgele id üretildiğinden, korumasız iki mükerrer satıra yol
+  // açardı) senkron bir kilit görevi görüyor — `aiTriggeringRef`
+  // (OnlineGameScreen.tsx) ile aynı desen.
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured || !savedGame || migratingSavedGameRef.current) return;
+    migratingSavedGameRef.current = true;
+    const id = crypto.randomUUID();
+    void upsertLocalGameSave(id, user.id, savedGame.state)
+      .then(() => {
+        clearGameState();
+        setSavedGame(null);
+        void refreshCloudSaves();
+      })
+      .finally(() => {
+        migratingSavedGameRef.current = false;
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Kelime listesi main.tsx'te tetiklenen ayrı chunk'tan yükleniyor —
   // hazır olana kadar hamle doğrulama/YZ turu tetiklenmemeli (bkz.
