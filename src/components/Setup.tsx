@@ -45,6 +45,43 @@ function remainingTime(savedAt: number, willSurrender: boolean): { text: string;
   return { text, urgent: days < 1 };
 }
 
+// Misafire (girişsiz) kurulum formunun altında gösterilen üyelik faydaları
+// kutusu — 31 Temmuz 2026'da kullanıcı isteğiyle eklendi. Yalnızca "Yapay
+// Zeka ile" sekmesinde, hem 2 hem 4 oyunculu alt sekmede görünür (bu kutunun
+// kullanıldığı `else` dalı `count`'tan bağımsız olduğundan otomatik ikisinde
+// de çıkıyor); girişli kullanıcı "+ Yeni Yapay Zeka Oyunu" formunu açtığında
+// (aynı `else` dalına düşse de) `!user` koşuluyla gizli kalır.
+const MEMBERSHIP_PERKS = [
+  'Arkadaşınla canlı oyun oynama',
+  'Skor takibi ve Sanal Lig sıralaması',
+  'Aynı anda birden fazla Yapay Zeka oyunu oynama',
+  'Cihazlar arası kesintisiz devam etme',
+  'Oyun geçmişini kalıcı saklama, beğenme ve paylaşma',
+  'Arkadaş ekleyip listende tutma',
+];
+
+function MembershipPerksBox({ onSignup }: { onSignup: () => void }) {
+  return (
+    <div className="shadow-raised flex flex-col gap-2.5 rounded-md px-3.5 py-3 border border-accent/30 bg-accent/5">
+      <div className="font-sans text-sm font-bold text-text">Neden Üye Olmalıyım?</div>
+      <ul className="flex flex-col gap-1.5">
+        {MEMBERSHIP_PERKS.map((perk) => (
+          <li key={perk} className="flex items-start gap-2 text-[11px] font-mono text-muted leading-snug">
+            <span className="text-green font-bold shrink-0" aria-hidden="true">✓</span>
+            {perk}
+          </li>
+        ))}
+      </ul>
+      <button
+        onClick={onSignup}
+        className="btn-raised-neutral py-2 rounded-md font-sans text-xs font-bold uppercase tracking-[1px] bg-void border border-border text-text active:scale-[0.97] transition-transform"
+      >
+        Giriş Yap / Kayıt Ol
+      </button>
+    </div>
+  );
+}
+
 /**
  * "Devam Eden Oyun" satırı — misafirin tekil localStorage kaydında (bkz.
  * `savedGame` prop'u) ve girişli kullanıcının `cloudSaves` listesindeki her
@@ -569,6 +606,8 @@ export function Setup({
               </button>
             )}
           </div>
+
+          {!user && <MembershipPerksBox onSignup={() => setShowAuthModal(true)} />}
         </>
       )}
 
