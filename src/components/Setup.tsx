@@ -68,9 +68,9 @@ const MEMBERSHIP_PERKS = [
   'Arkadaş ekleyip listende tutma',
 ];
 
-function MembershipPerksBox({ onSignup }: { onSignup: () => void }) {
+function MembershipPerksBox({ onSignup, className = '' }: { onSignup: () => void; className?: string }) {
   return (
-    <div className="shadow-raised flex flex-col gap-2.5 rounded-md px-3.5 py-3 border border-accent/30 bg-accent/5">
+    <div className={`shadow-raised flex flex-col gap-2.5 rounded-md px-3.5 py-3 border border-accent/30 bg-accent/5 ${className}`}>
       <div className="font-sans text-sm font-bold text-text">Neden Üye Olmalıyım?</div>
       <ul className="flex flex-col gap-1.5">
         {MEMBERSHIP_PERKS.map((perk) => (
@@ -476,7 +476,7 @@ export function Setup({
             sonraki gelişinizde devam edilebilir. Üye değilseniz bu oyunu
             bitirmeden yeni oyun açamazsınız.
           </p>
-          <MembershipPerksBox onSignup={() => setShowAuthModal(true)} />
+          <MembershipPerksBox onSignup={() => setShowAuthModal(true)} className="mt-2" />
         </div>
       ) : user && !creatingLocal ? (
         // Girişli kullanıcı — cihazlar arası senkron olduğundan (bkz.
