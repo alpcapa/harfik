@@ -55,14 +55,18 @@ function remainingTimeLabel(deadline: string | null | undefined): { text: string
 // Bekleyen bir davetin/oyunun 7 günlük iptal süresine kalan süre — Setup'taki
 // "Devam Eden Oyun" satırının remainingTime'ıyla aynı ilke ve aynı süre
 // (ABANDON_TIMEOUT_MS), oluşturulma anından itibaren. "N gün M saat kaldı"
-// biçiminde (gün kalmadıysa yalnızca saat).
+// biçiminde (24 saatin altına düşünce dakika hassasiyetinde saate geçer,
+// aynı zamanda kırmızı/kalın olur — remainingTimeLabel'daki aynı mantık).
 function remainingInviteDays(createdAt: string): { text: string; urgent: boolean } {
   const ms = Date.parse(createdAt) + ABANDON_TIMEOUT_MS - Date.now();
   if (ms <= 0) return { text: 'Bugün iptal edilir', urgent: true };
-  const totalHours = Math.ceil(ms / (60 * 60 * 1000));
+  const totalMinutes = Math.ceil(ms / (60 * 1000));
+  const totalHours = Math.floor(totalMinutes / 60);
   const days = Math.floor(totalHours / 24);
   const hours = totalHours % 24;
-  const text = days > 0 ? `${days} gün ${hours} saat kaldı` : `${hours} saat kaldı`;
+  const minutes = totalMinutes % 60;
+  const text =
+    days > 0 ? `${days} gün ${hours} saat kaldı` : `${hours} saat ${minutes} dakika kaldı`;
   return { text, urgent: days < 1 };
 }
 

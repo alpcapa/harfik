@@ -24,16 +24,23 @@ import type { LocalGameSave, OnlineGame } from '../lib/database.types';
 // (savedAt) anından itibaren. `willSurrender` true ise (turnCount>=2 — en az
 // bir tam tur oynanmış, gerçek -2 teslim cezası uygulanır, bkz. CLAUDE.md
 // "Terk edilen oyunun otomatik temizliği") "teslim sayılacak", değilse
-// (henüz hiç hamle yok, ceza yok) "silinecek" metni kullanılır.
+// (henüz hiç hamle yok, ceza yok) "silinecek" metni kullanılır. Kırmızı/kalın
+// kalan süre 24 saatin altına inince devreye giriyor — o noktadan itibaren
+// metin de "gün" yerine dakika hassasiyetinde saat gösterir (LiveGamesTab'daki
+// aktif Canlı oyun kalan-süre etiketiyle aynı mantık).
 function remainingTime(savedAt: number, willSurrender: boolean): { text: string; urgent: boolean } {
   const verb = willSurrender ? 'teslim sayılacak' : 'silinecek';
   const ms = savedAt + ABANDON_TIMEOUT_MS - Date.now();
   if (ms <= 0) return { text: `Bugün ${verb}`, urgent: true };
-  const totalHours = Math.ceil(ms / (60 * 60 * 1000));
+  const totalMinutes = Math.ceil(ms / (60 * 1000));
+  const totalHours = Math.floor(totalMinutes / 60);
   const days = Math.floor(totalHours / 24);
   const hours = totalHours % 24;
+  const minutes = totalMinutes % 60;
   const text =
-    days > 0 ? `${days} gün ${hours} saat sonra ${verb}` : `${hours} saat sonra ${verb}`;
+    days > 0
+      ? `${days} gün ${hours} saat sonra ${verb}`
+      : `${hours} saat ${minutes} dakika sonra ${verb}`;
   return { text, urgent: days < 1 };
 }
 
