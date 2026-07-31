@@ -19,11 +19,18 @@ import { TermsModal } from './TermsModal';
 import { PrivacyModal } from './PrivacyModal';
 import type { OnlineGame } from '../lib/database.types';
 
-// "Devam Eden Oyun" satırındaki kalan gün sayısı — gameStorage.ts'teki
+// "Devam Eden Oyun" satırındaki kalan süre — gameStorage.ts'teki
 // ABANDON_TIMEOUT_MS (7 gün) ile aynı terk-silme kuralına göre, son kayıt
-// (savedAt) anından itibaren.
-function remainingDays(savedAt: number): number {
-  return Math.floor((savedAt + ABANDON_TIMEOUT_MS - Date.now()) / (24 * 60 * 60 * 1000));
+// (savedAt) anından itibaren. "N gün M saat kaldı" biçiminde (gün kalmadıysa
+// yalnızca saat) — LiveGamesTab.tsx'teki remainingInviteDays ile aynı ilke.
+function remainingTime(savedAt: number): { text: string; urgent: boolean } {
+  const ms = savedAt + ABANDON_TIMEOUT_MS - Date.now();
+  if (ms <= 0) return { text: 'Bugün silinecek', urgent: true };
+  const totalHours = Math.ceil(ms / (60 * 60 * 1000));
+  const days = Math.floor(totalHours / 24);
+  const hours = totalHours % 24;
+  const text = days > 0 ? `${days} gün ${hours} saat kaldı` : `${hours} saat kaldı`;
+  return { text, urgent: days < 1 };
 }
 
 interface SetupProps {
@@ -334,12 +341,10 @@ export function Setup({ onStart, mainView, onMainViewChange, onOpenLiveGame, sav
               </span>
               <span
                 className={`font-mono text-[10px] truncate ${
-                  remainingDays(savedGame.savedAt) <= 1 ? 'text-red font-bold' : 'text-muted'
+                  remainingTime(savedGame.savedAt).urgent ? 'text-red font-bold' : 'text-muted'
                 }`}
               >
-                {remainingDays(savedGame.savedAt) <= 0
-                  ? 'Bugün silinecek'
-                  : `${remainingDays(savedGame.savedAt)} gün içinde silinir`}
+                {remainingTime(savedGame.savedAt).text}
                 {savedGame.state.turnCount >= 2 ? ' — teslim sayılır (-2)' : ''}
               </span>
             </span>
