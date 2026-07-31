@@ -305,7 +305,7 @@ export function AuthModal({
               className="mt-0.5 shrink-0 accent-accent"
             />
             <span className="text-xs font-sans text-muted leading-relaxed">
-              Pazarlama iletişimi almayı kabul ediyorum. (opsiyonel)
+              Pazarlama iletişimi almayı kabul ediyorum.
             </span>
           </label>
         )}
