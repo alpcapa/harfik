@@ -19,6 +19,8 @@ export default defineConfig({
         'fonts/space-grotesk-700-normal-latin-ext.woff2',
       ],
       manifest: {
+        id: '/',
+        lang: 'tr',
         name: 'Kelimeki — Ücretsiz Online Türkçe Kelime Oyunu',
         short_name: 'Kelimeki',
         description: 'Kelimeki, TDK sözlüğüne dayalı ücretsiz online Türkçe kelime oyunu. 2 ya da 4 kişilik, köşelerden başlayan stratejik Scrabble benzeri oyun.',

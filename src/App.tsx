@@ -40,6 +40,7 @@ import {
   claimAbandonedLocalGameSave,
 } from './lib/api';
 import { saveGameDurable, flushPendingGames } from './utils/gameSync';
+import { setActivelyPlaying } from './lib/pwa';
 import { flushPendingFeedback } from './utils/feedbackSync';
 import { takePendingInviteToken } from './utils/friendInvite';
 import {
@@ -439,6 +440,13 @@ export default function App() {
   useEffect(() => {
     setOnlineGame(null);
   }, [user?.id]);
+
+  // Service worker güncellemesinin (`pwa.ts`) kullanıcıyı GERÇEKTEN oyun
+  // ekranındayken kesintiye uğratmasını önlemek için "şu an aktif oynanıyor
+  // mu" bayrağı — yerel 'play' fazı ya da açık bir Canlı oyun ekranı.
+  useEffect(() => {
+    setActivelyPlaying((state.phase === 'play' && !state.isGameOver) || !!onlineGame);
+  }, [state.phase, state.isGameOver, onlineGame]);
 
   // Rakip köşeye giriş onay popup'ı.
   const [invasionConfirm, setInvasionConfirm] = useState<

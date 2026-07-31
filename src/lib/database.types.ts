@@ -505,6 +505,17 @@ export interface AdminGuestStandaloneRow {
 export type AdminGameScope = 'total' | 'registered' | 'guest';
 
 /**
+ * admin_game_activity_series'in p_source parametresi: Toplam/Canlı/Yapay Zeka
+ * kombosu (31 Temmuz 2026, `admin_game_activity_include_online` migration'ı).
+ * 'local', Yapay Zeka'ya karşı yerel/aynı-cihaz oyunları (`game_finishes`
+ * tablosu) kapsar; 'online' Canlı (gerçek çok kullanıcılı) oyunları (`games`
+ * tablosundaki `online_game_id is not null` satırları, `online_game_id`
+ * bazında tekilleştirilmiş) kapsar. 'online' seçiliyken `AdminGameScope`
+ * 'guest' anlamsızdır — Canlı oyunda tüm katılımcılar girişlidir.
+ */
+export type AdminGameSourceType = 'total' | 'online' | 'local';
+
+/**
  * admin_game_activity_series RPC çıktısındaki tek kova (Büyüme > Oyun grafiği).
  * `games_finished` yalnızca gerçekten sonuna kadar oynanıp (bag+raf
  * boşalarak ya da pas turuyla) biten, teslimle bitmemiş oyunları sayar

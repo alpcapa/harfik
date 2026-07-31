@@ -22,6 +22,7 @@ import type {
   AdminUserActivityPoint,
   AdminGameActivityPoint,
   AdminGameScope,
+  AdminGameSourceType,
   AdminEngagementActivityPoint,
   AdminEngagementTotals,
   AdminFriendActivityPoint,
@@ -105,8 +106,57 @@ const FRIEND_SERIES: ChartSeriesDef[] = [
   { key: 'friendships_formed', label: 'Kurulan Arkadaşlık', color: '#008300' },
 ];
 
-const selectCls =
-  'w-auto shrink-0 py-1.5 px-2 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1px] bg-panel text-text border border-border';
+/**
+ * Filtre kombosu — `tabBtn` (Kullanıcı/Oyun) ile AYNI 11px görsel boyutta.
+ * Gerçek `<select>` (iOS zoom-önleme kuralı gereği hep ≥16px olmak zorunda
+ * — `input,textarea,select{font-size:16px!important}`, `src/index.css`)
+ * görünmez (`opacity-0`) ama tıklama/klavye/native picker'ı hâlâ o veriyor;
+ * üstündeki görsel etiket kutusu tamamen ayrı, küçük punto ile render
+ * ediliyor. `appearance-none`/sabit yükseklik gibi önceki denemeler (31
+ * Temmuz 2026) kutunun DIŞ boyutunu küçültüyordu ama METNİN kendisi hâlâ
+ * 16px kaldığından `tabBtn`'in 11px'ine göre göze hâlâ "büyük" batıyordu —
+ * bu, punto farkını da ortadan kaldıran asıl çözüm.
+ */
+function AdminSelect({
+  value,
+  onChange,
+  options,
+  disabled,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  disabled?: boolean;
+}) {
+  const current = options.find((o) => o.value === value);
+  return (
+    <div className="relative inline-block shrink-0">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className={`absolute inset-0 w-full h-full opacity-0 ${disabled ? 'cursor-default' : 'cursor-pointer'}`}
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <div
+        aria-hidden="true"
+        className={`pointer-events-none flex items-center gap-1 py-1.5 px-2 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1px] bg-panel text-text border border-border whitespace-nowrap ${
+          disabled ? 'opacity-50' : ''
+        }`}
+      >
+        <span>{current?.label ?? ''}</span>
+        <svg width="9" height="6" viewBox="0 0 10 6" fill="none" className="shrink-0">
+          <path d="M1 1l4 4 4-4" stroke="#5A6673" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+    </div>
+  );
+}
 
 /** GrowthChart'ın `controls` satırına konan bölüm başlığı — Tablo Görünümü linkiyle aynı hizada. */
 const sectionTitleCls = 'text-[10px] font-mono font-bold uppercase tracking-[1px] text-accent';
@@ -296,6 +346,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [gameGranularity, setGameGranularity] = useState<AdminActivityGranularity>('day');
   const [gamePeriod, setGamePeriod] = useState<number>(30);
   const [gameScope, setGameScope] = useState<AdminGameScope>('total');
+  const [gameSource, setGameSource] = useState<AdminGameSourceType>('total');
   const [gamePlayerCount, setGamePlayerCount] = useState<GameSubTab>('total');
   const [engagementActivity, setEngagementActivity] = useState<AdminEngagementActivityPoint[] | null>(null);
   const [engagementTotals, setEngagementTotals] = useState<AdminEngagementTotals | null>(null);
@@ -372,10 +423,11 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       gameGranularity,
       gameScope,
       gamePlayerCount === 'total' ? null : gamePlayerCount,
+      gameSource,
     )
       .then(setGameActivity)
       .catch((e) => setError(String(e)));
-  }, [gamePeriod, gameGranularity, gameScope, gamePlayerCount]);
+  }, [gamePeriod, gameGranularity, gameScope, gamePlayerCount, gameSource]);
 
   useEffect(() => {
     fetchAdminEngagementActivitySeries(gamePeriod, gameGranularity)
@@ -391,6 +443,14 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   function selectGameGranularity(g: AdminActivityGranularity) {
     setGameGranularity(g);
     setGamePeriod(PERIOD_OPTIONS[g][1]);
+  }
+
+  // Canlı oyunlarda misafir kavramı yok (tüm katılımcılar girişli) — Canlı
+  // seçilince Kayıtlı/Misafir kombosu tek seçeneğe ("Kayıtlı") düşüyor,
+  // scope'u da buna göre sabitliyoruz.
+  function selectGameSource(s: AdminGameSourceType) {
+    setGameSource(s);
+    if (s === 'online') setGameScope('registered');
   }
 
   function toggleSort(key: MemberSortKey) {
@@ -581,73 +641,79 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
               {growthSubTab === 'user' && (
                 <div className="flex items-center flex-wrap gap-2">
-                  <select
+                  <AdminSelect
                     value={userGranularity}
-                    onChange={(e) => selectUserGranularity(e.target.value as AdminActivityGranularity)}
-                    className={selectCls}
-                  >
-                    <option value="day">Günlük</option>
-                    <option value="week">Haftalık</option>
-                    <option value="month">Aylık</option>
-                    <option value="year">Yıllık</option>
-                  </select>
-                  <select
-                    value={userPeriod}
-                    onChange={(e) => setUserPeriod(Number(e.target.value))}
-                    className={selectCls}
-                  >
-                    {PERIOD_OPTIONS[userGranularity].map((p) => (
-                      <option key={p} value={p}>
-                        Son {p} {PERIOD_UNIT_LABEL[userGranularity]}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => selectUserGranularity(v as AdminActivityGranularity)}
+                    options={[
+                      { value: 'day', label: 'Günlük' },
+                      { value: 'week', label: 'Haftalık' },
+                      { value: 'month', label: 'Aylık' },
+                      { value: 'year', label: 'Yıllık' },
+                    ]}
+                  />
+                  <AdminSelect
+                    value={String(userPeriod)}
+                    onChange={(v) => setUserPeriod(Number(v))}
+                    options={PERIOD_OPTIONS[userGranularity].map((p) => ({
+                      value: String(p),
+                      label: `Son ${p} ${PERIOD_UNIT_LABEL[userGranularity]}`,
+                    }))}
+                  />
                 </div>
               )}
 
               {growthSubTab === 'game' && (
                 <div className="flex items-center flex-wrap gap-2">
-                  <select
+                  <AdminSelect
+                    value={gameSource}
+                    onChange={(v) => selectGameSource(v as AdminGameSourceType)}
+                    options={[
+                      { value: 'total', label: 'Toplam' },
+                      { value: 'online', label: 'Canlı' },
+                      { value: 'local', label: 'Yapay Zeka' },
+                    ]}
+                  />
+                  <AdminSelect
                     value={gameScope}
-                    onChange={(e) => setGameScope(e.target.value as AdminGameScope)}
-                    className={selectCls}
-                  >
-                    <option value="total">Toplam</option>
-                    <option value="registered">Kayıtlı</option>
-                    <option value="guest">Misafir</option>
-                  </select>
-                  <select
-                    value={gamePlayerCount}
-                    onChange={(e) =>
-                      setGamePlayerCount(e.target.value === 'total' ? 'total' : (Number(e.target.value) as 2 | 4))
+                    onChange={(v) => setGameScope(v as AdminGameScope)}
+                    disabled={gameSource === 'online'}
+                    options={
+                      gameSource === 'online'
+                        ? [{ value: 'registered', label: 'Kayıtlı' }]
+                        : [
+                            { value: 'total', label: 'Toplam' },
+                            { value: 'registered', label: 'Kayıtlı' },
+                            { value: 'guest', label: 'Misafir' },
+                          ]
                     }
-                    className={selectCls}
-                  >
-                    <option value="total">Toplam</option>
-                    <option value={2}>2 Kişilik</option>
-                    <option value={4}>4 Kişilik</option>
-                  </select>
-                  <select
+                  />
+                  <AdminSelect
+                    value={String(gamePlayerCount)}
+                    onChange={(v) => setGamePlayerCount(v === 'total' ? 'total' : (Number(v) as 2 | 4))}
+                    options={[
+                      { value: 'total', label: 'Toplam' },
+                      { value: '2', label: '2 Kişilik' },
+                      { value: '4', label: '4 Kişilik' },
+                    ]}
+                  />
+                  <AdminSelect
                     value={gameGranularity}
-                    onChange={(e) => selectGameGranularity(e.target.value as AdminActivityGranularity)}
-                    className={selectCls}
-                  >
-                    <option value="day">Günlük</option>
-                    <option value="week">Haftalık</option>
-                    <option value="month">Aylık</option>
-                    <option value="year">Yıllık</option>
-                  </select>
-                  <select
-                    value={gamePeriod}
-                    onChange={(e) => setGamePeriod(Number(e.target.value))}
-                    className={selectCls}
-                  >
-                    {PERIOD_OPTIONS[gameGranularity].map((p) => (
-                      <option key={p} value={p}>
-                        Son {p} {PERIOD_UNIT_LABEL[gameGranularity]}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => selectGameGranularity(v as AdminActivityGranularity)}
+                    options={[
+                      { value: 'day', label: 'Günlük' },
+                      { value: 'week', label: 'Haftalık' },
+                      { value: 'month', label: 'Aylık' },
+                      { value: 'year', label: 'Yıllık' },
+                    ]}
+                  />
+                  <AdminSelect
+                    value={String(gamePeriod)}
+                    onChange={(v) => setGamePeriod(Number(v))}
+                    options={PERIOD_OPTIONS[gameGranularity].map((p) => ({
+                      value: String(p),
+                      label: `Son ${p} ${PERIOD_UNIT_LABEL[gameGranularity]}`,
+                    }))}
+                  />
                 </div>
               )}
             </div>
@@ -664,7 +730,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                 value={memberSearch}
                 onChange={(e) => setMemberSearch(e.target.value)}
                 placeholder="İsim ya da nickname ara…"
-                className="w-full bg-bg border border-border rounded-md px-3 py-2 text-[11px] font-mono text-text outline-none focus:border-accent transition-colors"
+                className="w-full bg-bg border border-border rounded-md px-2.5 py-1.5 text-[11px] font-mono text-text outline-none focus:border-accent transition-colors"
               />
 
               {members === null ? (
@@ -867,7 +933,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         data={gameActivity}
                         granularity={gameGranularity}
                         series={GAME_COUNT_SERIES}
-                        defaultActiveKeys={['games_finished_same_session']}
+                        defaultActiveKeys={['games_finished']}
                         controls={<span className={sectionTitleCls}>Oyun Sayısı</span>}
                         csvBaseName="kelimeki-oyun-sayisi"
                       />
@@ -875,7 +941,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         data={gameActivity}
                         granularity={gameGranularity}
                         series={DURATION_SERIES}
-                        defaultActiveKeys={['avg_duration_same_session_seconds']}
+                        defaultActiveKeys={DURATION_SERIES.map((s) => s.key)}
                         formatValue={formatDuration}
                         controls={<span className={sectionTitleCls}>Ortalama Oyun Süresi</span>}
                         csvBaseName="kelimeki-ortalama-oyun-suresi"
