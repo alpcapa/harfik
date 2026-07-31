@@ -547,13 +547,27 @@ export function Setup({
             })}
           </div>
 
-          <button
-            onClick={handleStart}
-            disabled={!wordsReady}
-            className="btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-          >
-            {wordsReady ? 'Oyunu Başlat' : 'Hazırlanıyor…'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleStart}
+              disabled={!wordsReady}
+              className="flex-1 btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              {wordsReady ? 'Oyunu Başlat' : 'Hazırlanıyor…'}
+            </button>
+            {/* Yalnızca girişli kullanıcı için (creatingLocal) — LiveGameCreateForm'un
+                "Vazgeç" butonuyla BİREBİR AYNI, Devam Eden Oyunlar listesine
+                dönmeyi sağlar. Misafirde bu form zaten tek/koşulsuz gösterilen
+                yol olduğundan (dönülecek bir liste yok) hiç render edilmez. */}
+            {creatingLocal && (
+              <button
+                onClick={() => setCreatingLocal(false)}
+                className="flex-1 btn-raised-neutral py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-void border border-border text-text active:scale-[0.97] transition-transform"
+              >
+                Vazgeç
+              </button>
+            )}
+          </div>
         </>
       )}
 
