@@ -357,6 +357,7 @@ export type GameHistoryEntry = Pick<
   | 'surrendered'
   | 'online_game_id'
   | 'message_count'
+  | 'user_id'
 > & {
   /**
    * Bu isteği yapan (oturum açan) kullanıcının bu oyunu beğenip beğenmediği —

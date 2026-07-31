@@ -2,7 +2,7 @@
 // oyunların listesi, gelen davetlerde kiminle oynayacağını gösterme +
 // Kabul/Reddet + "+ Yeni Canlı Oyun" ile kurulum formuna geçiş (bkz.
 // src/App.tsx'teki mainView tab'ı, src/components/LiveGameCreateForm.tsx).
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import {
   checkInviteExpiry,
@@ -11,6 +11,7 @@ import {
   fetchOnlineGameTurns,
   listMyOnlineGames,
   respondToGameInvite,
+  subscribeMyOnlineGames,
 } from '../lib/api';
 import { ABANDON_TIMEOUT_MS } from '../utils/gameStorage';
 import type { OnlineGame, OnlineGameSlot } from '../lib/database.types';
@@ -377,6 +378,24 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
     void loadGames();
   };
 
+  // Bir daveti gönderilen/kabul edilen/reddedilen taraf bu sekmeyi zaten
+  // açık tutuyorsa (ör. davet gönderilirken alıcı "Arkadaşınla" sekmesinde
+  // bekliyorsa), önceden bunu görmenin tek yolu sekmeden çıkıp geri dönmek
+  // (yeniden mount) ya da uygulamayı aç/kapa etmekti — online_games/
+  // game_invites hiçbir Realtime olayı yayınlamıyordu. Artık ikisi de
+  // supabase_realtime publication'ında (bkz. ilgili migration); burada
+  // herhangi bir değişiklikte listeyi yeniden çekiyoruz. Art arda gelen
+  // birden fazla olayı (ör. bir davet kabul edilince hem game_invites hem
+  // online_games değişir) tek bir reload'a indirmek için kısa bir debounce.
+  const reloadTimeoutRef = useRef<number | null>(null);
+  const scheduleReload = () => {
+    if (reloadTimeoutRef.current != null) window.clearTimeout(reloadTimeoutRef.current);
+    reloadTimeoutRef.current = window.setTimeout(() => {
+      reloadTimeoutRef.current = null;
+      reload();
+    }, 300);
+  };
+
   useEffect(() => {
     if (!user) {
       setGames(null);
@@ -384,8 +403,24 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
     }
     const cancelledRef = { current: false };
     void loadGames(cancelledRef);
+    const unsubscribe = subscribeMyOnlineGames(scheduleReload);
+    // Mobil tarayıcılar (özellikle iOS Safari) arka plana alınan bir
+    // sekmenin Realtime websocket'ini askıya alabiliyor — o sırada gelen
+    // bir davet/kabul olayı kaçırılabilir (bkz. OnlineGameScreen'deki aynı
+    // gerekçe). Ön plana/çevrimiçi'ye dönüşte emniyet için elle de tazele.
+    const onForeground = () => {
+      if (document.visibilityState === 'visible') reload();
+    };
+    document.addEventListener('visibilitychange', onForeground);
+    window.addEventListener('focus', onForeground);
+    window.addEventListener('online', onForeground);
     return () => {
       cancelledRef.current = true;
+      unsubscribe();
+      document.removeEventListener('visibilitychange', onForeground);
+      window.removeEventListener('focus', onForeground);
+      window.removeEventListener('online', onForeground);
+      if (reloadTimeoutRef.current != null) window.clearTimeout(reloadTimeoutRef.current);
     };
   }, [user]);
 
