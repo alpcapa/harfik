@@ -22,6 +22,7 @@ import type {
   AdminUserActivityPoint,
   AdminGameActivityPoint,
   AdminGameScope,
+  AdminGameSourceType,
   AdminEngagementActivityPoint,
   AdminEngagementTotals,
   AdminFriendActivityPoint,
@@ -296,6 +297,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [gameGranularity, setGameGranularity] = useState<AdminActivityGranularity>('day');
   const [gamePeriod, setGamePeriod] = useState<number>(30);
   const [gameScope, setGameScope] = useState<AdminGameScope>('total');
+  const [gameSource, setGameSource] = useState<AdminGameSourceType>('total');
   const [gamePlayerCount, setGamePlayerCount] = useState<GameSubTab>('total');
   const [engagementActivity, setEngagementActivity] = useState<AdminEngagementActivityPoint[] | null>(null);
   const [engagementTotals, setEngagementTotals] = useState<AdminEngagementTotals | null>(null);
@@ -372,10 +374,11 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       gameGranularity,
       gameScope,
       gamePlayerCount === 'total' ? null : gamePlayerCount,
+      gameSource,
     )
       .then(setGameActivity)
       .catch((e) => setError(String(e)));
-  }, [gamePeriod, gameGranularity, gameScope, gamePlayerCount]);
+  }, [gamePeriod, gameGranularity, gameScope, gamePlayerCount, gameSource]);
 
   useEffect(() => {
     fetchAdminEngagementActivitySeries(gamePeriod, gameGranularity)
@@ -391,6 +394,14 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   function selectGameGranularity(g: AdminActivityGranularity) {
     setGameGranularity(g);
     setGamePeriod(PERIOD_OPTIONS[g][1]);
+  }
+
+  // Canlı oyunlarda misafir kavramı yok (tüm katılımcılar girişli) — Canlı
+  // seçilince Kayıtlı/Misafir kombosu tek seçeneğe ("Kayıtlı") düşüyor,
+  // scope'u da buna göre sabitliyoruz.
+  function selectGameSource(s: AdminGameSourceType) {
+    setGameSource(s);
+    if (s === 'online') setGameScope('registered');
   }
 
   function toggleSort(key: MemberSortKey) {
@@ -608,13 +619,29 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
               {growthSubTab === 'game' && (
                 <div className="flex items-center flex-wrap gap-2">
                   <select
-                    value={gameScope}
-                    onChange={(e) => setGameScope(e.target.value as AdminGameScope)}
+                    value={gameSource}
+                    onChange={(e) => selectGameSource(e.target.value as AdminGameSourceType)}
                     className={selectCls}
                   >
                     <option value="total">Toplam</option>
-                    <option value="registered">Kayıtlı</option>
-                    <option value="guest">Misafir</option>
+                    <option value="online">Canlı</option>
+                    <option value="local">Yapay Zeka</option>
+                  </select>
+                  <select
+                    value={gameScope}
+                    onChange={(e) => setGameScope(e.target.value as AdminGameScope)}
+                    className={selectCls}
+                    disabled={gameSource === 'online'}
+                  >
+                    {gameSource === 'online' ? (
+                      <option value="registered">Kayıtlı</option>
+                    ) : (
+                      <>
+                        <option value="total">Toplam</option>
+                        <option value="registered">Kayıtlı</option>
+                        <option value="guest">Misafir</option>
+                      </>
+                    )}
                   </select>
                   <select
                     value={gamePlayerCount}

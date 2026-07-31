@@ -13,6 +13,7 @@ import type {
   AdminFriendTotals,
   AdminGameActivityPoint,
   AdminGameScope,
+  AdminGameSourceType,
   AdminGuestSourceRow,
   AdminGuestDeviceRow,
   AdminGuestStandaloneRow,
@@ -1103,14 +1104,16 @@ export async function fetchAdminUserActivitySeries(
 /**
  * Son `periods` kova için oyun başlatma/bitirme sayılarını ve ortalama oyun
  * süresini döner (yalnızca admin — Büyüme > Oyun). `scope` Toplam/Kayıtlı/
- * Misafir kombosuna, `playerCount` Toplam/2/4 kişilik kırılımına karşılık
- * gelir (null = tüm oyuncu sayıları).
+ * Misafir kombosuna, `playerCount` Toplam/2/4 kişilik kırılımına, `source`
+ * Toplam/Canlı/Yapay Zeka kombosuna (31 Temmuz 2026) karşılık gelir (null =
+ * tüm oyuncu sayıları).
  */
 export async function fetchAdminGameActivitySeries(
   periods: number,
   granularity: AdminActivityGranularity,
   scope: AdminGameScope,
   playerCount: number | null,
+  source: AdminGameSourceType,
 ): Promise<AdminGameActivityPoint[]> {
   if (!supabase) return [];
   const { data, error } = await supabase.rpc('admin_game_activity_series', {
@@ -1118,6 +1121,7 @@ export async function fetchAdminGameActivitySeries(
     p_granularity: granularity,
     p_scope: scope,
     p_player_count: playerCount,
+    p_source: source,
   });
   if (error) {
     console.error('[Kelimeki] fetchAdminGameActivitySeries hatası:', error.message);
