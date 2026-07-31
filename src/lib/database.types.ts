@@ -158,6 +158,8 @@ export interface OnlineGameStatePublic {
   bag_count: number;
   started_at: string;
   updated_at: string;
+  /** Sırası gelen oyuncunun bu tarihe kadar hamle yapması gerekir — geçerse `check_turn_timeout` onu otomatik teslim eder. `is_game_over:true` iken null. */
+  turn_deadline: string | null;
 }
 
 /** `online_game_moves` tablosundaki tek satır (audit log / hamle geçmişi). */

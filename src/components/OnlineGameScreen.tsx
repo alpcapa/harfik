@@ -51,7 +51,9 @@ import {
   triggerAiTurn,
 } from '../lib/api';
 import type { HistoryEntry, Tile as TileModel } from '../game/types';
-import type { OnlineGame, OnlineMoveRow, WordMeaning } from '../lib/database.types';
+import type { OnlineGame, OnlineGameSlot, OnlineMoveRow, WordMeaning } from '../lib/database.types';
+
+type HumanSlot = Extract<OnlineGameSlot, { type: 'human' }>;
 
 interface OnlineGameScreenProps {
   game: OnlineGame;
@@ -98,6 +100,10 @@ function buildMoveHistory(rows: OnlineMoveRow[]): HistoryEntry[] {
 export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenProps) {
   const [state, dispatch] = useReducer(gameReducer, undefined, createInitialState);
   const [moveRows, setMoveRows] = useState<OnlineMoveRow[]>([]);
+  // Sırası gelen oyuncunun 48 saatlik zaman aşımına kalan süresi — yalnızca
+  // `canAct` iken (sıra bendeyken) 24 saatin altına düşünce bir uyarı
+  // göstermek için (bkz. aşağıdaki `deadlineWarning`).
+  const [turnDeadline, setTurnDeadline] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [validating, setValidating] = useState(false);
@@ -197,6 +203,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       if (cancelled || !publicState) return;
       dispatch({ type: 'SYNC_ONLINE_STATE', publicState, myRack, mySlotIndex });
       setMoveRows(rows);
+      setTurnDeadline(publicState.turn_deadline);
       setLoaded(true);
 
       if (!publicState.is_game_over && !aiTriggeringRef.current) {
@@ -263,6 +270,20 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   // olabilir — aşağıdaki banner'da bunu bir insanın sırasını beklemekten
   // ayırt etmek için kullanılıyor (bkz. o banner'daki not).
   const isAiTurn = !canAct && !state.isGameOver && game.slots[state.current]?.type === 'ai';
+
+  // Sıra bendeyken (canAct) 48 saatlik zaman aşımına 24 saatten az kaldıysa
+  // uyarı metni — LiveGamesTab'daki liste satırının kırmızı/kalın kalan-süre
+  // eşiğiyle aynı mantık (bkz. CLAUDE.md), burada tam cümle olarak oyun
+  // ekranında gösteriliyor.
+  const deadlineWarning = useMemo(() => {
+    if (!canAct || !turnDeadline) return null;
+    const ms = Date.parse(turnDeadline) - Date.now();
+    if (ms <= 0 || ms >= 24 * 60 * 60 * 1000) return null;
+    const creatorName = game.slots.find(
+      (s): s is HumanSlot => s.type === 'human' && s.user_id === game.created_by,
+    )?.name;
+    return `${creatorName ?? 'Bir arkadaşının'} açtığı ${game.player_count} kişilik oyunda 24 saat içinde hamle yapmazsanız teslim olmuş sayılacaksınız ve lig puanınızdan 2 puan düşülecek.`;
+  }, [canAct, turnDeadline, game.slots, game.created_by, game.player_count]);
 
   // Raftan bir taş ya da tahtaya bu tur konmuş bir taş sürüklenmeye başlanır.
   const beginDrag = (source: DragSource, e: React.PointerEvent) => {
@@ -639,6 +660,12 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
                 {isAiTurn
                   ? `${state.players[state.current]?.name ?? 'Yapay Zeka'} hamlesini hesaplıyor…`
                   : `Sıra: ${state.players[state.current]?.name ?? 'Rakip'} — oynaması bekleniyor`}
+              </span>
+            </div>
+          ) : deadlineWarning ? (
+            <div className="shadow-raised flex items-center justify-center rounded-md border border-red/40 bg-red/10 px-4 py-3">
+              <span className="font-mono text-[11px] font-bold text-red text-center leading-relaxed">
+                {deadlineWarning}
               </span>
             </div>
           ) : (
