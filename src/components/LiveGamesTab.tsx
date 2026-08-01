@@ -562,7 +562,7 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
 
       <button
         onClick={() => setCreating(true)}
-        className="btn-raised-orange py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-orange text-white active:scale-[0.97] transition-transform"
+        className="btn-raised-orange py-2.5 rounded-md font-sans text-sm font-bold uppercase tracking-[1.5px] bg-orange text-white active:scale-[0.97] transition-transform"
       >
         + Yeni Canlı Oyun Aç
       </button>
