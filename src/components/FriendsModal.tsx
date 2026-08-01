@@ -20,6 +20,7 @@ import {
   sendFriendRequest,
 } from '../lib/api';
 import type { FriendRow, FriendSearchResult, IncomingFriendRequest } from '../lib/database.types';
+import { trCompare } from '../utils/turkish';
 
 /** Bir arkadaşı `PlayerScoreCard` açabilecek şekle çevirir — henüz canlı oyun
  * olmadığından arkadaş eklemenin somut faydası şu an bu: kişinin skor
@@ -120,7 +121,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
   useEffect(() => {
     if (tab !== 'search' || allUsers !== null) return;
     void listUsersForFriend(0, ALL_USERS_PAGE_SIZE).then((page) => {
-      setAllUsers(page);
+      setAllUsers([...page].sort((a, b) => trCompare(a.name, b.name)));
       setAllUsersHasMore(page.length === ALL_USERS_PAGE_SIZE);
     });
   }, [tab, allUsers]);
@@ -130,7 +131,11 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
     setAllUsersLoadingMore((already) => {
       if (already) return already;
       void listUsersForFriend(allUsers.length, ALL_USERS_PAGE_SIZE).then((page) => {
-        setAllUsers((cur) => [...(cur ?? []), ...page]);
+        // Sayfalar backend'in kendi sırasına göre çekiliyor ama Türkçe
+        // harflerin (ç/ğ/ı/ö/ş/ü) sayfa sınırlarında yanlış collation'a göre
+        // dağılmış olma ihtimaline karşı, her yeni sayfadan sonra TÜM birikmiş
+        // listeyi (yalnızca son sayfayı değil) yeniden alfabetik sıralıyoruz.
+        setAllUsers((cur) => [...(cur ?? []), ...page].sort((a, b) => trCompare(a.name, b.name)));
         setAllUsersHasMore(page.length === ALL_USERS_PAGE_SIZE);
         setAllUsersLoadingMore(false);
       });
