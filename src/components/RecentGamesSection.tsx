@@ -1,5 +1,5 @@
 // Kelimeki — "Son Oynadıklarım": hem "Yapay Zeka ile" hem "Arkadaşınla"
-// sekmelerinde, o sekmenin türüne uygun (yerel/Canlı) son 2 biten oyunu
+// sekmelerinde, o sekmenin türüne uygun (yerel/Canlı) son 5 biten oyunu
 // gösteren kompakt liste. Bir satıra tıklamak Tüm Oyunlarım'ı
 // (`GameHistoryModal`) doğrudan o oyunun tahta önizlemesi açık hâlde açar —
 // ayrı bir mini tahta/sohbet gösterimi yazmak yerine mevcut modalın tüm
@@ -50,7 +50,7 @@ export function RecentGamesSection({ onlineOnly }: RecentGamesSectionProps) {
       return;
     }
     let cancelled = false;
-    fetchMyGames(null, 0, 2, undefined, false, onlineOnly).then(({ games: rows }) => {
+    fetchMyGames(null, 0, 5, undefined, false, onlineOnly).then(({ games: rows }) => {
       if (!cancelled) setGames(rows);
     });
     return () => {
