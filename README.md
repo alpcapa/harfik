@@ -115,7 +115,8 @@ src/
 │   ├── useAuth.tsx        # Supabase auth context
 │   ├── useModalA11y.ts    # modal odak hapsi, Escape, dialog yığını
 │   ├── useOnlineStatus.ts # çevrimiçi/çevrimdışı durumu izler
-│   └── useNicknameAvailability.ts # takma isim uygunluğu (debounce'lu RPC kontrolü, AuthModal + AccountSettingsModal ortak)
+│   ├── useNicknameAvailability.ts # takma isim uygunluğu (debounce'lu RPC kontrolü, AuthModal + AccountSettingsModal ortak)
+│   └── useAppIconBadge.ts # PWA ikonu üzerinde Badge API ile kırmızı yuvarlak/beyaz sayı rozeti
 └── lib/
     ├── supabase.ts        # Supabase istemcisi
     ├── api.ts             # saveGame, fetchLeaderboard, auth, fetchMeaning

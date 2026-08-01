@@ -56,6 +56,7 @@ import type { LocalGameSave, OnlineGame, WordMeaning } from './lib/database.type
 import { OnlineGameScreen } from './components/OnlineGameScreen';
 import { useAuth } from './hooks/useAuth';
 import { useModalA11y } from './hooks/useModalA11y';
+import { useAppIconBadge } from './hooks/useAppIconBadge';
 
 const AI_THINK_MS = 1100;
 // Sürüklemenin "tıklama" değil gerçek bir sürükleme sayılması için gereken
@@ -496,6 +497,21 @@ export default function App() {
   useEffect(() => {
     setActivelyPlaying((state.phase === 'play' && !state.isGameOver) || !!onlineGame);
   }, [state.phase, state.isGameOver, onlineGame]);
+
+  // "Ana Ekrana Ekle" ile kurulan PWA ikonu üzerinde (masaüstü/dock/görev
+  // çubuğu) kırmızı yuvarlak/beyaz sayı rozeti — Setup'taki sekme
+  // rozetleriyle AYNI mantık, ama App.tsx seviyesinde (hangi ekran açık
+  // olursa olsun) çalışsın diye ayrı bir hook'ta (bkz. useAppIconBadge.ts).
+  // `localSaveCount` Setup.tsx'teki formülle birebir aynı: girişli
+  // kullanıcıda `cloudSaves`'in uzunluğu, misafirde tekil `savedGame`
+  // kaydının 0/1'i. `isOnSetupScreen`, hem yerel oyundan ("Çık"/ABANDON,
+  // state.phase 'play'→'setup') hem bir Canlı oyundan ("←", onlineGame
+  // null'a döner) Setup'a dönüşü kapsar — ikisi de ayrı state olduğundan
+  // (`state.phase` Canlı oyun ekranındayken hiç değişmiyor) sadece
+  // `state.phase`'i izlemek Canlı dönüşünü kaçırırdı.
+  const localSaveCount = user ? (cloudSaves?.length ?? 0) : savedGame ? 1 : 0;
+  const isOnSetupScreen = state.phase === 'setup' && !onlineGame;
+  useAppIconBadge(user?.id, localSaveCount, isOnSetupScreen);
 
   // Rakip köşeye giriş onay popup'ı.
   const [invasionConfirm, setInvasionConfirm] = useState<
