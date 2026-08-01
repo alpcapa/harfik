@@ -14,6 +14,7 @@ import { HelpModal } from './HelpModal';
 import { LiveGamesTab } from './LiveGamesTab';
 import { LogoMark } from './LogoMark';
 import { PlayerBadge } from './PlayerBadge';
+import { RecentGamesSection } from './RecentGamesSection';
 import { TermsModal } from './TermsModal';
 import { PrivacyModal } from './PrivacyModal';
 import type { LocalGameSave, OnlineGame } from '../lib/database.types';
@@ -478,8 +479,8 @@ export function Setup({
             >
               {tab.label}
               {tab.badge > 0 && (
-                <span className="min-w-[16px] h-4 px-1 rounded-full bg-red text-white text-[11px] font-bold flex items-center justify-center leading-none">
-                  <span className="translate-x-[0.5px] translate-y-[1px]">{tab.badge}</span>
+                <span className="min-w-[16px] h-4 px-1 rounded-full bg-red text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                  {tab.badge}
                 </span>
               )}
             </button>
@@ -651,6 +652,8 @@ export function Setup({
           {!user && <MembershipPerksBox onSignup={() => setShowAuthModal(true)} />}
         </>
       )}
+
+      {mainView === 'local' && <RecentGamesSection onlineOnly={false} />}
 
       <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-muted">
         <button onClick={() => setShowTerms(true)} className="hover:underline active:opacity-70 transition-opacity">

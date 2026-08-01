@@ -274,6 +274,11 @@ export async function fetchMyGames(
   limit = 20,
   userId?: string,
   favoritesOnly = false,
+  // undefined: filtre yok. true: yalnızca Canlı (online_game_id dolu — bkz.
+  // "Canlı Oyun — Faz 3" `games.online_game_id`). false: yalnızca yerel/Yapay
+  // Zeka oyunları (online_game_id null). `RecentGamesSection`'ın "Yapay Zeka
+  // ile"/"Arkadaşınla" sekmelerindeki "Son Oynadıklarım" widget'ı için.
+  onlineOnly?: boolean,
 ): Promise<{ games: GameHistoryEntry[]; hasMore: boolean }> {
   if (!supabase) return { games: [], hasMore: false };
   const {
@@ -308,6 +313,8 @@ export async function fetchMyGames(
   } else {
     let query = supabase.from('games').select(cols).eq('user_id', targetUid);
     if (playerCount !== null) query = query.eq('player_count', playerCount);
+    if (onlineOnly === true) query = query.not('online_game_id', 'is', null);
+    else if (onlineOnly === false) query = query.is('online_game_id', null);
     const { data, error } = await query
       .order('created_at', { ascending: false })
       .range(offset, offset + limit);

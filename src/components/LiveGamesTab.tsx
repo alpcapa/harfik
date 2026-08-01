@@ -19,6 +19,7 @@ import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
 import { FriendSuggestModal } from './FriendSuggestModal';
 import { LiveGameCreateForm } from './LiveGameCreateForm';
+import { RecentGamesSection } from './RecentGamesSection';
 
 type HumanSlot = Extract<OnlineGameSlot, { type: 'human' }>;
 
@@ -221,7 +222,7 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
       </span>
       <span className="flex flex-col items-end gap-0.5 shrink-0">
         <span
-          className={`text-[9px] font-mono uppercase tracking-[1px] ${
+          className={`text-[12px] font-mono uppercase tracking-[1px] ${
             game.status === 'active'
               ? isMyTurn
                 ? 'text-green font-bold'
@@ -428,13 +429,16 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
 
   if (creating) {
     return (
-      <LiveGameCreateForm
-        onCancel={() => setCreating(false)}
-        onCreated={() => {
-          setCreating(false);
-          reload();
-        }}
-      />
+      <div className="w-full flex flex-col gap-5">
+        <LiveGameCreateForm
+          onCancel={() => setCreating(false)}
+          onCreated={() => {
+            setCreating(false);
+            reload();
+          }}
+        />
+        <RecentGamesSection onlineOnly />
+      </div>
     );
   }
 
@@ -508,6 +512,7 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
         </p>
       ) : (
         <>
+          <Section title="Devam Eden Oyunlar" games={active} onOpenGame={onOpenGame} turns={turns} deadlines={deadlines} />
           {invites.length > 0 && (
             <div className="flex flex-col gap-2">
               <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
@@ -525,11 +530,12 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
               </div>
             </div>
           )}
-          <Section title="Devam Eden Oyunlar" games={active} onOpenGame={onOpenGame} turns={turns} deadlines={deadlines} />
           <PendingSection title="Kabul Ettin — Diğerleri Bekleniyor" games={acceptedWaiting} />
           <PendingSection title="Bekleyen Oyunlar" games={waiting} />
         </>
       )}
+
+      <RecentGamesSection onlineOnly />
     </div>
   );
 }

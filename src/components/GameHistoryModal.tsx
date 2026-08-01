@@ -45,6 +45,13 @@ interface GameHistoryModalProps {
   userId?: string;
   /** Verilirse varsayılan "Tüm Oyunlar · N Oyunculu" başlığının yerine geçer. */
   title?: string;
+  /**
+   * Verilirse (ör. `RecentGamesSection`'daki "Son Oynadıklarım" satırlarından
+   * biri tıklanınca) modal açılır açılmaz bu oyunun tahta önizlemesi
+   * genişletilmiş hâlde gösterilir ve o karta kaydırılır — kullanıcı ayrıca
+   * tıklamak zorunda kalmaz.
+   */
+  initialExpandedId?: string;
 }
 
 const PAGE_SIZE = 20;
@@ -180,7 +187,7 @@ function ScoreBoxRow({
   );
 }
 
-export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHistoryModalProps) {
+export function GameHistoryModal({ playerCount, onClose, userId, title, initialExpandedId }: GameHistoryModalProps) {
   const { user, profile, profileLoading } = useAuth();
   // Her oyunun `players` jsonb'si o oyun bittiği andaki ismi donmuş halde
   // tutar — takma adını sonradan değiştirsen eski kayıtlar güncellenmez.
@@ -333,11 +340,29 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
       setGames(page);
       setHasMore(more);
       setLoading(false);
+      // "Son Oynadıklarım" satırından açıldıysa (initialExpandedId), o karta
+      // hiç tıklamaya gerek kalmadan tahtayı hemen genişletip kaydır.
+      if (initialExpandedId) {
+        setExpandedId(initialExpandedId);
+        if (!fetchedIds.current.has(initialExpandedId)) {
+          fetchedIds.current.add(initialExpandedId);
+          setSnapshotLoadingId(initialExpandedId);
+          void fetchGameBoardSnapshot(initialExpandedId).then((snap) => {
+            setSnapshots((c) => ({ ...c, [initialExpandedId]: snap }));
+            setSnapshotLoadingId((id) => (id === initialExpandedId ? null : id));
+          });
+        }
+        requestAnimationFrame(() => {
+          document
+            .getElementById(`game-history-entry-${initialExpandedId}`)
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
     });
     return () => {
       cancelled = true;
     };
-  }, [playerCount, userId, favoritesOnly]);
+  }, [playerCount, userId, favoritesOnly, initialExpandedId]);
 
   const loadMore = useCallback(() => {
     setLoadingMore((already) => {
@@ -419,7 +444,7 @@ export function GameHistoryModal({ playerCount, onClose, userId, title }: GameHi
             const isOnline = !!entry.online_game_id;
             const isVsAi = !isOnline && hasSnapshot && players.some((p) => p.is_ai);
             return (
-              <div key={entry.id} className="flex flex-col gap-1.5">
+              <div key={entry.id} id={`game-history-entry-${entry.id}`} className="flex flex-col gap-1.5">
                 <div
                   role="button"
                   tabIndex={0}
