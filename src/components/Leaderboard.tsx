@@ -98,7 +98,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
       onClose={onClose}
     >
       <p className="text-[11px] text-muted font-mono text-center mb-3 leading-relaxed">
-        Sanal Lig, senin gibi kayıtlı kullanıcıların aldığı puanlara göre oluşan bir yarışmadır.
+        k-lig, senin gibi kayıtlı kullanıcıların aldığı puanlara göre oluşan bir yarışmadır.
       </p>
       {rows === null ? (
         <p className="text-muted text-xs font-mono text-center py-6">Yükleniyor…</p>

@@ -110,7 +110,7 @@ export default function App() {
   // "iddia edip" (claimAbandonedLocalGameSave) siler ve — tıpkı localStorage'daki
   // terk edilme akışıyla (aşağıdaki mount effect'i) BİREBİR AYNI mantıkla —
   // gerçekten başlamış (turnCount>=2) olanlar için gecikmeli bir teslim kaydı
-  // (-2 Sanal Lig cezası) oluşturur. `state === 'setup'` her göründüğünde
+  // (-2 k-lig cezası) oluşturur. `state === 'setup'` her göründüğünde
   // (App.tsx'teki phase effect'i) tetiklenir.
   const refreshCloudSaves = async () => {
     if (!user || !isSupabaseConfigured) {
@@ -348,7 +348,7 @@ export default function App() {
       void logGameFinish(pending.playerCount, pending.durationSeconds, pending.multiSession, false);
       // Oyun gerçekten başlamışsa (turnCount>=2 — en az bir tam hamle
       // alışverişi) bu, hesap sahibi için gecikmeli bir teslim sayılır — -2
-      // Sanal Lig cezası uygulanır. Bu artık hesap sahibinin -2 alabileceği
+      // k-lig cezası uygulanır. Bu artık hesap sahibinin -2 alabileceği
       // TEK yol: logo tıklaması artık anlık teslim istemiyor (bkz.
       // handleLogoClick), yalnızca bu 7 günlük terk edilme kuralı devreye
       // giriyor. Misafirse (o an giriş yoksa) saveGameDurable normal

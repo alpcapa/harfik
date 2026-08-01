@@ -38,7 +38,7 @@ export interface PendingAbandonedGame {
   /**
    * Terk edilip silinen tam GameState — App.tsx bunu, oyun gerçekten
    * başlamışsa (`turnCount>=2`, mevcut "Çık" akışındaki `gameStarted` ile
-   * aynı eşik) hesap sahibi için bir teslim kaydı (-2 Sanal Lig cezası)
+   * aynı eşik) hesap sahibi için bir teslim kaydı (-2 k-lig cezası)
    * oluşturmak için kullanır. `saveGameState` her zaman bunu doldurur —
    * yalnızca çok eski (bu alan eklenmeden önceki) bir kayıt hâlâ
    * localStorage'da bekliyorsa teorik olarak eksik olabilir.

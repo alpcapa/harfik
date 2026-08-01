@@ -244,7 +244,7 @@ export async function fetchPlayerStats(
  * sayısındaki oyunlarını sayfalı biçimde döner (en yeni önce),
  * `GameHistoryModal`'ın kaydırdıkça yüklemesi (lazy load) için. `hasMore`,
  * bir sonraki sayfanın olup olmadığını bildirir. `userId` verilirse (admin
- * panelindeki ya da Sanal Lig'den açılan oyuncu detayı) o kullanıcının
+ * panelindeki ya da k-lig'den açılan oyuncu detayı) o kullanıcının
  * geçmişi döner — `games` tablosunun SELECT politikası herhangi bir girişli
  * kullanıcıya açık olduğundan (herkes herkesin oyununu görüp beğenebilsin/
  * paylaşabilsin diye) bu ekstra bir yetki gerektirmez.

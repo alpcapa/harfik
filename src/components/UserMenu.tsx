@@ -13,6 +13,7 @@ import { AccountSettingsModal } from './AccountSettingsModal';
 import { HelpModal } from './HelpModal';
 import { Leaderboard } from './Leaderboard';
 import { AdminDashboard } from './AdminDashboard';
+import { KLigMark } from './KLigMark';
 import { FriendsModal } from './FriendsModal';
 
 type ActiveModal = 'auth' | 'account' | 'score' | 'help' | 'league' | 'admin' | 'friends' | null;
@@ -132,9 +133,11 @@ export function UserMenu() {
                   className="flex items-center gap-1 text-[10px] font-mono text-left truncate active:opacity-70 transition-opacity"
                 >
                   <span className="text-muted truncate">
-                    {myRank
-                      ? `#${myRank.rank} · ${myRank.total_score.toLocaleString('tr-TR')} puan`
-                      : 'Sanal Lig'}
+                    {myRank ? (
+                      `#${myRank.rank} · ${myRank.total_score.toLocaleString('tr-TR')} puan`
+                    ) : (
+                      <KLigMark height={9} color="currentColor" className="inline-block relative top-[1px]" />
+                    )}
                   </span>
                   <span className="w-3 h-3 rounded-full border border-accent text-accent flex items-center justify-center text-[8px] leading-none font-bold shrink-0">
                     ?

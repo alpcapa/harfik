@@ -280,9 +280,9 @@ function DetailedRules() {
 
       <Section title="Skor Kartı ve Puanlama">
         <P>
-          Oyun oynamak için giriş yapman gerekmez. Sadece oyun istatistikleri ve Sanal Lig için
+          Oyun oynamak için giriş yapman gerekmez. Sadece oyun istatistikleri ve k-lig için
           giriş yapman gerekir. Giriş yapmış kullanıcıların oyun sonuçları Skor Kartı'na
-          kaydedilir. Oyun içi puanının yanında, sıralamana göre bir Sanal Lig puanı da
+          kaydedilir. Oyun içi puanının yanında, sıralamana göre bir k-lig puanı da
           kazanırsın. 4 kişilik oyunda birinci bitirirsen <strong>+2</strong>, ikinci
           bitirirsen <strong>+1</strong> puan alırsın; üçüncü ve dördüncü puan almaz. 2 kişilik
           oyunda ise sadece birinci <strong>+2</strong> puan alır; ikinci puan almaz.

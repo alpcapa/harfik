@@ -96,7 +96,7 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
           </P>
           <P>
             Bunun yanında, adınız/takma isminiz, profil fotoğrafınız ve oyun istatistikleriniz
-            Sanal Lig (lider tablosu) ve arkadaşlık arama özelliği aracılığıyla diğer KAYITLI
+            k-lig (lider tablosu) ve arkadaşlık arama özelliği aracılığıyla diğer KAYITLI
             kullanıcılara görünür olur; e-posta adresiniz hiçbir zaman başka bir kullanıcıya
             gösterilmez. Bir oyunu paylaşmayı seçerseniz, o oyunun tahtası ve oyuncu
             isimleri/puanları giriş yapmamış ziyaretçiler dahil herkese açık bir bağlantı

@@ -60,7 +60,7 @@ function remainingTime(savedAt: number, willSurrender: boolean): { text: string;
 // (aynı `else` dalına düşse de) `!user` koşuluyla gizli kalır.
 const MEMBERSHIP_PERKS = [
   'Arkadaşlarınla çoklu canlı oyun oynama',
-  'Skor takibi ve Sanal Lig sıralaması',
+  'Skor takibi ve k-lig sıralaması',
   'Aynı anda birden fazla Yapay Zeka oyunu oynama',
   'Cihazlar arası kesintisiz devam etme',
   'Oyun geçmişini saklama, beğenme ve paylaşma',
@@ -388,7 +388,7 @@ export function Setup({
             ✕
           </button>
           <p className="text-sm text-text font-sans leading-relaxed pr-6">
-            Oyunların istatistikleri, Sanal Lig ve arkadaşınla canlı oyun için lütfen giriş yapın.
+            Oyunların istatistikleri, k-lig ve arkadaşınla canlı oyun için lütfen giriş yapın.
           </p>
           <div className="flex gap-2 mt-1">
             <button

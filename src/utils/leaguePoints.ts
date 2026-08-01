@@ -1,9 +1,9 @@
-// Kelimeki — bir oyun sonucundan Sanal Lig (SL) puanı hesaplama
+// Kelimeki — bir oyun sonucundan k-lig (SL) puanı hesaplama
 // GameHistoryModal ve SharedGamePage arasında paylaşılan tek kaynak.
 import type { GamePlayerSnapshot } from '../lib/database.types';
 
 /**
- * Bir oyuncunun bu oyundan kazandığı Sanal Lig puanı — leaderboard/
+ * Bir oyuncunun bu oyundan kazandığı k-lig puanı — leaderboard/
  * player_stats view'larıyla aynı formül: teslim → -2, 1. → +2, 2. (yalnızca
  * 2 kişilik değilse) → +1, diğerleri 0.
  */

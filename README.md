@@ -63,7 +63,7 @@ src/
 │   ├── FeedbackModal.tsx        # görüş/şikayet bildirme formu
 │   ├── AdminDashboard.tsx       # admin paneli: üyeler, oyunlar, büyüme grafiği, geri bildirim (yalnızca is_admin)
 │   ├── MemberMessageModal.tsx   # admin panelinden bir üyeye serbest metinli mesaj gönderme compose modalı
-│   ├── PlayerScoreCard.tsx      # bir oyuncunun ScoreCard'ının salt-okunur görünümü (admin panelinden ve Sanal Lig'den açılır)
+│   ├── PlayerScoreCard.tsx      # bir oyuncunun ScoreCard'ının salt-okunur görünümü (admin panelinden ve k-lig'den açılır)
 │   ├── GrowthChart.tsx          # admin büyüme grafiği (generic zaman serisi çizgi grafiği)
 │   ├── PrivacyModal.tsx         # gizlilik politikası
 │   ├── TermsModal.tsx           # kullanım koşulları
@@ -109,7 +109,7 @@ src/
 │   ├── shareBoardImage.ts # bir DOM düğümünü (tahta önizlemesi) paylaşılabilir PNG'ye çevirir (html-to-image)
 │   ├── friendInvite.ts # bekleyen arkadaşlık davet token'ı için tek seferlik localStorage kuyruğu
 │   ├── csvExport.ts    # admin paneli tabloları/grafikleri için CSV indirme yardımcısı
-│   ├── leaguePoints.ts # Sanal Lig puanı hesaplama (GameHistoryModal ve SharedGamePage ortak)
+│   ├── leaguePoints.ts # k-lig puanı hesaplama (GameHistoryModal ve SharedGamePage ortak)
 │   └── profileFields.ts # cinsiyet seçenekleri, GG/AA/YYYY ↔ ISO tarih dönüşümü (AuthModal ve AccountSettingsModal ortak)
 ├── hooks/
 │   ├── useAuth.tsx        # Supabase auth context

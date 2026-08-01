@@ -1,11 +1,12 @@
 // Kelimeki — herhangi bir oyuncunun salt-okunur skor kartı (Admin Paneli >
-// Üyeler ve Sanal Lig'de bir satıra tıklanınca açılır)
+// Üyeler ve k-lig'de bir satıra tıklanınca açılır)
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
 import { GameHistoryModal } from './GameHistoryModal';
 import { Leaderboard } from './Leaderboard';
+import { KLigMark } from './KLigMark';
 import { useAuth } from '../hooks/useAuth';
 import { useModalA11y } from '../hooks/useModalA11y';
 import {
@@ -40,7 +41,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 4, label: '4 Oyunculu' },
 ];
 
-// Skor kartı herkese açık olduğundan (Sanal Lig'den herkes başkasının
+// Skor kartı herkese açık olduğundan (k-lig'den herkes başkasının
 // kartını açabilir) tam ad/soyad değil, oyun içindekiyle aynı kısa kimlik
 // gösterilir — nickname yoksa sadece isim, soyadı hiç kullanılmaz.
 function memberDisplayName(m: PlayerSummary) {
@@ -48,7 +49,7 @@ function memberDisplayName(m: PlayerSummary) {
 }
 
 // Henüz canlı oyun olmadığından arkadaş eklemenin somut bir faydası yok —
-// bu yüzden Sanal Lig'den herhangi birinin kartını görünce arkadaş
+// bu yüzden k-lig'den herhangi birinin kartını görünce arkadaş
 // ekleyebilmek önemli: arkadaşsa yeşil ✓ (dokununca çıkarma onayı), değilse
 // + (dokununca duruma göre ekleme/kabul/iptal onayı) gösterir.
 function friendDialogCopy(relation: FriendRelation | null, name: string) {
@@ -233,11 +234,11 @@ export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
         <button
           type="button"
           onClick={() => setShowLeague(true)}
-          aria-label="Sanal Lig sıralamasını göster"
+          aria-label="k-lig sıralamasını göster"
           className="text-right shrink-0 active:opacity-70 transition-opacity"
         >
           <div className="flex items-center justify-end gap-1 text-xs uppercase tracking-[1px] text-muted font-mono">
-            <span className="font-bold">Sanal Lig</span>
+            <KLigMark height={11} color="currentColor" className="inline-block" />
             <span className="w-3.5 h-3.5 rounded-full border border-muted text-muted flex items-center justify-center text-[9px] leading-none font-bold">
               ?
             </span>

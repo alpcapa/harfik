@@ -4,6 +4,7 @@ import { Modal } from './Modal';
 import { Avatar } from './Avatar';
 import { GameHistoryModal } from './GameHistoryModal';
 import { Leaderboard } from './Leaderboard';
+import { KLigMark } from './KLigMark';
 import { fetchPlayerStats, fetchMyLeaderboardRank } from '../lib/api';
 import type { PlayerStats, MyLeaderboardRank, Gender } from '../lib/database.types';
 import { useAuth } from '../hooks/useAuth';
@@ -63,7 +64,7 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
     fetchMyLeaderboardRank(user.id).then(setMyRank);
   }, [user]);
 
-  // Skor kartı herkese açık olabildiğinden (Sanal Lig üzerinden başkaları da
+  // Skor kartı herkese açık olabildiğinden (k-lig üzerinden başkaları da
   // görebilir) tam ad/soyad değil, oyun içindeki aynı kısa kimlik gösterilir
   // (bkz. Setup/App.tsx'teki accountName) — nickname yoksa sadece isim.
   const name =
@@ -150,11 +151,11 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
         <button
           type="button"
           onClick={() => setShowLeague(true)}
-          aria-label="Sanal Lig sıralamasını göster"
+          aria-label="k-lig sıralamasını göster"
           className="text-right shrink-0 active:opacity-70 transition-opacity"
         >
           <div className="flex items-center justify-end gap-1 text-xs uppercase tracking-[1px] text-muted font-mono">
-            <span className="font-bold">Sanal Lig</span>
+            <KLigMark height={11} color="currentColor" className="inline-block" />
             <span className="w-3.5 h-3.5 rounded-full border border-muted text-muted flex items-center justify-center text-[9px] leading-none font-bold">
               ?
             </span>
