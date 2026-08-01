@@ -15,6 +15,8 @@ export default defineConfig({
         'apple-touch-icon.png',
         'fonts/space-mono-400-normal-latin.woff2',
         'fonts/space-mono-400-normal-latin-ext.woff2',
+        'fonts/space-mono-700-normal-latin.woff2',
+        'fonts/space-mono-700-normal-latin-ext.woff2',
         'fonts/space-grotesk-700-normal-latin.woff2',
         'fonts/space-grotesk-700-normal-latin-ext.woff2',
       ],
