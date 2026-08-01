@@ -122,7 +122,7 @@ function PendingGameCard({
   return (
     <div className="shadow-raised flex flex-col gap-2.5 rounded-md px-2.5 py-2.5 border border-border bg-panel">
       <div className="flex items-start gap-2">
-        <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text leading-snug">{title}</span>
+        <span className="flex-1 min-w-0 font-sans text-[12px] font-bold text-text leading-snug">{title}</span>
         <span
           className={`shrink-0 text-[9px] font-mono uppercase tracking-[0.5px] whitespace-nowrap ${
             remaining.urgent ? 'text-red font-bold' : 'text-muted'
@@ -132,7 +132,7 @@ function PendingGameCard({
         </span>
       </div>
       <div className="flex flex-col gap-1.5">
-        <div className="text-[9px] uppercase tracking-[1px] text-muted font-mono">Kiminle Oynayacaksın</div>
+        <div className="text-[9px] uppercase tracking-[1px] text-muted font-mono">Oyuncular</div>
         {humanSlots.map((slot) => (
           <ParticipantRow key={slot.user_id} slot={slot} game={game} />
         ))}
@@ -213,7 +213,7 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
       }`}
     >
       <span className="flex-1 min-w-0 flex flex-col gap-0.5">
-        <span className="font-sans text-sm font-bold text-text truncate">
+        <span className="font-sans text-[12px] font-bold text-text truncate">
           {game.player_count} Kişilik Oyun
         </span>
         <span className="text-[9px] font-mono text-muted truncate">
@@ -222,7 +222,7 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
       </span>
       <span className="flex flex-col items-end gap-0.5 shrink-0">
         <span
-          className={`text-[12px] font-mono uppercase tracking-[1px] ${
+          className={`text-[11px] font-mono uppercase tracking-[1px] ${
             game.status === 'active'
               ? isMyTurn
                 ? 'text-green font-bold'
@@ -481,7 +481,13 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   };
 
   const invites = (games ?? []).filter((g) => g.my_role === 'invitee' && g.my_invite_status === 'pending');
-  const active = (games ?? []).filter((g) => g.status === 'active');
+  // Sırası kendisinde olan oyunlar ("Senin Hamlen Bekleniyor") listenin en
+  // üstünde — dikkat gerektiren oyunlar her zaman ilk bakışta görünsün diye.
+  // Array.prototype.sort kararlı (stable) olduğundan aynı gruptaki oyunlar
+  // arasında `games`'in geldiği sıra (en son güncellenen önce) korunur.
+  const active = (games ?? [])
+    .filter((g) => g.status === 'active')
+    .sort((a, b) => Number(turns[b.id] === mySlotIndex(b)) - Number(turns[a.id] === mySlotIndex(a)));
   const waiting = (games ?? []).filter((g) => g.my_role === 'creator' && g.status === 'pending');
   // Daveti kabul ettin ama oyun (4 kişilikte diğer davetliler henüz
   // kabul etmediğinden) hâlâ 'pending' — `invites`/`active`/`waiting`

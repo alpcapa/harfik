@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
+import { CountBadge } from './CountBadge';
 import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
 import { useModalA11y } from '../hooks/useModalA11y';
 import {
@@ -308,11 +309,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
       }`}
     >
       {label}
-      {!!badge && (
-        <span className="min-w-[16px] h-4 px-1 rounded-full bg-red text-white text-[9px] font-bold flex items-center justify-center leading-none">
-          {badge}
-        </span>
-      )}
+      {!!badge && <CountBadge count={badge} />}
     </button>
   );
 

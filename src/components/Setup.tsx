@@ -10,6 +10,7 @@ import { ABANDON_TIMEOUT_MS, type SavedGame } from '../utils/gameStorage';
 import { preloadWordSet, isWordSetReady } from '../data/wordSetLoader';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
+import { CountBadge } from './CountBadge';
 import { HelpModal } from './HelpModal';
 import { LiveGamesTab } from './LiveGamesTab';
 import { LogoMark } from './LogoMark';
@@ -116,11 +117,11 @@ function SavedGameRow({
       className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel w-full text-left active:scale-[0.99] transition-transform"
     >
       <span className="flex-1 min-w-0 flex flex-col gap-0.5">
-        <span className="font-sans text-sm font-bold text-text truncate">{title}</span>
+        <span className="font-sans text-[12px] font-bold text-text truncate">{title}</span>
         <span className="text-[9px] font-mono text-muted truncate">{subtitle}</span>
       </span>
       <span className="flex flex-col items-end gap-0.5 shrink-0">
-        <span className="text-[9px] font-mono uppercase tracking-[1px] text-green font-bold">
+        <span className="text-[11px] font-mono uppercase tracking-[1px] text-green font-bold">
           Senin Hamlen Bekleniyor
         </span>
         <span
@@ -478,11 +479,7 @@ export function Setup({
               ].join(' ')}
             >
               {tab.label}
-              {tab.badge > 0 && (
-                <span className="min-w-[16px] h-4 px-1 rounded-full bg-red text-white text-[9px] font-bold flex items-center justify-center leading-none">
-                  {tab.badge}
-                </span>
-              )}
+              {tab.badge > 0 && <CountBadge count={tab.badge} />}
             </button>
           ))}
         </div>

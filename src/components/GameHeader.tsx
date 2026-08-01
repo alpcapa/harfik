@@ -66,7 +66,7 @@ interface GameHeaderProps {
 export function GameHeader({ state, onLogoClick, exitDisabled }: GameHeaderProps) {
   const { players, current } = state;
   return (
-    <header className="w-full max-w-[680px] flex items-center justify-between gap-2 px-3 py-2.5 border-b border-border">
+    <header className="w-full max-w-[680px] flex items-center justify-between gap-2 px-3 py-2.5">
       <button
         onClick={onLogoClick}
         disabled={exitDisabled}
