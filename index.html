@@ -87,6 +87,20 @@
     </script>
   </head>
   <body>
+    <!-- Uygulama tamamen istemci tarafında (React) render ediliyor —
+         JS'i güvenilir çalıştırmayan/az çalıştıran crawler'lar (ör. Bing)
+         için, ham HTML'de <head>'deki meta/title dışında hiçbir statik
+         metin olmaması "içerik yok" gibi algılanıp indekslemeyi
+         engelleyebiliyor (1 Ağustos 2026'da Bing Webmaster Tools'ta
+         "issues preventing indexation" olarak gözlemlendi). Bu blok
+         yalnızca JS ÇALIŞMAZSA görünür — normal kullanıcı deneyimini
+         hiç etkilemez, yalnızca crawler'lara gerçek bir metin sinyali verir. -->
+    <noscript>
+      <div style="max-width: 600px; margin: 48px auto; padding: 0 20px; font-family: sans-serif; color: #1B2430; text-align: center;">
+        <h1>Kelimeki — Ücretsiz Online Türkçe Stratejik Kelime Oyunu</h1>
+        <p>2 veya 4 kişi, yapay zekaya ve arkadaşlarına karşı oynanan stratejik bir Türkçe kelime oyunu. Kelimeki'yi oynamak için tarayıcınızda JavaScript'i etkinleştirmeniz gerekiyor.</p>
+      </div>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
