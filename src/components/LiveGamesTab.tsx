@@ -471,6 +471,10 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   if (authLoading) return null;
 
   if (creating) {
+    // "Son Oynananlar" burada bilerek gösterilmiyor — artık kendi tabında
+    // (aşağıdaki tab satırı) her zaman erişilebilir; kurulum formunun
+    // (arkadaş seçimi vb.) hemen altında tekrar çıkması yalnızca gürültü
+    // yaratıyordu (kullanıcı geri bildirimi).
     return (
       <div className="w-full flex flex-col gap-5">
         <LiveGameCreateForm
@@ -480,7 +484,6 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
             reload();
           }}
         />
-        <RecentGamesSection onlineOnly />
       </div>
     );
   }

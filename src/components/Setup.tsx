@@ -685,13 +685,14 @@ export function Setup({
         </>
       )}
 
-      {/* Girişli kullanıcının liste görünümünde (yukarıdaki tab) "Son
-          Oynananlar" zaten kendi tabı içinde gösteriliyor — burada TEKRAR
-          render edilmesin diye o dal (`user && !creatingLocal`) hariç
-          tutuluyor. Guest'in tekil kayıt görünümünde ve kurulum formunda
-          (creatingLocal ya da hiç kaydı olmayan misafir) eskisi gibi
-          koşulsuz altta kalmaya devam ediyor. */}
-      {mainView === 'local' && !(user && !creatingLocal) && <RecentGamesSection onlineOnly={false} />}
+      {/* "Son Oynananlar" artık yalnızca girişli kullanıcının liste
+          görünümündeki kendi tabında gösteriliyor (yukarıda) — kurulum
+          formunun (creatingLocal, ör. oyuncu seçimi) hemen altında tekrar
+          çıkması `LiveGamesTab`'daki aynı kullanıcı geri bildirimiyle
+          gürültü olarak değerlendirilip kaldırıldı. Misafirin tekil kayıt
+          görünümünde zaten hiç görünmüyordu (RecentGamesSection girişsiz
+          kullanıcı için `null` döner), o yüzden bu satırın kaldırılması
+          misafir tarafında hiçbir görsel fark yaratmıyor. */}
 
       <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-muted">
         <button onClick={() => setShowTerms(true)} className="hover:underline active:opacity-70 transition-opacity">
