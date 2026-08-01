@@ -222,7 +222,7 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
       </span>
       <span className="flex flex-col items-end gap-0.5 shrink-0">
         <span
-          className={`text-[12px] font-mono uppercase tracking-[1px] ${
+          className={`text-[11px] font-mono uppercase tracking-[1px] ${
             game.status === 'active'
               ? isMyTurn
                 ? 'text-green font-bold'

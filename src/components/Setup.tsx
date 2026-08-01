@@ -120,7 +120,7 @@ function SavedGameRow({
         <span className="text-[9px] font-mono text-muted truncate">{subtitle}</span>
       </span>
       <span className="flex flex-col items-end gap-0.5 shrink-0">
-        <span className="text-[9px] font-mono uppercase tracking-[1px] text-green font-bold">
+        <span className="text-[11px] font-mono uppercase tracking-[1px] text-green font-bold">
           Senin Hamlen Bekleniyor
         </span>
         <span
