@@ -155,7 +155,7 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
           className="text-right shrink-0 active:opacity-70 transition-opacity"
         >
           <div className="flex items-center justify-end gap-1 text-xs uppercase tracking-[1px] text-muted font-mono">
-            <KLigMark height={13} className="inline-block" />
+            <KLigMark height={16} className="inline-block" />
             <span className="w-3.5 h-3.5 rounded-full border border-muted text-muted flex items-center justify-center text-[9px] leading-none font-bold">
               ?
             </span>
