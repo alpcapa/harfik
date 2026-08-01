@@ -258,11 +258,15 @@ export default function App() {
       if (!savedGame) clearGameState();
       return;
     }
-    // Kurulum ekranına dönüldü (ABANDON). Girişli kullanıcı için sunucudaki
-    // kayıt BİLEREK silinmez — "Devam Eden Oyun" listesinde kalmaya devam
-    // eder; yalnızca bir sonraki oyunun yeni bir id alması için ref
-    // sıfırlanır. Misafir için mevcut davranış aynen korunur: `savedGame`
-    // doluysa (henüz Setup'ta gösterilmemiş bir kayıt) localStorage silinmez.
+    // Kurulum ekranına dönüldü (ABANDON). turnCount>=2 olan (gerçekten
+    // başlamış) bir oyun için girişli kullanıcının sunucudaki kaydı BİLEREK
+    // silinmez — "Devam Eden Oyun" listesinde kalmaya devam eder; ref yalnızca
+    // bir sonraki oyunun yeni bir id alması için sıfırlanır. turnCount<2 iken
+    // kayıt zaten `handleLogoClick` (App.tsx) tarafından dispatch'ten ÖNCE
+    // silinip `activeSaveIdRef.current` null'landığından burada tekrar
+    // silinecek bir şey kalmaz (bkz. 1 Ağustos 2026 notu, handleLogoClick).
+    // Misafir için mevcut davranış aynen korunur: `savedGame` doluysa
+    // (henüz Setup'ta gösterilmemiş bir kayıt) localStorage silinmez.
     activeSaveIdRef.current = null;
     if (!savedGame) clearGameState();
   }, [state, savedGame, user]);
@@ -414,9 +418,23 @@ export default function App() {
   // sonrası `clearGameState()`'i çağırıp localStorage'daki autosave
   // kaydını da temizler, yani Setup'ta hiçbir "Devam Eden Oyun" izi
   // kalmaz ve gecikmeli ceza da hiç devreye girmez.
+  //
+  // 1 Ağustos 2026 — girişli kullanıcı için de aynı "hiç iz bırakma" davranışı:
+  // öncesinde bu turnCount<2 dalı yalnızca misafiri (localStorage) kapsıyordu,
+  // girişli kullanıcının `local_game_saves` satırı BİLİNÇLİ OLARAK silinmiyordu
+  // (7 günlük süpürmeye bırakılıyordu, bkz. refreshCloudSaves). Kullanıcı
+  // isteğiyle bu asimetri kaldırıldı: hiç başlamamış (turnCount<2) bir oyunu
+  // terk eden girişli kullanıcının sunucudaki kaydı da burada HEMEN silinir —
+  // "Devam Eden Oyunlar" listesinde 7 gün boyunca öylesine açılıp hiç
+  // oynanmamış bir satır olarak beklemez. turnCount>=2 olan (gerçekten
+  // başlamış) oyunlar bu değişiklikten etkilenmedi, eskisi gibi listede kalır.
   const handleLogoClick = () => {
-    if (state.phase === 'play' && !state.isGameOver && state.turnCount >= 2) {
+    const abandoningMidGame = state.phase === 'play' && !state.isGameOver;
+    if (abandoningMidGame && state.turnCount >= 2) {
       setSavedGame({ state, savedAt: Date.now() });
+    } else if (abandoningMidGame && user && isSupabaseConfigured && activeSaveIdRef.current) {
+      void deleteLocalGameSave(activeSaveIdRef.current);
+      activeSaveIdRef.current = null;
     }
     dispatch({ type: 'ABANDON' });
   };
