@@ -12,10 +12,20 @@
    taşınıp index.html'den preload edildi — LogoMark.tsx'teki Caveat
    düzeltmesiyle aynı gün yaşanan aynı kök sebep, ama burada değişken/canlı
    metin (skorlar, kullanıcı adları) render edildiğinden Caveat gibi statik
-   SVG path'lere çevrilemez; preload en iyi pratik çözüm. Diğer ağırlık
-   (700) daha az kritik yollarda kullanıldığından şimdilik eski
-   ./files/ + swap-only yolunda bırakıldı — aynı sorun orada da
-   tekrarlanırsa aynı preload deseni uygulanmalı. */
+   SVG path'lere çevrilemez; preload en iyi pratik çözüm.
+
+   1 Ağustos 2026 — ağırlık 700 de aynı deseni aldı: kullanıcı, GameHeader'daki
+   YZ skor kutusunun (dar, `font-mono font-bold` = 700 ağırlık) her hamleden
+   sonra kısaca "1…" gibi kırpılmış göründüğünü, kısa süre sonra düzeldiğini
+   bildirdi — kutu genişliği/border hesaplarında (bkz. GameHeader.tsx'teki
+   1 Ağustos notu) sorun aranıp bulunamadı; PR Preview'da (her açılışta font
+   önbelleksiz TAZE bir sayfa) hâlâ tekrarlanınca kök sebebin bu ağırlığın
+   HİÇ preload edilmemesi olduğu anlaşıldı — sayfa önce sistemin varsayılan
+   (daha geniş) monospace fallback'iyle boyanıyor, Space Mono 700 arka planda
+   `swap` ile indirilip geldiğinde metin daha dar gerçek fontla yeniden
+   akıyordu; dar YZ kutusunda bu ara an tam olarak kenardan taşıp kırpılmaya
+   yol açıyordu. Aynı düzeltme: dosyalar `public/fonts/`'a taşınıp
+   index.html'den preload edildi. */
 @font-face {
   font-family: 'Space Mono';
   font-style: normal;
@@ -37,7 +47,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('./files/space-mono-700-normal-latin.woff2') format('woff2');
+  src: url('/fonts/space-mono-700-normal-latin.woff2') format('woff2');
 }
 
 @font-face {
@@ -45,6 +55,6 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('./files/space-mono-700-normal-latin-ext.woff2') format('woff2');
+  src: url('/fonts/space-mono-700-normal-latin-ext.woff2') format('woff2');
 }
 

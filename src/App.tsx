@@ -179,11 +179,42 @@ export default function App() {
   // YENİ bir rastgele id üretildiğinden, korumasız iki mükerrer satıra yol
   // açardı) senkron bir kilit görevi görüyor — `aiTriggeringRef`
   // (OnlineGameScreen.tsx) ile aynı desen.
+  //
+  // 1 Ağustos 2026 — bulunan hata: 1. oyuncunun adı taşınmıyordu. Misafirken
+  // oyun `Setup.tsx`'in `doStart`'ıyla `players[0].name: 'Misafir'` olarak
+  // kuruluyor (`accountName || 'Misafir'`) ve bu literal string doğrudan
+  // `GameState`'e gömülüyor. Oyun içindeyken (`state.phase==='play'`) giriş
+  // yapılırsa bunu düzelten ayrı bir `RENAME_PLAYER` efekti var (aşağıda,
+  // "Oyun devam ederken giriş yapılırsa..."), ama misafir logoya basıp
+  // Setup'a DÖNDÜKTEN sonra giriş yaparsa o efekt `state.phase!=='play'`
+  // olduğundan hiç çalışmıyor — bu migration `savedGame.state`'i OLDUĞU GİBİ
+  // yüklüyordu, yani `players[0].name` sonsuza dek `"Misafir"` kalıyor,
+  // Setup'taki "Devam Eden Oyunlar" listesi de bunu doğrudan state'ten
+  // okuduğundan (`Sıra: ${...name}`) hesap gerçek isimle eşleşse bile
+  // kalıcı olarak "Sıra: Misafir" gösteriyordu. Düzeltme: yüklemeden önce
+  // aynı isim hesabı (profil → display_name/first_name → e-posta öneki,
+  // Setup.tsx'teki `accountName` ile birebir aynı mantık) yapılıp 1.
+  // oyuncunun adı güncel hesap adıyla değiştiriliyor. `profileLoading` bitene
+  // kadar effect bilerek bekletiliyor — aksi halde profil henüz gelmeden
+  // hesaplanan `accountName` `null` kalıp yine "Misafir" ile yüklenebilirdi;
+  // migration tamamlanınca `savedGame` zaten `null`'a döndüğünden bu ek
+  // bağımlılık ikinci bir yüklemeye yol açmıyor (`!savedGame` koruması).
   useEffect(() => {
     if (!user || !isSupabaseConfigured || !savedGame || migratingSavedGameRef.current) return;
+    if (profileLoading) return;
     migratingSavedGameRef.current = true;
     const id = crypto.randomUUID();
-    void upsertLocalGameSave(id, user.id, savedGame.state)
+    const accountName =
+      profile?.display_name || profile?.first_name || (user.email ? user.email.split('@')[0] : null);
+    const p0 = savedGame.state.players[0];
+    const stateToUpload =
+      accountName && p0 && !p0.isAI && p0.name !== accountName
+        ? {
+            ...savedGame.state,
+            players: savedGame.state.players.map((p, i) => (i === 0 ? { ...p, name: accountName } : p)),
+          }
+        : savedGame.state;
+    void upsertLocalGameSave(id, user.id, stateToUpload)
       .then(() => {
         clearGameState();
         setSavedGame(null);
@@ -193,7 +224,7 @@ export default function App() {
         migratingSavedGameRef.current = false;
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, profileLoading]);
 
   // Kelime listesi main.tsx'te tetiklenen ayrı chunk'tan yükleniyor —
   // hazır olana kadar hamle doğrulama/YZ turu tetiklenmemeli (bkz.
@@ -258,11 +289,15 @@ export default function App() {
       if (!savedGame) clearGameState();
       return;
     }
-    // Kurulum ekranına dönüldü (ABANDON). Girişli kullanıcı için sunucudaki
-    // kayıt BİLEREK silinmez — "Devam Eden Oyun" listesinde kalmaya devam
-    // eder; yalnızca bir sonraki oyunun yeni bir id alması için ref
-    // sıfırlanır. Misafir için mevcut davranış aynen korunur: `savedGame`
-    // doluysa (henüz Setup'ta gösterilmemiş bir kayıt) localStorage silinmez.
+    // Kurulum ekranına dönüldü (ABANDON). turnCount>=2 olan (gerçekten
+    // başlamış) bir oyun için girişli kullanıcının sunucudaki kaydı BİLEREK
+    // silinmez — "Devam Eden Oyun" listesinde kalmaya devam eder; ref yalnızca
+    // bir sonraki oyunun yeni bir id alması için sıfırlanır. turnCount<2 iken
+    // kayıt zaten `handleLogoClick` (App.tsx) tarafından dispatch'ten ÖNCE
+    // silinip `activeSaveIdRef.current` null'landığından burada tekrar
+    // silinecek bir şey kalmaz (bkz. 1 Ağustos 2026 notu, handleLogoClick).
+    // Misafir için mevcut davranış aynen korunur: `savedGame` doluysa
+    // (henüz Setup'ta gösterilmemiş bir kayıt) localStorage silinmez.
     activeSaveIdRef.current = null;
     if (!savedGame) clearGameState();
   }, [state, savedGame, user]);
@@ -414,9 +449,23 @@ export default function App() {
   // sonrası `clearGameState()`'i çağırıp localStorage'daki autosave
   // kaydını da temizler, yani Setup'ta hiçbir "Devam Eden Oyun" izi
   // kalmaz ve gecikmeli ceza da hiç devreye girmez.
+  //
+  // 1 Ağustos 2026 — girişli kullanıcı için de aynı "hiç iz bırakma" davranışı:
+  // öncesinde bu turnCount<2 dalı yalnızca misafiri (localStorage) kapsıyordu,
+  // girişli kullanıcının `local_game_saves` satırı BİLİNÇLİ OLARAK silinmiyordu
+  // (7 günlük süpürmeye bırakılıyordu, bkz. refreshCloudSaves). Kullanıcı
+  // isteğiyle bu asimetri kaldırıldı: hiç başlamamış (turnCount<2) bir oyunu
+  // terk eden girişli kullanıcının sunucudaki kaydı da burada HEMEN silinir —
+  // "Devam Eden Oyunlar" listesinde 7 gün boyunca öylesine açılıp hiç
+  // oynanmamış bir satır olarak beklemez. turnCount>=2 olan (gerçekten
+  // başlamış) oyunlar bu değişiklikten etkilenmedi, eskisi gibi listede kalır.
   const handleLogoClick = () => {
-    if (state.phase === 'play' && !state.isGameOver && state.turnCount >= 2) {
+    const abandoningMidGame = state.phase === 'play' && !state.isGameOver;
+    if (abandoningMidGame && state.turnCount >= 2) {
       setSavedGame({ state, savedAt: Date.now() });
+    } else if (abandoningMidGame && user && isSupabaseConfigured && activeSaveIdRef.current) {
+      void deleteLocalGameSave(activeSaveIdRef.current);
+      activeSaveIdRef.current = null;
     }
     dispatch({ type: 'ABANDON' });
   };

@@ -16,6 +16,12 @@
     <link rel="preload" href="/fonts/space-mono-400-normal-latin-ext.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/space-grotesk-700-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/space-grotesk-700-normal-latin-ext.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- 1 Ağustos 2026 — GameHeader'daki skor kutuları (font-mono font-bold
+         = Space Mono 700) de aynı FOUT riskine giriyordu: dar YZ kutusunda
+         fallback fontla kısaca kırpılmış görünüp gerçek font swap'landığında
+         düzeliyordu (bkz. src/fonts/space-mono-inline.css'teki not). -->
+    <link rel="preload" href="/fonts/space-mono-700-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/space-mono-700-normal-latin-ext.woff2" as="font" type="font/woff2" crossorigin />
     <!-- Supabase isteklerinin (guest_visits vb.) DNS/TLS kurulumunu erkenden başlatır — kritik istek zincirindeki gecikmeyi azaltır -->
     <link rel="preconnect" href="https://xvqlizifakkkoqahaxsg.supabase.co" crossorigin />
     <link rel="dns-prefetch" href="https://xvqlizifakkkoqahaxsg.supabase.co" />
