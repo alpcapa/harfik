@@ -331,7 +331,7 @@ export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
         </>
       )}
 
-      <div className="text-center mt-4">
+      <div className="text-center mt-1.5">
         <button
           onClick={() => setShowAllGames(true)}
           className="text-[11px] font-mono font-bold uppercase tracking-[1px] text-accent active:opacity-70 transition-opacity"
