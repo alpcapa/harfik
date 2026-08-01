@@ -139,7 +139,7 @@ export function UserMenu() {
                         #{myRank.rank}
                         <span className="mx-0.5">·</span>
                         {myRank.total_score.toLocaleString('tr-TR')}
-                        <span className="font-normal"> puan</span>
+                        <span className="font-normal text-muted"> puan</span>
                       </>
                     )}
                   </span>
