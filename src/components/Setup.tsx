@@ -445,22 +445,25 @@ export function Setup({
         </div>
         <div className="flex gap-2">
           {([
-            { key: 'local' as const, label: 'Yapay Zeka ile' },
-            { key: 'live' as const, label: 'Arkadaşınla' },
+            { key: 'local' as const, label: 'Yapay Zeka ile', badge: localSaveCount },
+            { key: 'live' as const, label: 'Arkadaşınla', badge: liveActionCount },
           ]).map((tab) => (
             <button
               key={tab.key}
               onClick={() => onMainViewChange(tab.key)}
               className={[
-                'flex-1 py-3 rounded-md font-sans text-sm font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97]',
+                'flex-1 py-3 rounded-md font-sans text-sm font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97] flex items-center justify-center gap-1.5',
                 mainView === tab.key
                   ? 'btn-raised bg-accent text-white border-accent'
                   : 'btn-raised-neutral bg-panel text-text border-border',
               ].join(' ')}
             >
               {tab.label}
-              {tab.key === 'live' && liveActionCount > 0 ? ` (${liveActionCount})` : ''}
-              {tab.key === 'local' && localSaveCount > 0 ? ` (${localSaveCount})` : ''}
+              {tab.badge > 0 && (
+                <span className="min-w-[16px] h-4 px-1 rounded-full bg-red text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                  {tab.badge}
+                </span>
+              )}
             </button>
           ))}
         </div>
