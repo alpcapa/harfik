@@ -6,6 +6,7 @@ import { fetchLeaderboard, fetchMyLeaderboardRank } from '../lib/api';
 import type { LeaderboardRow, MyLeaderboardRank } from '../lib/database.types';
 import { useAuth } from '../hooks/useAuth';
 import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
+import { KLigMark } from './KLigMark';
 
 interface LeaderboardProps {
   onClose: () => void;
@@ -88,9 +89,16 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
   const meInList = user && rows ? rows.some((r) => r.user_id === user.id) : false;
 
   return (
-    <Modal title="🏆 Sanal Lig" onClose={onClose}>
+    <Modal
+      title={
+        <span className="inline-flex items-center gap-1.5">
+          🏆 <KLigMark height={36} className="inline-block relative top-[1px]" />
+        </span>
+      }
+      onClose={onClose}
+    >
       <p className="text-[11px] text-muted font-mono text-center mb-3 leading-relaxed">
-        Sanal Lig, senin gibi kayıtlı kullanıcıların aldığı puanlara göre oluşan bir yarışmadır.
+        k-lig, senin gibi kayıtlı kullanıcıların aldığı puanlara göre oluşan bir yarışmadır.
       </p>
       {rows === null ? (
         <p className="text-muted text-xs font-mono text-center py-6">Yükleniyor…</p>
