@@ -20,8 +20,13 @@ import { UserMenu } from './UserMenu';
 // Tailwind class'ı değil inline style kullanılıyor çünkü clamp()/calc()
 // içindeki virgüller Tailwind'in arbitrary-value söz dizimiyle iyi
 // geçinmiyor.
-const PLAYER_BOX_WIDTH = 'clamp(51px, calc(-44.83px + 25.56vw), 74px)';
-const YZ_BOX_WIDTH = 'clamp(33px, calc(-29.5px + 16.67vw), 48px)';
+// 1 Ağustos 2026 — 4 gerçek insan oyunculu bir Canlı oyunda (uzun takma
+// isimler) iPhone'da şerit hâlâ dar gelip son kutu UserMenu'nün altına
+// girecek kadar sıkışıyordu (kullanıcı ekran görüntüsüyle bildirdi) —
+// genişlik bir kademe daha küçültüldü, isim `truncate` sayesinde zaten
+// üç nokta ile kesiliyor (kabul edilen davranış).
+const PLAYER_BOX_WIDTH = 'clamp(43px, calc(-52.83px + 25.56vw), 66px)';
+const YZ_BOX_WIDTH = 'clamp(28px, calc(-34.5px + 16.67vw), 43px)';
 const LABEL_FONT_SIZE = 'clamp(6px, calc(-2.33px + 2.22vw), 8px)';
 const SCORE_FONT_SIZE = 'clamp(13px, calc(-7.83px + 5.56vw), 18px)';
 // 31 Temmuz 2026 — hem kutu genişliği hem yatay dolgu daraltıldı (kullanıcı
@@ -30,7 +35,8 @@ const SCORE_FONT_SIZE = 'clamp(13px, calc(-7.83px + 5.56vw), 18px)';
 // indirildi, sonra ikinci bir geri bildirimle bir kez daha (1.5-3.5px'e)
 // daraltıldı.
 const BOX_PADDING_X = 'clamp(1.5px, calc(-6.83px + 2.22vw), 3.5px)';
-const BOX_GAP = 'clamp(6px, calc(-2.33px + 2.22vw), 8px)';
+// 1 Ağustos 2026 — kutu genişliğiyle aynı gerekçeyle daraltıldı.
+const BOX_GAP = 'clamp(4px, calc(-4.33px + 2.22vw), 6px)';
 // Sabit py-0.5 (2px) kullanıldığında kutu, Giriş butonundan (UserMenu.tsx —
 // kendi 1px kenarlığı + akıcı GIRIS_PADDING_Y'si var) 375px'te ~1.4px,
 // 465px'te ~3px daha kısa kalıyordu (24 Temmuz 2026'da kullanıcı fotoğrafıyla
