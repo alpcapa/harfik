@@ -130,7 +130,7 @@ export function UserMenu() {
                     setModal('league');
                     setOpen(false);
                   }}
-                  className="flex items-center gap-1 text-[10px] font-mono text-left truncate active:opacity-70 transition-opacity"
+                  className="flex items-center gap-2 text-[10px] font-mono text-left truncate active:opacity-70 transition-opacity"
                 >
                   <KLigMark height={13} className="inline-block relative top-[1px] shrink-0" />
                   <span className="text-xs font-bold text-accent truncate">
@@ -138,7 +138,8 @@ export function UserMenu() {
                       <>
                         #{myRank.rank}
                         <span className="mx-0.5">·</span>
-                        {myRank.total_score.toLocaleString('tr-TR')} puan
+                        {myRank.total_score.toLocaleString('tr-TR')}
+                        <span className="font-normal"> puan</span>
                       </>
                     )}
                   </span>
