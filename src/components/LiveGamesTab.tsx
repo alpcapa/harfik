@@ -562,9 +562,9 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
 
       <button
         onClick={() => setCreating(true)}
-        className="btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform"
+        className="btn-raised-orange py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-orange text-white active:scale-[0.97] transition-transform"
       >
-        + Yeni Canlı Oyun
+        + Yeni Canlı Oyun Aç
       </button>
 
       <div className="flex gap-2">

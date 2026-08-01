@@ -74,6 +74,17 @@ select {
     box-shadow: none;
   }
 
+  .btn-raised-orange {
+    box-shadow: 3px 3px 8px rgba(163, 177, 198, 0.55), -2px -2px 6px rgba(255, 255, 255, 0.7), 0 6px 14px rgba(100, 116, 139, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .btn-raised-orange:active {
+    box-shadow: 1px 1px 3px rgba(100, 116, 139, 0.5);
+  }
+  .btn-raised-orange:disabled {
+    box-shadow: none;
+  }
+
   /* Statik nömorfik kabartma — buton olmayan kartlar/satırlar için (basma efekti yok). */
   .shadow-raised {
     box-shadow: 2px 2px 6px rgba(163, 177, 198, 0.5), -2px -2px 5px rgba(255, 255, 255, 0.85);
