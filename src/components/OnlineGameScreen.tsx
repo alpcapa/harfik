@@ -346,6 +346,16 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     markChatRead(game.id, latest.created_at);
   }, [showChat, chatMessages, game.id]);
 
+  // Popup'taki mesaj zaten doğrudan ekranda gösterildiğinden (görüldüğünden),
+  // popup'ı kapatmak (✕/"Kapat"/"Cevap Ver" — üçü de) o mesajı ve öncesini
+  // okunmuş sayar; aksi halde kırmızı nokta popup kapatıldıktan sonra da
+  // kalıcı kalıyordu (kullanıcı zaten gördüğü mesajı "yeni" sanıyordu).
+  const closeMessagePopup = () => {
+    if (newMessagePopup) markChatRead(game.id, newMessagePopup.created_at);
+    setNewMessagePopup(null);
+    setUnreadCount(0);
+  };
+
   const wordsReady = isWordSetReady();
   const me = state.players[mySlotIndex];
   const canAct = loaded && !state.isGameOver && state.current === mySlotIndex && !!me;
@@ -991,7 +1001,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
         <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
           <div className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none relative">
             <button
-              onClick={() => setNewMessagePopup(null)}
+              onClick={() => closeMessagePopup()}
               aria-label="Kapat"
               className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
             >
@@ -1005,16 +1015,15 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
             <div className="flex gap-2">
               <button
                 onClick={() => {
-                  setNewMessagePopup(null);
+                  closeMessagePopup();
                   setShowChat(true);
-                  setUnreadCount(0);
                 }}
                 className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
               >
                 Cevap Ver
               </button>
               <button
-                onClick={() => setNewMessagePopup(null)}
+                onClick={() => closeMessagePopup()}
                 className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
               >
                 Kapat
