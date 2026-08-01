@@ -481,7 +481,13 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   };
 
   const invites = (games ?? []).filter((g) => g.my_role === 'invitee' && g.my_invite_status === 'pending');
-  const active = (games ?? []).filter((g) => g.status === 'active');
+  // Sırası kendisinde olan oyunlar ("Senin Hamlen Bekleniyor") listenin en
+  // üstünde — dikkat gerektiren oyunlar her zaman ilk bakışta görünsün diye.
+  // Array.prototype.sort kararlı (stable) olduğundan aynı gruptaki oyunlar
+  // arasında `games`'in geldiği sıra (en son güncellenen önce) korunur.
+  const active = (games ?? [])
+    .filter((g) => g.status === 'active')
+    .sort((a, b) => Number(turns[b.id] === mySlotIndex(b)) - Number(turns[a.id] === mySlotIndex(a)));
   const waiting = (games ?? []).filter((g) => g.my_role === 'creator' && g.status === 'pending');
   // Daveti kabul ettin ama oyun (4 kişilikte diğer davetliler henüz
   // kabul etmediğinden) hâlâ 'pending' — `invites`/`active`/`waiting`
