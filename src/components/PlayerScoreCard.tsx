@@ -245,10 +245,10 @@ export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
           </div>
           <div className="font-mono text-sm font-bold text-accent">
             {rank && (
-              <span className="text-sm font-normal text-muted">
+              <>
                 #{rank.rank}
                 <span className="mx-0.5">·</span>
-              </span>
+              </>
             )}
             {totalScore}
             <span className="text-xs font-normal text-muted"> puan</span>
