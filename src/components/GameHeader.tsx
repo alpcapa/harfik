@@ -27,8 +27,9 @@ const SCORE_FONT_SIZE = 'clamp(13px, calc(-7.83px + 5.56vw), 18px)';
 // 31 Temmuz 2026 — hem kutu genişliği hem yatay dolgu daraltıldı (kullanıcı
 // geri bildirimi: isim/puan kenarlara çok uzak duruyordu). Aynı 375/465 uç
 // noktalı sistemin içinde kalınarak eskisinin (6-8px) yaklaşık yarısına
-// indirildi.
-const BOX_PADDING_X = 'clamp(3px, calc(-5.33px + 2.22vw), 5px)';
+// indirildi, sonra ikinci bir geri bildirimle bir kez daha (1.5-3.5px'e)
+// daraltıldı.
+const BOX_PADDING_X = 'clamp(1.5px, calc(-6.83px + 2.22vw), 3.5px)';
 const BOX_GAP = 'clamp(6px, calc(-2.33px + 2.22vw), 8px)';
 // Sabit py-0.5 (2px) kullanıldığında kutu, Giriş butonundan (UserMenu.tsx —
 // kendi 1px kenarlığı + akıcı GIRIS_PADDING_Y'si var) 375px'te ~1.4px,
