@@ -380,6 +380,18 @@ Kullanıcı isteği: hem Canlı oyunlarda sırası gelen oyuncuya (48 saatlik `t
 
 Büyük/küçük harf dönüşümünde **mutlaka** `trUpper()` / `trLower()` (`src/utils/turkish.ts`) kullanılmalı. Native `toUpperCase()`/`toLowerCase()` i/İ ve ı/I harflerini yanlış dönüştürür.
 
+## SEO
+
+**Google Search Console** kurulu (mülk doğrulanmış, kullanıcı hesabında) — bu, Supabase Dashboard/Brevo ayarları gibi repoda hiçbir iz bırakmıyor, bu yüzden bu not burada duruyor. `public/sitemap.xml` (tek URL, `https://kelimeki.com/`) ve `public/robots.txt` (`Sitemap: https://kelimeki.com/sitemap.xml` satırıyla ona işaret ediyor) GSC'ye gönderilmiş durumda. **Bing Webmaster Tools** da aynı gün kuruldu, aynı `sitemap.xml`/`robots.txt` orada da gönderildi — GSC ile ilgili aşağıdaki tüm notlar (statik `lastmod`, Claude'un erişimi olmaması, PR deploy olmadan tetiklemenin işe yaramaması) Bing için de birebir geçerli; tek fark Bing'in kendi paneli (bing.com/webmasters) — "URL Denetleme"nin karşılığı orada **"URL Gönder" (Submit URL)**.
+
+**`sitemap.xml`'in `lastmod`'u statik/elle — deploy'larla OTOMATİK güncellenmiyor.** İlk fark edildiği an (1 Ağustos 2026): kullanıcı `index.html`'in meta description'ını "Scrabble" ifadesinden arındırmıştı ama Google'ın SERP'te gösterdiği snippet hâlâ eskiydi. Kök sebep incelenirken iki ayrı boşluk bulundu — (1) `vite.config.ts`'teki PWA manifest `description`'ı (`dist/manifest.webmanifest`'e işleniyor, gerçekten kullanıcıya/crawler'a servis ediliyor) o güncellemede atlanmış, hâlâ "Scrabble benzeri oyun" diyordu; (2) `sitemap.xml`'in `lastmod`'u 12 gündür aynıydı — Google'a "bu sayfa değişti, yeniden tara" sinyali hiç gitmemişti. Anlamlı bir meta/açıklama/başlık değişikliği yapıldığında **her ikisi de** (`vite.config.ts`'teki manifest `description`'ı VE `sitemap.xml`'in `lastmod`'u, o günün tarihine) kontrol edilip güncellenmeli — `CLAUDE.md`/`README.md` senkron kontrolüyle aynı refleks.
+
+**Yeniden indekslemeyi hızlandırma — Claude'un GSC'ye erişimi YOK, bu adımlar kullanıcı tarafından yapılmalı:**
+1. Meta/sitemap değişikliği içeren PR merge edilip **deploy olduktan SONRA** (sırası önemli — deploy olmadan tetiklemek eski içeriği yeniden tazeler).
+2. GSC → **URL Denetleme (URL Inspection)** → `https://kelimeki.com/` → **"Dizine Eklenmesini İste"** — en etkili tekil adım, öncelikli yeniden tarama kuyruğuna alır (saatler-birkaç gün, garantisi yok).
+3. GSC → **Sitemaps** raporunda mevcut `sitemap.xml` girdisini yeniden gönder (resubmit) — dosyanın kendisi zaten sabit URL'de olduğundan ayrıca "yüklemek" gerekmez, Google onu zaten periyodik çekiyor; resubmit yalnızca bu çekimi hemen tetikler.
+4. Marka karışıklığı (ör. Google AI Overview'ın "kelimeki"yi başka bir uygulamayla — "Kelimelik" gibi — karıştırması) reindex ile alakasız, ayrı ve daha yavaş çözülen bir marka-tanınırlık sorunu (daha fazla organik arama/backlink zamanla düzeltir) — "Dizine Eklenmesini İste" bunu çözmez.
+
 ## Supabase
 
 Env değişkenleri olmadan uygulama offline çalışır — `useAuth` içindeki `configured` flag'i `false` olur ve tüm hesap/lider tablosu özellikleri gizlenir. Lokal geliştirmede Supabase gerekmez.

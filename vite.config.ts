@@ -25,7 +25,7 @@ export default defineConfig({
         lang: 'tr',
         name: 'Kelimeki — Ücretsiz Online Türkçe Kelime Oyunu',
         short_name: 'Kelimeki',
-        description: 'Kelimeki, TDK sözlüğüne dayalı ücretsiz online Türkçe kelime oyunu. 2 ya da 4 kişilik, köşelerden başlayan stratejik Scrabble benzeri oyun.',
+        description: 'Kelimeki, TDK sözlüğüne dayalı ücretsiz online Türkçe stratejik kelime oyunu. 2 ya da 4 kişi, yapay zekaya ve arkadaşlarına karşı köşelerden başlayan özgün bir mekanikle oynanır.',
         theme_color: '#0F1C26',
         background_color: '#0F1C26',
         display: 'standalone',
