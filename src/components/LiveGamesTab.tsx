@@ -2,6 +2,30 @@
 // oyunların listesi, gelen davetlerde kiminle oynayacağını gösterme +
 // Kabul/Reddet + "+ Yeni Canlı Oyun" ile kurulum formuna geçiş (bkz.
 // src/App.tsx'teki mainView tab'ı, src/components/LiveGameCreateForm.tsx).
+//
+// 1 Ağustos 2026 — üç bölüm (Devam Eden Oyunlar / davet+bekleme grupları /
+// Son Oynadıklarım) alt alta dizildiğinde, çok sayıda devam eden oyunu olan
+// biri için "Davet Bekliyor" listesi ekranın altına düşüp scroll etmeden
+// görünmüyordu — halbuki ikisi de (devam eden VE davet) aynı derecede
+// dikkat gerektiriyor. Kullanıcı isteğiyle üçü, "+ Yeni Canlı Oyun"un
+// altına yerleştirilen bir tab satırına (Devam Edenler / Oyun Davetleri /
+// Son Oynananlar) taşındı; her tab AÇILDIĞINDA içindeki bölüm başlıkları
+// ("Devam Eden Oyunlar", "Davet Bekliyor" vb.) eskisiyle birebir aynı
+// kalıyor — yalnızca hangi bölümün ne zaman göründüğü değişti. İlk iki
+// tabın kırmızı sayaç rozeti dikkat gerektiren gerçek sayıyı gösteriyor
+// (Setup'taki "Arkadaşınla (N)" rozetiyle aynı iki bileşen: yanıt bekleyen
+// davet sayısı / sırası çağıranda olan aktif oyun sayısı) — "Son
+// Oynananlar" hiçbir zaman dikkat gerektirmediğinden rozet almıyor.
+// Bekleyen bir davet varsa uygulama açılışında doğrudan "Oyun Davetleri"
+// tabı açık gelir (yoksa "Devam Edenler") — bu yalnızca veri İLK yüklendiğinde
+// bir kez uygulanır, kullanıcı sonradan elle başka bir taba geçerse bir
+// daha zorlanmaz. Rozetler `games`/`turns`'ten TÜRETİLDİĞİNDEN (ayrı bir
+// sayaç state'i tutulmuyor) her `reload()` sonrası (bir davet kabul
+// edilince/reddedilince, bir hamle oynanınca) otomatik doğru sayıya
+// düşer/artar — ör. 2 bekleyen davetten biri kabul edilince `invites`
+// dizisinden çıkıp rozet kendiliğinden 1'e iner, sıfıra inmeden rozet asla
+// erken kaybolmaz (yalnızca gerçekten 0 olunca `tab.badge > 0` koşuluyla
+// gizlenir).
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -17,9 +41,12 @@ import { ABANDON_TIMEOUT_MS } from '../utils/gameStorage';
 import type { OnlineGame, OnlineGameSlot } from '../lib/database.types';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
+import { CountBadge } from './CountBadge';
 import { FriendSuggestModal } from './FriendSuggestModal';
 import { LiveGameCreateForm } from './LiveGameCreateForm';
 import { RecentGamesSection } from './RecentGamesSection';
+
+type SubTab = 'active' | 'invites' | 'recent';
 
 type HumanSlot = Extract<OnlineGameSlot, { type: 'human' }>;
 
@@ -317,6 +344,13 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   // katılımcılara toplu istek gönderme önerisi (bkz. FriendSuggestModal).
   const [suggestCandidates, setSuggestCandidates] = useState<HumanSlot[] | null>(null);
 
+  const [subTab, setSubTab] = useState<SubTab>('active');
+  // Varsayılan tab seçimi ("bekleyen davet varsa Oyun Davetleri, yoksa
+  // Devam Edenler") yalnızca veri İLK kez yüklendiğinde bir kez uygulanır —
+  // bu ref sayesinde kullanıcı sonradan elle başka bir taba geçerse (ör. Son
+  // Oynanan'a bakarken bir Realtime güncellemesi gelirse) bir daha zorlanmaz.
+  const appliedDefaultTabRef = useRef(false);
+
   // Listeyi çeker, aktif oyunların sırasını/son tarihini yükler; süresi
   // ZATEN dolmuş bir sıra varsa `check_turn_timeout`'u (no-op değilse
   // otomatik teslim uygulanır), 7 gündür yanıtlanmamış bir davet/oyun varsa
@@ -425,9 +459,22 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
     };
   }, [user]);
 
+  // Varsayılan tab: veri ilk kez geldiğinde (null -> dizi geçişinde) bekleyen
+  // bir davet varsa "Oyun Davetleri", yoksa "Devam Edenler" açık gelsin.
+  useEffect(() => {
+    if (games === null || appliedDefaultTabRef.current) return;
+    appliedDefaultTabRef.current = true;
+    const hasInvites = games.some((g) => g.my_role === 'invitee' && g.my_invite_status === 'pending');
+    if (hasInvites) setSubTab('invites');
+  }, [games]);
+
   if (authLoading) return null;
 
   if (creating) {
+    // "Son Oynananlar" burada bilerek gösterilmiyor — artık kendi tabında
+    // (aşağıdaki tab satırı) her zaman erişilebilir; kurulum formunun
+    // (arkadaş seçimi vb.) hemen altında tekrar çıkması yalnızca gürültü
+    // yaratıyordu (kullanıcı geri bildirimi).
     return (
       <div className="w-full flex flex-col gap-5">
         <LiveGameCreateForm
@@ -437,7 +484,6 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
             reload();
           }}
         />
-        <RecentGamesSection onlineOnly />
       </div>
     );
   }
@@ -496,6 +542,20 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   const acceptedWaiting = (games ?? []).filter(
     (g) => g.my_role === 'invitee' && g.my_invite_status === 'accepted' && g.status === 'pending',
   );
+  // İlk iki tabın kırmızı rozeti — Setup'taki "Arkadaşınla (N)" rozetiyle
+  // aynı iki sayı: gerçekten hamle bekleyen (sırası çağıranda olan) aktif
+  // oyun sayısı, ve yanıt bekleyen davet sayısı. "Kabul Ettin — Diğerleri
+  // Bekleniyor"/"Bekleyen Oyunlar" bilerek dahil değil — onlar başkasının
+  // hamlesini/yanıtını bekliyor, kullanıcının kendisinden bir eylem
+  // gerektirmiyor.
+  const myTurnCount = active.filter((g) => turns[g.id] === mySlotIndex(g)).length;
+  const inviteCount = invites.length;
+
+  const SUB_TABS: { key: SubTab; label: string; badge: number }[] = [
+    { key: 'active', label: 'Devam Edenler', badge: myTurnCount },
+    { key: 'invites', label: 'Oyun Davetleri', badge: inviteCount },
+    { key: 'recent', label: 'Son Oynananlar', badge: 0 },
+  ];
 
   return (
     <div className="w-full flex flex-col gap-5">
@@ -505,43 +565,66 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
 
       <button
         onClick={() => setCreating(true)}
-        className="btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform"
+        className="btn-raised-orange py-2.5 rounded-md font-sans text-sm font-bold uppercase tracking-[1.5px] bg-orange text-white active:scale-[0.97] transition-transform"
       >
-        + Yeni Canlı Oyun
+        + Yeni Canlı Oyun Aç
       </button>
+
+      <div className="flex gap-2">
+        {SUB_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setSubTab(tab.key)}
+            className={[
+              'flex-1 py-2.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[0.5px] border transition-transform active:scale-[0.97] flex items-center justify-center gap-1.5',
+              subTab === tab.key
+                ? 'btn-raised bg-accent text-white border-accent'
+                : 'btn-raised-neutral bg-panel text-text border-border',
+            ].join(' ')}
+          >
+            {tab.label}
+            {tab.badge > 0 && <CountBadge count={tab.badge} />}
+          </button>
+        ))}
+      </div>
 
       {games === null ? (
         <p className="text-center text-xs text-muted font-mono py-8">Yükleniyor…</p>
-      ) : games.length === 0 ? (
-        <p className="text-center text-xs text-muted font-mono py-8">
-          Henüz bir Canlı oyunun yok.
-        </p>
-      ) : (
-        <>
+      ) : subTab === 'active' ? (
+        active.length === 0 ? (
+          <p className="text-center text-xs text-muted font-mono py-8">Devam eden bir Canlı oyunun yok.</p>
+        ) : (
           <Section title="Devam Eden Oyunlar" games={active} onOpenGame={onOpenGame} turns={turns} deadlines={deadlines} />
-          {invites.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
-                Davet Bekliyor
-              </div>
+        )
+      ) : subTab === 'invites' ? (
+        invites.length === 0 && acceptedWaiting.length === 0 && waiting.length === 0 ? (
+          <p className="text-center text-xs text-muted font-mono py-8">Bekleyen bir davet ya da oyunun yok.</p>
+        ) : (
+          <>
+            {invites.length > 0 && (
               <div className="flex flex-col gap-2">
-                {invites.map((g) => (
-                  <GameRow
-                    key={g.id}
-                    game={g}
-                    onRespond={(accept) => handleRespond(g, accept)}
-                    busy={busyInviteId === g.my_invite_id}
-                  />
-                ))}
+                <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
+                  Davet Bekliyor
+                </div>
+                <div className="flex flex-col gap-2">
+                  {invites.map((g) => (
+                    <GameRow
+                      key={g.id}
+                      game={g}
+                      onRespond={(accept) => handleRespond(g, accept)}
+                      busy={busyInviteId === g.my_invite_id}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-          <PendingSection title="Kabul Ettin — Diğerleri Bekleniyor" games={acceptedWaiting} />
-          <PendingSection title="Bekleyen Oyunlar" games={waiting} />
-        </>
+            )}
+            <PendingSection title="Kabul Ettin — Diğerleri Bekleniyor" games={acceptedWaiting} />
+            <PendingSection title="Bekleyen Oyunlar" games={waiting} />
+          </>
+        )
+      ) : (
+        <RecentGamesSection onlineOnly emptyMessage="Henüz bitmiş bir Canlı oyunun yok." />
       )}
-
-      <RecentGamesSection onlineOnly />
     </div>
   );
 }

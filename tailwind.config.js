@@ -11,6 +11,7 @@ export default {
         muted: '#5A6673',
         accent: '#2563EB',
         gold: '#B7791F',
+        orange: '#F2650F',
         green: '#16A34A',
         red: '#DC2626',
         'tile-bg': '#FFFFFF',

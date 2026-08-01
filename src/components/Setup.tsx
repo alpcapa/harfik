@@ -230,6 +230,12 @@ export function Setup({
   // akışıyla BİREBİR AYNI desen). Misafirde bu buton hiç yok — tek slot
   // olduğundan form zaten doğrudan gösteriliyor (aşağıya bkz.).
   const [creatingLocal, setCreatingLocal] = useState(false);
+  // "Yapay Zeka ile" liste görünümünün Devam Edenler/Son Oynananlar tabı —
+  // `LiveGamesTab`'daki (Arkadaşınla) BİREBİR AYNI çözüm, buraya da aynı
+  // gerekçeyle taşındı: çok sayıda devam eden YZ oyunu olan biri için "Son
+  // Oynadıklarım" listesi ekranın altına düşüp scroll etmeden görünmüyordu.
+  // Burada "Oyun Davetleri" kavramı olmadığından yalnızca iki tab var.
+  const [localSubTab, setLocalSubTab] = useState<'active' | 'recent'>('active');
   // Rozet artık `mainView`e (tab değişimine) bağlı DEĞİL — önceden bir davet
   // kabul edilip Canlı sekmesinden hiç çıkılmazsa (mainView 'live' olarak
   // sabit kalırsa) sayı asla tazelenmiyordu, yalnızca Local'e geçip geri
@@ -512,36 +518,65 @@ export function Setup({
         // Girişli kullanıcı — cihazlar arası senkron olduğundan (bkz.
         // CLAUDE.md) çoklu oyun mümkün: `LiveGamesTab`'daki "+ Yeni Canlı
         // Oyun" ile BİREBİR AYNI desen — liste varsayılan görünüm, kurulum
-        // formu yalnızca butona tıklanınca açılır.
+        // formu yalnızca butona tıklanınca açılır. Devam Edenler/Son
+        // Oynananlar tabı da `LiveGamesTab`'daki BİREBİR AYNI çözüm.
         <>
           <button
             onClick={() => setCreatingLocal(true)}
-            className="btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform"
+            className="btn-raised-orange py-2.5 rounded-md font-sans text-sm font-bold uppercase tracking-[1.5px] bg-orange text-white active:scale-[0.97] transition-transform"
           >
-            + Yeni Yapay Zeka Oyunu
+            + Yeni Yapay Zeka Oyunu Aç
           </button>
-          {cloudSaves === null ? (
-            <p className="text-center text-xs text-muted font-mono py-8">Yükleniyor…</p>
-          ) : cloudSaves.length === 0 ? (
-            <p className="text-center text-xs text-muted font-mono py-8">
-              Henüz bir Yapay Zeka oyunun yok.
-            </p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
-                Devam Eden Oyunlar
+
+          <div className="flex gap-2">
+            {(
+              [
+                { key: 'active' as const, label: 'Devam Edenler', badge: cloudSaves?.length ?? 0 },
+                { key: 'recent' as const, label: 'Son Oynananlar', badge: 0 },
+              ]
+            ).map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setLocalSubTab(tab.key)}
+                className={[
+                  'flex-1 py-2.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[0.5px] border transition-transform active:scale-[0.97] flex items-center justify-center gap-1.5',
+                  localSubTab === tab.key
+                    ? 'btn-raised bg-accent text-white border-accent'
+                    : 'btn-raised-neutral bg-panel text-text border-border',
+                ].join(' ')}
+              >
+                {tab.label}
+                {tab.badge > 0 && <CountBadge count={tab.badge} />}
+              </button>
+            ))}
+          </div>
+
+          {localSubTab === 'active' ? (
+            cloudSaves === null ? (
+              <p className="text-center text-xs text-muted font-mono py-8">Yükleniyor…</p>
+            ) : cloudSaves.length === 0 ? (
+              <p className="text-center text-xs text-muted font-mono py-8">
+                Devam eden bir Yapay Zeka oyunun yok.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
+                  Devam Eden Oyunlar
+                </div>
+                {cloudSaves.map((save) => (
+                  <SavedGameRow
+                    key={save.id}
+                    title={`${save.state.players.length} Kişilik Oyun`}
+                    subtitle={`Sıra: ${save.state.players[save.state.current]?.name ?? '—'}`}
+                    savedAtMs={Date.parse(save.updated_at)}
+                    willSurrender={save.state.turnCount >= 2}
+                    onClick={() => onResumeCloudSave(save)}
+                  />
+                ))}
               </div>
-              {cloudSaves.map((save) => (
-                <SavedGameRow
-                  key={save.id}
-                  title={`${save.state.players.length} Kişilik Oyun`}
-                  subtitle={`Sıra: ${save.state.players[save.state.current]?.name ?? '—'}`}
-                  savedAtMs={Date.parse(save.updated_at)}
-                  willSurrender={save.state.turnCount >= 2}
-                  onClick={() => onResumeCloudSave(save)}
-                />
-              ))}
-            </div>
+            )
+          ) : (
+            <RecentGamesSection onlineOnly={false} emptyMessage="Henüz bitmiş bir Yapay Zeka oyunun yok." />
           )}
         </>
       ) : (
@@ -650,7 +685,14 @@ export function Setup({
         </>
       )}
 
-      {mainView === 'local' && <RecentGamesSection onlineOnly={false} />}
+      {/* "Son Oynananlar" artık yalnızca girişli kullanıcının liste
+          görünümündeki kendi tabında gösteriliyor (yukarıda) — kurulum
+          formunun (creatingLocal, ör. oyuncu seçimi) hemen altında tekrar
+          çıkması `LiveGamesTab`'daki aynı kullanıcı geri bildirimiyle
+          gürültü olarak değerlendirilip kaldırıldı. Misafirin tekil kayıt
+          görünümünde zaten hiç görünmüyordu (RecentGamesSection girişsiz
+          kullanıcı için `null` döner), o yüzden bu satırın kaldırılması
+          misafir tarafında hiçbir görsel fark yaratmıyor. */}
 
       <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-muted">
         <button onClick={() => setShowTerms(true)} className="hover:underline active:opacity-70 transition-opacity">
