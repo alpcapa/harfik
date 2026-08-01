@@ -133,7 +133,7 @@ export function UserMenu() {
                   className="flex items-center gap-1 text-[10px] font-mono text-left truncate active:opacity-70 transition-opacity"
                 >
                   <KLigMark height={13} className="inline-block relative top-[1px] shrink-0" />
-                  <span className="text-muted truncate">
+                  <span className="text-xs font-bold text-accent truncate">
                     {myRank && (
                       <>
                         #{myRank.rank}
