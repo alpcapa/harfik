@@ -132,7 +132,7 @@ function PendingGameCard({
         </span>
       </div>
       <div className="flex flex-col gap-1.5">
-        <div className="text-[9px] uppercase tracking-[1px] text-muted font-mono">Kiminle Oynayacaksın</div>
+        <div className="text-[9px] uppercase tracking-[1px] text-muted font-mono">Oyuncular</div>
         {humanSlots.map((slot) => (
           <ParticipantRow key={slot.user_id} slot={slot} game={game} />
         ))}
