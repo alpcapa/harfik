@@ -44,9 +44,20 @@ function titleFor(entry: GameHistoryEntry): string {
 interface RecentGamesSectionProps {
   /** true: yalnızca Canlı (Arkadaşınla) oyunlar, false: yalnızca Yapay Zeka. */
   onlineOnly: boolean;
+  /**
+   * Verilirse, hiç bitmiş oyun yokken (ya da henüz yüklenmemişken) sessizce
+   * `null` dönmek yerine bu metni gösterir — `LiveGamesTab`'daki "Son
+   * Oynanan" sekmesi gibi, bileşenin TEK içerik olduğu bir sekme/alan boş
+   * kaldığında kullanıcıya hâlâ bir şeyin orada olması gerektiğini
+   * hatırlatmak için. Verilmezse eski davranış (boşsa hiçbir şey
+   * render etmeme) aynen korunur — ör. "Yapay Zeka ile" sekmesinde ya da
+   * Canlı oyun kurulum formunun altında, zaten başka içerik olduğundan
+   * boş bir mesaj gösterilmesine gerek yok.
+   */
+  emptyMessage?: string;
 }
 
-export function RecentGamesSection({ onlineOnly }: RecentGamesSectionProps) {
+export function RecentGamesSection({ onlineOnly, emptyMessage }: RecentGamesSectionProps) {
   const { user } = useAuth();
   const [games, setGames] = useState<GameHistoryEntry[] | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
@@ -68,8 +79,11 @@ export function RecentGamesSection({ onlineOnly }: RecentGamesSectionProps) {
 
   // Girişsiz kullanıcı için oyun geçmişi hiç yok; henüz yüklenmediyse ya da
   // hiç bitmiş oyun yoksa da bilerek sessizce gizleniyor — boş bir bölüm
-  // başlığı göstermenin bir değeri yok.
-  if (!user || !games || games.length === 0) return null;
+  // başlığı göstermenin bir değeri yok. `emptyMessage` verilmişse (bileşen
+  // kendi başına bir sekmenin tek içeriğiyse) bunun yerine o metin gösterilir.
+  if (!user) return null;
+  if (!games) return emptyMessage ? <p className="text-center text-xs text-muted font-mono py-8">Yükleniyor…</p> : null;
+  if (games.length === 0) return emptyMessage ? <p className="text-center text-xs text-muted font-mono py-8">{emptyMessage}</p> : null;
 
   return (
     <div className="flex flex-col gap-2">
