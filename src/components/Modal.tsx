@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { useModalA11y } from '../hooks/useModalA11y';
 
 interface ModalProps {
-  title: string;
+  title: ReactNode;
   onClose: () => void;
   children: ReactNode;
   // Başlığın hemen üstünde gösterilen küçük bir gezinme linki (ör. HelpModal'ın
