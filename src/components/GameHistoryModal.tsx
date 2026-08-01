@@ -335,9 +335,35 @@ export function GameHistoryModal({ playerCount, onClose, userId, title, initialE
     setBoardSheetId(null);
     setLikersGameId(null);
     fetchedIds.current.clear();
-    void fetchMyGames(playerCount, 0, PAGE_SIZE, userId, favoritesOnly).then(({ games: page, hasMore: more }) => {
-      if (cancelled) return;
-      setGames(page);
+    void (async () => {
+      // "Son Oynadıklarım" (RecentGamesSection) TÜR filtreli (onlineOnly)
+      // bir sıralamadan geliyor — buradaki (Tüm Oyunlarım) liste ise
+      // filtresiz/karma. Sonuç: "Son Oynadıklarım"da 3-5. sırada görünen
+      // (ör. en son Canlı oyun) bir kayıt, arada çok sayıda yerel/YZ oyunu
+      // varsa, karma sıralamada ilk PAGE_SIZE'ın çok gerisinde kalabiliyordu
+      // — hedef kart hiç fetch edilmediğinden `scrollIntoView` sessizce
+      // hiçbir şey yapmıyor, kart yalnızca kullanıcı kendisi sonsuz
+      // kaydırmayla oraya ulaşınca (beklenmedik bir noktada) beliriyordu.
+      // Düzeltme: initialExpandedId varsa, hedef sayfada bulunana ya da
+      // liste tükenene kadar (makul bir üst sınıra kadar) sayfa sayfa
+      // çekmeye devam ediyoruz.
+      let offset = 0;
+      let accumulated: GameHistoryEntry[] = [];
+      let more = true;
+      let found = false;
+      let pages = 0;
+      const MAX_PAGES = 25; // ~500 oyun — pratikte hiç ulaşılmaz, sonsuz döngüye karşı güvenlik ağı.
+      do {
+        const { games: page, hasMore: hm } = await fetchMyGames(playerCount, offset, PAGE_SIZE, userId, favoritesOnly);
+        if (cancelled) return;
+        accumulated = accumulated.concat(page);
+        more = hm;
+        offset += page.length;
+        pages += 1;
+        if (initialExpandedId && page.some((g) => g.id === initialExpandedId)) found = true;
+      } while (initialExpandedId && !found && more && pages < MAX_PAGES);
+
+      setGames(accumulated);
       setHasMore(more);
       setLoading(false);
       // "Son Oynadıklarım" satırından açıldıysa (initialExpandedId), o karta
@@ -358,7 +384,7 @@ export function GameHistoryModal({ playerCount, onClose, userId, title, initialE
             ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
       }
-    });
+    })();
     return () => {
       cancelled = true;
     };
