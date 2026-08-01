@@ -169,7 +169,9 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
               placeholder="İsim ya da takma ad ara…"
               className="w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors"
             />
-            <div className="flex flex-col gap-1.5 max-h-[280px] overflow-y-auto pr-0.5">
+            {/* 3.5 satır yüksekliğinde (46px satır + 6px boşluk, Playwright ile ölçüldü) —
+                dördüncü satırın yarısı kesik görünerek listenin kaydırılabilir olduğunu ima eder. */}
+            <div className="flex flex-col gap-1.5 max-h-[179px] overflow-y-auto pr-0.5">
               {(() => {
                 const filtered = friends.filter((f) => trLower(f.name).includes(trLower(query.trim())));
                 if (filtered.length === 0) {
