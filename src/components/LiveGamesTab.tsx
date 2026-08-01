@@ -9,16 +9,23 @@
 // görünmüyordu — halbuki ikisi de (devam eden VE davet) aynı derecede
 // dikkat gerektiriyor. Kullanıcı isteğiyle üçü, "+ Yeni Canlı Oyun"un
 // altına yerleştirilen bir tab satırına (Devam Edenler / Davetler / Son
-// Oynanan) taşındı; her tab AÇILDIĞINDA içindeki bölüm başlıkları
+// Oynananlar) taşındı; her tab AÇILDIĞINDA içindeki bölüm başlıkları
 // ("Devam Eden Oyunlar", "Davet Bekliyor" vb.) eskisiyle birebir aynı
 // kalıyor — yalnızca hangi bölümün ne zaman göründüğü değişti. İlk iki
 // tabın kırmızı sayaç rozeti dikkat gerektiren gerçek sayıyı gösteriyor
 // (Setup'taki "Arkadaşınla (N)" rozetiyle aynı iki bileşen: yanıt bekleyen
-// davet sayısı / sırası çağıranda olan aktif oyun sayısı) — "Son Oynanan"
-// hiçbir zaman dikkat gerektirmediğinden rozet almıyor. Bekleyen bir davet
-// varsa uygulama açılışında doğrudan "Davetler" tabı açık gelir (yoksa
-// "Devam Edenler") — bu yalnızca veri İLK yüklendiğinde bir kez uygulanır,
-// kullanıcı sonradan elle başka bir taba geçerse bir daha zorlanmaz.
+// davet sayısı / sırası çağıranda olan aktif oyun sayısı) — "Son
+// Oynananlar" hiçbir zaman dikkat gerektirmediğinden rozet almıyor.
+// Bekleyen bir davet varsa uygulama açılışında doğrudan "Davetler" tabı
+// açık gelir (yoksa "Devam Edenler") — bu yalnızca veri İLK yüklendiğinde
+// bir kez uygulanır, kullanıcı sonradan elle başka bir taba geçerse bir
+// daha zorlanmaz. Rozetler `games`/`turns`'ten TÜRETİLDİĞİNDEN (ayrı bir
+// sayaç state'i tutulmuyor) her `reload()` sonrası (bir davet kabul
+// edilince/reddedilince, bir hamle oynanınca) otomatik doğru sayıya
+// düşer/artar — ör. 2 bekleyen davetten biri kabul edilince `invites`
+// dizisinden çıkıp rozet kendiliğinden 1'e iner, sıfıra inmeden rozet asla
+// erken kaybolmaz (yalnızca gerçekten 0 olunca `tab.badge > 0` koşuluyla
+// gizlenir).
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -544,7 +551,7 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   const SUB_TABS: { key: SubTab; label: string; badge: number }[] = [
     { key: 'active', label: 'Devam Edenler', badge: myTurnCount },
     { key: 'invites', label: 'Davetler', badge: inviteCount },
-    { key: 'recent', label: 'Son Oynanan', badge: 0 },
+    { key: 'recent', label: 'Son Oynananlar', badge: 0 },
   ];
 
   return (
