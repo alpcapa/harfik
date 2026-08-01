@@ -40,7 +40,7 @@ import {
 } from '../utils/validator';
 import { getFormedWords, getFullWordAt, key } from '../utils/board';
 import { trLower } from '../utils/turkish';
-import { hasSeenChatIntro, markChatIntroSeen } from '../utils/onboarding';
+import { hasSeenChatIntro, markChatIntroSeen, getChatLastReadAt, markChatRead } from '../utils/onboarding';
 import {
   checkOnlineGameTurnTimeout,
   fetchMeaning,
@@ -308,7 +308,17 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     if (mySlotIndex < 0) return;
     let cancelled = false;
     void fetchOnlineGameMessages(game.id).then((rows) => {
-      if (!cancelled) setChatMessages(rows);
+      if (cancelled) return;
+      setChatMessages(rows);
+      // Bu cihazda daha önce (bir önceki ziyarette) nereye kadar okunduğu
+      // bilinmiyorsa (hiç yok) ya da o andan SONRA gelen, kendisinin
+      // GÖNDERMEDİĞİ bir mesaj varsa — sohbet kapalıyken de "Mesajlaşma"
+      // butonunda kırmızı nokta çıksın diye (bkz. onboarding.ts).
+      const lastReadAt = getChatLastReadAt(game.id);
+      const unread = rows.filter(
+        (r) => r.sender_user_id !== myUserId && (!lastReadAt || r.created_at > lastReadAt)
+      ).length;
+      setUnreadCount(unread);
     });
     const unsubscribe = subscribeOnlineGameMessages(game.id, (row) => {
       setChatMessages((cur) => (cur.some((m) => m.id === row.id) ? cur : [...cur, row]));
@@ -324,7 +334,17 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       cancelled = true;
       unsubscribe();
     };
-  }, [game.id, mySlotIndex]);
+  }, [game.id, mySlotIndex, myUserId]);
+
+  // Sohbet açıkken (ilk açılışta ya da zaten açıkken yeni bir mesaj daha
+  // gelirse) görülen en son mesajı cihaza yazar — bir sonraki ziyarette
+  // (yukarıdaki yükleme effect'i) kırmızı nokta yalnızca bundan SONRAKİ,
+  // kendi göndermediği mesajlar için çıkar.
+  useEffect(() => {
+    if (!showChat || chatMessages.length === 0) return;
+    const latest = chatMessages.reduce((a, b) => (a.created_at > b.created_at ? a : b));
+    markChatRead(game.id, latest.created_at);
+  }, [showChat, chatMessages, game.id]);
 
   const wordsReady = isWordSetReady();
   const me = state.players[mySlotIndex];

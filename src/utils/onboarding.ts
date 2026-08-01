@@ -37,3 +37,31 @@ export function markChatIntroSeen(): void {
     // yoksay
   }
 }
+
+// Oyun İçi Mesajlaşma — okunmamış mesaj göstergesi (rozet/sayı değil,
+// yalnızca "Mesajlaşma" butonunun üstünde küçük bir kırmızı nokta). Oyuncu
+// sohbeti bu oyun için en son ne zaman açtığını (son görülen mesajın
+// created_at'i) cihaza yazar; bir sonraki girişte (ör. 1 gün sonra) bundan
+// SONRA gelen ve kendisinin göndermediği bir mesaj varsa nokta çıkar —
+// `OnlineGameScreen.tsx`'teki mesaj listesi ilk yüklendiğinde bununla
+// karşılaştırılır. Cihaza özel (localStorage) — sunucuda okundu bilgisi
+// tutulmuyor, bilinçli olarak kapsam dışı (bkz. CLAUDE.md).
+function chatLastReadKey(gameId: string): string {
+  return `kelimeki:chat-last-read:${gameId}`;
+}
+
+export function getChatLastReadAt(gameId: string): string | null {
+  try {
+    return localStorage.getItem(chatLastReadKey(gameId));
+  } catch {
+    return null;
+  }
+}
+
+export function markChatRead(gameId: string, lastMessageAt: string): void {
+  try {
+    localStorage.setItem(chatLastReadKey(gameId), lastMessageAt);
+  } catch {
+    // yoksay
+  }
+}
