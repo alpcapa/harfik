@@ -8,6 +8,7 @@ import { signOut, fetchMyLeaderboardRank, fetchIncomingFriendRequests } from '..
 import type { MyLeaderboardRank } from '../lib/database.types';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
+import { CountBadge } from './CountBadge';
 import { ScoreCard } from './ScoreCard';
 import { AccountSettingsModal } from './AccountSettingsModal';
 import { HelpModal } from './HelpModal';
@@ -156,9 +157,7 @@ export function UserMenu() {
             >
               <span aria-hidden>👥</span> Arkadaşlar
               {incomingRequestCount > 0 && (
-                <span className="ml-auto min-w-[16px] h-4 px-1 rounded-full bg-red text-white text-[9px] font-bold flex items-center justify-center leading-none">
-                  {incomingRequestCount}
-                </span>
+                <CountBadge count={incomingRequestCount} className="ml-auto" />
               )}
             </button>
             <button

@@ -10,6 +10,7 @@ import { ABANDON_TIMEOUT_MS, type SavedGame } from '../utils/gameStorage';
 import { preloadWordSet, isWordSetReady } from '../data/wordSetLoader';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
+import { CountBadge } from './CountBadge';
 import { HelpModal } from './HelpModal';
 import { LiveGamesTab } from './LiveGamesTab';
 import { LogoMark } from './LogoMark';
@@ -478,11 +479,7 @@ export function Setup({
               ].join(' ')}
             >
               {tab.label}
-              {tab.badge > 0 && (
-                <span className="min-w-[16px] h-4 px-1 rounded-full bg-red text-white text-[9px] font-bold flex items-center justify-center leading-none">
-                  <span className="relative top-px">{tab.badge}</span>
-                </span>
-              )}
+              {tab.badge > 0 && <CountBadge count={tab.badge} />}
             </button>
           ))}
         </div>
