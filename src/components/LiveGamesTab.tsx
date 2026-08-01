@@ -8,16 +8,16 @@
 // biri için "Davet Bekliyor" listesi ekranın altına düşüp scroll etmeden
 // görünmüyordu — halbuki ikisi de (devam eden VE davet) aynı derecede
 // dikkat gerektiriyor. Kullanıcı isteğiyle üçü, "+ Yeni Canlı Oyun"un
-// altına yerleştirilen bir tab satırına (Devam Edenler / Davetler / Son
-// Oynananlar) taşındı; her tab AÇILDIĞINDA içindeki bölüm başlıkları
+// altına yerleştirilen bir tab satırına (Devam Edenler / Oyun Davetleri /
+// Son Oynananlar) taşındı; her tab AÇILDIĞINDA içindeki bölüm başlıkları
 // ("Devam Eden Oyunlar", "Davet Bekliyor" vb.) eskisiyle birebir aynı
 // kalıyor — yalnızca hangi bölümün ne zaman göründüğü değişti. İlk iki
 // tabın kırmızı sayaç rozeti dikkat gerektiren gerçek sayıyı gösteriyor
 // (Setup'taki "Arkadaşınla (N)" rozetiyle aynı iki bileşen: yanıt bekleyen
 // davet sayısı / sırası çağıranda olan aktif oyun sayısı) — "Son
 // Oynananlar" hiçbir zaman dikkat gerektirmediğinden rozet almıyor.
-// Bekleyen bir davet varsa uygulama açılışında doğrudan "Davetler" tabı
-// açık gelir (yoksa "Devam Edenler") — bu yalnızca veri İLK yüklendiğinde
+// Bekleyen bir davet varsa uygulama açılışında doğrudan "Oyun Davetleri"
+// tabı açık gelir (yoksa "Devam Edenler") — bu yalnızca veri İLK yüklendiğinde
 // bir kez uygulanır, kullanıcı sonradan elle başka bir taba geçerse bir
 // daha zorlanmaz. Rozetler `games`/`turns`'ten TÜRETİLDİĞİNDEN (ayrı bir
 // sayaç state'i tutulmuyor) her `reload()` sonrası (bir davet kabul
@@ -345,9 +345,9 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   const [suggestCandidates, setSuggestCandidates] = useState<HumanSlot[] | null>(null);
 
   const [subTab, setSubTab] = useState<SubTab>('active');
-  // Varsayılan tab seçimi ("bekleyen davet varsa Davetler, yoksa Devam
-  // Edenler") yalnızca veri İLK kez yüklendiğinde bir kez uygulanır — bu ref
-  // sayesinde kullanıcı sonradan elle başka bir taba geçerse (ör. Son
+  // Varsayılan tab seçimi ("bekleyen davet varsa Oyun Davetleri, yoksa
+  // Devam Edenler") yalnızca veri İLK kez yüklendiğinde bir kez uygulanır —
+  // bu ref sayesinde kullanıcı sonradan elle başka bir taba geçerse (ör. Son
   // Oynanan'a bakarken bir Realtime güncellemesi gelirse) bir daha zorlanmaz.
   const appliedDefaultTabRef = useRef(false);
 
@@ -460,7 +460,7 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   }, [user]);
 
   // Varsayılan tab: veri ilk kez geldiğinde (null -> dizi geçişinde) bekleyen
-  // bir davet varsa "Davetler", yoksa "Devam Edenler" açık gelsin.
+  // bir davet varsa "Oyun Davetleri", yoksa "Devam Edenler" açık gelsin.
   useEffect(() => {
     if (games === null || appliedDefaultTabRef.current) return;
     appliedDefaultTabRef.current = true;
@@ -550,7 +550,7 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
 
   const SUB_TABS: { key: SubTab; label: string; badge: number }[] = [
     { key: 'active', label: 'Devam Edenler', badge: myTurnCount },
-    { key: 'invites', label: 'Davetler', badge: inviteCount },
+    { key: 'invites', label: 'Oyun Davetleri', badge: inviteCount },
     { key: 'recent', label: 'Son Oynananlar', badge: 0 },
   ];
 
