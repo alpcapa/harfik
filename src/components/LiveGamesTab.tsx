@@ -512,6 +512,7 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
         </p>
       ) : (
         <>
+          <Section title="Devam Eden Oyunlar" games={active} onOpenGame={onOpenGame} turns={turns} deadlines={deadlines} />
           {invites.length > 0 && (
             <div className="flex flex-col gap-2">
               <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
@@ -529,7 +530,6 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
               </div>
             </div>
           )}
-          <Section title="Devam Eden Oyunlar" games={active} onOpenGame={onOpenGame} turns={turns} deadlines={deadlines} />
           <PendingSection title="Kabul Ettin — Diğerleri Bekleniyor" games={acceptedWaiting} />
           <PendingSection title="Bekleyen Oyunlar" games={waiting} />
         </>
