@@ -281,6 +281,27 @@ export function GameHistoryModal({ playerCount, onClose, userId, title, initialE
     }
   }, []);
 
+  // "Son Oynadıklarım"dan `initialExpandedId` ile açılınca hedef kartı
+  // listenin ORTASINA hizalar (kullanıcı isteği: "direkt görünsün").
+  // `scrollIntoView({block:'start'})` burada güvenilir değildi — bu liste
+  // Modal.tsx'in KENDİ `overflow-y-auto` gövdesinin İÇİNDE ikinci (iç
+  // içe) bir kaydırma alanı; tarayıcılar iç içe kaydırma alanlarında
+  // hizalamayı tutarsız uyguluyor, bu yüzden `getBoundingClientRect` ile
+  // hedefin `scrollRef` konteynerine göre GERÇEK konumu elle hesaplanıp
+  // `scrollTop` doğrudan ayarlanıyor — konteynerin kendisi taşımadığı
+  // sürece (yani ana Modal gövdesi de kaymadığı sürece, ki normalde bu
+  // liste `max-h-[65vh]` ile zaten kendi içinde taşıyor) sonuç garantili.
+  const centerEntryInView = useCallback((id: string, behavior: ScrollBehavior = 'smooth') => {
+    const container = scrollRef.current;
+    const target = document.getElementById(`game-history-entry-${id}`);
+    if (!container || !target) return;
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const offsetWithinContainer = targetRect.top - containerRect.top + container.scrollTop;
+    const centered = offsetWithinContainer - container.clientHeight / 2 + target.clientHeight / 2;
+    container.scrollTo({ top: Math.max(0, centered), behavior });
+  }, []);
+
   // Karta (aksiyon menüsü/kalp dışındaki herhangi bir yerine) tıklanınca
   // tahta önizlemesini aç/kapa çevirir — tekrar tıklamak kapatır.
   const handleToggleBoard = useCallback((gameId: string) => {
@@ -376,13 +397,15 @@ export function GameHistoryModal({ playerCount, onClose, userId, title, initialE
           void fetchGameBoardSnapshot(initialExpandedId).then((snap) => {
             setSnapshots((c) => ({ ...c, [initialExpandedId]: snap }));
             setSnapshotLoadingId((id) => (id === initialExpandedId ? null : id));
+            // Tahta önizlemesi yüklenince kart boyu ciddi ölçüde büyüyor
+            // (bkz. yukarıdaki centerEntryInView yorumu) — ilk hizalama o
+            // andaki (henüz "Yükleniyor…" yer tutucusu kadar kısa) yüksekliğe
+            // göre yapıldığından, gerçek tahta render olduktan sonra tekrar
+            // ortalamak gerekiyor, yoksa kart yeniden ekranın altına kayabilir.
+            requestAnimationFrame(() => centerEntryInView(initialExpandedId));
           });
         }
-        requestAnimationFrame(() => {
-          document
-            .getElementById(`game-history-entry-${initialExpandedId}`)
-            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
+        requestAnimationFrame(() => centerEntryInView(initialExpandedId));
       }
     })();
     return () => {
