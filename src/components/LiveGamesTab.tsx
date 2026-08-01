@@ -19,6 +19,7 @@ import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
 import { FriendSuggestModal } from './FriendSuggestModal';
 import { LiveGameCreateForm } from './LiveGameCreateForm';
+import { RecentGamesSection } from './RecentGamesSection';
 
 type HumanSlot = Extract<OnlineGameSlot, { type: 'human' }>;
 
@@ -530,6 +531,8 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
           <PendingSection title="Bekleyen Oyunlar" games={waiting} />
         </>
       )}
+
+      <RecentGamesSection onlineOnly />
     </div>
   );
 }
