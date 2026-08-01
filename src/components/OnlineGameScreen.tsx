@@ -310,14 +310,26 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     void fetchOnlineGameMessages(game.id).then((rows) => {
       if (cancelled) return;
       setChatMessages(rows);
-      // Bu cihazda daha önce (bir önceki ziyarette) nereye kadar okunduğu
-      // bilinmiyorsa (hiç yok) ya da o andan SONRA gelen, kendisinin
-      // GÖNDERMEDİĞİ bir mesaj varsa — sohbet kapalıyken de "Mesajlaşma"
-      // butonunda kırmızı nokta çıksın diye (bkz. onboarding.ts).
+      // Bu cihazda bu oyun için "en son okunan mesaj" damgası hiç yoksa
+      // (ör. bu özellik yeni devreye girdi ya da oyun ekranı bu cihazda
+      // hiç açılmadı), mevcut TÜM geçmişi "okunmamış" saymak yanlış
+      // pozitif üretiyordu — kullanıcı çoktan görmüş olabileceği eski
+      // mesajlar için de kırmızı nokta çıkıyordu. Bunun yerine ilk
+      // hesaplamada mevcut son mesaja (yoksa şu ana) kadar okunmuş kabul
+      // edilip damga oradan başlatılıyor; kırmızı nokta yalnızca BUNDAN
+      // SONRA gelecek gerçek yeni mesajlar için çıkar — geç giriş
+      // özelliği (bkz. CLAUDE.md) bir sonraki ziyarette olduğu gibi çalışmaya devam eder.
       const lastReadAt = getChatLastReadAt(game.id);
-      const unread = rows.filter(
-        (r) => r.sender_user_id !== myUserId && (!lastReadAt || r.created_at > lastReadAt)
-      ).length;
+      if (lastReadAt === null) {
+        const seedAt =
+          rows.length > 0
+            ? rows.reduce((a, b) => (a.created_at > b.created_at ? a : b)).created_at
+            : new Date().toISOString();
+        markChatRead(game.id, seedAt);
+        setUnreadCount(0);
+        return;
+      }
+      const unread = rows.filter((r) => r.sender_user_id !== myUserId && r.created_at > lastReadAt).length;
       setUnreadCount(unread);
     });
     const unsubscribe = subscribeOnlineGameMessages(game.id, (row) => {
