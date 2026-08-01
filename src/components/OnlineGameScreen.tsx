@@ -982,12 +982,24 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
               <p className="text-sm font-bold text-text font-sans">{chatSender?.name ?? 'Oyuncu'}</p>
             </div>
             <p className="text-sm text-text font-sans leading-relaxed break-words">{newMessagePopup.message}</p>
-            <button
-              onClick={() => setNewMessagePopup(null)}
-              className="btn-raised-neutral py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
-            >
-              Kapat
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setNewMessagePopup(null);
+                  setShowChat(true);
+                  setUnreadCount(0);
+                }}
+                className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Cevap Ver
+              </button>
+              <button
+                onClick={() => setNewMessagePopup(null)}
+                className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Kapat
+              </button>
+            </div>
           </div>
         </div>
       )}
