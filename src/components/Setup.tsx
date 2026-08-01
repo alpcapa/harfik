@@ -461,7 +461,7 @@ export function Setup({
               {tab.label}
               {tab.badge > 0 && (
                 <span className="min-w-[16px] h-4 px-1 rounded-full bg-red text-white text-[11px] font-bold flex items-center justify-center leading-none">
-                  <span className="translate-y-[0.5px]">{tab.badge}</span>
+                  <span className="translate-x-[0.5px] translate-y-[1px]">{tab.badge}</span>
                 </span>
               )}
             </button>
