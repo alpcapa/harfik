@@ -409,7 +409,7 @@ export function Board({
   );
 
   return (
-    <div className="w-full max-w-[680px] mx-auto px-3 pt-2 pb-3 flex flex-col items-center">
+    <div className="w-full max-w-[680px] mx-auto px-3 pt-1.5 pb-3 flex flex-col items-center">
       <div
         className="relative w-full bg-[#DDE4EE] rounded-[18px]"
         style={{
