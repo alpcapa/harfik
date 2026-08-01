@@ -23,12 +23,20 @@ function rankFor(entry: GameHistoryEntry): number {
 }
 
 // 2 kişilik bir oyunda rakibin adını (varsa donmuş `players` anlık
-// görüntüsünden) gösterir — 4 kişilikte tüm rakipleri sığdırmak pratik
-// olmadığından jenerik "N Kişilik Oyun" başlığına düşülür.
+// görüntüsünden) gösterir. Canlı 4 kişilik bir oyunda rakiplerin hepsi
+// gerçek kişiler olabildiğinden (kimle oynadığını görmek anlamlı) hepsi
+// yan yana virgülle yazılır; yerel (Yapay Zeka) 4 kişilik oyunlarda
+// rakipler zaten hep YZ olduğundan bu bilgi eklemez, jenerik "N Kişilik
+// Oyun" başlığına düşülür.
 function titleFor(entry: GameHistoryEntry): string {
-  if (entry.player_count === 2 && entry.players && entry.players.length === 2) {
-    const opponent = entry.players[1 - (rankFor(entry) - 1)];
-    if (opponent) return opponent.is_ai ? 'Yapay Zeka' : opponent.name;
+  if (!entry.players || entry.players.length < 2) return `${entry.player_count} Kişilik Oyun`;
+  const meIdx = rankFor(entry) - 1;
+  const others = entry.players.filter((_, i) => i !== meIdx);
+  if (entry.player_count === 2 && others.length === 1) {
+    return others[0].is_ai ? 'Yapay Zeka' : others[0].name;
+  }
+  if (entry.online_game_id && others.length > 0) {
+    return others.map((p) => (p.is_ai ? 'Yapay Zeka' : p.name)).join(', ');
   }
   return `${entry.player_count} Kişilik Oyun`;
 }

@@ -355,7 +355,7 @@ export function GameHistoryModal({ playerCount, onClose, userId, title, initialE
         requestAnimationFrame(() => {
           document
             .getElementById(`game-history-entry-${initialExpandedId}`)
-            ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
       }
     });
