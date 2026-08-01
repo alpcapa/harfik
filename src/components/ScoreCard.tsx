@@ -82,11 +82,9 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
   const pct = (n: number) =>
     stats && stats.games_played > 0 ? `%${Math.round((n / stats.games_played) * 100)}` : '%0';
 
-  // "Genel" sekmesi tablo yapısı olarak 4 kişilikle aynı (kullanıcı isteği)
-  // — ikisi de aynı cells düzenini kullanır. 2 kişilikte 2. olmak = kaybetmek
-  // olduğundan (lig puanı getirmiyor) "İkincilik" hücresi yalnızca o sekmede
-  // hiç gösterilmez.
-  const useWideLayout = tab === 4 || tab === 'all';
+  // 2 kişilikte 2. olmak lig puanı getirmez (kaybetmekle aynı şey) ama
+  // "İkincilik" kutusu yine de bilgi amaçlı tüm sekmelerde gösteriliyor —
+  // kullanıcı isteği: üç sekme de aynı kutu setine sahip olsun.
   const secondCellValue = stats?.second_places ?? 0;
 
   type Cell = { label: string; value: number | string; rate?: string; cls?: string; span2?: boolean };
@@ -113,16 +111,12 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
       rate: pct(stats?.first_places ?? 0),
       cls: 'text-gold',
     },
-    ...(useWideLayout
-      ? [
-          {
-            label: 'İkincilik',
-            value: secondCellValue,
-            rate: pct(secondCellValue),
-            cls: 'text-accent',
-          },
-        ]
-      : []),
+    {
+      label: 'İkincilik',
+      value: secondCellValue,
+      rate: pct(secondCellValue),
+      cls: 'text-accent',
+    },
     {
       label: 'Teslim Olma',
       value: stats?.surrendered_count ?? 0,

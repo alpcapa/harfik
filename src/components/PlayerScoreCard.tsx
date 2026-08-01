@@ -155,10 +155,9 @@ export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
   const pct = (n: number) =>
     stats && stats.games_played > 0 ? `%${Math.round((n / stats.games_played) * 100)}` : '%0';
 
-  // "Genel" sekmesi tablo yapısı olarak 4 kişilikle aynı (ScoreCard.tsx'teki
-  // aynı gerekçe) — 2 kişilikte 2. olmak lig puanı getirmediğinden
-  // "İkincilik" hücresi yalnızca o sekmede hiç gösterilmez.
-  const useWideLayout = tab === 4 || tab === 'all';
+  // 2 kişilikte 2. olmak lig puanı getirmez (kaybetmekle aynı şey) ama
+  // "İkincilik" kutusu yine de bilgi amaçlı tüm sekmelerde gösteriliyor —
+  // ScoreCard.tsx'teki aynı düzenleme, birlikte güncellendi.
   const secondCellValue = stats?.second_places ?? 0;
 
   type Cell = { label: string; value: number | string; rate?: string; cls?: string; span2?: boolean };
@@ -184,16 +183,12 @@ export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
       rate: pct(stats?.first_places ?? 0),
       cls: 'text-gold',
     },
-    ...(useWideLayout
-      ? [
-          {
-            label: 'İkincilik',
-            value: secondCellValue,
-            rate: pct(secondCellValue),
-            cls: 'text-accent',
-          },
-        ]
-      : []),
+    {
+      label: 'İkincilik',
+      value: secondCellValue,
+      rate: pct(secondCellValue),
+      cls: 'text-accent',
+    },
     {
       label: 'Teslim Olma',
       value: stats?.surrendered_count ?? 0,
