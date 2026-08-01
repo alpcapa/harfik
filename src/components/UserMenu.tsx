@@ -136,7 +136,7 @@ export function UserMenu() {
                     {myRank ? (
                       `#${myRank.rank} · ${myRank.total_score.toLocaleString('tr-TR')} puan`
                     ) : (
-                      <KLigMark height={9} color="currentColor" className="inline-block relative top-[1px]" />
+                      <KLigMark height={11} color="currentColor" className="inline-block relative top-[1px]" />
                     )}
                   </span>
                   <span className="w-3 h-3 rounded-full border border-accent text-accent flex items-center justify-center text-[8px] leading-none font-bold shrink-0">

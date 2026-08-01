@@ -92,7 +92,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
     <Modal
       title={
         <span className="inline-flex items-center gap-1.5">
-          🏆 <KLigMark height={15} className="inline-block relative top-[1px]" />
+          🏆 <KLigMark height={24} className="inline-block relative top-[1px]" />
         </span>
       }
       onClose={onClose}
