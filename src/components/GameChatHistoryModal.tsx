@@ -26,15 +26,18 @@ export function GameChatHistoryModal({ gameId, onClose }: GameChatHistoryModalPr
     };
   }, [gameId]);
 
-  const threadMessages: ChatThreadMessage[] =
-    messages?.map((m, i) => ({
-      key: `${m.created_at}-${i}`,
-      name: m.name,
-      colorIndex: m.colorIndex,
-      message: m.message,
-      createdAt: m.created_at,
-      mine: false,
-    })) ?? [];
+  const threadMessages: ChatThreadMessage[] = messages
+    ? messages
+        .map((m, i) => ({
+          key: `${m.created_at}-${i}`,
+          name: m.name,
+          colorIndex: m.colorIndex,
+          message: m.message,
+          createdAt: m.created_at,
+          mine: false,
+        }))
+        .reverse()
+    : [];
 
   return (
     <Modal title="Sohbet Geçmişi" onClose={onClose}>

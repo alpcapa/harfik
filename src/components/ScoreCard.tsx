@@ -82,28 +82,28 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
   const pct = (n: number) =>
     stats && stats.games_played > 0 ? `%${Math.round((n / stats.games_played) * 100)}` : '%0';
 
-  // "Genel" sekmesi tablo yapısı olarak 4 kişilikle aynı (kullanıcı isteği)
-  // — ikisi de aynı cells düzenini kullanır. 2 kişilikte 2. olmak = kaybetmek
-  // olduğundan (lig puanı getirmiyor) "İkincilik" hücresi yalnızca o sekmede
-  // hiç gösterilmez.
-  const useWideLayout = tab === 4 || tab === 'all';
+  // 2 kişilikte 2. olmak lig puanı getirmez (kaybetmekle aynı şey) ama
+  // "İkincilik" kutusu yine de bilgi amaçlı tüm sekmelerde gösteriliyor —
+  // kullanıcı isteği: üç sekme de aynı kutu setine sahip olsun.
   const secondCellValue = stats?.second_places ?? 0;
 
-  const cells: {
-    label: string;
-    value: number | string;
-    rate?: string;
-    cls?: string;
-    wide?: boolean;
-    span2?: boolean;
-    place?: string;
-  }[] = [
+  type Cell = { label: string; value: number | string; rate?: string; cls?: string; span2?: boolean };
+
+  // Oyuncu istatistikleri (davranış/sonuç sayıları) üstte, oyun istatistikleri
+  // (tek oyun/hamle/kelime rekorları) altta — kullanıcı isteği. Oyun
+  // istatistikleri artık tab'dan bağımsız (İkincilik hariç hiçbiri
+  // player_count'a göre değişmiyordu zaten).
+  const playerCells: Cell[] = [
     { label: 'Toplam Oyun', value: stats?.games_played ?? 0 },
     {
-      label: 'Ortalama Hamle Puanı',
-      value: Number(stats?.avg_move_score ?? 0).toFixed(2),
-      cls: 'text-accent',
-      place: 'row-start-2 col-start-1',
+      label: 'Yapay Zeka ile',
+      value: stats?.local_games_played ?? 0,
+      rate: pct(stats?.local_games_played ?? 0),
+    },
+    {
+      label: 'Arkadaşınla',
+      value: stats?.online_games_played ?? 0,
+      rate: pct(stats?.online_games_played ?? 0),
     },
     {
       label: 'Birincilik',
@@ -111,39 +111,30 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
       rate: pct(stats?.first_places ?? 0),
       cls: 'text-gold',
     },
-    ...(useWideLayout
-      ? [
-          {
-            label: 'İkincilik',
-            value: secondCellValue,
-            rate: pct(secondCellValue),
-            cls: 'text-accent',
-          },
-          { label: 'En Yüksek Oyun Puanı', value: stats?.best_score ?? 0, cls: 'text-gold' },
-          {
-            label: 'Teslim Olma',
-            value: stats?.surrendered_count ?? 0,
-            rate: pct(stats?.surrendered_count ?? 0),
-            cls: 'text-red',
-          },
-        ]
-      : [
-          {
-            label: 'Teslim Olma',
-            value: stats?.surrendered_count ?? 0,
-            rate: pct(stats?.surrendered_count ?? 0),
-            cls: 'text-red',
-          },
-          { label: 'En Yüksek Oyun Puanı', value: stats?.best_score ?? 0, cls: 'text-gold' },
-        ]),
-    { label: 'En İyi Hamle Puanı', value: stats?.best_move_score ?? 0, cls: 'text-accent' },
     {
-      label: 'En Uzun Kelime',
-      value: stats?.longest_word ?? '—',
-      cls: 'text-text',
-      wide: !useWideLayout,
-      span2: useWideLayout,
+      label: 'İkincilik',
+      value: secondCellValue,
+      rate: pct(secondCellValue),
+      cls: 'text-accent',
     },
+    {
+      label: 'Teslim Olma',
+      value: stats?.surrendered_count ?? 0,
+      rate: pct(stats?.surrendered_count ?? 0),
+      cls: 'text-red',
+    },
+  ];
+
+  const gameCells: Cell[] = [
+    { label: 'En Yüksek Oyun Puanı', value: stats?.best_score ?? 0, cls: 'text-gold' },
+    { label: 'En İyi Hamle Puanı', value: stats?.best_move_score ?? 0, cls: 'text-accent' },
+    { label: 'En Yüksek Puanlı Kelime', value: stats?.best_word_score ?? 0, cls: 'text-gold' },
+    {
+      label: 'Ortalama Hamle Puanı',
+      value: Number(stats?.avg_move_score ?? 0).toFixed(2),
+      cls: 'text-accent',
+    },
+    { label: 'En Uzun Kelime', value: stats?.longest_word ?? '—', cls: 'text-text', span2: true },
   ];
 
   return (
@@ -211,11 +202,36 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
               {tab === 'all' ? 'Henüz hiç oyun kaydın yok.' : `Henüz ${tab} oyunculu oyun kaydın yok.`}
             </p>
           )}
+          <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono mb-1.5">
+            Oyuncu İstatistikleri
+          </div>
           <div className="grid grid-cols-3 gap-2">
-            {cells.map((c) => (
+            {playerCells.map((c) => (
               <div
                 key={c.label}
-                className={`btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center ${c.wide ? 'col-span-3' : c.span2 ? 'col-span-2' : ''} ${c.place ?? ''}`}
+                className={`btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center ${c.span2 ? 'col-span-2' : ''}`}
+              >
+                <div className={`font-mono text-xl font-bold ${c.cls ?? 'text-text'}`}>
+                  {c.value}
+                </div>
+                {c.rate && (
+                  <div className="font-mono text-xs text-muted mt-0.5">({c.rate})</div>
+                )}
+                <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
+                  {c.label}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono mt-4 mb-1.5">
+            Oyun İstatistikleri
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {gameCells.map((c) => (
+              <div
+                key={c.label}
+                className={`btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center ${c.span2 ? 'col-span-2' : ''}`}
               >
                 <div className={`font-mono text-xl font-bold ${c.cls ?? 'text-text'}`}>
                   {c.value}
@@ -232,12 +248,12 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
         </>
       )}
 
-      <div className="text-center mt-4">
+      <div className="text-center mt-1.5">
         <button
           onClick={() => setShowAllGames(true)}
-          className="text-[11px] font-mono font-bold uppercase tracking-[1px] text-muted underline underline-offset-2 active:opacity-70 transition-opacity"
+          className="text-[11px] font-mono font-bold uppercase tracking-[1px] text-accent active:opacity-70 transition-opacity"
         >
-          Tüm Oyunları Gör
+          Tüm Geçmiş Oyunlar
         </button>
       </div>
 

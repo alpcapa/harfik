@@ -31,7 +31,7 @@ export function ChatModal({ messages, participants, myUserId, onSend, onClose }:
 
   useEffect(() => {
     const el = threadRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (el) el.scrollTop = 0;
   }, [messages.length]);
 
   const handleSend = async () => {
@@ -49,18 +49,20 @@ export function ChatModal({ messages, participants, myUserId, onSend, onClose }:
     }
   };
 
-  const threadMessages: ChatThreadMessage[] = messages.map((m) => {
-    const p = participants.find((x) => x.userId === m.sender_user_id);
-    return {
-      key: m.id,
-      name: p?.name ?? 'Oyuncu',
-      colorIndex: p?.colorIndex ?? 0,
-      avatarUrl: p?.avatarUrl ?? null,
-      message: m.message,
-      createdAt: m.created_at,
-      mine: m.sender_user_id === myUserId,
-    };
-  });
+  const threadMessages: ChatThreadMessage[] = messages
+    .map((m) => {
+      const p = participants.find((x) => x.userId === m.sender_user_id);
+      return {
+        key: m.id,
+        name: p?.name ?? 'Oyuncu',
+        colorIndex: p?.colorIndex ?? 0,
+        avatarUrl: p?.avatarUrl ?? null,
+        message: m.message,
+        createdAt: m.created_at,
+        mine: m.sender_user_id === myUserId,
+      };
+    })
+    .reverse();
 
   return (
     <Modal title="Mesajlaşma" onClose={onClose}>

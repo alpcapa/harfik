@@ -20,12 +20,23 @@ import { UserMenu } from './UserMenu';
 // Tailwind class'ı değil inline style kullanılıyor çünkü clamp()/calc()
 // içindeki virgüller Tailwind'in arbitrary-value söz dizimiyle iyi
 // geçinmiyor.
-const PLAYER_BOX_WIDTH = 'clamp(61px, calc(-34.83px + 25.56vw), 84px)';
-const YZ_BOX_WIDTH = 'clamp(41px, calc(-21.5px + 16.67vw), 56px)';
+// 1 Ağustos 2026 — 4 gerçek insan oyunculu bir Canlı oyunda (uzun takma
+// isimler) iPhone'da şerit hâlâ dar gelip son kutu UserMenu'nün altına
+// girecek kadar sıkışıyordu (kullanıcı ekran görüntüsüyle bildirdi) —
+// genişlik bir kademe daha küçültüldü, isim `truncate` sayesinde zaten
+// üç nokta ile kesiliyor (kabul edilen davranış).
+const PLAYER_BOX_WIDTH = 'clamp(43px, calc(-52.83px + 25.56vw), 66px)';
+const YZ_BOX_WIDTH = 'clamp(28px, calc(-34.5px + 16.67vw), 43px)';
 const LABEL_FONT_SIZE = 'clamp(6px, calc(-2.33px + 2.22vw), 8px)';
 const SCORE_FONT_SIZE = 'clamp(13px, calc(-7.83px + 5.56vw), 18px)';
-const BOX_PADDING_X = 'clamp(6px, calc(-2.33px + 2.22vw), 8px)';
-const BOX_GAP = 'clamp(6px, calc(-2.33px + 2.22vw), 8px)';
+// 31 Temmuz 2026 — hem kutu genişliği hem yatay dolgu daraltıldı (kullanıcı
+// geri bildirimi: isim/puan kenarlara çok uzak duruyordu). Aynı 375/465 uç
+// noktalı sistemin içinde kalınarak eskisinin (6-8px) yaklaşık yarısına
+// indirildi, sonra ikinci bir geri bildirimle bir kez daha (1.5-3.5px'e)
+// daraltıldı.
+const BOX_PADDING_X = 'clamp(1.5px, calc(-6.83px + 2.22vw), 3.5px)';
+// 1 Ağustos 2026 — kutu genişliğiyle aynı gerekçeyle daraltıldı.
+const BOX_GAP = 'clamp(4px, calc(-4.33px + 2.22vw), 6px)';
 // Sabit py-0.5 (2px) kullanıldığında kutu, Giriş butonundan (UserMenu.tsx —
 // kendi 1px kenarlığı + akıcı GIRIS_PADDING_Y'si var) 375px'te ~1.4px,
 // 465px'te ~3px daha kısa kalıyordu (24 Temmuz 2026'da kullanıcı fotoğrafıyla
@@ -96,7 +107,7 @@ export function GameHeader({ state, onLogoClick, exitDisabled }: GameHeaderProps
             return (
               <div
                 key={i}
-                className="shrink-0 shadow-raised text-center rounded-md transition-all"
+                className="shrink-0 text-center rounded-md transition-all"
                 style={{
                   width: p.isAI ? YZ_BOX_WIDTH : PLAYER_BOX_WIDTH,
                   paddingLeft: BOX_PADDING_X,
@@ -108,37 +119,14 @@ export function GameHeader({ state, onLogoClick, exitDisabled }: GameHeaderProps
                   // territory hücre dolgusu ve buildOutline çağrısı). Sıra
                   // kimdeyse onu ayırt etmek için tek fark çerçeve kalınlığı —
                   // renk her oyuncuda aynı mantıkla (kendi base'i) belirleniyor.
-                  // Sırası olmayanların çevresi bilinçli olarak İNCE tutuluyor
-                  // (28 Temmuz 2026'da 1.5px'ten önce 0.75px'e düşürüldü, sonra
-                  // gerçek bir `border`a çevrildi) — `boxShadow: inset` alt
-                  // piksel (0.75px gibi) kalınlıklarda kenarlar arasında
-                  // asimetrik render ediyordu (sol/üst kenarlar sağ/alttan
-                  // kalın görünüyordu, kullanıcı gerçek cihazda fark etti) —
-                  // `ScoreBoxRow`taki (GameHistoryModal.tsx) aynı inset
-                  // box-shadow güvenilmezliği dersiyle tutarlı, oradaki gibi
-                  // gerçek bir CSS `border`a geçildi, bu piksel ızgarasına
-                  // tutarlı hizalanıyor.
+                  // 31 Temmuz 2026 — nömorfik `boxShadow` (shadow-raised +
+                  // sırası gelen kutunun parıltısı) kullanıcı geri bildirimiyle
+                  // ("çamur gibi duruyor") tamamen kaldırıldı; kutular artık
+                  // yalnızca çerçeve kalınlığıyla (2px aktif / 0.5px pasif)
+                  // ayrışıyor.
                   background: col.tint,
                   border: `${active ? 2 : 0.5}px solid ${col.base}`,
                   opacity: p.surrendered ? 0.45 : 1,
-                  // Çerçeve kalınlığı tek başına yeterince ayrışmadığından
-                  // (28 Temmuz 2026, kullanıcı geri bildirimi) sırası gelen
-                  // kutu ayrıca kendi rengiyle uyumlu bir parıltı kazanıyor.
-                  // İlk denemede `transform: scale` + `filter: drop-shadow`
-                  // kullanılmıştı ama bu kutuyu üst şeridin (`overflow-x-auto`
-                  // — CSS'in "bir eksen auto ise diğerini de auto say" kuralı
-                  // yüzünden dikeyde de kırpıyor, bkz. UserMenu ile ilgili
-                  // yukarıdaki not) sınırlarının dışına taşırıp KESİYORDU, ve
-                  // drop-shadow'un yayılımı komşu kutuya kadar uzanıyordu.
-                  // Düzeltme: `transform`/`filter` tamamen kaldırıldı; bunun
-                  // yerine `shadow-raised` class'ının katmanları BURADA aynen
-                  // tekrarlanıp (inline `boxShadow` class'ınkini komple ezdiği
-                  // için) üzerine dar bir (4px bulanıklık, hiç yayılım yok)
-                  // parıltı katmanı EKLENİYOR — BOX_GAP'in (min 6px) altında
-                  // kalacak kadar dar tutulduğundan komşu kutuya değmiyor.
-                  boxShadow: active
-                    ? `2px 2px 6px rgba(163, 177, 198, 0.5), -2px -2px 5px rgba(255, 255, 255, 0.85), 0 0 4px 0px ${col.base}80`
-                    : undefined,
                 }}
               >
                 <div

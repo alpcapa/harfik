@@ -59,6 +59,7 @@ export function buildGameRecord(
     player_count: state.players.length,
     move_count: human.moveCount || null,
     best_move_score: human.bestMoveScore || null,
+    best_word_score: human.bestWordScore || null,
     longest_word: human.longestWord || null,
     move_points_sum: human.moveScoreSum || null,
     surrendered,
