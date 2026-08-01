@@ -134,7 +134,13 @@ export function UserMenu() {
                 >
                   <KLigMark height={13} className="inline-block relative top-[1px] shrink-0" />
                   <span className="text-muted truncate">
-                    {myRank && `#${myRank.rank} · ${myRank.total_score.toLocaleString('tr-TR')} puan`}
+                    {myRank && (
+                      <>
+                        #{myRank.rank}
+                        <span className="mx-0.5">·</span>
+                        {myRank.total_score.toLocaleString('tr-TR')} puan
+                      </>
+                    )}
                   </span>
                 </button>
               </div>

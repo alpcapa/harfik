@@ -243,7 +243,7 @@ export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
               ?
             </span>
           </div>
-          <div className="font-mono text-xl font-bold text-gold">
+          <div className="font-mono text-sm font-bold text-accent">
             {rank && (
               <span className="text-sm font-normal text-muted">
                 #{rank.rank}

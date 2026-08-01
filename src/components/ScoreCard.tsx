@@ -160,7 +160,7 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
               ?
             </span>
           </div>
-          <div className="font-mono text-xl font-bold text-gold">
+          <div className="font-mono text-sm font-bold text-accent">
             {myRank && (
               <span className="text-sm font-normal text-muted">
                 #{myRank.rank}
