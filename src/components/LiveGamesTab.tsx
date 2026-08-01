@@ -429,13 +429,16 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
 
   if (creating) {
     return (
-      <LiveGameCreateForm
-        onCancel={() => setCreating(false)}
-        onCreated={() => {
-          setCreating(false);
-          reload();
-        }}
-      />
+      <div className="w-full flex flex-col gap-5">
+        <LiveGameCreateForm
+          onCancel={() => setCreating(false)}
+          onCreated={() => {
+            setCreating(false);
+            reload();
+          }}
+        />
+        <RecentGamesSection onlineOnly />
+      </div>
     );
   }
 

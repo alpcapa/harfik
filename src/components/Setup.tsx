@@ -653,7 +653,7 @@ export function Setup({
         </>
       )}
 
-      {mainView === 'local' && !creatingLocal && <RecentGamesSection onlineOnly={false} />}
+      {mainView === 'local' && <RecentGamesSection onlineOnly={false} />}
 
       <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-muted">
         <button onClick={() => setShowTerms(true)} className="hover:underline active:opacity-70 transition-opacity">
