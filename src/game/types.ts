@@ -50,6 +50,12 @@ export interface Player {
    * çarpanları dahil) — köşe vergisi kesintisinden ÖNCEKİ brüt puan.
    */
   bestMoveScore: number;
+  /**
+   * Bu oyunda oynanan en yüksek puanlı TEK kelimenin (X2/X3 kelime çarpanı
+   * dahil) nihai puanı — `bestMoveScore`'dan farklı, o bir HAMLEnin (birden
+   * fazla kelime + bonus içerebilir) toplam puanıdır.
+   */
+  bestWordScore: number;
   /** Bu oyunda oluşturulan en uzun kelime. */
   longestWord: string;
   /** Bu oyunda oynanan (geçilmemiş) hamle sayısı. */

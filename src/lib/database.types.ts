@@ -138,6 +138,7 @@ export interface OnlinePlayerPublic {
   rackCount: number;
   score: number;
   bestMoveScore: number;
+  bestWordScore: number;
   longestWord: string;
   moveCount: number;
   moveScoreSum: number;
@@ -263,6 +264,12 @@ export interface Game {
   player_count: number;
   move_count: number | null;
   best_move_score: number | null;
+  /**
+   * Bu oyunda oynanan en yüksek puanlı TEK kelimenin (X2/X3 çarpanı dahil)
+   * nihai puanı. `best_move_score`'dan farklı — o bir HAMLEnin (birden
+   * fazla kelime + bonus içerebilir) toplam puanıdır.
+   */
+  best_word_score: number | null;
   longest_word: string | null;
   /** Bu oyunda oynanan hamlelerin brüt puanları toplamı (ortalama hamle puanı için). */
   move_points_sum: number | null;
@@ -337,6 +344,7 @@ export type NewGame = Pick<
   user_id?: string | null;
   move_count?: number | null;
   best_move_score?: number | null;
+  best_word_score?: number | null;
   longest_word?: string | null;
   move_points_sum?: number | null;
   surrendered?: boolean;
@@ -418,9 +426,19 @@ export interface PlayerStats {
   avg_score: number;
   avg_move_score: number | null;
   best_move_score: number | null;
+  /**
+   * Oynanan en yüksek puanlı TEK kelimenin (X2/X3 çarpanı dahil) nihai
+   * puanı — tüm oyunlar arasında en yükseği (`max`). `best_move_score`'dan
+   * farklı, o bir HAMLEnin toplam puanıdır.
+   */
+  best_word_score: number | null;
   longest_word: string | null;
   first_places: number;
   second_places: number;
+  /** `online_game_id` boş olan (Yapay Zeka'ya karşı) oyun sayısı. */
+  local_games_played: number;
+  /** `online_game_id` dolu olan (Canlı/Arkadaşınla) oyun sayısı. */
+  online_games_played: number;
   /**
    * Lig puanı (oyun içi ham skorların toplamı değil): 4 kişilikte 1.=2,
    * 2.=1, 3./4.=0; 2 kişilikte sadece 1.=2, 2.=0 (tek rakipli oyunda ikinci

@@ -106,6 +106,7 @@ function startGame(setup: PlayerSetup[]): GameState {
     rack: drawTiles(bag, RACK_SIZE),
     score: 0,
     bestMoveScore: 0,
+    bestWordScore: 0,
     longestWord: '',
     moveCount: 0,
     moveScoreSum: 0,
@@ -249,6 +250,22 @@ function appendMoveHistory(
 /** Aktif oyuncunun rafından bir taş çıkararak oyuncular dizisini günceller. */
 function withRack(state: GameState, rack: Tile[]): Player[] {
   return state.players.map((p, i) => (i === state.current ? { ...p, rack } : p));
+}
+
+/**
+ * Bir hamlede oluşan kelimelerin (X2/X3 çarpanı dahil) nihai puanlarından
+ * en yükseğini, önceki en iyisiyle (`prevBest`) karşılaştırıp döner —
+ * `wordRawScores`'un `score` alanı çarpan UYGULANMADAN tutulduğundan burada
+ * hesaplanır (bkz. `HistoryEntry.wordScores`).
+ */
+function bestWordScoreFrom(
+  wordScores: { word: string; score: number; x2: boolean; x3: boolean }[],
+  prevBest: number,
+): number {
+  return wordScores.reduce((best, w) => {
+    const final = w.score * (w.x3 ? 3 : w.x2 ? 2 : 1);
+    return final > best ? final : best;
+  }, prevBest);
 }
 
 export function gameReducer(state: GameState, action: Action): GameState {
@@ -543,6 +560,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         me.longestWord,
       );
       const isNewBestMove = basePts > me.bestMoveScore;
+      const newBestWordScore = bestWordScoreFrom(wordRawScores, me.bestWordScore);
       const players = state.players.map((p, i) => {
         if (i === state.current) {
           return {
@@ -550,6 +568,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
             rack,
             score: p.score + pts + finishBonus,
             bestMoveScore: isNewBestMove ? basePts : p.bestMoveScore,
+            bestWordScore: newBestWordScore,
             longestWord: newLongestWord,
             moveCount: p.moveCount + 1,
             moveScoreSum: p.moveScoreSum + basePts,
@@ -716,6 +735,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         me.longestWord,
       );
       const aiIsNewBestMove = move.score > me.bestMoveScore;
+      const aiNewBestWordScore = bestWordScoreFrom(aiWordRawScores, me.bestWordScore);
       const players = state.players.map((p, i) => {
         if (i === state.current) {
           return {
@@ -723,6 +743,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
             rack,
             score: p.score + aiPts + aiFinishBonus,
             bestMoveScore: aiIsNewBestMove ? move.score : p.bestMoveScore,
+            bestWordScore: aiNewBestWordScore,
             longestWord: aiLongestWord,
             moveCount: p.moveCount + 1,
             moveScoreSum: p.moveScoreSum + move.score,
@@ -842,6 +863,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         rack: i === action.mySlotIndex ? action.myRack : new Array(p.rackCount).fill({ letter: 'A', pts: 1 }),
         score: p.score,
         bestMoveScore: p.bestMoveScore,
+        bestWordScore: p.bestWordScore,
         longestWord: p.longestWord,
         moveCount: p.moveCount,
         moveScoreSum: p.moveScoreSum,

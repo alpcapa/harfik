@@ -64,6 +64,7 @@ export function buildSnapshotGameState(
       rack: [],
       score: meta?.score ?? 0,
       bestMoveScore: 0,
+      bestWordScore: 0,
       longestWord: '',
       moveCount: 0,
       moveScoreSum: 0,
