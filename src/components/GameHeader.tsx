@@ -124,8 +124,17 @@ export function GameHeader({ state, onLogoClick, exitDisabled }: GameHeaderProps
                   // ("çamur gibi duruyor") tamamen kaldırıldı; kutular artık
                   // yalnızca çerçeve kalınlığıyla (2px aktif / 0.5px pasif)
                   // ayrışıyor.
+                  // 1 Ağustos 2026 — gerçek bir `border` yerine (bulunan hata:
+                  // box-sizing:border-box altında 2px/0.5px arası fark iç
+                  // içeriğin genişliğini de değiştiriyordu — YZ kutusunun dar
+                  // genişliğinde (max 43px) bu, sırası AI'dayken/aktifken 3
+                  // haneli skoru "1…" diye kırpılmaya zorluyor, sıra insana
+                  // geçip kutu pasifleşince genişlik geri açılıp düzeliyordu)
+                  // `outline` kullanılıyor — offset kutunun tam kenarına denk
+                  // gelecek şekilde negatif verilip layout'a hiç dokunmuyor.
                   background: col.tint,
-                  border: `${active ? 2 : 0.5}px solid ${col.base}`,
+                  outline: `${active ? 2 : 0.5}px solid ${col.base}`,
+                  outlineOffset: active ? -2 : -0.5,
                   opacity: p.surrendered ? 0.45 : 1,
                 }}
               >
