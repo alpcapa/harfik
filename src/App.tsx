@@ -56,6 +56,7 @@ import type { LocalGameSave, OnlineGame, WordMeaning } from './lib/database.type
 import { OnlineGameScreen } from './components/OnlineGameScreen';
 import { useAuth } from './hooks/useAuth';
 import { useModalA11y } from './hooks/useModalA11y';
+import { useAppIconBadge } from './hooks/useAppIconBadge';
 
 const AI_THINK_MS = 1100;
 // Sürüklemenin "tıklama" değil gerçek bir sürükleme sayılması için gereken
@@ -159,6 +160,16 @@ export default function App() {
     if (state.phase === 'setup') void refreshCloudSaves();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase, user?.id]);
+
+  // "Ana Ekrana Ekle" ile kurulan PWA ikonu üzerinde (masaüstü/dock/görev
+  // çubuğu) kırmızı yuvarlak/beyaz sayı rozeti — Setup'taki sekme
+  // rozetleriyle AYNI mantık, ama App.tsx seviyesinde (hangi ekran açık
+  // olursa olsun) çalışsın diye ayrı bir hook'ta (bkz. useAppIconBadge.ts).
+  // `localSaveCount` Setup.tsx'teki formülle birebir aynı: girişli
+  // kullanıcıda `cloudSaves`'in uzunluğu, misafirde tekil `savedGame`
+  // kaydının 0/1'i.
+  const localSaveCount = user ? (cloudSaves?.length ?? 0) : savedGame ? 1 : 0;
+  useAppIconBadge(user?.id, localSaveCount);
 
   // Misafirken (girişsiz) yarıda bırakılmış (localStorage'daki tekil
   // `savedGame` slotu) bir YZ oyunu, kişi AYNI cihazda sonradan giriş/kayıt
