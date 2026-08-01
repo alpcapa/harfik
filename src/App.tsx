@@ -161,16 +161,6 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase, user?.id]);
 
-  // "Ana Ekrana Ekle" ile kurulan PWA ikonu üzerinde (masaüstü/dock/görev
-  // çubuğu) kırmızı yuvarlak/beyaz sayı rozeti — Setup'taki sekme
-  // rozetleriyle AYNI mantık, ama App.tsx seviyesinde (hangi ekran açık
-  // olursa olsun) çalışsın diye ayrı bir hook'ta (bkz. useAppIconBadge.ts).
-  // `localSaveCount` Setup.tsx'teki formülle birebir aynı: girişli
-  // kullanıcıda `cloudSaves`'in uzunluğu, misafirde tekil `savedGame`
-  // kaydının 0/1'i.
-  const localSaveCount = user ? (cloudSaves?.length ?? 0) : savedGame ? 1 : 0;
-  useAppIconBadge(user?.id, localSaveCount);
-
   // Misafirken (girişsiz) yarıda bırakılmış (localStorage'daki tekil
   // `savedGame` slotu) bir YZ oyunu, kişi AYNI cihazda sonradan giriş/kayıt
   // olursa hesabına taşınır — kullanıcının "üye olursa oyunları altına
@@ -507,6 +497,21 @@ export default function App() {
   useEffect(() => {
     setActivelyPlaying((state.phase === 'play' && !state.isGameOver) || !!onlineGame);
   }, [state.phase, state.isGameOver, onlineGame]);
+
+  // "Ana Ekrana Ekle" ile kurulan PWA ikonu üzerinde (masaüstü/dock/görev
+  // çubuğu) kırmızı yuvarlak/beyaz sayı rozeti — Setup'taki sekme
+  // rozetleriyle AYNI mantık, ama App.tsx seviyesinde (hangi ekran açık
+  // olursa olsun) çalışsın diye ayrı bir hook'ta (bkz. useAppIconBadge.ts).
+  // `localSaveCount` Setup.tsx'teki formülle birebir aynı: girişli
+  // kullanıcıda `cloudSaves`'in uzunluğu, misafirde tekil `savedGame`
+  // kaydının 0/1'i. `isOnSetupScreen`, hem yerel oyundan ("Çık"/ABANDON,
+  // state.phase 'play'→'setup') hem bir Canlı oyundan ("←", onlineGame
+  // null'a döner) Setup'a dönüşü kapsar — ikisi de ayrı state olduğundan
+  // (`state.phase` Canlı oyun ekranındayken hiç değişmiyor) sadece
+  // `state.phase`'i izlemek Canlı dönüşünü kaçırırdı.
+  const localSaveCount = user ? (cloudSaves?.length ?? 0) : savedGame ? 1 : 0;
+  const isOnSetupScreen = state.phase === 'setup' && !onlineGame;
+  useAppIconBadge(user?.id, localSaveCount, isOnSetupScreen);
 
   // Rakip köşeye giriş onay popup'ı.
   const [invasionConfirm, setInvasionConfirm] = useState<

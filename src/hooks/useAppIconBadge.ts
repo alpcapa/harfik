@@ -14,13 +14,24 @@
 // yoksa sessizce hiçbir şey yapılmıyor. Uygulama kapalıyken (arka planda
 // bile çalışmıyorken) bu rozeti canlı güncelleyecek bir mekanizma yok
 // (bunun için Push API + Service Worker gerekir, kapsam dışı) — rozet
-// yalnızca uygulama açıkken/arka plan sekmesindeyken tazelenir.
+// yalnızca uygulama açıkken/arka plan sekmesindeyken (Realtime +
+// focus/visibility/online olayları + Setup ekranına her dönüş + 10
+// dakikalık periyodik tazeleme) güncelleniyor.
 import { useEffect, useRef } from 'react';
 import { fetchIncomingFriendRequests, fetchOnlineGameTurns, listMyOnlineGames, subscribeMyOnlineGames } from '../lib/api';
 
-export function useAppIconBadge(userId: string | undefined, localSaveCount: number): void {
+export function useAppIconBadge(
+  userId: string | undefined,
+  localSaveCount: number,
+  isOnSetupScreen: boolean
+): void {
   const friendCountRef = useRef(0);
   const liveCountRef = useRef(0);
+  // Aşağıdaki [userId] effect'i içindeki refreshAll'a dışarıdan (Setup'a
+  // dönüş effect'inden) erişebilmek için — `localSaveCount`'un App.tsx'teki
+  // `refreshCloudSaves` aracılığıyla zaten yaptığı gibi, Canlı/arkadaşlık
+  // kısmı da Setup ekranına her dönüşte tazelensin diye (tutarlılık).
+  const refreshAllRef = useRef<() => void>(() => {});
 
   const applyBadge = () => {
     if (!('setAppBadge' in navigator)) return;
@@ -43,6 +54,7 @@ export function useAppIconBadge(userId: string | undefined, localSaveCount: numb
     if (!userId) {
       friendCountRef.current = 0;
       liveCountRef.current = 0;
+      refreshAllRef.current = () => {};
       applyBadge();
       return;
     }
@@ -85,6 +97,7 @@ export function useAppIconBadge(userId: string | undefined, localSaveCount: numb
       refreshFriends();
       refreshLive();
     };
+    refreshAllRef.current = refreshAll;
 
     refreshAll();
     const unsubscribe = subscribeMyOnlineGames(refreshAll);
@@ -104,7 +117,19 @@ export function useAppIconBadge(userId: string | undefined, localSaveCount: numb
       window.removeEventListener('focus', onForeground);
       window.removeEventListener('online', onForeground);
       window.clearInterval(intervalId);
+      refreshAllRef.current = () => {};
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
+
+  // Setup ekranına her dönüşte (App.tsx zaten `cloudSaves`'i aynı geçişte
+  // tazeliyor, dolayısıyla `localSaveCount` kendiliğinden güncel) Canlı
+  // oyun/arkadaşlık kısmını da tazele — az önce oynanan bir hamle sırf
+  // `online_game_states`'i değiştirdiğinden (yukarıdaki Realtime aboneliği
+  // yalnızca `online_games`/`game_invites`'ı dinliyor) tek başına rozeti
+  // güncellemiyordu; Setup'a dönüş artık ikisi için de ortak bir tazeleme
+  // anı oluyor.
+  useEffect(() => {
+    if (isOnSetupScreen) refreshAllRef.current();
+  }, [isOnSetupScreen]);
 }
