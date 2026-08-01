@@ -251,9 +251,9 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
       <div className="text-center mt-4">
         <button
           onClick={() => setShowAllGames(true)}
-          className="text-[11px] font-mono font-bold uppercase tracking-[1px] text-muted underline underline-offset-2 active:opacity-70 transition-opacity"
+          className="text-[11px] font-mono font-bold uppercase tracking-[1px] text-accent active:opacity-70 transition-opacity"
         >
-          Tüm Oyunları Gör
+          Tüm Geçmiş Oyunlar
         </button>
       </div>
 
