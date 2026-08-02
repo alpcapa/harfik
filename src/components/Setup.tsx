@@ -478,14 +478,14 @@ export function Setup({
               key={tab.key}
               onClick={() => onMainViewChange(tab.key)}
               className={[
-                'flex-1 py-3 rounded-md font-sans text-sm font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97] flex items-center justify-center gap-1.5',
+                'relative flex-1 py-3 rounded-md font-sans text-sm font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97] flex items-center justify-center',
                 mainView === tab.key
                   ? 'btn-raised bg-accent text-white border-accent'
                   : 'btn-raised-neutral bg-panel text-text border-border',
               ].join(' ')}
             >
               {tab.label}
-              {tab.badge > 0 && <CountBadge count={tab.badge} />}
+              {tab.badge > 0 && <CountBadge count={tab.badge} className="absolute -top-1.5 -right-1.5" />}
             </button>
           ))}
         </div>
@@ -539,14 +539,14 @@ export function Setup({
                 key={tab.key}
                 onClick={() => setLocalSubTab(tab.key)}
                 className={[
-                  'flex-1 py-2.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[0.5px] border transition-transform active:scale-[0.97] flex items-center justify-center gap-1.5',
+                  'relative flex-1 py-2.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[0.5px] border transition-transform active:scale-[0.97] flex items-center justify-center',
                   localSubTab === tab.key
                     ? 'btn-raised bg-accent text-white border-accent'
                     : 'btn-raised-neutral bg-panel text-text border-border',
                 ].join(' ')}
               >
                 {tab.label}
-                {tab.badge > 0 && <CountBadge count={tab.badge} />}
+                {tab.badge > 0 && <CountBadge count={tab.badge} className="absolute -top-1.5 -right-1.5" />}
               </button>
             ))}
           </div>
