@@ -1717,6 +1717,10 @@ export async function updateProfile(
      * göndereceği herhangi bir değeri zaten yok sayardı.
      */
     marketing_consent?: boolean;
+    /** İşlemsel-ama-tercih-edilebilir bildirim maillerini (arkadaşlık isteği,
+     * oyun daveti, süre uyarısı vb.) alma tercihi — marketing_consent'ten
+     * ayrı, `AccountSettingsModal`'daki ikinci checkbox. */
+    email_notifications_enabled?: boolean;
   },
 ): Promise<void> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');

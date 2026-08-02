@@ -109,8 +109,16 @@ Deno.serve(async (req: Request) => {
   for (const invite of invites) {
     const [{ data: authUser }, { data: recipientProfile }] = await Promise.all([
       serviceClient.auth.admin.getUserById(invite.invitee_id),
-      serviceClient.from('profiles').select('display_name, first_name').eq('id', invite.invitee_id).maybeSingle(),
+      serviceClient
+        .from('profiles')
+        .select('display_name, first_name, email_notifications_enabled')
+        .eq('id', invite.invitee_id)
+        .maybeSingle(),
     ]);
+
+    // İşlemsel-ama-tercih-edilebilir bildirim — bu davetli kapatmışsa yalnızca
+    // onu atlıyoruz, diğer davetlilere gönderim devam ediyor.
+    if (recipientProfile?.email_notifications_enabled === false) continue;
 
     const recipientEmail = authUser?.user?.email;
     if (!recipientEmail) {

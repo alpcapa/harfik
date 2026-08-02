@@ -103,7 +103,10 @@ Deno.serve(async (req: Request) => {
   const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const [{ data: authUser }, { data: profiles }] = await Promise.all([
     serviceClient.auth.admin.getUserById(friendId),
-    serviceClient.from('profiles').select('id, display_name, first_name').in('id', [userData.user.id, friendId]),
+    serviceClient
+      .from('profiles')
+      .select('id, display_name, first_name, email_notifications_enabled')
+      .in('id', [userData.user.id, friendId]),
   ]);
 
   const recipientEmail = authUser?.user?.email;
@@ -114,6 +117,12 @@ Deno.serve(async (req: Request) => {
 
   const inviterProfile = profiles?.find((p) => p.id === userData.user.id);
   const recipientProfile = profiles?.find((p) => p.id === friendId);
+
+  // İşlemsel-ama-tercih-edilebilir bildirim — alıcı bunu Hesap Ayarları'ndan
+  // kapatmış olabilir (bkz. CLAUDE.md, marketing_consent'ten AYRI alan).
+  if (recipientProfile?.email_notifications_enabled === false) {
+    return jsonResponse({ ok: true, sent: false, reason: 'recipient_opted_out' });
+  }
   const inviterName = inviterProfile?.display_name || inviterProfile?.first_name || 'Bir kullanıcı';
   const recipientName = recipientProfile?.display_name || recipientProfile?.first_name || undefined;
 

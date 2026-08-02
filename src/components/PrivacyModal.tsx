@@ -52,6 +52,10 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             <li>Doğum tarihi (isteğe bağlı)</li>
             <li>Profil fotoğrafı (isteğe bağlı)</li>
             <li>Pazarlama iletişimi onayı ve onay tarihi (isteğe bağlı)</li>
+            <li>
+              Arkadaşlık isteği, oyun daveti ve süre uyarısı gibi işlemsel e-posta
+              bildirimlerini alma tercihi
+            </li>
             <li>Oyun istatistikleri (oynanan oyunlar, kazanma/kaybetme, puan geçmişi)</li>
             <li>
               Arkadaşlık bağlantıları (kiminle arkadaş olduğunuz, gönderdiğiniz/aldığınız

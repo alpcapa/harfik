@@ -111,16 +111,25 @@ Deno.serve(async (req: Request) => {
     const currentSlot = slots[row.current];
     if (!currentSlot || currentSlot.type !== 'human' || !currentSlot.user_id) continue;
 
-    const [{ data: recipientAuth }, { data: creatorProfile }] = await Promise.all([
+    const [{ data: recipientAuth }, { data: profiles }] = await Promise.all([
       supabase.auth.admin.getUserById(currentSlot.user_id),
-      supabase.from('profiles').select('display_name, first_name').eq('id', game.created_by).maybeSingle(),
+      supabase
+        .from('profiles')
+        .select('id, display_name, first_name, email_notifications_enabled')
+        .in('id', [game.created_by, currentSlot.user_id]),
     ]);
+
+    const recipientProfile = profiles?.find((p) => p.id === currentSlot.user_id);
+    // İşlemsel-ama-tercih-edilebilir bildirim — alıcı bunu kapattıysa atla.
+    if (recipientProfile?.email_notifications_enabled === false) continue;
+
     const recipientEmail = recipientAuth?.user?.email;
     if (!recipientEmail) {
       console.error('[notify-deadline-warnings] Alıcının e-postası bulunamadı:', currentSlot.user_id);
       continue;
     }
 
+    const creatorProfile = profiles?.find((p) => p.id === game.created_by);
     const creatorName = creatorProfile?.display_name || creatorProfile?.first_name || 'Bir arkadaşın';
     if (await sendDeadlineEmail(recipientEmail, creatorName, game.player_count as number)) sentOnline += 1;
   }
@@ -154,8 +163,16 @@ Deno.serve(async (req: Request) => {
 
     const [{ data: recipientAuth }, { data: ownerProfile }] = await Promise.all([
       supabase.auth.admin.getUserById(row.user_id),
-      supabase.from('profiles').select('display_name, first_name').eq('id', row.user_id).maybeSingle(),
+      supabase
+        .from('profiles')
+        .select('display_name, first_name, email_notifications_enabled')
+        .eq('id', row.user_id)
+        .maybeSingle(),
     ]);
+
+    // Yerel oyunda hesap sahibi hem alıcı hem "oyunu açan" — tercihi kapattıysa atla.
+    if (ownerProfile?.email_notifications_enabled === false) continue;
+
     const recipientEmail = recipientAuth?.user?.email;
     if (!recipientEmail) {
       console.error('[notify-deadline-warnings] Hesap sahibinin e-postası bulunamadı:', row.user_id);
