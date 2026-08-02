@@ -304,12 +304,12 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
   const tabBtn = (t: Tab, label: string, badge?: number) => (
     <button
       onClick={() => setTab(t)}
-      className={`flex-1 py-2 text-[11px] font-mono font-bold uppercase tracking-[0.5px] rounded-md transition-colors flex items-center justify-center gap-1.5 ${
+      className={`relative flex-1 py-2 text-[11px] font-mono font-bold uppercase tracking-[0.5px] rounded-md transition-colors flex items-center justify-center ${
         tab === t ? 'bg-accent text-white' : 'text-muted hover:text-text'
       }`}
     >
       {label}
-      {!!badge && <CountBadge count={badge} />}
+      {!!badge && <CountBadge count={badge} className="absolute -top-1 -right-1" />}
     </button>
   );
 
