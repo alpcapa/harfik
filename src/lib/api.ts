@@ -78,7 +78,32 @@ export async function saveGame(game: NewGame): Promise<string | null> {
     console.error('[Kelimeki] saveGame hatası:', error.message);
     return null;
   }
+  // Yerel (Yapay Zeka'ya karşı) oyunlarda surrendered:true artık YALNIZCA
+  // 7 günlük terk-edilme akışından gelir (manuel/anlık teslim yolu 29
+  // Temmuz 2026'da kaldırıldı) — yani bu bayrak tek başına "bu kayıt bir
+  // terk-edilme cezası" anlamına geliyor. `error.code==='23505'` (zaten
+  // kaydedilmiş, tekrar deneme) dalında ÇAĞRILMIYOR ki kuyruktan yeniden
+  // denenen bir kayıt aynı bildirimi iki kez göndermesin.
+  if (game.surrendered) {
+    void notifyLocalGameAbandoned(game.player_count);
+  }
   return data?.id ?? null;
+}
+
+/**
+ * `saveGame`'in az önce GERÇEKTEN yeni kaydettiği (terk edilmiş) bir yerel
+ * oyun için hesap sahibine -2 k-lig cezasını bildiren bir e-posta gönderir
+ * (`notify-local-game-abandoned` Edge Function'ı). Best-effort/
+ * fire-and-forget — kayıt zaten oluşmuş olduğundan bir e-posta hatası
+ * kullanıcıya hiç yansıtılmaz, yalnızca loglanır.
+ */
+async function notifyLocalGameAbandoned(playerCount: number): Promise<void> {
+  if (!supabase) return;
+  try {
+    await invokeEdgeFunction('notify-local-game-abandoned', { player_count: playerCount });
+  } catch (err) {
+    console.error('[Kelimeki] notifyLocalGameAbandoned hatası:', (err as Error).message);
+  }
 }
 
 /**
