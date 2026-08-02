@@ -110,21 +110,19 @@ export function ChatModal({
       }
     >
       <div className="flex flex-col gap-2 mb-3">
-        <div>
-          <textarea
-            className="w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors resize-none"
-            rows={2}
-            placeholder="Mesajınızı girin"
-            value={text}
-            onChange={(e) => setText(e.target.value.slice(0, MAX_LENGTH))}
-            maxLength={MAX_LENGTH}
-            disabled={sending}
-          />
-          <span className="block mt-0.5 text-[10px] text-muted font-mono">
+        <textarea
+          className="w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors resize-none"
+          rows={2}
+          placeholder="Mesajınızı girin"
+          value={text}
+          onChange={(e) => setText(e.target.value.slice(0, MAX_LENGTH))}
+          maxLength={MAX_LENGTH}
+          disabled={sending}
+        />
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] text-muted font-mono">
             {text.length}/{MAX_LENGTH}
           </span>
-        </div>
-        <div className="flex items-center justify-end gap-2">
           <button
             onClick={() => void handleSend()}
             disabled={sending || text.trim().length === 0}
