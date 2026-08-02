@@ -31,7 +31,11 @@ setupPwaUpdates();
 
 // Kelime listesini (~63k kelime) ayrı bir chunk olarak arka planda
 // hemen indirmeye başlar — ilk render'ı bloklamaz (bkz. wordSetLoader.ts).
-void preloadWordSet();
+// Bu ilk tetikleme fire-and-forget; gerçek retry mantığı App.tsx/Setup.tsx'in
+// kendi preloadWordSet() effect'lerinde — burada yalnızca bir kerelik ağ
+// hatasının konsola "Uncaught (in promise)" olarak düşmesini (App/Setup zaten
+// kendi çağrılarında yeniden deneyecek) önlemek için sessizce yutuluyor.
+preloadWordSet().catch(() => {});
 
 // Projede genel bir router yok — herkese açık route'lar (/game/:id paylaşılan
 // oyun sayfası, /davet/:token arkadaşlık davet linki) için ayrı bir kütüphane

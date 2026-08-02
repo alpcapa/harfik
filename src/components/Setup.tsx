@@ -203,7 +203,27 @@ export function Setup({
   const [wordsReady, setWordsReady] = useState(isWordSetReady());
   useEffect(() => {
     if (wordsReady) return;
-    preloadWordSet().then(() => setWordsReady(true));
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    const attempt = () => {
+      preloadWordSet()
+        .then(() => {
+          if (!cancelled) setWordsReady(true);
+        })
+        .catch((err) => {
+          // Bir kerelik ağ hatasında sonsuza dek "Hazırlanıyor…" kilidinde
+          // kalınmasın diye birkaç saniye sonra otomatik tekrar deneniyor
+          // (preloadWordSet artık başarısızlıkta kendi önbelleğini
+          // temizleyip yeniden denemeye izin veriyor, bkz. wordSetLoader.ts).
+          console.error('[Kelimeki] Kelime listesi yüklenemedi, tekrar denenecek:', err);
+          if (!cancelled) retryTimer = setTimeout(attempt, 5000);
+        });
+    };
+    attempt();
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
   }, [wordsReady]);
 
   const [showWarningPopup, setShowWarningPopup] = useState(false);

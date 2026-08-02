@@ -1,5 +1,6 @@
 // Kelimeki — profil küçük resmi (fotoğraf ya da baş harf yedeği)
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { trUpper } from '../utils/turkish';
 
 interface AvatarProps {
   url?: string | null;
@@ -23,12 +24,20 @@ function initials(name?: string | null): string {
   // E-posta ise @ öncesini al.
   const base = n.includes('@') ? n.split('@')[0] : n;
   const parts = base.split(/[\s._-]+/).filter(Boolean);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return base.slice(0, 2).toUpperCase();
+  if (parts.length >= 2) return trUpper(parts[0][0] + parts[1][0]);
+  return trUpper(base.slice(0, 2));
 }
 
 export function Avatar({ url, name, size = 32, className = '', dot = false }: AvatarProps) {
   const [broken, setBroken] = useState(false);
+  // `url` değişince (ör. kullanıcı yeni bir profil fotoğrafı yükleyince)
+  // önceki bir yükleme hatasının `broken` bayrağı sıfırlanmıyordu — aynı
+  // `Avatar` örneği (ör. UserMenu'deki, oturum boyunca hiç unmount olmayan)
+  // yeni geçerli bir URL gelse bile kalıcı olarak baş harfleri göstermeye
+  // devam ediyordu (bkz. kod incelemesi).
+  useEffect(() => {
+    setBroken(false);
+  }, [url]);
   const style = { width: size, height: size, fontSize: Math.round(size * 0.4) };
 
   const inner =

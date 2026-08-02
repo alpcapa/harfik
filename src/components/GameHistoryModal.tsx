@@ -43,6 +43,12 @@ interface GameHistoryModalProps {
   onClose: () => void;
   /** Verilirse (admin panelindeki oyuncu detayı) oturum sahibi yerine bu kullanıcının geçmişi gösterilir. */
   userId?: string;
+  /**
+   * `userId` doluyken hedef üyenin görünen adı — eski (players alanı
+   * olmayan) kayıtlardaki "Sen" yer tutucusunun izleyenin kendisi değil bu
+   * kullanıcı için gösterilmesi gerektiğinden (bkz. `fallbackPlayers`).
+   */
+  targetName?: string | null;
   /** Verilirse varsayılan "Tüm Oyunlar · N Oyunculu" başlığının yerine geçer. */
   title?: string;
   /**
@@ -65,11 +71,23 @@ function formatDate(iso: string): string {
  * kendi puanın ve en iyi rakibin puanı bilinir — diğer oyuncuların adı/puanı
  * saklanmamıştır. Bilinen iki satırı döner; kalan oyuncu sayısını ve kendi
  * satırının indeksini ayrıca verir.
+ *
+ * `isMyRow` false iken (ör. admin panelinden ya da k-lig'den BAŞKA bir
+ * üyenin eski bir kaydını görüntülerken) "Sen" etiketi izleyenin kendisi
+ * değil, o eski kaydın gerçek sahibi olan hedef üye için kullanılır —
+ * önceden bu ayrım yapılmadığından, başkasının geçmişinde her zaman
+ * literal "Sen" yazısı görünüyordu (bkz. kod incelemesi).
  */
 function fallbackPlayers(
   entry: GameHistoryEntry,
+  isMyRow: boolean,
+  targetName: string | null,
 ): { known: GamePlayerSnapshot[]; unknownCount: number; meIndex: number } {
-  const me: GamePlayerSnapshot = { name: 'Sen', score: entry.player_score, is_ai: false };
+  const me: GamePlayerSnapshot = {
+    name: isMyRow ? 'Sen' : targetName || 'Oyuncu',
+    score: entry.player_score,
+    is_ai: false,
+  };
   const opponent: GamePlayerSnapshot = { name: 'En iyi rakip', score: entry.ai_score, is_ai: false };
   const meFirst = entry.player_score >= entry.ai_score;
   const known = meFirst ? [me, opponent] : [opponent, me];
@@ -187,7 +205,14 @@ function ScoreBoxRow({
   );
 }
 
-export function GameHistoryModal({ playerCount, onClose, userId, title, initialExpandedId }: GameHistoryModalProps) {
+export function GameHistoryModal({
+  playerCount,
+  onClose,
+  userId,
+  targetName,
+  title,
+  initialExpandedId,
+}: GameHistoryModalProps) {
   const { user, profile, profileLoading } = useAuth();
   // Her oyunun `players` jsonb'si o oyun bittiği andaki ismi donmuş halde
   // tutar — takma adını sonradan değiştirsen eski kayıtlar güncellenmez.
@@ -477,9 +502,6 @@ export function GameHistoryModal({ playerCount, onClose, userId, title, initialE
         <div ref={scrollRef} className="flex flex-col gap-2 max-h-[65vh] overflow-y-auto pr-1">
           {games.map((entry) => {
             const hasSnapshot = !!entry.players && entry.players.length > 0;
-            const fallback = hasSnapshot ? null : fallbackPlayers(entry);
-            const players = hasSnapshot ? entry.players! : fallback!.known;
-            const unknownCount = fallback?.unknownCount ?? 0;
             // Favoriler listesinde bir satır, oturum açan kullanıcının SAHİP
             // OLMADIĞI bir oyuna (başkasının kartından beğenilmiş) ait olabilir
             // — bu durumda `entry.rank`/`entry.player_score` o satırın gerçek
@@ -487,6 +509,9 @@ export function GameHistoryModal({ playerCount, onClose, userId, title, initialE
             // ikame etmek yanlış oyuncuyu "ben" gibi gösterirdi (bkz. list_liked_games
             // notu, src/lib/api.ts). Yalnızca satır GERÇEKTEN bana aitse hesapla.
             const isMyRow = !!user && entry.user_id === user.id;
+            const fallback = hasSnapshot ? null : fallbackPlayers(entry, isMyRow, targetName ?? null);
+            const players = hasSnapshot ? entry.players! : fallback!.known;
+            const unknownCount = fallback?.unknownCount ?? 0;
             const meIndex = isMyRow ? (hasSnapshot ? findMeIndex(entry, players) : fallback!.meIndex) : -1;
             const ranks = computeRanks(players);
             const expanded = expandedId === entry.id;

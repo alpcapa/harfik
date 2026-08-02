@@ -1153,14 +1153,15 @@ export function subscribeMyOnlineGames(onChange: () => void): () => void {
  */
 export async function triggerAiTurn(gameId: string): Promise<{ played: boolean }> {
   if (!supabase) return { played: false };
-  const { data, error } = await supabase.functions.invoke('play-ai-turn', {
-    body: { game_id: gameId },
-  });
-  if (error) {
-    console.error('[Kelimeki] triggerAiTurn hatası:', error.message);
-    return { played: false };
-  }
-  return { played: !!(data as { played?: boolean } | null)?.played };
+  // `invokeEdgeFunction` (diğer tüm Edge Function çağrılarının kullandığı
+  // ortak sarmalayıcı) `play-ai-turn`'ün döndürdüğü gerçek hata gövdesini
+  // okuyup fırlatır — önceden burada doğrudan `supabase.functions.invoke`
+  // kullanılıp yalnızca jenerik "Edge Function returned a non-2xx status
+  // code" loglanıyordu, asıl hata (RLS reddi, oyun bulunamadı vb.) hiç
+  // görünmüyordu (bkz. kod incelemesi). Çağıran (OnlineGameScreen) zaten
+  // kendi `.catch()`'iyle bu reddi ele alıyor.
+  const data = await invokeEdgeFunction<{ played?: boolean } | null>('play-ai-turn', { game_id: gameId });
+  return { played: !!data?.played };
 }
 
 /**
@@ -1219,8 +1220,10 @@ export async function fetchAdminMembers(): Promise<AdminMember[]> {
   if (!supabase) return [];
   const { data, error } = await supabase.rpc('admin_list_members');
   if (error) {
-    console.error('[Kelimeki] fetchAdminMembers hatası:', error.message);
-    return [];
+    // Admin panelindeki .catch(setError) zinciri buna güveniyor —
+    // önceden burada [] /null dönülüp hata yutuluyordu, admin gerçek
+    // bir RPC/izin hatasını asla göremiyordu (bkz. kod incelemesi).
+    throw new Error(error.message);
   }
   return (data as AdminMember[]) ?? [];
 }
@@ -1305,8 +1308,10 @@ export async function fetchAdminUserActivitySeries(
     p_granularity: granularity,
   });
   if (error) {
-    console.error('[Kelimeki] fetchAdminUserActivitySeries hatası:', error.message);
-    return [];
+    // Admin panelindeki .catch(setError) zinciri buna güveniyor —
+    // önceden burada [] /null dönülüp hata yutuluyordu, admin gerçek
+    // bir RPC/izin hatasını asla göremiyordu (bkz. kod incelemesi).
+    throw new Error(error.message);
   }
   return (data as AdminUserActivityPoint[]) ?? [];
 }
@@ -1334,8 +1339,10 @@ export async function fetchAdminGameActivitySeries(
     p_source: source,
   });
   if (error) {
-    console.error('[Kelimeki] fetchAdminGameActivitySeries hatası:', error.message);
-    return [];
+    // Admin panelindeki .catch(setError) zinciri buna güveniyor —
+    // önceden burada [] /null dönülüp hata yutuluyordu, admin gerçek
+    // bir RPC/izin hatasını asla göremiyordu (bkz. kod incelemesi).
+    throw new Error(error.message);
   }
   return (data as AdminGameActivityPoint[]) ?? [];
 }
@@ -1356,8 +1363,10 @@ export async function fetchAdminEngagementActivitySeries(
     p_granularity: granularity,
   });
   if (error) {
-    console.error('[Kelimeki] fetchAdminEngagementActivitySeries hatası:', error.message);
-    return [];
+    // Admin panelindeki .catch(setError) zinciri buna güveniyor —
+    // önceden burada [] /null dönülüp hata yutuluyordu, admin gerçek
+    // bir RPC/izin hatasını asla göremiyordu (bkz. kod incelemesi).
+    throw new Error(error.message);
   }
   return (data as AdminEngagementActivityPoint[]) ?? [];
 }
@@ -1370,8 +1379,10 @@ export async function fetchAdminEngagementTotals(): Promise<AdminEngagementTotal
   if (!supabase) return null;
   const { data, error } = await supabase.rpc('admin_engagement_totals');
   if (error) {
-    console.error('[Kelimeki] fetchAdminEngagementTotals hatası:', error.message);
-    return null;
+    // Admin panelindeki .catch(setError) zinciri buna güveniyor —
+    // önceden burada [] /null dönülüp hata yutuluyordu, admin gerçek
+    // bir RPC/izin hatasını asla göremiyordu (bkz. kod incelemesi).
+    throw new Error(error.message);
   }
   const row = (data as AdminEngagementTotals[] | null)?.[0];
   return row ?? null;
@@ -1391,8 +1402,10 @@ export async function fetchAdminFriendActivitySeries(
     p_granularity: granularity,
   });
   if (error) {
-    console.error('[Kelimeki] fetchAdminFriendActivitySeries hatası:', error.message);
-    return [];
+    // Admin panelindeki .catch(setError) zinciri buna güveniyor —
+    // önceden burada [] /null dönülüp hata yutuluyordu, admin gerçek
+    // bir RPC/izin hatasını asla göremiyordu (bkz. kod incelemesi).
+    throw new Error(error.message);
   }
   return (data as AdminFriendActivityPoint[]) ?? [];
 }
@@ -1405,8 +1418,10 @@ export async function fetchAdminFriendTotals(): Promise<AdminFriendTotals | null
   if (!supabase) return null;
   const { data, error } = await supabase.rpc('admin_friend_totals');
   if (error) {
-    console.error('[Kelimeki] fetchAdminFriendTotals hatası:', error.message);
-    return null;
+    // Admin panelindeki .catch(setError) zinciri buna güveniyor —
+    // önceden burada [] /null dönülüp hata yutuluyordu, admin gerçek
+    // bir RPC/izin hatasını asla göremiyordu (bkz. kod incelemesi).
+    throw new Error(error.message);
   }
   const row = (data as AdminFriendTotals[] | null)?.[0];
   return row ?? null;
@@ -1421,8 +1436,10 @@ export async function fetchAdminGuestSourceBreakdown(days = 30): Promise<AdminGu
   if (!supabase) return [];
   const { data, error } = await supabase.rpc('admin_guest_source_breakdown', { p_days: days });
   if (error) {
-    console.error('[Kelimeki] fetchAdminGuestSourceBreakdown hatası:', error.message);
-    return [];
+    // Admin panelindeki .catch(setError) zinciri buna güveniyor —
+    // önceden burada [] /null dönülüp hata yutuluyordu, admin gerçek
+    // bir RPC/izin hatasını asla göremiyordu (bkz. kod incelemesi).
+    throw new Error(error.message);
   }
   return (data as AdminGuestSourceRow[]) ?? [];
 }
@@ -1435,8 +1452,10 @@ export async function fetchAdminGuestDeviceBreakdown(days = 30): Promise<AdminGu
   if (!supabase) return [];
   const { data, error } = await supabase.rpc('admin_guest_device_breakdown', { p_days: days });
   if (error) {
-    console.error('[Kelimeki] fetchAdminGuestDeviceBreakdown hatası:', error.message);
-    return [];
+    // Admin panelindeki .catch(setError) zinciri buna güveniyor —
+    // önceden burada [] /null dönülüp hata yutuluyordu, admin gerçek
+    // bir RPC/izin hatasını asla göremiyordu (bkz. kod incelemesi).
+    throw new Error(error.message);
   }
   return (data as AdminGuestDeviceRow[]) ?? [];
 }
@@ -1450,8 +1469,10 @@ export async function fetchAdminGuestStandaloneBreakdown(days = 30): Promise<Adm
   if (!supabase) return [];
   const { data, error } = await supabase.rpc('admin_guest_standalone_breakdown', { p_days: days });
   if (error) {
-    console.error('[Kelimeki] fetchAdminGuestStandaloneBreakdown hatası:', error.message);
-    return [];
+    // Admin panelindeki .catch(setError) zinciri buna güveniyor —
+    // önceden burada [] /null dönülüp hata yutuluyordu, admin gerçek
+    // bir RPC/izin hatasını asla göremiyordu (bkz. kod incelemesi).
+    throw new Error(error.message);
   }
   return (data as AdminGuestStandaloneRow[]) ?? [];
 }
@@ -1466,8 +1487,10 @@ export async function fetchAdminFeedback(): Promise<AdminFeedbackRow[]> {
     )
     .order('created_at', { ascending: false });
   if (error) {
-    console.error('[Kelimeki] fetchAdminFeedback hatası:', error.message);
-    return [];
+    // Admin panelindeki .catch(setError) zinciri buna güveniyor —
+    // önceden burada [] /null dönülüp hata yutuluyordu, admin gerçek
+    // bir RPC/izin hatasını asla göremiyordu (bkz. kod incelemesi).
+    throw new Error(error.message);
   }
   return (data as AdminFeedbackRow[]) ?? [];
 }
@@ -1484,8 +1507,10 @@ export async function fetchAdminChatReports(): Promise<AdminChatReportRow[]> {
   if (!supabase) return [];
   const { data, error } = await supabase.rpc('admin_list_chat_reports');
   if (error) {
-    console.error('[Kelimeki] fetchAdminChatReports hatası:', error.message);
-    return [];
+    // Admin panelindeki .catch(setError) zinciri buna güveniyor —
+    // önceden burada [] /null dönülüp hata yutuluyordu, admin gerçek
+    // bir RPC/izin hatasını asla göremiyordu (bkz. kod incelemesi).
+    throw new Error(error.message);
   }
   return (data as AdminChatReportRow[]) ?? [];
 }
@@ -1520,7 +1545,7 @@ export async function deleteFeedback(id: string): Promise<void> {
  * bunu otomatik yapmıyor). Yalnızca admin fonksiyonlarına (feedback-reply,
  * admin-send-message) özgü değil — notify-friend-request/notify-game-invite
  * gibi herhangi bir kullanıcının çağırabileceği fonksiyonlarda da kullanılır. */
-async function invokeEdgeFunction(name: string, body: Record<string, unknown>): Promise<void> {
+async function invokeEdgeFunction<T = unknown>(name: string, body: Record<string, unknown>): Promise<T> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
   const { data, error } = await supabase.functions.invoke(name, { body });
   if (error) {
@@ -1536,6 +1561,7 @@ async function invokeEdgeFunction(name: string, body: Record<string, unknown>): 
     throw new Error(error.message);
   }
   if (data?.error) throw new Error(data.error);
+  return data as T;
 }
 
 /**

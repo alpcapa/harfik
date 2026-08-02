@@ -244,7 +244,27 @@ export default function App() {
   const [wordsReady, setWordsReady] = useState(isWordSetReady());
   useEffect(() => {
     if (wordsReady) return;
-    preloadWordSet().then(() => setWordsReady(true));
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    const attempt = () => {
+      preloadWordSet()
+        .then(() => {
+          if (!cancelled) setWordsReady(true);
+        })
+        .catch((err) => {
+          // Bir kerelik ağ hatasında sonsuza dek "Yükleniyor…" kilidinde
+          // kalınmasın diye birkaç saniye sonra otomatik tekrar deneniyor
+          // (preloadWordSet artık başarısızlıkta kendi önbelleğini
+          // temizleyip yeniden denemeye izin veriyor, bkz. wordSetLoader.ts).
+          console.error('[Kelimeki] Kelime listesi yüklenemedi, tekrar denenecek:', err);
+          if (!cancelled) retryTimer = setTimeout(attempt, 5000);
+        });
+    };
+    attempt();
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
   }, [wordsReady]);
 
   // Sosyal medya/tanıtım linklerindeki ?ref= parametresini (varsa) cihaza
@@ -980,6 +1000,14 @@ export default function App() {
               break;
             }
           }
+        } catch (err) {
+          // isValidWordRemote normalde Supabase hatasını yakalayıp `null`
+          // döner (yukarıdaki dal), ama beklenmedik bir throw (ör. tam ağ
+          // kopukluğu) burada yakalanmazsa hamle hiçbir dispatch/hata mesajı
+          // olmadan askıda kalırdı — aynı `result === null` dalı gibi yerel
+          // doğrulamaya düşülüyor.
+          console.error('[Kelimeki] Sunucu kelime doğrulaması başarısız:', err);
+          serverOk = false;
         } finally {
           setValidating(false);
         }

@@ -142,10 +142,18 @@ export function findAIMove(
       }
       return;
     }
-    // Paylaşım sonrası YZ'ye kalacak gerçek puan (bkz. computeInvasionSplit).
-    const denom = touchedIdx.size === 1 ? 3 : touchedIdx.size + 1;
-    const share = Math.round(score / denom);
-    const effective = score - share * touchedIdx.size;
+    // Paylaşım sonrası YZ'ye kalacak gerçek puan — validator.ts'teki
+    // `computeInvasionSplit`'in AYNI formülü (`round(basePts*(n+1)/(6n))`),
+    // burada `territories`nin zaten önbelleğe alınmış olmasından
+    // yararlanmak için elle tekrarlanıyor (computeInvasionSplit'in
+    // kendisini çağırmak, aday hamle başına computeAllTerritories'i
+    // yeniden hesaplayıp arama performansını ciddi biçimde düşürürdü).
+    // Önceki hâli n=2/3'te yanlış bir bölen kullanıyordu (bkz. kod
+    // incelemesi) — bu, YZ'nin kârlı çoklu-bölge hamlelerini olduğundan
+    // az kazançlı sanmasına yol açıyordu.
+    const n = touchedIdx.size;
+    const share = Math.round((score * (n + 1)) / (6 * n));
+    const effective = score - share * n;
     if (effective > bestAnyEffective) {
       bestAnyEffective = effective;
       bestAny = { word, score, placements };
