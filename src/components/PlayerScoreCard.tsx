@@ -127,18 +127,30 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
   const friendResultRef = useModalA11y(!!friendResultMsg, () => setFriendResultMsg(null));
 
   useEffect(() => {
+    let cancelled = false;
     for (const { key } of TABS) {
-      fetchPlayerStats(key, member.id).then((s) =>
-        setStatsByTab((cur) => ({ ...cur, [key]: s })),
-      );
+      fetchPlayerStats(key, member.id).then((s) => {
+        if (!cancelled) setStatsByTab((cur) => ({ ...cur, [key]: s }));
+      });
     }
-    fetchMyLeaderboardRank(member.id).then(setRank);
+    fetchMyLeaderboardRank(member.id).then((r) => {
+      if (!cancelled) setRank(r);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [member.id]);
 
   useEffect(() => {
     if (!isAdminView) return;
+    let cancelled = false;
     setActivityLog(undefined);
-    fetchAdminMemberActivityLog(member.id).then((rows) => setActivityLog(rows.length ? rows : null));
+    fetchAdminMemberActivityLog(member.id).then((rows) => {
+      if (!cancelled) setActivityLog(rows.length ? rows : null);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [isAdminView, member.id]);
 
   useEffect(() => {

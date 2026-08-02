@@ -241,11 +241,39 @@ export function GameHistoryModal({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [snapshots, setSnapshots] = useState<Record<string, BoardSnapshotTile[] | null>>({});
   const [snapshotLoadingId, setSnapshotLoadingId] = useState<string | null>(null);
+  // Gerçek bir ağ/DB hatası ("kaydedilmemiş" değil, yüklenemedi) yaşayan
+  // oyun id'leri — bu id'ler `fetchedIds`e EKLENMEZ ki "Tekrar Dene" gerçekten
+  // yeniden ağa gitsin (bkz. `loadSnapshot`).
+  const [snapshotErrorIds, setSnapshotErrorIds] = useState<Set<string>>(new Set());
   const fetchedIds = useRef<Set<string>>(new Set());
+
+  const loadSnapshot = useCallback((gameId: string, afterLoad?: () => void) => {
+    fetchedIds.current.add(gameId);
+    setSnapshotErrorIds((cur) => {
+      if (!cur.has(gameId)) return cur;
+      const next = new Set(cur);
+      next.delete(gameId);
+      return next;
+    });
+    setSnapshotLoadingId(gameId);
+    fetchGameBoardSnapshot(gameId)
+      .then((snap) => {
+        setSnapshots((c) => ({ ...c, [gameId]: snap }));
+        setSnapshotLoadingId((id) => (id === gameId ? null : id));
+        afterLoad?.();
+      })
+      .catch((err) => {
+        console.error('[Kelimeki] tahta önizlemesi yüklenemedi:', err);
+        fetchedIds.current.delete(gameId);
+        setSnapshotLoadingId((id) => (id === gameId ? null : id));
+        setSnapshotErrorIds((cur) => new Set(cur).add(gameId));
+      });
+  }, []);
 
   // Tahta önizlemesine tıklanınca açılan Kapat/Paylaş aksiyon menüsü.
   const [boardSheetId, setBoardSheetId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [shareErrorId, setShareErrorId] = useState<string | null>(null);
   const copiedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Aynı anda yalnızca bir oyunun tahtası genişletilmiş olabildiğinden
   // (expandedId tek bir id) paylaş için görseli buradan yakalıyoruz — tek ref yeterli.
@@ -299,10 +327,20 @@ export function GameHistoryModal({
       return;
     }
     if (navigator.clipboard) {
-      await navigator.clipboard.writeText(url ? `${text}\n${url}` : text);
-      setCopiedId(entry.id);
+      try {
+        await navigator.clipboard.writeText(url ? `${text}\n${url}` : text);
+        setCopiedId(entry.id);
+        setShareErrorId(null);
+      } catch (err) {
+        console.error('[Kelimeki] panoya kopyalama hatası:', err);
+        setShareErrorId(entry.id);
+        setCopiedId(null);
+      }
       if (copiedTimeout.current) clearTimeout(copiedTimeout.current);
-      copiedTimeout.current = setTimeout(() => setCopiedId(null), 1800);
+      copiedTimeout.current = setTimeout(() => {
+        setCopiedId(null);
+        setShareErrorId(null);
+      }, 1800);
     }
   }, []);
 
@@ -332,13 +370,8 @@ export function GameHistoryModal({
   const handleToggleBoard = useCallback((gameId: string) => {
     setExpandedId((cur) => (cur === gameId ? null : gameId));
     if (fetchedIds.current.has(gameId)) return;
-    fetchedIds.current.add(gameId);
-    setSnapshotLoadingId(gameId);
-    void fetchGameBoardSnapshot(gameId).then((snap) => {
-      setSnapshots((c) => ({ ...c, [gameId]: snap }));
-      setSnapshotLoadingId((id) => (id === gameId ? null : id));
-    });
-  }, []);
+    loadSnapshot(gameId);
+  }, [loadSnapshot]);
 
   const flipLike = (g: GameHistoryEntry) => ({
     ...g,
@@ -417,18 +450,14 @@ export function GameHistoryModal({
       if (initialExpandedId) {
         setExpandedId(initialExpandedId);
         if (!fetchedIds.current.has(initialExpandedId)) {
-          fetchedIds.current.add(initialExpandedId);
-          setSnapshotLoadingId(initialExpandedId);
-          void fetchGameBoardSnapshot(initialExpandedId).then((snap) => {
-            setSnapshots((c) => ({ ...c, [initialExpandedId]: snap }));
-            setSnapshotLoadingId((id) => (id === initialExpandedId ? null : id));
-            // Tahta önizlemesi yüklenince kart boyu ciddi ölçüde büyüyor
-            // (bkz. yukarıdaki centerEntryInView yorumu) — ilk hizalama o
-            // andaki (henüz "Yükleniyor…" yer tutucusu kadar kısa) yüksekliğe
-            // göre yapıldığından, gerçek tahta render olduktan sonra tekrar
-            // ortalamak gerekiyor, yoksa kart yeniden ekranın altına kayabilir.
-            requestAnimationFrame(() => centerEntryInView(initialExpandedId));
-          });
+          // Tahta önizlemesi yüklenince kart boyu ciddi ölçüde büyüyor (bkz.
+          // yukarıdaki centerEntryInView yorumu) — ilk hizalama o andaki
+          // (henüz "Yükleniyor…" yer tutucusu kadar kısa) yüksekliğe göre
+          // yapıldığından, gerçek tahta render olduktan sonra tekrar
+          // ortalamak gerekiyor, yoksa kart yeniden ekranın altına kayabilir.
+          loadSnapshot(initialExpandedId, () =>
+            requestAnimationFrame(() => centerEntryInView(initialExpandedId)),
+          );
         }
         requestAnimationFrame(() => centerEntryInView(initialExpandedId));
       }
@@ -654,7 +683,28 @@ export function GameHistoryModal({
                             Panoya kopyalandı
                           </p>
                         )}
+                        {shareErrorId === entry.id && (
+                          <p className="text-red text-[10px] font-mono text-center pt-1.5">
+                            Panoya kopyalanamadı.
+                          </p>
+                        )}
                       </>
+                    ) : snapshotErrorIds.has(entry.id) ? (
+                      <div className="flex flex-col items-center gap-1.5 py-3">
+                        <p className="text-red text-[10px] font-mono text-center">
+                          Tahta önizlemesi yüklenemedi.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            loadSnapshot(entry.id);
+                          }}
+                          className="text-accent text-[10px] font-mono font-bold uppercase tracking-[0.5px] hover:underline"
+                        >
+                          Tekrar Dene
+                        </button>
+                      </div>
                     ) : (
                       <p className="text-muted text-[10px] font-mono text-center py-3">
                         Bu oyun için tahta görüntüsü kaydedilmemiş.

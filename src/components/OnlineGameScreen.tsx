@@ -79,6 +79,29 @@ const MESSAGE_COLORS: Record<string, string> = {
 const DRAG_THRESHOLD = 6;
 const DRAG_LIFT = 30;
 
+/**
+ * `promise` bir süre içinde sonuçlanmazsa reddeden bir sarmalayıcı — asıl
+ * isteği iptal etmez, yalnızca çağıranın (burada `aiTriggeringRef`/
+ * `timeoutCheckingRef` gibi "devam ediyor" bayraklarının) sonsuza dek askıda
+ * kalmasını önler. Ağ isteği gerçekten çok geç dönerse bile bayrak zamanında
+ * sıfırlanır, bir sonraki refresh tekrar deneyebilir.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`Zaman aşımı (${ms}ms)`)), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(timer);
+        reject(e);
+      },
+    );
+  });
+}
+
 type DragSource =
   | { kind: 'rack'; index: number; tile: TileModel }
   | { kind: 'placed'; r: number; c: number; tile: TileModel };
@@ -268,7 +291,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
         const currentSlot = game.slots[publicState.current];
         if (currentSlot?.type === 'ai') {
           aiTriggeringRef.current = true;
-          triggerAiTurn(game.id)
+          withTimeout(triggerAiTurn(game.id), 20000)
             .catch((err) => console.error('[Kelimeki] triggerAiTurn (OnlineGameScreen) hatası:', err))
             .finally(() => {
               aiTriggeringRef.current = false;
@@ -282,7 +305,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       // önler (bkz. CLAUDE.md "Canlı Oyun — Faz 3.6").
       if (!publicState.is_game_over && !timeoutCheckingRef.current) {
         timeoutCheckingRef.current = true;
-        checkOnlineGameTurnTimeout(game.id)
+        withTimeout(checkOnlineGameTurnTimeout(game.id), 20000)
           .catch((err) => console.error('[Kelimeki] checkOnlineGameTurnTimeout (OnlineGameScreen) hatası:', err))
           .finally(() => {
             timeoutCheckingRef.current = false;
@@ -299,8 +322,16 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     // kaçırılan olay tekrar oynatılmaz). Ön plana/çevrimiçi'ye dönüldüğünde
     // emniyet için elle bir kez daha senkronize ediyoruz — önceden bunun
     // tek yolu sekmeden çıkıp tekrar girmekti.
+    // Masaüstünde sekmeye dönüş genelde visibilitychange+focus'u (bazen
+    // online'ı da) neredeyse aynı anda tetikliyor — kısa bir pencerede
+    // birden fazlasını tek bir refresh()'e indirger.
+    let lastForegroundRefresh = 0;
     const onForeground = () => {
-      if (document.visibilityState === 'visible') void refresh();
+      if (document.visibilityState !== 'visible') return;
+      const now = Date.now();
+      if (now - lastForegroundRefresh < 1000) return;
+      lastForegroundRefresh = now;
+      void refresh();
     };
     document.addEventListener('visibilitychange', onForeground);
     window.addEventListener('focus', onForeground);
@@ -775,7 +806,6 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   }
 
   const historyState = { ...state, moveHistory: buildMoveHistory(moveRows) };
-  const tilesState = { ...state, current: mySlotIndex };
   const dragHiddenKey = ghost && ghost.source.kind === 'placed' ? key(ghost.source.r, ghost.source.c) : null;
   const dragHiddenIndex = ghost && ghost.source.kind === 'rack' ? ghost.source.index : null;
 
@@ -1052,7 +1082,9 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       )}
 
       {meaning && <MeaningModal entries={meaning.entries} onClose={() => setMeaning(null)} />}
-      {showTiles && <RemainingTilesModal state={tilesState} onClose={() => setShowTiles(false)} />}
+      {showTiles && (
+        <RemainingTilesModal state={state} myIndex={mySlotIndex} onClose={() => setShowTiles(false)} />
+      )}
       {showHistory && <MoveHistoryModal state={historyState} onClose={() => setShowHistory(false)} />}
 
       {showChatIntro && (

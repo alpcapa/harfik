@@ -37,15 +37,40 @@ export function UserMenu() {
   const [incomingRequestCount, setIncomingRequestCount] = useState(0);
   const wrapRef = useRef<HTMLDivElement>(null);
 
+  // Hızlı hesap değişiminde (ör. çıkış yapıp başka bir hesapla giriş) eski
+  // kullanıcının isteği geç dönüp yeni kullanıcının verisini ezebilirdi —
+  // useAppIconBadge'deki aynı "bu hâlâ güncel istek mi" kilidini kullanıyor.
   useEffect(() => {
     if (!user) return;
-    fetchMyLeaderboardRank(user.id).then(setMyRank);
+    let cancelled = false;
+    fetchMyLeaderboardRank(user.id).then((r) => {
+      if (!cancelled) setMyRank(r);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
+
+  const refreshIncomingRequestCount = () => {
+    if (!user) return;
+    fetchIncomingFriendRequests().then((r) => setIncomingRequestCount(r.length));
+  };
 
   useEffect(() => {
     if (!user) return;
-    fetchIncomingFriendRequests().then((r) => setIncomingRequestCount(r.length));
-  }, [user, modal]);
+    let cancelled = false;
+    fetchIncomingFriendRequests().then((r) => {
+      if (!cancelled) setIncomingRequestCount(r.length);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // Yalnızca kullanıcı değişince tazelenir — arkadaşlıkla ilgisi olmayan
+    // her modal açılış/kapanışında (`modal` değişimi) yeniden çekmek
+    // gereksizdi. FriendsModal kapanınca (isteğe yanıt verilmiş olabilir)
+    // `refreshIncomingRequestCount` ayrıca çağrılıyor (aşağıda).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Dışarı tıklayınca / Esc ile menüyü kapat.
   useEffect(() => {
@@ -106,9 +131,10 @@ export function UserMenu() {
       <div className="relative shrink-0" ref={wrapRef}>
         <button
           onClick={() => setOpen((v) => !v)}
+          disabled={identityLoading}
           aria-label="Hesap menüsü"
           aria-expanded={open}
-          className="rounded-full active:scale-95 transition-transform ring-offset-2 focus:outline-none"
+          className="rounded-full active:scale-95 transition-transform ring-offset-2 focus:outline-none disabled:cursor-not-allowed"
         >
           {identityLoading ? (
             <span className="w-8 h-8 rounded-full bg-panel border border-border flex items-center justify-center text-muted text-[10px] font-mono">
@@ -222,7 +248,14 @@ export function UserMenu() {
         <HelpModal onClose={() => setModal(null)} />
       )}
       {modal === 'admin' && <AdminDashboard onClose={() => setModal(null)} />}
-      {modal === 'friends' && <FriendsModal onClose={() => setModal(null)} />}
+      {modal === 'friends' && (
+        <FriendsModal
+          onClose={() => {
+            setModal(null);
+            refreshIncomingRequestCount();
+          }}
+        />
+      )}
     </>
   );
 }

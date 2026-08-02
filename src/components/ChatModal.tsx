@@ -61,7 +61,7 @@ export function ChatModal({
 
   useEffect(() => {
     const el = threadRef.current;
-    if (el) el.scrollTop = 0;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [messages.length]);
 
   const handleSend = async () => {
@@ -79,21 +79,27 @@ export function ChatModal({
     }
   };
 
-  const threadMessages: ChatThreadMessage[] = messages
-    .map((m) => {
-      const p = participants.find((x) => x.userId === m.sender_user_id);
-      return {
-        key: m.id,
-        name: p?.name ?? 'Oyuncu',
-        colorIndex: p?.colorIndex ?? 0,
-        avatarUrl: p?.avatarUrl ?? null,
-        message: m.message,
-        createdAt: m.created_at,
-        mine: m.sender_user_id === myUserId,
-        senderId: m.sender_user_id,
-      };
-    })
-    .reverse();
+  // `messages` (chatMessages, OnlineGameScreen.tsx) zaten eskiden-yeniye
+  // (kronolojik artan — fetchOnlineGameMessages'ın `order('created_at', {
+  // ascending: true })`'u ve yeni mesajları sona ekleyen realtime callback)
+  // geliyor; ChatThread de kendi tarafında sıralama yapmıyor, yukarıdan
+  // aşağı basıyor. Buradaki `.reverse()` en yeni mesajı en üste koyup
+  // CLAUDE.md'nin "yeni mesajda otomatik en alta kaydırma" davranışıyla
+  // çelişiyordu (GameChatHistoryModal'daki aynı hatanın kardeşi, bkz. o
+  // dosyadaki yorum).
+  const threadMessages: ChatThreadMessage[] = messages.map((m) => {
+    const p = participants.find((x) => x.userId === m.sender_user_id);
+    return {
+      key: m.id,
+      name: p?.name ?? 'Oyuncu',
+      colorIndex: p?.colorIndex ?? 0,
+      avatarUrl: p?.avatarUrl ?? null,
+      message: m.message,
+      createdAt: m.created_at,
+      mine: m.sender_user_id === myUserId,
+      senderId: m.sender_user_id,
+    };
+  });
 
   return (
     <Modal

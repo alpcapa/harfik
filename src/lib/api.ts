@@ -416,6 +416,14 @@ export async function fetchGameLikers(gameId: string): Promise<GameLiker[]> {
  * tıklanıp genişletildiğinde ayrıca çekilir. Bu sütun eklenmeden önceki
  * kayıtlarda null.
  */
+/**
+ * Bir oyunun (yalnızca doluysa) tahta anlık görüntüsünü döner — `null`
+ * dönüşü "bu oyun için hiç kaydedilmemiş" anlamına gelir (eski kayıtlar).
+ * Gerçek bir ağ/DB hatasında (önceden sessizce `null`'a düşüp "kaydedilmemiş"
+ * ile ayırt edilemiyordu, kalıcı olarak retry edilemiyordu — bkz. kod
+ * incelemesi) artık fırlatıyor; çağıran (`GameHistoryModal`) bunu ayrı bir
+ * hata durumuyla ele alıp yeniden deneme imkânı sunuyor.
+ */
 export async function fetchGameBoardSnapshot(gameId: string): Promise<BoardSnapshotTile[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase
@@ -423,10 +431,7 @@ export async function fetchGameBoardSnapshot(gameId: string): Promise<BoardSnaps
     .select('board_snapshot')
     .eq('id', gameId)
     .maybeSingle();
-  if (error) {
-    console.error('[Kelimeki] fetchGameBoardSnapshot hatası:', error.message);
-    return null;
-  }
+  if (error) throw new Error(error.message);
   return (data?.board_snapshot as BoardSnapshotTile[] | null) ?? null;
 }
 
@@ -559,8 +564,14 @@ export async function listUsersForFriend(offset: number, limit: number): Promise
  * insert karşılıklı otomatik kabulle SONUÇLANMADIYSA (hâlâ 'pending'),
  * `notify-friend-request` Edge Function'ı ile alıcıya işlemsel bir e-posta
  * bildirimi gönderilir (`marketing_consent`'e bağlı değil — bkz. CLAUDE.md).
+ *
+ * Karşı taraftan zaten bekleyen bir istek varsa `handle_friend_request_insert`
+ * trigger'ı insert'i doğrudan 'accepted'a çevirir — dönüş değeri bunu
+ * çağırana bildirir ki (FriendsModal.tsx) UI "İstek Gönderildi" yerine
+ * doğrudan "Arkadaşsınız" göstersin (önceden bu ayrım kaybolup her zaman
+ * "pending_outgoing" gösteriliyordu, iki taraf zaten arkadaş olmuşken bile).
  */
-export async function sendFriendRequest(targetId: string): Promise<void> {
+export async function sendFriendRequest(targetId: string): Promise<'pending' | 'accepted'> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
   const {
     data: { user },
@@ -572,9 +583,11 @@ export async function sendFriendRequest(targetId: string): Promise<void> {
     .select('status')
     .single();
   if (error) throw new Error(error.message);
-  if (data?.status === 'pending') {
+  const status: 'pending' | 'accepted' = data?.status === 'accepted' ? 'accepted' : 'pending';
+  if (status === 'pending') {
     void notifyFriendRequest(targetId);
   }
+  return status;
 }
 
 /**
@@ -1215,7 +1228,16 @@ export async function fetchMeaning(word: string): Promise<WordMeaning | null> {
 
 // ── Admin paneli ────────────────────────────────────────────────────────────
 
-/** Tüm kayıtlı kullanıcıları döner (yalnızca is_admin=true için, RPC içinde kontrol edilir). */
+/**
+ * Tüm kayıtlı kullanıcıları döner (yalnızca is_admin=true için, RPC içinde
+ * kontrol edilir) — sayfalama yok, arama/sıralama client-side. Kod
+ * incelemesinde ("Orta" bulgu) bilinçli olarak ertelendi: bu yazıldığı anda
+ * yalnızca ~20 kayıtlı kullanıcı/~7 geri bildirim var, sunucu tarafı
+ * sayfalama (RPC imza değişikliği + CSV export'un "ekranda görüneni indir"
+ * semantiğini bozması riskiyle) şu an gerçek bir sorunu çözmeyen erken bir
+ * optimizasyon olurdu. Hacim gerçekten büyüyünce (ör. yüzlerce satır) aynı
+ * desenle (fetchOnlineGameTurns'teki gibi offset/limit) eklenmeli.
+ */
 export async function fetchAdminMembers(): Promise<AdminMember[]> {
   if (!supabase) return [];
   const { data, error } = await supabase.rpc('admin_list_members');
@@ -1477,7 +1499,11 @@ export async function fetchAdminGuestStandaloneBreakdown(days = 30): Promise<Adm
   return (data as AdminGuestStandaloneRow[]) ?? [];
 }
 
-/** Tüm geri bildirim mesajlarını döner (RLS: yalnızca is_admin=true okuyabilir). */
+/**
+ * Tüm geri bildirim mesajlarını döner (RLS: yalnızca is_admin=true
+ * okuyabilir) — sayfalama yok, bkz. `fetchAdminMembers`'daki aynı gerekçe
+ * (bilinçli erteleme notu).
+ */
 export async function fetchAdminFeedback(): Promise<AdminFeedbackRow[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1495,11 +1521,20 @@ export async function fetchAdminFeedback(): Promise<AdminFeedbackRow[]> {
   return (data as AdminFeedbackRow[]) ?? [];
 }
 
-/** Bir geri bildirim mesajını okundu/okunmadı işaretler (yalnızca admin). */
-export async function markFeedbackHandled(id: string, handled: boolean): Promise<void> {
-  if (!supabase) return;
+/**
+ * Bir geri bildirim mesajını okundu/okunmadı işaretler (yalnızca admin).
+ * `AdminDashboard`'daki iyimser (optimistic) UI güncellemesi başarısızlıkta
+ * geri alınabilsin diye başarı/başarısızlığı `boolean` olarak döner —
+ * `toggleGameLike`'daki (`GameHistoryModal`) aynı desen.
+ */
+export async function markFeedbackHandled(id: string, handled: boolean): Promise<boolean> {
+  if (!supabase) return false;
   const { error } = await supabase.from('feedback').update({ handled }).eq('id', id);
-  if (error) console.error('[Kelimeki] markFeedbackHandled hatası:', error.message);
+  if (error) {
+    console.error('[Kelimeki] markFeedbackHandled hatası:', error.message);
+    return false;
+  }
+  return true;
 }
 
 /** Tüm sohbet şikayetlerini döner (yalnızca admin — admin_list_chat_reports RPC'si). */
@@ -1515,11 +1550,18 @@ export async function fetchAdminChatReports(): Promise<AdminChatReportRow[]> {
   return (data as AdminChatReportRow[]) ?? [];
 }
 
-/** Bir şikayeti okundu/okunmadı işaretler (yalnızca admin). */
-export async function markChatReportHandled(id: string, handled: boolean): Promise<void> {
-  if (!supabase) return;
+/**
+ * Bir şikayeti okundu/okunmadı işaretler (yalnızca admin). `markFeedbackHandled`
+ * ile aynı gerekçeyle başarı/başarısızlığı `boolean` olarak döner.
+ */
+export async function markChatReportHandled(id: string, handled: boolean): Promise<boolean> {
+  if (!supabase) return false;
   const { error } = await supabase.rpc('admin_mark_chat_report_handled', { p_id: id, p_handled: handled });
-  if (error) console.error('[Kelimeki] markChatReportHandled hatası:', error.message);
+  if (error) {
+    console.error('[Kelimeki] markChatReportHandled hatası:', error.message);
+    return false;
+  }
+  return true;
 }
 
 /** Bitmiş bir Canlı oyunun tam sohbet dökümünü döner (yalnızca admin, yalnızca bitmiş oyunlar). */

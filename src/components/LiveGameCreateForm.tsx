@@ -210,8 +210,24 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
             {playerCount === 4 && showAiRow && (
               <button
                 type="button"
-                onClick={() => setAiSelected((v) => !v)}
-                className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel text-left transition-transform active:scale-[0.99]"
+                disabled={selected.length >= 3}
+                onClick={() => {
+                  // 3 arkadaş zaten seçiliyken YZ'yi de işaretlemek "3/3
+                  // arkadaş" + "YZ ✓"nin aynı anda görünmesine (5 koltuklu
+                  // bir davet gönderiliyormuş izlenimine) yol açıyordu —
+                  // handleSubmit bu durumda zaten YZ'yi yok sayıyordu
+                  // (selected.length===3 dalı önce geliyor) ama görünüm
+                  // yanıltıcıydı. toggleFriend zaten aiSelected true iken 3.
+                  // arkadaşı eklemeyi engelliyor (cap=2); simetriyi
+                  // tamamlamak için burada da 3 arkadaş seçiliyken YZ
+                  // işaretlenemez.
+                  if (selected.length >= 3) return;
+                  setAiSelected((v) => !v);
+                }}
+                className={[
+                  'shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel text-left transition-transform active:scale-[0.99]',
+                  selected.length >= 3 ? 'opacity-40 cursor-not-allowed' : '',
+                ].join(' ')}
               >
                 <span className="w-7 h-7 rounded-full bg-void border border-border flex items-center justify-center text-sm shrink-0" aria-hidden>
                   🤖
