@@ -1212,6 +1212,27 @@ export async function setUserBanned(userId: string, banned: boolean): Promise<vo
   if (!supabase) return;
   const { error } = await supabase.rpc('admin_set_user_banned', { p_user_id: userId, p_banned: banned });
   if (error) throw new Error(error.message);
+  // Yalnızca dondurma anında bir uyarı e-postası gönderilir — dondurma
+  // kaldırılırken (banned:false) hiçbir mail yok, kullanıcı isteği bunu
+  // kapsamıyor.
+  if (banned) {
+    void notifyAccountBanned(userId);
+  }
+}
+
+/**
+ * `setUserBanned(true)`'un az önce dondurduğu hesaba, süresiz dondurulduğunu
+ * bildiren bir e-posta gönderir (`notify-account-banned` Edge Function'ı).
+ * Best-effort/fire-and-forget: hesap zaten dondurulmuş olduğundan bir
+ * e-posta hatası admin'e hiç yansıtılmaz, yalnızca loglanır.
+ */
+async function notifyAccountBanned(userId: string): Promise<void> {
+  if (!supabase) return;
+  try {
+    await invokeEdgeFunction('notify-account-banned', { user_id: userId });
+  } catch (err) {
+    console.error('[Kelimeki] notifyAccountBanned hatası:', (err as Error).message);
+  }
 }
 
 /**
