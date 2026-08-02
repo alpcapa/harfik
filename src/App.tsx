@@ -216,7 +216,17 @@ export default function App() {
           }
         : savedGame.state;
     void upsertLocalGameSave(id, user.id, stateToUpload)
-      .then(() => {
+      .then((ok) => {
+        // Yalnızca sunucuya GERÇEKTEN yazıldığı doğrulanınca yerel/bellek
+        // kopyaları silinir — aksi halde (ağ/RLS hatası) `savedGame` olduğu
+        // gibi bırakılır, bir sonraki girişte/mount'ta migrasyon tekrar
+        // denenir. `upsertLocalGameSave` hatayı yutup sessizce `false`
+        // dönebildiğinden bu kontrol olmadan başarısız bir yazım bile
+        // "başarılı" sayılıp oyunun tek kopyası da silinmiş olurdu.
+        if (!ok) {
+          console.error('[Kelimeki] Misafir oyunu hesaba taşınamadı, tekrar denenecek.');
+          return;
+        }
         clearGameState();
         setSavedGame(null);
         void refreshCloudSaves();
@@ -462,7 +472,13 @@ export default function App() {
   // başlamış) oyunlar bu değişiklikten etkilenmedi, eskisi gibi listede kalır.
   const handleLogoClick = () => {
     const abandoningMidGame = state.phase === 'play' && !state.isGameOver;
-    if (abandoningMidGame && state.turnCount >= 2) {
+    if (abandoningMidGame && state.turnCount >= 2 && (!user || !isSupabaseConfigured)) {
+      // Yalnızca misafir için: girişli kullanıcının kaydı zaten sunucuda
+      // (`local_game_saves`, autosave effect'i) duruyor ve `cloudSaves`
+      // üzerinden gösteriliyor — `savedGame`'i burada da doldurmak, hesap
+      // çıkışından sonra bu oyunun "misafirin devam eden oyunu" olarak
+      // başka birine (ya da sonraki misafir oturumuna) sızmasına yol açardı,
+      // çünkü `[user?.id]` değişince `savedGame` hiçbir yerde temizlenmiyor.
       setSavedGame({ state, savedAt: Date.now() });
     } else if (abandoningMidGame && user && isSupabaseConfigured && activeSaveIdRef.current) {
       void deleteLocalGameSave(activeSaveIdRef.current);
