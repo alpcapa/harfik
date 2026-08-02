@@ -119,7 +119,7 @@ export function ChatModal({
           maxLength={MAX_LENGTH}
           disabled={sending}
         />
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 -mt-1">
           <span className="text-[10px] text-muted font-mono">
             {text.length}/{MAX_LENGTH}
           </span>
