@@ -26,6 +26,10 @@ interface ChatSettingsModalProps {
   onReported: (targetUserId: string) => void;
   onWithdrawn: (targetUserId: string) => void;
   onClose: () => void;
+  /** Doluysa modal doğrudan bu kişinin detay görünümüyle açılır — sohbetteki
+   * bir rozete (🚫/🚩) tıklanınca kullanılır, listeyi atlayıp direkt
+   * hatırlatma/aksiyon ekranına gider. */
+  initialParticipantId?: string | null;
 }
 
 type View =
@@ -45,8 +49,12 @@ export function ChatSettingsModal({
   onReported,
   onWithdrawn,
   onClose,
+  initialParticipantId,
 }: ChatSettingsModalProps) {
-  const [view, setView] = useState<View>({ kind: 'list' });
+  const [view, setView] = useState<View>(() => {
+    const initial = initialParticipantId ? participants.find((p) => p.userId === initialParticipantId) : null;
+    return initial ? { kind: 'detail', participant: initial } : { kind: 'list' };
+  });
   const [reasonDraft, setReasonDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

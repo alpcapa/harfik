@@ -24,6 +24,14 @@ interface ChatModalProps {
   /** Ayarlar/dişli ikonuna basınca çağrılır — Oyun İçi Mesajlaşma Faz 2
    * (sessize alma/raporlama) panelini açar (bkz. `ChatSettingsModal`). */
   onOpenSettings: () => void;
+  /** Oyun İçi Mesajlaşma — Faz 2: çağıranın sessize aldığı/aktif rapor
+   * açtığı kullanıcı id'leri — sohbetteki isimlerin yanında rozet (🚫/🚩)
+   * göstermek için `ChatThread`'e iletilir. */
+  mutedUserIds: Set<string>;
+  reportedUserIds: Set<string>;
+  /** Bir mesajdaki rozete tıklanınca çağrılır — o kişinin ayarlar detayını
+   * doğrudan açar (bkz. `ChatSettingsModal`'ın `initialParticipantId`'i). */
+  onOpenParticipantSettings: (userId: string) => void;
 }
 
 function GearIcon() {
@@ -35,7 +43,17 @@ function GearIcon() {
   );
 }
 
-export function ChatModal({ messages, participants, myUserId, onSend, onClose, onOpenSettings }: ChatModalProps) {
+export function ChatModal({
+  messages,
+  participants,
+  myUserId,
+  onSend,
+  onClose,
+  onOpenSettings,
+  mutedUserIds,
+  reportedUserIds,
+  onOpenParticipantSettings,
+}: ChatModalProps) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +90,7 @@ export function ChatModal({ messages, participants, myUserId, onSend, onClose, o
         message: m.message,
         createdAt: m.created_at,
         mine: m.sender_user_id === myUserId,
+        senderId: m.sender_user_id,
       };
     })
     .reverse();
@@ -116,7 +135,13 @@ export function ChatModal({ messages, participants, myUserId, onSend, onClose, o
       </div>
 
       <div ref={threadRef} className="max-h-72 overflow-y-auto pr-1">
-        <ChatThread messages={threadMessages} emptyText="Henüz mesaj yok. İlk mesajı sen gönder!" />
+        <ChatThread
+          messages={threadMessages}
+          emptyText="Henüz mesaj yok. İlk mesajı sen gönder!"
+          mutedUserIds={mutedUserIds}
+          reportedUserIds={reportedUserIds}
+          onBadgeClick={onOpenParticipantSettings}
+        />
       </div>
     </Modal>
   );

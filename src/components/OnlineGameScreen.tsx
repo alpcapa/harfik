@@ -170,6 +170,9 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
 
   // Oyun İçi Mesajlaşma — Faz 2 (sessize alma / raporlama).
   const [showChatSettings, setShowChatSettings] = useState(false);
+  // Doluysa Ayarlar paneli doğrudan bu kişinin detayıyla açılır — sohbetteki
+  // bir 🚫/🚩 rozetine tıklanınca (bkz. handleOpenParticipantSettings).
+  const [chatSettingsInitialParticipant, setChatSettingsInitialParticipant] = useState<string | null>(null);
   const [mutedUserIds, setMutedUserIds] = useState<Set<string>>(new Set());
   const [reportedUserIds, setReportedUserIds] = useState<Set<string>>(new Set());
   // Realtime insert handler'ı mount anında sabitlenen bir closure içinde
@@ -825,6 +828,13 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       return next;
     });
   };
+  // Mesajdaki bir 🚫/🚩 rozetine tıklanınca — Ayarlar panelini o kişinin
+  // detayıyla doğrudan açar, listeyi atlar (kullanıcı isteği: "sessize
+  // aldığını hatırlayıp basıp tekrar açabilsin").
+  const handleOpenParticipantSettings = (userId: string) => {
+    setChatSettingsInitialParticipant(userId);
+    setShowChatSettings(true);
+  };
 
   return (
     <div className="min-h-[100dvh] w-full flex flex-col items-center overflow-x-hidden">
@@ -1110,7 +1120,13 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
           myUserId={myUserId}
           onSend={(text) => sendOnlineGameMessage(game.id, text)}
           onClose={() => setShowChat(false)}
-          onOpenSettings={() => setShowChatSettings(true)}
+          onOpenSettings={() => {
+            setChatSettingsInitialParticipant(null);
+            setShowChatSettings(true);
+          }}
+          mutedUserIds={mutedUserIds}
+          reportedUserIds={reportedUserIds}
+          onOpenParticipantSettings={handleOpenParticipantSettings}
         />
       )}
 
@@ -1123,7 +1139,11 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
           onMuteChange={handleChatMuteChange}
           onReported={handleChatReported}
           onWithdrawn={handleChatReportWithdrawn}
-          onClose={() => setShowChatSettings(false)}
+          initialParticipantId={chatSettingsInitialParticipant}
+          onClose={() => {
+            setShowChatSettings(false);
+            setChatSettingsInitialParticipant(null);
+          }}
         />
       )}
 
