@@ -380,10 +380,19 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [banTarget, setBanTarget] = useState<{ id: string; name: string; banned: boolean } | null>(null);
   const [banBusy, setBanBusy] = useState(false);
   const [banError, setBanError] = useState<string | null>(null);
+  const [highlightedMemberId, setHighlightedMemberId] = useState<string | null>(null);
 
   const panelRef = useModalA11y(true, onClose);
   const feedbackDeleteRef = useModalA11y(!!feedbackToDelete, () => setFeedbackToDelete(null));
   const banConfirmRef = useModalA11y(!!banTarget, () => setBanTarget(null));
+
+  useEffect(() => {
+    if (tab !== 'members' || !highlightedMemberId) return;
+    const el = document.getElementById(`admin-member-row-${highlightedMemberId}`);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const timer = setTimeout(() => setHighlightedMemberId(null), 2500);
+    return () => clearTimeout(timer);
+  }, [tab, highlightedMemberId]);
 
   useEffect(() => {
     fetchAdminMembers()
@@ -809,8 +818,11 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         return (
                         <tr
                           key={m.id}
+                          id={`admin-member-row-${m.id}`}
                           onClick={() => setSelectedMember(m)}
-                          className="border-b border-border/50 cursor-pointer hover:bg-bg/60 active:opacity-70"
+                          className={`border-b border-border/50 cursor-pointer hover:bg-bg/60 active:opacity-70 transition-colors ${
+                            highlightedMemberId === m.id ? 'bg-accent/20' : ''
+                          }`}
                         >
                           <td className="py-2 pr-3 text-text whitespace-nowrap">{memberName(m)}</td>
                           <td className="py-2 pr-3 text-text whitespace-nowrap">{memberNickname(m)}</td>
@@ -827,7 +839,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                           </td>
                           <td className="py-2 pl-3 whitespace-nowrap">
                             {banned ? (
-                              <span className="text-red font-bold">Devre Dışı</span>
+                              <span className="text-red font-bold">Donduruldu</span>
                             ) : (
                               <span className="text-muted">Aktif</span>
                             )}
@@ -851,7 +863,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                                 }}
                                 className={`text-[10px] font-mono hover:underline ${banned ? 'text-accent' : 'text-red'}`}
                               >
-                                {banned ? 'Aktif Et' : 'Devre Dışı Bırak'}
+                                {banned ? 'Dondurmayı Kaldır' : 'Hesabı Dondur'}
                               </button>
                             </div>
                           </td>
@@ -1318,26 +1330,16 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                                       Oyun sürüyor, sohbet henüz görüntülenemez
                                     </span>
                                   )}
-                                  {(() => {
-                                    const reportedBanned = isBanned(
-                                      members?.find((m) => m.id === r.reported_user_id)?.banned_until,
-                                    );
-                                    return (
-                                      <button
-                                        onClick={() => {
-                                          setBanError(null);
-                                          setBanTarget({
-                                            id: r.reported_user_id,
-                                            name: r.reported_name,
-                                            banned: !reportedBanned,
-                                          });
-                                        }}
-                                        className={`text-[10px] font-mono hover:underline ${reportedBanned ? 'text-accent' : 'text-red'}`}
-                                      >
-                                        {reportedBanned ? `${r.reported_name} — Aktif Et` : `${r.reported_name} — Hesabı Devre Dışı Bırak`}
-                                      </button>
-                                    );
-                                  })()}
+                                  <button
+                                    onClick={() => {
+                                      setTab('members');
+                                      setMemberSearch('');
+                                      setHighlightedMemberId(r.reported_user_id);
+                                    }}
+                                    className="text-[10px] font-mono text-accent hover:underline"
+                                  >
+                                    {r.reported_name} — Kişiye Git →
+                                  </button>
                                 </div>
                               </div>
                             </>
@@ -1415,7 +1417,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
             ref={banConfirmRef}
             role="dialog"
             aria-modal="true"
-            aria-label={banTarget.banned ? 'Hesabı devre dışı bırakma onayı' : 'Hesabı aktif etme onayı'}
+            aria-label={banTarget.banned ? 'Hesabı dondurma onayı' : 'Dondurmayı kaldırma onayı'}
             tabIndex={-1}
             className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none"
           >
@@ -1423,13 +1425,13 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
             <p className="text-sm text-text font-sans leading-relaxed">
               {banTarget.banned ? (
                 <>
-                  <span className="font-bold">{banTarget.name}</span> hesabını devre dışı bırakmak istediğinize emin
-                  misiniz? Bu kullanıcı bir sonraki girişte/oturum yenilemede reddedilir.
+                  <span className="font-bold">{banTarget.name}</span> hesabını dondurmak istediğinize emin misiniz?
+                  Bu kullanıcı bir sonraki girişte/oturum yenilemede reddedilir.
                 </>
               ) : (
                 <>
-                  <span className="font-bold">{banTarget.name}</span> hesabını tekrar aktif etmek istediğinize emin
-                  misiniz?
+                  <span className="font-bold">{banTarget.name}</span> hesabının dondurulmasını kaldırmak istediğinize
+                  emin misiniz?
                 </>
               )}
             </p>
@@ -1442,7 +1444,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                   banTarget.banned ? 'btn-raised-red bg-red text-white' : 'btn-raised bg-accent text-white'
                 }`}
               >
-                {banBusy ? '...' : banTarget.banned ? 'Devre Dışı Bırak' : 'Aktif Et'}
+                {banBusy ? '...' : banTarget.banned ? 'Hesabı Dondur' : 'Dondurmayı Kaldır'}
               </button>
               <button
                 onClick={() => setBanTarget(null)}
