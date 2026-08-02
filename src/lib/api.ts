@@ -2,6 +2,21 @@
 //
 // Tüm fonksiyonlar Supabase yapılandırılmamışsa güvenli biçimde boş/no-op
 // döner, böylece oyun çevrimdışı da çalışır.
+//
+// Dosyanın boyutu (~70 fonksiyon, `if (!supabase) return ...` + `console.error`
+// kalıbının neredeyse her fonksiyonda tekrarı) kod incelemesinde ("Orta"
+// bulgu) bilinçli olarak ele alınmadı — sebep tembellik değil, gerçek bir
+// risk/fayda hesabı: fonksiyonların dönüş tipleri/hata semantiği birbirinden
+// belirgin şekilde farklı (kimi `null` döner, kimi boş dizi, kimi fırlatır,
+// kimi `false`/`0` — bkz. #21/#40/#42/#43'teki fix'ler, tam da bu farkın
+// nerede bilinçli nerede kazara olduğunu ayırt etmenin kendisi zaman aldı).
+// Tek bir genel `withSupabase` sarmalayıcısına zorlamak ya hepsini tek bir
+// dönüş sözleşmesine indirger (birçok çağrı yerinde davranış değişikliği
+// riski) ya da sarmalayıcı kendisi neredeyse her fonksiyon için ayrı bir
+// varyant taşımak zorunda kalır (kazanç şüpheli). Bu incelemede zaten
+// somut, gerçek hataları olan fonksiyonlar (bkz. yukarıdaki High/Medium
+// fix'ler) tek tek düzeltildi; kalan tekrar yalnızca bir okunabilirlik
+// notu, ayrı bir davranış riski taşımıyor.
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './supabase';
 import type {
@@ -84,8 +99,8 @@ export async function saveGame(game: NewGame): Promise<string | null> {
   // terk-edilme cezası" anlamına geliyor. `error.code==='23505'` (zaten
   // kaydedilmiş, tekrar deneme) dalında ÇAĞRILMIYOR ki kuyruktan yeniden
   // denenen bir kayıt aynı bildirimi iki kez göndermesin.
-  if (game.surrendered) {
-    void notifyLocalGameAbandoned(game.player_count);
+  if (game.surrendered && data?.id) {
+    void notifyLocalGameAbandoned(data.id, game.player_count);
   }
   return data?.id ?? null;
 }
@@ -95,12 +110,17 @@ export async function saveGame(game: NewGame): Promise<string | null> {
  * oyun için hesap sahibine -2 k-lig cezasını bildiren bir e-posta gönderir
  * (`notify-local-game-abandoned` Edge Function'ı). Best-effort/
  * fire-and-forget — kayıt zaten oluşmuş olduğundan bir e-posta hatası
- * kullanıcıya hiç yansıtılmaz, yalnızca loglanır.
+ * kullanıcıya hiç yansıtılmaz, yalnızca loglanır. `gameId`, Edge Function'ın
+ * gerçekten böyle bir satır olduğunu (kendi hesabına ait, surrendered=true,
+ * yerel/online_game_id null) doğrulayabilmesi için geçiliyor — önceden
+ * yalnızca çıplak bir `player_count` alıp hiçbir doğrulama yapmadan mail
+ * gönderiyordu (kod incelemesi: kullanıcı kendine sahte "-2 puan" maili
+ * gönderebiliyordu, düşük etkili ama tasarım simetrisi bozuktu).
  */
-async function notifyLocalGameAbandoned(playerCount: number): Promise<void> {
+async function notifyLocalGameAbandoned(gameId: string, playerCount: number): Promise<void> {
   if (!supabase) return;
   try {
-    await invokeEdgeFunction('notify-local-game-abandoned', { player_count: playerCount });
+    await invokeEdgeFunction('notify-local-game-abandoned', { game_id: gameId, player_count: playerCount });
   } catch (err) {
     console.error('[Kelimeki] notifyLocalGameAbandoned hatası:', (err as Error).message);
   }

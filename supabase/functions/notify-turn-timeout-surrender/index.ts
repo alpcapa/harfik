@@ -29,7 +29,7 @@
 // online_game_id ile çağrılırsa (ya da oyun timeout DIŞINDA bir sebeple
 // bittiyse) sessizce no-op döner.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml } from './_shared/email.ts';
+import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml } from '../_shared/email.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -146,36 +146,43 @@ Deno.serve(async (req: Request) => {
 
   let sent = 0;
   for (const r of recipients) {
-    const opponentNames = slots
-      .map((seat, i) => ({ seat, i }))
-      .filter(({ i }) => i !== r.index)
-      .map(({ seat, i }) => players[i]?.name || (seat.type === 'ai' ? 'Yapay Zeka' : 'Oyuncu'));
+    // Alıcı başına try/catch — biri hata verirse (ör. getUserById/Brevo
+    // geçici sorunu) diğer alıcılara gönderim yine de denensin (aynı
+    // gerekçe notify-deadline-warnings/notify-friend-request-reminders'da).
+    try {
+      const opponentNames = slots
+        .map((seat, i) => ({ seat, i }))
+        .filter(({ i }) => i !== r.index)
+        .map(({ seat, i }) => players[i]?.name || (seat.type === 'ai' ? 'Yapay Zeka' : 'Oyuncu'));
 
-    const [{ data: authUser }, { data: recipientProfile }] = await Promise.all([
-      serviceClient.auth.admin.getUserById(r.seat.user_id!),
-      serviceClient.from('profiles').select('email_notifications_enabled').eq('id', r.seat.user_id!).maybeSingle(),
-    ]);
+      const [{ data: authUser }, { data: recipientProfile }] = await Promise.all([
+        serviceClient.auth.admin.getUserById(r.seat.user_id!),
+        serviceClient.from('profiles').select('email_notifications_enabled').eq('id', r.seat.user_id!).maybeSingle(),
+      ]);
 
-    // İşlemsel-ama-tercih-edilebilir bildirim — alıcı bunu kapattıysa atla.
-    if (recipientProfile?.email_notifications_enabled === false) continue;
+      // İşlemsel-ama-tercih-edilebilir bildirim — alıcı bunu kapattıysa atla.
+      if (recipientProfile?.email_notifications_enabled === false) continue;
 
-    const email = authUser?.user?.email;
-    if (!email) {
-      console.error('[notify-turn-timeout-surrender] Alıcının e-postası bulunamadı:', r.seat.user_id);
-      continue;
-    }
+      const email = authUser?.user?.email;
+      if (!email) {
+        console.error('[notify-turn-timeout-surrender] Alıcının e-postası bulunamadı:', r.seat.user_id);
+        continue;
+      }
 
-    const brevoRes = await sendBrevoEmail(BREVO_API_KEY, {
-      to: { email, name: r.player.name },
-      subject: 'Kelimeki — Oyununuz Süre Aşımından Sona Erdi',
-      htmlContent: buildHtml(r.player.name, joinTurkishList(opponentNames), game.player_count),
-    });
+      const brevoRes = await sendBrevoEmail(BREVO_API_KEY, {
+        to: { email, name: r.player.name },
+        subject: 'Kelimeki — Oyununuz Süre Aşımından Sona Erdi',
+        htmlContent: buildHtml(r.player.name, joinTurkishList(opponentNames), game.player_count),
+      });
 
-    if (brevoRes.ok) {
-      sent += 1;
-    } else {
-      const detail = await brevoRes.text();
-      console.error('[notify-turn-timeout-surrender] Brevo hatası:', brevoRes.status, detail);
+      if (brevoRes.ok) {
+        sent += 1;
+      } else {
+        const detail = await brevoRes.text();
+        console.error('[notify-turn-timeout-surrender] Brevo hatası:', brevoRes.status, detail);
+      }
+    } catch (err) {
+      console.error('[notify-turn-timeout-surrender] alıcı hatası:', r.seat.user_id, err);
     }
   }
 
