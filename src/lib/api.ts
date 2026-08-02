@@ -1212,11 +1212,13 @@ export async function setUserBanned(userId: string, banned: boolean): Promise<vo
   if (!supabase) return;
   const { error } = await supabase.rpc('admin_set_user_banned', { p_user_id: userId, p_banned: banned });
   if (error) throw new Error(error.message);
-  // Yalnızca dondurma anında bir uyarı e-postası gönderilir — dondurma
-  // kaldırılırken (banned:false) hiçbir mail yok, kullanıcı isteği bunu
-  // kapsamıyor.
+  // Her iki yönde de bir bildirim e-postası gönderilir — dondurulan kişi
+  // giriş yapamadığından hesabının donduğunu/tekrar açıldığını yalnızca
+  // bu mailden öğrenebilir.
   if (banned) {
     void notifyAccountBanned(userId);
+  } else {
+    void notifyAccountUnbanned(userId);
   }
 }
 
@@ -1232,6 +1234,23 @@ async function notifyAccountBanned(userId: string): Promise<void> {
     await invokeEdgeFunction('notify-account-banned', { user_id: userId });
   } catch (err) {
     console.error('[Kelimeki] notifyAccountBanned hatası:', (err as Error).message);
+  }
+}
+
+/**
+ * `setUserBanned(false)`'un az önce dondurmasını kaldırdığı hesaba, hesabın
+ * tekrar aktif olduğunu bildiren bir e-posta gönderir (`notify-account-unbanned`
+ * Edge Function'ı) — dondurulmuş kişi giriş yapamadığından itirazını yalnızca
+ * genel "Görüş Bildir" formundan iletebiliyor, admin haklı bulup dondurmayı
+ * kaldırdığında bunu bir e-postayla öğrenmesi gerekiyor. Best-effort/
+ * fire-and-forget, aynı hata toleransı.
+ */
+async function notifyAccountUnbanned(userId: string): Promise<void> {
+  if (!supabase) return;
+  try {
+    await invokeEdgeFunction('notify-account-unbanned', { user_id: userId });
+  } catch (err) {
+    console.error('[Kelimeki] notifyAccountUnbanned hatası:', (err as Error).message);
   }
 }
 
