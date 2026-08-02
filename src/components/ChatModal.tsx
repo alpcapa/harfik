@@ -110,9 +110,9 @@ export function ChatModal({
       }
     >
       <div className="flex flex-col gap-2 mb-3">
-        <div className="relative">
+        <div>
           <textarea
-            className="w-full bg-bg border border-border rounded-md px-3 pt-2 pb-5 text-sm text-text outline-none focus:border-accent transition-colors resize-none"
+            className="w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors resize-none"
             rows={2}
             placeholder="Mesajınızı girin"
             value={text}
@@ -120,7 +120,7 @@ export function ChatModal({
             maxLength={MAX_LENGTH}
             disabled={sending}
           />
-          <span className="absolute bottom-1.5 right-2.5 text-[10px] text-muted font-mono pointer-events-none">
+          <span className="block mt-0.5 text-[10px] text-muted font-mono">
             {text.length}/{MAX_LENGTH}
           </span>
         </div>
