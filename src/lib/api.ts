@@ -6,6 +6,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './supabase';
 import type {
   AdminActivityGranularity,
+  AdminChatReportRow,
   AdminEngagementActivityPoint,
   AdminEngagementTotals,
   AdminFeedbackRow,
@@ -1015,6 +1016,81 @@ export function subscribeOnlineGameMessages(
   };
 }
 
+// ── Oyun İçi Mesajlaşma — Faz 2: sessize alma / raporlama ─────────────────
+// Sessize almak mesajı gizlemez (tüm sohbet herkese aynı kalır) — yalnızca
+// "yeni mesaj" popup'ını/okunmamış rozetini o gönderen için bastırır (bkz.
+// OnlineGameScreen.tsx). Rapor etmek otomatik olarak hedefi de sessize
+// alır; ikisi de karşı tarafa hiçbir şekilde yansımaz (bkz. CLAUDE.md).
+
+/** Çağıranın bu oyunda sessize aldığı kullanıcı id'lerini döner (yalnızca kendi kayıtları, RLS). */
+export async function fetchMyChatMutes(gameId: string): Promise<Set<string>> {
+  if (!supabase) return new Set();
+  const { data, error } = await supabase
+    .from('online_game_message_mutes')
+    .select('muted_user_id')
+    .eq('online_game_id', gameId);
+  if (error) {
+    console.error('[Kelimeki] fetchMyChatMutes hatası:', error.message);
+    return new Set();
+  }
+  return new Set((data ?? []).map((r) => r.muted_user_id as string));
+}
+
+/**
+ * Çağıranın bu oyunda AKTİF (geri çekilmemiş) rapor açtığı kullanıcı
+ * id'lerini döner — bayrak rozeti bu sete bakar (mute tablosuna değil),
+ * çünkü rapor geri çekilse bile mute bağımsız olarak sürebilir.
+ */
+export async function fetchMyActiveChatReports(gameId: string): Promise<Set<string>> {
+  if (!supabase) return new Set();
+  const { data, error } = await supabase
+    .from('online_game_chat_reports')
+    .select('reported_user_id')
+    .eq('online_game_id', gameId)
+    .is('withdrawn_at', null);
+  if (error) {
+    console.error('[Kelimeki] fetchMyActiveChatReports hatası:', error.message);
+    return new Set();
+  }
+  return new Set((data ?? []).map((r) => r.reported_user_id as string));
+}
+
+/** Bir katılımcıyı sessize alır/sessizden çıkarır (RPC: atomik, katılımcı kontrolü sunucuda). */
+export async function setChatMute(gameId: string, targetUserId: string, muted: boolean): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.rpc('mute_online_game_participant', {
+    p_game_id: gameId,
+    p_target_user_id: targetUserId,
+    p_muted: muted,
+  });
+  if (error) throw new Error(error.message);
+}
+
+/** Bir katılımcıyı admine rapor eder (aynı zamanda otomatik sessize alır — bkz. RPC gövdesi). */
+export async function reportChatParticipant(gameId: string, targetUserId: string, reason: string): Promise<void> {
+  if (!supabase) return;
+  const trimmed = reason.trim();
+  if (trimmed.length === 0 || trimmed.length > 500) {
+    throw new Error('Rapor nedeni 1-500 karakter arasında olmalı.');
+  }
+  const { error } = await supabase.rpc('report_online_game_participant', {
+    p_game_id: gameId,
+    p_target_user_id: targetUserId,
+    p_reason: trimmed,
+  });
+  if (error) throw new Error(error.message);
+}
+
+/** Bir katılımcıya karşı açık tüm raporları geri çeker (tek RPC, hepsi birden). */
+export async function withdrawChatReports(gameId: string, targetUserId: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.rpc('withdraw_online_game_chat_reports', {
+    p_game_id: gameId,
+    p_target_user_id: targetUserId,
+  });
+  if (error) throw new Error(error.message);
+}
+
 /**
  * `online_games`/`game_invites`'taki HERHANGİ bir değişiklikte `onChange`'i
  * tetikler (Realtime) — LiveGamesTab'ın liste/rozet verisini (davet
@@ -1306,6 +1382,35 @@ export async function markFeedbackHandled(id: string, handled: boolean): Promise
   if (!supabase) return;
   const { error } = await supabase.from('feedback').update({ handled }).eq('id', id);
   if (error) console.error('[Kelimeki] markFeedbackHandled hatası:', error.message);
+}
+
+/** Tüm sohbet şikayetlerini döner (yalnızca admin — admin_list_chat_reports RPC'si). */
+export async function fetchAdminChatReports(): Promise<AdminChatReportRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('admin_list_chat_reports');
+  if (error) {
+    console.error('[Kelimeki] fetchAdminChatReports hatası:', error.message);
+    return [];
+  }
+  return (data as AdminChatReportRow[]) ?? [];
+}
+
+/** Bir şikayeti okundu/okunmadı işaretler (yalnızca admin). */
+export async function markChatReportHandled(id: string, handled: boolean): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.rpc('admin_mark_chat_report_handled', { p_id: id, p_handled: handled });
+  if (error) console.error('[Kelimeki] markChatReportHandled hatası:', error.message);
+}
+
+/** Bitmiş bir Canlı oyunun tam sohbet dökümünü döner (yalnızca admin, yalnızca bitmiş oyunlar). */
+export async function fetchAdminFinishedGameChat(onlineGameId: string): Promise<GameChatMessage[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('admin_get_finished_game_chat', { p_online_game_id: onlineGameId });
+  if (error) {
+    console.error('[Kelimeki] fetchAdminFinishedGameChat hatası:', error.message);
+    return [];
+  }
+  return (data as GameChatMessage[]) ?? [];
 }
 
 /** Bir geri bildirim mesajını siler (yalnızca admin). */

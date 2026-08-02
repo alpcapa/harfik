@@ -205,6 +205,28 @@ export interface OnlineGameMessageRow {
 }
 
 /**
+ * Oyun İçi Mesajlaşma — Faz 2: `admin_list_chat_reports` RPC'sinin çıktısı
+ * (Admin panosu > Geri Bildirim > Şikayetler). `withdrawn_at` doluysa
+ * raporu gönderen kişi geri çekmiş demektir (handled de otomatik true
+ * olur) — admin arayüzü bunu "Geri Çekildi" olarak ayrı gösterir.
+ * `game_finished` true değilse sohbet dökümü henüz görüntülenemez (v1
+ * kapsamı — yalnızca bitmiş oyunlar).
+ */
+export interface AdminChatReportRow {
+  id: string;
+  online_game_id: string;
+  reporter_user_id: string;
+  reporter_name: string;
+  reported_user_id: string;
+  reported_name: string;
+  reason: string;
+  created_at: string;
+  handled: boolean;
+  withdrawn_at: string | null;
+  game_finished: boolean;
+}
+
+/**
  * `games.messages` jsonb'sindeki tek, dondurulmuş sohbet satırı —
  * `_finish_online_game_records` bir Canlı oyun bitince `online_game_messages`
  * tablosundaki tüm mesajları bu şekle indirgeyip her insan katılımcının

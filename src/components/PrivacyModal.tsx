@@ -28,7 +28,7 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
       <div className="flex flex-col gap-5">
         <P>
           Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, hangi verileri topladığımızı,
-          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 31 Temmuz 2026.
+          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 2 Ağustos 2026.
         </P>
 
         <Section title="1. Veri Sorumlusu">
@@ -58,6 +58,10 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
               arkadaşlık istekleri, davet linkinizin kullanım verisi)
             </li>
             <li>Canlı oyunlarda gönderdiğiniz oyun içi sohbet mesajları</li>
+            <li>
+              Bir Canlı oyunda kimleri sessize aldığınız ve gönderdiğiniz uygunsuz paylaşım
+              raporları (raporun nedeni dahil)
+            </li>
           </ul>
         </Section>
 
@@ -105,6 +109,13 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             zamanlı olarak görünür ve oyun bittikten sonra oyun kaydının bir parçası olarak
             (mevcut skor/tahta görünürlüğüyle aynı şekilde, tüm kayıtlı kullanıcılara açık)
             saklanır.
+          </P>
+          <P>
+            Bir Canlı oyunda kimi sessize aldığınız yalnızca size görünür, diğer katılımcılar
+            (sessize alınan kişi dahil) bunu hiçbir zaman göremez. Gönderdiğiniz uygunsuz
+            paylaşım raporları yalnızca inceleme amacıyla yönetici ekibiyle paylaşılır;
+            raporlanan kullanıcıya rapor edildiği, kimin raporladığı ya da raporun içeriği
+            hiçbir şekilde bildirilmez.
           </P>
         </Section>
 

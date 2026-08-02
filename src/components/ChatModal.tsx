@@ -21,9 +21,21 @@ interface ChatModalProps {
   myUserId: string;
   onSend: (text: string) => Promise<void>;
   onClose: () => void;
+  /** Ayarlar/dişli ikonuna basınca çağrılır — Oyun İçi Mesajlaşma Faz 2
+   * (sessize alma/raporlama) panelini açar (bkz. `ChatSettingsModal`). */
+  onOpenSettings: () => void;
 }
 
-export function ChatModal({ messages, participants, myUserId, onSend, onClose }: ChatModalProps) {
+function GearIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  );
+}
+
+export function ChatModal({ messages, participants, myUserId, onSend, onClose, onOpenSettings }: ChatModalProps) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +77,19 @@ export function ChatModal({ messages, participants, myUserId, onSend, onClose }:
     .reverse();
 
   return (
-    <Modal title="Mesajlaşma" onClose={onClose}>
+    <Modal
+      title="Mesajlaşma"
+      onClose={onClose}
+      headerAction={
+        <button
+          onClick={onOpenSettings}
+          aria-label="Sohbet Ayarları"
+          className="text-muted hover:text-text w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
+        >
+          <GearIcon />
+        </button>
+      }
+    >
       <div className="flex flex-col gap-2 mb-3">
         <textarea
           className="w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors resize-none"

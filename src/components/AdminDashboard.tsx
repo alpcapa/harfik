@@ -16,6 +16,8 @@ import {
   markFeedbackHandled,
   deleteFeedback,
   sendFeedbackReply,
+  fetchAdminChatReports,
+  markChatReportHandled,
 } from '../lib/api';
 import type {
   AdminMember,
@@ -32,9 +34,11 @@ import type {
   AdminGuestStandaloneRow,
   AdminActivityGranularity,
   AdminFeedbackRow,
+  AdminChatReportRow,
 } from '../lib/database.types';
 import { PlayerScoreCard } from './PlayerScoreCard';
 import { MemberMessageModal } from './MemberMessageModal';
+import { AdminChatTranscriptModal } from './AdminChatTranscriptModal';
 import { GrowthChart, type ChartSeriesDef } from './GrowthChart';
 import { trLower } from '../utils/turkish';
 import { useModalA11y } from '../hooks/useModalA11y';
@@ -47,6 +51,7 @@ interface AdminDashboardProps {
 type Tab = 'members' | 'growth' | 'feedback';
 type GameSubTab = 'total' | 2 | 4;
 type GrowthSubTab = 'user' | 'game';
+type FeedbackSubTab = 'inbox' | 'flags';
 type MemberSortKey =
   | 'name'
   | 'nickname'
@@ -362,6 +367,10 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [replyOpenId, setReplyOpenId] = useState<string | null>(null);
   const [replySendingId, setReplySendingId] = useState<string | null>(null);
   const [replyError, setReplyError] = useState<string | null>(null);
+  const [feedbackSubTab, setFeedbackSubTab] = useState<FeedbackSubTab>('inbox');
+  const [chatReports, setChatReports] = useState<AdminChatReportRow[] | null>(null);
+  const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
+  const [transcriptGameId, setTranscriptGameId] = useState<string | null>(null);
 
   const panelRef = useModalA11y(true, onClose);
   const feedbackDeleteRef = useModalA11y(!!feedbackToDelete, () => setFeedbackToDelete(null));
@@ -372,6 +381,9 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       .catch((e) => setError(String(e)));
     fetchAdminFeedback()
       .then(setFeedback)
+      .catch((e) => setError(String(e)));
+    fetchAdminChatReports()
+      .then(setChatReports)
       .catch((e) => setError(String(e)));
     fetchAdminEngagementTotals()
       .then(setEngagementTotals)
@@ -987,6 +999,19 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
           {tab === 'feedback' && (
             <>
+              <div className="flex gap-1.5">
+                <button className={tabBtn(feedbackSubTab === 'inbox')} onClick={() => setFeedbackSubTab('inbox')}>
+                  Gelen Kutusu
+                </button>
+                <button className={tabBtn(feedbackSubTab === 'flags')} onClick={() => setFeedbackSubTab('flags')}>
+                  Şikayetler{chatReports && chatReports.filter((r) => !r.handled).length > 0
+                    ? ` (${chatReports.filter((r) => !r.handled).length})`
+                    : ''}
+                </button>
+              </div>
+
+              {feedbackSubTab === 'inbox' && (
+            <>
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex gap-1.5">
                   <button className={tabBtn(feedbackOriginFilter === 'all')} onClick={() => setFeedbackOriginFilter('all')}>
@@ -1169,12 +1194,97 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                 </div>
               )}
             </>
+              )}
+
+              {feedbackSubTab === 'flags' && (
+                <div className="flex flex-col gap-2">
+                  {chatReports === null ? (
+                    <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>
+                  ) : chatReports.length === 0 ? (
+                    <div className="text-xs font-mono text-muted text-center py-6">Henüz şikayet yok.</div>
+                  ) : (
+                    chatReports.map((r) => {
+                      const isExpanded = expandedReportId === r.id;
+                      return (
+                        <div
+                          key={r.id}
+                          onClick={() => setExpandedReportId((prev) => (prev === r.id ? null : r.id))}
+                          className={`bg-bg border border-border rounded-lg p-3 flex flex-col gap-1.5 cursor-pointer ${
+                            r.handled ? 'opacity-60' : ''
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-muted">
+                            <span className="truncate min-w-0 flex-1">
+                              {r.reporter_name} → {r.reported_name}
+                            </span>
+                            {r.withdrawn_at ? (
+                              <span className="shrink-0 px-1.5 py-0.5 rounded bg-panel border border-border text-[9px] uppercase tracking-[0.5px]">
+                                Geri Çekildi
+                              </span>
+                            ) : r.handled ? (
+                              <span className="shrink-0 px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[9px] uppercase tracking-[0.5px]">
+                                İncelendi
+                              </span>
+                            ) : (
+                              <span className="shrink-0 px-1.5 py-0.5 rounded bg-red/20 text-red text-[9px] uppercase tracking-[0.5px]">
+                                Yeni
+                              </span>
+                            )}
+                            <span className="shrink-0">{fmtDate(r.created_at)}</span>
+                          </div>
+
+                          {!isExpanded ? (
+                            <p className="text-xs text-muted truncate">{r.reason}</p>
+                          ) : (
+                            <>
+                              <p className="text-xs text-text whitespace-pre-wrap">{r.reason}</p>
+                              <div className="flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center gap-3">
+                                  <button
+                                    onClick={() => {
+                                      const next = !r.handled;
+                                      setChatReports((prev) =>
+                                        prev?.map((x) => (x.id === r.id ? { ...x, handled: next } : x)) ?? prev,
+                                      );
+                                      void markChatReportHandled(r.id, next);
+                                    }}
+                                    className="text-[10px] font-mono text-accent hover:underline"
+                                  >
+                                    {r.handled ? 'Okunmadı işaretle' : 'Okundu işaretle'}
+                                  </button>
+                                  {r.game_finished ? (
+                                    <button
+                                      onClick={() => setTranscriptGameId(r.online_game_id)}
+                                      className="text-[10px] font-mono text-accent hover:underline"
+                                    >
+                                      Sohbeti Görüntüle
+                                    </button>
+                                  ) : (
+                                    <span className="text-[10px] font-mono text-muted">
+                                      Oyun sürüyor, sohbet henüz görüntülenemez
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
 
       {selectedMember && (
         <PlayerScoreCard member={selectedMember} onClose={() => setSelectedMember(null)} />
+      )}
+
+      {transcriptGameId && (
+        <AdminChatTranscriptModal onlineGameId={transcriptGameId} onClose={() => setTranscriptGameId(null)} />
       )}
 
       {messageTarget?.email && (

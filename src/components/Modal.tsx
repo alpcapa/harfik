@@ -10,9 +10,13 @@ interface ModalProps {
   // Başlığın hemen üstünde gösterilen küçük bir gezinme linki (ör. HelpModal'ın
   // Hızlı Başlangıç ↔ Detaylı Kurallar geçişi).
   headerLink?: ReactNode;
+  // Başlığın YANINDA, kapat butonunun solunda gösterilen küçük bir aksiyon
+  // ikonu (ör. ChatModal'ın Ayarlar/dişli ikonu, Oyun İçi Mesajlaşma — Faz 2).
+  // headerLink'in aksine aynı satırda, başlıkla ✕ arasında render edilir.
+  headerAction?: ReactNode;
 }
 
-export function Modal({ title, onClose, children, headerLink }: ModalProps) {
+export function Modal({ title, onClose, children, headerLink, headerAction }: ModalProps) {
   const containerRef = useModalA11y(true, onClose);
   const titleId = useId();
   return createPortal(
@@ -35,17 +39,20 @@ export function Modal({ title, onClose, children, headerLink }: ModalProps) {
             <h2 id={titleId} className="font-mono text-sm font-bold tracking-[1.5px] uppercase text-accent">
               {title}
             </h2>
-            {/* Çoğu modalda headerLink olmadığından bu, DOM'daki ilk odaklanabilir
-                öğe oluyor — useModalA11y açılışta buraya otomatik odaklanıyor,
-                bu yüzden tarayıcının varsayılan mavi focus halkası her modal
-                açılışında görünür oluyordu. */}
-            <button
-              onClick={onClose}
-              aria-label="Kapat"
-              className="text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform focus:outline-none"
-            >
-              ✕
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              {headerAction}
+              {/* Çoğu modalda headerLink olmadığından bu, DOM'daki ilk odaklanabilir
+                  öğe oluyor — useModalA11y açılışta buraya otomatik odaklanıyor,
+                  bu yüzden tarayıcının varsayılan mavi focus halkası her modal
+                  açılışında görünür oluyordu. */}
+              <button
+                onClick={onClose}
+                aria-label="Kapat"
+                className="text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform focus:outline-none"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         </div>
         <div className="overflow-y-auto px-5 pt-4 pb-5">{children}</div>
