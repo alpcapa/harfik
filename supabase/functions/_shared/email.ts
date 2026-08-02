@@ -21,6 +21,31 @@ export function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// Kullanıcı-kontrollü bir ismi (display_name/first_name) e-posta KONU
+// satırına gömmeden önce güvenli hale getirir. Konu satırları gövdenin
+// aksine escapeHtml'e tabi değildi — biri kendi adını uzun/keyfi bir
+// metne (ör. "ÜCRETSİZ KAZANDIN TIKLA") çevirip gerçek noreply@kelimeki.com
+// adresinden gelen bir e-postanın konu satırında bunu gösterebiliyordu
+// (marka güvenilirliğini istismar eden bir sosyal mühendislik/phishing
+// vektörü). Satır sonu/kontrol karakterleri temizlenip makul bir uzunlukta
+// kırpılır — isim seçimini engellemez, yalnızca konu satırının kısa/tek
+// satırlık kalmasını garanti eder.
+export function sanitizeForSubject(name: string, maxLen = 40): string {
+  // Regex kaçış dizileri yerine bilinçli olarak kod noktası karşılaştırması
+  // kullanılıyor — kontrol karakterlerini (satır sonu dahil, kod noktası 32'den
+  // küçük olan her şey + DEL/127) boşluğa çevirip ardışık boşlukları teke indiriyor.
+  const withoutControlChars = Array.from(name)
+    .map((ch) => {
+      const code = ch.codePointAt(0) ?? 0;
+      return code < 32 || code === 127 ? ' ' : ch;
+    })
+    .join('');
+  const cleaned = withoutControlChars.split(/\s+/).filter(Boolean).join(' ').trim();
+  if (!cleaned) return 'Bir kullanıcı';
+  if (cleaned.length <= maxLen) return cleaned;
+  return `${cleaned.slice(0, maxLen - 1).trimEnd()}...`;
+}
+
 // Supabase Auth mailleri (supabase/email-templates/*.html — reset-password,
 // confirm-signup, change-email) ile aynı kart/logo görünümü. Auth şablonları
 // Dashboard'da yaşadığından bu HTML'i otomatik paylaşamıyorlar — bu yüzden

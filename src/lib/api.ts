@@ -1831,15 +1831,19 @@ export async function listLocalGameSaves(): Promise<LocalGameSave[]> {
  * bitene/terk edilene kadar sabit kalır, böylece art arda gelen her hamle
  * aynı satırı günceller.
  */
-export async function upsertLocalGameSave(id: string, userId: string, state: GameState): Promise<void> {
-  if (!supabase) return;
+export async function upsertLocalGameSave(id: string, userId: string, state: GameState): Promise<boolean> {
+  if (!supabase) return false;
   const { error } = await supabase.from('local_game_saves').upsert({
     id,
     user_id: userId,
     state,
     player_count: state.players.length,
   });
-  if (error) console.error('[Kelimeki] upsertLocalGameSave hatası:', error.message);
+  if (error) {
+    console.error('[Kelimeki] upsertLocalGameSave hatası:', error.message);
+    return false;
+  }
+  return true;
 }
 
 /** Bir yerel oyun kaydını siler — oyun normal biçimde bitince ya da 7 günlük terk edilme süpürmesi tarafından çağrılır. */

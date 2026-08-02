@@ -19,7 +19,7 @@
 // hiçbir client rolüne hiç açılmaz) ve isimler ayrı bir service-role
 // client'la okunur — play-ai-turn'deki aynı ayrım.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml } from '../_shared/email.ts';
+import { CORS_HEADERS, escapeHtml, sanitizeForSubject, sendBrevoEmail, buildBrandedEmailHtml } from '../_shared/email.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -128,7 +128,10 @@ Deno.serve(async (req: Request) => {
 
   const brevoRes = await sendBrevoEmail(BREVO_API_KEY, {
     to: { email: recipientEmail, name: recipientName },
-    subject: `Kelimeki — ${inviterName} sana arkadaşlık isteği gönderdi`,
+    // İsim, gövdenin aksine escapeHtml'e değil sanitizeForSubject'e tabi —
+    // konu satırı HTML render edilmediğinden escape değil, kontrol
+    // karakteri/uzunluk sınırlaması gerekiyor (bkz. _shared/email.ts).
+    subject: `Kelimeki — ${sanitizeForSubject(inviterName)} sana arkadaşlık isteği gönderdi`,
     htmlContent: buildHtml(inviterName, recipientName),
   });
 

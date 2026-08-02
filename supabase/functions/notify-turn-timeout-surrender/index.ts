@@ -112,6 +112,27 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ ok: true, sent: 0, reason: 'not_finished_by_timeout' });
   }
 
+  // Atomik "iddia" — bu fonksiyon verify_jwt=false ile herkese açık bir POST
+  // hedefi olduğundan, yukarıdaki kontrol tek başına yeterli değil: oyunun
+  // surrendered/is_game_over durumu bir kez sağlandıktan sonra KALICI olarak
+  // true kaldığından, bitmiş bir oyunun online_game_id'sini bilen herkes bu
+  // URL'e tekrar tekrar POST atarak aynı kullanıcı(lar)a "-2 puan cezası
+  // aldın" mailini sınırsız kez gönderebilirdi. `timeout_notified_at`'i
+  // yalnızca hâlâ null iken dolduran bu UPDATE, `deadline_warning_sent_at`
+  // deseniyle aynı: `.is(...)` filtresi eşleşmezse (zaten bildirilmiş) hiçbir
+  // satır güncellenmez, `claimed` null döner ve fonksiyon mail göndermeden çıkar.
+  const { data: claimed } = await serviceClient
+    .from('online_game_states')
+    .update({ timeout_notified_at: new Date().toISOString() })
+    .eq('online_game_id', gameId)
+    .is('timeout_notified_at', null)
+    .select('online_game_id')
+    .maybeSingle();
+
+  if (!claimed) {
+    return jsonResponse({ ok: true, sent: 0, reason: 'already_notified' });
+  }
+
   const slots = game.slots as Slot[];
   const players = state.players as PlayerState[];
 
