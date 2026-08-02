@@ -59,6 +59,9 @@ export function ChatThread({ messages, emptyText, mutedUserIds, reportedUserIds,
         const reported = !!m.senderId && !!reportedUserIds?.has(m.senderId);
         const muted = !reported && !!m.senderId && !!mutedUserIds?.has(m.senderId);
         const badge = reported ? '🚩' : muted ? '🚫' : null;
+        // Kendi mesajını sessize alamayacağın/rapor edemeyeceğin için
+        // yalnızca başkasının mesajına tıklamak ayarlar panelini açar.
+        const canOpenSettings = !m.mine && !!m.senderId && !!onBadgeClick;
         return (
           <div key={m.key} className={`flex items-end gap-1.5 ${m.mine ? 'flex-row-reverse' : ''}`}>
             <Avatar url={m.avatarUrl} name={m.name} size={22} className="shrink-0" />
@@ -86,12 +89,24 @@ export function ChatThread({ messages, emptyText, mutedUserIds, reportedUserIds,
                     </span>
                   ))}
               </span>
-              <div
-                className="rounded-xl px-2.5 py-1.5 text-[12px] font-sans text-text leading-snug break-words"
-                style={{ background: col.tint, border: `1px solid ${col.base}` }}
-              >
-                {m.message}
-              </div>
+              {canOpenSettings ? (
+                <button
+                  type="button"
+                  onClick={() => onBadgeClick!(m.senderId!)}
+                  aria-label={`${m.name} — sessize al/rapor et`}
+                  className="rounded-xl px-2.5 py-1.5 text-[12px] font-sans text-text leading-snug break-words text-left active:opacity-70 transition-opacity"
+                  style={{ background: col.tint, border: `1px solid ${col.base}` }}
+                >
+                  {m.message}
+                </button>
+              ) : (
+                <div
+                  className="rounded-xl px-2.5 py-1.5 text-[12px] font-sans text-text leading-snug break-words"
+                  style={{ background: col.tint, border: `1px solid ${col.base}` }}
+                >
+                  {m.message}
+                </div>
+              )}
               <span className="text-[8px] font-mono text-muted">{formatMessageTime(m.createdAt)}</span>
             </div>
           </div>
