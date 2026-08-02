@@ -44,6 +44,8 @@ import { hasSeenChatIntro, markChatIntroSeen, getChatLastReadAt, markChatRead } 
 import {
   checkOnlineGameTurnTimeout,
   fetchMeaning,
+  fetchMyActiveChatReports,
+  fetchMyChatMutes,
   fetchOnlineGameMessages,
   fetchOnlineGameMoves,
   fetchOnlineGameState,
@@ -56,6 +58,7 @@ import {
   subscribeOnlineGameState,
   triggerAiTurn,
 } from '../lib/api';
+import { ChatSettingsModal } from './ChatSettingsModal';
 import type { GameState, HistoryEntry, Tile as TileModel } from '../game/types';
 import type { OnlineGame, OnlineGameMessageRow, OnlineGameSlot, OnlineMoveRow, WordMeaning } from '../lib/database.types';
 
@@ -164,6 +167,24 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   const [showChatIntro, setShowChatIntro] = useState(false);
   const [newMessagePopup, setNewMessagePopup] = useState<OnlineGameMessageRow | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Oyun İçi Mesajlaşma — Faz 2 (sessize alma / raporlama).
+  const [showChatSettings, setShowChatSettings] = useState(false);
+  // Doluysa Ayarlar paneli doğrudan bu kişinin detayıyla açılır — sohbetteki
+  // bir 🚫/🚩 rozetine tıklanınca (bkz. handleOpenParticipantSettings).
+  const [chatSettingsInitialParticipant, setChatSettingsInitialParticipant] = useState<string | null>(null);
+  const [mutedUserIds, setMutedUserIds] = useState<Set<string>>(new Set());
+  const [reportedUserIds, setReportedUserIds] = useState<Set<string>>(new Set());
+  // Realtime insert handler'ı mount anında sabitlenen bir closure içinde
+  // çalıştığından ([game.id, mySlotIndex, myUserId] bağımlılığı), güncel
+  // mute setini oradan okuyabilmek için bir ref aynası tutuluyor — aksi
+  // halde her (un)mute'ta tüm sohbet aboneliğinin sökülüp yeniden
+  // kurulması gerekirdi (mesaj kaçırma riski, dragRef/suppressClickRef ile
+  // aynı "ref aynası" deseni).
+  const mutedUserIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    mutedUserIdsRef.current = mutedUserIds;
+  }, [mutedUserIds]);
 
   // ── Taş sürükleme (App.tsx'teki sistemle birebir aynı) ─────────────────
   const dragRef = useRef<{ source: DragSource; startX: number; startY: number; moved: boolean } | null>(null);
@@ -307,8 +328,19 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   useEffect(() => {
     if (mySlotIndex < 0) return;
     let cancelled = false;
-    void fetchOnlineGameMessages(game.id).then((rows) => {
+    // Mute/rapor setleri ile mesaj listesi BİRLİKTE (Promise.all) çekiliyor
+    // ki aşağıdaki ilk "okunmamış" hesaplaması güncel mute setini kullansın
+    // — ikisi ayrı/bağımsız fetch olsaydı hangi önce bittiği garanti
+    // olmadığından, soğuk yüklemede sessize alınmış birinin mesajı yanlışlıkla
+    // bir an için okunmamış sayılabilirdi.
+    void Promise.all([
+      fetchMyChatMutes(game.id),
+      fetchMyActiveChatReports(game.id),
+      fetchOnlineGameMessages(game.id),
+    ]).then(([mutes, reported, rows]) => {
       if (cancelled) return;
+      setMutedUserIds(mutes);
+      setReportedUserIds(reported);
       setChatMessages(rows);
       // Bu cihazda bu oyun için "en son okunan mesaj" damgası hiç yoksa
       // (ör. bu özellik yeni devreye girdi ya da oyun ekranı bu cihazda
@@ -329,13 +361,18 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
         setUnreadCount(0);
         return;
       }
-      const unread = rows.filter((r) => r.sender_user_id !== myUserId && r.created_at > lastReadAt).length;
+      // Faz 2: sessize alınmış birinin geçmiş mesajları da (mute'tan önce
+      // gelmiş olsalar bile) okunmamış sayılmıyor — mute'un amacı zaten bu
+      // kişiden rahatsız olunmasını engellemek.
+      const unread = rows.filter(
+        (r) => r.sender_user_id !== myUserId && r.created_at > lastReadAt && !mutes.has(r.sender_user_id),
+      ).length;
       setUnreadCount(unread);
     });
     const unsubscribe = subscribeOnlineGameMessages(game.id, (row) => {
       setChatMessages((cur) => (cur.some((m) => m.id === row.id) ? cur : [...cur, row]));
       setShowChat((open) => {
-        if (!open) {
+        if (!open && !mutedUserIdsRef.current.has(row.sender_user_id)) {
           setNewMessagePopup(row);
           setUnreadCount((n) => n + 1);
         }
@@ -768,6 +805,37 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     }
   };
 
+  // Oyun İçi Mesajlaşma — Faz 2: ChatSettingsModal'daki eylemlerden sonra
+  // yerel state'i güncelleyen callback'ler — RPC zaten sunucuda kalıcı
+  // hâle getirdi, burada yalnızca UI'ı (rozetler + realtime filtre için
+  // kullanılan ref aynası) senkron tutuyoruz.
+  const handleChatMuteChange = (targetUserId: string, muted: boolean) => {
+    setMutedUserIds((cur) => {
+      const next = new Set(cur);
+      if (muted) next.add(targetUserId);
+      else next.delete(targetUserId);
+      return next;
+    });
+  };
+  const handleChatReported = (targetUserId: string) => {
+    setReportedUserIds((cur) => new Set(cur).add(targetUserId));
+    handleChatMuteChange(targetUserId, true);
+  };
+  const handleChatReportWithdrawn = (targetUserId: string) => {
+    setReportedUserIds((cur) => {
+      const next = new Set(cur);
+      next.delete(targetUserId);
+      return next;
+    });
+  };
+  // Mesajdaki bir 🚫/🚩 rozetine tıklanınca — Ayarlar panelini o kişinin
+  // detayıyla doğrudan açar, listeyi atlar (kullanıcı isteği: "sessize
+  // aldığını hatırlayıp basıp tekrar açabilsin").
+  const handleOpenParticipantSettings = (userId: string) => {
+    setChatSettingsInitialParticipant(userId);
+    setShowChatSettings(true);
+  };
+
   return (
     <div className="min-h-[100dvh] w-full flex flex-col items-center overflow-x-hidden">
       <GameHeader state={state} onLogoClick={onBack} />
@@ -1052,6 +1120,30 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
           myUserId={myUserId}
           onSend={(text) => sendOnlineGameMessage(game.id, text)}
           onClose={() => setShowChat(false)}
+          onOpenSettings={() => {
+            setChatSettingsInitialParticipant(null);
+            setShowChatSettings(true);
+          }}
+          mutedUserIds={mutedUserIds}
+          reportedUserIds={reportedUserIds}
+          onOpenParticipantSettings={handleOpenParticipantSettings}
+        />
+      )}
+
+      {showChatSettings && (
+        <ChatSettingsModal
+          gameId={game.id}
+          participants={chatParticipants.filter((p) => p.userId !== myUserId)}
+          mutedUserIds={mutedUserIds}
+          reportedUserIds={reportedUserIds}
+          onMuteChange={handleChatMuteChange}
+          onReported={handleChatReported}
+          onWithdrawn={handleChatReportWithdrawn}
+          initialParticipantId={chatSettingsInitialParticipant}
+          onClose={() => {
+            setShowChatSettings(false);
+            setChatSettingsInitialParticipant(null);
+          }}
         />
       )}
 

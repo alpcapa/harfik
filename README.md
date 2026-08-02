@@ -55,6 +55,7 @@ src/
 │   ├── MoveHistoryModal.tsx     # oyun geçmişi (hamle hamle)
 │   ├── ChatThread.tsx           # oyun içi mesajlaşma: paylaşılan sohbet baloncuğu listesi (canlı + arşiv)
 │   ├── ChatModal.tsx            # oyun içi mesajlaşma: Canlı oyunda gerçek sohbet penceresi (yalnızca Canlı oyunlar)
+│   ├── ChatSettingsModal.tsx    # oyun içi mesajlaşma Faz 2: kişi sessize alma / rapor etme ayarları (ChatModal'ın dişli ikonundan açılır)
 │   ├── GameChatHistoryModal.tsx # oyun içi mesajlaşma: bitmiş bir oyunun dondurulmuş sohbet kaydının salt-okunur görünümü
 │   ├── Leaderboard.tsx          # lider tablosu
 │   ├── MeaningModal.tsx         # kelime anlamı penceresi
@@ -63,6 +64,7 @@ src/
 │   ├── FeedbackModal.tsx        # görüş/şikayet bildirme formu
 │   ├── AdminDashboard.tsx       # admin paneli: üyeler, oyunlar, büyüme grafiği, geri bildirim (yalnızca is_admin)
 │   ├── MemberMessageModal.tsx   # admin panelinden bir üyeye serbest metinli mesaj gönderme compose modalı
+│   ├── AdminChatTranscriptModal.tsx # admin paneli Şikayetler sekmesi: bitmiş bir Canlı oyunun tam sohbet dökümü
 │   ├── PlayerScoreCard.tsx      # bir oyuncunun ScoreCard'ının salt-okunur görünümü (admin panelinden ve k-lig'den açılır)
 │   ├── GrowthChart.tsx          # admin büyüme grafiği (generic zaman serisi çizgi grafiği)
 │   ├── PrivacyModal.tsx         # gizlilik politikası

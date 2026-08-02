@@ -205,6 +205,43 @@ export interface OnlineGameMessageRow {
 }
 
 /**
+ * Oyun İçi Mesajlaşma — Faz 2: `admin_list_chat_reports` RPC'sinin çıktısı
+ * (Admin panosu > Geri Bildirim > Şikayetler). `withdrawn_at` doluysa
+ * raporu gönderen kişi geri çekmiş demektir (handled de otomatik true
+ * olur) — admin arayüzü bunu "Geri Çekildi" olarak ayrı gösterir.
+ * `game_finished` true değilse sohbet dökümü henüz görüntülenemez (v1
+ * kapsamı — yalnızca bitmiş oyunlar).
+ */
+export interface AdminChatReportRow {
+  id: string;
+  online_game_id: string;
+  reporter_user_id: string;
+  reporter_name: string;
+  reported_user_id: string;
+  reported_name: string;
+  reason: string;
+  created_at: string;
+  handled: boolean;
+  withdrawn_at: string | null;
+  game_finished: boolean;
+}
+
+/**
+ * `admin_get_member_activity_log` RPC'sinin çıktısı — Admin panosu >
+ * Üyeler > bir üyenin skor kartının en altındaki "Kayıtlar" bölümü.
+ * Oynadığı oyunlar HARİÇ, hesabıyla ilgili kritik olayların (üye oluş,
+ * hesap dondurma/kaldırma, admin ile mesaj geçmişi, rapor edilme/geri
+ * çekilme) kronolojik (en yeni önce) dökümü. `detail` bazı satırlarda
+ * (ör. "Üye Oldu") null olabilir.
+ */
+export interface AdminMemberActivityLogRow {
+  kind: 'signup' | 'ban' | 'unban' | 'feedback_user' | 'feedback_admin' | 'feedback_replied' | 'report_received' | 'report_withdrawn';
+  created_at: string;
+  title: string;
+  detail: string | null;
+}
+
+/**
  * `games.messages` jsonb'sindeki tek, dondurulmuş sohbet satırı —
  * `_finish_online_game_records` bir Canlı oyun bitince `online_game_messages`
  * tablosundaki tüm mesajları bu şekle indirgeyip her insan katılımcının

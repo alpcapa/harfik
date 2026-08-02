@@ -10,6 +10,7 @@ import { KLigMark } from './KLigMark';
 import { useAuth } from '../hooks/useAuth';
 import { useModalA11y } from '../hooks/useModalA11y';
 import {
+  fetchAdminMemberActivityLog,
   fetchFriendRelation,
   fetchMyLeaderboardRank,
   fetchPlayerStats,
@@ -17,7 +18,12 @@ import {
   respondFriendRequest,
   sendFriendRequest,
 } from '../lib/api';
-import type { FriendRelation, MyLeaderboardRank, PlayerStats } from '../lib/database.types';
+import type {
+  AdminMemberActivityLogRow,
+  FriendRelation,
+  MyLeaderboardRank,
+  PlayerStats,
+} from '../lib/database.types';
 
 /** Bir skor kartı çizmek için gereken asgari oyuncu kimliği. */
 export interface PlayerSummary {
@@ -32,6 +38,28 @@ export interface PlayerSummary {
 interface PlayerScoreCardProps {
   member: PlayerSummary;
   onClose: () => void;
+  /** Yalnızca Admin Paneli > Üyeler'den açılınca true — kartın en altına
+   * bu üyenin (oynadığı oyunlar hariç) kritik hesap geçmişini gösteren
+   * "Kayıtlar" bölümünü ekler (bkz. `admin_get_member_activity_log`). */
+  isAdminView?: boolean;
+}
+
+const ACTIVITY_LOG_ICON: Record<AdminMemberActivityLogRow['kind'], string> = {
+  signup: '👤',
+  ban: '🚫',
+  unban: '✅',
+  feedback_user: '✉️',
+  feedback_admin: '📨',
+  feedback_replied: '↩️',
+  report_received: '🚩',
+  report_withdrawn: '↩️',
+};
+
+function fmtLogDate(iso: string) {
+  const d = new Date(iso);
+  const date = d.toLocaleDateString('tr-TR');
+  const time = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  return `${date} ${time}`;
 }
 
 type TabKey = 'all' | 2 | 4;
@@ -81,7 +109,7 @@ function friendDialogCopy(relation: FriendRelation | null, name: string) {
   }
 }
 
-export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
+export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCardProps) {
   const { user } = useAuth();
   const [statsByTab, setStatsByTab] = useState<
     Record<TabKey, PlayerStats | null | undefined>
@@ -94,6 +122,7 @@ export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
   const [showFriendConfirm, setShowFriendConfirm] = useState(false);
   const [friendBusy, setFriendBusy] = useState(false);
   const [friendResultMsg, setFriendResultMsg] = useState<string | null>(null);
+  const [activityLog, setActivityLog] = useState<AdminMemberActivityLogRow[] | null | undefined>(undefined);
   const friendConfirmRef = useModalA11y(showFriendConfirm, () => setShowFriendConfirm(false));
   const friendResultRef = useModalA11y(!!friendResultMsg, () => setFriendResultMsg(null));
 
@@ -105,6 +134,12 @@ export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
     }
     fetchMyLeaderboardRank(member.id).then(setRank);
   }, [member.id]);
+
+  useEffect(() => {
+    if (!isAdminView) return;
+    setActivityLog(undefined);
+    fetchAdminMemberActivityLog(member.id).then((rows) => setActivityLog(rows.length ? rows : null));
+  }, [isAdminView, member.id]);
 
   useEffect(() => {
     if (!user || user.id === member.id) {
@@ -340,6 +375,41 @@ export function PlayerScoreCard({ member, onClose }: PlayerScoreCardProps) {
           Tüm Geçmiş Oyunlar
         </button>
       </div>
+
+      {isAdminView && (
+        <div className="mt-4 pt-3 border-t border-border/60">
+          <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono mb-1.5">
+            Kayıtlar
+          </div>
+          {activityLog === undefined ? (
+            <p className="text-muted text-xs font-mono text-center py-3">Yükleniyor…</p>
+          ) : activityLog === null ? (
+            <p className="text-muted text-[10px] font-mono text-center py-2">
+              Bu üye için henüz bir kayıt yok.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-1.5 max-h-56 overflow-y-auto pr-1">
+              {activityLog.map((entry, i) => (
+                <li
+                  key={`${entry.kind}-${entry.created_at}-${i}`}
+                  className="flex items-start gap-2 text-[11px] font-mono"
+                >
+                  <span className="shrink-0" aria-hidden>
+                    {ACTIVITY_LOG_ICON[entry.kind]}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="text-text font-bold">{entry.title}</span>
+                    {entry.detail && (
+                      <span className="text-muted"> — {entry.detail}</span>
+                    )}
+                  </span>
+                  <span className="shrink-0 text-muted whitespace-nowrap">{fmtLogDate(entry.created_at)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {showAllGames && (
         <GameHistoryModal

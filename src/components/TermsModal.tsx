@@ -28,7 +28,7 @@ export function TermsModal({ onClose }: TermsModalProps) {
       <div className="flex flex-col gap-5">
         <P>
           Kelimeki'ye kaydolarak aşağıdaki koşulları okuduğunuzu ve kabul ettiğinizi beyan edersiniz.
-          Son güncelleme: 31 Temmuz 2026.
+          Son güncelleme: 2 Ağustos 2026.
         </P>
 
         <Section title="1. Hizmet Sağlayıcı ve Kapsam">
@@ -80,6 +80,8 @@ export function TermsModal({ onClose }: TermsModalProps) {
             Oyun içi mesajlaşma özelliğiyle gönderilen mesajlar önceden denetlenmez (moderasyona
             tabi değildir); kullanıcılar arasında gönderilen mesajların içeriğinden Kelimeki hiçbir
             şekilde sorumlu tutulamaz, sorumluluk tamamen mesajı gönderen kullanıcıya aittir.
+            Uygunsuz bir mesajla karşılaşan kullanıcılar, sohbet ekranındaki ayarlar üzerinden
+            ilgili kişiyi sessize alabilir ve/veya yönetici ekibine rapor edebilir.
           </P>
         </Section>
 
