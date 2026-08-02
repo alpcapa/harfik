@@ -50,6 +50,7 @@ src/
 │   ├── ResetPasswordModal.tsx   # şifre sıfırlama e-postasındaki bağlantıdan sonra yeni şifre belirleme
 │   ├── AccountSettingsModal.tsx # profil düzenleme (avatar, kullanıcı adı)
 │   ├── ScoreCard.tsx            # oyuncu istatistikleri
+│   ├── RecentGamesSection.tsx   # Setup'taki "Yapay Zeka ile"/"Arkadaşınla" sekmelerinde son 5 biten oyun listesi
 │   ├── GameHistoryModal.tsx     # geçmiş oyunların listesi (kalp ikonu: favori, karta tıkla: tahta önizlemesi), Tümü/Favoriler filtresi
 │   ├── GameBoardPreview.tsx     # bir oyunun bitiş anındaki tahtasının salt-okunur önizlemesi
 │   ├── MoveHistoryModal.tsx     # oyun geçmişi (hamle hamle)
@@ -57,7 +58,9 @@ src/
 │   ├── ChatModal.tsx            # oyun içi mesajlaşma: Canlı oyunda gerçek sohbet penceresi (yalnızca Canlı oyunlar)
 │   ├── ChatSettingsModal.tsx    # oyun içi mesajlaşma Faz 2: kişi sessize alma / rapor etme ayarları (ChatModal'ın dişli ikonundan açılır)
 │   ├── GameChatHistoryModal.tsx # oyun içi mesajlaşma: bitmiş bir oyunun dondurulmuş sohbet kaydının salt-okunur görünümü
-│   ├── Leaderboard.tsx          # lider tablosu
+│   ├── Leaderboard.tsx          # lider tablosu (k-lig)
+│   ├── KLigMark.tsx             # "k-lig" logosu — statik SVG path (üretilmiş, bkz. scripts/generate-klig-paths.mjs), font bağımsız
+│   ├── CountBadge.tsx           # ortak kırmızı sayaç rozeti (sekme başlıkları, "Arkadaşlar" satırı vb.)
 │   ├── MeaningModal.tsx         # kelime anlamı penceresi
 │   ├── RemainingTilesModal.tsx  # torbada kalan taşlar
 │   ├── WildcardModal.tsx        # joker taşı harf seçimi
@@ -103,6 +106,7 @@ src/
 │   ├── turkish.ts      # trUpper / trLower (i/İ, ı/I dönüşümü)
 │   ├── random.ts       # karıştırma
 │   ├── ranking.ts      # oyun sonu sıralama (teslim olanlar en sona)
+│   ├── gameRecord.ts   # buildGameRecord — bir GameState'ten games tablosuna yazılacak kaydı üretir (canlı oyun bitişi ve gecikmeli terk-edilme kaydı ortak)
 │   ├── gameStorage.ts  # devam eden oyunun localStorage kalıcılığı + terk temizliği (yalnızca misafir/girişsiz kullanıcı — girişli kullanıcı sunucudaki local_game_saves'i kullanır, cihazlar arası + çoklu oyun, bkz. lib/api.ts)
 │   ├── gameSync.ts      # bitmiş oyunlar için çevrimdışı/misafir kuyruğu
 │   ├── feedbackSync.ts # geri bildirim formu için çevrimdışı kuyruk
@@ -164,6 +168,11 @@ VITE_SUPABASE_ANON_KEY=sb_publishable_...   # Project Settings → API
 - `notify-friend-request/` / `notify-game-invite/` — bir arkadaşlık isteği ya da Canlı oyun daveti oluşturulduğunda alıcıya işlemsel (marketing_consent'e bağlı olmayan) bir e-posta bildirimi gönderir; aynı Brevo API'sini kullanır. Best-effort/fire-and-forget çağrılır (`src/lib/api.ts`), bir e-posta hatası isteğin/davetin kendisini etkilemez. Detay için `CLAUDE.md`'deki "İşlemsel e-posta bildirimleri" bölümüne bakın.
 - `notify-deadline-warnings/` — Canlı oyunda sırası gelen oyuncuya (48 saatlik `turn_deadline`) ve YZ'ye karşı devam eden oyunlara (7 günlük terk-edilme penceresi) süre 24 saatten az kalınca hatırlatma gönderir. Projenin ilk `pg_cron` + `pg_net` job'u — kullanıcı etkileşimine bağlı diğer "hafif" desenlerin aksine (`check_turn_timeout` gibi) 15 dakikada bir kendiliğinden tetiklenir, `verify_jwt: false`.
 - `notify-friend-request-reminders/` — 3 gün cevapsız kalan arkadaşlık isteklerine tek seferlik bir hatırlatma e-postası gönderir. İkinci `pg_cron` job'u, günde bir kez (08:00 UTC) tetiklenir. Detay için `CLAUDE.md`'deki "Arkadaşlık isteği hatırlatma e-postası" bölümüne bakın.
+- `notify-turn-timeout-surrender/` — bir Canlı oyunda sırası gelen oyuncu 48 saat içinde hamle yapmayıp otomatik teslim olduğunda (ve bu, oyunun gerçekten bittiği ana denk geldiğinde) ilgili oyunculara -2 k-lig cezasını bildirir. `check_turn_timeout` RPC'sinden `net.http_post` ile SQL içinden tetiklenir, `verify_jwt: false`.
+- `notify-local-game-abandoned/` — Yapay Zeka'ya karşı 7 gün boyunca hiç hamle yapılmayıp terk edilmiş sayılan bir yerel oyunun -2 k-lig cezasını hesap sahibine bildirir; `saveGame` gerçek bir `surrendered:true` kaydı eklediğinde tetiklenir.
+- `notify-account-banned/` / `notify-account-unbanned/` — admin bir hesabı dondurduğunda/dondurmayı kaldırdığında ilgili kullanıcıya bildirim gönderir.
+
+Altı işlemsel bildirim türü (`notify-friend-request`, `notify-friend-request-reminders`, `notify-game-invite`, `notify-deadline-warnings`, `notify-turn-timeout-surrender`, `notify-local-game-abandoned`) alıcının `profiles.email_notifications_enabled` tercihine (varsayılan açık, Hesap Ayarları'ndan kapatılabilir) bağlıdır — kapalıysa gönderim sessizce atlanır. Hesap güvenliği/admin yazışması niteliğindeki diğer fonksiyonlar (`notify-account-banned`/`notify-account-unbanned`, `feedback-reply`, `admin-send-message`) bu tercihe bakmadan her zaman gönderilir.
 
 Yukarıdaki tüm e-posta gönderen fonksiyonlar `noreply@kelimeki.com` adresinden gönderiyor (tek yönlü — gerçek bir `destek@` gelen kutusu henüz kurulmadı, bilinçli olarak ertelendi). `feedback-reply`/`admin-send-message`'ın gönderdiği e-postaların altında "Bu e-posta noreply adresinden gönderilmiştir. Cevap için tıklayın" notu var — link `kelimeki.com/?contact=1&re=<id>`'e gider (`<id>`, cevaben geldiği mesajın kaydı), `App.tsx`'teki bir effect bu parametreleri okuyup genel "Görüş Bildir" formunu (`FeedbackModal`, `source="general"`) otomatik açar ve yeni gönderilen mesajı `feedback.related_to` ile önceki mesaja bağlar. `admin-send-message` artık kendi gönderdiği mesajı da `feedback`'e (`origin: 'admin'`) yazıyor — admin panelinde "kime ne yazıldığı" kalıcı olarak görünür.
 
