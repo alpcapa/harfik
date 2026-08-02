@@ -6,7 +6,7 @@
 // Hızlı Başlangıç ↔ Detaylı Kurallar geçişiyle aynı desen.
 //
 // Rozet mantığı: bayrak (🚩) yalnızca AKTİF (geri çekilmemiş) bir raporum
-// varsa gösterilir; yoksa ve kişiyi sessize almışsam dur işareti (🛑)
+// varsa gösterilir; yoksa ve kişiyi sessize almışsam yasak işareti (🚫)
 // gösterilir; ikisi de yoksa hiçbir işaret yok. Bu rozetler yalnızca
 // işlemi yapan kişiye (bana) görünür — karşı taraf hiçbir zaman göremez
 // (bkz. CLAUDE.md "karşı tarafa yansımıyor" ilkesi).
@@ -123,7 +123,7 @@ export function ChatSettingsModal({
                     </span>
                   ) : muted ? (
                     <span aria-label="Sessize alındı" title="Sessize alındı" className="text-sm shrink-0">
-                      🛑
+                      🚫
                     </span>
                   ) : null}
                 </button>
