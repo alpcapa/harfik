@@ -35,8 +35,10 @@ interface ChatSettingsModalProps {
 type View =
   | { kind: 'list' }
   | { kind: 'detail'; participant: ChatParticipant }
+  | { kind: 'mute-confirm'; participant: ChatParticipant; nextMuted: boolean }
   | { kind: 'report-reason'; participant: ChatParticipant }
-  | { kind: 'report-confirm'; participant: ChatParticipant; reason: string };
+  | { kind: 'report-confirm'; participant: ChatParticipant; reason: string }
+  | { kind: 'withdraw-confirm'; participant: ChatParticipant };
 
 const REASON_MAX = 500;
 
@@ -151,7 +153,14 @@ export function ChatSettingsModal({
           <button
             type="button"
             disabled={busy}
-            onClick={() => void handleToggleMute(view.participant)}
+            onClick={() => {
+              setError(null);
+              setView({
+                kind: 'mute-confirm',
+                participant: view.participant,
+                nextMuted: !mutedUserIds.has(view.participant.userId),
+              });
+            }}
             className="flex items-center gap-2.5 bg-bg border border-border rounded-lg px-2.5 py-2 text-left disabled:opacity-50"
           >
             <span
@@ -173,10 +182,13 @@ export function ChatSettingsModal({
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => void handleWithdraw(view.participant)}
+                onClick={() => {
+                  setError(null);
+                  setView({ kind: 'withdraw-confirm', participant: view.participant });
+                }}
                 className="btn-raised-neutral rounded-md py-2 text-xs font-bold uppercase tracking-[1px] bg-void border border-border text-text active:scale-[0.97] transition-transform disabled:opacity-50"
               >
-                {busy ? '...' : 'Raporu Geri Çek'}
+                Raporu Geri Çek
               </button>
             </div>
           ) : (
@@ -202,6 +214,77 @@ export function ChatSettingsModal({
           >
             ← Geri
           </button>
+        </div>
+      )}
+
+      {view.kind === 'mute-confirm' && (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-text font-bold">Emin misiniz?</p>
+          <p className="text-sm text-text leading-relaxed">
+            {view.nextMuted ? (
+              <>
+                <span className="font-bold">{view.participant.name}</span> kişisini sessize almak istediğinize emin
+                misiniz? Mesajları sohbette görünmeye devam eder, yalnızca bu kişiden gelen yeni mesaj bildirimleri
+                sizin için kapanır.
+              </>
+            ) : (
+              <>
+                <span className="font-bold">{view.participant.name}</span> kişisini sessizden çıkarmak istediğinize
+                emin misiniz? Bu kişiden gelen yeni mesajlar için tekrar bildirim almaya başlarsınız.
+              </>
+            )}
+          </p>
+          {error && <p className="text-red text-[10px] font-mono">{error}</p>}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={async () => {
+                await handleToggleMute(view.participant);
+                setView({ kind: 'detail', participant: view.participant });
+              }}
+              className="flex-1 btn-raised rounded-md py-2.5 text-xs font-bold uppercase tracking-[1px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-50"
+            >
+              {busy ? '...' : view.nextMuted ? 'Sessize Al' : 'Sessizden Çıkar'}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setView({ kind: 'detail', participant: view.participant })}
+              className="flex-1 btn-raised-neutral rounded-md py-2.5 text-xs font-bold uppercase tracking-[1px] bg-void border border-border text-text active:scale-[0.97] transition-transform disabled:opacity-50"
+            >
+              Vazgeç
+            </button>
+          </div>
+        </div>
+      )}
+
+      {view.kind === 'withdraw-confirm' && (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-text font-bold">Emin misiniz?</p>
+          <p className="text-sm text-text leading-relaxed">
+            <span className="font-bold">{view.participant.name}</span> için gönderdiğiniz raporu geri çekmek
+            istediğinize emin misiniz?
+          </p>
+          {error && <p className="text-red text-[10px] font-mono">{error}</p>}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void handleWithdraw(view.participant)}
+              className="flex-1 btn-raised rounded-md py-2.5 text-xs font-bold uppercase tracking-[1px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-50"
+            >
+              {busy ? '...' : 'Raporu Geri Çek'}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setView({ kind: 'detail', participant: view.participant })}
+              className="flex-1 btn-raised-neutral rounded-md py-2.5 text-xs font-bold uppercase tracking-[1px] bg-void border border-border text-text active:scale-[0.97] transition-transform disabled:opacity-50"
+            >
+              Vazgeç
+            </button>
+          </div>
         </div>
       )}
 
