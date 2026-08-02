@@ -206,6 +206,25 @@ function advanceTurn(state: GameState): GameState {
   return nextState;
 }
 
+/**
+ * Sunucudan taze çekilen bir rafı, bu turda yerel olarak (henüz sunucuya
+ * gönderilmemiş) tahtaya konmuş `placed` taşları için düşürür. Sunucu
+ * yalnızca gerçek bir `submit_move` ile rafı günceller — SYNC_ONLINE_STATE
+ * turn ilerlemeden (ör. sekme arka plandan döndüğünde) geldiğinde `myRack`
+ * hâlâ bu taşları içerir; çıkarmazsak aynı taş hem tahtada hem rafta
+ * görünür ve bir sonraki "Geri Al"/senkronda `recallAll` bunları rafa BİR
+ * KEZ DAHA ekleyip taş çoğaltır (gerçek bir kullanıcı raporuyla bulundu).
+ */
+function subtractPlacedFromRack(rack: Tile[], placed: GameState['placed']): Tile[] {
+  const remaining = [...rack];
+  for (const tile of Object.values(placed)) {
+    const letter = tile.wild ? '?' : tile.letter;
+    const idx = remaining.findIndex((t) => t.letter === letter && t.pts === tile.pts);
+    if (idx !== -1) remaining.splice(idx, 1);
+  }
+  return remaining;
+}
+
 /** Geçici yerleştirilen taşları aktif oyuncunun rafına geri toplar. */
 function recallAll(state: GameState): GameState {
   const rack = [...state.players[state.current].rack];
@@ -854,13 +873,19 @@ export function gameReducer(state: GameState, action: Action): GameState {
     // arka plandaki bir yenilemeyle sebepsiz kaybolmaması için.
     case 'SYNC_ONLINE_STATE': {
       const turnAdvanced = action.publicState.turn_count !== state.turnCount;
+      const placed = turnAdvanced ? {} : state.placed;
       const players: Player[] = action.publicState.players.map((p, i) => ({
         name: p.name,
         corners: p.corners,
         colorIndex: p.colorIndex,
         isAI: p.isAI,
         surrendered: p.surrendered,
-        rack: i === action.mySlotIndex ? action.myRack : new Array(p.rackCount).fill({ letter: 'A', pts: 1 }),
+        rack:
+          i === action.mySlotIndex
+            ? turnAdvanced
+              ? action.myRack
+              : subtractPlacedFromRack(action.myRack, placed)
+            : new Array(p.rackCount).fill({ letter: 'A', pts: 1 }),
         score: p.score,
         bestMoveScore: p.bestMoveScore,
         bestWordScore: p.bestWordScore,
@@ -876,12 +901,16 @@ export function gameReducer(state: GameState, action: Action): GameState {
         board: action.publicState.board,
         bag: new Array(action.publicState.bag_count).fill({ letter: 'A', pts: 1 }),
         bonuses: action.publicState.bonuses,
-        placed: turnAdvanced ? {} : state.placed,
+        placed,
         players,
         current: action.publicState.current,
         selectedTile: turnAdvanced ? null : state.selectedTile,
-        swapMode: false,
-        swapSelection: [],
+        // Değiştirme (swap) modu/seçimi de `placed`/`selectedTile` ile aynı
+        // korumayı almalı — turn ilerlemediyse (ör. sekme arka plandan
+        // döndüğünde tetiklenen bir senkron) kullanıcının "Değiştir"e basıp
+        // seçtiği taşlar sebepsiz sıfırlanmamalı.
+        swapMode: turnAdvanced ? false : state.swapMode,
+        swapSelection: turnAdvanced ? [] : state.swapSelection,
         turnCount: action.publicState.turn_count,
         consecutivePasses: action.publicState.consecutive_passes,
         isGameOver: action.publicState.is_game_over,
