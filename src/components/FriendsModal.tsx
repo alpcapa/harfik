@@ -309,7 +309,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
       }`}
     >
       {label}
-      {!!badge && <CountBadge count={badge} className="absolute -top-1.5 -right-1.5" />}
+      {!!badge && <CountBadge count={badge} className="absolute -top-1 -right-1" />}
     </button>
   );
 

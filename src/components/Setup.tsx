@@ -485,7 +485,7 @@ export function Setup({
               ].join(' ')}
             >
               {tab.label}
-              {tab.badge > 0 && <CountBadge count={tab.badge} className="absolute -top-1.5 -right-1.5" />}
+              {tab.badge > 0 && <CountBadge count={tab.badge} className="absolute -top-1 -right-1" />}
             </button>
           ))}
         </div>
@@ -546,7 +546,7 @@ export function Setup({
                 ].join(' ')}
               >
                 {tab.label}
-                {tab.badge > 0 && <CountBadge count={tab.badge} className="absolute -top-1.5 -right-1.5" />}
+                {tab.badge > 0 && <CountBadge count={tab.badge} className="absolute -top-1 -right-1" />}
               </button>
             ))}
           </div>
