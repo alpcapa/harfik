@@ -18,6 +18,7 @@ import {
   sendFeedbackReply,
   fetchAdminChatReports,
   markChatReportHandled,
+  setUserBanned,
 } from '../lib/api';
 import type {
   AdminMember,
@@ -314,6 +315,11 @@ function memberChannelLabel(m: AdminMember) {
   return m.signup_channel === 'form' ? 'Form' : 'Direkt';
 }
 
+/** `banned_until` gelecekte bir tarihse hesap şu an devre dışıdır. */
+function isBanned(bannedUntil: string | null | undefined): boolean {
+  return !!bannedUntil && new Date(bannedUntil).getTime() > Date.now();
+}
+
 function memberSortValue(m: AdminMember, key: MemberSortKey): string | number {
   switch (key) {
     case 'name':
@@ -371,9 +377,13 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [chatReports, setChatReports] = useState<AdminChatReportRow[] | null>(null);
   const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
   const [transcriptGameId, setTranscriptGameId] = useState<string | null>(null);
+  const [banTarget, setBanTarget] = useState<{ id: string; name: string; banned: boolean } | null>(null);
+  const [banBusy, setBanBusy] = useState(false);
+  const [banError, setBanError] = useState<string | null>(null);
 
   const panelRef = useModalA11y(true, onClose);
   const feedbackDeleteRef = useModalA11y(!!feedbackToDelete, () => setFeedbackToDelete(null));
+  const banConfirmRef = useModalA11y(!!banTarget, () => setBanTarget(null));
 
   useEffect(() => {
     fetchAdminMembers()
@@ -569,6 +579,28 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     setFeedbackToDelete(null);
     setFeedback((prev) => prev?.filter((x) => x.id !== f.id) ?? prev);
     deleteFeedback(f.id).catch((e) => setError(String(e)));
+  }
+
+  async function confirmSetUserBanned() {
+    const target = banTarget;
+    if (!target) return;
+    setBanBusy(true);
+    setBanError(null);
+    try {
+      await setUserBanned(target.id, target.banned);
+      setMembers((prev) =>
+        prev?.map((m) =>
+          m.id === target.id
+            ? { ...m, banned_until: target.banned ? new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 100).toISOString() : null }
+            : m,
+        ) ?? prev,
+      );
+      setBanTarget(null);
+    } catch (e) {
+      setBanError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBanBusy(false);
+    }
   }
 
   async function submitFeedbackReply(f: AdminFeedbackRow) {
@@ -767,11 +799,14 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         <SortHeader label="Katılma" sortKeyFor="created_at" />
                         <SortHeader label="Son Giriş" sortKeyFor="last_sign_in_at" />
                         <SortHeader label="Rol" sortKeyFor="is_admin" />
+                        <th className="py-2 pl-3 text-left font-normal">Durum</th>
                         <th className="py-2 pl-3 text-left font-normal"></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredMembers?.map((m) => (
+                      {filteredMembers?.map((m) => {
+                        const banned = isBanned(m.banned_until);
+                        return (
                         <tr
                           key={m.id}
                           onClick={() => setSelectedMember(m)}
@@ -790,20 +825,39 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                               <span className="text-muted">Üye</span>
                             )}
                           </td>
-                          <td className="py-2 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                            {m.email ? (
-                              <button
-                                onClick={() => setMessageTarget(m)}
-                                className="text-[10px] font-mono text-accent hover:underline"
-                              >
-                                Mesaj Gönder
-                              </button>
+                          <td className="py-2 pl-3 whitespace-nowrap">
+                            {banned ? (
+                              <span className="text-red font-bold">Devre Dışı</span>
                             ) : (
-                              <span className="text-[10px] font-mono text-muted">—</span>
+                              <span className="text-muted">Aktif</span>
                             )}
                           </td>
+                          <td className="py-2 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-2">
+                              {m.email ? (
+                                <button
+                                  onClick={() => setMessageTarget(m)}
+                                  className="text-[10px] font-mono text-accent hover:underline"
+                                >
+                                  Mesaj Gönder
+                                </button>
+                              ) : (
+                                <span className="text-[10px] font-mono text-muted">—</span>
+                              )}
+                              <button
+                                onClick={() => {
+                                  setBanError(null);
+                                  setBanTarget({ id: m.id, name: memberName(m), banned: !banned });
+                                }}
+                                className={`text-[10px] font-mono hover:underline ${banned ? 'text-accent' : 'text-red'}`}
+                              >
+                                {banned ? 'Aktif Et' : 'Devre Dışı Bırak'}
+                              </button>
+                            </div>
+                          </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -1238,8 +1292,8 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                           ) : (
                             <>
                               <p className="text-xs text-text whitespace-pre-wrap">{r.reason}</p>
-                              <div className="flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
-                                <div className="flex items-center gap-3">
+                              <div className="flex items-center flex-wrap justify-between gap-2" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center flex-wrap gap-3">
                                   <button
                                     onClick={() => {
                                       const next = !r.handled;
@@ -1264,6 +1318,26 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                                       Oyun sürüyor, sohbet henüz görüntülenemez
                                     </span>
                                   )}
+                                  {(() => {
+                                    const reportedBanned = isBanned(
+                                      members?.find((m) => m.id === r.reported_user_id)?.banned_until,
+                                    );
+                                    return (
+                                      <button
+                                        onClick={() => {
+                                          setBanError(null);
+                                          setBanTarget({
+                                            id: r.reported_user_id,
+                                            name: r.reported_name,
+                                            banned: !reportedBanned,
+                                          });
+                                        }}
+                                        className={`text-[10px] font-mono hover:underline ${reportedBanned ? 'text-accent' : 'text-red'}`}
+                                      >
+                                        {reportedBanned ? `${r.reported_name} — Aktif Et` : `${r.reported_name} — Hesabı Devre Dışı Bırak`}
+                                      </button>
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             </>
@@ -1324,6 +1398,56 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
               <button
                 onClick={() => setFeedbackToDelete(null)}
                 className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Vazgeç
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {banTarget && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center px-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            ref={banConfirmRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={banTarget.banned ? 'Hesabı devre dışı bırakma onayı' : 'Hesabı aktif etme onayı'}
+            tabIndex={-1}
+            className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none"
+          >
+            <p className="text-base font-bold text-text font-sans">Emin misiniz?</p>
+            <p className="text-sm text-text font-sans leading-relaxed">
+              {banTarget.banned ? (
+                <>
+                  <span className="font-bold">{banTarget.name}</span> hesabını devre dışı bırakmak istediğinize emin
+                  misiniz? Bu kullanıcı bir sonraki girişte/oturum yenilemede reddedilir.
+                </>
+              ) : (
+                <>
+                  <span className="font-bold">{banTarget.name}</span> hesabını tekrar aktif etmek istediğinize emin
+                  misiniz?
+                </>
+              )}
+            </p>
+            {banError && <p className="text-red text-[10px] font-mono">{banError}</p>}
+            <div className="flex gap-2 mt-1">
+              <button
+                onClick={confirmSetUserBanned}
+                disabled={banBusy}
+                className={`flex-1 py-2.5 rounded-md text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50 ${
+                  banTarget.banned ? 'btn-raised-red bg-red text-white' : 'btn-raised bg-accent text-white'
+                }`}
+              >
+                {banBusy ? '...' : banTarget.banned ? 'Devre Dışı Bırak' : 'Aktif Et'}
+              </button>
+              <button
+                onClick={() => setBanTarget(null)}
+                disabled={banBusy}
+                className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
               >
                 Vazgeç
               </button>

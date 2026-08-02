@@ -1199,6 +1199,20 @@ export async function fetchAdminMembers(): Promise<AdminMember[]> {
   return (data as AdminMember[]) ?? [];
 }
 
+/**
+ * Bir kullanıcı hesabını devre dışı bırakır/aktif eder (yalnızca admin —
+ * `admin_set_user_banned` RPC'si, `auth.users.banned_until`'ı günceller).
+ * Devre dışı bırakılan kullanıcı bir sonraki giriş/token yenilemede
+ * reddedilir; hâlâ geçerli olan kısa ömürlü access token'lar süresi
+ * dolana kadar çalışmaya devam edebilir (Supabase Auth'un standart ban
+ * davranışı, anlık oturum kesme kapsam dışı).
+ */
+export async function setUserBanned(userId: string, banned: boolean): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.rpc('admin_set_user_banned', { p_user_id: userId, p_banned: banned });
+  if (error) throw new Error(error.message);
+}
+
 /** Son `periods` kova için yeni kayıt sayısını döner (yalnızca admin — Büyüme > Kullanıcı). */
 export async function fetchAdminUserActivitySeries(
   periods: number,
