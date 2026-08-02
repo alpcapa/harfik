@@ -130,7 +130,14 @@ Deno.serve(async (req: Request) => {
       .filter(({ i }) => i !== r.index)
       .map(({ seat, i }) => players[i]?.name || (seat.type === 'ai' ? 'Yapay Zeka' : 'Oyuncu'));
 
-    const { data: authUser } = await serviceClient.auth.admin.getUserById(r.seat.user_id!);
+    const [{ data: authUser }, { data: recipientProfile }] = await Promise.all([
+      serviceClient.auth.admin.getUserById(r.seat.user_id!),
+      serviceClient.from('profiles').select('email_notifications_enabled').eq('id', r.seat.user_id!).maybeSingle(),
+    ]);
+
+    // İşlemsel-ama-tercih-edilebilir bildirim — alıcı bunu kapattıysa atla.
+    if (recipientProfile?.email_notifications_enabled === false) continue;
+
     const email = authUser?.user?.email;
     if (!email) {
       console.error('[notify-turn-timeout-surrender] Alıcının e-postası bulunamadı:', r.seat.user_id);

@@ -2,7 +2,7 @@
 import { useRef, useState } from 'react';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
-import { updateProfile, updateEmail, uploadAvatar, sendPasswordReset } from '../lib/api';
+import { updateProfile, updateEmail, uploadAvatar } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
 import { useNicknameAvailability } from '../hooks/useNicknameAvailability';
 import type { Gender } from '../lib/database.types';
@@ -23,6 +23,7 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
   const [gender, setGender] = useState<Gender | ''>(profile?.gender ?? '');
   const [birthDate, setBirthDate] = useState(isoToTrDate(profile?.birth_date));
   const [marketingConsent, setMarketingConsent] = useState(profile?.marketing_consent ?? false);
+  const [emailNotifications, setEmailNotifications] = useState(profile?.email_notifications_enabled ?? true);
 
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -103,6 +104,7 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
         gender?: Gender | null;
         birth_date?: string | null;
         marketing_consent?: boolean;
+        email_notifications_enabled?: boolean;
       } = {};
       if (firstName.trim() !== (profile?.first_name ?? ''))
         profilePatch.first_name = firstName.trim();
@@ -116,6 +118,8 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
         profilePatch.birth_date = birthDateIso;
       if (marketingConsent !== (profile?.marketing_consent ?? false))
         profilePatch.marketing_consent = marketingConsent;
+      if (emailNotifications !== (profile?.email_notifications_enabled ?? true))
+        profilePatch.email_notifications_enabled = emailNotifications;
       if (Object.keys(profilePatch).length > 0) {
         await updateProfile(profilePatch);
         await refreshProfile();
@@ -278,25 +282,20 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
           </span>
         </label>
 
-        <button
-          type="button"
-          onClick={async () => {
-            if (!user?.email) return;
-            setError(null);
-            setInfo(null);
-            try {
-              const { error } = await sendPasswordReset(user.email);
-              if (error) throw error;
-              setInfo('Şifre sıfırlama bağlantısı e-postana gönderildi.');
-            } catch (err) {
-              const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
-              setError(msg || 'Bir hata oluştu.');
-            }
-          }}
-          className="text-left text-[10px] text-accent font-mono hover:underline"
-        >
-          Şifremi değiştir — sıfırlama e-postası gönder
-        </button>
+        <label className="flex items-start gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={emailNotifications}
+            onChange={(e) => setEmailNotifications(e.target.checked)}
+            className="mt-0.5 shrink-0 accent-accent"
+          />
+          <span className="text-xs font-sans text-muted leading-relaxed">
+            Arkadaşlık isteği, oyun daveti ve süre uyarısı gibi e-posta bildirimlerini almak istiyorum.
+            <span className="block text-[9px] font-mono text-muted mt-0.5">
+              Bunu kapatsan da hesap güvenliğiyle ilgili mailleri (şifre sıfırlama, hesap durumu vb.) almaya devam edersin.
+            </span>
+          </span>
+        </label>
 
         {error && <p className="text-red text-xs font-mono">{error}</p>}
         {info && <p className="text-green text-xs font-mono">{info}</p>}

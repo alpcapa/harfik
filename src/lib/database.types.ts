@@ -27,6 +27,14 @@ export interface Profile {
   marketing_consent: boolean;
   /** `marketing_consent` true olduğu andaki (kayıt anındaki) sunucu zaman damgası — false ise null. */
   marketing_consent_at: string | null;
+  /**
+   * Arkadaşlık isteği/hatırlatması, Canlı oyun daveti, süre uyarısı ve süre
+   * aşımı/terk-edilme ceza bildirimi gibi işlemsel-ama-tercih-edilebilir
+   * e-postaları alma tercihi (varsayılan açık) — `marketing_consent`'ten
+   * TAMAMEN ayrı: hesap güvenliği/admin yazışması gibi zorunlu maillere
+   * hiç etkisi yok, onlar bu bayrağa bakmadan her zaman gönderilir.
+   */
+  email_notifications_enabled: boolean;
 }
 
 // ── Arkadaşlık sistemi ──────────────────────────────────────────────────────

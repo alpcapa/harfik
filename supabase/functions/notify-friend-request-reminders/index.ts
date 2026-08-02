@@ -82,7 +82,10 @@ Deno.serve(async (req: Request) => {
 
     const [{ data: recipientAuth }, { data: profiles }] = await Promise.all([
       supabase.auth.admin.getUserById(row.friend_id),
-      supabase.from('profiles').select('id, display_name, first_name').in('id', [row.user_id, row.friend_id]),
+      supabase
+        .from('profiles')
+        .select('id, display_name, first_name, email_notifications_enabled')
+        .in('id', [row.user_id, row.friend_id]),
     ]);
 
     const recipientEmail = recipientAuth?.user?.email;
@@ -93,6 +96,11 @@ Deno.serve(async (req: Request) => {
 
     const inviterProfile = profiles?.find((p) => p.id === row.user_id);
     const recipientProfile = profiles?.find((p) => p.id === row.friend_id);
+
+    // Bildirimi zaten "iddia ettik" (reminder_sent_at işaretlendi) — alıcı
+    // e-posta bildirimlerini kapattıysa yalnızca gönderimi atlıyoruz, bu
+    // istek için bir daha hatırlatma denemesi zaten olmayacaktı.
+    if (recipientProfile?.email_notifications_enabled === false) continue;
     const inviterName = inviterProfile?.display_name || inviterProfile?.first_name || 'Bir kullanıcı';
     const recipientName = recipientProfile?.display_name || recipientProfile?.first_name || undefined;
 

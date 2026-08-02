@@ -85,9 +85,15 @@ Deno.serve(async (req: Request) => {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('display_name, first_name')
+    .select('display_name, first_name, email_notifications_enabled')
     .eq('id', userData.user.id)
     .maybeSingle();
+
+  // İşlemsel-ama-tercih-edilebilir bildirim — kendisi kapattıysa gönderme.
+  if (profile?.email_notifications_enabled === false) {
+    return jsonResponse({ ok: true, sent: false, reason: 'recipient_opted_out' });
+  }
+
   const name = profile?.display_name || profile?.first_name || 'kullanıcımız';
 
   const brevoRes = await sendBrevoEmail(BREVO_API_KEY, {
