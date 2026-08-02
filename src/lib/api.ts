@@ -123,6 +123,14 @@ async function notifyLocalGameAbandoned(playerCount: number): Promise<void> {
  * `completed=true` olsa da "Bitirilen" sayısına/ortalama süresine değil
  * ayrı bir "Teslim" serisine dahil edilir (teslim genelde saniyeler içinde
  * geldiğinden gerçek oyun süresini yansıtmaz).
+ *
+ * `userId` opsiyonel — çağıran zaten `useAuth()`'tan bir `user.id` biliyorsa
+ * (App.tsx'teki oyun bitiş akışında olduğu gibi, aynı anda `saveGameDurable`
+ * ile birlikte çağrılıyor) burada AYRICA bir `getUser()` ağ turu yapılmasın
+ * diye geçilebilir; verilmezse eskisi gibi `getUser()`'dan okunur. Bu alan
+ * yalnızca anonim bir sayaç tablosuna (`game_finishes`) yazılıyor — RLS zaten
+ * gerçek `auth.uid()`'i kendi tarafında doğruladığından, çağıranın önbellekte
+ * tuttuğu bir id'ye güvenmek burada bir güvenlik zafiyeti yaratmıyor.
  */
 export async function logGameFinish(
   playerCount: number,
@@ -130,16 +138,21 @@ export async function logGameFinish(
   multiSession: boolean,
   completed = true,
   endedBySurrender = false,
+  userId?: string | null,
 ): Promise<void> {
   if (!supabase) return;
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let resolvedUserId = userId;
+  if (resolvedUserId === undefined) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    resolvedUserId = user?.id ?? null;
+  }
 
   const { error } = await supabase
     .from('game_finishes')
     .insert({
-      user_id: user?.id ?? null,
+      user_id: resolvedUserId,
       player_count: playerCount,
       duration_seconds: durationSeconds,
       multi_session: multiSession,
@@ -1806,11 +1819,18 @@ export async function updateProfile(
 
   // Profil satırı henüz oluşturulmamışsa kayıt aç. display_name NOT NULL
   // olduğundan (nickname artık zorunlu) patch'te yoksa e-posta önekine düşer.
+  // `...patch` İLK sırada yayılıyor ki gender/birth_date/marketing_consent/
+  // email_notifications_enabled gibi alanlar da (önceden bu yedek yolda
+  // sessizce kayboluyordu — kod incelemesiyle bulundu) satıra geçsin; hemen
+  // ardından id/username/first_name/last_name/display_name/avatar_url
+  // AÇIKÇA üzerine yazılıyor ki bunlar `patch`'te eksikse (undefined)
+  // aşağıdaki hesaplanmış varsayılanları ezmesinler.
   if (!data || data.length === 0) {
     const firstName = patch.first_name ?? '';
     const lastName = patch.last_name ?? '';
     const fallbackNickname = user.email ? user.email.split('@')[0] : user.id;
     const { error: createErr } = await supabase.from('profiles').insert({
+      ...patch,
       id: user.id,
       username: fallbackNickname,
       first_name: firstName,

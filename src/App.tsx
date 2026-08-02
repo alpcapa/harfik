@@ -151,7 +151,9 @@ export default function App() {
         0,
         Math.round((Date.parse(save.updated_at) - Date.parse(claimedState.startedAt)) / 1000),
       );
-      void logGameFinish(claimedState.players.length, durationSeconds, claimedState.multiSession, false);
+      // `user` bu noktada zaten dolu (fonksiyon başında `if (!user) return`
+      // ile garanti ediliyor) — logGameFinish'in kendi getUser() ağ turunu tekrarlamasın diye geçiliyor.
+      void logGameFinish(claimedState.players.length, durationSeconds, claimedState.multiSession, false, false, user.id);
       if (claimedState.turnCount >= 2) {
         const record = buildGameRecord(claimedState, true, 0);
         if (record) void saveGameDurable(record);
@@ -695,7 +697,18 @@ export default function App() {
   useEffect(() => {
     if (!state.isGameOver || state.phase !== 'play') return;
     const durationSeconds = Math.max(0, Math.round((Date.now() - Date.parse(state.startedAt)) / 1000));
-    void logGameFinish(state.players.length, durationSeconds, state.multiSession, true, state.endReason === 'surrender');
+    // user?.id zaten useAuth()'tan biliniyor — logGameFinish'in kendi
+    // içinde AYRICA bir getUser() ağ turu yapmasını (yukarıdaki
+    // saveGameDurable/buildGameRecord effect'iyle aynı anda tetiklendiğinden
+    // gereksiz ikinci bir round-trip olurdu) önlemek için geçiliyor.
+    void logGameFinish(
+      state.players.length,
+      durationSeconds,
+      state.multiSession,
+      true,
+      state.endReason === 'surrender',
+      user?.id ?? null,
+    );
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.isGameOver]);
 
