@@ -7,6 +7,7 @@ import { supabase, isSupabaseConfigured } from './supabase';
 import type {
   AdminActivityGranularity,
   AdminChatReportRow,
+  AdminMemberActivityLogRow,
   AdminEngagementActivityPoint,
   AdminEngagementTotals,
   AdminFeedbackRow,
@@ -1211,6 +1212,21 @@ export async function setUserBanned(userId: string, banned: boolean): Promise<vo
   if (!supabase) return;
   const { error } = await supabase.rpc('admin_set_user_banned', { p_user_id: userId, p_banned: banned });
   if (error) throw new Error(error.message);
+}
+
+/**
+ * Bir üyenin (oynadığı oyunlar HARİÇ) kritik hesap geçmişini kronolojik
+ * (en yeni önce) döner — Admin Paneli > Üyeler > skor kartının en
+ * altındaki "Kayıtlar" bölümü (`admin_get_member_activity_log` RPC'si).
+ */
+export async function fetchAdminMemberActivityLog(userId: string): Promise<AdminMemberActivityLogRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('admin_get_member_activity_log', { p_user_id: userId });
+  if (error) {
+    console.error('[Kelimeki] fetchAdminMemberActivityLog hatası:', error.message);
+    return [];
+  }
+  return (data as AdminMemberActivityLogRow[]) ?? [];
 }
 
 /** Son `periods` kova için yeni kayıt sayısını döner (yalnızca admin — Büyüme > Kullanıcı). */

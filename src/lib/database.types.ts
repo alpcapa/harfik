@@ -227,6 +227,21 @@ export interface AdminChatReportRow {
 }
 
 /**
+ * `admin_get_member_activity_log` RPC'sinin çıktısı — Admin panosu >
+ * Üyeler > bir üyenin skor kartının en altındaki "Kayıtlar" bölümü.
+ * Oynadığı oyunlar HARİÇ, hesabıyla ilgili kritik olayların (üye oluş,
+ * hesap dondurma/kaldırma, admin ile mesaj geçmişi, rapor edilme/geri
+ * çekilme) kronolojik (en yeni önce) dökümü. `detail` bazı satırlarda
+ * (ör. "Üye Oldu") null olabilir.
+ */
+export interface AdminMemberActivityLogRow {
+  kind: 'signup' | 'ban' | 'unban' | 'feedback_user' | 'feedback_admin' | 'feedback_replied' | 'report_received' | 'report_withdrawn';
+  created_at: string;
+  title: string;
+  detail: string | null;
+}
+
+/**
  * `games.messages` jsonb'sindeki tek, dondurulmuş sohbet satırı —
  * `_finish_online_game_records` bir Canlı oyun bitince `online_game_messages`
  * tablosundaki tüm mesajları bu şekle indirgeyip her insan katılımcının

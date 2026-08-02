@@ -1356,7 +1356,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       </div>
 
       {selectedMember && (
-        <PlayerScoreCard member={selectedMember} onClose={() => setSelectedMember(null)} />
+        <PlayerScoreCard member={selectedMember} onClose={() => setSelectedMember(null)} isAdminView />
       )}
 
       {transcriptGameId && (
