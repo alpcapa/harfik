@@ -29,6 +29,7 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [confirmingPasswordReset, setConfirmingPasswordReset] = useState(false);
 
   const name = nickname || firstName || user?.email || 'Oyuncu';
   const nicknameStatus = useNicknameAvailability(nickname, true, profile?.display_name ?? undefined);
@@ -297,25 +298,55 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
           </span>
         </label>
 
-        <button
-          type="button"
-          onClick={async () => {
-            if (!user?.email) return;
-            setError(null);
-            setInfo(null);
-            try {
-              const { error } = await sendPasswordReset(user.email);
-              if (error) throw error;
-              setInfo('Şifre sıfırlama bağlantısı e-postana gönderildi.');
-            } catch (err) {
-              const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
-              setError(msg || 'Bir hata oluştu.');
-            }
-          }}
-          className="text-left text-[10px] text-accent font-mono hover:underline"
-        >
-          Şifremi değiştir — sıfırlama e-postası gönder
-        </button>
+        {confirmingPasswordReset ? (
+          <div className="flex flex-col gap-2 bg-panel border border-border rounded-md p-3">
+            <p className="text-xs font-sans text-text">
+              Emin misiniz? <span className="font-bold">{user?.email}</span> adresine bir sıfırlama bağlantısı gönderilecek.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!user?.email) return;
+                  setError(null);
+                  setInfo(null);
+                  try {
+                    const { error } = await sendPasswordReset(user.email);
+                    if (error) throw error;
+                    setInfo('Şifre sıfırlama bağlantısı e-postana gönderildi.');
+                  } catch (err) {
+                    const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
+                    setError(msg || 'Bir hata oluştu.');
+                  } finally {
+                    setConfirmingPasswordReset(false);
+                  }
+                }}
+                className="btn-raised bg-accent text-white rounded-md px-3 py-1.5 text-[10px] font-mono uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Gönder
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingPasswordReset(false)}
+                className="btn-raised-neutral bg-void border border-border text-text rounded-md px-3 py-1.5 text-[10px] font-mono uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Vazgeç
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setError(null);
+              setInfo(null);
+              setConfirmingPasswordReset(true);
+            }}
+            className="text-left text-[10px] text-accent font-mono hover:underline"
+          >
+            Şifremi değiştir — sıfırlama e-postası gönder
+          </button>
+        )}
 
         {error && <p className="text-red text-xs font-mono">{error}</p>}
         {info && <p className="text-green text-xs font-mono">{info}</p>}
