@@ -415,6 +415,7 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
         <GameHistoryModal
           playerCount={tab === 'all' ? null : tab}
           userId={member.id}
+          targetName={name}
           title={tab === 'all' ? name : `${name} · ${tab} Oyunculu`}
           onClose={() => setShowAllGames(false)}
         />

@@ -108,9 +108,12 @@ export function findAIMove(
       }
       return;
     }
-    const denom = touchedIdx.size === 1 ? 3 : touchedIdx.size + 1;
-    const share = Math.round(score / denom);
-    const effective = score - share * touchedIdx.size;
+    // src/utils/ai.ts ile senkron tutulmalı — bkz. o dosyadaki aynı satırın
+    // yorumu (kod incelemesiyle bulunan, n=2/3'te yanlış bölen kullanan
+    // formül hatasının düzeltmesi).
+    const n = touchedIdx.size;
+    const share = Math.round((score * (n + 1)) / (6 * n));
+    const effective = score - share * n;
     if (effective > bestAnyEffective) {
       bestAnyEffective = effective;
       bestAny = { word, score, placements };

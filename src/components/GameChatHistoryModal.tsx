@@ -26,17 +26,22 @@ export function GameChatHistoryModal({ gameId, onClose }: GameChatHistoryModalPr
     };
   }, [gameId]);
 
+  // `games.messages` zaten eskiden-yeniye (kronolojik artan) dondurulmuş
+  // durumda geliyor (bkz. _finish_online_game_records) — ChatThread de
+  // kendi tarafında hiçbir sıralama yapmıyor, mesajları olduğu gibi
+  // yukarıdan aşağı basıyor. Buradaki `.reverse()` yanlışlıkla en yeni
+  // mesajı en üste koyuyordu; aynı veriyi gösteren AdminChatTranscriptModal
+  // reverse yapmadığından iki ekran farklı sırada görünüyordu (kod
+  // incelemesiyle bulundu).
   const threadMessages: ChatThreadMessage[] = messages
-    ? messages
-        .map((m, i) => ({
-          key: `${m.created_at}-${i}`,
-          name: m.name,
-          colorIndex: m.colorIndex,
-          message: m.message,
-          createdAt: m.created_at,
-          mine: false,
-        }))
-        .reverse()
+    ? messages.map((m, i) => ({
+        key: `${m.created_at}-${i}`,
+        name: m.name,
+        colorIndex: m.colorIndex,
+        message: m.message,
+        createdAt: m.created_at,
+        mine: false,
+      }))
     : [];
 
   return (

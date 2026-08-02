@@ -67,22 +67,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       currentUserId = u?.id ?? null;
       if (u) {
         setProfileLoading(true);
-        fetchMyProfile().then((p) => {
-          if (currentUserId === u.id) {
-            setProfile(p);
-            setProfileLoading(false);
-          }
-        });
+        fetchMyProfile()
+          .then((p) => {
+            if (currentUserId === u.id) {
+              setProfile(p);
+              setProfileLoading(false);
+            }
+          })
+          .catch((err) => {
+            // fetchMyProfile kendi Supabase sorgu hatasını yakalayıp `null`
+            // döner, ama içindeki `supabase.auth.getUser()` çağrısı
+            // beklenmedik şekilde reddederse bu `.catch` olmadan
+            // `profileLoading` sonsuza dek `true` kalır — isim hiçbir zaman
+            // belirmez (bkz. kod incelemesi).
+            console.error('[Kelimeki] fetchMyProfile beklenmedik hata:', err);
+            if (currentUserId === u.id) setProfileLoading(false);
+          });
       } else {
         setProfile(null);
         setProfileLoading(false);
       }
     };
 
-    supabase.auth.getSession().then(({ data }) => {
-      applyUser(data.session?.user ?? null);
-      setLoading(false);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        applyUser(data.session?.user ?? null);
+        setLoading(false);
+      })
+      .catch((err) => {
+        // Sandboxed sekme/depolama erişimi engelli gibi nadir durumlarda
+        // reddedebilir — bu olmadan `loading` sonsuza dek `true` kalır ve
+        // "Giriş" butonu dahil oturum durumuna bağlı hiçbir UI hiç belirmez.
+        console.error('[Kelimeki] getSession beklenmedik hata:', err);
+        setLoading(false);
+      });
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       applyUser(session?.user ?? null);
       if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);

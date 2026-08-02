@@ -12,10 +12,21 @@ let loadPromise: Promise<ReadonlySet<string>> | undefined;
 
 export function preloadWordSet(): Promise<ReadonlySet<string>> {
   if (!loadPromise) {
-    loadPromise = import('./words').then((mod) => {
-      wordSet = mod.WORD_SET;
-      return wordSet;
-    });
+    loadPromise = import('./words')
+      .then((mod) => {
+        wordSet = mod.WORD_SET;
+        return wordSet;
+      })
+      .catch((err) => {
+        // Bir kerelik ağ hatası (ör. chunk indirilemedi) yüzünden reddedilen
+        // bir promise'i kalıcı olarak önbellekte tutmuyoruz — aksi halde
+        // `if (!loadPromise)` koruması bir daha asla yeniden denemeye izin
+        // vermez ve uygulama "Hazırlanıyor…" ekranında sonsuza dek kilitli
+        // kalırdı. Bir sonraki `preloadWordSet()` çağrısı (ör. kullanıcının
+        // tekrar denemesiyle) baştan indirmeyi yeniden dener.
+        loadPromise = undefined;
+        throw err;
+      });
   }
   return loadPromise;
 }

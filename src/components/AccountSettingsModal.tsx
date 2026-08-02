@@ -1,5 +1,5 @@
 // Kelimeki — hesap ayarları: profil fotoğrafı, kullanıcı adı, e-posta, cinsiyet, doğum tarihi
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
 import { updateProfile, updateEmail, uploadAvatar } from '../lib/api';
@@ -29,6 +29,27 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+
+  // `useState`'in initial value'su yalnızca ilk mount'ta okunur — modal
+  // `profile` henüz ağdan gelmeden (ör. UserMenu'nün avatar butonu
+  // `identityLoading` sırasında disable edilmediğinden) açılırsa formlar
+  // boş/varsayılan değerlerle başlar. `profile` sonradan dolarsa bu efekt
+  // olmadan alanlar hiç senkronize olmuyordu — en ciddisi, kullanıcı hiç
+  // dokunmadığı `marketingConsent`/`emailNotifications` gibi checkbox'ların
+  // stale (mount anındaki) değeri `save()`'de gerçek profille karşılaştırılıp
+  // sessizce ters yöne kaydediliyordu (bkz. kod incelemesi).
+  useEffect(() => {
+    setFirstName(profile?.first_name ?? '');
+    setLastName(profile?.last_name ?? '');
+    setNickname(profile?.display_name ?? '');
+    setGender(profile?.gender ?? '');
+    setBirthDate(isoToTrDate(profile?.birth_date));
+    setMarketingConsent(profile?.marketing_consent ?? false);
+    setEmailNotifications(profile?.email_notifications_enabled ?? true);
+  }, [profile]);
+  useEffect(() => {
+    setEmail(user?.email ?? '');
+  }, [user]);
 
   const name = nickname || firstName || user?.email || 'Oyuncu';
   const nicknameStatus = useNicknameAvailability(nickname, true, profile?.display_name ?? undefined);
