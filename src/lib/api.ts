@@ -65,6 +65,20 @@ import { getLocalMeaning } from '../data/meanings';
 import { trLower } from '../utils/turkish';
 import type { GameState, Tile } from '../game/types';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/**
+ * removeFriend/fetchFriendRelation gibi bir kimliği ham bir PostgREST
+ * `.or()` filtre string'ine gömen fonksiyonlarda kullanılıyor — parametre
+ * her zaman bir uuid (ör. `user.id`, başka bir profilin id'si) olduğundan
+ * risk düşük (kod incelemesi, "Düşük" bulgu), ama virgül/parantez gibi
+ * PostgREST filtre söz dizimine özel karakterler taşıyan bir değer
+ * filtreyi kırıp beklenmeyen ek koşullar enjekte edebilirdi — bu kontrol
+ * o ihtimali baştan eler.
+ */
+function assertUuid(id: string, label: string): void {
+  if (!UUID_RE.test(id)) throw new Error(`Geçersiz ${label}.`);
+}
+
 /**
  * Tamamlanan bir oyunu kaydeder (oturum açıksa). Eklenen kaydın id'sini döner.
  *
@@ -672,6 +686,7 @@ export async function respondFriendRequest(requesterId: string, accept: boolean)
 // kullanılıyor — isimlendirme kafa karıştırıcı olabilir ama bug değil.
 export async function removeFriend(friendId: string): Promise<void> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
+  assertUuid(friendId, 'kullanıcı kimliği');
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -704,6 +719,7 @@ export async function fetchFriends(): Promise<FriendRow[]> {
  */
 export async function fetchFriendRelation(targetId: string): Promise<FriendRelation | null> {
   if (!supabase) return null;
+  if (!UUID_RE.test(targetId)) return null;
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -1222,8 +1238,11 @@ export async function triggerAiTurn(gameId: string): Promise<{ played: boolean }
  */
 export async function isValidWordRemote(word: string): Promise<boolean | null> {
   if (!supabase) return null;
+  // fetchMeaning ile tutarlı olsun diye normalizasyon burada da (çağıranın
+  // önceden trLower yapmış olmasına güvenmeden) uygulanıyor — idempotent,
+  // mevcut çağrı yerlerinin (zaten trLower'lı geçiyorlar) davranışını değiştirmez.
   const { data, error } = await supabase.rpc('is_valid_word', {
-    p_word: word,
+    p_word: trLower(word),
   });
   if (error) {
     console.error('[Kelimeki] isValidWordRemote hatası:', error.message);
@@ -1896,14 +1915,31 @@ export async function setNewPassword(newPassword: string) {
  * Profil fotoğrafını `avatars` depolama kovasına yükler, profildeki
  * avatar_url'i günceller ve genel (public) URL'i döner.
  */
+// MIME/boyut kontrolü asıl UI çağrı yerinde (AccountSettingsModal.onPickFile)
+// zaten yapılıyor — burada ikinci bir savunma katmanı olarak tekrarlanıyor,
+// çünkü uploadAvatar paylaşılan bir kütüphane fonksiyonu ve ileride başka
+// bir çağrı yeri bu kontrolü atlayabilir.
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+const EXT_BY_MIME: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+};
+
 export async function uploadAvatar(file: File): Promise<string> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
+  if (!file.type.startsWith('image/')) throw new Error('Lütfen bir görsel dosyası seç.');
+  if (file.size > MAX_AVATAR_BYTES) throw new Error('Görsel 2 MB’den küçük olmalı.');
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error('Oturum açık değil.');
 
-  const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+  // Dosya adındaki uzantı yerine gerçek MIME tipinden türetiliyor —
+  // uzantısız/yanıltıcı bir dosya adı (ör. "photo", "resim.jpeg.txt")
+  // önceden path'e olduğu gibi (ör. "avatar.photo") yazılıyordu.
+  const ext = EXT_BY_MIME[file.type] ?? 'png';
   const path = `${user.id}/avatar.${ext}`;
 
   const { error: upErr } = await supabase.storage
