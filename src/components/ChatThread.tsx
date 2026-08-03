@@ -18,12 +18,21 @@ export interface ChatThreadMessage {
   /** true ise mesaj sağa, kendi rengiyle hizalanır. */
   mine: boolean;
   /**
-   * Gönderenin user_id'si — yalnızca canlı sohbette dolu (Oyun İçi
-   * Mesajlaşma Faz 2, sessize alma/rapor rozetleri için). Arşivde
-   * (`GameChatMessage`) bilerek yok — donmuş bir isim kimliğe geri
-   * bağlanmıyor, ayrıca bitmiş bir oyunda mute/rapor durumu zaten anlamsız.
+   * Gönderenin user_id'si — yalnızca canlı sohbette dolu (`ChatModal`).
+   * Arşivde (`GameChatMessage`) bilerek yok: donmuş snapshot girişli HERKESE
+   * açık olduğundan (`games_select_authenticated`) kimliğe geri bağlanmıyor.
+   * Rozete/mesaja tıklayıp ayarları açmak bu alana bağlı, dolayısıyla arşiv
+   * rozetleri salt-görsel kalır.
    */
   senderId?: string;
+  /**
+   * Oyun İçi Mesajlaşma — Faz 2: bu gönderen için gösterilecek rozet.
+   * Kararı ÇAĞIRAN veriyor, çünkü iki kullanım yeri kimliği farklı
+   * anahtarlarla biliyor: canlı sohbet `senderId` setleriyle
+   * (`mutedUserIds`/`reportedUserIds`), arşiv ise renk indeksiyle
+   * (`chat_flags_for_finished_game` — bkz. `fetchFinishedGameChatFlags`).
+   */
+  badge?: 'muted' | 'reported';
 }
 
 function formatMessageTime(iso: string): string {
@@ -37,18 +46,14 @@ interface ChatThreadProps {
   messages: ChatThreadMessage[];
   emptyText: string;
   /**
-   * Oyun İçi Mesajlaşma — Faz 2: çağıranın (viewer'ın) sessize aldığı/aktif
-   * rapor açtığı kullanıcı id'leri — doluysa ilgili gönderenin ismi
-   * yanında küçük bir rozet (🚫/🚩) gösterilir. İkisi de verilmezse
-   * (arşiv görünümü, `GameChatHistoryModal`) hiç rozet render edilmez.
+   * Rozete/mesaja tıklanınca çağrılır — o kişinin ayarlar detayını açmak
+   * için. Yalnızca canlı sohbette (`ChatModal`) verilir; arşivde
+   * verilmediğinden rozetler salt-görsel kalır.
    */
-  mutedUserIds?: Set<string>;
-  reportedUserIds?: Set<string>;
-  /** Rozete tıklanınca çağrılır — o kişinin ayarlar detayını açmak için. */
   onBadgeClick?: (userId: string) => void;
 }
 
-export function ChatThread({ messages, emptyText, mutedUserIds, reportedUserIds, onBadgeClick }: ChatThreadProps) {
+export function ChatThread({ messages, emptyText, onBadgeClick }: ChatThreadProps) {
   if (messages.length === 0) {
     return <p className="text-muted text-[10px] font-mono text-center py-4">{emptyText}</p>;
   }
@@ -56,9 +61,8 @@ export function ChatThread({ messages, emptyText, mutedUserIds, reportedUserIds,
     <div className="flex flex-col gap-2.5">
       {messages.map((m) => {
         const col = PLAYER_COLORS[m.colorIndex] ?? PLAYER_COLORS[0];
-        const reported = !!m.senderId && !!reportedUserIds?.has(m.senderId);
-        const muted = !reported && !!m.senderId && !!mutedUserIds?.has(m.senderId);
-        const badge = reported ? '🚩' : muted ? '🚫' : null;
+        const reported = m.badge === 'reported';
+        const badge = reported ? '🚩' : m.badge === 'muted' ? '🚫' : null;
         // Kendi mesajını sessize alamayacağın/rapor edemeyeceğin için
         // yalnızca başkasının mesajına tıklamak ayarlar panelini açar.
         const canOpenSettings = !m.mine && !!m.senderId && !!onBadgeClick;
@@ -74,7 +78,7 @@ export function ChatThread({ messages, emptyText, mutedUserIds, reportedUserIds,
                   {m.name}
                 </span>
                 {badge &&
-                  (onBadgeClick ? (
+                  (onBadgeClick && m.senderId ? (
                     <button
                       type="button"
                       onClick={() => onBadgeClick(m.senderId!)}
