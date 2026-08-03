@@ -4,7 +4,12 @@
 // Yalnızca Supabase yapılandırıldığında görünür.
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { signOut, fetchMyLeaderboardRank, fetchIncomingFriendRequests } from '../lib/api';
+import {
+  signOut,
+  fetchMyLeaderboardRank,
+  fetchIncomingFriendRequests,
+  fetchAdminUnreadFeedbackCount,
+} from '../lib/api';
 import type { MyLeaderboardRank } from '../lib/database.types';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
@@ -35,7 +40,9 @@ export function UserMenu() {
   const [modal, setModal] = useState<ActiveModal>(null);
   const [myRank, setMyRank] = useState<MyLeaderboardRank | null>(null);
   const [incomingRequestCount, setIncomingRequestCount] = useState(0);
+  const [unreadFeedbackCount, setUnreadFeedbackCount] = useState(0);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const isAdmin = !!profile?.is_admin;
 
   // Hızlı hesap değişiminde (ör. çıkış yapıp başka bir hesapla giriş) eski
   // kullanıcının isteği geç dönüp yeni kullanıcının verisini ezebilirdi —
@@ -71,6 +78,31 @@ export function UserMenu() {
     // `refreshIncomingRequestCount` ayrıca çağrılıyor (aşağıda).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  // Admin'i bekleyen (okunmamış) geri bildirim sayısı — "Admin Paneli"
+  // satırının yanındaki kırmızı rozet için. Arkadaşlık isteği sayacıyla
+  // aynı desen: yalnızca kullanıcı/rol değişince çekilir (`feedback` tablosu
+  // Realtime publication'ında değil, ayrı bir abonelik bilinçli olarak
+  // eklenmedi), panel kapanınca ayrıca tazelenir — admin içeride mesajları
+  // okundu işaretlemiş olabilir.
+  const refreshUnreadFeedbackCount = () => {
+    if (!isAdmin) return;
+    fetchAdminUnreadFeedbackCount().then(setUnreadFeedbackCount);
+  };
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setUnreadFeedbackCount(0);
+      return;
+    }
+    let cancelled = false;
+    fetchAdminUnreadFeedbackCount().then((n) => {
+      if (!cancelled) setUnreadFeedbackCount(n);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, isAdmin]);
 
   // Dışarı tıklayınca / Esc ile menüyü kapat.
   useEffect(() => {
@@ -141,7 +173,15 @@ export function UserMenu() {
               …
             </span>
           ) : (
-            <Avatar url={profile?.avatar_url} name={name} size={32} dot={incomingRequestCount > 0} />
+            /* Menü kapalıyken de fark edilsin diye avatardaki nokta, menü
+               içindeki rozetlerin herhangi birini yansıtır — arkadaşlık
+               isteği ya da (admin ise) bekleyen geri bildirim. */
+            <Avatar
+              url={profile?.avatar_url}
+              name={name}
+              size={32}
+              dot={incomingRequestCount > 0 || unreadFeedbackCount > 0}
+            />
           )}
         </button>
 
@@ -214,7 +254,7 @@ export function UserMenu() {
               <span aria-hidden>⚙️</span> Hesap Ayarları
             </button>
 
-            {profile?.is_admin && (
+            {isAdmin && (
               <button
                 className={`${item} border-t border-border`}
                 onClick={() => {
@@ -223,6 +263,9 @@ export function UserMenu() {
                 }}
               >
                 <span aria-hidden>🛡️</span> Admin Paneli
+                {unreadFeedbackCount > 0 && (
+                  <CountBadge count={unreadFeedbackCount} className="ml-auto" />
+                )}
               </button>
             )}
 
@@ -247,7 +290,16 @@ export function UserMenu() {
       {modal === 'help' && (
         <HelpModal onClose={() => setModal(null)} />
       )}
-      {modal === 'admin' && <AdminDashboard onClose={() => setModal(null)} />}
+      {modal === 'admin' && (
+        <AdminDashboard
+          onClose={() => {
+            setModal(null);
+            // İçeride mesajlar okundu işaretlenmiş olabilir — FriendsModal
+            // kapanışındaki aynı desen.
+            refreshUnreadFeedbackCount();
+          }}
+        />
+      )}
       {modal === 'friends' && (
         <FriendsModal
           onClose={() => {

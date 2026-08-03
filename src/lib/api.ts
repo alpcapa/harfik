@@ -1580,6 +1580,32 @@ export async function fetchAdminFeedback(): Promise<AdminFeedbackRow[]> {
 }
 
 /**
+ * Admin'i bekleyen (okunmamış) geri bildirim sayısını döner — `UserMenu`'deki
+ * "Admin Paneli" satırının yanındaki kırmızı rozet için. `fetchAdminFeedback`
+ * tüm satırları çektiğinden, yalnızca bir sayı için onu çağırmak (menü her
+ * açıldığında tüm geri bildirim geçmişini indirmek) gereksiz olurdu; bu
+ * yüzden `head: true` ile yalnızca `count` isteniyor, hiç satır gövdesi
+ * dönmüyor. Filtre `AdminDashboard`'daki `unhandledFeedbackCount` ile
+ * BİREBİR aynı (`handled=false`, origin ayrımı yok) — rozetteki sayı ile
+ * paneldeki "Geri Bildirim (N)" sekmesindeki sayı her zaman eşleşmeli.
+ * Admin'in kendi gönderdiği mesajlar (`origin='admin'`) zaten
+ * `handled: true` ile eklendiğinden doğal olarak sayılmıyor. RLS gereği
+ * admin olmayan bir çağıran her zaman 0 görür.
+ */
+export async function fetchAdminUnreadFeedbackCount(): Promise<number> {
+  if (!supabase) return 0;
+  const { count, error } = await supabase
+    .from('feedback')
+    .select('id', { count: 'exact', head: true })
+    .eq('handled', false);
+  if (error) {
+    console.error('[Kelimeki] fetchAdminUnreadFeedbackCount hatası:', error.message);
+    return 0;
+  }
+  return count ?? 0;
+}
+
+/**
  * Bir geri bildirim mesajını okundu/okunmadı işaretler (yalnızca admin).
  * `AdminDashboard`'daki iyimser (optimistic) UI güncellemesi başarısızlıkta
  * geri alınabilsin diye başarı/başarısızlığı `boolean` olarak döner —
