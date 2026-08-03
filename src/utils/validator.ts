@@ -228,33 +228,6 @@ function computeConqueredChain(board: Board, ownCorners: number[], owner: number
 }
 
 /**
- * Bir oyuncunun bölgesini hesaplar: kendi fetih zinciri (bkz.
- * `computeConqueredChain`) + kendi köşe kare(ler)inden, BAŞKA bir oyuncunun
- * zinciri tarafından ele geçirilmemiş olanlar. 16 karelik köşe bloğu hiçbir
- * koşulda garanti/dokunulmaz değildir — yalnızca henüz kimse tarafından
- * fethedilmemiş hücreler için taban/varsayılan sahiplik sağlar. Rakip,
- * kendi köşesinden (ya da önce izole bıraktığı bir taşı sonradan zincirine
- * bağlayarak) kesintisiz kendi taşlarıyla bu bloğun içine kadar ulaşırsa, o
- * hücreler (teorik olarak blok tamamen de olsa) rakibe geçer — bir kale
- * fethi gibi. Diğer oyuncuların zincirleri bilinmediğinden bu fonksiyon tek
- * başına çağrıldığında (ör. dışarıdan) yalnızca yaklaşık bir sonuç verir; tam
- * doğru sonuç için tüm oyuncuları birlikte çözen `computeAllTerritories`
- * kullanılmalıdır.
- */
-export function computeTerritory(board: Board, ownCorners: number[], owner: number): Set<string> {
-  const territory = new Set(computeConqueredChain(board, ownCorners, owner));
-  for (const corner of ownCorners) {
-    const b = cornerBounds(corner);
-    for (let r = b.r0; r <= b.r1; r++) {
-      for (let c = b.c0; c <= b.c1; c++) {
-        territory.add(key(r, c));
-      }
-    }
-  }
-  return territory;
-}
-
-/**
  * Tüm oyuncuların bölgelerini (indekslerine göre) hesaplar. Önce her
  * oyuncunun gerçek fetih zinciri ayrı ayrı hesaplanır; bir hücre bir
  * zincirde olabilir en fazla TEK bir oyuncuya ait olduğundan (bir hücrede
@@ -295,8 +268,8 @@ export function computeAllTerritories(board: Board, players: Player[]): Set<stri
  * Rakip bölge(ler)ine sınır vergisini hesaplar. Bu tur konan taşlardan biri
  * bir rakip bölgesinin içine düşüyorsa (girme) ya da dışarıdan sınırına
  * bitişikse (değme), kazanılan puandan bir pay bölge sahibine gider. Bölge
- * artık sabit 5x5 köşe değil, `computeTerritory` ile hesaplanan — oyuncunun
- * kendi taşlarıyla köşesinden genişlettiği— dinamik alandır. Rakip bölgesine
+ * artık sabit 5x5 köşe değil, `computeAllTerritories` ile hesaplanan —
+ * oyuncunun kendi taşlarıyla köşesinden genişlettiği — dinamik alandır. Rakip bölgesine
  * girmek için hiçbir ön koşul yok — her zaman serbest.
  * Etkileşilen rakip bölge sayısına (n) göre saldırganın payı küçülür: n=1'de
  * puanın 2/3'ü saldırgana kalır, kalan 1/3 tek bölge sahibine gider. n=2'de

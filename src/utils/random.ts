@@ -8,8 +8,3 @@ export function shuffle<T>(a: T[]): T[] {
   }
   return a;
 }
-
-/** Diziden rastgele bir eleman seçer. */
-export function pick<T>(a: T[]): T {
-  return a[Math.floor(Math.random() * a.length)];
-}

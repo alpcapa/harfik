@@ -13,7 +13,7 @@ export function key(r: number, c: number): CellKey {
   return `${r},${c}`;
 }
 
-export function inBounds(r: number, c: number): boolean {
+function inBounds(r: number, c: number): boolean {
   return r >= 0 && r < SIZE && c >= 0 && c < SIZE;
 }
 
@@ -26,7 +26,7 @@ export function tileLetter(tile: Tile): string {
  * (r,c) konumundaki etkin harfi döndürür. Önce geçici yerleştirmelere,
  * sonra tahtaya bakar; harf yoksa null.
  */
-export function getLetterAt(
+function getLetterAt(
   board: Board,
   placed: Placed,
   r: number,

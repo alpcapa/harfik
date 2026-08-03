@@ -35,6 +35,104 @@ function friendToPlayerSummary(f: FriendRow): PlayerSummary {
   };
 }
 
+// Aşağıdaki iki bileşen, bu dosyadaki dört neredeyse birebir aynı onay/sonuç
+// modalını (Arkadaşlıktan Çıkar/İsteği Reddet/İsteği İptal Et + üçünün
+// "Tamam" sonuç modalı) tek bir yerde toplar (kod incelemesi, dead-code/
+// tekrar bulgusu). `dialogRef`, çağıranın kendi `useModalA11y` çağrısından
+// (odak hapsi/Escape/dialog-yığını için, koşullu render edilen bir dialog
+// içinde çağrılamaz — hep üst bileşende kalmalı) geldiğinden prop olarak alınır.
+function ConfirmDialog({
+  dialogRef,
+  ariaLabel,
+  title,
+  message,
+  confirmLabel,
+  busy,
+  onConfirm,
+  onCancel,
+}: {
+  dialogRef: React.RefObject<HTMLDivElement>;
+  ariaLabel: string;
+  title: string;
+  message: string;
+  confirmLabel: string;
+  busy: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={ariaLabel}
+        tabIndex={-1}
+        className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none"
+      >
+        <p className="text-base font-bold text-text font-sans">{title}</p>
+        <p className="text-sm text-text font-sans leading-relaxed">{message}</p>
+        <div className="flex gap-2 mt-1">
+          <button
+            onClick={onConfirm}
+            disabled={busy}
+            className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+          >
+            {busy ? '...' : confirmLabel}
+          </button>
+          <button
+            onClick={onCancel}
+            disabled={busy}
+            className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+          >
+            Vazgeç
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function InfoDialog({
+  dialogRef,
+  message,
+  onClose,
+}: {
+  dialogRef: React.RefObject<HTMLDivElement>;
+  message: string;
+  onClose: () => void;
+}) {
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Arkadaşlık durumu"
+        tabIndex={-1}
+        className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none relative"
+      >
+        <button
+          onClick={onClose}
+          aria-label="Kapat"
+          className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
+        >
+          ✕
+        </button>
+        <p className="text-sm text-text font-sans leading-relaxed pr-6">{message}</p>
+        <button
+          onClick={onClose}
+          className="btn-raised py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+        >
+          Tamam
+        </button>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 interface FriendsModalProps {
   onClose: () => void;
   /** İlk açılışta hangi sekmenin görüneceği — `UserMenu`'den bir bekleyen istek rozetine tıklanınca "requests" ile açılır. */
@@ -458,203 +556,53 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
         <PlayerScoreCard member={selectedFriend} onClose={() => setSelectedFriend(null)} />
       )}
 
-      {confirmRemove &&
-        createPortal(
-          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
-            <div
-              ref={confirmRemoveRef}
-              role="dialog"
-              aria-modal="true"
-              aria-label="Arkadaşlıktan Çıkar"
-              tabIndex={-1}
-              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none"
-            >
-              <p className="text-base font-bold text-text font-sans">Arkadaşlıktan Çıkar</p>
-              <p className="text-sm text-text font-sans leading-relaxed">
-                {confirmRemove.name} ile arkadaşsınız. Arkadaşlıktan çıkmak mı istiyorsunuz?
-              </p>
-              <div className="flex gap-2 mt-1">
-                <button
-                  onClick={handleConfirmRemove}
-                  disabled={busyId === confirmRemove.friend_id}
-                  className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
-                >
-                  {busyId === confirmRemove.friend_id ? '...' : 'Çıkar'}
-                </button>
-                <button
-                  onClick={() => setConfirmRemove(null)}
-                  disabled={busyId === confirmRemove.friend_id}
-                  className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
-                >
-                  Vazgeç
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )}
+      {confirmRemove && (
+        <ConfirmDialog
+          dialogRef={confirmRemoveRef}
+          ariaLabel="Arkadaşlıktan Çıkar"
+          title="Arkadaşlıktan Çıkar"
+          message={`${confirmRemove.name} ile arkadaşsınız. Arkadaşlıktan çıkmak mı istiyorsunuz?`}
+          confirmLabel="Çıkar"
+          busy={busyId === confirmRemove.friend_id}
+          onConfirm={handleConfirmRemove}
+          onCancel={() => setConfirmRemove(null)}
+        />
+      )}
+      {removeResultMsg && (
+        <InfoDialog dialogRef={removeResultRef} message={removeResultMsg} onClose={() => setRemoveResultMsg(null)} />
+      )}
 
-      {removeResultMsg &&
-        createPortal(
-          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
-            <div
-              ref={removeResultRef}
-              role="dialog"
-              aria-modal="true"
-              aria-label="Arkadaşlık durumu"
-              tabIndex={-1}
-              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none relative"
-            >
-              <button
-                onClick={() => setRemoveResultMsg(null)}
-                aria-label="Kapat"
-                className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
-              >
-                ✕
-              </button>
-              <p className="text-sm text-text font-sans leading-relaxed pr-6">{removeResultMsg}</p>
-              <button
-                onClick={() => setRemoveResultMsg(null)}
-                className="btn-raised py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
-              >
-                Tamam
-              </button>
-            </div>
-          </div>,
-          document.body,
-        )}
+      {confirmReject && (
+        <ConfirmDialog
+          dialogRef={confirmRejectRef}
+          ariaLabel="İsteği Reddet"
+          title="İsteği Reddet"
+          message={`${confirmReject.name} oyuncusunun arkadaşlık isteğini reddetmek mi istiyorsunuz?`}
+          confirmLabel="Reddet"
+          busy={busyId === confirmReject.requester_id}
+          onConfirm={handleConfirmReject}
+          onCancel={() => setConfirmReject(null)}
+        />
+      )}
+      {rejectResultMsg && (
+        <InfoDialog dialogRef={rejectResultRef} message={rejectResultMsg} onClose={() => setRejectResultMsg(null)} />
+      )}
 
-      {confirmReject &&
-        createPortal(
-          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
-            <div
-              ref={confirmRejectRef}
-              role="dialog"
-              aria-modal="true"
-              aria-label="İsteği Reddet"
-              tabIndex={-1}
-              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none"
-            >
-              <p className="text-base font-bold text-text font-sans">İsteği Reddet</p>
-              <p className="text-sm text-text font-sans leading-relaxed">
-                {confirmReject.name} oyuncusunun arkadaşlık isteğini reddetmek mi istiyorsunuz?
-              </p>
-              <div className="flex gap-2 mt-1">
-                <button
-                  onClick={handleConfirmReject}
-                  disabled={busyId === confirmReject.requester_id}
-                  className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
-                >
-                  {busyId === confirmReject.requester_id ? '...' : 'Reddet'}
-                </button>
-                <button
-                  onClick={() => setConfirmReject(null)}
-                  disabled={busyId === confirmReject.requester_id}
-                  className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
-                >
-                  Vazgeç
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )}
-
-      {rejectResultMsg &&
-        createPortal(
-          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
-            <div
-              ref={rejectResultRef}
-              role="dialog"
-              aria-modal="true"
-              aria-label="Arkadaşlık durumu"
-              tabIndex={-1}
-              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none relative"
-            >
-              <button
-                onClick={() => setRejectResultMsg(null)}
-                aria-label="Kapat"
-                className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
-              >
-                ✕
-              </button>
-              <p className="text-sm text-text font-sans leading-relaxed pr-6">{rejectResultMsg}</p>
-              <button
-                onClick={() => setRejectResultMsg(null)}
-                className="btn-raised py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
-              >
-                Tamam
-              </button>
-            </div>
-          </div>,
-          document.body,
-        )}
-
-      {confirmCancel &&
-        createPortal(
-          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
-            <div
-              ref={confirmCancelRef}
-              role="dialog"
-              aria-modal="true"
-              aria-label="İsteği İptal Et"
-              tabIndex={-1}
-              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none"
-            >
-              <p className="text-base font-bold text-text font-sans">İsteği İptal Et</p>
-              <p className="text-sm text-text font-sans leading-relaxed">
-                {confirmCancel.name} oyuncusuna gönderdiğin arkadaşlık isteğini iptal etmek istiyor musun?
-              </p>
-              <div className="flex gap-2 mt-1">
-                <button
-                  onClick={handleConfirmCancel}
-                  disabled={busyId === confirmCancel.id}
-                  className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
-                >
-                  {busyId === confirmCancel.id ? '...' : 'İptal Et'}
-                </button>
-                <button
-                  onClick={() => setConfirmCancel(null)}
-                  disabled={busyId === confirmCancel.id}
-                  className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
-                >
-                  Vazgeç
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )}
-
-      {cancelResultMsg &&
-        createPortal(
-          <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
-            <div
-              ref={cancelResultRef}
-              role="dialog"
-              aria-modal="true"
-              aria-label="Arkadaşlık durumu"
-              tabIndex={-1}
-              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none relative"
-            >
-              <button
-                onClick={() => setCancelResultMsg(null)}
-                aria-label="Kapat"
-                className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
-              >
-                ✕
-              </button>
-              <p className="text-sm text-text font-sans leading-relaxed pr-6">{cancelResultMsg}</p>
-              <button
-                onClick={() => setCancelResultMsg(null)}
-                className="btn-raised py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
-              >
-                Tamam
-              </button>
-            </div>
-          </div>,
-          document.body,
-        )}
+      {confirmCancel && (
+        <ConfirmDialog
+          dialogRef={confirmCancelRef}
+          ariaLabel="İsteği İptal Et"
+          title="İsteği İptal Et"
+          message={`${confirmCancel.name} oyuncusuna gönderdiğin arkadaşlık isteğini iptal etmek istiyor musun?`}
+          confirmLabel="İptal Et"
+          busy={busyId === confirmCancel.id}
+          onConfirm={handleConfirmCancel}
+          onCancel={() => setConfirmCancel(null)}
+        />
+      )}
+      {cancelResultMsg && (
+        <InfoDialog dialogRef={cancelResultRef} message={cancelResultMsg} onClose={() => setCancelResultMsg(null)} />
+      )}
     </Modal>
   );
 }
