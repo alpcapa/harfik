@@ -49,6 +49,19 @@ import { RecentGamesSection } from './RecentGamesSection';
 
 type SubTab = 'active' | 'invites' | 'recent';
 
+// `user.id` -> son çekilen liste/sıra/son-tarih durumu. Modül seviyesinde
+// (bileşenin kendi state'i DEĞİL) tutuluyor çünkü `LiveGamesTab`, `Setup`'ın
+// "Oyun Tipi" sekmeleri arasında geçişte tamamen UNMOUNT/MOUNT oluyor (bkz.
+// CLAUDE.md, "yükleniyor uzun sürüyor" regresyonu, 3 Ağustos 2026) — önceden
+// her dönüşte state sıfırlanıp `games===null` yüzünden yeniden "Yükleniyor…"
+// gösteriliyordu. Bu önbellek sayesinde bir sonraki mount, son bilinen
+// veriyi anında gösterir; `loadGames` yine her mount'ta arka planda taze
+// veriyi çekip hem state'i hem bu önbelleği günceller.
+const liveGamesCache = new Map<
+  string,
+  { games: OnlineGame[]; turns: Record<string, number>; deadlines: Record<string, string | null> }
+>();
+
 type HumanSlot = Extract<OnlineGameSlot, { type: 'human' }>;
 
 /** `game.slots`teki, çağıranın kendi koltuğunun indeksi (`relation==='self'`). */
@@ -351,11 +364,20 @@ interface LiveGamesTabProps {
 export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   const { user, loading: authLoading } = useAuth();
   // null = henüz çekilmedi (yükleniyor), [] = çekildi ama hiç oyun yok.
-  const [games, setGames] = useState<OnlineGame[] | null>(null);
+  // İlk değer, varsa bu kullanıcı için önbellekteki son bilinen listeden
+  // geliyor (bkz. `liveGamesCache` tanımındaki not) — yeniden mount'ta
+  // spinner göstermeden son durumu anında çizip arkada tazeliyoruz.
+  const [games, setGames] = useState<OnlineGame[] | null>(
+    () => (user ? (liveGamesCache.get(user.id)?.games ?? null) : null),
+  );
   // gameId -> sırası gelen koltuk indeksi ("Sıra sende" rozeti için).
-  const [turns, setTurns] = useState<Record<string, number>>({});
+  const [turns, setTurns] = useState<Record<string, number>>(
+    () => (user ? (liveGamesCache.get(user.id)?.turns ?? {}) : {}),
+  );
   // gameId -> sırası gelen oyuncunun zaman aşımı son tarihi ("kalan süre" için).
-  const [deadlines, setDeadlines] = useState<Record<string, string | null>>({});
+  const [deadlines, setDeadlines] = useState<Record<string, string | null>>(
+    () => (user ? (liveGamesCache.get(user.id)?.deadlines ?? {}) : {}),
+  );
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [busyInviteId, setBusyInviteId] = useState<string | null>(null);
@@ -508,6 +530,13 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
     const hasInvites = games.some((g) => g.my_role === 'invitee' && g.my_invite_status === 'pending');
     if (hasInvites) setSubTab('invites');
   }, [games]);
+
+  // `liveGamesCache`'i her güncellemede tazeler — bir sonraki mount'un
+  // gösterebileceği "son bilinen" durum.
+  useEffect(() => {
+    if (!user || games === null) return;
+    liveGamesCache.set(user.id, { games, turns, deadlines });
+  }, [user, games, turns, deadlines]);
 
   if (authLoading) return null;
 

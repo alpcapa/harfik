@@ -17,6 +17,10 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('tr-TR');
 }
 
+// `user.id:onlineOnly` -> son çekilen 5 oyunluk liste. Bkz. bileşen
+// gövdesindeki not.
+const recentGamesCache = new Map<string, GameHistoryEntry[]>();
+
 // Eski (rank hiç yazılmamış) kayıtlarda bile en azından 1./2. tahmini için
 // puan karşılaştırmasına düşülür — GameHistoryModal'daki fallbackPlayers'ın
 // aynı ilkesi.
@@ -61,7 +65,18 @@ interface RecentGamesSectionProps {
 
 export function RecentGamesSection({ onlineOnly, emptyMessage }: RecentGamesSectionProps) {
   const { user } = useAuth();
-  const [games, setGames] = useState<GameHistoryEntry[] | null>(null);
+  // 3 Ağustos 2026 — bu bileşen `Setup`/`LiveGamesTab`'ın kendi sekmeleri
+  // arasında geçişte UNMOUNT/MOUNT olur (bkz. CLAUDE.md, "yükleniyor uzun
+  // sürüyor" regresyonu); önceden her dönüşte state sıfırlanıp yeniden
+  // "Yükleniyor…" gösteriliyordu. Modül seviyesindeki bu önbellek (bileşenin
+  // kendi state'i DEĞİL, JS modülü yüklü kaldığı sürece yaşıyor) sayesinde
+  // ilk render'da varsa son bilinen veri ANINDA gösterilir; aşağıdaki effect
+  // yine de her mount'ta arka planda taze veriyi çekip hem state'i hem bu
+  // önbelleği günceller — yalnızca görünür spinner ortadan kalkıyor.
+  const cacheKey = user ? `${user.id}:${onlineOnly}` : null;
+  const [games, setGames] = useState<GameHistoryEntry[] | null>(() =>
+    cacheKey ? (recentGamesCache.get(cacheKey) ?? null) : null,
+  );
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
 
@@ -71,8 +86,11 @@ export function RecentGamesSection({ onlineOnly, emptyMessage }: RecentGamesSect
       return;
     }
     let cancelled = false;
+    const key = `${user.id}:${onlineOnly}`;
     fetchMyGames(null, 0, 5, undefined, false, onlineOnly).then(({ games: rows }) => {
-      if (!cancelled) setGames(rows);
+      if (cancelled) return;
+      setGames(rows);
+      recentGamesCache.set(key, rows);
     });
     return () => {
       cancelled = true;
