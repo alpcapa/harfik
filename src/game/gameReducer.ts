@@ -199,6 +199,21 @@ function advanceTurn(state: GameState): GameState {
   };
 
   // Teslim olmamış bir oyuncunun rafı boşaldıysa ve torba bittiyse oyun biter.
+  //
+  // Kod incelemesi (Şüpheli bulgu) SURRENDER'ın da advanceTurn'ü çağırdığını
+  // görüp "SURRENDER ile aynı anda başka bir oyuncunun rafı+torba boşalması
+  // çakışırsa endGame() burada varsayılan 'normal' reason'ıyla çağrılır,
+  // asıl sebep teslim olma olduğu halde" diye işaretlemişti. İncelenip
+  // ULAŞILAMAZ olduğu doğrulandı: `someoneEmpty` burada SADECE teslim
+  // OLMAYAN bir oyuncunun rafı için true olabilir (yukarıdaki filtre) — ama
+  // böyle bir oyuncunun rafı+torba ZATEN boşsa, oyun bunun oluştuğu ÖNCEKİ
+  // turda (o oyuncunun kendi PLAY'i/advanceTurn'ü sırasında) zaten bitmiş
+  // olurdu; `SURRENDER` case'i en başında `state.isGameOver` kontrolüyle
+  // zaten bitmiş bir oyunda hiç çalışmaz. Yani bu action'a buradan
+  // ulaşıldığında someoneEmpty'nin true olması mantıksal olarak imkansız —
+  // 'normal' varsayılanı burada güvenli. Ayrıca SURRENDER'ın kendisi şu an
+  // UI'dan hiç dispatch edilmiyor (bkz. CLAUDE.md "Teslim olma (kademeli)"),
+  // yani bu yol zaten dolaylı olarak da erişilemez durumda.
   const someoneEmpty = nextState.players.some((p) => !p.surrendered && p.rack.length === 0);
   if (someoneEmpty && nextState.bag.length === 0) {
     return endGame(nextState);
@@ -350,7 +365,14 @@ function applyPlacement(
     (best, fw) => (fw.word.length > best.length ? fw.word : best),
     me.longestWord,
   );
-  const isNewBestMove = basePts > me.bestMoveScore;
+  // "En İyi Hamle Puanı"/"Ortalama Hamle Puanı" istatistikleri bu hamlenin
+  // TOPLAM puanını temsil etmeli (bkz. CLAUDE.md — bestMoveScore "birden
+  // fazla kelime + bonus içerebilir"). finishBonus önceden buraya dahil
+  // edilmiyordu ama oyuncuya gösterilen mesaj/gerçek skor onu içeriyordu —
+  // jokerli bir bitiş hamlesi gerçekte en yüksek puanlı hamle olsa bile
+  // istatistiklerde 25/50 puan eksik görünebiliyordu (kod incelemesi).
+  const moveTotal = basePts + finishBonus;
+  const isNewBestMove = moveTotal > me.bestMoveScore;
   const newBestWordScore = bestWordScoreFrom(wordRawScores, me.bestWordScore);
   const players = state.players.map((p, i) => {
     if (i === state.current) {
@@ -358,11 +380,11 @@ function applyPlacement(
         ...p,
         rack,
         score: p.score + pts + finishBonus,
-        bestMoveScore: isNewBestMove ? basePts : p.bestMoveScore,
+        bestMoveScore: isNewBestMove ? moveTotal : p.bestMoveScore,
         bestWordScore: newBestWordScore,
         longestWord: newLongestWord,
         moveCount: p.moveCount + 1,
-        moveScoreSum: p.moveScoreSum + basePts,
+        moveScoreSum: p.moveScoreSum + moveTotal,
       };
     }
     const share = shares.find((s) => s.index === i);
