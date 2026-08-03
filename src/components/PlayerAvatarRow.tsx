@@ -23,6 +23,23 @@ export interface AvatarRowPlayer {
    * gerçek bir üye gibi gösteriyordu.
    */
   isAi?: boolean;
+  /**
+   * Misafir (girişsiz) koltuk — yerel (YZ) oyunlarda mümkün, Canlı'da değil
+   * (orada herkes kayıtlı). Profil olmadığından baş harf üretilecek anlamlı
+   * bir isim de yok: `GameState`'e literal `GUEST_PLAYER_NAME` gömülüyor
+   * (bkz. `Setup`'un `doStart`'ı), yani baş harf "MI" çıkıp misafiri gerçek
+   * bir üye gibi gösteriyor. Bu bayrak `Avatar`'a boş isim geçirterek onun
+   * zaten var olan **"?"** yedeğini seçtiriyor — yeni bir görsel icat
+   * edilmedi.
+   *
+   * İki çağrı yeri var ve misafirliği FARKLI yollardan biliyorlar:
+   * `Setup`'un devam eden oyun satırı (`savedGameAvatars`) oturum durumundan
+   * (`!user`), `RecentGamesSection`'ın bitmiş oyun satırı ise dondurulmuş
+   * `games.players` anlık görüntüsündeki isimden — o snapshot bilerek
+   * `user_id` taşımadığından tespitin tek yolu `GUEST_PLAYER_NAME`
+   * karşılaştırması.
+   */
+  isGuest?: boolean;
 }
 
 /**
@@ -56,7 +73,7 @@ export function PlayerAvatarRow({
               🤖
             </span>
           ) : (
-            <Avatar url={p.avatarUrl} name={p.name} size={size} />
+            <Avatar url={p.avatarUrl} name={p.isGuest ? '' : p.name} size={size} />
           )}
         </span>
       ))}

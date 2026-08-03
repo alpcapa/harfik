@@ -1,6 +1,6 @@
 // Kelimeki — oyun kurulum ekranı: oyuncu sayısı (2/4) seçimi
 import { useEffect, useRef, useState } from 'react';
-import { PLAYER_COLORS } from '../game/constants';
+import { GUEST_PLAYER_NAME, PLAYER_COLORS } from '../game/constants';
 import type { PlayerSetup } from '../game/gameReducer';
 import { useAuth } from '../hooks/useAuth';
 import { useModalA11y } from '../hooks/useModalA11y';
@@ -15,6 +15,7 @@ import { CountBadge } from './CountBadge';
 import { HelpModal } from './HelpModal';
 import { LiveGamesTab } from './LiveGamesTab';
 import { LogoMark } from './LogoMark';
+import { PlayerAvatarRow, type AvatarRowPlayer } from './PlayerAvatarRow';
 import { PlayerBadge } from './PlayerBadge';
 import { RecentGamesSection } from './RecentGamesSection';
 import { TermsModal } from './TermsModal';
@@ -93,19 +94,44 @@ function MembershipPerksBox({ onSignup, className = '' }: { onSignup: () => void
 }
 
 /**
+ * Kaydedilmiş bir yerel (YZ) oyunun oyuncularını "Devam Eden Oyun"
+ * satırındaki avatarlara çevirir — YZ koltukları robot avatarı alır.
+ *
+ * İnsan koltuğu yerel oyunda HER ZAMAN 0. koltuktur ve her zaman bu
+ * cihazdaki kişidir (bkz. `doStart`), ama `GameState` avatar taşımaz
+ * (`Player`'da böyle bir alan yok) — bu yüzden fotoğraf dondurulmuş
+ * state'ten değil O ANKİ profilden okunur. Kullanıcı isteğinin "misafirken
+ * '?' görünür, giriş yapınca kişinin gerçek avatarına döner" kısmı bu
+ * sayede ek bir taşıma/migration gerektirmeden kendiliğinden çalışıyor:
+ * misafirin kaydı giriş sonrası zaten hesaba taşınıyor (bkz. CLAUDE.md,
+ * `migratingSavedGameRef`) ve o satır artık `profile` ile render ediliyor.
+ */
+function savedGameAvatars(
+  players: { name: string; isAI: boolean }[],
+  avatarUrl: string | null | undefined,
+  isGuest: boolean,
+): AvatarRowPlayer[] {
+  return players.map((p) =>
+    p.isAI
+      ? { name: 'Yapay Zeka', isAi: true }
+      : { name: p.name, avatarUrl, isGuest },
+  );
+}
+
+/**
  * "Devam Eden Oyun" satırı — misafirin tekil localStorage kaydında (bkz.
  * `savedGame` prop'u) ve girişli kullanıcının `cloudSaves` listesindeki her
  * satırda AYNI görsel/etkileşim deseni kullanılsın diye ortak bileşene
  * çıkarıldı.
  */
 function SavedGameRow({
-  title,
+  players,
   subtitle,
   savedAtMs,
   willSurrender,
   onClick,
 }: {
-  title: string;
+  players: AvatarRowPlayer[];
   subtitle: string;
   savedAtMs: number;
   willSurrender: boolean;
@@ -118,7 +144,12 @@ function SavedGameRow({
       className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel w-full text-left active:scale-[0.99] transition-transform"
     >
       <span className="flex-1 min-w-0 flex flex-col gap-0.5">
-        <span className="font-sans text-[12px] font-bold text-text truncate">{title}</span>
+        {/* "N Kişilik Oyun" başlığının yerine katılımcı avatarları —
+            `LiveGamesTab`'daki Canlı oyun kartlarıyla BİREBİR AYNI desen
+            (kullanıcı isteği: YZ oyunlarında da Canlı'daki gibi avatar).
+            Avatar sayısı zaten oyuncu sayısını gösterdiğinden metin bilgi
+            kaybettirmiyor. */}
+        <PlayerAvatarRow players={players} />
         <span className="text-[9px] font-mono text-muted truncate">{subtitle}</span>
       </span>
       <span className="flex flex-col items-end gap-0.5 shrink-0">
@@ -391,7 +422,7 @@ export function Setup({
       // ihtimali göz ardı edilebilir olduğundan diğer tüm oyuncular her
       // zaman YZ'dir.
       if (i === 0) {
-        return { name: accountName || 'Misafir', isAI: false };
+        return { name: accountName || GUEST_PLAYER_NAME, isAI: false };
       }
       return { name: `Yapay Zeka ${i + 1}`, isAI: true };
     });
@@ -519,7 +550,7 @@ export function Setup({
             Devam Eden Oyun
           </div>
           <SavedGameRow
-            title={`${savedGame.state.players.length} Kişilik Oyun`}
+            players={savedGameAvatars(savedGame.state.players, null, true)}
             subtitle={`Sıra: ${savedGame.state.players[savedGame.state.current]?.name ?? '—'}`}
             savedAtMs={savedGame.savedAt}
             willSurrender={false}
@@ -584,7 +615,7 @@ export function Setup({
                 {cloudSaves.map((save) => (
                   <SavedGameRow
                     key={save.id}
-                    title={`${save.state.players.length} Kişilik Oyun`}
+                    players={savedGameAvatars(save.state.players, profile?.avatar_url, false)}
                     subtitle={`Sıra: ${save.state.players[save.state.current]?.name ?? '—'}`}
                     savedAtMs={Date.parse(save.updated_at)}
                     willSurrender={save.state.turnCount >= 2}
@@ -662,7 +693,7 @@ export function Setup({
                     </span>
                   ) : (
                     <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
-                      {i === 0 ? 'Misafir' : `Yapay Zeka ${i + 1}`}
+                      {i === 0 ? GUEST_PLAYER_NAME : `Yapay Zeka ${i + 1}`}
                     </span>
                   )}
 

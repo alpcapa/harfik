@@ -5,8 +5,10 @@ import { test, expect } from '@playwright/test';
 // düzeyinde bir güven: launch öncesi/deploy sonrası hızlı bir sağlık kontrolü.
 
 test('Setup ekranı açılır, 2 kişilik oyun başlar, YZ hamle yapar', async ({ page }) => {
-  // Pas geçme, native window.confirm() ile onay istiyor (App.tsx handlePass) —
-  // Playwright varsayılan olarak dialog'ları reddeder, burada kabul ediyoruz.
+  // Pas geçme onayı artık native window.confirm() DEĞİL, uygulama içi bir
+  // modal (`aria-label="Pas geçme onayı"`, App.tsx `showPassConfirm`) — bu
+  // dinleyici yalnızca beklenmedik bir native dialog testi kilitlemesin diye
+  // güvenlik ağı olarak duruyor.
   page.on('dialog', (dialog) => dialog.accept());
 
   await page.goto('/');
@@ -32,9 +34,13 @@ test('Setup ekranı açılır, 2 kişilik oyun başlar, YZ hamle yapar', async (
   const oynaButton = page.getByRole('button', { name: 'OYNA' });
   await expect(oynaButton).toBeVisible();
 
-  const pasGecButton = page.getByRole('button', { name: 'PAS GEÇ' });
+  // Onay modalı açılınca sayfada AYNI isimde ikinci bir "Pas Geç" butonu
+  // (modalın kendi onay butonu) oluşuyor — bu yüzden oyun ekranındaki buton
+  // `main` landmark'ıyla, modaldeki ise kendi aria-label'ıyla hedefleniyor.
+  const pasGecButton = page.getByRole('main').getByRole('button', { name: 'Pas Geç' });
   await expect(pasGecButton).toBeEnabled();
   await pasGecButton.click();
+  await page.getByLabel('Pas geçme onayı').getByRole('button', { name: 'Pas Geç' }).click();
 
   // Sıra YZ'ye geçince kontroller devre dışı kalır (App.tsx `canAct`).
   await expect(pasGecButton).toBeDisabled();
