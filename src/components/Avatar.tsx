@@ -39,6 +39,19 @@ export function Avatar({ url, name, size = 32, className = '', dot = false }: Av
     setBroken(false);
   }, [url]);
   const style = { width: size, height: size, fontSize: Math.round(size * 0.4) };
+  // Baş harf yedeğinin punto oranı İKİ harfe göre ayarlı (0.4) — dairenin
+  // içine yatayda ancak öyle sığıyor. Tek karakterlik yedekte (misafirin
+  // "?"i ya da tek harfli bir isim) bu kısıt yok ve 0.4 optik olarak zayıf
+  // kalıyor: `PlayerAvatarRow`'da "?" avatarı, yanında durduğu robot
+  // avatarının 0.55 oranıyla yan yana gelince belirgin şekilde küçük
+  // görünüyordu (kullanıcı bildirdi). Tek karakter aynı 0.55'e çekildi —
+  // iki harfli baş harfler (yani kullanım yerlerinin ezici çoğunluğu) hiç
+  // etkilenmiyor.
+  const text = initials(name);
+  const fallbackStyle = {
+    ...style,
+    fontSize: Math.round(size * (text.length === 1 ? 0.55 : 0.4)),
+  };
 
   const inner =
     url && !broken ? (
@@ -51,10 +64,10 @@ export function Avatar({ url, name, size = 32, className = '', dot = false }: Av
       />
     ) : (
       <span
-        style={style}
+        style={fallbackStyle}
         className={`rounded-full flex items-center justify-center font-mono font-bold text-white bg-accent border border-accent select-none ${className}`}
       >
-        {initials(name)}
+        {text}
       </span>
     );
 
