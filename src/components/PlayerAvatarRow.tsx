@@ -15,6 +15,14 @@ export interface AvatarRowPlayer {
   name: string;
   /** Yalnızca Canlı oyun kartlarında dolu olabilir — bkz. dosya sonundaki not. */
   avatarUrl?: string | null;
+  /**
+   * YZ koltuğu — baş harf yerine robot avatarı gösterilir. Görsel dil
+   * `LiveGameCreateForm`/`PendingGameCard`'daki (oyun daveti) robot
+   * avatarıyla birebir aynı: `bg-void` zemin + `border-border` çerçeve
+   * içinde 🤖. YZ'nin profili olmadığından baş harf üretmek ("YZ") onu
+   * gerçek bir üye gibi gösteriyordu.
+   */
+  isAi?: boolean;
 }
 
 /**
@@ -37,7 +45,19 @@ export function PlayerAvatarRow({
         // ayrışmasını sağlıyor; `ring` layout'a hiç yer kaplamadığından
         // avatar boyutunu/satır yüksekliğini etkilemiyor.
         <span key={`${p.name}-${i}`} className="inline-flex rounded-full ring-2 ring-panel">
-          <Avatar url={p.avatarUrl} name={p.name} size={size} />
+          {p.isAi ? (
+            <span
+              style={{ width: size, height: size, fontSize: Math.round(size * 0.55) }}
+              className="rounded-full bg-void border border-border flex items-center justify-center select-none"
+              title={p.name}
+              aria-label={p.name}
+              role="img"
+            >
+              🤖
+            </span>
+          ) : (
+            <Avatar url={p.avatarUrl} name={p.name} size={size} />
+          )}
         </span>
       ))}
     </span>

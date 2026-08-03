@@ -116,7 +116,9 @@ export function RecentGamesSection({ onlineOnly, emptyMessage }: RecentGamesSect
                     yalnızca Canlı kartlarında çıkar. Snapshot'ı hiç olmayan
                     eski kayıtlarda ise eski metin başlığına düşülüyor. */}
                 {g.players && g.players.length > 0 ? (
-                  <PlayerAvatarRow players={g.players.map((p) => ({ name: p.name }))} />
+                  <PlayerAvatarRow
+                    players={g.players.map((p) => ({ name: p.name, isAi: p.is_ai }))}
+                  />
                 ) : (
                   <span className="font-sans text-[12px] font-bold text-text truncate">{titleFor(g)}</span>
                 )}

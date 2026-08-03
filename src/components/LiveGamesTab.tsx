@@ -243,14 +243,14 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
       <span className="flex-1 min-w-0 flex flex-col gap-0.5">
         {/* "N Kişilik Oyun" başlığının yerine katılımcı avatarları — avatar
             sayısı zaten oyuncu sayısını gösterdiğinden metin bilgi
-            kaybettirmiyor (bkz. PlayerAvatarRow). YZ koltuklarının profili
-            olmadığından adı "Yapay Zeka"ya sabitleniyor; Avatar bundan "YZ"
-            baş harflerini üretiyor. */}
+            kaybettirmiyor (bkz. PlayerAvatarRow). YZ koltukları bu kartın
+            davet hâlindeki karşılığıyla (PendingGameCard) aynı robot
+            avatarını alıyor. */}
         <PlayerAvatarRow
           players={game.slots.map((s) =>
             s.type === 'human'
               ? { name: s.name ?? 'Oyuncu', avatarUrl: s.avatar_url }
-              : { name: 'Yapay Zeka' },
+              : { name: 'Yapay Zeka', isAi: true },
           )}
         />
         <span className="text-[9px] font-mono text-muted truncate">
