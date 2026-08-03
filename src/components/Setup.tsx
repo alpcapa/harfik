@@ -265,9 +265,21 @@ export function Setup({
   // dinleyicileri sayesinde artık sekme hiç değişmeden de kendiliğinden
   // güncelleniyor.
   //
-  // Kişi login olduğunda Canlı'da hamle bekleyen (sırası kendisinde olan
-  // aktif) bir oyunu varsa "Arkadaşınla" sekmesi otomatik açık gelsin —
-  // yalnızca BİR KEZ (bu ref sayesinde) uygulanır, yoksa kullanıcı elle
+  // Kişi login olduğunda Canlı'da dikkat bekleyen bir şey varsa "Arkadaşınla"
+  // sekmesi otomatik açık gelsin — hamle bekleyen (sırası kendisinde olan)
+  // aktif bir oyun YA DA yanıtlanmamış bir davet. İkisi de aynı rozette
+  // (`liveActionCount`) sayıldığından ikisinin de sekmeyi açması gerekiyor;
+  // 3 Ağustos 2026'ya kadar yalnızca `myTurnCount` bakılıyordu, yani sadece
+  // bekleyen bir daveti olan kişi login olduğunda hâlâ "Yapay Zeka ile"
+  // sekmesiyle karşılaşıyor, daveti ancak rozeti fark edip elle sekme
+  // değiştirirse görüyordu (kullanıcı bildirdi).
+  //
+  // "Davetler oyunlardan öncelikli" kısmı burada değil, sekmenin İÇİNDE
+  // çözülüyor: LiveGamesTab'ın kendi varsayılan alt-sekme effect'i, bekleyen
+  // bir davet varsa "Devam Edenler" yerine "Oyun Davetleri"ni açıyor. Yani
+  // ikisi de varsa kullanıcı doğrudan davetlerin üstüne düşüyor.
+  //
+  // Yalnızca BİR KEZ (bu ref sayesinde) uygulanır, yoksa kullanıcı elle
   // "Yapay Zeka ile"ye dönse bile aşağıdaki effect'in refresh()'i (Realtime/
   // foreground tetiklemeleriyle tekrar tekrar çağrıldığında) onu tekrar
   // Live'a geri çekerdi.
@@ -281,16 +293,16 @@ export function Setup({
     // Yalnızca bu ref'in (kullanıcı için) İLK başarılı sonucunda bir kez
     // uygulanır — refresh() sonraki her tetiklenmede (Realtime/foreground)
     // tekrar çağrılsa da ref zaten dolu olduğundan bir daha zorlanmaz.
-    const applyLoginDefaultOnce = (myTurnCount: number) => {
+    const applyLoginDefaultOnce = (inviteCount: number, myTurnCount: number) => {
       if (appliedLoginDefaultRef.current) return;
       appliedLoginDefaultRef.current = true;
-      if (myTurnCount > 0) onMainViewChange('live');
+      if (inviteCount > 0 || myTurnCount > 0) onMainViewChange('live');
     };
     const refresh = () => {
       fetchPendingLiveGameCounts().then(({ inviteCount, myTurnCount }) => {
         if (cancelled) return;
         setLiveActionCount(inviteCount + myTurnCount);
-        applyLoginDefaultOnce(myTurnCount);
+        applyLoginDefaultOnce(inviteCount, myTurnCount);
       });
     };
     refresh();
