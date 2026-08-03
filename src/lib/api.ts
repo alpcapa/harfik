@@ -1580,29 +1580,46 @@ export async function fetchAdminFeedback(): Promise<AdminFeedbackRow[]> {
 }
 
 /**
- * Admin'i bekleyen (okunmamış) geri bildirim sayısını döner — `UserMenu`'deki
- * "Admin Paneli" satırının yanındaki kırmızı rozet için. `fetchAdminFeedback`
- * tüm satırları çektiğinden, yalnızca bir sayı için onu çağırmak (menü her
- * açıldığında tüm geri bildirim geçmişini indirmek) gereksiz olurdu; bu
- * yüzden `head: true` ile yalnızca `count` isteniyor, hiç satır gövdesi
- * dönmüyor. Filtre `AdminDashboard`'daki `unhandledFeedbackCount` ile
- * BİREBİR aynı (`handled=false`, origin ayrımı yok) — rozetteki sayı ile
- * paneldeki "Geri Bildirim (N)" sekmesindeki sayı her zaman eşleşmeli.
- * Admin'in kendi gönderdiği mesajlar (`origin='admin'`) zaten
- * `handled: true` ile eklendiğinden doğal olarak sayılmıyor. RLS gereği
- * admin olmayan bir çağıran her zaman 0 görür.
+ * Admin'i bekleyen işlerin toplam sayısını döner — `UserMenu`'deki "Admin
+ * Paneli" satırının yanındaki kırmızı rozet için. İki kaynağın toplamı:
+ * okunmamış geri bildirim (`feedback`, "Gelen Kutusu") + okunmamış şikayet
+ * (`online_game_chat_reports`, "Şikayetler"), yani paneldeki iki alt sekmenin
+ * kendi sayaçlarının toplamı. İki filtre de `AdminDashboard`'daki
+ * `unhandledFeedbackCount`/`chatReports.filter(r => !r.handled)` ile BİREBİR
+ * aynı (`handled=false`) — rozetteki sayı ile panelin içindeki sayılar hiçbir
+ * zaman ayrışmamalı. İki uç durum doğal olarak zaten doğru davranıyor:
+ * admin'in KENDİ gönderdiği mesajlar (`origin='admin'`) `handled: true` ile
+ * eklendiğinden, geri çekilen şikayetler de (`withdraw_online_game_chat_
+ * reports` aynı anda `handled=true` yaptığından) sayılmıyor.
+ *
+ * `fetchAdminFeedback`/`fetchAdminChatReports` tüm satırları çektiğinden,
+ * yalnızca bir sayı için onları çağırmak (menü her açıldığında tüm geçmişi
+ * indirmek) gereksiz olurdu; bu yüzden `head: true` ile yalnızca `count`
+ * isteniyor, hiç satır gövdesi dönmüyor.
+ *
+ * **Yalnızca admin için çağrılmalı** (`UserMenu` bunu `profile.is_admin` ile
+ * güvenceye alıyor): `feedback`'in RLS'i admin olmayana zaten 0 döndürür, ama
+ * `online_game_chat_reports_select_admin_or_own` politikası kişinin KENDİ
+ * gönderdiği şikayetleri de görmesine izin verdiğinden, admin olmayan bir
+ * çağıran burada kendi bekleyen şikayetlerini sayardı — bu rozetin anlamı
+ * değil.
  */
-export async function fetchAdminUnreadFeedbackCount(): Promise<number> {
+export async function fetchAdminPendingCount(): Promise<number> {
   if (!supabase) return 0;
-  const { count, error } = await supabase
-    .from('feedback')
-    .select('id', { count: 'exact', head: true })
-    .eq('handled', false);
-  if (error) {
-    console.error('[Kelimeki] fetchAdminUnreadFeedbackCount hatası:', error.message);
-    return 0;
+  const [feedbackRes, reportsRes] = await Promise.all([
+    supabase.from('feedback').select('id', { count: 'exact', head: true }).eq('handled', false),
+    supabase
+      .from('online_game_chat_reports')
+      .select('id', { count: 'exact', head: true })
+      .eq('handled', false),
+  ]);
+  if (feedbackRes.error) {
+    console.error('[Kelimeki] fetchAdminPendingCount (feedback) hatası:', feedbackRes.error.message);
   }
-  return count ?? 0;
+  if (reportsRes.error) {
+    console.error('[Kelimeki] fetchAdminPendingCount (şikayet) hatası:', reportsRes.error.message);
+  }
+  return (feedbackRes.count ?? 0) + (reportsRes.count ?? 0);
 }
 
 /**

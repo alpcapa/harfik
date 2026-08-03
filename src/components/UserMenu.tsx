@@ -8,7 +8,7 @@ import {
   signOut,
   fetchMyLeaderboardRank,
   fetchIncomingFriendRequests,
-  fetchAdminUnreadFeedbackCount,
+  fetchAdminPendingCount,
 } from '../lib/api';
 import type { MyLeaderboardRank } from '../lib/database.types';
 import { Avatar } from './Avatar';
@@ -40,7 +40,7 @@ export function UserMenu() {
   const [modal, setModal] = useState<ActiveModal>(null);
   const [myRank, setMyRank] = useState<MyLeaderboardRank | null>(null);
   const [incomingRequestCount, setIncomingRequestCount] = useState(0);
-  const [unreadFeedbackCount, setUnreadFeedbackCount] = useState(0);
+  const [adminPendingCount, setAdminPendingCount] = useState(0);
   const wrapRef = useRef<HTMLDivElement>(null);
   const isAdmin = !!profile?.is_admin;
 
@@ -79,25 +79,28 @@ export function UserMenu() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // Admin'i bekleyen (okunmamış) geri bildirim sayısı — "Admin Paneli"
-  // satırının yanındaki kırmızı rozet için. Arkadaşlık isteği sayacıyla
-  // aynı desen: yalnızca kullanıcı/rol değişince çekilir (`feedback` tablosu
-  // Realtime publication'ında değil, ayrı bir abonelik bilinçli olarak
-  // eklenmedi), panel kapanınca ayrıca tazelenir — admin içeride mesajları
-  // okundu işaretlemiş olabilir.
-  const refreshUnreadFeedbackCount = () => {
+  // Admin'i bekleyen okunmamış geri bildirim + şikayet sayısı — "Admin
+  // Paneli" satırının yanındaki kırmızı rozet için. Arkadaşlık isteği
+  // sayacıyla aynı desen: yalnızca kullanıcı/rol değişince çekilir (ne
+  // `feedback` ne `online_game_chat_reports` Realtime publication'ında,
+  // ayrı bir abonelik bilinçli olarak eklenmedi), panel kapanınca ayrıca
+  // tazelenir — admin içeride okundu işaretlemiş olabilir.
+  const refreshAdminPendingCount = () => {
     if (!isAdmin) return;
-    fetchAdminUnreadFeedbackCount().then(setUnreadFeedbackCount);
+    fetchAdminPendingCount().then(setAdminPendingCount);
   };
 
   useEffect(() => {
+    // Admin olmayan için çağrılmamalı — bkz. fetchAdminPendingCount'un
+    // dokümantasyonundaki uyarı (şikayet RLS'i kişinin kendi şikayetlerini
+    // de görmesine izin veriyor).
     if (!isAdmin) {
-      setUnreadFeedbackCount(0);
+      setAdminPendingCount(0);
       return;
     }
     let cancelled = false;
-    fetchAdminUnreadFeedbackCount().then((n) => {
-      if (!cancelled) setUnreadFeedbackCount(n);
+    fetchAdminPendingCount().then((n) => {
+      if (!cancelled) setAdminPendingCount(n);
     });
     return () => {
       cancelled = true;
@@ -175,12 +178,12 @@ export function UserMenu() {
           ) : (
             /* Menü kapalıyken de fark edilsin diye avatardaki nokta, menü
                içindeki rozetlerin herhangi birini yansıtır — arkadaşlık
-               isteği ya da (admin ise) bekleyen geri bildirim. */
+               isteği ya da (admin ise) bekleyen geri bildirim/şikayet. */
             <Avatar
               url={profile?.avatar_url}
               name={name}
               size={32}
-              dot={incomingRequestCount > 0 || unreadFeedbackCount > 0}
+              dot={incomingRequestCount > 0 || adminPendingCount > 0}
             />
           )}
         </button>
@@ -263,8 +266,8 @@ export function UserMenu() {
                 }}
               >
                 <span aria-hidden>🛡️</span> Admin Paneli
-                {unreadFeedbackCount > 0 && (
-                  <CountBadge count={unreadFeedbackCount} className="ml-auto" />
+                {adminPendingCount > 0 && (
+                  <CountBadge count={adminPendingCount} className="ml-auto" />
                 )}
               </button>
             )}
@@ -294,9 +297,9 @@ export function UserMenu() {
         <AdminDashboard
           onClose={() => {
             setModal(null);
-            // İçeride mesajlar okundu işaretlenmiş olabilir — FriendsModal
-            // kapanışındaki aynı desen.
-            refreshUnreadFeedbackCount();
+            // İçeride mesaj/şikayet okundu işaretlenmiş olabilir —
+            // FriendsModal kapanışındaki aynı desen.
+            refreshAdminPendingCount();
           }}
         />
       )}
