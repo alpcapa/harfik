@@ -364,8 +364,10 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     // olmadığından, soğuk yüklemede sessize alınmış birinin mesajı yanlışlıkla
     // bir an için okunmamış sayılabilirdi.
     void Promise.all([
-      fetchMyChatMutes(game.id),
-      fetchMyActiveChatReports(game.id),
+      // Kişi bazlı (oyuna göre filtrelenmez) — bu kişiyi başka bir oyunda
+      // sessize almış/rapor etmişsem burada da işaretli gelir.
+      fetchMyChatMutes(),
+      fetchMyActiveChatReports(),
       fetchOnlineGameMessages(game.id),
     ]).then(([mutes, reported, rows]) => {
       if (cancelled) return;

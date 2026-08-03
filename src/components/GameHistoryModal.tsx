@@ -770,7 +770,11 @@ export function GameHistoryModal({
         <PlayerScoreCard member={selectedLiker} onClose={() => setSelectedLiker(null)} />
       )}
       {selectedChatGameId && (
-        <GameChatHistoryModal gameId={selectedChatGameId} onClose={() => setSelectedChatGameId(null)} />
+        <GameChatHistoryModal
+          gameId={selectedChatGameId}
+          onlineGameId={games.find((g) => g.id === selectedChatGameId)?.online_game_id ?? null}
+          onClose={() => setSelectedChatGameId(null)}
+        />
       )}
     </Modal>
   );

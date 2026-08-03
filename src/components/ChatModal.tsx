@@ -98,6 +98,14 @@ export function ChatModal({
       createdAt: m.created_at,
       mine: m.sender_user_id === myUserId,
       senderId: m.sender_user_id,
+      // Bayrak rapora, yasak işareti yalnızca sessize almaya bakar — biri
+      // rapor edildiyse (rapor otomatik sessize de aldığından) bayrak
+      // kazanır, iki rozet aynı anda gösterilmez.
+      badge: reportedUserIds.has(m.sender_user_id)
+        ? ('reported' as const)
+        : mutedUserIds.has(m.sender_user_id)
+          ? ('muted' as const)
+          : undefined,
     };
   });
 
@@ -144,8 +152,6 @@ export function ChatModal({
         <ChatThread
           messages={threadMessages}
           emptyText="Henüz mesaj yok. İlk mesajı sen gönder!"
-          mutedUserIds={mutedUserIds}
-          reportedUserIds={reportedUserIds}
           onBadgeClick={onOpenParticipantSettings}
         />
       </div>

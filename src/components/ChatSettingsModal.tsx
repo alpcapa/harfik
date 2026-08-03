@@ -10,6 +10,11 @@
 // gösterilir; ikisi de yoksa hiçbir işaret yok. Bu rozetler yalnızca
 // işlemi yapan kişiye (bana) görünür — karşı taraf hiçbir zaman göremez
 // (bkz. CLAUDE.md "karşı tarafa yansımıyor" ilkesi).
+//
+// 3 Ağustos 2026'dan beri her iki durum da KİŞİ bazlı ve kalıcı: bir oyunda
+// sessize aldığın/rapor ettiğin kişi, onunla açtığın sonraki oyunlarda da
+// işaretli gelir ve buradan (yine) değiştirilebilir. Bu yüzden onay
+// metinleri "bu oyunda" demiyor.
 import { useState } from 'react';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
@@ -38,6 +43,7 @@ type View =
   | { kind: 'mute-confirm'; participant: ChatParticipant; nextMuted: boolean }
   | { kind: 'report-reason'; participant: ChatParticipant }
   | { kind: 'report-confirm'; participant: ChatParticipant; reason: string }
+  | { kind: 'report-sent'; participant: ChatParticipant }
   | { kind: 'withdraw-confirm'; participant: ChatParticipant };
 
 const REASON_MAX = 500;
@@ -79,7 +85,7 @@ export function ChatSettingsModal({
     setBusy(true);
     setError(null);
     try {
-      await withdrawChatReports(gameId, participant.userId);
+      await withdrawChatReports(participant.userId);
       onWithdrawn(participant.userId);
       setView({ kind: 'list' });
     } catch (err) {
@@ -95,7 +101,12 @@ export function ChatSettingsModal({
     try {
       await reportChatParticipant(gameId, participant.userId, reason);
       onReported(participant.userId);
-      setView({ kind: 'list' });
+      // Önceden burada sessizce listeye dönülüyordu — kullanıcının aldığı
+      // tek geri bildirim ismin yanında beliren küçük 🚩 idi, "gitti mi?"
+      // sorusu tam da buradan doğuyordu (kullanıcı bildirdi). Artık
+      // FriendSuggestModal'daki "Arkadaşlık davetiniz iletilmiştir."
+      // deseniyle açık bir onay ekranı gösteriliyor.
+      setView({ kind: 'report-sent', participant });
       setReasonDraft('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Rapor gönderilemedi.');
@@ -109,7 +120,8 @@ export function ChatSettingsModal({
       {view.kind === 'list' && (
         <div className="flex flex-col gap-3">
           <p className="text-xs text-muted leading-relaxed">
-            Buradan kişileri sessize alabilir ve/veya uygunsuz paylaşımları rapor edebilirsiniz.
+            Buradan kişileri sessize alabilir ve/veya uygunsuz paylaşımları rapor edebilirsiniz. Verdiğiniz karar
+            kalıcıdır — aynı kişiyle açtığınız sonraki oyunlarda da geçerli olur.
           </p>
           <div className="flex flex-col gap-1.5">
             {participants.map((p) => {
@@ -225,12 +237,13 @@ export function ChatSettingsModal({
               <>
                 <span className="font-bold">{view.participant.name}</span> kişisini sessize almak istediğinize emin
                 misiniz? Mesajları sohbette görünmeye devam eder, yalnızca bu kişiden gelen yeni mesaj bildirimleri
-                sizin için kapanır.
+                sizin için kapanır. Bu tercih kalıcıdır — bu kişiyle açtığınız sonraki oyunlarda da geçerli olur.
               </>
             ) : (
               <>
                 <span className="font-bold">{view.participant.name}</span> kişisini sessizden çıkarmak istediğinize
-                emin misiniz? Bu kişiden gelen yeni mesajlar için tekrar bildirim almaya başlarsınız.
+                emin misiniz? Bu kişiden gelen yeni mesajlar için — bu oyunda ve diğer tüm oyunlarınızda — tekrar
+                bildirim almaya başlarsınız.
               </>
             )}
           </p>
@@ -263,8 +276,9 @@ export function ChatSettingsModal({
         <div className="flex flex-col gap-3">
           <p className="text-sm text-text font-bold">Emin misiniz?</p>
           <p className="text-sm text-text leading-relaxed">
-            <span className="font-bold">{view.participant.name}</span> için gönderdiğiniz raporu geri çekmek
-            istediğinize emin misiniz?
+            <span className="font-bold">{view.participant.name}</span> için gönderdiğiniz şikayeti geri çekmek
+            istediğinize emin misiniz? Bu kişi hakkında hangi oyunda açtığınız olursa olsun tüm açık şikayetleriniz
+            geri çekilir. Sessize alma bundan etkilenmez — isterseniz ayrıca kaldırabilirsiniz.
           </p>
           {error && <p className="text-red text-[10px] font-mono">{error}</p>}
           <div className="flex gap-2">
@@ -354,6 +368,24 @@ export function ChatSettingsModal({
               Vazgeç
             </button>
           </div>
+        </div>
+      )}
+
+      {view.kind === 'report-sent' && (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-text font-bold">Şikayetiniz iletildi.</p>
+          <p className="text-sm text-text leading-relaxed">
+            <span className="font-bold">{view.participant.name}</span> hakkındaki şikayetiniz Kelimeki ekibine
+            ulaştı. Bu kişi aynı zamanda sizin için sessize alındı; dilerseniz şikayetinizi buradan geri
+            çekebilirsiniz.
+          </p>
+          <button
+            type="button"
+            onClick={() => setView({ kind: 'list' })}
+            className="btn-raised rounded-md py-2.5 text-xs font-bold uppercase tracking-[1px] bg-accent text-white active:scale-[0.97] transition-transform"
+          >
+            Tamam
+          </button>
         </div>
       )}
     </Modal>

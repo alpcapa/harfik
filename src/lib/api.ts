@@ -1116,13 +1116,20 @@ export function subscribeOnlineGameMessages(
 // OnlineGameScreen.tsx). Rapor etmek otomatik olarak hedefi de sessize
 // alır; ikisi de karşı tarafa hiçbir şekilde yansımaz (bkz. CLAUDE.md).
 
-/** Çağıranın bu oyunda sessize aldığı kullanıcı id'lerini döner (yalnızca kendi kayıtları, RLS). */
-export async function fetchMyChatMutes(gameId: string): Promise<Set<string>> {
+/**
+ * Çağıranın sessize aldığı TÜM kullanıcı id'lerini döner (yalnızca kendi
+ * kayıtları, RLS). Sorgu bilinçli olarak `online_game_id`'ye göre
+ * FİLTRELENMİYOR: 3 Ağustos 2026'dan beri sessize alma kişi bazlı kalıcı bir
+ * durum — bir kişiyi bir oyunda susturduysan onunla açtığın SONRAKİ
+ * oyunlarda da susturulmuş kalır (bkz. `person_scoped_chat_moderation`
+ * migration'ı). Satırlar hâlâ hangi oyunda başladığını taşır, yalnızca
+ * kapsam kişiye taşındı.
+ */
+export async function fetchMyChatMutes(): Promise<Set<string>> {
   if (!supabase) return new Set();
   const { data, error } = await supabase
     .from('online_game_message_mutes')
-    .select('muted_user_id')
-    .eq('online_game_id', gameId);
+    .select('muted_user_id');
   if (error) {
     console.error('[Kelimeki] fetchMyChatMutes hatası:', error.message);
     return new Set();
@@ -1131,22 +1138,51 @@ export async function fetchMyChatMutes(gameId: string): Promise<Set<string>> {
 }
 
 /**
- * Çağıranın bu oyunda AKTİF (geri çekilmemiş) rapor açtığı kullanıcı
- * id'lerini döner — bayrak rozeti bu sete bakar (mute tablosuna değil),
- * çünkü rapor geri çekilse bile mute bağımsız olarak sürebilir.
+ * Çağıranın AKTİF (geri çekilmemiş) rapor açtığı TÜM kullanıcı id'lerini
+ * döner — bayrak rozeti bu sete bakar (mute tablosuna değil), çünkü rapor
+ * geri çekilse bile mute bağımsız olarak sürebilir. `fetchMyChatMutes` ile
+ * aynı gerekçeyle oyuna göre filtrelenmiyor: bir kişiyi rapor ettiysen
+ * bayrak onunla oynadığın her oyunda görünür.
  */
-export async function fetchMyActiveChatReports(gameId: string): Promise<Set<string>> {
+export async function fetchMyActiveChatReports(): Promise<Set<string>> {
   if (!supabase) return new Set();
   const { data, error } = await supabase
     .from('online_game_chat_reports')
     .select('reported_user_id')
-    .eq('online_game_id', gameId)
     .is('withdrawn_at', null);
   if (error) {
     console.error('[Kelimeki] fetchMyActiveChatReports hatası:', error.message);
     return new Set();
   }
   return new Set((data ?? []).map((r) => r.reported_user_id as string));
+}
+
+/**
+ * Biten bir oyunun sohbet ARŞİVİ (`GameChatHistoryModal`) için: çağıranın o
+ * oyundaki hangi RENK İNDEKSİNDEKİ oyuncuyu sessize aldığı/rapor ettiği.
+ * Dondurulmuş `games.messages` satırları bilerek `sender_user_id`
+ * taşımadığından (girişli herkes okuyabildiği için, bkz. `GameChatMessage`)
+ * kimlik istemciye hiç gelmiyor — RPC doğrudan cevabı, yani renk indeksi
+ * bazında bayrakları döndürüyor. Katılımcı olmayan biri (ör. başkasının
+ * beğendiği bir oyunu açan) boş liste alır.
+ */
+export async function fetchFinishedGameChatFlags(
+  onlineGameId: string,
+): Promise<{ muted: Set<number>; reported: Set<number> }> {
+  const empty = { muted: new Set<number>(), reported: new Set<number>() };
+  if (!supabase) return empty;
+  const { data, error } = await supabase.rpc('chat_flags_for_finished_game', {
+    p_online_game_id: onlineGameId,
+  });
+  if (error) {
+    console.error('[Kelimeki] fetchFinishedGameChatFlags hatası:', error.message);
+    return empty;
+  }
+  const rows = (data ?? []) as { color_index: number; muted: boolean; reported: boolean }[];
+  return {
+    muted: new Set(rows.filter((r) => r.muted).map((r) => r.color_index)),
+    reported: new Set(rows.filter((r) => r.reported).map((r) => r.color_index)),
+  };
 }
 
 /** Bir katılımcıyı sessize alır/sessizden çıkarır (RPC: atomik, katılımcı kontrolü sunucuda). */
@@ -1175,11 +1211,16 @@ export async function reportChatParticipant(gameId: string, targetUserId: string
   if (error) throw new Error(error.message);
 }
 
-/** Bir katılımcıya karşı açık tüm raporları geri çeker (tek RPC, hepsi birden). */
-export async function withdrawChatReports(gameId: string, targetUserId: string): Promise<void> {
+/**
+ * Bir kişiye karşı açık TÜM raporları geri çeker — hangi oyunda açıldığından
+ * bağımsız (tek RPC, hepsi birden). Bayrak 3 Ağustos 2026'dan beri kişi
+ * bazlı olduğundan yalnızca içinde bulunulan oyunun raporunu geri çekmek onu
+ * söndürmezdi; RPC de bu yüzden artık `p_game_id` almıyor (yalnızca
+ * çağıranın KENDİ raporlarına dokunduğundan bir oyun bağlamına ihtiyacı yok).
+ */
+export async function withdrawChatReports(targetUserId: string): Promise<void> {
   if (!supabase) return;
   const { error } = await supabase.rpc('withdraw_online_game_chat_reports', {
-    p_game_id: gameId,
     p_target_user_id: targetUserId,
   });
   if (error) throw new Error(error.message);
