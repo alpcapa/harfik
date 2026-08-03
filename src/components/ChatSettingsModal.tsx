@@ -11,10 +11,18 @@
 // işlemi yapan kişiye (bana) görünür — karşı taraf hiçbir zaman göremez
 // (bkz. CLAUDE.md "karşı tarafa yansımıyor" ilkesi).
 //
-// 3 Ağustos 2026'dan beri her iki durum da KİŞİ bazlı ve kalıcı: bir oyunda
-// sessize aldığın/rapor ettiğin kişi, onunla açtığın sonraki oyunlarda da
-// işaretli gelir ve buradan (yine) değiştirilebilir. Bu yüzden onay
-// metinleri "bu oyunda" demiyor.
+// 3 Ağustos 2026'dan beri her iki durum da OYUNA değil KİŞİYE bağlı: bir
+// oyunda sessize aldığın/rapor ettiğin kişi, onunla açtığın sonraki oyunlarda
+// da işaretli gelir. Bu yüzden onay metinleri "bu oyunda" demiyor.
+//
+// Ama "kalıcı" DEĞİL, geri alınabilir: sessize alma buradan tekrar açılıp
+// kapatılabiliyor, rapor da "Raporu Geri Çek" ile kapatılabiliyor. Aynı gün
+// giriş paragrafında ve sessize alma onayında "Bu tercih kalıcıdır" yazıyordu
+// — kullanıcı bunun yanlış olduğunu bildirdi ve haklıydı: cümle "oyunlar
+// arası taşınır" demek istiyordu ama "geri alınamaz" gibi okunuyordu, yani
+// kullanıcıyı gerçekte var olmayan bir sonuçtan korkutuyordu. İkisi de
+// kaldırıldı; kapsamı anlatmak için başka bir yere gerek yok, zaten kişiyle
+// sonraki oyunda rozet görünüyor.
 import { useState } from 'react';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
@@ -236,7 +244,7 @@ export function ChatSettingsModal({
               <>
                 <span className="font-bold">{view.participant.name}</span> kişisini sessize almak istediğinize emin
                 misiniz? Mesajları sohbette görünmeye devam eder, yalnızca bu kişiden gelen yeni mesaj bildirimleri
-                sizin için kapanır. Bu tercih kalıcıdır — bu kişiyle açtığınız sonraki oyunlarda da geçerli olur.
+                sizin için kapanır.
               </>
             ) : (
               <>
