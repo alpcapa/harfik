@@ -456,14 +456,10 @@ export async function fetchGameLikers(gameId: string): Promise<GameLiker[]> {
 }
 
 /**
- * Tek bir oyunun bitişteki tahta anlık görüntüsünü döner — `fetchMyGames`'in
+ * Bir oyunun bitişteki tahta anlık görüntüsünü döner — `fetchMyGames`'in
  * liste sorgusuna DAHİL EDİLMEZ (satır başına birkaç KB'a varabildiğinden
  * sayfa yükünü şişirmesin diye); yalnızca `GameHistoryModal`'da bir oyuna
- * tıklanıp genişletildiğinde ayrıca çekilir. Bu sütun eklenmeden önceki
- * kayıtlarda null.
- */
-/**
- * Bir oyunun (yalnızca doluysa) tahta anlık görüntüsünü döner — `null`
+ * tıklanıp genişletildiğinde ayrıca çekilir. `null`
  * dönüşü "bu oyun için hiç kaydedilmemiş" anlamına gelir (eski kayıtlar).
  * Gerçek bir ağ/DB hatasında (önceden sessizce `null`'a düşüp "kaydedilmemiş"
  * ile ayırt edilemiyordu, kalıcı olarak retry edilemiyordu — bkz. kod

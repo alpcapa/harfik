@@ -349,6 +349,10 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   // paylaşır — önceden yalnızca ilk yükleme kendi yerel cancelledRef'ini
   // taşıyordu, reload() unmount sonrası tetiklenirse setGames/setTurns/
   // setDeadlines unmounted bir bileşende çalışabiliyordu (tutarsız/kırılgan).
+  // Bu ref, o an GEÇERLİ olan iptal jetonunu tutar: jetonun kendisi her
+  // effect çalıştırmasında yenilenir (bkz. aşağıdaki effect), böylece
+  // kullanıcı değişiminde önceki çalıştırmanın uçuştaki isteği kalıcı
+  // olarak iptal kalır ve eski hesabın listesini yazamaz.
   const cancelledRef = useRef({ current: false });
 
   const [subTab, setSubTab] = useState<SubTab>('active');
@@ -443,11 +447,15 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
       setGames(null);
       return;
     }
-    // Yeniden mount/kullanıcı değişimi durumunda önceki cleanup'ın bıraktığı
-    // true değeri sıfırlanmalı — aksi halde bu ve sonraki tüm reload()
-    // çağrıları kalıcı olarak no-op kalırdı.
-    cancelledRef.current.current = false;
-    void loadGames(cancelledRef.current);
+    // Her çalıştırma KENDİ iptal jetonunu alır; `cancelledRef` yalnızca
+    // "şu an geçerli olan jeton"u tutar (handleRespond bunu kullanıyor).
+    // İlk sürüm tek bir paylaşılan nesneyi yeniden kullanıp her çalıştırmada
+    // `false`'a çekiyordu — kullanıcı değişiminde önceki çalıştırmanın hâlâ
+    // uçuşta olan isteği böylece iptal edilmemiş sayılıp ESKİ hesabın oyun
+    // listesini yazabiliyordu (3 Ağustos 2026 regresyon geçişi).
+    const token = { current: false };
+    cancelledRef.current = token;
+    void loadGames(token);
     const unsubscribe = subscribeMyOnlineGames(scheduleReload);
     // Mobil tarayıcılar (özellikle iOS Safari) arka plana alınan bir
     // sekmenin Realtime websocket'ini askıya alabiliyor — o sırada gelen
@@ -464,7 +472,7 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
     window.addEventListener('focus', onForeground);
     window.addEventListener('online', onForeground);
     return () => {
-      cancelledRef.current.current = true;
+      token.current = true;
       unsubscribe();
       document.removeEventListener('visibilitychange', onForeground);
       window.removeEventListener('focus', onForeground);

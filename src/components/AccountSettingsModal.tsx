@@ -38,17 +38,30 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
   // dokunmadığı `marketingConsent`/`emailNotifications` gibi checkbox'ların
   // stale (mount anındaki) değeri `save()`'de gerçek profille karşılaştırılıp
   // sessizce ters yöne kaydediliyordu (bkz. kod incelemesi).
+  // Yalnızca BİR KEZ, profil ilk kez geldiğinde doldurulur. İlk sürüm
+  // koşulsuz `[profile]`e bağlıydı; ama `useAuth`'un `onAuthStateChange`
+  // dinleyicisi HER auth olayında (Supabase'in ~saatlik `TOKEN_REFRESHED`'i
+  // dahil) `fetchMyProfile()` çağırıp `setProfile` ile yeni bir nesne
+  // kimliği üretiyor — o an formu dolduran kullanıcının yazdıkları
+  // sıfırlanıyordu (3 Ağustos 2026 regresyon geçişi). Ref'li koruma, asıl
+  // niyeti (geç gelen profili yakalamak) bozmadan bunu engelliyor.
+  const profileHydratedRef = useRef(false);
   useEffect(() => {
-    setFirstName(profile?.first_name ?? '');
-    setLastName(profile?.last_name ?? '');
-    setNickname(profile?.display_name ?? '');
-    setGender(profile?.gender ?? '');
-    setBirthDate(isoToTrDate(profile?.birth_date));
-    setMarketingConsent(profile?.marketing_consent ?? false);
-    setEmailNotifications(profile?.email_notifications_enabled ?? true);
+    if (profileHydratedRef.current || !profile) return;
+    profileHydratedRef.current = true;
+    setFirstName(profile.first_name ?? '');
+    setLastName(profile.last_name ?? '');
+    setNickname(profile.display_name ?? '');
+    setGender(profile.gender ?? '');
+    setBirthDate(isoToTrDate(profile.birth_date));
+    setMarketingConsent(profile.marketing_consent ?? false);
+    setEmailNotifications(profile.email_notifications_enabled ?? true);
   }, [profile]);
+  const emailHydratedRef = useRef(false);
   useEffect(() => {
-    setEmail(user?.email ?? '');
+    if (emailHydratedRef.current || !user) return;
+    emailHydratedRef.current = true;
+    setEmail(user.email ?? '');
   }, [user]);
 
   const name = nickname || firstName || user?.email || 'Oyuncu';
