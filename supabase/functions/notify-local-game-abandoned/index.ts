@@ -101,6 +101,7 @@ Deno.serve(async (req: Request) => {
 
   const email = userData.user.email;
   if (!email) {
+    console.error('[notify-local-game-abandoned] Kullanıcının e-postası bulunamadı:', userData.user.id);
     return jsonResponse({ ok: true, sent: false, reason: 'no_email' });
   }
 
