@@ -61,9 +61,19 @@ interface GameHeaderProps {
   /** true iken çıkış devre dışı — ör. teslim olup YZ'leri izlerken oyundan
    *  çıkılamaz, oyunun bitmesi beklenmek zorunda. */
   exitDisabled?: boolean;
+  /**
+   * Verilirse skor kutuları tıklanabilir olur ve o koltuğun indeksiyle
+   * çağrılır — Canlı oyunda rakibin skor kartını açmak için
+   * (`OnlineGameScreen`). YZ koltukları hiçbir zaman tıklanabilir olmaz
+   * (profilleri/skor kartları yok), bu yüzden ayrı bir "hangi indeksler
+   * tıklanabilir" prop'una gerek yok — `Player.isAI` zaten state'te.
+   * Verilmezse (yerel/YZ oyun ekranı, App.tsx) kutular eskisi gibi düz
+   * `div` kalır, görünüm ve davranış hiç değişmez.
+   */
+  onPlayerClick?: (index: number) => void;
 }
 
-export function GameHeader({ state, onLogoClick, exitDisabled }: GameHeaderProps) {
+export function GameHeader({ state, onLogoClick, exitDisabled, onPlayerClick }: GameHeaderProps) {
   const { players, current } = state;
   return (
     <header className="w-full max-w-[680px] flex items-center justify-between gap-2 px-3 py-2.5">
@@ -104,10 +114,17 @@ export function GameHeader({ state, onLogoClick, exitDisabled }: GameHeaderProps
             const col = PLAYER_COLORS[p.colorIndex];
             const active = i === current;
             const label = p.isAI ? `YZ ${i + 1}` : p.name;
+            const clickable = !!onPlayerClick && !p.isAI;
+            const Box = clickable ? 'button' : 'div';
             return (
-              <div
+              <Box
                 key={i}
-                className="shrink-0 text-center rounded-md transition-all"
+                type={clickable ? 'button' : undefined}
+                onClick={clickable ? () => onPlayerClick(i) : undefined}
+                aria-label={clickable ? `${label} — skor kartını aç` : undefined}
+                className={`shrink-0 text-center rounded-md transition-all${
+                  clickable ? ' active:scale-[0.97]' : ''
+                }`}
                 style={{
                   width: p.isAI ? YZ_BOX_WIDTH : PLAYER_BOX_WIDTH,
                   paddingLeft: BOX_PADDING_X,
@@ -157,7 +174,7 @@ export function GameHeader({ state, onLogoClick, exitDisabled }: GameHeaderProps
                 >
                   {p.surrendered ? 'Teslim' : p.score}
                 </div>
-              </div>
+              </Box>
             );
           })}
         </div>

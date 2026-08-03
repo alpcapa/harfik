@@ -21,6 +21,7 @@ import { GameHeader } from './GameHeader';
 import { GameOver } from './GameOver';
 import { MeaningModal } from './MeaningModal';
 import { RemainingTilesModal } from './RemainingTilesModal';
+import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
 import { MoveHistoryModal } from './MoveHistoryModal';
 import { WildcardModal } from './WildcardModal';
 import { FeedbackModal } from './FeedbackModal';
@@ -168,6 +169,8 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   const [validating, setValidating] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showTiles, setShowTiles] = useState(false);
+  // Header'daki skor kutusuna dokunulan oyuncunun skor kartı.
+  const [scoreCardPlayer, setScoreCardPlayer] = useState<PlayerSummary | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [gameOverDismissed, setGameOverDismissed] = useState(false);
   const [showPassConfirm, setShowPassConfirm] = useState(false);
@@ -454,6 +457,32 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   // olabilir — aşağıdaki banner'da bunu bir insanın sırasını beklemekten
   // ayırt etmek için kullanılıyor (bkz. o banner'daki not).
   const isAiTurn = !canAct && !state.isGameOver && game.slots[state.current]?.type === 'ai';
+
+  /**
+   * Header'daki bir skor kutusuna dokunulunca o koltuğun skor kartını açar.
+   * Kimlik `game.slots`'tan geliyor — `state.players` (online state'in
+   * public kopyası) yalnızca görünen adı taşır, `user_id` taşımaz.
+   * `GameHeader` YZ koltuklarını zaten tıklanabilir yapmıyor; buradaki
+   * `type !== 'human'` kontrolü ikinci bir güvenlik ağı (ör. slot dizisi
+   * beklenmedik şekilde kısa gelirse).
+   *
+   * `PlayerSummary`, `likerToPlayerSummary` (GameHistoryModal) ile aynı
+   * desende dolduruluyor: sunucu `list_my_online_games`'te görünen adı
+   * zaten kısa kimlik kuralıyla (soyad yok) hesapladığından `display_name`
+   * olarak veriliyor, ad/soyad alanları boş bırakılıyor.
+   */
+  const handlePlayerBoxClick = (index: number) => {
+    const slot = game.slots[index];
+    if (!slot || slot.type !== 'human') return;
+    setScoreCardPlayer({
+      id: slot.user_id,
+      username: null,
+      first_name: null,
+      last_name: null,
+      display_name: slot.name ?? state.players[index]?.name ?? 'Oyuncu',
+      avatar_url: slot.avatar_url ?? null,
+    });
+  };
 
   // Raftan bir taş ya da tahtaya bu tur konmuş bir taş sürüklenmeye başlanır.
   const beginDrag = (source: DragSource, e: React.PointerEvent) => {
@@ -892,7 +921,12 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
 
   return (
     <div className="min-h-[100dvh] w-full flex flex-col items-center overflow-x-hidden">
-      <GameHeader state={state} onLogoClick={onBack} />
+      {/* Skor kutusuna dokunmak o oyuncunun skor kartını açar (kullanıcı
+          isteği, 3 Ağustos 2026). Yalnızca Canlı oyunda — yerel/YZ ekranı
+          (App.tsx) bu prop'u hiç geçmediğinden orada kutular eskisi gibi
+          tıklanamaz kalıyor. YZ koltukları GameHeader'ın kendi `isAI`
+          kontrolüyle zaten dışarıda. */}
+      <GameHeader state={state} onLogoClick={onBack} onPlayerClick={handlePlayerBoxClick} />
 
       <main className="w-full flex flex-col items-center">
         <Board
@@ -1105,6 +1139,9 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
         </div>
       )}
 
+      {scoreCardPlayer && (
+        <PlayerScoreCard member={scoreCardPlayer} onClose={() => setScoreCardPlayer(null)} />
+      )}
       {meaning && <MeaningModal entries={meaning.entries} onClose={() => setMeaning(null)} />}
       {showTiles && (
         <RemainingTilesModal state={state} myIndex={mySlotIndex} onClose={() => setShowTiles(false)} />
