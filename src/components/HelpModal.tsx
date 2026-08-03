@@ -158,9 +158,7 @@ function DetailedRules() {
       <Section title="Temel Kurallar">
         <P>
           <strong>Başlangıç:</strong> Her oyuncu tahtanın köşelerindeki 4×4'lük bölgelere
-          sahiptir. 2 kişilik oyunda 1. oyuncu sol-üst, 2. oyuncu sağ-alt köşeyi kullanır; 4
-          kişilik oyunda her oyuncu tek bir köşe kullanır. Köşelerdeki ev işaretli kare, o
-          oyuncunun başlangıç noktasıdır.
+          sahiptir. Köşelerdeki ev işaretli kare, o oyuncunun başlangıç noktasıdır.
         </P>
         <P>
           <strong>Bağlantı:</strong> Her hamle, oyun tahtasındaki mevcut harflere (rakipler de
@@ -280,8 +278,9 @@ function DetailedRules() {
 
       <Section title="Skor Kartı ve Puanlama">
         <P>
-          Oyun oynamak için giriş yapman gerekmez. Sadece oyun istatistikleri ve k-lig için
-          giriş yapman gerekir. Giriş yapmış kullanıcıların oyun sonuçları Skor Kartı'na
+          Oyun oynamak için giriş yapman gerekmez. Sadece arkadaşınla canlı oyun, k-lig
+          puanları ve oyun istatistikleri için giriş yapman gerekir. Giriş yapmış
+          kullanıcıların oyun sonuçları Skor Kartı'na
           kaydedilir. Oyun içi puanının yanında, sıralamana göre bir k-lig puanı da
           kazanırsın. 4 kişilik oyunda birinci bitirirsen <strong>+2</strong>, ikinci
           bitirirsen <strong>+1</strong> puan alırsın; üçüncü ve dördüncü puan almaz. 2 kişilik
