@@ -14,7 +14,7 @@
 // hem e-postasını (`auth.getUser()`) hem adını (`profiles`, `auth.uid() =
 // id` RLS'i kendi satırını okumaya zaten izin veriyor) okuyoruz.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml } from './_shared/email.ts';
+import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml } from '../_shared/email.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -64,14 +64,35 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Yetkisiz.' }, 401);
   }
 
-  let body: { player_count?: number };
+  let body: { player_count?: number; game_id?: string };
   try {
     body = await req.json();
   } catch {
     return jsonResponse({ error: 'Geçersiz istek.' }, 400);
   }
 
-  const playerCount = body.player_count === 4 ? 4 : 2;
+  // Gerçekten böyle bir terk-edilme kaydı var mı doğrula — önceden
+  // çağıranın gönderdiği çıplak player_count'a hiç sorgusuz güveniliyordu,
+  // yani herhangi bir girişli kullanıcı kendine sahte bir "-2 puan" maili
+  // gönderebiliyordu (kod incelemesi). Yerel terk-edilme akışında
+  // surrendered:true YALNIZCA gerçek 7 günlük terk-edilme kuyruğundan gelir
+  // (bkz. dosya başındaki not) — bu yüzden kendi hesabına ait, online_game_id
+  // null, surrendered=true bir satırın varlığı yeterli kanıt.
+  if (!body.game_id) {
+    return jsonResponse({ ok: true, sent: false, reason: 'missing_game_id' });
+  }
+  const { data: gameRow } = await supabase
+    .from('games')
+    .select('id, player_count, surrendered, online_game_id, user_id')
+    .eq('id', body.game_id)
+    .eq('user_id', userData.user.id)
+    .maybeSingle();
+  if (!gameRow || !gameRow.surrendered || gameRow.online_game_id !== null) {
+    return jsonResponse({ ok: true, sent: false, reason: 'not_verified' });
+  }
+  // Metindeki oyuncu sayısı artık istemcinin gönderdiği değeri değil,
+  // doğrulanmış satırdan (gameRow) okunuyor.
+  const playerCount = gameRow.player_count === 4 ? 4 : 2;
 
   if (!BREVO_API_KEY) {
     console.error('[notify-local-game-abandoned] BREVO_API_KEY tanımlı değil.');

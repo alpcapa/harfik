@@ -12,11 +12,14 @@
 // yeniden null) sayacı doğal olarak sıfırlar — ayrı bir reset mantığına
 // gerek yok.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml } from './_shared/email.ts';
+import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml } from '../_shared/email.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+// Opsiyonel savunma-derinliği katmanı — bkz. notify-deadline-warnings'teki
+// aynı gerekçe/yorum. CRON_SECRET tanımlı değilse davranış değişmez.
+const CRON_SECRET = Deno.env.get('CRON_SECRET');
 
 const REMINDER_DELAY_MS = 3 * 24 * 60 * 60 * 1000;
 
@@ -45,6 +48,10 @@ Deno.serve(async (req: Request) => {
     return new Response('ok', { headers: CORS_HEADERS });
   }
 
+  if (CRON_SECRET && req.headers.get('Authorization') !== `Bearer ${CRON_SECRET}`) {
+    return jsonResponse({ error: 'Yetkisiz.' }, 401);
+  }
+
   if (!BREVO_API_KEY) {
     console.error('[notify-friend-request-reminders] BREVO_API_KEY tanımlı değil.');
     return jsonResponse({ ok: true, sent: 0, reason: 'no_api_key' });
@@ -68,53 +75,59 @@ Deno.serve(async (req: Request) => {
   let sent = 0;
 
   for (const row of due ?? []) {
-    // Atomik iddia — başka bir eşzamanlı/tekrar eden çalıştırma bu satırı
-    // zaten işaretlemiş olabilir.
-    const { data: claimed } = await supabase
-      .from('friend_requests')
-      .update({ reminder_sent_at: new Date().toISOString() })
-      .eq('user_id', row.user_id)
-      .eq('friend_id', row.friend_id)
-      .is('reminder_sent_at', null)
-      .select('user_id')
-      .maybeSingle();
-    if (!claimed) continue;
+    // Her satır kendi try/catch'inde — bkz. notify-deadline-warnings'teki
+    // aynı gerekçe (bir satırın hatası diğerlerini engellemesin).
+    try {
+      // Atomik iddia — başka bir eşzamanlı/tekrar eden çalıştırma bu satırı
+      // zaten işaretlemiş olabilir.
+      const { data: claimed } = await supabase
+        .from('friend_requests')
+        .update({ reminder_sent_at: new Date().toISOString() })
+        .eq('user_id', row.user_id)
+        .eq('friend_id', row.friend_id)
+        .is('reminder_sent_at', null)
+        .select('user_id')
+        .maybeSingle();
+      if (!claimed) continue;
 
-    const [{ data: recipientAuth }, { data: profiles }] = await Promise.all([
-      supabase.auth.admin.getUserById(row.friend_id),
-      supabase
-        .from('profiles')
-        .select('id, display_name, first_name, email_notifications_enabled')
-        .in('id', [row.user_id, row.friend_id]),
-    ]);
+      const [{ data: recipientAuth }, { data: profiles }] = await Promise.all([
+        supabase.auth.admin.getUserById(row.friend_id),
+        supabase
+          .from('profiles')
+          .select('id, display_name, first_name, email_notifications_enabled')
+          .in('id', [row.user_id, row.friend_id]),
+      ]);
 
-    const recipientEmail = recipientAuth?.user?.email;
-    if (!recipientEmail) {
-      console.error('[notify-friend-request-reminders] Alıcının e-postası bulunamadı:', row.friend_id);
-      continue;
+      const recipientEmail = recipientAuth?.user?.email;
+      if (!recipientEmail) {
+        console.error('[notify-friend-request-reminders] Alıcının e-postası bulunamadı:', row.friend_id);
+        continue;
+      }
+
+      const inviterProfile = profiles?.find((p) => p.id === row.user_id);
+      const recipientProfile = profiles?.find((p) => p.id === row.friend_id);
+
+      // Bildirimi zaten "iddia ettik" (reminder_sent_at işaretlendi) — alıcı
+      // e-posta bildirimlerini kapattıysa yalnızca gönderimi atlıyoruz, bu
+      // istek için bir daha hatırlatma denemesi zaten olmayacaktı.
+      if (recipientProfile?.email_notifications_enabled === false) continue;
+      const inviterName = inviterProfile?.display_name || inviterProfile?.first_name || 'Bir kullanıcı';
+      const recipientName = recipientProfile?.display_name || recipientProfile?.first_name || undefined;
+
+      const res = await sendBrevoEmail(BREVO_API_KEY, {
+        to: { email: recipientEmail, name: recipientName },
+        subject: 'Kelimeki — Bekleyen bir arkadaşlık isteğin var',
+        htmlContent: buildHtml(inviterName, recipientName),
+      });
+
+      if (!res.ok) {
+        console.error('[notify-friend-request-reminders] Brevo hatası:', res.status, await res.text());
+        continue;
+      }
+      sent += 1;
+    } catch (err) {
+      console.error('[notify-friend-request-reminders] satır hatası:', row.user_id, row.friend_id, err);
     }
-
-    const inviterProfile = profiles?.find((p) => p.id === row.user_id);
-    const recipientProfile = profiles?.find((p) => p.id === row.friend_id);
-
-    // Bildirimi zaten "iddia ettik" (reminder_sent_at işaretlendi) — alıcı
-    // e-posta bildirimlerini kapattıysa yalnızca gönderimi atlıyoruz, bu
-    // istek için bir daha hatırlatma denemesi zaten olmayacaktı.
-    if (recipientProfile?.email_notifications_enabled === false) continue;
-    const inviterName = inviterProfile?.display_name || inviterProfile?.first_name || 'Bir kullanıcı';
-    const recipientName = recipientProfile?.display_name || recipientProfile?.first_name || undefined;
-
-    const res = await sendBrevoEmail(BREVO_API_KEY, {
-      to: { email: recipientEmail, name: recipientName },
-      subject: 'Kelimeki — Bekleyen bir arkadaşlık isteğin var',
-      htmlContent: buildHtml(inviterName, recipientName),
-    });
-
-    if (!res.ok) {
-      console.error('[notify-friend-request-reminders] Brevo hatası:', res.status, await res.text());
-      continue;
-    }
-    sent += 1;
   }
 
   return jsonResponse({ ok: true, sent });

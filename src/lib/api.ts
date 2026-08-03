@@ -2,6 +2,21 @@
 //
 // Tüm fonksiyonlar Supabase yapılandırılmamışsa güvenli biçimde boş/no-op
 // döner, böylece oyun çevrimdışı da çalışır.
+//
+// Dosyanın boyutu (~70 fonksiyon, `if (!supabase) return ...` + `console.error`
+// kalıbının neredeyse her fonksiyonda tekrarı) kod incelemesinde ("Orta"
+// bulgu) bilinçli olarak ele alınmadı — sebep tembellik değil, gerçek bir
+// risk/fayda hesabı: fonksiyonların dönüş tipleri/hata semantiği birbirinden
+// belirgin şekilde farklı (kimi `null` döner, kimi boş dizi, kimi fırlatır,
+// kimi `false`/`0` — bkz. #21/#40/#42/#43'teki fix'ler, tam da bu farkın
+// nerede bilinçli nerede kazara olduğunu ayırt etmenin kendisi zaman aldı).
+// Tek bir genel `withSupabase` sarmalayıcısına zorlamak ya hepsini tek bir
+// dönüş sözleşmesine indirger (birçok çağrı yerinde davranış değişikliği
+// riski) ya da sarmalayıcı kendisi neredeyse her fonksiyon için ayrı bir
+// varyant taşımak zorunda kalır (kazanç şüpheli). Bu incelemede zaten
+// somut, gerçek hataları olan fonksiyonlar (bkz. yukarıdaki High/Medium
+// fix'ler) tek tek düzeltildi; kalan tekrar yalnızca bir okunabilirlik
+// notu, ayrı bir davranış riski taşımıyor.
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './supabase';
 import type {
@@ -84,8 +99,8 @@ export async function saveGame(game: NewGame): Promise<string | null> {
   // terk-edilme cezası" anlamına geliyor. `error.code==='23505'` (zaten
   // kaydedilmiş, tekrar deneme) dalında ÇAĞRILMIYOR ki kuyruktan yeniden
   // denenen bir kayıt aynı bildirimi iki kez göndermesin.
-  if (game.surrendered) {
-    void notifyLocalGameAbandoned(game.player_count);
+  if (game.surrendered && data?.id) {
+    void notifyLocalGameAbandoned(data.id, game.player_count);
   }
   return data?.id ?? null;
 }
@@ -95,12 +110,17 @@ export async function saveGame(game: NewGame): Promise<string | null> {
  * oyun için hesap sahibine -2 k-lig cezasını bildiren bir e-posta gönderir
  * (`notify-local-game-abandoned` Edge Function'ı). Best-effort/
  * fire-and-forget — kayıt zaten oluşmuş olduğundan bir e-posta hatası
- * kullanıcıya hiç yansıtılmaz, yalnızca loglanır.
+ * kullanıcıya hiç yansıtılmaz, yalnızca loglanır. `gameId`, Edge Function'ın
+ * gerçekten böyle bir satır olduğunu (kendi hesabına ait, surrendered=true,
+ * yerel/online_game_id null) doğrulayabilmesi için geçiliyor — önceden
+ * yalnızca çıplak bir `player_count` alıp hiçbir doğrulama yapmadan mail
+ * gönderiyordu (kod incelemesi: kullanıcı kendine sahte "-2 puan" maili
+ * gönderebiliyordu, düşük etkili ama tasarım simetrisi bozuktu).
  */
-async function notifyLocalGameAbandoned(playerCount: number): Promise<void> {
+async function notifyLocalGameAbandoned(gameId: string, playerCount: number): Promise<void> {
   if (!supabase) return;
   try {
-    await invokeEdgeFunction('notify-local-game-abandoned', { player_count: playerCount });
+    await invokeEdgeFunction('notify-local-game-abandoned', { game_id: gameId, player_count: playerCount });
   } catch (err) {
     console.error('[Kelimeki] notifyLocalGameAbandoned hatası:', (err as Error).message);
   }
@@ -123,6 +143,14 @@ async function notifyLocalGameAbandoned(playerCount: number): Promise<void> {
  * `completed=true` olsa da "Bitirilen" sayısına/ortalama süresine değil
  * ayrı bir "Teslim" serisine dahil edilir (teslim genelde saniyeler içinde
  * geldiğinden gerçek oyun süresini yansıtmaz).
+ *
+ * `userId` opsiyonel — çağıran zaten `useAuth()`'tan bir `user.id` biliyorsa
+ * (App.tsx'teki oyun bitiş akışında olduğu gibi, aynı anda `saveGameDurable`
+ * ile birlikte çağrılıyor) burada AYRICA bir `getUser()` ağ turu yapılmasın
+ * diye geçilebilir; verilmezse eskisi gibi `getUser()`'dan okunur. Bu alan
+ * yalnızca anonim bir sayaç tablosuna (`game_finishes`) yazılıyor — RLS zaten
+ * gerçek `auth.uid()`'i kendi tarafında doğruladığından, çağıranın önbellekte
+ * tuttuğu bir id'ye güvenmek burada bir güvenlik zafiyeti yaratmıyor.
  */
 export async function logGameFinish(
   playerCount: number,
@@ -130,16 +158,21 @@ export async function logGameFinish(
   multiSession: boolean,
   completed = true,
   endedBySurrender = false,
+  userId?: string | null,
 ): Promise<void> {
   if (!supabase) return;
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let resolvedUserId = userId;
+  if (resolvedUserId === undefined) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    resolvedUserId = user?.id ?? null;
+  }
 
   const { error } = await supabase
     .from('game_finishes')
     .insert({
-      user_id: user?.id ?? null,
+      user_id: resolvedUserId,
       player_count: playerCount,
       duration_seconds: durationSeconds,
       multi_session: multiSession,
@@ -416,6 +449,14 @@ export async function fetchGameLikers(gameId: string): Promise<GameLiker[]> {
  * tıklanıp genişletildiğinde ayrıca çekilir. Bu sütun eklenmeden önceki
  * kayıtlarda null.
  */
+/**
+ * Bir oyunun (yalnızca doluysa) tahta anlık görüntüsünü döner — `null`
+ * dönüşü "bu oyun için hiç kaydedilmemiş" anlamına gelir (eski kayıtlar).
+ * Gerçek bir ağ/DB hatasında (önceden sessizce `null`'a düşüp "kaydedilmemiş"
+ * ile ayırt edilemiyordu, kalıcı olarak retry edilemiyordu — bkz. kod
+ * incelemesi) artık fırlatıyor; çağıran (`GameHistoryModal`) bunu ayrı bir
+ * hata durumuyla ele alıp yeniden deneme imkânı sunuyor.
+ */
 export async function fetchGameBoardSnapshot(gameId: string): Promise<BoardSnapshotTile[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase
@@ -423,10 +464,7 @@ export async function fetchGameBoardSnapshot(gameId: string): Promise<BoardSnaps
     .select('board_snapshot')
     .eq('id', gameId)
     .maybeSingle();
-  if (error) {
-    console.error('[Kelimeki] fetchGameBoardSnapshot hatası:', error.message);
-    return null;
-  }
+  if (error) throw new Error(error.message);
   return (data?.board_snapshot as BoardSnapshotTile[] | null) ?? null;
 }
 
@@ -559,8 +597,14 @@ export async function listUsersForFriend(offset: number, limit: number): Promise
  * insert karşılıklı otomatik kabulle SONUÇLANMADIYSA (hâlâ 'pending'),
  * `notify-friend-request` Edge Function'ı ile alıcıya işlemsel bir e-posta
  * bildirimi gönderilir (`marketing_consent`'e bağlı değil — bkz. CLAUDE.md).
+ *
+ * Karşı taraftan zaten bekleyen bir istek varsa `handle_friend_request_insert`
+ * trigger'ı insert'i doğrudan 'accepted'a çevirir — dönüş değeri bunu
+ * çağırana bildirir ki (FriendsModal.tsx) UI "İstek Gönderildi" yerine
+ * doğrudan "Arkadaşsınız" göstersin (önceden bu ayrım kaybolup her zaman
+ * "pending_outgoing" gösteriliyordu, iki taraf zaten arkadaş olmuşken bile).
  */
-export async function sendFriendRequest(targetId: string): Promise<void> {
+export async function sendFriendRequest(targetId: string): Promise<'pending' | 'accepted'> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
   const {
     data: { user },
@@ -572,9 +616,11 @@ export async function sendFriendRequest(targetId: string): Promise<void> {
     .select('status')
     .single();
   if (error) throw new Error(error.message);
-  if (data?.status === 'pending') {
+  const status: 'pending' | 'accepted' = data?.status === 'accepted' ? 'accepted' : 'pending';
+  if (status === 'pending') {
     void notifyFriendRequest(targetId);
   }
+  return status;
 }
 
 /**
@@ -1215,7 +1261,16 @@ export async function fetchMeaning(word: string): Promise<WordMeaning | null> {
 
 // ── Admin paneli ────────────────────────────────────────────────────────────
 
-/** Tüm kayıtlı kullanıcıları döner (yalnızca is_admin=true için, RPC içinde kontrol edilir). */
+/**
+ * Tüm kayıtlı kullanıcıları döner (yalnızca is_admin=true için, RPC içinde
+ * kontrol edilir) — sayfalama yok, arama/sıralama client-side. Kod
+ * incelemesinde ("Orta" bulgu) bilinçli olarak ertelendi: bu yazıldığı anda
+ * yalnızca ~20 kayıtlı kullanıcı/~7 geri bildirim var, sunucu tarafı
+ * sayfalama (RPC imza değişikliği + CSV export'un "ekranda görüneni indir"
+ * semantiğini bozması riskiyle) şu an gerçek bir sorunu çözmeyen erken bir
+ * optimizasyon olurdu. Hacim gerçekten büyüyünce (ör. yüzlerce satır) aynı
+ * desenle (fetchOnlineGameTurns'teki gibi offset/limit) eklenmeli.
+ */
 export async function fetchAdminMembers(): Promise<AdminMember[]> {
   if (!supabase) return [];
   const { data, error } = await supabase.rpc('admin_list_members');
@@ -1477,7 +1532,11 @@ export async function fetchAdminGuestStandaloneBreakdown(days = 30): Promise<Adm
   return (data as AdminGuestStandaloneRow[]) ?? [];
 }
 
-/** Tüm geri bildirim mesajlarını döner (RLS: yalnızca is_admin=true okuyabilir). */
+/**
+ * Tüm geri bildirim mesajlarını döner (RLS: yalnızca is_admin=true
+ * okuyabilir) — sayfalama yok, bkz. `fetchAdminMembers`'daki aynı gerekçe
+ * (bilinçli erteleme notu).
+ */
 export async function fetchAdminFeedback(): Promise<AdminFeedbackRow[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -1495,11 +1554,20 @@ export async function fetchAdminFeedback(): Promise<AdminFeedbackRow[]> {
   return (data as AdminFeedbackRow[]) ?? [];
 }
 
-/** Bir geri bildirim mesajını okundu/okunmadı işaretler (yalnızca admin). */
-export async function markFeedbackHandled(id: string, handled: boolean): Promise<void> {
-  if (!supabase) return;
+/**
+ * Bir geri bildirim mesajını okundu/okunmadı işaretler (yalnızca admin).
+ * `AdminDashboard`'daki iyimser (optimistic) UI güncellemesi başarısızlıkta
+ * geri alınabilsin diye başarı/başarısızlığı `boolean` olarak döner —
+ * `toggleGameLike`'daki (`GameHistoryModal`) aynı desen.
+ */
+export async function markFeedbackHandled(id: string, handled: boolean): Promise<boolean> {
+  if (!supabase) return false;
   const { error } = await supabase.from('feedback').update({ handled }).eq('id', id);
-  if (error) console.error('[Kelimeki] markFeedbackHandled hatası:', error.message);
+  if (error) {
+    console.error('[Kelimeki] markFeedbackHandled hatası:', error.message);
+    return false;
+  }
+  return true;
 }
 
 /** Tüm sohbet şikayetlerini döner (yalnızca admin — admin_list_chat_reports RPC'si). */
@@ -1515,11 +1583,18 @@ export async function fetchAdminChatReports(): Promise<AdminChatReportRow[]> {
   return (data as AdminChatReportRow[]) ?? [];
 }
 
-/** Bir şikayeti okundu/okunmadı işaretler (yalnızca admin). */
-export async function markChatReportHandled(id: string, handled: boolean): Promise<void> {
-  if (!supabase) return;
+/**
+ * Bir şikayeti okundu/okunmadı işaretler (yalnızca admin). `markFeedbackHandled`
+ * ile aynı gerekçeyle başarı/başarısızlığı `boolean` olarak döner.
+ */
+export async function markChatReportHandled(id: string, handled: boolean): Promise<boolean> {
+  if (!supabase) return false;
   const { error } = await supabase.rpc('admin_mark_chat_report_handled', { p_id: id, p_handled: handled });
-  if (error) console.error('[Kelimeki] markChatReportHandled hatası:', error.message);
+  if (error) {
+    console.error('[Kelimeki] markChatReportHandled hatası:', error.message);
+    return false;
+  }
+  return true;
 }
 
 /** Bitmiş bir Canlı oyunun tam sohbet dökümünü döner (yalnızca admin, yalnızca bitmiş oyunlar). */
@@ -1764,11 +1839,18 @@ export async function updateProfile(
 
   // Profil satırı henüz oluşturulmamışsa kayıt aç. display_name NOT NULL
   // olduğundan (nickname artık zorunlu) patch'te yoksa e-posta önekine düşer.
+  // `...patch` İLK sırada yayılıyor ki gender/birth_date/marketing_consent/
+  // email_notifications_enabled gibi alanlar da (önceden bu yedek yolda
+  // sessizce kayboluyordu — kod incelemesiyle bulundu) satıra geçsin; hemen
+  // ardından id/username/first_name/last_name/display_name/avatar_url
+  // AÇIKÇA üzerine yazılıyor ki bunlar `patch`'te eksikse (undefined)
+  // aşağıdaki hesaplanmış varsayılanları ezmesinler.
   if (!data || data.length === 0) {
     const firstName = patch.first_name ?? '';
     const lastName = patch.last_name ?? '';
     const fallbackNickname = user.email ? user.email.split('@')[0] : user.id;
     const { error: createErr } = await supabase.from('profiles').insert({
+      ...patch,
       id: user.id,
       username: fallbackNickname,
       first_name: firstName,

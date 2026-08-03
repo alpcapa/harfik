@@ -287,6 +287,116 @@ function bestWordScoreFrom(
   }, prevBest);
 }
 
+/**
+ * PLAY ve AI_PLAY case'lerinin ortak çekirdeği: bir yerleştirme hamlesini
+ * ("r,c" -> Tile) tahtaya işler, bölge vergisini/jokerli bitiş bonusunu
+ * hesaplar, oyuncuları ve moveHistory'yi günceller, rafı torbadan tamamlar.
+ * `rackAfterRemoval` çağıranın zaten oynanan taşları çıkarmış rafı olmalı
+ * (PLAY'de bu, PLACE_TILE'larla önceden raftan düşürülmüş `me.rack`; AI_PLAY'de
+ * `move.placements`'a göre elle çıkarılmış bir kopya). `basePts` de çağırana
+ * bırakılır — PLAY calcScore'u burada tekrar çağırmak yerine kendi hesabını
+ * geçer, AI_PLAY ise ai.ts'in zaten hesapladığı `move.score`'u aynen kullanır
+ * (iki yerde aynı hesabı tekrarlamaktan kaçınmak için). Mesaj metni insan/YZ
+ * arasında bilinçli olarak farklı üslupta olduğundan (ürün kararı) çağırana
+ * bir `buildMessage` callback'iyle bırakılır.
+ */
+function applyPlacement(
+  state: GameState,
+  placedMap: Record<string, Tile>,
+  rackAfterRemoval: Tile[],
+  basePts: number,
+  buildMessage: (ctx: {
+    pts: number;
+    shares: { index: number; amount: number }[];
+    finishBonus: number;
+    words: string[];
+  }) => string,
+): GameState {
+  const me = state.players[state.current];
+  const formed = getFormedWords(state.board, placedMap);
+  const wordRawScores = calcWordRawScores(state.board, placedMap, state.bonuses);
+
+  const placedCoords = Object.keys(placedMap).map(
+    (k) => k.split(',').map(Number) as [number, number],
+  );
+  const { pts, shares } = computeInvasionSplit(
+    placedCoords,
+    state.current,
+    state.players,
+    basePts,
+    state.board,
+  );
+
+  const board = state.board.map((row) => [...row]);
+  for (const [k, tile] of Object.entries(placedMap)) {
+    const [r, c] = k.split(',').map(Number);
+    board[r][c] = { ...tile, owner: state.current };
+  }
+
+  const bag = [...state.bag];
+  const rack = [...rackAfterRemoval];
+  rack.push(...drawTiles(bag, RACK_SIZE - rack.length));
+
+  // Bu hamle rafı + torbayı tamamen bitiriyorsa ve oynanan taşların TAMAMI
+  // jokerse, jokerli bitiş bonusu eklenir (köşe vergisine tabi değildir).
+  // Jokerle birlikte normal bir harf de oynandıysa bonus yok.
+  const placedTiles = Object.values(placedMap);
+  const jokerCount = placedTiles.filter((t) => t.wild).length;
+  const onlyJokers = placedTiles.length > 0 && jokerCount === placedTiles.length;
+  const finishesGame = rack.length === 0 && bag.length === 0;
+  const finishBonus = finishesGame && onlyJokers ? jokerFinishBonus(jokerCount) : 0;
+
+  const newLongestWord = formed.reduce(
+    (best, fw) => (fw.word.length > best.length ? fw.word : best),
+    me.longestWord,
+  );
+  const isNewBestMove = basePts > me.bestMoveScore;
+  const newBestWordScore = bestWordScoreFrom(wordRawScores, me.bestWordScore);
+  const players = state.players.map((p, i) => {
+    if (i === state.current) {
+      return {
+        ...p,
+        rack,
+        score: p.score + pts + finishBonus,
+        bestMoveScore: isNewBestMove ? basePts : p.bestMoveScore,
+        bestWordScore: newBestWordScore,
+        longestWord: newLongestWord,
+        moveCount: p.moveCount + 1,
+        moveScoreSum: p.moveScoreSum + basePts,
+      };
+    }
+    const share = shares.find((s) => s.index === i);
+    if (share) {
+      return { ...p, score: p.score + share.amount };
+    }
+    return p;
+  });
+
+  return {
+    ...state,
+    board,
+    bag,
+    placed: {},
+    players,
+    consecutivePasses: 0,
+    selectedTile: null,
+    lastMoveCells: placedCoords,
+    moveHistory: appendMoveHistory(
+      state.moveHistory,
+      state.turnCount,
+      state.current,
+      formed.map((f) => f.word),
+      pts + finishBonus,
+      shares,
+      finishBonus > 0 ? jokerCount : undefined,
+      wordRawScores,
+      placedTiles.length >= RACK_SIZE,
+    ),
+    message: buildMessage({ pts, shares, finishBonus, words: formed.map((f) => f.word) }),
+    messageType: 'ok',
+  };
+}
+
 export function gameReducer(state: GameState, action: Action): GameState {
   switch (action.type) {
     case 'INIT':
@@ -534,95 +644,19 @@ export function gameReducer(state: GameState, action: Action): GameState {
         return { ...state, message: check.reason!, messageType: 'err' };
       }
       const basePts = calcScore(state.board, state.placed, state.bonuses);
-      const formed = getFormedWords(state.board, state.placed);
-      const wordRawScores = calcWordRawScores(state.board, state.placed, state.bonuses);
-
-      // Rakip köşe sınırına değme: kazanılan puan köşe sahip(ler)iyle paylaşılır.
-      const placedCoords = Object.keys(state.placed).map(
-        (k) => k.split(',').map(Number) as [number, number],
-      );
-      const { pts, shares } = computeInvasionSplit(
-        placedCoords,
-        state.current,
-        state.players,
+      const moved = applyPlacement(
+        state,
+        state.placed,
+        me.rack,
         basePts,
-        state.board,
+        ({ pts, shares, finishBonus, words }) => {
+          const bonusNote = shares.length > 0
+            ? ` (${shares.map((s) => `${s.amount} puanı ${state.players[s.index].name} kaptı`).join(', ')})`
+            : '';
+          const finishBonusNote = finishBonus > 0 ? ` (jokerli bitiş bonusu +${finishBonus})` : '';
+          return `${me.name}: +${pts} puan${bonusNote}${finishBonusNote} Kelimeler: ${words.join(', ')}`;
+        },
       );
-      const bonusNote = shares.length > 0
-        ? ` (${shares.map((s) => `${s.amount} puanı ${state.players[s.index].name} kaptı`).join(', ')})`
-        : '';
-
-      // Yerleştirmeleri tahtaya işle.
-      const board = state.board.map((row) => [...row]);
-      for (const [k, tile] of Object.entries(state.placed)) {
-        const [r, c] = k.split(',').map(Number);
-        board[r][c] = { ...tile, owner: state.current };
-      }
-
-      // Rafı doldur.
-      const bag = [...state.bag];
-      const rack = [...me.rack];
-      rack.push(...drawTiles(bag, RACK_SIZE - rack.length));
-
-      // Bu hamle rafı + torbayı tamamen bitiriyorsa ve oynanan taşların
-      // TAMAMI jokerse, jokerli bitiş bonusu eklenir (köşe vergisine tabi
-      // değildir). Jokerle birlikte normal bir harf de oynandıysa bonus yok.
-      const placedTiles = Object.values(state.placed);
-      const jokerCount = placedTiles.filter((t) => t.wild).length;
-      const onlyJokers = placedTiles.length > 0 && jokerCount === placedTiles.length;
-      const finishesGame = rack.length === 0 && bag.length === 0;
-      const finishBonus = finishesGame && onlyJokers ? jokerFinishBonus(jokerCount) : 0;
-      const finishBonusNote = finishBonus > 0 ? ` (jokerli bitiş bonusu +${finishBonus})` : '';
-
-      const newLongestWord = formed.reduce(
-        (best, fw) => (fw.word.length > best.length ? fw.word : best),
-        me.longestWord,
-      );
-      const isNewBestMove = basePts > me.bestMoveScore;
-      const newBestWordScore = bestWordScoreFrom(wordRawScores, me.bestWordScore);
-      const players = state.players.map((p, i) => {
-        if (i === state.current) {
-          return {
-            ...p,
-            rack,
-            score: p.score + pts + finishBonus,
-            bestMoveScore: isNewBestMove ? basePts : p.bestMoveScore,
-            bestWordScore: newBestWordScore,
-            longestWord: newLongestWord,
-            moveCount: p.moveCount + 1,
-            moveScoreSum: p.moveScoreSum + basePts,
-          };
-        }
-        const share = shares.find((s) => s.index === i);
-        if (share) {
-          return { ...p, score: p.score + share.amount };
-        }
-        return p;
-      });
-
-      const moved: GameState = {
-        ...state,
-        board,
-        bag,
-        placed: {},
-        players,
-        consecutivePasses: 0,
-        selectedTile: null,
-        lastMoveCells: placedCoords,
-        moveHistory: appendMoveHistory(
-          state.moveHistory,
-          state.turnCount,
-          state.current,
-          formed.map((f) => f.word),
-          pts + finishBonus,
-          shares,
-          finishBonus > 0 ? jokerCount : undefined,
-          wordRawScores,
-          placedTiles.length >= RACK_SIZE,
-        ),
-        message: `${me.name}: +${pts} puan${bonusNote}${finishBonusNote} Kelimeler: ${check.words!.join(', ')}`,
-        messageType: 'ok',
-      };
       return advanceTurn(moved);
     }
 
@@ -714,92 +748,32 @@ export function gameReducer(state: GameState, action: Action): GameState {
         return advanceTurn(moved);
       }
 
-      // Hamledeki taşları tahtaya işle ve raftan düş.
+      // Hamledeki taşları tahtaya işleyecek map + raftan çıkarılmış kopya
+      // (PLAY'in aksine YZ'nin rafı PLACE_TILE'larla önceden azaltılmamış,
+      // move.placements'a göre burada elle çıkarılması gerekiyor).
       const placedMap: Record<string, Tile> = {};
       for (const p of move.placements) placedMap[key(p.r, p.c)] = p.tile;
-      const formed = getFormedWords(state.board, placedMap);
-      const aiWordRawScores = calcWordRawScores(state.board, placedMap, state.bonuses);
-
-      const board = state.board.map((row) => [...row]);
-      const rack = [...me.rack];
+      const rackAfterRemoval = [...me.rack];
       for (const p of move.placements) {
-        board[p.r][p.c] = { ...p.tile, owner: state.current };
         const idx = p.tile.wild
-          ? rack.findIndex((t) => t.letter === '?')
-          : rack.findIndex((t) => t.letter === p.tile.letter);
-        if (idx >= 0) rack.splice(idx, 1);
+          ? rackAfterRemoval.findIndex((t) => t.letter === '?')
+          : rackAfterRemoval.findIndex((t) => t.letter === p.tile.letter);
+        if (idx >= 0) rackAfterRemoval.splice(idx, 1);
       }
-      const bag = [...state.bag];
-      rack.push(...drawTiles(bag, RACK_SIZE - rack.length));
 
-      // Bu hamle rafı + torbayı tamamen bitiriyorsa ve oynanan taşların
-      // TAMAMI jokerse, jokerli bitiş bonusu eklenir (köşe vergisine tabi
-      // değildir). Jokerle birlikte normal bir harf de oynandıysa bonus yok.
-      const aiJokerCount = move.placements.filter((p) => p.tile.wild).length;
-      const aiOnlyJokers = move.placements.length > 0 && aiJokerCount === move.placements.length;
-      const aiFinishesGame = rack.length === 0 && bag.length === 0;
-      const aiFinishBonus = aiFinishesGame && aiOnlyJokers ? jokerFinishBonus(aiJokerCount) : 0;
-
-      const aiCoords = move.placements.map((p) => [p.r, p.c] as [number, number]);
-      const { pts: aiPts, shares: aiShares } = computeInvasionSplit(
-        aiCoords,
-        state.current,
-        state.players,
+      const moved = applyPlacement(
+        state,
+        placedMap,
+        rackAfterRemoval,
         move.score,
-        state.board,
+        ({ pts, shares, finishBonus }) => {
+          const invasionNote = shares.length > 0
+            ? ` (${shares.map((s) => `${s.amount} puanı ${state.players[s.index].name} kaptı`).join(', ')})`
+            : '';
+          const finishBonusNote = finishBonus > 0 ? ` (jokerli bitiş bonusu +${finishBonus})` : '';
+          return `${me.name} "${move.word}" oynadı. +${pts} puan.${invasionNote}${finishBonusNote}`;
+        },
       );
-
-      const aiLongestWord = formed.reduce(
-        (best, fw) => (fw.word.length > best.length ? fw.word : best),
-        me.longestWord,
-      );
-      const aiIsNewBestMove = move.score > me.bestMoveScore;
-      const aiNewBestWordScore = bestWordScoreFrom(aiWordRawScores, me.bestWordScore);
-      const players = state.players.map((p, i) => {
-        if (i === state.current) {
-          return {
-            ...p,
-            rack,
-            score: p.score + aiPts + aiFinishBonus,
-            bestMoveScore: aiIsNewBestMove ? move.score : p.bestMoveScore,
-            bestWordScore: aiNewBestWordScore,
-            longestWord: aiLongestWord,
-            moveCount: p.moveCount + 1,
-            moveScoreSum: p.moveScoreSum + move.score,
-          };
-        }
-        const share = aiShares.find((s) => s.index === i);
-        if (share) {
-          return { ...p, score: p.score + share.amount };
-        }
-        return p;
-      });
-
-      const aiInvasionNote = aiShares.length > 0
-        ? ` (${aiShares.map((s) => `${s.amount} puanı ${state.players[s.index].name} kaptı`).join(', ')})`
-        : '';
-      const aiFinishBonusNote = aiFinishBonus > 0 ? ` (jokerli bitiş bonusu +${aiFinishBonus})` : '';
-      const moved: GameState = {
-        ...state,
-        board,
-        bag,
-        players,
-        consecutivePasses: 0,
-        lastMoveCells: aiCoords,
-        moveHistory: appendMoveHistory(
-          state.moveHistory,
-          state.turnCount,
-          state.current,
-          formed.map((f) => f.word),
-          aiPts + aiFinishBonus,
-          aiShares,
-          aiFinishBonus > 0 ? aiJokerCount : undefined,
-          aiWordRawScores,
-          move.placements.length >= RACK_SIZE,
-        ),
-        message: `${me.name} "${move.word}" oynadı. +${aiPts} puan.${aiInvasionNote}${aiFinishBonusNote}`,
-        messageType: 'ok',
-      };
       return advanceTurn(moved);
     }
 

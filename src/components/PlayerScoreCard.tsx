@@ -24,6 +24,7 @@ import type {
   MyLeaderboardRank,
   PlayerStats,
 } from '../lib/database.types';
+import { type TabKey, SCORE_TABS, ScoreTabsBar, ScoreStatsSection } from './ScoreStatsSection';
 
 /** Bir skor kartı çizmek için gereken asgari oyuncu kimliği. */
 export interface PlayerSummary {
@@ -62,12 +63,6 @@ function fmtLogDate(iso: string) {
   return `${date} ${time}`;
 }
 
-type TabKey = 'all' | 2 | 4;
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'all', label: 'Genel' },
-  { key: 2, label: '2 Oyunculu' },
-  { key: 4, label: '4 Oyunculu' },
-];
 
 // Skor kartı herkese açık olduğundan (k-lig'den herkes başkasının
 // kartını açabilir) tam ad/soyad değil, oyun içindekiyle aynı kısa kimlik
@@ -127,18 +122,30 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
   const friendResultRef = useModalA11y(!!friendResultMsg, () => setFriendResultMsg(null));
 
   useEffect(() => {
-    for (const { key } of TABS) {
-      fetchPlayerStats(key, member.id).then((s) =>
-        setStatsByTab((cur) => ({ ...cur, [key]: s })),
-      );
+    let cancelled = false;
+    for (const { key } of SCORE_TABS) {
+      fetchPlayerStats(key, member.id).then((s) => {
+        if (!cancelled) setStatsByTab((cur) => ({ ...cur, [key]: s }));
+      });
     }
-    fetchMyLeaderboardRank(member.id).then(setRank);
+    fetchMyLeaderboardRank(member.id).then((r) => {
+      if (!cancelled) setRank(r);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [member.id]);
 
   useEffect(() => {
     if (!isAdminView) return;
+    let cancelled = false;
     setActivityLog(undefined);
-    fetchAdminMemberActivityLog(member.id).then((rows) => setActivityLog(rows.length ? rows : null));
+    fetchAdminMemberActivityLog(member.id).then((rows) => {
+      if (!cancelled) setActivityLog(rows.length ? rows : null);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [isAdminView, member.id]);
 
   useEffect(() => {
@@ -188,63 +195,6 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
   const stats = statsByTab[tab];
   const totalScore = statsByTab.all?.total_score ?? 0;
 
-  const pct = (n: number) =>
-    stats && stats.games_played > 0 ? `%${Math.round((n / stats.games_played) * 100)}` : '%0';
-
-  // 2 kişilikte 2. olmak lig puanı getirmez (kaybetmekle aynı şey) ama
-  // "İkincilik" kutusu yine de bilgi amaçlı tüm sekmelerde gösteriliyor —
-  // ScoreCard.tsx'teki aynı düzenleme, birlikte güncellendi.
-  const secondCellValue = stats?.second_places ?? 0;
-
-  type Cell = { label: string; value: number | string; rate?: string; cls?: string; span2?: boolean };
-
-  // Oyuncu istatistikleri (davranış/sonuç sayıları) üstte, oyun istatistikleri
-  // (tek oyun/hamle/kelime rekorları) altta — ScoreCard.tsx'teki aynı
-  // düzenleme, birlikte güncellendi (bkz. dosya başındaki not).
-  const playerCells: Cell[] = [
-    { label: 'Toplam Oyun', value: stats?.games_played ?? 0 },
-    {
-      label: 'Yapay Zeka ile',
-      value: stats?.local_games_played ?? 0,
-      rate: pct(stats?.local_games_played ?? 0),
-    },
-    {
-      label: 'Arkadaşınla',
-      value: stats?.online_games_played ?? 0,
-      rate: pct(stats?.online_games_played ?? 0),
-    },
-    {
-      label: 'Birincilik',
-      value: stats?.first_places ?? 0,
-      rate: pct(stats?.first_places ?? 0),
-      cls: 'text-gold',
-    },
-    {
-      label: 'İkincilik',
-      value: secondCellValue,
-      rate: pct(secondCellValue),
-      cls: 'text-accent',
-    },
-    {
-      label: 'Teslim Olma',
-      value: stats?.surrendered_count ?? 0,
-      rate: pct(stats?.surrendered_count ?? 0),
-      cls: 'text-red',
-    },
-  ];
-
-  const gameCells: Cell[] = [
-    { label: 'En Yüksek Oyun Puanı', value: stats?.best_score ?? 0, cls: 'text-gold' },
-    { label: 'En İyi Hamle Puanı', value: stats?.best_move_score ?? 0, cls: 'text-accent' },
-    { label: 'En Yüksek Puanlı Kelime', value: stats?.best_word_score ?? 0, cls: 'text-gold' },
-    {
-      label: 'Ortalama Hamle Puanı',
-      value: Number(stats?.avg_move_score ?? 0).toFixed(2),
-      cls: 'text-accent',
-    },
-    { label: 'En Uzun Kelime', value: stats?.longest_word ?? '—', cls: 'text-text', span2: true },
-  ];
-
   return (
     <Modal title="Skor Kartı" onClose={onClose}>
       <div className="mb-4 flex items-center gap-3">
@@ -291,81 +241,16 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
         </button>
       </div>
 
-      <div className="mb-3 flex gap-2">
-        {TABS.map(({ key, label }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setTab(key)}
-            className={[
-              'flex-1 py-2 rounded-md font-sans text-sm font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97] flex flex-col items-center',
-              tab === key
-                ? 'btn-raised bg-accent text-white border-accent'
-                : 'btn-raised-neutral bg-panel text-text border-border',
-            ].join(' ')}
-          >
-            <span className="leading-none">{label}</span>
-            <span className="text-[10px] font-normal normal-case leading-none mt-0.5">
-              ({statsByTab[key]?.total_score ?? 0} puan)
-            </span>
-          </button>
-        ))}
-      </div>
+      <ScoreTabsBar tab={tab} onChange={setTab} statsByTab={statsByTab} />
 
-      {stats === undefined ? (
-        <p className="text-muted text-xs font-mono text-center py-4">Yükleniyor…</p>
-      ) : (
-        <>
-          {!stats && (
-            <p className="text-muted text-[10px] font-mono text-center pb-2">
-              {tab === 'all' ? 'Bu oyuncunun hiç oyun kaydı yok.' : `Bu oyuncunun ${tab} oyunculu oyun kaydı yok.`}
-            </p>
-          )}
-          <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono mb-1.5">
-            Oyuncu İstatistikleri
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {playerCells.map((c) => (
-              <div
-                key={c.label}
-                className={`btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center ${c.span2 ? 'col-span-2' : ''}`}
-              >
-                <div className={`font-mono text-xl font-bold ${c.cls ?? 'text-text'}`}>
-                  {c.value}
-                </div>
-                {c.rate && (
-                  <div className="font-mono text-xs text-muted mt-0.5">({c.rate})</div>
-                )}
-                <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
-                  {c.label}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono mt-4 mb-1.5">
-            Oyun İstatistikleri
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {gameCells.map((c) => (
-              <div
-                key={c.label}
-                className={`btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center ${c.span2 ? 'col-span-2' : ''}`}
-              >
-                <div className={`font-mono text-xl font-bold ${c.cls ?? 'text-text'}`}>
-                  {c.value}
-                </div>
-                {c.rate && (
-                  <div className="font-mono text-xs text-muted mt-0.5">({c.rate})</div>
-                )}
-                <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
-                  {c.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+      <ScoreStatsSection
+        stats={stats}
+        emptyText={
+          tab === 'all'
+            ? 'Bu oyuncunun hiç oyun kaydı yok.'
+            : `Bu oyuncunun ${tab} oyunculu oyun kaydı yok.`
+        }
+      />
 
       <div className="text-center mt-1.5">
         <button

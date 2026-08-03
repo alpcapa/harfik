@@ -70,7 +70,16 @@ export function findAIMove(
 ): AIMove | null {
   const rackLetters = rack.map((t) => t.letter);
   const wordPool = getWordPool();
-  const candidates = wordPool.filter((w) => canSpell(w, rackLetters));
+  // tryCornerStart dışında hiç kullanılmıyor — bu da yalnızca isFirstMove
+  // (ya da nadir freshCorners) dallarında tetikleniyor. Her normal hamlede
+  // onbinlerce kelimeyi boşuna filtrelememek için tembel/önbellekli hesap.
+  let candidatesCache: string[] | undefined;
+  const candidates = (): string[] => {
+    if (!candidatesCache) {
+      candidatesCache = wordPool.filter((w) => canSpell(w, rackLetters));
+    }
+    return candidatesCache;
+  };
 
   // Çapalı hamlelerde kelimenin bir harfi tahtada zaten var olabilir (çapa).
   // O harfi rafta aramaya gerek yok — rafa + çapa harfine göre gevşetilmiş
@@ -168,7 +177,7 @@ export function findAIMove(
     const [homeR, homeC] = cornerCell(homeCorner);
     for (let sr = b.r0; sr <= b.r1; sr++) {
       for (let sc = b.c0; sc <= b.c1; sc++) {
-        for (const W of candidates) {
+        for (const W of candidates()) {
           for (const horiz of [true, false]) {
             const er = horiz ? sr : sr + W.length - 1;
             const ec = horiz ? sc + W.length - 1 : sc;

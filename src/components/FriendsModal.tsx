@@ -164,8 +164,12 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
   const handleSend = async (id: string) => {
     setBusyId(id);
     try {
-      await sendFriendRequest(id);
-      patchRelation(id, 'pending_outgoing');
+      const status = await sendFriendRequest(id);
+      // Karşı taraftan zaten bekleyen bir istek varsa sunucu insert'i
+      // doğrudan 'accepted'a çeviriyor — bu durumda UI da "İstek
+      // Gönderildi" yerine gerçek durumu (arkadaş oldunuz) göstermeli.
+      patchRelation(id, status === 'accepted' ? 'accepted' : 'pending_outgoing');
+      if (status === 'accepted') reloadFriends();
     } catch (err) {
       console.error('[Kelimeki] arkadaşlık isteği hatası:', err);
     } finally {

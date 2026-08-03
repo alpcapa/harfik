@@ -6,11 +6,14 @@ import { Tile } from './Tile';
 
 interface RemainingTilesModalProps {
   state: GameState;
+  /** "Benim rafım" hangi oyuncu — state.current DEĞİL, çünkü bu modal YZ'nin
+      sırasında da açılabiliyor (o an state.current YZ'yi gösterir). */
+  myIndex: number;
   onClose: () => void;
 }
 
-export function RemainingTilesModal({ state, onClose }: RemainingTilesModalProps) {
-  const myRack = state.players[state.current]?.rack ?? [];
+export function RemainingTilesModal({ state, myIndex, onClose }: RemainingTilesModalProps) {
+  const myRack = state.players[myIndex]?.rack ?? [];
   const rows = remainingTiles(state.board, myRack);
   const total = rows.reduce((s, r) => s + r.count, 0);
 

@@ -101,6 +101,13 @@ export default function App() {
   // tarafından dispatch'ten ÖNCE atanır). Oyun bitince/terk edilince null'a
   // döner ki bir sonraki oyun yeni bir id alsın.
   const activeSaveIdRef = useRef<string | null>(null);
+  // Girişli kullanıcının autosave'i (aşağıdaki effect) debounce'lu — taş
+  // seçmek dahil her dispatch'te ağ isteği atmamak için. `saveChainRef` ayrıca
+  // ardışık çağrıları SERİLEŞTİRİR (bir öncekinin cevabını beklemeden yenisini
+  // başlatmaz) ki gecikmiş bir eski istek, sonra tamamlanan daha yeni bir
+  // isteği ezip cihazlar-arası devamda eski state'i göstermesin.
+  const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveChainRef = useRef<Promise<unknown>>(Promise.resolve());
   // Misafirin yarıda bırakılmış `savedGame`'ini girişten sonra hesaba
   // taşıyan effect'in (aşağıda) StrictMode/mükerrer-çalışma kilidi.
   const migratingSavedGameRef = useRef(false);
@@ -144,7 +151,9 @@ export default function App() {
         0,
         Math.round((Date.parse(save.updated_at) - Date.parse(claimedState.startedAt)) / 1000),
       );
-      void logGameFinish(claimedState.players.length, durationSeconds, claimedState.multiSession, false);
+      // `user` bu noktada zaten dolu (fonksiyon başında `if (!user) return`
+      // ile garanti ediliyor) — logGameFinish'in kendi getUser() ağ turunu tekrarlamasın diye geçiliyor.
+      void logGameFinish(claimedState.players.length, durationSeconds, claimedState.multiSession, false, false, user.id);
       if (claimedState.turnCount >= 2) {
         const record = buildGameRecord(claimedState, true, 0);
         if (record) void saveGameDurable(record);
@@ -305,14 +314,30 @@ export default function App() {
       if (user && isSupabaseConfigured) {
         clearGameState();
         if (!activeSaveIdRef.current) activeSaveIdRef.current = crypto.randomUUID();
-        void upsertLocalGameSave(activeSaveIdRef.current, user.id, state);
+        const id = activeSaveIdRef.current;
+        const uid = user.id;
+        const snapshot = state;
+        if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
+        saveDebounceRef.current = setTimeout(() => {
+          saveDebounceRef.current = null;
+          saveChainRef.current = saveChainRef.current
+            .catch(() => {})
+            .then(() => upsertLocalGameSave(id, uid, snapshot));
+        }, 600);
       } else {
         saveGameState(state);
       }
       return;
     }
+    if (saveDebounceRef.current) {
+      clearTimeout(saveDebounceRef.current);
+      saveDebounceRef.current = null;
+    }
     if (state.isGameOver) {
       // Oyun gerçekten bitti — sunucudaki devam-eden kaydı (varsa) sil.
+      // Bekleyen bir debounce'lu kayıt varsa (yukarıda az önce temizlendi)
+      // artık gönderilmeyecek — devam kaydını silme işleminin ardından
+      // gecikmeli/eski bir upsert'in onu diriltmesi istenmez.
       if (activeSaveIdRef.current) {
         void deleteLocalGameSave(activeSaveIdRef.current);
         activeSaveIdRef.current = null;
@@ -672,7 +697,18 @@ export default function App() {
   useEffect(() => {
     if (!state.isGameOver || state.phase !== 'play') return;
     const durationSeconds = Math.max(0, Math.round((Date.now() - Date.parse(state.startedAt)) / 1000));
-    void logGameFinish(state.players.length, durationSeconds, state.multiSession, true, state.endReason === 'surrender');
+    // user?.id zaten useAuth()'tan biliniyor — logGameFinish'in kendi
+    // içinde AYRICA bir getUser() ağ turu yapmasını (yukarıdaki
+    // saveGameDurable/buildGameRecord effect'iyle aynı anda tetiklendiğinden
+    // gereksiz ikinci bir round-trip olurdu) önlemek için geçiliyor.
+    void logGameFinish(
+      state.players.length,
+      durationSeconds,
+      state.multiSession,
+      true,
+      state.endReason === 'surrender',
+      user?.id ?? null,
+    );
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.isGameOver]);
 
@@ -1287,7 +1323,7 @@ export default function App() {
       )}
 
       {showTiles && (
-        <RemainingTilesModal state={state} onClose={() => setShowTiles(false)} />
+        <RemainingTilesModal state={state} myIndex={0} onClose={() => setShowTiles(false)} />
       )}
 
       {pendingWild && (

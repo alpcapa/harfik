@@ -443,8 +443,12 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
     // sekmenin Realtime websocket'ini askıya alabiliyor — o sırada gelen
     // bir davet/kabul olayı kaçırılabilir (bkz. OnlineGameScreen'deki aynı
     // gerekçe). Ön plana/çevrimiçi'ye dönüşte emniyet için elle de tazele.
+    // Masaüstünde sekmeye dönüş genelde visibilitychange+focus'u (bazen
+    // online'ı da) neredeyse aynı anda tetiklediğinden `reload()`'u
+    // doğrudan değil, realtime olaylarıyla aynı 300ms'lik `scheduleReload`
+    // debounce'ından çağırıyoruz — art arda gelenler tek bir isteğe iner.
     const onForeground = () => {
-      if (document.visibilityState === 'visible') reload();
+      if (document.visibilityState === 'visible') scheduleReload();
     };
     document.addEventListener('visibilitychange', onForeground);
     window.addEventListener('focus', onForeground);

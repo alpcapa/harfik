@@ -53,7 +53,17 @@ export function findAIMove(
 ): AIMove | null {
   const rackLetters = rack.map((t) => t.letter);
   const wordPoolLocal = getWordPool();
-  const candidates = wordPoolLocal.filter((w) => canSpell(w, rackLetters));
+  // tryCornerStart dışında hiç kullanılmıyor — bu da yalnızca isFirstMove
+  // (ya da nadir freshCorners) dallarında tetikleniyor. Her normal hamlede
+  // onbinlerce kelimeyi boşuna filtrelememek için tembel/önbellekli hesap.
+  // src/utils/ai.ts ile senkron tutulmalı.
+  let candidatesCache: string[] | undefined;
+  const candidates = (): string[] => {
+    if (!candidatesCache) {
+      candidatesCache = wordPoolLocal.filter((w) => canSpell(w, rackLetters));
+    }
+    return candidatesCache;
+  };
 
   const anchoredCandidatesCache = new Map<string, string[]>();
   const candidatesForAnchor = (letter: string): string[] => {
@@ -125,7 +135,7 @@ export function findAIMove(
     const [homeR, homeC] = cornerCell(homeCorner);
     for (let sr = b.r0; sr <= b.r1; sr++) {
       for (let sc = b.c0; sc <= b.c1; sc++) {
-        for (const W of candidates) {
+        for (const W of candidates()) {
           for (const horiz of [true, false]) {
             const er = horiz ? sr : sr + W.length - 1;
             const ec = horiz ? sc + W.length - 1 : sc;

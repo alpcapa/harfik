@@ -579,7 +579,12 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   function toggleFeedbackHandled(f: AdminFeedbackRow) {
     const next = !f.handled;
     setFeedback((prev) => prev?.map((x) => (x.id === f.id ? { ...x, handled: next } : x)) ?? prev);
-    void markFeedbackHandled(f.id, next);
+    void markFeedbackHandled(f.id, next).then((ok) => {
+      if (!ok) {
+        // Sunucu güncellemesi başarısız oldu — iyimser güncellemeyi geri al.
+        setFeedback((prev) => prev?.map((x) => (x.id === f.id ? { ...x, handled: f.handled } : x)) ?? prev);
+      }
+    });
   }
 
   function confirmRemoveFeedback() {
@@ -587,7 +592,11 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     if (!f) return;
     setFeedbackToDelete(null);
     setFeedback((prev) => prev?.filter((x) => x.id !== f.id) ?? prev);
-    deleteFeedback(f.id).catch((e) => setError(String(e)));
+    deleteFeedback(f.id).catch((e) => {
+      setError(String(e));
+      // Silme başarısız oldu — kayıt listeden yanlışlıkla kaybolmuş olmasın.
+      setFeedback((prev) => (prev ? [...prev, f].sort((a, b) => b.created_at.localeCompare(a.created_at)) : prev));
+    });
   }
 
   async function confirmSetUserBanned() {
@@ -1309,10 +1318,17 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                                   <button
                                     onClick={() => {
                                       const next = !r.handled;
+                                      const prevHandled = r.handled;
                                       setChatReports((prev) =>
                                         prev?.map((x) => (x.id === r.id ? { ...x, handled: next } : x)) ?? prev,
                                       );
-                                      void markChatReportHandled(r.id, next);
+                                      void markChatReportHandled(r.id, next).then((ok) => {
+                                        if (!ok) {
+                                          setChatReports((prev) =>
+                                            prev?.map((x) => (x.id === r.id ? { ...x, handled: prevHandled } : x)) ?? prev,
+                                          );
+                                        }
+                                      });
                                     }}
                                     className="text-[10px] font-mono text-accent hover:underline"
                                   >
