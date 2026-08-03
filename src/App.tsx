@@ -379,7 +379,7 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     const token = takePendingInviteToken();
-    if (token) void acceptFriendInvite(token).catch(() => {});
+    if (token) void acceptFriendInvite(token).catch((err) => console.error('acceptFriendInvite (pending token):', err));
   }, [user]);
 
   // Offline nedeniyle gönderilemeyip kuyruğa alınmış "Görüş Bildir" mesajlarını
@@ -766,8 +766,11 @@ export default function App() {
       cells,
       score: calcScore(state.board, state.placed, state.bonuses),
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.placed, state.board, state.players, state.current, wordsReady]);
+    // state.bonuses eklendi — calcScore onu okuyor, önceden eksikti (şu ana
+    // kadar zararsızdı çünkü bonuses yalnızca oyun başında bir kez kurulup
+    // SYNC_ONLINE_STATE dışında hiç değişmiyor, o durumda da state.board
+    // zaten aynı anda değişip memoyu tetikliyordu).
+  }, [state.placed, state.board, state.players, state.current, state.bonuses, wordsReady]);
 
   // Oyna'ya basmadan önce, geçersiz bir hamle varsa sebebini canlı olarak
   // alttaki mesaj alanında göster — oyuncu Oyna'ya basmadan neden geçersiz
@@ -852,7 +855,13 @@ export default function App() {
   // Raftan bir taş ya da tahtaya bu tur konmuş bir taş sürüklenmeye başlanır.
   const beginDrag = (source: DragSource, e: React.PointerEvent) => {
     if (!canAct || state.swapMode) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // Nadir durumlarda (ör. pointerId zaten geçersiz) atabilir —
+      // releasePointerCapture'daki aynı toleransla simetrik, sürüklemenin
+      // kendisi yakalama olmadan da çalışmaya devam eder.
+    }
     dragRef.current = { source, startX: e.clientX, startY: e.clientY, moved: false };
   };
 
@@ -1026,16 +1035,20 @@ export default function App() {
         let serverOk = true;
         const invalidWords: string[] = [];
         try {
-          for (const word of structural.words) {
-            const result = await isValidWordRemote(trLower(word));
+          // Kelimeler birbirinden bağımsız doğrulandığından sıralı
+          // (for…await) yerine paralel çalıştırılabilir — çoklu kelimeli bir
+          // hamlede gereksiz gecikmeyi önler.
+          const results = await Promise.all(
+            structural.words.map((word) => isValidWordRemote(trLower(word))),
+          );
+          results.forEach((result, i) => {
             if (result === false) {
-              invalidWords.push(word);
+              invalidWords.push(structural.words![i]);
             } else if (result === null) {
               // Sunucu hatası — yerel sözlüğe düş.
               serverOk = false;
-              break;
             }
-          }
+          });
         } catch (err) {
           // isValidWordRemote normalde Supabase hatasını yakalayıp `null`
           // döner (yukarıdaki dal), ama beklenmedik bir throw (ör. tam ağ

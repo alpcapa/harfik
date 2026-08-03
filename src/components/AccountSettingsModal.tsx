@@ -158,6 +158,11 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
     } catch (err) {
       const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
       setError(msg || 'Bir hata oluştu.');
+      // Profil kısmı (updateProfile) e-posta güncellemesinden ÖNCE zaten
+      // başarıyla tamamlanmış olabilir — hata yalnızca sonraki e-posta
+      // adımından geliyorsa, kullanıcı profildeki değişikliklerinin de
+      // kaybolduğunu sanmasın diye bu notu ayrıca göster.
+      if (notes.length > 0) setInfo(notes.join(' '));
     } finally {
       setBusy(false);
     }
@@ -241,6 +246,13 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
           )}
           {nicknameStatus === 'taken' && (
             <p className="text-[10px] text-red font-mono mt-1">Bu takma isim kullanımda.</p>
+          )}
+          {nicknameStatus === 'error' && (
+            // Kontrol başarısız olsa bile submit engellenmiyor (DB'deki unique
+            // kısıt zaten gerçek doğruluk kaynağı, friendlyNicknameError ile
+            // dostane bir hataya çevriliyor) — bu yalnızca kullanıcıya
+            // kontrolün neden hiç sonuçlanmadığını açıklıyor.
+            <p className="text-[10px] text-muted font-mono mt-1">Kullanılabilirlik kontrol edilemedi, kaydederken tekrar denenecek.</p>
           )}
         </div>
 

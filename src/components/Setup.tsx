@@ -682,10 +682,14 @@ export function Setup({
           <div className="flex gap-2">
             <button
               onClick={handleStart}
-              disabled={!wordsReady}
+              disabled={!wordsReady || accountPending}
               className="flex-1 btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
             >
-              {wordsReady ? 'Oyunu Başlat' : 'Hazırlanıyor…'}
+              {/* accountPending iken de "Hazırlanıyor…" gösterilir — girişli
+                  kullanıcı için profil gelmeden basılırsa oyuncu adı kısa
+                  süreliğine 'Misafir' kaydedilebiliyordu (RENAME_PLAYER
+                  sonradan düzeltiyordu ama önlemek daha temiz). */}
+              {wordsReady && !accountPending ? 'Oyunu Başlat' : 'Hazırlanıyor…'}
             </button>
             {/* Yalnızca girişli kullanıcı için (creatingLocal) — LiveGameCreateForm'un
                 "Vazgeç" butonuyla BİREBİR AYNI, Devam Eden Oyunlar listesine

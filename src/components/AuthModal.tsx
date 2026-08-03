@@ -184,6 +184,12 @@ export function AuthModal({
               {nicknameStatus === 'taken' && (
                 <p className="text-[10px] text-red font-mono mt-1">Bu takma isim kullanımda.</p>
               )}
+              {nicknameStatus === 'error' && (
+                // Kontrol başarısız olsa bile kayıt engellenmiyor — DB'deki
+                // unique kısıt gerçek doğruluk kaynağı, çakışma olursa
+                // friendlyNicknameError dostane bir hataya çeviriyor.
+                <p className="text-[10px] text-muted font-mono mt-1">Kullanılabilirlik kontrol edilemedi, kayıt sırasında tekrar denenecek.</p>
+              )}
             </div>
           </>
         )}

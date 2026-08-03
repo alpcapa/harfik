@@ -163,9 +163,10 @@ export function validatePlacement(
   const structural = validatePlacementStructural(board, placed, owner, ownCorners, isFirstMove);
   if (!structural.valid) return structural;
 
-  const formed = getFormedWords(board, placed);
+  // structural.words zaten validatePlacementStructural içindeki getFormedWords
+  // sonucudur — burada aynı tahtayı ikinci kez taramaya gerek yok.
   const invalidWords = Array.from(
-    new Set(formed.map((f) => f.word).filter((word) => !getWordSet().has(trLower(word)))),
+    new Set((structural.words ?? []).filter((word) => !getWordSet().has(trLower(word)))),
   );
   if (invalidWords.length > 0) {
     return { valid: false, reason: formatInvalidWordsReason(invalidWords) };

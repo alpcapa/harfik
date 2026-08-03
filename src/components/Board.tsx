@@ -201,13 +201,17 @@ export function Board({
     () => computeAllTerritories(board, players),
     [board, players],
   );
-  const territoryOwnerAt = (r: number, c: number): number => {
-    const k = key(r, c);
-    for (let i = 0; i < territories.length; i++) {
-      if (territories[i].has(k)) return i;
-    }
-    return -1;
-  };
+  // territories[i]'yi hücre başına tek tek taramak yerine, aynı useMemo
+  // içinde tek bir hücre→sahip Map'ine çevriliyor — 169 hücrenin her biri
+  // için O(oyuncu sayısı) yerine O(1) arama.
+  const territoryOwnerMap = useMemo(() => {
+    const m = new Map<string, number>();
+    territories.forEach((cellSet, i) => {
+      cellSet.forEach((k) => m.set(k, i));
+    });
+    return m;
+  }, [territories]);
+  const territoryOwnerAt = (r: number, c: number): number => territoryOwnerMap.get(key(r, c)) ?? -1;
 
   const cells = [];
 

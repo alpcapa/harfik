@@ -344,6 +344,13 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   // katılımcılara toplu istek gönderme önerisi (bkz. FriendSuggestModal).
   const [suggestCandidates, setSuggestCandidates] = useState<HumanSlot[] | null>(null);
 
+  // İlk yükleme (mount effect) ve sonraki tüm reload() çağrıları (Realtime,
+  // foreground, davet yanıtı, yeni oyun oluşturma) AYNI unmount korumasını
+  // paylaşır — önceden yalnızca ilk yükleme kendi yerel cancelledRef'ini
+  // taşıyordu, reload() unmount sonrası tetiklenirse setGames/setTurns/
+  // setDeadlines unmounted bir bileşende çalışabiliyordu (tutarsız/kırılgan).
+  const cancelledRef = useRef({ current: false });
+
   const [subTab, setSubTab] = useState<SubTab>('active');
   // Varsayılan tab seçimi ("bekleyen davet varsa Oyun Davetleri, yoksa
   // Devam Edenler") yalnızca veri İLK kez yüklendiğinde bir kez uygulanır —
@@ -410,7 +417,7 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   };
 
   const reload = () => {
-    void loadGames();
+    void loadGames(cancelledRef.current);
   };
 
   // Bir daveti gönderilen/kabul edilen/reddedilen taraf bu sekmeyi zaten
@@ -436,8 +443,11 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
       setGames(null);
       return;
     }
-    const cancelledRef = { current: false };
-    void loadGames(cancelledRef);
+    // Yeniden mount/kullanıcı değişimi durumunda önceki cleanup'ın bıraktığı
+    // true değeri sıfırlanmalı — aksi halde bu ve sonraki tüm reload()
+    // çağrıları kalıcı olarak no-op kalırdı.
+    cancelledRef.current.current = false;
+    void loadGames(cancelledRef.current);
     const unsubscribe = subscribeMyOnlineGames(scheduleReload);
     // Mobil tarayıcılar (özellikle iOS Safari) arka plana alınan bir
     // sekmenin Realtime websocket'ini askıya alabiliyor — o sırada gelen
@@ -454,7 +464,7 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
     window.addEventListener('focus', onForeground);
     window.addEventListener('online', onForeground);
     return () => {
-      cancelledRef.current = true;
+      cancelledRef.current.current = true;
       unsubscribe();
       document.removeEventListener('visibilitychange', onForeground);
       window.removeEventListener('focus', onForeground);
@@ -522,7 +532,10 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
         );
         if (candidates.length > 0) setSuggestCandidates(candidates);
       }
-      reload();
+      // reload()'un aksine (fire-and-forget) burada bilerek await ediliyor —
+      // önceden busy göstergesi liste tazelenmeden kayboluyordu, kullanıcı
+      // aynı davete art arda iki kez tıklayabiliyordu.
+      await loadGames(cancelledRef.current);
     } catch (err) {
       console.error('[Kelimeki] respondToGameInvite hatası:', err);
     } finally {

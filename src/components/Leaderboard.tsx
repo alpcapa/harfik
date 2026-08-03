@@ -56,22 +56,29 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
     fetchMyLeaderboardRank(user.id).then(setMyRank);
   }, [user]);
 
-  // Kaydırıldıkça listenin sonuna kadar devam eden lazy load.
+  // rows'un en güncel uzunluğunu bir ref'te tutmak loadMore'u (dolayısıyla
+  // aşağıdaki IntersectionObserver effect'ini) rows'tan bağımsız/stabil
+  // kılıyor — önceden loadMore [rows]'a bağlı olduğundan, her yeni sayfa
+  // yüklendiğinde (rows referansı değiştiğinde) observer gereksiz yere
+  // disconnect edilip yeniden kuruluyordu.
+  const rowsRef = useRef(rows);
+  rowsRef.current = rows;
   const loadMore = useCallback(() => {
-    if (rows === null) return;
+    if (rowsRef.current === null) return;
     setLoadingMore((already) => {
       if (already) return already;
-      void fetchLeaderboard(PAGE_SIZE, rows.length).then((page) => {
+      void fetchLeaderboard(PAGE_SIZE, rowsRef.current!.length).then((page) => {
         setRows((cur) => [...(cur ?? []), ...page]);
         setHasMore(page.length === PAGE_SIZE);
         setLoadingMore(false);
       });
       return true;
     });
-  }, [rows]);
+  }, []);
 
+  const rowsLoaded = rows !== null;
   useEffect(() => {
-    if (!hasMore || rows === null) return;
+    if (!hasMore || !rowsLoaded) return;
     const sentinel = sentinelRef.current;
     const root = scrollRef.current;
     if (!sentinel || !root) return;
@@ -83,7 +90,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, rows, loadMore]);
+  }, [hasMore, rowsLoaded, loadMore]);
 
   // Giriş yapmış kullanıcı şu ana kadar yüklenen satırlarda mı?
   const meInList = user && rows ? rows.some((r) => r.user_id === user.id) : false;

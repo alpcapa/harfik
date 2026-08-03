@@ -664,6 +664,12 @@ export async function respondFriendRequest(requesterId: string, accept: boolean)
 }
 
 /** Arkadaşlıktan çıkarır (kabul edilmiş satırı siler — her iki taraf da çağırabilir). */
+// Adı "arkadaşlıktan çıkar" gibi dursa da aslında iki taraf arasındaki
+// friend_requests satırını durumdan (accepted/pending) bağımsız siler —
+// bu yüzden hem gerçek bir arkadaşlığı sonlandırmak (FriendsModal
+// handleConfirmRemove) hem de HENÜZ kabul edilmemiş, kendi gönderdiğin bir
+// isteği iptal etmek (FriendsModal handleConfirmCancel) için aynı fonksiyon
+// kullanılıyor — isimlendirme kafa karıştırıcı olabilir ama bug değil.
 export async function removeFriend(friendId: string): Promise<void> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
   const {
