@@ -50,7 +50,6 @@ import {
   fetchOnlineGameMoves,
   fetchOnlineGameState,
   getMyOnlineRack,
-  isSupabaseConfigured,
   isValidWordRemote,
   sendOnlineGameMessage,
   submitMove,
@@ -683,7 +682,10 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       return;
     }
 
-    if (isSupabaseConfigured && words.length > 0) {
+    // Bu ekran yalnızca Supabase gerçekten yapılandırılmışken (Canlı oyun bir
+    // hesap gerektirir) hiç mount edilmediğinden, App.tsx'ten kopyalanan
+    // isSupabaseConfigured kontrolü burada her zaman true'ydu — kaldırıldı.
+    if (words.length > 0) {
       setValidating(true);
       const invalidWords: string[] = [];
       let serverOk = true;

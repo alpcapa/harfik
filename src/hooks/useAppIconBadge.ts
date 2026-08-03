@@ -18,7 +18,8 @@
 // focus/visibility/online olayları + Setup ekranına her dönüş + 10
 // dakikalık periyodik tazeleme) güncelleniyor.
 import { useEffect, useRef } from 'react';
-import { fetchIncomingFriendRequests, fetchOnlineGameTurns, listMyOnlineGames, subscribeMyOnlineGames } from '../lib/api';
+import { fetchIncomingFriendRequests, subscribeMyOnlineGames } from '../lib/api';
+import { fetchPendingLiveGameCounts } from '../utils/pendingLiveGames';
 
 export function useAppIconBadge(
   userId: string | undefined,
@@ -69,27 +70,10 @@ export function useAppIconBadge(
     };
 
     const refreshLive = () => {
-      listMyOnlineGames().then((rows) => {
+      fetchPendingLiveGameCounts().then(({ inviteCount, myTurnCount }) => {
         if (cancelled) return;
-        const inviteCount = rows.filter(
-          (g) => g.my_role === 'invitee' && g.my_invite_status === 'pending'
-        ).length;
-        const activeIds = rows.filter((g) => g.status === 'active').map((g) => g.id);
-        if (activeIds.length === 0) {
-          liveCountRef.current = inviteCount;
-          applyBadge();
-          return;
-        }
-        fetchOnlineGameTurns(activeIds).then((turns) => {
-          if (cancelled) return;
-          const myTurnCount = rows.filter((g) => {
-            if (g.status !== 'active') return false;
-            const idx = g.slots.findIndex((s) => s.type === 'human' && s.relation === 'self');
-            return turns[g.id] === idx;
-          }).length;
-          liveCountRef.current = inviteCount + myTurnCount;
-          applyBadge();
-        });
+        liveCountRef.current = inviteCount + myTurnCount;
+        applyBadge();
       });
     };
 

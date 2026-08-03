@@ -126,8 +126,11 @@ export function GrowthChart<T extends { bucket: string }>({
         ...s,
         d: data.map((row, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(valueOf(row, s.key) ?? 0)}`).join(' '),
       })),
+    // x()/y() leftPad/rightPad/plotW'a bağlı olduğundan eklendi — önceden
+    // eksikti (şu ana kadar zararsızdı çünkü bunlar zaten data/niceMax'a
+    // bağlı olarak aynı anda değişiyordu, ama örtük bir varsayımdı).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data, niceMax, activeKeys],
+    [data, niceMax, activeKeys, leftPad, rightPad],
   );
 
   // Son noktadaki değer etiketlerini üst üste binmeyecek şekilde dikey olarak ayır.

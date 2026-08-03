@@ -4,9 +4,10 @@ import { PLAYER_COLORS } from '../game/constants';
 import type { PlayerSetup } from '../game/gameReducer';
 import { useAuth } from '../hooks/useAuth';
 import { useModalA11y } from '../hooks/useModalA11y';
-import { fetchOnlineGameTurns, fetchPlayerStats, listMyOnlineGames, subscribeMyOnlineGames } from '../lib/api';
+import { fetchPlayerStats, subscribeMyOnlineGames } from '../lib/api';
 import { hasSeenQuickStart, markQuickStartSeen } from '../utils/onboarding';
 import { ABANDON_TIMEOUT_MS, type SavedGame } from '../utils/gameStorage';
+import { fetchPendingLiveGameCounts } from '../utils/pendingLiveGames';
 import { preloadWordSet, isWordSetReady } from '../data/wordSetLoader';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
@@ -286,25 +287,10 @@ export function Setup({
       if (myTurnCount > 0) onMainViewChange('live');
     };
     const refresh = () => {
-      listMyOnlineGames().then((rows) => {
+      fetchPendingLiveGameCounts().then(({ inviteCount, myTurnCount }) => {
         if (cancelled) return;
-        const inviteCount = rows.filter((g) => g.my_role === 'invitee' && g.my_invite_status === 'pending').length;
-        const activeIds = rows.filter((g) => g.status === 'active').map((g) => g.id);
-        if (activeIds.length === 0) {
-          setLiveActionCount(inviteCount);
-          applyLoginDefaultOnce(0);
-          return;
-        }
-        fetchOnlineGameTurns(activeIds).then((turns) => {
-          if (cancelled) return;
-          const myTurnCount = rows.filter((g) => {
-            if (g.status !== 'active') return false;
-            const idx = g.slots.findIndex((s) => s.type === 'human' && s.relation === 'self');
-            return turns[g.id] === idx;
-          }).length;
-          setLiveActionCount(inviteCount + myTurnCount);
-          applyLoginDefaultOnce(myTurnCount);
-        });
+        setLiveActionCount(inviteCount + myTurnCount);
+        applyLoginDefaultOnce(myTurnCount);
       });
     };
     refresh();
@@ -682,10 +668,14 @@ export function Setup({
           <div className="flex gap-2">
             <button
               onClick={handleStart}
-              disabled={!wordsReady}
+              disabled={!wordsReady || accountPending}
               className="flex-1 btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
             >
-              {wordsReady ? 'Oyunu Başlat' : 'Hazırlanıyor…'}
+              {/* accountPending iken de "Hazırlanıyor…" gösterilir — girişli
+                  kullanıcı için profil gelmeden basılırsa oyuncu adı kısa
+                  süreliğine 'Misafir' kaydedilebiliyordu (RENAME_PLAYER
+                  sonradan düzeltiyordu ama önlemek daha temiz). */}
+              {wordsReady && !accountPending ? 'Oyunu Başlat' : 'Hazırlanıyor…'}
             </button>
             {/* Yalnızca girişli kullanıcı için (creatingLocal) — LiveGameCreateForm'un
                 "Vazgeç" butonuyla BİREBİR AYNI, Devam Eden Oyunlar listesine

@@ -418,34 +418,19 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   // en alttaki Arkadaşlık bölümünü) kaybettiriyordu (kullanıcı geri bildirimi,
   // 27 Temmuz 2026). Yeni veri gelene kadar eski veri ekranda kalıp üzerine
   // yazılıyor — düzen boyutu sabit kaldığından scroll konumu korunuyor.
+  // Beşi de aynı [userPeriod, userGranularity] bağımlılığına sahipti — ayrı
+  // useEffect'ler yerine tek bir Promise.all'a birleştirildi (davranış aynı:
+  // her biri kendi setX'ini bağımsız çağırır, biri reddederse diğerleri yine
+  // de sonuçlanır, tek bir setError yeterli).
   useEffect(() => {
-    fetchAdminUserActivitySeries(userPeriod, userGranularity)
-      .then(setUserActivity)
-      .catch((e) => setError(String(e)));
-  }, [userPeriod, userGranularity]);
-
-  useEffect(() => {
-    fetchAdminGuestSourceBreakdown(userPeriod * GRANULARITY_TO_DAYS[userGranularity])
-      .then(setGuestSources)
-      .catch((e) => setError(String(e)));
-  }, [userPeriod, userGranularity]);
-
-  useEffect(() => {
-    fetchAdminGuestDeviceBreakdown(userPeriod * GRANULARITY_TO_DAYS[userGranularity])
-      .then(setGuestDevices)
-      .catch((e) => setError(String(e)));
-  }, [userPeriod, userGranularity]);
-
-  useEffect(() => {
-    fetchAdminGuestStandaloneBreakdown(userPeriod * GRANULARITY_TO_DAYS[userGranularity])
-      .then(setGuestStandalone)
-      .catch((e) => setError(String(e)));
-  }, [userPeriod, userGranularity]);
-
-  useEffect(() => {
-    fetchAdminFriendActivitySeries(userPeriod, userGranularity)
-      .then(setFriendActivity)
-      .catch((e) => setError(String(e)));
+    const days = userPeriod * GRANULARITY_TO_DAYS[userGranularity];
+    Promise.all([
+      fetchAdminUserActivitySeries(userPeriod, userGranularity).then(setUserActivity),
+      fetchAdminGuestSourceBreakdown(days).then(setGuestSources),
+      fetchAdminGuestDeviceBreakdown(days).then(setGuestDevices),
+      fetchAdminGuestStandaloneBreakdown(days).then(setGuestStandalone),
+      fetchAdminFriendActivitySeries(userPeriod, userGranularity).then(setFriendActivity),
+    ]).catch((e) => setError(String(e)));
   }, [userPeriod, userGranularity]);
 
   useEffect(() => {

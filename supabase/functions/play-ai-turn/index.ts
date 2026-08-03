@@ -193,7 +193,10 @@ Deno.serve(async (req: Request) => {
           p_base_points: 0,
           p_lost_shares: [],
         });
-        if (submitError) return jsonResponse({ error: submitError.message }, 400);
+        if (submitError) {
+          console.error('[play-ai-turn] submit_move (exchange) hatası:', submitError.message);
+          return jsonResponse({ error: 'Hamle gönderilemedi.' }, 400);
+        }
         return jsonResponse({ ok: true, played: true, action: 'exchange' });
       }
       const { error: submitError } = await supabase.rpc('submit_move', {
@@ -206,7 +209,10 @@ Deno.serve(async (req: Request) => {
         p_base_points: 0,
         p_lost_shares: [],
       });
-      if (submitError) return jsonResponse({ error: submitError.message }, 400);
+      if (submitError) {
+        console.error('[play-ai-turn] submit_move (pass) hatası:', submitError.message);
+        return jsonResponse({ error: 'Hamle gönderilemedi.' }, 400);
+      }
       return jsonResponse({ ok: true, played: true, action: 'pass' });
     }
 
@@ -237,7 +243,7 @@ Deno.serve(async (req: Request) => {
     });
     if (submitError) {
       console.error('[play-ai-turn] submit_move hatası:', submitError.message);
-      return jsonResponse({ error: submitError.message }, 400);
+      return jsonResponse({ error: 'Hamle gönderilemedi.' }, 400);
     }
 
     return jsonResponse({ ok: true, played: true, action: 'play', word: move.word, score: move.score });

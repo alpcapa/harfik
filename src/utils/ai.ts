@@ -69,14 +69,17 @@ export function findAIMove(
   players: Player[],
 ): AIMove | null {
   const rackLetters = rack.map((t) => t.letter);
-  const wordPool = getWordPool();
+  // Yerel değişken bilerek `pool` adını taşıyor — modül seviyesindeki
+  // `wordPool` önbelleğiyle (yukarı) aynı adı taşımak okunabilirliği
+  // düşürüyordu (fonksiyonel bir hata yoktu, isim gölgelemesiydi).
+  const pool = getWordPool();
   // tryCornerStart dışında hiç kullanılmıyor — bu da yalnızca isFirstMove
   // (ya da nadir freshCorners) dallarında tetikleniyor. Her normal hamlede
   // onbinlerce kelimeyi boşuna filtrelememek için tembel/önbellekli hesap.
   let candidatesCache: string[] | undefined;
   const candidates = (): string[] => {
     if (!candidatesCache) {
-      candidatesCache = wordPool.filter((w) => canSpell(w, rackLetters));
+      candidatesCache = pool.filter((w) => canSpell(w, rackLetters));
     }
     return candidatesCache;
   };
@@ -89,7 +92,7 @@ export function findAIMove(
   const candidatesForAnchor = (letter: string): string[] => {
     let cached = anchoredCandidatesCache.get(letter);
     if (!cached) {
-      cached = wordPool.filter(
+      cached = pool.filter(
         (w) => w.includes(letter) && canSpell(w, [...rackLetters, letter]),
       );
       anchoredCandidatesCache.set(letter, cached);

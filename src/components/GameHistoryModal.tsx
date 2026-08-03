@@ -19,6 +19,7 @@ import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
 import { GameChatHistoryModal } from './GameChatHistoryModal';
 import { captureNodeAsPng } from '../utils/shareBoardImage';
 import { leaguePoints, formatLeaguePoints, computeRanks } from '../utils/leaguePoints';
+import { shortDisplayName } from '../utils/profileFields';
 
 /** Beğenenler listesindeki bir satırı `PlayerScoreCard` açabilecek şekle çevirir. */
 function likerToPlayerSummary(l: GameLiker): PlayerSummary {
@@ -34,7 +35,7 @@ function likerToPlayerSummary(l: GameLiker): PlayerSummary {
 
 /** `Leaderboard`/`PlayerScoreCard`'daki aynı kısa kimlik kuralı: soyad hiç gösterilmez. */
 function likerName(l: GameLiker): string {
-  return l.display_name || l.first_name || 'Oyuncu';
+  return shortDisplayName(l, 'Oyuncu');
 }
 
 interface GameHistoryModalProps {
@@ -467,17 +468,23 @@ export function GameHistoryModal({
     };
   }, [playerCount, userId, favoritesOnly, initialExpandedId]);
 
+  // games.length'i bir ref'te tutmak loadMore'u (dolayısıyla aşağıdaki
+  // IntersectionObserver effect'ini) games'ten bağımsız kılıyor — önceden
+  // loadMore [games.length]'e bağlı olduğundan, her yeni sayfa yüklendiğinde
+  // observer gereksiz yere disconnect edilip yeniden kuruluyordu.
+  const gamesLengthRef = useRef(games.length);
+  gamesLengthRef.current = games.length;
   const loadMore = useCallback(() => {
     setLoadingMore((already) => {
       if (already) return already;
-      void fetchMyGames(playerCount, games.length, PAGE_SIZE, userId, favoritesOnly).then(({ games: page, hasMore: more }) => {
+      void fetchMyGames(playerCount, gamesLengthRef.current, PAGE_SIZE, userId, favoritesOnly).then(({ games: page, hasMore: more }) => {
         setGames((cur) => [...cur, ...page]);
         setHasMore(more);
         setLoadingMore(false);
       });
       return true;
     });
-  }, [playerCount, games.length, userId, favoritesOnly]);
+  }, [playerCount, userId, favoritesOnly]);
 
   // Liste kaydırılıp en alttaki sentinel göründüğünde bir sonraki sayfayı yükler.
   useEffect(() => {
