@@ -227,7 +227,16 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
     );
   }
 
-  const remaining = remainingTimeLabel(deadline);
+  // Kalan süre YALNIZCA sırası çağıranda olan oyunlarda gösterilir.
+  // `turn_deadline` her zaman SIRASI GELEN oyuncuya ait; "Rakibin hamlesi
+  // bekleniyor" satırının altında "N saat sonra teslim sayılacak" yazınca
+  // kullanıcı bunu KENDİ süresi sanıyordu (kullanıcı bildirdi) — oysa o süre
+  // dolduğunda teslim olan taraf rakip. Sırası kendisinde olmayan oyunda
+  // kullanıcının yapabileceği bir şey de yok, yani gösterilmemesi bilgi
+  // kaybı değil. `isMyTurn` henüz `undefined` iken (turns tablosu yüklenmemiş)
+  // de gizli kalır — yanlış tarafa ait bir sürenin bir an görünmesindense
+  // hiç görünmemesi tercih edildi.
+  const remaining = isMyTurn ? remainingTimeLabel(deadline) : null;
   const Wrapper = onOpen ? 'button' : 'div';
   const creatorName = game.slots.find(
     (s): s is HumanSlot => s.type === 'human' && s.user_id === game.created_by,
