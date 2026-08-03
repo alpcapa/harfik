@@ -17,7 +17,13 @@ Türkçe kelime oyunu. 13×13 tahtada köşe bölgeleriyle oynanan özgün bir m
 ```bash
 npm run build   # TypeScript derleme + üretim build
 npm run dev     # Geliştirme sunucusu
+npm run lint    # tsc --noEmit (ayrı bir ESLint kurulumu yok)
+npm run test    # Playwright duman testleri (tests/smoke.spec.ts)
 ```
+
+**`npm run test` neyi kapsıyor, neyi kapsamıyor:** `tests/smoke.spec.ts` kapsamlı bir test paketi DEĞİL — "uygulama açılıyor, 2 kişilik bir oyun başlatılabiliyor, YZ hamle yapıyor, bilinmeyen bir path SPA fallback'iyle açılıyor" düzeyinde bir kritik-yol kontrolü. Buraya kadar hatasız gelmek reducer/YZ/skor/bölge hesaplama zincirinin ucuna kadar çalıştığı ve `ErrorBoundary`'nin devreye girmediği anlamına geliyor.
+
+Projenin geri kalanının çok büyük bölümü (Canlı oyun, mesajlaşma, e-posta bildirimleri, admin paneli) **yapısı gereği otomatik test edilemiyor**: iki ayrı gerçek oturum, gerçek gelen kutusu ve gerçek Supabase Auth gerektiriyor. Bunlar için elle koşulan kontrol listesi ayrı bir dosyada: **`TESTING.md`**. Yeni bir Canlı oyun/mesajlaşma/e-posta özelliği eklendiğinde o listeyi de güncelle — `CLAUDE.md`/`README.md` senkron kontrolüyle aynı refleks.
 
 ## Git / Branch Kuralı
 
