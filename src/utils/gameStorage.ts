@@ -126,12 +126,15 @@ function queuePendingAbandonedGame(record: PendingAbandonedGame): void {
 
 /**
  * Bir önceki `loadGameState()` çağrısı 7 gün hareketsizlik yüzünden bir
- * oyunu terk edilmiş sayıp sildiyse, o oyunun kaydı burada tek seferlik
- * okunup temizlenir — çağıran (App.tsx) bunu `logGameFinish(..., completed:
- * false)` ile sunucuya bildirir, ve oyun gerçekten başlamışsa (bkz.
- * `PendingAbandonedGame.state`) hesap sahibi için bir teslim kaydı (-2 Sanal
- * Lig cezası, `buildGameRecord`/`saveGameDurable`) oluşturur — tıpkı oyun
- * içindeki "Çık" ile teslim olmak gibi, yalnızca gecikmeli/örtük. Kuyruk
+ * oyunun süresini dolmuş sayıp sildiyse, o oyunun kaydı burada tek seferlik
+ * okunup temizlenir. Oyun gerçekten başlamışsa (bkz.
+ * `PendingAbandonedGame.state`, `turnCount>=2`) çağıran (App.tsx) hesap
+ * sahibi için bir teslim kaydı (-2 k-lig cezası,
+ * `buildGameRecord`/`saveGameDurable`) oluşturur ve bunu
+ * `logGameFinish(..., endedBySurrender: true)` ile anonim telemetriye de
+ * yazar — tıpkı oyun içinde teslim olmak gibi, yalnızca gecikmeli/örtük.
+ * Hiç oynanmamış bir kayıt ceza da telemetri de üretmez (kendi isteğiyle
+ * "terk etme" diye ayrı bir durum 3 Ağustos 2026'da kaldırıldı). Kuyruk
  * boşsa null döner.
  */
 export function takePendingAbandonedGame(): PendingAbandonedGame | null {
