@@ -40,6 +40,7 @@ import type {
 import { PlayerScoreCard } from './PlayerScoreCard';
 import { MemberMessageModal } from './MemberMessageModal';
 import { AdminChatTranscriptModal } from './AdminChatTranscriptModal';
+import { CountBadge } from './CountBadge';
 import { GrowthChart, type ChartSeriesDef } from './GrowthChart';
 import { trLower } from '../utils/turkish';
 import { useModalA11y } from '../hooks/useModalA11y';
@@ -509,8 +510,13 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     );
   }
 
+  // `relative`, sekmenin sağ üst köşesine oturan `CountBadge` için gerekli —
+  // bekleyen iş sayısı artık başlığa " (N)" olarak gömülmüyor, Setup/
+  // LiveGamesTab/FriendsModal sekmelerindeki kırmızı yuvarlak rozetin
+  // aynısıyla gösteriliyor (kullanıcı isteği: "bu bir standart, her yerde
+  // öyle olmalı", 3 Ağustos 2026).
   const tabBtn = (active: boolean) =>
-    `flex-1 py-2.5 px-3 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1px] transition-colors ${
+    `relative flex-1 py-2.5 px-3 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1px] transition-colors ${
       active ? 'bg-accent text-white' : 'bg-panel text-muted border border-border'
     }`;
 
@@ -531,7 +537,11 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     );
   }
 
+  // Sekme rozetlerini besleyen iki sayaç. Filtreler `fetchAdminPendingCount`
+  // (UserMenu'deki "Admin Paneli" rozeti) ile BİREBİR aynı olmalı — oradaki
+  // toplam, buradaki iki sayının toplamıdır.
   const unhandledFeedbackCount = feedback?.filter((f) => !f.handled).length ?? 0;
+  const unhandledChatReportCount = chatReports?.filter((r) => !r.handled).length ?? 0;
   const filteredFeedback = useMemo(
     () =>
       feedbackOriginFilter === 'all'
@@ -670,7 +680,10 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
               Büyüme
             </button>
             <button className={tabBtn(tab === 'feedback')} onClick={() => setTab('feedback')}>
-              Geri Bildirim{unhandledFeedbackCount > 0 ? ` (${unhandledFeedbackCount})` : ''}
+              Geri Bildirim
+              {unhandledFeedbackCount > 0 && (
+                <CountBadge count={unhandledFeedbackCount} className="absolute -top-1 -right-1" />
+              )}
             </button>
           </div>
 
@@ -1063,9 +1076,10 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                   Gelen Kutusu
                 </button>
                 <button className={tabBtn(feedbackSubTab === 'flags')} onClick={() => setFeedbackSubTab('flags')}>
-                  Şikayetler{chatReports && chatReports.filter((r) => !r.handled).length > 0
-                    ? ` (${chatReports.filter((r) => !r.handled).length})`
-                    : ''}
+                  Şikayetler
+                  {unhandledChatReportCount > 0 && (
+                    <CountBadge count={unhandledChatReportCount} className="absolute -top-1 -right-1" />
+                  )}
                 </button>
               </div>
 
