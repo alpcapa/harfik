@@ -519,6 +519,16 @@ export default function App() {
   // "Devam Eden Oyunlar" listesinde 7 gün boyunca öylesine açılıp hiç
   // oynanmamış bir satır olarak beklemez. turnCount>=2 olan (gerçekten
   // başlamış) oyunlar bu değişiklikten etkilenmedi, eskisi gibi listede kalır.
+  //
+  // 3 Ağustos 2026 (regresyon düzeltmesi) — `else if` dalına `turnCount < 2`
+  // koşulu eklendi. Kritik #1 düzeltmesi ilk daldan girişli kullanıcıyı
+  // çıkarınca (`!user || !isSupabaseConfigured`), turnCount>=2 olan girişli
+  // oyunlar da bu dala düşüp sunucudaki kaydın SİLİNMESİNE yol açıyordu —
+  // yani devam eden gerçek bir oyunu logoya basarak terk etmek onu "Devam
+  // Eden Oyunlar"dan tamamen yok ediyor, üstelik 7 günlük gecikmeli -2
+  // cezasını da (silinen bir kayıt terk edilmiş sayılamayacağı için)
+  // atlatıyordu. Dalın kapsamı, en baştaki niyetine (yalnızca hiç
+  // oynanmamış kayıtları anında sil) geri çekildi.
   const handleLogoClick = () => {
     const abandoningMidGame = state.phase === 'play' && !state.isGameOver;
     if (abandoningMidGame && state.turnCount >= 2 && (!user || !isSupabaseConfigured)) {
@@ -529,7 +539,13 @@ export default function App() {
       // başka birine (ya da sonraki misafir oturumuna) sızmasına yol açardı,
       // çünkü `[user?.id]` değişince `savedGame` hiçbir yerde temizlenmiyor.
       setSavedGame({ state, savedAt: Date.now() });
-    } else if (abandoningMidGame && user && isSupabaseConfigured && activeSaveIdRef.current) {
+    } else if (
+      abandoningMidGame &&
+      state.turnCount < 2 &&
+      user &&
+      isSupabaseConfigured &&
+      activeSaveIdRef.current
+    ) {
       void deleteLocalGameSave(activeSaveIdRef.current);
       activeSaveIdRef.current = null;
     }
