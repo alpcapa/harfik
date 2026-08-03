@@ -30,7 +30,13 @@ npm run dev      # geliştirme sunucusu (http://localhost:5173)
 npm run build    # üretim derlemesi (dist/)
 npm run preview  # derlemeyi yerelde önizle
 npm run lint     # TypeScript tip kontrolü
+npm run test     # Playwright duman testleri (tests/smoke.spec.ts)
 ```
+
+`npm run test` kritik yolu kontrol eder (uygulama açılıyor, oyun başlıyor, YZ
+oynuyor, SPA fallback çalışıyor) — kapsamlı bir paket değil. Canlı oyun,
+mesajlaşma, e-posta bildirimleri gibi iki gerçek oturum ve gerçek gelen kutusu
+gerektiren akışların elle koşulan kontrol listesi: [`TESTING.md`](TESTING.md).
 
 ## Proje Yapısı
 
