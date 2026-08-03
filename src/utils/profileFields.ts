@@ -1,11 +1,26 @@
-// Kelimeki — cinsiyet/doğum tarihi alanları için paylaşılan sabit ve
-// yardımcılar (AuthModal'ın kayıt formu ve AccountSettingsModal arasında ortak).
+// Kelimeki — profil alanları için paylaşılan sabit ve yardımcılar (AuthModal'ın
+// kayıt formu, AccountSettingsModal, Leaderboard/PlayerScoreCard/
+// GameHistoryModal arasında ortak).
 import type { Gender } from '../lib/database.types';
 
 export const GENDER_OPTIONS: { value: Gender; label: string }[] = [
   { value: 'female', label: 'Kadın' },
   { value: 'male', label: 'Erkek' },
 ];
+
+/**
+ * Herkese açık yerlerde (Leaderboard, GameHistoryModal beğenenler listesi,
+ * PlayerScoreCard) kullanılan kısa kimlik kuralı — nickname varsa o, yoksa
+ * yalnızca ad; soyad hiçbir zaman gösterilmez. Önceden `rowName`/`likerName`/
+ * `memberDisplayName` olarak üç ayrı dosyada birebir kopyalanmıştı (kod
+ * incelemesi, dead-code/tekrar bulgusu).
+ */
+export function shortDisplayName(
+  entity: { display_name?: string | null; first_name?: string | null } | null | undefined,
+  fallback: string,
+): string {
+  return entity?.display_name || entity?.first_name || fallback;
+}
 
 /**
  * `birth_date` (ISO yyyy-mm-dd) sütununu "gg/aa/yyyy" gösterim biçimine

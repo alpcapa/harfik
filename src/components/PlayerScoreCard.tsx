@@ -25,6 +25,7 @@ import type {
   PlayerStats,
 } from '../lib/database.types';
 import { type TabKey, SCORE_TABS, ScoreTabsBar, ScoreStatsSection } from './ScoreStatsSection';
+import { shortDisplayName } from '../utils/profileFields';
 
 /** Bir skor kartı çizmek için gereken asgari oyuncu kimliği. */
 export interface PlayerSummary {
@@ -68,7 +69,7 @@ function fmtLogDate(iso: string) {
 // kartını açabilir) tam ad/soyad değil, oyun içindekiyle aynı kısa kimlik
 // gösterilir — nickname yoksa sadece isim, soyadı hiç kullanılmaz.
 function memberDisplayName(m: PlayerSummary) {
-  return m.display_name || m.first_name || 'Oyuncu';
+  return shortDisplayName(m, 'Oyuncu');
 }
 
 // Henüz canlı oyun olmadığından arkadaş eklemenin somut bir faydası yok —

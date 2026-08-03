@@ -19,6 +19,7 @@ import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
 import { GameChatHistoryModal } from './GameChatHistoryModal';
 import { captureNodeAsPng } from '../utils/shareBoardImage';
 import { leaguePoints, formatLeaguePoints, computeRanks } from '../utils/leaguePoints';
+import { shortDisplayName } from '../utils/profileFields';
 
 /** Beğenenler listesindeki bir satırı `PlayerScoreCard` açabilecek şekle çevirir. */
 function likerToPlayerSummary(l: GameLiker): PlayerSummary {
@@ -34,7 +35,7 @@ function likerToPlayerSummary(l: GameLiker): PlayerSummary {
 
 /** `Leaderboard`/`PlayerScoreCard`'daki aynı kısa kimlik kuralı: soyad hiç gösterilmez. */
 function likerName(l: GameLiker): string {
-  return l.display_name || l.first_name || 'Oyuncu';
+  return shortDisplayName(l, 'Oyuncu');
 }
 
 interface GameHistoryModalProps {

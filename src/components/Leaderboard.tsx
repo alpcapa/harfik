@@ -7,6 +7,7 @@ import type { LeaderboardRow, MyLeaderboardRank } from '../lib/database.types';
 import { useAuth } from '../hooks/useAuth';
 import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
 import { KLigMark } from './KLigMark';
+import { shortDisplayName } from '../utils/profileFields';
 
 interface LeaderboardProps {
   onClose: () => void;
@@ -20,7 +21,7 @@ const PAGE_SIZE = 20;
 // Herkese açık bir sıralama olduğundan tam ad/soyad değil, nickname yoksa
 // sadece isim gösterilir (oyun içindeki aynı kısa kimlik kuralı).
 function rowName(r: LeaderboardRow): string {
-  return r.display_name || r.first_name || 'Anonim';
+  return shortDisplayName(r, 'Anonim');
 }
 
 function rowToPlayerSummary(r: LeaderboardRow): PlayerSummary {
