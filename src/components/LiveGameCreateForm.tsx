@@ -53,6 +53,13 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
   const [error, setError] = useState<string | null>(null);
   const [showFriendsModal, setShowFriendsModal] = useState(false);
   const [query, setQuery] = useState('');
+  // Davet gerçekten gönderildiğinde (3 Ağustos 2026, kullanıcı isteği) form
+  // sessizce kapanıp listeye dönmek yerine önce bir onay ekranı gösterir —
+  // `FriendSuggestModal`'ın "Arkadaşlık davetiniz iletilmiştir." ve
+  // `ChatSettingsModal`'ın "Şikayetiniz iletildi." ekranlarıyla aynı desen.
+  // Davet edilenlerin isimleri gönderim anında dondurulur: `onCreated` ile
+  // listeye dönülene kadar `selected`/`friends` değişebilir.
+  const [sentTo, setSentTo] = useState<{ names: string[]; withAi: boolean } | null>(null);
 
   const aiConfirmRef = useModalA11y(showAiConfirm, () => setShowAiConfirm(false));
 
@@ -98,7 +105,12 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
         ...(withAiLastSlot ? [{ type: 'ai' as const }] : []),
       ];
       await createOnlineGame(playerCount, slots);
-      onCreated();
+      setSentTo({
+        names: selected.map(
+          (id) => friends?.find((f) => f.friend_id === id)?.name ?? 'Bir arkadaşın',
+        ),
+        withAi: withAiLastSlot,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Davet gönderilemedi.');
     } finally {
@@ -118,6 +130,30 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
     }
     setShowAiConfirm(true);
   };
+
+  if (sentTo) {
+    return (
+      <div className="w-full flex flex-col items-center gap-4 py-6 text-center">
+        <span
+          className="w-12 h-12 rounded-full bg-accent text-white flex items-center justify-center text-2xl leading-none"
+          aria-hidden
+        >
+          ✓
+        </span>
+        <p className="text-sm text-text font-sans leading-relaxed">Davetiniz gönderilmiştir.</p>
+        <p className="text-xs text-muted font-mono leading-relaxed">
+          {sentTo.names.join(', ')} yanıt verince oyun başlayacak.
+          {sentTo.withAi && ' 4. koltuk Yapay Zeka.'}
+        </p>
+        <button
+          onClick={onCreated}
+          className="btn-raised py-2.5 px-8 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+        >
+          Tamam
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col gap-5">
