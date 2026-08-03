@@ -42,6 +42,7 @@ import type { OnlineGame, OnlineGameSlot } from '../lib/database.types';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
 import { CountBadge } from './CountBadge';
+import { PlayerAvatarRow } from './PlayerAvatarRow';
 import { FriendSuggestModal } from './FriendSuggestModal';
 import { LiveGameCreateForm } from './LiveGameCreateForm';
 import { RecentGamesSection } from './RecentGamesSection';
@@ -240,9 +241,18 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
       }`}
     >
       <span className="flex-1 min-w-0 flex flex-col gap-0.5">
-        <span className="font-sans text-[12px] font-bold text-text truncate">
-          {game.player_count} Kişilik Oyun
-        </span>
+        {/* "N Kişilik Oyun" başlığının yerine katılımcı avatarları — avatar
+            sayısı zaten oyuncu sayısını gösterdiğinden metin bilgi
+            kaybettirmiyor (bkz. PlayerAvatarRow). YZ koltukları bu kartın
+            davet hâlindeki karşılığıyla (PendingGameCard) aynı robot
+            avatarını alıyor. */}
+        <PlayerAvatarRow
+          players={game.slots.map((s) =>
+            s.type === 'human'
+              ? { name: s.name ?? 'Oyuncu', avatarUrl: s.avatar_url }
+              : { name: 'Yapay Zeka', isAi: true },
+          )}
+        />
         <span className="text-[9px] font-mono text-muted truncate">
           {creatorName ?? 'Bir arkadaşın'} açtı
         </span>

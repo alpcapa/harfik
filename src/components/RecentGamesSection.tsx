@@ -10,6 +10,7 @@ import { fetchMyGames } from '../lib/api';
 import type { GameHistoryEntry } from '../lib/database.types';
 import { leaguePoints, formatLeaguePoints } from '../utils/leaguePoints';
 import { GameHistoryModal } from './GameHistoryModal';
+import { PlayerAvatarRow } from './PlayerAvatarRow';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('tr-TR');
@@ -108,7 +109,19 @@ export function RecentGamesSection({ onlineOnly, emptyMessage }: RecentGamesSect
               className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel w-full text-left active:scale-[0.99] transition-transform"
             >
               <span className="flex-1 min-w-0 flex flex-col gap-0.5">
-                <span className="font-sans text-[12px] font-bold text-text truncate">{titleFor(g)}</span>
+                {/* Rakip isimlerinin yerine katılımcı avatarları. Dondurulmuş
+                    `players` anlık görüntüsü avatar_url TAŞIMIYOR (bilerek —
+                    o snapshot girişli herkese açık, bkz. GamePlayerSnapshot),
+                    bu yüzden burada her zaman baş harfler görünür; fotoğraflar
+                    yalnızca Canlı kartlarında çıkar. Snapshot'ı hiç olmayan
+                    eski kayıtlarda ise eski metin başlığına düşülüyor. */}
+                {g.players && g.players.length > 0 ? (
+                  <PlayerAvatarRow
+                    players={g.players.map((p) => ({ name: p.name, isAi: p.is_ai }))}
+                  />
+                ) : (
+                  <span className="font-sans text-[12px] font-bold text-text truncate">{titleFor(g)}</span>
+                )}
                 <span className="text-[9px] font-mono text-muted truncate">{formatDate(g.created_at)}</span>
               </span>
               <span className="flex items-center gap-2 shrink-0">
