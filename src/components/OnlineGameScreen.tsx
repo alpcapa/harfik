@@ -657,20 +657,40 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   // (endGame'in yerel karşılığı) gameReducer.ts'teki `endGame()` gibi bu her
   // şeyin önüne geçip kesin olarak "Oyun bitti." gösterir — son hamlenin
   // sonucu değil (o GameOver ekranının arkasında kalır).
+  //
+  // Sıra kendisinde DEĞİLKEN geçerli bir kelime kurulduğunda mesaj özel
+  // olarak eziliyor: `PLACE_TILE` (gameReducer.ts) `state.message`'a
+  // koşulsuz "Oyna tuşuyla kelimeyi onayla." yazıyor, ama bu ekranda "Oyna"
+  // yalnızca `canAct` iken aktif — üstelik "Sıra: X" bandı da taş
+  // yerleştirilir yerleştirilmez gizleniyor (yukarıdaki JSX). Sonuç,
+  // kullanıcıyı PASİF bir butona basmaya çağıran, sebebi hiçbir yerde
+  // yazmayan çelişkili bir ekrandı — özelliği yazan kişiyi bile yanılttı
+  // (3 Ağustos 2026, gerçek kullanım). Doğrulama geri bildirimi (Board'daki
+  // yeşil dış hat + puan rozeti) aynen kalıyor, yalnızca çağrı yerini
+  // butonun neden kapalı olduğuna bırakıyor. Geçersiz kelimede bu gerekmiyor
+  // — orada "Oyna"nın kapalı olmasının sebebi zaten hata metninde yazıyor.
+  const offTurnValidNote =
+    moveStatus?.valid && !canAct && !state.isGameOver
+      ? isAiTurn
+        ? `Kelime geçerli — ${state.players[state.current]?.name ?? 'Yapay Zeka'} hamlesini hesaplıyor…`
+        : `Kelime geçerli — Sıra: ${state.players[state.current]?.name ?? 'Rakip'}`
+      : null;
   const liveMessage = moveStatus && !moveStatus.valid && moveStatus.reason
     ? moveStatus.reason
     : state.isGameOver
       ? 'Oyun bitti.'
-      : state.message || lastMoveMessage.message;
+      : offTurnValidNote ?? (state.message || lastMoveMessage.message);
   const liveMessageType = moveStatus && !moveStatus.valid && moveStatus.reason
     ? 'err'
-    : moveStatus?.valid
-      ? 'ok'
-      : state.isGameOver
-        ? ''
-        : state.message
-          ? state.messageType
-          : lastMoveMessage.messageType;
+    : offTurnValidNote
+      ? 'warn'
+      : moveStatus?.valid
+        ? 'ok'
+        : state.isGameOver
+          ? ''
+          : state.message
+            ? state.messageType
+            : lastMoveMessage.messageType;
 
   const handlePlay = async () => {
     if (!wordsReady || !canAct || busy || !me) return;
