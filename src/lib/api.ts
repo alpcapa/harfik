@@ -147,16 +147,17 @@ async function notifyLocalGameAbandoned(gameId: string, playerCount: number): Pr
  * kaydı hâlâ yalnızca giriş yapmış kullanıcılar için `saveGame`/`games`
  * tablosu üzerinden yürür. `multiSession`,
  * `GameState.multiSession`'dan gelir — oyun bitmeden en az bir kez
- * tarayıcı/uygulama kapatılıp devam ettirildiyse true. `completed=false`,
- * oyunun normal biçimde bitmediğini, 7 gün hareketsizlik sonrası terk
- * edilmiş sayılıp silindiğini belirtir (bkz. `gameStorage.ts`
- * `takePendingAbandonedGame`) — admin panelinin Büyüme grafiği bu iki
- * durumu ayrı gösterir. `endedBySurrender`, `GameState.endReason ===
- * 'surrender'`'dan gelir — bir/birden fazla oyuncunun teslim olmasıyla
- * aktif oyuncu sayısı 1'e düşüp oyunun aniden bitmesi; bu tür oyunlar
- * `completed=true` olsa da "Bitirilen" sayısına/ortalama süresine değil
- * ayrı bir "Teslim" serisine dahil edilir (teslim genelde saniyeler içinde
- * geldiğinden gerçek oyun süresini yansıtmaz).
+ * tarayıcı/uygulama kapatılıp devam ettirildiyse true. `endedBySurrender`
+ * true ise oyun normal yoldan (bag+raf boşalarak ya da pas turuyla)
+ * bitmemiş, teslim sayılmıştır — admin panelinin Büyüme > Oyun grafiği
+ * bunları "Bitirilen" sayısına/ortalama süresine değil ayrı bir "Teslim"
+ * serisine koyar (teslim, gerçek oyun süresini yansıtmaz). Yerel/YZ
+ * oyunlarında teslimin TEK kaynağı 7 günlük süre aşımıdır (bkz.
+ * `gameStorage.ts` `takePendingAbandonedGame` ve App.tsx'teki
+ * `refreshCloudSaves`) — manuel/anlık teslim yolu 29 Temmuz 2026'da
+ * kaldırıldığından, "kendi isteğiyle terk etme" diye ayrı bir durum artık
+ * yok; süresi dolmadan gerçekten bırakılan (turnCount<2) bir oyun ise hiç
+ * kaydedilmez, çünkü ceza da almaz.
  *
  * `userId` opsiyonel — çağıran zaten `useAuth()`'tan bir `user.id` biliyorsa
  * (App.tsx'teki oyun bitiş akışında olduğu gibi, aynı anda `saveGameDurable`
@@ -170,7 +171,6 @@ export async function logGameFinish(
   playerCount: number,
   durationSeconds: number,
   multiSession: boolean,
-  completed = true,
   endedBySurrender = false,
   userId?: string | null,
 ): Promise<void> {
@@ -190,7 +190,6 @@ export async function logGameFinish(
       player_count: playerCount,
       duration_seconds: durationSeconds,
       multi_session: multiSession,
-      completed,
       ended_by_surrender: endedBySurrender,
     });
   if (error) {

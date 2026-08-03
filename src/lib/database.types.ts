@@ -587,10 +587,13 @@ export type AdminGameSourceType = 'total' | 'online' | 'local';
  * kırılımı). `games_surrendered`, aynı `completed=true` kümesinden ama
  * bir/birden fazla oyuncunun teslim olmasıyla aktif oyuncu sayısı 1'e
  * düşüp aniden biten oyunları ayrı sayar (`GameState.endReason ===
- * 'surrender'`) — bunlar genelde saniyeler içinde geldiğinden "Bitirilen"e
- * karışmaz. `games_abandoned` 7 gün hareketsizlik sonrası terk edilmiş
- * sayılıp silinen oyunları (bkz. `gameStorage.ts` `ABANDON_TIMEOUT_MS`) ayrı
- * bir seride tutar. avg_duration_* alanları da yalnızca teslimsiz tamamlanan
+ * 'surrender'`, Canlı'da `check_turn_timeout`) — bunlar gerçek oyun süresini
+ * yansıtmadığından "Bitirilen"e karışmaz. Yerelde teslimin tek kaynağı 7
+ * günlük süre aşımı, Canlı'da 48 saatlik sıra aşımıdır; kullanıcının kendi
+ * isteğiyle terk etmesi 29 Temmuz 2026'da kaldırıldığından ayrı bir "Terk"
+ * serisi (eski `games_abandoned`) 3 Ağustos 2026'da tamamen kaldırıldı —
+ * hiç oynanmamış (turnCount<2) bir kayıt artık ceza da telemetri de
+ * üretmiyor. avg_duration_* alanları da yalnızca teslimsiz tamamlanan
  * oyunlar üzerinden hesaplanır ve o kovada hiç biten oyun yoksa null döner
  * (0 değil). same_session: hiç kapatılıp devam ettirilmemiş oyunlar;
  * multi_session: en az bir kez kapatılıp localStorage'dan devam ettirilmiş
@@ -605,7 +608,6 @@ export interface AdminGameActivityPoint {
   games_finished_same_session: number;
   games_finished_multi_session: number;
   games_surrendered: number;
-  games_abandoned: number;
   avg_duration_seconds: number | null;
   avg_duration_same_session_seconds: number | null;
   avg_duration_multi_session_seconds: number | null;

@@ -96,7 +96,6 @@ const GAME_COUNT_SERIES: ChartSeriesDef[] = [
   { key: 'games_finished_same_session', label: 'Bitirilen (Aynı Oturum)', color: '#0891B2' },
   { key: 'games_finished_multi_session', label: 'Bitirilen (Çok Oturumlu)', color: '#7c3aed' },
   { key: 'games_surrendered', label: 'Teslim', color: '#D97706' },
-  { key: 'games_abandoned', label: 'Terk', color: '#DC2626' },
 ];
 const DURATION_SERIES: ChartSeriesDef[] = [
   { key: 'avg_duration_seconds', label: 'Genel', color: '#7c3aed' },

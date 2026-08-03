@@ -151,10 +151,15 @@ export default function App() {
         0,
         Math.round((Date.parse(save.updated_at) - Date.parse(claimedState.startedAt)) / 1000),
       );
-      // `user` bu noktada zaten dolu (fonksiyon başında `if (!user) return`
-      // ile garanti ediliyor) — logGameFinish'in kendi getUser() ağ turunu tekrarlamasın diye geçiliyor.
-      void logGameFinish(claimedState.players.length, durationSeconds, claimedState.multiSession, false, false, user.id);
+      // Yalnızca gerçekten başlamış (turnCount>=2) bir oyun teslim sayılır ve
+      // -2 k-lig cezası alır; hiç oynanmamış bir kayıt sessizce silinir, ne
+      // ceza ne de telemetri üretir (eskiden bunlar ayrı bir "Terk" serisine
+      // yazılıyordu — kullanıcının kendi isteğiyle terk etmesi 29 Temmuz
+      // 2026'da kaldırıldığından o seri tamamen kaldırıldı).
       if (claimedState.turnCount >= 2) {
+        // `user` bu noktada zaten dolu (fonksiyon başında `if (!user) return`
+        // ile garanti ediliyor) — logGameFinish'in kendi getUser() ağ turunu tekrarlamasın diye geçiliyor.
+        void logGameFinish(claimedState.players.length, durationSeconds, claimedState.multiSession, true, user.id);
         const record = buildGameRecord(claimedState, true, 0);
         if (record) void saveGameDurable(record);
       }
@@ -393,26 +398,25 @@ export default function App() {
   }, []);
 
   // Yukarıdaki lazy init sırasında (loadGameState) 7 gün hareketsizlik
-  // yüzünden terk edilmiş sayılıp silinen bir oyun varsa, o kayıt burada
-  // (mount'ta, bir kez) sunucuya "tamamlanmadı" olarak bildirilir. Kuyruk
-  // read-then-clear olduğundan StrictMode'un dev'de effect'i iki kez
-  // çalıştırması zararsızdır — ikinci okuma boş döner.
+  // yüzünden süresi dolmuş sayılıp silinen bir oyun varsa, o kayıt burada
+  // (mount'ta, bir kez) teslim olarak işlenir. Kuyruk read-then-clear
+  // olduğundan StrictMode'un dev'de effect'i iki kez çalıştırması
+  // zararsızdır — ikinci okuma boş döner.
   useEffect(() => {
     const pending = takePendingAbandonedGame();
-    if (pending) {
-      void logGameFinish(pending.playerCount, pending.durationSeconds, pending.multiSession, false);
-      // Oyun gerçekten başlamışsa (turnCount>=2 — en az bir tam hamle
-      // alışverişi) bu, hesap sahibi için gecikmeli bir teslim sayılır — -2
-      // k-lig cezası uygulanır. Bu artık hesap sahibinin -2 alabileceği
-      // TEK yol: logo tıklaması artık anlık teslim istemiyor (bkz.
-      // handleLogoClick), yalnızca bu 7 günlük terk edilme kuralı devreye
-      // giriyor. Misafirse (o an giriş yoksa) saveGameDurable normal
-      // bitişteki gibi kaydı offline kuyruğa alır, kişi ileride giriş/kayıt
-      // olursa hesabına işlenir.
-      if (pending.state && pending.state.turnCount >= 2) {
-        const record = buildGameRecord(pending.state, true, 0);
-        if (record) void saveGameDurable(record);
-      }
+    // Oyun gerçekten başlamışsa (turnCount>=2 — en az bir tam hamle
+    // alışverişi) bu, hesap sahibi için gecikmeli bir teslim sayılır — -2
+    // k-lig cezası uygulanır. Bu artık hesap sahibinin -2 alabileceği TEK
+    // yol: logo tıklaması artık anlık teslim istemiyor (bkz.
+    // handleLogoClick), yalnızca bu 7 günlük süre aşımı devreye giriyor.
+    // Misafirse (o an giriş yoksa) saveGameDurable normal bitişteki gibi
+    // kaydı offline kuyruğa alır, kişi ileride giriş/kayıt olursa hesabına
+    // işlenir. Hiç oynanmamış (turnCount<2) bir kayıt ceza almadığından
+    // telemetriye de hiç girmez.
+    if (pending?.state && pending.state.turnCount >= 2) {
+      void logGameFinish(pending.playerCount, pending.durationSeconds, pending.multiSession, true);
+      const record = buildGameRecord(pending.state, true, 0);
+      if (record) void saveGameDurable(record);
     }
   }, []);
 
@@ -705,7 +709,6 @@ export default function App() {
       state.players.length,
       durationSeconds,
       state.multiSession,
-      true,
       state.endReason === 'surrender',
       user?.id ?? null,
     );
