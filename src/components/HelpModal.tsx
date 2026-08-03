@@ -158,9 +158,7 @@ function DetailedRules() {
       <Section title="Temel Kurallar">
         <P>
           <strong>Başlangıç:</strong> Her oyuncu tahtanın köşelerindeki 4×4'lük bölgelere
-          sahiptir. 2 kişilik oyunda 1. oyuncu sol-üst, 2. oyuncu sağ-alt köşeyi kullanır; 4
-          kişilik oyunda her oyuncu tek bir köşe kullanır. Köşelerdeki ev işaretli kare, o
-          oyuncunun başlangıç noktasıdır.
+          sahiptir. Köşelerdeki ev işaretli kare, o oyuncunun başlangıç noktasıdır.
         </P>
         <P>
           <strong>Bağlantı:</strong> Her hamle, oyun tahtasındaki mevcut harflere (rakipler de
