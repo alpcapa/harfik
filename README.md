@@ -88,6 +88,7 @@ src/
 │   ├── FriendSuggestModal.tsx   # bir Canlı davet kabul edildikten sonra, henüz arkadaş olunmayan katılımcılara toplu istek gönderme önerisi
 │   ├── OnlineGameScreen.tsx     # gerçek Canlı oyun ekranı — Board/Rack/GameHeader'ı Supabase state'ine (Realtime) bağlar
 │   ├── Avatar.tsx               # profil fotoğrafı bileşeni
+│   ├── PlayerAvatarRow.tsx      # oyun kartlarında "N Kişilik Oyun" başlığı yerine geçen katılımcı avatarları (YZ → robot, misafir → "?")
 │   ├── PlayerBadge.tsx          # renkli oyuncu sıra/koltuk rozeti
 │   ├── LandscapeHint.tsx        # yatay modda gösterilen kapatılabilir dikey-mod önerisi banner'ı
 │   ├── ErrorBoundary.tsx        # kök seviye React crash yakalayıcı

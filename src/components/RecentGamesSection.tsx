@@ -5,6 +5,7 @@
 // ayrı bir mini tahta/sohbet gösterimi yazmak yerine mevcut modalın tüm
 // davranışını (paylaş/beğen/sohbet geçmişi) olduğu gibi devralır.
 import { useEffect, useState } from 'react';
+import { GUEST_PLAYER_NAME } from '../game/constants';
 import { useAuth } from '../hooks/useAuth';
 import { fetchMyGames } from '../lib/api';
 import type { GameHistoryEntry } from '../lib/database.types';
@@ -117,7 +118,23 @@ export function RecentGamesSection({ onlineOnly, emptyMessage }: RecentGamesSect
                     eski kayıtlarda ise eski metin başlığına düşülüyor. */}
                 {g.players && g.players.length > 0 ? (
                   <PlayerAvatarRow
-                    players={g.players.map((p) => ({ name: p.name, isAi: p.is_ai }))}
+                    players={g.players.map((p) => ({
+                      name: p.name,
+                      isAi: p.is_ai,
+                      // Misafirken oynanıp bitirilen, sonra (aynı cihazda üye
+                      // olunca) `flushPendingGames` ile hesaba taşınan yerel
+                      // oyunlar: snapshot'taki isim kalıcı olarak
+                      // GUEST_PLAYER_NAME kalıyor (`buildGameRecord` state'teki
+                      // adı donduruyor), yani baş harf "MI" çıkıp misafiri
+                      // gerçek bir üye gibi gösteriyordu. Snapshot bilerek
+                      // `user_id` taşımadığından tespitin tek yolu isim.
+                      // `online_game_id` kontrolü yanlış pozitifi daraltıyor:
+                      // Canlı'da misafir koltuk YOK, oradaki herkes kayıtlı —
+                      // takma adı gerçekten "Misafir" olan bir üye (nickname
+                      // benzersiz olduğundan en fazla bir kişi) Canlı
+                      // kartlarında baş harflerini korur.
+                      isGuest: !p.is_ai && !g.online_game_id && p.name === GUEST_PLAYER_NAME,
+                    }))}
                   />
                 ) : (
                   <span className="font-sans text-[12px] font-bold text-text truncate">{titleFor(g)}</span>

@@ -17,6 +17,18 @@ export const BINGO_BONUS = 25;
 export const RACK_SIZE = 7;
 
 /**
+ * Girişsiz (misafir) oyuncunun `GameState`'e gömülen adı — yerel/YZ
+ * oyunlarda 0. koltuk için `accountName` yoksa kullanılır (bkz. `Setup`'un
+ * `doStart`'ı). Sabit olarak dışa açılmasının sebebi: bu isim oyun bitince
+ * `games.players` anlık görüntüsüne KALICI olarak donuyor (`buildGameRecord`,
+ * `r.player.name`) ve okuma tarafı (`RecentGamesSection`) "bu koltuk misafir
+ * miydi" sorusunu yalnızca bu string'e bakarak cevaplayabiliyor — snapshot
+ * bilerek `user_id` taşımıyor. Yazan ile okuyanın sessizce ayrışmaması için
+ * ikisi de bu tek sabiti kullanır.
+ */
+export const GUEST_PLAYER_NAME = 'Misafir';
+
+/**
  * Oyunu bitiren hamlede (raf + torba tamamen boşalırsa) oynanan taşların
  * TAMAMI jokerse verilen ekstra bonus: 1 joker (tek taş) +25, 2 joker
  * (iki taş) +50. Hamlede joker dışında herhangi bir taş varsa (jokerle
