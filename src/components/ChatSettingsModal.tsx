@@ -120,8 +120,7 @@ export function ChatSettingsModal({
       {view.kind === 'list' && (
         <div className="flex flex-col gap-3">
           <p className="text-xs text-muted leading-relaxed">
-            Buradan kişileri sessize alabilir ve/veya uygunsuz paylaşımları rapor edebilirsiniz. Verdiğiniz karar
-            kalıcıdır — aynı kişiyle açtığınız sonraki oyunlarda da geçerli olur.
+            Buradan kişileri sessize alabilir ve/veya uygunsuz paylaşımları rapor edebilirsiniz.
           </p>
           <div className="flex flex-col gap-1.5">
             {participants.map((p) => {
