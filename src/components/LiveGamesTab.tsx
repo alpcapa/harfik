@@ -505,7 +505,12 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   useEffect(() => {
     if (games === null || appliedDefaultTabRef.current) return;
     appliedDefaultTabRef.current = true;
-    const hasInvites = games.some((g) => g.my_role === 'invitee' && g.my_invite_status === 'pending');
+    // `status === 'pending'` şartı `invites` kovasıyla aynı olmalı (aşağı bkz.)
+    // — yoksa süresi dolmuş bir davet, kullanıcıyı hiçbir şeyin görünmediği
+    // boş "Oyun Davetleri" sekmesine düşürürdü.
+    const hasInvites = games.some(
+      (g) => g.my_role === 'invitee' && g.my_invite_status === 'pending' && g.status === 'pending',
+    );
     if (hasInvites) setSubTab('invites');
   }, [games]);
 
@@ -570,7 +575,15 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
     }
   };
 
-  const invites = (games ?? []).filter((g) => g.my_role === 'invitee' && g.my_invite_status === 'pending');
+  // `g.status === 'pending'` ŞART: `check_invite_expiry` süresi dolan bir
+  // daveti iptal ederken yalnızca `online_games.status`'ü `'abandoned'` yapıp
+  // `game_invites` satırına (kayıt kalsın diye) bilerek dokunmuyor. Bu kontrol
+  // olmadan iptal edilmiş bir davet DAVETLİNİN listesinde sonsuza dek
+  // duruyordu — kuranın tarafı (`waiting`, aşağıda) baştan beri `status`'e
+  // baktığından orada doğru kayboluyordu, asimetri buradaydı (4 Ağustos 2026).
+  const invites = (games ?? []).filter(
+    (g) => g.my_role === 'invitee' && g.my_invite_status === 'pending' && g.status === 'pending',
+  );
   // Sırası kendisinde olan oyunlar ("Senin Hamlen Bekleniyor") listenin en
   // üstünde — dikkat gerektiren oyunlar her zaman ilk bakışta görünsün diye.
   // Array.prototype.sort kararlı (stable) olduğundan aynı gruptaki oyunlar
