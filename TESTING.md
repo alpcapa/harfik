@@ -105,15 +105,45 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
 ## 4. Süre aşımı ve cezalar
 
 Bunlar gerçek zamanda 24-48 saat/7 gün bekler; acele ediyorsan veritabanından
-`turn_deadline`/`updated_at` geçmişe çekilerek tetiklenebilir.
+`turn_deadline`/`updated_at`/`created_at` geçmişe çekilerek tetiklenebilir.
+
+**Süreyi geçmişe çekerken:** yalnızca test hesaplarının satırlarına dokun,
+`id` ile hedefleyerek. Bu tablolarda gerçek kullanıcıların oyunları da duruyor
+ve buradaki her akış gerçek bir e-posta gönderip gerçek bir k-lig cezası
+uyguluyor. Değişiklikten sonra, tetiklemeden önce, cron'un/süpürmenin gerçekte
+neyi kapsayacağını bir kez sorgulayıp doğrula.
+
+**Mail hangi hesaba gidiyor:** uyarılan/teslim olan taraf hangi hesapsa mail
+ona gider. Görsel doğrulama yapacaksan testi, o taraf **gerçek gelen kutusu
+olan** hesap olacak şekilde kur (bkz. yukarıdaki Mailinator notu) — gerekirse
+önce bir hamle oynayıp sırayı o tarafa geçir.
 
 - [ ] **24 saat uyarısı.** Sırası gelen oyuncuya "Oyun Süresi Doluyor!" maili.
+      Fonksiyonun **iki ayrı dalı** var (Canlı oyun + devam eden YZ oyunu) —
+      ikisini aynı anda pencereye sokup **iki mail** geldiğini doğrula, tek
+      dal çalışıyor olabilir. Metin isme iyelik eki eklememeli: "X **tarafından
+      açılan** oyun" (takma isimlerde ünlü uyumu garanti edilemez).
 - [ ] **48 saat aşımı (Canlı).** Sırası gelen otomatik teslim: puanı 0, rafı
       torbaya karışır. 2 kişilikte oyun anında biter. Teslim olana -2, karşı
       tarafa galibiyet +2. Teslim olana "Süre Aşımından Sona Erdi" maili.
+- [ ] **Teslim sonrası torba sayacı.** `online_game_states.bag_count`, teslim
+      olanın rafı geri karıştıktan sonra gerçek torbaya (`online_game_secrets.
+      bag`) eşit olmalı. **4 kişilikte** asıl görünür: teslim oyunu bitirmediği
+      için kalan oyuncular tahtada torbayı doğru görmeli, bir sonraki hamleyi
+      beklemeden.
 - [ ] **7 gün (YZ oyunu).** Devam eden YZ oyunu terk edilmiş sayılır, -2 ve
       bilgilendirme maili. Misafirde yalnızca yerel kayıt silinir (ceza yok).
-- [ ] **7 gün (davet).** Yanıtlanmamış davet kendiliğinden iptal olur.
+- [ ] **Süpürme öne dönüşte de çalışıyor.** Uygulamayı Setup'ta açık bırakıp
+      arka plana al, süreyi geçmişe çek, sonra öne getir — tam yeniden
+      yüklemeden süpürülmeli. (Eskiden yalnızca mount'ta çalışıyordu, ceza
+      kullanıcı uygulamayı baştan açana kadar gecikiyordu.)
+- [ ] **7 gün (davet).** Yanıtlanmamış davet kendiliğinden iptal olur —
+      **iki tarafta da**. Kuranın "Rakip Bekleniyor" listesinden ve
+      **davetlinin "Davet Bekliyor" listesinden** kalkmalı; davetli tarafı
+      ayrıca kontrol et, iptal yalnızca `online_games.status`'ü değiştirip
+      `game_invites` satırını `pending` bıraktığından bu kova bir dönem
+      filtrelemeyi atlamıştı. Rozetlerin de düşmesi lazım (Setup'taki
+      "Arkadaşınla", "Oyun Davetleri" alt sekmesi, PWA ikonu).
 
 ## 5. E-posta bildirimleri
 
