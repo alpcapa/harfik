@@ -257,6 +257,20 @@ export function Setup({
   // Oynadıklarım" listesi ekranın altına düşüp scroll etmeden görünmüyordu.
   // Burada "Oyun Davetleri" kavramı olmadığından yalnızca iki tab var.
   const [localSubTab, setLocalSubTab] = useState<'active' | 'recent'>('active');
+  // Sekme değişiminde (Arkadaşınla ↔ Yapay Zeka ile) "Devam Edenler"e dön.
+  // `LiveGamesTab` bunu zaten yapıyordu ama KASITLI OLARAK DEĞİL: o bileşen
+  // koşullu render edildiğinden (aşağıda, `mainView === 'live' ? ...`) sekme
+  // değişiminde unmount olup state'ini kaybediyor. `Setup` ise mount'ta
+  // kaldığından `localSubTab` korunuyordu — sonuç, kimsenin karar vermediği
+  // bir asimetriydi: Canlı tarafı sıfırlanıyor, YZ tarafı "Son Oynananlar"da
+  // kalıyordu (kullanıcı bildirdi, 4 Ağustos 2026). İkisi de sıfırlanacak
+  // şekilde hizalandı — bu yön seçildi çünkü Canlı taraftaki "bekleyen davet
+  // varsa Oyun Davetleri'ni aç" akıllı varsayılanı (bkz. `appliedDefaultTabRef`,
+  // `LiveGamesTab`) ancak sıfırlanan bir sekmede çalışabiliyor; hatırlayan bir
+  // sekme, dikkat bekleyen işi öne çıkaran o davranışı devre dışı bırakırdı.
+  useEffect(() => {
+    setLocalSubTab('active');
+  }, [mainView]);
   // Rozet artık `mainView`e (tab değişimine) bağlı DEĞİL — önceden bir davet
   // kabul edilip Canlı sekmesinden hiç çıkılmazsa (mainView 'live' olarak
   // sabit kalırsa) sayı asla tazelenmiyordu, yalnızca Local'e geçip geri
