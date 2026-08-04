@@ -642,7 +642,15 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
         {SUB_TABS.map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setSubTab(tab.key)}
+            onClick={() => {
+              // Elle bir sekme seçildiği an varsayılan-sekme effect'i (yukarı)
+              // devre dışı bırakılır: `games` henüz yüklenmemişken (null)
+              // kullanıcı bir sekmeye dokunursa, liste birkaç yüz ms sonra
+              // gelince effect çalışıp seçimi eziyordu — dar ama gerçek bir
+              // yarış durumu (4 Ağustos 2026).
+              appliedDefaultTabRef.current = true;
+              setSubTab(tab.key);
+            }}
             className={[
               'relative flex-1 py-2.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[0.5px] border transition-transform active:scale-[0.97] flex items-center justify-center',
               subTab === tab.key
