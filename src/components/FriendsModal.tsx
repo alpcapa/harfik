@@ -196,6 +196,23 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
     reloadRequests();
   }, []);
 
+  // Varsayılan tab: bekleyen bir arkadaşlık isteği varsa "İstekler" açık
+  // gelsin — `LiveGamesTab`'daki (bekleyen davet varsa "Oyun Davetleri")
+  // BİREBİR aynı desen ve gerekçe: bekleyen iş her zaman ön plana çıkmalı,
+  // kullanıcı onu bulmak için sekme aramak zorunda kalmamalı (kullanıcı
+  // isteği, 4 Ağustos 2026 — rozet zinciri doğru çalışıyordu ama modal yine
+  // de "Arkadaşlarım"da açılıyordu).
+  //
+  // Çağıran AÇIKÇA bir tab belirtmişse (`LiveGameCreateForm`'un
+  // `initialTab="search"`'ü — "arkadaş eklemek için tıkla" akışı) o niyet
+  // ezilmemeli: ref o durumda baştan "uygulanmış" sayılır.
+  const appliedDefaultTabRef = useRef(initialTab !== 'friends');
+  useEffect(() => {
+    if (requests === null || appliedDefaultTabRef.current) return;
+    appliedDefaultTabRef.current = true;
+    if (requests.length > 0) setTab('requests');
+  }, [requests]);
+
   // Arama girdisini hafifçe geciktir (her tuş vuruşunda RPC çağırmamak için).
   useEffect(() => {
     if (query.trim().length < 2) {
@@ -405,7 +422,13 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
 
   const tabBtn = (t: Tab, label: string, badge?: number) => (
     <button
-      onClick={() => setTab(t)}
+      onClick={() => {
+        // Elle bir sekme seçilir seçilmez varsayılan-sekme effect'i devre
+        // dışı kalır — istekler henüz yüklenmemişken (null) dokunulursa,
+        // liste gelince effect seçimi ezerdi (`LiveGamesTab`'daki aynı guard).
+        appliedDefaultTabRef.current = true;
+        setTab(t);
+      }}
       className={`relative flex-1 py-2 text-[11px] font-mono font-bold uppercase tracking-[0.5px] rounded-md transition-colors flex items-center justify-center ${
         tab === t ? 'bg-accent text-white' : 'text-muted hover:text-text'
       }`}
