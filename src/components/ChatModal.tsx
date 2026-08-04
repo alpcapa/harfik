@@ -59,9 +59,12 @@ export function ChatModal({
   const [error, setError] = useState<string | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
 
+  // En yeni mesaj en ÜSTTE olduğundan (aşağıdaki `.reverse()`) yeni mesaj
+  // gelince listenin başına kaydırılır — eskiden sona (`scrollHeight`)
+  // kaydırılıyordu, o sıralama tersken doğruydu.
   useEffect(() => {
     const el = threadRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (el) el.scrollTop = 0;
   }, [messages.length]);
 
   const handleSend = async () => {
@@ -79,35 +82,40 @@ export function ChatModal({
     }
   };
 
-  // `messages` (chatMessages, OnlineGameScreen.tsx) zaten eskiden-yeniye
-  // (kronolojik artan — fetchOnlineGameMessages'ın `order('created_at', {
-  // ascending: true })`'u ve yeni mesajları sona ekleyen realtime callback)
-  // geliyor; ChatThread de kendi tarafında sıralama yapmıyor, yukarıdan
-  // aşağı basıyor. Buradaki `.reverse()` en yeni mesajı en üste koyup
-  // CLAUDE.md'nin "yeni mesajda otomatik en alta kaydırma" davranışıyla
-  // çelişiyordu (GameChatHistoryModal'daki aynı hatanın kardeşi, bkz. o
-  // dosyadaki yorum).
-  const threadMessages: ChatThreadMessage[] = messages.map((m) => {
-    const p = participants.find((x) => x.userId === m.sender_user_id);
-    return {
-      key: m.id,
-      name: p?.name ?? 'Oyuncu',
-      colorIndex: p?.colorIndex ?? 0,
-      avatarUrl: p?.avatarUrl ?? null,
-      message: m.message,
-      createdAt: m.created_at,
-      mine: m.sender_user_id === myUserId,
-      senderId: m.sender_user_id,
-      // Bayrak rapora, yasak işareti yalnızca sessize almaya bakar — biri
-      // rapor edildiyse (rapor otomatik sessize de aldığından) bayrak
-      // kazanır, iki rozet aynı anda gösterilmez.
-      badge: reportedUserIds.has(m.sender_user_id)
-        ? ('reported' as const)
-        : mutedUserIds.has(m.sender_user_id)
-          ? ('muted' as const)
-          : undefined,
-    };
-  });
+  // `messages` (chatMessages, OnlineGameScreen.tsx) eskiden-yeniye
+  // (kronolojik artan) geliyor; ChatThread kendi tarafında sıralama yapmıyor,
+  // verilen diziyi yukarıdan aşağı basıyor. Aşağıdaki `.reverse()` en yeni
+  // mesajı en ÜSTE alıyor (kullanıcı isteği, 4 Ağustos 2026) — mesaj yazma
+  // alanı bu modalda zaten en üstte olduğundan, gönderilen mesaj artık
+  // input'un hemen altında beliriyor; öncesinde en alta düşüyordu ve görmek
+  // için aşağı kaydırmak gerekiyordu. **Bu bir kez daha denenip geri
+  // alınmıştı:** o sefer yalnızca `.reverse()` eklenmiş, yukarıdaki otomatik
+  // kaydırma `scrollHeight`'ta (en alt) bırakılmıştı — ikisi birbiriyle
+  // çelişip yeni mesaj gelince listeyi en eskiye kaydırıyordu. İkisi birlikte
+  // değiştirilmeli: sıralama tersse kaydırma da `scrollTop = 0` olmalı.
+  const threadMessages: ChatThreadMessage[] = messages
+    .map((m) => {
+      const p = participants.find((x) => x.userId === m.sender_user_id);
+      return {
+        key: m.id,
+        name: p?.name ?? 'Oyuncu',
+        colorIndex: p?.colorIndex ?? 0,
+        avatarUrl: p?.avatarUrl ?? null,
+        message: m.message,
+        createdAt: m.created_at,
+        mine: m.sender_user_id === myUserId,
+        senderId: m.sender_user_id,
+        // Bayrak rapora, yasak işareti yalnızca sessize almaya bakar — biri
+        // rapor edildiyse (rapor otomatik sessize de aldığından) bayrak
+        // kazanır, iki rozet aynı anda gösterilmez.
+        badge: reportedUserIds.has(m.sender_user_id)
+          ? ('reported' as const)
+          : mutedUserIds.has(m.sender_user_id)
+            ? ('muted' as const)
+            : undefined,
+      };
+    })
+    .reverse();
 
   return (
     <Modal

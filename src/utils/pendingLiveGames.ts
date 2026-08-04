@@ -14,8 +14,13 @@ export interface PendingLiveGameCounts {
 
 export async function fetchPendingLiveGameCounts(): Promise<PendingLiveGameCounts> {
   const rows = await listMyOnlineGames();
+  // `g.status === 'pending'` şartı LiveGamesTab'daki `invites` kovasıyla
+  // BİREBİR aynı olmak zorunda — aksi halde süresi dolup iptal edilmiş
+  // (`abandoned`) bir davet rozetleri şişirir: Setup'taki "Arkadaşınla (N)",
+  // PWA ikon rozeti, ve girişte otomatik Canlı sekmesine geçiren
+  // `inviteCount > 0` koşulu (4 Ağustos 2026'da ikisi birlikte düzeltildi).
   const inviteCount = rows.filter(
-    (g) => g.my_role === 'invitee' && g.my_invite_status === 'pending',
+    (g) => g.my_role === 'invitee' && g.my_invite_status === 'pending' && g.status === 'pending',
   ).length;
   const activeIds = rows.filter((g) => g.status === 'active').map((g) => g.id);
   if (activeIds.length === 0) {

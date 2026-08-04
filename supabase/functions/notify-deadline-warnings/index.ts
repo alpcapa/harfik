@@ -43,7 +43,13 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 function buildHtml(creatorName: string, playerCount: number): string {
-  const bodyText = `${escapeHtml(creatorName)}'nin açtığı ${playerCount} kişilik oyunun süresi dolmak üzere. 24 saat içinde hamle yapmadığınız taktirde teslim olmuş sayılacaksınız ve lig puanınızdan 2 puan düşülecek.`;
+  // İsme iyelik eki EKLEME ("X'nin açtığı" DEĞİL, "X tarafından açılan") —
+  // takma isimler keyfi olduğundan Türkçe ünlü uyumu programatik olarak
+  // garanti edilemez, sabit bir 'nin eki isimlerin çoğunda yanlış çıkıyordu
+  // ("T1'nin" → doğrusu "T1'in", "Ironman'nin" → "Ironman'in").
+  // `notify-friend-request-reminders`'taki ("X tarafından gönderilen") ve
+  // OnlineGameScreen'deki ("Sıra: {isim}") aynı ek-istemeyen kalıp.
+  const bodyText = `${escapeHtml(creatorName)} tarafından açılan ${playerCount} kişilik oyunun süresi dolmak üzere. 24 saat içinde hamle yapmadığınız taktirde teslim olmuş sayılacaksınız ve lig puanınızdan 2 puan düşülecek.`;
   const body = `
     <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#1B2430;">${bodyText}</p>
     <p style="margin:0 0 24px 0;">

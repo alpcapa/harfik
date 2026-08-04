@@ -175,6 +175,46 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase, user?.id]);
 
+  // Her render'da yeniden tanımlanan `refreshCloudSaves`'in en güncel hâlini
+  // tutar — aşağıdaki dinleyici effect'i bu yüzden her render'da yeniden
+  // abone olmak zorunda kalmıyor (useAppIconBadge'deki `refreshAllRef` deseni).
+  const refreshCloudSavesRef = useRef(refreshCloudSaves);
+  refreshCloudSavesRef.current = refreshCloudSaves;
+
+  // Setup'ta BEKLERKEN de tazele. Yukarıdaki effect yalnızca `state.phase`
+  // ya da kullanıcı değişince çalışıyor — yani uygulama arka planda günlerce
+  // durup öne döndüğünde (mobil PWA'da tipik) 7 günlük terk-edilme süpürmesi
+  // hiç tetiklenmiyordu; kayıt ancak tam bir yeniden yüklemede süpürülüyordu
+  // (4 Ağustos 2026'da TESTING.md bölüm 4 koşulurken fark edildi). Ceza
+  // gecikiyordu, kaybolmuyordu — ama Canlı taraf (`LiveGamesTab`) baştan beri
+  // bu dinleyicilere sahip olduğundan iki süpürme arasında tutarsızlık vardı.
+  // Aynı 300ms'lik debounce: masaüstünde sekmeye dönüş visibilitychange +
+  // focus'u (bazen online'ı da) neredeyse aynı anda tetikliyor.
+  useEffect(() => {
+    if (state.phase !== 'setup' || !user) return;
+    let timeout: number | null = null;
+    const schedule = () => {
+      if (timeout != null) window.clearTimeout(timeout);
+      timeout = window.setTimeout(() => {
+        timeout = null;
+        void refreshCloudSavesRef.current();
+      }, 300);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') schedule();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('focus', schedule);
+    window.addEventListener('online', schedule);
+    return () => {
+      if (timeout != null) window.clearTimeout(timeout);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('focus', schedule);
+      window.removeEventListener('online', schedule);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase, user?.id]);
+
   // Misafirken (girişsiz) yarıda bırakılmış (localStorage'daki tekil
   // `savedGame` slotu) bir YZ oyunu, kişi AYNI cihazda sonradan giriş/kayıt
   // olursa hesabına taşınır — kullanıcının "üye olursa oyunları altına

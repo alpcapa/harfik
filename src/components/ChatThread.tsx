@@ -82,7 +82,7 @@ export function ChatThread({ messages, emptyText, onBadgeClick }: ChatThreadProp
                     <button
                       type="button"
                       onClick={() => onBadgeClick(m.senderId!)}
-                      aria-label={reported ? 'Rapor edildi — ayarları aç' : 'Sessize alındı — ayarları aç'}
+                      aria-label={reported ? 'Şikayet edildi — ayarları aç' : 'Sessize alındı — ayarları aç'}
                       className="text-[9px] leading-none active:opacity-70 transition-opacity"
                     >
                       {badge}
@@ -97,7 +97,7 @@ export function ChatThread({ messages, emptyText, onBadgeClick }: ChatThreadProp
                 <button
                   type="button"
                   onClick={() => onBadgeClick!(m.senderId!)}
-                  aria-label={`${m.name} — sessize al/rapor et`}
+                  aria-label={`${m.name} — sessize al/şikayet et`}
                   className="rounded-xl px-2.5 py-1.5 text-[12px] font-sans text-text leading-snug break-words text-left active:opacity-70 transition-opacity"
                   style={{ background: col.tint, border: `1px solid ${col.base}` }}
                 >

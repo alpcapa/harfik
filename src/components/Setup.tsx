@@ -288,6 +288,20 @@ export function Setup({
   // Oynadıklarım" listesi ekranın altına düşüp scroll etmeden görünmüyordu.
   // Burada "Oyun Davetleri" kavramı olmadığından yalnızca iki tab var.
   const [localSubTab, setLocalSubTab] = useState<'active' | 'recent'>('active');
+  // Sekme değişiminde (Arkadaşınla ↔ Yapay Zeka ile) "Devam Edenler"e dön.
+  // `LiveGamesTab` bunu zaten yapıyordu ama KASITLI OLARAK DEĞİL: o bileşen
+  // koşullu render edildiğinden (aşağıda, `mainView === 'live' ? ...`) sekme
+  // değişiminde unmount olup state'ini kaybediyor. `Setup` ise mount'ta
+  // kaldığından `localSubTab` korunuyordu — sonuç, kimsenin karar vermediği
+  // bir asimetriydi: Canlı tarafı sıfırlanıyor, YZ tarafı "Son Oynananlar"da
+  // kalıyordu (kullanıcı bildirdi, 4 Ağustos 2026). İkisi de sıfırlanacak
+  // şekilde hizalandı — bu yön seçildi çünkü Canlı taraftaki "bekleyen davet
+  // varsa Oyun Davetleri'ni aç" akıllı varsayılanı (bkz. `appliedDefaultTabRef`,
+  // `LiveGamesTab`) ancak sıfırlanan bir sekmede çalışabiliyor; hatırlayan bir
+  // sekme, dikkat bekleyen işi öne çıkaran o davranışı devre dışı bırakırdı.
+  useEffect(() => {
+    setLocalSubTab('active');
+  }, [mainView]);
   // Rozet artık `mainView`e (tab değişimine) bağlı DEĞİL — önceden bir davet
   // kabul edilip Canlı sekmesinden hiç çıkılmazsa (mainView 'live' olarak
   // sabit kalırsa) sayı asla tazelenmiyordu, yalnızca Local'e geçip geri
@@ -336,16 +350,32 @@ export function Setup({
         applyLoginDefaultOnce(inviteCount, myTurnCount);
       });
     };
+    // 300ms debounce — `LiveGamesTab`'daki aynı desen/gerekçe. Tek bir olay
+    // gibi görünen şeyler birden fazla tablo değişikliği üretiyor (davet
+    // kabulünde `game_invites` + `online_games`, oyun bitişinde
+    // `online_game_states` + `online_games`); ayrıca abonelik artık her
+    // hamleyi de dinlediğinden (bkz. `subscribeMyOnlineGames`) art arda gelen
+    // olaylar tek bir sorguya iniyor. Masaüstünde sekmeye dönüş de
+    // visibilitychange + focus'u neredeyse aynı anda tetikliyor.
+    let debounceId: number | null = null;
+    const scheduleRefresh = () => {
+      if (debounceId != null) window.clearTimeout(debounceId);
+      debounceId = window.setTimeout(() => {
+        debounceId = null;
+        refresh();
+      }, 300);
+    };
     refresh();
-    const unsubscribe = subscribeMyOnlineGames(refresh);
+    const unsubscribe = subscribeMyOnlineGames(scheduleRefresh);
     const onForeground = () => {
-      if (document.visibilityState === 'visible') refresh();
+      if (document.visibilityState === 'visible') scheduleRefresh();
     };
     document.addEventListener('visibilitychange', onForeground);
     window.addEventListener('focus', onForeground);
     window.addEventListener('online', onForeground);
     return () => {
       cancelled = true;
+      if (debounceId != null) window.clearTimeout(debounceId);
       unsubscribe();
       document.removeEventListener('visibilitychange', onForeground);
       window.removeEventListener('focus', onForeground);

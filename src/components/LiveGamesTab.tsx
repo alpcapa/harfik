@@ -102,14 +102,25 @@ function remainingTimeLabel(deadline: string | null | undefined): { text: string
 // aynı zamanda kırmızı/kalın olur — remainingTimeLabel'daki aynı mantık).
 function remainingInviteDays(createdAt: string): { text: string; urgent: boolean } {
   const ms = Date.parse(createdAt) + ABANDON_TIMEOUT_MS - Date.now();
-  if (ms <= 0) return { text: 'Bugün iptal edilir', urgent: true };
+  // Süre dolduğunda "Bugün iptal edilir" yazıyordu — hem yanlış (iptal
+  // GELECEKTE değil, süre ZATEN doldu) hem de projedeki diğer sayaçlarla
+  // tutarsızdı. `remainingTimeLabel`'ın "Süresi doldu - teslim oldu"
+  // kalıbıyla hizalandı. Bu durum artık yalnızca geçici: süresi dolmuş bir
+  // davet, `check_invite_expiry` süpürmesi çalışana kadar (saniyeler)
+  // görünür, sonra listeden kalkar (bkz. `invites` kovasındaki status filtresi).
+  if (ms <= 0) return { text: 'Süresi doldu', urgent: true };
   const totalMinutes = Math.ceil(ms / (60 * 1000));
   const totalHours = Math.floor(totalMinutes / 60);
   const days = Math.floor(totalHours / 24);
   const hours = totalHours % 24;
   const minutes = totalMinutes % 60;
+  // "... kaldı" yerine "... sonra iptal edilecek" — `remainingTimeLabel`
+  // ("... sonra teslim sayılacak") ve Setup'taki `SavedGameRow` ("... sonra
+  // silinecek") ile aynı kalıp: süre + o sürenin sonunda NE olacağı.
   const text =
-    days > 0 ? `${days} gün ${hours} saat kaldı` : `${hours} saat ${minutes} dakika kaldı`;
+    days > 0
+      ? `${days} gün ${hours} saat sonra iptal edilecek`
+      : `${hours} saat ${minutes} dakika sonra iptal edilecek`;
   return { text, urgent: days < 1 };
 }
 
@@ -527,7 +538,12 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   useEffect(() => {
     if (games === null || appliedDefaultTabRef.current) return;
     appliedDefaultTabRef.current = true;
-    const hasInvites = games.some((g) => g.my_role === 'invitee' && g.my_invite_status === 'pending');
+    // `status === 'pending'` şartı `invites` kovasıyla aynı olmalı (aşağı bkz.)
+    // — yoksa süresi dolmuş bir davet, kullanıcıyı hiçbir şeyin görünmediği
+    // boş "Oyun Davetleri" sekmesine düşürürdü.
+    const hasInvites = games.some(
+      (g) => g.my_role === 'invitee' && g.my_invite_status === 'pending' && g.status === 'pending',
+    );
     if (hasInvites) setSubTab('invites');
   }, [games]);
 
@@ -599,7 +615,15 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
     }
   };
 
-  const invites = (games ?? []).filter((g) => g.my_role === 'invitee' && g.my_invite_status === 'pending');
+  // `g.status === 'pending'` ŞART: `check_invite_expiry` süresi dolan bir
+  // daveti iptal ederken yalnızca `online_games.status`'ü `'abandoned'` yapıp
+  // `game_invites` satırına (kayıt kalsın diye) bilerek dokunmuyor. Bu kontrol
+  // olmadan iptal edilmiş bir davet DAVETLİNİN listesinde sonsuza dek
+  // duruyordu — kuranın tarafı (`waiting`, aşağıda) baştan beri `status`'e
+  // baktığından orada doğru kayboluyordu, asimetri buradaydı (4 Ağustos 2026).
+  const invites = (games ?? []).filter(
+    (g) => g.my_role === 'invitee' && g.my_invite_status === 'pending' && g.status === 'pending',
+  );
   // Sırası kendisinde olan oyunlar ("Senin Hamlen Bekleniyor") listenin en
   // üstünde — dikkat gerektiren oyunlar her zaman ilk bakışta görünsün diye.
   // Array.prototype.sort kararlı (stable) olduğundan aynı gruptaki oyunlar
@@ -647,7 +671,15 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
         {SUB_TABS.map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setSubTab(tab.key)}
+            onClick={() => {
+              // Elle bir sekme seçildiği an varsayılan-sekme effect'i (yukarı)
+              // devre dışı bırakılır: `games` henüz yüklenmemişken (null)
+              // kullanıcı bir sekmeye dokunursa, liste birkaç yüz ms sonra
+              // gelince effect çalışıp seçimi eziyordu — dar ama gerçek bir
+              // yarış durumu (4 Ağustos 2026).
+              appliedDefaultTabRef.current = true;
+              setSubTab(tab.key);
+            }}
             className={[
               'relative flex-1 py-2.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[0.5px] border transition-transform active:scale-[0.97] flex items-center justify-center',
               subTab === tab.key

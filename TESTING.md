@@ -93,6 +93,11 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       rozetleri orada da görünmeli (durum oyuna değil kişiye bağlı).
 - [ ] **Geri çekme.** "Raporu Geri Çek" → onay. Bayrak kalkmalı; sessize alma
       bundan etkilenmemeli (bağımsız). Aynı kişi tekrar raporlanabilmeli.
+- [ ] **Geri çekilen rapor admin'de hâlâ "okunmamış".** Kart "Geri Çekildi"
+      rozetini alır ama soluklaşMAmalı ve bekleyen sayaçlarından düşMEmeli —
+      admin ne yaşandığını görüp okundu işaretlemeyi kendisi seçmeli. (Bir
+      dönem geri çekme otomatik `handled=true` yapıyordu; rapor admin hiç
+      bakmadan "incelenmiş" görünüyordu.)
 - [ ] **Admin.** Admin Paneli → Geri Bildirim → Şikayetler: kart "Yeni"
       rozetiyle görünmeli, "Sohbeti Görüntüle" (yalnızca BİTMİŞ oyunlarda)
       dökümü açmalı, "Kişiye Git →" Üyeler tablosunda o satırı vurgulamalı.
@@ -100,15 +105,45 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
 ## 4. Süre aşımı ve cezalar
 
 Bunlar gerçek zamanda 24-48 saat/7 gün bekler; acele ediyorsan veritabanından
-`turn_deadline`/`updated_at` geçmişe çekilerek tetiklenebilir.
+`turn_deadline`/`updated_at`/`created_at` geçmişe çekilerek tetiklenebilir.
+
+**Süreyi geçmişe çekerken:** yalnızca test hesaplarının satırlarına dokun,
+`id` ile hedefleyerek. Bu tablolarda gerçek kullanıcıların oyunları da duruyor
+ve buradaki her akış gerçek bir e-posta gönderip gerçek bir k-lig cezası
+uyguluyor. Değişiklikten sonra, tetiklemeden önce, cron'un/süpürmenin gerçekte
+neyi kapsayacağını bir kez sorgulayıp doğrula.
+
+**Mail hangi hesaba gidiyor:** uyarılan/teslim olan taraf hangi hesapsa mail
+ona gider. Görsel doğrulama yapacaksan testi, o taraf **gerçek gelen kutusu
+olan** hesap olacak şekilde kur (bkz. yukarıdaki Mailinator notu) — gerekirse
+önce bir hamle oynayıp sırayı o tarafa geçir.
 
 - [ ] **24 saat uyarısı.** Sırası gelen oyuncuya "Oyun Süresi Doluyor!" maili.
+      Fonksiyonun **iki ayrı dalı** var (Canlı oyun + devam eden YZ oyunu) —
+      ikisini aynı anda pencereye sokup **iki mail** geldiğini doğrula, tek
+      dal çalışıyor olabilir. Metin isme iyelik eki eklememeli: "X **tarafından
+      açılan** oyun" (takma isimlerde ünlü uyumu garanti edilemez).
 - [ ] **48 saat aşımı (Canlı).** Sırası gelen otomatik teslim: puanı 0, rafı
       torbaya karışır. 2 kişilikte oyun anında biter. Teslim olana -2, karşı
       tarafa galibiyet +2. Teslim olana "Süre Aşımından Sona Erdi" maili.
+- [ ] **Teslim sonrası torba sayacı.** `online_game_states.bag_count`, teslim
+      olanın rafı geri karıştıktan sonra gerçek torbaya (`online_game_secrets.
+      bag`) eşit olmalı. **4 kişilikte** asıl görünür: teslim oyunu bitirmediği
+      için kalan oyuncular tahtada torbayı doğru görmeli, bir sonraki hamleyi
+      beklemeden.
 - [ ] **7 gün (YZ oyunu).** Devam eden YZ oyunu terk edilmiş sayılır, -2 ve
       bilgilendirme maili. Misafirde yalnızca yerel kayıt silinir (ceza yok).
-- [ ] **7 gün (davet).** Yanıtlanmamış davet kendiliğinden iptal olur.
+- [ ] **Süpürme öne dönüşte de çalışıyor.** Uygulamayı Setup'ta açık bırakıp
+      arka plana al, süreyi geçmişe çek, sonra öne getir — tam yeniden
+      yüklemeden süpürülmeli. (Eskiden yalnızca mount'ta çalışıyordu, ceza
+      kullanıcı uygulamayı baştan açana kadar gecikiyordu.)
+- [ ] **7 gün (davet).** Yanıtlanmamış davet kendiliğinden iptal olur —
+      **iki tarafta da**. Kuranın "Rakip Bekleniyor" listesinden ve
+      **davetlinin "Davet Bekliyor" listesinden** kalkmalı; davetli tarafı
+      ayrıca kontrol et, iptal yalnızca `online_games.status`'ü değiştirip
+      `game_invites` satırını `pending` bıraktığından bu kova bir dönem
+      filtrelemeyi atlamıştı. Rozetlerin de düşmesi lazım (Setup'taki
+      "Arkadaşınla", "Oyun Davetleri" alt sekmesi, PWA ikonu).
 
 ## 5. E-posta bildirimleri
 
@@ -140,3 +175,27 @@ kopyanın da güncellendiğini doğrula.
 
 - [ ] Kayıt onayı, şifre sıfırlama, e-posta değişikliği — üçü de marka kartıyla
       gelmeli, gönderen "Kelimeki &lt;noreply@kelimeki.com&gt;" olmalı.
+
+## 7. Bildirim rozetleri (site geneli)
+
+Kırmızı yuvarlak sayı rozeti tek bir bileşenden gelir (`CountBadge`) ve her
+zaman **bekleyen iş sayısını** gösterir. Bu, bölüm bölüm test edilirken
+gözden kaçıyor: bir sekmeye rozet eklenip onu kapsayan üst sekmenin toplamı
+güncellenmeyince sayılar sessizce ayrışıyor (iki ayrı kez oldu). Aşağıdakileri
+tek turda, gerçekten bekleyen bir iş varken kontrol et.
+
+- [ ] **Toplama zinciri.** Bekleyen bir geri bildirim VE bekleyen bir şikayet
+      aynı anda varken: Admin Paneli'ndeki "Gelen Kutusu" ve "Şikayetler" alt
+      sekmeleri kendi sayılarını, üstteki "Geri Bildirim" tab'ı ikisinin
+      TOPLAMINI, `UserMenu`'deki "Admin Paneli" satırı da aynı toplamı
+      göstermeli — üçü asla ayrışmamalı.
+- [ ] **Diğer rozetler.** `UserMenu` → "Arkadaşlar" (bekleyen istek), Setup →
+      "Yapay Zeka ile"/"Arkadaşınla" ve bunların alt sekmeleri, `FriendsModal`
+      → "İstekler". Hepsi sağ üst köşede yuvarlak rozet olmalı; başlığa
+      gömülü " (N)" biçiminde bir sayı **hiçbir yerde kalmamalı**.
+- [ ] **Sayı değil, nokta olması gerekenler.** Board footer'ındaki
+      "Mesajlaşma" (okunmamış mesaj) ve `UserMenu` avatarı — bunlar
+      boolean gösterge, sayı taşımaz, bu doğru davranış.
+- [ ] **Rozet olMAması gerekenler.** "Değiştir (N)" (seçili taş sayısı) ve
+      "Arkadaşlarını Seç (N/3)" (seçim ilerlemesi) — bunlar bekleyen iş değil,
+      metin içinde kalmalı.

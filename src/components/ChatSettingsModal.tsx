@@ -15,8 +15,16 @@
 // oyunda sessize aldığın/rapor ettiğin kişi, onunla açtığın sonraki oyunlarda
 // da işaretli gelir. Bu yüzden onay metinleri "bu oyunda" demiyor.
 //
+// TERMİNOLOJİ (4 Ağustos 2026): kullanıcıya görünen TÜM metinlerde "rapor"
+// yerine "şikayet" kullanılıyor — kullanıcı isteği: "rapor et" İngilizceden
+// türeme ve burada ne anlama geldiği net değil. Kod tarafı (RPC/tablo/prop
+// adları: `report_online_game_participant`, `online_game_chat_reports`,
+// `reportedUserIds`…) bilerek DEĞİŞMEDİ — "k-lig" rebrand'indeki aynı ilke,
+// yalnızca görünen metin değişir. Admin panelindeki "Şikayetler" sekmesi
+// zaten bu terimi kullanıyordu, bu değişiklik ikisini hizaladı.
+//
 // Ama "kalıcı" DEĞİL, geri alınabilir: sessize alma buradan tekrar açılıp
-// kapatılabiliyor, rapor da "Raporu Geri Çek" ile kapatılabiliyor. Aynı gün
+// kapatılabiliyor, şikayet de "Şikayeti Geri Çek" ile kapatılabiliyor. Aynı gün
 // giriş paragrafında ve sessize alma onayında "Bu tercih kalıcıdır" yazıyordu
 // — kullanıcı bunun yanlış olduğunu bildirdi ve haklıydı: cümle "oyunlar
 // arası taşınır" demek istiyordu ama "geri alınamaz" gibi okunuyordu, yani
@@ -117,7 +125,7 @@ export function ChatSettingsModal({
       setView({ kind: 'report-sent', participant });
       setReasonDraft('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Rapor gönderilemedi.');
+      setError(err instanceof Error ? err.message : 'Şikayet gönderilemedi.');
     } finally {
       setBusy(false);
     }
@@ -128,7 +136,7 @@ export function ChatSettingsModal({
       {view.kind === 'list' && (
         <div className="flex flex-col gap-3">
           <p className="text-xs text-muted leading-relaxed">
-            Buradan kişileri sessize alabilir ve/veya uygunsuz paylaşımları rapor edebilirsiniz.
+            Buradan kişileri sessize alabilir ve/veya uygunsuz paylaşımları şikayet edebilirsiniz.
           </p>
           <div className="flex flex-col gap-1.5">
             {participants.map((p) => {
@@ -147,7 +155,7 @@ export function ChatSettingsModal({
                   <Avatar url={p.avatarUrl} name={p.name} size={24} />
                   <span className="text-xs text-text flex-1 min-w-0 truncate">{p.name}</span>
                   {reported ? (
-                    <span aria-label="Rapor edildi" title="Rapor edildi" className="text-sm shrink-0">
+                    <span aria-label="Şikayet edildi" title="Şikayet edildi" className="text-sm shrink-0">
                       🚩
                     </span>
                   ) : muted ? (
@@ -197,7 +205,7 @@ export function ChatSettingsModal({
 
           {reportedUserIds.has(view.participant.userId) ? (
             <div className="flex flex-col gap-1.5">
-              <p className="text-xs text-muted">Bu kişiyi rapor ettiniz.</p>
+              <p className="text-xs text-muted">Bu kişiyi şikayet ettiniz.</p>
               <button
                 type="button"
                 disabled={busy}
@@ -207,7 +215,7 @@ export function ChatSettingsModal({
                 }}
                 className="btn-raised-neutral rounded-md py-2 text-xs font-bold uppercase tracking-[1px] bg-void border border-border text-text active:scale-[0.97] transition-transform disabled:opacity-50"
               >
-                Raporu Geri Çek
+                Şikayeti Geri Çek
               </button>
             </div>
           ) : (
@@ -220,7 +228,7 @@ export function ChatSettingsModal({
               }}
               className="btn-raised rounded-md py-2 text-xs font-bold uppercase tracking-[1px] bg-red text-white active:scale-[0.97] transition-transform"
             >
-              Kişiyi Rapor Et
+              Kişiyi Şikayet Et
             </button>
           )}
 
@@ -295,7 +303,7 @@ export function ChatSettingsModal({
               onClick={() => void handleWithdraw(view.participant)}
               className="flex-1 btn-raised rounded-md py-2.5 text-xs font-bold uppercase tracking-[1px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-50"
             >
-              {busy ? '...' : 'Raporu Geri Çek'}
+              {busy ? '...' : 'Şikayeti Geri Çek'}
             </button>
             <button
               type="button"
@@ -312,7 +320,7 @@ export function ChatSettingsModal({
       {view.kind === 'report-reason' && (
         <div className="flex flex-col gap-3">
           <p className="text-sm text-text">
-            <span className="font-bold">{view.participant.name}</span> kullanıcısını neden rapor ediyorsunuz?
+            <span className="font-bold">{view.participant.name}</span> kullanıcısını neden şikayet ediyorsunuz?
           </p>
           <textarea
             className="w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors resize-none"
@@ -350,8 +358,8 @@ export function ChatSettingsModal({
         <div className="flex flex-col gap-3">
           <p className="text-sm text-text font-bold">Emin misiniz?</p>
           <p className="text-sm text-text leading-relaxed">
-            <span className="font-bold">{view.participant.name}</span> kullanıcısı, yazdığınız nedenle admine rapor
-            edilecek. Bu işlem geri alınamaz (ama daha sonra raporu geri çekebilirsiniz).
+            <span className="font-bold">{view.participant.name}</span> kullanıcısı, yazdığınız nedenle admine şikayet
+            edilecek. Bu işlem geri alınamaz (ama daha sonra şikayetinizi geri çekebilirsiniz).
           </p>
           <div className="bg-bg border border-border rounded-md p-2">
             <p className="text-xs text-muted whitespace-pre-wrap">{view.reason}</p>
@@ -364,7 +372,7 @@ export function ChatSettingsModal({
               onClick={() => void handleSubmitReport(view.participant, view.reason)}
               className="flex-1 btn-raised rounded-md py-2.5 text-xs font-bold uppercase tracking-[1px] bg-red text-white active:scale-[0.97] transition-transform disabled:opacity-50"
             >
-              {busy ? '...' : 'Rapor Et'}
+              {busy ? '...' : 'Şikayet Et'}
             </button>
             <button
               type="button"
