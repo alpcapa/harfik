@@ -258,7 +258,7 @@ export function Board({
         );
       } else if (placedTile) {
         classes.push('relative z-[5] bg-transparent');
-        content = <Tile tile={placedTile} variant="placed" color={currentColor} />;
+        content = <Tile tile={placedTile} variant="placed" color={colorOf(placedTile.owner) ?? currentColor} />;
       } else if (inZone) {
         // Merkezdeki x2 bonus bölgesi — altın zemin, büyük "X2" filigranı
         // bölgenin tamamının arkasına yazılır (aşağıda). Tam ortadaki tek
