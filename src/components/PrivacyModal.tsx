@@ -64,7 +64,7 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             <li>Canlı oyunlarda gönderdiğiniz oyun içi sohbet mesajları</li>
             <li>
               Bir Canlı oyunda kimleri sessize aldığınız ve gönderdiğiniz uygunsuz paylaşım
-              raporları (raporun nedeni dahil)
+              şikayetleri (şikayetin nedeni dahil)
             </li>
           </ul>
         </Section>
@@ -117,8 +117,8 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
           <P>
             Bir Canlı oyunda kimi sessize aldığınız yalnızca size görünür, diğer katılımcılar
             (sessize alınan kişi dahil) bunu hiçbir zaman göremez. Gönderdiğiniz uygunsuz
-            paylaşım raporları yalnızca inceleme amacıyla yönetici ekibiyle paylaşılır;
-            raporlanan kullanıcıya rapor edildiği, kimin raporladığı ya da raporun içeriği
+            paylaşım şikayetleri yalnızca inceleme amacıyla yönetici ekibiyle paylaşılır;
+            şikayet edilen kullanıcıya şikayet edildiği, kimin şikayet ettiği ya da şikayetin içeriği
             hiçbir şekilde bildirilmez.
           </P>
         </Section>

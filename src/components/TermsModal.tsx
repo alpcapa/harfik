@@ -81,7 +81,7 @@ export function TermsModal({ onClose }: TermsModalProps) {
             tabi değildir); kullanıcılar arasında gönderilen mesajların içeriğinden Kelimeki hiçbir
             şekilde sorumlu tutulamaz, sorumluluk tamamen mesajı gönderen kullanıcıya aittir.
             Uygunsuz bir mesajla karşılaşan kullanıcılar, sohbet ekranındaki ayarlar üzerinden
-            ilgili kişiyi sessize alabilir ve/veya yönetici ekibine rapor edebilir.
+            ilgili kişiyi sessize alabilir ve/veya yönetici ekibine şikayet edebilir.
           </P>
         </Section>
 
