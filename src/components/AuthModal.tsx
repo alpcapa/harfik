@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Modal } from './Modal';
 import { TermsModal } from './TermsModal';
 import { PrivacyModal } from './PrivacyModal';
-import { signIn, signUp, sendPasswordReset } from '../lib/api';
+import { signIn, signUp, sendPasswordReset, friendlyAuthMessage } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
 import { useNicknameAvailability } from '../hooks/useNicknameAvailability';
 import { GENDER_OPTIONS, formatTrDateInput, trDateToIso } from '../utils/profileFields';
@@ -113,7 +113,7 @@ export function AuthModal({
         }
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
+      const msg = friendlyAuthMessage(err) ?? (err instanceof Error ? err.message : (err as { message?: string })?.message);
       setError(msg || 'Bir hata oluştu.');
     } finally {
       setBusy(false);

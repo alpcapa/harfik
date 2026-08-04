@@ -12,6 +12,22 @@ interface FeedbackModalProps {
   // E-postadaki "cevap için tıklayın" linkine gömülü bir referans (?contact=1&re=<id>)
   // varsa, gönderilen yeni mesajı o önceki mesaja bağlamak için.
   relatedTo?: string | null;
+  /**
+   * Kullanıcı buraya BİZİM gönderdiğimiz bir e-postadaki linkten (?contact=1)
+   * geldiyse `true` — gönderim sonrası "bu e-postayla üyeliğine devam etmek
+   * ister misin?" teklifi gösterilmez, yalnızca teşekkür + "Kapat" çıkar.
+   *
+   * Gerekçe (kullanıcı isteği, 4 Ağustos 2026): o linke tıklayan kişiye zaten
+   * biz mail atmışız, yani e-postası bizde kayıtlı ve büyük olasılıkla hesabı
+   * da var. En uç örneği hesabı DONDURULMUŞ bir kullanıcının itiraz etmesi:
+   * giriş yapamadığı için girişsiz görünüyor, itirazını gönderiyor ve
+   * sonunda "üye olmak ister misin?" teklifi alıyordu — zaten üyesi.
+   * Uygulama bunu tek başına anlayamaz (ziyaretçi girişsiz, elde yalnızca bir
+   * e-posta metni var) ve "bu e-posta kayıtlı mı" diye sormak hesap-varlığı
+   * sızdıran bir enumeration açığı olurdu; bu yüzden çözüm sorgu değil,
+   * BAĞLAM: linkten gelindiği bilgisini prop olarak taşımak.
+   */
+  fromEmailLink?: boolean;
 }
 
 // Basit bot/spam koruması: sunucu tarafı doğrulaması olmadığı için (henüz
@@ -43,7 +59,7 @@ function recordSubmission(): void {
   }
 }
 
-export function FeedbackModal({ onClose, source, relatedTo }: FeedbackModalProps) {
+export function FeedbackModal({ onClose, source, relatedTo, fromEmailLink = false }: FeedbackModalProps) {
   const { user } = useAuth();
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState(user?.email ?? '');
@@ -96,7 +112,7 @@ export function FeedbackModal({ onClose, source, relatedTo }: FeedbackModalProps
       {sent ? (
         <div className="flex flex-col items-center gap-3 py-4 text-center">
           <p className="text-sm text-text">Teşekkürler, mesajın bize ulaştı.</p>
-          {!user && email.trim() ? (
+          {!user && email.trim() && !fromEmailLink ? (
             <>
               <p className="text-xs text-muted font-mono">
                 {email.trim()} ile üyeliğine devam etmek ister misin?

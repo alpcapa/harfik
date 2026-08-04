@@ -1,7 +1,7 @@
 // Kelimeki — şifre sıfırlama bağlantısı tıklanınca açılan "yeni şifre belirle" ekranı
 import { useState } from 'react';
 import { Modal } from './Modal';
-import { setNewPassword } from '../lib/api';
+import { setNewPassword, friendlyAuthMessage } from '../lib/api';
 
 interface ResetPasswordModalProps {
   onDone: () => void;
@@ -31,7 +31,7 @@ export function ResetPasswordModal({ onDone }: ResetPasswordModalProps) {
       if (error) throw error;
       setDone(true);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
+      const msg = friendlyAuthMessage(err) ?? (err instanceof Error ? err.message : (err as { message?: string })?.message);
       setError(msg || 'Bir hata oluştu.');
     } finally {
       setBusy(false);

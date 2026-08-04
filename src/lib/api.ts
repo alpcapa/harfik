@@ -1850,6 +1850,94 @@ export async function checkNicknameAvailable(nickname: string): Promise<boolean>
 }
 
 /** Postgres'in unique-violation hatasını takma isim için okunur bir mesaja çevirir. */
+/**
+ * Supabase Auth (GoTrue) hatalarını Türkçeye çevirir.
+ *
+ * 4 Ağustos 2026'da bulundu: `AuthModal`/`ResetPasswordModal`/
+ * `AccountSettingsModal` yakaladıkları hatanın `message`'ını OLDUĞU GİBİ
+ * ekrana basıyordu — yani Türkçe bir uygulamada kullanıcı "User is banned",
+ * "Invalid login credentials", "Email not confirmed" gibi ham İngilizce
+ * metinler görüyordu. (Dondurulmuş bir hesapla giriş denenirken fark edildi;
+ * bu yalnızca dondurmaya özgü değil, TÜM auth hataları aynı yoldan geçiyordu.)
+ *
+ * Önce `code` (GoTrue'nun `error_code`'u) denenir — mesaj metni sürümler
+ * arasında değişebilir, kod daha kararlıdır. Kod tanınmazsa mesaj metnine
+ * göre eşleme yapılır. İkisi de tutmazsa `null` dönülür ve çağıran orijinal
+ * mesajı gösterir: bilmediğimiz bir hatayı uydurma bir Türkçe cümleyle
+ * gizlemek, hata ayıklamayı imkânsız kılardı.
+ *
+ * ÖNEMLİ: bu fonksiyon yalnızca Supabase kaynaklı hatalara uygulanmalı.
+ * Formların kendi doğrulama hataları (`throw new Error('Ad zorunludur.')`)
+ * zaten Türkçe — `code` taşımadıklarından ve mesajları eşleşmediğinden
+ * buradan olduğu gibi geçerler.
+ */
+export function friendlyAuthMessage(err: unknown): string | null {
+  const e = err as { code?: string; message?: string } | null;
+  const code = e?.code;
+  const msg = e?.message ?? '';
+
+  const byCode: Record<string, string> = {
+    invalid_credentials: 'E-posta ya da şifre hatalı.',
+    // Kullanıcıyı "Görüş Bildir"e yönlendirmiyoruz: o form girişsiz bir
+    // ziyaretçiye Setup'ta hiç görünmüyor (yalnızca Kullanım Koşulları/
+    // Gizlilik modallerinin içine gömülü bir bağlantı), dolayısıyla eyleme
+    // dönüşmezdi. `notify-account-banned` her dondurmada zaten gerekçeyi ve
+    // çalışan bir iletişim bağlantısını (?contact=1) içeren bir e-posta
+    // gönderiyor — doğru yönlendirme orası.
+    //
+    // BİLİNÇLİ KARAR (4 Ağustos 2026) — bu mesaj küçük bir bilgi sızıntısı
+    // içeriyor ve öyle KALIYOR. Gerçek uçla ölçüldü (pg_net ile
+    // /auth/v1/token'a dört senaryo): kayıtlı olmayan e-posta ve kayıtlı ama
+    // yanlış şifre `invalid_credentials` dönerken, DONDURULMUŞ bir hesap
+    // ŞİFRE DOĞRU MU YANLIŞ MI FARK ETMEKSİZİN `user_banned` dönüyor. Yani
+    // birinin e-postasını bilen biri, şifresini bilmeden o hesabın
+    // dondurulduğunu öğrenebilir.
+    //
+    // "Önce şifreyi doğrula, sonra ban'a bak" sırası istemci tarafında
+    // KURULAMAZ: GoTrue şifreyi hiç doğrulamadan `user_banned` döndürdüğünden
+    // bize ulaşan yanıtta şifrenin doğru olup olmadığı bilgisi yok. Üç seçenek
+    // değerlendirildi: (1) olduğu gibi bırakmak, (2) dondurulmuşta da genel
+    // "e-posta ya da şifre hatalı" göstermek, (3) service-role bir Edge
+    // Function'da pgcrypto `crypt()` ile kendi bcrypt doğrulamamızı yazmak.
+    // (2) gerçekten dondurulmuş kullanıcıyı yanıltırdı (şifresini yanlış
+    // yazdığını sanıp defalarca denerdi); (3) kimlik doğrulamasız bir
+    // şifre-doğrulama ucu açıp GoTrue'nun rate limiting'ini devre dışı
+    // bırakacağından kapattığı sızıntıdan daha büyük bir risk üretirdi.
+    // Sızıntının değeri düşük — sıradan hesap sayımı (enumeration) hâlâ
+    // engelli, yalnızca "kayıtlı + dondurulmuş" ayırt edilebiliyor ve bunun
+    // için hedefin e-postasını zaten bilmek gerekiyor.
+    user_banned: 'Hesabınız donduruldu. Gerekçesi ve itiraz yolu e-posta adresinize gönderildi.',
+    email_not_confirmed: 'E-posta adresini henüz doğrulamadın. Gelen kutunu (ve spam klasörünü) kontrol et.',
+    user_already_exists: 'Bu e-posta adresi zaten kayıtlı. Giriş yapmayı ya da şifreni sıfırlamayı dene.',
+    email_exists: 'Bu e-posta adresi zaten kayıtlı. Giriş yapmayı ya da şifreni sıfırlamayı dene.',
+    weak_password: 'Şifre çok zayıf. En az 6 karakter kullan.',
+    same_password: 'Yeni şifre eskisiyle aynı olamaz.',
+    otp_expired: 'Bağlantının süresi dolmuş. Yeni bir bağlantı iste.',
+    over_email_send_rate_limit: 'Çok fazla e-posta isteği gönderildi. Birkaç dakika sonra tekrar dene.',
+    over_request_rate_limit: 'Çok fazla deneme yapıldı. Birkaç dakika sonra tekrar dene.',
+    signup_disabled: 'Şu anda yeni kayıt alınmıyor.',
+    validation_failed: 'Girdiğin bilgilerde bir hata var, kontrol et.',
+  };
+  if (code && byCode[code]) return byCode[code];
+
+  // `code` yoksa (eski supabase-js sürümleri / bazı uçlar) mesaja bak.
+  const byMessage: [RegExp, string][] = [
+    [/user is banned/i, byCode.user_banned],
+    [/invalid login credentials/i, byCode.invalid_credentials],
+    [/email not confirmed/i, byCode.email_not_confirmed],
+    [/user already registered|already been registered/i, byCode.user_already_exists],
+    [/password should be at least/i, byCode.weak_password],
+    [/new password should be different/i, byCode.same_password],
+    [/token has expired or is invalid/i, byCode.otp_expired],
+    [/for security purposes|rate limit/i, byCode.over_request_rate_limit],
+    [/unable to validate email address|invalid format/i, 'Geçerli bir e-posta adresi gir.'],
+  ];
+  for (const [re, text] of byMessage) {
+    if (re.test(msg)) return text;
+  }
+  return null;
+}
+
 function friendlyNicknameError(message: string | undefined): Error | null {
   if (message && /profiles_display_name_tr_lower_key|display_name/i.test(message) && /duplicate key|unique/i.test(message)) {
     return new Error('Bu takma isim zaten kullanılıyor. Farklı bir tane dene.');
