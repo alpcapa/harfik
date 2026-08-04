@@ -1884,6 +1884,28 @@ export function friendlyAuthMessage(err: unknown): string | null {
     // dönüşmezdi. `notify-account-banned` her dondurmada zaten gerekçeyi ve
     // çalışan bir iletişim bağlantısını (?contact=1) içeren bir e-posta
     // gönderiyor — doğru yönlendirme orası.
+    //
+    // BİLİNÇLİ KARAR (4 Ağustos 2026) — bu mesaj küçük bir bilgi sızıntısı
+    // içeriyor ve öyle KALIYOR. Gerçek uçla ölçüldü (pg_net ile
+    // /auth/v1/token'a dört senaryo): kayıtlı olmayan e-posta ve kayıtlı ama
+    // yanlış şifre `invalid_credentials` dönerken, DONDURULMUŞ bir hesap
+    // ŞİFRE DOĞRU MU YANLIŞ MI FARK ETMEKSİZİN `user_banned` dönüyor. Yani
+    // birinin e-postasını bilen biri, şifresini bilmeden o hesabın
+    // dondurulduğunu öğrenebilir.
+    //
+    // "Önce şifreyi doğrula, sonra ban'a bak" sırası istemci tarafında
+    // KURULAMAZ: GoTrue şifreyi hiç doğrulamadan `user_banned` döndürdüğünden
+    // bize ulaşan yanıtta şifrenin doğru olup olmadığı bilgisi yok. Üç seçenek
+    // değerlendirildi: (1) olduğu gibi bırakmak, (2) dondurulmuşta da genel
+    // "e-posta ya da şifre hatalı" göstermek, (3) service-role bir Edge
+    // Function'da pgcrypto `crypt()` ile kendi bcrypt doğrulamamızı yazmak.
+    // (2) gerçekten dondurulmuş kullanıcıyı yanıltırdı (şifresini yanlış
+    // yazdığını sanıp defalarca denerdi); (3) kimlik doğrulamasız bir
+    // şifre-doğrulama ucu açıp GoTrue'nun rate limiting'ini devre dışı
+    // bırakacağından kapattığı sızıntıdan daha büyük bir risk üretirdi.
+    // Sızıntının değeri düşük — sıradan hesap sayımı (enumeration) hâlâ
+    // engelli, yalnızca "kayıtlı + dondurulmuş" ayırt edilebiliyor ve bunun
+    // için hedefin e-postasını zaten bilmek gerekiyor.
     user_banned: 'Hesabınız donduruldu. Gerekçesi ve itiraz yolu e-posta adresinize gönderildi.',
     email_not_confirmed: 'E-posta adresini henüz doğrulamadın. Gelen kutunu (ve spam klasörünü) kontrol et.',
     user_already_exists: 'Bu e-posta adresi zaten kayıtlı. Giriş yapmayı ya da şifreni sıfırlamayı dene.',
