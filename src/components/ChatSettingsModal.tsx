@@ -250,15 +250,15 @@ export function ChatSettingsModal({
           <p className="text-sm text-text leading-relaxed">
             {view.nextMuted ? (
               <>
-                <span className="font-bold">{view.participant.name}</span> kişisini sessize almak istediğinize emin
-                misiniz? Mesajları sohbette görünmeye devam eder, yalnızca bu kişiden gelen yeni mesaj bildirimleri
-                sizin için kapanır.
+                <span className="font-bold">{view.participant.name}</span> kullanıcısını sessize almak istediğinize
+                emin misiniz? Kullanıcının mesajları sohbette görünmeye devam eder ama sizin ekranınıza bildirim
+                olarak gelmez.
               </>
             ) : (
               <>
-                <span className="font-bold">{view.participant.name}</span> kişisini sessizden çıkarmak istediğinize
-                emin misiniz? Bu kişiden gelen yeni mesajlar için — bu oyunda ve diğer tüm oyunlarınızda — tekrar
-                bildirim almaya başlarsınız.
+                <span className="font-bold">{view.participant.name}</span> kullanıcısını sessizden çıkarmak
+                istediğinize emin misiniz? Kullanıcıdan gelen yeni mesajlar için tekrar bildirim almaya
+                başlarsınız.
               </>
             )}
           </p>
@@ -292,8 +292,8 @@ export function ChatSettingsModal({
           <p className="text-sm text-text font-bold">Emin misiniz?</p>
           <p className="text-sm text-text leading-relaxed">
             <span className="font-bold">{view.participant.name}</span> için gönderdiğiniz şikayeti geri çekmek
-            istediğinize emin misiniz? Bu kişi hakkında hangi oyunda açtığınız olursa olsun tüm açık şikayetleriniz
-            geri çekilir. Sessize alma bundan etkilenmez — isterseniz ayrıca kaldırabilirsiniz.
+            istediğinize emin misiniz? Bu kullanıcı hakkındaki tüm açık şikayetleriniz geri çekilir ama sessize alma
+            durumu devam eder; isterseniz ayrıca mesajlaşma ayarlarından onu da kaldırabilirsiniz.
           </p>
           {error && <p className="text-red text-[10px] font-mono">{error}</p>}
           <div className="flex gap-2">
@@ -358,8 +358,9 @@ export function ChatSettingsModal({
         <div className="flex flex-col gap-3">
           <p className="text-sm text-text font-bold">Emin misiniz?</p>
           <p className="text-sm text-text leading-relaxed">
-            <span className="font-bold">{view.participant.name}</span> kullanıcısı, yazdığınız nedenle admine şikayet
-            edilecek. Bu işlem geri alınamaz (ama daha sonra şikayetinizi geri çekebilirsiniz).
+            <span className="font-bold">{view.participant.name}</span> kullanıcısı, yazdığınız nedenle Kelimeki
+            ekibine şikayet olarak iletilecektir. Bu şikayetinizi daha sonra mesajlaşma ayarlarından geri
+            çekebilirsiniz.
           </p>
           <div className="bg-bg border border-border rounded-md p-2">
             <p className="text-xs text-muted whitespace-pre-wrap">{view.reason}</p>
