@@ -93,6 +93,11 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       rozetleri orada da görünmeli (durum oyuna değil kişiye bağlı).
 - [ ] **Geri çekme.** "Raporu Geri Çek" → onay. Bayrak kalkmalı; sessize alma
       bundan etkilenmemeli (bağımsız). Aynı kişi tekrar raporlanabilmeli.
+- [ ] **Geri çekilen rapor admin'de hâlâ "okunmamış".** Kart "Geri Çekildi"
+      rozetini alır ama soluklaşMAmalı ve bekleyen sayaçlarından düşMEmeli —
+      admin ne yaşandığını görüp okundu işaretlemeyi kendisi seçmeli. (Bir
+      dönem geri çekme otomatik `handled=true` yapıyordu; rapor admin hiç
+      bakmadan "incelenmiş" görünüyordu.)
 - [ ] **Admin.** Admin Paneli → Geri Bildirim → Şikayetler: kart "Yeni"
       rozetiyle görünmeli, "Sohbeti Görüntüle" (yalnızca BİTMİŞ oyunlarda)
       dökümü açmalı, "Kişiye Git →" Üyeler tablosunda o satırı vurgulamalı.
@@ -140,3 +145,27 @@ kopyanın da güncellendiğini doğrula.
 
 - [ ] Kayıt onayı, şifre sıfırlama, e-posta değişikliği — üçü de marka kartıyla
       gelmeli, gönderen "Kelimeki &lt;noreply@kelimeki.com&gt;" olmalı.
+
+## 7. Bildirim rozetleri (site geneli)
+
+Kırmızı yuvarlak sayı rozeti tek bir bileşenden gelir (`CountBadge`) ve her
+zaman **bekleyen iş sayısını** gösterir. Bu, bölüm bölüm test edilirken
+gözden kaçıyor: bir sekmeye rozet eklenip onu kapsayan üst sekmenin toplamı
+güncellenmeyince sayılar sessizce ayrışıyor (iki ayrı kez oldu). Aşağıdakileri
+tek turda, gerçekten bekleyen bir iş varken kontrol et.
+
+- [ ] **Toplama zinciri.** Bekleyen bir geri bildirim VE bekleyen bir şikayet
+      aynı anda varken: Admin Paneli'ndeki "Gelen Kutusu" ve "Şikayetler" alt
+      sekmeleri kendi sayılarını, üstteki "Geri Bildirim" tab'ı ikisinin
+      TOPLAMINI, `UserMenu`'deki "Admin Paneli" satırı da aynı toplamı
+      göstermeli — üçü asla ayrışmamalı.
+- [ ] **Diğer rozetler.** `UserMenu` → "Arkadaşlar" (bekleyen istek), Setup →
+      "Yapay Zeka ile"/"Arkadaşınla" ve bunların alt sekmeleri, `FriendsModal`
+      → "İstekler". Hepsi sağ üst köşede yuvarlak rozet olmalı; başlığa
+      gömülü " (N)" biçiminde bir sayı **hiçbir yerde kalmamalı**.
+- [ ] **Sayı değil, nokta olması gerekenler.** Board footer'ındaki
+      "Mesajlaşma" (okunmamış mesaj) ve `UserMenu` avatarı — bunlar
+      boolean gösterge, sayı taşımaz, bu doğru davranış.
+- [ ] **Rozet olMAması gerekenler.** "Değiştir (N)" (seçili taş sayısı) ve
+      "Arkadaşlarını Seç (N/3)" (seçim ilerlemesi) — bunlar bekleyen iş değil,
+      metin içinde kalmalı.
