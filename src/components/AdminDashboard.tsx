@@ -1077,6 +1077,9 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
               <div className="flex gap-1.5">
                 <button className={tabBtn(feedbackSubTab === 'inbox')} onClick={() => setFeedbackSubTab('inbox')}>
                   Gelen Kutusu
+                  {unhandledFeedbackCount > 0 && (
+                    <CountBadge count={unhandledFeedbackCount} className="absolute -top-1 -right-1" />
+                  )}
                 </button>
                 <button className={tabBtn(feedbackSubTab === 'flags')} onClick={() => setFeedbackSubTab('flags')}>
                   Şikayetler
