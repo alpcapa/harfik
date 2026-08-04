@@ -89,14 +89,25 @@ function remainingTimeLabel(deadline: string | null | undefined): { text: string
 // aynı zamanda kırmızı/kalın olur — remainingTimeLabel'daki aynı mantık).
 function remainingInviteDays(createdAt: string): { text: string; urgent: boolean } {
   const ms = Date.parse(createdAt) + ABANDON_TIMEOUT_MS - Date.now();
-  if (ms <= 0) return { text: 'Bugün iptal edilir', urgent: true };
+  // Süre dolduğunda "Bugün iptal edilir" yazıyordu — hem yanlış (iptal
+  // GELECEKTE değil, süre ZATEN doldu) hem de projedeki diğer sayaçlarla
+  // tutarsızdı. `remainingTimeLabel`'ın "Süresi doldu - teslim oldu"
+  // kalıbıyla hizalandı. Bu durum artık yalnızca geçici: süresi dolmuş bir
+  // davet, `check_invite_expiry` süpürmesi çalışana kadar (saniyeler)
+  // görünür, sonra listeden kalkar (bkz. `invites` kovasındaki status filtresi).
+  if (ms <= 0) return { text: 'Süresi doldu', urgent: true };
   const totalMinutes = Math.ceil(ms / (60 * 1000));
   const totalHours = Math.floor(totalMinutes / 60);
   const days = Math.floor(totalHours / 24);
   const hours = totalHours % 24;
   const minutes = totalMinutes % 60;
+  // "... kaldı" yerine "... sonra iptal edilecek" — `remainingTimeLabel`
+  // ("... sonra teslim sayılacak") ve Setup'taki `SavedGameRow` ("... sonra
+  // silinecek") ile aynı kalıp: süre + o sürenin sonunda NE olacağı.
   const text =
-    days > 0 ? `${days} gün ${hours} saat kaldı` : `${hours} saat ${minutes} dakika kaldı`;
+    days > 0
+      ? `${days} gün ${hours} saat sonra iptal edilecek`
+      : `${hours} saat ${minutes} dakika sonra iptal edilecek`;
   return { text, urgent: days < 1 };
 }
 
