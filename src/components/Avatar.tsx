@@ -73,7 +73,11 @@ export function Avatar({ url, name, size = 32, className = '', dot = false }: Av
 
   if (!dot) return inner;
 
-  const dotSize = Math.max(8, Math.round(size * 0.3));
+  // 4 Ağustos 2026 — kullanıcı isteğiyle bir tık büyütüldü (taban 8→10px,
+  // oran 0.30→0.34). Board footer'ındaki "Mesajlaşma" noktasıyla (8→10px)
+  // aynı turda değişti; ikisi de "var/yok" bilgisi taşıyan aynı sınıf
+  // gösterge olduğundan boyutları birbirine yakın kalmalı.
+  const dotSize = Math.max(10, Math.round(size * 0.34));
   return (
     <span className="relative inline-flex shrink-0">
       {inner}

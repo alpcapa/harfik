@@ -542,7 +542,7 @@ export function Board({
                   Mesajlaşma
                   {hasUnreadMessage && (
                     <span
-                      className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red"
+                      className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red"
                       aria-hidden
                     />
                   )}

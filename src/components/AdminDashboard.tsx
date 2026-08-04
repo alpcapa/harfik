@@ -1,5 +1,5 @@
 // Kelimeki — admin paneli: üyeler ve oyun istatistikleri
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   fetchAdminMembers,
@@ -412,6 +412,39 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       .catch((e) => setError(String(e)));
   }, []);
 
+  // Varsayılan tab: bekleyen iş varsa "Geri Bildirim" açık gelsin — panel
+  // baştan beri "Büyüme" ile açılıyordu, yani okunmamış bir geri bildirim/
+  // şikayet varken bile admin'i önce grafiklere düşürüyordu (kullanıcı
+  // isteği, 4 Ağustos 2026). `LiveGamesTab` (bekleyen davet varsa "Oyun
+  // Davetleri") ve `FriendsModal` (bekleyen istek varsa "İstekler") ile
+  // BİREBİR aynı desen ve gerekçe: bekleyen iş her zaman ön plana çıkmalı.
+  //
+  // Alt sekme de aynı mantığı izliyor: gelen kutusunda bekleyen yoksa ama
+  // şikayet varsa doğrudan "Şikayetler" açılır — aksi halde admin, rozeti
+  // gördüğü hâlde boş bir "Gelen Kutusu" ile karşılaşırdı.
+  //
+  // Yalnızca İKİ liste de yüklendikten sonra bir kez uygulanır; elle sekme
+  // seçildiği anda devre dışı kalır (aşağıdaki `selectTab`).
+  const appliedDefaultTabRef = useRef(false);
+  /**
+   * Elle sekme seçimi — varsayılan-sekme effect'ini (aşağı) devre dışı
+   * bırakır. Veri henüz yüklenmemişken bir sekmeye dokunulursa listeler
+   * gelince effect seçimi ezerdi (`LiveGamesTab`/`FriendsModal`'daki aynı guard).
+   */
+  const selectTab = (next: Tab) => {
+    appliedDefaultTabRef.current = true;
+    setTab(next);
+  };
+  useEffect(() => {
+    if (feedback === null || chatReports === null || appliedDefaultTabRef.current) return;
+    appliedDefaultTabRef.current = true;
+    const pendingFeedback = feedback.filter((f) => !f.handled).length;
+    const pendingReports = chatReports.filter((r) => !r.handled).length;
+    if (pendingFeedback + pendingReports === 0) return;
+    setTab('feedback');
+    if (pendingFeedback === 0) setFeedbackSubTab('flags');
+  }, [feedback, chatReports]);
+
   // Not: period/granülerlik değişince önceki veriyi `null`'a çekip
   // "Yükleniyor…" göstermiyoruz — bu, o anda ekranda kaç grafik/tablo varsa
   // hepsini aynı anda küçük bir yer tutucuya küçültüp scroll konumunu (ör.
@@ -673,13 +706,13 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
             </button>
           </div>
           <div className="flex gap-1.5">
-            <button className={tabBtn(tab === 'members')} onClick={() => setTab('members')}>
+            <button className={tabBtn(tab === 'members')} onClick={() => selectTab('members')}>
               Üyeler
             </button>
-            <button className={tabBtn(tab === 'growth')} onClick={() => setTab('growth')}>
+            <button className={tabBtn(tab === 'growth')} onClick={() => selectTab('growth')}>
               Büyüme
             </button>
-            <button className={tabBtn(tab === 'feedback')} onClick={() => setTab('feedback')}>
+            <button className={tabBtn(tab === 'feedback')} onClick={() => selectTab('feedback')}>
               Geri Bildirim
               {unhandledFeedbackCount + unhandledChatReportCount > 0 && (
                 <CountBadge
