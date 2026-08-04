@@ -83,10 +83,24 @@ export function useAppIconBadge(
     };
     refreshAllRef.current = refreshAll;
 
+    // 300ms debounce — `LiveGamesTab`/`Setup`'takiyle aynı desen. Abonelik
+    // artık `online_game_states`'i de dinlediğinden (bkz.
+    // `subscribeMyOnlineGames`) oyun içindeyken her hamle bu hook'u da
+    // tetikliyor; art arda gelen olaylar (ör. oyun bitişinde iki tablo birden
+    // değişir) tek bir çift sorguya iner.
+    let debounceId: number | null = null;
+    const scheduleRefreshAll = () => {
+      if (debounceId != null) window.clearTimeout(debounceId);
+      debounceId = window.setTimeout(() => {
+        debounceId = null;
+        refreshAll();
+      }, 300);
+    };
+
     refreshAll();
-    const unsubscribe = subscribeMyOnlineGames(refreshAll);
+    const unsubscribe = subscribeMyOnlineGames(scheduleRefreshAll);
     const onForeground = () => {
-      if (document.visibilityState === 'visible') refreshAll();
+      if (document.visibilityState === 'visible') scheduleRefreshAll();
     };
     document.addEventListener('visibilitychange', onForeground);
     window.addEventListener('focus', onForeground);
@@ -96,6 +110,7 @@ export function useAppIconBadge(
     const intervalId = window.setInterval(refreshAll, 10 * 60 * 1000);
     return () => {
       cancelled = true;
+      if (debounceId != null) window.clearTimeout(debounceId);
       unsubscribe();
       document.removeEventListener('visibilitychange', onForeground);
       window.removeEventListener('focus', onForeground);

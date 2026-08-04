@@ -1222,10 +1222,28 @@ export async function withdrawChatReports(targetUserId: string): Promise<void> {
 }
 
 /**
- * `online_games`/`game_invites`'taki HERHANGİ bir değişiklikte `onChange`'i
- * tetikler (Realtime) — LiveGamesTab'ın liste/rozet verisini (davet
- * gönderildi/kabul edildi/reddedildi, oyun active'e geçti vb.) yeniden
- * çekmesi için. `subscribeOnlineGameState`'in aynı deseni, ama tek bir
+ * `online_games`/`game_invites`/`online_game_states`'teki HERHANGİ bir
+ * değişiklikte `onChange`'i tetikler (Realtime) — LiveGamesTab'ın liste/rozet
+ * verisini (davet gönderildi/kabul edildi/reddedildi, oyun active'e geçti,
+ * sıra ilerledi vb.) yeniden çekmesi için.
+ *
+ * **`online_game_states` 4 Ağustos 2026'da eklendi:** öncesinde yalnızca ilk
+ * iki tablo dinleniyordu, ama `submit_move` normal bir hamlede `online_games`'e
+ * HİÇ dokunmuyor (yalnızca oyun bitince `status='finished'` yazıyor) — yani
+ * "rakip oynadı, sıra sana geçti" hiçbir Realtime olayı üretmiyordu. Sonuç:
+ * Setup'taki "Arkadaşınla (N)" rozeti sıra kullanıcıya geçtiğinde
+ * güncellenmiyor, ancak foreground'a dönüş/yeniden mount ile düzeliyordu;
+ * PWA ikon rozeti ise kendi 10 dakikalık interval'i sayesinde er geç
+ * yakaladığından ikisi görünür şekilde ayrışıyordu. Tablo zaten
+ * `supabase_realtime` publication'ındaydı (`online_game_states_realtime`
+ * migration'ı), ek bir migration gerekmedi.
+ *
+ * Bu ekleme olay hacmini artırdığından (taraf olunan her oyundaki her hamle)
+ * TÜM tüketiciler `onChange`'i debounce etmeli — LiveGamesTab baştan beri
+ * ediyordu, Setup ve useAppIconBadge'e aynı 300ms'lik desen bu değişiklikle
+ * eklendi.
+ *
+ * `subscribeOnlineGameState`'in aynı deseni, ama tek bir
  * oyuna değil çağıranın TARAF OLDUĞU tüm oyunlara bağlı olduğundan bir
  * `filter` verilmiyor — RLS (`online_games_select_party`/
  * `game_invites_select_party`) zaten yalnızca kendi satırlarını yayınlar,
@@ -1242,6 +1260,7 @@ export function subscribeMyOnlineGames(onChange: () => void): () => void {
     .channel(`my_online_games_${crypto.randomUUID()}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'online_games' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'game_invites' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'online_game_states' }, onChange)
     .subscribe();
   return () => {
     void client.removeChannel(channel);

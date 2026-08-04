@@ -305,16 +305,32 @@ export function Setup({
         applyLoginDefaultOnce(inviteCount, myTurnCount);
       });
     };
+    // 300ms debounce — `LiveGamesTab`'daki aynı desen/gerekçe. Tek bir olay
+    // gibi görünen şeyler birden fazla tablo değişikliği üretiyor (davet
+    // kabulünde `game_invites` + `online_games`, oyun bitişinde
+    // `online_game_states` + `online_games`); ayrıca abonelik artık her
+    // hamleyi de dinlediğinden (bkz. `subscribeMyOnlineGames`) art arda gelen
+    // olaylar tek bir sorguya iniyor. Masaüstünde sekmeye dönüş de
+    // visibilitychange + focus'u neredeyse aynı anda tetikliyor.
+    let debounceId: number | null = null;
+    const scheduleRefresh = () => {
+      if (debounceId != null) window.clearTimeout(debounceId);
+      debounceId = window.setTimeout(() => {
+        debounceId = null;
+        refresh();
+      }, 300);
+    };
     refresh();
-    const unsubscribe = subscribeMyOnlineGames(refresh);
+    const unsubscribe = subscribeMyOnlineGames(scheduleRefresh);
     const onForeground = () => {
-      if (document.visibilityState === 'visible') refresh();
+      if (document.visibilityState === 'visible') scheduleRefresh();
     };
     document.addEventListener('visibilitychange', onForeground);
     window.addEventListener('focus', onForeground);
     window.addEventListener('online', onForeground);
     return () => {
       cancelled = true;
+      if (debounceId != null) window.clearTimeout(debounceId);
       unsubscribe();
       document.removeEventListener('visibilitychange', onForeground);
       window.removeEventListener('focus', onForeground);
