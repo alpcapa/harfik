@@ -199,3 +199,46 @@ tek turda, gerçekten bekleyen bir iş varken kontrol et.
 - [ ] **Rozet olMAması gerekenler.** "Değiştir (N)" (seçili taş sayısı) ve
       "Arkadaşlarını Seç (N/3)" (seçim ilerlemesi) — bunlar bekleyen iş değil,
       metin içinde kalmalı.
+
+## 8. "Bekleyen iş öne çıksın" — varsayılan sekmeler
+
+Rozet bekleyen işi gösterir; bu kural kullanıcıyı oraya götürür. Dört ekran
+aynı deseni paylaşıyor, dolayısıyla biri bozulduğunda diğerleri de şüpheli.
+Her birinde gerçekten bekleyen bir iş varken ekranı **kapatıp yeniden aç**.
+
+- [ ] **Canlı sekmesi.** Bekleyen davet varsa "Oyun Davetleri", yoksa
+      "Devam Edenler" açık gelmeli.
+- [ ] **Arkadaşlar penceresi.** Bekleyen istek varsa "İstekler" açık gelmeli.
+      Ama "+ Yeni Canlı Oyun" içindeki "arkadaş eklemek için tıkla"
+      bağlantısından açılınca **"Ara & Ekle"de kalmalı** — o açık bir niyet,
+      ezilmemeli.
+- [ ] **Admin paneli.** Bekleyen geri bildirim/şikayet varsa "Geri Bildirim"
+      açık gelmeli (yoksa "Büyüme"). Gelen kutusunda bekleyen yokken yalnızca
+      şikayet varsa doğrudan **"Şikayetler"** alt sekmesi açılmalı — aksi
+      halde rozette sayı görünüp boş bir "Gelen Kutusu" karşılar.
+- [ ] **YZ sekmesi.** "Son Oynananlar"a geç, "Arkadaşınla"ya gidip dön —
+      "Devam Edenler" açılmalı. (İki taraf da sıfırlanır; bu bilinçli, akıllı
+      varsayılan ancak sıfırlanan bir sekmede çalışabiliyor.)
+- [ ] **Elle seçim ezilmemeli.** Bir ekranı açıp veri yüklenmeden HEMEN bir
+      sekmeye dokun — liste gelince seçimin değişmemeli.
+- [ ] **Sekme kendiliğinden DEĞİŞMEMELİ.** Bir sekmede otururken yeni bir
+      davet/istek gelsin: yalnızca rozet artmalı, sekme zıplamamalı.
+
+## 9. Auth hata mesajları
+
+Hepsi Türkçe olmalı — ham İngilizce ("User is banned", "Invalid login
+credentials") görünmemeli. Bilinmeyen bir hata olduğu gibi geçer, bu doğru:
+uydurma bir Türkçe cümleyle gizlemek hata ayıklamayı imkânsız kılardı.
+
+- [ ] **Hatalı giriş.** Yanlış şifre → "E-posta ya da şifre hatalı."
+- [ ] **Dondurulmuş hesap.** → "Hesabınız donduruldu. Gerekçesi ve itiraz yolu
+      e-posta adresinize gönderildi." Şifre doğru da yanlış da olsa aynı mesaj
+      çıkar (GoTrue şifreyi doğrulamadan ban'a bakıyor, ölçüldü).
+- [ ] **Zaten kayıtlı e-posta.** Kayıt formunda mevcut bir adresle dene.
+- [ ] **Form doğrulamaları bozulmamış.** Boş ad/soyad, alınmış takma isim →
+      kendi Türkçe mesajları çıkmalı (bunlar aynı `catch`'ten geçiyor,
+      çeviri katmanı onları ezmemeli).
+- [ ] **E-posta linkinden gelen geri bildirim.** Bir bildirim mailindeki
+      "cevap için tıklayın" ile gel, mesaj gönder: gönderim sonrası
+      **üyelik teklifi çıkmamalı**, yalnızca teşekkür + "Kapat". (Uygulama
+      içinden — oyun sonu, Terms/Privacy — açılan formda teklif hâlâ çıkar.)
