@@ -19,3 +19,11 @@ export function trLower(s: string): string {
 export function trUpper(s: string): string {
   return s.replace(/i/g, 'İ').replace(/ı/g, 'I').toUpperCase();
 }
+
+/** Türkçe alfabetik sıralama için karşılaştırıcı (ör. isim listelerini
+ * alfabetik dizmek için `.sort(trCompare)`) — `localeCompare(..., 'tr')`
+ * native `<`/`toUpperCase` karşılaştırmasının aksine ş/ğ/ü/ö/ç/ı/İ gibi
+ * Türkçe harfleri doğru sıralar (bkz. `AdminDashboard.tsx`'teki aynı desen). */
+export function trCompare(a: string, b: string): number {
+  return a.localeCompare(b, 'tr');
+}

@@ -62,7 +62,7 @@ import type {
   WordMeaning,
 } from './database.types';
 import { getLocalMeaning } from '../data/meanings';
-import { trLower } from '../utils/turkish';
+import { trCompare, trLower } from '../utils/turkish';
 import type { GameState, Tile } from '../game/types';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -570,7 +570,7 @@ export async function searchUsersForFriend(query: string): Promise<FriendSearchR
     console.error('[Kelimeki] searchUsersForFriend hatası:', error.message);
     return [];
   }
-  return (data as FriendSearchResult[]) ?? [];
+  return ((data as FriendSearchResult[]) ?? []).sort((a, b) => trCompare(a.name, b.name));
 }
 
 /**
@@ -591,7 +591,7 @@ export async function listUsersForFriend(offset: number, limit: number): Promise
     console.error('[Kelimeki] listUsersForFriend hatası:', error.message);
     return [];
   }
-  return (data as FriendSearchResult[]) ?? [];
+  return ((data as FriendSearchResult[]) ?? []).sort((a, b) => trCompare(a.name, b.name));
 }
 
 /**
@@ -693,7 +693,9 @@ export async function removeFriend(friendId: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-/** Kabul edilmiş arkadaş listesini döner (en son kabul edilen önce). */
+/** Kabul edilmiş arkadaş listesini döner — isme göre alfabetik sıralı (RPC
+ * en son kabul edilene göre döner, `trCompare` ile client tarafında yeniden
+ * sıralanır). */
 export async function fetchFriends(): Promise<FriendRow[]> {
   if (!supabase) return [];
   const { data, error } = await supabase.rpc('list_friends');
@@ -701,7 +703,7 @@ export async function fetchFriends(): Promise<FriendRow[]> {
     console.error('[Kelimeki] fetchFriends hatası:', error.message);
     return [];
   }
-  return (data as FriendRow[]) ?? [];
+  return ((data as FriendRow[]) ?? []).sort((a, b) => trCompare(a.name, b.name));
 }
 
 /**

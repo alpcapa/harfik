@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useModalA11y } from '../hooks/useModalA11y';
 import { sendFriendRequest } from '../lib/api';
+import { trCompare } from '../utils/turkish';
 import { Avatar } from './Avatar';
 
 interface Candidate {
@@ -33,6 +34,7 @@ function CheckMark({ checked }: { checked: boolean }) {
 }
 
 export function FriendSuggestModal({ candidates, onDone }: FriendSuggestModalProps) {
+  const sortedCandidates = [...candidates].sort((a, b) => trCompare(a.name ?? '', b.name ?? ''));
   const [selected, setSelected] = useState<Set<string>>(new Set(candidates.map((c) => c.user_id)));
   const [stage, setStage] = useState<'select' | 'done'>('select');
   const [busy, setBusy] = useState(false);
@@ -81,7 +83,7 @@ export function FriendSuggestModal({ candidates, onDone }: FriendSuggestModalPro
               Bu kişileri arkadaşın olarak eklemek ister misin?
             </p>
             <div className="flex flex-col gap-1.5">
-              {candidates.map((c) => (
+              {sortedCandidates.map((c) => (
                 <button
                   key={c.user_id}
                   type="button"

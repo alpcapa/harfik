@@ -156,7 +156,7 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
   }
 
   return (
-    <div className="w-full flex flex-col gap-5">
+    <div className="w-full flex flex-col gap-5 pb-32">
       {showFriendsModal && (
         <FriendsModal
           initialTab="search"
@@ -230,19 +230,6 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
                 });
               })()}
             </div>
-            <button
-              type="button"
-              onClick={() => setShowFriendsModal(true)}
-              className="flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-dashed border-border text-left transition-transform active:scale-[0.99]"
-            >
-              <span
-                className="w-7 h-7 rounded-full border border-dashed border-border flex items-center justify-center text-accent text-base leading-none shrink-0"
-                aria-hidden
-              >
-                +
-              </span>
-              <span className="text-sm font-bold text-accent">Arkadaş Ekle</span>
-            </button>
             {playerCount === 4 && showAiRow && (
               <button
                 type="button"
@@ -283,22 +270,57 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
 
       {error && <p className="text-xs text-red font-mono text-center">{error}</p>}
 
-      <div className="flex gap-2">
-        <button
-          onClick={handleSubmit}
-          disabled={!canSubmit || busy}
-          className="flex-1 btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-        >
-          {busy ? 'Gönderiliyor…' : 'Davet Gönder'}
-        </button>
-        <button
-          onClick={onCancel}
-          disabled={busy}
-          className="flex-1 btn-raised-neutral py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-void border border-border text-text active:scale-[0.97] transition-transform disabled:opacity-50"
-        >
-          Vazgeç
-        </button>
-      </div>
+      {createPortal(
+        // İçerik (arkadaş listesi vb.) uzadıkça "Davet Gönder"/"Vazgeç"
+        // #root'un (asıl kaydırma konteyneri, bkz. index.css — body
+        // position:fixed) altına itilip görünmez oluyordu. Bunun yerine bu
+        // satır viewport'un altına sabitlendi (`fixed`, diğer popup'larla
+        // aynı `createPortal(..., document.body)` deseni — olası bir ata
+        // `transform`'undan bağımsız kalması için); üstteki `pb-32` de en
+        // alttaki içerik bu barın arkasında kalmasın diye var. "Arkadaş
+        // Ekle" de aynı sebeple (uzun listede aşağı itilmesin diye) bu bara,
+        // Davet Gönder/Vazgeç'in hemen üstüne taşındı. Playwright'ta #root'un
+        // kendi scrollTop'ı ile (window değil) doğrulandı.
+        <div className="fixed inset-x-0 bottom-0 z-30 flex justify-center bg-bg border-t border-border">
+          <div
+            className="w-full max-w-[460px] px-4 pt-3 flex flex-col gap-2"
+            style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+          >
+            {friends !== null && friends.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowFriendsModal(true)}
+                className="flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-dashed border-border text-left transition-transform active:scale-[0.99] bg-bg"
+              >
+                <span
+                  className="w-7 h-7 rounded-full border border-dashed border-border flex items-center justify-center text-accent text-base leading-none shrink-0"
+                  aria-hidden
+                >
+                  +
+                </span>
+                <span className="text-sm font-bold text-accent">Arkadaş Ekle</span>
+              </button>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={handleSubmit}
+                disabled={!canSubmit || busy}
+                className="flex-1 btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+              >
+                {busy ? 'Gönderiliyor…' : 'Davet Gönder'}
+              </button>
+              <button
+                onClick={onCancel}
+                disabled={busy}
+                className="flex-1 btn-raised-neutral py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-void border border-border text-text active:scale-[0.97] transition-transform disabled:opacity-50"
+              >
+                Vazgeç
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
 
       {showAiConfirm &&
         createPortal(
