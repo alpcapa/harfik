@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
-import { updateProfile, updateEmail, uploadAvatar } from '../lib/api';
+import { updateProfile, updateEmail, uploadAvatar, friendlyAuthMessage } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
 import { useNicknameAvailability } from '../hooks/useNicknameAvailability';
 import type { Gender } from '../lib/database.types';
@@ -87,7 +87,7 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
       await refreshProfile();
       setInfo('Profil fotoğrafı güncellendi.');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
+      const msg = friendlyAuthMessage(err) ?? (err instanceof Error ? err.message : (err as { message?: string })?.message);
       setError(msg || 'Yükleme başarısız.');
     } finally {
       setUploading(false);
@@ -169,7 +169,7 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
 
       setInfo(notes.length ? notes.join(' ') : 'Değişiklik yok.');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message;
+      const msg = friendlyAuthMessage(err) ?? (err instanceof Error ? err.message : (err as { message?: string })?.message);
       setError(msg || 'Bir hata oluştu.');
       // Profil kısmı (updateProfile) e-posta güncellemesinden ÖNCE zaten
       // başarıyla tamamlanmış olabilir — hata yalnızca sonraki e-posta
