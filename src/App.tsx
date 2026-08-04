@@ -890,6 +890,7 @@ export default function App() {
           <FeedbackModal
             source="general"
             relatedTo={contactRelatedTo}
+            fromEmailLink
             onClose={() => setShowContactFeedback(false)}
           />
         )}
@@ -1471,6 +1472,7 @@ export default function App() {
         <FeedbackModal
           source="general"
           relatedTo={contactRelatedTo}
+          fromEmailLink
           onClose={() => setShowContactFeedback(false)}
         />
       )}
