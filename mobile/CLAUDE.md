@@ -14,11 +14,10 @@ kancası gibi) kök `CLAUDE.md` de kontrol edilir.
    (aşağıda) otomatik kanıtlanır. Kullanıcı web'in geleceği konusunda "emin
    değilim" dedi — web ileride Flutter Web'e geçerse kanonik taraf Dart'a
    çevrilebilir; golden vector altyapısı bu geçişi güvenli kılmak için de var.
-2. **Backend değişiklikleri onaylandı** (henüz YAPILMADI, sıradaki iş):
-   (a) `submit_move`'a istemci üretimli hamle UUID'si (mobil ağlarda
-   kaybolan-yanıt yeniden denemesinin çifte hamle/yanlış ret üretmemesi için,
-   `saveGame`'in 23505 desenine benzer); (b) `min_supported_client` ayarı
-   (mağaza binary'si PWA gibi kendini zorla güncelleyemez).
+2. **Backend değişiklikleri onaylandı ve UYGULANDI (5 Ağustos 2026)** —
+   ayrıntı aşağıdaki "Backend Hazırlığı" bölümünde: (a) `submit_move`'a
+   istemci üretimli hamle UUID'si (`p_move_id`); (b) `app_config` tablosu +
+   `mobile_min_supported_version` kaydı.
 3. **Admin paneli mobil uygulamaya GİRMEYECEK** — web'de kalıyor. Bu,
    `api.ts`'in büyük bir bölümünün hiç port edilmemesi demek.
 4. **Kelime anlamları (`meanings.json`, 6.3 MB) uygulamaya GÖMÜLECEK** —
@@ -30,6 +29,43 @@ kancası gibi) kök `CLAUDE.md` de kontrol edilir.
    yapmıyor (havuz taraması + `canSpell`), trie/DAWG ancak YZ yeniden
    yazılırsa anlam kazanır. `WordSource` arayüzü o kapıyı açık bırakır.
    Tahmini bellek ~4-6 MB, soğuk açılışta bir kez yüklenir.
+
+## Backend Hazırlığı (5 Ağustos 2026 — production'a uygulandı)
+
+İki migration, kök CLAUDE.md'deki zorunlu akışla (SQL dosyası + MCP ile canlıya
+uygulama + canlıda doğrulama + `list_migrations` versiyon eşleştirme) uygulandı.
+**Web istemcisinin davranışı İKİSİNDE de değişmedi** — doğrulamanın bir parçası
+olarak eski (parametresiz) çağrı şekli canlıda test edildi.
+
+- **`20260805225619_submit_move_move_id_idempotency`** — `online_game_moves`e
+  nullable `move_id uuid` kolonu + `(online_game_id, move_id)` kısmi unique
+  index; `submit_move` imzasına `p_move_id uuid default null` eklendi.
+  Parametre eklemek overload yaratacağından (PostgREST'te 8-argümanlı çağrı
+  iki fonksiyona da uyar → 300 ambiguous) eski imza DROP edilip fonksiyon tek
+  başına yeniden CREATE edildi; grant'ler (authenticated+service_role) birebir
+  geri kuruldu. Dedup kontrolü `online_games` satır kilidinden SONRA ve
+  `player_user_id = auth.uid()` şartıyla yapılır (eşzamanlı özdeş retry'lar
+  kilitte serileşir; başkasının move_id'siyle hamle yutma kapalı). **Amaç:**
+  mobil ağlarda "istek gitti, yanıt kayboldu" retry'ı bugüne kadar sahte bir
+  'Sıra sende değil.' reddine dönüşüyordu — artık aynı `p_move_id` ile gelen
+  yeniden deneme sessizce başarı döner, çifte hamle yapısal olarak imkânsız.
+  Web istemcisi/`play-ai-turn` parametreyi göndermiyor (null → dedup atlanır,
+  bugünkü davranış). Mobil istemci HER hamlede `p_move_id` gönderecek ve
+  "başarı ya da kesin ret" varsayabilecek.
+  - **Doğrulama (production, disposable oyun, transaction+rollback):** T1/T2
+    test hesaplarıyla gerçek `init_online_game_state`+`submit_move` çağrıları:
+    move_id'li pas → tur ilerledi + hamle satırında move_id; AYNI move_id ile
+    retry → hatasız döndü, tur İLERLEMEDİ, ikinci satır açılmadı; move_id'SİZ
+    (mevcut web çağrı şekli) pas → normal işledi, satırda move_id null. Tümü
+    rollback edildi, sıfır iz (leftover=0 sorgusuyla ayrıca teyit).
+- **`20260805225630_app_config_min_supported_client`** — `app_config(key,
+  value jsonb, updated_at)` tablosu, RLS: herkese (anon dahil — sürüm kontrolü
+  login'den önce yapılmalı) SELECT, hiçbir client rolüne yazma yolu YOK
+  (değer değişikliği migration/SQL ile). Seed: `mobile_min_supported_version`
+  = `{"android":"0.0.0","ios":"0.0.0"}` (hiçbir şeyi engellemez). Mobil
+  uygulama açılışta okuyup semver karşılaştırmasıyla "önce güncelle" ekranı
+  gösterecek. Doğrulama: anon rolüyle satır okundu; authenticated rolüyle
+  UPDATE denemesi `insufficient_privilege` ile reddedildi.
 
 ## Klasör Yapısı
 
@@ -191,12 +227,13 @@ bağlı değil.)
 
 ## Sıradaki Fazlar (mutabık kalınan sıra)
 
-1. **Backend güvenilirlik migration'ları** (karar 2 — SQL kullanıcıya
-   gösterilip MCP ile canlıya uygulanacak, kök CLAUDE.md'deki migration
-   disiplini aynen geçerli).
+1. ~~Backend güvenilirlik migration'ları~~ — TAMAMLANDI (5 Ağustos 2026,
+   bkz. "Backend Hazırlığı" bölümü).
 2. **`mobile/app/` Flutter iskeleti** — supabase_flutter, deep link'ler
    (kelimeki.com App/Universal Links), portre kilidi, `ChangeNotifier`
-   kabuğu, sözlüğün `Isolate.run` ile yüklenmesi.
+   kabuğu, sözlüğün `Isolate.run` ile yüklenmesi; her `submit_move`
+   çağrısına `p_move_id` UUID'si, açılışta `mobile_min_supported_version`
+   kontrolü.
 3. **Depolama katmanı** — SQLite (kayıt/kuyruklar) + SharedPreferences
    (bayraklar); versiyonlu şema, karantina (asla silme), atomik yazım.
    localStorage anahtar eşlemesi ana sohbette kararlaştırıldı (PORT_BRIEF +
@@ -205,4 +242,6 @@ bağlı değil.)
    değil); admin paneli/PWA/LandscapeHint/csvExport bilinçli olarak YOK.
 5. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
-   olarak işaretli).
+   olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek
+   HTTP/PostgREST katmanıyla ayrıca doğrulanmalı (şimdilik yalnızca SQL
+   seviyesinde doğrulandı).
