@@ -1,0 +1,33 @@
+name: kelimeki
+description: >-
+  Kelimeki — köşelerden başlayan stratejik Türkçe kelime oyunu (iOS/Android).
+  Oyun motoru kelimeki_core paketindedir; mimari kararlar: mobile/CLAUDE.md.
+publish_to: none
+
+# Sürüm ayrıca lib/src/config/env.dart'taki appVersion sabitinde tutulur
+# (mobile_min_supported_version karşılaştırması için) — release'te ikisi
+# BİRLİKTE artırılmalı, bkz. mobile/CLAUDE.md "Sürüm disiplini".
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.4.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  kelimeki_core:
+    path: ../kelimeki_core
+  supabase_flutter: ^2.10.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    # ÜRETİLMİŞ (elle düzenlenmez): kaynak src/data/words.ts,
+    # `npm run generate-golden-vectors` yeniden üretir. Satır SIRASI
+    # sözleşmedir (YZ determinizmi) — bkz. mobile/CLAUDE.md.
+    - assets/dictionary/words_tr.txt

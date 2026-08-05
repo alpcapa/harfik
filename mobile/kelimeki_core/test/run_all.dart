@@ -175,7 +175,7 @@ void testReducerScenario(String name) {
 }
 
 void main() {
-  final wordsFile = File('../assets/dictionary/words_tr.txt');
+  final wordsFile = File('../app/assets/dictionary/words_tr.txt');
   if (!wordsFile.existsSync()) {
     stderr.writeln('words_tr.txt yok — önce `npm run generate-golden-vectors` koş.');
     exit(2);

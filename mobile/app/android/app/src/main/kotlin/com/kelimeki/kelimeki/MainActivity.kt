@@ -1,0 +1,5 @@
+package com.kelimeki.kelimeki
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()

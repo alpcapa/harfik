@@ -35,7 +35,10 @@ import { key, type Board, type Placed } from '../src/utils/board';
 
 const ROOT = process.cwd();
 const GOLDENS = join(ROOT, 'mobile/kelimeki_core/test/goldens');
-const ASSETS = join(ROOT, 'mobile/assets/dictionary');
+// Sözlük asset'i Flutter uygulama paketinin İÇİNDE yaşar (Flutter, paket kökü
+// dışındaki asset'lere izin vermez) — tek kopya, kelimeki_core testleri de
+// buradan okur.
+const ASSETS = join(ROOT, 'mobile/app/assets/dictionary');
 
 // ── PRNG: Dart tarafındaki Mulberry32 ile bit-eş ─────────────────────────────
 function mulberry32(seed: number): () => number {

@@ -72,11 +72,29 @@ olarak eski (parametresiz) çağrı şekli canlıda test edildi.
 ```
 mobile/
   CLAUDE.md                  # bu dosya
-  assets/
-    dictionary/words_tr.txt  # ÜRETİLMİŞ (elle düzenlenmez) — kaynak
+  app/                       # Flutter uygulaması (iskelet — aşağıdaki bölüm)
+    pubspec.yaml             # kelimeki_core (path) + supabase_flutter
+    assets/dictionary/words_tr.txt
+                             # ÜRETİLMİŞ (elle düzenlenmez) — kaynak
                              # src/data/words.ts; `npm run generate-golden-vectors`
                              # yeniden üretir. SIRA words.ts'teki WORD_LIST
-                             # sırasıdır ve DEĞİŞMEZ SÖZLEŞMEDİR (aşağı bkz.)
+                             # sırasıdır ve DEĞİŞMEZ SÖZLEŞMEDİR (aşağı bkz.).
+                             # Uygulama paketinin İÇİNDE, çünkü Flutter paket
+                             # kökü dışından asset kabul etmez — kelimeki_core
+                             # testleri de TEK kopya kalsın diye buradan okur.
+    lib/main.dart            # portre kilidi + bootstrap + runApp
+    lib/src/
+      bootstrap.dart         # AppServices: sözlük Future'ı + supabase + sürüm kapısı
+      config/env.dart        # --dart-define SUPABASE_URL/ANON_KEY; appVersion sabiti
+      config/version_gate.dart # app_config.mobile_min_supported_version kontrolü (fail-open)
+      data/dictionary_loader.dart # rootBundle + Isolate.run → SetWordSource
+      data/supabase_client.dart   # anahtar yoksa null → tam offline mod (web'deki configured)
+      data/online_api.dart   # submit_move sarmalayıcısı: p_move_id UUID + retry
+      game/game_controller.dart # ChangeNotifier motor kabuğu + otomatik YZ turu
+      ui/                    # app.dart, home_screen.dart (İSKELET), update_required_screen.dart
+      util/semver.dart, util/uuid.dart
+    android/ ios/            # flutter create çıktısı + elle değişiklikler (aşağı bkz.)
+    test/                    # util, controller (golden replay!), widget duman testleri
   kelimeki_core/             # saf Dart motor paketi (Flutter bağımlılığı YOK)
     pubspec.yaml             # SIFIR bağımlılık (bilinçli — offline pub get)
     lib/kelimeki_core.dart   # tek barrel export = genel API
@@ -103,8 +121,66 @@ mobile/
       goldens/*.json         # ÜRETİLMİŞ fixture'lar (elle düzenlenmez)
 ```
 
-Henüz OLMAYANLAR (sıradaki fazlar): `mobile/app/` (Flutter uygulaması),
-backend migration'ları (yukarıdaki karar 2), depolama katmanı.
+Henüz OLMAYANLAR (sıradaki fazlar): depolama katmanı (SQLite/karantina),
+gerçek oyun UI'ı, Canlı oyun ekranları, `meanings.json` gömme (karar 4 —
+iskelette bilerek yok, MeaningModal'ın UI fazında eklenecek).
+
+## Flutter Uygulama İskeleti (`mobile/app/`, 5 Ağustos 2026)
+
+Gerçek UI DEĞİL — kablolama iskeleti: motor + sözlük + Supabase + sürüm
+kapısı + idempotent hamle gönderimi uçtan uca bağlı ve test edilmiş durumda.
+`HomeScreen` şimdilik bir durum paneli + "Motor testi: YZ vs YZ" düğmesi.
+
+- **Kimlik/platform:** org `com.kelimeki`, proje adı `kelimeki` (Android
+  paket adı `com.kelimeki.kelimeki` — mağazaya İLK yüklemeye kadar
+  değiştirilebilir, sonrasında kalıcı; değiştirilecekse o ilk yüklemeden
+  önce). `flutter create --platforms=android,ios` çıktısı olduğu gibi
+  commit'li; elle yapılan platform değişiklikleri ŞUNLARLA sınırlı:
+  - `AndroidManifest.xml`: `android:label="Kelimeki"`,
+    `screenOrientation="portrait"`, ve kelimeki.com için `autoVerify`'lı App
+    Links intent-filter'ı. **assetlinks.json henüz YOK** — imzalama anahtarı
+    oluşturulduğunda sitenin `/.well-known/assetlinks.json` yayınlaması
+    gerekiyor (web tarafına dokunan iş; o güne dek filtre zararsız).
+    iOS Universal Links (associated domains entitlement + AASA dosyası)
+    tamamen Apple hesabı gerektirdiğinden hiç başlanmadı.
+  - `Info.plist`: iPhone VE iPad portre-kilidi, `CFBundleDisplayName`
+    "Kelimeki". Portre kilidi ayrıca runtime'da `SystemChrome` ile —
+    web'deki `LandscapeHint` banner'ının yerine geçen kesin çözüm.
+- **Bootstrap deseni (`bootstrap.dart`):** tüm dış dünya tek `AppServices`
+  nesnesinde — widget testleri sahte servislerle pump edebiliyor. Sözlük
+  yüklemesi ilk kareyi BEKLETMEZ (web'deki preloadWordSet gibi Future olarak
+  taşınır); satır ayrıştırma `Isolate.run`'da.
+- **Sürüm kapısı FAIL-OPEN:** `app_config`a ulaşılamazsa (offline/anahtarsız/
+  5sn zaman aşımı) kapı geçilir — yerel YZ oyunu offline bir haktır; eşik
+  yalnızca sunucu sözleşmesi kırıldığında yükseltilir ve o durumda offline
+  oyuncu zaten etkilenmez. `appVersion` sabiti (env.dart) pubspec `version`
+  ile BİRLİKTE artırılmalı — **sürüm disiplini:** release commit'i ikisini
+  birden değiştirir (package_info_plus eklentisi tek sabit için bilinçli
+  olarak alınmadı).
+- **`OnlineApi.submitMove`:** her çağrı `p_move_id` UUID'si üretir
+  (20260805225619 migration'ının istemci yarısı); taşıma hatalarında AYNI
+  id ile 3 denemeye kadar üstel bekleme, `PostgrestException`'da (sunucunun
+  kesin kararı) asla retry yok. `uuid` paketi yerine 15 satırlık yerel v4
+  üretimi (Random.secure) — bağımlılık tasarrufu.
+- **`GameController`:** karar #5'in gereği — framework'süz `ChangeNotifier`;
+  YZ sırası gelince bir sonraki event-loop turunda otomatik `AiPlayAction`
+  (web'deki App.tsx effect'inin eşleniği), `autoPlayAi: false` ile testlerde
+  kapatılabilir.
+- **`anonKey` deprecation'ı bilinçli susturuldu** (supabase_client.dart):
+  web istemcisi legacy anon key kullanıyor; publishable key'e geçiş iki
+  istemcinin birlikte vereceği ayrı bir karar.
+- **Doğrulama durumu (5 Ağustos 2026):** Flutter 3.38.4 (Linux) ile
+  `flutter analyze` temiz; `flutter test` 6/6 — en önemlisi
+  `game_controller_test.dart`, golden `reducer_ai2` senaryosunu (tohum
+  12345) uygulamanın KENDİ katmanından (GameController + gerçek asset
+  dosyası) yeniden oynatıp final skor/tur sayısını fixture'la birebir
+  doğruluyor; ayrıca autoPlayAi'nin kendiliğinden hamle sürdüğü ve sürüm
+  kapısının UpdateRequiredScreen'e yönlendirdiği test edildi.
+  **Doğrulama sınırı:** bu ortamda Android SDK/emülatör/gerçek cihaz YOK —
+  `flutter build apk`/`build ios` hiç koşulmadı; gerçek cihazda ilk açılış
+  (asset yükleme süresi, Supabase bağlantısı, App Links) kullanıcının
+  cihazıyla teyit edilmeli. Supabase'e gerçek bağlantı da test edilmedi
+  (anahtarlar --dart-define ile verilecek).
 
 ## kelimeki_core — Tasarım Sözleşmeleri
 
@@ -229,11 +305,9 @@ bağlı değil.)
 
 1. ~~Backend güvenilirlik migration'ları~~ — TAMAMLANDI (5 Ağustos 2026,
    bkz. "Backend Hazırlığı" bölümü).
-2. **`mobile/app/` Flutter iskeleti** — supabase_flutter, deep link'ler
-   (kelimeki.com App/Universal Links), portre kilidi, `ChangeNotifier`
-   kabuğu, sözlüğün `Isolate.run` ile yüklenmesi; her `submit_move`
-   çağrısına `p_move_id` UUID'si, açılışta `mobile_min_supported_version`
-   kontrolü.
+2. ~~`mobile/app/` Flutter iskeleti~~ — TAMAMLANDI (5 Ağustos 2026, bkz.
+   "Flutter Uygulama İskeleti" bölümü; açık kalanlar: assetlinks.json,
+   iOS Universal Links, gerçek cihaz doğrulaması).
 3. **Depolama katmanı** — SQLite (kayıt/kuyruklar) + SharedPreferences
    (bayraklar); versiyonlu şema, karantina (asla silme), atomik yazım.
    localStorage anahtar eşlemesi ana sohbette kararlaştırıldı (PORT_BRIEF +

@@ -139,7 +139,9 @@ src/
 mobile/                    # Flutter (iOS+Android) portu — ayrıntı: mobile/CLAUDE.md
 ├── kelimeki_core/         # oyun motorunun saf Dart portu (web motoruna eşitliği
 │                          # golden vector testleriyle kanıtlı: dart run test/run_all.dart)
-└── assets/dictionary/     # üretilmiş kelime listesi asset'i (words_tr.txt,
+└── app/                   # Flutter uygulaması (iskelet): motor + sözlük + Supabase +
+    │                      # sürüm kapısı kablolaması; flutter analyze/test temiz
+    └── assets/dictionary/ # üretilmiş kelime listesi asset'i (words_tr.txt,
                            # kaynak src/data/words.ts — npm run generate-golden-vectors üretir)
 ```
 
