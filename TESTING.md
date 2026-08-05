@@ -47,7 +47,11 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       (oyun `abandoned` olur). Hiçbir yerde "bekliyor" olarak durmamalı.
 - [ ] **Login varsayılanı.** Bekleyen bir davet varken çıkış yapıp tekrar gir:
       "Arkadaşınla" sekmesi otomatik açılmalı ve "Oyun Davetleri" alt sekmesi
-      seçili gelmeli (davetler devam eden oyunlardan öncelikli).
+      seçili gelmeli (davetler devam eden oyunlardan öncelikli). **Testi
+      "Yapay Zeka ile" sekmesindeyken çıkarak koş** — Canlı sekmesindeyken
+      çıkarsan seçim yeni oturuma taşındığından test, varsayılan hiç
+      çalışmasa bile geçer (5 Ağustos 2026'ya kadar tam olarak bu oluyordu,
+      bkz. bölüm 8'in son iki maddesi).
 - [ ] **Kurma formunun arkadaş listesi hesap değişiminde tazelenmeli.** Bir
       hesapla "+ Yeni Canlı Oyun"u aç (arkadaş listesi yüklensin), kapatmadan
       çıkış yapıp BAŞKA bir hesapla gir, tekrar "+ Yeni Canlı Oyun"a bas.
@@ -142,6 +146,14 @@ olan** hesap olacak şekilde kur (bkz. yukarıdaki Mailinator notu) — gerekirs
       beklemeden.
 - [ ] **7 gün (YZ oyunu).** Devam eden YZ oyunu terk edilmiş sayılır, -2 ve
       bilgilendirme maili. Misafirde yalnızca yerel kayıt silinir (ceza yok).
+- [ ] **Hiç oynanmamış YZ oyunu iz bırakmamalı.** Girişliyken bir YZ oyunu aç,
+      **hiç hamle yapmadan** logoya bas. Setup'ta "Devam Edenler" listesinde
+      hiçbir satır kalmamalı ve "Yapay Zeka ile" rozeti artmamalı — sekme
+      değiştirip dönmeye gerek kalmadan, **ilk görünüşte**. (Satır zaten
+      siliniyordu; listeyi çeken sorgu silme sunucuda commit edilmeden yola
+      çıktığından kaydı bir kez daha gösteriyordu — 5 Ağustos 2026. Bu yüzden
+      "sekme değiştirince düzeliyor" bir geçiş sayılmaz.) Oyunu 2+ hamle
+      oynayıp terk edince ise satır listede KALMALI, bu doğru davranış.
 - [ ] **Süpürme öne dönüşte de çalışıyor.** Uygulamayı Setup'ta açık bırakıp
       arka plana al, süreyi geçmişe çek, sonra öne getir — tam yeniden
       yüklemeden süpürülmeli. (Eskiden yalnızca mount'ta çalışıyordu, ceza
@@ -239,6 +251,20 @@ Her birinde gerçekten bekleyen bir iş varken ekranı **kapatıp yeniden aç**.
       sekmeye dokun — liste gelince seçimin değişmemeli.
 - [ ] **Sekme kendiliğinden DEĞİŞMEMELİ.** Bir sekmede otururken yeni bir
       davet/istek gelsin: yalnızca rozet artmalı, sekme zıplamamalı.
+- [ ] **Seçim bir sonraki oturuma TAŞINMAMALI.** "Arkadaşınla" sekmesindeyken
+      çıkış yap, sonra Canlı'da **hiçbir bekleyen işi olmayan** bir hesapla
+      gir (rozet 0, aktif oyunda sıra rakipte olsun): "Yapay Zeka ile" ile
+      açılmalı. Bu, bölüm 1'deki "Login varsayılanı"nın negatif eşi — orada
+      sekmenin doğru açılması varsayılanın çalıştığını KANITLAMIYOR, çünkü
+      taşınan seçim de aynı sonucu veriyordu. (`Setup`/`LiveGamesTab` çıkışta
+      unmount olmuyor, `mainView` hiçbir yerde sıfırlanmıyordu — 5 Ağustos
+      2026.)
+- [ ] **Varsayılan İKİNCİ hesaba da uygulanmalı.** Bekleyen işi OLMAYAN bir
+      hesapla gir (sekme "Yapay Zeka ile"de kalsın), çıkış yap, sonra bekleyen
+      daveti/sırası OLAN başka bir hesapla gir: "Arkadaşınla" açılmalı. Aynı
+      sekmede ikinci giriş olduğundan, "bir kez uygula" bayrağı hesap başına
+      sıfırlanmazsa bu adım sessizce çalışmaz — yukarıdaki maddeyle birlikte
+      koş, ikisi birbirinin kör noktasını kapatıyor.
 
 ## 9. Auth hata mesajları
 
