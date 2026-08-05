@@ -208,6 +208,13 @@ Her birinde gerçekten bekleyen bir iş varken ekranı **kapatıp yeniden aç**.
 
 - [ ] **Canlı sekmesi.** Bekleyen davet varsa "Oyun Davetleri", yoksa
       "Devam Edenler" açık gelmeli.
+- [ ] **Davet SONRADAN gelmişken.** Yukarıdakinin asıl kırıldığı hâl, ayrıca
+      koş: önce "Arkadaşınla"ya bir kez gir (davet YOKKEN — liste önbelleğe
+      girsin), çık; **sonra** sana bir davet gönderilsin; tekrar gir.
+      "Oyun Davetleri" açılmalı. (Önbellekten hidrate edilen bayat liste
+      varsayılanı bir kez yanlış uygulayıp kalıcılaştırıyordu — 5 Ağustos
+      2026. Aynısı hesap değiştirmeden, sadece "Yapay Zeka ile"ye gidip
+      dönerek de üretilebilir.)
 - [ ] **Arkadaşlar penceresi.** Bekleyen istek varsa "İstekler" açık gelmeli.
       Ama "+ Yeni Canlı Oyun" içindeki "arkadaş eklemek için tıkla"
       bağlantısından açılınca **"Ara & Ekle"de kalmalı** — o açık bir niyet,

@@ -413,6 +413,15 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   // bu ref sayesinde kullanıcı sonradan elle başka bir taba geçerse (ör. Son
   // Oynanan'a bakarken bir Realtime güncellemesi gelirse) bir daha zorlanmaz.
   const appliedDefaultTabRef = useRef(false);
+  // Varsayılan sekme kararı SUNUCUDAN gelen taze listeye göre verilmeli, mount
+  // anında `liveGamesCache`'ten okunan bayat listeye göre değil (bkz. 5 Ağustos
+  // 2026 hatası, CLAUDE.md) — önbellek dolu olduğunda `games` mount'ta hiç
+  // `null` olmadığından effect bayat veriyle çalışıp ref'i tüketiyor, taze veri
+  // daveti getirdiğinde sekme bir daha düzelmiyordu.
+  const [hasFreshGames, setHasFreshGames] = useState(false);
+  // Son uygulanan hesabın id'si — `user` referansı hesap değişmeden de
+  // değiştiğinden (aşağı bkz.) sıfırlama kararı buna göre veriliyor.
+  const lastUserIdRef = useRef<string | null>(user?.id ?? null);
 
   // Listeyi çeker, aktif oyunların sırasını/son tarihini yükler; süresi
   // ZATEN dolmuş bir sıra varsa `check_turn_timeout`'u (no-op değilse
@@ -425,6 +434,7 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
     const rows = await listMyOnlineGames();
     if (cancelledRef?.current) return;
     setGames(rows);
+    setHasFreshGames(true);
 
     const expiredInviteIds = rows
       .filter((g) => g.status === 'pending' && Date.parse(g.created_at) + ABANDON_TIMEOUT_MS <= Date.now())
@@ -495,6 +505,27 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   };
 
   useEffect(() => {
+    // Hesap değişimi varsayılan-tab kararını sıfırlar: bu bileşen çıkış
+    // yapıldığında unmount OLMUYOR (`mainView` çıkışta sıfırlanmıyor), yani
+    // ref'ler yaşıyor — sıfırlamasak yeni hesap varsayılan sekme kararını hiç
+    // alamazdı. İki kısıt var: (1) karşılaştırma `user` REFERANSINA değil
+    // `user.id`'ye bakmak ZORUNDA, çünkü `useAuth` her onAuthStateChange
+    // olayında (TOKEN_REFRESHED dahil, kabaca saatte bir) yeni bir User
+    // nesnesi set ediyor — referansa bakılsaydı varsayılan sekme saatler
+    // sonra yeniden uygulanıp kullanıcıyı oturduğu sekmeden koparırdı
+    // ("Sekme OTOMATİK değişmez" kuralı, aşağıda); (2) burada `games`e
+    // DOKUNULMAZ — aşağıdaki önbellek-yazma effect'i aynı commit'te ESKİ
+    // `games` closure'ıyla çalıştığından, burada yeni hesabın listesini
+    // yazmak "yeni user + eski liste" anını açıp önbelleğe yanlış anahtarla
+    // yazma penceresi yaratıyordu. O pencereyi kapalı tutan şey, aşağıdaki
+    // `!user` dalının çıkışta `games`i `null`a çekmesi (eski davranış,
+    // bilerek korundu).
+    const uid = user?.id ?? null;
+    if (uid !== lastUserIdRef.current) {
+      lastUserIdRef.current = uid;
+      appliedDefaultTabRef.current = false;
+      setHasFreshGames(false);
+    }
     if (!user) {
       setGames(null);
       return;
@@ -533,10 +564,14 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
     };
   }, [user]);
 
-  // Varsayılan tab: veri ilk kez geldiğinde (null -> dizi geçişinde) bekleyen
-  // bir davet varsa "Oyun Davetleri", yoksa "Devam Edenler" açık gelsin.
+  // Varsayılan tab: SUNUCUDAN taze liste geldiğinde bekleyen bir davet varsa
+  // "Oyun Davetleri", yoksa "Devam Edenler" açık gelsin. `hasFreshGames`
+  // beklemek şart — önbellekten hidrate edilmiş bayat bir listeyle karar
+  // verilirse ref tükenip sekme kalıcı olarak yanlış kalıyor (yukarı bkz.).
+  // Önbellek doluyken sekmenin kısa bir an sonra "Devam Edenler"den
+  // "Oyun Davetleri"ne kayması olağan; kalıcı yanlış sekmeden iyi.
   useEffect(() => {
-    if (games === null || appliedDefaultTabRef.current) return;
+    if (!hasFreshGames || games === null || appliedDefaultTabRef.current) return;
     appliedDefaultTabRef.current = true;
     // `status === 'pending'` şartı `invites` kovasıyla aynı olmalı (aşağı bkz.)
     // — yoksa süresi dolmuş bir davet, kullanıcıyı hiçbir şeyin görünmediği
@@ -545,7 +580,7 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
       (g) => g.my_role === 'invitee' && g.my_invite_status === 'pending' && g.status === 'pending',
     );
     if (hasInvites) setSubTab('invites');
-  }, [games]);
+  }, [games, hasFreshGames]);
 
   // `liveGamesCache`'i her güncellemede tazeler — bir sonraki mount'un
   // gösterebileceği "son bilinen" durum.
