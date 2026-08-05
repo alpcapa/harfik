@@ -19,6 +19,7 @@ npm run build   # TypeScript derleme + üretim build
 npm run dev     # Geliştirme sunucusu
 npm run lint    # tsc --noEmit (ayrı bir ESLint kurulumu yok)
 npm run test    # Playwright duman testleri (tests/smoke.spec.ts)
+npm run generate-golden-vectors  # Flutter portu parite fixture'ları (bkz. "Flutter / Mobil Port")
 ```
 
 **`npm run test` neyi kapsıyor, neyi kapsamıyor:** `tests/smoke.spec.ts` kapsamlı bir test paketi DEĞİL — "uygulama açılıyor, 2 kişilik bir oyun başlatılabiliyor, YZ hamle yapıyor, bilinmeyen bir path SPA fallback'iyle açılıyor" düzeyinde bir kritik-yol kontrolü. Buraya kadar hatasız gelmek reducer/YZ/skor/bölge hesaplama zincirinin ucuna kadar çalıştığı ve `ErrorBoundary`'nin devreye girmediği anlamına geliyor.
@@ -35,6 +36,25 @@ Projenin geri kalanının çok büyük bölümü (Canlı oyun, mesajlaşma, e-po
 
 Anlamlı bir değişiklik yapıldığında (yeni dosya/component/util/hook, klasör yapısı değişikliği, sözlük kelime sayısı gibi somut rakamlar, migration/akış değişikliği vb.) **standart olarak** hem bu dosyayı (`CLAUDE.md`) hem de `README.md`'yi kontrol et ve gerekiyorsa aynı PR'da güncelle — özellikle "Klasör Yapısı" (burada) ve "Proje Yapısı" (`README.md`) ağaçları, ve `README.md`'deki kelime sayısı gibi rakamlar zamanla koddan kopabiliyor (23 Temmuz 2026'da fark edildi: README hâlâ eski **92.503** kelime rakamını taşıyordu, gerçek liste sonradan yapılan çok-sözcüklü madde temizlikleriyle ~64 bine düşmüştü; ayrıca `ErrorBoundary`/`PlayerBadge`/`useModalA11y`/`useOnlineStatus`/`gameStorage`/`gameSync`/`feedbackSync`/`onboarding`/`ranking`/`visitTracking` gibi dosyalar hiç listeye girmemişti). Bu bir "fırsat bulunca yapılır" işi değil — migration senkron kontrolü (aşağıda, "Migration'lar" bölümü) gibi asıl işin bir parçası say.
 
+## Flutter / Mobil Port (`mobile/`)
+
+5 Ağustos 2026'da başladı — iOS+Android için Flutter portu. **Tüm port
+kararları/yapısı AYRI bir rehberde: `mobile/CLAUDE.md`** (bu dosyayla aynı
+"anlamlı değişiklikte aynı PR'da güncelle" disiplinine tabidir). Web tarafını
+ilgilendiren iki kanca:
+
+- **Motor dosyalarına dokunan her PR golden vector'ları yeniden üretmeli:**
+  `src/game/` ya da `src/utils/`'ın kural dosyaları (validator, ai, board,
+  bag, ranking, leaguePoints, turkish, random, tiles, gameReducer, constants,
+  types) değişirse `npm run generate-golden-vectors` koşulup
+  `mobile/kelimeki_core` Dart testleri (`dart run test/run_all.dart`) aynı
+  PR'da geçirilmeli — Dart motoru web motorunun birebir kopyası, parite bu
+  fixture'larla kanıtlanıyor. Ayrıntı: `mobile/CLAUDE.md`, "Golden Vector İş
+  Akışı".
+- **`src/utils/random.ts`'teki `setRandomSource()`** yalnızca bu fixture
+  üreticisi için var — üretim kodu hiç çağırmaz, davranış değişmedi
+  (varsayılan `Math.random`).
+
 ## Klasör Yapısı
 
 ```
@@ -48,6 +68,8 @@ src/
   data/         # Kelime listesi (~63k), harf dağılımı, kelime anlamları, wordSetLoader (lazy chunk)
   lib/          # Supabase istemcisi ve API sarmalayıcısı
   hooks/        # useAuth, useModalA11y, useOnlineStatus, useAppIconBadge, useNicknameAvailability
+mobile/         # Flutter portu — kelimeki_core (saf Dart motor) + üretilmiş
+                # sözlük asset'i + golden vector fixture'ları (bkz. mobile/CLAUDE.md)
 ```
 
 ## Kritik Sabitler (src/game/constants.ts)

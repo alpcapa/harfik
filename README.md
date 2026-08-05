@@ -135,6 +135,12 @@ src/
     ├── api.ts             # saveGame, fetchLeaderboard, auth, fetchMeaning
     ├── pwa.ts             # PWA/service worker yardımcıları
     └── database.types.ts  # şema tipleri
+
+mobile/                    # Flutter (iOS+Android) portu — ayrıntı: mobile/CLAUDE.md
+├── kelimeki_core/         # oyun motorunun saf Dart portu (web motoruna eşitliği
+│                          # golden vector testleriyle kanıtlı: dart run test/run_all.dart)
+└── assets/dictionary/     # üretilmiş kelime listesi asset'i (words_tr.txt,
+                           # kaynak src/data/words.ts — npm run generate-golden-vectors üretir)
 ```
 
 ## Supabase (opsiyonel)
