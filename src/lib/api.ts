@@ -1644,10 +1644,12 @@ export async function fetchAdminFeedback(): Promise<AdminFeedbackRow[]> {
  * kendi sayaçlarının toplamı. İki filtre de `AdminDashboard`'daki
  * `unhandledFeedbackCount`/`chatReports.filter(r => !r.handled)` ile BİREBİR
  * aynı (`handled=false`) — rozetteki sayı ile panelin içindeki sayılar hiçbir
- * zaman ayrışmamalı. İki uç durum doğal olarak zaten doğru davranıyor:
- * admin'in KENDİ gönderdiği mesajlar (`origin='admin'`) `handled: true` ile
- * eklendiğinden, geri çekilen şikayetler de (`withdraw_online_game_chat_
- * reports` aynı anda `handled=true` yaptığından) sayılmıyor.
+ * zaman ayrışmamalı. Admin'in KENDİ gönderdiği mesajlar (`origin='admin'`)
+ * `handled: true` ile eklendiğinden doğal olarak sayılmıyor. Geri çekilen
+ * şikayetler ise sayılmaya DEVAM ediyor (4 Ağustos 2026,
+ * `withdraw_report_keeps_unhandled` migration'ı) — geri çekme raporlayanın
+ * kararıdır, admin'in incelemesi yerine geçmez; admin ne olduğunu görüp
+ * kendi iradesiyle okundu işaretlemeli.
  *
  * `fetchAdminFeedback`/`fetchAdminChatReports` tüm satırları çektiğinden,
  * yalnızca bir sayı için onları çağırmak (menü her açıldığında tüm geçmişi
