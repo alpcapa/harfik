@@ -67,9 +67,17 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
     fetchFriends().then(setFriends);
   };
 
+  // Hesap değişiminde YENİDEN çekilmeli: bu bileşen bir modal değil tam bir
+  // görünüm ve `LiveGamesTab`'ın `creating` dalı `!user` kontrolünden ÖNCE
+  // döndüğünden çıkış→giriş döngüsünü mount'ta kalarak atlatabiliyor — mount'a
+  // bağlı bir çekim, yeni hesaba ÖNCEKİ hesabın arkadaş listesini gösteriyordu
+  // (5 Ağustos 2026: T2 kendi listesinde kendini gördü). Bağımlılık `user`
+  // REFERANSI değil `user?.id`: `useAuth` her onAuthStateChange olayında
+  // (TOKEN_REFRESHED dahil) yeni bir User nesnesi set ediyor, referansa
+  // bağlansa saatte bir gereksiz yere yeniden çekerdi.
   useEffect(() => {
     reloadFriends();
-  }, []);
+  }, [user?.id]);
 
   // 2↔4 arası kural tamamen farklı (YZ izni yok / var) — sekme değişince
   // seçimleri sıfırlıyoruz ki eski bir seçim yeni kuralda geçersiz kalmasın.
