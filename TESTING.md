@@ -37,7 +37,9 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       bir "🤖 Yapay Zeka" satırı belirmeli ve bir daha sorulmamalı.
 - [ ] **Davetlinin görünümü.** Karşı hesapta "Oyun Davetleri" sekmesinde kart
       görünmeli, katılımcıların yanında "Davet gönderen"/"Bekliyor" etiketleri
-      ve "N gün içinde iptal edilir" satırı olmalı.
+      ve "N gün M saat sonra iptal edilecek" satırı olmalı (süre + sonunda ne
+      olacağı — 5 Ağustos 2026'da "Bugün iptal edilir" gibi yanlış/süresiz
+      ifadelerden bu kalıba geçildi).
 - [ ] **Kabul.** Oyun `active` olmalı, tahta/torba kurulmalı, iki tarafta da
       "Devam Edenler"e geçmeli. Kabul sonrası arkadaş önerisi modalı çıkmalı
       (henüz arkadaş olunmayan katılımcılar varsa).
@@ -46,6 +48,13 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
 - [ ] **Login varsayılanı.** Bekleyen bir davet varken çıkış yapıp tekrar gir:
       "Arkadaşınla" sekmesi otomatik açılmalı ve "Oyun Davetleri" alt sekmesi
       seçili gelmeli (davetler devam eden oyunlardan öncelikli).
+- [ ] **Kurma formunun arkadaş listesi hesap değişiminde tazelenmeli.** Bir
+      hesapla "+ Yeni Canlı Oyun"u aç (arkadaş listesi yüklensin), kapatmadan
+      çıkış yapıp BAŞKA bir hesapla gir, tekrar "+ Yeni Canlı Oyun"a bas.
+      Yeni hesabın KENDİ arkadaş listesi görünmeli — önceki hesabınki (hatta
+      kendi adının listede belirmesi) DEĞİL. (5 Ağustos 2026: `LiveGameCreateForm`
+      arkadaşları yalnızca mount'ta çekiyordu, bu form modal değil tam görünüm
+      olduğundan çıkış→giriş döngüsünü mount'ta kalarak atlatabiliyordu.)
 
 ## 2. Canlı oyun — oynanış
 
