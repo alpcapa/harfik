@@ -622,6 +622,30 @@ export default function App() {
   // 2/4 kişilik seçicisinin içine değil, onun yanına ayrı bir sekme olarak
   // eklendi — iki mod farklı zihinsel modeller taşıyor (bkz. proje notları).
   const [mainView, setMainView] = useState<'local' | 'live'>('local');
+  // Çıkışta (ve doğrudan hesap değişiminde) sekme seçimi varsayılana döner.
+  // Bu bileşen çıkışta unmount OLMADIĞINDAN `mainView` aksi halde bir sonraki
+  // oturuma taşınıyordu: Canlı sekmesindeyken çıkıp başka bir hesapla giren
+  // kullanıcı, Canlı'da hiçbir bekleyen işi olmasa da (ve rozet 0 iken)
+  // doğrudan "Arkadaşınla > Devam Edenler" ile karşılaşıyordu — üstelik
+  // Setup'taki giriş varsayılanı (`applyLoginDefaultOnce`) yalnızca 'live'e
+  // GEÇİREBİLDİĞİNDEN, yani hiçbir zaman 'local'e geri çekmediğinden, bu
+  // taşınan seçimi düzeltebilecek bir şey yoktu.
+  //
+  // Sıfırlama BİLEREK yalnızca "önceden girişliydi" durumunda çalışır
+  // (`prev !== null`): misafirken "Arkadaşınla" sekmesine girip oradaki
+  // uyarıdan giriş yapan kullanıcı (null → hesap) tam da Canlı'yı görmek
+  // istediğinden o sekmede bırakılır. Karar `user` REFERANSINA değil
+  // `user.id`'ye bakar — `useAuth` her `onAuthStateChange` olayında
+  // (TOKEN_REFRESHED dahil) yeni bir `User` nesnesi veriyor, referansa
+  // bakmak saatler sonra kullanıcıyı habersizce sekmeden atardı.
+  const lastAuthUserIdRef = useRef<string | null>(user?.id ?? null);
+  useEffect(() => {
+    const id = user?.id ?? null;
+    const prev = lastAuthUserIdRef.current;
+    if (prev === id) return;
+    lastAuthUserIdRef.current = id;
+    if (prev !== null) setMainView('local');
+  }, [user]);
 
   // Açık olan Canlı oyun (Faz 3, 4. adım) — Setup/LiveGamesTab'daki "Devam
   // Eden" bir oyuna dokununca dolar; doluyken tüm normal kurulum/yerel oyun

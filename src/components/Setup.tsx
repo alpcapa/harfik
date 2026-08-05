@@ -329,6 +329,26 @@ export function Setup({
   // foreground tetiklemeleriyle tekrar tekrar çağrıldığında) onu tekrar
   // Live'a geri çekerdi.
   const appliedLoginDefaultRef = useRef(false);
+  // ...ama "bir kez" HESAP BAŞINA bir kez olmalı. Bu bileşen çıkışta unmount
+  // olmadığından (`!user` dalını render edip mount'ta kalıyor) ref yaşıyordu:
+  // ilk hesap onu tükettikten sonra, aynı sekmede giren İKİNCİ hesap bekleyen
+  // bir daveti/sırası olsa bile Canlı sekmesine hiç geçirilmiyordu
+  // (`LiveGamesTab`'ın 5 Ağustos 2026'da düzeltilen aynı sınıf hatası).
+  // Karar `user` REFERANSINA değil `user.id`'ye bakar — `useAuth` her
+  // `onAuthStateChange` olayında (TOKEN_REFRESHED dahil, kabaca saatte bir)
+  // yeni bir `User` nesnesi verdiğinden, referansa bakmak "bir kez"i saatlik
+  // bir tekrara çevirip kullanıcıyı oturduğu sekmeden habersizce atardı.
+  // Ref `user?.id` ile başlatıldığından mount yolu hiç değişmiyor (blok
+  // mount'ta çalışmıyor). Aşağıdaki effect'ten ÖNCE tanımlı olması şart:
+  // React aynı commit'te setup'ları tanım sırasıyla çalıştırdığından,
+  // sıfırlama `refresh()`'ten önce gerçekleşir.
+  const lastUserIdRef = useRef<string | null>(user?.id ?? null);
+  useEffect(() => {
+    const id = user?.id ?? null;
+    if (lastUserIdRef.current === id) return;
+    lastUserIdRef.current = id;
+    appliedLoginDefaultRef.current = false;
+  }, [user]);
   useEffect(() => {
     if (!user) {
       setLiveActionCount(0);
