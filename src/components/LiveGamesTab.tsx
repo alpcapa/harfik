@@ -419,6 +419,9 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   // `null` olmadığından effect bayat veriyle çalışıp ref'i tüketiyor, taze veri
   // daveti getirdiğinde sekme bir daha düzelmiyordu.
   const [hasFreshGames, setHasFreshGames] = useState(false);
+  // Son uygulanan hesabın id'si — `user` referansı hesap değişmeden de
+  // değiştiğinden (aşağı bkz.) sıfırlama kararı buna göre veriliyor.
+  const lastUserIdRef = useRef<string | null>(user?.id ?? null);
 
   // Listeyi çeker, aktif oyunların sırasını/son tarihini yükler; süresi
   // ZATEN dolmuş bir sıra varsa `check_turn_timeout`'u (no-op değilse
@@ -502,16 +505,22 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   };
 
   useEffect(() => {
-    // Kullanıcı değişimi varsayılan-tab kararını da sıfırlar: önceki hesabın
-    // listesi/kararı yeni hesaba taşınmamalı. Mount'ta bu, lazy init ile aynı
-    // değeri yazdığından (aynı dizi referansı) ekstra render üretmez.
-    appliedDefaultTabRef.current = false;
-    setHasFreshGames(false);
-    if (!user) {
-      setGames(null);
-      return;
+    // Hesap değişimi varsayılan-tab kararını da sıfırlar: önceki hesabın
+    // listesi/kararı yeni hesaba taşınmamalı. Karşılaştırma `user` REFERANSINA
+    // değil `user.id`'ye bakmak ZORUNDA — `useAuth` her onAuthStateChange
+    // olayında (TOKEN_REFRESHED dahil, kabaca saatte bir) yeni bir User
+    // nesnesi set ediyor; referansa bakılsaydı varsayılan sekme saatler sonra
+    // yeniden uygulanıp kullanıcıyı oturduğu sekmeden koparırdı ("Sekme
+    // OTOMATİK değişmez" kuralı, CLAUDE.md). Mount'ta bu blok lazy init ile
+    // aynı diziyi yazdığından (aynı referans) ekstra render üretmez.
+    const uid = user?.id ?? null;
+    if (uid !== lastUserIdRef.current) {
+      lastUserIdRef.current = uid;
+      appliedDefaultTabRef.current = false;
+      setHasFreshGames(false);
+      setGames(uid ? (liveGamesCache.get(uid)?.games ?? null) : null);
     }
-    setGames(liveGamesCache.get(user.id)?.games ?? null);
+    if (!user) return;
     // Her çalıştırma KENDİ iptal jetonunu alır; `cancelledRef` yalnızca
     // "şu an geçerli olan jeton"u tutar (handleRespond bunu kullanıyor).
     // İlk sürüm tek bir paylaşılan nesneyi yeniden kullanıp her çalıştırmada
