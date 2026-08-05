@@ -151,7 +151,7 @@ export default function App() {
       // olabilir. Böyle yarım kalmış "bitmiş ama hâlâ orada duran" bir kayıt
       // varsa fırsatçı biçimde temizlenir, listeye hiç girmez.
       if (save.state.phase !== 'play' || save.state.isGameOver) {
-        void deleteLocalGameSave(save.id);
+        void enqueueSaveWrite(() => deleteLocalGameSave(save.id));
         continue;
       }
       if (Date.parse(save.updated_at) > cutoffMs) {
