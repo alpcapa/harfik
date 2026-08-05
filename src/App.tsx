@@ -108,6 +108,16 @@ export default function App() {
   // isteği ezip cihazlar-arası devamda eski state'i göstermesin.
   const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveChainRef = useRef<Promise<unknown>>(Promise.resolve());
+  // `local_game_saves`e yazan HER işlem (upsert VE silme) bu kuyruğa girmeli
+  // — yalnızca upsert'ler serileşirse, doğrudan atılan bir silme uçuştaki bir
+  // upsert'i "geçip" satırın yeniden yazılmasına yol açabilir. Ayrıca
+  // `refreshCloudSaves` listeyi çekmeden önce bu kuyruğun boşalmasını bekler
+  // (aşağı bkz.) — silme ile listeleme arasındaki yarışı da bu kapatıyor.
+  const enqueueSaveWrite = <T,>(run: () => Promise<T>): Promise<T> => {
+    const next = saveChainRef.current.catch(() => {}).then(run);
+    saveChainRef.current = next;
+    return next;
+  };
   // Misafirin yarıda bırakılmış `savedGame`'ini girişten sonra hesaba
   // taşıyan effect'in (aşağıda) StrictMode/mükerrer-çalışma kilidi.
   const migratingSavedGameRef = useRef(false);
@@ -124,6 +134,12 @@ export default function App() {
       setCloudSaves(null);
       return;
     }
+    // Bekleyen yazma varsa (özellikle `handleLogoClick`'in hiç oynanmamış
+    // oyunu silmesi — o silme, ABANDON dispatch'inden ÖNCE kuyruğa girer)
+    // önce onun bitmesini bekle. Aksi halde bu liste sorgusu silme sunucuda
+    // commit edilmeden dönüp az önce silinen kaydı "Devam Edenler"de bir kez
+    // gösterir; kullanıcı sekme değiştirip dönene kadar orada kalırdı.
+    await saveChainRef.current.catch(() => {});
     const saves = await listLocalGameSaves();
     const cutoffMs = Date.now() - ABANDON_TIMEOUT_MS;
     const cutoffIso = new Date(cutoffMs).toISOString();
@@ -269,7 +285,7 @@ export default function App() {
             players: savedGame.state.players.map((p, i) => (i === 0 ? { ...p, name: accountName } : p)),
           }
         : savedGame.state;
-    void upsertLocalGameSave(id, user.id, stateToUpload)
+    void enqueueSaveWrite(() => upsertLocalGameSave(id, user.id, stateToUpload))
       .then((ok) => {
         // Yalnızca sunucuya GERÇEKTEN yazıldığı doğrulanınca yerel/bellek
         // kopyaları silinir — aksi halde (ağ/RLS hatası) `savedGame` olduğu
@@ -365,9 +381,7 @@ export default function App() {
         if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
         saveDebounceRef.current = setTimeout(() => {
           saveDebounceRef.current = null;
-          saveChainRef.current = saveChainRef.current
-            .catch(() => {})
-            .then(() => upsertLocalGameSave(id, uid, snapshot));
+          void enqueueSaveWrite(() => upsertLocalGameSave(id, uid, snapshot));
         }, 600);
       } else {
         saveGameState(state);
@@ -384,7 +398,8 @@ export default function App() {
       // artık gönderilmeyecek — devam kaydını silme işleminin ardından
       // gecikmeli/eski bir upsert'in onu diriltmesi istenmez.
       if (activeSaveIdRef.current) {
-        void deleteLocalGameSave(activeSaveIdRef.current);
+        const id = activeSaveIdRef.current;
+        void enqueueSaveWrite(() => deleteLocalGameSave(id));
         activeSaveIdRef.current = null;
       }
       if (!savedGame) clearGameState();
@@ -586,7 +601,17 @@ export default function App() {
       isSupabaseConfigured &&
       activeSaveIdRef.current
     ) {
-      void deleteLocalGameSave(activeSaveIdRef.current);
+      const id = activeSaveIdRef.current;
+      // Bekleyen (henüz ateşlenmemiş) debounce'lu upsert'i ÖNCE iptal et —
+      // aksi halde silme kuyruğa girdikten sonra o zamanlayıcı ateşlenip
+      // satırı yeniden yazabilirdi. (Aşağıdaki ABANDON dispatch'i zaten
+      // save/clear effect'i üzerinden de iptal ediyor; burada senkron olarak
+      // yapmak sıralamayı effect'lerin çalışma anından bağımsız kılıyor.)
+      if (saveDebounceRef.current) {
+        clearTimeout(saveDebounceRef.current);
+        saveDebounceRef.current = null;
+      }
+      void enqueueSaveWrite(() => deleteLocalGameSave(id));
       activeSaveIdRef.current = null;
     }
     dispatch({ type: 'ABANDON' });
