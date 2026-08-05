@@ -505,22 +505,31 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   };
 
   useEffect(() => {
-    // Hesap değişimi varsayılan-tab kararını da sıfırlar: önceki hesabın
-    // listesi/kararı yeni hesaba taşınmamalı. Karşılaştırma `user` REFERANSINA
-    // değil `user.id`'ye bakmak ZORUNDA — `useAuth` her onAuthStateChange
+    // Hesap değişimi varsayılan-tab kararını sıfırlar: bu bileşen çıkış
+    // yapıldığında unmount OLMUYOR (`mainView` çıkışta sıfırlanmıyor), yani
+    // ref'ler yaşıyor — sıfırlamasak yeni hesap varsayılan sekme kararını hiç
+    // alamazdı. İki kısıt var: (1) karşılaştırma `user` REFERANSINA değil
+    // `user.id`'ye bakmak ZORUNDA, çünkü `useAuth` her onAuthStateChange
     // olayında (TOKEN_REFRESHED dahil, kabaca saatte bir) yeni bir User
-    // nesnesi set ediyor; referansa bakılsaydı varsayılan sekme saatler sonra
-    // yeniden uygulanıp kullanıcıyı oturduğu sekmeden koparırdı ("Sekme
-    // OTOMATİK değişmez" kuralı, CLAUDE.md). Mount'ta bu blok lazy init ile
-    // aynı diziyi yazdığından (aynı referans) ekstra render üretmez.
+    // nesnesi set ediyor — referansa bakılsaydı varsayılan sekme saatler
+    // sonra yeniden uygulanıp kullanıcıyı oturduğu sekmeden koparırdı
+    // ("Sekme OTOMATİK değişmez" kuralı, aşağıda); (2) burada `games`e
+    // DOKUNULMAZ — aşağıdaki önbellek-yazma effect'i aynı commit'te ESKİ
+    // `games` closure'ıyla çalıştığından, burada yeni hesabın listesini
+    // yazmak "yeni user + eski liste" anını açıp önbelleğe yanlış anahtarla
+    // yazma penceresi yaratıyordu. O pencereyi kapalı tutan şey, aşağıdaki
+    // `!user` dalının çıkışta `games`i `null`a çekmesi (eski davranış,
+    // bilerek korundu).
     const uid = user?.id ?? null;
     if (uid !== lastUserIdRef.current) {
       lastUserIdRef.current = uid;
       appliedDefaultTabRef.current = false;
       setHasFreshGames(false);
-      setGames(uid ? (liveGamesCache.get(uid)?.games ?? null) : null);
     }
-    if (!user) return;
+    if (!user) {
+      setGames(null);
+      return;
+    }
     // Her çalıştırma KENDİ iptal jetonunu alır; `cancelledRef` yalnızca
     // "şu an geçerli olan jeton"u tutar (handleRespond bunu kullanıyor).
     // İlk sürüm tek bir paylaşılan nesneyi yeniden kullanıp her çalıştırmada
