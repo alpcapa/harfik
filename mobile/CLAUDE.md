@@ -946,7 +946,41 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - Doğrulama: `meaning_test.dart` (4 test — asset ↔ kaynak JSON
        karşılaştırması + Türkçe büyük harfli sorgu + damga yenileme + modal
        render dalları + `build/screenshots/meaning_modal.png`). 50/50 yeşil.
-   - Sıradaki parça: kurallar ("Nasıl oynanır?") ekranı.
+   - ✅ **Parça 10 — kurallar ekranı (6 Ağustos 2026):** `HelpModal.tsx`
+     portu (`help_modal.dart`): iki adım (Hızlı Başlangıç / Detaylı
+     Kurallar), başlığın ÜSTÜNDEKİ linkle geçiş — `KModal`'a web'in
+     `headerLink` prop'u eklendi. Web'in yardımcıları birebir taşındı
+     (Section/P/Pill/TileRow/QuickItem). Setup'taki "Nasıl oynanır?" linki
+     bağlandı (yanındaki "Arkadaşınla paylaş" hâlâ eksik — native share
+     ayrı parça). Bingo bonusu metinde sabit değil, motordan
+     (`bingoBonus`).
+     - **Kural metinleri web'den BİREBİR kopyalandı** — özetlenmedi. Dosya
+       başında bu kural yazılı; web metni değişirse buraya aynen taşınmalı
+       (iki taraf tek kaynaktan üretilmiyor). Testler bunu iki cümle
+       örnekleyerek koruyor ("puanın 1/3'ü bölge sahibine gider…" gibi).
+       `<strong>` vurguları kaynakta `**...**` ile yazılıp `_runs()` ile
+       TextSpan'e çevriliyor — Türkçe metin kaynakta okunur/kopyalanabilir
+       kalsın diye.
+     - **Puan tablosu artık motora karşı doğrulanıyor:** web tablosu elle
+       yazılmış; test 28 harfin puanını `letterPoints` ile karşılaştırıyor,
+       sapma olursa düşer.
+     - **Emoji dersi (Material ikonlarının kardeşi):** `FontLoader` ile
+       yüklenen aile, `TextStyle`'da ADIYLA referans verilmedikçe
+       kullanılmıyor — ilk sürümde 🎯🏠🔗… ekran görüntüsünde boş kutu
+       çıktı. `_QuickItem` artık `fontFamilyFallback: ['Noto Color Emoji',
+       'Apple Color Emoji']` veriyor; bu hem testte gerçek emoji çizdiriyor
+       hem cihazda doğru aileyi hedefliyor. `test_fonts.dart` emoji fontunu
+       da yüklüyor. Ayrıca ÖLÇÜLDÜ: `★` (U+2605) hiçbir bundled fontta yok
+       → taş jokerindeki kararla aynı şekilde `Icons.star` (WidgetSpan).
+     - Doğrulama: `help_modal_test.dart` (3 test — 9 hızlı madde + motordan
+       gelen bonus, iki yönlü adım geçişi + 10 bölüm başlığı + kural
+       cümleleri, puan tablosu ↔ motor tutarlılığı; ekran görüntüleri
+       `build/screenshots/help_quick.png` ve `help_detailed.png`).
+       53/53 yeşil.
+   - **Web UI paritesi bu parçayla tamamlandı** (misafir/YZ akışı için).
+     Kalan bilinçli eksikler auth'a bağlı: "Görüş Bildir" formu,
+     "Arkadaşınla paylaş" (native share), Canlı oyun ekranları, skor kartı/
+     k-lig. Sıradaki faz: auth + Canlı oyun (bkz. "Sıradaki Fazlar").
 5. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

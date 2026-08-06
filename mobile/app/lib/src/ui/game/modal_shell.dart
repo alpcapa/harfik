@@ -19,7 +19,16 @@ class KModal extends StatelessWidget {
   final String title;
   final Widget child;
 
-  const KModal({super.key, required this.title, required this.child});
+  /// Başlığın ÜSTÜNDE gösterilen küçük gezinme linki (web `headerLink` —
+  /// HelpModal'ın Hızlı Başlangıç ↔ Detaylı Kurallar geçişi).
+  final Widget? headerLink;
+
+  const KModal({
+    super.key,
+    required this.title,
+    required this.child,
+    this.headerLink,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -43,28 +52,38 @@ class KModal extends StatelessWidget {
               decoration: const BoxDecoration(
                 border: Border(bottom: BorderSide(color: _divider)),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: Text(
-                      // Web'de CSS `uppercase` (tr locale ile doğru çalışır);
-                      // Dart'ta karşılığı trUpper — native toUpperCase 'İ'yi
-                      // bozar (proje kuralı).
-                      trUpper(title),
-                      style: const TextStyle(
-                        fontFamily: 'SpaceMono',
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
-                        color: _accent,
+                  if (headerLink != null) ...[
+                    headerLink!,
+                    const SizedBox(height: 8), // web gap-2
+                  ],
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          // Web'de CSS `uppercase` (tr locale ile doğru çalışır);
+                          // Dart'ta karşılığı trUpper — native toUpperCase 'İ'yi
+                          // bozar (proje kuralı).
+                          trUpper(title),
+                          style: const TextStyle(
+                            fontFamily: 'SpaceMono',
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                            color: _accent,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    tooltip: 'Kapat',
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, size: 18, color: _muted),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        tooltip: 'Kapat',
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close, size: 18, color: _muted),
+                      ),
+                    ],
                   ),
                 ],
               ),

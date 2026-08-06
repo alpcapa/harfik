@@ -9,8 +9,8 @@
 // listesi (Misafir + "Yapay Zeka N"), sözlük hazır olana dek "HAZIRLANIYOR…"
 // gösteren Oyunu Başlat; misafirin tekil kaydı varsa form yerine "Devam Eden
 // Oyun" satırı (avatarlar + Sıra: + kalan süre) ve 7 gün paragrafı.
-// Bilinçli eksikler: "Nasıl oynanır?" (kurallar ekranı ayrı parça),
-// "Arkadaşınla paylaş" (native share ayrı parça).
+// "Nasıl oynanır?" linki kurallar modalını açar; "Arkadaşınla paylaş"
+// (native share) bilinçli eksik — ayrı parça.
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
@@ -20,6 +20,7 @@ import '../../game/game_controller.dart';
 import '../../game/local_game_repo.dart';
 import '../../storage/local_save_store.dart' show abandonTimeout;
 import '../game/game_screen.dart';
+import '../game/help_modal.dart';
 import '../game/logo_mark.dart';
 import '../game/neo_button.dart';
 import '../game/player_badge.dart';
@@ -157,6 +158,25 @@ class _SetupScreenState extends State<SetupScreen> {
                       fontSize: 12,
                       height: 1.5,
                       color: _muted,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Web Setup'taki "Nasıl oynanır?" linki (yanındaki
+                  // "Arkadaşınla paylaş" native share parçasının işi).
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: GestureDetector(
+                      onTap: () => showHelpModal(context),
+                      behavior: HitTestBehavior.opaque,
+                      child: const Text(
+                        'Nasıl oynanır?',
+                        style: TextStyle(
+                          fontFamily: 'SpaceMono',
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2563EB),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),

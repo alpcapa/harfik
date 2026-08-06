@@ -31,10 +31,24 @@ Future<void> _loadMaterialIcons() async {
       ['$root/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf']);
 }
 
+/// Emoji de uygulama asset'i DEĞİL — platform sağlar (iOS Apple Color Emoji,
+/// Android Noto Color Emoji). Test ortamında yoksa kurallar ekranındaki
+/// 🎯🏠🔗… ikonları boş kutuya döner; ekran görüntüsü temsili olsun diye
+/// SDK'nın/konteynerin Noto Color Emoji'si yüklenir (Material ikonlarındaki
+/// aynı ders).
+Future<void> _loadEmoji() async {
+  final root = Platform.environment['FLUTTER_ROOT'] ?? '/root/flutter';
+  await _loadFamily('Noto Color Emoji', [
+    '$root/engine/src/flutter/txt/third_party/fonts/NotoColorEmoji.ttf',
+    '/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf',
+  ]);
+}
+
 /// Uygulamanın üç font ailesini (web tailwind eşlenikleri) + Material
-/// ikonlarını yükler.
+/// ikonlarını + emoji yükler.
 Future<void> loadAppFonts() async {
   await _loadMaterialIcons();
+  await _loadEmoji();
   await _loadFamily('Nunito', ['assets/fonts/Nunito-ExtraBold.ttf']);
   await _loadFamily('SpaceGrotesk', [
     'assets/fonts/SpaceGrotesk-Regular.ttf',
