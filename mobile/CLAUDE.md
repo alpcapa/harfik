@@ -489,6 +489,11 @@ bağlı değil.)
      yetmez — boyama modelinin kendisi farklıysa (yoğunluk, katman sırası,
      sigma tanımı) web'in çıktısı ölçülüp Flutter tarafında aynı ÇIKTIYI
      üreten mekanizma kurulmalı.
+   - ✅ **Mesaj satırı tahtanın ALTINA taşındı (6 Ağustos 2026, kullanıcı
+     bildirdi):** ilk portta mesaj skor satırıyla tahtanın arasındaydı; web'de
+     gerçek sıra Board → mesaj → Rack (`App.tsx` ~1234, `w-full max-w-[680px]`
+     bloğunun ilk çocuğu). Ayrıca web mesajı `font-mono` (Space Mono) basar —
+     app'te de `fontFamily: 'SpaceMono'` yapıldı.
    - Sıradaki parçalar: taş değiştirme akışı + GameOver ekranı, gerçek
      GameHeader görsel dili, kaydet/yükle bağlantısı (LocalSaveStore +
      terk cezası üst katmanı), Setup ekranı, sürükle-bırak, kelime anlamı.

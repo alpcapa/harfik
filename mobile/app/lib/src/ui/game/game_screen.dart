@@ -220,26 +220,6 @@ class _GameScreenState extends State<GameScreen> {
                     ],
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SizedBox(
-                    height: 32,
-                    child: Center(
-                      child: Text(
-                        state.isGameOver ? 'Oyun bitti.' : liveMessage,
-                        maxLines: 2,
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: _messageColor(
-                              state.isGameOver ? MessageKind.none : liveKind),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -253,6 +233,29 @@ class _GameScreenState extends State<GameScreen> {
                               score: moveStatus.score,
                             ),
                       onCellTap: _handleCellTap,
+                    ),
+                  ),
+                ),
+                // Mesaj satırı web'deki gibi tahtanın ALTINDA, rafın üstünde
+                // (App.tsx: Board → liveMessage → Rack; font-mono 11px bold).
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                  child: SizedBox(
+                    height: 30,
+                    child: Center(
+                      child: Text(
+                        state.isGameOver ? 'Oyun bitti.' : liveMessage,
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontFamily: 'SpaceMono',
+                          fontWeight: FontWeight.bold,
+                          color: _messageColor(
+                              state.isGameOver ? MessageKind.none : liveKind),
+                        ),
+                      ),
                     ),
                   ),
                 ),
