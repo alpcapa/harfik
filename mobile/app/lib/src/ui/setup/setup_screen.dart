@@ -224,6 +224,7 @@ class _SetupScreenState extends State<SetupScreen> {
         words: words,
         meanings: widget.services.meanings,
         auth: widget.services.auth,
+        stats: widget.services.stats,
       ),
     ));
     await guestSession?.end();
@@ -323,7 +324,8 @@ class _SetupScreenState extends State<SetupScreen> {
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Align(
                           alignment: Alignment.centerRight,
-                          child: AccountButton(auth: auth),
+                          child: AccountButton(
+                              auth: auth, stats: widget.services.stats),
                         ),
                       ),
                     const Center(child: LogoMark(height: 52)),

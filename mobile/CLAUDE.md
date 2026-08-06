@@ -103,6 +103,7 @@ mobile/
       data/cloud_save_repo.dart   # local_game_saves senkronu (girişli YZ oyunları)
       data/game_record.dart  # buildGameRecord portu (`games` satırı)
       data/games_api.dart    # games/game_finishes + dayanıklı kuyruk/flush
+      data/stats_api.dart    # player_stats / leaderboard / my_leaderboard_rank
       game/game_controller.dart # ChangeNotifier motor kabuğu + otomatik YZ turu
       storage/               # SQLite + prefs katmanı (bkz. "Depolama Katmanı"):
                              # app_database (şema), app_storage (giriş kapısı),
@@ -1257,11 +1258,63 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        `game_finishes` insert'i ve Edge Function çağrısı bu ortamdan test
        EDİLEMEDİ — cihazda bir oyun bitirilip web'deki Skor Kartı'ndan
        doğrulanmalı.
-   - Sıradaki parçalar (sıra önerisi): şifre sıfırlama (özel şema deep
-     link — `kelimeki://reset`, Dashboard redirect listesine ekleme
-     gerekir), skor kartı/k-lig ekranı (+ `buildSnapshotGameState` portu,
-     oyun geçmişi), Canlı oyun ekranları, Görüş Bildir formu,
-     "Arkadaşınla paylaş" (native share).
+   - ✅ **Parça 4 — Skor Kartı + k-lig + oyuncu kartı (6 Ağustos 2026,
+     `lib/src/ui/score/`):** 3b'nin yazdığı veri artık kullanıcıya
+     görünüyor.
+     - **Wordmark tek kaynaktan (logo deseninin ikizi):**
+       `scripts/generate-klig-paths.mjs` artık `klig_mark_data.dart`ı da
+       yazıyor — `npm run generate-klig-paths` iki tarafı birden günceller
+       (üretici koşulduğunda web `KLigMark.tsx`'in DEĞİŞMEDİĞİ `git diff`
+       ile doğrulandı). `klig_mark.dart` çizimi `logo_mark.dart`ın
+       `parseSvgPath`'ini paylaşıyor.
+     - **`data/stats_api.dart`** — `PlayerStats`/`LeaderboardRow`/
+       `MyLeaderboardRank` + `StatsGateway`/`StatsRepo`. "Genel" sekmesi
+       AYRI view'dan (`player_stats_overall`) gelir; web'in gerekçesi
+       aynen geçerli (ağırlıklı ortalama + longest_word iki hazır satırdan
+       birleştirilemez). Salt okunur katman: yazma kuyruğu/dayanıklılık
+       YOK, ağ hatasında null/boş döner. `shortName` web'in kısa kimlik
+       kuralı (nickname → ad → Anonim; soyad ASLA).
+     - **`ui/score/score_stats_section.dart`** — web `ScoreStatsSection`
+       portu; ScoreCard ve PlayerScoreCard BU dosyayı paylaşıyor (web'de
+       de iki kopya bir kez açılıp kod incelemesiyle tek kaynağa
+       çekilmişti). Kutu ızgarası web'in `grid-cols-3` + `col-span-2`
+       davranışını elle satırlara bölerek veriyor.
+     - **`score_card_modal.dart`** (kendi kartın: avatar/isim/"Y:36/C:E",
+       k-lig sırası → sıralamayı açar, üç sekme + iki ızgara),
+       **`leaderboard_modal.dart`** (ilk 10 + kaydırınca 20'şer lazy —
+       web IntersectionObserver'ın ScrollController karşılığı, kendi
+       satırın vurgulu, listede yoksan "senin sıran" kısayolu),
+       **`player_score_card_modal.dart`** (k-lig satırına dokununca).
+       Hesap menüsüne k-lig ve Skor Kartı satırları eklendi (`stats`
+       null iken hiç çizilmez — offline modda dürüstlük deseni).
+       **Bilinçli eksikler:** "Tüm Geçmiş Oyunlar" linki (oyun geçmişi
+       ayrı parça), PlayerScoreCard'daki arkadaşlık simgesi (arkadaşlık
+       sistemi henüz yok) — çalışmayan kontrol koymuyoruz.
+     - **KModal'a `titleWidget`** eklendi: web'de başlık bir ReactNode
+       olabiliyor (k-lig'de 🏆 + wordmark) — String başlıkla temsil
+       edilemiyordu.
+     - **Ekran görüntüsü ÜÇ hata yakaladı** (kod okumasıyla değil):
+       (1) etiketlerde native `toUpperCase` → "BIRINCILIK"/"KELIME"
+       (noktasız I) — `trUpper`a çevrildi ve testle korumaya alındı;
+       (2) 🏆 kutu çıkıyordu — `fontFamilyFallback` şart (help_modal'da
+       öğrenilen ders, yeni bir emoji eklendiğinde tekrar geçerli);
+       (3) "SIRA" başlığı 24px sütuna sığmayıp alt satıra kayıyordu →
+       28px. Ayrıca `CrossAxisAlignment.stretch` bir Column içinde
+       doğrudan kullanılınca "infinite height" ile patladı (parça 3'teki
+       raf satırının AYNI dersi) — `IntrinsicHeight` ile sarıldı.
+     - Doğrulama: `score_card_test.dart` (9 test — ayrıştırma/kısa
+       kimlik/ağ hatası birimleri, skor kartı kimlik+sekme+kutular +
+       sekme değişimi + `build/screenshots/score_card.png`, boş kayıt
+       hâli, k-lig ilk sayfa/lazy ikinci sayfa (limit 10 → 20, offset 10)
+       + `leaderboard.png`, satırdan oyuncu kartı, boş liste). 109/109
+       yeşil, analyze temiz. **Doğrulama sınırı:** gerçek view/RPC
+       sorguları (RLS dahil) bu ortamdan test EDİLEMEDİ — cihazda gerçek
+       bir hesapla doğrulanmalı.
+   - Sıradaki parçalar (sıra önerisi): oyun geçmişi (`GameHistoryModal` +
+     `buildSnapshotGameState` portu + tahta önizlemesi; beğeni/paylaşma),
+     şifre sıfırlama (özel şema deep link — `kelimeki://reset`, Dashboard
+     redirect listesine ekleme gerekir), Canlı oyun ekranları, Görüş
+     Bildir formu, "Arkadaşınla paylaş" (native share).
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

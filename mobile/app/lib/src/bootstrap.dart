@@ -11,6 +11,7 @@ import 'data/auth_service.dart';
 import 'data/cloud_save_repo.dart';
 import 'data/dictionary_loader.dart';
 import 'data/games_api.dart';
+import 'data/stats_api.dart';
 import 'data/meaning_store.dart';
 import 'data/supabase_client.dart';
 import 'storage/app_storage.dart';
@@ -47,6 +48,10 @@ class AppServices {
   /// bu yüzden Future. Supabase yoksa null (kayıt tutulmaz).
   final Future<GamesRepo>? games;
 
+  /// Skor kartı / k-lig verisi — Supabase yoksa null (menüde bu satırlar
+  /// hiç çizilmez).
+  final StatsRepo? stats;
+
   const AppServices({
     required this.dictionary,
     required this.meanings,
@@ -56,6 +61,7 @@ class AppServices {
     this.storage,
     this.cloudSaves,
     this.games,
+    this.stats,
   });
 }
 
@@ -79,5 +85,6 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
     games: supabase != null
         ? storage.then((s) => GamesRepo(SupabaseGamesGateway(supabase), s.queue))
         : null,
+    stats: supabase != null ? StatsRepo(SupabaseStatsGateway(supabase)) : null,
   );
 }

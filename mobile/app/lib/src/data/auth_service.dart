@@ -29,6 +29,12 @@ class KProfile {
   final String? avatarUrl;
   final bool isAdmin;
 
+  /// ISO `yyyy-mm-dd` (opsiyonel) — Skor Kartı'ndaki "Y:59/C:E" satırı.
+  final String? birthDate;
+
+  /// 'female' | 'male' | null (web `Gender`).
+  final String? gender;
+
   const KProfile({
     required this.id,
     this.displayName,
@@ -37,6 +43,8 @@ class KProfile {
     this.lastName,
     this.avatarUrl,
     this.isAdmin = false,
+    this.birthDate,
+    this.gender,
   });
 
   factory KProfile.fromMap(Map<String, dynamic> m) => KProfile(
@@ -47,6 +55,8 @@ class KProfile {
         lastName: m['last_name'] as String?,
         avatarUrl: m['avatar_url'] as String?,
         isAdmin: m['is_admin'] == true,
+        birthDate: m['birth_date'] as String?,
+        gender: m['gender'] as String?,
       );
 }
 

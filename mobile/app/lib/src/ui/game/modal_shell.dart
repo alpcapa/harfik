@@ -17,6 +17,10 @@ const Color _muted = Color(0xFF5A6673);
 class KModal extends StatelessWidget {
   /// Boş bırakılabilir — web'de GameOver `title=""` geçip yalnızca ✕ gösterir.
   final String title;
+
+  /// Metin yerine bir widget başlık (web'de `title` bir ReactNode olabiliyor:
+  /// k-lig sıralamasının başlığı 🏆 + wordmark). Verilirse [title] yok sayılır.
+  final Widget? titleWidget;
   final Widget child;
 
   /// Başlığın ÜSTÜNDE gösterilen küçük gezinme linki (web `headerLink` —
@@ -27,6 +31,7 @@ class KModal extends StatelessWidget {
     super.key,
     required this.title,
     required this.child,
+    this.titleWidget,
     this.headerLink,
   });
 
@@ -63,19 +68,20 @@ class KModal extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
-                          // Web'de CSS `uppercase` (tr locale ile doğru çalışır);
-                          // Dart'ta karşılığı trUpper — native toUpperCase 'İ'yi
-                          // bozar (proje kuralı).
-                          trUpper(title),
-                          style: const TextStyle(
-                            fontFamily: 'SpaceMono',
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                            color: _accent,
-                          ),
-                        ),
+                        child: titleWidget ??
+                            Text(
+                              // Web'de CSS `uppercase` (tr locale ile doğru
+                              // çalışır); Dart'ta karşılığı trUpper — native
+                              // toUpperCase 'İ'yi bozar (proje kuralı).
+                              trUpper(title),
+                              style: const TextStyle(
+                                fontFamily: 'SpaceMono',
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.5,
+                                color: _accent,
+                              ),
+                            ),
                       ),
                       IconButton(
                         visualDensity: VisualDensity.compact,

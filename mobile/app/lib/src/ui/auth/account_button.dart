@@ -4,15 +4,21 @@
 //   kimlik yükleniyor → "…" dairesi (dokunulamaz)
 //   oturum yok       → GİRİŞ (btn-raised accent) → giriş penceresi
 //   oturum var       → avatar → açılır menü
-// Menü bu fazda YALNIZCA gerçekten çalışan maddeleri taşıyor: isim başlığı,
-// "Nasıl Oynanır?" ve "Çıkış Yap". Web'deki diğer satırlar (k-lig,
-// Arkadaşlar, Skor Kartı, Hesap Ayarları) kendi ekranları portlanınca
-// eklenecek — çalışmayan madde koymuyoruz (ARKADAŞINLA dürüstlük deseni).
+// Menü YALNIZCA gerçekten çalışan maddeleri taşıyor: isim başlığı, k-lig
+// satırı (rank+puan, sıralamayı açar), Skor Kartı, "Nasıl Oynanır?" ve
+// "Çıkış Yap". Web'deki kalanlar (Arkadaşlar, Hesap Ayarları) kendi
+// ekranları portlanınca eklenecek — çalışmayan madde koymuyoruz
+// (ARKADAŞINLA dürüstlük deseni). k-lig/Skor Kartı yalnızca `stats`
+// verildiğinde (Supabase yapılandırılmışsa) görünür.
 import 'package:flutter/material.dart';
 
 import '../../data/auth_service.dart';
+import '../../data/stats_api.dart';
 import '../game/help_modal.dart';
 import '../game/neo_box.dart';
+import '../score/klig_mark.dart';
+import '../score/leaderboard_modal.dart';
+import '../score/score_card_modal.dart';
 import 'k_avatar.dart';
 import 'auth_modal.dart';
 
@@ -23,6 +29,10 @@ const Color _border = Color(0xFFDCE2EA);
 
 class AccountButton extends StatelessWidget {
   final AuthService auth;
+
+  /// null ise k-lig/Skor Kartı satırları hiç çizilmez (Supabase
+  /// yapılandırılmamış ya da testte verilmemiş).
+  final StatsRepo? stats;
 
   /// GİRİŞ butonunun akıcı ölçüleri — GameHeader kendi clamp değerlerini
   /// geçer; Setup varsayılan (maksimum) değerleri kullanır (web UserMenu
@@ -35,6 +45,7 @@ class AccountButton extends StatelessWidget {
   const AccountButton({
     super.key,
     required this.auth,
+    this.stats,
     this.girisFontSize = 11,
     this.girisPaddingX = 8,
     this.girisPaddingY = 12,
@@ -113,7 +124,16 @@ class AccountButton extends StatelessWidget {
         side: const BorderSide(color: Color(0xFFB8C2D1)),
       ),
       onSelected: (value) {
+        final stats = this.stats;
         switch (value) {
+          case 'league':
+            if (stats != null) {
+              showLeaderboard(context, auth: auth, stats: stats);
+            }
+          case 'score':
+            if (stats != null) {
+              showScoreCard(context, auth: auth, stats: stats);
+            }
           case 'help':
             showHelpModal(context);
           case 'signout':
@@ -141,6 +161,21 @@ class AccountButton extends StatelessWidget {
           ),
         ),
         const PopupMenuDivider(),
+        if (stats != null) ...[
+          // Web dropdown'ının en üstündeki tıklanabilir "k-lig" satırı.
+          const PopupMenuItem<String>(
+            value: 'league',
+            child: Row(children: [
+              KLigMark(height: 14),
+              SizedBox(width: 8),
+              Text('Sıralama', style: itemStyle),
+            ]),
+          ),
+          const PopupMenuItem<String>(
+            value: 'score',
+            child: Text('📊  Skor Kartı', style: itemStyle),
+          ),
+        ],
         const PopupMenuItem<String>(
           value: 'help',
           child: Text('❓  Nasıl Oynanır?', style: itemStyle),
