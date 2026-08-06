@@ -70,6 +70,15 @@ class _HomeScreenState extends State<HomeScreen> {
             Text(services.supabase != null
                 ? 'Sunucu: bağlı'
                 : 'Sunucu: yapılandırılmamış (offline mod)'),
+            if (services.storage != null)
+              FutureBuilder(
+                future: services.storage,
+                builder: (context, snap) => Text(snap.hasError
+                    ? 'Depolama: hata — ${snap.error}'
+                    : snap.hasData
+                        ? 'Depolama: hazır'
+                        : 'Depolama: açılıyor…'),
+              ),
             FutureBuilder<SetWordSource>(
               future: services.dictionary,
               builder: (context, snap) {

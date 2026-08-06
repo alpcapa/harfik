@@ -91,6 +91,10 @@ mobile/
       data/supabase_client.dart   # anahtar yoksa null → tam offline mod (web'deki configured)
       data/online_api.dart   # submit_move sarmalayıcısı: p_move_id UUID + retry
       game/game_controller.dart # ChangeNotifier motor kabuğu + otomatik YZ turu
+      storage/               # SQLite + prefs katmanı (bkz. "Depolama Katmanı"):
+                             # app_database (şema), app_storage (giriş kapısı),
+                             # local_save_store (karantinalı kayıt), pending_queue_store,
+                             # pending_event_store, chat_read_store, flags_store
       ui/                    # app.dart, home_screen.dart (İSKELET), update_required_screen.dart
       util/semver.dart, util/uuid.dart
     android/ ios/            # flutter create çıktısı + elle değişiklikler (aşağı bkz.)
@@ -152,6 +156,61 @@ değil kod:
 İkisi de `test/invariants_test.dart`'ta test edildi — DELETE/SELECT yarışı
 minyatürü (kuyruksuz okuma bayat görür, kuyruklu görmez), hata kuyruğu
 kilitlemez, tokenRefreshed no-op'u, çıkış/ikinci-hesap sıfırlaması.
+
+## Depolama Katmanı (`mobile/app/lib/src/storage/`, 6 Ağustos 2026)
+
+Web'in localStorage kalıcılığının mobil karşılığı — SQLite (sqflite) +
+SharedPreferences. Tasarımın amacı PORT_BRIEF §7'deki "bozuk kayıt → çökme
+döngüsü → ErrorBoundary'den elle silme" sınıfını YAPISAL olarak imkânsız
+kılmak; dört kural:
+
+1. **"Parse, don't validate"** — yükleme `gameStateFromJson`dan geçer: ya
+   tamamen geçerli state ya fırlatma; yarım state temsil edilemez.
+2. **Karantina, ASLA silme** — çözülemeyen/bilinmeyen-sürümlü kayıt
+   `quarantined_saves`e taşınır (sebep + zaman damgasıyla), kullanıcı temiz
+   başlar, veri teşhis için durur. Aynı bozuk kayıt iki kez okunamayacağı
+   için çökme döngüsü kurulamaz.
+3. **Versiyonlu payload** — her kayıtta `payload_version`; şekil değişince
+   `_payloadMigrations`e adım eklenir; zinciri olmayan sürüm (gelecekten
+   gelen kayıt dahil) tahmin edilmez, karantinaya gider. DB şema sürümü
+   (`kDbSchemaVersion`, yıkıcı olmayan migrasyonlar, downgrade'de dokunma)
+   AYRI bir kavramdır.
+4. **Tek blob yok** — kayıt/karantina/kuyruk/olay/damga ayrı tablolar; biri
+   bozulunca diğerlerini rehin alamaz. Atomiklik transaction'lardan bedava.
+
+Saat her store'a ENJEKTE edilir (`nowMs`) — core'daki determinizm
+sözleşmesinin devamı; testler 7 günlük süreleri ileri sararak koşuyor.
+
+**localStorage → mobil eşleme tablosu** (tartışmada kararlaştırılan, artık
+uygulanmış hâli — web→mobil VERİ taşınması yok, localStorage okunamaz;
+girişli kullanıcının bulut tarafı `local_game_saves` senkron fazının işi):
+
+| Web anahtarı | Mobil karşılığı |
+|---|---|
+| `kelimeki:game-state` | `local_saves` tablosu, tek `guest` slotu (`LocalSaveStore`) — 7 günlük terk süresi (`abandonTimeout`, web `ABANDON_TIMEOUT_MS`) dolunca kayıt `pending_events`'e (`abandoned-game`) taşınır; yüklenen oyun web'deki gibi `multiSession=true` işaretlenir |
+| `kelimeki:pending-abandoned-game` | `pending_events` satırı — `takeAll` SELECT+DELETE'i tek transaction'da (web'in read-then-clear/StrictMode savunmasının atomik hâli) |
+| `kelimeki:pending-games` | `pending_queue` (`kind='finished-game'`) — id dedup (ilk kayıt kalır), tür başına 300 sınırı (`kMaxPendingPerKind`), okumada 7 günlük TTL (`pendingExpiry`); sunucuya flush senkron fazında |
+| `kelimeki:pending-feedback` | `pending_queue` (`kind='feedback'`) — aynı mekanik |
+| `kelimeki:pending-friend-invite-token` | `pending_events` (`friend-invite-token`) |
+| `kelimeki:chat-last-read:<gameId>` | `chat_last_read` tablosu (`ChatReadStore`) — sınırsız dinamik anahtar prefs'e değil tabloya |
+| `kelimeki:seen-quickstart` / `seen-chat-intro` | SharedPreferences (`FlagsStore`) |
+| `kelimeki:anon-id` / `anon-visit-date` / `utm-source` | SharedPreferences — anonId bir kez üretilir, UTM first-touch (ikinci yazma yok sayılır, web `captureUtmSource` ilkesi) |
+| `kelimeki_landscape_hint_dismissed`, `kelimeki_a2hs_dismissed` | YOK — portre kilidi native, PWA banner'ı mobilde anlamsız (bilinçli düşürüldü) |
+
+`AppStorage.open()` tek giriş kapısı; bootstrap'ta sözlükle aynı desenle
+fire-and-forget açılır (`AppServices.storage`, ilk kareyi bekletmez),
+`HomeScreen` durum satırı gösterir. Testler `sqflite_common_ffi` ile
+masaüstü VM'de GERÇEK SQLite üzerinde (cihaz gerekmez): dolu-oyun roundtrip
+(motor + gerçek sözlükle üretilmiş state), bozuk-payload karantinası,
+bilinmeyen-sürüm karantinası, 7 günlük terk olayı (tek seferlik take),
+kuyruk dedup/300-sınırı/TTL/tür-izolasyonu, damga ve bayrak davranışları.
+
+**Henüz BAĞLANMAYAN uçlar (sonraki fazların işi):** `LocalSaveStore`'u
+gerçek kaydet/yükle akışına bağlayan UI (Setup/oyun ekranı), terk olayını
+-2 cezasına çeviren üst katman (web `takePendingAbandonedGame` +
+`buildGameRecord` eşleniği), kuyrukları sunucuya boşaltan flush (web
+`flushPendingGames`/`feedbackSync`) — flush, Supabase'e yazarken
+`TableWriteQueue`dan geçmek ZORUNDA (bkz. "Porta Taşınan Değişmezler").
 
 ## Flutter Uygulama İskeleti (`mobile/app/`, 5 Ağustos 2026)
 
@@ -336,10 +395,9 @@ bağlı değil.)
 2. ~~`mobile/app/` Flutter iskeleti~~ — TAMAMLANDI (5 Ağustos 2026, bkz.
    "Flutter Uygulama İskeleti" bölümü; açık kalanlar: assetlinks.json,
    iOS Universal Links, gerçek cihaz doğrulaması).
-3. **Depolama katmanı** — SQLite (kayıt/kuyruklar) + SharedPreferences
-   (bayraklar); versiyonlu şema, karantina (asla silme), atomik yazım.
-   localStorage anahtar eşlemesi ana sohbette kararlaştırıldı (PORT_BRIEF +
-   konuşma kaydı); uygulanırken buraya tablo olarak geçirilecek.
+3. ~~Depolama katmanı~~ — TAMAMLANDI (6 Ağustos 2026, bkz. "Depolama
+   Katmanı" bölümü; açık uçlar orada listeli: kaydet/yükle UI bağlantısı,
+   terk cezası üst katmanı, sunucuya flush).
 4. **UI portu** — 51 React bileşeninin Flutter'da yeniden yazımı (çeviri
    değil); admin paneli/PWA/LandscapeHint/csvExport bilinçli olarak YOK.
 5. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless

@@ -1,0 +1,103 @@
+// Uygulama SQLite veritabanı — depolama katmanının tek şema/açılış noktası.
+//
+// Neden SQLite (localStorage'ın aksine): (1) ATOMİKLİK — mobilde dosya
+// yazımları çökme anında yarım kalabilir, localStorage'ın tarayıcı nezaketi
+// yok; transaction'lar bunu bedavaya çözer. (2) Kuyruklar (cap/TTL) gerçek
+// satır semantiği ister. (3) "Tek blob her şeyi rehin alır" sınıfı hatalar
+// tablo ayrımıyla yapısal olarak kapanır. Bkz. mobile/CLAUDE.md,
+// "Depolama Katmanı".
+//
+// ŞEMA MİGRASYON KURALI: yükseltmeler ASLA yıkıcı olamaz (drop/delete yok);
+// downgrade (uygulama geri alma) durumunda şemaya DOKUNULMAZ — okumalar
+// kolon adıyla yapıldığından yeni/fazla kolon zararsızdır, payload
+// seviyesindeki sürüm kontrolü (LocalSaveStore) bilinmeyen içeriği zaten
+// karantinaya alır.
+import 'package:sqflite/sqflite.dart';
+
+/// DB şema sürümü — tablo/kolon değişikliklerinde artır ve `_migrations`e
+/// bir adım ekle. Payload sürümünden (kSavePayloadVersion) AYRI bir kavram.
+const int kDbSchemaVersion = 1;
+
+Future<void> _createV1(Database db) async {
+  await db.execute('''
+    create table local_saves(
+      slot text primary key,
+      payload_version integer not null,
+      payload text not null,
+      saved_at integer not null
+    )''');
+  // Karantina: bozuk/bilinmeyen kayıtlar SİLİNMEZ, buraya taşınır —
+  // web'deki ErrorBoundary "kaydı sil ve yeniden yükle" kaçış kapağının
+  // kayıpsız, otomatik karşılığı (PORT_BRIEF §7).
+  await db.execute('''
+    create table quarantined_saves(
+      id integer primary key autoincrement,
+      slot text not null,
+      payload_version integer,
+      payload text not null,
+      reason text not null,
+      quarantined_at integer not null
+    )''');
+  // Offline/misafir kuyrukları (web: kelimeki:pending-games / pending-feedback).
+  await db.execute('''
+    create table pending_queue(
+      id text primary key,
+      kind text not null,
+      payload text not null,
+      created_at integer not null
+    )''');
+  await db.execute(
+      'create index idx_pending_queue_kind on pending_queue(kind, created_at)');
+  // Tek seferlik oku-ve-temizle olayları (web: pending-abandoned-game,
+  // pending-friend-invite-token).
+  await db.execute('''
+    create table pending_events(
+      id integer primary key autoincrement,
+      kind text not null,
+      payload text not null,
+      created_at integer not null
+    )''');
+  // Oyun başına son-okunan sohbet damgası (web: kelimeki:chat-last-read:<id>
+  // — sınırsız dinamik anahtar prefs'e değil tabloya aittir).
+  await db.execute('''
+    create table chat_last_read(
+      game_id text primary key,
+      last_read_at integer not null
+    )''');
+}
+
+/// Sürüm N-1 → N yükseltme adımları (v1'de boş; her yeni sürüm buraya
+/// YALNIZCA ekleyici bir adım koyar).
+final Map<int, Future<void> Function(Database)> _migrations = {};
+
+Future<Database> openAppDatabase({
+  DatabaseFactory? factory,
+  String? path,
+}) async {
+  final f = factory ?? databaseFactory;
+  final dbPath = path ?? '${await f.getDatabasesPath()}/kelimeki.db';
+  return f.openDatabase(
+    dbPath,
+    options: OpenDatabaseOptions(
+      version: kDbSchemaVersion,
+      onCreate: (db, version) async {
+        await _createV1(db);
+        for (var v = 2; v <= version; v++) {
+          await _migrations[v]!(db);
+        }
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        for (var v = oldVersion + 1; v <= newVersion; v++) {
+          final step = _migrations[v];
+          if (step == null) {
+            throw StateError('şema migrasyonu eksik: v$v');
+          }
+          await step(db);
+        }
+      },
+      // Downgrade'de şemaya dokunma (varsayılan davranış fırlatmaktı) —
+      // üstteki şema migrasyon kuralı.
+      onDowngrade: (db, oldVersion, newVersion) async {},
+    ),
+  );
+}

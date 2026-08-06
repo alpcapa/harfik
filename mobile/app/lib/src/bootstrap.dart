@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/version_gate.dart';
 import 'data/dictionary_loader.dart';
 import 'data/supabase_client.dart';
+import 'storage/app_storage.dart';
 
 class AppServices {
   /// Sözlük — açılışta fire-and-forget başlar, oyun başlatma bekler
@@ -20,21 +21,28 @@ class AppServices {
 
   final VersionGateStatus versionGate;
 
+  /// Depolama — açılışta fire-and-forget açılır (sözlükle aynı desen);
+  /// widget testleri null geçebilir (yalnızca durum satırı gizlenir).
+  final Future<AppStorage>? storage;
+
   const AppServices({
     required this.dictionary,
     required this.supabase,
     required this.versionGate,
+    this.storage,
   });
 }
 
 Future<AppServices> bootstrap(AssetBundle bundle) async {
-  // Sözlük yüklemesi ilk kareyi BEKLETMEZ — Future olarak taşınır.
+  // Sözlük ve depolama ilk kareyi BEKLETMEZ — Future olarak taşınır.
   final dictionary = loadDictionary(bundle);
+  final storage = AppStorage.open();
   final supabase = await initSupabase();
   final versionGate = await checkVersionGate(supabase);
   return AppServices(
     dictionary: dictionary,
     supabase: supabase,
     versionGate: versionGate,
+    storage: storage,
   );
 }
