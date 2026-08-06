@@ -173,14 +173,22 @@ mobile/
       data/online_api.dart   # submit_move sarmalayıcısı: p_move_id UUID + retry
       data/cloud_save_repo.dart   # local_game_saves senkronu (girişli YZ oyunları)
       data/game_record.dart  # buildGameRecord portu (`games` satırı)
-      data/games_api.dart    # games/game_finishes + dayanıklı kuyruk/flush
+      data/games_api.dart    # games/game_finishes + dayanıklı kuyruk/flush +
+                             # beğeni (toggle/stats/likers/list_liked_games) +
+                             # dondurulmuş sohbet (messages/chat_flags)
       data/stats_api.dart    # player_stats / leaderboard / my_leaderboard_rank
       game/game_controller.dart # ChangeNotifier motor kabuğu + otomatik YZ turu
       storage/               # SQLite + prefs katmanı (bkz. "Depolama Katmanı"):
                              # app_database (şema), app_storage (giriş kapısı),
                              # local_save_store (karantinalı kayıt), pending_queue_store,
                              # pending_event_store, chat_read_store, flags_store
-      ui/                    # app.dart, home_screen.dart (İSKELET), update_required_screen.dart
+      ui/                    # app.dart, update_required_screen.dart, ve:
+      ui/auth/               # giriş-kayıt modalı, hesap butonu, avatar, Terms/Privacy
+      ui/game/               # tahta/raf/header/modaller (oyun ekranının tamamı)
+      ui/score/              # skor kartı, k-lig, oyuncu kartı, oyun geçmişi
+      ui/chat/               # chat_thread (paylaşılan baloncuk listesi) +
+                             # game_chat_history_modal (bitmiş oyunun arşivi)
+      ui/setup/              # kurulum ekranı (yeni oyun / devam edenler)
       util/semver.dart, util/uuid.dart
     android/ ios/            # flutter create çıktısı + elle değişiklikler (aşağı bkz.)
     test/                    # util, controller (golden replay!), widget duman testleri
@@ -1430,10 +1438,58 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        "Favoriler" sekmesi, beğenenler listesi), paylaşma (PNG yakalama +
        native share), sohbet rozeti/dökümü, `RecentGamesSection`
        ("Son Oynadıklarım") ve onun `initialExpandedId` akışı.
-   - Sıradaki parçalar (sıra önerisi): **5b — beğeni + paylaşma**, şifre
-     sıfırlama (özel şema deep link — `kelimeki://reset`, Dashboard
-     redirect listesine ekleme gerekir), Görüş Bildir formu, Canlı oyun
-     ekranları, arkadaşlık sistemi, "Arkadaşınla paylaş" (native share).
+   - ✅ **Parça 5b — beğeni zinciri + sohbet arşivi (6 Ağustos 2026,
+     `ui/chat/`, `ui/score/game_history_modal.dart`, `data/games_api.dart`):**
+     Kartın başlığına kalp + beğeni sayısı + sohbet rozeti, listeye
+     Tümü/Favoriler sekmeleri geldi.
+     - **Beğeni web'in İKİ sözleşmesini birebir koruyor:** (1) `likedByMe`
+       her zaman İSTEĞİ YAPANIN durumu — listelenen kişiden bağımsız,
+       böylece başkasının kartındaki oyun da beğenilebilir; (2) toggle
+       İYİMSER: `flipLike` anında uygulanır, repo `null` dönerse (ağ
+       hatası) aynı `flipLike` ikinci kez uygulanarak geri alınır. Repo
+       state tutmuyor, geri alma kararı çağıranda (web'deki yer).
+     - **`_mergeLikeStats` TEK sorgu** (`game_like_stats`) ve iki koruma:
+       misafirde hiç sorulmuyor (beğeni oturum gerektirir), hata listeyi
+       DÜŞÜRMÜYOR (geçmiş zaten elde, kartlar beğenisiz çizilir). İkisi de
+       ayrı testlerle sabitlendi (sahte uç çağrılırsa `fail()`).
+     - **`isMyRow` artık SATIR bazında** (`entry.userId == viewer`) —
+       Favoriler listesi başkasının satırını döndürebildiğinden, web'in
+       kod incelemesiyle kapattığı hata buraya taşınmadan önlendi: aksi
+       halde görüntüleyenin güncel adı rakibin skoruna yapıştırılırdı.
+       Regresyon testi var.
+     - **Yakalanan parite farkı (5a'dan kalma):** "Yapay Zeka" rozeti
+       `isOnline ? Canlı : Yapay Zeka` diye basitleştirilmişti; web koşulu
+       `!isOnline && players'ta GERÇEKTEN bir YZ koltuğu var`. Eski
+       (players'sız) yerel kayıtlar artık web'deki gibi rozetsiz.
+     - **`ChatThread` paylaşılan bileşen olarak yazıldı** (bugün yalnızca
+       arşiv tüketiyor; Canlı sohbet ekranı geldiğinde `mine` doldurulup
+       aynı bileşen kullanılacak — web'de de tek bileşen iki yeri
+       besliyor). Web'in `onBadgeClick`/`senderId` yolu BİLİNÇLİ YOK:
+       arşivde zaten salt-görsel, canlı sohbet portlanana kadar çalışmayan
+       kontrol koymuyoruz. Rozet eşlemesi renk indeksi üzerinden
+       (`chat_flags_for_finished_game`) — donmuş snapshot kimlik taşımaz.
+       Sıra ters ÇEVRİLMİYOR: arşiv bir döküm (web'de bir dönem
+       `.reverse()` vardı, admin ekranıyla ayrıştığı için kaldırılmıştı).
+     - **Test dersi — `find.text('1')` rozet numarasıyla çakışıyor:**
+       beğeni/mesaj sayacı ile `PlayerBadge`'in koltuk numarası aynı metni
+       üretiyor. Sayaçlara `ValueKey('like-count-…')`/`('chat-count-…')`
+       eklendi; sayı doğrulaması key'in altındaki `Text`ten okunuyor.
+     - Doğrulama: `game_likes_test.dart` (13 test) + ortak `gameRow`/`snap`/
+       `newRepo` yardımcıları `test/support/game_rows.dart`'a çıkarıldı
+       (iki test dosyası paylaşıyor). 134/134 yeşil, analyze temiz,
+       `build/screenshots/chat_history.png`. **Doğrulama sınırı:** dört RPC
+       (`toggle_game_like`, `game_like_stats`, `game_likers`,
+       `list_liked_games`) ve `chat_flags_for_finished_game` cihazda gerçek
+       oturumla doğrulanmalı.
+     - **Bilinçli eksikler (5c):** paylaşma (tahta önizlemesine dokununca
+       açılan ActionSheet + PNG yakalama + sistem paylaş sayfası +
+       `set_game_shared`) ve `RecentGamesSection` ("Son Oynadıklarım") +
+       `initialExpandedId`/karta ortalama akışı.
+   - Sıradaki parçalar (sıra önerisi): **5c — paylaşma + Son
+     Oynadıklarım**, şifre sıfırlama (özel şema deep link —
+     `kelimeki://reset`, Dashboard redirect listesine ekleme gerekir),
+     Görüş Bildir formu, Canlı oyun ekranları, arkadaşlık sistemi,
+     "Arkadaşınla paylaş" (native share).
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

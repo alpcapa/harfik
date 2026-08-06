@@ -22,10 +22,67 @@ import '../storage/pending_queue_store.dart';
 import '../util/uuid.dart';
 import 'game_record.dart';
 
+/// Bir oyunu beğenen kullanıcı — web `GameLiker` (`game_likers` RPC'si).
+/// E-posta HİÇBİR ZAMAN dönmez (projenin genel ilkesi).
+class GameLiker {
+  final String userId;
+  final String? displayName;
+  final String? firstName;
+  final String? avatarUrl;
+
+  const GameLiker({
+    required this.userId,
+    required this.displayName,
+    required this.firstName,
+    required this.avatarUrl,
+  });
+
+  /// `Leaderboard`/`PlayerScoreCard`'daki aynı kısa kimlik kuralı — soyad
+  /// hiç gösterilmez (web `likerName`; yedek metni orada da 'Oyuncu').
+  String get shortName => (displayName?.isNotEmpty ?? false)
+      ? displayName!
+      : (firstName?.isNotEmpty ?? false)
+          ? firstName!
+          : 'Oyuncu';
+
+  factory GameLiker.fromJson(Map<String, Object?> j) => GameLiker(
+        userId: j['user_id'] as String,
+        displayName: j['display_name'] as String?,
+        firstName: j['first_name'] as String?,
+        avatarUrl: j['avatar_url'] as String?,
+      );
+}
+
+/// Bitmiş bir Canlı oyunun DONDURULMUŞ sohbet satırı (`games.messages`) —
+/// web `GameChatMessage`. `sender_user_id` bilerek YOK: bu snapshot girişli
+/// herkese açık olduğundan (`games_select_authenticated`) kimliğe geri
+/// bağlanmıyor; rozet eşlemesi renk indeksi üzerinden yapılır.
+class GameChatMessage {
+  final String name;
+  final int colorIndex;
+  final String message;
+  final String createdAt;
+
+  const GameChatMessage({
+    required this.name,
+    required this.colorIndex,
+    required this.message,
+    required this.createdAt,
+  });
+
+  factory GameChatMessage.fromJson(Map<String, Object?> j) => GameChatMessage(
+        name: j['name'] as String? ?? '',
+        colorIndex: (j['colorIndex'] as num?)?.toInt() ?? 0,
+        message: j['message'] as String? ?? '',
+        createdAt: j['created_at'] as String? ?? '',
+      );
+}
+
 /// `games` tablosundaki bir satırın LİSTE görünümü — web `GameHistoryEntry`.
-/// `board_snapshot` BİLEREK yok: satır başına birkaç KB tuttuğundan liste
-/// sorgusunu şişirmesin diye yalnızca kart açılınca ayrıca çekilir (web'in
-/// aynı kararı). Beğeni/paylaşma alanları da yok — 5b'nin işi.
+/// `board_snapshot` ve `messages` BİLEREK yok: satır başına birkaç KB
+/// tuttuklarından liste sorgusunu şişirmesinler diye yalnızca kart
+/// açılınca/rozete dokununca ayrıca çekilirler (web'in aynı kararı);
+/// `messageCount` sunucuda üretilen sayaç sütunu, rozet kararı ona bakar.
 class GameHistoryEntry {
   final String id;
   final String userId;
@@ -44,6 +101,19 @@ class GameHistoryEntry {
   /// önceki kayıtlarda boş (çağıran yedek satır üretir, web fallbackPlayers).
   final List<GamePlayerSnapshot> players;
 
+  /// Bu oyunda kaç sohbet mesajı donduruldu (`games.message_count`, sunucuda
+  /// üretilen sütun). >0 ise kartta sohbet rozeti çıkar. Yerel/YZ oyunlarda
+  /// her zaman 0 — Oyun İçi Mesajlaşma yalnızca Canlı oyunlarda var.
+  final int messageCount;
+
+  /// İSTEĞİ YAPAN (görüntüleyen) kullanıcı bu oyunu beğendi mi — listelenen
+  /// kişiden BAĞIMSIZ, böylece başkasının kartına bakarken de kalp kendi
+  /// durumunu gösterir ve tıklanabilir kalır (web'in aynı kuralı).
+  final bool likedByMe;
+
+  /// Oyunu toplam kaç kullanıcı beğendi (`game_like_stats`).
+  final int likeCount;
+
   const GameHistoryEntry({
     required this.id,
     required this.userId,
@@ -55,7 +125,37 @@ class GameHistoryEntry {
     required this.surrendered,
     required this.onlineGameId,
     required this.players,
+    this.messageCount = 0,
+    this.likedByMe = false,
+    this.likeCount = 0,
   });
+
+  /// Beğeni durumunu değiştirilmiş bir kopya — hem `game_like_stats`
+  /// birleştirmesi hem kalp dokunuşundaki İYİMSER güncelleme (ve hatada
+  /// geri alma) bunu kullanır.
+  GameHistoryEntry withLikes({required bool likedByMe, required int likeCount}) =>
+      GameHistoryEntry(
+        id: id,
+        userId: userId,
+        createdAt: createdAt,
+        playerCount: playerCount,
+        playerScore: playerScore,
+        aiScore: aiScore,
+        rank: rank,
+        surrendered: surrendered,
+        onlineGameId: onlineGameId,
+        players: players,
+        messageCount: messageCount,
+        likedByMe: likedByMe,
+        likeCount: likeCount,
+      );
+
+  /// Web `flipLike` — iyimser güncelleme; aynı çağrı geri almak için de
+  /// kullanılır (kendisinin tersi).
+  GameHistoryEntry flipLike() => withLikes(
+        likedByMe: !likedByMe,
+        likeCount: likeCount + (likedByMe ? -1 : 1),
+      );
 
   factory GameHistoryEntry.fromJson(Map<String, Object?> j) => GameHistoryEntry(
         id: j['id'] as String,
@@ -71,6 +171,7 @@ class GameHistoryEntry {
           for (final p in (j['players'] as List? ?? const []))
             GamePlayerSnapshot.fromJson((p as Map).cast<String, Object?>())
         ],
+        messageCount: (j['message_count'] as num?)?.toInt() ?? 0,
       );
 }
 
@@ -111,8 +212,39 @@ abstract class GamesGateway {
     required int limit,
   });
 
+  /// "Favoriler" sekmesi — hedef kullanıcının SAHİP OLDUĞU değil BEĞENDİĞİ
+  /// oyunlar (`list_liked_games` RPC'si; sahiplik fark etmez, sıralama
+  /// beğenilme anına göre). RPC sunucu tarafında, aynı Canlı oyunun birden
+  /// çok `games` satırı varsa hedefin KENDİ satırını tercih eder.
+  Future<List<Map<String, Object?>>> listLikedGames({
+    required String userId,
+    required int? playerCount,
+    required int offset,
+    required int limit,
+  });
+
+  /// Bir sayfadaki tüm oyunlar için toplam beğeni sayısı + çağıranın kendi
+  /// beğeni durumu — TEK sorgu (`game_like_stats`).
+  Future<List<Map<String, Object?>>> likeStats(List<String> gameIds);
+
+  /// Beğeniyi tersine çevirir (`toggle_game_like`). Dönüş: yeni durum.
+  Future<bool> toggleLike(String gameId);
+
+  /// Oyunu beğenenler, en yeni önce (`game_likers`).
+  Future<List<Map<String, Object?>>> likers(String gameId);
+
   /// Tek bir oyunun tahta anlık görüntüsü — kart açılınca lazy çekilir.
   Future<List<Map<String, Object?>>?> gameBoardSnapshot(String gameId);
+
+  /// Bitmiş bir oyunun dondurulmuş sohbeti (`games.messages`) — rozete
+  /// dokununca lazy çekilir, `gameBoardSnapshot` ile aynı desen.
+  Future<List<Map<String, Object?>>> gameMessages(String gameId);
+
+  /// Arşiv sohbetindeki sessize alma/rapor rozetleri
+  /// (`chat_flags_for_finished_game`) — kimlik istemciye hiç gelmediğinden
+  /// sunucu doğrudan RENK İNDEKSİ bazında cevap döner. Katılımcı olmayan
+  /// (ör. başkasının beğendiği bir oyunu açan) boş liste alır.
+  Future<List<Map<String, Object?>>> chatFlags(String onlineGameId);
 }
 
 class SupabaseGamesGateway implements GamesGateway {
@@ -165,10 +297,11 @@ class SupabaseGamesGateway implements GamesGateway {
         body: {'game_id': gameId, 'player_count': playerCount});
   }
 
-  /// Web ile AYNI sütun listesi (board_snapshot yok — bkz. GameHistoryEntry).
+  /// Web ile AYNI sütun listesi (board_snapshot/messages yok — bkz.
+  /// GameHistoryEntry).
   static const _listCols =
       'id, user_id, created_at, player_count, players, player_score, '
-      'ai_score, rank, surrendered, online_game_id';
+      'ai_score, rank, surrendered, online_game_id, message_count';
 
   @override
   Future<List<Map<String, Object?>>> listGames({
@@ -188,6 +321,43 @@ class SupabaseGamesGateway implements GamesGateway {
   }
 
   @override
+  Future<List<Map<String, Object?>>> listLikedGames({
+    required String userId,
+    required int? playerCount,
+    required int offset,
+    required int limit,
+  }) async {
+    // RPC'nin kendisi `p_limit`'i olduğu gibi uyguluyor; "bir fazla satır"
+    // hilesi burada da geçerli olsun diye limit+1 isteniyor (web aynen böyle).
+    final rows = await client.rpc('list_liked_games', params: {
+      'p_user_id': userId,
+      'p_player_count': playerCount,
+      'p_offset': offset,
+      'p_limit': limit + 1,
+    });
+    return [for (final r in (rows as List)) (r as Map).cast<String, Object?>()];
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> likeStats(List<String> gameIds) async {
+    final rows =
+        await client.rpc('game_like_stats', params: {'p_game_ids': gameIds});
+    return [for (final r in (rows as List)) (r as Map).cast<String, Object?>()];
+  }
+
+  @override
+  Future<bool> toggleLike(String gameId) async {
+    final res = await client.rpc('toggle_game_like', params: {'p_game_id': gameId});
+    return res == true;
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> likers(String gameId) async {
+    final rows = await client.rpc('game_likers', params: {'p_game_id': gameId});
+    return [for (final r in (rows as List)) (r as Map).cast<String, Object?>()];
+  }
+
+  @override
   Future<List<Map<String, Object?>>?> gameBoardSnapshot(String gameId) async {
     final row = await client
         .from('games')
@@ -197,6 +367,25 @@ class SupabaseGamesGateway implements GamesGateway {
     final snap = row?['board_snapshot'];
     if (snap is! List) return null;
     return [for (final t in snap) (t as Map).cast<String, Object?>()];
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> gameMessages(String gameId) async {
+    final row = await client
+        .from('games')
+        .select('messages')
+        .eq('id', gameId)
+        .maybeSingle();
+    final msgs = row?['messages'];
+    if (msgs is! List) return const [];
+    return [for (final m in msgs) (m as Map).cast<String, Object?>()];
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> chatFlags(String onlineGameId) async {
+    final rows = await client.rpc('chat_flags_for_finished_game',
+        params: {'p_online_game_id': onlineGameId});
+    return [for (final r in (rows as List)) (r as Map).cast<String, Object?>()];
   }
 }
 
@@ -330,27 +519,119 @@ class GamesRepo {
   /// Oyun geçmişi sayfası. Dönüş: o sayfanın satırları + daha var mı.
   /// Ağ hatasında boş sayfa + hasMore=false (web ile aynı: liste sessizce
   /// boş kalır, çağıran "yükleniyor"da asılı kalmaz).
+  /// [favoritesOnly] true iken liste artık hedefin SAHİP OLDUĞU değil
+  /// BEĞENDİĞİ oyunlardır (web'in aynı ayrımı) — kendi oyunu da başkasının
+  /// oyunu da olabilir, sıralama beğenilme anına göredir.
   Future<({List<GameHistoryEntry> games, bool hasMore})> history({
     required String userId,
     required int? playerCount,
     required int offset,
     int limit = 20,
+    bool favoritesOnly = false,
   }) async {
     try {
-      final rows = await gateway.listGames(
-          userId: userId,
-          playerCount: playerCount,
-          offset: offset,
-          limit: limit);
+      final rows = favoritesOnly
+          ? await gateway.listLikedGames(
+              userId: userId,
+              playerCount: playerCount,
+              offset: offset,
+              limit: limit)
+          : await gateway.listGames(
+              userId: userId,
+              playerCount: playerCount,
+              offset: offset,
+              limit: limit);
       final hasMore = rows.length > limit;
       final page = hasMore ? rows.sublist(0, limit) : rows;
-      return (
-        games: [for (final r in page) GameHistoryEntry.fromJson(r)],
-        hasMore: hasMore,
-      );
+      var games = [for (final r in page) GameHistoryEntry.fromJson(r)];
+      games = await _mergeLikeStats(games);
+      return (games: games, hasMore: hasMore);
     } catch (e) {
       debugPrint('[Kelimeki] oyun geçmişi alınamadı: $e');
       return (games: const <GameHistoryEntry>[], hasMore: false);
+    }
+  }
+
+  /// Sayfadaki tüm oyunların beğeni sayısı + kendi beğeni durumu TEK
+  /// sorguda (web `fetchMyGames`'in ikinci adımı). Misafirde hiç sorulmaz
+  /// (beğeni oturum gerektirir); hata listeyi DÜŞÜRMEZ — kartlar beğenisiz
+  /// gösterilir, çünkü geçmişin kendisi zaten elde.
+  Future<List<GameHistoryEntry>> _mergeLikeStats(
+      List<GameHistoryEntry> games) async {
+    if (games.isEmpty || gateway.currentUserId == null) return games;
+    try {
+      final rows = await gateway.likeStats([for (final g in games) g.id]);
+      final byId = <String, ({int count, bool mine})>{};
+      for (final r in rows) {
+        byId[r['game_id'] as String] = (
+          count: (r['like_count'] as num?)?.toInt() ?? 0,
+          mine: r['liked_by_me'] == true,
+        );
+      }
+      return [
+        for (final g in games)
+          g.withLikes(
+            likedByMe: byId[g.id]?.mine ?? false,
+            likeCount: byId[g.id]?.count ?? 0,
+          )
+      ];
+    } catch (e) {
+      debugPrint('[Kelimeki] beğeni sayıları alınamadı: $e');
+      return games;
+    }
+  }
+
+  /// Beğeniyi tersine çevirir. Web'le aynı sözleşme: başarısızsa `null`
+  /// döner ve ÇAĞIRAN iyimser güncellemeyi geri alır (repo state tutmaz).
+  Future<bool?> toggleLike(String gameId) async {
+    try {
+      return await gateway.toggleLike(gameId);
+    } catch (e) {
+      debugPrint('[Kelimeki] beğeni değiştirilemedi: $e');
+      return null;
+    }
+  }
+
+  /// Beğenenler listesi — hata durumunda boş liste (web davranışı).
+  Future<List<GameLiker>> likers(String gameId) async {
+    try {
+      final rows = await gateway.likers(gameId);
+      return [for (final r in rows) GameLiker.fromJson(r)];
+    } catch (e) {
+      debugPrint('[Kelimeki] beğenenler alınamadı: $e');
+      return const [];
+    }
+  }
+
+  /// Bitmiş bir oyunun dondurulmuş sohbeti. Yerel/YZ oyunlarında her zaman
+  /// boş (mesajlaşma yalnızca Canlı oyunlarda var).
+  Future<List<GameChatMessage>> messages(String gameId) async {
+    try {
+      final rows = await gateway.gameMessages(gameId);
+      return [for (final r in rows) GameChatMessage.fromJson(r)];
+    } catch (e) {
+      debugPrint('[Kelimeki] sohbet kaydı alınamadı: $e');
+      return const [];
+    }
+  }
+
+  /// Arşiv sohbetindeki rozetler, renk indeksi bazında.
+  Future<({Set<int> muted, Set<int> reported})> chatFlags(
+      String onlineGameId) async {
+    try {
+      final rows = await gateway.chatFlags(onlineGameId);
+      final muted = <int>{};
+      final reported = <int>{};
+      for (final r in rows) {
+        final ci = (r['color_index'] as num?)?.toInt();
+        if (ci == null) continue;
+        if (r['muted'] == true) muted.add(ci);
+        if (r['reported'] == true) reported.add(ci);
+      }
+      return (muted: muted, reported: reported);
+    } catch (e) {
+      debugPrint('[Kelimeki] sohbet rozetleri alınamadı: $e');
+      return (muted: <int>{}, reported: <int>{});
     }
   }
 

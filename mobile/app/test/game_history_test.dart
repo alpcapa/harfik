@@ -9,64 +9,16 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/game_record.dart';
 import 'package:kelimeki/src/data/games_api.dart';
-import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:kelimeki/src/ui/game/board_widget.dart';
 import 'package:kelimeki/src/ui/game/player_badge.dart';
 import 'package:kelimeki/src/ui/score/game_history_modal.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'support/fake_games_gateway.dart';
+import 'support/game_rows.dart';
 import 'support/test_fonts.dart';
 import 'support/test_view.dart';
-
-/// `games` satırı — yalnızca liste sütunları (web ile aynı set).
-Map<String, Object?> gameRow({
-  required String id,
-  String userId = 'u-me',
-  String createdAt = '2026-08-01T12:00:00.000Z',
-  int playerCount = 2,
-  int playerScore = 238,
-  int aiScore = 179,
-  int? rank = 1,
-  bool surrendered = false,
-  String? onlineGameId,
-  List<Map<String, Object?>>? players,
-}) =>
-    {
-      'id': id,
-      'user_id': userId,
-      'created_at': createdAt,
-      'player_count': playerCount,
-      'player_score': playerScore,
-      'ai_score': aiScore,
-      'rank': rank,
-      'surrendered': surrendered,
-      'online_game_id': onlineGameId,
-      'players': players,
-    };
-
-Map<String, Object?> snap(String name, int score,
-        {bool ai = false, bool surrendered = false, int colorIndex = 0}) =>
-    {
-      'name': name,
-      'score': score,
-      'is_ai': ai,
-      'surrendered': surrendered,
-      'colorIndex': colorIndex,
-    };
-
-Future<GamesRepo> newRepo(FakeGamesGateway gw) async {
-  SharedPreferences.setMockInitialValues({});
-  final storage = await AppStorage.open(
-    factory: databaseFactoryFfi,
-    path: inMemoryDatabasePath,
-    prefs: await SharedPreferences.getInstance(),
-    nowMs: () => DateTime.now().millisecondsSinceEpoch,
-  );
-  return GamesRepo(gw, storage.queue);
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

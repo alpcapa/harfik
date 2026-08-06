@@ -94,4 +94,83 @@ class FakeGamesGateway implements GamesGateway {
   @override
   Future<List<Map<String, Object?>>?> gameBoardSnapshot(String gameId) async =>
       snapshots[gameId];
+
+  // ── Beğeni / sohbet arşivi (parça 5b) ─────────────────────────────────
+  /// gameId → o oyunu beğenenler (gerçek uçtaki `game_likers` sırası:
+  /// en yeni önce; sahte tarafta verilen sıra korunur).
+  Map<String, List<Map<String, Object?>>> likersByGame = const {};
+
+  /// Bu kullanıcının beğendiği oyun id'leri — hem `game_like_stats`in
+  /// `liked_by_me`si hem "Favoriler" listesi buradan türer.
+  Set<String> likedByMe = <String>{};
+
+  /// gameId → toplam beğeni sayısı (`game_like_stats`).
+  Map<String, int> likeCounts = <String, int>{};
+
+  /// gameId → dondurulmuş sohbet (`games.messages`).
+  Map<String, List<Map<String, Object?>>> messagesByGame = const {};
+
+  /// onlineGameId → renk indeksi bazlı rozetler.
+  Map<String, List<Map<String, Object?>>> chatFlagsByGame = const {};
+
+  final toggledLikes = <String>[];
+  bool failNextToggleLike = false;
+
+  @override
+  Future<List<Map<String, Object?>>> listLikedGames({
+    required String userId,
+    required int? playerCount,
+    required int offset,
+    required int limit,
+  }) async {
+    // Gerçek RPC sahiplikten bağımsız çalışır: BEĞENİLEN oyunlar döner,
+    // satır başkasının bile olabilir — sahte de bunu taklit ediyor.
+    final filtered = [
+      for (final r in history)
+        if (likedByMe.contains(r['id']) &&
+            (playerCount == null || r['player_count'] == playerCount))
+          r
+    ];
+    return filtered.skip(offset).take(limit).toList();
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> likeStats(List<String> gameIds) async => [
+        for (final id in gameIds)
+          {
+            'game_id': id,
+            'like_count': likeCounts[id] ?? 0,
+            'liked_by_me': likedByMe.contains(id),
+          }
+      ];
+
+  @override
+  Future<bool> toggleLike(String gameId) async {
+    if (failNextToggleLike) {
+      failNextToggleLike = false;
+      throw Exception('ağ hatası');
+    }
+    toggledLikes.add(gameId);
+    final now = !likedByMe.contains(gameId);
+    if (now) {
+      likedByMe.add(gameId);
+      likeCounts[gameId] = (likeCounts[gameId] ?? 0) + 1;
+    } else {
+      likedByMe.remove(gameId);
+      likeCounts[gameId] = (likeCounts[gameId] ?? 1) - 1;
+    }
+    return now;
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> likers(String gameId) async =>
+      likersByGame[gameId] ?? const [];
+
+  @override
+  Future<List<Map<String, Object?>>> gameMessages(String gameId) async =>
+      messagesByGame[gameId] ?? const [];
+
+  @override
+  Future<List<Map<String, Object?>>> chatFlags(String onlineGameId) async =>
+      chatFlagsByGame[onlineGameId] ?? const [];
 }

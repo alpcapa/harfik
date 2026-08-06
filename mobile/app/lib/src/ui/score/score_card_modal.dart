@@ -195,6 +195,9 @@ class _ScoreCardModalState extends State<ScoreCardModal> {
                     userId: auth.user!.id,
                     playerCount: _tab.playerCount,
                     currentName: name,
+                    // "Beğenenler" listesinden bir isme dokununca o kişinin
+                    // skor kartı açılabilsin diye.
+                    stats: widget.stats,
                   );
                 },
                 behavior: HitTestBehavior.opaque,

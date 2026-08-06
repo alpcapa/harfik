@@ -1,18 +1,27 @@
-// Tüm Geçmiş Oyunlar — web `GameHistoryModal.tsx` portu (liste + tahta
-// önizlemesi kısmı; beğeni/paylaşma/sohbet rozeti 5b'nin işi).
+// Tüm Geçmiş Oyunlar — web `GameHistoryModal.tsx` portu.
 //
-// Her kart: tarih + Canlı/Yapay Zeka rozeti, final sıralamasıyla oyuncu
-// satırları (sıra no, rozet, ad, TESLİM OLDU etiketi, Puan, SL). Karta
-// dokunmak o oyunun tahtasını altta açar/kapar — tahta lazy çekilir ve bir
-// kez çekilince önbellekte kalır (web'in aynı kararı).
+// Her kart: tarih + Canlı/Yapay Zeka rozeti + (varsa) sohbet rozeti, kalp
+// (beğeni) ve beğeni sayısı, final sıralamasıyla oyuncu satırları (sıra no,
+// rozet, ad, TESLİM OLDU etiketi, Puan, k-lig). Karta dokunmak o oyunun
+// tahtasını altta açar/kapar — tahta lazy çekilir ve bir kez çekilince
+// önbellekte kalır (web'in aynı kararı).
+//
+// **Bilinçli eksik (5c):** tahta önizlemesine dokununca açılan
+// "Paylaş/Kapat" aksiyon menüsü — paylaşım (PNG yakalama + sistem paylaş
+// sayfası) ayrı bir parça. Yokluğunda ölü bir kontrol de yok: önizlemenin
+// kendisi tıklanabilir değil.
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import '../../data/game_record.dart';
 import '../../data/games_api.dart';
+import '../../data/stats_api.dart';
+import '../auth/k_avatar.dart';
+import '../chat/game_chat_history_modal.dart';
 import '../game/board_widget.dart';
 import '../game/modal_shell.dart';
 import '../game/player_badge.dart';
+import 'player_score_card_modal.dart';
 
 const _panel = Color(0xFFF5F7FA);
 const _border = Color(0xFFDCE2EA);
@@ -40,6 +49,10 @@ Future<void> showGameHistory(
   /// Liste sahibi görüntüleyenin kendisi mi — "Sen" etiketi ve kendi
   /// satırının vurgusu buna bağlı (web `isMyRow`).
   bool isMe = true,
+
+  /// "Beğenenler" listesinden bir isme dokununca o kişinin skor kartını
+  /// açmak için. null ise isimler tıklanmaz (çalışmayan kontrol koymuyoruz).
+  StatsRepo? stats,
 }) {
   return showDialog<void>(
     context: context,
@@ -49,6 +62,7 @@ Future<void> showGameHistory(
       playerCount: playerCount,
       currentName: currentName,
       isMe: isMe,
+      stats: stats,
     ),
   );
 }
@@ -59,6 +73,7 @@ class GameHistoryModal extends StatefulWidget {
   final int? playerCount;
   final String? currentName;
   final bool isMe;
+  final StatsRepo? stats;
 
   const GameHistoryModal({
     super.key,
@@ -67,6 +82,7 @@ class GameHistoryModal extends StatefulWidget {
     required this.playerCount,
     this.currentName,
     this.isMe = true,
+    this.stats,
   });
 
   @override
@@ -78,6 +94,14 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
   bool _hasMore = true;
   bool _loadingMore = false;
   String? _expandedId;
+
+  /// Tümü / Favoriler. Favoriler, hedefin SAHİP OLDUĞU değil BEĞENDİĞİ
+  /// oyunları listeler (web'in aynı ayrımı).
+  bool _favoritesOnly = false;
+
+  /// gameId → beğenenler (bir kez çekilip önbellekte tutulur; kalbe basmak
+  /// bu önbelleği geçersiz kılar ki bir dahaki açılışta güncel liste gelsin).
+  final _likers = <String, List<GameLiker>>{};
 
   /// gameId → tahta (bir kez çekilince önbellekte kalır; null değeri
   /// "çekildi ama kayıt yok" demek — web'in aynı ayrımı).
@@ -104,13 +128,18 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
   }
 
   Future<void> _loadPage(int offset) async {
+    // Sekme değişimi uçuştaki bir sayfayla yarışabilir: dönen sayfa artık
+    // geçerli olmayan sekmeye aitse yazma (web'de `cancelled` bayrağının
+    // yaptığı iş).
+    final forFavorites = _favoritesOnly;
     final res = await widget.games.history(
       userId: widget.userId,
       playerCount: widget.playerCount,
       offset: offset,
       limit: _pageSize,
+      favoritesOnly: forFavorites,
     );
-    if (!mounted) return;
+    if (!mounted || forFavorites != _favoritesOnly) return;
     setState(() {
       _entries = [...?(offset == 0 ? null : _entries), ...res.games];
       _hasMore = res.hasMore;
@@ -122,6 +151,57 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
     if (_loadingMore || !_hasMore || _entries == null) return;
     setState(() => _loadingMore = true);
     _loadPage(_entries!.length);
+  }
+
+  void _selectTab(bool favoritesOnly) {
+    if (_favoritesOnly == favoritesOnly) return;
+    setState(() {
+      _favoritesOnly = favoritesOnly;
+      _entries = null;
+      _hasMore = true;
+      _loadingMore = false;
+      _expandedId = null;
+      _snapshots.clear();
+      _snapshotLoadingId = null;
+    });
+    _loadPage(0);
+  }
+
+  /// Kalp: İYİMSER güncelleme — istek başarısızsa (ör. çevrimdışı) geri
+  /// alınır. Web'le aynı: repo `null` dönerse çağıran flip'i tekrar uygular.
+  Future<void> _toggleLike(GameHistoryEntry entry) async {
+    setState(() {
+      _entries = [
+        for (final g in _entries ?? const <GameHistoryEntry>[])
+          g.id == entry.id ? g.flipLike() : g
+      ];
+      _likers.remove(entry.id); // bayatladı
+    });
+    final res = await widget.games.toggleLike(entry.id);
+    if (!mounted || res != null) return;
+    setState(() {
+      _entries = [
+        for (final g in _entries ?? const <GameHistoryEntry>[])
+          g.id == entry.id ? g.flipLike() : g
+      ];
+    });
+  }
+
+  Future<void> _showLikers(GameHistoryEntry entry) async {
+    if (!_likers.containsKey(entry.id)) {
+      final rows = await widget.games.likers(entry.id);
+      if (!mounted) return;
+      _likers[entry.id] = rows;
+    }
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => _LikersModal(
+        likers: _likers[entry.id] ?? const [],
+        stats: widget.stats,
+        games: widget.games,
+      ),
+    );
   }
 
   Future<void> _toggleBoard(GameHistoryEntry entry) async {
@@ -145,7 +225,32 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
     final entries = _entries;
     return KModal(
       title: 'Tüm Geçmiş Oyunlar',
-      child: entries == null
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(children: [
+            Expanded(
+                child: _FilterTab(
+                    label: 'Tümü',
+                    selected: !_favoritesOnly,
+                    onTap: () => _selectTab(false))),
+            const SizedBox(width: 6),
+            Expanded(
+                child: _FilterTab(
+                    label: 'Favoriler',
+                    selected: _favoritesOnly,
+                    onTap: () => _selectTab(true))),
+          ]),
+          const SizedBox(height: 12),
+          _buildList(entries),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildList(List<GameHistoryEntry>? entries) {
+    return entries == null
           ? const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Center(
@@ -155,11 +260,17 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
               ),
             )
           : entries.isEmpty
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
                   child: Center(
-                    child: Text('Henüz kayıtlı bir oyunun yok.',
-                        style: TextStyle(
+                    child: Text(
+                        _favoritesOnly
+                            ? (widget.isMe
+                                ? 'Henüz favori işaretlediğin bir oyun yok.'
+                                : 'Bu oyuncunun henüz favori işaretlediği bir oyun yok.')
+                            : 'Henüz kayıtlı bir oyunun yok.',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
                             fontFamily: 'SpaceMono',
                             fontSize: 12,
                             color: _muted)),
@@ -189,16 +300,134 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
                       return _EntryCard(
                         entry: e,
                         currentName: widget.currentName,
-                        isMe: widget.isMe,
+                        // Favoriler listesinde bir satır, görüntüleyenin
+                        // SAHİP OLMADIĞI bir oyuna ait olabilir (başkasının
+                        // kartından beğenilmiş) — o durumda entry.rank/
+                        // player_score o satırın gerçek sahibine ait
+                        // olduğundan "ben" hesaplamak yanlış oyuncuyu
+                        // vurgulardı (web'in aynı koruması).
+                        isMyRow: widget.isMe &&
+                            (widget.games.gateway.currentUserId == null ||
+                                e.userId == widget.games.gateway.currentUserId),
                         expanded: _expandedId == e.id,
                         snapshotLoading: _snapshotLoadingId == e.id,
                         snapshotFetched: _snapshots.containsKey(e.id),
                         snapshot: _snapshots[e.id],
                         onTap: () => _toggleBoard(e),
+                        onToggleLike: () => _toggleLike(e),
+                        onShowLikers: () => _showLikers(e),
+                        onShowChat: () => showGameChatHistory(
+                          context,
+                          games: widget.games,
+                          gameId: e.id,
+                          onlineGameId: e.onlineGameId,
+                        ),
                       );
                     },
                   ),
-                ),
+                );
+  }
+}
+
+/// Tümü / Favoriler sekmesi — web'deki iki butonun aynı görsel dili.
+class _FilterTab extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _FilterTab(
+      {required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? _accent : _panel,
+            border: selected ? null : Border.all(color: _border),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            trUpper(label),
+            style: TextStyle(
+              fontFamily: 'SpaceMono',
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+              color: selected ? Colors.white : _muted,
+            ),
+          ),
+        ),
+      );
+}
+
+/// Beğeni sayısına dokununca açılan liste; bir isme dokunmak o kişinin
+/// skor kartını açar (web'in "kartına gir → oyununu beğen → kimler
+/// beğenmiş → onun kartına gir" zinciri).
+class _LikersModal extends StatelessWidget {
+  final List<GameLiker> likers;
+  final StatsRepo? stats;
+  final GamesRepo games;
+
+  const _LikersModal(
+      {required this.likers, required this.stats, required this.games});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = stats;
+    return KModal(
+      title: 'Beğenenler',
+      child: likers.isEmpty
+          ? const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text('Bu oyunu henüz kimse beğenmemiş.',
+                    style: TextStyle(
+                        fontFamily: 'SpaceMono', fontSize: 12, color: _muted)),
+              ),
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final l in likers)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: GestureDetector(
+                      // stats yoksa skor kartı açılamaz — o durumda satır
+                      // bilerek tıklanmaz (çalışmayan kontrol koymuyoruz).
+                      onTap: s == null
+                          ? null
+                          : () => showPlayerScoreCard(
+                                context,
+                                stats: s,
+                                userId: l.userId,
+                                name: l.shortName,
+                                avatarUrl: l.avatarUrl,
+                                games: Future.value(games),
+                              ),
+                      behavior: HitTestBehavior.opaque,
+                      child: Row(
+                        children: [
+                          KAvatar(url: l.avatarUrl, name: l.shortName, size: 22),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(l.shortName,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    fontFamily: 'SpaceMono',
+                                    fontSize: 13,
+                                    color: _text)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
     );
   }
 }
@@ -266,22 +495,31 @@ String _formatDate(String iso) {
 class _EntryCard extends StatelessWidget {
   final GameHistoryEntry entry;
   final String? currentName;
-  final bool isMe;
+
+  /// Bu satır GERÇEKTEN görüntüleyene mi ait (web `isMyRow`) — "Sen"
+  /// yedeği, kendi satırının vurgusu ve güncel-ad ikamesi buna bağlı.
+  final bool isMyRow;
   final bool expanded;
   final bool snapshotLoading;
   final bool snapshotFetched;
   final List<BoardSnapshotTile>? snapshot;
   final VoidCallback onTap;
+  final VoidCallback onToggleLike;
+  final VoidCallback onShowLikers;
+  final VoidCallback onShowChat;
 
   const _EntryCard({
     required this.entry,
     required this.currentName,
-    required this.isMe,
+    required this.isMyRow,
     required this.expanded,
     required this.snapshotLoading,
     required this.snapshotFetched,
     required this.snapshot,
     required this.onTap,
+    required this.onToggleLike,
+    required this.onShowLikers,
+    required this.onShowChat,
   });
 
   @override
@@ -293,12 +531,14 @@ class _EntryCard extends StatelessWidget {
     if (hasSnapshot) {
       players = entry.players;
       unknownCount = 0;
-      meIndex = _findMeIndex(entry, players);
+      // Satır bana ait değilse hiçbir slot "ben" değil (-1) — aksi halde
+      // başkasının skoruna kendi güncel adım yapıştırılırdı.
+      meIndex = isMyRow ? _findMeIndex(entry, players) : -1;
     } else {
-      final fb = _fallbackPlayers(entry, isMe, currentName);
+      final fb = _fallbackPlayers(entry, isMyRow, currentName);
       players = fb.known;
       unknownCount = fb.unknownCount;
-      meIndex = fb.meIndex;
+      meIndex = isMyRow ? fb.meIndex : -1;
     }
     final ranks = computeRanks([
       for (final p in players)
@@ -327,17 +567,79 @@ class _EntryCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
+                      // Kalp — kartın kendisini AÇMADAN yalnızca beğeniyi
+                      // değiştirir (web'in `stopPropagation`'ı).
+                      GestureDetector(
+                        onTap: onToggleLike,
+                        behavior: HitTestBehavior.opaque,
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 2),
+                          child: Icon(
+                            entry.likedByMe
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            size: 13,
+                            color: _muted,
+                          ),
+                        ),
+                      ),
+                      if (entry.likeCount > 0)
+                        GestureDetector(
+                          // Key: rakam PlayerBadge'in koltuk numarasıyla
+                          // aynı metni üretebiliyor, testler ayırt edebilsin.
+                          key: ValueKey('like-count-${entry.id}'),
+                          onTap: onShowLikers,
+                          behavior: HitTestBehavior.opaque,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
+                            child: Text('${entry.likeCount}',
+                                style: const TextStyle(
+                                    fontFamily: 'SpaceMono',
+                                    fontSize: 9,
+                                    decoration: TextDecoration.underline,
+                                    color: _muted)),
+                          ),
+                        ),
+                      const SizedBox(width: 4),
                       Text(_formatDate(entry.createdAt),
                           style: const TextStyle(
                               fontFamily: 'SpaceMono',
                               fontSize: 9,
                               letterSpacing: 0.5,
                               color: _muted)),
-                      const SizedBox(width: 6),
-                      _Badge(
-                        text: isOnline ? 'Canlı' : 'Yapay Zeka',
-                        color: isOnline ? _green : _accent,
-                      ),
+                      // Web: "Yapay Zeka" rozeti yalnızca gerçekten bir YZ
+                      // koltuğu KAYITLIYSA çıkar — eski (players'sız) yerel
+                      // kayıtlar rozetsiz kalır. İlk port bunu "Canlı değilse
+                      // Yapay Zeka" diye basitleştirmişti, düzeltildi.
+                      if (isOnline) ...[
+                        const SizedBox(width: 6),
+                        const _Badge(text: 'Canlı', color: _green),
+                      ] else if (hasSnapshot &&
+                          players.any((p) => p.isAi)) ...[
+                        const SizedBox(width: 6),
+                        const _Badge(text: 'Yapay Zeka', color: _accent),
+                      ],
+                      if (entry.messageCount > 0) ...[
+                        const SizedBox(width: 6),
+                        GestureDetector(
+                          key: ValueKey('chat-count-${entry.id}'),
+                          onTap: onShowChat,
+                          behavior: HitTestBehavior.opaque,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.chat_bubble_outline,
+                                  size: 11, color: _muted),
+                              const SizedBox(width: 2),
+                              Text('${entry.messageCount}',
+                                  style: const TextStyle(
+                                      fontFamily: 'SpaceMono',
+                                      fontSize: 9,
+                                      color: _muted)),
+                            ],
+                          ),
+                        ),
+                      ],
                       const Spacer(),
                       const SizedBox(
                           width: 40,

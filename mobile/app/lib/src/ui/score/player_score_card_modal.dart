@@ -129,6 +129,7 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
                     playerCount: _tab.playerCount,
                     currentName: widget.name,
                     isMe: false,
+                    stats: widget.stats,
                   );
                 },
                 behavior: HitTestBehavior.opaque,
