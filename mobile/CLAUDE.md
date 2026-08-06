@@ -125,6 +125,34 @@ Henüz OLMAYANLAR (sıradaki fazlar): depolama katmanı (SQLite/karantina),
 gerçek oyun UI'ı, Canlı oyun ekranları, `meanings.json` gömme (karar 4 —
 iskelette bilerek yok, MeaningModal'ın UI fazında eklenecek).
 
+## Porta Taşınan Değişmezler (PORT_BRIEF §7, 6 Ağustos 2026)
+
+Web'de 5 Ağustos'ta bulunan iki hatadan (#224) PORT_BRIEF §7'ye "kodu değil
+değişmezi taşı" notuyla eklenen (#225) iki kural, iskelete BİRER PRİMİTİF
+olarak kondu — sonraki fazlar bunları kullanmak ZORUNDA, kural yorum satırı
+değil kod:
+
+- **`data/write_queue.dart` — `TableWriteQueue`:** satır sahibi tablo başına
+  tek serileşmiş yazma yolu; okuma, bekleyen yazmalar çözülmeden yapılmaz
+  (`read`/`idle`). Web'deki `local_game_saves` DELETE→SELECT yarışının
+  (silinen YZ kaydının listede yeniden belirmesi) Dart eşleniği önlemi —
+  yarış React'e özgü değil, aynı şemaya giden her istemci üretir. Depolama/
+  senkron fazında `local_game_saves`e (ve satır sahibi her yeni tabloya)
+  giden TÜM erişim bu kuyruktan geçecek; kuyruğu atlayan tek çağrı yarışı
+  geri getirir.
+- **`auth/account_scope.dart` — `AccountScope`:** oturuma bağlı state'in
+  hesap değişiminde sıfırlanması TEK yerden, `user.id` karşılaştırmasıyla.
+  `supabase_flutter`'ın `onAuthStateChange`'i `tokenRefreshed`'i saatte bir
+  TAZE User nesnesiyle yayınlar — nesne kimliğine bakan karar web'deki
+  hatayı aynen üretir. İlk olay sıfırlama sayılmaz (web'deki "mount yolunu
+  dokunulmamış bırak" inceliği). Auth fazında dinleyici her olayda yalnızca
+  `onAuthEvent(user?.id)` çağıracak; oturumu aşan ömürlü her controller
+  sıfırlamasını `registerReset` ile buraya kaydedecek.
+
+İkisi de `test/invariants_test.dart`'ta test edildi — DELETE/SELECT yarışı
+minyatürü (kuyruksuz okuma bayat görür, kuyruklu görmez), hata kuyruğu
+kilitlemez, tokenRefreshed no-op'u, çıkış/ikinci-hesap sıfırlaması.
+
 ## Flutter Uygulama İskeleti (`mobile/app/`, 5 Ağustos 2026)
 
 Gerçek UI DEĞİL — kablolama iskeleti: motor + sözlük + Supabase + sürüm
