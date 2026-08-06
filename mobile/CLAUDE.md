@@ -6,6 +6,34 @@ TÜM kararların ve yapının kaydıdır — kök `CLAUDE.md` ile aynı refleks:
 dokunan bir port değişikliği olduğunda (ör. `src/utils/random.ts`'teki test
 kancası gibi) kök `CLAUDE.md` de kontrol edilir.
 
+## Parça Bitirme Kontrol Listesi (ZORUNLU — her parçanın son adımı)
+
+Kullanıcı isteği (6 Ağustos 2026): "her tamamladığın işten sonra ilgili
+dosyaları kontrol edip güncellemeyi unutma". Kural zaten vardı ama bir kez
+YARIM uygulandı — parça 4'te `scripts/generate-klig-paths.mjs` (yani
+`mobile/` DIŞINDA bir dosya) değiştiği hâlde yalnızca bu dosya güncellendi;
+kök `CLAUDE.md`/`README.md` bayat kaldı ve `mobile/CLAUDE.md`'ye var
+olmayan bir `npm run generate-klig-paths` komutu yazıldı. Ders: "dokümanı
+güncelledim" yetmez, **hangi dokümanı** sorusu `git status`tan çıkar.
+
+Commit'ten önce, sırayla:
+
+1. **`git status --short` oku ve `mobile/` DIŞINDAKİ her dosyayı işaretle.**
+   Bu parça web tarafına dokundu mu? Dokunduysa kök `CLAUDE.md` (+ gerekirse
+   `README.md`) AYNI commit'te güncellenmeli — kök dosyanın kuralı bu.
+2. **`mobile/CLAUDE.md`**: parça günlüğüne giriş (ne yapıldı, hangi web
+   dosyasının portu, bilinçli eksikler, bulunan hatalar/dersler, doğrulama
+   ve doğrulama SINIRI), "Klasör Yapısı" ağacına yeni dosyalar, "Sıradaki
+   parçalar" satırının güncellenmesi.
+3. **Yazdığın her komutun GERÇEKTEN var olduğunu doğrula** (`package.json`
+   scripts) — parça 4'te bu adım atlandığı için çalışmayan bir komut
+   dokümana girdi.
+4. **`README.md`**: mobil ağacı/durum cümlesi hâlâ doğru mu? ("iskelet"
+   gibi bir niteleme üç faz sonra bayatlamıştı.)
+5. Motor dosyası değiştiyse golden vector akışı (aşağıdaki bölüm), asset
+   üreticisi değiştiyse ilgili `npm run generate-*` — ikisi de opsiyonel
+   değil.
+
 ## Üst Düzey Kararlar (5 Ağustos 2026, kullanıcıyla birlikte verildi)
 
 1. **Oyun kurallarının tek doğruluk kaynağı ŞİMDİLİK web'deki TypeScript
