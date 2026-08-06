@@ -595,9 +595,49 @@ bağlı değil.)
      - Doğrulama: `game_header_test.dart` (3 test: path çözümü + sınırlar,
        bilinmeyen komutta fırlatma, etiketler/logo dokunuşu + ekran
        görüntüsü `build/screenshots/game_header.png`). 32/32 yeşil.
-   - Sıradaki parçalar: kaydet/yükle bağlantısı (LocalSaveStore + terk
-     cezası üst katmanı + logo çıkışında kaydet), Setup ekranı,
-     sürükle-bırak, kelime anlamı modalı, hamle geçmişi modalı.
+   - ✅ **Parça 5 — kaydet/yükle bağlantısı (6 Ağustos 2026,
+     `local_game_repo.dart`):** Depolama katmanı (LocalSaveStore, Parça
+     "storage") artık gerçekten oyuna bağlı. İki sınıf:
+     - **`LocalGameRepo`** — misafir slotunun (tek kayıt, web localStorage
+       paritesi) politika katmanı. `local_saves` tablosunun TEK
+       `TableWriteQueue`'suna sahip (PORT_BRIEF §7): hasSave/savedAtMs/
+       loadSave hepsi `read()` üzerinden (bekleyen yazma bitmeden okuma
+       yok), GameSession'ın tüm yazmaları `enqueue` üzerinden — web'deki
+       DELETE/SELECT yarışı yapısal olarak imkânsız; test bunu end()
+       beklenmeden hasSave sorarak kanıtlıyor. `drainAbandonedGames()` =
+       web `takePendingAbandonedGame` akışı: LocalSaveStore.load'un 7
+       günlük süre aşımında ürettiği terk olaylarını atomik tüketir,
+       YALNIZCA `turnCount >= 2` oyunlar için pending_queue'ya
+       (`finished-game`, 7 gün TTL) `{type:'abandoned-surrender', savedAt,
+       state}` kaydı kuyruklar — payload TAM GameState taşır ki senkron
+       fazı gerçek `games` satırını (buildGameRecord portu) oradan
+       üretebilsin; sunucuya flush BİLİNÇLİ olarak o fazın işi.
+     - **`GameSession`** — bir GameController'ı kalıcılığa bağlar:
+       autosave `play && !isGameOver` HER değişimde (web autosave'i gibi
+       koşulsuz — turnCount eşiği kayıtta DEĞİL çıkışta), `isGameOver` →
+       slot silinir, `end()` (bilinçli çıkış: logo/YENİ OYUN dönüşü)
+       `turnCount < 2` ise slotu İZ BIRAKMADAN siler (web handleLogoClick
+       eşiği); uygulama kill edilirse (end çağrılmaz) autosave kalır,
+       sonraki açılışta devam edilir — üçü de testli.
+     - **HomeScreen (hâlâ iskelet, gerçek Setup ayrı parça):** açılışta
+       `loadSave()` (süresi dolanı olaya çevirir) + `drainAbandonedGames()`
+       süpürmesi — web'in "Setup her göründüğünde" refleksi. Kayıt varsa
+       "Devam Eden Oyun" kartı (Senin Hamlen Bekleniyor + "N gün/saat sonra
+       silinecek" — misafir dili, "teslim sayılacak" DEĞİL) + web'in
+       anti-kaçış kuralı: kayıt bitmeden yeni oyun butonu HİÇ gösterilmez.
+       "Devam Et" → `loadSave()` (null dönerse tam o an süresi dolmuş —
+       liste tazelenir) → `controller.restore()` → GameScreen. Oyun
+       ekranından HER dönüşte `session.end()` + durum tazelenir. Motor
+       testi (YZ vs YZ) kalıcılığa bilerek BAĞLI DEĞİL (misafir slotunu
+       kirletmesin).
+     - Doğrulama: `local_game_repo_test.dart` (5 test, gerçek SQLite ffi +
+       enjekte saat): autosave+roundtrip (multiSession işareti dahil),
+       bitişte silme, 7 günlük terk (turnCount>=2 ceza kuyruklanır, <2 iz
+       bırakmaz; ikinci 8 günlük sıçramada eski cezanın kuyruk TTL'ine
+       takılıp düşmesi de web PENDING_EXPIRY paritesi olarak doğrulandı),
+       kill-sonrası devam, yazma-okuma yarışı. 37/37 yeşil.
+   - Sıradaki parçalar: Setup ekranı (gerçek görsel dil), sürükle-bırak,
+     kelime anlamı modalı, hamle geçmişi modalı.
 5. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

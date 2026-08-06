@@ -1,9 +1,11 @@
 // Oynanabilir oyun ekranı — App.tsx'in oyun görünümünün çekirdeği: skor
 // satırı + tahta (canlı geçerlilik çerçevesiyle) + mesaj + raf/OYNA + web
 // buton düzeni (Pas Geç/Değiştir/Karıştır/Geri Al/Torba; swap modunda
-// Değiştir (N)/Vazgeç) + GameOver modalı. Parça parça plan gereği BİLİNÇLİ
-// eksikler (mobile/CLAUDE.md): GameHeader'ın gerçek görsel dili,
-// sürükle-bırak, kelime anlamı modalı, hamle geçmişi, kaydet/yükle.
+// Değiştir (N)/Vazgeç) + GameOver modalı. Kalıcılık bu ekranın DIŞINDA:
+// HomeScreen oyunu GameSession'la sarar (autosave/çıkış kuralları,
+// local_game_repo.dart) — ekran yalnızca oynatır. Parça parça plan gereği
+// BİLİNÇLİ eksikler (mobile/CLAUDE.md): sürükle-bırak, kelime anlamı
+// modalı, hamle geçmişi modalı, gerçek Setup ekranı.
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 

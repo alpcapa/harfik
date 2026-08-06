@@ -69,6 +69,15 @@ class LocalSaveStore {
     return rows.isNotEmpty;
   }
 
+  /// Kaydın son yazılma anı (epoch ms) — "N sonra silinecek" etiketi için;
+  /// kayıt yoksa null. Süre/karantina değerlendirmesi YAPMAZ (o `load`un
+  /// işi), yalnızca ham damgayı okur.
+  Future<int?> savedAtMs(String slot) async {
+    final rows = await db.query('local_saves',
+        columns: ['saved_at'], where: 'slot = ?', whereArgs: [slot]);
+    return rows.isEmpty ? null : rows.first['saved_at'] as int;
+  }
+
   /// Kaydı yükler. Üç sonuç: geçerli state (multiSession=true ile), null
   /// (kayıt yok / süresi dolup pending_events'e taşındı / bozuk olup
   /// karantinaya taşındı). null dönüşünde slot her durumda temizlenmiştir —
