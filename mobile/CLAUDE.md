@@ -555,15 +555,19 @@ bağlı değil.)
        `clamp(min, calc(a+b·vw), max)` sisteminin birebir eşleniği (aynı
        katsayılar, 375→min/465→max uç noktaları); kutu = tint zemin + base
        çerçeve, aktif 2px / pasif 0.5px; İNSAN kutusu geniş, YZ kutusu dar
-       ("YZ N" etiketi). **Teslim durumu — web'den BİLİNÇLİ sapma
-       (kullanıcı kararı, aynı gün):** ilk sürüm web'i izleyip kutuyu %45
-       soluklaştırıp TESLİM'i küçük puntoyla basıyordu; kullanıcı "diğerleriyle
-       aynı boy ve tasarımda olmalı, yalnızca puan alanında Teslim yazmalı"
-       dedi — soluklaştırma kaldırıldı, puan satırı skorla AYNI yükseklikte
-       sabit bir SizedBox, TESLİM metni FittedBox'la sığdırılıyor; test kutu
-       boylarının birebir eşit olduğunu ölçüyor. Web hâlâ eski davranışta —
-       aynı değişiklik istenirse web `GameHeader.tsx` ayrıca güncellenmeli;
-       isim
+       ("YZ N" etiketi). **Teslim gösterimi — İKİ TARAF BİRLİKTE
+       netleştirildi (kullanıcı kararı, aynı gün, üç adımda):** ilk sürüm
+       web'in o günkü davranışını (soluklaştırma + küçük punto) izliyordu;
+       kullanıcı önce "diğerleriyle aynı boy/tasarımda olsun, yalnızca puan
+       alanında Teslim yazsın" dedi (soluklaştırma kalktı), sonra web'in o
+       anki hâlini görünce nihai karar verildi: **aynı kutu/tasarım + puan
+       alanını dolduran TESLİM + %45 soluklaştırma, web'de de app'te de.**
+       App: puan satırı skorla AYNI yükseklikte sabit SizedBox, TESLİM
+       FittedBox'la sığdırılır, kutu `Opacity(0.45)` ile solgun; test hem
+       boy eşitliğini hem yalnızca teslim kutusunun soluk olduğunu ölçüyor.
+       Web: `GameHeader.tsx`'e `TESLIM_FONT_SIZE` (11-16px, aynı 375/465
+       sistemi) + `lineHeight: SCORE_FONT_SIZE` eklendi (bkz. kök
+       CLAUDE.md); isim
        `trUpper` ile (CSS `uppercase`ın Türkçe-farkındalı karşılığı —
        İbrahim→İBRAHİM testte doğrulanıyor). **Çerçeve
        `foregroundDecoration`da** — web'in `border`→`outline` dersinin

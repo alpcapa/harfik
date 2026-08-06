@@ -185,12 +185,11 @@ class _PlayerBox extends StatelessWidget {
     final col = playerColors[player.colorIndex % playerColors.length];
     final label = player.isAI ? 'YZ ${index + 1}' : trUpper(player.name);
 
-    // Teslim durumu kutunun TASARIMINI değiştirmez (kullanıcı kararı,
-    // 6 Ağustos 2026 — web'in %45 soluklaştırma + küçük punto davranışından
-    // bilinçli sapma): kutu diğerleriyle aynı boy/renk/çerçevede kalır,
-    // yalnızca puan alanında skor yerine "Teslim" yazar. Puan satırının
-    // yüksekliği skorla birebir aynı tutulur (SizedBox), metin sığması için
-    // FittedBox ile daraltılır.
+    // Teslim gösterimi (kullanıcı kararı, 6 Ağustos 2026 — web'le BİRLİKTE
+    // netleştirildi, iki taraf aynı): kutu diğerleriyle aynı boy/renk/
+    // çerçevede kalır, puan alanında skor satırını dolduran boyutta TESLİM
+    // yazar (yükseklik SizedBox'la skora sabit, metin FittedBox'la sığar)
+    // ve kutunun tamamı %45 soluklaştırılır (aşağıdaki Opacity).
     final box = Container(
       key: ValueKey('player-box-$index'),
       width: width,
@@ -247,6 +246,11 @@ class _PlayerBox extends StatelessWidget {
       ),
     );
 
-    return onTap == null ? box : GestureDetector(onTap: onTap, child: box);
+    final dimmed = player.surrendered
+        ? Opacity(opacity: 0.45, child: box) // web'le aynı soluklaştırma
+        : box;
+    return onTap == null
+        ? dimmed
+        : GestureDetector(onTap: onTap, child: dimmed);
   }
 }

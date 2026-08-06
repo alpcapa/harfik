@@ -119,9 +119,12 @@ void main() {
     // Teslim olan koltuk skor yerine TESLİM gösterir, adı da görünür.
     expect(find.text('DENİZ'), findsOneWidget);
     expect(find.text('TESLİM'), findsOneWidget);
-    // Kullanıcı kararı: teslim kutusu diğerleriyle AYNI boy/tasarımda —
-    // soluklaştırma yok, yükseklik normal insan kutusuyla birebir aynı.
-    expect(find.byType(Opacity), findsNothing);
+    // Kullanıcı kararı (web'le birlikte netleştirildi): teslim kutusu
+    // diğerleriyle AYNI boy/tasarımda, üstüne %45 soluklaştırma — yalnızca
+    // teslim kutusu soluk, boyu normal insan kutusuyla birebir aynı.
+    final dims = tester.widgetList<Opacity>(find.byType(Opacity)).toList();
+    expect(dims, hasLength(1));
+    expect(dims.single.opacity, 0.45);
     final normalBox =
         tester.getSize(find.byKey(const ValueKey('player-box-0')));
     final surrenderedBox =

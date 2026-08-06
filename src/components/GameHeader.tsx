@@ -29,6 +29,16 @@ const PLAYER_BOX_WIDTH = 'clamp(43px, calc(-52.83px + 25.56vw), 66px)';
 const YZ_BOX_WIDTH = 'clamp(28px, calc(-34.5px + 16.67vw), 43px)';
 const LABEL_FONT_SIZE = 'clamp(6px, calc(-2.33px + 2.22vw), 8px)';
 const SCORE_FONT_SIZE = 'clamp(13px, calc(-7.83px + 5.56vw), 18px)';
+// 6 Ağustos 2026 — teslim gösterimi netleştirildi (kullanıcı kararı, Flutter
+// portundaki GameHeader çalışmasıyla birlikte): "Teslim" artık etiket
+// puntosunda değil, skor satırını dolduran büyüklükte. Skor puntosunun
+// kendisi kullanılamıyor çünkü 6 karakterlik TESLİM insan kutusuna sığmıyor
+// (Space Mono ~0.6em/karakter: 375px'te içerik 40px → 11px, 465px'te 59px →
+// 16px; aynı 375/465 uç noktalı sistem). Satır yüksekliği SCORE_FONT_SIZE'a
+// sabitlenir ki teslim kutusu diğerleriyle BİREBİR aynı boyda kalsın
+// (önceden etiket puntosuyla ~10px daha kısaydı). %45 soluklaştırma
+// bilinçli olarak DURUYOR — kutu tasarımı aynı, yalnızca solgun.
+const TESLIM_FONT_SIZE = 'clamp(11px, calc(-9.83px + 5.56vw), 16px)';
 // 31 Temmuz 2026 — hem kutu genişliği hem yatay dolgu daraltıldı (kullanıcı
 // geri bildirimi: isim/puan kenarlara çok uzak duruyordu). Aynı 375/465 uç
 // noktalı sistemin içinde kalınarak eskisinin (6-8px) yaklaşık yarısına
@@ -164,13 +174,20 @@ export function GameHeader({ state, onLogoClick, exitDisabled, onPlayerClick }: 
                 <div
                   className={
                     p.surrendered
-                      ? 'font-mono font-bold uppercase tracking-[1px] leading-none truncate'
+                      ? 'font-mono font-bold uppercase truncate'
                       : 'font-mono font-bold leading-none truncate'
                   }
-                  style={{
-                    fontSize: p.surrendered ? LABEL_FONT_SIZE : SCORE_FONT_SIZE,
-                    color: col.base,
-                  }}
+                  style={
+                    p.surrendered
+                      ? {
+                          // Satır yüksekliği skor satırıyla birebir aynı —
+                          // teslim kutusu diğerleriyle aynı boyda kalır.
+                          fontSize: TESLIM_FONT_SIZE,
+                          lineHeight: SCORE_FONT_SIZE,
+                          color: col.base,
+                        }
+                      : { fontSize: SCORE_FONT_SIZE, color: col.base }
+                  }
                 >
                   {p.surrendered ? 'Teslim' : p.score}
                 </div>
