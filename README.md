@@ -139,10 +139,14 @@ src/
 mobile/                    # Flutter (iOS+Android) portu — ayrıntı: mobile/CLAUDE.md
 ├── kelimeki_core/         # oyun motorunun saf Dart portu (web motoruna eşitliği
 │                          # golden vector testleriyle kanıtlı: dart run test/run_all.dart)
-└── app/                   # Flutter uygulaması (iskelet): motor + sözlük + Supabase +
-    │                      # sürüm kapısı kablolaması; flutter analyze/test temiz
-    └── assets/dictionary/ # üretilmiş kelime listesi asset'i (words_tr.txt,
-                           # kaynak src/data/words.ts — npm run generate-golden-vectors üretir)
+└── app/                   # Flutter uygulaması: Yapay Zeka'ya karşı oyun uçtan uca
+    │                      # oynanabilir (kurulum/tahta/raf/sürükle-bırak, kurallar,
+    │                      # kelime anlamı, hamle geçmişi), Supabase oturumu
+    │                      # (giriş/kayıt), bulut kayıt senkronu, skor kartı/k-lig
+    ├── assets/dictionary/ # üretilmiş asset'ler: words_tr.txt (kaynak
+    │                      # src/data/words.ts — npm run generate-golden-vectors)
+    │                      # ve meanings.db (npm run generate-meanings-db)
+    └── assets/fonts/      # Space Grotesk / Space Mono / Nunito (web'le aynı aileler)
 ```
 
 ## Supabase (opsiyonel)
