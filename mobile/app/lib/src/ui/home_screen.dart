@@ -9,6 +9,7 @@ import '../bootstrap.dart';
 import '../config/env.dart';
 import '../game/game_controller.dart';
 import 'game/board_widget.dart';
+import 'game/game_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final AppServices services;
@@ -94,6 +95,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text('Sözlük: ${words.length} kelime'),
                     const SizedBox(height: 24),
                     FilledButton(
+                      onPressed: () {
+                        // Deneme oyunu: Sen vs YZ — GameScreen'in ilk gerçek
+                        // kullanıcısı (Setup ekranı sonraki parçalar).
+                        final controller = GameController(words: words);
+                        controller.dispatch(StartAction(const [
+                          PlayerSetup(name: 'Sen', isAI: false),
+                          PlayerSetup(name: '', isAI: true),
+                        ]));
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => GameScreen(
+                              controller: controller, words: words),
+                        ));
+                      },
+                      child: const Text('Oyna: Sen vs Yapay Zeka (deneme)'),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton(
                       onPressed: () => _runDemoGame(words),
                       child: const Text('Motor testi: YZ vs YZ oyunu oynat'),
                     ),

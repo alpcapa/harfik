@@ -417,9 +417,29 @@ bağlı değil.)
      fazına): nömorfik iç gölgeler düz tonla, Nunito taş fontu ve harf
      konturu yok, yerleştirme nabız animasyonu yok, alt bilgi şeridi
      (Hamleler/Mesajlaşma) ekran parçasının işi.
-   - Sıradaki parçalar: raf + taş yerleştirme etkileşimi (dokunma), oyun
-     ekranı iskeleti (GameHeader/mesaj satırı/butonlar), sürükle-bırak,
-     kaydet/yükle bağlantısı (LocalSaveStore), Setup ekranı.
+   - ✅ **Parça 2 — raf + dokunarak yerleştirme + oynanabilir GameScreen:**
+     `rack_widget.dart` (Rack.tsx portu; sürükleme prop'ları bilinçli yok),
+     `wild_letter_sheet.dart` (WildcardModal portu — alttan sayfa; editing
+     modu + "Geri Al"), `move_status.dart` (App.tsx moveStatus useMemo'sunun
+     portu), `game_screen.dart` (minimal oynanabilir ekran: basit skor
+     satırı, liveMessage kuralı — geçersiz sebep kırmızı/geçerliyken yeşil,
+     tahta + canlı çerçeve, raf, OYNA/PAS GEÇ/GERİ AL/KARIŞTIR, bölge
+     vergisi "Sınır İhlali!" onayı, pas onayı). Web davranış paritesi:
+     yerleştirilmiş taşa dokunmak geri alır AMA jokere dokunmak seçiciyi
+     editing modunda yeniden açar (taş geri alınmaz); joker harf seçilmeden
+     tahtaya konmaz. HomeScreen'e "Oyna: Sen vs Yapay Zeka (deneme)" girişi
+     eklendi — yerel YZ oyunu cihazda UÇTAN UCA OYNANABİLİR durumda.
+     Doğrulama: `game_screen_test.dart` — KELİME dizme (+7 rozeti, skor,
+     longestWord), geçersiz dizilim mesajı ('"KM" geçerli bir kelime
+     değil.'), taşa-dokun-geri-al, joker akışının tamamı; ekran görüntüsü
+     `build/screenshots/game_screen_kelime.png`. Bilinçli eksikler: taş
+     değiştirme (swap) UI akışı, kelime anlamı modalı, GameOver ekranı
+     (şimdilik KAPAT), gerçek GameHeader; test ortamı notu: ★ (joker)
+     SDK Roboto alt kümesinde yok — ekran görüntüsünde kutu görünür,
+     cihaz fontlarında sorun değil.
+   - Sıradaki parçalar: taş değiştirme akışı + GameOver ekranı, gerçek
+     GameHeader görsel dili, kaydet/yükle bağlantısı (LocalSaveStore +
+     terk cezası üst katmanı), Setup ekranı, sürükle-bırak, kelime anlamı.
 5. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek
