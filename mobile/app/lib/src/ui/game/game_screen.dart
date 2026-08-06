@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
+import '../../data/auth_service.dart';
 import '../../data/meaning_store.dart';
 import '../../game/game_controller.dart';
 import '../../game/move_status.dart';
@@ -34,11 +35,16 @@ class GameScreen extends StatefulWidget {
   /// yok sayılır — web'de de anlam gösterimi oyunun çalışmasına bağlı değil.
   final MeaningStore? meanings;
 
+  /// Hesap durumu — GameHeader'daki GİRİŞ/avatar kontrolü için; verilmezse
+  /// (testler) hesap kontrolü çizilmez (web offline davranışı).
+  final AuthService? auth;
+
   const GameScreen({
     super.key,
     required this.controller,
     required this.words,
     this.meanings,
+    this.auth,
   });
 
   @override
@@ -465,6 +471,7 @@ class _GameScreenState extends State<GameScreen> {
                     // (GameHeader.tsx portu, akıcı clamp sistemiyle).
                     GameHeader(
                       state: state,
+                      auth: widget.auth,
                       onLogoTap: () => Navigator.of(context).pop(),
                     ),
                     // Web akışıyla aynı: tahta → mesaj → raf → butonlar yukarıdan

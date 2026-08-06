@@ -1,12 +1,13 @@
 // Oyun başlığı — src/components/GameHeader.tsx portu: solda logo (dokunuş =
-// oyundan çık), sağda oyuncu skor kutuları. Web'in akıcı clamp() sistemi
-// (375px'te min → 465px'te max) burada _fluid() ile birebir hesaplanır;
-// UserMenu (hesap menüsü) BİLİNÇLİ eksik — auth sonraki fazın işi.
+// oyundan çık), sağda oyuncu skor kutuları + hesap kontrolü (AccountButton:
+// GİRİŞ / avatar-menü — web UserMenu). Web'in akıcı clamp() sistemi
+// (375px'te min → 465px'te max) burada _fluid() ile birebir hesaplanır.
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
+import '../../data/auth_service.dart';
+import '../auth/account_button.dart';
 import 'logo_mark.dart';
-import 'neo_box.dart';
 import 'player_colors.dart';
 
 /// Web'deki `clamp(min, calc(a + b·vw), max)` eşleniği — vw = ekran
@@ -20,6 +21,11 @@ class GameHeader extends StatelessWidget {
   final GameState state;
   final VoidCallback? onLogoTap;
 
+  /// Hesap durumu — verilmezse ya da Supabase yapılandırılmamışsa hesap
+  /// kontrolü hiç çizilmez (web'de UserMenu'nun `!configured → null`
+  /// davranışı; testler/salt önizlemeler auth geçirmeyebilir).
+  final AuthService? auth;
+
   /// Verilirse insan koltuklarının kutuları tıklanabilir olur (Canlı oyunda
   /// skor kartı — web onPlayerClick'in eşleniği; yerel oyunda verilmez).
   final void Function(int index)? onPlayerTap;
@@ -29,6 +35,7 @@ class GameHeader extends StatelessWidget {
     required this.state,
     this.onLogoTap,
     this.onPlayerTap,
+    this.auth,
   });
 
   @override
@@ -100,79 +107,20 @@ class GameHeader extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                _GirisButton(
-                  fontSize: girisFontSize,
-                  paddingX: girisPaddingX,
-                  paddingY: girisPaddingY,
-                ),
+                if (auth != null && auth!.configured) ...[
+                  const SizedBox(width: 8),
+                  AccountButton(
+                    auth: auth!,
+                    girisFontSize: girisFontSize,
+                    girisPaddingX: girisPaddingX,
+                    girisPaddingY: girisPaddingY,
+                    avatarSize: 32,
+                  ),
+                ],
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Web UserMenu'nün misafir durumu: accent zeminli "GİRİŞ" düğmesi (oturum
-/// açıksa web avatar+dropdown gösterir — o durum auth fazıyla gelecek).
-/// Şimdilik dokununca dürüst bir "yakında" açıklaması gösterilir; sahte bir
-/// giriş formu bilinçli olarak YOK.
-class _GirisButton extends StatelessWidget {
-  final double fontSize;
-  final double paddingX;
-  final double paddingY;
-  const _GirisButton({
-    required this.fontSize,
-    required this.paddingX,
-    required this.paddingY,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Giriş'),
-          content: const Text(
-              'Hesapla giriş ve Canlı oyun özellikleri uygulamanın sonraki '
-              'sürümünde gelecek. Şimdilik Yapay Zeka\'ya karşı '
-              'oynayabilirsin.'),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('TAMAM'),
-            ),
-          ],
-        ),
-      ),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: paddingX, vertical: paddingY),
-        // Web: `btn-raised bg-accent` — index.css'teki gölge üçlüsü, CSS
-        // semantiğiyle (bkz. neo_box.dart).
-        decoration: const ShapeDecorationWithCssShadows(
-          color: Color(0xFF2563EB), // web bg-accent
-          radius: 6,
-          shadows: [
-            CssShadow(color: Color(0x8CA3B1C6), offset: Offset(3, 3), blur: 8),
-            CssShadow(
-                color: Color(0xB3FFFFFF), offset: Offset(-2, -2), blur: 6),
-            CssShadow(color: Color(0x59647489), offset: Offset(0, 6), blur: 14),
-          ],
-        ),
-        child: Text(
-          'GİRİŞ',
-          style: TextStyle(
-            fontFamily: 'SpaceMono',
-            fontWeight: FontWeight.bold,
-            fontSize: fontSize,
-            letterSpacing: 0.5,
-            height: 1,
-            color: Colors.white,
-          ),
-        ),
       ),
     );
   }

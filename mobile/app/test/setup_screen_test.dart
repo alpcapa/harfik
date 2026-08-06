@@ -11,6 +11,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/bootstrap.dart';
+import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/meaning_store.dart';
 import 'package:kelimeki/src/config/version_gate.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
@@ -39,6 +40,7 @@ Future<AppStorage> openTestStorage() async {
 AppServices services({Future<AppStorage>? storage}) => AppServices(
       dictionary: Future.value(words),
       meanings: MeaningStore(bundle: rootBundle),
+      auth: AuthService(null),
       supabase: null,
       versionGate: VersionGateStatus.ok,
       storage: storage,

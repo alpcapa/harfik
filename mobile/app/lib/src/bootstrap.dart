@@ -7,6 +7,7 @@ import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/version_gate.dart';
+import 'data/auth_service.dart';
 import 'data/dictionary_loader.dart';
 import 'data/meaning_store.dart';
 import 'data/supabase_client.dart';
@@ -24,6 +25,10 @@ class AppServices {
   /// null = Supabase yapılandırılmamış → tam offline mod.
   final SupabaseClient? supabase;
 
+  /// Oturum/profil durumu — web AuthProvider'ın eşleniği. Supabase
+  /// yapılandırılmamışsa `configured=false` olur ve hesap UI'ı hiç çizilmez.
+  final AuthService auth;
+
   final VersionGateStatus versionGate;
 
   /// Depolama — açılışta fire-and-forget açılır (sözlükle aynı desen);
@@ -33,6 +38,7 @@ class AppServices {
   const AppServices({
     required this.dictionary,
     required this.meanings,
+    required this.auth,
     required this.supabase,
     required this.versionGate,
     this.storage,
@@ -45,10 +51,12 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
   final meanings = MeaningStore(bundle: bundle);
   final storage = AppStorage.open();
   final supabase = await initSupabase();
+  final auth = AuthService(supabase);
   final versionGate = await checkVersionGate(supabase);
   return AppServices(
     dictionary: dictionary,
     meanings: meanings,
+    auth: auth,
     supabase: supabase,
     versionGate: versionGate,
     storage: storage,

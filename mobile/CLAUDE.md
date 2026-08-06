@@ -981,7 +981,63 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      Kalan bilinçli eksikler auth'a bağlı: "Görüş Bildir" formu,
      "Arkadaşınla paylaş" (native share), Canlı oyun ekranları, skor kartı/
      k-lig. Sıradaki faz: auth + Canlı oyun (bkz. "Sıradaki Fazlar").
-5. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
+5. **Auth + Canlı oyun fazı — PARÇA PARÇA ilerliyor** (Fable ile,
+   6 Ağustos 2026'da başladı).
+   - ✅ **Parça 1 — Supabase oturumu + hesap durumunun UI'a yansıması:**
+     - **`AuthService`** (`lib/src/data/auth_service.dart`, ChangeNotifier —
+       Üst Düzey Kararlar #5): web `useAuth`'un iki sözleşmesi aynen taşındı:
+       (1) `user` set edilmesi ile profil çekiminin başlaması AYNI adımda
+       (arada "user dolu ama profileLoading eski" render'ı yok — web'de
+       yaşanmış kimlik-sıçraması hatası); (2) hiçbir hata `loading`/
+       `profileLoading`'i sonsuza dek true bırakamaz. Kimlik kuralları
+       birebir: `accountName` (display_name → first_name → profil
+       YÜKLENDİYSE e-posta öneki; beklerken null → `accountPending`),
+       `menuName` (UserMenu kuralı), `identityLoading`. Oturum kalıcılığı
+       supabase_flutter'ın kendi deposunda — ek bir şey saklanmıyor.
+       `friendlyAuthMessage` portu kod+regex eşlemesiyle web'le birebir
+       (bilinmeyen hata null → orijinal mesaj gösterilir; `user_banned`
+       bilgi-sızıntısı kararı web'de ölçülüp verildi, mesaj aynı).
+       **`AuthService.fake`** (@visibleForTesting) ağsız test durumları
+       kuruyor — gerçek `User` nesnesi gotrue kurucusuyla elle yaratılıyor.
+     - **`LoginModal`** (`lib/src/ui/auth/login_modal.dart`) — AuthModal'ın
+       LOGIN dalı: e-posta+şifre, boş alan istemci doğrulaması, Türkçe hata
+       eşlemesi, girişte kendiliğinden kapanır. "Şifremi unuttum" (recovery
+       deep-link ister) ve "Kayıt ol" (nickname benzersizliği/koşullar)
+       SONRAKİ parçalar — dürüst "kelimeki.com üzerinden" diyaloğu, sahte
+       form yok.
+     - **`AccountButton`** (`lib/src/ui/auth/account_button.dart`) — web
+       UserMenu çekirdeği, dört durum: yapılandırılmamış → hiç çizilmez;
+       kimlik yükleniyor → "…" dairesi; oturumsuz → GİRİŞ (btn-raised,
+       görsel eski `_GirisButton`dan taşındı — o sınıf silindi); oturumlu →
+       `KAvatar` + açılır menü. Menü YALNIZCA çalışan maddeleri taşıyor
+       (isim başlığı, Nasıl Oynanır?, Çıkış Yap) — k-lig/Arkadaşlar/Skor
+       Kartı/Hesap Ayarları kendi ekranları portlanınca eklenecek
+       (ARKADAŞINLA dürüstlük deseni). `KAvatar` (`k_avatar.dart`) web
+       Avatar portu: initials() kuralı + tek karakter 0.55 oranı dersi.
+     - **Kablolar:** `AppServices.auth` (bootstrap'te `AuthService(supabase)`
+       — yapılandırılmamışsa configured=false, hesap UI'ı görünmez);
+       GameHeader/GameScreen opsiyonel `auth` (testler/önizlemeler
+       geçmeyebilir → web offline davranışı); Setup sağ üstte AccountButton
+       (web App.tsx kurulum dalındaki UserMenu konumu), gövde
+       `ListenableBuilder(auth)` ile tazelenir, 1. koltuk hesap dalı
+       (avatar + kilitli isim / pending'de nötr "Yükleniyor…"),
+       `_startNewGame` 1. oyuncuyu `accountName` ile başlatır (web doStart).
+     - **Doğrulama:** `auth_test.dart` (10 test: friendlyAuthMessage kod/
+       mesaj/null; accountName öncelik zinciri; accountPending; girişli
+       Setup ekranı + oyunun hesap adıyla başlaması + hesap menüsü; GİRİŞ →
+       giriş penceresi + boş alan hatası; pending'de kimlik sıçraması yok +
+       `build/screenshots/setup_logged_in.png`). 63/63 yeşil.
+       **Doğrulama sınırı:** gerçek Supabase el sıkışması (şifre girişi,
+       oturum kalıcılığı, profil RLS okuması) bu ortamdan test EDİLEMEDİ —
+       cihazda `--dart-define=SUPABASE_URL/ANON_KEY` ile kullanıcı
+       doğrulamalı. Testte "İR" beklentisi yanlış çıktı: "Ironman" BÜYÜK
+       I ile başlar, trUpper doğru şekilde "IR" üretir (Türkçe kural
+       yalnızca küçük i'yi İ yapar) — baş harf beklentisi yazarken dikkat.
+     - Sıradaki parçalar (sıra önerisi): kayıt formu (nickname
+       benzersizliği RPC'si + koşullar onayı), şifre sıfırlama (deep link),
+       girişli kullanıcının bulut kayıtları (`local_game_saves` senkronu),
+       Canlı oyun ekranları.
+6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek
    HTTP/PostgREST katmanıyla ayrıca doğrulanmalı (şimdilik yalnızca SQL

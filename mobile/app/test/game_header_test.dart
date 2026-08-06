@@ -8,6 +8,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/ui/game/game_header.dart';
 import 'package:kelimeki/src/ui/game/logo_mark.dart';
 import 'package:kelimeki/src/ui/game/logo_mark_data.dart';
@@ -104,7 +105,8 @@ void main() {
         theme: ThemeData(
             fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
         home: Scaffold(
-          body: GameHeader(state: s, onLogoTap: () {}),
+          body:
+              GameHeader(state: s, onLogoTap: () {}, auth: AuthService.fake()),
         ),
       ));
       await tester.pump();
@@ -163,6 +165,7 @@ void main() {
             child: GameHeader(
               state: headerState(),
               onLogoTap: () => logoTapped = true,
+              auth: AuthService.fake(),
             ),
           ),
         ),
@@ -195,14 +198,16 @@ void main() {
     await tester.tap(find.byType(LogoMark));
     expect(logoTapped, isTrue);
 
-    // Web UserMenu'nün misafir durumu: GİRİŞ düğmesi görünür, dokununca
-    // "yakında" açıklaması çıkar.
+    // Web UserMenu'nün oturumsuz durumu: GİRİŞ düğmesi görünür, dokununca
+    // GERÇEK giriş penceresi (e-posta+şifre) açılır — auth fazı parça 1.
     expect(find.text('GİRİŞ'), findsOneWidget);
     await tester.tap(find.text('GİRİŞ'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('sonraki sürümünde gelecek'), findsOneWidget);
-    await tester.tap(find.text('TAMAM'));
+    expect(find.text('E-POSTA'), findsOneWidget);
+    expect(find.text('GİRİŞ YAP'), findsOneWidget);
+    await tester.tap(find.byTooltip('Kapat'));
     await tester.pumpAndSettle();
+    expect(find.text('E-POSTA'), findsNothing);
 
     await tester.runAsync(() async {
       final boundary =

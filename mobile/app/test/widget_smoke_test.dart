@@ -5,6 +5,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/bootstrap.dart';
 import 'package:kelimeki/src/config/version_gate.dart';
+import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/meaning_store.dart';
 import 'package:kelimeki/src/ui/app.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
@@ -15,6 +16,7 @@ void main() {
     final services = AppServices(
       dictionary: Future.value(SetWordSource(const ['ab', 'aba', 'kelime'])),
       meanings: MeaningStore(bundle: rootBundle),
+      auth: AuthService(null),
       supabase: null,
       versionGate: VersionGateStatus.ok,
     );
@@ -31,6 +33,7 @@ void main() {
     final services = AppServices(
       dictionary: Future.value(SetWordSource(const ['ab'])),
       meanings: MeaningStore(bundle: rootBundle),
+      auth: AuthService(null),
       supabase: null,
       versionGate: VersionGateStatus.updateRequired,
     );

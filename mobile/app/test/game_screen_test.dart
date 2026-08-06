@@ -9,6 +9,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/ui/game/game_over_modal.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
@@ -92,7 +93,8 @@ Future<GameController> pumpGame(WidgetTester tester, GlobalKey key) async {
         fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
     home: RepaintBoundary(
       key: key,
-      child: GameScreen(controller: controller, words: words),
+      child: GameScreen(
+          controller: controller, words: words, auth: AuthService.fake()),
     ),
   ));
   await tester.pump();
@@ -310,7 +312,8 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       theme: ThemeData(
           fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
-      home: GameScreen(controller: controller, words: words),
+      home: GameScreen(
+          controller: controller, words: words, auth: AuthService.fake()),
     ));
     await tester.pumpAndSettle();
 

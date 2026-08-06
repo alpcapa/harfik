@@ -25,6 +25,8 @@ import '../game/logo_mark.dart';
 import '../game/neo_button.dart';
 import '../game/player_badge.dart';
 import '../game/player_colors.dart';
+import '../auth/account_button.dart';
+import '../auth/k_avatar.dart';
 
 const _panel = Color(0xFFF5F7FA);
 const _border = Color(0xFFDCE2EA);
@@ -83,6 +85,7 @@ class _SetupScreenState extends State<SetupScreen> {
         controller: controller,
         words: words,
         meanings: widget.services.meanings,
+        auth: widget.services.auth,
       ),
     ));
     await session?.end();
@@ -92,10 +95,12 @@ class _SetupScreenState extends State<SetupScreen> {
 
   Future<void> _startNewGame(SetWordSource words) async {
     final controller = GameController(words: words);
-    // Web doStart paritesi: 1. oyuncu her zaman gerçek kişi (misafir),
-    // diğerleri "Yapay Zeka N" adıyla YZ.
+    // Web doStart paritesi: 1. oyuncu her zaman gerçek kişi — oturum
+    // açıksa hesap sahibi (accountName), değilse misafir; diğerleri
+    // "Yapay Zeka N" adıyla YZ.
+    final me = widget.services.auth.accountName ?? guestPlayerName;
     controller.dispatch(StartAction([
-      const PlayerSetup(name: guestPlayerName, isAI: false),
+      PlayerSetup(name: me, isAI: false),
       for (var i = 1; i < _count; i++)
         PlayerSetup(name: 'Yapay Zeka ${i + 1}', isAI: true),
     ]));
@@ -135,120 +140,137 @@ class _SetupScreenState extends State<SetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = widget.services.auth;
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Center(child: LogoMark(height: 52)),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Kelimeler kurarak bölgeni genişlet, rakiplerini kuşat. '
-                    'Ama dikkat et: Hamlen rakibinin bölgesine temas ederse, '
-                    'kazandığın puanın bir kısmını onunla paylaşmak zorunda '
-                    'kalırsın. Her hamle bir strateji, her kelime bir mücadele.',
-                    style: TextStyle(
-                      fontFamily: 'SpaceMono',
-                      fontSize: 12,
-                      height: 1.5,
-                      color: _muted,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Web Setup'taki "Nasıl oynanır?" linki (yanındaki
-                  // "Arkadaşınla paylaş" native share parçasının işi).
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: GestureDetector(
-                      onTap: () => showHelpModal(context),
-                      behavior: HitTestBehavior.opaque,
-                      child: const Text(
-                        'Nasıl oynanır?',
-                        style: TextStyle(
-                          fontFamily: 'SpaceMono',
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF2563EB),
+        // Oturum/profil değişince (giriş, çıkış, profil gelmesi) tüm ekran
+        // tazelenir — web'de useAuth context'inin yeniden render etmesiyle
+        // aynı; auth yapılandırılmamışsa hiç notify etmez, maliyeti yok.
+        child: ListenableBuilder(
+          listenable: auth,
+          builder: (context, _) => SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Web: Setup'ın üstünde sağa yaslı UserMenu (App.tsx,
+                    // kurulum dalı) — GİRİŞ / avatar burada da sağ üstte.
+                    if (auth.configured)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: AccountButton(auth: auth),
                         ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  const _SectionLabel('OYUN TİPİ'),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _ChoiceButton(
-                          label: 'YAPAY ZEKA İLE',
-                          selected: true,
-                          onTap: () {},
-                        ),
+                    const Center(child: LogoMark(height: 52)),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Kelimeler kurarak bölgeni genişlet, rakiplerini kuşat. '
+                      'Ama dikkat et: Hamlen rakibinin bölgesine temas ederse, '
+                      'kazandığın puanın bir kısmını onunla paylaşmak zorunda '
+                      'kalırsın. Her hamle bir strateji, her kelime bir mücadele.',
+                      style: TextStyle(
+                        fontFamily: 'SpaceMono',
+                        fontSize: 12,
+                        height: 1.5,
+                        color: _muted,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _ChoiceButton(
-                          label: 'ARKADAŞINLA',
-                          selected: false,
-                          onTap: () => _showComingSoon(
-                            'Arkadaşınla',
-                            'Canlı oyun (arkadaşlarınla gerçek zamanlı) '
-                                'uygulamanın sonraki sürümünde gelecek. '
-                                'Şimdilik Yapay Zeka\'ya karşı oynayabilirsin.',
+                    ),
+                    const SizedBox(height: 12),
+                    // Web Setup'taki "Nasıl oynanır?" linki (yanındaki
+                    // "Arkadaşınla paylaş" native share parçasının işi).
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: GestureDetector(
+                        onTap: () => showHelpModal(context),
+                        behavior: HitTestBehavior.opaque,
+                        child: const Text(
+                          'Nasıl oynanır?',
+                          style: TextStyle(
+                            fontFamily: 'SpaceMono',
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2563EB),
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  FutureBuilder<SetWordSource>(
-                    future: widget.services.dictionary,
-                    builder: (context, snap) {
-                      if (snap.hasError) {
-                        return Text('Sözlük yüklenemedi: ${snap.error}',
-                            style: const TextStyle(color: Color(0xFFDC2626)));
-                      }
-                      final words = snap.data;
-                      if (!_saveChecked) {
-                        return const _SectionLabel(
-                            'KAYITLAR KONTROL EDİLİYOR…');
-                      }
-                      return _savedState != null
-                          ? _buildSavedGameView(words)
-                          : _buildNewGameForm(words);
-                    },
-                  ),
-                  const SizedBox(height: 32),
-                  // Teşhis alt satırı (iskelet HomeScreen'in durum
-                  // panelinden kalan tek iz — cihazda ilk açılış doğrulaması
-                  // için faydalı, göze batmayan tek satır).
-                  FutureBuilder<SetWordSource>(
-                    future: widget.services.dictionary,
-                    builder: (context, snap) => Text(
-                      [
-                        'Sürüm $appVersion',
-                        snap.hasData
-                            ? 'Sözlük: ${snap.data!.length} kelime'
-                            : 'Sözlük: yükleniyor…',
-                        widget.services.supabase != null
-                            ? 'sunucu bağlı'
-                            : 'offline mod',
-                      ].join(' · '),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontFamily: 'SpaceMono',
-                        fontSize: 9,
-                        color: Color(0xFF8A93A2),
+                    ),
+                    const SizedBox(height: 20),
+                    const _SectionLabel('OYUN TİPİ'),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _ChoiceButton(
+                            label: 'YAPAY ZEKA İLE',
+                            selected: true,
+                            onTap: () {},
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _ChoiceButton(
+                            label: 'ARKADAŞINLA',
+                            selected: false,
+                            onTap: () => _showComingSoon(
+                              'Arkadaşınla',
+                              'Canlı oyun (arkadaşlarınla gerçek zamanlı) '
+                                  'uygulamanın sonraki sürümünde gelecek. '
+                                  'Şimdilik Yapay Zeka\'ya karşı oynayabilirsin.',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    FutureBuilder<SetWordSource>(
+                      future: widget.services.dictionary,
+                      builder: (context, snap) {
+                        if (snap.hasError) {
+                          return Text('Sözlük yüklenemedi: ${snap.error}',
+                              style: const TextStyle(color: Color(0xFFDC2626)));
+                        }
+                        final words = snap.data;
+                        if (!_saveChecked) {
+                          return const _SectionLabel(
+                              'KAYITLAR KONTROL EDİLİYOR…');
+                        }
+                        return _savedState != null
+                            ? _buildSavedGameView(words)
+                            : _buildNewGameForm(words);
+                      },
+                    ),
+                    const SizedBox(height: 32),
+                    // Teşhis alt satırı (iskelet HomeScreen'in durum
+                    // panelinden kalan tek iz — cihazda ilk açılış doğrulaması
+                    // için faydalı, göze batmayan tek satır).
+                    FutureBuilder<SetWordSource>(
+                      future: widget.services.dictionary,
+                      builder: (context, snap) => Text(
+                        [
+                          'Sürüm $appVersion',
+                          snap.hasData
+                              ? 'Sözlük: ${snap.data!.length} kelime'
+                              : 'Sözlük: yükleniyor…',
+                          widget.services.supabase != null
+                              ? 'sunucu bağlı'
+                              : 'offline mod',
+                        ].join(' · '),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontFamily: 'SpaceMono',
+                          fontSize: 9,
+                          color: Color(0xFF8A93A2),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -315,7 +337,12 @@ class _SetupScreenState extends State<SetupScreen> {
         const SizedBox(height: 8),
         for (var i = 0; i < _count; i++) ...[
           if (i > 0) const SizedBox(height: 8),
-          _PlayerRow(index: i),
+          _PlayerRow(
+            index: i,
+            accountName: widget.services.auth.accountName,
+            accountAvatarUrl: widget.services.auth.profile?.avatarUrl,
+            accountPending: widget.services.auth.accountPending,
+          ),
         ],
         const SizedBox(height: 20),
         SizedBox(
@@ -383,12 +410,30 @@ class _ChoiceButton extends StatelessWidget {
 /// PlayerBadge + ad + sağda "Sen"/"YZN" etiketi.
 class _PlayerRow extends StatelessWidget {
   final int index;
-  const _PlayerRow({required this.index});
+
+  /// Oturum açıksa 1. koltuk hesap sahibidir (web isAccount): avatar +
+  /// kilitli isim. Profil beklenirken (accountPending) nötr "Yükleniyor…"
+  /// gösterilir — bir anlık "Misafir" yazıp gerçek adla değişmesin (web'de
+  /// yaşanmış kimlik-değişimi hatası).
+  final String? accountName;
+  final String? accountAvatarUrl;
+  final bool accountPending;
+
+  const _PlayerRow({
+    required this.index,
+    this.accountName,
+    this.accountAvatarUrl,
+    this.accountPending = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final col = playerColors[index % playerColors.length];
-    final name = index == 0 ? guestPlayerName : 'Yapay Zeka ${index + 1}';
+    final isAccount = index == 0 && accountName != null;
+    final isPending = index == 0 && accountPending;
+    final name = index == 0
+        ? (accountName ?? (isPending ? 'Yükleniyor…' : guestPlayerName))
+        : 'Yapay Zeka ${index + 1}';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
@@ -398,16 +443,29 @@ class _PlayerRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          PlayerBadge(index: index),
+          if (isAccount)
+            KAvatar(url: accountAvatarUrl, name: accountName, size: 20)
+          else if (isPending)
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: _panel,
+                shape: BoxShape.circle,
+                border: Border.all(color: _border),
+              ),
+            )
+          else
+            PlayerBadge(index: index),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               name,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
-                color: _text,
+                color: isPending ? _muted : _text,
               ),
             ),
           ),
