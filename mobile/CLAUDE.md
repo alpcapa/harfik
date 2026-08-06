@@ -707,8 +707,44 @@ bağlı değil.)
      Misafir+YZ kadrosu; ARKADAŞINLA diyaloğu; kayıt varken anti-kaçış +
      satırdan devam — turnCount/multiSession korunuyor) +
      `widget_smoke_test.dart` Setup'a göre güncellendi. 42/42 yeşil.
-   - Sıradaki parçalar: sürükle-bırak, kelime anlamı modalı, hamle geçmişi
-     modalı, kurallar ("Nasıl oynanır?") ekranı.
+   - ✅ **Parça 7 — sürükle-bırak (6 Ağustos 2026):** Web App.tsx'in
+     beginDrag/moveDrag/endDrag sisteminin birebir portu — üç akış da var:
+     raftan tahtaya yerleştirme (joker sürüklenince önce harf seçici,
+     `PlaceTileAction(rackIndex)`), tahtada taşıma (`MovePlacedTileAction`),
+     tahtadan rafa sürükleyerek geri alma. Aynı sabitler: `DRAG_LIFT=30`
+     (hayalet + bırakma hedefi parmağın 30px üzerinde; ızgara üst kenarına
+     kırpılır — web'in "üst satıra bırakılamıyordu" düzeltmesi dahil),
+     `DRAG_THRESHOLD=6` (altı dokunuş sayılır). Hayalet taş 46px,
+     1.1 ölçek, gölgeli, `IgnorePointer` — SafeArea içi Stack overlay'inde.
+     Kaynak taş görünmez çizilir (raf: opacity 0 yer tutar; tahta:
+     dragHiddenKey), hedef hücre 2px KESİKLİ yeşil/kırmızı çerçeve alır
+     (`_DashedBorderPainter` — web `outline: 2px dashed`).
+     - **Dokunuş/sürükleme ayrımı web'deki gibi TEK pointer akışında:**
+       drag handler'ları verildiğinde raf taşları ve YERLEŞTİRİLMİŞ hücreler
+       GestureDetector yerine `Listener` taşır (Flutter'da pointer, basılan
+       widget'ın hit-test yoluna bağlı kalır — web setPointerCapture'ın
+       doğal karşılığı); hareketsiz bırakış = dokunuş (seç / joker-düzenle /
+       geri al), eşik aşan hareket = sürükleme. İkisi birden dinlenseydi tek
+       dokunuş çift işlem yapardı — web'in suppressClickRef'ine gerek
+       kalmadı (boş hücrenin GestureDetector'ı zaten tetiklenmiyor, jest
+       kaynak taşın Listener'ına ait). Swap modunda raf eski GestureDetector
+       yolunda kalır (web `isDraggable = draggable && !swapMode`);
+       `canAct/swapMode` guard'ı beginDrag'de `enabled` bayrağına iner —
+       kapalıyken hareket yok sayılır, dokunuş çalışmaya devam eder.
+     - **Hedef bulma geometrik:** web `elementFromPoint` yerine
+       `gridKey`/`rackKey` RenderBox'larından global→hücre eşlemesi
+       (13 hücre + 12×3px boşluk stride'ı; boşluğa düşen nokta soldaki
+       hücreye sayılır — web'de null olurdu, kabul edilen küçük fark).
+     - **Test yardımcıları ValueKey'e geçti:** `rack-$i` / `cell-$r-$c` —
+       tip tabanlı (GestureDetector) indeksleme Listener'a geçişle kayardı;
+       yeni bir hücre/raf finder'ı yazarken key kullan. Drag testlerinde
+       DRAG_LIFT telafisi: hedef merkezin +30 ALTINA bırak (web Playwright
+       testindeki aynı ders). Doğrulama: `game_screen_test.dart`
+       sürükle-bırak testi (üç akış + dolu hücreye bırakma reddi + kaynak
+       gizleme + sürükleme-anı ekran görüntüsü
+       `build/screenshots/game_drag.png`). 43/43 yeşil.
+   - Sıradaki parçalar: kelime anlamı modalı, hamle geçmişi modalı,
+     kurallar ("Nasıl oynanır?") ekranı.
 5. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

@@ -1,6 +1,9 @@
 // Aktif oyuncunun harf rafı — src/components/Rack.tsx portu.
-// Sürükleme prop'ları bilinçli olarak henüz yok (sürükle-bırak ayrı parça);
-// dokunma-esaslı seçim/yerleştirme bu parçanın kapsamı.
+// Drag handler'ları verildiğinde (ve swap modunda DEĞİLKEN — web
+// `isDraggable = draggable && !swapMode`) taşlar GestureDetector yerine
+// Listener taşır: dokunuş/sürükleme ayrımını ekran katmanının pointer akışı
+// yapar (dokunuş = hareketsiz bırakış → onSelect oradan çağrılır). Swap
+// modunda eski dokunuş yolu aynen kalır.
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show Tile;
 
@@ -18,6 +21,14 @@ class RackWidget extends StatelessWidget {
   final bool swapMode;
   final List<int> swapSelection;
 
+  /// Sürüklenen taşın indeksi — görünmez çizilir, yeri korunur (web
+  /// dragHiddenIndex: opacity 0).
+  final int? dragHiddenIndex;
+  final void Function(int index, PointerDownEvent e)? onTilePointerDown;
+  final void Function(PointerMoveEvent e)? onTilePointerMove;
+  final void Function(PointerUpEvent e)? onTilePointerUp;
+  final VoidCallback? onTilePointerCancel;
+
   const RackWidget({
     super.key,
     required this.tiles,
@@ -27,6 +38,11 @@ class RackWidget extends StatelessWidget {
     required this.color,
     this.swapMode = false,
     this.swapSelection = const [],
+    this.dragHiddenIndex,
+    this.onTilePointerDown,
+    this.onTilePointerMove,
+    this.onTilePointerUp,
+    this.onTilePointerCancel,
   });
 
   @override
@@ -89,17 +105,7 @@ class RackWidget extends StatelessWidget {
                       alignment: Alignment.bottomCenter,
                       child: SizedBox(
                         height: 46,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => onSelect(i),
-                          child: TileWidget(
-                            tile: tiles[i],
-                            variant: TileVariant.rack,
-                            selected: swapMode
-                                ? swapSelection.contains(i)
-                                : selectedTile == i,
-                          ),
-                        ),
+                        child: _tileTouchArea(i),
                       ),
                     ),
                   ),
@@ -109,6 +115,36 @@ class RackWidget extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _tileTouchArea(int i) {
+    final tile = Opacity(
+      opacity: dragHiddenIndex == i ? 0 : 1,
+      child: TileWidget(
+        tile: tiles[i],
+        variant: TileVariant.rack,
+        selected: swapMode ? swapSelection.contains(i) : selectedTile == i,
+      ),
+    );
+    final isDraggable = onTilePointerDown != null && !swapMode;
+    if (isDraggable) {
+      return Listener(
+        key: ValueKey('rack-$i'),
+        behavior: HitTestBehavior.opaque,
+        onPointerDown: (e) => onTilePointerDown!(i, e),
+        onPointerMove: onTilePointerMove,
+        onPointerUp: onTilePointerUp,
+        onPointerCancel:
+            onTilePointerCancel == null ? null : (_) => onTilePointerCancel!(),
+        child: tile,
+      );
+    }
+    return GestureDetector(
+      key: ValueKey('rack-$i'),
+      behavior: HitTestBehavior.opaque,
+      onTap: () => onSelect(i),
+      child: tile,
     );
   }
 }

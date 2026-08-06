@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
-import 'package:kelimeki/src/ui/game/board_widget.dart';
 import 'package:kelimeki/src/ui/game/game_over_modal.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
 import 'package:kelimeki/src/ui/game/rack_widget.dart';
@@ -67,13 +66,12 @@ GameState craftedState() => GameState(
       moveHistory: const [],
     );
 
-Finder rackTile(int i) => find
-    .descendant(of: find.byType(RackWidget), matching: find.byType(GestureDetector))
-    .at(i);
+// Hücre/raf taşları artık ValueKey taşıyor — sürükleme parçasıyla raf
+// taşları ve yerleştirilmiş hücreler GestureDetector'dan Listener'a geçti,
+// tip tabanlı indeksleme iki widget türü arasında kayardı.
+Finder rackTile(int i) => find.byKey(ValueKey('rack-$i'));
 
-Finder boardCell(int r, int c) => find
-    .descendant(of: find.byType(BoardWidget), matching: find.byType(GestureDetector))
-    .at(r * boardSize + c);
+Finder boardCell(int r, int c) => find.byKey(ValueKey('cell-$r-$c'));
 
 Future<GameController> pumpGame(WidgetTester tester, GlobalKey key) async {
   final controller = GameController(words: words, autoPlayAi: false, nowIso: () => '');
@@ -310,6 +308,98 @@ void main() {
     expect(find.text('YAPAY ZEKA 2 KAZANDI'), findsNothing);
     // Modal kapanınca tahta görünür kalır, raf satırında YENİ OYUN çıkar.
     expect(find.textContaining('YENİ'), findsOneWidget);
+  });
+
+  testWidgets(
+      'sürükle-bırak: raftan tahtaya + tahtada taşıma + rafa geri alma',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final key = GlobalKey();
+    final controller = await pumpGame(tester, key);
+
+    // 1) Raftan (0,0)'a sürükle. DRAG_LIFT telafisi: hayalet/bırakma hedefi
+    // parmağın 30px ÜZERİNDE hesaplanır — hedef hücre merkezinin +30
+    // altına bırakılır (web Playwright testindeki aynı ders,
+    // mobile/CLAUDE.md "Test notu").
+    final start = tester.getCenter(rackTile(0)); // K
+    final target = tester.getCenter(boardCell(0, 0)) + const Offset(0, 30);
+    final g = await tester.startGesture(start);
+    await g.moveTo(start + const Offset(0, -40)); // eşik aşılır
+    await tester.pump();
+    await g.moveTo(target);
+    await tester.pump();
+    // Sürükleme sırasında: kaynak raf taşı gizli (opacity 0), taş henüz
+    // yerleşmedi.
+    expect(controller.state.placed, isEmpty);
+    final hidden = tester
+        .widgetList<Opacity>(find.descendant(
+            of: find.byType(RackWidget), matching: find.byType(Opacity)))
+        .where((o) => o.opacity == 0);
+    expect(hidden, hasLength(1));
+    // Ekran görüntüsü: hayalet taş + kesikli hedef çerçevesi.
+    await tester.runAsync(() async {
+      final boundary =
+          key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: 2);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      final out = File('build/screenshots/game_drag.png');
+      out.parent.createSync(recursive: true);
+      out.writeAsBytesSync(bytes!.buffer.asUint8List());
+    });
+    await g.up();
+    await tester.pump();
+    expect(controller.state.placed['0,0']?.letter, 'K');
+    expect(controller.state.players[0].rack.length, 6);
+
+    // 2) Tahtada taşı: (0,0) → (2,2).
+    final from = tester.getCenter(boardCell(0, 0));
+    final to = tester.getCenter(boardCell(2, 2)) + const Offset(0, 30);
+    final g2 = await tester.startGesture(from);
+    await g2.moveTo(from + const Offset(0, 40));
+    await tester.pump();
+    await g2.moveTo(to);
+    await tester.pump();
+    await g2.up();
+    await tester.pump();
+    expect(controller.state.placed['0,0'], isNull);
+    expect(controller.state.placed['2,2']?.letter, 'K');
+
+    // 3) Tahtadan rafa sürükleyerek geri al.
+    final from2 = tester.getCenter(boardCell(2, 2));
+    final rackTarget =
+        tester.getCenter(find.byType(RackWidget)) + const Offset(0, 30);
+    final g3 = await tester.startGesture(from2);
+    await g3.moveTo(from2 + const Offset(0, 40));
+    await tester.pump();
+    await g3.moveTo(rackTarget);
+    await tester.pump();
+    await g3.up();
+    await tester.pump();
+    expect(controller.state.placed, isEmpty);
+    expect(controller.state.players[0].rack.length, 7);
+
+    // 4) Dolu hücreye bırakma reddedilir: iki taş koy, birini diğerinin
+    // üstüne sürükle — hiçbir şey değişmemeli.
+    await tester.tap(rackTile(0));
+    await tester.pump();
+    await tester.tap(boardCell(0, 0));
+    await tester.pump();
+    await tester.tap(rackTile(0));
+    await tester.pump();
+    await tester.tap(boardCell(0, 1));
+    await tester.pump();
+    expect(controller.state.placed.length, 2);
+    final a = tester.getCenter(boardCell(0, 0));
+    final b = tester.getCenter(boardCell(0, 1)) + const Offset(0, 30);
+    final g4 = await tester.startGesture(a);
+    await g4.moveTo(a + const Offset(0, 40));
+    await tester.pump();
+    await g4.moveTo(b);
+    await tester.pump();
+    await g4.up();
+    await tester.pump();
+    expect(controller.state.placed['0,0'], isNotNull);
+    expect(controller.state.placed['0,1'], isNotNull);
   });
 
   testWidgets('GameOver modalı ekran görüntüsü (beraberlik varyantı yok)',

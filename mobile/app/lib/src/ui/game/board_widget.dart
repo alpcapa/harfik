@@ -1,11 +1,9 @@
 // 13×13 oyun tahtası — src/components/Board.tsx'in render katmanı portu.
-// Bu parça SALT GÖRSEL + hücre dokunuşu: sürükle-bırak, taş yerleştirme
-// etkileşimi ve alt bilgi şeridi (Hamleler/Mesajlaşma) sonraki parçaların
-// işi (mobile/CLAUDE.md, "UI portu — parça planı").
-//
-// Web'le bilinçli küçük farklar (parlatma fazında ele alınacak):
-// nömorfik iç gölgeler düz tonlarla, taş harfi konturu kalın ağırlıkla
-// yaklaşık; yerleştirilen taşın nabız animasyonu henüz yok.
+// Sürükle-bırak destekli: yerleştirilmiş (bu tur konmuş) taşlar, drag
+// handler'ları verildiğinde GestureDetector yerine Listener taşır — dokunuş
+// da sürükleme de ekran katmanının (GameScreen) pointer akışından geçer
+// (web'de Tile'ın onPointerDown/Move/Up prop'larının eşleniği). Alt bilgi
+// şeridi (Hamleler/Mesajlaşma) sonraki parçaların işi.
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
@@ -38,7 +36,8 @@ class MoveOverlay {
   final bool valid;
   final List<Cell> cells;
   final int score;
-  const MoveOverlay({required this.valid, required this.cells, required this.score});
+  const MoveOverlay(
+      {required this.valid, required this.cells, required this.score});
 }
 
 class BoardWidget extends StatelessWidget {
@@ -47,12 +46,42 @@ class BoardWidget extends StatelessWidget {
   final MoveOverlay? moveOverlay;
   final bool compact;
 
+  /// Sürüklenen kaynağın hücresi — taş görünmez çizilir (web dragHiddenKey).
+  final String? dragHiddenKey;
+
+  /// Sürükleme sırasında altındaki hücre + bırakma geçerliliği (web
+  /// dragOverKey/dragOverValid — kesikli yeşil/kırmızı çerçeve).
+  final String? dragOverKey;
+  final bool dragOverValid;
+
+  /// Verildiğinde, YERLEŞTİRİLMİŞ taş taşıyan hücreler GestureDetector
+  /// yerine Listener olur — dokunuş/sürükleme ayrımını ekran katmanının
+  /// pointer akışı yapar (web Tile onPointerDown zinciri). Boş/tahta
+  /// hücreleri onCellTap'ta kalır.
+  final void Function(int r, int c, PointerDownEvent e)? onTilePointerDown;
+  final void Function(PointerMoveEvent e)? onTilePointerMove;
+  final void Function(PointerUpEvent e)? onTilePointerUp;
+  final VoidCallback? onTilePointerCancel;
+
+  /// Izgara alanının (Stack) geometrisine dışarıdan erişim — ekran katmanı
+  /// global noktayı hücreye çevirirken kullanır (web elementFromPoint'in
+  /// geometri tabanlı eşleniği).
+  final GlobalKey? gridKey;
+
   const BoardWidget({
     super.key,
     required this.state,
     this.onCellTap,
     this.moveOverlay,
     this.compact = false,
+    this.dragHiddenKey,
+    this.dragOverKey,
+    this.dragOverValid = false,
+    this.onTilePointerDown,
+    this.onTilePointerMove,
+    this.onTilePointerUp,
+    this.onTilePointerCancel,
+    this.gridKey,
   });
 
   PlayerColor _colorOfIndex(int playerIndex) =>
@@ -86,9 +115,8 @@ class BoardWidget extends StatelessWidget {
     final lastMoveSet = {
       for (final c in state.lastMoveCells) cellKey(c.$1, c.$2)
     };
-    final currentColor = players.isEmpty
-        ? playerColors.first
-        : _colorOfIndex(state.current);
+    final currentColor =
+        players.isEmpty ? playerColors.first : _colorOfIndex(state.current);
 
     final outlines = <(Path, Color)>[
       for (var i = 0; i < players.length; i++)
@@ -103,7 +131,9 @@ class BoardWidget extends StatelessWidget {
       if (moveOverlay != null && moveOverlay!.cells.isNotEmpty)
         (
           buildRoundedOutlinePath(moveOverlay!.cells, _outlineRadius),
-          moveOverlay!.valid ? const Color(0xFF1FA05C) : const Color(0xFFE0483A),
+          moveOverlay!.valid
+              ? const Color(0xFF1FA05C)
+              : const Color(0xFFE0483A),
         ),
     ];
 
@@ -120,8 +150,7 @@ class BoardWidget extends StatelessWidget {
           // ilk yazılan en üstte) kendisi çizer — kullanıcı web/app
           // karşılaştırması, 6 Ağustos 2026.
           shadows: [
-            CssShadow(
-                color: Color(0xB3A3B1C6), offset: Offset(8, 8), blur: 20),
+            CssShadow(color: Color(0xB3A3B1C6), offset: Offset(8, 8), blur: 20),
             CssShadow(
                 color: Color(0xE6FFFFFF), offset: Offset(-4, -4), blur: 14),
             CssShadow(
@@ -130,6 +159,7 @@ class BoardWidget extends StatelessWidget {
         ),
         padding: const EdgeInsets.all(10),
         child: Stack(
+          key: gridKey,
           children: [
             GridView.count(
               crossAxisCount: boardSize,
@@ -139,8 +169,8 @@ class BoardWidget extends StatelessWidget {
               children: [
                 for (var r = 0; r < boardSize; r++)
                   for (var c = 0; c < boardSize; c++)
-                    _buildCell(r, c, territoryOwner, homeCellColor,
-                        lastMoveSet, currentColor),
+                    _buildCell(r, c, territoryOwner, homeCellColor, lastMoveSet,
+                        currentColor),
               ],
             ),
             // Bölge/hamle dış hatları — ızgara alanının tamamını kaplayan tek
@@ -151,7 +181,9 @@ class BoardWidget extends StatelessWidget {
               ),
             ),
             if (!compact)
-              Positioned.fill(child: IgnorePointer(child: _watermarks(cornerColor, cornerNumber))),
+              Positioned.fill(
+                  child: IgnorePointer(
+                      child: _watermarks(cornerColor, cornerNumber))),
             if (moveOverlay != null && moveOverlay!.cells.isNotEmpty)
               Positioned.fill(child: IgnorePointer(child: _moveBadge())),
           ],
@@ -170,7 +202,8 @@ class BoardWidget extends StatelessWidget {
   ) {
     final k = cellKey(r, c);
     final boardTile = state.board[r][c];
-    final placedTile = state.placed[k];
+    // Sürüklenen taşın kaynağı boş çizilir (web: k === dragHiddenKey).
+    final placedTile = k == dragHiddenKey ? null : state.placed[k];
     final isCenter = state.bonuses[k] == BonusType.tw;
     final inZone = inBonusZone(r, c);
     final zoneOwner = territoryOwner[k];
@@ -214,15 +247,23 @@ class BoardWidget extends StatelessWidget {
             insetShadows: isCenter
                 ? const [
                     InsetShadow(
-                        color: Color(0x59B4500A), offset: Offset(2, 2), blur: 5),
+                        color: Color(0x59B4500A),
+                        offset: Offset(2, 2),
+                        blur: 5),
                     InsetShadow(
-                        color: Color(0xB3FFFFFF), offset: Offset(-1, -1), blur: 3),
+                        color: Color(0xB3FFFFFF),
+                        offset: Offset(-1, -1),
+                        blur: 3),
                   ]
                 : const [
                     InsetShadow(
-                        color: Color(0x4DB4820A), offset: Offset(2, 2), blur: 5),
+                        color: Color(0x4DB4820A),
+                        offset: Offset(2, 2),
+                        blur: 5),
                     InsetShadow(
-                        color: Color(0xB3FFFFFF), offset: Offset(-1, -1), blur: 3),
+                        color: Color(0xB3FFFFFF),
+                        offset: Offset(-1, -1),
+                        blur: 3),
                   ],
             outerShadows: isCenter
                 ? const [
@@ -295,12 +336,47 @@ class BoardWidget extends StatelessWidget {
       );
     }
 
+    Widget body =
+        cellBox != null ? cellBox(content) : SizedBox.expand(child: content);
+
+    // Bırakma hedefi vurgusu — web: 2px kesikli yeşil/kırmızı çerçeve.
+    if (k == dragOverKey) {
+      body = Stack(
+        fit: StackFit.expand,
+        children: [
+          body,
+          IgnorePointer(
+            child: CustomPaint(
+              painter: _DashedBorderPainter(
+                dragOverValid
+                    ? const Color(0xFF1FA05C)
+                    : const Color(0xFFE0483A),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Yerleştirilmiş taş + drag handler'ları: Listener (dokunuş da
+    // sürükleme de ekran katmanında ayrışır); diğer hücreler GestureDetector.
+    if (placedTile != null && onTilePointerDown != null) {
+      return Listener(
+        key: ValueKey('cell-$r-$c'),
+        behavior: HitTestBehavior.opaque,
+        onPointerDown: (e) => onTilePointerDown!(r, c, e),
+        onPointerMove: onTilePointerMove,
+        onPointerUp: onTilePointerUp,
+        onPointerCancel:
+            onTilePointerCancel == null ? null : (_) => onTilePointerCancel!(),
+        child: body,
+      );
+    }
     return GestureDetector(
+      key: ValueKey('cell-$r-$c'),
       behavior: HitTestBehavior.opaque,
       onTap: onCellTap == null ? null : () => onCellTap!(r, c),
-      child: cellBox != null
-          ? cellBox(content)
-          : SizedBox.expand(child: content),
+      child: body,
     );
   }
 
@@ -415,6 +491,35 @@ class BoardWidget extends StatelessWidget {
   }
 }
 
+/// Bırakma hedefinin 2px kesikli çerçevesi (web `outline: 2px dashed`).
+class _DashedBorderPainter extends CustomPainter {
+  final Color color;
+  _DashedBorderPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..color = color;
+    final rrect = RRect.fromRectAndRadius(
+        (Offset.zero & size).deflate(1), const Radius.circular(5));
+    final path = Path()..addRRect(rrect);
+    const dash = 4.0, gap = 3.0;
+    for (final metric in path.computeMetrics()) {
+      var d = 0.0;
+      while (d < metric.length) {
+        canvas.drawPath(
+            metric.extractPath(d, (d + dash).clamp(0, metric.length)), paint);
+        d += dash + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBorderPainter old) => old.color != color;
+}
+
 class _OutlinesPainter extends CustomPainter {
   /// Izgara birimi (0..13) cinsinden path + renk çiftleri.
   final List<(Path, Color)> outlines;
@@ -469,5 +574,6 @@ class _HomeMarkPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_HomeMarkPainter oldDelegate) => oldDelegate.color != color;
+  bool shouldRepaint(_HomeMarkPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
