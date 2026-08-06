@@ -14,6 +14,7 @@ import 'package:kelimeki/src/ui/game/logo_mark_data.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import 'support/test_fonts.dart';
+import 'support/test_view.dart';
 
 Player player(String name,
         {required bool isAI,
@@ -87,9 +88,53 @@ void main() {
   });
 
   testWidgets(
+      '4 kutu + GİRİŞ 375-465 aralığında kaydırmasız sığar (web garantisi)',
+      (tester) async {
+    // Web'in akıcı clamp sistemi tam bunun için ayarlandı ("4 oyunculu +
+    // Giriş neredeyse hiçbir zaman kaydırmaya ihtiyaç duymaz",
+    // GameHeader.tsx) — aynı garanti app'te ölçülerek doğrulanır. "Neredeyse"
+    // web'de de gerçek: 4 İNSAN koltuğu + misafir GİRİŞ butonu (avatardan
+    // geniş) aralığın üst ucunda (~430px+) webde de birkaç px görünmez
+    // kaydırmaya düşer (insan kutusu eğimi 4×25.56vw > 100vw — aynı
+    // formüller aynı sonucu verir); telefon genişliklerinde (375-390) ve
+    // yerel oyunun gerçek kadrolarında (YZ'li karışım) her yerde sığar.
+    Future<double> overflowAt(double width, GameState s) async {
+      await setPhoneViewSize(tester, Size(width, 200));
+      await tester.pumpWidget(MaterialApp(
+        theme: ThemeData(
+            fontFamily: 'SpaceGrotesk',
+            scaffoldBackgroundColor: Colors.white),
+        home: Scaffold(
+          body: GameHeader(state: s, onLogoTap: () {}),
+        ),
+      ));
+      await tester.pump();
+      return tester
+          .state<ScrollableState>(find.byType(Scrollable))
+          .position
+          .maxScrollExtent;
+    }
+
+    final state = headerState();
+    final allHuman = state.copyWith(players: [
+      for (final p in state.players) p.copyWith(isAI: false),
+    ]);
+    // 4 insan + GİRİŞ: yaygın telefon genişliklerinde kaydırmasız.
+    for (final width in [375.0, 390.0]) {
+      expect(await overflowAt(width, allHuman), 0,
+          reason: '$width px: 4 insan koltuğu + GİRİŞ sığmalı');
+    }
+    // 2 insan + 2 YZ (headerState) tüm aralıkta kaydırmasız.
+    for (final width in [375.0, 390.0, 420.0, 465.0]) {
+      expect(await overflowAt(width, state), 0,
+          reason: '$width px: karışık kadro sığmalı');
+    }
+  });
+
+  testWidgets(
       'başlık etiketleri: trUpper(ad) / YZ N / TESLİM; logo tıklanabilir',
       (tester) async {
-    await tester.binding.setSurfaceSize(const Size(420, 200));
+    await setPhoneViewSize(tester, const Size(420, 200));
     var logoTapped = false;
     await tester.pumpWidget(MaterialApp(
       theme: ThemeData(

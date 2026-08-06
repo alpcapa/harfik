@@ -17,6 +17,7 @@ import 'package:kelimeki/src/ui/game/rack_widget.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import 'support/test_fonts.dart';
+import 'support/test_view.dart';
 
 late SetWordSource words;
 
@@ -102,7 +103,7 @@ void main() {
 
   testWidgets('dokunarak KELİME dizilir: yeşil çerçeve + doğru puan + OYNA',
       (tester) async {
-    await tester.binding.setSurfaceSize(const Size(420, 900));
+    await setPhoneViewSize(tester, const Size(420, 900));
     final key = GlobalKey();
     final controller = await pumpGame(tester, key);
 
@@ -138,7 +139,7 @@ void main() {
 
   testWidgets('geçersiz dizilim: kırmızı sebep mesajı + geri alma',
       (tester) async {
-    await tester.binding.setSurfaceSize(const Size(420, 900));
+    await setPhoneViewSize(tester, const Size(420, 900));
     final controller = await pumpGame(tester, GlobalKey());
 
     await tester.tap(rackTile(0)); // K
@@ -167,7 +168,7 @@ void main() {
 
   testWidgets('joker akışı: harf seçici → yerleştir → düzenle → geri al',
       (tester) async {
-    await tester.binding.setSurfaceSize(const Size(420, 900));
+    await setPhoneViewSize(tester, const Size(420, 900));
     final controller = await pumpGame(tester, GlobalKey());
 
     await tester.tap(rackTile(6)); // '?' (rafta ★)
@@ -203,7 +204,7 @@ void main() {
 
   testWidgets('taş değiştirme akışı: DEĞİŞTİR → seç (N) → onayla → sıra YZ\'de',
       (tester) async {
-    await tester.binding.setSurfaceSize(const Size(420, 900));
+    await setPhoneViewSize(tester, const Size(420, 900));
     final key = GlobalKey();
     final controller = await pumpGame(tester, key);
 
@@ -243,7 +244,7 @@ void main() {
   });
 
   testWidgets('VAZGEÇ swap modundan işlemsiz çıkar', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(420, 900));
+    await setPhoneViewSize(tester, const Size(420, 900));
     final controller = await pumpGame(tester, GlobalKey());
 
     await tester.tap(find.text('DEĞİŞTİR'));
@@ -258,7 +259,7 @@ void main() {
   });
 
   testWidgets('TORBA butonu Kalan Taşlar dökümünü açar', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(420, 900));
+    await setPhoneViewSize(tester, const Size(420, 900));
     await pumpGame(tester, GlobalKey());
 
     await tester.tap(find.text('TORBA 6'));
@@ -270,7 +271,7 @@ void main() {
 
   testWidgets('oyun bitince GameOver modalı: kazanan + Teslim + YENİ OYUN',
       (tester) async {
-    await tester.binding.setSurfaceSize(const Size(420, 900));
+    await setPhoneViewSize(tester, const Size(420, 900));
     final golden = jsonDecode(
       File('../kelimeki_core/test/goldens/reducer_ai4.json').readAsStringSync(),
     ) as Map<String, dynamic>;
@@ -303,7 +304,7 @@ void main() {
 
   testWidgets('GameOver modalı ekran görüntüsü (beraberlik varyantı yok)',
       (tester) async {
-    await tester.binding.setSurfaceSize(const Size(520, 700));
+    await setPhoneViewSize(tester, const Size(520, 700));
     final golden = jsonDecode(
       File('../kelimeki_core/test/goldens/reducer_ai4.json').readAsStringSync(),
     ) as Map<String, dynamic>;

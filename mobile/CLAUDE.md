@@ -596,9 +596,30 @@ bağlı değil.)
        uzatılınca Material'ın stadium varsayılanı onu dev bir hap/daireye
        çevirir — web'in rounded-md/lg görünümü için her butona açık
        `RoundedRectangleBorder` verildi.
-     - Doğrulama: `game_header_test.dart` (3 test: path çözümü + sınırlar,
+     - Doğrulama: `game_header_test.dart` (path çözümü + sınırlar,
        bilinmeyen komutta fırlatma, etiketler/logo dokunuşu + ekran
-       görüntüsü `build/screenshots/game_header.png`). 32/32 yeşil.
+       görüntüsü `build/screenshots/game_header.png`, sığdırma garantisi).
+     - **Bulunan test-düzeneği tuzağı (kullanıcı iPhone web ekran
+       görüntüsüyle "kutular GİRİŞ'in altına giriyor, web'deki ayarlar
+       bozulmadı umarım" deyince bulundu, 6 Ağustos 2026):**
+       `tester.binding.setSurfaceSize` YALNIZCA çizim yüzeyini küçültür —
+       `MediaQuery` hâlâ 800×600 varsayılan test penceresini bildirir.
+       GameHeader kendini 800px'te sanıp TÜM akıcı değerleri maksimumda
+       (66px kutu, 36px logo) çizdi, 420px'lik yüzeyde taştı — yani
+       paylaşılan ekran görüntülerindeki kırpılma bir UYGULAMA hatası değil
+       YAKALAMA artefaktıydı (cihazda MediaQuery doğru, web'le aynı).
+       Düzeltme: `support/test_view.dart`teki `setPhoneViewSize`
+       (devicePixelRatio=1 + physicalSize + surface birlikte) — MediaQuery
+       kullanan HER widget testi bunu kullanmalı, yalnız `setSurfaceSize`
+       yetmez. Web tarafının sığdırma ayarlarına HİÇ dokunulmadı (branch'te
+       GameHeader.tsx diff'i yalnızca teslim satırı — doğrulandı).
+       **Sığdırma garantisi artık ölçülen bir test:** 4 insan koltuğu +
+       GİRİŞ 375/390'da, karışık kadro (2 insan + 2 YZ) 375-465'te
+       kaydırmasız sığmalı. Bilinçli sınır: 4 insan + misafir GİRİŞ butonu
+       (avatardan geniş) ~430px üstünde WEB'DE DE birkaç px görünmez
+       kaydırmaya düşer — insan kutusu eğimi (4×25.56vw) genişleme hızını
+       aşar, aynı formüller aynı sonucu verir; web bunu overflow-x güvenlik
+       ağıyla kabul etmişti, app'te de aynı kabul geçerli.
    - ✅ **Parça 5 — kaydet/yükle bağlantısı (6 Ağustos 2026,
      `local_game_repo.dart`):** Depolama katmanı (LocalSaveStore, Parça
      "storage") artık gerçekten oyuna bağlı. İki sınıf:
