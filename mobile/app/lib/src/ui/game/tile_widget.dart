@@ -1,6 +1,8 @@
 // Tek harf taşı — src/components/Tile.tsx portu.
-// Web'deki WebkitTextStroke konturu Flutter'da birebir yok; kalın ağırlıkla
-// yaklaşılıyor (Nunito fontu ve ince kontur ayarı font/parlatma fazının işi).
+// Harf fontu web'le aynı: Nunito 800 + ince kontur (web -webkit-text-stroke
+// karşılığı: aynı renkte stroke katmanı). Harf rengi tahta/yerleştirme
+// varyantında HER ZAMAN #1B2430 (web text-tile-letter) — oyuncu rengi
+// yalnızca zemin/çerçevede.
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show Tile, tileLetter;
 
@@ -44,7 +46,7 @@ class TileWidget extends StatelessWidget {
         border: Border.all(color: color!.base, width: 1),
         borderRadius: BorderRadius.circular(5),
       );
-      letterColor = color!.text;
+      letterColor = const Color(0xFF1B2430); // web text-tile-letter
       ptsColor = const Color(0xFF2563EB); // web text-accent
     } else if (isRack) {
       decoration = BoxDecoration(
@@ -62,6 +64,11 @@ class TileWidget extends StatelessWidget {
             blurRadius: 10,
           ),
           BoxShadow(
+            color: Color(0xCCFFFAC8),
+            offset: Offset(-2, -2),
+            blurRadius: 6,
+          ),
+          BoxShadow(
             color: Color(0x59A38200),
             offset: Offset(0, 6),
             blurRadius: 14,
@@ -72,9 +79,20 @@ class TileWidget extends StatelessWidget {
       ptsColor = const Color(0xFF8B5E00);
     } else {
       decoration = BoxDecoration(borderRadius: BorderRadius.circular(5));
-      letterColor = const Color(0xFF3A4A5C);
+      letterColor = const Color(0xFF1B2430);
       ptsColor = const Color(0xFF2563EB);
     }
+
+    // Web -webkit-text-stroke: harfin üstüne aynı renkte ince kontur bindirir
+    // (glyph'i kalınlaştırır) — rafta 0.7px, tahtada 0.35px.
+    final strokeWidth = isRack ? 0.7 : 0.35;
+    final letterStyle = TextStyle(
+      color: letterColor,
+      fontFamily: 'Nunito',
+      fontWeight: FontWeight.w800,
+      fontSize: isRack ? 24 : (compact ? 12 : 20),
+      height: 1,
+    );
 
     final body = Container(
       decoration: decoration,
@@ -85,15 +103,26 @@ class TileWidget extends StatelessWidget {
               padding: EdgeInsets.all(compact ? 1 : 2),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(
-                  display,
-                  style: TextStyle(
-                    color: letterColor,
-                    fontWeight: FontWeight.w800,
-                    fontSize: isRack ? 24 : (compact ? 12 : 20),
-                    height: 1,
-                  ),
-                ),
+                // Joker yıldızı: ★ glyph'i Nunito'da yok (web'de tarayıcı
+                // yedek fonttan basar) — Flutter'da Material ikonu kullanılır.
+                child: display == '★'
+                    ? Icon(Icons.star,
+                        size: letterStyle.fontSize, color: letterColor)
+                    : Stack(
+                        children: [
+                          Text(
+                            display,
+                            style: letterStyle.copyWith(
+                              color: null,
+                              foreground: Paint()
+                                ..style = PaintingStyle.stroke
+                                ..strokeWidth = strokeWidth
+                                ..color = letterColor,
+                            ),
+                          ),
+                          Text(display, style: letterStyle),
+                        ],
+                      ),
               ),
             ),
           ),
@@ -105,6 +134,7 @@ class TileWidget extends StatelessWidget {
                 '${tile.pts}',
                 style: TextStyle(
                   color: ptsColor,
+                  fontFamily: 'SpaceMono',
                   fontWeight: FontWeight.bold,
                   fontSize: isRack ? 10 : 7,
                   height: 1,

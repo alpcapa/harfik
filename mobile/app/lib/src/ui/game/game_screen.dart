@@ -166,7 +166,7 @@ class _GameScreenState extends State<GameScreen> {
         final me = state.players.isEmpty ? null : state.players[state.current];
 
         return Scaffold(
-          backgroundColor: const Color(0xFFEDF1F7),
+          backgroundColor: Colors.white, // web sayfa zemini (colors.bg)
           appBar: AppBar(title: const Text('Kelimeki')),
           body: SafeArea(
             child: Column(
@@ -198,6 +198,7 @@ class _GameScreenState extends State<GameScreen> {
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     fontSize: 10,
+                                    fontFamily: 'SpaceMono',
                                     fontWeight: FontWeight.bold,
                                     color: _colorOf(i).text,
                                   ),
@@ -206,7 +207,8 @@ class _GameScreenState extends State<GameScreen> {
                                   '${state.players[i].score}',
                                   style: TextStyle(
                                     fontSize: 14,
-                                    fontWeight: FontWeight.w800,
+                                    fontFamily: 'SpaceMono',
+                                    fontWeight: FontWeight.bold,
                                     color: _colorOf(i).text,
                                   ),
                                 ),

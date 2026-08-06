@@ -44,9 +44,9 @@ Future<void> capturePng(WidgetTester tester, GlobalKey key, String outPath) asyn
 Future<void> pumpBoard(WidgetTester tester, GlobalKey key, GameState state,
     {MoveOverlay? overlay}) async {
   await tester.pumpWidget(MaterialApp(
-    theme: ThemeData(fontFamily: 'Roboto'),
+    theme: ThemeData(fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
     home: Scaffold(
-      backgroundColor: const Color(0xFFEDF1F7),
+      backgroundColor: Colors.white,
       body: Center(
         child: RepaintBoundary(
           key: key,

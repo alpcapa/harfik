@@ -77,7 +77,7 @@ Future<GameController> pumpGame(WidgetTester tester, GlobalKey key) async {
   final controller = GameController(words: words, autoPlayAi: false, nowIso: () => '');
   controller.dispatch(ResumeSavedAction(craftedState()));
   await tester.pumpWidget(MaterialApp(
-    theme: ThemeData(fontFamily: 'Roboto'),
+    theme: ThemeData(fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
     home: RepaintBoundary(
       key: key,
       child: GameScreen(controller: controller, words: words),
@@ -174,7 +174,9 @@ void main() {
     await tester.tap(boardCell(1, 0));
     await tester.pumpAndSettle();
     expect(find.text('Joker Hangi Harf Olsun?'), findsOneWidget);
-    await tester.tap(find.text('B'));
+    // Kontur katmanı her taş harfini iki Text yapar (stroke+dolgu, aynı taş)
+    // — .first ikisinden birine dokunmak için yeterli.
+    await tester.tap(find.text('B').first);
     await tester.pumpAndSettle();
     final placed = controller.state.placed['1,0'];
     expect(placed, isNotNull);
@@ -185,7 +187,7 @@ void main() {
     await tester.tap(boardCell(1, 0));
     await tester.pumpAndSettle();
     expect(find.text('Jokeri Hangi Harfe Çevir?'), findsOneWidget);
-    await tester.tap(find.text('Ç'));
+    await tester.tap(find.text('Ç').first);
     await tester.pumpAndSettle();
     expect(controller.state.placed['1,0']!.wildLetter, 'Ç');
 

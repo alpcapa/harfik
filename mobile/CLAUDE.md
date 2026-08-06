@@ -412,10 +412,8 @@ bağlı değil.)
      çiziyor. Doğrulama: `board_render_test.dart` gerçek fixture
      state'lerini (reducer_ai4 finali — teslim olmuş oyuncunun hatsız
      kalması dahil; reducer_ai2 + overlay) çizip taş sayısını doğruluyor
-     ve `build/screenshots/`a PNG üretiyor (SDK Roboto'su FontLoader'la —
-     yoksa Ahem blokları, test yine geçer). Bilinçli eksikler (parlatma
-     fazına): nömorfik iç gölgeler düz tonla, Nunito taş fontu ve harf
-     konturu yok, yerleştirme nabız animasyonu yok, alt bilgi şeridi
+     ve `build/screenshots/`a PNG üretiyor. Bilinçli eksikler:
+     yerleştirme nabız animasyonu yok, alt bilgi şeridi
      (Hamleler/Mesajlaşma) ekran parçasının işi.
    - ✅ **Parça 2 — raf + dokunarak yerleştirme + oynanabilir GameScreen:**
      `rack_widget.dart` (Rack.tsx portu; sürükleme prop'ları bilinçli yok),
@@ -437,6 +435,32 @@ bağlı değil.)
      (şimdilik KAPAT), gerçek GameHeader; test ortamı notu: ★ (joker)
      SDK Roboto alt kümesinde yok — ekran görüntüsünde kutu görünür,
      cihaz fontlarında sorun değil.
+   - ✅ **Görsel birebirlik düzeltmeleri (6 Ağustos 2026, kullanıcı web/app
+     ekran görüntüsü karşılaştırmasıyla bildirdi):** üç fark kapatıldı.
+     (1) **Sayfa zemini web'de BEYAZ** (`colors.bg=#FFFFFF`) — ilk portta
+     #EDF1F7 kullanılmıştı; tahtanın beyaz sol-üst parlaması o zeminde
+     "ince beyaz çizgi", koyu gölgeler "kalın gri bant" gibi okunuyordu.
+     Zemin beyaza çekilince web'deki denge kendiliğinden geldi (gölge
+     DEĞERLERİ zaten birebirdi — ders: gölge algısı zemine bağlı, değerle
+     oynamadan önce zemini doğrula). (2) **Nömorfik iç gölgeler:**
+     `neo_box.dart` — CSS inset box-shadow'un Flutter karşılığı (RRect'e
+     kırpılmış alanda, kaydırılmış RRect'in dışı blur'lanır; sigma=blur/2).
+     Board.tsx'in dört hücre stili (tarafsız/bölge/altın/merkez) iç+dış
+     gölge değerleriyle birebir taşındı. (3) **Fontlar:** web'in üç ailesi
+     (tailwind: sans=Space Grotesk, mono=Space Mono, tile=Nunito 800)
+     Google Fonts statik TTF'leriyle `assets/fonts/`a gömüldü; tema
+     varsayılanı Grotesk, taş harfleri Nunito 800 + web'in
+     -webkit-text-stroke'unun karşılığı stroke katmanı (rafta 0.7, tahtada
+     0.35), puan üst simgeleri/raf başlığı/skor kutuları SpaceMono. Taş
+     harf rengi tahtada HER ZAMAN #1B2430 (web text-tile-letter) — ilk
+     port oyuncu rengini kullanıyordu, düzeltildi. **Joker ★ Material
+     ikonuyla** çizilir (Nunito'da U+2605 yok; web'de tarayıcının yedek
+     fontu basıyor, Flutter'da güvenilir yol ikon). **Test dersi:**
+     flutter_test pubspec fontlarını OTOMATİK YÜKLEMEZ — ekran görüntüsü
+     üreten testler `support/test_fonts.dart` ile uygulamanın gerçek
+     TTF'lerini FontLoader'dan yükler, yoksa her metin Ahem bloğu olur.
+     Kontur katmanı her taş harfini iki Text yaptığından testlerde
+     `find.text(...).first` gerekir.
    - Sıradaki parçalar: taş değiştirme akışı + GameOver ekranı, gerçek
      GameHeader görsel dili, kaydet/yükle bağlantısı (LocalSaveStore +
      terk cezası üst katmanı), Setup ekranı, sürükle-bırak, kelime anlamı.

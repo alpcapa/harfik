@@ -17,6 +17,11 @@ class KelimekiApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0891B2)),
         useMaterial3: true,
+        // Web tailwind fontFamily.sans = Space Grotesk; sayfa zemini web'de
+        // BEYAZ (colors.bg) — soluk gri değil (gölge dengesi buna bağlı,
+        // kullanıcı karşılaştırması 6 Ağustos 2026).
+        fontFamily: 'SpaceGrotesk',
+        scaffoldBackgroundColor: Colors.white,
       ),
       home: services.versionGate == VersionGateStatus.updateRequired
           ? const UpdateRequiredScreen()

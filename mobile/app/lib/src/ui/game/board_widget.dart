@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
+import 'neo_box.dart';
 import 'outline.dart';
 import 'player_colors.dart';
 import 'tile_widget.dart';
@@ -18,7 +19,6 @@ const double _outlineRadius = 0.16;
 const double _outlineStroke = 2.5;
 
 const Color _boardBg = Color(0xFFDDE4EE);
-const Color _neutralCell = Color(0xFFD3DBE7);
 
 const LinearGradient _goldZone = LinearGradient(
   begin: Alignment.topLeft,
@@ -184,7 +184,7 @@ class BoardWidget extends StatelessWidget {
     final homeColor = homeCellColor[k];
 
     Widget? content;
-    BoxDecoration? decoration;
+    Widget Function(Widget? child)? cellBox;
 
     if (boardTile != null) {
       final tileColor = boardTile.owner != null
@@ -213,10 +213,39 @@ class BoardWidget extends StatelessWidget {
             : currentColor,
       );
     } else if (inZone) {
-      decoration = BoxDecoration(
-        gradient: isCenter ? _centerZone : _goldZone,
-        borderRadius: BorderRadius.circular(5),
-      );
+      // Web GOLD_ZONE_STYLE/CENTER_ZONE_STYLE — iç gölgeler + hafif dış gölge.
+      final radius = BorderRadius.circular(5);
+      cellBox = (child) => NeoBox(
+            borderRadius: radius,
+            gradient: isCenter ? _centerZone : _goldZone,
+            insetShadows: isCenter
+                ? const [
+                    InsetShadow(
+                        color: Color(0x59B4500A), offset: Offset(2, 2), blur: 5),
+                    InsetShadow(
+                        color: Color(0xB3FFFFFF), offset: Offset(-1, -1), blur: 3),
+                  ]
+                : const [
+                    InsetShadow(
+                        color: Color(0x4DB4820A), offset: Offset(2, 2), blur: 5),
+                    InsetShadow(
+                        color: Color(0xB3FFFFFF), offset: Offset(-1, -1), blur: 3),
+                  ],
+            outerShadows: isCenter
+                ? const [
+                    BoxShadow(
+                        color: Color(0x40B4500A),
+                        offset: Offset(0, 2),
+                        blurRadius: 4),
+                  ]
+                : const [
+                    BoxShadow(
+                        color: Color(0x33B4820A),
+                        offset: Offset(0, 2),
+                        blurRadius: 4),
+                  ],
+            child: child,
+          );
       if (isCenter && !compact) {
         content = const Center(
           child: FittedBox(
@@ -224,6 +253,7 @@ class BoardWidget extends StatelessWidget {
               'X3',
               style: TextStyle(
                 color: _centerText,
+                fontFamily: 'SpaceMono',
                 fontWeight: FontWeight.bold,
                 fontSize: 10,
               ),
@@ -232,15 +262,34 @@ class BoardWidget extends StatelessWidget {
         );
       }
     } else if (zoneOwner != null) {
-      decoration = BoxDecoration(
-        color: _colorOfIndex(zoneOwner).tint,
-        borderRadius: BorderRadius.circular(5),
-      );
+      // Web: bölge hücresi — oyuncu tonu + içe gömülü gölge (base%13 + beyaz).
+      final zone = _colorOfIndex(zoneOwner);
+      cellBox = (child) => NeoBox(
+            borderRadius: BorderRadius.circular(5),
+            color: zone.tint,
+            insetShadows: [
+              InsetShadow(
+                  color: zone.base.withValues(alpha: 0.133),
+                  offset: const Offset(2, 2),
+                  blur: 5),
+              const InsetShadow(
+                  color: Color(0x99FFFFFF), offset: Offset(-1, -1), blur: 3),
+            ],
+            child: child,
+          );
     } else {
-      decoration = BoxDecoration(
-        color: _neutralCell,
-        borderRadius: BorderRadius.circular(5),
-      );
+      // Web: tarafsız boş kare — tahta zemin rengi + nömorfik içe gömülü.
+      cellBox = (child) => NeoBox(
+            borderRadius: BorderRadius.circular(5),
+            color: _boardBg,
+            insetShadows: const [
+              InsetShadow(
+                  color: Color(0x99A3B1C6), offset: Offset(3, 3), blur: 6),
+              InsetShadow(
+                  color: Color(0xCCFFFFFF), offset: Offset(-2, -2), blur: 5),
+            ],
+            child: child,
+          );
     }
 
     if (homeColor != null && boardTile == null && placedTile == null) {
@@ -256,10 +305,9 @@ class BoardWidget extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onCellTap == null ? null : () => onCellTap!(r, c),
-      child: DecoratedBox(
-        decoration: decoration ?? const BoxDecoration(),
-        child: SizedBox.expand(child: content),
-      ),
+      child: cellBox != null
+          ? cellBox(content)
+          : SizedBox.expand(child: content),
     );
   }
 

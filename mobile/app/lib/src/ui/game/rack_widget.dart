@@ -57,6 +57,7 @@ class RackWidget extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: swapMode ? const Color(0xFFD97706) : color.text,
+                    fontFamily: 'SpaceMono',
                     fontWeight: FontWeight.bold,
                     fontSize: 9,
                     letterSpacing: 1.5,
@@ -69,6 +70,7 @@ class RackWidget extends StatelessWidget {
                     : '${tiles.length} harf',
                 style: const TextStyle(
                   color: Color(0xFF8A93A2),
+                  fontFamily: 'SpaceMono',
                   fontSize: 9,
                   letterSpacing: 1.5,
                 ),
