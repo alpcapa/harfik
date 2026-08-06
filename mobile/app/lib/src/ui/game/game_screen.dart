@@ -1,17 +1,19 @@
-// Minimal OYNANABİLİR oyun ekranı — App.tsx'in oyun görünümünün çekirdeği:
-// skor satırı + mesaj + tahta (canlı geçerlilik çerçevesiyle) + raf +
-// Oyna/Pas Geç/Geri Al/Karıştır. Parça parça plan gereği BİLİNÇLİ eksikler
-// (mobile/CLAUDE.md): GameHeader'ın gerçek görsel dili, taş değiştirme
-// (swap) akışı, sürükle-bırak, kelime anlamı modalı, GameOver ekranı
-// (şimdilik basit bant), kaydet/yükle bağlantısı.
+// Oynanabilir oyun ekranı — App.tsx'in oyun görünümünün çekirdeği: skor
+// satırı + tahta (canlı geçerlilik çerçevesiyle) + mesaj + raf/OYNA + web
+// buton düzeni (Pas Geç/Değiştir/Karıştır/Geri Al/Torba; swap modunda
+// Değiştir (N)/Vazgeç) + GameOver modalı. Parça parça plan gereği BİLİNÇLİ
+// eksikler (mobile/CLAUDE.md): GameHeader'ın gerçek görsel dili,
+// sürükle-bırak, kelime anlamı modalı, hamle geçmişi, kaydet/yükle.
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import '../../game/game_controller.dart';
 import '../../game/move_status.dart';
 import 'board_widget.dart';
+import 'game_over_modal.dart';
 import 'player_colors.dart';
 import 'rack_widget.dart';
+import 'remaining_tiles_modal.dart';
 import 'wild_letter_sheet.dart';
 
 class GameScreen extends StatefulWidget {
@@ -27,6 +29,10 @@ class _GameScreenState extends State<GameScreen> {
   GameController get controller => widget.controller;
   GameState get state => controller.state;
 
+  /// GameOver modalı bu isGameOver geçişi için zaten gösterildi mi
+  /// (web gameOverDismissed'in eşleniği — kapatınca tahta görünür kalır).
+  bool _gameOverShown = false;
+
   PlayerColor _colorOf(int i) =>
       playerColors[state.players[i].colorIndex % playerColors.length];
 
@@ -34,6 +40,14 @@ class _GameScreenState extends State<GameScreen> {
       !state.isGameOver &&
       state.players.isNotEmpty &&
       !state.players[state.current].isAI;
+
+  /// Web rackPlayer kuralı: sıra YZ'deyse raf yine İNSANIN rafını gösterir.
+  int get _rackIndex {
+    if (state.players.isEmpty) return 0;
+    if (!state.players[state.current].isAI) return state.current;
+    final human = state.players.indexWhere((p) => !p.isAI);
+    return human >= 0 ? human : state.current;
+  }
 
   Future<void> _handleCellTap(int r, int c) async {
     final k = cellKey(r, c);
@@ -149,19 +163,32 @@ class _GameScreenState extends State<GameScreen> {
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
+        // Oyun bittiği an GameOver modalı bir kez gösterilir; KAPAT ile
+        // kapatınca tahta görünür kalır (web gameOverDismissed davranışı).
+        if (state.isGameOver && !_gameOverShown) {
+          _gameOverShown = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) showGameOverModal(context, state);
+          });
+        } else if (!state.isGameOver && _gameOverShown) {
+          _gameOverShown = false;
+        }
+
         final moveStatus = computeMoveStatus(state, widget.words);
         // Web liveMessage kuralı: geçersiz hamlenin sebebi anlık gösterilir,
         // geçerliyse mevcut mesaj yeşile döner.
-        final liveMessage =
-            (moveStatus != null && !moveStatus.valid && moveStatus.reason != null)
-                ? moveStatus.reason!
-                : state.message;
-        final liveKind =
-            (moveStatus != null && !moveStatus.valid && moveStatus.reason != null)
-                ? MessageKind.err
-                : (moveStatus?.valid ?? false)
-                    ? MessageKind.ok
-                    : state.messageType;
+        final liveMessage = (moveStatus != null &&
+                !moveStatus.valid &&
+                moveStatus.reason != null)
+            ? moveStatus.reason!
+            : state.message;
+        final liveKind = (moveStatus != null &&
+                !moveStatus.valid &&
+                moveStatus.reason != null)
+            ? MessageKind.err
+            : (moveStatus?.valid ?? false)
+                ? MessageKind.ok
+                : state.messageType;
 
         final me = state.players.isEmpty ? null : state.players[state.current];
 
@@ -173,7 +200,8 @@ class _GameScreenState extends State<GameScreen> {
               children: [
                 // Basit skor satırı (gerçek GameHeader sonraki parça).
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   child: Row(
                     children: [
                       for (var i = 0; i < state.players.length; i++) ...[
@@ -259,75 +287,179 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                   ),
                 ),
-                if (me != null && !state.isGameOver) ...[
+                if (me != null) ...[
+                  // Web düzeni: Raf + (Oyna | Yeni Oyun) yan yana; swap
+                  // modunda sağdaki buton hiç görünmez (App.tsx ~1281).
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                    child: RackWidget(
-                      tiles: me.rack,
-                      selectedTile: state.selectedTile,
-                      onSelect: (i) =>
-                          _canAct ? controller.dispatch(SelectTileAction(i)) : null,
-                      title: me.name,
-                      color: _colorOf(state.current),
-                      swapMode: state.swapMode,
-                      swapSelection: state.swapSelection,
+                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+                    // IntrinsicHeight: buton raf kartıyla aynı boya uzasın
+                    // (stretch, Column içinde sınırsız yükseklikte patlar).
+                    child: IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: RackWidget(
+                              tiles: state.players[_rackIndex].rack,
+                              selectedTile: state.selectedTile,
+                              onSelect: (i) {
+                                if (!_canAct) return;
+                                controller.dispatch(state.swapMode
+                                    ? ToggleSwapTileAction(i)
+                                    : SelectTileAction(i));
+                              },
+                              title: state.players[_rackIndex].name,
+                              color: _colorOf(_rackIndex),
+                              swapMode: state.swapMode,
+                              swapSelection: state.swapSelection,
+                            ),
+                          ),
+                          if (!state.swapMode) ...[
+                            const SizedBox(width: 8),
+                            state.isGameOver
+                                ? FilledButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
+                                    child: const Text('YENİ\nOYUN',
+                                        textAlign: TextAlign.center),
+                                  )
+                                : FilledButton(
+                                    onPressed:
+                                        _canAct && state.placed.isNotEmpty
+                                            ? () => _handlePlay(moveStatus)
+                                            : null,
+                                    child: const Text('OYNA'),
+                                  ),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: _canAct && state.placed.isNotEmpty
-                                ? () => _handlePlay(moveStatus)
-                                : null,
-                            child: const Text('OYNA'),
+                    child: state.swapMode
+                        ? Row(
+                            children: [
+                              Expanded(
+                                child: FilledButton(
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor:
+                                        const Color(0xFFB7791F), // web gold
+                                  ),
+                                  onPressed: _canAct &&
+                                          state.swapSelection.isNotEmpty
+                                      ? () => controller
+                                          .dispatch(const ConfirmSwapAction())
+                                      : null,
+                                  child: Text(state.swapSelection.isNotEmpty
+                                      ? 'DEĞİŞTİR (${state.swapSelection.length})'
+                                      : 'DEĞİŞTİR'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: _canAct
+                                      ? () => controller.dispatch(
+                                          const ToggleSwapModeAction())
+                                      : null,
+                                  child: const Text('VAZGEÇ'),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              Expanded(
+                                child: _SmallButton(
+                                  label: 'PAS GEÇ',
+                                  onPressed: _canAct ? _handlePass : null,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: _SmallButton(
+                                  label: 'DEĞİŞTİR',
+                                  onPressed: _canAct && state.bag.isNotEmpty
+                                      ? () => controller.dispatch(
+                                          const ToggleSwapModeAction())
+                                      : null,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: _SmallButton(
+                                  label: 'KARIŞTIR',
+                                  onPressed: _canAct
+                                      ? () => controller
+                                          .dispatch(const ShuffleRackAction())
+                                      : null,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: _SmallButton(
+                                  label: 'GERİ AL',
+                                  onPressed: _canAct && state.placed.isNotEmpty
+                                      ? () => controller
+                                          .dispatch(const RecallAllAction())
+                                      : null,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: _SmallButton(
+                                  label: 'TORBA ${state.bag.length}',
+                                  // Web'de Torba hiç disable olmaz — YZ'nin
+                                  // sırasında/oyun bitince de açılabilir.
+                                  onPressed: () => showRemainingTilesModal(
+                                      context, state, _rackIndex),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: _canAct ? _handlePass : null,
-                            child: const Text('PAS GEÇ'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: _canAct && state.placed.isNotEmpty
-                                ? () =>
-                                    controller.dispatch(const RecallAllAction())
-                                : null,
-                            child: const Text('GERİ AL'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: _canAct
-                                ? () =>
-                                    controller.dispatch(const ShuffleRackAction())
-                                : null,
-                            child: const Text('KARIŞTIR'),
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
-                ] else if (state.isGameOver)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: FilledButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('KAPAT'),
-                    ),
-                  ),
+                ],
               ],
             ),
           ),
         );
       },
+    );
+  }
+}
+
+/// Alt sıradaki dar aksiyon butonları — web btn-raised-neutral'ın 11px
+/// bold/uppercase görünümüne yakın kompakt buton (gerçek nömorfik buton
+/// dili sonraki "GameHeader görsel dili" parçasının işi).
+class _SmallButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onPressed;
+  const _SmallButton({required this.label, this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 10),
+        minimumSize: const Size(0, 36),
+        side: const BorderSide(color: Color(0xFFDCE2EA)),
+        foregroundColor: const Color(0xFF1B2430),
+        backgroundColor: const Color(0xFFF5F7FA),
+      ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          label,
+          maxLines: 1,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.6,
+          ),
+        ),
+      ),
     );
   }
 }

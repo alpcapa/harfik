@@ -31,6 +31,14 @@ class GameController extends ChangeNotifier {
 
   GameState get state => _state;
 
+  /// State'i olduğu gibi yükler (kayıttan devam, testte fixture'la başlama).
+  /// Web'deki RESUME_SAVED'in eşleniği — dispatch zinciri dışından tek yol.
+  void restore(GameState s) {
+    _state = s;
+    notifyListeners();
+    _maybeScheduleAiTurn();
+  }
+
   void dispatch(GameAction action) {
     final next = _engine.reduce(_state, action);
     if (identical(next, _state)) return; // no-op action (guard'lar)

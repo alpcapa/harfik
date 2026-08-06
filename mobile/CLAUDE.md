@@ -494,9 +494,53 @@ bağlı değil.)
      gerçek sıra Board → mesaj → Rack (`App.tsx` ~1234, `w-full max-w-[680px]`
      bloğunun ilk çocuğu). Ayrıca web mesajı `font-mono` (Space Mono) basar —
      app'te de `fontFamily: 'SpaceMono'` yapıldı.
-   - Sıradaki parçalar: taş değiştirme akışı + GameOver ekranı, gerçek
-     GameHeader görsel dili, kaydet/yükle bağlantısı (LocalSaveStore +
-     terk cezası üst katmanı), Setup ekranı, sürükle-bırak, kelime anlamı.
+   - ✅ **Parça 3 — taş değiştirme akışı + GameOver ekranı + Torba dökümü +
+     web buton düzeni (6 Ağustos 2026):**
+     - **Buton düzeni artık web'le aynı yapıda** (`App.tsx` ~1257-1355): raf
+       satırı = Raf (flex) + sağında OYNA (oyun bitmişse YENİ OYUN — pop ile
+       HomeScreen'e döner; web'deki INIT/"Yeni Oyun Aç"ın eşleniği); alt
+       satır normalde PAS GEÇ / DEĞİŞTİR / KARIŞTIR / GERİ AL / TORBA N,
+       swap modunda DEĞİŞTİR (N) (altın #B7791F) / VAZGEÇ. Swap modunda
+       OYNA hiç görünmez (web `!state.swapMode` koşulu). TORBA hiç disable
+       olmaz (web'de de öyle — YZ sırasında/oyun bitince de açılır).
+       DEĞİŞTİR torba boşken pasif. Raf satırı `IntrinsicHeight` içinde —
+       `CrossAxisAlignment.stretch` Column içinde sınırsız yükseklikle
+       patlar (test yakaladı), buton raf kartı boyuna böyle uzatılır.
+     - **Swap akışı:** DEĞİŞTİR → `ToggleSwapModeAction` (reducer taşları
+       önce rafa geri çağırır); raf dokunuşu swap modunda
+       `ToggleSwapTileAction` (normalde `SelectTileAction`); onay
+       `ConfirmSwapAction`. UI'da yeni kural mantığı YOK — hepsi core'da
+       zaten vardı, bu parça yalnızca butonları bağladı.
+     - **`game_over_modal.dart`** — `GameOver.tsx` portu: kazanan başlığı
+       (mono 26/2px; beraberlikte altın "BERABERE", değilse kazanan
+       renginde "{AD} KAZANDI"), `rankPlayers` sırasıyla satırlar
+       (`player_badge.dart` = PlayerBadge.tsx portu, rank. ad, (TESLİM)
+       rozeti, KALAN −N, TOPLAM skor oyuncu renginde), altta Toplam hamle.
+       `GameScreen` oyun bittiği an modalı BİR KEZ açar (`_gameOverShown`
+       bayrağı, web `gameOverDismissed`in eşleniği) — KAPAT'la kapatınca
+       tahta görünür kalır, raf satırında YENİ OYUN belirir. Web'deki
+       "Oyun Geçmişi"/"Görüş Bildir" linkleri BİLİNÇLİ eksik (hamle
+       geçmişi modalı ve görüş formu sonraki parçalar).
+     - **`remaining_tiles_modal.dart`** — `RemainingTilesModal.tsx` portu:
+       core `remainingTiles` (dağılım − tahta − bakanın rafı), 5 sütun raf
+       taşı + ×adet, tükenen harf %30 opak. `myIndex` = `_rackIndex`
+       (web'deki not: `state.current` DEĞİL, YZ sırasında da açılabilir).
+     - **`GameController.restore(GameState)`** eklendi — kayıttan devam /
+       testte fixture'la başlama için dispatch dışı tek yol (web
+       RESUME_SAVED eşleniği); GameOver testi `reducer_ai4` fixture'ının
+       final state'iyle bunu kullanıyor.
+     - **Web `rackPlayer` kuralı porta geldi:** sıra YZ'deyse raf yine
+       İNSANIN rafını gösterir (`_rackIndex`) — önceki parça
+       `state.current`ın rafını gösteriyordu (YZ sırasında YZ'nin rafı
+       görünürdü, gizlilik değil ama web davranışından sapmaydı).
+     - Doğrulama: `game_screen_test.dart` +5 test (swap seç/onayla/sıra
+       devri/bag sabit/consecutivePasses; VAZGEÇ işlemsiz çıkış; TORBA
+       dökümü 93 taş; GameOver kazanan+Teslim+YENİ OYUN; GameOver ekran
+       görüntüsü `build/screenshots/game_over.png`, swap modu
+       `game_screen_swap.png`). 29/29 yeşil.
+   - Sıradaki parçalar: gerçek GameHeader görsel dili, kaydet/yükle
+     bağlantısı (LocalSaveStore + terk cezası üst katmanı), Setup ekranı,
+     sürükle-bırak, kelime anlamı modalı, hamle geçmişi modalı.
 5. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

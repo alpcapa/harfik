@@ -11,6 +11,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/ui/game/board_widget.dart';
+import 'package:kelimeki/src/ui/game/game_over_modal.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
 import 'package:kelimeki/src/ui/game/rack_widget.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
@@ -198,5 +199,142 @@ void main() {
     await tester.pumpAndSettle();
     expect(controller.state.placed, isEmpty);
     expect(controller.state.players[0].rack.any((t) => t.letter == '?'), isTrue);
+  });
+
+  testWidgets('taş değiştirme akışı: DEĞİŞTİR → seç (N) → onayla → sıra YZ\'de',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(420, 900));
+    final key = GlobalKey();
+    final controller = await pumpGame(tester, key);
+
+    await tester.tap(find.text('DEĞİŞTİR'));
+    await tester.pump();
+    expect(controller.state.swapMode, isTrue);
+    // Swap modunda OYNA gizli, satır DEĞİŞTİR/VAZGEÇ'e döner (web düzeni).
+    expect(find.text('OYNA'), findsNothing);
+    expect(find.text('VAZGEÇ'), findsOneWidget);
+    expect(find.textContaining('değiştirilecek taşları seç'), findsOneWidget);
+
+    await tester.tap(rackTile(0));
+    await tester.pump();
+    await tester.tap(rackTile(2));
+    await tester.pump();
+    expect(controller.state.swapSelection, [0, 2]);
+    expect(find.text('DEĞİŞTİR (2)'), findsOneWidget);
+
+    await tester.runAsync(() async {
+      final boundary =
+          key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: 2);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      final out = File('build/screenshots/game_screen_swap.png');
+      out.parent.createSync(recursive: true);
+      out.writeAsBytesSync(bytes!.buffer.asUint8List());
+    });
+
+    final bagBefore = controller.state.bag.length;
+    await tester.tap(find.text('DEĞİŞTİR (2)'));
+    await tester.pump();
+    expect(controller.state.swapMode, isFalse);
+    expect(controller.state.players[0].rack.length, 7);
+    expect(controller.state.bag.length, bagBefore); // 2 çek + 2 iade
+    expect(controller.state.current, 1); // değişim sırayı devreder
+    expect(controller.state.consecutivePasses, 1); // puansız tur sayacı
+  });
+
+  testWidgets('VAZGEÇ swap modundan işlemsiz çıkar', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(420, 900));
+    final controller = await pumpGame(tester, GlobalKey());
+
+    await tester.tap(find.text('DEĞİŞTİR'));
+    await tester.pump();
+    await tester.tap(rackTile(1));
+    await tester.pump();
+    await tester.tap(find.text('VAZGEÇ'));
+    await tester.pump();
+    expect(controller.state.swapMode, isFalse);
+    expect(controller.state.swapSelection, isEmpty);
+    expect(controller.state.current, 0); // sıra devretmedi
+  });
+
+  testWidgets('TORBA butonu Kalan Taşlar dökümünü açar', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(420, 900));
+    await pumpGame(tester, GlobalKey());
+
+    await tester.tap(find.text('TORBA 6'));
+    await tester.pumpAndSettle();
+    expect(find.text('Kalan Taşlar'), findsOneWidget);
+    // Dağılım 100 − tahta 0 − benim rafım 7 = 93 taş dışarıda.
+    expect(find.textContaining('93'), findsOneWidget);
+  });
+
+  testWidgets('oyun bitince GameOver modalı: kazanan + Teslim + YENİ OYUN',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(420, 900));
+    final golden = jsonDecode(
+      File('../kelimeki_core/test/goldens/reducer_ai4.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    final steps = golden['steps'] as List;
+    final finished = gameStateFromJson(
+        ((steps.last as Map)['state'] as Map).cast<String, Object?>());
+    expect(finished.isGameOver, isTrue);
+
+    final controller =
+        GameController(words: words, autoPlayAi: false, nowIso: () => '');
+    controller.restore(finished);
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(
+          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      home: GameScreen(controller: controller, words: words),
+    ));
+    await tester.pumpAndSettle();
+
+    // Fixture: Yapay Zeka 2 kazanır (162), Yapay Zeka 3 teslim olmuştur.
+    expect(find.text('YAPAY ZEKA 2 KAZANDI'), findsOneWidget);
+    expect(find.text('(TESLİM)'), findsOneWidget);
+    expect(find.text('Toplam hamle'), findsOneWidget);
+
+    await tester.tap(find.text('KAPAT'));
+    await tester.pumpAndSettle();
+    expect(find.text('YAPAY ZEKA 2 KAZANDI'), findsNothing);
+    // Modal kapanınca tahta görünür kalır, raf satırında YENİ OYUN çıkar.
+    expect(find.textContaining('YENİ'), findsOneWidget);
+  });
+
+  testWidgets('GameOver modalı ekran görüntüsü (beraberlik varyantı yok)',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(520, 700));
+    final golden = jsonDecode(
+      File('../kelimeki_core/test/goldens/reducer_ai4.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    final steps = golden['steps'] as List;
+    final finished = gameStateFromJson(
+        ((steps.last as Map)['state'] as Map).cast<String, Object?>());
+
+    final key = GlobalKey();
+    // Dialog overlay'i Navigator'da yaşadığından ekran görüntüsü için modal
+    // doğrudan bir widget olarak (showDialog'suz) çizilir.
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+      home: RepaintBoundary(
+        key: key,
+        child: ColoredBox(
+          color: Colors.white,
+          child: Center(child: GameOverModal(state: finished)),
+        ),
+      ),
+    ));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+
+    await tester.runAsync(() async {
+      final boundary =
+          key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: 2);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      final out = File('build/screenshots/game_over.png');
+      out.parent.createSync(recursive: true);
+      out.writeAsBytesSync(bytes!.buffer.asUint8List());
+    });
   });
 }
