@@ -28,9 +28,11 @@ import '../game/help_modal.dart';
 import '../game/logo_mark.dart';
 import '../game/neo_button.dart';
 import '../game/player_badge.dart';
+import '../game/player_avatar_row.dart';
 import '../game/player_colors.dart';
 import '../auth/account_button.dart';
 import '../auth/k_avatar.dart';
+import 'recent_games_section.dart';
 
 const _panel = Color(0xFFF5F7FA);
 const _border = Color(0xFFDCE2EA);
@@ -74,7 +76,13 @@ class _SetupScreenState extends State<SetupScreen> {
     _lastUserId = widget.services.auth.user?.id;
     widget.services.auth.addListener(_onAuthEvent);
     final storage = widget.services.storage;
-    unawaited(widget.services.games?.then((g) => _games = g));
+    // setState şart: "Son Oynadıklarım" bölümü bu repoya bağlı çizildiğinden
+    // (5c), repo geldiğinde ekranın yeniden kurulması gerekiyor. Önceki
+    // kullanımlar (kaydet/sürdür akışları) alanı yalnızca olay anında
+    // okuduğundan bunu gerektirmiyordu.
+    unawaited(widget.services.games?.then((g) {
+      if (mounted) setState(() => _games = g);
+    }));
     if (storage != null) {
       storage.then((s) async {
         final repo = LocalGameRepo(s);
@@ -547,6 +555,20 @@ class _SetupScreenState extends State<SetupScreen> {
             const SizedBox(height: 8),
           ],
         ],
+        // "Son Oynadıklarım" — BİTEN oyunlar (devam edenlerden ayrı bir
+        // kaynak: `games` tablosu). Web'de kendi alt sekmesinde duruyor;
+        // burada henüz alt sekme yok, listenin altına ekleniyor. Hiç bitmiş
+        // oyun yoksa bileşen kendini sessizce gizliyor.
+        if (_games != null && auth.user != null) ...[
+          const SizedBox(height: 8),
+          RecentGamesSection(
+            games: _games!,
+            userId: auth.user!.id,
+            onlineOnly: false,
+            currentName: auth.accountName,
+            stats: widget.services.stats,
+          ),
+        ],
       ],
     );
   }
@@ -811,11 +833,20 @@ class _SavedGameRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _AvatarStrip(
-                    players: state.players,
-                    humanAvatarUrl: accountAvatarUrl,
-                    isGuest: isGuest,
-                  ),
+                  // Ortak bileşen (parça 5c'de çıkarıldı) — "Son
+                  // Oynadıklarım" satırı da aynısını kullanıyor; ikisi
+                  // sessizce ayrışmasın diye tek kaynak.
+                  PlayerAvatarRow(players: [
+                    for (final p in state.players)
+                      AvatarRowPlayer(
+                        name: p.name,
+                        isAi: p.isAI,
+                        // Yerel oyunda insan koltuk HER ZAMAN bu cihazdaki
+                        // kişi; misafirse profil/ad yok → "?" yedeği.
+                        isGuest: !p.isAI && isGuest,
+                        avatarUrl: p.isAI ? null : accountAvatarUrl,
+                      ),
+                  ]),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
@@ -864,66 +895,3 @@ class _SavedGameRow extends StatelessWidget {
   }
 }
 
-/// PlayerAvatarRow'un yerel-oyun alt kümesi: hafif üst üste binen 20px
-/// çemberler — YZ koltuklar robot; insan koltuk misafirde "?" (webde
-/// Avatar'ın boş-isim yedeği), girişli kullanıcıda gerçek avatar
-/// (fotoğraf ya da baş harfler — web savedGameAvatars/isGuest ayrımı).
-class _AvatarStrip extends StatelessWidget {
-  final List<Player> players;
-  final String? humanAvatarUrl;
-  final bool isGuest;
-  const _AvatarStrip({
-    required this.players,
-    this.humanAvatarUrl,
-    this.isGuest = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const size = 20.0;
-    const overlap = 4.0;
-    final width = size + (players.length - 1) * (size - overlap);
-    return SizedBox(
-      width: width,
-      height: size,
-      child: Stack(
-        children: [
-          for (var i = 0; i < players.length; i++)
-            Positioned(
-              left: i * (size - overlap),
-              child: players[i].isAI || isGuest
-                  ? Container(
-                      width: size,
-                      height: size,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: players[i].isAI
-                            ? const Color(0xFFE8EBEF) // web bg-void (robot)
-                            : _panel,
-                        border: Border.all(color: _border),
-                        shape: BoxShape.circle,
-                      ),
-                      child: players[i].isAI
-                          ? const Icon(Icons.smart_toy_outlined,
-                              size: 12, color: _muted)
-                          : const Text(
-                              '?',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: _muted,
-                                height: 1,
-                              ),
-                            ),
-                    )
-                  : KAvatar(
-                      url: humanAvatarUrl,
-                      name: players[i].name,
-                      size: size,
-                    ),
-            ),
-        ],
-      ),
-    );
-  }
-}

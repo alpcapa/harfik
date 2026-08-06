@@ -68,6 +68,7 @@ grep -rn "\.sort(" app/lib/ kelimeki_core/lib/ | grep -v trCompare  # metin sır
 grep -rn "DateTime.now()\|Random()" kelimeki_core/lib/      # core determinizmi (yalnız SystemRng meşru)
 grep -rn "local_game_saves" app/lib/                        # yalnız cloud_save_repo (TableWriteQueue)
 grep -rln "\.from('" app/lib/                               # Supabase yalnız veri katmanında
+grep -rn "await newRepo(" app/test/*_test.dart              # testWidgets İÇİNDE çıkarsa newRepoForWidget'a çevir (runAsync)
 ```
 
 **Son tam tarama: 6 Ağustos 2026 — beşi de temiz.** O turda bulunan TEK
@@ -154,7 +155,9 @@ olarak eski (parametresiz) çağrı şekli canlıda test edildi.
 mobile/
   CLAUDE.md                  # bu dosya
   app/                       # Flutter uygulaması (iskelet — aşağıdaki bölüm)
-    pubspec.yaml             # kelimeki_core (path) + supabase_flutter
+    pubspec.yaml             # kelimeki_core (path) + supabase_flutter +
+                             # sqflite/shared_preferences + share_plus/
+                             # path_provider (paylaşım, 5c)
     assets/dictionary/words_tr.txt
                              # ÜRETİLMİŞ (elle düzenlenmez) — kaynak
                              # src/data/words.ts; `npm run generate-golden-vectors`
@@ -184,12 +187,17 @@ mobile/
                              # pending_event_store, chat_read_store, flags_store
       ui/                    # app.dart, update_required_screen.dart, ve:
       ui/auth/               # giriş-kayıt modalı, hesap butonu, avatar, Terms/Privacy
-      ui/game/               # tahta/raf/header/modaller (oyun ekranının tamamı)
-      ui/score/              # skor kartı, k-lig, oyuncu kartı, oyun geçmişi
+      ui/game/               # tahta/raf/header/modaller (oyun ekranının
+                             # tamamı) + PAYLAŞILAN küçük parçalar:
+                             # modal_shell, neo_box/neo_button, player_badge,
+                             # player_avatar_row, action_sheet
+      ui/score/              # skor kartı, k-lig, oyuncu kartı, oyun geçmişi,
+                             # score_box_row (paylaşılan görselin üst şeridi)
       ui/chat/               # chat_thread (paylaşılan baloncuk listesi) +
                              # game_chat_history_modal (bitmiş oyunun arşivi)
-      ui/setup/              # kurulum ekranı (yeni oyun / devam edenler)
-      util/semver.dart, util/uuid.dart
+      ui/setup/              # kurulum ekranı (yeni oyun / devam edenler) +
+                             # recent_games_section ("Son Oynadıklarım")
+      util/semver.dart, util/uuid.dart, util/share_board.dart
     android/ ios/            # flutter create çıktısı + elle değişiklikler (aşağı bkz.)
     test/                    # util, controller (golden replay!), widget duman testleri
   kelimeki_core/             # saf Dart motor paketi (Flutter bağımlılığı YOK)
@@ -1485,11 +1493,66 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        açılan ActionSheet + PNG yakalama + sistem paylaş sayfası +
        `set_game_shared`) ve `RecentGamesSection` ("Son Oynadıklarım") +
        `initialExpandedId`/karta ortalama akışı.
-   - Sıradaki parçalar (sıra önerisi): **5c — paylaşma + Son
-     Oynadıklarım**, şifre sıfırlama (özel şema deep link —
-     `kelimeki://reset`, Dashboard redirect listesine ekleme gerekir),
-     Görüş Bildir formu, Canlı oyun ekranları, arkadaşlık sistemi,
-     "Arkadaşınla paylaş" (native share).
+   - ✅ **Parça 5c — paylaşma + "Son Oynadıklarım" (6 Ağustos 2026,
+     `util/share_board.dart`, `ui/game/action_sheet.dart`,
+     `ui/game/player_avatar_row.dart`, `ui/score/score_box_row.dart`,
+     `ui/setup/recent_games_section.dart`):** Oyun geçmişi zinciri
+     tamamlandı; Setup'a biten oyunların kısa listesi geldi.
+     - **İLK platform eklentileri:** `share_plus` + `path_provider`
+       (paylaş sayfası ve geçici dosya). `pubspec.lock` bu ortamın Flutter
+       3.35.4'ü ile yeniden çözüldüğü için ilgisiz paketlerde de sürüm
+       düşüşü içeriyor — kullanıcının daha yeni SDK'sı bir sonraki
+       `pub get`'te geri yükseltir, zararsız.
+     - **Yakalama web'den DAHA basit çıktı:** web DOM'u `html-to-image`
+       ile yakalamak zorunda (gradyan/gölge/SVG dış hatlarını elle canvas'a
+       çizmek kırılgandı); Flutter'da `RepaintBoundary.toImage` bunu
+       yerleşik ve kayıpsız veriyor — ek kütüphane yok. Yakalanan düğüm
+       web'le aynı: `ScoreBoxRow` + tahta, beyaz zeminli.
+     - **Sıra sözleşmesi web'le aynı:** önce `set_game_shared` (link ancak
+       o bayrakla bir şey gösterir), sonra görsel, sonra paylaş. İşaretleme
+       düşerse LİNKSİZ paylaşılır (hiç paylaşmamaktan iyi) — testi var.
+     - **`ActionSheet` portu bir widget değil bir çağrı yardımcısı:** web
+       karartma katmanını ve kayarak belirişi elle yazmıştı (kullanıcı
+       "altta çıkıyor, fark edilmiyor" demişti); Flutter'ın
+       `showModalBottomSheet`'i ikisini de yerleşik veriyor.
+     - **`PlayerAvatarRow` ortak bileşene çıkarıldı** — Setup'ın devam eden
+       oyun satırındaki `_AvatarStrip` (canlı `Player` listesi) ile "Son
+       Oynadıklarım"ın satırı (dondurulmuş `games.players`) aynı görseli
+       çiziyor; web'de de tek bileşen iki yeri besliyor. Misafir tespiti
+       core'daki `guestPlayerName` sabitiyle — yeni bir kopya YAZILMADI
+       (yazan `doStart` ile okuyan taraf sessizce ayrışmasın diye).
+     - **`initialExpandedId`:** hedef bulunana kadar sayfa sayfa çekme
+       (web'in düzeltmesi: "Son Oynadıklarım" tür filtreli, geçmiş listesi
+       karma → hedef ilk sayfanın gerisinde kalabiliyor) + karta ortalama.
+       Web burada iç içe kaydırma alanları yüzünden `scrollTop`'u elle
+       hesaplamak zorunda kalmıştı; Flutter'da `Scrollable.ensureVisible
+       (alignment: 0.5)` bunu çözüyor — tek incelik ListView'ın tembelliği:
+       hedef henüz build edilmemişse birer viewport atlayıp tekrar bakan
+       sınırlı bir döngü var.
+     - **İKİ test tuzağı (ikisi de aynı kökten: sahte zaman gerçek işi
+       tamamlamaz):** (1) widget testinde repoyu `await newRepo(...)` ile
+       hazırlamak testi SÜRESİZ asıyor — `newRepoForWidget` (runAsync)
+       eklendi, yeni widget testlerinde HER ZAMAN o kullanılmalı; (2)
+       `RepaintBoundary.toImage` sahte zamanda hiç tamamlanmıyor, paylaş
+       akışı sessizce orada asılı kalıyordu → yakalama `CaptureBoardFn`
+       olarak enjekte edilebilir yapıldı; gerçek yakalayıcı AYRI bir testte
+       `runAsync` ile (PNG imzası kontrolüyle) doğrulanıyor.
+     - Doğrulama: `share_recent_test.dart` (8 test) + gerçek paylaşım
+       görselinin kendisi `build/screenshots/share_image.png` olarak
+       yazılıyor (paylaşılan PNG'nin BİREBİR aynısı — yakalama düğümü aynı),
+       `build/screenshots/recent_games.png`. 142/142 yeşil, analyze temiz.
+       **Doğrulama sınırı:** `set_game_shared` RPC'si ve gerçek sistem
+       paylaş sayfası (share_plus/path_provider kanalları) cihazda
+       doğrulanmalı.
+     - **Bilinçli eksik:** Setup'ta web'deki "Devam Edenler / Son
+       Oynananlar" ALT SEKMELERİ hâlâ yok — liste devam edenlerin altında
+       duruyor; Canlı sekmesi (dolayısıyla `onlineOnly: true` kullanımı)
+       Canlı oyun fazının işi.
+   - Sıradaki parçalar (sıra önerisi): şifre sıfırlama (özel şema deep
+     link — `kelimeki://reset`, Dashboard redirect listesine ekleme
+     gerekir), Görüş Bildir formu, Canlı oyun ekranları, arkadaşlık
+     sistemi, "Arkadaşınla paylaş" (native share — artık `share_plus`
+     hazır, yalnızca Setup'taki buton kaldı).
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

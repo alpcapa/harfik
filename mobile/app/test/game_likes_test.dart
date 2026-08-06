@@ -109,7 +109,7 @@ void main() {
 
   testWidgets('kalp: iyimser güncelleme, sayı anında artar', (tester) async {
     final gw = FakeGamesGateway(userId: 'u-me')..history = [gameRow(id: 'a')];
-    final repo = await newRepo(gw);
+    final repo = await newRepoForWidget(tester, gw);
     await pumpHistory(tester, repo);
 
     expect(find.byIcon(Icons.favorite_border), findsOneWidget);
@@ -136,7 +136,7 @@ void main() {
     final gw = FakeGamesGateway(userId: 'u-me')
       ..history = [gameRow(id: 'a')]
       ..failNextToggleLike = true;
-    final repo = await newRepo(gw);
+    final repo = await newRepoForWidget(tester, gw);
     await pumpHistory(tester, repo);
 
     await tester.tap(find.byIcon(Icons.favorite_border));
@@ -168,7 +168,7 @@ void main() {
           },
         ]
       };
-    final repo = await newRepo(gw);
+    final repo = await newRepoForWidget(tester, gw);
     await pumpHistory(tester, repo);
 
     await tester.tap(find.byKey(const ValueKey('like-count-a')));
@@ -190,7 +190,7 @@ void main() {
       ]
       ..likedByMe = {'theirs'}
       ..likeCounts = {'theirs': 1};
-    final repo = await newRepo(gw);
+    final repo = await newRepoForWidget(tester, gw);
     await pumpHistory(tester, repo);
 
     expect(find.text('01.08.2026'), findsOneWidget);
@@ -221,7 +221,7 @@ void main() {
         ),
       ]
       ..likedByMe = {'theirs'};
-    final repo = await newRepo(gw);
+    final repo = await newRepoForWidget(tester, gw);
     await pumpHistory(tester, repo);
 
     await tester.tap(find.text('FAVORİLER'));
@@ -240,7 +240,7 @@ void main() {
     // İlk port bunu "Canlı değilse Yapay Zeka" diye basitleştirmişti.
     final gw = FakeGamesGateway(userId: 'u-me')
       ..history = [gameRow(id: 'eski')]; // players: null
-    final repo = await newRepo(gw);
+    final repo = await newRepoForWidget(tester, gw);
     await pumpHistory(tester, repo);
 
     expect(find.text('Yapay Zeka'), findsNothing);
@@ -287,7 +287,7 @@ void main() {
           {'color_index': 1, 'muted': true, 'reported': false},
         ]
       };
-    final repo = await newRepo(gw);
+    final repo = await newRepoForWidget(tester, gw);
     await pumpHistory(tester, repo);
 
     expect(
@@ -352,7 +352,7 @@ void main() {
           },
         ]
       };
-    final repo = await newRepo(gw);
+    final repo = await newRepoForWidget(tester, gw);
     final key = GlobalKey();
 
     await setPhoneViewSize(tester, const Size(420, 620));

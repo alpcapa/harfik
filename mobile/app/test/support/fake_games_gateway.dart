@@ -79,12 +79,15 @@ class FakeGamesGateway implements GamesGateway {
     required int? playerCount,
     required int offset,
     required int limit,
+    bool? onlineOnly,
   }) async {
     listCalls.add((offset: offset, limit: limit, playerCount: playerCount));
     final filtered = [
       for (final r in history)
         if (r['user_id'] == userId &&
-            (playerCount == null || r['player_count'] == playerCount))
+            (playerCount == null || r['player_count'] == playerCount) &&
+            (onlineOnly == null ||
+                (onlineOnly ? r['online_game_id'] != null : r['online_game_id'] == null)))
           r
     ];
     // Gerçek uçtaki `.range(offset, offset + limit)` gibi BİR FAZLA satır.
@@ -161,6 +164,12 @@ class FakeGamesGateway implements GamesGateway {
     }
     return now;
   }
+
+  /// `set_game_shared` çağrılan oyunlar.
+  final sharedGames = <String>[];
+
+  @override
+  Future<void> markShared(String gameId) async => sharedGames.add(gameId);
 
   @override
   Future<List<Map<String, Object?>>> likers(String gameId) async =>

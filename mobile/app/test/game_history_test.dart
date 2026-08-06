@@ -157,7 +157,7 @@ void main() {
           ],
         ),
       ];
-    final repo = await newRepo(gw);
+    final repo = await newRepoForWidget(tester, gw);
 
     final key = GlobalKey();
     await pumpHistory(tester, repo, key: key);
@@ -210,7 +210,7 @@ void main() {
           snap('Yapay Zeka 2', 179, ai: true, colorIndex: 1),
         ])
       ];
-    await pumpHistory(tester, await newRepo(gw), currentName: 'YeniNick');
+    await pumpHistory(tester, await newRepoForWidget(tester, gw), currentName: 'YeniNick');
     expect(find.text('YeniNick'), findsOneWidget);
     expect(find.text('EskiNick'), findsNothing);
   });
@@ -222,7 +222,7 @@ void main() {
         gameRow(id: 'old', playerCount: 4, playerScore: 100, aiScore: 150, rank: null)
       ];
     // currentName VERİLMEDEN: yedek satır "Sen" etiketini kullanmalı.
-    await pumpHistory(tester, await newRepo(gw), currentName: null);
+    await pumpHistory(tester, await newRepoForWidget(tester, gw), currentName: null);
     expect(find.text('Sen'), findsOneWidget);
     expect(find.text('En iyi rakip'), findsOneWidget);
     expect(find.textContaining('+2 diğer oyuncu'), findsOneWidget);
@@ -232,7 +232,7 @@ void main() {
       (tester) async {
     final gw = FakeGamesGateway(userId: 'u-me')
       ..history = [gameRow(id: 'old', rank: null)];
-    await pumpHistory(tester, await newRepo(gw),
+    await pumpHistory(tester, await newRepoForWidget(tester, gw),
         currentName: 'Esiner', isMe: false);
     expect(find.text('Sen'), findsNothing);
     expect(find.text('Esiner'), findsOneWidget);
@@ -253,7 +253,7 @@ void main() {
           {'r': 0, 'c': 1, 'l': 'B', 'o': 0},
         ]
       };
-    await pumpHistory(tester, await newRepo(gw));
+    await pumpHistory(tester, await newRepoForWidget(tester, gw));
 
     expect(find.byType(BoardWidget), findsNothing); // liste sorgusunda YOK
     await tester.tap(find.text('01.08.2026'));
@@ -268,7 +268,7 @@ void main() {
   testWidgets('tahta kaydı yoksa açıklama gösterilir', (tester) async {
     final gw = FakeGamesGateway(userId: 'u-me')
       ..history = [gameRow(id: 'g1', rank: 1)]; // snapshots boş
-    await pumpHistory(tester, await newRepo(gw));
+    await pumpHistory(tester, await newRepoForWidget(tester, gw));
     await tester.tap(find.text('01.08.2026'));
     await tester.pumpAndSettle();
     expect(find.text('Bu oyun için tahta görüntüsü kaydedilmemiş.'),
@@ -277,7 +277,7 @@ void main() {
   });
 
   testWidgets('hiç kayıt yoksa boş metin', (tester) async {
-    await pumpHistory(tester, await newRepo(FakeGamesGateway(userId: 'u-me')));
+    await pumpHistory(tester, await newRepoForWidget(tester, FakeGamesGateway(userId: 'u-me')));
     expect(find.text('Henüz kayıtlı bir oyunun yok.'), findsOneWidget);
   });
 }
@@ -289,6 +289,7 @@ class _ThrowingGateway extends FakeGamesGateway {
     required int? playerCount,
     required int offset,
     required int limit,
+    bool? onlineOnly,
   }) =>
       Future.error(Exception('ağ'));
 }

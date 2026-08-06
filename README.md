@@ -143,7 +143,8 @@ mobile/                    # Flutter (iOS+Android) portu — ayrıntı: mobile/C
     │                      # oynanabilir (kurulum/tahta/raf/sürükle-bırak, kurallar,
     │                      # kelime anlamı, hamle geçmişi), Supabase oturumu
     │                      # (giriş/kayıt), bulut kayıt senkronu, skor kartı/k-lig,
-    │                      # oyun geçmişi (tahta önizlemesi, beğeni, sohbet arşivi)
+    │                      # oyun geçmişi (tahta önizlemesi, beğeni, sohbet
+    │                      # arşivi, paylaşma), Son Oynadıklarım listesi
     ├── assets/dictionary/ # üretilmiş asset'ler: words_tr.txt (kaynak
     │                      # src/data/words.ts — npm run generate-golden-vectors)
     │                      # ve meanings.db (npm run generate-meanings-db)

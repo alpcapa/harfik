@@ -1,5 +1,6 @@
 // `games` satırı/oyuncu snapshot'ı üreten ortak test yardımcıları —
 // oyun geçmişi (5a) ve beğeni/sohbet (5b) testleri paylaşıyor.
+import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/games_api.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -54,4 +55,18 @@ Future<GamesRepo> newRepo(FakeGamesGateway gw) async {
     nowMs: () => DateTime.now().millisecondsSinceEpoch,
   );
   return GamesRepo(gw, storage.queue);
+}
+
+/// Widget testlerinde repoyu HAZIRLARKEN gerçek sqflite I/O'sunun sahte
+/// zamanla (fake-async) kilitlenmemesi için: `runAsync` gerçek saati
+/// kullandırır. Doğrudan `await newRepo(...)` bazı ekranlarda testi süresiz
+/// asıyor (5c'de RecentGamesSection'da yaşandı) — widget testinde HER ZAMAN
+/// bunu kullan.
+Future<GamesRepo> newRepoForWidget(
+    WidgetTester tester, FakeGamesGateway gw) async {
+  late GamesRepo repo;
+  await tester.runAsync(() async {
+    repo = await newRepo(gw);
+  });
+  return repo;
 }

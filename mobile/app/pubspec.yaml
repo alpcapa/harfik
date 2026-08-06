@@ -17,6 +17,8 @@ dependencies:
     sdk: flutter
   kelimeki_core:
     path: ../kelimeki_core
+  path_provider: ^2.1.5
+  share_plus: ^12.0.2
   shared_preferences: ^2.5.3
   sqflite: ^2.4.2
   supabase_flutter: ^2.10.2

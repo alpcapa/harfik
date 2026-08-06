@@ -12,6 +12,12 @@ const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 bool get supabaseConfigured =>
     supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
 
+/// Paylaşılan oyun linklerinin kökü (`https://kelimeki.com/game/:id`).
+/// Web bunu `window.location.origin`'den türetiyor (preview/localhost'ta da
+/// doğru çalışsın diye); uygulamanın böyle bir "origin"i olmadığından sabit.
+/// Hedef sayfa girişsiz de açılabilen `SharedGamePage`.
+const String webOrigin = 'https://kelimeki.com';
+
 /// Uygulama sürümü — pubspec.yaml'daki `version` ile BİRLİKTE artırılır
 /// (release disiplini, bkz. mobile/CLAUDE.md "Sürüm disiplini").
 /// `app_config.mobile_min_supported_version` eşiğiyle karşılaştırılır;

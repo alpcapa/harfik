@@ -6,22 +6,27 @@
 // tahtasını altta açar/kapar — tahta lazy çekilir ve bir kez çekilince
 // önbellekte kalır (web'in aynı kararı).
 //
-// **Bilinçli eksik (5c):** tahta önizlemesine dokununca açılan
-// "Paylaş/Kapat" aksiyon menüsü — paylaşım (PNG yakalama + sistem paylaş
-// sayfası) ayrı bir parça. Yokluğunda ölü bir kontrol de yok: önizlemenin
-// kendisi tıklanabilir değil.
+// Açık tahta önizlemesine dokunmak "Paylaş / Kapat" aksiyon menüsünü açar;
+// paylaşım skor şeridi + tahtayı tek PNG olarak yakalayıp sistem paylaş
+// sayfasına verir (web'in aynı akışı).
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
+import '../../config/env.dart';
 import '../../data/game_record.dart';
 import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
+import '../../util/share_board.dart';
 import '../auth/k_avatar.dart';
 import '../chat/game_chat_history_modal.dart';
+import '../game/action_sheet.dart';
 import '../game/board_widget.dart';
 import '../game/modal_shell.dart';
 import '../game/player_badge.dart';
 import 'player_score_card_modal.dart';
+import 'score_box_row.dart';
 
 const _panel = Color(0xFFF5F7FA);
 const _border = Color(0xFFDCE2EA);
@@ -53,6 +58,17 @@ Future<void> showGameHistory(
   /// "Beğenenler" listesinden bir isme dokununca o kişinin skor kartını
   /// açmak için. null ise isimler tıklanmaz (çalışmayan kontrol koymuyoruz).
   StatsRepo? stats,
+
+  /// Verilirse ("Son Oynadıklarım"dan bir satıra dokununca) modal açılır
+  /// açılmaz bu oyunun tahtası genişletilmiş gelir ve kart listenin
+  /// ORTASINA kaydırılır — kullanıcı ayrıca aramak zorunda kalmaz.
+  String? initialExpandedId,
+
+  /// Testler gerçek paylaş kanalına gitmesin diye enjekte edilebilir.
+  ShareBoardFn? share,
+
+  /// Testler için: görsel yakalama (bkz. `CaptureBoardFn`).
+  CaptureBoardFn? capture,
 }) {
   return showDialog<void>(
     context: context,
@@ -63,6 +79,9 @@ Future<void> showGameHistory(
       currentName: currentName,
       isMe: isMe,
       stats: stats,
+      initialExpandedId: initialExpandedId,
+      share: share,
+      capture: capture,
     ),
   );
 }
@@ -74,6 +93,9 @@ class GameHistoryModal extends StatefulWidget {
   final String? currentName;
   final bool isMe;
   final StatsRepo? stats;
+  final String? initialExpandedId;
+  final ShareBoardFn? share;
+  final CaptureBoardFn? capture;
 
   const GameHistoryModal({
     super.key,
@@ -83,6 +105,9 @@ class GameHistoryModal extends StatefulWidget {
     this.currentName,
     this.isMe = true,
     this.stats,
+    this.initialExpandedId,
+    this.share,
+    this.capture,
   });
 
   @override
@@ -110,10 +135,18 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
 
   final _scrollController = ScrollController();
 
+  /// Paylaşım için yakalanacak düğüm — aynı anda yalnızca BİR kart açık
+  /// olabildiğinden (tek `_expandedId`) tek anahtar yeterli (web'de de tek
+  /// `boardCaptureRef`).
+  final _captureKey = GlobalKey();
+
+  /// Hedef karta kaydırmak için: id → o kartın anahtarı.
+  final _entryKeys = <String, GlobalKey>{};
+
   @override
   void initState() {
     super.initState();
-    _loadPage(0);
+    unawaited(_loadInitial());
     _scrollController.addListener(() {
       if (!_scrollController.hasClients) return;
       final pos = _scrollController.position;
@@ -125,6 +158,86 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// İlk yükleme. `initialExpandedId` verilmişse hedef sayfada BULUNANA ya
+  /// da liste tükenene kadar sayfa sayfa çekmeye devam eder — web'in aynı
+  /// düzeltmesi: "Son Oynadıklarım" TÜR filtreli bir sıralamadan geliyor,
+  /// buradaki liste ise karma; hedef ilk sayfanın çok gerisinde kalabiliyor
+  /// ve o zaman kaydırma sessizce hiçbir şey yapmıyordu.
+  Future<void> _loadInitial() async {
+    final target = widget.initialExpandedId;
+    const maxPages = 25; // ~500 oyun — sonsuz döngüye karşı güvenlik ağı
+    final acc = <GameHistoryEntry>[];
+    var offset = 0;
+    var more = true;
+    var found = false;
+    var pages = 0;
+    do {
+      final res = await widget.games.history(
+        userId: widget.userId,
+        playerCount: widget.playerCount,
+        offset: offset,
+        limit: _pageSize,
+        favoritesOnly: _favoritesOnly,
+      );
+      if (!mounted) return;
+      acc.addAll(res.games);
+      more = res.hasMore;
+      offset += res.games.length;
+      pages++;
+      if (target != null && res.games.any((g) => g.id == target)) found = true;
+      if (res.games.isEmpty) break; // sunucu boş döndü: ilerlemiyoruz
+    } while (target != null && !found && more && pages < maxPages);
+
+    setState(() {
+      _entries = acc;
+      _hasMore = more;
+      _loadingMore = false;
+      if (found) _expandedId = target;
+    });
+    if (found) unawaited(_revealTarget(target!));
+  }
+
+  /// Hedef kartın tahtasını açıp kartı listenin ortasına getirir. Ortalama
+  /// İKİ kez yapılır: tahta asenkron geldiğinden kart o sırada "Yükleniyor…"
+  /// kadar kısa; gerçek tahta render olunca kart ciddi ölçüde büyüyüp
+  /// hizalama bozuluyor (web'de de aynı çift çağrı var).
+  Future<void> _revealTarget(String id) async {
+    unawaited(_centerOnEntry(id));
+    if (_snapshots.containsKey(id)) return;
+    setState(() => _snapshotLoadingId = id);
+    final snap = await widget.games.boardSnapshot(id);
+    if (!mounted) return;
+    setState(() {
+      _snapshots[id] = snap;
+      _snapshotLoadingId = null;
+    });
+    unawaited(_centerOnEntry(id));
+  }
+
+  /// Kartı görünür alanın ORTASINA kaydırır. `Scrollable.ensureVisible`
+  /// yalnızca DOM'daki (build edilmiş) bir öğe için çalışır; ListView tembel
+  /// olduğundan hedef henüz oluşmamış olabilir — o durumda birer viewport
+  /// aşağı atlayıp tekrar bakıyoruz. Web burada iç içe kaydırma alanları
+  /// yüzünden elle `scrollTop` hesabı yapmak zorunda kalmıştı; Flutter'ın
+  /// `ensureVisible`'ı iç içe Scrollable'ları kendisi çözüyor.
+  Future<void> _centerOnEntry(String id) async {
+    for (var i = 0; i < 60; i++) {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+      final ctx = _entryKeys[id]?.currentContext;
+      if (ctx != null && ctx.mounted) {
+        await Scrollable.ensureVisible(ctx,
+            alignment: 0.5, duration: const Duration(milliseconds: 200));
+        return;
+      }
+      if (!_scrollController.hasClients) continue;
+      final pos = _scrollController.position;
+      if (pos.pixels >= pos.maxScrollExtent) return; // liste bitti, kart yok
+      _scrollController.jumpTo(
+          (pos.pixels + pos.viewportDimension).clamp(0.0, pos.maxScrollExtent));
+    }
   }
 
   Future<void> _loadPage(int offset) async {
@@ -201,6 +314,28 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
         stats: widget.stats,
         games: widget.games,
       ),
+    );
+  }
+
+  /// Açık tahta önizlemesine dokununca. Web'in iki seçeneği: Paylaş / Kapat.
+  Future<void> _openBoardSheet(GameHistoryEntry entry) async {
+    await showActionSheet(context, actions: [
+      ActionSheetItem(label: 'Paylaş', onSelect: () => unawaited(_share(entry))),
+      ActionSheetItem(
+          label: 'Kapat', onSelect: () => setState(() => _expandedId = null)),
+    ]);
+  }
+
+  /// Web `handleShare` sırası: önce oyunu paylaşıma aç (link ancak öyle bir
+  /// şey gösterir), sonra görseli yakala, sonra sistem paylaş sayfası.
+  /// İşaretleme başarısızsa linksiz paylaşılır — hiç paylaşmamaktan iyi.
+  Future<void> _share(GameHistoryEntry entry) async {
+    final shared = await widget.games.markShared(entry.id);
+    final png = await (widget.capture ?? captureBoundaryAsPng)(_captureKey);
+    await (widget.share ?? shareBoard)(
+      png: png,
+      text: shareMessage,
+      url: shared ? '$webOrigin/game/${entry.id}' : null,
     );
   }
 
@@ -298,6 +433,9 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
                       }
                       final e = entries[i];
                       return _EntryCard(
+                        // Kaydırma hedefi olabilmesi için sabit anahtar.
+                        key: _entryKeys.putIfAbsent(e.id, GlobalKey.new),
+                        captureKey: _expandedId == e.id ? _captureKey : null,
                         entry: e,
                         currentName: widget.currentName,
                         // Favoriler listesinde bir satır, görüntüleyenin
@@ -322,6 +460,7 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
                           gameId: e.id,
                           onlineGameId: e.onlineGameId,
                         ),
+                        onTapBoard: () => _openBoardSheet(e),
                       );
                     },
                   ),
@@ -508,7 +647,16 @@ class _EntryCard extends StatelessWidget {
   final VoidCallback onShowLikers;
   final VoidCallback onShowChat;
 
+  /// Açık tahtaya dokunma — Paylaş/Kapat menüsü.
+  final VoidCallback onTapBoard;
+
+  /// Yalnızca AÇIK kartta dolu: paylaşım görselinin yakalanacağı düğüm
+  /// (skor şeridi + tahta). Kapalı kartlarda null.
+  final GlobalKey? captureKey;
+
   const _EntryCard({
+    super.key,
+    required this.captureKey,
     required this.entry,
     required this.currentName,
     required this.isMyRow,
@@ -520,6 +668,7 @@ class _EntryCard extends StatelessWidget {
     required this.onToggleLike,
     required this.onShowLikers,
     required this.onShowChat,
+    required this.onTapBoard,
   });
 
   @override
@@ -714,13 +863,41 @@ class _EntryCard extends StatelessWidget {
                 ),
               )
             else if (snapshotFetched && snapshot != null)
-              // Gerçek BoardWidget'ın salt-okunur hâli — compact/hideFooter
-              // zaten vardı (parça 1/8), canlı oyun tahtasına DOKUNULMADI.
-              BoardWidget(
-                state: buildSnapshotGameState(
-                    snapshot!, entry.playerCount, players),
-                compact: true,
-                hideFooter: true,
+              GestureDetector(
+                onTap: onTapBoard,
+                behavior: HitTestBehavior.opaque,
+                child: RepaintBoundary(
+                  key: captureKey,
+                  // Yakalanan görselin zemini: PNG'de saydam kalmasın
+                  // (parça 1'in dersi — gölge/zemin yakalama artefaktı).
+                  child: ColoredBox(
+                    color: Colors.white,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Paylaşılan görsel yalnızca tahtayı değil kimin kaç
+                        // puan aldığını da taşısın diye (web'in kararı).
+                        ScoreBoxRow(
+                          players: players,
+                          seatIndexOf: (p, i) =>
+                              _seatIndexFor(p, i, hasSnapshot),
+                          meIndex: meIndex,
+                          currentName: currentName,
+                        ),
+                        const SizedBox(height: 6),
+                        // Gerçek BoardWidget'ın salt-okunur hâli —
+                        // compact/hideFooter zaten vardı (parça 1/8), canlı
+                        // oyun tahtasına DOKUNULMADI.
+                        BoardWidget(
+                          state: buildSnapshotGameState(
+                              snapshot!, entry.playerCount, players),
+                          compact: true,
+                          hideFooter: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               )
             else
               const Padding(

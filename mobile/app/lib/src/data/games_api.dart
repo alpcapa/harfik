@@ -205,11 +205,14 @@ abstract class GamesGateway {
   /// Oyun geçmişi sayfası — `board_snapshot` HARİÇ liste sütunları,
   /// `created_at` azalan. [playerCount] null ise filtre uygulanmaz
   /// ("Genel" sekmesinden açılan liste, web'in aynı davranışı).
+  /// [onlineOnly] null: filtre yok. true: yalnızca Canlı, false: yalnızca
+  /// yerel/YZ oyunları — "Son Oynadıklarım" listesi sekmesine göre süzüyor.
   Future<List<Map<String, Object?>>> listGames({
     required String userId,
     required int? playerCount,
     required int offset,
     required int limit,
+    bool? onlineOnly,
   });
 
   /// "Favoriler" sekmesi — hedef kullanıcının SAHİP OLDUĞU değil BEĞENDİĞİ
@@ -239,6 +242,11 @@ abstract class GamesGateway {
   /// Bitmiş bir oyunun dondurulmuş sohbeti (`games.messages`) — rozete
   /// dokununca lazy çekilir, `gameBoardSnapshot` ile aynı desen.
   Future<List<Map<String, Object?>>> gameMessages(String gameId);
+
+  /// Oyunu herkese açık `/game/:id` linkiyle görülebilir işaretler
+  /// (`set_game_shared`) — sahiplik gerektirmez, idempotent, geri
+  /// alınamaz bir bayrak.
+  Future<void> markShared(String gameId);
 
   /// Arşiv sohbetindeki sessize alma/rapor rozetleri
   /// (`chat_flags_for_finished_game`) — kimlik istemciye hiç gelmediğinden
@@ -309,9 +317,15 @@ class SupabaseGamesGateway implements GamesGateway {
     required int? playerCount,
     required int offset,
     required int limit,
+    bool? onlineOnly,
   }) async {
     var q = client.from('games').select(_listCols).eq('user_id', userId);
     if (playerCount != null) q = q.eq('player_count', playerCount);
+    if (onlineOnly == true) {
+      q = q.not('online_game_id', 'is', null);
+    } else if (onlineOnly == false) {
+      q = q.isFilter('online_game_id', null);
+    }
     // Web `range(offset, offset + limit)` — bir FAZLA satır ister ki
     // "daha var mı" ekstra bir count sorgusu olmadan anlaşılsın.
     final rows = await q
@@ -379,6 +393,11 @@ class SupabaseGamesGateway implements GamesGateway {
     final msgs = row?['messages'];
     if (msgs is! List) return const [];
     return [for (final m in msgs) (m as Map).cast<String, Object?>()];
+  }
+
+  @override
+  Future<void> markShared(String gameId) async {
+    await client.rpc('set_game_shared', params: {'p_game_id': gameId});
   }
 
   @override
@@ -528,6 +547,7 @@ class GamesRepo {
     required int offset,
     int limit = 20,
     bool favoritesOnly = false,
+    bool? onlineOnly,
   }) async {
     try {
       final rows = favoritesOnly
@@ -540,7 +560,8 @@ class GamesRepo {
               userId: userId,
               playerCount: playerCount,
               offset: offset,
-              limit: limit);
+              limit: limit,
+              onlineOnly: onlineOnly);
       final hasMore = rows.length > limit;
       final page = hasMore ? rows.sublist(0, limit) : rows;
       var games = [for (final r in page) GameHistoryEntry.fromJson(r)];
@@ -589,6 +610,19 @@ class GamesRepo {
     } catch (e) {
       debugPrint('[Kelimeki] beğeni değiştirilemedi: $e');
       return null;
+    }
+  }
+
+  /// Oyunu paylaşılabilir işaretler. Başarısızsa `false` — çağıran o
+  /// durumda linksiz paylaşır (web `markGameShared` ile aynı sözleşme:
+  /// link olmadan paylaşmak, hiç paylaşmamaktan iyi).
+  Future<bool> markShared(String gameId) async {
+    try {
+      await gateway.markShared(gameId);
+      return true;
+    } catch (e) {
+      debugPrint('[Kelimeki] oyun paylaşıma açılamadı: $e');
+      return false;
     }
   }
 
