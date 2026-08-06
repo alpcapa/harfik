@@ -388,6 +388,19 @@ bağlı değil.)
 - Dart SDK repoya/CI'a bağlanmadı — bu ortamda scratchpad'e indirilip
   kullanıldı; geliştirici makinesinde standart `dart` kurulumu yeterli.
 
+## Web'de Bekleyen Küçük Düzeltmeler
+
+Port sırasında fark edilen, uygulamada ÇÖZÜLMÜŞ ama web'de hâlâ duran
+farklar. Kullanıcı kararı: "web kalsın şimdilik, daha sonra düzeltiriz"
+(6 Ağustos 2026) — yani bunlar bilinçli sapmalar, "port eksik" değil.
+Web tarafına dokunulacak bir sonraki fırsatta (ayrı bir web PR'ı) topluca
+uygulanmalı; her biri tek satırlık.
+
+- **Raf başlığındaki swap aksiyon metni** — `src/components/Rack.tsx`
+  swap modunda başlığı `` `${title} — değiştirilecek taşları seç` ``
+  yapıyor; aynı talimat zaten tahtanın altındaki mesaj satırında var.
+  Uygulamada kaldırıldı (bkz. aşağıdaki parça günlüğü), web'de duruyor.
+
 ## Sıradaki Fazlar (mutabık kalınan sıra)
 
 1. ~~Backend güvenilirlik migration'ları~~ — TAMAMLANDI (5 Ağustos 2026,
