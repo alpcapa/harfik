@@ -50,12 +50,19 @@ Future<void> pumpBoard(WidgetTester tester, GlobalKey key, GameState state,
       body: Center(
         child: RepaintBoundary(
           key: key,
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: SizedBox(
-              width: 560,
-              height: 560,
-              child: BoardWidget(state: state, moveOverlay: overlay),
+          // Beyaz zemin boundary'nin İÇİNDE olmalı ve pay gölgelerin tam
+          // sönümlenmesine yetmeli — aksi halde PNG'de gölgeler saydam zemin
+          // üzerine ham yarı-şeffaf gri kaydedilip kesiliyor ve "kalın gri
+          // levha" gibi görünüyordu (kullanıcı bildirimi, 6 Ağustos 2026).
+          child: ColoredBox(
+            color: Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.all(90),
+              child: SizedBox(
+                width: 560,
+                height: 560,
+                child: BoardWidget(state: state, moveOverlay: overlay),
+              ),
             ),
           ),
         ),
@@ -72,7 +79,7 @@ void main() {
 
   testWidgets('reducer_ai4 final tahtası hatasız çizilir, taş sayısı tutar',
       (tester) async {
-    await tester.binding.setSurfaceSize(const Size(700, 700));
+    await tester.binding.setSurfaceSize(const Size(760, 760));
     final state = loadFixtureState('reducer_ai4');
     var tileCount = 0;
     for (final row in state.board) {
@@ -92,7 +99,7 @@ void main() {
 
   testWidgets('hamle çerçevesi + puan rozeti çizilir (geçerli/yeşil)',
       (tester) async {
-    await tester.binding.setSurfaceSize(const Size(700, 700));
+    await tester.binding.setSurfaceSize(const Size(760, 760));
     final state = loadFixtureState('reducer_ai2');
     final overlay = MoveOverlay(
       valid: true,

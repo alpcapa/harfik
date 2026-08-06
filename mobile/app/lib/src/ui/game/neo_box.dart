@@ -14,6 +14,52 @@ class InsetShadow {
   const InsetShadow({required this.color, required this.offset, required this.blur});
 }
 
+/// CSS box-shadow tanımı (blur = CSS blur-radius; sigma DEĞİL).
+class CssShadow {
+  final Color color;
+  final Offset offset;
+  final double blur;
+  const CssShadow({required this.color, required this.offset, required this.blur});
+}
+
+/// Dış gölgeleri CSS semantiğiyle çizen decoration: sigma = blur/2 ve
+/// İLK yazılan gölge EN ÜSTTE (CSS sırası — Flutter BoxShadow listesi tam
+/// tersini yapar). BoxDecoration'ın gölge boyaması hem daha yoğun hem sırası
+/// ters olduğundan web panelleriyle birebirlik için bu kullanılır.
+class ShapeDecorationWithCssShadows extends Decoration {
+  final Color color;
+  final double radius;
+  final List<CssShadow> shadows;
+  const ShapeDecorationWithCssShadows({
+    required this.color,
+    required this.radius,
+    required this.shadows,
+  });
+
+  @override
+  BoxPainter createBoxPainter([VoidCallback? onChanged]) =>
+      _CssShadowBoxPainter(this);
+}
+
+class _CssShadowBoxPainter extends BoxPainter {
+  final ShapeDecorationWithCssShadows d;
+  _CssShadowBoxPainter(this.d);
+
+  @override
+  void paint(Canvas canvas, Offset offset, ImageConfiguration configuration) {
+    final rect = offset & configuration.size!;
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(d.radius));
+    // CSS: listedeki ilk gölge en üstte → ters sırayla çiz.
+    for (final s in d.shadows.reversed) {
+      final paint = Paint()
+        ..color = s.color
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, s.blur / 2);
+      canvas.drawRRect(rrect.shift(s.offset), paint);
+    }
+    canvas.drawRRect(rrect, Paint()..color = d.color);
+  }
+}
+
 class NeoBox extends StatelessWidget {
   final BorderRadius borderRadius;
   final Color? color;

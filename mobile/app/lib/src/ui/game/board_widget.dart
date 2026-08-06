@@ -110,29 +110,22 @@ class BoardWidget extends StatelessWidget {
     return AspectRatio(
       aspectRatio: 1,
       child: Container(
-        decoration: BoxDecoration(
+        decoration: const ShapeDecorationWithCssShadows(
           color: _boardBg,
-          borderRadius: BorderRadius.circular(18),
-          // Web Board.tsx'in nömorfik gölge üçlüsü BİREBİR: koyu sağ-alt +
-          // BEYAZ sol-üst parlama + altta geniş yumuşak gölge. Beyaz katman
-          // ilk portta eksikti — o olmadan alt kenar kalın gri bir bant gibi
-          // okunuyordu (kullanıcı fark etti, 6 Ağustos 2026).
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0xB3A3B1C6),
-              offset: Offset(8, 8),
-              blurRadius: 20,
-            ),
-            BoxShadow(
-              color: Color(0xE6FFFFFF),
-              offset: Offset(-4, -4),
-              blurRadius: 14,
-            ),
-            BoxShadow(
-              color: Color(0x80A3B1C6),
-              offset: Offset(0, 20),
-              blurRadius: 60,
-            ),
+          radius: 18,
+          // Web Board.tsx'in gölge üçlüsü — CSS değerleriyle: koyu sağ-alt,
+          // beyaz sol-üst parlama, altta geniş yumuşak gölge. Flutter'ın
+          // BoxShadow'u CSS'ten hem daha koyu/kısa boyuyor hem katman sırası
+          // ters; bu decoration gölgeleri CSS matematiğiyle (sigma=blur/2,
+          // ilk yazılan en üstte) kendisi çizer — kullanıcı web/app
+          // karşılaştırması, 6 Ağustos 2026.
+          shadows: [
+            CssShadow(
+                color: Color(0xB3A3B1C6), offset: Offset(8, 8), blur: 20),
+            CssShadow(
+                color: Color(0xE6FFFFFF), offset: Offset(-4, -4), blur: 14),
+            CssShadow(
+                color: Color(0x80A3B1C6), offset: Offset(0, 20), blur: 60),
           ],
         ),
         padding: const EdgeInsets.all(10),

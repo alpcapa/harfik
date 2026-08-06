@@ -461,6 +461,34 @@ bağlı değil.)
      TTF'lerini FontLoader'dan yükler, yoksa her metin Ahem bloğu olur.
      Kontur katmanı her taş harfini iki Text yaptığından testlerde
      `find.text(...).first` gerekir.
+   - ✅ **Tahta dış gölgesi "Orijinal gibi" düzeltmesi (6 Ağustos 2026,
+     kullanıcı IMG_0853 ile bildirdi — önceki düzeltmeden sonra bile alt/sağ
+     gölge "kalın gri levha" gibi duruyordu):** iki ayrı, üst üste binen kök
+     sebep bulundu; ikisi de değerlerle değil MEKANİZMAYLA ilgiliydi.
+     (1) **Ekran görüntüsü tuzağı:** beyaz zemin `RepaintBoundary`'nin
+     DIŞINDAYDI — PNG'de gölgeler saydam zemin üzerine ham yarı-şeffaf gri
+     olarak kaydedilip 24px'te kesiliyordu, yani görüntüdeki "levha"nın bir
+     kısmı gerçek render değil yakalama artefaktıydı. Kural: gölge içeren bir
+     ekran görüntüsünde opak zemin (ColoredBox) boundary'nin İÇİNDE olmalı ve
+     pay (padding) gölgenin tam sönümüne yetmeli (burada 90px).
+     (2) **Flutter `BoxDecoration.boxShadow` CSS box-shadow'un birebir
+     karşılığı DEĞİL:** hem belirgin şekilde daha yoğun/koyu boyuyor hem de
+     katman sırası TERS — CSS'te listedeki İLK gölge en üstte, Flutter'da son
+     çizilen (listedeki son) üstte kalıyor. Çözüm `neo_box.dart`taki
+     `CssShadow` + `ShapeDecorationWithCssShadows`: özel bir BoxPainter,
+     gölgeleri sigma=blur/2 ile ve listeyi TERS sırayla (CSS semantiği)
+     çizip üstüne dolguyu basar. `board_widget.dart`ın konteyneri artık
+     web'in üçlü gölgesini (`8,8,20 rgba(163,177,198,.7)` +
+     `-4,-4,14 rgba(255,255,255,.9)` + `0,20,60 rgba(163,177,198,.5)`)
+     bu decoration'la taşıyor. Doğrulama piksel profiliyle: web ekran
+     görüntüsünde tahtanın alt kenarından aşağı inen gri profil tepe R=197
+     ve ~75px'te 233→255 yumuşak sönüm; düzeltme sonrası app PNG'sinde tepe
+     R=198 ve aynı sönüm eğrisi — göz kararı değil ölçümle kapatıldı (bkz.
+     kök CLAUDE.md'deki "ölçmeden teşhis koyma" dersleri). **Ders:** CSS
+     gölge/efekt değerlerini Flutter'a "aynı sayıları yaz" diye taşımak
+     yetmez — boyama modelinin kendisi farklıysa (yoğunluk, katman sırası,
+     sigma tanımı) web'in çıktısı ölçülüp Flutter tarafında aynı ÇIKTIYI
+     üreten mekanizma kurulmalı.
    - Sıradaki parçalar: taş değiştirme akışı + GameOver ekranı, gerçek
      GameHeader görsel dili, kaydet/yükle bağlantısı (LocalSaveStore +
      terk cezası üst katmanı), Setup ekranı, sürükle-bırak, kelime anlamı.
