@@ -8,6 +8,7 @@ import 'package:kelimeki_core/kelimeki_core.dart';
 import '../bootstrap.dart';
 import '../config/env.dart';
 import '../game/game_controller.dart';
+import 'game/board_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   final AppServices services;
@@ -101,12 +102,24 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             const SizedBox(height: 16),
-            if (demoState != null && demoState.phase == GamePhase.play)
+            if (demoState != null && demoState.phase == GamePhase.play) ...[
               Text(_demoSummary ??
                   'Oynanıyor… tur ${demoState.turnCount}, '
                       'skorlar: ${demoState.players.map((p) => p.score).join(' - ')}'),
-            if (_demoSummary != null) Text(_demoSummary!),
-            const Spacer(),
+              const SizedBox(height: 8),
+              // Motor testinin canlı tahtası — BoardWidget'ın cihaz üzerindeki
+              // ilk gerçek tüketicisi (gerçek oyun ekranı sonraki parçalar).
+              Expanded(
+                child: Center(
+                  child: SingleChildScrollView(
+                    child: BoardWidget(state: demoState),
+                  ),
+                ),
+              ),
+            ] else if (_demoSummary != null)
+              Text(_demoSummary!),
+            if (demoState == null || demoState.phase != GamePhase.play)
+              const Spacer(),
             const Text(
               'İskelet ekran — gerçek oyun arayüzü UI portu fazında gelecek '
               '(mobile/CLAUDE.md).',

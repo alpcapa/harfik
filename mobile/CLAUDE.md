@@ -398,8 +398,28 @@ bağlı değil.)
 3. ~~Depolama katmanı~~ — TAMAMLANDI (6 Ağustos 2026, bkz. "Depolama
    Katmanı" bölümü; açık uçlar orada listeli: kaydet/yükle UI bağlantısı,
    terk cezası üst katmanı, sunucuya flush).
-4. **UI portu** — 51 React bileşeninin Flutter'da yeniden yazımı (çeviri
-   değil); admin paneli/PWA/LandscapeHint/csvExport bilinçli olarak YOK.
+4. **UI portu — PARÇA PARÇA ilerliyor** (kullanıcı kararı, 6 Ağustos 2026);
+   admin paneli/PWA/LandscapeHint/csvExport bilinçli olarak YOK.
+   - ✅ **Parça 1 — tahta render katmanı** (`lib/src/ui/game/`):
+     `player_colors.dart` (PLAYER_COLORS hex'leri birebir; renk core'a
+     girmez, UI'da yaşar), `outline.dart` (outline.ts'in birebir portu —
+     çıktı SVG dizesi değil ui.Path; içbükey köşe yuvarlatma dahil),
+     `tile_widget.dart` (rack/placed/board varyantları, joker ★),
+     `board_widget.dart` (bölge tonları + dış hatlar, köşe numarası ve X2
+     filigranları, X3 hücresi, ev işareti — web'deki HomeMark SVG path'i
+     birebir, son-hamle koyulaştırması, MoveOverlay çerçevesi + puan
+     rozeti). Ana ekrandaki YZ vs YZ motor testi artık canlı tahtayı
+     çiziyor. Doğrulama: `board_render_test.dart` gerçek fixture
+     state'lerini (reducer_ai4 finali — teslim olmuş oyuncunun hatsız
+     kalması dahil; reducer_ai2 + overlay) çizip taş sayısını doğruluyor
+     ve `build/screenshots/`a PNG üretiyor (SDK Roboto'su FontLoader'la —
+     yoksa Ahem blokları, test yine geçer). Bilinçli eksikler (parlatma
+     fazına): nömorfik iç gölgeler düz tonla, Nunito taş fontu ve harf
+     konturu yok, yerleştirme nabız animasyonu yok, alt bilgi şeridi
+     (Hamleler/Mesajlaşma) ekran parçasının işi.
+   - Sıradaki parçalar: raf + taş yerleştirme etkileşimi (dokunma), oyun
+     ekranı iskeleti (GameHeader/mesaj satırı/butonlar), sürükle-bırak,
+     kaydet/yükle bağlantısı (LocalSaveStore), Setup ekranı.
 5. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek
