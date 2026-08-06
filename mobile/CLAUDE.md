@@ -410,6 +410,14 @@ uygulanmalı; her biri tek satırlık.
   swap modunda başlığı `` `${title} — değiştirilecek taşları seç` ``
   yapıyor; aynı talimat zaten tahtanın altındaki mesaj satırında var.
   Uygulamada kaldırıldı (bkz. aşağıdaki parça günlüğü), web'de duruyor.
+- **Anlam metnindeki `►` (opsiyonel, web BOZUK DEĞİL)** — uygulama bunu
+  `→` ile değiştiriyor (bkz. Parça 9). Web'de aynı karakter duruyor ve
+  DÜZGÜN çiziliyor: tarayıcılar karakter bazında sistem yedeğine düşer
+  (Chromium'da ekran görüntüsüyle doğrulandı). ÖLÇÜLDÜ: web'in subset
+  woff2'lerinde (225-333 glyph) ne `►` ne `→` var — yani web'de ikisi de
+  yedek fonttan basılır, `→`ye geçmek tipografik bir kazanç SAĞLAMAZ,
+  yalnızca iki platformun metnini aynı yapar. Tek satırlık değişiklik
+  (`MeaningModal.tsx`), aciliyeti yok.
 
 ## Sıradaki Fazlar (mutabık kalınan sıra)
 
