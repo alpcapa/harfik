@@ -704,11 +704,25 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
         ? `Kelime geçerli — ${state.players[state.current]?.name ?? 'Yapay Zeka'} hamlesini hesaplıyor…`
         : `Kelime geçerli — Sıra: ${state.players[state.current]?.name ?? 'Rakip'}`
       : null;
+  // Sıra kendisindeyken GEÇERLİ taslak da türetilir (6 Ağustos 2026,
+  // kullanıcı ekran görüntüleriyle buldu): önceden metin state.message /
+  // lastMoveMessage'a kalıyordu ve AYNI tahta durumu üç farklı şey
+  // söyleyebiliyordu — (1) taş seçmeden boş hücreye dokununca PLACE_TILE
+  // guard'ının yazdığı bayat "Önce bir harf seç." (üstelik yeşil), (2)
+  // ekran değiştirip dönünce SYNC_ONLINE_STATE mesajı silip satır rakibin
+  // SON hamlesine ("Esiner: +13 puan…") düşüyordu, (3) taşla yeniden
+  // oynanınca "Oyna tuşuyla kelimeyi onayla." geri geliyordu. Geçerli
+  // taslak + sıra sende = her zaman aynı türetilmiş metin; senkron/bayat
+  // yazım sonucu değiştiremez (offTurnValidNote'un kardeş kuralı).
+  const myTurnValidNote =
+    moveStatus?.valid && canAct && !state.isGameOver
+      ? 'Oyna tuşuyla kelimeyi onayla.'
+      : null;
   const liveMessage = moveStatus && !moveStatus.valid && moveStatus.reason
     ? moveStatus.reason
     : state.isGameOver
       ? 'Oyun bitti.'
-      : offTurnValidNote ?? (state.message || lastMoveMessage.message);
+      : offTurnValidNote ?? myTurnValidNote ?? (state.message || lastMoveMessage.message);
   const liveMessageType = moveStatus && !moveStatus.valid && moveStatus.reason
     ? 'err'
     : offTurnValidNote

@@ -70,6 +70,13 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
 - [ ] **Off-turn deneme.** Sıra sende değilken de taş yerleştirebilmeli,
       Board'da geçerlilik dış hattı/puan rozeti çalışmalı, "Oyna" pasif
       kalmalı. Rakip oynayınca deneme taşları rafa dönüp "Oyna" aktifleşmeli.
+- [ ] **Geçerli taslakta mesaj kararlı.** Sıra sende + tahtada geçerli
+      (yeşil çerçeveli) bir taslak varken alttaki mesaj HER ZAMAN "Oyna
+      tuşuyla kelimeyi onayla." olmalı — taş seçmeden boş hücreye dokunmak
+      ("Önce bir harf seç."i yazsa bile), uygulamayı arka plana alıp geri
+      dönmek (senkron) ya da başka ekrana geçip dönmek metni DEĞİŞTİRMEMELİ;
+      özellikle rakibin son hamle özeti ("X: +N puan …") görünmemeli
+      (6 Ağustos 2026'da bulunan üç-farklı-mesaj hatası).
 - [ ] **Sürükle-bırak.** Raftan tahtaya, tahtada taşıma, tahtadan rafa geri
       alma — üçü de çalışmalı (yerel oyundakiyle aynı davranış).
 - [ ] **Realtime.** Karşı taraf oynadığında ekran kendiliğinden güncellenmeli.

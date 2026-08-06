@@ -661,6 +661,16 @@ bağlı değil.)
        bırakmaz; ikinci 8 günlük sıçramada eski cezanın kuyruk TTL'ine
        takılıp düşmesi de web PENDING_EXPIRY paritesi olarak doğrulandı),
        kill-sonrası devam, yazma-okuma yarışı. 37/37 yeşil.
+   - ✅ **Mesaj satırı geçerli taslakta türetiliyor (6 Ağustos 2026,
+     kullanıcı web Canlı oyunda üç ekran görüntüsüyle buldu — üç istemci
+     aynı gün aynı kurala çekildi):** `state.message` "son yazan kazanır"
+     bir alan; taş seçmeden boş hücreye dokunmak "Önce bir harf seç."i
+     yazıp geçerli taslağın "Oyna tuşuyla kelimeyi onayla."sını ezebiliyor
+     (web Canlı'da senkron da mesajı silip satırı rakibin son hamlesine
+     düşürüyordu). Kural: taslak GEÇERLİYSE metin state.message'tan okunmaz,
+     türetilir. App'te testli: reducer'a bayat mesaj yazılsa bile satır
+     türetilmiş metni gösterir (`game_screen_test.dart`). Ayrıntı: kök
+     CLAUDE.md, "Mesaj satırı — geçerli taslakta metin artık TÜRETİLİYOR".
    - Sıradaki parçalar: Setup ekranı (gerçek görsel dil), sürükle-bırak,
      kelime anlamı modalı, hamle geçmişi modalı.
 5. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless

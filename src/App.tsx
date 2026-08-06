@@ -882,11 +882,19 @@ export default function App() {
 
   // Oyna'ya basmadan önce, geçersiz bir hamle varsa sebebini canlı olarak
   // alttaki mesaj alanında göster — oyuncu Oyna'ya basmadan neden geçersiz
-  // olduğunu (köşe kuralı, sözlük vb.) hemen görsün. Geçerliyse aynı mesaj
-  // ("Oyna tuşuyla kelimeyi onayla.") yeşile döner.
+  // olduğunu (köşe kuralı, sözlük vb.) hemen görsün.
+  // GEÇERLİ taslakta metin state.message'tan OKUNMAZ, durumdan TÜRETİLİR
+  // (6 Ağustos 2026, kullanıcı Canlı oyunda buldu ama sınıf ortaktı):
+  // state.message "son yazan kazanır" bir alan — taslak dururken raftan taş
+  // seçmeden boş hücreye dokunmak PLACE_TILE guard'ının "Önce bir harf seç."
+  // metnini üstüne yazıyor, satır da moveStatus geçerli diye bunu YEŞİL
+  // basıyordu (metin/renk çelişkisi). Geçerli taslak = her zaman
+  // "Oyna tuşuyla kelimeyi onayla." — bayat imperatif mesaj gölgede kalır.
   const liveMessage = moveStatus && !moveStatus.valid && moveStatus.reason
     ? moveStatus.reason
-    : state.message;
+    : moveStatus?.valid
+      ? 'Oyna tuşuyla kelimeyi onayla.'
+      : state.message;
   const liveMessageType = moveStatus && !moveStatus.valid && moveStatus.reason
     ? 'err'
     : moveStatus?.valid

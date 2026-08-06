@@ -178,13 +178,19 @@ class _GameScreenState extends State<GameScreen> {
         }
 
         final moveStatus = computeMoveStatus(state, widget.words);
-        // Web liveMessage kuralı: geçersiz hamlenin sebebi anlık gösterilir,
-        // geçerliyse mevcut mesaj yeşile döner.
+        // Web liveMessage kuralı: geçersiz hamlenin sebebi anlık gösterilir;
+        // GEÇERLİ taslakta metin state.message'tan okunmaz, TÜRETİLİR —
+        // state.message "son yazan kazanır" bir alan, taş seçmeden boş
+        // hücreye dokunmak "Önce bir harf seç."i üstüne yazıp yeşil
+        // gösterebiliyordu (web'de kullanıcı buldu, 6 Ağustos 2026 — üç
+        // istemci de aynı gün aynı kurala çekildi).
         final liveMessage = (moveStatus != null &&
                 !moveStatus.valid &&
                 moveStatus.reason != null)
             ? moveStatus.reason!
-            : state.message;
+            : (moveStatus?.valid ?? false)
+                ? 'Oyna tuşuyla kelimeyi onayla.'
+                : state.message;
         final liveKind = (moveStatus != null &&
                 !moveStatus.valid &&
                 moveStatus.reason != null)

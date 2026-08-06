@@ -118,6 +118,16 @@ void main() {
     expect(controller.state.placed.length, 6);
     // KELİME = 1+1+1+1+2+1 = 7; 0. satır bonus bölgesi dışında → çarpan yok.
     expect(find.text('+7'), findsOneWidget);
+    expect(find.text('Oyna tuşuyla kelimeyi onayla.'), findsOneWidget);
+
+    // Bayat mesaj türetilmiş metni EZEMEZ (web'de kullanıcı buldu): taş
+    // seçmeden boş hücreye dokunmak reducer'a "Önce bir harf seç." yazar ama
+    // taslak geçerliyken satır yine "Oyna tuşuyla kelimeyi onayla." demeli.
+    await tester.tap(boardCell(5, 5));
+    await tester.pump();
+    expect(controller.state.message, 'Önce bir harf seç.');
+    expect(find.text('Oyna tuşuyla kelimeyi onayla.'), findsOneWidget);
+    expect(find.text('Önce bir harf seç.'), findsNothing);
     // Ekran görüntüsü: yeşil çerçeveli taslak hamle + raf + butonlar.
     await tester.runAsync(() async {
       final boundary =
