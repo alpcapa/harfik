@@ -42,6 +42,11 @@ class GameHeader extends StatelessWidget {
     final boxGap = _fluid(w, 4, -4.33, 2.22, 6);
     final boxPaddingY = _fluid(w, 2.7, -0.63, 0.89, 3.5);
     final logoHeight = _fluid(w, 28, -5.33, 8.89, 36);
+    // UserMenu.tsx'in GIRIS_* sabitleri — Giriş butonu skor kutularıyla aynı
+    // satırda/aynı akıcı sistemde büyür.
+    final girisFontSize = _fluid(w, 8, -4.5, 3.33, 11);
+    final girisPaddingX = _fluid(w, 6, -2.33, 2.22, 8);
+    final girisPaddingY = _fluid(w, 8.7, -5.05, 3.67, 12);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -55,6 +60,8 @@ class GameHeader extends StatelessWidget {
           const SizedBox(width: 8),
           // Web güvenlik ağıyla aynı: sığmazsa şerit görünmez biçimde yatay
           // kaydırılır (satır kırmak yerine), 0. kutu her zaman erişilebilir.
+          // GİRİŞ/avatar bu kaydırma kabının DIŞINDA — web'deki aynı ders
+          // (UserMenu overflow kabının içindeyken dropdown'ı kırpılıyordu).
           Flexible(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -82,7 +89,69 @@ class GameHeader extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(width: 8),
+          _GirisButton(
+            fontSize: girisFontSize,
+            paddingX: girisPaddingX,
+            paddingY: girisPaddingY,
+          ),
         ],
+      ),
+    );
+  }
+}
+
+/// Web UserMenu'nün misafir durumu: accent zeminli "GİRİŞ" düğmesi (oturum
+/// açıksa web avatar+dropdown gösterir — o durum auth fazıyla gelecek).
+/// Şimdilik dokununca dürüst bir "yakında" açıklaması gösterilir; sahte bir
+/// giriş formu bilinçli olarak YOK.
+class _GirisButton extends StatelessWidget {
+  final double fontSize;
+  final double paddingX;
+  final double paddingY;
+  const _GirisButton({
+    required this.fontSize,
+    required this.paddingX,
+    required this.paddingY,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Giriş'),
+          content: const Text(
+              'Hesapla giriş ve Canlı oyun özellikleri uygulamanın sonraki '
+              'sürümünde gelecek. Şimdilik Yapay Zeka\'ya karşı '
+              'oynayabilirsin.'),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('TAMAM'),
+            ),
+          ],
+        ),
+      ),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: paddingX, vertical: paddingY),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2563EB), // web bg-accent
+          border: Border.all(color: const Color(0xFF2563EB)),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          'GİRİŞ',
+          style: TextStyle(
+            fontFamily: 'SpaceMono',
+            fontWeight: FontWeight.bold,
+            fontSize: fontSize,
+            letterSpacing: 0.5,
+            height: 1,
+            color: Colors.white,
+          ),
+        ),
       ),
     );
   }

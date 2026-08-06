@@ -123,6 +123,15 @@ void main() {
     await tester.tap(find.byType(LogoMark));
     expect(logoTapped, isTrue);
 
+    // Web UserMenu'nün misafir durumu: GİRİŞ düğmesi görünür, dokununca
+    // "yakında" açıklaması çıkar.
+    expect(find.text('GİRİŞ'), findsOneWidget);
+    await tester.tap(find.text('GİRİŞ'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('sonraki sürümünde gelecek'), findsOneWidget);
+    await tester.tap(find.text('TAMAM'));
+    await tester.pumpAndSettle();
+
     await tester.runAsync(() async {
       final boundary = tester.renderObject(find.byKey(
           const Key('header-boundary'))) as RenderRepaintBoundary;

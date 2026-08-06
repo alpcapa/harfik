@@ -563,7 +563,14 @@ bağlı değil.)
        aktif/pasif kalınlık farkı dar YZ kutusunda skoru kırpardı; ön-katman
        dekorasyonu layout'a hiç dokunmaz. Sığmazsa şerit web'deki gibi yatay
        kaydırılır. `onPlayerTap` opsiyonel (Canlı oyunda skor kartı için,
-       web `onPlayerClick`); UserMenu BİLİNÇLİ yok (auth sonraki faz).
+       web `onPlayerClick`). **UserMenu'nün misafir durumu var (kullanıcı
+       "Avatar (menü) eksik" deyince aynı gün eklendi):** sağ uçta web'in
+       GIRIS_* akıcı sabitleriyle birebir bir "GİRİŞ" düğmesi
+       (`_GirisButton`) — kaydırma kabının DIŞINDA (web'in "UserMenu
+       overflow kabının içindeyken dropdown kırpılıyordu" dersi). Dokununca
+       dürüst bir "hesap/Canlı oyun sonraki sürümde" diyaloğu gösterir;
+       sahte giriş formu bilinçli YOK. Oturum-açık durum (avatar + dropdown)
+       auth fazının işi.
      - **GameScreen düzeni web akışına çekildi:** AppBar + geçici skor
        satırı kalktı; içerik artık header → tahta → mesaj → raf → butonlar
        olarak TEK scroll akışında diziliyor, artan boşluk web'deki gibi en
