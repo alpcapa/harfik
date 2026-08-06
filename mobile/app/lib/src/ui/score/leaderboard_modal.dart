@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/auth_service.dart';
+import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../auth/k_avatar.dart';
 import '../game/modal_shell.dart';
@@ -25,17 +26,26 @@ Future<void> showLeaderboard(
   BuildContext context, {
   required AuthService auth,
   required StatsRepo stats,
+  Future<GamesRepo>? games,
 }) {
   return showDialog<void>(
     context: context,
-    builder: (_) => LeaderboardModal(auth: auth, stats: stats),
+    builder: (_) => LeaderboardModal(auth: auth, stats: stats, games: games),
   );
 }
 
 class LeaderboardModal extends StatefulWidget {
   final AuthService auth;
   final StatsRepo stats;
-  const LeaderboardModal({super.key, required this.auth, required this.stats});
+
+  /// Satırdan açılan oyuncu kartındaki "Tüm Oyunları Gör" için taşınır.
+  final Future<GamesRepo>? games;
+  const LeaderboardModal({
+    super.key,
+    required this.auth,
+    required this.stats,
+    this.games,
+  });
 
   @override
   State<LeaderboardModal> createState() => _LeaderboardModalState();
@@ -196,6 +206,7 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
                       userId: r.userId,
                       name: r.shortName,
                       avatarUrl: r.avatarUrl,
+                      games: widget.games,
                     ),
                   );
                 },
@@ -228,6 +239,7 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
                   userId: user.id,
                   name: widget.auth.menuName,
                   avatarUrl: widget.auth.profile?.avatarUrl,
+                  games: widget.games,
                 ),
               ),
             ],

@@ -1381,11 +1381,59 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        yeşil, analyze temiz. **Doğrulama sınırı:** gerçek view/RPC
        sorguları (RLS dahil) bu ortamdan test EDİLEMEDİ — cihazda gerçek
        bir hesapla doğrulanmalı.
-   - Sıradaki parçalar (sıra önerisi): oyun geçmişi (`GameHistoryModal` +
-     `buildSnapshotGameState` portu + tahta önizlemesi; beğeni/paylaşma),
-     şifre sıfırlama (özel şema deep link — `kelimeki://reset`, Dashboard
-     redirect listesine ekleme gerekir), Canlı oyun ekranları, Görüş
-     Bildir formu, "Arkadaşınla paylaş" (native share).
+   - ✅ **Parça 5a — oyun geçmişi (6 Ağustos 2026,
+     `ui/score/game_history_modal.dart`):** Skor Kartı'ndaki eksik link
+     kapandı; 3b'nin yazdığı `games` satırları artık kart kart okunuyor.
+     - **Etki analizi parçayı KÜÇÜLTTÜ (kuralın ilk gerçek faydası):**
+       koda başlamadan yapılan tarama, `BoardWidget`'ın `compact`/
+       `hideFooter` prop'larının parça 1/8'de ZATEN portlanmış olduğunu
+       gösterdi — en riskli görünen kısım (canlı oyun tahtasına dokunmak)
+       hiç gerekmedi, önizleme gerçek widget'ın salt-okunur çağrısı.
+     - **`buildSnapshotGameState` core'a DEĞİL uygulama katmanına konuldu**
+       (`data/game_record.dart`): yazma yönü yalnızca `Board` alıyor ve
+       core'da, okuma yönü ise DB satır şeklini (`GamePlayerSnapshot`)
+       istiyor — core'a taşımak veri katmanını motora sızdırırdı. Sonuç:
+       core'a hiç dokunulmadı, golden vector turu gerekmedi.
+     - **`GamesRepo`'ya İLK okuma yolu** (`history`/`boardSnapshot`) —
+       `games` tablosuna erişim tek dosyada kalsın diye buraya (Supabase
+       katman sınırı değişmezi). Sayfalama web'in `range(offset, offset +
+       limit)` hilesiyle: bir FAZLA satır istenip `hasMore` ondan
+       çıkarılıyor, ayrı bir count sorgusu yok. `board_snapshot` liste
+       sorgusunda YOK (satır başına birkaç KB), yalnızca kart açılınca
+       lazy çekilip önbelleğe alınıyor.
+     - Kart içeriği web ile birebir: tarih, Canlı/Yapay Zeka rozeti (Canlı
+       kayıtlar gri zeminle ayrışıyor), final sıralamasıyla oyuncu
+       satırları (sıra, koltuk rozeti, ad, TESLİM OLDU, Puan, SL), eski
+       kayıtların "Sen / En iyi rakip" yedeği + "+N diğer oyuncu"
+       notu. Kendi satırında dondurulmuş ad yerine GÜNCEL ad
+       (web `myCurrentName`); BAŞKASININ geçmişinde yedek satır "Sen"
+       değil o kişinin adı (`isMe=false`, web'in kod incelemesiyle
+       düzelttiği ayrım).
+     - **Ekran görüntüsü İKİ hata yakaladı** (yine kod okumasıyla değil):
+       (1) `_seatIndexFor`'da web'in İLK satırı (`colorIndex` varsa onu
+       kullan) düşmüştü → 4 kişilik kartta dört oyuncu da "1"/turkuaz
+       görünüyordu. Kök sebep tip seçimiydi: `GamePlayerSnapshot
+       .colorIndex` `int` (varsayılan 0) idi, "yok" ile "0. koltuk" ayırt
+       edilemiyordu → `int?` yapıldı (web `!== undefined`). Etki analizi
+       taraması bu alanı yalnızca iki dosyanın okuduğunu gösterdiği için
+       değişiklik kapalı devre kaldı. Regresyon testi eklendi (rozetler
+       [0,1,2,3] olmalı). (2) "1." sıra numarası 14px sütuna sığmayıp alt
+       satıra kayıyordu → 18px + `softWrap:false`.
+     - Doğrulama: `game_history_test.dart` (12 test — sayfalama/filtre/ağ
+       hatası/lazy snapshot birimleri, `buildSnapshotGameState`'in koltuk
+       ve joker eşlemesi, kart içeriği + koltuk rozetleri +
+       `build/screenshots/game_history.png`, güncel ad, eski kayıt
+       yedeği, başkasının geçmişi, tahtayı aç/kapa, kayıt yok hâli, boş
+       liste). 121/121 yeşil, analyze temiz. **Doğrulama sınırı:** gerçek
+       `games` SELECT'i ve RLS'i cihazda doğrulanmalı.
+     - **Bilinçli eksikler (5b):** beğeni (`game_likes` RPC'leri,
+       "Favoriler" sekmesi, beğenenler listesi), paylaşma (PNG yakalama +
+       native share), sohbet rozeti/dökümü, `RecentGamesSection`
+       ("Son Oynadıklarım") ve onun `initialExpandedId` akışı.
+   - Sıradaki parçalar (sıra önerisi): **5b — beğeni + paylaşma**, şifre
+     sıfırlama (özel şema deep link — `kelimeki://reset`, Dashboard
+     redirect listesine ekleme gerekir), Görüş Bildir formu, Canlı oyun
+     ekranları, arkadaşlık sistemi, "Arkadaşınla paylaş" (native share).
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

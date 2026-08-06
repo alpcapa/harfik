@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import '../../data/auth_service.dart';
+import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../auth/account_button.dart';
 import 'logo_mark.dart';
@@ -31,6 +32,9 @@ class GameHeader extends StatelessWidget {
   /// gösterilmez — offline mod).
   final StatsRepo? stats;
 
+  /// Hesap menüsünden açılan skor kartındaki geçmiş linki için.
+  final Future<GamesRepo>? games;
+
   /// Verilirse insan koltuklarının kutuları tıklanabilir olur (Canlı oyunda
   /// skor kartı — web onPlayerClick'in eşleniği; yerel oyunda verilmez).
   final void Function(int index)? onPlayerTap;
@@ -42,6 +46,7 @@ class GameHeader extends StatelessWidget {
     this.onPlayerTap,
     this.auth,
     this.stats,
+    this.games,
   });
 
   @override
@@ -118,6 +123,7 @@ class GameHeader extends StatelessWidget {
                   AccountButton(
                     auth: auth!,
                     stats: stats,
+                    games: games,
                     girisFontSize: girisFontSize,
                     girisPaddingX: girisPaddingX,
                     girisPaddingY: girisPaddingY,

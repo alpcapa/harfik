@@ -20,13 +20,18 @@ class GamePlayerSnapshot {
   final int score;
   final bool isAi;
   final bool surrendered;
-  final int colorIndex;
+
+  /// Koltuk kimliği — final SIRALAMADAN bağımsız (renk/köşe eşlemesi bundan
+  /// gelir). Bu alan eklenmeden ÖNCEKİ kayıtlarda YOK: null ile 0'ı ayırt
+  /// edebilmek şart, yoksa eski kayıtlarda herkes 0. koltuk sanılır
+  /// (web `colorIndex !== undefined` kontrolünün karşılığı).
+  final int? colorIndex;
   const GamePlayerSnapshot({
     required this.name,
     required this.score,
     required this.isAi,
     required this.surrendered,
-    required this.colorIndex,
+    this.colorIndex,
   });
 
   Map<String, Object?> toJson() => {
@@ -43,7 +48,7 @@ class GamePlayerSnapshot {
         score: (j['score'] as num?)?.toInt() ?? 0,
         isAi: j['is_ai'] == true,
         surrendered: j['surrendered'] == true,
-        colorIndex: (j['colorIndex'] as num?)?.toInt() ?? 0,
+        colorIndex: (j['colorIndex'] as num?)?.toInt(),
       );
 }
 
@@ -136,6 +141,79 @@ class NewGameRecord {
             BoardSnapshotTile.fromJson((t as Map).cast<String, Object?>())
         ],
       );
+}
+
+/// Bir `board_snapshot`tan, gerçek `BoardWidget`'ı salt-okunur çizebilmek
+/// için sahte ama tip açısından geçerli bir `GameState` üretir — web
+/// `buildSnapshotGameState` (boardSnapshot.ts) portu.
+///
+/// **Neden core'da DEĞİL:** yazma yönü (`serializeBoardSnapshot`) yalnızca
+/// `Board` alıyor ve core'da; okuma yönü ise DB satır şeklini
+/// (`GamePlayerSnapshot`) istiyor — onu core'a taşımak veri katmanını
+/// motora sızdırırdı. Bu yüzden çift bilinçli olarak ayrıldı ve core'a hiç
+/// dokunulmadı (dolayısıyla golden vector turu gerekmiyor).
+///
+/// Koltuk kimliği `colorIndex`'ten okunur — final SIRALAMADAKİ konumdan
+/// bağımsız, böylece köşeler/renkler gerçek oyundaki gibi eşleşir (web'in
+/// aynı kuralı).
+GameState buildSnapshotGameState(
+  List<BoardSnapshotTile> snapshot,
+  int playerCount,
+  List<GamePlayerSnapshot> players,
+) {
+  final board = createEmptyBoard();
+  for (final t in snapshot) {
+    board[t.r][t.c] = Tile(
+      letter: t.w ? '?' : t.l,
+      pts: t.w ? 0 : letterPoints(t.l),
+      wild: t.w,
+      wildLetter: t.w ? t.l : null,
+      owner: t.o,
+    );
+  }
+
+  final corners = cornersFor(playerCount);
+  return GameState(
+    phase: GamePhase.play,
+    startedAt: '',
+    multiSession: false,
+    endReason: EndReason.normal,
+    board: board,
+    bag: const [],
+    bonuses: buildInitialBonuses(),
+    placed: {},
+    players: [
+      for (var seat = 0; seat < playerCount; seat++)
+        () {
+          final meta = players.where((p) => p.colorIndex == seat).firstOrNull;
+          return Player(
+            name: meta?.name ?? '',
+            corners: seat < corners.length ? corners[seat] : const [],
+            colorIndex: seat,
+            isAI: meta?.isAi ?? false,
+            surrendered: meta?.surrendered ?? false,
+            rack: const [],
+            score: meta?.score ?? 0,
+            bestMoveScore: 0,
+            bestWordScore: 0,
+            longestWord: '',
+            moveCount: 0,
+            moveScoreSum: 0,
+          );
+        }(),
+    ],
+    current: 0,
+    selectedTile: null,
+    swapMode: false,
+    swapSelection: const [],
+    turnCount: 0,
+    consecutivePasses: 0,
+    isGameOver: true,
+    message: '',
+    messageType: MessageKind.none,
+    lastMoveCells: const [],
+    moveHistory: const [],
+  );
 }
 
 /// Web `buildGameRecord` birebir.

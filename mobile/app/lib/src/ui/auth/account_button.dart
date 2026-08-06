@@ -13,6 +13,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/auth_service.dart';
+import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../game/help_modal.dart';
 import '../game/neo_box.dart';
@@ -34,6 +35,10 @@ class AccountButton extends StatelessWidget {
   /// yapılandırılmamış ya da testte verilmemiş).
   final StatsRepo? stats;
 
+  /// Skor kartından açılan "Tüm Geçmiş Oyunlar" için — null ise o link
+  /// çizilmez (kartın kendisi yine açılır).
+  final Future<GamesRepo>? games;
+
   /// GİRİŞ butonunun akıcı ölçüleri — GameHeader kendi clamp değerlerini
   /// geçer; Setup varsayılan (maksimum) değerleri kullanır (web UserMenu
   /// iki ekranda da aynı bileşen/aynı akıcı sistem).
@@ -46,6 +51,7 @@ class AccountButton extends StatelessWidget {
     super.key,
     required this.auth,
     this.stats,
+    this.games,
     this.girisFontSize = 11,
     this.girisPaddingX = 8,
     this.girisPaddingY = 12,
@@ -128,11 +134,11 @@ class AccountButton extends StatelessWidget {
         switch (value) {
           case 'league':
             if (stats != null) {
-              showLeaderboard(context, auth: auth, stats: stats);
+              showLeaderboard(context, auth: auth, stats: stats, games: games);
             }
           case 'score':
             if (stats != null) {
-              showScoreCard(context, auth: auth, stats: stats);
+              showScoreCard(context, auth: auth, stats: stats, games: games);
             }
           case 'help':
             showHelpModal(context);

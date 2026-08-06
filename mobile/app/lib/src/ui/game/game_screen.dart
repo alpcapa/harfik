@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import '../../data/auth_service.dart';
+import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../../data/meaning_store.dart';
 import '../../game/game_controller.dart';
@@ -43,6 +44,9 @@ class GameScreen extends StatefulWidget {
   /// Hesap menüsündeki k-lig/Skor Kartı için (GameHeader'a iletilir).
   final StatsRepo? stats;
 
+  /// Skor kartındaki geçmiş linki için (GameHeader'a iletilir).
+  final Future<GamesRepo>? games;
+
   const GameScreen({
     super.key,
     required this.controller,
@@ -50,6 +54,7 @@ class GameScreen extends StatefulWidget {
     this.meanings,
     this.auth,
     this.stats,
+    this.games,
   });
 
   @override
@@ -478,6 +483,7 @@ class _GameScreenState extends State<GameScreen> {
                       state: state,
                       auth: widget.auth,
                       stats: widget.stats,
+                      games: widget.games,
                       onLogoTap: () => Navigator.of(context).pop(),
                     ),
                     // Web akışıyla aynı: tahta → mesaj → raf → butonlar yukarıdan

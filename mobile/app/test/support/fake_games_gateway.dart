@@ -61,4 +61,37 @@ class FakeGamesGateway implements GamesGateway {
   Future<void> notifyLocalGameAbandoned(String gameId, int playerCount) async {
     notified.add((gameId: gameId, playerCount: playerCount));
   }
+
+  // ── Okuma ucu (parça 5a: oyun geçmişi) ────────────────────────────────
+  /// Geçmiş listesi kaynağı — `created_at` azalan verilmeli (gerçek uç
+  /// sıralamayı sunucuda yapıyor).
+  List<Map<String, Object?>> history = const [];
+
+  /// gameId → tahta anlık görüntüsü; anahtarı olmayan oyun "kaydedilmemiş"
+  /// sayılır (eski kayıt), null döner.
+  Map<String, List<Map<String, Object?>>> snapshots = const {};
+
+  final listCalls = <({int offset, int limit, int? playerCount})>[];
+
+  @override
+  Future<List<Map<String, Object?>>> listGames({
+    required String userId,
+    required int? playerCount,
+    required int offset,
+    required int limit,
+  }) async {
+    listCalls.add((offset: offset, limit: limit, playerCount: playerCount));
+    final filtered = [
+      for (final r in history)
+        if (r['user_id'] == userId &&
+            (playerCount == null || r['player_count'] == playerCount))
+          r
+    ];
+    // Gerçek uçtaki `.range(offset, offset + limit)` gibi BİR FAZLA satır.
+    return filtered.skip(offset).take(limit + 1).toList();
+  }
+
+  @override
+  Future<List<Map<String, Object?>>?> gameBoardSnapshot(String gameId) async =>
+      snapshots[gameId];
 }

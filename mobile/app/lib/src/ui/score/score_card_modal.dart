@@ -1,15 +1,15 @@
 // Skor Kartı — web `ScoreCard.tsx` portu: üstte avatar/isim/yaş-cinsiyet +
-// k-lig sırası, altında üç sekme (Genel/2/4) ve iki istatistik ızgarası.
-//
-// "Tüm Geçmiş Oyunlar" linki BİLİNÇLİ eksik — oyun geçmişi (tahta
-// önizlemesi/beğeni/paylaşma) ayrı bir parça; çalışmayan bir link koymak
-// yerine hiç göstermiyoruz (ARKADAŞINLA/UserMenu'deki aynı dürüstlük deseni).
+// k-lig sırası, altında üç sekme (Genel/2/4), iki istatistik ızgarası ve
+// "Tüm Geçmiş Oyunlar" linki (aktif sekmenin oyuncu sayısıyla açılır —
+// "Genel"de filtresiz).
 import 'package:flutter/material.dart';
 
 import '../../data/auth_service.dart';
+import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../auth/k_avatar.dart';
 import '../game/modal_shell.dart';
+import 'game_history_modal.dart';
 import 'klig_mark.dart';
 import 'leaderboard_modal.dart';
 import 'score_stats_section.dart';
@@ -22,17 +22,27 @@ Future<void> showScoreCard(
   BuildContext context, {
   required AuthService auth,
   required StatsRepo stats,
+  Future<GamesRepo>? games,
 }) {
   return showDialog<void>(
     context: context,
-    builder: (_) => ScoreCardModal(auth: auth, stats: stats),
+    builder: (_) => ScoreCardModal(auth: auth, stats: stats, games: games),
   );
 }
 
 class ScoreCardModal extends StatefulWidget {
   final AuthService auth;
   final StatsRepo stats;
-  const ScoreCardModal({super.key, required this.auth, required this.stats});
+
+  /// null ise "Tüm Geçmiş Oyunlar" linki çizilmez (offline mod) — çalışmayan
+  /// link koymuyoruz.
+  final Future<GamesRepo>? games;
+  const ScoreCardModal({
+    super.key,
+    required this.auth,
+    required this.stats,
+    this.games,
+  });
 
   @override
   State<ScoreCardModal> createState() => _ScoreCardModalState();
@@ -133,7 +143,9 @@ class _ScoreCardModalState extends State<ScoreCardModal> {
               // k-lig sırası — dokununca sıralama açılır (web'deki aynı buton).
               GestureDetector(
                 onTap: () => showLeaderboard(context,
-                    auth: widget.auth, stats: widget.stats),
+                    auth: widget.auth,
+                    stats: widget.stats,
+                    games: widget.games),
                 behavior: HitTestBehavior.opaque,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -170,6 +182,37 @@ class _ScoreCardModalState extends State<ScoreCardModal> {
                 ? 'Henüz hiç oyun kaydın yok.'
                 : 'Henüz ${_tab.playerCount} oyunculu oyun kaydın yok.',
           ),
+          if (widget.games != null && auth.user != null) ...[
+            const SizedBox(height: 8),
+            Center(
+              child: GestureDetector(
+                onTap: () async {
+                  final games = await widget.games!;
+                  if (!context.mounted) return;
+                  await showGameHistory(
+                    context,
+                    games: games,
+                    userId: auth.user!.id,
+                    playerCount: _tab.playerCount,
+                    currentName: name,
+                  );
+                },
+                behavior: HitTestBehavior.opaque,
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 4),
+                  child: Text(
+                    'TÜM GEÇMİŞ OYUNLAR',
+                    style: TextStyle(
+                        fontFamily: 'SpaceMono',
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                        color: _accent),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
