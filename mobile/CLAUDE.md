@@ -34,7 +34,44 @@ Commit'ten önce, sırayla:
    üreticisi değiştiyse ilgili `npm run generate-*` — ikisi de opsiyonel
    değil.
 
-## Üst Düzey Kararlar (5 Ağustos 2026, kullanıcıyla birlikte verildi)
+## Etki Analizi (ZORUNLU — her parçanın İLK adımı)
+
+Kullanıcı isteği (6 Ağustos 2026): "yapılacak her geliştirmenin etkilemesi
+muhtemel yerleri iyi analiz etmek gerekiyor". Gerekçe: bu projede dalgaların
+büyük kısmı **derleyicinin ve testlerin göremediği** türden — imza
+değişikliğini `dart analyze` yakalar, ama web↔mobil paritesinin sessizce
+ayrışmasını, Türkçe dil kuralının tek bir dosyada unutulmasını ya da bir
+değişmezin (kuyruk/determinizm) delinmesini hiçbir şey yakalamaz.
+
+**Yazmaya başlamadan önce** şu üç soruyu cevapla:
+
+1. **Bu kodun web'de bir KAYNAĞI var mı?** Varsa portun kendisi kadar,
+   web'in o dosyaya bağlı KARARLARI da taşınmalı (ör. `player_stats` vs
+   `player_stats_overall` ayrımı bir tercih değil, web'in yazılı
+   gerekçesi). Kaynağı okumadan port yazma.
+2. **Değiştirdiğim şeyi kim OKUYOR?** Yalnızca çağıranlar değil: aynı
+   tabloya yazan öteki istemci (web!), aynı JSON'u ayrıştıran öteki taraf,
+   aynı fixture'a bakan testler, aynı üreticiden beslenen ikinci dosya.
+3. **Hangi görünmez değişmeze dokunuyorum?** Aşağıdaki tarama tek komutluk;
+   şüphelendiğinde koş, yeni bir değişmez eklediğinde listeye ekle.
+
+```bash
+cd mobile
+grep -rn "toUpperCase()\|toLowerCase()" app/lib/            # Türkçe: trUpper/trLower şart
+grep -rn "\.sort(" app/lib/ kelimeki_core/lib/ | grep -v trCompare  # metin sıralaması → trCompare
+grep -rn "DateTime.now()\|Random()" kelimeki_core/lib/      # core determinizmi (yalnız SystemRng meşru)
+grep -rn "local_game_saves" app/lib/                        # yalnız cloud_save_repo (TableWriteQueue)
+grep -rln "\.from('" app/lib/                               # Supabase yalnız veri katmanında
+```
+
+**Son tam tarama: 6 Ağustos 2026 — beşi de temiz.** O turda bulunan TEK
+gerçek ihlal (`score_stats_section`'daki `toUpperCase` → "BIRINCILIK")
+parça 4'te düzeltilmişti; tarama bunun tek örnek olduğunu kanıtladı.
+Değişmez listesi kapsamlı DEĞİL — derleyicinin göremediği yeni bir kural
+eklediğinde (ör. yeni bir üretilmiş dosya, yeni bir "tek kaynaktan" kuralı)
+buraya bir satır da ekle, aksi halde bir sonraki oturum onu bilmez.
+
+## Parça Bitirme Kontrol Listesi (ZORUNLU — her parçanın son adımı)
 
 1. **Oyun kurallarının tek doğruluk kaynağı ŞİMDİLİK web'deki TypeScript
    motoru** (`src/game` + `src/utils`). Dart portu (`mobile/kelimeki_core`)
