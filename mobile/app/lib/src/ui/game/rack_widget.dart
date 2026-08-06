@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show Tile;
 
+import 'neo_box.dart';
 import 'player_colors.dart';
 import 'tile_widget.dart';
 
@@ -48,15 +49,16 @@ class RackWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFDDE4EE),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0xA6A3B1C6),
-            offset: Offset(5, 5),
-            blurRadius: 14,
-          ),
+      // Web Rack.tsx gölge çifti — CSS semantiğiyle (tahtadaki aynı ders:
+      // BoxShadow hem daha yoğun boyar hem katman sırası ters; ilk sürüm
+      // ayrıca beyaz sol-üst parlamayı hiç taşımamıştı).
+      decoration: const ShapeDecorationWithCssShadows(
+        color: Color(0xFFDDE4EE),
+        radius: 16,
+        shadows: [
+          CssShadow(color: Color(0xA6A3B1C6), offset: Offset(5, 5), blur: 14),
+          CssShadow(
+              color: Color(0xE6FFFFFF), offset: Offset(-3, -3), blur: 10),
         ],
       ),
       padding: const EdgeInsets.all(12),

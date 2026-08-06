@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show Tile, tileLetter;
 
+import 'neo_box.dart';
 import 'player_colors.dart';
 
 enum TileVariant { rack, placed, board }
@@ -37,7 +38,7 @@ class TileWidget extends StatelessWidget {
     // Joker rafta yıldız; oynanınca seçilen harfe döner (web ile aynı).
     final display = raw == '?' ? '★' : raw;
 
-    final BoxDecoration decoration;
+    final Decoration? decoration;
     final Color letterColor;
     final Color ptsColor;
     if (color != null) {
@@ -49,36 +50,26 @@ class TileWidget extends StatelessWidget {
       letterColor = const Color(0xFF1B2430); // web text-tile-letter
       ptsColor = const Color(0xFF2563EB); // web text-accent
     } else if (isRack) {
-      decoration = BoxDecoration(
-        gradient: const LinearGradient(
+      // Web Tile.tsx raf taşı gölge üçlüsü — CSS semantiğiyle (tahta/raf
+      // kartındaki aynı ders: BoxShadow yoğun + katman sırası ters).
+      decoration = const ShapeDecorationWithCssShadows(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [Color(0xFFFFF0A0), Color(0xFFFFD800), Color(0xFFF0C000)],
           stops: [0.0, 0.6, 1.0],
         ),
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x8CA38200),
-            offset: Offset(4, 4),
-            blurRadius: 10,
-          ),
-          BoxShadow(
-            color: Color(0xCCFFFAC8),
-            offset: Offset(-2, -2),
-            blurRadius: 6,
-          ),
-          BoxShadow(
-            color: Color(0x59A38200),
-            offset: Offset(0, 6),
-            blurRadius: 14,
-          ),
+        radius: 10,
+        shadows: [
+          CssShadow(color: Color(0x8CA38200), offset: Offset(4, 4), blur: 10),
+          CssShadow(color: Color(0xCCFFFAC8), offset: Offset(-2, -2), blur: 6),
+          CssShadow(color: Color(0x59A38200), offset: Offset(0, 6), blur: 14),
         ],
       );
       letterColor = const Color(0xFF5A3800);
       ptsColor = const Color(0xFF8B5E00);
     } else {
-      decoration = BoxDecoration(borderRadius: BorderRadius.circular(5));
+      decoration = null; // tahta varyantı — zemin/çerçeve hücrenin işi
       letterColor = const Color(0xFF1B2430);
       ptsColor = const Color(0xFF2563EB);
     }

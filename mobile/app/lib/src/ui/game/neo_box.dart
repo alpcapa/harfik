@@ -27,14 +27,17 @@ class CssShadow {
 /// tersini yapar). BoxDecoration'ın gölge boyaması hem daha yoğun hem sırası
 /// ters olduğundan web panelleriyle birebirlik için bu kullanılır.
 class ShapeDecorationWithCssShadows extends Decoration {
-  final Color color;
+  final Color? color;
+  final Gradient? gradient;
   final double radius;
   final List<CssShadow> shadows;
   const ShapeDecorationWithCssShadows({
-    required this.color,
+    this.color,
+    this.gradient,
     required this.radius,
     required this.shadows,
-  });
+  }) : assert(color != null || gradient != null,
+            'color ya da gradient verilmeli');
 
   @override
   BoxPainter createBoxPainter([VoidCallback? onChanged]) =>
@@ -56,7 +59,13 @@ class _CssShadowBoxPainter extends BoxPainter {
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, s.blur / 2);
       canvas.drawRRect(rrect.shift(s.offset), paint);
     }
-    canvas.drawRRect(rrect, Paint()..color = d.color);
+    final fill = Paint();
+    if (d.gradient != null) {
+      fill.shader = d.gradient!.createShader(rect);
+    } else {
+      fill.color = d.color!;
+    }
+    canvas.drawRRect(rrect, fill);
   }
 }
 

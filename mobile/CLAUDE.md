@@ -743,6 +743,19 @@ bağlı değil.)
        sürükle-bırak testi (üç akış + dolu hücreye bırakma reddi + kaynak
        gizleme + sürükleme-anı ekran görüntüsü
        `build/screenshots/game_drag.png`). 43/43 yeşil.
+   - ✅ **Raf kartı + raf taşları da CSS-semantikli gölgeye geçti
+     (6 Ağustos 2026, kullanıcı bildirdi — "tahtadaki gölge sorunu rafta
+     da var"):** İkisi de hâlâ `BoxShadow`'daydı (yoğun + ters katman);
+     `ShapeDecorationWithCssShadows`'a opsiyonel `gradient` desteği
+     eklenip raf kartı (web Rack.tsx çifti — koyu sağ-alt + İLK SÜRÜMDE
+     HİÇ TAŞINMAMIŞ beyaz sol-üst parlama `-3,-3,10 beyaz .9`) ve raf
+     taşı (Tile.tsx üçlüsü, altın gradyan dolgu) bu decoration'a taşındı.
+     Tarama notu: `BoxShadow` kullanan kalan yerler bilinçli — bonus
+     hücrelerinin 2-4px'lik minik dış gölgeleri (NeoBox.outerShadows,
+     fark algılanamaz) ve hayalet taşın web'de de farklı mekanizma olan
+     drop-shadow'u; yeni bir panel/kart gölgesi eklerken varsayılan
+     ŞÜPHE: web'den kopyalanan çok katmanlı box-shadow değerleri
+     `CssShadow` ile taşınmalı.
    - Sıradaki parçalar: kelime anlamı modalı, hamle geçmişi modalı,
      kurallar ("Nasıl oynanır?") ekranı.
 5. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
