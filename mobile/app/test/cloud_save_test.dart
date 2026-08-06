@@ -4,9 +4,9 @@
 // doğrulanır. Web davranış paritesi: debounce'lu autosave aynı satırı
 // günceller, oyun bitince satır silinir, turnCount<2 çıkışı iz bırakmaz,
 // bitmiş/play-dışı satırlar fırsatçı temizlenir, süresi dolmuş satır
-// listeye girmez ama SİLİNMEZ (ceza üretimi 3b'nin işi), yazma-okuma
-// yarışı TableWriteQueue ile kapalı, misafir kaydı isim düzeltmesiyle
-// hesaba taşınır.
+// atomik olarak iddia edilip silinir (cezaya çevirme GamesRepo'nun işi),
+// yazma-okuma yarışı TableWriteQueue ile kapalı, misafir kaydı isim
+// düzeltmesiyle hesaba taşınır.
 import 'dart:convert';
 import 'dart:io';
 
@@ -67,6 +67,18 @@ class FakeGateway implements CloudSaveGateway {
     if (slowDelete) await Future<void>.delayed(const Duration(milliseconds: 20));
     rows.remove(id);
   }
+
+  /// Gerçek uçtaki atomik `delete().lt(updated_at, cutoff).select('state')`
+  /// taklidi: satır hâlâ eskiyse siler ve state'ini döner, aksi halde null.
+  @override
+  Future<Map<String, Object?>?> claimAbandoned(
+      String id, String cutoffIso) async {
+    final row = rows[id];
+    if (row == null) return null;
+    if ((row['updated_at'] as String).compareTo(cutoffIso) >= 0) return null;
+    rows.remove(id);
+    return (row['state'] as Map).cast<String, Object?>();
+  }
 }
 
 Future<AppStorage> openTestStorage() async {
@@ -117,10 +129,10 @@ void main() {
     expect(await repo.upsert('id-1', 'user-1', state), isTrue);
     final list = await repo.list();
     expect(list, isNotNull);
-    expect(list!.single.id, 'id-1');
+    expect(list!.saves.single.id, 'id-1');
     // Kanonik codec üzerinden birebir aynı state (golden disipliniyle aynı
     // karşılaştırma biçimi).
-    expect(jsonEncode(gameStateToJson(list.single.state)),
+    expect(jsonEncode(gameStateToJson(list.saves.single.state)),
         jsonEncode(gameStateToJson(state)));
     expect(gw.rows['id-1']!['player_count'], 2);
     expect(gw.rows['id-1']!['user_id'], 'user-1');
@@ -134,7 +146,7 @@ void main() {
     // ignore: unawaited_futures — kasıtlı: silme uçuştayken hemen listele.
     repo.delete('id-1');
     final list = await repo.list(); // kuyruk boşalana kadar beklemeli
-    expect(list, isEmpty);
+    expect(list!.saves, isEmpty);
   });
 
   test('bitmiş/play-dışı satır fırsatçı temizlenir', () async {
@@ -142,20 +154,29 @@ void main() {
     final finished = newPlayState().copyWith(isGameOver: true);
     await repo.upsert('done', 'user-1', finished);
     final list = await repo.list();
-    expect(list, isEmpty);
+    expect(list!.saves, isEmpty);
     await repo.idle;
     expect(gw.rows, isEmpty); // satır gerçekten silindi
   });
 
-  test('süresi dolmuş satır listeye girmez ama SİLİNMEZ (süpürme 3b)',
+  test('süresi dolmuş satır iddia edilip silinir, abandoned listesine düşer',
       () async {
     final (repo, gw) = newRepo();
-    await repo.upsert('stale', 'user-1', newPlayState());
+    final state = newPlayState();
+    await repo.upsert('stale', 'user-1', state);
     clock += const Duration(days: 8).inMilliseconds;
     final list = await repo.list();
-    expect(list, isEmpty);
+    expect(list!.saves, isEmpty); // devam eden listede YOK
+    expect(list.abandoned, hasLength(1));
+    expect(jsonEncode(gameStateToJson(list.abandoned.single.state)),
+        jsonEncode(gameStateToJson(state)));
     await repo.idle;
-    expect(gw.rows.containsKey('stale'), isTrue); // ceza kanıtı sunucuda durur
+    expect(gw.rows, isEmpty); // satır iddia edilip silindi
+
+    // İkinci tarama (ör. başka bir cihaz aynı anda süpürdü) hiçbir şey
+    // üretmez — ceza İKİ KEZ uygulanamaz.
+    final again = await repo.list();
+    expect(again!.abandoned, isEmpty);
   });
 
   test('çözülemeyen satır atlanır, sunucudan silinmez', () async {
@@ -167,7 +188,7 @@ void main() {
     };
     await repo.upsert('good', 'user-1', newPlayState());
     final list = await repo.list();
-    expect(list!.single.id, 'good');
+    expect(list!.saves.single.id, 'good');
     await repo.idle;
     expect(gw.rows.containsKey('bad'), isTrue); // web istemcisi için geçerli olabilir
   });

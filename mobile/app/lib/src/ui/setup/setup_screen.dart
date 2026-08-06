@@ -19,6 +19,7 @@ import 'package:kelimeki_core/kelimeki_core.dart';
 import '../../bootstrap.dart';
 import '../../config/env.dart';
 import '../../data/cloud_save_repo.dart';
+import '../../data/games_api.dart';
 import '../../game/game_controller.dart';
 import '../../game/local_game_repo.dart';
 import '../../storage/local_save_store.dart' show abandonTimeout;
@@ -48,6 +49,7 @@ class _SetupScreenState extends State<SetupScreen> {
   int _count = 2;
 
   LocalGameRepo? _repo;
+  GamesRepo? _games;
   bool _saveChecked = false;
   GameState? _savedState; // null = kayıt yok
   int? _savedAtMs;
@@ -72,17 +74,33 @@ class _SetupScreenState extends State<SetupScreen> {
     _lastUserId = widget.services.auth.user?.id;
     widget.services.auth.addListener(_onAuthEvent);
     final storage = widget.services.storage;
+    unawaited(widget.services.games?.then((g) => _games = g));
     if (storage != null) {
       storage.then((s) async {
         final repo = LocalGameRepo(s);
         _repo = repo;
         await _refreshSaveStatus(); // load süresi dolanı olaya çevirir
-        await repo.drainAbandonedGames(); // web'in Setup süpürme refleksi
-        unawaited(_syncCloud()); // girişliyse migrasyon + liste
+        await _sweepLocalAbandoned(); // web'in Setup süpürme refleksi
+        unawaited(_syncCloud()); // girişliyse migrasyon + liste + flush
       });
     } else {
       _saveChecked = true; // depo yok (test ortamı) — kalıcılıksız çalış
       unawaited(_syncCloud());
+    }
+  }
+
+  /// Süresi dolan MİSAFİR kaydından doğan terk olaylarını -2 cezalı teslim
+  /// kayıtlarına çevirir (girişsizken kayıt kuyruğa girer, kişi 7 gün içinde
+  /// bu cihazda giriş yaparsa hesabına işlenir — web'in aynı akışı).
+  Future<void> _sweepLocalAbandoned() async {
+    final repo = _repo;
+    if (repo == null) return;
+    final events = await repo.drainAbandonedGames();
+    if (events.isEmpty) return;
+    final games = _games ?? await widget.services.games;
+    if (games == null) return;
+    for (final e in events) {
+      await games.recordAbandoned(e.state, endedAtMs: e.savedAtMs);
     }
   }
 
@@ -133,10 +151,30 @@ class _SetupScreenState extends State<SetupScreen> {
         _migratingGuest = false;
       }
     }
+    // Kuyrukta bekleyen bitmiş/terk edilmiş oyun kayıtlarını (misafirken
+    // ya da offline'da biriken) bu hesaba işle — web'in `flushPendingGames`
+    // refleksi (açılış + giriş durumu değişimi).
+    final games = _games ?? await widget.services.games;
+    if (games != null) unawaited(games.flushPending());
+
     final list = await cloud.list();
+    if (list != null) {
+      // 7 günü dolup bu turda iddia edilen kayıtlar → -2 cezalı teslim
+      // (web refreshCloudSaves'in claim dalı).
+      for (final a in list.abandoned) {
+        await games?.recordAbandoned(a.state, endedAtMs: a.updatedAtMs);
+      }
+    }
     if (!mounted || widget.services.auth.user?.id != user.id) return;
     if (list == null && _cloudSaves != null) return; // ağ hatası eskiyi ezmesin
-    setState(() => _cloudSaves = list);
+    setState(() => _cloudSaves = list?.saves);
+  }
+
+  /// Normal biten oyunun `games` kaydı + anonim bitiş telemetrisi
+  /// (web'in oyun-bitti effect'i). Misafirse kayıt kuyruğa girer.
+  Future<void> _recordFinishedGame(GameState state) async {
+    final games = _games ?? await widget.services.games;
+    await games?.recordFinished(state);
   }
 
   Future<void> _refreshSaveStatus() async {
@@ -160,6 +198,18 @@ class _SetupScreenState extends State<SetupScreen> {
     // öncesi eski misafir kaydı zaten migrasyonla taşınıp silinmiş olur).
     final user = widget.services.auth.user;
     final cloud = widget.services.cloudSaves;
+    // Oyun bittiği AN kaydı tutulur — web'in `[state.isGameOver]` effect'i
+    // gibi (ekran açıkken, GameOver modalı kapatılmasa bile). Uygulama o
+    // anda kill edilse bile kayıt kuyruğa/sunucuya çoktan gitmiş olur.
+    var recorded = false;
+    void recordOnGameOver() {
+      if (recorded || !controller.state.isGameOver) return;
+      recorded = true;
+      unawaited(_recordFinishedGame(controller.state));
+    }
+
+    controller.addListener(recordOnGameOver);
+
     GameSession? guestSession;
     CloudGameSession? cloudSession;
     if (user != null && cloud != null) {
@@ -178,6 +228,11 @@ class _SetupScreenState extends State<SetupScreen> {
     ));
     await guestSession?.end();
     await cloudSession?.end();
+    controller.removeListener(recordOnGameOver);
+    // Güvenlik ağı: dinleyici bir şekilde kaçırdıysa (ör. restore edilmiş
+    // zaten bitmiş bir state) çıkışta bir kez daha denenir — `recorded`
+    // bayrağı çift kaydı engeller (her çağrı YENİ bir id üretirdi).
+    recordOnGameOver();
     controller.dispose();
     // Web'de oyun başlayınca Setup unmount olup `creatingLocal` kendiliğinden
     // sıfırlanıyor; burada ekran mount'ta kaldığından dönüşte elle sıfırlanır

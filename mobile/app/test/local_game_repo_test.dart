@@ -1,11 +1,13 @@
 // Kalıcılık üst katmanı (LocalGameRepo/GameSession) testleri — gerçek SQLite
 // (ffi, in-memory) + gerçek GameController. Web davranış paritesi:
 // autosave her hamlede, oyun bitince slot silinir, turnCount<2 çıkışı iz
-// bırakmaz, 7 günlük terk → yalnızca turnCount>=2 için ceza kaydı kuyruklanır.
+// bırakmaz, 7 günlük terk → drain olayı verir, GamesRepo yalnızca
+// turnCount>=2 için -2 cezalı teslim kaydı üretir (misafirde kuyruğa).
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kelimeki/src/data/games_api.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/game/local_game_repo.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
@@ -13,6 +15,8 @@ import 'package:kelimeki/src/storage/pending_queue_store.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+import 'support/fake_games_gateway.dart';
 
 late SetWordSource words;
 late int clock;
@@ -104,10 +108,13 @@ void main() {
     await storage.close();
   });
 
-  test('7 günlük terk: turnCount>=2 ceza kaydı kuyruklar, <2 iz bırakmaz',
+  test('7 günlük terk: misafirin cezası kuyruğa girer, <2 iz bırakmaz',
       () async {
     final storage = await openTestStorage();
     final repo = LocalGameRepo(storage);
+    // Misafir (oturum yok) — GamesRepo kaydı gönderemeyip kuyruklamalı.
+    final gamesGw = FakeGamesGateway();
+    final games = GamesRepo(gamesGw, storage.queue);
 
     // Başlamış bir oyun kaydet.
     final c = newController();
@@ -121,16 +128,29 @@ void main() {
     await s.end();
     expect(await repo.hasSave(), isTrue);
 
-    // 8 gün ileri sar: load kaydı terk olayına çevirir, drain cezayı kuyruklar.
+    // 8 gün ileri sar: load kaydı terk olayına çevirir, drain onu verir,
+    // GamesRepo -2 cezalı teslim kaydına çevirip (misafir olduğundan)
+    // kuyruklar.
     clock += const Duration(days: 8).inMilliseconds;
     expect(await repo.loadSave(), isNull);
-    expect(await repo.drainAbandonedGames(), 1);
+    final events = await repo.drainAbandonedGames();
+    expect(events, hasLength(1));
+    expect(events.single.state.turnCount, greaterThanOrEqualTo(2));
+    for (final e in events) {
+      await games.recordAbandoned(e.state, endedAtMs: e.savedAtMs);
+    }
+    expect(gamesGw.inserted, isEmpty); // misafir — ağa gitmedi
     final queued = await storage.queue.readAll(finishedGameKind);
     expect(queued, hasLength(1));
-    expect(queued.first.payload['type'], 'abandoned-surrender');
-    final st = gameStateFromJson(
-        (queued.first.payload['state'] as Map).cast<String, Object?>());
-    expect(st.turnCount, greaterThanOrEqualTo(2));
+    expect(queued.first.payload['surrendered'], isTrue);
+    expect(queued.first.payload['result'], 'lose');
+    expect(queued.first.payload['player_score'], 0);
+
+    // Kişi bu cihazda giriş yaparsa ceza hesabına işlenir (web flush).
+    gamesGw.userId = 'u-1';
+    expect(await games.flushPending(), 1);
+    expect(gamesGw.inserted.single['surrendered'], isTrue);
+    expect(await storage.queue.count(finishedGameKind), 0);
 
     // İkinci tur: hiç oynanmamış (turnCount 0) kayıt — açık uçlu çıkışla
     // değil uygulama kapanmasıyla kalmış gibi elle yaz.
@@ -145,11 +165,14 @@ void main() {
     expect(await repo.hasSave(), isTrue);
     clock += const Duration(days: 8).inMilliseconds;
     expect(await repo.loadSave(), isNull);
-    expect(await repo.drainAbandonedGames(), 0); // ceza YOK
-    // İlk ceza kaydı da bu ikinci 8 günlük sıçramayla kuyruğun kendi 7
-    // günlük TTL'ine takılıp düşer (web PENDING_EXPIRY paritesi) — kuyruk
-    // artık boş: turnCount<2 kaydı hiç girmedi, eski kayıt süresi doldu.
-    expect(await storage.queue.readAll(finishedGameKind), isEmpty);
+    final events2 = await repo.drainAbandonedGames();
+    expect(events2, hasLength(1)); // olay üretilir...
+    for (final e in events2) {
+      await games.recordAbandoned(e.state, endedAtMs: e.savedAtMs);
+    }
+    // ...ama turnCount<2 olduğundan ne ceza ne telemetri (web eşiği).
+    expect(gamesGw.inserted, hasLength(1)); // hâlâ yalnızca ilk oyun
+    expect(await storage.queue.count(finishedGameKind), 0);
     await storage.close();
   });
 

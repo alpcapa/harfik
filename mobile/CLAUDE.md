@@ -101,6 +101,8 @@ mobile/
       data/supabase_client.dart   # anahtar yoksa null → tam offline mod (web'deki configured)
       data/online_api.dart   # submit_move sarmalayıcısı: p_move_id UUID + retry
       data/cloud_save_repo.dart   # local_game_saves senkronu (girişli YZ oyunları)
+      data/game_record.dart  # buildGameRecord portu (`games` satırı)
+      data/games_api.dart    # games/game_finishes + dayanıklı kuyruk/flush
       game/game_controller.dart # ChangeNotifier motor kabuğu + otomatik YZ turu
       storage/               # SQLite + prefs katmanı (bkz. "Depolama Katmanı"):
                              # app_database (şema), app_storage (giriş kapısı),
@@ -129,6 +131,7 @@ mobile/
       dictionary/word_source.dart # WordSource arayüzü + SetWordSource
       online/online_state.dart    # OnlineGameStatePublic (snake_case fromJson)
       serialize/codec.dart   # GameState JSON codec'i (kanonik biçim)
+      serialize/board_snapshot.dart # games.board_snapshot (boardSnapshot.ts)
       rng.dart               # Rng arayüzü, SystemRng, Mulberry32, shuffleList
     test/
       run_all.dart           # TÜM testler: `dart run test/run_all.dart`
@@ -1192,13 +1195,73 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        DEVREDİLMEZ (web mid-game RENAME_PLAYER+devir effect'i) — misafir
        slotunda kalır, Setup'a dönüşte migrasyon taşır; sonuç aynı,
        yalnızca o oyun boyunca autosave yerel kalır.
-   - Sıradaki parçalar (sıra önerisi): **3b — bitmiş/terk edilmiş oyun
-     kayıtları** (`buildGameRecord` portu + `games` insert'i (23505
-     idempotency) + `pending_queue` flush'ı + 7 günlük bulut süpürmesi &
-     -2 ceza + `notify-local-game-abandoned` tetiği), şifre sıfırlama
-     (özel şema deep link — `kelimeki://reset`, Dashboard redirect
-     listesine ekleme gerekir), Canlı oyun ekranları, skor kartı/k-lig,
-     Görüş Bildir formu, "Arkadaşınla paylaş" (native share).
+   - ✅ **Parça 3b — bitmiş/terk edilmiş oyun kayıtları (6 Ağustos 2026):**
+     Mobilde oynanan oyunlar artık k-lig'i besliyor — `games` satırı,
+     anonim bitiş telemetrisi (`game_finishes`) ve 7 günlük terk cezası
+     (-2) tam olarak web'in ürettiği biçimde.
+     - **`serialize/board_snapshot.dart` (core)** — `boardSnapshot.ts`
+       portu; yalnızca dolu hücreler `{r,c,l,o,w?}`, jokerde görünen harf.
+       Alan adları/dizi sırası SÖZLEŞME (aynı satırı web okuyor). Ters
+       yön (`buildSnapshotGameState`) BİLİNÇLİ port EDİLMEDİ — geçmiş
+       tahtayı çizen ekran (skor kartı/oyun geçmişi) henüz yok.
+     - **`data/game_record.dart`** — `gameRecord.ts` + `NewGame` portu:
+       `NewGameRecord` (+`GamePlayerSnapshot`/`GameResult`), sütun adları
+       `games` ile birebir. `newId`/`now` ENJEKTE edilir (core'un
+       determinizm sözleşmesinin devamı — testler sabitliyor). Web'in
+       `human.moveCount || null` JS-falsy kısayolu `nz()` ile korundu:
+       0/'' değerleri null'a düşer.
+     - **`data/games_api.dart`** — `GamesGateway` (3 uç: insert /
+       telemetri / terk maili) + `GamesRepo` (politika). Web paritesi:
+       23505 = başarı (idempotent retry); `notify-local-game-abandoned`
+       YALNIZCA gerçek ilk insert'te (23505 dalında DEĞİL — kuyruktan
+       tekrar denenen kayıt mükerrer "-2 puan" maili göndermesin);
+       misafir/offline kayıt `pending_queue`ya (7 gün TTL, 300 sınırı),
+       giriş yapılınca `flushPending` hesaba işler; oturum yoksa flush
+       AĞA HİÇ DOKUNMAZ. `logFinish` web gibi best-effort — kuyruğa
+       ALINMAZ (kök CLAUDE.md'deki `game_finishes` rollout kararıyla
+       tutarlı).
+     - **İki terk yolu TEK noktada birleşti:** `LocalGameRepo
+       .drainAbandonedGames` artık ceza kuyruklamıyor, olayları ÇAĞIRANA
+       veriyor; hem yerel (misafir, 7 gün) hem bulut (`claimAbandoned`)
+       yolu `GamesRepo.recordAbandoned`'a akıyor — web'de de tek
+       `buildGameRecord(state,true,0)+saveGameDurable+logGameFinish`
+       vardı, iki kopya açmamak bilinçli (3a'daki `_finish_online_game
+       _records` dersinin aynısı).
+     - **7 günlük bulut süpürmesi (3a'da bilerek bırakılan uç):**
+       `CloudSaveGateway.claimAbandoned` = web'in ATOMİK
+       `.delete().eq(id).lt(updated_at,cutoff).select('state')` sorgusu —
+       satır kilidi sayesinde ayrı RPC/kilit gerekmez; başka bir cihaz
+       aynı anda süpürdüyse null döner ve ceza İKİ KEZ uygulanamaz
+       (testli). `list()` artık `CloudSaveList(saves, abandoned)` dönüyor;
+       Setup her senkron turunda `abandoned`ı cezaya çeviriyor.
+     - **Kayıt oyun bittiği AN tutuluyor:** web'in `[state.isGameOver]`
+       effect'i gibi — `_openGame` controller'a bir dinleyici takıyor,
+       GameOver modalı kapatılmasa/ekrandan çıkılmasa bile kayıt gider;
+       çıkışta bir kez daha denenir ama `recorded` bayrağı çift kaydı
+       (her çağrı YENİ id üretirdi) engeller. Testli.
+     - **Doğrulama — web üretim koduyla FİKSTÜR KARŞILAŞTIRMASI:**
+       `test/fixtures/web_game_record.json`, web'in ÜRETİM
+       `buildGameRecord`/`serializeBoardSnapshot`'ı tohumlu iki oyunla
+       (2 kişilik doğal bitiş / 4 kişilik orta-oyun terk) koşturulup
+       id+saat sabitlenerek üretildi; Dart portu AYNI state'ten
+       `jsonEncode` düzeyinde BİREBİR AYNI satırı üretiyor (96 ve 42
+       taşlı, jokerli tahtalar — boş bir karşılaştırma değil). Golden
+       vector disiplininin bu katmandaki karşılığı; `gameRecord.ts`/
+       `boardSnapshot.ts` değişirse fikstür yeniden üretilmeli.
+       `test/game_record_test.dart` (11) + `local_game_repo_test`'in
+       yeniden yazılan terk testi + `setup_cloud_test`'e eklenen iki
+       uçtan uca test (bulut süpürmesi→ceza, oyun bitişi→kayıt).
+       **100/100 yeşil**, `flutter analyze` temiz, core 6746 kontrol/0
+       hata (yeni core dosyası eklendi, davranış değişmedi).
+       **Doğrulama sınırı:** gerçek `games` insert'i/RLS'i, gerçek 23505,
+       `game_finishes` insert'i ve Edge Function çağrısı bu ortamdan test
+       EDİLEMEDİ — cihazda bir oyun bitirilip web'deki Skor Kartı'ndan
+       doğrulanmalı.
+   - Sıradaki parçalar (sıra önerisi): şifre sıfırlama (özel şema deep
+     link — `kelimeki://reset`, Dashboard redirect listesine ekleme
+     gerekir), skor kartı/k-lig ekranı (+ `buildSnapshotGameState` portu,
+     oyun geçmişi), Canlı oyun ekranları, Görüş Bildir formu,
+     "Arkadaşınla paylaş" (native share).
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

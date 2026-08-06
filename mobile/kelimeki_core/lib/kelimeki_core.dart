@@ -33,5 +33,6 @@ export 'src/rules/board.dart'
 export 'src/rules/league_points.dart';
 export 'src/rules/ranking.dart';
 export 'src/rules/validator.dart';
+export 'src/serialize/board_snapshot.dart';
 export 'src/serialize/codec.dart';
 export 'src/text/turkish.dart';

@@ -47,6 +47,25 @@ class CloudSave {
   });
 }
 
+/// 7 günü dolmuş ve bu cihaz tarafından ATOMİK olarak iddia edilip silinmiş
+/// bir satır — çağıran bunu -2 cezalı teslim kaydına çevirir (web
+/// refreshCloudSaves'in claim dalı).
+class AbandonedCloudSave {
+  final GameState state;
+
+  /// Satırın son güncellenme anı — oyun süresi bundan ve `startedAt`'ten
+  /// hesaplanır (web durationSeconds).
+  final int updatedAtMs;
+  const AbandonedCloudSave({required this.state, required this.updatedAtMs});
+}
+
+/// `list()` sonucu: devam eden kayıtlar + bu turda iddia edilen terkler.
+class CloudSaveList {
+  final List<CloudSave> saves;
+  final List<AbandonedCloudSave> abandoned;
+  const CloudSaveList(this.saves, this.abandoned);
+}
+
 /// Satır kapısı — Supabase'e giden üç sorgunun soyutlaması. Politika
 /// (kuyruk, ayrıştırma, temizlik) BURADA DEĞİL, CloudSaveRepo'da yaşar.
 abstract class CloudSaveGateway {
@@ -59,6 +78,14 @@ abstract class CloudSaveGateway {
       String id, String userId, Map<String, Object?> stateJson, int playerCount);
 
   Future<void> delete(String id);
+
+  /// Süresi dolmuş bir satırı ATOMİK olarak "iddia edip" siler ve silinen
+  /// satırın state'ini döner; satır o arada güncellendiyse (başka cihaz
+  /// oynadı) ya da başka bir cihaz zaten iddia ettiyse null döner. Web
+  /// `claimAbandonedLocalGameSave`: tek bir `.delete().eq(id)
+  /// .lt(updated_at, cutoff).select('state')` sorgusu — satır kilidi
+  /// sayesinde ayrı bir RPC/kilit gerekmez.
+  Future<Map<String, Object?>?> claimAbandoned(String id, String cutoffIso);
 }
 
 class SupabaseCloudSaveGateway implements CloudSaveGateway {
@@ -89,6 +116,20 @@ class SupabaseCloudSaveGateway implements CloudSaveGateway {
   Future<void> delete(String id) async {
     await client.from('local_game_saves').delete().eq('id', id);
   }
+
+  @override
+  Future<Map<String, Object?>?> claimAbandoned(
+      String id, String cutoffIso) async {
+    final rows = await client
+        .from('local_game_saves')
+        .delete()
+        .eq('id', id)
+        .lt('updated_at', cutoffIso)
+        .select('state');
+    if (rows.isEmpty) return null;
+    final state = (rows.first as Map)['state'];
+    return state is Map ? state.cast<String, Object?>() : null;
+  }
 }
 
 class CloudSaveRepo {
@@ -107,16 +148,19 @@ class CloudSaveRepo {
   /// Bekleyen tüm yazmalar çözülene kadar (test/senkron noktaları için).
   Future<void> get idle => _queue.idle;
 
-  /// Devam eden oyunların listesi. Web refreshCloudSaves'in listeleme
-  /// kısmıyla aynı kararlar:
+  /// Devam eden oyunların listesi + bu turda iddia edilen terkler. Web
+  /// refreshCloudSaves'in birebir eşleniği:
   /// - bitmiş/play-dışı satır fırsatçı temizlenir, listeye girmez;
-  /// - 7 günü dolmuş satır listeye GİRMEZ ama silinmez (üstteki not);
+  /// - 7 günü dolmuş satır ATOMİK olarak iddia edilip silinir ve
+  ///   `abandoned` listesine düşer (çağıran -2 cezalı teslim kaydına
+  ///   çevirir); başka bir cihaz aynı anda iddia ettiyse claim null döner
+  ///   ve satır sessizce atlanır — ceza İKİ KEZ uygulanamaz;
   /// - çözülemeyen satır atlanır, sunucuda DURUR (web'de bu dal yok çünkü
   ///   TS ayrıştırmaz; "parse, don't validate" mobil disiplini — satır bir
   ///   web oyunu için geçerli olabilir, mobilin silme/karantina hakkı yok).
   /// Ağ hatasında boş liste yerine null döner ki UI "hiç oyunun yok" ile
   /// "liste alınamadı"yı karıştırmasın.
-  Future<List<CloudSave>?> list() async {
+  Future<CloudSaveList?> list() async {
     final List<Map<String, Object?>> rows;
     try {
       rows = await _queue.read(gateway.list);
@@ -125,7 +169,11 @@ class CloudSaveRepo {
       return null;
     }
     final cutoffMs = _nowMs() - abandonTimeout.inMilliseconds;
+    final cutoffIso =
+        DateTime.fromMillisecondsSinceEpoch(cutoffMs, isUtc: true)
+            .toIso8601String();
     final result = <CloudSave>[];
+    final abandoned = <AbandonedCloudSave>[];
     for (final row in rows) {
       final id = row['id'] as String?;
       final rawState = row['state'];
@@ -143,10 +191,31 @@ class CloudSaveRepo {
         continue;
       }
       final updatedAtMs = DateTime.parse(updatedAt).millisecondsSinceEpoch;
-      if (updatedAtMs <= cutoffMs) continue; // süresi dolmuş — süpürme 3b'de
-      result.add(CloudSave(id: id, state: state, updatedAtMs: updatedAtMs));
+      if (updatedAtMs > cutoffMs) {
+        result.add(CloudSave(id: id, state: state, updatedAtMs: updatedAtMs));
+        continue;
+      }
+      // Süresi dolmuş — iddia et. Claim de kuyruktan geçer (bir silme).
+      Map<String, Object?>? claimed;
+      try {
+        claimed = await _queue
+            .enqueue(() => gateway.claimAbandoned(id, cutoffIso));
+      } catch (e) {
+        debugPrint('[Kelimeki] terk edilmiş kayıt iddia edilemedi: $e');
+        continue;
+      }
+      if (claimed == null) continue; // başka cihaz aldı ya da yeniden oynandı
+      try {
+        abandoned.add(AbandonedCloudSave(
+          state: gameStateFromJson(claimed),
+          updatedAtMs: updatedAtMs,
+        ));
+      } catch (e) {
+        // Satır silindi ama state çözülemedi — ceza uydurulamaz.
+        debugPrint('[Kelimeki] iddia edilen kayıt çözülemedi: $e');
+      }
     }
-    return result;
+    return CloudSaveList(result, abandoned);
   }
 
   /// Bir oyunu sunucuya yazar. Web upsertLocalGameSave gibi hata YUTULUR

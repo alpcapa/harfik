@@ -14,13 +14,19 @@ import 'package:kelimeki/src/bootstrap.dart';
 import 'package:kelimeki/src/config/version_gate.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/cloud_save_repo.dart';
+import 'package:kelimeki/src/data/games_api.dart';
 import 'package:kelimeki/src/data/meaning_store.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
+import 'package:kelimeki/src/storage/app_storage.dart';
+import 'package:kelimeki/src/ui/game/game_screen.dart';
 import 'package:kelimeki/src/ui/game/logo_mark.dart';
 import 'package:kelimeki/src/ui/setup/setup_screen.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
+import 'support/fake_games_gateway.dart';
 import 'support/test_fonts.dart';
 import 'support/test_view.dart';
 
@@ -48,6 +54,16 @@ class MemGateway implements CloudSaveGateway {
 
   @override
   Future<void> delete(String id) async => rows.remove(id);
+
+  @override
+  Future<Map<String, Object?>?> claimAbandoned(
+      String id, String cutoffIso) async {
+    final row = rows[id];
+    if (row == null) return null;
+    if ((row['updated_at'] as String).compareTo(cutoffIso) >= 0) return null;
+    rows.remove(id);
+    return (row['state'] as Map).cast<String, Object?>();
+  }
 }
 
 User fakeUser() => User(
@@ -61,13 +77,25 @@ User fakeUser() => User(
 
 const ironman = KProfile(id: 'u-test', displayName: 'Ironman');
 
-AppServices services(MemGateway gw) => AppServices(
+Future<GamesRepo> memGamesRepo(FakeGamesGateway gw) async {
+  SharedPreferences.setMockInitialValues({});
+  final storage = await AppStorage.open(
+    factory: databaseFactoryFfi,
+    path: inMemoryDatabasePath,
+    prefs: await SharedPreferences.getInstance(),
+    nowMs: () => DateTime.now().millisecondsSinceEpoch,
+  );
+  return GamesRepo(gw, storage.queue);
+}
+
+AppServices services(MemGateway gw, {Future<GamesRepo>? games}) => AppServices(
       dictionary: Future.value(SetWordSource(const ['ab', 'aba', 'kelime'])),
       meanings: MeaningStore(bundle: rootBundle),
       auth: AuthService.fake(user: fakeUser(), profile: ironman),
       supabase: null,
       versionGate: VersionGateStatus.ok,
       cloudSaves: CloudSaveRepo(gw),
+      games: games,
     );
 
 /// turnCount>=2 olan gerçek bir play state'i satır olarak kuyruklar.
@@ -89,15 +117,17 @@ Future<GameState> seedSave(MemGateway gw, String id) async {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  sqfliteFfiInit();
 
   setUpAll(loadAppFonts);
 
-  Future<void> pumpSetup(WidgetTester tester, MemGateway gw) async {
+  Future<void> pumpSetup(WidgetTester tester, MemGateway gw,
+      {Future<GamesRepo>? games}) async {
     await setPhoneViewSize(tester, const Size(420, 950));
     await tester.pumpWidget(MaterialApp(
       theme: ThemeData(
           fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
-      home: SetupScreen(services: services(gw)),
+      home: SetupScreen(services: services(gw, games: games)),
     ));
     await tester.pumpAndSettle();
   }
@@ -180,6 +210,66 @@ void main() {
     await tester.tap(find.byType(LogoMark));
     await tester.pumpAndSettle();
     expect(find.text('SENİN HAMLEN BEKLENİYOR'), findsOneWidget);
+  });
+
+  testWidgets('7 günü dolan bulut kaydı: iddia edilir → -2 cezalı teslim kaydı',
+      (tester) async {
+    final gw = MemGateway();
+    await seedSave(gw, 'stale');
+    // Satırı 8 gün geriye al (web'in 7 günlük ABANDON_TIMEOUT eşiği).
+    gw.rows['stale']!['updated_at'] = DateTime.now()
+        .toUtc()
+        .subtract(const Duration(days: 8))
+        .toIso8601String();
+
+    final gamesGw = FakeGamesGateway(userId: 'u-test');
+    final gamesRepo = await tester.runAsync(() => memGamesRepo(gamesGw));
+    await pumpSetup(tester, gw, games: Future.value(gamesRepo));
+    await tester.pumpAndSettle();
+
+    // Satır sunucudan silindi ve listede görünmüyor.
+    expect(gw.rows, isEmpty);
+    expect(find.text('Devam eden bir Yapay Zeka oyunun yok.'), findsOneWidget);
+    // -2 cezalı teslim kaydı + terk bildirimi + telemetri üretildi.
+    expect(gamesGw.inserted, hasLength(1));
+    expect(gamesGw.inserted.single['surrendered'], isTrue);
+    expect(gamesGw.inserted.single['result'], 'lose');
+    expect(gamesGw.inserted.single['player_score'], 0);
+    expect(gamesGw.notified, hasLength(1));
+    expect(gamesGw.finishes.single['ended_by_surrender'], isTrue);
+  });
+
+  testWidgets('oyun bitince kayıt ANINDA tutulur (ekrandan çıkmadan)',
+      (tester) async {
+    final gw = MemGateway();
+    final gamesGw = FakeGamesGateway(userId: 'u-test');
+    final gamesRepo = await tester.runAsync(() => memGamesRepo(gamesGw));
+    await pumpSetup(tester, gw, games: Future.value(gamesRepo));
+
+    await tester.tap(find.text('+ YENİ YAPAY ZEKA OYUNU AÇ'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OYUNU BAŞLAT'));
+    await tester.pumpAndSettle();
+    expect(gamesGw.inserted, isEmpty);
+
+    // Oyunu bitmiş hâle getir (gerçek bir bitişin reducer sonucu yerine
+    // doğrudan state — burada test edilen şey KAYIT tetikleyicisi).
+    final controller = tester
+        .widget<GameScreen>(find.byType(GameScreen))
+        .controller;
+    controller.restore(controller.state.copyWith(isGameOver: true));
+    await tester.pumpAndSettle();
+
+    // Ekrandan HİÇ çıkmadan kayıt gitti (web'in [isGameOver] effect'i).
+    expect(gamesGw.inserted, hasLength(1));
+    expect(gamesGw.inserted.single['surrendered'], isFalse);
+    expect(gamesGw.notified, isEmpty); // normal bitişte terk maili YOK
+    expect(gamesGw.finishes.single['ended_by_surrender'], isFalse);
+
+    // Çıkışta İKİNCİ bir kayıt açılmaz (recorded bayrağı).
+    await tester.tap(find.byType(LogoMark));
+    await tester.pumpAndSettle();
+    expect(gamesGw.inserted, hasLength(1));
   });
 
   testWidgets('yeni oyun turnCount<2 iken terk edilirse listede iz bırakmaz',

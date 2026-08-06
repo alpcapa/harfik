@@ -15,11 +15,9 @@
 //   web'deki DELETE/SELECT yarışı yapısal olarak imkânsız.
 // - Terk edilme cezası: LocalSaveStore.load süresi dolan kaydı
 //   pending_events'e taşır; `drainAbandonedGames` bu olayları tüketip
-//   web'in gecikmeli teslim kaydıyla (buildGameRecord(state, true, 0) → -2)
-//   aynı KARARI verir: yalnızca turnCount >= 2 olan oyunlar pending_queue'ya
-//   (finished-game, TTL 7 gün) bir teslim kaydı olarak girer — sunucuya
-//   flush senkron fazının işi, payload tam GameState taşır ki flush fazı
-//   gerçek `games` satırını (buildGameRecord portu) oradan üretebilsin.
+//   ÇAĞIRANA verir — cezaya çevirme (buildGameRecord(state, surrendered:
+//   true, surrenderingIndex: 0) + saveDurable + logFinish) `GamesRepo`'da,
+//   bulut terk yoluyla AYNI noktada birleşir (web'de de tek fonksiyon).
 import 'dart:convert';
 
 import 'package:kelimeki_core/kelimeki_core.dart';
@@ -28,9 +26,19 @@ import '../data/write_queue.dart';
 import '../storage/app_storage.dart';
 import '../storage/local_save_store.dart';
 import '../storage/pending_event_store.dart' show abandonedGameKind;
-import '../storage/pending_queue_store.dart' show finishedGameKind;
-import '../util/uuid.dart';
 import 'game_controller.dart';
+
+/// 7 günü dolup terk olayına dönüşmüş bir misafir kaydı — çağıran bunu -2
+/// cezalı teslim kaydına çevirir (bulut tarafındaki AbandonedCloudSave'in
+/// yerel eşleniği).
+class AbandonedLocalGame {
+  final GameState state;
+
+  /// Kaydın son yazılma anı — oyun süresi bundan ve `startedAt`'ten
+  /// hesaplanır (web durationSeconds).
+  final int savedAtMs;
+  const AbandonedLocalGame({required this.state, required this.savedAtMs});
+}
 
 class LocalGameRepo {
   final AppStorage storage;
@@ -58,35 +66,27 @@ class LocalGameRepo {
       _savesQueue.enqueue(() => storage.saves.clear(guestSaveSlot));
 
   /// Süresi dolmuş kayıtlardan doğan terk olaylarını tüketir (read-then-clear,
-  /// atomik). Web'in takePendingAbandonedGame akışıyla aynı karar: yalnızca
-  /// gerçekten başlamış (turnCount >= 2) oyunlar için gecikmeli bir teslim
-  /// kaydı kuyruklanır; hiç oynanmamış kayıt iz bırakmadan düşer.
-  /// Döndürdüğü sayı: kuyruklanan ceza kaydı adedi (test/teşhis için).
-  Future<int> drainAbandonedGames() async {
+  /// atomik) ve çağırana verir — ceza kaydına çevirmek ÇAĞIRANIN işi
+  /// (`GamesRepo.recordAbandoned`), böylece yerel ve bulut terk yolları
+  /// web'deki gibi TEK bir buildGameRecord+saveGameDurable+logGameFinish
+  /// noktasında birleşir. Çözülemeyen olay sessizce düşer — kayıt zaten
+  /// karantina disiplininden geçmiş bir kopyaydı, ceza uydurulamaz.
+  Future<List<AbandonedLocalGame>> drainAbandonedGames() async {
     final events = await storage.events.takeAll(abandonedGameKind);
-    var queued = 0;
+    final result = <AbandonedLocalGame>[];
     for (final e in events) {
       try {
         final stateJson =
             (jsonDecode(e['state'] as String) as Map).cast<String, Object?>();
-        final state = gameStateFromJson(stateJson);
-        if (state.turnCount < 2) continue;
-        await storage.queue.enqueue(
-          kind: finishedGameKind,
-          id: uuidV4(),
-          payload: {
-            'type': 'abandoned-surrender',
-            'savedAt': e['savedAt'],
-            'state': stateJson,
-          },
-        );
-        queued++;
+        result.add(AbandonedLocalGame(
+          state: gameStateFromJson(stateJson),
+          savedAtMs: (e['savedAt'] as num).toInt(),
+        ));
       } catch (_) {
-        // Çözülemeyen olay sessizce düşer — kayıt zaten karantina
-        // disiplininden geçmiş bir kopyaydı, ceza uydurulamaz.
+        // yut
       }
     }
-    return queued;
+    return result;
   }
 
   /// Bir oyunu kalıcılığa bağlar — controller yaşadığı sürece autosave.

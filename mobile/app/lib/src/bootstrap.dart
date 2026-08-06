@@ -10,6 +10,7 @@ import 'config/version_gate.dart';
 import 'data/auth_service.dart';
 import 'data/cloud_save_repo.dart';
 import 'data/dictionary_loader.dart';
+import 'data/games_api.dart';
 import 'data/meaning_store.dart';
 import 'data/supabase_client.dart';
 import 'storage/app_storage.dart';
@@ -41,6 +42,11 @@ class AppServices {
   /// Testler sahte bir gateway'li repo geçer.
   final CloudSaveRepo? cloudSaves;
 
+  /// Bitmiş/terk edilmiş oyun kayıtları (`games` + `game_finishes`) —
+  /// depolama açıldıktan sonra kurulur (kuyruk deposuna ihtiyaç duyar),
+  /// bu yüzden Future. Supabase yoksa null (kayıt tutulmaz).
+  final Future<GamesRepo>? games;
+
   const AppServices({
     required this.dictionary,
     required this.meanings,
@@ -49,6 +55,7 @@ class AppServices {
     required this.versionGate,
     this.storage,
     this.cloudSaves,
+    this.games,
   });
 }
 
@@ -69,5 +76,8 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
     storage: storage,
     cloudSaves:
         supabase != null ? CloudSaveRepo(SupabaseCloudSaveGateway(supabase)) : null,
+    games: supabase != null
+        ? storage.then((s) => GamesRepo(SupabaseGamesGateway(supabase), s.queue))
+        : null,
   );
 }
