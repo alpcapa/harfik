@@ -14,7 +14,7 @@ import '../../data/auth_service.dart';
 import '../game/help_modal.dart';
 import '../game/neo_box.dart';
 import 'k_avatar.dart';
-import 'login_modal.dart';
+import 'auth_modal.dart';
 
 const Color _text = Color(0xFF1B2430);
 const Color _muted = Color(0xFF5A6673);

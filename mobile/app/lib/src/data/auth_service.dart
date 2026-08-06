@@ -136,6 +136,72 @@ class AuthService extends ChangeNotifier {
     // Başarı/oturum güncellemesi onAuthStateChange üzerinden gelir.
   }
 
+  /// Kayıt — web `signUp` (src/lib/api.ts) portu. `sharedxp_pending_profile`
+  /// metadata'sını `handle_new_user` trigger'ı okur; display_name üst
+  /// seviyede gider (e-posta doğrulaması açıkken session dönmez, sonraki
+  /// bir update'e güvenilemez — web'deki aynı gerekçe). Dönen değer: oturum
+  /// hemen açıldı mı (e-posta doğrulaması kapalıysa true).
+  ///
+  /// `signup_channel: 'direct'` web'le aynı — admin panelinin Üyeler
+  /// tablosu yalnızca Direkt/Form ayrımını biliyor; mobile'a özel bir kanal
+  /// eklemek panel/trigger tarafında ayrı bir karar, bu parçada değil.
+  Future<bool> signUp({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+    required String nickname,
+    required bool termsAccepted,
+    String? gender,
+    String? birthDate,
+    bool marketingConsent = false,
+  }) async {
+    final c = _client;
+    if (c == null) throw const AuthException('Supabase yapılandırılmadı.');
+    try {
+      final res = await c.auth.signUp(
+        email: email,
+        password: password,
+        data: {
+          'sharedxp_pending_profile': {
+            'firstName': firstName,
+            'lastName': lastName,
+            'agreedToTerms': termsAccepted,
+            'gender': gender,
+            'birthDate': birthDate,
+            'marketingConsent': marketingConsent,
+          },
+          'signup_channel': 'direct',
+          'display_name': nickname,
+        },
+      );
+      final session = res.session;
+      if (session != null) {
+        // E-posta doğrulaması kapalıysa kabul zamanını hemen yaz (web'le
+        // aynı; doğrulama açıkken trigger'daki agreedToTerms yeterli).
+        await c.from('profiles').update({'agreed_to_terms': termsAccepted}).eq(
+            'id', session.user.id);
+      }
+      return session != null;
+    } on AuthException catch (e) {
+      // Yarış durumu güvenlik ağı (iki kişi aynı anda aynı ismi kaparsa) —
+      // web friendlyNicknameError.
+      throw friendlyNicknameError(e.message) ?? e;
+    } on PostgrestException catch (e) {
+      throw friendlyNicknameError(e.message) ?? e;
+    }
+  }
+
+  /// `check_nickname_available` RPC'si — canlı UX geri bildirimi; asıl
+  /// doğruluk kaynağı DB'deki unique index (web'deki aynı not).
+  Future<bool> checkNicknameAvailable(String nickname) async {
+    final c = _client;
+    if (c == null) throw const AuthException('Supabase yapılandırılmadı.');
+    final data = await c
+        .rpc('check_nickname_available', params: {'p_nickname': nickname});
+    return data == true;
+  }
+
   Future<void> signOut() async {
     await _client?.auth.signOut();
   }
@@ -196,6 +262,20 @@ class AuthService extends ChangeNotifier {
     _sub?.cancel();
     super.dispose();
   }
+}
+
+/// Postgres unique-violation hatasını takma isim için okunur bir mesaja
+/// çevirir — web `friendlyNicknameError` birebir.
+AuthException? friendlyNicknameError(String? message) {
+  if (message != null &&
+      RegExp('profiles_display_name_tr_lower_key|display_name',
+              caseSensitive: false)
+          .hasMatch(message) &&
+      RegExp('duplicate key|unique', caseSensitive: false).hasMatch(message)) {
+    return const AuthException(
+        'Bu takma isim zaten kullanılıyor. Farklı bir tane dene.');
+  }
+  return null;
 }
 
 /// Web `friendlyAuthMessage` (src/lib/api.ts) portu — önce GoTrue hata

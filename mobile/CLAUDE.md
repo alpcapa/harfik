@@ -1033,10 +1033,79 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        doğrulamalı. Testte "İR" beklentisi yanlış çıktı: "Ironman" BÜYÜK
        I ile başlar, trUpper doğru şekilde "IR" üretir (Türkçe kural
        yalnızca küçük i'yi İ yapar) — baş harf beklentisi yazarken dikkat.
-     - Sıradaki parçalar (sıra önerisi): kayıt formu (nickname
-       benzersizliği RPC'si + koşullar onayı), şifre sıfırlama (deep link),
-       girişli kullanıcının bulut kayıtları (`local_game_saves` senkronu),
-       Canlı oyun ekranları.
+   - ✅ **Parça 2 — kayıt formu + Kullanım Koşulları/Gizlilik portları
+     (6 Ağustos 2026):**
+     - **`AuthModal`** (`lib/src/ui/auth/auth_modal.dart`) — Parça 1'in
+       `LoginModal`'ı SİLİNDİ, yerine web `AuthModal.tsx` gibi tek modalda
+       iki mod (giriş/kayıt, alttaki linkle geçiş). Kayıt formu web'le
+       birebir: AD*/SOYAD* yan yana, TAKMA İSİM* (canlı durum satırı),
+       E-POSTA* ("Doğrulama linki gönderilir" hint'i), CİNSİYET dropdown
+       ('' Belirtilmedi + `genderOptions`), DOĞUM TARİHİ (yazarken otomatik
+       "/" — `formatTrDateInput`), ŞİFRE* (göster/gizle), zorunlu koşullar
+       + opsiyonel pazarlama checkbox'ları, "* Zorunlu alan" notu.
+       **Doğrulama sırası web `submit()` ile aynı** (Ad → Soyad → Takma
+       isim → E-posta → Şifre → koşullar → tarih) ve testle korunuyor.
+       Koşullar satırında metne dokunmak checkbox'ı TOGGLE ETMEZ — linkler
+       (TapGestureRecognizer) Terms/Privacy modallerini açar (web parity).
+     - **Takma isim canlı kontrolü** — web `useNicknameAvailability`
+       portu: boşluk `onChanged`'da anında silinir
+       (`display_name_no_whitespace`), 400ms debounce + sıra sayacı (geç
+       gelen eski yanıt yenisini ezemez), `check_nickname_available` RPC'si
+       (`AuthService.checkNicknameAvailable`); durum `taken`/`checking`
+       iken KAYIT OL devre dışı. Asıl doğruluk kaynağı yine DB unique
+       index'i — yarışta `friendlyNicknameError` (regex: constraint adı +
+       duplicate/unique) 'Bu takma isim zaten kullanılıyor.' üretir.
+     - **`AuthService.signUp`** — web `signUp()` birebir:
+       `sharedxp_pending_profile` metadata'sı camelCase anahtarlarla
+       (firstName/lastName/agreedToTerms/gender/birthDate/
+       marketingConsent), `display_name` metadata kökünde
+       (`handle_new_user` trigger'ı okur — e-posta doğrulaması AÇIKKEN
+       oturum açılmadığından sonradan update güvenilmez),
+       `signup_channel: 'direct'` (mobil için ayrı kanal BİLİNÇLİ ertelendi
+       — admin paneli yalnızca Direkt/Form tanıyor), `agreed_to_terms`
+       yalnızca oturum HEMEN açıldıysa profile yazılır (web'in bilinen
+       eksiğiyle aynı davranış — düzeltmek web'le birlikte ayrı karar).
+       Dönüş `sessionOpened: bool` — false ise modal giriş moduna dönüp
+       "Hesap oluşturuldu. E-postanı doğrulayıp giriş yap." gösterir.
+     - **`legal_modals.dart`** — `TermsModal`/`PrivacyModal`, web
+       metinleri BİREBİR (özet yok; KVKK maddeleri, Sarıyer/İstanbul,
+       "Son güncelleme: 2 Ağustos 2026" dahil). Web metni değişirse buraya
+       aynen taşınmalı (HelpModal'daki aynı kural). "Görüş Bildir formu"
+       geçişi dürüst "kelimeki.com üzerinden" diyaloğuna bağlı (form auth
+       fazının sonraki parçası). Testler iki modalden cümle örnekleyerek
+       birebirliği koruyor.
+     - **`profile_fields.dart`** — web `profileFields.ts` portu:
+       `genderOptions`, `formatTrDateInput`, `trDateToIso` (Türkçe hata
+       metinleri birebir; `FormatException` olarak fırlatır), `isoToTrDate`
+       (hesap ayarları parçası için hazır).
+     - **İki font bulgusu (ölçülerek):** (1) `DropdownButtonFormField.style`
+       tema fontunu MİRAS ALMAZ (`ButtonStyle.textStyle` dersinin kardeşi)
+       — fontFamily verilmeyince cihazda Roboto'ya, testte Ahem bloğuna
+       (ekran görüntüsünde "siyah dikdörtgen") düşer; `fontFamily:
+       'SpaceGrotesk'` açıkça verildi. (2) ✓ (U+2713) bundled fontların
+       HİÇBİRİNDE yok (fontTools ile ölçüldü) — ★/► kararlarıyla aynı:
+       durum satırı `Icons.check` + "Kullanılabilir".
+     - **Üç test dersi:** (1) TextSpan linkleri `find.text` ile bulunamaz —
+       `tester.tapOnText(find.textRange.ofSubstring(...))`; (2) üst üste
+       iki modal açıkken ✕ için `find.byTooltip('Kapat').last`; (3)
+       `build/unit_test_assets` bayatlarsa Material3 ink splash'i
+       "ink_sparkle.frag ... Unsupported runtime stages format version"
+       ile testi düşürür — kod hatası değil, klasörü silip yeniden koş.
+     - Doğrulama: `signup_test.dart` (8 test: profile_fields birimleri,
+       friendlyNicknameError, debounce/boşluk/dolu-isim + buton kilidi,
+       doğrulama sırası — son adım 'Supabase yapılandırılmadı.' ile akışın
+       signUp'a KADAR indiğinin kanıtı, Terms/Privacy linkleri + birebir
+       metin örnekleri + link-checkbox ayrımı, tarih oto-ayırıcı + ekran
+       görüntüsü `build/screenshots/signup_form.png`). 71/71 yeşil,
+       `flutter analyze` temiz. **Doğrulama sınırı:** gerçek `signUp`
+       (trigger'ın profili kurması, e-posta doğrulaması açık/kapalı
+       dalları, gerçek nickname yarışı) bu ortamdan test EDİLEMEDİ —
+       cihazda gerçek bir kayıtla doğrulanmalı.
+   - Sıradaki parçalar (sıra önerisi): şifre sıfırlama (recovery deep
+     link), girişli kullanıcının bulut kayıtları (`local_game_saves`
+     senkronu — misafir kuyruğu `TableWriteQueue`'dan geçerek), Canlı oyun
+     ekranları, skor kartı/k-lig, Görüş Bildir formu, "Arkadaşınla paylaş"
+     (native share).
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek
