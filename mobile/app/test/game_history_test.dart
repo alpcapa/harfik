@@ -225,7 +225,11 @@ void main() {
         .toList();
     expect(badges.take(4), [0, 1, 2, 3]);
 
-    // SL: 1.=+2, 4 kişilikte 2.=+1, 3.= '-', teslim=-2.
+    // Sütun başlığı "SL" (Sanal Lig) DEĞİL — marka "k-lig" olarak değişti.
+    expect(find.text('k-lig'), findsNWidgets(2)); // iki oyun kartı
+    expect(find.text('SL'), findsNothing);
+
+    // k-lig: 1.=+2, 4 kişilikte 2.=+1, 3.= '-', teslim=-2.
     // İKİ tane +2 var: Canlı oyunun birincisi VE YZ oyununu kazanan YZ —
     // web de her satır için SL gösteriyor (YZ satırları dahil).
     expect(find.text('+2'), findsNWidgets(2));

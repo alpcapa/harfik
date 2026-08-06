@@ -349,9 +349,15 @@ class _EntryCard extends StatelessWidget {
                                   letterSpacing: 0.5,
                                   color: _muted))),
                       const SizedBox(width: 8),
+                      // "SL" (Sanal Lig) yerine "k-lig" — marka adı düz metin
+                      // ve küçük harf (KLigMark wordmark'ı 9px'lik bir tablo
+                      // başlığı için okunmaz kalırdı, bkz. CLAUDE.md k-lig
+                      // notu: kısa etiketlerde wordmark, ama bu punto onun
+                      // altında). Sütun 24→32: 5 karakter 9px SpaceMono +
+                      // 0.5 letterSpacing ile 24'e sığmıyordu.
                       const SizedBox(
-                          width: 24,
-                          child: Text('SL',
+                          width: 32,
+                          child: Text('k-lig',
                               textAlign: TextAlign.right,
                               style: TextStyle(
                                   fontFamily: 'SpaceMono',
@@ -516,7 +522,9 @@ class _PlayerRow extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           SizedBox(
-            width: 24,
+            // Başlıkla (k-lig) aynı genişlik — ikisi de sağa hizalı, sağ
+            // kenarların çakışması için eşit olmak zorunda.
+            width: 32,
             child: Text(
               formatLeaguePoints(points),
               textAlign: TextAlign.right,
