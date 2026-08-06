@@ -398,13 +398,34 @@ bağlı değil.)
 - Dart SDK repoya/CI'a bağlanmadı — bu ortamda scratchpad'e indirilip
   kullanıldı; geliştirici makinesinde standart `dart` kurulumu yeterli.
 
-## Web'de Bekleyen Küçük Düzeltmeler
+## Web ↔ Uygulama Arasındaki Kabul Edilmiş Farklar
 
-Port sırasında fark edilen, uygulamada ÇÖZÜLMÜŞ ama web'de hâlâ duran
-farklar. Kullanıcı kararı: "web kalsın şimdilik, daha sonra düzeltiriz"
-(6 Ağustos 2026) — yani bunlar bilinçli sapmalar, "port eksik" değil.
-Web tarafına dokunulacak bir sonraki fırsatta (ayrı bir web PR'ı) topluca
-uygulanmalı; her biri tek satırlık.
+Port sırasında fark edilen, uygulamada ÇÖZÜLMÜŞ ama web'de bilinçli olarak
+BIRAKILAN farklar. **Kullanıcı kararı (6 Ağustos 2026): "Web'de şimdiye
+kadar bir sorun yaşamadım, o taraf düzgün çalışıyor. Değişiklik yapıp riske
+sokmanın anlamı yok — ek bir faydası yoksa o tarafa dokunmayalım."**
+
+Yani bu liste bir "yapılacaklar" listesi DEĞİL, bir karar kaydı: aşağıdaki
+maddeler web'de ölçülerek KUSURSUZ çalıştığı doğrulandı, uygulamadaki
+farklılık platform kısıtından doğuyor. **Bir sonraki oturum bunları "eksik"
+sanıp web'e dokunmasın.** Yalnızca ölçülebilir yeni bir fayda (gerçek bir
+kullanıcı şikâyeti, ölçülen bir hata) çıkarsa yeniden değerlendirilir.
+
+- **Raf başlığındaki swap aksiyon metni** — `src/components/Rack.tsx`
+  swap modunda başlığı `` `${title} — değiştirilecek taşları seç` ``
+  yapıyor; aynı talimat zaten tahtanın altındaki mesaj satırında var.
+  Uygulamada kaldırıldı (kullanıcı isteği), web'de duruyor ve bir sorun
+  üretmiyor.
+- **Anlam metnindeki `►`** — uygulama bunu `→` ile değiştiriyor (bkz.
+  Parça 9). Web'de aynı karakter duruyor ve DÜZGÜN çiziliyor: tarayıcılar
+  karakter bazında sistem yedeğine düşer (Chromium'da ekran görüntüsüyle
+  doğrulandı). ÖLÇÜLDÜ: web'in subset woff2'lerinde (225-333 glyph) ne `►`
+  ne `→` var — yani web'de ikisi de yedek fonttan basılır, `→`ye geçmek
+  tipografik bir kazanç SAĞLAMAZ, yalnızca iki platformun metnini aynı
+  yapardı. Flutter'da ise fark gerçek (tam TTF'lerde `→` var, `►` yok).
+
+Eski (silinmiş) başlık: "Web'de Bekleyen Küçük Düzeltmeler" — o hâliyle
+liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti.
 
 - **Raf başlığındaki swap aksiyon metni** — `src/components/Rack.tsx`
   swap modunda başlığı `` `${title} — değiştirilecek taşları seç` ``
