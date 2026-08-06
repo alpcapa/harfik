@@ -5,16 +5,18 @@
 // tahtada taşıma, rafa geri — web beginDrag/endDrag portu). Kalıcılık bu
 // ekranın DIŞINDA: SetupScreen oyunu GameSession'la sarar (autosave/çıkış
 // kuralları, local_game_repo.dart) — ekran yalnızca oynatır. Parça parça
-// plan gereği BİLİNÇLİ eksikler (mobile/CLAUDE.md): kelime anlamı modalı,
-// hamle geçmişi modalı.
+// Tahtadaki onaylanmış bir taşa dokunmak, o hücreden geçen kelimelerin
+// anlamını gösterir (meanings deposu verilmişse).
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
+import '../../data/meaning_store.dart';
 import '../../game/game_controller.dart';
 import '../../game/move_status.dart';
 import 'board_widget.dart';
 import 'game_header.dart';
 import 'game_over_modal.dart';
+import 'meaning_modal.dart';
 import 'move_history_modal.dart';
 import 'neo_button.dart';
 import 'player_colors.dart';
@@ -26,7 +28,18 @@ import 'wild_letter_sheet.dart';
 class GameScreen extends StatefulWidget {
   final GameController controller;
   final WordSource words;
-  const GameScreen({super.key, required this.controller, required this.words});
+
+  /// Tahtadaki bir taşa dokunulunca açılan anlam modalının veri kaynağı.
+  /// Verilmezse (testlerin bir kısmı, ileride önizlemeler) dokunuş sessizce
+  /// yok sayılır — web'de de anlam gösterimi oyunun çalışmasına bağlı değil.
+  final MeaningStore? meanings;
+
+  const GameScreen({
+    super.key,
+    required this.controller,
+    required this.words,
+    this.meanings,
+  });
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -131,7 +144,14 @@ class _GameScreenState extends State<GameScreen> {
   Future<void> _handleCellTap(int r, int c) async {
     final k = cellKey(r, c);
     if (state.board[r][c] != null) {
-      // Kelime anlamı modalı sonraki parçaların işi — şimdilik dokunuş yok.
+      // Tahtada duran (onaylanmış) bir taş: o hücreden geçen yatay ve dikey
+      // kelimelerin anlamı gösterilir (web handleCellClick'in ilk dalı).
+      final store = widget.meanings;
+      if (store == null) return;
+      await showMeaningModal(context, store.lookup, [
+        fullWordAt(state.board, const {}, r, c, 0, 1),
+        fullWordAt(state.board, const {}, r, c, 1, 0),
+      ]);
       return;
     }
     final placedTile = state.placed[k];

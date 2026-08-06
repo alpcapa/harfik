@@ -50,6 +50,13 @@ FormedWord _fullWordWithCoords(
   return FormedWord(word: buf.toString(), coords: coords);
 }
 
+/// (r,c) hücresinden (dr,dc) yönünde uzanan tam kelime — web
+/// `getFullWordAt` (src/utils/board.ts) eşleniği. Anlam sorgusu için tahtadaki
+/// bir taşa dokunulduğunda o hücreden geçen yatay/dikey kelimeyi bulur.
+/// Mevcut özel yardımcıyı sarar; davranış değişmez (golden vector paritesi).
+String fullWordAt(Board board, Placed placed, int r, int c, int dr, int dc) =>
+    _fullWordWithCoords(board, placed, r, c, dr, dc).word;
+
 /// Bu turdaki yerleştirmelerle oluşan tüm kelimeler (ana + çapraz).
 /// 2 harften kısa kelimeler atlanır. Sıra TS ile birebir: önce ana kelime,
 /// sonra her yerleştirme için çapraz kelime (placed ekleme sırasında).

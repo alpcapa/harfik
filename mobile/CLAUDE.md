@@ -23,6 +23,16 @@ kancası gibi) kök `CLAUDE.md` de kontrol edilir.
 4. **Kelime anlamları (`meanings.json`, 6.3 MB) uygulamaya GÖMÜLECEK** —
    kullanıcı boyutu sorun etmedi; sıkıştırılmış ~1.5-2 MB. Sunucudan çekme /
    sonradan indirme seçenekleri konuşuldu ve elendi (offline + anında açılış).
+   **6 Ağustos 2026'da BİÇİM netleşti — JSON değil SQLite (kullanıcı onayı):**
+   web JSON'u fetch edip TAMAMINI RAM'de tutuyor; mobilde bu 6.5 MB'lık bir
+   parse gecikmesi + onlarca MB kalıcı bellek demekti. Asset build-time'da
+   tek tablolu bir SQLite'a çevriliyor (`npm run generate-meanings-db` →
+   `mobile/app/assets/dictionary/meanings.db`, 63.890 kelime, **5.26 MB ham
+   / ~2.0 MB gzip** — ölçüldü), uygulama sorgu anında TEK SATIR okuyor:
+   açılış maliyeti sıfır, bellek maliyeti sıfıra yakın. Auth fazı gelince
+   web'in iki yollu sırası kurulabilir (önce Supabase `word_meaning` RPC,
+   hata/offline'da bu yerel db) — bugünkü iş yedek katmana dönüşür, çöpe
+   gitmez.
 5. **State yönetimi: ek framework YOK** (Riverpod/Bloc yok) — motor zaten bir
    reducer; uygulama katmanı ince bir `ChangeNotifier` kabuğu olacak.
 6. **Sözlük: düz `HashSet<String>`** — mevcut YZ algoritması prefix araması
@@ -863,9 +873,51 @@ uygulanmalı; her biri tek satırlık.
        rozet/filtre dalları + `build/screenshots/move_history.png`, boş
        liste, GameScreen'de gerçek hamle sonrası footer linkinden açılış).
        46/46 yeşil.
-   - Sıradaki parçalar: kelime anlamı modalı (önce `meanings.json`
-     paketleme kararı — bkz. Üst Düzey Kararlar #4), kurallar
-     ("Nasıl oynanır?") ekranı.
+   - ✅ **Parça 9 — kelime anlamı modalı (6 Ağustos 2026):** Üç katman.
+     (1) **Asset üreticisi** `scripts/generate-meanings-db.mjs`
+     (`npm run generate-meanings-db`): `src/data/meanings.json` → tek tablolu
+     SQLite (`word` PRIMARY KEY, `pos`, `meanings` JSON dizisi, WITHOUT
+     ROWID). Anahtarlar web'le AYNI `trLower` normalizasyonundan geçer.
+     Çıktı deterministik (aynı girdi → aynı sha, git churn yok) ve yanına
+     küçük bir `meanings.db.sha256` yazılır. **`meanings.json` değişirse bu
+     script yeniden koşulmalı** — sözlük/golden vector disiplininin aynısı.
+     (2) **`MeaningStore`** (`lib/src/data/meaning_store.dart`): asset'ler
+     paket içinde yaşadığından doğrudan açılamaz — İLK SORGUDA bir kez
+     uygulama db dizinine kopyalanır; "kopya güncel mi" sorusu 5 MB'ı
+     okumadan, sha256 damgası karşılaştırılarak yanıtlanır (damga tutmazsa
+     yeniden kopyalanır). Sonra `readOnly` açılıp tek satır sorgulanır.
+     Hata durumunda (asset yok/bozuk) sessizce null döner — anlam gösterimi
+     oyunun çalışmasına bağlı değil. **`databaseFactory` TEMBEL çözülür:**
+     kurucuda okumak, anlam deposunu hiç kullanmayan ffi testlerini bile
+     "databaseFactory not initialized" ile düşürüyordu.
+     (3) **`MeaningModal`** (`MeaningModal.tsx` portu, `KModal` kabuğu):
+     numaralı anlam listesi, iki kelimede ayraçlı alt başlık, yükleniyor ve
+     "bulunamadı" hâlleri. Tetikleyici web `handleCellClick`'in ilk dalı —
+     tahtadaki ONAYLANMIŞ bir taşa dokunmak, o hücreden geçen yatay+dikey
+     kelimeleri gösterir.
+     - **Motor dokunuşu:** `fullWordAt` (web `getFullWordAt` eşleniği)
+       kelimeki_core'un board.dart'ında zaten var olan özel yardımcıyı saran
+       PUBLIC bir fonksiyon olarak eklendi (davranış değişmedi). Kural gereği
+       golden vector'lar yeniden üretildi (fixture'larda sıfır fark) ve Dart
+       çekirdek testleri koşuldu: 6746 kontrol, 0 hata.
+     - **Modal depoya değil `MeaningLookup` fonksiyonuna bağlı** — bu bir
+       test kolaylığı değil zorunluluk: `initState`'te başlayan Future
+       testWidgets'ın SAHTE zaman bölgesine bağlanır, `runAsync`'te beklemek
+       onu ÇÖZMEZ (gerçek IO hiç ilerlemez). Widget testleri bu yüzden veriyi
+       fake zone DIŞINDA (setUpAll) gerçek asset'ten okuyup besliyor; deponun
+       kendi doğruluğu ayrı `test()` vakalarında sınanıyor. **`tester.pump`
+       runAsync'in İÇİNDE ÇAĞRILMAZ** — denendi, kilitleniyor (5 dk).
+     - **Ölçülen font bulgusu:** TDK verisindeki çapraz gönderme işareti
+       `►` (U+25BA) ne Space Grotesk'te ne Space Mono'da VAR (fontTools ile
+       ölçüldü); web'de tarayıcı sistem yedeğinden basıyor, Flutter'da cihaz
+       yedeğine kalıyor ve garanti değil (testte boş kutu çıktı). Veri
+       setinin TAMAMI tarandı: fontların kapsamadığı TEK karakter bu (16.298
+       geçiş). Render anında bundled fontlarda var olan `→` ile
+       değiştiriliyor; test bunu (`►` ekrana ulaşmamalı) doğruluyor.
+     - Doğrulama: `meaning_test.dart` (4 test — asset ↔ kaynak JSON
+       karşılaştırması + Türkçe büyük harfli sorgu + damga yenileme + modal
+       render dalları + `build/screenshots/meaning_modal.png`). 50/50 yeşil.
+   - Sıradaki parça: kurallar ("Nasıl oynanır?") ekranı.
 5. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

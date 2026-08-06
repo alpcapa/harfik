@@ -23,7 +23,13 @@ export 'src/model/types.dart';
 export 'src/online/online_state.dart';
 export 'src/rng.dart';
 export 'src/rules/board.dart'
-    show createEmptyBoard, cellKey, parseKey, tileLetter, getFormedWords;
+    show
+        createEmptyBoard,
+        cellKey,
+        parseKey,
+        tileLetter,
+        fullWordAt,
+        getFormedWords;
 export 'src/rules/league_points.dart';
 export 'src/rules/ranking.dart';
 export 'src/rules/validator.dart';

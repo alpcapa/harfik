@@ -35,6 +35,11 @@ flutter:
     # `npm run generate-golden-vectors` yeniden üretir. Satır SIRASI
     # sözleşmedir (YZ determinizmi) — bkz. mobile/CLAUDE.md.
     - assets/dictionary/words_tr.txt
+    # ÜRETİLMİŞ (elle düzenlenmez): kaynak src/data/meanings.json,
+    # `npm run generate-meanings-db` yeniden üretir. Yanındaki .sha256
+    # kopyanın tazeliğini 5 MB okumadan doğrular (bkz. meaning_store.dart).
+    - assets/dictionary/meanings.db
+    - assets/dictionary/meanings.db.sha256
   # Web ile aynı üç aile (tailwind fontFamily): sans=Space Grotesk,
   # mono=Space Mono, tile=Nunito. Google Fonts'tan statik TTF'ler.
   fonts:

@@ -20,6 +20,7 @@ npm run dev     # Geliştirme sunucusu
 npm run lint    # tsc --noEmit (ayrı bir ESLint kurulumu yok)
 npm run test    # Playwright duman testleri (tests/smoke.spec.ts)
 npm run generate-golden-vectors  # Flutter portu parite fixture'ları (bkz. "Flutter / Mobil Port")
+npm run generate-meanings-db     # Flutter portu için meanings.json → SQLite asset'i
 ```
 
 **`npm run test` neyi kapsıyor, neyi kapsamıyor:** `tests/smoke.spec.ts` kapsamlı bir test paketi DEĞİL — "uygulama açılıyor, 2 kişilik bir oyun başlatılabiliyor, YZ hamle yapıyor, bilinmeyen bir path SPA fallback'iyle açılıyor" düzeyinde bir kritik-yol kontrolü. Buraya kadar hatasız gelmek reducer/YZ/skor/bölge hesaplama zincirinin ucuna kadar çalıştığı ve `ErrorBoundary`'nin devreye girmediği anlamına geliyor.
@@ -51,6 +52,13 @@ ilgilendiren iki kanca:
   PR'da geçirilmeli — Dart motoru web motorunun birebir kopyası, parite bu
   fixture'larla kanıtlanıyor. Ayrıntı: `mobile/CLAUDE.md`, "Golden Vector İş
   Akışı".
+- **`src/data/meanings.json` değişirse `npm run generate-meanings-db`
+  koşulmalı:** Flutter portu anlamları JSON olarak DEĞİL, build-time'da
+  üretilen bir SQLite asset'i olarak taşıyor (mobilde 6.5 MB JSON parse
+  etmemek için) — script `mobile/app/assets/dictionary/meanings.db`'yi
+  yeniden üretir. Web tarafı bu değişiklikten hiç etkilenmiyor, hâlâ
+  `src/data/meanings.ts` üzerinden JSON'u kendisi yüklüyor. Ayrıntı:
+  `mobile/CLAUDE.md`, "Üst Düzey Kararlar" #4.
 - **`src/utils/random.ts`'teki `setRandomSource()`** yalnızca bu fixture
   üreticisi için var — üretim kodu hiç çağırmaz, davranış değişmedi
   (varsayılan `Math.random`).

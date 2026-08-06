@@ -78,7 +78,11 @@ class _SetupScreenState extends State<SetupScreen> {
   Future<void> _openGame(GameController controller, SetWordSource words) async {
     final session = _repo?.attach(controller);
     await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => GameScreen(controller: controller, words: words),
+      builder: (_) => GameScreen(
+        controller: controller,
+        words: words,
+        meanings: widget.services.meanings,
+      ),
     ));
     await session?.end();
     controller.dispose();

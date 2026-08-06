@@ -30,7 +30,8 @@ class PendingEventStore {
       final rows = await txn.query('pending_events',
           where: 'kind = ?', whereArgs: [kind], orderBy: 'created_at asc');
       if (rows.isNotEmpty) {
-        await txn.delete('pending_events', where: 'kind = ?', whereArgs: [kind]);
+        await txn
+            .delete('pending_events', where: 'kind = ?', whereArgs: [kind]);
       }
       return [
         for (final r in rows)

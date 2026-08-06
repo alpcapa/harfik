@@ -77,8 +77,8 @@ class PendingQueueStore {
         QueueEntry(
           id: r['id'] as String,
           kind: r['kind'] as String,
-          payload:
-              (jsonDecode(r['payload'] as String) as Map).cast<String, Object?>(),
+          payload: (jsonDecode(r['payload'] as String) as Map)
+              .cast<String, Object?>(),
           createdAt: r['created_at'] as int,
         ),
     ];

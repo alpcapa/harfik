@@ -1,9 +1,11 @@
 // Widget duman testi — web'in tests/smoke.spec.ts felsefesinin eşleniği:
 // uygulama kabuğu Setup ekranıyla açılıyor mu, teşhis satırı (offline mod +
 // sözlük durumu) görünüyor mu, sürüm kapısı doğru ekrana yönlendiriyor mu.
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/bootstrap.dart';
 import 'package:kelimeki/src/config/version_gate.dart';
+import 'package:kelimeki/src/data/meaning_store.dart';
 import 'package:kelimeki/src/ui/app.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
@@ -12,6 +14,7 @@ void main() {
       (tester) async {
     final services = AppServices(
       dictionary: Future.value(SetWordSource(const ['ab', 'aba', 'kelime'])),
+      meanings: MeaningStore(bundle: rootBundle),
       supabase: null,
       versionGate: VersionGateStatus.ok,
     );
@@ -27,6 +30,7 @@ void main() {
       (tester) async {
     final services = AppServices(
       dictionary: Future.value(SetWordSource(const ['ab'])),
+      meanings: MeaningStore(bundle: rootBundle),
       supabase: null,
       versionGate: VersionGateStatus.updateRequired,
     );

@@ -9,8 +9,8 @@ class ChatReadStore {
   ChatReadStore(this.db);
 
   Future<int?> lastReadAt(String gameId) async {
-    final rows = await db.query('chat_last_read',
-        where: 'game_id = ?', whereArgs: [gameId]);
+    final rows = await db
+        .query('chat_last_read', where: 'game_id = ?', whereArgs: [gameId]);
     return rows.isEmpty ? null : rows.first['last_read_at'] as int;
   }
 
@@ -25,6 +25,7 @@ class ChatReadStore {
   /// Oyun listeden tamamen düştüğünde damga da temizlenir (sınırsız satır
   /// birikmesin — prefs yerine tablo seçilmesinin gerekçesi).
   Future<void> remove(String gameId) async {
-    await db.delete('chat_last_read', where: 'game_id = ?', whereArgs: [gameId]);
+    await db
+        .delete('chat_last_read', where: 'game_id = ?', whereArgs: [gameId]);
   }
 }
