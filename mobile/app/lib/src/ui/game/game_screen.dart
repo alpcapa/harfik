@@ -15,6 +15,7 @@ import '../../game/move_status.dart';
 import 'board_widget.dart';
 import 'game_header.dart';
 import 'game_over_modal.dart';
+import 'move_history_modal.dart';
 import 'neo_button.dart';
 import 'player_colors.dart';
 import 'rack_widget.dart';
@@ -468,6 +469,8 @@ class _GameScreenState extends State<GameScreen> {
                                       ),
                                 onCellTap: _handleCellTap,
                                 gridKey: _gridKey,
+                                onOpenHistory: () =>
+                                    showMoveHistoryModal(context, state),
                                 dragHiddenKey: _ghost?.source is _PlacedSource
                                     ? cellKey(
                                         (_ghost!.source as _PlacedSource).r,

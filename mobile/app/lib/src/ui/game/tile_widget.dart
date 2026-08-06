@@ -137,6 +137,8 @@ class TileWidget extends StatelessWidget {
     );
 
     // Seçili raf taşı hafif yukarı kalkar (web: -translate-y-[7px]).
-    return selected ? Transform.translate(offset: const Offset(0, -7), child: body) : body;
+    return selected
+        ? Transform.translate(offset: const Offset(0, -7), child: body)
+        : body;
   }
 }

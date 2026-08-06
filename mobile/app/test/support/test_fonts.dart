@@ -20,8 +20,21 @@ Future<void> _loadFamily(String family, List<String> assetPaths) async {
   if (any) await loader.load();
 }
 
-/// Uygulamanın üç font ailesini yükler (web tailwind eşlenikleri).
+/// Material ikon fontu SDK önbelleğinde yaşar, uygulama asset'i değildir —
+/// yüklenmezse `Icons.*` (joker yıldızı, modal ✕, YZ robotu) ekran
+/// görüntülerinde boş kutuya döner. Gerçek cihazda sorun yok; bu yalnızca
+/// görüntülerin temsili olması için (6 Ağustos 2026, hamle geçmişi
+/// parçasında fark edildi).
+Future<void> _loadMaterialIcons() async {
+  final root = Platform.environment['FLUTTER_ROOT'] ?? '/root/flutter';
+  await _loadFamily('MaterialIcons',
+      ['$root/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf']);
+}
+
+/// Uygulamanın üç font ailesini (web tailwind eşlenikleri) + Material
+/// ikonlarını yükler.
 Future<void> loadAppFonts() async {
+  await _loadMaterialIcons();
   await _loadFamily('Nunito', ['assets/fonts/Nunito-ExtraBold.ttf']);
   await _loadFamily('SpaceGrotesk', [
     'assets/fonts/SpaceGrotesk-Regular.ttf',

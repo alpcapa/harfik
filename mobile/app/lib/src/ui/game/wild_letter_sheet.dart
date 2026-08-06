@@ -13,7 +13,9 @@ class WildLetterChoice {
   final String? letter;
   final bool recallRequested;
   const WildLetterChoice.letter(String this.letter) : recallRequested = false;
-  const WildLetterChoice.recall() : letter = null, recallRequested = true;
+  const WildLetterChoice.recall()
+      : letter = null,
+        recallRequested = true;
 }
 
 Future<WildLetterChoice?> showWildLetterSheet(

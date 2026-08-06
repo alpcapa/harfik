@@ -116,10 +116,10 @@ void main() {
 
   group('PendingQueueStore', () {
     test('aynı id ikinci kez eklenirse ilk kayıt kalır (dedup)', () async {
-      await storage.queue.enqueue(
-          kind: finishedGameKind, id: 'g1', payload: {'n': 1});
-      await storage.queue.enqueue(
-          kind: finishedGameKind, id: 'g1', payload: {'n': 2});
+      await storage.queue
+          .enqueue(kind: finishedGameKind, id: 'g1', payload: {'n': 1});
+      await storage.queue
+          .enqueue(kind: finishedGameKind, id: 'g1', payload: {'n': 2});
       final all = await storage.queue.readAll(finishedGameKind);
       expect(all, hasLength(1));
       expect(all.first.payload['n'], 1);

@@ -11,7 +11,8 @@ class InsetShadow {
 
   /// CSS blur-radius değeri (sigma değil) — web değerleri aynen taşınır.
   final double blur;
-  const InsetShadow({required this.color, required this.offset, required this.blur});
+  const InsetShadow(
+      {required this.color, required this.offset, required this.blur});
 }
 
 /// CSS box-shadow tanımı (blur = CSS blur-radius; sigma DEĞİL).
@@ -19,7 +20,8 @@ class CssShadow {
   final Color color;
   final Offset offset;
   final double blur;
-  const CssShadow({required this.color, required this.offset, required this.blur});
+  const CssShadow(
+      {required this.color, required this.offset, required this.blur});
 }
 
 /// Dış gölgeleri CSS semantiğiyle çizen decoration: sigma = blur/2 ve

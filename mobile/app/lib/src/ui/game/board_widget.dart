@@ -3,7 +3,9 @@
 // handler'ları verildiğinde GestureDetector yerine Listener taşır — dokunuş
 // da sürükleme de ekran katmanının (GameScreen) pointer akışından geçer
 // (web'de Tile'ın onPointerDown/Move/Up prop'larının eşleniği). Alt bilgi
-// şeridi (Hamleler/Mesajlaşma) sonraki parçaların işi.
+// şeridi (Hamleler linki + X2/X3 açıklaması) kartın alt bölümü olarak
+// portlandı; "Mesajlaşma" butonu yalnızca Canlı oyunda çıkar (o faz henüz
+// yok, web'de de prop verilmezse hiç render edilmiyor).
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
@@ -68,6 +70,15 @@ class BoardWidget extends StatelessWidget {
   /// geometri tabanlı eşleniği).
   final GlobalKey? gridKey;
 
+  /// Alt bilgi şeridindeki "Hamleler" linki — verilmezse link çizilmez
+  /// (web'de zorunlu prop; burada ileride salt-okunur önizleme için
+  /// opsiyonel). "Mesajlaşma" butonu Canlı oyun fazının işi.
+  final VoidCallback? onOpenHistory;
+
+  /// Alt bilgi şeridini tamamen gizler — salt-okunur önizlemeler (web
+  /// hideFooter).
+  final bool hideFooter;
+
   const BoardWidget({
     super.key,
     required this.state,
@@ -82,6 +93,8 @@ class BoardWidget extends StatelessWidget {
     this.onTilePointerUp,
     this.onTilePointerCancel,
     this.gridKey,
+    this.onOpenHistory,
+    this.hideFooter = false,
   });
 
   PlayerColor _colorOfIndex(int playerIndex) =>
@@ -137,60 +150,147 @@ class BoardWidget extends StatelessWidget {
         ),
     ];
 
-    return AspectRatio(
-      aspectRatio: 1,
-      child: Container(
-        decoration: const ShapeDecorationWithCssShadows(
-          color: _boardBg,
-          radius: 18,
-          // Web Board.tsx'in gölge üçlüsü — CSS değerleriyle: koyu sağ-alt,
-          // beyaz sol-üst parlama, altta geniş yumuşak gölge. Flutter'ın
-          // BoxShadow'u CSS'ten hem daha koyu/kısa boyuyor hem katman sırası
-          // ters; bu decoration gölgeleri CSS matematiğiyle (sigma=blur/2,
-          // ilk yazılan en üstte) kendisi çizer — kullanıcı web/app
-          // karşılaştırması, 6 Ağustos 2026.
-          shadows: [
-            CssShadow(color: Color(0xB3A3B1C6), offset: Offset(8, 8), blur: 20),
-            CssShadow(
-                color: Color(0xE6FFFFFF), offset: Offset(-4, -4), blur: 14),
-            CssShadow(
-                color: Color(0x80A3B1C6), offset: Offset(0, 20), blur: 60),
-          ],
-        ),
-        padding: const EdgeInsets.all(10),
-        child: Stack(
-          key: gridKey,
-          children: [
-            GridView.count(
-              crossAxisCount: boardSize,
-              mainAxisSpacing: 3,
-              crossAxisSpacing: 3,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                for (var r = 0; r < boardSize; r++)
-                  for (var c = 0; c < boardSize; c++)
-                    _buildCell(r, c, territoryOwner, homeCellColor, lastMoveSet,
-                        currentColor),
-              ],
-            ),
-            // Bölge/hamle dış hatları — ızgara alanının tamamını kaplayan tek
-            // katman (web'deki tek SVG'nin eşleniği), dokunuşları engellemez.
-            Positioned.fill(
-              child: IgnorePointer(
-                child: CustomPaint(painter: _OutlinesPainter(outlines)),
+    // Web: kart (zemin + gölge) ızgarayı VE alt bilgi şeridini birlikte
+    // sarar — şerit ayrı/asılı bir beyaz bant değil, kartın alt bölümü.
+    return Container(
+      decoration: const ShapeDecorationWithCssShadows(
+        color: _boardBg,
+        radius: 18,
+        // Web Board.tsx'in gölge üçlüsü — CSS değerleriyle: koyu sağ-alt,
+        // beyaz sol-üst parlama, altta geniş yumuşak gölge. Flutter'ın
+        // BoxShadow'u CSS'ten hem daha koyu/kısa boyuyor hem katman sırası
+        // ters; bu decoration gölgeleri CSS matematiğiyle (sigma=blur/2,
+        // ilk yazılan en üstte) kendisi çizer — kullanıcı web/app
+        // karşılaştırması, 6 Ağustos 2026.
+        shadows: [
+          CssShadow(color: Color(0xB3A3B1C6), offset: Offset(8, 8), blur: 20),
+          CssShadow(color: Color(0xE6FFFFFF), offset: Offset(-4, -4), blur: 14),
+          CssShadow(color: Color(0x80A3B1C6), offset: Offset(0, 20), blur: 60),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AspectRatio(
+            aspectRatio: 1,
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Stack(
+                key: gridKey,
+                children: [
+                  GridView.count(
+                    crossAxisCount: boardSize,
+                    mainAxisSpacing: 3,
+                    crossAxisSpacing: 3,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      for (var r = 0; r < boardSize; r++)
+                        for (var c = 0; c < boardSize; c++)
+                          _buildCell(r, c, territoryOwner, homeCellColor,
+                              lastMoveSet, currentColor),
+                    ],
+                  ),
+                  // Bölge/hamle dış hatları — ızgara alanının tamamını kaplayan
+                  // tek katman (web'deki tek SVG'nin eşleniği), dokunuşları
+                  // engellemez.
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(painter: _OutlinesPainter(outlines)),
+                    ),
+                  ),
+                  if (!compact)
+                    Positioned.fill(
+                        child: IgnorePointer(
+                            child: _watermarks(cornerColor, cornerNumber))),
+                  if (moveOverlay != null && moveOverlay!.cells.isNotEmpty)
+                    Positioned.fill(child: IgnorePointer(child: _moveBadge())),
+                ],
               ),
             ),
-            if (!compact)
-              Positioned.fill(
-                  child: IgnorePointer(
-                      child: _watermarks(cornerColor, cornerNumber))),
-            if (moveOverlay != null && moveOverlay!.cells.isNotEmpty)
-              Positioned.fill(child: IgnorePointer(child: _moveBadge())),
-          ],
-        ),
+          ),
+          if (!hideFooter) _footer(),
+        ],
       ),
     );
   }
+
+  /// Alt bilgi şeridi — solda "Hamleler" linki, sağda X2/X3 açıklaması.
+  /// ("Mesajlaşma" butonu yalnızca Canlı oyunda çıkar, o faz henüz yok.)
+  Widget _footer() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          if (onOpenHistory != null)
+            GestureDetector(
+              onTap: onOpenHistory,
+              behavior: HitTestBehavior.opaque,
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _DocumentIcon(),
+                  SizedBox(width: 4),
+                  Text(
+                    'Hamleler',
+                    style: TextStyle(
+                      fontFamily: 'SpaceMono',
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                      color: Color(0xFF2563EB),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            const SizedBox.shrink(),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _legendItem(_goldZone, 'X2', '- kelime X2'),
+              const SizedBox(width: 8),
+              _legendItem(_centerZone, 'X3', '- kelime X3'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _legendItem(Gradient swatch, String label, String desc) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              gradient: swatch,
+              borderRadius: BorderRadius.circular(1),
+            ),
+          ),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'SpaceMono',
+              fontSize: 8,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF5A6673),
+            ),
+          ),
+          const SizedBox(width: 3),
+          Text(
+            desc,
+            style: const TextStyle(
+              fontFamily: 'SpaceMono',
+              fontSize: 8,
+              color: Color(0xB35A6673), // web text-muted/70
+            ),
+          ),
+        ],
+      );
 
   Widget _buildCell(
     int r,
@@ -576,4 +676,55 @@ class _HomeMarkPainter extends CustomPainter {
   @override
   bool shouldRepaint(_HomeMarkPainter oldDelegate) =>
       oldDelegate.color != color;
+}
+
+/// "Hamleler" linkinin başındaki küçük döküman ikonu — web'deki aynı SVG
+/// path'lerinin (dosya + kıvrık köşe + iki satır) 12px'lik portu.
+class _DocumentIcon extends StatelessWidget {
+  const _DocumentIcon();
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: 12,
+        height: 12,
+        child: CustomPaint(painter: _DocumentIconPainter()),
+      );
+}
+
+class _DocumentIconPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.width / 24;
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2 * s
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = const Color(0xFF2563EB);
+    // M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z
+    final body = Path()
+      ..moveTo(14 * s, 2 * s)
+      ..lineTo(6 * s, 2 * s)
+      ..arcToPoint(Offset(4 * s, 4 * s), radius: Radius.circular(2 * s))
+      ..lineTo(4 * s, 20 * s)
+      ..arcToPoint(Offset(6 * s, 22 * s), radius: Radius.circular(2 * s))
+      ..lineTo(18 * s, 22 * s)
+      ..arcToPoint(Offset(20 * s, 20 * s), radius: Radius.circular(2 * s))
+      ..lineTo(20 * s, 8 * s)
+      ..close();
+    canvas.drawPath(body, paint);
+    // M14 2v6h6
+    canvas.drawPath(
+        Path()
+          ..moveTo(14 * s, 2 * s)
+          ..lineTo(14 * s, 8 * s)
+          ..lineTo(20 * s, 8 * s),
+        paint);
+    // M9 13h6M9 17h6
+    canvas.drawLine(Offset(9 * s, 13 * s), Offset(15 * s, 13 * s), paint);
+    canvas.drawLine(Offset(9 * s, 17 * s), Offset(15 * s, 17 * s), paint);
+  }
+
+  @override
+  bool shouldRepaint(_DocumentIconPainter oldDelegate) => false;
 }

@@ -102,8 +102,7 @@ void main() {
       await setPhoneViewSize(tester, Size(width, 200));
       await tester.pumpWidget(MaterialApp(
         theme: ThemeData(
-            fontFamily: 'SpaceGrotesk',
-            scaffoldBackgroundColor: Colors.white),
+            fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
         home: Scaffold(
           body: GameHeader(state: s, onLogoTap: () {}),
         ),
@@ -206,8 +205,9 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.runAsync(() async {
-      final boundary = tester.renderObject(find.byKey(
-          const Key('header-boundary'))) as RenderRepaintBoundary;
+      final boundary =
+          tester.renderObject(find.byKey(const Key('header-boundary')))
+              as RenderRepaintBoundary;
       final image = await boundary.toImage(pixelRatio: 2);
       final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
       final out = File('build/screenshots/game_header.png');

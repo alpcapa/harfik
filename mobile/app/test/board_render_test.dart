@@ -29,7 +29,8 @@ GameState loadFixtureState(String name) {
   return gameStateFromJson(last.cast<String, Object?>());
 }
 
-Future<void> capturePng(WidgetTester tester, GlobalKey key, String outPath) async {
+Future<void> capturePng(
+    WidgetTester tester, GlobalKey key, String outPath) async {
   await tester.runAsync(() async {
     final boundary =
         key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
@@ -44,7 +45,8 @@ Future<void> capturePng(WidgetTester tester, GlobalKey key, String outPath) asyn
 Future<void> pumpBoard(WidgetTester tester, GlobalKey key, GameState state,
     {MoveOverlay? overlay}) async {
   await tester.pumpWidget(MaterialApp(
-    theme: ThemeData(fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+    theme: ThemeData(
+        fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
     home: Scaffold(
       backgroundColor: Colors.white,
       body: Center(
@@ -61,7 +63,12 @@ Future<void> pumpBoard(WidgetTester tester, GlobalKey key, GameState state,
               child: SizedBox(
                 width: 560,
                 height: 560,
-                child: BoardWidget(state: state, moveOverlay: overlay),
+                // Bu testler yalnızca IZGARA render'ını ölçer; kartın alt
+                // bilgi şeridi (Hamleler/X2-X3) sabit 560×560 kutuya
+                // sığmayacağından kapatılır — şeridin kendi testi
+                // move_history_test.dart'ta.
+                child: BoardWidget(
+                    state: state, moveOverlay: overlay, hideFooter: true),
               ),
             ),
           ),

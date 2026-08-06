@@ -11,7 +11,8 @@ void main() {
       expect(compareSemver('1.10.0', '1.9.0'), 1); // sayısal, sözlüksel değil
       expect(compareSemver('2.0', '2.0.0'), 0); // eksik alan 0
       expect(compareSemver('1.2.3+7', '1.2.3'), 0); // build eki yok sayılır
-      expect(compareSemver('0.0.0', '0.1.0'), -1); // seed eşiği hiçbir şeyi engellemez
+      expect(compareSemver('0.0.0', '0.1.0'),
+          -1); // seed eşiği hiçbir şeyi engellemez
     });
   });
 

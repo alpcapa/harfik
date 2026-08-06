@@ -1,11 +1,12 @@
 // Oyun sonu ekranı — src/components/GameOver.tsx portu.
 // Kazanan başlığı (beraberlikte altın "BERABERE"), rankPlayers sırasıyla
 // oyuncu listesi (Kalan/Toplam sütunları, Teslim rozeti), toplam hamle.
-// Web'deki "Oyun Geçmişi"/"Görüş Bildir" linkleri BİLİNÇLİ eksik — hamle
-// geçmişi modalı ve görüş formu sonraki parçaların işi (mobile/CLAUDE.md).
+// Web'deki "Oyun Geçmişi" linki portlandı; "Görüş Bildir" BİLİNÇLİ eksik
+// (form Supabase'e yazıyor — auth fazının işi, bkz. mobile/CLAUDE.md).
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
+import 'move_history_modal.dart';
 import 'player_badge.dart';
 import 'player_colors.dart';
 
@@ -25,8 +26,7 @@ class GameOverModal extends StatelessWidget {
     final ranked = rankPlayers(state.players);
     final top = ranked.first;
     final tie = ranked.length > 1 && ranked[1].rank == top.rank;
-    final winColor =
-        playerColors[top.player.colorIndex % playerColors.length];
+    final winColor = playerColors[top.player.colorIndex % playerColors.length];
 
     return Dialog(
       backgroundColor: const Color(0xFFF5F7FA), // web panel
@@ -96,9 +96,31 @@ class GameOverModal extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('KAPAT'),
+            // Web'deki iki linkten "Oyun Geçmişi" portlandı; "Görüş Bildir"
+            // hâlâ eksik (geri bildirim formu Supabase'e yazıyor — auth
+            // fazının işi).
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton(
+                  onPressed: () => showMoveHistoryModal(context, state),
+                  child: const Text(
+                    'OYUN GEÇMİŞİ',
+                    style: TextStyle(
+                      fontFamily: 'SpaceMono',
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                      color: Color(0xFF5A6673),
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('KAPAT'),
+                ),
+              ],
             ),
           ],
         ),
@@ -152,8 +174,8 @@ class _PlayerRow extends StatelessWidget {
                 child: Text(
                   '${entry.rank}. ${p.name}',
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontSize: 15, color: Color(0xFF1B2430)),
+                  style:
+                      const TextStyle(fontSize: 15, color: Color(0xFF1B2430)),
                 ),
               ),
               if (p.surrendered)

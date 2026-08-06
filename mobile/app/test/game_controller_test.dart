@@ -14,7 +14,9 @@ import 'package:kelimeki_core/kelimeki_core.dart';
 SetWordSource loadWordsFromFile() {
   final f = File('assets/dictionary/words_tr.txt');
   return SetWordSource(
-    const LineSplitter().convert(f.readAsStringSync()).where((w) => w.isNotEmpty),
+    const LineSplitter()
+        .convert(f.readAsStringSync())
+        .where((w) => w.isNotEmpty),
   );
 }
 

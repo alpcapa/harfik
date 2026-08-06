@@ -26,25 +26,29 @@ class PlayerColor {
 }
 
 const List<PlayerColor> playerColors = [
-  PlayerColor( // camgöbeği
+  PlayerColor(
+    // camgöbeği
     base: Color(0xFF0891B2),
     tint: Color(0xFFA9E4EF),
     zone: Color(0xFFE7F6FA),
     text: Color(0xFF0A6076),
   ),
-  PlayerColor( // kırmızı
+  PlayerColor(
+    // kırmızı
     base: Color(0xFFDC2626),
     tint: Color(0xFFFBDADA),
     zone: Color(0xFFFDEFEF),
     text: Color(0xFF7A1414),
   ),
-  PlayerColor( // yeşil
+  PlayerColor(
+    // yeşil
     base: Color(0xFF16A34A),
     tint: Color(0xFFD6F3E1),
     zone: Color(0xFFEDFAF1),
     text: Color(0xFF0B5128),
   ),
-  PlayerColor( // mor
+  PlayerColor(
+    // mor
     base: Color(0xFF7C3AED),
     tint: Color(0xFFDCC8FC),
     zone: Color(0xFFF3ECFE),

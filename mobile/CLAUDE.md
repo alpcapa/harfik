@@ -820,8 +820,52 @@ uygulanmalı; her biri tek satırlık.
      turuncuya dönüyor, sağdaki "N seçili" duruyor). **Web'de aynı satır
      kaldırılana kadar bu bilinçli bir sapmadır** — parite tablosuna
      bakarken "port eksik" sanılmasın.
-   - Sıradaki parçalar: kelime anlamı modalı, hamle geçmişi modalı,
-     kurallar ("Nasıl oynanır?") ekranı.
+   - ✅ **Parça 8 — hamle geçmişi modalı + Board alt bilgi şeridi
+     (6 Ağustos 2026):** `MoveHistoryModal.tsx` portu (`move_history_modal.
+     dart`) — veri tamamen `GameState.moveHistory`'den geldiğinden (motorla
+     birlikte portlanmış, golden vector'larla doğrulanmış) yeni asset/ağ
+     çağrısı gerekmedi; bu yüzden kelime anlamı modalından ÖNCE yapıldı
+     (o 6.5 MB'lık `meanings.json`'un mobil paketleme kararını bekliyor).
+     Kapsanan web davranışları: en yeni üstte (ters sıra), `invasionFrom`
+     dolu "vergi geliri" satırlarının kart olarak GÖSTERİLMEMESİ ve hamle
+     sayısına katılmaması (ama toplam puana katılması), kelime başına
+     "SÖZCÜK (ham puan ×2/×3)" satırı, Bingo/jokerli-bitiş/Sınır İhlali
+     rozetleri + altlarındaki açıklama satırları, pas/değiştir/teslim
+     metinleri, boş liste hâli.
+     - **Ortak modal kabuğu çıkarıldı (`modal_shell.dart`, `KModal`):**
+       web'de ~15 modal `Modal.tsx`'i paylaşıyor; Flutter'da ilk iki modal
+       (Kalan Taşlar, GameOver) kendi Dialog'unu kurmuştu. Üçüncüsünde
+       ortak kabuk yazıldı (360px, %85 yükseklik sınırı, mono/uppercase/
+       accent başlık + ✕ + ayraç). Başlık `trUpper`'dan geçer (web'de CSS
+       `uppercase`). Kalan Taşlar/GameOver'ın kendi kabukları ŞİMDİLİK
+       DOKUNULMADAN kaldı — onları da taşımak ayrı bir görsel doğrulama
+       turu demek; yeni modaller `KModal` kullanmalı.
+     - **Board alt bilgi şeridi** (Parça 1'de bilinçli ertelenmişti):
+       kart artık `Column[AspectRatio(1) ızgara, şerit]` — web'deki gibi
+       şerit kartın kendi zemininde/gölgesinde, ayrı bir bant değil. Solda
+       döküman ikonu + "Hamleler" (CustomPainter, web SVG path'i), sağda
+       X2/X3 açıklaması. `hideFooter` (web'in aynı prop'u) salt-okunur
+       render'lar için: `board_render_test.dart` sabit 560×560 kutuda
+       çizdiğinden şeridi kapatıyor.
+     - **Test ortamında Material ikon fontu eksikti:** `Icons.*` (joker
+       yıldızı, modal ✕, YZ robotu) ekran görüntülerinde boş kutuya
+       dönüyordu — ikon fontu SDK önbelleğinde yaşıyor, uygulama asset'i
+       değil. `test_fonts.dart` artık `$FLUTTER_ROOT/bin/cache/artifacts/
+       material_fonts/MaterialIcons-Regular.otf`'yi de yüklüyor. Gerçek
+       cihazda sorun yoktu, yalnızca görüntüler yanıltıcıydı (önceki
+       parçaların görüntülerinde jokerin "□" görünmesinin sebebi buydu).
+       Aynı sebeple hamle geçmişindeki ★/★★ rozeti metin yerine
+       `Icons.star` kullanıyor (taş jokerindeki aynı karar — ★ glyph'i
+       Space Mono'da yok).
+     - GameOver'a web'deki "Oyun Geçmişi" linki eklendi; "Görüş Bildir"
+       hâlâ bilinçli eksik (form Supabase'e yazıyor → auth fazı).
+     - Doğrulama: `move_history_test.dart` (3 test — zengin geçmişle tüm
+       rozet/filtre dalları + `build/screenshots/move_history.png`, boş
+       liste, GameScreen'de gerçek hamle sonrası footer linkinden açılış).
+       46/46 yeşil.
+   - Sıradaki parçalar: kelime anlamı modalı (önce `meanings.json`
+     paketleme kararı — bkz. Üst Düzey Kararlar #4), kurallar
+     ("Nasıl oynanır?") ekranı.
 5. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

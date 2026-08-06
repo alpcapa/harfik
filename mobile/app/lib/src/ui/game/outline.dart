@@ -47,8 +47,8 @@ List<List<Offset>> _traceEdges(List<(int, int)> cells, ExtraOpen? extraOpen) {
 
   Offset parseKey(String k) {
     final i = k.indexOf(',');
-    return Offset(double.parse(k.substring(0, i)),
-        double.parse(k.substring(i + 1)));
+    return Offset(
+        double.parse(k.substring(0, i)), double.parse(k.substring(i + 1)));
   }
 
   final paths = <List<Offset>>[];
