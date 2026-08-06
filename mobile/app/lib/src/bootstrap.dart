@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/version_gate.dart';
 import 'data/auth_service.dart';
+import 'data/cloud_save_repo.dart';
 import 'data/dictionary_loader.dart';
 import 'data/meaning_store.dart';
 import 'data/supabase_client.dart';
@@ -35,6 +36,11 @@ class AppServices {
   /// widget testleri null geçebilir (yalnızca durum satırı gizlenir).
   final Future<AppStorage>? storage;
 
+  /// Girişli kullanıcının sunucu kayıtları (`local_game_saves`) — Supabase
+  /// yapılandırılmamışsa null (tam offline mod, yalnızca misafir slotu).
+  /// Testler sahte bir gateway'li repo geçer.
+  final CloudSaveRepo? cloudSaves;
+
   const AppServices({
     required this.dictionary,
     required this.meanings,
@@ -42,6 +48,7 @@ class AppServices {
     required this.supabase,
     required this.versionGate,
     this.storage,
+    this.cloudSaves,
   });
 }
 
@@ -60,5 +67,7 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
     supabase: supabase,
     versionGate: versionGate,
     storage: storage,
+    cloudSaves:
+        supabase != null ? CloudSaveRepo(SupabaseCloudSaveGateway(supabase)) : null,
   );
 }

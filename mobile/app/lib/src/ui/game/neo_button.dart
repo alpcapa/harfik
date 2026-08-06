@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 
 import 'neo_box.dart';
 
-enum NeoButtonVariant { accent, neutral, gold }
+enum NeoButtonVariant { accent, neutral, gold, orange }
 
 class NeoButton extends StatelessWidget {
   final String label;
@@ -51,6 +51,17 @@ class NeoButton extends StatelessWidget {
         bg = const Color(0xFFB7791F);
         fg = Colors.white;
         borderColor = null;
+        shadows = const [
+          CssShadow(color: Color(0x8CA3B1C6), offset: Offset(3, 3), blur: 8),
+          CssShadow(color: Color(0xB3FFFFFF), offset: Offset(-2, -2), blur: 6),
+          CssShadow(color: Color(0x59647489), offset: Offset(0, 6), blur: 14),
+        ];
+      case NeoButtonVariant.orange:
+        bg = const Color(0xFFF2650F); // tailwind orange (Setup "+ Yeni" butonu)
+        fg = Colors.white;
+        borderColor = null;
+        // web .btn-raised-orange — gölge değerleri .btn-raised ile birebir
+        // aynı (ölçüldü, index.css:78), yalnızca zemin rengi farklı.
         shadows = const [
           CssShadow(color: Color(0x8CA3B1C6), offset: Offset(3, 3), blur: 8),
           CssShadow(color: Color(0xB3FFFFFF), offset: Offset(-2, -2), blur: 6),

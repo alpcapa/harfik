@@ -100,6 +100,7 @@ mobile/
       data/dictionary_loader.dart # rootBundle + Isolate.run → SetWordSource
       data/supabase_client.dart   # anahtar yoksa null → tam offline mod (web'deki configured)
       data/online_api.dart   # submit_move sarmalayıcısı: p_move_id UUID + retry
+      data/cloud_save_repo.dart   # local_game_saves senkronu (girişli YZ oyunları)
       game/game_controller.dart # ChangeNotifier motor kabuğu + otomatik YZ turu
       storage/               # SQLite + prefs katmanı (bkz. "Depolama Katmanı"):
                              # app_database (şema), app_storage (giriş kapısı),
@@ -1101,11 +1102,103 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        (trigger'ın profili kurması, e-posta doğrulaması açık/kapalı
        dalları, gerçek nickname yarışı) bu ortamdan test EDİLEMEDİ —
        cihazda gerçek bir kayıtla doğrulanmalı.
-   - Sıradaki parçalar (sıra önerisi): şifre sıfırlama (recovery deep
-     link), girişli kullanıcının bulut kayıtları (`local_game_saves`
-     senkronu — misafir kuyruğu `TableWriteQueue`'dan geçerek), Canlı oyun
-     ekranları, skor kartı/k-lig, Görüş Bildir formu, "Arkadaşınla paylaş"
-     (native share).
+   - ✅ **Parça 3a — bulut kayıtları senkronu (6 Ağustos 2026,
+     `data/cloud_save_repo.dart`):** Girişli kullanıcının devam eden YZ
+     oyunları artık web'le AYNI `local_game_saves` tablosunda — cihazlar
+     arası devam (web'de başla → mobilde sürdür ve tersi) + çoklu oyun.
+     Üç katman: `CloudSaveGateway` (satır kapısı — gerçek uç
+     `SupabaseCloudSaveGateway`, testlerde bellek içi sahte),
+     `CloudSaveRepo` (politika), `CloudGameSession` (misafir
+     `GameSession`'ının bulut eşleniği).
+     - **PORT_BRIEF §7 değişmezinin ilk gerçek kullanıcısı:**
+       `local_game_saves`e giden HER yazma (upsert + silme) tablonun TEK
+       `TableWriteQueue`'sundan geçer, listeleme kuyruk boşalana kadar
+       bekler — web'deki DELETE→SELECT yarışı (silinen kaydın listede bir
+       kez daha görünmesi) yapısal olarak imkânsız; test, silme uçuştayken
+       listeleyerek kanıtlıyor.
+     - **Web autosave davranışı birebir:** 600ms debounce (aynı süre/
+       gerekçe), satır id'si ilk değişimde tembelce üretilir (web
+       `activeSaveIdRef`), sunucudan devamda `resumeSaveId` ile dışarıdan
+       verilir (aynı satır güncellenir, yenisi açılmaz — testli); oyun
+       bitince satır silinir (bekleyen debounce iptal — gecikmeli upsert
+       silinen satırı diriltemez); çıkışta `turnCount<2` ise satır İZ
+       BIRAKMADAN silinir (web handleLogoClick). **Tek bilinçli sapma:**
+       `turnCount>=2` çıkışında bekleyen debounce web'de İPTAL edilir (son
+       ≤600ms kaybolabilir), mobilde AYNI satıra hemen flush edilir —
+       mobil OS uygulamayı daha sert kapattığından daha taze veri; şema/
+       anlam farkı yok. (İlk sürümde flush hiç çalışmıyordu — `detach()`
+       timer'ı öldürdükten SONRA `_timer != null` kontrol ediliyordu;
+       test yakaladı.)
+     - **Listeleme kararları (web refreshCloudSaves'in liste kısmı):**
+       bitmiş/play-dışı satır fırsatçı temizlenir; ağ hatasında `null`
+       döner (web `[]` döndürüp yanlış "hiç oyunun yok" gösterirdi —
+       mobilde UI eski listeyi korur); çözülemeyen satır SİLİNMEDEN
+       atlanır (satır web istemcisi için geçerli olabilir — mobilin
+       silme/karantina hakkı yok). **7 günlük satır listeye girmez ama
+       SİLİNMEZ:** claim+(-2 ceza+`games` satırı) 3b'nin işi — satırı ceza
+       üretmeden silmek cezayı YUTMAK olurdu; süresi dolan satırı şimdilik
+       aynı hesabın web istemcisi süpürüyor.
+     - **Misafir migrasyonu** (`migrateGuestSave` — web
+       `migratingSavedGameRef` effect'i): girişte misafir slotu yeni bir
+       uuid ile buluta taşınır; 1. oyuncunun adı hesap adına çevrilir
+       ("Sıra: Misafir" kalıcı kalmasın — web 1 Ağustos düzeltmesi; isim
+       düzeltme kanonik JSON üzerinden, `copyWith` zinciri yerine
+       yaz→değiştir→geri-ayrıştır), Setup çağıranı `profileLoading`
+       bitene kadar bekler; slot YALNIZCA sunucu yazımı doğrulanınca
+       silinir (ağ hatasında dokunulmaz, sonraki denemede tekrar taşınır
+       — testli).
+     - **Setup girişli dalı** (web `user && !creatingLocal`): turuncu
+       "+ Yeni Yapay Zeka Oyunu Aç" (NeoButton'a `orange` varyantı —
+       gölgeler ÖLÇÜLDÜ, `.btn-raised` ile birebir aynı, yalnız zemin
+       farklı) + "Devam Eden Oyunlar" listesi; form yalnızca butonla
+       açılır, yanında VAZGEÇ (web creatingLocal/Vazgeç). Satırlar misafir
+       `_SavedGameRow`'unun kendisi: girişli + `turnCount>=2` için kalan
+       süre dili "teslim sayılacak" (web `willSurrender`), insan koltuk
+       avatarı profil fotoğrafı/baş harfler (web `savedGameAvatars`).
+       Girişliyken misafir slotuna HİÇ yazılmaz (web "girişliyken
+       localStorage'a yazılmaz" kuralı — mükerrer ceza önlemi). Hesap
+       değişimi kararı `user.id` ile (`_lastUserId` — web "user REFERANSI
+       hesap değişimi değildir" dersi); değişimde liste/form sıfırlanır.
+       Web'de oyun başlayınca Setup unmount olup `creatingLocal` sıfırlanır
+       — mobilde ekran mount'ta kaldığından oyundan dönüşte elle
+       sıfırlanır (test yakaladı: turnCount<2 çıkışında liste yerine form
+       görünüyordu). Web'in "Devam Edenler / Son Oynananlar" alt sekmeleri
+       BİLİNÇLİ eksik — "Son Oynananlar" bitmiş oyun geçmişi (`games`)
+       ister, o 3b/skor kartı parçasının işi.
+     - **Çapraz platform state uyumluluğu ÖLÇÜLDÜ (parçanın kritik
+       doğrulaması):** web'in ÜRETİM reducer'ıyla (esbuild, tohumlu) 8 tur
+       oynanmış + 1 taslak taşlı bir oyunun HAM kaydı (`JSON.stringify
+       (state)` — serState normalizasyonu YOK, gerçek `startedAt` dahil)
+       üretilip Dart'a verildi: `gameStateFromJson` sorunsuz çözdü, motor
+       kullanabildi (RecallAll + Pass), ve Dart'ın kanonik geri-yazımı ham
+       web JSON'uyla **yapısal olarak SIFIR farklı** çıktı (anahtar
+       bazında özyinelemeli diff, 0 fark). Yani mobil web'in yazdığını
+       okur, web de mobilin yazdığını okur — mobil satır web'in kendi
+       yazdığı biçimin aynısı. Web bulut devamında `multiSession`
+       İŞARETLEMEZ (yalnızca misafir localStorage yükleyicisi işaretler) —
+       mobil bulut devamı da işaretlemez, bilinçli aynı davranış.
+     - Doğrulama: `cloud_save_test.dart` (12 test — roundtrip, yazma-okuma
+       yarışı, fırsatçı temizlik, süresi-dolmuş-satır-silinmez,
+       bozuk-satır-atlanır, hata yutma, debounce birleştirme + tek satır,
+       bitişte silme, iki `end()` dalı, resumeSaveId, migrasyon üç dalı) +
+       `setup_cloud_test.dart` (4 widget testi — liste/teslim dili +
+       ekran görüntüsü `build/screenshots/setup_cloud_list.png`, boş
+       liste + form/Vazgeç döngüsü, satırdan devam→aynı satır, turnCount<2
+       terk→iz yok). 87/87 yeşil, analyze temiz. **Doğrulama sınırı:**
+       `SupabaseCloudSaveGateway` (gerçek PostgREST upsert/delete/select
+       + RLS) bu ortamdan test EDİLEMEDİ — cihazda iki oturumla (web ↔
+       mobil aynı hesap) uçtan uca doğrulanmalı. **Bilinçli ertelenen:**
+       oyun İÇİNDE (GameHeader'dan) giriş yapılırsa oyun o an buluta
+       DEVREDİLMEZ (web mid-game RENAME_PLAYER+devir effect'i) — misafir
+       slotunda kalır, Setup'a dönüşte migrasyon taşır; sonuç aynı,
+       yalnızca o oyun boyunca autosave yerel kalır.
+   - Sıradaki parçalar (sıra önerisi): **3b — bitmiş/terk edilmiş oyun
+     kayıtları** (`buildGameRecord` portu + `games` insert'i (23505
+     idempotency) + `pending_queue` flush'ı + 7 günlük bulut süpürmesi &
+     -2 ceza + `notify-local-game-abandoned` tetiği), şifre sıfırlama
+     (özel şema deep link — `kelimeki://reset`, Dashboard redirect
+     listesine ekleme gerekir), Canlı oyun ekranları, skor kartı/k-lig,
+     Görüş Bildir formu, "Arkadaşınla paylaş" (native share).
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

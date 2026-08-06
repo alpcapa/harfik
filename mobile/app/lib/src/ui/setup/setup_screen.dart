@@ -11,11 +11,14 @@
 // Oyun" satırı (avatarlar + Sıra: + kalan süre) ve 7 gün paragrafı.
 // "Nasıl oynanır?" linki kurallar modalını açar; "Arkadaşınla paylaş"
 // (native share) bilinçli eksik — ayrı parça.
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import '../../bootstrap.dart';
 import '../../config/env.dart';
+import '../../data/cloud_save_repo.dart';
 import '../../game/game_controller.dart';
 import '../../game/local_game_repo.dart';
 import '../../storage/local_save_store.dart' show abandonTimeout;
@@ -49,9 +52,25 @@ class _SetupScreenState extends State<SetupScreen> {
   GameState? _savedState; // null = kayıt yok
   int? _savedAtMs;
 
+  // Girişli kullanıcının bulut kayıtları (web cloudSaves state'i) —
+  // null: henüz çekilmedi/alınamadı. `_creatingLocal` web'in aynı adlı
+  // state'i: kurulum formu yalnızca "+ Yeni Yapay Zeka Oyunu Aç" ile açılır.
+  List<CloudSave>? _cloudSaves;
+  bool _creatingLocal = false;
+  // Misafir kaydını hesaba taşıyan akışın mükerrer-çalışma kilidi (web
+  // migratingSavedGameRef).
+  bool _migratingGuest = false;
+  // Hesap değişimi kararı `user` REFERANSINA değil id'ye bakar — web dersi:
+  // her onAuthStateChange (TOKEN_REFRESHED dahil) yeni bir User nesnesi
+  // verir; referansa bakmak "bir kez"lik sıfırlamaları saatlik tekrara
+  // çevirirdi. Mount'ta mevcut id ile başlar (mount yolu dokunulmaz).
+  String? _lastUserId;
+
   @override
   void initState() {
     super.initState();
+    _lastUserId = widget.services.auth.user?.id;
+    widget.services.auth.addListener(_onAuthEvent);
     final storage = widget.services.storage;
     if (storage != null) {
       storage.then((s) async {
@@ -59,10 +78,65 @@ class _SetupScreenState extends State<SetupScreen> {
         _repo = repo;
         await _refreshSaveStatus(); // load süresi dolanı olaya çevirir
         await repo.drainAbandonedGames(); // web'in Setup süpürme refleksi
+        unawaited(_syncCloud()); // girişliyse migrasyon + liste
       });
     } else {
       _saveChecked = true; // depo yok (test ortamı) — kalıcılıksız çalış
+      unawaited(_syncCloud());
     }
+  }
+
+  @override
+  void dispose() {
+    widget.services.auth.removeListener(_onAuthEvent);
+    super.dispose();
+  }
+
+  void _onAuthEvent() {
+    final id = widget.services.auth.user?.id;
+    if (id != _lastUserId) {
+      // Çıkış ya da hesap değişimi: önceki hesabın listesi/form durumu
+      // yeni hesaba sızmasın (web mainView/cloudSaves sıfırlama dersleri).
+      _lastUserId = id;
+      if (mounted) {
+        setState(() {
+          _cloudSaves = null;
+          _creatingLocal = false;
+        });
+      }
+    }
+    // Aynı hesapta tekrarlanan bildirimlerde yeniden çekim zararsız (web
+    // dersi: fazladan fetch zararsız, ref sıfırlamak zararlı) — profil
+    // yüklenince de burası tetiklenip bekleyen migrasyonu tamamlar.
+    unawaited(_syncCloud());
+  }
+
+  /// Girişliyse: önce misafir kaydını hesaba taşımayı dener (profil hazır
+  /// olduğunda — accountName kesinleşmeden yüklenirse "Sıra: Misafir" kalıcı
+  /// kalırdı, web'in profileLoading beklemesi), sonra listeyi tazeler.
+  Future<void> _syncCloud() async {
+    final auth = widget.services.auth;
+    final cloud = widget.services.cloudSaves;
+    final user = auth.user;
+    if (user == null || cloud == null) return;
+    final repo = _repo;
+    if (repo != null && !auth.profileLoading && !_migratingGuest) {
+      _migratingGuest = true;
+      try {
+        final moved = await cloud.migrateGuestSave(
+          guestRepo: repo,
+          userId: user.id,
+          accountName: auth.accountName,
+        );
+        if (moved && mounted) await _refreshSaveStatus();
+      } finally {
+        _migratingGuest = false;
+      }
+    }
+    final list = await cloud.list();
+    if (!mounted || widget.services.auth.user?.id != user.id) return;
+    if (list == null && _cloudSaves != null) return; // ağ hatası eskiyi ezmesin
+    setState(() => _cloudSaves = list);
   }
 
   Future<void> _refreshSaveStatus() async {
@@ -78,8 +152,22 @@ class _SetupScreenState extends State<SetupScreen> {
     });
   }
 
-  Future<void> _openGame(GameController controller, SetWordSource words) async {
-    final session = _repo?.attach(controller);
+  Future<void> _openGame(GameController controller, SetWordSource words,
+      {String? resumeCloudId}) async {
+    // Girişli kullanıcının oyunu SUNUCUYA yazılır (CloudGameSession),
+    // misafir slotuna HİÇ dokunulmaz — web'in "girişliyken localStorage'a
+    // yazılmaz" kuralının eşleniği (mükerrer terk cezası önlemi; giriş
+    // öncesi eski misafir kaydı zaten migrasyonla taşınıp silinmiş olur).
+    final user = widget.services.auth.user;
+    final cloud = widget.services.cloudSaves;
+    GameSession? guestSession;
+    CloudGameSession? cloudSession;
+    if (user != null && cloud != null) {
+      cloudSession = CloudGameSession(controller, cloud, user.id,
+          resumeSaveId: resumeCloudId);
+    } else {
+      guestSession = _repo?.attach(controller);
+    }
     await Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => GameScreen(
         controller: controller,
@@ -88,9 +176,15 @@ class _SetupScreenState extends State<SetupScreen> {
         auth: widget.services.auth,
       ),
     ));
-    await session?.end();
+    await guestSession?.end();
+    await cloudSession?.end();
     controller.dispose();
+    // Web'de oyun başlayınca Setup unmount olup `creatingLocal` kendiliğinden
+    // sıfırlanıyor; burada ekran mount'ta kaldığından dönüşte elle sıfırlanır
+    // — dönüş her zaman listeye (web "sonraki mount'ta sıfırlanır" davranışı).
+    if (mounted && _creatingLocal) setState(() => _creatingLocal = false);
     await _refreshSaveStatus();
+    await _syncCloud();
   }
 
   Future<void> _startNewGame(SetWordSource words) async {
@@ -120,6 +214,16 @@ class _SetupScreenState extends State<SetupScreen> {
     final controller = GameController(words: words);
     controller.restore(state);
     await _openGame(controller, words);
+  }
+
+  Future<void> _resumeCloudSave(CloudSave save, SetWordSource words) async {
+    // Web handleResumeCloudSave: satır id'si session'a DIŞARIDAN verilir ki
+    // autosave yeni satır açmak yerine aynı satırı güncellesin. State olduğu
+    // gibi uygulanır — web RESUME_SAVED de multiSession İŞARETLEMEZ (yalnızca
+    // misafirin localStorage yükleyicisi işaretliyor; bilinçli aynı davranış).
+    final controller = GameController(words: words);
+    controller.restore(save.state);
+    await _openGame(controller, words, resumeCloudId: save.id);
   }
 
   void _showComingSoon(String title, String message) {
@@ -236,6 +340,14 @@ class _SetupScreenState extends State<SetupScreen> {
                               style: const TextStyle(color: Color(0xFFDC2626)));
                         }
                         final words = snap.data;
+                        // Girişli kullanıcı: liste varsayılan görünüm, form
+                        // yalnızca "+ Yeni" ile açılır (web creatingLocal).
+                        if (auth.user != null &&
+                            widget.services.cloudSaves != null) {
+                          return _creatingLocal
+                              ? _buildNewGameForm(words, showCancel: true)
+                              : _buildCloudListView(words);
+                        }
                         if (!_saveChecked) {
                           return const _SectionLabel(
                               'KAYITLAR KONTROL EDİLİYOR…');
@@ -294,6 +406,7 @@ class _SetupScreenState extends State<SetupScreen> {
           state: state,
           subtitle: 'Sıra: $current',
           savedAtMs: _savedAtMs ?? 0,
+          isGuest: true,
           onTap: words == null ? null : () => _resumeSavedGame(words),
         ),
         const SizedBox(height: 8),
@@ -312,7 +425,73 @@ class _SetupScreenState extends State<SetupScreen> {
     );
   }
 
-  Widget _buildNewGameForm(SetWordSource? words) {
+  /// Girişli kullanıcının varsayılan görünümü — web Setup'ın `user &&
+  /// !creatingLocal` dalı: üstte turuncu "+ Yeni Yapay Zeka Oyunu Aç",
+  /// altında Devam Eden Oyunlar listesi. Web'deki "Devam Edenler / Son
+  /// Oynananlar" alt sekmeleri BİLİNÇLİ eksik — "Son Oynananlar" bitmiş
+  /// oyun geçmişi (`games` tablosu) ister, o skor kartı/kayıt parçasının işi.
+  Widget _buildCloudListView(SetWordSource? words) {
+    final saves = _cloudSaves;
+    final auth = widget.services.auth;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: 44,
+          child: NeoButton(
+            label: '+ YENİ YAPAY ZEKA OYUNU AÇ',
+            variant: NeoButtonVariant.orange,
+            fontSize: 14,
+            letterSpacing: 1.5,
+            onPressed: () => setState(() => _creatingLocal = true),
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (saves == null)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: Text(
+                'Yükleniyor…',
+                style: TextStyle(
+                    fontFamily: 'SpaceMono', fontSize: 12, color: _muted),
+              ),
+            ),
+          )
+        else if (saves.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: Text(
+                'Devam eden bir Yapay Zeka oyunun yok.',
+                style: TextStyle(
+                    fontFamily: 'SpaceMono', fontSize: 12, color: _muted),
+              ),
+            ),
+          )
+        else ...[
+          const _SectionLabel('DEVAM EDEN OYUNLAR'),
+          const SizedBox(height: 8),
+          for (final save in saves) ...[
+            _SavedGameRow(
+              state: save.state,
+              subtitle:
+                  'Sıra: ${save.state.players.isNotEmpty ? save.state.players[save.state.current].name : '—'}',
+              savedAtMs: save.updatedAtMs,
+              // Web: girişli kullanıcıda gerçekten başlamış oyun için süre
+              // dolunca -2'li teslim gerçek/anında sonuç → "teslim sayılacak".
+              willSurrender: save.state.turnCount >= 2,
+              accountAvatarUrl: auth.profile?.avatarUrl,
+              onTap: words == null ? null : () => _resumeCloudSave(save, words),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ],
+      ],
+    );
+  }
+
+  Widget _buildNewGameForm(SetWordSource? words, {bool showCancel = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -345,17 +524,41 @@ class _SetupScreenState extends State<SetupScreen> {
           ),
         ],
         const SizedBox(height: 20),
-        SizedBox(
-          height: 48,
-          // Web: `btn-raised bg-accent ... disabled:opacity-35` — NeoButton
-          // disabled durumu birebir aynı görünümü verir.
-          child: NeoButton(
-            label: words == null ? 'HAZIRLANIYOR…' : 'OYUNU BAŞLAT',
-            variant: NeoButtonVariant.accent,
-            fontSize: 14,
-            letterSpacing: 2,
-            onPressed: words == null ? null : () => _startNewGame(words),
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 48,
+                // Web: `btn-raised bg-accent ... disabled:opacity-35` —
+                // NeoButton disabled durumu birebir aynı görünümü verir.
+                child: NeoButton(
+                  label: words == null ? 'HAZIRLANIYOR…' : 'OYUNU BAŞLAT',
+                  variant: NeoButtonVariant.accent,
+                  fontSize: 14,
+                  letterSpacing: 2,
+                  onPressed: words == null ? null : () => _startNewGame(words),
+                ),
+              ),
+            ),
+            // Yalnızca girişli kullanıcının "+ Yeni" ile açtığı formda —
+            // web'in creatingLocal "Vazgeç" butonu (Devam Eden Oyunlar
+            // listesine döner); misafirde form tek yol, hiç çizilmez.
+            if (showCancel) ...[
+              const SizedBox(width: 8),
+              Expanded(
+                child: SizedBox(
+                  height: 48,
+                  child: NeoButton(
+                    label: 'VAZGEÇ',
+                    variant: NeoButtonVariant.neutral,
+                    fontSize: 14,
+                    letterSpacing: 2,
+                    onPressed: () => setState(() => _creatingLocal = false),
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ],
     );
@@ -490,18 +693,31 @@ class _SavedGameRow extends StatelessWidget {
   final GameState state;
   final String subtitle;
   final int savedAtMs;
+
+  /// Web remainingTime'ın aynı ayrımı: misafirde kesin sonuç silinme
+  /// ("silinecek"); girişli kullanıcının başlamış (turnCount>=2) oyununda
+  /// süre dolunca -2'li teslim gerçek/anında sonuç ("teslim sayılacak").
+  final bool willSurrender;
+
+  /// Girişli kullanıcının satırında insan koltuğun avatarı (web
+  /// savedGameAvatars: profil fotoğrafı ya da baş harfler); null + misafir
+  /// satırında "?" çemberi.
+  final String? accountAvatarUrl;
+  final bool isGuest;
   final VoidCallback? onTap;
   const _SavedGameRow({
     required this.state,
     required this.subtitle,
     required this.savedAtMs,
+    this.willSurrender = false,
+    this.accountAvatarUrl,
+    this.isGuest = false,
     this.onTap,
   });
 
-  /// Web remainingTime portu (willSurrender=false — misafir dili: kesin olan
-  /// tek sonuç silinme; <24 saatte kırmızı + dakika hassasiyeti).
+  /// Web remainingTime portu (<24 saatte kırmızı + dakika hassasiyeti).
   ({String text, bool urgent}) _remaining() {
-    const verb = 'silinecek';
+    final verb = willSurrender ? 'teslim sayılacak' : 'silinecek';
     final ms = savedAtMs +
         abandonTimeout.inMilliseconds -
         DateTime.now().millisecondsSinceEpoch;
@@ -535,7 +751,11 @@ class _SavedGameRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _AvatarStrip(players: state.players),
+                  _AvatarStrip(
+                    players: state.players,
+                    humanAvatarUrl: accountAvatarUrl,
+                    isGuest: isGuest,
+                  ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
@@ -584,12 +804,19 @@ class _SavedGameRow extends StatelessWidget {
   }
 }
 
-/// PlayerAvatarRow'un misafir/YZ alt kümesi: hafif üst üste binen 20px
-/// çemberler — misafir koltuk "?" (webde Avatar'ın boş-isim yedeği),
-/// YZ koltuklar robot. Fotoğraflı üye avatarı auth fazının işi.
+/// PlayerAvatarRow'un yerel-oyun alt kümesi: hafif üst üste binen 20px
+/// çemberler — YZ koltuklar robot; insan koltuk misafirde "?" (webde
+/// Avatar'ın boş-isim yedeği), girişli kullanıcıda gerçek avatar
+/// (fotoğraf ya da baş harfler — web savedGameAvatars/isGuest ayrımı).
 class _AvatarStrip extends StatelessWidget {
   final List<Player> players;
-  const _AvatarStrip({required this.players});
+  final String? humanAvatarUrl;
+  final bool isGuest;
+  const _AvatarStrip({
+    required this.players,
+    this.humanAvatarUrl,
+    this.isGuest = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -604,30 +831,36 @@ class _AvatarStrip extends StatelessWidget {
           for (var i = 0; i < players.length; i++)
             Positioned(
               left: i * (size - overlap),
-              child: Container(
-                width: size,
-                height: size,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: players[i].isAI
-                      ? const Color(0xFFE8EBEF) // web bg-void (robot)
-                      : _panel,
-                  border: Border.all(color: _border),
-                  shape: BoxShape.circle,
-                ),
-                child: players[i].isAI
-                    ? const Icon(Icons.smart_toy_outlined,
-                        size: 12, color: _muted)
-                    : const Text(
-                        '?',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: _muted,
-                          height: 1,
-                        ),
+              child: players[i].isAI || isGuest
+                  ? Container(
+                      width: size,
+                      height: size,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: players[i].isAI
+                            ? const Color(0xFFE8EBEF) // web bg-void (robot)
+                            : _panel,
+                        border: Border.all(color: _border),
+                        shape: BoxShape.circle,
                       ),
-              ),
+                      child: players[i].isAI
+                          ? const Icon(Icons.smart_toy_outlined,
+                              size: 12, color: _muted)
+                          : const Text(
+                              '?',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: _muted,
+                                height: 1,
+                              ),
+                            ),
+                    )
+                  : KAvatar(
+                      url: humanAvatarUrl,
+                      name: players[i].name,
+                      size: size,
+                    ),
             ),
         ],
       ),

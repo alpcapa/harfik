@@ -52,6 +52,11 @@ class LocalGameRepo {
   Future<GameState?> loadSave() =>
       _savesQueue.read(() => storage.saves.load(guestSaveSlot));
 
+  /// Misafir slotunu siler — bulut migrasyonu (CloudSaveRepo.migrateGuestSave)
+  /// kaydın sunucuya yazıldığını DOĞRULADIKTAN sonra çağırır.
+  Future<void> clearSave() =>
+      _savesQueue.enqueue(() => storage.saves.clear(guestSaveSlot));
+
   /// Süresi dolmuş kayıtlardan doğan terk olaylarını tüketir (read-then-clear,
   /// atomik). Web'in takePendingAbandonedGame akışıyla aynı karar: yalnızca
   /// gerçekten başlamış (turnCount >= 2) oyunlar için gecikmeli bir teslim
