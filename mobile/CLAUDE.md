@@ -671,8 +671,44 @@ bağlı değil.)
      türetilir. App'te testli: reducer'a bayat mesaj yazılsa bile satır
      türetilmiş metni gösterir (`game_screen_test.dart`). Ayrıntı: kök
      CLAUDE.md, "Mesaj satırı — geçerli taslakta metin artık TÜRETİLİYOR".
-   - Sıradaki parçalar: Setup ekranı (gerçek görsel dil), sürükle-bırak,
-     kelime anlamı modalı, hamle geçmişi modalı.
+   - ✅ **Parça 6 — Setup ekranı (6 Ağustos 2026,
+     `lib/src/ui/setup/setup_screen.dart`):** İskelet HomeScreen SİLİNDİ
+     (motor testi/durum paneli göreviydi, tamamladı) — `app.dart` artık
+     SetupScreen'e açılıyor; kalıcılık akışı (LocalGameRepo, süpürme,
+     anti-kaçış) HomeScreen'den buraya taşındı. Web `Setup.tsx`'in MİSAFİR
+     akışının portu: logo (52px) + tanıtım paragrafı (metin birebir),
+     "OYUN TİPİ" sekmeleri (YAPAY ZEKA İLE seçili; ARKADAŞINLA → GİRİŞ
+     düğmesiyle aynı dürüst "sonraki sürümde" diyaloğu), "OYUNCU SAYISI"
+     2/4, renkli "OYUNCULAR" listesi (tint zemin + base çerçeve +
+     PlayerBadge; 1. koltuk `guestPlayerName`='Misafir' + SEN, diğerleri
+     "Yapay Zeka N" + YZN — web doStart'ın YZ adlarını AÇIKÇA geçtiği
+     kural dahil: 2 kişilikte YZ'nin adı "Yapay Zeka 2", reducer
+     varsayılanı "Yapay Zeka" DEĞİL), sözlük hazır olana dek
+     "HAZIRLANIYOR…" gösteren OYUNU BAŞLAT. Misafirin tekil kaydı varsa
+     form HİÇ çizilmez (anti-kaçış): "DEVAM EDEN OYUN" satırı — avatar
+     şeridi (misafir "?" + robot çemberleri; fotoğraflı üye avatarı auth
+     fazının işi), "Sıra: X", yeşil "SENİN HAMLEN BEKLENİYOR", web
+     `remainingTime`'ın birebir portu kalan-süre etiketi (misafir dili
+     "silinecek"; <24 saatte kırmızı + dakika hassasiyeti) + 7 gün
+     paragrafı. Altta göze batmayan tek satır teşhis (sürüm · sözlük ·
+     sunucu durumu) — iskelet panelden kalan tek iz. Bilinçli eksikler:
+     "Nasıl oynanır?" (kurallar ekranı ayrı parça), "Arkadaşınla paylaş"
+     (native share ayrı parça), MembershipPerksBox/girişli dallar (auth
+     fazı).
+     **İki test dersi:** (1) sqflite'ın GERÇEK async I/O'su `testWidgets`in
+     fake-async bölgesinde ASLA çözülmez — ilk sürüm 10 dakika asılı kaldı;
+     depolamaya dokunan her widget-test adımı `tester.runAsync` köprüsünden
+     geçmek zorunda (hazırlık, initState zincirinin beklenmesi, dokunuş
+     sonrası yükleme). (2) `toUpperCase()` Türkçe'de yasak — 'silinecek'
+     noktasız I ile 'SILINECEK' oluyor; test yakaladı, `trUpper` kullanıldı
+     (web'de CSS `uppercase` tr locale ile doğruydu, Dart'ta karşılığı
+     trUpper). Doğrulama: `setup_screen_test.dart` (4 test: 2/4 kadro +
+     ekran görüntüsü `build/screenshots/setup_form.png`; başlatılan oyunda
+     Misafir+YZ kadrosu; ARKADAŞINLA diyaloğu; kayıt varken anti-kaçış +
+     satırdan devam — turnCount/multiSession korunuyor) +
+     `widget_smoke_test.dart` Setup'a göre güncellendi. 42/42 yeşil.
+   - Sıradaki parçalar: sürükle-bırak, kelime anlamı modalı, hamle geçmişi
+     modalı, kurallar ("Nasıl oynanır?") ekranı.
 5. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

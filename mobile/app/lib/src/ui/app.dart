@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../bootstrap.dart';
 import '../config/version_gate.dart';
-import 'home_screen.dart';
+import 'setup/setup_screen.dart';
 import 'update_required_screen.dart';
 
 class KelimekiApp extends StatelessWidget {
@@ -25,7 +25,7 @@ class KelimekiApp extends StatelessWidget {
       ),
       home: services.versionGate == VersionGateStatus.updateRequired
           ? const UpdateRequiredScreen()
-          : HomeScreen(services: services),
+          : SetupScreen(services: services),
     );
   }
 }
