@@ -15,6 +15,7 @@ import '../../game/move_status.dart';
 import 'board_widget.dart';
 import 'game_header.dart';
 import 'game_over_modal.dart';
+import 'neo_button.dart';
 import 'player_colors.dart';
 import 'rack_widget.dart';
 import 'remaining_tiles_modal.dart';
@@ -366,19 +367,12 @@ class _GameScreenState extends State<GameScreen> {
       child: IgnorePointer(
         child: Transform.scale(
           scale: 1.1,
-          child: Container(
+          // Ek gölge YOK (kullanıcı web karşılaştırması): sürüklenen taş
+          // yalnızca kendi taş görünümünü taşır, hedef kesikli çerçeveyle
+          // gösterilir.
+          child: SizedBox(
             width: 46,
             height: 46,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(isRack ? 10 : 5),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x59000000),
-                  offset: Offset(0, 10),
-                  blurRadius: 16,
-                ),
-              ],
-            ),
             child: TileWidget(
               tile: g.source.tile,
               variant: isRack ? TileVariant.rack : TileVariant.placed,
@@ -572,26 +566,33 @@ class _GameScreenState extends State<GameScreen> {
                                       ),
                                       if (!state.swapMode) ...[
                                         const SizedBox(width: 8),
-                                        // Raf boyuna uzadığından şekil sabitlenir — aksi
-                                        // halde Material'ın stadium varsayılanı butonu
-                                        // dev bir daireye çevirir (web: rounded-lg).
                                         state.isGameOver
-                                            ? FilledButton(
-                                                style: _playButtonStyle,
+                                            ? NeoButton(
+                                                label: 'YENİ\nOYUN',
+                                                variant:
+                                                    NeoButtonVariant.accent,
+                                                fontSize: 13,
+                                                letterSpacing: 1.2,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 20),
                                                 onPressed: () =>
                                                     Navigator.of(context).pop(),
-                                                child: const Text('YENİ\nOYUN',
-                                                    textAlign:
-                                                        TextAlign.center),
                                               )
-                                            : FilledButton(
-                                                style: _playButtonStyle,
+                                            : NeoButton(
+                                                label: 'OYNA',
+                                                variant:
+                                                    NeoButtonVariant.accent,
+                                                fontSize: 13,
+                                                letterSpacing: 1.2,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 20),
                                                 onPressed: _canAct &&
                                                         state.placed.isNotEmpty
                                                     ? () =>
                                                         _handlePlay(moveStatus)
                                                     : null,
-                                                child: const Text('OYNA'),
                                               ),
                                       ],
                                     ],
@@ -605,41 +606,28 @@ class _GameScreenState extends State<GameScreen> {
                                     ? Row(
                                         children: [
                                           Expanded(
-                                            child: FilledButton(
-                                              style: FilledButton.styleFrom(
-                                                backgroundColor: const Color(
-                                                    0xFFB7791F), // web gold
-                                                shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8)),
-                                              ),
+                                            child: NeoButton(
+                                              label: state
+                                                      .swapSelection.isNotEmpty
+                                                  ? 'DEĞİŞTİR (${state.swapSelection.length})'
+                                                  : 'DEĞİŞTİR',
+                                              variant: NeoButtonVariant.gold,
                                               onPressed: _canAct &&
                                                       state.swapSelection
                                                           .isNotEmpty
                                                   ? () => controller.dispatch(
                                                       const ConfirmSwapAction())
                                                   : null,
-                                              child: Text(state
-                                                      .swapSelection.isNotEmpty
-                                                  ? 'DEĞİŞTİR (${state.swapSelection.length})'
-                                                  : 'DEĞİŞTİR'),
                                             ),
                                           ),
                                           const SizedBox(width: 8),
                                           Expanded(
-                                            child: OutlinedButton(
-                                              style: OutlinedButton.styleFrom(
-                                                shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            8)),
-                                              ),
+                                            child: NeoButton(
+                                              label: 'VAZGEÇ',
                                               onPressed: _canAct
                                                   ? () => controller.dispatch(
                                                       const ToggleSwapModeAction())
                                                   : null,
-                                              child: const Text('VAZGEÇ'),
                                             ),
                                           ),
                                         ],
@@ -647,7 +635,7 @@ class _GameScreenState extends State<GameScreen> {
                                     : Row(
                                         children: [
                                           Expanded(
-                                            child: _SmallButton(
+                                            child: NeoButton(
                                               label: 'PAS GEÇ',
                                               onPressed:
                                                   _canAct ? _handlePass : null,
@@ -655,7 +643,7 @@ class _GameScreenState extends State<GameScreen> {
                                           ),
                                           const SizedBox(width: 6),
                                           Expanded(
-                                            child: _SmallButton(
+                                            child: NeoButton(
                                               label: 'DEĞİŞTİR',
                                               onPressed: _canAct &&
                                                       state.bag.isNotEmpty
@@ -666,7 +654,7 @@ class _GameScreenState extends State<GameScreen> {
                                           ),
                                           const SizedBox(width: 6),
                                           Expanded(
-                                            child: _SmallButton(
+                                            child: NeoButton(
                                               label: 'KARIŞTIR',
                                               onPressed: _canAct
                                                   ? () => controller.dispatch(
@@ -676,7 +664,7 @@ class _GameScreenState extends State<GameScreen> {
                                           ),
                                           const SizedBox(width: 6),
                                           Expanded(
-                                            child: _SmallButton(
+                                            child: NeoButton(
                                               label: 'GERİ AL',
                                               onPressed: _canAct &&
                                                       state.placed.isNotEmpty
@@ -687,7 +675,7 @@ class _GameScreenState extends State<GameScreen> {
                                           ),
                                           const SizedBox(width: 6),
                                           Expanded(
-                                            child: _SmallButton(
+                                            child: NeoButton(
                                               label:
                                                   'TORBA ${state.bag.length}',
                                               // Web'de Torba hiç disable olmaz — YZ'nin
@@ -715,61 +703,6 @@ class _GameScreenState extends State<GameScreen> {
           ),
         );
       },
-    );
-  }
-}
-
-/// Rafın yanındaki OYNA/YENİ OYUN — web'in `rounded-lg px-5 bg-accent`
-/// görünümü; raf kartı boyuna uzasa da köşe yarıçapı sabit kalır.
-final ButtonStyle _playButtonStyle = FilledButton.styleFrom(
-  backgroundColor: const Color(0xFF2563EB),
-  foregroundColor: Colors.white, // web: text-white
-  padding: const EdgeInsets.symmetric(horizontal: 20),
-  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-  textStyle: const TextStyle(
-    // ButtonStyle.textStyle tema fontunu MİRAS ALMAZ — fontFamily
-    // verilmezse testlerde Ahem bloklarına düşer (bkz. mobile/CLAUDE.md).
-    fontFamily: 'SpaceGrotesk',
-    fontSize: 13,
-    fontWeight: FontWeight.bold,
-    letterSpacing: 1.2,
-  ),
-);
-
-/// Alt sıradaki dar aksiyon butonları — web btn-raised-neutral'ın 11px
-/// bold/uppercase görünümüne yakın kompakt buton (gerçek nömorfik buton
-/// dili sonraki "GameHeader görsel dili" parçasının işi).
-class _SmallButton extends StatelessWidget {
-  final String label;
-  final VoidCallback? onPressed;
-  const _SmallButton({required this.label, this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 10),
-        minimumSize: const Size(0, 36),
-        side: const BorderSide(color: Color(0xFFDCE2EA)),
-        foregroundColor: const Color(0xFF1B2430),
-        backgroundColor: const Color(0xFFF5F7FA),
-        // Web btn-raised-neutral: rounded-md — Material'ın hap (stadium)
-        // varsayılanı değil.
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          label,
-          maxLines: 1,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.6,
-          ),
-        ),
-      ),
     );
   }
 }

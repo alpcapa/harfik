@@ -21,10 +21,10 @@ import '../../game/local_game_repo.dart';
 import '../../storage/local_save_store.dart' show abandonTimeout;
 import '../game/game_screen.dart';
 import '../game/logo_mark.dart';
+import '../game/neo_button.dart';
 import '../game/player_badge.dart';
 import '../game/player_colors.dart';
 
-const _accent = Color(0xFF2563EB);
 const _panel = Color(0xFFF5F7FA);
 const _border = Color(0xFFDCE2EA);
 const _muted = Color(0xFF5A6673);
@@ -192,7 +192,8 @@ class _SetupScreenState extends State<SetupScreen> {
                       }
                       final words = snap.data;
                       if (!_saveChecked) {
-                        return const _SectionLabel('KAYITLAR KONTROL EDİLİYOR…');
+                        return const _SectionLabel(
+                            'KAYITLAR KONTROL EDİLİYOR…');
                       }
                       return _savedState != null
                           ? _buildSavedGameView(words)
@@ -236,9 +237,8 @@ class _SetupScreenState extends State<SetupScreen> {
   /// oyun formu HİÇ yok, kayıt bitene/silinene kadar tek yol devam etmek.
   Widget _buildSavedGameView(SetWordSource? words) {
     final state = _savedState!;
-    final current = state.players.isNotEmpty
-        ? state.players[state.current].name
-        : '—';
+    final current =
+        state.players.isNotEmpty ? state.players[state.current].name : '—';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -296,21 +296,14 @@ class _SetupScreenState extends State<SetupScreen> {
         const SizedBox(height: 20),
         SizedBox(
           height: 48,
-          child: FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: _accent,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6)),
-              textStyle: const TextStyle(
-                fontFamily: 'SpaceGrotesk',
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2,
-              ),
-            ),
+          // Web: `btn-raised bg-accent ... disabled:opacity-35` — NeoButton
+          // disabled durumu birebir aynı görünümü verir.
+          child: NeoButton(
+            label: words == null ? 'HAZIRLANIYOR…' : 'OYUNU BAŞLAT',
+            variant: NeoButtonVariant.accent,
+            fontSize: 14,
+            letterSpacing: 2,
             onPressed: words == null ? null : () => _startNewGame(words),
-            child: Text(words == null ? 'HAZIRLANIYOR…' : 'OYUNU BAŞLAT'),
           ),
         ),
       ],
@@ -337,7 +330,8 @@ class _SectionLabel extends StatelessWidget {
 }
 
 /// Web'in btn-raised/btn-raised-neutral sekme/seçim butonu: seçili = accent
-/// zemin + beyaz, değil = panel zemin + çerçeve.
+/// zemin + beyaz, değil = panel zemin + çerçeve — gölgeler NeoButton'dan
+/// (index.css btn-raised / btn-raised-neutral değerleri).
 class _ChoiceButton extends StatelessWidget {
   final String label;
   final bool selected;
@@ -350,26 +344,13 @@ class _ChoiceButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected ? _accent : _panel,
-          border: Border.all(color: selected ? _accent : _border),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1,
-            color: selected ? Colors.white : _text,
-          ),
-        ),
-      ),
+    return NeoButton(
+      label: label,
+      variant: selected ? NeoButtonVariant.accent : NeoButtonVariant.neutral,
+      fontSize: 13,
+      letterSpacing: 1,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+      onPressed: onTap,
     );
   }
 }
@@ -509,9 +490,7 @@ class _SavedGameRow extends StatelessWidget {
                     fontFamily: 'SpaceMono',
                     fontSize: 8,
                     letterSpacing: 0.5,
-                    color: remaining.urgent
-                        ? const Color(0xFFDC2626)
-                        : _muted,
+                    color: remaining.urgent ? const Color(0xFFDC2626) : _muted,
                   ),
                 ),
               ],

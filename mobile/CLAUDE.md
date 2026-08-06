@@ -752,10 +752,40 @@ bağlı değil.)
      taşı (Tile.tsx üçlüsü, altın gradyan dolgu) bu decoration'a taşındı.
      Tarama notu: `BoxShadow` kullanan kalan yerler bilinçli — bonus
      hücrelerinin 2-4px'lik minik dış gölgeleri (NeoBox.outerShadows,
-     fark algılanamaz) ve hayalet taşın web'de de farklı mekanizma olan
-     drop-shadow'u; yeni bir panel/kart gölgesi eklerken varsayılan
+     fark algılanamaz; hayalet taşın ek gölgesi ise bir alt maddeyle
+     tamamen kaldırıldı); yeni bir panel/kart gölgesi eklerken varsayılan
      ŞÜPHE: web'den kopyalanan çok katmanlı box-shadow değerleri
      `CssShadow` ile taşınmalı.
+   - ✅ **Buton gölgeleri + hayalet taş + OYNA disabled görünümü
+     (6 Ağustos 2026, kullanıcı üç maddelik geri bildirimle):** (1) Hayalet
+     (sürüklenen) taşın Flutter'a özgü EK koyu gölgesi kaldırıldı — taş
+     artık yalnızca kendi altın gölge üçlüsüyle çiziliyor. **Bilinçli
+     web sapması:** web'in hayaletinde aslında ek bir
+     `drop-shadow(0 10px 16px rgba(0,0,0,0.35))` VAR (App.tsx ~1497), ama
+     kullanıcı webi "taşırken shadow yok" diye algılayıp öyle istedi —
+     Flutter'daki yoğun BoxShadow blob'u asıl şikayetti; bu subtle
+     drop-shadow İSTENEREK taşınmadı, ileride "hayalette web'de olan gölge
+     eksik" diye düzeltmeye kalkma. (2) Yeni **`neo_button.dart`
+     (NeoButton)** — web `.btn-raised`/`.btn-raised-neutral`/gold
+     butonlarının index.css gölge değerleriyle, CSS semantiğinde
+     (`ShapeDecorationWithCssShadows`) tek ortak buton: accent (mavi zemin
+     + beyaz yazı + üçlü gölge), neutral (panel zemin + `#DCE2EA` çerçeve
+     + ikili gölge), gold. Disabled = web ile aynı: gölge YOK +
+     `Opacity(0.35)` tüm butona — accent'te bu "açık mavi zemin üstünde
+     beyaz yazı" görünümü verir (kullanıcının istediği; Material'ın gri
+     disabled'ı DEĞİL, bu yüzden Filled/OutlinedButton yerine
+     GestureDetector+Container). Kullanım yerleri: OYNA/YENİ OYUN (accent,
+     13px/1.2), swap satırı DEĞİŞTİR (gold)/VAZGEÇ, alt sıra PAS
+     GEÇ/DEĞİŞTİR/KARIŞTIR/GERİ AL/TORBA (neutral) — eski
+     `_SmallButton`/`_playButtonStyle` silindi; Setup `_ChoiceButton`
+     (seçili=accent/değil=neutral) ve OYUNU BAŞLAT (accent, 14px/2.0)
+     NeoButton'a delegate; GameHeader `_GirisButton` aynı üçlü gölgeyi
+     kendi Container'ında aldı (akıcı padding sistemi NeoButton'un sabit
+     padding'ine uymadığından delegate edilmedi). Doğrulama: 43/43 test +
+     `game_screen_kelime.png` (OYNA aktif mavi/beyaz + alt sıra soft
+     gölgeler), `game_drag.png` (hayalet gölgesiz, OYNA disabled açık
+     mavi), `game_screen_swap.png` (gold), `setup_form.png` gözle
+     incelendi.
    - Sıradaki parçalar: kelime anlamı modalı, hamle geçmişi modalı,
      kurallar ("Nasıl oynanır?") ekranı.
 5. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless

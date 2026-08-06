@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import 'logo_mark.dart';
+import 'neo_box.dart';
 import 'player_colors.dart';
 
 /// Web'deki `clamp(min, calc(a + b·vw), max)` eşleniği — vw = ekran
@@ -89,10 +90,10 @@ class GameHeader extends StatelessWidget {
                             paddingY: boxPaddingY,
                             labelFontSize: labelFontSize,
                             scoreFontSize: scoreFontSize,
-                            onTap: (onPlayerTap != null &&
-                                    !state.players[i].isAI)
-                                ? () => onPlayerTap!(i)
-                                : null,
+                            onTap:
+                                (onPlayerTap != null && !state.players[i].isAI)
+                                    ? () => onPlayerTap!(i)
+                                    : null,
                           ),
                         ],
                       ],
@@ -149,10 +150,17 @@ class _GirisButton extends StatelessWidget {
       ),
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: paddingX, vertical: paddingY),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2563EB), // web bg-accent
-          border: Border.all(color: const Color(0xFF2563EB)),
-          borderRadius: BorderRadius.circular(6),
+        // Web: `btn-raised bg-accent` — index.css'teki gölge üçlüsü, CSS
+        // semantiğiyle (bkz. neo_box.dart).
+        decoration: const ShapeDecorationWithCssShadows(
+          color: Color(0xFF2563EB), // web bg-accent
+          radius: 6,
+          shadows: [
+            CssShadow(color: Color(0x8CA3B1C6), offset: Offset(3, 3), blur: 8),
+            CssShadow(
+                color: Color(0xB3FFFFFF), offset: Offset(-2, -2), blur: 6),
+            CssShadow(color: Color(0x59647489), offset: Offset(0, 6), blur: 14),
+          ],
         ),
         child: Text(
           'GİRİŞ',
