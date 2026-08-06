@@ -57,8 +57,7 @@ class RackWidget extends StatelessWidget {
         radius: 16,
         shadows: [
           CssShadow(color: Color(0xA6A3B1C6), offset: Offset(5, 5), blur: 14),
-          CssShadow(
-              color: Color(0xE6FFFFFF), offset: Offset(-3, -3), blur: 10),
+          CssShadow(color: Color(0xE6FFFFFF), offset: Offset(-3, -3), blur: 10),
         ],
       ),
       padding: const EdgeInsets.all(12),
@@ -70,8 +69,14 @@ class RackWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Flexible(
+                // Yalnızca oyuncunun adı — web'de swap modunda buraya bir de
+                // "— değiştirilecek taşları seç" ekleniyor (Rack.tsx), ama
+                // kullanıcı 6 Ağustos 2026'da bunu istemedi: aksiyon metni
+                // zaten tahtanın altındaki mesaj satırında yazıyor, rafta
+                // tekrar edilmesi gereksiz. Web'de de aynı satır kaldırılana
+                // kadar bilinçli bir sapma (bkz. mobile/CLAUDE.md).
                 child: Text(
-                  swapMode ? '$title — değiştirilecek taşları seç' : title,
+                  title,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: swapMode ? const Color(0xFFD97706) : color.text,

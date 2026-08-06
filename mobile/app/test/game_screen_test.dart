@@ -22,7 +22,8 @@ late SetWordSource words;
 
 Tile t(String letter) => Tile(letter: letter, pts: letterPoints(letter));
 
-Player player(String name, {required bool isAI, required int index, required List<Tile> rack}) =>
+Player player(String name,
+        {required bool isAI, required int index, required List<Tile> rack}) =>
     Player(
       name: name,
       corners: cornersFor(2)[index],
@@ -48,9 +49,18 @@ GameState craftedState() => GameState(
       bonuses: buildInitialBonuses(),
       placed: const {},
       players: [
-        player('Sen', isAI: false, index: 0,
-            rack: [t('K'), t('E'), t('L'), t('İ'), t('M'), t('E'), const Tile(letter: '?', pts: 0)]),
-        player('Yapay Zeka', isAI: true, index: 1,
+        player('Ironman', isAI: false, index: 0, rack: [
+          t('K'),
+          t('E'),
+          t('L'),
+          t('İ'),
+          t('M'),
+          t('E'),
+          const Tile(letter: '?', pts: 0)
+        ]),
+        player('Yapay Zeka',
+            isAI: true,
+            index: 1,
             rack: [t('A'), t('A'), t('A'), t('A'), t('A'), t('A'), t('A')]),
       ],
       current: 0,
@@ -74,10 +84,12 @@ Finder rackTile(int i) => find.byKey(ValueKey('rack-$i'));
 Finder boardCell(int r, int c) => find.byKey(ValueKey('cell-$r-$c'));
 
 Future<GameController> pumpGame(WidgetTester tester, GlobalKey key) async {
-  final controller = GameController(words: words, autoPlayAi: false, nowIso: () => '');
+  final controller =
+      GameController(words: words, autoPlayAi: false, nowIso: () => '');
   controller.dispatch(ResumeSavedAction(craftedState()));
   await tester.pumpWidget(MaterialApp(
-    theme: ThemeData(fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+    theme: ThemeData(
+        fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
     home: RepaintBoundary(
       key: key,
       child: GameScreen(controller: controller, words: words),
@@ -207,7 +219,8 @@ void main() {
     await tester.tap(find.byKey(const Key('wild-recall')));
     await tester.pumpAndSettle();
     expect(controller.state.placed, isEmpty);
-    expect(controller.state.players[0].rack.any((t) => t.letter == '?'), isTrue);
+    expect(
+        controller.state.players[0].rack.any((t) => t.letter == '?'), isTrue);
   });
 
   testWidgets('taş değiştirme akışı: DEĞİŞTİR → seç (N) → onayla → sıra YZ\'de',
@@ -222,7 +235,10 @@ void main() {
     // Swap modunda OYNA gizli, satır DEĞİŞTİR/VAZGEÇ'e döner (web düzeni).
     expect(find.text('OYNA'), findsNothing);
     expect(find.text('VAZGEÇ'), findsOneWidget);
-    expect(find.textContaining('değiştirilecek taşları seç'), findsOneWidget);
+    // Raf başlığı swap modunda da yalnızca oyuncunun adı — aksiyon metni
+    // mesaj satırında (kullanıcı kararı, bkz. rack_widget.dart).
+    expect(find.textContaining('değiştirilecek taşları seç'), findsNothing);
+    expect(find.text('Ironman'), findsOneWidget);
 
     await tester.tap(rackTile(0));
     await tester.pump();
@@ -310,8 +326,7 @@ void main() {
     expect(find.textContaining('YENİ'), findsOneWidget);
   });
 
-  testWidgets(
-      'sürükle-bırak: raftan tahtaya + tahtada taşıma + rafa geri alma',
+  testWidgets('sürükle-bırak: raftan tahtaya + tahtada taşıma + rafa geri alma',
       (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));
     final key = GlobalKey();

@@ -786,6 +786,27 @@ bağlı değil.)
      gölgeler), `game_drag.png` (hayalet gölgesiz, OYNA disabled açık
      mavi), `game_screen_swap.png` (gold), `setup_form.png` gözle
      incelendi.
+   - ⚠️ **Raf başlığı: yalnızca oyuncu adı — web'den BİLİNÇLİ sapma
+     (6 Ağustos 2026, kullanıcı bildirdi):** Kullanıcı ekran görüntülerinde
+     rafta "Sen" görüp "webde kişinin nickname'i yazıyor, yanında aksiyon
+     yazısı yok" dedi. İki bulgu ayrıştı: (1) **"Sen" bir kod sabiti
+     DEĞİLDİ** — `RackWidget.title` baştan beri `players[_rackIndex].name`;
+     ekran görüntüsündeki "Sen" yalnızca `game_screen_test.dart`
+     fixture'ının oyuncu adıydı (gerçek akışta misafirde "Misafir", auth
+     gelince nickname). Fixture `Ironman`a çevrildi ki ekran görüntüleri
+     temsili olsun — bir yan fayda: header skor kutusunda uzun adın
+     kırpılma davranışı da artık görünüyor (web'de de `truncate`).
+     **Ders: bir ekran görüntüsündeki metni "hardcode" sanmadan önce
+     fixture'a bak.** (2) Aksiyon metni GERÇEKTEN vardı ama web'de de var:
+     `src/components/Rack.tsx` swap modunda başlığı
+     `` `${title} — değiştirilecek taşları seç` `` yapıyor (App.tsx ve
+     OnlineGameScreen.tsx ikisi de `swapMode` geçiyor). Kullanıcı bunu
+     istemedi — aksiyon metni zaten tahtanın altındaki mesaj satırında
+     ("Değiştireceğin taşları seç, sonra "Değiştir"e bas."). Flutter'da
+     kaldırıldı; başlık her durumda yalnızca ad (swap modunda rengi hâlâ
+     turuncuya dönüyor, sağdaki "N seçili" duruyor). **Web'de aynı satır
+     kaldırılana kadar bu bilinçli bir sapmadır** — parite tablosuna
+     bakarken "port eksik" sanılmasın.
    - Sıradaki parçalar: kelime anlamı modalı, hamle geçmişi modalı,
      kurallar ("Nasıl oynanır?") ekranı.
 5. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
