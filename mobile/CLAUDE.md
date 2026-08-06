@@ -36,6 +36,12 @@ Commit'ten önce, sırayla:
 
 ## Etki Analizi (ZORUNLU — her parçanın İLK adımı)
 
+Bu, kök `CLAUDE.md`'deki **"Çalışma İlkesi: Önce Etki Analizi, Sonra
+Doküman Senkronu"** kuralının porta özgü sürümüdür — kural projenin
+TAMAMI için geçerli (web/backend/mobil); burada yalnızca Dart tarafının
+kendi değişmezleri somutlaştırılıyor. Kök tablodaki "mobile/ DIŞINDA bir
+dosya" satırı bu iki dosyayı birbirine bağlar.
+
 Kullanıcı isteği (6 Ağustos 2026): "yapılacak her geliştirmenin etkilemesi
 muhtemel yerleri iyi analiz etmek gerekiyor". Gerekçe: bu projede dalgaların
 büyük kısmı **derleyicinin ve testlerin göremediği** türden — imza

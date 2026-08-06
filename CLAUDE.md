@@ -27,6 +27,53 @@ npm run generate-meanings-db     # Flutter portu için meanings.json → SQLite 
 
 Projenin geri kalanının çok büyük bölümü (Canlı oyun, mesajlaşma, e-posta bildirimleri, admin paneli) **yapısı gereği otomatik test edilemiyor**: iki ayrı gerçek oturum, gerçek gelen kutusu ve gerçek Supabase Auth gerektiriyor. Bunlar için elle koşulan kontrol listesi ayrı bir dosyada: **`TESTING.md`**. Yeni bir Canlı oyun/mesajlaşma/e-posta özelliği eklendiğinde o listeyi de güncelle — `CLAUDE.md`/`README.md` senkron kontrolüyle aynı refleks.
 
+## Çalışma İlkesi: Önce Etki Analizi, Sonra Doküman Senkronu
+
+Kullanıcı isteği (6 Ağustos 2026, **projenin tamamı için** — web, backend,
+mobil port, hepsi): *"yapılacak her geliştirmenin etkilemesi muhtemel
+yerleri iyi analiz etmek gerekiyor"* ve *"her tamamladığın işten sonra
+ilgili dosyaları kontrol edip güncellemeyi unutma"*.
+
+Bu bir nezaket kuralı değil; bu kodtabanının somut deneyimi. Aşağıdaki
+bölümlerin ÇOĞU aslında bu iki adımın atlanmasıyla doğmuş hataların
+kaydı — "rozet zinciri yukarı takip edilmedi" (bkz. `CountBadge`),
+"filtrelerin hepsi okunmadan 'zaten eler' denildi" (bkz.
+`check_invite_expiry`), "iki istemci aynı satıra yazarken sıra garanti
+sanıldı" (bkz. `local_game_saves` yarışı), "README kelime sayısı koddan
+koptu" (bkz. "Belgeleri Güncel Tutma").
+
+**İŞE BAŞLAMADAN ÖNCE — üç soru:**
+
+1. **Bu kodun ikinci bir okuyucusu/yazarı var mı?** Aynı tabloya yazan
+   öteki istemci (web ↔ mobil!), aynı JSON'u ayrıştıran öteki taraf, aynı
+   üreticiden beslenen ikinci dosya, aynı fixture'a bakan testler.
+2. **Değiştirdiğim şey bir ZİNCİRİN halkası mı?** Bir sayaç/rozet/filtre
+   ise onu KAPSAYAN her seviye de güncellenmeli; bir filtre ise aynı veriyi
+   eleyen TÜM filtreler tek tek okunmalı ("şu zaten eler" varsayımı bu
+   projede iki kez yanlış çıktı).
+3. **Derleyicinin göremeyeceği hangi değişmeze dokunuyorum?** Türkçe dil
+   kuralı (`trUpper`/`trLower`/`trCompare`), migration senkronu, Edge
+   Function `verify_jwt`, golden vector paritesi, üretilmiş dosyalar
+   (logo/k-lig/meanings.db/words_tr.txt), Terms/Privacy kapsamı.
+
+**İŞ BİTTİĞİNDE — `git status` oku ve dokunduğun her alanın eşini güncelle:**
+
+| Dokunduğun yer | Aynı PR'da güncellenecek |
+|---|---|
+| Yeni dosya/component/hook, klasör yapısı, somut rakamlar | `CLAUDE.md` + `README.md` ("Belgeleri Güncel Tutma") |
+| `src/game/`, `src/utils/` motor dosyaları | `npm run generate-golden-vectors` + Dart core testleri |
+| `src/data/meanings.json` | `npm run generate-meanings-db` |
+| `LogoMark`/`KLigMark` | `npm run generate-logo-paths` / `generate-klig-paths` (ikisi de web+Dart yazar) |
+| Canlı oyun / mesajlaşma / e-posta özelliği | `TESTING.md` (elle koşulan liste) |
+| Migration | Canlıya uygula + doğrula + `list_migrations` ile dosya adını eşleştir |
+| Yeni kullanıcı verisi ya da görünürlük değişikliği | `TermsModal`/`PrivacyModal` |
+| `App.tsx`'teki joker/mesaj/raf desenleri | `OnlineGameScreen.tsx` (ikisi deseni paylaşıyor) |
+| `mobile/` DIŞINDA bir dosya (port işi sırasında) | kök `CLAUDE.md`/`README.md` — port dokümanı TEK BAŞINA yetmez |
+
+Mobil portun kendi (daha ayrıntılı, Dart'a özgü) sürümü: `mobile/CLAUDE.md`,
+"Etki Analizi" ve "Parça Bitirme Kontrol Listesi" bölümleri — orada tek
+komutluk bir grep taraması da var.
+
 ## Git / Branch Kuralı
 
 - Branch adı: `claude/<kısa-açıklama>` formatı
