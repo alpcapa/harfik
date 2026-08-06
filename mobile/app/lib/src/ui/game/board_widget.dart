@@ -113,11 +113,20 @@ class BoardWidget extends StatelessWidget {
         decoration: BoxDecoration(
           color: _boardBg,
           borderRadius: BorderRadius.circular(18),
+          // Web Board.tsx'in nömorfik gölge üçlüsü BİREBİR: koyu sağ-alt +
+          // BEYAZ sol-üst parlama + altta geniş yumuşak gölge. Beyaz katman
+          // ilk portta eksikti — o olmadan alt kenar kalın gri bir bant gibi
+          // okunuyordu (kullanıcı fark etti, 6 Ağustos 2026).
           boxShadow: const [
             BoxShadow(
               color: Color(0xB3A3B1C6),
               offset: Offset(8, 8),
               blurRadius: 20,
+            ),
+            BoxShadow(
+              color: Color(0xE6FFFFFF),
+              offset: Offset(-4, -4),
+              blurRadius: 14,
             ),
             BoxShadow(
               color: Color(0x80A3B1C6),
