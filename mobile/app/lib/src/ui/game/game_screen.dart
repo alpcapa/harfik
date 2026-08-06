@@ -10,6 +10,7 @@ import 'package:kelimeki_core/kelimeki_core.dart';
 import '../../game/game_controller.dart';
 import '../../game/move_status.dart';
 import 'board_widget.dart';
+import 'game_header.dart';
 import 'game_over_modal.dart';
 import 'player_colors.dart';
 import 'rack_widget.dart';
@@ -194,232 +195,216 @@ class _GameScreenState extends State<GameScreen> {
 
         return Scaffold(
           backgroundColor: Colors.white, // web sayfa zemini (colors.bg)
-          appBar: AppBar(title: const Text('Kelimeki')),
           body: SafeArea(
             child: Column(
               children: [
-                // Basit skor satırı (gerçek GameHeader sonraki parça).
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  child: Row(
-                    children: [
-                      for (var i = 0; i < state.players.length; i++) ...[
-                        if (i > 0) const SizedBox(width: 6),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: _colorOf(i).zone,
-                              border: Border.all(
-                                color: _colorOf(i).base,
-                                width: i == state.current ? 2 : 0.5,
-                              ),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Column(
-                              children: [
-                                Text(
-                                  state.players[i].name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontFamily: 'SpaceMono',
-                                    fontWeight: FontWeight.bold,
-                                    color: _colorOf(i).text,
-                                  ),
-                                ),
-                                Text(
-                                  '${state.players[i].score}',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontFamily: 'SpaceMono',
-                                    fontWeight: FontWeight.bold,
-                                    color: _colorOf(i).text,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                // Gerçek başlık: logo (dokunuş = oyundan çık) + skor kutuları
+                // (GameHeader.tsx portu, akıcı clamp sistemiyle).
+                GameHeader(
+                  state: state,
+                  onLogoTap: () => Navigator.of(context).pop(),
                 ),
+                // Web akışıyla aynı: tahta → mesaj → raf → butonlar yukarıdan
+                // aşağı dizilir, artan boşluk EN ALTA düşer (önceden tahta
+                // Expanded'ta tek başınaydı ve boşluk tahta ile mesajın
+                // ARASINA giriyordu); kısa ekranda tamamı kaydırılabilir.
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: BoardWidget(
-                      state: state,
-                      moveOverlay: moveStatus == null
-                          ? null
-                          : MoveOverlay(
-                              valid: moveStatus.valid,
-                              cells: moveStatus.cells,
-                              score: moveStatus.score,
-                            ),
-                      onCellTap: _handleCellTap,
-                    ),
-                  ),
-                ),
-                // Mesaj satırı web'deki gibi tahtanın ALTINDA, rafın üstünde
-                // (App.tsx: Board → liveMessage → Rack; font-mono 11px bold).
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                  child: SizedBox(
-                    height: 30,
-                    child: Center(
-                      child: Text(
-                        state.isGameOver ? 'Oyun bitti.' : liveMessage,
-                        maxLines: 2,
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontFamily: 'SpaceMono',
-                          fontWeight: FontWeight.bold,
-                          color: _messageColor(
-                              state.isGameOver ? MessageKind.none : liveKind),
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: BoardWidget(
+                            state: state,
+                            moveOverlay: moveStatus == null
+                                ? null
+                                : MoveOverlay(
+                                    valid: moveStatus.valid,
+                                    cells: moveStatus.cells,
+                                    score: moveStatus.score,
+                                  ),
+                            onCellTap: _handleCellTap,
+                          ),
                         ),
-                      ),
+                        // Mesaj satırı web'deki gibi tahtanın ALTINDA, rafın üstünde
+                        // (App.tsx: Board → liveMessage → Rack; font-mono 11px bold).
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                          child: SizedBox(
+                            height: 30,
+                            child: Center(
+                              child: Text(
+                                state.isGameOver ? 'Oyun bitti.' : liveMessage,
+                                maxLines: 2,
+                                textAlign: TextAlign.center,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontFamily: 'SpaceMono',
+                                  fontWeight: FontWeight.bold,
+                                  color: _messageColor(state.isGameOver
+                                      ? MessageKind.none
+                                      : liveKind),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (me != null) ...[
+                          // Web düzeni: Raf + (Oyna | Yeni Oyun) yan yana; swap
+                          // modunda sağdaki buton hiç görünmez (App.tsx ~1281).
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+                            // IntrinsicHeight: buton raf kartıyla aynı boya uzasın
+                            // (stretch, Column içinde sınırsız yükseklikte patlar).
+                            child: IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(
+                                    child: RackWidget(
+                                      tiles: state.players[_rackIndex].rack,
+                                      selectedTile: state.selectedTile,
+                                      onSelect: (i) {
+                                        if (!_canAct) return;
+                                        controller.dispatch(state.swapMode
+                                            ? ToggleSwapTileAction(i)
+                                            : SelectTileAction(i));
+                                      },
+                                      title: state.players[_rackIndex].name,
+                                      color: _colorOf(_rackIndex),
+                                      swapMode: state.swapMode,
+                                      swapSelection: state.swapSelection,
+                                    ),
+                                  ),
+                                  if (!state.swapMode) ...[
+                                    const SizedBox(width: 8),
+                                    // Raf boyuna uzadığından şekil sabitlenir — aksi
+                                    // halde Material'ın stadium varsayılanı butonu
+                                    // dev bir daireye çevirir (web: rounded-lg).
+                                    state.isGameOver
+                                        ? FilledButton(
+                                            style: _playButtonStyle,
+                                            onPressed: () =>
+                                                Navigator.of(context).pop(),
+                                            child: const Text('YENİ\nOYUN',
+                                                textAlign: TextAlign.center),
+                                          )
+                                        : FilledButton(
+                                            style: _playButtonStyle,
+                                            onPressed: _canAct &&
+                                                    state.placed.isNotEmpty
+                                                ? () => _handlePlay(moveStatus)
+                                                : null,
+                                            child: const Text('OYNA'),
+                                          ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                            child: state.swapMode
+                                ? Row(
+                                    children: [
+                                      Expanded(
+                                        child: FilledButton(
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor: const Color(
+                                                0xFFB7791F), // web gold
+                                            shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8)),
+                                          ),
+                                          onPressed: _canAct &&
+                                                  state.swapSelection.isNotEmpty
+                                              ? () => controller.dispatch(
+                                                  const ConfirmSwapAction())
+                                              : null,
+                                          child: Text(state
+                                                  .swapSelection.isNotEmpty
+                                              ? 'DEĞİŞTİR (${state.swapSelection.length})'
+                                              : 'DEĞİŞTİR'),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          style: OutlinedButton.styleFrom(
+                                            shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8)),
+                                          ),
+                                          onPressed: _canAct
+                                              ? () => controller.dispatch(
+                                                  const ToggleSwapModeAction())
+                                              : null,
+                                          child: const Text('VAZGEÇ'),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Row(
+                                    children: [
+                                      Expanded(
+                                        child: _SmallButton(
+                                          label: 'PAS GEÇ',
+                                          onPressed:
+                                              _canAct ? _handlePass : null,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: _SmallButton(
+                                          label: 'DEĞİŞTİR',
+                                          onPressed: _canAct &&
+                                                  state.bag.isNotEmpty
+                                              ? () => controller.dispatch(
+                                                  const ToggleSwapModeAction())
+                                              : null,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: _SmallButton(
+                                          label: 'KARIŞTIR',
+                                          onPressed: _canAct
+                                              ? () => controller.dispatch(
+                                                  const ShuffleRackAction())
+                                              : null,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: _SmallButton(
+                                          label: 'GERİ AL',
+                                          onPressed:
+                                              _canAct && state.placed.isNotEmpty
+                                                  ? () => controller.dispatch(
+                                                      const RecallAllAction())
+                                                  : null,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: _SmallButton(
+                                          label: 'TORBA ${state.bag.length}',
+                                          // Web'de Torba hiç disable olmaz — YZ'nin
+                                          // sırasında/oyun bitince de açılabilir.
+                                          onPressed: () =>
+                                              showRemainingTilesModal(
+                                                  context, state, _rackIndex),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ),
-                if (me != null) ...[
-                  // Web düzeni: Raf + (Oyna | Yeni Oyun) yan yana; swap
-                  // modunda sağdaki buton hiç görünmez (App.tsx ~1281).
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
-                    // IntrinsicHeight: buton raf kartıyla aynı boya uzasın
-                    // (stretch, Column içinde sınırsız yükseklikte patlar).
-                    child: IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: RackWidget(
-                              tiles: state.players[_rackIndex].rack,
-                              selectedTile: state.selectedTile,
-                              onSelect: (i) {
-                                if (!_canAct) return;
-                                controller.dispatch(state.swapMode
-                                    ? ToggleSwapTileAction(i)
-                                    : SelectTileAction(i));
-                              },
-                              title: state.players[_rackIndex].name,
-                              color: _colorOf(_rackIndex),
-                              swapMode: state.swapMode,
-                              swapSelection: state.swapSelection,
-                            ),
-                          ),
-                          if (!state.swapMode) ...[
-                            const SizedBox(width: 8),
-                            state.isGameOver
-                                ? FilledButton(
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(),
-                                    child: const Text('YENİ\nOYUN',
-                                        textAlign: TextAlign.center),
-                                  )
-                                : FilledButton(
-                                    onPressed:
-                                        _canAct && state.placed.isNotEmpty
-                                            ? () => _handlePlay(moveStatus)
-                                            : null,
-                                    child: const Text('OYNA'),
-                                  ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                    child: state.swapMode
-                        ? Row(
-                            children: [
-                              Expanded(
-                                child: FilledButton(
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor:
-                                        const Color(0xFFB7791F), // web gold
-                                  ),
-                                  onPressed: _canAct &&
-                                          state.swapSelection.isNotEmpty
-                                      ? () => controller
-                                          .dispatch(const ConfirmSwapAction())
-                                      : null,
-                                  child: Text(state.swapSelection.isNotEmpty
-                                      ? 'DEĞİŞTİR (${state.swapSelection.length})'
-                                      : 'DEĞİŞTİR'),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: _canAct
-                                      ? () => controller.dispatch(
-                                          const ToggleSwapModeAction())
-                                      : null,
-                                  child: const Text('VAZGEÇ'),
-                                ),
-                              ),
-                            ],
-                          )
-                        : Row(
-                            children: [
-                              Expanded(
-                                child: _SmallButton(
-                                  label: 'PAS GEÇ',
-                                  onPressed: _canAct ? _handlePass : null,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: _SmallButton(
-                                  label: 'DEĞİŞTİR',
-                                  onPressed: _canAct && state.bag.isNotEmpty
-                                      ? () => controller.dispatch(
-                                          const ToggleSwapModeAction())
-                                      : null,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: _SmallButton(
-                                  label: 'KARIŞTIR',
-                                  onPressed: _canAct
-                                      ? () => controller
-                                          .dispatch(const ShuffleRackAction())
-                                      : null,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: _SmallButton(
-                                  label: 'GERİ AL',
-                                  onPressed: _canAct && state.placed.isNotEmpty
-                                      ? () => controller
-                                          .dispatch(const RecallAllAction())
-                                      : null,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: _SmallButton(
-                                  label: 'TORBA ${state.bag.length}',
-                                  // Web'de Torba hiç disable olmaz — YZ'nin
-                                  // sırasında/oyun bitince de açılabilir.
-                                  onPressed: () => showRemainingTilesModal(
-                                      context, state, _rackIndex),
-                                ),
-                              ),
-                            ],
-                          ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -428,6 +413,23 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 }
+
+/// Rafın yanındaki OYNA/YENİ OYUN — web'in `rounded-lg px-5 bg-accent`
+/// görünümü; raf kartı boyuna uzasa da köşe yarıçapı sabit kalır.
+final ButtonStyle _playButtonStyle = FilledButton.styleFrom(
+  backgroundColor: const Color(0xFF2563EB),
+  foregroundColor: Colors.white, // web: text-white
+  padding: const EdgeInsets.symmetric(horizontal: 20),
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+  textStyle: const TextStyle(
+    // ButtonStyle.textStyle tema fontunu MİRAS ALMAZ — fontFamily
+    // verilmezse testlerde Ahem bloklarına düşer (bkz. mobile/CLAUDE.md).
+    fontFamily: 'SpaceGrotesk',
+    fontSize: 13,
+    fontWeight: FontWeight.bold,
+    letterSpacing: 1.2,
+  ),
+);
 
 /// Alt sıradaki dar aksiyon butonları — web btn-raised-neutral'ın 11px
 /// bold/uppercase görünümüne yakın kompakt buton (gerçek nömorfik buton
@@ -447,6 +449,9 @@ class _SmallButton extends StatelessWidget {
         side: const BorderSide(color: Color(0xFFDCE2EA)),
         foregroundColor: const Color(0xFF1B2430),
         backgroundColor: const Color(0xFFF5F7FA),
+        // Web btn-raised-neutral: rounded-md — Material'ın hap (stadium)
+        // varsayılanı değil.
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       child: FittedBox(
         fit: BoxFit.scaleDown,

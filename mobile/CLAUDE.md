@@ -538,8 +538,50 @@ bağlı değil.)
        dökümü 93 taş; GameOver kazanan+Teslim+YENİ OYUN; GameOver ekran
        görüntüsü `build/screenshots/game_over.png`, swap modu
        `game_screen_swap.png`). 29/29 yeşil.
-   - Sıradaki parçalar: gerçek GameHeader görsel dili, kaydet/yükle
-     bağlantısı (LocalSaveStore + terk cezası üst katmanı), Setup ekranı,
+   - ✅ **Parça 4 — gerçek GameHeader: logo + akıcı skor kutuları (6 Ağustos
+     2026):**
+     - **Logo tek kaynaktan:** `scripts/generate-logo-paths.mjs` artık web
+       `LogoMark.tsx`'in yanında `mobile/app/lib/src/ui/game/
+       logo_mark_data.dart`ı da üretiyor (aynı Caveat Bold glyph
+       outline'ları; Caveat fontu uygulamaya HİÇ gömülmez) — logo değişirse
+       `npm run generate-logo-paths` iki tarafı birden günceller, elle
+       senkron yok. Üretici koşulduğunda web dosyasının değişmediği `git
+       diff` ile doğrulandı. `logo_mark.dart`taki `parseSvgPath` yalnızca
+       üreticinin ürettiği MUTLAK M/L/Q/C/Z komutlarını çözer ve bilinmeyen
+       girdide FIRLATIR — üretici bir gün farklı komut üretirse sessiz bozuk
+       çizim yerine test anında yakalanır (`game_header_test.dart` path'i
+       gerçekten çözüp viewBox sınırlarıyla karşılaştırıyor).
+     - **`game_header.dart`** — GameHeader.tsx portu: `_fluid()` web'in
+       `clamp(min, calc(a+b·vw), max)` sisteminin birebir eşleniği (aynı
+       katsayılar, 375→min/465→max uç noktaları); kutu = tint zemin + base
+       çerçeve, aktif 2px / pasif 0.5px; İNSAN kutusu geniş, YZ kutusu dar
+       ("YZ N" etiketi); teslimde %45 opaklık + skor yerine TESLİM; isim
+       `trUpper` ile (CSS `uppercase`ın Türkçe-farkındalı karşılığı —
+       İbrahim→İBRAHİM testte doğrulanıyor). **Çerçeve
+       `foregroundDecoration`da** — web'in `border`→`outline` dersinin
+       Flutter karşılığı: `BoxDecoration.border` içeriden yer kapladığından
+       aktif/pasif kalınlık farkı dar YZ kutusunda skoru kırpardı; ön-katman
+       dekorasyonu layout'a hiç dokunmaz. Sığmazsa şerit web'deki gibi yatay
+       kaydırılır. `onPlayerTap` opsiyonel (Canlı oyunda skor kartı için,
+       web `onPlayerClick`); UserMenu BİLİNÇLİ yok (auth sonraki faz).
+     - **GameScreen düzeni web akışına çekildi:** AppBar + geçici skor
+       satırı kalktı; içerik artık header → tahta → mesaj → raf → butonlar
+       olarak TEK scroll akışında diziliyor, artan boşluk web'deki gibi en
+       alta düşüyor (önceden tahta Expanded'ta tek başınaydı ve boşluk
+       tahtayla mesajın ARASINA giriyordu). Logo dokunuşu oyundan çıkarır
+       (şimdilik `Navigator.pop` — kaydet/yükle parçası gelince web'in
+       "kaydet ve Setup'a dön" davranışına bağlanacak).
+     - **İki Material tuzağı:** (1) `ButtonStyle.textStyle` tema fontunu
+       MİRAS ALMAZ — fontFamily verilmezse testlerde metin Ahem bloğuna
+       düşer (OYNA butonunda yaşandı); (2) buton bir satırda boyuna
+       uzatılınca Material'ın stadium varsayılanı onu dev bir hap/daireye
+       çevirir — web'in rounded-md/lg görünümü için her butona açık
+       `RoundedRectangleBorder` verildi.
+     - Doğrulama: `game_header_test.dart` (3 test: path çözümü + sınırlar,
+       bilinmeyen komutta fırlatma, etiketler/logo dokunuşu + ekran
+       görüntüsü `build/screenshots/game_header.png`). 32/32 yeşil.
+   - Sıradaki parçalar: kaydet/yükle bağlantısı (LocalSaveStore + terk
+     cezası üst katmanı + logo çıkışında kaydet), Setup ekranı,
      sürükle-bırak, kelime anlamı modalı, hamle geçmişi modalı.
 5. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
