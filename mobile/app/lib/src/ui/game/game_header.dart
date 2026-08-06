@@ -51,49 +51,62 @@ class GameHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           GestureDetector(
             onTap: onLogoTap,
             child: LogoMark(height: logoHeight),
           ),
           const SizedBox(width: 8),
-          // Web güvenlik ağıyla aynı: sığmazsa şerit görünmez biçimde yatay
-          // kaydırılır (satır kırmak yerine), 0. kutu her zaman erişilebilir.
-          // GİRİŞ/avatar bu kaydırma kabının DIŞINDA — web'deki aynı ders
-          // (UserMenu overflow kabının içindeyken dropdown'ı kırpılıyordu).
-          Flexible(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              reverse: false,
-              child: Row(
-                children: [
-                  for (var i = 0; i < state.players.length; i++) ...[
-                    if (i > 0) SizedBox(width: boxGap),
-                    _PlayerBox(
-                      player: state.players[i],
-                      index: i,
-                      active: i == state.current,
-                      width:
-                          state.players[i].isAI ? yzBoxWidth : playerBoxWidth,
-                      paddingX: boxPaddingX,
-                      paddingY: boxPaddingY,
-                      labelFontSize: labelFontSize,
-                      scoreFontSize: scoreFontSize,
-                      onTap: (onPlayerTap != null && !state.players[i].isAI)
-                          ? () => onPlayerTap!(i)
-                          : null,
+          // Web justify-between'in ikinci çocuğu tek bir SAĞ GRUP: kutular +
+          // GİRİŞ/avatar birbirine bitişik (gap-2) ve sağa yaslı — artan
+          // boşluk logo ile kutuların ARASINA düşer, kutuların sağına değil
+          // (kullanıcı iPhone karşılaştırmasıyla bildirdi).
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                // Web güvenlik ağıyla aynı: sığmazsa şerit görünmez biçimde
+                // yatay kaydırılır (satır kırmak yerine), 0. kutu her zaman
+                // erişilebilir. GİRİŞ/avatar bu kaydırma kabının DIŞINDA —
+                // web'deki aynı ders (UserMenu overflow kabının içindeyken
+                // dropdown'ı kırpılıyordu).
+                Flexible(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    reverse: false,
+                    child: Row(
+                      children: [
+                        for (var i = 0; i < state.players.length; i++) ...[
+                          if (i > 0) SizedBox(width: boxGap),
+                          _PlayerBox(
+                            player: state.players[i],
+                            index: i,
+                            active: i == state.current,
+                            width: state.players[i].isAI
+                                ? yzBoxWidth
+                                : playerBoxWidth,
+                            paddingX: boxPaddingX,
+                            paddingY: boxPaddingY,
+                            labelFontSize: labelFontSize,
+                            scoreFontSize: scoreFontSize,
+                            onTap: (onPlayerTap != null &&
+                                    !state.players[i].isAI)
+                                ? () => onPlayerTap!(i)
+                                : null,
+                          ),
+                        ],
+                      ],
                     ),
-                  ],
-                ],
-              ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _GirisButton(
+                  fontSize: girisFontSize,
+                  paddingX: girisPaddingX,
+                  paddingY: girisPaddingY,
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: 8),
-          _GirisButton(
-            fontSize: girisFontSize,
-            paddingX: girisPaddingX,
-            paddingY: girisPaddingY,
           ),
         ],
       ),

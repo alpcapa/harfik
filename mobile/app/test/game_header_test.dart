@@ -129,6 +129,22 @@ void main() {
       expect(await overflowAt(width, state), 0,
           reason: '$width px: karışık kadro sığmalı');
     }
+
+    // Sağa yaslılık (web justify-between paritesi): son kutu GİRİŞ'e
+    // bitişik (8px), artan boşluk logo ile İLK kutunun arasında kalır.
+    await overflowAt(465, state);
+    final lastBoxRight =
+        tester.getTopRight(find.byKey(const ValueKey('player-box-3'))).dx;
+    final girisLeft = tester
+        .getTopLeft(find.ancestor(
+            of: find.text('GİRİŞ'), matching: find.byType(Container)))
+        .dx;
+    expect(girisLeft - lastBoxRight, moreOrLessEquals(8, epsilon: 0.5));
+    final girisRight = tester
+        .getTopRight(find.ancestor(
+            of: find.text('GİRİŞ'), matching: find.byType(Container)))
+        .dx;
+    expect(girisRight, moreOrLessEquals(465 - 12, epsilon: 0.5)); // sağ dolgu
   });
 
   testWidgets(
