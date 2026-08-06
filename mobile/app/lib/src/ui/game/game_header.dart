@@ -185,55 +185,65 @@ class _PlayerBox extends StatelessWidget {
     final col = playerColors[player.colorIndex % playerColors.length];
     final label = player.isAI ? 'YZ ${index + 1}' : trUpper(player.name);
 
-    final box = Opacity(
-      opacity: player.surrendered ? 0.45 : 1,
-      child: Container(
-        width: width,
-        padding: EdgeInsets.symmetric(horizontal: paddingX, vertical: paddingY),
-        decoration: BoxDecoration(
-          color: col.tint,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        // Çerçeve foregroundDecoration'da: web'deki `outline` dersiyle aynı
-        // sebep — aktif/pasif kalınlık farkı (2/0.5px) iç içerik genişliğini
-        // değiştirirse dar YZ kutusunda 3 haneli skor kırpılır. Flutter'da
-        // BoxDecoration.border da içeriden yer kapladığından çerçeve layout'a
-        // hiç dokunmayan ön katmana çizilir.
-        foregroundDecoration: BoxDecoration(
-          border: Border.all(color: col.base, width: active ? 2 : 0.5),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'SpaceMono',
-                fontWeight: FontWeight.bold,
-                fontSize: labelFontSize,
-                letterSpacing: 1,
-                color: col.base,
+    // Teslim durumu kutunun TASARIMINI değiştirmez (kullanıcı kararı,
+    // 6 Ağustos 2026 — web'in %45 soluklaştırma + küçük punto davranışından
+    // bilinçli sapma): kutu diğerleriyle aynı boy/renk/çerçevede kalır,
+    // yalnızca puan alanında skor yerine "Teslim" yazar. Puan satırının
+    // yüksekliği skorla birebir aynı tutulur (SizedBox), metin sığması için
+    // FittedBox ile daraltılır.
+    final box = Container(
+      key: ValueKey('player-box-$index'),
+      width: width,
+      padding: EdgeInsets.symmetric(horizontal: paddingX, vertical: paddingY),
+      decoration: BoxDecoration(
+        color: col.tint,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      // Çerçeve foregroundDecoration'da: web'deki `outline` dersiyle aynı
+      // sebep — aktif/pasif kalınlık farkı (2/0.5px) iç içerik genişliğini
+      // değiştirirse dar YZ kutusunda 3 haneli skor kırpılır. Flutter'da
+      // BoxDecoration.border da içeriden yer kapladığından çerçeve layout'a
+      // hiç dokunmayan ön katmana çizilir.
+      foregroundDecoration: BoxDecoration(
+        border: Border.all(color: col.base, width: active ? 2 : 0.5),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'SpaceMono',
+              fontWeight: FontWeight.bold,
+              fontSize: labelFontSize,
+              letterSpacing: 1,
+              color: col.base,
+            ),
+          ),
+          SizedBox(
+            height: scoreFontSize, // skor satırıyla (height:1) aynı boy
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  player.surrendered ? 'TESLİM' : '${player.score}',
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontFamily: 'SpaceMono',
+                    fontWeight: FontWeight.bold,
+                    fontSize: scoreFontSize,
+                    height: 1,
+                    color: col.base,
+                  ),
+                ),
               ),
             ),
-            Text(
-              player.surrendered ? 'TESLİM' : '${player.score}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontFamily: 'SpaceMono',
-                fontWeight: FontWeight.bold,
-                fontSize: player.surrendered ? labelFontSize : scoreFontSize,
-                height: 1,
-                letterSpacing: player.surrendered ? 1 : 0,
-                color: col.base,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
 

@@ -555,7 +555,15 @@ bağlı değil.)
        `clamp(min, calc(a+b·vw), max)` sisteminin birebir eşleniği (aynı
        katsayılar, 375→min/465→max uç noktaları); kutu = tint zemin + base
        çerçeve, aktif 2px / pasif 0.5px; İNSAN kutusu geniş, YZ kutusu dar
-       ("YZ N" etiketi); teslimde %45 opaklık + skor yerine TESLİM; isim
+       ("YZ N" etiketi). **Teslim durumu — web'den BİLİNÇLİ sapma
+       (kullanıcı kararı, aynı gün):** ilk sürüm web'i izleyip kutuyu %45
+       soluklaştırıp TESLİM'i küçük puntoyla basıyordu; kullanıcı "diğerleriyle
+       aynı boy ve tasarımda olmalı, yalnızca puan alanında Teslim yazmalı"
+       dedi — soluklaştırma kaldırıldı, puan satırı skorla AYNI yükseklikte
+       sabit bir SizedBox, TESLİM metni FittedBox'la sığdırılıyor; test kutu
+       boylarının birebir eşit olduğunu ölçüyor. Web hâlâ eski davranışta —
+       aynı değişiklik istenirse web `GameHeader.tsx` ayrıca güncellenmeli;
+       isim
        `trUpper` ile (CSS `uppercase`ın Türkçe-farkındalı karşılığı —
        İbrahim→İBRAHİM testte doğrulanıyor). **Çerçeve
        `foregroundDecoration`da** — web'in `border`→`outline` dersinin

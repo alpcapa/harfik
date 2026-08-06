@@ -119,6 +119,15 @@ void main() {
     // Teslim olan koltuk skor yerine TESLİM gösterir, adı da görünür.
     expect(find.text('DENİZ'), findsOneWidget);
     expect(find.text('TESLİM'), findsOneWidget);
+    // Kullanıcı kararı: teslim kutusu diğerleriyle AYNI boy/tasarımda —
+    // soluklaştırma yok, yükseklik normal insan kutusuyla birebir aynı.
+    expect(find.byType(Opacity), findsNothing);
+    final normalBox =
+        tester.getSize(find.byKey(const ValueKey('player-box-0')));
+    final surrenderedBox =
+        tester.getSize(find.byKey(const ValueKey('player-box-2')));
+    expect(surrenderedBox.height, normalBox.height);
+    expect(surrenderedBox.width, normalBox.width);
 
     await tester.tap(find.byType(LogoMark));
     expect(logoTapped, isTrue);
