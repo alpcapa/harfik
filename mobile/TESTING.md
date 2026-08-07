@@ -15,7 +15,13 @@ kaydı değildir**, her sürüm öncesi baştan koşulabilir.
 - Uygulama gerçek anahtarlarla derlenmiş olmalı:
   `--dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...`
   Anahtar verilmezse uygulama tamamen offline moda düşer (hesap özellikleri
-  gizlenir) — bu listenin çoğu koşulamaz.
+  gizlenir) — bu listenin çoğu koşulamaz. CI bunları depo sırlarından
+  (`SUPABASE_URL`/`SUPABASE_ANON_KEY`) okuyor; sırlar boşken üretilen APK
+  yalnızca 0. ve 1. bölümler için kullanılabilir.
+- **Anahtarın gerçekten gömüldüğünü ilk açılışta doğrula:** kurulum
+  ekranında hesap/giriş girişi görünüyorsa gömülmüştür; görünmüyorsa APK
+  offline modda derlenmiş demektir (sırlar eksik ya da yanlış adla
+  girilmiş).
 - İki test hesabı (ör. T1/T2) ve **aynı hesapla açılmış bir web oturumu**:
   bu listenin en değerli maddeleri web ↔ mobil aynı veriyi görüyor mu diye
   soruyor.
