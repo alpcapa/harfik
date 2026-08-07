@@ -1,0 +1,110 @@
+# Mobil (Flutter) derleme doğrulaması.
+#
+# NEDEN VAR: geliştirme ortamında (Claude Code oturumu) Android SDK, Xcode ve
+# CocoaPods YOK — `flutter test` koşuyor ama `flutter build ios/apk` hiç
+# koşmadı. Yani "testler yeşil" ile "uygulama gerçekten derleniyor" arasında
+# doğrulanmamış bir boşluk vardı; özellikle platform eklentileri
+# (sqflite, shared_preferences, supabase_flutter, share_plus, path_provider)
+# ancak gerçek bir pod/gradle derlemesinde patlar.
+#
+# MALİYET: macOS runner'ları özel depolarda dakika kotasını 10x tüketiyor.
+# Bu yüzden HİÇBİR otomatik tetikleyici yok (push/PR'da çalışmaz) — yalnızca
+# elle (Actions sekmesi → Run workflow). iOS işini istemezsen kapatabilirsin.
+#
+# İMZALAMA/TESTFLIGHT: burada YOK. iOS işi `--no-codesign` ile yalnızca
+# derlemeyi kanıtlıyor; Apple Developer üyeliği geldiğinde TestFlight
+# yüklemesi ayrı bir iş olarak eklenecek (bkz. mobile/TESTING.md,
+# "TestFlight kurulumu").
+name: Mobil derleme
+
+on:
+  workflow_dispatch:
+    inputs:
+      ios:
+        description: 'iOS derlemesi (macOS runner — dakika kotasını 10x tüketir)'
+        type: boolean
+        default: true
+      android:
+        description: 'Android APK derlemesi'
+        type: boolean
+        default: true
+
+# Aynı anda tek çalıştırma yeter; arka arkaya tetiklenirse eskisini iptal et.
+concurrency:
+  group: mobile-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Analiz + testler
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      # Saf Dart motor paketi: golden vector replay testleri (web motoruyla
+      # parite kanıtı). Flutter'a hiç bağlı değil, `dart` ile koşuyor.
+      - name: kelimeki_core testleri
+        working-directory: mobile/kelimeki_core
+        run: |
+          dart pub get
+          dart run test/run_all.dart
+      - name: Uygulama analiz + testleri
+        working-directory: mobile/app
+        run: |
+          flutter pub get
+          dart analyze lib/ test/
+          flutter test
+
+  android:
+    name: Android APK
+    if: ${{ inputs.android }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      # Anahtarlar verilmezse uygulama TAMAMEN OFFLINE moda düşer (web'deki
+      # `configured` bayrağının eşleniği) — derleme doğrulaması için yeterli.
+      # Gerçek bir test derlemesi isteniyorsa depo sırlarına eklenir.
+      - name: APK derle
+        working-directory: mobile/app
+        run: |
+          flutter pub get
+          flutter build apk --release \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kelimeki-apk
+          path: mobile/app/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+  ios:
+    name: iOS (imzasız)
+    if: ${{ inputs.ios }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      # `--no-codesign`: sertifika/profil GEREKTİRMEZ, yalnızca derlemenin
+      # (pod install dahil) çalıştığını kanıtlar. Apple üyeliği olmadan da
+      # koşar. Podfile depoda yok; flutter tooling burada üretir.
+      - name: iOS derle
+        working-directory: mobile/app
+        run: |
+          flutter pub get
+          flutter build ios --release --no-codesign \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
