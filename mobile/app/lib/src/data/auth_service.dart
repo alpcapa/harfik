@@ -362,6 +362,46 @@ class AuthService extends ChangeNotifier {
     await c.auth.updateUser(UserAttributes(email: email));
   }
 
+  static const _maxAvatarBytes = 2 * 1024 * 1024;
+  static const _extByMime = <String, String>{
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/gif': 'gif',
+  };
+
+  /// Web `uploadAvatar` (src/lib/api.ts) portu — `avatars` kovasına
+  /// `<uid>/avatar.<ext>` yoluna yükler (RLS: yalnızca kendi klasörünü
+  /// yazabilirsin, bkz. `profile_avatar` migration'ı), profildeki
+  /// `avatar_url`'i günceller ve önbelleği atlamak için `?v=` sürüm
+  /// parametreli genel URL'i döner. MIME/boyut kontrolü web'deki gibi
+  /// burada da tekrarlanıyor (UI zaten kontrol ediyor, bu ikinci bir
+  /// savunma katmanı — ileride başka bir çağrı yeri bunu atlayabilir).
+  Future<String> uploadAvatar(
+      {required Uint8List bytes, required String mimeType}) async {
+    final c = _client;
+    if (c == null) throw const AuthException('Supabase yapılandırılmadı.');
+    if (!mimeType.startsWith('image/')) {
+      throw const AuthException('Lütfen bir görsel dosyası seç.');
+    }
+    if (bytes.length > _maxAvatarBytes) {
+      throw const AuthException('Görsel 2 MB’den küçük olmalı.');
+    }
+    final u = _user;
+    if (u == null) throw const AuthException('Oturum açık değil.');
+    final ext = _extByMime[mimeType] ?? 'png';
+    final path = '${u.id}/avatar.$ext';
+    await c.storage.from('avatars').uploadBinary(
+          path,
+          bytes,
+          fileOptions: FileOptions(upsert: true, contentType: mimeType),
+        );
+    final publicUrl = c.storage.from('avatars').getPublicUrl(path);
+    final url = '$publicUrl?v=${DateTime.now().millisecondsSinceEpoch}';
+    await updateProfile({'avatar_url': url});
+    return url;
+  }
+
   void _applyUser(User? u) {
     _user = u;
     if (u?.id == _currentUserId) {

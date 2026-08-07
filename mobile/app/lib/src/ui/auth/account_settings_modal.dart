@@ -17,10 +17,12 @@
 //   paylaşılamayan bir yardımcı, web'de de iki ayrı bileşenin AYNI hook'u
 //   ayrı ayrı çağırmasıyla aynı sonucu veriyor).
 //
-// Bilinçli eksik: profil fotoğrafı değiştirme (web'in dosya seçici +
-// `uploadAvatar`) — `image_picker` + Supabase Storage upload gerektiren
-// AYRI bir platform bağımlılığı, bu parçanın kapsamı dışında bırakıldı.
-// Mevcut fotoğraf (varsa) salt-okunur gösteriliyor.
+// Profil fotoğrafı değiştirme (7 Ağustos 2026, Parça 14) — web'in dosya
+// seçici + `uploadAvatar`'ı: `pickAvatarImage` (galeriden seçim) →
+// `AuthService.uploadAvatar` (doğrulama + `avatars` kovasına yükleme +
+// `profiles.avatar_url` güncellemesi) → `refreshProfile`. Seçim
+// `PickAvatarFn` olarak enjekte edilebilir (widget testleri gerçek galeriye
+// dokunmadan akışı doğruluyor — `share_board.dart`'taki aynı desen).
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -28,6 +30,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 
 import '../../data/auth_service.dart';
 import '../../data/profile_fields.dart';
+import '../../util/avatar_picker.dart';
 import '../game/modal_shell.dart';
 import '../game/neo_button.dart';
 import 'k_avatar.dart';
@@ -43,12 +46,14 @@ Future<void> showAccountSettingsModal(
   BuildContext context,
   AuthService auth, {
   Future<bool> Function(String nickname)? nicknameChecker,
+  PickAvatarFn? pickAvatar,
 }) {
   return showDialog<void>(
     context: context,
     builder: (context) => AccountSettingsModal(
       auth: auth,
       nicknameChecker: nicknameChecker,
+      pickAvatar: pickAvatar,
     ),
   );
 }
@@ -62,8 +67,14 @@ class AccountSettingsModal extends StatefulWidget {
   /// üretimde `auth.checkNicknameAvailable`.
   final Future<bool> Function(String nickname)? nicknameChecker;
 
+  /// Test injection'ı — verilmezse gerçek `pickAvatarImage` (galeri).
+  final PickAvatarFn? pickAvatar;
+
   const AccountSettingsModal(
-      {super.key, required this.auth, this.nicknameChecker});
+      {super.key,
+      required this.auth,
+      this.nicknameChecker,
+      this.pickAvatar});
 
   @override
   State<AccountSettingsModal> createState() => _AccountSettingsModalState();
@@ -99,6 +110,12 @@ class _AccountSettingsModalState extends State<AccountSettingsModal> {
   bool _busy = false;
   String? _error;
   String? _info;
+
+  bool _uploadingAvatar = false;
+  // Yükleme sonrası `auth.profile?.avatarUrl` bir sonraki `refreshProfile`e
+  // kadar eski kalabilir (ağ gecikmesi) — o ana kadar yeni fotoğrafı hemen
+  // göstermek için yerel bir önizleme.
+  String? _avatarUrlOverride;
 
   @override
   void initState() {
@@ -182,6 +199,35 @@ class _AccountSettingsModalState extends State<AccountSettingsModal> {
     if (e is FormatException) return e.message; // trDateToIso Türkçe mesajları
     if (e is AuthException) return e.message;
     return e.toString();
+  }
+
+  /// Web `onPickFile` portu: seç → doğrula (AuthService.uploadAvatar zaten
+  /// tip/boyut kontrolü yapıyor, burada yalnızca "iptal edildi" no-op'u) →
+  /// yükle → `refreshProfile`. Kullanıcı galeriyi iptal ederse (`null`)
+  /// sessizce hiçbir şey olmaz — web'de dosya seçmeden kapatmakla aynı.
+  Future<void> _pickAndUploadAvatar() async {
+    setState(() {
+      _error = null;
+      _info = null;
+    });
+    final picked = await (widget.pickAvatar ?? pickAvatarImage)();
+    if (picked == null || !mounted) return;
+    setState(() => _uploadingAvatar = true);
+    try {
+      final url = await widget.auth
+          .uploadAvatar(bytes: picked.bytes, mimeType: picked.mimeType);
+      await widget.auth.refreshProfile();
+      if (mounted) {
+        setState(() {
+          _avatarUrlOverride = url;
+          _info = 'Profil fotoğrafı güncellendi.';
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = _describe(e));
+    } finally {
+      if (mounted) setState(() => _uploadingAvatar = false);
+    }
   }
 
   Future<void> _save() async {
@@ -402,13 +448,36 @@ class _AccountSettingsModalState extends State<AccountSettingsModal> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              KAvatar(url: auth.profile?.avatarUrl, name: name, size: 56),
+              KAvatar(
+                  url: _avatarUrlOverride ?? auth.profile?.avatarUrl,
+                  name: name,
+                  size: 56),
               const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Profil fotoğrafı değiştirme yakında — kelimeki.com üzerinden düzenleyebilirsin.',
-                  style: TextStyle(
-                      fontFamily: 'SpaceMono', fontSize: 9, color: _muted),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    NeoButton(
+                      label:
+                          _uploadingAvatar ? 'YÜKLENİYOR…' : 'FOTOĞRAF DEĞİŞTİR',
+                      variant: NeoButtonVariant.neutral,
+                      fontSize: 10,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      onPressed: _uploadingAvatar || _busy
+                          ? null
+                          : _pickAndUploadAvatar,
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 4),
+                      child: Text('JPG/PNG, en fazla 2 MB',
+                          style: TextStyle(
+                              fontFamily: 'SpaceMono',
+                              fontSize: 9,
+                              color: _muted)),
+                    ),
+                  ],
                 ),
               ),
             ]),

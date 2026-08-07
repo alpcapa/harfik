@@ -19,6 +19,11 @@ dependencies:
   # linklerini (kelimeki://davet/...) dinlemek için doğrudan bağımlılığa
   # alındı (FriendInviteInbox); sürüm kısıtı supabase_flutter'ınkiyle uyumlu.
   app_links: ^6.4.1
+  # Hesap Ayarları'ndaki profil fotoğrafı değiştirme — yalnızca galeriden
+  # seçim (ImageSource.gallery); kamerayla çekim BİLİNÇLİ kapsam dışı (web
+  # `<input type="file">` de yalnızca dosya seçtiriyor, kamera izni
+  # gerektirmeyen en yakın eşdeğer).
+  image_picker: ^1.1.2
   kelimeki_core:
     path: ../kelimeki_core
   path_provider: ^2.1.5

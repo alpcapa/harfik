@@ -254,7 +254,9 @@ mobile/
                              # online_game_screen (TAHTA — game_screen.dart
                              # ile sürükleme/joker/mesaj desenini PAYLAŞIR,
                              # biri değişirse öteki de güncellenmeli)
-      util/semver.dart, util/uuid.dart, util/share_board.dart
+      util/semver.dart, util/uuid.dart, util/share_board.dart,
+    util/avatar_picker.dart # profil fotoğrafı seçimi (image_picker sarmalayıcısı,
+                             # yalnızca galeri) — enjekte edilebilir PickAvatarFn
     android/ ios/            # flutter create çıktısı + elle değişiklikler (aşağı bkz.)
     test/                    # util, controller (golden replay!), widget duman testleri
   kelimeki_core/             # saf Dart motor paketi (Flutter bağımlılığı YOK)
@@ -2407,11 +2409,75 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        `updateEmail`/`refreshProfile` (RLS, unique index yarışı, GoTrue
        e-posta değişikliği onayı) bu ortamdan test EDİLEMEDİ — cihazda
        gerçek bir hesapla doğrulanmalı, TESTING.md'ye ayrı bölüm eklendi.
-   - **Auth + Canlı oyun fazının web UI paritesi bu parçayla tamamlandı**
-     (admin paneli hariç — bilinçli kapsam dışı, bkz. "Üst Düzey Kararlar"
-     #3). Kalan bilinçli eksikler: profil fotoğrafı değiştirme (yukarı),
-     Şifre Değiştir (web'de zaten 2 Ağustos 2026'da kaldırılmış — parite
-     eksiği DEĞİL).
+   - ✅ **Parça 14 — profil fotoğrafı yükleme (7 Ağustos 2026,
+     `data/auth_service.dart`, `util/avatar_picker.dart`,
+     `ui/auth/account_settings_modal.dart`):** Parça 13'te bilinçli eksik
+     bırakılan tek madde kapandı — Hesap Ayarları artık web'in
+     `uploadAvatar` akışını (dosya seç → doğrula → `avatars` kovasına
+     yükle → `profiles.avatar_url` güncelle) uçtan uca taşıyor.
+     - **`AuthService.uploadAvatar({bytes, mimeType})`** — web
+       `uploadAvatar` (`src/lib/api.ts`) portu: MIME (`image/*`) ve boyut
+       (≤2 MB) doğrulaması istemci tarafında TEKRARLANIYOR (UI zaten
+       kontrol ediyor, bu ikinci bir savunma katmanı), `avatars` kovasına
+       `<uid>/avatar.<ext>` yoluna `uploadBinary(upsert:true)` ile yazıp
+       `getPublicUrl` + `?v=<epoch ms>` önbellek-kırma parametresiyle
+       `profiles.avatar_url`'i `updateProfile`'a devrediyor. RLS
+       (`profile_avatar` migration'ı — yalnızca kendi `auth.uid()` klasörüne
+       yazabilirsin) web'le aynı, dokunulmadı; `security_hardening`
+       migration'ının yalnızca fazla bir SELECT policy'sini kaldırdığı,
+       INSERT/UPDATE/DELETE kısıtının değişmediği kaynak okunarak
+       doğrulandı. **Supabase Storage'ın Dart SDK'sı JS'ten farklı:**
+       `getPublicUrl` düz bir `String` döner (JS'in `{data:{publicUrl}}`
+       sarmalayıcısı yok) — port bu farkı gözetti.
+     - **`util/avatar_picker.dart` (yeni, enjekte edilebilir):**
+       `PickedImage`/`PickAvatarFn` + üretim `pickAvatarImage()` —
+       `image_picker`in `ImageSource.gallery`'si (web'in
+       `<input type="file" accept="image/*">`'ıyla aynı kapsam: yalnızca
+       galeri, KAMERA BİLİNÇLİ YOK — ek bir kamera izni gerektirmeyen en
+       yakın eşdeğer). `XFile.mimeType` platforma göre boş kalabildiğinden
+       dosya uzantısından bir yedek harita (`_mimeByExt`) var; ikisi de
+       tanınmazsa `application/octet-stream` (sessizce yanlış bir MIME
+       uydurmuyoruz — `uploadAvatar`'ın `image/*` kontrolü bunu zaten
+       reddeder). `share_board.dart`'taki `ShareBoardFn`/`CaptureBoardFn`
+       ile AYNI enjeksiyon deseni: platform kanalı widget testinde
+       çalışmaz, `AccountSettingsModal` seçimi opsiyonel `pickAvatar`
+       parametresi olarak alır.
+     - **UI:** avatar satırındaki "kelimeki.com üzerinden düzenleyebilirsin"
+       notu kalktı; `KAvatar` + "FOTOĞRAF DEĞİŞTİR" (NeoButton, neutral) +
+       "JPG/PNG, en fazla 2 MB" alt yazısı geldi. Yükleme sırasında buton
+       "YÜKLENİYOR…" gösterip devre dışı kalıyor; başarıda yerel bir
+       `_avatarUrlOverride` (web'in aynı gecikme sorunu — `refreshProfile`
+       ağ gecikmesi boyunca eski fotoğraf görünmesin diye) + "Profil
+       fotoğrafı güncellendi." notu; galeri iptal edilirse (`null`)
+       sessizce hiçbir şey olmaz (web'de dosya seçmeden kapatmakla aynı).
+     - **iOS izni:** `Info.plist`'e `NSPhotoLibraryUsageDescription`
+       eklendi (galeri erişimi için zorunlu) — attribute-seviyesinde
+       doğrulama yapıldı (üretici dersinin refleksi), başka hiçbir key
+       kaybolmadı/değişmedi.
+     - **Test sınırı — `AuthService.fake`'in `_client==null` kontrolü
+       yükleme başarısını simüle etmeyi ENGELLİYOR:** `uploadAvatar`
+       önce `_client == null` kontrolü yapıp fırlıyor — MIME/boyut
+       doğrulaması ondan SONRA geliyor. Yani fake client'la HERHANGİ bir
+       seçilmiş görsel (geçerli ya da değil) doğrudan "Supabase
+       yapılandırılmadı."ya düşer; bu iki test (`_save()` testlerindeki
+       AYNI desen) yalnızca akışın GERÇEKTEN `AuthService.uploadAvatar`'a
+       ulaştığını kanıtlıyor — MIME/boyut doğrulama mantığının kendisi
+       bu ortamdan test EDİLEMEDİ.
+     - Doğrulama: `account_settings_test.dart`'a 2 test eklendi (seçim→
+       yükleme→ağ çağrısına ulaşma; galeri iptali→no-op). **Tam takım
+       245/245 yeşil**, analyze + değişmez taraması temiz (yeni
+       `toLowerCase()` çağrısı `avatar_picker.dart`'ta bir dosya
+       UZANTISI üzerinde — Türkçe metin değil, `trLower` gerektirmiyor).
+       **Doğrulama sınırı:** gerçek galeri seçici, gerçek Storage upload'ı
+       (RLS'in başka bir kullanıcının klasörüne yazmayı gerçekten
+       reddettiği), public URL'in önbellek kırma davranışı ve 2 MB/
+       resim-dışı-dosya reddi cihazda doğrulanmalı — TESTING.md'ye ayrı
+       madde eklendi.
+   - **Auth + Canlı oyun fazının web UI paritesi Parça 10'da tamamlanmıştı;
+     Parça 14 ile son bilinçli eksik de kapandı** (admin paneli hariç —
+     bilinçli kapsam dışı, bkz. "Üst Düzey Kararlar" #3). Kalan tek fark
+     Şifre Değiştir'in mobilde hiç olmaması — web'de de zaten 2 Ağustos
+     2026'da kaldırılmıştı, bu bir parite eksiği DEĞİL.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

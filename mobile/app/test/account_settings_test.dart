@@ -7,11 +7,14 @@
 // gönderim "Supabase yapılandırılmadı." ile sonuçlanır; bu, akışın ağ
 // çağrısına GERÇEKTEN ulaştığının kanıtı olarak kullanılıyor (signup_test
 // ile aynı sınır/desen).
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/ui/auth/account_button.dart';
 import 'package:kelimeki/src/ui/auth/account_settings_modal.dart';
+import 'package:kelimeki/src/util/avatar_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
 import 'support/test_fonts.dart';
@@ -34,13 +37,15 @@ void main() {
     WidgetTester tester,
     AuthService auth, {
     Future<bool> Function(String)? checker,
+    PickAvatarFn? pickAvatar,
   }) async {
     await setPhoneViewSize(tester, const Size(420, 900));
     await tester.pumpWidget(MaterialApp(
       theme: ThemeData(
           fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
       home: Scaffold(
-        body: AccountSettingsModal(auth: auth, nicknameChecker: checker),
+        body: AccountSettingsModal(
+            auth: auth, nicknameChecker: checker, pickAvatar: pickAvatar),
       ),
     ));
     await tester.pump();
@@ -165,6 +170,51 @@ void main() {
     await tester.pump();
     expect(find.text('Bu takma isim zaten kullanılıyor.'), findsNothing);
     expect(find.text('Supabase yapılandırılmadı.'), findsNothing);
+  });
+
+  testWidgets(
+      'profil fotoğrafı: seçim → yükleme → ağ çağrısına ulaşır (fake client "Supabase yapılandırılmadı." döner)',
+      (tester) async {
+    final auth = AuthService.fake(
+      user: fakeUser('me'),
+      profile: const KProfile(id: 'me', displayName: 'ironman'),
+    );
+    await pumpSettings(tester, auth,
+        pickAvatar: () async => PickedImage(
+            bytes: Uint8List.fromList([1, 2, 3]), mimeType: 'image/png'));
+
+    expect(find.text('FOTOĞRAF DEĞİŞTİR'), findsOneWidget);
+    await tester.tap(find.text('FOTOĞRAF DEĞİŞTİR'));
+    await tester.pumpAndSettle();
+    // AuthService.fake gerçek bir Supabase client taşımıyor —
+    // uploadAvatar'ın `_client == null` kontrolüne takılıp
+    // 'Supabase yapılandırılmadı.' fırlatması, akışın GERÇEKTEN
+    // AuthService.uploadAvatar'a ulaştığının kanıtı (signup_test/_save
+    // testleriyle aynı sınır/desen).
+    expect(find.text('Supabase yapılandırılmadı.'), findsOneWidget);
+    expect(find.text('YÜKLENİYOR…'), findsNothing);
+    expect(find.text('FOTOĞRAF DEĞİŞTİR'), findsOneWidget);
+  });
+
+  testWidgets('profil fotoğrafı: galeri iptal edilirse (null) hiçbir şey olmaz',
+      (tester) async {
+    var calls = 0;
+    final auth = AuthService.fake(
+      user: fakeUser('me'),
+      profile: const KProfile(id: 'me', displayName: 'ironman'),
+    );
+    await pumpSettings(tester, auth, pickAvatar: () async {
+      calls++;
+      return null;
+    });
+
+    await tester.tap(find.text('FOTOĞRAF DEĞİŞTİR'));
+    await tester.pumpAndSettle();
+
+    expect(calls, 1);
+    expect(find.text('YÜKLENİYOR…'), findsNothing);
+    expect(find.text('Supabase yapılandırılmadı.'), findsNothing);
+    expect(find.text('FOTOĞRAF DEĞİŞTİR'), findsOneWidget);
   });
 
   testWidgets('AccountButton menüsünde "Hesap Ayarları" satırı modalı açar',

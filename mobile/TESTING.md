@@ -475,10 +475,27 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **Doğum tarihi doğrulaması.** Geçersiz bir tarih (ör. 31/13/1990)
       yaz → Kaydet: Türkçe hata mesajı ("Doğum ayı geçersiz." vb.) çıkmalı,
       hiçbir şey kaydedilmemeli.
-- [ ] **Profil fotoğrafı.** Mevcut fotoğraf (varsa, web'den yüklenmiş)
-      salt-okunur görünmeli — bu ekrandan DEĞİŞTİRİLEMEZ (bilinçli eksik,
-      bkz. mobile/CLAUDE.md). Fotoğrafın altında kısa bir "kelimeki.com
-      üzerinden düzenleyebilirsin" notu olmalı.
+- [ ] **Profil fotoğrafı — seçim + izin.** "FOTOĞRAF DEĞİŞTİR"e bas:
+      iOS'ta ilk kez galeri izni istenmeli (`NSPhotoLibraryUsageDescription`
+      metni Türkçe görünmeli), Android'de doğrudan galeri açılmalı. Galeriyi
+      İPTAL edersen hiçbir şey olmamalı (hata/not/YÜKLENİYOR çıkmamalı).
+- [ ] **Profil fotoğrafı — başarılı yükleme.** Bir görsel seç: buton kısa
+      süreliğine "YÜKLENİYOR…" gösterip devre dışı kalmalı, ardından
+      "Profil fotoğrafı güncellendi." notu + YENİ fotoğraf hem bu modalde
+      hem Setup/hesap menüsündeki avatarda görünmeli. Uygulamayı kapatıp
+      aç (ya da webde aynı hesaba gir) — fotoğraf kalıcı olmalı.
+- [ ] **Profil fotoğrafı — RLS.** Yüklenen dosyanın gerçekten `avatars`
+      kovasında `<kendi-uid>/avatar.<ext>` yoluna gittiğini (Supabase
+      Dashboard → Storage) doğrula; başka bir kullanıcının klasörüne
+      yazma denemesi (varsa bir test aracıyla) RLS tarafından reddedilmeli.
+- [ ] **Profil fotoğrafı — önbellek kırma.** Yeni bir fotoğrafla üzerine
+      yaz (aynı hesap, ikinci kez "FOTOĞRAF DEĞİŞTİR"): eski fotoğraf
+      önbellekte takılı kalmadan YENİ görsel hemen görünmeli (URL'deki
+      `?v=` zaman damgası sayesinde).
+- [ ] **Profil fotoğrafı — sınır kontrolleri.** 2 MB'ı aşan bir görsel
+      seçmeyi dene: "Görsel 2 MB'den küçük olmalı." hatası çıkmalı, hiçbir
+      şey yüklenmemeli. Bir resim-DIŞI dosya (galeri buna izin veriyorsa)
+      seçilirse "Lütfen bir görsel dosyası seç." hatası çıkmalı.
 
 ---
 
