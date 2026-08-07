@@ -27,6 +27,11 @@ class KModal extends StatelessWidget {
   /// HelpModal'ın Hızlı Başlangıç ↔ Detaylı Kurallar geçişi).
   final Widget? headerLink;
 
+  /// Başlığın YANINDA, ✕'in solunda gösterilen küçük bir aksiyon ikonu
+  /// (web `headerAction` — ChatModal'ın Ayarlar/dişli ikonu, Oyun İçi
+  /// Mesajlaşma Faz 2). `headerLink`'in aksine aynı satırda render edilir.
+  final Widget? headerAction;
+
   /// ✕'in davranışı — web Modal'ın `onClose` prop'u. Verilmezse Navigator
   /// pop (showDialog ile açılan olağan kullanım). Bir route OLMADAN inline
   /// render edilen modal (ResetPasswordModal'ın kök recovery kapısı) pop
@@ -40,6 +45,7 @@ class KModal extends StatelessWidget {
     required this.child,
     this.titleWidget,
     this.headerLink,
+    this.headerAction,
     this.onClose,
   });
 
@@ -91,6 +97,7 @@ class KModal extends StatelessWidget {
                               ),
                             ),
                       ),
+                      if (headerAction != null) headerAction!,
                       IconButton(
                         visualDensity: VisualDensity.compact,
                         tooltip: 'Kapat',

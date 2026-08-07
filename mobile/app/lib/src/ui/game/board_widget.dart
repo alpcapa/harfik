@@ -72,8 +72,17 @@ class BoardWidget extends StatelessWidget {
 
   /// Alt bilgi şeridindeki "Hamleler" linki — verilmezse link çizilmez
   /// (web'de zorunlu prop; burada ileride salt-okunur önizleme için
-  /// opsiyonel). "Mesajlaşma" butonu Canlı oyun fazının işi.
+  /// opsiyonel).
   final VoidCallback? onOpenHistory;
+
+  /// "Mesajlaşma" butonu — yalnızca Canlı oyun ekranı geçirir (web
+  /// `onOpenMessaging`); verilmezse (yerel/YZ oyun) buton hiç render
+  /// edilmez, Oyun İçi Mesajlaşma yerelde kapsam dışı.
+  final VoidCallback? onOpenMessaging;
+
+  /// `onOpenMessaging` butonunun üstünde küçük bir kırmızı nokta —
+  /// sohbet kapalıyken okunmamış mesaj geldiğini belli etmek için.
+  final bool hasUnreadMessage;
 
   /// Alt bilgi şeridini tamamen gizler — salt-okunur önizlemeler (web
   /// hideFooter).
@@ -94,6 +103,8 @@ class BoardWidget extends StatelessWidget {
     this.onTilePointerCancel,
     this.gridKey,
     this.onOpenHistory,
+    this.onOpenMessaging,
+    this.hasUnreadMessage = false,
     this.hideFooter = false,
   });
 
@@ -214,38 +225,88 @@ class BoardWidget extends StatelessWidget {
     );
   }
 
-  /// Alt bilgi şeridi — solda "Hamleler" linki, sağda X2/X3 açıklaması.
-  /// ("Mesajlaşma" butonu yalnızca Canlı oyunda çıkar, o faz henüz yok.)
+  /// Alt bilgi şeridi — solda "Hamleler" (+ Canlı oyunda "· Mesajlaşma"),
+  /// sağda X2/X3 açıklaması.
   Widget _footer() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          if (onOpenHistory != null)
-            GestureDetector(
-              onTap: onOpenHistory,
-              behavior: HitTestBehavior.opaque,
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _DocumentIcon(),
-                  SizedBox(width: 4),
-                  Text(
-                    'Hamleler',
-                    style: TextStyle(
-                      fontFamily: 'SpaceMono',
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                      color: Color(0xFF2563EB),
-                    ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (onOpenHistory != null)
+                GestureDetector(
+                  onTap: onOpenHistory,
+                  behavior: HitTestBehavior.opaque,
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _DocumentIcon(),
+                      SizedBox(width: 4),
+                      Text(
+                        'Hamleler',
+                        style: TextStyle(
+                          fontFamily: 'SpaceMono',
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                          color: Color(0xFF2563EB),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            )
-          else
-            const SizedBox.shrink(),
+                ),
+              if (onOpenMessaging != null) ...[
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6),
+                  child: Text('·',
+                      style: TextStyle(
+                          fontSize: 12, color: Color(0xFF5A6673))),
+                ),
+                GestureDetector(
+                  onTap: onOpenMessaging,
+                  behavior: HitTestBehavior.opaque,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _ChatBubbleIcon(),
+                          SizedBox(width: 4),
+                          Text(
+                            'Mesajlaşma',
+                            style: TextStyle(
+                              fontFamily: 'SpaceMono',
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                              color: Color(0xFF2563EB),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (hasUnreadMessage)
+                        Positioned(
+                          top: -4,
+                          right: -4,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFE0483A),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -727,4 +788,44 @@ class _DocumentIconPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DocumentIconPainter oldDelegate) => false;
+}
+
+/// Web `ChatBubbleIcon` — "Mesajlaşma" butonunun konuşma balonu SVG'si
+/// (`M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z`).
+class _ChatBubbleIcon extends StatelessWidget {
+  const _ChatBubbleIcon();
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: 12,
+        height: 12,
+        child: CustomPaint(painter: _ChatBubbleIconPainter()),
+      );
+}
+
+class _ChatBubbleIconPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.width / 24;
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2 * s
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = const Color(0xFF2563EB);
+    final path = Path()
+      ..moveTo(21 * s, 15 * s)
+      ..arcToPoint(Offset(19 * s, 17 * s), radius: Radius.circular(2 * s))
+      ..lineTo(7 * s, 17 * s)
+      ..lineTo(3 * s, 21 * s)
+      ..lineTo(3 * s, 5 * s)
+      ..arcToPoint(Offset(5 * s, 3 * s), radius: Radius.circular(2 * s))
+      ..lineTo(19 * s, 3 * s)
+      ..arcToPoint(Offset(21 * s, 5 * s), radius: Radius.circular(2 * s))
+      ..close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_ChatBubbleIconPainter oldDelegate) => false;
 }

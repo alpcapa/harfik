@@ -38,6 +38,7 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import '../../data/auth_service.dart';
+import '../../data/chat_api.dart';
 import '../../data/feedback_api.dart';
 import '../../data/friends_api.dart';
 import '../../data/games_api.dart';
@@ -46,6 +47,10 @@ import '../../data/online_games_api.dart';
 import '../../data/stats_api.dart';
 import '../../game/game_controller.dart';
 import '../../game/move_status.dart';
+import '../../storage/app_storage.dart';
+import '../auth/k_avatar.dart';
+import '../chat/chat_modal.dart';
+import '../chat/chat_settings_modal.dart';
 import '../feedback/feedback_modal.dart';
 import '../game/board_widget.dart';
 import '../game/game_header.dart';
@@ -62,6 +67,40 @@ import '../score/player_score_card_modal.dart';
 
 const Color _muted = Color(0xFF5A6673);
 const Color _red = Color(0xFFE0483A);
+
+/// Sohbet durumu — `_OnlineGameScreenState` sahibi, hem Board footer'ının
+/// rozeti (kırmızı nokta) hem AÇIK duran ChatModal/ChatSettingsModal
+/// dialoglarının canlı güncellenmesi için (web'de bu, React state'inin
+/// tüm ağacı yeniden render etmesiyle bedavaya geliyordu — Flutter'da
+/// `showDialog` ile açılan bir route ebeveyn rebuild'inden otomatik
+/// haberdar olmadığından, açık dialog içeriği `ListenableBuilder` ile bu
+/// nesneyi dinleyerek taze kalıyor).
+class _ChatState extends ChangeNotifier {
+  List<ChatMessage> messages = const [];
+  Set<String> mutedUserIds = const {};
+  Set<String> reportedUserIds = const {};
+  int unreadCount = 0;
+  ChatMessage? newMessagePopup;
+
+  void update({
+    List<ChatMessage>? messages,
+    Set<String>? mutedUserIds,
+    Set<String>? reportedUserIds,
+    int? unreadCount,
+    Object? newMessagePopup = _unset,
+  }) {
+    if (messages != null) this.messages = messages;
+    if (mutedUserIds != null) this.mutedUserIds = mutedUserIds;
+    if (reportedUserIds != null) this.reportedUserIds = reportedUserIds;
+    if (unreadCount != null) this.unreadCount = unreadCount;
+    if (!identical(newMessagePopup, _unset)) {
+      this.newMessagePopup = newMessagePopup as ChatMessage?;
+    }
+    notifyListeners();
+  }
+}
+
+const _unset = Object();
 
 /// Web'in `refresh()` döngüsündeki periyodik taraması — ekran açık kalıp
 /// hiçbir hamle/foreground olayı olmazsa zaman aşımı hiç taranmaz.
@@ -83,6 +122,16 @@ class OnlineGameScreen extends StatefulWidget {
   final FeedbackRepo? feedback;
   final FriendsRepo? friends;
 
+  /// Oyun içi mesajlaşma — null iken Board footer'ında "Mesajlaşma" hiç
+  /// çizilmez (Supabase yapılandırılmamış — teorik olarak bu ekrana hiç
+  /// gelinemez, ama testler/önizlemeler için güvenlik ağı).
+  final ChatRepo? chat;
+
+  /// "Son görülen mesaj" damgası + "sohbet tanıtımını gördü mü" bayrağı
+  /// için — null ise (test ortamı) ikisi de kalıcı olmadan çalışır
+  /// (her açılışta tanıtım gösterilir, okunmamış sayacı hep 0'dan başlar).
+  final Future<AppStorage>? storage;
+
   const OnlineGameScreen({
     super.key,
     required this.game,
@@ -95,6 +144,8 @@ class OnlineGameScreen extends StatefulWidget {
     this.games,
     this.feedback,
     this.friends,
+    this.chat,
+    this.storage,
   });
 
   @override
@@ -180,6 +231,27 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   _DragRef? _dragRef;
   _Ghost? _ghost;
 
+  // ── Oyun İçi Mesajlaşma (Faz 1 + 2) ─────────────────────────────────────
+  final _chatState = _ChatState();
+  void Function()? _unsubscribeChat;
+  bool _chatOpen = false;
+  bool _popupDialogActive = false;
+
+  List<ChatParticipant> get _chatParticipants => [
+        for (var i = 0; i < widget.game.slots.length; i++)
+          if (!widget.game.slots[i].isAi && widget.game.slots[i].userId != null)
+            ChatParticipant(
+              userId: widget.game.slots[i].userId!,
+              name: widget.game.slots[i].name ?? 'Oyuncu',
+              avatarUrl: widget.game.slots[i].avatarUrl,
+              // Renk sunucudaki güncel `state.players`'tan — koltuk indeksi
+              // `game.slots` ile `state.players` arasında AYNIDIR (web notu).
+              colorIndex: i < state.players.length
+                  ? state.players[i].colorIndex
+                  : i,
+            ),
+      ];
+
   @override
   void initState() {
     super.initState();
@@ -189,6 +261,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     _unsubscribe =
         widget.onlineGames.subscribeGame(widget.game.id, () => _refresh());
     _periodic = Timer.periodic(_periodicRefresh, (_) => _refresh());
+    unawaited(_loadChat());
   }
 
   @override
@@ -209,8 +282,246 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     WidgetsBinding.instance.removeObserver(this);
     _periodic?.cancel();
     _unsubscribe?.call();
+    _unsubscribeChat?.call();
     _controller.dispose();
+    _chatState.dispose();
     super.dispose();
+  }
+
+  // ── Oyun İçi Mesajlaşma — veri yükleme + Realtime ────────────────────────
+
+  /// `online_game_states`'in aboneliğinden BAĞIMSIZ ayrı bir kanal (farklı
+  /// tablo) — ilk yükte tüm sohbeti + mute/rapor setlerini çeker, sonrasında
+  /// yeni mesajları INSERT olayıyla dinler (web'in aynı ayrımı).
+  Future<void> _loadChat() async {
+    final chat = widget.chat;
+    if (chat == null || _mySlot < 0) return;
+    final results = await Future.wait([
+      chat.myMutes(),
+      chat.myActiveReports(),
+      chat.messages(widget.game.id),
+    ]);
+    if (!mounted) return;
+    final mutes = results[0] as Set<String>;
+    final reported = results[1] as Set<String>;
+    final rows = results[2] as List<OnlineGameMessageRow>?;
+    final msgs = [
+      for (final r in rows ?? const <OnlineGameMessageRow>[])
+        ChatMessage(
+            id: r.id,
+            senderUserId: r.senderUserId,
+            message: r.message,
+            createdAt: r.createdAt),
+    ];
+    _chatState.update(
+        messages: msgs, mutedUserIds: mutes, reportedUserIds: reported);
+    await _seedInitialUnread(msgs, mutes);
+    _unsubscribeChat = chat.subscribe(widget.game.id, _onChatMessage);
+  }
+
+  /// Bu cihazda bu oyun için "en son okunan mesaj" damgası hiç yoksa (özellik
+  /// yeni devreye girdi ya da bu cihazda ilk kez açılıyor), mevcut TÜM
+  /// geçmişi "okunmamış" saymak yanlış pozitif üretir — damga mevcut son
+  /// mesaja (yoksa şimdiye) oturtulup okunmamış sayaç 0'da kalır; kırmızı
+  /// nokta yalnızca BUNDAN SONRA gelecek gerçek yeni mesajlar için çıkar
+  /// (web `getChatLastReadAt`/`markChatRead` ilk-ziyaret düzeltmesi).
+  Future<void> _seedInitialUnread(
+      List<ChatMessage> msgs, Set<String> mutes) async {
+    final storageFuture = widget.storage;
+    final store = storageFuture == null ? null : (await storageFuture).chatRead;
+    final lastReadMs = store == null
+        ? null
+        : await store.lastReadAt(widget.game.id);
+    if (lastReadMs == null) {
+      final seedMs = msgs.isEmpty
+          ? DateTime.now().millisecondsSinceEpoch
+          : msgs
+              .map((m) => DateTime.parse(m.createdAt).millisecondsSinceEpoch)
+              .reduce((a, b) => a > b ? a : b);
+      await store?.markRead(widget.game.id, seedMs);
+      if (mounted) _chatState.update(unreadCount: 0);
+      return;
+    }
+    final unread = msgs
+        .where((m) =>
+            m.senderUserId != widget.myUserId &&
+            DateTime.parse(m.createdAt).millisecondsSinceEpoch > lastReadMs &&
+            !mutes.contains(m.senderUserId))
+        .length;
+    if (mounted) _chatState.update(unreadCount: unread);
+  }
+
+  void _onChatMessage(OnlineGameMessageRow row) {
+    if (!mounted) return;
+    if (_chatState.messages.any((m) => m.id == row.id)) return;
+    final msg = ChatMessage(
+        id: row.id,
+        senderUserId: row.senderUserId,
+        message: row.message,
+        createdAt: row.createdAt);
+    _chatState.update(messages: [..._chatState.messages, msg]);
+
+    if (_chatOpen) {
+      unawaited(_markChatReadTo(row.createdAt));
+      return;
+    }
+    if (_chatState.mutedUserIds.contains(row.senderUserId)) return;
+    _chatState.update(
+        newMessagePopup: msg, unreadCount: _chatState.unreadCount + 1);
+    if (!_popupDialogActive) unawaited(_showNewMessagePopup());
+  }
+
+  Future<void> _markChatReadTo(String iso) async {
+    final storageFuture = widget.storage;
+    if (storageFuture == null) return;
+    final store = (await storageFuture).chatRead;
+    await store.markRead(
+        widget.game.id, DateTime.parse(iso).millisecondsSinceEpoch);
+  }
+
+  /// Sohbet penceresini açar — web `handleOpenMessaging`: tanıtımı hiç
+  /// görmediyse önce kısa bir hoşgeldin diyaloğu (web `showChatIntro`).
+  Future<void> _openMessaging() async {
+    final storageFuture = widget.storage;
+    final flags = storageFuture == null ? null : (await storageFuture).flags;
+    if (!mounted) return;
+    if (flags != null && !flags.seenChatIntro) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Oyun içi mesajlaşmaya hoşgeldiniz!'),
+          content: const Text(
+              'Buradan gruba mesaj atabilirsiniz. Mesaj herkesin ekranında '
+              'popup şeklinde gözükür. Haydi, ilk mesajını gönder!'),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('DEVAM'),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true || !mounted) return;
+      await flags.markChatIntroSeen();
+    }
+    _openChatModal();
+  }
+
+  void _openChatModal() {
+    setState(() => _chatOpen = true);
+    _chatState.update(unreadCount: 0);
+    final latest = _chatState.messages.isEmpty
+        ? DateTime.now().toUtc().toIso8601String()
+        : _chatState.messages
+            .reduce((a, b) => a.createdAt.compareTo(b.createdAt) > 0 ? a : b)
+            .createdAt;
+    unawaited(_markChatReadTo(latest));
+    showDialog<void>(
+      context: context,
+      builder: (_) => ListenableBuilder(
+        listenable: _chatState,
+        builder: (context, _) => ChatModal(
+          messages: _chatState.messages,
+          participants: _chatParticipants,
+          myUserId: widget.myUserId,
+          onSend: (text) => widget.chat!.send(widget.game.id, text),
+          onOpenSettings: () => _openChatSettings(null),
+          mutedUserIds: _chatState.mutedUserIds,
+          reportedUserIds: _chatState.reportedUserIds,
+          onOpenParticipantSettings: (id) => _openChatSettings(id),
+        ),
+      ),
+    ).then((_) {
+      if (mounted) setState(() => _chatOpen = false);
+    });
+  }
+
+  void _openChatSettings(String? initialParticipantId) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => ListenableBuilder(
+        listenable: _chatState,
+        builder: (context, _) => ChatSettingsModal(
+          gameId: widget.game.id,
+          chat: widget.chat!,
+          participants: [
+            for (final p in _chatParticipants)
+              if (p.userId != widget.myUserId) p
+          ],
+          mutedUserIds: _chatState.mutedUserIds,
+          reportedUserIds: _chatState.reportedUserIds,
+          initialParticipantId: initialParticipantId,
+          onMuteChange: (targetUserId, muted) {
+            final next = Set<String>.of(_chatState.mutedUserIds);
+            muted ? next.add(targetUserId) : next.remove(targetUserId);
+            _chatState.update(mutedUserIds: next);
+          },
+          onReported: (targetUserId) {
+            // Rapor otomatik olarak hedefi de sessize alır (sunucu tarafı).
+            final nextReported = Set<String>.of(_chatState.reportedUserIds)
+              ..add(targetUserId);
+            final nextMuted = Set<String>.of(_chatState.mutedUserIds)
+              ..add(targetUserId);
+            _chatState.update(
+                reportedUserIds: nextReported, mutedUserIds: nextMuted);
+          },
+          onWithdrawn: (targetUserId) {
+            final next = Set<String>.of(_chatState.reportedUserIds)
+              ..remove(targetUserId);
+            _chatState.update(reportedUserIds: next);
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Yeni mesaj popup'ı — kapalıyken gelen bir mesajı gösterir. Popup
+  /// AÇIKKEN bir mesaj daha gelirse yeni bir dialog route AÇILMAZ, aynı
+  /// (Listenable ile canlı) dialog içeriği güncellenir (web'in tek
+  /// `newMessagePopup` state alanının davranışı).
+  Future<void> _showNewMessagePopup() async {
+    _popupDialogActive = true;
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => ListenableBuilder(
+        listenable: _chatState,
+        builder: (context, _) {
+          final popup = _chatState.newMessagePopup;
+          final sender = popup == null
+              ? null
+              : _chatParticipants
+                  .where((p) => p.userId == popup.senderUserId)
+                  .firstOrNull;
+          return AlertDialog(
+            title: Row(children: [
+              KAvatar(url: sender?.avatarUrl, name: sender?.name ?? 'Oyuncu'),
+              const SizedBox(width: 8),
+              Expanded(
+                  child: Text(sender?.name ?? 'Oyuncu',
+                      overflow: TextOverflow.ellipsis)),
+            ]),
+            content: Text(popup?.message ?? ''),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop('reply'),
+                child: const Text('CEVAP VER'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop('close'),
+                child: const Text('KAPAT'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    _popupDialogActive = false;
+    final closedPopup = _chatState.newMessagePopup;
+    _chatState.update(unreadCount: 0, newMessagePopup: null);
+    if (closedPopup != null) {
+      unawaited(_markChatReadTo(closedPopup.createdAt));
+    }
+    if (result == 'reply' && mounted) _openChatModal();
   }
 
   Future<void> _refresh() async {
@@ -746,7 +1057,11 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     }
 
     return ListenableBuilder(
-      listenable: _controller,
+      // `_chatState` de dinleniyor: Board footer'ının okunmamış-mesaj kırmızı
+      // noktası (`hasUnreadMessage`) sohbet kapalıyken gelen bir mesajla
+      // tetiklenir, bu tetiklemenin ekrana yansıması için tahta oyun
+      // motorundan bağımsız da yeniden çizilebilmeli.
+      listenable: Listenable.merge([_controller, _chatState]),
       builder: (context, _) {
         final me = _me;
         if (!_loaded || me == null) {
@@ -857,6 +1172,10 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                     context,
                                     state.copyWith(
                                         moveHistory: buildMoveHistory(_moves))),
+                                onOpenMessaging: widget.chat == null
+                                    ? null
+                                    : _openMessaging,
+                                hasUnreadMessage: _chatState.unreadCount > 0,
                                 dragHiddenKey: _ghost?.source is _PlacedSource
                                     ? cellKey(
                                         (_ghost!.source as _PlacedSource).r,

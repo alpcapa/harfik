@@ -1,14 +1,11 @@
-// Paylaşılan, salt-görsel mesaj listesi — web `ChatThread.tsx` portu.
+// Paylaşılan mesaj listesi — web `ChatThread.tsx` portu.
 //
-// Bugün tek tüketicisi ARŞİV (`GameChatHistoryModal`: bitmiş bir Canlı
-// oyunun dondurulmuş sohbeti). Canlı sohbet ekranı (Canlı oyun fazı)
-// geldiğinde aynı bileşeni `mine` dolu şekilde kullanacak — web'de de tek
-// bileşen iki yeri besliyor.
-//
-// **Bilinçli eksik:** web'in `onBadgeClick`/`senderId` yolu (rozete ya da
-// mesaja dokunup sessize alma/şikayet panelini açma) BURADA YOK. Arşivde
-// zaten çalışmıyor (donmuş snapshot kimlik taşımaz, web'de de salt-görsel);
-// canlı sohbet port edilene kadar çalışmayan bir kontrol koymuyoruz.
+// İki tüketicisi var: ARŞİV (`GameChatHistoryModal`: bitmiş bir Canlı
+// oyunun dondurulmuş sohbeti — `senderId`/`onBadgeClick` hiç verilmez,
+// rozetler salt-görsel kalır, donmuş snapshot kimlik taşımaz) ve CANLI
+// sohbet (`ChatModal`, Oyun İçi Mesajlaşma — Faz 2): `senderId` + kendi
+// mesajı olmayan bir balona/rozete dokunmak `onBadgeClick`'i tetikleyip
+// o kişinin Ayarlar panelini açar (web'in aynı ayrım kararı).
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
 
@@ -38,6 +35,11 @@ class ChatThreadMessage {
 
   final ChatBadge? badge;
 
+  /// Gönderenin user_id'si — yalnızca canlı sohbette dolu. Arşivde
+  /// BİLEREK yok: donmuş snapshot kimlik taşımaz, dolayısıyla rozet/mesaj
+  /// tıklaması orada hiçbir zaman aktif olamaz.
+  final String? senderId;
+
   const ChatThreadMessage({
     required this.name,
     required this.colorIndex,
@@ -46,6 +48,7 @@ class ChatThreadMessage {
     this.avatarUrl,
     this.mine = false,
     this.badge,
+    this.senderId,
   });
 }
 
@@ -61,10 +64,16 @@ class ChatThread extends StatelessWidget {
   final List<ChatThreadMessage> messages;
   final String emptyText;
 
+  /// Rozete/mesaja tıklanınca çağrılır (o kişinin ayarlar detayını açmak
+  /// için) — yalnızca canlı sohbette (`ChatModal`) verilir; arşivde
+  /// verilmediğinden rozetler/balonlar salt-görsel kalır.
+  final void Function(String userId)? onBadgeClick;
+
   const ChatThread({
     super.key,
     required this.messages,
     required this.emptyText,
+    this.onBadgeClick,
   });
 
   @override
@@ -86,7 +95,7 @@ class ChatThread extends StatelessWidget {
         for (var i = 0; i < messages.length; i++)
           Padding(
             padding: EdgeInsets.only(top: i == 0 ? 0 : 10),
-            child: _Bubble(message: messages[i]),
+            child: _Bubble(message: messages[i], onBadgeClick: onBadgeClick),
           ),
       ],
     );
@@ -95,7 +104,8 @@ class ChatThread extends StatelessWidget {
 
 class _Bubble extends StatelessWidget {
   final ChatThreadMessage message;
-  const _Bubble({required this.message});
+  final void Function(String userId)? onBadgeClick;
+  const _Bubble({required this.message, this.onBadgeClick});
 
   @override
   Widget build(BuildContext context) {
@@ -111,68 +121,80 @@ class _Bubble extends StatelessWidget {
 
     final avatar = KAvatar(url: m.avatarUrl, name: m.name, size: 22);
 
+    // Kendi mesajını sessize alamayacağın/rapor edemeyeceğin için yalnızca
+    // başkasının mesajına dokunmak ayarlar panelini açar (web `canOpenSettings`).
+    final senderId = m.senderId;
+    final canOpenSettings = !m.mine && senderId != null && onBadgeClick != null;
+
+    final nameRow = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: Text(
+            // Web'de bu satır `uppercase` — Türkçe kuralı gereği native
+            // toUpperCase DEĞİL trUpper (i→İ, I→ı).
+            trUpper(m.name),
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'SpaceMono',
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+              color: col.base,
+            ),
+          ),
+        ),
+        if (badgeText != null) ...[
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: canOpenSettings ? () => onBadgeClick!(senderId) : null,
+            child: Text(badgeText,
+                style: const TextStyle(
+                  fontSize: 9,
+                  // Emoji SDK'nın varsayılan fontunda yok — testlerde ve
+                  // bazı cihazlarda kutu çıkmasın diye açık fallback
+                  // (bkz. mobile/CLAUDE.md, 🏆 dersi).
+                  fontFamilyFallback: ['Noto Color Emoji', 'Apple Color Emoji'],
+                )),
+          ),
+        ],
+      ],
+    );
+
+    final bubble = LayoutBuilder(
+      builder: (context, c) => ConstrainedBox(
+        // Web `max-w-[75%]`: uzun bir mesaj balonu satırın tamamını
+        // kaplamasın. ConstrainedBox içeriğine göre küçülür, yalnızca ÜST
+        // sınır koyar (FractionallySizedBox olsaydı kısa mesajlar da zorla
+        // %75 genişlerdi).
+        constraints: BoxConstraints(maxWidth: c.maxWidth * 0.75),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: col.tint,
+            border: Border.all(color: col.base),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(m.message,
+              style: const TextStyle(
+                  fontFamily: 'SpaceGrotesk',
+                  fontSize: 12,
+                  height: 1.35,
+                  color: _text)),
+        ),
+      ),
+    );
+
     final body = Column(
       crossAxisAlignment:
           m.mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(
-                // Web'de bu satır `uppercase` — Türkçe kuralı gereği native
-                // toUpperCase DEĞİL trUpper (i→İ, I→ı).
-                trUpper(m.name),
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: 'SpaceMono',
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                  color: col.base,
-                ),
-              ),
-            ),
-            if (badgeText != null) ...[
-              const SizedBox(width: 4),
-              Text(badgeText,
-                  style: const TextStyle(
-                    fontSize: 9,
-                    // Emoji SDK'nın varsayılan fontunda yok — testlerde ve
-                    // bazı cihazlarda kutu çıkmasın diye açık fallback
-                    // (bkz. mobile/CLAUDE.md, 🏆 dersi).
-                    fontFamilyFallback: [
-                      'Noto Color Emoji',
-                      'Apple Color Emoji'
-                    ],
-                  )),
-            ],
-          ],
-        ),
+        nameRow,
         const SizedBox(height: 2),
-        // Web `max-w-[75%]`: uzun bir mesaj balonu satırın tamamını
-        // kaplamasın. ConstrainedBox içeriğine göre küçülür, yalnızca ÜST
-        // sınır koyar (FractionallySizedBox olsaydı kısa mesajlar da
-        // zorla %75 genişlerdi).
-        LayoutBuilder(
-          builder: (context, c) => ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: c.maxWidth * 0.75),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: col.tint,
-                border: Border.all(color: col.base),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(m.message,
-                  style: const TextStyle(
-                      fontFamily: 'SpaceGrotesk',
-                      fontSize: 12,
-                      height: 1.35,
-                      color: _text)),
-            ),
-          ),
-        ),
+        canOpenSettings
+            ? GestureDetector(
+                onTap: () => onBadgeClick!(senderId), child: bubble)
+            : bubble,
         const SizedBox(height: 2),
         Text(formatMessageTime(m.createdAt),
             style: const TextStyle(

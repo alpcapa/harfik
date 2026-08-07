@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/version_gate.dart';
 import 'data/auth_service.dart';
+import 'data/chat_api.dart';
 import 'data/cloud_save_repo.dart';
 import 'data/dictionary_loader.dart';
 import 'data/feedback_api.dart';
@@ -64,6 +65,10 @@ class AppServices {
   /// sekmesi girişsiz uyarı/giriş çağrısı gösterir).
   final OnlineGamesRepo? onlineGames;
 
+  /// Oyun içi mesajlaşma (yalnızca Canlı oyunlarda) — Supabase yoksa null
+  /// (Board footer'ındaki "Mesajlaşma" butonu hiç çizilmez).
+  final ChatRepo? chat;
+
   /// Gelen arkadaş daveti linkleri (kelimeki://davet/... ve
   /// kelimeki.com/davet/...) — token'ları `pending_events`e kuyruklar,
   /// SetupScreen işler. Depolamasız test ortamında null.
@@ -89,6 +94,7 @@ class AppServices {
     this.friends,
     this.inviteInbox,
     this.onlineGames,
+    this.chat,
   });
 }
 
@@ -122,6 +128,7 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
     onlineGames: supabase != null
         ? OnlineGamesRepo(SupabaseOnlineGamesGateway(supabase))
         : null,
+    chat: supabase != null ? ChatRepo(SupabaseChatGateway(supabase)) : null,
     inviteInbox: createFriendInviteInbox(storage),
   );
 }

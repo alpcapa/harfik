@@ -219,6 +219,8 @@ mobile/
       data/feedback_api.dart # Görüş Bildir: submit + kuyruk + flush + rate limit
       data/friends_api.dart  # arkadaşlık RPC'leri + davet linki üretimi/çözümü
       data/friend_invite_inbox.dart # gelen davet linkleri → pending_events
+      data/chat_api.dart     # Canlı oyun sohbeti + sessize alma/raporlama
+                             # (ChatRepo/ChatGateway) — yalnız Canlı oyunlar
       game/game_controller.dart # ChangeNotifier motor kabuğu + otomatik YZ turu
       storage/               # SQLite + prefs katmanı (bkz. "Depolama Katmanı"):
                              # app_database (şema), app_storage (giriş kapısı),
@@ -234,8 +236,11 @@ mobile/
                              # player_avatar_row, action_sheet, count_badge
       ui/score/              # skor kartı, k-lig, oyuncu kartı, oyun geçmişi,
                              # score_box_row (paylaşılan görselin üst şeridi)
-      ui/chat/               # chat_thread (paylaşılan baloncuk listesi) +
-                             # game_chat_history_modal (bitmiş oyunun arşivi)
+      ui/chat/               # chat_thread (paylaşılan baloncuk listesi —
+                             # arşiv VE canlı sohbet ikisi de kullanır) +
+                             # game_chat_history_modal (bitmiş oyunun arşivi) +
+                             # chat_modal (Canlı sohbet penceresi) +
+                             # chat_settings_modal (sessize alma/raporlama)
       ui/setup/              # kurulum ekranı (yeni oyun / devam edenler) +
                              # recent_games_section ("Son Oynadıklarım") +
                              # membership_perks_box (misafir "Neden Üye
@@ -279,10 +284,10 @@ mobile/
       goldens/*.json         # ÜRETİLMİŞ fixture'lar (elle düzenlenmez)
 ```
 
-Henüz OLMAYANLAR (sıradaki fazlar): oyun içi mesajlaşma (Canlı sohbet +
-sessize alma/raporlama), Setup'taki "Arkadaşınla (N)" rozeti + girişte Canlı
-sekmesi varsayılanı, "Arkadaşınla paylaş" butonu, Hesap Ayarları ekranı
-(ayrıntı: "Sıradaki parçalar" satırı, auth+Canlı fazının sonunda).
+Henüz OLMAYANLAR (sıradaki fazlar): Setup'taki "Arkadaşınla (N)" rozeti +
+girişte Canlı sekmesi varsayılanı, "Arkadaşınla paylaş" butonu, Hesap
+Ayarları ekranı (ayrıntı: "Sıradaki parçalar" satırı, auth+Canlı fazının
+sonunda).
 
 ## Porta Taşınan Değişmezler (PORT_BRIEF §7, 6 Ağustos 2026)
 
@@ -2185,8 +2190,78 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Bu parçanın kapsamı DIŞINDA (bilinçli):** oyun içi mesajlaşma
        (Board footer'daki "Mesajlaşma" butonu Canlı'da da henüz yok —
        sohbet + sessize alma/raporlama ayrı parça).
-   - Sıradaki parçalar (sıra önerisi): oyun içi mesajlaşma (Faz 1 sohbet +
-     Faz 2 sessize alma/raporlama), Setup'taki "Arkadaşınla (N)" rozeti +
+   - ✅ **Parça 11 — oyun içi mesajlaşma (7 Ağustos 2026, `data/chat_api.dart`,
+     `ui/chat/chat_modal.dart`, `ui/chat/chat_settings_modal.dart`,
+     `online_game_screen.dart` bağlantısı):** web Faz 1 (sohbet) + Faz 2
+     (sessize alma/raporlama) portu — yalnızca Canlı oyunlarda, yerel/YZ
+     ekranına hiç dokunulmadı.
+     - **`ChatRepo`/`ChatGateway`:** web `fetchOnlineGameMessages`/
+       `sendOnlineGameMessage`/`subscribeOnlineGameMessages`/
+       `fetchMyChatMutes`/`fetchMyActiveChatReports`/`setChatMute`/
+       `reportChatParticipant`/`withdrawChatReports` birebir. Mute/rapor
+       web'in 3 Ağustos 2026 kararıyla KİŞİ bazlı — `myMutes`/
+       `myActiveReports` gameId almaz. Mesaj göndermek RPC değil doğrudan
+       RLS insert'i (1-200 karakter istemci tarafı kısıtı tekrarlanır);
+       rapor sunucu tarafında hedefi otomatik sessize alır, istemci ayrıca
+       `setMute` çağırmaz.
+     - **`_ChatState extends ChangeNotifier`** (`online_game_screen.dart`,
+       yeni desen): `showDialog` ile açılan `ChatModal`/`ChatSettingsModal`
+       ebeveyn widget'ın state'i değişince OTOMATİK yeniden çizilmiyor —
+       ikisi de bu paylaşılan `ChangeNotifier`'ı `ListenableBuilder` ile
+       dinleyerek gerçek zamanlı mesaj/mute/rapor değişikliklerini açık
+       diyalogların içine sızdırıyor. Board'ın kırmızı nokta rozeti için
+       tepedeki tek `ListenableBuilder` artık `Listenable.merge([_controller,
+       _chatState])` dinliyor.
+     - **"İlk-ziyaret" okunmamış mesaj tohumlama** — web'in aynı dersi:
+       `ChatReadStore`'da hiç damga yoksa TÜM geçmişi "okunmamış" saymak
+       yanlış pozitif kırmızı nokta üretir (özellik ilk devreye girdiğinde
+       zaten sohbeti okumuş herkes için); damga yoksa en son mesaja (ya da
+       şimdiye) sessizce oturtulup unreadCount 0 başlatılıyor, yalnızca
+       BUNDAN SONRAKİ gerçek yeni mesajlar sayılıyor.
+     - **`ChatSettingsModal`** — web'in 7 view'lık durum makinesi birebir
+       (liste → detay → mute-confirm/report-reason→confirm→sent/withdraw-
+       confirm); üç işlemin (mute aç/kapa, rapor geri çek) HEPSİNDE ayrı
+       "Emin misiniz?" adımı var, yalnızca rapor GÖNDERME değil (web 2
+       Ağustos düzeltmesi). Rozet (🚩 rapor / 🚫 mute) hem katılımcı
+       listesinde hem sohbetteki mesaj balonunun yanında — ikisi de
+       tıklanıp doğrudan o kişinin detayına (`initialParticipantId`) açılır.
+     - **Bulunan hata (test yakaladı) — `ChatRepo.send`/`report` `async`
+       DEĞİLDİ:** doğrulama `throw Exception(...)` senkron olarak
+       çağıranın stack'inde fırlıyordu (Future.error'a sarılmadan) —
+       `expectLater(repo.send(...), throwsException)` gibi bir Future
+       bekleyen test Future hiç oluşmadan çöktü. **Ders (parça 7'nin
+       `late final _openedAt`/parça 10'un `late final _pulse` dersinin
+       üçüncü kardeşi, ama farklı bir sınıf):** `if (invalid) throw ...`
+       içeren bir metod `async` OLMAK ZORUNDA, aksi halde hata Future
+       sözleşmesini bozup senkron fırlar.
+     - **Test dersi (sqflite'ın gerçek I/O'suyla ilgili, yeni bir alt
+       tuzak):** `_openChatModal()`'daki `unawaited(_markChatReadTo(...))`
+       fire-and-forget gerçek bir sqflite yazması başlatıyor; sqflite'ın
+       dahili ~10sn'lik yazma-kilidi uyarı `Timer`'ı bu yazma GERÇEK
+       zamanda tamamlanıp iptal olana kadar bekliyor. Gerçek depoyla
+       (`newStorageForWidget`) kurulan widget testlerinde `unmount`'tan
+       hemen önce bu timer hâlâ "beklemede" sayılıp "A Timer is still
+       pending even after the widget tree was disposed" ile test
+       düşüyordu — `tester.runAsync` içinde kısa (50ms) bir GERÇEK zaman
+       uykusu + `tester.pump()` yazmanın bitmesine yetip timer'ı iptal
+       ettiriyor. **Ders:** parça 6'daki "gerçek sqflite I/O'su
+       `tester.runAsync` gerektirir" dersinin İNCELTİLMİŞ hâli — sorun
+       kilitlenme değil, fire-and-forget bir yazmanın kütüphane-içi bir
+       zamanlayıcıyı test bitene kadar canlı bırakması; her DB etkileşimini
+       `runAsync`'e sarmak yetmez, `unawaited` bir yazmaya GERÇEK zaman
+       tanımak gerekir.
+     - Doğrulama: `chat_test.dart` (20 test — ChatRepo doğrulama/hata
+       yutma/RPC delegasyonu, ChatModal sıralama/rozet/sayaç/hata +
+       `build/screenshots/chat_modal.png`, ChatSettingsModal 7 view'ın
+       tamamı) + `online_game_chat_test.dart` (9 test — Board footer
+       görünürlüğü, storage'sız sohbet akışı + Realtime popup/rozet/mute
+       bastırma/canlı güncelleme, gerçek depoyla ilk-ziyaret tanıtımı +
+       kalıcılık). **Tam takım 232/232 yeşil**, analyze + değişmez
+       taraması temiz. **Doğrulama sınırı:** iki gerçek oturumlu tarayıcı
+       arasında Realtime mesaj/mute/rapor akışı bu ortamdan test
+       EDİLEMEDİ — cihazda iki hesapla doğrulanmalı, TESTING.md'ye ayrı
+       bölüm eklendi.
+   - Sıradaki parçalar (sıra önerisi): Setup'taki "Arkadaşınla (N)" rozeti +
      girişte Canlı sekmesi varsayılanı, "Arkadaşınla paylaş" (native
      share — `share_plus` hazır, yalnızca Setup'taki buton kaldı), Hesap
      Ayarları ekranı.

@@ -307,9 +307,7 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 
 ## 11. Canlı oyun — davet/kabul + tahta
 
-İki gerçek hesap gerekir (biri web'de olabilir). Oyun içi mesajlaşma henüz
-YOK — Board altındaki "Mesajlaşma" butonunun Canlı'da da görünmemesi
-BEKLENEN davranış.
+İki gerçek hesap gerekir (biri web'de olabilir).
 
 - [ ] **Davet gönderme.** ARKADAŞINLA → "+ Yeni Canlı Oyun Aç" → 2
       oyunculu, bir arkadaş seç → Davet Gönder: "Davetiniz gönderilmiştir."
@@ -377,6 +375,49 @@ BEKLENEN davranış.
 - [ ] **Oyun sonu.** Oyun bitince GameOver modalı + kapatınca "CANLI
       LİSTESİ" butonu çıkmalı; skor kartı/k-lig puanları web ile
       tutmalı (`games` satırı her insan katılımcı için ayrı yazılır).
+
+### Mesajlaşma (Faz 1 sohbet + Faz 2 sessize alma/raporlama)
+
+- [ ] **Buton görünürlüğü.** Board altındaki "Mesajlaşma" butonu YALNIZCA
+      Canlı oyun ekranında görünmeli; yerel/YZ oyun ekranında hiç
+      çizilmemeli.
+- [ ] **İlk açılış tanıtımı.** Bir hesapla o oyunda İLK kez "Mesajlaşma"ya
+      dokun: "Oyun içi mesajlaşmaya hoşgeldiniz!" penceresi çıkmalı,
+      "DEVAM" → sohbet penceresi açılmalı. Aynı hesapla tekrar aç (başka
+      bir Canlı oyunda da olabilir) — tanıtım BİR DAHA çıkmamalı (bayrak
+      hesaba özel, oyuna özel değil).
+- [ ] **Gönder/al gerçek zamanlı.** İki hesapla (biri web olabilir) aynı
+      Canlı oyunu aç, mobilden mesaj gönder → web'de ~1sn içinde görünmeli
+      (ve tersi). Mesajlar en YENİ üstte sıralanmalı.
+- [ ] **Popup + rozet.** Sohbet KAPALIYKEN karşı taraf mesaj gönderirse
+      Board'daki "Mesajlaşma" butonunda kırmızı nokta + bir popup
+      ("CEVAP VER"/"KAPAT") çıkmalı; CEVAP VER sohbeti açmalı. Sohbet
+      AÇIKKEN gelen mesaj popup AÇMADAN doğrudan listeye eklenmeli.
+- [ ] **Rozet kalıcılığı (uygulama yeniden başlatma).** Karşı taraf mesaj
+      gönderdikten SONRA uygulamayı tamamen kapat, aç, aynı oyuna gir —
+      kırmızı nokta hâlâ görünmeli (okundu damgası `chat_last_read`
+      tablosunda, cihaza özel). Sohbeti aç → nokta kaybolmalı; uygulamayı
+      tekrar kapat/aç → nokta bir daha ÇIKMAMALI (aynı mesajlar için).
+- [ ] **Sessize alma.** Dişli ikonundan bir katılımcıyı seç → "Kişiyi
+      Sessize Al" → onay → 🚫 rozeti hem ayarlar listesinde hem o kişinin
+      mesaj balonlarının yanında görünmeli. O kişiden yeni bir mesaj
+      gelirse popup AÇILMAMALI ama mesaj sohbet geçmişinde görünmeye
+      devam etmeli. Aynı kişiyle BAŞKA bir Canlı oyun aç — sessize alma
+      hâlâ geçerli olmalı (durum kişiye bağlı, oyuna değil).
+- [ ] **Raporlama.** Bir katılımcıyı raporla (neden yaz → onayla) →
+      "Şikayetiniz iletildi." ekranı; kişi otomatik sessize de alınmalı
+      (🚩 rozeti). Web admin panelinde Geri Bildirim → Şikayetler
+      sekmesinde rapor "Yeni" olarak görünmeli. Raporlanan hesapta
+      HİÇBİR iz/bildirim OLMAMALI (bilinçli tasarım).
+- [ ] **Rapor geri çekme.** Raporu geri çek → 🚩 kalkmalı, 🚫 (sessize
+      alma) AYRI bir durum olduğundan kalmaya devam etmeli (kaldırmak
+      istersen ayrıca kapatman gerekir).
+- [ ] **Mesaj balonuna dokunma.** Karşı tarafın bir mesaj balonuna
+      doğrudan dokun (rozet olmasa bile) → o kişinin ayarlar detayı
+      açılmalı. Kendi mesajına dokununca hiçbir şey olmamalı.
+- [ ] **Sohbet arşivi ile tutarlılık.** Oyun bitince (bkz. bölüm 5 "Sohbet
+      arşivi") dondurulmuş sohbette de aynı mute/rapor rozetleri (bugünkü
+      GÜNCEL duruma göre, o oyundaki değil) görünmeli.
 
 ---
 

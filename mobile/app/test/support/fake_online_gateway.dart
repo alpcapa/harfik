@@ -1,6 +1,7 @@
 // Canlı oyun testlerinin paylaştığı sahte uçlar — davet/kabul akışı
-// (live_games_test) ve oynanış ekranı (online_game_screen_test) aynı
-// gateway'i kullanıyor.
+// (live_games_test), oynanış ekranı (online_game_screen_test) ve oyun içi
+// mesajlaşma (chat_test/online_game_chat_test) aynı gateway'leri kullanıyor.
+import 'package:kelimeki/src/data/chat_api.dart';
 import 'package:kelimeki/src/data/friends_api.dart';
 import 'package:kelimeki/src/data/online_games_api.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show User;
@@ -164,6 +165,101 @@ class FakeOnlineGamesGateway implements OnlineGamesGateway {
     };
   }
 }
+
+class FakeChatGateway implements ChatGateway {
+  List<Map<String, Object?>> rows = [];
+  List<String> mutes = [];
+  List<String> activeReports = [];
+  final sent = <(String, String)>[];
+  final mutedCalls = <(String, String, bool)>[];
+  final reportedCalls = <(String, String, String)>[];
+  final withdrawnCalls = <String>[];
+
+  Object? messagesFailWith;
+  Object? sendFailWith;
+  Object? mutesFailWith;
+  Object? reportsFailWith;
+  Object? muteFailWith;
+  Object? reportFailWith;
+  Object? withdrawFailWith;
+
+  /// subscribe'ın verdiği geri çağrı — testler "sunucudan yeni mesaj geldi"
+  /// senaryosunu bununla sürer.
+  void Function(Map<String, Object?> row)? insertListener;
+  int subscribeCount = 0;
+  int unsubscribeCount = 0;
+
+  @override
+  Future<List<Map<String, Object?>>> messages(String gameId) async {
+    final f = messagesFailWith;
+    if (f != null) throw f;
+    return rows;
+  }
+
+  @override
+  Future<void> send(String gameId, String message) async {
+    final f = sendFailWith;
+    if (f != null) throw f;
+    sent.add((gameId, message));
+  }
+
+  @override
+  void Function() subscribe(
+      String gameId, void Function(Map<String, Object?> row) onInsert) {
+    subscribeCount++;
+    insertListener = onInsert;
+    return () => unsubscribeCount++;
+  }
+
+  @override
+  Future<List<String>> myMutes() async {
+    final f = mutesFailWith;
+    if (f != null) throw f;
+    return mutes;
+  }
+
+  @override
+  Future<List<String>> myActiveReports() async {
+    final f = reportsFailWith;
+    if (f != null) throw f;
+    return activeReports;
+  }
+
+  @override
+  Future<void> setMute(String gameId, String targetUserId, bool muted) async {
+    final f = muteFailWith;
+    if (f != null) throw f;
+    mutedCalls.add((gameId, targetUserId, muted));
+  }
+
+  @override
+  Future<void> report(
+      String gameId, String targetUserId, String reason) async {
+    final f = reportFailWith;
+    if (f != null) throw f;
+    reportedCalls.add((gameId, targetUserId, reason));
+  }
+
+  @override
+  Future<void> withdrawReports(String targetUserId) async {
+    final f = withdrawFailWith;
+    if (f != null) throw f;
+    withdrawnCalls.add(targetUserId);
+  }
+}
+
+Map<String, Object?> chatRow({
+  required String id,
+  required String senderUserId,
+  required String message,
+  String? createdAt,
+}) =>
+    {
+      'id': id,
+      'sender_user_id': senderUserId,
+      'message': message,
+      'created_at': createdAt ?? DateTime.now().toUtc().toIso8601String(),
+    };
 
 class FakeFriendsGateway implements FriendsGateway {
   @override
