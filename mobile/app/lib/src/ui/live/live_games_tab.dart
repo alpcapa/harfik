@@ -361,18 +361,21 @@ class _LiveGamesTabState extends State<LiveGamesTab>
           _appliedDefaultTab = true; // elle seçim varsayılanı devre dışı bırakır
           setState(() => _subTab = t);
         },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: active ? _accent : _panel,
-            border: Border.all(color: active ? _accent : _border),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.center,
-            children: [
-              Text(
+        // Rozet web'deki gibi SEKME KUTUSUNUN sağ üst köşesinde (`absolute
+        // -top-1 -right-1` = -4px) — Stack metni değil kutuyu sarmalı, yoksa
+        // rozet metnin yanına düşer (kullanıcı bildirdi).
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: active ? _accent : _panel,
+                border: Border.all(color: active ? _accent : _border),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              alignment: Alignment.center,
+              child: Text(
                 trUpper(label),
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -382,10 +385,10 @@ class _LiveGamesTabState extends State<LiveGamesTab>
                   color: active ? Colors.white : _text,
                 ),
               ),
-              if (badge > 0)
-                Positioned(top: -8, right: -4, child: CountBadge(count: badge)),
-            ],
-          ),
+            ),
+            if (badge > 0)
+              Positioned(top: -4, right: -4, child: CountBadge(count: badge)),
+          ],
         ),
       ),
     );

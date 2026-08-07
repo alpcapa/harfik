@@ -2069,6 +2069,16 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Test dersi:** öneri modalının arkasındaki davet kartı aynı
        isimleri çizdiğinden `find.text` çakışır — finder
        `find.descendant(of: find.byType(Dialog))` ile daraltılmalı.
+     - **Rozet konumu düzeltildi (aynı gün, kullanıcı bildirdi):** sekme
+       rozetleri web'de SEKME KUTUSUNUN sağ üst köşesine oturur (`absolute
+       -top-1 -right-1` — buton `relative`); ilk sürümde Stack yalnızca
+       `Text`'i sardığından rozet METNİN yanına düşüyordu. Hem
+       `LiveGamesTab._subTabBtn` hem `FriendsModal._tabBtn` (aynı hata
+       oradan kopyalanmıştı) düzeltildi: Stack tüm kutuyu sarar, rozet
+       `Positioned(top: -4, right: -4)`. **Ders:** rozetli bir sekme/buton
+       porta gelirken Stack'in NEYİ sardığına bak — web'in `relative`
+       referansı buton, metni saran Stack aynı koordinatlarla farklı yere
+       konumlar.
      - Doğrulama: `live_games_test.dart` (16 test — kova filtreleri
        [status==pending şartı dahil], süre etiketleri enjekte nowMs ile,
        repo load/süpürme/null-hata/create+notify, LiveGamesTab varsayılan

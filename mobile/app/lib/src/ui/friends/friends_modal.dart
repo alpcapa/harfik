@@ -331,17 +331,20 @@ class _FriendsModalState extends State<FriendsModal> {
           setState(() => _tab = t);
           if (t == FriendsTab.search) _ensureAllUsers();
         },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: active ? _accent : Colors.transparent,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.center,
-            children: [
-              Text(
+        // Rozet web'deki gibi SEKME KUTUSUNUN sağ üst köşesinde (`absolute
+        // -top-1 -right-1` = -4px) — Stack metni değil kutuyu sarmalı
+        // (LiveGamesTab'la aynı düzeltme, kullanıcı bildirdi).
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: active ? _accent : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              alignment: Alignment.center,
+              child: Text(
                 trUpper(label), // web tabBtn CSS `uppercase`
                 style: TextStyle(
                   fontFamily: 'SpaceMono',
@@ -351,11 +354,10 @@ class _FriendsModalState extends State<FriendsModal> {
                   color: active ? Colors.white : _muted,
                 ),
               ),
-              if (badge > 0)
-                Positioned(
-                    top: -6, right: -2, child: CountBadge(count: badge)),
-            ],
-          ),
+            ),
+            if (badge > 0)
+              Positioned(top: -4, right: -4, child: CountBadge(count: badge)),
+          ],
         ),
       ),
     );
