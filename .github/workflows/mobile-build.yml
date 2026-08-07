@@ -17,9 +17,12 @@
 # DALDA (main) olduğunda Actions sekmesinde belirir (GitHub kuralı) —
 # port dalı main'e girene kadar pratikte (1) çalışıyor.
 #
-# İMZALAMA/TESTFLIGHT: burada YOK. iOS işi `--no-codesign` ile yalnızca
-# derlemeyi kanıtlıyor; Apple Developer üyeliği geldiğinde TestFlight
-# yüklemesi ayrı bir iş olarak eklenecek (bkz. mobile/TESTING.md,
+# İMZALAMA/TESTFLIGHT: burada YOK ve iOS'u test etmek için GEREKMİYOR.
+# iOS işi iki çıktı üretiyor, ikisi de imzasız: (a) `--no-codesign` cihaz
+# derlemesi — yalnızca "derleniyor mu" kanıtı; (b) SİMÜLATÖR `.app`'i —
+# Appetize.io'ya yüklenip tarayıcıda çalıştırılabiliyor. Apple Developer
+# üyeliği yalnızca GERÇEK CİHAZA kurulum (TestFlight/App Store) için
+# gerekli; o iş üyelik geldiğinde eklenecek (bkz. mobile/TESTING.md,
 # "TestFlight kurulumu").
 name: Mobil derleme
 
@@ -119,3 +122,28 @@ jobs:
           flutter build ios --release --no-codesign \
             --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
             --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+      # SİMÜLATÖR derlemesi — Appetize.io iOS uygulamasını cihaz `.ipa`'sı
+      # olarak DEĞİL simülatör `.app`'i olarak istiyor, ve simülatör
+      # derlemeleri İMZA GEREKTİRMİYOR: Apple Developer üyeliği olmadan da
+      # iOS'u tarayıcıda test edebiliyoruz.
+      #
+      # `--debug` zorunlu: Flutter simülatör için release derlemeyi
+      # desteklemiyor (AOT yok). Sonuç JIT ile çalışır — biraz yavaş, ama
+      # görsel/işlevsel doğrulama için yeterli.
+      - name: iOS simülatör derlemesi (Appetize için)
+        working-directory: mobile/app
+        run: |
+          flutter build ios --simulator --debug \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          # Appetize yüklemesi ZIP bekliyor; `.app` bir klasör olduğundan
+          # sıkıştırmadan yüklenemez. upload-artifact kendi zip'ini
+          # ürettiğinden çift zip oluyor — indirince bir kez açman yeterli,
+          # içinden Runner.app.zip çıkar (Appetize'a O yüklenir).
+          cd build/ios/iphonesimulator
+          zip -ry Runner.app.zip Runner.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kelimeki-ios-simulator
+          path: mobile/app/build/ios/iphonesimulator/Runner.app.zip
+          if-no-files-found: error

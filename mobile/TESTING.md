@@ -237,7 +237,17 @@ Bu bölüm bir kontrol listesi değil, **tek seferlik kurulum** notu.
    maili gelince "Kabul Et" → Kelimeki gerçek bir uygulama olarak açılır.
    Yukarıdaki bölümler bundan sonra koşulabilir.
 
-**Android tarafı:** Apple üyeliği gerekmiyor. Workflow'un ürettiği
-`kelimeki-apk` artefaktını indirip (Actions → çalıştırma → Artifacts) bir
-Android cihaza kurabilir ya da Appetize.io gibi bir tarayıcı emülatörüne
-yükleyip iPad'den test edebilirsin.
+**Üyelik OLMADAN test:** iş akışı iki artefakt üretiyor, ikisi de
+Appetize.io'ya (tarayıcı emülatörü) yüklenebiliyor ve hiçbiri Apple
+üyeliği gerektirmiyor:
+- `kelimeki-apk` → Android
+- `kelimeki-ios-simulator` → iOS. Appetize iOS uygulamasını cihaz
+  `.ipa`'sı olarak değil **simülatör `.app`'i** olarak istiyor; simülatör
+  derlemeleri imzasız olduğundan üyelik gerekmiyor. İndirdiğin zip'i bir
+  kez aç, içinden çıkan `Runner.app.zip`'i Appetize'a yükle. Bu derleme
+  DEBUG modda (Flutter simülatör için release desteklemiyor) — JIT ile
+  çalıştığından biraz yavaş, animasyonlar takılabilir; görsel/işlevsel
+  doğrulama için sorun değil ama PERFORMANS bu derlemeden ölçülmez.
+
+Üyelik yalnızca gerçek cihaza kurulum (TestFlight) ve App Store yayını
+için gerekli.
