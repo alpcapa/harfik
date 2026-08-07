@@ -80,6 +80,14 @@ buraya bir satır da ekle, aksi halde bir sonraki oturum onu bilmez.
 
 ## Parça Bitirme Kontrol Listesi (ZORUNLU — her parçanın son adımı)
 
+0. **Cihazda doğrulanması gereken bir şey eklediysen `mobile/TESTING.md`'ye
+   yaz.** `flutter test` veri katmanını SAHTE uçlarla sınıyor — "testler
+   yeşil" ile "sunucuyla gerçekten konuşuyor" arasındaki boşluk oradaki
+   listeyle kapanıyor. Bir parçanın "Doğrulama sınırı" notu yazıldıysa,
+   karşılığı bir kontrol maddesi olarak o dosyada da olmalı; aksi halde
+   borç yalnızca bu dosyanın içinde kaybolur (kök `TESTING.md` ile aynı
+   refleks).
+
 1. **Oyun kurallarının tek doğruluk kaynağı ŞİMDİLİK web'deki TypeScript
    motoru** (`src/game` + `src/utils`). Dart portu (`mobile/kelimeki_core`)
    birebir davranış kopyasıdır ve eşitlik **golden vector** fixture'larıyla

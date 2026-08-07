@@ -38,6 +38,12 @@ oynuyor, SPA fallback çalışıyor) — kapsamlı bir paket değil. Canlı oyun
 mesajlaşma, e-posta bildirimleri gibi iki gerçek oturum ve gerçek gelen kutusu
 gerektiren akışların elle koşulan kontrol listesi: [`TESTING.md`](TESTING.md).
 
+Flutter portunun kendi testleri `mobile/app`'te `flutter test` ile koşar
+(veri katmanı sahte uçlarla sınanır); gerçek Supabase/platform davranışının
+cihazda koşulan listesi: [`mobile/TESTING.md`](mobile/TESTING.md). Derlemeyi
+(imzasız iOS + Android APK) doğrulayan GitHub Actions iş akışı elle
+tetiklenir: `.github/workflows/mobile-build.yml`.
+
 ## Proje Yapısı
 
 ```

@@ -65,6 +65,7 @@ koptu" (bkz. "Belgeleri Güncel Tutma").
 | `src/data/meanings.json` | `npm run generate-meanings-db` |
 | `LogoMark`/`KLigMark` | `npm run generate-logo-paths` / `generate-klig-paths` (ikisi de web+Dart yazar) |
 | Canlı oyun / mesajlaşma / e-posta özelliği | `TESTING.md` (elle koşulan liste) |
+| `mobile/app/` — sunucuya/platforma dokunan bir şey | `mobile/TESTING.md` (cihazda koşulan liste) |
 | Migration | Canlıya uygula + doğrula + `list_migrations` ile dosya adını eşleştir |
 | Yeni kullanıcı verisi ya da görünürlük değişikliği | `TermsModal`/`PrivacyModal` |
 | `App.tsx`'teki joker/mesaj/raf desenleri | `OnlineGameScreen.tsx` (ikisi deseni paylaşıyor) |
