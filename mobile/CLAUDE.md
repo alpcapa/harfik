@@ -165,7 +165,14 @@ mobile/
   app/                       # Flutter uygulaması (iskelet — aşağıdaki bölüm)
     pubspec.yaml             # kelimeki_core (path) + supabase_flutter +
                              # sqflite/shared_preferences + share_plus/
-                             # path_provider (paylaşım, 5c)
+                             # path_provider (paylaşım, 5c) +
+                             # sqflite_common_ffi_web (YALNIZCA web test
+                             # ortamı — koşullu import'un arkasında, mobil
+                             # derleme onu hiç görmez; bkz. "Web Derlemesi")
+    web/                     # Flutter web iskeleti (TEST ORTAMI, ürün değil).
+                             # sqflite_sw.js + sqlite3.wasm ÜRETİLMİŞ
+                             # (`dart run sqflite_common_ffi_web:setup`) ama
+                             # derlemede ağa çıkılmasın diye repoda tutulur.
     assets/dictionary/words_tr.txt
                              # ÜRETİLMİŞ (elle düzenlenmez) — kaynak
                              # src/data/words.ts; `npm run generate-golden-vectors`
@@ -497,6 +504,53 @@ bağlı değil.)
   değiştirmez (varsayılan hâlâ `Math.random`).
 - Dart SDK repoya/CI'a bağlanmadı — bu ortamda scratchpad'e indirilip
   kullanıldı; geliştirici makinesinde standart `dart` kurulumu yeterli.
+
+## Web Derlemesi — ÜRÜN DEĞİL, TEST ORTAMI (7 Ağustos 2026)
+
+Flutter'ın web hedefi bu porta üçüncü bir platform olarak EKLENMEDİ; ürün
+hedefi hâlâ yalnızca iOS + Android. Web derlemesi tek bir sorunu çözüyor:
+**geliştiricinin çalıştırabileceği hiçbir cihazı yok.** iPad'den çalışıyor,
+Mac yok, Android telefon yok, Apple Developer üyeliği askıda (TestFlight
+yok), tarayıcı emülatörü (Appetize) ücretsiz katmanda 3 dakikayla sınırlı.
+Aynı Dart kodu aynı çizim motoruyla (CanvasKit) koştuğundan yerleşim/font/
+gölge/oyun akışı doğrulaması burada ücretsiz ve süresiz yapılabiliyor.
+
+Adres `https://alpcapa.github.io/kelimeki/`, her mobil push'ta
+`.github/workflows/mobile-build.yml`'in `web` işi GitHub Pages'e deploy
+ediyor. NE KANITLAR / NE KANITLAMAZ ayrımı `mobile/TESTING.md`'de ("Web
+derlemesi") — kısaca: platform kanalı gerektiren her şey (paylaş sayfası,
+dosya sistemi, oturum kalıcılığı, ikon/splash, gerçek dokunmatik jestler,
+performans) hâlâ gerçek cihaz ister.
+
+**KURAL — web dalı mobil kod yolunu DEĞİŞTİREMEZ.** Üç kırık noktanın
+üçünde de mobil taraf bire bir korundu; yeni bir platform-bağımlı API
+kullanırken aynı deseni izle:
+
+| Kırılan | Sebep | Çözüm |
+|---|---|---|
+| Sözlük hiç yüklenmiyordu | `Isolate.run` web'de yok ("Unsupported operation: new RawReceivePort") | `kIsWeb` dalı (`dictionary_loader.dart`) — derleme zamanı sabiti olduğundan mobil derlemede web dalı tamamen elenir |
+| Depolamaya bağlı her ekran asılı kalıyordu | `sqflite`'ın native platform kanalı tarayıcıda yok | `sqflite_common_ffi_web` (WASM sqlite3 + IndexedDB) aynı `DatabaseFactory` arayüzünü verir → şema/sorgu/store kodu HİÇ değişmedi |
+| Kelime anlamları açılamıyordu | asset kopyası `dart:io` ile dosyaya yazılıyor | web dalı kopyayı IndexedDB'ye yazar; "güncel mi" sorusu ayrı damga dosyası yerine ADA gömülü sha256 ile yanıtlanır |
+
+**Koşullu import deseni (`lib/src/storage/web_db.dart`).** `sqflite_common_ffi_web`
+yalnızca web'de derlenebilen js_interop içeriyor — doğrudan import edilirse
+iOS/Android derlemesini KIRAR. Üçlü dosya: `web_db.dart` (`export ... if
+(dart.library.js_interop) ...`), `web_db_stub.dart` (mobil, her zaman
+`null`), `web_db_web.dart` (web). Tek kullanım yeri `openAppDatabase` +
+`MeaningStore._open`; ikisi de "çağıran kendi fabrikasını geçtiyse hiç
+devreye girme" kuralını uyguluyor, bu yüzden **testlerin hiçbiri
+etkilenmedi** (142/142 aynen geçiyor).
+
+**`web/` klasörü depoda tutuluyor** — içindeki `sqflite_sw.js` ve
+`sqlite3.wasm` `dart run sqflite_common_ffi_web:setup` ile ÜRETİLİR ama
+derleme anında ağdan indirilmemesi için repoya konmuştur. `sqflite_common_ffi_web`
+sürümü yükseltilirse bu iki dosya da yeniden üretilmeli.
+
+**Yeni bir platform API'si eklerken sor:** web'de var mı? Yoksa (a) `kIsWeb`
+ile dallan, (b) koşullu import'un arkasına al, ya da (c) sessizce
+işlevsizleş (anlam modalı asset açılamazsa "anlam bulunamadı" der, oyun
+akışı bozulmaz). Ne yaparsan yap, web derlemesinin ASILI KALMAMASI şart —
+asılı bir ekran bütün test ortamını kullanılmaz yapıyor.
 
 ## Web ↔ Uygulama Arasındaki Kabul Edilmiş Farklar
 

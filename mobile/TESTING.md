@@ -209,6 +209,56 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 
 ---
 
+## Web derlemesi (ücretsiz tarayıcı test ortamı)
+
+**Adres:** `https://alpcapa.github.io/kelimeki/` — her mobil push'ta
+kendiliğinden güncellenir (`.github/workflows/mobile-build.yml`, `web` işi).
+Süre limiti yok, kurulum yok, iPad Safari'de doğrudan açılır.
+
+**Neden var:** geliştiricinin elinde ne Mac ne Android cihaz var; Apple
+Developer üyeliği askıda (TestFlight yok) ve Appetize'ın ücretsiz katmanı
+3 dakikayla sınırlı. Flutter'ın web hedefi **aynı Dart kodunu aynı çizim
+motoruyla** (CanvasKit) koşturuyor — yani yukarıdaki listenin büyük
+bölümü burada gerçekten koşulabilir.
+
+**Burada koşulabilen bölümler:** 1 (oyun çekirdeği), 2 (auth), 3 (bulut
+kayıtları), 4 (biten oyun kayıtları), 5 (oyun geçmişi), 7 (Son
+Oynadıklarım). Hepsi saf Dart + ağ; platform kanalı gerektirmiyorlar.
+
+### Web derlemesiyle neyi test EDEMEZSİN
+
+Bunları "geçti" saymak bir hatayı gizler — hepsi hâlâ gerçek cihaz ister:
+
+- **Bölüm 6 (Paylaşma).** `share_plus` web'de tarayıcının Web Share
+  API'sine düşer; iOS/Android'in native paylaş sayfası DEĞİL. Görsel
+  yakalama + dosya eki davranışı farklı.
+- **Bölüm 8 (Uçak modu / dayanıklılık).** Tarayıcının ağ/önbellek
+  semantiği native'inkiyle aynı değil; işletim sisteminin uygulamayı
+  arka planda öldürmesi de burada yok.
+- **Bölüm 0'ın "ilk açılış"ı.** Splash, portre kilidi (`SystemChrome`),
+  uygulama ikonu — hiçbiri web'de geçerli değil.
+- **Oturum kalıcılığı.** `supabase_flutter` web'de token'ı farklı bir
+  depoda tutuyor; "uygulamayı tamamen kapat, hâlâ girişli ol" maddesi
+  native davranışı kanıtlamaz.
+- **Depolama arka ucu.** Web'de native SQLite yok; `sqflite_common_ffi_web`
+  (WASM sqlite3 + IndexedDB) devrede (bkz. `lib/src/storage/web_db.dart`).
+  Şema/sorgu/store kodu aynı, ama "gerçek cihazda SQLite dosyası çökme
+  anında tutarlı mı" sorusu burada yanıtlanmaz.
+- **Gerçek dokunmatik jestler.** Sürükle-bırağın parmak altındaki hissi,
+  30px kaldırma, jest çakışmaları — fare/trackpad ile ölçülemez.
+- **Performans.** Farklı derleyici (dart2js), farklı GPU yolu.
+
+### İlk açılışta doğrula
+
+- [ ] Sağ üstte **GİRİŞ** butonu ve altbilgide **"sunucu bağlı"** — ikisi
+      de varsa Supabase sırları derlemeye gömülmüş demektir.
+- [ ] Altbilgide **"Sözlük: 63890 kelime"** (yükleniyor'da takılı kalmamalı).
+- [ ] **OYUNU BAŞLAT** çalışıyor ve tahta çiziliyor — depolama katmanı
+      (IndexedDB) kurulmuş demektir. "KAYITLAR KONTROL EDİLİYOR…" takılı
+      kalırsa web depolama arka ucu bozulmuştur.
+
+---
+
 ## TestFlight kurulumu (Apple Developer üyeliği geldiğinde)
 
 Bu bölüm bir kontrol listesi değil, **tek seferlik kurulum** notu.
