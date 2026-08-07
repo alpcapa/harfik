@@ -17,6 +17,7 @@ import 'package:flutter/services.dart' show AssetBundle;
 import 'package:kelimeki_core/kelimeki_core.dart' show trLower;
 import 'package:sqflite/sqflite.dart';
 
+import '../storage/web_db.dart';
 import 'meaning_entry.dart';
 
 const String meaningsAssetPath = 'assets/dictionary/meanings.db';
@@ -76,6 +77,13 @@ class MeaningStore {
 
   Future<Database?> _open() async {
     try {
+      // WEB: dosya sistemi yok — kopya IndexedDB'ye yazılır (bkz.
+      // storage/web_db.dart). Mobilde `webDatabaseFactory()` null döner ve
+      // aşağıdaki dart:io yolu bire bir eskisi gibi çalışır; testler kendi
+      // fabrikasını geçtiğinden hiç etkilenmez.
+      final web = _factory == null ? webDatabaseFactory() : null;
+      if (web != null) return await _openWeb(web);
+
       final dir = await _dbDir();
       await Directory(dir).create(recursive: true);
       // Düz birleştirme yeterli: bu kod yalnızca iOS/Android'de (ve Linux
@@ -114,5 +122,27 @@ class MeaningStore {
       _opening = null;
       return null;
     }
+  }
+
+  /// Web kopyası. "Güncel mi" sorusu ayrı bir damga DOSYASI yerine ADA gömülü
+  /// damgayla yanıtlanıyor (web'de dosya sistemi yok, yan yana iki nesne
+  /// tutmanın karşılığı da yok): yeni damga = yeni ad = kendiliğinden yeniden
+  /// kopyalama. Eski ad IndexedDB'de kalır, zararsız.
+  Future<Database?> _openWeb(DatabaseFactory f) async {
+    final assetStamp = (await _bundle.loadString(meaningsStampAssetPath)).trim();
+    final dbPath = 'meanings-$assetStamp.db';
+    if (!await f.databaseExists(dbPath)) {
+      final bytes = await _bundle.load(meaningsAssetPath);
+      await f.writeDatabaseBytes(
+        dbPath,
+        bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
+      );
+    }
+    final db = await f.openDatabase(
+      dbPath,
+      options: OpenDatabaseOptions(readOnly: true, singleInstance: false),
+    );
+    _db = db;
+    return db;
   }
 }

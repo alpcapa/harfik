@@ -42,6 +42,10 @@ on:
         description: 'Android APK derlemesi'
         type: boolean
         default: true
+      web:
+        description: 'Web derlemesi (GitHub Pages test ortamı)'
+        type: boolean
+        default: true
 
 # Aynı anda tek çalıştırma yeter; arka arkaya tetiklenirse eskisini iptal et.
 concurrency:
@@ -180,3 +184,56 @@ jobs:
         run: |
           cp build/ios/iphonesimulator/Runner.app.zip kelimeki-ios-simulator.zip
           gh release upload mobile-latest kelimeki-ios-simulator.zip --clobber
+
+  # Web derlemesi — ÜRÜN HEDEFİ DEĞİL, TEST ORTAMI.
+  #
+  # NEDEN VAR: geliştirici iPad'den çalışıyor; elinde ne Mac ne Android cihaz
+  # var. Apple Developer üyeliği (TestFlight) askıda, tarayıcı içi emülatör
+  # (Appetize) ücretsiz katmanda 3 dakikayla sınırlı. Flutter'ın web hedefi
+  # aynı Dart kodunu aynı çizim motoruyla (CanvasKit) koşturuyor — yani
+  # yerleşim/font/gölge/oyun akışı doğrulaması ücretsiz ve süresiz yapılabilir.
+  # Bu iş her mobil push'ta GitHub Pages'e deploy eder, adres sabit kalır.
+  #
+  # NEYİ KANITLAMAZ: platform davranışı. Paylaş sayfası, dosya sistemi,
+  # oturum kalıcılığı, uygulama ikonu, gerçek dokunmatik jestler web'de
+  # FARKLI çalışır — bkz. mobile/TESTING.md, "Web derlemesiyle neyi test
+  # edemezsin". Depolama da farklı bir arka uç kullanır (IndexedDB üstünde
+  # WASM sqlite3, bkz. lib/src/storage/web_db.dart).
+  web:
+    name: Web (GitHub Pages test ortamı)
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.web }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - uses: actions/configure-pages@v5
+      # `--no-web-resources-cdn`: CanvasKit'i gstatic.com yerine kendi
+      # adresimizden servis eder — dış bağımlılık yok, kısıtlı ağlarda da
+      # açılır. `--base-href`: Pages siteyi /kelimeki/ altında yayınlıyor.
+      # `--pwa-strategy=none`: service worker YOK; her açılışta en son
+      # derleme gelir (test ortamında bayat önbellek en son isteyeceğimiz şey).
+      - name: Web derle
+        working-directory: mobile/app
+        run: |
+          flutter pub get
+          flutter build web --release \
+            --no-web-resources-cdn \
+            --pwa-strategy=none \
+            --base-href /kelimeki/ \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: mobile/app/build/web
+      - id: deploy
+        uses: actions/deploy-pages@v4

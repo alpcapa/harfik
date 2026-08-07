@@ -14,6 +14,8 @@
 // karantinaya alır.
 import 'package:sqflite/sqflite.dart';
 
+import 'web_db.dart';
+
 /// DB şema sürümü — tablo/kolon değişikliklerinde artır ve `_migrations`e
 /// bir adım ekle. Payload sürümünden (kSavePayloadVersion) AYRI bir kavram.
 const int kDbSchemaVersion = 1;
@@ -74,8 +76,16 @@ Future<Database> openAppDatabase({
   DatabaseFactory? factory,
   String? path,
 }) async {
-  final f = factory ?? databaseFactory;
-  final dbPath = path ?? '${await f.getDatabasesPath()}/kelimeki.db';
+  // WEB: sqflite'ın native platform kanalı tarayıcıda yok; `web_db.dart`
+  // koşullu import'u orada WASM sqlite3 + IndexedDB fabrikasını döndürür.
+  // Mobilde her zaman null döner → kod yolu bire bir eskisi gibi. Çağıran
+  // kendi fabrikasını geçtiyse (tüm testler) hiç devreye girmez.
+  final web = factory == null ? webDatabaseFactory() : null;
+  final f = factory ?? web ?? databaseFactory;
+  // ffi_web'de "veritabanı dizini" kavramı yok — ad doğrudan IndexedDB
+  // anahtarı olur, getDatabasesPath() anlamsız.
+  final dbPath = path ??
+      (web != null ? 'kelimeki.db' : '${await f.getDatabasesPath()}/kelimeki.db');
   return f.openDatabase(
     dbPath,
     options: OpenDatabaseOptions(
