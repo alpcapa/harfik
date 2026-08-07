@@ -201,6 +201,7 @@ mobile/
                              # beğeni (toggle/stats/likers/list_liked_games) +
                              # dondurulmuş sohbet (messages/chat_flags)
       data/stats_api.dart    # player_stats / leaderboard / my_leaderboard_rank
+      data/feedback_api.dart # Görüş Bildir: submit + kuyruk + flush + rate limit
       game/game_controller.dart # ChangeNotifier motor kabuğu + otomatik YZ turu
       storage/               # SQLite + prefs katmanı (bkz. "Depolama Katmanı"):
                              # app_database (şema), app_storage (giriş kapısı),
@@ -222,6 +223,7 @@ mobile/
                              # recent_games_section ("Son Oynadıklarım") +
                              # membership_perks_box (misafir "Neden Üye
                              # Olmalıyım?" kutusu, 7 Ağustos 2026)
+      ui/feedback/           # feedback_modal ("Görüş Bildir" formu)
       util/semver.dart, util/uuid.dart, util/share_board.dart
     android/ ios/            # flutter create çıktısı + elle değişiklikler (aşağı bkz.)
     test/                    # util, controller (golden replay!), widget duman testleri
@@ -252,9 +254,9 @@ mobile/
       goldens/*.json         # ÜRETİLMİŞ fixture'lar (elle düzenlenmez)
 ```
 
-Henüz OLMAYANLAR (sıradaki fazlar): Görüş Bildir formu, Canlı oyun
-ekranları, arkadaşlık sistemi, Setup'taki "Arkadaşınla paylaş" butonu
-(ayrıntı: "Sıradaki parçalar" satırı, auth+Canlı fazının sonunda).
+Henüz OLMAYANLAR (sıradaki fazlar): Canlı oyun ekranları, arkadaşlık
+sistemi, Setup'taki "Arkadaşınla paylaş" butonu (ayrıntı: "Sıradaki
+parçalar" satırı, auth+Canlı fazının sonunda).
 
 ## Porta Taşınan Değişmezler (PORT_BRIEF §7, 6 Ağustos 2026)
 
@@ -332,12 +334,14 @@ masaüstü VM'de GERÇEK SQLite üzerinde (cihaz gerekmez): dolu-oyun roundtrip
 bilinmeyen-sürüm karantinası, 7 günlük terk olayı (tek seferlik take),
 kuyruk dedup/300-sınırı/TTL/tür-izolasyonu, damga ve bayrak davranışları.
 
-**Henüz BAĞLANMAYAN uçlar (sonraki fazların işi):** `LocalSaveStore`'u
-gerçek kaydet/yükle akışına bağlayan UI (Setup/oyun ekranı), terk olayını
--2 cezasına çeviren üst katman (web `takePendingAbandonedGame` +
-`buildGameRecord` eşleniği), kuyrukları sunucuya boşaltan flush (web
-`flushPendingGames`/`feedbackSync`) — flush, Supabase'e yazarken
-`TableWriteQueue`dan geçmek ZORUNDA (bkz. "Porta Taşınan Değişmezler").
+**Bu bölümde "henüz bağlanmayan uç" KALMADI** (7 Ağustos 2026 itibarıyla):
+kaydet/yükle UI'ı UI parça 5-6'da, terk→-2 üst katmanı auth parça 3b'de,
+`finished-game` flush'ı 3b'de, `feedback` flush'ı Görüş Bildir parçasında
+bağlandı. Yeni bir kuyruk türü eklenirse aynı kural geçerli: satır sahibi
+tabloya giden flush `TableWriteQueue`dan geçmek ZORUNDA (bkz. "Porta
+Taşınan Değişmezler"; `feedback` tablosu append-only/satır sahipliği
+olmayan bir insert olduğundan o kuyruğa bilinçli olarak GİRMİYOR — okuma
+yolu yok, DELETE→SELECT yarışı kurulamaz).
 
 ## Flutter Uygulama İskeleti (`mobile/app/`, 5 Ağustos 2026)
 
@@ -1870,10 +1874,76 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ortamdan test EDİLEMEZ (Supabase'e gerçek istek + e-posta kutusu +
        cihaz gerekir) — TESTING.md bölüm 2'deki dört yeni maddeyle cihazda
        doğrulanmalı; Redirect URL Dashboard'a eklenmeden akış çalışmaz.
-   - Sıradaki parçalar (sıra önerisi): Görüş Bildir formu, Canlı oyun
-     ekranları, arkadaşlık sistemi (davet deep link'i — `kelimeki` şeması
-     ve app_links borusu artık hazır), "Arkadaşınla paylaş" (native share —
-     `share_plus` hazır, yalnızca Setup'taki buton kaldı).
+   - ✅ **Parça 7 — Görüş Bildir formu (7 Ağustos 2026,
+     `data/feedback_api.dart`, `ui/feedback/feedback_modal.dart`):**
+     depolama fazında açılıp bugüne dek boş duran `pending_queue`
+     `kind='feedback'` kanalı artık gerçekten dolup boşalıyor; web
+     `FeedbackModal.tsx` + `submitFeedback` (api.ts) +
+     `submitFeedbackDurable`/`flushPendingFeedback` (feedbackSync.ts) portu.
+     - **`FeedbackRepo` SENKRON kurulur** (storage Future'ını içeride
+       bekler) — `AppServices.feedback` bu sayede GamesRepo gibi `Future`
+       değil; AuthModal→Terms/Privacy zinciri gibi UI katmanları Future
+       taşımadan referans alabildi. Supabase yapılandırılmamışken bile
+       DOLU (gateway'i null) — web feedbackSync'in "configured değilken de
+       kuyrukla" davranışı; mesaj hiçbir konfigürasyonda kaybolmaz.
+     - **Flush OTURUM ŞARTSIZ** — `GamesRepo.flushPending`'den bilinçli
+       fark: anonim geri bildirim RLS'te zaten serbest
+       (`feedback_insert_any`), web de girişsiz flush'lıyor. Tetikleyici:
+       Setup `initState` (web App.tsx mount + 'online' olayının karşılığı;
+       connectivity dinleyicisi için paket EKLENMEDİ — Setup'a her dönüş
+       yeterli). `feedback` tablosu `TableWriteQueue`ya bilinçli GİRMİYOR:
+       append-only insert, okuma yolu yok — DELETE→SELECT yarışı kurulamaz.
+     - **Web'in üç bot önleminden ikisi taşındı, biri bilinçli taşınmadı:**
+       rate limit (3 mesaj/10dk — karar repo'da, geçmiş FlagsStore
+       `feedback_submission_times`'ta; kuyruğa düşen de pencereye sayılır,
+       web recordSubmission) ve MIN_SUBMIT_MS (1.5sn altı gönderim → hiçbir
+       şey kaydetmeden sahte "gönderildi", modal'da). **Honeypot YOK** —
+       gizli form alanı web crawler'ları için var, native uygulamada o
+       vektör yok.
+     - **"Üyeliğine devam" teklifi** (misafir + e-posta girmiş): EVET →
+       AuthModal KAYIT modunda, e-posta önceden dolu,
+       `signup_channel='form'` — AuthModal'a web'in `initialMode`/
+       `initialEmail`/`signupChannel` prop'ları eklendi
+       (`startInSignup`), `AuthService.signUp`'a `signupChannel` parametresi
+       (varsayılan 'direct', davranış değişmedi). Web'in `fromEmailLink`
+       prop'u BİLİNÇLİ yok — o bağlam yalnızca web'in `?contact=1` e-posta
+       linkinden geliyor, mobilde öyle bir giriş yolu yok.
+     - **İki bağlama:** GameOver'daki eksik "GÖRÜŞ BİLDİR" linki
+       (`onFeedback` opsiyonel — testler/önizlemeler vermezse çizilmez;
+       source `game_end`) ve Terms/Privacy içindeki "Görüş Bildir formu"
+       linki (source `general`) — legal_modals'ın "sonraki sürümde" stub'ı
+       SİLİNDİ; `_FeedbackLinkLine` callback'siz kurulursa ölü link yerine
+       düz metin çizer. Zincir enjeksiyon disipliniyle taşındı (services →
+       Setup/GameScreen → GameHeader/AccountButton/MembershipPerksBox →
+       showLoginModal → AuthModal → legal modaller). `auth_modal` ↔
+       `feedback_modal` BİLİNÇLİ döngüsel import — web'in GameHistoryModal
+       ↔ PlayerScoreCard emsali: iki referans da yalnızca çalışma anında.
+     - **Test yakaladı (gerçek hata):** ilk sürümde `late final _openedAt =
+       _now()` — `late` TEMBEL değerlendirilir, ilk erişim `_submit`
+       içindeydi; açılış zamanı gönderim anına eşitlenip HER ilk gönderim
+       bot sanılırdı. `initState`'e taşındı. **Ders:** "açılış anını
+       damgala" niyetiyle `late final x = now()` yazma — damga initState'te
+       atılmalı.
+     - **İki test-izolasyon dersi** (`feedback_test.dart` başındaki
+       yorumlarda): (1) sqflite factory'si `inMemoryDatabasePath`'i AÇIK
+       KALDIKÇA paylaşır — kapatmayan test dosyası sonrakine veri sızdırır;
+       benzersiz temp dosya yolu kapatma sırasına bağımlı olmayan izolasyon
+       verir. (2) id üreticisini repo başına sıfırlamak, aynı kuyruğa yazan
+       iki reponun id çakışmasında enqueue dedup'ının ikinci kaydı sessizce
+       yutmasına yol açar — sayaç global olmalı.
+     - Doğrulama: `feedback_test.dart` (10 test — repo: başarı/kuyruk/
+       gateway-null/rate-limit penceresi/flush-oturumsuz-bozuk-kayıt;
+       modal: misafir tam akış + üyelik teklifi → KAYIT, girişli "Yanıt
+       e-postan" + ekran görüntüsü `build/screenshots/feedback_form.png`,
+       bot dalı, rate-limit hatası; bağlamalar: GameOver linki iki dal,
+       Kayıt→Terms→form zinciri). 158/158 yeşil, analyze temiz.
+       **Doğrulama sınırı:** gerçek `feedback` insert'i (RLS, user_id/
+       e-posta fallback'i) cihazda doğrulanmalı — TESTING.md "Görüş
+       Bildir" maddeleri.
+   - Sıradaki parçalar (sıra önerisi): Canlı oyun ekranları, arkadaşlık
+     sistemi (davet deep link'i — `kelimeki` şeması ve app_links borusu
+     hazır), "Arkadaşınla paylaş" (native share — `share_plus` hazır,
+     yalnızca Setup'taki buton kaldı).
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

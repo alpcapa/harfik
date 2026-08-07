@@ -76,6 +76,11 @@ class _SetupScreenState extends State<SetupScreen> {
     super.initState();
     _lastUserId = widget.services.auth.user?.id;
     widget.services.auth.addListener(_onAuthEvent);
+    // Kuyruktaki geri bildirimleri tekrar dene — web App.tsx'in mount +
+    // 'online' olayındaki flushPendingFeedback refleksi; mobil karşılığı
+    // Setup'a her geliş. Oyun kayıtlarının aksine oturum BEKLEMEZ
+    // (feedback_api.dart'taki not), bu yüzden _syncCloud'a değil buraya.
+    unawaited(widget.services.feedback?.flushPending());
     final storage = widget.services.storage;
     // setState şart: "Son Oynadıklarım" bölümü bu repoya bağlı çizildiğinden
     // (5c), repo geldiğinde ekranın yeniden kurulması gerekiyor. Önceki
@@ -235,6 +240,7 @@ class _SetupScreenState extends State<SetupScreen> {
         auth: widget.services.auth,
         stats: widget.services.stats,
         games: widget.services.games,
+        feedback: widget.services.feedback,
       ),
     ));
     await guestSession?.end();
@@ -335,6 +341,7 @@ class _SetupScreenState extends State<SetupScreen> {
                         child: Align(
                           alignment: Alignment.centerRight,
                           child: AccountButton(
+                            feedback: widget.services.feedback,
                               auth: auth,
                               stats: widget.services.stats,
                               games: widget.services.games),
@@ -493,7 +500,10 @@ class _SetupScreenState extends State<SetupScreen> {
         // Widget kendi içinde `auth.user == null` kontrolü yapıyor — bu
         // görünüme yalnızca misafirken düşüldüğünden burada koşul gerekmez,
         // ama üstteki tek çağıranla (auth) tutarlı kalsın diye geçiliyor.
-        MembershipPerksBox(auth: widget.services.auth, topMargin: true),
+        MembershipPerksBox(
+            auth: widget.services.auth,
+            feedback: widget.services.feedback,
+            topMargin: true),
       ],
     );
   }
@@ -652,7 +662,9 @@ class _SetupScreenState extends State<SetupScreen> {
         // "+ Yeni" formunda (showCancel:true) çağrıldığından gate widget'ın
         // kendi içinde (`auth.user == null`); girişli çağrıda sessizce
         // gizli kalır.
-        MembershipPerksBox(auth: widget.services.auth),
+        MembershipPerksBox(
+            auth: widget.services.auth,
+            feedback: widget.services.feedback),
       ],
     );
   }

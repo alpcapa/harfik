@@ -10,6 +10,7 @@ import 'config/version_gate.dart';
 import 'data/auth_service.dart';
 import 'data/cloud_save_repo.dart';
 import 'data/dictionary_loader.dart';
+import 'data/feedback_api.dart';
 import 'data/games_api.dart';
 import 'data/stats_api.dart';
 import 'data/meaning_store.dart';
@@ -52,6 +53,12 @@ class AppServices {
   /// hiç çizilmez).
   final StatsRepo? stats;
 
+  /// "Görüş Bildir" — GamesRepo'nun aksine Supabase YOKKEN de dolu
+  /// (gateway'i null olur, mesajlar kuyrukta bekler — web feedbackSync'in
+  /// "Supabase hiç yapılandırılmamışken de kuyrukla" davranışı); yalnızca
+  /// depolamasız widget testlerinde null.
+  final FeedbackRepo? feedback;
+
   const AppServices({
     required this.dictionary,
     required this.meanings,
@@ -62,6 +69,7 @@ class AppServices {
     this.cloudSaves,
     this.games,
     this.stats,
+    this.feedback,
   });
 }
 
@@ -86,5 +94,9 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
         ? storage.then((s) => GamesRepo(SupabaseGamesGateway(supabase), s.queue))
         : null,
     stats: supabase != null ? StatsRepo(SupabaseStatsGateway(supabase)) : null,
+    feedback: FeedbackRepo(
+      supabase != null ? SupabaseFeedbackGateway(supabase) : null,
+      storage,
+    ),
   );
 }

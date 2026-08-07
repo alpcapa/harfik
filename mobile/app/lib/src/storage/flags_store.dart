@@ -44,4 +44,20 @@ class FlagsStore {
     if (prefs.getString(_utmSource) != null) return;
     await prefs.setString(_utmSource, source);
   }
+
+  static const _feedbackTimes = 'feedback_submission_times';
+
+  /// Görüş Bildir rate-limit geçmişi (epoch ms listesi) — web
+  /// `kelimeki:feedback-submissions` eşleniği. Pencere/eşik kararı
+  /// FeedbackRepo'nun işi; burada yalnızca ham saklama (sabit anahtar,
+  /// küçük değer — dosya başındaki kurala uygun).
+  List<int> get feedbackSubmissionTimes =>
+      (prefs.getStringList(_feedbackTimes) ?? const [])
+          .map(int.tryParse)
+          .whereType<int>()
+          .toList();
+
+  Future<void> setFeedbackSubmissionTimes(List<int> times) =>
+      prefs.setStringList(
+          _feedbackTimes, [for (final t in times) t.toString()]);
 }

@@ -254,6 +254,28 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       aç: boş liste ya da "Yükleniyor…" ile kalmalı, hata ekranı/çökme
       OLMAMALI.
 
+## 9. Görüş Bildir
+
+- [ ] **Misafir gönderim.** Girişsizken bir oyun bitir → GameOver'daki
+      "GÖRÜŞ BİLDİR" → mesaj + e-posta yaz → GÖNDER → "Teşekkürler" +
+      "{e-posta} ile üyeliğine devam etmek ister misin?" teklifi çıkmalı.
+      Web admin panelinde (Geri Bildirim sekmesi) mesaj o e-postayla,
+      kaynağı oyun-sonu olarak görünmeli.
+- [ ] **Üyelik teklifi → kayıt.** Teklifte EVET → kayıt formu doğrudan
+      açılmalı, e-posta önceden dolu; kayıt tamamlanınca admin panelinde
+      Üyeler tablosunda kanal "Form" görünmeli (`signup_channel='form'`).
+- [ ] **Girişli gönderim.** Girişliyken formda e-posta alanı OLMAMALI
+      ("Yanıt e-postan: …" satırı var); gönderilen mesaj admin panelinde
+      hesabına bağlı görünmeli.
+- [ ] **Terms/Privacy içi link.** Kayıt formundaki Kullanım Koşulları →
+      "Görüş Bildir formu" linki formu açmalı (kaynak: genel).
+- [ ] **Offline kuyruk.** Uçak modunda mesaj gönder → "Teşekkürler"
+      görünmeli (mesaj kuyruğa girdi); ağı açıp Setup'a dönünce mesaj
+      sunucuya işlenmeli (admin panelinden doğrula). Kuyruk girişsiz de
+      boşalır — oyun kayıtlarının aksine oturum beklemez.
+- [ ] **Rate limit.** 10 dakika içinde 4. mesajda "Çok fazla mesaj
+      gönderdin…" hatası çıkmalı, mesaj gönderilmemeli.
+
 ---
 
 ## Web derlemesi (ücretsiz tarayıcı test ortamı)

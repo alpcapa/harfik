@@ -13,6 +13,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/auth_service.dart';
+import '../../data/feedback_api.dart';
 import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../game/help_modal.dart';
@@ -39,6 +40,9 @@ class AccountButton extends StatelessWidget {
   /// çizilmez (kartın kendisi yine açılır).
   final Future<GamesRepo>? games;
 
+  /// Giriş/kayıt modalı → Terms/Privacy → "Görüş Bildir formu" zinciri için.
+  final FeedbackRepo? feedback;
+
   /// GİRİŞ butonunun akıcı ölçüleri — GameHeader kendi clamp değerlerini
   /// geçer; Setup varsayılan (maksimum) değerleri kullanır (web UserMenu
   /// iki ekranda da aynı bileşen/aynı akıcı sistem).
@@ -52,6 +56,7 @@ class AccountButton extends StatelessWidget {
     required this.auth,
     this.stats,
     this.games,
+    this.feedback,
     this.girisFontSize = 11,
     this.girisPaddingX = 8,
     this.girisPaddingY = 12,
@@ -87,7 +92,7 @@ class AccountButton extends StatelessWidget {
 
   Widget _girisButton(BuildContext context) {
     return GestureDetector(
-      onTap: () => showLoginModal(context, auth),
+      onTap: () => showLoginModal(context, auth, feedback: feedback),
       child: Container(
         padding: EdgeInsets.symmetric(
             horizontal: girisPaddingX, vertical: girisPaddingY),

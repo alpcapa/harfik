@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import '../../data/auth_service.dart';
+import '../../data/feedback_api.dart';
 import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../auth/account_button.dart';
@@ -35,6 +36,10 @@ class GameHeader extends StatelessWidget {
   /// Hesap menüsünden açılan skor kartındaki geçmiş linki için.
   final Future<GamesRepo>? games;
 
+  /// Hesap zincirindeki Terms/Privacy içi "Görüş Bildir formu" linki için
+  /// (AccountButton → AuthModal'a iletilir).
+  final FeedbackRepo? feedback;
+
   /// Verilirse insan koltuklarının kutuları tıklanabilir olur (Canlı oyunda
   /// skor kartı — web onPlayerClick'in eşleniği; yerel oyunda verilmez).
   final void Function(int index)? onPlayerTap;
@@ -47,6 +52,7 @@ class GameHeader extends StatelessWidget {
     this.auth,
     this.stats,
     this.games,
+    this.feedback,
   });
 
   @override
@@ -124,6 +130,7 @@ class GameHeader extends StatelessWidget {
                     auth: auth!,
                     stats: stats,
                     games: games,
+                    feedback: feedback,
                     girisFontSize: girisFontSize,
                     girisPaddingX: girisPaddingX,
                     girisPaddingY: girisPaddingY,

@@ -11,9 +11,11 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import '../../data/auth_service.dart';
+import '../../data/feedback_api.dart';
 import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../../data/meaning_store.dart';
+import '../feedback/feedback_modal.dart';
 import '../../game/game_controller.dart';
 import '../../game/move_status.dart';
 import 'board_widget.dart';
@@ -47,6 +49,10 @@ class GameScreen extends StatefulWidget {
   /// Skor kartındaki geçmiş linki için (GameHeader'a iletilir).
   final Future<GamesRepo>? games;
 
+  /// GameOver'daki "Görüş Bildir" linki + hesap zincirindeki Terms/Privacy
+  /// içi form linki için; verilmezse (testler) link hiç çizilmez.
+  final FeedbackRepo? feedback;
+
   const GameScreen({
     super.key,
     required this.controller,
@@ -55,6 +61,7 @@ class GameScreen extends StatefulWidget {
     this.auth,
     this.stats,
     this.games,
+    this.feedback,
   });
 
   @override
@@ -438,7 +445,16 @@ class _GameScreenState extends State<GameScreen> {
         if (state.isGameOver && !_gameOverShown) {
           _gameOverShown = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) showGameOverModal(context, state);
+            if (!mounted) return;
+            final auth = widget.auth;
+            showGameOverModal(context, state,
+                // Web GameOver onOpenFeedback (source: 'game_end').
+                onFeedback: auth == null
+                    ? null
+                    : () => showFeedbackModal(context,
+                        auth: auth,
+                        feedback: widget.feedback,
+                        source: FeedbackSource.gameEnd));
           });
         } else if (!state.isGameOver && _gameOverShown) {
           _gameOverShown = false;
@@ -484,6 +500,7 @@ class _GameScreenState extends State<GameScreen> {
                       auth: widget.auth,
                       stats: widget.stats,
                       games: widget.games,
+                      feedback: widget.feedback,
                       onLogoTap: () => Navigator.of(context).pop(),
                     ),
                     // Web akışıyla aynı: tahta → mesaj → raf → butonlar yukarıdan

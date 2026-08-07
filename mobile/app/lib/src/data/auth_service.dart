@@ -185,9 +185,11 @@ class AuthService extends ChangeNotifier {
   /// bir update'e güvenilemez — web'deki aynı gerekçe). Dönen değer: oturum
   /// hemen açıldı mı (e-posta doğrulaması kapalıysa true).
   ///
-  /// `signup_channel: 'direct'` web'le aynı — admin panelinin Üyeler
-  /// tablosu yalnızca Direkt/Form ayrımını biliyor; mobile'a özel bir kanal
-  /// eklemek panel/trigger tarafında ayrı bir karar, bu parçada değil.
+  /// `signupChannel` web'le aynı iki değeri alır ('direct' | 'form' —
+  /// admin panelinin Üyeler tablosu yalnızca bu ikisini biliyor; mobile'a
+  /// özel bir kanal eklemek panel/trigger tarafında ayrı bir karar).
+  /// 'form' yalnızca Görüş Bildir sonrası "üyeliğine devam" teklifinden
+  /// gelir (web FeedbackModal→AuthModal zinciri).
   Future<bool> signUp({
     required String email,
     required String password,
@@ -198,6 +200,7 @@ class AuthService extends ChangeNotifier {
     String? gender,
     String? birthDate,
     bool marketingConsent = false,
+    String signupChannel = 'direct',
   }) async {
     final c = _client;
     if (c == null) throw const AuthException('Supabase yapılandırılmadı.');
@@ -214,7 +217,7 @@ class AuthService extends ChangeNotifier {
             'birthDate': birthDate,
             'marketingConsent': marketingConsent,
           },
-          'signup_channel': 'direct',
+          'signup_channel': signupChannel,
           'display_name': nickname,
         },
       );

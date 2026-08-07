@@ -1,8 +1,8 @@
 // Oyun sonu ekranı — src/components/GameOver.tsx portu.
 // Kazanan başlığı (beraberlikte altın "BERABERE"), rankPlayers sırasıyla
 // oyuncu listesi (Kalan/Toplam sütunları, Teslim rozeti), toplam hamle.
-// Web'deki "Oyun Geçmişi" linki portlandı; "Görüş Bildir" BİLİNÇLİ eksik
-// (form Supabase'e yazıyor — auth fazının işi, bkz. mobile/CLAUDE.md).
+// Web'deki iki link de portlandı: "Oyun Geçmişi" + "Görüş Bildir"
+// ([onFeedback] verilmezse — bazı testler — ikincisi hiç çizilmez).
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
@@ -10,16 +10,21 @@ import 'move_history_modal.dart';
 import 'player_badge.dart';
 import 'player_colors.dart';
 
-Future<void> showGameOverModal(BuildContext context, GameState state) {
+Future<void> showGameOverModal(BuildContext context, GameState state,
+    {VoidCallback? onFeedback}) {
   return showDialog<void>(
     context: context,
-    builder: (context) => GameOverModal(state: state),
+    builder: (context) => GameOverModal(state: state, onFeedback: onFeedback),
   );
 }
 
 class GameOverModal extends StatelessWidget {
   final GameState state;
-  const GameOverModal({super.key, required this.state});
+
+  /// "Görüş Bildir" linki — web GameOver `onOpenFeedback`.
+  final VoidCallback? onFeedback;
+
+  const GameOverModal({super.key, required this.state, this.onFeedback});
 
   @override
   Widget build(BuildContext context) {
@@ -96,9 +101,6 @@ class GameOverModal extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            // Web'deki iki linkten "Oyun Geçmişi" portlandı; "Görüş Bildir"
-            // hâlâ eksik (geri bildirim formu Supabase'e yazıyor — auth
-            // fazının işi).
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -116,6 +118,21 @@ class GameOverModal extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (onFeedback != null)
+                  TextButton(
+                    onPressed: onFeedback,
+                    child: const Text(
+                      'GÖRÜŞ BİLDİR',
+                      style: TextStyle(
+                        fontFamily: 'SpaceMono',
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                        color: Color(0xFF5A6673),
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
                   child: const Text('KAPAT'),

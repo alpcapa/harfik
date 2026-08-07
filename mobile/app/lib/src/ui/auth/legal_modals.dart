@@ -15,29 +15,17 @@ const Color _text = Color(0xFF1B2430);
 const Color _accent = Color(0xFF2563EB);
 const Color _border = Color(0xFFDCE2EA);
 
-Future<void> showTermsModal(BuildContext context) => showDialog<void>(
-    context: context, builder: (context) => const TermsModal());
+Future<void> showTermsModal(BuildContext context,
+        {VoidCallback? onFeedback}) =>
+    showDialog<void>(
+        context: context,
+        builder: (context) => TermsModal(onFeedback: onFeedback));
 
-Future<void> showPrivacyModal(BuildContext context) => showDialog<void>(
-    context: context, builder: (context) => const PrivacyModal());
-
-void _feedbackComingSoon(BuildContext context) {
-  showDialog<void>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Görüş Bildir'),
-      content: const Text(
-          'Görüş Bildir formu uygulamanın sonraki sürümünde gelecek. '
-          'Şimdilik kelimeki.com üzerinden ulaşabilirsin.'),
-      actions: [
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('TAMAM'),
-        ),
-      ],
-    ),
-  );
-}
+Future<void> showPrivacyModal(BuildContext context,
+        {VoidCallback? onFeedback}) =>
+    showDialog<void>(
+        context: context,
+        builder: (context) => PrivacyModal(onFeedback: onFeedback));
 
 // ── Ortak metin parçaları (web Section/P/liste) ───────────────────────────
 
@@ -115,10 +103,21 @@ class _Bullets extends StatelessWidget {
 class _FeedbackLinkLine extends StatelessWidget {
   final String prefix;
   final String suffix;
-  const _FeedbackLinkLine({required this.prefix, this.suffix = ''});
+  /// "Görüş Bildir formu"nu açan callback — AuthModal kurar (kendisi
+  /// FeedbackModal'ı auth+repo ile açar); null ise link ölü görünmesin
+  /// diye satır DÜZ METİN olarak çizilir (yalnızca modalın doğrudan,
+  /// callback'siz kurulduğu test/önizleme durumları).
+  final VoidCallback? onTap;
+
+  const _FeedbackLinkLine(
+      {required this.prefix, this.suffix = '', this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    if (onTap == null) {
+      // Ölü (tıklanamaz) bir link göstermektense düz metin.
+      return Text('${prefix}Görüş Bildir formu$suffix', style: _pStyle);
+    }
     return Text.rich(
       TextSpan(children: [
         TextSpan(text: prefix, style: _pStyle),
@@ -126,7 +125,7 @@ class _FeedbackLinkLine extends StatelessWidget {
           alignment: PlaceholderAlignment.baseline,
           baseline: TextBaseline.alphabetic,
           child: GestureDetector(
-            onTap: () => _feedbackComingSoon(context),
+            onTap: onTap,
             child: Text(
               'Görüş Bildir formu',
               style: _pStyle.copyWith(
@@ -164,7 +163,8 @@ class _StackedSections extends StatelessWidget {
 // ── Kullanım Koşulları ────────────────────────────────────────────────────
 
 class TermsModal extends StatelessWidget {
-  const TermsModal({super.key});
+  final VoidCallback? onFeedback;
+  const TermsModal({super.key, this.onFeedback});
 
   @override
   Widget build(BuildContext context) {
@@ -228,7 +228,7 @@ class TermsModal extends StatelessWidget {
               'koşulları kabul ettiğiniz anlamına gelir.'),
         ]),
         _Section('7. İletişim', [
-          const _FeedbackLinkLine(prefix: 'Sorularınız için: '),
+          _FeedbackLinkLine(prefix: 'Sorularınız için: ', onTap: onFeedback),
         ]),
       ]),
     );
@@ -238,7 +238,8 @@ class TermsModal extends StatelessWidget {
 // ── Gizlilik Politikası ───────────────────────────────────────────────────
 
 class PrivacyModal extends StatelessWidget {
-  const PrivacyModal({super.key});
+  final VoidCallback? onFeedback;
+  const PrivacyModal({super.key, this.onFeedback});
 
   @override
   Widget build(BuildContext context) {
@@ -380,7 +381,8 @@ class PrivacyModal extends StatelessWidget {
           ]),
         ]),
         _Section("8. Başvuru Usulü ve Kurul'a Şikayet Hakkı", [
-          const _FeedbackLinkLine(
+          _FeedbackLinkLine(
+            onTap: onFeedback,
             prefix: 'Yukarıdaki haklarınızı kullanmak için ',
             suffix: ' üzerinden başvurabilirsiniz. Başvurunuz niteliğine '
                 'göre en geç 30 gün içinde ücretsiz olarak sonuçlandırılır. '

@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/auth_service.dart';
+import '../../data/feedback_api.dart';
 import '../auth/auth_modal.dart';
 import '../game/neo_box.dart';
 import '../game/neo_button.dart';
@@ -31,6 +32,9 @@ const List<String> _kMembershipPerks = [
 class MembershipPerksBox extends StatelessWidget {
   final AuthService auth;
 
+  /// Giriş/kayıt modalı → Terms/Privacy → "Görüş Bildir formu" zinciri için.
+  final FeedbackRepo? feedback;
+
   /// web `className="mt-2"` — yalnızca "Devam Eden Oyun" görünümündeki
   /// çağrı yerinde true (paragraftan sonra gelen ekstra boşluk).
   final bool topMargin;
@@ -38,6 +42,7 @@ class MembershipPerksBox extends StatelessWidget {
   const MembershipPerksBox({
     super.key,
     required this.auth,
+    this.feedback,
     this.topMargin = false,
   });
 
@@ -119,7 +124,7 @@ class MembershipPerksBox extends StatelessWidget {
                 variant: NeoButtonVariant.neutral,
                 fontSize: 12,
                 letterSpacing: 1,
-                onPressed: () => showLoginModal(context, auth),
+                onPressed: () => showLoginModal(context, auth, feedback: feedback),
               ),
             ),
           ],

@@ -20,7 +20,9 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 
 import '../../data/auth_service.dart';
+import '../../data/feedback_api.dart';
 import '../../data/profile_fields.dart';
+import '../feedback/feedback_modal.dart';
 import '../game/modal_shell.dart';
 import '../game/neo_button.dart';
 import 'legal_modals.dart';
@@ -33,10 +35,11 @@ const Color _red = Color(0xFFE0483A);
 const Color _green = Color(0xFF1FA05C);
 const Color _gold = Color(0xFFB7791F); // web text-gold (tailwind.config)
 
-Future<void> showLoginModal(BuildContext context, AuthService auth) {
+Future<void> showLoginModal(BuildContext context, AuthService auth,
+    {FeedbackRepo? feedback}) {
   return showDialog<void>(
     context: context,
-    builder: (context) => AuthModal(auth: auth),
+    builder: (context) => AuthModal(auth: auth, feedback: feedback),
   );
 }
 
@@ -51,16 +54,35 @@ class AuthModal extends StatefulWidget {
   /// üretimde `auth.checkNicknameAvailable`.
   final Future<bool> Function(String nickname)? nicknameChecker;
 
-  const AuthModal({super.key, required this.auth, this.nicknameChecker});
+  /// Web AuthModal'ın aynı üç prop'u — Görüş Bildir'in "üyeliğine devam"
+  /// teklifi modalı doğrudan kayıt modunda, e-posta önceden dolu ve
+  /// `signup_channel='form'` ile açar.
+  final bool startInSignup;
+  final String? initialEmail;
+  final String signupChannel;
+
+  /// Terms/Privacy içindeki "Görüş Bildir formu" linki için — null olabilir
+  /// (testler/depolamasız ortam): form yine açılır, gönderim hata verir.
+  final FeedbackRepo? feedback;
+
+  const AuthModal({
+    super.key,
+    required this.auth,
+    this.nicknameChecker,
+    this.startInSignup = false,
+    this.initialEmail,
+    this.signupChannel = 'direct',
+    this.feedback,
+  });
 
   @override
   State<AuthModal> createState() => _AuthModalState();
 }
 
 class _AuthModalState extends State<AuthModal> {
-  _Mode _mode = _Mode.login;
+  late _Mode _mode = widget.startInSignup ? _Mode.signup : _Mode.login;
 
-  final _email = TextEditingController();
+  late final _email = TextEditingController(text: widget.initialEmail ?? '');
   final _password = TextEditingController();
   final _firstName = TextEditingController();
   final _lastName = TextEditingController();
@@ -84,9 +106,21 @@ class _AuthModalState extends State<AuthModal> {
   // Koşullar metnindeki iki link — TextSpan içinde dokunuş ancak
   // recognizer'la yakalanır; yaşam döngüsü state'te yönetilir.
   late final TapGestureRecognizer _termsRec = TapGestureRecognizer()
-    ..onTap = () => showTermsModal(context);
+    ..onTap = () => showTermsModal(context, onFeedback: _openFeedback);
   late final TapGestureRecognizer _privacyRec = TapGestureRecognizer()
-    ..onTap = () => showPrivacyModal(context);
+    ..onTap = () => showPrivacyModal(context, onFeedback: _openFeedback);
+
+  // Terms/Privacy içindeki "Görüş Bildir formu" linki (web'de her iki
+  // modal da FeedbackModal'ı source='general' ile açar). feedback_modal
+  // bu dosyayı zaten import ediyor ("üyeliğine devam" → AuthModal) —
+  // bilinçli döngüsel import, web'in GameHistoryModal ↔ PlayerScoreCard
+  // emsaliyle aynı: iki referans da yalnızca çalışma anında.
+  void _openFeedback() {
+    showFeedbackModal(context,
+        auth: widget.auth,
+        feedback: widget.feedback,
+        source: FeedbackSource.general);
+  }
 
   @override
   void dispose() {
@@ -222,6 +256,7 @@ class _AuthModalState extends State<AuthModal> {
         gender: _gender.isEmpty ? null : _gender,
         birthDate: birthDateIso,
         marketingConsent: _marketingConsent,
+        signupChannel: widget.signupChannel,
       );
       if (!mounted) return;
       if (sessionOpened) {
