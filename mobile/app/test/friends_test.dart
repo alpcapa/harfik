@@ -1,0 +1,498 @@
+// Arkadaşlık sistemi parçası — FriendsRepo (sahte gateway), davet linki
+// çözümleme/kuyruklama (FriendInviteInbox + gerçek SQLite ffi), FriendsModal
+// sekmeleri/varsayılan-sekme kuralı/ilişki yamaları, AccountButton rozeti ve
+// PlayerScoreCard arkadaşlık simgesi. Gerçek RPC'ler/RLS cihazda
+// doğrulanacak (mobile/TESTING.md, "Arkadaşlar").
+import 'dart:io';
+import 'dart:ui' as ui;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:kelimeki/src/data/auth_service.dart';
+import 'package:kelimeki/src/data/friend_invite_inbox.dart';
+import 'package:kelimeki/src/data/friends_api.dart';
+import 'package:kelimeki/src/data/stats_api.dart';
+import 'package:kelimeki/src/storage/app_storage.dart';
+import 'package:kelimeki/src/storage/pending_event_store.dart';
+import 'package:kelimeki/src/ui/auth/account_button.dart';
+import 'package:kelimeki/src/ui/friends/friends_modal.dart';
+import 'package:kelimeki/src/ui/score/player_score_card_modal.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show User;
+
+import 'support/test_fonts.dart';
+import 'support/test_view.dart';
+
+int _dbSeq = 0;
+
+/// feedback_test'teki aynı izolasyon kararı: benzersiz temp dosya yolu —
+/// inMemoryDatabasePath açık kaldıkça testler arasında paylaşılır.
+Future<AppStorage> openTestStorage() async {
+  SharedPreferences.setMockInitialValues({});
+  final dir = Directory.systemTemp.createTempSync('kelimeki-fr-test');
+  return AppStorage.open(
+    factory: databaseFactoryFfi,
+    path: '${dir.path}/t${_dbSeq++}.db',
+    prefs: await SharedPreferences.getInstance(),
+    nowMs: () => DateTime.now().millisecondsSinceEpoch,
+  );
+}
+
+class FakeFriendsGateway implements FriendsGateway {
+  @override
+  String? currentUserId = 'me';
+
+  List<Map<String, Object?>> friendsRows = [];
+  List<Map<String, Object?>> requestRows = [];
+  List<Map<String, Object?>> userRows = [];
+  Map<String, Object?>? relation;
+  String sendResult = 'pending';
+  final notified = <String>[];
+  final accepted = <String>[];
+  final deleted = <String>[];
+  final acceptedInvites = <String>[];
+  Object? failWith;
+
+  void _maybeFail() {
+    final f = failWith;
+    if (f != null) throw f;
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> searchUsers(String query) async {
+    _maybeFail();
+    return userRows;
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> listUsers(int offset, int limit) async {
+    _maybeFail();
+    return userRows.skip(offset).take(limit).toList();
+  }
+
+  @override
+  Future<String> sendRequest(String targetId) async {
+    _maybeFail();
+    return sendResult;
+  }
+
+  @override
+  Future<void> notifyFriendRequest(String friendId) async {
+    notified.add(friendId);
+  }
+
+  @override
+  Future<void> acceptRequest(String requesterId) async {
+    _maybeFail();
+    accepted.add(requesterId);
+  }
+
+  @override
+  Future<void> deleteRelation(String otherId) async {
+    _maybeFail();
+    deleted.add(otherId);
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> listFriends() async {
+    _maybeFail();
+    return friendsRows;
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> listIncomingRequests() async {
+    _maybeFail();
+    return requestRows;
+  }
+
+  @override
+  Future<Map<String, Object?>?> relationRow(String targetId) async {
+    _maybeFail();
+    return relation;
+  }
+
+  @override
+  Future<String?> createInviteToken() async {
+    _maybeFail();
+    return 'tok-123';
+  }
+
+  @override
+  Future<String?> inviteInfo(String token) async {
+    _maybeFail();
+    return 'Ironman';
+  }
+
+  @override
+  Future<String?> acceptInvite(String token) async {
+    _maybeFail();
+    acceptedInvites.add(token);
+    return 'Ironman';
+  }
+}
+
+User fakeUser() => User(
+      id: 'me',
+      appMetadata: const {},
+      userMetadata: const {},
+      aud: 'authenticated',
+      createdAt: '2026-01-01T00:00:00Z',
+      email: 'alp.capa@hotmail.com',
+    );
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  sqfliteFfiInit();
+
+  setUpAll(loadAppFonts);
+
+  group('parseInviteToken', () {
+    test('iki geçerli biçim + negatifler', () {
+      expect(parseInviteToken(Uri.parse('kelimeki://davet/abc123')), 'abc123');
+      expect(parseInviteToken(Uri.parse('https://kelimeki.com/davet/abc123')),
+          'abc123');
+      expect(parseInviteToken(Uri.parse('http://kelimeki.com/davet/t')), 't');
+      // Auth callback'leri ve alakasız yollar davet DEĞİL.
+      expect(parseInviteToken(Uri.parse('kelimeki://reset?code=xyz')), isNull);
+      expect(parseInviteToken(Uri.parse('https://kelimeki.com/game/abc')),
+          isNull);
+      expect(parseInviteToken(Uri.parse('https://ornek.com/davet/abc')),
+          isNull);
+      expect(parseInviteToken(Uri.parse('kelimeki://davet/')), isNull);
+      expect(parseInviteToken(Uri.parse('kelimeki://davet/a/b')), isNull);
+    });
+
+    test('buildInviteUrl web biçimiyle birebir', () {
+      expect(buildInviteUrl('tok'), 'https://kelimeki.com/davet/tok');
+    });
+  });
+
+  group('FriendInviteInbox', () {
+    test('davet URI kuyruklanır + haber verilir; alakasız URI yok sayılır',
+        () async {
+      final storage = openTestStorage();
+      final inbox = FriendInviteInbox(storage);
+      var notified = 0;
+      inbox.addListener(() => notified++);
+
+      // handleUri doğrudan await edilir (stream dinleyicisi aynı metoda
+      // delege ediyor; gerçek dosya IO'lu storage açılışını sabit bir
+      // gecikmeyle beklemek uçucu çıkmıştı).
+      await inbox.handleUri(Uri.parse('kelimeki://reset?code=x')); // auth
+      await inbox.handleUri(Uri.parse('kelimeki://davet/tok-1'));
+
+      expect(notified, 1);
+      expect(inbox.lastToken, 'tok-1');
+      final s = await storage;
+      final events = await s.events.takeAll(friendInviteTokenKind);
+      expect(events, hasLength(1));
+      expect(events.single['token'], 'tok-1');
+      inbox.dispose();
+    });
+  });
+
+  group('FriendsRepo', () {
+    test('listeler trCompare ile sıralanır; hata null döner', () async {
+      final gw = FakeFriendsGateway()
+        ..friendsRows = [
+          {'friend_id': 'a', 'name': 'çiğdem', 'avatar_url': null},
+          {'friend_id': 'b', 'name': 'Ali', 'avatar_url': null},
+          {'friend_id': 'c', 'name': 'ümit', 'avatar_url': null},
+        ];
+      final repo = FriendsRepo(gw);
+      final friends = await repo.friends();
+      expect([for (final f in friends!) f.name], ['Ali', 'çiğdem', 'ümit']);
+
+      gw.failWith = Exception('ağ');
+      expect(await repo.friends(), isNull);
+      expect(await repo.search('ab'), isNull);
+      expect(await repo.incomingRequests(), isNull);
+    });
+
+    test('sendRequest: pending → bildirim; accepted → bildirim YOK', () async {
+      final gw = FakeFriendsGateway()..sendResult = 'pending';
+      final repo = FriendsRepo(gw);
+      expect(await repo.sendRequest('u1'), FriendRelation.pendingOutgoing);
+      await Future<void>.delayed(Duration.zero);
+      expect(gw.notified, ['u1']);
+
+      gw.sendResult = 'accepted';
+      expect(await repo.sendRequest('u2'), FriendRelation.accepted);
+      await Future<void>.delayed(Duration.zero);
+      expect(gw.notified, ['u1']); // u2 için bildirim gitmedi
+    });
+
+    test('relationWith: yön doğru çözülür; kendi kartında null', () async {
+      final gw = FakeFriendsGateway();
+      final repo = FriendsRepo(gw);
+      expect(await repo.relationWith('me'), isNull); // kendisi
+
+      gw.relation = {'user_id': 'me', 'status': 'pending'};
+      expect(await repo.relationWith('u1'), FriendRelation.pendingOutgoing);
+      gw.relation = {'user_id': 'u1', 'status': 'pending'};
+      expect(await repo.relationWith('u1'), FriendRelation.pendingIncoming);
+      gw.relation = {'user_id': 'u1', 'status': 'accepted'};
+      expect(await repo.relationWith('u1'), FriendRelation.accepted);
+      gw.relation = null;
+      expect(await repo.relationWith('u1'), isNull);
+    });
+  });
+
+  group('FriendsModal', () {
+    Future<FakeFriendsGateway> pumpModal(
+      WidgetTester tester, {
+      FakeFriendsGateway? gateway,
+      FriendsTab? initialTab,
+      Future<void> Function(String)? sharer,
+    }) async {
+      await setPhoneViewSize(tester, const Size(420, 900));
+      final gw = gateway ?? FakeFriendsGateway();
+      await tester.pumpWidget(MaterialApp(
+        theme: ThemeData(
+            fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+        home: Scaffold(
+          body: FriendsModal(
+            friends: FriendsRepo(gw),
+            auth: AuthService.fake(user: fakeUser()),
+            initialTab: initialTab,
+            sharer: sharer,
+          ),
+        ),
+      ));
+      await tester.pump();
+      await tester.pump();
+      return gw;
+    }
+
+    testWidgets(
+        'varsayılan sekme: bekleyen istek varsa İstekler + rozet; kabul akışı',
+        (tester) async {
+      final gw = FakeFriendsGateway()
+        ..requestRows = [
+          {'requester_id': 'r1', 'name': 'Esiner', 'avatar_url': null},
+        ];
+      await pumpModal(tester, gateway: gw);
+
+      // Bekleyen istek → İstekler sekmesi açık gelir (web deseni).
+      expect(find.text('Esiner'), findsOneWidget);
+      expect(find.text('KABUL ET'), findsOneWidget);
+      expect(find.text('1'), findsOneWidget); // CountBadge
+
+      await tester.tap(find.text('KABUL ET'));
+      await tester.pumpAndSettle();
+      expect(gw.accepted, ['r1']);
+    });
+
+    testWidgets('initialTab açıkça verilirse varsayılan kural ezmez',
+        (tester) async {
+      final gw = FakeFriendsGateway()
+        ..requestRows = [
+          {'requester_id': 'r1', 'name': 'Esiner', 'avatar_url': null},
+        ];
+      await pumpModal(tester, gateway: gw, initialTab: FriendsTab.friends);
+      // İstek beklese de "Arkadaşlarım" açık (boş durum metni görünür).
+      expect(find.textContaining('Henüz arkadaşın yok'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Ara & Ekle: tüm üyeler listesi + Ekle → İSTEK GÖNDERİLDİ yaması',
+        (tester) async {
+      final gw = FakeFriendsGateway()
+        ..userRows = [
+          {'id': 'u1', 'name': 'Bobola', 'avatar_url': null, 'relation': null},
+          {
+            'id': 'u2',
+            'name': 'Ali',
+            'avatar_url': null,
+            'relation': 'accepted'
+          },
+        ];
+      await pumpModal(tester, gateway: gw);
+      await tester.tap(find.text('ARA & EKLE'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('TÜM ÜYELER'), findsOneWidget);
+      expect(find.text('ARKADAŞSINIZ'), findsOneWidget); // Ali
+      await tester.tap(find.text('EKLE'));
+      // pumpAndSettle DEĞİL: odaklı arama alanının imleç animasyonu hiç
+      // durmadığından settle asılır (feedback formunda görünmedi çünkü
+      // orada gönderim alanı söküyor) — sınırlı pump yeterli.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.text('İSTEK GÖNDERİLDİ'), findsOneWidget); // patchRelation
+      // DİKKAT: testWidgets içinde `await Future.delayed(...)` fake-async
+      // bölgesinde ASILIR (timer pump'sız çözülmez) — bildirim fake'te
+      // senkron kaydedildiğinden doğrudan kontrol yeterli.
+      expect(gw.notified, ['u1']);
+    });
+
+    testWidgets('davet butonu: link + metin paylaş ucuna gider + görüntü',
+        (tester) async {
+      final shared = <String>[];
+      final gw = await pumpModal(tester, sharer: (t) async => shared.add(t));
+      expect(gw, isNotNull);
+
+      final key = GlobalKey();
+      // Ekran görüntüsü için yeniden pump (RepaintBoundary ile).
+      await tester.pumpWidget(MaterialApp(
+        theme: ThemeData(
+            fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+        home: RepaintBoundary(
+          key: key,
+          child: Scaffold(
+            body: FriendsModal(
+              friends: FriendsRepo(FakeFriendsGateway()
+                ..friendsRows = [
+                  {'friend_id': 'a', 'name': 'Bobola', 'avatar_url': null},
+                  {'friend_id': 'b', 'name': 'Esiner', 'avatar_url': null},
+                ]),
+              auth: AuthService.fake(user: fakeUser()),
+              sharer: (t) async => shared.add(t),
+            ),
+          ),
+        ),
+      ));
+      await tester.pump();
+      await tester.pump();
+      await tester.tap(find.text('ARKADAŞINI DAVET ET'));
+      await tester.pumpAndSettle();
+      expect(shared.single,
+          '$inviteShareText\nhttps://kelimeki.com/davet/tok-123');
+
+      await tester.runAsync(() async {
+        final boundary =
+            key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+        final image = await boundary.toImage(pixelRatio: 2);
+        final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+        final out = File('build/screenshots/friends_modal.png');
+        out.parent.createSync(recursive: true);
+        out.writeAsBytesSync(bytes!.buffer.asUint8List());
+      });
+    });
+
+    testWidgets('Arkadaşlarım: Çıkar → onay → silme + sonuç diyaloğu',
+        (tester) async {
+      final gw = FakeFriendsGateway()
+        ..friendsRows = [
+          {'friend_id': 'f1', 'name': 'Bobola', 'avatar_url': null},
+        ];
+      await pumpModal(tester, gateway: gw);
+      expect(find.text('Bobola'), findsOneWidget);
+
+      await tester.tap(find.text('ÇIKAR'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Arkadaşlıktan çıkmak mı'), findsOneWidget);
+      await tester.tap(find.text('VAZGEÇ'));
+      await tester.pumpAndSettle();
+      expect(gw.deleted, isEmpty); // vazgeçildi
+
+      await tester.tap(find.text('ÇIKAR'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('ÇIKAR').last); // onay butonu
+      await tester.pumpAndSettle();
+      expect(gw.deleted, ['f1']);
+      expect(find.text('Arkadaşlıktan çıkarıldı.'), findsOneWidget);
+    });
+  });
+
+  group('AccountButton + PlayerScoreCard', () {
+    testWidgets('menüde Arkadaşlar satırı + rozet + avatar noktası',
+        (tester) async {
+      await setPhoneViewSize(tester, const Size(420, 900));
+      final gw = FakeFriendsGateway()
+        ..requestRows = [
+          {'requester_id': 'r1', 'name': 'Esiner', 'avatar_url': null},
+          {'requester_id': 'r2', 'name': 'Bobola', 'avatar_url': null},
+        ];
+      await tester.pumpWidget(MaterialApp(
+        theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+        home: Scaffold(
+          body: Center(
+            child: AccountButton(
+              auth: AuthService.fake(
+                  user: fakeUser(),
+                  profile: const KProfile(id: 'me', displayName: 'Ironman')),
+              friends: FriendsRepo(gw),
+            ),
+          ),
+        ),
+      ));
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.byType(AccountButton));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Arkadaşlar'), findsOneWidget);
+      expect(find.text('2'), findsOneWidget); // rozet
+    });
+
+    testWidgets(
+        'PlayerScoreCard: arkadaşsa yeşil işaret → çıkar onayı; değilse ekle',
+        (tester) async {
+      await setPhoneViewSize(tester, const Size(420, 900));
+      final gw = FakeFriendsGateway()
+        ..relation = {'user_id': 'me', 'status': 'accepted'};
+      await tester.pumpWidget(MaterialApp(
+        theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+        home: Scaffold(
+          body: PlayerScoreCardModal(
+            stats: StatsRepo(_NullStatsGateway()),
+            userId: 'u9',
+            name: 'Bobola',
+            friends: FriendsRepo(gw),
+          ),
+        ),
+      ));
+      await tester.pump();
+      await tester.pump();
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.check_circle));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Arkadaşlıktan çıkmak mı'), findsOneWidget);
+      await tester.tap(find.text('ÇIKAR'));
+      await tester.pumpAndSettle();
+      expect(gw.deleted, ['u9']);
+      // Simge artık "ekle"ye döner.
+      expect(find.byIcon(Icons.person_add_alt_1), findsOneWidget);
+    });
+  });
+
+  group('Setup davet kuyruğu işleme', () {
+    test('girişliyken takeAll → acceptInvite; hata token düşürür', () async {
+      // Setup'ın _processInvites'inin veri katmanı sözleşmesi burada repo +
+      // store seviyesinde sınanır (widget akışı: kuyruk → kabul → boşalır).
+      final storage = await openTestStorage();
+      await storage.events.add(friendInviteTokenKind, {'token': 't1'});
+      await storage.events.add(friendInviteTokenKind, {'token': 't2'});
+      final gw = FakeFriendsGateway();
+      final repo = FriendsRepo(gw);
+
+      final events = await storage.events.takeAll(friendInviteTokenKind);
+      expect(events, hasLength(2));
+      for (final e in events) {
+        await repo.acceptInvite(e['token'] as String);
+      }
+      expect(gw.acceptedInvites, ['t1', 't2']);
+      // takeAll atomik tüketti — ikinci okuma boş.
+      expect(await storage.events.takeAll(friendInviteTokenKind), isEmpty);
+    });
+  });
+}
+
+class _NullStatsGateway implements StatsGateway {
+  @override
+  Future<List<Map<String, Object?>>> leaderboard(int limit, int offset) async =>
+      [];
+
+  @override
+  Future<Map<String, Object?>?> myLeaderboardRank(String userId) async => null;
+
+  @override
+  Future<Map<String, Object?>?> playerStats(
+          String userId, int? playerCount) async =>
+      null;
+}

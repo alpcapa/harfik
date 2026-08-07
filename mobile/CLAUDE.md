@@ -165,7 +165,8 @@ mobile/
   app/                       # Flutter uygulaması (iskelet — aşağıdaki bölüm)
     pubspec.yaml             # kelimeki_core (path) + supabase_flutter +
                              # sqflite/shared_preferences + share_plus/
-                             # path_provider (paylaşım, 5c) +
+                             # path_provider (paylaşım, 5c) + app_links
+                             # (davet deep link'i, parça 8) +
                              # sqflite_common_ffi_web (YALNIZCA web test
                              # ortamı — koşullu import'un arkasında, mobil
                              # derleme onu hiç görmez; bkz. "Web Derlemesi")
@@ -202,6 +203,8 @@ mobile/
                              # dondurulmuş sohbet (messages/chat_flags)
       data/stats_api.dart    # player_stats / leaderboard / my_leaderboard_rank
       data/feedback_api.dart # Görüş Bildir: submit + kuyruk + flush + rate limit
+      data/friends_api.dart  # arkadaşlık RPC'leri + davet linki üretimi/çözümü
+      data/friend_invite_inbox.dart # gelen davet linkleri → pending_events
       game/game_controller.dart # ChangeNotifier motor kabuğu + otomatik YZ turu
       storage/               # SQLite + prefs katmanı (bkz. "Depolama Katmanı"):
                              # app_database (şema), app_storage (giriş kapısı),
@@ -214,7 +217,7 @@ mobile/
       ui/game/               # tahta/raf/header/modaller (oyun ekranının
                              # tamamı) + PAYLAŞILAN küçük parçalar:
                              # modal_shell, neo_box/neo_button, player_badge,
-                             # player_avatar_row, action_sheet
+                             # player_avatar_row, action_sheet, count_badge
       ui/score/              # skor kartı, k-lig, oyuncu kartı, oyun geçmişi,
                              # score_box_row (paylaşılan görselin üst şeridi)
       ui/chat/               # chat_thread (paylaşılan baloncuk listesi) +
@@ -224,6 +227,8 @@ mobile/
                              # membership_perks_box (misafir "Neden Üye
                              # Olmalıyım?" kutusu, 7 Ağustos 2026)
       ui/feedback/           # feedback_modal ("Görüş Bildir" formu)
+      ui/friends/            # friends_modal (3 sekme + davet paylaşımı +
+                             # paylaşılan onay/sonuç diyalogları)
       util/semver.dart, util/uuid.dart, util/share_board.dart
     android/ ios/            # flutter create çıktısı + elle değişiklikler (aşağı bkz.)
     test/                    # util, controller (golden replay!), widget duman testleri
@@ -254,9 +259,9 @@ mobile/
       goldens/*.json         # ÜRETİLMİŞ fixture'lar (elle düzenlenmez)
 ```
 
-Henüz OLMAYANLAR (sıradaki fazlar): Canlı oyun ekranları, arkadaşlık
-sistemi, Setup'taki "Arkadaşınla paylaş" butonu (ayrıntı: "Sıradaki
-parçalar" satırı, auth+Canlı fazının sonunda).
+Henüz OLMAYANLAR (sıradaki fazlar): Canlı oyun ekranları, Setup'taki
+"Arkadaşınla paylaş" butonu (ayrıntı: "Sıradaki parçalar" satırı,
+auth+Canlı fazının sonunda).
 
 ## Porta Taşınan Değişmezler (PORT_BRIEF §7, 6 Ağustos 2026)
 
@@ -1940,10 +1945,70 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        **Doğrulama sınırı:** gerçek `feedback` insert'i (RLS, user_id/
        e-posta fallback'i) cihazda doğrulanmalı — TESTING.md "Görüş
        Bildir" maddeleri.
-   - Sıradaki parçalar (sıra önerisi): Canlı oyun ekranları, arkadaşlık
-     sistemi (davet deep link'i — `kelimeki` şeması ve app_links borusu
-     hazır), "Arkadaşınla paylaş" (native share — `share_plus` hazır,
-     yalnızca Setup'taki buton kaldı).
+   - ✅ **Parça 8 — arkadaşlık sistemi (7 Ağustos 2026,
+     `data/friends_api.dart`, `data/friend_invite_inbox.dart`,
+     `ui/friends/friends_modal.dart`):** Canlı oyunun ön koşulu kapandı —
+     web Faz 1'in tam portu.
+     - **`FriendsRepo`/`SupabaseFriendsGateway`:** web api.ts'in arkadaşlık
+       bölümü birebir (arama/tüm üyeler/istek gönder-yanıtla/çıkar/ilişki/
+       davet linki üret-önizle-kabul). `sendFriendRequest` dönüşü UI'a
+       taşınır (karşılıklı istek → sunucu trigger'ı anında accepted; o
+       durumda `notify-friend-request` maili BİLEREK gitmez — web parity).
+       Listeler `trCompare` ile client'ta sıralanır; tüm-üyeler
+       sayfalamasında HER sayfadan sonra TÜM birikmiş liste yeniden
+       sıralanır (web'in Türkçe collation sayfa sınırı dersi). Tek bilinçli
+       sapma: liste hatası web'in `[]`'i yerine `null` (StatsRepo kararı —
+       yanlış "hiç arkadaşın yok" gösterme).
+     - **`FriendsModal` (KModal):** üç sekme + davet butonu. Varsayılan
+       sekme: bekleyen istek varsa "İstekler" (yalnızca GERÇEK sunucu
+       verisiyle, bir kez — web hasFreshGames dersi; `initialTab` verilirse
+       ezilmez). Çıkar/Reddet/İptal onay+sonuç diyalogları paylaşılan
+       `confirmFriendAction`/`showFriendInfoDialog` yardımcılarında.
+       Davet paylaşımı web'in aynı https linkini (`webOrigin/davet/:token`)
+       sistem paylaş sayfasıyla gönderir — clipboard fallback'i mobilde
+       bilinçli yok; sekme etiketleri/butonlar trUpper (web CSS uppercase).
+     - **`CountBadge` portu** (`ui/game/count_badge.dart`, web anlam
+       sözleşmesi yorumda) — İstekler sekmesi + hesap menüsündeki
+       "Arkadaşlar" satırı kullanıyor; `KAvatar`'a web `Avatar.dot`
+       eşleniği eklendi (sayısız var/yok noktası), hesap avatarında
+       bekleyen istek göstergesi. `AccountButton` StatefulWidget oldu:
+       sayaç mount + hesap değişimi (user.id kararı) + FriendsModal
+       kapanışında tazelenir (web UserMenu anları; Realtime web'de de yok).
+     - **`PlayerScoreCard` arkadaşlık simgesi:** isim yanında ilişkiye göre
+       yeşil ✓ (çıkar onayı) / kişi-ekle ikonu (duruma göre ekle/kabul/
+       iptal onayı) — `friends` verilmezse hiç çizilmez (eski davranış).
+       Zincir: services → Setup/GameScreen → GameHeader → AccountButton →
+       Leaderboard/ScoreCard → PlayerScoreCard (feedback zinciriyle aynı
+       enjeksiyon disiplini).
+     - **Davet deep link'i:** `FriendInviteInbox` app_links akışını dinler
+       (supabase_flutter'la aynı broadcast akış — davet URI'ları auth
+       parametresi taşımadığından iki dinleyici kesişmez; app_links artık
+       DOĞRUDAN bağımlılık, zaten transitive'di). `parseInviteToken` iki
+       biçimi tanır: `kelimeki://davet/<t>` ve `https://kelimeki.com/
+       davet/<t>`. Token `pending_events`e (`friend-invite-token` —
+       depolama fazında açılan kanal) yazılır; SetupScreen işler:
+       girişliyse `takeAll` → `accept_friend_invite` → sonuç diyaloğu
+       (web App.tsx yolu SESSİZDİ — mobilde sayfa olmadığından bilinçli
+       ekleme); girişsizse kuyruk TÜKETİLMEZ, yalnızca son link için bir
+       kez "X seni eklemek istiyor, giriş yapınca ekleneceksiniz"
+       önizlemesi (web /davet sayfasının karşılığı). Kabul hatası token'ı
+       web'deki gibi DÜŞÜRÜR (sonsuz yeniden deneme kilidi olmasın).
+     - **İki test dersi:** (1) testWidgets İÇİNDE `await Future.delayed`
+       fake-async bölgesinde ASILIR (timer pump'sız çözülmez) — 3+ dakika
+       asılı kalan test bundan çıktı; (2) odaklı bir TextField'ın imleç
+       animasyonu `pumpAndSettle`'ı asar (alan ekranda kaldıkça) — sınırlı
+       `pump` kullan (feedback formunda görünmemişti çünkü gönderim alanı
+       söküyordu).
+     - Doğrulama: `friends_test.dart` (14 test — parse/inbox/repo
+       sıralama-yön-bildirim/modal sekmeleri+patch+onaylar/AccountButton
+       rozeti/PlayerScoreCard simgesi/kuyruk işleme; ekran görüntüsü
+       `build/screenshots/friends_modal.png`). 172/172 yeşil, analyze +
+       değişmez taraması temiz. **Doğrulama sınırı:** gerçek RPC'ler/RLS,
+       gerçek davet e-postası/linki ve iki hesaplı karşılıklı-istek
+       trigger'ı cihazda doğrulanmalı — TESTING.md "Arkadaşlar" bölümü.
+   - Sıradaki parçalar (sıra önerisi): Canlı oyun ekranları (arkadaşlık
+     artık hazır), "Arkadaşınla paylaş" (native share — `share_plus`
+     hazır, yalnızca Setup'taki buton kaldı), Hesap Ayarları ekranı.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

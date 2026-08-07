@@ -11,6 +11,8 @@ import 'data/auth_service.dart';
 import 'data/cloud_save_repo.dart';
 import 'data/dictionary_loader.dart';
 import 'data/feedback_api.dart';
+import 'data/friend_invite_inbox.dart';
+import 'data/friends_api.dart';
 import 'data/games_api.dart';
 import 'data/stats_api.dart';
 import 'data/meaning_store.dart';
@@ -53,6 +55,15 @@ class AppServices {
   /// hiç çizilmez).
   final StatsRepo? stats;
 
+  /// Arkadaşlık sistemi — Supabase yoksa null (tamamen online bir özellik;
+  /// hesap menüsündeki "Arkadaşlar" satırı hiç çizilmez).
+  final FriendsRepo? friends;
+
+  /// Gelen arkadaş daveti linkleri (kelimeki://davet/... ve
+  /// kelimeki.com/davet/...) — token'ları `pending_events`e kuyruklar,
+  /// SetupScreen işler. Depolamasız test ortamında null.
+  final FriendInviteInbox? inviteInbox;
+
   /// "Görüş Bildir" — GamesRepo'nun aksine Supabase YOKKEN de dolu
   /// (gateway'i null olur, mesajlar kuyrukta bekler — web feedbackSync'in
   /// "Supabase hiç yapılandırılmamışken de kuyrukla" davranışı); yalnızca
@@ -70,6 +81,8 @@ class AppServices {
     this.games,
     this.stats,
     this.feedback,
+    this.friends,
+    this.inviteInbox,
   });
 }
 
@@ -98,5 +111,8 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
       supabase != null ? SupabaseFeedbackGateway(supabase) : null,
       storage,
     ),
+    friends:
+        supabase != null ? FriendsRepo(SupabaseFriendsGateway(supabase)) : null,
+    inviteInbox: createFriendInviteInbox(storage),
   );
 }

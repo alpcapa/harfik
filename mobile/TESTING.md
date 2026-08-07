@@ -276,6 +276,35 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **Rate limit.** 10 dakika içinde 4. mesajda "Çok fazla mesaj
       gönderdin…" hatası çıkmalı, mesaj gönderilmemeli.
 
+## 10. Arkadaşlar
+
+- [ ] **Modal + rozet.** Girişliyken hesap menüsünde "Arkadaşlar" satırı
+      görünmeli; başka bir hesaptan sana istek gönderilince (web'den
+      gönderilebilir) satırda kırmızı sayı rozeti + avatarda kırmızı nokta
+      çıkmalı (tazelenme: uygulamayı yeniden açınca ya da modalı açıp
+      kapatınca — Realtime bilinçli yok, web'de de yok).
+- [ ] **Varsayılan sekme.** Bekleyen istek varken modal "İstekler"
+      sekmesiyle açılmalı; Kabul Et → kişi "Arkadaşlarım"a düşmeli,
+      web tarafında da arkadaş görünmeli.
+- [ ] **Ara & Ekle.** Boş kutuda "Tüm Üyeler" listesi kaydırdıkça
+      20'şer büyümeli; 2+ karakterle arama çalışmalı; Ekle → "İSTEK
+      GÖNDERİLDİ" (karşı hesapta istek görünmeli); karşılıklı istek
+      senaryosu: karşı taraf sana zaten istek göndermişse Ekle anında
+      "ARKADAŞSINIZ" olmalı (sunucu trigger'ı) ve e-posta GİTMEMELİ.
+- [ ] **Davet linki.** "Arkadaşını Davet Et" sistem paylaş sayfasını
+      açmalı; link `https://kelimeki.com/davet/…` biçiminde olmalı ve
+      webde açılıp çalışmalı (üye olmayan kayıt akışına düşmeli).
+- [ ] **Davet linki uygulamada.** Uygulama kuruluyken
+      `kelimeki://davet/<token>` linkine dokun (test için token'ı web
+      linkinden alıp şemayı elle kur, ör. notlara yapıştırıp aç):
+      girişliysen "X ile artık arkadaşsınız" diyaloğu; girişsizsen
+      "giriş yaptığında ekleneceksiniz" önizlemesi, giriş sonrası
+      Setup'ta otomatik kabul.
+- [ ] **PlayerScoreCard simgesi.** k-lig/arkadaş listesinden birinin
+      kartını aç: arkadaşsan yeşil onay işareti (dokun → çıkar onayı),
+      değilsen kişi-ekle ikonu (dokun → istek onayı) görünmeli; kendi
+      kartında simge OLMAMALI.
+
 ---
 
 ## Web derlemesi (ücretsiz tarayıcı test ortamı)

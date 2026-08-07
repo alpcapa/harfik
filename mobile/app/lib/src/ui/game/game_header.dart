@@ -7,6 +7,7 @@ import 'package:kelimeki_core/kelimeki_core.dart';
 
 import '../../data/auth_service.dart';
 import '../../data/feedback_api.dart';
+import '../../data/friends_api.dart';
 import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../auth/account_button.dart';
@@ -40,6 +41,9 @@ class GameHeader extends StatelessWidget {
   /// (AccountButton → AuthModal'a iletilir).
   final FeedbackRepo? feedback;
 
+  /// Hesap menüsündeki "Arkadaşlar" satırı + rozet için.
+  final FriendsRepo? friends;
+
   /// Verilirse insan koltuklarının kutuları tıklanabilir olur (Canlı oyunda
   /// skor kartı — web onPlayerClick'in eşleniği; yerel oyunda verilmez).
   final void Function(int index)? onPlayerTap;
@@ -53,6 +57,7 @@ class GameHeader extends StatelessWidget {
     this.stats,
     this.games,
     this.feedback,
+    this.friends,
   });
 
   @override
@@ -131,6 +136,7 @@ class GameHeader extends StatelessWidget {
                     stats: stats,
                     games: games,
                     feedback: feedback,
+                    friends: friends,
                     girisFontSize: girisFontSize,
                     girisPaddingX: girisPaddingX,
                     girisPaddingY: girisPaddingY,

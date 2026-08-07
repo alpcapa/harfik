@@ -12,6 +12,7 @@ import 'package:kelimeki_core/kelimeki_core.dart';
 
 import '../../data/auth_service.dart';
 import '../../data/feedback_api.dart';
+import '../../data/friends_api.dart';
 import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../../data/meaning_store.dart';
@@ -53,6 +54,9 @@ class GameScreen extends StatefulWidget {
   /// içi form linki için; verilmezse (testler) link hiç çizilmez.
   final FeedbackRepo? feedback;
 
+  /// Hesap menüsündeki "Arkadaşlar" satırı için (GameHeader'a iletilir).
+  final FriendsRepo? friends;
+
   const GameScreen({
     super.key,
     required this.controller,
@@ -62,6 +66,7 @@ class GameScreen extends StatefulWidget {
     this.stats,
     this.games,
     this.feedback,
+    this.friends,
   });
 
   @override
@@ -501,6 +506,7 @@ class _GameScreenState extends State<GameScreen> {
                       stats: widget.stats,
                       games: widget.games,
                       feedback: widget.feedback,
+                      friends: widget.friends,
                       onLogoTap: () => Navigator.of(context).pop(),
                     ),
                     // Web akışıyla aynı: tahta → mesaj → raf → butonlar yukarıdan

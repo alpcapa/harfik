@@ -20,6 +20,8 @@ import '../../bootstrap.dart';
 import '../../config/env.dart';
 import '../../data/cloud_save_repo.dart';
 import '../../data/games_api.dart';
+import '../../storage/pending_event_store.dart' show friendInviteTokenKind;
+import '../friends/friends_modal.dart' show showFriendInfoDialog;
 import '../../game/game_controller.dart';
 import '../../game/local_game_repo.dart';
 import '../../storage/local_save_store.dart' show abandonTimeout;
@@ -71,6 +73,10 @@ class _SetupScreenState extends State<SetupScreen> {
   // çevirirdi. Mount'ta mevcut id ile başlar (mount yolu dokunulmaz).
   String? _lastUserId;
 
+  // Davet linki işleme kilidi + girişsiz önizlemenin tek seferlik bayrağı.
+  bool _processingInvites = false;
+  String? _previewedInviteToken;
+
   @override
   void initState() {
     super.initState();
@@ -96,10 +102,65 @@ class _SetupScreenState extends State<SetupScreen> {
         await _refreshSaveStatus(); // load süresi dolanı olaya çevirir
         await _sweepLocalAbandoned(); // web'in Setup süpürme refleksi
         unawaited(_syncCloud()); // girişliyse migrasyon + liste + flush
+        unawaited(_processInvites()); // kuyruklanmış davet token'ları
       });
     } else {
       _saveChecked = true; // depo yok (test ortamı) — kalıcılıksız çalış
       unawaited(_syncCloud());
+    }
+    // Uygulama açıkken gelen davet linki (deep link) — inbox haber verir.
+    widget.services.inviteInbox?.addListener(_onInviteEvent);
+  }
+
+  void _onInviteEvent() => unawaited(_processInvites());
+
+  /// Kuyruklanmış arkadaş daveti token'larını işler — web App.tsx'in
+  /// `takePendingInviteToken` + `acceptFriendInvite` akışının karşılığı.
+  /// Girişsizken kuyruk TÜKETİLMEZ (token giriş yapılana dek bekler; web'in
+  /// e-posta-doğrulaması-açık senaryosuyla aynı gerekçe) — yalnızca son
+  /// gelen link için bir kez "X seni eklemek istiyor" önizlemesi gösterilir
+  /// (web'de bu önizleme /davet sayfasının işiydi; mobilde sayfa yok).
+  /// Kabul BAŞARISIZSA token web'deki gibi DÜŞER (App.tsx da yalnızca
+  /// loglar) — geçersiz/tükenmiş bir token'ın her açılışta yeniden
+  /// denenmesi kilitlenme üretirdi. Kabulde web'in sessiz App.tsx yolundan
+  /// BİLİNÇLİ sapma: sonuç diyaloğu gösterilir (linke tıklayan kullanıcı
+  /// mobilde başka hiçbir geri bildirim almazdı; web'de onu /davet sayfası
+  /// gösteriyor).
+  Future<void> _processInvites() async {
+    final friends = widget.services.friends;
+    final storage = widget.services.storage;
+    if (friends == null || storage == null || _processingInvites) return;
+    final user = widget.services.auth.user;
+    if (user == null) {
+      final token = widget.services.inviteInbox?.lastToken;
+      if (token == null || token == _previewedInviteToken) return;
+      _previewedInviteToken = token;
+      final name = await friends.inviteInfo(token);
+      if (name != null && mounted) {
+        await showFriendInfoDialog(context,
+            "$name seni Kelimeki'de arkadaş eklemek istiyor. Giriş yaptığında otomatik olarak ekleneceksiniz.");
+      }
+      return;
+    }
+    _processingInvites = true;
+    try {
+      final s = await storage;
+      final events = await s.events.takeAll(friendInviteTokenKind);
+      for (final e in events) {
+        final token = e['token'];
+        if (token is! String || token.isEmpty) continue;
+        try {
+          final name = await friends.acceptInvite(token);
+          if (mounted) {
+            await showFriendInfoDialog(
+                context, '${name ?? 'Bir oyuncu'} ile artık arkadaşsınız.');
+          }
+        } catch (err) {
+          debugPrint('[Kelimeki] davet kabul edilemedi (token düştü): $err');
+        }
+      }
+    } finally {
+      _processingInvites = false;
     }
   }
 
@@ -121,6 +182,7 @@ class _SetupScreenState extends State<SetupScreen> {
   @override
   void dispose() {
     widget.services.auth.removeListener(_onAuthEvent);
+    widget.services.inviteInbox?.removeListener(_onInviteEvent);
     super.dispose();
   }
 
@@ -141,6 +203,9 @@ class _SetupScreenState extends State<SetupScreen> {
     // dersi: fazladan fetch zararsız, ref sıfırlamak zararlı) — profil
     // yüklenince de burası tetiklenip bekleyen migrasyonu tamamlar.
     unawaited(_syncCloud());
+    // Giriş gerçekleşince kuyrukta bekleyen davet token'ları işlenir
+    // (web'in `useEffect([user])` + takePendingInviteToken karşılığı).
+    unawaited(_processInvites());
   }
 
   /// Girişliyse: önce misafir kaydını hesaba taşımayı dener (profil hazır
@@ -241,6 +306,7 @@ class _SetupScreenState extends State<SetupScreen> {
         stats: widget.services.stats,
         games: widget.services.games,
         feedback: widget.services.feedback,
+        friends: widget.services.friends,
       ),
     ));
     await guestSession?.end();
@@ -342,6 +408,7 @@ class _SetupScreenState extends State<SetupScreen> {
                           alignment: Alignment.centerRight,
                           child: AccountButton(
                             feedback: widget.services.feedback,
+                            friends: widget.services.friends,
                               auth: auth,
                               stats: widget.services.stats,
                               games: widget.services.games),

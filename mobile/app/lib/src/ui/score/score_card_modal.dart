@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/auth_service.dart';
+import '../../data/friends_api.dart';
 import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../auth/k_avatar.dart';
@@ -23,10 +24,12 @@ Future<void> showScoreCard(
   required AuthService auth,
   required StatsRepo stats,
   Future<GamesRepo>? games,
+  FriendsRepo? friends,
 }) {
   return showDialog<void>(
     context: context,
-    builder: (_) => ScoreCardModal(auth: auth, stats: stats, games: games),
+    builder: (_) =>
+        ScoreCardModal(auth: auth, stats: stats, games: games, friends: friends),
   );
 }
 
@@ -37,11 +40,13 @@ class ScoreCardModal extends StatefulWidget {
   /// null ise "Tüm Geçmiş Oyunlar" linki çizilmez (offline mod) — çalışmayan
   /// link koymuyoruz.
   final Future<GamesRepo>? games;
+  final FriendsRepo? friends;
   const ScoreCardModal({
     super.key,
     required this.auth,
     required this.stats,
     this.games,
+    this.friends,
   });
 
   @override
@@ -145,7 +150,8 @@ class _ScoreCardModalState extends State<ScoreCardModal> {
                 onTap: () => showLeaderboard(context,
                     auth: widget.auth,
                     stats: widget.stats,
-                    games: widget.games),
+                    games: widget.games,
+                    friends: widget.friends),
                 behavior: HitTestBehavior.opaque,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,

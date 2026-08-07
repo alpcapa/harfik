@@ -23,10 +23,39 @@ class KAvatar extends StatelessWidget {
   final String? url;
   final String? name;
   final double size;
-  const KAvatar({super.key, this.url, this.name, this.size = 32});
+
+  /// Sağ üstte küçük kırmızı nokta — web `Avatar`'ın `dot` prop'u:
+  /// SAYI taşımayan, "var/yok" bilgisi (bekleyen arkadaşlık isteği).
+  /// Bilinçli olarak CountBadge DEĞİL (web'in aynı ayrımı).
+  final bool dot;
+
+  const KAvatar(
+      {super.key, this.url, this.name, this.size = 32, this.dot = false});
 
   @override
   Widget build(BuildContext context) {
+    final avatar = _circle();
+    if (!dot) return avatar;
+    final d = (size * 0.34).clamp(10.0, 14.0);
+    return Stack(clipBehavior: Clip.none, children: [
+      avatar,
+      Positioned(
+        top: -1,
+        right: -1,
+        child: Container(
+          width: d,
+          height: d,
+          decoration: BoxDecoration(
+            color: const Color(0xFFE0483A),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 1.5),
+          ),
+        ),
+      ),
+    ]);
+  }
+
+  Widget _circle() {
     final text = avatarInitials(name);
     // Web dersi: iki harfe göre ayarlı 0.4 oranı tek karakterde ("?") optik
     // olarak zayıf kalıyor → tek karakter 0.55 (bkz. PlayerAvatarRow notu).

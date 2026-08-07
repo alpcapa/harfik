@@ -3,16 +3,22 @@
 // AYNI bileşendir (web'de de öyle — iki kopya bir kez açılmış, kod
 // incelemesiyle tek kaynağa çekilmişti).
 //
-// Web'deki arkadaşlık simgesi (ekle/çıkar) BİLİNÇLİ eksik: arkadaşlık
-// sistemi henüz port edilmedi — çalışmayan bir kontrol koymuyoruz.
+// Web'deki arkadaşlık simgesi (7 Ağustos 2026'dan beri) BURADA DA VAR:
+// [friends] verilirse isim yanında ilişkiye göre yeşil ✓ (dokun →
+// arkadaşlıktan çık onayı) ya da + (dokun → duruma göre ekle / kabul et /
+// isteği iptal onayı) — web `fetchFriendRelation` akışının eşleniği.
+// [friends] null ise simge hiç çizilmez (offline/testler — önceki davranış).
 // "Tüm Oyunları Gör" bağlı: o oyuncunun geçmişini açar (görüntülenen kişi
 // SEN DEĞİLSİN, bu yüzden isMe=false — eski kayıtlardaki yedek satır "Sen"
 // yerine o kişinin adını taşır, web'in aynı ayrımı).
 import 'package:flutter/material.dart';
 
+import '../../data/friends_api.dart';
 import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../auth/k_avatar.dart';
+import '../friends/friends_modal.dart'
+    show confirmFriendAction, showFriendInfoDialog;
 import '../game/modal_shell.dart';
 import 'game_history_modal.dart';
 import 'score_stats_section.dart';
@@ -26,6 +32,7 @@ Future<void> showPlayerScoreCard(
   required String name,
   String? avatarUrl,
   Future<GamesRepo>? games,
+  FriendsRepo? friends,
 }) {
   return showDialog<void>(
     context: context,
@@ -35,6 +42,7 @@ Future<void> showPlayerScoreCard(
       name: name,
       avatarUrl: avatarUrl,
       games: games,
+      friends: friends,
     ),
   );
 }
@@ -48,6 +56,9 @@ class PlayerScoreCardModal extends StatefulWidget {
   /// null ise "Tüm Oyunları Gör" çizilmez (offline mod).
   final Future<GamesRepo>? games;
 
+  /// null ise arkadaşlık simgesi çizilmez (offline/test).
+  final FriendsRepo? friends;
+
   const PlayerScoreCardModal({
     super.key,
     required this.stats,
@@ -55,6 +66,7 @@ class PlayerScoreCardModal extends StatefulWidget {
     required this.name,
     this.avatarUrl,
     this.games,
+    this.friends,
   });
 
   @override
@@ -66,9 +78,15 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
   final _statsByTab = <StatsTab, PlayerStats?>{};
   final _loaded = <StatsTab>{};
 
+  // Arkadaşlık ilişkisi: null = ilişki yok ya da henüz yüklenmedi/kendi
+  // kartın — `_relationLoaded` ikisini ayırır (yüklenmeden simge çizilmez).
+  FriendRelation? _relation;
+  bool _relationLoaded = false;
+
   @override
   void initState() {
     super.initState();
+    _loadRelation();
     for (final t in StatsTab.values) {
       widget.stats.playerStats(widget.userId, t).then((s) {
         if (!mounted) return;
@@ -78,6 +96,92 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
         });
       });
     }
+  }
+
+  void _loadRelation() {
+    final friends = widget.friends;
+    if (friends == null) return;
+    friends.relationWith(widget.userId).then((r) {
+      if (!mounted) return;
+      setState(() {
+        _relation = r;
+        _relationLoaded = true;
+      });
+    });
+  }
+
+  /// Web PlayerScoreCard simge davranışı: ✓ = arkadaşsınız (dokun →
+  /// çıkar onayı); + = değilsiniz (duruma göre ekle / kabul et / iptal).
+  Future<void> _onRelationTap() async {
+    final friends = widget.friends;
+    if (friends == null) return;
+    final name = widget.name;
+    try {
+      switch (_relation) {
+        case FriendRelation.accepted:
+          final ok = await confirmFriendAction(context,
+              title: 'Arkadaşlıktan Çıkar',
+              message:
+                  '$name ile arkadaşsınız. Arkadaşlıktan çıkmak mı istiyorsunuz?',
+              confirmLabel: 'Çıkar');
+          if (!ok || !mounted) return;
+          await friends.removeOrCancel(widget.userId);
+          if (mounted) setState(() => _relation = null);
+        case FriendRelation.pendingOutgoing:
+          final ok = await confirmFriendAction(context,
+              title: 'İsteği İptal Et',
+              message: '$name oyuncusuna gönderdiğin arkadaşlık isteğini '
+                  'iptal etmek istiyor musun?',
+              confirmLabel: 'İptal Et');
+          if (!ok || !mounted) return;
+          await friends.removeOrCancel(widget.userId);
+          if (mounted) setState(() => _relation = null);
+        case FriendRelation.pendingIncoming:
+          final ok = await confirmFriendAction(context,
+              title: 'İsteği Kabul Et',
+              message:
+                  '$name sana arkadaşlık isteği göndermiş. Kabul ediyor musun?',
+              confirmLabel: 'Kabul Et');
+          if (!ok || !mounted) return;
+          await friends.respond(widget.userId, accept: true);
+          if (mounted) setState(() => _relation = FriendRelation.accepted);
+        case null:
+          final ok = await confirmFriendAction(context,
+              title: 'Arkadaş Ekle',
+              message: '$name oyuncusuna arkadaşlık isteği gönderilsin mi?',
+              confirmLabel: 'Gönder');
+          if (!ok || !mounted) return;
+          final r = await friends.sendRequest(widget.userId);
+          if (mounted) {
+            setState(() => _relation = r);
+            if (r == FriendRelation.accepted) {
+              await showFriendInfoDialog(
+                  context, '$name ile artık arkadaşsınız.');
+            }
+          }
+      }
+    } catch (e) {
+      debugPrint('[Kelimeki] arkadaşlık işlemi hatası: $e');
+    }
+  }
+
+  Widget? _relationIcon() {
+    if (widget.friends == null || !_relationLoaded) return null;
+    final accepted = _relation == FriendRelation.accepted;
+    return GestureDetector(
+      onTap: _onRelationTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 6),
+        child: Icon(
+          accepted ? Icons.check_circle : Icons.person_add_alt_1,
+          size: 20,
+          color: accepted
+              ? const Color(0xFF1FA05C) // web yeşil ✓
+              : const Color(0xFF2563EB),
+        ),
+      ),
+    );
   }
 
   @override
@@ -91,7 +195,7 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
             children: [
               KAvatar(url: widget.avatarUrl, name: widget.name, size: 44),
               const SizedBox(width: 12),
-              Expanded(
+              Flexible(
                 child: Text(widget.name,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -99,6 +203,8 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
                         fontWeight: FontWeight.bold,
                         color: _text)),
               ),
+              if (_relationIcon() case final icon?) icon,
+              const Spacer(),
             ],
           ),
           const SizedBox(height: 16),

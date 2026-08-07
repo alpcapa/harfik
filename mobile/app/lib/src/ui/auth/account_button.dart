@@ -5,17 +5,24 @@
 //   oturum yok       → GİRİŞ (btn-raised accent) → giriş penceresi
 //   oturum var       → avatar → açılır menü
 // Menü YALNIZCA gerçekten çalışan maddeleri taşıyor: isim başlığı, k-lig
-// satırı (rank+puan, sıralamayı açar), Skor Kartı, "Nasıl Oynanır?" ve
-// "Çıkış Yap". Web'deki kalanlar (Arkadaşlar, Hesap Ayarları) kendi
-// ekranları portlanınca eklenecek — çalışmayan madde koymuyoruz
-// (ARKADAŞINLA dürüstlük deseni). k-lig/Skor Kartı yalnızca `stats`
-// verildiğinde (Supabase yapılandırılmışsa) görünür.
+// satırı (rank+puan, sıralamayı açar), Skor Kartı, Arkadaşlar (7 Ağustos
+// 2026 — bekleyen istek sayısı CountBadge'le, avatarda web'in `dot`
+// noktası), "Nasıl Oynanır?" ve "Çıkış Yap". Web'deki kalan (Hesap
+// Ayarları) kendi ekranı portlanınca eklenecek — çalışmayan madde
+// koymuyoruz. k-lig/Skor Kartı `stats`, Arkadaşlar `friends` verildiğinde
+// (Supabase yapılandırılmışsa) görünür. Bekleyen istek sayısı web
+// UserMenu'yle aynı anlarda tazelenir: mount + FriendsModal kapanınca
+// (içeride yanıtlanmış olabilir); Realtime aboneliği web'de de bilinçli
+// yok (friend_requests publication'da değil).
 import 'package:flutter/material.dart';
 
 import '../../data/auth_service.dart';
 import '../../data/feedback_api.dart';
 import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
+import '../../data/friends_api.dart';
+import '../friends/friends_modal.dart';
+import '../game/count_badge.dart';
 import '../game/help_modal.dart';
 import '../game/neo_box.dart';
 import '../score/klig_mark.dart';
@@ -29,7 +36,7 @@ const Color _muted = Color(0xFF5A6673);
 const Color _panel = Color(0xFFF5F7FA);
 const Color _border = Color(0xFFDCE2EA);
 
-class AccountButton extends StatelessWidget {
+class AccountButton extends StatefulWidget {
   final AuthService auth;
 
   /// null ise k-lig/Skor Kartı satırları hiç çizilmez (Supabase
@@ -42,6 +49,9 @@ class AccountButton extends StatelessWidget {
 
   /// Giriş/kayıt modalı → Terms/Privacy → "Görüş Bildir formu" zinciri için.
   final FeedbackRepo? feedback;
+
+  /// null ise "Arkadaşlar" satırı hiç çizilmez.
+  final FriendsRepo? friends;
 
   /// GİRİŞ butonunun akıcı ölçüleri — GameHeader kendi clamp değerlerini
   /// geçer; Setup varsayılan (maksimum) değerleri kullanır (web UserMenu
@@ -57,11 +67,61 @@ class AccountButton extends StatelessWidget {
     this.stats,
     this.games,
     this.feedback,
+    this.friends,
     this.girisFontSize = 11,
     this.girisPaddingX = 8,
     this.girisPaddingY = 12,
     this.avatarSize = 32,
   });
+
+  @override
+  State<AccountButton> createState() => _AccountButtonState();
+}
+
+class _AccountButtonState extends State<AccountButton> {
+  AuthService get auth => widget.auth;
+  StatsRepo? get stats => widget.stats;
+  Future<GamesRepo>? get games => widget.games;
+  FeedbackRepo? get feedback => widget.feedback;
+  double get girisFontSize => widget.girisFontSize;
+  double get girisPaddingX => widget.girisPaddingX;
+  double get girisPaddingY => widget.girisPaddingY;
+  double get avatarSize => widget.avatarSize;
+
+  int _incomingRequests = 0;
+  String? _lastUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    _lastUserId = auth.user?.id;
+    _refreshRequestCount();
+    auth.addListener(_onAuthEvent);
+  }
+
+  @override
+  void dispose() {
+    auth.removeListener(_onAuthEvent);
+    super.dispose();
+  }
+
+  // Hesap değişimi kararı user.id ile (web "user referansı hesap değişimi
+  // değildir" dersi) — değişimde eski hesabın rozeti sıfırlanıp yenisi çekilir.
+  void _onAuthEvent() {
+    final id = auth.user?.id;
+    if (id == _lastUserId) return;
+    _lastUserId = id;
+    if (mounted) setState(() => _incomingRequests = 0);
+    _refreshRequestCount();
+  }
+
+  void _refreshRequestCount() {
+    final friends = widget.friends;
+    if (friends == null || auth.user == null) return;
+    friends.incomingRequests().then((r) {
+      if (mounted && r != null) setState(() => _incomingRequests = r.length);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,14 +196,28 @@ class AccountButton extends StatelessWidget {
       ),
       onSelected: (value) {
         final stats = this.stats;
+        final friends = widget.friends;
         switch (value) {
+          case 'friends':
+            if (friends != null) {
+              showFriendsModal(context,
+                      friends: friends,
+                      auth: auth,
+                      stats: stats,
+                      games: games)
+                  // Web UserMenu deseni: modal kapanınca sayaç tazelenir
+                  // (içeride istek yanıtlanmış olabilir).
+                  .then((_) => _refreshRequestCount());
+            }
           case 'league':
             if (stats != null) {
-              showLeaderboard(context, auth: auth, stats: stats, games: games);
+              showLeaderboard(context,
+                  auth: auth, stats: stats, games: games, friends: friends);
             }
           case 'score':
             if (stats != null) {
-              showScoreCard(context, auth: auth, stats: stats, games: games);
+              showScoreCard(context,
+                  auth: auth, stats: stats, games: games, friends: friends);
             }
           case 'help':
             showHelpModal(context);
@@ -187,6 +261,17 @@ class AccountButton extends StatelessWidget {
             child: Text('📊  Skor Kartı', style: itemStyle),
           ),
         ],
+        if (widget.friends != null)
+          PopupMenuItem<String>(
+            value: 'friends',
+            child: Row(children: [
+              const Text('👥  Arkadaşlar', style: itemStyle),
+              if (_incomingRequests > 0) ...[
+                const SizedBox(width: 8),
+                CountBadge(count: _incomingRequests),
+              ],
+            ]),
+          ),
         const PopupMenuItem<String>(
           value: 'help',
           child: Text('❓  Nasıl Oynanır?', style: itemStyle),
@@ -200,6 +285,8 @@ class AccountButton extends StatelessWidget {
         url: auth.profile?.avatarUrl,
         name: auth.menuName,
         size: avatarSize,
+        // Web Avatar `dot`: bekleyen iş VAR/YOK göstergesi (sayı değil).
+        dot: _incomingRequests > 0,
       ),
     );
   }
