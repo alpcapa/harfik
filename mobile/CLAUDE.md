@@ -623,6 +623,70 @@ işlevsizleş (anlam modalı asset açılamazsa "anlam bulunamadı" der, oyun
 akışı bozulmaz). Ne yaparsan yap, web derlemesinin ASILI KALMAMASI şart —
 asılı bir ekran bütün test ortamını kullanılmaz yapıyor.
 
+## Appetize — Otomatik Yükleme (7 Ağustos 2026)
+
+**Sabit linkler** (bir daha değişmez, her derlemede otomatik güncellenir):
+- Android → https://appetize.io/app/oexlhcjxdl6onjr4dewaarnvwa
+- iOS → https://appetize.io/app/onpdavcakhztlouyedivwrcrdi
+
+**Sorun:** geliştirici iPad'den çalışıyor, Appetize'a manuel yükleme
+iOS Safari'nin dosya seçicisinde günlerce iki ayrı belirtiyle tıkanıyordu:
+(1) dosya seçicide `.apk` SOLUK/tıklanamaz kalıyordu — sebep iOS'un
+`.apk`'ya karşılık gelen bir UTI (Uniform Type Identifier) tanımlaması,
+Appetize'ın hangi platform sekmesi seçili olursa olsun bu değişmiyordu
+(ilk teşhis "platform sekmesi yanlış" idi, ikinci denemede aynı sekmeyle
+tekrar başarısız olunca bu teşhis de çürüdü); (2) dosya seçici yerine
+sürükle-bırak denendiğinde dosya "aktif" görünüyordu ama yükleme
+**400 Bad Request**'le reddediliyordu — muhtemelen iPad Safari'nin
+uygulamalar-arası (Files → Safari) büyük dosya sürüklemesinin XHR/fetch
+multipart isteğine tam veri aktarmaması. İkisi de tarayıcı/iOS kaynaklı,
+Appetize tarafında elle düzeltilebilecek bir ayar değildi.
+
+**Çözüm — dosya seçiciyi tamamen devreden çıkarmak:** Appetize'ın REST
+API'si (`https://api.appetize.io/v1/apps/`) `{"url": ...}` gövdesiyle
+POST edilirse dosyayı **sunucu sunucuya** kendisi çekiyor — iPad'in
+tarayıcısı hiç işin içine girmiyor. Bu, web arayüzünde görünmeyen ama
+API'de baştan beri var olan bir yol (`maxep/appetize-upload-action`
+GitHub Action'ının kaynağından bulundu — `POST /v1/apps/[public-key]`,
+gövde `{url, platform, note, timeout}`, HTTP Basic Auth `username=<API
+token>`). `.github/workflows/mobile-build.yml`'deki `android`/`ios`
+işlerinin sonuna, GitHub Release'e yükleme adımından hemen sonra birer
+`curl` adımı eklendi — o dosyanın az önce yüklendiği herkese açık
+`mobile-latest` release URL'ini Appetize'a gönderiyor.
+
+**İki aşamalı kuruluş — NEDEN `public-key` sabit bir değer:** İlk koşuda
+`public-key` verilmeden POST edilirse Appetize YENİ bir app oluşturuyor
+(her koşuda ayrı bir tane, hesabı dolduracak kadar). Bunun yerine bir
+KEŞİF koşusu yapıldı (`public-key` yok) → dönen `publicKey` job log'undan
+okunup (`echo "$resp" | jq '{publicKey, appURL}'`) İKİNCİ bir commit'le
+workflow'a sabit parametre olarak gömüldü (`/v1/apps/oexlh.../` gibi) —
+artık her koşu AYNI app'i günceller, `appURL` (yukarıdaki linkler) bir
+daha değişmiyor. `manageURL` alanı bilerek log'a hiç yazdırılmıyor —
+action'ın kendisi bunu `core.setSecret` ile maskeliyor, aynı ihtiyat
+burada da uygulandı (`publicKey`/`appURL` Appetize'ın kendi tasarımı
+gereği zaten paylaşılabilir — session linkleri herkese açık).
+
+**Gereken tek kurulum: `APPETIZE_API_TOKEN` secret'ı.** Appetize →
+Organization Settings → API Token → **Developer** rolüyle üretilip
+GitHub'a repo secret'ı olarak eklendi
+(`https://github.com/alpcapa/kelimeki/settings/secrets/actions`). Adım
+bu secret olmadan da KIRILMAZ — `if [ -z "$APPETIZE_API_TOKEN" ]; then
+exit 0; fi` ile sessizce atlanır, derleme etkilenmez.
+
+**Bu ortamdan (Claude Code oturumu) doğrudan denenemedi:**
+`api.appetize.io`/`appetize.io`'ya bu oturumun ağ proxy'si 403 ile engel
+koyuyor (`CONNECT tunnel failed`) — API'nin var olduğu ve çalıştığı GitHub
+Actions runner'ından (proxy'siz, gerçek internet erişimi olan ortam)
+gerçek bir keşif koşusuyla kanıtlandı, kör kod yazılmadı.
+
+**Doğrulama:** Keşif koşusu (commit `1fc8522`) gerçek `APPETIZE_API_TOKEN`
+ile hem Android hem iOS için gerçekten yeni birer Appetize app'i açtı —
+job log'larında dönen `publicKey`/`appURL` doğrudan okunup ikinci
+commit'e (bu bölümdeki sabit değerler) aynen taşındı. Uçtan uca (linke
+tıklayıp Start'a basma) doğrulaması kullanıcının kendi cihazından
+bekleniyor — bu ortamdan `appetize.io` erişilemediğinden ben açıp
+göremiyorum.
+
 ## Web ↔ Uygulama Arasındaki Kabul Edilmiş Farklar
 
 Port sırasında fark edilen, uygulamada ÇÖZÜLMÜŞ ama web'de bilinçli olarak

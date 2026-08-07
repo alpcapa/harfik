@@ -298,19 +298,34 @@ Bu bölüm bir kontrol listesi değil, **tek seferlik kurulum** notu.
    maili gelince "Kabul Et" → Kelimeki gerçek bir uygulama olarak açılır.
    Yukarıdaki bölümler bundan sonra koşulabilir.
 
-**Üyelik OLMADAN test (Appetize.io — tarayıcı emülatörü):** iş akışı her
-derlemede `mobile-latest` prerelease'ini güncelliyor. Oradaki **düz,
-herkese açık URL'ler** Appetize'ın "URL'den yükle" seçeneğine
-yapıştırılabilir — indirme/açma/dosya seçici derdi yok:
+## Üyelik OLMADAN test (Appetize.io — tarayıcı emülatörü)
 
-- Android → `https://github.com/alpcapa/kelimeki/releases/download/mobile-latest/kelimeki.apk`
-- iOS → `https://github.com/alpcapa/kelimeki/releases/download/mobile-latest/kelimeki-ios-simulator.zip`
+**Sabit linkler — bunlara dokun, "Start"a bas, hepsi bu.** Her
+Android/iOS derlemesi bittiğinde CI aynı iki Appetize uygulamasını
+otomatik günceller; linkler bir daha değişmez, hiçbir yükleme/dosya
+seçme adımı gerekmez:
 
-**Neden URL yolu:** (1) Actions artefaktlarının indirme bağlantısı oturum
-istiyor, Appetize çekemez; (2) iOS/iPadOS'ta `.apk` dosya seçicide PASİF
-kalıyor (Safari uzantıyı tanımıyor); (3) Appetize'ın Android tarafı
-yalnızca ham `.apk` kabul ediyor — zip yüklersen onu iOS uygulaması sanıp
-"unable to process the file" diyor (7 Ağustos 2026'da yaşandı).
+- **Android** → https://appetize.io/app/oexlhcjxdl6onjr4dewaarnvwa
+- **iOS** → https://appetize.io/app/onpdavcakhztlouyedivwrcrdi
+
+**Bunlar nasıl kalıcı kalıyor (`.github/workflows/mobile-build.yml`,
+"Appetize'a otomatik yükleme"):** derleme bitip GitHub Release'e
+yüklendikten hemen sonra, o dosyanın herkese açık indirme URL'i
+Appetize'ın REST API'sine (`POST /v1/apps/<public-key>`, gövde
+`{"url": ...}`) gönderiliyor — Appetize dosyayı SUNUCU SUNUCUYA kendisi
+çekiyor, tarayıcı hiç devreye girmiyor. Bu, `APPETIZE_API_TOKEN` adlı bir
+GitHub Actions secret'ı gerektiriyor (Appetize → Organization Settings →
+API Token → Developer rolü); secret yoksa adım sessizce atlanır, derleme
+etkilenmez.
+
+**Neden bu yola geçildi (7 Ağustos 2026):** iPad Safari'nin dosya
+seçicisi/sürükle-bırak'ı `.apk` için günlerce çözülemeyen iki ayrı
+belirtiye takıldı — dosya seçicide SOLUK/tıklanamaz kalıyordu (iOS
+`.apk` uzantısını tanımıyor, hangi Appetize sekmesi seçili olursa olsun)
+ve sürükle-bırak dosyayı "aktif" gösterse de yükleme **400 Bad
+Request**'le reddediliyordu. İkisi de tarayıcı/iOS kaynaklı, elle
+düzeltilebilecek bir ayar değildi — kökten çözüm dosya seçiciyi
+DEVREDEN ÇIKARMAK oldu.
 
 iOS'un neden üyelik gerektirmediği: Appetize iOS uygulamasını cihaz
 `.ipa`'sı olarak değil **simülatör `.app`'i** olarak istiyor ve simülatör
