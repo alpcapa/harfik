@@ -152,7 +152,8 @@ mobile/                    # Flutter (iOS+Android) portu — ayrıntı: mobile/C
     │                      # skor kartı/k-lig, oyun geçmişi (tahta önizlemesi,
     │                      # beğeni, sohbet arşivi, paylaşma), Son Oynadıklarım,
     │                      # Görüş Bildir, arkadaşlık sistemi (davet linki dahil),
-    │                      # Canlı oyun davet/kabul akışı (tahta sonraki parça)
+    │                      # Canlı (çok oyunculu) oyun: davet/kabul + gerçek
+    │                      # zamanlı tahta (mesajlaşma sonraki parça)
     ├── assets/dictionary/ # üretilmiş asset'ler: words_tr.txt (kaynak
     │                      # src/data/words.ts — npm run generate-golden-vectors)
     │                      # ve meanings.db (npm run generate-meanings-db)

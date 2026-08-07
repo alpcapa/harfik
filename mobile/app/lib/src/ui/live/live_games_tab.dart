@@ -34,6 +34,7 @@ import '../game/player_avatar_row.dart';
 import '../setup/recent_games_section.dart';
 import 'friend_suggest_modal.dart';
 import 'live_game_create_form.dart';
+import 'online_game_screen.dart';
 
 const Color _text = Color(0xFF1B2430);
 const Color _muted = Color(0xFF5A6673);
@@ -181,22 +182,30 @@ class _LiveGamesTabState extends State<LiveGamesTab>
     }
   }
 
-  void _openGameComingSoon() {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Canlı Oyun'),
-        content: const Text(
-            'Canlı oyun tahtası uygulamanın sonraki sürümünde gelecek. '
-            'Şimdilik hamlelerini kelimeki.com üzerinden oynayabilirsin.'),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('TAMAM'),
-          ),
-        ],
+  /// Aktif bir oyuna dokunulunca Canlı tahtayı açar; dönüşte liste
+  /// tazelenir (oyunda oynanan hamle "Devam Edenler"deki sıra etiketini
+  /// değiştirmiş olabilir — Realtime da tetikler ama dönüş anı garanti).
+  Future<void> _openGame(OnlineGame game) async {
+    final repo = services.onlineGames;
+    final user = services.auth.user;
+    if (repo == null || user == null) return;
+    final words = await services.dictionary;
+    if (!mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => OnlineGameScreen(
+        game: game,
+        myUserId: user.id,
+        onlineGames: repo,
+        words: words,
+        meanings: services.meanings,
+        auth: services.auth,
+        stats: services.stats,
+        games: services.games,
+        feedback: services.feedback,
+        friends: services.friends,
       ),
-    );
+    ));
+    if (mounted) unawaited(_reload());
   }
 
   @override
@@ -292,7 +301,7 @@ class _LiveGamesTabState extends State<LiveGamesTab>
                         game: g,
                         isMyTurn: turns[g.id] == g.mySlotIndex,
                         deadline: deadlines[g.id],
-                        onOpen: _openGameComingSoon,
+                        onOpen: () => _openGame(g),
                       ),
                   ]),
             LiveSubTab.invites => (invites.isEmpty &&

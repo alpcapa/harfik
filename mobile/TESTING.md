@@ -305,11 +305,11 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       değilsen kişi-ekle ikonu (dokun → istek onayı) görünmeli; kendi
       kartında simge OLMAMALI.
 
-## 11. Canlı oyun — davet/kabul (tahta henüz yok)
+## 11. Canlı oyun — davet/kabul + tahta
 
-İki gerçek hesap gerekir (biri web'de olabilir). Oynanış ekranı sonraki
-parça — aktif oyuna dokunmak şimdilik "tahta sonraki sürümde" diyaloğu
-gösterir, bu BEKLENEN davranış.
+İki gerçek hesap gerekir (biri web'de olabilir). Oyun içi mesajlaşma henüz
+YOK — Board altındaki "Mesajlaşma" butonunun Canlı'da da görünmemesi
+BEKLENEN davranış.
 
 - [ ] **Davet gönderme.** ARKADAŞINLA → "+ Yeni Canlı Oyun Aç" → 2
       oyunculu, bir arkadaş seç → Davet Gönder: "Davetiniz gönderilmiştir."
@@ -339,6 +339,44 @@ gösterir, bu BEKLENEN davranış.
       davet varsa (test için `created_at` SQL ile geriye çekilebilir)
       liste açılınca kendiliğinden kaybolmalı (`check_invite_expiry`) —
       davetLİnin listesinde de (hayalet davet regresyonu).
+
+### Tahta (oynanış)
+
+- [ ] **Açılış.** "Devam Edenler"de bir oyuna dokun: tahta, KENDİ rafın
+      (rakibin taşları HİÇBİR yerde görünmemeli), skorlar ve doğru sıra
+      gelmeli. Rakibin rafı ağ trafiğinde de olmamalı (yalnızca
+      `get_my_online_rack` çağrılır).
+- [ ] **Hamle.** Sıra sendeyken kelime kur → OYNA: hamle web tarafında
+      anında görünmeli, skor/torba/raf iki tarafta da tutmalı. Bölge
+      vergisi varsa önce "Sınır İhlali!" onayı çıkmalı ve kabul edilen
+      pay rakibin skoruna geçmeli.
+- [ ] **Sıra sende değilken egzersiz.** Rakibi beklerken taş yerleştir:
+      yeşil/kırmızı çerçeve + puan rozeti çalışmalı, mesaj "Kelime geçerli
+      — Sıra: X" demeli, OYNA PASİF olmalı. Rakip oynayınca deneme taşları
+      kendiliğinden rafa dönmeli ve OYNA aktifleşmeli.
+- [ ] **Realtime.** İki cihaz açıkken rakip hamle yapsın: tahtan ~1sn
+      içinde güncellenmeli. Uygulamayı arka plana alıp (ya da ekranı
+      kilitleyip) rakip oynadıktan sonra geri dön — ön plana dönüşte
+      tahta kendiliğinden senkronlanmalı (websocket askıya alınmışsa bile).
+- [ ] **PAS GEÇ / DEĞİŞTİR.** İkisi de onay/akış sonrası sunucuya gitmeli;
+      taş değiştirmede raf yenilenmeli, torba sayısı DEĞİŞMEMELİ.
+- [ ] **YZ koltuğu (4 kişilik).** Sıra YZ'ye gelince nabız atan
+      "… hamlesini hesaplıyor" bandı çıkmalı ve YZ birkaç saniye içinde
+      kendiliğinden oynamalı (`play-ai-turn`). Uygulamayı kapatıp açmaya
+      GEREK KALMAMALI.
+- [ ] **Mobil ağ dayanıklılığı (p_move_id).** Hamleyi gönderirken uçak
+      moduna al/aç ya da zayıf şebekede dene: aynı hamle İKİ KEZ
+      işlenmemeli (skor bir kez artmalı), "Sıra sende değil." gibi sahte
+      bir hata çıkmamalı.
+- [ ] **Süre aşımı.** Sırası gelenin 48 saati dolmuşsa (SQL ile
+      `turn_deadline` geriye çekilerek test edilebilir) ekran açılınca
+      otomatik teslim işlemeli ve oyun doğru şekilde sonlanmalı/devam
+      etmeli (2 kişilikte biter, 4 kişilikte sıra ilerler).
+- [ ] **Logo çıkışı teslim DEĞİL.** Oyun içinde logoya bas: yalnızca Canlı
+      listesine dönmeli, oyun bitmemeli, sıra/skor değişmemeli.
+- [ ] **Oyun sonu.** Oyun bitince GameOver modalı + kapatınca "CANLI
+      LİSTESİ" butonu çıkmalı; skor kartı/k-lig puanları web ile
+      tutmalı (`games` satırı her insan katılımcı için ayrı yazılır).
 
 ---
 

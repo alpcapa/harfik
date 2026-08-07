@@ -71,12 +71,22 @@ grep -rln "\.from('" app/lib/                               # Supabase yalnız v
 grep -rn "await newRepo(" app/test/*_test.dart              # testWidgets İÇİNDE çıkarsa newRepoForWidget'a çevir (runAsync)
 ```
 
-**Son tam tarama: 6 Ağustos 2026 — beşi de temiz.** O turda bulunan TEK
-gerçek ihlal (`score_stats_section`'daki `toUpperCase` → "BIRINCILIK")
-parça 4'te düzeltilmişti; tarama bunun tek örnek olduğunu kanıtladı.
-Değişmez listesi kapsamlı DEĞİL — derleyicinin göremediği yeni bir kural
-eklediğinde (ör. yeni bir üretilmiş dosya, yeni bir "tek kaynaktan" kuralı)
-buraya bir satır da ekle, aksi halde bir sonraki oturum onu bilmez.
+**Son tam tarama: 7 Ağustos 2026 (Canlı oyun tahtası parçası) — beşi de
+temiz.** İlk tam tarama 6 Ağustos'taydı; o turda bulunan TEK gerçek ihlal
+(`score_stats_section`'daki `toUpperCase` → "BIRINCILIK") parça 4'te
+düzeltilmişti. Değişmez listesi kapsamlı DEĞİL — derleyicinin göremediği
+yeni bir kural eklediğinde (ör. yeni bir üretilmiş dosya, yeni bir "tek
+kaynaktan" kuralı) buraya bir satır da ekle, aksi halde bir sonraki oturum
+onu bilmez.
+
+**Grep'e girmeyen ama aynı sınıftan bir değişmez — İKİ oyun ekranı aynı
+deseni paylaşıyor:** `ui/game/game_screen.dart` (yerel/YZ) ve
+`ui/live/online_game_screen.dart` (Canlı) sürükle-bırak katmanını, joker
+akışını ve mesaj satırı kuralını BİLİNÇLİ olarak ayrı ayrı taşıyor — web'in
+App.tsx ↔ OnlineGameScreen.tsx ayrımının birebir eşleniği (kök CLAUDE.md o
+ikisi için de "ikisi deseni paylaşıyor, biri değişirse diğeri de" diyor).
+Bu dosyalardan birinde sürükleme/joker/mesaj davranışı değişirse ÖTEKİ de
+aynı PR'da güncellenmeli; hiçbir derleyici/test bunu yakalamaz.
 
 ## Parça Bitirme Kontrol Listesi (ZORUNLU — her parçanın son adımı)
 
@@ -233,9 +243,12 @@ mobile/
       ui/feedback/           # feedback_modal ("Görüş Bildir" formu)
       ui/friends/            # friends_modal (3 sekme + davet paylaşımı +
                              # paylaşılan onay/sonuç diyalogları)
-      ui/live/               # Canlı oyun davet/kabul: live_games_tab (3 alt
-                             # sekme + kartlar), live_game_create_form,
-                             # friend_suggest_modal (kabul sonrası öneri)
+      ui/live/               # Canlı oyun: live_games_tab (3 alt sekme +
+                             # kartlar), live_game_create_form,
+                             # friend_suggest_modal (kabul sonrası öneri),
+                             # online_game_screen (TAHTA — game_screen.dart
+                             # ile sürükleme/joker/mesaj desenini PAYLAŞIR,
+                             # biri değişirse öteki de güncellenmeli)
       util/semver.dart, util/uuid.dart, util/share_board.dart
     android/ ios/            # flutter create çıktısı + elle değişiklikler (aşağı bkz.)
     test/                    # util, controller (golden replay!), widget duman testleri
@@ -266,10 +279,10 @@ mobile/
       goldens/*.json         # ÜRETİLMİŞ fixture'lar (elle düzenlenmez)
 ```
 
-Henüz OLMAYANLAR (sıradaki fazlar): Canlı oyun TAHTASI (OnlineGameScreen —
-davet/kabul akışı parça 9'la geldi, oynanış ekranı sıradaki parça), oyun içi
-mesajlaşma, Setup'taki "Arkadaşınla paylaş" butonu (ayrıntı: "Sıradaki
-parçalar" satırı, auth+Canlı fazının sonunda).
+Henüz OLMAYANLAR (sıradaki fazlar): oyun içi mesajlaşma (Canlı sohbet +
+sessize alma/raporlama), Setup'taki "Arkadaşınla (N)" rozeti + girişte Canlı
+sekmesi varsayılanı, "Arkadaşınla paylaş" butonu, Hesap Ayarları ekranı
+(ayrıntı: "Sıradaki parçalar" satırı, auth+Canlı fazının sonunda).
 
 ## Porta Taşınan Değişmezler (PORT_BRIEF §7, 6 Ağustos 2026)
 
@@ -2090,10 +2103,91 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        gerçek RPC'ler (`list_my_online_games`/`create_online_game`/
        `respond_to_game_invite`/süpürmeler), Realtime kanalları ve davet
        e-postası cihazda iki hesapla doğrulanmalı — TESTING.md bölüm 11.
-   - Sıradaki parçalar (sıra önerisi): Canlı oyun TAHTASI (OnlineGameScreen
-     — `SyncOnlineStateAction` zaten core'da, `OnlineApi.submitMove` hazır;
-     ardından oyun içi mesajlaşma ve Setup "Arkadaşınla (N)" rozeti +
-     girişte Canlı sekmesi varsayılanı), "Arkadaşınla paylaş" (native
+   - ✅ **Parça 10 — Canlı oyun TAHTASI (7 Ağustos 2026,
+     `ui/live/online_game_screen.dart`, `data/online_games_api.dart`
+     oynanış yarısı):** web `OnlineGameScreen.tsx` portu — ARKADAŞINLA →
+     "Devam Edenler"deki bir oyuna dokunmak artık gerçek tahtayı açıyor,
+     hamleler `submit_move` ile sunucuya gidiyor.
+     - **Veri katmanı:** `OnlineMoveRow` + `buildMoveHistory` (web'in aynı
+       adlı fonksiyonu — bölge vergisi payları AYRI `invasionFrom`
+       satırlarına açılır), `OnlineGameSnapshot` ve
+       `OnlineGamesRepo.loadGame` (state + KENDİ rafım + hamleler TEK
+       turda; ağ hatasında null → ekran korunur, liste tarafının aynı
+       sözleşmesi). Gateway'e `gameState`/`myRack`/`moves`/`triggerAiTurn`/
+       `submitMove`/`subscribeGame` eklendi; `submitMove` mevcut
+       `OnlineApi`'ye delege ediyor, yani **her hamle `p_move_id` taşıyor
+       ve taşıma hatasında AYNI id ile yeniden deneniyor** (mobil ağın asıl
+       kazancı; web bu parametreyi göndermiyor). `triggerAiTurn`/
+       `sweepTurnTimeout` 20sn tavanlı (web `withTimeout` gerekçesi:
+       çağıranın "devam ediyor" bayrağı asılı kalmasın).
+     - **`GameController.actingSeat`** (yeni, opsiyonel — web
+       `onlineGameReducerRef`): reducer'ın yerel düzenleme action'ları
+       `state.current`'ın rafı üzerinden işler; Canlı'da sıra bende
+       olmasa da taş koyabildiğimden (`canEdit`) bu action'lar BENİM
+       koltuğum üzerinden işlemeli. `current` reduce süresince sabitlenip
+       sonra sunucu değerine geri yükleniyor; `SyncOnlineStateAction` muaf
+       (current'ı gerçekten o belirliyor) ve no-op kısa devresi korunuyor
+       (`copyWith` her seferinde yeni nesne üretip `identical` kontrolünü
+       işlevsiz bırakırdı). Varsayılan null → **yerel oyunun davranışı
+       bitine kadar aynı**, üç testle sabitlendi.
+     - **Ekran:** `canAct` (sunucuya gönderim — gerçekten sıra bende) vs
+       `canEdit` (salt yerel düzenleme — oyun bitmediyse her zaman) ayrımı;
+       sıra bende değilken kırmızı "SIRA: X — oynaması bekleniyor" bandı
+       (YZ koltuğunda nabız atan noktayla "hamlesini hesaplıyor…"), taş
+       konulunca bandın yerini mesaj satırı alır; mesaj satırı web'in
+       türetme kuralını bire bir izler (geçersiz sebep → `offTurnNote` →
+       `myTurnNote` → `state.message` → son hamleden türetilen metin).
+       `online_game_states` mesaj taşımadığından "Esiner: +13 puan (4 puanı
+       Ironman kaptı) Kelimeler: ARA" gibi satırlar `online_game_moves`'tan
+       reducer'ın AYNI şablonlarıyla yeniden üretiliyor. Logo yalnızca
+       listeye döner (oyunu BİTİRMEZ — teslim yalnızca 48 saatlik zaman
+       aşımıyla); oyun bitince OYNA'nın yerini "CANLI LİSTESİ" alır. Skor
+       kutusuna dokunmak oyuncunun kartını açar (`onPlayerTap`, yalnızca
+       Canlı'da — yerel ekran bu prop'u geçmiyor).
+     - **Bilinçli kod tekrarı:** sürükle-bırak katmanı + tahta/raf/buton
+       düzeni `game_screen.dart` ile neredeyse birebir. Web de bunu iki
+       ayrı dosyada taşıyor; ortak kabuğa çıkarmak web↔mobil dosya
+       eşlemesini dolaylı hale getirirdi. Karşılığında yeni bir senkron
+       kuralı doğdu — "Etki Analizi" bölümüne değişmez olarak yazıldı.
+     - **Bilinçli SAPMA — kelime doğrulaması yerel:** web `handlePlay`
+       her kelimeyi `is_valid_word` RPC'siyle sorar (kelime başına bir
+       gidiş-dönüş, hatada yerel sözlüğe düşer). Mobilde sözlük zaten
+       pakette ve tahtadaki canlı yeşil/kırmızı çerçeve onu kullanıyor —
+       N sıralı RPC hem yavaş hem "çerçeve yeşil ama OYNA hata veriyor"
+       çelişkisi riski. Tek yerel `validatePlacement` yeterli; sunucu
+       zaten kelime doğrulamıyor (mimari karar), güvenlik kaybı yok. Tek
+       gerçek fark: `public.words`a uygulama sürümü çıkmadan eklenen bir
+       kelimeyi web oynar, mobil oynayamaz.
+     - **Bulunan hata (test yakaladı) — `late final AnimationController`
+       dispose'ta doğuyor:** banner'ın nabız controller'ı `late final _pulse
+       = AnimationController(...)` idi; `late` TEMBEL olduğundan sıra bir
+       İNSANDAYKEN (isAiTurn false) alan hiç okunmuyor, ilk erişim
+       `dispose()`taki `_pulse.dispose()` oluyor ve orada `createTicker`
+       sökülmüş elemanın atasını arayıp "Looking up a deactivated widget's
+       ancestor is unsafe" ile patlıyordu. `initState`'te kurmaya çevrildi.
+       **`late final _openedAt = _now()` dersinin (parça 7) ikinci yüzü** —
+       kural genelleşti: `late final` bir alana YAN ETKİLİ ya da bağlam
+       gerektiren bir değer bağlama, kurulumu `initState`'te yap.
+     - Doğrulama: `online_game_screen_test.dart` (15 test — buildMoveHistory
+       vergi/aksiyon eşlemesi; loadGame çözümü + null dalları; actingSeat'in
+       üç kuralı (benim rafımdan işler + current korunur + no-op + yerel
+       davranış değişmedi); ekran: katılımcı değil, sıra rakipte banner +
+       süre taraması + YZ tetiklenmez, YZ koltuğunda `play-ai-turn`
+       tetiklenir, off-turn egzersiz (+7 rozeti, "Kelime geçerli — Sıra:
+       Esiner", OYNA pasif/gönderim yok), sıra bende KELİME → OYNA →
+       payload (words/basePoints/placements), PAS GEÇ onay+vazgeç, sunucu
+       reddinin mesaj satırına düşmesi, Realtime olayının tazelemesi +
+       aboneliğin sökülmesi, son hamle mesajı + ekran görüntüsü
+       `build/screenshots/online_game.png`). Tam takım **203/203 yeşil**,
+       analyze + değişmez taraması temiz. **Doğrulama sınırı:** gerçek
+       `submit_move`/`get_my_online_rack`/`play-ai-turn`/Realtime ve iki
+       hesaplı gerçek oynanış cihazda doğrulanmalı — TESTING.md bölüm 11.
+     - **Bu parçanın kapsamı DIŞINDA (bilinçli):** oyun içi mesajlaşma
+       (Board footer'daki "Mesajlaşma" butonu Canlı'da da henüz yok —
+       sohbet + sessize alma/raporlama ayrı parça).
+   - Sıradaki parçalar (sıra önerisi): oyun içi mesajlaşma (Faz 1 sohbet +
+     Faz 2 sessize alma/raporlama), Setup'taki "Arkadaşınla (N)" rozeti +
+     girişte Canlı sekmesi varsayılanı, "Arkadaşınla paylaş" (native
      share — `share_plus` hazır, yalnızca Setup'taki buton kaldı), Hesap
      Ayarları ekranı.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless

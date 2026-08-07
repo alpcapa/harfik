@@ -23,8 +23,11 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:kelimeki_core/kelimeki_core.dart'
+    show HistoryEntry, LostShare, OnlineGameStatePublic, Tile, WordScore;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'online_api.dart';
 import '../util/uuid.dart';
 
 enum OnlineGameStatus { pending, active, finished, abandoned }
@@ -148,6 +151,102 @@ class OnlineGamesSnapshot {
   const OnlineGamesSnapshot(this.games, this.turns, this.deadlines);
 }
 
+/// `online_game_moves` satırı (web OnlineMoveRow) — oynanış ekranının hamle
+/// geçmişi ve "son hamle" mesajı bu satırlardan türetilir.
+class OnlineMoveRow {
+  final int turn;
+  final int playerIndex;
+
+  /// 'play' | 'pass' | 'exchange' | 'surrender'
+  final String action;
+  final List<String> words;
+  final List<WordScore>? wordScores;
+  final int points;
+  final List<LostShare> lostShares;
+  final int tileCount;
+  final int finishJokerCount;
+  final bool bingo;
+
+  const OnlineMoveRow({
+    required this.turn,
+    required this.playerIndex,
+    required this.action,
+    required this.words,
+    this.wordScores,
+    required this.points,
+    required this.lostShares,
+    required this.tileCount,
+    required this.finishJokerCount,
+    required this.bingo,
+  });
+
+  factory OnlineMoveRow.fromJson(Map<String, Object?> m) => OnlineMoveRow(
+        turn: (m['turn'] as num).toInt(),
+        playerIndex: (m['player_index'] as num).toInt(),
+        action: m['action'] as String? ?? 'play',
+        words: [for (final w in (m['words'] as List? ?? const [])) w as String],
+        wordScores: m['word_scores'] == null
+            ? null
+            : [
+                for (final w in m['word_scores'] as List)
+                  WordScore.fromJson((w as Map).cast<String, Object?>()),
+              ],
+        points: (m['points'] as num?)?.toInt() ?? 0,
+        lostShares: [
+          for (final s in (m['lost_shares'] as List? ?? const []))
+            LostShare.fromJson((s as Map).cast<String, Object?>()),
+        ],
+        tileCount: (m['tile_count'] as num?)?.toInt() ?? 0,
+        finishJokerCount: (m['finish_joker_count'] as num?)?.toInt() ?? 0,
+        bingo: m['bingo'] as bool? ?? false,
+      );
+}
+
+/// `online_game_moves` satırlarını `GameState.moveHistory` şekline çevirir —
+/// web `buildMoveHistory`'nin birebir portu (reducer'ın `appendMoveHistory`
+/// deseniyle aynı: bölge vergisi payları AYRI birer `invasionFrom` satırı
+/// olarak eklenir, MoveHistoryModal bunları kart olarak göstermez ama
+/// toplam puana katar).
+List<HistoryEntry> buildMoveHistory(List<OnlineMoveRow> rows) {
+  final entries = <HistoryEntry>[];
+  for (final row in rows) {
+    entries.add(HistoryEntry(
+      turn: row.turn,
+      player: row.playerIndex,
+      words: row.words,
+      points: row.points,
+      wordScores: row.wordScores,
+      finishJokerCount:
+          row.finishJokerCount != 0 ? row.finishJokerCount : null,
+      bingo: row.bingo,
+      action: row.action != 'play' ? row.action : null,
+      tileCount: row.action == 'exchange' ? row.tileCount : null,
+      lostShares: row.lostShares.isNotEmpty ? row.lostShares : null,
+    ));
+    for (final s in row.lostShares) {
+      entries.add(HistoryEntry(
+        turn: row.turn,
+        player: s.to,
+        words: row.words,
+        points: s.amount,
+        invasionFrom: row.playerIndex,
+      ));
+    }
+  }
+  return entries;
+}
+
+/// Tek bir Canlı oyunun oynanış verisi — üçü BİRLİKTE çekilir (web
+/// `refresh()`'in Promise.all'ı): sunucu state'i, YALNIZCA çağıranın kendi
+/// rafı (`get_my_online_rack` — rakibin rafı hiçbir istemciye gitmez) ve
+/// hamle geçmişi.
+class OnlineGameSnapshot {
+  final OnlineGameStatePublic state;
+  final List<Tile> myRack;
+  final List<OnlineMoveRow> moves;
+  const OnlineGameSnapshot(this.state, this.myRack, this.moves);
+}
+
 abstract class OnlineGamesGateway {
   Future<List<Map<String, Object?>>> listMine();
   Future<String> create(int playerCount, List<Map<String, Object?>> slots);
@@ -161,10 +260,34 @@ abstract class OnlineGamesGateway {
   /// online_games + game_invites + online_game_states değişikliklerini
   /// dinler; dönüş aboneliği kapatır. Debounce ÇAĞIRANIN işi (web kuralı).
   void Function() subscribe(void Function() onChange);
+
+  // ── Oynanış (tek oyun) ──────────────────────────────────────────────────
+  Future<Map<String, Object?>?> gameState(String gameId);
+  Future<List<Map<String, Object?>>> myRack(String gameId);
+  Future<List<Map<String, Object?>>> moves(String gameId);
+
+  /// `play-ai-turn` Edge Function'ı — YZ'nin hamlesi TAMAMEN sunucuda
+  /// hesaplanır (rafı hiçbir istemciye gitmez, web güvenlik kararı).
+  Future<void> triggerAiTurn(String gameId);
+
+  Future<void> submitMove({
+    required String gameId,
+    required String action,
+    List<Map<String, Object?>>? placements,
+    List<String>? exchangeLetters,
+    List<String> words,
+    List<Map<String, Object?>>? wordScores,
+    int basePoints,
+    List<Map<String, Object?>> lostShares,
+  });
+
+  /// Yalnızca BU oyunun `online_game_states` satırını dinler.
+  void Function() subscribeGame(String gameId, void Function() onChange);
 }
 
 class SupabaseOnlineGamesGateway implements OnlineGamesGateway {
   final SupabaseClient client;
+  late final OnlineApi _moves = OnlineApi(client);
   SupabaseOnlineGamesGateway(this.client);
 
   List<Map<String, Object?>> _rows(dynamic data) => [
@@ -241,6 +364,79 @@ class SupabaseOnlineGamesGateway implements OnlineGamesGateway {
         callback: (_) => onChange(),
       );
     }
+    channel.subscribe();
+    return () => client.removeChannel(channel);
+  }
+
+  @override
+  Future<Map<String, Object?>?> gameState(String gameId) async {
+    final row = await client
+        .from('online_game_states')
+        .select()
+        .eq('online_game_id', gameId)
+        .maybeSingle();
+    return row?.cast<String, Object?>();
+  }
+
+  @override
+  Future<List<Map<String, Object?>>> myRack(String gameId) async =>
+      _rows(await client.rpc('get_my_online_rack', params: {
+        'p_game_id': gameId,
+      }));
+
+  @override
+  Future<List<Map<String, Object?>>> moves(String gameId) async => _rows(
+      await client
+          .from('online_game_moves')
+          .select()
+          .eq('online_game_id', gameId)
+          .order('turn', ascending: true)
+          .order('created_at', ascending: true));
+
+  @override
+  Future<void> triggerAiTurn(String gameId) async {
+    await client.functions.invoke('play-ai-turn', body: {'game_id': gameId});
+  }
+
+  @override
+  Future<void> submitMove({
+    required String gameId,
+    required String action,
+    List<Map<String, Object?>>? placements,
+    List<String>? exchangeLetters,
+    List<String> words = const [],
+    List<Map<String, Object?>>? wordScores,
+    int basePoints = 0,
+    List<Map<String, Object?>> lostShares = const [],
+  }) =>
+      // Mobil ağ dayanıklılığı burada: OnlineApi her çağrıya bir `p_move_id`
+      // koyar ve taşıma hatalarında AYNI id ile yeniden dener (çifte hamle
+      // yapısal olarak imkânsız — 20260805225619 migration'ı).
+      _moves.submitMove(
+        gameId: gameId,
+        action: action,
+        placements: placements,
+        exchangeLetters: exchangeLetters,
+        words: words,
+        wordScores: wordScores,
+        basePoints: basePoints,
+        lostShares: lostShares,
+      );
+
+  @override
+  void Function() subscribeGame(String gameId, void Function() onChange) {
+    final channel = client.channel('online-game-$gameId-${uuidV4()}');
+    channel.onPostgresChanges(
+      event: PostgresChangeEvent.all,
+      schema: 'public',
+      table: 'online_game_states',
+      filter: PostgresChangeFilter(
+        type: PostgresChangeFilterType.eq,
+        column: 'online_game_id',
+        value: gameId,
+      ),
+      callback: (_) => onChange(),
+    );
     channel.subscribe();
     return () => client.removeChannel(channel);
   }
@@ -332,6 +528,73 @@ class OnlineGamesRepo {
 
   Future<void> respondInvite(String inviteId, {required bool accept}) =>
       gateway.respondInvite(inviteId, accept);
+
+  // ── Oynanış (tek oyun) ────────────────────────────────────────────────
+
+  /// Web `refresh()`'in veri yarısı: state + kendi rafım + hamleler TEK
+  /// turda (Future.wait). Ağ hatasında null — çağıran eski ekranı korur
+  /// (liste tarafındaki `load()` ile aynı sözleşme).
+  Future<OnlineGameSnapshot?> loadGame(String gameId) async {
+    try {
+      final results = await Future.wait([
+        gateway.gameState(gameId),
+        gateway.myRack(gameId),
+        gateway.moves(gameId),
+      ]);
+      final stateRow = results[0] as Map<String, Object?>?;
+      if (stateRow == null) return null; // state henüz kurulmamış
+      return OnlineGameSnapshot(
+        OnlineGameStatePublic.fromJson(stateRow),
+        [
+          for (final t in results[1] as List<Map<String, Object?>>)
+            Tile.fromJson(t)
+        ],
+        [
+          for (final m in results[2] as List<Map<String, Object?>>)
+            OnlineMoveRow.fromJson(m)
+        ],
+      );
+    } catch (e) {
+      debugPrint('[Kelimeki] Canlı oyun durumu alınamadı: $e');
+      return null;
+    }
+  }
+
+  /// 20 saniyelik tavan, web `withTimeout` ile aynı gerekçe: çağıranın
+  /// "devam ediyor" bayrağı çok geç dönen bir istekte sonsuza dek askıda
+  /// kalmasın (istek iptal edilmez, yalnızca bekleme kesilir).
+  static const Duration _callTimeout = Duration(seconds: 20);
+
+  Future<void> triggerAiTurn(String gameId) =>
+      gateway.triggerAiTurn(gameId).timeout(_callTimeout);
+
+  Future<void> sweepTurnTimeout(String gameId) =>
+      gateway.checkTurnTimeout(gameId).timeout(_callTimeout);
+
+  /// Hamle gönderimi — hata FIRLATILIR (ekran mesaj satırında gösterir).
+  Future<void> submitMove({
+    required String gameId,
+    required String action,
+    List<Map<String, Object?>>? placements,
+    List<String>? exchangeLetters,
+    List<String> words = const [],
+    List<Map<String, Object?>>? wordScores,
+    int basePoints = 0,
+    List<Map<String, Object?>> lostShares = const [],
+  }) =>
+      gateway.submitMove(
+        gameId: gameId,
+        action: action,
+        placements: placements,
+        exchangeLetters: exchangeLetters,
+        words: words,
+        wordScores: wordScores,
+        basePoints: basePoints,
+        lostShares: lostShares,
+      );
+
+  void Function() subscribeGame(String gameId, void Function() onChange) =>
+      gateway.subscribeGame(gameId, onChange);
 }
 
 // ── Kova filtreleri + süre etiketleri (web LiveGamesTab'ın saf mantığı) ────
