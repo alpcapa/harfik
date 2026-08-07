@@ -347,7 +347,7 @@ void main() {
       // hâlâ bekliyor sayılır ve "Timer is still pending" ile test düşer —
       // kısa bir gerçek-zaman uykusu yazmanın bitmesine yetiyor.
       await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+          () => Future<void>.delayed(const Duration(milliseconds: 200)));
       await tester.pump();
       await unmount(tester);
     });
@@ -364,7 +364,7 @@ void main() {
           findsOneWidget);
       // Aynı gerçek-zaman bekleyişi — bkz. yukarıdaki yorum.
       await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+          () => Future<void>.delayed(const Duration(milliseconds: 200)));
       await tester.pump();
       await unmount(tester);
     });

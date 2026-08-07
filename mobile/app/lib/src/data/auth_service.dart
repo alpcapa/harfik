@@ -37,6 +37,16 @@ class KProfile {
   /// 'female' | 'male' | null (web `Gender`).
   final String? gender;
 
+  /// Hesap Ayarları'ndaki opsiyonel pazarlama onayı — kabul anı
+  /// (`marketingConsentAt`) sunucu tarafında bir trigger'la yazılır,
+  /// client hiçbir zaman göndermez (web `updateProfile` yorumuyla aynı).
+  final bool marketingConsent;
+  final String? marketingConsentAt;
+
+  /// İşlemsel-ama-tercih-edilebilir bildirim mailleri (arkadaşlık isteği,
+  /// oyun daveti, süre uyarısı) — varsayılan AÇIK (web `?? true`).
+  final bool emailNotificationsEnabled;
+
   const KProfile({
     required this.id,
     this.displayName,
@@ -47,6 +57,9 @@ class KProfile {
     this.isAdmin = false,
     this.birthDate,
     this.gender,
+    this.marketingConsent = false,
+    this.marketingConsentAt,
+    this.emailNotificationsEnabled = true,
   });
 
   factory KProfile.fromMap(Map<String, dynamic> m) => KProfile(
@@ -59,6 +72,9 @@ class KProfile {
         isAdmin: m['is_admin'] == true,
         birthDate: m['birth_date'] as String?,
         gender: m['gender'] as String?,
+        marketingConsent: m['marketing_consent'] == true,
+        marketingConsentAt: m['marketing_consent_at'] as String?,
+        emailNotificationsEnabled: m['email_notifications_enabled'] != false,
       );
 }
 
@@ -281,6 +297,69 @@ class AuthService extends ChangeNotifier {
 
   Future<void> signOut() async {
     await _client?.auth.signOut();
+  }
+
+  /// Web `refreshProfile` (`useAuth`) birebir: yalnızca profili yeniden
+  /// çeker (`fetchMyProfile`), `loading`/`profileLoading` bayraklarına HİÇ
+  /// dokunmaz — `_fetchProfile`'ı (auth akışının kendi profil çekimi)
+  /// çağırmıyoruz çünkü o `_profileLoading`'i true'ya çekip Hesap
+  /// Ayarları'nda "Kaydet" sonrası tüm hesap kimliğine bağlı UI'ın (avatar,
+  /// Setup'taki isim) bir an "yükleniyor" görünmesine yol açardı. Hata
+  /// sessizce yutulur (web `fetchMyProfile`'ın `error` dalıyla aynı).
+  Future<void> refreshProfile() async {
+    final c = _client;
+    final u = _user;
+    if (c == null || u == null) return;
+    try {
+      final row = await c.from('profiles').select().eq('id', u.id).maybeSingle();
+      _profile = row == null ? null : KProfile.fromMap(row);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[Kelimeki] profil yenilenemedi: $e');
+    }
+  }
+
+  /// Web `updateProfile` (src/lib/api.ts) portu — `patch` yalnızca
+  /// DEĞİŞEN alanları taşır, hesaplaması çağıranın işi (bkz.
+  /// `AccountSettingsModal._save`). Satır henüz yoksa (kuramsal —
+  /// `handle_new_user` trigger'ı normalde baştan açar) web'deki gibi bir
+  /// yedek insert dener, `patch`'i ÖNCE yayıp id/username/first_name/
+  /// last_name/display_name/avatar_url'i sonradan üzerine yazarak (web'in
+  /// aynı sırası — `patch`'te eksik alanlar hesaplanmış varsayılanları
+  /// ezmesin diye).
+  Future<void> updateProfile(Map<String, Object?> patch) async {
+    final c = _client;
+    if (c == null) throw const AuthException('Supabase yapılandırılmadı.');
+    final u = _user;
+    if (u == null) throw const AuthException('Oturum açık değil.');
+    try {
+      final rows =
+          await c.from('profiles').update(patch).eq('id', u.id).select('id');
+      if (rows.isEmpty) {
+        final email = u.email;
+        final fallbackNickname =
+            (email != null && email.isNotEmpty) ? email.split('@').first : u.id;
+        await c.from('profiles').insert({
+          ...patch,
+          'id': u.id,
+          'username': fallbackNickname,
+          'first_name': patch['first_name'] ?? '',
+          'last_name': patch['last_name'] ?? '',
+          'display_name': patch['display_name'] ?? fallbackNickname,
+          'avatar_url': patch['avatar_url'],
+        });
+      }
+    } on PostgrestException catch (e) {
+      throw friendlyNicknameError(e.message) ?? e;
+    }
+  }
+
+  /// Web `updateEmail` — doğrulama gerekebilir (GoTrue yeni adrese onay
+  /// linki gönderir, değişiklik hemen uygulanmaz).
+  Future<void> updateEmail(String email) async {
+    final c = _client;
+    if (c == null) throw const AuthException('Supabase yapılandırılmadı.');
+    await c.auth.updateUser(UserAttributes(email: email));
   }
 
   void _applyUser(User? u) {

@@ -7,9 +7,9 @@
 // Menü YALNIZCA gerçekten çalışan maddeleri taşıyor: isim başlığı, k-lig
 // satırı (rank+puan, sıralamayı açar), Skor Kartı, Arkadaşlar (7 Ağustos
 // 2026 — bekleyen istek sayısı CountBadge'le, avatarda web'in `dot`
-// noktası), "Nasıl Oynanır?" ve "Çıkış Yap". Web'deki kalan (Hesap
-// Ayarları) kendi ekranı portlanınca eklenecek — çalışmayan madde
-// koymuyoruz. k-lig/Skor Kartı `stats`, Arkadaşlar `friends` verildiğinde
+// noktası), "Nasıl Oynanır?", "Hesap Ayarları" (7 Ağustos 2026 —
+// AccountSettingsModal, web sırasındaki gibi Çıkış Yap'ın hemen üstünde)
+// ve "Çıkış Yap". k-lig/Skor Kartı `stats`, Arkadaşlar `friends` verildiğinde
 // (Supabase yapılandırılmışsa) görünür. Bekleyen istek sayısı web
 // UserMenu'yle aynı anlarda tazelenir: mount + FriendsModal kapanınca
 // (içeride yanıtlanmış olabilir); Realtime aboneliği web'de de bilinçli
@@ -28,6 +28,7 @@ import '../game/neo_box.dart';
 import '../score/klig_mark.dart';
 import '../score/leaderboard_modal.dart';
 import '../score/score_card_modal.dart';
+import 'account_settings_modal.dart';
 import 'k_avatar.dart';
 import 'auth_modal.dart';
 
@@ -221,6 +222,8 @@ class _AccountButtonState extends State<AccountButton> {
             }
           case 'help':
             showHelpModal(context);
+          case 'settings':
+            showAccountSettingsModal(context, auth);
           case 'signout':
             auth.signOut();
         }
@@ -275,6 +278,10 @@ class _AccountButtonState extends State<AccountButton> {
         const PopupMenuItem<String>(
           value: 'help',
           child: Text('❓  Nasıl Oynanır?', style: itemStyle),
+        ),
+        const PopupMenuItem<String>(
+          value: 'settings',
+          child: Text('⚙️  Hesap Ayarları', style: itemStyle),
         ),
         const PopupMenuItem<String>(
           value: 'signout',

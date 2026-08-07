@@ -2242,13 +2242,18 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        (`newStorageForWidget`) kurulan widget testlerinde `unmount`'tan
        hemen önce bu timer hâlâ "beklemede" sayılıp "A Timer is still
        pending even after the widget tree was disposed" ile test
-       düşüyordu — `tester.runAsync` içinde kısa (50ms) bir GERÇEK zaman
-       uykusu + `tester.pump()` yazmanın bitmesine yetip timer'ı iptal
-       ettiriyor. **Ders:** parça 6'daki "gerçek sqflite I/O'su
-       `tester.runAsync` gerektirir" dersinin İNCELTİLMİŞ hâli — sorun
-       kilitlenme değil, fire-and-forget bir yazmanın kütüphane-içi bir
-       zamanlayıcıyı test bitene kadar canlı bırakması; her DB etkileşimini
-       `runAsync`'e sarmak yetmez, `unawaited` bir yazmaya GERÇEK zaman
+       düşüyordu — `tester.runAsync` içinde kısa bir GERÇEK zaman uykusu +
+       `tester.pump()` yazmanın bitmesine yetip timer'ı iptal ettiriyor.
+       **7 Ağustos 2026 — süre 50ms→200ms'ye çıkarıldı:** dosya tek başına
+       koşulduğunda 50ms yetiyordu ama TÜM paket koşulurken (CPU daha
+       yoğun, gerçek I/O daha yavaş tamamlanıyor) ara sıra aynı "Timer is
+       still pending" hatasıyla flaky düşüyordu — tek dosya çalıştırmak bu
+       sınıf bir hatayı YAKALAMAZ, tam paket koşusu şart. **Ders:** parça
+       6'daki "gerçek sqflite I/O'su `tester.runAsync` gerektirir" dersinin
+       İNCELTİLMİŞ hâli — sorun kilitlenme değil, fire-and-forget bir
+       yazmanın kütüphane-içi bir zamanlayıcıyı test bitene kadar canlı
+       bırakması; her DB etkileşimini `runAsync`'e sarmak yetmez, `unawaited`
+       bir yazmaya GERÇEK zaman
        tanımak gerekir.
      - Doğrulama: `chat_test.dart` (20 test — ChatRepo doğrulama/hata
        yutma/RPC delegasyonu, ChatModal sıralama/rozet/sayaç/hata +
@@ -2326,9 +2331,87 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        **Tam takım 238/238 yeşil**, analyze + değişmez taraması temiz.
        **Doğrulama sınırı:** gerçek Realtime aboneliği ve gerçek sistem
        paylaş sayfası cihazda doğrulanmalı.
-   - Sıradaki parçalar (sıra önerisi): Hesap Ayarları ekranı (ad/soyad/takma
-     isim/cinsiyet/doğum tarihi düzenleme, pazarlama onayı, e-posta
-     bildirimi tercihi — web `AccountSettingsModal.tsx` portu).
+   - ✅ **Parça 13 — Hesap Ayarları ekranı (7 Ağustos 2026,
+     `data/auth_service.dart`, `ui/auth/account_settings_modal.dart`,
+     `ui/auth/account_button.dart`):** Web `AccountSettingsModal.tsx`
+     portu — hesap menüsündeki son "çalışmayan madde koymuyoruz" boşluğu
+     kapandı (Nasıl Oynanır? ile Çıkış Yap arasına, web'in sırasındaki
+     gibi).
+     - **`AuthService`'e üç yeni metod + `KProfile` genişlemesi:**
+       `refreshProfile()` (web `useAuth.refreshProfile` birebir —
+       YALNIZCA profili yeniden çeker, `loading`/`profileLoading`'e HİÇ
+       dokunmaz; `_fetchProfile`'ı KASITLI OLARAK çağırmıyor, o
+       `_profileLoading`'i true'ya çekip Kaydet sonrası tüm hesap
+       kimliğine bağlı UI'ın — avatar, Setup'taki isim — bir an
+       "yükleniyor" görünmesine yol açardı), `updateProfile(patch)` (web
+       `updateProfile` birebir — patch yalnızca DEĞİŞEN alanları taşır,
+       satır yoksa yedek insert dener), `updateEmail(email)`.
+       `KProfile`'a `marketingConsent`/`marketingConsentAt`/
+       `emailNotificationsEnabled` eklendi (varsayılan sırasıyla
+       false/null/true — web `?? true` kuralı `emailNotificationsEnabled`
+       için `fromMap`'te `!= false` ile taşındı).
+     - **Bilinçli eksik — profil fotoğrafı değiştirme:** web'in dosya
+       seçici + `uploadAvatar` (Supabase Storage) akışı BU PARÇANIN
+       KAPSAMI DIŞINDA bırakıldı — `image_picker` gibi yeni bir platform
+       bağımlılığı + storage upload + izin yapılandırması gerektiriyor,
+       tek başına ayrı bir parça. Mevcut fotoğraf (varsa) salt-okunur
+       gösteriliyor, ekranda "kelimeki.com üzerinden düzenleyebilirsin"
+       notu var — web'in "sonraki sürümde" dürüstlük deseniyle tutarlı
+       (bkz. `LiveGameCreateForm`/`Setup`'taki benzer notlar).
+     - **Nickname debounce KÜÇÜK bir kopya olarak taşındı, `AuthModal`'a
+       DOKUNULMADI:** web'in `useNicknameAvailability` hook'u hem
+       `AuthModal` hem `AccountSettingsModal`'ı besliyor — Flutter'da
+       State'ler arası doğrudan paylaşılamayan bu ~40 satırlık debounce+
+       durum mantığı, riskli bir refactor yerine (172+ testi olan
+       `auth_modal.dart`'ı bozma riski) kendi içinde bilinçli olarak
+       tekrarlandı — `game_screen.dart`/`online_game_screen.dart`
+       arasındaki "bilinçli kod tekrarı" kararıyla aynı sınıf. Web'in
+       `useNicknameAvailability(nickname, true, profile?.display_name)`
+       "mevcut isimle aynıysa kontrol atla" davranışı da taşındı.
+     - **Test dersi — `find.ancestor`/`find.descendant` zincirinin
+       "en yakın ata" varsayımı YANLIŞ:** ilk test taslağı web/AuthModal
+       test dosyasındaki `fieldByLabel` desenini (`find.descendant(of:
+       find.ancestor(of: label, matching: Column), matching: TextField)`)
+       kopyalayıp "Too many elements" ile patladı. Kök sebep: Flutter'ın
+       `find.ancestor`'ı bir widget'ın YALNIZCA EN YAKIN eşleşen atasını
+       değil, köke kadar TÜM eşleşen atalarını döner (`_collectAncestors`
+       kaynağı doğrulandı) — form birden fazla iç içe `Column` taşıdığından
+       (`_labeled`'in kendi Column'u + dış form Column'u), `descendant`
+       bu ikisinin BİRLEŞİMİNDEN arama yapıp forma dağılmış TÜM
+       `TextField`'ları (yalnızca hedeflenen alanı değil) döndürüyordu.
+       `signup_test.dart`'ın aynı deseni her çağrı yerinde `.first` ekleyip
+       (ambiguity'yi ÖRTEREK, çözmeden) kullanıyor — kırılgan bir emsal.
+       **Düzeltme, emsali kopyalamak yerine:** her alana açık bir
+       `ValueKey('field-...')` verilip testte `find.byKey(...)` kullanıldı
+       — kesin, refactor'a dayanıklı, hiçbir ata/torun belirsizliği yok.
+       **Ders:** bir test yardımcısını (`fieldByLabel` gibi) başka bir
+       dosyadan kopyalarken, o yardımcının ÇAĞRI YERLERİNDE gizli bir
+       `.first`/ek varsayım olup olmadığını da kontrol et — yalnızca
+       tanımını kopyalamak yeterli değil.
+     - **Yan bulgu (bu parçanın testi sırasında) — `online_game_chat_test.dart`
+       flaky çıktı:** tek başına koşulduğunda hep geçen "ilk açılışta
+       tanıtım gösterilir" testi, TAM paket koşulurken (CPU daha yoğun)
+       ara sıra "A Timer is still pending" ile düştü — sqflite'ın dahili
+       yazma-kilidi timer'ına tanınan 50ms'lik gerçek-zaman payı bazen
+       yetmiyordu. 200ms'ye çıkarıldı (bkz. o parçanın CLAUDE.md notu,
+       güncellendi). **Ders:** bu sınıf bir flake'i YALNIZCA tam paket
+       koşusu yakalar — tek dosya çalıştırmak yanlış bir güven verir.
+     - Doğrulama: `account_settings_test.dart` (5 test — hidrasyon
+       [profil+e-posta+pazarlama onay tarihi], doğrulama sırası [Ad→
+       Soyad→Takma isim→doğum tarihi→"Supabase yapılandırılmadı." ile
+       ağ çağrısına ulaşma kanıtı — `signup_test.dart` ile AYNI sınır],
+       mevcut isimle aynı takma isimde kontrol atlanması, dolu takma
+       isimde KAYDET'in işlemsiz kalması, AccountButton menü satırı +
+       modal açılışı). **Tam takım 243/243 yeşil**, analyze + değişmez
+       taraması temiz. **Doğrulama sınırı:** gerçek `updateProfile`/
+       `updateEmail`/`refreshProfile` (RLS, unique index yarışı, GoTrue
+       e-posta değişikliği onayı) bu ortamdan test EDİLEMEDİ — cihazda
+       gerçek bir hesapla doğrulanmalı, TESTING.md'ye ayrı bölüm eklendi.
+   - **Auth + Canlı oyun fazının web UI paritesi bu parçayla tamamlandı**
+     (admin paneli hariç — bilinçli kapsam dışı, bkz. "Üst Düzey Kararlar"
+     #3). Kalan bilinçli eksikler: profil fotoğrafı değiştirme (yukarı),
+     Şifre Değiştir (web'de zaten 2 Ağustos 2026'da kaldırılmış — parite
+     eksiği DEĞİL).
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

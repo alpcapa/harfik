@@ -440,6 +440,46 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       arşivi") dondurulmuş sohbette de aynı mute/rapor rozetleri (bugünkü
       GÜNCEL duruma göre, o oyundaki değil) görünmeli.
 
+## 12. Hesap Ayarları
+
+- [ ] **Açılış + hidrasyon.** Hesap menüsü → "⚙️ Hesap Ayarları": Ad/
+      Soyad/Takma İsim/E-posta/Cinsiyet/Doğum Tarihi alanları profildeki
+      GERÇEK değerlerle dolu gelmeli — boş/varsayılan DEĞİL. Pazarlama
+      onayı işaretliyse altında "Kabul tarihi: GG.AA.YYYY SS:DD" satırı
+      görünmeli.
+- [ ] **Ad/Soyad/Takma isim değiştir → Kaydet.** "Profil güncellendi."
+      notu çıkmalı; uygulamayı kapatıp aç (ya da webde aynı hesaba gir) —
+      yeni değerler kalıcı olmalı, Setup'taki hesap satırı/avatar menüsü
+      de yeni ismi göstermeli.
+- [ ] **Takma isim benzersizliği.** Başka bir hesabın kullandığı bir isim
+      yaz: "Bu takma isim kullanımda." çıkmalı, KAYDET devre dışı kalmalı.
+      Kendi mevcut ismini AYNEN yeniden yazarsan kontrol hiç tetiklenmemeli
+      ("Kontrol ediliyor…" görünmemeli).
+- [ ] **E-posta değişikliği.** Yeni bir e-posta yaz → Kaydet: "E-posta
+      değişikliği için onay bağlantısı gönderildi." notu çıkmalı, hesap
+      e-postası HENÜZ değişmemiş olmalı (GoTrue onay linkine kadar).
+      Yeni adrese gelen onay linkine tıklayınca değişiklik tamamlanmalı.
+- [ ] **Profil + e-posta aynı anda değiştirilirse.** İkisini birden
+      değiştirip Kaydet'e bas: PROFİL kısmı e-posta adımından önce zaten
+      başarıyla tamamlanmışsa, e-posta adımı bir hata verse bile "Profil
+      güncellendi." notu KAYBOLMAMALI (ikisi birden görünmeli).
+- [ ] **Pazarlama onayı aç/kapa.** Checkbox'ı işaretle → Kaydet → tekrar
+      aç (Setup'a dönüp geri gel): işaretli kalmalı, "Kabul tarihi" o anki
+      zamanla dolmalı. Kapat → Kaydet → tekrar aç: kabul tarihi satırı
+      kaybolmalı (web'in sunucu-taraflı `marketing_consent_at` trigger'ı
+      ile aynı davranış — istemci bu alanı hiç göndermiyor).
+- [ ] **E-posta bildirimi tercihi.** Kapat → Kaydet → başka bir hesaptan
+      kendine bir arkadaşlık isteği/Canlı davet gönder: bildirim maili
+      GİTMEMELİ. Şifre sıfırlama gibi zorunlu maillerin hâlâ geldiğini
+      doğrula (bu tercihten etkilenmemeli).
+- [ ] **Doğum tarihi doğrulaması.** Geçersiz bir tarih (ör. 31/13/1990)
+      yaz → Kaydet: Türkçe hata mesajı ("Doğum ayı geçersiz." vb.) çıkmalı,
+      hiçbir şey kaydedilmemeli.
+- [ ] **Profil fotoğrafı.** Mevcut fotoğraf (varsa, web'den yüklenmiş)
+      salt-okunur görünmeli — bu ekrandan DEĞİŞTİRİLEMEZ (bilinçli eksik,
+      bkz. mobile/CLAUDE.md). Fotoğrafın altında kısa bir "kelimeki.com
+      üzerinden düzenleyebilirsin" notu olmalı.
+
 ---
 
 ## Web derlemesi (ücretsiz tarayıcı test ortamı)
@@ -456,7 +496,9 @@ bölümü burada gerçekten koşulabilir.
 
 **Burada koşulabilen bölümler:** 1 (oyun çekirdeği), 2 (auth), 3 (bulut
 kayıtları), 4 (biten oyun kayıtları), 5 (oyun geçmişi), 7 (Son
-Oynadıklarım). Hepsi saf Dart + ağ; platform kanalı gerektirmiyorlar.
+Oynadıklarım), 12 (Hesap Ayarları — profil fotoğrafı hariç, o zaten
+salt-okunur/platform bağımsız). Hepsi saf Dart + ağ; platform kanalı
+gerektirmiyorlar.
 
 ### Web derlemesiyle neyi test EDEMEZSİN
 
