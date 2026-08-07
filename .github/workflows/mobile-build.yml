@@ -126,6 +126,31 @@ jobs:
               --title "Mobil test derlemesi (otomatik)" \
               --notes "Her mobil derlemede ÜZERİNE YAZILIR — sürüm değil, test derlemesidir. Appetize.io'ya URL ile yüklemek için: aşağıdaki dosyanın bağlantısını kopyala."
           gh release upload mobile-latest kelimeki.apk --clobber
+      # KEŞİF ADIMI (7 Ağustos 2026) — bir sonraki commit'te bu, sabit bir
+      # `public-key` ile GÜNCELLEME'ye dönüşecek. Appetize'ın REST API'si
+      # `{"url": ...}` gövdesiyle çağrılırsa dosyayı SUNUCU SUNUCUYA kendisi
+      # çekiyor — iPad Safari'nin dosya seçicisi/sürükle-bırak'ı (günlerce
+      # süren "400"/"silik dosya" derdi) hiç devreye girmiyor. `public-key`
+      # verilmezse YENİ bir app oluşturur; bu ilk koşuda bilerek öyle —
+      # dönen `publicKey`'i job log'undan okuyup ikinci bir commit'le sabit
+      # parametre olarak workflow'a gömeceğiz (aynı app'i GÜNCELLEMEK için).
+      # `manageURL` bilerek YAZDIRILMIYOR — Appetize'ın kendi action'ı
+      # (maxep/appetize-upload-action) bunu `setSecret` ile maskeliyor, aynı
+      # ihtiyatı burada da uyguluyoruz. `publicKey`/`appURL` PAYLAŞILABİLİR
+      # (Appetize'ın kendi tasarımı — session linkleri zaten herkese açık).
+      - name: "Appetize'a yükle (Android, keşif)"
+        env:
+          APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
+        run: |
+          if [ -z "$APPETIZE_API_TOKEN" ]; then
+            echo "APPETIZE_API_TOKEN secret'ı yok — adım atlanıyor."
+            exit 0
+          fi
+          resp=$(curl -sS -u "${APPETIZE_API_TOKEN}:" \
+            -H "Content-Type: application/json" \
+            -d "{\"url\":\"https://github.com/${{ github.repository }}/releases/download/mobile-latest/kelimeki.apk\",\"platform\":\"android\",\"note\":\"CI otomatik — ${{ github.sha }}\"}" \
+            https://api.appetize.io/v1/apps/)
+          echo "$resp" | jq '{publicKey, appURL}'
 
   ios:
     name: iOS (imzasız)
@@ -184,6 +209,20 @@ jobs:
         run: |
           cp build/ios/iphonesimulator/Runner.app.zip kelimeki-ios-simulator.zip
           gh release upload mobile-latest kelimeki-ios-simulator.zip --clobber
+      # KEŞİF ADIMI — android işindeki aynı adımla birebir aynı gerekçe.
+      - name: "Appetize'a yükle (iOS, keşif)"
+        env:
+          APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
+        run: |
+          if [ -z "$APPETIZE_API_TOKEN" ]; then
+            echo "APPETIZE_API_TOKEN secret'ı yok — adım atlanıyor."
+            exit 0
+          fi
+          resp=$(curl -sS -u "${APPETIZE_API_TOKEN}:" \
+            -H "Content-Type: application/json" \
+            -d "{\"url\":\"https://github.com/${{ github.repository }}/releases/download/mobile-latest/kelimeki-ios-simulator.zip\",\"platform\":\"ios\",\"note\":\"CI otomatik — ${{ github.sha }}\"}" \
+            https://api.appetize.io/v1/apps/)
+          echo "$resp" | jq '{publicKey, appURL}'
 
   # Web derlemesi — ÜRÜN HEDEFİ DEĞİL, TEST ORTAMI.
   #
