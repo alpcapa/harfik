@@ -31,8 +31,11 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
 
 ## 0. Derleme ve ilk açılış
 
-- [ ] **Derleme geçiyor.** GitHub Actions → "Mobil derleme" → Run workflow.
-      Üç iş de yeşil olmalı (analiz+testler, Android APK, iOS imzasız).
+- [ ] **Derleme geçiyor.** GitHub Actions → "Mobil derleme" → en son
+      çalıştırma yeşil olmalı (analiz+testler, Android APK, iOS imzasız).
+      Port dalına `mobile/**` altında her push otomatik tetikliyor; elle
+      çalıştırma (Run workflow) yalnızca dosya main'e girdikten sonra
+      Actions sekmesinde belirir.
       Bu, bu ortamda HİÇ koşulmamış olan `pod install`/gradle adımlarının
       ilk gerçek kanıtı — özellikle beş platform eklentisi
       (sqflite, shared_preferences, supabase_flutter, share_plus,

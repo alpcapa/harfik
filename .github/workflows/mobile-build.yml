@@ -7,9 +7,15 @@
 # (sqflite, shared_preferences, supabase_flutter, share_plus, path_provider)
 # ancak gerçek bir pod/gradle derlemesinde patlar.
 #
-# MALİYET: macOS runner'ları özel depolarda dakika kotasını 10x tüketiyor.
-# Bu yüzden HİÇBİR otomatik tetikleyici yok (push/PR'da çalışmaz) — yalnızca
-# elle (Actions sekmesi → Run workflow). iOS işini istemezsen kapatabilirsin.
+# MALİYET: bu depo PUBLIC olduğundan Actions dakikaları ücretsiz ve
+# sınırsız (macOS runner'ları dahil) — özel depolardaki 10x macOS çarpanı
+# burada geçerli DEĞİL. Bu yüzden mobil dosyalara her dokunuşta çalışıyor;
+# derleme kırılırsa aynı gün görülür.
+#
+# TETİKLEYİCİLER: (1) port dalına `mobile/**` push'u — sürekli doğrulama;
+# (2) elle (Actions → Run workflow). İkincisi yalnızca dosya VARSAYILAN
+# DALDA (main) olduğunda Actions sekmesinde belirir (GitHub kuralı) —
+# port dalı main'e girene kadar pratikte (1) çalışıyor.
 #
 # İMZALAMA/TESTFLIGHT: burada YOK. iOS işi `--no-codesign` ile yalnızca
 # derlemeyi kanıtlıyor; Apple Developer üyeliği geldiğinde TestFlight
@@ -18,10 +24,15 @@
 name: Mobil derleme
 
 on:
+  push:
+    branches: [claude/word-game-flutter-port-dr9dos]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-build.yml'
   workflow_dispatch:
     inputs:
       ios:
-        description: 'iOS derlemesi (macOS runner — dakika kotasını 10x tüketir)'
+        description: 'iOS derlemesi (macOS runner)'
         type: boolean
         default: true
       android:
@@ -60,7 +71,7 @@ jobs:
 
   android:
     name: Android APK
-    if: ${{ inputs.android }}
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.android }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -90,7 +101,7 @@ jobs:
 
   ios:
     name: iOS (imzasız)
-    if: ${{ inputs.ios }}
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.ios }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
