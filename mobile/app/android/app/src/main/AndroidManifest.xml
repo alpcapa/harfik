@@ -42,6 +42,24 @@
                     android:scheme="https"
                     android:host="kelimeki.com"/>
             </intent-filter>
+            <!-- Custom şema (kelimeki://): Supabase auth dönüş linkleri —
+                 bugün şifre sıfırlama (kelimeki://reset), ileride davet gibi
+                 diğer dönüşler. App Links'in aksine doğrulama (assetlinks)
+                 GEREKTİRMEZ, imzalama anahtarı beklemeden çalışır; host
+                 kısıtlanmadı ki gelecekteki kelimeki://... linkleri de aynı
+                 filtreden geçsin. supabase_flutter gelen URI'yi app_links
+                 üzerinden kendisi yakalar (auth parametresi taşımayan URI'lere
+                 dokunmaz — bkz. mobile/CLAUDE.md, şifre sıfırlama parçası). -->
+            <intent-filter>
+                <action
+                    android:name="android.intent.action.VIEW"/>
+                <category
+                    android:name="android.intent.category.DEFAULT"/>
+                <category
+                    android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="kelimeki"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

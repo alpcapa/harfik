@@ -119,6 +119,35 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       ("Invalid login credentials") DEĞİL.
 - [ ] **Kullanım Koşulları / Gizlilik.** Kayıt formundaki linkler açılmalı,
       metin web'dekiyle aynı olmalı.
+- [ ] **Şifre sıfırlama — ÖN KOŞUL (tek seferlik el işi):** Supabase
+      Dashboard → Authentication → URL Configuration → Redirect URLs
+      listesine `kelimeki://reset` eklenmiş olmalı. Eklenmeden test etme:
+      GoTrue izinsiz redirect'i sessizce Site URL'e (web'e) düşürür,
+      bağlantı uygulamayı hiç açmaz — bu bir uygulama hatası DEĞİLDİR.
+- [ ] **Şifre sıfırlama — sıcak başlangıç.** Giriş penceresi → "Şifremi
+      unuttum" → e-posta gir → "BAĞLANTI GÖNDER" → altın renkli "Şifre
+      sıfırlama bağlantısı e-postana gönderildi." çıkmalı. Uygulama AÇIKKEN
+      e-postadaki bağlantıya dokun: uygulama öne gelmeli ve her şeyin
+      önünde "Yeni Şifre Belirle" penceresi açılmalı. Yeni şifreyi belirle
+      → "Şifren başarıyla değiştirildi." → KAPAT → girişli olarak devam
+      (recovery oturumu zaten açık). Eski şifreyle giriş artık reddedilmeli,
+      yenisiyle çalışmalı.
+- [ ] **Şifre sıfırlama — soğuk başlangıç.** Uygulamayı tamamen kapat,
+      bağlantıya e-postadan dokun: uygulama açılıp aynı pencere gelmeli
+      (PKCE code takası ilk URI'de de çalışıyor olmalı). ÖNEMLİ: bağlantıya
+      sıfırlamayı İSTEYEN CİHAZDA dokunulmalı — PKCE verifier o cihazda
+      saklı; başka cihazda açılırsa takas başarısız olur, bu beklenen
+      davranıştır.
+- [ ] **Süresi geçmiş bağlantı.** Eski bir sıfırlama e-postasındaki
+      bağlantıya dokun: uygulama normal açılmalı ve KİLİTLENMEMELİ —
+      sıfırlama penceresi ÇIKMAZ, görünür bir hata da yok (dönüş linki
+      `error` parametresi taşır, supabase_flutter bunu akışa hata olarak
+      verir, dinleyici yalnızca loglar; web de aynı durumda sessizce ana
+      sayfaya düşüyor — bilinçli parite, ayrı bir hata ekranı eklenmedi).
+      Kullanıcı yeni bir bağlantı isteyerek devam eder.
+- [ ] **Web etkilenmedi.** Web'deki "Şifremi unuttum" akışı aynen çalışmalı
+      (web `redirectTo` olarak kendi origin'ini göndermeye devam ediyor —
+      mobil değişikliği yalnızca mobilin kendi isteğini etkiler).
 
 ## 3. Bulut kayıtları (web ↔ mobil aynı oyun)
 

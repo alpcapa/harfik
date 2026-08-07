@@ -207,7 +207,9 @@ mobile/
                              # local_save_store (karantinalı kayıt), pending_queue_store,
                              # pending_event_store, chat_read_store, flags_store
       ui/                    # app.dart, update_required_screen.dart, ve:
-      ui/auth/               # giriş-kayıt modalı, hesap butonu, avatar, Terms/Privacy
+      ui/auth/               # giriş-kayıt-şifremi-unuttum modalı, hesap
+                             # butonu, avatar, Terms/Privacy,
+                             # reset_password_modal (recovery kapısı)
       ui/game/               # tahta/raf/header/modaller (oyun ekranının
                              # tamamı) + PAYLAŞILAN küçük parçalar:
                              # modal_shell, neo_box/neo_button, player_badge,
@@ -250,9 +252,9 @@ mobile/
       goldens/*.json         # ÜRETİLMİŞ fixture'lar (elle düzenlenmez)
 ```
 
-Henüz OLMAYANLAR (sıradaki fazlar): depolama katmanı (SQLite/karantina),
-gerçek oyun UI'ı, Canlı oyun ekranları, `meanings.json` gömme (karar 4 —
-iskelette bilerek yok, MeaningModal'ın UI fazında eklenecek).
+Henüz OLMAYANLAR (sıradaki fazlar): Görüş Bildir formu, Canlı oyun
+ekranları, arkadaşlık sistemi, Setup'taki "Arkadaşınla paylaş" butonu
+(ayrıntı: "Sıradaki parçalar" satırı, auth+Canlı fazının sonunda).
 
 ## Porta Taşınan Değişmezler (PORT_BRIEF §7, 6 Ağustos 2026)
 
@@ -349,15 +351,21 @@ kapısı + idempotent hamle gönderimi uçtan uca bağlı ve test edilmiş durum
   önce). `flutter create --platforms=android,ios` çıktısı olduğu gibi
   commit'li; elle yapılan platform değişiklikleri ŞUNLARLA sınırlı:
   - `AndroidManifest.xml`: `android:label="Kelimeki"`,
-    `screenOrientation="portrait"`, ve kelimeki.com için `autoVerify`'lı App
-    Links intent-filter'ı. **assetlinks.json henüz YOK** — imzalama anahtarı
+    `screenOrientation="portrait"`, kelimeki.com için `autoVerify`'lı App
+    Links intent-filter'ı, ve `kelimeki` custom şeması için ikinci bir
+    intent-filter (7 Ağustos 2026, şifre sıfırlama parçası — host
+    kısıtlanmadı ki gelecekteki `kelimeki://...` linkleri de geçsin;
+    custom şema assetlinks/imza gerektirmez, bugün ÇALIŞIR durumda).
+    **assetlinks.json henüz YOK** — imzalama anahtarı
     oluşturulduğunda sitenin `/.well-known/assetlinks.json` yayınlaması
     gerekiyor (web tarafına dokunan iş; o güne dek filtre zararsız).
     iOS Universal Links (associated domains entitlement + AASA dosyası)
     tamamen Apple hesabı gerektirdiğinden hiç başlanmadı.
   - `Info.plist`: iPhone VE iPad portre-kilidi, `CFBundleDisplayName`
-    "Kelimeki". Portre kilidi ayrıca runtime'da `SystemChrome` ile —
-    web'deki `LandscapeHint` banner'ının yerine geçen kesin çözüm.
+    "Kelimeki", ve `CFBundleURLTypes` ile `kelimeki` custom şeması (aynı
+    parça — Universal Links'in aksine Apple hesabı gerektirmez). Portre
+    kilidi ayrıca runtime'da `SystemChrome` ile — web'deki `LandscapeHint`
+    banner'ının yerine geçen kesin çözüm.
 - **Bootstrap deseni (`bootstrap.dart`):** tüm dış dünya tek `AppServices`
   nesnesinde — widget testleri sahte servislerle pump edebiliyor. Sözlük
   yüklemesi ilk kareyi BEKLETMEZ (web'deki preloadWordSet gibi Future olarak
@@ -1802,11 +1810,70 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        Oynananlar" ALT SEKMELERİ hâlâ yok — liste devam edenlerin altında
        duruyor; Canlı sekmesi (dolayısıyla `onlineOnly: true` kullanımı)
        Canlı oyun fazının işi.
-   - Sıradaki parçalar (sıra önerisi): şifre sıfırlama (özel şema deep
-     link — `kelimeki://reset`, Dashboard redirect listesine ekleme
-     gerekir), Görüş Bildir formu, Canlı oyun ekranları, arkadaşlık
-     sistemi, "Arkadaşınla paylaş" (native share — artık `share_plus`
-     hazır, yalnızca Setup'taki buton kaldı).
+   - ✅ **Parça 6 — deep link altyapısı + şifre sıfırlama (7 Ağustos 2026,
+     `ui/auth/reset_password_modal.dart`):** AuthModal'daki son dürüstlük
+     diyaloğu ("Şifremi unuttum → kelimeki.com üzerinden") gerçek akışla
+     değişti; `kelimeki` custom şeması iki platforma da kaydedildi (bkz.
+     yukarıdaki "Flutter Uygulama İskeleti" platform notları).
+     - **Deep link borusu SIFIR özel kodla kuruldu — kaynaktan doğrulanan
+       üç halka:** (1) gotrue 2.27.1'in `resetPasswordForEmail`'i PKCE
+       verifier'ı `passwordRecovery` OLAY ADIYLA saklıyor ve dönüşteki
+       `?code=...` takası (`exchangeCodeForSession`) bu adı okuyup
+       `AuthChangeEvent.passwordRecovery` yayınlıyor — yani supabase_flutter
+       v2'nin varsayılan PKCE akışında flow tipi değiştirmeye/elle URI
+       ayrıştırmaya GEREK YOK (eski sürümlerde bilinen bir eksikti, bu
+       sürümde kapalı — pub-cache kaynağı okunarak doğrulandı, tahminle
+       değil). (2) supabase_flutter auth parametresi (`code`/`access_token`/
+       `error*`) taşıyan HER gelen URI'yi app_links üzerinden kendisi
+       yakalayıp `getSessionFromUrl`'a verir; taşımayanlara DOKUNMAZ —
+       gelecekteki `kelimeki://davet/...` linkleri aynı `AppLinks()
+       .uriLinkStream`'den (broadcast) bağımsız dinlenebilir, arkadaşlık
+       parçası boruyu hazır bulacak. (3) Mobilde İLK (cold start) URI de
+       aynı stream'e dahil — soğuk başlangıç için ayrı kod yok.
+     - **`AuthService`:** `passwordRecovery`/`clearPasswordRecovery` (web
+       useAuth), `sendPasswordReset` (web'den tek fark `redirectTo:
+       resetRedirectUri` — `kelimeki://reset`, env.dart) ve `setNewPassword`
+       portları. **Dashboard el işi:** bu URI Supabase → Authentication →
+       URL Configuration → Redirect URLs'e eklenmeli (mobile/TESTING.md'de
+       ön koşul maddesi) — eklenmezse GoTrue linki sessizce Site URL'e
+       düşürür, repo/migration izi olmayan bir konfigürasyon.
+     - **AuthModal forgot modu** web'le birebir: yalnız e-posta +
+       "BAĞLANTI GÖNDER" + "Giriş ekranına dön"; başarı bilgisi ALTIN
+       renkte — `_infoGold` web `infoTone`'un portu ("Hesap oluşturuldu"
+       kırmızı kalır). Boş e-posta web'de HTML `required` ile engelli,
+       mobil karşılığı açık kontrol ('E-posta zorunludur.').
+     - **Kök recovery kapısı `MaterialApp.builder`'da** (web App.tsx erken
+       dönüşü): builder Navigator'ı SARDIĞINDAN kapı hangi rota/dialog açık
+       olursa olsun önde; alttaki ağaç sökülmez (state korunur — web'de de
+       App component'i mount kalıp yalnızca render'ı değişiyordu), beyaz
+       `ModalBarrier` web'in "boş sayfa + ortada modal" görünümünü verir.
+       **İki incelik:** (a) katman Navigator'ın DIŞINDA yaşadığından kendi
+       `Overlay`'i şart — KModal ✕'inin tooltip'i gibi Overlay isteyen her
+       şey onsuz fırlatırdı; (b) `KModal`'a opsiyonel `onClose` eklendi
+       (web Modal'ın prop'u) — route'suz inline render'da varsayılan
+       `Navigator.pop` ALTTAKİ GERÇEK EKRANI pop ederdi.
+     - **Süresi geçmiş bağlantı SESSİZ (bilinçli parite):** dönüş linki
+       `error` parametresi taşır → supabase_flutter akışa hata verir →
+       dinleyici yalnızca loglar; web de aynı durumda sessizce ana sayfaya
+       düşüyor. Ayrı bir hata ekranı bilinçli eklenmedi (TESTING.md'de
+       dürüst madde).
+     - Doğrulama: `reset_password_test.dart` (5 test — bayrak birimi;
+       forgot geçişi + boş e-posta + akışın `sendPasswordReset`'e indiği
+       'Supabase yapılandırılmadı.' kanıtı; modal doğrulama sırası/
+       metinleri + başarı + onDone; sunucu hatasının friendlyAuthMessage'tan
+       geçişi; kök kapı — bariyerin dokunuşu yuttuğu dahil — + ekran
+       görüntüsü `build/screenshots/reset_password.png`); auth_test'in eski
+       diyalog beklentisi güncellendi. 148/148 yeşil, analyze temiz;
+       manifest/plist elle düzenlemesi attribute seviyesinde doğrulandı
+       (üretici dersinin refleksi — portre kilidi/mevcut filtreler birebir).
+       **Doğrulama sınırı:** gerçek e-posta + deep link + PKCE takası bu
+       ortamdan test EDİLEMEZ (Supabase'e gerçek istek + e-posta kutusu +
+       cihaz gerekir) — TESTING.md bölüm 2'deki dört yeni maddeyle cihazda
+       doğrulanmalı; Redirect URL Dashboard'a eklenmeden akış çalışmaz.
+   - Sıradaki parçalar (sıra önerisi): Görüş Bildir formu, Canlı oyun
+     ekranları, arkadaşlık sistemi (davet deep link'i — `kelimeki` şeması
+     ve app_links borusu artık hazır), "Arkadaşınla paylaş" (native share —
+     `share_plus` hazır, yalnızca Setup'taki buton kaldı).
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

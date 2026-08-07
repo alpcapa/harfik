@@ -18,6 +18,14 @@ bool get supabaseConfigured =>
 /// Hedef sayfa girişsiz de açılabilen `SharedGamePage`.
 const String webOrigin = 'https://kelimeki.com';
 
+/// Şifre sıfırlama e-postasındaki bağlantının uygulamaya dönüş adresi.
+/// Web `sendPasswordReset` `window.location.origin`'e döndürür; uygulamada
+/// karşılık custom şema (AndroidManifest intent-filter'ı + Info.plist
+/// CFBundleURLTypes bu şemayı kaydeder). Supabase Dashboard → Authentication →
+/// URL Configuration → Redirect URLs listesinde BİREBİR bu değer olmalı —
+/// yoksa GoTrue linki Site URL'e (web'e) düşürür (mobile/TESTING.md).
+const String resetRedirectUri = 'kelimeki://reset';
+
 /// Uygulama sürümü — pubspec.yaml'daki `version` ile BİRLİKTE artırılır
 /// (release disiplini, bkz. mobile/CLAUDE.md "Sürüm disiplini").
 /// `app_config.mobile_min_supported_version` eşiğiyle karşılaştırılır;

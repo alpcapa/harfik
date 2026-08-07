@@ -27,12 +27,20 @@ class KModal extends StatelessWidget {
   /// HelpModal'ın Hızlı Başlangıç ↔ Detaylı Kurallar geçişi).
   final Widget? headerLink;
 
+  /// ✕'in davranışı — web Modal'ın `onClose` prop'u. Verilmezse Navigator
+  /// pop (showDialog ile açılan olağan kullanım). Bir route OLMADAN inline
+  /// render edilen modal (ResetPasswordModal'ın kök recovery kapısı) pop
+  /// edilecek bir dialog route'u taşımadığından bunu geçmek ZORUNDA — aksi
+  /// halde ✕ alttaki gerçek ekran route'unu pop ederdi.
+  final VoidCallback? onClose;
+
   const KModal({
     super.key,
     required this.title,
     required this.child,
     this.titleWidget,
     this.headerLink,
+    this.onClose,
   });
 
   @override
@@ -86,7 +94,8 @@ class KModal extends StatelessWidget {
                       IconButton(
                         visualDensity: VisualDensity.compact,
                         tooltip: 'Kapat',
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed:
+                            onClose ?? () => Navigator.of(context).pop(),
                         icon: const Icon(Icons.close, size: 18, color: _muted),
                       ),
                     ],

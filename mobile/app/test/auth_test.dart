@@ -185,10 +185,12 @@ void main() {
     await tester.pump();
     expect(find.text('E-posta ve şifre zorunludur.'), findsOneWidget);
 
-    // "Şifremi unuttum"/"Kayıt ol" dürüst yönlendirme diyaloğu açar.
+    // "Şifremi unuttum" artık gerçek forgot moduna geçer (eski "kelimeki.com
+    // üzerinden" yönlendirme diyaloğu şifre sıfırlama parçasıyla kalktı) —
+    // akışın kendisi reset_password_test.dart'ta.
     await tester.tap(find.text('Şifremi unuttum'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('kelimeki.com üzerinden'), findsOneWidget);
+    expect(find.text('ŞİFREMİ UNUTTUM'), findsOneWidget);
   });
 
   testWidgets(

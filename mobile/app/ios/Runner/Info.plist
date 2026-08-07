@@ -22,6 +22,24 @@
 		<string>$(FLUTTER_BUILD_NAME)</string>
 		<key>CFBundleSignature</key>
 		<string>????</string>
+		<!-- Custom şema (kelimeki://): Supabase auth dönüş linkleri — bugün
+		     şifre sıfırlama (kelimeki://reset), ileride davet gibi diğer
+		     dönüşler. Universal Links'in aksine Apple hesabı/AASA dosyası
+		     gerektirmez. supabase_flutter gelen URI'yi app_links üzerinden
+		     kendisi yakalar (bkz. mobile/CLAUDE.md, şifre sıfırlama parçası). -->
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLName</key>
+				<string>com.kelimeki.kelimeki</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>kelimeki</string>
+				</array>
+			</dict>
+		</array>
 		<key>CFBundleVersion</key>
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>LSRequiresIPhoneOS</key>

@@ -1,7 +1,8 @@
-// Giriş + Kayıt penceresi — src/components/AuthModal.tsx portu (web'deki
-// gibi TEK modal, içeride mod makinesi: login ↔ signup; 'forgot' modu
-// recovery deep-link'i gerektirdiğinden SONRAKİ parça — dürüst
-// "kelimeki.com üzerinden" diyaloğu).
+// Giriş + Kayıt + Şifremi Unuttum penceresi — src/components/AuthModal.tsx
+// portu (web'deki gibi TEK modal, içeride mod makinesi: login ↔ signup ↔
+// forgot). Forgot modu yalnız e-posta alır, `sendPasswordReset` custom
+// şemaya (`kelimeki://reset`) dönen bir sıfırlama e-postası gönderir;
+// bağlantı tıklanınca ResetPasswordModal kapısı devreye girer (app.dart).
 //
 // Kayıt akışının web'den taşınan incelikleri:
 // - Takma isim boşluk kabul etmez (display_name_no_whitespace migration'ı)
@@ -30,6 +31,7 @@ const Color _accent = Color(0xFF2563EB);
 const Color _border = Color(0xFFDCE2EA);
 const Color _red = Color(0xFFE0483A);
 const Color _green = Color(0xFF1FA05C);
+const Color _gold = Color(0xFFB7791F); // web text-gold (tailwind.config)
 
 Future<void> showLoginModal(BuildContext context, AuthService auth) {
   return showDialog<void>(
@@ -38,7 +40,7 @@ Future<void> showLoginModal(BuildContext context, AuthService auth) {
   );
 }
 
-enum _Mode { login, signup }
+enum _Mode { login, signup, forgot }
 
 enum _NickStatus { idle, checking, available, taken, error }
 
@@ -71,7 +73,8 @@ class _AuthModalState extends State<AuthModal> {
 
   bool _busy = false;
   String? _error;
-  String? _info; // login modunda "hesap oluşturuldu" bilgisi
+  String? _info; // "hesap oluşturuldu" / "sıfırlama bağlantısı gönderildi"
+  bool _infoGold = false; // web infoTone: 'gold' | 'red'
 
   // ── useNicknameAvailability portu (400ms debounce + sıra sayacı) ────────
   _NickStatus _nickStatus = _NickStatus.idle;
@@ -169,6 +172,20 @@ class _AuthModalState extends State<AuthModal> {
         if (mounted) Navigator.of(context).pop();
         return;
       }
+      if (_mode == _Mode.forgot) {
+        final email = _email.text.trim();
+        // Web'de boş gönderim HTML `required` ile engelli; mobil karşılığı
+        // login modundaki aynı açık kontrol deseni.
+        if (email.isEmpty) throw const _FormError('E-posta zorunludur.');
+        await widget.auth.sendPasswordReset(email);
+        if (mounted) {
+          setState(() {
+            _infoGold = true;
+            _info = 'Şifre sıfırlama bağlantısı e-postana gönderildi.';
+          });
+        }
+        return;
+      }
       // ── Kayıt (web submit doğrulama sırası) ──────────────────────────
       if (_firstName.text.trim().isEmpty) {
         throw const _FormError('Ad zorunludur.');
@@ -210,9 +227,11 @@ class _AuthModalState extends State<AuthModal> {
       if (sessionOpened) {
         Navigator.of(context).pop();
       } else {
-        // E-posta doğrulaması açık: web'deki gibi login moduna dön + bilgi.
+        // E-posta doğrulaması açık: web'deki gibi login moduna dön + bilgi
+        // (web setInfoTone('red')).
         setState(() {
           _mode = _Mode.login;
+          _infoGold = false;
           _info = 'Hesap oluşturuldu. E-postanı doğrulayıp giriş yap.';
         });
       }
@@ -223,33 +242,20 @@ class _AuthModalState extends State<AuthModal> {
     }
   }
 
-  void _forgotComingSoon() {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Şifremi Unuttum'),
-        content: const Text(
-            'Şifre sıfırlama akışı uygulamanın sonraki sürümünde gelecek. '
-            'Şimdilik kelimeki.com üzerinden yapabilirsin.'),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('TAMAM'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final signup = _mode == _Mode.signup;
+    final forgot = _mode == _Mode.forgot;
     final submitDisabled = _busy ||
         (signup &&
             (_nickStatus == _NickStatus.checking ||
                 _nickStatus == _NickStatus.taken));
     return KModal(
-      title: signup ? 'Kayıt' : 'Giriş',
+      title: signup
+          ? 'Kayıt'
+          : forgot
+              ? 'Şifremi Unuttum'
+              : 'Giriş',
       child: AutofillGroup(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -329,32 +335,41 @@ class _AuthModalState extends State<AuthModal> {
                     }
                   })),
             ],
-            const SizedBox(height: 12),
-            _labeled('ŞİFRE',
-                required: signup,
-                child: _field(_password,
-                    hint: 'Şifre',
-                    obscure: !_showPassword,
-                    autofillHints: [
-                      signup
-                          ? AutofillHints.newPassword
-                          : AutofillHints.password
-                    ],
-                    onSubmitted: signup ? null : (_) => _submit(),
-                    suffix: IconButton(
-                      visualDensity: VisualDensity.compact,
-                      tooltip:
-                          _showPassword ? 'Şifreyi gizle' : 'Şifreyi göster',
-                      icon: Icon(
-                        _showPassword
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        size: 18,
-                        color: _muted,
-                      ),
-                      onPressed: () =>
-                          setState(() => _showPassword = !_showPassword),
-                    ))),
+            if (!forgot) ...[
+              const SizedBox(height: 12),
+              _labeled('ŞİFRE',
+                  required: signup,
+                  child: _field(_password,
+                      hint: 'Şifre',
+                      obscure: !_showPassword,
+                      autofillHints: [
+                        signup
+                            ? AutofillHints.newPassword
+                            : AutofillHints.password
+                      ],
+                      onSubmitted: signup ? null : (_) => _submit(),
+                      suffix: IconButton(
+                        visualDensity: VisualDensity.compact,
+                        tooltip:
+                            _showPassword ? 'Şifreyi gizle' : 'Şifreyi göster',
+                        icon: Icon(
+                          _showPassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          size: 18,
+                          color: _muted,
+                        ),
+                        onPressed: () =>
+                            setState(() => _showPassword = !_showPassword),
+                      ))),
+            ] else ...[
+              const SizedBox(height: 12),
+              const Text(
+                'E-posta adresini gir, sıfırlama bağlantısı gönderelim.',
+                style: TextStyle(
+                    fontFamily: 'SpaceMono', fontSize: 12, color: _muted),
+              ),
+            ],
             if (signup) ...[
               const SizedBox(height: 12),
               // Koşullar satırı: kutu işareti checkbox'tan, linkler kendi
@@ -408,8 +423,10 @@ class _AuthModalState extends State<AuthModal> {
             if (_info != null) ...[
               const SizedBox(height: 10),
               Text(_info!,
-                  style: const TextStyle(
-                      fontFamily: 'SpaceMono', fontSize: 11, color: _red)),
+                  style: TextStyle(
+                      fontFamily: 'SpaceMono',
+                      fontSize: 11,
+                      color: _infoGold ? _gold : _red)),
             ],
             const SizedBox(height: 16),
             NeoButton(
@@ -417,7 +434,9 @@ class _AuthModalState extends State<AuthModal> {
                   ? '…'
                   : signup
                       ? 'KAYIT OL'
-                      : 'GİRİŞ YAP',
+                      : forgot
+                          ? 'BAĞLANTI GÖNDER'
+                          : 'GİRİŞ YAP',
               variant: NeoButtonVariant.accent,
               fontSize: 13,
               letterSpacing: 1.2,
@@ -425,7 +444,7 @@ class _AuthModalState extends State<AuthModal> {
               onPressed: submitDisabled ? null : _submit,
             ),
             const SizedBox(height: 12),
-            if (!signup) ...[
+            if (_mode == _Mode.login) ...[
               _footerLink(
                 child: const Text('Şifremi unuttum',
                     textAlign: TextAlign.center,
@@ -434,7 +453,7 @@ class _AuthModalState extends State<AuthModal> {
                         fontSize: 12,
                         color: _muted,
                         decoration: TextDecoration.underline)),
-                onTap: _forgotComingSoon,
+                onTap: () => _switchMode(_Mode.forgot),
               ),
               const SizedBox(height: 6),
               _footerLink(
@@ -453,7 +472,18 @@ class _AuthModalState extends State<AuthModal> {
                 ),
                 onTap: () => _switchMode(_Mode.signup),
               ),
-            ] else
+            ] else if (forgot)
+              _footerLink(
+                child: const Text('Giriş ekranına dön',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontFamily: 'SpaceMono',
+                        fontSize: 12,
+                        color: _muted,
+                        decoration: TextDecoration.underline)),
+                onTap: () => _switchMode(_Mode.login),
+              )
+            else
               _footerLink(
                 child: Text.rich(
                   TextSpan(children: [

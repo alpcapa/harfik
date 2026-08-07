@@ -18,6 +18,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config/env.dart' show resetRedirectUri;
+
 /// `profiles` satırının bu fazda kullanılan alt kümesi (web `Profile`
 /// tipinin eşleniği; skor/lig alanları sonraki parçaların işi).
 class KProfile {
@@ -81,7 +83,15 @@ class AuthService extends ChangeNotifier {
     _applyUser(c.auth.currentSession?.user);
     _loading = false;
     _sub = c.auth.onAuthStateChange.listen(
-      (state) => _applyUser(state.session?.user),
+      (state) {
+        // Şifre sıfırlama linki tıklanınca supabase_flutter deep link'i
+        // kendisi yakalayıp (app_links) oturumu kurar ve bu olayı yayınlar —
+        // web useAuth'un `if (event === 'PASSWORD_RECOVERY')` dalı.
+        if (state.event == AuthChangeEvent.passwordRecovery) {
+          _passwordRecovery = true;
+        }
+        _applyUser(state.session?.user);
+      },
       // Web getSession catch'inin eşleniği: akış hatası oturumu değiştirmez,
       // yalnızca loglanır — UI kilitlenmez.
       onError: (Object e) => debugPrint('[Kelimeki] auth akış hatası: $e'),
@@ -108,6 +118,29 @@ class AuthService extends ChangeNotifier {
   KProfile? get profile => _profile;
   bool get loading => _loading;
   bool get profileLoading => _profileLoading;
+
+  bool _passwordRecovery = false;
+
+  /// Sıfırlama e-postasındaki bağlantıyla bir recovery oturumu açıldı —
+  /// yeni şifre belirlenene (ya da kapatılana) kadar uygulamanın önüne
+  /// ResetPasswordModal geçer (web useAuth `passwordRecovery` + App.tsx
+  /// erken dönüşü; mobilde kapı `KelimekiApp`'in builder'ında).
+  bool get passwordRecovery => _passwordRecovery;
+
+  /// Web `clearPasswordRecovery` — modal kapatılınca/şifre kaydedilince.
+  void clearPasswordRecovery() {
+    if (!_passwordRecovery) return;
+    _passwordRecovery = false;
+    notifyListeners();
+  }
+
+  /// Testler için: recovery olayını ağsız tetikler (fake'te gerçek
+  /// onAuthStateChange akışı yok).
+  @visibleForTesting
+  void debugTriggerPasswordRecovery() {
+    _passwordRecovery = true;
+    notifyListeners();
+  }
 
   /// Web UserMenu `identityLoading` — avatar/isim henüz güvenilir değil.
   bool get identityLoading => _loading || (_user != null && _profileLoading);
@@ -210,6 +243,26 @@ class AuthService extends ChangeNotifier {
     final data = await c
         .rpc('check_nickname_available', params: {'p_nickname': nickname});
     return data == true;
+  }
+
+  /// Şifre sıfırlama e-postası gönderir — web `sendPasswordReset`
+  /// (src/lib/api.ts) portu; tek fark dönüş adresi: web origin'ine değil
+  /// uygulamanın custom şemasına (`kelimeki://reset`) döner. gotrue-dart
+  /// PKCE verifier'ı `passwordRecovery` olay adıyla sakladığından dönüşteki
+  /// `?code=...` takası doğru olayı yayınlar (kaynaktan doğrulandı,
+  /// gotrue 2.27.1 — bkz. mobile/CLAUDE.md, şifre sıfırlama parçası).
+  Future<void> sendPasswordReset(String email) async {
+    final c = _client;
+    if (c == null) throw const AuthException('Supabase yapılandırılmadı.');
+    await c.auth.resetPasswordForEmail(email, redirectTo: resetRedirectUri);
+  }
+
+  /// Recovery oturumunda yeni şifreyi belirler — web `setNewPassword`:
+  /// eski şifre gerekmez, oturum linkin kendisiyle zaten doğrulanmıştır.
+  Future<void> setNewPassword(String newPassword) async {
+    final c = _client;
+    if (c == null) throw const AuthException('Supabase yapılandırılmadı.');
+    await c.auth.updateUser(UserAttributes(password: newPassword));
   }
 
   Future<void> signOut() async {
