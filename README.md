@@ -148,9 +148,11 @@ mobile/                    # Flutter (iOS+Android) portu — ayrıntı: mobile/C
 └── app/                   # Flutter uygulaması: Yapay Zeka'ya karşı oyun uçtan uca
     │                      # oynanabilir (kurulum/tahta/raf/sürükle-bırak, kurallar,
     │                      # kelime anlamı, hamle geçmişi), Supabase oturumu
-    │                      # (giriş/kayıt), bulut kayıt senkronu, skor kartı/k-lig,
-    │                      # oyun geçmişi (tahta önizlemesi, beğeni, sohbet
-    │                      # arşivi, paylaşma), Son Oynadıklarım listesi
+    │                      # (giriş/kayıt/şifre sıfırlama), bulut kayıt senkronu,
+    │                      # skor kartı/k-lig, oyun geçmişi (tahta önizlemesi,
+    │                      # beğeni, sohbet arşivi, paylaşma), Son Oynadıklarım,
+    │                      # Görüş Bildir, arkadaşlık sistemi (davet linki dahil),
+    │                      # Canlı oyun davet/kabul akışı (tahta sonraki parça)
     ├── assets/dictionary/ # üretilmiş asset'ler: words_tr.txt (kaynak
     │                      # src/data/words.ts — npm run generate-golden-vectors)
     │                      # ve meanings.db (npm run generate-meanings-db)

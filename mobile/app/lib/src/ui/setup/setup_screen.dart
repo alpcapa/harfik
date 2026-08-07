@@ -3,7 +3,8 @@
 // anti-kaçış) oradan buraya taşındı.
 //
 // Web paritesi: logo + tanıtım metni, "Oyun Tipi" sekmeleri (Arkadaşınla =
-// dürüst "sonraki sürümde" diyaloğu), Oyuncu Sayısı 2/4, renkli Oyuncular
+// LiveGamesTab, davet/kabul akışı — 7 Ağustos 2026), Oyuncu Sayısı 2/4,
+// renkli Oyuncular
 // listesi (Misafir + "Yapay Zeka N"), sözlük hazır olana dek "HAZIRLANIYOR…"
 // gösteren Oyunu Başlat; misafirin tekil kaydı varsa form yerine "Devam Eden
 // Oyun" satırı (avatarlar + Sıra: + kalan süre) ve 7 gün paragrafı; misafirin
@@ -32,6 +33,7 @@ import '../game/neo_button.dart';
 import '../game/player_badge.dart';
 import '../game/player_avatar_row.dart';
 import '../game/player_colors.dart';
+import '../live/live_games_tab.dart';
 import '../auth/account_button.dart';
 import '../auth/k_avatar.dart';
 import 'membership_perks_box.dart';
@@ -52,6 +54,11 @@ class SetupScreen extends StatefulWidget {
 
 class _SetupScreenState extends State<SetupScreen> {
   int _count = 2;
+
+  /// Web `mainView` ('local' | 'live') — OYUN TİPİ sekmeleri. Canlı sekme
+  /// yalnızca görünümü değiştirir; YZ tarafının state'i (kayıtlar/form)
+  /// mount'ta kaldığından geçişte kaybolmaz.
+  bool _liveView = false;
 
   LocalGameRepo? _repo;
   GamesRepo? _games;
@@ -364,21 +371,6 @@ class _SetupScreenState extends State<SetupScreen> {
     await _openGame(controller, words, resumeCloudId: save.id);
   }
 
-  void _showComingSoon(String title, String message) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('TAMAM'),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -455,26 +447,24 @@ class _SetupScreenState extends State<SetupScreen> {
                         Expanded(
                           child: _ChoiceButton(
                             label: 'YAPAY ZEKA İLE',
-                            selected: true,
-                            onTap: () {},
+                            selected: !_liveView,
+                            onTap: () => setState(() => _liveView = false),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: _ChoiceButton(
                             label: 'ARKADAŞINLA',
-                            selected: false,
-                            onTap: () => _showComingSoon(
-                              'Arkadaşınla',
-                              'Canlı oyun (arkadaşlarınla gerçek zamanlı) '
-                                  'uygulamanın sonraki sürümünde gelecek. '
-                                  'Şimdilik Yapay Zeka\'ya karşı oynayabilirsin.',
-                            ),
+                            selected: _liveView,
+                            onTap: () => setState(() => _liveView = true),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 20),
+                    if (_liveView)
+                      LiveGamesTab(services: widget.services)
+                    else
                     FutureBuilder<SetWordSource>(
                       future: widget.services.dictionary,
                       builder: (context, snap) {

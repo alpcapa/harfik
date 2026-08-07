@@ -1,7 +1,8 @@
 // Setup ekranı testleri — web Setup.tsx misafir akışının paritesi: oyuncu
-// sayısı seçimi, Misafir+YZ kadrosuyla oyun başlatma, Arkadaşınla "sonraki
-// sürümde" diyaloğu, tekil kayıt varken anti-kaçış (form yok, Devam Eden
-// Oyun satırı) ve kayıttan devam. Gerçek SQLite (ffi) + gerçek sözlük.
+// sayısı seçimi, Misafir+YZ kadrosuyla oyun başlatma, Arkadaşınla sekmesinin
+// misafir görünümü (LiveGamesTab giriş çağrısı), tekil kayıt varken
+// anti-kaçış (form yok, Devam Eden Oyun satırı) ve kayıttan devam.
+// Gerçek SQLite (ffi) + gerçek sözlük.
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -141,16 +142,22 @@ void main() {
     expect(find.byType(AuthModal), findsOneWidget);
   });
 
-  testWidgets('ARKADAŞINLA sekmesi dürüst "sonraki sürümde" diyaloğu açar',
+  testWidgets('ARKADAŞINLA sekmesi misafire giriş çağrısı gösterir, geri döner',
       (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));
     await pumpSetup(tester, services());
 
     await tester.tap(find.text('ARKADAŞINLA'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('sonraki sürümünde gelecek'), findsOneWidget);
-    await tester.tap(find.text('TAMAM'));
+    // Girişsiz + Supabase yapılandırılmamış: LiveGamesTab'ın misafir görünümü;
+    // GİRİŞ YAP butonu yalnızca auth.configured iken çizilir (burada değil).
+    expect(find.text('Canlı oyun oynamak için giriş yapmalısın.'),
+        findsOneWidget);
+    expect(find.text('OYUNU BAŞLAT'), findsNothing);
+
+    await tester.tap(find.text('YAPAY ZEKA İLE'));
     await tester.pumpAndSettle();
+    expect(find.text('OYUNU BAŞLAT'), findsOneWidget);
   });
 
   testWidgets(

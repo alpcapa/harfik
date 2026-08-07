@@ -14,6 +14,7 @@ import 'data/feedback_api.dart';
 import 'data/friend_invite_inbox.dart';
 import 'data/friends_api.dart';
 import 'data/games_api.dart';
+import 'data/online_games_api.dart';
 import 'data/stats_api.dart';
 import 'data/meaning_store.dart';
 import 'data/supabase_client.dart';
@@ -59,6 +60,10 @@ class AppServices {
   /// hesap menüsündeki "Arkadaşlar" satırı hiç çizilmez).
   final FriendsRepo? friends;
 
+  /// Canlı oyun davet/kabul akışı — Supabase yoksa null (ARKADAŞINLA
+  /// sekmesi girişsiz uyarı/giriş çağrısı gösterir).
+  final OnlineGamesRepo? onlineGames;
+
   /// Gelen arkadaş daveti linkleri (kelimeki://davet/... ve
   /// kelimeki.com/davet/...) — token'ları `pending_events`e kuyruklar,
   /// SetupScreen işler. Depolamasız test ortamında null.
@@ -83,6 +88,7 @@ class AppServices {
     this.feedback,
     this.friends,
     this.inviteInbox,
+    this.onlineGames,
   });
 }
 
@@ -113,6 +119,9 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
     ),
     friends:
         supabase != null ? FriendsRepo(SupabaseFriendsGateway(supabase)) : null,
+    onlineGames: supabase != null
+        ? OnlineGamesRepo(SupabaseOnlineGamesGateway(supabase))
+        : null,
     inviteInbox: createFriendInviteInbox(storage),
   );
 }

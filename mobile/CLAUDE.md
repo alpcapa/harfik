@@ -196,6 +196,10 @@ mobile/
       data/dictionary_loader.dart # rootBundle + Isolate.run → SetWordSource
       data/supabase_client.dart   # anahtar yoksa null → tam offline mod (web'deki configured)
       data/online_api.dart   # submit_move sarmalayıcısı: p_move_id UUID + retry
+      data/online_games_api.dart # Canlı oyun davet/kabul: list_my_online_games/
+                             # create/respond RPC'leri + sıra/son-tarih +
+                             # "hafif süpürme" + Realtime aboneliği + kova
+                             # filtreleri/süre etiketleri (saf fonksiyonlar)
       data/cloud_save_repo.dart   # local_game_saves senkronu (girişli YZ oyunları)
       data/game_record.dart  # buildGameRecord portu (`games` satırı)
       data/games_api.dart    # games/game_finishes + dayanıklı kuyruk/flush +
@@ -229,6 +233,9 @@ mobile/
       ui/feedback/           # feedback_modal ("Görüş Bildir" formu)
       ui/friends/            # friends_modal (3 sekme + davet paylaşımı +
                              # paylaşılan onay/sonuç diyalogları)
+      ui/live/               # Canlı oyun davet/kabul: live_games_tab (3 alt
+                             # sekme + kartlar), live_game_create_form,
+                             # friend_suggest_modal (kabul sonrası öneri)
       util/semver.dart, util/uuid.dart, util/share_board.dart
     android/ ios/            # flutter create çıktısı + elle değişiklikler (aşağı bkz.)
     test/                    # util, controller (golden replay!), widget duman testleri
@@ -259,9 +266,10 @@ mobile/
       goldens/*.json         # ÜRETİLMİŞ fixture'lar (elle düzenlenmez)
 ```
 
-Henüz OLMAYANLAR (sıradaki fazlar): Canlı oyun ekranları, Setup'taki
-"Arkadaşınla paylaş" butonu (ayrıntı: "Sıradaki parçalar" satırı,
-auth+Canlı fazının sonunda).
+Henüz OLMAYANLAR (sıradaki fazlar): Canlı oyun TAHTASI (OnlineGameScreen —
+davet/kabul akışı parça 9'la geldi, oynanış ekranı sıradaki parça), oyun içi
+mesajlaşma, Setup'taki "Arkadaşınla paylaş" butonu (ayrıntı: "Sıradaki
+parçalar" satırı, auth+Canlı fazının sonunda).
 
 ## Porta Taşınan Değişmezler (PORT_BRIEF §7, 6 Ağustos 2026)
 
@@ -2006,9 +2014,78 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        değişmez taraması temiz. **Doğrulama sınırı:** gerçek RPC'ler/RLS,
        gerçek davet e-postası/linki ve iki hesaplı karşılıklı-istek
        trigger'ı cihazda doğrulanmalı — TESTING.md "Arkadaşlar" bölümü.
-   - Sıradaki parçalar (sıra önerisi): Canlı oyun ekranları (arkadaşlık
-     artık hazır), "Arkadaşınla paylaş" (native share — `share_plus`
-     hazır, yalnızca Setup'taki buton kaldı), Hesap Ayarları ekranı.
+   - ✅ **Parça 9 — Canlı oyun davet/kabul akışı (7 Ağustos 2026,
+     `data/online_games_api.dart`, `ui/live/`):** Canlı fazın ilk alt
+     parçası — web Faz 2'nin (davet + kabul) tam portu; ARKADAŞINLA sekmesi
+     artık dürüst diyalog değil gerçek `LiveGamesTab`. Oynanış (tahta +
+     `submit_move` + state senkronu) BİLİNÇLİ olarak sonraki alt parça —
+     aktif oyuna dokunmak şimdilik dürüst "tahta sonraki sürümde,
+     kelimeki.com'dan oynayabilirsin" diyaloğu gösteriyor.
+     - **`OnlineGamesRepo`/`SupabaseOnlineGamesGateway`:** web api.ts'in
+       `listMyOnlineGames`/`createOnlineGame`/`respondToGameInvite`/
+       `fetchOnlineGameTurns`/`fetchOnlineGameDeadlines` bölümü, GamesRepo
+       gateway/repo bölünmesiyle. Web sözleşmeleri birebir: `create`
+       sonrası `notify-game-invite` fire-and-forget (hata yalnız loglanır);
+       "hafif süpürme" `load()`un içinde — süresi ZATEN dolmuş sıra/davet
+       görülürse `check_turn_timeout`/`check_invite_expiry` tetiklenip
+       liste BİR KEZ daha çekilir (testte sahte sunucu etkisiyle iki fetch
+       sayılarak kanıtlı); liste hatası `null` (StatsRepo kararı — UI eski
+       listeyi korur). Realtime aboneliği ÜÇ tabloda (`online_games` +
+       `game_invites` + `online_game_states` — web 4 Ağustos dersi: hamle
+       yalnız state'i değiştirir), kanal adı `uuidV4` ile benzersiz, her
+       tüketici 300ms debounce'lar (web kuralı).
+     - **Kova filtreleri saf fonksiyon olarak** (`inviteBucket`/
+       `activeBucket`/`waitingBucket`/`acceptedWaitingBucket`/
+       `myTurnCount`): `inviteBucket` `status == pending` ŞARTINI taşıyor —
+       web'in 4 Ağustos 2026 hayalet-davet hatası (iptal edilen davet
+       davetlinin listesinde sonsuza dek kalıyordu) porta hiç girmeden
+       kapandı, testi de var. `activeBucket` sıra-bende-önce sıralamasında
+       indeks tie-break kullanıyor (Dart `List.sort` kararlı değil — core
+       sözleşmesinin UI katmanındaki tekrarı).
+     - **`LiveGamesTab`:** üç alt sekme (Devam Edenler / Oyun Davetleri /
+       Son Oynananlar) `CountBadge` rozetli; varsayılan alt sekme kuralı
+       web'in düzeltilmiş hâliyle — karar YALNIZCA sunucudan dönen taze
+       sonucun setState'inde veriliyor (önbellek hidrasyonu initState'te,
+       karara hiç değmiyor — hasFreshGames dersinin yapısal hâli), elle
+       seçim kalıcı devre dışı bırakıyor, sekme sonradan otomatik
+       değişmiyor. Modül seviyesinde `user.id` anahtarlı snapshot önbelleği
+       (web liveGamesCache), hesap değişimi `user.id` karşılaştırmasıyla,
+       eski yüklemenin sonucu `_loadSeq` sayacıyla düşürülüyor (web iptal
+       jetonunun sayaç karşılığı). Kalan süre etiketi YALNIZCA sırası
+       çağıranda olan satırda (web 3 Ağustos dersi). Kabul → henüz arkadaş
+       olunmayan katılımcılar için `FriendSuggestModal` (hepsi önceden
+       işaretli, tekil istek hatası yutulur) — web'in aynı akışı.
+     - **`LiveGameCreateForm`:** kompozisyon kuralı istemcide de aynı
+       (2 kişilikte tam 1 arkadaş/YZ yok; 4 kişilikte 2-3 arkadaş, yalnız
+       4. koltuk YZ). 2 arkadaşla gönderimde "4. koltuk Yapay Zeka ile
+       doldurulacak, tamam mı?" onayı; HAYIR → kalıcı YZ satırı (bir daha
+       sorulmaz, 3 arkadaş seçiliyken pasif). Gönderim sonrası "Davetiniz
+       gönderilmiştir." ekranı — isimler gönderim ANINDA dondurulur
+       (web sentTo). Arkadaş listesi hesap değişiminde `user.id` ile
+       yeniden çekilir (web 5 Ağustos dersi — form tam görünüm, mount'ta
+       kalarak hesap değişimini atlatabilir). **Bilinçli sapma:** web'in
+       viewport'a sabit alt barı yok (o, web'in #root scroll yapısına özgü
+       bir düzeltmeydi; mobilde liste kendi 280px sınırında kaydırılıyor).
+     - **Test dersi:** öneri modalının arkasındaki davet kartı aynı
+       isimleri çizdiğinden `find.text` çakışır — finder
+       `find.descendant(of: find.byType(Dialog))` ile daraltılmalı.
+     - Doğrulama: `live_games_test.dart` (16 test — kova filtreleri
+       [status==pending şartı dahil], süre etiketleri enjekte nowMs ile,
+       repo load/süpürme/null-hata/create+notify, LiveGamesTab varsayılan
+       sekme + kabul→öneri→istek akışı + durum/kalan-süre etiketleri +
+       `build/screenshots/live_games.png`, form 2/4 kuralları + YZ onayı +
+       sentTo + VAZGEÇ); `setup_screen_test`'in eski ARKADAŞINLA diyalog
+       beklentisi misafir giriş-çağrısı görünümüne güncellendi. 188/188
+       yeşil, analyze + değişmez taraması temiz. **Doğrulama sınırı:**
+       gerçek RPC'ler (`list_my_online_games`/`create_online_game`/
+       `respond_to_game_invite`/süpürmeler), Realtime kanalları ve davet
+       e-postası cihazda iki hesapla doğrulanmalı — TESTING.md bölüm 11.
+   - Sıradaki parçalar (sıra önerisi): Canlı oyun TAHTASI (OnlineGameScreen
+     — `SyncOnlineStateAction` zaten core'da, `OnlineApi.submitMove` hazır;
+     ardından oyun içi mesajlaşma ve Setup "Arkadaşınla (N)" rozeti +
+     girişte Canlı sekmesi varsayılanı), "Arkadaşınla paylaş" (native
+     share — `share_plus` hazır, yalnızca Setup'taki buton kaldı), Hesap
+     Ayarları ekranı.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

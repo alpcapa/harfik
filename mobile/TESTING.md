@@ -305,6 +305,41 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       değilsen kişi-ekle ikonu (dokun → istek onayı) görünmeli; kendi
       kartında simge OLMAMALI.
 
+## 11. Canlı oyun — davet/kabul (tahta henüz yok)
+
+İki gerçek hesap gerekir (biri web'de olabilir). Oynanış ekranı sonraki
+parça — aktif oyuna dokunmak şimdilik "tahta sonraki sürümde" diyaloğu
+gösterir, bu BEKLENEN davranış.
+
+- [ ] **Davet gönderme.** ARKADAŞINLA → "+ Yeni Canlı Oyun Aç" → 2
+      oyunculu, bir arkadaş seç → Davet Gönder: "Davetiniz gönderilmiştir."
+      ekranı; karşı hesapta (web LiveGamesTab ya da mobil) davet
+      görünmeli ve davetliye e-posta gitmeli (`notify-game-invite`,
+      alıcının `email_notifications_enabled` açıksa).
+- [ ] **4 kişilik YZ kuralı.** 4 oyunculu + 2 arkadaşla gönderimde
+      "4. koltuk Yapay Zeka…" onayı çıkmalı; HAYIR → listede kalıcı
+      "Yapay Zeka" satırı; 3 arkadaş seçiliyken YZ satırı pasif olmalı.
+      Sunucu tarafı: oluşan oyunda 4. koltuk `{"type":"ai"}` olmalı.
+- [ ] **Davet alma + varsayılan sekme.** Sana davet gönderilmişken
+      ARKADAŞINLA'yı aç: "Oyun Davetleri" alt sekmesi kendiliğinden
+      seçili gelmeli (rozetle), kartta katılımcılar doğru durum
+      etiketleriyle (Davet gönderen/Kabul etti/Bekliyor) listelenmeli.
+- [ ] **Kabul → öneri → aktif.** Kabul Et: henüz arkadaş olmadığın
+      katılımcı varsa arkadaşlık önerisi modalı çıkmalı (Devam → istek
+      web'de görünmeli); tüm davetler kabul olunca oyun iki tarafta da
+      "Devam Edenler"e düşmeli, sıra kimdeyse onda "Senin Hamlen
+      Bekleniyor" + kalan süre (yalnız sırası olanda) görünmeli.
+- [ ] **Ret.** Reddet: oyun HER İKİ tarafın listesinden de anında
+      kalkmalı (web `decline_game_invite_abandons_game` — oyun
+      `abandoned`).
+- [ ] **Realtime.** İki cihaz açıkken web'den yeni davet gönder: mobil
+      ARKADAŞINLA açıkken liste ~1sn içinde kendiliğinden güncellenmeli
+      (arka plandan dönüşte de — lifecycle resumed tazelemesi).
+- [ ] **Süresi dolmuş davet süpürmesi.** 7 günden eski pending bir
+      davet varsa (test için `created_at` SQL ile geriye çekilebilir)
+      liste açılınca kendiliğinden kaybolmalı (`check_invite_expiry`) —
+      davetLİnin listesinde de (hayalet davet regresyonu).
+
 ---
 
 ## Web derlemesi (ücretsiz tarayıcı test ortamı)
