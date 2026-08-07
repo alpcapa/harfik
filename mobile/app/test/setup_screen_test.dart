@@ -17,6 +17,7 @@ import 'package:kelimeki/src/config/version_gate.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/game/local_game_repo.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
+import 'package:kelimeki/src/ui/auth/auth_modal.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
 import 'package:kelimeki/src/ui/setup/setup_screen.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
@@ -122,6 +123,24 @@ void main() {
     expect(players[1].isAI, isTrue);
   });
 
+  testWidgets(
+      'misafirde "Neden Ücretsiz Üye Olmalıyım?" kutusu: 6 madde + giriş açar',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await pumpSetup(tester, services());
+
+    expect(find.text('Neden Ücretsiz Üye Olmalıyım?'), findsOneWidget);
+    // web MEMBERSHIP_PERKS ile birebir aynı sıra — ilk ve son madde yeterli
+    // kanıt (aradakiler aynı listeden geliyor, tek tek tekrar etmeye gerek yok).
+    expect(
+        find.text('Arkadaşlarınla çoklu canlı oyun oynama'), findsOneWidget);
+    expect(find.text('Arkadaş ekleyip listende tutma'), findsOneWidget);
+
+    await tester.tap(find.text('GİRİŞ YAP / KAYIT OL'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AuthModal), findsOneWidget);
+  });
+
   testWidgets('ARKADAŞINLA sekmesi dürüst "sonraki sürümde" diyaloğu açar',
       (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));
@@ -177,6 +196,8 @@ void main() {
     // Anti-kaçış: yeni oyun formu hiç yok.
     expect(find.text('OYUNU BAŞLAT'), findsNothing);
     expect(find.text('OYUNCU SAYISI'), findsNothing);
+    // Web: bu görünümde de (form yerine) kutu çıkıyor — className="mt-2" ile.
+    expect(find.text('Neden Ücretsiz Üye Olmalıyım?'), findsOneWidget);
 
     // Devam: satıra dokun → GameScreen aynı turdan açılır. Dokunuş
     // loadSave (gerçek I/O) tetiklediğinden yine runAsync köprüsü gerekir.

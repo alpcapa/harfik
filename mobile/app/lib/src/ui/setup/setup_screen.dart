@@ -1,6 +1,4 @@
-// Kurulum ekranı — src/components/Setup.tsx'in MİSAFİR akışının portu
-// (uygulamanın bu fazında auth yok; girişli dallar — cloudSaves, hesap
-// satırı, MembershipPerksBox — auth fazının işi). İskelet HomeScreen'in
+// Kurulum ekranı — src/components/Setup.tsx'in portu. İskelet HomeScreen'in
 // yerine geçer; kalıcılık akışı (LocalGameRepo süpürmesi, tek slot,
 // anti-kaçış) oradan buraya taşındı.
 //
@@ -8,9 +6,11 @@
 // dürüst "sonraki sürümde" diyaloğu), Oyuncu Sayısı 2/4, renkli Oyuncular
 // listesi (Misafir + "Yapay Zeka N"), sözlük hazır olana dek "HAZIRLANIYOR…"
 // gösteren Oyunu Başlat; misafirin tekil kaydı varsa form yerine "Devam Eden
-// Oyun" satırı (avatarlar + Sıra: + kalan süre) ve 7 gün paragrafı.
-// "Nasıl oynanır?" linki kurallar modalını açar; "Arkadaşınla paylaş"
-// (native share) bilinçli eksik — ayrı parça.
+// Oyun" satırı (avatarlar + Sıra: + kalan süre) ve 7 gün paragrafı; misafirin
+// her iki görünümünde de (Devam Eden Oyun / boş form) "Neden Ücretsiz Üye
+// Olmalıyım?" kutusu (`MembershipPerksBox`, 7 Ağustos 2026). "Nasıl oynanır?"
+// linki kurallar modalını açar; "Arkadaşınla paylaş" (native share) bilinçli
+// eksik — ayrı parça.
 import 'dart:async' show unawaited;
 
 import 'package:flutter/material.dart';
@@ -32,6 +32,7 @@ import '../game/player_avatar_row.dart';
 import '../game/player_colors.dart';
 import '../auth/account_button.dart';
 import '../auth/k_avatar.dart';
+import 'membership_perks_box.dart';
 import 'recent_games_section.dart';
 
 const _panel = Color(0xFFF5F7FA);
@@ -489,6 +490,10 @@ class _SetupScreenState extends State<SetupScreen> {
             color: _muted,
           ),
         ),
+        // Widget kendi içinde `auth.user == null` kontrolü yapıyor — bu
+        // görünüme yalnızca misafirken düşüldüğünden burada koşul gerekmez,
+        // ama üstteki tek çağıranla (auth) tutarlı kalsın diye geçiliyor.
+        MembershipPerksBox(auth: widget.services.auth, topMargin: true),
       ],
     );
   }
@@ -642,6 +647,12 @@ class _SetupScreenState extends State<SetupScreen> {
             ],
           ],
         ),
+        // Web: `!user && <MembershipPerksBox .../>` — bu fonksiyon hem
+        // misafirin boş formunda (showCancel:false) hem girişli kullanıcının
+        // "+ Yeni" formunda (showCancel:true) çağrıldığından gate widget'ın
+        // kendi içinde (`auth.user == null`); girişli çağrıda sessizce
+        // gizli kalır.
+        MembershipPerksBox(auth: widget.services.auth),
       ],
     );
   }

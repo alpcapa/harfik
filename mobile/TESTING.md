@@ -93,6 +93,13 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
 
 ## 2. Hesap (auth)
 
+- [ ] **Misafir üyelik kutusu.** Setup ekranını misafir (girişsiz) olarak
+      aç — hem boş kurulum formunun altında hem (bir oyun yarıda bırakılıp
+      "Devam Eden Oyun" görünümüne düşünce) o görünümün altında "Neden
+      Ücretsiz Üye Olmalıyım?" kutusu görünmeli: 6 madde (yeşil ✓ ikonlu,
+      web'le birebir aynı sıra/metin) + "GİRİŞ YAP / KAYIT OL" butonu.
+      Butona dokununca giriş/kayıt modalı açılmalı. Giriş yapılmışken bu
+      kutu hiçbir yerde görünmemeli.
 - [ ] **Kayıt.** Yeni bir e-postayla kayıt ol. Takma isim alanı boşluk
       kabul etmemeli; kullanılan bir takma isim yazınca "Bu takma isim
       kullanımda." uyarısı çıkmalı ("✓ Kullanılabilir" satırının yanında

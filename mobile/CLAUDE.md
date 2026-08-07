@@ -217,7 +217,9 @@ mobile/
       ui/chat/               # chat_thread (paylaşılan baloncuk listesi) +
                              # game_chat_history_modal (bitmiş oyunun arşivi)
       ui/setup/              # kurulum ekranı (yeni oyun / devam edenler) +
-                             # recent_games_section ("Son Oynadıklarım")
+                             # recent_games_section ("Son Oynadıklarım") +
+                             # membership_perks_box (misafir "Neden Üye
+                             # Olmalıyım?" kutusu, 7 Ağustos 2026)
       util/semver.dart, util/uuid.dart, util/share_board.dart
     android/ ios/            # flutter create çıktısı + elle değişiklikler (aşağı bkz.)
     test/                    # util, controller (golden replay!), widget duman testleri
@@ -456,6 +458,60 @@ kompozisyondan türetiliyor.
   etkilenmedi). Gerçek cihazda/Appetize'da görsel doğrulama kullanıcıdan
   bekleniyor — bu ortamda Android SDK/Xcode yok, yalnızca üretilen PNG'ler
   bu oturumda gözle kontrol edildi (web'deki marka ile birebir aynı).
+
+## MembershipPerksBox — Setup Misafir Kutusu (7 Ağustos 2026)
+
+`src/components/Setup.tsx`'teki `MembershipPerksBox`'ın portu —
+`lib/src/ui/setup/membership_perks_box.dart`. Web'in iki çağrı yerine
+(misafirin "Devam Eden Oyun" görünümü, `topMargin: true` = web
+`className="mt-2"`; misafirin boş kurulum formu, `topMargin: false`)
+birebir aynı iki yerde: `_buildSavedGameView` ve `_buildNewGameForm`.
+
+- **Gate widget'ın KENDİSİNDE** (`if (auth.user != null) return
+  SizedBox.shrink()`), çağıranlarda değil — `_buildNewGameForm` hem
+  misafirin boş formunda (`showCancel:false`) hem girişli kullanıcının
+  "+ Yeni" formunda (`showCancel:true`) çağrıldığından (web'in aynı
+  `else` dalını paylaşan deseniyle birebir), tek bir yerden gate etmek
+  iki çağrı yerinde de kod tekrarını önlüyor — `AccountButton`'ın kendi
+  `auth.user`/`configured` kontrolünü içeride yapması deseniyle tutarlı.
+- **`auth.configured`'a BİLEREK bakılmıyor** — web de bakmıyor
+  (`Setup.tsx`, `useAuth()`'tan yalnızca `user/profile/loading/profileLoading`
+  okunuyor, `configured` hiç). Yani Supabase yapılandırılmamış (offline)
+  bir ortamda bile kutu görünür — web'in kendisi de böyle davranıyor,
+  `AuthService.signIn`/`signUp` zaten `_client==null` iken sessizce no-op
+  olduğundan (`auth_service.dart`) tıklanabilir ama zararsız kalıyor,
+  mobilde ekstra bir gate eklemek istenmeyen bir davranış farkı (scope
+  dışı bir "düzeltme") olurdu.
+- **Bulunan hata (bu iş sırasında, ekran görüntüsüyle yakalandı) — ✓
+  (U+2713) glyph'i SpaceMono'da yok:** ilk sürüm web'deki `✓` karakterini
+  `Text` widget'ına aynen kopyalamıştı; web'de tarayıcı otomatik font
+  fallback yaptığından görünüyordu, Flutter'da otomatik fallback OLMADIĞI
+  için (`fontFamilyFallback` verilmedikçe) boş kare (tofu) render etti.
+  Bu proje bu DERSİ zaten bir kez öğrenmişti (`auth_modal.dart`'ın
+  `_StatusLine`'ı, nickname kontrolündeki "✓ Kullanılabilir" için) — aynı
+  çözüm tekrarlandı: karakter yerine `Icon(Icons.check, size: 12,
+  color: _green)`. **Ders:** web'den Unicode sembol/emoji kopyalanan her
+  yerde önce bu iki dosyadaki (`_StatusLine`, şimdi bu widget) örneğe
+  bakılmalı — bu proje artık üçüncü kez aynı "gömülü fontta glyph yok"
+  tuzağına düşmemeli (★/► için de aynı ders daha önce not edilmişti, bkz.
+  yukarıdaki `_StatusLine` alıntısındaki yorum).
+- **Gölge/renk değerleri elle tahmin edilmedi, ölçüldü:** kutunun
+  `shadow-raised` gölgesi (index.css) `NeoButtonVariant.neutral`'ın
+  gölgesiyle (`neo_button.dart`) BİREBİR AYNI rgba/offset/blur
+  değerlerine sahip olduğu doğrulanıp (0x80A3B1C6/(2,2)/6 ve
+  0xD9FFFFFF/(-2,-2)/5) doğrudan oradan kopyalandı — yeni bir gölge
+  sabiti icat edilmedi. Zemin/çerçeve rengi (`bg-accent/5`/`border-accent/30`)
+  tailwind.config'teki `accent:'#2563EB'` üzerinden hesaplanan opaklıklar
+  (0x0D/0x4D).
+- **Doğrulama:** `dart analyze` temiz; `flutter test` 143/143 (yeni test:
+  misafirde 6 madde + buton görünüyor + `showLoginModal` gerçekten
+  `AuthModal`'ı açıyor; ayrıca "anti-kaçış" testine kutunun "Devam Eden
+  Oyun" görünümünde de çıktığı doğrulaması eklendi). Görsel doğrulama
+  gerçek render'la yapıldı — Flutter Web derlemesi (bkz. "Web Derlemesi"
+  bölümü) Chromium'da açılıp ekran görüntüsü alındı; ✓ glyph hatası TAM
+  BU YÖNTEMLE yakalandı (widget testleri metni doğru buluyordu ama
+  glyph'in görsel olarak render olup olmadığını göremez — bu ayrım bir
+  ders: metin eşleşmesi doğru ≠ görsel olarak doğru render).
 
 ## kelimeki_core — Tasarım Sözleşmeleri
 
@@ -1034,8 +1090,9 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      paragrafı. Altta göze batmayan tek satır teşhis (sürüm · sözlük ·
      sunucu durumu) — iskelet panelden kalan tek iz. Bilinçli eksikler:
      "Nasıl oynanır?" (kurallar ekranı ayrı parça), "Arkadaşınla paylaş"
-     (native share ayrı parça), MembershipPerksBox/girişli dallar (auth
-     fazı).
+     (native share ayrı parça). Girişli dallar (cloudSaves, hesap satırı)
+     auth fazında (parça 5) tamamlandı; MembershipPerksBox 7 Ağustos
+     2026'da (bkz. "MembershipPerksBox — Setup Misafir Kutusu" bölümü).
      **İki test dersi:** (1) sqflite'ın GERÇEK async I/O'su `testWidgets`in
      fake-async bölgesinde ASLA çözülmez — ilk sürüm 10 dakika asılı kaldı;
      depolamaya dokunan her widget-test adımı `tester.runAsync` köprüsünden
