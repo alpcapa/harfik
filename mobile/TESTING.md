@@ -237,17 +237,29 @@ Bu bölüm bir kontrol listesi değil, **tek seferlik kurulum** notu.
    maili gelince "Kabul Et" → Kelimeki gerçek bir uygulama olarak açılır.
    Yukarıdaki bölümler bundan sonra koşulabilir.
 
-**Üyelik OLMADAN test:** iş akışı iki artefakt üretiyor, ikisi de
-Appetize.io'ya (tarayıcı emülatörü) yüklenebiliyor ve hiçbiri Apple
-üyeliği gerektirmiyor:
-- `kelimeki-apk` → Android
-- `kelimeki-ios-simulator` → iOS. Appetize iOS uygulamasını cihaz
-  `.ipa`'sı olarak değil **simülatör `.app`'i** olarak istiyor; simülatör
-  derlemeleri imzasız olduğundan üyelik gerekmiyor. İndirdiğin zip'i bir
-  kez aç, içinden çıkan `Runner.app.zip`'i Appetize'a yükle. Bu derleme
-  DEBUG modda (Flutter simülatör için release desteklemiyor) — JIT ile
-  çalıştığından biraz yavaş, animasyonlar takılabilir; görsel/işlevsel
-  doğrulama için sorun değil ama PERFORMANS bu derlemeden ölçülmez.
+**Üyelik OLMADAN test (Appetize.io — tarayıcı emülatörü):** iş akışı her
+derlemede `mobile-latest` prerelease'ini güncelliyor. Oradaki **düz,
+herkese açık URL'ler** Appetize'ın "URL'den yükle" seçeneğine
+yapıştırılabilir — indirme/açma/dosya seçici derdi yok:
+
+- Android → `https://github.com/alpcapa/kelimeki/releases/download/mobile-latest/kelimeki.apk`
+- iOS → `https://github.com/alpcapa/kelimeki/releases/download/mobile-latest/kelimeki-ios-simulator.zip`
+
+**Neden URL yolu:** (1) Actions artefaktlarının indirme bağlantısı oturum
+istiyor, Appetize çekemez; (2) iOS/iPadOS'ta `.apk` dosya seçicide PASİF
+kalıyor (Safari uzantıyı tanımıyor); (3) Appetize'ın Android tarafı
+yalnızca ham `.apk` kabul ediyor — zip yüklersen onu iOS uygulaması sanıp
+"unable to process the file" diyor (7 Ağustos 2026'da yaşandı).
+
+iOS'un neden üyelik gerektirmediği: Appetize iOS uygulamasını cihaz
+`.ipa`'sı olarak değil **simülatör `.app`'i** olarak istiyor ve simülatör
+derlemeleri imzasız. Bu derleme DEBUG modda (Flutter simülatör için
+release desteklemiyor) — JIT ile çalıştığından biraz yavaş, animasyonlar
+takılabilir; görsel/işlevsel doğrulama için sorun değil ama PERFORMANS bu
+derlemeden ölçülmez.
+
+Artefaktlar (`kelimeki-apk`, `kelimeki-ios-simulator`) hâlâ üretiliyor —
+gerçek bir Android cihaza kurmak istersen APK'yı oradan da indirebilirsin.
 
 Üyelik yalnızca gerçek cihaza kurulum (TestFlight) ve App Store yayını
 için gerekli.

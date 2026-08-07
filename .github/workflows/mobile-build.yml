@@ -76,6 +76,9 @@ jobs:
     name: Android APK
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.android }}
     runs-on: ubuntu-latest
+    # Release'e yükleme için (aşağıdaki adım) yazma izni şart.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -101,11 +104,34 @@ jobs:
           name: kelimeki-apk
           path: mobile/app/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
+      # Artefaktların indirme bağlantısı OTURUM İSTİYOR ve iOS/iPadOS'ta
+      # `.apk` dosya seçicide pasif kalıyor (Safari uzantıyı tanımıyor);
+      # Appetize'ın Android tarafı da yalnızca ham `.apk` kabul ediyor —
+      # zip'i iOS uygulaması sanıp ayrıştıramıyor. Çözüm: derlemeleri
+      # herkese açık DÜZ URL'i olan bir prerelease'e koymak, Appetize'ın
+      # "URL'den yükle" seçeneği doğrudan çekebilsin.
+      - name: Derlemeleri "mobile-latest" prerelease'ine yükle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: mobile/app
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk kelimeki.apk
+          gh release view mobile-latest >/dev/null 2>&1 || \
+            gh release create mobile-latest --prerelease \
+              --target "$GITHUB_SHA" \
+              --title "Mobil test derlemesi (otomatik)" \
+              --notes "Her mobil derlemede ÜZERİNE YAZILIR — sürüm değil, test derlemesidir. Appetize.io'ya URL ile yüklemek için: aşağıdaki dosyanın bağlantısını kopyala."
+          gh release upload mobile-latest kelimeki.apk --clobber
 
   ios:
     name: iOS (imzasız)
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.ios }}
     runs-on: macos-latest
+    permissions:
+      contents: write
+    # Android işi release'i oluşturuyor; ikisi aynı anda `gh release create`
+    # çalıştırıp çakışmasın diye iOS onu bekliyor (yükleme birkaç saniye).
+    needs: android
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -147,3 +173,10 @@ jobs:
           name: kelimeki-ios-simulator
           path: mobile/app/build/ios/iphonesimulator/Runner.app.zip
           if-no-files-found: error
+      - name: Simülatör derlemesini prerelease'e yükle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: mobile/app
+        run: |
+          cp build/ios/iphonesimulator/Runner.app.zip kelimeki-ios-simulator.zip
+          gh release upload mobile-latest kelimeki-ios-simulator.zip --clobber
