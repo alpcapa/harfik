@@ -199,6 +199,17 @@ jobs:
   # FARKLI çalışır — bkz. mobile/TESTING.md, "Web derlemesiyle neyi test
   # edemezsin". Depolama da farklı bir arka uç kullanır (IndexedDB üstünde
   # WASM sqlite3, bkz. lib/src/storage/web_db.dart).
+  #
+  # İKİ DEFA ELLE AÇILMASI GEREKEN AYAR (7 Ağustos 2026'da ikisine de
+  # takıldık, ikisi de depo ayarı — kodla çözülemez):
+  #   1. Settings → Pages → Source = "GitHub Actions". Yoksa
+  #      `configure-pages` adımı düşer.
+  #   2. Settings → Environments → github-pages → Deployment branches:
+  #      Pages açıldığında GitHub bu ortamı YALNIZCA VARSAYILAN DALA
+  #      kısıtlıyor. Port dalından deploy edebilmek için kısıt gevşetilmeli
+  #      ("No restriction" ya da `claude/*` kuralı) — aksi halde iş HİÇ ADIM
+  #      ÇALIŞMADAN, ~2 saniyede ve LOGSUZ düşer (bu belirti tanıdık
+  #      gelmezse saatler yakar).
   web:
     name: Web (GitHub Pages test ortamı)
     if: ${{ github.event_name != 'workflow_dispatch' || inputs.web }}
