@@ -173,6 +173,12 @@ mobile/
                              # sqflite_sw.js + sqlite3.wasm ÜRETİLMİŞ
                              # (`dart run sqflite_common_ffi_web:setup`) ama
                              # derlemede ağa çıkılmasın diye repoda tutulur.
+    assets/icon/             # ÜRETİLMİŞ (elle düzenlenmez) — kaynak
+                             # public/icon.svg (web), `node
+                             # mobile/scripts/generate-app-icon-masters.mjs`
+                             # yeniden üretir. iOS AppIcon/Android mipmap-*/
+                             # splash'in ARA kaynağı — bkz. "Uygulama İkonu
+                             # / Splash".
     assets/dictionary/words_tr.txt
                              # ÜRETİLMİŞ (elle düzenlenmez) — kaynak
                              # src/data/words.ts; `npm run generate-golden-vectors`
@@ -385,6 +391,71 @@ kapısı + idempotent hamle gönderimi uçtan uca bağlı ve test edilmiş durum
   (asset yükleme süresi, Supabase bağlantısı, App Links) kullanıcının
   cihazıyla teyit edilmeli. Supabase'e gerçek bağlantı da test edilmedi
   (anahtarlar --dart-define ile verilecek).
+
+## Uygulama İkonu / Splash (7 Ağustos 2026)
+
+`flutter create`'in varsayılan mavi kuş ikonu, kullanıcı Appetize.io'da
+uygulamayı ilk kez çalıştırdığında fark edildi — o ana kadar hiç
+dokunulmamıştı. Yeni bir marka görseli İCAT EDİLMEDİ: kaynak, web'in
+`public/icon.svg`'si (kök `scripts/generate-icons.mjs`'in ürettiği, PWA
+ikonunu/favicon'u besleyen aynı SVG — tahta filigranı + "kelimeki" el
+yazısı). Mobil ikon web'deki `icon-512.png` ile PİKSEL AÇISINDAN aynı
+kompozisyondan türetiliyor.
+
+- **`mobile/scripts/generate-app-icon-masters.mjs`** (kök `node_modules`'daki
+  Playwright/sharp'ı kullanır, repo kökünden `node mobile/scripts/generate-app-icon-masters.mjs`
+  ile çalıştırılır) `public/icon.svg`'yi okuyup iki ARA görsel üretir
+  (`mobile/app/assets/icon/`, elle düzenlenmez):
+  - `icon-source.png` — 1024×1024, opak beyaz zemin, tam kanama. iOS
+    `AppIcon.appiconset` + Android LEGACY (`mipmap-*`) ikonunun kaynağı.
+  - `icon-adaptive-fg.png` — 1024×1024, ŞEFFAF zemin, içerik `<rect
+    fill="#ffffff"/>` zemin dikdörtgeni kaldırılıp %66'lık güvenli bölgeye
+    küçültülmüş. Android ADAPTIVE ikonun ön katmanı VE splash görseli
+    olarak İKİ amaçla kullanılıyor — Android 12+'nin native splash API'si
+    de aynı dairesel maskeleme kısıtına tabi, tek dosya iki yerde güvenle
+    kullanılabiliyor.
+  - **%66 güvenli bölge NEDEN:** Android adaptive ikon maskeleri (dairesel/
+    squircle/yuvarlatılmış kare, launcher'a göre değişir) merkezi ~%61'lik
+    bir daireyi hiçbir zaman kesmiyor; web'deki `icon-512.png`'de kelime
+    kenarlara çok yakın (~%93 genişlik) — doğrudan kullanılsaydı bazı
+    launcher'larda "k"/"i" harflerinin kenarları kırpılırdı.
+- **Üretici paketler** (`dev_dependencies`, yalnızca `dart run` sırasında
+  kullanılır, derlenmiş uygulamaya girmez): `flutter_launcher_icons` (iOS
+  AppIcon.appiconset + Android mipmap-*/mipmap-anydpi-v26 adaptive XML) ve
+  `flutter_native_splash` (Android 12+ splash API + eski `launch_background`
+  + iOS `LaunchScreen.storyboard`) — ikisi de pubspec.yaml'daki kendi
+  anahtarlarından (`flutter_launcher_icons:`/`flutter_native_splash:`)
+  yapılandırılıyor, ayrı bir yaml dosyası yok. **`flutter_native_splash`
+  `^2.4.8` bu Flutter SDK'sının (3.35.4) sabitlediği `meta 1.16.0` ile
+  çakışıyor** (`meta ^1.18.0` istiyor) — `^2.4.7`'de kal.
+  `flutter_native_splash`'in `web: false` bayrağı bilinçli: `web/` klasörü
+  ayrı bir TEST ORTAMI (bkz. yukarı "Web Derlemesi"), elle kurulmuş
+  `index.html`/CanvasKit ayarlarına bu üretici hiç dokunmasın diye kapalı.
+  Çalıştırma sırası: `flutter pub get` → `dart run flutter_launcher_icons`
+  → `dart run flutter_native_splash:create`.
+- **Işlem sonrası doğrulama ZORUNLU — üreticiler platform dosyalarını
+  MERKEZDEN yeniden yazıyor, elle yazılmış özel ayarları sessizce
+  silebiliyor:** `flutter_native_splash`'in `AndroidManifest.xml`'i
+  yeniden biçimlendirmesi (`dart run` çıktısı) bu PR'da `android:screenOrientation="portrait"`
+  attribute'unu SESSİZCE düşürmüştü — bu, yukarıdaki "Flutter Uygulama
+  İskeleti" bölümünde belgelenmiş, BİLİNÇLİ bir native portre kilidi (Dart
+  tarafındaki `SystemChrome` kilidi yalnızca Flutter motoru başladıktan
+  SONRA devreye giriyor; native splash motor başlamadan ÖNCE gösterildiğinden
+  bu attribute olmadan cihaz yatay tutuluyorsa splash bir an yatay
+  görünebilirdi). Fark, iki dosyayı `git show HEAD:...` ile üretici
+  ÖNCESİ haliyle karşılaştırıp (XML için `xml.etree`, plist için
+  `plistlib` — attribute/key kümesini SIRADAN/BOŞLUKTAN bağımsız
+  karşılaştırarak) yakalandı; attribute geri eklendi. **Ders — bir platform
+  dosyası üretici tarafından yeniden yazıldığında `git diff`in "değişti"
+  demesi yetmez, NE değiştiğini attribute seviyesinde doğrula** (biçim
+  farkı mı, gerçek bir kayıp mı). `Info.plist`'te tek gerçek ekleme
+  `UIStatusBarHidden=false` (native_splash'in kendi, zararsız eklemesi) —
+  aynı yöntemle doğrulandı, başka hiçbir key kaybolmadı/değişmedi.
+- **Doğrulama:** `dart analyze` temiz, `flutter test` 142/142 (ikon/splash
+  yalnızca asset+config dosyalarını değiştirdiğinden Dart kodu hiç
+  etkilenmedi). Gerçek cihazda/Appetize'da görsel doğrulama kullanıcıdan
+  bekleniyor — bu ortamda Android SDK/Xcode yok, yalnızca üretilen PNG'ler
+  bu oturumda gözle kontrol edildi (web'deki marka ile birebir aynı).
 
 ## kelimeki_core — Tasarım Sözleşmeleri
 

@@ -46,9 +46,20 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
       ilk gerçek kanıtı — özellikle beş platform eklentisi
       (sqflite, shared_preferences, supabase_flutter, share_plus,
       path_provider) için.
-- [ ] **İlk açılış.** Uygulama açılıyor, portre kilitli, splash sonrası
-      kurulum ekranı geliyor. Logo ve yazı tipleri (Space Grotesk/Mono,
-      taşlarda Nunito) doğru — sistem yazı tipine düşmüş görünmemeli.
+- [ ] **Uygulama ikonu.** Ana ekranda/Appetize'ın uygulama listesinde
+      "kelimeki" el yazısı ikonu görünmeli — Flutter'ın varsayılan mavi kuş
+      DEĞİL (7 Ağustos 2026'ya kadar bu hiç üretilmemişti, ilk Appetize
+      denemesinde fark edildi).
+- [ ] **Splash ekranı.** Uygulama açılırken kısa bir an beyaz zemin
+      üzerinde "kelimeki" logosu görünmeli — siyah ekran ya da mavi kuş
+      GÖRÜNMEMELİ. Android'de sistem karanlık modda olsa bile splash beyaz
+      kalmalı (uygulamanın kendisi karanlık tema desteklemiyor, bkz.
+      mobile/CLAUDE.md "Uygulama İkonu / Splash").
+- [ ] **İlk açılış.** Uygulama açılıyor, portre kilitli (yatay tutulan bir
+      cihazda bile splash ANINDA dikey kalmalı — `screenOrientation="portrait"`
+      native kilidi, bkz. CLAUDE.md), splash sonrası kurulum ekranı geliyor.
+      Logo ve yazı tipleri (Space Grotesk/Mono, taşlarda Nunito) doğru —
+      sistem yazı tipine düşmüş görünmemeli.
 - [ ] **Sözlük yükleniyor.** "Oyunu Başlat" başlangıçta "HAZIRLANIYOR…"
       gösterip birkaç saniye içinde etkinleşmeli (63.890 kelime asset'ten
       bir isolate'te okunuyor).
