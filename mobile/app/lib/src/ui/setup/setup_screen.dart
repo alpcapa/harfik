@@ -10,9 +10,13 @@
 // Oyun" satırı (avatarlar + Sıra: + kalan süre) ve 7 gün paragrafı; misafirin
 // her iki görünümünde de (Devam Eden Oyun / boş form) "Neden Ücretsiz Üye
 // Olmalıyım?" kutusu (`MembershipPerksBox`, 7 Ağustos 2026). "Nasıl oynanır?"
-// linki kurallar modalını açar; "Arkadaşınla paylaş" (native share) bilinçli
-// eksik — ayrı parça.
-import 'dart:async' show unawaited;
+// linki kurallar modalını açar; yanındaki "Arkadaşınla paylaş" web'in
+// `handleShare`'i (`?ref=arkadas` linki, sistem paylaş sayfası). "Arkadaşınla"
+// sekmesi web'in `liveActionCount` rozetini taşır (bekleyen davet + sırası
+// çağıranda olan aktif oyun) ve girişte, dikkat bekleyen bir şey varsa, sekme
+// otomatik "Arkadaşınla"ya geçer (web `appliedLoginDefaultRef`, hesap başına
+// bir kez) — 7 Ağustos 2026.
+import 'dart:async' show Timer, unawaited;
 
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
@@ -26,6 +30,8 @@ import '../friends/friends_modal.dart' show showFriendInfoDialog;
 import '../../game/game_controller.dart';
 import '../../game/local_game_repo.dart';
 import '../../storage/local_save_store.dart' show abandonTimeout;
+import '../../util/share_board.dart';
+import '../game/count_badge.dart';
 import '../game/game_screen.dart';
 import '../game/help_modal.dart';
 import '../game/logo_mark.dart';
@@ -46,19 +52,51 @@ const _text = Color(0xFF1B2430);
 
 class SetupScreen extends StatefulWidget {
   final AppServices services;
-  const SetupScreen({super.key, required this.services});
+
+  /// Test injection'ı için — bkz. `GameHistoryModal.share`'daki aynı
+  /// desen. Verilmezse gerçek `shareBoard` (sistem paylaş sayfası) kullanılır.
+  final ShareBoardFn? share;
+
+  const SetupScreen({super.key, required this.services, this.share});
 
   @override
   State<SetupScreen> createState() => _SetupScreenState();
 }
 
-class _SetupScreenState extends State<SetupScreen> {
+class _SetupScreenState extends State<SetupScreen>
+    with WidgetsBindingObserver {
   int _count = 2;
 
   /// Web `mainView` ('local' | 'live') — OYUN TİPİ sekmeleri. Canlı sekme
   /// yalnızca görünümü değiştirir; YZ tarafının state'i (kayıtlar/form)
   /// mount'ta kaldığından geçişte kaybolmaz.
   bool _liveView = false;
+
+  /// "Arkadaşınla (N)" rozeti — bekleyen davet + sırası çağıranda olan
+  /// aktif oyun toplamı (web `liveActionCount`). LiveGamesTab kendi
+  /// listesini ayrıca çeker — küçük bir tekrar fetch pahası web'in de
+  /// kabul ettiği bir ödün.
+  int _liveActionCount = 0;
+  Timer? _liveBadgeDebounce;
+  void Function()? _unsubscribeLiveBadge;
+
+  /// Girişte "Arkadaşınla"ya otomatik geçiş — yalnızca hesap başına BİR
+  /// KEZ (web `appliedLoginDefaultRef`); `_lastUserId` değişince sıfırlanır.
+  bool _appliedLoginDefault = false;
+
+  /// Web `lastAuthUserIdRef` (`useRef<string|null>(null)`) — React'te bu
+  /// ref'in effect'i mount'tan HEMEN sonra bir kez kendiliğinden çalışıp
+  /// `current`'ı gerçek mount id'sine eşitliyor (`prev===null` olduğundan
+  /// sıfırlamıyor). `ChangeNotifier.addListener` mount'ta ASLA otomatik
+  /// tetiklenmediğinden, bu ilk-çalışma `initState`'te elle taklit ediliyor
+  /// (aşağı bkz.) — aksi halde İLK gerçek `_onAuthEvent` (ör. gerçek bir
+  /// çıkış) `prevAuthId==null` görüp yanlışlıkla "ilk çalışma" sanılırdı.
+  /// Yalnızca GİRİŞLİDEN başka bir şeye geçiş (çıkış/hesap değişimi)
+  /// `_liveView`'i sıfırlar — misafirken "Arkadaşınla"ya girip login olan
+  /// kullanıcı (`prevAuthId==null`) o sekmede BİLEREK bırakılır (web 5
+  /// Ağustos 2026 dersi: aksi halde biten bir hesabın "Arkadaşınla" seçimi
+  /// bomboş bir sonraki hesaba taşınır).
+  String? _lastAuthUserIdForLiveViewReset;
 
   LocalGameRepo? _repo;
   GamesRepo? _games;
@@ -88,6 +126,7 @@ class _SetupScreenState extends State<SetupScreen> {
   void initState() {
     super.initState();
     _lastUserId = widget.services.auth.user?.id;
+    _lastAuthUserIdForLiveViewReset = _lastUserId; // React'in mount-anı effect'i
     widget.services.auth.addListener(_onAuthEvent);
     // Kuyruktaki geri bildirimleri tekrar dene — web App.tsx'in mount +
     // 'online' olayındaki flushPendingFeedback refleksi; mobil karşılığı
@@ -117,9 +156,69 @@ class _SetupScreenState extends State<SetupScreen> {
     }
     // Uygulama açıkken gelen davet linki (deep link) — inbox haber verir.
     widget.services.inviteInbox?.addListener(_onInviteEvent);
+
+    // "Arkadaşınla (N)" rozeti — web `subscribeMyOnlineGames` + foreground
+    // dinleyicileri deseni (LiveGamesTab'daki aynı desen); Realtime olayları
+    // 300ms debounce ile tek tazelemeye iner.
+    WidgetsBinding.instance.addObserver(this);
+    _unsubscribeLiveBadge =
+        widget.services.onlineGames?.gateway.subscribe(_scheduleLiveBadgeRefresh);
+    unawaited(_refreshLiveBadge());
   }
 
   void _onInviteEvent() => unawaited(_processInvites());
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _scheduleLiveBadgeRefresh();
+  }
+
+  void _scheduleLiveBadgeRefresh() {
+    _liveBadgeDebounce?.cancel();
+    _liveBadgeDebounce = Timer(
+        const Duration(milliseconds: 300), () => unawaited(_refreshLiveBadge()));
+  }
+
+  /// Web `fetchPendingLiveGameCounts` + rozet/varsayılan-sekme birleşimi
+  /// (`Setup.tsx`'teki aynı effect). `_appliedLoginDefault` yalnızca bu
+  /// hesap için İLK başarılı sonuçta bir kez tetiklenir — sonraki her
+  /// tazeleme (Realtime/foreground) kullanıcıyı elle seçtiği sekmeden
+  /// zorla çekmez.
+  Future<void> _refreshLiveBadge() async {
+    final repo = widget.services.onlineGames;
+    final user = widget.services.auth.user;
+    if (repo == null || user == null) {
+      if (mounted && _liveActionCount != 0) {
+        setState(() => _liveActionCount = 0);
+      }
+      return;
+    }
+    final counts = await repo.pendingCounts();
+    if (!mounted || widget.services.auth.user?.id != user.id) return;
+    final applyDefault = !_appliedLoginDefault &&
+        (counts.inviteCount > 0 || counts.myTurnCount > 0);
+    _appliedLoginDefault = true;
+    setState(() {
+      _liveActionCount = counts.inviteCount + counts.myTurnCount;
+      if (applyDefault) _liveView = true;
+    });
+  }
+
+  /// Web `handleShare` — `?ref=arkadas` UTM etiketli site linki, sistem
+  /// paylaş sayfasıyla. `shareBoard(png: null, ...)` zaten dosyasız/
+  /// metin+link paylaşımını (`shareMessage`in web karşılığı burada sabit
+  /// bir davet metni) yerleşik destekliyor — ikinci bir yardımcı yazmaya
+  /// gerek yok. Web'in clipboard-fallback + "Link kopyalandı!" geçici
+  /// durumu BİLİNÇLİ taşınmadı: `share_plus` iOS/Android'de her zaman
+  /// native paylaş sayfasına düşer, "paylaşım API'si yok" durumu (yalnızca
+  /// masaüstü tarayıcılara özgü) mobilde hiç oluşmaz.
+  Future<void> _handleShare() {
+    return (widget.share ?? shareBoard)(
+      png: null,
+      text: 'Hemen ücretsiz dene!',
+      url: '$webOrigin/?ref=arkadas',
+    );
+  }
 
   /// Kuyruklanmış arkadaş daveti token'larını işler — web App.tsx'in
   /// `takePendingInviteToken` + `acceptFriendInvite` akışının karşılığı.
@@ -188,21 +287,37 @@ class _SetupScreenState extends State<SetupScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     widget.services.auth.removeListener(_onAuthEvent);
     widget.services.inviteInbox?.removeListener(_onInviteEvent);
+    _liveBadgeDebounce?.cancel();
+    _unsubscribeLiveBadge?.call();
     super.dispose();
   }
 
   void _onAuthEvent() {
     final id = widget.services.auth.user?.id;
+
+    // Web `lastAuthUserIdRef`: yalnızca GİRİŞLİDEN başka bir şeye (çıkış/
+    // hesap değişimi) geçişte `_liveView`'i sıfırlar — `prev == null` iken
+    // (misafirken login olan kullanıcı) BİLEREK dokunmaz, o kişi zaten
+    // "Arkadaşınla"yı görmek istediğinden orada bırakılır.
+    final prevAuthId = _lastAuthUserIdForLiveViewReset;
+    _lastAuthUserIdForLiveViewReset = id;
+    if (prevAuthId != null && prevAuthId != id && _liveView) {
+      if (mounted) setState(() => _liveView = false);
+    }
+
     if (id != _lastUserId) {
       // Çıkış ya da hesap değişimi: önceki hesabın listesi/form durumu
       // yeni hesaba sızmasın (web mainView/cloudSaves sıfırlama dersleri).
       _lastUserId = id;
+      _appliedLoginDefault = false;
       if (mounted) {
         setState(() {
           _cloudSaves = null;
           _creatingLocal = false;
+          _liveActionCount = 0;
         });
       }
     }
@@ -213,6 +328,7 @@ class _SetupScreenState extends State<SetupScreen> {
     // Giriş gerçekleşince kuyrukta bekleyen davet token'ları işlenir
     // (web'in `useEffect([user])` + takePendingInviteToken karşılığı).
     unawaited(_processInvites());
+    unawaited(_refreshLiveBadge());
   }
 
   /// Girişliyse: önce misafir kaydını hesaba taşımayı dener (profil hazır
@@ -421,22 +537,24 @@ class _SetupScreenState extends State<SetupScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    // Web Setup'taki "Nasıl oynanır?" linki (yanındaki
-                    // "Arkadaşınla paylaş" native share parçasının işi).
+                    // Web Setup'taki "Nasıl oynanır?" · "Arkadaşınla paylaş"
+                    // satırı — ikisi de font-mono/11px/kalın/accent linkler.
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: GestureDetector(
-                        onTap: () => showHelpModal(context),
-                        behavior: HitTestBehavior.opaque,
-                        child: const Text(
-                          'Nasıl oynanır?',
-                          style: TextStyle(
-                            fontFamily: 'SpaceMono',
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF2563EB),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _InlineLink(
+                            'Nasıl oynanır?',
+                            onTap: () => showHelpModal(context),
                           ),
-                        ),
+                          const Text(' · ',
+                              style: TextStyle(
+                                  fontFamily: 'SpaceMono',
+                                  fontSize: 11,
+                                  color: _muted)),
+                          _InlineLink('Arkadaşınla paylaş', onTap: _handleShare),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -456,6 +574,7 @@ class _SetupScreenState extends State<SetupScreen> {
                           child: _ChoiceButton(
                             label: 'ARKADAŞINLA',
                             selected: _liveView,
+                            badge: _liveActionCount,
                             onTap: () => setState(() => _liveView = true),
                           ),
                         ),
@@ -751,22 +870,60 @@ class _SectionLabel extends StatelessWidget {
 class _ChoiceButton extends StatelessWidget {
   final String label;
   final bool selected;
+  final int badge;
   final VoidCallback onTap;
   const _ChoiceButton({
     required this.label,
     required this.selected,
+    this.badge = 0,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return NeoButton(
+    final button = NeoButton(
       label: label,
       variant: selected ? NeoButtonVariant.accent : NeoButtonVariant.neutral,
       fontSize: 13,
       letterSpacing: 1,
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
       onPressed: onTap,
+    );
+    if (badge <= 0) return button;
+    // Stack TÜM tıklanabilir kutuyu sarmalı (yalnızca metni değil) — web
+    // `relative`/`absolute -top-1 -right-1` referansı buton, `LiveGamesTab`/
+    // `FriendsModal`'daki aynı düzeltmenin dersi (bkz. mobile/CLAUDE.md).
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        button,
+        Positioned(top: -4, right: -4, child: CountBadge(count: badge)),
+      ],
+    );
+  }
+}
+
+/// Web'in `font-mono text-[11px] font-bold text-accent hover:underline`
+/// linkleri — "Nasıl oynanır?" / "Arkadaşınla paylaş" satırında paylaşılıyor.
+class _InlineLink extends StatelessWidget {
+  final String text;
+  final VoidCallback onTap;
+  const _InlineLink(this.text, {required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontFamily: 'SpaceMono',
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF2563EB),
+        ),
+      ),
     );
   }
 }

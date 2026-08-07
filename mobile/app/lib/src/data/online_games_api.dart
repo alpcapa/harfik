@@ -595,6 +595,28 @@ class OnlineGamesRepo {
 
   void Function() subscribeGame(String gameId, void Function() onChange) =>
       gateway.subscribeGame(gameId, onChange);
+
+  /// Web `fetchPendingLiveGameCounts` — Setup'taki "Arkadaşınla (N)" rozeti
+  /// ve girişte Canlı sekmesi varsayılanı için. `load()`'un aynı kova
+  /// filtrelerini (`inviteBucket`/`myTurnCount`) yeniden kullanır — özellikle
+  /// `inviteBucket`'ın `status == pending` şartı, süresi dolup iptal edilmiş
+  /// bir davetin bu rozette de "hayalet" olarak sayılmasını (web 4 Ağustos
+  /// 2026 dersi) önlüyor. Ağ hatasında 0/0 — rozet geçici olarak kaybolur,
+  /// zararsız (LiveGamesTab kendi listesini ayrıca çeker).
+  Future<PendingLiveGameCounts> pendingCounts() async {
+    final snap = await load();
+    if (snap == null) return const PendingLiveGameCounts(0, 0);
+    return PendingLiveGameCounts(
+      inviteBucket(snap.games).length,
+      myTurnCount(snap.games, snap.turns),
+    );
+  }
+}
+
+class PendingLiveGameCounts {
+  final int inviteCount;
+  final int myTurnCount;
+  const PendingLiveGameCounts(this.inviteCount, this.myTurnCount);
 }
 
 // ── Kova filtreleri + süre etiketleri (web LiveGamesTab'ın saf mantığı) ────

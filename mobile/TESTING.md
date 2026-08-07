@@ -337,6 +337,27 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       davet varsa (test için `created_at` SQL ile geriye çekilebilir)
       liste açılınca kendiliğinden kaybolmalı (`check_invite_expiry`) —
       davetLİnin listesinde de (hayalet davet regresyonu).
+- [ ] **Setup'taki "Arkadaşınla (N)" rozeti.** Bekleyen bir davetin/sırası
+      sende olan bir oyunun varken uygulamayı aç: kurulum ekranındaki
+      "ARKADAŞINLA" sekme butonunun sağ üst köşesinde kırmızı bir sayı
+      rozeti görünmeli VE sekme kendiliğinden "Arkadaşınla" ile açılmalı
+      (elle "Yapay Zeka ile"ye dokunmana gerek kalmadan). Bekleyen işi
+      giderdikten (hamleni oyna/daveti yanıtla) sonra Setup'a dönünce
+      rozet kaybolmalı.
+- [ ] **Otomatik geçiş yalnızca girişte, bir kez.** Yukarıdaki sekmeden
+      elle "Yapay Zeka ile"ye dön — uygulama tekrar Canlı'ya ZORLA
+      GERİ ÇEKMEMELİ (rozet sayısı değişse bile).
+- [ ] **Hesap değişimi.** Bekleyen işi olan bir hesapla "Arkadaşınla"
+      sekmesindeyken çıkış yap → "Yapay Zeka ile"ye dönmeli (bomboş bir
+      "Arkadaşınla" ekranında kalmamalı). Farklı bir hesapla giriş yap —
+      o hesabın kendi bekleyen işi varsa yine otomatik "Arkadaşınla"ya
+      geçmeli (ilk hesaptan kalan bir kilitlenme olmamalı).
+- [ ] **"Arkadaşınla paylaş".** Logonun altındaki "Nasıl oynanır? ·
+      Arkadaşınla paylaş" satırındaki linke dokun: sistem paylaş sayfası
+      açılmalı, paylaşılan metin "Hemen ücretsiz dene!" + linkte
+      `?ref=arkadas` olmalı. Web admin panelinde (Büyüme > Kullanıcı >
+      Ziyaretçi Kaynağı) bu linkten gelen bir ziyaret "arkadas" kaynağıyla
+      görünmeli (misafirken açılırsa).
 
 ### Tahta (oynanış)
 

@@ -15,16 +15,20 @@ import 'package:kelimeki/src/bootstrap.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/meaning_store.dart';
 import 'package:kelimeki/src/config/version_gate.dart';
+import 'package:kelimeki/src/data/online_games_api.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/game/local_game_repo.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:kelimeki/src/ui/auth/auth_modal.dart';
+import 'package:kelimeki/src/ui/game/count_badge.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
+import 'package:kelimeki/src/ui/live/live_games_tab.dart';
 import 'package:kelimeki/src/ui/setup/setup_screen.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'support/fake_online_gateway.dart';
 import 'support/test_fonts.dart';
 import 'support/test_view.dart';
 
@@ -46,6 +50,18 @@ AppServices services({Future<AppStorage>? storage}) => AppServices(
       supabase: null,
       versionGate: VersionGateStatus.ok,
       storage: storage,
+    );
+
+/// "Arkadaşınla (N)" rozeti/girişte otomatik sekme testleri için — girişli,
+/// depolamasız (bu davranış `local_game_saves`e hiç dokunmuyor).
+AppServices liveBadgeServices(AuthService auth, OnlineGamesRepo onlineGames) =>
+    AppServices(
+      dictionary: Future.value(words),
+      meanings: MeaningStore(bundle: rootBundle),
+      auth: auth,
+      supabase: null,
+      versionGate: VersionGateStatus.ok,
+      onlineGames: onlineGames,
     );
 
 Future<void> pumpSetup(WidgetTester tester, AppServices s) async {
@@ -220,5 +236,109 @@ void main() {
     expect(screen.controller.state.turnCount, savedTurn);
     expect(screen.controller.state.multiSession, isTrue);
     await tester.runAsync(() => storage.close());
+  });
+
+  testWidgets(
+      'ARKADAŞINLA rozeti: bekleyen davet + sırası bende olan oyun toplamı, '
+      'girişte otomatik sekme açılışı',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final gw = FakeOnlineGamesGateway()
+      ..rows = [
+        gameRow(
+            id: 'inv',
+            myId: 'me',
+            status: 'pending',
+            myRole: 'invitee',
+            myInviteStatus: 'pending',
+            myInviteId: 'i1'),
+      ];
+    await pumpSetup(
+        tester, liveBadgeServices(AuthService.fake(user: fakeUser('me')), OnlineGamesRepo(gw)));
+
+    expect(tester.widget<CountBadge>(find.byType(CountBadge)).count, 1);
+    // Bekleyen iş varken girişte "Arkadaşınla" kendiliğinden açılmalı (web
+    // `appliedLoginDefaultRef`).
+    expect(find.byType(LiveGamesTab), findsOneWidget);
+  });
+
+  testWidgets(
+      'ARKADAŞINLA rozeti: bekleyen iş YOKKEN rozet çıkmaz ve sekme otomatik '
+      'açılmaz (negatif eşi — kök CLAUDE.md dersi)',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final gw = FakeOnlineGamesGateway();
+    await pumpSetup(
+        tester, liveBadgeServices(AuthService.fake(user: fakeUser('me')), OnlineGamesRepo(gw)));
+
+    expect(find.byType(CountBadge), findsNothing);
+    expect(find.byType(LiveGamesTab), findsNothing);
+    expect(find.text('OYUNU BAŞLAT'), findsOneWidget);
+  });
+
+  testWidgets(
+      'hesap değişiminde (çıkış) Arkadaşınla seçimi sıfırlanır; ikinci hesap '
+      'kendi bekleyen işi için ayrıca otomatik geçer (web 5 Ağustos dersi)',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final gw = FakeOnlineGamesGateway()
+      ..rows = [
+        gameRow(
+            id: 'inv',
+            myId: 'a',
+            status: 'pending',
+            myRole: 'invitee',
+            myInviteStatus: 'pending',
+            myInviteId: 'i1'),
+      ];
+    final auth = AuthService.fake(user: fakeUser('a'));
+    await pumpSetup(tester, liveBadgeServices(auth, OnlineGamesRepo(gw)));
+    expect(find.byType(LiveGamesTab), findsOneWidget);
+
+    // Çıkış: `_liveView` bomboş kalmasın diye sıfırlanmalı.
+    auth.debugSetUser(null);
+    await tester.pumpAndSettle();
+    expect(find.byType(LiveGamesTab), findsNothing);
+    expect(find.text('OYUNU BAŞLAT'), findsOneWidget);
+
+    // İkinci hesap (b) kendi bekleyen işiyle girer — `appliedLoginDefault`
+    // hesap başına sıfırlanmadıysa bu hesap hiç Canlı'ya geçirilmezdi.
+    gw.rows = [
+      gameRow(
+          id: 'inv2',
+          myId: 'b',
+          status: 'pending',
+          myRole: 'invitee',
+          myInviteStatus: 'pending',
+          myInviteId: 'i2'),
+    ];
+    auth.debugSetUser(fakeUser('b'));
+    await tester.pumpAndSettle();
+    expect(find.byType(LiveGamesTab), findsOneWidget);
+  });
+
+  testWidgets('"Arkadaşınla paylaş" ?ref=arkadas linkini paylaşır',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    String? sharedText;
+    String? sharedUrl;
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(
+          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      home: SetupScreen(
+        services: services(),
+        share: ({required png, required text, required url}) async {
+          sharedText = text;
+          sharedUrl = url;
+        },
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Arkadaşınla paylaş'));
+    await tester.pump();
+
+    expect(sharedText, 'Hemen ücretsiz dene!');
+    expect(sharedUrl, 'https://kelimeki.com/?ref=arkadas');
   });
 }

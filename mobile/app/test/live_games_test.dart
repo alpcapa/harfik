@@ -230,6 +230,41 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(gw.notified, isEmpty);
     });
+
+    test(
+        'pendingCounts: bekleyen davet + sırası bende olan aktif oyun toplamı '
+        '(web fetchPendingLiveGameCounts) — Setup rozetinin kaynağı',
+        () async {
+      final gw = FakeOnlineGamesGateway()
+        ..rows = [
+          gameRow(
+              id: 'inv',
+              myId: 'me',
+              status: 'pending',
+              myRole: 'invitee',
+              myInviteStatus: 'pending',
+              myInviteId: 'i1'),
+          gameRow(id: 'mine', myId: 'me', status: 'active'),
+          gameRow(id: 'theirs', myId: 'me', status: 'active'),
+        ]
+        ..turnRows = [
+          {'online_game_id': 'mine', 'current': 1}, // 'me' 2. koltukta
+          {'online_game_id': 'theirs', 'current': 0}, // rakibin sırası
+        ];
+      final repo = OnlineGamesRepo(gw, nowMs: () => nowMs);
+      final counts = await repo.pendingCounts();
+      expect(counts.inviteCount, 1);
+      expect(counts.myTurnCount, 1);
+    });
+
+    test('pendingCounts: ağ hatasında 0/0 (rozet geçici olarak kaybolur)',
+        () async {
+      final gw = FakeOnlineGamesGateway()..failWith = Exception('ağ');
+      final repo = OnlineGamesRepo(gw, nowMs: () => nowMs);
+      final counts = await repo.pendingCounts();
+      expect(counts.inviteCount, 0);
+      expect(counts.myTurnCount, 0);
+    });
   });
 
   // ── Widget testleri ───────────────────────────────────────────────────────

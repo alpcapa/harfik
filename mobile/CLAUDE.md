@@ -2261,10 +2261,74 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        arasında Realtime mesaj/mute/rapor akışı bu ortamdan test
        EDİLEMEDİ — cihazda iki hesapla doğrulanmalı, TESTING.md'ye ayrı
        bölüm eklendi.
-   - Sıradaki parçalar (sıra önerisi): Setup'taki "Arkadaşınla (N)" rozeti +
-     girişte Canlı sekmesi varsayılanı, "Arkadaşınla paylaş" (native
-     share — `share_plus` hazır, yalnızca Setup'taki buton kaldı), Hesap
-     Ayarları ekranı.
+   - ✅ **Parça 12 — Setup'taki "Arkadaşınla (N)" rozeti + girişte Canlı
+     sekmesi varsayılanı + "Arkadaşınla paylaş" (7 Ağustos 2026,
+     `data/online_games_api.dart`, `ui/setup/setup_screen.dart`,
+     `data/auth_service.dart`):** Web `Setup.tsx`'in aynı üç web'in
+     BİRLİKTE anlattığı özelliğin portu — üçü de mimari yenilik gerektirmedi,
+     var olan kova filtrelerini/`shareBoard` yardımcısını bağlamaktı.
+     - **`OnlineGamesRepo.pendingCounts()`** — web `fetchPendingLiveGameCounts`
+       birebir: `load()`'u tekrar kullanıp `inviteBucket(games).length` +
+       `myTurnCount(games, turns)` döner. Aynı `status==pending` şartını
+       (web'in 4 Ağustos 2026 hayalet-davet dersi) miras alıyor çünkü
+       `inviteBucket`'ın kendisini çağırıyor — ikinci bir kopya açılmadı.
+       Ağ hatasında `0/0` (rozet geçici kaybolur, `LiveGamesTab` kendi
+       listesini ayrıca çeker).
+     - **Rozet + girişte otomatik "Arkadaşınla"ya geçiş** (`SetupScreen`) —
+       web `liveActionCount`/`appliedLoginDefaultRef` birebir: 300ms
+       debounce'lu Realtime aboneliği (`gateway.subscribe`) + foreground
+       (`WidgetsBindingObserver.didChangeAppLifecycleState`) tazelemesi;
+       `_appliedLoginDefault` yalnızca hesap başına BİR KEZ tetiklenir.
+     - **Web'in İKİ dokümante edilmiş hatası port SIRASINDA baştan
+       önlendi** (kod yazılırken, sonradan bulunmadı — etki analizinin web
+       kaynağını okuma adımı sayesinde):
+       1. `_appliedLoginDefault`, `_lastUserId` (mount id'siyle başlayan,
+          `user.id` karşılaştırmalı) değişince sıfırlanıyor — web'in "ilk
+          hesap ref'i tükettikten sonra ikinci hesap hiç Canlı'ya
+          geçirilmiyordu" hatasının portu hiç yaşamaması.
+       2. `_liveView`, yalnızca GİRİŞLİDEN başka bir şeye (çıkış/hesap
+          değişimi) geçişte sıfırlanıyor (`_lastAuthUserIdForLiveViewReset`,
+          web `lastAuthUserIdRef`) — misafirken "Arkadaşınla"ya girip login
+          olan kullanıcı BİLEREK o sekmede bırakılıyor.
+       **Port sırasında bulunan ÜÇÜNCÜ, mobile'a özgü bir uyum sorunu:**
+       React'in `[user]` bağımlı effect'i mount'tan HEMEN SONRA kendiliğinden
+       bir kez çalışıp ref'i gerçek mount id'sine eşitliyor (`prev===null`
+       olduğundan sıfırlamıyor) — Dart'ın `ChangeNotifier.addListener`'ı
+       mount'ta ASLA otomatik tetiklenmiyor. Bu farkı gözetmeden
+       `_lastAuthUserIdForLiveViewReset`'i `null` bırakınca, halihazırda
+       GİRİŞLİ mount olup SONRA çıkış yapan ilk gerçek `_onAuthEvent`
+       çağrısı "ilk çalışma" sanılıp `_liveView`'i sıfırlamıyordu (yazılan
+       testte hemen yakalandı) — düzeltme `initState`'te
+       `_lastAuthUserIdForLiveViewReset = _lastUserId` ile React'in
+       mount-anı effect'ini elle taklit etmek. **Ders:** bir web ref'inin
+       başlangıç değerini (`useRef(null)` vs `useRef(user?.id)`) Dart'a
+       birebir kopyalamak yetmez — React'in effect'lerin mount'ta bir kez
+       kendiliğinden çalıştığı gerçeğini de hesaba katmak gerekiyor,
+       `ChangeNotifier` bunu bedava vermiyor.
+     - **`AuthService.debugSetUser`** (yeni, `@visibleForTesting`) —
+       `debugTriggerPasswordRecovery` ile aynı desen: fake auth'ta gerçek
+       `onAuthStateChange` akışı olmadığından, hesap değişimi/çıkış
+       senaryolarını test etmenin tek yolu.
+     - **"Arkadaşınla paylaş"** — web `handleShare`'in `?ref=arkadas` UTM
+       linkini `shareBoard(png: null, ...)` ile paylaşır; ikinci bir paylaşım
+       yardımcısı YAZILMADI, 5c'nin `shareBoard`'ı zaten dosyasız/metin+link
+       paylaşımını destekliyordu. Web'in clipboard-fallback + "Link
+       kopyalandı!" geçici durumu BİLİNÇLİ taşınmadı — `share_plus`
+       iOS/Android'de her zaman native paylaş sayfasına düşer, "paylaşım
+       API'si yok" durumu (yalnızca masaüstü tarayıcılara özgü) mobilde
+       hiç oluşmaz. Test injection'ı `GameHistoryModal.share`'daki AYNI
+       desen (`SetupScreen.share` opsiyonel param, `widget.share ??
+       shareBoard`).
+     - Doğrulama: `live_games_test.dart`'a 2 test (`pendingCounts` toplamı +
+       ağ hatası), `setup_screen_test.dart`'a 5 test (rozet + otomatik geçiş,
+       negatif eşi — bekleyen iş yokken geçiş OLMAMALI, hesap değişimi
+       sıfırlaması + ikinci hesabın kendi otomatik geçişi, paylaş butonu).
+       **Tam takım 238/238 yeşil**, analyze + değişmez taraması temiz.
+       **Doğrulama sınırı:** gerçek Realtime aboneliği ve gerçek sistem
+       paylaş sayfası cihazda doğrulanmalı.
+   - Sıradaki parçalar (sıra önerisi): Hesap Ayarları ekranı (ad/soyad/takma
+     isim/cinsiyet/doğum tarihi düzenleme, pazarlama onayı, e-posta
+     bildirimi tercihi — web `AccountSettingsModal.tsx` portu).
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

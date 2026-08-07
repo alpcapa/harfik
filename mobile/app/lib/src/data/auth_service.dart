@@ -142,6 +142,17 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Testler için: hesap değişimi/çıkış senaryolarını ağsız simüle eder
+  /// (fake'te gerçek `onAuthStateChange` akışı yok) — `[user?.id]` bağımlı
+  /// sıfırlama efektlerini (bkz. kök CLAUDE.md "user REFERANSI hesap
+  /// değişimi değildir" dersi) gerçek bir hesap geçişiyle test edebilmek
+  /// için.
+  @visibleForTesting
+  void debugSetUser(User? user) {
+    _user = user;
+    notifyListeners();
+  }
+
   /// Web UserMenu `identityLoading` — avatar/isim henüz güvenilir değil.
   bool get identityLoading => _loading || (_user != null && _profileLoading);
 
