@@ -2646,63 +2646,6 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        katbekat büyüyebileceğini göz önünde bulundur — Parça 16'nın
        taraması yalnızca 396-760px yüzeylerde yapılmıştı, gerçek kullanıcı
        şikayeti çok daha geniş bir yüzeyden geldi.
-   - ✅ **Parça 18 — hücre-içi (per-cell) nömorfik gölgeler CanvasKit'te
-     CSS'e göre soluk çıkıyordu (8 Ağustos 2026, `board_widget.dart`):**
-     Parça 17'nin kart-genişliği düzeltmesinden sonra kullanıcı, tahtanın
-     GENELİNİN artık doğru göründüğünü ama hücrelerin TEK TEK "gölgesiz/düz"
-     kaldığını bildirdi — web'in nömorfik ("gömük kare") görünümü eksikti.
-     - **Doğrulama yöntemi — kod okumadan ÖNCE değer karşılaştırması,
-       SONRA aynı-ölçekli kanıt istendi:** `Board.tsx`'teki hücre
-       `boxShadow` tanımları (`inset 3px 3px 6px rgba(163,177,198,0.6),
-       inset -2px -2px 5px rgba(255,255,255,0.8)` gibi) ile
-       `board_widget.dart`'taki `InsetShadow` değerleri (`Color(0x99A3B1C6)`,
-       `blur: 6` vb.) karşılaştırıldığında **birebir aynı** çıktı — renk/
-       alfa/offset/blur hiçbiri sapmamıştı. `flutter test`'in ürettiği
-       PNG'yi 3-4x yakınlaştırınca gölge GERÇEKTEN render oluyordu (yumuşak
-       ama görünür bir bant). Bu noktada iki olasılık kaldı: (a) etki gerçek
-       cihazda da render oluyor ama BÜYÜK hücrede (geniş/yatay ekran) CSS
-       piksel cinsinden sabit blur oranı görece küçüldüğünden gözle
-       seçilmiyor — bu durumda web'in KENDİSİ de aynı ölçekte aynı derecede
-       soluk görünürdü, kod hatası değil; (b) CanvasKit'in blur'lu maske
-       render'ı gerçekten daha zayıf. Kullanıcıdan **aynı iPad'de, aynı
-       yatay yönde, benzer hücre boyutunda** hem production kelimeki.com
-       hem mobil portun (github.io) ekran görüntüsünü istedim — ikisi de
-       geldiğinde hücre boyutları görünür şekilde eşleşiyordu (~80-90px)
-       ve production'da hücreler net bir şekilde "oyuk" görünürken mobil
-       portta düzdü. Bu, (a) hipotezini eledi — gerçek bir render farkı
-       doğrulandı, "değerler zaten CSS'le aynı, o zaman sorun yok"
-       varsayımı YETERSİZ kalıyordu.
-     - **Kök sebep netleştirilemedi (canlı CanvasKit/WebGL'e bu ortamdan
-       erişim yok), pragmatik amaçlı düzeltme yapıldı:** Dört hücre
-       stilinin (nötr boş kare, oyuncu bölgesi, altın X2 bölgesi, merkez X3)
-       `InsetShadow` alfa değerleri ~%50-80 artırıldı, blur yarıçapları
-       ~%40 büyütüldü — ör. nötr kare `0x99A3B1C6`/blur:6 → `0xE6A3B1C6`/
-       blur:9. **Bu, projenin genel "CSS'ten SAPMA" karşıtı ilkesinin
-       BİLİNÇLİ tek istisnası** — amaç artık web'in CSS DEĞERİYLE birebir
-       eşleşmek değil, web'in GÖRSEL SONUCUYLA (gözle görülür eşdeğerlik)
-       eşleşmek; CanvasKit aynı sayısal girdiyi daha soluk bastığından
-       sayısal parite görsel pariteyi garanti etmiyordu.
-     - Doğrulama: `flutter analyze` temiz, **tam takım 246/246 yeşil**
-       (renk/blur değerleri hiçbir testin beklediği bir değer olmadığından
-       —testler yapı/davranış kontrol ediyor, piksel rengi değil— hiçbiri
-       bozulmadı). `board_render_test.dart`'ın ürettiği PNG'ler yeniden
-       üretilip 3x yakınlaştırılarak incelendi — hem nötr hem bölge-sahipli
-       boş hücrelerde belirgin şekilde güçlenmiş bir gradyan görülüyor.
-       **Doğrulama sınırı — bu düzeltmenin KENDİSİ de gerçek cihazda teyit
-       edilmeli:** boost miktarı bu ortamdaki yerel Skia render'ına göre
-       seçildi, CanvasKit'in tam olarak ne kadar soluttuğü ölçülemedi —
-       kullanıcının bir sonraki deploy'da aynı iPad/aynı açıyla tekrar
-       kontrol etmesi gerekiyor; yetersiz kalırsa değerler daha da
-       artırılabilir.
-     - **Ders:** "sayısal değerler eşleşiyor, o hâlde render de eşleşir"
-       varsayımı platformlar arası (CSS vs Skia/CanvasKit) her zaman
-       GEÇERLİ değil — özellikle blur/mask-filter gibi görece "yorumlanan"
-       efektlerde. Böyle bir şüphe ortaya çıktığında (ve canlı ortama
-       erişim yoksa) en güvenilir kanıt kullanıcıdan **aynı ölçekte/aynı
-       cihazda iki tarafı yan yana** gösteren bir ekran görüntüsü çifti
-       istemek — tek taraflı "render oluyor" kanıtı (bu ortamdaki test PNG'i
-       gibi) yeterli değil, çünkü "oluyor mu" sorusunu cevaplıyor ama "web
-       kadar mı" sorusunu cevaplamıyor.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

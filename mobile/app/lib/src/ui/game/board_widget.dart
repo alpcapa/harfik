@@ -262,7 +262,8 @@ class BoardWidget extends StatelessWidget {
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 6),
                   child: Text('·',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF5A6673))),
+                      style: TextStyle(
+                          fontSize: 12, color: Color(0xFF5A6673))),
                 ),
                 GestureDetector(
                   onTap: onOpenMessaging,
@@ -400,10 +401,6 @@ class BoardWidget extends StatelessWidget {
       );
     } else if (inZone) {
       // Web GOLD_ZONE_STYLE/CENTER_ZONE_STYLE — iç gölgeler + hafif dış gölge.
-      // Alfa/blur CSS değerlerinin ÜSTÜNDE (bkz. altındaki nötr hücre notu —
-      // CanvasKit'in blur'lu maske render'ı Safari'nin native box-shadow'una
-      // göre gözle görülür ölçüde soluk çıkıyor, kullanıcı aynı ölçekli
-      // production/mobil karşılaştırmasıyla kanıtladı, 8 Ağustos 2026).
       final radius = BorderRadius.circular(5);
       cellBox = (child) => NeoBox(
             borderRadius: radius,
@@ -411,23 +408,23 @@ class BoardWidget extends StatelessWidget {
             insetShadows: isCenter
                 ? const [
                     InsetShadow(
-                        color: Color(0xA6B4500A),
+                        color: Color(0x59B4500A),
                         offset: Offset(2, 2),
-                        blur: 7),
-                    InsetShadow(
-                        color: Color(0xE0FFFFFF),
-                        offset: Offset(-1, -1),
                         blur: 5),
+                    InsetShadow(
+                        color: Color(0xB3FFFFFF),
+                        offset: Offset(-1, -1),
+                        blur: 3),
                   ]
                 : const [
                     InsetShadow(
-                        color: Color(0x99B4820A),
+                        color: Color(0x4DB4820A),
                         offset: Offset(2, 2),
-                        blur: 7),
-                    InsetShadow(
-                        color: Color(0xE0FFFFFF),
-                        offset: Offset(-1, -1),
                         blur: 5),
+                    InsetShadow(
+                        color: Color(0xB3FFFFFF),
+                        offset: Offset(-1, -1),
+                        blur: 3),
                   ],
             outerShadows: isCenter
                 ? const [
@@ -467,31 +464,24 @@ class BoardWidget extends StatelessWidget {
             color: zone.tint,
             insetShadows: [
               InsetShadow(
-                  color: zone.base.withValues(alpha: 0.30),
+                  color: zone.base.withValues(alpha: 0.133),
                   offset: const Offset(2, 2),
-                  blur: 7),
+                  blur: 5),
               const InsetShadow(
-                  color: Color(0xE0FFFFFF), offset: Offset(-1, -1), blur: 5),
+                  color: Color(0x99FFFFFF), offset: Offset(-1, -1), blur: 3),
             ],
             child: child,
           );
     } else {
       // Web: tarafsız boş kare — tahta zemin rengi + nömorfik içe gömülü.
-      // Alfa/blur CSS'in (rgba(163,177,198,0.6)/rgba(255,255,255,0.8), blur
-      // 6/5) ÜSTÜNE çıkarıldı — CanvasKit'te aynı CSS değerleri Safari'nin
-      // native box-shadow'undan belirgin şekilde soluk çıkıyordu (kullanıcı
-      // production kelimeki.com ile aynı hücre boyutunda çekilmiş bir
-      // ekran görüntüsüyle kanıtladı, 8 Ağustos 2026) — bu portun tek
-      // istisnası, CSS parite kuralı yerine "gözle görülür eşdeğerlik"i
-      // önceliklendiriyor.
       cellBox = (child) => NeoBox(
             borderRadius: BorderRadius.circular(5),
             color: _boardBg,
             insetShadows: const [
               InsetShadow(
-                  color: Color(0xE6A3B1C6), offset: Offset(3, 3), blur: 9),
+                  color: Color(0x99A3B1C6), offset: Offset(3, 3), blur: 6),
               InsetShadow(
-                  color: Color(0xF0FFFFFF), offset: Offset(-2, -2), blur: 7),
+                  color: Color(0xCCFFFFFF), offset: Offset(-2, -2), blur: 5),
             ],
             child: child,
           );
