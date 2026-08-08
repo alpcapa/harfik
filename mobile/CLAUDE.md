@@ -2779,6 +2779,59 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        çalışan run'ı iptal ediyor, ama Pages deploy işi zincirin başında
        olduğundan (dakika 1-2) pratikte tamamlanıyor — iptal edilen run
        mutlaka "deploy olmadı" demek DEĞİL, job bazında bakılmalı.
+   - ✅ **Parça 20 — joker seçici dar/yatay yükseklikte "RenderFlex
+     overflowed" ile taşıyordu (8 Ağustos 2026, `wild_letter_sheet.dart`):**
+     FAZ A1 (Bölüm 1: Oyun) cihaz testinde kullanıcı, iPad Safari'de bir
+     jokeri tahtaya koyunca açılan "Joker Hangi Harf Olsun?" alt sayfasının
+     ekranın altından taştığını, alt satırların (U/Ü/V/Y/Z) kesildiğini
+     ekran görüntüsüyle bildirdi.
+     - **Kök sebep, Flutter SDK kaynağından doğrulandı (tahmin değil):**
+       `showModalBottomSheet`'in `isScrollControlled` parametresi
+       verilmezse (varsayılan `false`) sheet'in maksimum yüksekliği
+       `constraints.maxHeight * (9/16)` — ekranın yalnızca **%56**'sı
+       olarak sabitleniyor (`bottom_sheet.dart`,
+       `_defaultScrollControlDisabledMaxHeightRatio`). `wild_letter_sheet.dart`
+       bu parametreyi hiç geçmiyordu ve içeriği (26 harflik 6 sütunlu
+       ızgara + başlık) SARAN bir kaydırma alanı da yoktu (`Padding` →
+       `Column(mainAxisSize.min)` → `GridView.count(shrinkWrap,
+       NeverScrollableScrollPhysics)`) — kısıtlı yükseklik içeriğe
+       yetmeyince `Column` klasik "RenderFlex overflowed" hatasıyla taştı.
+       Web'in ortak `Modal.tsx`'i (`WildcardModal.tsx`'in kullandığı)
+       `max-h-[85vh] overflow-y-auto` taşıdığından bu sınıf bir taşma web'de
+       hiç yaşanmıyor — port sırasında `KModal`'a değil ham
+       `showModalBottomSheet`'e gidildiğinden bu koruma hiç taşınmamıştı.
+       Kullanıcının ekran görüntüsü muhtemelen iPad YATAY moddaydı (tahta
+       ekranın yalnızca sol-üst çeyreğinde görünüyordu) — yatayda
+       kullanılabilir yükseklik dikeye göre çok daha dar olduğundan %56
+       sınırı orada daha kolay aşılıyor, ama sınır MUTLAK (ekran boyutundan
+       bağımsız): yeterince kısa herhangi bir yükseklikte tekrarlanır.
+     - **Düzeltme:** `showModalBottomSheet`'e `isScrollControlled: true`
+       eklendi (sheet artık tam yüksekliğe kadar büyüyebiliyor) ve içerik
+       `Padding` yerine `SingleChildScrollView` içine alındı (web'in
+       `overflow-y-auto`'suyla aynı güvenlik ağı — çok küçük ekranlarda
+       hâlâ sığmazsa taşmak yerine kaydırılır). `GERİ AL` butonu dahil
+       tüm içerik aynı kaydırma alanının içinde.
+     - **Test — negatif eş doğrulamasıyla:** `game_screen_test.dart`'a
+       `showWildLetterSheet`'i oyun ekranından İZOLE (kendi `MaterialApp`/
+       `Scaffold` pump'ı) açan yeni bir test eklendi — `Size(800, 420)`
+       gibi kısa bir yüzeyde `tester.takeException()`'ın `null` olduğunu
+       doğruluyor. Düzeltme geçici geri alınıp test GERÇEKTEN
+       `FlutterError:<A RenderFlex overflowed by 368 pixels on the
+       bottom.>` ile düştüğü görüldü, sonra düzeltme geri konup 10/10 yeşil
+       olduğu doğrulandı (kök CLAUDE.md'nin "negatif eş" dersi — aradığın
+       davranışın YOKLUĞUNDA da geçen bir kontrol boştur).
+       **İki test-dersi notu:** (1) İlk deneme oyun ekranı üzerinden
+       (`rackTile`/`boardCell` dokunarak) açmayı denedi — Parça 15-17'nin
+       kendi `SingleChildScrollView`/`max-w-680px` düzeni yüzünden kısa
+       yükseklikte raf ekran dışına düşüyor, test YANLIŞ sebepten
+       (rack bulunamadı) düşüyordu; izole pump bu karışmayı ortadan
+       kaldırdı. (2) `find.text('Z')` iki eşleşme veriyor (kontur+dolgu
+       katmanı, bkz. joker akışı testindeki aynı desen) — `.first` gerekli.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 248/248 yeşil**
+       (yalnızca `wild_letter_sheet.dart` + `game_screen_test.dart`
+       değişti — `action_sheet.dart`'taki tek diğer `showModalBottomSheet`
+       kullanımına bilerek dokunulmadı, o içerik kısa/sabit bir liste,
+       aynı sınıf bir taşma riski taşımıyor).
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

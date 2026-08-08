@@ -78,7 +78,13 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       alma. Hayalet taş parmağın ÜSTÜNDE görünmeli (30px kaldırma).
 - [ ] **Joker.** Jokeri tahtaya koy → harf seçici açılmalı; konmuş jokere
       tekrar dokun → seçici "Geri Al" seçenekli açılmalı, taş geri
-      ALINMAMALI (dokunma ile sürükleme farklı davranır).
+      ALINMAMALI (dokunma ile sürükleme farklı davranır). **Seçici hiçbir
+      zaman ekranın altından taşmamalı/kesilmemeli** — tüm harfler (A'dan
+      Z'ye) görünür ya da kaydırılarak erişilebilir olmalı; özellikle
+      YATAY modda ya da kısa yüksekliğe sahip ekranlarda kontrol et (8
+      Ağustos 2026'da bir kullanıcı bunu iPad yatay modda kesik gördü —
+      `showModalBottomSheet`'in eksik `isScrollControlled` parametresi
+      yüzünden, bkz. mobile/CLAUDE.md Parça 20).
 - [ ] **Taş değiştirme / pas.** İkisi de sırayı ilerletmeli; pas onay
       sorusu çıkmalı.
 - [ ] **Bölge vergisi.** Rakip bölgesine değen bir hamlede "Sınır İhlali!"

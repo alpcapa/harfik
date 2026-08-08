@@ -14,6 +14,7 @@ import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/ui/game/game_over_modal.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
 import 'package:kelimeki/src/ui/game/rack_widget.dart';
+import 'package:kelimeki/src/ui/game/wild_letter_sheet.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import 'support/test_fonts.dart';
@@ -223,6 +224,56 @@ void main() {
     expect(controller.state.placed, isEmpty);
     expect(
         controller.state.players[0].rack.any((t) => t.letter == '?'), isTrue);
+  });
+
+  testWidgets(
+      'joker seçici dar (yatay mod benzeri) yükseklikte taşmıyor '
+      '(showModalBottomSheet varsayılanı sheet\'i ekranın %56\'sına '
+      'sabitliyordu, kullanıcı iPad yatay modda ekran görüntüsüyle buldu)',
+      (tester) async {
+    // Oyun ekranının KENDİ sorumluluğundaki (Parça 15-17) kaydırma/genişlik
+    // davranışından bilerek izole — yalnızca showWildLetterSheet'in kendi
+    // yükseklik/kaydırma sözleşmesini sınıyor. Geniş/kısa yüzey (iPad yatay
+    // moddaki dar kullanılabilir yükseklikle aynı sınıf): 26 harflik 6
+    // sütunlu ızgara + başlık, eski %56 sınırını dar bir yükseklikte aşar.
+    await setPhoneViewSize(tester, const Size(800, 420));
+    WildLetterChoice? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Builder(
+        builder: (context) => Scaffold(
+          body: Center(
+            child: ElevatedButton(
+              onPressed: () async {
+                result = await showWildLetterSheet(context);
+              },
+              child: const Text('Aç'),
+            ),
+          ),
+        ),
+      ),
+    ));
+
+    await tester.tap(find.text('Aç'));
+    await tester.pumpAndSettle();
+    expect(find.text('Joker Hangi Harf Olsun?'), findsOneWidget);
+
+    // `isScrollControlled:true` + `SingleChildScrollView` olmadan bu, dar
+    // yükseklikte klasik "RenderFlex overflowed" hatasını (sheet'in kendi
+    // ConstrainedBox'ı içindeki Column'un taşması) fırlatırdı — kesilen
+    // içerik görsel olarak sessiz kırpma gibi görünse de kök sebep budur.
+    expect(tester.takeException(), isNull);
+    // Sheet artık kendi kaydırma alanına sahip; ızgaranın son harfi (Z)
+    // ağaçta gerçekten bulunabilir VE kaydırma katmanının içinde.
+    expect(find.byType(SingleChildScrollView), findsWidgets);
+    // Kontur katmanı her taş harfini iki Text yapar (stroke+dolgu) — .first
+    // ikisinden birinin var olduğunu doğrulamak için yeterli (bkz. joker
+    // akışı testindeki aynı desen).
+    expect(find.text('Z').first, findsOneWidget);
+
+    // Sheet'i normal kullanıcı akışıyla (bir harf seçerek) kapat.
+    await tester.tap(find.text('A').first);
+    await tester.pumpAndSettle();
+    expect(result?.letter, 'A');
   });
 
   testWidgets('taş değiştirme akışı: DEĞİŞTİR → seç (N) → onayla → sıra YZ\'de',

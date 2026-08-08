@@ -29,8 +29,18 @@ Future<WildLetterChoice?> showWildLetterSheet(
   return showModalBottomSheet<WildLetterChoice>(
     context: context,
     showDragHandle: true,
+    // Web'in Modal.tsx'i `max-h-[85vh] overflow-y-auto` taşıyor — içerik
+    // sığmazsa kayar, hiçbir zaman kırpılmaz. Flutter'ın showModalBottomSheet'i
+    // isScrollControlled:false (varsayılan) iken sheet'i ekranın YALNIZCA
+    // %56'sına (9/16, bkz. bottom_sheet.dart _defaultScrollControlDisabledMaxHeightRatio)
+    // sabitliyor — 26 harflik 6 sütunlu ızgara + başlık bunu aşınca alt
+    // satırlar (ekran görüntüsüyle bildirildi) kesiliyordu. isScrollControlled:true
+    // sheet'i tam yüksekliğe kadar büyütmeye izin veriyor; SingleChildScrollView
+    // de (çok küçük ekranlarda hâlâ sığmazsa) web'deki kaydırma parite ile
+    // eşleşiyor.
+    isScrollControlled: true,
     builder: (context) => SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
