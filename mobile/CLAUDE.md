@@ -2545,6 +2545,60 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        Cihazda doğrulama kullanıcının kendi web derlemesi testinden geldi —
        bu parçanın "doğrulama sınırı"nı KAPATAN nadir bir örnek (genelde
        tersi oluyor).
+   - ✅ **Parça 16 — Board/Rack gölgeleri sonraki panel tarafından ezilmiyordu
+     (8 Ağustos 2026, `game_screen.dart`, `online_game_screen.dart`):**
+     Kullanıcı, Parça 15'in hemen ardından tahtanın/raf kartının web'e göre
+     "eksik/yanlış — daha hacimli ve gölgeli olmalı" göründüğünü bildirdi.
+     **Yanlış ilk hipotez, ölçülerek elenmiş:** İlk şüphe `SingleChildScrollView`'ın
+     varsayılan `Clip.hardEdge`'inin gölgenin taşmasını kırptığıydı (Board'un
+     en büyük gölgesi blur:60 — geniş bir sönümleme payı istiyor, `board_render_test.dart`
+     zaten bunun için 90px pay kullanıyordu). Bu ortamdan kelimeki.com'a VE
+     `alpcapa.github.io`'ya ağ erişimi proxy tarafından engellendiğinden
+     (`curl .../__agentproxy/status` ile doğrulandı — ikisi de 403), canlı
+     karşılaştırma yapılamadı; bunun yerine `SingleChildScrollView`'a geçici
+     olarak `clipBehavior: Clip.none` verilip `flutter test`'in ürettiği
+     GERÇEK `game_screen_kelime.png`'yi yeniden üretip incelemek gibi
+     YERİNDE bir doğrulama yöntemi kullanıldı — **sıfır fark**, hipotez
+     çürüdü, değişiklik geri alındı.
+     - **Gerçek kök sebep — paint SIRASI, klipleme değil:** `BoardWidget`'ı
+       (aynı fixture, aynı 396px genişlik) TEK BAŞINA, `board_render_test.dart`'ın
+       90px'lik boş-alan tekniğiyle yeniden render edilince gölge MÜKEMMEL
+       göründü — yani gölgenin KENDİSİ ve BOYUTU asla sorun değildi. Fark
+       şuydu: gerçek `GameScreen`'de Board'un HEMEN altında (aradaki mesaj
+       satırı şeffaf, sorun değil) Raf kartının KENDİ OPAK zemini var — ve
+       `Column` içinde SONRA çizilen bir kardeş, ÖNCE çizilenin üzerine
+       boyar (Flutter'ın ve CSS'in normal akışta paylaştığı aynı kural).
+       Board'un aşağı doğru sönümlenmeye vakit bulamayan gölgesi, birkaç
+       piksel sonra başlayan Raf kartının zemini tarafından ezilip
+       görünmez oluyordu — aynı sorun Raf kartının kendi (daha küçük,
+       blur:14) gölgesi için de geçerliydi, hemen altındaki buton satırına
+       karşı.
+     - **Düzeltme — iki geçiş noktasına ölçülerek/gözlenerek ayarlanmış
+       boşluk:** Board'un Padding'inden sonra `const SizedBox(height: 56)`
+       (mesaj satırından ÖNCE) ve Raf/OYNA satırından sonraki buton
+       satırının üst boşluğu 8→24px — **iki değer de 4-8-24-56 gibi
+       yuvarlak sayılarla başlayıp `flutter test` ile ekran görüntüsü
+       yeniden üretilip gözle incelenerek** (28→56'ya çıkarıldı, ilk
+       deneme yetersizdi) bulundu; gölge değerlerinin KENDİSİNE
+       dokunulmadı. Aynı iki değişiklik `online_game_screen.dart`'a da
+       BİREBİR uygulandı (bilinçli kod tekrarı — bkz. Parça 10/15).
+       **Bilinçli kapsam sınırı:** yalnızca DİKEY (aşağı doğru) sönümleme
+       payı eklendi — yatay (sol/sağ) kenarlardaki küçük gölgeler
+       (blur 14-20) hâlâ 12px'lik dar bir yatay Padding içinde, ama
+       bunlar Board'un DOMİNANT gölgesi olmadığından ("voluminous" hissi
+       asıl bu büyük alt gölgeden geliyor) ayrı bir düzeltme gerekmedi.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 246/246 yeşil**
+       (spacing değişikliği hiçbir testi bozmadı — sürükleme testleri
+       `tester.getCenter()` ile DİNAMİK konum okuduğundan otomatik
+       adapte oldu). Görsel doğrulama dört ekran görüntüsüyle (KELİME,
+       swap modu, sürükleme, Canlı oyun) yapıldı — hepsinde Board VE Rack
+       kartlarının altında artık net, "hacimli" bir gölge var. **Ders —
+       ikinci kez pekişti (bkz. Parça 15'in `SingleChildScrollView` dersi):
+       bir görsel eksiklik bulunca ÖNCE en olası/kolay açıklamayı (klipleme)
+       kodu OKUYARAK değil YERİNDE TEST EDEREK doğrula/çürüt** — bu
+       ortamdan canlı siteye erişim olmasa bile `flutter test`'in ürettiği
+       gerçek PNG'leri okuyup karşılaştırmak, salt kod okumaktan çok daha
+       güvenilir bir teşhis yöntemi oldu.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

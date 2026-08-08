@@ -573,6 +573,14 @@ class _GameScreenState extends State<GameScreen> {
                                 onTilePointerCancel: _cancelTileDrag,
                               ),
                             ),
+                            // Tahtanın nömorfik gölgesi (en büyüğü blur:60,
+                            // aşağı doğru) sönümlenecek yer bulamadan hemen
+                            // altındaki raf kartının OPAK zemini tarafından
+                            // "ezilip" görünmez oluyordu — Column'da geç
+                            // çizilen kardeş widget'lar erken çizilenin
+                            // üzerine boyar (kullanıcı web derlemesinde
+                            // bizzat bulup bildirdi; ölçülerek doğrulandı).
+                            const SizedBox(height: 56),
                             // Mesaj satırı web'deki gibi tahtanın ALTINDA, rafın üstünde
                             // (App.tsx: Board → liveMessage → Rack; font-mono 11px bold).
                             Padding(
@@ -687,8 +695,12 @@ class _GameScreenState extends State<GameScreen> {
                                 ),
                               ),
                               Padding(
+                                // Üst boşluk 8→24: raf kartının kendi gölgesi
+                                // (blur:14, aşağı doğru) bu satırın opak
+                                // butonları tarafından ezilmesin diye (aynı
+                                // ders — bkz. yukarıdaki Board→mesaj notu).
                                 padding:
-                                    const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                                    const EdgeInsets.fromLTRB(12, 24, 12, 12),
                                 child: state.swapMode
                                     ? Row(
                                         children: [

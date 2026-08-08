@@ -1209,6 +1209,10 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                 onTilePointerCancel: _cancelTileDrag,
                               ),
                             ),
+                            // Tahtanın nömorfik gölgesi (en büyüğü blur:60,
+                            // aşağı doğru) game_screen.dart ile AYNI sebeple
+                            // buraya eklendi — bkz. orada, "Board→mesaj" notu.
+                            const SizedBox(height: 56),
                             // Sıra bende değil VE henüz taş koymadıysam
                             // banner (kimin sırası olduğu net kalsın); taş
                             // koyunca yerini normal mesaj satırına bırakır.
@@ -1317,8 +1321,10 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                               ),
                             ),
                             Padding(
+                              // Üst boşluk 8→24: raf kartının kendi gölgesi
+                              // game_screen.dart ile AYNI sebeple (bkz. orada).
                               padding:
-                                  const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                                  const EdgeInsets.fromLTRB(12, 24, 12, 12),
                               child: state.swapMode
                                   ? Row(children: [
                                       Expanded(
