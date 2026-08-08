@@ -126,12 +126,19 @@ class _InsetShadowPainter extends CustomPainter {
         ..color = s.color
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, sigma);
       final pad = s.blur * 2 + s.offset.distance + 4;
-      final outer = Path()..addRect(rect.inflate(pad));
-      final inner = Path()..addRRect(rrect.shift(s.offset));
-      canvas.drawPath(
-        Path.combine(PathOperation.difference, outer, inner),
-        paint,
-      );
+      // "Dış dikdörtgen EKSİ kaydırılmış rrect" TEK bir yolla, evenOdd dolgu
+      // kuralıyla ifade edilir — `Path.combine(difference, ...)` KULLANILMAZ.
+      // Gerekçe (8 Ağustos 2026, ölçülerek bulundu): combine Skia'nın PathOps
+      // katmanına iner ve CanvasKit'te MaskFilter.blur ile birlikte deliği
+      // KAYBEDİYOR — yol tüm hücreyi düz dolduruyordu (native Skia'da doğru
+      // çalıştığından `flutter test` PNG'leri sorunu hiç göstermiyordu; hata
+      // yalnızca tarayıcıda görünüyordu). evenOdd saf bir dolgu kuralı,
+      // PathOps'a hiç girmiyor ve iki motorda da aynı sonucu veriyor.
+      final path = Path()
+        ..fillType = PathFillType.evenOdd
+        ..addRect(rect.inflate(pad))
+        ..addRRect(rrect.shift(s.offset));
+      canvas.drawPath(path, paint);
     }
   }
 

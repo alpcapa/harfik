@@ -69,6 +69,7 @@ grep -rn "DateTime.now()\|Random()" kelimeki_core/lib/      # core determinizmi 
 grep -rn "local_game_saves" app/lib/                        # yalnız cloud_save_repo (TableWriteQueue)
 grep -rln "\.from('" app/lib/                               # Supabase yalnız veri katmanında
 grep -rn "await newRepo(" app/test/*_test.dart              # testWidgets İÇİNDE çıkarsa newRepoForWidget'a çevir (runAsync)
+grep -rn "Path.combine\|PathOperation" app/lib/             # CanvasKit'te PathOps GÜVENİLMEZ (bkz. Parça 18) — evenOdd kullan
 ```
 
 **Son tam tarama: 7 Ağustos 2026 (Canlı oyun tahtası parçası) — beşi de
@@ -87,6 +88,23 @@ App.tsx ↔ OnlineGameScreen.tsx ayrımının birebir eşleniği (kök CLAUDE.md
 ikisi için de "ikisi deseni paylaşıyor, biri değişirse diğeri de" diyor).
 Bu dosyalardan birinde sürükleme/joker/mesaj davranışı değişirse ÖTEKİ de
 aynı PR'da güncellenmeli; hiçbir derleyici/test bunu yakalamaz.
+
+**Grep'e giren ama testlerin ASLA yakalayamayacağı bir değişmez — özel
+`Canvas` çizimi iki motorda ayrışabilir:** `flutter test` native Skia ile
+render eder, web derlemesi ise CanvasKit ile — ikisi her zaman aynı sonucu
+vermez. 8 Ağustos 2026'da `Path.combine(PathOperation.difference, ...)`
+CanvasKit'te `MaskFilter.blur` ile birlikte deliği kaybedip tüm hücreyi düz
+doldururken native Skia'da kusursuz çalışıyordu (Parça 18) — "246/246 yeşil"
+bu konuda hiçbir şey kanıtlamadı. Kural: `CustomPainter`/`Decoration` içinde
+PathOps (`Path.combine`) KULLANMA, deliği `PathFillType.evenOdd` ile ifade
+et. Yeni bir özel çizim eklerken (ya da böyle bir render şüphesi doğduğunda)
+tarayıcıda ölç — bu ortamda yapılabilir:
+`flutter build web --release --target=lib/<minik_harness>.dart
+--output=build/webprobe` → `python3 -m http.server` → Playwright/Chromium
+(`/opt/pw-browsers/chromium-1194/chrome-linux/chrome`, `--use-angle=swiftshader`).
+Tüm uygulamayı boot etmeye çalışma (sözlük/Supabase açılışta asılı kalıyor),
+yalnızca şüpheli widget'ı render eden bir harness derle; harness'i ve
+`build/webprobe`'u iş bitince sil.
 
 ## Parça Bitirme Kontrol Listesi (ZORUNLU — her parçanın son adımı)
 
@@ -2646,6 +2664,80 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        katbekat büyüyebileceğini göz önünde bulundur — Parça 16'nın
        taraması yalnızca 396-760px yüzeylerde yapılmıştı, gerçek kullanıcı
        şikayeti çok daha geniş bir yüzeyden geldi.
+   - ✅ **Parça 18 — `Path.combine` CanvasKit'te deliği KAYBEDİYOR: hücre-içi
+     gölgeler tarayıcıda tamamen düz çıkıyordu (8 Ağustos 2026,
+     `neo_box.dart`):** Parça 17'den sonra kullanıcı tahtanın genelinin
+     düzeldiğini ama hücrelerin TEK TEK "gölgesiz/düz" kaldığını bildirdi.
+     **Bu hata iki yanlış teşhisten sonra ancak ÖLÇÜLEREK bulundu — önemli
+     olan da bu.**
+     - **İlk (BAŞARISIZ) deneme — CSS parite ilkesi ihlal edildi:** Kod
+       değerleri (`InsetShadow` renk/alfa/offset/blur) `Board.tsx`'in CSS
+       `box-shadow` tanımlarıyla birebir aynı olduğu doğrulanmış, buradan
+       "değerler doğru ama CanvasKit soluk basıyor" diye TAHMİN yürütülüp
+       alfa/blur değerleri elle ~%50-80 artırılmıştı. Sonuç cihazda DAHA DA
+       kötü oldu (kullanıcı: "şimdi daha silik"). Kullanıcı haklı olarak
+       geri aldırdı: *"Tamamen tahminle iş yapıyorsun. Geri al ve CSS
+       kurallarını bozma bir daha."* Commit geri alındı (`66055a6`), CSS
+       değerlerine bir daha dokunulmadı.
+     - **Doğru yöntem — üç motoru AYNI ölçüde yan yana koyup piksel ölçmek:**
+       (1) `Board.tsx`'in hücre CSS'i birebir kopyalanarak bağımsız bir HTML
+       yazıldı ve YEREL Chromium'da (Playwright, `/opt/pw-browsers`) DPR 2
+       ile render edildi — hücre 38.375 CSS px, Flutter'ın kendi hesabıyla
+       ((555−20−36)/13) birebir aynı. (2) `BoardWidget` `flutter test` ile
+       TAM AYNI ölçüde (555 mantıksal px, pixelRatio 2) PNG'ye çekildi.
+       (3) `flutter build web` ile SADECE `BoardWidget`'ı render eden minik
+       bir harness derlenip yerel HTTP sunucusundan Chromium'da açıldı —
+       **gerçek CanvasKit**. Üçünde de aynı hücrenin (0,5) aynı yatay
+       tarama çizgisi okundu:
+       | | t=0.03 | t=0.5 | t=0.97 |
+       |---|---|---|---|
+       | Web CSS (Chromium) | 197 | 221 | 235 |
+       | Skia (`flutter test`) | 199 | 221 | 237 |
+       | **CanvasKit (tarayıcı)** | **241** | **241** | **241** |
+       Skia ile CSS 1-4 birim farkla ÖRTÜŞÜYOR — yani kod baştan doğruydu ve
+       ilk denemedeki "değerleri artır" hamlesi tam da bu yüzden yanlıştı.
+       CanvasKit ise gradyan ÜRETMİYOR, hücreyi tek bir düz renkle dolduruyor.
+     - **Kök sebep, 241 sayısından okundu:** zemin #DDE4EE (221) üzerine önce
+       koyu gölge (`0x99A3B1C6`, α .6) TÜM hücreye → 186, sonra beyaz gölge
+       (`0xCCFFFFFF`, α .8) TÜM hücreye → **241.2**. Yani her iki gölge yolu
+       da hücrenin TAMAMINI dolduruyor: ortadaki delik hiç uygulanmıyor.
+       Delik `Path.combine(PathOperation.difference, outer, inner)` ile
+       üretiliyordu — bu Skia'nın **PathOps** katmanına iner ve CanvasKit'te
+       `MaskFilter.blur` ile birlikte deliği kaybediyor.
+     - **Düzeltme (tek satırlık kavram, sihirli sayı YOK):** aynı delik artık
+       PathOps'a hiç girmeyen saf bir dolgu kuralıyla ifade ediliyor —
+       `Path()..fillType = PathFillType.evenOdd ..addRect(dış) ..addRRect(iç)`.
+       Renk/alfa/offset/blur değerlerinin HİÇBİRİNE dokunulmadı, CSS paritesi
+       korundu. Doğrulama aynı ölçüm döngüsüyle tekrarlandı: CanvasKit artık
+       **200 → 221 → 237**, yani CSS (197 → 221 → 237) ile örtüşüyor; native
+       Skia çıktısı ise düzeltme öncesiyle **bit düzeyinde aynı** (regresyon
+       yok). Görsel olarak altın X2 bölgesi ve köşe bölgeleri de düzeldi —
+       beyaz gölge onları da basıyormuş.
+     - **Kapsam:** `Path.combine` tüm kod tabanındaki TEK kullanımdı (tarandı);
+       `NeoBox`/`InsetShadow` yalnızca `board_widget.dart` tarafından
+       tüketildiğinden dört hücre tipi (nötr, bölge, altın X2, merkez X3) tek
+       düzeltmeyle kapsandı. `_CssShadowBoxPainter`'ın (kart/taş DIŞ gölgeleri)
+       `MaskFilter`'ı düz bir `drawRRect` üzerinde — PathOps yok, CanvasKit'te
+       zaten doğru çalışıyordu (ölçümde de doğrulandı).
+     - **Doğrulama sınırı:** yerel Chromium'da GPU olmadığından SwiftShader
+       (yazılım GL) kullanıldı; çıktıda birkaç soluk yatay bant var ama bunlar
+       düzeltmeden ÖNCE de vardı, değişmediler ve kullanıcının gerçek cihaz
+       ekran görüntülerinde hiç görünmüyorlar — ortam artefaktı sayıldı.
+       iOS Safari'nin kendi CanvasKit'i cihazda ayrıca teyit edilmeli.
+     - **Ders 1 — `flutter test` bu hata SINIFINI yapısal olarak göremez:**
+       widget testleri native Skia ile render eder, hata yalnızca CanvasKit'te
+       vardı. "246/246 yeşil" bu konuda hiçbir şey kanıtlamıyordu. Tarayıcıya
+       özgü render şüphesi doğduğunda tek geçerli kanıt **web derlemesini
+       gerçekten tarayıcıda açıp ölçmek** — ve bu, bu ortamda YAPILABİLİR:
+       `flutter build web --target=<minik harness>` + `python3 -m http.server`
+       + Playwright/Chromium. Tüm uygulamayı boot etmeye çalışma (sözlük/
+       Supabase açılışta asılı kalıyor), yalnızca şüphelenilen widget'ı
+       render eden bir harness derle.
+     - **Ders 2 — "değerler aynı, o hâlde sorun yok" bir teşhis DEĞİL:**
+       değer eşitliği yalnızca girdinin aynı olduğunu söyler; ÇIKTININ aynı
+       olduğunu söylemez. Aradaki fark bir motor hatasıysa, değerleri
+       kurcalamak (ilk denemedeki gibi) semptomu kovalamaktır ve genellikle
+       daha da bozar. Önce çıktıyı ölç, sonra sebebi ara.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

@@ -548,6 +548,13 @@ Bunları "geçti" saymak bir hatayı gizler — hepsi hâlâ gerçek cihaz ister
 - [ ] **OYUNU BAŞLAT** çalışıyor ve tahta çiziliyor — depolama katmanı
       (IndexedDB) kurulmuş demektir. "KAYITLAR KONTROL EDİLİYOR…" takılı
       kalırsa web depolama arka ucu bozulmuştur.
+- [ ] **Tahtadaki boş hücreler "gömük" görünüyor** (her karenin sol-üstü hafif
+      koyu, sağ-altı hafif parlak — nömorfik oyuk); hücreler DÜZ/tek renk
+      görünüyorsa CanvasKit özel çizimi bozulmuş demektir. Bu, `flutter test`'in
+      YAPISAL OLARAK göremediği bir hata sınıfı (testler native Skia ile render
+      eder, tarayıcı CanvasKit ile) — bir kez gerçekten yaşandı, bkz.
+      `mobile/CLAUDE.md` Parça 18. Aynı kontrol altın X2 bölgesi ve köşe
+      bölgeleri için de geçerli: soluk/yıkanmış görünmemeliler.
 
 ---
 
