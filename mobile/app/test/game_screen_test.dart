@@ -11,6 +11,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
+import 'package:kelimeki/src/ui/game/board_widget.dart'
+    show DashedBorderPainter, debugBoardBuildCountForTests;
 import 'package:kelimeki/src/ui/game/game_over_modal.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
 import 'package:kelimeki/src/ui/game/rack_widget.dart';
@@ -418,6 +420,24 @@ void main() {
             of: find.byType(RackWidget), matching: find.byType(Opacity)))
         .where((o) => o.opacity == 0);
     expect(hidden, hasLength(1));
+    // Hover çerçevesinin GERÇEK geometrisi — ekran görüntüsünde hayalet taş
+    // (46px, cell'den büyük) hedef hücrenin tam üstüne düştüğünden kesikli
+    // çerçeveyi görsel olarak tamamen örtüyor (BİLEREK — web'in de tasarımı,
+    // DRAG_LIFT telafisi ikisini aynı noktaya oturtuyor); bu yüzden konumu
+    // gözle DEĞİL, `_hoverHighlight`'ın çizdiği `DashedBorderPainter`
+    // CustomPaint'inin gerçek render rect'ini `boardCell(0, 0)`'ın rect'iyle
+    // karşılaştırarak doğruluyoruz (8 Ağustos 2026 performans düzeltmesi —
+    // hover artık ayrı bir overlay, elle hesaplanan bir geometri).
+    final hoverFinder = find.byWidgetPredicate(
+        (w) => w is CustomPaint && w.painter is DashedBorderPainter);
+    expect(hoverFinder, findsOneWidget);
+    final hoverRect = tester.getRect(hoverFinder);
+    final targetCellRect = tester.getRect(boardCell(0, 0));
+    expect((hoverRect.center - targetCellRect.center).distance, lessThan(1),
+        reason: 'Hover çerçevesi (0,0) hücresinin merkezinde değil — '
+            'geometri hatası: hover=$hoverRect hücre=$targetCellRect');
+    expect((hoverRect.width - targetCellRect.width).abs(), lessThan(1));
+    expect((hoverRect.height - targetCellRect.height).abs(), lessThan(1));
     // Ekran görüntüsü: hayalet taş + kesikli hedef çerçevesi.
     await tester.runAsync(() async {
       final boundary =
@@ -483,6 +503,47 @@ void main() {
     await tester.pump();
     expect(controller.state.placed['0,0'], isNotNull);
     expect(controller.state.placed['0,1'], isNotNull);
+  });
+
+  testWidgets(
+      'performans regresyonu: sürükleme sırasında BoardWidget PER-MOVE '
+      'yeniden inşa EDİLMİYOR (8 Ağustos 2026, kullanıcı iPad Safari\'de '
+      'titreme/takılma bildirdi — bkz. mobile/CLAUDE.md Parça 23)',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await pumpGame(tester, GlobalKey());
+
+    final start = tester.getCenter(rackTile(0));
+    final g = await tester.startGesture(start);
+    await g
+        .moveTo(start + const Offset(0, -40)); // eşik aşılır, sürükleme başlar
+    await tester.pump();
+
+    // Eşik-aşımı anındaki build'ler referans — asıl iddia BUNDAN SONRAKİ N
+    // pointer-move'un `BoardWidget`'ı (169 hücre + territory hesabı) HİÇ
+    // yeniden inşa ETMEDİĞİ (dragHiddenKey/hover overlay artık bağımsız bir
+    // ValueNotifier'dan besleniyor — bkz. GameScreen._dragNotifier).
+    final buildsBeforeMoves = debugBoardBuildCountForTests;
+
+    const steps = 30;
+    for (var i = 0; i < steps; i++) {
+      final r = i % boardSize;
+      final c = (i * 7) % boardSize; // farklı hücrelere dağılsın
+      final target = tester.getCenter(boardCell(r, c)) + const Offset(0, 30);
+      await g.moveTo(target);
+      await tester.pump();
+    }
+
+    final extraBuilds = debugBoardBuildCountForTests - buildsBeforeMoves;
+    // Brief'in izin verdiği tolerans "0-1 kez" — burada sürükleme zaten
+    // başlamış olduğundan (eşik önceden aşıldı) pratikte tam 0 bekleniyor.
+    expect(extraBuilds, lessThanOrEqualTo(1),
+        reason: '$steps pointer-move adımı sırasında BoardWidget $extraBuilds '
+            'kez yeniden inşa edildi (per-move rebuild REGRESYONU — düzeltme '
+            'geri alınmış/bozulmuş olabilir).');
+
+    await g.up();
+    await tester.pump();
   });
 
   testWidgets('GameOver modalı ekran görüntüsü (beraberlik varyantı yok)',

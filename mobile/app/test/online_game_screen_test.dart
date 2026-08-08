@@ -14,6 +14,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/online_games_api.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
+import 'package:kelimeki/src/ui/game/board_widget.dart'
+    show DashedBorderPainter;
 import 'package:kelimeki/src/ui/live/online_game_screen.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
@@ -400,8 +402,7 @@ void main() {
       await pumpScreen(tester, current: 0);
       ScrollPhysics? scrollPhysics() => tester
           .widget<SingleChildScrollView>(find.byWidgetPredicate((w) =>
-              w is SingleChildScrollView &&
-              w.scrollDirection == Axis.vertical))
+              w is SingleChildScrollView && w.scrollDirection == Axis.vertical))
           .physics;
       expect(scrollPhysics(), isNull);
 
@@ -413,6 +414,18 @@ void main() {
       expect(scrollPhysics(), isA<NeverScrollableScrollPhysics>());
       await g.moveTo(target);
       await tester.pump();
+      // Hover çerçevesinin geometrisi — game_screen_test.dart'taki AYNI
+      // kontrol (bkz. orada, "hayalet taş hedefi görsel olarak örtüyor"
+      // notu): konum gözle değil `DashedBorderPainter`'ın gerçek render
+      // rect'i (0,0) hücresinin rect'iyle karşılaştırılarak doğrulanıyor.
+      final hoverFinder = find.byWidgetPredicate(
+          (w) => w is CustomPaint && w.painter is DashedBorderPainter);
+      expect(hoverFinder, findsOneWidget);
+      final hoverRect = tester.getRect(hoverFinder);
+      final targetCellRect = tester.getRect(boardCell(0, 0));
+      expect((hoverRect.center - targetCellRect.center).distance, lessThan(1),
+          reason: 'Hover çerçevesi (0,0) hücresinin merkezinde değil — '
+              'hover=$hoverRect hücre=$targetCellRect');
       await g.up();
       await tester.pump();
       expect(scrollPhysics(), isNull);

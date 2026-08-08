@@ -6,6 +6,7 @@
 // şeridi (Hamleler linki + X2/X3 açıklaması) kartın alt bölümü olarak
 // portlandı; "Mesajlaşma" butonu yalnızca Canlı oyunda çıkar (o faz henüz
 // yok, web'de de prop verilmezse hiç render edilmiyor).
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
@@ -13,6 +14,16 @@ import 'neo_box.dart';
 import 'outline.dart';
 import 'player_colors.dart';
 import 'tile_widget.dart';
+
+/// Yalnızca testler için: `build()` her çağrıldığında bir artar. Sürükleme
+/// sırasında `BoardWidget`'ın gereksiz yere yeniden inşa EDİLMEDİĞİNİ
+/// kanıtlayan kalıcı bir performans regresyon testi bunu okur (8 Ağustos
+/// 2026, mobile/CLAUDE.md Parça 23 — 169 hücre + territory hesabının her
+/// pointer hareketinde sıfırdan çizilmesi kullanıcı tarafından cihazda
+/// "titreme/takılma" olarak bildirilmişti). Üretim davranışını hiç
+/// etkilemez, yalnızca bir sayaç.
+@visibleForTesting
+int debugBoardBuildCountForTests = 0;
 
 /// Dış hat köşe yarıçapı (ızgara birimi) ve kalınlığı — web sabitleri.
 const double _outlineRadius = 0.16;
@@ -49,12 +60,14 @@ class BoardWidget extends StatelessWidget {
   final bool compact;
 
   /// Sürüklenen kaynağın hücresi — taş görünmez çizilir (web dragHiddenKey).
+  /// Yalnızca sürükleme BAŞLADIĞINDA/BİTTİĞİNDE değişir (nadir) — hover
+  /// hedefi (`dragOverKey`/`dragOverValid`, HER pointer hareketinde değişen)
+  /// artık bu widget'ın parametresi DEĞİL; ekran katmanı onu ayrı, küçük bir
+  /// overlay'de (`ValueListenableBuilder`) çiziyor ki her hareket bu
+  /// widget'ın (169 hücre + territory hesabı) tamamını yeniden inşa
+  /// ETMESİN (8 Ağustos 2026 performans düzeltmesi — bkz. mobile/CLAUDE.md
+  /// Parça 23, `DashedBorderPainter`'ı ekran katmanı da kullanıyor).
   final String? dragHiddenKey;
-
-  /// Sürükleme sırasında altındaki hücre + bırakma geçerliliği (web
-  /// dragOverKey/dragOverValid — kesikli yeşil/kırmızı çerçeve).
-  final String? dragOverKey;
-  final bool dragOverValid;
 
   /// Verildiğinde, YERLEŞTİRİLMİŞ taş taşıyan hücreler GestureDetector
   /// yerine Listener olur — dokunuş/sürükleme ayrımını ekran katmanının
@@ -95,8 +108,6 @@ class BoardWidget extends StatelessWidget {
     this.moveOverlay,
     this.compact = false,
     this.dragHiddenKey,
-    this.dragOverKey,
-    this.dragOverValid = false,
     this.onTilePointerDown,
     this.onTilePointerMove,
     this.onTilePointerUp,
@@ -113,6 +124,7 @@ class BoardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (kDebugMode) debugBoardBuildCountForTests++;
     final players = state.players;
 
     // Bölgeler: köşe + kendi taşlarıyla genişleyen alan (core'dan).
@@ -262,8 +274,7 @@ class BoardWidget extends StatelessWidget {
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 6),
                   child: Text('·',
-                      style: TextStyle(
-                          fontSize: 12, color: Color(0xFF5A6673))),
+                      style: TextStyle(fontSize: 12, color: Color(0xFF5A6673))),
                 ),
                 GestureDetector(
                   onTap: onOpenMessaging,
@@ -500,24 +511,10 @@ class BoardWidget extends StatelessWidget {
     Widget body =
         cellBox != null ? cellBox(content) : SizedBox.expand(child: content);
 
-    // Bırakma hedefi vurgusu — web: 2px kesikli yeşil/kırmızı çerçeve.
-    if (k == dragOverKey) {
-      body = Stack(
-        fit: StackFit.expand,
-        children: [
-          body,
-          IgnorePointer(
-            child: CustomPaint(
-              painter: _DashedBorderPainter(
-                dragOverValid
-                    ? const Color(0xFF1FA05C)
-                    : const Color(0xFFE0483A),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
+    // Bırakma hedefi vurgusu (kesikli yeşil/kırmızı çerçeve) artık BURADA
+    // çizilmiyor — ekran katmanının hover overlay'i (`_hoverHighlight`,
+    // `DashedBorderPainter`'ı yeniden kullanıyor) hücrenin üstüne ayrı bir
+    // Positioned katman olarak çiziyor (bkz. yukarıdaki dragHiddenKey notu).
 
     // Yerleştirilmiş taş + drag handler'ları: Listener (dokunuş da
     // sürükleme de ekran katmanında ayrışır); diğer hücreler GestureDetector.
@@ -652,10 +649,12 @@ class BoardWidget extends StatelessWidget {
   }
 }
 
-/// Bırakma hedefinin 2px kesikli çerçevesi (web `outline: 2px dashed`).
-class _DashedBorderPainter extends CustomPainter {
+/// Bırakma hedefinin 2px kesikli çerçevesi (web `outline: 2px dashed`) —
+/// PUBLIC: ekran katmanlarının (`game_screen.dart`/`online_game_screen.dart`)
+/// hover overlay'i de bunu kullanıyor (bkz. yukarıdaki dragHiddenKey notu).
+class DashedBorderPainter extends CustomPainter {
   final Color color;
-  _DashedBorderPainter(this.color);
+  DashedBorderPainter(this.color);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -678,7 +677,7 @@ class _DashedBorderPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_DashedBorderPainter old) => old.color != color;
+  bool shouldRepaint(DashedBorderPainter old) => old.color != color;
 }
 
 class _OutlinesPainter extends CustomPainter {

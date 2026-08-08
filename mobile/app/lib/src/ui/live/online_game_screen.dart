@@ -222,14 +222,25 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   Timer? _periodic;
   DateTime? _lastForeground;
 
-  // ── Sürükle-bırak (game_screen.dart ile bilinçli aynı; bkz. dosya başı) ─
+  // ── Sürükle-bırak (game_screen.dart ile bilinçli aynı; bkz. dosya başı —
+  // performans düzeltmesi de dahil, 8 Ağustos 2026, mobile/CLAUDE.md Parça 23)
   static const double _dragLift = 30;
   static const double _dragThreshold = 6;
   final GlobalKey _gridKey = GlobalKey();
   final GlobalKey _rackKey = GlobalKey();
   final GlobalKey _stackKey = GlobalKey();
   _DragRef? _dragRef;
-  _Ghost? _ghost;
+
+  /// Sürüklenen kaynak — YALNIZCA eşik aşıldığında/bittiğinde değişir
+  /// (game_screen.dart'taki `_hiddenSource` ile aynı gerekçe — kaynağı
+  /// pointer-down anında değil, gerçek sürükleme başladığında gizle).
+  _DragSource? _hiddenSource;
+
+  /// Hover hedefi (`_Ghost.overKey`/`overValid`) HER pointer hareketinde
+  /// değişir — `setState`'e değil bağımsız bir `ValueNotifier`'a yazılıyor,
+  /// yalnızca küçük bir `ValueListenableBuilder` overlay'i bunu dinliyor
+  /// (game_screen.dart'taki `_dragNotifier` ile birebir aynı düzeltme).
+  final ValueNotifier<_Ghost?> _dragNotifier = ValueNotifier(null);
 
   // ── Oyun İçi Mesajlaşma (Faz 1 + 2) ─────────────────────────────────────
   final _chatState = _ChatState();
@@ -284,6 +295,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     _unsubscribeChat?.call();
     _controller.dispose();
     _chatState.dispose();
+    _dragNotifier.dispose();
     super.dispose();
   }
 
@@ -924,6 +936,9 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     if (!d.moved) {
       if ((e.position - d.start).distance < _dragThreshold) return;
       d.moved = true;
+      // Eşik İLK kez aşıldı — kaynak artık "sürükleniyor" sayılır ve
+      // gizlenir (game_screen.dart ile aynı düzeltme — bkz. orada).
+      setState(() => _hiddenSource = d.source);
     }
     if (!d.enabled) return;
     final lifted = Offset(e.position.dx, _liftedY(e.position.dy));
@@ -934,22 +949,23 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
       overKey = cellKey(cell.$1, cell.$2);
       overValid = _isCellFreeFor(d.source, cell.$1, cell.$2);
     }
-    setState(() {
-      _ghost = _Ghost(
-        global: lifted,
-        source: d.source,
-        overKey: overKey,
-        overValid: overValid,
-      );
-    });
+    // BİLEREK setState DEĞİL (game_screen.dart ile aynı düzeltme — bkz.
+    // orada, `_dragNotifier` notu).
+    _dragNotifier.value = _Ghost(
+      global: lifted,
+      source: d.source,
+      overKey: overKey,
+      overValid: overValid,
+    );
   }
 
   Future<void> _endTileDrag(PointerUpEvent e) async {
     final d = _dragRef;
     setState(() {
       _dragRef = null;
-      _ghost = null;
+      _hiddenSource = null;
     });
+    _dragNotifier.value = null;
     if (d == null) return;
 
     if (!d.moved) {
@@ -997,12 +1013,12 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   void _cancelTileDrag() {
     setState(() {
       _dragRef = null;
-      _ghost = null;
+      _hiddenSource = null;
     });
+    _dragNotifier.value = null;
   }
 
-  Widget _buildGhost() {
-    final g = _ghost!;
+  Widget _buildGhost(_Ghost g) {
     final box = _boxOf(_stackKey);
     final local = box == null ? g.global : box.globalToLocal(g.global);
     final isRack = g.source is _RackSource;
@@ -1020,6 +1036,34 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
               variant: isRack ? TileVariant.rack : TileVariant.placed,
               color: isRack ? null : _colorOf(_mySlot),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Bırakma hedefinin kesikli çerçevesi — game_screen.dart'taki
+  /// `_hoverHighlight` ile birebir aynı (bkz. orada, geometri notu).
+  Widget _hoverHighlight(_Ghost g) {
+    final key = g.overKey;
+    if (key == null) return const SizedBox.shrink();
+    final grid = _boxOf(_gridKey);
+    final stack = _boxOf(_stackKey);
+    if (grid == null || stack == null) return const SizedBox.shrink();
+    final (r, c) = parseKey(key);
+    const gap = 3.0;
+    final strideX = (grid.size.width + gap) / boardSize;
+    final strideY = (grid.size.height + gap) / boardSize;
+    final gridOrigin = stack.globalToLocal(grid.localToGlobal(Offset.zero));
+    return Positioned(
+      left: gridOrigin.dx + c * strideX,
+      top: gridOrigin.dy + r * strideY,
+      width: strideX - gap,
+      height: strideY - gap,
+      child: IgnorePointer(
+        child: CustomPaint(
+          painter: DashedBorderPainter(
+            g.overValid ? const Color(0xFF1FA05C) : const Color(0xFFE0483A),
           ),
         ),
       ),
@@ -1200,14 +1244,12 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                         : _openMessaging,
                                     hasUnreadMessage:
                                         _chatState.unreadCount > 0,
-                                    dragHiddenKey: _ghost?.source
+                                    dragHiddenKey: _hiddenSource
                                             is _PlacedSource
                                         ? cellKey(
-                                            (_ghost!.source as _PlacedSource).r,
-                                            (_ghost!.source as _PlacedSource).c)
+                                            (_hiddenSource as _PlacedSource).r,
+                                            (_hiddenSource as _PlacedSource).c)
                                         : null,
-                                    dragOverKey: _ghost?.overKey,
-                                    dragOverValid: _ghost?.overValid ?? false,
                                     onTilePointerDown: (r, c, e) {
                                       final t = state.placed[cellKey(r, c)];
                                       if (t != null) {
@@ -1285,8 +1327,8 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                               swapSelection:
                                                   state.swapSelection,
                                               dragHiddenIndex:
-                                                  _ghost?.source is _RackSource
-                                                      ? (_ghost!.source
+                                                  _hiddenSource is _RackSource
+                                                      ? (_hiddenSource
                                                               as _RackSource)
                                                           .index
                                                       : null,
@@ -1435,7 +1477,19 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                     ),
                   ),
                 ),
-                if (_ghost != null) _buildGhost(),
+                // game_screen.dart ile birebir aynı overlay deseni (bkz.
+                // orada) — `_dragNotifier`'ı dinleyen tek, koşulsuz duran
+                // ValueListenableBuilder.
+                ValueListenableBuilder<_Ghost?>(
+                  valueListenable: _dragNotifier,
+                  builder: (context, ghost, _) {
+                    if (ghost == null) return const SizedBox.shrink();
+                    return Stack(children: [
+                      _hoverHighlight(ghost),
+                      _buildGhost(ghost),
+                    ]);
+                  },
+                ),
               ],
             ),
           ),

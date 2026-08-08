@@ -72,8 +72,8 @@ grep -rn "await newRepo(" app/test/*_test.dart              # testWidgets İÇİ
 grep -rn "Path.combine\|PathOperation" app/lib/             # CanvasKit'te PathOps GÜVENİLMEZ (bkz. Parça 18) — evenOdd kullan
 ```
 
-**Son tam tarama: 7 Ağustos 2026 (Canlı oyun tahtası parçası) — beşi de
-temiz.** İlk tam tarama 6 Ağustos'taydı; o turda bulunan TEK gerçek ihlal
+**Son tam tarama: 8 Ağustos 2026 (Parça 23, sürükleme performans düzeltmesi)
+— yedisi de temiz.** İlk tam tarama 6 Ağustos'taydı; o turda bulunan TEK gerçek ihlal
 (`score_stats_section`'daki `toUpperCase` → "BIRINCILIK") parça 4'te
 düzeltilmişti. Değişmez listesi kapsamlı DEĞİL — derleyicinin göremediği
 yeni bir kural eklediğinde (ör. yeni bir üretilmiş dosya, yeni bir "tek
@@ -2991,6 +2991,95 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        karşılaştırma kullanıcının paylaştığı iki ekran görüntüsüyle
        yapıldı (kod okuması DEĞİL) — deploy sonrası gerçek cihazda bir
        kez daha (sert yenileme sonrası) teyit edilmeli.
+   - ✅ **Parça 23 — sürükleme HER pointer hareketinde tüm tahtayı (169
+     hücre + territory hesabı) sıfırdan yeniden inşa ediyordu (8 Ağustos
+     2026, `board_widget.dart`, `game_screen.dart`, `online_game_screen.dart`):**
+     FAZ A1 cihaz testinde (iPad Safari, gerçek web derlemesi) kullanıcı taş
+     sürüklerken "hafif titreyerek/takılarak" olduğunu bildirdi.
+     - **Ölçüm (bu ortamda, native VM/Skia'da — gerçek cihaz/CanvasKit değil):**
+       `board_widget.dart`'a geçici bir sayaç eklenip `flutter test`'te gerçek
+       bir `tester.startGesture` + 30 adımlık `moveTo` dizisiyle sürükleme
+       simüle edildi — **30 pointer-move adımı → `BoardWidget.build()` TAM 30
+       KEZ çağrıldı (1:1)**, adım başı ortalama **~38-40ms** (60fps bütçesi
+       16.7ms'nin 2 katından fazla). Kontrol: state değişmeden 30 `pump()` →
+       0 board build, adım başı ~0.13ms — maliyetin tamamen bu per-move
+       rebuild'den geldiği doğrulandı.
+     - **Kök sebep:** `game_screen.dart`'taki `_moveTileDrag` (ve
+       `online_game_screen.dart`'taki BİREBİR eşleniği) her
+       `PointerMoveEvent`'te `setState(() { _ghost = _Ghost(...); })`
+       çağırıyordu — bu, ekranın TÜM `build()`'ini yeniden çalıştırıyor, ki bu
+       da her seferinde YENİ bir `BoardWidget(...)` örneği inşa ediyordu.
+       `BoardWidget` bir `StatelessWidget` olduğundan (const değil), her yeni
+       örnek `build()`'ini baştan çalıştırıyor — 169 hücre + territory hesabı
+       + outline painter'lar her pointer hareketinde sıfırdan.
+     - **Tasarım — üç parça:**
+       1. `BoardWidget`'ın `dragOverKey`/`dragOverValid` parametreleri
+          TAMAMEN KALDIRILDI (ve hücre inşa döngüsündeki kesikli-çerçeve
+          bloğu) — `dragHiddenKey` KALDI (nadir değişiyor, sorun değil).
+          `_DashedBorderPainter` public'e çevrildi (`DashedBorderPainter`) ki
+          ekran katmanları da kullanabilsin — kopya YAZILMADI, sınıf taşındı.
+       2. Her iki ekranda da `_Ghost? _ghost` alanı
+          `final ValueNotifier<_Ghost?> _dragNotifier` oldu. `_moveTileDrag`
+          artık `setState` YERİNE `_dragNotifier.value = _Ghost(...)` yazıyor
+          — GameScreen'in tüm build'ini tetiklemeyi durduran asıl değişiklik.
+          Ekrandaki hayalet taş + hover çerçevesi artık KOŞULSUZ duran tek bir
+          `ValueListenableBuilder<_Ghost?>` (`Stack`teki eski
+          `if (_ghost != null) _buildGhost()` yerine) — yalnızca kendi küçük
+          alt ağacını günceller, `BoardWidget`'ı tetiklemez. `dispose()`'ta
+          `_dragNotifier.dispose()` (`game_screen.dart`'ta `dispose()` hiç
+          yoktu, eklendi; `online_game_screen.dart`'ta zaten vardı).
+       3. **Hover çerçevesi artık ekran katmanının kendi overlay'i** —
+          hücrenin ızgaradaki GERÇEK konumu `_gridKey`'in boyutundan
+          `_cellAtGlobal` ile AYNI stride formülüyle (`(grid.size+gap)/13`)
+          elle hesaplanıp `_stackKey`'e göre `Positioned` ile konumlandırılıyor
+          (`_hoverHighlight`, `_buildGhost`'un `globalToLocal` deseniyle
+          tutarlı).
+     - **Bilinçli tasarım REVİZYONU — `dragHiddenKey` `_beginTileDrag`'de
+       DEĞİL, eşik-aşımı anında dolduruluyor:** İlk taslak (kullanıcının
+       verdiği brief) `dragHiddenKey`i `_beginTileDrag`de (pointer-down
+       anında, eşik aşılmadan) hesaplamayı öneriyordu. Bu, web/eski
+       davranıştan sapardı: sıradan bir dokunuşta (sürüklenmeden bırakılan)
+       taş bir an için görünmez olurdu, üstelik yerine henüz hiçbir hayalet
+       taş da çizilmemiş olurdu (ghost yalnızca eşik aşılınca `_moveTileDrag`
+       içinde belirir) — bir görsel "delik". Bunun yerine `_hiddenSource`
+       (board için `dragHiddenKey`, rafta `dragHiddenIndex`) `_moveTileDrag`in
+       `d.moved` geçişinde (eşik İLK kez aşıldığında, sürükleme başına TEK
+       sefer) `setState`'le dolduruluyor — hem web'in "gerçek hareket
+       başlayınca kaynağı gizle" anıyla birebir örtüşüyor hem de performans
+       hedefini aynen koruyor (sürükleme başına yalnızca BİR ekstra
+       `setState`, per-move DEĞİL — brief'in izin verdiği "0-1 kez" toleransı
+       içinde).
+     - **Test — negatif eş doğrulamasıyla (kök CLAUDE.md dersi):** Yeni bir
+       `testWidgets` (`game_screen_test.dart`), gerçek bir sürükleme simüle
+       edip (`startGesture` + 30 adımlık `moveTo`, her adımda `pump()`) eşik
+       aşıldıktan SONRAKİ `BoardWidget.build()` sayısını ölçüyor — bunun için
+       `board_widget.dart`'a `@visibleForTesting int
+       debugBoardBuildCountForTests` (yalnızca `kDebugMode`de artan bir
+       sayaç) eklendi. Düzeltme GEÇİCİ OLARAK geri alınıp (`_dragNotifier`e
+       yazımın `setState` içine alınması) test koşuldu — **GERÇEKTEN
+       başarısız oldu: `Expected: <=1, Actual: <30>`** (30/30 rebuild, tam
+       yukarıdaki ölçümle birebir eşleşen sayı), sonra düzeltme geri konup
+       yeşile döndü. Ayrıca hover çerçevesinin/hayalet taşın GERÇEK render
+       konumu (`tester.getRect`) `boardCell(0,0)`'ın rect'iyle < 1px farkla
+       karşılaştırılarak doğrulandı (aynı desen `online_game_screen_test.dart`'ın
+       mevcut sürükleme testine de eklendi) — ekran görüntüsünde (`game_drag.png`)
+       hayalet taş (46px, cell'den büyük) hedefin üstüne tam oturduğundan
+       kesikli çerçeveyi görsel olarak örtüyor (web'in DRAG_LIFT tasarımı
+       gereği İKİSİ HER ZAMAN aynı noktada), bu yüzden konum yalnızca gözle
+       değil bu geometrik assertion'la da kanıtlandı.
+     - Doğrulama: `flutter analyze` temiz, değişmez taraması temiz (hiçbiri
+       yeni bir ihlal göstermedi — dokunulan dosyalar zaten grep'in kapsamı
+       DIŞINDA). **Tam takım iki ayrı temiz koşuda 256/256 yeşil** (255 + bu
+       parçanın 1 yeni testi) — `game_screen_test.dart`/`online_game_screen_test.dart`'ın
+       MEVCUT sürükleme testleri (raftan tahtaya/tahtada taşıma/rafa geri
+       alma, sayfa kaymama) HİÇ DEĞİŞMEDEN geçti. `kelimeki_core`'a hiç
+       dokunulmadı (golden vector yeniden üretimi gerekmedi) — bu tamamen
+       Flutter render/state katmanına özgü bir düzeltme.
+     - **Doğrulama sınırı:** Bu ortamda gerçek cihaz/CanvasKit performansı
+       ÖLÇÜLEMEDİ — yalnızca native VM/Skia'da (`flutter test`) rebuild
+       SAYISININ 30/30'dan 0'a düştüğü kanıtlandı; gerçek "artık daha akıcı
+       hissediyor" teyidi kullanıcının cihazından (sert yenileme/yeni build
+       sonrası) bekleniyor. `mobile/TESTING.md`'ye bir regresyon notu eklendi.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

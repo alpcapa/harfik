@@ -136,7 +136,36 @@ class _GameScreenState extends State<GameScreen> {
   // SingleChildScrollView'ın `physics`i buna bağlı olduğundan (bkz. build())
   // her değişiklik setState içinde yapılmak ZORUNDA.
   _DragRef? _dragRef;
-  _Ghost? _ghost;
+
+  /// Sürüklenen kaynak — YALNIZCA sürükleme GERÇEKTEN başladığında (eşik
+  /// aşıldığında, `_moveTileDrag`'in `d.moved` geçişinde — sürükleme başına
+  /// TEK sefer) ve bittiğinde/iptal olduğunda değişir; `BoardWidget`'ın
+  /// `dragHiddenKey`'i ve `RackWidget`'ın `dragHiddenIndex`'i buradan
+  /// türetiliyor. Kaynağı POINTER DOWN anında (eşik aşılmadan) gizlemek
+  /// web/eski davranıştan sapardı — sıradan bir dokunuşta (sürüklenmeden
+  /// bırakılan) taş bir an için görünmezdi, üstelik yerine henüz hiçbir
+  /// hayalet taş da çizilmemiş olurdu (ghost yalnızca eşik aşılınca
+  /// belirir). Eşik-aşımı anına bağlamak hem bu görsel deliği önlüyor hem
+  /// de performans hedefini aynen koruyor — sürükleme başına yalnızca BİR
+  /// ekstra `setState`, per-move DEĞİL.
+  _DragSource? _hiddenSource;
+
+  /// Hover hedefi (`_Ghost.overKey`/`overValid`) HER pointer hareketinde
+  /// değişir — bunu `setState`'e (dolayısıyla `GameScreen`'in TÜM build'ine,
+  /// yani `BoardWidget`'ın 169 hücre + territory hesabının sıfırdan
+  /// yeniden çizilmesine) bağlamak yerine bağımsız bir `ValueNotifier`'a
+  /// yazıyoruz — yalnızca aşağıdaki küçük `ValueListenableBuilder` overlay'i
+  /// bunu dinliyor (8 Ağustos 2026 performans düzeltmesi, kullanıcı iPad
+  /// Safari'de sürüklerken titreme/takılma bildirdi; ölçüm: 30 pointer-move
+  /// → 30/30 BoardWidget rebuild, adım başı ~38-40ms — bkz. mobile/CLAUDE.md
+  /// Parça 23).
+  final ValueNotifier<_Ghost?> _dragNotifier = ValueNotifier(null);
+
+  @override
+  void dispose() {
+    _dragNotifier.dispose();
+    super.dispose();
+  }
 
   PlayerColor _colorOf(int i) =>
       playerColors[state.players[i].colorIndex % playerColors.length];
@@ -322,7 +351,10 @@ class _GameScreenState extends State<GameScreen> {
 
   void _beginTileDrag(_DragSource source, PointerDownEvent e) {
     // setState şart: aşağıdaki SingleChildScrollView'ın `physics`i buna bağlı
-    // (bkz. build() — sürükleme sırasında sayfa kaymasın diye).
+    // (bkz. build() — sürükleme sırasında sayfa kaymasın diye). `_hiddenSource`
+    // BURADA sıfırlanmıyor/doldurulmuyor — yalnızca aşağıda `_moveTileDrag`in
+    // eşik-aşımı anında (web'in "gerçek hareket başlayınca kaynağı gizle"
+    // davranışıyla aynı an) doluyor; sıradan bir dokunuşta hiç dolmadan kalır.
     setState(() {
       _dragRef = _DragRef(
         source: source,
@@ -338,6 +370,11 @@ class _GameScreenState extends State<GameScreen> {
     if (!d.moved) {
       if ((e.position - d.start).distance < _dragThreshold) return;
       d.moved = true;
+      // Eşik İLK kez aşıldı — kaynak artık "sürükleniyor" sayılır ve
+      // gizlenir (web'in aynı anki davranışı). Sürükleme başına yalnızca BİR
+      // kez tetiklenen nadir bir geçiş — per-move DEĞİL, setState burada
+      // ucuz/güvenli.
+      setState(() => _hiddenSource = d.source);
     }
     if (!d.enabled) return;
     final lifted = Offset(e.position.dx, _liftedY(e.position.dy));
@@ -348,22 +385,25 @@ class _GameScreenState extends State<GameScreen> {
       overKey = cellKey(cell.$1, cell.$2);
       overValid = _isCellFreeFor(d.source, cell.$1, cell.$2);
     }
-    setState(() {
-      _ghost = _Ghost(
-        global: lifted,
-        source: d.source,
-        overKey: overKey,
-        overValid: overValid,
-      );
-    });
+    // BİLEREK setState DEĞİL — bu, GameScreen'in tüm build'ini (dolayısıyla
+    // BoardWidget'ın 169 hücre + territory hesabını) HER pointer hareketinde
+    // yeniden tetikleyen asıl kaynaktı (bkz. yukarıdaki _dragNotifier notu).
+    // Yalnızca aşağıdaki ValueListenableBuilder overlay'i bunu dinliyor.
+    _dragNotifier.value = _Ghost(
+      global: lifted,
+      source: d.source,
+      overKey: overKey,
+      overValid: overValid,
+    );
   }
 
   Future<void> _endTileDrag(PointerUpEvent e) async {
     final d = _dragRef;
     setState(() {
       _dragRef = null;
-      _ghost = null;
+      _hiddenSource = null;
     });
+    _dragNotifier.value = null;
     if (d == null) return;
 
     if (!d.moved) {
@@ -410,14 +450,14 @@ class _GameScreenState extends State<GameScreen> {
   void _cancelTileDrag() {
     setState(() {
       _dragRef = null;
-      _ghost = null;
+      _hiddenSource = null;
     });
+    _dragNotifier.value = null;
   }
 
   /// Parmağın üzerinde süzülen taş — web'in fixed ghost overlay'i (46px,
   /// merkezlenmiş, 1.1 ölçek, gölgeli).
-  Widget _buildGhost() {
-    final g = _ghost!;
+  Widget _buildGhost(_Ghost g) {
     final box = _boxOf(_stackKey);
     final local = box == null ? g.global : box.globalToLocal(g.global);
     final isRack = g.source is _RackSource;
@@ -438,6 +478,39 @@ class _GameScreenState extends State<GameScreen> {
               variant: isRack ? TileVariant.rack : TileVariant.placed,
               color: isRack ? null : _colorOf(state.current),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Bırakma hedefinin kesikli yeşil/kırmızı çerçevesi — eskiden
+  /// `BoardWidget`in `dragOverKey`/`dragOverValid` parametreleriydi (o
+  /// widget'ı per-move yeniden inşa ettiriyordu); artık ekran katmanının
+  /// KENDİ küçük overlay'i olarak, hücrenin ızgaradaki GERÇEK konumu elle
+  /// hesaplanıp (`_gridKey`'in boyutundan, `_cellAtGlobal` ile AYNI
+  /// stride formülüyle) `_stackKey`'e göre konumlandırılıyor —
+  /// `_buildGhost`'un `globalToLocal` deseniyle tutarlı.
+  Widget _hoverHighlight(_Ghost g) {
+    final key = g.overKey;
+    if (key == null) return const SizedBox.shrink();
+    final grid = _boxOf(_gridKey);
+    final stack = _boxOf(_stackKey);
+    if (grid == null || stack == null) return const SizedBox.shrink();
+    final (r, c) = parseKey(key);
+    const gap = 3.0;
+    final strideX = (grid.size.width + gap) / boardSize;
+    final strideY = (grid.size.height + gap) / boardSize;
+    final gridOrigin = stack.globalToLocal(grid.localToGlobal(Offset.zero));
+    return Positioned(
+      left: gridOrigin.dx + c * strideX,
+      top: gridOrigin.dy + r * strideY,
+      width: strideX - gap,
+      height: strideY - gap,
+      child: IgnorePointer(
+        child: CustomPaint(
+          painter: DashedBorderPainter(
+            g.overValid ? const Color(0xFF1FA05C) : const Color(0xFFE0483A),
           ),
         ),
       ),
@@ -567,14 +640,12 @@ class _GameScreenState extends State<GameScreen> {
                                     gridKey: _gridKey,
                                     onOpenHistory: () =>
                                         showMoveHistoryModal(context, state),
-                                    dragHiddenKey: _ghost?.source
+                                    dragHiddenKey: _hiddenSource
                                             is _PlacedSource
                                         ? cellKey(
-                                            (_ghost!.source as _PlacedSource).r,
-                                            (_ghost!.source as _PlacedSource).c)
+                                            (_hiddenSource as _PlacedSource).r,
+                                            (_hiddenSource as _PlacedSource).c)
                                         : null,
-                                    dragOverKey: _ghost?.overKey,
-                                    dragOverValid: _ghost?.overValid ?? false,
                                     onTilePointerDown: (r, c, e) {
                                       final t = state.placed[cellKey(r, c)];
                                       if (t != null) {
@@ -656,12 +727,14 @@ class _GameScreenState extends State<GameScreen> {
                                                 swapMode: state.swapMode,
                                                 swapSelection:
                                                     state.swapSelection,
-                                                dragHiddenIndex: _ghost?.source
-                                                        is _RackSource
-                                                    ? (_ghost!.source
-                                                            as _RackSource)
-                                                        .index
-                                                    : null,
+                                                // `_hiddenSource` (dragHiddenKey
+                                                // ile aynı kaynak/gerekçe).
+                                                dragHiddenIndex:
+                                                    _hiddenSource is _RackSource
+                                                        ? (_hiddenSource
+                                                                as _RackSource)
+                                                            .index
+                                                        : null,
                                                 onTilePointerDown: (i, e) =>
                                                     _beginTileDrag(
                                                         _RackSource(
@@ -823,7 +896,21 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                   ),
                 ),
-                if (_ghost != null) _buildGhost(),
+                // Hover çerçevesi + hayalet taş: KOŞULSUZ duran tek bir
+                // ValueListenableBuilder — yalnızca `_dragNotifier` değişince
+                // (HER pointer hareketinde) kendi küçük alt ağacını günceller,
+                // GameScreen'in (dolayısıyla BoardWidget'ın) tam build'ini
+                // TETİKLEMEZ (bkz. yukarıdaki _dragNotifier notu).
+                ValueListenableBuilder<_Ghost?>(
+                  valueListenable: _dragNotifier,
+                  builder: (context, ghost, _) {
+                    if (ghost == null) return const SizedBox.shrink();
+                    return Stack(children: [
+                      _hoverHighlight(ghost),
+                      _buildGhost(ghost),
+                    ]);
+                  },
+                ),
               ],
             ),
           ),

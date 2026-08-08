@@ -83,6 +83,16 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       mobile/CLAUDE.md Parça 21).
 - [ ] **Sürükle-bırak.** Raftan tahtaya, tahtada taşıma, tahtadan rafa geri
       alma. Hayalet taş parmağın ÜSTÜNDE görünmeli (30px kaldırma).
+      **Sürükleme AKICI olmalı — hafif titreme/takılma bir REGRESYONDUR**
+      (8 Ağustos 2026'da kullanıcı iPad Safari'de bunu bizzat bildirdi; kök
+      sebep `BoardWidget`'ın (169 hücre + territory hesabı) HER pointer
+      hareketinde sıfırdan yeniden inşa edilmesiydi — ölçüm: 30 pointer-move
+      → 30/30 rebuild, adım başı ~38-40ms; düzeltme sonrası (bu ortamda
+      native VM/Skia'da doğrulandı) 0 rebuild — bkz. mobile/CLAUDE.md
+      Parça 23). Bu ortamda gerçek cihaz/CanvasKit performansı ÖLÇÜLEMEDİ,
+      yalnızca burada cihazda teyit edilebilir — sürüklerken parmağı yavaşça
+      tahtanın bir ucundan diğerine gezdir, hayalet taş + kesikli hedef
+      çerçevesi pürüzsüz takip etmeli.
 - [ ] **Joker.** Jokeri tahtaya koy → harf seçici açılmalı; konmuş jokere
       tekrar dokun → seçici "Geri Al" seçenekli açılmalı, taş geri
       ALINMAMALI (dokunma ile sürükleme farklı davranır). **Seçici hiçbir
