@@ -54,6 +54,27 @@ class _CssShadowBoxPainter extends BoxPainter {
   void paint(Canvas canvas, Offset offset, ImageConfiguration configuration) {
     final rect = offset & configuration.size!;
     final rrect = RRect.fromRectAndRadius(rect, Radius.circular(d.radius));
+    // CSS: DIŞ gölge kutunun İÇİNE hiç boyanmaz (border-box'ın dışına
+    // kırpılır) — bu yüzden gölgeler şeklin kendi alanı DIŞLANARAK çizilir.
+    // Opak bir dolguda fark görünmez (dolgu altındakini zaten örter), ama
+    // SAYDAM dolguda gölge içeriden sızıp kutuyu grileştiriyordu: web'de
+    // beyaz zemin + %5 mavi = (244,247,254) iken mobilde araya gri gölge
+    // girip (200,210,226) çıkıyordu (kullanıcı "Neden Ücretsiz Üye
+    // Olmalıyım?" kutusunda bildirdi, 8 Ağustos 2026 — projedeki TEK
+    // saydam dolgulu kullanım yeri o).
+    // (`clipRRect` bir ClipOp almıyor; "şekli DIŞLA" kırpması evenOdd bir
+    // clipPath ile ifade ediliyor — inset gölgelerdeki aynı teknik, PathOps'a
+    // girmediğinden CanvasKit'te de güvenli.)
+    var reach = 0.0;
+    for (final s in d.shadows) {
+      final r = s.blur * 2 + s.offset.distance;
+      if (r > reach) reach = r;
+    }
+    canvas.save();
+    canvas.clipPath(Path()
+      ..fillType = PathFillType.evenOdd
+      ..addRect(rect.inflate(reach + 4))
+      ..addRRect(rrect));
     // CSS: listedeki ilk gölge en üstte → ters sırayla çiz.
     for (final s in d.shadows.reversed) {
       final paint = Paint()
@@ -61,6 +82,7 @@ class _CssShadowBoxPainter extends BoxPainter {
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, s.blur / 2);
       canvas.drawRRect(rrect.shift(s.offset), paint);
     }
+    canvas.restore();
     final fill = Paint();
     if (d.gradient != null) {
       fill.shader = d.gradient!.createShader(rect);

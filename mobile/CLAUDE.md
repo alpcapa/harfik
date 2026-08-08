@@ -2738,6 +2738,47 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        olduğunu söylemez. Aradaki fark bir motor hatasıysa, değerleri
        kurcalamak (ilk denemedeki gibi) semptomu kovalamaktır ve genellikle
        daha da bozar. Önce çıktıyı ölç, sonra sebebi ara.
+   - ✅ **Parça 19 — Setup ortalaması + DIŞ gölge saydam dolgunun altından
+     sızıyordu (8 Ağustos 2026, `setup_screen.dart`, `neo_box.dart`):** İki
+     ayrı kullanıcı bildirimi, ikisi de web paritesi eksiği.
+     - **(a) Tanıtım paragrafı ve link satırı sola yaslıydı.** Web'de blok
+       `text-center flex flex-col items-center` içinde — hem paragraf hem
+       altındaki "Nasıl oynanır? · Arkadaşınla paylaş" satırı ORTALI.
+       Flutter'da paragrafta `textAlign` hiç yoktu, link satırı da
+       `Alignment.centerLeft` idi (~72px sapma). İkisi de düzeltildi.
+       Hizalamayı koruyan bir test eklendi (link satırının yatay merkezi,
+       içerik genişliğini kaplayan paragrafın merkeziyle eşleşmeli) ve
+       **test düzeltme geri alınarak DOĞRULANDI** — eski hâlde 210 yerine
+       138 ölçüp başarısız oluyor (kök CLAUDE.md'nin "negatif eşi" dersi:
+       aradığın davranışın YOKLUĞUNDA da geçen bir kontrol boştur).
+     - **(b) "Neden Ücretsiz Üye Olmalıyım?" kutusu grimsi/lavanta
+       görünüyordu, web'de açık mavi-beyaz.** Kök sebep `neo_box.dart`'ta:
+       `_CssShadowBoxPainter` dış gölgeleri tam bir rrect olarak çizip
+       ÜSTÜNE dolguyu basıyordu. CSS'te dış gölge border-box'ın İÇİNE hiç
+       boyanmaz; opak dolguda fark görünmez (dolgu altındakini örter) ama
+       bu kutu projedeki **TEK saydam dolgulu** kullanım yeri
+       (`Color(0x0D2563EB)` = web `bg-accent/5`) olduğundan gri gölge
+       içeriden sızıyordu. Ölçümle doğrulandı: web CSS'i Chromium'da
+       **(244,247,254)**, mobil **(200,210,226)** — ikisi de önceden
+       hesapladığım değerlerle birebir çıktı (beyaz + %5 mavi vs beyaz +
+       gri gölge + %5 mavi). Düzeltme: gölgeler artık şeklin kendi alanı
+       DIŞLANARAK çiziliyor. `clipRRect` bir `ClipOp` almadığından kırpma
+       evenOdd bir `clipPath` ile ifade edildi — Parça 18'deki aynı teknik,
+       PathOps'a girmediğinden CanvasKit'te de güvenli. Düzeltme sonrası
+       mobil **(244,247,254)** — web ile birebir. Opak kullanıcılar (tahta
+       kartı, taşlar, raf, NeoButton, AccountButton) taranıp hepsinin opak
+       olduğu doğrulandı, onlarda görünür değişiklik yok.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 247/247 yeşil**.
+     - **Ders — bir "deploy oldu mu?" kontrolü teşhisin parçasıdır:** (a)
+       düzeltildikten sonra kullanıcı hâlâ eski hâli bildirdi; GitHub
+       Actions'a bakınca web işinin 11:42:48'de bittiği, ekran görüntüsünün
+       11:44'te alındığı görüldü — yani ~1 dakikalık tarayıcı önbelleği.
+       Kod yeniden kurcalanmadan önce **deploy zaman damgası ile ekran
+       görüntüsü saati karşılaştırılmalı** (bu oturumda bir kez de
+       gereksiz araştırmaya yol açtı). Ayrıca: hızlı art arda push'lar
+       çalışan run'ı iptal ediyor, ama Pages deploy işi zincirin başında
+       olduğundan (dakika 1-2) pratikte tamamlanıyor — iptal edilen run
+       mutlaka "deploy olmadı" demek DEĞİL, job bazında bakılmalı.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek
