@@ -114,9 +114,15 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       mobile/CLAUDE.md Parça 24). Raf taşlarının harfi bundan ETKİLENMEMELİ
       — orada web'de de sabit boyut var.
 - [ ] **Taş değiştirme / pas.** İkisi de sırayı ilerletmeli; pas onay
-      sorusu çıkmalı.
+      sorusu çıkmalı — başlık "Pas Geçiyorsun!", gövde "Pas geçmek
+      istediğinden emin misin? Sıran diğer oyuncuya geçer." (web ile
+      birebir), kabul butonu (PAS GEÇ/OYNA) SOLDA, VAZGEÇ SAĞDA — 8 Ağustos
+      2026'da `game_screen.dart`'ta bu metin bayat, buton sırası da (bu
+      ekranla Canlı oyun ekranının İKİSİNDE) ters çıkmıştı, bkz.
+      mobile/CLAUDE.md Parça 25.
 - [ ] **Bölge vergisi.** Rakip bölgesine değen bir hamlede "Sınır İhlali!"
-      onayı çıkmalı, kabul edilince puan bölünmeli.
+      onayı çıkmalı (kabul butonu solda, VAZGEÇ sağda), kabul edilince
+      puan bölünmeli.
 - [ ] **Kelime anlamı.** Tahtadaki ONAYLANMIŞ (Oyna ile kesinleşmiş) bir
       taşa dokun → o hücreden geçen yatay/dikey kelimelerin anlam modalı
       (yerel SQLite asset'ten) açılmalı — tetikleyici Hamle Geçmişi
@@ -411,8 +417,9 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       `get_my_online_rack` çağrılır).
 - [ ] **Hamle.** Sıra sendeyken kelime kur → OYNA: hamle web tarafında
       anında görünmeli, skor/torba/raf iki tarafta da tutmalı. Bölge
-      vergisi varsa önce "Sınır İhlali!" onayı çıkmalı ve kabul edilen
-      pay rakibin skoruna geçmeli.
+      vergisi varsa önce "Sınır İhlali!" onayı çıkmalı (kabul butonu
+      solda, VAZGEÇ sağda — bkz. mobile/CLAUDE.md Parça 25) ve kabul
+      edilen pay rakibin skoruna geçmeli.
 - [ ] **Sıra sende değilken egzersiz.** Rakibi beklerken taş yerleştir:
       yeşil/kırmızı çerçeve + puan rozeti çalışmalı, mesaj "Kelime geçerli
       — Sıra: X" demeli, OYNA PASİF olmalı. Rakip oynayınca deneme taşları

@@ -337,6 +337,41 @@ void main() {
     expect(controller.state.current, 0); // sıra devretmedi
   });
 
+  testWidgets(
+      'Pas Geç onayı: web metni birebir + kabul butonu VAZGEÇ\'in solunda',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final controller = await pumpGame(tester, GlobalKey());
+
+    await tester.tap(find.text('PAS GEÇ'));
+    await tester.pumpAndSettle();
+
+    // Web (src/App.tsx showPassConfirm) ile birebir aynı başlık/gövde —
+    // online_game_screen.dart'ın ZATEN doğru olan sürümüyle de aynı.
+    expect(find.text('Pas Geçiyorsun!'), findsOneWidget);
+    expect(
+      find.text(
+          'Pas geçmek istediğinden emin misin? Sıran diğer oyuncuya geçer.'),
+      findsOneWidget,
+    );
+
+    // Buton sırası web'le aynı: kabul (PAS GEÇ) solda, VAZGEÇ sağda —
+    // AlertDialog.actions liste sırasıyla soldan sağa dizilir.
+    final acceptBtn = find.widgetWithText(FilledButton, 'PAS GEÇ');
+    final cancelBtn = find.widgetWithText(TextButton, 'VAZGEÇ');
+    expect(acceptBtn, findsOneWidget);
+    expect(cancelBtn, findsOneWidget);
+    expect(
+      tester.getTopLeft(acceptBtn).dx,
+      lessThan(tester.getTopLeft(cancelBtn).dx),
+      reason: 'PAS GEÇ (kabul) VAZGEÇ\'in solunda olmalı — web düzeni',
+    );
+
+    await tester.tap(cancelBtn);
+    await tester.pumpAndSettle();
+    expect(controller.state.current, 0); // pas geçilmedi
+  });
+
   testWidgets('TORBA butonu Kalan Taşlar dökümünü açar', (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));
     await pumpGame(tester, GlobalKey());

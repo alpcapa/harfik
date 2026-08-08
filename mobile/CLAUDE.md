@@ -3144,6 +3144,71 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        widget-test ölçümüyle doğrulandı) — deploy sonrası kullanıcının
        kendi cihazında (iPad + telefon, ikisi birden — fark her iki yönde
        de gerçek) teyit edilmeli.
+   - ✅ **Parça 25 — "Pas Geç" onayının metni BAYATTI + tüm dört onay
+     diyaloğunda kabul butonu VAZGEÇ'in YANLIŞ tarafındaydı (8 Ağustos
+     2026, `game_screen.dart`, `online_game_screen.dart`):** Cihaz testi
+     triyajı sırasında iki gerçek, birbirinden bağımsız hata bulundu.
+     - **Bug 1 — kardeş ekran senkronsuzluğu, tam da `mobile/CLAUDE.md`'nin
+       kendi uyardığı sınıftan:** Bu dosyanın "Etki Analizi" bölümü
+       `game_screen.dart` (yerel/YZ) ile `online_game_screen.dart`'ın
+       (Canlı) sürükle-bırak/joker/mesaj mantığını BİLİNÇLİ kod tekrarıyla
+       taşıdığını ve "biri değişirse öteki de AYNI PR'da güncellenmeli"
+       dediğini söylüyor — pas onayı bu uyarının somut bir örneğiydi.
+       `online_game_screen.dart`'ın Pas Geç diyaloğu bir noktada web'e
+       (`src/App.tsx`'in `showPassConfirm` bloğu) uydurulup başlığı
+       "Pas Geçiyorsun!", gövdesi "Pas geçmek istediğinden emin misin?
+       Sıran diğer oyuncuya geçer." olmuştu — ama `game_screen.dart`'taki
+       ikizi hiç güncellenmemiş, hâlâ eski/bayat "Pas Geç" başlığı +
+       "Sıranı pas geçmek istediğine emin misin?" gövdesini taşıyordu.
+       Düzeltme: `game_screen.dart`'ın `_handlePass`'i web/`online_game_
+       screen.dart` ile BİREBİR aynı metne çekildi — `online_game_screen.
+       dart`'ın metnine HİÇ DOKUNULMADI (zaten doğruydu).
+     - **Bug 2 — buton sırası web'in TERSİYDİ, tüm dört diyalogda:** Web
+       (`src/App.tsx`) hem "Sınır İhlali!" hem "Pas Geçiyorsun!"
+       diyaloglarında kabul/aksiyon butonunu (Oyna/Pas Geç) HER ZAMAN
+       SOLDA, Vazgeç'i SAĞDA render ediyor (düz `flex` satırı, `row-reverse`
+       yok — JSX'te `<button>Oyna</button>` `<button>Vazgeç</button>`'ten
+       önce). Flutter portundaki dört diyalogun (`game_screen.dart`'ta
+       Sınır İhlali + Pas Geçiyorsun, `online_game_screen.dart`'ta aynı
+       ikisi) `actions:` listesi `[TextButton(VAZGEÇ), FilledButton(kabul)]`
+       sırasındaydı — `AlertDialog.actions` liste sırasıyla soldan sağa
+       dizildiğinden bu, VAZGEÇ'i solda, kabul butonunu sağda gösteriyordu
+       (kullanıcı ekran görüntüsüyle doğruladı). Düzeltme: dördünde de
+       liste `[FilledButton(kabul), TextButton(VAZGEÇ)]`'e çevrildi —
+       `onPressed`/`child` içerikleri DOKUNULMADAN, yalnızca sıra değişti.
+     - **Bilinçli DOKUNULMAYAN:** "Sınır İhlali!" diyaloğunun başlık/gövde
+       metni (ikisi zaten web'le birebirdi, yalnızca buton sırası
+       yanlıştı); `kelimeki_core` (motor dosyası değil, golden vector
+       yeniden üretimi gerekmedi).
+     - **Test — negatif eş doğrulamasıyla (kök CLAUDE.md dersi), İKİ AYRI
+       spot-check:** `game_screen_test.dart`'a yeni bir test eklendi — Pas
+       Geç butonuna dokunup açılan diyalogda (1) başlık+gövdenin web
+       metniyle birebir olduğunu, (2) kabul butonunun (`FilledButton`,
+       'PAS GEÇ') `getTopLeft().dx`'inin VAZGEÇ'inkinden (`TextButton`)
+       KÜÇÜK (yani solda) olduğunu doğruluyor. **İki ayrı negatif-eş
+       koşusu yapıldı:** (a) `git stash` ile YALNIZCA `game_screen.dart`'ın
+       düzeltmesi geri alınıp (test dosyası düzeltilmiş hâliyle kaldı)
+       test koşuldu — GERÇEKTEN `find.text('Pas Geçiyorsun!')` 0 widget
+       buldu (`Expected: exactly one matching candidate, Actual: Found 0
+       widgets`), stash pop ile geri alınıp yeşile döndü; (b) yalnızca
+       buton SIRASI (metin doğru bırakılarak) geçici olarak eski hâline
+       çevrilip test tekrar koşuldu — GERÇEKTEN `Expected: a value less
+       than <169.22>, Actual: <252.62>` ile düştü (kabul butonu artık
+       VAZGEÇ'in solunda değil sağındaydı), sonra doğru sıra geri konup
+       yeşile döndü. İkisi de metin ve sıra hatalarının BAĞIMSIZ olarak
+       yakalandığını kanıtlıyor — birinin varlığı diğerini maskelemiyor.
+     - Doğrulama: `flutter analyze` temiz, mevcut `online_game_screen_test.
+       dart`'taki Pas Geç testi (`find.widgetWithText(FilledButton, 'PAS
+       GEÇ')`/`find.text('VAZGEÇ')` — widget-tipi/metin bazlı, sıraya
+       duyarsız) hiç değişmeden geçti. **Tam takım 262/262 yeşil** (261 +
+       bu parçanın 1 yeni testi). `kelimeki_core`'a hiç dokunulmadı.
+     - **Doğrulama sınırı:** cihazda gerçek görsel teyit (yeni metin +
+       düzeltilmiş buton sırası) bu oturumda yapılamadı — kullanıcının
+       cihaz testi triyajı bu iki hatayı zaten bulduğundan, sonraki
+       cihaz turunda "artık web'le birebir mi" diye bakması yeterli;
+       `mobile/TESTING.md`'ye ayrı bir YENİ madde eklenmedi (mevcut
+       "Taş değiştirme / pas" ve "Bölge vergisi" maddeleri beklenen
+       metin/buton sırasını artık açıkça belirtiyor).
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

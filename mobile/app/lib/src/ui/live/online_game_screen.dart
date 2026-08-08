@@ -699,13 +699,13 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
           content: Text(
               'Bu hamleden kazanacağın $basePts puanın $parts vergi olarak gidecek.'),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('VAZGEÇ'),
-            ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
               child: const Text('OYNA'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('VAZGEÇ'),
             ),
           ],
         ),
@@ -758,13 +758,13 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
         content: const Text(
             'Pas geçmek istediğinden emin misin? Sıran diğer oyuncuya geçer.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('VAZGEÇ'),
-          ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('PAS GEÇ'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('VAZGEÇ'),
           ),
         ],
       ),

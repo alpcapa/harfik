@@ -260,13 +260,13 @@ class _GameScreenState extends State<GameScreen> {
             content: Text(
                 'Bu hamleden kazanacağın $score puanın $parts vergi olarak gidecek.'),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('VAZGEÇ'),
-              ),
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(true),
                 child: const Text('OYNA'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('VAZGEÇ'),
               ),
             ],
           ),
@@ -281,16 +281,17 @@ class _GameScreenState extends State<GameScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Pas Geç'),
-        content: const Text('Sıranı pas geçmek istediğine emin misin?'),
+        title: const Text('Pas Geçiyorsun!'),
+        content: const Text(
+            'Pas geçmek istediğinden emin misin? Sıran diğer oyuncuya geçer.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('VAZGEÇ'),
-          ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('PAS GEÇ'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('VAZGEÇ'),
           ),
         ],
       ),
