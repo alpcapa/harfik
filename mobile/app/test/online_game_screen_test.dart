@@ -334,6 +334,21 @@ void main() {
       await unmount(tester);
     });
 
+    testWidgets(
+        'TORBA sayacı ayrı stilli — game_screen.dart ile AYNI NeoButton '
+        'richLabel deseni (bkz. mobile/CLAUDE.md Parça 26)', (tester) async {
+      await pumpScreen(tester, current: 0);
+      // _baseState: bag 60 taş.
+      final torbaText = tester.widget<Text>(find.text('TORBA 60'));
+      final richLabel = torbaText.textSpan as TextSpan;
+      final countSpan = richLabel.children!
+          .whereType<TextSpan>()
+          .firstWhere((s) => s.text == '60');
+      expect(countSpan.style!.fontSize, 13);
+      expect(countSpan.style!.color, const Color(0xFF2563EB));
+      await unmount(tester);
+    });
+
     testWidgets('sıra YZ koltuğunda: nabızlı banner + play-ai-turn tetiklenir',
         (tester) async {
       final gw = await pumpScreen(tester, current: 1, opponentIsAi: true);

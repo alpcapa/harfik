@@ -3209,6 +3209,102 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        `mobile/TESTING.md`'ye ayrı bir YENİ madde eklenmedi (mevcut
        "Taş değiştirme / pas" ve "Bölge vergisi" maddeleri beklenen
        metin/buton sırasını artık açıkça belirtiyor).
+   - ✅ **Parça 26 — GameOver modalı ortak `KModal` kabuğunu kullanmıyordu
+     (geniş/kare-değil, bottom "KAPAT" düğmesi web'de yok) + TORBA
+     sayacı ayrı stillendirilmemişti (8 Ağustos 2026, `game_over_modal.dart`,
+     `neo_button.dart`, `game_screen.dart`, `online_game_screen.dart`):**
+     Cihaz testinde aynı turda bulunan, birbirinden bağımsız iki hata.
+     - **Bug 1 — `GameOverModal` ham `Dialog` kuruyordu, paylaşılan
+       `KModal`'ı hiç kullanmıyordu:** Web kaynağı (`src/components/
+       GameOver.tsx`) TÜM içeriği (kazanan başlığı, oyuncu skor kartı,
+       "Oyun Geçmişi"/"Görüş Bildir" linkleri) paylaşılan
+       `<Modal title="" onClose={onClose}>`'un (`src/components/Modal.tsx`)
+       `children`'ı olarak render ediyor — `title=""` başlık çubuğunu boş
+       başlıkla gösterse de bırakıyor, kapatmanın TEK yolu sağ üstteki ✕.
+       Web'de bottom bir "Kapat"/"KAPAT" düğmesi HİÇ YOK. Flutter portu
+       ise kendi `Dialog(backgroundColor:..., shape:...)`'unu kuruyordu —
+       genişlik sınırsız (360px web sabitine karşı geniş/"kare değil"
+       render, kullanıcının cihaz ekran görüntüsü karşılaştırmasıyla
+       bulduğu şey) ve altta `TextButton(child: Text('KAPAT'))` vardı —
+       ikisi de web'de yok. `mobile/CLAUDE.md`'nin Parça 8'de zaten
+       hazırladığı ortak `modal_shell.dart`'taki `KModal` (360px maxWidth,
+       ✕, `title:''` desteği — kendi doc yorumu bu geçişi öngörmüştü:
+       "Boş bırakılabilir — web'de GameOver `title=""` geçip yalnızca ✕
+       gösterir") hiç kullanılmamıştı. **Düzeltme:** `GameOverModal.build()`
+       artık `KModal(title: '', child: Column(...))` döndürüyor — dış
+       `Dialog`/`Padding`/`backgroundColor`/`shape` boilerplate'i tamamen
+       kaldırıldı, `KModal`'ın kendi 20/16/20/20 padding'i içeriğin
+       kendi `SizedBox` boşluklarıyla çakışmadığından ekstra bir kırpma
+       gerekmedi (görsel olarak `game_over.png` ekran görüntüsünde
+       doğrulandı). Bottom link satırındaki `TextButton(child: Text
+       ('KAPAT'))` tamamen silindi — "Oyun Geçmişi"/"Görüş Bildir"
+       linkleri aynen kaldı, kapatma artık yalnızca KModal'ın ✕'i.
+     - **Bug 2 — TORBA sayacı web'in `<span text-[13px] text-accent>`
+       ayrımını taşımıyordu:** Web (`src/App.tsx` ~1360) `Torba <span
+       className="text-[13px] text-accent">{state.bag.length}</span>`
+       yazıyor — `<span>` yalnızca punto (13px, düğmenin kendi 11px'ine
+       karşı) ve rengi (`#2563EB` mavi, düğmenin `text-text` koyu rengine
+       karşı) EZİYOR, `font-bold`/`uppercase`/`tracking-[1.2px]` düğmeden
+       miras kalıyor. `NeoButton` (`neo_button.dart`) tek düz bir
+       `String label` alıp tek biçimli `Text` basıyordu — iki oyun
+       ekranındaki (`game_screen.dart`, `online_game_screen.dart` —
+       ikisi de bu deseni AYRI AYRI taşıyan bilinçli kod tekrarı çifti,
+       bkz. dosyanın "Etki Analizi" bölümü) TORBA çağrıları düz
+       `'TORBA ${state.bag.length}'` interpolasyonu geçiyordu, sayı hiç
+       ayrışmıyordu. **Düzeltme:** `NeoButton`'a opsiyonel `List<InlineSpan>?
+       richLabel` parametresi eklendi — doluysa `FittedBox` içinde
+       `Text.rich(TextSpan(style: baseStyle, children: richLabel))`
+       render ediliyor (taban stil düğmenin MEVCUT `TextStyle`'ıyla
+       BİREBİR aynı — yalnızca web'in `<span>`inin ezdiği iki alan
+       değişiyor), `null` iken (projedeki ~10 diğer çağrı yeri) davranış
+       TAMAMEN aynı kalıyor. İki TORBA çağrı yerine de `richLabel: [
+       TextSpan(text:'TORBA '), TextSpan(text:'$bagCount', style:
+       TextStyle(fontSize:13, color:Color(0xFF2563EB), fontWeight:
+       FontWeight.bold))]` eklendi — `label` parametresi a11y/semantics
+       yedeği olarak aynen kaldı (Flutter'ın `find.text` matcher'ı zaten
+       `Text.rich`'in `textSpan.toPlainText()`'ini karşılaştırdığından
+       mevcut `find.text('TORBA 6')` testi hiç değişmeden geçmeye devam
+       etti — bu yan bulgu ayrı bir kod değişikliği gerektirmedi).
+     - **Bilinçli DOKUNULMAYAN:** `kelimeki_core` (motor dosyası değil,
+       golden vector yeniden üretimi gerekmedi); `NeoButton`'ın diğer
+       hiçbir çağrı yeri (richLabel varsayılan `null`, davranış birebir
+       korunuyor); web `App.tsx`'in `spectating` dalındaki ikinci TORBA
+       kopyası (kapsam dışı, bkz. Parça günlüğünün diğer maddelerindeki
+       aynı gerekçe — mobilde `spectating` hiç ulaşılamıyor).
+     - **Test — negatif eş doğrulamasıyla (kök CLAUDE.md dersi), İKİ AYRI
+       kanıt:** (1) `game_screen_test.dart`'a yeni bir test eklendi —
+       GameOver açıldıktan sonra `find.text('KAPAT')` artık `findsNothing`,
+       `find.byTooltip('Kapat')` `findsOneWidget` ve tıklanınca modal
+       kapanıyor; ikinci bir test `find.byType(Dialog)`'un TEK olduğunu
+       (GameOverModal artık ikinci bir ham Dialog kurmuyor) ve 360px
+       `maxWidth` taşıyan bir `ConstrainedBox` bulunduğunu doğruluyor.
+       `game_over_modal.dart`'ın düzeltmesi `git stash push -- <dosya>`
+       ile geçici geri alınıp test koşuldu — GERÇEKTEN `find.text('KAPAT')`
+       1 widget buldu (`Expected: no matching candidates, Actual: Found 1
+       widget`), `stash pop` ile geri alınıp yeşile döndü. (2)
+       `game_screen_test.dart`'a (+ aynı fikirle `online_game_screen_test.
+       dart`'a, `NeoButton` artık ortak katman olduğundan iki ekranda da
+       ayrı test) TORBA'nın `Text.rich` çocuklarında `'6'`/`'60'` span'inin
+       `fontSize:13`/`color:0xFF2563EB` taşıdığını doğrulayan testler
+       eklendi. `neo_button.dart`'taki `if (richLabel != null)` dalı
+       geçici olarak `if (false && richLabel != null)`'a çevrilip test
+       koşuldu — GERÇEKTEN `type 'Null' is not a subtype of type
+       'TextSpan' in type cast` ile düştü (richLabel hiç kullanılmadığından
+       `Text.rich` yolu render olmuyordu), satır geri konup yeşile döndü.
+     - Doğrulama: `flutter analyze` temiz. **Tam takım 266/266 yeşil**
+       (gerçek baseline 263/263'tü — `git stash` ile bu parçadan önceki
+       HEAD'e (7b53f70) dönülüp doğrulandı; Parça 25'in doc'undaki "262"
+       rakamı bir öncekinden kalma küçük bir sapmaydı, buradaki 263→266
+       delta kendi içinde tutarlı ve doğrulanmış — 3 yeni test: GameOver/
+       KModal + TORBA stili (game_screen_test.dart 2 test) + TORBA stili
+       (online_game_screen_test.dart 1 test)). `kelimeki_core`'a hiç
+       dokunulmadı.
+     - **Doğrulama sınırı:** cihazda gerçek görsel teyit (360px kare
+       kart + ✕-only kapatma + TORBA sayacının gerçekten mavi/büyük
+       göründüğü) bu oturumda yapılamadı — kullanıcının bir sonraki cihaz
+       testi turunda web ile yan yana karşılaştırması bekleniyor;
+       `mobile/TESTING.md`'nin Bölüm 1 "Oyun sonu" maddesine bu iki
+       davranış (360px/✕-only/KAPAT-yok, TORBA sayaç stili) eklendi.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

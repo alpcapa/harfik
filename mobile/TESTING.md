@@ -130,7 +130,20 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       dalı; web'de de aynı — `MoveHistoryModal.tsx`'te hiçbir anlam
       tetikleyicisi yok, tetikleyici `App.tsx`'in `handleCellClick`'i).
 - [ ] **Oyun sonu.** Torba+raf bitince sonuç ekranı; sıralama ve kalan taş
-      düşümü doğru.
+      düşümü doğru. **GameOver modalı web'deki gibi küçük/kare bir kart
+      olmalı** — sabit ~360px genişlik, hiçbir bottom "KAPAT" düğmesi
+      YOK, tek kapatma yolu sağ üstteki ✕ (8 Ağustos 2026'da bir kullanıcı
+      cihazda bunun geniş bir Dialog olarak ve altta metin bir "KAPAT"
+      düğmesiyle render olduğunu bildirdi — modal ortak `KModal` kabuğuna
+      taşınmadan kendi ham `Dialog`'unu kuruyordu, bkz. mobile/CLAUDE.md
+      Parça 26).
+- [ ] **TORBA sayacı ayrı stilli.** Alt buton satırındaki "TORBA N"
+      etiketinde YALNIZCA sayı (N) daha büyük punto + mavi (`#2563EB`)
+      olmalı, "TORBA" kelimesi düğmenin normal (siyah/beyaz, duruma göre)
+      rengini korumalı — ikisi aynı renk/puntoda görünüyorsa web
+      paritesi bozulmuş demektir (8 Ağustos 2026'da kullanıcı bildirdi,
+      bkz. mobile/CLAUDE.md Parça 26). Hem yerel/YZ oyun ekranında hem
+      Canlı oyun ekranında kontrol et — ikisi de aynı düğmeyi kullanıyor.
 - [ ] **Kalıcılık.** Oyun ortasında uygulamayı TAMAMEN kapat, yeniden aç →
       "Devam Eden Oyun" satırı görünmeli, dokununca aynı tahta/raf/tur ile
       devam etmeli. **Avatar şeridi web ile aynı görünmeli** — misafirin

@@ -876,6 +876,28 @@ class _GameScreenState extends State<GameScreen> {
                                                 child: NeoButton(
                                                   label:
                                                       'TORBA ${state.bag.length}',
+                                                  // Web App.tsx ~1360: <span
+                                                  // className="text-[13px]
+                                                  // text-accent">{count}</span>
+                                                  // — yalnızca puntoyu/rengi
+                                                  // ezer, geri kalanı
+                                                  // (bold/uppercase/tracking)
+                                                  // butondan miras alır.
+                                                  richLabel: [
+                                                    const TextSpan(
+                                                        text: 'TORBA '),
+                                                    TextSpan(
+                                                      text:
+                                                          '${state.bag.length}',
+                                                      style: const TextStyle(
+                                                        fontSize: 13,
+                                                        color:
+                                                            Color(0xFF2563EB),
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ],
                                                   // Web'de Torba hiç disable olmaz — YZ'nin
                                                   // sırasında/oyun bitince de açılabilir.
                                                   onPressed: () =>

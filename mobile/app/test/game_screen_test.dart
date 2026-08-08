@@ -383,6 +383,29 @@ void main() {
     expect(find.textContaining('93'), findsOneWidget);
   });
 
+  testWidgets(
+      'TORBA sayacı ayrı stilli — web App.tsx: <span text-[13px] '
+      'text-accent>{count}</span>', (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await pumpGame(tester, GlobalKey());
+
+    final torbaText = tester.widget<Text>(find.text('TORBA 6'));
+    final richLabel = torbaText.textSpan as TextSpan;
+    final countSpan = richLabel.children!
+        .whereType<TextSpan>()
+        .firstWhere((s) => s.text == '6');
+    expect(countSpan.style!.fontSize, 13);
+    expect(countSpan.style!.color, const Color(0xFF2563EB));
+    // Taban span ("TORBA ") sayaçtan FARKLI — yalnızca punto/renk ezilmiş,
+    // geri kalanı (bold/tracking) NeoButton'ın temel stilinden miras.
+    final baseSpan = richLabel.children!
+        .whereType<TextSpan>()
+        .firstWhere((s) => s.text == 'TORBA ');
+    expect(baseSpan.style, isNull,
+        reason: 'taban span kendi stilini taşımamalı — TextSpan(style: '
+            'baseStyle) üstündeki miras yeterli');
+  });
+
   testWidgets('oyun bitince GameOver modalı: kazanan + Teslim + YENİ OYUN',
       (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));
@@ -410,11 +433,46 @@ void main() {
     expect(find.text('(TESLİM)'), findsOneWidget);
     expect(find.text('Toplam hamle'), findsOneWidget);
 
-    await tester.tap(find.text('KAPAT'));
+    // Web `<Modal title="" onClose={onClose}>` — bottom "KAPAT" düğmesi
+    // yok, tek kapatma yolu KModal'ın sağ üstteki ✕'i (bkz. mobile/CLAUDE.md
+    // Parça 26).
+    expect(find.text('KAPAT'), findsNothing);
+    expect(find.byTooltip('Kapat'), findsOneWidget);
+    await tester.tap(find.byTooltip('Kapat'));
     await tester.pumpAndSettle();
     expect(find.text('YAPAY ZEKA 2 KAZANDI'), findsNothing);
     // Modal kapanınca tahta görünür kalır, raf satırında YENİ OYUN çıkar.
     expect(find.textContaining('YENİ'), findsOneWidget);
+  });
+
+  testWidgets('GameOver modalı KModal kabuğunu kullanır — 360px sınırı, ham '
+      'Dialog DEĞİL', (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final golden = jsonDecode(
+      File('../kelimeki_core/test/goldens/reducer_ai4.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    final steps = golden['steps'] as List;
+    final finished = gameStateFromJson(
+        ((steps.last as Map)['state'] as Map).cast<String, Object?>());
+
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(
+          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      home: Scaffold(
+        body: Center(child: GameOverModal(state: finished)),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // KModal'ın kendi Dialog'u tek Dialog olmalı — GameOverModal artık ham
+    // bir ikinci Dialog kurmuyor.
+    expect(find.byType(Dialog), findsOneWidget);
+    final constrained = tester
+        .widgetList<ConstrainedBox>(find.byType(ConstrainedBox))
+        .where((c) => c.constraints.maxWidth == 360);
+    expect(constrained, isNotEmpty,
+        reason: 'KModal'
+            "'ın 360px maxWidth kısıtı uygulanmalı");
   });
 
   testWidgets('sürükle-bırak: raftan tahtaya + tahtada taşıma + rafa geri alma',

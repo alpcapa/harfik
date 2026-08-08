@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
+import 'modal_shell.dart';
 import 'move_history_modal.dart';
 import 'player_badge.dart';
 import 'player_colors.dart';
@@ -33,81 +34,96 @@ class GameOverModal extends StatelessWidget {
     final tie = ranked.length > 1 && ranked[1].rank == top.rank;
     final winColor = playerColors[top.player.colorIndex % playerColors.length];
 
-    return Dialog(
-      backgroundColor: const Color(0xFFF5F7FA), // web panel
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              tie ? 'BERABERE' : '${trUpper(top.player.name)} KAZANDI',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'SpaceMono',
-                fontWeight: FontWeight.bold,
-                fontSize: 26,
-                letterSpacing: 2,
-                color: tie ? const Color(0xFFB7791F) : winColor.base,
-              ),
+    // Web `<Modal title="" onClose={onClose}>` — başlık boş, kapatma
+    // yalnızca sağ üstteki ✕ (bkz. Modal.tsx). Bottom "KAPAT" düğmesi
+    // web'de hiç yok; KModal'ın ✕'i tek kapatma yolu.
+    return KModal(
+      title: '',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            tie ? 'BERABERE' : '${trUpper(top.player.name)} KAZANDI',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'SpaceMono',
+              fontWeight: FontWeight.bold,
+              fontSize: 26,
+              letterSpacing: 2,
+              color: tie ? const Color(0xFFB7791F) : winColor.base,
             ),
-            const SizedBox(height: 18),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-              decoration: BoxDecoration(
-                color: Colors.white, // web bg
-                border: Border.all(color: const Color(0xFFDCE2EA)),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                children: [
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      _ColHeader('KALAN', width: 34),
-                      SizedBox(width: 16),
-                      _ColHeader('TOPLAM', width: 48),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  for (final r in ranked) ...[
-                    _PlayerRow(entry: r),
-                    const SizedBox(height: 10),
-                  ],
-                  const Divider(height: 1, color: Color(0xFFDCE2EA)),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Toplam hamle',
-                        style:
-                            TextStyle(fontSize: 12, color: Color(0xFF5A6673)),
-                      ),
-                      Text(
-                        '${state.turnCount}',
-                        style: const TextStyle(
-                          fontFamily: 'SpaceMono',
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          color: Color(0xFF5A6673),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+          ),
+          const SizedBox(height: 18),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+            decoration: BoxDecoration(
+              color: Colors.white, // web bg
+              border: Border.all(color: const Color(0xFFDCE2EA)),
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Column(
               children: [
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    _ColHeader('KALAN', width: 34),
+                    SizedBox(width: 16),
+                    _ColHeader('TOPLAM', width: 48),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                for (final r in ranked) ...[
+                  _PlayerRow(entry: r),
+                  const SizedBox(height: 10),
+                ],
+                const Divider(height: 1, color: Color(0xFFDCE2EA)),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Toplam hamle',
+                      style:
+                          TextStyle(fontSize: 12, color: Color(0xFF5A6673)),
+                    ),
+                    Text(
+                      '${state.turnCount}',
+                      style: const TextStyle(
+                        fontFamily: 'SpaceMono',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: Color(0xFF5A6673),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextButton(
+                onPressed: () => showMoveHistoryModal(context, state),
+                child: const Text(
+                  'OYUN GEÇMİŞİ',
+                  style: TextStyle(
+                    fontFamily: 'SpaceMono',
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                    color: Color(0xFF5A6673),
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+              if (onFeedback != null)
                 TextButton(
-                  onPressed: () => showMoveHistoryModal(context, state),
+                  onPressed: onFeedback,
                   child: const Text(
-                    'OYUN GEÇMİŞİ',
+                    'GÖRÜŞ BİLDİR',
                     style: TextStyle(
                       fontFamily: 'SpaceMono',
                       fontSize: 11,
@@ -118,29 +134,9 @@ class GameOverModal extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (onFeedback != null)
-                  TextButton(
-                    onPressed: onFeedback,
-                    child: const Text(
-                      'GÖRÜŞ BİLDİR',
-                      style: TextStyle(
-                        fontFamily: 'SpaceMono',
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                        color: Color(0xFF5A6673),
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('KAPAT'),
-                ),
-              ],
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }

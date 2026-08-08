@@ -1462,6 +1462,22 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                             child: NeoButton(
                                               label:
                                                   'TORBA ${state.bag.length}',
+                                              // Web App.tsx ~1360 (bkz.
+                                              // game_screen.dart'taki aynı
+                                              // NeoButton çağrısı — ikisi de
+                                              // AYNI PR'da güncellenmeli).
+                                              richLabel: [
+                                                const TextSpan(text: 'TORBA '),
+                                                TextSpan(
+                                                  text: '${state.bag.length}',
+                                                  style: const TextStyle(
+                                                    fontSize: 13,
+                                                    color: Color(0xFF2563EB),
+                                                    fontWeight:
+                                                        FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
                                               onPressed: () =>
                                                   showRemainingTilesModal(
                                                       context, state, _mySlot),

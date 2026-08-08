@@ -18,6 +18,14 @@ class NeoButton extends StatelessWidget {
   final double letterSpacing;
   final EdgeInsets padding;
 
+  /// Zengin (çok stilli) etiket — web'in tek bir `<span>`i (`text-[13px]
+  /// text-accent`) üzerine bindirip geri kalanı butondan MİRAS ALAN
+  /// deseninin (App.tsx TORBA butonu) Flutter karşılığı. Verilirse [label]
+  /// yerine bu render edilir (yine de [label] geçilmeli — a11y/semantics
+  /// yedeği); null ise davranış tamamen değişmeden [label] tek biçimde
+  /// basılır.
+  final List<InlineSpan>? richLabel;
+
   const NeoButton({
     super.key,
     required this.label,
@@ -26,6 +34,7 @@ class NeoButton extends StatelessWidget {
     this.fontSize = 11,
     this.letterSpacing = 1,
     this.padding = const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+    this.richLabel,
   });
 
   @override
@@ -94,17 +103,26 @@ class NeoButton extends StatelessWidget {
             ),
       child: FittedBox(
         fit: BoxFit.scaleDown,
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
+        child: () {
+          final baseStyle = TextStyle(
             fontSize: fontSize,
             fontWeight: FontWeight.bold,
             letterSpacing: letterSpacing,
             color: fg,
             height: 1.2,
-          ),
-        ),
+          );
+          if (richLabel != null) {
+            return Text.rich(
+              TextSpan(style: baseStyle, children: richLabel),
+              textAlign: TextAlign.center,
+            );
+          }
+          return Text(
+            label,
+            textAlign: TextAlign.center,
+            style: baseStyle,
+          );
+        }(),
       ),
     );
     if (!enabled) box = Opacity(opacity: 0.35, child: box); // web opacity-35
