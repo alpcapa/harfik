@@ -2912,6 +2912,85 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        mesajının artık en az ~1sn okunabilir kaldığı — bu ortamdan cihazda
        doğrulanamadı; `mobile/TESTING.md` Bölüm 1'e ayrı bir kontrol maddesi
        eklendi (aşağı bkz.).
+   - ✅ **Parça 22 — avatar yedeği (misafir "?") gri, YZ robotu Material
+     ikonuydu; web'de ikisi de farklı (8 Ağustos 2026, `k_avatar.dart`,
+     `player_avatar_row.dart`):** FAZ A1 (Bölüm 2 öncesi, kalıcılık
+     testinde) kullanıcı kelimeki.com'un ("web") ve
+     `alpcapa.github.io`'nun ("app") aynı "Devam Eden Oyun" satırının
+     ekran görüntülerini yan yana koyup avatarların FARKLI göründüğünü
+     bildirdi.
+     - **Kök sebep, iki ayrı bulgu — ikisi de kaynak koddan doğrulandı,
+       CLAUDE.md'de belgeli bir bilinçli sapma DEĞİLDİ:**
+       1. **"?" yedeği rengi.** Web `Avatar.tsx`'in fotoğrafsız/hatalı
+          yükleme yedeği (`<span>`) HER ZAMAN `bg-accent` (tailwind
+          `accent:'#2563EB'`) + `border-accent` + `text-white` — misafirin
+          "?" hâli de dahil, web hiç bir "gri/nötr" yedek göstermiyor.
+          `KAvatar`'ın yedeği ise `_panel`(#F5F7FA)/`_border`(#DCE2EA)
+          zemin + `_muted`(#5A6673) gri yazı kullanıyordu — Parça 1'de
+          ("KAvatar web Avatar portu: initials() kuralı + tek karakter
+          0.55 oranı dersi") yalnızca punto/oran taşınmış, RENK hiç
+          karşılaştırılmamıştı.
+       2. **YZ robot avatarı.** Web `PlayerAvatarRow.tsx` gerçek 🤖
+          (U+1F916) Unicode emoji'sini basıyor; Flutter portu
+          `Icons.smart_toy_outlined` (Material ikonu) kullanıyordu —
+          şekli TAMAMEN farklı. Bu, ★/✓ gibi "gömülü fontta glyph yok →
+          ikona geç" kararlarından FARKLI bir sınıf: 🤖 bir emoji, ikon
+          gerektiren bir font-eksikliği değil (help_modal.dart'taki
+          🎯🏠🔗 ve k-lig'in 🏆'ı zaten `fontFamilyFallback` ile gerçek
+          emoji basıyor) — port sırasında es geçilmiş bir ikame.
+     - **Düzeltme:**
+       - `KAvatar` `StatelessWidget`'tan `StatefulWidget`'a çevrildi —
+         web'in `useState<boolean>(broken)` + `useEffect(() =>
+         setBroken(false), [url])` deseninin birebir eşleniği: `_broken`
+         alanı `didUpdateWidget`'ta `url` DEĞİŞİNCE sıfırlanıyor (web'in
+         "eski bir yükleme hatası yeni geçerli bir URL'de kalıcı
+         kalmasın" düzeltmesi). Container'ın zemin/çerçeve rengi artık
+         KOŞULLU: fotoğraf başarıyla yükleniyorsa `_panel`/`_border`
+         (web `<img border-border>`), yoksa/yüklenemezse `_accent`
+         (0xFF2563EB) zemin+çerçeve + beyaz yazı (web `<span
+         bg-accent border-accent text-white>`). `Image.network`'ün
+         `errorBuilder`'ı BUILD SIRASINDA çağrıldığından `setState`'i
+         doğrudan orada tetiklemek "called during build" hatası verir —
+         web'in reaktif `onError`'unun eşleniği `addPostFrameCallback`'e
+         ertelendi.
+       - `PlayerAvatarRow._Avatar`'ın `isGuest` dalı, kendi elle yazılmış
+         gri/beyaz "?" kopyasını (Container+Text, `_muted` renkli) TAMAMEN
+         KALDIRDI — artık `KAvatar(name: '', size: size)`'a delege ediyor.
+         Bu hem kod tekrarını kapattı hem de KAvatar'ın rengi düzelince
+         ikisinin sessizce AYRIŞMASINI (biri düzelip diğeri unutulması)
+         yapısal olarak imkânsızlaştırdı. `isAi` dalındaki
+         `Icons.smart_toy_outlined` gerçek `Text('🤖')`'a çevrildi
+         (`fontFamilyFallback: ['Noto Color Emoji', 'Apple Color Emoji']`
+         — help_modal.dart'taki emoji dersiyle aynı), font-size oranı
+         web'in `Math.round(size*0.55)`'iyle eşleşecek şekilde `0.6`'dan
+         `0.55`'e düzeltildi (eski değer hiç web'den türetilmemiş,
+         tahmini bir sayıymış). `player_avatar_row.dart`'taki artık
+         kullanılmayan `_panel`/`_muted` sabitleri silindi.
+     - **Etki taraması:** `KAvatar` 16 dosyada kullanılıyor (Hesap menüsü,
+       Hesap Ayarları, Skor Kartı, k-lig, Arkadaşlar, Canlı oyun ekranları,
+       Oyun Geçmişi…) — hiçbir mevcut test bu widget'ın renk/ikon
+       detaylarını ASSERT ETMİYORDU (grep ile doğrulandı), bu yüzden
+       düzeltme mevcut 250 testin HİÇBİRİNİ bozmadı; yalnızca YENİ
+       `avatar_test.dart` bu davranışı doğruluyor.
+     - **Yeni test — `avatar_test.dart` (5 test), negatif eş
+       doğrulamasıyla:** "?" yedeğinin `_accent` renginde olduğu, isimli
+       ama fotoğrafsız bir kullanıcının ("IR") da AYNI mavi rengi aldığı
+       (renk yalnızca "?" özel durumu değil), YZ koltuğunun gerçek 🤖
+       metnini gösterip `Icons.smart_toy_outlined`'ın hiç bulunmadığı,
+       misafir koltuğunun da aynı mavi yedeği KAvatar üzerinden aldığı +
+       bir ekran görüntüsü (`build/screenshots/avatar.png`, üç avatarı
+       yan yana gösteriyor — web'deki mavi "?"/"IR" + gerçek robot
+       emoji'siyle gözle karşılaştırıldı, birebir eşleşiyor). Düzeltme
+       geçici geri alınıp (`git stash`) test dosyası koşuldu — assertion
+       taşıyan 4 testin TAMAMI gerçekten düştü (yalnızca assertion'sız
+       ekran görüntüsü testi geçti), sonra düzeltme geri konup 5/5 yeşile
+       döndü (kök CLAUDE.md'nin "negatif eş" dersi).
+     - Doğrulama: `flutter analyze` temiz, **tam takım 255/255 yeşil**
+       (250 + bu parçanın 5 testi). `kelimeki_core`'a hiç dokunulmadı.
+     - **Doğrulama sınırı:** cihazda/gerçek web derlemesinde görsel
+       karşılaştırma kullanıcının paylaştığı iki ekran görüntüsüyle
+       yapıldı (kod okuması DEĞİL) — deploy sonrası gerçek cihazda bir
+       kez daha (sert yenileme sonrası) teyit edilmeli.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

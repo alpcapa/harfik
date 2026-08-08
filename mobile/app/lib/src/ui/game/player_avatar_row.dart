@@ -14,9 +14,7 @@ import 'package:flutter/material.dart';
 
 import '../auth/k_avatar.dart';
 
-const _panel = Color(0xFFF5F7FA);
 const _border = Color(0xFFDCE2EA);
-const _muted = Color(0xFF5A6673);
 
 /// Web `bg-void` — robot avatarının zemini.
 const _void = Color(0xFFE8EBEF);
@@ -83,29 +81,44 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!player.isAi && !player.isGuest) {
-      return KAvatar(url: player.avatarUrl, name: player.name, size: size);
+    if (player.isAi) {
+      // Web `bg-void border-border` zemin + gerçek 🤖 emoji (Material
+      // `Icons.smart_toy_outlined` ikonuyla İLK PORTTA yanlışlıkla
+      // değiştirilmişti — tamamen farklı bir şekil; web'de font-fallback
+      // gerektiren bir glyph değil, düz Unicode emoji, bu yüzden ★/✓
+      // kararlarındaki gibi bir ikon ikamesine hiç gerek yoktu).
+      return Container(
+        width: size,
+        height: size,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: _void,
+          border: Border.all(color: _border),
+          shape: BoxShape.circle,
+        ),
+        child: Text(
+          '🤖',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: (size * 0.55).roundToDouble(),
+            height: 1,
+            fontFamilyFallback: const [
+              'Noto Color Emoji',
+              'Apple Color Emoji',
+            ],
+          ),
+        ),
+      );
     }
-    return Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: player.isAi ? _void : _panel,
-        border: Border.all(color: _border),
-        shape: BoxShape.circle,
-      ),
-      child: player.isAi
-          ? Icon(Icons.smart_toy_outlined, size: size * 0.6, color: _muted)
-          : Text('?',
-              style: TextStyle(
-                // KAvatar'ın tek karakterlik yedeğiyle AYNI oran — ikisi
-                // yan yana çıkabildiğinden birlikte değişmeleri şart.
-                fontSize: (size * 0.55).roundToDouble(),
-                fontWeight: FontWeight.bold,
-                color: _muted,
-                height: 1,
-              )),
+    // Misafir koltuk (isGuest) da dahil — `KAvatar`'a boş isim geçirmek
+    // onun zaten var olan "?" yedeğini (mavi zemin, web `Avatar.tsx`'in
+    // fallback stiliyle BİREBİR) seçtiriyor; ayrı bir gri/nötr kopya
+    // ARTIK YOK (KAvatar'ın kendi yedek rengi düzeltilince bu ikisinin
+    // ayrışmaması için buraya delege edildi).
+    return KAvatar(
+      url: player.avatarUrl,
+      name: player.isGuest ? '' : player.name,
+      size: size,
     );
   }
 }

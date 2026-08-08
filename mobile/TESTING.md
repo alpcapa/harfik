@@ -106,7 +106,12 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       düşümü doğru.
 - [ ] **Kalıcılık.** Oyun ortasında uygulamayı TAMAMEN kapat, yeniden aç →
       "Devam Eden Oyun" satırı görünmeli, dokununca aynı tahta/raf/tur ile
-      devam etmeli.
+      devam etmeli. **Avatar şeridi web ile aynı görünmeli** — misafirin
+      "?" avatarı ve YZ koltuklarının robot avatarı ikisi de MAVİ zeminde
+      olmalı (gri/nötr DEĞİL), YZ robotu gerçek 🤖 emoji olmalı (kutu/farklı
+      bir ikon DEĞİL) — kelimeki.com'daki aynı satırla yan yana karşılaştır
+      (8 Ağustos 2026'da bir kullanıcı iki ekran görüntüsünü kıyaslayınca
+      bulundu, bkz. mobile/CLAUDE.md Parça 22).
 
 ## 2. Hesap (auth)
 
@@ -185,8 +190,9 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       "Devam Eden Oyunlar"a taşınmalı ve **1. oyuncunun adı hesap adın**
       olmalı ("Misafir" DEĞİL).
 - [ ] **Avatar şeridi.** Devam eden oyun satırında insan koltuğu senin
-      avatarın/baş harflerin, YZ koltukları robot ikonu olmalı; misafirken
-      insan koltuğu "?" olmalı.
+      avatarın/baş harflerin (fotoğraf yoksa MAVİ zeminde), YZ koltukları
+      gerçek 🤖 emoji olmalı (Material ikonu/kutu DEĞİL); misafirken insan
+      koltuğu MAVİ zeminde "?" olmalı (bkz. Bölüm 1'deki aynı kontrol).
 
 ## 4. Biten oyun kayıtları ve istatistikler
 

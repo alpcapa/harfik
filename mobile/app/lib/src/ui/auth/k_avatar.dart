@@ -5,7 +5,12 @@ import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
 
 const Color _panel = Color(0xFFF5F7FA);
 const Color _border = Color(0xFFDCE2EA);
-const Color _muted = Color(0xFF5A6673);
+// Web `bg-accent`/`border-accent` (tailwind.config.js `accent: '#2563EB'`) —
+// fotoğrafsız/yüklenemeyen avatarın YEDEK durumu HER ZAMAN bu mavi zeminle
+// çizilir (`Avatar.tsx`'in `<span className="... bg-accent border-accent
+// text-white">` dalı — hem gerçek kullanıcı hem misafirin "?" hâli aynı
+// stili kullanıyor, web hiçbir zaman gri/nötr bir yedek göstermiyor).
+const Color _accent = Color(0xFF2563EB);
 
 /// Web `initials()`: e-postaysa @ öncesi; boşluk/nokta/altçizgi/tire ile
 /// bölünen iki parçadan birer harf, tek parçaysa ilk iki harf.
@@ -19,7 +24,7 @@ String avatarInitials(String? name) {
   return trUpper(base.length >= 2 ? base.substring(0, 2) : base);
 }
 
-class KAvatar extends StatelessWidget {
+class KAvatar extends StatefulWidget {
   final String? url;
   final String? name;
   final double size;
@@ -33,10 +38,30 @@ class KAvatar extends StatelessWidget {
       {super.key, this.url, this.name, this.size = 32, this.dot = false});
 
   @override
+  State<KAvatar> createState() => _KAvatarState();
+}
+
+class _KAvatarState extends State<KAvatar> {
+  // Web `useState<boolean>(broken=false)` + `useEffect(() =>
+  // setBroken(false), [url])` — fotoğraf yüklenemediyse baş harf yedeğine
+  // düşer; `url` DEĞİŞİNCE (ör. yeni bir fotoğraf yüklenince) bu bayrak
+  // sıfırlanır, aksi halde eski bir yükleme hatası kalıcı olarak baş
+  // harflerde takılı kalırdı (web'in kod incelemesiyle düzelttiği hata).
+  bool _broken = false;
+
+  @override
+  void didUpdateWidget(covariant KAvatar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      _broken = false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final avatar = _circle();
-    if (!dot) return avatar;
-    final d = (size * 0.34).clamp(10.0, 14.0);
+    if (!widget.dot) return avatar;
+    final d = (widget.size * 0.34).clamp(10.0, 14.0);
     return Stack(clipBehavior: Clip.none, children: [
       avatar,
       Positioned(
@@ -56,29 +81,45 @@ class KAvatar extends StatelessWidget {
   }
 
   Widget _circle() {
-    final text = avatarInitials(name);
+    final text = avatarInitials(widget.name);
     // Web dersi: iki harfe göre ayarlı 0.4 oranı tek karakterde ("?") optik
     // olarak zayıf kalıyor → tek karakter 0.55 (bkz. PlayerAvatarRow notu).
-    final fontSize = (size * (text.length == 1 ? 0.55 : 0.4)).roundToDouble();
-    final u = url;
+    final fontSize = (widget.size * (text.length == 1 ? 0.55 : 0.4))
+        .roundToDouble();
+    final u = widget.url;
+    final showImage = u != null && u.isNotEmpty && !_broken;
     return Container(
-      width: size,
-      height: size,
+      width: widget.size,
+      height: widget.size,
       alignment: Alignment.center,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: _panel,
+        // Fotoğraf başarıyla yüklenmişse nötr panel/gri çerçeve (web `<img
+        // className="... border-border bg-panel">`); yoksa (yok/yüklenemedi)
+        // mavi yedek (web `<span className="... bg-accent border-accent">`).
+        color: showImage ? _panel : _accent,
         shape: BoxShape.circle,
-        border: Border.all(color: _border),
+        border: Border.all(color: showImage ? _border : _accent),
       ),
-      child: u != null && u.isNotEmpty
+      child: showImage
           ? Image.network(
               u,
-              width: size,
-              height: size,
+              width: widget.size,
+              height: widget.size,
               fit: BoxFit.cover,
               // Ağ hatasında baş harflere düş (web <img> onError eşleniği).
-              errorBuilder: (_, __, ___) => _initialsText(text, fontSize),
+              // `errorBuilder` build sırasında çağrıldığından `setState`'i
+              // doğrudan burada tetiklemek "called during build" hatası
+              // verir — web'in reaktif `broken` state'inin eşleniği bir
+              // sonraki kareye ertelenir.
+              errorBuilder: (_, __, ___) {
+                if (!_broken) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted && !_broken) setState(() => _broken = true);
+                  });
+                }
+                return _initialsText(text, fontSize);
+              },
             )
           : _initialsText(text, fontSize),
     );
@@ -91,7 +132,7 @@ class KAvatar extends StatelessWidget {
           fontWeight: FontWeight.bold,
           fontSize: fontSize,
           height: 1,
-          color: _muted,
+          color: Colors.white,
         ),
       );
 }
