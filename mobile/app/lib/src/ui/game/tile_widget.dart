@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show Tile, tileLetter;
 
+import 'fluid.dart';
 import 'neo_box.dart';
 import 'player_colors.dart';
 
@@ -77,11 +78,21 @@ class TileWidget extends StatelessWidget {
     // Web -webkit-text-stroke: harfin üstüne aynı renkte ince kontur bindirir
     // (glyph'i kalınlaştırır) — rafta 0.7px, tahtada 0.35px.
     final strokeWidth = isRack ? 0.7 : 0.35;
+    // Web'de tahta/compact harf puntosu HÜCREYE değil EKRAN genişliğine
+    // (vw) bağlı — Tile.tsx: rafta sabit 24px, tahtada
+    // `clamp(14px,3.8vw,24px)`, compact önizlemede `clamp(8px,2.4vw,14px)`.
+    // Geniş ekranlarda (ör. iPad, >631px) web 24px'e kilitlenirken port
+    // sabit 20px kullanıyordu — gerçek, ölçülebilir bir boyut farkı (bkz.
+    // mobile/CLAUDE.md Parça 24). Rack sabit kalıyor (web de sabit).
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final boardLetterSize = compact
+        ? fluidSize(screenWidth, 8, 0, 2.4, 14)
+        : fluidSize(screenWidth, 14, 0, 3.8, 24);
     final letterStyle = TextStyle(
       color: letterColor,
       fontFamily: 'Nunito',
       fontWeight: FontWeight.w800,
-      fontSize: isRack ? 24 : (compact ? 12 : 20),
+      fontSize: isRack ? 24 : boardLetterSize,
       height: 1,
     );
 
@@ -127,7 +138,9 @@ class TileWidget extends StatelessWidget {
                   color: ptsColor,
                   fontFamily: 'SpaceMono',
                   fontWeight: FontWeight.bold,
-                  fontSize: isRack ? 10 : 7,
+                  // Web: rafta sabit 10px, tahtada `clamp(6px,1.6vw,10px)`
+                  // (aynı vw-tabanlı sistem, bkz. yukarıdaki letterStyle notu).
+                  fontSize: isRack ? 10 : fluidSize(screenWidth, 6, 0, 1.6, 10),
                   height: 1,
                 ),
               ),

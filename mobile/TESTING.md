@@ -102,6 +102,17 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       Ağustos 2026'da bir kullanıcı bunu iPad yatay modda kesik gördü —
       `showModalBottomSheet`'in eksik `isScrollControlled` parametresi
       yüzünden, bkz. mobile/CLAUDE.md Parça 20).
+- [ ] **Tahta taşı harf/puan puntosu ekran genişliğine göre değişmeli.**
+      Web'deki gibi geniş bir ekranda (tablet/iPad — dikey ya da yatay
+      fark etmez, viewport genişliği >631px olduğu sürece) harfler daha
+      BÜYÜK, dar bir telefon ekranında daha KÜÇÜK görünmeli — sabit bir
+      boyutta KALMAMALI. Aynı cihazı döndürüp (dikey↔yatay) harflerin
+      boyutunun da değiştiğini gözle doğrula (8 Ağustos 2026'da kullanıcı
+      web/app ekran görüntüsü karşılaştırmasıyla bulundu — iPad'de web
+      24px'e kilitlenirken port sabit 20px kullanıyordu; düzeltme + kaynak
+      kodun `vw`-tabanlı `clamp()` formülüne bağlanması, bkz.
+      mobile/CLAUDE.md Parça 24). Raf taşlarının harfi bundan ETKİLENMEMELİ
+      — orada web'de de sabit boyut var.
 - [ ] **Taş değiştirme / pas.** İkisi de sırayı ilerletmeli; pas onay
       sorusu çıkmalı.
 - [ ] **Bölge vergisi.** Rakip bölgesine değen bir hamlede "Sınır İhlali!"

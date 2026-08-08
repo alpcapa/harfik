@@ -3080,6 +3080,70 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        SAYISININ 30/30'dan 0'a düştüğü kanıtlandı; gerçek "artık daha akıcı
        hissediyor" teyidi kullanıcının cihazından (sert yenileme/yeni build
        sonrası) bekleniyor. `mobile/TESTING.md`'ye bir regresyon notu eklendi.
+   - ✅ **Parça 24 — tahta taşı harf/puan puntosu EKRAN GENİŞLİĞİNE değil
+     sabit bir sayıya bağlıydı; web geniş ekranda daha büyük harf çiziyor
+     (8 Ağustos 2026, `tile_widget.dart`, yeni `fluid.dart`):** Kullanıcı
+     kelimeki.com ("web") ile `alpcapa.github.io` ("app") ekran
+     görüntülerini (ikisi de iPad) yan yana koyup "taş fontları biraz
+     farklı gibi, web daha mı büyük?" diye sordu.
+     - **Kök sebep, kaynak koddan (tahmin değil) doğrulandı:**
+       `src/components/Tile.tsx`'te tahta harfi hücre/kart genişliğine
+       DEĞİL, doğrudan tarayıcı VIEWPORT genişliğine (`vw`) bağlı:
+       `clamp(14px, 3.8vw, 24px)` (puan üst simgesi aynı sistemde
+       `clamp(6px, 1.6vw, 10px)`) — raf harfi ise web'de de sabit
+       (`text-[24px]`/`10px`). Flutter portu (`tile_widget.dart`) tahta
+       varyantını hiç `vw`'ye bağlamamıştı, sabit 20px/7px kullanıyordu.
+       iPad gibi geniş bir ekranda (viewport >631px, `3.8vw` formülü
+       zaten 24'ü aştığından web üst sınıra kilitleniyor) bu, web 24px
+       çizerken app'in sabit 20px'te kalması demekti (~%17 küçük) —
+       ekran görüntüsündeki fark kullanıcının izlenimi değil ÖLÇÜLEBİLİR
+       bir gerçekti. **Dar ekranlarda ise TERSİ de doğruydu** (ölçüm
+       sırasında bulundu): 390px'lik bir telefonda web'in formülü
+       `0.038×390≈14.82px` verirken port sabit 20px basıyordu — yani port
+       hem büyük ekranda küçük hem küçük ekranda BÜYÜK çiziyordu, ikisi de
+       aynı kök sebepten (viewport'a hiç bağlı olmayan sabit sayı).
+     - **Düzeltme — `game_header.dart`'ın `_fluid()`'i (web'in
+       `clamp(min, calc(a+b·vw), max)` sisteminin Flutter karşılığı, Parça
+       4'ten beri var) ortak `fluid.dart`'a (`fluidSize`) çıkarıldı:**
+       tek dosyada özel kalması (Dart privacy dosya/kütüphane bazlı)
+       ikinci bir kopya açmayı gerektirirdi — kural buydu ("aynı formülü
+       iki widget'ın sessizce ayrıştırmasına izin verme"). `game_header.dart`
+       kendi `_fluid` tanımını silip bu ortak fonksiyona geçti (davranış
+       BİREBİR aynı — yalnızca isim/dosya taşındı, katsayılar dokunulmadı).
+       `tile_widget.dart`'ın tahta/compact dalları artık
+       `fluidSize(screenWidth, min, a, b, max)` çağırıyor
+       (`MediaQuery.sizeOf(context).width` — web'in `vw`'sinin Flutter
+       karşılığı): harf `fluidSize(w,14,0,3.8,24)` (compact önizlemede
+       `fluidSize(w,8,0,2.4,14)`), puan `fluidSize(w,6,0,1.6,10)`. Raf
+       varyantı (24/10) DOKUNULMADI — web'de de sabit.
+     - **Test — negatif eş doğrulamasıyla (kök CLAUDE.md dersi):** Yeni
+       `tile_font_size_test.dart` (5 test) — geniş ekranda (1024px) tahta
+       harfinin GERÇEKTEN 24px'e kilitlendiği (eski sabit 20 burada
+       farklı çıkardı), dar ekranda (390px) ~14.82px olduğu, 631px altında
+       tabana (14px) kilitlendiği, raf harfinin ekran genişliğinden
+       ETKİLENMEDİĞİ (24px sabit — regresyon güvencesi), puan üst
+       simgesinin de aynı sistemi paylaştığı (geniş ekranda 10px).
+       Doğrulama render edilmiş GERÇEK `Text` widget'ının `fontSize`'ını
+       okuyor — `fluidSize`'ın kendisiyle karşılaştırıp hiçbir şey
+       kanıtlamayan bir totoloji kurulmadı. Düzeltme geçici olarak
+       `git stash`lanıp (yalnızca `tile_widget.dart`, `fluid.dart`/
+       `game_header.dart` yerinde bırakılarak) test tekrar koşuldu — 5
+       testten 4'ü GERÇEKTEN düştü (`Expected: <24> Actual: <20.0>` gibi;
+       raf testi beklendiği gibi geçti, çünkü rack hiç değişmedi), sonra
+       düzeltme geri konup 5/5 yeşile döndü.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 261/261 yeşil**
+       (256 + bu parçanın 5 testi). `kelimeki_core`'a hiç dokunulmadı.
+       Tam takım koşusunda `game_screen_test.dart`'taki joker seçici
+       testinde (`TileVariant.rack` kullanan, bu parçadan hiç
+       etkilenmeyen bir widget) zararsız bir hit-test UYARISI (fatal
+       değil, testi düşürmüyor) gözlendi — düzeltme öncesi aynı tam-takım
+       koşusunda da vardı, bu parçayla ilgisiz/önceden var olan bir
+       ortam tuhaflığı.
+     - **Doğrulama sınırı:** cihazda/gerçek web derlemesinde görsel
+       karşılaştırma bu oturumda yapılamadı (kaynak kod okuması +
+       widget-test ölçümüyle doğrulandı) — deploy sonrası kullanıcının
+       kendi cihazında (iPad + telefon, ikisi birden — fark her iki yönde
+       de gerçek) teyit edilmeli.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

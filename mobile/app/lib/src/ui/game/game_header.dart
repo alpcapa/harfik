@@ -1,7 +1,7 @@
 // Oyun başlığı — src/components/GameHeader.tsx portu: solda logo (dokunuş =
 // oyundan çık), sağda oyuncu skor kutuları + hesap kontrolü (AccountButton:
 // GİRİŞ / avatar-menü — web UserMenu). Web'in akıcı clamp() sistemi
-// (375px'te min → 465px'te max) burada _fluid() ile birebir hesaplanır.
+// (375px'te min → 465px'te max) burada fluidSize() ile birebir hesaplanır.
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
@@ -11,15 +11,9 @@ import '../../data/friends_api.dart';
 import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../auth/account_button.dart';
+import 'fluid.dart';
 import 'logo_mark.dart';
 import 'player_colors.dart';
-
-/// Web'deki `clamp(min, calc(a + b·vw), max)` eşleniği — vw = ekran
-/// genişliği / 100. Uç noktalar web'le aynı (375 → min, 465 → max).
-double _fluid(double screenWidth, double min, double a, double b, double max) {
-  final v = a + b * (screenWidth / 100);
-  return v.clamp(min, max);
-}
 
 class GameHeader extends StatelessWidget {
   final GameState state;
@@ -64,19 +58,19 @@ class GameHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final w = MediaQuery.sizeOf(context).width;
     // Web sabitleri (GameHeader.tsx) — aynı katsayılar.
-    final playerBoxWidth = _fluid(w, 43, -52.83, 25.56, 66);
-    final yzBoxWidth = _fluid(w, 28, -34.5, 16.67, 43);
-    final labelFontSize = _fluid(w, 6, -2.33, 2.22, 8);
-    final scoreFontSize = _fluid(w, 13, -7.83, 5.56, 18);
-    final boxPaddingX = _fluid(w, 1.5, -6.83, 2.22, 3.5);
-    final boxGap = _fluid(w, 4, -4.33, 2.22, 6);
-    final boxPaddingY = _fluid(w, 2.7, -0.63, 0.89, 3.5);
-    final logoHeight = _fluid(w, 28, -5.33, 8.89, 36);
+    final playerBoxWidth = fluidSize(w, 43, -52.83, 25.56, 66);
+    final yzBoxWidth = fluidSize(w, 28, -34.5, 16.67, 43);
+    final labelFontSize = fluidSize(w, 6, -2.33, 2.22, 8);
+    final scoreFontSize = fluidSize(w, 13, -7.83, 5.56, 18);
+    final boxPaddingX = fluidSize(w, 1.5, -6.83, 2.22, 3.5);
+    final boxGap = fluidSize(w, 4, -4.33, 2.22, 6);
+    final boxPaddingY = fluidSize(w, 2.7, -0.63, 0.89, 3.5);
+    final logoHeight = fluidSize(w, 28, -5.33, 8.89, 36);
     // UserMenu.tsx'in GIRIS_* sabitleri — Giriş butonu skor kutularıyla aynı
     // satırda/aynı akıcı sistemde büyür.
-    final girisFontSize = _fluid(w, 8, -4.5, 3.33, 11);
-    final girisPaddingX = _fluid(w, 6, -2.33, 2.22, 8);
-    final girisPaddingY = _fluid(w, 8.7, -5.05, 3.67, 12);
+    final girisFontSize = fluidSize(w, 8, -4.5, 3.33, 11);
+    final girisPaddingX = fluidSize(w, 6, -2.33, 2.22, 8);
+    final girisPaddingY = fluidSize(w, 8.7, -5.05, 3.67, 12);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
