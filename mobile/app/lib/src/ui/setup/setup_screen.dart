@@ -63,8 +63,7 @@ class SetupScreen extends StatefulWidget {
   State<SetupScreen> createState() => _SetupScreenState();
 }
 
-class _SetupScreenState extends State<SetupScreen>
-    with WidgetsBindingObserver {
+class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   int _count = 2;
 
   /// Web `mainView` ('local' | 'live') — OYUN TİPİ sekmeleri. Canlı sekme
@@ -126,7 +125,8 @@ class _SetupScreenState extends State<SetupScreen>
   void initState() {
     super.initState();
     _lastUserId = widget.services.auth.user?.id;
-    _lastAuthUserIdForLiveViewReset = _lastUserId; // React'in mount-anı effect'i
+    _lastAuthUserIdForLiveViewReset =
+        _lastUserId; // React'in mount-anı effect'i
     widget.services.auth.addListener(_onAuthEvent);
     // Kuyruktaki geri bildirimleri tekrar dene — web App.tsx'in mount +
     // 'online' olayındaki flushPendingFeedback refleksi; mobil karşılığı
@@ -161,8 +161,8 @@ class _SetupScreenState extends State<SetupScreen>
     // dinleyicileri deseni (LiveGamesTab'daki aynı desen); Realtime olayları
     // 300ms debounce ile tek tazelemeye iner.
     WidgetsBinding.instance.addObserver(this);
-    _unsubscribeLiveBadge =
-        widget.services.onlineGames?.gateway.subscribe(_scheduleLiveBadgeRefresh);
+    _unsubscribeLiveBadge = widget.services.onlineGames?.gateway
+        .subscribe(_scheduleLiveBadgeRefresh);
     unawaited(_refreshLiveBadge());
   }
 
@@ -175,8 +175,8 @@ class _SetupScreenState extends State<SetupScreen>
 
   void _scheduleLiveBadgeRefresh() {
     _liveBadgeDebounce?.cancel();
-    _liveBadgeDebounce = Timer(
-        const Duration(milliseconds: 300), () => unawaited(_refreshLiveBadge()));
+    _liveBadgeDebounce = Timer(const Duration(milliseconds: 300),
+        () => unawaited(_refreshLiveBadge()));
   }
 
   /// Web `fetchPendingLiveGameCounts` + rozet/varsayılan-sekme birleşimi
@@ -487,7 +487,6 @@ class _SetupScreenState extends State<SetupScreen>
     await _openGame(controller, words, resumeCloudId: save.id);
   }
 
-
   @override
   Widget build(BuildContext context) {
     final auth = widget.services.auth;
@@ -515,8 +514,8 @@ class _SetupScreenState extends State<SetupScreen>
                         child: Align(
                           alignment: Alignment.centerRight,
                           child: AccountButton(
-                            feedback: widget.services.feedback,
-                            friends: widget.services.friends,
+                              feedback: widget.services.feedback,
+                              friends: widget.services.friends,
                               auth: auth,
                               stats: widget.services.stats,
                               games: widget.services.games),
@@ -529,6 +528,9 @@ class _SetupScreenState extends State<SetupScreen>
                       'Ama dikkat et: Hamlen rakibinin bölgesine temas ederse, '
                       'kazandığın puanın bir kısmını onunla paylaşmak zorunda '
                       'kalırsın. Her hamle bir strateji, her kelime bir mücadele.',
+                      // Web'de bu blok `text-center flex flex-col items-center`
+                      // içinde — paragraf da altındaki link satırı da ORTALI.
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'SpaceMono',
                         fontSize: 12,
@@ -540,7 +542,7 @@ class _SetupScreenState extends State<SetupScreen>
                     // Web Setup'taki "Nasıl oynanır?" · "Arkadaşınla paylaş"
                     // satırı — ikisi de font-mono/11px/kalın/accent linkler.
                     Align(
-                      alignment: Alignment.centerLeft,
+                      alignment: Alignment.center,
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -553,7 +555,8 @@ class _SetupScreenState extends State<SetupScreen>
                                   fontFamily: 'SpaceMono',
                                   fontSize: 11,
                                   color: _muted)),
-                          _InlineLink('Arkadaşınla paylaş', onTap: _handleShare),
+                          _InlineLink('Arkadaşınla paylaş',
+                              onTap: _handleShare),
                         ],
                       ),
                     ),
@@ -584,31 +587,32 @@ class _SetupScreenState extends State<SetupScreen>
                     if (_liveView)
                       LiveGamesTab(services: widget.services)
                     else
-                    FutureBuilder<SetWordSource>(
-                      future: widget.services.dictionary,
-                      builder: (context, snap) {
-                        if (snap.hasError) {
-                          return Text('Sözlük yüklenemedi: ${snap.error}',
-                              style: const TextStyle(color: Color(0xFFDC2626)));
-                        }
-                        final words = snap.data;
-                        // Girişli kullanıcı: liste varsayılan görünüm, form
-                        // yalnızca "+ Yeni" ile açılır (web creatingLocal).
-                        if (auth.user != null &&
-                            widget.services.cloudSaves != null) {
-                          return _creatingLocal
-                              ? _buildNewGameForm(words, showCancel: true)
-                              : _buildCloudListView(words);
-                        }
-                        if (!_saveChecked) {
-                          return const _SectionLabel(
-                              'KAYITLAR KONTROL EDİLİYOR…');
-                        }
-                        return _savedState != null
-                            ? _buildSavedGameView(words)
-                            : _buildNewGameForm(words);
-                      },
-                    ),
+                      FutureBuilder<SetWordSource>(
+                        future: widget.services.dictionary,
+                        builder: (context, snap) {
+                          if (snap.hasError) {
+                            return Text('Sözlük yüklenemedi: ${snap.error}',
+                                style:
+                                    const TextStyle(color: Color(0xFFDC2626)));
+                          }
+                          final words = snap.data;
+                          // Girişli kullanıcı: liste varsayılan görünüm, form
+                          // yalnızca "+ Yeni" ile açılır (web creatingLocal).
+                          if (auth.user != null &&
+                              widget.services.cloudSaves != null) {
+                            return _creatingLocal
+                                ? _buildNewGameForm(words, showCancel: true)
+                                : _buildCloudListView(words);
+                          }
+                          if (!_saveChecked) {
+                            return const _SectionLabel(
+                                'KAYITLAR KONTROL EDİLİYOR…');
+                          }
+                          return _savedState != null
+                              ? _buildSavedGameView(words)
+                              : _buildNewGameForm(words);
+                        },
+                      ),
                     const SizedBox(height: 32),
                     // Teşhis alt satırı (iskelet HomeScreen'in durum
                     // panelinden kalan tek iz — cihazda ilk açılış doğrulaması
@@ -850,8 +854,7 @@ class _SetupScreenState extends State<SetupScreen>
         // kendi içinde (`auth.user == null`); girişli çağrıda sessizce
         // gizli kalır.
         MembershipPerksBox(
-            auth: widget.services.auth,
-            feedback: widget.services.feedback),
+            auth: widget.services.auth, feedback: widget.services.feedback),
       ],
     );
   }
@@ -1142,4 +1145,3 @@ class _SavedGameRow extends StatelessWidget {
     );
   }
 }
-

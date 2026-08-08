@@ -149,14 +149,12 @@ void main() {
     expect(find.text('Neden Ücretsiz Üye Olmalıyım?'), findsOneWidget);
     // web MEMBERSHIP_PERKS ile birebir aynı sıra — ilk ve son madde yeterli
     // kanıt (aradakiler aynı listeden geliyor, tek tek tekrar etmeye gerek yok).
-    expect(
-        find.text('Arkadaşlarınla çoklu canlı oyun oynama'), findsOneWidget);
+    expect(find.text('Arkadaşlarınla çoklu canlı oyun oynama'), findsOneWidget);
     expect(find.text('Arkadaş ekleyip listende tutma'), findsOneWidget);
     // Kutu, üstündeki OYUNU BAŞLAT butonuna yapışık durmamalı — web'in dıştaki
     // flex kapsayıcısının (`gap-5`) verdiği 20px boşluğu karşılayan SizedBox
     // eskiden bu tek geçişte eksikti (kullanıcı web derlemesinde bizzat buldu).
-    final buttonBottom =
-        tester.getBottomLeft(find.text('OYUNU BAŞLAT')).dy;
+    final buttonBottom = tester.getBottomLeft(find.text('OYUNU BAŞLAT')).dy;
     final boxTop =
         tester.getTopLeft(find.text('Neden Ücretsiz Üye Olmalıyım?')).dy;
     expect(boxTop - buttonBottom, greaterThan(15));
@@ -175,8 +173,8 @@ void main() {
     await tester.pumpAndSettle();
     // Girişsiz + Supabase yapılandırılmamış: LiveGamesTab'ın misafir görünümü;
     // GİRİŞ YAP butonu yalnızca auth.configured iken çizilir (burada değil).
-    expect(find.text('Canlı oyun oynamak için giriş yapmalısın.'),
-        findsOneWidget);
+    expect(
+        find.text('Canlı oyun oynamak için giriş yapmalısın.'), findsOneWidget);
     expect(find.text('OYUNU BAŞLAT'), findsNothing);
 
     await tester.tap(find.text('YAPAY ZEKA İLE'));
@@ -248,8 +246,7 @@ void main() {
 
   testWidgets(
       'ARKADAŞINLA rozeti: bekleyen davet + sırası bende olan oyun toplamı, '
-      'girişte otomatik sekme açılışı',
-      (tester) async {
+      'girişte otomatik sekme açılışı', (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));
     final gw = FakeOnlineGamesGateway()
       ..rows = [
@@ -262,7 +259,9 @@ void main() {
             myInviteId: 'i1'),
       ];
     await pumpSetup(
-        tester, liveBadgeServices(AuthService.fake(user: fakeUser('me')), OnlineGamesRepo(gw)));
+        tester,
+        liveBadgeServices(
+            AuthService.fake(user: fakeUser('me')), OnlineGamesRepo(gw)));
 
     expect(tester.widget<CountBadge>(find.byType(CountBadge)).count, 1);
     // Bekleyen iş varken girişte "Arkadaşınla" kendiliğinden açılmalı (web
@@ -272,12 +271,13 @@ void main() {
 
   testWidgets(
       'ARKADAŞINLA rozeti: bekleyen iş YOKKEN rozet çıkmaz ve sekme otomatik '
-      'açılmaz (negatif eşi — kök CLAUDE.md dersi)',
-      (tester) async {
+      'açılmaz (negatif eşi — kök CLAUDE.md dersi)', (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));
     final gw = FakeOnlineGamesGateway();
     await pumpSetup(
-        tester, liveBadgeServices(AuthService.fake(user: fakeUser('me')), OnlineGamesRepo(gw)));
+        tester,
+        liveBadgeServices(
+            AuthService.fake(user: fakeUser('me')), OnlineGamesRepo(gw)));
 
     expect(find.byType(CountBadge), findsNothing);
     expect(find.byType(LiveGamesTab), findsNothing);
@@ -348,5 +348,31 @@ void main() {
 
     expect(sharedText, 'Hemen ücretsiz dene!');
     expect(sharedUrl, 'https://kelimeki.com/?ref=arkadas');
+  });
+
+  testWidgets(
+      'tanıtım paragrafı ve "Nasıl oynanır? · Arkadaşınla paylaş" '
+      'satırı ORTALI (web text-center paritesi)', (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(
+          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      home: SetupScreen(services: services()),
+    ));
+    await tester.pumpAndSettle();
+
+    final para = find.textContaining('Kelimeler kurarak');
+    expect(tester.widget<Text>(para).textAlign, TextAlign.center);
+
+    // Paragraf içerik genişliğinin tamamını kapladığından merkezi = içerik
+    // merkezi; link satırı (mainAxisSize.min bir Row) onunla AYNI x'te
+    // olmalı — sola yaslıyken bu fark ~90px'e çıkıyordu.
+    final links = find
+        .ancestor(of: find.text('Nasıl oynanır?'), matching: find.byType(Row))
+        .first;
+    expect(
+      tester.getCenter(links).dx,
+      moreOrLessEquals(tester.getCenter(para).dx, epsilon: 1),
+    );
   });
 }
