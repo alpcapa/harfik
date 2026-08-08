@@ -394,6 +394,31 @@ void main() {
       await unmount(tester);
     });
 
+    testWidgets(
+        'sürükleme sırasında sayfa kaymıyor (game_screen.dart ile aynı düzeltme)',
+        (tester) async {
+      await pumpScreen(tester, current: 0);
+      ScrollPhysics? scrollPhysics() => tester
+          .widget<SingleChildScrollView>(find.byWidgetPredicate((w) =>
+              w is SingleChildScrollView &&
+              w.scrollDirection == Axis.vertical))
+          .physics;
+      expect(scrollPhysics(), isNull);
+
+      final start = tester.getCenter(rackTile(0));
+      final target = tester.getCenter(boardCell(0, 0)) + const Offset(0, 30);
+      final g = await tester.startGesture(start);
+      await g.moveTo(start + const Offset(0, -40)); // eşik aşılır
+      await tester.pump();
+      expect(scrollPhysics(), isA<NeverScrollableScrollPhysics>());
+      await g.moveTo(target);
+      await tester.pump();
+      await g.up();
+      await tester.pump();
+      expect(scrollPhysics(), isNull);
+      await unmount(tester);
+    });
+
     testWidgets('PAS GEÇ: onay → submit_move pass', (tester) async {
       final gw = await pumpScreen(tester, current: 0);
 

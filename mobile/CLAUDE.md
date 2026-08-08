@@ -2478,6 +2478,73 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      bilinçli kapsam dışı, bkz. "Üst Düzey Kararlar" #3). Kalan tek fark
      Şifre Değiştir'in mobilde hiç olmaması — web'de de zaten 2 Ağustos
      2026'da kaldırılmıştı, bu bir parite eksiği DEĞİL.
+   - ✅ **Parça 15 — cihaz testi sırasında bulunan iki hata (8 Ağustos 2026,
+     `game_screen.dart`, `online_game_screen.dart`, `setup_screen.dart`):**
+     Kullanıcı, web derlemesini iPad Safari'de manuel test ederken (FAZ A0
+     sonrası) iki gerçek hata buldu — üçüncü bir şikayet (yatay modda
+     tahtanın yarısının görünmesi) web-test-ortamının doğal bir sınırıydı
+     (native `screenOrientation="portrait"` kilidi tarayıcıda geçerli değil,
+     gerçek uygulamada hiç yaşanmaz) ve dördüncüsü (dikeyde rafın altındaki
+     butonların görünmemesi) yalnızca kaydırma gerektiriyordu — ikisi de
+     kod değişikliği gerektirmedi.
+     - **Raf/tahta taşı sürüklerken sayfa da kayıyordu.** Kök sebep: hem
+       `game_screen.dart` hem `online_game_screen.dart`'ta TÜM oyun ekranı
+       (tahta+mesaj+raf+butonlar) tek bir `SingleChildScrollView` içinde;
+       sürükleme sistemi ham `Listener` kullanıyor (web `setPointerCapture`
+       eşdeğeri, bilinçli tercih — bkz. Parça 7) ve bu, Flutter'ın jest
+       arenasına HİÇ katılmıyor. Sonuç: `Scrollable`'ın kendi dikey sürükleme
+       algılayıcısı aynı parmak hareketini bağımsızca "sayfa kaydırma"
+       sanıp kazanıyor, taş sürüklenirken sayfa da kayıyordu — `Listener`
+       arenaya katılmadığından bunu ENGELLEYECEK hiçbir mekanizma yoktu.
+       **Düzeltme:** `SingleChildScrollView`'ın `physics`i artık aktif bir
+       sürükleme sırasında (`_dragRef?.enabled == true`) `NeverScrollable
+       ScrollPhysics`'e çekiliyor, aksi halde `null` (ambient/varsayılan
+       davranış korunuyor — `ClampingScrollPhysics` gibi sabit bir değer
+       YAZILMADI, iOS'taki bouncy varsayılanı bozmasın diye).
+       `NeverScrollableScrollPhysics.shouldAcceptUserOffset` `false`
+       döndüğünden `Scrollable` arenayı "kazansa" bile ekrana uygulanan
+       kaydırma deltası sıfır kalıyor — pratikte sayfa hiç kaymıyor.
+       `_dragRef` daha önce render tetiklemeden (setState'siz) okunup
+       güncelleniyordu (bilinçli — web `dragRef`in salt veri taşıması); artık
+       `physics` buna bağlı olduğundan `_beginTileDrag`/`_endTileDrag`/
+       `_cancelTileDrag`'in HER ÜÇÜ de setState içine alındı — iki dosyada
+       da BİREBİR aynı değişiklik (Parça 10'daki "bilinçli kod tekrarı"
+       kararının bir sonucu: biri değişirse öteki de değişmek zorunda).
+       **Test dersi:** `find.byType(SingleChildScrollView)` bu ekranlarda
+       İKİ eşleşme veriyor — `GameHeader`'ın kendi (yatay) skor kutusu
+       şeridi de aynı widget'ı kullanıyor (bkz. Parça 4). Testler
+       `find.byWidgetPredicate((w) => w is SingleChildScrollView &&
+       w.scrollDirection == Axis.vertical)` ile ana gövdeyi ayırt ediyor —
+       yeni bir yerde aynı finder'ı kopyalarken bu ayrımı unutma.
+     - **Setup'taki "Neden Ücretsiz Üye Olmalıyım?" kutusu üstündeki butona
+       yapışık duruyordu.** Web kaynağı karşılaştırıldığında: kutu ile
+       üstündeki eleman arasında web'de HER ZAMAN dıştaki flex kapsayıcının
+       (`gap-5`=20px ya da iç kapsayıcının `gap-2`=8px, bağlama göre) verdiği
+       taban boşluk var — `topMargin` prop'u (web `className="mt-2"`) bunun
+       ÜSTÜNE binen EK boşluk, taban boşluğun YERİNE geçen tek boşluk değil.
+       Flutter portu `_buildNewGameForm`'da (boş kurulum formunun altı) bu
+       tabanı hiç taşımamıştı — diğer TÜM bölüm geçişlerinde (Oyuncu
+       Sayısı→Oyuncular, Oyuncular→buton satırı) doğru `SizedBox(height:20)`
+       vardı, yalnızca SONUNCUSU (buton satırı→kutu) unutulmuştu.
+       `_buildSavedGameView`'da (misafirin "Devam Eden Oyun" görünümü) ise
+       yalnızca `topMargin`in kendi 8px'i uygulanıyordu, web'in iç `gap-2`
+       (8px) tabanı hiç yoktu — toplam 16px yerine 8px. **Düzeltme:** iki
+       çağrı yerine de eksik `SizedBox` eklendi (`_buildNewGameForm`'a 20px,
+       `_buildSavedGameView`'a 8px) — `MembershipPerksBox` widget'ının
+       kendisine (renk/gölge/kenarlık/iç boşluklar) dokunulmadı, zaten
+       ölçülerek web'le eşleşiyordu; sorun yalnızca ÇAĞIRANLARDAKİ eksik
+       boşluktu. **Test:** mevcut "misafirde kutu" testine, OYUNU BAŞLAT
+       butonunun alt kenarı ile kutu başlığının üst kenarı arasındaki
+       farkın 15px'i aştığını doğrulayan bir ölçüm eklendi (önceden ~0px).
+     - Doğrulama: `game_screen_test.dart`'ın mevcut sürükle-bırak testine
+       sürükleme öncesi/sırası/sonrası `physics` kontrolü eklendi;
+       `online_game_screen_test.dart`'a aynı deseni doğrulayan YENİ bir test
+       eklendi (o dosyada daha önce gerçek pointer-gesture simülasyonu
+       yoktu, yalnızca `dispatch` ile doğrudan action gönderiliyordu).
+       **Tam takım 246/246 yeşil**, analyze + değişmez taraması temiz.
+       Cihazda doğrulama kullanıcının kendi web derlemesi testinden geldi —
+       bu parçanın "doğrulama sınırı"nı KAPATAN nadir bir örnek (genelde
+       tersi oluyor).
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

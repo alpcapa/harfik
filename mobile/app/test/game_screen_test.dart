@@ -341,9 +341,22 @@ void main() {
     // mobile/CLAUDE.md "Test notu").
     final start = tester.getCenter(rackTile(0)); // K
     final target = tester.getCenter(boardCell(0, 0)) + const Offset(0, 30);
+    // GameHeader'ın kendi (yatay) skor kutusu şeridi de bir
+    // SingleChildScrollView taşıyor — dikey (ana gövde) olanı `scrollDirection`
+    // ile ayırt ediyoruz.
+    ScrollPhysics? scrollPhysics() => tester
+        .widget<SingleChildScrollView>(find.byWidgetPredicate((w) =>
+            w is SingleChildScrollView && w.scrollDirection == Axis.vertical))
+        .physics;
+    expect(scrollPhysics(), isNull); // sürükleme yokken varsayılan
     final g = await tester.startGesture(start);
     await g.moveTo(start + const Offset(0, -40)); // eşik aşılır
     await tester.pump();
+    // Kullanıcının web derlemesinde bulduğu hata: aktif sürükleme sırasında
+    // sayfa da kayıyordu — Listener jest arenasına katılmadığından
+    // Scrollable'ın kendi dikey sürükleme algılayıcısı aynı hareketi
+    // "kaydırma" sanıp kazanıyordu. Artık aktif sürüklemede physics kilitli.
+    expect(scrollPhysics(), isA<NeverScrollableScrollPhysics>());
     await g.moveTo(target);
     await tester.pump();
     // Sürükleme sırasında: kaynak raf taşı gizli (opacity 0), taş henüz
@@ -368,6 +381,7 @@ void main() {
     await tester.pump();
     expect(controller.state.placed['0,0']?.letter, 'K');
     expect(controller.state.players[0].rack.length, 6);
+    expect(scrollPhysics(), isNull); // sürükleme bitince kilit kalkar
 
     // 2) Tahtada taşı: (0,0) → (2,2).
     final from = tester.getCenter(boardCell(0, 0));

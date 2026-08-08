@@ -152,6 +152,14 @@ void main() {
     expect(
         find.text('Arkadaşlarınla çoklu canlı oyun oynama'), findsOneWidget);
     expect(find.text('Arkadaş ekleyip listende tutma'), findsOneWidget);
+    // Kutu, üstündeki OYUNU BAŞLAT butonuna yapışık durmamalı — web'in dıştaki
+    // flex kapsayıcısının (`gap-5`) verdiği 20px boşluğu karşılayan SizedBox
+    // eskiden bu tek geçişte eksikti (kullanıcı web derlemesinde bizzat buldu).
+    final buttonBottom =
+        tester.getBottomLeft(find.text('OYUNU BAŞLAT')).dy;
+    final boxTop =
+        tester.getTopLeft(find.text('Neden Ücretsiz Üye Olmalıyım?')).dy;
+    expect(boxTop - buttonBottom, greaterThan(15));
 
     await tester.tap(find.text('GİRİŞ YAP / KAYIT OL'));
     await tester.pumpAndSettle();

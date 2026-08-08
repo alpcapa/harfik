@@ -132,7 +132,10 @@ class _GameScreenState extends State<GameScreen> {
   final GlobalKey _gridKey = GlobalKey();
   final GlobalKey _rackKey = GlobalKey();
   final GlobalKey _stackKey = GlobalKey();
-  _DragRef? _dragRef; // render tetiklemeden okunur/güncellenir (web dragRef)
+  // `_dragRef`in kendisi web dragRef gibi salt veri taşır, ama artık
+  // SingleChildScrollView'ın `physics`i buna bağlı olduğundan (bkz. build())
+  // her değişiklik setState içinde yapılmak ZORUNDA.
+  _DragRef? _dragRef;
   _Ghost? _ghost;
 
   PlayerColor _colorOf(int i) =>
@@ -318,11 +321,15 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _beginTileDrag(_DragSource source, PointerDownEvent e) {
-    _dragRef = _DragRef(
-      source: source,
-      start: e.position,
-      enabled: _canAct && !state.swapMode,
-    );
+    // setState şart: aşağıdaki SingleChildScrollView'ın `physics`i buna bağlı
+    // (bkz. build() — sürükleme sırasında sayfa kaymasın diye).
+    setState(() {
+      _dragRef = _DragRef(
+        source: source,
+        start: e.position,
+        enabled: _canAct && !state.swapMode,
+      );
+    });
   }
 
   void _moveTileDrag(PointerMoveEvent e) {
@@ -353,8 +360,10 @@ class _GameScreenState extends State<GameScreen> {
 
   Future<void> _endTileDrag(PointerUpEvent e) async {
     final d = _dragRef;
-    _dragRef = null;
-    if (_ghost != null) setState(() => _ghost = null);
+    setState(() {
+      _dragRef = null;
+      _ghost = null;
+    });
     if (d == null) return;
 
     if (!d.moved) {
@@ -399,8 +408,10 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _cancelTileDrag() {
-    _dragRef = null;
-    if (_ghost != null) setState(() => _ghost = null);
+    setState(() {
+      _dragRef = null;
+      _ghost = null;
+    });
   }
 
   /// Parmağın üzerinde süzülen taş — web'in fixed ghost overlay'i (46px,
@@ -515,6 +526,17 @@ class _GameScreenState extends State<GameScreen> {
                     // ARASINA giriyordu); kısa ekranda tamamı kaydırılabilir.
                     Expanded(
                       child: SingleChildScrollView(
+                        // Aktif bir taş sürüklemesi varken kaydırma kilitleniyor
+                        // — sürükleme sistemi ham `Listener` kullandığından
+                        // (web setPointerCapture eşdeğeri, jest arenasına hiç
+                        // katılmıyor) bu Scrollable'ın kendi dikey sürükleme
+                        // algılayıcısı aynı parmak hareketini "sayfa kaydırma"
+                        // sanıp kazanıyordu — kullanıcı bunu web derlemesinde
+                        // bizzat bulup bildirdi (raf taşını çekerken ekran da
+                        // kayıyordu).
+                        physics: (_dragRef?.enabled ?? false)
+                            ? const NeverScrollableScrollPhysics()
+                            : null,
                         child: Column(
                           children: [
                             Padding(

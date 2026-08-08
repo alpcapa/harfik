@@ -903,13 +903,18 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   }
 
   void _beginTileDrag(_DragSource source, PointerDownEvent e) {
-    _dragRef = _DragRef(
-      source: source,
-      start: e.position,
-      // Yerel ekranın `canAct`i yerine `canEdit`: sıra bende olmasa da
-      // sürükleyip deneyebilirim (swap modunda kapalı, web ile aynı).
-      enabled: _canEdit && !state.swapMode,
-    );
+    // setState şart: aşağıdaki SingleChildScrollView'ın `physics`i buna bağlı
+    // (bkz. build() — sürükleme sırasında sayfa kaymasın diye, game_screen.dart
+    // ile aynı düzeltme — bkz. mobile/CLAUDE.md).
+    setState(() {
+      _dragRef = _DragRef(
+        source: source,
+        start: e.position,
+        // Yerel ekranın `canAct`i yerine `canEdit`: sıra bende olmasa da
+        // sürükleyip deneyebilirim (swap modunda kapalı, web ile aynı).
+        enabled: _canEdit && !state.swapMode,
+      );
+    });
   }
 
   void _moveTileDrag(PointerMoveEvent e) {
@@ -940,8 +945,10 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
 
   Future<void> _endTileDrag(PointerUpEvent e) async {
     final d = _dragRef;
-    _dragRef = null;
-    if (_ghost != null) setState(() => _ghost = null);
+    setState(() {
+      _dragRef = null;
+      _ghost = null;
+    });
     if (d == null) return;
 
     if (!d.moved) {
@@ -988,8 +995,10 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   }
 
   void _cancelTileDrag() {
-    _dragRef = null;
-    if (_ghost != null) setState(() => _ghost = null);
+    setState(() {
+      _dragRef = null;
+      _ghost = null;
+    });
   }
 
   Widget _buildGhost() {
@@ -1152,6 +1161,12 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                     ),
                     Expanded(
                       child: SingleChildScrollView(
+                        // Aktif bir taş sürüklemesi varken kaydırma kilitleniyor
+                        // — game_screen.dart'taki aynı düzeltme (bkz. orada,
+                        // "Listener jest arenasına katılmıyor" notu).
+                        physics: (_dragRef?.enabled ?? false)
+                            ? const NeverScrollableScrollPhysics()
+                            : null,
                         child: Column(
                           children: [
                             Padding(

@@ -673,6 +673,11 @@ class _SetupScreenState extends State<SetupScreen>
             color: _muted,
           ),
         ),
+        // Web'de bu paragrafla kutu arasında iç kapsayıcının (`gap-2`, 8px)
+        // verdiği taban boşluk var, `topMargin`in eklediği `mt-2` (8px) bunun
+        // ÜSTÜNE biniyor (toplam 16px) — Flutter'da bu taban boşluk hiç
+        // taşınmamıştı, yalnızca `topMargin`in kendi 8px'i uygulanıyordu.
+        const SizedBox(height: 8),
         // Widget kendi içinde `auth.user == null` kontrolü yapıyor — bu
         // görünüme yalnızca misafirken düşüldüğünden burada koşul gerekmez,
         // ama üstteki tek çağıranla (auth) tutarlı kalsın diye geçiliyor.
@@ -833,6 +838,12 @@ class _SetupScreenState extends State<SetupScreen>
             ],
           ],
         ),
+        // Web'de bu kutu ile üstündeki buton satırı arasında dıştaki flex
+        // kapsayıcının (`gap-5`, 20px) verdiği boşluk var — Flutter'da diğer
+        // TÜM bölüm geçişlerinde bu 20px elle SizedBox'la taşınmıştı, yalnızca
+        // bu son geçiş unutulmuştu (kutu butona "yapışık" duruyordu, kullanıcı
+        // web derlemesinde bizzat bulup bildirdi).
+        const SizedBox(height: 20),
         // Web: `!user && <MembershipPerksBox .../>` — bu fonksiyon hem
         // misafirin boş formunda (showCancel:false) hem girişli kullanıcının
         // "+ Yeni" formunda (showCancel:true) çağrıldığından gate widget'ın
