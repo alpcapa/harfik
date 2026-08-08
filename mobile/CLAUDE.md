@@ -2599,6 +2599,53 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ortamdan canlı siteye erişim olmasa bile `flutter test`'in ürettiği
        gerçek PNG'leri okuyup karşılaştırmak, salt kod okumaktan çok daha
        güvenilir bir teşhis yöntemi oldu.
+   - ✅ **Parça 17 — Parça 16'nın "bilinçli kapsam sınırı" YETERSİZDİ: oyun
+     ekranına web'in `max-w-[680px]` kart sınırı hiç uygulanmamıştı (8
+     Ağustos 2026, `game_screen.dart`, `online_game_screen.dart`):**
+     Kullanıcı, Parça 16'dan sonra deploy edilen GitHub Pages derlemesini
+     iPad'de YATAY modda test edip tahtanın hâlâ "eksik/yanlış" göründüğünü,
+     gerçek web'e (kelimeki.com, "Ironman" hesabıyla) benzemediğini
+     bildirdi — ekran görüntüsünde tahta ekranın SOL kenarından SAĞ
+     kenarına kadar (13 sütun ~103px'lik hücrelerle) gerilmiş, hiçbir
+     gölge görünmüyordu.
+     - **Kök sebep — Parça 16'nın "yatay gölgeler dominant değil" varsayımı
+       yanlış çıktı:** `game_screen.dart`/`online_game_screen.dart`'ta
+       Board'un (ve altındaki mesaj/raf/buton bloğunun) etrafında yalnızca
+       `EdgeInsets.symmetric(horizontal: 12)` vardı — web'in AKSİNE
+       (`GameHeader.tsx`, `Board.tsx`, `App.tsx`'in raf/buton container'ı
+       — ÜÇÜ DE ayrı ayrı `w-full max-w-[680px]` taşıyor, bkz. kök
+       CLAUDE.md'nin ilgili notları) mobil tarafta hiçbir üst sınır YOKTU.
+       Dar bir telefon ekranında bu fark görünmüyordu (12px zaten dar
+       ekranda yeterliydi), ama GENİŞ/YATAY bir ekranda (iPad yatay,
+       ~1389px) Board kendi genişliğini doldurdukça 13×13 hücre devasa
+       büyüyor, kart kenardan kenara gerilip gölgenin sönümleneceği HİÇBİR
+       boşluk kalmıyordu — Parça 16'nın çözdüğü DİKEY ezilme meselesinden
+       tamamen ayrı, yeni bir kök sebep. `setup_screen.dart`'ta bu sınır
+       zaten vardı (`ConstrainedBox(maxWidth: 480)`, web'in `max-w-[460px]`
+       eşleniği) — yalnızca OYUN ekranları bu deseni hiç almamıştı.
+     - **Düzeltme:** Her iki ekranda da GameHeader+Board+mesaj+raf+buton
+       bloğunun TAMAMI `Center(child: ConstrainedBox(constraints:
+       BoxConstraints(maxWidth: 680), ...))` ile sarmalandı — web'in üç
+       ayrı `max-w-[680px]` container'ının net görsel etkisiyle özdeş (hiç
+       biri arka plan rengi taşımadığından tek bir ortak sarmalayıcıya
+       indirgemek görsel fark yaratmıyor). Dar ekranlarda (680px altı)
+       davranış DEĞİŞMEDİ — kısıt yalnızca genişlik 680'i AŞTIĞINDA devreye
+       giriyor.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 246/246 yeşil**
+       (mevcut testlerin hepsi 680px altı yüzey boyutlarında koştuğundan
+       kısıt hiçbirini etkilemedi). Geçici bir betikle `GameScreen`
+       1389×866 (kullanıcının bildirdiği iPad yatay ölçüsü) yüzeyinde
+       render edilip PNG'ye yakalandı — düzeltmeden önce tahta kenardan
+       kenara geriliyordu, düzeltmeden sonra 680px'lik ortalanmış bir
+       "kart" olarak göründü ve kartın etrafında gölgenin sönümlenebileceği
+       bariz beyaz boşluk oluştu (betik incelemeden sonra silindi, kalıcı
+       test paketine eklenmedi — tek seferlik görsel doğrulama amaçlıydı).
+       **Ders:** "küçük/dominant olmayan gölgeler" gerekçesiyle bir kapsam
+       sınırı çizerken, o gerekçenin yalnızca test edilen ekran boyutunda
+       (dar telefon) geçerli olabileceğini, GENİŞ ekranlarda aynı ihmalin
+       katbekat büyüyebileceğini göz önünde bulundur — Parça 16'nın
+       taraması yalnızca 396-760px yüzeylerde yapılmıştı, gerçek kullanıcı
+       şikayeti çok daha geniş bir yüzeyden geldi.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek
