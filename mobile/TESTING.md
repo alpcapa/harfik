@@ -93,6 +93,19 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       yalnızca burada cihazda teyit edilebilir — sürüklerken parmağı yavaşça
       tahtanın bir ucundan diğerine gezdir, hayalet taş + kesikli hedef
       çerçevesi pürüzsüz takip etmeli.
+- [ ] **Tahtadan rafa sürüklerken hayalet taş board sınırını geçerken
+      KAYBOLMAMALI.** Bir taşı tahtaya koy, sonra sürükleyerek rafa geri al
+      — parmağını board'un alt kenarından mesaj satırı/rafa doğru
+      GEZDİRİRKEN hayalet taş yolun HİÇBİR noktasında görünmez olmamalı,
+      rafa varana kadar sürekli görünür kalmalı (8 Ağustos 2026'da
+      kullanıcı bunu bizzat bildirdi: "board sınırını geçerken kayboluyor,
+      taş rafa dönüyor ama görünmüyor" — kök sebep `_hoverHighlight`'ın
+      board dışında çıplak `SizedBox.shrink()` döndürmesiydi, bu da onu
+      saran overlay Stack'i 0×0'a küçültüp hayalet taşı kırpıyordu; hem
+      native Skia hem gerçek CanvasKit'te (Playwright/Chromium web
+      harness) ölçülerek doğrulandı, düzeltildi — bkz. mobile/CLAUDE.md
+      Parça 27). Aynı kontrol Canlı oyun ekranında da geçerli
+      (`OnlineGameScreen`, birebir aynı düzeltme).
 - [ ] **Joker.** Jokeri tahtaya koy → harf seçici açılmalı; konmuş jokere
       tekrar dokun → seçici "Geri Al" seçenekli açılmalı, taş geri
       ALINMAMALI (dokunma ile sürükleme farklı davranır). **Seçici hiçbir

@@ -15,7 +15,9 @@ import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/online_games_api.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/ui/game/board_widget.dart'
-    show DashedBorderPainter;
+    show BoardWidget, DashedBorderPainter;
+import 'package:kelimeki/src/ui/game/rack_widget.dart' show RackWidget;
+import 'package:kelimeki/src/ui/game/tile_widget.dart' show TileWidget;
 import 'package:kelimeki/src/ui/live/online_game_screen.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
@@ -444,6 +446,55 @@ void main() {
       await g.up();
       await tester.pump();
       expect(scrollPhysics(), isNull);
+      await unmount(tester);
+    });
+
+    testWidgets(
+        'regresyon (Parça 27): tahtanın dışına sürüklerken hayalet taş '
+        'KIRPILMIYOR — game_screen.dart ile aynı düzeltme', (tester) async {
+      await pumpScreen(tester, current: 0);
+      final start = tester.getCenter(rackTile(0));
+      final offBoard = tester.getCenter(find.byType(RackWidget));
+      final g = await tester.startGesture(start);
+      await g.moveTo(start + const Offset(0, -40)); // eşik aşılır
+      await tester.pump();
+      await g.moveTo(offBoard);
+      await tester.pump();
+
+      Finder outsideGhost() => find.byWidgetPredicate((w) {
+            if (w is! TileWidget) return false;
+            final e = find.byWidget(w).evaluate().first;
+            var underBoardOrRack = false;
+            e.visitAncestorElements((a) {
+              if (a.widget.runtimeType == BoardWidget ||
+                  a.widget.runtimeType == RackWidget) {
+                underBoardOrRack = true;
+                return false;
+              }
+              return true;
+            });
+            return !underBoardOrRack;
+          });
+      expect(outsideGhost(), findsOneWidget);
+
+      final ghostElement = outsideGhost().evaluate().first;
+      Element? stackElement;
+      ghostElement.visitAncestorElements((a) {
+        if (a.widget is Stack) {
+          stackElement = a;
+          return false;
+        }
+        return true;
+      });
+      expect(stackElement, isNotNull,
+          reason: 'Hayalet taşın bir Stack atası olmalı');
+      final stackSize = (stackElement!.renderObject as RenderBox).size;
+      expect(stackSize, isNot(Size.zero),
+          reason: 'Overlay Stack (0,0)\'a küçülmüş — hayalet taş tamamen '
+              'kırpılıyor demektir. stackSize=$stackSize');
+
+      await g.up();
+      await tester.pump();
       await unmount(tester);
     });
 

@@ -3305,6 +3305,123 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        testi turunda web ile yan yana karşılaştırması bekleniyor;
        `mobile/TESTING.md`'nin Bölüm 1 "Oyun sonu" maddesine bu iki
        davranış (360px/✕-only/KAPAT-yok, TORBA sayaç stili) eklendi.
+   - ✅ **Parça 27 — tahtadan rafa sürüklerken hayalet taş, board sınırını
+     geçerken KAYBOLUYORDU: gerçek kök sebep bir CanvasKit özel durumu
+     DEĞİL, Stack'in "yalnızca Positioned çocuk" değişmezinin ihlaliydi
+     (8 Ağustos 2026, `game_screen.dart`/`online_game_screen.dart`
+     `_hoverHighlight`):** Kullanıcı cihaz testinde bildirdi: "Tahtaya
+     konan taşı sürükle bırak şeklinde rafa geri alırken board sınırını
+     geçerken yok oluyor. Taş rafa dönüyor ama görünmüyor." Web'de aynı
+     geçiş net görünüyor.
+     - **Önce kod okumasıyla teşhis denendi, sonuçsuz kaldı:** sürükleme
+       geometrisi (`_beginTileDrag`/`_moveTileDrag`/`_buildGhost`/
+       `_hoverHighlight`) ve widget ağacı (`ValueListenableBuilder` →
+       `Stack(children:[_hoverHighlight, _buildGhost])`, dış `_stackKey`
+       Stack'inin doğrudan ikinci çocuğu) baştan sona okundu — hiçbir
+       koşullu gizleme/kırpma mantığı GÖRÜNMÜYORDU. Kök CLAUDE.md'nin
+       "tahminle düzeltme yapma" dersi (Parça 18 emsali) gereği koda
+       müdahale edilmedi, ölçülerek ilerlendi.
+     - **Adım 1 — native Skia'da widget-ağacı/geometri testi: hatayı hiç
+       YAKALAMADI.** `flutter test` ile 20 adımlık senteze bir sürükleme
+       simüle edilip her adımda hayalet taşın `TileWidget` sayısı VE
+       gerçek `Rect`'i (`tester.getRect`) ölçüldü — sayaç hep `1`, `Rect`
+       hep tutarlı/doğrusal kaldı, board'un alt kenarını (`boardBottom`)
+       geçerken HİÇBİR ANOMALİ yoktu. Bu ADIM TEK BAŞINA "sorun yok"
+       sonucuna götürüyordu — ama yalnızca widget LAYOUT geometrisini
+       ölçüyordu, PAINT/kırpmayı DEĞİL (kritik ayrım, aşağıda).
+     - **Adım 2 — gerçek CanvasKit'te (tarayıcı) ölçüm: hata BİREBİR
+       tekrarlandı.** `GameScreen`'i (crafted küçük bir state ile,
+       Supabase/sözlük boot etmeden) render eden minik bir web harness'i
+       (`flutter build web --target=<harness>`) derleyip yerel Chromium'da
+       (Playwright, `--use-angle=swiftshader --enable-unsafe-swiftshader`;
+       CanvasKit'in varsayılan `gstatic.com` CDN'i bu ortamın proxy'sinde
+       engelli olduğundan istekler yerel `build/webprobe/canvaskit/`
+       dosyalarına `page.route`+`fulfill` ile yönlendirildi) açılıp
+       GERÇEK bir pointer sürüklemesi (board hücresinden rafa, 24 küçük
+       adım) sürülüp her adımda ekran görüntüsü alındı: hayalet taş K
+       hücresi tam olarak board'un alt kenarını geçerken (adım ~17/24)
+       KAYBOLUYOR ve rafa varana, hatta bırakılana kadar bir daha hiç
+       görünmüyordu — kullanıcının tarifiyle birebir.
+     - **Adım 3 — asıl kök sebep GENE native Skia'da, ama bu sefer doğru
+       şeyi ölçerek bulundu:** Adım 1'in "geometri hep doğru" bulgusuyla
+       Adım 2'nin "gerçek render'da kayboluyor" bulgusu birlikte ŞUNU
+       ima ediyordu: widget hâlâ ağaçta/doğru konumda ama PAINT'te
+       KIRPILIYOR — bir Flutter CLIP operasyonu layout geometrisini hiç
+       değiştirmez, yalnızca paint'i etkiler, bu yüzden Adım 1'in
+       `getRect` kontrolleri böyle bir hatayı yapısal olarak GÖREMEZDİ.
+       `_hoverHighlight`/`_buildGhost`'u saran iç `Stack`'e GEÇİCİ bir
+       `key` eklenip `flutter test`'te bu Stack'in GERÇEK render
+       boyutu her adımda ölçüldü: board'un içindeyken `Size(420.0,
+       900.0)` (tam ekran), board'un DIŞINA çıkar çıkmaz **`Size(0.0,
+       0.0)`**'a çöküyor ve bir daha düzelmiyordu.
+     - **Mekanizma:** `_hoverHighlight(g)`'in `g.overKey == null` (pointer
+       artık board grid'inin üzerinde değil — tam da rafa doğru sürükleme
+       sırasında olan şey) ve `grid==null||stack==null` erken dönüşleri
+       ÇIPLAK `const SizedBox.shrink()` döndürüyordu — `Positioned` İÇİNE
+       SARILMAMIŞ. Bu, onu saran `Stack(children:[_hoverHighlight(g),
+       _buildGhost(g)])`'un TEK non-positioned çocuğu hâline getiriyordu
+       (`_buildGhost` her zaman `Positioned` döner). Flutter'ın Stack
+       boyutlandırma kuralı: non-positioned çocuk YOKSA Stack gelen
+       constraint'in en büyüğüne (`constraints.biggest`) sığar; EN AZ BİR
+       non-positioned çocuk VARSA Stack o çocu(kları)n boyutuna göre
+       küçülür — burada tek non-positioned çocuk `SizedBox.shrink()`
+       (0×0) olduğundan Stack'in KENDİSİ 0×0'a küçülüyordu. Stack'in
+       varsayılan `clipBehavior: Clip.hardEdge`'i de bu 0×0 alanın
+       dışındaki HER ŞEYİ (diğer çocuk olan hayalet taşın `Positioned`ı
+       dahil) kırpıyordu — taş hâlâ doğru koordinatta "var" ama hiç
+       boyanmıyordu.
+     - **Düzeltme (sihirli sayı yok, tek satırlık kavram):** iki erken
+       dönüş de artık `const Positioned(left: 0, top: 0, child:
+       SizedBox.shrink())` döndürüyor — Stack'in "yalnızca Positioned
+       çocuk" değişmezi hiçbir zaman bozulmuyor, Stack her zaman
+       `constraints.biggest`e (tam ekran) sığıyor. `online_game_screen.
+       dart`'taki BİREBİR AYNI kopya (`_hoverHighlight`, "bilinçli kod
+       tekrarı" çifti) da aynı iki satırla düzeltildi.
+     - **Test — negatif eş doğrulamasıyla:** her iki dosyaya da (kalıcı,
+       teşhis harness'i DEĞİL) yeni bir regresyon testi eklendi — rafa
+       doğru bir sürükleme başlatılıp pointer board'un dışına taşınıyor,
+       hayalet taşın (Board/Rack DIŞINDAki tek `TileWidget`) en yakın
+       `Stack` atasının render boyutu `isNot(Size.zero)` ile doğrulanıyor.
+       Düzeltme `git stash push -- <dosya>` ile GEÇİCİ geri alınıp
+       (önce `game_screen.dart`, sonra ayrı bir turda `online_game_
+       screen.dart`) her iki test de GERÇEKTEN `Expected: not
+       Size:<Size(0.0, 0.0)> / Actual: Size(0.0, 0.0)` ile düştüğü
+       görüldü, `stash pop` ile geri konup yeşile döndü — ikisi de
+       ayrı ayrı kanıtlandı.
+     - **Ders 1 — "widget-ağacı testi temiz" tek başına bir CLIP hatasını
+       EKARTE ETMEZ:** `tester.getRect`/element-sayımı yalnızca LAYOUT
+       geometrisini görür; bir ata `ClipRect`/`Clip.hardEdge` ile
+       kırpıyorsa geometri hâlâ "doğru" raporlanır, yalnızca PAINT
+       etkilenir. Bu proje daha önce Parça 18'de "değerler doğru, o hâlde
+       CanvasKit'e özgü bir motor hatası" diye tahmin yürütmüştü (yanlış
+       çıkmıştı) — bu sefer önce native Skia'da geometri ölçülüp "temiz"
+       bulununca CanvasKit-özel bir hata olduğu VARSAYILABİLİRDİ, ama
+       Adım 3'teki ek ölçüm (Stack boyutu) gösterdi ki hata aslında
+       EVRENSEL bir Flutter mantık hatasıydı — CanvasKit'e özgü hiçbir
+       şey yoktu, yalnızca native testin İLK turu YANLIŞ ŞEYİ (rect,
+       clip değil) ölçmüştü. "CanvasKit'e özgü" sonucuna varmadan önce
+       native tarafta GERÇEKTEN paint/clip'i de ölçmek gerekiyor —
+       yalnızca geometriyi ölçmek yeterli değil.
+     - **Ders 2 — `Stack`'in "non-positioned çocuk boyutu belirler"
+       kuralı sessiz bir tuzak:** Bir `Stack`'in TÜM çocuklarının
+       `Positioned` olduğu bir yerde YENİ bir erken-dönüş/koşullu dal
+       eklerken, o dalın da `Positioned` (ya da eşdeğer sıfır-etkili bir
+       `Positioned` sarmalayıcı) döndürmesi gerekiyor — çıplak
+       `SizedBox.shrink()`/`Container()` gibi "zararsız görünen" bir
+       yer tutucu, Stack'in TÜM boyutunu (dolayısıyla diğer TÜM
+       Positioned kardeşlerin görünürlüğünü) sessizce bozabilir.
+     - Doğrulama: `flutter analyze` temiz, tam takım **267/267 yeşil**
+       (266'dan +2 — Parça 27'nin iki yeni regresyon testi;
+       `kelimeki_core`'a hiç dokunulmadı, motor dosyası değil).
+     - **Doğrulama sınırı:** Bu düzeltme hem native Skia (`flutter test`)
+       hem gerçek CanvasKit'te (Playwright/Chromium web harness, adım
+       adım ekran görüntüsüyle) doğrulandı — ikisi de bu oturumda
+       yapılabildi. Gerçek bir iOS/Android cihazda (Skia/Impeller, web
+       değil) parite hâlâ kullanıcıdan bekleniyor, ama hata mekanizması
+       (bir Flutter framework kuralı, platform/render backend'inden
+       BAĞIMSIZ) evrensel olduğundan cihazda da aynı şekilde düzelmesi
+       bekleniyor — bkz. `mobile/TESTING.md` Bölüm 1'e eklenen yeni
+       kontrol maddesi.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

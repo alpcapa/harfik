@@ -1043,13 +1043,18 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   }
 
   /// Bırakma hedefinin kesikli çerçevesi — game_screen.dart'taki
-  /// `_hoverHighlight` ile birebir aynı (bkz. orada, geometri notu).
+  /// `_hoverHighlight` ile birebir aynı (bkz. orada, geometri VE
+  /// "erken dönüşler de Positioned olmalı" kırpma notu — Parça 27).
   Widget _hoverHighlight(_Ghost g) {
     final key = g.overKey;
-    if (key == null) return const SizedBox.shrink();
+    if (key == null) {
+      return const Positioned(left: 0, top: 0, child: SizedBox.shrink());
+    }
     final grid = _boxOf(_gridKey);
     final stack = _boxOf(_stackKey);
-    if (grid == null || stack == null) return const SizedBox.shrink();
+    if (grid == null || stack == null) {
+      return const Positioned(left: 0, top: 0, child: SizedBox.shrink());
+    }
     final (r, c) = parseKey(key);
     const gap = 3.0;
     final strideX = (grid.size.width + gap) / boardSize;

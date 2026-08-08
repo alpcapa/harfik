@@ -12,10 +12,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/ui/game/board_widget.dart'
-    show DashedBorderPainter, debugBoardBuildCountForTests;
+    show BoardWidget, DashedBorderPainter, debugBoardBuildCountForTests;
 import 'package:kelimeki/src/ui/game/game_over_modal.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
 import 'package:kelimeki/src/ui/game/rack_widget.dart';
+import 'package:kelimeki/src/ui/game/tile_widget.dart';
 import 'package:kelimeki/src/ui/game/wild_letter_sheet.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
@@ -596,6 +597,73 @@ void main() {
     await tester.pump();
     expect(controller.state.placed['0,0'], isNotNull);
     expect(controller.state.placed['0,1'], isNotNull);
+  });
+
+  testWidgets(
+      'regresyon (Parça 27): tahtanın dışına sürüklerken hayalet taş '
+      'KIRPILMIYOR — hover çerçevesi boşken _hoverHighlight artık '
+      'Positioned SizedBox.shrink dönüyor, çıplak SizedBox.shrink DEĞİL',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await pumpGame(tester, GlobalKey());
+
+    // Rafta bir taşı sürüklemeye başla, tahtanın DIŞINDA bir noktaya taşı
+    // (ör. mesaj satırının hizası) — hover hedefi burada `null` olur ve
+    // `_hoverHighlight` erken dönüş yolunu tetikler. Kullanıcının gerçek
+    // hatası bu erken dönüşün çıplak (Positioned OLMAYAN) bir
+    // `SizedBox.shrink()` döndürmesiydi — bu, üst overlay Stack'in TEK
+    // non-positioned çocuğu hâline gelip Stack'i 0×0'a küçültüyor ve
+    // varsayılan `clipBehavior: Clip.hardEdge` sürüklenen hayalet taşı
+    // (Stack'in DİĞER çocuğu, hâlâ Positioned) tamamen kırpıyordu.
+    final start = tester.getCenter(rackTile(0));
+    final offBoard = tester.getCenter(find.byType(RackWidget));
+    final g = await tester.startGesture(start);
+    await g.moveTo(start + const Offset(0, -40)); // eşik aşılır
+    await tester.pump();
+    await g.moveTo(offBoard);
+    await tester.pump();
+
+    // Hayalet taş widget'ı hâlâ ağaçta olmalı (Board/Rack'in dışında) —
+    // bunu üretim kodu zaten sağlıyordu (yalnızca PAINT kırpılıyordu, ağaç
+    // hiç değişmiyordu — bu yüzden bu satır tek başına hatayı YAKALAMAZ).
+    Finder outsideGhost() => find.byWidgetPredicate((w) {
+          if (w is! TileWidget) return false;
+          final e = find.byWidget(w).evaluate().first;
+          var underBoardOrRack = false;
+          e.visitAncestorElements((a) {
+            if (a.widget.runtimeType == BoardWidget ||
+                a.widget.runtimeType == RackWidget) {
+              underBoardOrRack = true;
+              return false;
+            }
+            return true;
+          });
+          return !underBoardOrRack;
+        });
+    expect(outsideGhost(), findsOneWidget);
+
+    // ASIL kanıt: hayalet taşın EN YAKIN Stack atası — `_hoverHighlight`
+    // ile `_buildGhost`'u saran overlay Stack'i — asla (0,0)'a KÜÇÜLMEMELİ.
+    // Bu hata giderilmeden ÖNCE bu boyut tam olarak Size.zero'ya düşüyordu
+    // (tahtanın dışına ilk çıkışta) — bkz. mobile/CLAUDE.md Parça 27.
+    final ghostElement = outsideGhost().evaluate().first;
+    Element? stackElement;
+    ghostElement.visitAncestorElements((a) {
+      if (a.widget is Stack) {
+        stackElement = a;
+        return false;
+      }
+      return true;
+    });
+    expect(stackElement, isNotNull,
+        reason: 'Hayalet taşın bir Stack atası olmalı');
+    final stackSize = (stackElement!.renderObject as RenderBox).size;
+    expect(stackSize, isNot(Size.zero),
+        reason: 'Overlay Stack (0,0)\'a küçülmüş — hayalet taş tamamen '
+            'kırpılıyor demektir. stackSize=$stackSize');
+
+    await g.up();
+    await tester.pump();
   });
 
   testWidgets(

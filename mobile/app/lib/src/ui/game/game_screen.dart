@@ -493,11 +493,35 @@ class _GameScreenState extends State<GameScreen> {
   /// stride formülüyle) `_stackKey`'e göre konumlandırılıyor —
   /// `_buildGhost`'un `globalToLocal` deseniyle tutarlı.
   Widget _hoverHighlight(_Ghost g) {
+    // BİLİNÇLİ: erken dönüşler DE `Positioned` olmak zorunda. Bu widget
+    // `_buildGhost`'un hayalet taşıyla birlikte üst-seviye Stack'in (o Stack
+    // ayrıca `_stackKey`'in de İÇİNDE, dış Stack'in non-positioned tek
+    // çocuğu olarak durur) İKİ çocuğundan biri — Stack'in KENDİSİ hiç
+    // non-positioned çocuk yoksa `constraints.biggest`e (tam ekran) sığar,
+    // ama TEK bir non-positioned çocuk (ör. çıplak `SizedBox.shrink()`)
+    // varsa Stack o çocuğun boyutuna (0×0) KÜÇÜLÜR ve varsayılan
+    // `clipBehavior: Clip.hardEdge` yüzünden diğer Positioned çocuğu
+    // (hayalet taş) TAMAMEN KIRPAR. Önceden buradaki iki erken dönüş çıplak
+    // `SizedBox.shrink()` idi — pointer tahtanın (`key==null`/`grid==null`)
+    // dışına, ör. rafa doğru sürüklenirken çıkınca bu Stack anlık olarak
+    // 0×0'a küçülüp hayalet taşı görünmez kılıyordu (kullanıcı "tahtadan
+    // rafa sürüklerken board sınırını geçerken kayboluyor" diye bildirdi,
+    // 8 Ağustos 2026 — ölçülerek doğrulandı: `flutter test` widget
+    // geometrisi hep doğruydu, yalnızca PAINT kırpılıyordu, bu yüzden
+    // native Skia'da widget-ağacı/rect kontrolleri hatayı hiç yakalamadı;
+    // gerçek CanvasKit render'ında ekran görüntüsüyle doğrulandı). Düzeltme
+    // sihirli bir sayı içermiyor — boş içerik de `Positioned` içine
+    // sarılınca Stack'in "yalnızca Positioned çocuklar var" değişmezi
+    // korunuyor, tam ekran boyutuna geri dönüyor.
     final key = g.overKey;
-    if (key == null) return const SizedBox.shrink();
+    if (key == null) {
+      return const Positioned(left: 0, top: 0, child: SizedBox.shrink());
+    }
     final grid = _boxOf(_gridKey);
     final stack = _boxOf(_stackKey);
-    if (grid == null || stack == null) return const SizedBox.shrink();
+    if (grid == null || stack == null) {
+      return const Positioned(left: 0, top: 0, child: SizedBox.shrink());
+    }
     final (r, c) = parseKey(key);
     const gap = 3.0;
     final strideX = (grid.size.width + gap) / boardSize;
