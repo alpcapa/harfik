@@ -2832,6 +2832,86 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        değişti — `action_sheet.dart`'taki tek diğer `showModalBottomSheet`
        kullanımına bilerek dokunulmadı, o içerik kısa/sabit bir liste,
        aynı sınıf bir taşma riski taşımıyor).
+   - ✅ **Parça 21 — YZ düşünme gecikmesi (1100 ms) hiç port edilmemişti
+     (8 Ağustos 2026, `game_controller.dart`):** FAZ A1 (Bölüm 1: Oyun)
+     cihaz testinde kullanıcı, iPad Safari'de web derlemesini test ederken
+     kendi hamlesini OYNA ile onayladıktan sonra kendi hamlesinin mesaj
+     satırını ("Misafir: +N puan Kelimeler: …") HİÇ göremediğini bildirdi —
+     YZ anında oynayıp kendi mesajını üstüne yazıyordu.
+     - **Kök sebep:** Web'de YZ hamlesi bilerek GECİKMELİ — `src/App.tsx`
+       `const AI_THINK_MS = 1100;` + bir effect'te
+       `setTimeout(() => dispatch({type:'AI_PLAY'}), AI_THINK_MS)`
+       (cleanup'ta `clearTimeout`). Dart portundaki `_maybeScheduleAiTurn()`
+       bu gecikmeyi hiç taşımamış — `Future<void>(() { ... dispatch(...) })`
+       ile yalnızca bir sonraki event-loop turunu (≈0 ms) bekliyordu; YZ
+       pratikte anında oynuyordu.
+     - **Düzeltme:** `GameController`'a web'in `AI_THINK_MS`'iyle eşleşen,
+       enjekte edilebilir bir `final Duration aiThinkDelay` alanı eklendi
+       (varsayılan `Duration(milliseconds: 1100)`, kurucudan override
+       edilebilir) — bu projenin "saat/rastgelelik enjekte edilir"
+       sözleşmesinin (`rng`/`nowIso` ile aynı desen) devamı: testler gerçek
+       zaman kaybetmeden hassas bir gecikme geçebiliyor. `_maybeScheduleAiTurn()`
+       artık `Future<void>(...)` yerine bir `Timer` kullanıp referansı
+       `Timer? _aiTimer` alanında tutuyor; timer ateşlendiğinde web effect
+       cleanup'ının eşleniği olan aynı yeniden-kontrol (phase==play &&
+       !isGameOver && players[current].isAI) korunuyor — gecikme boyunca
+       state değiştiyse (restore/dispose/insan araya girdi) eski karar
+       uygulanmıyor. Eski `_aiScheduled` bayrağının "üst üste tetiklenmeyi
+       önleme" işlevi artık `_aiTimer?.isActive` ile okunuyor, ayrı bir
+       bayrağa gerek kalmadı.
+     - **`dispose()`'ta `_aiTimer?.cancel()` — bilinçli, yapısal önlem:**
+       gecikme gerçek bir `Timer`'a dönüştüğü an, widget testlerinde ekran
+       sökülürken bekleyen bir timer kalırsa bu proje "A Timer is still
+       pending even after the widget tree was disposed" flake'ini yer
+       (Parça 11/13'ün sqflite dersiyle AYNI hata sınıfı — bkz. yukarı).
+       `dispose()`'un artık `_disposed=true` yapmasının yanında timer'ı da
+       İPTAL etmesi bunu yapısal olarak önlüyor; `autoPlayAi:false` olan
+       her yer (Canlı oyun `online_game_screen.dart`, testlerin çoğu) ve
+       `actingSeat`/`_reduce`/no-op `identical` kısa devresi hiç
+       etkilenmedi — yalnızca zamanlama katmanı değişti, `kelimeki_core`
+       motoruna dokunulmadı (golden vector yeniden üretimi gerekmedi).
+     - **Test — iki yeni `testWidgets`, `tester.pump(Duration)` ile FakeAsync
+       saatini GERÇEK bekleme olmadan hassas ilerleterek:** (1) "gecikme
+       dolmadan AI_PLAY dispatch edilmez, dolunca edilir" —
+       `aiThinkDelay: 300ms` ile `pump(299ms)`'te `turnCount==0`,
+       `pump(2ms)` daha sonra (`301ms` toplam) `turnCount>0` doğrulanıyor.
+       (2) "dispose() bekleyen YZ timer'ını iptal eder" — `aiThinkDelay:
+       500ms`, timer ateşlenmeden `dispose()` çağrılıyor; test sonunda
+       `flutter_test`'in kendi pending-timer kontrolü (testWidgets'ın
+       fake-async zon'unda YARATILAN her timer'ın test bitene kadar ateşlenmiş
+       ya da iptal edilmiş olmasını zorunlu kılıyor) sessizce geçiyor.
+       Düz `test()` + `Future.delayed` yerine bilerek `testWidgets` +
+       `tester.pump` seçildi — hem deterministik hem de (2)'deki pending-timer
+       kontrolünü GERÇEKTEN tetikleyebilen tek yol bu (plain `test()`'te
+       böyle bir kontrol hiç yok).
+     - **Negatif eş doğrulaması (ikisi de, kök CLAUDE.md dersi):** (1)
+       ilk testte `aiThinkDelay: 300ms` geçici olarak `Duration.zero`'ya
+       çekilip koşuldu — `pump(299ms)`'teki "gecikme dolmadan oynamamalı"
+       assertion'ı `Expected: <0> Actual: <33>` ile GERÇEKTEN düştü (YZ
+       gecikmesiz onlarca tur ilerlemişti), sonra 300ms'ye geri konup yeşile
+       döndü. (2) `dispose()`'daki `_aiTimer?.cancel();` satırı geçici
+       olarak yorum satırına alınıp yalnızca ikinci test koşuldu — GERÇEKTEN
+       `A Timer is still pending even after the widget tree was disposed.`
+       (`Failed assertion: line 1617 pos 12: '!timersPending'`) ile düştü,
+       stack trace tam olarak `GameController._maybeScheduleAiTurn`'e işaret
+       etti; satır geri konunca yeşile döndü.
+     - Doğrulama: `flutter analyze` temiz, değişmez taraması temiz
+       (`kelimeki_core`'a hiç dokunulmadı). **Tam takım iki ayrı temiz
+       koşuda 250/250 yeşil** (248 + bu parçanın 2 yeni testi) — tam paket
+       koşusunda iki AYRI, bu parçayla İLGİSİZ flake de gözlendi (biri
+       `setup_cloud_test.dart`'ta sqflite'ın dahili 10 saniyelik yazma-kilidi
+       timer'ının CPU yükü altında test bitmeden ateşlenmemesi — Parça 13'ün
+       "bu sınıf bir flake'i YALNIZCA tam paket koşusu yakalar" dersiyle
+       birebir aynı; ötekinin — "joker seçici… RenderFlex" — kök sebebi
+       Parça 20'nin DÜZELTMESİ henüz rebase edilmeden önceki eski HEAD'e
+       dayanıyordu, rebase sonrası hiç tekrarlamadı); ikisinin de stack
+       trace'i `game_controller.dart`'a hiç değmiyor.
+     - **Bilinçli sınır:** `autoPlayAi:true` olan gerçek bir Canlı/PWA
+       akışında (yalnızca yerel/YZ oyunda kullanılıyor) 1.1sn'lik gecikmenin
+       cihazda GÖRÜNÜR şekilde web paritesini sağladığı — kendi hamle
+       mesajının artık en az ~1sn okunabilir kaldığı — bu ortamdan cihazda
+       doğrulanamadı; `mobile/TESTING.md` Bölüm 1'e ayrı bir kontrol maddesi
+       eklendi (aşağı bkz.).
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

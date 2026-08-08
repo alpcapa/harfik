@@ -77,4 +77,68 @@ void main() {
     await sawProgress.future.timeout(const Duration(seconds: 60));
     controller.dispose();
   });
+
+  // Bkz. mobile/CLAUDE.md Parça 20 — web'in `AI_THINK_MS = 1100` gecikmesi
+  // ilk portta hiç taşınmamıştı, YZ bir sonraki event-loop turunda (≈0 ms)
+  // oynuyordu; kullanıcı kendi hamlesinin mesaj satırını hiç göremeden YZ
+  // üstüne yazıyordu. Aşağıdaki iki test `testWidgets` içinde koşuyor ki
+  // `tester.pump(Duration)` ile FakeAsync saatini GERÇEK bekleme olmadan,
+  // hassas/deterministik ilerletebilelim (düz `test()` + `Future.delayed`
+  // gerçek duvar-saati bekler, gereksiz yavaşlatırdı).
+  testWidgets(
+    'aiThinkDelay: gecikme dolmadan AI_PLAY dispatch edilmez, dolunca edilir',
+    (tester) async {
+      final controller = GameController(
+        words: words,
+        rng: Mulberry32(7),
+        aiThinkDelay: const Duration(milliseconds: 300),
+      );
+      controller.dispatch(StartAction(const [
+        PlayerSetup(name: '', isAI: true),
+        PlayerSetup(name: '', isAI: true),
+      ]));
+      expect(controller.state.turnCount, 0);
+      // Gecikmenin (300ms) HEMEN ALTINDA bir noktada hâlâ hiçbir hamle
+      // dispatch edilmemiş olmalı.
+      await tester.pump(const Duration(milliseconds: 299));
+      expect(
+        controller.state.turnCount,
+        0,
+        reason: 'gecikme (300ms) dolmadan YZ oynamamalı',
+      );
+      // Gecikme dolunca (toplam 301ms) hamle gerçekten dispatch edilmiş
+      // olmalı — web'in setTimeout(..., AI_THINK_MS) eşleniği.
+      await tester.pump(const Duration(milliseconds: 2));
+      expect(
+        controller.state.turnCount,
+        greaterThan(0),
+        reason: 'gecikme dolunca YZ otomatik oynamalı',
+      );
+      controller.dispose();
+    },
+  );
+
+  testWidgets(
+    "dispose() bekleyen YZ timer'ını iptal eder (pending-timer sızıntısı yok)",
+    (tester) async {
+      final controller = GameController(
+        words: words,
+        rng: Mulberry32(7),
+        aiThinkDelay: const Duration(milliseconds: 500),
+      );
+      controller.dispatch(StartAction(const [
+        PlayerSetup(name: '', isAI: true),
+        PlayerSetup(name: '', isAI: true),
+      ]));
+      // Timer henüz ateşlenmeden (500ms dolmadan) dispose ediliyor. Bu
+      // iptal edilmezse `flutter_test` test sonunda "A Timer is still
+      // pending even after the widget tree was disposed" ile düşer — bkz.
+      // mobile/CLAUDE.md Parça 11/13'ün sqflite dersiyle AYNI hata sınıfı.
+      // Negatif eş doğrulaması: `dispose()`'daki `_aiTimer?.cancel();`
+      // satırı geçici olarak yorum satırına alınıp bu test tek başına
+      // koşulduğunda GERÇEKTEN "A Timer is still pending…" ile düştü;
+      // satır geri konunca yeşile döndü (bkz. görev raporu).
+      controller.dispose();
+    },
+  );
 }

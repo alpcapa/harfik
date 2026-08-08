@@ -73,7 +73,14 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
 Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
 
 - [ ] **2 kişilik oyun.** Kurulum → Oyunu Başlat → köşeden kelime kur →
-      OYNA. Puan artmalı, YZ kendi turunu oynamalı.
+      OYNA. Puan artmalı, YZ kendi turunu oynamalı. **Kendi hamlenin mesaj
+      satırı ("Misafir: +N puan Kelimeler: …") YZ oynamadan ÖNCE en az ~1
+      saniye görünür kalmalı** — YZ'nin kendi mesajıyla ANINDA üstüne
+      yazması bir regresyon (8 Ağustos 2026'da bulundu: web'in `AI_THINK_MS`
+      gecikmesi ilk portta hiç taşınmamıştı, YZ bir sonraki event-loop
+      turunda [≈0 ms] oynuyordu — kullanıcı kendi hamlesinin mesajını hiç
+      göremiyordu; düzeltme + enjekte edilebilir `aiThinkDelay`, bkz.
+      mobile/CLAUDE.md Parça 21).
 - [ ] **Sürükle-bırak.** Raftan tahtaya, tahtada taşıma, tahtadan rafa geri
       alma. Hayalet taş parmağın ÜSTÜNDE görünmeli (30px kaldırma).
 - [ ] **Joker.** Jokeri tahtaya koy → harf seçici açılmalı; konmuş jokere
@@ -89,8 +96,12 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       sorusu çıkmalı.
 - [ ] **Bölge vergisi.** Rakip bölgesine değen bir hamlede "Sınır İhlali!"
       onayı çıkmalı, kabul edilince puan bölünmeli.
-- [ ] **Kelime anlamı.** Hamle geçmişinde bir kelimeye dokun → anlam modalı
-      (yerel SQLite asset'ten) açılmalı.
+- [ ] **Kelime anlamı.** Tahtadaki ONAYLANMIŞ (Oyna ile kesinleşmiş) bir
+      taşa dokun → o hücreden geçen yatay/dikey kelimelerin anlam modalı
+      (yerel SQLite asset'ten) açılmalı — tetikleyici Hamle Geçmişi
+      DEĞİL, doğrudan tahta (`game_screen.dart` `_handleCellTap`'in ilk
+      dalı; web'de de aynı — `MoveHistoryModal.tsx`'te hiçbir anlam
+      tetikleyicisi yok, tetikleyici `App.tsx`'in `handleCellClick`'i).
 - [ ] **Oyun sonu.** Torba+raf bitince sonuç ekranı; sıralama ve kalan taş
       düşümü doğru.
 - [ ] **Kalıcılık.** Oyun ortasında uygulamayı TAMAMEN kapat, yeniden aç →

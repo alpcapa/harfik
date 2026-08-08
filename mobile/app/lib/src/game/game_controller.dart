@@ -3,6 +3,8 @@
 // Karar (mobile/CLAUDE.md #5): ek state-management framework'ü YOK. Motor
 // zaten saf bir reducer; UI katmanının tek ihtiyacı "state değişti" sinyali.
 // Web'deki useReducer + App.tsx YZ-turu effect'inin eşleniği.
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
@@ -37,8 +39,19 @@ class GameController extends ChangeNotifier {
   /// bitine kadar aynı.
   final int? actingSeat;
 
+  /// YZ'nin sırası geldikten sonra hamlesini dispatch etmeden önce beklenen
+  /// süre — web `src/App.tsx`'teki `const AI_THINK_MS = 1100;` sabitinin
+  /// birebir portu (bkz. mobile/CLAUDE.md Parça 20). Web'de YZ HER ZAMAN bu
+  /// kadar "düşünür" görünür; port ilk sürümde bunu hiç taşımamış, YZ bir
+  /// sonraki event-loop turunda (≈0 ms) oynuyordu — sonuç: kullanıcı kendi
+  /// hamlesinin mesaj satırını hiç göremeden YZ'nin mesajı üstüne yazıyordu.
+  /// Enjekte edilebilir tutulur (bu projenin "saat/rastgelelik enjekte
+  /// edilir" sözleşmesinin devamı, bkz. `rng`/`nowIso`) — testler
+  /// `Duration.zero` geçip gerçek zaman kaybetmeden sürebilir.
+  final Duration aiThinkDelay;
+
   GameState _state = createInitialState();
-  bool _aiScheduled = false;
+  Timer? _aiTimer;
   bool _disposed = false;
 
   GameController({
@@ -47,6 +60,7 @@ class GameController extends ChangeNotifier {
     String Function()? nowIso,
     this.autoPlayAi = true,
     this.actingSeat,
+    this.aiThinkDelay = const Duration(milliseconds: 1100),
   }) : _engine = GameEngine(
           words: words,
           rng: rng ?? SystemRng(),
@@ -91,19 +105,20 @@ class GameController extends ChangeNotifier {
     return next.copyWith(current: s.current);
   }
 
-  /// Sıra bir YZ koltuğundaysa bir sonraki event-loop turunda AI_PLAY
-  /// dispatch eder — senkron zincir yerine Future(...) ile, her hamle
-  /// arasında UI'ın çizim şansı olsun ve dinleyiciler her ara state'i
-  /// görsün diye. `_aiScheduled` bayrağı üst üste tetiklenmeyi önler.
+  /// Sıra bir YZ koltuğundaysa `aiThinkDelay` sonra AI_PLAY dispatch eder —
+  /// web'in `setTimeout(..., AI_THINK_MS)` effect'inin birebir eşleniği.
+  /// Bekleyen bir timer varsa (`_aiTimer?.isActive`) üst üste tetiklenmeyi
+  /// önlemek için yeni bir tane kurulmaz — eski `_aiScheduled` bayrağının
+  /// işlevi artık timer'ın kendi durumundan okunuyor.
   void _maybeScheduleAiTurn() {
-    if (!autoPlayAi || _aiScheduled || _disposed) return;
+    if (!autoPlayAi || (_aiTimer?.isActive ?? false) || _disposed) return;
     final s = _state;
     if (s.phase != GamePhase.play || s.isGameOver) return;
     if (!s.players[s.current].isAI) return;
-    _aiScheduled = true;
-    Future<void>(() {
-      _aiScheduled = false;
+    _aiTimer = Timer(aiThinkDelay, () {
       if (_disposed) return;
+      // Web effect cleanup'ının eşleniği: gecikme boyunca state değiştiyse
+      // (ör. restore/dispose/insan araya girdi) eski karar uygulanmaz.
       final cur = _state;
       if (cur.phase == GamePhase.play &&
           !cur.isGameOver &&
@@ -116,6 +131,11 @@ class GameController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    // Gecikme gerçek bir Timer olduğundan, iptal edilmezse widget testlerinde
+    // "A Timer is still pending even after the widget tree was disposed"
+    // flake'ine yol açar (bkz. mobile/CLAUDE.md Parça 11/13) — dispose'ta
+    // iptal etmek bunu yapısal olarak önler.
+    _aiTimer?.cancel();
     super.dispose();
   }
 }
