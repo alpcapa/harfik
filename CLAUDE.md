@@ -666,3 +666,11 @@ uygulanınca buradan silinip ilgili bölümün kendi tarihli notuna taşınmalı
   emojisi kullanıyor (`🚪  Çıkış Yap`) ve kullanıcı web'in de kapı ikonuna
   geçmesini istedi. Tek kullanım yeri — `UserMenu.tsx`'teki bu satır
   güncellenmeli, admin/diğer menülerde ayrı bir çıkış butonu yok.
+- **Hesap menüsü avatarına "Hesap menüsü" tooltip'i — `UserMenu.tsx`**
+  (9 Ağustos 2026, kullanıcı mobil↔web karşılaştırmasıyla istedi):
+  Mobilde avatar butonunun üzerine basılı tutunca/mouse over'da "Hesap
+  menüsü" ipucu çıkıyor (`PopupMenuButton`'ın `tooltip` parametresi,
+  `account_button.dart:271`); web'deki avatar butonunda böyle bir
+  `title`/tooltip yok. Web'e de eklenmesi isteniyor — tek kullanım yeri
+  `UserMenu.tsx`'teki avatar `<button>`ı, muhtemelen `title="Hesap
+  menüsü"` attribute'u yeterli.
