@@ -94,6 +94,13 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       YZ oyununda hiç olmamalı.
 - [ ] **Gönderme.** 200 karakter sınırı ve canlı "x/200" sayacı çalışmalı.
       Kendi mesajın sağda/kendi renginde, karşınınki solda.
+- [ ] **Sıralama — en yeni EN ÜSTTE, ÜÇ ekranda birden.** Sohbet penceresi
+      (`ChatModal`), biten oyunun sohbet arşivi (Tüm Oyunlarım → konuşma
+      balonu rozeti) ve admin sohbet dökümü (Şikayetler → "Sohbeti
+      Görüntüle"). Üçü de aynı `ChatThread`'i besliyor ama yön kararı her
+      birinin KENDİ çağrısında — biri değişirse üçü de kontrol edilmeli.
+      (9 Ağustos 2026'ya kadar yalnızca sohbet penceresi doğru yöndeydi;
+      iki arşiv ekranı ters duruyordu.)
 - [ ] **Karşı tarafta.** Sohbet kapalıyken gelen mesaj için popup (gönderenin
       avatarı + adı + metin) çıkmalı ve **yalnızca elle** kapanmalı; butonda
       kırmızı nokta belirmeli. Sohbeti açınca nokta sıfırlanmalı.

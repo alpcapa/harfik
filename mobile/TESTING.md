@@ -349,10 +349,10 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       kartında konuşma balonu rozeti + mesaj sayısı olmalı; dokununca
       dondurulmuş sohbet açılmalı. Sessize aldığın biri varsa isminin
       yanında 🚫 görünmeli.
-      **Sıralama eskiden-yeniye (en yeni EN ALTTA) olmalı — bu web ile
-      birebir aynı, bir port hatası DEĞİL** (web'de de arşiv ve admin
-      dökümü aynı yönde; bkz. Parça 35). Canlı sohbet penceresi
-      (`ChatModal`) bunun tersi (en yeni üstte) — o da iki platformda aynı.
+      **Sıralama: en yeni mesaj EN ÜSTTE** (9 Ağustos 2026 — arşiv o güne
+      kadar ters duruyordu, bkz. Parça 36). Kural her yerde aynı: canlı
+      sohbet penceresi, bu arşiv ve web'in admin dökümü — üçü de en
+      yeniden eskiye.
 
 ## 6. Paylaşma
 

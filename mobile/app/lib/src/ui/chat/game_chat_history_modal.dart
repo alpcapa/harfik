@@ -3,11 +3,12 @@
 // rozetinden açılır; kayıt kalıcı olarak erişilebilir kalıyor (ileride
 // uygunsuz paylaşım kontrolü için).
 //
-// Sıra: `games.messages` zaten eskiden-yeniye dondurulmuş geliyor
-// (`_finish_online_game_records`) ve BURADA hiç ters çevrilmiyor — web'de
-// bir dönem `.reverse()` vardı, aynı veriyi gösteren admin ekranıyla farklı
-// sırada göründüğü için kaldırıldı. Ters sıralama yalnızca CANLI sohbet
-// kutusuna özel (yazma alanı üstte olduğundan), arşiv bir döküm.
+// Sıra: `games.messages` eskiden-yeniye dondurulmuş geliyor
+// (`_finish_online_game_records`), burada ters çevrilip EN YENİ EN ÜSTTE
+// gösteriliyor — mesajların her yerde aynı yönde okunması kuralı (bkz.
+// build()'deki not). Bu satır bir dönem tersini söylüyordu ("arşiv bir
+// döküm, ters sıralama yalnızca canlı sohbete özel") — o ayrım kullanıcı
+// isteği değil bir yorumdu, 9 Ağustos 2026'da dört ekran birden hizalandı.
 import 'package:flutter/material.dart';
 
 import '../../data/games_api.dart';
@@ -99,8 +100,24 @@ class _GameChatHistoryModalState extends State<GameChatHistoryModal> {
               child: SingleChildScrollView(
                 child: ChatThread(
                   emptyText: 'Bu oyunda hiç mesaj gönderilmemiş.',
+                  // En yeni mesaj en ÜSTTE (`.reversed`) — `games.messages`
+                  // eskiden-yeniye dondurulmuş geliyor, `ChatThread` kendi
+                  // tarafında sıralama yapmıyor.
+                  //
+                  // **Kural: mesajlar HER YERDE en yeniden eskiye (9 Ağustos
+                  // 2026, kullanıcı isteği).** İstek daha önce üç kez
+                  // iletilmiş ama her seferinde yalnızca canlı sohbet
+                  // penceresine (`chat_modal.dart`) uygulanmış; arşiv
+                  // "döküm" sayılıp bilerek dışarıda bırakılmıştı — o gerekçe
+                  // kullanıcıdan gelmiyordu. Aynı gün web'in İKİ arşiv ekranı
+                  // (`GameChatHistoryModal`/`AdminChatTranscriptModal`) da
+                  // aynı yöne çevrildi; dördünden biri değişirse hepsi
+                  // değişmeli. Burada kaydırma eşleşmesi gerekmiyor:
+                  // `SingleChildScrollView` en üstte açılıyor, otomatik
+                  // kaydırma yok (canlı sohbette sıra ile kaydırma birlikte
+                  // değişmek ZORUNDA — bkz. chat_modal.dart).
                   messages: [
-                    for (final m in messages)
+                    for (final m in messages.reversed)
                       ChatThreadMessage(
                         name: m.name,
                         colorIndex: m.colorIndex,

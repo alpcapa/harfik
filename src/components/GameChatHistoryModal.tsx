@@ -50,13 +50,21 @@ export function GameChatHistoryModal({ gameId, onlineGameId, onClose }: GameChat
     };
   }, [onlineGameId]);
 
-  // `games.messages` zaten eskiden-yeniye (kronolojik artan) dondurulmuş
-  // durumda geliyor (bkz. _finish_online_game_records) — ChatThread de
-  // kendi tarafında hiçbir sıralama yapmıyor, mesajları olduğu gibi
-  // yukarıdan aşağı basıyor. Buradaki `.reverse()` yanlışlıkla en yeni
-  // mesajı en üste koyuyordu; aynı veriyi gösteren AdminChatTranscriptModal
-  // reverse yapmadığından iki ekran farklı sırada görünüyordu (kod
-  // incelemesiyle bulundu).
+  // `games.messages` eskiden-yeniye (kronolojik artan) dondurulmuş durumda
+  // geliyor (bkz. _finish_online_game_records) — ChatThread kendi tarafında
+  // hiçbir sıralama yapmıyor, verilen diziyi yukarıdan aşağı basıyor.
+  // Aşağıdaki `.reverse()` en yeni mesajı en ÜSTE alıyor.
+  //
+  // **Kural: mesajlar HER YERDE en yeniden eskiye (9 Ağustos 2026, kullanıcı
+  // isteği).** Bu istek daha önce üç kez iletildi ama her seferinde yalnızca
+  // `ChatModal`'a (canlı sohbet) uygulandı; arşiv görünümleri "yazışma kutusu
+  // değil döküm" gerekçesiyle bilerek dışarıda bırakılmıştı — o gerekçe
+  // kullanıcıdan gelmiyordu. Artık ÜÇ ekran da (ChatModal,
+  // GameChatHistoryModal, AdminChatTranscriptModal) aynı yönde; birine
+  // dokunan diğer ikisini de kontrol etmeli. Buradaki liste (Modal içindeki
+  // `max-h-72 overflow-y-auto`) otomatik kaydırma YAPMIYOR, en üstte açılıyor
+  // — yani sıralamayı çevirmek ChatModal'daki gibi bir kaydırma eşleşmesi
+  // gerektirmiyor (orada `scrollTop = 0` ile birlikte değişmek zorundaydı).
   const threadMessages: ChatThreadMessage[] = messages
     ? messages.map((m, i) => ({
         key: `${m.created_at}-${i}`,
@@ -74,7 +82,7 @@ export function GameChatHistoryModal({ gameId, onlineGameId, onClose }: GameChat
           : flags.muted.has(m.colorIndex)
             ? ('muted' as const)
             : undefined,
-      }))
+      })).reverse()
     : [];
 
   return (

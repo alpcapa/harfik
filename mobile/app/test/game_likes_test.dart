@@ -383,6 +383,18 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
+    // Sıralama: en yeni mesaj en ÜSTTE (9 Ağustos 2026, kullanıcı isteği —
+    // mesajlar HER YERDE aynı yönde okunur; bkz. mobile/CLAUDE.md Parça 36).
+    // Fixture kronolojik artan (09:05 → 09:06 → 09:08) geliyor; ekranda tam
+    // tersi sırada durmalı.
+    final enYeni = tester.getTopLeft(find.text('Görüşürüz o zaman :)')).dy;
+    final ortanca = tester
+        .getTopLeft(find.textContaining('Şu köşeyi almana izin vermeyeceğim'))
+        .dy;
+    final enEski = tester.getTopLeft(find.text('İyi oyunlar, bol şans!')).dy;
+    expect(enYeni, lessThan(ortanca));
+    expect(ortanca, lessThan(enEski));
+
     await tester.runAsync(() async {
       final boundary =
           key.currentContext!.findRenderObject()! as RenderRepaintBoundary;

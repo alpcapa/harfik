@@ -1795,6 +1795,9 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        (`chat_flags_for_finished_game`) — donmuş snapshot kimlik taşımaz.
        Sıra ters ÇEVRİLMİYOR: arşiv bir döküm (web'de bir dönem
        `.reverse()` vardı, admin ekranıyla ayrıştığı için kaldırılmıştı).
+       **BU SATIR ARTIK GEÇERSİZ — 9 Ağustos 2026'da dört ekran birden
+       "en yeni en üstte"ye çevrildi (Parça 36); "arşiv bir döküm" ayrımı
+       kullanıcı isteği değil bir yorumdu.**
      - **Test dersi — `find.text('1')` rozet numarasıyla çakışıyor:**
        beğeni/mesaj sayacı ile `PlayerBadge`'in koltuk numarası aynı metni
        üretiyor. Sayaçlara `ValueKey('like-count-…')`/`('chat-count-…')`
@@ -4070,6 +4073,64 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        cihazda görülebilir — testte kanıtlanan şey "dosyalı yol patlarsa
        metin+link yolu GERÇEKTEN çağrılıyor". Kalbin kırmızısı da cihazda
        gözle teyit edilmeli.
+   - ✅ **Parça 36 — sohbet arşivi de "en yeni en üstte": DÖRT kez istenmiş,
+     üç kez yalnızca yarısı yapılmış bir istek (9 Ağustos 2026,
+     `game_chat_history_modal.dart` + web `GameChatHistoryModal.tsx`/
+     `AdminChatTranscriptModal.tsx`):** Kullanıcı Parça 35'teki "mobil web
+     ile birebir aynı" cevabıma itiraz etti: "bunu daha önce 2-3 kere
+     söyledim ve yapıldı diye biliyorum… her yerde her zaman en yeni en
+     üstte olmalı."
+     - **Kayıt kullanıcıyı doğruladı.** Kök `CLAUDE.md` satır 532 (4 Ağustos
+       2026, "kullanıcı isteği") sıralamayı `ChatModal`'da çevirmiş, ama
+       aynı girdi arşiv görünümlerini AÇIKÇA dışarıda bırakmış: *"…arşiv
+       görünümleri bu değişiklikten ETKİLENMEDİ — orada okuma yönü hâlâ
+       eskiden-yeniye, çünkü onlar bir yazışma kutusu değil bir döküm."*
+       **O gerekçe kullanıcıdan gelmiyordu**, kod incelemesi sırasında
+       üretilmişti. Sonuç: aynı istek dört kez tekrarlandı, üç kez
+       "tamamlandı" sayıldı; ben de Parça 35'te bu yarım işi "web ile
+       birebir, dolayısıyla port hatası değil" diye savundum — teknik
+       olarak doğru, kullanıcının isteği açısından yanlış bir cevaptı.
+     - **Düzeltme — dört ekran, tek yön.** Yön kararı HER ZAMAN çağıranda
+       (paylaşılan `ChatThread`/`chat_thread.dart` hiç sıralama yapmıyor,
+       verilen diziyi yukarıdan aşağı basıyor): `ChatModal` (web+mobil,
+       zaten doğruydu), `GameChatHistoryModal` (web `.reverse()` + mobil
+       `.reversed`), `AdminChatTranscriptModal` (web `.reverse()`).
+       Bu, kullanıcının 6 Ağustos'taki "web'e dokunmayalım" kararının
+       bilinçli bir istisnası: istek açıkça "her yerde" dendiği için
+       verildi ve yalnızca mobilde çevirmek, web'in bir dönem
+       `GameChatHistoryModal`↔`AdminChatTranscriptModal` arasında kapattığı
+       ayrışmayı bu sefer web↔mobil arasında geri açardı.
+     - **Kaydırma eşleşmesi yalnızca CANLI sohbete özel:** `ChatModal`'da
+       sıralama ile otomatik kaydırma birlikte değişmek ZORUNDA (`scrollTop
+       = 0` / en üste kaydırma) — web'de bu bir kez unutulup geri
+       alınmıştı. İki arşiv ekranı otomatik kaydırma YAPMIYOR (düz bir
+       kaydırma kabı, en üstte açılıyor), bu yüzden orada yalnızca sıra
+       çevrildi.
+     - **Test — negatif eş doğrulamasıyla:** `game_likes_test.dart`'ın
+       mevcut arşiv testine (fixture kronolojik artan: 09:05 → 09:06 →
+       09:08) üç mesajın ekrandaki dikey sırasını ölçen assertion'lar
+       eklendi — en yeni EN ÜSTTE olmalı. `.reversed` geri alınınca test
+       GERÇEKTEN `Expected: a value less than <323.5> Actual: <423.5>` ile
+       düştü, geri konup yeşile döndü.
+     - **Bayat yorumlar da temizlendi** (aynı hatanın tekrar üretilmemesi
+       için): `game_chat_history_modal.dart`'ın dosya başlığı ve bu
+       dosyanın Parça 5b girdisi "arşiv bir döküm, ters çevrilmiyor"
+       diyordu; kök `CLAUDE.md`'nin 4 Ağustos girdisi ve iki `TESTING.md`
+       (kök bölüm 3, mobil bölüm 5 — ikincisini DÜN ben yanlış yönde
+       yazmıştım) güncellendi.
+     - Doğrulama: web `npm run lint` + `npm run build` temiz; mobil
+       `flutter analyze` temiz, **tam takım 282/282 yeşil** (yeni test
+       eklenmedi, mevcut arşiv testine assertion eklendi).
+     - **Doğrulama sınırı:** üç ekranın gerçek görsel teyidi (özellikle
+       admin dökümü — bu ortamdan admin paneline girilemiyor) kullanıcıdan
+       bekleniyor.
+     - **Ders — "bu ekran farklı bir kategoriye giriyor" gerekçesini KENDİN
+       üretiyorsan, onu koda yazmadan önce kullanıcıya sor.** Bu proje
+       "ölçmeden teşhis koyma" (Parça 18/27) ve "ölçmeden YOK SAYMA"
+       (Parça 34) derslerini zaten öğrenmişti; bu üçüncüsü: **bir isteğin
+       KAPSAMINI daraltan gerekçeyi kendin uydurma.** Bedeli burada aynı
+       isteğin dört kez tekrarlanması oldu ve üç oturum boyunca görünmedi,
+       çünkü her turda isteğin görünür yarısı (canlı sohbet) düzeliyordu.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

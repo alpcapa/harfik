@@ -26,14 +26,21 @@ export function AdminChatTranscriptModal({ onlineGameId, onClose }: AdminChatTra
     };
   }, [onlineGameId]);
 
-  const threadMessages: ChatThreadMessage[] = (messages ?? []).map((m, i) => ({
-    key: `${m.created_at}-${i}`,
-    name: m.name,
-    colorIndex: m.colorIndex,
-    message: m.message,
-    createdAt: m.created_at,
-    mine: false,
-  }));
+  // En yeni mesaj en ÜSTTE — mesajların HER YERDE aynı yönde okunması kuralı
+  // (9 Ağustos 2026, kullanıcı isteği; bkz. GameChatHistoryModal'daki uzun
+  // not). Bu ekran `ChatModal`/`GameChatHistoryModal` ile aynı `ChatThread`'i
+  // besliyor ve o da kendi tarafında sıralama yapmıyor — üçünden birinin
+  // yönü değişirse diğer ikisi de değişmeli.
+  const threadMessages: ChatThreadMessage[] = (messages ?? [])
+    .map((m, i) => ({
+      key: `${m.created_at}-${i}`,
+      name: m.name,
+      colorIndex: m.colorIndex,
+      message: m.message,
+      createdAt: m.created_at,
+      mine: false,
+    }))
+    .reverse();
 
   return (
     <Modal title="Sohbet Dökümü" onClose={onClose}>
