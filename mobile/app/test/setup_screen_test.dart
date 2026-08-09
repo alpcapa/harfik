@@ -18,6 +18,7 @@ import 'package:kelimeki/src/config/version_gate.dart';
 import 'package:kelimeki/src/data/online_games_api.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/game/local_game_repo.dart';
+import 'package:kelimeki/src/ui/game/neo_button.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:kelimeki/src/ui/auth/auth_modal.dart';
 import 'package:kelimeki/src/ui/game/count_badge.dart';
@@ -396,6 +397,41 @@ void main() {
     expect(
       tester.getCenter(links).dx,
       moreOrLessEquals(tester.getCenter(para).dx, epsilon: 1),
+    );
+  });
+
+  testWidgets(
+      'sekme butonları web ile AYNI punto/satır/kutu — ölçülerek eşlendi '
+      '(Parça 37: OYUN TİPİ+OYUNCU SAYISI 14px/46px, alt sekmeler 11px/38.5px)',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(
+          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      home: SetupScreen(services: services()),
+    ));
+    await tester.pumpAndSettle();
+
+    // Beklenen değerler web'in DERLENMİŞ CSS'i (dist/assets/index-*.css)
+    // Chromium'da render edilip `getComputedStyle`/`getBoundingClientRect`
+    // ile okunarak alındı — Tailwind sınıflarından zihnen türetilmedi
+    // (Parça 33'ün dersi).
+    final tipi = tester.widget<Text>(find.text('YAPAY ZEKA İLE'));
+    expect(tipi.style!.fontSize, 14);
+    expect(tipi.style!.height, moreOrLessEquals(20 / 14, epsilon: 0.001));
+
+    final sayi = tester.widget<Text>(find.text('2 OYUNCULU'));
+    expect(sayi.style!.fontSize, 14);
+
+    // Kutu yüksekliği: 12+12 dolgu + 20 satır = 44. Web'de 46 ölçülüyor;
+    // aradaki 2px, web'in `border`ının yer kaplaması. Flutter'da çerçeve
+    // `foregroundDecoration`da (Parça 4'ün bilinçli kararı — aktif/pasif
+    // kalınlık farkı düzeni kaydırmasın diye) ve yer KAPLAMIYOR. Telafi için
+    // sahte bir dolgu eklenmedi: bu, çerçeve bir gün decoration'a taşınırsa
+    // sessizce iki kez sayılacak bir sihirli sayı olurdu. 2px fark bilinçli.
+    expect(
+      tester.getSize(find.byType(NeoButton).first).height,
+      moreOrLessEquals(44, epsilon: 0.5),
     );
   });
 }

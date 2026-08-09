@@ -26,6 +26,15 @@ class NeoButton extends StatelessWidget {
   /// basılır.
   final List<InlineSpan>? richLabel;
 
+  /// Satır yüksekliği ÇARPANI (`TextStyle.height`) — web'in CSS
+  /// `line-height`ının karşılığı. Tailwind'in hazır punto sınıfları satır
+  /// yüksekliğini de belirler (`text-sm` → 14px/20px) ve keyfi değerlerde
+  /// (`text-[11px]`) gövdeden 1.5 miras kalır. Bu buton verilmezse sabit
+  /// 1.2 kullanıyor — çoğu yerde sorun değil, ama web'in daha ferah satırını
+  /// taşıyan yerlerde kutu alçak kalıyordu. Ölçülerek eşlenen yerler kendi
+  /// değerini geçer (bkz. Parça 37); null iken davranış tamamen değişmez.
+  final double? lineHeight;
+
   const NeoButton({
     super.key,
     required this.label,
@@ -35,6 +44,7 @@ class NeoButton extends StatelessWidget {
     this.letterSpacing = 1,
     this.padding = const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
     this.richLabel,
+    this.lineHeight,
   });
 
   @override
@@ -109,7 +119,8 @@ class NeoButton extends StatelessWidget {
             fontWeight: FontWeight.bold,
             letterSpacing: letterSpacing,
             color: fg,
-            height: 1.2,
+            // Varsayılan 1.2 — ölçülerek eşlenen yerler kendi değerini geçer.
+            height: lineHeight ?? 1.2,
           );
           if (richLabel != null) {
             return Text.rich(

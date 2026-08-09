@@ -391,7 +391,11 @@ class _LiveGamesTabState extends State<LiveGamesTab>
                 trUpper(label),
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 10,
+                  // Web `text-[11px] ... tracking-[0.5px] py-2.5` — ölçüldü:
+                  // 11px punto, 16.5px satır, 38.5px kutu (Parça 37).
+                  // Setup'taki `_localSubTabBtn` ikizi ile birlikte değişir.
+                  fontSize: 11,
+                  height: 1.5,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
                   color: active ? Colors.white : _text,

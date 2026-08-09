@@ -846,7 +846,11 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                 trUpper(label),
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 10,
+                  // Web `text-[11px] ... tracking-[0.5px] py-2.5` — ölçüldü:
+                  // 11px punto, 16.5px satır (gövdeden miras 1.5), 38.5px
+                  // kutu (bkz. Parça 37). `LiveGamesTab`'daki ikizi de aynı.
+                  fontSize: 11,
+                  height: 1.5,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
                   color: active ? Colors.white : _text,
@@ -986,7 +990,11 @@ class _ChoiceButton extends StatelessWidget {
     final button = NeoButton(
       label: label,
       variant: selected ? NeoButtonVariant.accent : NeoButtonVariant.neutral,
-      fontSize: 13,
+      // Web `text-sm font-bold tracking-[1px] py-3` — Chromium'da derlenmiş
+      // CSS ile ÖLÇÜLDÜ: 14px punto, 20px satır, 46px kutu (bkz. Parça 37).
+      // Önceki 13px + doğal satır yüksekliği kutuyu ~41px'e düşürüyordu.
+      fontSize: 14,
+      lineHeight: 20 / 14,
       letterSpacing: 1,
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
       onPressed: onTap,

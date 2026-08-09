@@ -4131,6 +4131,55 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        KAPSAMINI daraltan gerekçeyi kendin uydurma.** Bedeli burada aynı
        isteğin dört kez tekrarlanması oldu ve üç oturum boyunca görünmedi,
        çünkü her turda isteğin görünür yarısı (canlı sohbet) düzeliyordu.
+   - ✅ **Parça 37 — sekme butonlarının puntosu ve satır yüksekliği web'den
+     küçüktü; ÜÇ yerde birden (9 Ağustos 2026, `neo_button.dart`,
+     `setup_screen.dart`, `live_games_tab.dart`):** Kullanıcı Bölüm 7 cihaz
+     testinden sonra "tab fontları web'e göre biraz daha küçük gibi geldi"
+     dedi — Parça 33'ün (skor kartı sekmelerinde 13 vs web'in 14'ü) aynı
+     sınıfı, farklı yerlerde.
+     - **Ölçüm, Parça 33'ün yöntemiyle** (Tailwind sınıflarından zihnen
+       türetmek YASAK — o ders orada öğrenildi): `npm run build` ile web'in
+       DERLENMİŞ CSS'i (`dist/assets/index-*.css`) üretilip, `Setup.tsx`/
+       `LiveGamesTab.tsx`'in buton `className`'leri birebir kopyalanan bir
+       HTML'e konup Chromium'da (Playwright) `getComputedStyle` +
+       `getBoundingClientRect` ile okundu. `tailwind.config.js`'te
+       `fontSize` override'ı OLMADIĞI da ayrıca kontrol edildi (olsaydı
+       `text-sm`=14px varsayımı çürürdü).
+       | | web (ölçüldü) | port (öncesi) |
+       |---|---|---|
+       | OYUN TİPİ + OYUNCU SAYISI (`text-sm`) | 14px / satır 20px / kutu 46 | 13px / satır 1.2 / ~41 |
+       | Alt sekmeler (`text-[11px]`) | 11px / satır 16.5px / kutu 38.5 | 10px / doğal / ~33 |
+     - **İki ayrı sapma vardı, ikincisi gözden kaçmıştı:** punto (1px) VE
+       satır yüksekliği. Tailwind'in hazır punto sınıfları `line-height`i de
+       belirliyor (`text-sm` → 14/20), keyfi değerlerde (`text-[11px]`)
+       gövdeden 1.5 miras kalıyor; `NeoButton` ise sabit `height: 1.2`
+       taşıyordu ve alt sekmeler hiç `height` vermiyordu (fontun doğal
+       ~1.3'ü). Yalnızca puntoyu düzeltmek kutuyu hâlâ alçak bırakırdı.
+       `NeoButton`'a opsiyonel `lineHeight` eklendi (`?? 1.2` — diğer ~10
+       çağrı yerinin davranışı BİREBİR aynı kaldı); `_ChoiceButton`
+       `20/14`, iki alt sekme `1.5` geçiyor.
+     - **`_ChoiceButton` iki yerde kullanılıyor** (OYUN TİPİ sekmeleri +
+       OYUNCU SAYISI 2/4) — web'de İKİSİ de `text-sm ... tracking-[1px]
+       py-3`, yani tek düzeltme ikisi için de doğru; çağrı yerleri tek tek
+       kontrol edildi, "paylaşılan bileşen, herhalde aynıdır" varsayımıyla
+       geçilmedi.
+     - **Kalan 2px BİLİNÇLİ:** düzeltmeden sonra kutu 44, web 46. Fark tam
+       olarak web'in `border`ının yer kaplaması; Flutter'da çerçeve
+       `foregroundDecoration`da (Parça 4'ün kararı — aktif/pasif kalınlık
+       farkı düzeni kaydırmasın) ve yer KAPLAMIYOR. Telafi için 1px dolgu
+       eklenMEDİ: çerçeve bir gün decoration'a taşınırsa iki kez sayılacak
+       bir sihirli sayı olurdu. Test 44'ü, gerekçesiyle birlikte sabitliyor.
+     - **Test — negatif eş doğrulamasıyla:** `setup_screen_test.dart`'a yeni
+       bir test (punto 14 + satır 20/14 + OYUNCU SAYISI de 14 + kutu 44).
+       `fontSize: 14, lineHeight: 20/14` geri alınınca test GERÇEKTEN
+       `Expected: <14> Actual: <13.0>` ile düştü, geri konup yeşile döndü.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 283/283 yeşil**
+       (282'den +1). `kelimeki_core`'a hiç dokunulmadı; ölçüm için üretilen
+       `dist/` ve geçici HTML/Playwright betikleri silindi.
+     - **Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor.
+       Alt sekmelerin `LiveGamesTab` kopyası da düzeltildi ama onun kendi
+       ölçüm testi YOK — Setup'taki testin kardeşi olarak elle senkron
+       tutuluyor (iki dosya zaten "bilinçli kod tekrarı" çifti).
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek
