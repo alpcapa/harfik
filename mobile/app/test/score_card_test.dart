@@ -95,8 +95,9 @@ void main() {
 
   setUpAll(loadAppFonts);
 
-  Future<void> pumpModal(WidgetTester tester, Widget modal) async {
-    await setPhoneViewSize(tester, const Size(420, 900));
+  Future<void> pumpModal(WidgetTester tester, Widget modal,
+      [Size view = const Size(420, 900)]) async {
+    await setPhoneViewSize(tester, view);
     await tester.pumpWidget(MaterialApp(
       theme: ThemeData(
           fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
@@ -253,6 +254,43 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(tester.getSize(find.byType(ScoreTabsBar)).height, 44.0);
+  });
+
+  // 9 Ağustos 2026 — kullanıcı web test derlemesinde kartın kesildiğini
+  // (kaydırma gerektiğini) bildirdi. ÖLÇÜLDÜ: kartın gerçek içerik
+  // yüksekliği 633 logical px, web'in aynı kartı (derlenmiş Tailwind CSS'i
+  // Chromium'da ölçüldü) 655 — yani içerik paritesi sorun DEĞİL. Kaydırma
+  // yalnızca ÜST SINIRDAN geliyor: `KModal` web'in `max-h-[85vh]`ini
+  // `MediaQuery.height × 0.85` olarak porta taşıyor; web test derlemesinde
+  // Flutter canvas'ı tarayıcı kromu kadar KISA (iPad'de ~700 logical),
+  // CSS `vh` ise kromu saymadığından web'in sınırı bağlamıyor. Bu test,
+  // GERÇEK cihaz boyutlarında kartın sınıra HİÇ dayanmadığını (yani
+  // kaydırma GEREKMEDİĞİNİ) sabitliyor — ileride içerik büyürse yakalar.
+  testWidgets('Skor Kartı gerçek cihaz boyutlarında kaydırmasız sığar',
+      (tester) async {
+    final gw = FakeStatsGateway(
+      stats: {
+        'u-me': {
+          // En uzun gerçek içerik: 3 haneli rakamlar + 8 harfli kelime.
+          null: statRow(games: 89, local: 74, online: 15, first: 35,
+              second: 32, surrendered: 6, bestScore: 333, bestMove: 96,
+              bestWord: 36, avgMove: 12.72, longest: 'ÇALIŞKAN', total: 70),
+        },
+      },
+      rank: const {'rank': 1, 'total_score': 70},
+    );
+    final auth = AuthService.fake(user: fakeUser(), profile: ironman);
+
+    // iPhone 14 (390×844) ve iPad portre (834×1194) — MediaQuery, native
+    // uygulamada TAM EKRANDIR (tarayıcı kromu yok).
+    for (final view in const [Size(390, 844), Size(834, 1194)]) {
+      await pumpModal(
+          tester, ScoreCardModal(auth: auth, stats: StatsRepo(gw)), view);
+      final card = tester.getSize(find.byWidgetPredicate(
+          (w) => w is ConstrainedBox && w.constraints.maxWidth == 360));
+      expect(card.height, lessThan(view.height * 0.85),
+          reason: '$view: kart %85 sınırına dayanıyor → kaydırma gerekir');
+    }
   });
 
   testWidgets('Skor Kartı: hiç kaydı yoksa boş metin + sıfır kutular',

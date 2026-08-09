@@ -3938,10 +3938,21 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        hiçbir dosya değişmedi (ölçüm için üretilen `dist/`, geçici HTML ve
        geçici ölçüm testleri silindi).
      - **Doğrulama sınırı:** parantezlerin ve sekme çubuğunun görsel
-       teyidi cihazda/web derlemesinde kullanıcıdan bekleniyor. "Kaydırma"
-       şikayetinin native derlemede kaybolduğu bu ortamda GÖSTERİLEMEDİ —
-       yalnızca hesapla (712 > 633) ve web'in ölçülen `vh` davranışıyla
-       gerekçelendirildi; TestFlight/Appetize turunda teyit edilmeli.
+       teyidi cihazda/web derlemesinde kullanıcıdan bekleniyor.
+     - **Ek (aynı gün, kullanıcı düzeltmelerden sonra kartın HÂLÂ kesik
+       geldiğini bildirince):** "native'de sığar" iddiası artık bir
+       hesap değil KALICI BİR TEST — `score_card_test.dart`'a en uzun
+       gerçek içerikle (3 haneli rakamlar + 8 harfli kelime) iki gerçek
+       cihaz boyutunda kartın %85 sınırına HİÇ dayanmadığını doğrulayan
+       bir test eklendi. Ölçülen: iPhone 14 (390×844) kart **633** /
+       sınır **717** → sığıyor; iPad portre (834×1194) 633 / **1015** →
+       sığıyor; web test derlemesinin iPad yatay canvas'ı (≈1194×700)
+       ise 595 / **595** → tam sınıra dayanıyor, kaydırma gerekiyor.
+       Yani fark tek bir yerden geliyor: tarayıcı kromu Flutter canvas'ını
+       ~145 logical px kısaltıyor, CSS `vh` ise kısaltmıyor. Bu test aynı
+       zamanda ileride içerik büyürse (yeni bir istatistik kutusu vb.)
+       gerçek cihazda kaydırmaya düşüldüğünü yakalayan bir regresyon
+       koruması.
    - ✅ **Parça 34 — fotoğraflı avatarın çerçeve halkası BOZUKTU; "artefakt"
      diye İKİ KEZ kapattığım gerçek bir hataydı (9 Ağustos 2026,
      `k_avatar.dart`):** Kullanıcı önce "mobilde avatar tam yuvarlak
