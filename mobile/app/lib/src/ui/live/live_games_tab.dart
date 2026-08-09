@@ -355,6 +355,7 @@ class _LiveGamesTabState extends State<LiveGamesTab>
                         currentName: auth.accountName,
                         onlineOnly: true,
                         stats: services.stats,
+                        emptyMessage: 'Henüz bitmiş bir Canlı oyunun yok.',
                       );
                     },
                   )

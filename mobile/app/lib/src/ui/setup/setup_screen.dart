@@ -49,6 +49,7 @@ const _panel = Color(0xFFF5F7FA);
 const _border = Color(0xFFDCE2EA);
 const _muted = Color(0xFF5A6673);
 const _text = Color(0xFF1B2430);
+const _accent = Color(0xFF2563EB);
 
 class SetupScreen extends StatefulWidget {
   final AppServices services;
@@ -63,6 +64,14 @@ class SetupScreen extends StatefulWidget {
   State<SetupScreen> createState() => _SetupScreenState();
 }
 
+/// "Yapay Zeka ile" liste görünümünün Devam Edenler/Son Oynananlar tabı —
+/// web `localSubTab` ('active'|'recent'), `LiveGamesTab`'daki (Arkadaşınla)
+/// BİREBİR AYNI çözüm (bkz. Setup.tsx: "çok sayıda devam eden YZ oyunu olan
+/// biri için 'Son Oynadıklarım' listesi ekranın altına düşüp scroll
+/// etmeden görünmüyordu"). "Oyun Davetleri" kavramı burada yok, yalnızca
+/// iki sekme.
+enum _LocalSubTab { active, recent }
+
 class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   int _count = 2;
 
@@ -70,6 +79,11 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   /// yalnızca görünümü değiştirir; YZ tarafının state'i (kayıtlar/form)
   /// mount'ta kaldığından geçişte kaybolmaz.
   bool _liveView = false;
+
+  /// Web: sekme değişiminde (Arkadaşınla ↔ Yapay Zeka ile) her zaman
+  /// "Devam Edenler"e döner (`useEffect(() => setLocalSubTab('active'),
+  /// [mainView])`) — `_liveView`'i değiştiren HER yer bunu da sıfırlamalı.
+  _LocalSubTab _localSubTab = _LocalSubTab.active;
 
   /// "Arkadaşınla (N)" rozeti — bekleyen davet + sırası çağıranda olan
   /// aktif oyun toplamı (web `liveActionCount`). LiveGamesTab kendi
@@ -200,7 +214,10 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     _appliedLoginDefault = true;
     setState(() {
       _liveActionCount = counts.inviteCount + counts.myTurnCount;
-      if (applyDefault) _liveView = true;
+      if (applyDefault) {
+        _liveView = true;
+        _localSubTab = _LocalSubTab.active;
+      }
     });
   }
 
@@ -305,7 +322,12 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     final prevAuthId = _lastAuthUserIdForLiveViewReset;
     _lastAuthUserIdForLiveViewReset = id;
     if (prevAuthId != null && prevAuthId != id && _liveView) {
-      if (mounted) setState(() => _liveView = false);
+      if (mounted) {
+        setState(() {
+          _liveView = false;
+          _localSubTab = _LocalSubTab.active;
+        });
+      }
     }
 
     if (id != _lastUserId) {
@@ -569,7 +591,10 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                           child: _ChoiceButton(
                             label: 'YAPAY ZEKA İLE',
                             selected: !_liveView,
-                            onTap: () => setState(() => _liveView = false),
+                            onTap: () => setState(() {
+                              _liveView = false;
+                              _localSubTab = _LocalSubTab.active;
+                            }),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -578,7 +603,10 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                             label: 'ARKADAŞINLA',
                             selected: _liveView,
                             badge: _liveActionCount,
-                            onTap: () => setState(() => _liveView = true),
+                            onTap: () => setState(() {
+                              _liveView = true;
+                              _localSubTab = _LocalSubTab.active;
+                            }),
                           ),
                         ),
                       ],
@@ -695,9 +723,10 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
 
   /// Girişli kullanıcının varsayılan görünümü — web Setup'ın `user &&
   /// !creatingLocal` dalı: üstte turuncu "+ Yeni Yapay Zeka Oyunu Aç",
-  /// altında Devam Eden Oyunlar listesi. Web'deki "Devam Edenler / Son
-  /// Oynananlar" alt sekmeleri BİLİNÇLİ eksik — "Son Oynananlar" bitmiş
-  /// oyun geçmişi (`games` tablosu) ister, o skor kartı/kayıt parçasının işi.
+  /// altında "Devam Edenler / Son Oynananlar" sekmeleri — `LiveGamesTab`
+  /// (Arkadaşınla) ile BİREBİR AYNI çözüm (bkz. Setup.tsx, `_subTabBtn`
+  /// deseni). 9 Ağustos 2026'da kullanıcı cihaz testinde eski (sekmesiz,
+  /// listenin altına eklenmiş) sürümü bildirdi — Parça 28.
   Widget _buildCloudListView(SetWordSource? words) {
     final saves = _cloudSaves;
     final auth = widget.services.auth;
@@ -714,62 +743,116 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
             onPressed: () => setState(() => _creatingLocal = true),
           ),
         ),
-        const SizedBox(height: 16),
-        if (saves == null)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32),
-            child: Center(
-              child: Text(
-                'Yükleniyor…',
-                style: TextStyle(
-                    fontFamily: 'SpaceMono', fontSize: 12, color: _muted),
-              ),
-            ),
-          )
-        else if (saves.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32),
-            child: Center(
-              child: Text(
-                'Devam eden bir Yapay Zeka oyunun yok.',
-                style: TextStyle(
-                    fontFamily: 'SpaceMono', fontSize: 12, color: _muted),
-              ),
-            ),
-          )
-        else ...[
-          const _SectionLabel('DEVAM EDEN OYUNLAR'),
-          const SizedBox(height: 8),
-          for (final save in saves) ...[
-            _SavedGameRow(
-              state: save.state,
-              subtitle:
-                  'Sıra: ${save.state.players.isNotEmpty ? save.state.players[save.state.current].name : '—'}',
-              savedAtMs: save.updatedAtMs,
-              // Web: girişli kullanıcıda gerçekten başlamış oyun için süre
-              // dolunca -2'li teslim gerçek/anında sonuç → "teslim sayılacak".
-              willSurrender: save.state.turnCount >= 2,
-              accountAvatarUrl: auth.profile?.avatarUrl,
-              onTap: words == null ? null : () => _resumeCloudSave(save, words),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ],
-        // "Son Oynadıklarım" — BİTEN oyunlar (devam edenlerden ayrı bir
-        // kaynak: `games` tablosu). Web'de kendi alt sekmesinde duruyor;
-        // burada henüz alt sekme yok, listenin altına ekleniyor. Hiç bitmiş
-        // oyun yoksa bileşen kendini sessizce gizliyor.
-        if (_games != null && auth.user != null) ...[
-          const SizedBox(height: 8),
-          RecentGamesSection(
-            games: _games!,
-            userId: auth.user!.id,
-            onlineOnly: false,
-            currentName: auth.accountName,
-            stats: widget.services.stats,
-          ),
-        ],
+        const SizedBox(height: 12),
+        Row(children: [
+          _localSubTabBtn(_LocalSubTab.active, 'Devam Edenler',
+              badge: saves?.length ?? 0),
+          const SizedBox(width: 6),
+          _localSubTabBtn(_LocalSubTab.recent, 'Son Oynananlar'),
+        ]),
+        const SizedBox(height: 12),
+        switch (_localSubTab) {
+          _LocalSubTab.active => saves == null
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Text('Yükleniyor…',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontFamily: 'SpaceMono',
+                          fontSize: 11,
+                          color: _muted)),
+                )
+              : saves.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Text('Devam eden bir Yapay Zeka oyunun yok.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontFamily: 'SpaceMono',
+                              fontSize: 11,
+                              color: _muted)),
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const _SectionLabel('DEVAM EDEN OYUNLAR'),
+                        const SizedBox(height: 8),
+                        for (final save in saves) ...[
+                          _SavedGameRow(
+                            state: save.state,
+                            subtitle: 'Sıra: ${save.state.players.isNotEmpty ? save.state.players[save.state.current].name : '—'}',
+                            savedAtMs: save.updatedAtMs,
+                            // Web: girişli kullanıcıda gerçekten başlamış
+                            // oyun için süre dolunca -2'li teslim gerçek/
+                            // anında sonuç → "teslim sayılacak".
+                            willSurrender: save.state.turnCount >= 2,
+                            accountAvatarUrl: auth.profile?.avatarUrl,
+                            onTap: words == null
+                                ? null
+                                : () => _resumeCloudSave(save, words),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                      ],
+                    ),
+          _LocalSubTab.recent => _games != null && auth.user != null
+              ? RecentGamesSection(
+                  games: _games!,
+                  userId: auth.user!.id,
+                  onlineOnly: false,
+                  currentName: auth.accountName,
+                  stats: widget.services.stats,
+                  emptyMessage: 'Henüz bitmiş bir Yapay Zeka oyunun yok.',
+                )
+              : const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Text('Yükleniyor…',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontFamily: 'SpaceMono',
+                          fontSize: 11,
+                          color: _muted)),
+                ),
+        },
       ],
+    );
+  }
+
+  /// `LiveGamesTab._subTabBtn` ile BİREBİR AYNI görsel — iki bağımsız
+  /// kod tekrarı çifti (bkz. dosya başındaki "Etki Analizi" tablosu), biri
+  /// değişirse öteki de güncellenmeli.
+  Widget _localSubTabBtn(_LocalSubTab t, String label, {int badge = 0}) {
+    final active = _localSubTab == t;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _localSubTab = t),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                color: active ? _accent : _panel,
+                border: Border.all(color: active ? _accent : _border),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                trUpper(label),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                  color: active ? Colors.white : _text,
+                ),
+              ),
+            ),
+            if (badge > 0)
+              Positioned(top: -4, right: -4, child: CountBadge(count: badge)),
+          ],
+        ),
+      ),
     );
   }
 

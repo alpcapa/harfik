@@ -74,6 +74,16 @@ class RecentGamesSection extends StatefulWidget {
   /// tıklanmaz).
   final StatsRepo? stats;
 
+  /// Web `emptyMessage` (RecentGamesSection.tsx) — verilirse yükleme
+  /// sırasında "Yükleniyor…", liste boşken bu metin gösterilir; null ise
+  /// (varsayılan davranış DEĞİŞMEDİ) ikisinde de bölüm SESSİZCE gizlenir.
+  /// Kendi başına bir sekmenin İÇERİĞİ olarak kullanıldığında (Setup'ın
+  /// "Son Oynananlar"ı, LiveGamesTab'ın "Son Oynananlar"ı — Parça 28)
+  /// verilmesi ZORUNLU, aksi halde boş bir sekme hiçbir geri bildirim
+  /// vermeden tamamen boş kalır; başka bir listenin ALTINA sessizce
+  /// eklenen eski kullanım biçiminde (artık yok) hâlâ null bırakılabilir.
+  final String? emptyMessage;
+
   const RecentGamesSection({
     super.key,
     required this.games,
@@ -81,6 +91,7 @@ class RecentGamesSection extends StatefulWidget {
     required this.onlineOnly,
     this.currentName,
     this.stats,
+    this.emptyMessage,
   });
 
   @override
@@ -122,12 +133,27 @@ class _RecentGamesSectionState extends State<RecentGamesSection> {
         initialExpandedId: focusId,
       );
 
+  Widget _emptyOrHidden(String text) {
+    final msg = widget.emptyMessage;
+    if (msg == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Text(text,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+              fontFamily: 'SpaceMono', fontSize: 11, color: _muted)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final games = _games;
-    // Web: henüz yüklenmediyse ya da hiç bitmiş oyun yoksa bölüm SESSİZCE
-    // gizlenir — boş bir başlık göstermenin değeri yok.
-    if (games == null || games.isEmpty) return const SizedBox.shrink();
+    // Web: `emptyMessage` verilmemişse (başka bir listenin altına sessizce
+    // eklenen eski kullanım biçimi) bölüm SESSİZCE gizlenir; verilmişse
+    // (kendi başına bir sekme içeriği — Parça 28) "Yükleniyor…"/mesaj
+    // gösterilir.
+    if (games == null) return _emptyOrHidden('Yükleniyor…');
+    if (games.isEmpty) return _emptyOrHidden(widget.emptyMessage ?? '');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -27,6 +27,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
 import 'support/fake_games_gateway.dart';
+import 'support/game_rows.dart' show gameRow;
 import 'support/test_fonts.dart';
 import 'support/test_view.dart';
 
@@ -184,6 +185,50 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('OYUNCU SAYISI'), findsNothing);
     expect(find.text('Devam eden bir Yapay Zeka oyunun yok.'), findsOneWidget);
+  });
+
+  testWidgets(
+      'regresyon (Parça 28): Devam Edenler/Son Oynananlar GERÇEK bir sekme '
+      'sistemi — eskiden listenin altına sessizce ekleniyordu', (tester) async {
+    final gw = MemGateway();
+    await seedSave(gw, 'save-1');
+    final gamesGw = FakeGamesGateway(userId: 'u-test')
+      ..history = [gameRow(id: 'g1', userId: 'u-test')];
+    final gamesRepo = await tester.runAsync(() => memGamesRepo(gamesGw));
+    await pumpSetup(tester, gw, games: Future.value(gamesRepo));
+
+    // Varsayılan: "Devam Edenler" seçili, o listenin satırı görünür,
+    // "Son Oynananlar"ın içeriği (Son Oynadıklarım başlığı) HENÜZ yok.
+    expect(find.text('DEVAM EDENLER'), findsOneWidget);
+    expect(find.text('SON OYNANANLAR'), findsOneWidget);
+    expect(find.text('SENİN HAMLEN BEKLENİYOR'), findsOneWidget);
+    expect(find.text('SON OYNADIKLARIM'), findsNothing);
+
+    // "Son Oynananlar"a geç — biten oyunun kartı gelir, devam eden oyunun
+    // satırı artık EKRANDA DEĞİL (eskiden ikisi aynı anda, alt alta duruyordu).
+    await tester.tap(find.text('SON OYNANANLAR'));
+    await tester.pumpAndSettle();
+    expect(find.text('SON OYNADIKLARIM'), findsOneWidget);
+    expect(find.text('SENİN HAMLEN BEKLENİYOR'), findsNothing);
+
+    // Geri dön.
+    await tester.tap(find.text('DEVAM EDENLER'));
+    await tester.pumpAndSettle();
+    expect(find.text('SENİN HAMLEN BEKLENİYOR'), findsOneWidget);
+    expect(find.text('SON OYNADIKLARIM'), findsNothing);
+
+    // "Arkadaşınla"ya geçip geri dönmek "Devam Edenler"e sıfırlamalı (web
+    // `useEffect(() => setLocalSubTab('active'), [mainView])`) — önce
+    // "Son Oynananlar"a geçip test ediyoruz.
+    await tester.tap(find.text('SON OYNANANLAR'));
+    await tester.pumpAndSettle();
+    expect(find.text('SON OYNADIKLARIM'), findsOneWidget);
+    await tester.tap(find.text('ARKADAŞINLA'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('YAPAY ZEKA İLE'));
+    await tester.pumpAndSettle();
+    expect(find.text('SENİN HAMLEN BEKLENİYOR'), findsOneWidget);
+    expect(find.text('SON OYNADIKLARIM'), findsNothing);
   });
 
   testWidgets('satırdan devam: oyun açılır, autosave AYNI satırı günceller',

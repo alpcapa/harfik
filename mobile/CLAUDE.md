@@ -3422,6 +3422,142 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        BAĞIMSIZ) evrensel olduğundan cihazda da aynı şekilde düzelmesi
        bekleniyor — bkz. `mobile/TESTING.md` Bölüm 1'e eklenen yeni
        kontrol maddesi.
+   - ✅ **Parça 28 — Bölüm 2 (Hesap/auth) cihaz testinde bulunan üç bağımsız
+     hata (9 Ağustos 2026, `account_button.dart`, `setup_screen.dart`,
+     `recent_games_section.dart`, `live_games_tab.dart`):**
+     - **Bug 1 — hesap menüsünde "k-lig Sıralama" AYRI bir liste maddesi
+       olarak çıkıyordu, web'de öyle değil:** Web kaynağı (`UserMenu.tsx`
+       satır ~193-218) k-lig'i ayrı bir `<button>` OLARAK DEĞİL, isim
+       başlığının (avatar+isim) HEMEN ALTINDA, kendi başına tıklanabilir
+       küçük bir alt-satır olarak gösteriyor — `KLigMark` + "#sıra · puan
+       puan" formatında, `myRank` (`fetchMyLeaderboardRank`) null iken boş.
+       Mobil port bunu bir `PopupMenuItem<String>(value:'league', child:
+       Row([KLigMark, Text('Sıralama')]))` olarak, başlığın ALTINDAKİ bir
+       liste maddesi şeklinde kurmuştu — kullanıcı cihaz testinde "k-lig
+       Sıralama diye ayrı bir madde çıkmış, o aslında isim altında yer
+       alan bir özellik" diye bildirdi. **Düzeltme:** `_AccountButtonState`
+       artık web'in `myRank` state'iyle AYNI (`StatsRepo.myRank(userId)`,
+       zaten vardı — yalnızca `LeaderboardModal` kullanıyordu) bir
+       `MyLeaderboardRank? _myRank` tutuyor (`_incomingRequests` ile aynı
+       mount+hesap-değişimi tazeleme deseni); başlık `PopupMenuItem`'ının
+       `child`'ı artık `Row(avatar, Column([isim, if (rank varsa)
+       GestureDetector(k-lig satırı)]))`. Devre dışı (`enabled:false`) bir
+       `PopupMenuItem`in İÇİNDE bağımsız tıklanabilir bir alt-widget kurmak
+       için standart yol kullanıldı: iç `GestureDetector.onTap` doğrudan
+       `Navigator.of(context).pop('league')` çağırıyor — bu, `showMenu`'nün
+       kendi route'unu bir değerle kapatıp `PopupMenuButton.onSelected`i
+       tetiklemesiyle AYNI mekanizma, dıştaki `enabled:false`'tan bağımsız
+       çalışıyor (context, `itemBuilder(context)`'in kendi parametresi —
+       menü route'u henüz push edilmeden yakalanan ama AYNI Navigator'a ait
+       bir ata context, `Navigator.of()` route pozisyonundan bağımsız en
+       yakın Navigator'ı bulduğundan sorunsuz çalışıyor).
+     - **Bug 2 — madde sırası yanlıştı + "Çıkış Yap"ın kendi üstünde çizgi
+       yoktu:** Web sırası (`UserMenu.tsx`): Arkadaşlar → Skor Kartı →
+       Nasıl Oynanır? → Hesap Ayarları → (varsa Admin) → **Çıkış Yap**
+       (kendi `border-t border-border`'ı HER ZAMAN var, admin bloğundan
+       bağımsız). Mobil: Skor Kartı → Arkadaşlar (ters sıra) ve tek
+       `PopupMenuDivider` başlığın hemen altındaydı, Çıkış Yap'ın üstünde
+       hiç yoktu — kullanıcı ekran görüntüsüyle bildirdi. **Düzeltme:**
+       sıra web ile birebir hizalandı (Arkadaşlar artık Skor Kartı'ndan
+       ÖNCE), başlığın altındaki `PopupMenuDivider` kaldırıldı, Çıkış
+       Yap'ın hemen üstüne YENİ bir `PopupMenuDivider` eklendi.
+     - **Bug 3 — Setup'ın "Yapay Zeka ile" listesi "Devam Edenler/Son
+       Oynananlar" GERÇEK bir sekme sistemi DEĞİLDİ:** Bu, Flutter port
+       Setup ekranını yazarken (Parça 5c dolaylarında) BİLİNÇLİ bırakılmış
+       bir eksikti — kod içi yorum bunu açıkça "web'deki alt sekmeler
+       BİLİNÇLİ eksik" diye kayda geçirmişti. Kullanıcı cihaz testinde
+       tam bunu buldu: "Son oynadıklarım devam eden oyunlar altında
+       geliyor eski formatta, webdeki gibi Tab sistemi olması lazım."
+       Web (`Setup.tsx` satır ~285-334, `localSubTab` state'i) bunu
+       `LiveGamesTab`'ın (Arkadaşınla) BİREBİR AYNI çözümüyle çözüyor:
+       iki buton ("Devam Edenler"/"Son Oynananlar", seçili olan accent
+       dolgu), altında YALNIZCA seçili sekmenin içeriği; `mainView`
+       (Yapay Zeka ile ↔ Arkadaşınla) değişince her zaman "Devam
+       Edenler"e döner. Mobil portun `LiveGamesTab`'ı (`live_games_tab.
+       dart`) bu deseni ZATEN taşıyordu (`_subTabBtn`, `LiveSubTab` enum) —
+       Setup'a taşınmamıştı. **Düzeltme:** yeni bir `_LocalSubTab {active,
+       recent}` enum'ı + `_localSubTab` state'i eklendi; `_buildCloudListView`
+       artık `LiveGamesTab._subTabBtn` ile BİREBİR AYNI görsel bir buton
+       çifti (`_localSubTabBtn`, bilinçli kod tekrarı — dosya başındaki
+       Etki Analizi tablosuna göre) çiziyor, `switch (_localSubTab)` ile
+       ya "Devam Eden Oyunlar" listesini ya `RecentGamesSection`'ı
+       gösteriyor (asla ikisi birden). `_liveView`'i (OYUN TİPİ sekmesi)
+       değiştiren HER yer (4 nokta: girişte otomatik geçiş, hesap
+       değişiminde sıfırlama, iki elle-seçim butonu) artık `_localSubTab`ı
+       da `active`'e sıfırlıyor — web'in `useEffect(() => setLocalSubTab
+       ('active'), [mainView])`'ı ile aynı davranış.
+     - **Bug 3'ün yan bulgusu — `RecentGamesSection` boşken/yüklenirken
+       SESSİZCE gizleniyordu, artık kendi başına bir SEKME içeriği olunca
+       bu boş görünürdü:** Web `RecentGamesSection.tsx`'in `emptyMessage`
+       prop'u (verilmişse "Yükleniyor…"/özel boş mesajı basar, verilmezse
+       eskisi gibi `null` döner) mobil portta hiç yoktu — bileşen her
+       zaman `games==null||games.isEmpty` iken `SizedBox.shrink()`
+       dönüyordu. Bu, listenin ALTINA sessizce eklendiği eski kullanımda
+       (Setup) fark edilmiyordu, ama "Son Oynananlar" artık KENDİ BAŞINA
+       bir sekme içeriği olduğundan (hem Setup'ta hem — AYNI ÖNCEDEN VAR
+       OLAN gap — `LiveGamesTab`'da) boş/yükleniyor durumunda kullanıcıya
+       HİÇBİR geri bildirim vermeden tamamen boş bir sekme gösterirdi.
+       `RecentGamesSection`'a opsiyonel bir `emptyMessage` parametresi
+       eklendi (web'le aynı sözleşme — null ise davranış TAMAMEN aynı
+       kalıyor); Setup "Henüz bitmiş bir Yapay Zeka oyunun yok." geçiyor,
+       `LiveGamesTab` (aynı düzeltmeyle, aynı PR'da — bu ikisi de bilinçli
+       kod tekrarı çifti) "Henüz bitmiş bir Canlı oyunun yok." geçiyor.
+     - **Test — negatif eş doğrulamasıyla, İKİ AYRI dosya:** (1) yeni
+       `test/account_button_test.dart` — Bug 1/2 için: "Sıralama" metninin
+       hiçbir yerde bulunmadığını + isim altındaki "#3 · 47 puan" satırının
+       Leaderboard'u açtığını, VE madde sırasının (`tester.getTopLeft`
+       y-koordinatlarıyla) web ile aynı olduğunu + tek `PopupMenuDivider`in
+       Hesap Ayarları ile Çıkış Yap ARASINDA durduğunu doğruluyor.
+       `account_button.dart`'taki düzeltme `git stash push -- <dosya>` ile
+       geçici geri alınıp iki test de GERÇEKTEN düştüğü (biri "Sıralama"
+       metnini bulamayıp `#3` metnini de bulamadığından, diğeri sıra
+       kontrolünde `223.5 < 175.5` gibi ters bir eşitsizlikle) görüldü,
+       `stash pop` ile geri konup yeşile döndü. (2) `test/setup_cloud_test.
+       dart`'a eklenen yeni bir test — varsayılan "Devam Edenler"de devam
+       eden oyunun satırı GÖRÜNÜR + "Son Oynananlar"da GÖRÜNMEZ olduğunu,
+       sekmeler arası geçişte tam tersinin doğru olduğunu, VE Arkadaşınla'ya
+       geçip geri dönmenin "Devam Edenler"e sıfırladığını doğruluyor.
+       `setup_screen.dart` + `recent_games_section.dart`'taki düzeltme
+       birlikte geçici geri alınınca test GERÇEKTEN derleme hatasıyla
+       düştü (`emptyMessage` parametresi yok — güçlü/belirsizliksiz bir
+       başarısızlık), geri konup yeşile döndü.
+     - Doğrulama: `flutter analyze` temiz, tam takım **270/270 yeşil**
+       (267'den +3 — Parça 28'in üç yeni regresyon testi). `kelimeki_core`'a
+       hiç dokunulmadı.
+     - **Doğrulama sınırı — DB tarafı ayrıca doğrulandı, UI cihazda
+       bekleniyor:** Aynı cihaz testinde kullanıcının bildirdiği "pazarlama
+       onayı DB'ye gerçekten yazıldı mı?" sorusu Supabase MCP ile canlı
+       sorgulanıp doğrulandı (`profiles.marketing_consent=true`,
+       `marketing_consent_at` sunucu tetikleyicisiyle dolu) — bu bir kod
+       hatası DEĞİLDİ, zaten doğru çalışıyordu. Yukarıdaki üç UI
+       düzeltmesinin GERÇEK cihazdaki son görsel teyidi (menü düzeni,
+       k-lig satırının gerçek rank/puanla göründüğü, sekmelerin dokunmatik
+       ekranda beklendiği gibi tepki verdiği) kullanıcının bir sonraki
+       test turunda bekleniyor.
+     - **Bilinçli olarak DOKUNULMAYAN iki bulgu — bunlar kod hatası
+       DEĞİL:** (1) **Profil fotoğrafı 2 MB sınırı** (`account_settings_
+       modal.dart`, Hesap Ayarları) — kullanıcı 2 MB altı bir fotoğraf
+       bulmakta zorlandığını bildirdi, ama bu sınır `src/lib/api.ts`'teki
+       `MAX_AVATAR_BYTES`/web `AccountSettingsModal.tsx` ile BİREBİR AYNI
+       (`2 * 1024 * 1024`) — mobile'a özgü bir hata değil, iki platformun
+       da paylaştığı bilinçli bir kısıt (muhtemelen Supabase Storage
+       bucket politikasıyla da uyumlu); değiştirilecekse bu bir ürün
+       kararı, tek başına mobil tarafta sessizce büyütülmedi. (2)
+       **Şifre sıfırlama derin bağlantısı (`kelimeki://reset`) GitHub
+       Pages web test ortamından tetiklenemedi** — kullanıcı e-postadaki
+       bağlantıya dokununca "Safari cannot open the page because the
+       address is invalid" gördü (madde 9-10), süresi geçmiş bağlantıda
+       ise sessizce web'in kendi (kelimeki.com) fallback'ine düştü (madde
+       11, aslında BEKLENEN web davranışı — mobil uygulamanın DEĞİL). Bu,
+       bu test ortamının yapısal bir sınırı: `kelimeki://` özel URL
+       şeması yalnızca GERÇEK kurulu bir native uygulama (TestFlight ya
+       da Appetize.io'ya yüklenmiş bir `.ipa`/`.apk`) varken işletim
+       sistemi tarafından yakalanabilir — düz bir web sayfası (GitHub
+       Pages) bunu asla intercept edemez, kod tarafında düzeltilecek bir
+       şey yok. Madde 9-12'nin deep-link kısımları FAZ B'ye (TestFlight/
+       Appetize) ertelendi — kök CLAUDE.md'nin baştan beri planladığı
+       "Bölüm 2 (Hesap/auth, excluding deep-link items)" ayrımı tam bu
+       yüzdendi.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

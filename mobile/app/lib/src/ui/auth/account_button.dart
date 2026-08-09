@@ -92,11 +92,18 @@ class _AccountButtonState extends State<AccountButton> {
   int _incomingRequests = 0;
   String? _lastUserId;
 
+  /// Menü başlığındaki (isim satırının altındaki) tıklanabilir k-lig
+  /// satırı için — web `UserMenu`'nün `myRank` state'iyle aynı: `useEffect`
+  /// yalnızca `user` değişince tetiklenir (`fetchMyLeaderboardRank`),
+  /// burada da `_onAuthEvent`'in aynı hesap-değişimi kilidiyle tazeleniyor.
+  MyLeaderboardRank? _myRank;
+
   @override
   void initState() {
     super.initState();
     _lastUserId = auth.user?.id;
     _refreshRequestCount();
+    _refreshMyRank();
     auth.addListener(_onAuthEvent);
   }
 
@@ -112,8 +119,14 @@ class _AccountButtonState extends State<AccountButton> {
     final id = auth.user?.id;
     if (id == _lastUserId) return;
     _lastUserId = id;
-    if (mounted) setState(() => _incomingRequests = 0);
+    if (mounted) {
+      setState(() {
+        _incomingRequests = 0;
+        _myRank = null;
+      });
+    }
     _refreshRequestCount();
+    _refreshMyRank();
   }
 
   void _refreshRequestCount() {
@@ -121,6 +134,15 @@ class _AccountButtonState extends State<AccountButton> {
     if (friends == null || auth.user == null) return;
     friends.incomingRequests().then((r) {
       if (mounted && r != null) setState(() => _incomingRequests = r.length);
+    });
+  }
+
+  void _refreshMyRank() {
+    final stats = widget.stats;
+    final userId = auth.user?.id;
+    if (stats == null || userId == null) return;
+    stats.myRank(userId).then((r) {
+      if (mounted) setState(() => _myRank = r);
     });
   }
 
@@ -229,7 +251,20 @@ class _AccountButtonState extends State<AccountButton> {
         }
       },
       itemBuilder: (context) => [
-        // İsim başlığı — web dropdown'ının üst bölümü (tıklanamaz).
+        // İsim başlığı — web dropdown'ının üst bölümü. Web'de bu, TEK bir
+        // tıklanamaz blok DEĞİL: avatar+isim satırı sabit dururken, hemen
+        // altındaki KLigMark+"#sıra · puan" satırı AYRI, KENDİ başına
+        // tıklanabilir bir `<button>` (bkz. UserMenu.tsx satır ~197-216) —
+        // "k-lig Sıralama" web'de bu listenin ayrı bir maddesi DEĞİL, isim
+        // başlığının bir PARÇASI (kullanıcı 9 Ağustos 2026'da cihaz
+        // testinde "k-lig Sıralama diye ayrı bir madde çıkmış, o aslında
+        // isim altında yer alan bir özellik" diye bildirdi). Dış öğe
+        // `enabled: false` (kendi seçimi yok) ama içteki k-lig satırı
+        // `Navigator.pop(context, 'league')`'i ELLE çağırıp PopupMenuButton
+        // ile AYNI mekanizmayı (showMenu'nün route'unu bir değerle kapatıp
+        // `onSelected`i tetiklemek) tetikliyor — bu, devre dışı bir
+        // `PopupMenuItem`in İÇİNDE bağımsız tıklanabilir bir alt-widget
+        // kurmanın standart yolu.
         PopupMenuItem<String>(
           enabled: false,
           child: Row(
@@ -238,32 +273,60 @@ class _AccountButtonState extends State<AccountButton> {
                   url: auth.profile?.avatarUrl, name: auth.menuName, size: 36),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  auth.menuName,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.bold, color: _text),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      auth.menuName,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: _text),
+                    ),
+                    if (stats != null && _myRank != null) ...[
+                      const SizedBox(height: 2),
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => Navigator.of(context).pop('league'),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const KLigMark(height: 13),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text.rich(
+                                TextSpan(children: [
+                                  TextSpan(text: '#${_myRank!.rank}'),
+                                  const TextSpan(text: ' · '),
+                                  TextSpan(text: '${_myRank!.totalScore}'),
+                                  const TextSpan(
+                                    text: ' puan',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.normal,
+                                        color: _muted),
+                                  ),
+                                ]),
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontFamily: 'SpaceMono',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF2563EB),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],
           ),
         ),
-        const PopupMenuDivider(),
-        if (stats != null) ...[
-          // Web dropdown'ının en üstündeki tıklanabilir "k-lig" satırı.
-          const PopupMenuItem<String>(
-            value: 'league',
-            child: Row(children: [
-              KLigMark(height: 14),
-              SizedBox(width: 8),
-              Text('Sıralama', style: itemStyle),
-            ]),
-          ),
-          const PopupMenuItem<String>(
-            value: 'score',
-            child: Text('📊  Skor Kartı', style: itemStyle),
-          ),
-        ],
         if (widget.friends != null)
           PopupMenuItem<String>(
             value: 'friends',
@@ -275,6 +338,11 @@ class _AccountButtonState extends State<AccountButton> {
               ],
             ]),
           ),
+        if (stats != null)
+          const PopupMenuItem<String>(
+            value: 'score',
+            child: Text('📊  Skor Kartı', style: itemStyle),
+          ),
         const PopupMenuItem<String>(
           value: 'help',
           child: Text('❓  Nasıl Oynanır?', style: itemStyle),
@@ -283,6 +351,9 @@ class _AccountButtonState extends State<AccountButton> {
           value: 'settings',
           child: Text('⚙️  Hesap Ayarları', style: itemStyle),
         ),
+        // Web: `border-t border-border` — Çıkış Yap'ın kendi üstündeki
+        // AYRI çizgi, admin bloğu olsun olmasın hep var (bkz. UserMenu.tsx).
+        const PopupMenuDivider(),
         const PopupMenuItem<String>(
           value: 'signout',
           child: Text('🚪  Çıkış Yap', style: itemStyle),

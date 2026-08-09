@@ -199,6 +199,20 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       listesine `kelimeki://reset` eklenmiş olmalı. Eklenmeden test etme:
       GoTrue izinsiz redirect'i sessizce Site URL'e (web'e) düşürür,
       bağlantı uygulamayı hiç açmaz — bu bir uygulama hatası DEĞİLDİR.
+      **Aşağıdaki üç madde (sıcak/soğuk başlangıç, süresi geçmiş bağlantı)
+      GitHub Pages web test ortamından (`alpcapa.github.io`) TEST
+      EDİLEMEZ** (9 Ağustos 2026'da denenip doğrulandı) — `kelimeki://`
+      özel URL şeması yalnızca GERÇEK kurulu bir native uygulama varken
+      (TestFlight ya da Appetize.io'ya yüklenmiş bir `.ipa`/`.apk`)
+      işletim sistemi tarafından yakalanabilir; düz bir web sayfası bunu
+      hiçbir zaman intercept edemez. Web test ortamında bağlantıya
+      dokununca "Safari cannot open the page because the address is
+      invalid" görülür (sıcak/soğuk başlangıç için beklenen, bir hata
+      DEĞİL) — süresi geçmiş bağlantıda ise Supabase sessizce web'in
+      kendi (kelimeki.com) fallback'ine düşer, bu da web'in KENDİ
+      davranışıdır, mobil uygulamanın değil. Bu üçü FAZ B'de (TestFlight/
+      Appetize) gerçek bir kurulu uygulamayla koşulmalı — bkz.
+      mobile/CLAUDE.md Parça 28.
 - [ ] **Şifre sıfırlama — sıcak başlangıç.** Giriş penceresi → "Şifremi
       unuttum" → e-posta gir → "BAĞLANTI GÖNDER" → altın renkli "Şifre
       sıfırlama bağlantısı e-postana gönderildi." çıkmalı. Uygulama AÇIKKEN
