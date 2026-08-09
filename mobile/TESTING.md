@@ -191,7 +191,12 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       üstündeki çizgi de ince bir kenar çizgisi olmalı, 16px'lik AYRI bir
       boş satır DEĞİL. Menünün en üstünde (başlığın üstünde)/en altında
       (Çıkış Yap'ın altında) görünmez bir boşluk OLMAMALI — kelimeki.com'da
-      aynı hesabın menüsüyle yan yana karşılaştır.
+      aynı hesabın menüsüyle yan yana karşılaştır. **Avatara UZUN BASINCA
+      hiçbir ipucu balonu çıkmamalı (9 Ağustos 2026, Parça 41 — kullanıcı
+      isteğiyle kaldırıldı):** ne Türkçe "Hesap menüsü" ne İngilizce
+      "Show menu"; İngilizcesi çıkıyorsa `tooltip: ''` yerine parametre
+      tamamen silinmiş demektir (Flutter o durumda kendi varsayılanına
+      düşüyor).
 - [ ] **Misafir üyelik kutusu.** Setup ekranını misafir (girişsiz) olarak
       aç — hem boş kurulum formunun altında hem (bir oyun yarıda bırakılıp
       "Devam Eden Oyun" görünümüne düşünce) o görünümün altında "Neden

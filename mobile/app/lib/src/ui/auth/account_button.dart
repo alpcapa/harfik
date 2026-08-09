@@ -268,7 +268,14 @@ class _AccountButtonState extends State<AccountButton> {
 
   Widget _avatarMenu(BuildContext context) {
     return PopupMenuButton<String>(
-      tooltip: 'Hesap menüsü',
+      // Uzun basınca çıkan ipucu kullanıcı isteğiyle kaldırıldı (9 Ağustos
+      // 2026) — web'deki `title` attribute'u da aynı anda kaldırıldı.
+      // Parametreyi tamamen SİLMEK yanlış olurdu: PopupMenuButton null
+      // gelince MaterialLocalizations'ın İngilizce "Show menu" metnine
+      // düşüyor. Boş dize doğru yol — Tooltip.build boş mesajda çocuğu
+      // olduğu gibi döndürüp hiç overlay kurmuyor (SDK kaynağından
+      // doğrulandı, tahmin değil).
+      tooltip: '',
       offset: Offset(0, avatarSize + 8),
       color: _panel,
       shape: RoundedRectangleBorder(

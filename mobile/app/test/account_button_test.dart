@@ -89,7 +89,9 @@ void main() {
       ),
     ));
     await tester.pump();
-    await tester.tap(find.byTooltip('Hesap menüsü'));
+    // Tooltip kaldırıldığından (9 Ağustos 2026) artık byTooltip ile
+    // bulunamıyor — widget tipiyle bulmak zaten daha sağlam.
+    await tester.tap(find.byType(PopupMenuButton<String>));
     await tester.pumpAndSettle();
   }
 

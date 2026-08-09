@@ -167,11 +167,10 @@ export function UserMenu() {
         <button
           onClick={() => setOpen((v) => !v)}
           disabled={identityLoading}
+          // `aria-label` DURUYOR (ekran okuyucu için gerekli); hover/uzun
+          // basma ipucu veren `title` ise kullanıcı isteğiyle kaldırıldı
+          // (9 Ağustos 2026) — mobil porttaki `tooltip` de aynı anda.
           aria-label="Hesap menüsü"
-          // `aria-label` yalnızca ekran okuyucuya gider; hover/uzun basma
-          // ipucu için `title` gerekiyor — mobil portta `PopupMenuButton`'ın
-          // `tooltip`i bunu veriyordu (9 Ağustos 2026, kullanıcı isteği).
-          title="Hesap menüsü"
           aria-expanded={open}
           className="rounded-full active:scale-95 transition-transform ring-offset-2 focus:outline-none disabled:cursor-not-allowed"
         >

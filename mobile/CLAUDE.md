@@ -4414,6 +4414,34 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        `kelimeki_core`'a hiç dokunulmadı; teşhis harness'i silindi.
      - **Doğrulama sınırı:** ölçümler SwiftShader'da; gerçek iPad'de görsel
        teyit kullanıcıdan bekleniyor.
+   - ✅ **Parça 41 — avatar menüsünün "Hesap menüsü" ipucu İKİ TARAFTAN DA
+     kaldırıldı (9 Ağustos 2026, `account_button.dart` + web
+     `UserMenu.tsx`):** Bir gün önce (Parça 40 sonrası web işi) mobildeki
+     `PopupMenuButton.tooltip`'in web karşılığı olarak `UserMenu`'nün avatar
+     butonuna `title="Hesap menüsü"` eklenmişti; kullanıcı bir sonraki turda
+     bundan vazgeçip "hem web hem app'ten kaldır" dedi.
+     - **Parametreyi tamamen SİLMEK yanlış olurdu:** `PopupMenuButton`'ın
+       build'i `Tooltip(message: widget.tooltip ?? MaterialLocalizations
+       .of(context).showMenuTooltip, ...)` diyor — null bırakmak İngilizce
+       "Show menu" metnine düşürürdü, yani ipucu kaybolmaz, YABANCILAŞIRDI.
+       Doğru yol boş dize: `Tooltip.build` `_tooltipMessage.isEmpty` iken
+       çocuğu olduğu gibi döndürüp hiç overlay kurmuyor. İkisi de SDK
+       kaynağı okunarak doğrulandı (`popup_menu.dart:1711`,
+       `tooltip.dart:924`) — tahmin değil.
+     - **Web'de `aria-label` DURUYOR, yalnızca `title` kaldırıldı** — biri
+       ekran okuyucu erişilebilirliği, diğeri görünür hover balonu; istek
+       yalnızca ikincisini kapsıyordu.
+     - **Test:** `account_button_test.dart`'ın `pumpMenu` yardımcısı menüyü
+       `find.byTooltip('Hesap menüsü')` ile açıyordu — artık
+       `find.byType(PopupMenuButton<String>)` kullanıyor (widget tipiyle
+       bulmak zaten daha sağlam, görünür metne/ipucuna bağlı değil).
+       Ayrı bir negatif eş kurulmadı: davranış bir "yokluk" olduğundan
+       (ipucu ÇIKMAMALI) ve tooltip'in kendisi artık ağaçta hiç
+       oluşmadığından, `pumpMenu`'nün eski finder'ıyla ÇALIŞMAMASI zaten
+       kaldırmanın kanıtı — testi eski hâlinde bırakmak paketi kırıyordu.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 290/290 yeşil**; web
+       `npm run lint` + `npm run build` temiz. `kelimeki_core`'a hiç
+       dokunulmadı.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek
