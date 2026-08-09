@@ -4441,7 +4441,11 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        kaldırmanın kanıtı — testi eski hâlinde bırakmak paketi kırıyordu.
      - Doğrulama: `flutter analyze` temiz, **tam takım 290/290 yeşil**; web
        `npm run lint` + `npm run build` temiz. `kelimeki_core`'a hiç
-       dokunulmadı.
+       dokunulmadı. **Cihazda da doğrulandı** (kullanıcı, GitHub Pages web
+       derlemesi, aynı gün): avatarda artık hiçbir ipucu balonu çıkmıyor —
+       ne Türkçe metin ne de `tooltip` null bırakılsaydı çıkacak olan
+       İngilizce "Show menu". Yani boş dize çözümü gerçek CanvasKit'te de
+       beklendiği gibi çalışıyor.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek
