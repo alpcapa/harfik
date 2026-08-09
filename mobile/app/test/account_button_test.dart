@@ -140,4 +140,32 @@ void main() {
     expect(dividerY, greaterThan(settingsY));
     expect(dividerY, lessThan(signOutY));
   });
+
+  testWidgets(
+      'regresyon (Parça 29): satır boyu web (py-2.5) gibi kompakt — '
+      'Flutter\'ın 48px minimum dokunma yüksekliği kullanılmıyor, menü '
+      'genişliği web\'in w-56 (224px) sabitine yakınsıyor', (tester) async {
+    final stats = StatsRepo(_FakeStatsGateway());
+    final friends = FriendsRepo(_FakeFriendsGateway());
+    await pumpMenu(tester, stats: stats, friends: friends);
+
+    double topOf(Finder f) => tester.getTopLeft(f).dy;
+    final rowSpacing =
+        topOf(find.textContaining('Skor Kartı')) -
+            topOf(find.textContaining('Arkadaşlar'));
+    // Web satırı ~py-2.5 (20px dolgu) + 12px punto ≈ 35-40px — Flutter'ın
+    // varsayılan `kMinInteractiveDimension`ı (48px) kullanılıyorsa bu her
+    // zaman >=48 olurdu.
+    expect(rowSpacing, lessThan(44),
+        reason: 'Satır aralığı hâlâ Flutter\'ın 48px varsayılanına yakın — '
+            'ölçülen=$rowSpacing');
+
+    final itemBox = tester.getSize(find
+        .ancestor(
+            of: find.textContaining('Arkadaşlar'), matching: find.byType(SizedBox))
+        .first);
+    expect(itemBox.width, closeTo(200, 1),
+        reason: 'Satır içerik genişliği sabitlenmemiş — menü web\'in '
+            'w-56 sabitinden belirgin genişleyebilir');
+  });
 }

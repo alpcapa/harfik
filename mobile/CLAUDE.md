@@ -3558,6 +3558,93 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        Appetize) ertelendi — kök CLAUDE.md'nin baştan beri planladığı
        "Bölüm 2 (Hesap/auth, excluding deep-link items)" ayrımı tam bu
        yüzdendi.
+   - ✅ **Parça 29 — Bölüm 3 (Bulut kayıtları) cihaz testinde bulunan iki
+     GERÇEK hata + bir üçüncüsünün araştırılıp KOD HATASI OLMADIĞININ
+     kanıtlanması (9 Ağustos 2026, `account_button.dart`,
+     `setup_screen.dart`):** Kullanıcı bulut kayıtlarının (mobil↔web
+     senkron) 6/6 çalıştığını doğruladıktan sonra üç ekran görüntüsüyle
+     bildirdi: "Menu items have bigger spacing... menü daha büyük...
+     setup page seems to be wider... robot avatarları aynı değil."
+     - **Bug 1 — hesap menüsü satırları/genişliği web'den GÖZLE GÖRÜLÜR
+       büyüktü:** Kök sebep `PopupMenuItem`'ın Flutter varsayılanları —
+       `height` (kaldırma dokunma hedefi için `kMinInteractiveDimension`,
+       48px) HER satıra ZORUNLU bir minimum yükseklik dayatıyor, `padding`
+       varsayılanı da yatayda 16px. Web'in gerçek satır boyu (`px-3
+       py-2.5` = 12/10px dolgu + 12px punto) bunların ikisinden de
+       belirgin küçük — fark ekran görüntülerinde satırlar arası boşluğun
+       ve menü genişliğinin büyümesi olarak görünüyordu. **Düzeltme:** her
+       `PopupMenuItem`e `height: 0` (varsayılan minimumu KALDIRIR, satır
+       kendi içeriğine göre boyutlanır) + `padding: EdgeInsets.symmetric
+       (horizontal: 12, vertical: 10)` (web `px-3 py-2.5`) eklendi; her
+       satırın `child`'ı `SizedBox(width: 200)` (224 web `w-56` sabiti
+       eksi 2×12 dolgu) içine sarılarak menünün TOPLAM genişliği de
+       web'in `w-56`sına yakınsatıldı (Flutter'da `PopupMenuButton`'ın
+       doğrudan bir "menü genişliği" API'si yok — genişlik en geniş
+       satırın intrinsic genişliğine göre hesaplanıyor, bu yüzden her
+       satırın içerik genişliğini elle sabitlemek gerekiyor).
+     - **Bug 2 — Setup ekranı web'den daha geniş sınırlanıyordu:**
+       `ConstrainedBox(maxWidth: 480)` kullanılıyordu; web kaynağı
+       (`Setup.tsx` satır ~536) `max-w-[460px]` — **GameHeader/Board'un
+       kullandığı 680'le KARIŞTIRILMAMALI**, Setup kendi (daha dar) sabitini
+       taşıyor. 480→460 tek satırlık bir düzeltme.
+     - **Bug 3 olarak bildirilen ("robot avatarları aynı değil") aslında
+       KOD HATASI DEĞİL — CanvasKit'in web-özel emoji render sınırlaması,
+       ölçülerek kanıtlandı:** Önce kaynak karşılaştırması yapıldı: mobil
+       `player_avatar_row.dart`'taki robot avatarı (zemin `#E8EBEF`
+       [web `bg-void`], kenarlık `#DCE2EA` [web `border-border`], `🤖`
+       Unicode karakteri, punto `(size*0.55).round()`) web `PlayerAvatarRow.
+       tsx`'in DEĞERLERİYLE BİREBİR AYNIYDI — kodda düzeltilecek bir şey
+       yoktu. Bu proje daha önce (Parça 18, Parça 27) "değerler doğru
+       görünüyor, o hâlde CanvasKit'e özgü bir render hatası olabilir"
+       varsayımını KANITLAMADAN kabul etmemeyi öğrenmişti — bu sefer de
+       aynı disiplinle, minik bir `flutter build web` harness'i (yalnızca
+       `PlayerAvatarRow`'u render eden) derlenip Playwright/Chromium'da
+       (gerçek CanvasKit) açıldı. Sonuç KESİN: robot emoji'nin bulunduğu
+       yerde TAMAMEN BOŞ (rengi olmayan, çerçevesi olmayan, hiçbir glyph
+       içermeyen düz `_void` renkli bir daire) render oluyordu — ne
+       gerçek emoji ne bir yedek karakter. Ağ trafiği incelenince kök
+       sebep netleşti: Flutter Web/CanvasKit, renkli emoji çizebilmek için
+       çalışma anında `fonts.gstatic.com`'dan bir "Noto Color Emoji" web
+       fontu ÇEKMEK ZORUNDA (yerleşik bir renkli-emoji fontu bundle
+       etmiyor) — bu istek BU test ortamının proxy'sinde (agent sandbox)
+       engelli olduğundan tamamen başarısız oluyor ve CanvasKit hiçbir
+       yedek glyph'e bile düşmeden boş bırakıyor. **Gerçek native
+       (iOS/Android) build bu sorunu hiç YAŞAMAZ** — Skia/Impeller doğrudan
+       işletim sisteminin KENDİ kurulu emoji fontuna (Apple Color Emoji/
+       Noto Color Emoji) erişir, ağ isteğine hiç ihtiyaç duymaz; kullanıcının
+       gerçek iPad'inde Safari üzerinden test ettiği GitHub Pages derlemesi
+       de teknik olarak CanvasKit kullandığından (bkz. "Web Derlemesi —
+       ÜRÜN DEĞİL, TEST ORTAMI" bölümü) AYNI ağ-bağımlı davranışı taşıyor —
+       kullanıcının cihazında Google Fonts'a erişim yavaş/kesintili/
+       engellenmiş olursa (kurumsal ağ, gizlilik uzantısı, ITP vb.) aynı
+       boş daire onda da görünebilir; bu senaryoda dahi kök neden koddaki
+       bir hata değil, web test derlemesinin CanvasKit'in emoji stratejisine
+       olan bu bağımlılığıdır. **Bilinçli olarak DOKUNULMADI** — kod zaten
+       web'le birebir aynı değerleri taşıyor, "düzeltilecek" bir şey yok;
+       gerçek/kesin doğrulama TestFlight/Appetize'daki native build'de
+       yapılmalı (orada bu risk yapısal olarak mevcut değil).
+     - **Test — negatif eş doğrulamasıyla:** Bug 1/2 için `account_button_
+       test.dart`'a satır-aralığı (`<44px`, eski varsayılan 48px'e karşı) +
+       satır-içerik-genişliği (`≈200px`) doğrulayan yeni bir test,
+       `setup_screen_test.dart`'a da geniş bir viewport'ta `ConstrainedBox
+       (maxWidth:460)` bulunduğunu VE eski `480`in hiç kalmadığını
+       doğrulayan yeni bir test eklendi. İki dosyadaki düzeltme birlikte
+       geçici geri alınınca İKİ test de GERÇEKTEN düştü (satır aralığı
+       tam olarak eski varsayılan `48.0` ölçüldü, `ConstrainedBox(460)`
+       hiç bulunamadı) — `stash pop` ile geri konup yeşile döndü.
+     - Doğrulama: `flutter analyze` temiz, tam takım **272/272 yeşil**
+       (270'ten +2 — Parça 29'un iki yeni regresyon testi). Bug 3'ün
+       araştırması İÇİN kullanılan `avatar_probe_harness.dart` (ve
+       `build/webprobe`) TEŞHİS SONRASI silindi, kalıcı bir dosya değil.
+     - **Ders — "kod web'le birebir aynı" bir bulgu, "o zaman görsel fark
+       yanılsama" anlamına GELMEZ:** Bu proje daha önce hep "koddaki
+       değerler doğru → CanvasKit'e özgü bir motor hatası olabilir, ÖLÇ"
+       dersini işlemişti (Parça 18/27); Bug 3 aynı dersi bir adım daha
+       ileri taşıyor — bazen "motor hatası" bile değil, motorun (CanvasKit)
+       web'e özgü bir MİMARİ KARARININ (emoji'yi ağdan çekme) test
+       ortamının ağ politikasıyla çakışmasıdır. İkisi de aynı sonuca
+       varıyor: koda dokunmadan önce ölç, "değerler doğru" bulgusunu asla
+       "görsel fark de yoktur" diye genişletme.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

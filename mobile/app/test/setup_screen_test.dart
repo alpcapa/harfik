@@ -123,6 +123,29 @@ void main() {
     });
   });
 
+  testWidgets(
+      'regresyon (Parça 29): içerik sütunu web\'in max-w-[460px]\'iyle AYNI '
+      'genişlikte sınırlı — GameHeader/Board\'un 680\'iyle KARIŞTIRILMAMALI',
+      (tester) async {
+    // Geniş bir viewport (iPad yatay benzeri) — dar bir ekranda maxWidth'in
+    // hiç devreye girmediğini (içerik zaten daha dar olduğunu) fark etmeyiz.
+    await setPhoneViewSize(tester, const Size(1024, 900));
+    await pumpSetup(tester, services());
+
+    final constrainedBoxes = tester
+        .widgetList<ConstrainedBox>(find.byType(ConstrainedBox))
+        .where((c) => c.constraints.maxWidth == 460);
+    expect(constrainedBoxes, isNotEmpty,
+        reason: 'Setup içeriği 460px\'e kısıtlanmış bir ConstrainedBox '
+            'içermeli (web Setup.tsx max-w-[460px])');
+    expect(
+        tester
+            .widgetList<ConstrainedBox>(find.byType(ConstrainedBox))
+            .where((c) => c.constraints.maxWidth == 480),
+        isEmpty,
+        reason: 'Eski (yanlış) 480px sabiti hâlâ kullanılıyor');
+  });
+
   testWidgets('OYUNU BAŞLAT: Misafir + YZ kadrosuyla GameScreen açılır',
       (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));

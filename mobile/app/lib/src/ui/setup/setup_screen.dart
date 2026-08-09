@@ -524,7 +524,12 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
+                // Web: `max-w-[460px]` (Setup.tsx satır ~536) — GameHeader/
+                // Board'un 680px'iyle KARIŞTIRILMAMALI, Setup kendi (daha
+                // dar) sabitini kullanıyor. Burada yanlışlıkla 480 idi —
+                // kullanıcı 9 Ağustos 2026'da web'e kıyasla "setup ekranı
+                // daha geniş duruyor" diye bildirdi (Parça 29).
+                constraints: const BoxConstraints(maxWidth: 460),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

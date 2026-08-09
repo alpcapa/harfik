@@ -164,7 +164,14 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       olmalı (gri/nötr DEĞİL), YZ robotu gerçek 🤖 emoji olmalı (kutu/farklı
       bir ikon DEĞİL) — kelimeki.com'daki aynı satırla yan yana karşılaştır
       (8 Ağustos 2026'da bir kullanıcı iki ekran görüntüsünü kıyaslayınca
-      bulundu, bkz. mobile/CLAUDE.md Parça 22).
+      bulundu, bkz. mobile/CLAUDE.md Parça 22). **GitHub Pages web test
+      derlemesinde robot emoji BOŞ/soluk bir daire olarak görünürse bu
+      muhtemelen bir kod hatası DEĞİL** — Flutter Web/CanvasKit renkli
+      emoji'yi çalışma anında `fonts.gstatic.com`'dan çekiyor, bu istek
+      yavaş/kesintili olursa emoji hiç çizilmiyor (9 Ağustos 2026'da
+      ölçülerek doğrulandı, bkz. mobile/CLAUDE.md Parça 29) — gerçek
+      native build (TestFlight/Appetize) bu ağ bağımlılığını hiç
+      taşımaz, kesin doğrulama orada yapılmalı.
 
 ## 2. Hesap (auth)
 

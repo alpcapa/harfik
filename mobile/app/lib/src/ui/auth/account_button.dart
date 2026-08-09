@@ -206,6 +206,24 @@ class _AccountButtonState extends State<AccountButton> {
     );
   }
 
+  // Web: `w-56` (224px) sabit menü genişliği, satırlar `px-3 py-2.5`
+  // (12/10px). Flutter'ın `PopupMenuItem`'ı bunları HİÇ paylaşmıyor —
+  // varsayılan `padding` yatayda 16px VE varsayılan `height` (kaldırma
+  // dokunma hedefi için `kMinInteractiveDimension`, 48px) satır başına
+  // ZORUNLU bir minimum yükseklik dayatıyor; web'in gerçek satır boyu
+  // (py-2.5 + 12px punto) bundan belirgin şekilde kısa. Aradaki fark
+  // menüyü hem daha GENİŞ hem satırlar arası daha AÇIK gösteriyordu
+  // (kullanıcı 9 Ağustos 2026'da iki ekran görüntüsüyle bildirdi — Parça
+  // 29). Her `PopupMenuItem` artık bu ikisini elle web değerlerine
+  // eziyor; `_menuItemWidth` de her satırın İÇERİK genişliğini sabitleyip
+  // (`SizedBox`) menünün toplam genişliğinin web'in `w-56`sına yakınsamasını
+  // sağlıyor (Flutter menü genişliğini en geniş satırın intrinsic
+  // genişliğine göre hesaplıyor, sabit bir `width` API'si yok).
+  static const _menuItemPadding =
+      EdgeInsets.symmetric(horizontal: 12, vertical: 10);
+  static const _menuItemHeight = 0.0;
+  static const _menuItemWidth = 200.0; // 224 (w-56) - 2*12 (px-3)
+
   Widget _avatarMenu(BuildContext context) {
     const itemStyle =
         TextStyle(fontFamily: 'SpaceMono', fontSize: 12, color: _text);
@@ -267,96 +285,130 @@ class _AccountButtonState extends State<AccountButton> {
         // kurmanın standart yolu.
         PopupMenuItem<String>(
           enabled: false,
-          child: Row(
-            children: [
-              KAvatar(
-                  url: auth.profile?.avatarUrl, name: auth.menuName, size: 36),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      auth.menuName,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: _text),
-                    ),
-                    if (stats != null && _myRank != null) ...[
-                      const SizedBox(height: 2),
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => Navigator.of(context).pop('league'),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const KLigMark(height: 13),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text.rich(
-                                TextSpan(children: [
-                                  TextSpan(text: '#${_myRank!.rank}'),
-                                  const TextSpan(text: ' · '),
-                                  TextSpan(text: '${_myRank!.totalScore}'),
-                                  const TextSpan(
-                                    text: ' puan',
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.normal,
-                                        color: _muted),
+          height: _menuItemHeight,
+          // Web: `px-3 py-3` (başlık bloğu diğer satırlardan biraz daha
+          // dolgun, `py-3` = 12px) — diğer satırların `py-2.5`inden farklı.
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: SizedBox(
+            width: _menuItemWidth,
+            child: Row(
+              children: [
+                KAvatar(
+                    url: auth.profile?.avatarUrl,
+                    name: auth.menuName,
+                    size: 36),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        auth.menuName,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: _text),
+                      ),
+                      if (stats != null && _myRank != null) ...[
+                        const SizedBox(height: 2),
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => Navigator.of(context).pop('league'),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const KLigMark(height: 13),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text.rich(
+                                  TextSpan(children: [
+                                    TextSpan(text: '#${_myRank!.rank}'),
+                                    const TextSpan(text: ' · '),
+                                    TextSpan(text: '${_myRank!.totalScore}'),
+                                    const TextSpan(
+                                      text: ' puan',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.normal,
+                                          color: _muted),
+                                    ),
+                                  ]),
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontFamily: 'SpaceMono',
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF2563EB),
                                   ),
-                                ]),
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontFamily: 'SpaceMono',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2563EB),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         if (widget.friends != null)
           PopupMenuItem<String>(
             value: 'friends',
-            child: Row(children: [
-              const Text('👥  Arkadaşlar', style: itemStyle),
-              if (_incomingRequests > 0) ...[
-                const SizedBox(width: 8),
-                CountBadge(count: _incomingRequests),
-              ],
-            ]),
+            height: _menuItemHeight,
+            padding: _menuItemPadding,
+            child: SizedBox(
+              width: _menuItemWidth,
+              child: Row(children: [
+                const Text('👥  Arkadaşlar', style: itemStyle),
+                if (_incomingRequests > 0) ...[
+                  const SizedBox(width: 8),
+                  CountBadge(count: _incomingRequests),
+                ],
+              ]),
+            ),
           ),
         if (stats != null)
-          const PopupMenuItem<String>(
+          PopupMenuItem<String>(
             value: 'score',
-            child: Text('📊  Skor Kartı', style: itemStyle),
+            height: _menuItemHeight,
+            padding: _menuItemPadding,
+            child: const SizedBox(
+              width: _menuItemWidth,
+              child: Text('📊  Skor Kartı', style: itemStyle),
+            ),
           ),
-        const PopupMenuItem<String>(
+        PopupMenuItem<String>(
           value: 'help',
-          child: Text('❓  Nasıl Oynanır?', style: itemStyle),
+          height: _menuItemHeight,
+          padding: _menuItemPadding,
+          child: const SizedBox(
+            width: _menuItemWidth,
+            child: Text('❓  Nasıl Oynanır?', style: itemStyle),
+          ),
         ),
-        const PopupMenuItem<String>(
+        PopupMenuItem<String>(
           value: 'settings',
-          child: Text('⚙️  Hesap Ayarları', style: itemStyle),
+          height: _menuItemHeight,
+          padding: _menuItemPadding,
+          child: const SizedBox(
+            width: _menuItemWidth,
+            child: Text('⚙️  Hesap Ayarları', style: itemStyle),
+          ),
         ),
         // Web: `border-t border-border` — Çıkış Yap'ın kendi üstündeki
         // AYRI çizgi, admin bloğu olsun olmasın hep var (bkz. UserMenu.tsx).
         const PopupMenuDivider(),
-        const PopupMenuItem<String>(
+        PopupMenuItem<String>(
           value: 'signout',
-          child: Text('🚪  Çıkış Yap', style: itemStyle),
+          height: _menuItemHeight,
+          padding: _menuItemPadding,
+          child: const SizedBox(
+            width: _menuItemWidth,
+            child: Text('🚪  Çıkış Yap', style: itemStyle),
+          ),
         ),
       ],
       child: KAvatar(
