@@ -368,6 +368,18 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **İptal ikinci sayfa açmamalı.** Paylaş sayfasını kapat/iptal et →
       arkasından ikinci bir paylaş sayfası AÇILMAMALI (`share_plus`
       iptalde fırlatmaz, yedek zincire düşmemeli).
+- [ ] **FAZ B (gerçek cihaz) — paylaş sayfasını kapatınca NEREYE dönüyor?**
+      Paylaş sayfasını dışarı dokunarak kapat: **oyun listesinde kalmalı**,
+      Skor Kartı'na geri DÜŞMEMELİ. (9 Ağustos 2026, web derlemesinde iPad
+      Safari'de: Escape ile kapatınca listede kalıyor ama dışarı dokununca
+      Skor Kartı'na dönüyordu. Mekanizma koddan doğrulandı — Safari,
+      paylaş sayfasını kapatan dokunuşu altındaki sayfaya da iletiyor,
+      dokunuş `showDialog`'un barrier'ına düşüp `GameHistoryModal`'ı
+      kapatıyor; `barrierDismissible` varsayılan `true` ve web'in
+      `Modal.tsx`'i de aynı kuralı uyguluyor, yani bir port sapması DEĞİL.
+      Native'de paylaş sayfası işletim sistemi katmanında olduğundan bu
+      dokunuşun uygulamaya iletilMEmesi bekleniyor — **bu, doğrulanmamış
+      bir çıkarım**, cihazda tekrarlarsa düzeltilmeli.)
 - [ ] **Link çalışıyor.** Paylaşımı kendine gönder (Notlar/WhatsApp),
       linke tıkla: `kelimeki.com/game/<id>` sayfası **girişsiz** açılmalı
       ve aynı tahtayı göstermeli. (Bu, `set_game_shared` RPC'sinin
