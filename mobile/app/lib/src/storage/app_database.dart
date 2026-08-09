@@ -18,7 +18,7 @@ import 'web_db.dart';
 
 /// DB şema sürümü — tablo/kolon değişikliklerinde artır ve `_migrations`e
 /// bir adım ekle. Payload sürümünden (kSavePayloadVersion) AYRI bir kavram.
-const int kDbSchemaVersion = 1;
+const int kDbSchemaVersion = 2;
 
 Future<void> _createV1(Database db) async {
   await db.execute('''
@@ -68,9 +68,31 @@ Future<void> _createV1(Database db) async {
     )''');
 }
 
-/// Sürüm N-1 → N yükseltme adımları (v1'de boş; her yeni sürüm buraya
-/// YALNIZCA ekleyici bir adım koyar).
-final Map<int, Future<void> Function(Database)> _migrations = {};
+/// Girişli kullanıcının devam eden YZ oyunlarının YEREL AYNASI — sunucudaki
+/// `local_game_saves`e yazılamayan (offline/ağ hatası) state buraya düşer ve
+/// bağlantı dönünce itilir. Girişli kullanıcı `local_saves`e BİLEREK
+/// yazmıyor (mükerrer terk-edilme cezası önlemi, Parça 3a); bu ayrı tablo o
+/// kuralı bozmadan offline dayanıklılığı veriyor — 7 günlük süpürme ve
+/// `multiSession` işaretlemesi buraya HİÇ uygulanmaz, ikisi de bulut
+/// tarafının kararıdır (bkz. Parça 38).
+Future<void> _createPendingCloudSaves(Database db) async {
+  await db.execute('''
+    create table pending_cloud_saves(
+      id text primary key,
+      user_id text not null,
+      payload_version integer not null,
+      payload text not null,
+      saved_at integer not null
+    )''');
+  await db.execute('create index idx_pending_cloud_saves_user '
+      'on pending_cloud_saves(user_id, saved_at)');
+}
+
+/// Sürüm N-1 → N yükseltme adımları — her yeni sürüm buraya YALNIZCA
+/// ekleyici (yıkıcı olmayan) bir adım koyar.
+final Map<int, Future<void> Function(Database)> _migrations = {
+  2: _createPendingCloudSaves,
+};
 
 Future<Database> openAppDatabase({
   DatabaseFactory? factory,

@@ -27,12 +27,16 @@ class FakeGateway implements CloudSaveGateway {
   int upsertCalls = 0;
   bool failNextUpsert = false;
 
+  /// Kalıcı ağ kesintisi (uçak modu) — upsert VE list boyunca fırlatır.
+  bool offline = false;
+
   /// Yavaş silme — yazma-okuma yarışını görünür kılmak için (kuyruk yoksa
   /// liste, silme sunucuda işlenmeden dönebilirdi).
   bool slowDelete = false;
 
   @override
   Future<List<Map<String, Object?>>> list() async {
+    if (offline) throw Exception('ağ yok');
     final list = rows.entries
         .map((e) => <String, Object?>{
               'id': e.key,
@@ -49,6 +53,7 @@ class FakeGateway implements CloudSaveGateway {
   Future<void> upsert(String id, String userId,
       Map<String, Object?> stateJson, int playerCount) async {
     upsertCalls++;
+    if (offline) throw Exception('ağ yok');
     if (failNextUpsert) {
       failNextUpsert = false;
       throw Exception('ağ hatası');
@@ -342,5 +347,91 @@ void main() {
             guestRepo: guestRepo, userId: 'user-1', accountName: 'Ironman'),
         isFalse);
     expect(gw.rows.length, 1);
+  });
+
+  // ——— Parça 38: offline dayanıklılık (kullanıcı 9 Ağustos 2026 cihaz
+  // testinde buldu — girişliyken uçak modunda oynanan hamleler sessizce
+  // kayboluyor, ağ dönünce sunucudaki son senkron state'e geri düşülüyordu).
+
+  Future<(CloudSaveRepo, FakeGateway, AppStorage)> newMirroredRepo() async {
+    final gw = FakeGateway();
+    final storage = await openTestStorage();
+    return (
+      CloudSaveRepo(gw,
+          nowMs: () => clock, mirrorStore: Future.value(storage.cloudMirror)),
+      gw,
+      storage
+    );
+  }
+
+  test('offline oynanan hamleler KAYBOLMAZ: ayna sunucudakini bindirir',
+      () async {
+    final (repo, gw, storage) = await newMirroredRepo();
+    final online = newPlayState();
+    expect(await repo.upsert('id-1', 'user-1', online), isTrue);
+
+    // Uçak modu: sonraki hamleler sunucuya gidemiyor.
+    gw.offline = true;
+    clock += 60000;
+    final offlineState = online.copyWith(turnCount: online.turnCount + 3);
+    expect(await repo.upsert('id-1', 'user-1', offlineState), isFalse);
+
+    // Ağ döndü ama henüz flush edilmedi: liste AYNAYI göstermeli.
+    gw.offline = false;
+    final list = await repo.list(userId: 'user-1');
+    expect(list!.saves.single.state.turnCount, offlineState.turnCount,
+        reason: 'offline hamleler listede görünmeli');
+    await storage.db.close();
+  });
+
+  test('ağ dönünce ayna sunucuya itilir ve temizlenir', () async {
+    final (repo, gw, storage) = await newMirroredRepo();
+    gw.offline = true;
+    final state = newPlayState();
+    expect(await repo.upsert('id-1', 'user-1', state), isFalse);
+    expect(gw.rows, isEmpty);
+    expect((await storage.cloudMirror.pending('user-1')).length, 1);
+
+    gw.offline = false;
+    expect(await repo.flushMirrored('user-1'), 1);
+    expect(gw.rows.containsKey('id-1'), isTrue);
+    expect(await storage.cloudMirror.pending('user-1'), isEmpty,
+        reason: 'sunucuya yazılan ayna silinmeli');
+    await storage.db.close();
+  });
+
+  test('tamamen offline açılan oyun listede görünür (sunucu onu hiç görmedi)',
+      () async {
+    final (repo, gw, storage) = await newMirroredRepo();
+    gw.offline = true;
+    await repo.upsert('id-yeni', 'user-1', newPlayState());
+    final list = await repo.list(userId: 'user-1');
+    expect(list, isNull, reason: 'sunucu listesi offline: null');
+
+    gw.offline = false; // liste alınabiliyor ama satır yok
+    final list2 = await repo.list(userId: 'user-1');
+    expect(list2!.saves.single.id, 'id-yeni');
+    await storage.db.close();
+  });
+
+  test(
+      'taze ayna, sunucudaki eski satırın HAKSIZ yere terk sayılmasını '
+      'engeller (mükerrer/yanlış -2 önlemi)', () async {
+    final (repo, gw, storage) = await newMirroredRepo();
+    final state = newPlayState();
+    await repo.upsert('id-1', 'user-1', state);
+
+    // Sunucu satırı 8 gün eskiyor…
+    clock += const Duration(days: 8).inMilliseconds;
+    // …ama kullanıcı DÜN offline oynadı: ayna taze.
+    gw.offline = true;
+    await repo.upsert('id-1', 'user-1', state.copyWith(turnCount: 9));
+    gw.offline = false;
+
+    final list = await repo.list(userId: 'user-1');
+    expect(list!.abandoned, isEmpty,
+        reason: 'taze aynası olan oyun terk sayılmamalı');
+    expect(list.saves.single.state.turnCount, 9);
+    await storage.db.close();
   });
 }

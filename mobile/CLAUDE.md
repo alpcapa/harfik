@@ -4180,6 +4180,71 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        Alt sekmelerin `LiveGamesTab` kopyası da düzeltildi ama onun kendi
        ölçüm testi YOK — Setup'taki testin kardeşi olarak elle senkron
        tutuluyor (iki dosya zaten "bilinçli kod tekrarı" çifti).
+   - ✅ **Parça 38 — girişli kullanıcı offline oynayınca hamleler SESSİZCE
+     kayboluyordu; bulut kayıtlarına yerel ayna eklendi (9 Ağustos 2026,
+     `storage/cloud_save_mirror_store.dart` (yeni), `app_database.dart` v2,
+     `cloud_save_repo.dart`, `bootstrap.dart`, `setup_screen.dart`):**
+     Bölüm 8 cihaz testinde kullanıcı buldu — girişliyken uçak modunda
+     oynanan hamleler (doğrulama/OYNA/YZ cevabı hepsi çalışıyordu) ağ
+     dönünce KAYBOLUYOR, oyun sunucudaki son senkron state'e geri
+     düşüyordu.
+     - **Kök sebep, kod okunarak doğrulandı:** girişli kullanıcı için oyun
+       `CloudGameSession` ile kaydediliyor (`setup_screen.dart`,
+       `if (user != null && cloud != null)`) ve **yerele HİÇ yazılmıyor** —
+       `else` dalındaki misafir slotu yalnızca girişsizler için. Her
+       hamledeki `upsert` ağ hatasını yakalayıp `false` dönüyor ve state'i
+       DÜŞÜRÜYORDU: ne yeniden deneme kuyruğu ne yerel yedek vardı.
+     - **"Web de aynısını yapıyor" bu sefer savunma DEĞİL** — iki gün önce
+       (Parça 36) tam bu gerekçeyle yarım kalmış bir işi savunup
+       yanılmıştım. Fark: portun kendi yazılı gerekçesi *"yerel YZ oyunu
+       offline bir haktır"* (sürüm kapısının fail-open kararı buna
+       dayanıyor) ve mobilde offline çalışmak native uygulamanın varlık
+       sebebi; depolama katmanı (SQLite) zaten var, yalnızca misafirler
+       için kullanılıyordu. Kullanıcı da "bence de şimdi düzeltelim" dedi.
+     - **Tasarım — write-behind ayna, `local_saves` YENİDEN KULLANILMADI:**
+       yeni bir `pending_cloud_saves` tablosu (şema v2, ekleyici migration).
+       Sebep, o tablonun `load()`unun iki kararı: (1) 7 günlük terk-edilme
+       süpürmesi — bulut satırının cezası sunucuda `claimAbandoned` ile
+       veriliyor, aynı oyunu bir de yerelden süpürmek MÜKERRER -2 demek
+       olurdu (girişli kullanıcının yerele yazmama kararının asıl gerekçesi
+       buydu, Parça 3a); (2) `multiSession=true` işaretlemesi — bulut
+       devamı web'de de mobilde de bunu bilinçli olarak yapmıyor. Ayna bu
+       ikisine HİÇ girmiyor; depolama katmanının diğer üç kuralı (versiyonlu
+       payload, parse-don't-validate, çözülemeyeni SİLME karantinaya al)
+       aynen geçerli.
+     - **Akış:** `upsert` ÖNCE aynaya yazar (yerel yazma her zaman başarılı),
+       sonra sunucuyu dener; başarıda aynayı siler — yani online akışta tablo
+       hep boş kalır, ek bir maliyet yok. `flushMirrored(userId)` bekleyenleri
+       iter ve `_syncCloud`ta **listelemeden ÖNCE** çağrılır. `list(userId:)`
+       aynayı bindirir: aynası sunucudakinden yeniyse onun state'i gösterilir,
+       yalnızca aynada olan oyunlar (tamamen offline açılmış) listeye eklenir.
+       `delete` aynayı da siler (bekleyen bir yazma satırı diriltmesin).
+     - **En ince nokta — bindirme, terk kararından ÖNCE:** sunucu satırı 7
+       günden eski ama ayna dünse, o oyun HAKSIZ yere `abandoned`a düşüp -2
+       yerdi. Bindirme `updatedAtMs`i de tazelediğinden bu kapalı; ayrı bir
+       testle sabitlendi (negatif eşte gerçekten `Expected: empty` ile
+       düşüyor).
+     - **Test — negatif eş doğrulamasıyla:** `cloud_save_test.dart`'a kalıcı
+       bir `offline` bayrağı + 4 test (offline hamleler listede kaybolmuyor;
+       ağ dönünce ayna itilip temizleniyor; tamamen offline açılan oyun
+       listede; taze ayna haksız terki engelliyor). Ayna yazma satırı geri
+       alınınca DÖRDÜ DE düştü (`+12 -4`), geri konunca yeşile döndü.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 287/287 yeşil**
+       (283'ten +4). `kelimeki_core`'a hiç dokunulmadı.
+     - **Doğrulama sınırı:** gerçek `local_game_saves` ucuyla (RLS, gerçek
+       ağ kesintisi) uçtan uca doğrulama cihazda yapılmalı — `mobile/TESTING.md`
+       Bölüm 8'e maddeler eklendi. **Bilinçli kapsam dışı:** ağ geri
+       geldiğinde kendiliğinden flush eden bir bağlantı dinleyicisi YOK
+       (web'de `online` olayı var); flush açılışta ve `_syncCloud`ta
+       çalışıyor. Bu, veri kaybı riski DEĞİL (ayna kalıcı) — yalnızca
+       senkron gecikmesi; connectivity paketi eklemeden çözülemiyor.
+     - **Ayrıca doğrulandı, hata DEĞİL:** offline'ken sayfayı yenileyince
+       Safari'nin "internet yok" sayfası çıkması ve logoya basınca aynısının
+       olması, web test ortamına özgü — Flutter web geri navigasyonu tarayıcı
+       geçmişine bağlı, offline'da o girdi ağa gidip sayfayı öldürüyor.
+       Native'de tarayıcı/geçmiş yok. Not: sayfa öldüğü an bellek de gittiği
+       için "çıkışta son bir kez yaz" türü bir çözüm zaten yetmezdi —
+       kalıcı yerel yedek şarttı.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

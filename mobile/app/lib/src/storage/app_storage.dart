@@ -8,6 +8,7 @@ import 'package:sqflite/sqflite.dart';
 import 'app_database.dart';
 import 'chat_read_store.dart';
 import 'flags_store.dart';
+import 'cloud_save_mirror_store.dart';
 import 'local_save_store.dart';
 import 'pending_event_store.dart';
 import 'pending_queue_store.dart';
@@ -15,6 +16,8 @@ import 'pending_queue_store.dart';
 class AppStorage {
   final Database db;
   final LocalSaveStore saves;
+  /// Girişli kullanıcının bulut kayıtlarının offline aynası (Parça 38).
+  final CloudSaveMirrorStore cloudMirror;
   final PendingQueueStore queue;
   final PendingEventStore events;
   final ChatReadStore chatRead;
@@ -23,6 +26,7 @@ class AppStorage {
   AppStorage._({
     required this.db,
     required this.saves,
+    required this.cloudMirror,
     required this.queue,
     required this.events,
     required this.chatRead,
@@ -41,6 +45,7 @@ class AppStorage {
     return AppStorage._(
       db: db,
       saves: LocalSaveStore(db, now),
+      cloudMirror: CloudSaveMirrorStore(db, now),
       queue: PendingQueueStore(db, now),
       events: PendingEventStore(db, now),
       chatRead: ChatReadStore(db),

@@ -381,7 +381,12 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     final games = _games ?? await widget.services.games;
     if (games != null) unawaited(games.flushPending());
 
-    final list = await cloud.list();
+    // Offline'da yerel aynada biriken devam eden oyunları ÖNCE sunucuya it
+    // (Parça 38) — listeleme bunu beklemeli ki taze satırları görsün.
+    // Başarısız olanlar aynada kalır; `list(userId:)` onları zaten
+    // bindirdiğinden kullanıcı offline'da da güncel oyununu görür.
+    await cloud.flushMirrored(user.id);
+    final list = await cloud.list(userId: user.id);
     if (list != null) {
       // 7 günü dolup bu turda iddia edilen kayıtlar → -2 cezalı teslim
       // (web refreshCloudSaves'in claim dalı).

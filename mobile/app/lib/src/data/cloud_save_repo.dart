@@ -31,6 +31,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../game/game_controller.dart';
 import '../game/local_game_repo.dart';
+import '../storage/cloud_save_mirror_store.dart';
 import '../storage/local_save_store.dart' show abandonTimeout;
 import '../util/uuid.dart';
 import 'write_queue.dart';
@@ -142,7 +143,16 @@ class CloudSaveRepo {
   /// saveChainRef` adımı).
   final TableWriteQueue _queue = TableWriteQueue();
 
-  CloudSaveRepo(this.gateway, {int Function()? nowMs})
+  /// Offline yerel ayna (Parça 38) — null ise davranış eskisi gibi:
+  /// sunucuya yazılamayan state DÜŞER. Üretimde her zaman verilir.
+  /// `Future` çünkü depolama katmanı bootstrap'ta asenkron açılıyor ve bu
+  /// repo (GamesRepo'nun aksine) senkron kuruluyor — ilk kullanımda çözülür.
+  final Future<CloudSaveMirrorStore>? mirrorStore;
+
+  Future<CloudSaveMirrorStore?> get _mirror async =>
+      mirrorStore == null ? null : await mirrorStore;
+
+  CloudSaveRepo(this.gateway, {int Function()? nowMs, this.mirrorStore})
       : _nowMs = nowMs ?? (() => DateTime.now().millisecondsSinceEpoch);
 
   /// Bekleyen tüm yazmalar çözülene kadar (test/senkron noktaları için).
@@ -160,7 +170,22 @@ class CloudSaveRepo {
   ///   web oyunu için geçerli olabilir, mobilin silme/karantina hakkı yok).
   /// Ağ hatasında boş liste yerine null döner ki UI "hiç oyunun yok" ile
   /// "liste alınamadı"yı karıştırmasın.
-  Future<CloudSaveList?> list() async {
+  /// [userId] verilirse yerel ayna listeye BİNDİRİLİR (Parça 38): aynası
+  /// sunucudakinden yeniyse (offline oynanmış) aynanın state'i gösterilir,
+  /// yalnızca aynada var olan oyunlar (tamamen offline açılmış) da listeye
+  /// eklenir. Bindirme, terk-edilme kararından ÖNCE uygulanır — aksi halde
+  /// dün offline oynanmış bir oyun, sunucudaki satırı 7 günden eski diye
+  /// haksız yere -2 cezasıyla süpürülürdü.
+  Future<CloudSaveList?> list({String? userId}) async {
+    final Map<String, MirroredSave> mirrored = {};
+    if (userId != null) {
+      final m = await _mirror;
+      if (m != null) {
+        for (final x in await m.pending(userId)) {
+          mirrored[x.id] = x;
+        }
+      }
+    }
     final List<Map<String, Object?>> rows;
     try {
       rows = await _queue.read(gateway.list);
@@ -179,7 +204,7 @@ class CloudSaveRepo {
       final rawState = row['state'];
       final updatedAt = row['updated_at'] as String?;
       if (id == null || rawState is! Map || updatedAt == null) continue;
-      final GameState state;
+      GameState state;
       try {
         state = gameStateFromJson(rawState.cast<String, Object?>());
       } catch (e) {
@@ -190,7 +215,13 @@ class CloudSaveRepo {
         unawaited(delete(id));
         continue;
       }
-      final updatedAtMs = DateTime.parse(updatedAt).millisecondsSinceEpoch;
+      var updatedAtMs = DateTime.parse(updatedAt).millisecondsSinceEpoch;
+      // Ayna bindirmesi: offline oynanan hamleler sunucudakinden yenidir.
+      final mine = mirrored.remove(id);
+      if (mine != null && mine.savedAtMs > updatedAtMs) {
+        state = mine.state;
+        updatedAtMs = mine.savedAtMs;
+      }
       if (updatedAtMs > cutoffMs) {
         result.add(CloudSave(id: id, state: state, updatedAtMs: updatedAtMs));
         continue;
@@ -215,6 +246,16 @@ class CloudSaveRepo {
         debugPrint('[Kelimeki] iddia edilen kayıt çözülemedi: $e');
       }
     }
+    // Sunucunun HİÇ görmediği oyunlar (tamamen offline açılmış) — yalnızca
+    // aynada varlar. Terk-edilme cezası uygulanMAZ: ceza sunucu tarafının
+    // kararı ve bu satır sunucuya hiç ulaşmadı; flush edildiğinde
+    // `updated_at` bugüne düşeceğinden sayaç oradan işlemeye başlar.
+    for (final m in mirrored.values) {
+      if (m.state.phase != GamePhase.play || m.state.isGameOver) continue;
+      result.add(
+          CloudSave(id: m.id, state: m.state, updatedAtMs: m.savedAtMs));
+    }
+    result.sort((a, b) => b.updatedAtMs.compareTo(a.updatedAtMs));
     return CloudSaveList(result, abandoned);
   }
 
@@ -224,19 +265,43 @@ class CloudSaveRepo {
   /// fire-and-forget, fırlatan bir future "unhandled" olurdu).
   Future<bool> upsert(String id, String userId, GameState state) {
     return _queue.enqueue(() async {
+      // ÖNCE yerel ayna: yerel yazma her zaman başarılı olduğundan, sunucu
+      // erişilemese bile hamle kaybolmaz (Parça 38 — offline oynanan
+      // hamleler sessizce düşüyordu). Sunucuya yazılınca ayna silinir, yani
+      // normal (online) akışta tablo hep boş kalır.
+      await (await _mirror)?.put(id, userId, state);
       try {
         await gateway.upsert(
             id, userId, gameStateToJson(state), state.players.length);
+        await (await _mirror)?.remove(id);
         return true;
       } catch (e) {
-        debugPrint('[Kelimeki] cloud save yazılamadı: $e');
+        debugPrint('[Kelimeki] cloud save yazılamadı, yerel aynada bekliyor: $e');
         return false;
       }
     });
   }
 
+  /// Sunucuya yazılamamış aynaları iter — uygulama açılışında/`_syncCloud`ta,
+  /// listeleme YAPILMADAN ÖNCE çağrılır ki liste zaten güncel satırları
+  /// görsün. Başarılı olan ayna silinir, olmayan bir sonraki tura kalır.
+  /// Dönüş: gerçekten sunucuya yazılan kayıt sayısı.
+  Future<int> flushMirrored(String userId) async {
+    final m = await _mirror;
+    if (m == null) return 0;
+    final pending = await m.pending(userId);
+    var sent = 0;
+    for (final p in pending) {
+      if (await upsert(p.id, userId, p.state)) sent++;
+    }
+    return sent;
+  }
+
   Future<void> delete(String id) {
     return _queue.enqueue(() async {
+      // Ayna her durumda gider: satır silinmek isteniyorsa bekleyen bir
+      // yazmanın onu sonradan diriltmesi istenmiyor.
+      await (await _mirror)?.remove(id);
       try {
         await gateway.delete(id);
       } catch (e) {

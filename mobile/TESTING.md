@@ -410,6 +410,19 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 
 - [ ] **Offline oyun.** Uçak moduna al, YZ oyunu oynanmaya devam etmeli
       (motor ve sözlük tamamen yerel).
+- [ ] **GİRİŞLİYKEN offline oynanan hamleler KAYBOLMAMALI (Parça 38).**
+      Girişli ol, bir YZ oyunu aç, birkaç hamle yap. Uçak moduna al ve
+      **birkaç hamle daha yap**. Ağı geri aç, uygulamayı yeniden başlat →
+      "Devam Eden Oyunlar"daki oyun **offline yaptığın hamlelerle**
+      açılmalı, eski hâline geri düşMEmeli. (9 Ağustos 2026'ya kadar
+      girişli kullanıcı yalnızca sunucuya yazıyordu, offline hamleler
+      sessizce düşüyordu.)
+- [ ] **Tamamen offline açılan oyun da kaybolmamalı.** Uçak modundayken
+      YENİ bir YZ oyunu aç, birkaç hamle yap. Ağı aç + yeniden başlat →
+      oyun listede olmalı (sunucu onu hiç görmemişti).
+- [ ] **Offline oynanan oyun HAKSIZ yere teslim sayılmamalı.** Uzun süre
+      (7 gün+) sunucuya yazılamamış ama offline oynanmaya devam eden bir
+      oyunda -2 cezası UYGULANMAMALI; oyun listede normal görünmeli.
 - [ ] **Offline bitiş kuyruğa girmeli.** Uçak modundayken bir oyunu bitir,
       sonra ağı aç ve uygulamayı yeniden başlat → kayıt sunucuya işlenmeli
       (web'deki Skor Kartı'ndan doğrula). Kayıt kaybolmamalı.
