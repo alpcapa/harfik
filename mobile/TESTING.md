@@ -388,16 +388,23 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 
 ## 7. Son Oynadıklarım
 
-- [ ] **Liste.** Setup'ta (girişli, devam eden oyunların altında) son 5
-      biten YZ oyunu görünmeli: avatar şeridi, tarih, puan, k-lig.
+- [ ] **Liste.** Setup → "Yapay Zeka ile" → **"Son Oynananlar"** alt
+      sekmesi (Parça 28'den beri ayrı bir sekme, artık devam eden
+      oyunların ALTINDA değil): son 5 biten YZ oyunu — avatar şeridi,
+      tarih, puan, k-lig. Başlık satırı "SON OYNADIKLARIM" + sağda
+      "TÜM OYUNLARIM" linki.
+- [ ] **Canlı tarafı aynı bileşen.** "Arkadaşınla" → "Son Oynananlar":
+      yalnızca biten CANLI oyunlar (YZ oyunları burada görünmemeli).
 - [ ] **Hedefe gitme.** Bir satıra dokun → Tüm Oyunlarım açılmalı ve **o
       oyunun tahtası zaten açık** olmalı, kart ekranın ortasında. (Hedef
       listenin gerisindeyse sayfalama otomatik ilerler — bunu test etmek
       için epeyce bitmiş oyunun olması gerekir.)
 - [ ] **Tüm Oyunlarım linki.** Sağ üstteki link listeyi odaklanmadan
       açmalı.
-- [ ] **Hiç bitmiş oyun yoksa bölüm hiç görünmemeli** (boş başlık
-      gösterilmiyor).
+- [ ] **Hiç bitmiş oyun yoksa BOŞ MESAJ gösterilmeli** — "Henüz bitmiş
+      bir Yapay Zeka oyunun yok." (Canlı sekmesinde "…bir Canlı oyunun
+      yok."). Parça 28'e kadar bölüm sessizce gizleniyordu; kendi başına
+      bir sekme içeriği olunca bu, bomboş bir sekme demek olurdu.
 
 ## 8. Dayanıklılık (uçak modu)
 
