@@ -278,6 +278,12 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       avatarın/baş harflerin (fotoğraf yoksa MAVİ zeminde), YZ koltukları
       gerçek 🤖 emoji olmalı (Material ikonu/kutu DEĞİL); misafirken insan
       koltuğu MAVİ zeminde "?" olmalı (bkz. Bölüm 1'deki aynı kontrol).
+- [ ] **Fotoğraflı avatarın çerçevesi HER YÖNDE eşit (9 Ağustos 2026,
+      Parça 34).** Profil fotoğrafı olan bir avatara (hesap menüsü, Skor
+      Kartı, oyun geçmişi…) yakından bak: ince gri çerçeve çepeçevre
+      KESİNTİSİZ olmalı. Çerçevenin yalnızca üst/alt/sağ/sol'da görünüp
+      köşegenlerde kaybolması (avatarın "dört kenarı düz" görünmesine yol
+      açan eski hata) TEKRARLAMAMALI.
 
 ## 4. Biten oyun kayıtları ve istatistikler
 

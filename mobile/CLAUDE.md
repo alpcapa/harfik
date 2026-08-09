@@ -3942,6 +3942,56 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        şikayetinin native derlemede kaybolduğu bu ortamda GÖSTERİLEMEDİ —
        yalnızca hesapla (712 > 633) ve web'in ölçülen `vh` davranışıyla
        gerekçelendirildi; TestFlight/Appetize turunda teyit edilmeli.
+   - ✅ **Parça 34 — fotoğraflı avatarın çerçeve halkası BOZUKTU; "artefakt"
+     diye İKİ KEZ kapattığım gerçek bir hataydı (9 Ağustos 2026,
+     `k_avatar.dart`):** Kullanıcı önce "mobilde avatar tam yuvarlak
+     durmuyor, üst/alt/sağ/sol kenarları düz" dedi; ben ölçmeden "ekran
+     görüntüsü artefaktı" deyip kapattım. Israr edip "içindeki resim
+     yuvarlağı doldurmuyor, ince boşluklar var" deyince bu kez "o normal
+     1px çerçeve" deyip yine kapattım — **her ikisi de yanlıştı.**
+     - **Kök sebep (gerçek widget ölçülerek bulundu):** `Container`ın
+       `clipBehavior: Clip.antiAlias` + `shape: BoxShape.circle` kırpması
+       DIŞ daireye (çap `size`) göre yapılıyor; ama `BoxDecoration.border`
+       çocuğu kenarlık kadar içeri ittiğinden çocuk `size − 2` kenarlı bir
+       KARE oluyordu. Kare, halkayı (yarıçap `size/2 − 1` … `size/2`)
+       KÖŞEGENLERDE aşıp üzerine boyuyor (decoration çocuktan ÖNCE
+       çizilir), yalnızca N/S/E/W'de halka görünür kalıyordu. Sonuç: dört
+       noktada gri "düz kenar", aralarda hiç çerçeve olmayan bozuk bir
+       halka — tam da kullanıcının tarif ettiği görüntü. Web'de
+       (`<img className="rounded-full ... border border-border">`) CSS
+       `border-radius` BORDER kutusuna uygulanır ve halkanın İÇ kenarı da
+       yuvarlanır: görüntü halkanın içindeki DAİREYE kırpılır, halka her
+       yönde eşit 1px kalır.
+     - **Kanıt — replika değil GERÇEK `KAvatar`, gerçek CanvasKit'te:**
+       widget'ı yerel bir damalı PNG'yle render eden minik bir web
+       harness'i derlenip Chromium'da (Playwright) açıldı ve halka
+       15°'lik adımlarla örneklendi. **ÖNCE: 24 açının yalnızca 4'ünde
+       (0/90/180/270°) çerçeve rengi (#DCE2EA) vardı; SONRA: 24/24.**
+       Ekran görüntüleri de gözle karşılaştırıldı.
+     - **Düzeltme:** görüntü `ClipOval` ile sarıldı ve boyutu
+       `size − 2×_borderWidth` yapıldı — yani halkanın İÇ kenarına tam
+       oturan daire. Kenarlık genişliği artık `_borderWidth` sabitinde
+       (tek kaynak); `Border.all`a açıkça geçiliyor.
+     - **Test — negatif eş doğrulamasıyla, İKİ AYRI kanıt:**
+       `avatar_test.dart`'a yeni bir test — (1) `ClipOval` görüntünün
+       atası, (2) görüntü boyutu 62 (64 − 2×1). Ağ görseli test ortamında
+       YÜKLENMEDİĞİNDEN (errorBuilder devreye girer, ClipOval yalnızca
+       yedek metni sarar) render boyutu ölçülemez; bu yüzden yükleme
+       durumundan bağımsız olan widget ÖZELLİKLERİ sabitlendi. ClipOval
+       kaldırılınca test GERÇEKTEN `Found 0 widgets with type "ClipOval"`,
+       boyut `size`a döndürülünce `Expected: <62> Actual: <64.0>` ile
+       düştü; ikisi de geri konup yeşile döndü.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 280/280 yeşil**
+       (279'dan +1). `kelimeki_core`'a hiç dokunulmadı.
+     - **Ders — "artefakt/normal" demek de bir TEŞHİSTİR ve ölçüm ister:**
+       Parça 18/27/29 hep "hatayı ölçmeden düzeltme" tuzağını anlatıyordu;
+       bu parça simetrik olanı gösterdi: **hatayı ölçmeden YOK SAYMAK.**
+       İlk turda kendi ürettiğim probe görüntüsünde halkanın N/S/E/W'de
+       gri, köşegenlerde hiç olmadığı ZATEN görünüyordu — "1px çerçeve"
+       diye bakıp geçmiştim. Doğru refleks: bir kullanıcı görsel bir farkı
+       İKİNCİ kez bildiriyorsa, kapatmadan önce o farkı ölç (burada halkayı
+       açı açı örneklemek 20 satırlık bir betikti). Uniform olması gereken
+       bir şeyin uniform olup olmadığı gözle değil, örnekleyerek anlaşılır.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

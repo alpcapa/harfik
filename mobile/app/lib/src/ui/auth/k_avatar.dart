@@ -12,6 +12,10 @@ const Color _border = Color(0xFFDCE2EA);
 // stili kullanıyor, web hiçbir zaman gri/nötr bir yedek göstermiyor).
 const Color _accent = Color(0xFF2563EB);
 
+/// `Border.all` varsayılanı — web `border` (1px) karşılığı. Görüntünün
+/// kırpılacağı iç dairenin çapı bu kadar küçüktür (bkz. `_circle`).
+const double _borderWidth = 1.0;
+
 /// Web `initials()`: e-postaysa @ öncesi; boşluk/nokta/altçizgi/tire ile
 /// bölünen iki parçadan birer harf, tek parçaysa ilk iki harf.
 String avatarInitials(String? name) {
@@ -99,13 +103,29 @@ class _KAvatarState extends State<KAvatar> {
         // mavi yedek (web `<span className="... bg-accent border-accent">`).
         color: showImage ? _panel : _accent,
         shape: BoxShape.circle,
-        border: Border.all(color: showImage ? _border : _accent),
+        border: Border.all(
+            color: showImage ? _border : _accent, width: _borderWidth),
       ),
+      // Web `<img className="rounded-full object-cover border border-border">`:
+      // CSS'te `border-radius` BORDER kutusuna uygulanır ve halkanın İÇ kenarı
+      // da yuvarlanır — görüntü, halkanın içindeki DAİREYE kırpılır, halka her
+      // yönde eşit 1px kalır. Flutter'da ise `Container`ın kırpması DIŞ daireye
+      // (çap `size`) göre yapılıyor, çocuk ise kenarlık kadar içeri itilmiş bir
+      // KARE (kenar `size − 2`) oluyordu: kare, köşegenlerde halkanın üzerine
+      // taşıp onu ÖRTÜYOR, yalnızca N/S/E/W'de halka görünüyordu. Sonuç dört
+      // noktada gri "düz kenar", aralarda hiç çerçeve olmayan bozuk bir halka
+      // (9 Ağustos 2026; kullanıcı cihaz testinde İKİ KEZ bildirdi, ilk iki
+      // turda yanlışlıkla ekran görüntüsü artefaktı sanılıp kapatılmıştı).
+      // GERÇEK widget CanvasKit'te render edilip halka açı açı ölçülerek
+      // kanıtlandı: 24 açının yalnızca 4'ünde (0/90/180/270°) #DCE2EA vardı,
+      // düzeltmeden sonra 24/24. `ClipOval` görüntüyü tam halkanın iç
+      // kenarına oturan daireye kırpar = CSS davranışı.
       child: showImage
-          ? Image.network(
+          ? ClipOval(
+              child: Image.network(
               u,
-              width: widget.size,
-              height: widget.size,
+              width: widget.size - _borderWidth * 2,
+              height: widget.size - _borderWidth * 2,
               fit: BoxFit.cover,
               // Ağ hatasında baş harflere düş (web <img> onError eşleniği).
               // `errorBuilder` build sırasında çağrıldığından `setState`'i
@@ -120,7 +140,7 @@ class _KAvatarState extends State<KAvatar> {
                 }
                 return _initialsText(text, fontSize);
               },
-            )
+            ))
           : _initialsText(text, fontSize),
     );
   }

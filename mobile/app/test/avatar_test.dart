@@ -144,4 +144,43 @@ void main() {
       out.writeAsBytesSync(bytes!.buffer.asUint8List());
     });
   });
+
+  // 9 Ağustos 2026 — kullanıcı avatarın "üst, alt, sağ ve sol kenarlarının
+  // düz göründüğünü" İKİ KEZ bildirdi (ilk iki turda yanlışlıkla ekran
+  // görüntüsü artefaktı / normal 1px çerçeve sanılıp kapatılmıştı).
+  // GERÇEK `KAvatar` CanvasKit'te render edilip çerçeve halkası açı açı
+  // ölçülünce kanıtlandı: halka 24 açının yalnızca 4'ünde (0/90/180/270°)
+  // görünüyordu, çünkü `Container`ın kırpması DIŞ daireye göreyken çocuk
+  // kenarlık kadar içeri itilmiş bir KAREYDİ ve köşegenlerde halkanın
+  // üzerine taşıyordu. Web'de (CSS `border-radius` + `border`) halka her
+  // yönde eşittir. `ClipOval` görüntüyü tam halkanın İÇ dairesine kırpar —
+  // bu test o geometriyi sabitliyor (düzeltme sonrası 24/24 ölçüldü).
+  testWidgets('fotoğraflı avatar halkanın İÇ dairesine kırpılır', (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: KAvatar(url: 'https://example.com/a.png', name: 'Ironman', size: 64),
+        ),
+      ),
+    ));
+    await tester.pump();
+
+    // Ağ görseli test ortamında yüklenmediğinden (errorBuilder devreye
+    // girer) RENDER boyutu ölçülemez — bunun yerine yükleme durumundan
+    // BAĞIMSIZ olan iki değişmez sabitleniyor.
+    final imageFinder =
+        find.descendant(of: find.byType(KAvatar), matching: find.byType(Image));
+    expect(imageFinder, findsOneWidget);
+
+    // (1) Görüntü ClipOval ile daireye kırpılıyor.
+    expect(find.ancestor(of: imageFinder, matching: find.byType(ClipOval)),
+        findsOneWidget,
+        reason: 'görüntü ClipOval ile daireye kırpılmalı');
+
+    // (2) O dairenin çapı halkanın İÇ kenarı: 64 − 2×1px kenarlık = 62.
+    //     Eskiden `size` (64) veriliyordu; kare, halkanın üzerine taşıyordu.
+    final img = tester.widget<Image>(imageFinder);
+    expect(img.width, 62);
+    expect(img.height, 62);
+  });
 }
