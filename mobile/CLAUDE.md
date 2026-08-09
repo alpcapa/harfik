@@ -4446,6 +4446,54 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ne Türkçe metin ne de `tooltip` null bırakılsaydı çıkacak olan
        İngilizce "Show menu". Yani boş dize çözümü gerçek CanvasKit'te de
        beklendiği gibi çalışıyor.
+   - ✅ **Parça 42 — arkadaşlık simgesi: bu sefer WEB porta hizalandı; yan
+     bulgu olarak "iki ayrı yeşil" ortaya çıktı (9 Ağustos 2026,
+     `player_score_card_modal.dart` + web `PlayerScoreCard.tsx`):**
+     Kullanıcı iki skor kartını yan yana koyup "web'deki arkadaş ekle
+     app'tekinden neden farklı?" diye sordu, sonra "hepsi app'teki gibi
+     olsun" dedi.
+     - **Fark İKİ noktadaydı, biri gözden kaçmıştı:** (1) web butonu
+       20×20'lik yuvarlak bir rozet (`bg-accent/15` zemin +
+       `border-accent/40` çerçeve) taşıyor, port kapsız çiziyor; (2) web
+       çizgisel (outline) SVG, port dolu (filled) Material glyph'i. Bir
+       gün önceki web değişikliği yalnızca glyph'i `+`'dan outline bir
+       ikona çevirmiş, rozeti hiç sorgulamamıştı — bu yüzden fark devam
+       etti. İkisi de web tarafında port yönünde kapatıldı.
+     - **Yön bu kez TERS (port → web) ve bu bilinçli:** projenin kuralı
+       "web kanonik, port ona uyar"; ama burada kullanıcı açıkça portun
+       görünümünü tercih etti. Kural bir estetik dayatma değil, sessiz
+       ayrışmayı önleme aracı — tercih açıkça belirtildiğinde web'in
+       değişmesi de aynı amaca hizmet ediyor.
+     - **Web'e yazılan path verisi PORTUN KENDİ FONTUNDAN çıkarıldı:**
+       `MaterialIcons-Regular.otf` (Flutter SDK) → fontTools →
+       `Icons.person_add_alt_1` (U+E494) ve `Icons.check_circle`
+       (U+E159) outline'ları → 24'lük viewBox (unitsPerEm 512, ölçek
+       24/512, y ters). Ölçülen sınırlar Material ızgarasıyla uyuştu
+       (person_add y 4-20, check_circle 2-22 kare) — yani iki platform
+       "benzer" değil AYNI vektörü çiziyor. Benzerini elle çizmek bu
+       projenin "ölçmeden teşhis koyma" dersinin görsel karşılığı olurdu.
+     - **✓ de aynı turda değişti:** web'de yeşil rozet içindeki `✓`
+       karakteri dolu `check_circle` ikonuna çevrildi. Tek başına
+       bırakılsaydı bu sefer O ayrışırdı — aynı butonun iki yüzü.
+     - **Yan bulgu (gerçek, kapatılmadı) — web'de İKİ ayrı yeşil var:**
+       tailwind token `green: #16A34A` (`text-green`: ✓ ikonu, "Senin
+       Hamlen Bekleniyor" gibi metinler) ve `Board.tsx`'te hardcoded
+       `#1FA05C` (`moveColor`, sürükleme dış hattı). Port ikincisini tek
+       `_green`'i sanıp **12 yerde** kullanıyor; bazıları doğru
+       (tahta/mesaj), bazıları değil. Bu parçada YALNIZCA ✓ ikonu
+       düzeltildi (`0xFF16A34A`) — kalan 11 kullanım yeri site site web
+       karşılığıyla karşılaştırılmadı. **Açık iş:** her `_green`
+       kullanımının web'de token mı yoksa `#1FA05C` mi olduğunu
+       denetleyen ayrı bir tur. Toplu bir "hepsini token yap" hamlesi
+       YANLIŞ olurdu — tahta/hamle dış hattı gerçekten `#1FA05C`.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 290/290 yeşil**;
+       web `npm run lint` + `npm run build` temiz, görsel kontrol
+       derlenmiş gerçek CSS ile Chromium'da DPR 3'te yapıldı (buton
+       kutusu 20×20, zemin şeffaf, çerçeve 0 ölçüldü). Web değişikliği
+       ayrı bir `main` tabanlı PR ile (#228) canlıya alındı.
+     - **Doğrulama sınırı:** iki platformun yan yana son görsel teyidi
+       kullanıcıdan bekleniyor (renk farkı ✓'te artık yok, ama gözle
+       ayırt edilemeyecek kadar küçüktü zaten).
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

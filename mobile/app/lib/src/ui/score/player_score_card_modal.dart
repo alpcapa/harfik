@@ -210,7 +210,13 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
           accepted ? Icons.check_circle : Icons.person_add_alt_1,
           size: 20,
           color: accepted
-              ? const Color(0xFF1FA05C) // web yeşil ✓
+              // Web'in bu elemandaki rengi tailwind `green` TOKEN'ı
+              // (`text-green` = #16A34A). Port baştan `#1FA05C` yazmıştı —
+              // o da web'de var ama BAŞKA bir yerde: `Board.tsx`'in
+              // sürükleme/hamle durumu dış hattında hardcoded duruyor.
+              // Yani ikisi web'de ayrı iki yeşil; burada token doğru olan
+              // (9 Ağustos 2026, web ikonu porta hizalanırken bulundu).
+              ? const Color(0xFF16A34A)
               : const Color(0xFF2563EB),
         ),
       ),
