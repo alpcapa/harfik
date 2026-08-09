@@ -1199,12 +1199,22 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                 // game_screen.dart'taki aynı 680px kart sınırı (bkz. orada,
                 // "web'in tamamı max-w-[680px]" notu) — geniş/yatay ekranda
                 // tahtanın/rafın gölgesi kenardan kırpılmasın diye.
-                Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 680),
-                    child: Column(
-                      children: [
-                        GameHeader(
+                Column(
+                  children: [
+                    // Web'de `min-h-[100dvh] flex flex-col` sayfanın TAMAMI akıyor
+                    // ve 680'lik sınır her bölümün KENDİ üzerinde (GameHeader.tsx,
+                    // Board.tsx, App.tsx'in alt container'ı) — yani hiçbir yerde
+                    // 680 genişliğinde bir KIRPMA kabı yok. Port bir dönem 680'i
+                    // her şeyi saran tek bir kaba koymuştu; kaydırma görünümü o
+                    // kap kadar (680) dar olduğundan tahtanın ~30px taşan gölgesi
+                    // kırpılıyor ve gölge bıçak gibi kesiliyordu (kullanıcı iPad'de
+                    // web ile yan yana koyup bildirdi, 9 Ağustos 2026 — Parça 40).
+                    // Artık web'in deseni birebir: kaydırma görünümü TAM GENİŞLİK,
+                    // 680 sınırı header'ın ve içerik sütununun kendi üzerinde.
+                    Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 680),
+                        child: GameHeader(
                           state: state,
                           auth: widget.auth,
                           stats: widget.stats,
@@ -1216,300 +1226,314 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                           onPlayerTap:
                               widget.stats == null ? null : _openPlayerCard,
                         ),
-                        Expanded(
-                          child: ClipRect(
-                            clipper: const _VerticalOnlyClipper(),
-                            child: SingleChildScrollView(
-                            clipBehavior: Clip.none,
-                            // Aktif bir taş sürüklemesi varken kaydırma kilitleniyor
-                            // — game_screen.dart'taki aynı düzeltme (bkz. orada,
-                            // "Listener jest arenasına katılmıyor" notu).
-                            physics: (_dragRef?.enabled ?? false)
-                                ? const NeverScrollableScrollPhysics()
-                                : null,
-                            child: Column(
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
-                                  child: BoardWidget(
-                                    state: state,
-                                    moveOverlay: moveStatus == null
-                                        ? null
-                                        : MoveOverlay(
-                                            valid: moveStatus.valid,
-                                            cells: moveStatus.cells,
-                                            score: moveStatus.score,
-                                          ),
-                                    onCellTap: _handleCellTap,
-                                    gridKey: _gridKey,
-                                    onOpenHistory: () => showMoveHistoryModal(
-                                        context,
-                                        state.copyWith(
-                                            moveHistory:
-                                                buildMoveHistory(_moves))),
-                                    onOpenMessaging: widget.chat == null
-                                        ? null
-                                        : _openMessaging,
-                                    hasUnreadMessage:
-                                        _chatState.unreadCount > 0,
-                                    dragHiddenKey: _hiddenSource
-                                            is _PlacedSource
-                                        ? cellKey(
-                                            (_hiddenSource as _PlacedSource).r,
-                                            (_hiddenSource as _PlacedSource).c)
-                                        : null,
-                                    onTilePointerDown: (r, c, e) {
-                                      final t = state.placed[cellKey(r, c)];
-                                      if (t != null) {
-                                        _beginTileDrag(
-                                            _PlacedSource(r, c, t), e);
-                                      }
-                                    },
-                                    onTilePointerMove: _moveTileDrag,
-                                    onTilePointerUp: _endTileDrag,
-                                    onTilePointerCancel: _cancelTileDrag,
+                      ),
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        // Aktif bir taş sürüklemesi varken kaydırma kilitleniyor
+                        // — game_screen.dart'taki aynı düzeltme (bkz. orada,
+                        // "Listener jest arenasına katılmıyor" notu).
+                        physics: (_dragRef?.enabled ?? false)
+                            ? const NeverScrollableScrollPhysics()
+                            : null,
+                        // İçerik sütunu web'in her bölümdeki
+                        // `max-w-[680px] mx-auto`sı gibi BURADA sınırlanıyor
+                        // — kaydırma görünümünün KENDİSİ tam genişlik kalmalı
+                        // ki tahtanın taşan gölgesi kırpılmasın (Parça 40).
+                        child: Center(
+                          child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 680),
+                              child: Column(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    child: BoardWidget(
+                                      state: state,
+                                      moveOverlay: moveStatus == null
+                                          ? null
+                                          : MoveOverlay(
+                                              valid: moveStatus.valid,
+                                              cells: moveStatus.cells,
+                                              score: moveStatus.score,
+                                            ),
+                                      onCellTap: _handleCellTap,
+                                      gridKey: _gridKey,
+                                      onOpenHistory: () => showMoveHistoryModal(
+                                          context,
+                                          state.copyWith(
+                                              moveHistory:
+                                                  buildMoveHistory(_moves))),
+                                      onOpenMessaging: widget.chat == null
+                                          ? null
+                                          : _openMessaging,
+                                      hasUnreadMessage:
+                                          _chatState.unreadCount > 0,
+                                      dragHiddenKey: _hiddenSource
+                                              is _PlacedSource
+                                          ? cellKey(
+                                              (_hiddenSource as _PlacedSource)
+                                                  .r,
+                                              (_hiddenSource as _PlacedSource)
+                                                  .c)
+                                          : null,
+                                      onTilePointerDown: (r, c, e) {
+                                        final t = state.placed[cellKey(r, c)];
+                                        if (t != null) {
+                                          _beginTileDrag(
+                                              _PlacedSource(r, c, t), e);
+                                        }
+                                      },
+                                      onTilePointerMove: _moveTileDrag,
+                                      onTilePointerUp: _endTileDrag,
+                                      onTilePointerCancel: _cancelTileDrag,
+                                    ),
                                   ),
-                                ),
-                                // Web: <main> içinde Board'dan hemen sonra mesaj
-                                // bloğu geliyor ve tek boşluk onun `pt-1`i (4px,
-                                // aşağıdaki Padding'de) — yani BURADA ek boşluk
-                                // YOK. Parça 16'da buraya 56px konmuştu ("tahta
-                                // gölgesi raf kartının opak zemini tarafından
-                                // eziliyor" gerekçesiyle); ama web de aynı
-                                // yapıya sahip ve orada sorun yok — gerçek kök
-                                // sebep Parça 17'de bulundu (max-width 680 hiç
-                                // uygulanmamış, tahta kenardan kenara gerilip
-                                // gölgeye yer kalmıyordu). O düzeltmeden sonra
-                                // bu 56px yalnızca web'den sapan görünür bir
-                                // boşluk olarak kaldı (kullanıcı 9 Ağustos
-                                // 2026'da bildirdi).
-                                // Sıra bende değil VE henüz taş koymadıysam
-                                // banner (kimin sırası olduğu net kalsın); taş
-                                // koyunca yerini normal mesaj satırına bırakır.
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                                  child: (!_canAct &&
-                                          !state.isGameOver &&
-                                          moveStatus == null)
-                                      ? _TurnBanner(
-                                          isAiTurn: _isAiTurn,
-                                          name: _currentName)
-                                      : SizedBox(
-                                          height: 30,
-                                          child: Center(
-                                            child: Text(
-                                              liveMessage,
-                                              maxLines: 2,
-                                              textAlign: TextAlign.center,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                fontFamily: 'SpaceMono',
-                                                fontWeight: FontWeight.bold,
-                                                color: _messageColor(liveKind),
+                                  // Web: <main> içinde Board'dan hemen sonra mesaj
+                                  // bloğu geliyor ve tek boşluk onun `pt-1`i (4px,
+                                  // aşağıdaki Padding'de) — yani BURADA ek boşluk
+                                  // YOK. Parça 16'da buraya 56px konmuştu ("tahta
+                                  // gölgesi raf kartının opak zemini tarafından
+                                  // eziliyor" gerekçesiyle); ama web de aynı
+                                  // yapıya sahip ve orada sorun yok — gerçek kök
+                                  // sebep Parça 17'de bulundu (max-width 680 hiç
+                                  // uygulanmamış, tahta kenardan kenara gerilip
+                                  // gölgeye yer kalmıyordu). O düzeltmeden sonra
+                                  // bu 56px yalnızca web'den sapan görünür bir
+                                  // boşluk olarak kaldı (kullanıcı 9 Ağustos
+                                  // 2026'da bildirdi).
+                                  // Sıra bende değil VE henüz taş koymadıysam
+                                  // banner (kimin sırası olduğu net kalsın); taş
+                                  // koyunca yerini normal mesaj satırına bırakır.
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                                    child: (!_canAct &&
+                                            !state.isGameOver &&
+                                            moveStatus == null)
+                                        ? _TurnBanner(
+                                            isAiTurn: _isAiTurn,
+                                            name: _currentName)
+                                        : SizedBox(
+                                            height: 30,
+                                            child: Center(
+                                              child: Text(
+                                                liveMessage,
+                                                maxLines: 2,
+                                                textAlign: TextAlign.center,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontFamily: 'SpaceMono',
+                                                  fontWeight: FontWeight.bold,
+                                                  color:
+                                                      _messageColor(liveKind),
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                ),
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(12, 4, 12, 0),
-                                  child: IntrinsicHeight(
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        Expanded(
-                                          child: KeyedSubtree(
-                                            key: _rackKey,
-                                            child: RackWidget(
-                                              tiles: me.rack,
-                                              selectedTile: state.selectedTile,
-                                              onSelect: (i) {
-                                                if (state.swapMode) {
-                                                  if (!_canAct) return;
-                                                  _controller.dispatch(
-                                                      ToggleSwapTileAction(i));
-                                                } else {
-                                                  if (!_canEdit) return;
-                                                  _controller.dispatch(
-                                                      SelectTileAction(i));
-                                                }
-                                              },
-                                              title: me.name,
-                                              color: _colorOf(_mySlot),
-                                              swapMode: state.swapMode,
-                                              swapSelection:
-                                                  state.swapSelection,
-                                              dragHiddenIndex:
-                                                  _hiddenSource is _RackSource
-                                                      ? (_hiddenSource
-                                                              as _RackSource)
-                                                          .index
-                                                      : null,
-                                              onTilePointerDown: (i, e) =>
-                                                  _beginTileDrag(
-                                                      _RackSource(
-                                                          i, me.rack[i]),
-                                                      e),
-                                              onTilePointerMove: _moveTileDrag,
-                                              onTilePointerUp: _endTileDrag,
-                                              onTilePointerCancel:
-                                                  _cancelTileDrag,
+                                  ),
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.fromLTRB(12, 4, 12, 0),
+                                    child: IntrinsicHeight(
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          Expanded(
+                                            child: KeyedSubtree(
+                                              key: _rackKey,
+                                              child: RackWidget(
+                                                tiles: me.rack,
+                                                selectedTile:
+                                                    state.selectedTile,
+                                                onSelect: (i) {
+                                                  if (state.swapMode) {
+                                                    if (!_canAct) return;
+                                                    _controller.dispatch(
+                                                        ToggleSwapTileAction(
+                                                            i));
+                                                  } else {
+                                                    if (!_canEdit) return;
+                                                    _controller.dispatch(
+                                                        SelectTileAction(i));
+                                                  }
+                                                },
+                                                title: me.name,
+                                                color: _colorOf(_mySlot),
+                                                swapMode: state.swapMode,
+                                                swapSelection:
+                                                    state.swapSelection,
+                                                dragHiddenIndex:
+                                                    _hiddenSource is _RackSource
+                                                        ? (_hiddenSource
+                                                                as _RackSource)
+                                                            .index
+                                                        : null,
+                                                onTilePointerDown: (i, e) =>
+                                                    _beginTileDrag(
+                                                        _RackSource(
+                                                            i, me.rack[i]),
+                                                        e),
+                                                onTilePointerMove:
+                                                    _moveTileDrag,
+                                                onTilePointerUp: _endTileDrag,
+                                                onTilePointerCancel:
+                                                    _cancelTileDrag,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                        if (!state.swapMode) ...[
-                                          const SizedBox(width: 8),
-                                          state.isGameOver
-                                              ? NeoButton(
-                                                  label: 'CANLI\nLİSTESİ',
-                                                  variant:
-                                                      NeoButtonVariant.accent,
-                                                  fontSize: 12,
-                                                  letterSpacing: 1.2,
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 16),
-                                                  onPressed: () =>
-                                                      Navigator.of(context)
-                                                          .pop(),
-                                                )
-                                              : NeoButton(
-                                                  label: _busy
-                                                      ? 'GÖNDERİLİYOR…'
-                                                      : 'OYNA',
-                                                  variant:
-                                                      NeoButtonVariant.accent,
-                                                  fontSize: 13,
-                                                  letterSpacing: 1.2,
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 20),
-                                                  onPressed: _canAct &&
-                                                          !_busy &&
-                                                          state
-                                                              .placed.isNotEmpty
-                                                      ? _handlePlay
-                                                      : null,
-                                                ),
+                                          if (!state.swapMode) ...[
+                                            const SizedBox(width: 8),
+                                            state.isGameOver
+                                                ? NeoButton(
+                                                    label: 'CANLI\nLİSTESİ',
+                                                    variant:
+                                                        NeoButtonVariant.accent,
+                                                    fontSize: 12,
+                                                    letterSpacing: 1.2,
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 16),
+                                                    onPressed: () =>
+                                                        Navigator.of(context)
+                                                            .pop(),
+                                                  )
+                                                : NeoButton(
+                                                    label: _busy
+                                                        ? 'GÖNDERİLİYOR…'
+                                                        : 'OYNA',
+                                                    variant:
+                                                        NeoButtonVariant.accent,
+                                                    fontSize: 13,
+                                                    letterSpacing: 1.2,
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 20),
+                                                    onPressed: _canAct &&
+                                                            !_busy &&
+                                                            state.placed
+                                                                .isNotEmpty
+                                                        ? _handlePlay
+                                                        : null,
+                                                  ),
+                                          ],
                                         ],
-                                      ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                                Padding(
-                                  // Üst boşluk 8→24: raf kartının kendi gölgesi
-                                  // game_screen.dart ile AYNI sebeple (bkz. orada).
-                                  padding:
-                                      const EdgeInsets.fromLTRB(12, 6, 12, 12),
-                                  child: state.swapMode
-                                      ? Row(children: [
-                                          Expanded(
-                                            child: NeoButton(
-                                              label: state
-                                                      .swapSelection.isNotEmpty
-                                                  ? 'DEĞİŞTİR (${state.swapSelection.length})'
-                                                  : 'DEĞİŞTİR',
-                                              variant: NeoButtonVariant.gold,
-                                              onPressed: _canAct &&
-                                                      !_busy &&
-                                                      state.swapSelection
-                                                          .isNotEmpty
-                                                  ? _handleConfirmSwap
-                                                  : null,
+                                  Padding(
+                                    // Üst boşluk 8→24: raf kartının kendi gölgesi
+                                    // game_screen.dart ile AYNI sebeple (bkz. orada).
+                                    padding: const EdgeInsets.fromLTRB(
+                                        12, 6, 12, 12),
+                                    child: state.swapMode
+                                        ? Row(children: [
+                                            Expanded(
+                                              child: NeoButton(
+                                                label: state.swapSelection
+                                                        .isNotEmpty
+                                                    ? 'DEĞİŞTİR (${state.swapSelection.length})'
+                                                    : 'DEĞİŞTİR',
+                                                variant: NeoButtonVariant.gold,
+                                                onPressed: _canAct &&
+                                                        !_busy &&
+                                                        state.swapSelection
+                                                            .isNotEmpty
+                                                    ? _handleConfirmSwap
+                                                    : null,
+                                              ),
                                             ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: NeoButton(
-                                              label: 'VAZGEÇ',
-                                              onPressed: _canAct
-                                                  ? () => _controller.dispatch(
-                                                      const ToggleSwapModeAction())
-                                                  : null,
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: NeoButton(
+                                                label: 'VAZGEÇ',
+                                                onPressed: _canAct
+                                                    ? () => _controller.dispatch(
+                                                        const ToggleSwapModeAction())
+                                                    : null,
+                                              ),
                                             ),
-                                          ),
-                                        ])
-                                      : Row(children: [
-                                          Expanded(
-                                            child: NeoButton(
-                                              label: 'PAS GEÇ',
-                                              onPressed: _canAct && !_busy
-                                                  ? _handlePass
-                                                  : null,
+                                          ])
+                                        : Row(children: [
+                                            Expanded(
+                                              child: NeoButton(
+                                                label: 'PAS GEÇ',
+                                                onPressed: _canAct && !_busy
+                                                    ? _handlePass
+                                                    : null,
+                                              ),
                                             ),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Expanded(
-                                            child: NeoButton(
-                                              label: 'DEĞİŞTİR',
-                                              onPressed: _canAct &&
-                                                      state.bag.isNotEmpty
-                                                  ? () => _controller.dispatch(
-                                                      const ToggleSwapModeAction())
-                                                  : null,
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: NeoButton(
+                                                label: 'DEĞİŞTİR',
+                                                onPressed: _canAct &&
+                                                        state.bag.isNotEmpty
+                                                    ? () => _controller.dispatch(
+                                                        const ToggleSwapModeAction())
+                                                    : null,
+                                              ),
                                             ),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Expanded(
-                                            child: NeoButton(
-                                              label: 'KARIŞTIR',
-                                              onPressed: _canEdit
-                                                  ? () => _controller.dispatch(
-                                                      const ShuffleRackAction())
-                                                  : null,
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: NeoButton(
+                                                label: 'KARIŞTIR',
+                                                onPressed: _canEdit
+                                                    ? () => _controller.dispatch(
+                                                        const ShuffleRackAction())
+                                                    : null,
+                                              ),
                                             ),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Expanded(
-                                            child: NeoButton(
-                                              label: 'GERİ AL',
-                                              onPressed: _canEdit &&
-                                                      state.placed.isNotEmpty
-                                                  ? () => _controller.dispatch(
-                                                      const RecallAllAction())
-                                                  : null,
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: NeoButton(
+                                                label: 'GERİ AL',
+                                                onPressed: _canEdit &&
+                                                        state.placed.isNotEmpty
+                                                    ? () => _controller.dispatch(
+                                                        const RecallAllAction())
+                                                    : null,
+                                              ),
                                             ),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Expanded(
-                                            child: NeoButton(
-                                              label:
-                                                  'TORBA ${state.bag.length}',
-                                              // Web App.tsx ~1360 (bkz.
-                                              // game_screen.dart'taki aynı
-                                              // NeoButton çağrısı — ikisi de
-                                              // AYNI PR'da güncellenmeli).
-                                              richLabel: [
-                                                const TextSpan(text: 'TORBA '),
-                                                TextSpan(
-                                                  text: '${state.bag.length}',
-                                                  style: const TextStyle(
-                                                    fontSize: 13,
-                                                    color: Color(0xFF2563EB),
-                                                    fontWeight:
-                                                        FontWeight.bold,
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: NeoButton(
+                                                label:
+                                                    'TORBA ${state.bag.length}',
+                                                // Web App.tsx ~1360 (bkz.
+                                                // game_screen.dart'taki aynı
+                                                // NeoButton çağrısı — ikisi de
+                                                // AYNI PR'da güncellenmeli).
+                                                richLabel: [
+                                                  const TextSpan(
+                                                      text: 'TORBA '),
+                                                  TextSpan(
+                                                    text: '${state.bag.length}',
+                                                    style: const TextStyle(
+                                                      fontSize: 13,
+                                                      color: Color(0xFF2563EB),
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
                                                   ),
-                                                ),
-                                              ],
-                                              onPressed: () =>
-                                                  showRemainingTilesModal(
-                                                      context, state, _mySlot),
+                                                ],
+                                                onPressed: () =>
+                                                    showRemainingTilesModal(
+                                                        context,
+                                                        state,
+                                                        _mySlot),
+                                              ),
                                             ),
-                                          ),
-                                        ]),
-                                ),
-                              ],
-                            ),
-                          )),
+                                          ]),
+                                  ),
+                                ],
+                              )),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
                 // game_screen.dart ile birebir aynı overlay deseni (bkz.
                 // orada) — `_dragNotifier`'ı dinleyen tek, koşulsuz duran
@@ -1624,28 +1648,4 @@ class _TurnBannerState extends State<_TurnBanner>
       ),
     );
   }
-}
-
-/// Dikeyde kırpar, yatayda KIRPMAZ — tahtanın nömorfik gölgesi kartın
-/// yanlarından ~30px taşıyor ve içerik sütunu 680'e sınırlı olduğundan,
-/// kaydırma görünümü etkinleştiğinde (içerik ekrandan uzun olduğunda) o taşan
-/// kısım kırpılıp gölge ANİ bir kenarla kesiliyordu. Ölçüldü (Parça 39):
-/// kaydırma yokken sağ kenar 217→228→238→243→247→250 diye sönümlenirken,
-/// kaydırma varken 217→255 ile bıçak gibi kesiliyordu; tetikleyici yön DEĞİL
-/// kaydırılabilirlik (aynı genişlikte, yalnızca yüksekliği kısaltınca da
-/// oluşuyor).
-///
-/// `clipBehavior: Clip.none` gölgeyi düzeltiyor ama kaydırılan içeriğin
-/// GameHeader'ın üstüne boyanmasına yol açıyor (Column'da header daha önce
-/// çizildiğinden) — bu yüzden dikey kırpma korunup yalnızca yatay eksen
-/// serbest bırakılıyor.
-class _VerticalOnlyClipper extends CustomClipper<Rect> {
-  const _VerticalOnlyClipper();
-
-  @override
-  Rect getClip(Size size) =>
-      Rect.fromLTRB(-100000, 0, size.width + 100000, size.height);
-
-  @override
-  bool shouldReclip(covariant CustomClipper<Rect> oldClipper) => false;
 }

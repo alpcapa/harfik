@@ -745,10 +745,11 @@ void main() {
   });
 
   testWidgets(
-      'kaydırma görünümü YATAYDA kırpmıyor — tahta gölgesi kartın yanlarından '
-      '~30px taşıyor (Parça 39: yatay modda gölge bıçak gibi kesiliyordu)',
-      (tester) async {
-    await setPhoneViewSize(tester, const Size(420, 620)); // içerik sığmaz → kaydırılabilir
+      'kaydırma görünümü TAM GENİŞLİK, 680 sınırı İÇERİDE — web deseni '
+      '(Parça 40: 680 kabı kaydırmayı sarınca tahtanın taşan gölgesi '
+      'kırpılıyordu)', (tester) async {
+    // İçerik sığmasın (kaydırılabilir olsun) ve viewport 680'den GENİŞ olsun.
+    await setPhoneViewSize(tester, const Size(900, 620));
     final c =
         GameController(words: words, autoPlayAi: false, nowIso: () => '');
     c.dispatch(ResumeSavedAction(craftedState()));
@@ -758,19 +759,20 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    // Dikey kaydırmayı kırpan ClipRect'i bul (GameHeader'ın üstüne taşmayı
-    // önlüyor) ve kırpma dikdörtgeninin YATAYDA kutunun dışına taştığını
-    // doğrula. `Clip.none` gölgeyi kurtarırdı ama kaydırılan içerik header'ın
-    // üstüne boyanırdı — bu yüzden eksen ayrımı şart.
-    final clips = tester.widgetList<ClipRect>(find.byType(ClipRect));
-    final custom = clips.where((w) => w.clipper != null).toList();
-    expect(custom, isNotEmpty, reason: 'özel eksen kırpıcısı bulunmalı');
-    const size = Size(420, 620);
-    final rect = custom.first.clipper!.getClip(size);
-    expect(rect.top, 0);
-    expect(rect.bottom, size.height, reason: 'dikeyde kırpmalı');
-    expect(rect.left, lessThan(-100), reason: 'yatayda kırpmamalı');
-    expect(rect.right, greaterThan(size.width + 100),
-        reason: 'yatayda kırpmamalı');
+    // Ana (dikey) kaydırma görünümü — GameHeader'ın kendi YATAY şeridi de
+    // aynı widget'ı kullandığından eksenle ayırt ediliyor (Parça 15 dersi).
+    final scroll = find.byWidgetPredicate((w) =>
+        w is SingleChildScrollView && w.scrollDirection == Axis.vertical);
+    expect(tester.getSize(scroll).width, 900,
+        reason: 'kaydırma görünümü tam genişlik olmalı — 680 olursa tahtanın '
+            'gölgesi kırpılır');
+
+    // İçerik yine de 680'e sınırlı (Parça 17: aksi halde tahta kenardan '
+    // kenara gerilir).
+    final inner = find.descendant(
+        of: scroll,
+        matching: find.byWidgetPredicate((w) =>
+            w is ConstrainedBox && w.constraints.maxWidth == 680));
+    expect(inner, findsWidgets, reason: 'içerik sütunu 680e sınırlı olmalı');
   });
 }

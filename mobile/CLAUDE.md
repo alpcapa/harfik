@@ -4327,6 +4327,52 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        kullanılan web harness'i ve `build/` çıktıları silindi.
      - **Doğrulama sınırı:** ölçümler yerel Chromium/SwiftShader'da yapıldı;
        gerçek iPad Safari'de görsel teyit kullanıcıdan bekleniyor.
+   - ✅ **Parça 40 — "web'in birebir aynısını uygulayamıyor muyuz?": 680'lik
+     sınır KAYDIRMAYI SARIYORDU, web'de ise her bölümün kendi üzerinde
+     (9 Ağustos 2026, `game_screen.dart`, `online_game_screen.dart`):**
+     Kullanıcı Parça 39'dan sonra da tahtanın sağ üstündeki gölgeyi "web'e
+     göre çok belirgin" bulup haklı bir soru sordu.
+     - **İlk ölçümüm YETERSİZDİ ve beni yanlış sonuca götürdü.** İZOLE
+       `BoardWidget`'ı web'in derlenmiş CSS'iyle aynı geometride ölçüp
+       "gölge birebir aynı, fark yok" demiştim — profiller gerçekten 1-2/255
+       farkla örtüşüyordu (kart zemini `#DDE4EE`, yarıçap 18, üçlü gölge
+       hepsi aynı). Ama izole widget GERÇEK EKRANIN sarmalayıcılarını
+       taşımıyordu; sorun gölgede değil DÜZENDEYDİ. **Ders:** "değerler
+       aynı" ölçümü, o değerlerin İÇİNDE YAŞADIĞI ağaç farklıysa hiçbir şey
+       kanıtlamaz — parite ölçümü gerçek ekranın kendisinde yapılmalı.
+     - **Kök sebep:** Web'de `min-h-[100dvh] flex flex-col` sayfanın TAMAMI
+       akıyor ve `max-w-[680px]` her bölümün KENDİ üzerinde (GameHeader.tsx,
+       Board.tsx, App.tsx'in alt container'ı) — yani 680 genişliğinde bir
+       KIRPMA kabı hiç yok. Port ise 680'i header+içeriği saran TEK bir
+       `ConstrainedBox`'a koymuştu; `SingleChildScrollView` o kabın içinde
+       kaldığından kaydırma görünümünün KENDİSİ 680 genişliğindeydi ve
+       tahtanın ~30px taşan gölgesini kırpıyordu.
+     - **Parça 39'un `_VerticalOnlyClipper`'ı bir YAMAYDI, kaldırıldı.**
+       Dün semptomu (yatayda kesilen gölge) doğru teşhis edip yanlış yerden
+       çözmüştüm: kırpmayı eksene bölmek yerine kırpma kabının neden 680
+       olduğunu sormalıydım. 200.000px'lik yapay bir kırpma dikdörtgeni de
+       geride kalmayacaktı. Artık `clipBehavior` varsayılan, özel clipper
+       yok — kaydırma görünümü TAM GENİŞLİK, 680 sınırı header'ın ve içerik
+       sütununun kendi üzerinde (web'in deseni birebir).
+     - **Doğrulama:** gerçek CanvasKit'te (tam `GameScreen`, yatay 1194x790)
+       sağ kenar profili kaydırmadan ÖNCE ve SONRA birebir aynı:
+       `221 197 206 217 228 238 243 247 250 251 252 253 254` — web
+       referansıyla (`203 214 225 236 242 247 249 251 252`) aynı sönüm
+       eğrisi. Kaydırılmış ekran görüntüsünde header hâlâ korunuyor (içerik
+       üstüne binmiyor).
+     - **Bulunan yapısal tuzak:** ilk yeniden düzenlemede `Expanded`
+       doğrudan `Stack`'in çocuğu olarak kaldı ("Incorrect use of
+       ParentDataWidget", 13 test düştü) — header ile kaydırma görünümünü
+       saran `Column` şart.
+     - **Test:** eski clipper testi, yerini yeni değişmeze bıraktı —
+       kaydırma görünümünün genişliği viewport'a eşit olmalı (680 DEĞİL) ve
+       içeride 680'lik `ConstrainedBox` bulunmalı; ikisi birden, çünkü
+       yalnızca ilki Parça 17'nin hatasını (tahta kenardan kenara gerilir)
+       geri açardı.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 290/290 yeşil**.
+       `kelimeki_core`'a hiç dokunulmadı; teşhis harness'i silindi.
+     - **Doğrulama sınırı:** ölçümler SwiftShader'da; gerçek iPad'de görsel
+       teyit kullanıcıdan bekleniyor.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek
