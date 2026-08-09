@@ -219,14 +219,54 @@ class _AccountButtonState extends State<AccountButton> {
   // (`SizedBox`) menünün toplam genişliğinin web'in `w-56`sına yakınsamasını
   // sağlıyor (Flutter menü genişliğini en geniş satırın intrinsic
   // genişliğine göre hesaplıyor, sabit bir `width` API'si yok).
+  //
+  // **Parça 30 — Parça 29'un ardından hâlâ fazla boşluk kalıyordu, iki
+  // ayrı kök sebep bulundu (ölçülerek, tahminle değil — `flutter test`te
+  // gerçek satır Size'ları okundu):**
+  // (1) "Nasıl Oynanır?"/"Hesap Ayarları" satırları 200px genişliğe
+  //     SIĞMIYOR, İKİ SATIRA sarıyordu (ölçülen: 200×34 — diğer satırlar
+  //     200×17) — kök sebep emoji glyph'inin (❓/⚙️) SpaceMono'da
+  //     olmayıp bir yedek fonttan çizilmesi, o yedeğin karakter
+  //     genişliğinin monospace hücreden BELİRGİN geniş olması. Web'de bu
+  //     metinler asla sarmıyor (statik, kısa etiketler); `maxLines:1` +
+  //     `softWrap:false` her satırı KOŞULSUZ tek satıra sabitliyor —
+  //     genişlik hesabı ne olursa olsun ikinci satır oluşamaz.
+  // (2) Çıkış Yap'ın üstündeki `PopupMenuDivider()` kendi başına 16px'lik
+  //     AYRI bir satır ekliyordu — web'in `border-t border-border`ı ise
+  //     düğmenin KENDİ kenarına oturan 1px'lik bir çizgi, ekstra bir satır
+  //     YOK. Aynı yanlış varsayım başlıkta da vardı — isim başlığının
+  //     altında hiç çizgi yoktu (web'de VAR: `border-b border-border`,
+  //     yine 1px, ekstra satır değil). İkisi de artık `PopupMenuDivider`
+  //     yerine `Container(decoration: BoxDecoration(border: ...))` ile
+  //     — web'in border-box modeliyle aynı: çizgi menünün TAM genişliğinde
+  //     (224px, `_menuItemWidth + 24`), ama dikey olarak neredeyse hiç yer
+  //     kaplamıyor (yalnızca 1px çizgi kalınlığı).
   static const _menuItemPadding =
       EdgeInsets.symmetric(horizontal: 12, vertical: 10);
   static const _menuItemHeight = 0.0;
   static const _menuItemWidth = 200.0; // 224 (w-56) - 2*12 (px-3)
+  static const _dividerBorder = BorderSide(color: _border, width: 1);
+
+  // Emoji glyphi (👥📊❓⚙️🚪) SpaceMono'da yok — yedek font adıyla
+  // referans verilmezse (help_modal.dart/player_avatar_row.dart'taki aynı
+  // ders) glyph genişliği öngörülemez, bu da satırın 200px'e sığmayıp
+  // ikinci satıra sarmasına yol açabiliyordu (bkz. Parça 30 notu, yukarı).
+  static const itemStyle = TextStyle(
+    fontFamily: 'SpaceMono',
+    fontSize: 12,
+    color: _text,
+    fontFamilyFallback: ['Noto Color Emoji', 'Apple Color Emoji'],
+  );
+
+  static Widget _menuLabel(String text) => Text(
+        text,
+        style: itemStyle,
+        maxLines: 1,
+        softWrap: false,
+        overflow: TextOverflow.visible,
+      );
 
   Widget _avatarMenu(BuildContext context) {
-    const itemStyle =
-        TextStyle(fontFamily: 'SpaceMono', fontSize: 12, color: _text);
     return PopupMenuButton<String>(
       tooltip: 'Hesap menüsü',
       offset: Offset(0, avatarSize + 8),
@@ -235,6 +275,13 @@ class _AccountButtonState extends State<AccountButton> {
         borderRadius: BorderRadius.circular(12),
         side: const BorderSide(color: Color(0xFFB8C2D1)),
       ),
+      // Flutter'ın varsayılanı `EdgeInsets.symmetric(vertical: 8)` — kartın
+      // İÇİNE (başlığın üstüne + Çıkış Yap'ın altına) 16px'lik görünmez bir
+      // boşluk daha ekliyordu. Web'in kartı (`overflow-hidden` div) hiç
+      // ekstra dolgu taşımıyor — içerik doğrudan başlığın kendi `py-3`ü ile
+      // başlıyor. Sıfırlamak, satır aralığı/çizgi düzeltmelerinin (yukarı)
+      // yanında "hâlâ çok boşluk var" şikayetine üçüncü bir katkıyı kapatıyor.
+      menuPadding: EdgeInsets.zero,
       onSelected: (value) {
         final stats = this.stats;
         final friends = widget.friends;
@@ -286,11 +333,21 @@ class _AccountButtonState extends State<AccountButton> {
         PopupMenuItem<String>(
           enabled: false,
           height: _menuItemHeight,
-          // Web: `px-3 py-3` (başlık bloğu diğer satırlardan biraz daha
-          // dolgun, `py-3` = 12px) — diğer satırların `py-2.5`inden farklı.
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          child: SizedBox(
-            width: _menuItemWidth,
+          padding: EdgeInsets.zero,
+          // Web: başlık bloğunun kendi `border-b border-border`ı —
+          // isim/k-lig satırıyla "Arkadaşlar" arasında ince bir çizgi
+          // (Parça 30, kullanıcı bildirdi — Parça 28'de bu çizgi hiç
+          // taşınmamıştı). `padding` PopupMenuItem'dan bu Container'a
+          // taşındı ki çizgi menünün TAM genişliğinde (224px) kenardan
+          // kenara çizilsin — `PopupMenuDivider` KULLANILMADI, o 16px'lik
+          // AYRI bir satır ekler, web'in border'ı ise (kendi 1px kalınlığı
+          // dışında) hiç ekstra dikey yer kaplamaz.
+          child: Container(
+            width: _menuItemWidth + 24,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: const BoxDecoration(
+              border: Border(bottom: _dividerBorder),
+            ),
             child: Row(
               children: [
                 KAvatar(
@@ -362,7 +419,7 @@ class _AccountButtonState extends State<AccountButton> {
             child: SizedBox(
               width: _menuItemWidth,
               child: Row(children: [
-                const Text('👥  Arkadaşlar', style: itemStyle),
+                _menuLabel('👥  Arkadaşlar'),
                 if (_incomingRequests > 0) ...[
                   const SizedBox(width: 8),
                   CountBadge(count: _incomingRequests),
@@ -375,39 +432,45 @@ class _AccountButtonState extends State<AccountButton> {
             value: 'score',
             height: _menuItemHeight,
             padding: _menuItemPadding,
-            child: const SizedBox(
+            child: SizedBox(
               width: _menuItemWidth,
-              child: Text('📊  Skor Kartı', style: itemStyle),
+              child: _menuLabel('📊  Skor Kartı'),
             ),
           ),
         PopupMenuItem<String>(
           value: 'help',
           height: _menuItemHeight,
           padding: _menuItemPadding,
-          child: const SizedBox(
+          child: SizedBox(
             width: _menuItemWidth,
-            child: Text('❓  Nasıl Oynanır?', style: itemStyle),
+            child: _menuLabel('❓  Nasıl Oynanır?'),
           ),
         ),
         PopupMenuItem<String>(
           value: 'settings',
           height: _menuItemHeight,
           padding: _menuItemPadding,
-          child: const SizedBox(
+          child: SizedBox(
             width: _menuItemWidth,
-            child: Text('⚙️  Hesap Ayarları', style: itemStyle),
+            child: _menuLabel('⚙️  Hesap Ayarları'),
           ),
         ),
         // Web: `border-t border-border` — Çıkış Yap'ın kendi üstündeki
         // AYRI çizgi, admin bloğu olsun olmasın hep var (bkz. UserMenu.tsx).
-        const PopupMenuDivider(),
+        // `PopupMenuDivider` YERİNE `Container` üst-çizgisi (bkz. yukarıdaki
+        // Parça 30 notu) — web'de bu çizgi ekstra bir satır DEĞİL, düğmenin
+        // kendi kenarı.
         PopupMenuItem<String>(
           value: 'signout',
           height: _menuItemHeight,
-          padding: _menuItemPadding,
-          child: const SizedBox(
-            width: _menuItemWidth,
-            child: Text('🚪  Çıkış Yap', style: itemStyle),
+          padding: EdgeInsets.zero,
+          child: Container(
+            width: _menuItemWidth + 24,
+            padding: _menuItemPadding,
+            decoration: const BoxDecoration(
+              border: Border(top: _dividerBorder),
+            ),
+            child: _menuLabel('🚪  Çıkış Yap'),
           ),
         ),
       ],

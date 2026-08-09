@@ -175,6 +175,17 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
 
 ## 2. Hesap (auth)
 
+- [ ] **Hesap menüsünün görünümü web'le birebir (9 Ağustos 2026, Parça 30).**
+      Girişliyken avatara dokun: isim/k-lig başlığının HEMEN ALTINDA (yani
+      "Arkadaşlar"ın ÜSTÜNDE) ince bir yatay çizgi olmalı — web'in
+      `border-b`si. Satırlar (Arkadaşlar/Skor Kartı/Nasıl Oynanır?/Hesap
+      Ayarları) web kadar sık/kompakt görünmeli, hiçbiri iki satıra
+      sarmamalı ("Nasıl Oynanır?"/"Hesap Ayarları" özellikle kontrol et —
+      emoji glyph'i satırı taşırıp ikiye bölebiliyordu). Çıkış Yap'ın
+      üstündeki çizgi de ince bir kenar çizgisi olmalı, 16px'lik AYRI bir
+      boş satır DEĞİL. Menünün en üstünde (başlığın üstünde)/en altında
+      (Çıkış Yap'ın altında) görünmez bir boşluk OLMAMALI — kelimeki.com'da
+      aynı hesabın menüsüyle yan yana karşılaştır.
 - [ ] **Misafir üyelik kutusu.** Setup ekranını misafir (girişsiz) olarak
       aç — hem boş kurulum formunun altında hem (bir oyun yarıda bırakılıp
       "Devam Eden Oyun" görünümüne düşünce) o görünümün altında "Neden

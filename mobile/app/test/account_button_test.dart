@@ -127,18 +127,17 @@ void main() {
     final scoreY = topOf(find.textContaining('Skor Kartı'));
     final helpY = topOf(find.textContaining('Nasıl Oynanır?'));
     final settingsY = topOf(find.textContaining('Hesap Ayarları'));
-    final dividerY = topOf(find.byType(PopupMenuDivider));
     final signOutY = topOf(find.textContaining('Çıkış Yap'));
 
     expect(friendsY, lessThan(scoreY),
         reason: 'Arkadaşlar, Skor Kartı\'ndan ÖNCE gelmeli (web sırası)');
     expect(scoreY, lessThan(helpY));
     expect(helpY, lessThan(settingsY));
+    expect(settingsY, lessThan(signOutY));
     // Çıkış Yap'ın kendi üstünde tek bir çizgi olmalı — isim başlığının
     // altında DEĞİL (eski davranış), Hesap Ayarları ile Çıkış Yap arasında.
-    expect(find.byType(PopupMenuDivider), findsOneWidget);
-    expect(dividerY, greaterThan(settingsY));
-    expect(dividerY, lessThan(signOutY));
+    // Çizgi artık bir `PopupMenuDivider` DEĞİL (bkz. Parça 30 testleri) —
+    // burada yalnızca sıra doğrulanıyor.
   });
 
   testWidgets(
@@ -167,5 +166,99 @@ void main() {
     expect(itemBox.width, closeTo(200, 1),
         reason: 'Satır içerik genişliği sabitlenmemiş — menü web\'in '
             'w-56 sabitinden belirgin genişleyebilir');
+  });
+
+  testWidgets(
+      'regresyon (Parça 30): TÜM satırlar tek satıra sığıyor — emoji '
+      'yedek fontu "Nasıl Oynanır?"/"Hesap Ayarları"yı ikinci satıra '
+      'sarmıyor (kök sebep, Parça 29\'un ardından hâlâ fazla boşluk '
+      'kalmasının asıl sebebiydi)', (tester) async {
+    final stats = StatsRepo(_FakeStatsGateway());
+    final friends = FriendsRepo(_FakeFriendsGateway());
+    await pumpMenu(tester, stats: stats, friends: friends);
+
+    double topOf(Finder f) => tester.getTopLeft(f).dy;
+    final gaps = [
+      topOf(find.textContaining('Skor Kartı')) -
+          topOf(find.textContaining('Arkadaşlar')),
+      topOf(find.textContaining('Nasıl Oynanır?')) -
+          topOf(find.textContaining('Skor Kartı')),
+      topOf(find.textContaining('Hesap Ayarları')) -
+          topOf(find.textContaining('Nasıl Oynanır?')),
+    ];
+    // İki satıra sarmış bir madde bu farkı ~17px daha büyük yapardı
+    // (ölçülen: sarmadan 38-39px, sararsa 54-72px) — tüm satırlar AYNI
+    // (tek satırlık) yükseklikte olmalı.
+    for (final g in gaps) {
+      expect(g, closeTo(gaps.first, 2),
+          reason: 'Satırlardan biri ikiye sarmış görünüyor — ölçülen '
+              'aralıklar: $gaps');
+    }
+  });
+
+  testWidgets(
+      'regresyon (Parça 30): isim başlığının ALTINDA ince bir çizgi var '
+      '("Arkadaşlar"ın üstünde) — web `border-b border-border`, Parça '
+      '28\'de kaybolmuştu; Çıkış Yap\'ın üstündeki çizgi hâlâ tek bir '
+      'satır KAPLAMIYOR (PopupMenuDivider DEĞİL, ince kenar çizgisi)',
+      (tester) async {
+    final stats = StatsRepo(_FakeStatsGateway());
+    final friends = FriendsRepo(_FakeFriendsGateway());
+    await pumpMenu(tester, stats: stats, friends: friends);
+
+    // Artık ayrı bir PopupMenuDivider() yok — ikisi de Container border'ı.
+    expect(find.byType(PopupMenuDivider), findsNothing);
+
+    // Başlığın altındaki Container'ın decoration'ı bottom border taşımalı.
+    final headerContainer = tester.widget<Container>(find
+        .ancestor(
+            of: find.text('Ironman'), matching: find.byType(Container))
+        .first);
+    final headerDecoration = headerContainer.decoration as BoxDecoration;
+    expect(headerDecoration.border?.bottom.width, 1);
+
+    // Çıkış Yap satırının kendi üst kenarı da aynı şekilde çizgili olmalı,
+    // ama bu bir PopupMenuDivider'ın 16px'lik AYRI satırı değil —
+    // Hesap Ayarları ile Çıkış Yap arasındaki boşluk normal satır
+    // aralığına (< 44px) yakın kalmalı.
+    final signOutContainer = tester.widget<Container>(find
+        .ancestor(
+            of: find.textContaining('Çıkış Yap'), matching: find.byType(Container))
+        .first);
+    final signOutDecoration = signOutContainer.decoration as BoxDecoration;
+    expect(signOutDecoration.border?.top.width, 1);
+
+    double topOf(Finder f) => tester.getTopLeft(f).dy;
+    final gap = topOf(find.textContaining('Çıkış Yap')) -
+        topOf(find.textContaining('Hesap Ayarları'));
+    expect(gap, lessThan(44),
+        reason: 'Çıkış Yap\'ın üstündeki çizgi hâlâ 16px\'lik ayrı bir '
+            'PopupMenuDivider satırı gibi davranıyor — ölçülen=$gap');
+  });
+
+  testWidgets(
+      'regresyon (Parça 30): menü kartının kendi üst/alt dolgusu (varsayılan '
+      '`menuPadding`, 8px) sıfırlandı — web\'in kartı hiç ekstra dolgu '
+      'taşımıyor, içerik doğrudan başlığın kendi py-3\'üyle başlıyor',
+      (tester) async {
+    final stats = StatsRepo(_FakeStatsGateway());
+    final friends = FriendsRepo(_FakeFriendsGateway());
+    await pumpMenu(tester, stats: stats, friends: friends);
+
+    final cardFinder = find.byWidgetPredicate(
+        (w) => w is Material && w.type == MaterialType.card);
+    final cardTop = tester.getTopLeft(cardFinder).dy;
+    final cardBottom = tester.getRect(cardFinder).bottom;
+    final headerTop = tester.getTopLeft(find.text('Ironman')).dy;
+    final signOutBottom = tester.getBottomLeft(find.textContaining('Çıkış Yap')).dy;
+
+    // Varsayılan `menuPadding` (8px) hâlâ devredeyse bu farklar sırasıyla
+    // ~20 (8+12 başlık dolgusu) ve ~18 (8+10 satır dolgusu) olurdu.
+    expect(headerTop - cardTop, closeTo(12, 2),
+        reason: 'Kartın üstünde hâlâ fazladan ~8px boşluk var — '
+            'ölçülen=${headerTop - cardTop}');
+    expect(cardBottom - signOutBottom, closeTo(10, 2),
+        reason: 'Kartın altında hâlâ fazladan ~8px boşluk var — '
+            'ölçülen=${cardBottom - signOutBottom}');
   });
 }

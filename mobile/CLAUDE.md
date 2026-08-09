@@ -3645,6 +3645,87 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ortamının ağ politikasıyla çakışmasıdır. İkisi de aynı sonuca
        varıyor: koda dokunmadan önce ölç, "değerler doğru" bulgusunu asla
        "görsel fark de yoktur" diye genişletme.
+   - ✅ **Parça 30 — Parça 29'un ardından hesap menüsü hâlâ web'den boşluklu
+     duruyordu + isim başlığının altındaki çizgi hâlâ hiç yoktu (9 Ağustos
+     2026, `account_button.dart`):** Kullanıcı testine paralel olarak
+     ("Ben testleri yaparken sen de...") istenen doğrudan bir düzeltme.
+     Parça 29'un `height:0`/`padding`/`SizedBox(width:200)` müdahalesi satır
+     boyunu Flutter'ın 48px varsayılanından kurtarmıştı ama iki AYRI kök
+     sebep daha kalıyordu — ikisi de ÖLÇÜLEREK bulundu (`flutter test`te
+     gerçek `Size`/`getTopLeft` okundu, tahminle değil):
+     1. **"Nasıl Oynanır?"/"Hesap Ayarları" satırları 200px'e SIĞMAYIP İKİ
+        SATIRA sarabiliyordu** (bir ölçümde 200×34, diğerlerinde 200×17) —
+        kök sebep emoji glyph'lerinin (❓/⚙️/👥/📊/🚪) `itemStyle`'da
+        `fontFamilyFallback` OLMADAN SpaceMono'dan yedek bir fonta
+        düşmesi; help_modal.dart/player_avatar_row.dart'taki aynı ders
+        buraya hiç taşınmamıştı. Web'de bu metinler asla sarmıyor (sabit,
+        kısa etiketler) — `itemStyle`'a `fontFamilyFallback: ['Noto Color
+        Emoji', 'Apple Color Emoji']` eklendi ve her etiket ortak bir
+        `_menuLabel()` yardımcısıyla `maxLines:1, softWrap:false,
+        overflow:TextOverflow.visible`'a bağlandı, satır ne olursa olsun
+        KOŞULSUZ tek satırda kalıyor. **Dürüstlük notu:** bu wrap, gerçek
+        fontlar yüklenmiş `flutter test`te KARARSIZ/tekrarlanamaz çıktı
+        (bazı çalıştırmalarda 34px, bazılarında 17px — muhtemelen test
+        sürecinin font-fallback çözümleme sırasına bağlı bir durum), yani
+        bu düzeltme negatif-eş ile bu ortamda KANITLANAMADI; yine de
+        `maxLines:1` + `fontFamilyFallback` kod olarak zararsız, web
+        paritesine daha yakın ve mevcut 3 kullanım (help_modal/
+        player_avatar_row/k-lig) ile tutarlı olduğundan tutuldu — gerçek
+        CanvasKit'te (kullanıcının GitHub Pages derlemesi) satır genişliği
+        emoji yedek fontunun ağdan (Google Fonts) çekilip çekilemediğine
+        bağlı olabileceğinden (bkz. Parça 29'daki aynı ağ-bağımlılığı
+        dersi) bu, tam da o riski önceden kapatan bir güvenlik önlemi.
+     2. **İki çizgi de `PopupMenuDivider()`nin 16px'lik AYRI bir satır
+        eklediği varsayımıyla yanlış modellenmişti — GERÇEK KÖK SEBEP,
+        ölçülerek doğrulandı:** Web'in hem başlığın altındaki
+        (`border-b border-border`, Parça 28'de hiç taşınmamıştı — kullanıcı
+        bu turda "arkadaşlar üzerinde ince bir çizgi olmalı" diye bildirdi)
+        hem Çıkış Yap'ın üstündeki (`border-t border-border`) çizgisi,
+        düğmenin KENDİ kenarına oturan 1px'lik bir çizgi — CSS border-box
+        modelinde ekstra bir satır/boşluk EKLEMİYOR. `PopupMenuDivider`
+        (Flutter'ın kendi `_kMenuDividerHeight=16.0` sabiti) ise TAM
+        BÖYLE bir ek satır davranışı sergiliyor. İkisi de
+        `PopupMenuDivider` yerine `Container(decoration:
+        BoxDecoration(border: Border(top/bottom: BorderSide(color:
+        _border, width: 1))))`'a çevrildi — `padding` `PopupMenuItem`dan
+        bu `Container`'a taşınarak çizginin menünün TAM genişliğinde
+        (224px, `_menuItemWidth + 24`) kenardan kenara çizilmesi sağlandı
+        (web'in `w-56` kartı gibi).
+     3. **ÜÇÜNCÜ, ayrı bir kök sebep — menünün kendi `menuPadding`
+        varsayılanı (8px dikey) web'in kartında hiç yok:** `PopupMenuButton`
+        varsayılan olarak `EdgeInsets.symmetric(vertical: 8)` ekliyor
+        (`_PopupMenuDefaultsM2/M3.menuPadding`) — kartın en üstünde
+        (başlığın ÜSTÜNDE) ve en altında (Çıkış Yap'ın ALTINDA) web'de
+        hiç karşılığı olmayan, görünmez 8+8=16px'lik bir boşluk. `
+        menuPadding: EdgeInsets.zero` eklendi — ölçülen fark
+        (üst: header top - card top) 20px'ten (8+12 başlık dolgusu) 12px'e
+        (yalnızca başlığın kendi py-3'ü) düştü; benzer şekilde alt kenar
+        18'den 10'a düştü.
+     - **Test — negatif eş doğrulamasıyla, ÜÇ AYRI kanıt (2/3'ü GERÇEKTEN
+       düşürülüp geri konarak doğrulandı, 1/3'ü — emoji wrap — bu ortamda
+       kararsız çıktığından dürüstçe "kanıtlanamadı" olarak işaretlendi):**
+       `account_button_test.dart`'a üç yeni test eklendi (tüm satırlar tek
+       satırda + tutarlı aralık; `PopupMenuDivider` hiç yok + her iki
+       Container'ın border'ı doğru kenarda + Hesap Ayarları↔Çıkış Yap
+       aralığı hâlâ normal satır aralığında; kart üst/alt kenarının
+       başlık/signout içeriğine olan mesafesi ~12/~10px). `menuPadding:
+       EdgeInsets.zero` satırı geçici olarak yorumlanıp test koşuldu —
+       GERÇEKTEN `Expected: closeTo(12,2) Actual:<20.0>` ile düştü, satır
+       geri konup yeşile döndü. `PopupMenuDivider` kaldırma değişikliği de
+       aynı şekilde eski (Parça 28) test dosyasının `find.byType
+       (PopupMenuDivider)` beklentisini kırdığından (artık böyle bir
+       widget yok), o eski test madde SIRASINI doğrulayacak şekilde
+       güncellendi — çizginin varlığı artık yeni Parça 30 testlerinin işi.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 275/275 yeşil**
+       (272'den +3 — bu parçanın üç yeni testi). `kelimeki_core`'a hiç
+       dokunulmadı.
+     - **Doğrulama sınırı:** gerçek CanvasKit'te (kullanıcının GitHub
+       Pages derlemesi) satır sarma riskinin gerçekten var olup olmadığı
+       bu oturumda KANITLANAMADI (native VM/Skia'da tekrarlanamadı, madde
+       1'e bkz.) — `fontFamilyFallback`/`maxLines:1` önlemi buna rağmen
+       tutuldu (zararsız + web paritesine yakın). Çizgi/dolgu
+       düzeltmelerinin (madde 2-3) gerçek cihazda/web derlemesinde görsel
+       teyidi kullanıcının bir sonraki test turunda bekleniyor.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek
