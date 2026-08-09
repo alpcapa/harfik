@@ -648,6 +648,37 @@ fikirlerin unutulmaması için bir bekleme listesi, kod DEĞİL. Bir madde
 uygulanınca buradan silinip ilgili bölümün kendi tarihli notuna taşınmalı
 (kök `CLAUDE.md`'nin genel "değişiklik = tarihli not" disipliniyle aynı).
 
+- **Girişli kullanıcının devam eden YZ oyunu offline'da KAYBOLUYOR —
+  `App.tsx` autosave + `api.ts:upsertLocalGameSave`** (9 Ağustos 2026, mobil
+  cihaz testinde bulundu, kullanıcı kararıyla web tarafı SONRAYA bırakıldı):
+  `App.tsx`'in autosave effect'i girişli kullanıcıda `clearGameState()`
+  çağırıp YALNIZCA sunucuya yazıyor (`if (user && isSupabaseConfigured)`
+  dalı, ~satır 375); `upsertLocalGameSave` ağ hatasında `false` dönüp state'i
+  DÜŞÜRÜYOR — ne kuyruk ne yerel yedek var. Yani çevrimdışıyken oynanan her
+  hamle sessizce kayboluyor, bağlantı dönünce oyun sunucudaki son senkron
+  hâline geri düşüyor. **Bu, "tarayıcı zaten offline çalışmaz" diye
+  savunulamaz:** uygulama kurulabilir bir PWA ve service worker asset'leri
+  precache ettiğinden ana ekrana ekleyen biri offline'da açıp oynayabiliyor.
+  - **Mobildeki çözüm hazır bir şablon (bkz. `mobile/CLAUDE.md` Parça 38):**
+    write-behind ayna — önce yerele yaz, sonra sunucuyu dene, başarıda yereli
+    sil; açılışta bekleyenleri it; listede aynayı bindir (daha yeni ayna
+    kazanır, yalnızca-aynada olan oyunlar da listelenir).
+  - **Ayna AYRI bir anahtarda tutulmalı, `kelimeki:game-state` DEĞİL.** O
+    anahtarı `clearGameState()` bilerek siliyor: aynı oyun hem localStorage
+    hem `local_game_saves` üzerinden iki kez terk-edilmiş sayılıp MÜKERRER -2
+    cezası üretebilirdi. Mobilde bu yüzden ayrı bir tablo (`pending_cloud_saves`)
+    açıldı; web'de ayrı bir localStorage anahtarı aynı işi görür.
+  - **Mobilde bu iş yapılırken açılan ve AYNI GÜN kapatılan üç gedik web'de de
+    tekrarlanmamalı:** (a) süresi DOLMUŞ aynayı sunucuya itmek `updated_at`i
+    tazeleyip 7 gün cezasını sessizce atlatır — son etkinlik anı
+    `max(sunucu updated_at, ayna damgası)` olarak okunmalı; (b) terk edilmiş
+    sayılan oyunun aynası da silinmeli, yoksa sonraki açılışta "yalnızca
+    aynada var" sanılıp oyun DİRİLİR; (c) sunucunun hiç görmediği (tamamen
+    offline açılmış) oyunlar da 7 günde cezalandırılmalı.
+  - Mobil tarafta dördü ayna davranışı + ikisi bu gedikler için olmak üzere
+    6 test var (`mobile/app/test/cloud_save_test.dart`), hepsi negatif eşle
+    doğrulandı — web sürümü yazılırken oradan birebir uyarlanabilir.
+
 - **Arkadaş ekle simgesi — `ScoreCard.tsx`/`PlayerScoreCard.tsx`** (9 Ağustos
   2026, kullanıcı mobil↔web ekran görüntüsü karşılaştırmasıyla istedi):
   Web'de arkadaş olunmayan bir oyuncunun kartında düz bir `+` karakteri

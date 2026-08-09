@@ -4253,6 +4253,15 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ZAMAN DAMGASI olarak okuyor?" diye sor — burada `updated_at` aynı
        anda hem "en son ne zaman kaydettim" hem "terk edildi mi" sorusunun
        cevabıydı; onu tazelemek ikinci sorunun cevabını sessizce siliyordu.
+     - **Web'de AYNI kusur duruyor — bilinçli, kullanıcı kararıyla sonraya
+       bırakıldı (9 Ağustos 2026):** `App.tsx`'in autosave'i girişli
+       kullanıcıda `clearGameState()` çağırıp yalnızca sunucuya yazıyor,
+       yani web'de offline hamleler hâlâ kayboluyor (kurulabilir PWA
+       olduğundan bu gerçek bir senaryo). 7 gün CEZASI tarafında ayrışma
+       YOK — web'de ayna hiç olmadığı için o açık orada hiç doğmadı, bu
+       parçanın düzeltmesi mobili web'in zaten doğru olan davranışına geri
+       getirdi. Kayıt: kök `CLAUDE.md`, "Web'de Yapılacak İşler" (mobildeki
+       tasarım + kaçınılması gereken üç gedik oraya yazıldı).
      - **Doğrulama sınırı:** gerçek `local_game_saves` ucuyla (RLS, gerçek
        ağ kesintisi) uçtan uca doğrulama cihazda yapılmalı — `mobile/TESTING.md`
        Bölüm 8'e maddeler eklendi. **Bilinçli kapsam dışı:** ağ geri
