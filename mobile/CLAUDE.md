@@ -4229,8 +4229,30 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ağ dönünce ayna itilip temizleniyor; tamamen offline açılan oyun
        listede; taze ayna haksız terki engelliyor). Ayna yazma satırı geri
        alınınca DÖRDÜ DE düştü (`+12 -4`), geri konunca yeşile döndü.
-     - Doğrulama: `flutter analyze` temiz, **tam takım 287/287 yeşil**
-       (283'ten +4). `kelimeki_core`'a hiç dokunulmadı.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 289/289 yeşil**
+       (283'ten +6). `kelimeki_core`'a hiç dokunulmadı.
+     - **Aynı gün, kullanıcı sorusuyla bulunan ÜÇ AÇIK (düzeltildi):**
+       Kullanıcı "oyunu açıp interneti kapatıp 10 gün sonra dönersem 7 gün
+       kuralı işler mi?" diye sordu — cevap HAYIR'dı ve bu, bu parçanın
+       KENDİ açtığı bir gedikti: `_syncCloud` önce `flushMirrored` çağırdığı
+       için 10 gün önceki ayna sunucuya yazılıyor, sunucu `updated_at`i
+       bugüne çekiyor ve `list()` satırı taze görüp cezayı hiç uygulamıyordu
+       (yani bir hamle offline oynayıp yıllarca kaybolmak cezadan muaf
+       olmak demekti). İki kardeşi de vardı: (a) terk dalı aynayı SİLMİYORDU
+       — satır silindikten sonra bir sonraki açılışta oyun "yalnızca aynada
+       var" sanılıp DİRİLİYORDU (hem ceza yazılmış hem oyun devam ediyor);
+       (b) sunucunun hiç görmediği (tamamen offline açılmış) oyunlar süre
+       dolsa da hiç cezalandırılmıyordu — kodun kendi yorumunda bu açıkça
+       yazılıydı. **Düzeltme:** `flushMirrored` süresi DOLMUŞ aynayı itmez
+       (karar `list()`e bırakılır; son etkinlik anı `max(sunucu, ayna)`),
+       terk dalı aynayı da siler, ve yalnızca-ayna satırları da 7 günde
+       cezaya çevrilip aynadan silinir (bu satır cihaza özel olduğundan
+       `claimAbandoned`ın yarış koruması gerekmiyor). İki yeni test negatif
+       eşle doğrulandı — cutoff atlaması geri alınınca ikisi de düşüyor.
+       **Ders:** yeni bir dayanıklılık katmanı eklerken "bu veriyi kim
+       ZAMAN DAMGASI olarak okuyor?" diye sor — burada `updated_at` aynı
+       anda hem "en son ne zaman kaydettim" hem "terk edildi mi" sorusunun
+       cevabıydı; onu tazelemek ikinci sorunun cevabını sessizce siliyordu.
      - **Doğrulama sınırı:** gerçek `local_game_saves` ucuyla (RLS, gerçek
        ağ kesintisi) uçtan uca doğrulama cihazda yapılmalı — `mobile/TESTING.md`
        Bölüm 8'e maddeler eklendi. **Bilinçli kapsam dışı:** ağ geri

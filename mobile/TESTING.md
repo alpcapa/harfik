@@ -420,6 +420,12 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **Tamamen offline açılan oyun da kaybolmamalı.** Uçak modundayken
       YENİ bir YZ oyunu aç, birkaç hamle yap. Ağı aç + yeniden başlat →
       oyun listede olmalı (sunucu onu hiç görmemişti).
+- [ ] **Ama uzun süre DÖNÜLMEZSE ceza yine işlemeli.** Oyunu aç, interneti
+      kapat, uygulamayı kapat; 7 günden sonra internetle geri dön → oyun
+      teslim sayılıp **-2** uygulanmalı ve listede kalmamalı. Bekleyen bir
+      yerel ayna bu cezayı ATLATMAMALI (9 Ağustos 2026'da tam bu açık
+      bulundu). Sonraki açılışta oyun geri DİRİLMEMELİ ve ceza ikinci kez
+      uygulanmamalı.
 - [ ] **Offline oynanan oyun HAKSIZ yere teslim sayılmamalı.** Uzun süre
       (7 gün+) sunucuya yazılamamış ama offline oynanmaya devam eden bir
       oyunda -2 cezası UYGULANMAMALI; oyun listede normal görünmeli.

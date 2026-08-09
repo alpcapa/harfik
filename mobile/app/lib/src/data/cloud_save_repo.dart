@@ -236,6 +236,10 @@ class CloudSaveRepo {
         continue;
       }
       if (claimed == null) continue; // başka cihaz aldı ya da yeniden oynandı
+      // Ayna da gitmeli: aksi halde satır silindikten sonra bir sonraki
+      // açılışta "yalnızca aynada var" sanılıp oyun DİRİLİR — hem ceza
+      // yazılmış hem oyun devam ediyor olurdu.
+      await (await _mirror)?.remove(id);
       try {
         abandoned.add(AbandonedCloudSave(
           state: gameStateFromJson(claimed),
@@ -247,13 +251,23 @@ class CloudSaveRepo {
       }
     }
     // Sunucunun HİÇ görmediği oyunlar (tamamen offline açılmış) — yalnızca
-    // aynada varlar. Terk-edilme cezası uygulanMAZ: ceza sunucu tarafının
-    // kararı ve bu satır sunucuya hiç ulaşmadı; flush edildiğinde
-    // `updated_at` bugüne düşeceğinden sayaç oradan işlemeye başlar.
+    // aynada varlar. 7 gün kuralı bunlara da işler: sunucu satırı olmadığı
+    // için `claimAbandoned`la iddia edilecek bir şey yok, ama ayna zaten
+    // CİHAZA ÖZEL (başka bir cihazda kopyası olamaz), dolayısıyla yarış da
+    // yok — doğrudan cezaya çevirip aynayı siliyoruz.
     for (final m in mirrored.values) {
-      if (m.state.phase != GamePhase.play || m.state.isGameOver) continue;
-      result.add(
-          CloudSave(id: m.id, state: m.state, updatedAtMs: m.savedAtMs));
+      if (m.state.phase != GamePhase.play || m.state.isGameOver) {
+        await (await _mirror)?.remove(m.id);
+        continue;
+      }
+      if (m.savedAtMs > cutoffMs) {
+        result.add(
+            CloudSave(id: m.id, state: m.state, updatedAtMs: m.savedAtMs));
+        continue;
+      }
+      abandoned.add(
+          AbandonedCloudSave(state: m.state, updatedAtMs: m.savedAtMs));
+      await (await _mirror)?.remove(m.id);
     }
     result.sort((a, b) => b.updatedAtMs.compareTo(a.updatedAtMs));
     return CloudSaveList(result, abandoned);
@@ -290,8 +304,16 @@ class CloudSaveRepo {
     final m = await _mirror;
     if (m == null) return 0;
     final pending = await m.pending(userId);
+    final cutoffMs = _nowMs() - abandonTimeout.inMilliseconds;
     var sent = 0;
     for (final p in pending) {
+      // Süresi DOLMUŞ aynayı itme: sunucu `updated_at`i bugüne çekerdi ve
+      // 7 gün kuralı sessizce atlatılırdı (kullanıcı 9 Ağustos 2026'da tam
+      // bu senaryoyu sordu: "oyunu açıp interneti kapatıp 10 gün sonra
+      // dönersem?"). Böyle bir ayna `list()`e bırakılır; orada son
+      // etkinlik anı max(sunucu, ayna) olarak değerlendirilip ceza
+      // uygulanır ve ayna temizlenir.
+      if (p.savedAtMs <= cutoffMs) continue;
       if (await upsert(p.id, userId, p.state)) sent++;
     }
     return sent;

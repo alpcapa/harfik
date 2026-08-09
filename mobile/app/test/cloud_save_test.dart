@@ -434,4 +434,50 @@ void main() {
     expect(list.saves.single.state.turnCount, 9);
     await storage.db.close();
   });
+
+  test(
+      '10 gün sonra dönüş: bekleyen ayna 7 gün cezasını ATLATMAZ '
+      '(kullanıcı senaryosu — oyunu aç, interneti kapat, 10 gün sonra gel)',
+      () async {
+    final (repo, gw, storage) = await newMirroredRepo();
+    final state = newPlayState();
+    await repo.upsert('id-1', 'user-1', state); // online: sunucuda satır var
+
+    // İnternet kapandı, birkaç hamle daha yapıldı, uygulama kapandı.
+    gw.offline = true;
+    await repo.upsert('id-1', 'user-1', state.copyWith(turnCount: 5));
+    gw.offline = false;
+
+    // 10 gün sonra internetle açılış: önce flush, sonra liste (Setup sırası).
+    clock += const Duration(days: 10).inMilliseconds;
+    await repo.flushMirrored('user-1');
+    final list = await repo.list(userId: 'user-1');
+
+    expect(list!.abandoned, hasLength(1),
+        reason: '10 gün dönülmedi — ceza uygulanmalı');
+    expect(list.saves, isEmpty);
+    // Ayna temizlenmeli: aksi halde sonraki açılışta oyun DİRİLİRDİ.
+    expect(await storage.cloudMirror.pending('user-1'), isEmpty);
+    final again = await repo.list(userId: 'user-1');
+    expect(again!.saves, isEmpty, reason: 'cezalandırılan oyun geri gelmemeli');
+    expect(again.abandoned, isEmpty, reason: 'ceza İKİ KEZ uygulanmamalı');
+    await storage.db.close();
+  });
+
+  test('sunucunun hiç görmediği (tamamen offline) oyun da 7 günde cezalanır',
+      () async {
+    final (repo, gw, storage) = await newMirroredRepo();
+    gw.offline = true;
+    await repo.upsert('id-yalniz-ayna', 'user-1', newPlayState());
+    gw.offline = false;
+
+    clock += const Duration(days: 10).inMilliseconds;
+    await repo.flushMirrored('user-1');
+    final list = await repo.list(userId: 'user-1');
+    expect(list!.abandoned, hasLength(1));
+    expect(list.saves, isEmpty);
+    expect(gw.rows, isEmpty, reason: 'süresi dolmuş ayna sunucuya İTİLMEMELİ');
+    expect(await storage.cloudMirror.pending('user-1'), isEmpty);
+    await storage.db.close();
+  });
 }
