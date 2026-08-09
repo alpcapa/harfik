@@ -168,6 +168,10 @@ export function UserMenu() {
           onClick={() => setOpen((v) => !v)}
           disabled={identityLoading}
           aria-label="Hesap menüsü"
+          // `aria-label` yalnızca ekran okuyucuya gider; hover/uzun basma
+          // ipucu için `title` gerekiyor — mobil portta `PopupMenuButton`'ın
+          // `tooltip`i bunu veriyordu (9 Ağustos 2026, kullanıcı isteği).
+          title="Hesap menüsü"
           aria-expanded={open}
           className="rounded-full active:scale-95 transition-transform ring-offset-2 focus:outline-none disabled:cursor-not-allowed"
         >
@@ -279,7 +283,7 @@ export function UserMenu() {
                 await signOut();
               }}
             >
-              <span aria-hidden>↩</span> Çıkış Yap
+              <span aria-hidden>🚪</span> Çıkış Yap
             </button>
           </div>
         )}
