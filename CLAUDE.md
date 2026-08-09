@@ -659,3 +659,10 @@ uygulanınca buradan silinip ilgili bölümün kendi tarihli notuna taşınmalı
   "henüz arkadaş değilsin, ekle" durumu için istendi. Web'de `+` karakteri
   hem `ScoreCard.tsx` hem `PlayerScoreCard.tsx`'te (aynı buton, iki kopya)
   kullanıldığından ikisi birlikte güncellenmeli.
+- **Çıkış Yap ikonu — `UserMenu.tsx`** (9 Ağustos 2026, kullanıcı mobil↔web
+  karşılaştırmasıyla istedi): Web'de `UserMenu`'nün "Çıkış Yap" satırı bir
+  geri-ok karakteri kullanıyor (`<span aria-hidden>↩</span> Çıkış Yap`,
+  `UserMenu.tsx:282`); mobil port (`account_button.dart:473`) burada bir kapı
+  emojisi kullanıyor (`🚪  Çıkış Yap`) ve kullanıcı web'in de kapı ikonuna
+  geçmesini istedi. Tek kullanım yeri — `UserMenu.tsx`'teki bu satır
+  güncellenmeli, admin/diğer menülerde ayrı bir çıkış butonu yok.
