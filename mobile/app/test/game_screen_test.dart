@@ -743,4 +743,34 @@ void main() {
       out.writeAsBytesSync(bytes!.buffer.asUint8List());
     });
   });
+
+  testWidgets(
+      'kaydırma görünümü YATAYDA kırpmıyor — tahta gölgesi kartın yanlarından '
+      '~30px taşıyor (Parça 39: yatay modda gölge bıçak gibi kesiliyordu)',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 620)); // içerik sığmaz → kaydırılabilir
+    final c =
+        GameController(words: words, autoPlayAi: false, nowIso: () => '');
+    c.dispatch(ResumeSavedAction(craftedState()));
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+      home: GameScreen(controller: c, words: words),
+    ));
+    await tester.pumpAndSettle();
+
+    // Dikey kaydırmayı kırpan ClipRect'i bul (GameHeader'ın üstüne taşmayı
+    // önlüyor) ve kırpma dikdörtgeninin YATAYDA kutunun dışına taştığını
+    // doğrula. `Clip.none` gölgeyi kurtarırdı ama kaydırılan içerik header'ın
+    // üstüne boyanırdı — bu yüzden eksen ayrımı şart.
+    final clips = tester.widgetList<ClipRect>(find.byType(ClipRect));
+    final custom = clips.where((w) => w.clipper != null).toList();
+    expect(custom, isNotEmpty, reason: 'özel eksen kırpıcısı bulunmalı');
+    const size = Size(420, 620);
+    final rect = custom.first.clipper!.getClip(size);
+    expect(rect.top, 0);
+    expect(rect.bottom, size.height, reason: 'dikeyde kırpmalı');
+    expect(rect.left, lessThan(-100), reason: 'yatayda kırpmamalı');
+    expect(rect.right, greaterThan(size.width + 100),
+        reason: 'yatayda kırpmamalı');
+  });
 }

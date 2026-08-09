@@ -635,7 +635,10 @@ class _GameScreenState extends State<GameScreen> {
                         // Expanded'ta tek başınaydı ve boşluk tahta ile mesajın
                         // ARASINA giriyordu); kısa ekranda tamamı kaydırılabilir.
                         Expanded(
-                          child: SingleChildScrollView(
+                          child: ClipRect(
+                            clipper: const _VerticalOnlyClipper(),
+                            child: SingleChildScrollView(
+                            clipBehavior: Clip.none,
                             // Aktif bir taş sürüklemesi varken kaydırma kilitleniyor
                             // — sürükleme sistemi ham `Listener` kullandığından
                             // (web setPointerCapture eşdeğeri, jest arenasına hiç
@@ -683,14 +686,19 @@ class _GameScreenState extends State<GameScreen> {
                                     onTilePointerCancel: _cancelTileDrag,
                                   ),
                                 ),
-                                // Tahtanın nömorfik gölgesi (en büyüğü blur:60,
-                                // aşağı doğru) sönümlenecek yer bulamadan hemen
-                                // altındaki raf kartının OPAK zemini tarafından
-                                // "ezilip" görünmez oluyordu — Column'da geç
-                                // çizilen kardeş widget'lar erken çizilenin
-                                // üzerine boyar (kullanıcı web derlemesinde
-                                // bizzat bulup bildirdi; ölçülerek doğrulandı).
-                                const SizedBox(height: 56),
+                                // Web: <main> içinde Board'dan hemen sonra mesaj
+                                // bloğu geliyor ve tek boşluk onun `pt-1`i (4px,
+                                // aşağıdaki Padding'de) — yani BURADA ek boşluk
+                                // YOK. Parça 16'da buraya 56px konmuştu ("tahta
+                                // gölgesi raf kartının opak zemini tarafından
+                                // eziliyor" gerekçesiyle); ama web de aynı
+                                // yapıya sahip ve orada sorun yok — gerçek kök
+                                // sebep Parça 17'de bulundu (max-width 680 hiç
+                                // uygulanmamış, tahta kenardan kenara gerilip
+                                // gölgeye yer kalmıyordu). O düzeltmeden sonra
+                                // bu 56px yalnızca web'den sapan görünür bir
+                                // boşluk olarak kaldı (kullanıcı 9 Ağustos
+                                // 2026'da bildirdi).
                                 // Mesaj satırı web'deki gibi tahtanın ALTINDA, rafın üstünde
                                 // (App.tsx: Board → liveMessage → Rack; font-mono 11px bold).
                                 Padding(
@@ -820,7 +828,7 @@ class _GameScreenState extends State<GameScreen> {
                                     // butonları tarafından ezilmesin diye (aynı
                                     // ders — bkz. yukarıdaki Board→mesaj notu).
                                     padding: const EdgeInsets.fromLTRB(
-                                        12, 24, 12, 12),
+                                        12, 6, 12, 12),
                                     child: state.swapMode
                                         ? Row(
                                             children: [
@@ -937,7 +945,7 @@ class _GameScreenState extends State<GameScreen> {
                                 ],
                               ],
                             ),
-                          ),
+                          )),
                         ),
                       ],
                     ),
@@ -965,4 +973,28 @@ class _GameScreenState extends State<GameScreen> {
       },
     );
   }
+}
+
+/// Dikeyde kırpar, yatayda KIRPMAZ — tahtanın nömorfik gölgesi kartın
+/// yanlarından ~30px taşıyor ve içerik sütunu 680'e sınırlı olduğundan,
+/// kaydırma görünümü etkinleştiğinde (içerik ekrandan uzun olduğunda) o taşan
+/// kısım kırpılıp gölge ANİ bir kenarla kesiliyordu. Ölçüldü (Parça 39):
+/// kaydırma yokken sağ kenar 217→228→238→243→247→250 diye sönümlenirken,
+/// kaydırma varken 217→255 ile bıçak gibi kesiliyordu; tetikleyici yön DEĞİL
+/// kaydırılabilirlik (aynı genişlikte, yalnızca yüksekliği kısaltınca da
+/// oluşuyor).
+///
+/// `clipBehavior: Clip.none` gölgeyi düzeltiyor ama kaydırılan içeriğin
+/// GameHeader'ın üstüne boyanmasına yol açıyor (Column'da header daha önce
+/// çizildiğinden) — bu yüzden dikey kırpma korunup yalnızca yatay eksen
+/// serbest bırakılıyor.
+class _VerticalOnlyClipper extends CustomClipper<Rect> {
+  const _VerticalOnlyClipper();
+
+  @override
+  Rect getClip(Size size) =>
+      Rect.fromLTRB(-100000, 0, size.width + 100000, size.height);
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Rect> oldClipper) => false;
 }

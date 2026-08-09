@@ -4276,6 +4276,57 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        Native'de tarayıcı/geçmiş yok. Not: sayfa öldüğü an bellek de gittiği
        için "çıkışta son bir kez yaz" türü bir çözüm zaten yetmezdi —
        kalıcı yerel yedek şarttı.
+   - ✅ **Parça 39 — tahta ile mesaj arasındaki fazla boşluk + yatay modda
+     kesilen tahta gölgesi (9 Ağustos 2026, `game_screen.dart`,
+     `online_game_screen.dart`):** Bölüm 8 testinden önce kullanıcı iki
+     görsel bulgu bildirdi; ikisi de ÖLÇÜLDÜ.
+     - **(a) 56px'lik boşluk Parça 16'nın kalıntısıydı.** Web'de `<main>`
+       içinde Board'dan sonra mesaj bloğu geliyor ve tek boşluk onun `pt-1`i
+       (**4px**); mobilde araya 56px konmuştu. O 56px Parça 16'da "tahta
+       gölgesi raf kartının opak zemini tarafından eziliyor" gerekçesiyle
+       eklenmişti — ama web de AYNI yapıya sahip ve orada sorun yok. Gerçek
+       kök sebep bir parça sonra bulunmuştu (Parça 17: `max-width 680` hiç
+       uygulanmamış, tahta kenardan kenara gerilip gölgeye yer
+       kalmıyordu). Yani 16'daki 56px bir çözüm değil bir SEMPTOM
+       bastırmasıydı ve 17'den sonra yalnızca web'den sapan görünür bir
+       boşluk olarak kaldı. Kaldırıldı; aynı parçada 8→24 yapılan buton
+       satırı boşluğu da web'in `gap-1.5`ine (**6px**) çekildi.
+       **Ders:** bir görsel semptomu boşluk/dolgu ekleyerek bastırdıysan,
+       gerçek kök sebep sonradan bulunduğunda o bastırmayı GERİ AL — aksi
+       halde iki düzeltme üst üste binip yeni bir sapma üretiyor.
+     - **(b) "Yatay modda tahtanın arkasında hatalı gölge" — tetikleyici
+       YÖN DEĞİL, KAYDIRILABİLİRLİK.** Gerçek CanvasKit'te (web derlemesi +
+       Playwright, Parça 18/27'nin yöntemi) tahtanın sağ kenarındaki piksel
+       profili ölçüldü: kaydırma yokken `217→228→238→243→247→250` diye
+       sönümlenirken, kaydırma varken `217→255` ile bıçak gibi kesiliyordu.
+       Kesin deney: AYNI genişlikte (834) yalnızca yüksekliği kısaltıp
+       (1150→600) içeriği kaydırılabilir yapmak hatayı üretti — yani yönle
+       ilgisi yok, yatayda görünmesinin sebebi içeriğin yalnızca orada
+       ekranı aşması. Kesim tam olarak 680'lik içerik sütununun kenarında:
+       kaydırma görünümü etkinleşince gölgenin widget sınırları DIŞINA
+       taşan kısmı kırpılıyor.
+     - **Elenen iki hipotez (ölçülerek):** `RepaintBoundary` ile tahtayı
+       kendi katmanına almak piksel profilini HİÇ değiştirmedi (eklenip
+       ölçüldü, sonra geri alındı); `_CssShadowBoxPainter`'ın kendi evenOdd
+       kırpması da sebep değil (`rect.inflate(reach + 4)` ≈ 144px pay
+       bırakıyor).
+     - **Çözüm — eksen ayrımı:** `clipBehavior: Clip.none` gölgeyi
+       düzeltiyor AMA kaydırılan içerik `GameHeader`'ın üstüne boyanıyor
+       (Column'da header daha önce çizildiğinden) — ekran görüntüsüyle
+       doğrulandı. Bu yüzden kaydırma görünümü `Clip.none` yapılıp yeni bir
+       `_VerticalOnlyClipper` (`ClipRect(clipper:)`) ile SARILDI: dikeyde
+       kırpar (header korunur), yatayda kırpmaz (gölge sönümlenir). Üç
+       ölçümde de (portre, kısa portre, yatay) profil artık birebir aynı.
+     - **Test — negatif eş doğrulamasıyla:** kırpıcının niyetini sabitleyen
+       bir widget testi (dikeyde tam kutu, yatayda kutunun ±100px dışına
+       taşan bir `Rect`). Kırpıcı normal bir tam-kutu dikdörtgenine
+       çevrilince test GERÇEKTEN `Expected: a value less than <-100>
+       Actual: <0.0>` ile düştü.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 290/290 yeşil**
+       (289'dan +1). `kelimeki_core`'a hiç dokunulmadı; teşhis için
+       kullanılan web harness'i ve `build/` çıktıları silindi.
+     - **Doğrulama sınırı:** ölçümler yerel Chromium/SwiftShader'da yapıldı;
+       gerçek iPad Safari'de görsel teyit kullanıcıdan bekleniyor.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek
