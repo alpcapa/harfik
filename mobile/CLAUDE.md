@@ -3812,6 +3812,64 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        açılan bir oyuncu kartında k-lig satırının (auth'suz, bilgi-amaçlı)
        göründüğü ama tıklanamadığı davranışı cihazda/web derlemesinde
        teyit edilmeli.
+   - ✅ **Parça 32 — arkadaş ekle onay diyaloğu geniş ekranda taşıyordu +
+     işlem sonrası sonuç mesajı hiç çıkmıyordu (9 Ağustos 2026,
+     `friends_modal.dart`, `player_score_card_modal.dart`):** Kullanıcı üç
+     ekran görüntüsüyle (mobil skor kartları + web'in "+" simgesi) bildirdi:
+     "Arkadaş istediği göndermek için bastığımda uyarı ekranı upuzun
+     geliyor... göndere basınca gönderilmiştir vb uyarısı çıkmıyor." Ayrıca
+     mobildeki (`Icons.person_add_alt_1`) arkadaş-ekle simgesinin web'in düz
+     "+" karakterinden daha iyi göründüğünü belirtip web tarafında da
+     uygulanmasını istedi — bu üçüncü madde KOD DEĞİŞİKLİĞİ olarak değil,
+     kök `CLAUDE.md`'nin yeni "Web'de Yapılacak İşler" bekleme listesine
+     bir madde olarak eklendi (web'e dokunulmadı, yalnızca not düşüldü).
+     1. **Kök sebep — Flutter `Dialog`ın varsayılan üst genişlik sınırı
+        YOK:** `dialog.dart` kaynağı doğrulandı —
+        `constraints ?? dialogTheme.constraints ?? const
+        BoxConstraints(minWidth: 280.0)` — yalnızca ALT sınır var, üst
+        sınır yok. `confirmFriendAction`/`showFriendInfoDialog`
+        (`friends_modal.dart`) bunu hiç geçmiyordu; geniş bir ekranda
+        (iPad) `insetPadding`in bıraktığı TÜM alana yayılıyordu. Web'in
+        kaynağı (`FriendsModal.tsx`'teki `ConfirmDialog`) `max-w-sm`
+        (384px) kullanıyor — ikisine de `constraints: BoxConstraints
+        (maxWidth: 384)` eklendi.
+     2. **Kök sebep — web'in `handleFriendAction`i HER dört dalda da bir
+        `resultMsg` gösteriyor, mobil portun `_onRelationTap`ı (Parça 4'ten
+        kalma) HİÇBİRİNDE göstermiyordu:** `PlayerScoreCard.tsx` kaynağı
+        okunup dört dalın metni birebir taşındı — accepted→remove:
+        "Arkadaşlıktan çıkarıldı.", pendingOutgoing→cancel: "Arkadaşlık
+        isteği iptal edildi.", pendingIncoming→accept: "Arkadaş oldunuz.",
+        null→send: "Arkadaşlık isteğiniz iletilmiştir." (mobilin kendi
+        eklediği, web'de karşılığı olmayan "$name ile artık arkadaşsınız."
+        özel mesajı — karşılıklı anlık kabul durumu için — BİLİNÇLİ
+        KORUNDU, yalnızca normal/tekil gönderim dalına eksik olan web
+        mesajı eklendi). Hepsi zaten var olan `showFriendInfoDialog`
+        (web `InfoDialog`) ile gösteriliyor, yeni bir widget gerekmedi.
+     - **Test — negatif eş doğrulamasıyla, İKİ AYRI kanıt:** `friends_test.dart`'a
+       (a) mevcut "arkadaşsa yeşil işaret" testine "Arkadaşlıktan
+       çıkarıldı." sonuç mesajı assertion'ı eklendi, (b) yeni bir test —
+       geniş (1200px) bir viewport'ta onay diyaloğunun kendi
+       `constraints.maxWidth`inin (384) VE gerçek render boyutunun ≤384
+       kaldığını, gönderince "Arkadaşlık isteğiniz iletilmiştir." çıktığını
+       doğruluyor. `constraints: BoxConstraints(maxWidth: 384)` satırları
+       geçici yorum satırına alınıp test koşuldu — GERÇEKTEN
+       `Expected:<384> Actual:<1200.0>` ile düştü; ayrı bir turda
+       `player_score_card_modal.dart`'taki dört `showFriendInfoDialog`
+       çağrısı da geçici geri alınıp İKİ test de GERÇEKTEN `Found 0
+       widgets with text "Arkadaşlıktan çıkarıldı."`/`"...iletilmiştir."`
+       ile düştü — ikisi de geri konup yeşile döndü.
+       **Ölçüm dersi:** `tester.getSize(find.byType(Dialog))` yanıltıcı —
+       `Dialog`'un kendi build'i `Align -> ConstrainedBox(constraints) ->
+       Material` şeklinde, yani `Dialog` widget'ının RENDER boyutu
+       `Align`in kapladığı TÜM alan (ekran − insetPadding), İÇERİDEKİ
+       kartın değil; genişlik testi bu yüzden widget'ın `constraints`
+       ALANINI okuyarak + içteki `ConstrainedBox`ı ayrıca bularak yapıldı.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 278/278 yeşil**
+       (277'den +1 — bu parçanın bir yeni testi; mevcut teste eklenen
+       assertion ayrı test SAYILMIYOR). `kelimeki_core`'a hiç dokunulmadı.
+     - **Doğrulama sınırı:** gerçek cihazda/web derlemesinde diyalog
+       genişliğinin ve dört sonuç mesajının görsel teyidi kullanıcının bir
+       sonraki test turunda bekleniyor.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

@@ -656,6 +656,13 @@ Future<bool> confirmFriendAction(
         borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: Color(0xFFB8C2D1)),
       ),
+      // Web `ConfirmDialog`: `max-w-sm` (384px) — Flutter'ın `Dialog`ı
+      // VARSAYILAN OLARAK yalnızca `minWidth: 280` taşıyor, üst sınır YOK
+      // (kaynak: dialog.dart, `constraints ?? ... ?? BoxConstraints
+      // (minWidth: 280.0)`). Geniş bir ekranda (iPad) bu, `insetPadding`in
+      // bıraktığı TÜM genişliğe yayılıp diyaloğu "upuzun" gösteriyordu
+      // (9 Ağustos 2026, kullanıcı ekran görüntüsüyle bildirdi).
+      constraints: const BoxConstraints(maxWidth: 384),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -711,6 +718,9 @@ Future<void> showFriendInfoDialog(BuildContext context, String message) {
         borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: Color(0xFFB8C2D1)),
       ),
+      // bkz. confirmFriendAction'daki aynı gerekçe — Dialog'un varsayılan
+      // üst genişlik sınırsızlığı.
+      constraints: const BoxConstraints(maxWidth: 384),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(

@@ -456,8 +456,65 @@ void main() {
       await tester.tap(find.text('ÇIKAR'));
       await tester.pumpAndSettle();
       expect(gw.deleted, ['u9']);
+      // regresyon (9 Ağustos 2026): web'in `resultMsg`i — işlem sonrası bir
+      // "Tamam" sonuç diyaloğu çıkmalıydı, önceden HİÇBİRİ çıkmıyordu.
+      expect(find.text('Arkadaşlıktan çıkarıldı.'), findsOneWidget);
+      await tester.tap(find.text('TAMAM'));
+      await tester.pumpAndSettle();
       // Simge artık "ekle"ye döner.
       expect(find.byIcon(Icons.person_add_alt_1), findsOneWidget);
+    });
+
+    testWidgets(
+        'regresyon (9 Ağustos 2026): PlayerScoreCard\'ta arkadaş isteği '
+        'gönderince "iletilmiştir" sonuç diyaloğu çıkar + onay diyaloğu '
+        'geniş ekranda taşmaz (web max-w-sm paritesi)', (tester) async {
+      await setPhoneViewSize(tester, const Size(1200, 900));
+      final gw = FakeFriendsGateway()..sendResult = 'pending';
+      await tester.pumpWidget(MaterialApp(
+        theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+        home: Scaffold(
+          body: PlayerScoreCardModal(
+            stats: StatsRepo(_NullStatsGateway()),
+            userId: 'u9',
+            name: 'Bobola',
+            friends: FriendsRepo(gw),
+          ),
+        ),
+      ));
+      await tester.pump();
+      await tester.pump();
+      expect(find.byIcon(Icons.person_add_alt_1), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.person_add_alt_1));
+      await tester.pumpAndSettle();
+      expect(find.text('Arkadaş Ekle'), findsOneWidget);
+      // Onay diyaloğunun kendi `constraints.maxWidth`i web'in max-w-sm'ine
+      // (384px) yakın kalmalı — önceden Flutter Dialog'un varsayılan üst
+      // sınırsızlığı (`BoxConstraints(minWidth: 280)`, üst sınır YOK)
+      // yüzünden geniş ekranlarda neredeyse tam genişliğe yayılıyordu.
+      // (`tester.getSize(Dialog)` yerine widget'ın kendi `constraints`
+      // alanı okunuyor — `Dialog`'un RENDER boyutu `Align`in kapladığı
+      // TÜM alan, iç `Material` kartının değil; piksel ölçümü yanıltıcı.)
+      final confirmDialog = tester
+          .widgetList<Dialog>(find.byType(Dialog))
+          .firstWhere((d) => d.constraints?.maxWidth == 384);
+      expect(confirmDialog.constraints?.maxWidth, 384);
+      // Gerçek render boyutu da (Dialog'un içindeki ConstrainedBox) genişlik
+      // sınırını GERÇEKTEN uyguladığını kanıtlıyor.
+      final renderedWidth = tester
+          .getSize(find
+              .byWidgetPredicate((w) =>
+                  w is ConstrainedBox && w.constraints.maxWidth == 384)
+              .first)
+          .width;
+      expect(renderedWidth, lessThanOrEqualTo(384));
+
+      await tester.tap(find.text('GÖNDER'));
+      await tester.pumpAndSettle();
+      // regresyon: gönderince web'in "Arkadaşlık isteğiniz iletilmiştir."
+      // sonucu görünmeliydi, önceden HİÇBİR ŞEY çıkmıyordu.
+      expect(find.text('Arkadaşlık isteğiniz iletilmiştir.'), findsOneWidget);
     });
   });
 

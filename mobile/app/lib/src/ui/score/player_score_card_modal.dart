@@ -148,7 +148,10 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
               confirmLabel: 'Çıkar');
           if (!ok || !mounted) return;
           await friends.removeOrCancel(widget.userId);
-          if (mounted) setState(() => _relation = null);
+          if (mounted) {
+            setState(() => _relation = null);
+            await showFriendInfoDialog(context, 'Arkadaşlıktan çıkarıldı.');
+          }
         case FriendRelation.pendingOutgoing:
           final ok = await confirmFriendAction(context,
               title: 'İsteği İptal Et',
@@ -157,7 +160,11 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
               confirmLabel: 'İptal Et');
           if (!ok || !mounted) return;
           await friends.removeOrCancel(widget.userId);
-          if (mounted) setState(() => _relation = null);
+          if (mounted) {
+            setState(() => _relation = null);
+            await showFriendInfoDialog(
+                context, 'Arkadaşlık isteği iptal edildi.');
+          }
         case FriendRelation.pendingIncoming:
           final ok = await confirmFriendAction(context,
               title: 'İsteği Kabul Et',
@@ -166,7 +173,10 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
               confirmLabel: 'Kabul Et');
           if (!ok || !mounted) return;
           await friends.respond(widget.userId, accept: true);
-          if (mounted) setState(() => _relation = FriendRelation.accepted);
+          if (mounted) {
+            setState(() => _relation = FriendRelation.accepted);
+            await showFriendInfoDialog(context, 'Arkadaş oldunuz.');
+          }
         case null:
           final ok = await confirmFriendAction(context,
               title: 'Arkadaş Ekle',
@@ -176,10 +186,11 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
           final r = await friends.sendRequest(widget.userId);
           if (mounted) {
             setState(() => _relation = r);
-            if (r == FriendRelation.accepted) {
-              await showFriendInfoDialog(
-                  context, '$name ile artık arkadaşsınız.');
-            }
+            await showFriendInfoDialog(
+                context,
+                r == FriendRelation.accepted
+                    ? '$name ile artık arkadaşsınız.'
+                    : 'Arkadaşlık isteğiniz iletilmiştir.');
           }
       }
     } catch (e) {

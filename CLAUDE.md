@@ -637,3 +637,25 @@ Aylardır CLAUDE.md'nin çeşitli yerlerinde ayrı ayrı "kesin sebebi netleşti
 
 1. **Import yolu — kök sebep artık netleşti:** Araç, verdiğin `entrypoint_path`i olduğu gibi kullanmıyor, tüm dosyaları örtük bir `source/` klasörünün altına yerleştiriyor. Doğru/kararlı tarif: `entrypoint_path: "source/index.ts"` VER, entrypoint dosyasının adını da `"source/index.ts"` YAP (böylece gerçekte `source/source/index.ts`e iner) ve kardeş bağımlılık dosyalarını (`_shared/email.ts` gibi) **hiçbir `source/` öneki OLMADAN** adlandır (böylece `source/_shared/email.ts`e iner) — bu durumda `source/source/index.ts`'ten `source/_shared/email.ts`'e giden doğru göreli yol her zaman `'../_shared/email.ts'`dir. `'./_shared/email.ts'` kullanan 6 fonksiyonun (`notify-account-banned`, `notify-account-unbanned`, `notify-deadline-warnings`, `notify-friend-request-reminders`, `notify-local-game-abandoned`, `notify-turn-timeout-surrender`) bugüne kadar hiç patlamadan çalışmasının sebebi, o fonksiyonların ilk deploy'unda bu tarifin (muhtemelen) tutarlı uygulanmamış olması, yani dosyaların gerçekte BEKLENENDEN farklı bir iç içe klasör yapısına yerleşmiş olmasıydı — CLAUDE.md'de "CI/CLI deploy'a geçilirse 6 fonksiyon anında bozulur" diye zaten öngörülmüştü, bu doğru bir öngörüydü. **Düzeltme:** 6 fonksiyonun hepsi `'../_shared/email.ts'`e çevrilip yukarıdaki tarifle yeniden deploy edildi — artık 11 Edge Function'ın tamamı aynı, tek doğru importu kullanıyor.
 2. **`verify_jwt` — aracın kendi varsayılanı `true`, parametre REQUIRED değilse bile geçilmezse önceki deploy'un değerini KORUMUYOR:** Bu araçla (CLI/`supabase functions deploy` değil) yapılan bir redeploy'da `verify_jwt` parametresi verilmezse, önceden `false` olan bir fonksiyon SESSİZCE `true`'ya döner — kod hiç değişmese bile. Bu, `notify-deadline-warnings`i (cron tarafından JWT'siz çağrılıyor, `verify_jwt:false` olması ŞART) bu incelemenin bir yan etkisi olarak neredeyse kırıyordu: fonksiyonun kodunu (CRON_SECRET kontrolü, satır başına try/catch) güncelleyip `verify_jwt` belirtmeden deploy edince araç onu `true`'ya çevirdi, `list_edge_functions`'la fark edilip aynı anda ikinci bir deploy'la (bu kez `verify_jwt: false` açıkça verilerek) geri alındı — production'a hiç sızmadı ama neredeyse pg_cron'un 15 dakikada bir 401 almaya başlamasına yol açıyordu. **Kural: `deploy_edge_function`'ı çağırmadan ÖNCE her zaman `list_edge_functions`/`get_edge_function` ile fonksiyonun MEVCUT `verify_jwt` değerini kontrol et ve deploy çağrısına AYNI değeri açıkça geçir — asla parametreyi atlayıp aracın varsayılanına (`true`) güvenme.** Projedeki `verify_jwt:false` olması gereken üç fonksiyon: `notify-deadline-warnings`, `notify-friend-request-reminders` (ikisi de pg_cron'dan JWT'siz çağrılıyor), `notify-turn-timeout-surrender` (Postgres'in kendisinden `net.http_post` ile JWT'siz çağrılıyor) — geri kalan sekizi `true`.
+
+## Web'de Yapılacak İşler (mobil porttan gelen fikirler, henüz yapılmadı)
+
+Mobil port (bkz. `mobile/CLAUDE.md`) cihaz testi sırasında bazen web'de de
+uygulanması gereken küçük iyileştirmeler ortaya çıkarıyor — bu bölüm o
+fikirlerin unutulmaması için bir bekleme listesi, kod DEĞİL. Bir madde
+uygulanınca buradan silinip ilgili bölümün kendi tarihli notuna taşınmalı
+(kök `CLAUDE.md`'nin genel "değişiklik = tarihli not" disipliniyle aynı).
+
+- **Arkadaş ekle simgesi — `ScoreCard.tsx`/`PlayerScoreCard.tsx`** (9 Ağustos
+  2026, kullanıcı mobil↔web ekran görüntüsü karşılaştırmasıyla istedi):
+  Web'de arkadaş olunmayan bir oyuncunun kartında düz bir `+` karakteri
+  (yuvarlak `bg-accent/15 border-accent/40` arka plan içinde, `text-lg`)
+  gösteriliyor; mobil port (`player_score_card_modal.dart`'ın
+  `_relationIcon()`'ı) burada gerçek bir "kişi ekle" Material ikonu
+  (`Icons.person_add_alt_1`) kullanıyor ve kullanıcı bunun görsel olarak
+  daha iyi durduğunu belirtti — web'in de bu ikona (ya da eşdeğer bir SVG
+  glyph'e) geçmesi isteniyor. Arkadaşsa gösterilen yeşil ✓ karakteri
+  (`Icons.check_circle`'ın web karşılığı) bu istekten ETKİLENMEDİ, yalnızca
+  "henüz arkadaş değilsin, ekle" durumu için istendi. Web'de `+` karakteri
+  hem `ScoreCard.tsx` hem `PlayerScoreCard.tsx`'te (aynı buton, iki kopya)
+  kullanıldığından ikisi birlikte güncellenmeli.

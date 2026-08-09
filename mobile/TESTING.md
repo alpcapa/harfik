@@ -421,6 +421,15 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       kartını aç: arkadaşsan yeşil onay işareti (dokun → çıkar onayı),
       değilsen kişi-ekle ikonu (dokun → istek onayı) görünmeli; kendi
       kartında simge OLMAMALI.
+- [ ] **Onay/sonuç diyalogları (9 Ağustos 2026, Parça 32).** Aynı ekrandaki
+      arkadaş-ekle/çıkar/kabul-et/iptal-et onay diyaloğu (yatay/geniş
+      ekranda bile — özellikle iPad'de kontrol et) küçük/kompakt kalmalı,
+      ekranın TAMAMINA yayılmamalı. Her işlemin (Gönder/Çıkar/Kabul Et/
+      İptal Et) SONRASINDA bir "Tamam" sonuç mesajı çıkmalı: "Arkadaşlık
+      isteğiniz iletilmiştir." / "Arkadaşlıktan çıkarıldı." / "Arkadaş
+      oldunuz." / "Arkadaşlık isteği iptal edildi." (karşılıklı anlık kabul
+      durumunda "{isim} ile artık arkadaşsınız." — bu mobile özgü, web'de
+      karşılığı yok, bilinçli).
 
 ## 11. Canlı oyun — davet/kabul + tahta
 
