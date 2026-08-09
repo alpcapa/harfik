@@ -13,6 +13,7 @@ import 'package:kelimeki/src/ui/score/klig_mark.dart';
 import 'package:kelimeki/src/ui/score/leaderboard_modal.dart';
 import 'package:kelimeki/src/ui/score/player_score_card_modal.dart';
 import 'package:kelimeki/src/ui/score/score_card_modal.dart';
+import 'package:kelimeki/src/ui/score/score_stats_section.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
 import 'support/test_fonts.dart';
@@ -192,12 +193,15 @@ void main() {
     expect(find.text('EN UZUN KELİME'), findsOneWidget);
     expect(find.text('LÖSEMİT'), findsOneWidget);
     expect(find.text('13.50'), findsOneWidget); // ortalama iki ondalık
-    expect(find.text('%70'), findsOneWidget); // Yapay Zeka ile 7/10
+    // Web `({c.rate})` — oran PARANTEZ İÇİNDE (9 Ağustos 2026'da port
+    // eksiği olarak bulundu, web "(%70)" derken mobil "%70" yazıyordu).
+    expect(find.text('(%70)'), findsOneWidget); // Yapay Zeka ile 7/10
+    expect(find.text('%70'), findsNothing);
 
     // 4 Oyunculu sekmesine geç — kutular o sekmenin verisine döner.
     await tester.tap(find.text('4 OYUNCULU'));
     await tester.pumpAndSettle();
-    expect(find.text('%75'), findsOneWidget); // Arkadaşınla 3/4
+    expect(find.text('(%75)'), findsOneWidget); // Arkadaşınla 3/4
 
     await tester.runAsync(() async {
       final boundary =
@@ -208,6 +212,47 @@ void main() {
       out.parent.createSync(recursive: true);
       out.writeAsBytesSync(bytes!.buffer.asUint8List());
     });
+  });
+
+  // 9 Ağustos 2026 — cihaz testinde "web'deki skor kartı tam açık geliyor
+  // ama mobildekini scroll etmek gerekiyor" bildirimi üzerine web'in
+  // DERLENMİŞ Tailwind CSS'i (dist/assets/index-*.css) Chromium'da
+  // ölçüldü: sekme çubuğu tam 44px. Port 53px çiziyordu — `text-sm`
+  // (14px) yerine 13px kullanıyor ve `leading-none`u (line-height 1)
+  // hiç taşımamıştı. Bu test o ölçülen değeri sabitliyor.
+  testWidgets('Sekme çubuğu web ile aynı yükseklikte (44px)', (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final stats = PlayerStats.fromJson(statRow());
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+      home: Scaffold(
+        // ÜRETİMDEKİ kısıtı taklit etmek ŞART: modalda çubuk bir
+        // SingleChildScrollView'ın Column'unda yaşar, yani SINIRSIZ
+        // yükseklik alır. Doğrudan `Center`/`SizedBox` altına konursa
+        // sekme butonunun iç Column'u (MainAxisSize.max) tüm ekranı
+        // kaplar ve ölçüm 900 çıkar — widget'ın kendi hatası değil,
+        // test kurgusunun hatası olur.
+        body: SizedBox(
+          width: 320, // web: modal 360 − px-5×2
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ScoreTabsBar(
+                tab: StatsTab.all,
+                onChanged: (_) {},
+                statsByTab: {
+                  StatsTab.all: stats,
+                  StatsTab.two: stats,
+                  StatsTab.four: stats,
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byType(ScoreTabsBar)).height, 44.0);
   });
 
   testWidgets('Skor Kartı: hiç kaydı yoksa boş metin + sıfır kutular',

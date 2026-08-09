@@ -288,6 +288,17 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       "Oyuncu İstatistikleri" ve "Oyun İstatistikleri" blokları dolu
       gelmeli. Etiketler Türkçe büyük harfle doğru ("BİRİNCİLİK",
       "BIRINCILIK" değil).
+- [ ] **Yüzdeler PARANTEZ içinde (9 Ağustos 2026, Parça 33).** Kutulardaki
+      oran satırı web'deki gibi **"(%83)"** olmalı — parantezsiz "%83"
+      DEĞİL.
+- [ ] **Sekme çubuğu web ile aynı boyda (aynı parça).** "GENEL /
+      2 OYUNCULU / 4 OYUNCULU" butonları web'dekiyle aynı yükseklikte
+      (44px) ve aynı punto (14px) olmalı; mobilde daha uzun/şişkin
+      DURMAMALI. **Not:** kartın tamamının sığmayıp kaydırma gerektirmesi
+      web TEST DERLEMESİNDE normaldir (tarayıcı kromu Flutter canvas'ını
+      kısaltıyor, CSS `vh` ise kromu saymıyor) — bu kontrol yalnızca
+      native (TestFlight/Appetize) derlemede anlamlı: orada kart
+      kaydırmadan tam açılmalı.
 - [ ] **Genel = 2 + 4.** Genel sekmesindeki Toplam Oyun/Birincilik/
       İkincilik, iki sekmenin toplamına eşit olmalı.
 - [ ] **k-lig sıralaması (9 Ağustos 2026, Parça 31).** Liste açılmalı,

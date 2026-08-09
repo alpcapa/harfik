@@ -3870,6 +3870,78 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Doğrulama sınırı:** gerçek cihazda/web derlemesinde diyalog
        genişliğinin ve dört sonuç mesajının görsel teyidi kullanıcının bir
        sonraki test turunda bekleniyor.
+   - ✅ **Parça 33 — Skor Kartı "mobilde scroll gerekiyor" şikayeti:
+     ŞİKAYETİN KENDİSİ web-test-derlemesi artefaktı çıktı, ama araştırma
+     İKİ gerçek parite hatası buldu (9 Ağustos 2026,
+     `score_stats_section.dart`):** Kullanıcı AYNI hesabın (Ironman)
+     kelimeki.com ve `alpcapa.github.io` ekran görüntülerini yan yana
+     koyup web'de kartın tamamının sığdığını, mobilde kaydırmak
+     gerektiğini bildirdi.
+     - **Bu sefer ölçüm İKİ TARAFTA DA gerçek kodla yapıldı** (Parça
+       18/27/29'un "ölçmeden teşhis koyma" dersinin doğal devamı; yeni
+       olan: web tarafı da artık ELLE HESAPLANMIYOR). `npm install` +
+       `npm run build` ile web'in DERLENMİŞ Tailwind CSS'i üretilip
+       (`dist/assets/index-*.css`), `ScoreCard.tsx`/`ScoreStatsSection.tsx`/
+       `Modal.tsx`'in DOM'u birebir kopyalanan geçici bir HTML'e konup
+       yerel Chromium'da (Playwright) `getBoundingClientRect` ile ölçüldü;
+       mobil taraf `flutter test` içinde `tester.getSize` ile. **İlk elle
+       hesabım yanlıştı** (oyun kutularını 68px sandım, gerçek 80 — dar
+       sütunda etiket iki satıra sarıyor); derlenmiş CSS ölçümü bunu
+       düzeltti. **Ders: web'in "beklenen" ölçüsünü Tailwind sınıflarından
+       ZİHNEN türetme — `npm run build` + Chromium ile ölç, bu ortamda
+       yapılabiliyor.**
+     - **Ölçüm sonucu — içerik paritesi ZATEN İYİYDİ:** düzeltmelerden
+       sonra web modal içeriği **655** logical px, mobil **633** — mobil
+       hatta 22px daha kompakt. Yani kaydırmanın sebebi içerik yüksekliği
+       DEĞİL, **üst sınır**: web `max-h-[85vh]`, mobil
+       `MediaQuery.height × 0.85`. iOS Safari'de `vh` GÖRÜNÜR viewport'tan
+       BÜYÜK (tarayıcı kromunun kapladığı alanı saymaz), Flutter'ın
+       MediaQuery'si ise web derlemesinde yalnızca görünür canvas'ı görür
+       (kromun yediği ~140 logical px hariç). **Kullanıcının kendi ekran
+       görüntüsü bunu kanıtlıyor:** web modalı görünür sayfa alanının
+       %93'ünü kaplıyor — %85 sınırı görünür viewport'a göre olsaydı bu
+       İMKÂNSIZ olurdu. Gerçek native derlemede MediaQuery = tam ekran
+       olduğundan (iPad yatay ≈ 838 logical → 0.85×838 = 712 > 633) bu
+       şikayet **cihazda tekrarlamaz**; `0.85` çarpanı web'in `85vh`inin
+       doğru portu, değiştirilMEDİ.
+     - **Bulunan gerçek hata 1 — oran parantezleri hiç port edilmemiş:**
+       web `ScoreStatsSection.tsx` parantezleri RENDER'da ekliyor
+       (`({c.rate})`), `pct()` yalnızca `"%83"` döndürüyor. Port `pct`'yi
+       birebir taşımış ama sarmalamayı atlamış → mobil `%83`, web `(%83)`
+       gösteriyordu (kullanıcının ekran görüntülerinde de görünüyor).
+       `_CellBox` artık `'(${cell.rate!})'` basıyor.
+     - **Bulunan gerçek hata 2 — sekme çubuğu 53px, web 44px:** iki ayrı
+       sapma üst üste binmiş: (a) etiket `fontSize: 13` iken web `text-sm`
+       = **14px**; (b) web'in `leading-none`u (line-height 1) hiç
+       taşınmamış, Flutter fontun DOĞAL satır yüksekliğini (~1.3×)
+       kullanıyordu. `fontSize: 14` + `height: 1` (iki satırda da) ile
+       ölçülen değer **tam 44.0** oldu — web'le birebir.
+     - **Test kurgusu dersi — üretimin KISITINI taklit et:** ilk regresyon
+       testi çubuğu `Center`/`SizedBox` altına koydu ve 44 yerine **900**
+       ölçtü. Sebep widget'ta değil kurguda: sekme butonunun iç `Column`u
+       `MainAxisSize.max` ve SINIRLI bir yükseklik verilirse tüm alanı
+       kaplıyor. Üretimde çubuk `SingleChildScrollView`ın `Column`unda
+       yaşar → SINIRSIZ yükseklik → doğal boyuna sığar. Test artık aynı
+       şekli (`SizedBox` → `Column(mainAxisSize.min)`) kuruyor. **Bir
+       "yanlış" ölçüm çıktığında önce testin kısıt zincirini üretimle
+       karşılaştır** — widget'ı düzeltmeye kalkmak burada yanlış olurdu.
+     - **Test — negatif eş doğrulamasıyla, İKİ AYRI kanıt:**
+       `score_card_test.dart`'ın mevcut testi `(%70)`/`(%75)` bekleyecek
+       şekilde güncellendi (+ `%70`'in artık BULUNMADIĞI assertion'ı), ve
+       çubuk yüksekliğini 44.0'a sabitleyen yeni bir test eklendi.
+       Parantez düzeltmesi geçici geri alınınca test GERÇEKTEN `Found 0
+       widgets with text "(%70)"` ile, font/height düzeltmesi geri
+       alınınca `Expected: <44.0> Actual: <53.0>` ile düştü; ikisi de
+       geri konup yeşile döndü.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 279/279 yeşil**
+       (278'den +1). `kelimeki_core`'a hiç dokunulmadı; `mobile/` DIŞINDA
+       hiçbir dosya değişmedi (ölçüm için üretilen `dist/`, geçici HTML ve
+       geçici ölçüm testleri silindi).
+     - **Doğrulama sınırı:** parantezlerin ve sekme çubuğunun görsel
+       teyidi cihazda/web derlemesinde kullanıcıdan bekleniyor. "Kaydırma"
+       şikayetinin native derlemede kaybolduğu bu ortamda GÖSTERİLEMEDİ —
+       yalnızca hesapla (712 > 633) ve web'in ölçülen `vh` davranışıyla
+       gerekçelendirildi; TestFlight/Appetize turunda teyit edilmeli.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

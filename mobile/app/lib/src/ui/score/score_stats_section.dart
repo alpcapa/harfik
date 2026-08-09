@@ -94,12 +94,20 @@ class ScoreTabsBar extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
+                    // Web: `text-sm` (14px) + `leading-none` (line-height 1).
+                    // Port 13px kullanıyordu ve `leading-none`u hiç
+                    // taşımamıştı — Flutter'ın varsayılanı fontun DOĞAL
+                    // satır yüksekliği (~1.3×) olduğundan çubuk web'in
+                    // 44px'ine karşı 53px çiziliyordu (9 Ağustos 2026,
+                    // derlenmiş Tailwind CSS'i Chromium'da ölçülerek
+                    // doğrulandı). `height: 1` = CSS `leading-none`.
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
                         trUpper(t.label),
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 14,
+                          height: 1,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1,
                           color: tab == t ? Colors.white : _text,
@@ -111,6 +119,7 @@ class ScoreTabsBar extends StatelessWidget {
                       '(${statsByTab[t]?.totalScore ?? 0} puan)',
                       style: TextStyle(
                         fontSize: 10,
+                        height: 1,
                         color: tab == t ? Colors.white : _text,
                       ),
                     ),
@@ -278,7 +287,12 @@ class _CellBox extends StatelessWidget {
           ),
           if (cell.rate != null) ...[
             const SizedBox(height: 2),
-            Text(cell.rate!,
+            // Web `ScoreStatsSection.tsx`: `({c.rate})` — parantezler
+            // RENDER'da ekleniyor, `pct()` yalnızca "%83" döndürüyor.
+            // Port bu sarmalamayı hiç taşımamıştı (9 Ağustos 2026, cihaz
+            // testinde web↔mobil ekran görüntüsü karşılaştırmasıyla
+            // bulundu — web "(%83)", mobil "%83" gösteriyordu).
+            Text('(${cell.rate!})',
                 style: const TextStyle(
                     fontFamily: 'SpaceMono', fontSize: 12, color: _muted)),
           ],
