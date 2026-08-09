@@ -9,7 +9,9 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/stats_api.dart';
+import 'package:kelimeki/src/ui/score/klig_mark.dart';
 import 'package:kelimeki/src/ui/score/leaderboard_modal.dart';
+import 'package:kelimeki/src/ui/score/player_score_card_modal.dart';
 import 'package:kelimeki/src/ui/score/score_card_modal.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
@@ -170,8 +172,13 @@ void main() {
     expect(find.text('Ironman'), findsOneWidget);
     // Doğum tarihi + cinsiyet → "Y:36/C:E" (yaş bugüne göre hesaplanır).
     expect(find.textContaining('/C:E'), findsOneWidget);
-    // k-lig satırı: sıra + Genel sekmesinin lig puanı.
+    // k-lig satırı: sıra + Genel sekmesinin lig puanı + "?" bilgi rozeti.
     expect(find.text('#3 · 8 puan'), findsOneWidget);
+    expect(find.byType(KLigInfoBadge), findsOneWidget);
+    // Web `KLigMark`'ın `color` prop varsayılanı mavi (`KLIG_COLOR`) —
+    // kapsayan `text-muted` div'i SVG fill'ini etkilemiyor (bkz. dosyadaki
+    // düzeltme yorumu); burada `color` OVERRIDE EDİLMEMİŞ olmalı.
+    expect(tester.widget<KLigMark>(find.byType(KLigMark)).color, isNull);
     // Sekme çubuğu her sekmenin kendi puanını gösterir.
     expect(find.text('(8 puan)'), findsOneWidget);
     expect(find.text('(6 puan)'), findsOneWidget);
@@ -275,6 +282,53 @@ void main() {
     expect(gw.pageRequests.last.offset, 10);
   });
 
+  testWidgets(
+      'regresyon (9 Ağustos 2026): liste ilk 10\'a SIĞACAK KADAR uzun bir '
+      'ekranda açılırsa (kaydırmaya gerek kalmadan) sonraki sayfa OTOMATİK '
+      'yüklenmeli — kullanıcı web/mobil ekran görüntüsü karşılaştırmasıyla '
+      'bildirdi: mobilde liste "SENİN SIRAN" kısayoluna takılı kalıyordu, '
+      'web aynı kısa listeyi anında tam gösteriyordu', (tester) async {
+    final gw = FakeStatsGateway(
+      rows: [
+        for (var i = 0; i < 12; i++)
+          {
+            'user_id': i == 11 ? 'u-me' : 'u-$i',
+            'display_name': i == 11 ? 'Ironman' : 'Oyuncu$i',
+            'total_score': 100 - i,
+          }
+      ],
+      rank: const {'rank': 12, 'total_score': 89},
+    );
+    final auth = AuthService.fake(user: fakeUser(), profile: ironman);
+
+    // Web'in IntersectionObserver'ı sentinel açılışta zaten görünürse
+    // (kısa liste) kaydırmadan tetiklenir — burada da liste (12 satır)
+    // %50'lik maxHeight'e (uzun bir viewport'ta) sığacak kadar kısa
+    // tutuluyor, kaydırma HİÇ SİMÜLE EDİLMİYOR.
+    await setPhoneViewSize(tester, const Size(420, 1600));
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(
+          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      home: Scaffold(
+        body: LeaderboardModal(auth: auth, stats: StatsRepo(gw)),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // İkinci sayfa (kalan 2 satır) kendiliğinden istenmiş olmalı.
+    expect(gw.pageRequests.length, 2,
+        reason: 'Liste kaydırmaya gerek kalmadan otomatik tamamlanmalıydı — '
+            'gerçek istek sayısı: ${gw.pageRequests.length}');
+    expect(gw.pageRequests.last, (limit: 20, offset: 10));
+
+    // Kullanıcı artık listede GERÇEK adıyla görünmeli — "senin sıran"
+    // kısayolu/"Sen" yer tutucusu hiç çizilmemeli.
+    expect(find.text('SENİN SIRAN'), findsNothing);
+    expect(find.text('Sen'), findsNothing);
+    expect(find.text('Ironman'), findsOneWidget);
+    expect(find.text('89'), findsOneWidget); // gerçek puanı — myRank'in 89'u değil
+  });
+
   testWidgets('k-lig: satıra dokunmak o oyuncunun kartını açar',
       (tester) async {
     final gw = FakeStatsGateway(
@@ -297,6 +351,37 @@ void main() {
 
     expect(find.text('SKOR KARTI'), findsOneWidget);
     expect(find.text('KELİMEKİ'), findsOneWidget); // o oyuncunun verisi
+  });
+
+  testWidgets(
+      'regresyon (9 Ağustos 2026): PlayerScoreCard\'ta k-lig satırı + "?" '
+      'bilgi rozeti — web ScoreCard/PlayerScoreCard\'ın koşulsuz görünen '
+      'butonu (KLigMark mavi + "?" + "#sıra · puan puan"), dokununca '
+      '(auth verilmişse) k-lig açılır', (tester) async {
+    final gw = FakeStatsGateway(
+      rank: const {'rank': 7, 'total_score': 33},
+      stats: {'u-9': {null: statRow(total: 33)}},
+    );
+    final auth = AuthService.fake(user: fakeUser(), profile: ironman);
+    await pumpModal(
+      tester,
+      PlayerScoreCardModal(
+        stats: StatsRepo(gw),
+        userId: 'u-9',
+        name: 'Esiner',
+        auth: auth,
+      ),
+    );
+
+    expect(find.byType(KLigMark), findsOneWidget);
+    expect(tester.widget<KLigMark>(find.byType(KLigMark)).color, isNull);
+    expect(find.byType(KLigInfoBadge), findsOneWidget);
+    expect(find.textContaining('#7'), findsOneWidget);
+    expect(find.textContaining('33'), findsWidgets);
+
+    await tester.tap(find.byType(KLigInfoBadge));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('k-lig, senin gibi'), findsOneWidget);
   });
 
   testWidgets('k-lig: hiç satır yoksa davet metni', (tester) async {

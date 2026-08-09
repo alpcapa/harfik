@@ -290,9 +290,18 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       "BIRINCILIK" değil).
 - [ ] **Genel = 2 + 4.** Genel sekmesindeki Toplam Oyun/Birincilik/
       İkincilik, iki sekmenin toplamına eşit olmalı.
-- [ ] **k-lig sıralaması.** Liste açılmalı, kaydırınca sayfa sayfa
-      yüklenmeli; kendi satırın listede değilse altta kısayol çıkmalı.
-      Bir isme dokununca o oyuncunun kartı açılmalı.
+- [ ] **k-lig sıralaması (9 Ağustos 2026, Parça 31).** Liste açılmalı,
+      kaydırınca sayfa sayfa yüklenmeli; kendi satırın listede değilse
+      altta kısayol çıkmalı. **Liste az sayıda kullanıcıdan oluşuyorsa
+      (ilk 10'un altına sığacak kadar kısaysa) sonraki sayfa hiç kaydırma
+      gerekmeden KENDİLİĞİNDEN yüklenip kendi satırın GERÇEK adınla listede
+      görünmeli — "SENİN SIRAN" kısayolu/"Sen" yer tutucusu bu durumda hiç
+      çıkmamalı** (web/mobil ekran görüntüsü karşılaştırmasıyla bulundu —
+      önceden mobil kısa listede takılı kalıyordu). Bir isme dokununca o
+      oyuncunun kartı açılmalı. Skor Kartı ve bir başkasının kartında,
+      mavi "k-lig" yazısının yanında küçük dairesel bir "?" rozeti
+      olmalı; dokununca (ya da rozetin kendisine dokununca) k-lig
+      sıralaması açılmalı.
 - [ ] **Misafir kuyruğu.** Çıkış yap, misafirken bir oyunu BİTİR, sonra
       giriş yap → o oyun hesabına işlenmeli (web'deki Skor Kartı'ndan
       doğrula).

@@ -156,7 +156,22 @@ class _ScoreCardModalState extends State<ScoreCardModal> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const KLigMark(height: 16, color: _muted),
+                    // Web `KLigMark`'ın `color` prop'u `KLIG_COLOR` (mavi)
+                    // varsayılanı taşıyor — kapsayan `text-muted` div'i
+                    // yalnızca "?" rozetini ve puan metnini etkiliyor, SVG
+                    // fill'ini DEĞİL (CSS `currentColor` değil, doğrudan
+                    // React prop'u). Önceki sürüm burada `_muted` geçip
+                    // logoyu grileştiriyordu — 9 Ağustos 2026'da kullanıcı
+                    // "k-lig yazısı mavi olmalı" diye bildirdi, kaynak
+                    // koddan doğrulanıp düzeltildi.
+                    const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        KLigMark(height: 16),
+                        SizedBox(width: 4),
+                        KLigInfoBadge(),
+                      ],
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       [

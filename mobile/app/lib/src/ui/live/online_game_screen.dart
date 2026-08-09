@@ -822,6 +822,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
       avatarUrl: slot.avatarUrl,
       games: widget.games,
       friends: widget.friends,
+      auth: widget.auth,
     ));
   }
 

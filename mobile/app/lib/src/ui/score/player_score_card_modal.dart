@@ -13,6 +13,7 @@
 // yerine o kişinin adını taşır, web'in aynı ayrımı).
 import 'package:flutter/material.dart';
 
+import '../../data/auth_service.dart';
 import '../../data/friends_api.dart';
 import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
@@ -21,9 +22,13 @@ import '../friends/friends_modal.dart'
     show confirmFriendAction, showFriendInfoDialog;
 import '../game/modal_shell.dart';
 import 'game_history_modal.dart';
+import 'klig_mark.dart';
+import 'leaderboard_modal.dart';
 import 'score_stats_section.dart';
 
 const _text = Color(0xFF1B2430);
+const _muted = Color(0xFF5A6673);
+const _accent = Color(0xFF2563EB);
 
 Future<void> showPlayerScoreCard(
   BuildContext context, {
@@ -33,6 +38,7 @@ Future<void> showPlayerScoreCard(
   String? avatarUrl,
   Future<GamesRepo>? games,
   FriendsRepo? friends,
+  AuthService? auth,
 }) {
   return showDialog<void>(
     context: context,
@@ -43,6 +49,7 @@ Future<void> showPlayerScoreCard(
       avatarUrl: avatarUrl,
       games: games,
       friends: friends,
+      auth: auth,
     ),
   );
 }
@@ -59,6 +66,13 @@ class PlayerScoreCardModal extends StatefulWidget {
   /// null ise arkadaşlık simgesi çizilmez (offline/test).
   final FriendsRepo? friends;
 
+  /// null ise k-lig satırı tıklanamaz (Leaderboard açmak için gerekiyor) —
+  /// web'de bu satır koşulsuz görünür (`fetchMyLeaderboardRank` yalnızca
+  /// `stats` istiyor), ama `showLeaderboard`'ı çağırmak `AuthService`
+  /// gerektirdiğinden [auth] verilmemiş çağrı yerlerinde satır YİNE
+  /// görünür (rank/puan bilgisi hâlâ faydalı) ama dokunuşu no-op kalır.
+  final AuthService? auth;
+
   const PlayerScoreCardModal({
     super.key,
     required this.stats,
@@ -67,6 +81,7 @@ class PlayerScoreCardModal extends StatefulWidget {
     this.avatarUrl,
     this.games,
     this.friends,
+    this.auth,
   });
 
   @override
@@ -83,10 +98,17 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
   FriendRelation? _relation;
   bool _relationLoaded = false;
 
+  // k-lig satırındaki "#sıra ·" öneki — web `rank` state'iyle aynı
+  // (`fetchMyLeaderboardRank(member.id)`, burada `stats.myRank(userId)`).
+  MyLeaderboardRank? _rank;
+
   @override
   void initState() {
     super.initState();
     _loadRelation();
+    widget.stats.myRank(widget.userId).then((r) {
+      if (mounted) setState(() => _rank = r);
+    });
     for (final t in StatsTab.values) {
       widget.stats.playerStats(widget.userId, t).then((s) {
         if (!mounted) return;
@@ -184,6 +206,64 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
     );
   }
 
+  // k-lig satırı — web `PlayerScoreCard.tsx`nin koşulsuz görünen butonu
+  // (bkz. dosya başı yorumu): KLigMark + "?" bilgi rozeti + "#sıra · puan
+  // puan". `auth` verilmemiş çağrı yerlerinde (bkz. showPlayerScoreCard'ın
+  // AYRI çağrıldığı game_history_modal.dart) satır yine görünür ama dokunuş
+  // no-op kalır — bilgi kaybı yok, yalnızca Leaderboard'u açan aksiyon yok.
+  Widget _kligButton() {
+    final totalScore = _statsByTab[StatsTab.all]?.totalScore ?? 0;
+    final auth = widget.auth;
+    return GestureDetector(
+      onTap: auth == null
+          ? null
+          : () => showLeaderboard(context,
+              auth: auth,
+              stats: widget.stats,
+              games: widget.games,
+              friends: widget.friends),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // Web `KLigMark`'ın `color` prop varsayılanı mavi (`KLIG_COLOR`) —
+          // kapsayan `text-muted` div'i yalnızca "?" rozetini/puan metnini
+          // etkiliyor, SVG fill'ini değil (bkz. score_card_modal.dart'taki
+          // aynı düzeltmenin gerekçesi).
+          const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              KLigMark(height: 16),
+              SizedBox(width: 4),
+              KLigInfoBadge(),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text.rich(
+            TextSpan(children: [
+              if (_rank != null) ...[
+                TextSpan(text: '#${_rank!.rank}'),
+                const TextSpan(text: ' · '),
+              ],
+              TextSpan(text: '$totalScore'),
+              const TextSpan(
+                text: ' puan',
+                style: TextStyle(
+                    fontWeight: FontWeight.normal, color: _muted),
+              ),
+            ]),
+            style: const TextStyle(
+              fontFamily: 'SpaceMono',
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: _accent,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return KModal(
@@ -195,16 +275,22 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
             children: [
               KAvatar(url: widget.avatarUrl, name: widget.name, size: 44),
               const SizedBox(width: 12),
-              Flexible(
-                child: Text(widget.name,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: _text)),
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(widget.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: _text)),
+                    ),
+                    if (_relationIcon() case final icon?) icon,
+                  ],
+                ),
               ),
-              if (_relationIcon() case final icon?) icon,
-              const Spacer(),
+              _kligButton(),
             ],
           ),
           const SizedBox(height: 16),

@@ -77,6 +77,7 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
         _rows = rows;
         _hasMore = rows.length == _initialPageSize;
       });
+      _maybeAutoLoadIfNotScrollable();
     });
     final user = widget.auth.user;
     if (user != null) {
@@ -98,6 +99,28 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
     super.dispose();
   }
 
+  // Web'in `IntersectionObserver`ı sentinel açılışta ZATEN görünürse (liste
+  // 50vh'a sığacak kadar kısaysa) hiç kaydırma gerekmeden ANINDA tetiklenir
+  // — sentinel "görünür" olmayı bekler, "kaydırıldı" olmayı DEĞİL. Flutter'ın
+  // `ScrollController.addListener`ı ise yalnızca kaydırma POZİSYONU
+  // DEĞİŞTİĞİNDE çağrılıyor; içerik zaten sığıp `maxScrollExtent==0` kalırsa
+  // (kaydırılacak hiçbir şey olmadığından) listener HİÇ ateşlenmiyor ve
+  // sonraki sayfa asla otomatik yüklenmiyordu (9 Ağustos 2026'da kullanıcı
+  // web/mobil ekran görüntüsü karşılaştırmasıyla bildirdi — mobilde liste
+  // ilk 10'da/"senin sıran" kısayolunda takılı kalıyordu, web'de aynı kısa
+  // liste anında tam listeye tamamlanıyordu). Düzeltme: her sayfa
+  // yüklemesinden SONRA (post-frame, layout'un gerçekten bitmesini bekleyip)
+  // içerik hâlâ kaydırılamıyor mu diye elle kontrol edilip gerekirse bir
+  // sonraki sayfa da hemen istenir — `_hasMore` tükenene ya da liste
+  // gerçekten kaydırılabilir hâle gelene kadar zincirlenir.
+  void _maybeAutoLoadIfNotScrollable() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_hasMore || _loadingMore) return;
+      if (!_scrollController.hasClients) return;
+      if (_scrollController.position.maxScrollExtent <= 0) _loadMore();
+    });
+  }
+
   void _loadMore() {
     if (_loadingMore || !_hasMore || _rows == null) return;
     setState(() => _loadingMore = true);
@@ -110,6 +133,7 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
         _hasMore = page.length == _pageSize;
         _loadingMore = false;
       });
+      _maybeAutoLoadIfNotScrollable();
     });
   }
 
@@ -216,6 +240,7 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
                       avatarUrl: r.avatarUrl,
                       games: widget.games,
                       friends: widget.friends,
+                      auth: widget.auth,
                     ),
                   );
                 },
@@ -249,6 +274,8 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
                   name: widget.auth.menuName,
                   avatarUrl: widget.auth.profile?.avatarUrl,
                   games: widget.games,
+                  friends: widget.friends,
+                  auth: widget.auth,
                 ),
               ),
             ],

@@ -420,6 +420,7 @@ class _FriendsModalState extends State<FriendsModal> {
                           avatarUrl: f.avatarUrl,
                           games: widget.games,
                           friends: widget.friends,
+                          auth: widget.auth,
                         ),
                 child: Row(children: [
                   KAvatar(url: f.avatarUrl, name: f.name, size: 32),

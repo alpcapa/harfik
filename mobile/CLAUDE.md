@@ -3726,6 +3726,92 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        tutuldu (zararsız + web paritesine yakın). Çizgi/dolgu
        düzeltmelerinin (madde 2-3) gerçek cihazda/web derlemesinde görsel
        teyidi kullanıcının bir sonraki test turunda bekleniyor.
+   - ✅ **Parça 31 — k-lig sıralaması kısa listede otomatik tamamlanmıyordu +
+     k-lig "?" bilgi rozeti/mavi rengi ScoreCard/PlayerScoreCard'da eksikti
+     (9 Ağustos 2026, `leaderboard_modal.dart`, `score_card_modal.dart`,
+     `player_score_card_modal.dart`, `klig_mark.dart`):** Kullanıcı iki
+     ekran görüntüsüyle (mobil vs kelimeki.com, aynı hesap) bildirdi: k-lig
+     listesi web'de (13 kayıtlı kullanıcı) tam liste + gerçek isimlerle
+     açılırken mobilde ilk 10 + jenerik "Sen" satırıyla ("SENİN SIRAN"
+     kısayolu) takılı kalıyordu; ayrıca mobildeki mavi "k-lig" yazısının
+     yanında web'deki gibi bir "?" rozeti yoktu.
+     1. **Kök sebep — web'in `IntersectionObserver`ı GÖRÜNÜRLÜĞE tepki
+        veriyor, Flutter'ın `ScrollController.addListener`ı yalnızca
+        POZİSYON DEĞİŞİMİNE:** Web'de sonraki sayfa, sentinel elemanı
+        görünür alana GİRDİĞİNDE yükleniyor — liste zaten kısaysa (13
+        satır, `max-h-[50vh]`e sığıyor) sentinel açılışta ZATEN görünür
+        olduğundan hiç kaydırmaya gerek kalmadan ANINDA tetikleniyor.
+        Mobil port `ScrollController.addListener`ı kaydırma POZİSYONU
+        değiştiğinde çalışıyordu — içerik zaten sığıp `maxScrollExtent==0`
+        kaldığında (kaydırılacak hiçbir şey olmadığından) bu listener HİÇ
+        ateşlenmiyor, ikinci sayfa asla otomatik istenmiyordu. Düzeltme:
+        her sayfa yüklemesinden SONRA (post-frame) `maxScrollExtent<=0 &&
+        hasMore` kontrolü — doğruysa bir sonraki sayfa hemen istenip
+        `hasMore` tükenene ya da liste gerçekten kaydırılabilir olana
+        kadar zincirleniyor (`_maybeAutoLoadIfNotScrollable`).
+     2. **k-lig "?" bilgi rozeti hiç port edilmemişti:** web `ScoreCard.tsx`/
+        `PlayerScoreCard.tsx`nin ikisi de KLigMark'ın yanında küçük
+        dairesel bir "?" rozeti taşıyor (`w-3.5 h-3.5 rounded-full border
+        border-muted`) — `UserMenu`/`Leaderboard` başlığında YOK (üçü de
+        ayrı ayrı kontrol edildi, "hepsine ekle" varsayımıyla
+        genelleştirilmedi). Ortak `KLigInfoBadge` widget'ı (`klig_mark.dart`)
+        eklenip her iki kartın k-lig satırına eklendi.
+     3. **Yan bulgu, kod okurken bulundu (kullanıcının "mavi" tabiri
+        doğrulanınca fark edildi) — KLigMark'ın rengi web'de `text-muted`
+        DIŞ div'inden MİRAS ALINMIYOR:** web `KLigMark.tsx`'in `color`
+        prop'u `KLIG_COLOR` (mavi `#2563EB`) varsayılanı taşıyor ve SVG'ye
+        doğrudan React prop'u olarak geçiyor — kapsayan `text-muted` CSS
+        class'ı yalnızca `currentColor` kullanan elemanları (düz metin,
+        "?" rozetinin border/text'i) etkiler, KLigMark'ın SVG fill'ini
+        ETKİLEMEZ. Mobil `score_card_modal.dart` bunu yanlış okuyup
+        `KLigMark(color: _muted)` geçiyordu (Parça 4'ten kalma, bu oturumda
+        bulundu) — logo griydi, web'de her zaman mavi. Kaldırıldı (varsayılan
+        mavi); yeni eklenen `player_score_card_modal.dart`'ın satırı da
+        BAŞTAN doğru (renksiz/varsayılan) yazıldı.
+     4. **`PlayerScoreCardModal`e (başkasının kartı) k-lig satırının
+        TAMAMI eklendi — yalnızca "?" değil:** kod okunurken dosyanın
+        kendi üst yorumu ("k-lig satırına dokununca açılır") ile GERÇEK
+        kodun çelişkisi bulundu — satır hiç yoktu. Web `PlayerScoreCard.tsx`
+        birebir taşındı: `stats.myRank(userId)` ile o oyuncunun sırası +
+        KLigMark+"?"+"#sıra · puan puan", dokununca `showLeaderboard` açar.
+        `showLeaderboard`'ın gerektirdiği `AuthService` `PlayerScoreCardModal`e
+        OPSİYONEL yeni bir `auth` parametresi olarak eklendi (`friends`/
+        `games` ile aynı "yoksa ilgili özellik sessizce eksik kalır" deseni)
+        ve dört çağrı yerine (`friends_modal.dart`, `leaderboard_modal.dart`
+        ×2, `online_game_screen.dart`) trivially thread edildi —
+        `game_history_modal.dart`'ın çağrı yeri BİLİNÇLİ atlandı (o dosyada
+        hiç `AuthService` yok, threading çok daha büyük bir refactor
+        gerektirirdi); orada k-lig satırı hâlâ görünür (bilgi kaybı yok)
+        ama dokunuşu no-op kalır — "çalışmayan kontrol koymuyoruz" ilkesiyle
+        BİLE tutarlı, çünkü satırın kendisi (rank/puan bilgisi) her zaman
+        faydalı, yalnızca AKSİYONU (k-lig açma) auth olmadan mümkün değil.
+     - **Test — negatif eş doğrulamasıyla, ÜÇ AYRI kanıt:** (1)
+       `score_card_test.dart`'a yeni bir test — 12 satırlık kısa bir liste,
+       uzun bir viewport'ta (kaydırmaya HİÇ gerek kalmadan) açılınca ikinci
+       sayfanın kendiliğinden istendiğini, "SENİN SIRAN"/"Sen" hiç
+       görünmediğini, kullanıcının gerçek adıyla listede olduğunu
+       doğruluyor — `_maybeAutoLoadIfNotScrollable()` çağrıları geçici
+       yorum satırına alınıp test GERÇEKTEN `Expected:<2> Actual:<1>` ile
+       düştü, geri konup yeşile döndü. (2) `PlayerScoreCardModal`e yeni bir
+       test — k-lig satırı + "?" rozeti + rank/puan + dokununca Leaderboard
+       açılması; `auth` parametresi TAMAMEN kaldırılınca (4 çağrı yeri +
+       widget alanı) test paketi DERLEME HATASIYLA düştü (`No named
+       parameter with the name 'auth'`) — bu da geçerli bir negatif eş
+       kanıtı, geri konup 11/11 yeşile döndü. (3) İki karta da `KLigMark`
+       widget'ının `color` alanının `null` (yani varsayılan mavi) olduğunu
+       doğrulayan assertion eklendi; `score_card_modal.dart`'ta geçici
+       olarak `color: _muted` geri konunca test GERÇEKTEN `Expected: null
+       Actual: Color(...muted...)` ile düştü, kaldırılıp yeşile döndü.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 277/277 yeşil**
+       (275'ten +2 — bu parçanın iki yeni testi; mevcut testlere eklenen
+       assertion'lar ayrı test SAYILMIYOR). `kelimeki_core`'a hiç
+       dokunulmadı.
+     - **Doğrulama sınırı:** gerçek `leaderboard`/`myLeaderboardRank`
+       RPC'leri, gerçek CanvasKit'te (kullanıcının GitHub Pages derlemesi)
+       sentinel-görünürlük davranışı ve `game_history_modal.dart`'tan
+       açılan bir oyuncu kartında k-lig satırının (auth'suz, bilgi-amaçlı)
+       göründüğü ama tıklanamadığı davranışı cihazda/web derlemesinde
+       teyit edilmeli.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek
