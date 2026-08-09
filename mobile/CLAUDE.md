@@ -34,6 +34,47 @@ Commit'ten önce, sırayla:
    üreticisi değiştiyse ilgili `npm run generate-*` — ikisi de opsiyonel
    değil.
 
+## Sorun Bildirildiğinde İLK ADIM: "web'de bu nasıl yapılmış?"
+
+Kullanıcı kararı (9 Ağustos 2026, sözleri birebir): *"Bizim webde çalışan
+bir uygulamamız var ve bunun aynısını mobile app'e geçiriyoruz. App için
+bir şey yapacağın zaman her zaman ilk önce web'deki uygulamaya bakıp, onu
+app'e uygulamaya çalışman lazım. Sorun bildirdiğim zaman yine dönüp bunu
+web'de nasıl yapmışız diye inceleyip ondan sonra harekete geçmen lazım.
+Sürekli yama yapıp geri alman kabul edilemez."*
+
+Aşağıdaki "Etki Analizi" bölümü bu kuralı zaten içeriyordu ama YALNIZCA
+yeni parça yazarken uygulanıyordu. **Kural hata triyajı için de, hatta
+ÖNCELİKLE onun için geçerli:** bir hata/görsel fark bildirildiğinde ilk
+eylem Flutter tarafını kurcalamak DEĞİL, `src/`'deki karşılığını (bileşen,
+sarmalayıcı zinciri, sınıflar, kararlar) okumaktır. Ancak ondan sonra
+"port bunu nerede farklı yapmış?" sorusu sorulur.
+
+**Bu kuralın atlanmasının somut bedeli — tek bir düzen sorusu, dört tur:**
+
+| Parça | Yapılan | Sonuç |
+|---|---|---|
+| 16 | Tahta/mesaj arasına 56px boşluk eklendi (yama) | Parça 39'da geri alındı |
+| 17 | `max-w-[680px]`in hiç uygulanmadığı bulundu | Gerçek düzeltme |
+| 39 | Kaydırmada kesilen gölge için eksen-kırpıcı yazıldı (yama) | Parça 40'ta geri alındı |
+| 40 | `App.tsx`'in düzeni OKUNDU: 680 her bölümün kendi üzerinde | 5 dakikalık gerçek düzeltme |
+
+16 ve 39'un ikisi de semptomu bastıran, sonradan geri alınan yamalardı.
+`App.tsx`'in sarmalayıcı zincirini bir kez okumak ilk turda bitirirdi.
+
+**Pratikte:**
+
+1. Bildirilen davranışın web'deki dosyasını aç ve OKU (yalnızca değerleri
+   değil: sarmalayıcı zinciri, hangi kap neyi sınırlıyor, ne kırpıyor, ne
+   akıyor). Gerekirse `npm run build` + Chromium ile ÖLÇ.
+2. Portta o yapının karşılığını bul; fark yapısal mı, değer mi?
+3. Ancak bundan sonra kod yaz. **Yapısal farkı değer/boşluk/kırpma
+   ayarıyla kapatmaya çalışma** — bu projede üç kez denendi, üçünde de
+   geri alındı.
+4. Ölçüm yaparken İZOLE widget'ı değil GERÇEK ekranı ölç — Parça 40'ta
+   izole ölçüm "fark yok" deyip beni yanlış sonuca götürdü (bkz. o
+   parçanın notu).
+
 ## Etki Analizi (ZORUNLU — her parçanın İLK adımı)
 
 Bu, kök `CLAUDE.md`'deki **"Çalışma İlkesi: Önce Etki Analizi, Sonra

@@ -11,6 +11,12 @@ görürsün.
 Kök dizindeki `TESTING.md` (web) ile aynı disipline tabidir: **bir ilerleme
 kaydı değildir**, her sürüm öncesi baştan koşulabilir.
 
+**Buradan bir bulgu çıktığında düzeltmeye başlamadan önce:** o davranışın
+web'deki karşılığını (`src/`) OKU — bu port web'in birebir kopyası, bulgu
+neredeyse her zaman "web'de nasıl yapıldığına bakılmadan yazılmış bir
+parça" demek. Ayrıntı ve bu kuralın atlanmasının bedeli: `mobile/CLAUDE.md`,
+"Sorun Bildirildiğinde İLK ADIM".
+
 **Ön koşullar:**
 - Uygulama gerçek anahtarlarla derlenmiş olmalı:
   `--dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...`
