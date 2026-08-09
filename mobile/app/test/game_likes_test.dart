@@ -114,11 +114,19 @@ void main() {
 
     expect(find.byIcon(Icons.favorite_border), findsOneWidget);
     expect(find.byIcon(Icons.favorite), findsNothing);
+    // Beğenilmemiş kalp gri kalmalı (renk yalnızca beğenildiğinde değişir).
+    expect(tester.widget<Icon>(find.byIcon(Icons.favorite_border)).color,
+        isNot(const Color(0xFFDC2626)));
 
     await tester.tap(find.byIcon(Icons.favorite_border));
     await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.favorite), findsOneWidget);
+    // Web: `entry.liked_by_me ? 'text-red' : 'text-muted'` — beğenilen kalp
+    // KIRMIZI. Port ikonu doldurup rengi koşulsuz gri bırakmıştı (9 Ağustos
+    // 2026, cihaz testinde "like yapınca kalp gri/siyah kalıyor").
+    expect(tester.widget<Icon>(find.byIcon(Icons.favorite)).color,
+        const Color(0xFFDC2626));
     // Sayı rozeti belirdi. Key ile aranıyor: düz '1' metni PlayerBadge'in
     // koltuk numarasıyla çakışıyor.
     expect(

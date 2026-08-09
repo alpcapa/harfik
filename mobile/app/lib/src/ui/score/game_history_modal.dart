@@ -728,7 +728,13 @@ class _EntryCard extends StatelessWidget {
                                 ? Icons.favorite
                                 : Icons.favorite_border,
                             size: 13,
-                            color: _muted,
+                            // Web: `entry.liked_by_me ? 'text-red' :
+                            // 'text-muted'` — beğenilen kalp KIRMIZI.
+                            // Port ikonun DOLU/BOŞ hâlini taşımış ama
+                            // rengi koşulsuz `_muted` bırakmıştı, yani
+                            // beğeni yapınca kalp doluyor ama gri kalıyordu
+                            // (9 Ağustos 2026, cihaz testinde bulundu).
+                            color: entry.likedByMe ? _red : _muted,
                           ),
                         ),
                       ),

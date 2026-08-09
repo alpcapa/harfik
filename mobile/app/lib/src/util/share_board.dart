@@ -66,23 +66,40 @@ Future<void> shareBoard({
   // Web `${text}\n${url}` yedeğiyle aynı gövde: birçok hedef (SMS, not
   // uygulamaları) ayrı bir "url" alanı taşımadığından link metne katılıyor.
   final body = url == null ? text : '$text\n$url';
-  try {
-    if (png == null) {
-      await SharePlus.instance.share(ShareParams(text: body));
+
+  // Web `handleShare`in YEDEK ZİNCİRİ birebir: önce dosyalı paylaşım
+  // (`navigator.canShare({files})` dalı), OLMAZSA dosyasız metin+link
+  // (`navigator.share({title,text,url})` dalı). Portun ilk sürümünde bu
+  // ikinci basamak YOKTU: dosya yazımı ya da dosyalı paylaşım herhangi bir
+  // sebeple patlarsa (geçici dizin yok/dolu, o platformda path_provider
+  // yok…) tek bir `catch` her şeyi yutuyor ve kullanıcıya HİÇBİR ŞEY
+  // olmuyordu — 9 Ağustos 2026'da cihaz testinde "Paylaş çalışmıyor, tepki
+  // yok" diye bildirildi.
+  //
+  // NOT: kullanıcının paylaş sayfasını İPTAL etmesi bu dala DÜŞMEZ —
+  // share_plus iptalde fırlatmaz, `ShareResult.dismissed` döner; yani iptal
+  // ikinci bir paylaş sayfası açtırmaz.
+  if (png != null) {
+    try {
+      // share_plus dosya yolu istiyor; geçici dizine yazıp paylaşıyoruz
+      // (sistem paylaş sayfası kapanınca dosya orada kalır, işletim sistemi
+      // geçici dizini kendi temizler).
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/kelimeki.png');
+      await file.writeAsBytes(png, flush: true);
+      await SharePlus.instance.share(
+        ShareParams(
+            text: body, files: [XFile(file.path, mimeType: 'image/png')]),
+      );
       return;
+    } catch (e) {
+      debugPrint('[Kelimeki] görselli paylaşım olmadı, metne düşülüyor: $e');
     }
-    // share_plus dosya yolu istiyor; geçici dizine yazıp paylaşıyoruz
-    // (sistem paylaş sayfası kapanınca dosya orada kalır, işletim sistemi
-    // geçici dizini kendi temizler).
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/kelimeki.png');
-    await file.writeAsBytes(png, flush: true);
-    await SharePlus.instance.share(
-      ShareParams(text: body, files: [XFile(file.path, mimeType: 'image/png')]),
-    );
+  }
+
+  try {
+    await SharePlus.instance.share(ShareParams(text: body));
   } catch (e) {
-    // Kullanıcının paylaş sayfasını iptal etmesi de buraya düşebilir —
-    // web'de olduğu gibi sessizce geçiliyor, hata gösterilmiyor.
     debugPrint('[Kelimeki] paylaşım tamamlanmadı: $e');
   }
 }

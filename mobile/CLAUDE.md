@@ -4003,6 +4003,73 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        İKİNCİ kez bildiriyorsa, kapatmadan önce o farkı ölç (burada halkayı
        açı açı örneklemek 20 satırlık bir betikti). Uniform olması gereken
        bir şeyin uniform olup olmadığı gözle değil, örnekleyerek anlaşılır.
+   - ✅ **Parça 35 — Bölüm 5 (Oyun geçmişi) cihaz testinde bildirilen üç
+     bulgu: İKİSİ gerçek hata, ÜÇÜNCÜSÜ web ile ZATEN birebir (9 Ağustos
+     2026, `game_history_modal.dart`, `share_board.dart`):** Kullanıcı
+     "Tüm oyunlar penceresinde her şey geliyor. Like yapınca kalp kırmızı
+     olması gerekirken gri/siyah oluyor. … Paylaş çalışmıyor. (Tepki yok)
+     Mesajlar da çıkıyor ama sıralama ters. En yeni en üstte gelmeli."
+     diye bildirdi.
+     - **Bug 1 — beğenilmiş kalp GRİ kalıyordu.** Web
+       (`GameHistoryModal.tsx` ~579) `className={entry.liked_by_me ?
+       'text-red' : 'text-muted'}` ile ikonun rengini beğeni durumuna göre
+       değiştiriyor; port ikonun ŞEKLİNİ (`favorite` ↔ `favorite_border`)
+       doğru değiştiriyor ama `color`u koşulsuz `_muted` bırakıyordu — yani
+       dolu kalp çiziliyordu, ama gri. `_red` (`0xFFDC2626`, tailwind
+       `red`) sabiti dosyada ZATEN vardı (skor satırlarında kullanılıyor),
+       yeni bir renk icat edilmedi.
+     - **Bug 2 — "Paylaş"a dokununca hiçbir şey olmuyordu.** `shareBoard`
+       (`share_board.dart`) TEK bir `try/catch` içindeydi: PNG'yi geçici
+       dizine yaz → dosyalı `SharePlus.share`. Bu zincirin HERHANGİ bir
+       adımı patlarsa (geçici dizin yok/dolu, o platformda `path_provider`
+       kanalı yok — GitHub Pages web derlemesinde tam olarak bu) `catch`
+       her şeyi yutuyor ve kullanıcıya HİÇBİR ŞEY olmuyordu. Web'in
+       `handleShare`i ise bir YEDEK ZİNCİRİ: `navigator.canShare({files})`
+       tutmazsa dosyasız `navigator.share({title,text,url})`e düşer. Aynı
+       zincir porta eklendi — dosyalı paylaşım patlarsa (loglanır) metin+
+       link paylaşımı denenir. **Kullanıcının paylaş sayfasını İPTAL
+       etmesi bu dala DÜŞMEZ:** `share_plus` iptalde fırlatmaz,
+       `ShareResult.dismissed` döner — yani iptal ikinci bir paylaş
+       sayfası açtırmaz (kaynaktan doğrulandı, tahmin değil).
+     - **Bulgu 3 — sohbet arşivi sıralaması PORT HATASI DEĞİL, mobil web
+       ile BİREBİR aynı.** İkisi de eskiden-yeniye (kronolojik artan)
+       gösteriyor; üstelik web'in `GameChatHistoryModal.tsx`'i tam bu
+       satırda bir yorum taşıyor: bir dönem oradaki `.reverse()`
+       kaldırılmış, çünkü AYNI veriyi gösteren `AdminChatTranscriptModal`
+       reverse yapmıyordu ve iki ekran farklı sırada görünüyordu. Yani
+       "en yeni üstte" istemek meşru bir ürün isteği ama İKİ PLATFORMU
+       BİRLİKTE ilgilendiren bir karar (ve web'de üçüncü bir ekranı,
+       admin dökümünü de). Tek taraflı mobilde çevirmek tam da web'in
+       bilerek kapattığı ayrışmayı geri açardı — **bilinçli olarak
+       DEĞİŞTİRİLMEDİ**, kullanıcıya bu şekilde bildirildi. (Karşılaştırma
+       için: CANLI sohbet penceresi — `ChatModal` — web'de de mobilde de
+       en yeni ÜSTTE; orada yazma alanı en üstte olduğundan bu tutarlı.
+       Ters duran şey arşiv değil, ikisinin FARKLI olması — ve bu fark
+       web'de de aynen var.)
+     - **Test — negatif eş doğrulamasıyla, İKİ AYRI kanıt:** (1)
+       `game_likes_test.dart`'ın mevcut iyimser-güncelleme testine renk
+       assertion'ları eklendi — dokunmadan ÖNCE `favorite_border` ikonunun
+       rengi `_red` DEĞİL, dokunduktan sonra `favorite` ikonunun rengi TAM
+       OLARAK `_red`. (Sıra önemli: beğenildikten sonra `favorite_border`
+       ikonu artık ağaçta YOK, "önce gri" kontrolü tap'tan sonra
+       yapılamaz.) Renk düzeltmesi geri alınınca test GERÇEKTEN `Expected:
+       Color(0.8627, 0.1490, 0.1490) Actual: Color(0.3529, 0.4000,
+       0.4510)` ile düştü. (2) `share_recent_test.dart`'a yeni bir test —
+       `MethodChannel('dev.fluttercommunity.plus/share')` sahtelenip
+       dosyalı paylaşımın (path_provider kanalı testte yok) patlaması
+       sağlanıyor; TAM BİR çağrı yapıldığı, `args['text']`in
+       `'$shareMessage\nhttps://kelimeki.com/game/a'` olduğu ve
+       `args['uri']`nin null kaldığı doğrulanıyor. Yedek zincir geri
+       alınınca test GERÇEKTEN `Expected: an object with length of <1>
+       Actual: []` ile düştü; ikisi de geri konup yeşile döndü.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 282/282 yeşil**
+       (280'den +1 yeni test; kalp testine eklenen assertion'lar ayrı test
+       SAYILMIYOR). `kelimeki_core`'a hiç dokunulmadı.
+     - **Doğrulama sınırı:** yedek zincirin GERÇEK faydası (cihazda/web
+       derlemesinde paylaş sayfasının artık gerçekten açılması) yalnızca
+       cihazda görülebilir — testte kanıtlanan şey "dosyalı yol patlarsa
+       metin+link yolu GERÇEKTEN çağrılıyor". Kalbin kırmızısı da cihazda
+       gözle teyit edilmeli.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

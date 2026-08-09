@@ -5,11 +5,11 @@
 // fonksiyonla AKIŞI doğruluyor (markShared → görsel yakala → paylaş).
 // Gerçek paylaş sayfası cihazda doğrulanır.
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/games_api.dart';
 import 'package:kelimeki/src/ui/score/game_history_modal.dart';
@@ -302,6 +302,45 @@ void main() {
     expect(png, isNotNull);
     // PNG imzası: 89 50 4E 47
     expect(png!.sublist(0, 4), [0x89, 0x50, 0x4E, 0x47]);
+  });
+
+  // 9 Ağustos 2026 — cihaz testinde "Paylaş çalışmıyor, tepki yok" bildirildi.
+  // Kök sebep: `shareBoard`ın TEK `catch`i her şeyi yutuyordu; geçici dosya
+  // yazımı (path_provider) başarısız olursa kullanıcıya hiçbir şey
+  // gösterilmiyordu. Web `handleShare` ise dosyalı paylaşım mümkün değilse
+  // (`navigator.canShare({files})` false) DOSYASIZ metin+link paylaşımına
+  // düşüyor — port bu ikinci basamağı hiç taşımamıştı. Bu test tam o
+  // basamağı doğruluyor: path_provider mock'lanMADIĞINDAN
+  // `getTemporaryDirectory()` MissingPluginException fırlatır, akış metin
+  // paylaşımına düşmeli ve share kanalına metin+link GİTMELİ.
+  testWidgets('görselli paylaşım olmazsa metin+link paylaşımına düşer',
+      (tester) async {
+    const shareChannel = MethodChannel('dev.fluttercommunity.plus/share');
+    final calls = <MethodCall>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      shareChannel,
+      (call) async {
+        calls.add(call);
+        return '';
+      },
+    );
+    addTearDown(() => tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(shareChannel, null));
+
+    await tester.runAsync(() async {
+      await shareBoard(
+        png: Uint8List.fromList([1, 2, 3]), // geçerli bayt: dosya yolu denenir
+        text: shareMessage,
+        url: 'https://kelimeki.com/game/a',
+      );
+    });
+
+    expect(calls, hasLength(1), reason: 'yedek metin paylaşımı çağrılmalı');
+    final args = calls.single.arguments as Map;
+    expect(args['text'],
+        '$shareMessage\nhttps://kelimeki.com/game/a');
+    // Dosya yolu YOK — görselli dal başarısız olduğu için metne düşüldü.
+    expect(args['uri'], isNull);
   });
 
   testWidgets('Son Oynadıklarım: hiç bitmiş oyun yoksa bölüm GİZLİ',

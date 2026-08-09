@@ -337,8 +337,9 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       dokunmak kapatmalı.
 - [ ] **Web'de oynanan oyunlar da görünmeli** — geçmiş ortak tablodan
       geliyor, mobilde oynanmış olmasına gerek yok.
-- [ ] **Beğeni.** Kalbe dokun → dolmalı ve sayı artmalı. Web'de AYNI oyunu
-      aç: kalp orada da dolu olmalı.
+- [ ] **Beğeni.** Kalbe dokun → dolmalı, **KIRMIZI olmalı** (gri/siyah değil
+      — 9 Ağustos 2026'da gri kaldığı bulundu, bkz. Parça 35) ve sayı
+      artmalı. Web'de AYNI oyunu aç: kalp orada da dolu olmalı.
 - [ ] **Beğenenler.** Sayıya dokun → liste açılmalı; bir isme dokununca o
       kişinin skor kartı açılmalı.
 - [ ] **Favoriler sekmesi.** Yalnızca beğendiğin oyunları göstermeli —
@@ -348,6 +349,10 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       kartında konuşma balonu rozeti + mesaj sayısı olmalı; dokununca
       dondurulmuş sohbet açılmalı. Sessize aldığın biri varsa isminin
       yanında 🚫 görünmeli.
+      **Sıralama eskiden-yeniye (en yeni EN ALTTA) olmalı — bu web ile
+      birebir aynı, bir port hatası DEĞİL** (web'de de arşiv ve admin
+      dökümü aynı yönde; bkz. Parça 35). Canlı sohbet penceresi
+      (`ChatModal`) bunun tersi (en yeni üstte) — o da iki platformda aynı.
 
 ## 6. Paylaşma
 
@@ -355,6 +360,14 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       "Paylaş / Kapat / Vazgeç" menüsü, arka plan kararmış olmalı.
 - [ ] **Sistem paylaş sayfası.** "Paylaş" → iOS/Android paylaş sayfası
       açılmalı; görsel önizlemesi **skor kutuları + tahta** olmalı.
+      **Hiçbir tepki vermemesi bir hatadır** (9 Ağustos 2026'da web
+      derlemesinde tam bu yaşandı — dosyalı paylaşım patlayınca tek
+      `catch` her şeyi yutuyordu, bkz. Parça 35). Görselli paylaşım o
+      platformda mümkün değilse en azından **metin + link** paylaşım
+      sayfası açılmalı.
+- [ ] **İptal ikinci sayfa açmamalı.** Paylaş sayfasını kapat/iptal et →
+      arkasından ikinci bir paylaş sayfası AÇILMAMALI (`share_plus`
+      iptalde fırlatmaz, yedek zincire düşmemeli).
 - [ ] **Link çalışıyor.** Paylaşımı kendine gönder (Notlar/WhatsApp),
       linke tıkla: `kelimeki.com/game/<id>` sayfası **girişsiz** açılmalı
       ve aynı tahtayı göstermeli. (Bu, `set_game_shared` RPC'sinin
