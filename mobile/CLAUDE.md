@@ -889,6 +889,51 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
   yalnızca iki platformun metnini aynı yapar. Tek satırlık değişiklik
   (`MeaningModal.tsx`), aciliyeti yok.
 
+## Sonraya Bırakılan İşler (mobil)
+
+Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
+kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
+silinip kendi tarihli parça notuna taşınır.
+
+- **Kayıt onayı maili kaydın GELDİĞİ kanala dönmeli (10 Ağustos 2026,
+  kullanıcı kararı — sözleri: "Kişilerin kayıt başvurusu hangi kanaldan
+  geliyorsa o kanala yönlendirilmeleri doğrusu"):** Bugün `signUp()`
+  hiçbir `emailRedirectTo` geçmiyor, dolayısıyla GoTrue onay linkini
+  Supabase'deki tek Site URL'e (kelimeki.com) atıyor — uygulamadan kayıt
+  olan kişi de tarayıcıya düşüyor, oradan uygulamaya dönüp ELLE giriş
+  yapmak zorunda kalıyor. TESTING.md 9.4 koşulurken gözlendi (kullanıcı
+  uygulamadan T3 olarak kayıt oldu, link tarayıcıda kelimeki.com'u açtı
+  ve orada duran ESKİ T5 oturumunu gösterdi — bkz. aşağıdaki "bu bir hata
+  DEĞİL" notu).
+  - **Yapılacak:** `AuthService.signUp` mobilde `emailRedirectTo:
+    kelimeki://auth` (ya da benzeri bir yol) geçsin; web istemcisi
+    DEĞİŞMESİN (o zaten doğru kanalda). Dashboard → Authentication → URL
+    Configuration → **Redirect URLs**'e bu URI eklenmeli — `kelimeki://reset`
+    için yapılan aynı el işi (bkz. Parça 6); eklenmezse GoTrue sessizce
+    Site URL'e düşürür ve hiçbir şey değişmez.
+  - **Asıl kazanç yalnızca "doğru uygulama açılıyor" değil:** link
+    uygulamaya dönerse PKCE `code_verifier` ZATEN o cihazın uygulama
+    deposunda olduğundan supabase_flutter takası yapıp kullanıcıyı
+    DOĞRUDAN girişli bırakır — "e-postanı doğrula, sonra dönüp giriş yap"
+    adımı tamamen kalkar. Bugün bu takas yapılamıyor çünkü verifier
+    uygulamada, link ise başka bir origin'de (tarayıcı) açılıyor.
+  - **`signup_channel` ile KARIŞTIRMA:** o alan 'direct'/'form' ayrımını
+    (hangi FORMDAN gelindiği) tutuyor; buradaki "kanal" platform —
+    uygulama mı tarayıcı mı. İkisi bağımsız.
+  - **Doğrulaması FAZ B'ye bağlı:** custom şema (`kelimeki://`) yalnızca
+    GERÇEKTEN kurulu bir native uygulama varken işletim sistemi tarafından
+    yakalanabilir; GitHub Pages web derlemesinde test EDİLEMEZ (Parça
+    28'in aynı sınırı). Aynı turda `kelimeki://reset` de ilk kez gerçek
+    cihazda doğrulanacağından ikisi birlikte ele alınmalı.
+  - **Bugünkü davranış bir HATA değil, kayda geçsin:** T3'ün onay linki
+    sunucuda gerçekten işledi (`email_confirmed_at` linke basılan an) ve
+    tarayıcıdaki T5 oturumuna DOKUNMADI (`last_sign_in_at` bir saat
+    öncesinde kaldı) — yani link kimseyi giriş yaptırmadı, yalnızca o
+    origin'de zaten duran oturum göründü. PKCE'nin verifier'ı öteki
+    origin'de olduğundan takas yapılamıyor; bu aynı zamanda güvenlik
+    açısından doğru taraf (aksi halde bir kullanıcının onay linki başka
+    bir hesabın açık oturumunu sessizce ezerdi).
+
 ## Sıradaki Fazlar (mutabık kalınan sıra)
 
 1. ~~Backend güvenilirlik migration'ları~~ — TAMAMLANDI (5 Ağustos 2026,
