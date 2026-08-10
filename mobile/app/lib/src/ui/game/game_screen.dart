@@ -558,17 +558,24 @@ class _GameScreenState extends State<GameScreen> {
         // kapatınca tahta görünür kalır (web gameOverDismissed davranışı).
         if (state.isGameOver && !_gameOverShown) {
           _gameOverShown = true;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
             if (!mounted) return;
             final auth = widget.auth;
-            showGameOverModal(context, state,
-                // Web GameOver onOpenFeedback (source: 'game_end').
-                onFeedback: auth == null
-                    ? null
-                    : () => showFeedbackModal(context,
-                        auth: auth,
-                        feedback: widget.feedback,
-                        source: FeedbackSource.gameEnd));
+            // Web App.tsx (~1512-1517): GameOver'ın İKİ yolu da AYNI formu
+            // açıyor — içindeki "GÖRÜŞ BİLDİR" linki (`onOpenFeedback`) VE
+            // modalı KAPATMAK (`onClose`). Web'de kapatmanın her yolu
+            // (✕ / dışarı tıklama / Escape) tek `onClose`a gidiyor
+            // (Modal.tsx backdrop'ta `onClick={onClose}`); Flutter'da
+            // `showDialog`ın Future'ı da ✕/bariyer/geri tuşunun HEPSİNDE
+            // tamamlandığı için await etmek birebir aynı kapsamı veriyor.
+            void openFeedback() => showFeedbackModal(context,
+                auth: auth!,
+                feedback: widget.feedback,
+                source: FeedbackSource.gameEnd);
+            await showGameOverModal(context, state,
+                onFeedback: auth == null ? null : openFeedback);
+            if (!mounted || auth == null) return;
+            openFeedback();
           });
         } else if (!state.isGameOver && _gameOverShown) {
           _gameOverShown = false;

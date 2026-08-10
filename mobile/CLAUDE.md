@@ -4757,6 +4757,52 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        (298'den +1). Negatif eş: dosya `git stash` ile eski hâline
        döndürülünce 3 test düştü, geri alınınca yeşile döndü.
      - **Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor.
+   - ✅ **Parça 48 — GameOver'ı KAPATMAK "Görüş Bildir" formunu açmıyordu;
+     web'in `onClose` yan etkisi hiç port edilmemişti (10 Ağustos 2026,
+     `game_screen.dart`, `online_game_screen.dart`):** Kullanıcı TESTING.md
+     bölüm 9'u koşarken buldu — bir oyunu sonuna kadar bitirip modaldaki
+     "GÖRÜŞ BİLDİR" linkine BİLEREK dokunmadı, çünkü web'de ekranı kapatmak
+     zaten formu açıyor; app'te hiçbir şey olmadı.
+     - **Web kaynağı önce okundu (kuralın ilk adımı):** `src/App.tsx`
+       (~1509-1518) ve `src/components/OnlineGameScreen.tsx` (~1306-1316)
+       `<GameOver>`e İKİ ayrı callback geçiyor ve **ikisi de aynı formu
+       açıyor** — `onOpenFeedback={() => setShowFeedback(true)}` (modal
+       içindeki link) VE `onClose={() => { setGameOverDismissed(true);
+       setShowFeedback(true); }}` (modalı kapatmak). Port yalnızca
+       birincisini taşımıştı; `onClose`un ikinci satırı iki ekranda da
+       hiç yoktu.
+     - **Kapsam BİREBİR aynı, tesadüfen değil:** web'de kapatmanın HER
+       yolu tek bir `onClose`a gidiyor (`Modal.tsx:25` backdrop'ta
+       `onClick={onClose}`, ✕ butonu ve Escape aynı fonksiyonu çağırıyor).
+       Flutter'da `showDialog`ın Future'ı ✕ / bariyer dokunuşu / Android
+       geri tuşunun ÜÇÜNDE DE tamamlandığından, `await showGameOverModal
+       (...)` sonrası formu açmak aynı üç yolu birden kapsıyor — ayrı bir
+       "nasıl kapatıldı" ayrımı yapmaya gerek yok.
+     - **İki ekranda birden**, çünkü bu dosyanın "Etki Analizi" bölümündeki
+       değişmez tam olarak bunu söylüyor: `game_screen.dart` (yerel/YZ) ve
+       `online_game_screen.dart` (Canlı) web'in App.tsx ↔ OnlineGameScreen.tsx
+       ayrımının birebir eşleniği; birinde değişen davranış öbüründe de
+       AYNI PR'da değişmeli. Bu parça o kuralın uygulandığı bir örnek —
+       hata iki dosyada da vardı ve iki dosyada da düzeltildi.
+     - **`auth == null` iken form HİÇ açılmıyor** (misafir değil,
+       `AuthService` hiç enjekte edilmemiş önizleme/test durumu) — mevcut
+       `onFeedback: auth == null ? null : ...` deseniyle tutarlı;
+       `mounted` kontrolü `await`ten sonra tekrarlanıyor (ekran bu arada
+       sökülmüş olabilir).
+     - **Test — negatif eş doğrulamasıyla, İKİ AYRI dosya:** mevcut
+       `game_screen_test.dart` GameOver testine kapatma sonrası formun
+       başlığının ("GÖRÜŞLERİNİZ BİZİM İÇİN ÖNEMLİ", `trUpper`) göründüğü
+       assertion'ı eklendi; `online_game_screen_test.dart`'ın `pumpScreen`
+       yardımcısına `isGameOver` parametresi eklenip yeni bir test yazıldı
+       (✕ → form açılmalı). İki lib dosyasının düzeltmesi `git stash` ile
+       geçici geri alınıp her iki dosya AYRI AYRI koşuldu — ikisi de
+       GERÇEKTEN `+0 -1: Some tests failed.` ile düştü, geri konunca
+       yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       300/300 yeşil** (299'dan +1). `kelimeki_core`'a hiç dokunulmadı.
+     - **Doğrulama sınırı:** cihazda teyit kullanıcıdan bekleniyor —
+       9.3/9.4 bu düzeltme deploy edildikten sonra yeniden koşulacak
+       (`mobile/TESTING.md` bölüm 9'a ayrı bir madde eklendi).
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

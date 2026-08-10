@@ -443,6 +443,13 @@ void main() {
     expect(find.text('YAPAY ZEKA 2 KAZANDI'), findsNothing);
     // Modal kapanınca tahta görünür kalır, raf satırında YENİ OYUN çıkar.
     expect(find.textContaining('YENİ'), findsOneWidget);
+
+    // Web App.tsx (~1514-1517): GameOver'ı KAPATMAK "Görüş Bildir" formunu
+    // AÇAR (`onClose` hem gameOverDismissed hem showFeedback set ediyor).
+    // Port yalnızca modalın içindeki linki taşımıştı; kullanıcı 10 Ağustos
+    // 2026'da bölüm 9'u koşarken fark etti (bkz. Parça 48).
+    expect(find.text(trUpper('Görüşleriniz Bizim İçin Önemli')),
+        findsOneWidget);
   });
 
   testWidgets('GameOver modalı KModal kabuğunu kullanır — 360px sınırı, ham '

@@ -1138,16 +1138,21 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
 
         if (state.isGameOver && !_gameOverShown) {
           _gameOverShown = true;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
             if (!mounted) return;
             final auth = widget.auth;
-            showGameOverModal(context, state,
-                onFeedback: auth == null
-                    ? null
-                    : () => showFeedbackModal(context,
-                        auth: auth,
-                        feedback: widget.feedback,
-                        source: FeedbackSource.gameEnd));
+            // Web OnlineGameScreen.tsx (~1306-1316) — game_screen.dart ile
+            // BİREBİR aynı kural: modalı kapatmak da "Görüş Bildir" formunu
+            // açıyor. İkisi bilinçli kod tekrarı çifti, biri değişirse
+            // öteki de (bkz. mobile/CLAUDE.md "Etki Analizi").
+            void openFeedback() => showFeedbackModal(context,
+                auth: auth!,
+                feedback: widget.feedback,
+                source: FeedbackSource.gameEnd);
+            await showGameOverModal(context, state,
+                onFeedback: auth == null ? null : openFeedback);
+            if (!mounted || auth == null) return;
+            openFeedback();
           });
         }
 

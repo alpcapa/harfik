@@ -277,11 +277,12 @@ void main() {
       String myUserId = 'me',
       List<Map<String, Object?>>? moveRows,
       GlobalKey? boundaryKey,
+      bool isGameOver = false,
     }) async {
       await setPhoneViewSize(tester, const Size(420, 900));
       final s = _baseState(opponentIsAi: opponentIsAi);
       final gw = FakeOnlineGamesGateway()
-        ..stateRow = stateJson(s, current: current)
+        ..stateRow = stateJson(s, current: current, isGameOver: isGameOver)
         ..rackRows = [for (final tile in myRackTiles) tile.toJson()]
         ..moveRows = moveRows ?? const [];
       final row = gameRow(
@@ -584,6 +585,26 @@ void main() {
         out.parent.createSync(recursive: true);
         out.writeAsBytesSync(bytes!.buffer.asUint8List());
       });
+      await unmount(tester);
+    });
+
+    // Web OnlineGameScreen.tsx (~1306-1316), App.tsx'in (~1512-1517) BİREBİR
+    // aynısı: GameOver'ı kapatmak "Görüş Bildir" formunu AÇAR. Port yalnızca
+    // modalın İÇİNDEKİ linki taşımıştı — iki ekranda da eksikti (Parça 48).
+    testWidgets('GameOver kapatılınca Görüş Bildir formu açılır (web onClose)',
+        (tester) async {
+      await pumpScreen(tester, isGameOver: true);
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Kapat'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Kapat'));
+      await tester.pumpAndSettle();
+      expect(find.text(trUpper('Görüşleriniz Bizim İçin Önemli')),
+          findsOneWidget);
+
+      // Formu da kapat ki dispose'da bekleyen bir route kalmasın.
+      await tester.tap(find.byTooltip('Kapat'));
+      await tester.pumpAndSettle();
       await unmount(tester);
     });
   });

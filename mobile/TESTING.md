@@ -485,6 +485,12 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       "{e-posta} ile üyeliğine devam etmek ister misin?" teklifi çıkmalı.
       Web admin panelinde (Geri Bildirim sekmesi) mesaj o e-postayla,
       kaynağı oyun-sonu olarak görünmeli.
+- [ ] **Kapatmak da formu açar.** Aynı GameOver ekranında "GÖRÜŞ BİLDİR"e
+      DOKUNMADAN ✕ ile (ya da Android'de geri tuşuyla / dışarı dokunarak)
+      kapat → "Görüş Bildir" formu KENDİLİĞİNDEN açılmalı. Web'de kapatmanın
+      her yolu bunu yapıyor (`onClose` hem modalı kapatıyor hem formu
+      açıyor); portta 10 Ağustos 2026'ya kadar hiç yoktu (bkz. Parça 48).
+      Yerel/YZ oyununda ve Canlı oyunda AYRI AYRI dene.
 - [ ] **Üyelik teklifi → kayıt.** Teklifte EVET → kayıt formu doğrudan
       açılmalı, e-posta önceden dolu; kayıt tamamlanınca admin panelinde
       Üyeler tablosunda kanal "Form" görünmeli (`signup_channel='form'`).
