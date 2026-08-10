@@ -477,25 +477,36 @@ export async function fetchGameBoardSnapshot(gameId: string): Promise<BoardSnaps
   return (data?.board_snapshot as BoardSnapshotTile[] | null) ?? null;
 }
 
+/** `fetchGameMessages` dönüşü — yetki bilgisi İÇERİKTEN ayrı taşınır ki UI
+ *  "sohbet boş" ile "görme yetkin yok"u ayırt edebilsin. */
+export interface GameChatArchive {
+  allowed: boolean;
+  messages: GameChatMessage[];
+}
+
 /**
  * Bitmiş bir Canlı oyunun dondurulmuş sohbet kaydını döner —
  * `fetchGameBoardSnapshot` ile birebir aynı desen: `fetchMyGames`'in liste
  * sorgusuna dahil edilmez (bkz. `message_count`), yalnızca `GameHistoryModal`
  * (sohbet rozetine tıklanınca `GameChatHistoryModal`) lazy çeker. Yerel/YZ
  * oyunlarında (Oyun İçi Mesajlaşma — Faz 1 kapsam dışı) her zaman boş döner.
+ *
+ * 10 Ağustos 2026'dan beri `games.messages` DOĞRUDAN OKUNAMIYOR: o kolon
+ * istemci rollerinden kaldırıldı (`game_chat_archive_participants_only`
+ * migration'ı), çünkü `games`in SELECT politikası satır sahipliğine değil
+ * yalnızca "oturum var mı"ya bakıyor — k-lig → oyuncu kartı → "Tüm Oyunlar"
+ * zincirinden (ya da doğrudan API'den) başkasının yazışmaları okunabiliyordu.
+ * Okuma artık katılımcı/admin kapılı `game_chat_archive` RPC'sinden geçiyor.
  */
-export async function fetchGameMessages(gameId: string): Promise<GameChatMessage[]> {
-  if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('games')
-    .select('messages')
-    .eq('id', gameId)
-    .maybeSingle();
+export async function fetchGameMessages(gameId: string): Promise<GameChatArchive> {
+  if (!supabase) return { allowed: true, messages: [] };
+  const { data, error } = await supabase.rpc('game_chat_archive', { p_game_id: gameId });
   if (error) {
     console.error('[Kelimeki] fetchGameMessages hatası:', error.message);
-    return [];
+    return { allowed: true, messages: [] };
   }
-  return (data?.messages as GameChatMessage[] | null) ?? [];
+  const row = data as { allowed?: boolean; messages?: GameChatMessage[] } | null;
+  return { allowed: row?.allowed ?? false, messages: row?.messages ?? [] };
 }
 
 /**
