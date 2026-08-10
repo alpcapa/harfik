@@ -620,7 +620,13 @@ export function GameHistoryModal({
                     </span>
                     <span className="flex items-center gap-2 shrink-0 ml-auto">
                       <span className="w-9 text-right">Puan</span>
-                      <span className="w-6 text-right">SL</span>
+                      {/* "SL" (Sanal Lig) yerine marka adı: küçük harf "k-lig"
+                          — satır `uppercase` olduğundan `normal-case` şart
+                          (yanındaki "Canlı" rozetiyle aynı gerekçe). Wordmark
+                          (KLigMark) değil düz metin: 9px'te el yazısı okunmaz.
+                          w-6→w-8: 5 karakter 9px mono + 0.5px tracking ile
+                          24px'e sığmıyor (mobil portta da aynı genişlik). */}
+                      <span className="w-8 text-right normal-case">k-lig</span>
                     </span>
                   </div>
                   <div className="flex flex-col gap-0.5">
@@ -650,7 +656,10 @@ export function GameHistoryModal({
                               {p.score}
                             </span>
                             <span
-                              className={`font-bold w-6 text-right ${points > 0 ? 'text-green' : points < 0 ? 'text-red' : 'text-muted'}`}
+                              // Başlıkla (k-lig) aynı genişlik — ikisi de sağa
+                              // hizalı, sağ kenarların çakışması için eşit
+                              // olmak zorunda.
+                              className={`font-bold w-8 text-right ${points > 0 ? 'text-green' : points < 0 ? 'text-red' : 'text-muted'}`}
                             >
                               {formatLeaguePoints(points)}
                             </span>
