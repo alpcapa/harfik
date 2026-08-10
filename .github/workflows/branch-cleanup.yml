@@ -1,0 +1,127 @@
+# Dal temizliği — elle tetiklenen tek seferlik/periyodik süpürme.
+#
+# NEDEN VAR: Claude Code oturumlarının git kimliği yalnızca PUSH yetkisine
+# sahip; ref SİLME isteklerine GitHub 403 dönüyor (10 Ağustos 2026'da 209
+# dal birikince denendi ve doğrulandı). GitHub MCP araçlarında da dal silen
+# bir uç yok. Yani temizlik ancak GitHub'ın KENDİ tarafında, workflow'un
+# GITHUB_TOKEN'ıyla yapılabiliyor — bu dosya onun için.
+#
+# Kalıcı çözüm bu değil: Settings → General → Pull Requests →
+# "Automatically delete head branches" açılırsa merge edilen her PR'ın dalı
+# kendiliğinden silinir ve bu dosyaya bir daha ihtiyaç kalmaz (yalnızca
+# PR'sız/artık dallar için elde kalır).
+#
+# GÜVENLİK: varsayılan DRY RUN. Gerçekten silmek için dry_run'ı false yap.
+# Şunlara hiçbir koşulda dokunmaz: varsayılan dal (main), keep listesindeki
+# dallar, branch protection'lı dallar ve AÇIK bir PR'ın head'i olan dallar.
+# Silinen bir dal, PR sayfasındaki "Restore branch" düğmesiyle geri gelir.
+name: Dal temizliği
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Yalnızca listele, SİLME'
+        type: boolean
+        default: true
+      keep:
+        description: 'Korunacak dallar (virgülle ayrılmış)'
+        type: string
+        default: 'main,claude/word-game-flutter-port-dr9dos'
+      min_age_days:
+        description: 'Bu kadar günden YENİ dallara dokunma (0 = yaş filtresi yok)'
+        type: string
+        default: '0'
+
+permissions:
+  contents: write      # ref silmek için
+  pull-requests: read  # açık PR head'lerini korumak için
+
+concurrency: branch-cleanup
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const inputs = context.payload.inputs || {};
+            const dryRun = String(inputs.dry_run ?? 'true') !== 'false';
+            const minAgeDays = Number(inputs.min_age_days ?? '0') || 0;
+
+            const keep = new Set(
+              String(inputs.keep ?? '')
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean)
+            );
+
+            // Varsayılan dal her zaman korunur — keep listesi boş gelse bile.
+            const { data: repoInfo } = await github.rest.repos.get({ owner, repo });
+            keep.add(repoInfo.default_branch);
+
+            // Açık PR'ı olan dallar korunur: merge edilmemiş iş silinmesin.
+            const openPrs = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: 'open', per_page: 100,
+            });
+            for (const pr of openPrs) {
+              if (pr.head.repo && pr.head.repo.full_name === `${owner}/${repo}`) {
+                keep.add(pr.head.ref);
+              }
+            }
+
+            const branches = await github.paginate(github.rest.repos.listBranches, {
+              owner, repo, per_page: 100,
+            });
+
+            const cutoff = minAgeDays > 0 ? Date.now() - minAgeDays * 86400000 : null;
+            const deleted = [], skipped = [], failed = [];
+
+            for (const b of branches) {
+              if (keep.has(b.name)) { skipped.push(`${b.name} — korumalı`); continue; }
+              if (b.protected) { skipped.push(`${b.name} — branch protection`); continue; }
+
+              if (cutoff !== null) {
+                const { data: c } = await github.rest.repos.getCommit({
+                  owner, repo, ref: b.commit.sha,
+                });
+                const when = new Date(c.commit.committer.date).getTime();
+                if (when > cutoff) { skipped.push(`${b.name} — çok yeni`); continue; }
+              }
+
+              if (dryRun) { deleted.push(`${b.name} — ${b.commit.sha}`); continue; }
+
+              try {
+                await github.rest.git.deleteRef({ owner, repo, ref: `heads/${b.name}` });
+                deleted.push(`${b.name} — ${b.commit.sha}`);
+              } catch (e) {
+                failed.push(`${b.name}: ${e.message}`);
+              }
+            }
+
+            const title = dryRun ? 'DRY RUN — silinecekler' : 'Silindi';
+            const lines = [
+              `## Dal temizliği${dryRun ? ' (DRY RUN — hiçbir şey silinmedi)' : ''}`,
+              '',
+              `Toplam dal: **${branches.length}** · ${title}: **${deleted.length}** · ` +
+                `Korunan: **${skipped.length}** · Hata: **${failed.length}**`,
+              '',
+              `### ${title} (sha'lar geri yükleme için)`,
+              '```',
+              ...deleted,
+              '```',
+              '### Korunanlar',
+              '```',
+              ...skipped,
+              '```',
+            ];
+            if (failed.length) {
+              lines.push('### Hatalar', '```', ...failed, '```');
+            }
+            await core.summary.addRaw(lines.join('\n')).write();
+
+            if (failed.length) {
+              core.setFailed(`${failed.length} dal silinemedi.`);
+            }
