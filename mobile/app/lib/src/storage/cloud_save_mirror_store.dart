@@ -104,3 +104,65 @@ class CloudSaveMirrorStore {
     });
   }
 }
+
+/// Sunucudan SON BAŞARIYLA çekilen listenin yerel kopyası — yalnızca
+/// offline'da "Devam Eden Oyunlar"ı çizebilmek için (Parça 43).
+///
+/// **`CloudSaveMirrorStore` ile karıştırma:** o, sunucuya YAZILAMAMIŞ
+/// state'i tutar (kaynak kayıt — kaybolursa gerçekten veri kaybı olur, bu
+/// yüzden çözülemeyen satır karantinaya alınır). Bu ise sunucuda ZATEN
+/// duran satırların salt gösterim kopyasıdır; bozulursa en fazla offline
+/// liste eksik görünür, o yüzden çözülemeyen satır sessizce atlanır.
+class CloudSaveCacheStore {
+  final Database db;
+  final int Function() nowMs;
+  CloudSaveCacheStore(this.db, this.nowMs);
+
+  /// Bu kullanıcının önbelleğini TAMAMEN değiştirir — sunucudan başarılı bir
+  /// liste geldiğinde çağrılır. Silinen satırların önbellekte kalmaması için
+  /// tek transaction'da önce temizler, sonra yazar.
+  Future<void> replaceAll(
+      String userId, List<({String id, GameState state, int updatedAtMs})> rows) async {
+    await db.transaction((txn) async {
+      await txn
+          .delete('cloud_save_cache', where: 'user_id = ?', whereArgs: [userId]);
+      for (final r in rows) {
+        await txn.insert('cloud_save_cache', {
+          'id': r.id,
+          'user_id': userId,
+          'payload_version': kSavePayloadVersion,
+          'payload': jsonEncode(gameStateToJson(r.state)),
+          'updated_at': r.updatedAtMs,
+        });
+      }
+    });
+  }
+
+  /// Önbellekteki satırlar, en yeni önce. Çözülemeyen/bilinmeyen sürümlü
+  /// satır ATLANIR (bkz. sınıf yorumu — burada karantina gereksiz).
+  Future<List<MirroredSave>> read(String userId) async {
+    final rows = await db.query('cloud_save_cache',
+        where: 'user_id = ?', whereArgs: [userId], orderBy: 'updated_at desc');
+    final out = <MirroredSave>[];
+    for (final row in rows) {
+      final version = row['payload_version'] as int;
+      if (version != kSavePayloadVersion) continue;
+      try {
+        final json =
+            (jsonDecode(row['payload'] as String) as Map).cast<String, Object?>();
+        out.add(MirroredSave(
+          id: row['id'] as String,
+          state: gameStateFromJson(json),
+          savedAtMs: row['updated_at'] as int,
+        ));
+      } catch (_) {
+        // Gösterim kopyası — sessizce atla.
+      }
+    }
+    return out;
+  }
+
+  Future<void> remove(String id) async {
+    await db.delete('cloud_save_cache', where: 'id = ?', whereArgs: [id]);
+  }
+}

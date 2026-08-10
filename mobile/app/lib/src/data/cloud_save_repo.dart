@@ -152,7 +152,16 @@ class CloudSaveRepo {
   Future<CloudSaveMirrorStore?> get _mirror async =>
       mirrorStore == null ? null : await mirrorStore;
 
-  CloudSaveRepo(this.gateway, {int Function()? nowMs, this.mirrorStore})
+  /// Son başarılı sunucu listesinin yerel kopyası (Parça 43) — YALNIZCA
+  /// offline'da listeyi çizebilmek için. null ise offline davranış eskisi
+  /// gibi: liste boş görünür (veri kaybı yok, ayna yine korur).
+  final Future<CloudSaveCacheStore>? cacheStore;
+
+  Future<CloudSaveCacheStore?> get _cache async =>
+      cacheStore == null ? null : await cacheStore;
+
+  CloudSaveRepo(this.gateway,
+      {int Function()? nowMs, this.mirrorStore, this.cacheStore})
       : _nowMs = nowMs ?? (() => DateTime.now().millisecondsSinceEpoch);
 
   /// Bekleyen tüm yazmalar çözülene kadar (test/senkron noktaları için).
@@ -168,8 +177,10 @@ class CloudSaveRepo {
   /// - çözülemeyen satır atlanır, sunucuda DURUR (web'de bu dal yok çünkü
   ///   TS ayrıştırmaz; "parse, don't validate" mobil disiplini — satır bir
   ///   web oyunu için geçerli olabilir, mobilin silme/karantina hakkı yok).
-  /// Ağ hatasında boş liste yerine null döner ki UI "hiç oyunun yok" ile
-  /// "liste alınamadı"yı karıştırmasın.
+  /// Ağ hatasında `_offlineList`e düşer (Parça 43): son başarılı listenin
+  /// yerel önbelleği + ayna bindirmesi. Önbellek de ayna da yoksa (ör.
+  /// misafir/ilk açılış) yine null döner ki UI "hiç oyunun yok" ile "liste
+  /// alınamadı"yı karıştırmasın.
   /// [userId] verilirse yerel ayna listeye BİNDİRİLİR (Parça 38): aynası
   /// sunucudakinden yeniyse (offline oynanmış) aynanın state'i gösterilir,
   /// yalnızca aynada var olan oyunlar (tamamen offline açılmış) da listeye
@@ -191,7 +202,7 @@ class CloudSaveRepo {
       rows = await _queue.read(gateway.list);
     } catch (e) {
       debugPrint('[Kelimeki] cloud save listesi alınamadı: $e');
-      return null;
+      return _offlineList(userId, mirrored);
     }
     final cutoffMs = _nowMs() - abandonTimeout.inMilliseconds;
     final cutoffIso =
@@ -270,7 +281,64 @@ class CloudSaveRepo {
       await (await _mirror)?.remove(m.id);
     }
     result.sort((a, b) => b.updatedAtMs.compareTo(a.updatedAtMs));
+    // Offline'da listeyi çizebilmek için son BAŞARILI sonucu sakla. Sunucu
+    // satırlarını değil BİRLEŞTİRİLMİŞ sonucu yazıyoruz — "en son bilinen
+    // doğru liste" tam olarak bu; ayna bindirmesi zaten uygulanmış oluyor.
+    if (userId != null) {
+      await (await _cache)?.replaceAll(
+        userId,
+        [
+          for (final s in result)
+            (id: s.id, state: s.state, updatedAtMs: s.updatedAtMs)
+        ],
+      );
+    }
     return CloudSaveList(result, abandoned);
+  }
+
+  /// Sunucuya ulaşılamadığında liste: son başarılı önbellek + ayna
+  /// bindirmesi (Parça 43 — kullanıcı uçak modunda Setup'a dönünce oyunu
+  /// listede GÖREMİYORDU; veri güvendeydi ama "kayboldu" gibi duruyordu).
+  ///
+  /// **Yalnızca aynayı göstermek YETMEZ:** o zaman offline oynanmamış
+  /// diğer oyunlar listeden düşerdi — bir sorunu başkasıyla değişmiş
+  /// olurduk. Önbellek ayrıca o oyunlara offline devam edebilmeyi de
+  /// sağlıyor (state elimizde).
+  ///
+  /// **Bu dalda CEZA HİÇ uygulanmaz** (`abandoned` her zaman boş): 7 günü
+  /// dolmuş bir satırın gerçekten terk edilip edilmediği sunucuyla
+  /// doğrulanmadan bilinemez (başka bir cihaz oynamış olabilir), ve
+  /// `claimAbandoned`ın yarış koruması offline'da çalışamaz. Süresi geçmiş
+  /// satırlar listeye de ALINMAZ — kullanıcıyı, bir sonraki çevrimiçi
+  /// listelemede silinecek bir oyuna devam ettirmeyelim.
+  Future<CloudSaveList?> _offlineList(
+      String? userId, Map<String, MirroredSave> mirrored) async {
+    if (userId == null) return null;
+    final cache = await _cache;
+    if (cache == null && mirrored.isEmpty) return null;
+    final byId = <String, MirroredSave>{};
+    for (final c in await cache?.read(userId) ?? const <MirroredSave>[]) {
+      byId[c.id] = c;
+    }
+    // Ayna KOŞULSUZ kazanır — sunucu satırıyla karşılaştırmadaki (yukarı)
+    // `savedAtMs >` korumasının burada karşılığı yok ve olmamalı: orada
+    // ayna BAŞKA bir cihazın yazdığı satırdan eski olabilir, burada ise
+    // karşı taraf BU cihazın kendi önbelleği. Bekleyen bir ayna, tanımı
+    // gereği "son başarılı yazmadan sonra yapılan ve sunucuya ulaşmayan"
+    // değişikliktir; damgalar eşit olsa bile (aynı tick) ayna doğrudur.
+    for (final m in mirrored.values) {
+      byId[m.id] = m;
+    }
+    final cutoffMs = _nowMs() - abandonTimeout.inMilliseconds;
+    final result = <CloudSave>[];
+    for (final s in byId.values) {
+      if (s.state.phase != GamePhase.play || s.state.isGameOver) continue;
+      if (s.savedAtMs <= cutoffMs) continue;
+      result.add(
+          CloudSave(id: s.id, state: s.state, updatedAtMs: s.savedAtMs));
+    }
+    result.sort((a, b) => b.updatedAtMs.compareTo(a.updatedAtMs));
+    return CloudSaveList(result, const []);
   }
 
   /// Bir oyunu sunucuya yazar. Web upsertLocalGameSave gibi hata YUTULUR
@@ -322,8 +390,12 @@ class CloudSaveRepo {
   Future<void> delete(String id) {
     return _queue.enqueue(() async {
       // Ayna her durumda gider: satır silinmek isteniyorsa bekleyen bir
-      // yazmanın onu sonradan diriltmesi istenmiyor.
+      // yazmanın onu sonradan diriltmesi istenmiyor. Önbellek de (Parça 43)
+      // — aksi halde silme offline yapıldığında oyun listede görünmeye
+      // devam ederdi (bir sonraki başarılı listeleme düzeltirdi ama arada
+      // "sildim, hâlâ duruyor" gibi görünürdü).
       await (await _mirror)?.remove(id);
+      await (await _cache)?.remove(id);
       try {
         await gateway.delete(id);
       } catch (e) {

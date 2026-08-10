@@ -4494,6 +4494,70 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Doğrulama sınırı:** iki platformun yan yana son görsel teyidi
        kullanıcıdan bekleniyor (renk farkı ✓'te artık yok, ama gözle
        ayırt edilemeyecek kadar küçüktü zaten).
+   - ✅ **Parça 43 — offline'da "Devam Eden Oyunlar" BOŞ görünüyordu; ayna
+     veriyi koruyordu ama görünürlüğü değil (10 Ağustos 2026,
+     `app_database.dart` v3, `cloud_save_mirror_store.dart`,
+     `cloud_save_repo.dart`):** Kullanıcı TESTING.md 8.2'yi koşarken buldu.
+     Test kendi iddiasını GEÇTİ (uçak modunda oynanan hamleler ağ dönünce
+     duruyordu — skor 82→144, torba 56→37 ile doğrulandı), ama ara adımda
+     logoya basıp Setup'a dönünce oyun listede YOKTU.
+     - **Kök sebep, kod okunarak (tahminle değil):** `CloudSaveRepo.list()`
+       önce `gateway.list()` çağırıyor; offline'da bu fırlatıyor ve fonksiyon
+       ORACIKTA `null` dönüyordu. Ayna bindirmesi ve "yalnızca aynada olan
+       oyunlar" mantığının TAMAMI bu satırın altındaydı — yani Parça 38'in
+       eklediği her şey tam da en çok gerektiği anda (offline) devre dışıydı.
+       `null` gelince Setup eski listesini koruyor, o da yeni oyunu
+       içermiyordu.
+     - **Web de aynı davranıyor** (`refreshCloudSaves` hatada `[]` dönüp
+       "Henüz bir Yapay Zeka oyunun yok." gösteriyor) — yani bir port
+       paritesi eksiği DEĞİL. Ama native'de offline birinci sınıf bir
+       beklenti (sürüm kapısının fail-open gerekçesi de bu), o yüzden
+       porttan ileri gitmek bilinçli.
+     - **Çözüm — son başarılı listenin yerel önbelleği:** yeni
+       `cloud_save_cache` tablosu (şema v3, ekleyici migration) +
+       `CloudSaveCacheStore`. Her BAŞARILI `list()` sonucu (birleştirilmiş
+       hâli — ayna bindirmesi zaten uygulanmış) bu tabloya yazılıyor;
+       `gateway.list()` fırlattığında yeni `_offlineList` önbellek + ayna
+       bindirmesiyle listeyi çiziyor.
+     - **Neden yalnızca ayna YETMEZ:** o zaman offline oynanmamış diğer
+       oyunlar listeden düşerdi — bir sorunu başkasıyla değişmiş olurduk.
+       Önbellek ayrıca o oyunlara offline DEVAM edebilmeyi de sağlıyor
+       (state elde).
+     - **Offline dalda ceza HİÇ uygulanmaz** (`abandoned` her zaman boş): 7
+       günü dolmuş bir satırın gerçekten terk edilip edilmediği sunucuyla
+       doğrulanmadan bilinemez (başka cihaz oynamış olabilir) ve
+       `claimAbandoned`ın yarış koruması offline çalışamaz. Süresi geçmiş
+       satırlar listeye de ALINMAZ — kullanıcı, bir sonraki çevrimiçi
+       listelemede silinecek bir oyuna devam etmesin. Ağ dönünce ceza normal
+       yoldan işliyor (testli).
+     - **İki store'un rolü KARIŞTIRILMAMALI:** `pending_cloud_saves`
+       sunucuya YAZILAMAMIŞ state'i tutar (kaynak kayıt — kaybolursa gerçek
+       veri kaybı, o yüzden çözülemeyen satır KARANTİNAYA alınır);
+       `cloud_save_cache` sunucuda ZATEN duran satırların salt gösterim
+       kopyasıdır (bozulursa en fazla offline liste eksik görünür, o yüzden
+       çözülemeyen satır sessizce ATLANIR). `delete()` ikisini birden
+       temizliyor.
+     - **Test yazarken bulunan ince nokta:** `_offlineList`te ayna KOŞULSUZ
+       kazanmalı. Sunucu satırıyla karşılaştırmadaki `savedAtMs >` koruması
+       burada YANLIŞ olurdu — orada ayna BAŞKA bir cihazın yazdığı satırdan
+       eski olabilir, burada ise karşı taraf BU cihazın kendi önbelleği;
+       bekleyen bir ayna tanımı gereği son başarılı yazmadan sonradır.
+       İlk sürüm `>` kullanıyordu ve damgalar aynı tick'te eşit olduğu için
+       önbellek kazanıp offline hamleleri gizliyordu (test yakaladı).
+     - **Test dersi (kaskad):** ilk koşuda 3 test düştü ama yalnızca BİRİ
+       gerçekti — ilk test `storage.db.close()`a varamadan fırladığı için
+       sonraki testler onun DB'sinden artık ayna okuyup "1 bekliyordum, 2
+       geldi" verdi. Bu dosyada bir test düştüğünde ÖNCE ilkini düzelt,
+       sonrakileri ayrı hata sanma.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 293/293 yeşil**
+       (290'dan +3). Negatif eş: `_offlineList` çağrısı geçici olarak
+       `return null`a çevrilince yeni üç testin de (artı Parça 38'den bir
+       tanesi) GERÇEKTEN düştüğü görüldü (`Expected: not null / Actual:
+       <null>`), geri konunca yeşile döndü. `kelimeki_core`'a hiç
+       dokunulmadı.
+     - **Doğrulama sınırı:** gerçek cihazda (uçak modunda Setup'a dönüp
+       oyunu listede GÖRMEK) teyit kullanıcıdan bekleniyor — TESTING.md
+       bölüm 8'e ayrı madde eklendi.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

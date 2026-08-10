@@ -18,7 +18,7 @@ import 'web_db.dart';
 
 /// DB şema sürümü — tablo/kolon değişikliklerinde artır ve `_migrations`e
 /// bir adım ekle. Payload sürümünden (kSavePayloadVersion) AYRI bir kavram.
-const int kDbSchemaVersion = 2;
+const int kDbSchemaVersion = 3;
 
 Future<void> _createV1(Database db) async {
   await db.execute('''
@@ -88,10 +88,31 @@ Future<void> _createPendingCloudSaves(Database db) async {
       'on pending_cloud_saves(user_id, saved_at)');
 }
 
+/// SON BAŞARILI sunucu listesinin yerel önbelleği — offline'da "Devam Eden
+/// Oyunlar"ın boş görünmemesi için (Parça 43). `pending_cloud_saves`ten
+/// FARKLI bir şey: o, sunucuya YAZILAMAMIŞ state'i tutar (kaynak kayıt,
+/// kaybolursa veri kaybı); bu ise sunucuda ZATEN duran satırların salt
+/// gösterim kopyası — silinse en fazla offline liste boş görünür, hiçbir
+/// veri kaybolmaz. Bu yüzden karantina/versiyon kuralları aynı olsa da
+/// çözülemeyen bir satır burada sessizce ATLANIR.
+Future<void> _createCloudSaveCache(Database db) async {
+  await db.execute('''
+    create table cloud_save_cache(
+      id text primary key,
+      user_id text not null,
+      payload_version integer not null,
+      payload text not null,
+      updated_at integer not null
+    )''');
+  await db.execute('create index idx_cloud_save_cache_user '
+      'on cloud_save_cache(user_id, updated_at)');
+}
+
 /// Sürüm N-1 → N yükseltme adımları — her yeni sürüm buraya YALNIZCA
 /// ekleyici (yıkıcı olmayan) bir adım koyar.
 final Map<int, Future<void> Function(Database)> _migrations = {
   2: _createPendingCloudSaves,
+  3: _createCloudSaveCache,
 };
 
 Future<Database> openAppDatabase({

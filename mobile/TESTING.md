@@ -428,6 +428,14 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       açılmalı, eski hâline geri düşMEmeli. (9 Ağustos 2026'ya kadar
       girişli kullanıcı yalnızca sunucuya yazıyordu, offline hamleler
       sessizce düşüyordu.)
+- [ ] **Offline'da liste BOŞ görünmemeli (10 Ağustos 2026, Parça 43).**
+      Yukarıdaki adımın ortasında, **hâlâ uçak modundayken** logoya basıp
+      Setup'a dön: oyun "Devam Eden Oyunlar"da GÖRÜNMELİ (offline hamleleriyle
+      birlikte), ve daha önce açtığın diğer YZ oyunları da listede kalmalı —
+      yalnızca offline oynadığın oyun görünüyorsa önbellek devreye girmemiş
+      demektir. Süresi dolmuş bir kayıt bu ekranda listelenMEmeli ve
+      offline'dayken **-2 cezası uygulanMAmalı** (ceza ancak ağ dönünce
+      yazılır).
 - [ ] **Tamamen offline açılan oyun da kaybolmamalı.** Uçak modundayken
       YENİ bir YZ oyunu aç, birkaç hamle yap. Ağı aç + yeniden başlat →
       oyun listede olmalı (sunucu onu hiç görmemişti).

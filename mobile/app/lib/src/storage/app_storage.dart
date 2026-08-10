@@ -18,6 +18,9 @@ class AppStorage {
   final LocalSaveStore saves;
   /// Girişli kullanıcının bulut kayıtlarının offline aynası (Parça 38).
   final CloudSaveMirrorStore cloudMirror;
+
+  /// Son başarılı bulut listesinin gösterim kopyası (Parça 43).
+  final CloudSaveCacheStore cloudCache;
   final PendingQueueStore queue;
   final PendingEventStore events;
   final ChatReadStore chatRead;
@@ -27,6 +30,7 @@ class AppStorage {
     required this.db,
     required this.saves,
     required this.cloudMirror,
+    required this.cloudCache,
     required this.queue,
     required this.events,
     required this.chatRead,
@@ -46,6 +50,7 @@ class AppStorage {
       db: db,
       saves: LocalSaveStore(db, now),
       cloudMirror: CloudSaveMirrorStore(db, now),
+      cloudCache: CloudSaveCacheStore(db, now),
       queue: PendingQueueStore(db, now),
       events: PendingEventStore(db, now),
       chatRead: ChatReadStore(db),

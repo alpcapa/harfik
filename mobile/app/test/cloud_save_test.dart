@@ -358,7 +358,9 @@ void main() {
     final storage = await openTestStorage();
     return (
       CloudSaveRepo(gw,
-          nowMs: () => clock, mirrorStore: Future.value(storage.cloudMirror)),
+          nowMs: () => clock,
+          mirrorStore: Future.value(storage.cloudMirror),
+          cacheStore: Future.value(storage.cloudCache)),
       gw,
       storage
     );
@@ -405,8 +407,13 @@ void main() {
     final (repo, gw, storage) = await newMirroredRepo();
     gw.offline = true;
     await repo.upsert('id-yeni', 'user-1', newPlayState());
+    // Parça 43'e kadar burada `null` dönüyordu (kullanıcı uçak modunda
+    // Setup'a dönünce oyunu listede GÖREMİYORDU) — artık ayna listeye
+    // biniyor, oyun offline'da da görünüyor.
     final list = await repo.list(userId: 'user-1');
-    expect(list, isNull, reason: 'sunucu listesi offline: null');
+    expect(list!.saves.single.id, 'id-yeni',
+        reason: 'offline: yalnızca aynada olan oyun da listelenmeli');
+    expect(list.abandoned, isEmpty);
 
     gw.offline = false; // liste alınabiliyor ama satır yok
     final list2 = await repo.list(userId: 'user-1');
@@ -478,6 +485,68 @@ void main() {
     expect(list.saves, isEmpty);
     expect(gw.rows, isEmpty, reason: 'süresi dolmuş ayna sunucuya İTİLMEMELİ');
     expect(await storage.cloudMirror.pending('user-1'), isEmpty);
+    await storage.db.close();
+  });
+
+  // ——— Parça 43: offline'da liste boş görünüyordu (kullanıcı 10 Ağustos
+  // 2026 cihaz testinde buldu — veri güvendeydi ama uçak modunda Setup'a
+  // dönünce oyun "Devam Eden Oyunlar"da yoktu, kaybolmuş gibi duruyordu).
+
+  test('offline liste ÖNBELLEKTEN çizilir: offline oynanmamış oyunlar da kalır',
+      () async {
+    final (repo, gw, storage) = await newMirroredRepo();
+    final a = newPlayState();
+    expect(await repo.upsert('id-a', 'user-1', a), isTrue);
+    expect(await repo.upsert('id-b', 'user-1', newPlayState()), isTrue);
+    // Başarılı listeleme önbelleği doldurur.
+    expect((await repo.list(userId: 'user-1'))!.saves, hasLength(2));
+
+    gw.offline = true;
+    final offlineState = a.copyWith(turnCount: a.turnCount + 3);
+    expect(await repo.upsert('id-a', 'user-1', offlineState), isFalse);
+
+    final list = await repo.list(userId: 'user-1');
+    expect(list, isNotNull, reason: 'offline: önbellek+ayna ile çizilmeli');
+    expect(list!.saves.map((s) => s.id).toSet(), {'id-a', 'id-b'},
+        reason: 'yalnızca aynayı göstermek id-b\'yi listeden düşürürdü');
+    expect(list.saves.firstWhere((s) => s.id == 'id-a').state.turnCount,
+        offlineState.turnCount,
+        reason: 'ayna önbellekten YENİ: offline hamleler görünmeli');
+    expect(list.abandoned, isEmpty);
+    await storage.db.close();
+  });
+
+  test('offline listede CEZA uygulanmaz; süresi geçmiş satır da gösterilmez',
+      () async {
+    final (repo, gw, storage) = await newMirroredRepo();
+    expect(await repo.upsert('id-eski', 'user-1', newPlayState()), isTrue);
+    expect((await repo.list(userId: 'user-1'))!.saves, hasLength(1));
+
+    clock += const Duration(days: 10).inMilliseconds;
+    gw.offline = true;
+    final list = await repo.list(userId: 'user-1');
+    expect(list!.abandoned, isEmpty,
+        reason: 'sunucuyla doğrulanmadan -2 yazılamaz (claim yarışı yok)');
+    expect(list.saves, isEmpty,
+        reason: 'bir sonraki çevrimiçi listelemede silinecek oyuna devam '
+            'ettirmeyelim');
+
+    // Ağ dönünce ceza normal yoldan uygulanmalı — offline dal onu YUTMAMALI.
+    gw.offline = false;
+    final online = await repo.list(userId: 'user-1');
+    expect(online!.abandoned, hasLength(1));
+    await storage.db.close();
+  });
+
+  test('silme önbelleği de temizler (offline silinen oyun listede kalmaz)',
+      () async {
+    final (repo, gw, storage) = await newMirroredRepo();
+    expect(await repo.upsert('id-1', 'user-1', newPlayState()), isTrue);
+    expect((await repo.list(userId: 'user-1'))!.saves, hasLength(1));
+
+    gw.offline = true;
+    await repo.delete('id-1');
+    expect((await repo.list(userId: 'user-1'))!.saves, isEmpty);
     await storage.db.close();
   });
 }
