@@ -753,7 +753,10 @@ gerektirmiyorlar.
 
 ### Web derlemesiyle neyi test EDEMEZSİN
 
-Bunları "geçti" saymak bir hatayı gizler — hepsi hâlâ gerçek cihaz ister:
+Bunları "geçti" saymak bir hatayı gizler — hepsi hâlâ gerçek cihaz ister.
+Cihaza geçince koşulacak liste aşağıda ayrı bir bölüm: **"FAZ B — cihaza
+özel tur"** (orada ayrıca iOS/Android arasında FARKLI olabilecek maddeler
+ve platform başına tek seferlik ön koşullar var).
 
 - **Bölüm 6 (Paylaşma).** `share_plus` web'de tarayıcının Web Share
   API'sine düşer; iOS/Android'in native paylaş sayfası DEĞİL. Görsel
@@ -789,6 +792,101 @@ Bunları "geçti" saymak bir hatayı gizler — hepsi hâlâ gerçek cihaz ister
       eder, tarayıcı CanvasKit ile) — bir kez gerçekten yaşandı, bkz.
       `mobile/CLAUDE.md` Parça 18. Aynı kontrol altın X2 bölgesi ve köşe
       bölgeleri için de geçerli: soluk/yıkanmış görünmemeliler.
+
+---
+
+## FAZ B — cihaza özel tur (iOS + Android)
+
+**Bu bölüm FAZ A1'i TEKRARLAMAZ.** Yukarıdaki bölümlerin büyük kısmı web
+derlemesinde koşuldu ve geçti; kod tek bir Dart tabanında olduğundan o
+düzeltmeler (Parça 15-47) İKİ platformda da zaten geçerli. Burada yalnızca
+**web derlemesinin yapısı gereği kanıtlayamadığı** ve/veya **iki platformda
+FARKLI davranabilecek** şeyler var.
+
+**Neyi tekrar koşmayacaksın:** oyun kuralları/motor (golden vector'larla
+kanıtlı), yerleşim/gölge/punto paritesi (ölçülerek kapatıldı), veri
+katmanı mantığı (299 test + gerçek Supabase ile 8.1-8.8), auth akışları.
+Bunlarda cihaza özgü bir risk yok — bir fark görürsen o zaten YENİ bir
+bulgudur, tekrar değil.
+
+### Ön koşullar (platform başına, TEK SEFERLİK — henüz hiçbiri yapılmadı)
+
+| | Android | iOS |
+|---|---|---|
+| İmzalama | anahtar üret + `key.properties` | Apple Developer üyeliği + sertifika |
+| Dağıtım | APK/Play Internal Testing | TestFlight (bkz. bir alttaki bölüm) |
+| Universal/App Links | sitede `/.well-known/assetlinks.json` yayınla (imza SHA-256 gerekir) | `associated domains` entitlement + sitede `apple-app-site-association` |
+
+`kelimeki://` özel şeması İKİSİNDE de HAZIR (manifest + Info.plist) ve
+imza/site dosyası GEREKTİRMEZ — yani şifre sıfırlama derin bağlantısı
+(madde 9-12) yukarıdaki üç satır beklemeden, uygulama cihaza kurulur
+kurulmaz test edilebilir. `https://kelimeki.com/davet/...` biçimindeki
+davet linkleri ise ancak assetlinks/AASA yayınlandıktan sonra uygulamayı
+açar; o zamana kadar tarayıcıda açılırlar (bozuk değil, yalnızca eksik).
+
+### Her iki cihazda da koşulacak (aynı madde, iki kez)
+
+- [ ] **Bölüm 0 — ilk açılış:** uygulama ikonu (adaptive maske Android'de
+      launcher'a göre değişir), splash, portre kilidi (cihazı yatay tutup
+      aç — native kilit ekranı döndürmemeli), sözlük yükleme süresi.
+- [ ] **Bölüm 6 — paylaşma:** native paylaş sayfası GERÇEKTEN açılmalı ve
+      görsel eki taşımalı. Web derlemesinde dosyalı yol hiç çalışmıyordu
+      (yalnızca metin+link yedeği), yani bu madde ilk kez GERÇEK olarak
+      test ediliyor (bkz. Parça 35).
+- [ ] **Bölüm 8 — uçak modu:** burada native'in web'den DAHA İYİ olması
+      bekleniyor, iki şey ayrıca doğrulanmalı:
+      (a) uçak modunda **kelime anlamı GELMELİ** (`meanings.db` pakette —
+      web'de HTTP'den indiği için gelmiyordu, Parça 44);
+      (b) Setup'ın alt teşhis satırı **`depo ok`** göstermeli ve hiç
+      `DEPO YOK` olmamalı (web'de sqflite WASM dosyaları ağdan geldiğinden
+      bu risk vardı, Parça 45 — native'de sqflite platform kanalı).
+- [ ] **Bölüm 12 — profil fotoğrafı:** galeri seçici + izin diyaloğu.
+      iOS'ta `NSPhotoLibraryUsageDescription` metni görünmeli; Android'de
+      izin akışı sürüme göre değişir (13+ farklı davranır).
+- [ ] **Oturum kalıcılığı:** uygulamayı TAMAMEN kapat (arka plandan da at)
+      → yeniden aç → hâlâ girişli olmalı. Web'de token farklı bir depoda
+      tutulduğundan orada geçmesi bunu kanıtlamıyordu.
+- [ ] **Sürükle-bırak hissi + performans:** parmakla taş sürüklerken
+      takılma/titreme olmamalı. Parça 23'ün ölçümü native VM'de yapıldı,
+      gerçek cihaz GPU'sunda (Impeller/Skia) hiç ölçülmedi.
+- [ ] **🤖 robot avatarı gerçekten çizilmeli.** Web derlemesinde CanvasKit
+      emoji fontunu ağdan çektiğinden boş daire çıkabiliyordu (Parça 29).
+      **iOS ile Android'in emoji GÖRÜNTÜSÜ farklıdır ve bu bir hata
+      DEĞİLDİR** — Apple Color Emoji vs Noto Color Emoji; ikisi de doğru.
+      Aynı şey ❓⚙️👥📊🚪 (hesap menüsü) ve 🏆 (k-lig) için de geçerli.
+- [ ] **Klavye:** Türkçe karakterler (ı/İ/ğ/ş) tüm formlarda doğru
+      girilebilmeli; klavye açılınca form alanı klavyenin altında
+      kalmamalı (kayıt formu en uzun form).
+
+### Yalnızca Android
+
+- [ ] **Geri tuşu / geri jesti.** Kodda `PopScope`/`WillPopScope` HİÇ YOK —
+      yani geri tuşu düz bir `Navigator.pop`. Yapısal olarak güvenli
+      görünüyor (oyundan çıkış `await Navigator.push(...)` → `session.end()`
+      zincirinden geçiyor, geri tuşu da aynı yoldan döner) ama **hiç
+      denenmedi.** Kontrol: oyun içindeyken geri → Setup'a dönmeli VE
+      oyun "Devam Edenler"de kayıtlı kalmalı (turnCount ≥ 2 ise). Ayrıca
+      açık bir modalda geri → yalnızca modal kapanmalı, ekran değil.
+- [ ] Setup'ta geri → uygulamadan çıkmalı (standart davranış, onay yok).
+- [ ] `assetlinks.json` yayınlandıktan SONRA: `https://kelimeki.com/davet/<token>`
+      linki tarayıcı yerine uygulamayı açmalı.
+
+### Yalnızca iOS
+
+- [ ] **Kenardan kaydırarak geri (swipe-back).** Tahtanın sol kenarı ekranın
+      soluna yakınsa, taş sürüklemeyle çakışabilir — sol sütundaki bir taşı
+      sürüklemeyi dene, sistem geri jesti devreye girip oyundan çıkarmamalı.
+- [ ] **Güvenli alan:** çentik/Dynamic Island altında header kesilmemeli,
+      alttaki buton satırı home indicator'ın altında kalmamalı.
+- [ ] AASA yayınlandıktan SONRA: davet linki uygulamayı açmalı.
+
+### Bulgu çıkarsa
+
+Aynı disiplin geçerli: önce `src/`'deki karşılığını oku, sonra portta
+farkı bul, düzeltmeyi negatif eşle kanıtla (bkz. bu dosyanın başı ve
+`mobile/CLAUDE.md`, "Sorun Bildirildiğinde İLK ADIM"). **Bir bulgunun
+platforma özgü olup olmadığını, öteki cihazda da bakmadan söyleme** —
+platform-özgü sandığın şey çoğu zaman iki tarafta da var.
 
 ---
 
