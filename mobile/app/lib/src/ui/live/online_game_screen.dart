@@ -1392,15 +1392,24 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                           if (!state.swapMode) ...[
                                             const SizedBox(width: 8),
                                             state.isGameOver
+                                                // Web (OnlineGameScreen.tsx
+                                                // ~1018): tek satır,
+                                                // `text-[15px]` + `px-5` —
+                                                // OYNA'dan (12px) belirgin
+                                                // BÜYÜK olması bilinçli, raf
+                                                // (`flex-1 min-w-0`) buna
+                                                // göre daralıyor. Port
+                                                // `\n` ile iki satıra bölüp
+                                                // 12px'te bırakmıştı.
                                                 ? NeoButton(
-                                                    label: 'CANLI\nLİSTESİ',
+                                                    label: 'CANLI LİSTESİ',
                                                     variant:
                                                         NeoButtonVariant.accent,
-                                                    fontSize: 12,
+                                                    fontSize: 15,
                                                     letterSpacing: 1.2,
                                                     padding: const EdgeInsets
                                                         .symmetric(
-                                                        horizontal: 16),
+                                                        horizontal: 20),
                                                     onPressed: () =>
                                                         Navigator.of(context)
                                                             .pop(),
@@ -1411,7 +1420,8 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                                         : 'OYNA',
                                                     variant:
                                                         NeoButtonVariant.accent,
-                                                    fontSize: 13,
+                                                    fontSize:
+                                                        12, // web text-[12px]
                                                     letterSpacing: 1.2,
                                                     padding: const EdgeInsets
                                                         .symmetric(

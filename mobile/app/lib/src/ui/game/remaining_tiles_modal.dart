@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
+import 'modal_shell.dart';
 import 'tile_widget.dart';
 
 Future<void> showRemainingTilesModal(
@@ -31,105 +32,89 @@ class RemainingTilesModal extends StatelessWidget {
       total += r.count;
     }
 
-    return Dialog(
-      backgroundColor: const Color(0xFFF5F7FA),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return KModal(
+      title: 'Kalan Taşlar',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text.rich(
+            TextSpan(
+              text: 'Tahtada olmayan ve sende bulunmayan taşlar '
+                  '(torba + rakipler). Toplam ',
               children: [
-                const Expanded(
-                  child: Text(
-                    'Kalan Taşlar',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1B2430),
-                    ),
+                TextSpan(
+                  text: '$total',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2563EB),
                   ),
                 ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, size: 18),
-                ),
+                const TextSpan(text: ' taş dışarıda.'),
               ],
             ),
-            const SizedBox(height: 4),
-            Text.rich(
-              TextSpan(
-                text: 'Tahtada olmayan ve sende bulunmayan taşlar '
-                    '(torba + rakipler). Toplam ',
-                children: [
-                  TextSpan(
-                    text: '$total',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2563EB),
-                    ),
-                  ),
-                  const TextSpan(text: ' taş dışarıda.'),
-                ],
-              ),
-              style: const TextStyle(
-                fontFamily: 'SpaceMono',
-                fontSize: 10,
-                height: 1.5,
-                color: Color(0xFF5A6673),
-              ),
+            style: const TextStyle(
+              fontFamily: 'SpaceMono',
+              fontSize: 10,
+              height: 1.5,
+              color: Color(0xFF5A6673),
             ),
-            const SizedBox(height: 12),
-            Flexible(
-              child: SingleChildScrollView(
-                child: GridView.count(
-                  crossAxisCount: 5,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 6,
-                  crossAxisSpacing: 6,
-                  childAspectRatio: 1.05,
+          ),
+          const SizedBox(height: 12),
+          // Web `grid grid-cols-5 gap-1.5` + hücre `h-12`: yükseklik SABİT
+          // 48px, en-boy oranı DEĞİL — kart 360px'e sınırlı olduğundan
+          // web'de hücre ~59×48 çıkıyor. Port kare hücre (oran 1.05)
+          // kullanıp kendi Dialog'unu kurduğundan iPad'de kart ekrana
+          // yayılıyor ve taşlar devleşiyordu (Parça 47'nin joker
+          // seçicideki AYNI hatası).
+          // `GridView.count` sabit yükseklik veremiyor (yalnızca en-boy
+          // oranı) — Parça 47'de joker seçicide öğrenilen aynı sebeple
+          // builder + `mainAxisExtent`.
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 5,
+              mainAxisSpacing: 6,
+              crossAxisSpacing: 6,
+              mainAxisExtent: 48,
+            ),
+            itemCount: rows.length,
+            itemBuilder: (context, i) {
+              final r = rows[i];
+              return Opacity(
+                opacity: r.count == 0 ? 0.3 : 1,
+                child: Stack(
                   children: [
-                    for (final r in rows)
-                      Opacity(
-                        opacity: r.count == 0 ? 0.3 : 1,
-                        child: Stack(
-                          children: [
-                            Positioned.fill(
-                              child: TileWidget(
-                                tile: Tile(letter: r.letter, pts: r.pts),
-                                variant: TileVariant.rack,
-                              ),
-                            ),
-                            // Kalan adet — harfin altında (puan sağ üstte).
-                            Positioned(
-                              bottom: 3,
-                              left: 0,
-                              right: 0,
-                              child: Text(
-                                '×${r.count}',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontFamily: 'SpaceMono',
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 10,
-                                  height: 1,
-                                  color: Color(0xFF8B5E00),
-                                ),
-                              ),
-                            ),
-                          ],
+                    Positioned.fill(
+                      child: TileWidget(
+                        tile: Tile(letter: r.letter, pts: r.pts),
+                        variant: TileVariant.rack,
+                      ),
+                    ),
+                    // Kalan adet — harfin altında (puan sağ üstte).
+                    Positioned(
+                      bottom: 3,
+                      left: 0,
+                      right: 0,
+                      child: Text(
+                        '×${r.count}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontFamily: 'SpaceMono',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                          height: 1,
+                          color: Color(0xFF8B5E00),
                         ),
                       ),
+                    ),
                   ],
                 ),
-              ),
-            ),
-          ],
-        ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

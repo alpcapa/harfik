@@ -810,11 +810,20 @@ class _GameScreenState extends State<GameScreen> {
                                             if (!state.swapMode) ...[
                                               const SizedBox(width: 8),
                                               state.isGameOver
+                                                  // Web (App.tsx ~1291): tek
+                                                  // satır "Yeni Oyun Aç",
+                                                  // `text-[15px]` + `px-5` —
+                                                  // OYNA'dan (12px) belirgin
+                                                  // BÜYÜK olması bilinçli,
+                                                  // raf (`flex-1 min-w-0`)
+                                                  // buna göre daralıyor. Port
+                                                  // `\n` ile iki satıra bölüp
+                                                  // 13px'te bırakmıştı.
                                                   ? NeoButton(
-                                                      label: 'YENİ\nOYUN',
+                                                      label: 'YENİ OYUN AÇ',
                                                       variant: NeoButtonVariant
                                                           .accent,
-                                                      fontSize: 13,
+                                                      fontSize: 15,
                                                       letterSpacing: 1.2,
                                                       padding: const EdgeInsets
                                                           .symmetric(
@@ -827,7 +836,8 @@ class _GameScreenState extends State<GameScreen> {
                                                       label: 'OYNA',
                                                       variant: NeoButtonVariant
                                                           .accent,
-                                                      fontSize: 13,
+                                                      fontSize:
+                                                          12, // web text-[12px]
                                                       letterSpacing: 1.2,
                                                       padding: const EdgeInsets
                                                           .symmetric(

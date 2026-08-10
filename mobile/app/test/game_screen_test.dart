@@ -16,6 +16,7 @@ import 'package:kelimeki/src/ui/game/board_widget.dart'
 import 'package:kelimeki/src/ui/game/game_over_modal.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
 import 'package:kelimeki/src/ui/game/rack_widget.dart';
+import 'package:kelimeki/src/ui/game/remaining_tiles_modal.dart';
 import 'package:kelimeki/src/ui/game/tile_widget.dart';
 import 'package:kelimeki/src/ui/game/wild_letter_sheet.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
@@ -378,9 +379,72 @@ void main() {
 
     await tester.tap(find.text('TORBA 6'));
     await tester.pumpAndSettle();
-    expect(find.text('Kalan Taşlar'), findsOneWidget);
+    // KModal başlığı trUpper'dan geçer (web'in `uppercase` CSS'i) — modal
+    // Parça 50'de ham Dialog'dan ortak kabuğa taşındı.
+    expect(find.text('KALAN TAŞLAR'), findsOneWidget);
     // Dağılım 100 − tahta 0 − benim rafım 7 = 93 taş dışarıda.
     expect(find.textContaining('93'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Kalan Taşlar KModal kabuğunda: 360px kart + web h-12 (48px) hücre '
+      '(Parça 50: ham Dialog iPad\'de kartı ekrana yayıp taşları '
+      'devleştiriyordu)', (tester) async {
+    // GENİŞ ekran — hatanın gerçekten göründüğü yer (iPad).
+    await setPhoneViewSize(tester, const Size(1200, 900));
+    await pumpGame(tester, GlobalKey());
+
+    await tester.ensureVisible(find.text('TORBA 6'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('TORBA 6'));
+    await tester.pumpAndSettle();
+    expect(find.byType(RemainingTilesModal), findsOneWidget);
+
+    final card = find.descendant(
+      of: find.byType(RemainingTilesModal),
+      matching: find.byWidgetPredicate((w) =>
+          w is ConstrainedBox && w.constraints.maxWidth == 360),
+    );
+    expect(card, findsOneWidget, reason: 'web Modal 360px kartı');
+
+    final cell = find
+        .descendant(
+            of: find.byType(RemainingTilesModal),
+            matching: find.byType(TileWidget))
+        .first;
+    expect(tester.getSize(cell).height, 48, reason: 'web hücre h-12');
+  });
+
+  testWidgets(
+      'raf satırı buton puntoları web ile aynı: OYNA 12px, oyun bitince '
+      'YENİ OYUN AÇ tek satır 15px (Parça 50)', (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await pumpGame(tester, GlobalKey());
+
+    expect(tester.widget<Text>(find.text('OYNA')).style!.fontSize, 12);
+
+    // Oyun bitişini fixture'dan kur (GameOver testindeki aynı yol).
+    final golden = jsonDecode(
+      File('../kelimeki_core/test/goldens/reducer_ai4.json').readAsStringSync(),
+    ) as Map<String, dynamic>;
+    final steps = golden['steps'] as List<dynamic>;
+    final finalState = gameStateFromJson(
+        (steps.last as Map<String, dynamic>)['state'] as Map<String, dynamic>);
+    final c = GameController(
+        words: SetWordSource(const ['ab']), autoPlayAi: false, nowIso: () => '');
+    c.restore(finalState);
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(
+          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      home: GameScreen(controller: c, words: SetWordSource(const ['ab'])),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Kapat')); // GameOver modalını kapat
+    await tester.pumpAndSettle();
+
+    final newGame = tester.widget<Text>(find.text('YENİ OYUN AÇ'));
+    expect(newGame.style!.fontSize, 15,
+        reason: 'web text-[15px] — OYNA\'dan belirgin büyük');
   });
 
   testWidgets(

@@ -156,6 +156,17 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       düğmesiyle render olduğunu bildirdi — modal ortak `KModal` kabuğuna
       taşınmadan kendi ham `Dialog`'unu kuruyordu, bkz. mobile/CLAUDE.md
       Parça 26).
+- [ ] **Oyun sonu butonu BÜYÜR (Parça 50).** Oyun bitince raf satırındaki
+      mavi buton "YENİ OYUN AÇ" olmalı: **tek satır** ve OYNA'dan belirgin
+      **daha büyük punto** (web `text-[15px]` ↔ OYNA `text-[12px]`); raf
+      buna göre daralır, özellikle rafta 1-2 taş kalınca buton dikkat
+      çekici olur. İki satıra bölünmüş küçük bir "YENİ / OYUN" görüyorsan
+      parite bozulmuş demektir. Canlı oyunda karşılığı "CANLI LİSTESİ",
+      aynı kural.
+- [ ] **Kalan Taşlar dökümü küçük kalmalı (Parça 50).** TORBA'ya dokun →
+      açılan kart web'deki gibi **~360px** olmalı, taşlar küçük ve 5
+      sütun; iPad'de kart ekrana yayılıp taşlar devleşiyorsa parite
+      bozulmuş demektir. Başlık **"KALAN TAŞLAR"** (büyük harf).
 - [ ] **TORBA sayacı ayrı stilli.** Alt buton satırındaki "TORBA N"
       etiketinde YALNIZCA sayı (N) daha büyük punto + mavi (`#2563EB`)
       olmalı, "TORBA" kelimesi düğmenin normal (siyah/beyaz, duruma göre)

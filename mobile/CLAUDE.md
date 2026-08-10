@@ -928,6 +928,61 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        `online` olayının tam karşılığı Flutter'da paketsiz yok. Veri kaybı
        riski yok (kuyruk kalıcı, 7 gün TTL), yalnızca gecikme.
 
+   - ✅ **Parça 50 — "Kalan Taşlar" ham `Dialog`taydı (Parça 26/47'nin ÜÇÜNCÜ
+     örneği) + oyun sonu butonu web'de büyürken portta küçük kalıyordu
+     (10 Ağustos 2026, `remaining_tiles_modal.dart`, `game_screen.dart`,
+     `online_game_screen.dart`):** Kullanıcı bölüm 10'a başlamadan iki
+     bulgu bildirdi; ikisi de web kaynağı okunarak teşhis edildi.
+     - **(a) Torba dökümü iPad'de devasa açılıyordu.** Web
+       `RemainingTilesModal.tsx` paylaşılan `Modal`'ı (360px kart)
+       kullanıyor ve hücreleri `h-12` ile **sabit 48px** yüksekliğe
+       bağlıyor. Port kendi `Dialog`'unu kuruyor (üst sınır YOK — geniş
+       ekranda kart yayılıyor) ve `childAspectRatio: 1.05` ile KARE hücre
+       üretiyordu, yani kart genişledikçe taşlar da büyüyordu.
+       **`KModal` + `GridView.builder(mainAxisExtent: 48)`'e taşındı** —
+       Parça 47'de joker seçicide öğrenilen aynı iki ders (`GridView.count`
+       sabit yükseklik veremiyor; ham `Dialog` üst sınır taşımıyor).
+       Yan kazanç, yine Parça 47'deki gibi: başlık artık `KModal`
+       üzerinden `trUpper`dan geçiyor ("KALAN TAŞLAR") — web'in
+       `uppercase` CSS'iyle hizalandı, port düz "Kalan Taşlar" yazıyordu.
+     - **ÜÇÜNCÜ kez aynı sınıf:** GameOver (Parça 26), joker seçici (47),
+       şimdi bu. `modal_shell.dart`'ın kendi başlığındaki "diğer ikisi de
+       buna taşındı" notu bu parçaya kadar GERÇEK DEĞİLDİ. **Yeni bir
+       modal eklerken ilk soru "web hangi bileşeni kullanıyor?" olmalı;
+       ham `Dialog` kurmak neredeyse her zaman bir sapma.**
+     - **(b) Oyun sonu butonu.** Web'de raf satırındaki buton oyun bitince
+       "Yeni Oyun Aç"a dönüşüyor ve `text-[15px]` + `px-5` ile OYNA'dan
+       (`text-[12px]`) belirgin BÜYÜK oluyor; raf `flex-1 min-w-0`
+       olduğundan daralıyor — kullanıcının tarif ettiği "1-2 taş kalınca
+       buton büyüyor, Yeni Oyun Aç dikkat çekiyor" etkisi bu. Port
+       etiketi `'YENİ\nOYUN'` diye ELLE iki satıra bölüp 13px'te
+       bırakmıştı, yani buton hiç büyümüyordu. Tek satır + 15px yapıldı;
+       OYNA da 13→12px'e (web değeri) çekildi. Canlı ekranın karşılığı
+       (`'CANLI\nLİSTESİ'`, 12px, `horizontal: 16`) aynı şekilde tek satır
+       15px + 20 padding oldu — iki ekran "bilinçli kod tekrarı" çifti
+       olduğundan AYNI PR'da (bkz. "Etki Analizi").
+     - **Rafın daralması ek bir iş gerektirmedi:** portun rafı zaten
+       `Expanded` ve taşları `Expanded` (web'in `repeat(N, 1fr)`
+       karşılığı), yani buton büyüyünce taşlar web'deki gibi kendiliğinden
+       inceliyor.
+     - **Test — negatif eş doğrulamasıyla, İKİ AYRI kanıt:** (1) GENİŞ bir
+       yüzeyde (1200×900 — hatanın gerçekten göründüğü iPad koşulu) kartın
+       360px `ConstrainedBox`'ı ve hücre yüksekliğinin tam 48 olduğu;
+       (2) OYNA'nın 12, oyun bitince "YENİ OYUN AÇ"ın 15 punto olduğu.
+       İki lib dosyası AYRI AYRI `git stash`lenip her iki test de GERÇEKTEN
+       `+0 -1` ile düştü, geri konunca yeşile döndü. Mevcut TORBA testi de
+       yeni büyük harfli başlığa güncellendi.
+     - **Test tuzağı (yeni):** 1200×900'de dikey içerik viewport'u aştığından
+       "TORBA" düğmesi ekran dışında kalıyor ve `tap` sessizce ıskalıyordu —
+       modal hiç açılmadan test "0 widget" diye düşüyor, sebep yanıltıcı
+       görünüyor. `tester.ensureVisible` şart; ayrıca modalın gerçekten
+       açıldığını doğrulayan bir ara `expect` eklendi ki bir daha aynı hata
+       yanlış yeri işaret etmesin.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 303/303
+       yeşil** (301'den +2). `kelimeki_core`'a hiç dokunulmadı.
+     - **Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor —
+       `mobile/TESTING.md` bölüm 1'e iki yeni madde eklendi.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
