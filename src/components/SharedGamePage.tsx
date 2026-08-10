@@ -53,7 +53,10 @@ export function SharedGamePage({ gameId }: SharedGamePageProps) {
               <span>{formatDateTime(data.created_at)} · {data.player_count} Oyunculu</span>
               <span className="flex items-center gap-2 shrink-0">
                 <span className="w-9 text-right">Puan</span>
-                <span className="w-6 text-right">SL</span>
+                {/* Bkz. GameHistoryModal'daki aynı sütun — "SL" yerine küçük
+                    harf "k-lig" (satır `uppercase` olduğundan `normal-case`),
+                    w-6→w-8 çünkü 5 karakter 24px'e sığmıyor. */}
+                <span className="w-8 text-right normal-case">k-lig</span>
               </span>
             </div>
             <div className="flex flex-col gap-0.5">
@@ -74,7 +77,7 @@ export function SharedGamePage({ gameId }: SharedGamePageProps) {
                     <span className="flex items-center gap-2 shrink-0">
                       <span className="font-bold w-9 text-right text-gold">{p.score}</span>
                       <span
-                        className={`font-bold w-6 text-right ${points > 0 ? 'text-green' : points < 0 ? 'text-red' : 'text-muted'}`}
+                        className={`font-bold w-8 text-right ${points > 0 ? 'text-green' : points < 0 ? 'text-red' : 'text-muted'}`}
                       >
                         {formatLeaguePoints(points)}
                       </span>
