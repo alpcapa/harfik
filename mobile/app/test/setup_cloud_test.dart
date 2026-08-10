@@ -3,6 +3,7 @@
 // açılır, VAZGEÇ listeye döner; satırdan devam AYNI sunucu satırını
 // güncellemeye devam eder. Gateway sahte (bellek içi) — gerçek Supabase ucu
 // cihazda doğrulanır.
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -14,6 +15,7 @@ import 'package:kelimeki/src/bootstrap.dart';
 import 'package:kelimeki/src/config/version_gate.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/cloud_save_repo.dart';
+import 'package:kelimeki/src/data/feedback_api.dart';
 import 'package:kelimeki/src/data/games_api.dart';
 import 'package:kelimeki/src/data/meaning_store.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
@@ -96,7 +98,25 @@ Future<GamesRepo> memGamesRepo(FakeGamesGateway gw) async {
   return GamesRepo(gw, storage.queue);
 }
 
-AppServices services(MemGateway gw, {Future<GamesRepo>? games}) => AppServices(
+/// `flushPending`i sayan casus — GERÇEK `FeedbackRepo` sqflite'a bağlı ve
+/// onun gerçek I/O'su testWidgets'ın sahte zaman bölgesinde çözülmez (bu
+/// dosyanın diğer testleri bu yüzden depoyu hiç kurmuyor). Burada ölçülen
+/// şey deponun kendisi değil KABLO: öne dönüşte flush ÇAĞRILIYOR mu.
+class SpyFeedbackRepo extends FeedbackRepo {
+  SpyFeedbackRepo() : super(null, Completer<AppStorage>().future);
+
+  int flushCalls = 0;
+
+  @override
+  Future<int> flushPending() async {
+    flushCalls++;
+    return 0;
+  }
+}
+
+AppServices services(MemGateway gw,
+        {Future<GamesRepo>? games, FeedbackRepo? feedback}) =>
+    AppServices(
       dictionary: Future.value(SetWordSource(const ['ab', 'aba', 'kelime'])),
       meanings: MeaningStore(bundle: rootBundle),
       auth: AuthService.fake(user: fakeUser(), profile: ironman),
@@ -104,6 +124,7 @@ AppServices services(MemGateway gw, {Future<GamesRepo>? games}) => AppServices(
       versionGate: VersionGateStatus.ok,
       cloudSaves: CloudSaveRepo(gw),
       games: games,
+      feedback: feedback,
     );
 
 /// turnCount>=2 olan gerçek bir play state'i satır olarak kuyruklar.
@@ -130,12 +151,13 @@ void main() {
   setUpAll(loadAppFonts);
 
   Future<void> pumpSetup(WidgetTester tester, MemGateway gw,
-      {Future<GamesRepo>? games}) async {
+      {Future<GamesRepo>? games, FeedbackRepo? feedback}) async {
     await setPhoneViewSize(tester, const Size(420, 950));
     await tester.pumpWidget(MaterialApp(
       theme: ThemeData(
           fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
-      home: SetupScreen(services: services(gw, games: games)),
+      home: SetupScreen(
+          services: services(gw, games: games, feedback: feedback)),
     ));
     await tester.pumpAndSettle();
   }
@@ -364,5 +386,23 @@ void main() {
 
     expect(gw.listCalls, greaterThan(before),
         reason: 'resumed → _syncCloud (flush + liste) yeniden koşmalı');
+  });
+
+  testWidgets(
+      'öne dönüşte geri bildirim kuyruğu da tazelenir (Parça 49: flush '
+      'YALNIZCA initState\'teydi, Setup hiç unmount olmadığından uygulama '
+      'yeniden başlatılana kadar bekliyordu)', (tester) async {
+    final gw = MemGateway();
+    final spy = SpyFeedbackRepo();
+    await pumpSetup(tester, gw, feedback: spy);
+    expect(spy.flushCalls, 1, reason: 'mount flush\'ı zaten koşuyordu');
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    expect(spy.flushCalls, 2,
+        reason: 'resumed → flushPending yeniden çağrılmalı');
   });
 }

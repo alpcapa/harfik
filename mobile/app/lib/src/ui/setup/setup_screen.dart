@@ -215,6 +215,14 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     // Ayrıca web'deki asıl gerekçe de geçerli: uygulama Setup'ta günlerce
     // arka planda kalırsa 7 günlük terk süpürmesi hiç çalışmıyordu.
     _scheduleCloudSync();
+    // Geri bildirim kuyruğu da aynı gerekçeyle: initState'teki flush YALNIZCA
+    // uygulama açılışında koşuyor (SetupScreen `MaterialApp.home`, oyunlar
+    // `Navigator.push` ile açıldığından ekran hiç unmount OLMUYOR — "Setup'a
+    // her geliş" notu bu yüzden yanıltıcıydı). Yani Setup'ta otururken ağ
+    // dönerse kuyruk uygulama yeniden başlatılana kadar bekliyordu. Kuyruk
+    // boşken `flushPending` ağa hiç dokunmadan erken dönüyor, bu yüzden her
+    // öne dönüşte çağırmak bedelsiz — ayrı bir debounce'a gerek yok.
+    unawaited(widget.services.feedback?.flushPending());
   }
 
   void _scheduleLiveBadgeRefresh() {

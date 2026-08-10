@@ -889,6 +889,45 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
   yalnızca iki platformun metnini aynı yapar. Tek satırlık değişiklik
   (`MeaningModal.tsx`), aciliyeti yok.
 
+   - ✅ **Parça 49 — geri bildirim kuyruğunun flush'ı YALNIZCA uygulama
+     açılışında koşuyordu; "Setup'a her geliş" notu yanlıştı (10 Ağustos
+     2026, `setup_screen.dart`):** TESTING.md 9.5 (offline kuyruk) cihazda
+     GEÇTİ — ama testten önce verdiğim tahmin ("Setup'a dönüş yetmeyecek")
+     kodun gerçeğiyle uyuşuyordu, o yüzden geçişin sebebi kontrol edildi.
+     - **Bayat varsayım:** `flushPending()` yalnızca `initState`'te
+       çağrılıyordu ve yanındaki yorum bunu "mobil karşılığı Setup'a her
+       geliş" diye anlatıyordu. Doğru DEĞİL: `SetupScreen`
+       `MaterialApp.home`, oyunlar `Navigator.push` ile açılıyor, yani ekran
+       hiç unmount OLMUYOR — `initState` uygulama başına BİR KEZ koşuyor.
+       Yani Setup'ta otururken ağ dönerse kuyruk, uygulama yeniden
+       başlatılana kadar bekliyordu.
+     - **Cihaz testinin geçmesi bu boşluğu çürütmez:** web derlemesinde
+       Safari sekmeyi (özellikle uçak modundan sonra) yeniden yükleyebiliyor
+       ve her yeniden yükleme TAZE bir `initState` demek — bölüm 8'de aynı
+       davranış zaten gözlenmişti. Native'de böyle bir yeniden yükleme yok.
+       **Ders: "test geçti" ile "kod doğru" farklı şeyler; testin hangi
+       MEKANİZMAYLA geçtiği doğrulanmadan bir gap kapanmış sayılmaz.**
+     - **Düzeltme, Parça 44'ün simetriği:** `didChangeAppLifecycleState`'in
+       `resumed` dalı artık `_scheduleCloudSync()`in yanında
+       `feedback?.flushPending()` de çağırıyor. Debounce YOK ve gerekmiyor —
+       kuyruk boşken `flushPending` ağa hiç dokunmadan erken dönüyor
+       (`readAll` boşsa 0), yani her öne dönüşte çağırmak bedelsiz.
+       Yanıltıcı `initState` yorumu da düzeltildi.
+     - **Test — negatif eş doğrulamasıyla:** `setup_cloud_test.dart`'a yeni
+       bir test; gerçek `FeedbackRepo` sqflite'a bağlı olduğundan (ve onun
+       gerçek I/O'su testWidgets'ın sahte zaman bölgesinde çözülmediğinden —
+       Parça 6 dersi) `flushPending`i override eden bir `SpyFeedbackRepo`
+       kullanılıyor: ölçülen şey deponun kendisi değil KABLO. Mount'ta 1,
+       paused→resumed sonrası 2 çağrı. `setup_screen.dart` `git stash` ile
+       geri alınınca test GERÇEKTEN `+0 -1` ile düştü, geri konunca yeşile
+       döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 301/301
+       yeşil** (300'den +1). `kelimeki_core`'a hiç dokunulmadı.
+     - **Kalan sınır (Parça 44'ün aynısı):** uygulama ÖNDEYKEN ağ geri
+       gelirse (öne dönüş olayı hiç oluşmadan) kuyruk yine bekler — web'in
+       `online` olayının tam karşılığı Flutter'da paketsiz yok. Veri kaybı
+       riski yok (kuyruk kalıcı, 7 gün TTL), yalnızca gecikme.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
