@@ -684,6 +684,24 @@ uygulanınca buradan silinip ilgili bölümün kendi tarihli notuna taşınmalı
   - Mobil tarafta dördü ayna davranışı + ikisi bu gedikler için olmak üzere
     6 test var (`mobile/app/test/cloud_save_test.dart`), hepsi negatif eşle
     doğrulandı — web sürümü yazılırken oradan birebir uyarlanabilir.
+  - **İKİNCİ PARÇA — offline'da liste BOŞ görünüyor (10 Ağustos 2026, mobil
+    Parça 43'te bulundu):** Yukarıdaki veri kaybından AYRI bir eksik.
+    `listLocalGameSaves` (`api.ts`) ağ hatasında hatayı loglayıp **`[]`
+    dönüyor**, yani `refreshCloudSaves` "liste alınamadı" ile "hiç oyunun
+    yok"u ayırt edemiyor ve Setup boş liste gösteriyor — çevrimdışı
+    kullanıcı devam eden oyunlarını göremiyor (kaybolmuş gibi duruyor) ve
+    onlara devam edemiyor. Mobildeki çözüm: son BAŞARILI listeyi yerelde
+    önbelleğe al, ağ hatasında listeyi önbellek + ayna bindirmesiyle çiz.
+    Üç kritik ayrıntı: (a) yalnızca aynayı göstermek YETMEZ — offline
+    oynanmamış oyunlar listeden düşer, bir sorun başkasıyla değişilmiş
+    olur; (b) offline dalda 7 günlük ceza HİÇ uygulanmamalı (sunucuyla
+    doğrulanmadan terk kararı verilemez, claim'in yarış koruması offline
+    çalışmaz) ve süresi geçmiş satır listeye de alınmamalı; (c) ayna,
+    önbelleği KOŞULSUZ ezmeli — sunucu satırına karşı kullanılan
+    "daha yeniyse" koruması burada yanlış olur, çünkü karşı taraf aynı
+    cihazın kendi önbelleği (mobilde ilk sürüm bu yüzden eşit damgalarda
+    offline hamleleri gizliyordu). Mobilde 3 ek test var, hepsi negatif
+    eşle doğrulandı.
 
 (Diğer üç madde — arkadaş ekle simgesi, Çıkış Yap ikonu, hesap menüsü
 tooltip'i — 9 Ağustos 2026'da uygulandı; kayıtları `UserMenu` ve
