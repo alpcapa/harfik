@@ -4651,10 +4651,19 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        `e750b8aa…`) silindi, T5'in k-lig puanı -4'ten -2'ye döndü. Oyunun
        kendisi kurtarılamadı — iddia satırı sildi, tam `GameState` hiçbir
        yerde saklanmıyor (yalnızca `board_snapshot`).
-     - **8.5 hâlâ GEÇMEDİ:** bu düzeltmeler kaybın SEBEBİNİ kapatıyor ama
-       testin kendisi (offline oynanan oyun haksız yere teslim sayılmamalı)
-       yeniden koşulmalı — bu sefer teşhis satırı `depo ok` gösteriyorsa
-       sonuç anlamlı olur.
+     - **8.5 aynı gün yeniden koşuldu ve GEÇTİ (cihazda, gerçek hesapla):**
+       teşhis satırı `depo ok` gösterirken satır tekrar 8 gün geriye
+       alındı; kullanıcı offline oynadı. Sunucudan üç kontrol de temiz —
+       satır silinmedi, `turnCount` 16→22 / skor 144→181 (offline hamleler
+       gitti), `updated_at` bugüne çekildi, k-lig **-2** kaldı ve fazladan
+       `games` satırı açılmadı. Yani `flushMirrored`'ın `list()`ten ÖNCE
+       koşması gerçek cihazda kanıtlandı.
+     - **Geriye dönük not:** ilk (düşen) denemede `8ec0690a` satırının
+       sunucuda `turnCount 4→8`e ilerlediği sonradan görüldü — yani depo o
+       oturumda TAMAMEN ölü değildi, bir noktada çalışmıştı. "Depo hiç
+       açılmadı" hipotezi bu yüzden kesin DEĞİL; kesin olan tek şey ayna
+       yazmasının o an başarısız olduğu ve eski kodun bunu sessizce
+       yuttuğu. Teşhis satırı bir dahaki sefere bunu tahmine bırakmayacak.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek
