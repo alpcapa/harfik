@@ -457,6 +457,21 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **Offline listeler çökmemeli.** Uçak modunda geçmiş/k-lig ekranlarını
       aç: boş liste ya da "Yükleniyor…" ile kalmalı, hata ekranı/çökme
       OLMAMALI.
+- [ ] **Ağ dönünce senkron beklememeli (10 Ağustos 2026, Parça 44).**
+      Offline oynadıktan sonra ağı aç ve uygulamayı arka plana alıp öne
+      getir (uygulamayı kapatmadan, oyuna girip çıkmadan). Birkaç saniye
+      içinde kayıt sunucuya gitmeli — web'de (kelimeki.com) aynı hesapla
+      bakınca oyun görünmeli. **Bilinen sınır:** uygulama hiç arka plana
+      alınmadan, ÖNDEYKEN ağ geri gelirse senkron yine beklemez (web'in
+      `online` olayının Flutter'da paketsiz karşılığı yok); veri kaybı
+      yok, yalnızca gecikme.
+- [ ] **Uçak modunda kelime anlamı — bu bir HATA DEĞİL (web derlemesinde).**
+      Tahtadaki bir kelimeye dokununca "Bu kelimenin anlamı bulunamadı."
+      çıkması `alpcapa.github.io` derlemesinde BEKLENEN: asset'ler
+      uygulamaya gömülü değil HTTP ile iniyor, 5.26 MB'lık `meanings.db`
+      uçak modunda çekilemiyor. Online'ken aynı kelimenin anlamı GELMELİ.
+      Native (TestFlight/Appetize) derlemede asset pakette olduğundan
+      offline de çalışmalı — FAZ B'de ayrıca doğrula.
 
 ## 9. Görüş Bildir
 

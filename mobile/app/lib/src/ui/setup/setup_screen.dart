@@ -91,6 +91,11 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   /// kabul ettiği bir ödün.
   int _liveActionCount = 0;
   Timer? _liveBadgeDebounce;
+
+  /// Öne dönüşte bulut senkronunun debounce'u — bekleyen timer dispose'ta
+  /// iptal edilmezse widget söküldükten sonra ateşlenip "A Timer is still
+  /// pending" flake'i üretir (Parça 11/21'in aynı dersi).
+  Timer? _cloudSyncDebounce;
   void Function()? _unsubscribeLiveBadge;
 
   /// Girişte "Arkadaşınla"ya otomatik geçiş — yalnızca hesap başına BİR
@@ -184,13 +189,31 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _scheduleLiveBadgeRefresh();
+    if (state != AppLifecycleState.resumed) return;
+    _scheduleLiveBadgeRefresh();
+    // Bulut senkronu da öne dönüşte tazelenmeli — web'in `refreshCloudSaves`
+    // için kurduğu visibilitychange/focus/online dinleyicilerinin karşılığı
+    // (App.tsx, 4 Ağustos 2026). Mobilde bu HİÇ taşınmamıştı: Setup'ta
+    // otururken ağ geri gelirse hiçbir şey `_syncCloud`u tetiklemiyordu,
+    // yani offline'da biriken ayna ancak kullanıcı bir oyuna girip çıkınca
+    // ya da uygulamayı yeniden başlatınca sunucuya itiliyordu. 10 Ağustos
+    // 2026'da TESTING.md 8.3 koşulurken görüldü: oyun cihazda listedeydi
+    // ama web'de dakikalarca görünmedi (veri kaybı değil, gecikme).
+    // Ayrıca web'deki asıl gerekçe de geçerli: uygulama Setup'ta günlerce
+    // arka planda kalırsa 7 günlük terk süpürmesi hiç çalışmıyordu.
+    _scheduleCloudSync();
   }
 
   void _scheduleLiveBadgeRefresh() {
     _liveBadgeDebounce?.cancel();
     _liveBadgeDebounce = Timer(const Duration(milliseconds: 300),
         () => unawaited(_refreshLiveBadge()));
+  }
+
+  void _scheduleCloudSync() {
+    _cloudSyncDebounce?.cancel();
+    _cloudSyncDebounce = Timer(
+        const Duration(milliseconds: 300), () => unawaited(_syncCloud()));
   }
 
   /// Web `fetchPendingLiveGameCounts` + rozet/varsayılan-sekme birleşimi
@@ -308,6 +331,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     widget.services.auth.removeListener(_onAuthEvent);
     widget.services.inviteInbox?.removeListener(_onInviteEvent);
     _liveBadgeDebounce?.cancel();
+    _cloudSyncDebounce?.cancel();
     _unsubscribeLiveBadge?.call();
     super.dispose();
   }

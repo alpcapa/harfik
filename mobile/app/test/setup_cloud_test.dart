@@ -34,15 +34,22 @@ import 'support/test_view.dart';
 class MemGateway implements CloudSaveGateway {
   final rows = <String, Map<String, Object?>>{};
 
+  /// Kaç kez listelendi — öne dönüşte senkronun tetiklendiğini ölçmek için
+  /// (Parça 44).
+  int listCalls = 0;
+
   @override
-  Future<List<Map<String, Object?>>> list() async => [
+  Future<List<Map<String, Object?>>> list() async {
+    listCalls++;
+    return [
         for (final e in rows.entries)
           {
             'id': e.key,
             'state': e.value['state'],
             'updated_at': e.value['updated_at'],
           }
-      ];
+    ];
+  }
 
   @override
   Future<void> upsert(String id, String userId,
@@ -335,5 +342,27 @@ void main() {
     await tester.pumpAndSettle();
     expect(gw.rows, isEmpty);
     expect(find.text('Devam eden bir Yapay Zeka oyunun yok.'), findsOneWidget);
+  });
+
+  testWidgets(
+      'öne dönüşte bulut senkronu tazelenir — offline biriken ayna ağ '
+      'gelince beklemez (Parça 44: web visibilitychange/focus/online '
+      'dinleyicilerinin karşılığı hiç port edilmemişti)', (tester) async {
+    final gw = MemGateway();
+    await seedSave(gw, 'save-1');
+    await pumpSetup(tester, gw);
+    final before = gw.listCalls;
+    expect(before, greaterThan(0), reason: 'mount senkronu zaten koşmalı');
+
+    // Uygulama arka plana alınıp öne dönüyor (ağın geri gelmesiyle aynı an).
+    tester.binding
+        .handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding
+        .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump(const Duration(milliseconds: 400)); // debounce
+    await tester.pumpAndSettle();
+
+    expect(gw.listCalls, greaterThan(before),
+        reason: 'resumed → _syncCloud (flush + liste) yeniden koşmalı');
   });
 }

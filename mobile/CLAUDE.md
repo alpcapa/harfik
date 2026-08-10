@@ -4558,6 +4558,58 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Doğrulama sınırı:** gerçek cihazda (uçak modunda Setup'a dönüp
        oyunu listede GÖRMEK) teyit kullanıcıdan bekleniyor — TESTING.md
        bölüm 8'e ayrı madde eklendi.
+   - ✅ **Parça 44 — ağ geri gelince bulut senkronu KENDİLİĞİNDEN koşmuyordu;
+     web'in foreground dinleyicileri hiç port edilmemişti (10 Ağustos 2026,
+     `setup_screen.dart`):** Kullanıcı 8.3'ü koşarken bildirdi — tamamen
+     offline açılan oyun cihazda "Devam Edenler"de göründü (Parça 43
+     çalıştı) ama ağ dönünce web'de dakikalarca ÇIKMADI.
+     - **Teşhis tahminle değil sunucudan yapıldı:** `local_game_saves`
+       sorgulandı; satır gerçekten yoktu (kullanıcı 10:09'da bildirdi),
+       sonra tekrar sorgulandığında ORADAYDI — `updated_at` 10:17. Yani
+       veri kaybı yok, flush geç çalışmış. Aradaki farkı yaratan şey
+       kullanıcının o arada bir oyuna girip çıkması/uygulamayı yeniden
+       başlatması olmalı.
+     - **Kök sebep — port paritesi eksiği (yeni bir tasarım kararı DEĞİL):**
+       `_syncCloud` yalnızca üç anda koşuyordu: `initState`, `_onAuthEvent`,
+       ve bir oyundan Setup'a dönüş. Web ise `refreshCloudSaves` için
+       `visibilitychange` + `focus` + `online` dinleyicilerini 4 Ağustos
+       2026'da EKLEMİŞTİ (App.tsx; gerekçesi orada yazılı: "uygulama Setup'ta
+       arka planda günlerce durup öne döndüğünde 7 günlük terk süpürmesi hiç
+       tetiklenmiyordu"). Portun `didChangeAppLifecycleState`'i yalnızca
+       `_scheduleLiveBadgeRefresh`'i çağırıyordu — rozet tazeleniyor, bulut
+       senkronu tazelenmiyordu. Parça 38'in "bilinçli kapsam dışı" notu
+       ("ağ dönünce kendiliğinden flush eden bir dinleyici YOK") bu eksiği
+       zaten yazmıştı; bugünkü test onun gerçek maliyetini gösterdi.
+     - **Düzeltme:** `didChangeAppLifecycleState`'in `resumed` dalı artık
+       `_scheduleCloudSync()`i de çağırıyor (rozetle aynı 300ms debounce,
+       aynı gerekçe). Yeni `_cloudSyncDebounce` timer'ı `dispose()`ta iptal
+       ediliyor — Parça 11/21'in "bekleyen timer test bitince flake üretir"
+       dersi. Ayrı bir connectivity paketi EKLENMEDİ: uçak modundan dönüş
+       pratikte uygulamanın öne gelmesiyle birlikte oluyor, web de aynı
+       yaklaşımı (olay dinleyicisi, ağ durumu sorgusu değil) kullanıyor.
+     - **Kalan sınır (dürüstlük):** uygulama ÖNDEYKEN ağ geri gelirse (öne
+       dönüş olayı hiç oluşmadan) senkron yine beklemez — web'in `online`
+       olayının tam karşılığı Flutter'da paketsiz yok. Bu durumda kullanıcı
+       bir oyuna girip çıkınca ya da uygulamayı öne/arkaya alınca senkron
+       koşuyor; veri kaybı riski yok (ayna kalıcı), yalnızca gecikme.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 294/294 yeşil**
+       (293'ten +1). Negatif eş: `_scheduleCloudSync()` çağrısı yorum
+       satırına alınınca yeni test GERÇEKTEN düştü (`Expected: a value
+       greater than <1> / Actual: <1>`), geri konunca yeşile döndü.
+     - **Aynı turda kapatılan iki doğrulama sınırı (cihazda, gerçek
+       hesapla):** (1) Parça 38'in `SupabaseCloudSaveGateway` ucu (gerçek
+       PostgREST upsert + RLS) bu ortamdan hiç test edilememişti — 8.2'de
+       offline oynanan hamleler web'de göründü, yani flush gerçek uçla
+       uçtan uca çalışıyor; (2) Parça 43'ün offline listesi cihazda
+       doğrulandı (uçak modunda Setup'a dönünce oyun listede, son
+       oynandığı hâliyle).
+     - **Hata OLMAYAN bir bulgu, aynı turda:** uçak modunda kelime anlamı
+       "bulunamadı" dönüyor. Veri sağlam (`kurutaç` `meanings.json`'da VAR,
+       63.890 kayıt) — sebep web derlemesine özgü: asset'ler uygulamaya
+       gömülü değil HTTP ile indiriliyor, 5.26 MB'lık `meanings.db` uçak
+       modunda çekilemiyor. Online'da çalıştığı kullanıcı tarafından
+       doğrulandı. Native derlemede asset pakette olduğundan bu sorun
+       yapısal olarak yok; `mobile/TESTING.md`'ye dürüst bir not eklendi.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek
