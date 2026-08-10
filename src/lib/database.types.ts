@@ -349,7 +349,15 @@ export interface Game {
    * tıklanınca `fetchGameMessages` ile lazy çekilir.
    */
   messages: GameChatMessage[] | null;
-  /** `messages` dizisinin uzunluğu (generated sütun) — liste sorgusunu şişirmeden sohbet rozetinin gösterilip gösterilmeyeceğine karar vermek için. */
+  /**
+   * `messages` dizisinin uzunluğu (generated sütun) — liste sorgusunu
+   * şişirmeden sohbet rozetinin gösterilip gösterilmeyeceğine karar vermek
+   * için. **10 Ağustos 2026'dan beri bu kolon istemci rollerinden KALDIRILDI**
+   * (`chat_count_participants_only`): "X ile Y şu oyunda N mesajlaştı" da bir
+   * üstveri ve rozet zaten yalnızca katılımcının açabildiği bir kontroldü.
+   * Değer artık `game_like_stats` toplu RPC'sinden geliyor ve katılımcı/admin
+   * değilsen 0 dönüyor (rozet hiç çizilmez).
+   */
   message_count: number;
   created_at: string;
 }
