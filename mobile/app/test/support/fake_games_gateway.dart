@@ -87,7 +87,9 @@ class FakeGamesGateway implements GamesGateway {
         if (r['user_id'] == userId &&
             (playerCount == null || r['player_count'] == playerCount) &&
             (onlineOnly == null ||
-                (onlineOnly ? r['online_game_id'] != null : r['online_game_id'] == null)))
+                (onlineOnly
+                    ? r['online_game_id'] != null
+                    : r['online_game_id'] == null)))
           r
     ];
     // Gerçek uçtaki `.range(offset, offset + limit)` gibi BİR FAZLA satır.
@@ -175,9 +177,16 @@ class FakeGamesGateway implements GamesGateway {
   Future<List<Map<String, Object?>>> likers(String gameId) async =>
       likersByGame[gameId] ?? const [];
 
+  /// Yetkisiz kabul edilecek oyunlar — gerçek uçtaki katılımcı kapısının
+  /// (`game_chat_archive`) test karşılığı.
+  final unauthorizedChats = <String>{};
+
   @override
-  Future<List<Map<String, Object?>>> gameMessages(String gameId) async =>
-      messagesByGame[gameId] ?? const [];
+  Future<({bool allowed, List<Map<String, Object?>> messages})> gameMessages(
+          String gameId) async =>
+      unauthorizedChats.contains(gameId)
+          ? (allowed: false, messages: const <Map<String, Object?>>[])
+          : (allowed: true, messages: messagesByGame[gameId] ?? const []);
 
   @override
   Future<List<Map<String, Object?>>> chatFlags(String onlineGameId) async =>

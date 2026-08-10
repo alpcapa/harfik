@@ -133,7 +133,8 @@ class GameHistoryEntry {
   /// Beğeni durumunu değiştirilmiş bir kopya — hem `game_like_stats`
   /// birleştirmesi hem kalp dokunuşundaki İYİMSER güncelleme (ve hatada
   /// geri alma) bunu kullanır.
-  GameHistoryEntry withLikes({required bool likedByMe, required int likeCount}) =>
+  GameHistoryEntry withLikes(
+          {required bool likedByMe, required int likeCount}) =>
       GameHistoryEntry(
         id: id,
         userId: userId,
@@ -241,7 +242,10 @@ abstract class GamesGateway {
 
   /// Bitmiş bir oyunun dondurulmuş sohbeti (`games.messages`) — rozete
   /// dokununca lazy çekilir, `gameBoardSnapshot` ile aynı desen.
-  Future<List<Map<String, Object?>>> gameMessages(String gameId);
+  /// Dondurulmuş sohbet arşivi. `allowed` İÇERİKTEN ayrı taşınır ki UI
+  /// "hiç mesaj yok" ile "görme yetkin yok"u ayırt edebilsin.
+  Future<({bool allowed, List<Map<String, Object?>> messages})> gameMessages(
+      String gameId);
 
   /// Oyunu herkese açık `/game/:id` linkiyle görülebilir işaretler
   /// (`set_game_shared`) — sahiplik gerektirmez, idempotent, geri
@@ -361,7 +365,8 @@ class SupabaseGamesGateway implements GamesGateway {
 
   @override
   Future<bool> toggleLike(String gameId) async {
-    final res = await client.rpc('toggle_game_like', params: {'p_game_id': gameId});
+    final res =
+        await client.rpc('toggle_game_like', params: {'p_game_id': gameId});
     return res == true;
   }
 
@@ -383,16 +388,25 @@ class SupabaseGamesGateway implements GamesGateway {
     return [for (final t in snap) (t as Map).cast<String, Object?>()];
   }
 
+  /// 10 Ağustos 2026'dan beri `games.messages` DOĞRUDAN OKUNAMIYOR: o kolon
+  /// istemci rollerinden kaldırıldı (`game_chat_archive_participants_only`
+  /// migration'ı), çünkü `games`in SELECT politikası satır sahipliğine değil
+  /// yalnızca "oturum var mı"ya bakıyor — k-lig → oyuncu kartı → "Tüm
+  /// Oyunlar" zincirinden başkasının yazışmaları okunabiliyordu. Okuma artık
+  /// katılımcı/admin kapılı `game_chat_archive` RPC'sinden geçiyor.
   @override
-  Future<List<Map<String, Object?>>> gameMessages(String gameId) async {
-    final row = await client
-        .from('games')
-        .select('messages')
-        .eq('id', gameId)
-        .maybeSingle();
+  Future<({bool allowed, List<Map<String, Object?>> messages})> gameMessages(
+      String gameId) async {
+    final res =
+        await client.rpc('game_chat_archive', params: {'p_game_id': gameId});
+    final row = res is Map ? res.cast<String, Object?>() : null;
     final msgs = row?['messages'];
-    if (msgs is! List) return const [];
-    return [for (final m in msgs) (m as Map).cast<String, Object?>()];
+    return (
+      allowed: row?['allowed'] == true,
+      messages: msgs is List
+          ? [for (final m in msgs) (m as Map).cast<String, Object?>()]
+          : const <Map<String, Object?>>[],
+    );
   }
 
   @override
@@ -434,8 +448,8 @@ class GamesRepo {
       multiSession: state.multiSession,
       endedBySurrender: state.endReason == EndReason.surrender,
     );
-    final record = buildGameRecord(state,
-        surrendered: false, newId: _newId, now: _now);
+    final record =
+        buildGameRecord(state, surrendered: false, newId: _newId, now: _now);
     if (record != null) await saveDurable(record);
   }
 
@@ -446,7 +460,8 @@ class GamesRepo {
   ///
   /// YALNIZCA gerçekten başlamış (turnCount >= 2) oyunlar ceza alır; hiç
   /// oynanmamış kayıt ne -2 ne telemetri üretir (web'in aynı eşiği).
-  Future<void> recordAbandoned(GameState state, {required int endedAtMs}) async {
+  Future<void> recordAbandoned(GameState state,
+      {required int endedAtMs}) async {
     if (state.turnCount < 2) return;
     await logFinish(
       playerCount: state.players.length,
@@ -485,7 +500,8 @@ class GamesRepo {
   Future<int> flushPending() async {
     if (_flushing) return 0;
     if (gateway.currentUserId == null) return 0;
-    final entries = await queue.readAll(finishedGameKind); // TTL burada uygulanır
+    final entries =
+        await queue.readAll(finishedGameKind); // TTL burada uygulanır
     if (entries.isEmpty) return 0;
     _flushing = true;
     var sent = 0;
@@ -639,13 +655,19 @@ class GamesRepo {
 
   /// Bitmiş bir oyunun dondurulmuş sohbeti. Yerel/YZ oyunlarında her zaman
   /// boş (mesajlaşma yalnızca Canlı oyunlarda var).
-  Future<List<GameChatMessage>> messages(String gameId) async {
+  Future<({bool allowed, List<GameChatMessage> messages})> messages(
+      String gameId) async {
     try {
-      final rows = await gateway.gameMessages(gameId);
-      return [for (final r in rows) GameChatMessage.fromJson(r)];
+      final res = await gateway.gameMessages(gameId);
+      return (
+        allowed: res.allowed,
+        messages: [for (final r in res.messages) GameChatMessage.fromJson(r)],
+      );
     } catch (e) {
       debugPrint('[Kelimeki] sohbet kaydı alınamadı: $e');
-      return const [];
+      // Ağ/parse hatası bir YETKİ sorunu değil — kullanıcıya yanlışlıkla
+      // "yetkin yok" demeyelim, boş liste göster.
+      return (allowed: true, messages: const <GameChatMessage>[]);
     }
   }
 

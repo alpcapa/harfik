@@ -405,6 +405,45 @@ void main() {
           .writeAsBytesSync(data!.buffer.asUint8List());
     });
   });
+
+  testWidgets(
+      'katılımcı olmayan sohbet arşivini GÖREMEZ — "Yazışmaları görmeye '
+      'yetkiniz yok." (10 Ağustos 2026: games.messages girişli HERKESE '
+      'açıktı, bkz. Parça 51)', (tester) async {
+    final gw = FakeGamesGateway()
+      ..messagesByGame = {
+        'g-online': [
+          {
+            'name': 'Ironman',
+            'colorIndex': 0,
+            'message': 'Bu mesaj yetkisiz kullanıcıya SIZMAMALI',
+            'created_at': '2026-08-01T09:05:00.000Z',
+          },
+        ]
+      }
+      // Gerçek uçta bu kararı `game_chat_archive` RPC'si veriyor.
+      ..unauthorizedChats.add('g-online');
+    final repo = await newRepoForWidget(tester, gw);
+
+    await setPhoneViewSize(tester, const Size(420, 620));
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(
+          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      home: Scaffold(
+        body: GameChatHistoryModal(
+          games: repo,
+          gameId: 'g-online',
+          onlineGameId: 'og-1',
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Yazışmaları görmeye yetkiniz yok.'), findsOneWidget);
+    expect(find.textContaining('SIZMAMALI'), findsNothing);
+    // "Hiç mesaj yok" ile karıştırılmamalı — iki ayrı durum.
+    expect(find.text('Bu oyunda hiç mesaj gönderilmemiş.'), findsNothing);
+  });
 }
 
 /// `game_like_stats`'e HİÇ gitmemesi gerektiğini kanıtlayan sahte uç:

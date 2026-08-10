@@ -983,6 +983,71 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor —
        `mobile/TESTING.md` bölüm 1'e iki yeni madde eklendi.
 
+   - ✅ **Parça 51 — GİZLİLİK: bitmiş Canlı oyunun sohbet arşivi GİRİŞLİ
+     HERKESE açıktı (10 Ağustos 2026, `game_chat_archive_participants_only`
+     migration'ı + web `api.ts`/`GameChatHistoryModal.tsx`/`PrivacyModal.tsx`
+     + mobil `games_api.dart`/`game_chat_history_modal.dart`):** Kullanıcı
+     sordu: "k-lig'den kişiye tıklayıp skor kartına, oradan tüm oyunlarına
+     erişiliyor — sohbet geçmişleri de ulaşılabilir oluyor, değil mi?"
+     Haklıydı.
+     - **Önce ÖLÇÜLDÜ, tahmin edilmedi:** `games`in tek SELECT politikası
+       `games_select_authenticated` = `auth.uid() IS NOT NULL` — satır
+       sahipliğine hiç bakmıyor. Canlıda gerçek bir oyunla, o oyuna hiç
+       katılmamış bir hesabın kimliğiyle (`set local role authenticated` +
+       `request.jwt.claims`) sorgulandı: **5 mesajın tamamı gönderen
+       adlarıyla geldi.**
+     - **Arayüzde ikon gizlemek çözüm DEĞİL:** `anon` anahtarı JS paketinde
+       herkese açık, yani hesabı olan herkes doğrudan `select=messages`
+       çekebilirdi. Düzeltmenin veritabanında olması şarttı.
+     - **Postgres tuzağı (bu iş sırasında öğrenildi):** tablo düzeyinde
+       SELECT verilmişken `revoke select (messages)` ETKİSİZ. Tablo yetkisi
+       kaldırılıp kalan 21 kolon tek tek verilmek zorunda — **`games`e yeni
+       bir kolon eklenirse bu listeye de eklenmeli**, yoksa istemci onu hiç
+       okuyamaz (sessiz bir "kolon yok" hatası olarak görünür).
+     - **Yeni `game_chat_archive(p_game_id)` RPC'si** (security definer):
+       `is_online_game_participant` ya da `is_admin()` ise
+       `{allowed:true, messages:[…]}`, değilse `{allowed:false,
+       messages:[]}`. Var olmayan oyunda da yetkisizle AYNI cevap (varlık
+       sızdırmamak için). Yerel/YZ oyunlarda (`online_game_id is null`)
+       sohbet kavramı yok, `allowed:true` + boş dönüyor.
+     - **`allowed` içerikten AYRI taşınıyor** — "hiç mesaj yok" ile "görme
+       yetkin yok" iki farklı durum; yetkisiz kullanıcı artık boş bir
+       arşiv değil **"Yazışmaları görmeye yetkiniz yok."** görüyor
+       (kullanıcı isteği). Ağ/parse hatasında `allowed:true` dönülüyor —
+       geçici bir hata yüzünden kullanıcıya yanlışlıkla "yetkin yok"
+       dememek için.
+     - **`message_count` bilerek okunabilir kaldı** (kullanıcı kararı):
+       rozet fazladan bir istek atmadan çizilsin diye. Sızan bilgi yalnızca
+       "bu oyunda N mesaj vardı", içerik değil.
+     - **Etki taraması yapıldı, kırılan yok:** iki istemcide de `games`
+       üzerinde hiç `select('*')` yok (hepsi açık kolon listesi); `games`i
+       okuyan 13 fonksiyonun hiçbiri `messages` döndürmüyor; SECURITY
+       INVOKER olan üçü (`list_liked_games`, `game_like_stats`,
+       `toggle_game_like`) gövdelerinde bu kolona hiç dokunmuyor. Canlıda
+       doğrulandı: liste sorgusu, `board_snapshot`, `message_count` ve
+       `list_liked_games` düzeltmeden sonra da çalışıyor; katılımcı RPC ile
+       5 mesajı görüyor, katılımcı olmayan hem doğrudan okumada
+       `insufficient_privilege` alıyor hem RPC'den `allowed:false`.
+     - **Doküman senkronu (kuralın gereği):** kök `CLAUDE.md`'nin Faz 1
+       sohbet bölümündeki *"bu yeni alan aynı görünürlük seviyesinde
+       kalıyor, yeni bir gizlilik sorunu yaratmıyor"* cümlesi YANLIŞTI —
+       düzeltildi ve dersi yazıldı. `PrivacyModal`'ın "tüm kayıtlı
+       kullanıcılara açık" ifadesi de artık gerçeğe uymuyordu; "yalnızca o
+       oyunun katılımcılarına ve yönetici ekibine açıktır" olarak
+       değiştirildi, "Son güncelleme" 10 Ağustos 2026'ya çekildi.
+     - **Test — negatif eş doğrulamasıyla:** `game_likes_test.dart`'a
+       yetkisiz durumun mesajı GÖSTERMEDİĞİNİ ve "yetkiniz yok" metnini
+       gösterdiğini doğrulayan yeni bir test; `FakeGamesGateway`'e gerçek
+       uçtaki katılımcı kapısının karşılığı olan `unauthorizedChats`
+       eklendi. `_allowed = res.allowed` satırı `true`ya sabitlenince test
+       GERÇEKTEN düştü, geri konunca yeşile döndü.
+     - Doğrulama: web `npm run lint` + `npm run build` temiz; mobil
+       `flutter analyze` temiz, **tam takım 304/304 yeşil** (303'ten +1).
+     - **Ders: "bu satır zaten herkese açık, o hâlde yeni kolon da sorun
+       değil" akıl yürütmesi KOLON bazında yeniden sorulmalı** — aynı
+       satırda kamuya açık (skor, tahta) ve mahrem (yazışma) veri bir arada
+       olabilir.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

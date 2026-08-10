@@ -21,6 +21,9 @@ interface GameChatHistoryModalProps {
 
 export function GameChatHistoryModal({ gameId, onlineGameId, onClose }: GameChatHistoryModalProps) {
   const [messages, setMessages] = useState<GameChatMessage[] | null>(null);
+  // Yetki, içerikten AYRI taşınıyor: "hiç mesaj yok" ile "görme yetkin yok"
+  // farklı iki durum (bkz. `game_chat_archive` RPC'si, 10 Ağustos 2026).
+  const [allowed, setAllowed] = useState(true);
   // Renk indeksi bazlı — dondurulmuş mesajlar kimlik taşımadığından
   // (bkz. GameChatMessage) eşleme sunucuda yapılıp buraya yalnızca
   // "hangi renk işaretli" bilgisi geliyor.
@@ -31,8 +34,10 @@ export function GameChatHistoryModal({ gameId, onlineGameId, onClose }: GameChat
 
   useEffect(() => {
     let cancelled = false;
-    void fetchGameMessages(gameId).then((rows) => {
-      if (!cancelled) setMessages(rows);
+    void fetchGameMessages(gameId).then((res) => {
+      if (cancelled) return;
+      setAllowed(res.allowed);
+      setMessages(res.messages);
     });
     return () => {
       cancelled = true;
@@ -89,6 +94,12 @@ export function GameChatHistoryModal({ gameId, onlineGameId, onClose }: GameChat
     <Modal title="Sohbet Geçmişi" onClose={onClose}>
       {messages === null ? (
         <p className="text-muted text-xs font-mono text-center py-4">Yükleniyor…</p>
+      ) : !allowed ? (
+        // Rozet (message_count) herkese görünür kalıyor — bilerek, tek fazladan
+        // sorgudan kaçınmak için; içerik ise yalnızca katılımcıya/admin'e açık.
+        <p className="text-muted text-xs font-mono text-center py-4">
+          Yazışmaları görmeye yetkiniz yok.
+        </p>
       ) : (
         <div className="max-h-72 overflow-y-auto pr-1">
           <ChatThread messages={threadMessages} emptyText="Bu oyunda hiç mesaj gönderilmemiş." />

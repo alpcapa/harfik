@@ -55,6 +55,10 @@ class GameChatHistoryModal extends StatefulWidget {
 
 class _GameChatHistoryModalState extends State<GameChatHistoryModal> {
   List<GameChatMessage>? _messages;
+
+  /// Yetki İÇERİKTEN ayrı: "hiç mesaj yok" ile "görme yetkin yok" farklı iki
+  /// durum (bkz. `game_chat_archive` RPC'si, 10 Ağustos 2026).
+  bool _allowed = true;
   // Renk indeksi bazlı rozet kümeleri (kimlik istemciye hiç gelmez).
   Set<int> _mutedSeats = const {};
   Set<int> _reportedSeats = const {};
@@ -66,9 +70,12 @@ class _GameChatHistoryModalState extends State<GameChatHistoryModal> {
   }
 
   Future<void> _load() async {
-    final messages = await widget.games.messages(widget.gameId);
+    final res = await widget.games.messages(widget.gameId);
     if (!mounted) return;
-    setState(() => _messages = messages);
+    setState(() {
+      _allowed = res.allowed;
+      _messages = res.messages;
+    });
 
     final ogid = widget.onlineGameId;
     if (ogid == null) return;
@@ -94,47 +101,62 @@ class _GameChatHistoryModalState extends State<GameChatHistoryModal> {
                         fontFamily: 'SpaceMono', fontSize: 12, color: _muted)),
               ),
             )
-          : ConstrainedBox(
-              constraints: BoxConstraints(
-                  maxHeight: MediaQuery.sizeOf(context).height * 0.5),
-              child: SingleChildScrollView(
-                child: ChatThread(
-                  emptyText: 'Bu oyunda hiç mesaj gönderilmemiş.',
-                  // En yeni mesaj en ÜSTTE (`.reversed`) — `games.messages`
-                  // eskiden-yeniye dondurulmuş geliyor, `ChatThread` kendi
-                  // tarafında sıralama yapmıyor.
-                  //
-                  // **Kural: mesajlar HER YERDE en yeniden eskiye (9 Ağustos
-                  // 2026, kullanıcı isteği).** İstek daha önce üç kez
-                  // iletilmiş ama her seferinde yalnızca canlı sohbet
-                  // penceresine (`chat_modal.dart`) uygulanmış; arşiv
-                  // "döküm" sayılıp bilerek dışarıda bırakılmıştı — o gerekçe
-                  // kullanıcıdan gelmiyordu. Aynı gün web'in İKİ arşiv ekranı
-                  // (`GameChatHistoryModal`/`AdminChatTranscriptModal`) da
-                  // aynı yöne çevrildi; dördünden biri değişirse hepsi
-                  // değişmeli. Burada kaydırma eşleşmesi gerekmiyor:
-                  // `SingleChildScrollView` en üstte açılıyor, otomatik
-                  // kaydırma yok (canlı sohbette sıra ile kaydırma birlikte
-                  // değişmek ZORUNDA — bkz. chat_modal.dart).
-                  messages: [
-                    for (final m in messages.reversed)
-                      ChatThreadMessage(
-                        name: m.name,
-                        colorIndex: m.colorIndex,
-                        message: m.message,
-                        createdAt: m.createdAt,
-                        // Arşivde "kimin ekranı" kavramı yok — hepsi solda.
-                        mine: false,
-                        badge: _reportedSeats.contains(m.colorIndex)
-                            ? ChatBadge.reported
-                            : _mutedSeats.contains(m.colorIndex)
-                                ? ChatBadge.muted
-                                : null,
-                      ),
-                  ],
+          : !_allowed
+              // Rozet (message_count) herkese görünür kalıyor — bilerek, tek
+              // fazladan sorgudan kaçınmak için; içerik yalnızca
+              // katılımcıya/admin'e açık.
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Text('Yazışmaları görmeye yetkiniz yok.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontFamily: 'SpaceMono',
+                            fontSize: 12,
+                            color: _muted)),
+                  ),
+                )
+              : ConstrainedBox(
+                  constraints: BoxConstraints(
+                      maxHeight: MediaQuery.sizeOf(context).height * 0.5),
+                  child: SingleChildScrollView(
+                    child: ChatThread(
+                      emptyText: 'Bu oyunda hiç mesaj gönderilmemiş.',
+                      // En yeni mesaj en ÜSTTE (`.reversed`) — `games.messages`
+                      // eskiden-yeniye dondurulmuş geliyor, `ChatThread` kendi
+                      // tarafında sıralama yapmıyor.
+                      //
+                      // **Kural: mesajlar HER YERDE en yeniden eskiye (9 Ağustos
+                      // 2026, kullanıcı isteği).** İstek daha önce üç kez
+                      // iletilmiş ama her seferinde yalnızca canlı sohbet
+                      // penceresine (`chat_modal.dart`) uygulanmış; arşiv
+                      // "döküm" sayılıp bilerek dışarıda bırakılmıştı — o gerekçe
+                      // kullanıcıdan gelmiyordu. Aynı gün web'in İKİ arşiv ekranı
+                      // (`GameChatHistoryModal`/`AdminChatTranscriptModal`) da
+                      // aynı yöne çevrildi; dördünden biri değişirse hepsi
+                      // değişmeli. Burada kaydırma eşleşmesi gerekmiyor:
+                      // `SingleChildScrollView` en üstte açılıyor, otomatik
+                      // kaydırma yok (canlı sohbette sıra ile kaydırma birlikte
+                      // değişmek ZORUNDA — bkz. chat_modal.dart).
+                      messages: [
+                        for (final m in messages.reversed)
+                          ChatThreadMessage(
+                            name: m.name,
+                            colorIndex: m.colorIndex,
+                            message: m.message,
+                            createdAt: m.createdAt,
+                            // Arşivde "kimin ekranı" kavramı yok — hepsi solda.
+                            mine: false,
+                            badge: _reportedSeats.contains(m.colorIndex)
+                                ? ChatBadge.reported
+                                : _mutedSeats.contains(m.colorIndex)
+                                    ? ChatBadge.muted
+                                    : null,
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
     );
   }
 }
