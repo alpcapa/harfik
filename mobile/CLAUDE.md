@@ -21,6 +21,21 @@ Commit'ten önce, sırayla:
 1. **`git status --short` oku ve `mobile/` DIŞINDAKİ her dosyayı işaretle.**
    Bu parça web tarafına dokundu mu? Dokunduysa kök `CLAUDE.md` (+ gerekirse
    `README.md`) AYNI commit'te güncellenmeli — kök dosyanın kuralı bu.
+   **VE — 10 Ağustos 2026'da eklendi — doküman senkronu YETMEZ, değişikliği
+   `main`'e TESLİM et.** Bu madde uzun süre yalnızca dokümanı istedi; sonuç:
+   `src/` altında yapılan iki gerçek web düzeltmesi (SL→k-lig ve admin sohbet
+   dökümünün sıralaması) port dalında haftalarca mahsur kaldı, üretime hiç
+   çıkmadı, birini kullanıcı fark etti. Port dalı `main`'e merge EDİLMEDİĞİ
+   sürece buradaki hiçbir web değişikliği kullanıcıya ulaşmaz. Kullanıcıya
+   GÖRÜNEN bir web düzeltmesi yaptıysan aynı gün `main` tabanlı ayrı bir PR aç
+   (port altyapısını — `scripts/generate-*`, `random.ts` kancası,
+   `mobile-build.yml`, `package.json` girdileri — TAŞIMA, onlar port merge'iyle
+   gelmeli; `generate-*-paths.mjs`'in port sürümü Dart'a da yazdığından
+   `mobile/` olmayan bir `main`'de hata verir).
+   **Denetim komutu (şüphelendiğinde koş):**
+   `git diff --name-status origin/main..HEAD -- . ':!mobile'`
+   Ayrıntılı vaka kaydı: kök `CLAUDE.md` → "Port dalında mahsur kalan web
+   düzeltmeleri".
 2. **`mobile/CLAUDE.md`**: parça günlüğüne giriş (ne yapıldı, hangi web
    dosyasının portu, bilinçli eksikler, bulunan hatalar/dersler, doğrulama
    ve doğrulama SINIRI), "Klasör Yapısı" ağacına yeni dosyalar, "Sıradaki
