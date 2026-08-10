@@ -2876,6 +2876,13 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        değişti — `action_sheet.dart`'taki tek diğer `showModalBottomSheet`
        kullanımına bilerek dokunulmadı, o içerik kısa/sabit bir liste,
        aynı sınıf bir taşma riski taşımıyor).
+     - ⚠️ **BU DÜZELTME YALNIZCA SEMPTOMU KAPATTI — Parça 47 (10 Ağustos
+       2026) yapının kendisini değiştirdi:** web `WildcardModal.tsx`
+       alttan açılan bir sayfa DEĞİL, ortalanmış `Modal` kullanıyor.
+       Buradaki `isScrollControlled` yaması taşmayı durdurdu ama sheet
+       ekran genişliğini kapladığından taşlar iPad'de devleşmeye devam
+       etti; kullanıcı iki gün sonra "düzelmedi" diye bildirdi. Aşağıdaki
+       Parça 47'ye bak.
    - ✅ **Parça 21 — YZ düşünme gecikmesi (1100 ms) hiç port edilmemişti
      (8 Ağustos 2026, `game_controller.dart`):** FAZ A1 (Bölüm 1: Oyun)
      cihaz testinde kullanıcı, iPad Safari'de web derlemesini test ederken

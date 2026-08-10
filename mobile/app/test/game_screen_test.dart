@@ -231,14 +231,14 @@ void main() {
 
   testWidgets(
       'joker seçici dar (yatay mod benzeri) yükseklikte taşmıyor '
-      '(showModalBottomSheet varsayılanı sheet\'i ekranın %56\'sına '
-      'sabitliyordu, kullanıcı iPad yatay modda ekran görüntüsüyle buldu)',
+      '(Parça 20\'de bottom sheet\'in %56 sınırı kırpıyordu; Parça 47\'de '
+      'yapı KModal\'a geçti — bu kontrat İKİSİNDE de geçerli)',
       (tester) async {
     // Oyun ekranının KENDİ sorumluluğundaki (Parça 15-17) kaydırma/genişlik
     // davranışından bilerek izole — yalnızca showWildLetterSheet'in kendi
     // yükseklik/kaydırma sözleşmesini sınıyor. Geniş/kısa yüzey (iPad yatay
-    // moddaki dar kullanılabilir yükseklikle aynı sınıf): 26 harflik 6
-    // sütunlu ızgara + başlık, eski %56 sınırını dar bir yükseklikte aşar.
+    // moddaki dar kullanılabilir yükseklikle aynı sınıf): 29 harflik 6
+    // sütunlu ızgara + başlık kısa bir yükseklikte kabına sığmaz.
     await setPhoneViewSize(tester, const Size(800, 420));
     WildLetterChoice? result;
     await tester.pumpWidget(MaterialApp(
@@ -260,13 +260,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('JOKER HANGİ HARF OLSUN?'), findsOneWidget);
 
-    // `isScrollControlled:true` + `SingleChildScrollView` olmadan bu, dar
-    // yükseklikte klasik "RenderFlex overflowed" hatasını (sheet'in kendi
-    // ConstrainedBox'ı içindeki Column'un taşması) fırlatırdı — kesilen
+    // Kabın (eskiden sheet, şimdi KModal) kendi kaydırma alanı olmasaydı
+    // dar yükseklikte klasik "RenderFlex overflowed" fırlardı — kesilen
     // içerik görsel olarak sessiz kırpma gibi görünse de kök sebep budur.
     expect(tester.takeException(), isNull);
-    // Sheet artık kendi kaydırma alanına sahip; ızgaranın son harfi (Z)
-    // ağaçta gerçekten bulunabilir VE kaydırma katmanının içinde.
+    // KModal'ın gövdesi kaydırılabilir; ızgaranın son harfi (Z) ağaçta
+    // gerçekten bulunabilir VE kaydırma katmanının içinde.
     expect(find.byType(SingleChildScrollView), findsWidgets);
     // Kontur katmanı her taş harfini iki Text yapar (stroke+dolgu) — .first
     // ikisinden birinin var olduğunu doğrulamak için yeterli (bkz. joker
