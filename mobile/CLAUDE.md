@@ -1072,6 +1072,17 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - Doğrulama: web `npm run lint` + `npm run build` temiz; mobil
        `flutter analyze` temiz, **tam takım 305/305 yeşil** (303'ten +2 —
        biri içerik kapısı, biri rozet kapısı).
+     - **CANLIDA, İKİ YÖNLÜ doğrulandı (10 Ağustos 2026 akşamı, gerçek
+       hesapla):** yetkisiz kullanıcı başkasının oyununda rozeti HİÇ
+       görmüyor, kendi katıldığı oyunda rozet görünüp sohbet açılıyor.
+       İkinci yön şart: "yabancıda ikon yok" tek başına, rozet HERKES için
+       bozulsaydı da doğru çıkardı — iki durum dışarıdan aynı görünür.
+       (Kök CLAUDE.md'nin "aradığın davranışın YOKLUĞUNDA da geçen bir
+       kontrol bir şey kanıtlamaz" dersinin canlı örneği.) Ayrıca
+       production bundle'ı (`index-6EThUgtN.js`) doğrudan indirilip
+       `game_chat_archive`/`game_like_stats`/"Yazışmaları görmeye yetkiniz
+       yok." dizelerinin ve liste sorgusundan `message_count`'un
+       ÇIKARILDIĞININ orada olduğu teyit edildi.
      - **Ders: "bu satır zaten herkese açık, o hâlde yeni kolon da sorun
        değil" akıl yürütmesi KOLON bazında yeniden sorulmalı** — aynı
        satırda kamuya açık (skor, tahta) ve mahrem (yazışma) veri bir arada
