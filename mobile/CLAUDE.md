@@ -4664,6 +4664,46 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        açılmadı" hipotezi bu yüzden kesin DEĞİL; kesin olan tek şey ayna
        yazmasının o an başarısız olduğu ve eski kodun bunu sessizce
        yuttuğu. Teşhis satırı bir dahaki sefere bunu tahmine bırakmayacak.
+   - ✅ **Parça 46 — offline biten oyun "devam eden" olarak geri geliyordu:
+     yazmaların kalıcı kuyruğu vardı, SİLMELERİN yoktu (10 Ağustos 2026,
+     `app_database.dart` v4, `cloud_save_mirror_store.dart`,
+     `cloud_save_repo.dart`):** TESTING.md 8.6 koşulurken bulundu ve ben
+     bunu adımları verirken önceden tahmin etmiştim — kullanıcı doğruladı.
+     - **Mekanizma:** oyun bitince `CloudGameSession` satırı siliyor;
+       uçak modunda `gateway.delete` fırlıyor, `catch` yalnızca logluyordu.
+       Ayna ve önbellek temizlendiği için oyun offline'da listeden
+       kayboluyor, ama sunucudaki BİTMEMİŞ eski kopya duruyor — ağ dönünce
+       `list()` onu canlı bir oyun sanıp geri getiriyordu. `list()`'in
+       bitmiş satırları temizleyen dalı da devreye giremiyor, çünkü
+       sunucudaki state hiç "bitmiş" hâle gelmemişti (o yazma da offline'da
+       düşmüştü).
+     - **Düzeltme:** yeni `pending_cloud_deletes` tablosu (şema v4) +
+       `CloudSaveDeleteQueue`. `delete(id, userId:)` başarısız olursa id
+       kuyruğa yazılıyor, `flushMirrored` yazmalardan SONRA / listelemeden
+       ÖNCE bekleyen silmeleri tekrar deniyor, başarınca kuyruktan düşüyor.
+       Sıra bilinçli: silme aynayı zaten temizlediğinden yazma/silme
+       çakışması yok, ama liste birazdan silinecek satırı bir kez daha
+       göstermemeli.
+     - **`user_id` neden kuyrukta:** başka bir hesap açıkken onun adına
+       silme denemek RLS'te sessiz no-op olur ve kuyruk sonsuza dek dolu
+       kalırdı.
+     - **Asıl ders — SAHTE UÇ, gerçek ucun HER hata yolunu taklit etmeli:**
+       `FakeGateway.delete` `offline` bayrağını YOK SAYIYORDU (list ve
+       upsert sayıyordu). Yani "uçak modunda silme başarısız olur" senaryosu
+       testlerde hiç oluşmuyordu ve bu hata sınıfı yapısal olarak
+       görünmezdi — 25 test yeşilken bile. Sahtenin eksik bir hata yolu,
+       o yol hakkında testleri sessizce anlamsız kılıyor. Yeni bir gateway
+       metodu eklerken "bu gerçek uçta nasıl patlar?" sorusu sahteye de
+       sorulmalı.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 298/298 yeşil**
+       (296'dan +2). Negatif eş: kuyruğa alma satırı kapatılınca iki test de
+       düştü — ikincisi kullanıcının gördüğü hatayı birebir üretti
+       (`Expected: empty / Actual: [Instance of 'CloudSave']`).
+     - **Temizlik:** testin sunucuda bıraktığı artık satır (`74d38003…`,
+       bitmiş oyunun bitmemiş kopyası) elle silindi.
+     - **Web'de de aynı gedik var** (offline biten oyunun satırı silinemezse
+       unutuluyor) — kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesine
+       eklendi.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

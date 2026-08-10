@@ -71,6 +71,12 @@ class FakeGateway implements CloudSaveGateway {
   @override
   Future<void> delete(String id) async {
     if (slowDelete) await Future<void>.delayed(const Duration(milliseconds: 20));
+    // Parça 46'ya kadar burada `offline` kontrolü YOKTU — yani "uçak
+    // modunda silme başarısız olur" senaryosu testlerde hiç oluşmuyordu ve
+    // bütün bir hata sınıfı (silinemeyen satırın listeye geri gelmesi)
+    // görünmezdi. Sahte uçlar gerçek ucun HER hata yolunu taklit etmeli;
+    // etmiyorsa test yeşil kalır ama o yol hakkında hiçbir şey kanıtlamaz.
+    if (offline) throw Exception('ağ yok');
     rows.remove(id);
   }
 
@@ -361,7 +367,8 @@ void main() {
       CloudSaveRepo(gw,
           nowMs: () => clock,
           mirrorStore: Future.value(storage.cloudMirror),
-          cacheStore: Future.value(storage.cloudCache)),
+          cacheStore: Future.value(storage.cloudCache),
+          deleteQueue: Future.value(storage.cloudDeletes)),
       gw,
       storage
     );
@@ -593,5 +600,60 @@ void main() {
     expect(await repo.upsert('id-1', 'user-1', newPlayState()), isFalse);
     // Offline + depo yok → gösterilecek hiçbir şey yok, ama fırlamamalı.
     expect(await repo.list(userId: 'user-1'), isNull);
+  });
+
+  // ——— Parça 46: offline biten oyunun satırı sunucuda kalıyordu. Silme
+  // uçak modunda başarısız oluyor ve "bu satır silinmeli" bilgisi hiçbir
+  // yerde durmuyordu; ağ dönünce sunucudaki BİTMEMİŞ eski kopya listeye
+  // "devam eden oyun" olarak geri geliyordu (kullanıcı 8.6'da gördü).
+
+  test('offline silme kuyruğa girer ve ağ dönünce gerçekten silinir',
+      () async {
+    final (repo, gw, storage) = await newMirroredRepo();
+    expect(await repo.upsert('id-1', 'user-1', newPlayState()), isTrue);
+    expect((await repo.list(userId: 'user-1'))!.saves, hasLength(1));
+
+    gw.offline = true;
+    await repo.delete('id-1', userId: 'user-1');
+    expect(gw.rows.containsKey('id-1'), isTrue,
+        reason: 'offline: sunucudan silinemedi');
+    expect(await storage.cloudDeletes.pending('user-1'), ['id-1'],
+        reason: 'silme HATIRLANMALI');
+
+    gw.offline = false;
+    await repo.flushMirrored('user-1');
+    expect(gw.rows.containsKey('id-1'), isFalse,
+        reason: 'ağ dönünce silme tekrar denenmeli');
+    expect(await storage.cloudDeletes.pending('user-1'), isEmpty);
+    expect((await repo.list(userId: 'user-1'))!.saves, isEmpty,
+        reason: 'bitmiş oyun listeye GERİ DÖNMEMELİ');
+    await storage.db.close();
+  });
+
+  test('offline biten oyun: oturum satırı siler, ağ dönünce listede yok',
+      () async {
+    final (repo, gw, storage) = await newMirroredRepo();
+    final controller = newController();
+    controller.restore(newPlayState());
+    final session = CloudGameSession(controller, repo, 'user-1',
+        debounce: const Duration(milliseconds: 1));
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    await repo.idle;
+    expect(gw.rows, hasLength(1));
+
+    // Uçak modu: oyun biter, silme başarısız olur.
+    gw.offline = true;
+    controller.restore(controller.state.copyWith(isGameOver: true));
+    await session.end();
+    await repo.idle;
+    expect(gw.rows, hasLength(1), reason: 'offline: sunucuda hâlâ duruyor');
+
+    gw.offline = false;
+    await repo.flushMirrored('user-1');
+    final list = await repo.list(userId: 'user-1');
+    expect(list!.saves, isEmpty,
+        reason: 'bitmiş oyun "devam eden" olarak geri gelmemeli');
+    expect(gw.rows, isEmpty);
+    await storage.db.close();
   });
 }

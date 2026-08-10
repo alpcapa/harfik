@@ -117,7 +117,8 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
         supabase != null
             ? CloudSaveRepo(SupabaseCloudSaveGateway(supabase),
                 mirrorStore: storage.then((s) => s.cloudMirror),
-                cacheStore: storage.then((s) => s.cloudCache))
+                cacheStore: storage.then((s) => s.cloudCache),
+                deleteQueue: storage.then((s) => s.cloudDeletes))
             : null,
     games: supabase != null
         ? storage.then((s) => GamesRepo(SupabaseGamesGateway(supabase), s.queue))

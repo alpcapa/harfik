@@ -166,3 +166,36 @@ class CloudSaveCacheStore {
     await db.delete('cloud_save_cache', where: 'id = ?', whereArgs: [id]);
   }
 }
+
+
+/// Sunucuda silinmeyi bekleyen bulut kayıtları (Parça 46). Yalnızca id
+/// taşır — silinecek satırın içeriğini saklamanın anlamı yok; `user_id`
+/// kuyruğu hesaba göre kapsamak için (başka bir hesap açıkken onun adına
+/// silme denemek RLS'te sessiz no-op olur ve kuyruk sonsuza dek dolu
+/// kalırdı).
+class CloudSaveDeleteQueue {
+  final Database db;
+  final int Function() nowMs;
+  CloudSaveDeleteQueue(this.db, this.nowMs);
+
+  Future<void> add(String id, String userId) async {
+    await db.insert(
+      'pending_cloud_deletes',
+      {'id': id, 'user_id': userId, 'queued_at': nowMs()},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> remove(String id) async {
+    await db.delete('pending_cloud_deletes', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<String>> pending(String userId) async {
+    final rows = await db.query('pending_cloud_deletes',
+        columns: ['id'],
+        where: 'user_id = ?',
+        whereArgs: [userId],
+        orderBy: 'queued_at');
+    return [for (final r in rows) r['id'] as String];
+  }
+}

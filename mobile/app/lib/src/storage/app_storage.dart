@@ -21,6 +21,9 @@ class AppStorage {
 
   /// Son başarılı bulut listesinin gösterim kopyası (Parça 43).
   final CloudSaveCacheStore cloudCache;
+
+  /// Sunucuda silinmeyi bekleyen bulut kayıtları (Parça 46).
+  final CloudSaveDeleteQueue cloudDeletes;
   final PendingQueueStore queue;
   final PendingEventStore events;
   final ChatReadStore chatRead;
@@ -31,6 +34,7 @@ class AppStorage {
     required this.saves,
     required this.cloudMirror,
     required this.cloudCache,
+    required this.cloudDeletes,
     required this.queue,
     required this.events,
     required this.chatRead,
@@ -51,6 +55,7 @@ class AppStorage {
       saves: LocalSaveStore(db, now),
       cloudMirror: CloudSaveMirrorStore(db, now),
       cloudCache: CloudSaveCacheStore(db, now),
+      cloudDeletes: CloudSaveDeleteQueue(db, now),
       queue: PendingQueueStore(db, now),
       events: PendingEventStore(db, now),
       chatRead: ChatReadStore(db),

@@ -681,6 +681,18 @@ uygulanınca buradan silinip ilgili bölümün kendi tarihli notuna taşınmalı
     sayılan oyunun aynası da silinmeli, yoksa sonraki açılışta "yalnızca
     aynada var" sanılıp oyun DİRİLİR; (c) sunucunun hiç görmediği (tamamen
     offline açılmış) oyunlar da 7 günde cezalandırılmalı.
+  - **ÜÇÜNCÜ PARÇA — offline BİTEN oyunun satırı silinemezse unutuluyor
+    (10 Ağustos 2026, mobil Parça 46'da bulundu):** Oyun bitince
+    `App.tsx`'in autosave effect'i `deleteLocalGameSave` çağırıyor; ağ
+    yoksa bu düşüyor ve "bu satır silinmeli" bilgisi hiçbir yerde
+    kalmıyor. Sunucudaki BİTMEMİŞ eski kopya duruyor, bir sonraki
+    `refreshCloudSaves` onu "devam eden oyun" olarak geri getiriyor —
+    üstelik `refreshCloudSaves`'in bitmiş satırları temizleyen dalı da
+    devreye giremiyor, çünkü sunucudaki state hiç bitmiş hâle gelmemiş
+    oluyor. Mobildeki çözüm: silinemeyen id'yi kalıcı bir kuyruğa yaz,
+    sonraki senkronda (yazmalardan SONRA, listelemeden ÖNCE) tekrar dene.
+    Kuyruk hesaba göre kapsanmalı — başka bir hesap açıkken onun adına
+    silme denemek RLS'te sessiz no-op olur ve kuyruk hiç boşalmaz.
   - Mobil tarafta dördü ayna davranışı + ikisi bu gedikler için olmak üzere
     6 test var (`mobile/app/test/cloud_save_test.dart`), hepsi negatif eşle
     doğrulandı — web sürümü yazılırken oradan birebir uyarlanabilir.

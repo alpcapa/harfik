@@ -160,8 +160,33 @@ class CloudSaveRepo {
   Future<CloudSaveCacheStore?> get _cache async =>
       cacheStore == null ? null : await cacheStore;
 
+  /// Sunucuda silinmeyi bekleyen satırlar (Parça 46) — offline'da başarısız
+  /// olan silme burada hatırlanır ve bir sonraki senkronda tekrar denenir.
+  /// null ise davranış eskisi gibi: başarısız silme UNUTULUR ve sunucudaki
+  /// bitmemiş kopya listeye geri gelir.
+  final Future<CloudSaveDeleteQueue>? deleteQueue;
+
+  Future<CloudSaveDeleteQueue?> get _deletes async =>
+      deleteQueue == null ? null : await deleteQueue;
+
+  Future<bool> _tryDeletes(
+      Future<void> Function(CloudSaveDeleteQueue) op) async {
+    try {
+      final q = await _deletes;
+      if (q == null) return false;
+      await op(q);
+      return true;
+    } catch (e) {
+      debugPrint('[Kelimeki] silme kuyruğu erişilemedi: $e');
+      return false;
+    }
+  }
+
   CloudSaveRepo(this.gateway,
-      {int Function()? nowMs, this.mirrorStore, this.cacheStore})
+      {int Function()? nowMs,
+      this.mirrorStore,
+      this.cacheStore,
+      this.deleteQueue})
       : _nowMs = nowMs ?? (() => DateTime.now().millisecondsSinceEpoch);
 
   /// Depolama katmanına yapılan HER erişim buradan geçer. Gerekçe (10 Ağustos
@@ -256,7 +281,7 @@ class CloudSaveRepo {
         continue;
       }
       if (state.phase != GamePhase.play || state.isGameOver) {
-        unawaited(delete(id));
+        unawaited(delete(id, userId: userId));
         continue;
       }
       var updatedAtMs = DateTime.parse(updatedAt).millisecondsSinceEpoch;
@@ -428,6 +453,14 @@ class CloudSaveRepo {
       if (p.savedAtMs <= cutoffMs) continue;
       if (await upsert(p.id, userId, p.state)) sent++;
     }
+    // Bekleyen SİLMELER de burada denenir (Parça 46) — yazmalardan SONRA,
+    // çünkü silme aynayı zaten temizliyor; listeden ÖNCE, çünkü aksi halde
+    // liste birazdan silinecek satırı bir kez daha gösterirdi.
+    final ids = <String>[];
+    await _tryDeletes((q) async => ids.addAll(await q.pending(userId)));
+    for (final id in ids) {
+      await delete(id, userId: userId);
+    }
     return sent;
   }
 
@@ -441,7 +474,10 @@ class CloudSaveRepo {
     return n;
   }
 
-  Future<void> delete(String id) {
+  /// [userId] verilirse, silme başarısız olduğunda kalıcı kuyruğa yazılır ve
+  /// bir sonraki senkronda tekrar denenir (Parça 46). Verilmezse eski
+  /// davranış: başarısız silme unutulur.
+  Future<void> delete(String id, {String? userId}) {
     return _queue.enqueue(() async {
       // Ayna her durumda gider: satır silinmek isteniyorsa bekleyen bir
       // yazmanın onu sonradan diriltmesi istenmiyor. Önbellek de (Parça 43)
@@ -452,8 +488,12 @@ class CloudSaveRepo {
       await _tryCache((c) => c.remove(id));
       try {
         await gateway.delete(id);
+        await _tryDeletes((q) => q.remove(id));
       } catch (e) {
-        debugPrint('[Kelimeki] cloud save silinemedi: $e');
+        debugPrint('[Kelimeki] cloud save silinemedi, kuyruğa alındı: $e');
+        // Silinemedi: HATIRLA. Aksi halde sunucudaki (bitmemiş) eski kopya
+        // bir sonraki listede "devam eden oyun" olarak geri geliyordu.
+        if (userId != null) await _tryDeletes((q) => q.add(id, userId));
       }
     });
   }
@@ -553,7 +593,7 @@ class CloudGameSession {
       final id = _saveId;
       if (id != null) {
         _saveId = null;
-        unawaited(repo.delete(id));
+        unawaited(repo.delete(id, userId: userId));
       }
     }
   }
@@ -591,7 +631,7 @@ class CloudGameSession {
       _pending = null;
       final id = _saveId!;
       _saveId = null;
-      unawaited(repo.delete(id));
+      unawaited(repo.delete(id, userId: userId));
     } else if (hadPendingWrite) {
       _flush(); // en güncel state'i aynı satıra hemen yaz (üstteki not)
     }

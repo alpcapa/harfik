@@ -18,7 +18,7 @@ import 'web_db.dart';
 
 /// DB şema sürümü — tablo/kolon değişikliklerinde artır ve `_migrations`e
 /// bir adım ekle. Payload sürümünden (kSavePayloadVersion) AYRI bir kavram.
-const int kDbSchemaVersion = 3;
+const int kDbSchemaVersion = 4;
 
 Future<void> _createV1(Database db) async {
   await db.execute('''
@@ -108,11 +108,30 @@ Future<void> _createCloudSaveCache(Database db) async {
       'on cloud_save_cache(user_id, updated_at)');
 }
 
+/// Sunucuda SİLİNMESİ gereken ama silinemeyen (offline/ağ hatası) bulut
+/// kayıtlarının kuyruğu — Parça 46. Yazmalar için kalıcı bir kuyruk
+/// (`pending_cloud_saves`) baştan vardı, SİLMELER için yoktu: oyun offline
+/// bitince oturum satırı silmeye çalışıyor, başarısız oluyor ve "bu satır
+/// silinmeli" bilgisi hiçbir yerde kalmıyordu. Ağ dönünce sunucudaki
+/// bitmemiş eski kopya listeye "devam eden oyun" olarak geri geliyordu
+/// (kullanıcı 10 Ağustos 2026'da TESTING.md 8.6'yı koşarken gördü).
+Future<void> _createPendingCloudDeletes(Database db) async {
+  await db.execute('''
+    create table pending_cloud_deletes(
+      id text primary key,
+      user_id text not null,
+      queued_at integer not null
+    )''');
+  await db.execute('create index idx_pending_cloud_deletes_user '
+      'on pending_cloud_deletes(user_id, queued_at)');
+}
+
 /// Sürüm N-1 → N yükseltme adımları — her yeni sürüm buraya YALNIZCA
 /// ekleyici (yıkıcı olmayan) bir adım koyar.
 final Map<int, Future<void> Function(Database)> _migrations = {
   2: _createPendingCloudSaves,
   3: _createCloudSaveCache,
+  4: _createPendingCloudDeletes,
 };
 
 Future<Database> openAppDatabase({
