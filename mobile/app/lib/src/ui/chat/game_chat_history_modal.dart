@@ -102,9 +102,10 @@ class _GameChatHistoryModalState extends State<GameChatHistoryModal> {
               ),
             )
           : !_allowed
-              // Rozet (message_count) herkese görünür kalıyor — bilerek, tek
-              // fazladan sorgudan kaçınmak için; içerik yalnızca
-              // katılımcıya/admin'e açık.
+              // Rozet (message_count) de 10 Ağustos 2026'dan beri katılımcı
+              // kapılı (`game_like_stats` 0 döner), yani bu dal pratikte
+              // yalnızca yarışta görünür — yine de duruyor, "hiç mesaj yok"
+              // ile karıştırılmamalı.
               ? const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
                   child: Center(

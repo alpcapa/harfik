@@ -139,6 +139,9 @@ class FakeGamesGateway implements GamesGateway {
     return filtered.skip(offset).take(limit).toList();
   }
 
+  /// Sohbet sayacı da buradan gelir (gerçek uçta `game_like_stats`
+  /// katılımcı/admin değilse 0 döner) — `unauthorizedChats`'teki oyunlar o
+  /// davranışı taklit eder.
   @override
   Future<List<Map<String, Object?>>> likeStats(List<String> gameIds) async => [
         for (final id in gameIds)
@@ -146,8 +149,14 @@ class FakeGamesGateway implements GamesGateway {
             'game_id': id,
             'like_count': likeCounts[id] ?? 0,
             'liked_by_me': likedByMe.contains(id),
+            'message_count': unauthorizedChats.contains(id)
+                ? 0
+                : (messagesByGame[id]?.length ?? chatCounts[id] ?? 0),
           }
       ];
+
+  /// Mesaj gövdesi verilmeden yalnızca sayaç kurmak için (rozet testleri).
+  final chatCounts = <String, int>{};
 
   @override
   Future<bool> toggleLike(String gameId) async {

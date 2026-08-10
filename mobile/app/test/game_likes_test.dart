@@ -444,6 +444,33 @@ void main() {
     // "Hiç mesaj yok" ile karıştırılmamalı — iki ayrı durum.
     expect(find.text('Bu oyunda hiç mesaj gönderilmemiş.'), findsNothing);
   });
+
+  testWidgets(
+      'yetkisiz oyunda sohbet ROZETİ de çıkmaz, yetkilide çıkar '
+      '(sayaç artık game_like_stats kapısından geliyor)', (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [
+        // Katılımcı olduğum oyun: sayaç gelir, rozet çıkar.
+        gameRow(id: 'g-mine', playerCount: 2, onlineGameId: 'og-1'),
+        // Katılımcı OLMADIĞIM oyun (Favoriler'den açılmış olabilir):
+        // sunucu message_count'u 0 döndürür, rozet hiç çizilmez.
+        gameRow(id: 'g-other', playerCount: 2, onlineGameId: 'og-2'),
+      ]
+      ..chatCounts['g-mine'] = 5
+      ..chatCounts['g-other'] = 7
+      ..unauthorizedChats.add('g-other');
+    final repo = await newRepoForWidget(tester, gw);
+    await pumpHistory(tester, repo);
+
+    expect(
+        tester
+            .widget<Text>(find.descendant(
+                of: find.byKey(const ValueKey('chat-count-g-mine')),
+                matching: find.byType(Text)))
+            .data,
+        '5');
+    expect(find.byKey(const ValueKey('chat-count-g-other')), findsNothing);
+  });
 }
 
 /// `game_like_stats`'e HİÇ gitmemesi gerektiğini kanıtlayan sahte uç:

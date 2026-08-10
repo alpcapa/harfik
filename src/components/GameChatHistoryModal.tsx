@@ -95,8 +95,10 @@ export function GameChatHistoryModal({ gameId, onlineGameId, onClose }: GameChat
       {messages === null ? (
         <p className="text-muted text-xs font-mono text-center py-4">Yükleniyor…</p>
       ) : !allowed ? (
-        // Rozet (message_count) herkese görünür kalıyor — bilerek, tek fazladan
-        // sorgudan kaçınmak için; içerik ise yalnızca katılımcıya/admin'e açık.
+        // Rozet (message_count) da 10 Ağustos 2026'dan beri katılımcı kapılı
+        // (`game_like_stats` 0 döner), yani bu dal pratikte yalnızca yarışta
+        // görünür: liste çekildikten SONRA katılımcılıktan çıkılması gibi.
+        // Yine de duruyor — "hiç mesaj yok" ile karıştırılmamalı.
         <p className="text-muted text-xs font-mono text-center py-4">
           Yazışmaları görmeye yetkiniz yok.
         </p>

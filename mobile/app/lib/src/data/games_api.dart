@@ -101,7 +101,13 @@ class GameHistoryEntry {
   /// önceki kayıtlarda boş (çağıran yedek satır üretir, web fallbackPlayers).
   final List<GamePlayerSnapshot> players;
 
-  /// Bu oyunda kaç sohbet mesajı donduruldu (`games.message_count`, sunucuda
+  /// Bu oyunda kaç sohbet mesajı donduruldu. **10 Ağustos 2026'dan beri
+  /// `games.message_count` kolonu istemci rollerinden KALDIRILDI** (bkz.
+  /// `chat_count_participants_only`): "X ile Y şu oyunda N mesajlaştı" da bir
+  /// üstveri ve rozet zaten yalnızca katılımcının açabildiği bir kontroldü.
+  /// Değer artık `game_like_stats` toplu RPC'sinden geliyor ve
+  /// katılımcı/admin değilsen 0 dönüyor → rozet hiç çizilmez. (Eski not:
+  /// `games.message_count`, sunucuda
   /// üretilen sütun). >0 ise kartta sohbet rozeti çıkar. Yerel/YZ oyunlarda
   /// her zaman 0 — Oyun İçi Mesajlaşma yalnızca Canlı oyunlarda var.
   final int messageCount;
@@ -134,7 +140,9 @@ class GameHistoryEntry {
   /// birleştirmesi hem kalp dokunuşundaki İYİMSER güncelleme (ve hatada
   /// geri alma) bunu kullanır.
   GameHistoryEntry withLikes(
-          {required bool likedByMe, required int likeCount}) =>
+          {required bool likedByMe,
+          required int likeCount,
+          int? messageCount}) =>
       GameHistoryEntry(
         id: id,
         userId: userId,
@@ -146,7 +154,7 @@ class GameHistoryEntry {
         surrendered: surrendered,
         onlineGameId: onlineGameId,
         players: players,
-        messageCount: messageCount,
+        messageCount: messageCount ?? this.messageCount,
         likedByMe: likedByMe,
         likeCount: likeCount,
       );
@@ -228,7 +236,9 @@ abstract class GamesGateway {
   });
 
   /// Bir sayfadaki tüm oyunlar için toplam beğeni sayısı + çağıranın kendi
-  /// beğeni durumu — TEK sorgu (`game_like_stats`).
+  /// beğeni durumu + katılımcı kapılı sohbet sayacı — TEK sorgu
+  /// (`game_like_stats`; adı dar kalıyor ama kartın TÜM rozetlerini besliyor,
+  /// bkz. `chat_count_participants_only` migration'ının gerekçesi).
   Future<List<Map<String, Object?>>> likeStats(List<String> gameIds);
 
   /// Beğeniyi tersine çevirir (`toggle_game_like`). Dönüş: yeni durum.
@@ -313,7 +323,7 @@ class SupabaseGamesGateway implements GamesGateway {
   /// GameHistoryEntry).
   static const _listCols =
       'id, user_id, created_at, player_count, players, player_score, '
-      'ai_score, rank, surrendered, online_game_id, message_count';
+      'ai_score, rank, surrendered, online_game_id';
 
   @override
   Future<List<Map<String, Object?>>> listGames({
@@ -598,11 +608,12 @@ class GamesRepo {
     if (games.isEmpty || gateway.currentUserId == null) return games;
     try {
       final rows = await gateway.likeStats([for (final g in games) g.id]);
-      final byId = <String, ({int count, bool mine})>{};
+      final byId = <String, ({int count, bool mine, int msgs})>{};
       for (final r in rows) {
         byId[r['game_id'] as String] = (
           count: (r['like_count'] as num?)?.toInt() ?? 0,
           mine: r['liked_by_me'] == true,
+          msgs: (r['message_count'] as num?)?.toInt() ?? 0,
         );
       }
       return [
@@ -610,6 +621,7 @@ class GamesRepo {
           g.withLikes(
             likedByMe: byId[g.id]?.mine ?? false,
             likeCount: byId[g.id]?.count ?? 0,
+            messageCount: byId[g.id]?.msgs ?? 0,
           )
       ];
     } catch (e) {

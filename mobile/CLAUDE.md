@@ -1016,9 +1016,37 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        (kullanıcı isteği). Ağ/parse hatasında `allowed:true` dönülüyor —
        geçici bir hata yüzünden kullanıcıya yanlışlıkla "yetkin yok"
        dememek için.
-     - **`message_count` bilerek okunabilir kaldı** (kullanıcı kararı):
-       rozet fazladan bir istek atmadan çizilsin diye. Sızan bilgi yalnızca
-       "bu oyunda N mesaj vardı", içerik değil.
+     - **`message_count` de AYNI GÜN kapatıldı (ikinci yarı,
+       `chat_count_participants_only` migration'ı):** İlk sürümde sayaç
+       bilerek okunabilir bırakılmıştı ("rozet fazladan istek atmadan
+       çizilsin; sızan bilgi yalnızca N, içerik değil"). Kullanıcı bunu
+       yeniden değerlendirip *"sadece yetkisi olanlara gözüksün"* dedi —
+       haklı: "X ile Y şu oyunda N kez mesajlaştı" da bir üstveri ve rozet
+       zaten AÇILAMAYAN bir kontroldü (dokununca "yetkiniz yok").
+       - **Maliyet sıfıra yakın, çünkü liste zaten sayfa başına TEK toplu
+         RPC çağırıyor:** `game_like_stats(p_game_ids)`. Sayaç oraya
+         eklendi — EK BİR GİDİŞ-DÖNÜŞ YOK. Kolon grant listesinden düştü
+         (21 → 20), `fetchMyGames`/`GamesRepo.history` artık sayacı
+         satırdan DEĞİL bu RPC'den okuyor.
+       - **Fonksiyon SECURITY DEFINER olmak ZORUNDA kaldı:** kolon istemci
+         rollerinden kalkınca INVOKER bir fonksiyon onu okuyamaz. Definer'da
+         RLS bypass edildiğinden misafirin (uid null) hiçbir satır alamaması
+         davranışı `auth.uid() is not null` ile ELLE korundu. Sayaç
+         `is_admin() OR is_online_game_participant(...)` değilse 0; yerel
+         oyunlarda (`online_game_id is null`) zaten 0.
+       - **`list_liked_games` dönüşünden `message_count` çıkarıldı** —
+         sayaç iki sekmede de tek kaynaktan geliyor.
+       - **Ad BİLEREK değişmedi:** `game_like_stats` artık kartın tüm
+         rozetlerini besliyor, adı dar kalıyor; ama canlıdaki web bu adı
+         çağırıyor — yeniden adlandırmak deploy'a kadar beğenileri de
+         kırardı. Yeni kolon eklemek eski istemciyi etkilemiyor (fazladan
+         alanı yok sayıyor).
+       - **Test:** yetkisiz oyunun kartında rozetin HİÇ çizilmediğini,
+         yetkilide sayının göründüğünü doğrulayan ikinci bir test;
+         `FakeGamesGateway.likeStats` artık `unauthorizedChats` kapısını da
+         taklit ediyor (sahte uç gerçek ucun HER kararını taklit etmeli —
+         Parça 46'nın dersi). Kapı sahteden kaldırılınca test GERÇEKTEN
+         düştü, geri konunca yeşile döndü.
      - **Etki taraması yapıldı, kırılan yok:** iki istemcide de `games`
        üzerinde hiç `select('*')` yok (hepsi açık kolon listesi); `games`i
        okuyan 13 fonksiyonun hiçbiri `messages` döndürmüyor; SECURITY
@@ -1042,7 +1070,8 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        eklendi. `_allowed = res.allowed` satırı `true`ya sabitlenince test
        GERÇEKTEN düştü, geri konunca yeşile döndü.
      - Doğrulama: web `npm run lint` + `npm run build` temiz; mobil
-       `flutter analyze` temiz, **tam takım 304/304 yeşil** (303'ten +1).
+       `flutter analyze` temiz, **tam takım 305/305 yeşil** (303'ten +2 —
+       biri içerik kapısı, biri rozet kapısı).
      - **Ders: "bu satır zaten herkese açık, o hâlde yeni kolon da sorun
        değil" akıl yürütmesi KOLON bazında yeniden sorulmalı** — aynı
        satırda kamuya açık (skor, tahta) ve mahrem (yazışma) veri bir arada

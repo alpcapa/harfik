@@ -375,6 +375,13 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       kadar ters duruyordu, bkz. Parça 36). Kural her yerde aynı: canlı
       sohbet penceresi, bu arşiv ve web'in admin dökümü — üçü de en
       yeniden eskiye.
+- [ ] **Sohbet gizliliği (10 Ağustos 2026, Parça 51).** k-lig → sana ait
+      OLMAYAN bir oyuncuya dokun → skor kartı → "Tüm Oyunlar". Onun
+      **katılmadığın** bir Canlı oyununun kartında konuşma balonu rozeti
+      **HİÇ ÇIKMAMALI** (sayaç da içerik de yalnızca katılımcıya/admin'e
+      açık). Kendi katıldığın Canlı oyunlarda rozet + sayı normal
+      görünmeli. Aynı hesapla web'de de kontrol et — iki istemci aynı
+      RPC'yi (`game_like_stats`) çağırıyor, ayrışmamalı.
 
 ## 6. Paylaşma
 
