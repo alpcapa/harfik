@@ -116,6 +116,12 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   /// bomboş bir sonraki hesaba taşınır).
   String? _lastAuthUserIdForLiveViewReset;
 
+  /// Teşhis satırı için: depolama katmanı gerçekten açıldı mı ve sunucuya
+  /// itilmeyi bekleyen kaç ayna var (10 Ağustos 2026 — depo açılamadığında
+  /// offline hamleler sessizce kayboluyordu, cihazda görünür bir iz yoktu).
+  String _diagStorage = 'depo…';
+  int _diagPendingMirrors = 0;
+
   LocalGameRepo? _repo;
   GamesRepo? _games;
   bool _saveChecked = false;
@@ -162,12 +168,19 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     }));
     if (storage != null) {
       storage.then((s) async {
+        if (mounted) setState(() => _diagStorage = 'depo ok');
         final repo = LocalGameRepo(s);
         _repo = repo;
         await _refreshSaveStatus(); // load süresi dolanı olaya çevirir
         await _sweepLocalAbandoned(); // web'in Setup süpürme refleksi
         unawaited(_syncCloud()); // girişliyse migrasyon + liste + flush
         unawaited(_processInvites()); // kuyruklanmış davet token'ları
+      }).catchError((Object e) {
+        // Depo AÇILAMADI: kalıcılık yok. Sessiz kalmak, kullanıcının
+        // hamlelerini kaybettiğini fark etmemesi demek — teşhis satırında
+        // görünür kıl.
+        debugPrint('[Kelimeki] depolama açılamadı: $e');
+        if (mounted) setState(() => _diagStorage = 'DEPO YOK');
       });
     } else {
       _saveChecked = true; // depo yok (test ortamı) — kalıcılıksız çalış
@@ -409,7 +422,15 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     // (Parça 38) — listeleme bunu beklemeli ki taze satırları görsün.
     // Başarısız olanlar aynada kalır; `list(userId:)` onları zaten
     // bindirdiğinden kullanıcı offline'da da güncel oyununu görür.
-    await cloud.flushMirrored(user.id);
+    // Flush FIRLARSA liste yine çekilmeli (10 Ağustos 2026): depo
+    // açılamadığında `flushMirrored` hata veriyor ve bu satır tüm senkronu
+    // — 7 günlük süpürme dahil — bloke ediyordu. Repo artık hatayı kendi
+    // içinde yutuyor, bu try ikinci bir güvenlik ağı.
+    try {
+      await cloud.flushMirrored(user.id);
+    } catch (e) {
+      debugPrint('[Kelimeki] ayna itilemedi, listeye devam: $e');
+    }
     final list = await cloud.list(userId: user.id);
     if (list != null) {
       // 7 günü dolup bu turda iddia edilen kayıtlar → -2 cezalı teslim
@@ -419,8 +440,16 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
       }
     }
     if (!mounted || widget.services.auth.user?.id != user.id) return;
-    if (list == null && _cloudSaves != null) return; // ağ hatası eskiyi ezmesin
-    setState(() => _cloudSaves = list?.saves);
+    final pending = await cloud.pendingMirrorCount(user.id);
+    if (!mounted) return;
+    if (list == null && _cloudSaves != null) {
+      setState(() => _diagPendingMirrors = pending); // ağ hatası eskiyi ezmesin
+      return;
+    }
+    setState(() {
+      _cloudSaves = list?.saves;
+      _diagPendingMirrors = pending;
+    });
   }
 
   /// Normal biten oyunun `games` kaydı + anonim bitiş telemetrisi
@@ -690,6 +719,9 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                           widget.services.supabase != null
                               ? 'sunucu bağlı'
                               : 'offline mod',
+                          _diagStorage,
+                          if (_diagPendingMirrors > 0)
+                            'bekleyen $_diagPendingMirrors',
                         ].join(' · '),
                         textAlign: TextAlign.center,
                         style: const TextStyle(

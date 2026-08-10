@@ -15,6 +15,7 @@ import 'package:kelimeki/src/data/cloud_save_repo.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/game/local_game_repo.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
+import 'package:kelimeki/src/storage/cloud_save_mirror_store.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -548,5 +549,49 @@ void main() {
     await repo.delete('id-1');
     expect((await repo.list(userId: 'user-1'))!.saves, isEmpty);
     await storage.db.close();
+  });
+
+  // ——— Parça 45: depo açılamadığında (web'de sqflite'ın wasm/js dosyaları
+  // offline inemiyor; native'de disk dolu/bozulma) ayna yazması `upsert`in
+  // ilk satırıydı ve `try`ın DIŞINDAYDI — çağrı `unawaited` olduğundan
+  // hamle hem sunucuya hem aynaya yazılamıyor ve hata sessizce yutuluyordu
+  // (kullanıcı 10 Ağustos 2026 cihaz testinde kaybetti).
+
+  Future<CloudSaveMirrorStore> brokenMirror() =>
+      Future.delayed(Duration.zero, () => throw StateError('depo yok'));
+  Future<CloudSaveCacheStore> brokenCache() =>
+      Future.delayed(Duration.zero, () => throw StateError('depo yok'));
+
+  test('depo açılamasa bile hamle SUNUCUYA yazılır ve akış fırlamaz',
+      () async {
+    final gw = FakeGateway();
+    final repo = CloudSaveRepo(gw,
+        nowMs: () => clock,
+        mirrorStore: brokenMirror(),
+        cacheStore: brokenCache());
+
+    expect(await repo.upsert('id-1', 'user-1', newPlayState()), isTrue,
+        reason: 'ayna yazılamasa da sunucuya yazma DENENMELİ');
+    expect(gw.rows.containsKey('id-1'), isTrue);
+
+    // Liste ve flush da kilitlenmemeli — depo hatası tüm senkronu (7 günlük
+    // süpürme dahil) bloke ediyordu.
+    final list = await repo.list(userId: 'user-1');
+    expect(list, isNotNull);
+    expect(list!.saves.single.id, 'id-1');
+    expect(await repo.flushMirrored('user-1'), 0);
+    expect(await repo.pendingMirrorCount('user-1'), 0);
+  });
+
+  test('depo VE sunucu birlikte düşerse upsert false döner (sessiz değil)',
+      () async {
+    final gw = FakeGateway()..offline = true;
+    final repo = CloudSaveRepo(gw,
+        nowMs: () => clock,
+        mirrorStore: brokenMirror(),
+        cacheStore: brokenCache());
+    expect(await repo.upsert('id-1', 'user-1', newPlayState()), isFalse);
+    // Offline + depo yok → gösterilecek hiçbir şey yok, ama fırlamamalı.
+    expect(await repo.list(userId: 'user-1'), isNull);
   });
 }

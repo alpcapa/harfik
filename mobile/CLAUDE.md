@@ -4610,6 +4610,51 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        modunda çekilemiyor. Online'da çalıştığı kullanıcı tarafından
        doğrulandı. Native derlemede asset pakette olduğundan bu sorun
        yapısal olarak yok; `mobile/TESTING.md`'ye dürüst bir not eklendi.
+   - ✅ **Parça 45 — depo açılamadığında offline hamleler SESSİZCE
+     kayboluyordu; ayna kendisi bir kayıp yoluna dönüşebiliyordu (10 Ağustos
+     2026, `cloud_save_repo.dart`, `setup_screen.dart`):** 8.5 testinde
+     ortaya çıktı ve testin kendisi DÜŞTÜ — oyun terk sayılıp -2 yazıldı.
+     - **Kanıt zinciri (sunucudan, tahminle değil):** kullanıcı offline
+       oynadı, hamleler kayboldu; `local_game_saves` satırı SİLİNMİŞ ve
+       `games`e 11:05'te bir teslim kaydı açılmıştı (k-lig -2 → -4). Yani
+       bir senkron aynayı BOŞ bulmuş, 8 günlük satırı iddia etmiş.
+       Hamlelerin kaybolması için `upsert`in İLK satırının (ayna yazması)
+       fırlaması gerekir → depo o oturumda hiç açılmamış.
+     - **Neden açılmamış (web'e özgü):** web derlemesinde SQLite
+       `sqflite_sw.js` + `sqlite3.wasm` dosyalarını HTTP'den çekiyor; Safari
+       arka plandaki sekmeyi atıp uçak modundayken yeniden yüklediyse bu
+       fetch'ler başarısız olur. 8.2/8.3'te sayfa önce ONLINE yüklendiği
+       için depo zaten açıktı — fark buydu. Native'de sqflite platform
+       kanalı, indirilecek dosya yok.
+     - **Ama iki GERÇEK hata ortaya çıkardı (native'de de geçerli):**
+       (1) `upsert`te ayna yazması `try`ın DIŞINDAYDI ve çağrı `unawaited`
+       — depo hata verirse tüm yazma fırlıyor, hata yutuluyor, hamle HEM
+       yerelde HEM sunucuda kayboluyordu. Ayna veri kaybını ÖNLEMEK için
+       eklenmişti; bu hâliyle kendisi bir kayıp yoluna dönüşüyordu.
+       (2) `_syncCloud`'da `flushMirrored` fırlarsa `list()` HİÇ
+       çalışmıyordu — tek bir depo hıçkırığı 7 günlük süpürme dahil tüm
+       senkronu bloke ediyordu.
+     - **Düzeltme:** depoya yapılan HER erişim artık `_tryMirror`/`_tryCache`
+       üzerinden — hata izole edilip loglanıyor, çağıran akış devam ediyor.
+       `upsert` ayna yazılamasa bile sunucuya yazmayı DENİYOR; ikisi de
+       düşerse ayrı bir "KAYIP" logu basıyor (sessiz yutma yok).
+       `_syncCloud`'da flush ayrıca `try` içinde (ikinci güvenlik ağı).
+     - **Teşhis satırı:** Setup'ın alt satırı artık depo durumunu
+       (`depo ok` / `DEPO YOK`) ve bekleyen ayna sayısını (`bekleyen N`,
+       yalnızca >0 iken) gösteriyor. Bu olmadan aynı sınıf sorun ancak
+       tahminle tartışılabiliyordu — cihazda görünür bir iz yoktu.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 296/296 yeşil**
+       (294'ten +2). Negatif eş: `upsert`teki korumalı ayna yazması eski
+       (korumasız) hâline çevrilince iki yeni test de GERÇEKTEN düştü
+       (`Bad state: depo yok`), geri konunca yeşile döndü.
+     - **Temizlik:** testin ürettiği sahte teslim kaydı (`games`
+       `e750b8aa…`) silindi, T5'in k-lig puanı -4'ten -2'ye döndü. Oyunun
+       kendisi kurtarılamadı — iddia satırı sildi, tam `GameState` hiçbir
+       yerde saklanmıyor (yalnızca `board_snapshot`).
+     - **8.5 hâlâ GEÇMEDİ:** bu düzeltmeler kaybın SEBEBİNİ kapatıyor ama
+       testin kendisi (offline oynanan oyun haksız yere teslim sayılmamalı)
+       yeniden koşulmalı — bu sefer teşhis satırı `depo ok` gösteriyorsa
+       sonuç anlamlı olur.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek

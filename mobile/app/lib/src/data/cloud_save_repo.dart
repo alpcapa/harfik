@@ -164,6 +164,40 @@ class CloudSaveRepo {
       {int Function()? nowMs, this.mirrorStore, this.cacheStore})
       : _nowMs = nowMs ?? (() => DateTime.now().millisecondsSinceEpoch);
 
+  /// Depolama katmanına yapılan HER erişim buradan geçer. Gerekçe (10 Ağustos
+  /// 2026, kullanıcı cihaz testinde buldu): depo açılamadığında (web
+  /// derlemesinde sqflite'ın wasm/js dosyaları offline inemiyor; native'de
+  /// disk dolu/bozulma) `await _mirror` FIRLIYOR. Ayna yazması `upsert`in
+  /// ilk satırı ve `try`ın DIŞINDAYDI, çağrı da `unawaited` — yani hamle
+  /// hem sunucuya hem aynaya yazılamıyor ve hata sessizce yutuluyordu.
+  /// Ayna veri kaybını ÖNLEMEK için var; kendisi bir kayıp yoluna
+  /// dönüşemez. Artık her erişim izole: başarısızlık loglanır, çağıran
+  /// akış devam eder.
+  Future<bool> _tryMirror(
+      Future<void> Function(CloudSaveMirrorStore) op) async {
+    try {
+      final m = await _mirror;
+      if (m == null) return false;
+      await op(m);
+      return true;
+    } catch (e) {
+      debugPrint('[Kelimeki] yerel ayna erişilemedi: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _tryCache(Future<void> Function(CloudSaveCacheStore) op) async {
+    try {
+      final c = await _cache;
+      if (c == null) return false;
+      await op(c);
+      return true;
+    } catch (e) {
+      debugPrint('[Kelimeki] bulut liste önbelleği erişilemedi: $e');
+      return false;
+    }
+  }
+
   /// Bekleyen tüm yazmalar çözülene kadar (test/senkron noktaları için).
   Future<void> get idle => _queue.idle;
 
@@ -190,12 +224,11 @@ class CloudSaveRepo {
   Future<CloudSaveList?> list({String? userId}) async {
     final Map<String, MirroredSave> mirrored = {};
     if (userId != null) {
-      final m = await _mirror;
-      if (m != null) {
+      await _tryMirror((m) async {
         for (final x in await m.pending(userId)) {
           mirrored[x.id] = x;
         }
-      }
+      });
     }
     final List<Map<String, Object?>> rows;
     try {
@@ -250,7 +283,7 @@ class CloudSaveRepo {
       // Ayna da gitmeli: aksi halde satır silindikten sonra bir sonraki
       // açılışta "yalnızca aynada var" sanılıp oyun DİRİLİR — hem ceza
       // yazılmış hem oyun devam ediyor olurdu.
-      await (await _mirror)?.remove(id);
+      await _tryMirror((m) => m.remove(id));
       try {
         abandoned.add(AbandonedCloudSave(
           state: gameStateFromJson(claimed),
@@ -268,7 +301,7 @@ class CloudSaveRepo {
     // yok — doğrudan cezaya çevirip aynayı siliyoruz.
     for (final m in mirrored.values) {
       if (m.state.phase != GamePhase.play || m.state.isGameOver) {
-        await (await _mirror)?.remove(m.id);
+        await _tryMirror((x) => x.remove(m.id));
         continue;
       }
       if (m.savedAtMs > cutoffMs) {
@@ -278,20 +311,20 @@ class CloudSaveRepo {
       }
       abandoned.add(
           AbandonedCloudSave(state: m.state, updatedAtMs: m.savedAtMs));
-      await (await _mirror)?.remove(m.id);
+      await _tryMirror((x) => x.remove(m.id));
     }
     result.sort((a, b) => b.updatedAtMs.compareTo(a.updatedAtMs));
     // Offline'da listeyi çizebilmek için son BAŞARILI sonucu sakla. Sunucu
     // satırlarını değil BİRLEŞTİRİLMİŞ sonucu yazıyoruz — "en son bilinen
     // doğru liste" tam olarak bu; ayna bindirmesi zaten uygulanmış oluyor.
     if (userId != null) {
-      await (await _cache)?.replaceAll(
-        userId,
-        [
-          for (final s in result)
-            (id: s.id, state: s.state, updatedAtMs: s.updatedAtMs)
-        ],
-      );
+      await _tryCache((c) => c.replaceAll(
+            userId,
+            [
+              for (final s in result)
+                (id: s.id, state: s.state, updatedAtMs: s.updatedAtMs)
+            ],
+          ));
     }
     return CloudSaveList(result, abandoned);
   }
@@ -314,12 +347,13 @@ class CloudSaveRepo {
   Future<CloudSaveList?> _offlineList(
       String? userId, Map<String, MirroredSave> mirrored) async {
     if (userId == null) return null;
-    final cache = await _cache;
-    if (cache == null && mirrored.isEmpty) return null;
     final byId = <String, MirroredSave>{};
-    for (final c in await cache?.read(userId) ?? const <MirroredSave>[]) {
-      byId[c.id] = c;
-    }
+    final cached = await _tryCache((c) async {
+      for (final row in await c.read(userId)) {
+        byId[row.id] = row;
+      }
+    });
+    if (!cached && mirrored.isEmpty) return null;
     // Ayna KOŞULSUZ kazanır — sunucu satırıyla karşılaştırmadaki (yukarı)
     // `savedAtMs >` korumasının burada karşılığı yok ve olmamalı: orada
     // ayna BAŞKA bir cihazın yazdığı satırdan eski olabilir, burada ise
@@ -351,16 +385,24 @@ class CloudSaveRepo {
       // erişilemese bile hamle kaybolmaz (Parça 38 — offline oynanan
       // hamleler sessizce düşüyordu). Sunucuya yazılınca ayna silinir, yani
       // normal (online) akışta tablo hep boş kalır.
-      await (await _mirror)?.put(id, userId, state);
+      final mirrored = await _tryMirror((m) => m.put(id, userId, state));
       try {
         await gateway.upsert(
             id, userId, gameStateToJson(state), state.players.length);
-        await (await _mirror)?.remove(id);
-        return true;
       } catch (e) {
-        debugPrint('[Kelimeki] cloud save yazılamadı, yerel aynada bekliyor: $e');
+        if (mirrored) {
+          debugPrint(
+              '[Kelimeki] cloud save yazılamadı, yerel aynada bekliyor: $e');
+        } else {
+          // İkisi de başarısız — bu state HİÇBİR YERDE yok. Sessizce
+          // yutmak, kullanıcının hamlesini kaybettiğini fark etmemesi
+          // demek (10 Ağustos 2026'da tam bu yaşandı).
+          debugPrint('[Kelimeki] KAYIP: ne sunucuya ne aynaya yazılabildi: $e');
+        }
         return false;
       }
+      await _tryMirror((m) => m.remove(id));
+      return true;
     });
   }
 
@@ -369,9 +411,11 @@ class CloudSaveRepo {
   /// görsün. Başarılı olan ayna silinir, olmayan bir sonraki tura kalır.
   /// Dönüş: gerçekten sunucuya yazılan kayıt sayısı.
   Future<int> flushMirrored(String userId) async {
-    final m = await _mirror;
-    if (m == null) return 0;
-    final pending = await m.pending(userId);
+    final pending = <MirroredSave>[];
+    final ok = await _tryMirror((m) async {
+      pending.addAll(await m.pending(userId));
+    });
+    if (!ok) return 0;
     final cutoffMs = _nowMs() - abandonTimeout.inMilliseconds;
     var sent = 0;
     for (final p in pending) {
@@ -387,6 +431,16 @@ class CloudSaveRepo {
     return sent;
   }
 
+  /// Sunucuya itilmeyi bekleyen ayna sayısı — Setup'ın teşhis satırı için
+  /// (10 Ağustos 2026). "Hamlelerim kayboldu" tipi bir şikayette depo
+  /// çalışıyor mu / ayna birikmiş mi sorusunu cihazda görünür kılıyor;
+  /// bu olmadan aynı sınıf sorun ancak tahminle tartışılabiliyordu.
+  Future<int> pendingMirrorCount(String userId) async {
+    var n = 0;
+    await _tryMirror((m) async => n = (await m.pending(userId)).length);
+    return n;
+  }
+
   Future<void> delete(String id) {
     return _queue.enqueue(() async {
       // Ayna her durumda gider: satır silinmek isteniyorsa bekleyen bir
@@ -394,8 +448,8 @@ class CloudSaveRepo {
       // — aksi halde silme offline yapıldığında oyun listede görünmeye
       // devam ederdi (bir sonraki başarılı listeleme düzeltirdi ama arada
       // "sildim, hâlâ duruyor" gibi görünürdü).
-      await (await _mirror)?.remove(id);
-      await (await _cache)?.remove(id);
+      await _tryMirror((m) => m.remove(id));
+      await _tryCache((c) => c.remove(id));
       try {
         await gateway.delete(id);
       } catch (e) {
