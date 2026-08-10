@@ -361,7 +361,7 @@ export async function fetchMyGames(
   if (!targetUid) return { games: [], hasMore: false };
 
   const cols =
-    'id, created_at, player_count, players, player_score, ai_score, rank, surrendered, online_game_id, message_count, user_id';
+    'id, created_at, player_count, players, player_score, ai_score, rank, surrendered, online_game_id, user_id';
   type Row = Omit<GameHistoryEntry, 'liked_by_me' | 'like_count'>;
   let rows: Row[];
   let hasMore: boolean;
@@ -400,13 +400,31 @@ export async function fetchMyGames(
     hasMore = all.length > limit;
   }
 
-  const stats = new Map<string, { likeCount: number; likedByMe: boolean }>();
+  // Kartın TÜM rozetleri tek toplu RPC'den geliyor (sayfa başına bir
+  // gidiş-dönüş). `message_count` 10 Ağustos 2026'dan beri satırdan
+  // okunAMIYOR: o kolon istemci rollerinden kaldırıldı, çünkü "X ile Y şu
+  // oyunda N mesajlaştı" da bir üstveri ve rozet zaten yalnızca
+  // katılımcının açabildiği bir kontroldü. RPC katılımcı/admin değilse 0
+  // döner → rozet hiç çizilmez (bkz. `chat_count_participants_only`).
+  const stats = new Map<
+    string,
+    { likeCount: number; likedByMe: boolean; messageCount: number }
+  >();
   if (viewer && rows.length > 0) {
     const { data: likeStats } = await supabase.rpc('game_like_stats', {
       p_game_ids: rows.map((r) => r.id),
     });
-    for (const s of (likeStats as { game_id: string; like_count: number; liked_by_me: boolean }[]) ?? []) {
-      stats.set(s.game_id, { likeCount: Number(s.like_count), likedByMe: s.liked_by_me });
+    for (const s of (likeStats as {
+      game_id: string;
+      like_count: number;
+      liked_by_me: boolean;
+      message_count: number;
+    }[]) ?? []) {
+      stats.set(s.game_id, {
+        likeCount: Number(s.like_count),
+        likedByMe: s.liked_by_me,
+        messageCount: Number(s.message_count ?? 0),
+      });
     }
   }
 
@@ -415,6 +433,7 @@ export async function fetchMyGames(
       ...r,
       liked_by_me: stats.get(r.id)?.likedByMe ?? false,
       like_count: stats.get(r.id)?.likeCount ?? 0,
+      message_count: stats.get(r.id)?.messageCount ?? 0,
     })),
     hasMore,
   };
@@ -477,25 +496,36 @@ export async function fetchGameBoardSnapshot(gameId: string): Promise<BoardSnaps
   return (data?.board_snapshot as BoardSnapshotTile[] | null) ?? null;
 }
 
+/** `fetchGameMessages` dönüşü — yetki bilgisi İÇERİKTEN ayrı taşınır ki UI
+ *  "sohbet boş" ile "görme yetkin yok"u ayırt edebilsin. */
+export interface GameChatArchive {
+  allowed: boolean;
+  messages: GameChatMessage[];
+}
+
 /**
  * Bitmiş bir Canlı oyunun dondurulmuş sohbet kaydını döner —
  * `fetchGameBoardSnapshot` ile birebir aynı desen: `fetchMyGames`'in liste
  * sorgusuna dahil edilmez (bkz. `message_count`), yalnızca `GameHistoryModal`
  * (sohbet rozetine tıklanınca `GameChatHistoryModal`) lazy çeker. Yerel/YZ
  * oyunlarında (Oyun İçi Mesajlaşma — Faz 1 kapsam dışı) her zaman boş döner.
+ *
+ * 10 Ağustos 2026'dan beri `games.messages` DOĞRUDAN OKUNAMIYOR: o kolon
+ * istemci rollerinden kaldırıldı (`game_chat_archive_participants_only`
+ * migration'ı), çünkü `games`in SELECT politikası satır sahipliğine değil
+ * yalnızca "oturum var mı"ya bakıyor — k-lig → oyuncu kartı → "Tüm Oyunlar"
+ * zincirinden (ya da doğrudan API'den) başkasının yazışmaları okunabiliyordu.
+ * Okuma artık katılımcı/admin kapılı `game_chat_archive` RPC'sinden geçiyor.
  */
-export async function fetchGameMessages(gameId: string): Promise<GameChatMessage[]> {
-  if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('games')
-    .select('messages')
-    .eq('id', gameId)
-    .maybeSingle();
+export async function fetchGameMessages(gameId: string): Promise<GameChatArchive> {
+  if (!supabase) return { allowed: true, messages: [] };
+  const { data, error } = await supabase.rpc('game_chat_archive', { p_game_id: gameId });
   if (error) {
     console.error('[Kelimeki] fetchGameMessages hatası:', error.message);
-    return [];
+    return { allowed: true, messages: [] };
   }
-  return (data?.messages as GameChatMessage[] | null) ?? [];
+  const row = data as { allowed?: boolean; messages?: GameChatMessage[] } | null;
+  return { allowed: row?.allowed ?? false, messages: row?.messages ?? [] };
 }
 
 /**

@@ -94,6 +94,12 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       YZ oyununda hiç olmamalı.
 - [ ] **Gönderme.** 200 karakter sınırı ve canlı "x/200" sayacı çalışmalı.
       Kendi mesajın sağda/kendi renginde, karşınınki solda.
+- [ ] **Yazışma gizliliği (10 Ağustos 2026).** k-lig'den başka bir oyuncunun
+      kartına gir → "Tüm Oyunlar". Onun **katılmadığın** bir Canlı oyununun
+      kartında konuşma balonu rozeti **HİÇ ÇIKMAMALI** — ne sayı ne içerik.
+      Kendi katıldığın oyunlarda normal görünmeli; admin hepsini görebilmeli.
+      (O tarihe kadar `games.messages` girişli HERKESE açıktı — skor/tahta
+      herkese görünür olsa da yazışma değil.)
 - [ ] **Karşı tarafta.** Sohbet kapalıyken gelen mesaj için popup (gönderenin
       avatarı + adı + metin) çıkmalı ve **yalnızca elle** kapanmalı; butonda
       kırmızı nokta belirmeli. Sohbeti açınca nokta sıfırlanmalı.

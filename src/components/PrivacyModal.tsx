@@ -28,8 +28,7 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
       <div className="flex flex-col gap-5">
         <P>
           Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, hangi verileri topladığımızı,
-          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 2 Ağustos 2026.
-        </P>
+          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 10 Ağustos 2026</P>
 
         <Section title="1. Veri Sorumlusu">
           <P>
@@ -110,9 +109,10 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             isimleri/puanları giriş yapmamış ziyaretçiler dahil herkese açık bir bağlantı
             üzerinden görülebilir hale gelir; bu paylaşım geri alınamaz. Canlı oyunlarda
             gönderdiğiniz oyun içi sohbet mesajları o oyundaki diğer katılımcılara gerçek
-            zamanlı olarak görünür ve oyun bittikten sonra oyun kaydının bir parçası olarak
-            (mevcut skor/tahta görünürlüğüyle aynı şekilde, tüm kayıtlı kullanıcılara açık)
-            saklanır.
+            zamanlı olarak görünür ve oyun bittikten sonra da saklanır; bu yazışmalar
+            YALNIZCA o oyunun katılımcılarına ve (şikayet incelemesi amacıyla) yönetici
+            ekibine açıktır — oyunun skoru ve tahtası tüm kayıtlı kullanıcılara görünür
+            olsa bile sohbet içeriği görünmez.
           </P>
           <P>
             Bir Canlı oyunda kimi sessize aldığınız yalnızca size görünür, diğer katılımcılar
