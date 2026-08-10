@@ -201,7 +201,7 @@ void main() {
     await tester.pump();
     await tester.tap(boardCell(1, 0));
     await tester.pumpAndSettle();
-    expect(find.text('Joker Hangi Harf Olsun?'), findsOneWidget);
+    expect(find.text('JOKER HANGİ HARF OLSUN?'), findsOneWidget);
     // Kontur katmanı her taş harfini iki Text yapar (stroke+dolgu, aynı taş)
     // — .first ikisinden birine dokunmak için yeterli.
     await tester.tap(find.text('B').first);
@@ -214,7 +214,7 @@ void main() {
     // Yerleştirilmiş jokere dokunmak taşı GERİ ALMAZ — seçici yeniden açılır.
     await tester.tap(boardCell(1, 0));
     await tester.pumpAndSettle();
-    expect(find.text('Jokeri Hangi Harfe Çevir?'), findsOneWidget);
+    expect(find.text('JOKERİ HANGİ HARFE ÇEVİR?'), findsOneWidget);
     await tester.tap(find.text('Ç').first);
     await tester.pumpAndSettle();
     expect(controller.state.placed['1,0']!.wildLetter, 'Ç');
@@ -258,7 +258,7 @@ void main() {
 
     await tester.tap(find.text('Aç'));
     await tester.pumpAndSettle();
-    expect(find.text('Joker Hangi Harf Olsun?'), findsOneWidget);
+    expect(find.text('JOKER HANGİ HARF OLSUN?'), findsOneWidget);
 
     // `isScrollControlled:true` + `SingleChildScrollView` olmadan bu, dar
     // yükseklikte klasik "RenderFlex overflowed" hatasını (sheet'in kendi
@@ -774,5 +774,43 @@ void main() {
         matching: find.byWidgetPredicate((w) =>
             w is ConstrainedBox && w.constraints.maxWidth == 680));
     expect(inner, findsWidgets, reason: 'içerik sütunu 680e sınırlı olmalı');
+  });
+
+  testWidgets(
+      'joker seçici web gibi ORTALANMIŞ KModal — 360px kart + 44px taş '
+      '(Parça 47: alttan açılan sayfa iPad\'de taşları ~128px\'e şişiriyordu)',
+      (tester) async {
+    // Geniş yüzey, farkın görünür olduğu yer: bottom sheet ekran genişliğini
+    // kaplayıp kare hücreleri devleştiriyordu; web'in kartı 360px sabit.
+    await setPhoneViewSize(tester, const Size(1000, 900));
+    await tester.pumpWidget(MaterialApp(
+      home: Builder(
+        builder: (context) => Scaffold(
+          body: Center(
+            child: ElevatedButton(
+              onPressed: () => showWildLetterSheet(context),
+              child: const Text('Aç'),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('Aç'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BottomSheet), findsNothing,
+        reason: 'web ortalanmış Modal kullanıyor, alttan sayfa DEĞİL');
+    final card = find.descendant(
+      of: find.byType(Dialog),
+      matching: find.byWidgetPredicate((w) =>
+          w is ConstrainedBox && w.constraints.maxWidth == 360),
+    );
+    expect(card, findsWidgets, reason: 'web Modal 360px kart');
+
+    // Web `h-11` = 44px sabit yükseklik (kare bir ızgara DEĞİL).
+    final tile = tester.getSize(find.byType(TileWidget).first);
+    expect(tile.height, 44.0);
+    expect(tile.width, lessThan(80),
+        reason: '360px kart 6 sütuna bölününce taş ~50px olmalı');
   });
 }

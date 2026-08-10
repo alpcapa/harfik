@@ -4718,6 +4718,38 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Web'de de aynı gedik var** (offline biten oyunun satırı silinemezse
        unutuluyor) — kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesine
        eklendi.
+   - ✅ **Parça 47 — joker seçici alttan açılan SAYFAYDI, web ortalanmış bir
+     MODAL kullanıyor; Parça 20 yalnızca semptomu yamamıştı (10 Ağustos
+     2026, `wild_letter_sheet.dart`):** Kullanıcı ekran görüntüsüyle
+     "düzelmedi" dedi ve haklıydı — 8 Ağustos'ta yükseklik sınırını
+     (`isScrollControlled`) düzeltmiştim ama YAPI farkı duruyordu.
+     - **Web kaynağı (önce okundu):** `WildcardModal.tsx` paylaşılan
+       `Modal`'ı kullanıyor (ortalanmış 360px kart, başlık + ✕), ızgara
+       `grid-cols-6 gap-1.5` ve her hücre `h-11` = **sabit 44px yükseklik**.
+     - **Portun iki sapması:** (1) `showModalBottomSheet` — alttan açılıyor,
+       başlık çubuğu/✕ yok; (2) `GridView.count` KARE hücre üretiyor ve
+       sheet ekran genişliğini kapladığından iPad'de taş ~128px'e şişiyordu
+       (web'in 360px kartında ~50×44). Kullanıcının gördüğü devasa harfler
+       buydu.
+     - **Düzeltme:** `KModal` + `showDialog`; ızgara `GridView.builder` +
+       `SliverGridDelegateWithFixedCrossAxisCount(mainAxisExtent: 44)`
+       (`GridView.count` sabit yükseklik veremiyor, yalnızca en-boy oranı);
+       "GERİ AL" `OutlinedButton`dan `NeoButton(neutral)`a çevrildi (web
+       `.btn-raised-neutral`).
+     - **Yan kazanç — başlık artık BÜYÜK HARF:** `KModal` başlığı
+       `trUpper`dan geçiriyor (web'in `uppercase` CSS'i). Eski sheet düz
+       yazıyordu; testlerdeki beklentiler de buna göre güncellendi. Yani
+       yapıyı web'e çekmek, farkında olmadığımız bir tipografi sapmasını da
+       kapattı.
+     - **Ders (üçüncü kez):** semptomu bastıran yama, yapıyı web'e çekmekten
+       PAHALIYA geliyor. Parça 16→17 ve 39→40'ta da aynı şey oldu; bu sefer
+       maliyeti kullanıcının aynı sorunu iki kez bildirmesi oldu. Bir görsel
+       sorun bildirildiğinde ilk soru "web bunu hangi BİLEŞENLE yapıyor?"
+       olmalı, "hangi değeri ayarlarsam düzelir?" değil.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 299/299 yeşil**
+       (298'den +1). Negatif eş: dosya `git stash` ile eski hâline
+       döndürülünce 3 test düştü, geri alınınca yeşile döndü.
+     - **Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor.
 6. **Çok kullanıcılı eşzamanlılık testi** — iki gerçek oturumlu headless
    harness (web tarafında hiç yapılamamış e2e; PORT_BRIEF'te "unproven"
    olarak işaretli); `p_move_id` retry davranışı da bu harness'te gerçek
