@@ -4701,6 +4701,20 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        (`Expected: empty / Actual: [Instance of 'CloudSave']`).
      - **Temizlik:** testin sunucuda bıraktığı artık satır (`74d38003…`,
        bitmiş oyunun bitmemiş kopyası) elle silindi.
+     - **Cihazda doğrulandı (aynı gün, 8.6 yeniden koşuldu):** offline
+       bitirilen oyun ağ dönünce listeye GERİ GELMEDİ; sunucuda
+       `local_game_saves` satırı kalmadı, `games`te tek kayıt var, k-lig
+       beklenen +2'yi aldı (iki beraberlik: -2 → 0 → 2).
+     - **Gözlenen küçük pencere (bilinçli, düzeltilmedi):** kullanıcı,
+       oyunun listede KISA BİR SÜRE görünüp sonra kaybolduğunu bildirdi.
+       Sebep: ağ dönünce `_syncCloud` iki ayrı yoldan tetiklenebiliyor
+       (öne dönüş + bir auth olayı). TEK bir `_syncCloud` içinde silme
+       listelemeden önce biter, ama EŞZAMANLI iki çağrı arasında bu sıra
+       garanti değil — biri listeyi çekerken diğerinin silmesi henüz
+       tamamlanmamış olabiliyor. Kendini bir saniyede toparladığından ve
+       veri açısından zararsız olduğundan şimdilik bırakıldı; gerçek çözüm
+       `_syncCloud`u da tek bir kuyruğa almak olurdu (`TableWriteQueue`
+       deseni, bu sefer senkron akışı için).
      - **Web'de de aynı gedik var** (offline biten oyunun satırı silinemezse
        unutuluyor) — kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesine
        eklendi.

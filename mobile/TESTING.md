@@ -451,6 +451,11 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **Offline bitiş kuyruğa girmeli.** Uçak modundayken bir oyunu bitir,
       sonra ağı aç ve uygulamayı yeniden başlat → kayıt sunucuya işlenmeli
       (web'deki Skor Kartı'ndan doğrula). Kayıt kaybolmamalı.
+- [ ] **Biten oyun listeye GERİ GELMEMELİ (10 Ağustos 2026, Parça 46).**
+      Yukarıdaki adımdan sonra "Devam Edenler"e bak: offline bitirdiğin
+      oyun orada OLMAMALI. Ağ döndüğü an kısa bir süre (≈1 sn) görünüp
+      kaybolması normal — eşzamanlı iki senkrondan biri listeyi silme
+      tamamlanmadan çekmiş olabilir; kalıcı olarak duruyorsa hata.
 - [ ] **Mükerrer kayıt olmamalı.** Yukarıdaki kayıt Skor Kartı'nda **bir
       kez** görünmeli (aynı id ile ikinci gönderim 23505 alır ve başarı
       sayılır).
