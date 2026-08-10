@@ -654,6 +654,22 @@ fikirlerin unutulmaması için bir bekleme listesi, kod DEĞİL. Bir madde
 uygulanınca buradan silinip ilgili bölümün kendi tarihli notuna taşınmalı
 (kök `CLAUDE.md`'nin genel "değişiklik = tarihli not" disipliniyle aynı).
 
+- **"Tüm Oyunlarım"daki her karta hamle geçmişi ikonu — `games.moves`
+  (10 Ağustos 2026, kullanıcı kararı):** Bitmiş bir oyunun kartında sohbet
+  rozetinin yanına aynı boyda ikinci bir ikon; dokununca `MoveHistoryModal`
+  o oyunun TAM dökümüyle açılır (lazy çekilir, liste sorgusuna girmez).
+  Tasarım `games.messages` deseninin birebir tekrarı: yeni `games.moves
+  jsonb`, oyun biterken dondurulur — yerelde `buildGameRecord`
+  (`src/utils/gameRecord.ts` **ve** portun `game_record.dart`'ı, aynı
+  satıra yazan iki istemci), Canlı'da `_finish_online_game_records`.
+  `online_game_moves`'u doğrudan okumak YETMEZ: RLS'i yalnızca katılımcıya
+  açık, başkasının oyununu açan hamleleri göremezdi. Web tarafındaki iş:
+  `gameRecord.ts` + `api.ts`'e bir fetch + `GameHistoryModal.tsx`'e ikon.
+  **Ölçülen boyut ~5 KB/oyun** (`board_snapshot` ortalaması 926 bayt).
+  Ayrıntılı gerekçe/ölçüm, dondurulacak JSON'un tam şekli (alan kırpma
+  YOK — `invasionFrom` satırları dahil) ve Canlı oyunlar için geriye dönük
+  backfill notu: `mobile/CLAUDE.md`, "Sonraya Bırakılan İşler (mobil)".
+
 - **Girişli kullanıcının devam eden YZ oyunu offline'da KAYBOLUYOR —
   `App.tsx` autosave + `api.ts:upsertLocalGameSave`** (9 Ağustos 2026, mobil
   cihaz testinde bulundu, kullanıcı kararıyla web tarafı SONRAYA bırakıldı):

@@ -989,6 +989,59 @@ Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı
 kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
 silinip kendi tarihli parça notuna taşınır.
 
+- **"Tüm Oyunlarım"daki her karta hamle geçmişi ikonu (10 Ağustos 2026,
+  kullanıcı kararı — sözleri: "mesaj balonunun yanına aynı boyda bir file
+  ikonu koyup tüm hamleleri getirmek", "Lazy yükleme olarak. Hamleler
+  dialogunda nasılsa aynısı gelsin, tüm detaylarıyla"):** Bitmiş bir oyunun
+  kartında sohbet rozetinin yanında ikinci bir ikon; dokununca o oyunun
+  TAM hamle dökümü açılır.
+  - **Tasarım — `games.messages` (sohbet arşivi) deseninin BİREBİR
+    tekrarı:** yeni `games.moves jsonb` (nullable), oyun biterken dondurulur.
+    Yerel oyunlarda `buildGameRecord` doldurur — web `gameRecord.ts` **ve**
+    port `game_record.dart`, ikisi birden (aynı satıra yazan iki istemci
+    kuralı); Canlı oyunlarda `_finish_online_game_records`
+    (`online_game_moves`'tan okuyup).
+  - **Neden `online_game_moves`'u doğrudan okumuyoruz:** o tablonun RLS'i
+    yalnızca KATILIMCIYA açık — Favoriler'den başkasının oyununu açan biri
+    hamleleri göremezdi. Sohbette bu sorun tam da dondurarak çözülmüştü;
+    ayrıca dondurmak yerel/Canlı ayrımını da ortadan kaldırıyor (tek kod
+    yolu).
+  - **Yerel oyunlarda kolon ŞART, veri başka hiçbir yerde yok:**
+    `moveHistory` yalnızca `GameState` içinde yaşıyor; `local_game_saves`
+    satırı oyun bitince siliniyor, `games` bu alanı taşımıyor.
+  - **Boyut ÖLÇÜLDÜ (golden fixture'lardan, gerçek tam oyunlar):** 2
+    kişilik doğal bitiş 36 entry / **4.974 bayt**, 4 kişilik 37 entry /
+    **5.132 bayt** — yani ~5 KB/oyun. Karşılaştırma: production'da
+    `board_snapshot` ortalaması **926 bayt**. Bugüne kadarki 290 oyunun
+    tamamı ≈ 1,5 MB.
+  - **Lazy — liste sorgusuna GİRMEZ** (`board_snapshot`/`messages` ile aynı
+    gerekçe): kolon yalnızca ikona basılınca ayrı bir sorguyla çekilir ve
+    önbelleğe alınır.
+  - **"Tüm detaylarıyla" = `MoveHistoryModal`'ın bugünkü içeriği**, yani
+    dondurulan JSON tam `HistoryEntry` şekli olmalı — alan kırpma YOK:
+    kelime başına `wordScores` (x2/x3 dahil), Bingo/jokerli-bitiş/Sınır
+    İhlali rozetlerini besleyen alanlar, ve `invasionFrom` satırları
+    (modal onları kart olarak GÖSTERMİYOR ama toplam puana katıyor —
+    atılırsa toplamlar bozulur).
+  - **UI maliyeti ~sıfır:** `MoveHistoryModal` iki platformda da hazır ve
+    `GameState` alıyor; geçmiş kartı zaten `buildSnapshotGameState` ile
+    sahte-ama-geçerli bir `GameState` üretiyor (tahta önizlemesi bunu
+    kullanıyor) — üzerine `moveHistory` konup mevcut modal açılır. Yeni
+    modal/bağımlılık yok.
+  - **İkon HER kartta görünür** (sohbet rozetinin aksine — o yalnızca
+    `message_count > 0` iken çıkıyor), çünkü her bitmiş oyunun hamlesi
+    var. Kullanıcı isteği bu yönde ("aynı boyda bir file ikonu").
+  - **Geriye dönük:** yerel oyunlar kurtarılamaz (veri hiç yazılmamış),
+    kart `board_snapshot`'taki gibi "kaydedilmemiş" der. **Canlı oyunlar
+    DOLDURULABİLİR** — `online_game_moves` duruyor (bugün 32 oyun / 1055
+    satır); migration'a tek seferlik bir backfill eklenebilir.
+  - **Kapsam:** 1 migration + web'de 3 dosya (`gameRecord.ts`, `api.ts`'e
+    bir fetch, `GameHistoryModal.tsx`) + mobilde 3 dosya
+    (`game_record.dart`, `games_api.dart`, `game_history_modal.dart`) —
+    kabaca Parça 5b (sohbet arşivi) büyüklüğünde tek bir parça. Web tarafı
+    da değiştiğinden kök `CLAUDE.md`'nin "Web'de Yapılacak İşler"
+    listesinde de bir işaret var.
+
 - **Kayıt onayı maili kaydın GELDİĞİ kanala dönmeli (10 Ağustos 2026,
   kullanıcı kararı — sözleri: "Kişilerin kayıt başvurusu hangi kanaldan
   geliyorsa o kanala yönlendirilmeleri doğrusu"):** Bugün `signUp()`
