@@ -282,6 +282,11 @@ Her birinde gerçekten bekleyen bir iş varken ekranı **kapatıp yeniden aç**.
       onay diyaloğunu açmalı. Kartın kendi arkadaşlık simgesinden bir işlem
       yapıp (ör. çıkar) kartı kapatınca satırdaki ikon ANINDA yeni duruma
       dönmeli.
+- [ ] **Dokunmatikte yapışkan hover (11 Ağustos 2026).** Telefon/tablette
+      Setup'ın altındaki "Kullanım Koşulları"na dokun, modalı kapat: linkin
+      altında **kalıcı bir çizgi kalmamalı**. Aynısı "Nasıl oynanır?",
+      "Arkadaşınla paylaş" ve menü satırları için de geçerli. Masaüstünde
+      fareyle üzerine gelince alt çizgi HÂLÂ çıkmalı (o davranış korunuyor).
 - [ ] **Admin paneli.** Bekleyen geri bildirim/şikayet varsa "Geri Bildirim"
       açık gelmeli (yoksa "Büyüme"). Gelen kutusunda bekleyen yokken yalnızca
       şikayet varsa doğrudan **"Şikayetler"** alt sekmesi açılmalı — aksi

@@ -1,6 +1,19 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
+  future: {
+    // Dokunmatik cihazda "yapışkan hover": iOS Safari bir butona
+    // dokunulduktan sonra :hover'ı ekranın başka bir yerine dokunulana
+    // KADAR üzerinde bırakıyor. Setup'ın altındaki "Kullanım Koşulları"
+    // linkinde bu, modal kapandıktan sonra da duran bir alt çizgi olarak
+    // görünüyordu (kullanıcı bildirdi, 11 Ağustos 2026) — Chromium'da
+    // hasTouch ile birebir üretildi. Bu bayrak her `hover:` yardımcısını
+    // `@media (hover:hover) and (pointer:fine)` içine alır: fareli
+    // cihazlarda davranış aynı, dokunmatikte hover stili HİÇ uygulanmaz.
+    // Tailwind v4'te varsayılan; tek tek linkleri yamamak yerine 38
+    // kullanım yerini birden kapatıyor.
+    hoverOnlyWhenSupported: true,
+  },
   theme: {
     extend: {
       colors: {
