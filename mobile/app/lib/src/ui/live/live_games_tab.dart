@@ -36,6 +36,7 @@ import 'friend_suggest_modal.dart';
 import 'live_game_create_form.dart';
 import 'online_game_screen.dart';
 import '../tokens.dart';
+import '../game/neo_box.dart';
 
 const Color _text = kText;
 const Color _muted = kMuted;
@@ -382,10 +383,12 @@ class _LiveGamesTabState extends State<LiveGamesTab>
           children: [
             Container(
               padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
+              decoration: ShapeDecorationWithCssShadows(
                 color: active ? _accent : _panel,
-                border: Border.all(color: active ? _accent : _border),
-                borderRadius: BorderRadius.circular(6),
+                borderColor: active ? _accent : _border,
+                radius: 6,
+                // Web: seçili `btn-raised`, seçili değil `btn-raised-neutral`.
+                shadows: active ? kRaisedAccentShadows : kRaisedShadows,
               ),
               alignment: Alignment.center,
               child: Text(
@@ -461,10 +464,9 @@ class _GameRow extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: _panel,
-          border: Border.all(color: _border),
-          borderRadius: BorderRadius.circular(6),
+        decoration: const ShapeDecorationWithCssShadows(
+          color: _panel, borderColor: _border, radius: 6,
+          shadows: kRaisedShadows, // web shadow-raised
         ),
         child: Row(children: [
           Expanded(
@@ -544,10 +546,9 @@ class _PendingGameCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: _panel,
-        border: Border.all(color: _border),
-        borderRadius: BorderRadius.circular(6),
+      decoration: const ShapeDecorationWithCssShadows(
+        color: _panel, borderColor: _border, radius: 6,
+        shadows: kRaisedShadows, // web shadow-raised
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

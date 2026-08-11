@@ -382,7 +382,8 @@ class _FriendsModalState extends State<FriendsModal> {
                 trUpper(label), // web tabBtn CSS `uppercase`
                 style: TextStyle(
                   fontFamily: 'SpaceMono',
-                  fontSize: 10,
+                  fontSize: 11, // web text-[11px]
+                  height: 1.5, // web: gövdeden miras (16.5px satır)
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
                   color: active ? Colors.white : _muted,
@@ -687,7 +688,8 @@ class _FriendsModalState extends State<FriendsModal> {
       variant: neutral ? NeoButtonVariant.neutral : NeoButtonVariant.accent,
       fontSize: 10,
       letterSpacing: 0.5,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      // web `py-1.5 px-3`
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       onPressed: busy ? null : onTap,
     );
   }

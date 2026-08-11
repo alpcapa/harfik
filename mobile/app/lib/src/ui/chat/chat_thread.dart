@@ -180,7 +180,7 @@ class _Bubble extends StatelessWidget {
               style: const TextStyle(
                   fontFamily: 'SpaceGrotesk',
                   fontSize: 12,
-                  height: 1.35,
+                  height: 1.375, // web leading-snug
                   color: _text)),
         ),
       ),

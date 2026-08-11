@@ -74,6 +74,28 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
       test etmek istersen o satırı geçici olarak `99.0.0` yapıp uygulamayı
       yeniden aç: "güncelleme gerekli" ekranı çıkmalı — sonra geri al.)
 
+## 0.5 Web ile yan yana görsel karşılaştırma (Parça 56)
+
+Bu bölümü bir kez, iki sekmeyi (kelimeki.com ve alpcapa.github.io) AYNI
+hesapla açıp yan yana koyarak koş.
+
+- [ ] **Kartlar ve sekmeler "kabarık" görünmeli, düz DEĞİL.** Canlı oyun
+      kartları, davet kartları, "Son Oynadıklarım" satırları, Setup'taki
+      Devam Eden Oyun ve oyuncu satırları, skor kartındaki istatistik
+      kutuları, oyun geçmişi kartları ve TÜM alt sekme çubukları (Devam
+      Edenler/Oyun Davetleri/Son Oynananlar; Genel/2/4) web'deki gibi
+      yumuşak gölge taşımalı. Düz/kağıt gibi duruyorsa regresyon.
+- [ ] **Setup başlık bloğu.** Logo ile paragraf arası ve paragraf ile
+      "Nasıl oynanır? · Arkadaşınla paylaş" satırı arası web'le aynı
+      olmalı; paragraf 4 satır sürüyorsa satır aralığı da aynı görünmeli
+      (portta daha ferah duruyorsa regresyon).
+- [ ] **Setup'ın en altı.** "Kullanım Koşulları · Gizlilik Politikası"
+      görünmeli ve ikisi de ilgili modalı açmalı. (Altındaki `Sürüm … ·
+      depo ok` teşhis satırı BİLİNÇLİ olarak yalnızca app'te var.)
+- [ ] **Arkadaşlar modalı.** Üç sekmenin (Arkadaşlarım/İstekler/Ara &
+      Ekle) puntosu ve "Arkadaşını Davet Et"in altındaki küçük butonların
+      boyu web'le aynı olmalı.
+
 ## 1. Oyun (offline çekirdek)
 
 Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.

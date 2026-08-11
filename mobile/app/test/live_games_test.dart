@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kelimeki/src/ui/game/neo_box.dart';
 import 'package:kelimeki/src/bootstrap.dart';
 import 'package:kelimeki/src/config/version_gate.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
@@ -430,6 +431,19 @@ void main() {
       final left = tester
           .widget<Text>(find.textContaining('TESLİM SAYILACAK').first);
       expect(left.style!.fontSize, 8);
+
+      // Parça 56: web'de bu kartlar ve alt sekmeler `shadow-raised` /
+      // `btn-raised*` taşıyor; port hepsini düz BoxDecoration ile çiziyordu
+      // (kullanıcı iki ekran görüntüsünü yan yana koyunca fark etti).
+      final raised = tester
+          .widgetList<DecoratedBox>(find.byType(DecoratedBox))
+          .map((d) => d.decoration)
+          .whereType<ShapeDecorationWithCssShadows>()
+          .toList();
+      expect(raised.where((d) => d.shadows == kRaisedShadows), isNotEmpty,
+          reason: 'oyun kartı/pasif sekme gölgesiz kalmamalı');
+      expect(raised.where((d) => d.shadows == kRaisedAccentShadows), isNotEmpty,
+          reason: 'seçili alt sekme btn-raised gölgesini almalı');
     });
   });
 

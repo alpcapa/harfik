@@ -33,18 +33,49 @@ class ShapeDecorationWithCssShadows extends Decoration {
   final Gradient? gradient;
   final double radius;
   final List<CssShadow> shadows;
+
+  /// Opsiyonel 1px'lik çerçeve — web'de gölgeli kartlar `border border-border`
+  /// de taşıyor. `BoxDecoration.border` gibi İÇERİ doğru çizilir ve çocuğu
+  /// aynı miktarda içeri iter (`padding` override'ı), böylece bu decoration'a
+  /// geçen bir kutunun DIŞ ölçüsü BoxDecoration'daki hâliyle birebir aynı
+  /// kalır — gölge eklerken düzen kaymaz.
+  final Color? borderColor;
+  final double borderWidth;
+
   const ShapeDecorationWithCssShadows({
     this.color,
     this.gradient,
     required this.radius,
     required this.shadows,
+    this.borderColor,
+    this.borderWidth = 1,
   }) : assert(color != null || gradient != null,
             'color ya da gradient verilmeli');
+
+  @override
+  EdgeInsetsGeometry get padding => borderColor == null || borderWidth <= 0
+      ? EdgeInsets.zero
+      : EdgeInsets.all(borderWidth);
 
   @override
   BoxPainter createBoxPainter([VoidCallback? onChanged]) =>
       _CssShadowBoxPainter(this);
 }
+
+/// Web `.shadow-raised` (index.css) — `.btn-raised-neutral` ile BİREBİR AYNI
+/// iki katman. Kart/panel/istatistik kutusu gibi buton OLMAYAN yüzeyler için;
+/// butonlar `NeoButton` üzerinden aynı gölgeyi zaten alıyor.
+const List<CssShadow> kRaisedShadows = [
+  CssShadow(color: Color(0x80A3B1C6), offset: Offset(2, 2), blur: 6),
+  CssShadow(color: Color(0xD9FFFFFF), offset: Offset(-2, -2), blur: 5),
+];
+
+/// Web `.btn-raised` — seçili/vurgulu (accent) yüzeyler. Üç katman.
+const List<CssShadow> kRaisedAccentShadows = [
+  CssShadow(color: Color(0x8CA3B1C6), offset: Offset(3, 3), blur: 8),
+  CssShadow(color: Color(0xB3FFFFFF), offset: Offset(-2, -2), blur: 6),
+  CssShadow(color: Color(0x59647489), offset: Offset(0, 6), blur: 14),
+];
 
 class _CssShadowBoxPainter extends BoxPainter {
   final ShapeDecorationWithCssShadows d;
@@ -90,6 +121,14 @@ class _CssShadowBoxPainter extends BoxPainter {
       fill.color = d.color!;
     }
     canvas.drawRRect(rrect, fill);
+    if (d.borderColor != null && d.borderWidth > 0) {
+      canvas.drawRRect(
+          rrect.deflate(d.borderWidth / 2),
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = d.borderWidth
+            ..color = d.borderColor!);
+    }
   }
 }
 

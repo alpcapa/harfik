@@ -13,6 +13,7 @@ import '../../data/stats_api.dart';
 import '../game/player_avatar_row.dart';
 import '../score/game_history_modal.dart';
 import '../tokens.dart';
+import '../game/neo_box.dart';
 
 const _panel = kPanel;
 const _border = kBorder;
@@ -211,10 +212,9 @@ class _RecentRow extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: _panel,
-          border: Border.all(color: _border),
-          borderRadius: BorderRadius.circular(6),
+        decoration: const ShapeDecorationWithCssShadows(
+          color: _panel, borderColor: _border, radius: 6,
+          shadows: kRaisedShadows, // web shadow-raised
         ),
         child: Row(
           children: [

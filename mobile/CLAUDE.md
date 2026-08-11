@@ -1342,11 +1342,93 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor —
        `mobile/TESTING.md` bölüm 11'e madde eklendi.
 
+   - ✅ **Parça 56 — genel tasarım denetimi: EN BÜYÜK fark gölgelerdi, punto
+     değil (11 Ağustos 2026, 8 dosya):** Kullanıcı aynı Setup ekranının app
+     ve web ekran görüntüsünü yan yana koyup *"küçük font size, type, kutu
+     ölçüleri vb tüm tasarımsal farklılıkları analiz et… her şeyin web ile
+     uyumlu olup olmadığını kontrol et"* dedi.
+     - **Yöntem — Tailwind sınıfından zihnen türetme YOK (Parça 33 dersi):**
+       `npm run build` ile derlenen GERÇEK CSS, Chromium'da (Playwright)
+       render edilip `getComputedStyle`/`getBoundingClientRect` ile okundu.
+       Bu, ilk hipotezimi bir kez çürüttü: alt sekmelerin `py-2` (8px)
+       olduğunu sanıp "port 10 kullanıyor, fark var" diye not almıştım —
+       ölçüm web'in `py-2.5` (10px) olduğunu, yani portun DOĞRU olduğunu
+       gösterdi. Ölçmeden düzeltseydim çalışan bir değeri bozacaktım.
+     - **Asıl bulgu, tek tek farklardan büyük: web'in `shadow-raised`/
+       `btn-raised*` gölgeleri kartlarda ve sekmelerde HİÇ port edilmemişti.**
+       Port yalnızca BUTONLARA (NeoButton) gölge veriyordu; kart/panel/
+       istatistik kutusu/alt sekme düz `BoxDecoration` idi. Kullanıcının
+       "app daha düz duruyor" izlenimi tam olarak buydu. **10 site**
+       düzeltildi: Canlı oyun kartı, davet kartı, iki alt sekme çubuğu
+       (Setup + Canlı), "Son Oynadıklarım" satırı, skor kartı sekmesi +
+       istatistik kutusu, oyun geçmişi kartı, Setup oyuncu satırı, Devam
+       Eden Oyun satırı.
+       - `shadow-raised` ile `btn-raised-neutral` index.css'te BİREBİR AYNI
+         iki katman — `kRaisedShadows`; seçili/accent yüzeyler üç katmanlı
+         `kRaisedAccentShadows` (ikisi de `neo_box.dart`).
+       - `ShapeDecorationWithCssShadows`'a `borderColor`/`borderWidth`
+         eklendi. **`padding` override'ı kritik:** `Decoration.padding`
+         çocuğu çerçeve kadar içeri iter, yani BoxDecoration'dan geçen bir
+         kutunun DIŞ ölçüsü birebir korunuyor — gölge eklerken düzen kaymadı.
+     - **Ölçülen ve düzeltilen metrik farkları:**
+       | Yer | Web (ölçüldü) | Port (öncesi) |
+       |---|---|---|
+       | Setup: logo → paragraf | 20px | 16 |
+       | Setup: paragraf → link satırı | 16px | 12 |
+       | Setup: paragraf satır yüksekliği | 12/16px (`text-xs`) | 1.5 (=18) |
+       | Arkadaşlar: sekme puntosu | 11px | 10 |
+       | Arkadaşlar: küçük buton dolgusu | 6/12px (`py-1.5 px-3`) | 7/10 |
+       | Sohbet balonu satır yüksekliği | 1.375 (`leading-snug`) | 1.35 |
+       İlk ikisinin kök sebebi ortak ve öğreticiydi: web'de blok `gap-1`
+       taşıyor VE çocuklar `mt-4`/`mt-3` — flexbox'ta **gap ile margin
+       TOPLANIR**, port yalnızca margin'i taşımıştı.
+     - **Setup'ın en altındaki "Kullanım Koşulları · Gizlilik Politikası"
+       satırı porta hiç girmemişti** — modaller vardı ama yalnızca kayıt
+       formundan ulaşılabiliyordu. Eklendi (web'le aynı 10px mono/muted).
+       Teşhis satırı (`Sürüm … · depo ok`) BİLİNÇLİ olarak duruyor: web'de
+       karşılığı yok ama cihaz testinde aktif olarak kullanılıyor (Parça
+       45'te tam bu yüzden eklendi), hukuki satırın ALTINA alındı.
+     - **Doğrulanan ve DEĞİŞTİRİLMEYENLER** (ölçüldü, zaten doğru): modal
+       kabuğu (360px/12px radius/#B8C2D1/başlık 14px-1.5ls/gövde dolguları),
+       oyun kartı dolgusu 8/10, skor istatistik kutusu 12/4, k-lig satırı
+       6/8, oyun geçmişi filtre sekmesi 11px/6px, sohbet balonu 10/6 + 12px
+       radius, Setup bölüm etiketi ve OYUN TİPİ butonu.
+     - **Test — negatif eş, iki ayrı kanıt:** Setup geometrisi (20/16px +
+       12/16 satır + hukuki satır) ve gölgelerin varlığı ayrı testlerde
+       sabitlendi. Eski boşluklar geri konunca `Expected: a numeric value
+       within <1.5> of <16> / Actual: <12.0>`, gölgeler geri alınınca
+       "oyun kartı/pasif sekme gölgesiz kalmamalı" ile GERÇEKTEN düştüler.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       313/313 yeşil** (312'den +1). İlk koşuda 1 test düştü ama iki temiz
+       koşu daha yapıldı ve tekrarlamadı — bu, Parça 13/21'de belgelenen
+       sqflite yazma-kilidi timer flake'i, bu parçayla ilgisiz.
+       `kelimeki_core`'a hiç dokunulmadı.
+     - **Denetimde bulunan ama BU PARÇADA düzeltilmeyen iki şey** (ikisi de
+       ayrı bir tur istiyor, aşağıdaki "Sonraya Bırakılan İşler"e eklendi):
+       metin girişi dolgusu (port v10, web `py-2`=8) ve `InputDecoration`ın
+       8 dosyada kopyalanmış olması — ikincisi Parça 54'teki renk
+       sürüklenmesiyle AYNI sınıf bir risk.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
 kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
 silinip kendi tarihli parça notuna taşınır.
+
+- **Metin girişi dolgusu + `InputDecoration`ın 8 kopyası (11 Ağustos 2026,
+  Parça 56 denetiminde bulundu):** Port `contentPadding: h12/v10`
+  kullanıyor, web `px-3 py-2` = h12/**v8**. Kutu yüksekliği web'de tam
+  38px (20 satır + 16 dolgu + 2 çerçeve); portta satır yüksekliği de
+  serbest bırakıldığından ~40-41px. Birebir eşitlemek için İKİSİ birlikte
+  değişmeli: dolgu 8 **ve** giriş metninin `height: 20/14`i.
+  - **Asıl iş bu değil:** aynı `InputDecoration` bloğu **8 dosyada**
+    kopyalanmış (auth_modal, account_settings, reset_password, feedback,
+    friends, chat_modal, chat_settings, live_game_create_form) — Parça
+    54'teki renk sürüklenmesiyle AYNI sınıf risk. Önce ortak bir
+    `kInputDecoration` yardımcısına çekilmeli, düzeltme ondan sonra tek
+    yerden gelir.
+  - Cihazda görsel doğrulama gerektiriyor (Flutter'ın `isDense`/baseline
+    davranışı CSS ile birebir değil), o yüzden Parça 56'ya sığdırılmadı.
 
 - **"Tüm Oyunlarım"daki her karta hamle geçmişi ikonu (10 Ağustos 2026,
   kullanıcı kararı — sözleri: "mesaj balonunun yanına aynı boyda bir file

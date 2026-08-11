@@ -28,6 +28,7 @@ import '../game/player_badge.dart';
 import 'player_score_card_modal.dart';
 import 'score_box_row.dart';
 import '../tokens.dart';
+import '../game/neo_box.dart';
 
 const _panel = kPanel;
 const _border = kBorder;
@@ -706,11 +707,11 @@ class _EntryCard extends StatelessWidget {
             behavior: HitTestBehavior.opaque,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
+              decoration: ShapeDecorationWithCssShadows(
                 // Web: Canlı kayıtlar hafif gri zeminle ayrışır.
                 color: isOnline ? _panel : Colors.white,
-                border: Border.all(color: _border),
-                borderRadius: BorderRadius.circular(6),
+                borderColor: _border, radius: 6,
+                shadows: kRaisedShadows, // web shadow-raised
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,

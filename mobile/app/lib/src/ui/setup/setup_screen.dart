@@ -45,6 +45,10 @@ import '../auth/k_avatar.dart';
 import 'membership_perks_box.dart';
 import 'recent_games_section.dart';
 import '../tokens.dart';
+import '../game/neo_box.dart';
+import '../auth/legal_modals.dart';
+import '../feedback/feedback_modal.dart';
+import '../../data/feedback_api.dart';
 
 const _panel = kPanel;
 const _border = kBorder;
@@ -274,6 +278,17 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   /// durumu BİLİNÇLİ taşınmadı: `share_plus` iOS/Android'de her zaman
   /// native paylaş sayfasına düşer, "paylaşım API'si yok" durumu (yalnızca
   /// masaüstü tarayıcılara özgü) mobilde hiç oluşmaz.
+  /// Terms/Privacy içindeki "Görüş Bildir formu" linki — AuthModal'daki
+  /// aynı desen (web'de her iki modal da FeedbackModal'ı `general` ile açar).
+  void _openFeedback() {
+    final repo = widget.services.feedback;
+    if (repo == null) return;
+    showFeedbackModal(context,
+        auth: widget.services.auth,
+        feedback: repo,
+        source: FeedbackSource.general);
+  }
+
   Future<void> _handleShare() {
     return (widget.share ?? shareBoard)(
       png: null,
@@ -616,7 +631,9 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                         ),
                       ),
                     const Center(child: LogoMark(height: 52)),
-                    const SizedBox(height: 16),
+                    // Web: blok `gap-1` (4px) + paragrafın `mt-4`si (16px)
+                    // ÜST ÜSTE binerek 20px yapıyor — Chromium'da ölçüldü.
+                    const SizedBox(height: 20),
                     const Text(
                       'Kelimeler kurarak bölgeni genişlet, rakiplerini kuşat. '
                       'Ama dikkat et: Hamlen rakibinin bölgesine temas ederse, '
@@ -628,11 +645,14 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                       style: TextStyle(
                         fontFamily: 'SpaceMono',
                         fontSize: 12,
-                        height: 1.5,
+                        // Web `text-xs` = 12px/16px satır (1.333) — 1.5
+                        // dört satırlık bu blokta 8px fazla yer kaplıyordu.
+                        height: 16 / 12,
                         color: _muted,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    // Web: `gap-1` (4px) + link satırının `mt-3`ü (12px).
+                    const SizedBox(height: 16),
                     // Web Setup'taki "Nasıl oynanır?" · "Arkadaşınla paylaş"
                     // satırı — ikisi de font-mono/11px/kalın/accent linkler.
                     Align(
@@ -713,7 +733,30 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                               : _buildNewGameForm(words);
                         },
                       ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 20),
+                    // Web Setup'ın en altındaki hukuki link satırı
+                    // (`text-[10px] font-mono text-muted gap-2`). Port bunu
+                    // hiç taşımamıştı — modaller vardı ama Setup'tan
+                    // ulaşılamıyordu, yalnızca kayıt formundan.
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _LegalLink('Kullanım Koşulları',
+                            onTap: () => showTermsModal(context,
+                                onFeedback: _openFeedback)),
+                        const SizedBox(width: 8),
+                        const Text('·',
+                            style: TextStyle(
+                                fontFamily: 'SpaceMono',
+                                fontSize: 10,
+                                color: _muted)),
+                        const SizedBox(width: 8),
+                        _LegalLink('Gizlilik Politikası',
+                            onTap: () => showPrivacyModal(context,
+                                onFeedback: _openFeedback)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
                     // Teşhis alt satırı (iskelet HomeScreen'in durum
                     // panelinden kalan tek iz — cihazda ilk açılış doğrulaması
                     // için faydalı, göze batmayan tek satır).
@@ -906,10 +949,12 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
           children: [
             Container(
               padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
+              decoration: ShapeDecorationWithCssShadows(
                 color: active ? _accent : _panel,
-                border: Border.all(color: active ? _accent : _border),
-                borderRadius: BorderRadius.circular(6),
+                borderColor: active ? _accent : _border,
+                radius: 6,
+                // Web: seçili `btn-raised`, seçili değil `btn-raised-neutral`.
+                shadows: active ? kRaisedAccentShadows : kRaisedShadows,
               ),
               alignment: Alignment.center,
               child: Text(
@@ -1085,6 +1130,23 @@ class _ChoiceButton extends StatelessWidget {
 
 /// Web'in `font-mono text-[11px] font-bold text-accent hover:underline`
 /// linkleri — "Nasıl oynanır?" / "Arkadaşınla paylaş" satırında paylaşılıyor.
+/// Setup'ın en altındaki hukuki linkler — web `text-[10px] font-mono
+/// text-muted` (accent DEĞİL, `_InlineLink`'ten bu yüzden ayrı).
+class _LegalLink extends StatelessWidget {
+  final String text;
+  final VoidCallback onTap;
+  const _LegalLink(this.text, {required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Text(text,
+            style: const TextStyle(
+                fontFamily: 'SpaceMono', fontSize: 10, color: _muted)),
+      );
+}
+
 class _InlineLink extends StatelessWidget {
   final String text;
   final VoidCallback onTap;
@@ -1138,10 +1200,9 @@ class _PlayerRow extends StatelessWidget {
         : 'Yapay Zeka ${index + 1}';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: col.tint,
-        border: Border.all(color: col.base),
-        borderRadius: BorderRadius.circular(6),
+      decoration: ShapeDecorationWithCssShadows(
+        color: col.tint, borderColor: col.base, radius: 6,
+        shadows: kRaisedShadows, // web shadow-raised
       ),
       child: Row(
         children: [
@@ -1239,10 +1300,9 @@ class _SavedGameRow extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: _panel,
-          border: Border.all(color: _border),
-          borderRadius: BorderRadius.circular(6),
+        decoration: const ShapeDecorationWithCssShadows(
+          color: _panel, borderColor: _border, radius: 6,
+          shadows: kRaisedShadows, // web shadow-raised
         ),
         child: Row(
           children: [

@@ -22,6 +22,7 @@ import 'package:kelimeki/src/ui/game/neo_button.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:kelimeki/src/ui/auth/auth_modal.dart';
 import 'package:kelimeki/src/ui/game/count_badge.dart';
+import 'package:kelimeki/src/ui/game/logo_mark.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
 import 'package:kelimeki/src/ui/live/live_games_tab.dart';
 import 'package:kelimeki/src/ui/setup/setup_screen.dart';
@@ -433,5 +434,34 @@ void main() {
       tester.getSize(find.byType(NeoButton).first).height,
       moreOrLessEquals(44, epsilon: 0.5),
     );
+  });
+
+  // Parça 56 — web ile ÖLÇÜLEREK hizalanan Setup metrikleri. Değerlerin
+  // hepsi kelimeki.com'un DERLENMİŞ CSS'i Chromium'da render edilerek
+  // alındı (Tailwind sınıflarından zihnen türetilmedi — Parça 33 dersi).
+  testWidgets('Setup başlık bloğu ve hukuki alt satır web ile aynı',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(390, 844));
+    await pumpSetup(tester, services());
+
+    // Web ölçümü: logo alt → paragraf üst 20px, paragraf alt → link üst
+    // 16px (blok `gap-1` + paragrafın `mt-4`/linklerin `mt-3`ü ÜST ÜSTE
+    // biniyor — port ikisinde de yalnızca margin'i taşımıştı).
+    final logo = tester.getRect(find.byType(LogoMark).first);
+    final para = tester.getRect(find.textContaining('Kelimeler kurarak'));
+    final link = tester.getRect(find.text('Nasıl oynanır?'));
+    expect(para.top - logo.bottom, closeTo(20, 1.5));
+    expect(link.top - para.bottom, closeTo(16, 1.5));
+
+    // Web `text-xs` = 12px/16px satır → 4 satırlık paragraf 64px.
+    final paraText = tester.widget<Text>(find.textContaining('Kelimeler kurarak'));
+    expect(paraText.style!.fontSize, 12);
+    expect(paraText.style!.height! * 12, closeTo(16, 0.01));
+
+    // Web Setup'ın en altındaki hukuki linkler — port hiç taşımamıştı.
+    await tester.scrollUntilVisible(find.text('Kullanım Koşulları'), 200,
+        scrollable: find.byType(Scrollable).first);
+    expect(find.text('Kullanım Koşulları'), findsOneWidget);
+    expect(find.text('Gizlilik Politikası'), findsOneWidget);
   });
 }

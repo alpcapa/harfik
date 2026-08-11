@@ -7,6 +7,7 @@ import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
 
 import '../../data/stats_api.dart';
 import '../tokens.dart';
+import '../game/neo_box.dart';
 
 const _panel = kPanel;
 const _border = kBorder;
@@ -88,10 +89,12 @@ class ScoreTabsBar extends StatelessWidget {
               onTap: () => onChanged(t),
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
+                decoration: ShapeDecorationWithCssShadows(
                   color: tab == t ? _accent : _panel,
-                  border: Border.all(color: tab == t ? _accent : _border),
-                  borderRadius: BorderRadius.circular(6),
+                  borderColor: tab == t ? _accent : _border,
+                  radius: 6,
+                  shadows:
+                      tab == t ? kRaisedAccentShadows : kRaisedShadows,
                 ),
                 child: Column(
                   children: [
@@ -267,10 +270,10 @@ class _CellBox extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-      decoration: BoxDecoration(
+      decoration: const ShapeDecorationWithCssShadows(
         color: Colors.white, // web bg-bg
-        border: Border.all(color: _border),
-        borderRadius: BorderRadius.circular(6),
+        borderColor: _border, radius: 6,
+        shadows: kRaisedShadows, // web btn-raised-neutral
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
