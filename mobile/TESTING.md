@@ -535,10 +535,16 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       sekmesiyle açılmalı; Kabul Et → kişi "Arkadaşlarım"a düşmeli,
       web tarafında da arkadaş görünmeli.
 - [ ] **Ara & Ekle.** Boş kutuda "Tüm Üyeler" listesi kaydırdıkça
-      20'şer büyümeli; 2+ karakterle arama çalışmalı; Ekle → "İSTEK
-      GÖNDERİLDİ" (karşı hesapta istek görünmeli); karşılıklı istek
-      senaryosu: karşı taraf sana zaten istek göndermişse Ekle anında
-      "ARKADAŞSINIZ" olmalı (sunucu trigger'ı) ve e-posta GİTMEMELİ.
+      20'şer büyümeli; 2+ karakterle arama çalışmalı; **kişi-ekle ikonuna**
+      dokun → onay → satırdaki ikon **kum saatine** dönmeli (karşı hesapta
+      istek görünmeli); karşılıklı istek senaryosu: karşı taraf sana zaten
+      istek göndermişse ekle anında **kırmızı "adam-"** olmalı (sunucu
+      trigger'ı) ve e-posta GİTMEMELİ.
+      **Satır aksiyonları 11 Ağustos 2026'da metin butonlarından ikonlara
+      indirildi** (Ekle/İstek Gönderildi/Kabul Et/Arkadaşsınız/Çıkar). Dört
+      ikon: kişi-ekle (mavi) · kum saati (gri, dokun → iptal) · kişi-onay
+      (mavi, gelen isteği kabul) · adam- (kırmızı, çıkar). Kural: ikon,
+      dokunuşun NE YAPACAĞINI söyler.
 - [ ] **Davet linki.** "Arkadaşını Davet Et" sistem paylaş sayfasını
       açmalı; link `https://kelimeki.com/davet/…` biçiminde olmalı ve
       webde açılıp çalışmalı (üye olmayan kayıt akışına düşmeli).
@@ -549,8 +555,10 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       "giriş yaptığında ekleneceksiniz" önizlemesi, giriş sonrası
       Setup'ta otomatik kabul.
 - [ ] **PlayerScoreCard simgesi.** k-lig/arkadaş listesinden birinin
-      kartını aç: arkadaşsan yeşil onay işareti (dokun → çıkar onayı),
-      değilsen kişi-ekle ikonu (dokun → istek onayı) görünmeli; kendi
+      kartını aç: arkadaşsan **kırmızı "adam-"** (dokun → çıkar onayı; 11
+      Ağustos 2026'ya kadar yeşil onay işaretiydi — durumu anlatıyordu,
+      eylemi değil), değilsen kişi-ekle ikonu (dokun → istek onayı)
+      görünmeli; kendi
       kartında simge OLMAMALI.
 - [ ] **Onay/sonuç diyalogları (9 Ağustos 2026, Parça 32).** Aynı ekrandaki
       arkadaş-ekle/çıkar/kabul-et/iptal-et onay diyaloğu (yatay/geniş

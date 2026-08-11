@@ -297,7 +297,7 @@ void main() {
     });
 
     testWidgets(
-        'Ara & Ekle: tüm üyeler listesi + Ekle → İSTEK GÖNDERİLDİ yaması',
+        'Ara & Ekle: tüm üyeler listesi + ekle ikonu → bekliyor ikonu yaması',
         (tester) async {
       final gw = FakeFriendsGateway()
         ..userRows = [
@@ -315,14 +315,17 @@ void main() {
       await tester.pump();
 
       expect(find.text('TÜM ÜYELER'), findsOneWidget);
-      expect(find.text('ARKADAŞSINIZ'), findsOneWidget); // Ali
-      await tester.tap(find.text('EKLE'));
+      // 11 Ağustos 2026: satır aksiyonları metin değil ikon (bkz.
+      // RelationIcons.tsx / _relationIconButton) — arkadaş olan Ali
+      // person_remove, eklenebilir olan person_add gösteriyor.
+      expect(find.byIcon(Icons.person_remove), findsOneWidget); // Ali
+      await tester.tap(find.byIcon(Icons.person_add_alt_1));
       // pumpAndSettle DEĞİL: odaklı arama alanının imleç animasyonu hiç
       // durmadığından settle asılır (feedback formunda görünmedi çünkü
       // orada gönderim alanı söküyor) — sınırlı pump yeterli.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
-      expect(find.text('İSTEK GÖNDERİLDİ'), findsOneWidget); // patchRelation
+      expect(find.byIcon(Icons.hourglass_top), findsOneWidget); // patchRelation
       // DİKKAT: testWidgets içinde `await Future.delayed(...)` fake-async
       // bölgesinde ASILIR (timer pump'sız çözülmez) — bildirim fake'te
       // senkron kaydedildiğinden doğrudan kontrol yeterli.
@@ -373,7 +376,7 @@ void main() {
       });
     });
 
-    testWidgets('Arkadaşlarım: Çıkar → onay → silme + sonuç diyaloğu',
+    testWidgets('Arkadaşlarım: çıkar ikonu → onay → silme + sonuç diyaloğu',
         (tester) async {
       final gw = FakeFriendsGateway()
         ..friendsRows = [
@@ -382,16 +385,17 @@ void main() {
       await pumpModal(tester, gateway: gw);
       expect(find.text('Bobola'), findsOneWidget);
 
-      await tester.tap(find.text('ÇIKAR'));
+      await tester.tap(find.byIcon(Icons.person_remove));
       await tester.pumpAndSettle();
       expect(find.textContaining('Arkadaşlıktan çıkmak mı'), findsOneWidget);
       await tester.tap(find.text('VAZGEÇ'));
       await tester.pumpAndSettle();
       expect(gw.deleted, isEmpty); // vazgeçildi
 
-      await tester.tap(find.text('ÇIKAR'));
+      await tester.tap(find.byIcon(Icons.person_remove));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('ÇIKAR').last); // onay butonu
+      // Onay diyaloğunun butonu hâlâ METİN — yalnızca satır ikonlaştı.
+      await tester.tap(find.text('ÇIKAR').last);
       await tester.pumpAndSettle();
       expect(gw.deleted, ['f1']);
       expect(find.text('Arkadaşlıktan çıkarıldı.'), findsOneWidget);
@@ -430,7 +434,7 @@ void main() {
     });
 
     testWidgets(
-        'PlayerScoreCard: arkadaşsa yeşil işaret → çıkar onayı; değilse ekle',
+        'PlayerScoreCard: arkadaşsa person_remove → çıkar onayı; değilse person_add',
         (tester) async {
       await setPhoneViewSize(tester, const Size(420, 900));
       final gw = FakeFriendsGateway()
@@ -448,9 +452,9 @@ void main() {
       ));
       await tester.pump();
       await tester.pump();
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      expect(find.byIcon(Icons.person_remove), findsOneWidget);
 
-      await tester.tap(find.byIcon(Icons.check_circle));
+      await tester.tap(find.byIcon(Icons.person_remove));
       await tester.pumpAndSettle();
       expect(find.textContaining('Arkadaşlıktan çıkmak mı'), findsOneWidget);
       await tester.tap(find.text('ÇIKAR'));

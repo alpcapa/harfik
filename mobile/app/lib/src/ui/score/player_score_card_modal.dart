@@ -207,16 +207,17 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
       child: Padding(
         padding: const EdgeInsets.only(left: 6),
         child: Icon(
-          accepted ? Icons.check_circle : Icons.person_add_alt_1,
+          // 11 Ağustos 2026: arkadaş durumu yeşil `check_circle` DEĞİL kırmızı
+          // `person_remove`. Kural (web `RelationIcons.tsx` ile ortak): ikon,
+          // dokunuşun NE YAPACAĞINI söyler — burada dokunuş çıkarma onayı
+          // açıyor. Yeşil onay durumu anlatıyordu, eylemi değil.
+          // (Eski yeşil, tailwind `green` token'ıydı: #16A34A. Web'de İKİ
+          // ayrı yeşil olduğu notu hâlâ geçerli — `Board.tsx`'in hardcoded
+          // #1FA05C'si başka bir yer; bkz. mobile/CLAUDE.md Parça 42.)
+          accepted ? Icons.person_remove : Icons.person_add_alt_1,
           size: 20,
           color: accepted
-              // Web'in bu elemandaki rengi tailwind `green` TOKEN'ı
-              // (`text-green` = #16A34A). Port baştan `#1FA05C` yazmıştı —
-              // o da web'de var ama BAŞKA bir yerde: `Board.tsx`'in
-              // sürükleme/hamle durumu dış hattında hardcoded duruyor.
-              // Yani ikisi web'de ayrı iki yeşil; burada token doğru olan
-              // (9 Ağustos 2026, web ikonu porta hizalanırken bulundu).
-              ? const Color(0xFF16A34A)
+              ? const Color(0xFFDC2626) // tailwind red
               : const Color(0xFF2563EB),
         ),
       ),

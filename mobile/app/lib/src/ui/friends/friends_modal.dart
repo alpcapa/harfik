@@ -36,6 +36,8 @@ import '../score/player_score_card_modal.dart';
 const Color _text = Color(0xFF1B2430);
 const Color _muted = Color(0xFF5A6673);
 const Color _accent = Color(0xFF2563EB);
+// Web tailwind `red` — arkadaşlıktan çıkar ikonu.
+const Color _red = Color(0xFFDC2626);
 const Color _border = Color(0xFFDCE2EA);
 const Color _bg = Colors.white;
 
@@ -429,9 +431,10 @@ class _FriendsModalState extends State<FriendsModal> {
                 ]),
               ),
             ),
-            _smallButton(
-              'Çıkar',
-              neutral: true,
+            _relationIconButton(
+              icon: Icons.person_remove,
+              color: _red,
+              label: '${f.name} — arkadaşlıktan çıkar',
               busy: _busyId == f.friendId,
               onTap: () => _confirmThenRemoveFriend(f),
             ),
@@ -530,28 +533,49 @@ class _FriendsModalState extends State<FriendsModal> {
     );
   }
 
-  /// Web renderFriendRow — ilişkiye göre Ekle / İstek Gönderildi (iptal) /
-  /// Kabul Et / Arkadaşsınız.
+  /// Web renderFriendRow — ilişkiye göre ekle / bekliyor (iptal) / kabul /
+  /// çıkar. **Metin butonları 11 Ağustos 2026'da ikonlara indirildi**
+  /// (web `RelationIcons.tsx` ile aynı sözlük): ikon, dokunuşun NE YAPACAĞINI
+  /// söyler, ilişkinin adını değil — bu yüzden "arkadaşsınız" durumu yeşil
+  /// onay değil kırmızı `person_remove`. Flutter fontu gömülü taşıdığından
+  /// `Icons.*` doğrudan kullanılıyor; web aynı glyph'leri bu fonttan
+  /// çıkarılmış SVG path'leriyle çiziyor, yani iki platform BENZER değil
+  /// AYNI vektörü gösteriyor.
   Widget _candidateRow(FriendCandidate u) {
-    final Widget action = switch (u.relation) {
-      FriendRelation.accepted => const Text('ARKADAŞSINIZ',
-          style: TextStyle(
-              fontFamily: 'SpaceMono', fontSize: 9, color: _muted)),
-      FriendRelation.pendingOutgoing => GestureDetector(
-          onTap: _busyId == u.id ? null : () => _confirmThenCancel(u),
-          child: const Text('İSTEK GÖNDERİLDİ',
-              style: TextStyle(
-                  fontFamily: 'SpaceMono',
-                  fontSize: 9,
-                  color: _muted,
-                  decoration: TextDecoration.underline)),
+    final (IconData ikon, Color renk, String etiket, VoidCallback aksiyon) =
+        switch (u.relation) {
+      FriendRelation.accepted => (
+          Icons.person_remove,
+          _red,
+          'Arkadaşlıktan çıkar',
+          () => _confirmThenRemoveCandidate(u),
         ),
-      FriendRelation.pendingIncoming => _smallButton('Kabul Et',
-          busy: _busyId == u.id,
-          onTap: () => _handleRespond(u.id, accept: true)),
-      null => _smallButton('Ekle',
-          busy: _busyId == u.id, onTap: () => _handleSend(u)),
+      FriendRelation.pendingOutgoing => (
+          Icons.hourglass_top,
+          _muted,
+          'İstek gönderildi — iptal et',
+          () => _confirmThenCancel(u),
+        ),
+      FriendRelation.pendingIncoming => (
+          Icons.how_to_reg,
+          _accent,
+          'Arkadaşlık isteğini kabul et',
+          () => _handleRespond(u.id, accept: true),
+        ),
+      null => (
+          Icons.person_add_alt_1,
+          _accent,
+          'Arkadaş ekle',
+          () => _handleSend(u),
+        ),
     };
+    final Widget action = _relationIconButton(
+      icon: ikon,
+      color: renk,
+      label: '${u.name} — $etiket',
+      busy: _busyId == u.id,
+      onTap: aksiyon,
+    );
     return _row(
       child: Row(children: [
         KAvatar(url: u.avatarUrl, name: u.name, size: 32),
@@ -559,6 +583,36 @@ class _FriendsModalState extends State<FriendsModal> {
         _name(u.name),
         action,
       ]),
+    );
+  }
+
+  /// 44px dokunma hedefi (iOS asgarisi) içinde 20px ikon. Metin kalktığı
+  /// için `Semantics.label` artık ekran okuyucunun TEK bilgi kaynağı — boş
+  /// bırakma. Web'deki aynı buton `w-11 h-11` + `aria-label` taşıyor.
+  Widget _relationIconButton({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required bool busy,
+    VoidCallback? onTap,
+  }) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: busy ? null : onTap,
+        behavior: HitTestBehavior.opaque,
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Center(
+            child: Opacity(
+              opacity: busy ? 0.4 : 1,
+              child: Icon(icon, size: 20, color: color),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -576,6 +630,35 @@ class _FriendsModalState extends State<FriendsModal> {
   }
 
   // ── Onay/sonuç diyalogları (web ConfirmDialog/InfoDialog) ────────────────
+
+  /// "Ara & Ekle" listesindeki `accepted` satırından çıkarma. Web'de bu satır
+  /// eskiden tıklanamaz bir "Arkadaşsınız" metniydi; ikona dönünce çıkarma
+  /// yolu buradan da açıldı. `_confirmThenRemoveFriend` FriendRow istediği
+  /// için ayrı bir sarmalayıcı — onay/sonuç metinleri BİREBİR aynı.
+  Future<void> _confirmThenRemoveCandidate(FriendCandidate u) async {
+    final ok = await confirmFriendAction(
+      context,
+      title: 'Arkadaşlıktan Çıkar',
+      message:
+          '${u.name} ile arkadaşsınız. Arkadaşlıktan çıkmak mı istiyorsunuz?',
+      confirmLabel: 'Çıkar',
+    );
+    if (!ok || !mounted) return;
+    setState(() => _busyId = u.id);
+    try {
+      await widget.friends.removeOrCancel(u.id);
+      // Listedeki ikon anında person_add'e dönsün + Arkadaşlarım tazelensin.
+      _patchRelation(u.id, null);
+      _reloadFriends();
+      if (mounted) {
+        await showFriendInfoDialog(context, 'Arkadaşlıktan çıkarıldı.');
+      }
+    } catch (e) {
+      debugPrint('[Kelimeki] arkadaş çıkarma hatası: $e');
+    } finally {
+      if (mounted) setState(() => _busyId = null);
+    }
+  }
 
   Future<void> _confirmThenRemoveFriend(FriendRow f) async {
     final ok = await confirmFriendAction(

@@ -1103,6 +1103,62 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        satırda kamuya açık (skor, tahta) ve mahrem (yazışma) veri bir arada
        olabilir.
 
+   - ✅ **Parça 52 — arkadaşlık satırlarında metin butonları ikonlara indi
+     (11 Ağustos 2026, `friends_modal.dart`, `player_score_card_modal.dart`
+     + web `RelationIcons.tsx`/`FriendsModal.tsx`/`PlayerScoreCard.tsx`):**
+     Kullanıcı isteği — "Ara & Ekle ve Arkadaşlar sekmesinde yazı yerine
+     ikonlar; ekle/çıkar butonları kalkacak". Parça 42'de (dün) yalnızca
+     `PlayerScoreCard`'ın simgesi iki platformda aynı vektöre çekilmişti; bu
+     onun listelere yayılmış hâli.
+     - **Kural — ikon, DOKUNUŞUN NE YAPACAĞINI söyler, ilişkinin adını
+       değil.** Bu yüzden "arkadaşsınız" durumu yeşil `check_circle` DEĞİL
+       kırmızı `person_remove`: dokunulunca yapılan şey çıkarmak. Yeşil onay
+       durumu anlatıyordu, eylemi değil — Parça 42'de "keşfedilebilirlik
+       zayıf" diye not düşülen zaaf tam buydu ve kullanıcının "adam-" fikri
+       onu kapattı. `check_circle` artık HİÇBİR yerde kullanılmıyor.
+     - **Dört durum, dört glyph** (iki platformda aynı): `person_add_alt_1`
+       (mavi, ekle) · `hourglass_top` (gri, istek gönderildi → iptal) ·
+       `how_to_reg` (mavi, gelen isteği kabul) · `person_remove` (kırmızı,
+       çıkar). "İstekler" sekmesindeki Kabul Et/Reddet butonlarına
+       DOKUNULMADI — orası bir durum değil iki ayrı karar.
+     - **Kum saatini kullanıcı seçti** (saat/kum saati/üç nokta üçlüsü
+       gerçek fontla çizilip gösterildi). Karar öncesi ölçüm: `flutter build`
+       gerekmeden, glyph'ler fonttan çıkarılıp bir HTML mock'una konup
+       Chromium'da render edildi — tasarım tercihi tarif edilerek değil
+       GÖRÜLEREK verildi.
+     - **Bulunan tuzak — codepoint'i hafızadan yazma:** ilk denemede
+       `schedule`/`person_remove` vb. kodlarını hafızadan yazdım ve tamamen
+       başka glyph'ler çıktı (saat yerine hamburger çizgi, person_remove
+       yerine `<>`). `cmap`'te "o kodda bir glyph VAR" demek aradığın ikon
+       olduğu anlamına GELMİYOR. Tek doğru kaynak Flutter'ın kendi
+       `packages/flutter/lib/src/material/icons.dart`'ı; ayrıca font olarak
+       `bin/cache/artifacts/material_fonts/` kopyası kullanılmalı (devtools
+       altındaki ayrı bir sürüm). Hata yalnızca ÖNİZLEMEYİ render ettiğim
+       için yakalandı — kod yazılsaydı sessizce yanlış ikon girecekti.
+     - **Web'de path'ler tek dosyada:** `src/components/RelationIcons.tsx`
+       (4 ikon). `PlayerScoreCard`'ın inline `PersonAddIcon`/`CheckCircleIcon`
+       tanımları oraya taşındı — `FriendsModal` da aynı path'i kullandığından
+       ikinci kopya açılmadı. Flutter tarafı fontu gömülü taşıdığından
+       `Icons.*` doğrudan; yani iki platform BENZER değil AYNI vektör.
+     - **44px dokunma hedefi + erişilebilirlik:** ikon 20px, etrafındaki
+       görünmez alan 44px (iOS asgarisi; metin butonu bunu doğal olarak
+       sağlıyordu). Metin kalktığı için `aria-label`/`Semantics.label` artık
+       ekran okuyucunun TEK bilgi kaynağı — boş bırakılamaz.
+     - **Yeni yol: "Ara & Ekle"den çıkarma.** `accepted` satırı eskiden
+       tıklanamaz bir "Arkadaşsınız" metniydi; ikona dönünce çıkarma oradan
+       da mümkün oldu (`_confirmThenRemoveCandidate` / web'de aynı onay
+       state'i yapısal tiple paylaşıldı — ikinci bir diyalog açılmadı) ve
+       sonrasında `patchRelation` ile ikon anında `person_add`'e dönüyor.
+     - **Test — negatif eş doğrulamasıyla:** `friends_test.dart`'ın üç
+       assertion'ı yeni ikonlara çevrildi (onay diyaloğundaki "ÇIKAR"
+       METNİ kaldı — yalnızca satır ikonlaştı). İki lib dosyası `git stash`
+       ile geri alınınca 3 test GERÇEKTEN düştü, geri konunca 15/15.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 305/305**; web
+       `npm run lint` + `npm run build` temiz. Gerçek widget görüntüsü
+       `build/screenshots/friends_modal.png`'de (kırmızı adam- ikonları).
+     - **Doğrulama sınırı:** cihazda görsel/dokunma teyidi kullanıcıdan
+       bekleniyor — `mobile/TESTING.md` bölüm 10 buna göre güncellendi.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
