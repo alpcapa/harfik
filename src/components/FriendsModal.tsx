@@ -20,6 +20,7 @@ import {
   sendFriendRequest,
 } from '../lib/api';
 import type { FriendRow, FriendSearchResult, IncomingFriendRequest } from '../lib/database.types';
+import { PersonAddIcon, PersonRemoveIcon, HourglassIcon, HowToRegIcon } from './RelationIcons';
 import { trCompare } from '../utils/turkish';
 
 /** Bir arkadaşı `PlayerScoreCard` açabilecek şekle çevirir — henüz canlı oyun
@@ -168,7 +169,11 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
   const [busyId, setBusyId] = useState<string | null>(null);
   const [inviteStatus, setInviteStatus] = useState<'idle' | 'busy' | 'copied'>('idle');
   const [selectedFriend, setSelectedFriend] = useState<PlayerSummary | null>(null);
-  const [confirmRemove, setConfirmRemove] = useState<FriendRow | null>(null);
+  // Hem "Arkadaşlarım" satırı (FriendRow) hem "Ara & Ekle"deki `accepted`
+  // satırı (FriendSearchResult) aynı onayı kullansın diye yapısal tip —
+  // ikinci bir onay diyaloğu açmaya gerek yok.
+  const [confirmRemove, setConfirmRemove] =
+    useState<{ friend_id: string; name: string } | null>(null);
   const [removeResultMsg, setRemoveResultMsg] = useState<string | null>(null);
   const confirmRemoveRef = useModalA11y(!!confirmRemove, () => setConfirmRemove(null));
   const removeResultRef = useModalA11y(!!removeResultMsg, () => setRemoveResultMsg(null));
@@ -318,6 +323,8 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
     try {
       await removeFriend(friendId);
       reloadFriends();
+      // Arama/tüm-üyeler listesinde de ikon anında person_add'e dönsün.
+      patchRelation(friendId, null);
       setRemoveResultMsg('Arkadaşlıktan çıkarıldı.');
     } catch (err) {
       console.error('[Kelimeki] arkadaş çıkarma hatası:', err);
@@ -386,42 +393,39 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
     setInviteStatus('idle');
   };
 
-  // Arama sonuçlarında ve tüm-üyeler listesinde birebir aynı satır — ilişki
-  // durumuna göre Ekle/İstek Gönderildi/Kabul Et/Arkadaşsınız gösterir.
+  // Arama sonuçlarında ve tüm-üyeler listesinde birebir aynı satır. Metin
+  // butonları 11 Ağustos 2026'da ikonlara indirildi (bkz. RelationIcons.tsx):
+  // ikon, dokunuşun NE YAPACAĞINI söyler. Dokunma hedefi 44px — ikon 20px,
+  // etrafındaki görünmez alan iOS kılavuzunun asgarisini karşılıyor. Metin
+  // kalktığı için `aria-label` artık tek bilgi kaynağı, boş bırakma.
+  const relationAction = (u: FriendSearchResult) => {
+    const props =
+      u.relation === 'accepted'
+        ? { label: 'Arkadaşlıktan çıkar', color: 'text-red', icon: <PersonRemoveIcon />, act: () => setConfirmRemove({ friend_id: u.id, name: u.name }) }
+        : u.relation === 'pending_outgoing'
+          ? { label: 'İstek gönderildi — iptal et', color: 'text-muted', icon: <HourglassIcon />, act: () => setConfirmCancel(u) }
+          : u.relation === 'pending_incoming'
+            ? { label: 'Arkadaşlık isteğini kabul et', color: 'text-accent', icon: <HowToRegIcon />, act: () => handleRespond(u.id, true) }
+            : { label: 'Arkadaş ekle', color: 'text-accent', icon: <PersonAddIcon />, act: () => handleSend(u.id) };
+    return (
+      <button
+        type="button"
+        aria-label={`${u.name} — ${props.label}`}
+        title={props.label}
+        disabled={busyId === u.id}
+        onClick={props.act}
+        className={`shrink-0 w-11 h-11 -my-2 -mr-2 flex items-center justify-center leading-none active:scale-90 transition-transform disabled:opacity-40 ${props.color}`}
+      >
+        {props.icon}
+      </button>
+    );
+  };
+
   const renderFriendRow = (u: FriendSearchResult) => (
     <div key={u.id} className={rowCls}>
       <Avatar url={u.avatar_url} name={u.name} size={32} />
       <span className={nameCls}>{u.name}</span>
-      {u.relation === 'accepted' ? (
-        <span className="shrink-0 text-[10px] font-mono text-muted uppercase tracking-[0.5px]">
-          Arkadaşsınız
-        </span>
-      ) : u.relation === 'pending_outgoing' ? (
-        <button
-          type="button"
-          className="shrink-0 text-[10px] font-mono text-muted uppercase tracking-[0.5px] underline underline-offset-2 active:opacity-70 transition-opacity"
-          disabled={busyId === u.id}
-          onClick={() => setConfirmCancel(u)}
-        >
-          İstek Gönderildi
-        </button>
-      ) : u.relation === 'pending_incoming' ? (
-        <button
-          className={`${smallBtn} bg-accent text-white`}
-          disabled={busyId === u.id}
-          onClick={() => handleRespond(u.id, true)}
-        >
-          Kabul Et
-        </button>
-      ) : (
-        <button
-          className={`${smallBtn} bg-accent text-white`}
-          disabled={busyId === u.id}
-          onClick={() => handleSend(u.id)}
-        >
-          Ekle
-        </button>
-      )}
+      {relationAction(u)}
     </div>
   );
 
@@ -484,11 +488,14 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
                     <span className={nameCls}>{f.name}</span>
                   </button>
                   <button
-                    className={`${smallBtn} btn-raised-neutral bg-panel border border-border text-muted hover:text-red`}
+                    type="button"
+                    aria-label={`${f.name} — arkadaşlıktan çıkar`}
+                    title="Arkadaşlıktan çıkar"
+                    className="shrink-0 w-11 h-11 -my-2 -mr-2 flex items-center justify-center leading-none text-red active:scale-90 transition-transform disabled:opacity-40"
                     disabled={busyId === f.friend_id}
                     onClick={() => setConfirmRemove(f)}
                   >
-                    Çıkar
+                    <PersonRemoveIcon />
                   </button>
                 </div>
               ))
