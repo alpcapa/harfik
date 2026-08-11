@@ -524,6 +524,14 @@ export default function App() {
 
   // Pas geçme onay popup'ı.
   const [showPassConfirm, setShowPassConfirm] = useState(false);
+  /**
+   * Oyun bitince "Tekrar Oyna" onayı. Canlı taraftaki (OnlineGameScreen)
+   * aynı butonun yerel karşılığı — orada davet gönderildiğinden onay şart,
+   * burada da AYNI konumda duran OYNA butonu oyun bitince altındaki
+   * parmakla birlikte anlam değiştirdiğinden kazara dokunuşa karşı aynı
+   * koruma uygulanıyor (bkz. kök CLAUDE.md, "Tekrar Oyna").
+   */
+  const [showRematchConfirm, setShowRematchConfirm] = useState(false);
 
   // Setup ekranında "Oyunu Başlat" tıklandığında Tutorial ilk kez
   // görülmemişse, oyun ekranı açılır açılmaz burada gösterilir.
@@ -1289,10 +1297,10 @@ export default function App() {
               {!state.swapMode && (
                 state.isGameOver ? (
                   <button
-                    onClick={() => dispatch({ type: 'INIT' })}
+                    onClick={() => setShowRematchConfirm(true)}
                     className="btn-raised shrink-0 px-5 rounded-lg font-sans text-[15px] font-bold uppercase tracking-[1.2px] bg-accent text-white active:scale-[0.97]"
                   >
-                    Yeni Oyun Aç
+                    Tekrar Oyna
                   </button>
                 ) : (
                   <button
@@ -1439,6 +1447,41 @@ export default function App() {
               </button>
               <button
                 onClick={() => setShowPassConfirm(false)}
+                className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Vazgeç
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRematchConfirm && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+          <div className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none">
+            <p className="text-base font-bold text-text font-sans">Tekrar Oyna</p>
+            <p className="text-sm text-text font-sans leading-relaxed">
+              {state.players.length} kişilik, Yapay Zeka'ya karşı yeni bir oyun başlatılacak. Emin
+              misin?
+            </p>
+            <div className="flex gap-2 mt-1">
+              <button
+                onClick={() => {
+                  setShowRematchConfirm(false);
+                  // Aynı kadro: biten oyunun oyuncu adları/YZ bayrakları
+                  // Setup'ın `doStart`'ının ürettiğinin AYNISI, yeniden
+                  // hesaplamaya gerek yok.
+                  dispatch({
+                    type: 'START',
+                    players: state.players.map((p) => ({ name: p.name, isAI: p.isAI })),
+                  });
+                }}
+                className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Tekrar Oyna
+              </button>
+              <button
+                onClick={() => setShowRematchConfirm(false)}
                 className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
               >
                 Vazgeç

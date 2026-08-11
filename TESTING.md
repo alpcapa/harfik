@@ -96,6 +96,11 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       + YZ'li bir oyunda YZ yine 4. koltukta kalmalı. Rakibi arkadaşlıktan
       çıkarıp denersen "Yalnızca arkadaşlarını davet edebilirsin." görünmeli
       ve ekranda kalınmalı.
+- [ ] **Yerel/YZ oyununda da "Tekrar Oyna" (11 Ağustos 2026).** Bir YZ oyununu
+      bitir: buton "Yeni Oyun Aç" DEĞİL "Tekrar Oyna" olmalı; onaydan sonra
+      Setup'a uğramadan aynı kadroyla taze bir oyun açılmalı. **Aynı ekranda
+      iki oyunu üst üste bitir** — Skor Kartı → "Tüm Oyunlarım"da İKİSİ de
+      görünmeli (Flutter portunda burada sessiz bir kayıt kaybı bulunmuştu).
 
 ## 3. Oyun içi mesajlaşma
 
