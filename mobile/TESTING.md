@@ -582,6 +582,14 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       oldunuz." / "Arkadaşlık isteği iptal edildi." (karşılıklı anlık kabul
       durumunda "{isim} ile artık arkadaşsınız." — bu mobile özgü, web'de
       karşılığı yok, bilinçli).
+- [ ] **Kişiye dokunmak skor kartını açar — ÜÇ sekmede de (11 Ağustos
+      2026, Parça 53).** "Arkadaşlarım", "İstekler" ve "Ara & Ekle"
+      (hem arama sonucu hem "Tüm Üyeler") satırlarında **avatara/isme**
+      dokun → o kişinin skor kartı açılmalı. Aksiyon ikonu bundan
+      AYRIŞIK olmalı: ikona dokunmak kartı DEĞİL onay diyaloğunu
+      açmalı (ikisi birbirini yutmamalı). Kartın kendi arkadaşlık
+      simgesinden bir işlem yapıp (ör. çıkar) kartı kapatınca satırdaki
+      ikon ANINDA yeni duruma dönmeli — eski ikon kalmamalı.
 
 ## 11. Canlı oyun — davet/kabul + tahta
 

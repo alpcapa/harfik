@@ -440,28 +440,7 @@ class _FriendsModalState extends State<FriendsModal> {
       for (final f in friends)
         _row(
           child: Row(children: [
-            Expanded(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: widget.stats == null
-                    ? null
-                    : () => showPlayerScoreCard(
-                          context,
-                          stats: widget.stats!,
-                          userId: f.friendId,
-                          name: f.name,
-                          avatarUrl: f.avatarUrl,
-                          games: widget.games,
-                          friends: widget.friends,
-                          auth: widget.auth,
-                        ),
-                child: Row(children: [
-                  KAvatar(url: f.avatarUrl, name: f.name, size: 32),
-                  const SizedBox(width: 10),
-                  _name(f.name),
-                ]),
-              ),
-            ),
+            _personButton(f.friendId, f.name, f.avatarUrl),
             _relationIconButton(
               icon: Icons.person_remove,
               color: _red,
@@ -482,9 +461,8 @@ class _FriendsModalState extends State<FriendsModal> {
       for (final r in requests)
         _row(
           child: Row(children: [
-            KAvatar(url: r.avatarUrl, name: r.name, size: 32),
-            const SizedBox(width: 10),
-            _name(r.name),
+            _personButton(r.requesterId, r.name, r.avatarUrl),
+            const SizedBox(width: 6),
             _smallButton('Kabul Et',
                 busy: _busyId == r.requesterId,
                 onTap: () => _handleRespond(r.requesterId, accept: true)),
@@ -624,11 +602,49 @@ class _FriendsModalState extends State<FriendsModal> {
     );
     return _row(
       child: Row(children: [
-        KAvatar(url: u.avatarUrl, name: u.name, size: 32),
-        const SizedBox(width: 10),
-        _name(u.name),
+        _personButton(u.id, u.name, u.avatarUrl),
         action,
       ]),
+    );
+  }
+
+  /// Avatar+isim: dokununca o kişinin skor kartı. "Arkadaşlarım"da baştan
+  /// beri vardı, ÜÇ listede de olmalı (kullanıcı isteği, 11 Ağustos 2026) —
+  /// hele "İstekler"de, isteği yanıtlamadan önce kimin gönderdiğine bakmak
+  /// tam da orada gerekiyor. Kart kapanınca ilişki yeniden okunuyor: kullanıcı
+  /// kartın İÇİNDEN arkadaş ekleyip çıkabildiğinden (`PlayerScoreCardModal`'ın
+  /// kendi simgesi) arkadaki satırın ikonu yoksa bayat kalırdı.
+  Widget _personButton(String id, String name, String? avatarUrl) {
+    final stats = widget.stats;
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: stats == null
+            ? null
+            : () async {
+                await showPlayerScoreCard(
+                  context,
+                  stats: stats,
+                  userId: id,
+                  name: name,
+                  avatarUrl: avatarUrl,
+                  games: widget.games,
+                  friends: widget.friends,
+                  auth: widget.auth,
+                );
+                if (!mounted) return;
+                final r = await widget.friends.relationWith(id);
+                if (!mounted) return;
+                _patchRelation(id, r);
+                _reloadFriends();
+                _reloadRequests();
+              },
+        child: Row(children: [
+          KAvatar(url: avatarUrl, name: name, size: 32),
+          const SizedBox(width: 10),
+          _name(name),
+        ]),
+      ),
     );
   }
 

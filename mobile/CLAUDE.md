@@ -1199,6 +1199,55 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
          Negatif eş: iki lib dosyası `git stash`lenince 4 test GERÇEKTEN
          düştü, geri konunca yeşile döndü. Web yarısı ayrı PR (#232).
 
+   - ✅ **Parça 53 — kişiye dokunmak skor kartını açıyor: yalnızca
+     "Arkadaşlarım"da vardı, üç listeye birden yayıldı (11 Ağustos 2026,
+     `friends_modal.dart` + web `FriendsModal.tsx`):** Kullanıcı bildirdi —
+     *"Arkadaşlarımda kişilere tıklayınca skor kartına gidiyorum ama Ara &
+     Ekle'de bu yok. Bence orada da olmalı."*
+     - **Web kaynağı önce okundu (kuralın ilk adımı) ve kullanıcıyı
+       doğruladı:** `FriendsModal.tsx`'te yalnızca "Arkadaşlarım" satırı
+       `setSelectedFriend(friendToPlayerSummary(f))` ile tıklanabilir;
+       "İstekler" ve `renderFriendRow` (Ara & Ekle'nin hem arama hem "Tüm
+       Üyeler" listesini besleyen ortak satırı) düz `<Avatar>`+`<span>`
+       çiziyordu. Yani bu bir port sapması DEĞİL, iki platformda da olan
+       bir eksikti — düzeltme İKİ tarafa birden yazıldı.
+     - **"İstekler" de dahil edildi (kullanıcı yalnızca Ara & Ekle'yi
+       söylemişti):** kapsamı KENDİ genişletmek de daraltmak kadar riskli
+       (bkz. Parça 36'nın dersi), bu yüzden gerekçe açıkça yazılıyor ve
+       kullanıcıya bildirildi: bir arkadaşlık isteğini yanıtlamadan önce
+       gönderenin kartına bakmak, üç listenin İÇİNDE bu davranışın en
+       faydalı olduğu yer. İstenmezse tek satırlık geri alma.
+     - **Ortak `_personButton(id, name, avatarUrl)` (web'de aynı işi yapan
+       `personButton`)** — üç liste de bunu kullanıyor; "Arkadaşlarım"ın
+       kendi satır-içi kopyası silindi, ikinci bir tıklama yolu açılmadı.
+       Web'de `friendToPlayerSummary(f: FriendRow)` yerini genel bir
+       `toPlayerSummary(id, name, avatarUrl)`e bıraktı — üç listenin veri
+       tipi farklı (`FriendRow` / `IncomingRequest` / `FriendSearchResult`),
+       ortak olan yalnızca bu üç alan.
+     - **Kart kapanınca ilişki TAZELENİYOR** (`closeSelectedFriend`):
+       `PlayerScoreCard`'ın kendi arkadaşlık simgesinden ekleme/çıkarma
+       yapılabildiğinden, kapanışta `fetchFriendRelation` +
+       `patchRelation` ile satırın ikonu güncelleniyor, ayrıca iki liste
+       yeniden çekiliyor. Bu olmadan kartta "çıkar"a basıp kapatan
+       kullanıcı, satırda hâlâ eski ikonu görürdü — Parça 52'nin
+       "aksiyondan sonra ikon anında değişmeli" davranışının kardeşi.
+     - **Dokunma alanı ile aksiyon ikonu AYRIŞIK:** kişi butonu
+       `Expanded`/`flex-1` ile satırın metin+avatar kısmını kaplıyor,
+       ikon kendi 44px hedefinde kalıyor — yani "karta git" ile "ekle/
+       çıkar" birbirini yutmuyor (Parça 52'nin 44px kuralı korunuyor).
+     - **Test — negatif eş doğrulamasıyla:** `friends_test.dart`'a üç
+       listede de dokunuşun `PlayerScoreCardModal`'ı açtığını doğrulayan
+       yeni bir test; `pumpModal`'ın `withStats` bayrağı bunun için var
+       (kart `StatsRepo` olmadan hiç açılmaz). `friends_modal.dart`
+       `git stash` ile geri alınınca test GERÇEKTEN düştü (`Expected:
+       exactly one matching candidate / Actual: Found 0 widgets with type
+       "PlayerScoreCardModal"`), geri konunca yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       308/308 yeşil** (307'den +1). Web `npm run lint` + `npm run build`
+       temiz. `kelimeki_core`'a hiç dokunulmadı.
+     - **Doğrulama sınırı:** cihazda dokunma teyidi kullanıcıdan
+       bekleniyor — `mobile/TESTING.md` bölüm 10'a madde eklendi.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

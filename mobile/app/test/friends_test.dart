@@ -246,6 +246,7 @@ void main() {
       FakeFriendsGateway? gateway,
       FriendsTab? initialTab,
       Future<void> Function(String)? sharer,
+      bool withStats = false,
     }) async {
       await setPhoneViewSize(tester, const Size(420, 900));
       final gw = gateway ?? FakeFriendsGateway();
@@ -256,6 +257,9 @@ void main() {
           body: FriendsModal(
             friends: FriendsRepo(gw),
             auth: AuthService.fake(user: fakeUser()),
+            // stats yoksa isim/avatara dokunuş pasif kalır (offline dalı) —
+            // skor kartı testleri açıkça withStats: true geçiyor.
+            stats: withStats ? StatsRepo(_NullStatsGateway()) : null,
             initialTab: initialTab,
             sharer: sharer,
           ),
@@ -408,6 +412,48 @@ void main() {
 
       expect(find.text('Zeynep'), findsOneWidget);
       expect(find.byIcon(Icons.person_add_alt_1), findsOneWidget);
+    });
+
+    testWidgets(
+        'isim/avatara dokunmak ÜÇ listede de skor kartını açar (Ara & Ekle dahil)',
+        (tester) async {
+      final gw = FakeFriendsGateway()
+        ..friendsRows = [
+          {'friend_id': 'a', 'name': 'Bobola', 'avatar_url': null},
+        ]
+        ..requestRows = [
+          {'requester_id': 'r1', 'name': 'Esiner', 'avatar_url': null},
+        ]
+        ..userRows = [
+          {'id': 'u1', 'name': 'Zeynep', 'avatar_url': null, 'relation': null},
+        ];
+      await pumpModal(tester,
+          gateway: gw, initialTab: FriendsTab.friends, withStats: true);
+
+      // 1) Arkadaşlarım (baştan beri vardı — regresyon güvencesi)
+      await tester.tap(find.text('Bobola'));
+      await tester.pumpAndSettle();
+      expect(find.byType(PlayerScoreCardModal), findsOneWidget);
+      await tester.tap(find.byTooltip('Kapat').last);
+      await tester.pumpAndSettle();
+
+      // 2) İstekler — isteği yanıtlamadan önce kime bakıyoruz?
+      await tester.tap(find.text('İSTEKLER'));
+      await tester.pump();
+      await tester.tap(find.text('Esiner'));
+      await tester.pumpAndSettle();
+      expect(find.byType(PlayerScoreCardModal), findsOneWidget);
+      await tester.tap(find.byTooltip('Kapat').last);
+      await tester.pumpAndSettle();
+
+      // 3) Ara & Ekle — kullanıcının istediği asıl yer.
+      await tester.tap(find.text('ARA & EKLE'));
+      await tester.pump();
+      await tester.pump();
+      await tester.tap(find.text('Zeynep'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.byType(PlayerScoreCardModal), findsOneWidget);
     });
 
     testWidgets('davet butonu: link + metin paylaş ucuna gider + görüntü',
