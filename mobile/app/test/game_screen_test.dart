@@ -943,4 +943,31 @@ void main() {
     await tester.pumpAndSettle();
     expect(result, isFalse);
   });
+
+  // Parça 57 — tahta ↔ mesaj ↔ raf dikey boşlukları. Web'de ölçüldü
+  // (derlenmiş CSS + Chromium): tahta kartının ALTI ile mesaj arası 16px
+  // (Board.tsx sarmalayıcısının `pb-3`ü + mesaj kabının `pt-1`i), mesaj ile
+  // raf satırı arası 6px (`gap-1.5`). Parça 39'da yalnızca `pt-1`i görüp
+  // "tek boşluk 4px" demiştim — Board'un kendi `pb-3`ü gözden kaçmıştı, o
+  // yüzden app'te tahta mesaja yapışık duruyordu (kullanıcı bildirdi).
+  testWidgets('tahta ↔ mesaj ↔ raf boşlukları web ile aynı', (tester) async {
+    await setPhoneViewSize(tester, const Size(390, 844));
+    final c = GameController(words: words, autoPlayAi: false)
+      ..restore(craftedState());
+    await tester.pumpWidget(MaterialApp(
+      home: GameScreen(controller: c, words: words),
+    ));
+    await tester.pumpAndSettle();
+
+    // Tahta KARTI (BoardWidget'ın kendi Container'ı) — sarmalayıcı Padding
+    // değil, kartın kendisi ölçülüyor.
+    final board = tester.getRect(find.byType(BoardWidget));
+    final msg = tester.getRect(find.byKey(const ValueKey('message-line')));
+    final rack = tester.getRect(find.byType(RackWidget));
+
+    expect(msg.top - board.bottom, closeTo(16, 0.5),
+        reason: 'web: Board pb-3 (12) + mesaj kabının pt-1i (4)');
+    expect(rack.top - msg.bottom, closeTo(6, 0.5),
+        reason: 'web: kabın gap-1.5i');
+  });
 }

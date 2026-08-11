@@ -85,6 +85,11 @@ hesapla açıp yan yana koyarak koş.
       kutuları, oyun geçmişi kartları ve TÜM alt sekme çubukları (Devam
       Edenler/Oyun Davetleri/Son Oynananlar; Genel/2/4) web'deki gibi
       yumuşak gölge taşımalı. Düz/kağıt gibi duruyorsa regresyon.
+- [ ] **Tahta ↔ mesaj ↔ raf boşlukları (Parça 57).** Oyun ekranında
+      tahtanın alt kenarı ile mesaj satırı arasında, ve mesaj ile raf
+      arasında web'dekiyle aynı nefes payı olmalı. Tahta mesaja YAPIŞIK
+      duruyorsa regresyon (11 Ağustos 2026'ya kadar tam olarak öyleydi).
+      Hem YZ hem Canlı oyun ekranında kontrol et — ikisi ayrı dosya.
 - [ ] **Setup başlık bloğu.** Logo ile paragraf arası ve paragraf ile
       "Nasıl oynanır? · Arkadaşınla paylaş" satırı arası web'le aynı
       olmalı; paragraf 4 satır sürüyorsa satır aralığı da aynı görünmeli

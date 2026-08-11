@@ -1235,8 +1235,11 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                               child: Column(
                                 children: [
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12),
+                                    // Web `Board.tsx`'in dış sarmalayıcısı:
+                                    // `px-3 pt-1.5 pb-3` — port yalnızca yatayı
+                                    // taşımıştı, alttaki 12px hiç yoktu.
+                                    padding:
+                                        const EdgeInsets.fromLTRB(12, 6, 12, 12),
                                     child: BoardWidget(
                                       state: state,
                                       moveOverlay: moveStatus == null
@@ -1296,7 +1299,8 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                   // koyunca yerini normal mesaj satırına bırakır.
                                   Padding(
                                     padding:
-                                        const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                                        const EdgeInsets.fromLTRB(12, 4, 12, 0),
+
                                     child: (!_canAct &&
                                             !state.isGameOver &&
                                             moveStatus == null)
@@ -1304,6 +1308,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                             isAiTurn: _isAiTurn,
                                             name: _currentName)
                                         : SizedBox(
+                                            key: const ValueKey('message-line'),
                                             height: 30,
                                             child: Center(
                                               child: Text(
@@ -1324,7 +1329,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                   ),
                                   Padding(
                                     padding:
-                                        const EdgeInsets.fromLTRB(12, 4, 12, 0),
+                                        const EdgeInsets.fromLTRB(12, 6, 12, 0),
                                     child: IntrinsicHeight(
                                       child: Row(
                                         crossAxisAlignment:

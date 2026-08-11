@@ -1409,6 +1409,35 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        8 dosyada kopyalanmış olması — ikincisi Parça 54'teki renk
        sürüklenmesiyle AYNI sınıf bir risk.
 
+   - ✅ **Parça 57 — tahta ile mesaj arasındaki boşluk: Parça 39'da YANLIŞ
+     ölçmüşüm (11 Ağustos 2026, `game_screen.dart`, `online_game_screen.dart`):**
+     Kullanıcı app ve web'i yan yana koyup *"app'te tahta ile mesaj ve mesaj
+     ile harfler arasında web'deki boşluk yok"* dedi.
+     - **Kök sebep benim kendi hatam:** Parça 39'da 56px'lik yamayı
+       kaldırırken web'in gerçek boşluğunu "mesaj kabının `pt-1`i, yani
+       4px" diye yazmıştım — ama `Board.tsx`'in KENDİ dış sarmalayıcısı da
+       `px-3 pt-1.5 **pb-3**` taşıyor. Yani web'de tahta kartının altı ile
+       mesaj arası 12 + 4 = **16px**; port yalnızca 4px bırakmıştı.
+       Chromium'da gerçek DOM'la ölçüldü.
+     - **Aynı turda iki sapma daha çıktı:** mesaj ile raf satırı arası
+       web'de `gap-1.5` = 6px (port 4), ve mesaj bloğunun yatay dolgusu
+       web'de `px-3` = 12 (port 16). Üçü de düzeltildi; buton satırı
+       (`12, 6, 12, 12`) zaten doğruydu.
+     - **Ders — bir sarmalayıcının boşluğunu ölçerken YALNIZCA o elemanın
+       kendi sınıflarına bakma:** komşusunun `pb-*`i de aradaki mesafeye
+       giriyor. Parça 39 tam bu yüzden yanlış çıktı ve bir yamayı
+       kaldırırken yerine yanlış değeri koydu. Doğru refleks: iki düğümün
+       GERÇEK `getBoundingClientRect` farkını ölç (Parça 56'da kullanılan
+       yöntem), sınıf okuyarak toplama yapma.
+     - **Test — negatif eş:** boşluklar `ValueKey('message-line')` ile
+       ölçülüp sabitlendi (16 ± 0.5 ve 6 ± 0.5). Tahtanın alt dolgusu eski
+       hâline çevrilince test GERÇEKTEN `Expected: within <0.5> of <16> /
+       Actual: <4.0>` ile düştü — 4.0 tam olarak kullanıcının "boşluk yok"
+       dediği değer.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       314/314 yeşil** (313'ten +1). İki ekranda da AYNI değişiklik
+       (bilinçli kod tekrarı çifti). `kelimeki_core`'a dokunulmadı.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

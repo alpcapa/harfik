@@ -656,8 +656,11 @@ class _GameScreenState extends State<GameScreen> {
                               child: Column(
                                 children: [
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12),
+                                    // Web `Board.tsx`'in dış sarmalayıcısı:
+                                    // `px-3 pt-1.5 pb-3` — port yalnızca yatayı
+                                    // taşımıştı, alttaki 12px hiç yoktu.
+                                    padding:
+                                        const EdgeInsets.fromLTRB(12, 6, 12, 12),
                                     child: BoardWidget(
                                       state: state,
                                       moveOverlay: moveStatus == null
@@ -708,8 +711,9 @@ class _GameScreenState extends State<GameScreen> {
                                   // (App.tsx: Board → liveMessage → Rack; font-mono 11px bold).
                                   Padding(
                                     padding:
-                                        const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                                        const EdgeInsets.fromLTRB(12, 4, 12, 0),
                                     child: SizedBox(
+                                      key: const ValueKey('message-line'),
                                       height: 30,
                                       child: Center(
                                         child: Text(
@@ -737,7 +741,7 @@ class _GameScreenState extends State<GameScreen> {
                                     // modunda sağdaki buton hiç görünmez (App.tsx ~1281).
                                     Padding(
                                       padding: const EdgeInsets.fromLTRB(
-                                          12, 4, 12, 0),
+                                          12, 6, 12, 0),
                                       // IntrinsicHeight: buton raf kartıyla aynı boya uzasın
                                       // (stretch, Column içinde sınırsız yükseklikte patlar).
                                       child: IntrinsicHeight(
