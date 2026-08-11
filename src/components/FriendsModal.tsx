@@ -11,6 +11,7 @@ import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
 import { useModalA11y } from '../hooks/useModalA11y';
 import {
   createFriendInviteLink,
+  fetchFriendRelation,
   fetchFriends,
   fetchIncomingFriendRequests,
   listUsersForFriend,
@@ -26,14 +27,22 @@ import { trCompare } from '../utils/turkish';
 /** Bir arkadaşı `PlayerScoreCard` açabilecek şekle çevirir — henüz canlı oyun
  * olmadığından arkadaş eklemenin somut faydası şu an bu: kişinin skor
  * kartına bakabilmek. */
-function friendToPlayerSummary(f: FriendRow): PlayerSummary {
+/** Bu modaldeki ÜÇ listenin de (Arkadaşlarım / İstekler / Ara & Ekle) satırı
+ * aynı üç alanı taşıyor; `PlayerScoreCard` yalnızca bunları istiyor. Kısa
+ * kimlik kuralı gereği ad/soyad hiç doldurulmuyor (`display_name` zaten
+ * sunucuda o kuralla hesaplanmış görünen ad). */
+function toPlayerSummary(
+  id: string,
+  name: string,
+  avatarUrl: string | null,
+): PlayerSummary {
   return {
-    id: f.friend_id,
+    id,
     username: null,
     first_name: null,
     last_name: null,
-    display_name: f.name,
-    avatar_url: f.avatar_url,
+    display_name: name,
+    avatar_url: avatarUrl,
   };
 }
 
@@ -469,11 +478,37 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
 
   const renderFriendRow = (u: FriendSearchResult) => (
     <div key={u.id} className={rowCls}>
-      <Avatar url={u.avatar_url} name={u.name} size={32} />
-      <span className={nameCls}>{u.name}</span>
+      {personButton(u.id, u.name, u.avatar_url)}
       {relationAction(u)}
     </div>
   );
+
+  /** Avatar+isim: dokununca o kişinin skor kartı. "Arkadaşlarım"da baştan
+   * beri vardı, ÜÇ listede de olmalı (kullanıcı isteği, 11 Ağustos 2026) —
+   * hele "İstekler"de, isteği yanıtlamadan önce kimin gönderdiğine bakmak
+   * tam da orada gerekiyor. Kart kapanınca ilişki yeniden okunuyor: kullanıcı
+   * kartın İÇİNDEN arkadaş ekleyip çıkabildiğinden (`PlayerScoreCard`'ın
+   * kendi simgesi) arkadaki satırın ikonu yoksa bayat kalırdı. */
+  const personButton = (id: string, name: string, avatarUrl: string | null) => (
+    <button
+      type="button"
+      onClick={() => setSelectedFriend(toPlayerSummary(id, name, avatarUrl))}
+      className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:opacity-70 transition-opacity"
+    >
+      <Avatar url={avatarUrl} name={name} size={32} />
+      <span className={nameCls}>{name}</span>
+    </button>
+  );
+
+  const closeSelectedFriend = () => {
+    const id = selectedFriend?.id;
+    setSelectedFriend(null);
+    if (!id) return;
+    // Kart içinden ilişki değişmiş olabilir — listeyi gerçeğe eşitle.
+    void fetchFriendRelation(id).then((r) => patchRelation(id, r));
+    reloadFriends();
+    reloadRequests();
+  };
 
   const tabBtn = (t: Tab, label: string, badge?: number) => (
     <button
@@ -525,14 +560,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
             ) : (
               friends.map((f) => (
                 <div key={f.friend_id} className={rowCls}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedFriend(friendToPlayerSummary(f))}
-                    className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:opacity-70 transition-opacity"
-                  >
-                    <Avatar url={f.avatar_url} name={f.name} size={32} />
-                    <span className={nameCls}>{f.name}</span>
-                  </button>
+                  {personButton(f.friend_id, f.name, f.avatar_url)}
                   <button
                     type="button"
                     aria-label={`${f.name} — arkadaşlıktan çıkar`}
@@ -558,8 +586,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
             ) : (
               requests.map((r) => (
                 <div key={r.requester_id} className={rowCls}>
-                  <Avatar url={r.avatar_url} name={r.name} size={32} />
-                  <span className={nameCls}>{r.name}</span>
+                  {personButton(r.requester_id, r.name, r.avatar_url)}
                   <div className="flex gap-1.5 shrink-0">
                     <button
                       className={`${smallBtn} bg-accent text-white`}
@@ -642,7 +669,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
         )}
       </div>
       {selectedFriend && (
-        <PlayerScoreCard member={selectedFriend} onClose={() => setSelectedFriend(null)} />
+        <PlayerScoreCard member={selectedFriend} onClose={closeSelectedFriend} />
       )}
 
       {confirmRemove && (

@@ -275,6 +275,13 @@ Her birinde gerçekten bekleyen bir iş varken ekranı **kapatıp yeniden aç**.
       Skor kartında (k-lig → bir satır) arkadaş durumu **yeşil kişi-onay**
       — listedeki kırmızı adam- DEĞİL (bilinçli), dokununca yine çıkarma
       onayı açmalı.
+- [ ] **Kişiye tıklamak skor kartını açar — ÜÇ sekmede de (11 Ağustos
+      2026).** "Arkadaşlarım", "İstekler" ve "Ara & Ekle" (arama + Tüm
+      Üyeler) satırlarında **avatara/isme** tıkla → o kişinin skor kartı
+      açılmalı. Aksiyon ikonu bundan ayrışık: ikona tıklamak kartı DEĞİL
+      onay diyaloğunu açmalı. Kartın kendi arkadaşlık simgesinden bir işlem
+      yapıp (ör. çıkar) kartı kapatınca satırdaki ikon ANINDA yeni duruma
+      dönmeli.
 - [ ] **Admin paneli.** Bekleyen geri bildirim/şikayet varsa "Geri Bildirim"
       açık gelmeli (yoksa "Büyüme"). Gelen kutusunda bekleyen yokken yalnızca
       şikayet varsa doğrudan **"Şikayetler"** alt sekmesi açılmalı — aksi
