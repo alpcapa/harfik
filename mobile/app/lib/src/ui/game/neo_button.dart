@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 
 import 'neo_box.dart';
+import '../tokens.dart';
 
 enum NeoButtonVariant { accent, neutral, gold, orange }
 
@@ -57,7 +58,7 @@ class NeoButton extends StatelessWidget {
     final List<CssShadow> shadows;
     switch (variant) {
       case NeoButtonVariant.accent:
-        bg = const Color(0xFF2563EB);
+        bg = kAccent;
         fg = Colors.white;
         borderColor = null;
         // web .btn-raised
@@ -67,7 +68,7 @@ class NeoButton extends StatelessWidget {
           CssShadow(color: Color(0x59647489), offset: Offset(0, 6), blur: 14),
         ];
       case NeoButtonVariant.gold:
-        bg = const Color(0xFFB7791F);
+        bg = kGold;
         fg = Colors.white;
         borderColor = null;
         shadows = const [
@@ -76,7 +77,7 @@ class NeoButton extends StatelessWidget {
           CssShadow(color: Color(0x59647489), offset: Offset(0, 6), blur: 14),
         ];
       case NeoButtonVariant.orange:
-        bg = const Color(0xFFF2650F); // tailwind orange (Setup "+ Yeni" butonu)
+        bg = kOrange; // tailwind orange (Setup "+ Yeni" butonu)
         fg = Colors.white;
         borderColor = null;
         // web .btn-raised-orange — gölge değerleri .btn-raised ile birebir
@@ -87,9 +88,9 @@ class NeoButton extends StatelessWidget {
           CssShadow(color: Color(0x59647489), offset: Offset(0, 6), blur: 14),
         ];
       case NeoButtonVariant.neutral:
-        bg = const Color(0xFFF5F7FA); // web bg-panel
-        fg = const Color(0xFF1B2430); // web text-text
-        borderColor = const Color(0xFFDCE2EA); // web border-border
+        bg = kPanel; // web bg-panel
+        fg = kText; // web text-text
+        borderColor = kBorder; // web border-border
         // web .btn-raised-neutral
         shadows = const [
           CssShadow(color: Color(0x80A3B1C6), offset: Offset(2, 2), blur: 6),

@@ -14,10 +14,11 @@ import 'game_history_modal.dart';
 import 'klig_mark.dart';
 import 'leaderboard_modal.dart';
 import 'score_stats_section.dart';
+import '../tokens.dart';
 
-const _muted = Color(0xFF5A6673);
-const _text = Color(0xFF1B2430);
-const _accent = Color(0xFF2563EB);
+const _muted = kMuted;
+const _text = kText;
+const _accent = kAccent;
 
 Future<void> showScoreCard(
   BuildContext context, {

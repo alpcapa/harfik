@@ -64,9 +64,10 @@ import '../game/remaining_tiles_modal.dart';
 import '../game/tile_widget.dart';
 import '../game/wild_letter_sheet.dart';
 import '../score/player_score_card_modal.dart';
+import '../tokens.dart';
 
-const Color _muted = Color(0xFF5A6673);
-const Color _red = Color(0xFFE0483A);
+const Color _muted = kMuted;
+const Color _red = kRed;
 
 /// Sohbet durumu — `_OnlineGameScreenState` sahibi, hem Board footer'ının
 /// rozeti (kırmızı nokta) hem AÇIK duran ChatModal/ChatSettingsModal
@@ -1069,18 +1070,20 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
       child: IgnorePointer(
         child: CustomPaint(
           painter: DashedBorderPainter(
-            g.overValid ? const Color(0xFF1FA05C) : const Color(0xFFE0483A),
+            g.overValid ? kMoveValid : kMoveInvalid,
           ),
         ),
       ),
     );
   }
 
+  // Web `OnlineGameScreen.tsx`'teki MESSAGE_COLORS — `game_screen.dart`
+  // ile BİREBİR aynı olmalı (bilinçli kod tekrarı çifti).
   Color _messageColor(MessageKind kind) => switch (kind) {
-        MessageKind.err => _red,
-        MessageKind.ok => const Color(0xFF1FA05C),
-        MessageKind.warn => const Color(0xFFD97706),
-        MessageKind.none => _muted,
+        MessageKind.err => kRed,
+        MessageKind.ok => kGreen,
+        MessageKind.warn => kGold,
+        MessageKind.none => kMuted,
       };
 
   // ── Render ──────────────────────────────────────────────────────────────
@@ -1528,7 +1531,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                                     text: '${state.bag.length}',
                                                     style: const TextStyle(
                                                       fontSize: 13,
-                                                      color: Color(0xFF2563EB),
+                                                      color: kAccent,
                                                       fontWeight:
                                                           FontWeight.bold,
                                                     ),

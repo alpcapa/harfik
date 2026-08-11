@@ -14,10 +14,11 @@ import '../../data/feedback_api.dart';
 import '../auth/auth_modal.dart';
 import '../game/neo_box.dart';
 import '../game/neo_button.dart';
+import '../tokens.dart';
 
-const _text = Color(0xFF1B2430);
-const _muted = Color(0xFF5A6673);
-const _green = Color(0xFF16A34A);
+const _text = kText;
+const _muted = kMuted;
+const _green = kGreen;
 
 // web MEMBERSHIP_PERKS (Setup.tsx) ile birebir aynı sıra/metin.
 const List<String> _kMembershipPerks = [

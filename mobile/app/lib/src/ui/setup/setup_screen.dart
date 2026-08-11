@@ -44,12 +44,13 @@ import '../auth/account_button.dart';
 import '../auth/k_avatar.dart';
 import 'membership_perks_box.dart';
 import 'recent_games_section.dart';
+import '../tokens.dart';
 
-const _panel = Color(0xFFF5F7FA);
-const _border = Color(0xFFDCE2EA);
-const _muted = Color(0xFF5A6673);
-const _text = Color(0xFF1B2430);
-const _accent = Color(0xFF2563EB);
+const _panel = kPanel;
+const _border = kBorder;
+const _muted = kMuted;
+const _text = kText;
+const _accent = kAccent;
 
 class SetupScreen extends StatefulWidget {
   final AppServices services;
@@ -692,7 +693,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                           if (snap.hasError) {
                             return Text('Sözlük yüklenemedi: ${snap.error}',
                                 style:
-                                    const TextStyle(color: Color(0xFFDC2626)));
+                                    const TextStyle(color: kRed));
                           }
                           final words = snap.data;
                           // Girişli kullanıcı: liste varsayılan görünüm, form
@@ -1100,7 +1101,7 @@ class _InlineLink extends StatelessWidget {
           fontFamily: 'SpaceMono',
           fontSize: 11,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF2563EB),
+          color: kAccent,
         ),
       ),
     );
@@ -1286,7 +1287,7 @@ class _SavedGameRow extends StatelessWidget {
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1,
-                    color: Color(0xFF16A34A),
+                    color: kGreen,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1299,7 +1300,7 @@ class _SavedGameRow extends StatelessWidget {
                     fontFamily: 'SpaceMono',
                     fontSize: 8,
                     letterSpacing: 0.5,
-                    color: remaining.urgent ? const Color(0xFFDC2626) : _muted,
+                    color: remaining.urgent ? kRed : _muted,
                   ),
                 ),
               ],

@@ -6,14 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
 
 import '../../data/stats_api.dart';
+import '../tokens.dart';
 
-const _panel = Color(0xFFF5F7FA);
-const _border = Color(0xFFDCE2EA);
-const _muted = Color(0xFF5A6673);
-const _text = Color(0xFF1B2430);
-const _accent = Color(0xFF2563EB);
-const _gold = Color(0xFFB7791F);
-const _red = Color(0xFFDC2626);
+const _panel = kPanel;
+const _border = kBorder;
+const _muted = kMuted;
+const _text = kText;
+const _accent = kAccent;
+const _gold = kGold;
+const _red = kRed;
 
 class _Cell {
   final String label;

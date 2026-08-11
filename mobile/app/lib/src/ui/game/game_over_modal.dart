@@ -10,6 +10,7 @@ import 'modal_shell.dart';
 import 'move_history_modal.dart';
 import 'player_badge.dart';
 import 'player_colors.dart';
+import '../tokens.dart';
 
 Future<void> showGameOverModal(BuildContext context, GameState state,
     {VoidCallback? onFeedback}) {
@@ -50,7 +51,7 @@ class GameOverModal extends StatelessWidget {
               fontWeight: FontWeight.bold,
               fontSize: 26,
               letterSpacing: 2,
-              color: tie ? const Color(0xFFB7791F) : winColor.base,
+              color: tie ? kGold : winColor.base,
             ),
           ),
           const SizedBox(height: 18),
@@ -59,7 +60,7 @@ class GameOverModal extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
             decoration: BoxDecoration(
               color: Colors.white, // web bg
-              border: Border.all(color: const Color(0xFFDCE2EA)),
+              border: Border.all(color: kBorder),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Column(
@@ -77,7 +78,7 @@ class GameOverModal extends StatelessWidget {
                   _PlayerRow(entry: r),
                   const SizedBox(height: 10),
                 ],
-                const Divider(height: 1, color: Color(0xFFDCE2EA)),
+                const Divider(height: 1, color: kBorder),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -85,7 +86,7 @@ class GameOverModal extends StatelessWidget {
                     const Text(
                       'Toplam hamle',
                       style:
-                          TextStyle(fontSize: 12, color: Color(0xFF5A6673)),
+                          TextStyle(fontSize: 12, color: kMuted),
                     ),
                     Text(
                       '${state.turnCount}',
@@ -93,7 +94,7 @@ class GameOverModal extends StatelessWidget {
                         fontFamily: 'SpaceMono',
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
-                        color: Color(0xFF5A6673),
+                        color: kMuted,
                       ),
                     ),
                   ],
@@ -114,7 +115,7 @@ class GameOverModal extends StatelessWidget {
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1,
-                    color: Color(0xFF5A6673),
+                    color: kMuted,
                     decoration: TextDecoration.underline,
                   ),
                 ),
@@ -129,7 +130,7 @@ class GameOverModal extends StatelessWidget {
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1,
-                      color: Color(0xFF5A6673),
+                      color: kMuted,
                       decoration: TextDecoration.underline,
                     ),
                   ),
@@ -157,7 +158,7 @@ class _ColHeader extends StatelessWidget {
         style: const TextStyle(
           fontSize: 10,
           letterSpacing: 0.5,
-          color: Color(0xFF5A6673),
+          color: kMuted,
         ),
       ),
     );
@@ -188,7 +189,7 @@ class _PlayerRow extends StatelessWidget {
                   '${entry.rank}. ${p.name}',
                   overflow: TextOverflow.ellipsis,
                   style:
-                      const TextStyle(fontSize: 15, color: Color(0xFF1B2430)),
+                      const TextStyle(fontSize: 15, color: kText),
                 ),
               ),
               if (p.surrendered)
@@ -200,7 +201,7 @@ class _PlayerRow extends StatelessWidget {
                       fontFamily: 'SpaceMono',
                       fontSize: 9,
                       letterSpacing: 0.5,
-                      color: Color(0xFFDC2626),
+                      color: kRed,
                     ),
                   ),
                 ),
@@ -215,7 +216,7 @@ class _PlayerRow extends StatelessWidget {
             style: const TextStyle(
               fontFamily: 'SpaceMono',
               fontSize: 13,
-              color: Color(0xFF5A6673),
+              color: kMuted,
             ),
           ),
         ),

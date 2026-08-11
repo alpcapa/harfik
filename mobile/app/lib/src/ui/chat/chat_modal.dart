@@ -6,12 +6,13 @@ import 'package:flutter/material.dart';
 
 import 'chat_thread.dart';
 import '../game/modal_shell.dart';
+import '../tokens.dart';
 
-const _accent = Color(0xFF2563EB);
-const _muted = Color(0xFF5A6673);
-const _border = Color(0xFFDCE2EA);
-const _bg = Color(0xFFFFFFFF);
-const _red = Color(0xFFE0483A);
+const _accent = kAccent;
+const _muted = kMuted;
+const _border = kBorder;
+const _bg = kBg;
+const _red = kRed;
 
 const int kChatMaxLength = 200;
 

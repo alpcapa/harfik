@@ -6,6 +6,7 @@
 // Web 16px daire + 9px mono kullanır; font bileşende sabit (SpaceMono) —
 // web'in "ebeveyn fontu miras alınınca dikey ortalama kayıyordu" dersi.
 import 'package:flutter/material.dart';
+import '../tokens.dart';
 
 class CountBadge extends StatelessWidget {
   final int count;
@@ -19,7 +20,7 @@ class CountBadge extends StatelessWidget {
       height: 16,
       alignment: Alignment.center,
       decoration: const BoxDecoration(
-        color: Color(0xFFE0483A), // web bg-red
+        color: kRed, // web bg-red
         shape: BoxShape.circle,
       ),
       child: Text(

@@ -12,12 +12,13 @@ import '../auth/k_avatar.dart';
 import '../game/modal_shell.dart';
 import 'klig_mark.dart';
 import 'player_score_card_modal.dart';
+import '../tokens.dart';
 
-const _muted = Color(0xFF5A6673);
-const _text = Color(0xFF1B2430);
-const _accent = Color(0xFF2563EB);
-const _gold = Color(0xFFB7791F);
-const _border = Color(0xFFDCE2EA);
+const _muted = kMuted;
+const _text = kText;
+const _accent = kAccent;
+const _gold = kGold;
+const _border = kBorder;
 
 /// Web INITIAL_PAGE_SIZE / PAGE_SIZE — ilk açılışta "ilk 10", sonra 20'şer.
 const _initialPageSize = 10;

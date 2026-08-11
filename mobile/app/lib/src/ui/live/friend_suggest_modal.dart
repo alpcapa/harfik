@@ -9,10 +9,11 @@ import 'package:kelimeki_core/kelimeki_core.dart' show trCompare;
 import '../../data/friends_api.dart';
 import '../auth/k_avatar.dart';
 import '../game/neo_button.dart';
+import '../tokens.dart';
 
-const Color _text = Color(0xFF1B2430);
-const Color _accent = Color(0xFF2563EB);
-const Color _border = Color(0xFFDCE2EA);
+const Color _text = kText;
+const Color _accent = kAccent;
+const Color _border = kBorder;
 
 class SuggestCandidate {
   final String userId;
@@ -76,7 +77,7 @@ class _FriendSuggestModalState extends State<FriendSuggestModal> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: kPanel,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: Color(0xFFB8C2D1)),

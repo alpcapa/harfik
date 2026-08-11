@@ -23,14 +23,15 @@ import '../../data/chat_api.dart';
 import '../auth/k_avatar.dart';
 import '../game/modal_shell.dart';
 import 'chat_modal.dart' show ChatParticipant;
+import '../tokens.dart';
 
-const _text = Color(0xFF1B2430);
-const _muted = Color(0xFF5A6673);
-const _accent = Color(0xFF2563EB);
-const _red = Color(0xFFE0483A);
-const _border = Color(0xFFDCE2EA);
-const _bg = Color(0xFFFFFFFF);
-const _void = Color(0xFFEDF1F7);
+const _text = kText;
+const _muted = kMuted;
+const _accent = kAccent;
+const _red = kRed;
+const _border = kBorder;
+const _bg = kBg;
+const _void = kVoid;
 
 const int kReportReasonMaxLength = 500;
 

@@ -25,10 +25,11 @@ import 'game_history_modal.dart';
 import 'klig_mark.dart';
 import 'leaderboard_modal.dart';
 import 'score_stats_section.dart';
+import '../tokens.dart';
 
-const _text = Color(0xFF1B2430);
-const _muted = Color(0xFF5A6673);
-const _accent = Color(0xFF2563EB);
+const _text = kText;
+const _muted = kMuted;
+const _accent = kAccent;
 
 Future<void> showPlayerScoreCard(
   BuildContext context, {
@@ -227,8 +228,8 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
           accepted ? Icons.how_to_reg : Icons.person_add_alt_1,
           size: 20,
           color: accepted
-              ? const Color(0xFF16A34A) // tailwind green
-              : const Color(0xFF2563EB),
+              ? kGreen // tailwind green
+              : kAccent,
         ),
       ),
     );
@@ -362,7 +363,7 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1,
-                        color: Color(0xFF2563EB)),
+                        color: kAccent),
                   ),
                 ),
               ),

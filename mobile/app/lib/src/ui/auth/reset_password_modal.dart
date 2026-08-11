@@ -15,12 +15,13 @@ import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 import '../../data/auth_service.dart';
 import '../game/modal_shell.dart';
 import '../game/neo_button.dart';
+import '../tokens.dart';
 
-const Color _muted = Color(0xFF5A6673);
-const Color _red = Color(0xFFE0483A);
-const Color _green = Color(0xFF1FA05C);
-const Color _border = Color(0xFFDCE2EA);
-const Color _accent = Color(0xFF2563EB);
+const Color _muted = kMuted;
+const Color _red = kRed;
+const Color _green = kGreen;
+const Color _border = kBorder;
+const Color _accent = kAccent;
 
 class ResetPasswordModal extends StatefulWidget {
   final AuthService auth;

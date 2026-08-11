@@ -34,13 +34,14 @@ import '../../util/avatar_picker.dart';
 import '../game/modal_shell.dart';
 import '../game/neo_button.dart';
 import 'k_avatar.dart';
+import '../tokens.dart';
 
-const Color _text = Color(0xFF1B2430);
-const Color _muted = Color(0xFF5A6673);
-const Color _accent = Color(0xFF2563EB);
-const Color _border = Color(0xFFDCE2EA);
-const Color _red = Color(0xFFE0483A);
-const Color _green = Color(0xFF1FA05C);
+const Color _text = kText;
+const Color _muted = kMuted;
+const Color _accent = kAccent;
+const Color _border = kBorder;
+const Color _red = kRed;
+const Color _green = kGreen;
 
 Future<void> showAccountSettingsModal(
   BuildContext context,

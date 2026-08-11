@@ -6,12 +6,13 @@
 // taşındı (web'le aynı tek-kaynak disiplini).
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
+import '../tokens.dart';
 
-const Color _panel = Color(0xFFF5F7FA);
+const Color _panel = kPanel;
 const Color _panelBorder = Color(0xFFB8C2D1);
-const Color _divider = Color(0xFFDCE2EA);
-const Color _accent = Color(0xFF2563EB);
-const Color _muted = Color(0xFF5A6673);
+const Color _divider = kBorder;
+const Color _accent = kAccent;
+const Color _muted = kMuted;
 
 /// Web `Modal`: 360px'lik panel, %85 yükseklik sınırı, kaydırılabilir gövde.
 class KModal extends StatelessWidget {

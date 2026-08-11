@@ -32,13 +32,14 @@ import '../game/count_badge.dart';
 import '../game/modal_shell.dart';
 import '../game/neo_button.dart';
 import '../score/player_score_card_modal.dart';
+import '../tokens.dart';
 
-const Color _text = Color(0xFF1B2430);
-const Color _muted = Color(0xFF5A6673);
-const Color _accent = Color(0xFF2563EB);
+const Color _text = kText;
+const Color _muted = kMuted;
+const Color _accent = kAccent;
 // Web tailwind `red` — arkadaşlıktan çıkar ikonu.
-const Color _red = Color(0xFFDC2626);
-const Color _border = Color(0xFFDCE2EA);
+const Color _red = kRed;
+const Color _border = kBorder;
 const Color _bg = Colors.white;
 
 enum FriendsTab { friends, requests, search }
@@ -829,7 +830,7 @@ Future<bool> confirmFriendAction(
   final ok = await showDialog<bool>(
     context: context,
     builder: (context) => Dialog(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: kPanel,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: Color(0xFFB8C2D1)),
@@ -891,7 +892,7 @@ Future<void> showFriendInfoDialog(BuildContext context, String message) {
   return showDialog<void>(
     context: context,
     builder: (context) => Dialog(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: kPanel,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: Color(0xFFB8C2D1)),

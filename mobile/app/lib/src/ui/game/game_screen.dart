@@ -30,6 +30,7 @@ import 'rack_widget.dart';
 import 'remaining_tiles_modal.dart';
 import 'tile_widget.dart';
 import 'wild_letter_sheet.dart';
+import '../tokens.dart';
 
 class GameScreen extends StatefulWidget {
   final GameController controller;
@@ -535,18 +536,22 @@ class _GameScreenState extends State<GameScreen> {
       child: IgnorePointer(
         child: CustomPaint(
           painter: DashedBorderPainter(
-            g.overValid ? const Color(0xFF1FA05C) : const Color(0xFFE0483A),
+            g.overValid ? kMoveValid : kMoveInvalid,
           ),
         ),
       ),
     );
   }
 
+  // Web `App.tsx`'teki MESSAGE_COLORS haritası — dördü de TOKEN
+  // (text-red/green/gold/muted). Tahtanın hamle renkleriyle (kMoveValid/
+  // kMoveInvalid) karıştırma: onlar yalnızca ızgara üstündeki geçerlilik
+  // göstergesi, bu satır sıradan bir metin.
   Color _messageColor(MessageKind kind) => switch (kind) {
-        MessageKind.err => const Color(0xFFE0483A),
-        MessageKind.ok => const Color(0xFF1FA05C),
-        MessageKind.warn => const Color(0xFFD97706),
-        MessageKind.none => const Color(0xFF5B6472),
+        MessageKind.err => kRed,
+        MessageKind.ok => kGreen,
+        MessageKind.warn => kGold,
+        MessageKind.none => kMuted,
       };
 
   @override
@@ -956,7 +961,7 @@ class _GameScreenState extends State<GameScreen> {
                                                         style: const TextStyle(
                                                           fontSize: 13,
                                                           color:
-                                                              Color(0xFF2563EB),
+                                                              kAccent,
                                                           fontWeight:
                                                               FontWeight.bold,
                                                         ),

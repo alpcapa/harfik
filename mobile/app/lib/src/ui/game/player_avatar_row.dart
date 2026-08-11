@@ -13,11 +13,12 @@
 import 'package:flutter/material.dart';
 
 import '../auth/k_avatar.dart';
+import '../tokens.dart';
 
-const _border = Color(0xFFDCE2EA);
+const _border = kBorder;
 
 /// Web `bg-void` — robot avatarının zemini.
-const _void = Color(0xFFE8EBEF);
+const _void = kVoid;
 
 class AvatarRowPlayer {
   final String name;

@@ -14,8 +14,9 @@ import 'package:flutter/material.dart';
 import '../../data/games_api.dart';
 import '../game/modal_shell.dart';
 import 'chat_thread.dart';
+import '../tokens.dart';
 
-const _muted = Color(0xFF5A6673);
+const _muted = kMuted;
 
 Future<void> showGameChatHistory(
   BuildContext context, {

@@ -7,6 +7,7 @@ import 'package:kelimeki_core/kelimeki_core.dart';
 
 import 'modal_shell.dart';
 import 'tile_widget.dart';
+import '../tokens.dart';
 
 Future<void> showRemainingTilesModal(
     BuildContext context, GameState state, int myIndex) {
@@ -47,7 +48,7 @@ class RemainingTilesModal extends StatelessWidget {
                   text: '$total',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2563EB),
+                    color: kAccent,
                   ),
                 ),
                 const TextSpan(text: ' taş dışarıda.'),
@@ -57,7 +58,7 @@ class RemainingTilesModal extends StatelessWidget {
               fontFamily: 'SpaceMono',
               fontSize: 10,
               height: 1.5,
-              color: Color(0xFF5A6673),
+              color: kMuted,
             ),
           ),
           const SizedBox(height: 12),

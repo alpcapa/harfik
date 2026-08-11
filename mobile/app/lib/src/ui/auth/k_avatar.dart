@@ -2,15 +2,16 @@
 // yoksa isimden türetilen baş harfler (Türkçe trUpper ile), boş isimde "?".
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
+import '../tokens.dart';
 
-const Color _panel = Color(0xFFF5F7FA);
-const Color _border = Color(0xFFDCE2EA);
+const Color _panel = kPanel;
+const Color _border = kBorder;
 // Web `bg-accent`/`border-accent` (tailwind.config.js `accent: '#2563EB'`) —
 // fotoğrafsız/yüklenemeyen avatarın YEDEK durumu HER ZAMAN bu mavi zeminle
 // çizilir (`Avatar.tsx`'in `<span className="... bg-accent border-accent
 // text-white">` dalı — hem gerçek kullanıcı hem misafirin "?" hâli aynı
 // stili kullanıyor, web hiçbir zaman gri/nötr bir yedek göstermiyor).
-const Color _accent = Color(0xFF2563EB);
+const Color _accent = kAccent;
 
 /// `Border.all` varsayılanı — web `border` (1px) karşılığı. Görüntünün
 /// kırpılacağı iç dairenin çapı bu kadar küçüktür (bkz. `_circle`).
@@ -75,7 +76,7 @@ class _KAvatarState extends State<KAvatar> {
           width: d,
           height: d,
           decoration: BoxDecoration(
-            color: const Color(0xFFE0483A),
+            color: kRed,
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white, width: 1.5),
           ),

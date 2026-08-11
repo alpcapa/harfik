@@ -27,15 +27,16 @@ import '../game/modal_shell.dart';
 import '../game/player_badge.dart';
 import 'player_score_card_modal.dart';
 import 'score_box_row.dart';
+import '../tokens.dart';
 
-const _panel = Color(0xFFF5F7FA);
-const _border = Color(0xFFDCE2EA);
-const _muted = Color(0xFF5A6673);
-const _text = Color(0xFF1B2430);
-const _accent = Color(0xFF2563EB);
-const _green = Color(0xFF16A34A);
-const _gold = Color(0xFFB7791F);
-const _red = Color(0xFFDC2626);
+const _panel = kPanel;
+const _border = kBorder;
+const _muted = kMuted;
+const _text = kText;
+const _accent = kAccent;
+const _green = kGreen;
+const _gold = kGold;
+const _red = kRed;
 
 const _pageSize = 20;
 

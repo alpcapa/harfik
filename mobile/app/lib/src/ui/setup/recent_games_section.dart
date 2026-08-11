@@ -12,14 +12,15 @@ import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../game/player_avatar_row.dart';
 import '../score/game_history_modal.dart';
+import '../tokens.dart';
 
-const _panel = Color(0xFFF5F7FA);
-const _border = Color(0xFFDCE2EA);
-const _muted = Color(0xFF5A6673);
-const _text = Color(0xFF1B2430);
-const _accent = Color(0xFF2563EB);
-const _green = Color(0xFF16A34A);
-const _red = Color(0xFFDC2626);
+const _panel = kPanel;
+const _border = kBorder;
+const _muted = kMuted;
+const _text = kText;
+const _accent = kAccent;
+const _green = kGreen;
+const _red = kRed;
 
 /// `userId:onlineOnly` → son çekilen liste. Bileşen sekme değişiminde
 /// unmount/mount olduğundan (web'de de öyle) her dönüşte "Yükleniyor…"

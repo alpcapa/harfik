@@ -21,12 +21,13 @@ import '../../data/feedback_api.dart';
 import '../game/modal_shell.dart';
 import '../game/neo_button.dart';
 import '../auth/auth_modal.dart';
+import '../tokens.dart';
 
-const Color _text = Color(0xFF1B2430);
-const Color _muted = Color(0xFF5A6673);
-const Color _accent = Color(0xFF2563EB);
-const Color _border = Color(0xFFDCE2EA);
-const Color _red = Color(0xFFE0483A);
+const Color _text = kText;
+const Color _muted = kMuted;
+const Color _accent = kAccent;
+const Color _border = kBorder;
+const Color _red = kRed;
 
 /// Web MIN_SUBMIT_MS.
 const int kFeedbackMinSubmitMs = 1500;

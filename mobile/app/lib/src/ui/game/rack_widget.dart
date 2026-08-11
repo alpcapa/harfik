@@ -79,6 +79,10 @@ class RackWidget extends StatelessWidget {
                   title,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
+                    // #D97706 BİLİNÇLİ olarak token DEĞİL — web `Rack.tsx`
+                    // de tam bu değeri sabit yazıyor (`text-gold` #B7791F
+                    // değil). Renk denetiminde "token'a çek" diye
+                    // düzeltilmemeli.
                     color: swapMode ? const Color(0xFFD97706) : color.text,
                     fontFamily: 'SpaceMono',
                     fontWeight: FontWeight.bold,

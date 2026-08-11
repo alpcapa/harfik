@@ -7,12 +7,13 @@
 // yardımcısı: görsel dil (iki ayrı yuvarlatılmış panel, aralarında ince
 // ayraç, altta ayrı "Vazgeç" paneli) web'le aynı.
 import 'package:flutter/material.dart';
+import '../tokens.dart';
 
-const _panel = Color(0xFFF5F7FA);
-const _border = Color(0xFFDCE2EA);
-const _text = Color(0xFF1B2430);
-const _accent = Color(0xFF2563EB);
-const _red = Color(0xFFDC2626);
+const _panel = kPanel;
+const _border = kBorder;
+const _text = kText;
+const _accent = kAccent;
+const _red = kRed;
 
 class ActionSheetItem {
   final String label;

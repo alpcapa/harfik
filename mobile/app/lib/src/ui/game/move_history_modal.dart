@@ -6,14 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import 'modal_shell.dart';
+import '../tokens.dart';
 
-const Color _text = Color(0xFF1B2430);
-const Color _muted = Color(0xFF5A6673);
-const Color _accent = Color(0xFF2563EB);
-const Color _green = Color(0xFF1FA05C);
-const Color _red = Color(0xFFE0483A);
-const Color _gold = Color(0xFFB7791F);
-const Color _border = Color(0xFFDCE2EA);
+const Color _text = kText;
+const Color _muted = kMuted;
+const Color _accent = kAccent;
+const Color _green = kGreen;
+const Color _red = kRed;
+const Color _gold = kGold;
+const Color _border = kBorder;
 
 Future<void> showMoveHistoryModal(BuildContext context, GameState state) {
   return showDialog<void>(

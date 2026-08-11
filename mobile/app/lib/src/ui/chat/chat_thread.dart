@@ -11,9 +11,10 @@ import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
 
 import '../auth/k_avatar.dart';
 import '../game/player_colors.dart';
+import '../tokens.dart';
 
-const _muted = Color(0xFF5A6673);
-const _text = Color(0xFF1B2430);
+const _muted = kMuted;
+const _text = kText;
 
 /// Rozet: kişi sessize alınmış / şikayet edilmiş. Durum KİŞİ bazlı ve
 /// güncel olduğundan (bkz. kök CLAUDE.md `person_scoped_chat_moderation`)

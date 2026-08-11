@@ -126,7 +126,12 @@ grep -rn "local_game_saves" app/lib/                        # yalnız cloud_save
 grep -rln "\.from('" app/lib/                               # Supabase yalnız veri katmanında
 grep -rn "await newRepo(" app/test/*_test.dart              # testWidgets İÇİNDE çıkarsa newRepoForWidget'a çevir (runAsync)
 grep -rn "Path.combine\|PathOperation" app/lib/             # CanvasKit'te PathOps GÜVENİLMEZ (bkz. Parça 18) — evenOdd kullan
+grep -rn "Color(0xFF" app/lib/src/ui/ | grep -v tokens.dart # renk paleti TEK kaynaktan: ui/tokens.dart (bkz. Parça 54)
 ```
+
+Sonuncusunun otomatik hâli `test/color_tokens_test.dart` — elle grep'lemene
+gerek yok, tam takım koşarken zaten kontrol ediliyor (hem `tokens.dart` ↔
+`tailwind.config.js` eşitliği hem "yerel kopya açılmış mı" taraması).
 
 **Son tam tarama: 8 Ağustos 2026 (Parça 23, sürükleme performans düzeltmesi)
 — yedisi de temiz.** İlk tam tarama 6 Ağustos'taydı; o turda bulunan TEK gerçek ihlal
@@ -1247,6 +1252,69 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        temiz. `kelimeki_core`'a hiç dokunulmadı.
      - **Doğrulama sınırı:** cihazda dokunma teyidi kullanıcıdan
        bekleniyor — `mobile/TESTING.md` bölüm 10'a madde eklendi.
+
+   - ✅ **Parça 54 — renk denetimi: "iki ayrı yeşil" bir yeşil sorunu
+     DEĞİLDİ, palet sürüklenmesiydi; `ui/tokens.dart` ile yapısal olarak
+     kapatıldı (11 Ağustos 2026, 30 dosya + yeni `test/color_tokens_test.dart`):**
+     Parça 42'nin açık bıraktığı iş ("11 `_green` kullanım yeri site site
+     denetlenmedi") kullanıcı isteğiyle koşuldu. Denetim, aranan hatanın
+     çok ötesini buldu.
+     - **Web'in gerçeği önce sabitlendi (kuralın ilk adımı):**
+       `tailwind.config.js`'te `green: #16A34A` / `red: #DC2626` /
+       `gold: #B7791F` / `muted: #5A6673`. Bunların DIŞINDA yalnızca İKİ
+       sabit-yazılmış renk var ve ikisi de **tek bir dosyada**,
+       `Board.tsx`: `#1FA05C`/`#E0483A` (hamle dış hattı + puan rozeti +
+       sürükleme hedefi çerçevesi). Üçüncü bir istisna `Rack.tsx`'in swap
+       başlığındaki `#D97706`. Hepsi grep'le doğrulandı, hafızadan
+       yazılmadı.
+     - **Bulgu — sapma yeşille sınırlı DEĞİLDİ:** portun her dosyası kendi
+       `const Color _x = ...` kopyasını taşıyordu ve kopyalar ayrışmıştı.
+       `_red` **13 dosyada iki değere** bölünmüştü (8 dosya `#E0483A`, 5
+       dosya `#DC2626`) — yani aynı hata kırmızıda yeşilden DAHA yaygındı.
+       Üstelik `count_badge.dart`'ın satırında `// web bg-red` yorumu VARDI
+       ve yine yanlış değeri taşıyordu: yorum niyeti doğru yazıyor, değer
+       yanlış. Ek olarak `chat_settings_modal`'ın `_void`'i `#EDF1F7`
+       (portun ESKİ sayfa zemini) — web'in `#E8EBEF`'i değil.
+     - **İki oyun ekranının mesaj rengi haritası DÖRT dalıyla birden
+       yanlıştı:** web `MESSAGE_COLORS` dördü de token
+       (`text-red/green/gold/muted`); port `#E0483A`/`#1FA05C`/`#D97706`/
+       `#5B6472` kullanıyordu. Sonuncusu hiçbir yerde karşılığı olmayan,
+       uydurulmuş bir değerdi; `#D97706` ise `Rack.tsx`'ten yanlış yere
+       taşınmıştı (orada doğru, burada değil).
+     - **Düzeltme yapısal:** yeni `lib/src/ui/tokens.dart`
+       (`kText/kMuted/kAccent/kBorder/kRed/kGreen/kGold/kPanel/kVoid/
+       kOrange/kBg`) tailwind paletinin TEK Dart karşılığı; tahtaya özel
+       ikili ayrı ve AÇIKÇA token-olmayan adlarla (`kMoveValid`/
+       `kMoveInvalid`) duruyor ki bir daha karıştırılmasın. 30 dosyadaki
+       yerel kopyalar migrasyonla tokenlara bağlandı. Beyaz (`#FFFFFF`)
+       bilinçli olarak KAPSAM DIŞI: `bg` ve `tile-bg` aynı değere sahip,
+       bir literalden hangisi olduğu anlaşılamaz.
+     - **Regresyon koruması — 3 test, ikisi kaynak tarayıcı:** (1)
+       `tokens.dart` gerçekten `tailwind.config.js`'i mi taşıyor (test
+       web'in dosyasını OKUYUP karşılaştırıyor — web bir rengi değiştirir
+       ve port takip etmezse düşer); (2) `lib/` altında token değerini
+       tekrar yazan bir literal kaldı mı (yeni yerel kopyayı yakalar); (3)
+       `kMoveValid/kMoveInvalid` yalnızca o üç dosyada mı kullanılıyor.
+       **Negatif eş, ikisi de ayrı ayrı:** `kRed` eski yanlış değere
+       çekilince test 1 GERÇEKTEN düştü (`"red" web ile ayrışmış`),
+       `chat_modal`'a yerel kopya geri konunca test 2 GERÇEKTEN düştü
+       (dosya adını ve doğru token'ı işaret ederek).
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       311/311 yeşil** (308'den +3). `kelimeki_core`'a hiç dokunulmadı
+       (motor renk tutmuyor). Ekran görüntüleri gözle kontrol edildi.
+     - **Ders — "denetle" istenen şeyin sınırında durma:** görev "11
+       `_green` kullanım yerini kontrol et"ti; aynı taramayı kırmızıya
+       uygulamak sıfır ek maliyetti ve iki katı hata çıkardı. Bir hatayı
+       ÜRETEN mekanizma (her dosyada yerel palet kopyası) bulunduğunda,
+       o mekanizmanın ürettiği DİĞER örnekleri de ara — tek renk düzeltmek
+       `isMyTurn ? _green : _red` gibi satırları yarı-doğru bırakırdı.
+     - **Denetimde bulunan ama BİLİNÇLİ olarak düzeltilmeyen iki şey**
+       (renk değil, ayrı sınıf — kapsamı kendiliğinden genişletmemek için
+       buraya yazıldı, ayrı bir turda ele alınmalı): (a)
+       `live_games_tab.dart`'ın durum etiketi 10px, web'de `text-[11px]`
+       (Parça 37'nin punto sınıfı); (b) Canlı oyunun "Sınır İhlali!" onay
+       diyaloğu düz metin, web'de puanlar `<strong className="text-green/
+       red">` ile vurgulu.
 
 ## Sonraya Bırakılan İşler (mobil)
 

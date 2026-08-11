@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 
 import '../game/logo_mark.dart' show parseSvgPath;
 import 'klig_mark_data.dart';
+import '../tokens.dart';
 
 class KLigMark extends StatelessWidget {
   final double height;
@@ -57,7 +58,7 @@ class _KLigPainter extends CustomPainter {
 class KLigInfoBadge extends StatelessWidget {
   const KLigInfoBadge({super.key});
 
-  static const _muted = Color(0xFF5A6673);
+  static const _muted = kMuted;
 
   @override
   Widget build(BuildContext context) {

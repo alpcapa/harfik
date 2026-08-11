@@ -14,6 +14,7 @@ import 'neo_box.dart';
 import 'outline.dart';
 import 'player_colors.dart';
 import 'tile_widget.dart';
+import '../tokens.dart';
 
 /// Yalnızca testler için: `build()` her çağrıldığında bir artar. Sürükleme
 /// sırasında `BoardWidget`'ın gereksiz yere yeniden inşa EDİLMEDİĞİNİ
@@ -167,9 +168,7 @@ class BoardWidget extends StatelessWidget {
       if (moveOverlay != null && moveOverlay!.cells.isNotEmpty)
         (
           buildRoundedOutlinePath(moveOverlay!.cells, _outlineRadius),
-          moveOverlay!.valid
-              ? const Color(0xFF1FA05C)
-              : const Color(0xFFE0483A),
+          moveOverlay!.valid ? kMoveValid : kMoveInvalid,
         ),
     ];
 
@@ -264,7 +263,7 @@ class BoardWidget extends StatelessWidget {
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
-                          color: Color(0xFF2563EB),
+                          color: kAccent,
                         ),
                       ),
                     ],
@@ -274,7 +273,7 @@ class BoardWidget extends StatelessWidget {
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 6),
                   child: Text('·',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF5A6673))),
+                      style: TextStyle(fontSize: 12, color: kMuted)),
                 ),
                 GestureDetector(
                   onTap: onOpenMessaging,
@@ -294,7 +293,7 @@ class BoardWidget extends StatelessWidget {
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 0.5,
-                              color: Color(0xFF2563EB),
+                              color: kAccent,
                             ),
                           ),
                         ],
@@ -307,7 +306,7 @@ class BoardWidget extends StatelessWidget {
                             width: 10,
                             height: 10,
                             decoration: const BoxDecoration(
-                              color: Color(0xFFE0483A),
+                              color: kRed,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -349,7 +348,7 @@ class BoardWidget extends StatelessWidget {
               fontFamily: 'SpaceMono',
               fontSize: 8,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF5A6673),
+              color: kMuted,
             ),
           ),
           const SizedBox(width: 3),
@@ -602,8 +601,7 @@ class BoardWidget extends StatelessWidget {
         badge = cell;
       }
     }
-    final color =
-        overlay.valid ? const Color(0xFF1FA05C) : const Color(0xFFE0483A);
+    final color = overlay.valid ? kMoveValid : kMoveInvalid;
     return LayoutBuilder(
       builder: (context, constraints) {
         final left = badge!.$2 / boardSize * constraints.maxWidth;
@@ -760,7 +758,7 @@ class _DocumentIconPainter extends CustomPainter {
       ..strokeWidth = 2 * s
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
-      ..color = const Color(0xFF2563EB);
+      ..color = kAccent;
     // M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z
     final body = Path()
       ..moveTo(14 * s, 2 * s)
@@ -811,7 +809,7 @@ class _ChatBubbleIconPainter extends CustomPainter {
       ..strokeWidth = 2 * s
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
-      ..color = const Color(0xFF2563EB);
+      ..color = kAccent;
     final path = Path()
       ..moveTo(21 * s, 15 * s)
       ..arcToPoint(Offset(19 * s, 17 * s), radius: Radius.circular(2 * s))

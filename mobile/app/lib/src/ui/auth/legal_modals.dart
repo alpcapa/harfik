@@ -10,10 +10,11 @@
 import 'package:flutter/material.dart';
 
 import '../game/modal_shell.dart';
+import '../tokens.dart';
 
-const Color _text = Color(0xFF1B2430);
-const Color _accent = Color(0xFF2563EB);
-const Color _border = Color(0xFFDCE2EA);
+const Color _text = kText;
+const Color _accent = kAccent;
+const Color _border = kBorder;
 
 Future<void> showTermsModal(BuildContext context,
         {VoidCallback? onFeedback}) =>

@@ -31,11 +31,12 @@ import '../score/score_card_modal.dart';
 import 'account_settings_modal.dart';
 import 'k_avatar.dart';
 import 'auth_modal.dart';
+import '../tokens.dart';
 
-const Color _text = Color(0xFF1B2430);
-const Color _muted = Color(0xFF5A6673);
-const Color _panel = Color(0xFFF5F7FA);
-const Color _border = Color(0xFFDCE2EA);
+const Color _text = kText;
+const Color _muted = kMuted;
+const Color _panel = kPanel;
+const Color _border = kBorder;
 
 class AccountButton extends StatefulWidget {
   final AuthService auth;
@@ -182,7 +183,7 @@ class _AccountButtonState extends State<AccountButton> {
         // Web: `btn-raised bg-accent` (bkz. game_header.dart'taki eski
         // _GirisButton — görsel birebir korunarak buraya taşındı).
         decoration: const ShapeDecorationWithCssShadows(
-          color: Color(0xFF2563EB),
+          color: kAccent,
           radius: 6,
           shadows: [
             CssShadow(color: Color(0x8CA3B1C6), offset: Offset(3, 3), blur: 8),
@@ -403,7 +404,7 @@ class _AccountButtonState extends State<AccountButton> {
                                     fontFamily: 'SpaceMono',
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF2563EB),
+                                    color: kAccent,
                                   ),
                                 ),
                               ),

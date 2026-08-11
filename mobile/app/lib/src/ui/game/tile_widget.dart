@@ -9,6 +9,7 @@ import 'package:kelimeki_core/kelimeki_core.dart' show Tile, tileLetter;
 import 'fluid.dart';
 import 'neo_box.dart';
 import 'player_colors.dart';
+import '../tokens.dart';
 
 enum TileVariant { rack, placed, board }
 
@@ -48,8 +49,8 @@ class TileWidget extends StatelessWidget {
         border: Border.all(color: color!.base, width: 1),
         borderRadius: BorderRadius.circular(5),
       );
-      letterColor = const Color(0xFF1B2430); // web text-tile-letter
-      ptsColor = const Color(0xFF2563EB); // web text-accent
+      letterColor = kText; // web text-tile-letter
+      ptsColor = kAccent; // web text-accent
     } else if (isRack) {
       // Web Tile.tsx raf taşı gölge üçlüsü — CSS semantiğiyle (tahta/raf
       // kartındaki aynı ders: BoxShadow yoğun + katman sırası ters).
@@ -71,8 +72,8 @@ class TileWidget extends StatelessWidget {
       ptsColor = const Color(0xFF8B5E00);
     } else {
       decoration = null; // tahta varyantı — zemin/çerçeve hücrenin işi
-      letterColor = const Color(0xFF1B2430);
-      ptsColor = const Color(0xFF2563EB);
+      letterColor = kText;
+      ptsColor = kAccent;
     }
 
     // Web -webkit-text-stroke: harfin üstüne aynı renkte ince kontur bindirir

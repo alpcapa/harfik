@@ -23,12 +23,13 @@ import '../../data/stats_api.dart';
 import '../auth/k_avatar.dart';
 import '../friends/friends_modal.dart';
 import '../game/neo_button.dart';
+import '../tokens.dart';
 
-const Color _text = Color(0xFF1B2430);
-const Color _muted = Color(0xFF5A6673);
-const Color _accent = Color(0xFF2563EB);
-const Color _border = Color(0xFFDCE2EA);
-const Color _panel = Color(0xFFF5F7FA);
+const Color _text = kText;
+const Color _muted = kMuted;
+const Color _accent = kAccent;
+const Color _border = kBorder;
+const Color _panel = kPanel;
 
 class LiveGameCreateForm extends StatefulWidget {
   final AuthService auth;
@@ -436,7 +437,7 @@ class _LiveGameCreateFormState extends State<LiveGameCreateForm> {
               style: const TextStyle(
                   fontFamily: 'SpaceMono',
                   fontSize: 11,
-                  color: Color(0xFFE0483A))),
+                  color: kRed)),
         ],
         const SizedBox(height: 16),
         if (friends != null && friends.isNotEmpty) ...[

@@ -6,6 +6,7 @@ import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
 
 import '../../data/meaning_entry.dart';
 import 'modal_shell.dart';
+import '../tokens.dart';
 
 /// Kelime → anlam kaydı (yoksa null). Üretimde `MeaningStore.lookup`;
 /// modal deponun tamamına değil YALNIZCA bu işleve bağlı — widget testleri
@@ -23,10 +24,10 @@ typedef MeaningLookup = Future<MeaningEntry?> Function(String word);
 /// değiştiriliyor — anlam aynı ("bkz."), her cihazda kesin çiziliyor.
 String _renderable(String s) => s.replaceAll('►', '→');
 
-const Color _text = Color(0xFF1B2430);
-const Color _muted = Color(0xFF5A6673);
-const Color _accent = Color(0xFF2563EB);
-const Color _border = Color(0xFFDCE2EA);
+const Color _text = kText;
+const Color _muted = kMuted;
+const Color _accent = kAccent;
+const Color _border = kBorder;
 
 Future<void> showMeaningModal(
   BuildContext context,
