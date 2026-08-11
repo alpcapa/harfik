@@ -2408,6 +2408,23 @@ silinip kendi tarihli parça notuna taşınır.
        değişmez taraması temiz. **Doğrulama sınırı:** gerçek RPC'ler/RLS,
        gerçek davet e-postası/linki ve iki hesaplı karşılıklı-istek
        trigger'ı cihazda doğrulanmalı — TESTING.md "Arkadaşlar" bölümü.
+     - **BU SINIR KAPANDI (11 Ağustos 2026, iki gerçek hesapla —
+       `mobile/TESTING.md` bölüm 10'un tamamı geçti):** rozet + varsayılan
+       "İstekler" sekmesi, kabul/çıkar/gönder/iptal dörtlüsü ve sonuç
+       mesajları, "Tüm Üyeler" sayfalaması (20 → 22), arama, davet linki,
+       `PlayerScoreCard` simgesinin üç hâli ve iPad yatayda diyalog
+       genişliği. **Karşılıklı-istek trigger'ı sunucudan BAĞIMSIZ olarak
+       da kanıtlandı:** `friend_requests` satırının `created_at` ile
+       `responded_at`'i AYNI dakika (14:53) — bu, "Kabul Et"e basılmış bir
+       isteğin değil `handle_friend_request_insert`'ün imzası; yani
+       istemci kabul göndermedi, sunucu anında birleştirdi. Bir ekran
+       görüntüsü/kullanıcı beyanı yerine veriden okunabilen bu tür bir iz
+       aramak, "test geçti" ile "doğru mekanizma çalıştı" arasındaki farkı
+       kapatıyor (bkz. Parça 49'un aynı dersi).
+       **Hâlâ açık olan tek parça:** `kelimeki://davet/<token>` derin
+       bağlantısı — custom şemayı yalnızca GERÇEKTEN kurulu bir uygulama
+       yakalayabildiğinden web derlemesinde test EDİLEMEZ, FAZ B'de
+       `kelimeki://reset` ile birlikte bakılacak.
    - ✅ **Parça 9 — Canlı oyun davet/kabul akışı (7 Ağustos 2026,
      `data/online_games_api.dart`, `ui/live/`):** Canlı fazın ilk alt
      parçası — web Faz 2'nin (davet + kabul) tam portu; ARKADAŞINLA sekmesi
