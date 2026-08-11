@@ -509,7 +509,17 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     // anda kill edilse bile kayıt kuyruğa/sunucuya çoktan gitmiş olur.
     var recorded = false;
     void recordOnGameOver() {
-      if (recorded || !controller.state.isGameOver) return;
+      if (!controller.state.isGameOver) {
+        // Yeni bir oyun başladı — bayrak SIFIRLANMAK ZORUNDA. Ekran
+        // eskiden yalnızca Setup'a dönerek terk edilebildiğinden (o da bu
+        // closure'ı bitirdiğinden) tek seferlik bir bool yetiyordu; "TEKRAR
+        // OYNA" (Parça 60) aynı ekranda ikinci bir oyun başlatabildiğinden
+        // bayrak sıfırlanmazsa o oyun HİÇ kaydedilmezdi — ne `games` satırı
+        // ne k-lig puanı (bkz. mobile/CLAUDE.md Parça 60).
+        recorded = false;
+        return;
+      }
+      if (recorded) return;
       recorded = true;
       unawaited(_recordFinishedGame(controller.state));
     }

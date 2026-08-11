@@ -177,6 +177,16 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       DEĞİL, doğrudan tahta (`game_screen.dart` `_handleCellTap`'in ilk
       dalı; web'de de aynı — `MoveHistoryModal.tsx`'te hiçbir anlam
       tetikleyicisi yok, tetikleyici `App.tsx`'in `handleCellClick`'i).
+- [ ] **Oyun bitince "TEKRAR OYNA" (Parça 60).** Bir YZ oyununu sonuna
+      kadar bitir: buton "TEKRAR OYNA" olmalı ("YENİ OYUN AÇ" DEĞİL). Dokun →
+      onay ("… kişilik, Yapay Zeka'ya karşı yeni bir oyun başlatılacak. Emin
+      misin?"). VAZGEÇ hiçbir şey yapmamalı; onayla → Setup'a UĞRAMADAN aynı
+      kadroyla taze bir oyun açılmalı (skorlar 0, buton yine OYNA).
+- [ ] **İki oyun ART ARDA — kayıt kaybı regresyonu (Parça 60).** Yukarıdaki
+      akışla aynı ekranda İKİ oyunu üst üste bitir (aradan Setup'a çıkma).
+      Skor Kartı → "Tüm Oyunlarım"da **İKİSİ de** görünmeli ve k-lig puanı
+      ikisini de saymalı. Yalnızca ilki görünüyorsa kayıt bayrağı yeni
+      oyunda sıfırlanmıyor demektir.
 - [ ] **Oyun sonu.** Torba+raf bitince sonuç ekranı; sıralama ve kalan taş
       düşümü doğru. **GameOver modalı web'deki gibi küçük/kare bir kart
       olmalı** — sabit ~360px genişlik, hiçbir bottom "KAPAT" düğmesi

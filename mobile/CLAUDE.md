@@ -1570,6 +1570,59 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        zaten tek dokunuşluk bir YZ kurulum formu var. İstenirse ayrı bir
        parça.
 
+   - ✅ **Parça 60 — "TEKRAR OYNA" yerel/YZ ekranına da geldi; sessiz bir
+     k-lig kaybı BU ÇALIŞMA SIRASINDA yakalandı (11 Ağustos 2026,
+     `game_screen.dart`, `setup_screen.dart` + web `App.tsx`):** Kullanıcı
+     Parça 59'dan sonra "yerel/YZ ekranına da uygulasak mı?" diye sordu.
+     Kayıt oturumu (`activeSaveIdRef` / `CloudGameSession._saveId`) oyun
+     bitince id'yi zaten sıfırlıyor, yani yeni oyun kendiliğinden yeni bir
+     satır alıyor — uygulama iki tarafta da temiz oturdu.
+     - **Onay Canlı'dakiyle AYNI, gerekçesi FARKLI:** Canlı'da onay dışa
+       dönük bir eylemi (davet göndermek) koruyor; yerelde öyle bir sonuç
+       yok (oyun anında ve iz bırakmadan terk edilebilir, `turnCount<2`).
+       Yine de kondu: AYNI konumdaki buton oyun bitince parmağın altında
+       OYNA'dan TEKRAR OYNA'ya dönüşüyor — kazara dokunuş tam da bu yüzden
+       olası, ve iki kardeş ekranın aynı davranması bu projede bir kural.
+     - **Kadro yeniden hesaplanmıyor:** biten oyunun `players` adları/YZ
+       bayrakları Setup'ın `doStart`/`_startNewGame`'inin ürettiğinin
+       AYNISI — `StartAction`/`{type:'START'}` doğrudan onlarla çağrılıyor.
+     - **BULUNAN GERÇEK HATA — `recorded` bayrağı ekran oturumu başına tek
+       seferlikti:** `setup_screen.dart`'ın `_openGame`'i oyun bitince
+       `games` satırını yazan dinleyiciyi `var recorded = false` ile
+       koruyordu. Bu, ekran YALNIZCA Setup'a dönerek terk edilebildiği
+       sürece doğruydu (dönüş closure'ı bitiriyordu). "TEKRAR OYNA" aynı
+       ekranda ikinci bir oyun başlatabildiğinden bayrak sıfırlanmazsa o
+       oyun HİÇ kaydedilmezdi — ne `games` satırı, ne k-lig puanı, ne oyun
+       geçmişi; üstelik SESSİZCE. Dinleyici artık `isGameOver` false'a
+       düştüğünde bayrağı sıfırlıyor.
+     - **Web'de bu hata YOK ve sebebi öğretici:** oradaki kayıt bir
+       `useEffect(..., [state.isGameOver])` — bağımlılık false→true'ya
+       yeniden geçtiğinde effect kendiliğinden yeniden çalışıyor. Portun
+       elle yazılmış dinleyicisi bu "yeniden tetiklenme"yi taklit etmiyordu.
+       **Ders: bir React effect'ini elle bir `addListener`'a çevirirken
+       "bağımlılık DEĞİŞTİĞİNDE yeniden çalışır" garantisini de taşı** —
+       tek seferlik bir bool o garantiyi sessizce düşürür.
+     - **Test — negatif eş doğrulamasıyla, 2 yeni test:** (1)
+       `game_screen_test.dart` — oyun bitince buton "TEKRAR OYNA"
+       ("YENİ OYUN AÇ" DEĞİL), VAZGEÇ yeni oyun başlatmıyor, onay TAZE bir
+       oyun açıyor (turnCount 0, aynı kadro, buton yine OYNA); ekran dosyası
+       `git stash`lenince GERÇEKTEN düştü. (2) `setup_cloud_test.dart` —
+       aynı ekranda ikinci oyun da kaydediliyor; bayrak sıfırlaması geri
+       alınınca GERÇEKTEN `Expected: an object with length of <2>` ile
+       düştü. Ayrıca iki MEVCUT test eski etikete bağlıydı, beklentileri
+       güncellendi (Parça 50'nin ASIL sözleşmesi — tek satır, 15px — aynen
+       korunuyor, yalnızca metin değişti).
+     - **Test tuzağı:** GameOver'ı kapatmak Parça 48'den beri "Görüş
+       Bildir" formunu açıyor; formu da kapatmazsan modal bariyeri sonraki
+       dokunuşları yutuyor ve hata "buton yok" gibi görünüyor.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 324/324
+       yeşil** (322'den +2). Web `npm run lint` + `npm run build` temiz.
+       `kelimeki_core`'a hiç dokunulmadı.
+     - **Doğrulama sınırı:** cihazda teyit kullanıcıdan bekleniyor —
+       `mobile/TESTING.md` bölüm 1'e madde eklendi. En kritik maddesi
+       "aynı ekranda ART ARDA iki oyun bitir, İKİSİ de Skor Kartı'nda
+       görünsün" — yukarıdaki sessiz kaybın gerçek uçla kontrolü.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

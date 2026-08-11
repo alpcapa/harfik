@@ -346,6 +346,53 @@ void main() {
     expect(gamesGw.inserted, hasLength(1));
   });
 
+  // Parça 60: "TEKRAR OYNA" aynı ekranda ikinci bir oyun başlatabiliyor —
+  // `recorded` bayrağı ekran oturumu başına TEK SEFERLİK kalsaydı o oyun
+  // hiç kaydedilmez, k-lig puanı sessizce kaybolurdu.
+  testWidgets('TEKRAR OYNA: aynı ekranda İKİNCİ oyun da kaydedilir',
+      (tester) async {
+    final gw = MemGateway();
+    final gamesGw = FakeGamesGateway(userId: 'u-test');
+    final gamesRepo = await tester.runAsync(() => memGamesRepo(gamesGw));
+    await pumpSetup(tester, gw, games: Future.value(gamesRepo));
+
+    await tester.tap(find.text('+ YENİ YAPAY ZEKA OYUNU AÇ'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OYUNU BAŞLAT'));
+    await tester.pumpAndSettle();
+
+    final controller =
+        tester.widget<GameScreen>(find.byType(GameScreen)).controller;
+    final names = [for (final p in controller.state.players) p.name];
+
+    controller.restore(controller.state.copyWith(isGameOver: true));
+    await tester.pumpAndSettle();
+    expect(gamesGw.inserted, hasLength(1));
+
+    // GameOver modalı + Görüş Bildir formu kapat, sonra TEKRAR OYNA.
+    await tester.tap(find.byTooltip('Kapat'));
+    await tester.pumpAndSettle();
+    if (find.byTooltip('Kapat').evaluate().isNotEmpty) {
+      await tester.tap(find.byTooltip('Kapat'));
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.text('TEKRAR OYNA'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'TEKRAR OYNA'));
+    await tester.pumpAndSettle();
+
+    // Aynı kadroyla TAZE bir oyun.
+    expect(controller.state.isGameOver, isFalse);
+    expect(controller.state.turnCount, 0);
+    expect([for (final p in controller.state.players) p.name], names);
+
+    controller.restore(controller.state.copyWith(isGameOver: true));
+    await tester.pumpAndSettle();
+    expect(gamesGw.inserted, hasLength(2),
+        reason: 'İkinci oyun kaydedilmedi — `recorded` bayrağı yeni oyunda '
+            'sıfırlanmıyor demektir (k-lig puanı sessizce kaybolur).');
+  });
+
   testWidgets('yeni oyun turnCount<2 iken terk edilirse listede iz bırakmaz',
       (tester) async {
     final gw = MemGateway();

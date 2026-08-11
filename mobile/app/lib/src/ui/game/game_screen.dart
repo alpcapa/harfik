@@ -281,6 +281,44 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     controller.dispatch(const PlayAction());
   }
 
+  /// Oyun bitince OYNA'nın yerini alan "TEKRAR OYNA" — Canlı ekranındaki
+  /// aynı butonun yerel karşılığı (bkz. mobile/CLAUDE.md Parça 60). Orada
+  /// davet gönderildiğinden onay şart; burada da AYNI konumdaki buton oyun
+  /// bitince parmağın altında anlam değiştirdiğinden kazara dokunuşa karşı
+  /// aynı koruma uygulanıyor. Kadro yeniden hesaplanmıyor: biten oyunun
+  /// oyuncu adları/YZ bayrakları Setup'ın `_startNewGame`'inin ürettiğinin
+  /// AYNISI. Kayıt oturumu (`CloudGameSession`) oyun bitince satırı silip
+  /// `_saveId`'yi null'ladığından yeni oyun kendiliğinden yeni bir id alır —
+  /// burada ek bir şey yapmak gerekmiyor.
+  Future<void> _handleRematch() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Tekrar Oyna'),
+        content: Text(
+          '${state.players.length} kişilik, Yapay Zeka\'ya karşı yeni bir '
+          'oyun başlatılacak. Emin misin?',
+        ),
+        // Kabul butonu SOLDA (Parça 25 kuralı).
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('TEKRAR OYNA'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('VAZGEÇ'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    controller.dispatch(StartAction([
+      for (final p in state.players) PlayerSetup(name: p.name, isAI: p.isAI),
+    ]));
+    setState(() => _gameOverShown = false);
+  }
+
   Future<void> _handlePass() async {
     final ok = await showDialog<bool>(
       context: context,
@@ -832,7 +870,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                                   // `\n` ile iki satıra bölüp
                                                   // 13px'te bırakmıştı.
                                                   ? NeoButton(
-                                                      label: 'YENİ OYUN AÇ',
+                                                      label: 'TEKRAR OYNA',
                                                       variant: NeoButtonVariant
                                                           .accent,
                                                       fontSize: 15,
@@ -840,9 +878,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                                       padding: const EdgeInsets
                                                           .symmetric(
                                                           horizontal: 20),
-                                                      onPressed: () =>
-                                                          Navigator.of(context)
-                                                              .pop(),
+                                                      onPressed: _handleRematch,
                                                     )
                                                   : NeoButton(
                                                       label: 'OYNA',

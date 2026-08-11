@@ -419,7 +419,7 @@ void main() {
 
   testWidgets(
       'raf satırı buton puntoları web ile aynı: OYNA 12px, oyun bitince '
-      'YENİ OYUN AÇ tek satır 15px (Parça 50)', (tester) async {
+      'TEKRAR OYNA tek satır 15px (Parça 50)', (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));
     await pumpGame(tester, GlobalKey());
 
@@ -444,7 +444,9 @@ void main() {
     await tester.tap(find.byTooltip('Kapat')); // GameOver modalını kapat
     await tester.pumpAndSettle();
 
-    final newGame = tester.widget<Text>(find.text('YENİ OYUN AÇ'));
+    // Etiket Parça 60'ta 'YENİ OYUN AÇ' → 'TEKRAR OYNA' oldu; Parça 50'nin
+    // ASIL sözleşmesi (tek satır, 15px) aynen geçerli.
+    final newGame = tester.widget<Text>(find.text('TEKRAR OYNA'));
     expect(newGame.style!.fontSize, 15,
         reason: 'web text-[15px] — OYNA\'dan belirgin büyük');
   });
@@ -472,7 +474,7 @@ void main() {
             'baseStyle) üstündeki miras yeterli');
   });
 
-  testWidgets('oyun bitince GameOver modalı: kazanan + Teslim + YENİ OYUN',
+  testWidgets('oyun bitince GameOver modalı: kazanan + Teslim + TEKRAR OYNA',
       (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));
     final golden = jsonDecode(
@@ -507,8 +509,8 @@ void main() {
     await tester.tap(find.byTooltip('Kapat'));
     await tester.pumpAndSettle();
     expect(find.text('YAPAY ZEKA 2 KAZANDI'), findsNothing);
-    // Modal kapanınca tahta görünür kalır, raf satırında YENİ OYUN çıkar.
-    expect(find.textContaining('YENİ'), findsOneWidget);
+    // Modal kapanınca tahta görünür kalır, raf satırında TEKRAR OYNA çıkar.
+    expect(find.text('TEKRAR OYNA'), findsOneWidget);
 
     // Web App.tsx (~1514-1517): GameOver'ı KAPATMAK "Görüş Bildir" formunu
     // AÇAR (`onClose` hem gameOverDismissed hem showFeedback set ediyor).
@@ -736,6 +738,46 @@ void main() {
 
     await g.up();
     await tester.pump();
+  });
+
+  testWidgets(
+      'oyun bitince TEKRAR OYNA: onay → aynı kadroyla TAZE oyun (Parça 60)',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final controller = await pumpGame(tester, GlobalKey());
+    controller.restore(controller.state.copyWith(isGameOver: true));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Kapat')); // GameOver modalı
+    await tester.pumpAndSettle();
+    // Parça 48: GameOver'ı kapatmak "Görüş Bildir" formunu açıyor — o da
+    // kapatılmazsa modal bariyeri aşağıdaki dokunuşları yutar.
+    if (find.byTooltip('Kapat').evaluate().isNotEmpty) {
+      await tester.tap(find.byTooltip('Kapat'));
+      await tester.pumpAndSettle();
+    }
+
+    expect(find.text('TEKRAR OYNA'), findsOneWidget);
+    expect(find.text('YENİ OYUN AÇ'), findsNothing);
+    final names = [for (final p in controller.state.players) p.name];
+
+    // VAZGEÇ yeni oyun BAŞLATMAMALI.
+    await tester.tap(find.text('TEKRAR OYNA'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Emin misin?'), findsOneWidget);
+    await tester.tap(find.text('VAZGEÇ'));
+    await tester.pumpAndSettle();
+    expect(controller.state.isGameOver, isTrue);
+
+    await tester.tap(find.text('TEKRAR OYNA'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'TEKRAR OYNA'));
+    await tester.pumpAndSettle();
+
+    expect(controller.state.isGameOver, isFalse);
+    expect(controller.state.turnCount, 0);
+    expect([for (final p in controller.state.players) p.name], names,
+        reason: 'Kadro korunmalı — Setup\'a dönmeden aynı setle başlıyoruz.');
+    expect(find.text('OYNA'), findsOneWidget);
   });
 
   testWidgets(
