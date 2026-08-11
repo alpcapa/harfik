@@ -16,6 +16,21 @@
  * | bana istek geldi | how_to_reg | accent |
  * | arkadaşız | person_remove | red |
  *
+ * **`PlayerScoreCard` bu tablonun son satırında BİLİNÇLİ bir istisna** (kullanıcı
+ * kararı, 11 Ağustos 2026): orada arkadaş durumu yeşil `how_to_reg` çizilir,
+ * kırmızı `person_remove` değil. Gerekçe: listelerde ikon bir AKSİYON
+ * sütununda durur; skor kartında ise ismin hemen yanında durur ve kimliğin
+ * parçası gibi okunur — "adam-" orada bir uyarı gibi görünüyordu. Dokunuş
+ * yine de çıkarma onayını açar, yani kural (dokunuş ne yapıyorsa onu sor)
+ * onay diyaloğuyla korunuyor. Aynı glyph iki yerde iki farklı şey anlatıyor
+ * — listede "gelen isteği kabul et" (mavi), kartta "arkadaşsınız" (yeşil);
+ * renk ayrımı bu yüzden zorunlu, ikisini aynı renge çekme.
+ *
+ * **Hiçbir ikon dokunulduğu an iş yapmaz** — dördü de önce bir onay
+ * diyaloğu açar (`FriendsModal`'ın ConfirmDialog'ları / `PlayerScoreCard`'ın
+ * `friendDialogCopy`si). Etiketsiz bir ikona kazara dokunmak metin butonuna
+ * göre çok daha kolay; yeni bir ilişki ikonu eklerken bu sözleşmeyi koru.
+ *
  * **Path verisi elle çizilmedi**, Flutter SDK'sının `MaterialIcons-Regular.otf`
  * dosyasından fontTools ile çıkarılıp 24'lük viewBox'a dönüştürüldü
  * (unitsPerEm 512 → ölçek 24/512, y ekseni ters). Flutter portu aynı

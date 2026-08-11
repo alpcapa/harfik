@@ -185,6 +185,15 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
   const [cancelResultMsg, setCancelResultMsg] = useState<string | null>(null);
   const confirmCancelRef = useModalA11y(!!confirmCancel, () => setConfirmCancel(null));
   const cancelResultRef = useModalA11y(!!cancelResultMsg, () => setCancelResultMsg(null));
+  // "Ekle" ve "Kabul Et" de onaydan geçer — metin butonları ikonlara indiği
+  // için (11 Ağustos 2026) etiketsiz bir ikona kazara dokunmak artık çok daha
+  // kolay; `PlayerScoreCard` zaten dört ilişki dalının HEPSİNDE onay soruyordu,
+  // iki ekran arasındaki bu asimetri kapatıldı. Tek state: metin `relation`dan
+  // türetiliyor (gelen isteği kabul mü, yeni istek mi).
+  const [confirmAdd, setConfirmAdd] = useState<FriendSearchResult | null>(null);
+  const [addResultMsg, setAddResultMsg] = useState<string | null>(null);
+  const confirmAddRef = useModalA11y(!!confirmAdd, () => setConfirmAdd(null));
+  const addResultRef = useModalA11y(!!addResultMsg, () => setAddResultMsg(null));
 
   // Arama kutusu boşken gösterilen, tüm üyelerin alfabetik/sayfalı listesi —
   // `Leaderboard`'daki IntersectionObserver tabanlı lazy-load deseniyle aynı.
@@ -295,8 +304,10 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
       // Gönderildi" yerine gerçek durumu (arkadaş oldunuz) göstermeli.
       patchRelation(id, status === 'accepted' ? 'accepted' : 'pending_outgoing');
       if (status === 'accepted') reloadFriends();
+      return status;
     } catch (err) {
       console.error('[Kelimeki] arkadaşlık isteği hatası:', err);
+      return null;
     } finally {
       setBusyId(null);
     }
@@ -350,6 +361,23 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
     }
   };
 
+  const handleConfirmAdd = async () => {
+    if (!confirmAdd) return;
+    const { id, relation } = confirmAdd;
+    if (relation === 'pending_incoming') {
+      await handleRespond(id, true);
+      setAddResultMsg('Arkadaş oldunuz.');
+    } else {
+      const status = await handleSend(id);
+      // Karşı taraftan zaten bekleyen bir istek varsa sunucu trigger'ı
+      // ilişkiyi anında 'accepted' yapar — mesaj bunu yansıtmalı.
+      setAddResultMsg(
+        status === 'accepted' ? 'Arkadaş oldunuz.' : 'Arkadaşlık isteğiniz iletilmiştir.',
+      );
+    }
+    setConfirmAdd(null);
+  };
+
   const handleConfirmCancel = async () => {
     if (!confirmCancel) return;
     const id = confirmCancel.id;
@@ -398,6 +426,14 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
   // ikon, dokunuşun NE YAPACAĞINI söyler. Dokunma hedefi 44px — ikon 20px,
   // etrafındaki görünmez alan iOS kılavuzunun asgarisini karşılıyor. Metin
   // kalktığı için `aria-label` artık tek bilgi kaynağı, boş bırakma.
+  //
+  // Dört dalın DÖRDÜ de önce bir onay diyaloğu açar, hiçbiri anında iş
+  // yapmaz — `PlayerScoreCard`'daki `friendDialogCopy` ile aynı sözleşme.
+  // `accepted` dalı pratikte ULAŞILAMAZ (bu satır yalnızca "Ara & Ekle"
+  // listelerinde çiziliyor ve orası arkadaşları eliyor, bkz. `notFriend`) —
+  // savunma amaçlı duruyor: silinirse bir gün eleme atlanınca arkadaşa
+  // "ekle" ikonu gösterilirdi. "Arkadaşlarım" sekmesi bu satırı kullanmaz,
+  // kendi çıkarma butonu var.
   const relationAction = (u: FriendSearchResult) => {
     const props =
       u.relation === 'accepted'
@@ -405,8 +441,8 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
         : u.relation === 'pending_outgoing'
           ? { label: 'İstek gönderildi — iptal et', color: 'text-muted', icon: <HourglassIcon />, act: () => setConfirmCancel(u) }
           : u.relation === 'pending_incoming'
-            ? { label: 'Arkadaşlık isteğini kabul et', color: 'text-accent', icon: <HowToRegIcon />, act: () => handleRespond(u.id, true) }
-            : { label: 'Arkadaş ekle', color: 'text-accent', icon: <PersonAddIcon />, act: () => handleSend(u.id) };
+            ? { label: 'Arkadaşlık isteğini kabul et', color: 'text-accent', icon: <HowToRegIcon />, act: () => setConfirmAdd(u) }
+            : { label: 'Arkadaş ekle', color: 'text-accent', icon: <PersonAddIcon />, act: () => setConfirmAdd(u) };
     return (
       <button
         type="button"
@@ -420,6 +456,16 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
       </button>
     );
   };
+
+  // "Ara & Ekle" zaten arkadaş olunanları GÖSTERMEZ (kullanıcı isteği,
+  // 11 Ağustos 2026) — onlar "Arkadaşlarım" sekmesinde. Eleme fetch'te değil
+  // RENDER'da yapılıyor; iki sebep: (1) `allUsers.length` sayfalama offset'i
+  // olduğundan diziden atmak sayfaları kaydırıp üye atlatırdı; (2) satır
+  // ekrandayken arkadaş olunursa (kabul/karşılıklı istek) `patchRelation`
+  // ilişkiyi 'accepted' yapar ve satır kendiliğinden listeden düşer.
+  const notFriend = (u: FriendSearchResult) => u.relation !== 'accepted';
+  const visibleResults = results.filter(notFriend);
+  const visibleAllUsers = allUsers?.filter(notFriend) ?? null;
 
   const renderFriendRow = (u: FriendSearchResult) => (
     <div key={u.id} className={rowCls}>
@@ -550,12 +596,14 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
               <div className={`${listCls} min-h-[40px]`}>
                 {searching ? (
                   <p className="text-muted text-xs font-mono py-4 text-center">Aranıyor…</p>
-                ) : results.length === 0 ? (
+                ) : visibleResults.length === 0 ? (
                   <p className="text-muted text-xs font-mono py-4 text-center">
-                    Kimse bulunamadı — Kelimeki'de değilse yukarıdaki davet linkini gönderebilirsin.
+                    {results.length > 0
+                      ? 'Bulunanların hepsi zaten arkadaşın — "Arkadaşlarım" sekmesine bak.'
+                      : "Kimse bulunamadı — Kelimeki'de değilse yukarıdaki davet linkini gönderebilirsin."}
                   </p>
                 ) : (
-                  results.map((u) => renderFriendRow(u))
+                  visibleResults.map((u) => renderFriendRow(u))
                 )}
               </div>
             ) : (
@@ -563,16 +611,22 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
                 <p className="text-[9px] uppercase tracking-[1px] text-muted font-mono px-0.5">
                   Tüm Üyeler
                 </p>
-                {allUsers === null ? (
+                {visibleAllUsers === null ? (
                   <p className="text-muted text-xs font-mono py-4 text-center">Yükleniyor…</p>
-                ) : allUsers.length === 0 ? (
-                  <p className="text-muted text-xs font-mono py-4 text-center">Henüz başka üye yok.</p>
                 ) : (
                   <div
                     ref={allUsersScrollRef}
                     className={`${listCls} max-h-[50vh] overflow-y-auto pr-1`}
                   >
-                    {allUsers.map((u) => renderFriendRow(u))}
+                    {visibleAllUsers.map((u) => renderFriendRow(u))}
+                    {/* Boş mesajı yalnızca liste GERÇEKTEN tükendiyse göster —
+                        bir sayfanın tamamı arkadaş çıkarsa sentinel görünür
+                        kalıp bir sonraki sayfayı çekmeye devam etmeli. */}
+                    {visibleAllUsers.length === 0 && !allUsersHasMore && (
+                      <p className="text-muted text-xs font-mono py-4 text-center">
+                        Eklenecek başka üye yok.
+                      </p>
+                    )}
                     {allUsersHasMore && (
                       <div ref={allUsersSentinelRef} className="py-2 text-center">
                         <span className="text-muted text-[10px] font-mono">
@@ -621,6 +675,26 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
       )}
       {rejectResultMsg && (
         <InfoDialog dialogRef={rejectResultRef} message={rejectResultMsg} onClose={() => setRejectResultMsg(null)} />
+      )}
+
+      {confirmAdd && (
+        <ConfirmDialog
+          dialogRef={confirmAddRef}
+          ariaLabel={confirmAdd.relation === 'pending_incoming' ? 'Arkadaşlık İsteği' : 'Arkadaş Ekle'}
+          title={confirmAdd.relation === 'pending_incoming' ? 'Arkadaşlık İsteği' : 'Arkadaş Ekle'}
+          message={
+            confirmAdd.relation === 'pending_incoming'
+              ? `${confirmAdd.name} oyuncusu sana arkadaşlık isteği gönderdi. Kabul etmek istiyor musun?`
+              : `${confirmAdd.name} oyuncusunu arkadaş olarak eklemek istiyor musun?`
+          }
+          confirmLabel={confirmAdd.relation === 'pending_incoming' ? 'Kabul Et' : 'Ekle'}
+          busy={busyId === confirmAdd.id}
+          onConfirm={handleConfirmAdd}
+          onCancel={() => setConfirmAdd(null)}
+        />
+      )}
+      {addResultMsg && (
+        <InfoDialog dialogRef={addResultRef} message={addResultMsg} onClose={() => setAddResultMsg(null)} />
       )}
 
       {confirmCancel && (

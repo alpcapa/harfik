@@ -7,7 +7,7 @@ import { Avatar } from './Avatar';
 import { GameHistoryModal } from './GameHistoryModal';
 import { Leaderboard } from './Leaderboard';
 import { KLigMark } from './KLigMark';
-import { PersonAddIcon, PersonRemoveIcon } from './RelationIcons';
+import { HowToRegIcon, PersonAddIcon } from './RelationIcons';
 import { useAuth } from '../hooks/useAuth';
 import { useModalA11y } from '../hooks/useModalA11y';
 import {
@@ -74,9 +74,9 @@ function memberDisplayName(m: PlayerSummary) {
 }
 
 // k-lig'den herhangi birinin kartını açınca arkadaş ekleyebilmek için.
-// İkon ilişkiye göre değişir ve HER ZAMAN dokunuşun ne yapacağını söyler:
-// arkadaşsa kırmızı person_remove (çıkarma onayı), değilse mavi person_add
-// (duruma göre ekleme/kabul/iptal onayı). Bkz. RelationIcons.tsx.
+// İkon ilişkiye göre değişir: arkadaşsa yeşil how_to_reg (dokununca çıkarma
+// onayı), değilse mavi person_add (duruma göre ekleme/kabul/iptal onayı).
+// Dört dalın DÖRDÜ de önce bir onay diyaloğu açar. Bkz. RelationIcons.tsx.
 function friendDialogCopy(relation: FriendRelation | null, name: string) {
   switch (relation) {
     case 'accepted':
@@ -210,14 +210,17 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
               aria-label={relation === 'accepted' ? 'Arkadaşlıktan çıkar' : 'Arkadaş ekle'}
               /* Yuvarlak rozet (zemin+çerçeve) KALDIRILDI — port kapsız
                  çiziyor. Renk `currentColor` üzerinden SVG'ye iniyor.
-                 11 Ağustos 2026: arkadaş durumu artık yeşil `check_circle`
-                 değil kırmızı `person_remove` — ikon, dokunuşun NE YAPACAĞINI
-                 söylüyor (bkz. RelationIcons.tsx). */
+                 Arkadaş durumu burada BİLİNÇLİ olarak yeşil `how_to_reg`
+                 (kişi+onay), listelerdeki kırmızı `person_remove` DEĞİL —
+                 kullanıcı kararı: isim hizasında duran bu simge bir aksiyon
+                 sütunu değil, kimliğin yanındaki bir durum rozeti gibi
+                 okunuyor ve "adam-" orada iyi durmuyor. Dokunuş yine de
+                 çıkarma onayını açar (bkz. RelationIcons.tsx). */
               className={`shrink-0 leading-none active:scale-90 transition-transform ${
-                relation === 'accepted' ? 'text-red' : 'text-accent'
+                relation === 'accepted' ? 'text-green' : 'text-accent'
               }`}
             >
-              {relation === 'accepted' ? <PersonRemoveIcon /> : <PersonAddIcon />}
+              {relation === 'accepted' ? <HowToRegIcon /> : <PersonAddIcon />}
             </button>
           )}
         </div>
