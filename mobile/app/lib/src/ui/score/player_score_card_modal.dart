@@ -132,8 +132,9 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
     });
   }
 
-  /// Web PlayerScoreCard simge davranışı: ✓ = arkadaşsınız (dokun →
-  /// çıkar onayı); + = değilsiniz (duruma göre ekle / kabul et / iptal).
+  /// Web PlayerScoreCard simge davranışı: yeşil how_to_reg = arkadaşsınız
+  /// (dokun → çıkar onayı); mavi person_add = değilsiniz (duruma göre ekle /
+  /// kabul et / iptal). DÖRT dal da önce onay diyaloğu açar.
   Future<void> _onRelationTap() async {
     final friends = widget.friends;
     if (friends == null) return;
@@ -166,10 +167,14 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
                 context, 'Arkadaşlık isteği iptal edildi.');
           }
         case FriendRelation.pendingIncoming:
+          // Metinler web `friendDialogCopy` ile BİREBİR — aynı gün
+          // `FriendsModal._confirmThenAdd` de bu sözleri kullandığından
+          // uygulama içinde de tek bir dil kaldı (bu iki dal daha önce
+          // web'den sessizce ayrışmıştı).
           final ok = await confirmFriendAction(context,
-              title: 'İsteği Kabul Et',
-              message:
-                  '$name sana arkadaşlık isteği göndermiş. Kabul ediyor musun?',
+              title: 'Arkadaşlık İsteği',
+              message: '$name oyuncusu sana arkadaşlık isteği gönderdi. '
+                  'Kabul etmek istiyor musun?',
               confirmLabel: 'Kabul Et');
           if (!ok || !mounted) return;
           await friends.respond(widget.userId, accept: true);
@@ -180,8 +185,8 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
         case null:
           final ok = await confirmFriendAction(context,
               title: 'Arkadaş Ekle',
-              message: '$name oyuncusuna arkadaşlık isteği gönderilsin mi?',
-              confirmLabel: 'Gönder');
+              message: '$name oyuncusunu arkadaş olarak eklemek istiyor musun?',
+              confirmLabel: 'Ekle');
           if (!ok || !mounted) return;
           final r = await friends.sendRequest(widget.userId);
           if (mounted) {
@@ -207,17 +212,22 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
       child: Padding(
         padding: const EdgeInsets.only(left: 6),
         child: Icon(
-          // 11 Ağustos 2026: arkadaş durumu yeşil `check_circle` DEĞİL kırmızı
-          // `person_remove`. Kural (web `RelationIcons.tsx` ile ortak): ikon,
-          // dokunuşun NE YAPACAĞINI söyler — burada dokunuş çıkarma onayı
-          // açıyor. Yeşil onay durumu anlatıyordu, eylemi değil.
-          // (Eski yeşil, tailwind `green` token'ıydı: #16A34A. Web'de İKİ
-          // ayrı yeşil olduğu notu hâlâ geçerli — `Board.tsx`'in hardcoded
-          // #1FA05C'si başka bir yer; bkz. mobile/CLAUDE.md Parça 42.)
-          accepted ? Icons.person_remove : Icons.person_add_alt_1,
+          // Arkadaş durumu burada yeşil `how_to_reg` (kişi+onay) — listelerin
+          // kırmızı `person_remove`'u DEĞİL. Kullanıcı kararı (11 Ağustos
+          // 2026) ve bilinçli bir istisna: listede ikon bir AKSİYON
+          // sütununda durur, burada ismin hemen yanında durup kimliğin
+          // parçası gibi okunur; "adam-" orada bir uyarı gibi görünüyordu.
+          // Dokunuş yine çıkarma onayını açıyor, yani "ikon ne yapacağını
+          // söyler" kuralı onay diyaloğuyla korunuyor. Aynı glyph listede
+          // "gelen isteği kabul et" (mavi) demek — renk ayrımı bu yüzden
+          // zorunlu, ikisini aynı renge çekme.
+          // (Yeşil, tailwind `green` token'ı: #16A34A. Web'de İKİ ayrı yeşil
+          // olduğu notu hâlâ geçerli — `Board.tsx`'in hardcoded #1FA05C'si
+          // başka bir yer; bkz. mobile/CLAUDE.md Parça 42.)
+          accepted ? Icons.how_to_reg : Icons.person_add_alt_1,
           size: 20,
           color: accepted
-              ? const Color(0xFFDC2626) // tailwind red
+              ? const Color(0xFF16A34A) // tailwind green
               : const Color(0xFF2563EB),
         ),
       ),

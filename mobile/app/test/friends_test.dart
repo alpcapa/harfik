@@ -316,13 +316,27 @@ void main() {
 
       expect(find.text('TÜM ÜYELER'), findsOneWidget);
       // 11 Ağustos 2026: satır aksiyonları metin değil ikon (bkz.
-      // RelationIcons.tsx / _relationIconButton) — arkadaş olan Ali
-      // person_remove, eklenebilir olan person_add gösteriyor.
-      expect(find.byIcon(Icons.person_remove), findsOneWidget); // Ali
+      // RelationIcons.tsx / _relationIconButton). Aynı gün ikinci karar:
+      // zaten arkadaş olanlar ("Ali") bu listede HİÇ görünmez — onlar
+      // "Arkadaşlarım" sekmesinde.
+      expect(find.text('Ali'), findsNothing);
+      expect(find.byIcon(Icons.person_remove), findsNothing);
+      expect(find.text('Bobola'), findsOneWidget);
+
       await tester.tap(find.byIcon(Icons.person_add_alt_1));
       // pumpAndSettle DEĞİL: odaklı arama alanının imleç animasyonu hiç
       // durmadığından settle asılır (feedback formunda görünmedi çünkü
       // orada gönderim alanı söküyor) — sınırlı pump yeterli.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      // Ekle artık ANINDA iş yapmıyor: önce onay, sonra sonuç diyaloğu.
+      expect(find.text('Arkadaş Ekle'), findsOneWidget);
+      expect(gw.notified, isEmpty);
+      await tester.tap(find.text('EKLE'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.text('Arkadaşlık isteğiniz iletilmiştir.'), findsOneWidget);
+      await tester.tap(find.text('TAMAM'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
       expect(find.byIcon(Icons.hourglass_top), findsOneWidget); // patchRelation
@@ -330,6 +344,70 @@ void main() {
       // bölgesinde ASILIR (timer pump'sız çözülmez) — bildirim fake'te
       // senkron kaydedildiğinden doğrudan kontrol yeterli.
       expect(gw.notified, ['u1']);
+    });
+
+    testWidgets(
+        'Ara & Ekle: gelen isteği kabul de onaydan geçer + satır listeden düşer',
+        (tester) async {
+      final gw = FakeFriendsGateway()
+        ..userRows = [
+          {
+            'id': 'u3',
+            'name': 'Esiner',
+            'avatar_url': null,
+            'relation': 'pending_incoming'
+          },
+        ];
+      await pumpModal(tester, gateway: gw);
+      await tester.tap(find.text('ARA & EKLE'));
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.byIcon(Icons.how_to_reg));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      // Onay ekranı — henüz sunucuya HİÇBİR şey gitmedi.
+      expect(find.textContaining('Kabul etmek istiyor musun'), findsOneWidget);
+      expect(gw.accepted, isEmpty);
+
+      await tester.tap(find.text('KABUL ET'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(gw.accepted, ['u3']);
+      expect(find.text('Arkadaş oldunuz.'), findsOneWidget);
+      await tester.tap(find.text('TAMAM'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      // Artık arkadaş → "Ara & Ekle" listesinden düşer (Arkadaşlarım'da).
+      expect(find.text('Esiner'), findsNothing);
+    });
+
+    testWidgets(
+        'Ara & Ekle: bir sayfanın tamamı arkadaş çıkarsa sonraki sayfa yine gelir',
+        (tester) async {
+      // Kaydırılamayan bir listede ScrollController dinleyicisi HİÇ
+      // ateşlenmez (Parça 31'deki k-lig hatası) — eleme bu durumu artık
+      // kendiliğinden üretebildiğinden `_autoLoadIfNotScrollable` şart.
+      final gw = FakeFriendsGateway()
+        ..userRows = [
+          for (var i = 0; i < kAllUsersPageSize; i++)
+            {
+              'id': 'f\$i',
+              'name': 'Arkadas \$i',
+              'avatar_url': null,
+              'relation': 'accepted'
+            },
+          {'id': 'yeni', 'name': 'Zeynep', 'avatar_url': null, 'relation': null},
+        ];
+      await pumpModal(tester, gateway: gw);
+      await tester.tap(find.text('ARA & EKLE'));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump();
+
+      expect(find.text('Zeynep'), findsOneWidget);
+      expect(find.byIcon(Icons.person_add_alt_1), findsOneWidget);
     });
 
     testWidgets('davet butonu: link + metin paylaş ucuna gider + görüntü',
@@ -434,7 +512,7 @@ void main() {
     });
 
     testWidgets(
-        'PlayerScoreCard: arkadaşsa person_remove → çıkar onayı; değilse person_add',
+        'PlayerScoreCard: arkadaşsa yeşil how_to_reg → çıkar onayı; değilse person_add',
         (tester) async {
       await setPhoneViewSize(tester, const Size(420, 900));
       final gw = FakeFriendsGateway()
@@ -452,9 +530,14 @@ void main() {
       ));
       await tester.pump();
       await tester.pump();
-      expect(find.byIcon(Icons.person_remove), findsOneWidget);
+      // Skor kartında arkadaş durumu BİLİNÇLİ olarak listelerin kırmızı
+      // person_remove'u değil yeşil how_to_reg (kullanıcı kararı, 11 Ağustos
+      // 2026) — dokunuş yine de çıkarma onayını açıyor.
+      expect(find.byIcon(Icons.person_remove), findsNothing);
+      final relIcon = tester.widget<Icon>(find.byIcon(Icons.how_to_reg));
+      expect(relIcon.color, const Color(0xFF16A34A));
 
-      await tester.tap(find.byIcon(Icons.person_remove));
+      await tester.tap(find.byIcon(Icons.how_to_reg));
       await tester.pumpAndSettle();
       expect(find.textContaining('Arkadaşlıktan çıkmak mı'), findsOneWidget);
       await tester.tap(find.text('ÇIKAR'));
@@ -514,7 +597,9 @@ void main() {
           .width;
       expect(renderedWidth, lessThanOrEqualTo(384));
 
-      await tester.tap(find.text('GÖNDER'));
+      // 11 Ağustos 2026: onay metni web `friendDialogCopy` ile hizalandı —
+      // "Gönder" değil "Ekle" (FriendsModal'ın aynı diyaloğuyla da tek dil).
+      await tester.tap(find.text('EKLE'));
       await tester.pumpAndSettle();
       // regresyon: gönderince web'in "Arkadaşlık isteğiniz iletilmiştir."
       // sonucu görünmeliydi, önceden HİÇBİR ŞEY çıkmıyordu.

@@ -1158,6 +1158,46 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        `build/screenshots/friends_modal.png`'de (kırmızı adam- ikonları).
      - **Doğrulama sınırı:** cihazda görsel/dokunma teyidi kullanıcıdan
        bekleniyor — `mobile/TESTING.md` bölüm 10 buna göre güncellendi.
+     - **AYNI GÜN, kullanıcının üç düzeltmesi (ikisi yukarıdaki kararları
+       kısmen geri alıyor — kayda geçsin):**
+       1. **"Ara & Ekle" artık arkadaşları HİÇ göstermiyor** — "onlar
+          Arkadaşlarım altında var". Yani yukarıda "yan fayda" diye
+          yazdığım *"Ara & Ekle'den çıkarma yolu açıldı"* pratikte ortadan
+          kalktı; `accepted` dalı savunma amaçlı duruyor ama ulaşılamaz.
+          **Eleme fetch'te DEĞİL render'da:** `_allUsers.length` sayfalama
+          offset'i olduğundan diziden atmak sayfaları kaydırıp üye
+          atlatırdı. İkinci incelik, Parça 31'in tekrarı: eleme sonrası
+          liste kaydırılamayacak kadar kısa kalırsa `ScrollController`
+          dinleyicisi HİÇ ateşlenmez ve sonraki sayfa gelmez —
+          `_autoLoadIfNotScrollable` (post-frame `maxScrollExtent<=0`
+          kontrolü) bunu kapatıyor, testi de var.
+       2. **`PlayerScoreCard`'da arkadaş durumu yeşil `how_to_reg`** —
+          kırmızı `person_remove` "ismin yanında iyi durmuyor". Bu, bu
+          parçanın kendi kuralına ("ikon eylemi söyler") bilinçli bir
+          istisna: listede ikon bir AKSİYON sütununda, kartta ismin
+          yanında durup durum rozeti gibi okunuyor; dokunuş yine çıkarma
+          onayını açtığından kural onay diyaloğuyla korunuyor. **Aynı
+          glyph artık iki şey anlatıyor** (listede mavi = "gelen isteği
+          kabul et", kartta yeşil = "arkadaşsınız") — renk ayrımı bu
+          yüzden zorunlu, ikisini aynı renge çekme.
+       3. **Denetim: "bütün ikon dokunuşları onay soruyor mu?"** — HAYIR
+          soruyordu. `FriendsModal`'da "ekle" ve "kabul et" ANINDA iş
+          yapıyordu; `PlayerScoreCard` ise dört dalın hepsinde onay
+          soruyordu. Asimetri `_confirmThenAdd` ile kapatıldı (metin
+          ilişkiden türetiliyor) + sonrasında sonuç mesajı. Denetim
+          sırasında ikinci bir sapma da bulundu: skor kartının
+          `pendingIncoming`/`null` onay metinleri web'in
+          `friendDialogCopy`sinden sessizce ayrışmıştı ("İsteği Kabul
+          Et"/"Gönder") — web'e hizalandı, artık uygulama içinde de tek
+          dil. **Bilinçli kapsam dışı:** "İstekler" sekmesindeki metin
+          butonlu "Kabul Et" (orası etiketli iki ayrı karar, kazara
+          dokunma riski ikon kadar yüksek değil; "Reddet"in onayı zaten
+          var).
+       - Doğrulama: `flutter analyze` temiz, **tam takım 307/307** (+2
+         yeni test: kabul de onaydan geçiyor + satır listeden düşüyor;
+         bir sayfanın tamamı arkadaş çıkınca sonraki sayfa yine geliyor).
+         Negatif eş: iki lib dosyası `git stash`lenince 4 test GERÇEKTEN
+         düştü, geri konunca yeşile döndü. Web yarısı ayrı PR (#232).
 
 ## Sonraya Bırakılan İşler (mobil)
 

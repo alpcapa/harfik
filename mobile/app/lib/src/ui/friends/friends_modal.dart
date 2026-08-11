@@ -198,6 +198,7 @@ class _FriendsModalState extends State<FriendsModal> {
         _allUsers = [...page]..sort((a, b) => trCandidate(a, b));
         _allUsersHasMore = page.length == kAllUsersPageSize;
       });
+      _autoLoadIfNotScrollable();
     });
   }
 
@@ -214,6 +215,7 @@ class _FriendsModalState extends State<FriendsModal> {
         _allUsers = [...cur, ...page]..sort((a, b) => trCandidate(a, b));
         _allUsersHasMore = page.length == kAllUsersPageSize;
       });
+      _autoLoadIfNotScrollable();
     });
   }
 
@@ -231,14 +233,43 @@ class _FriendsModalState extends State<FriendsModal> {
     });
   }
 
-  Future<void> _handleSend(FriendCandidate u) async {
+  /// "Ara & Ekle" listeleri zaten arkadaş olunanları GÖSTERMEZ (kullanıcı
+  /// isteği, 11 Ağustos 2026) — onlar "Arkadaşlarım" sekmesinde. Eleme
+  /// fetch'te değil RENDER'da: (1) `_allUsers.length` sayfalama offset'i
+  /// olduğundan diziden atmak sayfaları kaydırıp üye atlatırdı; (2) satır
+  /// ekrandayken arkadaş olunursa `_patchRelation` ilişkiyi accepted yapar
+  /// ve satır kendiliğinden düşer.
+  static bool _notFriend(FriendCandidate u) =>
+      u.relation != FriendRelation.accepted;
+
+  List<FriendCandidate> get _visibleResults =>
+      _results.where(_notFriend).toList();
+
+  List<FriendCandidate>? get _visibleAllUsers =>
+      _allUsers?.where(_notFriend).toList();
+
+  /// Elemeden sonra liste kaydırılamayacak kadar kısaysa (ör. bir sayfanın
+  /// tamamı arkadaş çıktı) `_allUsersScroll` dinleyicisi HİÇ ateşlenmez ve
+  /// sonraki sayfa asla istenmez — Parça 31'deki k-lig hatasının aynısı.
+  /// Her yüklemeden sonra bir kare bekleyip elle kontrol ediyoruz.
+  void _autoLoadIfNotScrollable() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_allUsersHasMore) return;
+      if (!_allUsersScroll.hasClients) return;
+      if (_allUsersScroll.position.maxScrollExtent <= 0) _loadMoreAllUsers();
+    });
+  }
+
+  Future<FriendRelation?> _handleSend(FriendCandidate u) async {
     setState(() => _busyId = u.id);
     try {
       final result = await widget.friends.sendRequest(u.id);
       _patchRelation(u.id, result);
       if (result == FriendRelation.accepted) _reloadFriends();
+      return result;
     } catch (e) {
       debugPrint('[Kelimeki] arkadaşlık isteği hatası: $e');
+      return null;
     } finally {
       if (mounted) setState(() => _busyId = null);
     }
@@ -497,11 +528,16 @@ class _FriendsModalState extends State<FriendsModal> {
         if (q.length >= 2)
           _searching
               ? _emptyText('Aranıyor…')
-              : _results.isEmpty
-                  ? _emptyText("Kimse bulunamadı — Kelimeki'de değilse "
-                      'yukarıdaki davet linkini gönderebilirsin.')
+              : _visibleResults.isEmpty
+                  ? _emptyText(_results.isEmpty
+                      ? "Kimse bulunamadı — Kelimeki'de değilse "
+                          'yukarıdaki davet linkini gönderebilirsin.'
+                      : 'Bulunanların hepsi zaten arkadaşın — '
+                          '"Arkadaşlarım" sekmesine bak.')
                   : Column(
-                      children: [for (final u in _results) _candidateRow(u)])
+                      children: [
+                        for (final u in _visibleResults) _candidateRow(u)
+                      ])
         else ...[
           const Padding(
             padding: EdgeInsets.only(bottom: 6),
@@ -512,22 +548,25 @@ class _FriendsModalState extends State<FriendsModal> {
                     letterSpacing: 1,
                     color: _muted)),
           ),
-          _allUsers == null
-              ? _loading()
-              : _allUsers!.isEmpty
-                  ? _emptyText('Henüz başka üye yok.')
-                  : ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 320),
-                      child: ListView(
-                        controller: _allUsersScroll,
-                        shrinkWrap: true,
-                        children: [
-                          for (final u in _allUsers!) _candidateRow(u),
-                          if (_allUsersHasMore)
-                            _emptyText(_allUsersLoadingMore ? 'Yükleniyor…' : ''),
-                        ],
-                      ),
-                    ),
+          if (_visibleAllUsers == null)
+            _loading()
+          else
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 320),
+              child: ListView(
+                controller: _allUsersScroll,
+                shrinkWrap: true,
+                children: [
+                  for (final u in _visibleAllUsers!) _candidateRow(u),
+                  // Boş mesajı yalnızca liste GERÇEKTEN tükendiyse — bir
+                  // sayfanın tamamı arkadaş çıkarsa daha yüklenecek üye var.
+                  if (_visibleAllUsers!.isEmpty && !_allUsersHasMore)
+                    _emptyText('Eklenecek başka üye yok.'),
+                  if (_allUsersHasMore)
+                    _emptyText(_allUsersLoadingMore ? 'Yükleniyor…' : ''),
+                ],
+              ),
+            ),
         ],
       ],
     );
@@ -541,6 +580,13 @@ class _FriendsModalState extends State<FriendsModal> {
   /// `Icons.*` doğrudan kullanılıyor; web aynı glyph'leri bu fonttan
   /// çıkarılmış SVG path'leriyle çiziyor, yani iki platform BENZER değil
   /// AYNI vektörü gösteriyor.
+  ///
+  /// Dört dalın DÖRDÜ de önce bir onay diyaloğu açar, hiçbiri anında iş
+  /// yapmaz. `accepted` dalı pratikte ULAŞILAMAZ (bu satır yalnızca
+  /// "Ara & Ekle" listelerinde çiziliyor ve orası arkadaşları eliyor, bkz.
+  /// `_notFriend`) — savunma amaçlı duruyor: silinirse bir gün eleme
+  /// atlanınca arkadaşa "ekle" ikonu gösterilirdi. "Arkadaşlarım" sekmesi
+  /// bu satırı kullanmaz, kendi çıkarma butonu var.
   Widget _candidateRow(FriendCandidate u) {
     final (IconData ikon, Color renk, String etiket, VoidCallback aksiyon) =
         switch (u.relation) {
@@ -560,13 +606,13 @@ class _FriendsModalState extends State<FriendsModal> {
           Icons.how_to_reg,
           _accent,
           'Arkadaşlık isteğini kabul et',
-          () => _handleRespond(u.id, accept: true),
+          () => _confirmThenAdd(u),
         ),
       null => (
           Icons.person_add_alt_1,
           _accent,
           'Arkadaş ekle',
-          () => _handleSend(u),
+          () => _confirmThenAdd(u),
         ),
     };
     final Widget action = _relationIconButton(
@@ -630,6 +676,39 @@ class _FriendsModalState extends State<FriendsModal> {
   }
 
   // ── Onay/sonuç diyalogları (web ConfirmDialog/InfoDialog) ────────────────
+
+  /// "Ekle" ve "Kabul Et" de onaydan geçer (11 Ağustos 2026): metin butonları
+  /// ikonlara indiği için etiketsiz bir ikona kazara dokunmak çok daha kolay,
+  /// üstelik `PlayerScoreCard` dört ilişki dalının HEPSİNDE zaten onay
+  /// soruyordu — iki ekran arasındaki asimetri kapatıldı. Metin ilişkiden
+  /// türetiliyor; sözler `player_score_card_modal.dart` ile BİREBİR aynı.
+  Future<void> _confirmThenAdd(FriendCandidate u) async {
+    final incoming = u.relation == FriendRelation.pendingIncoming;
+    final ok = await confirmFriendAction(
+      context,
+      title: incoming ? 'Arkadaşlık İsteği' : 'Arkadaş Ekle',
+      message: incoming
+          ? '${u.name} oyuncusu sana arkadaşlık isteği gönderdi. '
+              'Kabul etmek istiyor musun?'
+          : '${u.name} oyuncusunu arkadaş olarak eklemek istiyor musun?',
+      confirmLabel: incoming ? 'Kabul Et' : 'Ekle',
+    );
+    if (!ok || !mounted) return;
+    String message;
+    if (incoming) {
+      await _handleRespond(u.id, accept: true);
+      message = 'Arkadaş oldunuz.';
+    } else {
+      final result = await _handleSend(u);
+      // Karşı taraftan zaten bekleyen bir istek varsa sunucu trigger'ı
+      // ilişkiyi anında accepted yapar — mesaj bunu yansıtmalı.
+      message = result == FriendRelation.accepted
+          ? 'Arkadaş oldunuz.'
+          : 'Arkadaşlık isteğiniz iletilmiştir.';
+    }
+    if (!mounted) return;
+    await showFriendInfoDialog(context, message);
+  }
 
   /// "Ara & Ekle" listesindeki `accepted` satırından çıkarma. Web'de bu satır
   /// eskiden tıklanamaz bir "Arkadaşsınız" metniydi; ikona dönünce çıkarma

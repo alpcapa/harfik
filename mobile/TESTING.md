@@ -536,15 +536,26 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       web tarafında da arkadaş görünmeli.
 - [ ] **Ara & Ekle.** Boş kutuda "Tüm Üyeler" listesi kaydırdıkça
       20'şer büyümeli; 2+ karakterle arama çalışmalı; **kişi-ekle ikonuna**
-      dokun → onay → satırdaki ikon **kum saatine** dönmeli (karşı hesapta
-      istek görünmeli); karşılıklı istek senaryosu: karşı taraf sana zaten
-      istek göndermişse ekle anında **kırmızı "adam-"** olmalı (sunucu
-      trigger'ı) ve e-posta GİTMEMELİ.
+      dokun → onay ("… arkadaş olarak eklemek istiyor musun?") → "Arkadaşlık
+      isteğiniz iletilmiştir." → satırdaki ikon **kum saatine** dönmeli
+      (karşı hesapta istek görünmeli); karşılıklı istek senaryosu: karşı
+      taraf sana zaten istek göndermişse mesaj "Arkadaş oldunuz." olmalı
+      (sunucu trigger'ı) ve e-posta GİTMEMELİ.
       **Satır aksiyonları 11 Ağustos 2026'da metin butonlarından ikonlara
-      indirildi** (Ekle/İstek Gönderildi/Kabul Et/Arkadaşsınız/Çıkar). Dört
-      ikon: kişi-ekle (mavi) · kum saati (gri, dokun → iptal) · kişi-onay
-      (mavi, gelen isteği kabul) · adam- (kırmızı, çıkar). Kural: ikon,
-      dokunuşun NE YAPACAĞINI söyler.
+      indirildi.** Üç ikon: kişi-ekle (mavi) · kum saati (gri, dokun →
+      iptal) · kişi-onay (mavi, gelen isteği kabul). Kural: ikon, dokunuşun
+      NE YAPACAĞINI söyler; **hiçbiri anında iş yapmaz, hepsi önce onay
+      sorar** (dokunup "Vazgeç" dediğinde karşı hesapta hiçbir şey
+      OLMAMALI — bunu da kontrol et).
+- [ ] **Ara & Ekle arkadaşları GÖSTERMEZ (aynı gün, kullanıcı isteği).**
+      Zaten arkadaş olduğun biri ne aramada ne "Tüm Üyeler" listesinde
+      çıkmalı — kırmızı "adam-" ikonu bu iki listede HİÇ görünmemeli
+      (arkadaş çıkarma yalnızca "Arkadaşlarım" sekmesinde ve skor kartında).
+      Bir gelen isteği buradan kabul edince satır listeden düşmeli ("Arkadaş
+      oldunuz." mesajından sonra "Arkadaşlarım"da görünmeli). Aramada
+      bulunanların HEPSİ arkadaşsa "Bulunanların hepsi zaten arkadaşın"
+      metni çıkmalı; "Tüm Üyeler"de bir sayfanın tamamı arkadaş çıksa bile
+      liste boş kalmamalı, sonraki sayfa kendiliğinden gelmeli.
 - [ ] **Davet linki.** "Arkadaşını Davet Et" sistem paylaş sayfasını
       açmalı; link `https://kelimeki.com/davet/…` biçiminde olmalı ve
       webde açılıp çalışmalı (üye olmayan kayıt akışına düşmeli).
@@ -555,11 +566,13 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       "giriş yaptığında ekleneceksiniz" önizlemesi, giriş sonrası
       Setup'ta otomatik kabul.
 - [ ] **PlayerScoreCard simgesi.** k-lig/arkadaş listesinden birinin
-      kartını aç: arkadaşsan **kırmızı "adam-"** (dokun → çıkar onayı; 11
-      Ağustos 2026'ya kadar yeşil onay işaretiydi — durumu anlatıyordu,
-      eylemi değil), değilsen kişi-ekle ikonu (dokun → istek onayı)
-      görünmeli; kendi
-      kartında simge OLMAMALI.
+      kartını aç: arkadaşsan ismin yanında **yeşil "kişi-onay"** (adam +
+      tik) görünmeli — listelerdeki kırmızı "adam-" DEĞİL; bu bilinçli bir
+      istisna (kullanıcı kararı: aksiyon sütununda değil, ismin yanında
+      duruyor). Dokununca yine **çıkarma onayı** açılmalı. Arkadaş değilsen
+      kişi-ekle ikonu (dokun → istek onayı) görünmeli; kendi kartında simge
+      OLMAMALI. **Dikkat:** aynı yeşil-adam-tik glyph'i "Ara & Ekle"de MAVİ
+      olarak "gelen isteği kabul et" demek — renkler karışmamalı.
 - [ ] **Onay/sonuç diyalogları (9 Ağustos 2026, Parça 32).** Aynı ekrandaki
       arkadaş-ekle/çıkar/kabul-et/iptal-et onay diyaloğu (yatay/geniş
       ekranda bile — özellikle iPad'de kontrol et) küçük/kompakt kalmalı,
