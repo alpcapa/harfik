@@ -253,6 +253,18 @@ Her birinde gerçekten bekleyen bir iş varken ekranı **kapatıp yeniden aç**.
       Ama "+ Yeni Canlı Oyun" içindeki "arkadaş eklemek için tıkla"
       bağlantısından açılınca **"Ara & Ekle"de kalmalı** — o açık bir niyet,
       ezilmemeli.
+- [ ] **Arkadaşlık ikonları (11 Ağustos 2026).** Satır aksiyonları metin
+      değil ikon: kişi-ekle (mavi) · kum saati (gri, dokun → iptal) ·
+      kişi-onay (mavi, gelen isteği kabul) · adam- (kırmızı, çıkar —
+      yalnızca "Arkadaşlarım"da). **Dördü de önce onay sorar**, hiçbiri
+      dokunulduğu an iş yapmaz; onayı iptal edince karşı hesapta hiçbir şey
+      olmamalı. "Ara & Ekle" (arama + Tüm Üyeler) **zaten arkadaş olunanları
+      HİÇ göstermez** — orada kırmızı adam- görünmemeli; bir gelen isteği
+      oradan kabul edince satır listeden düşmeli. Bir sayfanın tamamı
+      arkadaş çıksa bile "Tüm Üyeler" boş kalmamalı (sonraki sayfa gelir).
+      Skor kartında (k-lig → bir satır) arkadaş durumu **yeşil kişi-onay**
+      — listedeki kırmızı adam- DEĞİL (bilinçli), dokununca yine çıkarma
+      onayı açmalı.
 - [ ] **Admin paneli.** Bekleyen geri bildirim/şikayet varsa "Geri Bildirim"
       açık gelmeli (yoksa "Büyüme"). Gelen kutusunda bekleyen yokken yalnızca
       şikayet varsa doğrudan **"Şikayetler"** alt sekmesi açılmalı — aksi
