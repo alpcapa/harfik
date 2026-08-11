@@ -120,7 +120,7 @@ class _Ghost {
   });
 }
 
-class _GameScreenState extends State<GameScreen> {
+class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   GameController get controller => widget.controller;
   GameState get state => controller.state;
 
@@ -164,7 +164,29 @@ class _GameScreenState extends State<GameScreen> {
   final ValueNotifier<_Ghost?> _dragNotifier = ValueNotifier(null);
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  /// Web'in `clearStuckDrag`i (App.tsx — `visibilitychange`/`blur`
+  /// dinleyicileri) porta hiç girmemişti: uygulama sürükleme ORTASINDA arka
+  /// plana alınırsa `PointerUpEvent` bir daha hiç gelmeyebiliyor ve
+  /// `_dragRef` asılı kalıyor — hayalet taş havada duruyor, kaynak taş gizli
+  /// kalıyor ve `NeverScrollableScrollPhysics` sayfayı kilitliyor, yani alt
+  /// butonlara ulaşılamıyor. Web'de bu durumdan uygulamaya geri dönmek
+  /// yetiyordu; portta kurtuluş yolu YOKTU (uygulamayı kapatıp açmak
+  /// gerekiyordu — bkz. mobile/CLAUDE.md, Parça 58).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
+    if (lifecycle != AppLifecycleState.resumed && _dragRef != null) {
+      _cancelTileDrag();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _dragNotifier.dispose();
     super.dispose();
   }

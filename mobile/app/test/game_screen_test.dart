@@ -739,6 +739,37 @@ void main() {
   });
 
   testWidgets(
+      'sürükleme ortasında arka plana alınırsa drag İPTAL olur '
+      '(web clearStuckDrag portu — bkz. mobile/CLAUDE.md Parça 58)',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await pumpGame(tester, GlobalKey());
+    ScrollPhysics? scrollPhysics() => tester
+        .widget<SingleChildScrollView>(find.byWidgetPredicate((w) =>
+            w is SingleChildScrollView && w.scrollDirection == Axis.vertical))
+        .physics;
+
+    final start = tester.getCenter(rackTile(0));
+    final g = await tester.startGesture(start);
+    await g.moveTo(start + const Offset(0, -40)); // eşik aşılır
+    await tester.pump();
+    expect(scrollPhysics(), isA<NeverScrollableScrollPhysics>());
+
+    // Cihazda bu anda PointerUp bir daha hiç gelmeyebiliyor; web'in
+    // visibilitychange/blur neti sürüklemeyi temizler, port bunu hiç
+    // taşımamıştı — kurtuluş yalnızca uygulamayı kapatıp açmaktı.
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    await tester.pump();
+
+    expect(scrollPhysics(), isNull,
+        reason: 'Arka plana alınınca sürükleme temizlenmedi — sayfa kilitli '
+            'kaldığından alt butonlara ulaşılamaz.');
+
+    await g.up();
+    await tester.pump();
+  });
+
+  testWidgets(
       'performans regresyonu: sürükleme sırasında BoardWidget PER-MOVE '
       'yeniden inşa EDİLMİYOR (8 Ağustos 2026, kullanıcı iPad Safari\'de '
       'titreme/takılma bildirdi — bkz. mobile/CLAUDE.md Parça 23)',

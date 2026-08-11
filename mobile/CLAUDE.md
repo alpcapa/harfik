@@ -1438,6 +1438,74 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        314/314 yeşil** (313'ten +1). İki ekranda da AYNI değişiklik
        (bilinçli kod tekrarı çifti). `kelimeki_core`'a dokunulmadı.
 
+   - ✅ **Parça 58 — sürükleme ortasında rakip oynayınca taş havada asılı
+     kalıp EKRAN KİLİTLENİYORDU; web'in `clearStuckDrag` neti porta hiç
+     girmemişti (11 Ağustos 2026, `game_screen.dart`,
+     `online_game_screen.dart`):** Kullanıcı gerçek bir iki kişilik Canlı
+     oyundan sonra bildirdi: *"sürüklerken aynı anda karşı taraf da hamle
+     yapınca oldu galiba. Harf takıldı kaldı. Hiçbir şey çalışmaz oldu.
+     Kapatıp açınca … herşey normaldi."* Ekran görüntüsünde iz görünüyordu:
+     tahtanın üstünde asılı kalmış büyük bir taş ve rafta ondan boşalan yer.
+     - **İlk teşhisim YANLIŞTI ve testle çürütüldü.** `_refresh()`in
+       `SyncOnlineStateAction`'ı sürükleme state'ine hiç dokunmadığından,
+       rakibin hamlesi `placed`i temizleyip kaynak taşın `Listener`'ını
+       söküyor → `PointerUpEvent` hiç ulaşmıyor diye düşünmüştüm. Repro
+       testi (hem raf hem tahta kaynağı için) yazıldı ve **mevcut kodda
+       GEÇTİ**: Flutter olayı pointer-down anında kaydedilen hit-test
+       yoluna gönderdiğinden, yaprak `Listener` ağaçtan kalksa bile up
+       yerine ulaşıyor. Yani "kaybolan pointer-up" hipotezi ölçülerek
+       elendi — kod yazmadan önce.
+     - **Sonra web okundu (kuralın ilk adımı) ve gerçek boşluk çıktı:**
+       `App.tsx` ve `OnlineGameScreen.tsx`'in İKİSİNDE de adı doğrudan
+       `clearStuckDrag` olan bir effect var — `visibilitychange` + `blur`
+       dinleyip `dragRef`i ve ghost'u temizliyor. Yani web bu hata sınıfını
+       (sürükleme ortasında kaybolan pointer) TANIYOR ve kurtuluş yolu
+       sunuyor; port bu neti hiç taşımamış, bu yüzden tek kurtuluş yolu
+       uygulamayı kapatıp açmaktı — kullanıcının yaptığı tam buydu.
+     - **İki düzeltme, ikisi de testli:**
+       1. **Lifecycle neti (web parity, İKİ ekranda birden):**
+          `didChangeAppLifecycleState` `resumed` DIŞINDA bir duruma
+          geçerken bekleyen sürüklemeyi iptal ediyor. `game_screen.dart`'ta
+          `WidgetsBindingObserver` hiç yoktu, eklendi (`initState`'te
+          `addObserver`, `dispose`'ta `removeObserver`).
+       2. **Sync tur ilerletince sürükleme biter (`online_game_screen.dart`):**
+          `_refresh()` dispatch'ten ÖNCE `turnCount`u okuyup ilerlediyse
+          `_cancelTileDrag()` çağırıyor. Gerekçe semptom bastırma değil
+          tutarlılık: reducer'ın `turnAdvanced` dalı taslak taşları zaten
+          rafa geri döndürüyor ve rafı sunucudakiyle değiştiriyor — hayalet
+          taş bundan sonra SİLİNMİŞ bir kaynağı gösteriyor.
+     - **Neden kilitlenme "hiçbir şey çalışmıyor" gibi hissettiriyor:**
+       `_dragRef` asılı kalınca `SingleChildScrollView`
+       `NeverScrollableScrollPhysics`te kilitli kalıyor (Parça 15'in
+       düzeltmesi) — dikeyde içerik ekranı aştığında OYNA/PAS GEÇ satırına
+       kaydırılamıyor, yani butonlara fiziksel olarak ulaşılamıyor.
+     - **Test — negatif eş doğrulamasıyla, ÜÇ test:** raf ve tahta kaynağı
+       için ayrı ayrı "rakip hamle yaparsa ekran DONMUYOR" (parmak hâlâ
+       ekranDAYKEN hayalet taş ve kaydırma kilidi gitmeli) + iki ekranda
+       birer "arka plana alınırsa drag İPTAL olur". İki lib dosyası AYRI
+       AYRI `git stash`lendi: `game_screen.dart` geri alınınca 1 test
+       (`Expected: null / Actual: NeverScrollableScrollPhysics`),
+       `online_game_screen.dart` geri alınınca 3 test GERÇEKTEN düştü;
+       ikisi de geri konunca yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       318/318 yeşil** (314'ten +4). `kelimeki_core`'a hiç dokunulmadı.
+     - **Doğrulama SINIRI — dürüst kayıt:** cihazdaki ASIL tetikleyici
+       (up'ın gerçekten kaybolduğu an) bu ortamda YENİDEN ÜRETİLEMEDİ;
+       yukarıdaki iki düzeltme "rakip aynı anda oynadı" senaryosunu
+       kapatıyor ve hangi sebeple olursa olsun **kurtuluş yolu açıyor**
+       (uygulamayı arka plana alıp geri getirmek yetiyor, kapatıp açmak
+       gerekmiyor). Aynı belirti tekrar bildirilirse tetikleyici hâlâ
+       aranmalı. `mobile/TESTING.md` bölüm 11'e iki madde eklendi.
+     - **Ayrıca araştırıldı, HATA DEĞİL:** kullanıcı oyun bitince OYNA'nın
+       yerinde "yeni oyun aç" yerine "canlı izle gibi bir şey" yazdığını ve
+       basınca Setup'a döndüğünü bildirdi. Web `OnlineGameScreen.tsx` oyun
+       bitince TAM OLARAK bunu yapıyor: `<button onClick={onBack}>Canlı
+       Listesi</button>` — port birebir aynı (Parça 50'de puntosu da web'e
+       hizalanmıştı). Canlı bir oyun tek başına başlatılamadığından (davet
+       + kabul gerekiyor) doğru hedef listenin kendisi; "+ Yeni Canlı Oyun"
+       butonu orada. Değiştirmek İKİ platformu birden ilgilendiren bir ürün
+       kararı olur, tek taraflı portta yapılmadı.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

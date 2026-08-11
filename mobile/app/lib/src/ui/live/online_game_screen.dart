@@ -278,6 +278,14 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
+    // Web'in `clearStuckDrag`i (OnlineGameScreen.tsx — `visibilitychange`/
+    // `blur`) porta hiç girmemişti: sürükleme ORTASINDA arka plana alınırsa
+    // `PointerUpEvent` bir daha hiç gelmeyebiliyor ve `_dragRef` asılı
+    // kalıyor — sayfa `NeverScrollableScrollPhysics`te kilitli kalıyor
+    // (bkz. mobile/CLAUDE.md, Parça 58).
+    if (lifecycle != AppLifecycleState.resumed && _dragRef != null) {
+      _cancelTileDrag();
+    }
     // Arka planda websocket askıya alınabildiğinden (özellikle iOS) o sırada
     // gelen bir hamle olayı sessizce kaçırılır — Realtime canlı bir akış,
     // kaçırılan olayı tekrar oynatmaz. Ön plana dönüşte emniyet senkronu.
@@ -540,11 +548,19 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     if (_mySlot < 0) return;
     final snap = await widget.onlineGames.loadGame(widget.game.id);
     if (!mounted || snap == null) return; // ağ hatası — ekran korunur
+    final turnAdvanced = snap.state.turnCount > state.turnCount;
     _controller.dispatch(SyncOnlineStateAction(
       publicState: snap.state,
       myRack: snap.myRack,
       mySlotIndex: _mySlot,
     ));
+    // Rakip AYNI ANDA oynadıysa reducer'ın `turnAdvanced` dalı deneme
+    // taşlarını rafa geri döndürüp rafı sunucudakiyle değiştiriyor — yani
+    // sürüklenen kaynak (tahtadaki taslak taş ya da rafın o slotu) artık
+    // ilk seçildiği şey olmayabilir. Sürüklemeyi burada bitirmezsek hayalet
+    // taş silinmiş bir taslağı göstermeye devam eder. Kullanıcı gerçek bir
+    // oyunda tam bunu bildirdi (bkz. mobile/CLAUDE.md, Parça 58).
+    if (turnAdvanced && _dragRef != null) _cancelTileDrag();
     setState(() {
       _moves = snap.moves;
       _loaded = true;

@@ -499,6 +499,117 @@ void main() {
       await unmount(tester);
     });
 
+    // Parça 58: kullanıcı gerçek bir iki kişilik oyunda bildirdi — taş
+    // sürüklerken rakip AYNI ANDA hamle yapınca taş havada asılı kaldı ve
+    // ekran tamamen tepkisiz kaldı. Rakibin hamlesi `turnAdvanced` olduğundan
+    // taslak taşlar temizleniyor ve raf sunucudan gelenle DEĞİŞİYOR; kaynak
+    // taşın `Listener`'ı bu arada sökülürse `PointerUpEvent` hiç ulaşmıyor,
+    // `_dragRef`/`_hiddenSource`/hayalet taş sonsuza dek asılı kalıyor
+    // (kaydırma da `NeverScrollableScrollPhysics`te kilitli).
+    Finder outsideGhostFinder() => find.byWidgetPredicate((w) {
+          if (w is! TileWidget) return false;
+          final e = find.byWidget(w).evaluate().first;
+          var underBoardOrRack = false;
+          e.visitAncestorElements((a) {
+            if (a.widget.runtimeType == BoardWidget ||
+                a.widget.runtimeType == RackWidget) {
+              underBoardOrRack = true;
+              return false;
+            }
+            return true;
+          });
+          return !underBoardOrRack;
+        });
+
+    for (final fromRack in [true, false]) {
+      testWidgets(
+          'sürükleme sırasında rakip hamle yaparsa ekran DONMUYOR '
+          '(${fromRack ? 'raftan' : 'tahtadan'})', (tester) async {
+        final gw = await pumpScreen(tester, current: 0);
+        ScrollPhysics? scrollPhysics() => tester
+            .widget<SingleChildScrollView>(find.byWidgetPredicate((w) =>
+                w is SingleChildScrollView &&
+                w.scrollDirection == Axis.vertical))
+            .physics;
+
+        Offset start;
+        if (fromRack) {
+          start = tester.getCenter(rackTile(0));
+        } else {
+          // Önce bir taş yerleştir, sonra ONU sürükle (kaynak = tahta hücresi;
+          // rakibin hamlesi bu taşı temizleyeceğinden Listener'ı sökülür).
+          await tester.tap(rackTile(0));
+          await tester.pump();
+          await tester.tap(boardCell(0, 0));
+          await tester.pump();
+          start = tester.getCenter(boardCell(0, 0));
+        }
+
+        final g = await tester.startGesture(start);
+        await g.moveTo(start + const Offset(0, -40)); // eşik aşılır
+        await tester.pump();
+        expect(scrollPhysics(), isA<NeverScrollableScrollPhysics>());
+        expect(outsideGhostFinder(), findsOneWidget);
+
+        // Rakip AYNI ANDA oynadı: sunucudaki tur ilerledi, sıra karşıya geçti.
+        gw.stateRow = stateJson(_baseState(), current: 1, turnCount: 1);
+        gw.gameListener!();
+        await tester.pump();
+        await tester.pump();
+
+        // Parmak HÂLÂ ekranda ama sürükleme burada bitmeli: taslak silindiği
+        // için hayalet taş artık var olmayan bir kaynağı gösteriyor.
+        expect(outsideGhostFinder(), findsNothing,
+            reason: 'Rakip oynadı ama hayalet taş hâlâ havada.');
+        expect(scrollPhysics(), isNull,
+            reason: 'Rakip oynadı ama sayfa hâlâ kaydırılamıyor.');
+
+        await g.up();
+        await tester.pump();
+
+        expect(scrollPhysics(), isNull,
+            reason: 'Sürükleme bitti ama sayfa hâlâ kilitli — ekran donmuş.');
+        expect(outsideGhostFinder(), findsNothing,
+            reason: 'Hayalet taş havada asılı kaldı.');
+        // Kaynak taş gizli kalmamalı: rafta 7 taş da görünür olmalı.
+        expect(find.descendant(of: find.byType(RackWidget), matching: find.byType(TileWidget)),
+            findsNWidgets(7));
+        await unmount(tester);
+      });
+    }
+
+    testWidgets(
+        'sürükleme ortasında arka plana alınırsa drag İPTAL olur '
+        '(web clearStuckDrag)', (tester) async {
+      await pumpScreen(tester, current: 0);
+      ScrollPhysics? scrollPhysics() => tester
+          .widget<SingleChildScrollView>(find.byWidgetPredicate((w) =>
+              w is SingleChildScrollView && w.scrollDirection == Axis.vertical))
+          .physics;
+
+      final start = tester.getCenter(rackTile(0));
+      final g = await tester.startGesture(start);
+      await g.moveTo(start + const Offset(0, -40));
+      await tester.pump();
+      expect(scrollPhysics(), isA<NeverScrollableScrollPhysics>());
+      expect(outsideGhostFinder(), findsOneWidget);
+
+      // Uygulama arka plana alındı — cihazda bu anda PointerUp bir daha
+      // hiç gelmeyebiliyor; web'in visibilitychange/blur neti bunu temizler.
+      tester.binding
+          .handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pump();
+
+      expect(scrollPhysics(), isNull,
+          reason: 'Arka plana alınınca sürükleme temizlenmedi — ekran '
+              'kilitli kalıyor, kurtuluş yalnızca uygulamayı kapatmak.');
+      expect(outsideGhostFinder(), findsNothing);
+
+      await g.up();
+      await tester.pump();
+      await unmount(tester);
+    });
+
     testWidgets('PAS GEÇ: onay → submit_move pass', (tester) async {
       final gw = await pumpScreen(tester, current: 0);
 

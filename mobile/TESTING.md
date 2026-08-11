@@ -697,6 +697,16 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       yeşil/kırmızı çerçeve + puan rozeti çalışmalı, mesaj "Kelime geçerli
       — Sıra: X" demeli, OYNA PASİF olmalı. Rakip oynayınca deneme taşları
       kendiliğinden rafa dönmeli ve OYNA aktifleşmeli.
+- [ ] **Sürüklerken rakip oynarsa (Parça 58).** Bir taşı PARMAĞINI
+      KALDIRMADAN sürüklerken karşı taraftan hamle gelsin: sürükleme o an
+      bitmeli — hayalet taş kaybolmalı, rafta boş slot kalmamalı ve sayfa
+      yeniden KAYDIRILABİLİR olmalı (alt butonlara ulaşılabilmeli).
+      Regresyon belirtisi: taş havada asılı kalır ve ekran tamamen
+      tepkisiz görünür.
+- [ ] **Takılı sürüklemeden kurtuluş (web `clearStuckDrag` portu).** Bir
+      taşı sürüklerken uygulamayı arka plana al (ana ekrana çık) ve geri
+      dön: sürükleme temizlenmiş olmalı — uygulamayı KAPATIP AÇMAK
+      gerekmemeli. Aynı kontrol YZ oyununda (Yapay Zeka ile) da geçerli.
 - [ ] **Realtime.** İki cihaz açıkken rakip hamle yapsın: tahtan ~1sn
       içinde güncellenmeli. Uygulamayı arka plana alıp (ya da ekranı
       kilitleyip) rakip oynadıktan sonra geri dön — ön plana dönüşte
