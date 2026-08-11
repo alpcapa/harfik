@@ -31,6 +31,7 @@ import 'remaining_tiles_modal.dart';
 import 'tile_widget.dart';
 import 'wild_letter_sheet.dart';
 import '../tokens.dart';
+import 'invasion_confirm.dart';
 
 class GameScreen extends StatefulWidget {
   final GameController controller;
@@ -250,29 +251,9 @@ class _GameScreenState extends State<GameScreen> {
       final split = computeInvasionSplit(
           placedCoords, state.current, state.players, score, state.board);
       if (split.shares.isNotEmpty) {
-        final parts = split.shares
-            .map((s) =>
-                '${s.amount} puanı ${state.players[s.index].name} kullanıcısına')
-            .join(', ');
-        final ok = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Sınır İhlali!'),
-            content: Text(
-                'Bu hamleden kazanacağın $score puanın $parts vergi olarak gidecek.'),
-            actions: [
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('OYNA'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('VAZGEÇ'),
-              ),
-            ],
-          ),
-        );
-        if (ok != true) return;
+        final ok = await showInvasionConfirm(context,
+            score: score, shares: split.shares, players: state.players);
+        if (!ok) return;
       }
     }
     controller.dispatch(const PlayAction());

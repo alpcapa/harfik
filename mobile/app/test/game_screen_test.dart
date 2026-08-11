@@ -15,6 +15,8 @@ import 'package:kelimeki/src/ui/game/board_widget.dart'
     show BoardWidget, DashedBorderPainter, debugBoardBuildCountForTests;
 import 'package:kelimeki/src/ui/game/game_over_modal.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
+import 'package:kelimeki/src/ui/game/invasion_confirm.dart';
+import 'package:kelimeki/src/ui/tokens.dart';
 import 'package:kelimeki/src/ui/game/rack_widget.dart';
 import 'package:kelimeki/src/ui/game/remaining_tiles_modal.dart';
 import 'package:kelimeki/src/ui/game/tile_widget.dart';
@@ -882,5 +884,63 @@ void main() {
     expect(tile.height, 44.0);
     expect(tile.width, lessThan(80),
         reason: '360px kart 6 sütuna bölününce taş ~50px olmalı');
+  });
+
+  // Parça 55 — bölge vergisi onayı web'deki gibi VURGULU: kazanılacak puan
+  // yeşil, her bölge sahibine giden pay kırmızı, sahibin adı yalnızca kalın
+  // (web'de <strong> rengi yok). Port bugüne kadar düz metin basıyordu.
+  // Diyalog `game_screen`/`online_game_screen` çiftinin PAYLAŞTIĞI tek
+  // fonksiyon olduğundan izole test ikisini birden kapsıyor.
+  testWidgets('Sınır İhlali onayı: puan yeşil, vergi payı kırmızı, ad kalın',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(390, 844));
+    final players = [
+      player('Ironman', isAI: false, index: 0, rack: const []),
+      player('Esiner', isAI: false, index: 1, rack: const []),
+    ];
+    bool? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Builder(
+        builder: (context) => Scaffold(
+          body: Center(
+            child: ElevatedButton(
+              onPressed: () async {
+                result = await showInvasionConfirm(context,
+                    score: 24,
+                    shares: const [InvasionShare(index: 1, amount: 8)],
+                    players: players);
+              },
+              child: const Text('AÇ'),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('AÇ'));
+    await tester.pumpAndSettle();
+
+    final rich = tester.widget<Text>(
+        find.byWidgetPredicate((w) => w is Text && w.textSpan != null));
+    final spans = <TextSpan>[];
+    rich.textSpan!.visitChildren((s) {
+      if (s is TextSpan && s.text != null) spans.add(s);
+      return true;
+    });
+    String plain = spans.map((s) => s.text).join();
+    expect(plain,
+        'Bu hamleden kazanacağın 24 puanın 8 puanı Esiner kullanıcısına vergi olarak gidecek.');
+
+    TextSpan spanOf(String text) => spans.firstWhere((s) => s.text == text);
+    expect(spanOf('24').style!.color, kGreen);
+    expect(spanOf('24').style!.fontWeight, FontWeight.bold);
+    expect(spanOf('8').style!.color, kRed);
+    expect(spanOf('8').style!.fontWeight, FontWeight.bold);
+    // Ad KALIN ama renksiz — web'de <strong> class taşımıyor.
+    expect(spanOf('Esiner').style!.fontWeight, FontWeight.bold);
+    expect(spanOf('Esiner').style!.color, isNull);
+
+    await tester.tap(find.text('VAZGEÇ'));
+    await tester.pumpAndSettle();
+    expect(result, isFalse);
   });
 }

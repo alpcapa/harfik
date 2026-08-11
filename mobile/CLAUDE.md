@@ -1308,13 +1308,39 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ÜRETEN mekanizma (her dosyada yerel palet kopyası) bulunduğunda,
        o mekanizmanın ürettiği DİĞER örnekleri de ara — tek renk düzeltmek
        `isMyTurn ? _green : _red` gibi satırları yarı-doğru bırakırdı.
-     - **Denetimde bulunan ama BİLİNÇLİ olarak düzeltilmeyen iki şey**
-       (renk değil, ayrı sınıf — kapsamı kendiliğinden genişletmemek için
-       buraya yazıldı, ayrı bir turda ele alınmalı): (a)
-       `live_games_tab.dart`'ın durum etiketi 10px, web'de `text-[11px]`
-       (Parça 37'nin punto sınıfı); (b) Canlı oyunun "Sınır İhlali!" onay
-       diyaloğu düz metin, web'de puanlar `<strong className="text-green/
-       red">` ile vurgulu.
+     - **Denetimde bulunan ama bu parçada bilinçli olarak ERTELENEN iki
+       şey** (renk değil, ayrı sınıf): `live_games_tab`'ın durum etiketi
+       puntosu ve "Sınır İhlali!" diyaloğunun vurguları — kullanıcı isteğiyle
+       AYNI GÜN Parça 55'te kapatıldı, aşağı bkz.
+
+   - ✅ **Parça 55 — Parça 54'ün ertelediği iki madde (11 Ağustos 2026,
+     `live_games_tab.dart`, yeni `ui/game/invasion_confirm.dart`):**
+     - **(a) Durum etiketi 10px'ti, web'de `text-[11px]`.** Düzeltirken
+       KARDEŞİNE de bakıldı ve ikinci bir sapma çıktı: `PendingGameCard`'ın
+       kalan-süre etiketi 8px, web'de `text-[9px]`. **İkisi karıştırılmamalı**
+       — aktif satırdaki kalan-süre GERÇEKTEN 8px (web'de de öyle), yani
+       "hepsini eşitle" yanlış olurdu; üç etiketin üçü de ayrı ayrı web
+       kaynağından okundu.
+     - **(b) "Sınır İhlali!" onayı düz metindi**, web'de kazanılacak puan
+       yeşil + kalın, her bölge sahibine giden pay kırmızı + kalın, sahibin
+       adı yalnızca kalın (`<strong>` rengi yok — gövde rengini miras alıyor,
+       bu ayrım testte de sabitlendi).
+     - **Diyalog PAYLAŞILAN bir dosyaya çıkarıldı** (`showInvasionConfirm`).
+       `game_screen` ↔ `online_game_screen` çifti sürükleme/joker/mesaj
+       desenini bilinçli olarak ayrı taşıyor, ama bu diyalog o desenlerden
+       biri değil: iki ekranda BİREBİR aynı metin + aynı vurgu kuralı, ve
+       düz-metin hâli de iki kopya olarak duruyordu. `invasionShare`
+       formülünün core'da tek kopya tutulmasıyla aynı gerekçe. Yan fayda:
+       tek bir izole test iki ekranı birden kapsıyor.
+     - **Test — negatif eş, ikisi için ayrı ayrı:** punto 10'a geri
+       çekilince `Expected: <11> Actual: <10.0>` ile, span stilleri
+       kaldırılınca ilgili test GERÇEKTEN düştü; ikisi de geri konunca
+       yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       312/312 yeşil** (311'den +1; punto kontrolü mevcut teste eklendi,
+       ayrı test SAYILMIYOR). `kelimeki_core`'a hiç dokunulmadı.
+     - **Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor —
+       `mobile/TESTING.md` bölüm 11'e madde eklendi.
 
 ## Sonraya Bırakılan İşler (mobil)
 

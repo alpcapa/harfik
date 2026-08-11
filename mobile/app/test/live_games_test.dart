@@ -421,6 +421,15 @@ void main() {
       expect(find.text('RAKİBİN HAMLESİ BEKLENİYOR'), findsOneWidget);
       // Kalan süre YALNIZCA sırası bende olan satırda (web 3 Ağustos dersi).
       expect(find.textContaining('TESLİM SAYILACAK'), findsOneWidget);
+
+      // Punto web ile aynı (Parça 55): durum etiketi text-[11px], hemen
+      // altındaki kalan-süre text-[8px]. Bu İKİSİ web'de de farklı — biri
+      // ötekine uydurulmamalı.
+      final status = tester.widget<Text>(find.text('SENİN HAMLEN BEKLENİYOR'));
+      expect(status.style!.fontSize, 11);
+      final left = tester
+          .widget<Text>(find.textContaining('TESLİM SAYILACAK').first);
+      expect(left.style!.fontSize, 8);
     });
   });
 

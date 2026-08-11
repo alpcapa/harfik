@@ -65,6 +65,7 @@ import '../game/tile_widget.dart';
 import '../game/wild_letter_sheet.dart';
 import '../score/player_score_card_modal.dart';
 import '../tokens.dart';
+import '../game/invasion_confirm.dart';
 
 const Color _muted = kMuted;
 const Color _red = kRed;
@@ -689,29 +690,9 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
         placedCoords, _mySlot, state.players, basePts, state.board);
 
     if (split.shares.isNotEmpty) {
-      final parts = split.shares
-          .map((s) =>
-              '${s.amount} puanı ${state.players[s.index].name} kullanıcısına')
-          .join(', ');
-      final ok = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Sınır İhlali!'),
-          content: Text(
-              'Bu hamleden kazanacağın $basePts puanın $parts vergi olarak gidecek.'),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('OYNA'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('VAZGEÇ'),
-            ),
-          ],
-        ),
-      );
-      if (ok != true || !mounted) return;
+      final ok = await showInvasionConfirm(context,
+          score: basePts, shares: split.shares, players: state.players);
+      if (!ok || !mounted) return;
     }
 
     final wordScores =

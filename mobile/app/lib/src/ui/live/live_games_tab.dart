@@ -493,7 +493,7 @@ class _GameRow extends StatelessWidget {
                 trUpper(onlineStatusLabel(game, isMyTurn: isMyTurn)),
                 style: TextStyle(
                   fontFamily: 'SpaceMono',
-                  fontSize: 10,
+                  fontSize: 11, // web text-[11px]
                   letterSpacing: 1,
                   fontWeight: FontWeight.bold,
                   color: isMyTurn ? _green : _red,
@@ -568,8 +568,8 @@ class _PendingGameCard extends StatelessWidget {
                 trUpper(remaining.text),
                 style: TextStyle(
                   fontFamily: 'SpaceMono',
-                  fontSize: 8,
-                  letterSpacing: 0.5,
+                  fontSize: 9, // web text-[9px] — aktif satırdaki 8px'lik
+                  letterSpacing: 0.5, // kardeşiyle KARIŞTIRMA, web'de de farklı
                   fontWeight:
                       remaining.urgent ? FontWeight.bold : FontWeight.normal,
                   color: remaining.urgent ? _red : _muted,

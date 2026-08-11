@@ -141,7 +141,9 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       mobile/CLAUDE.md Parça 25.
 - [ ] **Bölge vergisi.** Rakip bölgesine değen bir hamlede "Sınır İhlali!"
       onayı çıkmalı (kabul butonu solda, VAZGEÇ sağda), kabul edilince
-      puan bölünmeli.
+      puan bölünmeli. **Metin VURGULU olmalı (Parça 55):** kazanacağın
+      puan yeşil+kalın, her rakibe giden pay kırmızı+kalın, rakibin adı
+      yalnızca kalın (renksiz) — düz tek renk metinse regresyon.
 - [ ] **Kelime anlamı.** Tahtadaki ONAYLANMIŞ (Oyna ile kesinleşmiş) bir
       taşa dokun → o hücreden geçen yatay/dikey kelimelerin anlam modalı
       (yerel SQLite asset'ten) açılmalı — tetikleyici Hamle Geçmişi
@@ -645,6 +647,13 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       Ziyaretçi Kaynağı) bu linkten gelen bir ziyaret "arkadas" kaynağıyla
       görünmeli (misafirken açılırsa).
 
+- [ ] **Etiket puntoları (Parça 55).** "Devam Edenler"deki durum etiketi
+      ("SENİN HAMLEN BEKLENİYOR"/"RAKİBİN HAMLESİ BEKLENİYOR") web'le aynı
+      boyda olmalı; hemen altındaki kalan-süre satırı ondan belirgin KÜÇÜK
+      (web'de de öyle — ikisi eşit görünüyorsa regresyon). Davet
+      kartlarının sağ üstündeki süre etiketi ise bu ikisinin arasında bir
+      boyda.
+
 ### Tahta (oynanış)
 
 - [ ] **Açılış.** "Devam Edenler"de bir oyuna dokun: tahta, KENDİ rafın
@@ -654,8 +663,9 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **Hamle.** Sıra sendeyken kelime kur → OYNA: hamle web tarafında
       anında görünmeli, skor/torba/raf iki tarafta da tutmalı. Bölge
       vergisi varsa önce "Sınır İhlali!" onayı çıkmalı (kabul butonu
-      solda, VAZGEÇ sağda — bkz. mobile/CLAUDE.md Parça 25) ve kabul
-      edilen pay rakibin skoruna geçmeli.
+      solda, VAZGEÇ sağda — bkz. mobile/CLAUDE.md Parça 25; metin bölüm
+      1'deki gibi renkli vurgulu) ve kabul edilen pay rakibin skoruna
+      geçmeli.
 - [ ] **Sıra sende değilken egzersiz.** Rakibi beklerken taş yerleştir:
       yeşil/kırmızı çerçeve + puan rozeti çalışmalı, mesaj "Kelime geçerli
       — Sıra: X" demeli, OYNA PASİF olmalı. Rakip oynayınca deneme taşları
