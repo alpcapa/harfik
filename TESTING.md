@@ -86,6 +86,21 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       oynamalı — uygulamayı kapatıp açmaya gerek kalmadan.
 - [ ] **Skor kutusu → skor kartı.** Header'daki bir insan oyuncunun kutusuna
       dokununca `PlayerScoreCard` açılmalı; YZ kutusu tıklanabilir olmamalı.
+- [ ] **Oyun bitince "Tekrar Oyna" (11 Ağustos 2026).** Oyun bitince "Oyna"nın
+      yerini **"Tekrar Oyna"** almalı ("Canlı Listesi" DEĞİL). Tıkla → onay
+      ("… ile aynı kadroda yeni bir oyun açılacak … Emin misin?"). Vazgeç
+      hiçbir şey göndermemeli; onayla → "Davetiniz gönderilmiştir." → Tamam
+      listeye dönmeli, yeni oyun "Rakip Bekleniyor"da görünmeli ve karşı
+      hesaba davet + `notify-game-invite` e-postası gitmeli. **Biten oyunu
+      SEN kurmamışsan da çalışmalı** (kurucu artık sen olursun) ve 4 kişilik
+      + YZ'li bir oyunda YZ yine 4. koltukta kalmalı. Rakibi arkadaşlıktan
+      çıkarıp denersen "Yalnızca arkadaşlarını davet edebilirsin." görünmeli
+      ve ekranda kalınmalı.
+- [ ] **Yerel/YZ oyununda da "Tekrar Oyna" (11 Ağustos 2026).** Bir YZ oyununu
+      bitir: buton "Yeni Oyun Aç" DEĞİL "Tekrar Oyna" olmalı; onaydan sonra
+      Setup'a uğramadan aynı kadroyla taze bir oyun açılmalı. **Aynı ekranda
+      iki oyunu üst üste bitir** — Skor Kartı → "Tüm Oyunlarım"da İKİSİ de
+      görünmeli (Flutter portunda burada sessiz bir kayıt kaybı bulunmuştu).
 
 ## 3. Oyun içi mesajlaşma
 
