@@ -20,6 +20,7 @@ import 'package:kelimeki/src/ui/game/rack_widget.dart' show RackWidget;
 import 'package:kelimeki/src/ui/game/tile_widget.dart' show TileWidget;
 import 'package:kelimeki/src/ui/live/online_game_screen.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 
 import 'support/fake_online_gateway.dart';
 import 'support/test_fonts.dart';
@@ -140,6 +141,46 @@ void main() {
         .convert(f.readAsStringSync())
         .where((w) => w.isNotEmpty));
     expect(words.contains('kelime'), isTrue);
+  });
+
+  // Parça 59: "Tekrar Oyna" biten oyunun kadrosunu aynen taşır.
+  // `create_online_game`'in üç kısıtı burada kanıtlanıyor: çağıran BAŞTA,
+  // YZ SONDA, ve RPC'ye yalnız type+user_id gidiyor (name/relation değil).
+  group('rematchSlots', () {
+    test('çağıran kurucu DEĞİLSE bile ilk koltuğa geçer', () {
+      final g = OnlineGame.fromJson(gameRow(
+        id: 'g1',
+        myId: 'me',
+        createdBy: 'esiner',
+        myRole: 'invitee',
+      ));
+      final slots = rematchSlots(g, 'me');
+      expect([for (final s in slots) s.toJson()], [
+        {'type': 'human', 'user_id': 'me'},
+        {'type': 'human', 'user_id': 'esiner'},
+      ]);
+    });
+
+    test('4 kişilik: YZ koltuğu SONDA kalır, insan sırası korunur', () {
+      final g = OnlineGame.fromJson(gameRow(
+        id: 'g1',
+        myId: 'me',
+        createdBy: 'a',
+        playerCount: 4,
+        slots: [
+          slotHuman('a', name: 'A'),
+          slotHuman('b', name: 'B'),
+          slotHuman('me', name: 'Ironman', relation: 'self'),
+          slotAi,
+        ],
+      ));
+      expect([for (final s in rematchSlots(g, 'me')) s.toJson()], [
+        {'type': 'human', 'user_id': 'me'},
+        {'type': 'human', 'user_id': 'a'},
+        {'type': 'human', 'user_id': 'b'},
+        {'type': 'ai'},
+      ]);
+    });
   });
 
   group('buildMoveHistory', () {
@@ -716,6 +757,70 @@ void main() {
       // Formu da kapat ki dispose'da bekleyen bir route kalmasın.
       await tester.tap(find.byTooltip('Kapat'));
       await tester.pumpAndSettle();
+      await unmount(tester);
+    });
+
+    testWidgets('oyun bitince TEKRAR OYNA: onay → aynı kadroyla yeni oyun',
+        (tester) async {
+      final gw = await pumpScreen(tester, isGameOver: true);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Kapat')); // GameOver + Görüş Bildir
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Kapat'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('TEKRAR OYNA'), findsOneWidget);
+      expect(find.text('CANLI LİSTESİ'), findsNothing);
+
+      // VAZGEÇ hiçbir şey göndermemeli.
+      await tester.tap(find.text('TEKRAR OYNA'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Emin misin?'), findsOneWidget);
+      await tester.tap(find.text('VAZGEÇ'));
+      await tester.pumpAndSettle();
+      expect(gw.createdSlots, isEmpty);
+
+      await tester.tap(find.text('TEKRAR OYNA'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'TEKRAR OYNA'));
+      await tester.pumpAndSettle();
+
+      expect(gw.createdCounts, [2]);
+      expect(gw.createdSlots.single, [
+        {'type': 'human', 'user_id': 'me'},
+        {'type': 'human', 'user_id': 'esiner'},
+      ]);
+      expect(find.text('Davetiniz gönderilmiştir.'), findsNothing,
+          reason: 'Metin tek satır değil — textContaining ile aranmalı.');
+      expect(find.textContaining('Davetiniz gönderilmiştir.'), findsOneWidget);
+
+      await tester.tap(find.text('TAMAM'));
+      await tester.pumpAndSettle();
+      await unmount(tester);
+    });
+
+    testWidgets('TEKRAR OYNA: sunucu reddi olduğu gibi gösterilir',
+        (tester) async {
+      final gw = await pumpScreen(tester, isGameOver: true);
+      gw.createError = PostgrestException(
+          message: 'Yalnızca arkadaşlarını davet edebilirsin.');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Kapat'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Kapat'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('TEKRAR OYNA'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'TEKRAR OYNA'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Yalnızca arkadaşlarını davet edebilirsin.'),
+          findsOneWidget);
+      await tester.tap(find.text('TAMAM'));
+      await tester.pumpAndSettle();
+      // Hata dalında listeye DÖNÜLMEZ — ekran ayakta kalmalı.
+      expect(find.text('TEKRAR OYNA'), findsOneWidget);
       await unmount(tester);
     });
   });

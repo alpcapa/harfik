@@ -59,9 +59,16 @@ class FakeOnlineGamesGateway implements OnlineGamesGateway {
     return [for (final r in rows) Map<String, Object?>.of(r)];
   }
 
+  /// `create_online_game`in KENDİ reddi (ör. "Yalnızca arkadaşlarını davet
+  /// edebilirsin.") — genel `failWith`ten ayrı, çünkü ekran o sırada
+  /// yüklenmiş durumda ve öteki uçların çalışmaya devam etmesi gerekiyor.
+  Object? createError;
+
   @override
   Future<String> create(
       int playerCount, List<Map<String, Object?>> slots) async {
+    final ce = createError;
+    if (ce != null) throw ce;
     _maybeFail();
     createdCounts.add(playerCount);
     createdSlots.add(slots);

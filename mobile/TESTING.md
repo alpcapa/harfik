@@ -703,6 +703,22 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       yeniden KAYDIRILABİLİR olmalı (alt butonlara ulaşılabilmeli).
       Regresyon belirtisi: taş havada asılı kalır ve ekran tamamen
       tepkisiz görünür.
+- [ ] **Oyun bitince "TEKRAR OYNA" (Parça 59).** Bir Canlı oyunu sonuna
+      kadar bitir: raf satırındaki buton "TEKRAR OYNA" olmalı ("CANLI
+      LİSTESİ" DEĞİL). Dokun → onay ("… ile aynı kadroda yeni bir oyun
+      açılacak … Emin misin?", kabul butonu SOLDA). VAZGEÇ hiçbir şey
+      göndermemeli. Onayla → "Davetiniz gönderilmiştir." → TAMAM listeye
+      dönmeli ve yeni oyun "Rakip Bekleniyor"da görünmeli; KARŞI hesapta
+      yeni bir davet + `notify-game-invite` e-postası olmalı.
+- [ ] **Tekrar Oyna — 4 kişilik + YZ.** 4 kişilik ve son koltuğu YZ olan
+      bitmiş bir oyunda aynı akış: onay metninde "4. koltuk yine Yapay Zeka
+      olacak." çıkmalı ve yeni oyunda 4. koltuk gerçekten `{"type":"ai"}`
+      olmalı (sunucudan doğrula). Biten oyunu SEN kurmamışsan da çalışmalı —
+      kurucu artık sen olursun.
+- [ ] **Tekrar Oyna — artık arkadaş değilseniz.** Rakibi arkadaşlıktan
+      çıkarıp dene: "Yalnızca arkadaşlarını davet edebilirsin." mesajı
+      görünmeli ve TAMAM'a basınca LİSTEYE DÖNÜLMEMELİ (oyun ekranı ayakta
+      kalmalı).
 - [ ] **Takılı sürüklemeden kurtuluş (web `clearStuckDrag` portu).** Bir
       taşı sürüklerken uygulamayı arka plana al (ana ekrana çık) ve geri
       dön: sürükleme temizlenmiş olmalı — uygulamayı KAPATIP AÇMAK

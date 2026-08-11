@@ -619,6 +619,24 @@ class PendingLiveGameCounts {
   const PendingLiveGameCounts(this.inviteCount, this.myTurnCount);
 }
 
+/// "Tekrar Oyna": biten bir oyunun kadrosunu AYNEN yeni bir Canlı oyuna
+/// taşıyacak koltuk dizisini kurar. Sıra `create_online_game`'in üç
+/// kısıtından çıkıyor: (1) ilk koltuk ÇAĞIRAN olmak zorunda — biten oyunu
+/// ben kurmamış olabilirim, o yüzden kendimi başa alıyorum; (2) 4 kişilikte
+/// YZ yalnız SON koltukta olabilir — insanları kendi aralarındaki sırayla
+/// koruyup YZ'leri sona yazmak bunu kendiliğinden sağlıyor; (3) 2 kişilikte
+/// YZ zaten olamaz (biten oyun geçerliyse yenisi de geçerli).
+/// `list_my_online_games`'in eklediği name/avatar/relation alanları RPC'ye
+/// GÖNDERİLMEZ — `NewGameSlot` yalnız type+user_id yazar.
+List<NewGameSlot> rematchSlots(OnlineGame game, String myUserId) => [
+      NewGameSlot.human(myUserId),
+      for (final s in game.slots)
+        if (!s.isAi && s.userId != null && s.userId != myUserId)
+          NewGameSlot.human(s.userId!),
+      for (final s in game.slots)
+        if (s.isAi) const NewGameSlot.ai(),
+    ];
+
 // ── Kova filtreleri + süre etiketleri (web LiveGamesTab'ın saf mantığı) ────
 
 /// Yanıt bekleyen davetler. `status == pending` ŞART — web 4 Ağustos 2026

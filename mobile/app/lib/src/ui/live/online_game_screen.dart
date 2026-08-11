@@ -779,6 +779,77 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     }
   }
 
+  /// Oyun bitince OYNA'nın yerini alan "TEKRAR OYNA": onay → biten oyunun
+  /// kadrosuyla (bkz. `rematchSlots`) yeni bir Canlı oyun → insan koltuklarına
+  /// davet gider (`create_online_game` + `notify-game-invite`). Sunucu reddi
+  /// (ör. artık arkadaş değilsiniz) olduğu gibi gösterilir.
+  Future<void> _handleRematch() async {
+    if (_busy) return;
+    final names = [
+      for (final s in widget.game.slots)
+        if (!s.isAi && s.userId != widget.myUserId)
+          s.name ?? 'Bir arkadaşın'
+    ];
+    final withAi = widget.game.slots.any((s) => s.isAi);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Tekrar Oyna'),
+        content: Text(
+          '${names.join(', ')} ile aynı kadroda yeni bir oyun açılacak ve '
+          'davet gönderilecek.'
+          '${withAi ? ' 4. koltuk yine Yapay Zeka olacak.' : ''} Emin misin?',
+        ),
+        // Kabul butonu SOLDA (Parça 25 kuralı — web'in düzeniyle aynı).
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('TEKRAR OYNA'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('VAZGEÇ'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() => _busy = true);
+    String? error;
+    try {
+      await widget.onlineGames.create(
+        widget.game.playerCount,
+        rematchSlots(widget.game, widget.myUserId),
+      );
+    } catch (e) {
+      // LiveGameCreateForm ile AYNI helper: `create_online_game`in Türkçe
+      // reddini (PostgrestException.message) ham `toString()` gürültüsü
+      // olmadan gösterir.
+      error = friendErrorText(e);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Tekrar Oyna'),
+        content: Text(error ??
+            'Davetiniz gönderilmiştir.\n\n'
+                '${names.join(', ')} yanıt verince oyun başlayacak.'
+                '${withAi ? ' 4. koltuk Yapay Zeka.' : ''}'),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('TAMAM'),
+          ),
+        ],
+      ),
+    );
+    // Başarıda listeye dön — yeni oyun "Rakip Bekleniyor" kovasında görünür.
+    if (error == null && mounted) Navigator.of(context).pop();
+  }
+
   Future<void> _handleConfirmSwap() async {
     final me = _me;
     if (!_canAct || _busy || me == null || state.swapSelection.isEmpty) return;
@@ -1407,7 +1478,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                                 // `\n` ile iki satıra bölüp
                                                 // 12px'te bırakmıştı.
                                                 ? NeoButton(
-                                                    label: 'CANLI LİSTESİ',
+                                                    label: 'TEKRAR OYNA',
                                                     variant:
                                                         NeoButtonVariant.accent,
                                                     fontSize: 15,
@@ -1415,9 +1486,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                                     padding: const EdgeInsets
                                                         .symmetric(
                                                         horizontal: 20),
-                                                    onPressed: () =>
-                                                        Navigator.of(context)
-                                                            .pop(),
+                                                    onPressed: _handleRematch,
                                                   )
                                                 : NeoButton(
                                                     label: _busy

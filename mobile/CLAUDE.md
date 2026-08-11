@@ -1504,7 +1504,71 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        hizalanmıştı). Canlı bir oyun tek başına başlatılamadığından (davet
        + kabul gerekiyor) doğru hedef listenin kendisi; "+ Yeni Canlı Oyun"
        butonu orada. Değiştirmek İKİ platformu birden ilgilendiren bir ürün
-       kararı olur, tek taraflı portta yapılmadı.
+       kararı olur, tek taraflı portta yapılmadı. **Kullanıcı aynı gün bu
+       kararı verdi ve buton "Tekrar Oyna"ya çevrildi — bkz. Parça 59.**
+
+   - ✅ **Parça 59 — oyun bitince "TEKRAR OYNA": aynı kadroyla yeni bir Canlı
+     oyun (11 Ağustos 2026, `online_games_api.dart`, `online_game_screen.dart`
+     + web `OnlineGameScreen.tsx`):** Parça 58'de "hata değil, web ile birebir"
+     diye kapattığım buton hakkında kullanıcı ürün kararını verdi: *"canlı
+     oyunda ideali 'Tekrar Oyna' çıkmalı. Basınca da aynı kişiyle oyun açsın …
+     arkadaşıyla oynamışsa, o kişiye oyun daveti göndersin. Emin misin
+     olmalı."* İki platforma AYNI GÜN uygulandı (web yarısı ayrı bir `main`
+     tabanlı PR).
+     - **Tek akış, iki dal değil:** "YZ ile" ve "arkadaşıyla" ayrı kodlar
+       değil — biten oyunun KADROSU aynen taşınıyor; insan koltuklarına davet
+       gidiyor, YZ koltuğu YZ kalıyor. Canlı'da zaten 2 kişilikte YZ olamıyor,
+       4 kişilikte yalnız son koltuk YZ olabiliyor, yani "kadroyu kopyala"
+       ikisini de karşılıyor.
+     - **`rematchSlots` (saf fonksiyon) sırayı `create_online_game`'in üç
+       kısıtından TÜRETİYOR, biten oyundan kopyalamıyor:** (1) ilk koltuk
+       ÇAĞIRAN olmak zorunda — biten oyunu ben kurmamış olabilirim (`my_role
+       == 'invitee'`), kendimi başa alıyorum; (2) 4 kişilikte YZ yalnız son
+       koltukta olabilir — insanları kendi aralarındaki sırayla koruyup
+       YZ'leri sona yazmak bunu kendiliğinden sağlıyor; (3) 2 kişilikte YZ
+       zaten olamaz. **Kısıtlar RPC kaynağından okundu, hatırlanmadı**
+       (`online_games_invites.sql` + `online_game_ai_slot_rule.sql`) — sırayı
+       "olduğu gibi gönder" demek, kurucu ben değilsem her seferinde
+       `'İlk koltuk oyunu kuran kişi olmalı.'` ile reddedilirdi.
+     - **Zenginleştirme alanları RPC'ye gitmiyor:** `list_my_online_games`
+       koltuklara `name`/`avatar_url`/`relation`/`invite_status` ekliyor;
+       `NewGameSlot` yalnız `type`+`user_id` yazdığından bu alanlar
+       `online_games.slots` jsonb'sine sızmıyor.
+     - **Sunucu reddi olduğu gibi gösteriliyor:** aradan arkadaşlıktan
+       çıkılmışsa RPC `'Yalnızca arkadaşlarını davet edebilirsin.'` fırlatıyor.
+       Mesaj `friendErrorText` ile (LiveGameCreateForm'un AYNI RPC için
+       kullandığı helper — `_errorText`in ham `toString()` gürültüsü değil)
+       gösteriliyor ve hata dalında listeye DÖNÜLMÜYOR. İstemci tarafına
+       ikinci bir arkadaşlık kontrolü eklenmedi: tek doğruluk kaynağı RPC.
+     - **Metinler mevcut kalıplardan alındı, yenisi icat edilmedi:**
+       "Davetiniz gönderilmiştir." + "{isimler} yanıt verince oyun
+       başlayacak." + " 4. koltuk Yapay Zeka." — `LiveGameCreateForm`'un
+       gönderim ekranıyla birebir. Onay diyaloğunda kabul butonu SOLDA
+       (Parça 25 kuralı).
+     - **Test — negatif eş doğrulamasıyla, 4 test:** `rematchSlots` için iki
+       birim testi (kurucu olmasam da başa geçiyorum; 4 kişilikte YZ sonda
+       kalıp insan sırası korunuyor) + iki widget testi (VAZGEÇ hiçbir şey
+       göndermiyor → onay → `create` doğru sayı/koltuklarla çağrılıyor →
+       "Davetiniz gönderilmiştir." → TAMAM listeye dönüyor; sunucu reddi
+       dalında mesaj görünüyor ve ekran ayakta kalıyor). Ekran dosyası
+       `git stash`lenince (saf helper yerinde bırakılarak) iki widget testi
+       de GERÇEKTEN düştü (`Found 0 widgets with text "TEKRAR OYNA"`), geri
+       konunca yeşile döndü.
+     - **Sahte uca `createError` eklendi** — genel `failWith`ten ayrı, çünkü
+       ekran o sırada yüklü ve öteki uçların çalışmaya devam etmesi gerekiyor
+       (Parça 46'nın dersi: sahte uç gerçek ucun HER hata yolunu taklit
+       etmeli).
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 322/322
+       yeşil** (318'den +4). Web `npm run lint` + `npm run build` temiz.
+       `kelimeki_core`'a hiç dokunulmadı.
+     - **Doğrulama sınırı:** gerçek `create_online_game` çağrısı (davetin
+       karşı hesapta belirmesi, `notify-game-invite` e-postası, artık arkadaş
+       olmayan biriyle gelen ret) iki hesapla cihazda doğrulanmalı —
+       `mobile/TESTING.md` bölüm 11'e madde eklendi.
+     - **Yerel/YZ oyun ekranına DOKUNULMADI:** orada buton hâlâ "YENİ OYUN AÇ"
+       ve Setup'a dönüyor — istek açıkça "canlı oyunda" diyordu ve Setup'ta
+       zaten tek dokunuşluk bir YZ kurulum formu var. İstenirse ayrı bir
+       parça.
 
 ## Sonraya Bırakılan İşler (mobil)
 
