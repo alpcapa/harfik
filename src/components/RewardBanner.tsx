@@ -24,6 +24,12 @@ export interface RewardSummary {
   /** Ödülü tetikleyen en yüksek PUAN eşiği (50/100/200/500/1000 — 12 Ağustos
    * 2026'dan beri ödüller oyun sayısına değil puan eşiğine bağlı). */
   rewardThreshold?: number;
+  /**
+   * Rütbe düşüş bildirimi — YALNIZCA hiçbir olumlu olay yokken doldurulur
+   * (LeagueRewardsHost öncelik kuralı: olumlu varsa üzgün banner bastırılır).
+   * `fromThreshold` altına inilen eşik, `newTier` yeni (alt) kademe.
+   */
+  rankDown?: { fromThreshold: number; newTier: RankTier };
 }
 
 // Konfeti parçacıkları — merkezden dışa savrulan 8 nokta (CSS değişkenleriyle
@@ -52,20 +58,28 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  const { rankUpTier, milestone, rewardPoints, rewardThreshold } = summary;
+  const { rankUpTier, milestone, rewardPoints, rewardThreshold, rankDown } = summary;
 
   // Öncelik: rütbe atlama > kilometre taşı > yalnızca eşik ödülü.
-  const tier = rankUpTier ?? tierFor(milestone ?? rewardThreshold ?? 0);
-  const glyph = rankUpTier
-    ? rankUpTier.letter
-    : milestone
-      ? String(milestone)
-      : `+${rewardPoints}`;
-  const title = rankUpTier
-    ? `Yeni rütben: ${rankUpTier.name}!`
-    : milestone
-      ? `${milestone} k-lig puanına ulaştın!`
-      : 'Eşik ödülü kazandın!';
+  // rankDown yalnızca hiçbir olumlu olay yokken dolu gelir (host garantisi) —
+  // üzgün varyant: konfeti yok, yeni (alt) kademenin mührü + nazik metin.
+  const tier = rankDown
+    ? rankDown.newTier
+    : (rankUpTier ?? tierFor(milestone ?? rewardThreshold ?? 0));
+  const glyph = rankDown
+    ? rankDown.newTier.letter
+    : rankUpTier
+      ? rankUpTier.letter
+      : milestone
+        ? String(milestone)
+        : `+${rewardPoints}`;
+  const title = rankDown
+    ? 'Rütben geriledi'
+    : rankUpTier
+      ? `Yeni rütben: ${rankUpTier.name}!`
+      : milestone
+        ? `${milestone} k-lig puanına ulaştın!`
+        : 'Eşik ödülü kazandın!';
   // "X k-lig puanına ulaştın" alt satırı — ulaşılan en yüksek eşik (rütbe/
   // kilometre taşı/ödül hangisi büyükse). Başlık zaten aynı bilgiyi veren
   // milestone-only durumda tekrarlanmaz.
@@ -92,15 +106,32 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
             <RankSeal tier={tier} glyph={glyph} size={76} />
           </div>
           <h2 className="text-base font-bold text-text">{title}</h2>
-          {(rankUpTier || (!milestone && rewardThreshold)) && reachedPoints > 0 ? (
-            <p className="text-[11px] font-mono text-muted mt-1">
-              {reachedPoints} k-lig puanına ulaştın
-            </p>
-          ) : null}
-          {rewardPoints > 0 && (
-            <p className="reward-line-anim font-mono text-sm font-bold text-green mt-1.5">
-              +{rewardPoints} ödül puanı eklendi
-            </p>
+          {rankDown ? (
+            <>
+              {/* Sayıya iyelik eki YOK ("50'nin/100'ün" ünlü uyumu isme göre
+                  değişirdi) — "X eşiğinin altına" kalıbı her eşikte çalışır,
+                  bkz. CLAUDE.md "Sıra: {isim}" dersi. */}
+              <p className="text-[11px] font-mono text-muted mt-1">
+                Üzgünüz — puanın {rankDown.fromThreshold} eşiğinin altına indi.
+                Yeni rütben: <b style={{ color: rankDown.newTier.color }}>{rankDown.newTier.name}</b>
+              </p>
+              <p className="reward-line-anim font-mono text-[11px] font-bold text-accent mt-1.5">
+                Kazandıkça geri yükselirsin!
+              </p>
+            </>
+          ) : (
+            <>
+              {(rankUpTier || (!milestone && rewardThreshold)) && reachedPoints > 0 ? (
+                <p className="text-[11px] font-mono text-muted mt-1">
+                  {reachedPoints} k-lig puanına ulaştın
+                </p>
+              ) : null}
+              {rewardPoints > 0 && (
+                <p className="reward-line-anim font-mono text-sm font-bold text-green mt-1.5">
+                  +{rewardPoints} ödül puanı eklendi
+                </p>
+              )}
+            </>
           )}
           <button
             type="button"
@@ -110,6 +141,7 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
             Devam
           </button>
         </div>
+        {rankDown ? null : (
         <div className="absolute inset-0 pointer-events-none overflow-visible" aria-hidden="true">
           {CONFETTI.map((c, i) => (
             <span
@@ -125,6 +157,7 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
             />
           ))}
         </div>
+        )}
       </div>
     </div>
   );

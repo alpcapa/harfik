@@ -376,7 +376,13 @@ gerekiyor).
       (k-lig listesi, Skor Kartı, PlayerScoreCard) bir alt kademeye İNMELİ —
       üç yer de aynı kademeyi göstermeli (hepsi güncel `total_score`'dan
       türetiliyor). Puan tekrar eşiği aşarsa damga geri gelir ama rütbe
-      banner'ı İKİNCİ kez ÇIKMAMALI (her eşik hayatta bir kez kutlanır).
+      banner'ı İKİNCİ kez ÇIKMAMALI ve ödül İKİNCİ kez VERİLMEMELİ (her
+      eşik hayatta bir kez).
+- [ ] **Rütbe düşüş banner'ı.** Eşiğin altına inince konfetisiz, üzgün bir
+      banner çıkmalı ("Rütben geriledi … Kazandıkça geri yükselirsin!") ve
+      bir kez gösterilmeli; aynı eşikten İKİNCİ kez düşülürse yeniden
+      çıkmalı (diğer banner'ların aksine tekrarlanabilir). Görülmemiş
+      olumlu bir kutlama ile çakışırsa yalnızca olumlu olan gösterilmeli.
 - [ ] **k-lig sırası tutarlı.** Listedeki sıra/puan (leaderboard view) ile
       "senin sıran" satırı (my_leaderboard_rank RPC) aynı toplamı (ödül
       dahil) göstermeli.

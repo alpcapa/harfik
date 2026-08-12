@@ -36,6 +36,7 @@ function buildSummary(rows: LeagueReward[]): RewardSummary {
   let rewardThreshold: number | undefined;
   let rankUpThreshold: number | undefined;
   let milestone: number | undefined;
+  let rankDownThreshold: number | undefined;
   for (const r of rows) {
     if (r.kind === 'points_reward') {
       rewardPoints += r.points;
@@ -44,13 +45,24 @@ function buildSummary(rows: LeagueReward[]): RewardSummary {
       if (!rankUpThreshold || r.threshold > rankUpThreshold) rankUpThreshold = r.threshold;
     } else if (r.kind === 'points_milestone') {
       if (!milestone || r.threshold > milestone) milestone = r.threshold;
+    } else if (r.kind === 'rank_down') {
+      // En DÜŞÜK eşiği al — art arda düşüşlerde güncel duruma en yakın olan.
+      if (!rankDownThreshold || r.threshold < rankDownThreshold) rankDownThreshold = r.threshold;
     }
   }
+  // Öncelik kuralı: görülmemiş OLUMLU bir olay (ödül/kutlama/rütbe) varsa
+  // üzgün banner bastırılır — ikisi aynı anda bekliyorsa net mesaj olumlu
+  // olandır; rank_down satırı "Devam"la birlikte sessizce görüldü sayılır.
+  const hasPositive = !!rankUpThreshold || !!milestone || rewardPoints > 0;
   return {
     rankUpTier: rankUpThreshold ? tierFor(rankUpThreshold) : undefined,
     milestone,
     rewardPoints,
     rewardThreshold,
+    rankDown:
+      !hasPositive && rankDownThreshold
+        ? { fromThreshold: rankDownThreshold, newTier: tierFor(rankDownThreshold - 1) }
+        : undefined,
   };
 }
 

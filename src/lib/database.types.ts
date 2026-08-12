@@ -532,13 +532,16 @@ export interface PlayerStats {
  * `points_reward` (puan eşiği ödülü — rütbe eşikleriyle aynı liste, 50→+5 …
  * 1000→+100; 12 Ağustos 2026'ya kadar oyun sayısına bağlı `games_reward`dı),
  * `points_milestone` (her 100 puan kutlaması, points=0),
- * `rank_up` (rütbe eşiği aşımı, points=0). `seen_at` kutlama banner'ının
- * cihazdan bağımsız "bir kez göster" işareti (bkz. LeagueRewardsHost).
+ * `rank_up` (rütbe eşiği aşımı, points=0),
+ * `rank_down` (rütbe düşüş bildirimi, points=0 — diğerlerinin aksine
+ * TEKRARLANABİLİR: aynı eşikten yeniden düşülürse sunucu `seen_at`'i
+ * sıfırlar, üzgün banner yeniden gösterilir). `seen_at` banner'ın cihazdan
+ * bağımsız "bir kez göster" işareti (bkz. LeagueRewardsHost).
  */
 export interface LeagueReward {
   id: string;
   user_id: string;
-  kind: 'points_reward' | 'points_milestone' | 'rank_up';
+  kind: 'points_reward' | 'points_milestone' | 'rank_up' | 'rank_down';
   threshold: number;
   points: number;
   seen_at: string | null;
