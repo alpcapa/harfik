@@ -101,26 +101,30 @@ export function RankInfoModal({ tier, totalScore, bonusPoints, onClose }: RankIn
                   }}
                 />
               </div>
-              {/* Eşik etiketlerinin altında o eşiğin tek seferlik ödülü —
-                  12 Ağustos 2026'dan beri ödüller puan eşiğine bağlı
-                  (RankTier.reward), etiket bu yüzden dürüst. */}
+              {/* Eşik etiketlerinin altında o eşiğin tek seferlik ödülü.
+                  Renk kuralı (12 Ağustos 2026, kullanıcı kararı): YEŞİL + ✓
+                  yalnızca ALINMIŞ ödülde (kişi sonradan eşiğin altına düşse
+                  bile yeşil ✓ kalır — ödül geri alınmıyor); henüz alınmamış
+                  hedef ödülü GRİ. */}
               <div className="flex justify-between text-[9px] font-mono text-muted mt-0.5">
                 <span className="flex flex-col items-start leading-tight">
                   <span>{tier.threshold}</span>
-                  {tier.reward > 0 && <span className="text-green font-bold">(+{tier.reward})</span>}
+                  {tier.reward > 0 &&
+                    (rewardAlreadyClaimed(tier, bonusPoints) ? (
+                      <span className="text-green font-bold">(+{tier.reward}) ✓</span>
+                    ) : (
+                      <span className="font-bold">(+{tier.reward})</span>
+                    ))}
                 </span>
                 <span className="font-bold text-text">{totalScore}</span>
                 <span className="flex flex-col items-end leading-tight">
                   <span>{nextTier.threshold} puan</span>
-                  {/* Hedef eşiğin ödülü daha önce alındıysa (eşikten düşülüp
-                      yeniden yaklaşılıyorsa) ödülün yanında aynı boyda yeşil
-                      bir ✓ — "bu ödül alındı, yeniden verilmez" (ilk sürüm
-                      "(0)" yazıyordu, kullanıcı fikriyle iyileştirildi). */}
-                  {nextTier.reward > 0 && (
-                    <span className="text-green font-bold">
-                      (+{nextTier.reward}){rewardAlreadyClaimed(nextTier, bonusPoints) ? ' ✓' : ''}
-                    </span>
-                  )}
+                  {nextTier.reward > 0 &&
+                    (rewardAlreadyClaimed(nextTier, bonusPoints) ? (
+                      <span className="text-green font-bold">(+{nextTier.reward}) ✓</span>
+                    ) : (
+                      <span className="font-bold">(+{nextTier.reward})</span>
+                    ))}
                 </span>
               </div>
             </div>

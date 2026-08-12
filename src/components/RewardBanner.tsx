@@ -155,13 +155,20 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
                     />
                   </div>
                   <div className="flex justify-between text-[9px] font-mono text-muted mt-0.5">
-                    <span>{rankDown.newTier.threshold}</span>
+                    <span className="flex flex-col items-start leading-tight">
+                      <span>{rankDown.newTier.threshold}</span>
+                      {/* Alt kademenin ödülü de (varsa) alınmış durumda —
+                          yeşil + ✓ (Çaylak'ta ödül yok, rozet çıkmaz). */}
+                      {rankDown.newTier.reward > 0 && (
+                        <span className="text-green font-bold">(+{rankDown.newTier.reward}) ✓</span>
+                      )}
+                    </span>
                     <span className="font-bold text-text">{rankDown.currentPoints}</span>
                     <span className="flex flex-col items-end leading-tight">
                       <span>{rankDown.fromThreshold} puan</span>
-                      {/* Ödül + yeşil ✓ = "bu eşiğin ödülü zaten alındı,
-                          yeniden aşmak ikinci kez vermez" (ilk sürümdeki
-                          "(0)" yerine kullanıcı fikri). */}
+                      {/* Düşülen eşiğin ödülü ZATEN alındı — kişi geri düşse
+                          bile yeşil ✓ kalır, yeniden aşmak ikinci kez vermez
+                          (ilk sürümdeki "(0)" yerine kullanıcı fikri). */}
                       <span className="text-green font-bold">
                         (+{tierFor(rankDown.fromThreshold).reward}) ✓
                       </span>

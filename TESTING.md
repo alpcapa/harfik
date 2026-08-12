@@ -368,8 +368,10 @@ gerekiyor).
 - [ ] **Mühür popup'ı.** Skor Kartı başlığı ile ✕ arasında ortalanmış büyük
       mühre dokun: damga animasyonuyla bilgi popup'ı açılmalı (kademe adı +
       puan + "+N eşik ödülü dahil" + sıradaki rütbe hedefi + hedefe akan
-      ilerleme çubuğu, eşiklerin altında yeşil "(+5)"/"(+10)" ödül
-      etiketleri; en üst kademede çubuk yok) ve İSTENDİĞİ KADAR
+      ilerleme çubuğu; en üst kademede çubuk yok). Çubuk etiketleri: sol
+      eşiğin ödülü YEŞİL "(+5) ✓" (alınmış), hedef eşiğin ödülü GRİ "(+10)"
+      (henüz alınmamış) — yeşil+✓ yalnızca alınmış ödülde. Popup İSTENDİĞİ
+      KADAR
       tekrar açılabilmeli (kutlamanın aksine "bir kez göster" kuralı yok).
       Başkasının kartında da (PlayerScoreCard) aynı mühür/popup çalışmalı.
 - [ ] **Rütbe düşmeli.** -2 ceza alıp eşiğin altına inen bir hesabın mührü
@@ -385,9 +387,9 @@ gerekiyor).
       olumlu bir kutlama ile çakışırsa yalnızca olumlu olan gösterilmeli.
       Banner'da kaybedilen eşiğe geri dönüş çubuğu olmalı; hedef etiketi
       "50 puan" biçiminde ve altında yeşil "(+5) ✓" (ödül + onay işareti =
-      zaten alındı). Aynı kural bilgi popup'ında: düşmüş biri mühre
-      dokununca hedef rozeti "(+N) ✓" olmalı — hiç düşmemişte ✓ YOK,
-      sadece "(+N)".
+      zaten alındı — kişi geri düşse bile yeşil ✓ kalır). Aynı kural bilgi
+      popup'ında: düşmüş biri mühre dokununca hedef rozeti yeşil "(+N) ✓"
+      olmalı — hiç düşmemişte hedef GRİ "(+N)", ✓ yok.
 - [ ] **k-lig sırası tutarlı.** Listedeki sıra/puan (leaderboard view) ile
       "senin sıran" satırı (my_leaderboard_rank RPC) aynı toplamı (ödül
       dahil) göstermeli.
