@@ -341,3 +341,55 @@ uydurma bir Türkçe cümleyle gizlemek hata ayıklamayı imkânsız kılardı.
       "cevap için tıklayın" ile gel, mesaj gönder: gönderim sonrası
       **üyelik teklifi çıkmamalı**, yalnızca teşekkür + "Kapat". (Uygulama
       içinden — oyun sonu, Terms/Privacy — açılan formda teklif hâlâ çıkar.)
+
+## 10. k-lig ödül & rütbe sistemi
+
+Ödül/rütbe kayıtları sunucuda, `games` tablosuna satır ekleyen bir trigger'la
+(`games_award_league_rewards`) açılır; kutlama banner'ının "bir kez göster"
+garantisi `league_rewards.seen_at` ile cihazdan bağımsızdır. Bu zincirin
+büyük kısmı otomatik test edilemiyor (gerçek oturum + gerçek oyun bitişi
+gerekiyor).
+
+- [ ] **Kutlama banner'ı bir kez çıkar.** Görülmemiş bir ödülün varken
+      (test için bir satırın `seen_at`'i SQL'le null'a çekilebilir) siteye
+      gir: mühür damgalı, konfetili banner ekranın ORTASINDA, karartılmış
+      arka planla çıkmalı. "Devam"dan sonra sayfa yenilense de, BAŞKA bir
+      cihazdan girilse de bir daha çıkmamalı.
+- [ ] **Banner oyun ortasında çıkmaz.** Devam eden bir YZ/Canlı oyunun
+      ekranındayken banner asla belirmemeli; oyun bitince (ya da Setup'a
+      dönünce) bekleyen kutlama kendiliğinden gösterilmeli.
+- [ ] **Birleşik özet.** Aynı anda birden fazla görülmemiş kayıt varken
+      (ör. geçmişe dönük backfill) TEK banner çıkmalı: rütbe varsa başlık
+      rütbe, ödül puanı yeşil satırda toplam olarak.
+- [ ] **Ödül toplama doğru.** 50 k-lig puanına İLK ulaşmada +5 eklenmeli
+      (toplam 55 olur); puan -2 cezalarıyla eşiğin altına inse de verilmiş
+      ödül GERİ ALINMAMALI. "Genel = 2 kişilik + 4 kişilik + ödül" toplamı
+      tutmalı.
+- [ ] **Mühür popup'ı.** Skor Kartı başlığı ile ✕ arasında ortalanmış büyük
+      mühre dokun: damga animasyonuyla bilgi popup'ı açılmalı (kademe adı +
+      puan + "+N eşik ödülü dahil" + sıradaki rütbe hedefi + hedefe akan
+      ilerleme çubuğu; en üst kademede çubuk yok). Çubuk etiketleri: sol
+      eşiğin ödülü YEŞİL "(+5)✓" (alınmış), hedef eşiğin ödülü GRİ "(+10)"
+      (henüz alınmamış) — yeşil+✓ yalnızca alınmış ödülde. Popup İSTENDİĞİ
+      KADAR
+      tekrar açılabilmeli (kutlamanın aksine "bir kez göster" kuralı yok).
+      Başkasının kartında da (PlayerScoreCard) aynı mühür/popup çalışmalı.
+- [ ] **Rütbe düşmeli.** -2 ceza alıp eşiğin altına inen bir hesabın mührü
+      (k-lig listesi, Skor Kartı, PlayerScoreCard) bir alt kademeye İNMELİ —
+      üç yer de aynı kademeyi göstermeli (hepsi güncel `total_score`'dan
+      türetiliyor). Puan tekrar eşiği aşarsa damga geri gelir ama rütbe
+      banner'ı İKİNCİ kez ÇIKMAMALI ve ödül İKİNCİ kez VERİLMEMELİ (her
+      eşik hayatta bir kez).
+- [ ] **Rütbe düşüş banner'ı.** Eşiğin altına inince konfetisiz, üzgün bir
+      banner çıkmalı ("Rütben geriledi … Kazandıkça geri yükselirsin!") ve
+      bir kez gösterilmeli; aynı eşikten İKİNCİ kez düşülürse yeniden
+      çıkmalı (diğer banner'ların aksine tekrarlanabilir). Görülmemiş
+      olumlu bir kutlama ile çakışırsa yalnızca olumlu olan gösterilmeli.
+      Banner'da kaybedilen eşiğe geri dönüş çubuğu olmalı; hedef etiketi
+      "50 puan" biçiminde ve altında yeşil "(+5)✓" (ödül + onay işareti =
+      zaten alındı — kişi geri düşse bile yeşil ✓ kalır). Aynı kural bilgi
+      popup'ında: düşmüş biri mühre dokununca hedef rozeti yeşil "(+N)✓"
+      olmalı — hiç düşmemişte hedef GRİ "(+N)", ✓ yok.
+- [ ] **k-lig sırası tutarlı.** Listedeki sıra/puan (leaderboard view) ile
+      "senin sıran" satırı (my_leaderboard_rank RPC) aynı toplamı (ödül
+      dahil) göstermeli.
