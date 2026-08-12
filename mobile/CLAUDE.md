@@ -2196,9 +2196,11 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        359/359 yeşil** (358'den +1). Web `npm run lint` + `npm run build`
        temiz. `kelimeki_core`'a hiç dokunulmadı (yalnızca `trUpper`
        import edildi) — golden vector turu gerekmedi.
-     - **Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor
-       — `mobile/TESTING.md` bölüm 13'e madde eklendi (web'in eşi kök
-       `TESTING.md` bölüm 10'da).
+     - ~~**Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor~~
+       — **12 Ağustos 2026'da cihazda KOŞULDU ve GEÇTİ** (dokuz kademe,
+       eşik/ödül değerleri ve büyük harf başlıklar; web'le yan yana
+       ayrışma yok). Kontrol maddeleri `mobile/TESTING.md` bölüm 13'te
+       (web'in eşi kök `TESTING.md` bölüm 10'da).
 
    - ✅ **Parça 67 — hamle ikonu artık yalnızca dökümü OLAN kartta; kullanıcının
      teşhisi ölçülerek çürütüldü (12 Ağustos 2026, `games_api.dart`,
@@ -2249,10 +2251,16 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        true, güncel yerel hepsi false, ve **en kritiği** bir YEREL satıra
        `moves` yazılınca bayrak true'ya döndü — geri alındı).
        `kelimeki_core`'a hiç dokunulmadı.
-     - **Doğrulama sınırı:** "yeni biten bir YZ oyununda ikon GERÇEKTEN
-       çıkıyor mu" bu ortamdan doğrulanamaz (gerçek oturumda bir oyun
-       bitirmek gerekiyor) — `mobile/TESTING.md` bölüm 5 ve kök
-       `TESTING.md` bölüm 3'e madde eklendi.
+     - ~~**Doğrulama sınırı:** "yeni biten bir YZ oyununda ikon GERÇEKTEN
+       çıkıyor mu" bu ortamdan doğrulanamaz~~ — **12 Ağustos 2026'da
+       cihazda KOŞULDU ve GEÇTİ:** yeni bitirilen bir YZ oyununun kartında
+       ikon çıktı, döküm doluydu. Kolon açılalı beri hiç yerel oyun
+       bitmemişti, yani bu, "bundan sonra bitenler DOLU olacak"
+       çıkarımının ilk gerçek uçtan uca kanıtı — Parça 67'nin kullanıcının
+       teşhisini ("YZ'de hiç olmayacak") çürüten ölçümü doğrulandı.
+       Kontrol maddeleri `mobile/TESTING.md` bölüm 5 ve kök `TESTING.md`
+       bölüm 3'te. **Aynı turda dokunma alanı sorunu bildirildi → Parça
+       68.**
 
    - ✅ **Parça 68 — hamle rozetinin dokunma alanı sohbet rozetinin YARISIYMIŞ
      (12 Ağustos 2026, `game_history_modal.dart` + web `GameHistoryModal.tsx`):**
