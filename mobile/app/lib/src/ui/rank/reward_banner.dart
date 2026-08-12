@@ -264,7 +264,11 @@ class _RewardBannerState extends State<RewardBanner>
             decoration: ShapeDecorationWithCssShadows(
               color: kBg,
               radius: 16, // web rounded-2xl
-              shadows: kRaisedShadows,
+              // Nömorfik `kRaisedShadows` DEĞİL (12 Ağustos 2026) — bkz.
+              // kFloatingCardShadows. RankInfoModal'ın kartı da aynı gün
+              // aynı gölgeye çekildi; ikisi AYNI kart, biri değişirse öteki
+              // de değişmeli.
+              shadows: kFloatingCardShadows,
               borderColor: kBorder,
             ),
             child: content,

@@ -15,7 +15,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../game/neo_box.dart';
-import '../game/neo_button.dart';
 import '../tokens.dart';
 import 'league_rank.dart';
 import 'rank_progress_bar.dart';
@@ -105,17 +104,41 @@ class _RankInfoModalState extends State<RankInfoModal>
                 child: SizedBox(
                   width: 280,
                   child: Container(
-                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
                     decoration: ShapeDecorationWithCssShadows(
                       color: kBg,
                       radius: 16,
-                      shadows: kRaisedShadows,
+                      // Nömorfik `kRaisedShadows` DEĞİL — karartılmış zeminde
+                      // yüzen kart (bkz. kFloatingCardShadows'un gerekçesi).
+                      shadows: kFloatingCardShadows,
                       borderColor: kBorder,
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: _body(tier, next),
+                    child: Stack(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: _body(tier, next),
+                          ),
+                        ),
+                        // Kapatma: kocaman bir "KAPAT" butonu yerine sağ
+                        // üstte ✕ (12 Ağustos 2026, kullanıcı isteği) —
+                        // projedeki TÜM modallerin (KModal) deseni bu, stil
+                        // oradan birebir alındı. Banner'ın "DEVAM"ı KALIR:
+                        // o gerçek bir aksiyon (ödülleri görüldü işaretler).
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: IconButton(
+                            visualDensity: VisualDensity.compact,
+                            tooltip: 'Kapat',
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(Icons.close,
+                                size: 18, color: kMuted),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -192,17 +215,6 @@ class _RankInfoModalState extends State<RankInfoModal>
           toClaimed: rewardAlreadyClaimed(next, widget.bonusPoints),
         ),
       ],
-      const SizedBox(height: 16),
-      Center(
-        child: NeoButton(
-          label: 'KAPAT',
-          variant: NeoButtonVariant.accent,
-          fontSize: 14,
-          letterSpacing: 1,
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
     ];
   }
 

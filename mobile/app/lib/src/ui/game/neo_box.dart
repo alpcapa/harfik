@@ -70,6 +70,17 @@ const List<CssShadow> kRaisedShadows = [
   CssShadow(color: Color(0xD9FFFFFF), offset: Offset(-2, -2), blur: 5),
 ];
 
+/// Web `Modal.tsx`'in `shadow-[0_20px_45px_rgba(15,23,42,0.5)]`'i —
+/// KARARTILMIŞ zeminde yüzen kartlar için (rütbe popup'ı, ödül banner'ı).
+/// `kRaisedShadows` BURADA KULLANILMAZ: onun sol-üst beyaz parıltısı
+/// (`-2 -2 5 rgba(255,255,255,.85)`) nömorfik YÜZEYLER için tasarlandı,
+/// `bg-black/40` üstünde yüzen bir kartta hale gibi okunuyor (kullanıcı
+/// 12 Ağustos 2026'da bildirdi: "üst ve sol tarafındaki beyaz gölge iyi
+/// durmuyor").
+const List<CssShadow> kFloatingCardShadows = [
+  CssShadow(color: Color(0x800F172A), offset: Offset(0, 20), blur: 45),
+];
+
 /// Web `.btn-raised` — seçili/vurgulu (accent) yüzeyler. Üç katman.
 const List<CssShadow> kRaisedAccentShadows = [
   CssShadow(color: Color(0x8CA3B1C6), offset: Offset(3, 3), blur: 8),

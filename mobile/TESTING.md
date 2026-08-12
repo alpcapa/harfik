@@ -882,16 +882,30 @@ listesi kök `TESTING.md` bölüm 10.
 - [ ] **Birleşik özet.** Aynı anda birden fazla görülmemiş kayıt varken
       TEK banner çıkmalı: rütbe varsa başlık rütbe, ödül puanı yeşil
       satırda TOPLAM olarak.
-- [ ] **Mühür üç yerde ve aynı kademede.** k-lig listesi satırları (18px,
-      iç kesikli halkasız ve DÜZ çemberli — harf OKUNABİLİR olmalı), Skor
-      Kartı ve başka bir oyuncunun kartı (34px, başlık ile ✕ ARASINDA
-      ortalı, yazısız, dış kenarı TIRTIKLI — noter mührü gibi). Üçü de
-      GÜNCEL toplam puandan türetildiğinden aynı kademeyi göstermeli.
+- [ ] **Mühür üç yerde ve aynı kademede.** k-lig listesi satırları (18px),
+      Skor Kartı ve başka bir oyuncunun kartı (34px, başlık ile ✕ ARASINDA
+      ortalı, yazısız). Üçü de GÜNCEL toplam puandan türetildiğinden aynı
+      kademeyi göstermeli.
+- [ ] **Tırtık HER BOYDA.** k-lig listesindeki 18px'lik küçük mühürlerin
+      dış kenarı da testere dişli olmalı (büyük mühürle aynı siluet, 24
+      diş) — düz çember GÖRÜNMEMELİ. Dişler telefonda net ayrışmalı, harf
+      (özellikle Ç/Ş sedillası) tırtığa DEĞMEMELİ ve OKUNABİLİR kalmalı.
+      Fark: küçük mühürde iç kesikli halka yok, harf daha büyük.
 - [ ] **Mühür popup'ı.** Skor Kartı başlığındaki mühre dokun: damga
       animasyonuyla bilgi popup'ı açılmalı (kademe adı + puan + "+N eşik
       ödülü dahil" + sıradaki rütbe hedefi + hedefe AKAN ilerleme çubuğu;
       en üst kademede çubuk yok). İstendiği kadar tekrar açılabilmeli —
       kutlamanın aksine "bir kez göster" kuralı YOK.
+- [ ] **Popup'ta ✕ var, "KAPAT" butonu YOK.** Kapatma yalnızca sağ
+      üstteki ✕ (ve karartılmış zemine dokunma) ile — kartın altında tam
+      genişlikte bir buton OLMAMALI. Kutlama/düşüş banner'ında ise
+      "DEVAM" KALMALI (o gerçek bir aksiyon: ödülleri görüldü işaretler).
+- [ ] **Kart gölgesinde beyaz hale yok.** Hem bilgi popup'ının hem
+      kutlama/düşüş banner'ının kartı karartılmış zeminde yalnızca
+      yumuşak, koyu bir düşen gölge taşımalı — sol/üst kenarda beyaz bir
+      parıltı GÖRÜNMEMELİ. Mührün kendi 88px'lik dairesi nömorfik
+      kalmaya devam eder (o doğru). İkisi aynı kart: biri değişirse öteki
+      de kontrol edilmeli.
 - [ ] **Rozet renk kuralı.** İlerleme çubuğunun altında: ALINMIŞ ödül
       YEŞİL "(+5)" + onay işareti, henüz alınmamış hedef ödülü GRİ "(+10)"
       ve onay işareti YOK. Onay işareti gerçekten bir tik olarak

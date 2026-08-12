@@ -36,9 +36,14 @@ bool sealIsCompact(double size) => size < 24;
 /// okundu, merkeze en uzak köşe Ç'de 23'te 15.48 / 24'te 16.20 — iç kesikli
 /// halka r=16 olduğundan 24'te Ç/Ş'nin sedillası halkayı taşıyor.
 ///
-/// Kompakt 27'DE KALDI: orada sınır dış çemberin iç kenarı (20.5 − 2.5/2 =
-/// 19.25) ve 27 zaten 18.17 ile tavana yakın (azami ~28.6) — bir punto
-/// artış görünmez, taşma riski gerçek.
+/// Kompakt 27'DE KALDI. Tırtık her boya yayılınca kompaktın iç sınırı
+/// daraldı (düz çemberin iç kenarı 19.25 → vadi iç kenarı 18.8 − 2/2 =
+/// 17.8) ve harfin sınırlayıcı KUTUSU 27'de 18.17, yani kutu taşıyor —
+/// ama kutunun köşesi boş: aynı harfler 20× ölçekte render edilip PİKSEL
+/// taranınca (Chromium, gerçek Space Mono 700) en uzak MÜREKKEP 27'de
+/// 16.56 (Ç; Ş 16.47, M 13.16, D 12.79, U 11.13, O 11.11) — sınıra 1.24
+/// birim var. Yuvarlak harflerde bbox köşesini sınır sanmak yanlış pozitif
+/// üretir; ölçüm mürekkeple yapılmalı.
 double sealFontSize(String text, {required bool compact}) {
   final n = text.characters.length;
   if (n <= 1) return compact ? 27 : 23;
@@ -108,49 +113,45 @@ class _RankSealPainter extends CustomPainter {
     final s = size.width / _kViewBox;
     final center = Offset(22 * s, 22 * s);
 
-    if (compact) {
-      // Küçük boyda tırtık alt-piksel gürültüsüne döner (18px'te diş derinliği
-      // <1px) — kompakt mühür DÜZ çemberde kalır, web ile aynı karar.
-      canvas.drawCircle(center, 20.5 * s, Paint()..color = kPanel);
-      canvas.drawCircle(
-        center,
-        20.5 * s,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.5 * s
-          ..color = color,
-      );
-    } else {
-      // Tırtıklı (noter mührü) dış kenar — 12 Ağustos 2026, kullanıcı isteği
-      // (referans görsel: testere dişli sertifika damgası). 24 diş; uç 21.0 /
-      // vadi 18.8 (stroke 2.0'ın yarısı taşınca 22'lik viewBox sınırında
-      // kırpılmadan kalır — eski düz çemberin 20.5+1.25 hesabıyla aynı bütçe).
-      // Web RankSeal.tsx aynı üç sabitle polygon üretir — ikisi birlikte
-      // değişmeli.
-      final path = Path();
-      const teeth = 24;
-      for (var i = 0; i < teeth * 2; i++) {
-        final r = (i.isEven ? 21.0 : 18.8) * s;
-        final a = i * math.pi / teeth - math.pi / 2;
-        final p = Offset(
-            center.dx + r * math.cos(a), center.dy + r * math.sin(a));
-        if (i == 0) {
-          path.moveTo(p.dx, p.dy);
-        } else {
-          path.lineTo(p.dx, p.dy);
-        }
+    // Tırtıklı (noter mührü) dış kenar — 12 Ağustos 2026, kullanıcı isteği
+    // (referans görsel: testere dişli sertifika damgası). 24 diş; uç 21.0 /
+    // vadi 18.8 (stroke 2.0'ın yarısı taşınca 22'lik viewBox sınırında
+    // kırpılmadan kalır — eski düz çemberin 20.5+1.25 hesabıyla aynı bütçe).
+    // Web RankSeal.tsx aynı üç sabitle polygon üretir — ikisi birlikte
+    // değişmeli.
+    //
+    // HER BOYDA çizilir (aynı gün ikinci karar, kullanıcı: "leaderboard'daki
+    // küçük rozetlerde tırtık olamıyor mu?"). İlk sürümde kompakt mühür düz
+    // çemberdi, gerekçesi "18px'te diş derinliği <1px, alt-piksel gürültüsüne
+    // döner" idi — bu ÖLÇÜLMEDEN yazılmış ve YANLIŞTI: hesap DPR 1
+    // varsayıyordu, retinada (DPR 3) 0.9 CSS px = 2.7 cihaz pikseli, dişler
+    // net çıkıyor (web tarafında 18px/DPR3 render edilip büyütülerek
+    // doğrulandı). Diş sayısı da bilerek aynı: tek siluet, tek sabit seti.
+    final path = Path();
+    const teeth = 24;
+    for (var i = 0; i < teeth * 2; i++) {
+      final r = (i.isEven ? 21.0 : 18.8) * s;
+      final a = i * math.pi / teeth - math.pi / 2;
+      final p =
+          Offset(center.dx + r * math.cos(a), center.dy + r * math.sin(a));
+      if (i == 0) {
+        path.moveTo(p.dx, p.dy);
+      } else {
+        path.lineTo(p.dx, p.dy);
       }
-      path.close();
-      canvas.drawPath(path, Paint()..color = kPanel);
-      canvas.drawPath(
-        path,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0 * s
-          ..strokeJoin = StrokeJoin.round
-          ..color = color,
-      );
     }
+    path.close();
+    canvas.drawPath(path, Paint()..color = kPanel);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0 * s
+        // Miter olsaydı sivri uçlarda uzun diken çıkardı (web
+        // strokeLinejoin="round" ile aynı karar).
+        ..strokeJoin = StrokeJoin.round
+        ..color = color,
+    );
 
     // İç kesikli halka — web `strokeDasharray="2.5 3.5"`, opacity .55, r16.
     if (!compact) {

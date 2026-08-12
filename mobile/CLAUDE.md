@@ -1747,9 +1747,10 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
           sertifika damgası) — 24 diş, uç 21.0 / vadi 18.8 viewBox
           birimi, stroke 2.0. Üç sabit web `RankSeal.tsx` ile ELLE
           senkron: web aynı üçlüyle bir `<polygon>` üretiyor, port
-          `Path`. **Kompakt mühür (k-lig satırları, <24px) BİLEREK DÜZ
-          çember kaldı** — 18px'te diş derinliği <1px'e düşüp alt-piksel
-          gürültüsüne dönüyor.
+          `Path`. **İlk sürümde kompakt mühür (k-lig satırları, <24px)
+          düz çember bırakılmıştı** — gerekçe "18px'te diş derinliği
+          <1px'e düşüp alt-piksel gürültüsüne dönüyor" idi; AYNI GÜN
+          ölçülüp ÇÜRÜTÜLDÜ, bkz. aşağıdaki 5. madde.
        2. **İlerleme çubuğunun sağ etiketi yalnızca SAYI.** İlk sürüm
           "100 puan" yazıyordu; "puan" kelimesi hemen ÜSTTEKİ "Sıradaki
           rütbe: Oyuncu · 100 puan" satırında zaten geçtiğinden alt alta
@@ -1767,16 +1768,55 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
           ile tavana yakın (azami ~28.6) — bir punto artış görünmez, taşma
           riski gerçek; o boy bir tur önce tam bu yüzden 19'dan 27'ye
           çıkarılmıştı. Web `RankSeal.tsx` ile aynı gün aynı değere çekildi.
+       5. **Tırtık HER BOYA yayıldı** (kullanıcı: "leaderboard'daki küçük
+          rozetlerde tırtık olamıyor mu?") — 1. maddedeki "kompakt düz
+          çember kalsın" gerekçesi ÖLÇÜLMEDEN yazılmış ve YANLIŞTI: hesap
+          DPR 1 varsayıyordu, retinada (DPR 3) 0.9 CSS px = 2.7 cihaz
+          pikseli. Web tarafında 18px/DPR3 render edilip büyütülerek
+          doğrulandı, dişler net. Diş sayısı bilerek aynı (24) — tek
+          siluet, tek sabit seti. **Kompakt harf 27'de KALDI ve bu sefer
+          MÜREKKEPLE ölçüldü:** tırtık yayılınca iç sınır daraldı (düz
+          çemberin iç kenarı 19.25 → vadi iç kenarı 17.8) ve harfin bbox
+          köşesi 18.17, yani KUTU taşıyor — ama kutunun köşesi boş; 20×
+          ölçekte piksel taranınca en uzak mürekkep 16.56 (Ç), sınıra
+          1.24 birim var. **Yuvarlak harflerde bbox köşesini sınır sanmak
+          yanlış pozitif üretir.**
+       6. **Kart gölgesi düz düşen gölgeye çevrildi** (kullanıcı: "üst ve
+          sol tarafındaki beyaz gölge iyi durmuyor") — `kRaisedShadows`in
+          sol-üst beyaz parıltısı nömorfik YÜZEYLER için tasarlandı,
+          `bg-black/40` üstünde yüzen bir kartta hale gibi okunuyordu.
+          Yeni `kFloatingCardShadows` (`neo_box.dart`, web `Modal.tsx`'in
+          `0 20px 45px rgba(15,23,42,.5)`'i) hem `RankInfoModal` hem
+          `RewardBanner` kartında — İKİSİ AYNI KART, biri değişirse öteki
+          de. Mührün kendi 88px'lik dairesi `kRaisedShadows` TAŞIMAYA
+          DEVAM ediyor (web'de de `shadow-raised`).
+       7. **Bilgi popup'ında kocaman "KAPAT" butonu kalktı, sağ üste ✕
+          geldi** — salt bilgi veren bir popup'ın altına tam genişlikte
+          aksiyon butonu konmaz; stil `KModal`ın ✕'inden birebir alındı.
+          **Banner'ın "DEVAM"ı KALDI:** o gerçek bir aksiyon (ödülleri
+          görüldü işaretler).
      - **Doğrulama (düzeltmeler sonrası):** `flutter analyze` "No issues
-       found!"; **tam takım 350/350 yeşil** (yeni test eklenmedi, mevcut
-       üç assertion güncellendi: `find.text('Rütben geriledi!')`,
-       `find.text('100')` + `find.text('100 puan')` findsNothing, ve
-       "çubuk gizli" testi artık `find.byType(RankProgressBar)` yokluğunu
-       ölçüyor — eşik metnine bağlı olmadığından etiket bir daha değişirse
-       yanlış yeri işaret etmez). Ekran görüntüsü
+       found!"; **tam takım 351/351 yeşil** (350'den +1). 1-4. maddeler
+       için yeni test eklenmedi, mevcut üç assertion güncellendi
+       (`find.text('Rütben geriledi!')`, `find.text('100')` +
+       `find.text('100 puan')` findsNothing, ve "çubuk gizli" testi artık
+       `find.byType(RankProgressBar)` yokluğunu ölçüyor — eşik metnine
+       bağlı olmadığından etiket bir daha değişirse yanlış yeri işaret
+       etmez). 5-7 için: mühür testi artık painter'ı sahte bir `Canvas`'a
+       çizdirip ilkelleri SAYIYOR (iki boyda da `drawCircle` YOK, iki
+       `drawPath` var; `drawArc` yalnızca tam boyda) — "tırtık mı düz
+       çember mi" sorusu ekran görüntüsüne bakmadan yanıtlanıyor; ayrıca
+       yeni bir test ✕'in varlığını + "KAPAT"ın yokluğunu + kart
+       gölgesini doğruluyor, banner'ın kendi testine de aynı gölge
+       assertion'ı eklendi. **Negatif eş, üçü ayrı ayrı:** `rank_seal.dart`
+       stash'lenince `Expected: <0> Actual: <2>` (çemberler geri geldi),
+       iki modal dosyası stash'lenince hem gölge testi (`Actual: [Instance
+       of 'CssShadow', Instance of 'CssShadow']`) hem ✕ testi (`Found 1
+       widget with text "KAPAT"`) GERÇEKTEN düştü. Ekran görüntüsü
        `build/screenshots/rank_info_modal.png` yeniden üretilip gözle
-       kontrol edildi (tırtıklı mavi mühür, `50` / `83` / `100`
-       etiketleri, solda yeşil `(+5)✓`, sağda gri `(+10)`).
+       kontrol edildi (tırtıklı mavi mühür, sağ üstte ✕, beyaz halesiz
+       kart, `50` / `83` / `100` etiketleri, solda yeşil `(+5)✓`, sağda
+       gri `(+10)`).
 
 ## Sonraya Bırakılan İşler (mobil)
 

@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/league_rewards_api.dart';
 import 'package:kelimeki/src/data/stats_api.dart';
+import 'package:kelimeki/src/ui/game/neo_box.dart';
 import 'package:kelimeki/src/ui/rank/league_rank.dart';
 import 'package:kelimeki/src/ui/rank/league_rewards_host.dart';
 import 'package:kelimeki/src/ui/rank/rank_info_modal.dart';
@@ -284,6 +285,9 @@ void main() {
       expect(find.text('100 k-lig puanına ulaştın'), findsOneWidget);
       expect(find.text('+10 ödül puanı eklendi'), findsOneWidget);
       expect(gw.markSeenCalls, 0, reason: 'işaretleme yalnızca DEVAM\'da');
+      // Kart gölgesi düz düşen gölge — nömorfik beyaz parıltı YOK (bilgi
+      // popup'ıyla AYNI kart, ikisi birlikte değişir).
+      _expectFloatingCardShadow(tester);
 
       await tester.tap(find.text('DEVAM'));
       await tester.pumpAndSettle();
@@ -409,6 +413,16 @@ void main() {
       expect(find.textContaining('eşik ödülü dahil'), findsNothing);
       expect(find.text('Çaylak'), findsOneWidget);
     });
+
+    testWidgets('kapatma sağ üstteki ✕ ile; "KAPAT" butonu YOK, kartta beyaz '
+        'hale yok', (tester) async {
+      await pumpInfo(tester, total: 83, bonus: 5);
+      // Salt bilgi veren bir popup'ın altına tam genişlikte aksiyon butonu
+      // konmaz — projedeki tüm modallerin (KModal) deseni sağ üstte ✕.
+      expect(find.text('KAPAT'), findsNothing);
+      expect(find.byIcon(Icons.close), findsOneWidget);
+      _expectFloatingCardShadow(tester);
+    });
   });
 
   // Görsel doğrulama — bu üç ekran görüntüsü `build/screenshots/` altına
@@ -504,7 +518,7 @@ void main() {
       expect(sealFontSize('+100', compact: false), 11);
     });
 
-    testWidgets('kompakt (<24px) ve tam boy çizim ayrımı', (tester) async {
+    testWidgets('tırtık her boyda; iç halka yalnızca tam boyda', (tester) async {
       await setPhoneViewSize(tester, const Size(200, 200));
       await tester.pumpWidget(const MaterialApp(
         home: Scaffold(
@@ -540,6 +554,64 @@ void main() {
       // Boyutlar RankSeal'ın verdiği size'a eşit (viewBox ölçeklemesi).
       expect(
           seals.map((p) => p.size), [const Size(18, 18), const Size(34, 34)]);
+
+      // Dış kenar HER BOYDA tırtıklı (12 Ağustos 2026, kullanıcı isteği):
+      // iki mühür de dış hattı `drawPath` ile çiziyor, HİÇBİRİ `drawCircle`
+      // kullanmıyor. Tek fark iç kesikli halka — o yalnızca tam boyda var
+      // (`drawArc`), kompaktta hiç çizilmiyor.
+      final compact = _recordSeal(seals.first, const Size(18, 18));
+      final full = _recordSeal(seals.last, const Size(34, 34));
+      expect(compact.circles, 0);
+      expect(full.circles, 0);
+      expect(compact.paths, 2); // dolgu + kenar
+      expect(full.paths, 2);
+      expect(compact.arcs, 0);
+      expect(full.arcs, greaterThan(0));
     });
   });
+}
+
+/// Kartın (radius 16) gölgesi web `Modal.tsx`'in düz düşen gölgesi olmalı —
+/// TEK katman, beyaz parıltı içermez. Mührün kendi 88px'lik nömorfik dairesi
+/// (radius 44) `kRaisedShadows` taşımaya DEVAM eder, web'de de öyle.
+void _expectFloatingCardShadow(WidgetTester tester) {
+  final card = tester
+      .widgetList<Container>(find.byType(Container))
+      .map((c) => c.decoration)
+      .whereType<ShapeDecorationWithCssShadows>()
+      .firstWhere((d) => d.radius == 16);
+  expect(card.shadows, hasLength(1));
+  expect(card.shadows.single.color, const Color(0x800F172A));
+  expect(card.shadows.single.offset, const Offset(0, 20));
+  expect(card.shadows.single.blur, 45);
+}
+
+/// Painter'ı sahte bir [Canvas]'a çizdirip hangi ilkellerin kullanıldığını
+/// sayar — "tırtık mı düz çember mi" sorusunun ekran görüntüsüne bakmadan,
+/// doğrudan çizim çağrılarından yanıtlanabilmesi için.
+({int circles, int paths, int arcs}) _recordSeal(CustomPaint p, Size size) {
+  final canvas = _RecordingCanvas();
+  p.painter!.paint(canvas, size);
+  return (circles: canvas.circles, paths: canvas.paths, arcs: canvas.arcs);
+}
+
+class _RecordingCanvas implements Canvas {
+  int circles = 0;
+  int paths = 0;
+  int arcs = 0;
+
+  @override
+  void drawCircle(Offset c, double radius, Paint paint) => circles++;
+
+  @override
+  void drawPath(Path path, Paint paint) => paths++;
+
+  @override
+  void drawArc(Rect rect, double startAngle, double sweepAngle, bool useCenter,
+          Paint paint) =>
+      arcs++;
+
+  // Geri kalan her çağrı (metin çizimi vb.) yok sayılır.
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
 }
