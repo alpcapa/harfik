@@ -140,6 +140,14 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       sonuna kadar bitir; O kartta ikon ÇIKMALI ve döküm dolu gelmeli.
       Çıkmıyorsa `buildGameRecord`/`saveGame` zinciri `moves`u yazmıyor
       demektir (yani "YZ'de hiç gösterme" gibi yanlış bir kural kalmış).
+- [ ] **Dokunmatikte ikona tek dokunuşta basılabilmeli (aynı gün, mobil
+      cihaz testinden geldi).** iPad/telefonda parmakla dene: "tam
+      basamazsan kart açılıp kapanıyor" olmamalı. Ölçüt yanındaki **sohbet
+      rozetiyle aynı kolaylık** — dokunma kutuları ölçülerek eşitlendi
+      (280px² vs 255px²). İkonun GÖRSEL konumu ve sohbet rozetiyle
+      arasındaki 6px boşluk değişMEmeli (`-mx-1` negatif margin tam bunun
+      için); kayma varsa dolgu/margin dengesi bozulmuş demektir. Mobil
+      uygulamada aynı kartı aç — iki platform aynı hissi vermeli.
 - [ ] **Karşı tarafta.** Sohbet kapalıyken gelen mesaj için popup (gönderenin
       avatarı + adı + metin) çıkmalı ve **yalnızca elle** kapanmalı; butonda
       kırmızı nokta belirmeli. Sohbeti açınca nokta sıfırlanmalı.

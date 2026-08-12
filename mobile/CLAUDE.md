@@ -2254,6 +2254,49 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        bitirmek gerekiyor) — `mobile/TESTING.md` bölüm 5 ve kök
        `TESTING.md` bölüm 3'e madde eklendi.
 
+   - ✅ **Parça 68 — hamle rozetinin dokunma alanı sohbet rozetinin YARISIYMIŞ
+     (12 Ağustos 2026, `game_history_modal.dart` + web `GameHistoryModal.tsx`):**
+     Parça 67'nin doğrulama sınırı cihazda koşuldu ve **geçti** (yeni bitirilen
+     bir YZ oyununda ikon çıktı, döküm doluydu) — ama aynı turda kullanıcı yeni
+     bir sorun bildirdi: *"hamleler ikonuna elle dokunmakta zorlandım, en az 4-5
+     kere dokunmam gerekti. Tam basamazsan oyun detayları açılıp kapanıyor
+     sürekli. Mesaj ikonu iyi bence, onunla aynı şekilde olabilir."*
+     - **Parça 65 bu şikâyeti ÖNCEDEN yazmıştı** ("cihazda rahatsız ederse İKİ
+       rozet BİRLİKTE büyütülmeli") — yani karar bilinçliydi, yalnızca ölçüsü
+       yanlıştı. O not "aynı boyda" istendiği için hedefleri EŞİT sanıyordu.
+     - **Ölçüm bunu çürüttü, üstelik İKİ platformda birden:** gerçek widget +
+       gerçek fontlarla sohbet **18.8×13.0 = 244px²**, hamle **11×11 = 121px²**
+       — tam yarısı. Web'de aynı yapı, aynı sonuç (derlenmiş CSS + Chromium):
+       sohbet 18.9×13.5 = 255px², hamle 12×12 = 144px². **Fark tesadüf değil
+       yapısal:** sohbet kontrolünün dokunma kutusuna sayı ETİKETİ de dahil
+       (`Row(icon, gap, Text('N'))`), hamle ikonunda etiket yok. İki istemcinin
+       6px'lik boşluğu bile birebir aynı çıktı — kusur ortak, düzeltme de ortak.
+     - **Düzeltme ikonu YERİNDEN OYNATMIYOR:** dolgu eklenip önündeki boşluk
+       aynı kadar kısılıyor (mobil `SizedBox` 6→2 + `horizontal: 4`; web
+       `px-1 py-px` + `-mx-1` negatif margin, yani layout ayak izi hiç
+       değişmiyor). Sonuç: mobil 121→**247px²**, web 144→**280px²**, ikonun
+       görsel konumu ve 6px boşluk BİREBİR aynı (ölçüldü: mobilde kutu sol
+       kenarı 225.6→221.6, +4px dolgu ile ikon yine 225.6'da).
+     - **Dikey neden 13'te kaldı:** satırın kendi yüksekliği zaten 13 (kalp ve
+       sohbet ikisi de 13); daha fazlası satırı, dolayısıyla HER kartı büyütür.
+       44px'lik iOS asgarisi yine UYGULANMADI — Parça 65'in gerekçesi
+       (~13px'lik satırda 44px'lik alan kardeş kontrolleri ve kartın kendi
+       dokunuşunu yutar) hâlâ geçerli, ve kullanıcı çıtayı zaten "mesaj ikonu
+       kadar" diye koydu.
+     - **Test bir SABİTİ değil ORANI kilitliyor:** yeni test iki kutuyu ölçüp
+       `hamle >= sohbet` diyor (+ ikonun görsel konumunun kaymadığını). Sohbet
+       rozeti ileride değişirse hamle rozeti onunla taşınmak ZORUNDA kalır —
+       Parça 65'in "iki rozet birlikte" notunun çalıştırılabilir hâli; yorum
+       satırı bunu sağlamıyordu, nitekim sağlayamadı.
+     - **Negatif eş:** `game_history_modal.dart` `git stash`lenince test
+       GERÇEKTEN kullanıcının semptomunu üretti (`Expected: >= 18.758, Actual:
+       11.0`), geri konunca yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 361/361
+       yeşil** (360'tan +1). Web `npm run lint` + `npm run build` temiz.
+       `kelimeki_core`'a hiç dokunulmadı — golden vector turu gerekmedi.
+     - **Doğrulama sınırı:** "artık rahat dokunuluyor" ancak gerçek parmakla
+       ölçülür — `mobile/TESTING.md` bölüm 5'e madde eklendi.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

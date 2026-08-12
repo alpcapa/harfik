@@ -686,7 +686,18 @@ export function GameHistoryModal({
                             setSelectedMovesGameId(entry.id);
                           }}
                           aria-label="Hamle geçmişini göster"
-                          className="flex items-center text-muted shrink-0"
+                          /* px-1/py-px + eşit negatif margin: dokunma alanı
+                             büyür ama ikonun GÖRSEL konumu ve yanındaki
+                             sohbet rozetiyle arasındaki 6px boşluk aynı
+                             kalır. Gerekçe/ölçüm mobil eşinde
+                             (`game_history_modal.dart`): sohbet kontrolünün
+                             kutusuna sayı ETİKETİ de dahil olduğundan
+                             18.9x13.5 = 255px², etiketsiz hamle ikonu ise
+                             12x12 = 144px² — tam yarısı; cihazda "tam
+                             basamazsan kart açılıp kapanıyor" olarak
+                             bildirildi. İkisi tek bir çift: biri
+                             büyütülürse öteki de kontrol edilmeli. */
+                          className="flex items-center text-muted shrink-0 px-1 py-px -mx-1"
                         >
                           <MovesIcon />
                         </button>

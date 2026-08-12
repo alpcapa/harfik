@@ -438,6 +438,14 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       bazlı DEĞİL:** uygulamada yeni bir YZ oyunu sonuna kadar bitir; O
       kartta ikon ÇIKMALI ve döküm dolu gelmeli. Web'de de aynı kart aynı
       şekilde davranmalı (tek kaynak: `game_like_stats.has_moves`).
+- [ ] **Hamle ikonuna dokunmak KOLAY olmalı (12 Ağustos 2026, Parça 68).**
+      İkona parmakla bir kerede dokunulabilmeli — "tam basamazsan kart
+      açılıp kapanıyor" olmamalı. Ölçüt: **yanındaki sohbet rozetiyle aynı
+      kolaylıkta** (dokunma kutuları artık eşit: 19×13 vs 18.8×13; ölçülen
+      ve testle korunan bir eşitlik). İkonun GÖRSEL konumu ve sohbet
+      rozetiyle arasındaki 6px boşluk değişMEmeli — kayma varsa dolgunun
+      karşılığında kısılan boşluk yanlış hesaplanmış demektir. Web'de aynı
+      karta bak: iki platform aynı hissi vermeli.
 - [ ] **Sohbet arşivi.** Web'de oynanmış, mesajlaşılmış bir Canlı oyunun
       kartında konuşma balonu rozeti + mesaj sayısı olmalı; dokununca
       dondurulmuş sohbet açılmalı. Sessize aldığın biri varsa isminin
