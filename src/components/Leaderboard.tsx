@@ -34,7 +34,12 @@ function formatOhp(v: number | null | undefined): string {
   return v == null ? '—' : Number(v).toFixed(2);
 }
 
-const OHP_HINT = 'OHP: Ortalama Hamle Puanı — bir hamlede alınan ortalama puan.';
+// Metin, sunucudaki hesabı BİREBİR tarif ediyor: `leaderboard.avg_move_score`
+// = sum(move_points_sum) / sum(move_count) — yani oyun başına ortalamaların
+// ortalaması DEĞİL, tüm hamlelerin tek bir havuzdaki ortalaması (ağırlıklı).
+// İfade değişirse bu cümle de değişmeli.
+const OHP_HINT =
+  'Ortalama Hamle Puanı tüm oyunlarda yapılan tüm hamlelerin ortalamasıdır.';
 
 function rowToPlayerSummary(r: LeaderboardRow): PlayerSummary {
   return {
@@ -54,12 +59,32 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [myRank, setMyRank] = useState<MyLeaderboardRank | null>(null);
   const [selected, setSelected] = useState<PlayerSummary | null>(null);
-  // "OHP" başlığına tıklayınca açılan açıklama satırı. Masaüstünde başlık
-  // ayrıca `title` ile hover balonu da gösterir; dokunmatikte `title`
-  // çalışmadığından asıl yol bu toggle.
-  const [showOhpHint, setShowOhpHint] = useState(false);
+  // "OHP" açıklama balonu. İki ayrı kaynak, çünkü ikisinin kapanma kuralı
+  // farklı: hover (masaüstü) fare çekilince kendiliğinden kapanır; tıklama
+  // (dokunmatik — orada hover DİYE BİR ŞEY YOK) bir daha dokunulana ya da
+  // dışarı dokunulana kadar açık kalır. Tek bir bayrakla ikisi birden doğru
+  // olamıyor: hover'ı da "dışarı tıklayınca kapat" kuralına bağlasaydık fare
+  // balonun üstünden geçerken kapanırdı.
+  const [ohpHintPinned, setOhpHintPinned] = useState(false);
+  const [ohpHintHover, setOhpHintHover] = useState(false);
+  const ohpHintOpen = ohpHintPinned || ohpHintHover;
+  const ohpRef = useRef<HTMLSpanElement | null>(null);
   const scrollRef = useRef<HTMLOListElement | null>(null);
   const sentinelRef = useRef<HTMLLIElement | null>(null);
+
+  // Dışarı dokunuş balonu kapatır. Sarmalayıcının İÇİ bilerek muaf: aksi
+  // halde bu dinleyici, butonun kendi onClick'i çalışmadan hemen önce
+  // kapatır ve toggle asla kapanmayan bir şeye dönüşürdü (pointerdown,
+  // click'ten önce gelir).
+  useEffect(() => {
+    if (!ohpHintPinned) return;
+    const onDown = (e: PointerEvent) => {
+      if (ohpRef.current?.contains(e.target as Node)) return;
+      setOhpHintPinned(false);
+    };
+    document.addEventListener('pointerdown', onDown);
+    return () => document.removeEventListener('pointerdown', onDown);
+  }, [ohpHintPinned]);
 
   useEffect(() => {
     fetchLeaderboard(INITIAL_PAGE_SIZE, 0).then((r) => {
@@ -131,23 +156,33 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
           <div className="flex items-center text-[9px] uppercase tracking-[1px] text-muted font-mono px-2 pb-1 gap-1">
             <span className="w-6">Sıra</span>
             <span className="flex-1">Oyuncu</span>
-            <button
-              type="button"
-              onClick={() => setShowOhpHint((v) => !v)}
-              title={OHP_HINT}
-              aria-label={OHP_HINT}
-              aria-expanded={showOhpHint}
-              className="w-12 text-right uppercase tracking-[1px] underline decoration-dotted underline-offset-2 active:opacity-70"
-            >
-              OHP
-            </button>
+            <span ref={ohpRef} className="relative w-12 shrink-0">
+              <button
+                type="button"
+                onClick={() => setOhpHintPinned((v) => !v)}
+                onMouseEnter={() => setOhpHintHover(true)}
+                onMouseLeave={() => setOhpHintHover(false)}
+                aria-label={OHP_HINT}
+                aria-expanded={ohpHintOpen}
+                className="w-full text-right uppercase tracking-[1px] underline decoration-dotted underline-offset-2 active:opacity-70"
+              >
+                OHP
+              </button>
+              {ohpHintOpen && (
+                /* Balon başlığın TAM ÜSTÜNDE. `normal-case tracking-normal`
+                   şart: başlık satırı `uppercase tracking-[1px]` taşıyor ve
+                   balon onu miras alırsa cümle büyük harfe döner. */
+                <span
+                  role="tooltip"
+                  className="absolute bottom-full right-0 mb-2 w-56 rounded-md border border-border bg-panel px-2 py-1.5 text-left text-[10px] normal-case tracking-normal leading-relaxed text-muted shadow-raised z-10"
+                >
+                  {OHP_HINT}
+                  <span className="absolute right-4 -bottom-1 h-2 w-2 rotate-45 border-b border-r border-border bg-panel" />
+                </span>
+              )}
+            </span>
             <span className="w-12 text-right">Puan</span>
           </div>
-          {showOhpHint && (
-            <p className="text-[10px] text-muted font-mono leading-relaxed bg-panel border border-border rounded-md px-2 py-1.5 -mt-1">
-              {OHP_HINT}
-            </p>
-          )}
           {rows.length === 0 ? (
             <p className="text-muted text-xs font-mono text-center py-4">
               Henüz skor yok. İlk sen ol!
@@ -189,10 +224,10 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                             büyük harf) — 12 Ağustos 2026 okunurluk düzeltmesi. */}
                         <RankSeal tier={tierFor(r.total_score)} size={18} className="shrink-0" />
                       </span>
-                      {/* OHP düz gri ve KALIN DEĞİL (kullanıcı isteği) —
-                          asıl sıralama ölçütü olan "Puan"la görsel olarak
-                          yarışmasın diye. */}
-                      <span className="w-12 text-right text-muted shrink-0">
+                      {/* OHP düz gri, KALIN DEĞİL ve satırın kendi 14px'inden
+                          küçük (kullanıcı isteği) — asıl sıralama ölçütü olan
+                          "Puan"la görsel olarak yarışmasın diye. */}
+                      <span className="w-12 text-right text-[11px] text-muted shrink-0">
                         {formatOhp(r.avg_move_score)}
                       </span>
                       <span className="w-12 text-right font-bold text-accent shrink-0">
@@ -236,7 +271,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
               >
                 <span className="w-6 font-bold text-muted shrink-0">{myRank.rank}</span>
                 <span className="flex-1 text-text">Sen</span>
-                <span className="w-12 text-right text-muted shrink-0">
+                <span className="w-12 text-right text-[11px] text-muted shrink-0">
                   {formatOhp(myRank.avg_move_score)}
                 </span>
                 <span className="w-12 text-right font-bold text-accent shrink-0">

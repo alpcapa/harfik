@@ -352,10 +352,17 @@ gerekiyor).
 
 - [ ] **k-lig'de OHP kolonu (12 Ağustos 2026).** Sıralamada "Puan"ın
       SOLUNDA bir OHP kolonu olmalı: rakamlar DÜZ GRİ ve kalın değil (Puan
-      mavi/kalın kalır), biçim iki basamak ("12.78"), veri yoksa "—".
-      Başlıktaki "OHP" tıklanınca açıklama satırı açılıp kapanmalı;
-      masaüstünde üzerine gelince (hover) aynı metin balon olarak
-      çıkmalı. **En kritik kontrol:** bir oyuncunun k-lig satırındaki OHP,
+      mavi/kalın kalır), biçim iki basamak ("12.78"), veri yoksa "—";
+      rakamlar satırın kendi puntosundan (14px) küçük görünmeli.
+      **Açıklama balonu:** başlıktaki "OHP"ye tıklayınca balon başlığın
+      TAM ÜSTÜNDE, aşağı bakan bir kuyrukla açılmalı ("Ortalama Hamle
+      Puanı tüm oyunlarda yapılan tüm hamlelerin ortalamasıdır."); tekrar
+      tıklayınca VE ekranda başka bir yere dokununca kapanmalı. Metin
+      BÜYÜK HARFE dönmemeli (başlık satırı `uppercase` taşıyor) ve
+      modalın üst kenarında kırpılmamalı. Masaüstünde fareyle üzerine
+      gelince açılıp çekilince kapanmalı — bu sırada tarayıcının kendi
+      sarı `title` balonu ÇIKMAMALI (ikinci bir balon = regresyon).
+      **En kritik kontrol:** bir oyuncunun k-lig satırındaki OHP,
       o oyuncunun kartındaki (Skor Kartı → "Genel" sekmesi) "Ortalama
       Hamle Puanı" ile BİREBİR aynı olmalı — ikisi aynı SQL ifadesinden
       geliyor, ayrışırlarsa biri bozulmuş demektir. Listede kendi satırın
