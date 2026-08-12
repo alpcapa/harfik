@@ -36,6 +36,12 @@ Commit'ten önce, sırayla:
    `git diff --name-status origin/main..HEAD -- . ':!mobile'`
    Ayrıntılı vaka kaydı: kök `CLAUDE.md` → "Port dalında mahsur kalan web
    düzeltmeleri".
+   **12 Ağustos 2026 — port dalı `main`'e MERGE EDİLDİ ve silindi**, yani bu
+   maddedeki "port dalında mahsur kalma" riski artık YOK: mobil de web de
+   doğrudan `main` tabanlı dallardan gidiyor. Madde yine de duruyor, çünkü
+   dersi (doküman senkronu ≠ teslim) dala özgü değil. Aynı merge'in yan
+   etkisi olarak `mobile-build.yml`'in tetikleyicisi de ölü bir dala bakar
+   hâle gelmişti — aynı gün `main` + PR'a çevrildi (bkz. o dosyanın başlığı).
 2. **`mobile/CLAUDE.md`**: parça günlüğüne giriş (ne yapıldı, hangi web
    dosyasının portu, bilinçli eksikler, bulunan hatalar/dersler, doğrulama
    ve doğrulama SINIRI), "Klasör Yapısı" ağacına yeni dosyalar, "Sıradaki
@@ -777,9 +783,12 @@ yok), tarayıcı emülatörü (Appetize) ücretsiz katmanda 3 dakikayla sınırl
 Aynı Dart kodu aynı çizim motoruyla (CanvasKit) koştuğundan yerleşim/font/
 gölge/oyun akışı doğrulaması burada ücretsiz ve süresiz yapılabiliyor.
 
-Adres `https://alpcapa.github.io/kelimeki/`, her mobil push'ta
-`.github/workflows/mobile-build.yml`'in `web` işi GitHub Pages'e deploy
-ediyor. NE KANITLAR / NE KANITLAMAZ ayrımı `mobile/TESTING.md`'de ("Web
+Adres `https://alpcapa.github.io/kelimeki/`; `main`e giren her mobil
+değişiklikte `.github/workflows/mobile-build.yml`'in `web` işi GitHub
+Pages'e deploy ediyor. **PR'larda deploy YOK** (site paylaşılan bir test
+ortamı, merge edilmemiş kodla değiştirilemez) — PR'da bunun yerine `test`
+işi web'i deploy etmeden DERLİYOR, yani web'e özgü kırılmalar yine
+yakalanıyor. NE KANITLAR / NE KANITLAMAZ ayrımı `mobile/TESTING.md`'de ("Web
 derlemesi") — kısaca: platform kanalı gerektiren her şey (paylaş sayfası,
 dosya sistemi, oturum kalıcılığı, ikon/splash, gerçek dokunmatik jestler,
 performans) hâlâ gerçek cihaz ister.
