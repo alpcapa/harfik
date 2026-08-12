@@ -150,6 +150,31 @@ void main() {
 
   setUpAll(loadAppFonts);
 
+  /// sqflite'ın dahili ~10 saniyelik yazma-kilidi uyarı timer'ını süpürür.
+  ///
+  /// GERÇEK depoyu (`memGamesRepo`) kullanan testlerde `_syncCloud` →
+  /// `GamesRepo.flushPending` → `PendingQueueStore.readAll` gerçek bir
+  /// sqflite yazması (TTL süpürmesi) başlatıyor; sqflite o yazma için bu
+  /// timer'ı kurup tamamlanınca iptal ediyor. Sahte zamanda yazma
+  /// ilerlemediğinden test gövdesi biter bitmez çalışan `!timersPending`
+  /// kontrolü timer'ı "bekliyor" buluyor ve test "A Timer is still pending
+  /// even after the widget tree was disposed" ile DÜŞÜYOR.
+  ///
+  /// CI'da (paylaşımlı runner, yük altında) gerçekten yaşandı; yerelde iki
+  /// temiz tam koşu bunu HİÇ göstermedi — bu sınıf bir flake'i yalnızca yük
+  /// yakalıyor (Parça 13'ün aynı dersi: tek dosya çalıştırmak yanlış güven
+  /// verir).
+  ///
+  /// **`tearDown`'da depoyu kapatmak ÇÖZMEZ** — invariant kontrolü test
+  /// gövdesi biter bitmez, tearDown'dan ÖNCE çalışıyor; gerçek zamanı
+  /// gövdenin İÇİNDE tanımak gerekiyor. Desen `online_game_chat_test.dart`
+  /// ile aynı (orada 50ms tam paket yükünde yetmeyip 200ms'ye çıkarılmıştı).
+  Future<void> drainRealIo(WidgetTester tester) async {
+    await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)));
+    await tester.pump();
+  }
+
   Future<void> pumpSetup(WidgetTester tester, MemGateway gw,
       {Future<GamesRepo>? games, FeedbackRepo? feedback}) async {
     await setPhoneViewSize(tester, const Size(420, 950));
@@ -258,6 +283,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('SENİN HAMLEN BEKLENİYOR'), findsOneWidget);
     expect(find.text('SON OYNADIKLARIM'), findsNothing);
+    await drainRealIo(tester);
   });
 
   testWidgets('satırdan devam: oyun açılır, autosave AYNI satırı günceller',
@@ -311,6 +337,7 @@ void main() {
     expect(gamesGw.inserted.single['player_score'], 0);
     expect(gamesGw.notified, hasLength(1));
     expect(gamesGw.finishes.single['ended_by_surrender'], isTrue);
+    await drainRealIo(tester);
   });
 
   testWidgets('oyun bitince kayıt ANINDA tutulur (ekrandan çıkmadan)',
@@ -344,6 +371,7 @@ void main() {
     await tester.tap(find.byType(LogoMark));
     await tester.pumpAndSettle();
     expect(gamesGw.inserted, hasLength(1));
+    await drainRealIo(tester);
   });
 
   // Parça 60: "TEKRAR OYNA" aynı ekranda ikinci bir oyun başlatabiliyor —
@@ -391,6 +419,7 @@ void main() {
     expect(gamesGw.inserted, hasLength(2),
         reason: 'İkinci oyun kaydedilmedi — `recorded` bayrağı yeni oyunda '
             'sıfırlanmıyor demektir (k-lig puanı sessizce kaybolur).');
+    await drainRealIo(tester);
   });
 
   testWidgets('yeni oyun turnCount<2 iken terk edilirse listede iz bırakmaz',

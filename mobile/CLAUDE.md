@@ -2027,6 +2027,43 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        başlığın üstünde, kuyruk OHP'yi gösteriyor, metin büyük harfe
        dönmemiş, kırpılma yok.
 
+   - ✅ **Parça 64 — CI'da tekrarlayan sqflite timer flake'i:
+     `setup_cloud_test.dart` yük altında düşüyordu (12 Ağustos 2026,
+     `setup_cloud_test.dart`):** Port dalı `main`'e merge edilirken CI'ın
+     `Analiz + testler` işi düştü; log'da tek hata `A Timer is still
+     pending even after the widget tree was disposed.` (`!timersPending`,
+     `binding.dart:2542`) ve yığın izi doğrudan sqflite'ın
+     `txnWriteSynchronized`ına iniyordu: `_SetupScreenState._syncCloud` →
+     `GamesRepo.flushPending` → `PendingQueueStore.readAll` → gerçek bir
+     sqflite yazması (TTL süpürmesi).
+     - **Sınıf zaten belgeliydi ama BU dosyada uygulanmamıştı:** Parça 11
+       aynı hatayı `online_game_chat_test.dart`'ta yaşayıp çözmüştü
+       (`tester.runAsync` + gerçek zaman payı; Parça 13'te 50ms yük
+       altında yetmeyip 200ms'ye çıkarılmıştı). `setup_cloud_test.dart`'ın
+       GERÇEK depoyu (`memGamesRepo`) kullanan testleri aynı yolu
+       tetikliyordu ama hiç pay tanımıyordu — sahte zamanda yazma
+       ilerlemediğinden sqflite'ın ~10 saniyelik kilit-uyarı `Timer`'ı
+       iptal edilmeden kalıyordu.
+     - **`tearDown`'da depoyu kapatmak ÇÖZMEZ** (denemeden önce SDK
+       kaynağından doğrulandı): `!timersPending` kontrolü test GÖVDESİ
+       biter bitmez, kullanıcı `tearDown`'undan ÖNCE çalışıyor. Gerçek
+       zamanı gövdenin İÇİNDE tanımak tek yol.
+     - **Düzeltme:** dosyaya ortak bir `drainRealIo(tester)` yardımcısı
+       (200ms `runAsync` + `pump`) eklendi ve `memGamesRepo` kullanan DÖRT
+       testin sonuna çağrıldı.
+     - **Dürüst doğrulama sınırı — negatif eş KURULAMADI:** flake yerelde
+       ÜÇ temiz tam koşuda (merge öncesi 356/356 ×2, düzeltme sonrası
+       356/356) hiç tekrarlamadı; yalnızca CI'ın paylaşımlı runner'ında,
+       dört ayrı koşuda (#91/#92/#93/#96 — üçü bu dosyada, biri
+       kardeşinde) görüldü. Yani "geri alınca düşüyor" gösterilemez;
+       gerçek kanıt CI'ın yeşile dönmesi. **Parça 13'ün dersinin bir üst
+       basamağı:** tek dosya koşusu yanlış güven verir → tam paket koşusu
+       da yanlış güven verebilir, bazı flake'leri YALNIZCA yüklü bir
+       runner yakalıyor.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       356/356 yeşil** (yeni test yok — dört mevcut testin gövdesine
+       gerçek-zaman payı eklendi). `kelimeki_core`'a hiç dokunulmadı.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
