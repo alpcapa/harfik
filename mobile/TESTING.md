@@ -914,6 +914,24 @@ listesi kök `TESTING.md` bölüm 10.
       çubuğunda birbirinden ayırt edilebildiği; (c) **Tanrı EN ÜST** —
       o kademede ilerleme çubuğu HİÇ çizilmemeli, Destan'da ise Efsane
       (2500) hedefiyle çizilmeli.
+- [ ] **"Nasıl Oynanır?" ekranında rütbe bölümü (Parça 66).** Detaylı
+      Kurallar'da, "Skor Kartı ve Puanlama"nın hemen altında **"Rütbeler ve
+      Ödüller"** başlıklı bir bölüm olmalı: dokuz kademe alt alta, her
+      satırda kademe renginde harf + ad + eşik + (Çaylak hariç) yeşil
+      "(ödül +N)". Tablo `league_rank.dart`'tan ÜRETİLİYOR, elle
+      yazılmıyor — yukarıdaki tabloyla BİREBİR aynı olmalı; ayrışırsa
+      biri elle yazılmış demektir. Bölümde ödülün hayatta bir kez
+      verildiği, rütbenin düşebileceği ve Tanrı'nın en üst kademe olduğu
+      yazmalı; "Skor Kartı ve Puanlama"nın sonunda da -2 cezasının iki
+      kaynağı (Canlı 48 saat, yerel 7 gün) geçmeli. **Web'de birebir aynı
+      bölüm var** (kök `TESTING.md` bölüm 10) — iki ekran ayrışmamalı.
+- [ ] **Bölüm başlıkları BÜYÜK HARF (aynı turda düzeltildi).** Detaylı
+      Kurallar'daki ON bölüm başlığı da ("PUAN TABLOSU", "BÖLGE VERGİSİ",
+      "RÜTBELER VE ÖDÜLLER"…) web gibi büyük harfli olmalı — port bunu
+      Parça 10'dan beri küçük harf çiziyordu. Türkçe kurala dikkat:
+      "NASIL OYNANIR?" (noktalı İ DEĞİL) ve "BÖLGE VERGİSİ" (sondaki İ
+      noktalı) — biri ters çıkarsa `trUpper` yerine native `toUpperCase`
+      kullanılmış demektir.
 - [ ] **Kutlama banner'ı bir kez çıkar.** Görülmemiş bir ödülün varken
       (test için bir satırın `seen_at`'i SQL'le null'a çekilebilir)
       uygulamayı aç: mühür damgalı, konfetili banner ekranın ORTASINDA,

@@ -462,6 +462,18 @@ gerekiyor).
       Usta 12 Ağustos 2026'da 200'den 250'ye çekildi — eski 200 eşiği
       HİÇBİR yerde görünmemeli. Uzaylı'nın harfi **Z** (Usta'nın U'suyla
       karışmasın); üç yeni renk çivit/camgöbeği/parlak altın.
+- [ ] **"Nasıl oynanır?" ekranında rütbe bölümü (12 Ağustos 2026).**
+      Detaylı Kurallar'ın sonunda, "Skor Kartı ve Puanlama"nın hemen
+      altında **"Rütbeler ve Ödüller"** başlıklı bir bölüm olmalı: dokuz
+      kademe alt alta, her satırda kademe renginde harf + ad + eşik +
+      (Çaylak hariç) yeşil "(ödül +N)". Tablo `leagueRank.ts`'ten
+      ÜRETİLİYOR, elle yazılmıyor — yani yukarıdaki maddede doğruladığın
+      eşik/ödüllerle BİREBİR aynı olmalı; ayrışırsa biri elle yazılmış
+      demektir. Aynı bölümde ödülün hayatta bir kez verildiği, rütbenin
+      düşebileceği ve Tanrı'nın en üst kademe olduğu yazmalı; "Skor Kartı
+      ve Puanlama"nın sonunda da -2 cezasının üç kaynağı (Canlı 48 saat,
+      yerel 7 gün) geçmeli. **Mobil portta da birebir aynı bölüm var**
+      (`mobile/TESTING.md` bölüm 13) — iki ekran ayrışmamalı.
 - [ ] **Ödül bir sonraki eşiği tetikleyebilir.** Ödül puanı toplamın
       İÇİNE sayıldığından, eşiğe çok yaklaşmış biri ödülü alınca aynı
       anda bir üst eşiği de geçebilir; iki banner değil TEK birleşik

@@ -12,7 +12,7 @@
 - **Tam sözlük** — TDK Güncel Türkçe Sözlük (12. baskı) kaynaklı **~63 bin oynanabilir kelime**, anlamlarıyla birlikte.
 - **Türkçe alfabe** — Ç, Ğ, İ, Ö, Ş, Ü dahil tam harf dağılımı ve puanlar. Joker (`?`) desteklenir. Torba, oyuncu sayısından bağımsız olarak sabit 100 taş.
 - **Bingo bonusu** — 7 taşın tamamını tek hamlede kullanınca +25 puan.
-- **k-lig ödül & rütbe sistemi** — Puana bağlı 6 kademeli rütbe mührü (Çaylak 0 → Meraklı 50 → Oyuncu 100 → Usta 200 → Şampiyon 500 → Destan 1000 — damga güncel puandan türetilir, puan gerilerse kademe de düşer) ve aynı eşiklere bağlı tek seferlik ödüller (50 puana ilk ulaşmada +5, 100 → +10, 200 → +25, 500 → +50, 1000 → +100; verilen ödül puan sonradan gerilese de geri alınmaz). Ödül/rütbe/100'lük puan eşikleri, damga+konfeti animasyonlu bir kutlama banner'ıyla bir kez bildirilir.
+- **k-lig ödül & rütbe sistemi** — Puana bağlı 9 kademeli rütbe mührü (Çaylak 0 → Meraklı 50 → Oyuncu 100 → Usta 250 → Şampiyon 500 → Destan 1000 → Efsane 2500 → Uzaylı 5000 → Tanrı 10000 — damga güncel puandan türetilir, puan gerilerse kademe de düşer; Tanrı en üst kademedir) ve aynı eşiklere bağlı tek seferlik ödüller (**ödül = eşik/10**: 50 → +5, 100 → +10, 250 → +25, 500 → +50, 1000 → +100, 2500 → +250, 5000 → +500, 10000 → +1000; verilen ödül puan sonradan gerilese de geri alınmaz). Ödül/rütbe/100'lük puan eşikleri, damga+konfeti animasyonlu bir kutlama banner'ıyla bir kez bildirilir; rütbe gerilerse üzgün bir bilgilendirme banner'ı çıkar. Kademelerin ve ödüllerin tam listesi oyun içindeki "Nasıl oynanır?" ekranında da var.
 - **Dokunmatik** — Mobil öncelikli düzen; harf seç → kareye dokun → **Oyna**.
 
 ## Teknoloji
@@ -64,8 +64,9 @@ src/
 │   ├── ResetPasswordModal.tsx   # şifre sıfırlama e-postasındaki bağlantıdan sonra yeni şifre belirleme
 │   ├── AccountSettingsModal.tsx # profil düzenleme (avatar, kullanıcı adı)
 │   ├── ScoreCard.tsx            # oyuncu istatistikleri
+│   ├── ScoreStatsSection.tsx    # "Oyuncu / Oyun İstatistikleri" kutu ızgarası (ScoreCard ve PlayerScoreCard ortak)
 │   ├── RecentGamesSection.tsx   # Setup'taki "Yapay Zeka ile"/"Arkadaşınla" sekmelerinde son 5 biten oyun listesi
-│   ├── GameHistoryModal.tsx     # geçmiş oyunların listesi (kalp ikonu: favori, karta tıkla: tahta önizlemesi), Tümü/Favoriler filtresi
+│   ├── GameHistoryModal.tsx     # geçmiş oyunların listesi (kalp: favori · balon: sohbet arşivi · dosya: hamle dökümü · karta tıkla: tahta önizlemesi), Tümü/Favoriler filtresi
 │   ├── GameBoardPreview.tsx     # bir oyunun bitiş anındaki tahtasının salt-okunur önizlemesi
 │   ├── MoveHistoryModal.tsx     # oyun geçmişi (hamle hamle)
 │   ├── ChatThread.tsx           # oyun içi mesajlaşma: paylaşılan sohbet baloncuğu listesi (canlı + arşiv)
@@ -76,7 +77,7 @@ src/
 │   ├── KLigMark.tsx             # "k-lig" logosu — statik SVG path (üretilmiş, bkz. scripts/generate-klig-paths.mjs), font bağımsız
 │   ├── RankSeal.tsx             # k-lig rütbe mührü (nömorfik damga SVG — k-lig satırları, Skor Kartı başlığı, ödül banner'ı)
 │   ├── RankInfoModal.tsx        # Skor Kartı'ndaki mühre dokununca açılan rütbe bilgi popup'ı (puan + ödül payı + sıradaki hedef)
-│   ├── RewardBanner.tsx         # k-lig kutlama banner'ı (rütbe atlama / puan eşiği / oyun ödülü — damga+konfeti animasyonu)
+│   ├── RewardBanner.tsx         # k-lig kutlama/düşüş banner'ı (rütbe atlama · puan eşiği ödülü · 100'lük kilometre taşı · rütbe gerileme — damga+konfeti animasyonu)
 │   ├── LeagueRewardsHost.tsx    # görülmemiş league_rewards kayıtlarını çekip tek birleşik RewardBanner gösteren sürücü
 │   ├── CountBadge.tsx           # ortak kırmızı sayaç rozeti (sekme başlıkları, "Arkadaşlar" satırı vb.)
 │   ├── MeaningModal.tsx         # kelime anlamı penceresi
@@ -99,6 +100,7 @@ src/
 │   ├── LiveGameCreateForm.tsx   # Canlı oyun kurulumu: oyuncu sayısı + arkadaş seçici + davet gönderme
 │   ├── FriendSuggestModal.tsx   # bir Canlı davet kabul edildikten sonra, henüz arkadaş olunmayan katılımcılara toplu istek gönderme önerisi
 │   ├── OnlineGameScreen.tsx     # gerçek Canlı oyun ekranı — Board/Rack/GameHeader'ı Supabase state'ine (Realtime) bağlar
+│   ├── RelationIcons.tsx        # arkadaşlık ilişkisi ikonları (ekle · istek gönderildi · kabul et · çıkar) — FriendsModal ve PlayerScoreCard ortak, path Flutter portuyla aynı fonttan
 │   ├── Avatar.tsx               # profil fotoğrafı bileşeni
 │   ├── PlayerAvatarRow.tsx      # oyun kartlarında "N Kişilik Oyun" başlığı yerine geçen katılımcı avatarları (YZ → robot, misafir → "?")
 │   ├── PlayerBadge.tsx          # renkli oyuncu sıra/koltuk rozeti
@@ -136,7 +138,8 @@ src/
 │   ├── friendInvite.ts # bekleyen arkadaşlık davet token'ı için tek seferlik localStorage kuyruğu
 │   ├── csvExport.ts    # admin paneli tabloları/grafikleri için CSV indirme yardımcısı
 │   ├── leaguePoints.ts # k-lig puanı hesaplama (GameHistoryModal ve SharedGamePage ortak)
-│   ├── leagueRank.ts   # k-lig rütbe kademeleri (Çaylak→Destan eşikleri/renkleri — sunucudaki _award_league_rewards ile elle senkron)
+│   ├── leagueRank.ts   # k-lig rütbe kademeleri (Çaylak→Tanrı, 9 kademe: eşik/renk/ödül — sunucudaki _award_league_rewards VE portun league_rank.dart'ı ile ELLE senkron, üç kopya)
+│   ├── pendingLiveGames.ts # Canlı taraftaki "bekleyen iş" sayısı (bekleyen davet + sırası sende olan oyun) — Setup rozeti ve PWA ikon rozeti ortak
 │   └── profileFields.ts # cinsiyet seçenekleri, GG/AA/YYYY ↔ ISO tarih dönüşümü (AuthModal ve AccountSettingsModal ortak)
 ├── hooks/
 │   ├── useAuth.tsx        # Supabase auth context
@@ -157,11 +160,13 @@ mobile/                    # Flutter (iOS+Android) portu — ayrıntı: mobile/C
     │                      # oynanabilir (kurulum/tahta/raf/sürükle-bırak, kurallar,
     │                      # kelime anlamı, hamle geçmişi), Supabase oturumu
     │                      # (giriş/kayıt/şifre sıfırlama), bulut kayıt senkronu,
-    │                      # skor kartı/k-lig, oyun geçmişi (tahta önizlemesi,
-    │                      # beğeni, sohbet arşivi, paylaşma), Son Oynadıklarım,
+    │                      # skor kartı/k-lig (rütbe mührü, ödül banner'ı),
+    │                      # oyun geçmişi (tahta önizlemesi, beğeni, sohbet
+    │                      # arşivi, hamle dökümü, paylaşma), Son Oynadıklarım,
     │                      # Görüş Bildir, arkadaşlık sistemi (davet linki dahil),
     │                      # Canlı (çok oyunculu) oyun: davet/kabul + gerçek
-    │                      # zamanlı tahta (mesajlaşma sonraki parça)
+    │                      # zamanlı tahta + oyun içi mesajlaşma (sessize alma/
+    │                      # raporlama dahil). Admin paneli BİLİNÇLİ olarak yok.
     ├── assets/dictionary/ # üretilmiş asset'ler: words_tr.txt (kaynak
     │                      # src/data/words.ts — npm run generate-golden-vectors)
     │                      # ve meanings.db (npm run generate-meanings-db)

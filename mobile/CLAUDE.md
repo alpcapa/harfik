@@ -2145,6 +2145,61 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        5'e madde eklendi. Migration canlıya uygulandı ve altı değişmezle
        doğrulandı (bkz. kök `CLAUDE.md`).
 
+   - ✅ **Parça 66 — "Nasıl Oynanır?"a rütbe/ödül bölümü + bölüm
+     başlıklarının `uppercase`ı Parça 10'dan beri eksikmiş (12 Ağustos
+     2026, `help_modal.dart` + web `HelpModal.tsx`):** Kullanıcı bir
+     doküman-tazelik denetimi isterken *"mesela rank olayını nasıl oynanır
+     alt kısma ekleyebiliriz"* dedi. Denetim onu doğruladı: k-lig bölümü
+     yalnızca puanın nasıl KAZANILDIĞINI anlatıyordu — -2 cezası, ödül
+     eşikleri ve dokuz rütbe hiçbir yerde yazmıyordu.
+     - **Tablo ELLE YAZILMIYOR, `kRankTiers`ten çiziliyor** (web'de
+       `RANK_TIERS`ten) — eşik/ödül değişirse iki ekran da kendiliğinden
+       takip eder. Bu bilinçli: kademe tablosu zaten ÜÇ KOPYA elle senkron
+       (SQL ↔ `leagueRank.ts` ↔ `league_rank.dart`); "Nasıl Oynanır?"a
+       elle bir tablo yazmak DÖRDÜNCÜ kopyayı açardı ve sessizce
+       ayrışacak ilk yer orası olurdu.
+     - **Metin web'den BİREBİR kopyalandı** (Parça 10'un kuralı: kural
+       metinleri özetlenmez) — `**kalın**` işaretlemesi `_runs()` ile
+       TextSpan'e çevriliyor. Yeni `_RankRow` widget'ı `_TileRow`un hemen
+       öncesinde: 26px'lik ortalanmış harf (kademe renginde) + kalın ad +
+       " — N puan" + yeşil "(ödül +N)".
+     - **YAN BULGU, kod okumasıyla DEĞİL yan yana render'la bulundu:**
+       web'in `<h3 ... uppercase>`ı porta hiç geçmemiş — on bölüm başlığı
+       da ("Puan Tablosu", "Bölge Vergisi"…) küçük harfle çiziliyordu.
+       Parça 10 "web'in yardımcıları birebir taşındı (Section/P/Pill/…)"
+       diyordu, yani niyet buydu, yalnızca `text-transform` atlanmıştı.
+       `trUpper` eklendi — native `toUpperCase` DEĞİL (Türkçe kural:
+       "Nasıl" → "NASIL", noktalı I üretmemeli). **Bu, istenen işin
+       KAPSAMI DIŞINDAYDI ve bilerek yapıldı:** aynı dosyada, tek satır,
+       ve tam da bu projenin en sık tekrarlayan hata sınıfı (sessiz
+       web↔port ayrışması); istenmezse tek satırlık geri alma.
+     - **Ölçüm — iki ekran GERÇEKTEN yan yana render edildi:** mobil
+       tarafta `HelpModal` 420×1400'de pump edilip bölüme kaydırılarak
+       PNG'ye çekildi (geçici harness, sonra silindi); web tarafında
+       `npm run build` çıktısı yerel bir sunucudan Playwright/Chromium'la
+       açılıp aynı bölüme kaydırıldı. Uppercase farkı TAM BURADA görüldü —
+       ekran görüntüsü olmadan iki tarafın kodunu okumak bunu vermezdi
+       (`uppercase` bir CSS sınıfı, Dart'ta karşılığı yok, yani "eksik
+       olan" görünmez bir şeydi).
+     - **Test — negatif eş doğrulamasıyla, İKİ AYRI kanıt:** yeni bir
+       test dokuz kademenin `kRankTiers`ten çizildiğini (harf/ad/eşik/
+       ödül; Çaylak'ta "(ödül +0)" YOK) ve -2 paragrafını doğruluyor;
+       mevcut bölüm-başlığı testi büyük harfli beklentilere çevrildi
+       (metinler ELLE büyük yazıldı ki `trUpper`ı kendisiyle
+       karşılaştıran bir totoloji kurulmasın). `help_modal.dart`
+       `git stash`lenince 2 test GERÇEKTEN düştü (`Found 0 widgets with
+       text "Rütbeler ve Ödüller"`, `Found 0 widgets with text "Ç"`);
+       ayrı bir turda yalnızca `trUpper(title!)` → `title!` çevrilince
+       başlık testi GERÇEKTEN `bölüm yok: NASIL OYNANIR?` ile düştü.
+       İkisi de geri konunca yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       359/359 yeşil** (358'den +1). Web `npm run lint` + `npm run build`
+       temiz. `kelimeki_core`'a hiç dokunulmadı (yalnızca `trUpper`
+       import edildi) — golden vector turu gerekmedi.
+     - **Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor
+       — `mobile/TESTING.md` bölüm 13'e madde eklendi (web'in eşi kök
+       `TESTING.md` bölüm 10'da).
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

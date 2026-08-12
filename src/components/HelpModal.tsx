@@ -3,6 +3,10 @@
 import { useState } from 'react';
 import { Modal } from './Modal';
 import { BINGO_BONUS } from '../game/constants';
+// Rütbe tablosu ELLE YAZILMAZ — tek kaynak `leagueRank.ts` (o da SQL'deki
+// `_award_league_rewards` ve portun `league_rank.dart`'ıyla elle senkron).
+// Eşik/ödül değişirse bu ekran kendiliğinden takip eder.
+import { RANK_TIERS } from '../utils/leagueRank';
 
 interface HelpModalProps {
   onClose: () => void;
@@ -286,6 +290,53 @@ function DetailedRules() {
           bitirirsen <strong>+1</strong> puan alırsın; üçüncü ve dördüncü puan almaz. 2 kişilik
           oyunda ise sadece birinci <strong>+2</strong> puan alır; ikinci puan almaz.
           Beraberlikte aynı sırayı paylaşan oyuncuların hepsi o sıranın puanını alır.
+        </P>
+        <P>
+          Puan kaybettiğin tek durum var: bir oyunu <strong>süresi içinde
+          bitirmemek</strong>. Canlı bir oyunda sıran sana geçtikten sonra 48 saat
+          hamle yapmazsan, Yapay Zeka'ya karşı devam eden bir oyuna da 7 gün
+          dönmezsen, oyun teslim sayılır ve k-lig puanından <strong>2 puan</strong>{' '}
+          düşülür. Böyle bir durumda e-postayla bilgilendirilirsin.
+        </P>
+      </Section>
+
+      <Section title="Rütbeler ve Ödüller">
+        <P>
+          k-lig puanın belirli eşikleri geçtikçe bir <strong>rütbe</strong> kazanırsın.
+          Rütben, Skor Kartı'nın başlığında ve k-lig sıralamasında adının yanında bir
+          mühür olarak görünür; mühre dokunursan puanını, sıradaki rütbeyi ve o hedefe
+          ne kadar kaldığını gösteren bir kart açılır.
+        </P>
+        <div className="flex flex-col gap-1 mt-0.5">
+          {RANK_TIERS.map((t) => (
+            <div key={t.name} className="flex items-center gap-2">
+              <span
+                className="shrink-0 w-[26px] text-center font-mono text-xs font-bold"
+                style={{ color: t.color }}
+              >
+                {t.letter}
+              </span>
+              <span className="font-mono text-xs text-text">
+                <strong>{t.name}</strong>
+                {' — '}
+                {t.threshold} puan
+                {t.reward > 0 && (
+                  <span className="text-green"> (ödül +{t.reward})</span>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+        <P>
+          Bir eşiğe <strong>ilk kez</strong> ulaştığında yanındaki ödül puanı k-lig
+          puanına eklenir; bu ödül hayatta bir kez verilir ve puanın sonradan gerilese
+          de geri alınmaz. Ayrıca her 100 puanda bir kutlama bildirimi alırsın.
+        </P>
+        <P>
+          Rütbe <strong>düşebilir</strong>: gösterilen mühür her zaman güncel puanından
+          hesaplanır, yani yukarıdaki −2'lik cezalarla bir eşiğin altına inersen kademen
+          de iner. Aynı eşiği yeniden geçmek ödülü ikinci kez vermez.{' '}
+          <strong>Tanrı</strong> en üst rütbedir; oraya varan orada kalır.
         </P>
       </Section>
 

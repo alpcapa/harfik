@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/ui/game/help_modal.dart';
+import 'package:kelimeki/src/ui/rank/league_rank.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show bingoBonus, letterPoints;
 
 import 'support/test_fonts.dart';
@@ -75,18 +76,24 @@ void main() {
     expect(find.text('DETAYLI KURALLAR'), findsOneWidget);
     expect(find.text('HIZLI BAŞLANGIÇ'), findsNothing);
 
-    // Bölüm başlıkları (web Section title'ları).
+    // Bölüm başlıkları (web Section title'ları). Web `uppercase` CSS'i
+    // taşıdığından port `trUpper`dan geçiriyor — beklenti de büyük harfli
+    // olmalı, ve native `toUpperCase` DEĞİL `trUpper` ile üretilmiş
+    // (İ/I ayrımı: "Nasıl" → "NASIL", "Bingo" → "BİNGO" değil "BINGO";
+    // "İhlal"deki İ korunur). Metinler burada ELLE büyük yazılıyor ki
+    // `trUpper`ı kendisiyle karşılaştıran bir totoloji kurulmasın.
     for (final t in [
-      'Nasıl Oynanır?',
-      'Temel Kurallar',
-      'Bölge Vergisi',
-      'Bonus Bölgesi',
-      'Hamle Seçenekleri',
-      'Bingo Bonusu',
-      'Sözlük',
-      'Oyunun Sonu',
-      'Skor Kartı ve Puanlama',
-      'Puan Tablosu',
+      'NASIL OYNANIR?',
+      'TEMEL KURALLAR',
+      'BÖLGE VERGİSİ',
+      'BONUS BÖLGESİ',
+      'HAMLE SEÇENEKLERİ',
+      'BİNGO BONUSU',
+      'SÖZLÜK',
+      'OYUNUN SONU',
+      'SKOR KARTI VE PUANLAMA',
+      'RÜTBELER VE ÖDÜLLER',
+      'PUAN TABLOSU',
     ]) {
       expect(find.text(t), findsOneWidget, reason: 'bölüm yok: $t');
     }
@@ -129,5 +136,35 @@ void main() {
     });
     expectText('sabit toplam 100 taş');
     expectText('Joker');
+  });
+
+  // Rütbe tablosu ELLE YAZILMIYOR (`kRankTiers`ten geliyor) — bu test onu
+  // sabitliyor: dokuz kademenin HEPSİ, kendi eşiği ve ödülüyle ekranda
+  // olmalı. Eşik/ödül tablosu SQL ↔ TS ↔ Dart arasında ELLE senkron
+  // olduğundan (bkz. league_rank.dart), ekranın kaynağı kaçırması sessiz
+  // bir yalan üretirdi.
+  testWidgets('Rütbeler bölümü dokuz kademeyi kaynaktan çiziyor',
+      (tester) async {
+    await pumpHelp(tester, GlobalKey());
+    await tester.tap(find.text('Detaylı Kurallar →').first);
+    await tester.pumpAndSettle();
+
+    expect(kRankTiers.length, 9); // kaynak gerçekten dokuz kademe mi
+    for (final t in kRankTiers) {
+      expect(find.text(t.letter), findsWidgets, reason: 'harf yok: ${t.letter}');
+      // Ad + eşik tek bir TextSpan zincirinde; düz metin araması yeterli.
+      expectText(t.name);
+      expectText('${t.threshold} puan');
+      if (t.reward > 0) expectText('(ödül +${t.reward})');
+    }
+    // Çaylak'ın ödülü 0 — "(ödül +0)" HİÇ yazılmamalı.
+    expectText('Çaylak');
+    expect(find.textContaining('(ödül +0)'), findsNothing);
+
+    // −2 cezası: kullanıcı bunu bugüne kadar yalnızca cezayı YEDİKTEN sonra
+    // gelen e-postadan öğreniyordu.
+    expectText('2 puan');
+    expectText('48');
+    expectText('7 gün');
   });
 }
