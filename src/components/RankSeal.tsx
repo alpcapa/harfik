@@ -37,7 +37,18 @@ export function RankSeal({ tier, size = 20, glyph, className }: RankSealProps) {
   // veriyor. Büyük boylarda (banner/başlık) tam detaylı mühür çizilir.
   const compact = size < 24;
   // Tek harf büyük, 2-3 karakter orta, daha uzunu küçük punto.
-  const fontSize = text.length <= 1 ? (compact ? 27 : 19) : text.length <= 3 ? 14 : 11;
+  //
+  // Tam boyda 19 → 23 (12 Ağustos 2026, kullanıcı isteği: "rozet içindeki
+  // harfleri büyüt"). 23 ÖLÇÜLMÜŞ tavan, tahmin değil: kademe harflerinin
+  // (Ç M O U Ş D) `getBBox`'ı gerçek Space Mono 700 ile Chromium'da okundu,
+  // merkeze en uzak köşe Ç'de 23'te 15.48 / 24'te 16.20 — iç kesikli halka
+  // r=16 olduğundan 24'te Ç/Ş'nin sedillası halkayı taşıyor.
+  //
+  // Kompakt 27'DE KALDI: orada sınır dış çemberin iç kenarı (20.5 − 2.5/2 =
+  // 19.25) ve 27 zaten 18.17 ile tavana yakın (azami ~28.6) — bir punto
+  // artış görünmez, taşma riski gerçek. O boy bir tur önce tam bu yüzden
+  // 19'dan 27'ye çıkarılmıştı.
+  const fontSize = text.length <= 1 ? (compact ? 27 : 23) : text.length <= 3 ? 14 : 11;
   return (
     <svg
       width={size}
