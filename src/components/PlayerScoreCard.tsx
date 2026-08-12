@@ -7,6 +7,10 @@ import { Avatar } from './Avatar';
 import { GameHistoryModal } from './GameHistoryModal';
 import { Leaderboard } from './Leaderboard';
 import { KLigMark } from './KLigMark';
+import { RankSeal } from './RankSeal';
+import { RankInfoModal } from './RankInfoModal';
+import { tierFor } from '../utils/leagueRank';
+import { HowToRegIcon, PersonAddIcon } from './RelationIcons';
 import { useAuth } from '../hooks/useAuth';
 import { useModalA11y } from '../hooks/useModalA11y';
 import {
@@ -72,10 +76,10 @@ function memberDisplayName(m: PlayerSummary) {
   return shortDisplayName(m, 'Oyuncu');
 }
 
-// Henüz canlı oyun olmadığından arkadaş eklemenin somut bir faydası yok —
-// bu yüzden k-lig'den herhangi birinin kartını görünce arkadaş
-// ekleyebilmek önemli: arkadaşsa yeşil ✓ (dokununca çıkarma onayı), değilse
-// + (dokununca duruma göre ekleme/kabul/iptal onayı) gösterir.
+// k-lig'den herhangi birinin kartını açınca arkadaş ekleyebilmek için.
+// İkon ilişkiye göre değişir: arkadaşsa yeşil how_to_reg (dokununca çıkarma
+// onayı), değilse mavi person_add (duruma göre ekleme/kabul/iptal onayı).
+// Dört dalın DÖRDÜ de önce bir onay diyaloğu açar. Bkz. RelationIcons.tsx.
 function friendDialogCopy(relation: FriendRelation | null, name: string) {
   switch (relation) {
     case 'accepted':
@@ -105,37 +109,6 @@ function friendDialogCopy(relation: FriendRelation | null, name: string) {
   }
 }
 
-/* Arkadaşlık simgeleri — 9 Ağustos 2026, kullanıcı web ile geliştirilmekte
- * olan Flutter portunu yan yana koyup "hepsi app'teki gibi olsun" dedi.
- * Öncesinde web'de yuvarlak bir rozet (`bg-accent/15` zemin + çerçeve)
- * içinde önce düz bir `+`, sonra çizgisel (outline) bir SVG vardı; port ise
- * kapsız ve DOLU Material glyph'leri kullanıyordu. İki fark da (kap + glyph
- * stili) port yönünde kapatıldı; ✓ de aynı turda değişti, çünkü tek başına
- * bırakılsaydı bu sefer o ayrışırdı.
- *
- * Path verisi ELLE ÇİZİLMEDİ: portun gerçekten render ettiği fonttan
- * (Flutter SDK'sındaki `MaterialIcons-Regular.otf`) fontTools ile,
- * `Icons.person_add_alt_1` (U+E494) ve `Icons.check_circle` (U+E159)
- * glyph'lerinin outline'ı çıkarılıp 24'lük viewBox'a dönüştürüldü
- * (unitsPerEm 512 → ölçek 24/512, y ekseni ters çevrildi). Ölçülen sınırlar
- * beklenen Material ızgarasıyla uyuştu: person_add x 0.98-23.02 / y 4-20,
- * check_circle 2-22 kare. Yani iki platform artık AYNI vektörü çiziyor. */
-function PersonAddIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M12.98 8.02C12.98 5.81 11.2 3.98 9.0 3.98C6.8 3.98 5.02 5.81 5.02 8.02C5.02 10.22 6.8 12.0 9.0 12.0C11.2 12.0 12.98 10.22 12.98 8.02ZM15.0 9.98V12.0H18.0V15.0H20.02V12.0H23.02V9.98H20.02V6.98H18.0V9.98H15.0ZM0.98 18.0V20.02H17.02V18.0C17.02 15.33 11.67 14.02 9.0 14.02C6.33 14.02 0.98 15.33 0.98 18.0Z" />
-    </svg>
-  );
-}
-
-function CheckCircleIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M12.0 2.02C6.47 2.02 2.02 6.47 2.02 12.0C2.02 17.53 6.47 21.98 12.0 21.98C17.53 21.98 21.98 17.53 21.98 12.0C21.98 6.47 17.53 2.02 12.0 2.02ZM9.98 17.02 5.02 12.0 6.42 10.59 9.98 14.16 17.58 6.56 18.98 8.02 9.98 17.02Z" />
-    </svg>
-  );
-}
-
 export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCardProps) {
   const { user } = useAuth();
   const [statsByTab, setStatsByTab] = useState<
@@ -144,6 +117,7 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
   const [tab, setTab] = useState<TabKey>('all');
   const [showAllGames, setShowAllGames] = useState(false);
   const [showLeague, setShowLeague] = useState(false);
+  const [showRankInfo, setShowRankInfo] = useState(false);
   const [rank, setRank] = useState<MyLeaderboardRank | null>(null);
   const [relation, setRelation] = useState<FriendRelation | null | undefined>(undefined);
   const [showFriendConfirm, setShowFriendConfirm] = useState(false);
@@ -226,27 +200,54 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
   const name = memberDisplayName(member);
   const stats = statsByTab[tab];
   const totalScore = statsByTab.all?.total_score ?? 0;
+  // Rütbe mührü — ScoreCard'daki aynı kural: GÜNCEL puandan türetilir
+  // (düşmeli sürüm); Genel istatistik yüklenene kadar gizli; modal
+  // başlığının sağında, dokununca RankInfoModal.
+  const rankTier = statsByTab.all !== undefined ? tierFor(statsByTab.all?.total_score) : null;
 
   return (
-    <Modal title="Skor Kartı" onClose={onClose}>
+    <Modal
+      title="Skor Kartı"
+      onClose={onClose}
+      headerCenter={
+        rankTier ? (
+          <button
+            type="button"
+            onClick={() => setShowRankInfo(true)}
+            aria-label={`Rütbe: ${rankTier.name} — bilgi için dokun`}
+            className="shrink-0 leading-none active:scale-90 transition-transform"
+          >
+            <RankSeal tier={rankTier} size={34} />
+          </button>
+        ) : undefined
+      }
+    >
       <div className="mb-4 flex items-center gap-3">
         <Avatar url={member.avatar_url ?? undefined} name={name} size={44} />
-        <div className="min-w-0 flex-1 flex items-center gap-2">
-          <div className="text-base font-bold text-text truncate">{name}</div>
-          {showFriendButton && (
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <div className="text-base font-bold text-text truncate">{name}</div>
+            {showFriendButton && (
             <button
               type="button"
               onClick={() => setShowFriendConfirm(true)}
-              aria-label={relation === 'accepted' ? 'Arkadaşlık durumunu yönet' : 'Arkadaş ekle'}
+              aria-label={relation === 'accepted' ? 'Arkadaşlıktan çıkar' : 'Arkadaş ekle'}
               /* Yuvarlak rozet (zemin+çerçeve) KALDIRILDI — port kapsız
-                 çiziyor. Renk `currentColor` üzerinden SVG'ye iniyor. */
+                 çiziyor. Renk `currentColor` üzerinden SVG'ye iniyor.
+                 Arkadaş durumu burada BİLİNÇLİ olarak yeşil `how_to_reg`
+                 (kişi+onay), listelerdeki kırmızı `person_remove` DEĞİL —
+                 kullanıcı kararı: isim hizasında duran bu simge bir aksiyon
+                 sütunu değil, kimliğin yanındaki bir durum rozeti gibi
+                 okunuyor ve "adam-" orada iyi durmuyor. Dokunuş yine de
+                 çıkarma onayını açar (bkz. RelationIcons.tsx). */
               className={`shrink-0 leading-none active:scale-90 transition-transform ${
                 relation === 'accepted' ? 'text-green' : 'text-accent'
               }`}
             >
-              {relation === 'accepted' ? <CheckCircleIcon /> : <PersonAddIcon />}
+              {relation === 'accepted' ? <HowToRegIcon /> : <PersonAddIcon />}
             </button>
           )}
+          </div>
         </div>
         <button
           type="button"
@@ -338,6 +339,15 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
         />
       )}
       {showLeague && <Leaderboard onClose={() => setShowLeague(false)} />}
+
+      {showRankInfo && rankTier && (
+        <RankInfoModal
+          tier={rankTier}
+          totalScore={totalScore}
+          bonusPoints={statsByTab.all?.bonus_points ?? 0}
+          onClose={() => setShowRankInfo(false)}
+        />
+      )}
 
       {showFriendConfirm &&
         relation !== undefined &&

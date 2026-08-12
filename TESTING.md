@@ -96,6 +96,11 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       + YZ'li bir oyunda YZ yine 4. koltukta kalmalı. Rakibi arkadaşlıktan
       çıkarıp denersen "Yalnızca arkadaşlarını davet edebilirsin." görünmeli
       ve ekranda kalınmalı.
+- [ ] **Yerel/YZ oyununda da "Tekrar Oyna" (11 Ağustos 2026).** Bir YZ oyununu
+      bitir: buton "Yeni Oyun Aç" DEĞİL "Tekrar Oyna" olmalı; onaydan sonra
+      Setup'a uğramadan aynı kadroyla taze bir oyun açılmalı. **Aynı ekranda
+      iki oyunu üst üste bitir** — Skor Kartı → "Tüm Oyunlarım"da İKİSİ de
+      görünmeli (Flutter portunda burada sessiz bir kayıt kaybı bulunmuştu).
 
 ## 3. Oyun içi mesajlaşma
 
@@ -110,7 +115,10 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       Görüntüle"). Üçü de aynı `ChatThread`'i besliyor ama yön kararı her
       birinin KENDİ çağrısında — biri değişirse üçü de kontrol edilmeli.
       (9 Ağustos 2026'ya kadar yalnızca sohbet penceresi doğru yöndeydi;
-      iki arşiv ekranı ters duruyordu.)
+      iki arşiv ekranı ters duruyordu. Admin dökümü ise 10 Ağustos akşamına
+      kadar canlıda hâlâ ters kaldı — düzeltme port dalında mahsur
+      kalmıştı, bkz. `CLAUDE.md` → "Port dalında mahsur kalan web
+      düzeltmeleri".)
 - [ ] **Yazışma gizliliği (10 Ağustos 2026).** k-lig'den başka bir oyuncunun
       kartına gir → "Tüm Oyunlar". Onun **katılmadığın** bir Canlı oyununun
       kartında konuşma balonu rozeti **HİÇ ÇIKMAMALI** — ne sayı ne içerik.
@@ -270,6 +278,30 @@ Her birinde gerçekten bekleyen bir iş varken ekranı **kapatıp yeniden aç**.
       Ama "+ Yeni Canlı Oyun" içindeki "arkadaş eklemek için tıkla"
       bağlantısından açılınca **"Ara & Ekle"de kalmalı** — o açık bir niyet,
       ezilmemeli.
+- [ ] **Arkadaşlık ikonları (11 Ağustos 2026).** Satır aksiyonları metin
+      değil ikon: kişi-ekle (mavi) · kum saati (gri, dokun → iptal) ·
+      kişi-onay (mavi, gelen isteği kabul) · adam- (kırmızı, çıkar —
+      yalnızca "Arkadaşlarım"da). **Dördü de önce onay sorar**, hiçbiri
+      dokunulduğu an iş yapmaz; onayı iptal edince karşı hesapta hiçbir şey
+      olmamalı. "Ara & Ekle" (arama + Tüm Üyeler) **zaten arkadaş olunanları
+      HİÇ göstermez** — orada kırmızı adam- görünmemeli; bir gelen isteği
+      oradan kabul edince satır listeden düşmeli. Bir sayfanın tamamı
+      arkadaş çıksa bile "Tüm Üyeler" boş kalmamalı (sonraki sayfa gelir).
+      Skor kartında (k-lig → bir satır) arkadaş durumu **yeşil kişi-onay**
+      — listedeki kırmızı adam- DEĞİL (bilinçli), dokununca yine çıkarma
+      onayı açmalı.
+- [ ] **Kişiye tıklamak skor kartını açar — ÜÇ sekmede de (11 Ağustos
+      2026).** "Arkadaşlarım", "İstekler" ve "Ara & Ekle" (arama + Tüm
+      Üyeler) satırlarında **avatara/isme** tıkla → o kişinin skor kartı
+      açılmalı. Aksiyon ikonu bundan ayrışık: ikona tıklamak kartı DEĞİL
+      onay diyaloğunu açmalı. Kartın kendi arkadaşlık simgesinden bir işlem
+      yapıp (ör. çıkar) kartı kapatınca satırdaki ikon ANINDA yeni duruma
+      dönmeli.
+- [ ] **Dokunmatikte yapışkan hover (11 Ağustos 2026).** Telefon/tablette
+      Setup'ın altındaki "Kullanım Koşulları"na dokun, modalı kapat: linkin
+      altında **kalıcı bir çizgi kalmamalı**. Aynısı "Nasıl oynanır?",
+      "Arkadaşınla paylaş" ve menü satırları için de geçerli. Masaüstünde
+      fareyle üzerine gelince alt çizgi HÂLÂ çıkmalı (o davranış korunuyor).
 - [ ] **Admin paneli.** Bekleyen geri bildirim/şikayet varsa "Geri Bildirim"
       açık gelmeli (yoksa "Büyüme"). Gelen kutusunda bekleyen yokken yalnızca
       şikayet varsa doğrudan **"Şikayetler"** alt sekmesi açılmalı — aksi
@@ -314,3 +346,103 @@ uydurma bir Türkçe cümleyle gizlemek hata ayıklamayı imkânsız kılardı.
       "cevap için tıklayın" ile gel, mesaj gönder: gönderim sonrası
       **üyelik teklifi çıkmamalı**, yalnızca teşekkür + "Kapat". (Uygulama
       içinden — oyun sonu, Terms/Privacy — açılan formda teklif hâlâ çıkar.)
+
+## 10. k-lig ödül & rütbe sistemi
+
+Ödül/rütbe kayıtları sunucuda, `games` tablosuna satır ekleyen bir trigger'la
+(`games_award_league_rewards`) açılır; kutlama banner'ının "bir kez göster"
+garantisi `league_rewards.seen_at` ile cihazdan bağımsızdır. Bu zincirin
+büyük kısmı otomatik test edilemiyor (gerçek oturum + gerçek oyun bitişi
+gerekiyor).
+
+- [ ] **k-lig'de OHP kolonu (12 Ağustos 2026).** Sıralamada "Puan"ın
+      SOLUNDA bir OHP kolonu olmalı: rakamlar DÜZ GRİ ve kalın değil (Puan
+      mavi/kalın kalır), biçim iki basamak ("12.78"), veri yoksa "—";
+      rakamlar satırın kendi puntosundan (14px) küçük görünmeli.
+      **Açıklama balonu:** başlıktaki "OHP"ye tıklayınca balon başlığın
+      TAM ÜSTÜNDE, aşağı bakan bir kuyrukla açılmalı ("Ortalama Hamle
+      Puanı tüm oyunlarda yapılan tüm hamlelerin ortalamasıdır."); tekrar
+      tıklayınca VE ekranda başka bir yere dokununca kapanmalı. Metin
+      BÜYÜK HARFE dönmemeli (başlık satırı `uppercase` taşıyor) ve
+      modalın üst kenarında kırpılmamalı. Masaüstünde fareyle üzerine
+      gelince açılıp çekilince kapanmalı — bu sırada tarayıcının kendi
+      sarı `title` balonu ÇIKMAMALI (ikinci bir balon = regresyon).
+      **En kritik kontrol:** bir oyuncunun k-lig satırındaki OHP,
+      o oyuncunun kartındaki (Skor Kartı → "Genel" sekmesi) "Ortalama
+      Hamle Puanı" ile BİREBİR aynı olmalı — ikisi aynı SQL ifadesinden
+      geliyor, ayrışırlarsa biri bozulmuş demektir. Listede kendi satırın
+      görünmeyecek kadar aşağıdaysan alttaki "senin sıran" kısayolunda da
+      OHP dolu olmalı (boş/hizasız DEĞİL).
+- [ ] **Kutlama banner'ı bir kez çıkar.** Görülmemiş bir ödülün varken
+      (test için bir satırın `seen_at`'i SQL'le null'a çekilebilir) siteye
+      gir: mühür damgalı, konfetili banner ekranın ORTASINDA, karartılmış
+      arka planla çıkmalı. "Devam"dan sonra sayfa yenilense de, BAŞKA bir
+      cihazdan girilse de bir daha çıkmamalı.
+- [ ] **Banner oyun ortasında çıkmaz.** Devam eden bir YZ/Canlı oyunun
+      ekranındayken banner asla belirmemeli; oyun bitince (ya da Setup'a
+      dönünce) bekleyen kutlama kendiliğinden gösterilmeli.
+- [ ] **Birleşik özet.** Aynı anda birden fazla görülmemiş kayıt varken
+      (ör. geçmişe dönük backfill) TEK banner çıkmalı: rütbe varsa başlık
+      rütbe, ödül puanı yeşil satırda toplam olarak.
+- [ ] **Ödül toplama doğru.** 50 k-lig puanına İLK ulaşmada +5 eklenmeli
+      (toplam 55 olur); puan -2 cezalarıyla eşiğin altına inse de verilmiş
+      ödül GERİ ALINMAMALI. "Genel = 2 kişilik + 4 kişilik + ödül" toplamı
+      tutmalı.
+- [ ] **Mühür popup'ı.** Skor Kartı başlığı ile ✕ arasında ortalanmış büyük
+      mühre (dış kenarı TIRTIKLI — noter mührü gibi) dokun: damga
+      animasyonuyla bilgi popup'ı açılmalı (kademe adı +
+      puan + "+N eşik ödülü dahil" + sıradaki rütbe hedefi + hedefe akan
+      ilerleme çubuğu; en üst kademede çubuk yok). Çubuk etiketleri: sol
+      eşiğin ödülü YEŞİL "(+5)✓" (alınmış), hedef eşiğin ödülü GRİ "(+10)"
+      (henüz alınmamış) — yeşil+✓ yalnızca alınmış ödülde. Popup İSTENDİĞİ
+      KADAR
+      tekrar açılabilmeli (kutlamanın aksine "bir kez göster" kuralı yok).
+      Başkasının kartında da (PlayerScoreCard) aynı mühür/popup çalışmalı.
+- [ ] **Popup'ta ✕ var, "KAPAT" butonu YOK.** Kapatma yalnızca sağ üstteki
+      ✕ (ve Escape / karartılmış zemine dokunma) ile — kartın altında tam
+      genişlikte bir buton OLMAMALI. Kutlama/düşüş banner'ında ise "DEVAM"
+      butonu KALMALI (o gerçek bir aksiyon: ödülleri görüldü işaretler).
+- [ ] **Kart gölgesinde beyaz hale yok.** Hem bilgi popup'ının hem kutlama/
+      düşüş banner'ının kartı karartılmış zeminde yalnızca yumuşak, koyu
+      bir düşen gölge taşımalı — sol/üst kenarda beyaz bir parıltı (nömorfik
+      `shadow-raised`) GÖRÜNMEMELİ. İkisi aynı kart, biri değişirse öteki de.
+- [ ] **Küçük rozetler de tırtıklı.** k-lig listesi/Skor Kartı satırlarındaki
+      18-20px'lik mühürlerin dış kenarı da testere dişli olmalı (büyük
+      mühürle aynı siluet, 24 diş) — düz çember GÖRÜNMEMELİ. Dişler
+      telefonda net ayrışmalı, harf (özellikle Ç/Ş sedillası) tırtığa
+      DEĞMEMELİ. Fark: küçük mühürde iç kesikli halka yok, harf daha büyük.
+- [ ] **Harf dikeyde ortalı — kuyruklu olanlar dahil.** Ç ve Ş (sedillalı)
+      dairede M/O/U/D ile AYNI ölçüde ortalı durmalı; alta yakın/aşağı
+      kaymış görünmemeli. Kolay kontrol: k-lig listesinde Çaylak ve
+      Şampiyon satırlarını Oyuncu/Ustaca ile yan yana karşılaştır.
+- [ ] **Dokuz kademe ve eşikleri.** Çaylak 0 (Ç) · Meraklı 50 (M) · Oyuncu
+      100 (O) · Usta **250** (U) · Şampiyon 500 (Ş) · Destan 1000 (D) ·
+      Efsane **2500** (E) · Uzaylı **5000** (Z) · Tanrı **10000** (T).
+      Ödül her eşikte eşik/10 (+5/+10/+25/+50/+100/+250/+500/+1000).
+      Usta 12 Ağustos 2026'da 200'den 250'ye çekildi — eski 200 eşiği
+      HİÇBİR yerde görünmemeli. Uzaylı'nın harfi **Z** (Usta'nın U'suyla
+      karışmasın); üç yeni renk çivit/camgöbeği/parlak altın.
+- [ ] **Ödül bir sonraki eşiği tetikleyebilir.** Ödül puanı toplamın
+      İÇİNE sayıldığından, eşiğe çok yaklaşmış biri ödülü alınca aynı
+      anda bir üst eşiği de geçebilir; iki banner değil TEK birleşik
+      banner çıkmalı ve iki ödül de verilmiş olmalı.
+- [ ] **Rütbe düşmeli.** -2 ceza alıp eşiğin altına inen bir hesabın mührü
+      (k-lig listesi, Skor Kartı, PlayerScoreCard) bir alt kademeye İNMELİ —
+      üç yer de aynı kademeyi göstermeli (hepsi güncel `total_score`'dan
+      türetiliyor). Puan tekrar eşiği aşarsa damga geri gelir ama rütbe
+      banner'ı İKİNCİ kez ÇIKMAMALI ve ödül İKİNCİ kez VERİLMEMELİ (her
+      eşik hayatta bir kez).
+- [ ] **Rütbe düşüş banner'ı.** Eşiğin altına inince konfetisiz, üzgün bir
+      banner çıkmalı ("Rütben geriledi! … Kazandıkça geri yükselirsin!") ve
+      bir kez gösterilmeli; aynı eşikten İKİNCİ kez düşülürse yeniden
+      çıkmalı (diğer banner'ların aksine tekrarlanabilir). Görülmemiş
+      olumlu bir kutlama ile çakışırsa yalnızca olumlu olan gösterilmeli.
+      Banner'da kaybedilen eşiğe geri dönüş çubuğu olmalı; hedef etiketi
+      YALNIZCA SAYI ("50" — "puan" kelimesi YOK) ve altında yeşil "(+5)✓"
+      (ödül + onay işareti =
+      zaten alındı — kişi geri düşse bile yeşil ✓ kalır). Aynı kural bilgi
+      popup'ında: düşmüş biri mühre dokununca hedef rozeti yeşil "(+N)✓"
+      olmalı — hiç düşmemişte hedef GRİ "(+N)", ✓ yok.
+- [ ] **k-lig sırası tutarlı.** Listedeki sıra/puan (leaderboard view) ile
+      "senin sıran" satırı (my_leaderboard_rank RPC) aynı toplamı (ödül
+      dahil) göstermeli.

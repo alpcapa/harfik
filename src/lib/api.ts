@@ -47,6 +47,7 @@ import type {
   Gender,
   IncomingFriendRequest,
   LeaderboardRow,
+  LeagueReward,
   LocalGameSave,
   MyLeaderboardRank,
   NewGame,
@@ -255,7 +256,44 @@ export async function fetchMyLeaderboardRank(userId: string): Promise<MyLeaderbo
     return null;
   }
   const row = Array.isArray(data) ? data[0] : null;
-  return row ? { rank: Number(row.rank), total_score: Number(row.total_score) } : null;
+  return row
+    ? {
+        rank: Number(row.rank),
+        total_score: Number(row.total_score),
+        avg_move_score: row.avg_move_score == null ? null : Number(row.avg_move_score),
+      }
+    : null;
+}
+
+/**
+ * Oturum açan kullanıcının henüz görmediği k-lig ödül/rütbe kayıtları —
+ * kutlama banner'ı (LeagueRewardsHost) için. RLS SELECT'i tüm girişli
+ * kullanıcılara açık olduğundan (rütbe herkese görünür lig verisinin
+ * parçası) filtre client'ta `eq(user_id)` ile daraltılıyor; `seen_at`
+ * yalnızca `mark_league_rewards_seen` RPC'siyle yazılabilir.
+ */
+export async function fetchUnseenLeagueRewards(userId: string): Promise<LeagueReward[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('league_rewards')
+    .select('*')
+    .eq('user_id', userId)
+    .is('seen_at', null)
+    .order('created_at', { ascending: true });
+  if (error) {
+    console.error('[Kelimeki] fetchUnseenLeagueRewards hatası:', error.message);
+    return [];
+  }
+  return (data as LeagueReward[]) ?? [];
+}
+
+/** Çağıranın TÜM görülmemiş ödül kayıtlarını görüldü işaretler (banner "Devam"ı). */
+export async function markLeagueRewardsSeen(): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.rpc('mark_league_rewards_seen');
+  if (error) {
+    console.error('[Kelimeki] markLeagueRewardsSeen hatası:', error.message);
+  }
 }
 
 /**

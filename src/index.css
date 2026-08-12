@@ -105,6 +105,86 @@ select {
   }
 }
 
+/* k-lig kutlama banner'ı (RewardBanner) — "Mühür" konsepti animasyonu.
+   `.reward-play` üst sınıfı bir rAF sonrası eklenir (ActionSheet dersi:
+   mount anında son durumda render edilirse tarayıcı geçişi atlar). Kart
+   alttan yaylanır, mühür 2× boyuttan küçülerek damgalanır (-6° eğik,
+   RankSeal'in kendi eğimi), konfeti merkezden savrulur, ödül satırı en son
+   belirir. */
+.reward-card-anim,
+.reward-seal-anim,
+.reward-line-anim,
+.reward-confetti {
+  opacity: 0;
+}
+.reward-play .reward-card-anim {
+  animation: reward-rise 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.2) 0.1s forwards;
+}
+.reward-play .reward-seal-anim {
+  animation: reward-stamp 0.5s cubic-bezier(0.25, 1.4, 0.4, 1) 0.5s forwards;
+}
+.reward-play .reward-line-anim {
+  animation: reward-fadeup 0.4s ease 1s forwards;
+}
+.reward-play .reward-confetti {
+  animation: reward-burst 0.9s cubic-bezier(0.15, 0.8, 0.4, 1) 0.65s forwards;
+}
+@keyframes reward-rise {
+  from {
+    opacity: 0;
+    transform: translateY(26px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes reward-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(2.1) rotate(-8deg);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(0.94) rotate(1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+@keyframes reward-fadeup {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes reward-burst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) rotate(240deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reward-card-anim,
+  .reward-seal-anim,
+  .reward-line-anim {
+    opacity: 1;
+    animation: none !important;
+  }
+  .reward-confetti {
+    animation: none !important;
+  }
+}
+
 @layer base {
   * {
     box-sizing: border-box;

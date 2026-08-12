@@ -461,11 +461,31 @@ export interface LeaderboardRow {
   total_score: number;
   games_played: number;
   wins: number;
+  /**
+   * Ulaşılan en yüksek rütbe eşiği (0=Çaylak) — kutlama geçmişi kaydı.
+   * Satırdaki mühür 12 Ağustos 2026'dan beri bundan DEĞİL güncel puandan
+   * (`tierFor(total_score)`, "düşmeli" sürüm) çiziliyor.
+   */
+  rank_tier: number;
+  /**
+   * OHP — ortalama hamle puanı (hamle başına alınan ortalama puan).
+   * `player_stats_overall.avg_move_score` ile BİREBİR AYNI ifadeden gelir
+   * (ağırlıklı ortalama, 2 basamak): k-lig satırındaki OHP ile o oyuncunun
+   * Skor Kartı'ndaki "Ortalama Hamle Puanı" AYNI sayı olmak zorunda, biri
+   * değişirse öteki de. Hiç hamle verisi olmayan (eski) kayıtlarda null.
+   */
+  avg_move_score: number | null;
 }
 
 export interface MyLeaderboardRank {
   rank: number;
   total_score: number;
+  /**
+   * Bkz. `LeaderboardRow.avg_move_score` — "senin sıran" kısayolu da aynı
+   * tabloda aynı kolonları çizdiğinden RPC bunu da döndürür (yoksa o tek
+   * satırda OHP boş kalır ve tablo hizasız görünür).
+   */
+  avg_move_score: number | null;
 }
 
 export interface PlayerStats {
@@ -503,6 +523,43 @@ export interface PlayerStats {
   total_score: number;
   /** Oyuncunun bitirmeden terk ettiği (teslim olduğu) oyun sayısı. */
   surrendered_count: number;
+  /**
+   * Ulaşılan en yüksek rütbe eşiği (0=Çaylak, 50/100/200/500/1000 —
+   * `league_rewards.kind='rank_up'` satırlarının max threshold'u).
+   * 12 Ağustos 2026'dan beri UI gösterimi bunu KULLANMIYOR — rütbe artık
+   * güncel puandan türetiliyor ("düşmeli" sürüm, `tierFor(total_score)`);
+   * bu kolon yalnızca "hangi eşikler daha önce kutlandı" kaydı. YALNIZCA
+   * `player_stats_overall` view'ında var — mod bazlı `player_stats`
+   * satırlarında undefined (ödül/rütbe moda bölünemez).
+   */
+  rank_tier?: number;
+  /**
+   * total_score'a dahil edilen toplam oyun ödülü puanı (games_reward
+   * satırlarının toplamı) — UI'da "Genel = sekmelerin toplamı + ödül"
+   * farkını açıklamak için. Yalnızca `player_stats_overall`'da var.
+   */
+  bonus_points?: number;
+}
+
+/**
+ * k-lig ödül/rütbe kayıtları (`league_rewards` tablosu) — üç tür:
+ * `points_reward` (puan eşiği ödülü — rütbe eşikleriyle aynı liste, 50→+5 …
+ * 1000→+100; 12 Ağustos 2026'ya kadar oyun sayısına bağlı `games_reward`dı),
+ * `points_milestone` (her 100 puan kutlaması, points=0),
+ * `rank_up` (rütbe eşiği aşımı, points=0),
+ * `rank_down` (rütbe düşüş bildirimi, points=0 — diğerlerinin aksine
+ * TEKRARLANABİLİR: aynı eşikten yeniden düşülürse sunucu `seen_at`'i
+ * sıfırlar, üzgün banner yeniden gösterilir). `seen_at` banner'ın cihazdan
+ * bağımsız "bir kez göster" işareti (bkz. LeagueRewardsHost).
+ */
+export interface LeagueReward {
+  id: string;
+  user_id: string;
+  kind: 'points_reward' | 'points_milestone' | 'rank_up' | 'rank_down';
+  threshold: number;
+  points: number;
+  seen_at: string | null;
+  created_at: string;
 }
 
 // ── Admin paneli ────────────────────────────────────────────────────────────
