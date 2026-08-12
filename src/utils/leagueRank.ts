@@ -27,7 +27,7 @@ export interface RankTier {
 
 export const RANK_TIERS: RankTier[] = [
   { name: 'Çaylak', letter: 'Ç', color: '#8A93A2', threshold: 0 },
-  { name: 'Meraklı', letter: 'M', color: '#2563EB', threshold: 25 },
+  { name: 'Meraklı', letter: 'M', color: '#2563EB', threshold: 50 },
   { name: 'Oyuncu', letter: 'O', color: '#16A34A', threshold: 100 },
   { name: 'Usta', letter: 'U', color: '#B7791F', threshold: 200 },
   { name: 'Şampiyon', letter: 'Ş', color: '#F2650F', threshold: 500 },
@@ -36,7 +36,7 @@ export const RANK_TIERS: RankTier[] = [
 
 /**
  * Bir puan/eşik değerine karşılık gelen kademe — hem `rank_tier` kolonundan
- * (ulaşılan en yüksek eşik: 0/25/100/200/500/1000) hem ham bir puandan
+ * (ulaşılan en yüksek eşik: 0/50/100/200/500/1000) hem ham bir puandan
  * (banner'daki kilometre taşı rengi için) çağrılabilir; ikisi de "threshold'u
  * geçmeyen en yüksek kademe" kuralıyla çözülür.
  */

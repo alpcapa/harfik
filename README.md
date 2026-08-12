@@ -12,7 +12,7 @@
 - **Tam sözlük** — TDK Güncel Türkçe Sözlük (12. baskı) kaynaklı **~63 bin oynanabilir kelime**, anlamlarıyla birlikte.
 - **Türkçe alfabe** — Ç, Ğ, İ, Ö, Ş, Ü dahil tam harf dağılımı ve puanlar. Joker (`?`) desteklenir. Torba, oyuncu sayısından bağımsız olarak sabit 100 taş.
 - **Bingo bonusu** — 7 taşın tamamını tek hamlede kullanınca +25 puan.
-- **k-lig ödül & rütbe sistemi** — Kademeli, tek seferlik oyun ödülleri (50 tamamlanan oyun → +5, 100 → +10, 250 → +25, 500 → +50, 1000 → +100 k-lig puanı; teslim/terk sayılmaz) ve puana bağlı 6 kademeli rütbe mührü (Çaylak 0 → Meraklı 25 → Oyuncu 100 → Usta 200 → Şampiyon 500 → Destan 1000 — damga güncel puandan türetilir, puan gerilerse kademe de düşer). Ödül/rütbe/100'lük puan eşikleri, damga+konfeti animasyonlu bir kutlama banner'ıyla bir kez bildirilir.
+- **k-lig ödül & rütbe sistemi** — Kademeli, tek seferlik oyun ödülleri (50 tamamlanan oyun → +5, 100 → +10, 250 → +25, 500 → +50, 1000 → +100 k-lig puanı; teslim/terk sayılmaz) ve puana bağlı 6 kademeli rütbe mührü (Çaylak 0 → Meraklı 50 → Oyuncu 100 → Usta 200 → Şampiyon 500 → Destan 1000 — damga güncel puandan türetilir, puan gerilerse kademe de düşer). Ödül/rütbe/100'lük puan eşikleri, damga+konfeti animasyonlu bir kutlama banner'ıyla bir kez bildirilir.
 - **Dokunmatik** — Mobil öncelikli düzen; harf seç → kareye dokun → **Oyna**.
 
 ## Teknoloji

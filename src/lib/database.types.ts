@@ -510,7 +510,7 @@ export interface PlayerStats {
   /** Oyuncunun bitirmeden terk ettiği (teslim olduğu) oyun sayısı. */
   surrendered_count: number;
   /**
-   * Ulaşılan en yüksek rütbe eşiği (0=Çaylak, 25/100/200/500/1000 —
+   * Ulaşılan en yüksek rütbe eşiği (0=Çaylak, 50/100/200/500/1000 —
    * `league_rewards.kind='rank_up'` satırlarının max threshold'u).
    * 12 Ağustos 2026'dan beri UI gösterimi bunu KULLANMIYOR — rütbe artık
    * güncel puandan türetiliyor ("düşmeli" sürüm, `tierFor(total_score)`);
