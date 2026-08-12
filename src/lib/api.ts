@@ -64,7 +64,7 @@ import type {
 } from './database.types';
 import { getLocalMeaning } from '../data/meanings';
 import { trCompare, trLower } from '../utils/turkish';
-import type { GameState, Tile } from '../game/types';
+import type { GameState, HistoryEntry, Tile } from '../game/types';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /**
@@ -532,6 +532,31 @@ export async function fetchGameBoardSnapshot(gameId: string): Promise<BoardSnaps
     .maybeSingle();
   if (error) throw new Error(error.message);
   return (data?.board_snapshot as BoardSnapshotTile[] | null) ?? null;
+}
+
+/**
+ * Bir oyunun DONDURULMUŞ tam hamle dökümü — `fetchGameBoardSnapshot` ile
+ * BİREBİR aynı desen: liste sorgusuna dahil değil (satır başına ~7 KB),
+ * yalnızca hamle geçmişi ikonuna basılınca çekilip önbelleğe alınır.
+ *
+ * `null` = "bu oyun için hiç kaydedilmemiş" (kolon eklenmeden önce biten
+ * yerel oyunlar — kurtarılamaz). Gerçek ağ/DB hatasında FIRLATIR ki çağıran
+ * bunu "kaydedilmemiş"ten ayırıp yeniden deneme sunabilsin.
+ *
+ * Sohbetin (`fetchGameMessages`) aksine ayrı bir yetki kapısı YOK: hamleler
+ * bir oyun verisi, kullanıcı yazışması değil — `board_snapshot`la aynı
+ * sınıf ve aynı görünürlükte (bkz. `games_moves_snapshot` migration'ının
+ * gizlilik notu).
+ */
+export async function fetchGameMoves(gameId: string): Promise<HistoryEntry[] | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('games')
+    .select('moves')
+    .eq('id', gameId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data?.moves as HistoryEntry[] | null) ?? null;
 }
 
 /** `fetchGameMessages` dönüşü — yetki bilgisi İÇERİKTEN ayrı taşınır ki UI

@@ -125,6 +125,15 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       Kendi katıldığın oyunlarda normal görünmeli; admin hepsini görebilmeli.
       (O tarihe kadar `games.messages` girişli HERKESE açıktı — skor/tahta
       herkese görünür olsa da yazışma değil.)
+- [ ] **Hamle geçmişi ikonu (12 Ağustos 2026).** Tüm Oyunlarım'da HER kartta
+      (sohbet rozetinin aksine — o yalnızca mesaj varsa çıkar) küçük bir
+      döküman ikonu olmalı; dokununca o oyunun TAM hamle dökümü açılmalı
+      (kelime + ham puan + ×2/×3 rozetleri, Bingo/Sınır İhlali etiketleri,
+      toplam puan). Hem Canlı hem YZ oyunlarında çalışmalı; kolon
+      eklenmeden ÖNCE biten YEREL oyunlarda "Bu oyun için hamle geçmişi
+      kaydedilmemiş." demeli (Canlı oyunlar geriye dönük dolduruldu).
+      Çevrimdışıyken dokunulunca "kaydedilmemiş" DEĞİL "Bağlantını kontrol
+      edip tekrar dene." demeli — ikisi ayrı durum.
 - [ ] **Karşı tarafta.** Sohbet kapalıyken gelen mesaj için popup (gönderenin
       avatarı + adı + metin) çıkmalı ve **yalnızca elle** kapanmalı; butonda
       kırmızı nokta belirmeli. Sohbeti açınca nokta sıfırlanmalı.

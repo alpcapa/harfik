@@ -1,7 +1,7 @@
 // Kelimeki — Supabase şema tipleri (elle yazıldı; MCP erişimi açılınca
 // `generate_typescript_types` ile otomatik üretilebilir).
 
-import type { BonusType, GameState, Tile } from '../game/types';
+import type { BonusType, GameState, HistoryEntry, Tile } from '../game/types';
 
 export type GameResult = 'win' | 'lose' | 'tie';
 
@@ -359,6 +359,21 @@ export interface Game {
    * değilsen 0 dönüyor (rozet hiç çizilmez).
    */
   message_count: number;
+  /**
+   * Bu oyunun DONDURULMUŞ tam hamle dökümü (`GameState.moveHistory` ile aynı
+   * şekil) — "Tüm Oyunlarım"daki hamle geçmişi ikonu bunu gösterir.
+   * Yerelde `buildGameRecord`, Canlı'da `_finish_online_game_records`
+   * (`_online_moves_snapshot` yardımcısıyla) yazar. Dondurmanın iki sebebi:
+   * yerelde `moveHistory` yalnızca `GameState`te yaşıyor ve oyun bitince
+   * kayboluyor; Canlı'da `online_game_moves`un RLS'i yalnızca katılımcıya
+   * açık, başkasının oyununu açan hamleleri göremezdi.
+   * Bu kolon eklenmeden ÖNCE biten yerel oyunlarda `null` — kurtarılamaz
+   * (kart "kaydedilmemiş" der); Canlı oyunlar migration'da geriye dönük
+   * dolduruldu. `board_snapshot`/`messages` ile aynı gerekçeyle liste
+   * sorgusuna DAHİL EDİLMEZ, yalnızca ikona basılınca `fetchGameMoves` ile
+   * lazy çekilir.
+   */
+  moves: HistoryEntry[] | null;
   created_at: string;
 }
 
@@ -403,6 +418,7 @@ export type NewGame = Pick<
   surrendered?: boolean;
   players?: GamePlayerSnapshot[];
   board_snapshot?: BoardSnapshotTile[];
+  moves?: HistoryEntry[];
 };
 
 /** Oyun geçmişi listesinde gösterilecek alanlar. */

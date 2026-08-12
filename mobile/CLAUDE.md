@@ -2064,6 +2064,78 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        356/356 yeşil** (yeni test yok — dört mevcut testin gövdesine
        gerçek-zaman payı eklendi). `kelimeki_core`'a hiç dokunulmadı.
 
+   - ✅ **Parça 65 — "Tüm Oyunlarım"daki her karta hamle geçmişi ikonu:
+     `games.moves` (12 Ağustos 2026, `game_record.dart`, `games_api.dart`,
+     `game_history_modal.dart`, `board_widget.dart`, `history_entry.dart` +
+     web `gameRecord.ts`/`api.ts`/`GameHistoryModal.tsx` +
+     `games_moves_snapshot` migration'ı):** "Sonraya Bırakılan İşler"deki
+     madde kapandı — kullanıcı isteği: *"mesaj balonunun yanına aynı boyda
+     bir file ikonu koyup tüm hamleleri getirmek", "Lazy yükleme olarak.
+     Hamleler dialogunda nasılsa aynısı gelsin, tüm detaylarıyla"*.
+     - **Yeni UI maliyeti ~sıfır:** `MoveHistoryModal` (Parça 8) zaten
+       hazır ve `GameState` alıyor; `buildSnapshotGameState([], playerCount,
+       players)` üstüne `moveHistory` konarak açılıyor. Yeni modal, yeni
+       bağımlılık, yeni asset YOK.
+     - **İkon KOPYALANMADI, paylaşıldı:** `board_widget.dart`'ın alt
+       şeridindeki `_DocumentIcon` public `DocumentIcon`a çevrildi (boyut +
+       renk parametreli). Aynı şeyi açan iki kontrol aynı görünmeli
+       (`RelationIcons` ilkesi). **Web tarafında da aynı hizalama
+       yapıldı** — `GameHistoryModal.tsx`'in yeni `MovesIcon`'u
+       `Board.tsx`'in path'leriyle birebir (ilk yazımda satır çizgileri
+       `M8 13h8M8 17h5` diye sapmıştı, `M9 13h6M9 17h6` oldu).
+     - **Dokunma hedefi BİLİNÇLİ olarak 44px'e çıkarılMADI:** Parça 52'nin
+       "ikon-only kontrol 44px görünmez alan taşır" kuralı burada
+       uygulanmadı — istek açıkça "aynı boyda" diyordu ve hemen yanındaki
+       sohbet rozeti de 11px; 44px'lik bir alan ~20px'lik satırda kardeş
+       kontrolleri ve kartın kendi dokunuşunu (tahtayı aç/kapa) yutardı.
+       Iskalanan dokunuş yıkıcı değil (kart açılır). Cihazda rahatsız
+       ederse İKİ rozet BİRLİKTE büyütülmeli.
+     - **Ağ hatası ile "kaydedilmemiş" AYRI taşınıyor:** `GamesRepo.moves`
+       artık `({bool ok, List<HistoryEntry>? moves})` dönüyor —
+       `boardSnapshot`'ın ikisini de `null`a çeken davranışından BİLİNÇLİ
+       sapma (web de ayırıyor). Çevrimdışı kullanıcıya "kaydedilmemiş"
+       demek yanlış olurdu: veri sunucuda duruyor. Hata ÖNBELLEĞE GİRMEZ,
+       tekrar dokunuş yeniden dener.
+     - **SQL'de bulunan gerçek hata (kök `CLAUDE.md`'de ayrıntısı):**
+       `_online_moves_snapshot`ın iki UNION dalı AYRI `row_number()`
+       üretiyordu, vergi satırları yanlış sıraya düşüyordu — ortak bir
+       `ordered` CTE'siyle düzeltildi. **İfadeyi gerçek veriye karşı
+       KOŞTURDUĞUM için bulundu, okumakla değil.**
+     - **Yan bulgu — `HistoryEntry.toJson`'ın anahtar SIRASI web'den
+       sapmıştı:** port TS'in ARAYÜZ bildirim sırasını izliyordu, oysa
+       `JSON.stringify` ÇALIŞMA ANINDAKİ ekleme sırasını yazıyor
+       (`pushHistory`: turn, player, words, points, sonra wordScores…).
+       Golden vector karşılaştırması YAPISAL olduğundan bugüne kadar
+       görünmedi; `games.moves` iki istemcinin de aynı satırı yazmasını
+       gerektirdiği an `web_game_record.json` fikstürü bunu bayt bayt
+       yakaladı. Dart çalışma anı sırasına hizalandı. **Ders: "kanonik
+       JSON" sözleşmesi TİP BİLDİRİMİNE değil, TS'in çalışma anındaki
+       nesne literaline bakar.**
+     - **Fikstür CERRAHİ yeniden üretildi:** web'in ÜRETİM
+       `buildGameRecord`'u fikstürün KENDİ state'leriyle koşturulup
+       yalnızca `record` yarısı yeniden yazıldı (girinti korunarak).
+       Anlamsal diff: TEK değişiklik iki senaryoya eklenen `moves` (46 ve
+       12 satır) — id/saat/tahta/skorlar bit düzeyinde aynı kaldı.
+     - **Test — negatif eş doğrulamasıyla, İKİ AYRI kanıt:**
+       `game_likes_test.dart`'a iki test (rozet HER kartta + sohbet rozeti
+       yokken de var + döküm gerçekten LAZY + modal içeriği; ağ hatası ile
+       "kaydedilmemiş"in AYRI mesajlar olduğu + hatanın önbelleğe
+       girmediği). `game_history_modal.dart` `git stash`lenince ikisi de
+       GERÇEKTEN düştü (`+15 -2`); `history_entry.dart` ayrıca
+       stash'lenince fikstür testleri GERÇEKTEN düştü (anahtar sırası —
+       `Differ at offset 3296`), ikisi de geri konunca yeşile döndü.
+       `FakeGamesGateway`e `movesCalls` eklendi (lazy iddiasının kanıtı).
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       358/358 yeşil** (356'dan +2). `kelimeki_core` DEĞİŞTİ
+       (`history_entry.dart`) — kural gereği Dart çekirdek testleri
+       koşuldu: **6746 kontrol, 0 hata**; golden vector fixture'ları TS
+       tarafı hiç değişmediğinden yeniden üretilmedi. Web `npm run lint` +
+       `npm run build` temiz.
+     - **Doğrulama sınırı:** gerçek `games.moves` okuması (kolon grant'i,
+       gerçek satırlar) cihazda doğrulanmalı — `mobile/TESTING.md` bölüm
+       5'e madde eklendi. Migration canlıya uygulandı ve altı değişmezle
+       doğrulandı (bkz. kök `CLAUDE.md`).
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
@@ -2100,59 +2172,6 @@ silinip kendi tarihli parça notuna taşınır.
     yerden gelir.
   - Cihazda görsel doğrulama gerektiriyor (Flutter'ın `isDense`/baseline
     davranışı CSS ile birebir değil), o yüzden Parça 56'ya sığdırılmadı.
-
-- **"Tüm Oyunlarım"daki her karta hamle geçmişi ikonu (10 Ağustos 2026,
-  kullanıcı kararı — sözleri: "mesaj balonunun yanına aynı boyda bir file
-  ikonu koyup tüm hamleleri getirmek", "Lazy yükleme olarak. Hamleler
-  dialogunda nasılsa aynısı gelsin, tüm detaylarıyla"):** Bitmiş bir oyunun
-  kartında sohbet rozetinin yanında ikinci bir ikon; dokununca o oyunun
-  TAM hamle dökümü açılır.
-  - **Tasarım — `games.messages` (sohbet arşivi) deseninin BİREBİR
-    tekrarı:** yeni `games.moves jsonb` (nullable), oyun biterken dondurulur.
-    Yerel oyunlarda `buildGameRecord` doldurur — web `gameRecord.ts` **ve**
-    port `game_record.dart`, ikisi birden (aynı satıra yazan iki istemci
-    kuralı); Canlı oyunlarda `_finish_online_game_records`
-    (`online_game_moves`'tan okuyup).
-  - **Neden `online_game_moves`'u doğrudan okumuyoruz:** o tablonun RLS'i
-    yalnızca KATILIMCIYA açık — Favoriler'den başkasının oyununu açan biri
-    hamleleri göremezdi. Sohbette bu sorun tam da dondurarak çözülmüştü;
-    ayrıca dondurmak yerel/Canlı ayrımını da ortadan kaldırıyor (tek kod
-    yolu).
-  - **Yerel oyunlarda kolon ŞART, veri başka hiçbir yerde yok:**
-    `moveHistory` yalnızca `GameState` içinde yaşıyor; `local_game_saves`
-    satırı oyun bitince siliniyor, `games` bu alanı taşımıyor.
-  - **Boyut ÖLÇÜLDÜ (golden fixture'lardan, gerçek tam oyunlar):** 2
-    kişilik doğal bitiş 36 entry / **4.974 bayt**, 4 kişilik 37 entry /
-    **5.132 bayt** — yani ~5 KB/oyun. Karşılaştırma: production'da
-    `board_snapshot` ortalaması **926 bayt**. Bugüne kadarki 290 oyunun
-    tamamı ≈ 1,5 MB.
-  - **Lazy — liste sorgusuna GİRMEZ** (`board_snapshot`/`messages` ile aynı
-    gerekçe): kolon yalnızca ikona basılınca ayrı bir sorguyla çekilir ve
-    önbelleğe alınır.
-  - **"Tüm detaylarıyla" = `MoveHistoryModal`'ın bugünkü içeriği**, yani
-    dondurulan JSON tam `HistoryEntry` şekli olmalı — alan kırpma YOK:
-    kelime başına `wordScores` (x2/x3 dahil), Bingo/jokerli-bitiş/Sınır
-    İhlali rozetlerini besleyen alanlar, ve `invasionFrom` satırları
-    (modal onları kart olarak GÖSTERMİYOR ama toplam puana katıyor —
-    atılırsa toplamlar bozulur).
-  - **UI maliyeti ~sıfır:** `MoveHistoryModal` iki platformda da hazır ve
-    `GameState` alıyor; geçmiş kartı zaten `buildSnapshotGameState` ile
-    sahte-ama-geçerli bir `GameState` üretiyor (tahta önizlemesi bunu
-    kullanıyor) — üzerine `moveHistory` konup mevcut modal açılır. Yeni
-    modal/bağımlılık yok.
-  - **İkon HER kartta görünür** (sohbet rozetinin aksine — o yalnızca
-    `message_count > 0` iken çıkıyor), çünkü her bitmiş oyunun hamlesi
-    var. Kullanıcı isteği bu yönde ("aynı boyda bir file ikonu").
-  - **Geriye dönük:** yerel oyunlar kurtarılamaz (veri hiç yazılmamış),
-    kart `board_snapshot`'taki gibi "kaydedilmemiş" der. **Canlı oyunlar
-    DOLDURULABİLİR** — `online_game_moves` duruyor (bugün 32 oyun / 1055
-    satır); migration'a tek seferlik bir backfill eklenebilir.
-  - **Kapsam:** 1 migration + web'de 3 dosya (`gameRecord.ts`, `api.ts`'e
-    bir fetch, `GameHistoryModal.tsx`) + mobilde 3 dosya
-    (`game_record.dart`, `games_api.dart`, `game_history_modal.dart`) —
-    kabaca Parça 5b (sohbet arşivi) büyüklüğünde tek bir parça. Web tarafı
-    da değiştiğinden kök `CLAUDE.md`'nin "Web'de Yapılacak İşler"
-    listesinde de bir işaret var.
 
 - **Kayıt onayı maili kaydın GELDİĞİ kanala dönmeli (10 Ağustos 2026,
   kullanıcı kararı — sözleri: "Kişilerin kayıt başvurusu hangi kanaldan

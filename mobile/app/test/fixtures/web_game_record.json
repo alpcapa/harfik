@@ -2061,6 +2061,794 @@
      "l": "R",
      "o": 1
     }
+   ],
+   "moves": [
+    {
+     "turn": 0,
+     "player": 0,
+     "words": [
+      "AÇINMA"
+     ],
+     "points": 10,
+     "wordScores": [
+      {
+       "word": "AÇINMA",
+       "score": 10,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 1,
+     "player": 1,
+     "words": [
+      "AMOR"
+     ],
+     "points": 6,
+     "wordScores": [
+      {
+       "word": "AMOR",
+       "score": 6,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 2,
+     "player": 0,
+     "words": [
+      "MARKET"
+     ],
+     "points": 14,
+     "wordScores": [
+      {
+       "word": "MARKET",
+       "score": 7,
+       "x2": true,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 3,
+     "player": 1,
+     "words": [
+      "ŞOM"
+     ],
+     "points": 8,
+     "wordScores": [
+      {
+       "word": "ŞOM",
+       "score": 8,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 4,
+     "player": 0,
+     "words": [
+      "AKAİT",
+      "AK",
+      "RA",
+      "Kİ",
+      "ET"
+     ],
+     "points": 17,
+     "wordScores": [
+      {
+       "word": "AKAİT",
+       "score": 4,
+       "x2": true,
+       "x3": false
+      },
+      {
+       "word": "AK",
+       "score": 2,
+       "x2": false,
+       "x3": false
+      },
+      {
+       "word": "RA",
+       "score": 1,
+       "x2": false,
+       "x3": false
+      },
+      {
+       "word": "Kİ",
+       "score": 2,
+       "x2": false,
+       "x3": false
+      },
+      {
+       "word": "ET",
+       "score": 2,
+       "x2": true,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 5,
+     "player": 1,
+     "words": [
+      "AŞOZ"
+     ],
+     "points": 11,
+     "wordScores": [
+      {
+       "word": "AŞOZ",
+       "score": 11,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 6,
+     "player": 0,
+     "words": [
+      "FİYAT"
+     ],
+     "points": 13,
+     "wordScores": [
+      {
+       "word": "FİYAT",
+       "score": 13,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 7,
+     "player": 1,
+     "words": [
+      "ALO",
+      "ALA"
+     ],
+     "points": 7,
+     "wordScores": [
+      {
+       "word": "ALO",
+       "score": 4,
+       "x2": false,
+       "x3": false
+      },
+      {
+       "word": "ALA",
+       "score": 3,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 8,
+     "player": 0,
+     "words": [
+      "JALE",
+      "JET"
+     ],
+     "points": 25,
+     "wordScores": [
+      {
+       "word": "JALE",
+       "score": 13,
+       "x2": false,
+       "x3": false
+      },
+      {
+       "word": "JET",
+       "score": 12,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 9,
+     "player": 1,
+     "words": [
+      "SİZ"
+     ],
+     "points": 7,
+     "wordScores": [
+      {
+       "word": "SİZ",
+       "score": 7,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 10,
+     "player": 0,
+     "words": [
+      "LÖSEMİT"
+     ],
+     "points": 30,
+     "wordScores": [
+      {
+       "word": "LÖSEMİT",
+       "score": 15,
+       "x2": true,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 11,
+     "player": 1,
+     "words": [
+      "KİLÜS"
+     ],
+     "points": 16,
+     "wordScores": [
+      {
+       "word": "KİLÜS",
+       "score": 8,
+       "x2": true,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 12,
+     "player": 0,
+     "words": [
+      "BİNGİ"
+     ],
+     "points": 22,
+     "wordScores": [
+      {
+       "word": "BİNGİ",
+       "score": 11,
+       "x2": true,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 13,
+     "player": 1,
+     "words": [
+      "EKE"
+     ],
+     "points": 6,
+     "wordScores": [
+      {
+       "word": "EKE",
+       "score": 3,
+       "x2": true,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 14,
+     "player": 0,
+     "words": [
+      "PUT",
+      "BU"
+     ],
+     "points": 39,
+     "wordScores": [
+      {
+       "word": "PUT",
+       "score": 8,
+       "x2": false,
+       "x3": true
+      },
+      {
+       "word": "BU",
+       "score": 5,
+       "x2": false,
+       "x3": true
+      }
+     ]
+    },
+    {
+     "turn": 15,
+     "player": 1,
+     "words": [
+      "TAZE"
+     ],
+     "points": 7,
+     "wordScores": [
+      {
+       "word": "TAZE",
+       "score": 7,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 16,
+     "player": 0,
+     "words": [
+      "KIYGI"
+     ],
+     "points": 13,
+     "wordScores": [
+      {
+       "word": "KIYGI",
+       "score": 13,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 17,
+     "player": 1,
+     "words": [
+      "ÇAKIR"
+     ],
+     "points": 16,
+     "wordScores": [
+      {
+       "word": "ÇAKIR",
+       "score": 8,
+       "x2": true,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 18,
+     "player": 0,
+     "words": [
+      "EN",
+      "MEY"
+     ],
+     "points": 16,
+     "wordScores": [
+      {
+       "word": "EN",
+       "score": 2,
+       "x2": true,
+       "x3": false
+      },
+      {
+       "word": "MEY",
+       "score": 6,
+       "x2": true,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 19,
+     "player": 1,
+     "words": [
+      "BRİÇ",
+      "İT"
+     ],
+     "points": 20,
+     "wordScores": [
+      {
+       "word": "BRİÇ",
+       "score": 8,
+       "x2": true,
+       "x3": false
+      },
+      {
+       "word": "İT",
+       "score": 2,
+       "x2": true,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 20,
+     "player": 0,
+     "words": [
+      "ÖD"
+     ],
+     "points": 10,
+     "wordScores": [
+      {
+       "word": "ÖD",
+       "score": 10,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 21,
+     "player": 1,
+     "words": [
+      "KUCAK",
+      "İTA"
+     ],
+     "points": 12,
+     "wordScores": [
+      {
+       "word": "KUCAK",
+       "score": 9,
+       "x2": false,
+       "x3": false
+      },
+      {
+       "word": "İTA",
+       "score": 3,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 22,
+     "player": 0,
+     "words": [
+      "FAL"
+     ],
+     "points": 9,
+     "wordScores": [
+      {
+       "word": "FAL",
+       "score": 9,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 23,
+     "player": 1,
+     "words": [
+      "CAĞ"
+     ],
+     "points": 13,
+     "wordScores": [
+      {
+       "word": "CAĞ",
+       "score": 13,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 24,
+     "player": 0,
+     "words": [
+      "AD"
+     ],
+     "points": 4,
+     "wordScores": [
+      {
+       "word": "AD",
+       "score": 4,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 25,
+     "player": 1,
+     "words": [
+      "VEFA",
+      "KE",
+      "UF"
+     ],
+     "points": 13,
+     "wordScores": [
+      {
+       "word": "VEFA",
+       "score": 9,
+       "x2": false,
+       "x3": false
+      },
+      {
+       "word": "KE",
+       "score": 2,
+       "x2": false,
+       "x3": false
+      },
+      {
+       "word": "UF",
+       "score": 2,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 26,
+     "player": 0,
+     "words": [
+      "Mİ"
+     ],
+     "points": 3,
+     "wordScores": [
+      {
+       "word": "Mİ",
+       "score": 3,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 27,
+     "player": 1,
+     "words": [
+      "VE"
+     ],
+     "points": 8,
+     "wordScores": [
+      {
+       "word": "VE",
+       "score": 8,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 28,
+     "player": 0,
+     "words": [
+      "IH"
+     ],
+     "points": 7,
+     "wordScores": [
+      {
+       "word": "IH",
+       "score": 7,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 29,
+     "player": 1,
+     "words": [
+      "KEŞ",
+      "KEŞ"
+     ],
+     "points": 12,
+     "wordScores": [
+      {
+       "word": "KEŞ",
+       "score": 6,
+       "x2": false,
+       "x3": false
+      },
+      {
+       "word": "KEŞ",
+       "score": 6,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 30,
+     "player": 0,
+     "words": [
+      "KUNT"
+     ],
+     "points": 5,
+     "wordScores": [
+      {
+       "word": "KUNT",
+       "score": 5,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 31,
+     "player": 1,
+     "words": [
+      "AB"
+     ],
+     "points": 4,
+     "wordScores": [
+      {
+       "word": "AB",
+       "score": 4,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 32,
+     "player": 0,
+     "words": [
+      "NÜ"
+     ],
+     "points": 3,
+     "wordScores": [
+      {
+       "word": "NÜ",
+       "score": 4,
+       "x2": false,
+       "x3": false
+      }
+     ],
+     "lostShares": [
+      {
+       "to": 1,
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "turn": 32,
+     "player": 1,
+     "words": [
+      "NÜ"
+     ],
+     "points": 1,
+     "invasionFrom": 0
+    },
+    {
+     "turn": 33,
+     "player": 1,
+     "words": [
+      "ESNA"
+     ],
+     "points": 5,
+     "wordScores": [
+      {
+       "word": "ESNA",
+       "score": 5,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 34,
+     "player": 0,
+     "words": [
+      "EL"
+     ],
+     "points": 1,
+     "wordScores": [
+      {
+       "word": "EL",
+       "score": 2,
+       "x2": false,
+       "x3": false
+      }
+     ],
+     "lostShares": [
+      {
+       "to": 1,
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "turn": 34,
+     "player": 1,
+     "words": [
+      "EL"
+     ],
+     "points": 1,
+     "invasionFrom": 0
+    },
+    {
+     "turn": 35,
+     "player": 1,
+     "words": [
+      "UR",
+      "IR"
+     ],
+     "points": 4,
+     "wordScores": [
+      {
+       "word": "UR",
+       "score": 3,
+       "x2": false,
+       "x3": false
+      },
+      {
+       "word": "IR",
+       "score": 3,
+       "x2": false,
+       "x3": false
+      }
+     ],
+     "lostShares": [
+      {
+       "to": 0,
+       "amount": 2
+      }
+     ]
+    },
+    {
+     "turn": 35,
+     "player": 0,
+     "words": [
+      "UR",
+      "IR"
+     ],
+     "points": 2,
+     "invasionFrom": 1
+    },
+    {
+     "turn": 36,
+     "player": 0,
+     "words": [],
+     "points": 0,
+     "action": "pass"
+    },
+    {
+     "turn": 37,
+     "player": 1,
+     "words": [
+      "ÜN"
+     ],
+     "points": 3,
+     "wordScores": [
+      {
+       "word": "ÜN",
+       "score": 4,
+       "x2": false,
+       "x3": false
+      }
+     ],
+     "lostShares": [
+      {
+       "to": 0,
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "turn": 37,
+     "player": 0,
+     "words": [
+      "ÜN"
+     ],
+     "points": 1,
+     "invasionFrom": 1
+    },
+    {
+     "turn": 38,
+     "player": 0,
+     "words": [],
+     "points": 0,
+     "action": "pass"
+    },
+    {
+     "turn": 39,
+     "player": 1,
+     "words": [],
+     "points": 0,
+     "action": "pass"
+    },
+    {
+     "turn": 40,
+     "player": 0,
+     "words": [],
+     "points": 0,
+     "action": "pass"
+    },
+    {
+     "turn": 41,
+     "player": 1,
+     "words": [],
+     "points": 0,
+     "action": "pass"
+    }
    ]
   }
  },
@@ -3279,6 +4067,214 @@
      "c": 12,
      "l": "O",
      "o": 3
+    }
+   ],
+   "moves": [
+    {
+     "turn": 0,
+     "player": 0,
+     "words": [
+      "ÇELLO"
+     ],
+     "points": 7,
+     "wordScores": [
+      {
+       "word": "ÇELLO",
+       "score": 7,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 1,
+     "player": 1,
+     "words": [
+      "ŞAYET"
+     ],
+     "points": 10,
+     "wordScores": [
+      {
+       "word": "ŞAYET",
+       "score": 10,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 2,
+     "player": 2,
+     "words": [
+      "ÖTE"
+     ],
+     "points": 9,
+     "wordScores": [
+      {
+       "word": "ÖTE",
+       "score": 9,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 3,
+     "player": 3,
+     "words": [
+      "MİSO"
+     ],
+     "points": 7,
+     "wordScores": [
+      {
+       "word": "MİSO",
+       "score": 7,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 4,
+     "player": 0,
+     "words": [
+      "OD"
+     ],
+     "points": 5,
+     "wordScores": [
+      {
+       "word": "OD",
+       "score": 5,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 5,
+     "player": 1,
+     "words": [
+      "BASIŞ"
+     ],
+     "points": 12,
+     "wordScores": [
+      {
+       "word": "BASIŞ",
+       "score": 12,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 6,
+     "player": 2,
+     "words": [
+      "EPİKRİZ"
+     ],
+     "points": 14,
+     "wordScores": [
+      {
+       "word": "EPİKRİZ",
+       "score": 14,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 7,
+     "player": 3,
+     "words": [
+      "CAM"
+     ],
+     "points": 7,
+     "wordScores": [
+      {
+       "word": "CAM",
+       "score": 7,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 8,
+     "player": 0,
+     "words": [
+      "EY"
+     ],
+     "points": 3,
+     "wordScores": [
+      {
+       "word": "EY",
+       "score": 3,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 9,
+     "player": 1,
+     "words": [
+      "BÜTAN"
+     ],
+     "points": 18,
+     "wordScores": [
+      {
+       "word": "BÜTAN",
+       "score": 9,
+       "x2": true,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 10,
+     "player": 2,
+     "words": [
+      "EKİP",
+      "ÖK",
+      "Tİ"
+     ],
+     "points": 18,
+     "wordScores": [
+      {
+       "word": "EKİP",
+       "score": 8,
+       "x2": false,
+       "x3": false
+      },
+      {
+       "word": "ÖK",
+       "score": 8,
+       "x2": false,
+       "x3": false
+      },
+      {
+       "word": "Tİ",
+       "score": 2,
+       "x2": false,
+       "x3": false
+      }
+     ]
+    },
+    {
+     "turn": 11,
+     "player": 3,
+     "words": [
+      "ACARA"
+     ],
+     "points": 8,
+     "wordScores": [
+      {
+       "word": "ACARA",
+       "score": 8,
+       "x2": false,
+       "x3": false
+      }
+     ]
     }
    ]
   }

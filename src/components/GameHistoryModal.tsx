@@ -5,10 +5,14 @@ import {
   fetchMyGames,
   fetchGameBoardSnapshot,
   fetchGameLikers,
+  fetchGameMoves,
   toggleGameLike,
   markGameShared,
 } from '../lib/api';
 import type { BoardSnapshotTile, GameHistoryEntry, GameLiker, GamePlayerSnapshot } from '../lib/database.types';
+import type { HistoryEntry } from '../game/types';
+import { buildSnapshotGameState } from '../utils/boardSnapshot';
+import { MoveHistoryModal } from './MoveHistoryModal';
 import { useAuth } from '../hooks/useAuth';
 import { PLAYER_COLORS } from '../game/constants';
 import { PlayerBadge } from './PlayerBadge';
@@ -157,6 +161,21 @@ function ChatBubbleIcon({ size = 12 }: { size?: number }) {
   );
 }
 
+/** Hamle geçmişi ikonu — sohbet rozetiyle AYNI boyda (kullanıcı isteği:
+ *  "mesaj balonunun yanına aynı boyda bir file ikonu"). Path verisi
+ *  `Board.tsx`'in alt şeridindeki "Hamleler" ikonuyla BİREBİR aynı: aynı
+ *  şeyi açan iki kontrol aynı görünmeli (bkz. `RelationIcons` ilkesi) —
+ *  biri değişirse öteki de değişmeli. */
+function MovesIcon({ size = 12 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="M9 13h6M9 17h6" />
+    </svg>
+  );
+}
+
 /**
  * Tahta önizlemesinin üstünde tek satır skor kutuları — `GameHeader`'daki
  * oyun içi skor kutularıyla aynı görsel dil (renk = zone.tint dolgu +
@@ -291,6 +310,13 @@ export function GameHistoryModal({
   // Oyun İçi Mesajlaşma — Faz 1: bir oyun kartındaki sohbet rozetine
   // tıklanınca o oyunun tüm sohbet geçmişini gösteren modal.
   const [selectedChatGameId, setSelectedChatGameId] = useState<string | null>(null);
+  // Hamle geçmişi — döküm lazy çekilip önbelleğe alınır (`board_snapshot`
+  // ile aynı desen). `null` değeri "çekildi ama kaydedilmemiş" demek;
+  // anahtarın hiç olmaması "henüz çekilmedi".
+  const [selectedMovesGameId, setSelectedMovesGameId] = useState<string | null>(null);
+  const [movesByGame, setMovesByGame] = useState<Record<string, HistoryEntry[] | null>>({});
+  const [movesLoading, setMovesLoading] = useState(false);
+  const [movesError, setMovesError] = useState(false);
 
   const handleShowLikers = useCallback((gameId: string) => {
     setLikersGameId(gameId);
@@ -486,6 +512,31 @@ export function GameHistoryModal({
     });
   }, [playerCount, userId, favoritesOnly]);
 
+  // Hamle geçmişi ikonuna basılınca dökümü lazy çeker (bir kez; sonra
+  // önbellekten). Hata ile "kaydedilmemiş" AYRI durumlar: ilki yeniden
+  // denenebilir, ikincisi kalıcı (kolon eklenmeden önce biten yerel oyunlar).
+  useEffect(() => {
+    const id = selectedMovesGameId;
+    if (!id || id in movesByGame) return;
+    let cancelled = false;
+    setMovesLoading(true);
+    setMovesError(false);
+    fetchGameMoves(id)
+      .then((rows) => {
+        if (cancelled) return;
+        setMovesByGame((prev) => ({ ...prev, [id]: rows }));
+      })
+      .catch(() => {
+        if (!cancelled) setMovesError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setMovesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedMovesGameId, movesByGame]);
+
   // Liste kaydırılıp en alttaki sentinel göründüğünde bir sonraki sayfayı yükler.
   useEffect(() => {
     if (!hasMore || loading) return;
@@ -617,6 +668,20 @@ export function GameHistoryModal({
                           {entry.message_count}
                         </button>
                       )}
+                      {/* Hamle geçmişi — sohbet rozetinin AKSİNE her kartta
+                          görünür: her bitmiş oyunun hamlesi var. Dökümün
+                          kendisi lazy (`fetchGameMoves`), kart açılmadan
+                          çekilmiyor. */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedMovesGameId(entry.id);
+                        }}
+                        aria-label="Hamle geçmişini göster"
+                        className="flex items-center text-muted shrink-0"
+                      >
+                        <MovesIcon />
+                      </button>
                     </span>
                     <span className="flex items-center gap-2 shrink-0 ml-auto">
                       <span className="w-9 text-right">Puan</span>
@@ -785,6 +850,45 @@ export function GameHistoryModal({
           onClose={() => setSelectedChatGameId(null)}
         />
       )}
+      {selectedMovesGameId && (() => {
+        const entry = games.find((g) => g.id === selectedMovesGameId);
+        const rows = movesByGame[selectedMovesGameId];
+        const close = () => setSelectedMovesGameId(null);
+        if (movesLoading || !(selectedMovesGameId in movesByGame)) {
+          return (
+            <Modal title="Hamleler" onClose={close}>
+              <p className="text-muted text-xs font-mono text-center py-4">Yükleniyor…</p>
+            </Modal>
+          );
+        }
+        if (movesError) {
+          return (
+            <Modal title="Hamleler" onClose={close}>
+              <p className="text-muted text-xs font-mono text-center py-4">
+                Hamleler yüklenemedi. Bağlantını kontrol edip tekrar dene.
+              </p>
+            </Modal>
+          );
+        }
+        if (!rows || rows.length === 0) {
+          // Kolon eklenmeden ÖNCE biten yerel oyunlar — veri hiç yazılmamış,
+          // kurtarılamaz (tahta önizlemesindeki aynı durum).
+          return (
+            <Modal title="Hamleler" onClose={close}>
+              <p className="text-muted text-xs font-mono text-center py-4">
+                Bu oyun için hamle geçmişi kaydedilmemiş.
+              </p>
+            </Modal>
+          );
+        }
+        // `MoveHistoryModal` yalnızca `moveHistory` ve `players`ı okuyor —
+        // tahtaya hiç bakmadığından boş bir snapshot yeterli.
+        const state = {
+          ...buildSnapshotGameState([], entry?.player_count ?? 2, entry?.players ?? []),
+          moveHistory: rows,
+        };
+        return <MoveHistoryModal state={state} onClose={close} />;
+      })()}
     </Modal>
   );
 }

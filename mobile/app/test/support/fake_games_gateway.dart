@@ -100,6 +100,23 @@ class FakeGamesGateway implements GamesGateway {
   Future<List<Map<String, Object?>>?> gameBoardSnapshot(String gameId) async =>
       snapshots[gameId];
 
+  /// gameId → dondurulmuş hamle dökümü. Anahtarın HİÇ olmaması gerçek uçtaki
+  /// "kaydedilmemiş" (null kolon) durumunu, `movesFail` ise ağ hatasını
+  /// taklit eder — repo ikisini AYRI taşıdığından (bkz. `GamesRepo.moves`)
+  /// sahte uç da ikisini ayrı üretebilmek zorunda (Parça 46'nın dersi).
+  Map<String, List<Map<String, Object?>>> movesByGame = const {};
+  bool movesFail = false;
+
+  /// "Lazy mi?" sorusunun kanıtı — liste yüklenirken boş kalmalı.
+  final movesCalls = <String>[];
+
+  @override
+  Future<List<Map<String, Object?>>?> gameMoves(String gameId) async {
+    movesCalls.add(gameId);
+    if (movesFail) throw Exception('ağ yok');
+    return movesByGame[gameId];
+  }
+
   // ── Beğeni / sohbet arşivi (parça 5b) ─────────────────────────────────
   /// gameId → o oyunu beğenenler (gerçek uçtaki `game_likers` sırası:
   /// en yeni önce; sahte tarafta verilen sıra korunur).
