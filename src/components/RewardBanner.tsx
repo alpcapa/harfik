@@ -76,7 +76,7 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
         ? String(milestone)
         : `+${rewardPoints}`;
   const title = rankDown
-    ? 'Rütben geriledi'
+    ? 'Rütben geriledi!'
     : rankUpTier
       ? `Yeni rütben: ${rankUpTier.name}!`
       : milestone
@@ -165,7 +165,8 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
                     </span>
                     <span className="font-bold text-text">{rankDown.currentPoints}</span>
                     <span className="flex flex-col items-end leading-tight">
-                      <span>{rankDown.fromThreshold} puan</span>
+                      {/* Yalnızca SAYI — RankInfoModal'daki aynı kural. */}
+                      <span>{rankDown.fromThreshold}</span>
                       {/* Düşülen eşiğin ödülü ZATEN alındı — kişi geri düşse
                           bile yeşil ✓ kalır, yeniden aşmak ikinci kez vermez
                           (ilk sürümdeki "(0)" yerine kullanıcı fikri). */}

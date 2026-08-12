@@ -118,7 +118,12 @@ export function RankInfoModal({ tier, totalScore, bonusPoints, onClose }: RankIn
                 </span>
                 <span className="font-bold text-text">{totalScore}</span>
                 <span className="flex flex-col items-end leading-tight">
-                  <span>{nextTier.threshold} puan</span>
+                  {/* Hedef eşik: YALNIZCA SAYI (12 Ağustos 2026, kullanıcı
+                      kararı). İlk sürüm "N puan" yazıyordu; "puan" kelimesi
+                      hemen üstteki "Sıradaki rütbe: … · N puan" satırında
+                      zaten geçtiğinden alt alta tekrar oluyordu — sayı
+                      kalır, kelime kalkar. */}
+                  <span>{nextTier.threshold}</span>
                   {nextTier.reward > 0 &&
                     (rewardAlreadyClaimed(nextTier, bonusPoints) ? (
                       <span className="text-green font-bold">(+{nextTier.reward})<span className="text-[13px] leading-none align-middle">✓</span></span>

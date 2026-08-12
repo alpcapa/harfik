@@ -5,6 +5,21 @@
 // kullanım yeri path/daireleri KOPYALAMASIN — RelationIcons ile aynı ilke.
 import type { RankTier } from '../utils/leagueRank';
 
+// Tırtıklı (noter mührü) dış kenar — 12 Ağustos 2026, kullanıcı isteği
+// (referans görsel: testere dişli sertifika damgası). 24 diş; uç 21.0 /
+// vadi 18.8 — stroke 2.0'ın yarısı taşınca 22'lik viewBox sınırında
+// kırpılmadan kalır (eski düz çemberin 20.5 + 1.25 bütçesiyle aynı).
+// Flutter portu (mobile/app/lib/src/ui/rank/rank_seal.dart) AYNI üç
+// sabitle bir Path üretir — ikisi BİRLİKTE değişmeli.
+const TEETH = 24;
+const TIP_R = 21;
+const VALLEY_R = 18.8;
+const SCALLOP_POINTS = Array.from({ length: TEETH * 2 }, (_, i) => {
+  const r = i % 2 === 0 ? TIP_R : VALLEY_R;
+  const a = (i * Math.PI) / TEETH - Math.PI / 2;
+  return `${(22 + r * Math.cos(a)).toFixed(2)},${(22 + r * Math.sin(a)).toFixed(2)}`;
+}).join(' ');
+
 interface RankSealProps {
   tier: RankTier;
   size?: number;
@@ -34,7 +49,19 @@ export function RankSeal({ tier, size = 20, glyph, className }: RankSealProps) {
       className={className}
       style={{ color: tier.color, transform: 'rotate(-6deg)' }}
     >
-      <circle cx="22" cy="22" r="20.5" fill="#F5F7FA" stroke="currentColor" strokeWidth="2.5" />
+      {/* Küçük boyda tırtık alt-piksel gürültüsüne döner (18px'te diş
+          derinliği <1px) — kompakt mühür DÜZ çemberde kalır. */}
+      {compact ? (
+        <circle cx="22" cy="22" r="20.5" fill="#F5F7FA" stroke="currentColor" strokeWidth="2.5" />
+      ) : (
+        <polygon
+          points={SCALLOP_POINTS}
+          fill="#F5F7FA"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+      )}
       {!compact && (
         <circle
           cx="22"

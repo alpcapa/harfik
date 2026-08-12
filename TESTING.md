@@ -366,7 +366,8 @@ gerekiyor).
       ödül GERİ ALINMAMALI. "Genel = 2 kişilik + 4 kişilik + ödül" toplamı
       tutmalı.
 - [ ] **Mühür popup'ı.** Skor Kartı başlığı ile ✕ arasında ortalanmış büyük
-      mühre dokun: damga animasyonuyla bilgi popup'ı açılmalı (kademe adı +
+      mühre (dış kenarı TIRTIKLI — noter mührü gibi; k-lig listelerindeki
+      18px'lik küçük mühür ise DÜZ çember) dokun: damga animasyonuyla bilgi popup'ı açılmalı (kademe adı +
       puan + "+N eşik ödülü dahil" + sıradaki rütbe hedefi + hedefe akan
       ilerleme çubuğu; en üst kademede çubuk yok). Çubuk etiketleri: sol
       eşiğin ödülü YEŞİL "(+5)✓" (alınmış), hedef eşiğin ödülü GRİ "(+10)"
@@ -381,12 +382,13 @@ gerekiyor).
       banner'ı İKİNCİ kez ÇIKMAMALI ve ödül İKİNCİ kez VERİLMEMELİ (her
       eşik hayatta bir kez).
 - [ ] **Rütbe düşüş banner'ı.** Eşiğin altına inince konfetisiz, üzgün bir
-      banner çıkmalı ("Rütben geriledi … Kazandıkça geri yükselirsin!") ve
+      banner çıkmalı ("Rütben geriledi! … Kazandıkça geri yükselirsin!") ve
       bir kez gösterilmeli; aynı eşikten İKİNCİ kez düşülürse yeniden
       çıkmalı (diğer banner'ların aksine tekrarlanabilir). Görülmemiş
       olumlu bir kutlama ile çakışırsa yalnızca olumlu olan gösterilmeli.
       Banner'da kaybedilen eşiğe geri dönüş çubuğu olmalı; hedef etiketi
-      "50 puan" biçiminde ve altında yeşil "(+5)✓" (ödül + onay işareti =
+      YALNIZCA SAYI ("50" — "puan" kelimesi YOK) ve altında yeşil "(+5)✓"
+      (ödül + onay işareti =
       zaten alındı — kişi geri düşse bile yeşil ✓ kalır). Aynı kural bilgi
       popup'ında: düşmüş biri mühre dokununca hedef rozeti yeşil "(+N)✓"
       olmalı — hiç düşmemişte hedef GRİ "(+N)", ✓ yok.
