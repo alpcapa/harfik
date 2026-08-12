@@ -100,13 +100,20 @@ void main() {
       expect(tierFor(50).name, 'Meraklı');
       expect(tierFor(99).name, 'Meraklı');
       expect(tierFor(100).name, 'Oyuncu');
-      expect(tierFor(199).name, 'Oyuncu');
-      expect(tierFor(200).name, 'Usta');
+      expect(tierFor(249).name, 'Oyuncu');
+      expect(tierFor(250).name, 'Usta');
       expect(tierFor(499).name, 'Usta');
       expect(tierFor(500).name, 'Şampiyon');
       expect(tierFor(999).name, 'Şampiyon');
       expect(tierFor(1000).name, 'Destan');
-      expect(tierFor(99999).name, 'Destan');
+      expect(tierFor(2499).name, 'Destan');
+      expect(tierFor(2500).name, 'Efsane');
+      expect(tierFor(4999).name, 'Efsane');
+      expect(tierFor(5000).name, 'Uzaylı');
+      expect(tierFor(9999).name, 'Uzaylı');
+      expect(tierFor(10000).name, 'Tanrı');
+      // Tanrı EN ÜST kademe: üstünde hiçbir eşik yok, oraya varan orada kalır.
+      expect(tierFor(999999).name, 'Tanrı');
     });
 
     test('negatif puan ve null Çaylak\'a düşer (-2 cezaları mümkün kılıyor)',
@@ -120,22 +127,50 @@ void main() {
       expect(tierFor(0).color, kTilePts);
       expect(tierFor(50).color, kAccent);
       expect(tierFor(100).color, kGreen);
-      expect(tierFor(200).color, kGold);
+      expect(tierFor(250).color, kGold);
       expect(tierFor(500).color, kOrange);
       expect(tierFor(1000).color, kRed);
+      expect(tierFor(2500).color, kIndigo);
+      expect(tierFor(5000).color, kCyan);
+      expect(tierFor(10000).color, kGoldBright);
     });
 
-    test('ödül tablosu SQL ile aynı: 50→5, 100→10, 200→25, 500→50, 1000→100',
+    test('ödül tablosu SQL ile aynı ve ödül HER eşikte eşik/10', () {
+      const thresholds = [0, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
+      const rewards = [0, 5, 10, 25, 50, 100, 250, 500, 1000];
+      expect([for (final t in kRankTiers) t.threshold], thresholds);
+      expect([for (final t in kRankTiers) t.reward], rewards);
+      // Kuralın kendisi (12 Ağustos 2026): ödül = eşik/10, istisnasız.
+      for (final t in kRankTiers) {
+        expect(t.reward, t.threshold ~/ 10, reason: '${t.name} eşik/10 değil');
+      }
+      // Tanrı'nın ödülü league_rewards_points_check'in tavanına (1000) TAM
+      // oturuyor — bir üst kademe eklenirse o kısıt da büyütülmeli.
+      expect(kRankTiers.last.reward, 1000);
+    });
+
+    test('kümülatif ödüller BİRBİRİNDEN FARKLI — prefix çıkarımının ön şartı',
         () {
-      expect([for (final t in kRankTiers) t.threshold],
-          [0, 50, 100, 200, 500, 1000]);
-      expect([for (final t in kRankTiers) t.reward], [0, 5, 10, 25, 50, 100]);
+      // rewardAlreadyClaimed ödenen eşik kümesini yalnızca TOPLAM ödülden
+      // türetiyor; iki farklı prefix aynı toplamı verirse o çıkarım bozulur.
+      final sums = <int>[];
+      var cum = 0;
+      for (final t in kRankTiers) {
+        cum += t.reward;
+        sums.add(cum);
+      }
+      expect(sums, [0, 5, 15, 40, 90, 190, 440, 940, 1940]);
+      // Çaylak'ın 0'ı hariç hepsi tekil ve artan olmalı.
+      final nonZero = sums.skip(1).toList();
+      expect(nonZero.toSet().length, nonZero.length);
     });
 
     test('nextTierAfter: en üstte null', () {
       expect(nextTierAfter(tierFor(0))!.name, 'Meraklı');
       expect(nextTierAfter(tierFor(500))!.name, 'Destan');
-      expect(nextTierAfter(tierFor(1000)), isNull);
+      expect(nextTierAfter(tierFor(1000))!.name, 'Efsane');
+      expect(nextTierAfter(tierFor(5000))!.name, 'Tanrı');
+      expect(nextTierAfter(tierFor(10000)), isNull);
     });
   });
 
@@ -150,17 +185,20 @@ void main() {
       expect(rewardAlreadyClaimed(t(100), 5), isFalse);
       // 15 → 50 + 100
       expect(rewardAlreadyClaimed(t(100), 15), isTrue);
-      expect(rewardAlreadyClaimed(t(200), 15), isFalse);
-      // 40 → 50 + 100 + 200
-      expect(rewardAlreadyClaimed(t(200), 40), isTrue);
+      expect(rewardAlreadyClaimed(t(250), 15), isFalse);
+      // 40 → 50 + 100 + 250
+      expect(rewardAlreadyClaimed(t(250), 40), isTrue);
       expect(rewardAlreadyClaimed(t(500), 40), isFalse);
-      // 190 → hepsi
+      // 190 → Destan'a kadar hepsi, Efsane henüz değil
       expect(rewardAlreadyClaimed(t(1000), 190), isTrue);
+      expect(rewardAlreadyClaimed(t(2500), 190), isFalse);
+      // 1940 → Tanrı dahil hepsi
+      expect(rewardAlreadyClaimed(t(10000), 1940), isTrue);
     });
 
     test('Çaylak\'ın ödülü yok → hiçbir bonus değerinde "alınmış" olmaz', () {
       expect(rewardAlreadyClaimed(t(0), 0), isFalse);
-      expect(rewardAlreadyClaimed(t(0), 190), isFalse);
+      expect(rewardAlreadyClaimed(t(0), 1940), isFalse);
     });
   });
 
@@ -401,10 +439,24 @@ void main() {
     });
 
     testWidgets('en üst kademede çubuk yok', (tester) async {
+      // En üst kademe 12 Ağustos 2026'dan beri Tanrı (10000) — bu test
+      // önceden 1200/Destan kullanıyordu ve üç yeni kademe eklenince
+      // DOĞRU şekilde düştü (Destan artık en üst değil, çubuk çiziliyor).
+      await pumpInfo(tester, total: 12000, bonus: 1940);
+      expect(find.text('Tanrı'), findsOneWidget);
+      expect(find.text('En yüksek rütbedesin!'), findsOneWidget);
+      expect(find.byType(RankProgressBar), findsNothing);
+    });
+
+    testWidgets('Destan artık en üst DEĞİL — Efsane hedefiyle çubuk çizilir',
+        (tester) async {
       await pumpInfo(tester, total: 1200, bonus: 190);
       expect(find.text('Destan'), findsOneWidget);
-      expect(find.text('En yüksek rütbedesin!'), findsOneWidget);
-      expect(find.text('1200'), findsNothing, reason: 'çubuk etiketi olmamalı');
+      expect(find.text('En yüksek rütbedesin!'), findsNothing);
+      expect(find.byType(RankProgressBar), findsOneWidget);
+      expect(find.textContaining('Efsane'), findsOneWidget);
+      // Hedef etiketi yalnızca SAYI ("puan" kelimesi üstteki satırda).
+      expect(find.text('2500'), findsOneWidget);
     });
 
     testWidgets('bonus 0 iken "eşik ödülü dahil" satırı çizilmez',

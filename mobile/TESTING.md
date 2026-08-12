@@ -857,7 +857,7 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       şey yüklenmemeli. Bir resim-DIŞI dosya (galeri buna izin veriyorsa)
       seçilirse "Lütfen bir görsel dosyası seç." hatası çıkmalı.
 
-## 13. k-lig ödül & rütbe sistemi (Parça 61)
+## 13. k-lig ödül & rütbe sistemi (Parça 61-62)
 
 Ödül/rütbe kayıtları SUNUCUDA, `games`e satır ekleyen bir trigger'la
 (`games_award_league_rewards`) açılır — yani mobilde bitirilen bir oyun da
@@ -867,6 +867,28 @@ mobilde tekrar ÇIKMAMALI (ve tersi). Bu zincirin büyük kısmı otomatik test
 edilemiyor (gerçek oturum + gerçek oyun bitişi gerekiyor); web'in aynı
 listesi kök `TESTING.md` bölüm 10.
 
+- [ ] **Dokuz kademe, doğru eşik/ödül/renk (Parça 62).** Bilgi popup'ında
+      ve mühürde gösterilen kademe şu tabloyla BİREBİR uyuşmalı — üç kopya
+      (SQL / `leagueRank.ts` / `league_rank.dart`) elle senkron olduğundan
+      biri sapmışsa burada görünür:
+
+      | Kademe | Harf | Eşik | Ödül | Renk |
+      |---|---|---|---|---|
+      | Çaylak | Ç | 0 | — | gri |
+      | Meraklı | M | 50 | +5 | mavi |
+      | Oyuncu | O | 100 | +10 | yeşil |
+      | Usta | U | **250** | +25 | altın |
+      | Şampiyon | Ş | 500 | +50 | turuncu |
+      | Destan | D | 1000 | +100 | kırmızı |
+      | Efsane | E | 2500 | +250 | çivit |
+      | Uzaylı | **Z** | 5000 | +500 | camgöbeği |
+      | Tanrı | T | 10000 | +1000 | parlak altın |
+
+      Üç şeye ayrıca bak: (a) Uzaylı'nın harfi **Z** (U DEĞİL — o Usta'da);
+      (b) üç yeni rengin (çivit/camgöbeği/parlak altın) mühürde ve ilerleme
+      çubuğunda birbirinden ayırt edilebildiği; (c) **Tanrı EN ÜST** —
+      o kademede ilerleme çubuğu HİÇ çizilmemeli, Destan'da ise Efsane
+      (2500) hedefiyle çizilmeli.
 - [ ] **Kutlama banner'ı bir kez çıkar.** Görülmemiş bir ödülün varken
       (test için bir satırın `seen_at`'i SQL'le null'a çekilebilir)
       uygulamayı aç: mühür damgalı, konfetili banner ekranın ORTASINDA,

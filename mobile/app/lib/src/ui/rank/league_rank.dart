@@ -9,7 +9,9 @@
 // ⚠ ÜÇ KOPYA ELLE SENKRON: buradaki liste, web'in `leagueRank.ts`'i ve
 // SQL'deki `(values ...)` listeleri tek kaynak DEĞİL (SQL ↔ TS ↔ Dart
 // arasında paylaşım mümkün olmadığından). Biri değişirse üçü birden
-// değişmeli — hiçbir derleyici/test bunu yakalamaz.
+// değişmeli — hiçbir derleyici/test bunu yakalamaz. Son senkron: 12 Ağustos
+// 2026, `rank_tiers_efsane_uzayli_tanri` migration'ı (Usta 200→250; üstüne
+// Efsane 2500 / Uzaylı 5000 / Tanrı 10000).
 //
 // Rütbe DÜŞMELİ (12 Ağustos 2026, kullanıcı kararı): gösterilen kademe her
 // zaman GÜNCEL toplam puandan (`tierFor`) türetilir; puan -2 cezalarıyla
@@ -50,6 +52,14 @@ class RankTier {
   });
 }
 
+/// Kademeler. **Ödül = eşik/10**, istisnasız (12 Ağustos 2026 — Usta 200'den
+/// 250'ye çekilince bu kural tabloya tam oturdu; öncesinde tek kırık o
+/// değerdi). Yeni bir kademe eklenirse aynı orandan devam edilmeli.
+///
+/// Kümülatif ödüller (0/5/15/40/90/190/440/940/1940) BİRBİRİNDEN FARKLI olmak
+/// ZORUNDA — `rewardAlreadyClaimed` ödenen eşik kümesini yalnızca toplam ödül
+/// puanından türetiyor; iki farklı prefix aynı toplamı verirse o çıkarım
+/// bozulur.
 const kRankTiers = <RankTier>[
   // Çaylak'ın rengi web'de `#8A93A2` = tailwind `tile-pts` (bkz. kTilePts).
   RankTier(
@@ -58,7 +68,7 @@ const kRankTiers = <RankTier>[
       name: 'Meraklı', letter: 'M', color: kAccent, threshold: 50, reward: 5),
   RankTier(
       name: 'Oyuncu', letter: 'O', color: kGreen, threshold: 100, reward: 10),
-  RankTier(name: 'Usta', letter: 'U', color: kGold, threshold: 200, reward: 25),
+  RankTier(name: 'Usta', letter: 'U', color: kGold, threshold: 250, reward: 25),
   RankTier(
       name: 'Şampiyon',
       letter: 'Ş',
@@ -67,6 +77,26 @@ const kRankTiers = <RankTier>[
       reward: 50),
   RankTier(
       name: 'Destan', letter: 'D', color: kRed, threshold: 1000, reward: 100),
+  RankTier(
+      name: 'Efsane',
+      letter: 'E',
+      color: kIndigo,
+      threshold: 2500,
+      reward: 250),
+  // Uzaylı'nın harfi Z — "U" Usta'da kullanılıyor ve mühür tek glyph
+  // gösterdiğinden iki kademe yalnızca renkleriyle ayrışırdı (12 Ağustos
+  // 2026, kullanıcı kararı).
+  RankTier(
+      name: 'Uzaylı', letter: 'Z', color: kCyan, threshold: 5000, reward: 500),
+  // Tanrı EN ÜST kademe — üstüne kademe eklenmez, oraya varan orada kalır.
+  // Ödülü (1000) `league_rewards_points_check`'in tavanına (points <= 1000)
+  // TAM oturuyor: bir üst kademe eklenecekse o kısıt da büyütülmeli.
+  RankTier(
+      name: 'Tanrı',
+      letter: 'T',
+      color: kGoldBright,
+      threshold: 10000,
+      reward: 1000),
 ];
 
 /// Bir puan/eşik değerine karşılık gelen kademe — "threshold'u geçmeyen en

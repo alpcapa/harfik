@@ -26,6 +26,18 @@ const kGreen = Color(0xFF16A34A);
 const kRed = Color(0xFFDC2626);
 const kVoid = Color(0xFFE8EBEF);
 
+/// k-lig'in üç üst kademesinin damga renkleri (Efsane/Uzaylı/Tanrı, 12
+/// Ağustos 2026). Palet kırmızıya kadar doluydu; bu üçü tailwind'e de token
+/// olarak eklendi ki "her kademe rengi bir palet token'ıdır" değişmezi
+/// kırılmasın (kanonik kaynak yine `tailwind.config.js`).
+///
+/// `color_tokens_test`in "yerel kopya" taramasına DA eklendiler — `kTilePts`
+/// gibi bir istisna gerekmiyor, bu üç değerin `lib/` altında başka hiçbir
+/// anlamı yok.
+const kIndigo = Color(0xFF4F46E5);
+const kCyan = Color(0xFF06B6D4);
+const kGoldBright = Color(0xFFEAB308);
+
 /// tailwind `tile-pts` — taş puanının soluk grisi. Parça 61'de eklendi:
 /// k-lig rütbe merdiveninin ilk kademesi (Çaylak) web'de bu değeri taşıyor
 /// (`leagueRank.ts`, `#8A93A2`), yani artık taşın dışında da kullanılıyor.

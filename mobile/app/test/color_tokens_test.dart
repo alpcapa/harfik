@@ -56,6 +56,10 @@ void main() {
       'green': kGreen.toARGB32(),
       'red': kRed.toARGB32(),
       'void': kVoid.toARGB32(),
+      // Parça 62: k-lig'in üç üst kademesi (Efsane/Uzaylı/Tanrı).
+      'indigo': kIndigo.toARGB32(),
+      'cyan': kCyan.toARGB32(),
+      'gold-bright': kGoldBright.toARGB32(),
       // Parça 61: k-lig'in ilk kademesi (Çaylak) bu değeri taşıyor, yani
       // artık taşın dışında da kullanılıyor. Aşağıdaki "yerel kopya"
       // taramasına BİLEREK eklenmedi — gerekçe tokens.dart'ta yazılı.
@@ -90,6 +94,9 @@ void main() {
       kGreen.toARGB32(): 'kGreen',
       kRed.toARGB32(): 'kRed',
       kVoid.toARGB32(): 'kVoid',
+      kIndigo.toARGB32(): 'kIndigo',
+      kCyan.toARGB32(): 'kCyan',
+      kGoldBright.toARGB32(): 'kGoldBright',
     };
     final offenders = <String>[];
     for (final f in Directory('lib').listSync(recursive: true)) {

@@ -317,9 +317,10 @@ mobile/
                              # player_avatar_row, action_sheet, count_badge
       ui/score/              # skor kartı, k-lig, oyuncu kartı, oyun geçmişi,
                              # score_box_row (paylaşılan görselin üst şeridi)
-      ui/rank/               # k-lig rütbe/ödül katmanı (Parça 61):
-                             # league_rank (eşik/ödül tablosu — SQL ile ELLE
-                             # senkron!), rank_seal (mühür CustomPainter),
+      ui/rank/               # k-lig rütbe/ödül katmanı (Parça 61-62):
+                             # league_rank (9 kademelik eşik/ödül tablosu —
+                             # SQL ve leagueRank.ts ile ELLE senkron, ÜÇ
+                             # kopya!), rank_seal (mühür CustomPainter),
                              # rank_header_seal (skor kartlarının başlık
                              # mührü), rank_progress_bar (PAYLAŞILAN çubuk +
                              # RewardBadge), reward_banner (kutlama/düşüş),
@@ -1851,6 +1852,73 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ilgisiz bir test bir kez düşüp sonraki iki temiz koşuda hiç
        tekrarlamadı (Parça 13/21'de belgelenen sqflite yazma-kilidi
        flake'i — bu parçanın kodu o testin yoluna hiç değmiyor).
+
+   - ✅ **Parça 62 — rütbe merdiveni 6'dan 9 kademeye çıktı: Usta 250,
+     üstüne Efsane/Uzaylı/Tanrı (12 Ağustos 2026, `league_rank.dart`,
+     `tokens.dart`, `tailwind.config.js` + web `leagueRank.ts` +
+     `rank_tiers_efsane_uzayli_tanri` migration'ı):** Kullanıcı isteği —
+     *"Usta 200'ü 250 yapalım. Destan'dan sonra 2500 Efsane. 5000 Uzaylı.
+     10000 Tanrı olsun. Ödül puanları da aynı mantığa göre ayarla.
+     Tanrı'dan sonra hep tanrı olarak kalsın."* Yeni bir mekanizma YOK;
+     üç kopyalı tablo (SQL ↔ TS ↔ Dart) genişletildi.
+     - **Ödül = eşik/10 kuralı bu değişiklikle tabloya TAM oturdu.**
+       Kural zaten 5 kademede geçerliydi, TEK kırık üye Usta'ydı (200
+       eşik / 25 ödül). Kullanıcının eşiği 250'ye çekmesi onu farkında
+       olmadan onardı — yeni üçlü de aynı orandan türetildi (250/500/
+       1000). Tanrı'nın 1000'i `league_rewards_points_check`in tavanına
+       (`points <= 1000`) TAM oturuyor: bir üst kademe eklenecekse o
+       kısıt da büyütülmeli, bu üç dosyaya not düşüldü.
+     - **Kümülatif toplamlar PAİRWİSE FARKLI olmak ZORUNDA** —
+       `rewardAlreadyClaimed` ödenen eşik kümesini yalnızca TOPLAM ödül
+       puanından türetiyor. Yeni dizi 0/5/15/40/90/190/440/940/1940;
+       farklılık artık bir yorum değil TEST (aşağı bkz.).
+     - **Uzaylı'nın harfi "Z", "U" DEĞİL** — U zaten Usta'da ve mühür tek
+       glyph gösterdiğinden iki kademe yalnızca renkleriyle ayrışırdı.
+       Kullanıcı önce *"Mühür harfleri yerine uygun imojiler mi
+       yaratsak?"* diye sordu; üç ÖLÇÜLMÜŞ itirazla emoji elendi ve
+       kullanıcı harfleri seçti: (a) emoji kendi renkleriyle çizilir,
+       `fill`/`color` yok sayılır — kademe rengi (mührün tek kimlik
+       taşıyıcısı) kaybolurdu; (b) k-lig satırındaki mühür 18px, o boyda
+       emoji detayı okunmaz (harf okunuyor); (c) CanvasKit renkli emojiyi
+       çalışma anında `fonts.gstatic.com`'dan çekiyor (Parça 29'da
+       ölçüldü, `pubspec.yaml`'da gömülü emoji fontu YOK) — ağ engelliyse
+       boş daire çıkar, harfte böyle bir bağımlılık yok.
+     - **Üç yeni palet token'ı** (`kIndigo`/`kCyan`/`kGoldBright`) —
+       "her kademe rengi bir palet token'ıdır" değişmezi kırılmasın diye
+       `tailwind.config.js`'e de eklendiler (kanonik kaynak orası) ve
+       `color_tokens_test`in HEM tailwind parite HEM "yerel kopya"
+       taramasına girdiler; `kTilePts` gibi bir istisna gerekmedi, bu üç
+       değerin `lib/` altında başka anlamı yok. **`tailwind.config.js`
+       `mobile/` DIŞINDA** — port dalında mahsur kalmasın diye web yarısı
+       (leagueRank.ts + migration + tailwind) AYNI GÜN `main` tabanlı ayrı
+       bir dalda teslim edildi (Parça Bitirme Kontrol Listesi madde 1).
+     - **Canlıda GERÇEK fonksiyonla doğrulandı (geri alınan transaction):**
+       disposable bir hesaba 4900 sahte galibiyet yazılıp gerçek
+       `_award_league_rewards` çağrıldı — 8 eşiğin TAMAMI (Tanrı dahil)
+       tetiklendi. Bu aynı zamanda ödül geri besleme döngüsünü de
+       kanıtladı: 9800 taban puan tek başına 10000'i geçmiyor, biriken
+       940 ödül puanıyla geçiyor. `rollback` sonrası iz kalmadığı ayrıca
+       sorgulandı. Migration'dan ÖNCE de kontrol edildi: eşik 200'de hiç
+       `league_rewards` satırı yoktu, yani Usta değişikliği hiçbir kaydı
+       öksüz bırakmadı.
+     - **Test — negatif eş doğrulamasıyla:** `league_rewards_test.dart`'ın
+       sınırları (249/250 … 999999→Tanrı), renkleri ve ödül tablosu
+       genişletildi; ödül testi artık sabit listeyi karşılaştırmakla
+       kalmayıp `reward == threshold ~/ 10` kuralını da her kademede
+       zorluyor. Yeni bir test kümülatif toplamların farklılığını
+       sabitliyor. "En üst kademede çubuk yok" testi 1200/Destan'dan
+       12000/Tanrı'ya taşındı ve kardeşi eklendi ("Destan artık en üst
+       DEĞİL — Efsane hedefiyle çubuk çizilir"); bu eşleşme bilinçli, tek
+       başına ilki merdiven yanlış kısaltılsa da geçerdi. `league_rank.dart`
+       + `tokens.dart` + `tailwind.config.js` birlikte `git stash`lenince
+       takım GERÇEKTEN `+0 -2` (derleme hatası — belirsizliksiz) ile
+       düştü, geri konunca yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       354/354 yeşil** (352'den +2). `kelimeki_core`'a hiç dokunulmadı
+       (motor rütbe/ödül bilmiyor), golden vector turu gerekmedi.
+     - **Doğrulama sınırı:** cihazda görsel teyit (yeni üç rengin mühürde
+       ve ilerleme çubuğunda nasıl durduğu, "Z" harfinin okunabilirliği)
+       kullanıcıdan bekleniyor — `mobile/TESTING.md` bölüm 13 güncellendi.
 
 ## Sonraya Bırakılan İşler (mobil)
 
