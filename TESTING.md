@@ -452,10 +452,15 @@ gerekiyor).
       KADAR
       tekrar açılabilmeli (kutlamanın aksine "bir kez göster" kuralı yok).
       Başkasının kartında da (PlayerScoreCard) aynı mühür/popup çalışmalı.
-- [ ] **Popup'ta ✕ var, "KAPAT" butonu YOK.** Kapatma yalnızca sağ üstteki
-      ✕ (ve Escape / karartılmış zemine dokunma) ile — kartın altında tam
-      genişlikte bir buton OLMAMALI. Kutlama/düşüş banner'ında ise "DEVAM"
-      butonu KALMALI (o gerçek bir aksiyon: ödülleri görüldü işaretler).
+- [ ] **✕ var, "KAPAT"/"DEVAM" butonu YOK — popup'ta DA banner'da DA.**
+      (12 Ağustos 2026, kullanıcı isteği; önce yalnızca popup'a
+      uygulanmıştı, aynı gün kutlama/düşüş banner'ına da genişletildi.)
+      Kapatma yalnızca sağ üstteki ✕ (ve Escape) ile; kartın altında tam
+      genişlikte bir buton OLMAMALI. **KRİTİK — banner'da ✕ yalnızca
+      kapatmıyor:** ödülleri "görüldü" işaretleyen tek yol o. Kapattıktan
+      sonra sayfayı yenile: banner **BİR DAHA ÇIKMAMALI**. Çıkıyorsa ✕
+      `mark_league_rewards_seen`'e bağlanmamış demektir (bilgi popup'ında
+      tam tersi doğru: hiçbir şeye dokunmaz, istendiği kadar açılır).
 - [ ] **Kart gölgesinde beyaz hale yok.** Hem bilgi popup'ının hem kutlama/
       düşüş banner'ının kartı karartılmış zeminde yalnızca yumuşak, koyu
       bir düşen gölge taşımalı — sol/üst kenarda beyaz bir parıltı (nömorfik

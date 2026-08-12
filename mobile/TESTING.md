@@ -982,10 +982,16 @@ listesi kök `TESTING.md` bölüm 10.
       ödülü dahil" + sıradaki rütbe hedefi + hedefe AKAN ilerleme çubuğu;
       en üst kademede çubuk yok). İstendiği kadar tekrar açılabilmeli —
       kutlamanın aksine "bir kez göster" kuralı YOK.
-- [ ] **Popup'ta ✕ var, "KAPAT" butonu YOK.** Kapatma yalnızca sağ
-      üstteki ✕ (ve karartılmış zemine dokunma) ile — kartın altında tam
-      genişlikte bir buton OLMAMALI. Kutlama/düşüş banner'ında ise
-      "DEVAM" KALMALI (o gerçek bir aksiyon: ödülleri görüldü işaretler).
+- [ ] **✕ var, "KAPAT"/"DEVAM" butonu YOK — popup'ta DA banner'da DA.**
+      (12 Ağustos 2026, kullanıcı: "bu banner'larda kapat, devam vb
+      olmamalı, sadece X". Önce yalnızca popup'a uygulanmıştı, aynı gün
+      kutlama/düşüş banner'ına da genişletildi.) Kapatma yalnızca sağ
+      üstteki ✕ ile; kartın altında tam genişlikte bir buton OLMAMALI.
+      **KRİTİK — ✕ yalnızca kapatmıyor:** banner'da ödülleri "görüldü"
+      işaretleyen tek yol o. Kapattıktan sonra uygulamayı yeniden başlat:
+      banner **BİR DAHA ÇIKMAMALI**. Çıkıyorsa ✕ `markSeen`'e bağlanmamış
+      demektir (bilgi popup'ında ise tam tersi doğru: o hiçbir şeye
+      dokunmaz, istendiği kadar açılır).
 - [ ] **Kart gölgesinde beyaz hale yok.** Hem bilgi popup'ının hem
       kutlama/düşüş banner'ının kartı karartılmış zeminde yalnızca
       yumuşak, koyu bir düşen gölge taşımalı — sol/üst kenarda beyaz bir

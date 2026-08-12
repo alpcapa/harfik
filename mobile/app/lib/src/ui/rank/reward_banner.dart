@@ -17,7 +17,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../game/neo_box.dart';
-import '../game/neo_button.dart';
 import '../tokens.dart';
 import 'league_rank.dart';
 import 'rank_progress_bar.dart';
@@ -237,16 +236,6 @@ class _RewardBannerState extends State<RewardBanner>
                 ..._rankDownBody(rankDown)
               else
                 ..._celebrationBody(s, reached),
-              const SizedBox(height: 16), // web mt-4
-              NeoButton(
-                label: 'DEVAM',
-                variant: NeoButtonVariant.accent,
-                fontSize: 14,
-                letterSpacing: 1,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
-                onPressed: widget.onClose,
-              ),
             ],
           ),
         ),
@@ -272,6 +261,29 @@ class _RewardBannerState extends State<RewardBanner>
               borderColor: kBorder,
             ),
             child: content,
+          ),
+          // Kapatma: tam genişlikte bir "DEVAM" butonu yerine sağ üstte ✕
+          // (12 Ağustos 2026, kullanıcı isteği — RankInfoModal'a uygulanan
+          // aynı kararın banner'lara da genişletilmesi: "bu banner'larda
+          // kapat, devam vb olmamalı, sadece X"). Stil KModal/
+          // RankInfoModal ile birebir; iki kart aynı, biri değişirse öteki
+          // de.
+          //
+          // DİKKAT — bu buton yalnızca kapatmıyor: `onClose`
+          // `mark_league_rewards_seen`'i çağıran TEK yol (bkz.
+          // `LeagueRewardsHost._close`). "DEVAM" buraya çevrilirken aynı
+          // callback'e bağlı kaldı; başka bir kapatma yolu eklenirse (ör.
+          // zemine dokunma) o da `onClose`'tan geçmeli, aksi halde banner
+          // her açılışta yeniden çıkar.
+          Positioned(
+            top: 8,
+            right: 8,
+            child: IconButton(
+              visualDensity: VisualDensity.compact,
+              tooltip: 'Kapat',
+              onPressed: widget.onClose,
+              icon: const Icon(Icons.close, size: 18, color: kMuted),
+            ),
           ),
           if (rankDown == null && !_reduced)
             Positioned.fill(child: IgnorePointer(child: _confettiLayer())),

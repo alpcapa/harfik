@@ -311,7 +311,7 @@ void main() {
   }
 
   group('LeagueRewardsHost — banner akışı', () {
-    testWidgets('görülmemiş ödül → banner; DEVAM işaretler ve kapatır',
+    testWidgets('görülmemiş ödül → banner; ✕ işaretler ve kapatır',
         (tester) async {
       final gw = FakeRewardsGateway(rows: [
         rewardRow('rank_up', 100),
@@ -322,12 +322,19 @@ void main() {
       expect(find.text('Yeni rütben: Oyuncu!'), findsOneWidget);
       expect(find.text('100 k-lig puanına ulaştın'), findsOneWidget);
       expect(find.text('+10 ödül puanı eklendi'), findsOneWidget);
-      expect(gw.markSeenCalls, 0, reason: 'işaretleme yalnızca DEVAM\'da');
+      expect(gw.markSeenCalls, 0, reason: 'işaretleme yalnızca kapatmada');
       // Kart gölgesi düz düşen gölge — nömorfik beyaz parıltı YOK (bilgi
       // popup'ıyla AYNI kart, ikisi birlikte değişir).
       _expectFloatingCardShadow(tester);
 
-      await tester.tap(find.text('DEVAM'));
+      // 12 Ağustos 2026, kullanıcı isteği: banner'da "DEVAM"/"KAPAT" gibi
+      // tam genişlikte bir buton YOK, yalnızca sağ üstte ✕ (RankInfoModal
+      // ile aynı desen). Buton metni aranmıyor — asıl değişmez ✕'in
+      // `markSeen`'i HÂLÂ çağırması: o, `mark_league_rewards_seen`'e giden
+      // TEK yol; bağlanmazsa banner her açılışta yeniden çıkardı.
+      expect(find.widgetWithText(ElevatedButton, 'DEVAM'), findsNothing,
+          reason: 'banner\'da tam genişlikte aksiyon butonu olmamalı');
+      await tester.tap(find.byTooltip('Kapat'));
       await tester.pumpAndSettle();
       expect(gw.markSeenCalls, 1);
       expect(find.byType(RewardBanner), findsNothing);

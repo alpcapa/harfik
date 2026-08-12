@@ -1803,8 +1803,11 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        7. **Bilgi popup'ında kocaman "KAPAT" butonu kalktı, sağ üste ✕
           geldi** — salt bilgi veren bir popup'ın altına tam genişlikte
           aksiyon butonu konmaz; stil `KModal`ın ✕'inden birebir alındı.
-          **Banner'ın "DEVAM"ı KALDI:** o gerçek bir aksiyon (ödülleri
-          görüldü işaretler).
+          ~~**Banner'ın "DEVAM"ı KALDI:** o gerçek bir aksiyon (ödülleri
+          görüldü işaretler).~~ — **AYNI GÜN geri alındı, bkz. Parça 69:**
+          kullanıcı kuralı banner'lara da genişletti ("bu banner'larda
+          kapat, devam vb olmamalı, sadece X"); işaretleme kaybolmadı, ✕
+          aynı `onClose`'a bağlandı.
        8. **Kuyruklu harfler (Ç/Ş) mühürde alta kaçıyordu — taban çizgisi
           artık MÜREKKEPTEN hesaplanıyor** (kullanıcı: "Ç, Ş gibi altında
           kuyruk olan karakterler ortalı durmuyor, alta daha yakın
@@ -2304,6 +2307,44 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        `kelimeki_core`'a hiç dokunulmadı — golden vector turu gerekmedi.
      - **Doğrulama sınırı:** "artık rahat dokunuluyor" ancak gerçek parmakla
        ölçülür — `mobile/TESTING.md` bölüm 5'e madde eklendi.
+
+   - ✅ **Parça 69 — kutlama/düşüş banner'ında "DEVAM" kalktı, yerine ✕
+     (12 Ağustos 2026, `reward_banner.dart` + web `RewardBanner.tsx`):**
+     Kullanıcı, bölüm 13'ün cihaz turunda: *"bence bu banner'larda kapat,
+     devam vb olmamalı, sadece X."* Bu, AYNI GÜN `RankInfoModal`'a verilen
+     kararın (ilk sürümde bilinçli olarak yalnızca popup'a uygulanmıştı)
+     banner'lara genişletilmesi — o notta *"Banner'ın DEVAM'ı KALIR: o
+     gerçek bir aksiyon"* yazıyordu; gerekçe teknik olarak doğruydu ama
+     kullanıcı görsel tutarlılığı tercih etti. Eski karar dört yerde birden
+     yazılıydı (kök + mobil `CLAUDE.md`, kök + mobil `TESTING.md`,
+     `rank_info_modal.dart` yorumu) ve hepsi düzeltildi — bayat kalan bir
+     "KALIR" cümlesi bir sonraki oturumu geri aldırırdı.
+     - **Asıl risk kozmetik DEĞİL:** "DEVAM" yalnızca kapatmıyordu,
+       `onClose` → `LeagueRewardsHost._close` → `markSeen()` zincirini
+       tetikleyen TEK yoldu (`mark_league_rewards_seen`). Butonu silip ✕'i
+       farklı bir yola bağlamak, banner'ı **her açılışta yeniden gösteren**
+       bir hataya yol açardı. ✕ bilerek AYNI `widget.onClose`'a bağlandı;
+       web'de de aynı (`useModalA11y` üzerinden Escape zaten oraya bağlı).
+     - **✕ kopyalanmadı, `RankInfoModal`'dan birebir alındı** (mobilde
+       `IconButton` + `Icons.close` 18px/`kMuted`/`tooltip: 'Kapat'`,
+       webde `Modal.tsx`'in class'ları) — iki kart aynı kart, ikisi
+       birlikte değişir.
+     - **Kapsam sınırı (bilinçli):** "DEVAM" metni başka iki yerde daha
+       var — `FriendSuggestModal` ve sohbet hoşgeldin popup'ı. İkisi de
+       birer ONAY adımı (istek gönder / karşılandı), kapatma butonu değil;
+       kullanıcının cümlesi "bu banner'lar" diyordu. Dokunulmadı.
+     - **Test — negatif eş doğrulamasıyla:** mevcut banner testi ✕'e
+       çevrildi ve iki şeyi birden ölçüyor: tam genişlikte bir aksiyon
+       butonu OLMADIĞI + ✕'in `markSeen`'i HÂLÂ çağırdığı (`markSeenCalls`
+       0 → 1). `reward_banner.dart` `git stash`lenince test GERÇEKTEN düştü
+       (`Found 0 widgets` — ✕ yok), geri konunca yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; tam takım
+       **361/361** yeşil. Web `npm run lint` + `npm run build` temiz.
+       `kelimeki_core`'a dokunulmadı.
+     - **Doğrulama sınırı:** cihazda görsel teyit + "kapattıktan sonra bir
+       daha çıkmıyor" kontrolü kullanıcıdan bekleniyor — kök ve mobil
+       `TESTING.md`'deki ilgili madde bu iki şeyi birlikte soracak şekilde
+       yeniden yazıldı.
 
 ## Sonraya Bırakılan İşler (mobil)
 
