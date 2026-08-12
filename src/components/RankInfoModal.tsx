@@ -29,6 +29,15 @@ export function RankInfoModal({ tier, totalScore, bonusPoints, onClose }: RankIn
   }, []);
 
   const nextTier = RANK_TIERS.find((t) => t.threshold > tier.threshold) ?? null;
+  // Sıradaki rütbeye ilerleme — mevcut kademenin eşiğinden sonrakine oran
+  // (Meraklı 50 → Oyuncu 100 arasında 83 puan = %66). Puan negatifse
+  // (yalnızca -2 cezalarıyla mümkün, kademe zaten Çaylak) 0'a kırpılır.
+  const progress = nextTier
+    ? Math.min(
+        1,
+        Math.max(0, (totalScore - tier.threshold) / (nextTier.threshold - tier.threshold)),
+      )
+    : 1;
 
   // Modal.tsx'in portal'ı z-[150] olduğundan bunun da portal + daha yüksek
   // z-index ile açılması gerekiyor — aksi halde Skor Kartı'nın altında kalırdı.
@@ -70,6 +79,35 @@ export function RankInfoModal({ tier, totalScore, bonusPoints, onClose }: RankIn
               ? `Sıradaki rütbe: ${nextTier.name} · ${nextTier.threshold} puan`
               : 'En yüksek rütbedesin!'}
           </p>
+          {nextTier && (
+            <div className="mt-1.5">
+              {/* İlerleme çubuğu — dolgu, kart görünür olduktan sonra 0'dan
+                  gerçek orana animasyonla akar (width transition; visible
+                  zaten bir rAF sonrası true olduğundan geçiş atlanmaz).
+                  Renk SIRADAKİ kademenin rengi — hedefe doğru dolduğu için. */}
+              <div
+                className="h-2 rounded-full bg-panel border border-border overflow-hidden"
+                role="progressbar"
+                aria-valuemin={tier.threshold}
+                aria-valuemax={nextTier.threshold}
+                aria-valuenow={Math.min(totalScore, nextTier.threshold)}
+                aria-label={`${nextTier.name} rütbesine ilerleme`}
+              >
+                <div
+                  className="h-full rounded-full transition-[width] duration-700 ease-out"
+                  style={{
+                    width: visible ? `${Math.round(progress * 100)}%` : '0%',
+                    background: nextTier.color,
+                  }}
+                />
+              </div>
+              <div className="flex justify-between text-[9px] font-mono text-muted mt-0.5">
+                <span>{tier.threshold}</span>
+                <span className="font-bold text-text">{totalScore}</span>
+                <span>{nextTier.threshold}</span>
+              </div>
+            </div>
+          )}
           <button
             type="button"
             onClick={onClose}

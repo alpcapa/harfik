@@ -14,9 +14,14 @@ interface ModalProps {
   // ikonu (ör. ChatModal'ın Ayarlar/dişli ikonu, Oyun İçi Mesajlaşma — Faz 2).
   // headerLink'in aksine aynı satırda, başlıkla ✕ arasında render edilir.
   headerAction?: ReactNode;
+  // Başlık ile ✕ arasındaki BOŞLUĞUN ortasında gösterilen öğe (ör. Skor
+  // Kartı'nın rütbe mührü). headerAction'dan farkı hizalama: o ✕'e bitişik
+  // sağda durur, bu ikisinin arasında ortalanır. Verilmezse hiçbir şey
+  // değişmez (justify-between eski davranışı korur).
+  headerCenter?: ReactNode;
 }
 
-export function Modal({ title, onClose, children, headerLink, headerAction }: ModalProps) {
+export function Modal({ title, onClose, children, headerLink, headerAction, headerCenter }: ModalProps) {
   const containerRef = useModalA11y(true, onClose);
   const titleId = useId();
   return createPortal(
@@ -36,9 +41,12 @@ export function Modal({ title, onClose, children, headerLink, headerAction }: Mo
         <div className="shrink-0 flex flex-col gap-2 px-5 pt-5 pb-4 border-b border-border">
           {headerLink}
           <div className="flex items-center justify-between">
-            <h2 id={titleId} className="font-mono text-sm font-bold tracking-[1.5px] uppercase text-accent">
+            <h2 id={titleId} className="font-mono text-sm font-bold tracking-[1.5px] uppercase text-accent shrink-0">
               {title}
             </h2>
+            {headerCenter && (
+              <div className="flex-1 flex items-center justify-center min-w-0">{headerCenter}</div>
+            )}
             <div className="flex items-center gap-1 shrink-0">
               {headerAction}
               {/* Çoğu modalda headerLink olmadığından bu, DOM'daki ilk odaklanabilir

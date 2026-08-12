@@ -87,13 +87,13 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
     <Modal
       title="Skor Kartı"
       onClose={onClose}
-      headerAction={
+      headerCenter={
         rankTier ? (
           <button
             type="button"
             onClick={() => setShowRankInfo(true)}
             aria-label={`Rütbe: ${rankTier.name} — bilgi için dokun`}
-            className="shrink-0 leading-none active:scale-90 transition-transform mr-1"
+            className="shrink-0 leading-none active:scale-90 transition-transform"
           >
             <RankSeal tier={rankTier} size={34} />
           </button>

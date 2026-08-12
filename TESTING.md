@@ -364,9 +364,10 @@ gerekiyor).
 - [ ] **Ödül toplama doğru.** 50. tamamlanan oyun bitince +5 gelmeli;
       teslim/terkle biten oyunlar sayacı İLERLETMEMELİ (surrendered satır).
       "Genel = 2 kişilik + 4 kişilik + ödül" toplamı tutmalı.
-- [ ] **Mühür popup'ı.** Skor Kartı başlığının sağındaki büyük mühre dokun:
-      damga animasyonuyla bilgi popup'ı açılmalı (kademe adı + puan +
-      "+N oyun ödülü dahil" + sıradaki rütbe hedefi) ve İSTENDİĞİ KADAR
+- [ ] **Mühür popup'ı.** Skor Kartı başlığı ile ✕ arasında ortalanmış büyük
+      mühre dokun: damga animasyonuyla bilgi popup'ı açılmalı (kademe adı +
+      puan + "+N oyun ödülü dahil" + sıradaki rütbe hedefi + hedefe akan
+      ilerleme çubuğu; en üst kademede çubuk yok) ve İSTENDİĞİ KADAR
       tekrar açılabilmeli (kutlamanın aksine "bir kez göster" kuralı yok).
       Başkasının kartında da (PlayerScoreCard) aynı mühür/popup çalışmalı.
 - [ ] **Rütbe düşmeli.** -2 ceza alıp eşiğin altına inen bir hesabın mührü
