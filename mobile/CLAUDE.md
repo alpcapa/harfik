@@ -1757,6 +1757,16 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
           etiketi kaldırıp kullanıcıya düzelttirdim; istek "sonundaki
           puan yazısını kaldır"dı, çubuğun eşiğini gizlemek değil.
        3. **Düşüş banner'ının başlığına ünlem:** "Rütben geriledi!"
+       4. **Mühürdeki harf büyüdü — tam boyda 19 → 23.** Sayı ÖLÇÜLEREK
+          seçildi: kademe harflerinin (Ç M O U Ş D) `getBBox`'ı gerçek
+          Space Mono 700 ile Chromium'da okundu, merkeze en uzak köşe Ç'de
+          23'te **15.48**, 24'te **16.20** — iç kesikli halka r=16
+          olduğundan 24'te Ç/Ş'nin sedillası halkayı taşıyor (zoom'lu
+          render'da da görüldü). **Kompakt 27'DE KALDI:** oradaki sınır
+          dış çemberin iç kenarı (20.5 − 2.5/2 = 19.25) ve 27 zaten 18.17
+          ile tavana yakın (azami ~28.6) — bir punto artış görünmez, taşma
+          riski gerçek; o boy bir tur önce tam bu yüzden 19'dan 27'ye
+          çıkarılmıştı. Web `RankSeal.tsx` ile aynı gün aynı değere çekildi.
      - **Doğrulama (düzeltmeler sonrası):** `flutter analyze` "No issues
        found!"; **tam takım 350/350 yeşil** (yeni test eklenmedi, mevcut
        üç assertion güncellendi: `find.text('Rütben geriledi!')`,

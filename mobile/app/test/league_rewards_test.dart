@@ -493,9 +493,11 @@ void main() {
       expect(sealIsCompact(24), isFalse);
       expect(sealIsCompact(34), isFalse);
       expect(sealIsCompact(76), isFalse);
-      // Tek harf kompaktta BÜYÜR (okunurluk düzeltmesi).
+      // Tek harf kompaktta BÜYÜR (okunurluk düzeltmesi). Tam boydaki 23 ise
+      // iç kesikli halkanın (r=16) ölçülmüş tavanı — 24'te Ç/Ş'nin sedillası
+      // halkayı taşıyor (bkz. sealFontSize'ın doc yorumu).
       expect(sealFontSize('Ç', compact: true), 27);
-      expect(sealFontSize('Ç', compact: false), 19);
+      expect(sealFontSize('Ç', compact: false), 23);
       // Banner glyph'leri: "50"/"+5" orta, "+100" küçük.
       expect(sealFontSize('50', compact: false), 14);
       expect(sealFontSize('+5', compact: false), 14);
