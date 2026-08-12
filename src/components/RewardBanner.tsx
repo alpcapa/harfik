@@ -27,9 +27,11 @@ export interface RewardSummary {
   /**
    * Rütbe düşüş bildirimi — YALNIZCA hiçbir olumlu olay yokken doldurulur
    * (LeagueRewardsHost öncelik kuralı: olumlu varsa üzgün banner bastırılır).
-   * `fromThreshold` altına inilen eşik, `newTier` yeni (alt) kademe.
+   * `fromThreshold` altına inilen eşik, `newTier` yeni (alt) kademe,
+   * `currentPoints` banner anındaki güncel toplam (host ayrıca çeker) —
+   * ilerleme çubuğunun dolgusu için; çekilemezse çubuk gizlenir.
    */
-  rankDown?: { fromThreshold: number; newTier: RankTier };
+  rankDown?: { fromThreshold: number; newTier: RankTier; currentPoints?: number };
 }
 
 // Konfeti parçacıkları — merkezden dışa savrulan 8 nokta (CSS değişkenleriyle
@@ -118,6 +120,50 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
               <p className="reward-line-anim font-mono text-[11px] font-bold text-accent mt-1.5">
                 Kazandıkça geri yükselirsin!
               </p>
+              {rankDown.currentPoints !== undefined && (
+                <div className="mt-2 text-left">
+                  {/* Kaybedilen eşiğe geri dönüş çubuğu — RankInfoModal'daki
+                      aynı desen. Hedef etiketin altında BİLEREK "(0)": bu
+                      eşiğin ödülü zaten alındı, yeniden aşmak ikinci kez
+                      ödül VERMEZ (kullanıcı isteği — yanlış beklenti
+                      oluşmasın). */}
+                  <div
+                    className="h-2 rounded-full bg-panel border border-border overflow-hidden"
+                    role="progressbar"
+                    aria-valuemin={rankDown.newTier.threshold}
+                    aria-valuemax={rankDown.fromThreshold}
+                    aria-valuenow={Math.min(rankDown.currentPoints, rankDown.fromThreshold)}
+                    aria-label="Kaybedilen rütbeye geri dönüş ilerlemesi"
+                  >
+                    <div
+                      className="h-full rounded-full transition-[width] duration-700 ease-out"
+                      style={{
+                        width: visible
+                          ? `${Math.round(
+                              Math.min(
+                                1,
+                                Math.max(
+                                  0,
+                                  (rankDown.currentPoints - rankDown.newTier.threshold) /
+                                    (rankDown.fromThreshold - rankDown.newTier.threshold),
+                                ),
+                              ) * 100,
+                            )}%`
+                          : '0%',
+                        background: tierFor(rankDown.fromThreshold).color,
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[9px] font-mono text-muted mt-0.5">
+                    <span>{rankDown.newTier.threshold}</span>
+                    <span className="font-bold text-text">{rankDown.currentPoints}</span>
+                    <span className="flex flex-col items-end leading-tight">
+                      <span>{rankDown.fromThreshold}</span>
+                      <span className="font-bold">(0)</span>
+                    </span>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <>

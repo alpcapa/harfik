@@ -14,7 +14,11 @@
 // bir kontrol tetiklenir, bekleyen kutlama o anda gösterilir.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { fetchUnseenLeagueRewards, markLeagueRewardsSeen } from '../lib/api';
+import {
+  fetchMyLeaderboardRank,
+  fetchUnseenLeagueRewards,
+  markLeagueRewardsSeen,
+} from '../lib/api';
 import type { LeagueReward } from '../lib/database.types';
 import { RewardBanner, type RewardSummary } from './RewardBanner';
 import { tierFor } from '../utils/leagueRank';
@@ -80,10 +84,16 @@ export function LeagueRewardsHost({ suppress = false }: { suppress?: boolean }) 
     if (!userId || suppressRef.current || inFlightRef.current || showingRef.current) return;
     inFlightRef.current = true;
     void fetchUnseenLeagueRewards(userId)
-      .then((rows) => {
-        if (rows.length > 0 && !suppressRef.current && !showingRef.current) {
-          setSummary(buildSummary(rows));
+      .then(async (rows) => {
+        if (rows.length === 0 || suppressRef.current || showingRef.current) return;
+        const summary = buildSummary(rows);
+        if (summary.rankDown) {
+          // Üzgün banner'ın ilerleme çubuğu güncel toplamı ister — tek RPC;
+          // çekilemezse çubuk gizli kalır, banner yine gösterilir.
+          const rank = await fetchMyLeaderboardRank(userId);
+          if (rank) summary.rankDown.currentPoints = rank.total_score;
         }
+        if (!suppressRef.current && !showingRef.current) setSummary(summary);
       })
       .finally(() => {
         inFlightRef.current = false;

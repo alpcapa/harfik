@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useModalA11y } from '../hooks/useModalA11y';
 import { RankSeal } from './RankSeal';
-import { RANK_TIERS, type RankTier } from '../utils/leagueRank';
+import { RANK_TIERS, rewardAlreadyClaimed, type RankTier } from '../utils/leagueRank';
 
 interface RankInfoModalProps {
   tier: RankTier;
@@ -112,9 +112,15 @@ export function RankInfoModal({ tier, totalScore, bonusPoints, onClose }: RankIn
                 <span className="font-bold text-text">{totalScore}</span>
                 <span className="flex flex-col items-end leading-tight">
                   <span>{nextTier.threshold}</span>
-                  {nextTier.reward > 0 && (
-                    <span className="text-green font-bold">(+{nextTier.reward})</span>
-                  )}
+                  {/* Hedef eşiğin ödülü daha önce alındıysa (eşikten düşülüp
+                      yeniden yaklaşılıyorsa) "(0)" — tekrar ödül beklentisi
+                      oluşmasın; alınmadıysa yeşil "(+N)". */}
+                  {nextTier.reward > 0 &&
+                    (rewardAlreadyClaimed(nextTier, bonusPoints) ? (
+                      <span className="font-bold">(0)</span>
+                    ) : (
+                      <span className="text-green font-bold">(+{nextTier.reward})</span>
+                    ))}
                 </span>
               </div>
             </div>

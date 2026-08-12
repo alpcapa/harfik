@@ -383,6 +383,10 @@ gerekiyor).
       bir kez gösterilmeli; aynı eşikten İKİNCİ kez düşülürse yeniden
       çıkmalı (diğer banner'ların aksine tekrarlanabilir). Görülmemiş
       olumlu bir kutlama ile çakışırsa yalnızca olumlu olan gösterilmeli.
+      Banner'da kaybedilen eşiğe geri dönüş çubuğu olmalı ve hedef eşiğin
+      altında "(+5)" DEĞİL "(0)" yazmalı (ödül zaten alındı). Aynı "(0)"
+      kuralı bilgi popup'ında da geçerli: düşmüş biri mühre dokununca
+      hedef eşiğin rozeti yeşil "(+N)" değil nötr "(0)" olmalı.
 - [ ] **k-lig sırası tutarlı.** Listedeki sıra/puan (leaderboard view) ile
       "senin sıran" satırı (my_leaderboard_rank RPC) aynı toplamı (ödül
       dahil) göstermeli.
