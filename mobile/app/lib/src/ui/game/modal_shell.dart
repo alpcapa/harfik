@@ -135,8 +135,18 @@ class KModal extends StatelessWidget {
           ),
         );
     // headerCenter yokken başlık kalan tüm genişliği alır (eski davranış:
-    // uzun bir başlık ✕'e kadar uzanıp kırpılır). Varken kendi genişliğinde
-    // durur ki ortalama gerçekten "başlık ile ✕ arası" olsun.
-    return headerCenter == null ? Expanded(child: label) : Flexible(child: label);
+    // uzun bir başlık ✕'e kadar uzanıp kırpılır). Varken web'deki gibi
+    // `shrink-0`: kendi doğal genişliğinde durur ki ortalama gerçekten
+    // "başlık ile ✕ arası" olsun.
+    //
+    // ÇIPLAK widget döner — `Flexible` DEĞİL (12 Ağustos 2026, kullanıcı
+    // cihazda "X kaymış" diye bildirdi). `Flexible`ın varsayılanı
+    // `flex: 1`'dir, yani başlık boş alanın YARISINI pay olarak alır;
+    // `fit: loose` olduğundan doğal genişliğinde kalır ama ARTAN pay
+    // yeniden dağıtılmaz ve Row'un sonunda ölü boşluk olarak birikir.
+    // Ölçüldü: ✕'in merkezi kartın sağ kenarından 75.3px içerideydi
+    // (olması gereken 32, web'de 34). Web'in `shrink-0`'ının doğru
+    // karşılığı hiç flex vermemektir.
+    return headerCenter == null ? Expanded(child: label) : label;
   }
 }

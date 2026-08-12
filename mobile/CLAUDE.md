@@ -2405,6 +2405,52 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        (iki başlık assertion'ı yeni metne çevrildi); web `npm run lint` +
        `npm run build` temiz.
 
+   - ✅ **Parça 71 — Skor Kartı başlığında ✕ sola kaymıştı: `Flexible`ın
+     görünmez `flex: 1`'i (12 Ağustos 2026, `modal_shell.dart`):** Kullanıcı
+     mobil ve web Skor Kartı'nın ekran görüntülerini yan yana koyup
+     *"mobilde X kaymış, ayrıca webdeki skor kartla ölçüleri farklı"* dedi.
+     İKİ ayrı iddia vardı; ölçüm birini doğruladı, ötekini çürüttü.
+     - **✕ — GERÇEK port hatası.** Web'de başlık `shrink-0` (doğal
+       genişlik, hiç esnemez). Port bunu `Flexible(child: label)` diye
+       taşımıştı — ama **`Flexible`ın varsayılanı `flex: 1`**: başlık boş
+       alanın YARISINI pay olarak alıyor, `fit: loose` olduğundan doğal
+       genişliğinde kalıyor ve **artan pay yeniden dağıtılmadığından**
+       Row'un sonunda ölü boşluk olarak birikiyordu. Ölçüldü (360px kart):
+       ✕'in merkezi sağ kenardan **75.3px** içerideydi; web'de (derlenmiş
+       CSS + Chromium ile aynı düzen kurulup ölçüldü) **35.0**. Aynı hata
+       mührü de kartın ortasına itiyordu (+12.7; web +35.6 — mühür kartın
+       değil "başlık ile ✕ arasının" ortasında durmalı, kök CLAUDE.md'nin
+       `headerCenter` kararı). Düzeltme: `headerCenter` varken başlık
+       ÇIPLAK widget döner. Sonra: ✕ **32.0**, mühür **+34.3** — web ile
+       ~1-3px içinde. (Kalan 3px, portun ✕ butonunun daha büyük dokunma
+       hedefi taşımasından: 40px buton + 12 sağ dolgu ≈ web'in 28px buton +
+       20 dolgusu. Bilinçli.)
+     - **Yükseklik — port hatası DEĞİL, ölçülerek elendi.** Kullanıcı
+       web'de "TÜM GEÇMİŞ OYUNLAR" linkinin göründüğünü, mobilde kesilip
+       kaydırma gerektiğini bildirdi. Ölçüm: içerik İKİ tarafta da aynı
+       (556px); fark yalnızca SINIRDA. iOS Safari'de CSS `vh` **büyük
+       viewport**'u (tarayıcı çubuklarının altını da) sayar, yani web'in
+       `max-h-[85vh]`'si görünür alanın %85'inden BÜYÜK olabiliyor;
+       Flutter'ın `MediaQuery.sizeOf(context).height`'i ise görünür alan.
+       Aynı iPad'de: Safari görünür yükseklik 683 → modal 580.5 (%85) →
+       **52.5px kesiliyor**. Native'de kesilme YOK: iPad yatay (834),
+       iPad dikey (1194), iPhone dikey (852) — üçünde de modal 633'te
+       (içerik boyu) kalıyor, sınıra hiç dayanmıyor. Yani sorun ASIL
+       ÜRÜNDE yaşanmıyor, yalnızca web test derlemesinde görünüyor.
+       Sabit DEĞİŞTİRİLMEDİ — %85 web'in yazılı kararı ve native'de zaten
+       yetiyor; bir Safari tuhaflığı için iki platformun da davranışını
+       değiştirmek yanlış olurdu. (`score_card_test.dart`de bu zaten
+       "gerçek cihaz boyutlarında kaydırmasız sığar" testiyle korunuyordu.)
+     - **Ders:** web'in `shrink-0`/`flex-1` gibi sınıflarını porta
+       çevirirken Flutter'ın VARSAYILANLARINI oku — `Flexible` "esneme"
+       değil "esneme payı al" demek. Bu, sınıfın adına bakıp doğru
+       göründüğü için gözden kaçan bir sınıf hata.
+     - **Test:** yeni bir regresyon testi ✕'in sağ kenardan uzaklığını ve
+       mührün merkezden sapmasını gerçek `ScoreCardModal` üzerinde
+       ölçüyor (ikisi de web'in ölçülen değerlerine bağlı).
+     - Doğrulama: `flutter analyze` temiz; tam takım **362/362** yeşil
+       (361'den +1). Web'e hiç dokunulmadı (yalnızca ölçüm için kullanıldı).
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

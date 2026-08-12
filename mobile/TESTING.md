@@ -76,6 +76,20 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
 
 ## 0.5 Web ile yan yana görsel karşılaştırma (Parça 56)
 
+- [ ] **Modal başlığı: ✕ sağa dayalı (12 Ağustos 2026, Parça 71).** Skor
+      Kartı'nı iki platformda yan yana aç: ✕ kartın sağ kenarına aynı
+      uzaklıkta olmalı ve rütbe mührü kartın ORTASINDA değil, **başlık ile
+      ✕ arasının** ortasında durmalı. (Portta ✕ 40px'lik bir dokunma
+      hedefi taşıdığından buton kutusu web'inkinden büyük — bakılacak şey
+      GLYPH'in konumu.)
+- [ ] **Modal yüksekliği farkı web test derlemesinde NORMAL.** Skor
+      Kartı'nın altındaki "TÜM GEÇMİŞ OYUNLAR" linki web'de görünüp
+      mobilde kesiliyorsa bu bir hata DEĞİL: iOS Safari'de CSS `vh`
+      tarayıcı çubuklarının altını da sayar, Flutter ise yalnızca görünür
+      alanı görür. **Native'de kesilme olmamalı** — FAZ B'de doğrula:
+      iPad yatay/dikey ve iPhone dikeyde modal, içeriğin tamamını
+      kaydırmasız göstermeli.
+
 Bu bölümü bir kez, iki sekmeyi (kelimeki.com ve alpcapa.github.io) AYNI
 hesapla açıp yan yana koyarak koş.
 
