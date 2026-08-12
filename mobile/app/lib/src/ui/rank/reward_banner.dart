@@ -166,7 +166,14 @@ class _RewardBannerState extends State<RewardBanner>
                 ? '${s.milestone}'
                 : '+${s.rewardPoints}';
     final title = rankDown != null
-        ? 'Rütben geriledi!'
+        // Emoji (12 Ağustos 2026, kullanıcı isteği) — başlığın `Text`'i bu
+        // yüzden `fontFamilyFallback` taşımak ZORUNDA: Flutter, tarayıcının
+        // aksine otomatik font fallback YAPMAZ ve gömülü SpaceGrotesk'te bu
+        // glyph yok, yani fallback'siz TOFU (boş kare) çizilir. Proje bu
+        // tuzağa üç kez düştü (bkz. `mobile/CLAUDE.md`: `_StatusLine`'ın
+        // ✓'si, `help_modal`'ın 🎯'si, ★). Web tarafında böyle bir şey
+        // gerekmiyor, tarayıcı kendi fallback'ini yapıyor.
+        ? 'Rütben geriledi! 😔'
         : s.rankUpTier != null
             ? 'Yeni rütben: ${s.rankUpTier!.name}!'
             : s.milestone != null
@@ -230,6 +237,12 @@ class _RewardBannerState extends State<RewardBanner>
                     letterSpacing: kNoTracking,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
+                    // Düşüş başlığındaki 😔 için ŞART (yukarıdaki nota bkz.);
+                    // fallback yalnızca birincil fontta OLMAYAN glyph'ler
+                    // için devreye girdiğinden kutlama başlıklarını hiç
+                    // etkilemiyor. Projedeki diğer altı emoji kullanım
+                    // yeriyle aynı liste.
+                    fontFamilyFallback: ['Noto Color Emoji', 'Apple Color Emoji'],
                     color: kText),
               ),
               if (rankDown != null)

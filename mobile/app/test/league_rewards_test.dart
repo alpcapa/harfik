@@ -377,7 +377,7 @@ void main() {
             FakeStatsGatewayForRank(const {'rank': 4, 'total_score': 88})),
       );
 
-      expect(find.text('Rütben geriledi!'), findsOneWidget);
+      expect(find.text('Rütben geriledi! 😔'), findsOneWidget);
       expect(find.text('Kazandıkça geri yükselirsin!'), findsOneWidget);
       // Sayıya iyelik eki YOK — "100 eşiğinin altına" kalıbı.
       final para = tester.widget<Text>(find.byWidgetPredicate((w) =>
@@ -404,7 +404,7 @@ void main() {
       final gw = FakeRewardsGateway(rows: [rewardRow('rank_down', 100)]);
       await pumpHost(tester,
           gw: gw, stats: StatsRepo(FakeStatsGatewayForRank(null)));
-      expect(find.text('Rütben geriledi!'), findsOneWidget);
+      expect(find.text('Rütben geriledi! 😔'), findsOneWidget);
       expect(find.byType(RankProgressBar), findsNothing);
     });
   });

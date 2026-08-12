@@ -1008,7 +1008,11 @@ listesi kök `TESTING.md` bölüm 10.
       geri gelir ama kutlama İKİNCİ kez ÇIKMAMALI, ödül İKİNCİ kez
       VERİLMEMELİ.
 - [ ] **Rütbe düşüş banner'ı.** Konfetisiz, üzgün banner ("Rütben
-      geriledi! … Kazandıkça geri yükselirsin!") + kaybedilen eşiğe geri
+      geriledi! 😔 … Kazandıkça geri yükselirsin!") — **başlıktaki üzgün
+      emoji GERÇEK emoji olmalı, boş kare (tofu) DEĞİL.** Boş kare
+      görürsen `fontFamilyFallback` düşmüş demektir. Not: web test
+      derlemesinde (CanvasKit) emoji ağdan çekilir; ağ kısıtlıysa boş
+      görünebilir — bu native'de YAŞANMAZ, FAZ B'de kesin doğrula. + kaybedilen eşiğe geri
       dönüş çubuğu; hedef etiketi YALNIZCA SAYI ("100" — "puan" kelimesi
       yok, o zaten bir üstteki "Sıradaki rütbe" satırında geçiyor) ve
       altında yeşil "(+10)"+tik (ödül zaten alındı). Görülmemiş OLUMLU

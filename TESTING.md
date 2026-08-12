@@ -504,7 +504,8 @@ gerekiyor).
       banner'ı İKİNCİ kez ÇIKMAMALI ve ödül İKİNCİ kez VERİLMEMELİ (her
       eşik hayatta bir kez).
 - [ ] **Rütbe düşüş banner'ı.** Eşiğin altına inince konfetisiz, üzgün bir
-      banner çıkmalı ("Rütben geriledi! … Kazandıkça geri yükselirsin!") ve
+      banner çıkmalı ("Rütben geriledi! 😔 … Kazandıkça geri yükselirsin!" —
+      başlıktaki üzgün emoji görünmeli, boş kare DEĞİL) ve
       bir kez gösterilmeli; aynı eşikten İKİNCİ kez düşülürse yeniden
       çıkmalı (diğer banner'ların aksine tekrarlanabilir). Görülmemiş
       olumlu bir kutlama ile çakışırsa yalnızca olumlu olan gösterilmeli.

@@ -76,7 +76,7 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
         ? String(milestone)
         : `+${rewardPoints}`;
   const title = rankDown
-    ? 'Rütben geriledi!'
+    ? 'Rütben geriledi! 😔'
     : rankUpTier
       ? `Yeni rütben: ${rankUpTier.name}!`
       : milestone

@@ -2346,6 +2346,39 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        `TESTING.md`'deki ilgili madde bu iki şeyi birlikte soracak şekilde
        yeniden yazıldı.
 
+   - ✅ **Parça 70 — düşüş banner'ının başlığına üzgün emoji (12 Ağustos
+     2026, `reward_banner.dart` + web `RewardBanner.tsx`):** Kullanıcı,
+     T1 turunu onayladıktan sonra: *"Rütben Geriledi!'nin yanına üzgün
+     emoji koyabiliriz."* Başlık `'Rütben geriledi! 😔'` oldu (pensive
+     face — "Üzgünüz…" alt satırının nazik tonuyla eşleşiyor; 😢 fazla
+     dramatik kalırdı).
+     - **Tek satırlık iş DEĞİL — bu projenin ÜÇ KEZ düştüğü tuzağa
+       değiyor:** Flutter, tarayıcının aksine **otomatik font fallback
+       YAPMAZ**; gömülü SpaceGrotesk'te bu glyph olmadığından fallback'siz
+       **tofu (boş kare)** çizilir. Aynı hata daha önce `_StatusLine`'ın
+       ✓'sinde, `help_modal`'ın 🎯'sinde ve ★'da yaşandı. Başlığın
+       `TextStyle`'ına projedeki kurulu liste eklendi:
+       `fontFamilyFallback: ['Noto Color Emoji', 'Apple Color Emoji']`
+       (altı kullanım yeriyle aynı). Fallback yalnızca birincil fontta
+       OLMAYAN glyph'ler için devreye girdiğinden kutlama başlıkları hiç
+       etkilenmiyor. Web tarafında gerek yok — tarayıcı kendi fallback'ini
+       yapıyor.
+     - **Tofu OLMADIĞI okunarak değil GÖRÜLEREK doğrulandı:** ekran
+       görüntüsü testi koşulup PNG açıldı — emoji renkli ve doğru glyph
+       olarak çizilmiş (aynı görüntü Parça 69'un ✕'ini de kanıtladı:
+       sağ üstte ✕, altta DEVAM yok).
+     - **Cihaz uyarısı (Parça 29'un bulgusu, hâlâ geçerli):** Flutter
+       Web/CanvasKit renkli emoji için çalışma anında
+       `fonts.gstatic.com`'dan Noto Color Emoji ÇEKİYOR. GitHub Pages test
+       derlemesi CanvasKit kullandığından, ağın Google Fonts'a erişimi
+       kısıtlıysa emoji BOŞ görünebilir — bu bir kod hatası değil, web
+       test ortamının yapısal sınırı. **Native (iOS/Android) derlemede bu
+       risk YOK** (Skia/Impeller doğrudan işletim sisteminin emoji
+       fontunu kullanır).
+     - Doğrulama: `flutter analyze` temiz; tam takım **361/361** yeşil
+       (iki başlık assertion'ı yeni metne çevrildi); web `npm run lint` +
+       `npm run build` temiz.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
