@@ -159,6 +159,11 @@ class FakeGamesGateway implements GamesGateway {
   /// Sohbet sayacı da buradan gelir (gerçek uçta `game_like_stats`
   /// katılımcı/admin değilse 0 döner) — `unauthorizedChats`'teki oyunlar o
   /// davranışı taklit eder.
+  ///
+  /// `has_moves` de burada: gerçek uçta `games.moves is not null`, yani
+  /// sahtede "bu oyun için bir döküm KURULMUŞ mu". Sahte uç gerçek ucun
+  /// HER kararını taklit etmeli (Parça 46'nın dersi) — aksi halde "dökümü
+  /// olmayan kartta ikon çizilmez" kuralı testlerde hiç sınanmazdı.
   @override
   Future<List<Map<String, Object?>>> likeStats(List<String> gameIds) async => [
         for (final id in gameIds)
@@ -169,6 +174,7 @@ class FakeGamesGateway implements GamesGateway {
             'message_count': unauthorizedChats.contains(id)
                 ? 0
                 : (messagesByGame[id]?.length ?? chatCounts[id] ?? 0),
+            'has_moves': movesByGame.containsKey(id),
           }
       ];
 

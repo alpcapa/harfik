@@ -125,15 +125,21 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       Kendi katıldığın oyunlarda normal görünmeli; admin hepsini görebilmeli.
       (O tarihe kadar `games.messages` girişli HERKESE açıktı — skor/tahta
       herkese görünür olsa da yazışma değil.)
-- [ ] **Hamle geçmişi ikonu (12 Ağustos 2026).** Tüm Oyunlarım'da HER kartta
-      (sohbet rozetinin aksine — o yalnızca mesaj varsa çıkar) küçük bir
-      döküman ikonu olmalı; dokununca o oyunun TAM hamle dökümü açılmalı
-      (kelime + ham puan + ×2/×3 rozetleri, Bingo/Sınır İhlali etiketleri,
-      toplam puan). Hem Canlı hem YZ oyunlarında çalışmalı; kolon
-      eklenmeden ÖNCE biten YEREL oyunlarda "Bu oyun için hamle geçmişi
-      kaydedilmemiş." demeli (Canlı oyunlar geriye dönük dolduruldu).
+- [ ] **Hamle geçmişi ikonu (12 Ağustos 2026).** Tüm Oyunlarım'da, dökümü
+      OLAN kartlarda küçük bir döküman ikonu olmalı; dokununca o oyunun TAM
+      hamle dökümü açılmalı (kelime + ham puan + ×2/×3 rozetleri,
+      Bingo/Sınır İhlali etiketleri, toplam puan).
       Çevrimdışıyken dokunulunca "kaydedilmemiş" DEĞİL "Bağlantını kontrol
       edip tekrar dene." demeli — ikisi ayrı durum.
+- [ ] **İkon YALNIZCA dökümü olan kartta (aynı gün düzeltildi).** Kolon
+      12 Ağustos 2026 15:27 UTC'de açıldı; ondan ÖNCE biten YEREL oyunların
+      dökümü kurtarılamıyor, Canlı oyunlar geriye dönük dolduruldu. Yani
+      **eski YZ kartlarında ikon HİÇ çıkmamalı** (ilk sürüm çıkarıyor ve
+      boş bir diyalog açıyordu), Canlı kartlarda çıkmalı.
+      **EN KRİTİK KONTROL — kural tür bazlı DEĞİL:** yeni bir YZ oyunu
+      sonuna kadar bitir; O kartta ikon ÇIKMALI ve döküm dolu gelmeli.
+      Çıkmıyorsa `buildGameRecord`/`saveGame` zinciri `moves`u yazmıyor
+      demektir (yani "YZ'de hiç gösterme" gibi yanlış bir kural kalmış).
 - [ ] **Karşı tarafta.** Sohbet kapalıyken gelen mesaj için popup (gönderenin
       avatarı + adı + metin) çıkmalı ve **yalnızca elle** kapanmalı; butonda
       kırmızı nokta belirmeli. Sohbeti açınca nokta sıfırlanmalı.

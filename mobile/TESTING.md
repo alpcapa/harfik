@@ -423,14 +423,21 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **Favoriler sekmesi.** Yalnızca beğendiğin oyunları göstermeli —
       başkasının oyununu beğendiysen o da listede olmalı ve satırda
       **senin adın hiçbir yere yapışmamalı** (o satır onun).
-- [ ] **Hamle geçmişi ikonu (12 Ağustos 2026, Parça 65).** HER kartta
-      (sohbet rozetinin aksine) küçük bir döküman ikonu olmalı; dokununca
-      "OYUN GEÇMİŞİ" dökümü tüm detayıyla açılmalı (kelime + ham puan +
-      ×2/×3, Bingo/Sınır İhlali rozetleri, toplam). Web'de AYNI oyunu aç —
-      iki istemci aynı `games.moves` kolonunu okuyor, döküm birebir aynı
-      olmalı. Kolon eklenmeden ÖNCE biten YEREL bir oyunda "kaydedilmemiş"
-      demeli; **uçak modunda** dokununca "kaydedilmemiş" DEĞİL "Bağlantını
+- [ ] **Hamle geçmişi ikonu (12 Ağustos 2026, Parça 65).** Dökümü OLAN
+      kartlarda küçük bir döküman ikonu olmalı; dokununca "OYUN GEÇMİŞİ"
+      dökümü tüm detayıyla açılmalı (kelime + ham puan + ×2/×3,
+      Bingo/Sınır İhlali rozetleri, toplam). Web'de AYNI oyunu aç — iki
+      istemci aynı `games.moves` kolonunu okuyor, döküm birebir aynı
+      olmalı. **Uçak modunda** dokununca "kaydedilmemiş" DEĞİL "Bağlantını
       kontrol edip tekrar dene." demeli (ikisi bilinçli olarak ayrı).
+- [ ] **İkon YALNIZCA dökümü olan kartta (Parça 67).** Kolon 12 Ağustos
+      2026 15:27 UTC'de açıldı; ondan ÖNCE biten YEREL oyunların dökümü
+      kurtarılamıyor. Yani **eski YZ kartlarında ikon HİÇ çıkmamalı** (ilk
+      sürüm çıkarıyor ve boş bir diyalog açıyordu — kullanıcı bunu
+      bildirdi), Canlı kartlarda çıkmalı. **EN KRİTİK KONTROL — kural tür
+      bazlı DEĞİL:** uygulamada yeni bir YZ oyunu sonuna kadar bitir; O
+      kartta ikon ÇIKMALI ve döküm dolu gelmeli. Web'de de aynı kart aynı
+      şekilde davranmalı (tek kaynak: `game_like_stats.has_moves`).
 - [ ] **Sohbet arşivi.** Web'de oynanmış, mesajlaşılmış bir Canlı oyunun
       kartında konuşma balonu rozeti + mesaj sayısı olmalı; dokununca
       dondurulmuş sohbet açılmalı. Sessize aldığın biri varsa isminin

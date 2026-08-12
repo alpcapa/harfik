@@ -444,9 +444,21 @@ export async function fetchMyGames(
   // oyunda N mesajlaştı" da bir üstveri ve rozet zaten yalnızca
   // katılımcının açabildiği bir kontroldü. RPC katılımcı/admin değilse 0
   // döner → rozet hiç çizilmez (bkz. `chat_count_participants_only`).
+  // `has_moves` de buradan geliyor (12 Ağustos 2026): hamle dökümü
+  // (`games.moves`) satır başına ~6.8 KB olduğundan liste sorgusuna
+  // GİRMİYOR, ama ikonu çizip çizmeyeceğimize karar vermek için "var mı"
+  // bilgisi lazım — RPC bunu `moves is not null` olarak döndürüyor, ek bir
+  // gidiş-dönüş yok. `message_count`in aksine katılımcı kapısı YOK: `moves`
+  // kolonunun kendisi zaten istemciye açık ve `board_snapshot`ın
+  // anlattığından fazlasını söylemiyor.
   const stats = new Map<
     string,
-    { likeCount: number; likedByMe: boolean; messageCount: number }
+    {
+      likeCount: number;
+      likedByMe: boolean;
+      messageCount: number;
+      hasMoves: boolean;
+    }
   >();
   if (viewer && rows.length > 0) {
     const { data: likeStats } = await supabase.rpc('game_like_stats', {
@@ -457,11 +469,13 @@ export async function fetchMyGames(
       like_count: number;
       liked_by_me: boolean;
       message_count: number;
+      has_moves: boolean;
     }[]) ?? []) {
       stats.set(s.game_id, {
         likeCount: Number(s.like_count),
         likedByMe: s.liked_by_me,
         messageCount: Number(s.message_count ?? 0),
+        hasMoves: s.has_moves === true,
       });
     }
   }
@@ -472,6 +486,7 @@ export async function fetchMyGames(
       liked_by_me: stats.get(r.id)?.likedByMe ?? false,
       like_count: stats.get(r.id)?.likeCount ?? 0,
       message_count: stats.get(r.id)?.messageCount ?? 0,
+      has_moves: stats.get(r.id)?.hasMoves ?? false,
     })),
     hasMore,
   };
