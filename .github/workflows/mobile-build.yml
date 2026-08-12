@@ -12,10 +12,30 @@
 # burada geçerli DEĞİL. Bu yüzden mobil dosyalara her dokunuşta çalışıyor;
 # derleme kırılırsa aynı gün görülür.
 #
-# TETİKLEYİCİLER: (1) port dalına `mobile/**` push'u — sürekli doğrulama;
-# (2) elle (Actions → Run workflow). İkincisi yalnızca dosya VARSAYILAN
-# DALDA (main) olduğunda Actions sekmesinde belirir (GitHub kuralı) —
-# port dalı main'e girene kadar pratikte (1) çalışıyor.
+# TETİKLEYİCİLER (12 Ağustos 2026'da değişti — aşağıdaki notu OKU):
+#   (1) `main`e `mobile/**` push'u — merge sonrası tam boru hattı; Appetize
+#       ve GitHub Pages test ortamı YALNIZCA burada güncellenir.
+#   (2) `main`e açılan, `mobile/**` dokunan PR — merge ÖNCESİ doğrulama;
+#       derler ama HİÇBİR ŞEY YAYINLAMAZ (bkz. "YAYINLAMA" notu).
+#   (3) elle (Actions → Run workflow).
+#
+# NEDEN DEĞİŞTİ: tetikleyici, artık SİLİNMİŞ olan port dalına
+# (`claude/word-game-flutter-port-dr9dos`) bağlıydı. Port 12 Ağustos'ta
+# main'e merge edilince o dal yok oldu ve workflow SESSİZCE ölü tetikleyiciye
+# bakmaya devam etti — yani mobil değişiklikler hiçbir gerçek derlemeden
+# geçmeden main'e girmeye başladı (PR #241 tam olarak böyle girdi: yalnızca
+# `flutter analyze` + testler koşmuştu, `build apk`/`build ios` HİÇ
+# koşmamıştı). Bu, workflow'un var olma sebebinin ta kendisiydi.
+# **Ders: bir workflow'u belirli bir dala bağlarken, o dal öldüğünde
+# workflow'un sessizce hiçbir şey yapmayacağını hesaba kat** — kırmızı bir
+# CI değil, HİÇ ÇALIŞMAYAN bir CI üretir ve bu fark edilmesi çok daha zordur.
+#
+# YAYINLAMA — PR'larda BİLİNÇLİ OLARAK KAPALI: `mobile-latest` release'i,
+# Appetize app'leri ve GitHub Pages sitesi TEK ve PAYLAŞILAN kaynaklar
+# ("en son test derlemesi" anlamına geliyorlar). Bir PR bunları güncellerse
+# henüz merge EDİLMEMİŞ kod "en son" diye görünür ve cihazda test eden kişi
+# neyi test ettiğini bilemez. Bu yüzden PR'da yalnızca DERLEME koşuyor;
+# release/Appetize adımları ve Pages işi atlanıyor.
 #
 # İMZALAMA/TESTFLIGHT: burada YOK ve iOS'u test etmek için GEREKMİYOR.
 # iOS işi iki çıktı üretiyor, ikisi de imzasız: (a) `--no-codesign` cihaz
@@ -37,7 +57,12 @@ name: Mobil derleme
 
 on:
   push:
-    branches: [claude/word-game-flutter-port-dr9dos]
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-build.yml'
+  pull_request:
+    branches: [main]
     paths:
       - 'mobile/**'
       - '.github/workflows/mobile-build.yml'
@@ -84,6 +109,16 @@ jobs:
           flutter pub get
           dart analyze lib/ test/
           flutter test
+      # PR'da web İŞİ atlanıyor (o iş yalnızca Pages'e deploy etmek için var,
+      # bkz. yukarıdaki "YAYINLAMA" notu) — ama web'e ÖZGÜ derleme
+      # kırılmaları gerçek bir sınıf: `Isolate.run` web'de yok, sqflite'ın
+      # platform kanalı yok, `sqflite_common_ffi_web` koşullu import'un
+      # arkasında (bkz. mobile/CLAUDE.md, "Web Derlemesi"). Bunlar
+      # `flutter test`te GÖRÜNMEZ. Deploy etmeden derleyip kontrol ediyoruz.
+      - name: Web derlemesi kontrolü (PR — deploy YOK)
+        if: ${{ github.event_name == 'pull_request' }}
+        working-directory: mobile/app
+        run: flutter build web --release --no-web-resources-cdn --pwa-strategy=none --base-href /kelimeki/
 
   android:
     name: Android APK
@@ -124,6 +159,9 @@ jobs:
       # herkese açık DÜZ URL'i olan bir prerelease'e koymak, Appetize'ın
       # "URL'den yükle" seçeneği doğrudan çekebilsin.
       - name: Derlemeleri "mobile-latest" prerelease'ine yükle
+        # PR'da atlanır: `mobile-latest` PAYLAŞILAN "en son test derlemesi"
+        # (bkz. başlıktaki "YAYINLAMA" notu).
+        if: ${{ github.event_name != 'pull_request' }}
         env:
           GH_TOKEN: ${{ github.token }}
         working-directory: mobile/app
@@ -148,6 +186,7 @@ jobs:
       # ihtiyatı burada da uyguluyoruz. `publicKey`/`appURL` PAYLAŞILABİLİR
       # (Appetize'ın kendi tasarımı — session linkleri zaten herkese açık).
       - name: "Appetize'a yükle (Android)"
+        if: ${{ github.event_name != 'pull_request' }}
         env:
           APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
         run: |
@@ -212,6 +251,7 @@ jobs:
           path: mobile/app/build/ios/iphonesimulator/Runner.app.zip
           if-no-files-found: error
       - name: Simülatör derlemesini prerelease'e yükle
+        if: ${{ github.event_name != 'pull_request' }}
         env:
           GH_TOKEN: ${{ github.token }}
         working-directory: mobile/app
@@ -222,6 +262,7 @@ jobs:
       # aynı gerekçe/mekanizma. `public-key` sabit: 7 Ağustos'taki keşif
       # koşusunda oluşturulan iOS app'in anahtarı.
       - name: "Appetize'a yükle (iOS)"
+        if: ${{ github.event_name != 'pull_request' }}
         env:
           APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
         run: |
@@ -262,7 +303,13 @@ jobs:
   #      gelmezse saatler yakar).
   web:
     name: Web (GitHub Pages test ortamı)
-    if: ${{ github.event_name != 'workflow_dispatch' || inputs.web }}
+    # PR'da HİÇ koşmaz: bu işin tek amacı Pages'e deploy etmek ve o site
+    # PAYLAŞILAN test ortamı — merge edilmemiş kodla değiştirilemez.
+    # (`environment:` iş seviyesinde, koşullu yapılamıyor; ayrıca ortamın
+    # dal kısıtı PR ref'inde işi logsuz düşürebilir.) Web'e ÖZGÜ derleme
+    # kırılmaları PR'da `test` işindeki "Web derlemesi kontrolü" adımıyla
+    # yakalanıyor.
+    if: ${{ github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.web) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

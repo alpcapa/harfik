@@ -42,8 +42,9 @@ gerektiren akışların elle koşulan kontrol listesi: [`TESTING.md`](TESTING.md
 Flutter portunun kendi testleri `mobile/app`'te `flutter test` ile koşar
 (veri katmanı sahte uçlarla sınanır); gerçek Supabase/platform davranışının
 cihazda koşulan listesi: [`mobile/TESTING.md`](mobile/TESTING.md). Derlemeyi
-(imzasız iOS + Android APK) doğrulayan GitHub Actions iş akışı elle
-tetiklenir: `.github/workflows/mobile-build.yml`.
+(imzasız iOS + Android APK + web) doğrulayan GitHub Actions iş akışı
+`mobile/**` dokunan her PR'da ve `main`e her push'ta otomatik koşar:
+`.github/workflows/mobile-build.yml`.
 
 ## Proje Yapısı
 

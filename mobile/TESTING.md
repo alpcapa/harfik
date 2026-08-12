@@ -990,8 +990,10 @@ listesi kök `TESTING.md` bölüm 10.
 
 ## Web derlemesi (ücretsiz tarayıcı test ortamı)
 
-**Adres:** `https://alpcapa.github.io/kelimeki/` — her mobil push'ta
-kendiliğinden güncellenir (`.github/workflows/mobile-build.yml`, `web` işi).
+**Adres:** `https://alpcapa.github.io/kelimeki/` — `main`e giren her mobil
+değişiklikte kendiliğinden güncellenir (`.github/workflows/mobile-build.yml`,
+`web` işi). PR'lardan deploy EDİLMEZ: burada gördüğün şey her zaman merge
+edilmiş koddur.
 Süre limiti yok, kurulum yok, iPad Safari'de doğrudan açılır.
 
 **Neden var:** geliştiricinin elinde ne Mac ne Android cihaz var; Apple
