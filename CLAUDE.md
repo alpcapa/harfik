@@ -21,6 +21,7 @@ npm run lint    # tsc --noEmit (ayrı bir ESLint kurulumu yok)
 npm run test    # Playwright duman testleri (tests/smoke.spec.ts)
 npm run generate-golden-vectors  # Flutter portu parite fixture'ları (bkz. "Flutter / Mobil Port")
 npm run generate-meanings-db     # Flutter portu için meanings.json → SQLite asset'i
+npm run verify-cloud-save-mirror # Bulut kaydı offline karar mantığı (saf fonksiyon kontrolleri)
 ```
 
 **`npm run test` neyi kapsıyor, neyi kapsamıyor:** `tests/smoke.spec.ts` kapsamlı bir test paketi DEĞİL — "uygulama açılıyor, 2 kişilik bir oyun başlatılabiliyor, YZ hamle yapıyor, bilinmeyen bir path SPA fallback'iyle açılıyor" düzeyinde bir kritik-yol kontrolü. Buraya kadar hatasız gelmek reducer/YZ/skor/bölge hesaplama zincirinin ucuna kadar çalıştığı ve `ErrorBoundary`'nin devreye girmediği anlamına geliyor.
@@ -126,7 +127,7 @@ src/
     constants.ts    # Tahta sabitleri, köşe hesapları, bonus konumları
     gameReducer.ts  # useReducer tabanlı oyun state makinesi
     types.ts        # GameState, Player, Tile tipleri
-  utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields...)
+  utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, cloudSaveMirror, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields...)
   data/         # Kelime listesi (~63k), harf dağılımı, kelime anlamları, wordSetLoader (lazy chunk)
   lib/          # Supabase istemcisi ve API sarmalayıcısı
   hooks/        # useAuth, useModalA11y, useOnlineStatus, useAppIconBadge, useNicknameAvailability
@@ -180,6 +181,13 @@ mobile/         # Flutter portu — kelimeki_core (saf Dart motor) + üretilmiş
   - **Yalnızca gerçek İLK insert'te tetikleniyor, kuyruktan yeniden denemede DEĞİL:** `saveGame`'in `error.code==='23505'` (aynı `id` ile önceden zaten kaydedilmiş, "başarı" sayılan tekrar deneme) dalı bilerek bu bildirimi TETİKLEMİYOR — yalnızca hatasız/gerçek insert dalında çağrılıyor, aksi halde bağlantı sorunuyla birkaç kez tekrar denenen bir kayıt aynı kişiye mükerrer "-2 puan" maili gönderirdi.
   - **Auth — service-role client'a hiç gerek yok:** Canlı oyundaki `notify-turn-timeout-surrender`'ın aksine burada bildirimi alacak kişi İLE `saveGame`'i çağıran kişi HER ZAMAN aynı hesap (kullanıcı kendi terk ettiği oyunun cezasını kendine bildiriyor) — bu yüzden `notify-local-game-abandoned` yalnızca çağıranın kendi JWT'siyle çalışıyor: e-postayı `auth.getUser()`'dan, adını `profiles`'tan (`profiles_select_own_or_admin` RLS'i zaten `auth.uid()=id` ile kendi satırını okumaya izin veriyor) okuyor, `notify-account-banned`/`notify-turn-timeout-surrender`'daki service-role client hiç kullanılmıyor.
   - **Doğrulama sınırı:** `play-ai-turn`/`admin-send-message` ile aynı gerekçeyle (bu ortamdan gerçek bir kullanıcı JWT'siyle Edge Function'a doğrudan HTTP isteği atılamıyor) uçtan uca gönderim test edilmedi — yalnızca fonksiyonun production'a `ACTIVE` deploy edildiği, `saveGame`'e eklenen tetikleme kodunun `tsc -b`/`npm run build`'dan hatasız geçtiği ve `game.surrendered` bayrağının yerel oyunlarda gerçekten yalnızca bu iki terk-edilme çağrı yerinden geldiği (kod taraması ile) doğrulandı.
+  **12 Ağustos 2026 — girişli kullanıcının offline dayanıklılığı (`src/utils/cloudSaveMirror.ts`):** Yukarıdaki bulut akışının bilinen bir açığı vardı ve mobil port tarafında (bkz. `mobile/CLAUDE.md` Parça 38/43/46) çözülüp web'de bilinçli olarak sonraya bırakılmıştı: autosave girişli kullanıcıda `clearGameState()` çağırıp YALNIZCA sunucuya yazıyordu, `upsertLocalGameSave` ağ hatasında `false` dönüp state'i DÜŞÜRÜYORDU — ne kuyruk ne yerel yedek. Çevrimdışı oynanan her hamle sessizce kayboluyor, bağlantı dönünce oyun sunucudaki son senkron hâline düşüyordu; ayrıca `listLocalGameSaves` hatada `[]` döndüğünden Setup çevrimdışıyken "hiç oyunun yok" gösteriyor, ve offline BİTEN bir oyunun silinemeyen satırı listeye "devam eden oyun" olarak geri geliyordu. **Bu "tarayıcı zaten offline çalışmaz" diye savunulamaz** — uygulama kurulabilir bir PWA ve service worker asset'leri precache ediyor.
+  **Çözüm, portun kanıtlanmış write-behind deseninin birebir karşılığı — üç AYRI localStorage deposu, üç ayrı soru:** `kelimeki:cloud-save-mirror` (sunucuya YAZILAMAMIŞ state — kaynak kayıt), `kelimeki:cloud-save-cache` (sunucuda zaten duran satırların salt gösterim kopyası) ve `kelimeki:cloud-save-deletes` (silinemeyen satır id'leri, HESABA GÖRE kapsanır — başka hesap açıkken silme denemek RLS'te sessiz no-op olur ve kuyruk hiç boşalmazdı). Ayrım bilinçli: gösterim kopyasının bozulmasıyla gerçek veri kaybı aynı kefeye konmamalı. **Anahtarlar `kelimeki:game-state`ten AYRI olmak ZORUNDA** — o anahtarı girişli kullanıcıda `clearGameState()` bilerek siliyor, çünkü aynı oyun iki yerden birden terk-edilmiş sayılıp MÜKERRER -2 üretebilirdi.
+  Akış: `writeCloudSave` önce aynaya yazar, sonra sunucuyu dener, başarıda aynayı siler — normal (online) akışta depolar hep boş kalır, maliyet tek bir localStorage yazması. `refreshCloudSaves` artık listelemeden ÖNCE bekleyen aynaları itiyor ve bekleyen silmeleri deniyor. `listLocalGameSaves` hatada artık `null` (boş dizi DEĞİL) dönüyor, `deleteLocalGameSave` başarıyı dönüyor.
+  **Karar mantığı saf iki fonksiyonda** (`classifyCloudSaves`/`mergeOfflineCloudSaves`) — riskin tamamı orada olduğundan ağ/localStorage/React'ten arındırıldı ve `npm run verify-cloud-save-mirror` ile (esbuild+node, `generate-golden-vectors`in aynı deseni; web'de birim test çatısı yok) 13 kontrolle doğrulanıyor. **Mobilde açılıp aynı gün kapatılan üç gedik burada baştan kapalı ve dördü de negatif eşle kanıtlandı:** (a) ayna bindirmesi terk kararından ÖNCE uygulanır — yoksa dün offline oynanmış oyun, sunucu satırı eski diye haksız -2 yerdi; (b) süresi DOLMUŞ ayna sunucuya İTİLMEZ — itilseydi `updated_at` bugüne çekilip 7 gün kuralı sessizce atlatılırdı, ve iddia edilen satırın aynası da silinir (yoksa oyun bir sonraki açılışta DİRİLİR); (c) sunucunun hiç görmediği (tamamen offline açılmış) oyunlar da 7 günde cezalandırılır. Offline dalda ceza HİÇ uygulanmaz ve süresi geçmiş satır listeye alınmaz (sunucuyla doğrulanmadan terk kararı verilemez, claim'in yarış koruması offline çalışmaz); orada ayna önbelleği KOŞULSUZ ezer — "daha yeniyse" koruması burada yanlış olurdu, karşı taraf aynı cihazın kendi önbelleği (portun ilk sürümü bu yüzden eşit damgalarda offline hamleleri gizlemişti).
+  **Misafir migrasyonu BİLEREK `writeCloudSave` kullanmıyor** (doğrudan `upsertLocalGameSave`): o yolun kendi dayanıklılığı var (başarısızlıkta `savedGame` durur, sonraki mount'ta tekrar denenir); aynaya da yazsaydık aynı oyun hem misafir slotunda hem aynada durur, liste onu bir de "yalnızca aynada olan oyun" sanıp MÜKERRER gösterirdi.
+  **Doğrulama sınırı:** gerçek ağ kesintisiyle uçtan uca (uçak modunda oynayıp bağlantıyı geri getirme) bu ortamdan test EDİLEMEDİ — saf karar fonksiyonları + `tsc` + `npm run build` + Playwright duman testleriyle doğrulandı; elle koşulacak maddeler `TESTING.md` bölüm 4'e eklendi.
+
 - **Bitmiş oyunların offline/misafir kuyruğu (`src/utils/gameSync.ts`):** `saveGameDurable`, `buildGameRecord`'un (`src/utils/gameRecord.ts`) ürettiği kaydı önce hemen göndermeyi dener; bu başarısız olursa — çevrimdışıyken, ağ hatasında ya da bu cihazda hiç giriş yapılmamışken (misafir) — kaydı `localStorage`'a (`kelimeki:pending-games`, en fazla `MAX_PENDING_GAMES=300`, aşılırsa en eskiler düşer) kuyruklar. Her kayıt istemcide üretilen bir `id` (uuid) ve gerçek bitiş anını taşıyan bir `created_at` (ISO) içerir: `id`, kaybolan bir cevaptan sonra aynı kaydın tekrar denenmesi sunucuda ikinci bir satır açmasın diye — `saveGame` (`src/lib/api.ts`) bu durumda dönen "23505" (unique violation) hatasını başarı sayar; `created_at`, kayıt günler sonra senkronlanabildiğinden sunucunun `insert` anındaki varsayılan `now()`'ı yerine geçer, böylece oyun geçmişinde doğru kronolojik yere yerleşir. `flushPendingGames`, uygulama açılışında/`online` olayında/giriş durumu değişince (`App.tsx`'teki `useEffect([user])`) çağrılır; bu cihazda **daha önce hiç oturum yoksa** (saf misafir) ağa hiç dokunmadan hemen çıkar, kuyruk kişi bu cihazda giriş/kayıt yapana kadar sessizce bekler — o an geldiğinde tüm kuyruk o hesaba aktarılır. Kuyruk yalnızca tutulduğu cihaza özeldir; farklı cihazlarda ayrı ayrı birikir ve her biri kendi cihazında oturum açıldığında kendi kuyruğunu gönderir. Bir kayıt `created_at`'ten itibaren `PENDING_EXPIRY_MS` (7 gün — `gameStorage.ts`'teki `ABANDON_TIMEOUT_MS` ile aynı süre/gerekçe) içinde bu cihazda talep edilmezse (giriş/kayıt olunmazsa) `readQueue` onu sessizce düşürür; misafir 7 gün içinde giriş yaparsa tüm bekleyen oyunlar sanki baştan giriş yapmış gibi hesabına işlenir. 20 Temmuz 2026 rebrand'i (Harfik→Kelimeki) `PENDING_KEY`'i taşımadan yeniden adlandırdığından, o deploy'dan önce kuyruklanmış kayıtlar eski `harfik:pending-games` anahtarında mahsur kalmıştı — `migrateLegacyQueue` bunları bir kereliğine yeni anahtara taşıyıp bu sorunu giderdi.
 
 ## Bileşen Notları
@@ -744,67 +752,6 @@ uygulanınca buradan silinip ilgili bölümün kendi tarihli notuna taşınmalı
   Ayrıntılı gerekçe/ölçüm, dondurulacak JSON'un tam şekli (alan kırpma
   YOK — `invasionFrom` satırları dahil) ve Canlı oyunlar için geriye dönük
   backfill notu: `mobile/CLAUDE.md`, "Sonraya Bırakılan İşler (mobil)".
-
-- **Girişli kullanıcının devam eden YZ oyunu offline'da KAYBOLUYOR —
-  `App.tsx` autosave + `api.ts:upsertLocalGameSave`** (9 Ağustos 2026, mobil
-  cihaz testinde bulundu, kullanıcı kararıyla web tarafı SONRAYA bırakıldı):
-  `App.tsx`'in autosave effect'i girişli kullanıcıda `clearGameState()`
-  çağırıp YALNIZCA sunucuya yazıyor (`if (user && isSupabaseConfigured)`
-  dalı, ~satır 375); `upsertLocalGameSave` ağ hatasında `false` dönüp state'i
-  DÜŞÜRÜYOR — ne kuyruk ne yerel yedek var. Yani çevrimdışıyken oynanan her
-  hamle sessizce kayboluyor, bağlantı dönünce oyun sunucudaki son senkron
-  hâline geri düşüyor. **Bu, "tarayıcı zaten offline çalışmaz" diye
-  savunulamaz:** uygulama kurulabilir bir PWA ve service worker asset'leri
-  precache ettiğinden ana ekrana ekleyen biri offline'da açıp oynayabiliyor.
-  - **Mobildeki çözüm hazır bir şablon (bkz. `mobile/CLAUDE.md` Parça 38):**
-    write-behind ayna — önce yerele yaz, sonra sunucuyu dene, başarıda yereli
-    sil; açılışta bekleyenleri it; listede aynayı bindir (daha yeni ayna
-    kazanır, yalnızca-aynada olan oyunlar da listelenir).
-  - **Ayna AYRI bir anahtarda tutulmalı, `kelimeki:game-state` DEĞİL.** O
-    anahtarı `clearGameState()` bilerek siliyor: aynı oyun hem localStorage
-    hem `local_game_saves` üzerinden iki kez terk-edilmiş sayılıp MÜKERRER -2
-    cezası üretebilirdi. Mobilde bu yüzden ayrı bir tablo (`pending_cloud_saves`)
-    açıldı; web'de ayrı bir localStorage anahtarı aynı işi görür.
-  - **Mobilde bu iş yapılırken açılan ve AYNI GÜN kapatılan üç gedik web'de de
-    tekrarlanmamalı:** (a) süresi DOLMUŞ aynayı sunucuya itmek `updated_at`i
-    tazeleyip 7 gün cezasını sessizce atlatır — son etkinlik anı
-    `max(sunucu updated_at, ayna damgası)` olarak okunmalı; (b) terk edilmiş
-    sayılan oyunun aynası da silinmeli, yoksa sonraki açılışta "yalnızca
-    aynada var" sanılıp oyun DİRİLİR; (c) sunucunun hiç görmediği (tamamen
-    offline açılmış) oyunlar da 7 günde cezalandırılmalı.
-  - **ÜÇÜNCÜ PARÇA — offline BİTEN oyunun satırı silinemezse unutuluyor
-    (10 Ağustos 2026, mobil Parça 46'da bulundu):** Oyun bitince
-    `App.tsx`'in autosave effect'i `deleteLocalGameSave` çağırıyor; ağ
-    yoksa bu düşüyor ve "bu satır silinmeli" bilgisi hiçbir yerde
-    kalmıyor. Sunucudaki BİTMEMİŞ eski kopya duruyor, bir sonraki
-    `refreshCloudSaves` onu "devam eden oyun" olarak geri getiriyor —
-    üstelik `refreshCloudSaves`'in bitmiş satırları temizleyen dalı da
-    devreye giremiyor, çünkü sunucudaki state hiç bitmiş hâle gelmemiş
-    oluyor. Mobildeki çözüm: silinemeyen id'yi kalıcı bir kuyruğa yaz,
-    sonraki senkronda (yazmalardan SONRA, listelemeden ÖNCE) tekrar dene.
-    Kuyruk hesaba göre kapsanmalı — başka bir hesap açıkken onun adına
-    silme denemek RLS'te sessiz no-op olur ve kuyruk hiç boşalmaz.
-  - Mobil tarafta dördü ayna davranışı + ikisi bu gedikler için olmak üzere
-    6 test var (`mobile/app/test/cloud_save_test.dart`), hepsi negatif eşle
-    doğrulandı — web sürümü yazılırken oradan birebir uyarlanabilir.
-  - **İKİNCİ PARÇA — offline'da liste BOŞ görünüyor (10 Ağustos 2026, mobil
-    Parça 43'te bulundu):** Yukarıdaki veri kaybından AYRI bir eksik.
-    `listLocalGameSaves` (`api.ts`) ağ hatasında hatayı loglayıp **`[]`
-    dönüyor**, yani `refreshCloudSaves` "liste alınamadı" ile "hiç oyunun
-    yok"u ayırt edemiyor ve Setup boş liste gösteriyor — çevrimdışı
-    kullanıcı devam eden oyunlarını göremiyor (kaybolmuş gibi duruyor) ve
-    onlara devam edemiyor. Mobildeki çözüm: son BAŞARILI listeyi yerelde
-    önbelleğe al, ağ hatasında listeyi önbellek + ayna bindirmesiyle çiz.
-    Üç kritik ayrıntı: (a) yalnızca aynayı göstermek YETMEZ — offline
-    oynanmamış oyunlar listeden düşer, bir sorun başkasıyla değişilmiş
-    olur; (b) offline dalda 7 günlük ceza HİÇ uygulanmamalı (sunucuyla
-    doğrulanmadan terk kararı verilemez, claim'in yarış koruması offline
-    çalışmaz) ve süresi geçmiş satır listeye de alınmamalı; (c) ayna,
-    önbelleği KOŞULSUZ ezmeli — sunucu satırına karşı kullanılan
-    "daha yeniyse" koruması burada yanlış olur, çünkü karşı taraf aynı
-    cihazın kendi önbelleği (mobilde ilk sürüm bu yüzden eşit damgalarda
-    offline hamleleri gizliyordu). Mobilde 3 ek test var, hepsi negatif
-    eşle doğrulandı.
 
 (Diğer üç madde — arkadaş ekle simgesi, Çıkış Yap ikonu, hesap menüsü
 tooltip'i — 9 Ağustos 2026'da uygulandı; kayıtları `UserMenu` ve

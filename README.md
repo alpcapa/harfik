@@ -126,6 +126,7 @@ src/
 │   ├── ranking.ts      # oyun sonu sıralama (teslim olanlar en sona)
 │   ├── gameRecord.ts   # buildGameRecord — bir GameState'ten games tablosuna yazılacak kaydı üretir (canlı oyun bitişi ve gecikmeli terk-edilme kaydı ortak)
 │   ├── gameStorage.ts  # devam eden oyunun localStorage kalıcılığı + terk temizliği (yalnızca misafir/girişsiz kullanıcı — girişli kullanıcı sunucudaki local_game_saves'i kullanır, cihazlar arası + çoklu oyun, bkz. lib/api.ts)
+│   ├── cloudSaveMirror.ts # girişli kullanıcının devam eden oyunu için offline ayna/önbellek/silme kuyruğu (write-behind) + saf karar fonksiyonları
 │   ├── gameSync.ts      # bitmiş oyunlar için çevrimdışı/misafir kuyruğu
 │   ├── feedbackSync.ts # geri bildirim formu için çevrimdışı kuyruk
 │   ├── onboarding.ts   # ilk açılış hızlı başlangıç ipucu bayrağı

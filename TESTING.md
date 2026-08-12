@@ -204,6 +204,37 @@ olan** hesap olacak şekilde kur (bkz. yukarıdaki Mailinator notu) — gerekirs
       filtrelemeyi atlamıştı. Rozetlerin de düşmesi lazım (Setup'taki
       "Arkadaşınla", "Oyun Davetleri" alt sekmesi, PWA ikonu).
 
+### 4.x Girişli kullanıcının offline dayanıklılığı (12 Ağustos 2026)
+
+Bu bölüm **kurulabilir PWA'da** (ana ekrana eklenmiş) koşulmalı — normal bir
+tarayıcı sekmesinde uçak modunda sayfa yenilenirse Safari/Chrome kendi
+"internet yok" sayfasını gösterir ve uygulama zaten açılmaz; asıl senaryo
+service worker'ın precache'iyle açılan kurulu uygulama.
+
+Hepsi GİRİŞLİ hesapla. Ayna/önbellek anahtarları: `kelimeki:cloud-save-mirror`,
+`kelimeki:cloud-save-cache`, `kelimeki:cloud-save-deletes` (DevTools →
+Application → Local Storage'dan izlenebilir; online akışta ilk ikisi boş kalmalı).
+
+- [ ] **Offline hamleler kaybolmuyor.** Bir YZ oyunu aç, birkaç hamle oyna,
+      uçak moduna geç, birkaç hamle daha oyna. Ağı geri aç, Setup'a dön ve
+      oyuna devam et — offline oynanan hamleler DURUYOR olmalı (skor/tur
+      sayısı geri gitmemeli). Ağ kapalıyken `cloud-save-mirror` dolmalı,
+      geri açılıp senkron olunca boşalmalı.
+- [ ] **Offline'da liste görünüyor.** Uçak modundayken Setup'a dön —
+      "Devam Eden Oyunlar" boş DEĞİL, oyunlar (offline oynanmamış olanlar
+      dahil) listede olmalı ve tıklanınca devam edilebilmeli.
+- [ ] **Offline biten oyun geri gelmiyor.** Uçak modundayken bir oyunu
+      SONUNA kadar bitir, sonra ağı aç ve Setup'a dön — oyun "Devam Eden
+      Oyunlar"da GÖRÜNMEMELİ (silme kuyruğu onu temizlemeli) ve Skor
+      Kartı'nda bir kez görünmeli.
+- [ ] **7 gün kuralı offline'da atlatılamıyor.** Bir oyunu aç, uçak moduna
+      geç, satırın `updated_at`'ini 8 gün geriye çek (ağ açıkken, sonra
+      tekrar kapat), sonra ağı aç ve Setup'a dön — oyun terk sayılıp -2
+      uygulanmalı; ağa çıkar çıkmaz "taze" sayılıp cezadan KURTULMAMALI.
+- [ ] **Taze offline hamle haksız ceza almıyor** (yukarıdakinin tersi):
+      satırı 8 gün geriye çek, sonra uçak modunda BİR HAMLE oyna, ağı aç —
+      oyun listede DURMALI, ceza uygulanMAMALI.
+
 ## 5. E-posta bildirimleri
 
 Onbir Edge Function var; hepsi `noreply@kelimeki.com`'dan, Brevo üzerinden.
