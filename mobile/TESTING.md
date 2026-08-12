@@ -423,6 +423,14 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **Favoriler sekmesi.** Yalnızca beğendiğin oyunları göstermeli —
       başkasının oyununu beğendiysen o da listede olmalı ve satırda
       **senin adın hiçbir yere yapışmamalı** (o satır onun).
+- [ ] **Hamle geçmişi ikonu (12 Ağustos 2026, Parça 65).** HER kartta
+      (sohbet rozetinin aksine) küçük bir döküman ikonu olmalı; dokununca
+      "OYUN GEÇMİŞİ" dökümü tüm detayıyla açılmalı (kelime + ham puan +
+      ×2/×3, Bingo/Sınır İhlali rozetleri, toplam). Web'de AYNI oyunu aç —
+      iki istemci aynı `games.moves` kolonunu okuyor, döküm birebir aynı
+      olmalı. Kolon eklenmeden ÖNCE biten YEREL bir oyunda "kaydedilmemiş"
+      demeli; **uçak modunda** dokununca "kaydedilmemiş" DEĞİL "Bağlantını
+      kontrol edip tekrar dene." demeli (ikisi bilinçli olarak ayrı).
 - [ ] **Sohbet arşivi.** Web'de oynanmış, mesajlaşılmış bir Canlı oyunun
       kartında konuşma balonu rozeti + mesaj sayısı olmalı; dokununca
       dondurulmuş sohbet açılmalı. Sessize aldığın biri varsa isminin

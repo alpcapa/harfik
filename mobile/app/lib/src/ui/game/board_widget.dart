@@ -254,7 +254,7 @@ class BoardWidget extends StatelessWidget {
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _DocumentIcon(),
+                      DocumentIcon(),
                       SizedBox(width: 4),
                       Text(
                         'Hamleler',
@@ -737,19 +737,30 @@ class _HomeMarkPainter extends CustomPainter {
 }
 
 /// "Hamleler" linkinin başındaki küçük döküman ikonu — web'deki aynı SVG
-/// path'lerinin (dosya + kıvrık köşe + iki satır) 12px'lik portu.
-class _DocumentIcon extends StatelessWidget {
-  const _DocumentIcon();
+/// path'lerinin (dosya + kıvrık köşe + iki satır) portu.
+///
+/// PUBLIC, çünkü ikinci bir tüketicisi var: "Tüm Oyunlarım"daki her kartın
+/// hamle dökümü rozeti (`game_history_modal.dart`). Path verisi
+/// KOPYALANMAMALI — aynı şeyi açan iki kontrol aynı görünmeli (bkz.
+/// `RelationIcons` ilkesi, kök CLAUDE.md).
+class DocumentIcon extends StatelessWidget {
+  final double size;
+  final Color color;
+
+  const DocumentIcon({super.key, this.size = 12, this.color = kAccent});
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        width: 12,
-        height: 12,
-        child: CustomPaint(painter: _DocumentIconPainter()),
+        width: size,
+        height: size,
+        child: CustomPaint(painter: _DocumentIconPainter(color)),
       );
 }
 
 class _DocumentIconPainter extends CustomPainter {
+  final Color color;
+  const _DocumentIconPainter(this.color);
+
   @override
   void paint(Canvas canvas, Size size) {
     final s = size.width / 24;
@@ -758,7 +769,7 @@ class _DocumentIconPainter extends CustomPainter {
       ..strokeWidth = 2 * s
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
-      ..color = kAccent;
+      ..color = color;
     // M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z
     final body = Path()
       ..moveTo(14 * s, 2 * s)
@@ -784,7 +795,8 @@ class _DocumentIconPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_DocumentIconPainter oldDelegate) => false;
+  bool shouldRepaint(_DocumentIconPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 /// Web `ChatBubbleIcon` — "Mesajlaşma" butonunun konuşma balonu SVG'si

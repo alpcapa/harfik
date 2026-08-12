@@ -24,6 +24,7 @@ import '../chat/game_chat_history_modal.dart';
 import '../game/action_sheet.dart';
 import '../game/board_widget.dart';
 import '../game/modal_shell.dart';
+import '../game/move_history_modal.dart';
 import '../game/player_badge.dart';
 import 'player_score_card_modal.dart';
 import 'score_box_row.dart';
@@ -134,6 +135,12 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
   /// "çekildi ama kayıt yok" demek — web'in aynı ayrımı).
   final _snapshots = <String, List<BoardSnapshotTile>?>{};
   String? _snapshotLoadingId;
+
+  /// gameId → hamle dökümü. `_snapshots` ile AYNI önbellek deseni: bir kez
+  /// çekilir, null değeri "kaydedilmemiş" demek. Ağ hatası önbelleğe
+  /// GİRMEZ — bir sonraki dokunuşta yeniden denensin.
+  final _moves = <String, List<HistoryEntry>?>{};
+  String? _movesLoadingId;
 
   final _scrollController = ScrollController();
 
@@ -319,6 +326,53 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
     );
   }
 
+  /// Hamle dökümü rozetine dokununca — döküm LAZY çekilir (liste sorgusuna
+  /// hiç girmez, `board_snapshot`/`messages` ile aynı gerekçe: satır başına
+  /// birkaç KB). Web'de olduğu gibi mevcut `MoveHistoryModal` yeniden
+  /// kullanılıyor: o yalnızca `moveHistory` ve `players`ı okuduğundan boş
+  /// bir tahta anlık görüntüsü yeterli.
+  Future<void> _showMoves(GameHistoryEntry entry) async {
+    if (!_moves.containsKey(entry.id)) {
+      setState(() => _movesLoadingId = entry.id);
+      final res = await widget.games.moves(entry.id);
+      if (!mounted) return;
+      setState(() => _movesLoadingId = null);
+      if (!res.ok) {
+        await _showMovesNote(
+            'Hamleler yüklenemedi. Bağlantını kontrol edip tekrar dene.');
+        return;
+      }
+      _moves[entry.id] = res.moves;
+    }
+    if (!mounted) return;
+    final rows = _moves[entry.id];
+    if (rows == null || rows.isEmpty) {
+      // Kolon eklenmeden ÖNCE biten yerel oyunlar — veri hiç yazılmamış,
+      // kurtarılamaz (tahta önizlemesindeki aynı durum).
+      await _showMovesNote('Bu oyun için hamle geçmişi kaydedilmemiş.');
+      return;
+    }
+    await showMoveHistoryModal(
+      context,
+      buildSnapshotGameState(const [], entry.playerCount, entry.players)
+          .copyWith(moveHistory: rows),
+    );
+  }
+
+  Future<void> _showMovesNote(String text) => showDialog<void>(
+        context: context,
+        builder: (_) => KModal(
+          title: 'Hamleler',
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Text(text,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontFamily: 'SpaceMono', fontSize: 12, color: _muted)),
+          ),
+        ),
+      );
+
   /// Açık tahta önizlemesine dokununca. Web'in iki seçeneği: Paylaş / Kapat.
   Future<void> _openBoardSheet(GameHistoryEntry entry) async {
     await showActionSheet(context, actions: [
@@ -462,6 +516,8 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
                           gameId: e.id,
                           onlineGameId: e.onlineGameId,
                         ),
+                        onShowMoves: () => _showMoves(e),
+                        movesLoading: _movesLoadingId == e.id,
                         onTapBoard: () => _openBoardSheet(e),
                       );
                     },
@@ -648,6 +704,10 @@ class _EntryCard extends StatelessWidget {
   final VoidCallback onToggleLike;
   final VoidCallback onShowLikers;
   final VoidCallback onShowChat;
+  final VoidCallback onShowMoves;
+
+  /// Hamle dökümü çekiliyor mu (yalnızca bu kart için).
+  final bool movesLoading;
 
   /// Açık tahtaya dokunma — Paylaş/Kapat menüsü.
   final VoidCallback onTapBoard;
@@ -670,6 +730,8 @@ class _EntryCard extends StatelessWidget {
     required this.onToggleLike,
     required this.onShowLikers,
     required this.onShowChat,
+    required this.onShowMoves,
+    required this.movesLoading,
     required this.onTapBoard,
   });
 
@@ -797,6 +859,29 @@ class _EntryCard extends StatelessWidget {
                           ),
                         ),
                       ],
+                      // Hamle dökümü — sohbet rozetinin AKSİNE HER kartta
+                      // görünür: her bitmiş oyunun hamlesi var. Dökümün
+                      // kendisi lazy, kart açılmadan çekilmiyor.
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        key: ValueKey('moves-${entry.id}'),
+                        onTap: onShowMoves,
+                        behavior: HitTestBehavior.opaque,
+                        child: Semantics(
+                          label: 'Hamle geçmişini göster',
+                          button: true,
+                          child: movesLoading
+                              // Sohbet rozetiyle aynı 11px kutuda kalır ki
+                              // yükleme sırasında satır kaymasın.
+                              ? const SizedBox(
+                                  width: 11,
+                                  height: 11,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 1.5, color: _muted),
+                                )
+                              : const DocumentIcon(size: 11, color: _muted),
+                        ),
+                      ),
                       const Spacer(),
                       const SizedBox(
                           width: 40,

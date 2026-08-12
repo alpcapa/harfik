@@ -471,8 +471,80 @@ void main() {
         '5');
     expect(find.byKey(const ValueKey('chat-count-g-other')), findsNothing);
   });
-}
 
+  // ── Hamle dökümü rozeti (kullanıcı isteği: "mesaj balonunun yanına aynı
+  // boyda bir file ikonu") ────────────────────────────────────────────────
+  testWidgets('hamle rozeti HER kartta var ve dökümü lazy açar',
+      (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [
+        gameRow(
+          id: 'g-1',
+          playerCount: 2,
+          players: [snap('Ironman', 150, colorIndex: 0), snap('YZ', 120, ai: true, colorIndex: 1)],
+        )
+      ]
+      ..movesByGame = {
+        'g-1': [
+          {
+            'turn': 0,
+            'player': 0,
+            'words': ['KELIME'],
+            'points': 24,
+            'wordScores': [
+              {'word': 'KELIME', 'score': 12, 'x2': true, 'x3': false}
+            ],
+          },
+        ]
+      };
+    final repo = await newRepoForWidget(tester, gw);
+    await pumpHistory(tester, repo);
+
+    // Sohbet rozeti YOK (message_count 0) ama hamle rozeti VAR — ikisi
+    // farklı kurallara tabi.
+    expect(find.byKey(const ValueKey('chat-count-g-1')), findsNothing);
+    expect(find.byKey(const ValueKey('moves-g-1')), findsOneWidget);
+    // Döküm LAZY: karta dokunmadan çekilmemeli.
+    expect(gw.movesCalls, isEmpty);
+
+    await tester.tap(find.byKey(const ValueKey('moves-g-1')));
+    await tester.pumpAndSettle();
+
+    expect(gw.movesCalls, ['g-1']);
+    expect(find.text('OYUN GEÇMİŞİ'), findsOneWidget);
+    // Kelime + ham puan (çarpan rozeti ayrı bir widget) — `MoveHistoryModal`
+    // dökümü tüm detayıyla çiziyor.
+    expect(find.text('KELIME (12'), findsOneWidget);
+    // Oyuncu adı dondurulmuş snapshot'tan geliyor (koltuk 0 = Ironman).
+    expect(find.text('1. Ironman'), findsOneWidget);
+  });
+
+  testWidgets('hamle dökümü: ağ hatası ile "kaydedilmemiş" AYRI mesajlar',
+      (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [gameRow(id: 'g-1'), gameRow(id: 'g-2')]
+      ..movesFail = true;
+    final repo = await newRepoForWidget(tester, gw);
+    await pumpHistory(tester, repo);
+
+    // (1) Ağ hatası: "kaydedilmemiş" DEMEZ — veri sunucuda duruyor olabilir.
+    await tester.tap(find.byKey(const ValueKey('moves-g-1')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Bağlantını kontrol'), findsOneWidget);
+    expect(find.textContaining('kaydedilmemiş'), findsNothing);
+    await tester.tap(find.byTooltip('Kapat').last);
+    await tester.pumpAndSettle();
+
+    // Hata önbelleğe GİRMEZ: aynı karta tekrar dokunmak yeniden dener.
+    gw.movesFail = false;
+    await tester.tap(find.byKey(const ValueKey('moves-g-1')));
+    await tester.pumpAndSettle();
+    expect(gw.movesCalls, ['g-1', 'g-1']);
+
+    // (2) Kolon null (kolon eklenmeden önce biten oyun): kaydedilmemiş.
+    expect(find.textContaining('kaydedilmemiş'), findsOneWidget);
+  });
+}
 /// `game_like_stats`'e HİÇ gitmemesi gerektiğini kanıtlayan sahte uç:
 /// çağrılırsa test patlar. `currentUserId` null (misafir).
 class _NoLikeStatsGateway extends FakeGamesGateway {

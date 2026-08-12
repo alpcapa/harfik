@@ -69,20 +69,31 @@ class HistoryEntry {
     this.bingo = false,
   });
 
+  /// Anahtar SIRASI TS'in ÇALIŞMA ANINDAKİ ekleme sırasıdır (arayüz
+  /// bildirimininki DEĞİL): `pushHistory` (gameReducer.ts) önce
+  /// `{turn, player, words, points}` literalini kuruyor, sonra sırayla
+  /// `wordScores`/`finishJokerCount`/`bingo`/`lostShares` atıyor; vergi
+  /// satırı `invasionFrom`la, pas/değişim `action`(+`tileCount`) ile
+  /// bitiyor — tek bir sıra üçünü de karşılıyor.
+  ///
+  /// Bu, `games.moves`ı İKİ istemcinin de aynı biçimde yazması için
+  /// gerekiyor ve `web_game_record.json` fikstürü bunu bayt bayt
+  /// doğruluyor (12 Ağustos 2026'da o test sırasını yakaladı — eski hâl
+  /// `wordScores`'u `points`ten ÖNCE yazıyordu).
   Map<String, Object?> toJson() => {
         'turn': turn,
         'player': player,
         'words': words,
+        'points': points,
         if (wordScores != null)
           'wordScores': [for (final w in wordScores!) w.toJson()],
-        'points': points,
-        if (invasionFrom != null) 'invasionFrom': invasionFrom,
-        if (lostShares != null)
-          'lostShares': [for (final s in lostShares!) s.toJson()],
-        if (action != null) 'action': action,
-        if (tileCount != null) 'tileCount': tileCount,
         if (finishJokerCount != null) 'finishJokerCount': finishJokerCount,
         if (bingo) 'bingo': true,
+        if (lostShares != null)
+          'lostShares': [for (final s in lostShares!) s.toJson()],
+        if (invasionFrom != null) 'invasionFrom': invasionFrom,
+        if (action != null) 'action': action,
+        if (tileCount != null) 'tileCount': tileCount,
       };
 
   factory HistoryEntry.fromJson(Map<String, Object?> j) => HistoryEntry(

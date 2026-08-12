@@ -65,5 +65,11 @@ export function buildGameRecord(
     surrendered,
     players,
     board_snapshot: serializeBoardSnapshot(state.board),
+    // Tam hamle dökümü — "Tüm Oyunlarım"daki hamle geçmişi ikonu bunu
+    // gösterir. Yerel oyunlarda tek kaynak burası: `moveHistory` yalnızca
+    // `GameState`te yaşıyor ve oyun bitince kayboluyor. Alan KIRPILMAZ
+    // (`invasionFrom` vergi satırları dahil) — modal onları kart olarak
+    // göstermiyor ama toplam puana katıyor, atılırlarsa toplamlar bozulur.
+    moves: state.moveHistory,
   };
 }

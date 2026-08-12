@@ -77,6 +77,16 @@ class NewGameRecord {
   final List<GamePlayerSnapshot> players;
   final List<BoardSnapshotTile> boardSnapshot;
 
+  /// Bu oyunun TAM hamle dökümü — "Tüm Oyunlarım"daki hamle geçmişi ikonu
+  /// bunu gösterir. Yerel oyunlarda tek kaynak burası: `moveHistory` yalnızca
+  /// `GameState`te yaşıyor ve oyun bitince kayboluyor. Alan KIRPILMAZ
+  /// (`invasionFrom` vergi satırları dahil) — modal onları kart olarak
+  /// göstermiyor ama toplam puana katıyor.
+  ///
+  /// AYNI SATIRA YAZAN İKİ İSTEMCİ: web `gameRecord.ts` de bu kolonu aynı
+  /// şekilde dolduruyor; biri değişirse öteki de değişmeli.
+  final List<HistoryEntry> moves;
+
   const NewGameRecord({
     required this.id,
     required this.createdAt,
@@ -94,6 +104,7 @@ class NewGameRecord {
     required this.surrendered,
     required this.players,
     required this.boardSnapshot,
+    required this.moves,
   });
 
   /// PostgREST'e giden satır (sütun adları). `user_id` BURADA YOK — çağıran
@@ -115,6 +126,7 @@ class NewGameRecord {
         'surrendered': surrendered,
         'players': [for (final p in players) p.toJson()],
         'board_snapshot': [for (final t in boardSnapshot) t.toJson()],
+        'moves': [for (final m in moves) m.toJson()],
       };
 
   factory NewGameRecord.fromJson(Map<String, Object?> j) => NewGameRecord(
@@ -139,6 +151,10 @@ class NewGameRecord {
         boardSnapshot: [
           for (final t in (j['board_snapshot'] as List? ?? const []))
             BoardSnapshotTile.fromJson((t as Map).cast<String, Object?>())
+        ],
+        moves: [
+          for (final m in (j['moves'] as List? ?? const []))
+            HistoryEntry.fromJson((m as Map).cast<String, Object?>())
         ],
       );
 }
@@ -291,5 +307,6 @@ NewGameRecord? buildGameRecord(
         )
     ],
     boardSnapshot: serializeBoardSnapshot(state.board),
+    moves: state.moveHistory,
   );
 }

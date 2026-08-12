@@ -250,6 +250,10 @@ abstract class GamesGateway {
   /// Tek bir oyunun tahta anlık görüntüsü — kart açılınca lazy çekilir.
   Future<List<Map<String, Object?>>?> gameBoardSnapshot(String gameId);
 
+  /// Bir oyunun dondurulmuş tam hamle dökümü — `gameBoardSnapshot` ile aynı
+  /// lazy desen (liste sorgusuna girmez, satır başına ~7 KB).
+  Future<List<Map<String, Object?>>?> gameMoves(String gameId);
+
   /// Bitmiş bir oyunun dondurulmuş sohbeti (`games.messages`) — rozete
   /// dokununca lazy çekilir, `gameBoardSnapshot` ile aynı desen.
   /// Dondurulmuş sohbet arşivi. `allowed` İÇERİKTEN ayrı taşınır ki UI
@@ -396,6 +400,18 @@ class SupabaseGamesGateway implements GamesGateway {
     final snap = row?['board_snapshot'];
     if (snap is! List) return null;
     return [for (final t in snap) (t as Map).cast<String, Object?>()];
+  }
+
+  @override
+  Future<List<Map<String, Object?>>?> gameMoves(String gameId) async {
+    final row = await client
+        .from('games')
+        .select('moves')
+        .eq('id', gameId)
+        .maybeSingle();
+    final moves = row?['moves'];
+    if (moves is! List) return null;
+    return [for (final m in moves) (m as Map).cast<String, Object?>()];
   }
 
   /// 10 Ağustos 2026'dan beri `games.messages` DOĞRUDAN OKUNAMIYOR: o kolon
@@ -714,6 +730,25 @@ class GamesRepo {
     } catch (e) {
       debugPrint('[Kelimeki] tahta görüntüsü alınamadı: $e');
       return null;
+    }
+  }
+
+  /// Tek oyunun hamle dökümü.
+  ///
+  /// İki başarısızlık BİLİNÇLİ olarak ayrı taşınıyor (`boardSnapshot`'ın
+  /// ikisini de `null`a çeken davranışından sapıyor, web'in aynı ayrımı):
+  /// `ok:false` ağ/parse hatası, `ok:true` + `moves:null` ise "bu oyunda
+  /// hamle dökümü hiç kaydedilmemiş" (kolon eklenmeden önce biten yerel
+  /// oyun). Çevrimdışı bir kullanıcıya "kaydedilmemiş" demek yanlış olurdu —
+  /// veri sunucuda duruyor, yalnızca ulaşılamıyor.
+  Future<({bool ok, List<HistoryEntry>? moves})> moves(String gameId) async {
+    try {
+      final rows = await gateway.gameMoves(gameId);
+      if (rows == null) return (ok: true, moves: null);
+      return (ok: true, moves: [for (final r in rows) HistoryEntry.fromJson(r)]);
+    } catch (e) {
+      debugPrint('[Kelimeki] hamle geçmişi alınamadı: $e');
+      return (ok: false, moves: null);
     }
   }
 
