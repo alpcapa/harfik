@@ -111,16 +111,16 @@ export function RankInfoModal({ tier, totalScore, bonusPoints, onClose }: RankIn
                 </span>
                 <span className="font-bold text-text">{totalScore}</span>
                 <span className="flex flex-col items-end leading-tight">
-                  <span>{nextTier.threshold}</span>
+                  <span>{nextTier.threshold} puan</span>
                   {/* Hedef eşiğin ödülü daha önce alındıysa (eşikten düşülüp
-                      yeniden yaklaşılıyorsa) "(0)" — tekrar ödül beklentisi
-                      oluşmasın; alınmadıysa yeşil "(+N)". */}
-                  {nextTier.reward > 0 &&
-                    (rewardAlreadyClaimed(nextTier, bonusPoints) ? (
-                      <span className="font-bold">(0)</span>
-                    ) : (
-                      <span className="text-green font-bold">(+{nextTier.reward})</span>
-                    ))}
+                      yeniden yaklaşılıyorsa) ödülün yanında aynı boyda yeşil
+                      bir ✓ — "bu ödül alındı, yeniden verilmez" (ilk sürüm
+                      "(0)" yazıyordu, kullanıcı fikriyle iyileştirildi). */}
+                  {nextTier.reward > 0 && (
+                    <span className="text-green font-bold">
+                      (+{nextTier.reward}){rewardAlreadyClaimed(nextTier, bonusPoints) ? ' ✓' : ''}
+                    </span>
+                  )}
                 </span>
               </div>
             </div>

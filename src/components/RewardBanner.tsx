@@ -123,7 +123,7 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
               {rankDown.currentPoints !== undefined && (
                 <div className="mt-2 text-left">
                   {/* Kaybedilen eşiğe geri dönüş çubuğu — RankInfoModal'daki
-                      aynı desen. Hedef etiketin altında BİLEREK "(0)": bu
+                      aynı desen. Hedef etiketin altında ödül + yeşil ✓: bu
                       eşiğin ödülü zaten alındı, yeniden aşmak ikinci kez
                       ödül VERMEZ (kullanıcı isteği — yanlış beklenti
                       oluşmasın). */}
@@ -158,8 +158,13 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
                     <span>{rankDown.newTier.threshold}</span>
                     <span className="font-bold text-text">{rankDown.currentPoints}</span>
                     <span className="flex flex-col items-end leading-tight">
-                      <span>{rankDown.fromThreshold}</span>
-                      <span className="font-bold">(0)</span>
+                      <span>{rankDown.fromThreshold} puan</span>
+                      {/* Ödül + yeşil ✓ = "bu eşiğin ödülü zaten alındı,
+                          yeniden aşmak ikinci kez vermez" (ilk sürümdeki
+                          "(0)" yerine kullanıcı fikri). */}
+                      <span className="text-green font-bold">
+                        (+{tierFor(rankDown.fromThreshold).reward}) ✓
+                      </span>
                     </span>
                   </div>
                 </div>
