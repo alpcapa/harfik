@@ -467,11 +467,25 @@ export interface LeaderboardRow {
    * (`tierFor(total_score)`, "düşmeli" sürüm) çiziliyor.
    */
   rank_tier: number;
+  /**
+   * OHP — ortalama hamle puanı (hamle başına alınan ortalama puan).
+   * `player_stats_overall.avg_move_score` ile BİREBİR AYNI ifadeden gelir
+   * (ağırlıklı ortalama, 2 basamak): k-lig satırındaki OHP ile o oyuncunun
+   * Skor Kartı'ndaki "Ortalama Hamle Puanı" AYNI sayı olmak zorunda, biri
+   * değişirse öteki de. Hiç hamle verisi olmayan (eski) kayıtlarda null.
+   */
+  avg_move_score: number | null;
 }
 
 export interface MyLeaderboardRank {
   rank: number;
   total_score: number;
+  /**
+   * Bkz. `LeaderboardRow.avg_move_score` — "senin sıran" kısayolu da aynı
+   * tabloda aynı kolonları çizdiğinden RPC bunu da döndürür (yoksa o tek
+   * satırda OHP boş kalır ve tablo hizasız görünür).
+   */
+  avg_move_score: number | null;
 }
 
 export interface PlayerStats {

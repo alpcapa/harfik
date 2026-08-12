@@ -38,8 +38,8 @@ const SCALLOP_POINTS = Array.from({ length: TEETH * 2 }, (_, i) => {
 const INK_ASC_EM = 0.71;
 const DESCENDER_EM = 0.21;
 // Bu mühürde basılabilen TEK kuyruklu karakterler. Kademe harfleri kapalı bir
-// küme (Ç M O U Ş D — `leagueRank.ts`), banner glyph'leri ise rakam ve "+".
-// Yeni bir kademe harfi eklenirse burası da gözden geçirilmeli.
+// küme (Ç M O U Ş D E Z T — `leagueRank.ts`), banner glyph'leri ise rakam ve
+// "+". Yeni bir kademe harfi eklenirse burası da gözden geçirilmeli.
 const DESCENDER_CHARS = /[ÇŞ]/;
 const baselineY = (text: string, fontSize: number) =>
   22 + ((INK_ASC_EM - (DESCENDER_CHARS.test(text) ? DESCENDER_EM : 0)) / 2) * fontSize;
@@ -76,6 +76,13 @@ export function RankSeal({ tier, size = 20, glyph, className }: RankSealProps) {
   // 27'de 16.56 (Ç; Ş 16.47, M 13.16, D 12.79, U 11.13, O 11.11) — sınıra
   // 1.24 birim var. Yuvarlak harflerde bbox köşesini sınır sanmak yanlış
   // pozitif üretir; ölçüm mürekkeple yapılmalı.
+  //
+  // Sonradan eklenen üç kademe harfi (E Z T, `rank_tiers_efsane_uzayli_tanri`)
+  // bu tavanları YENİDEN AÇMIYOR — kuyruksuz, düz kenarlı harfler: Space Mono
+  // Bold outline'ından ölçülen merkez-uzaklıkları 23'te 9.73-10.11 ve 27'de
+  // 11.42-11.86, yani Ç/Ş'nin (12.21/12.35 ve 14.33/14.49) belirgin altında.
+  // Not: bu üçü glif outline'ından (fontTools) ölçüldü, yukarıdaki piksel
+  // taramasıyla aynı yöntem değil — ama sıralama net olduğundan sonuç aynı.
   const fontSize = text.length <= 1 ? (compact ? 27 : 23) : text.length <= 3 ? 14 : 11;
   return (
     <svg
