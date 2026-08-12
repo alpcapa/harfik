@@ -10,6 +10,7 @@ import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../auth/k_avatar.dart';
 import '../game/modal_shell.dart';
+import '../rank/rank_header_seal.dart';
 import 'game_history_modal.dart';
 import 'klig_mark.dart';
 import 'leaderboard_modal.dart';
@@ -120,6 +121,11 @@ class _ScoreCardModalState extends State<ScoreCardModal> {
 
     return KModal(
       title: 'Skor Kartı',
+      // Rütbe mührü — GÜNCEL puandan türetilir (düşmeli sürüm); başlıkla ✕
+      // arasında ortalı, yazısız; dokununca RankInfoModal.
+      headerCenter: rankHeaderSeal(context,
+          overall: _statsByTab[StatsTab.all],
+          loaded: _loaded.contains(StatsTab.all)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

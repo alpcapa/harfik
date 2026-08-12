@@ -40,6 +40,7 @@ import '../game/player_badge.dart';
 import '../game/player_avatar_row.dart';
 import '../game/player_colors.dart';
 import '../live/live_games_tab.dart';
+import '../rank/league_rewards_host.dart';
 import '../auth/account_button.dart';
 import '../auth/k_avatar.dart';
 import 'membership_perks_box.dart';
@@ -481,6 +482,13 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   Future<void> _recordFinishedGame(GameState state) async {
     final games = _games ?? await widget.services.games;
     await games?.recordFinished(state);
+    // Kayıt sunucuya düştüğü an k-lig ödül kontrolü — `games` INSERT
+    // trigger'ı (`games_award_league_rewards`) ödülü AYNI transaction'da
+    // açtığından hemen ardından çekmek güvenli (web App.tsx'teki
+    // `saveGameDurable(...).then(requestLeagueRewardCheck)` deseni). O anda
+    // etkin host oyun ekranınınki; misafirde kayıt kuyruğa girer, kontrol
+    // boş döner ve ödül girişten sonraki ilk kontrolde görünür.
+    requestLeagueRewardCheck();
   }
 
   Future<void> _refreshSaveStatus() async {
@@ -544,6 +552,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
         games: widget.services.games,
         feedback: widget.services.feedback,
         friends: widget.services.friends,
+        leagueRewards: widget.services.leagueRewards,
       ),
     ));
     await guestSession?.end();
@@ -604,7 +613,16 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final auth = widget.services.auth;
-    return Scaffold(
+    // k-lig kutlama banner'ı — Setup'ta bastırma YOK (girişte / geçmişe
+    // dönük backfill'de bekleyen ödüller burada çıkar). Oyun ekranları bu
+    // ekranın ÜZERİNE push edildiğinden ve host'lar yığının en üstekini
+    // etkin saydığından, oyun sırasında buradaki host kendiliğinden susar
+    // (bkz. league_rewards_host.dart'ın mimari notu).
+    return LeagueRewardsHost(
+      rewards: widget.services.leagueRewards,
+      auth: auth,
+      stats: widget.services.stats,
+      child: Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         // Oturum/profil değişince (giriş, çıkış, profil gelmesi) tüm ekran
@@ -799,6 +817,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
             ),
           ),
         ),
+      ),
       ),
     );
   }

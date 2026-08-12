@@ -10,6 +10,8 @@ import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../auth/k_avatar.dart';
 import '../game/modal_shell.dart';
+import '../rank/league_rank.dart';
+import '../rank/rank_seal.dart';
 import 'klig_mark.dart';
 import 'player_score_card_modal.dart';
 import '../tokens.dart';
@@ -351,10 +353,24 @@ class _Row extends StatelessWidget {
               KAvatar(url: avatarUrl, name: name, size: 22),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(name,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontFamily: 'SpaceMono', fontSize: 14, color: _text)),
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(name,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontFamily: 'SpaceMono',
+                              fontSize: 14,
+                              color: _text)),
+                    ),
+                    const SizedBox(width: 6), // web gap-1.5
+                    // Rütbe mührü — GÜNCEL puandan türetilir (düşmeli sürüm),
+                    // ismin hemen yanında. Bu boyda RankSeal KOMPAKT çizer
+                    // (iç halkasız, büyük harf) — 12 Ağustos 2026 okunurluk
+                    // düzeltmesi.
+                    RankSeal(tier: tierFor(score), size: 18),
+                  ],
+                ),
               ),
               SizedBox(
                 width: 52,

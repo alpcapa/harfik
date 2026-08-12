@@ -56,6 +56,10 @@ void main() {
       'green': kGreen.toARGB32(),
       'red': kRed.toARGB32(),
       'void': kVoid.toARGB32(),
+      // Parça 61: k-lig'in ilk kademesi (Çaylak) bu değeri taşıyor, yani
+      // artık taşın dışında da kullanılıyor. Aşağıdaki "yerel kopya"
+      // taramasına BİLEREK eklenmedi — gerekçe tokens.dart'ta yazılı.
+      'tile-pts': kTilePts.toARGB32(),
     };
     for (final e in claimed.entries) {
       expect(tw[e.key], isNotNull,

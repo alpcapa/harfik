@@ -21,6 +21,7 @@ import '../auth/k_avatar.dart';
 import '../friends/friends_modal.dart'
     show confirmFriendAction, showFriendInfoDialog;
 import '../game/modal_shell.dart';
+import '../rank/rank_header_seal.dart';
 import 'game_history_modal.dart';
 import 'klig_mark.dart';
 import 'leaderboard_modal.dart';
@@ -297,6 +298,11 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
   Widget build(BuildContext context) {
     return KModal(
       title: 'Skor Kartı',
+      // Skor Kartı'ndaki AYNI mühür (tek kaynak) — bu kartın sahibinin
+      // güncel puanından türetilir.
+      headerCenter: rankHeaderSeal(context,
+          overall: _statsByTab[StatsTab.all],
+          loaded: _loaded.contains(StatsTab.all)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

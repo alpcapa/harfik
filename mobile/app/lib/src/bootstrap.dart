@@ -15,6 +15,7 @@ import 'data/feedback_api.dart';
 import 'data/friend_invite_inbox.dart';
 import 'data/friends_api.dart';
 import 'data/games_api.dart';
+import 'data/league_rewards_api.dart';
 import 'data/online_games_api.dart';
 import 'data/stats_api.dart';
 import 'data/meaning_store.dart';
@@ -57,6 +58,11 @@ class AppServices {
   /// hiç çizilmez).
   final StatsRepo? stats;
 
+  /// k-lig ödül/rütbe kutlamaları (`league_rewards`) — Supabase yoksa null
+  /// (misafirde de kullanılmaz: satırlar sunucuda hesaba bağlı üretilir,
+  /// kutlama girişten sonraki ilk kontrolde çıkar).
+  final LeagueRewardsRepo? leagueRewards;
+
   /// Arkadaşlık sistemi — Supabase yoksa null (tamamen online bir özellik;
   /// hesap menüsündeki "Arkadaşlar" satırı hiç çizilmez).
   final FriendsRepo? friends;
@@ -90,6 +96,7 @@ class AppServices {
     this.cloudSaves,
     this.games,
     this.stats,
+    this.leagueRewards,
     this.feedback,
     this.friends,
     this.inviteInbox,
@@ -124,6 +131,9 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
         ? storage.then((s) => GamesRepo(SupabaseGamesGateway(supabase), s.queue))
         : null,
     stats: supabase != null ? StatsRepo(SupabaseStatsGateway(supabase)) : null,
+    leagueRewards: supabase != null
+        ? LeagueRewardsRepo(SupabaseLeagueRewardsGateway(supabase))
+        : null,
     feedback: FeedbackRepo(
       supabase != null ? SupabaseFeedbackGateway(supabase) : null,
       storage,

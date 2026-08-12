@@ -30,6 +30,8 @@ import 'rack_widget.dart';
 import 'remaining_tiles_modal.dart';
 import 'tile_widget.dart';
 import 'wild_letter_sheet.dart';
+import '../rank/league_rewards_host.dart';
+import '../../data/league_rewards_api.dart';
 import '../tokens.dart';
 import 'invasion_confirm.dart';
 
@@ -59,6 +61,11 @@ class GameScreen extends StatefulWidget {
   /// Hesap menüsündeki "Arkadaşlar" satırı için (GameHeader'a iletilir).
   final FriendsRepo? friends;
 
+  /// k-lig kutlama banner'ı — oyun SÜRERKEN bastırılır, bittiğinde
+  /// bekleyen kutlama burada gösterilir (web'in oyun dalındaki
+  /// `<LeagueRewardsHost suppress=... />` mount'u). null ise host no-op.
+  final LeagueRewardsRepo? leagueRewards;
+
   const GameScreen({
     super.key,
     required this.controller,
@@ -69,6 +76,7 @@ class GameScreen extends StatefulWidget {
     this.games,
     this.feedback,
     this.friends,
+    this.leagueRewards,
   });
 
   @override
@@ -651,7 +659,14 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
         final me = state.players.isEmpty ? null : state.players[state.current];
 
-        return Scaffold(
+        return LeagueRewardsHost(
+          rewards: widget.leagueRewards,
+          auth: widget.auth,
+          stats: widget.stats,
+          // Oyun ortasında banner odak çalmaz; bayrak düşünce (oyun bitince)
+          // host kendiliğinden kontrol eder — web ile birebir.
+          suppress: !state.isGameOver,
+          child: Scaffold(
           backgroundColor: Colors.white, // web sayfa zemini (colors.bg)
           body: SafeArea(
             // Stack: hayalet taş (ghost) içerik akışının üzerinde süzülür.
@@ -1047,6 +1062,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 ),
               ],
             ),
+          ),
           ),
         );
       },

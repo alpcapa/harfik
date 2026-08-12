@@ -295,6 +295,8 @@ mobile/
                              # beğeni (toggle/stats/likers/list_liked_games) +
                              # dondurulmuş sohbet (messages/chat_flags)
       data/stats_api.dart    # player_stats / leaderboard / my_leaderboard_rank
+      data/league_rewards_api.dart # k-lig ödül/rütbe kayıtları (league_rewards
+                             # + mark_league_rewards_seen) — kutlama banner'ı
       data/feedback_api.dart # Görüş Bildir: submit + kuyruk + flush + rate limit
       data/friends_api.dart  # arkadaşlık RPC'leri + davet linki üretimi/çözümü
       data/friend_invite_inbox.dart # gelen davet linkleri → pending_events
@@ -315,6 +317,14 @@ mobile/
                              # player_avatar_row, action_sheet, count_badge
       ui/score/              # skor kartı, k-lig, oyuncu kartı, oyun geçmişi,
                              # score_box_row (paylaşılan görselin üst şeridi)
+      ui/rank/               # k-lig rütbe/ödül katmanı (Parça 61):
+                             # league_rank (eşik/ödül tablosu — SQL ile ELLE
+                             # senkron!), rank_seal (mühür CustomPainter),
+                             # rank_header_seal (skor kartlarının başlık
+                             # mührü), rank_progress_bar (PAYLAŞILAN çubuk +
+                             # RewardBadge), reward_banner (kutlama/düşüş),
+                             # rank_info_modal, league_rewards_host (yığın:
+                             # yalnızca EN ÜSTTEKİ ekranın host'u çalışır)
       ui/chat/               # chat_thread (paylaşılan baloncuk listesi —
                              # arşiv VE canlı sohbet ikisi de kullanır) +
                              # game_chat_history_modal (bitmiş oyunun arşivi) +
@@ -1623,11 +1633,135 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        "aynı ekranda ART ARDA iki oyun bitir, İKİSİ de Skor Kartı'nda
        görünsün" — yukarıdaki sessiz kaybın gerçek uçla kontrolü.
 
+   - ✅ **Parça 61 — k-lig Ödül & Rütbe Sistemi'nin UI katmanı (12 Ağustos
+     2026, 9 yeni dosya [8'i `ui/rank/` + `data/league_rewards_api.dart`] +
+     14 değişen; web `leagueRank.ts`/`RankSeal`/`RewardBanner`/
+     `RankInfoModal`/`LeagueRewardsHost` + `Modal.headerCenter` portu):**
+     Sunucu tarafı (league_rewards tablosu, `games` trigger'ı, view
+     kolonları) web PR'ıyla ZATEN canlıda — yani mobilde bitirilen bir oyun
+     ödülü bugün de kazanıyordu, yalnızca kullanıcıya gösterecek katman
+     yoktu. Bu parça o katmanı ekliyor; SUNUCUYA HİÇ DOKUNULMADI.
+     - **Dosya yerleşimi kararları:** (a) rütbe/ödül UI'ı `ui/score/`'a
+       serpiştirilmedi, kendi `ui/rank/` klasörüne alındı — banner ve host
+       "skor kartı" değil, uygulama seviyesinde bir katman; (b) veri katmanı
+       `stats_api.dart`'a EKLENMEDİ, ayrı `data/league_rewards_api.dart`
+       oldu: stats_api bilinçli olarak üç SALT OKUNUR view/RPC taşıyor,
+       buradaysa bir YAZMA yolu (`mark_league_rewards_seen`) + kendi modeli
+       var; proje deseni zaten alan başına bir dosya (chat/friends/feedback).
+     - **Host mimarisi — web'in "aynı anda tek host" garantisi Flutter'da
+       KENDİLİĞİNDEN GEÇERLİ DEĞİL:** Web'de App.tsx erken return'lerle
+       dallandığından üç mount birbirini dışlıyor. Portta `SetupScreen`
+       `MaterialApp.home`'dur ve oyun ekranları onun ÜZERİNE push edilir —
+       Setup'ın host'u oyun sırasında MOUNT KALIR. Çözüm: host'lar modül
+       seviyesinde bir yığına kaydolur, YALNIZCA EN ÜSTTEKİ çalışır (yığın
+       Navigator'la aynı sırayı izler; oyun pop edilince Setup'ınki
+       kendiliğinden yeniden etkinleşip kontrol koşar). `MaterialApp.builder`
+       içinde TEK global host + ayrı bir "suppress sinyali" alternatifi
+       değerlendirildi ve elendi: web'in `suppress` prop'unu iki ekrana
+       taşımak zaten gerekiyordu, yığın çözümü ise web'in kod şeklini
+       (`LeagueRewardsHost(suppress: ...)`) birebir koruyor.
+     - **Mount noktaları:** `setup_screen` (suppress YOK — giriş/backfill
+       kutlaması burada), `game_screen` ve `online_game_screen`
+       (`suppress: !state.isGameOver`). Yerel oyunda ayrıca
+       `_recordFinishedGame` kayıt sunucuya düşer düşmez
+       `requestLeagueRewardCheck()` çağırıyor (web'in
+       `saveGameDurable(...).then(requestLeagueRewardCheck)` deseni);
+       Canlı'da buna gerek yok, `suppress`in düşmesi yetiyor. Misafirde
+       host tamamen no-op (tek ağ isteği bile atılmıyor, testle sabit).
+     - **BULUNAN İKİ GÖRSEL HATA — ikisini de ÖLÇÜM yakaladı, kod okuması
+       DEĞİL** (ekran görüntüsü + Chromium'da gerçek fontla karşılaştırma):
+       1. **`✓` karakteri Space Mono'da YOK.** Web'de düz bir `✓` basılıyor
+          ve tarayıcı sessizce yedek fonta düşüyor (Chromium'da doğrulandı:
+          computed font "Space Mono, monospace", glyph monospace
+          yedeğinden geliyor). Flutter yedek fonta düşmediğinden TOFU (boş
+          kutu) çiziyordu. Rozet artık Material `Icons.check` kullanıyor —
+          her platformda ve testlerde garanti. **Ders: web'de çalışan bir
+          Unicode glyph portta çalışacak demek DEĞİL; fontun içerdiğini
+          varsayma, render edip bak.**
+       2. **Material 3'ün varsayılan `letterSpacing: 0.25`'i sessizce
+          miras alınıyordu.** "Sıradaki rütbe: Oyuncu · 100 puan" 33
+          karakterde tam 8.25px (33×0.25) şişip 230px'lik karta sığmıyor ve
+          İKİ SATIRA düşüyordu. Aynı metin Chromium'da gerçek Space Mono ile
+          222.16px, tek satır — yani geometri (280 kart / 1px çerçeve / 24px
+          dolgu / 11px punto) web ile BİREBİRDİ, fark yalnızca bu tracking'ti.
+          `ui/rank/` metinleri artık `letterSpacing: kNoTracking` (0) taşıyor.
+          **Bu bulgu bu parçanın DIŞINDA da geçerli olabilir** — portun
+          `ThemeData(useMaterial3: true)` kullanan diğer ekranlarında
+          `letterSpacing` yazmayan her metin 0.25 miras alıyor; ayrı bir
+          denetim işi (aşağıdaki "Sonraya Bırakılan İşler"e eklendi).
+     - **`RankSeal` CanvasKit-güvenli:** kesikli iç halka `Path.combine`/
+       PathOps ile DEĞİL, tek tek `drawArc`'larla çiziliyor (Parça 18 dersi).
+       Ortadaki harf SVG'nin `dominant-baseline: central`ı gibi FONT
+       METRİKLERİNE göre (ascent/descent ortası) yerleştiriliyor — `Center`
+       satır kutusuna göre hizalayıp glyph'i hafif yukarı kaçırırdı.
+       Kompakt kural (`size < 24` → halkasız + harf 19→27) saf fonksiyona
+       (`sealIsCompact`/`sealFontSize`) çıkarıldı ki testlenebilsin.
+     - **`KModal`'a `headerCenter` yuvası** (web `Modal.headerCenter`) —
+       `headerAction`'a DOKUNULMADI (ChatModal'ın dişlisi onu kullanıyor).
+       Verilmezse başlık eskisi gibi tüm boşluğu alır (`Expanded`), verilirse
+       başlık kendi genişliğinde durur (`Flexible`) ve yuva ortalanır.
+     - **`tokens.dart`'a `kTilePts`** (tailwind `tile-pts`, `#8A93A2`) —
+       Çaylak kademesinin rengi. `color_tokens_test`in TAİLWİND PARİTE
+       testine eklendi, "yerel kopya" taramasına BİLEREK eklenmedi: `lib/`
+       altında bu değerde 8 literal var ve hepsi `tile-pts` DEĞİL (beşi form
+       placeholder'ı — web oraya hiç renk yazmıyor, tarayıcı varsayılanı).
+       Beyazın dışlanmasıyla aynı gerekçe; ayrım gerektiren bu migrasyon
+       ayrı bir denetim işi.
+     - **`PlayerStats`'a `bonusPoints` + `rankTier`** (yalnızca
+       `player_stats_overall`'da dolu). `rankTier`'ı UI OKUMUYOR — rütbe
+       güncel puandan türetiliyor ("düşmeli" sürüm); kolon yalnızca "hangi
+       eşikler kutlandı" kaydı, web `PlayerStats.rank_tier` ile aynı gerekçe.
+     - **`RankProgressBar` PAYLAŞILAN:** web ilerleme çubuğunu iki yerde
+       (bilgi popup'ı + düşüş banner'ı) ayrı ayrı yazmış; port
+       `showInvasionConfirm` ile aynı gerekçeyle tek dosyaya aldı (aynı
+       görsel + aynı rozet kuralı, iki kopya sessizce ayrışır).
+     - **Test — 26 yeni test (`test/league_rewards_test.dart`), ikisi
+       negatif eşle doğrulandı:** `hasPositive` guard'ı kaldırılınca öncelik
+       testi GERÇEKTEN düştü (`Expected: null / Actual: RankDownInfo`);
+       rozet `claimed ? kGreen : kMuted` sabitlenince renk testi GERÇEKTEN
+       düştü. Kapsam: eşik sınırları/negatif puan/renk tokenları, ödül
+       tablosunun SQL ile aynılığı, `rewardAlreadyClaimed` prefix çıkarımı,
+       `buildRewardSummary` birleştirme + öncelik + bilinmeyen tür,
+       repo/gateway (unseen→markSeen, ağ hatası), host akışı (banner,
+       DEVAM=markSeen, suppress, misafir no-op, düşüş çubuğu, puan
+       çekilemezse çubuk gizli), bilgi popup'ı rozet kuralı + en üst kademe,
+       mühür kompakt eşiği. Ayrıca üç ekran görüntüsü
+       (`build/screenshots/reward_banner*.png`, `rank_info_modal.png`) —
+       yukarıdaki iki hata tam da bunlara bakarak bulundu.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 350/350
+       yeşil** (324'ten +26; ilk tam koşuda `setup_cloud_test`'in "TEKRAR
+       OYNA … İKİNCİ oyun" testi bir kez düştü ama tek başına ve ikinci tam
+       koşuda geçti — yük altındaki bir zamanlama flake'i, bu parçanın
+       eklediği kod o testin insert yolunu geciktirmiyor).
+       `kelimeki_core`'a hiç dokunulmadı (motor ödül/rütbe bilmiyor).
+     - **Doğrulama sınırı:** gerçek `league_rewards` tablosu/RPC'si ve
+       "cihazdan bağımsız bir kez göster" garantisi bu ortamdan
+       doğrulanamadı (gerçek oturum + gerçek oyun bitişi gerekiyor) —
+       `mobile/TESTING.md` bölüm 13 eklendi (web'in kök `TESTING.md` bölüm
+       10'unun mobil eşleniği, artı "web'de görülen kutlama mobilde
+       ÇIKMAMALI" çapraz maddesi).
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
 kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
 silinip kendi tarihli parça notuna taşınır.
+
+- **Material 3'ün varsayılan `letterSpacing: 0.25`'i tüm porta sızıyor
+  olabilir (12 Ağustos 2026, Parça 61'de ÖLÇÜLEREK bulundu):** `ThemeData`
+  `useMaterial3: true` olduğundan `TextTheme.bodyMedium` 0.25 tracking
+  taşıyor; `letterSpacing` yazmayan HER `Text` bunu miras alıyor. Web'de
+  bu metinlerde tracking YOK. Parça 61'de somut bir hataya yol açtı:
+  33 karakterlik bir satır tam 8.25px (33×0.25) şişip karta sığmadı ve iki
+  satıra düştü — aynı metin Chromium'da gerçek fontla 222.16px, tek satır.
+  - `ui/rank/` dosyaları düzeltildi (`kNoTracking`); **portun geri kalanı
+    DENETLENMEDİ.** Doğru çözüm muhtemelen tek yerden: `app.dart`'taki
+    `ThemeData`'ya `textTheme: Typography...apply(letterSpacingDelta: ...)`
+    ya da `bodyMedium: TextStyle(letterSpacing: 0)` — ama bu TÜM ekranların
+    metin genişliğini değiştireceğinden ölçülerek (Parça 56'nın Chromium
+    yöntemiyle) ve ekran görüntüleriyle yapılmalı.
+  - Parça 56'nın punto denetiminin gözden kaçırdığı sınıf tam olarak bu:
+    punto DOĞRUYDU, satır genişliği değildi.
 
 - **Metin girişi dolgusu + `InputDecoration`ın 8 kopyası (11 Ağustos 2026,
   Parça 56 denetiminde bulundu):** Port `contentPadding: h12/v10`

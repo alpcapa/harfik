@@ -64,6 +64,8 @@ import '../game/remaining_tiles_modal.dart';
 import '../game/tile_widget.dart';
 import '../game/wild_letter_sheet.dart';
 import '../score/player_score_card_modal.dart';
+import '../../data/league_rewards_api.dart';
+import '../rank/league_rewards_host.dart';
 import '../tokens.dart';
 import '../game/invasion_confirm.dart';
 
@@ -134,6 +136,12 @@ class OnlineGameScreen extends StatefulWidget {
   /// (her açılışta tanıtım gösterilir, okunmamış sayacı hep 0'dan başlar).
   final Future<AppStorage>? storage;
 
+  /// k-lig kutlama banner'ı — oyun SÜRERKEN bastırılır; oyun bitince
+  /// (sunucu `games` satırlarını bitişle aynı transaction'da yazdığından)
+  /// host kendiliğinden kontrol edip bekleyen kutlamayı gösterir. Web'in
+  /// `<LeagueRewardsHost suppress={!state.isGameOver} />` mount'u.
+  final LeagueRewardsRepo? leagueRewards;
+
   const OnlineGameScreen({
     super.key,
     required this.game,
@@ -148,6 +156,7 @@ class OnlineGameScreen extends StatefulWidget {
     this.friends,
     this.chat,
     this.storage,
+    this.leagueRewards,
   });
 
   @override
@@ -1266,7 +1275,12 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                             ? state.messageType
                             : last.kind;
 
-        return Scaffold(
+        return LeagueRewardsHost(
+          rewards: widget.leagueRewards,
+          auth: widget.auth,
+          stats: widget.stats,
+          suppress: !state.isGameOver,
+          child: Scaffold(
           backgroundColor: Colors.white,
           body: SafeArea(
             child: Stack(
@@ -1639,6 +1653,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                 ),
               ],
             ),
+          ),
           ),
         );
       },

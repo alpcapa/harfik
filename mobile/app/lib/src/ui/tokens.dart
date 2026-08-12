@@ -26,6 +26,19 @@ const kGreen = Color(0xFF16A34A);
 const kRed = Color(0xFFDC2626);
 const kVoid = Color(0xFFE8EBEF);
 
+/// tailwind `tile-pts` — taş puanının soluk grisi. Parça 61'de eklendi:
+/// k-lig rütbe merdiveninin ilk kademesi (Çaylak) web'de bu değeri taşıyor
+/// (`leagueRank.ts`, `#8A93A2`), yani artık taşın dışında da kullanılıyor.
+///
+/// **`color_tokens_test`in "yerel kopya" taramasına BİLİNÇLİ olarak
+/// eklenmedi** (yalnızca tailwind parite testine): `lib/` altında bu değerde
+/// 8 literal var ve hepsi `tile-pts` DEĞİL — beşi form placeholder'ı, web
+/// oraya hiç renk yazmıyor (tarayıcı varsayılanı), port kendi yaklaşık
+/// değerini seçmiş. Beyazın (`bg` ↔ `tile-bg`) dışlanmasıyla aynı gerekçe:
+/// literalden hangi kavram olduğu anlaşılamıyor. Ayrım gerektiren bu
+/// migrasyon ayrı bir denetim işi.
+const kTilePts = Color(0xFF8A93A2);
+
 /// Tahtanın hamle durumu renkleri — token DEĞİL, `Board.tsx`'te BİLİNÇLİ
 /// olarak sabit yazılmış iki ayrı değer (`moveColor` ve sürükleme sırasındaki
 /// kesikli çerçeve). Token yeşili/kırmızısıyla KARIŞTIRILMAMALI: bunlar

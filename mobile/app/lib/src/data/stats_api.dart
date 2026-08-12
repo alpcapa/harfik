@@ -41,7 +41,23 @@ class PlayerStats {
   final String? longestWord;
 
   /// Lig puanı (k-lig) — ham oyun skorlarının toplamı DEĞİL.
+  /// 12 Ağustos 2026'dan beri eşik ödülleri de DAHİL (bkz. [bonusPoints]).
   final int totalScore;
+
+  /// [totalScore]'a dahil edilen toplam eşik ödülü puanı — "Genel =
+  /// 2 kişilik + 4 kişilik" değişmezi artık "… + ödül puanı"; farkı bu alan
+  /// taşır ve rütbe bilgi popup'ı bunu açıkça gösterir. YALNIZCA
+  /// `player_stats_overall`'da var (ödül moda bölünemez) — mod bazlı
+  /// satırlarda null.
+  final int? bonusPoints;
+
+  /// Ulaşılan en yüksek rütbe eşiği (0=Çaylak) — yalnızca
+  /// `player_stats_overall`'da. **UI bunu OKUMUYOR:** rütbe 12 Ağustos
+  /// 2026'dan beri güncel puandan türetiliyor ("düşmeli" sürüm,
+  /// `tierFor(totalScore)`); kolon yalnızca "hangi eşikler daha önce
+  /// kutlandı" kaydı. Web `PlayerStats.rank_tier` ile aynı gerekçeyle
+  /// modelde duruyor.
+  final int? rankTier;
 
   const PlayerStats({
     required this.gamesPlayed,
@@ -56,6 +72,8 @@ class PlayerStats {
     required this.avgMoveScore,
     required this.longestWord,
     required this.totalScore,
+    this.bonusPoints,
+    this.rankTier,
   });
 
   static int _i(Object? v) => (v as num?)?.toInt() ?? 0;
@@ -74,6 +92,8 @@ class PlayerStats {
         avgMoveScore: (j['avg_move_score'] as num?)?.toDouble(),
         longestWord: j['longest_word'] as String?,
         totalScore: _i(j['total_score']),
+        bonusPoints: _ni(j['bonus_points']),
+        rankTier: _ni(j['rank_tier']),
       );
 }
 

@@ -33,6 +33,12 @@ class KModal extends StatelessWidget {
   /// Mesajlaşma Faz 2). `headerLink`'in aksine aynı satırda render edilir.
   final Widget? headerAction;
 
+  /// Başlık ile ✕ arasındaki BOŞLUĞUN ortasında gösterilen öğe (web
+  /// `headerCenter` — Skor Kartı'nın rütbe mührü). [headerAction]'dan farkı
+  /// hizalama: o ✕'e bitişik sağda durur, bu ikisinin arasında ortalanır.
+  /// Verilmezse hiçbir şey değişmez (başlık eskisi gibi tüm boşluğu alır).
+  final Widget? headerCenter;
+
   /// ✕'in davranışı — web Modal'ın `onClose` prop'u. Verilmezse Navigator
   /// pop (showDialog ile açılan olağan kullanım). Bir route OLMADAN inline
   /// render edilen modal (ResetPasswordModal'ın kök recovery kapısı) pop
@@ -47,6 +53,7 @@ class KModal extends StatelessWidget {
     this.titleWidget,
     this.headerLink,
     this.headerAction,
+    this.headerCenter,
     this.onClose,
   });
 
@@ -82,22 +89,12 @@ class KModal extends StatelessWidget {
                   ],
                   Row(
                     children: [
-                      Expanded(
-                        child: titleWidget ??
-                            Text(
-                              // Web'de CSS `uppercase` (tr locale ile doğru
-                              // çalışır); Dart'ta karşılığı trUpper — native
-                              // toUpperCase 'İ'yi bozar (proje kuralı).
-                              trUpper(title),
-                              style: const TextStyle(
-                                fontFamily: 'SpaceMono',
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.5,
-                                color: _accent,
-                              ),
-                            ),
-                      ),
+                      // headerCenter varsa başlık yalnızca kendi genişliğini
+                      // alır (web `shrink-0`) ve kalan boşluğu ortalanmış
+                      // yuva doldurur; yoksa eski davranış (başlık esner).
+                      _headerTitle(),
+                      if (headerCenter != null)
+                        Expanded(child: Center(child: headerCenter!)),
                       if (headerAction != null) headerAction!,
                       IconButton(
                         visualDensity: VisualDensity.compact,
@@ -121,5 +118,25 @@ class KModal extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _headerTitle() {
+    final label = titleWidget ??
+        Text(
+          // Web'de CSS `uppercase` (tr locale ile doğru çalışır); Dart'ta
+          // karşılığı trUpper — native toUpperCase 'İ'yi bozar (proje kuralı).
+          trUpper(title),
+          style: const TextStyle(
+            fontFamily: 'SpaceMono',
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.5,
+            color: _accent,
+          ),
+        );
+    // headerCenter yokken başlık kalan tüm genişliği alır (eski davranış:
+    // uzun bir başlık ✕'e kadar uzanıp kırpılır). Varken kendi genişliğinde
+    // durur ki ortalama gerçekten "başlık ile ✕ arası" olsun.
+    return headerCenter == null ? Expanded(child: label) : Flexible(child: label);
   }
 }

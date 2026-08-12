@@ -857,6 +857,67 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       şey yüklenmemeli. Bir resim-DIŞI dosya (galeri buna izin veriyorsa)
       seçilirse "Lütfen bir görsel dosyası seç." hatası çıkmalı.
 
+## 13. k-lig ödül & rütbe sistemi (Parça 61)
+
+Ödül/rütbe kayıtları SUNUCUDA, `games`e satır ekleyen bir trigger'la
+(`games_award_league_rewards`) açılır — yani mobilde bitirilen bir oyun da
+ödülü kendiliğinden kazanır. Kutlamanın "bir kez göster" garantisi
+`league_rewards.seen_at` ile CİHAZDAN BAĞIMSIZ: webde görülen bir kutlama
+mobilde tekrar ÇIKMAMALI (ve tersi). Bu zincirin büyük kısmı otomatik test
+edilemiyor (gerçek oturum + gerçek oyun bitişi gerekiyor); web'in aynı
+listesi kök `TESTING.md` bölüm 10.
+
+- [ ] **Kutlama banner'ı bir kez çıkar.** Görülmemiş bir ödülün varken
+      (test için bir satırın `seen_at`'i SQL'le null'a çekilebilir)
+      uygulamayı aç: mühür damgalı, konfetili banner ekranın ORTASINDA,
+      karartılmış arka planla çıkmalı. "DEVAM"dan sonra uygulama yeniden
+      başlatılsa da, **web'den girilse de** bir daha çıkmamalı.
+- [ ] **Banner oyun ortasında çıkmaz.** Devam eden bir YZ/Canlı oyunun
+      tahtasındayken banner asla belirmemeli. Oyun bitince (GameOver
+      modalı + Görüş Bildir formu kapatıldıktan sonra — banner onların
+      ALTINDA duruyor, web'de de öyle) kendiliğinden görünmeli.
+- [ ] **Setup'a dönünce de görünür.** Oyunu bitirmeden logoya basıp
+      Setup'a dön: orada bekleyen kutlama varsa çıkmalı (Setup'ın host'u
+      oyun ekranı pop edilince yeniden etkinleşir).
+- [ ] **Birleşik özet.** Aynı anda birden fazla görülmemiş kayıt varken
+      TEK banner çıkmalı: rütbe varsa başlık rütbe, ödül puanı yeşil
+      satırda TOPLAM olarak.
+- [ ] **Mühür üç yerde ve aynı kademede.** k-lig listesi satırları (18px,
+      iç kesikli halkasız — harf OKUNABİLİR olmalı), Skor Kartı ve başka
+      bir oyuncunun kartı (34px, başlık ile ✕ ARASINDA ortalı, yazısız).
+      Üçü de GÜNCEL toplam puandan türetildiğinden aynı kademeyi
+      göstermeli.
+- [ ] **Mühür popup'ı.** Skor Kartı başlığındaki mühre dokun: damga
+      animasyonuyla bilgi popup'ı açılmalı (kademe adı + puan + "+N eşik
+      ödülü dahil" + sıradaki rütbe hedefi + hedefe AKAN ilerleme çubuğu;
+      en üst kademede çubuk yok). İstendiği kadar tekrar açılabilmeli —
+      kutlamanın aksine "bir kez göster" kuralı YOK.
+- [ ] **Rozet renk kuralı.** İlerleme çubuğunun altında: ALINMIŞ ödül
+      YEŞİL "(+5)" + onay işareti, henüz alınmamış hedef ödülü GRİ "(+10)"
+      ve onay işareti YOK. Onay işareti gerçekten bir tik olarak
+      görünmeli — boş kutu (tofu) DEĞİL (Space Mono bu glyph'i içermiyor,
+      port Material ikonunu kullanıyor).
+- [ ] **Rütbe düşmeli.** -2 ceza alıp eşiğin altına inen hesabın mührü üç
+      yerde de bir alt kademeye İNMELİ. Puan tekrar eşiği aşarsa damga
+      geri gelir ama kutlama İKİNCİ kez ÇIKMAMALI, ödül İKİNCİ kez
+      VERİLMEMELİ.
+- [ ] **Rütbe düşüş banner'ı.** Konfetisiz, üzgün banner ("Rütben
+      geriledi … Kazandıkça geri yükselirsin!") + kaybedilen eşiğe geri
+      dönüş çubuğu; hedef etiketi "100 puan" ve altında yeşil "(+10)"+tik
+      (ödül zaten alındı). Görülmemiş OLUMLU bir kutlamayla çakışırsa
+      yalnızca olumlu olan gösterilmeli.
+- [ ] **Misafirde hiç çıkmaz.** Girişsizken oyun bitir: banner
+      görünmemeli, hiçbir ağ isteği atılmamalı. Sonradan giriş yapınca
+      (kuyruk sunucuya işlendikten sonraki ilk kontrolde) kutlama
+      çıkabilir.
+- [ ] **Uçak modu.** Ağ yokken banner çıkmamalı ve uygulama hiç
+      takılmamalı; ağ dönüp uygulama öne alınınca (arka plandan dönüş)
+      bekleyen kutlama kendiliğinden gösterilmeli.
+- [ ] **Web ↔ mobil aynı toplam.** Aynı hesabın "Genel" lig puanı iki
+      platformda BİREBİR aynı olmalı ("Genel = 2 kişilik + 4 kişilik +
+      eşik ödülü" — mod bazlı sekmelerin toplamı ödül kadar EKSİK olur,
+      bu doğru; fark popup'taki "+N eşik ödülü dahil" satırıdır).
+
 ---
 
 ## Web derlemesi (ücretsiz tarayıcı test ortamı)
