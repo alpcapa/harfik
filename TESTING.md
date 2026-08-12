@@ -363,8 +363,12 @@ gerekiyor).
       rütbe, ödül puanı yeşil satırda toplam olarak.
 - [ ] **Ödül toplama doğru.** 50. tamamlanan oyun bitince +5 gelmeli;
       teslim/terkle biten oyunlar sayacı İLERLETMEMELİ (surrendered satır).
-      Skor Kartı > Genel'de "Toplam puana +N oyun ödülü dahildir." notu ve
       "Genel = 2 kişilik + 4 kişilik + ödül" toplamı tutmalı.
+- [ ] **Mühür popup'ı.** Skor Kartı başlığının sağındaki büyük mühre dokun:
+      damga animasyonuyla bilgi popup'ı açılmalı (kademe adı + puan +
+      "+N oyun ödülü dahil" + sıradaki rütbe hedefi) ve İSTENDİĞİ KADAR
+      tekrar açılabilmeli (kutlamanın aksine "bir kez göster" kuralı yok).
+      Başkasının kartında da (PlayerScoreCard) aynı mühür/popup çalışmalı.
 - [ ] **Rütbe düşmeli.** -2 ceza alıp eşiğin altına inen bir hesabın mührü
       (k-lig listesi, Skor Kartı, PlayerScoreCard) bir alt kademeye İNMELİ —
       üç yer de aynı kademeyi göstermeli (hepsi güncel `total_score`'dan

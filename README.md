@@ -67,7 +67,8 @@ src/
 │   ├── GameChatHistoryModal.tsx # oyun içi mesajlaşma: bitmiş bir oyunun dondurulmuş sohbet kaydının salt-okunur görünümü
 │   ├── Leaderboard.tsx          # lider tablosu (k-lig)
 │   ├── KLigMark.tsx             # "k-lig" logosu — statik SVG path (üretilmiş, bkz. scripts/generate-klig-paths.mjs), font bağımsız
-│   ├── RankSeal.tsx             # k-lig rütbe mührü (nömorfik damga SVG — k-lig satırları, Skor Kartı, ödül banner'ı)
+│   ├── RankSeal.tsx             # k-lig rütbe mührü (nömorfik damga SVG — k-lig satırları, Skor Kartı başlığı, ödül banner'ı)
+│   ├── RankInfoModal.tsx        # Skor Kartı'ndaki mühre dokununca açılan rütbe bilgi popup'ı (puan + ödül payı + sıradaki hedef)
 │   ├── RewardBanner.tsx         # k-lig kutlama banner'ı (rütbe atlama / puan eşiği / oyun ödülü — damga+konfeti animasyonu)
 │   ├── LeagueRewardsHost.tsx    # görülmemiş league_rewards kayıtlarını çekip tek birleşik RewardBanner gösteren sürücü
 │   ├── CountBadge.tsx           # ortak kırmızı sayaç rozeti (sekme başlıkları, "Arkadaşlar" satırı vb.)

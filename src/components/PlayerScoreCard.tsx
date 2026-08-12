@@ -8,6 +8,7 @@ import { GameHistoryModal } from './GameHistoryModal';
 import { Leaderboard } from './Leaderboard';
 import { KLigMark } from './KLigMark';
 import { RankSeal } from './RankSeal';
+import { RankInfoModal } from './RankInfoModal';
 import { tierFor } from '../utils/leagueRank';
 import { HowToRegIcon, PersonAddIcon } from './RelationIcons';
 import { useAuth } from '../hooks/useAuth';
@@ -116,6 +117,7 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
   const [tab, setTab] = useState<TabKey>('all');
   const [showAllGames, setShowAllGames] = useState(false);
   const [showLeague, setShowLeague] = useState(false);
+  const [showRankInfo, setShowRankInfo] = useState(false);
   const [rank, setRank] = useState<MyLeaderboardRank | null>(null);
   const [relation, setRelation] = useState<FriendRelation | null | undefined>(undefined);
   const [showFriendConfirm, setShowFriendConfirm] = useState(false);
@@ -199,27 +201,32 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
   const stats = statsByTab[tab];
   const totalScore = statsByTab.all?.total_score ?? 0;
   // Rütbe mührü — ScoreCard'daki aynı kural: GÜNCEL puandan türetilir
-  // (düşmeli sürüm); Genel istatistik yüklenene kadar gizli.
+  // (düşmeli sürüm); Genel istatistik yüklenene kadar gizli; modal
+  // başlığının sağında, dokununca RankInfoModal.
   const rankTier = statsByTab.all !== undefined ? tierFor(statsByTab.all?.total_score) : null;
 
   return (
-    <Modal title="Skor Kartı" onClose={onClose}>
+    <Modal
+      title="Skor Kartı"
+      onClose={onClose}
+      headerAction={
+        rankTier ? (
+          <button
+            type="button"
+            onClick={() => setShowRankInfo(true)}
+            aria-label={`Rütbe: ${rankTier.name} — bilgi için dokun`}
+            className="shrink-0 leading-none active:scale-90 transition-transform mr-1"
+          >
+            <RankSeal tier={rankTier} size={34} />
+          </button>
+        ) : undefined
+      }
+    >
       <div className="mb-4 flex items-center gap-3">
         <Avatar url={member.avatar_url ?? undefined} name={name} size={44} />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <div className="text-base font-bold text-text truncate">{name}</div>
-            {rankTier && (
-              <>
-                <RankSeal tier={rankTier} size={15} className="shrink-0" />
-                <span
-                  className="text-[10px] font-mono font-bold shrink-0"
-                  style={{ color: rankTier.color }}
-                >
-                  {rankTier.name}
-                </span>
-              </>
-            )}
             {showFriendButton && (
             <button
               type="button"
@@ -332,6 +339,15 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
         />
       )}
       {showLeague && <Leaderboard onClose={() => setShowLeague(false)} />}
+
+      {showRankInfo && rankTier && (
+        <RankInfoModal
+          tier={rankTier}
+          totalScore={totalScore}
+          bonusPoints={statsByTab.all?.bonus_points ?? 0}
+          onClose={() => setShowRankInfo(false)}
+        />
+      )}
 
       {showFriendConfirm &&
         relation !== undefined &&

@@ -158,15 +158,6 @@ export function ScoreStatsSection({
         Oyun İstatistikleri
       </div>
       <CellsGrid cells={gameCells} />
-
-      {/* Yalnızca Genel sekmesinde görünür — `bonus_points` sadece
-          player_stats_overall'da var. "Genel = 2+4 sekme toplamı" değişmezi
-          ödülle birlikte "…+ ödül puanı" oldu; fark burada açıklanıyor. */}
-      {stats?.bonus_points ? (
-        <p className="text-[9px] text-muted font-mono text-center mt-2">
-          Toplam puana +{stats.bonus_points} oyun ödülü dahildir.
-        </p>
-      ) : null}
     </>
   );
 }
