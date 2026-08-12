@@ -374,6 +374,17 @@ gerekiyor).
       KADAR
       tekrar açılabilmeli (kutlamanın aksine "bir kez göster" kuralı yok).
       Başkasının kartında da (PlayerScoreCard) aynı mühür/popup çalışmalı.
+- [ ] **Dokuz kademe ve eşikleri.** Çaylak 0 (Ç) · Meraklı 50 (M) · Oyuncu
+      100 (O) · Usta **250** (U) · Şampiyon 500 (Ş) · Destan 1000 (D) ·
+      Efsane **2500** (E) · Uzaylı **5000** (Z) · Tanrı **10000** (T).
+      Ödül her eşikte eşik/10 (+5/+10/+25/+50/+100/+250/+500/+1000).
+      Usta 12 Ağustos 2026'da 200'den 250'ye çekildi — eski 200 eşiği
+      HİÇBİR yerde görünmemeli. Uzaylı'nın harfi **Z** (Usta'nın U'suyla
+      karışmasın); üç yeni renk çivit/camgöbeği/parlak altın.
+- [ ] **Ödül bir sonraki eşiği tetikleyebilir.** Ödül puanı toplamın
+      İÇİNE sayıldığından, eşiğe çok yaklaşmış biri ödülü alınca aynı
+      anda bir üst eşiği de geçebilir; iki banner değil TEK birleşik
+      banner çıkmalı ve iki ödül de verilmiş olmalı.
 - [ ] **Rütbe düşmeli.** -2 ceza alıp eşiğin altına inen bir hesabın mührü
       (k-lig listesi, Skor Kartı, PlayerScoreCard) bir alt kademeye İNMELİ —
       üç yer de aynı kademeyi göstermeli (hepsi güncel `total_score`'dan
