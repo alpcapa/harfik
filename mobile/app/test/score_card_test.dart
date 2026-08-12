@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/stats_api.dart';
 import 'package:kelimeki/src/ui/score/klig_mark.dart';
+import 'package:kelimeki/src/ui/tokens.dart';
 import 'package:kelimeki/src/ui/score/leaderboard_modal.dart';
 import 'package:kelimeki/src/ui/score/player_score_card_modal.dart';
 import 'package:kelimeki/src/ui/score/score_card_modal.dart';
@@ -476,6 +477,88 @@ void main() {
       ),
     );
     expect(find.text('Henüz skor yok. İlk sen ol!'), findsOneWidget);
+  });
+
+  // OHP = ortalama hamle puanı (12 Ağustos 2026, kullanıcı isteği): "Puan"ın
+  // SOLUNDA, düz gri, 2 basamak; başlığa dokununca açıklama açılıp kapanıyor.
+  // Sayı sunucuda `player_stats_overall.avg_move_score` ile AYNI ifadeden
+  // geliyor — burada sınanan, o sayının doğru YERDE ve doğru BİÇİMDE
+  // gösterilmesi.
+  testWidgets('k-lig: OHP kolonu — düz gri, 2 basamak, boşta —, hint toggle',
+      (tester) async {
+    final gw = FakeStatsGateway(
+      rows: [
+        {
+          'user_id': 'u-0',
+          'display_name': 'Oyuncu0',
+          'total_score': 100,
+          'avg_move_score': 12.78,
+        },
+        {
+          // Hiç hamle verisi olmayan (eski) kayıt → satırın "Puan"
+          // hücresiyle AYNI kuralla "—".
+          'user_id': 'u-1',
+          'display_name': 'Oyuncu1',
+          'total_score': 90,
+          'avg_move_score': null,
+        },
+      ],
+      // "Senin sıran" kısayolu da AYNI kolonu doldurmalı; boş kalsaydı o tek
+      // satırda tablo hizasız görünürdü (RPC bu yüzden alanı döndürüyor).
+      rank: const {'rank': 42, 'total_score': 5, 'avg_move_score': 6.7},
+    );
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await pumpModal(
+      tester,
+      LeaderboardModal(
+        auth: AuthService.fake(user: fakeUser(), profile: ironman),
+        stats: StatsRepo(gw),
+      ),
+    );
+
+    // Başlık sırası: … OYUNCU | OHP | PUAN  (OHP, PUAN'ın SOLUNDA)
+    expect(find.text('OHP'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('OHP')).dx,
+      lessThan(tester.getTopLeft(find.text('PUAN')).dx),
+    );
+
+    // Değer 2 basamak, DÜZ GRİ ve kalın DEĞİL (Puan mavi/kalın kalır).
+    final ohp = tester.widget<Text>(find.text('12.78'));
+    expect(ohp.style?.color, kMuted);
+    expect(ohp.style?.fontWeight, isNot(FontWeight.bold));
+    final puan = tester.widget<Text>(find.text('100'));
+    expect(puan.style?.color, kAccent);
+    expect(puan.style?.fontWeight, FontWeight.bold);
+
+    // Verisi olmayan satır ve "senin sıran" kısayolu.
+    expect(find.text('—'), findsOneWidget); // Oyuncu1
+    expect(find.text('6.70'), findsOneWidget); // myRank
+
+    // Hint: başlangıçta kapalı, başlığa dokununca açılıyor, tekrar
+    // dokununca kapanıyor (dokunmatikte `Tooltip` hover'ı olmadığından
+    // keşfedilebilir tek yol bu). Metin BİLEREK dizeyle yazılıyor,
+    // `ohpHint` sabitiyle değil: sabite bağlanan bir assertion, widget
+    // hint'i hiç göstermese bile derlenir — negatif eş kanıtlanamazdı.
+    const hint = 'OHP: Ortalama Hamle Puanı — bir hamlede alınan ortalama puan.';
+    expect(find.text(hint), findsNothing);
+    await tester.tap(find.text('OHP'));
+    await tester.pumpAndSettle();
+    expect(find.text(hint), findsOneWidget);
+    await tester.tap(find.text('OHP'));
+    await tester.pumpAndSettle();
+    expect(find.text(hint), findsNothing);
+  });
+
+  test('parseNullableDouble: sayı da dize de kabul edilir', () {
+    // PostgREST'in `numeric`i JSON'da sayı olarak döndürdüğü varsayılıyor
+    // (PlayerStats bunu cihazda kanıtladı) ama bu ortamdan REST ucuna
+    // erişilemiyor; bir dize gelirse `as num?` tüm listeyi düşürürdü.
+    expect(parseNullableDouble(12.78), 12.78);
+    expect(parseNullableDouble(12), 12.0);
+    expect(parseNullableDouble('12.78'), 12.78);
+    expect(parseNullableDouble(null), isNull);
+    expect(parseNullableDouble('abc'), isNull);
   });
 }
 

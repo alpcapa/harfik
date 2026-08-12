@@ -21,6 +21,16 @@ const _text = kText;
 const _accent = kAccent;
 const _gold = kGold;
 const _border = kBorder;
+const _panel = kPanel;
+
+/// OHP = ortalama hamle puanı. Skor Kartı'ndaki "Ortalama Hamle Puanı" ile
+/// AYNI değeri AYNI biçimde (2 basamak) gösterir — iki ekranın sessizce
+/// ayrışmaması için tek bir biçimlendirici (web `formatOhp` ile aynı).
+/// Veri yoksa, satırın "Puan" hücresiyle aynı kuralla, "—".
+String formatOhp(double? v) => v == null ? '—' : v.toStringAsFixed(2);
+
+/// Başlığa dokununca/hover edince görünen açıklama (web ile birebir).
+const ohpHint = 'OHP: Ortalama Hamle Puanı — bir hamlede alınan ortalama puan.';
 
 /// Web INITIAL_PAGE_SIZE / PAGE_SIZE — ilk açılışta "ilk 10", sonra 20'şer.
 const _initialPageSize = 10;
@@ -67,6 +77,11 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
   bool _hasMore = true;
   bool _loadingMore = false;
   MyLeaderboardRank? _myRank;
+
+  /// "OHP" başlığına dokununca açılan açıklama satırı. `Tooltip` masaüstü/
+  /// web'de hover, dokunmatikte uzun basma verir; asıl (keşfedilebilir) yol
+  /// bu toggle — web'deki `title` + tıklama çiftinin karşılığı.
+  bool _showOhpHint = false;
   final _scrollController = ScrollController();
 
   @override
@@ -197,16 +212,47 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
               ),
             )
           else ...[
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Row(children: [
                 // 28: "SIRA" 9px SpaceMono + 1px letter-spacing'te 24'e
                 // sığmayıp alt satıra kayıyordu (ekran görüntüsü yakaladı).
-                SizedBox(width: 28, child: _HeadLabel('SIRA')),
-                Expanded(child: _HeadLabel('OYUNCU')),
-                SizedBox(width: 52, child: _HeadLabel('PUAN', right: true)),
+                const SizedBox(width: 28, child: _HeadLabel('SIRA')),
+                const Expanded(child: _HeadLabel('OYUNCU')),
+                Tooltip(
+                  message: ohpHint,
+                  child: GestureDetector(
+                    onTap: () =>
+                        setState(() => _showOhpHint = !_showOhpHint),
+                    behavior: HitTestBehavior.opaque,
+                    child: const SizedBox(
+                      width: 52,
+                      child: _HeadLabel('OHP',
+                          right: true, underline: true),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 52, child: _HeadLabel('PUAN', right: true)),
               ]),
             ),
+            if (_showOhpHint) ...[
+              const SizedBox(height: 6),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _panel,
+                  border: Border.all(color: _border),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(ohpHint,
+                    style: TextStyle(
+                        fontFamily: 'SpaceMono',
+                        fontSize: 10,
+                        height: 1.5,
+                        color: _muted)),
+              ),
+            ],
             const SizedBox(height: 4),
             ConstrainedBox(
               constraints: BoxConstraints(
@@ -234,6 +280,7 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
                     name: r.shortName,
                     avatarUrl: r.avatarUrl,
                     score: r.totalScore,
+                    avgMoveScore: r.avgMoveScore,
                     isMe: user != null && r.userId == user.id,
                     onTap: () => showPlayerScoreCard(
                       context,
@@ -269,6 +316,7 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
                 name: 'Sen',
                 avatarUrl: widget.auth.profile?.avatarUrl,
                 score: _myRank!.totalScore,
+                avgMoveScore: _myRank!.avgMoveScore,
                 isMe: true,
                 onTap: () => showPlayerScoreCard(
                   context,
@@ -292,17 +340,25 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
 class _HeadLabel extends StatelessWidget {
   final String text;
   final bool right;
-  const _HeadLabel(this.text, {this.right = false});
+
+  /// Noktalı alt çizgi — başlığın dokunulabilir olduğunu belli eder
+  /// (web'deki `underline decoration-dotted` ile aynı).
+  final bool underline;
+  const _HeadLabel(this.text, {this.right = false, this.underline = false});
 
   @override
   Widget build(BuildContext context) => Text(
         text,
         textAlign: right ? TextAlign.right : TextAlign.left,
-        style: const TextStyle(
-            fontFamily: 'SpaceMono',
-            fontSize: 9,
-            letterSpacing: 1,
-            color: _muted),
+        style: TextStyle(
+          fontFamily: 'SpaceMono',
+          fontSize: 9,
+          letterSpacing: 1,
+          color: _muted,
+          decoration: underline ? TextDecoration.underline : null,
+          decorationStyle: underline ? TextDecorationStyle.dotted : null,
+          decorationColor: underline ? _muted : null,
+        ),
       );
 }
 
@@ -311,6 +367,7 @@ class _Row extends StatelessWidget {
   final String name;
   final String? avatarUrl;
   final int score;
+  final double? avgMoveScore;
   final bool isMe;
   final VoidCallback onTap;
 
@@ -319,6 +376,7 @@ class _Row extends StatelessWidget {
     required this.name,
     required this.avatarUrl,
     required this.score,
+    required this.avgMoveScore,
     required this.isMe,
     required this.onTap,
   });
@@ -371,6 +429,15 @@ class _Row extends StatelessWidget {
                     RankSeal(tier: tierFor(score), size: 18),
                   ],
                 ),
+              ),
+              // OHP düz gri ve KALIN DEĞİL (kullanıcı isteği) — asıl
+              // sıralama ölçütü olan "Puan"la görsel olarak yarışmasın diye.
+              SizedBox(
+                width: 52,
+                child: Text(formatOhp(avgMoveScore),
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                        fontFamily: 'SpaceMono', fontSize: 14, color: _muted)),
               ),
               SizedBox(
                 width: 52,

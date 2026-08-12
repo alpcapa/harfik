@@ -1920,6 +1920,68 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ve ilerleme çubuğunda nasıl durduğu, "Z" harfinin okunabilirliği)
        kullanıcıdan bekleniyor — `mobile/TESTING.md` bölüm 13 güncellendi.
 
+   - ✅ **Parça 63 — k-lig tablosuna OHP (ortalama hamle puanı) kolonu
+     (12 Ağustos 2026, `stats_api.dart`, `leaderboard_modal.dart` + web
+     `leaderboard`/`my_leaderboard_rank` + `Leaderboard.tsx`):** Kullanıcı
+     isteği — *"Hem web hem de app'te leaderboard tablosunda Puan kolonunun
+     soluna OHP kolonu ekle (mouseover/hover ya da tıklanınca/değince hint
+     olarak ne olduğu gösterilsin) rakamlar düz gri olsun."* Web yarısı
+     `main` tabanlı ayrı bir dalda teslim edildi (Parça Bitirme Kontrol
+     Listesi madde 1).
+     - **Sunucu — sayı ELLE hesaplanmadı, `player_stats_overall`'ın
+       İFADESİ birebir kopyalandı:** `avg_move_score` bir AĞIRLIKLI
+       ortalama (`sum(move_points_sum)/nullif(sum(move_count),0)`, 2
+       basamak), oyun başına ortalamaların ortalaması DEĞİL. `leaderboard`
+       view'ına aynı ifade eklendi ki bir oyuncunun k-lig satırındaki OHP
+       ile Skor Kartı'ndaki "Ortalama Hamle Puanı" HİÇBİR ZAMAN
+       ayrışamasın. Migration'dan ÖNCE canlıda doğrulandı: 15 kullanıcının
+       TAMAMINDA iki ifade birebir eşleşti (0 sapma, 0 null, aralık
+       6.70-15.54).
+     - **`create or replace view`, drop/create DEĞİL** — kolon SONA
+       eklendiğinde grant'ler ve `security_invoker = false` (owner hakları;
+       view'ın `profiles`/`games` üzerindeki kilitli RLS'i bypass etmesini
+       sağlayan şey) korunuyor. Uygulandıktan sonra canlıda `set local role
+       authenticated` + gerçek bir JWT iddiasıyla teyit edildi: sıradan bir
+       hesap hâlâ 15 satırın hepsini OHP dolu görüyor.
+     - **`my_leaderboard_rank` de genişletildi** ("senin sıran" kısayolu):
+       dönüş TİPİ değiştiğinden `drop function` + `create` şart, grant'ler
+       elle geri kuruldu. Kısayol AYNI tabloda AYNI kolonları çizdiğinden
+       alan eklenmeseydi o tek satırda OHP boş kalır, tablo hizasız
+       görünürdü.
+     - **`parseNullableDouble` — ölçülemeyen bir varsayımın dürüst
+       kaydı:** `PlayerStats` `numeric` alanları düz `as num?` ile okuyor
+       ve bu cihazda çalıştığı kanıtlanmış (yani PostgREST numeric'i JSON
+       SAYISI döndürüyor); ama bu ortamdan REST ucuna erişilemediğinden
+       (proxy 403) OHP alanları için AYNI varsayım ÖLÇÜLEMEDİ. Bir dize
+       gelseydi `as num?` tüm k-lig listesini bir TypeError ile düşürürdü —
+       iki olasılığı da kabul etmek iki satır, yeni bir bağımlılık yok.
+     - **Hint iki yoldan da açılıyor, çünkü tek yol yetmez:** `Tooltip`
+       (masaüstü hover — web `title`) VE başlığa dokununca açılan bir
+       satır (`_showOhpHint`). Dokunmatikte hover DİYE BİR ŞEY olmadığından
+       tooltip tek başına keşfedilemez; web'de de aynı ikili var (`title`
+       + tıklanınca açılan paragraf).
+     - **Renk kararı ölçülerek değil KURALDAN geldi:** "düz gri" =
+       `kMuted`, yani `tailwind muted` token'ı (`color_tokens_test` bunu
+       zaten web'e karşı doğruluyor) — yeni bir gri icat edilmedi. Puan
+       kolonunun mavi/kalın kalması testte AYRICA sabitlendi, aksi halde
+       "gri yaptım" iddiası Puan'ı da griye çekseydi geçerdi.
+     - **Test — negatif eş doğrulamasıyla, İKİ TURDA:** ilk tur iki lib
+       dosyasını birden `git stash`ledi ve DERLEME hatası verdi (güçlü ama
+       UI iddialarını sınamıyor); ikinci turda yalnızca
+       `leaderboard_modal.dart` geri alınıp `stats_api.dart` yerinde
+       bırakıldı — widget testi GERÇEKTEN `Found 0 widgets with text
+       "OHP"` ile düştü, `parseNullableDouble` testi (doğru şekilde) geçti.
+       **Bunu mümkün kılmak için test, hint metnini `ohpHint` SABİTİ
+       yerine düz dizeyle yazıyor:** sabite bağlanan bir assertion, widget
+       hint'i hiç göstermese bile derlenir ve negatif eş kanıtlanamazdı.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       356/356 yeşil** (354'ten +2). `kelimeki_core`'a hiç dokunulmadı
+       (motor istatistik bilmiyor), golden vector turu gerekmedi.
+     - **Doğrulama sınırı:** gerçek `leaderboard`/`my_leaderboard_rank`
+       uçlarından gelen OHP'nin cihazda göründüğü ve Skor Kartı'ndaki
+       sayıyla eşleştiği kullanıcıdan bekleniyor — `mobile/TESTING.md`
+       bölüm 4'e çapraz kontrol maddesi eklendi.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

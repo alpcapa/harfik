@@ -105,12 +105,20 @@ class LeaderboardRow {
   final String? avatarUrl;
   final int totalScore;
 
+  /// OHP — ortalama hamle puanı (hamle başına alınan ortalama puan).
+  /// Sunucuda `player_stats_overall.avg_move_score` ile BİREBİR AYNI
+  /// ifadeden gelir (ağırlıklı ortalama, 2 basamak): k-lig satırındaki OHP
+  /// ile o oyuncunun Skor Kartı'ndaki "Ortalama Hamle Puanı" AYNI sayı
+  /// olmak zorunda. Hiç hamle verisi olmayan (eski) kayıtlarda null.
+  final double? avgMoveScore;
+
   const LeaderboardRow({
     required this.userId,
     required this.displayName,
     required this.firstName,
     required this.avatarUrl,
     required this.totalScore,
+    required this.avgMoveScore,
   });
 
   /// Herkese açık bir sıralama olduğundan tam ad/soyad DEĞİL, oyun içindeki
@@ -127,14 +135,37 @@ class LeaderboardRow {
         firstName: j['first_name'] as String?,
         avatarUrl: j['avatar_url'] as String?,
         totalScore: (j['total_score'] as num?)?.toInt() ?? 0,
+        avgMoveScore: parseNullableDouble(j['avg_move_score']),
       );
 }
+
+/// Postgres `numeric` alanları için TOLERANT ayrıştırıcı. `PlayerStats`
+/// düz `as num?` kullanıyor ve cihazda çalıştığı doğrulandı (yani PostgREST
+/// numeric'i JSON SAYISI olarak döndürüyor); ama bu ortamdan REST ucuna
+/// erişilemediğinden (proxy engelliyor) OHP alanları için bu varsayım
+/// ÖLÇÜLEMEDİ — bir dize gelirse `as num?` tüm k-lig listesini bir
+/// TypeError ile düşürürdü. İki olasılığı da kabul etmek iki satır.
+double? parseNullableDouble(Object? v) => switch (v) {
+      num n => n.toDouble(),
+      String s => double.tryParse(s),
+      _ => null,
+    };
 
 /// Web `MyLeaderboardRank` — `my_leaderboard_rank` RPC çıktısı.
 class MyLeaderboardRank {
   final int rank;
   final int totalScore;
-  const MyLeaderboardRank({required this.rank, required this.totalScore});
+
+  /// Bkz. [LeaderboardRow.avgMoveScore] — "senin sıran" kısayolu AYNI
+  /// tabloda AYNI kolonları çizdiğinden RPC bunu da döndürüyor; yoksa o tek
+  /// satırda OHP boş kalır ve tablo hizasız görünürdü.
+  final double? avgMoveScore;
+
+  const MyLeaderboardRank({
+    required this.rank,
+    required this.totalScore,
+    required this.avgMoveScore,
+  });
 }
 
 /// Üç sorgunun soyutlaması — testler bellek içi sahteyle çalışır, gerçek uç
@@ -223,6 +254,7 @@ class StatsRepo {
       return MyLeaderboardRank(
         rank: (row['rank'] as num).toInt(),
         totalScore: (row['total_score'] as num).toInt(),
+        avgMoveScore: parseNullableDouble(row['avg_move_score']),
       );
     } catch (e) {
       debugPrint('[Kelimeki] myLeaderboardRank hatası: $e');

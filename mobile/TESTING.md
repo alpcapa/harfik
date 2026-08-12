@@ -380,6 +380,17 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       mavi "k-lig" yazısının yanında küçük dairesel bir "?" rozeti
       olmalı; dokununca (ya da rozetin kendisine dokununca) k-lig
       sıralaması açılmalı.
+- [ ] **OHP kolonu (12 Ağustos 2026, Parça 63).** k-lig tablosunda PUAN'ın
+      SOLUNDA bir **OHP** kolonu olmalı: iki basamaklı (`12.78`), **düz
+      gri ve kalın DEĞİL** (Puan mavi/kalın kalır), hiç hamle verisi
+      olmayan eski kayıtlarda `—`. Başlığa dokununca "OHP: Ortalama Hamle
+      Puanı — bir hamlede alınan ortalama puan." ipucu açılıp kapanmalı
+      (masaüstü tarayıcıda fareyle üzerine gelince de çıkar). **Çapraz
+      kontrol — asıl mesele bu:** bir oyuncunun k-lig satırındaki OHP ile
+      o oyuncunun kartını açıp "Ortalama Hamle Puanı" kutusunda yazan sayı
+      BİREBİR AYNI olmalı; ikisi sunucuda aynı ifadeden geliyor, ayrışırsa
+      view'lardan biri bozulmuş demektir. Aynı sayı web'de de aynı
+      görünmeli (`kelimeki.com` ile yan yana).
 - [ ] **Misafir kuyruğu.** Çıkış yap, misafirken bir oyunu BİTİR, sonra
       giriş yap → o oyun hesabına işlenmeli (web'deki Skor Kartı'ndan
       doğrula).
