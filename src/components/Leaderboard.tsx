@@ -26,6 +26,16 @@ function rowName(r: LeaderboardRow): string {
   return shortDisplayName(r, 'Anonim');
 }
 
+// OHP = ortalama hamle puanı. Skor Kartı'ndaki "Ortalama Hamle Puanı" ile
+// AYNI değeri AYNI biçimde (2 basamak) gösterir — iki ekranın sessizce
+// ayrışmaması için tek bir biçimlendirici. Hiç hamle verisi olmayan (eski)
+// kayıtlarda, satırın "Puan" hücresiyle aynı kuralla, "—".
+function formatOhp(v: number | null | undefined): string {
+  return v == null ? '—' : Number(v).toFixed(2);
+}
+
+const OHP_HINT = 'OHP: Ortalama Hamle Puanı — bir hamlede alınan ortalama puan.';
+
 function rowToPlayerSummary(r: LeaderboardRow): PlayerSummary {
   return {
     id: r.user_id,
@@ -44,6 +54,10 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [myRank, setMyRank] = useState<MyLeaderboardRank | null>(null);
   const [selected, setSelected] = useState<PlayerSummary | null>(null);
+  // "OHP" başlığına tıklayınca açılan açıklama satırı. Masaüstünde başlık
+  // ayrıca `title` ile hover balonu da gösterir; dokunmatikte `title`
+  // çalışmadığından asıl yol bu toggle.
+  const [showOhpHint, setShowOhpHint] = useState(false);
   const scrollRef = useRef<HTMLOListElement | null>(null);
   const sentinelRef = useRef<HTMLLIElement | null>(null);
 
@@ -117,8 +131,23 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
           <div className="flex items-center text-[9px] uppercase tracking-[1px] text-muted font-mono px-2 pb-1 gap-1">
             <span className="w-6">Sıra</span>
             <span className="flex-1">Oyuncu</span>
+            <button
+              type="button"
+              onClick={() => setShowOhpHint((v) => !v)}
+              title={OHP_HINT}
+              aria-label={OHP_HINT}
+              aria-expanded={showOhpHint}
+              className="w-12 text-right uppercase tracking-[1px] underline decoration-dotted underline-offset-2 active:opacity-70"
+            >
+              OHP
+            </button>
             <span className="w-12 text-right">Puan</span>
           </div>
+          {showOhpHint && (
+            <p className="text-[10px] text-muted font-mono leading-relaxed bg-panel border border-border rounded-md px-2 py-1.5 -mt-1">
+              {OHP_HINT}
+            </p>
+          )}
           {rows.length === 0 ? (
             <p className="text-muted text-xs font-mono text-center py-4">
               Henüz skor yok. İlk sen ol!
@@ -159,6 +188,12 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                             Bu boyda RankSeal kompakt çizer (iç halkasız,
                             büyük harf) — 12 Ağustos 2026 okunurluk düzeltmesi. */}
                         <RankSeal tier={tierFor(r.total_score)} size={18} className="shrink-0" />
+                      </span>
+                      {/* OHP düz gri ve KALIN DEĞİL (kullanıcı isteği) —
+                          asıl sıralama ölçütü olan "Puan"la görsel olarak
+                          yarışmasın diye. */}
+                      <span className="w-12 text-right text-muted shrink-0">
+                        {formatOhp(r.avg_move_score)}
                       </span>
                       <span className="w-12 text-right font-bold text-accent shrink-0">
                         {r.total_score?.toLocaleString('tr-TR') ?? '—'}
@@ -201,6 +236,9 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
               >
                 <span className="w-6 font-bold text-muted shrink-0">{myRank.rank}</span>
                 <span className="flex-1 text-text">Sen</span>
+                <span className="w-12 text-right text-muted shrink-0">
+                  {formatOhp(myRank.avg_move_score)}
+                </span>
                 <span className="w-12 text-right font-bold text-accent shrink-0">
                   {myRank.total_score.toLocaleString('tr-TR')}
                 </span>

@@ -350,6 +350,17 @@ garantisi `league_rewards.seen_at` ile cihazdan bağımsızdır. Bu zincirin
 büyük kısmı otomatik test edilemiyor (gerçek oturum + gerçek oyun bitişi
 gerekiyor).
 
+- [ ] **k-lig'de OHP kolonu (12 Ağustos 2026).** Sıralamada "Puan"ın
+      SOLUNDA bir OHP kolonu olmalı: rakamlar DÜZ GRİ ve kalın değil (Puan
+      mavi/kalın kalır), biçim iki basamak ("12.78"), veri yoksa "—".
+      Başlıktaki "OHP" tıklanınca açıklama satırı açılıp kapanmalı;
+      masaüstünde üzerine gelince (hover) aynı metin balon olarak
+      çıkmalı. **En kritik kontrol:** bir oyuncunun k-lig satırındaki OHP,
+      o oyuncunun kartındaki (Skor Kartı → "Genel" sekmesi) "Ortalama
+      Hamle Puanı" ile BİREBİR aynı olmalı — ikisi aynı SQL ifadesinden
+      geliyor, ayrışırlarsa biri bozulmuş demektir. Listede kendi satırın
+      görünmeyecek kadar aşağıdaysan alttaki "senin sıran" kısayolunda da
+      OHP dolu olmalı (boş/hizasız DEĞİL).
 - [ ] **Kutlama banner'ı bir kez çıkar.** Görülmemiş bir ödülün varken
       (test için bir satırın `seen_at`'i SQL'le null'a çekilebilir) siteye
       gir: mühür damgalı, konfetili banner ekranın ORTASINDA, karartılmış
