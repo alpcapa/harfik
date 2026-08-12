@@ -461,7 +461,11 @@ export interface LeaderboardRow {
   total_score: number;
   games_played: number;
   wins: number;
-  /** Ulaşılan en yüksek rütbe eşiği (0=Çaylak) — satırdaki mühür rozeti için. */
+  /**
+   * Ulaşılan en yüksek rütbe eşiği (0=Çaylak) — kutlama geçmişi kaydı.
+   * Satırdaki mühür 12 Ağustos 2026'dan beri bundan DEĞİL güncel puandan
+   * (`tierFor(total_score)`, "düşmeli" sürüm) çiziliyor.
+   */
   rank_tier: number;
 }
 
@@ -507,8 +511,10 @@ export interface PlayerStats {
   surrendered_count: number;
   /**
    * Ulaşılan en yüksek rütbe eşiği (0=Çaylak, 25/100/200/500/1000 —
-   * `league_rewards.kind='rank_up'` satırlarının max threshold'u; rütbe
-   * düşmediğinden puan gerilese de sabit kalır). YALNIZCA
+   * `league_rewards.kind='rank_up'` satırlarının max threshold'u).
+   * 12 Ağustos 2026'dan beri UI gösterimi bunu KULLANMIYOR — rütbe artık
+   * güncel puandan türetiliyor ("düşmeli" sürüm, `tierFor(total_score)`);
+   * bu kolon yalnızca "hangi eşikler daha önce kutlandı" kaydı. YALNIZCA
    * `player_stats_overall` view'ında var — mod bazlı `player_stats`
    * satırlarında undefined (ödül/rütbe moda bölünemez).
    */

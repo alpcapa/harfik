@@ -365,8 +365,11 @@ gerekiyor).
       teslim/terkle biten oyunlar sayacı İLERLETMEMELİ (surrendered satır).
       Skor Kartı > Genel'de "Toplam puana +N oyun ödülü dahildir." notu ve
       "Genel = 2 kişilik + 4 kişilik + ödül" toplamı tutmalı.
-- [ ] **Rütbe düşmez.** -2 ceza alıp eşiğin altına inen bir hesabın mührü
-      (k-lig listesi, Skor Kartı, PlayerScoreCard) aynı kademede kalmalı.
+- [ ] **Rütbe düşmeli.** -2 ceza alıp eşiğin altına inen bir hesabın mührü
+      (k-lig listesi, Skor Kartı, PlayerScoreCard) bir alt kademeye İNMELİ —
+      üç yer de aynı kademeyi göstermeli (hepsi güncel `total_score`'dan
+      türetiliyor). Puan tekrar eşiği aşarsa damga geri gelir ama rütbe
+      banner'ı İKİNCİ kez ÇIKMAMALI (her eşik hayatta bir kez kutlanır).
 - [ ] **k-lig sırası tutarlı.** Listedeki sıra/puan (leaderboard view) ile
       "senin sıran" satırı (my_leaderboard_rank RPC) aynı toplamı (ödül
       dahil) göstermeli.

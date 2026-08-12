@@ -152,10 +152,12 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                         size={22}
                         className="mr-1 shrink-0"
                       />
-                      <span className="flex-1 truncate text-text">{name}</span>
-                      {/* Rütbe mührü — ulaşılan en yüksek kademe (düşmez),
-                          bkz. leagueRank.ts / league_rewards.rank_up. */}
-                      <RankSeal tier={tierFor(r.rank_tier)} size={17} className="shrink-0 mr-0.5" />
+                      <span className="flex-1 min-w-0 flex items-center gap-1.5">
+                        <span className="truncate text-text">{name}</span>
+                        {/* Rütbe mührü — GÜNCEL puandan türetilir (düşmeli
+                            sürüm, bkz. leagueRank.ts), ismin hemen yanında. */}
+                        <RankSeal tier={tierFor(r.total_score)} size={17} className="shrink-0" />
+                      </span>
                       <span className="w-12 text-right font-bold text-accent shrink-0">
                         {r.total_score?.toLocaleString('tr-TR') ?? '—'}
                       </span>

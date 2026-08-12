@@ -7,9 +7,12 @@
 // buradaki liste değişirse ORADAKİ (values ...) listesi de değişmeli, ikisi
 // tek kaynak değil (SQL ile TS arasında paylaşım mümkün olmadığından).
 //
-// Rütbe DÜŞMEZ: gösterilen kademe her zaman sunucuda kaydedilmiş en yüksek
-// `rank_up.threshold`tur (`rank_tier` kolonu, leaderboard/player_stats_overall
-// view'ları) — puan -2 cezalarıyla eşiğin altına inse bile damga kalır.
+// Rütbe DÜŞMELİ (12 Ağustos 2026, kullanıcı kararı — ilk sürüm "düşmez"di):
+// gösterilen kademe her zaman GÜNCEL k-lig puanından (`total_score`)
+// `tierFor` ile türetilir; puan -2 cezalarıyla eşiğin altına inerse damga da
+// iner. Sunucudaki `rank_up` satırları / `rank_tier` kolonu artık gösterimi
+// SÜRMEZ — yalnızca "bu eşik daha önce kutlandı mı" kaydıdır (her eşik
+// hayatta bir kez kutlanır; düşüp tekrar çıkmak banner'ı tekrarlamaz).
 
 export interface RankTier {
   /** Kullanıcıya görünen ad. */
