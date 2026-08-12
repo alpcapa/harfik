@@ -1981,6 +1981,51 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        uçlarından gelen OHP'nin cihazda göründüğü ve Skor Kartı'ndaki
        sayıyla eşleştiği kullanıcıdan bekleniyor — `mobile/TESTING.md`
        bölüm 4'e çapraz kontrol maddesi eklendi.
+     - **AYNI GÜN, kullanıcının iki düzeltmesi + bir sorusu (iki platforma
+       birden uygulandı, bkz. kök `CLAUDE.md`):**
+       1. **Rakamlar 14 → 11px** (satırın kendi puntosundan küçük). Puan
+          14/kalın/mavi kaldı ve bu testte AYRICA sabitlendi — aksi halde
+          "küçülttüm" iddiası Puan'ı da küçültseydi geçerdi.
+       2. **Açıklama artık başlığın ALTINA açılan bir kutu DEĞİL, TAM
+          ÜSTÜNDE aşağı bakan kuyruklu bir balon.** `Tooltip` kaldırıldı:
+          Flutter'ın kendi balonu kendi metnini kendi konumunda gösterip
+          İKİNCİ bir balon üretirdi. Yeni yapı `OverlayPortal` +
+          `CompositedTransformFollower` (`targetAnchor: topRight` /
+          `followerAnchor: bottomRight`) — başlık satırı modalın kaydırma
+          kabında yaşadığından normal bir `Stack` çocuğu hem kırpılır hem
+          satır yüksekliğini değiştirirdi.
+          - **İki ayrı bayrak, çünkü kapanma kuralları farklı:**
+            `_ohpHintHover` (masaüstü `MouseRegion` — fare çekilince
+            kapanır) ve `_ohpHintPinned` (dokunuş; mobilde hover DİYE BİR
+            ŞEY YOK). Görünürlük ikisinin BİRLEŞİMİ (`_syncOhpHint`).
+          - **Tam ekran bariyer YALNIZCA pinned iken var** — hover'da da
+            olsaydı fare başlığın üstündeyken tüm modal tıklanamaz olurdu.
+            Bariyer başlığı da kapladığından "tekrar dokununca kapanır"
+            kuralı ondan geliyor (ayrı bir toggle yolu gerekmedi).
+          - Kuyruk `Path.combine`/PathOps KULLANMIYOR (Parça 18 dersi):
+            düz bir üçgen `drawPath` + yalnızca İKİ EĞİK kenarın stroke'u
+            (üst kenar kutunun kendi çerçevesiyle çakışıyor, 1px yukarı
+            kaydırılarak dikiş kapatılıyor).
+          - Metin `letterSpacing: 0` taşıyor — Material 3'ün varsayılan
+            0.25 tracking'i ("Sonraya Bırakılan İşler"deki açık madde) bu
+            yeni metne sızmasın diye.
+       3. **Kullanıcının sorusu — "OHP şu anda o şekilde hesaplanmıyor
+          mu?" — canlı veriyle DOĞRULANDI, kod değişmedi.** View'ın değeri
+          15 kullanıcının TAMAMINDA `sum(move_points_sum)/sum(move_count)`
+          ile birebir eşleşiyor; ayrım kanıtlı: oyun başına ortalamaların
+          ortalaması T5'te 9.86 verirken gerçek değer 12.59 — yani yeni
+          metin ("tüm oyunlarda yapılan TÜM HAMLELERİN ortalaması") mevcut
+          hesabı doğru tarif ediyor ve öteki yöntem için YANLIŞ olurdu.
+     - **Doğrulama (düzeltmeler sonrası):** `flutter analyze` "No issues
+       found!"; **tam takım 356/356 yeşil** (yeni test eklenmedi, mevcut
+       OHP testi genişletildi: punto + balonun başlığın ÜSTÜNDE olduğu +
+       üç kapanma yolu — dışarı dokunuş, tekrar dokunuş). **Negatif eş:**
+       `leaderboard_modal.dart` `git stash`lenince test GERÇEKTEN
+       `Expected: <11> Actual: <14.0>` ile düştü, geri konunca yeşile
+       döndü. Balon gerçek fontlarla render edilip (geçici bir
+       `RepaintBoundary` harness'i, sonra silindi) gözle kontrol edildi:
+       başlığın üstünde, kuyruk OHP'yi gösteriyor, metin büyük harfe
+       dönmemiş, kırpılma yok.
 
 ## Sonraya Bırakılan İşler (mobil)
 

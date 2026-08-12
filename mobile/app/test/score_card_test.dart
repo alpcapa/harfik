@@ -523,29 +523,53 @@ void main() {
       lessThan(tester.getTopLeft(find.text('PUAN')).dx),
     );
 
-    // Değer 2 basamak, DÜZ GRİ ve kalın DEĞİL (Puan mavi/kalın kalır).
+    // Değer 2 basamak, DÜZ GRİ, kalın DEĞİL ve satırın kendi 14px'inden
+    // KÜÇÜK (Puan mavi/kalın/14 kalır — "gri yaptım" iddiası Puan'ı da
+    // griye çekseydi bu ikinci blok olmadan geçerdi).
     final ohp = tester.widget<Text>(find.text('12.78'));
     expect(ohp.style?.color, kMuted);
     expect(ohp.style?.fontWeight, isNot(FontWeight.bold));
+    expect(ohp.style?.fontSize, 11);
     final puan = tester.widget<Text>(find.text('100'));
     expect(puan.style?.color, kAccent);
     expect(puan.style?.fontWeight, FontWeight.bold);
+    expect(puan.style?.fontSize, 14);
 
     // Verisi olmayan satır ve "senin sıran" kısayolu.
     expect(find.text('—'), findsOneWidget); // Oyuncu1
     expect(find.text('6.70'), findsOneWidget); // myRank
 
-    // Hint: başlangıçta kapalı, başlığa dokununca açılıyor, tekrar
-    // dokununca kapanıyor (dokunmatikte `Tooltip` hover'ı olmadığından
-    // keşfedilebilir tek yol bu). Metin BİLEREK dizeyle yazılıyor,
-    // `ohpHint` sabitiyle değil: sabite bağlanan bir assertion, widget
-    // hint'i hiç göstermese bile derlenir — negatif eş kanıtlanamazdı.
-    const hint = 'OHP: Ortalama Hamle Puanı — bir hamlede alınan ortalama puan.';
+    // Açıklama balonu: başlangıçta kapalı, başlığa dokununca açılıyor,
+    // TEKRAR dokununca VE dışarı dokununca kapanıyor (dokunmatikte hover
+    // DİYE BİR ŞEY olmadığından keşfedilebilir tek yol dokunuş). Metin
+    // BİLEREK dizeyle yazılıyor, `ohpHint` sabitiyle değil: sabite
+    // bağlanan bir assertion, widget balonu hiç göstermese bile derlenir
+    // — negatif eş kanıtlanamazdı.
+    const hint =
+        'Ortalama Hamle Puanı tüm oyunlarda yapılan tüm hamlelerin ortalamasıdır.';
     expect(find.text(hint), findsNothing);
     await tester.tap(find.text('OHP'));
     await tester.pumpAndSettle();
     expect(find.text(hint), findsOneWidget);
+
+    // Balon başlığın TAM ÜSTÜNDE (altında/yanında değil).
+    expect(
+      tester.getRect(find.text(hint)).bottom,
+      lessThanOrEqualTo(tester.getRect(find.text('OHP')).top),
+    );
+
+    // Dışarı dokunuş kapatır (tam ekran bariyer).
+    await tester.tapAt(const Offset(20, 20));
+    await tester.pumpAndSettle();
+    expect(find.text(hint), findsNothing);
+
+    // Tekrar aç, bu kez başlığın kendisine dokunarak kapat — bariyer
+    // başlığı da kapladığından dokunuş oraya düşüyor (warnIfMissed
+    // kapalı: hedef widget ağaçta ama üstünde bariyer var).
     await tester.tap(find.text('OHP'));
+    await tester.pumpAndSettle();
+    expect(find.text(hint), findsOneWidget);
+    await tester.tap(find.text('OHP'), warnIfMissed: false);
     await tester.pumpAndSettle();
     expect(find.text(hint), findsNothing);
   });

@@ -383,9 +383,15 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **OHP kolonu (12 Ağustos 2026, Parça 63).** k-lig tablosunda PUAN'ın
       SOLUNDA bir **OHP** kolonu olmalı: iki basamaklı (`12.78`), **düz
       gri ve kalın DEĞİL** (Puan mavi/kalın kalır), hiç hamle verisi
-      olmayan eski kayıtlarda `—`. Başlığa dokununca "OHP: Ortalama Hamle
-      Puanı — bir hamlede alınan ortalama puan." ipucu açılıp kapanmalı
-      (masaüstü tarayıcıda fareyle üzerine gelince de çıkar). **Çapraz
+      olmayan eski kayıtlarda `—`; rakamlar satırın kendi puntosundan
+      (14px) küçük görünmeli. **Açıklama balonu:** başlığa dokununca balon
+      başlığın TAM ÜSTÜNDE, aşağı bakan bir kuyrukla açılmalı ("Ortalama
+      Hamle Puanı tüm oyunlarda yapılan tüm hamlelerin ortalamasıdır.");
+      tekrar dokununca VE ekranda başka bir yere dokununca kapanmalı.
+      Metin BÜYÜK HARFE dönmemeli ve modalın üst kenarında kırpılmamalı.
+      (Masaüstü/web derlemesinde fareyle üzerine gelince de açılıp
+      çekilince kapanmalı; bu sırada ikinci bir Flutter `Tooltip` balonu
+      ÇIKMAMALI.) **Çapraz
       kontrol — asıl mesele bu:** bir oyuncunun k-lig satırındaki OHP ile
       o oyuncunun kartını açıp "Ortalama Hamle Puanı" kutusunda yazan sayı
       BİREBİR AYNI olmalı; ikisi sunucuda aynı ifadeden geliyor, ayrışırsa

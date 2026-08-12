@@ -30,7 +30,12 @@ const _panel = kPanel;
 String formatOhp(double? v) => v == null ? '—' : v.toStringAsFixed(2);
 
 /// Başlığa dokununca/hover edince görünen açıklama (web ile birebir).
-const ohpHint = 'OHP: Ortalama Hamle Puanı — bir hamlede alınan ortalama puan.';
+/// Metin sunucudaki hesabı BİREBİR tarif ediyor: `leaderboard.avg_move_score`
+/// = sum(move_points_sum) / sum(move_count) — yani oyun başına ortalamaların
+/// ortalaması DEĞİL, tüm hamlelerin tek havuzdaki ortalaması. İfade
+/// değişirse bu cümle de değişmeli (web `OHP_HINT` ile ELLE senkron).
+const ohpHint =
+    'Ortalama Hamle Puanı tüm oyunlarda yapılan tüm hamlelerin ortalamasıdır.';
 
 /// Web INITIAL_PAGE_SIZE / PAGE_SIZE — ilk açılışta "ilk 10", sonra 20'şer.
 const _initialPageSize = 10;
@@ -78,11 +83,94 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
   bool _loadingMore = false;
   MyLeaderboardRank? _myRank;
 
-  /// "OHP" başlığına dokununca açılan açıklama satırı. `Tooltip` masaüstü/
-  /// web'de hover, dokunmatikte uzun basma verir; asıl (keşfedilebilir) yol
-  /// bu toggle — web'deki `title` + tıklama çiftinin karşılığı.
-  bool _showOhpHint = false;
+  /// "OHP" açıklama balonu — başlığın TAM ÜSTÜNDE, aşağı bakan kuyruklu.
+  /// İki ayrı kaynak, çünkü kapanma kuralları farklı (web ile aynı ayrım):
+  /// hover (masaüstü) fare çekilince kendiliğinden kapanır; dokunuş
+  /// (mobilde hover DİYE BİR ŞEY YOK) bir daha dokunulana ya da dışarı
+  /// dokunulana kadar açık kalır. Tek bayrakla ikisi birden doğru olamıyor.
+  bool _ohpHintPinned = false;
+  bool _ohpHintHover = false;
+  bool get _ohpHintOpen => _ohpHintPinned || _ohpHintHover;
+  final _ohpLink = LayerLink();
+  final _ohpPortal = OverlayPortalController();
   final _scrollController = ScrollController();
+
+  /// Balonun görünürlüğünü iki bayrağın BİRLEŞİMİNDEN türetir — çağıranlar
+  /// yalnızca bayrağı değiştirip bunu çağırır, "kim açtı/kim kapatır"
+  /// mantığı tek yerde kalsın diye.
+  void _syncOhpHint() {
+    if (_ohpHintOpen) {
+      _ohpPortal.show();
+    } else {
+      _ohpPortal.hide();
+    }
+  }
+
+  /// "OHP" başlığı + üstünde açılan açıklama balonu.
+  ///
+  /// Balon `OverlayPortal` ile çiziliyor: başlık satırı kendi `Row`unun
+  /// içinde ve modalın kaydırma kabında yaşıyor, yani normal bir `Stack`
+  /// çocuğu olarak konsa hem kırpılır hem satırın yüksekliğini değiştirirdi.
+  /// Konum `CompositedTransformFollower` ile başlığın SAĞ ÜST köşesine
+  /// bağlı — balon sağa hizalı, aşağı bakan kuyruğu OHP'yi gösteriyor.
+  Widget _buildOhpHeader() {
+    return CompositedTransformTarget(
+      link: _ohpLink,
+      child: OverlayPortal(
+        controller: _ohpPortal,
+        overlayChildBuilder: (context) => Stack(
+          children: [
+            // Bariyer YALNIZCA dokunuşla açıldığında var: hover'da da
+            // olsaydı fare başlığın üstündeyken tüm modalı tıklanamaz
+            // yapardı. Bariyer başlığın kendisini de kapladığından
+            // "tekrar dokununca kapanır" kuralı da bundan geliyor.
+            if (_ohpHintPinned)
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    setState(() => _ohpHintPinned = false);
+                    _syncOhpHint();
+                  },
+                ),
+              ),
+            Positioned(
+              left: 0,
+              top: 0,
+              child: CompositedTransformFollower(
+                link: _ohpLink,
+                targetAnchor: Alignment.topRight,
+                followerAnchor: Alignment.bottomRight,
+                offset: const Offset(0, -6),
+                child: const _OhpHintBalloon(),
+              ),
+            ),
+          ],
+        ),
+        child: MouseRegion(
+          onEnter: (_) {
+            setState(() => _ohpHintHover = true);
+            _syncOhpHint();
+          },
+          onExit: (_) {
+            setState(() => _ohpHintHover = false);
+            _syncOhpHint();
+          },
+          child: GestureDetector(
+            onTap: () {
+              setState(() => _ohpHintPinned = !_ohpHintPinned);
+              _syncOhpHint();
+            },
+            behavior: HitTestBehavior.opaque,
+            child: const SizedBox(
+              width: 52,
+              child: _HeadLabel('OHP', right: true, underline: true),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -219,40 +307,10 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
                 // sığmayıp alt satıra kayıyordu (ekran görüntüsü yakaladı).
                 const SizedBox(width: 28, child: _HeadLabel('SIRA')),
                 const Expanded(child: _HeadLabel('OYUNCU')),
-                Tooltip(
-                  message: ohpHint,
-                  child: GestureDetector(
-                    onTap: () =>
-                        setState(() => _showOhpHint = !_showOhpHint),
-                    behavior: HitTestBehavior.opaque,
-                    child: const SizedBox(
-                      width: 52,
-                      child: _HeadLabel('OHP',
-                          right: true, underline: true),
-                    ),
-                  ),
-                ),
+                _buildOhpHeader(),
                 const SizedBox(width: 52, child: _HeadLabel('PUAN', right: true)),
               ]),
             ),
-            if (_showOhpHint) ...[
-              const SizedBox(height: 6),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                decoration: BoxDecoration(
-                  color: _panel,
-                  border: Border.all(color: _border),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text(ohpHint,
-                    style: TextStyle(
-                        fontFamily: 'SpaceMono',
-                        fontSize: 10,
-                        height: 1.5,
-                        color: _muted)),
-              ),
-            ],
             const SizedBox(height: 4),
             ConstrainedBox(
               constraints: BoxConstraints(
@@ -335,6 +393,80 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
       ),
     );
   }
+}
+
+/// OHP açıklama balonu — kutu + aşağı bakan kuyruk (web'in `absolute
+/// bottom-full` balonu + 45° döndürülmüş kare kuyruğunun karşılığı).
+class _OhpHintBalloon extends StatelessWidget {
+  const _OhpHintBalloon();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 224, // web `w-56`
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              color: _panel,
+              border: Border.all(color: _border),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Text(ohpHint,
+                style: TextStyle(
+                    fontFamily: 'SpaceMono',
+                    fontSize: 10,
+                    height: 1.5,
+                    letterSpacing: 0,
+                    color: _muted)),
+          ),
+          // Kuyruk kutunun alt çerçevesinin 1px ÜSTÜNDEN başlıyor ki
+          // aradaki çizgi kesintisiz görünsün (kuyruğun kendi üst kenarı
+          // çizilmiyor — o kutunun çerçevesiyle çakışıyor).
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Transform.translate(
+              offset: const Offset(0, -1),
+              child: CustomPaint(
+                size: const Size(10, 6),
+                painter: _BalloonTailPainter(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BalloonTailPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final tip = Offset(size.width / 2, size.height);
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(tip.dx, tip.dy)
+      ..close();
+    canvas.drawPath(path, Paint()..color = _panel);
+    // Yalnızca iki EĞİK kenar — üst kenar kutunun çerçevesiyle çakışıyor.
+    canvas.drawPath(
+      Path()
+        ..moveTo(0, 0)
+        ..lineTo(tip.dx, tip.dy)
+        ..lineTo(size.width, 0),
+      Paint()
+        ..color = _border
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _HeadLabel extends StatelessWidget {
@@ -430,14 +562,15 @@ class _Row extends StatelessWidget {
                   ],
                 ),
               ),
-              // OHP düz gri ve KALIN DEĞİL (kullanıcı isteği) — asıl
-              // sıralama ölçütü olan "Puan"la görsel olarak yarışmasın diye.
+              // OHP düz gri, KALIN DEĞİL ve satırın kendi 14px'inden küçük
+              // (kullanıcı isteği) — asıl sıralama ölçütü olan "Puan"la
+              // görsel olarak yarışmasın diye.
               SizedBox(
                 width: 52,
                 child: Text(formatOhp(avgMoveScore),
                     textAlign: TextAlign.right,
                     style: const TextStyle(
-                        fontFamily: 'SpaceMono', fontSize: 14, color: _muted)),
+                        fontFamily: 'SpaceMono', fontSize: 11, color: _muted)),
               ),
               SizedBox(
                 width: 52,
