@@ -292,6 +292,31 @@ Kullanıcı, oyun sonrası çıkan "Görüş Bildir" formuna (`FeedbackModal`) d
 
 Bir sonraki form/modal eklendiğinde aynı deseni (küçük punto istense bile input/textarea/select elemanının kendisi hep ≥16px kalmalı) otomatik olarak miras alıyor — ayrı bir işlem gerekmiyor, kural elemente göre (class'tan bağımsız) uygulanıyor. **Ders:** Tailwind v3'te `@layer`/cascade-layer tabanlı bir öncelik varsayımı kurmadan önce derlenmiş CSS çıktısında gerçekten `@layer` üretilip üretilmediğini doğrula — sürüme göre değişebilir, varsayımla ilerlemek (ilk sürümde olduğu gibi) sessizce işe yaramayan bir düzeltmeye yol açabilir.
 
+## Dokunmatikte "Yapışkan Hover" (11 Ağustos 2026)
+
+Kullanıcı, Setup'ın en altındaki **"Kullanım Koşulları"** linkinin altında,
+modal kapandıktan sonra da duran bir alt çizgi kaldığını bildirdi (iPad).
+
+Sebep bu linke özgü değil: dokunmatik cihazlarda tarayıcı, bir öğeye
+dokunulduğunda `:hover`'ı üzerine yapıştırıp **ekranın başka bir yerine
+dokunulana kadar** orada bırakıyor. `hover:underline` da bu yüzden kalıcı
+bir çizgiye dönüşüyordu. Chromium'da `hasTouch` bağlamıyla birebir üretildi:
+dokunmadan önce `none` → dokununca `underline` → 300 ms sonra hâlâ
+`underline` → başka yere dokununca `none`.
+
+**Düzeltme tek link yamamak DEĞİL** — projede 38 `hover:` yardımcısı var
+(16'sı `hover:underline`) ve hepsi aynı davranışı üretiyor.
+`tailwind.config.js`'e `future: { hoverOnlyWhenSupported: true }` eklendi:
+Tailwind her `hover:` kuralını `@media (hover:hover) and (pointer:fine)`
+içine alıyor, yani fareli cihazlarda davranış **birebir aynı** kalırken
+dokunmatikte hover stili hiç uygulanmıyor. (Tailwind v4'te bu zaten
+varsayılan; v3.4'te bayrakla açılıyor.) İkisi de ölçülerek doğrulandı —
+dokunmatikte dokunuş sonrası `none`, masaüstünde hover'da `underline`.
+
+**Yeni bir `hover:` sınıfı eklerken artık ekstra bir şey yapmaya gerek yok**,
+bayrak proje geneline uygulanıyor. `active:` durumları bundan etkilenmez
+(anlık, dokunuş bırakılınca kalkıyor).
+
 ## PWA — Servis Çalışanı Güncellemesi ve Android Uyumluluğu (31 Temmuz 2026)
 
 Kullanıcının Android kullanan bir tanıdığı iki ayrı sorun bildirdi (ekran görüntüsüyle): (1) `color-scheme: light` düzeltmesine (23 Temmuz 2026, bkz. `LogoMark` notundaki FOUT anlatımının hemen öncesi) rağmen sayfa hâlâ siyah zeminle açılıyordu; (2) "Ana Ekrana Ekle" denenince Google Play Protect "Güvenli olmayan uygulama engellendi — bu uygulama Android'in daha eski bir sürümü için geliştirilmiş" uyarısıyla kurulumu tamamen engelliyordu.
