@@ -384,7 +384,8 @@ gerekiyor).
       ödül GERİ ALINMAMALI. "Genel = 2 kişilik + 4 kişilik + ödül" toplamı
       tutmalı.
 - [ ] **Mühür popup'ı.** Skor Kartı başlığı ile ✕ arasında ortalanmış büyük
-      mühre dokun: damga animasyonuyla bilgi popup'ı açılmalı (kademe adı +
+      mühre (dış kenarı TIRTIKLI — noter mührü gibi) dokun: damga
+      animasyonuyla bilgi popup'ı açılmalı (kademe adı +
       puan + "+N eşik ödülü dahil" + sıradaki rütbe hedefi + hedefe akan
       ilerleme çubuğu; en üst kademede çubuk yok). Çubuk etiketleri: sol
       eşiğin ödülü YEŞİL "(+5)✓" (alınmış), hedef eşiğin ödülü GRİ "(+10)"
@@ -392,6 +393,23 @@ gerekiyor).
       KADAR
       tekrar açılabilmeli (kutlamanın aksine "bir kez göster" kuralı yok).
       Başkasının kartında da (PlayerScoreCard) aynı mühür/popup çalışmalı.
+- [ ] **Popup'ta ✕ var, "KAPAT" butonu YOK.** Kapatma yalnızca sağ üstteki
+      ✕ (ve Escape / karartılmış zemine dokunma) ile — kartın altında tam
+      genişlikte bir buton OLMAMALI. Kutlama/düşüş banner'ında ise "DEVAM"
+      butonu KALMALI (o gerçek bir aksiyon: ödülleri görüldü işaretler).
+- [ ] **Kart gölgesinde beyaz hale yok.** Hem bilgi popup'ının hem kutlama/
+      düşüş banner'ının kartı karartılmış zeminde yalnızca yumuşak, koyu
+      bir düşen gölge taşımalı — sol/üst kenarda beyaz bir parıltı (nömorfik
+      `shadow-raised`) GÖRÜNMEMELİ. İkisi aynı kart, biri değişirse öteki de.
+- [ ] **Küçük rozetler de tırtıklı.** k-lig listesi/Skor Kartı satırlarındaki
+      18-20px'lik mühürlerin dış kenarı da testere dişli olmalı (büyük
+      mühürle aynı siluet, 24 diş) — düz çember GÖRÜNMEMELİ. Dişler
+      telefonda net ayrışmalı, harf (özellikle Ç/Ş sedillası) tırtığa
+      DEĞMEMELİ. Fark: küçük mühürde iç kesikli halka yok, harf daha büyük.
+- [ ] **Harf dikeyde ortalı — kuyruklu olanlar dahil.** Ç ve Ş (sedillalı)
+      dairede M/O/U/D ile AYNI ölçüde ortalı durmalı; alta yakın/aşağı
+      kaymış görünmemeli. Kolay kontrol: k-lig listesinde Çaylak ve
+      Şampiyon satırlarını Oyuncu/Ustaca ile yan yana karşılaştır.
 - [ ] **Dokuz kademe ve eşikleri.** Çaylak 0 (Ç) · Meraklı 50 (M) · Oyuncu
       100 (O) · Usta **250** (U) · Şampiyon 500 (Ş) · Destan 1000 (D) ·
       Efsane **2500** (E) · Uzaylı **5000** (Z) · Tanrı **10000** (T).
@@ -410,12 +428,13 @@ gerekiyor).
       banner'ı İKİNCİ kez ÇIKMAMALI ve ödül İKİNCİ kez VERİLMEMELİ (her
       eşik hayatta bir kez).
 - [ ] **Rütbe düşüş banner'ı.** Eşiğin altına inince konfetisiz, üzgün bir
-      banner çıkmalı ("Rütben geriledi … Kazandıkça geri yükselirsin!") ve
+      banner çıkmalı ("Rütben geriledi! … Kazandıkça geri yükselirsin!") ve
       bir kez gösterilmeli; aynı eşikten İKİNCİ kez düşülürse yeniden
       çıkmalı (diğer banner'ların aksine tekrarlanabilir). Görülmemiş
       olumlu bir kutlama ile çakışırsa yalnızca olumlu olan gösterilmeli.
       Banner'da kaybedilen eşiğe geri dönüş çubuğu olmalı; hedef etiketi
-      "50 puan" biçiminde ve altında yeşil "(+5)✓" (ödül + onay işareti =
+      YALNIZCA SAYI ("50" — "puan" kelimesi YOK) ve altında yeşil "(+5)✓"
+      (ödül + onay işareti =
       zaten alındı — kişi geri düşse bile yeşil ✓ kalır). Aynı kural bilgi
       popup'ında: düşmüş biri mühre dokununca hedef rozeti yeşil "(+N)✓"
       olmalı — hiç düşmemişte hedef GRİ "(+N)", ✓ yok.

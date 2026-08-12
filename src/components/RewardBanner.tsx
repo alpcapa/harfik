@@ -76,7 +76,7 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
         ? String(milestone)
         : `+${rewardPoints}`;
   const title = rankDown
-    ? 'Rütben geriledi'
+    ? 'Rütben geriledi!'
     : rankUpTier
       ? `Yeni rütben: ${rankUpTier.name}!`
       : milestone
@@ -93,12 +93,15 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
         visible ? 'bg-black/40' : 'bg-transparent'
       }`}
     >
+      {/* Gölge `shadow-raised` DEĞİL (12 Ağustos 2026) — bkz. RankInfoModal:
+          nömorfik sol-üst beyaz parıltı, karartılmış zeminde yüzen bir kartta
+          hale gibi okunuyor. İki kart aynı; biri değişirse öteki de. */}
       <div
         ref={ref}
         role="dialog"
         aria-modal="true"
         aria-label="k-lig ödülü"
-        className={`relative w-[280px] max-w-full bg-bg border border-border rounded-2xl px-6 pt-6 pb-5 text-center shadow-raised ${
+        className={`relative w-[280px] max-w-full bg-bg border border-border rounded-2xl px-6 pt-6 pb-5 text-center shadow-[0_20px_45px_rgba(15,23,42,0.5)] ${
           visible ? 'reward-play' : ''
         }`}
         style={{ opacity: visible ? undefined : 0 }}
@@ -165,7 +168,8 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
                     </span>
                     <span className="font-bold text-text">{rankDown.currentPoints}</span>
                     <span className="flex flex-col items-end leading-tight">
-                      <span>{rankDown.fromThreshold} puan</span>
+                      {/* Yalnızca SAYI — RankInfoModal'daki aynı kural. */}
+                      <span>{rankDown.fromThreshold}</span>
                       {/* Düşülen eşiğin ödülü ZATEN alındı — kişi geri düşse
                           bile yeşil ✓ kalır, yeniden aşmak ikinci kez vermez
                           (ilk sürümdeki "(0)" yerine kullanıcı fikri). */}
