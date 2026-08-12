@@ -891,6 +891,12 @@ listesi kök `TESTING.md` bölüm 10.
       diş) — düz çember GÖRÜNMEMELİ. Dişler telefonda net ayrışmalı, harf
       (özellikle Ç/Ş sedillası) tırtığa DEĞMEMELİ ve OKUNABİLİR kalmalı.
       Fark: küçük mühürde iç kesikli halka yok, harf daha büyük.
+- [ ] **Harf dikeyde ortalı — kuyruklu olanlar dahil.** Ç ve Ş (sedillalı)
+      mühürlerde harf, dairenin dikey ORTASINDA durmalı — alta kaçmış
+      GÖRÜNMEMELİ. Ç ile M/O/U/D aynı hizada olmalı. Üç boyu da kontrol et
+      (18px k-lig satırı, 34px kart başlığı, 88px banner). Web'deki aynı
+      mühürle yan yana bak: iki platform BİREBİR aynı hizada olmalı
+      (`sealBaselineEm` ↔ web `baselineY`, ikisi elle senkron).
 - [ ] **Mühür popup'ı.** Skor Kartı başlığındaki mühre dokun: damga
       animasyonuyla bilgi popup'ı açılmalı (kademe adı + puan + "+N eşik
       ödülü dahil" + sıradaki rütbe hedefi + hedefe AKAN ilerleme çubuğu;

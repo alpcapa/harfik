@@ -1795,6 +1795,30 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
           aksiyon butonu konmaz; stil `KModal`ın ✕'inden birebir alındı.
           **Banner'ın "DEVAM"ı KALDI:** o gerçek bir aksiyon (ödülleri
           görüldü işaretler).
+       8. **Kuyruklu harfler (Ç/Ş) mühürde alta kaçıyordu — taban çizgisi
+          artık MÜREKKEPTEN hesaplanıyor** (kullanıcı: "Ç, Ş gibi altında
+          kuyruk olan karakterler ortalı durmuyor, alta daha yakın
+          duruyor"). Eski hâl web'de `dominant-baseline="central"`, portta
+          `TextPainter`ın satır kutusu ortalaması — İKİSİ DE mürekkebi
+          değil FONT METRİKLERİNİ (ascent/descent) ortalıyor. Ölçüm iki
+          ayrı sapma gösterdi: TÜM harfler ~1.2 birim aşağıdaydı (Space
+          Mono'nun descent'i ink descent'inden büyük), Ç/Ş sedilla yüzünden
+          ~2.5 birim DAHA aşağıdaydı — 27 puntoda toplam 2.85 birim, yani
+          kullanıcının gördüğü fark. **Düzeltme harf başına tablo DEĞİL,
+          iki ölçülmüş sabit:** `kSealInkAscEm` (.71 — M/U/D .70,
+          yuvarlaklar .72'nin ortalaması) ve `kSealDescenderEm` (.21);
+          taban çizgisi `(inkAsc − varsa descender)/2` kadar merkezin
+          ALTINA konuyor (`sealBaselineEm`). Painter `computeLineMetrics()`
+          ile satır kutusunun tepesinden `baseline` kadar geri alıyor —
+          `Center`/`tp.height/2` ile hizalamak tam da düzeltilen hatayı
+          geri getirirdi. Düzeltmeden sonra azami sapma 27'de **0.32**,
+          23'te **0.27** (ölçüldü). Web `RankSeal.tsx`'in `baselineY`'siyle
+          AYNI formül, ikisi ELLE senkron — biri değişirse öteki de.
+          **Yan bulgu (bilinçli KULLANILMADI):** mürekkep yukarı kayınca
+          Ç'nin merkeze en uzak mürekkebi 16.56 → **12.61**'e (fs=27),
+          tam boyda 10.74'e düştü — yani 4. maddedeki punto tavanları
+          artık çok daha gevşek; kullanıcı mevcut görünümü onayladığından
+          punto DEĞİŞTİRİLMEDİ, yalnızca kayda geçti.
      - **Doğrulama (düzeltmeler sonrası):** `flutter analyze` "No issues
        found!"; **tam takım 351/351 yeşil** (350'den +1). 1-4. maddeler
        için yeni test eklenmedi, mevcut üç assertion güncellendi
@@ -1816,7 +1840,17 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        `build/screenshots/rank_info_modal.png` yeniden üretilip gözle
        kontrol edildi (tırtıklı mavi mühür, sağ üstte ✕, beyaz halesiz
        kart, `50` / `83` / `100` etiketleri, solda yeşil `(+5)✓`, sağda
-       gri `(+10)`).
+       gri `(+10)`). **8. madde (ölçüldü, ayrı test):** `RankSeal(size:440)`
+       gerçek fontlarla render edilip `RepaintBoundary.toImage` ile PNG'ye
+       çekiliyor, iç halkanın içindeki (r<15 viewBox birimi) mürekkep
+       piksel piksel taranıp altı kademe harfinin (Ç Ş M O U D) dikey
+       merkezi ölçülüyor — her birinin sapması <0.6 VE Ç ile M'nin farkı
+       <0.6 olmalı. **Negatif eş:** `rank_seal.dart` stash'lenince test
+       GERÇEKTEN `Ç dikeyde ortalı değil: 2.85` ile düştü, geri konunca
+       yeşile döndü. **Tam takım 352/352 yeşil** (351'den +1); ilk koşuda
+       ilgisiz bir test bir kez düşüp sonraki iki temiz koşuda hiç
+       tekrarlamadı (Parça 13/21'de belgelenen sqflite yazma-kilidi
+       flake'i — bu parçanın kodu o testin yoluna hiç değmiyor).
 
 ## Sonraya Bırakılan İşler (mobil)
 

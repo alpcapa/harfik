@@ -50,6 +50,35 @@ double sealFontSize(String text, {required bool compact}) {
   return n <= 3 ? 14 : 11;
 }
 
+/// Büyük harflerin mürekkep tepesi, em cinsinden — ÖLÇÜLDÜ (Space Mono 700,
+/// Chromium `canvas.measureText`): M/U/D .70, yuvarlaklar .72 (standart
+/// taşma). Tek sabit olarak ortalama alındı; altı kademe harfinin hepsinde
+/// sapmayı ±0.15 viewBox biriminin altında tutuyor, harf başına tablo
+/// gerekmiyor.
+const double kSealInkAscEm = 0.71;
+
+/// Sedillanın taban çizgisi ALTINA inmesi, em cinsinden (aynı ölçüm).
+const double kSealDescenderEm = 0.21;
+
+/// Bu mühürde basılabilen TEK kuyruklu karakterler. Kademe harfleri kapalı
+/// bir küme (Ç M O U Ş D — `league_rank.dart`), banner glyph'leri ise rakam
+/// ve "+". Yeni bir kademe harfi eklenirse burası da gözden geçirilmeli.
+const String kSealDescenderChars = 'ÇŞ';
+
+/// Taban çizgisinin daire merkezine olan uzaklığı (em, aşağı pozitif) —
+/// mürekkep kutusunun dikey ortası merkeze gelsin diye.
+///
+/// Web `RankSeal.tsx`'in `baselineY`'siyle AYNI formül, ikisi ELLE senkron.
+/// Eski hâl `dominant-baseline: central`di; o, mürekkebi değil FONT
+/// metriklerini (ascent/descent) ortalıyor — kullanıcı 12 Ağustos 2026'da
+/// Ç/Ş'nin alta kaydığını bildirdi. Ölçüm iki ayrı sapma gösterdi: TÜM
+/// harfler ~1.2 birim aşağıdaydı, Ç/Ş sedilla yüzünden ~2.5 birim DAHA
+/// aşağıdaydı. Düzeltmeden sonra azami sapma 0.32'ye indi (ölçüldü).
+double sealBaselineEm(String text) {
+  final hasTail = text.split('').any(kSealDescenderChars.contains);
+  return (kSealInkAscEm - (hasTail ? kSealDescenderEm : 0)) / 2;
+}
+
 class RankSeal extends StatelessWidget {
   final RankTier tier;
   final double size;
@@ -174,10 +203,8 @@ class _RankSealPainter extends CustomPainter {
       }
     }
 
-    // Ortadaki harf/sayı. Web `dominant-baseline: central`: taban çizgisi,
-    // font metriklerinin (ascent/descent) ortasına gelecek şekilde kaydırılır
-    // — ink kutusuna göre DEĞİL. Aynı hesabı burada da yapıyoruz, yoksa
-    // `Center` satır kutusuna göre hizalayıp glyph'i hafif yukarı kaçırırdı.
+    // Ortadaki harf/sayı — taban çizgisi MÜREKKEP kutusunun dikey ortası
+    // daire merkezine gelecek şekilde konumlanır (bkz. sealBaselineEm).
     final tp = TextPainter(
       text: TextSpan(
         text: text,
@@ -191,11 +218,12 @@ class _RankSealPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     )..layout();
     final metrics = tp.computeLineMetrics();
+    // Taban çizgisinin gitmesi gereken yer; TextPainter satır kutusunun
+    // TEPESİNDEN boyadığından `baseline` kadar geri alınır.
+    final baselineY = center.dy + sealBaselineEm(text) * fontSize * s;
     final dy = metrics.isEmpty
         ? center.dy - tp.height / 2
-        : center.dy +
-            (metrics.first.ascent - metrics.first.descent) / 2 -
-            metrics.first.baseline;
+        : baselineY - metrics.first.baseline;
     tp.paint(canvas, Offset(center.dx - tp.width / 2, dy));
   }
 

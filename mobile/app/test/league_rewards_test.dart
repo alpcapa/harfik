@@ -568,6 +568,77 @@ void main() {
       expect(compact.arcs, 0);
       expect(full.arcs, greaterThan(0));
     });
+
+    testWidgets('harf MÜREKKEPTEN ortalanır — kuyruklu Ç düz M ile aynı hizada',
+        (tester) async {
+      // Kullanıcı 12 Ağustos 2026'da Ç/Ş'nin alta kaydığını bildirdi; eski
+      // hâl (`dominant-baseline: central`) mürekkebi değil FONT metriklerini
+      // ortalıyordu. Bu test render edilmiş GERÇEK pikselleri tarıyor —
+      // web tarafındaki ölçümün Dart karşılığı (bkz. sealBaselineEm).
+      const scale = 10.0; // 44 viewBox birimi → 440 px
+      final centers = <String, double>{};
+      for (final letter in ['Ç', 'Ş', 'M', 'O', 'U', 'D']) {
+        final key = GlobalKey();
+        await tester.pumpWidget(MaterialApp(
+          home: Scaffold(
+            backgroundColor: Colors.white,
+            body: Center(
+              child: RepaintBoundary(
+                key: key,
+                child: RankSeal(
+                  tier: RankTier(
+                      name: 'X',
+                      letter: letter,
+                      color: kRed,
+                      threshold: 0,
+                      reward: 0),
+                  size: 44 * scale,
+                ),
+              ),
+            ),
+          ),
+        ));
+        await tester.pumpAndSettle();
+        centers[letter] = await tester.runAsync(() async {
+          final boundary =
+              key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+          final image = await boundary.toImage();
+          final data = (await image.toByteData())!;
+          // Mühür -6° eğik olduğundan RepaintBoundary kutusu 44*scale'den
+          // biraz büyük; merkez her zaman kutunun ortası.
+          final cx = image.width / 2, cy = image.height / 2;
+          // YALNIZCA iç bölge taranır (r < 15 viewBox birimi): dışarıda
+          // tırtıklı kenar, 16'da kesikli halka var — ikisi de harfle aynı
+          // renkte. Harfin azami yarıçapı ölçülen 12.61, yani rahat sığıyor.
+          final limit = 15 * scale;
+          double top = double.infinity, bottom = -double.infinity;
+          for (var y = 0; y < image.height; y++) {
+            for (var x = 0; x < image.width; x++) {
+              final dx = x + 0.5 - cx, dy = y + 0.5 - cy;
+              if (dx * dx + dy * dy > limit * limit) continue;
+              final i = (y * image.width + x) * 4;
+              // Zemin kPanel (#F5F7FA); harf kRed — kırmızı kanal düşük.
+              if (data.getUint8(i + 1) < 128) {
+                if (y < top) top = y.toDouble();
+                if (y > bottom) bottom = y.toDouble();
+              }
+            }
+          }
+          expect(top.isFinite, isTrue, reason: "$letter için mürekkep bulunamadı");
+          // viewBox birimine çevir, merkeze göre sapma.
+          return ((top + bottom + 1) / 2 - cy) / scale;
+        }) as double;
+      }
+
+      // Her harf tek tek ortalı (web ölçümünde azami sapma 0.32'ydi).
+      for (final e in centers.entries) {
+        expect(e.value.abs(), lessThan(0.6),
+            reason: '${e.key} dikeyde ortalı değil: ${e.value}');
+      }
+      // Ve asıl şikayet: kuyruklu harf düz harfle AYNI hizada.
+      expect((centers['Ç']! - centers['M']!).abs(), lessThan(0.6));
+      expect((centers['Ş']! - centers['M']!).abs(), lessThan(0.6));
+    });
   });
 }
 
