@@ -20,6 +20,30 @@ const SCALLOP_POINTS = Array.from({ length: TEETH * 2 }, (_, i) => {
   return `${(22 + r * Math.cos(a)).toFixed(2)},${(22 + r * Math.sin(a)).toFixed(2)}`;
 }).join(' ');
 
+// Ortadaki harfin taban çizgisi — MÜREKKEP kutusunun dikey ortası dairenin
+// merkezine gelecek şekilde (12 Ağustos 2026, kullanıcı bildirdi: "Ç, Ş gibi
+// altında kuyruk olan karakterler ortalı durmuyor, alta daha yakın duruyor").
+//
+// Eski hâli `dominantBaseline="central"` idi; o, mürekkebi değil FONT
+// metriklerini (ascent/descent) ortalar. Chromium'da gerçek Space Mono 700
+// ile ölçüldü (20× render + piksel tarama, daire merkezi 22): TÜM harfler
+// ~1.2 birim aşağıdaydı, Ç/Ş ise sedilla yüzünden ~2.5 birim DAHA aşağıda —
+// gözle görülen buydu.
+//
+// İki sabit de em cinsinden ÖLÇÜLDÜ (`canvas.measureText`, 100px): büyük
+// harflerin mürekkep tepesi .70 (M/U/D) – .72 (yuvarlaklar; standart taşma),
+// sedillanın taban çizgisi altına inmesi .21. Ortalamayı (.71) tek sabit
+// olarak kullanmak altı harfin hepsinde sapmayı ±0.15'in altında tutuyor —
+// harf başına tablo tutmaya gerek yok.
+const INK_ASC_EM = 0.71;
+const DESCENDER_EM = 0.21;
+// Bu mühürde basılabilen TEK kuyruklu karakterler. Kademe harfleri kapalı bir
+// küme (Ç M O U Ş D — `leagueRank.ts`), banner glyph'leri ise rakam ve "+".
+// Yeni bir kademe harfi eklenirse burası da gözden geçirilmeli.
+const DESCENDER_CHARS = /[ÇŞ]/;
+const baselineY = (text: string, fontSize: number) =>
+  22 + ((INK_ASC_EM - (DESCENDER_CHARS.test(text) ? DESCENDER_EM : 0)) / 2) * fontSize;
+
 interface RankSealProps {
   tier: RankTier;
   size?: number;
@@ -93,9 +117,8 @@ export function RankSeal({ tier, size = 20, glyph, className }: RankSealProps) {
       )}
       <text
         x="22"
-        y="22.5"
+        y={baselineY(text, fontSize)}
         textAnchor="middle"
-        dominantBaseline="central"
         fontFamily="'Space Mono', monospace"
         fontWeight="700"
         fontSize={fontSize}

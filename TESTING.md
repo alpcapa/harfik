@@ -388,6 +388,10 @@ gerekiyor).
       mühürle aynı siluet, 24 diş) — düz çember GÖRÜNMEMELİ. Dişler
       telefonda net ayrışmalı, harf (özellikle Ç/Ş sedillası) tırtığa
       DEĞMEMELİ. Fark: küçük mühürde iç kesikli halka yok, harf daha büyük.
+- [ ] **Harf dikeyde ortalı — kuyruklu olanlar dahil.** Ç ve Ş (sedillalı)
+      dairede M/O/U/D ile AYNI ölçüde ortalı durmalı; alta yakın/aşağı
+      kaymış görünmemeli. Kolay kontrol: k-lig listesinde Çaylak ve
+      Şampiyon satırlarını Oyuncu/Ustaca ile yan yana karşılaştır.
 - [ ] **Rütbe düşmeli.** -2 ceza alıp eşiğin altına inen bir hesabın mührü
       (k-lig listesi, Skor Kartı, PlayerScoreCard) bir alt kademeye İNMELİ —
       üç yer de aynı kademeyi göstermeli (hepsi güncel `total_score`'dan
