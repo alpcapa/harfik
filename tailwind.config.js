@@ -14,6 +14,12 @@ export default {
         orange: '#F2650F',
         green: '#16A34A',
         red: '#DC2626',
+        // k-lig'in üç üst kademesi (Efsane/Uzaylı/Tanrı, 12 Ağustos 2026).
+        // Yalnızca RANK_TIERS kullanıyor; kırmızıdan sonrasını soğuk tonlarla
+        // sürdürüp en tepede parlak altınla bitiriyorlar.
+        indigo: '#4F46E5',
+        cyan: '#06B6D4',
+        'gold-bright': '#EAB308',
         'tile-bg': '#FFFFFF',
         'tile-border': '#C7D0DC',
         'tile-letter': '#1B2430',

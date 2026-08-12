@@ -256,7 +256,13 @@ export async function fetchMyLeaderboardRank(userId: string): Promise<MyLeaderbo
     return null;
   }
   const row = Array.isArray(data) ? data[0] : null;
-  return row ? { rank: Number(row.rank), total_score: Number(row.total_score) } : null;
+  return row
+    ? {
+        rank: Number(row.rank),
+        total_score: Number(row.total_score),
+        avg_move_score: row.avg_move_score == null ? null : Number(row.avg_move_score),
+      }
+    : null;
 }
 
 /**
