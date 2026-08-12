@@ -125,15 +125,21 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       Kendi katıldığın oyunlarda normal görünmeli; admin hepsini görebilmeli.
       (O tarihe kadar `games.messages` girişli HERKESE açıktı — skor/tahta
       herkese görünür olsa da yazışma değil.)
-- [ ] **Hamle geçmişi ikonu (12 Ağustos 2026).** Tüm Oyunlarım'da HER kartta
-      (sohbet rozetinin aksine — o yalnızca mesaj varsa çıkar) küçük bir
-      döküman ikonu olmalı; dokununca o oyunun TAM hamle dökümü açılmalı
-      (kelime + ham puan + ×2/×3 rozetleri, Bingo/Sınır İhlali etiketleri,
-      toplam puan). Hem Canlı hem YZ oyunlarında çalışmalı; kolon
-      eklenmeden ÖNCE biten YEREL oyunlarda "Bu oyun için hamle geçmişi
-      kaydedilmemiş." demeli (Canlı oyunlar geriye dönük dolduruldu).
+- [ ] **Hamle geçmişi ikonu (12 Ağustos 2026).** Tüm Oyunlarım'da, dökümü
+      OLAN kartlarda küçük bir döküman ikonu olmalı; dokununca o oyunun TAM
+      hamle dökümü açılmalı (kelime + ham puan + ×2/×3 rozetleri,
+      Bingo/Sınır İhlali etiketleri, toplam puan).
       Çevrimdışıyken dokunulunca "kaydedilmemiş" DEĞİL "Bağlantını kontrol
       edip tekrar dene." demeli — ikisi ayrı durum.
+- [ ] **İkon YALNIZCA dökümü olan kartta (aynı gün düzeltildi).** Kolon
+      12 Ağustos 2026 15:27 UTC'de açıldı; ondan ÖNCE biten YEREL oyunların
+      dökümü kurtarılamıyor, Canlı oyunlar geriye dönük dolduruldu. Yani
+      **eski YZ kartlarında ikon HİÇ çıkmamalı** (ilk sürüm çıkarıyor ve
+      boş bir diyalog açıyordu), Canlı kartlarda çıkmalı.
+      **EN KRİTİK KONTROL — kural tür bazlı DEĞİL:** yeni bir YZ oyunu
+      sonuna kadar bitir; O kartta ikon ÇIKMALI ve döküm dolu gelmeli.
+      Çıkmıyorsa `buildGameRecord`/`saveGame` zinciri `moves`u yazmıyor
+      demektir (yani "YZ'de hiç gösterme" gibi yanlış bir kural kalmış).
 - [ ] **Karşı tarafta.** Sohbet kapalıyken gelen mesaj için popup (gönderenin
       avatarı + adı + metin) çıkmalı ve **yalnızca elle** kapanmalı; butonda
       kırmızı nokta belirmeli. Sohbeti açınca nokta sıfırlanmalı.
@@ -462,6 +468,18 @@ gerekiyor).
       Usta 12 Ağustos 2026'da 200'den 250'ye çekildi — eski 200 eşiği
       HİÇBİR yerde görünmemeli. Uzaylı'nın harfi **Z** (Usta'nın U'suyla
       karışmasın); üç yeni renk çivit/camgöbeği/parlak altın.
+- [ ] **"Nasıl oynanır?" ekranında rütbe bölümü (12 Ağustos 2026).**
+      Detaylı Kurallar'ın sonunda, "Skor Kartı ve Puanlama"nın hemen
+      altında **"Rütbeler ve Ödüller"** başlıklı bir bölüm olmalı: dokuz
+      kademe alt alta, her satırda kademe renginde harf + ad + eşik +
+      (Çaylak hariç) yeşil "(ödül +N)". Tablo `leagueRank.ts`'ten
+      ÜRETİLİYOR, elle yazılmıyor — yani yukarıdaki maddede doğruladığın
+      eşik/ödüllerle BİREBİR aynı olmalı; ayrışırsa biri elle yazılmış
+      demektir. Aynı bölümde ödülün hayatta bir kez verildiği, rütbenin
+      düşebileceği ve Tanrı'nın en üst kademe olduğu yazmalı; "Skor Kartı
+      ve Puanlama"nın sonunda da -2 cezasının üç kaynağı (Canlı 48 saat,
+      yerel 7 gün) geçmeli. **Mobil portta da birebir aynı bölüm var**
+      (`mobile/TESTING.md` bölüm 13) — iki ekran ayrışmamalı.
 - [ ] **Ödül bir sonraki eşiği tetikleyebilir.** Ödül puanı toplamın
       İÇİNE sayıldığından, eşiğe çok yaklaşmış biri ödülü alınca aynı
       anda bir üst eşiği de geçebilir; iki banner değil TEK birleşik

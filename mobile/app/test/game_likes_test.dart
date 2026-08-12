@@ -474,7 +474,7 @@ void main() {
 
   // ── Hamle dökümü rozeti (kullanıcı isteği: "mesaj balonunun yanına aynı
   // boyda bir file ikonu") ────────────────────────────────────────────────
-  testWidgets('hamle rozeti HER kartta var ve dökümü lazy açar',
+  testWidgets('hamle rozeti dökümü olan kartta çıkar ve dökümü lazy açar',
       (tester) async {
     final gw = FakeGamesGateway(userId: 'u-me')
       ..history = [
@@ -519,15 +519,24 @@ void main() {
     expect(find.text('1. Ironman'), findsOneWidget);
   });
 
-  testWidgets('hamle dökümü: ağ hatası ile "kaydedilmemiş" AYRI mesajlar',
+  testWidgets('hamle dökümü: ağ hatasında "kaydedilmemiş" DEMEZ',
       (tester) async {
+    // İkon artık yalnızca dökümü OLAN kartta çizildiğinden (aşağıdaki
+    // teste bkz.) bu senaryo `movesByGame` dolu kurulmalı: sunucuda döküm
+    // VAR ama o anki istek düşüyor.
     final gw = FakeGamesGateway(userId: 'u-me')
-      ..history = [gameRow(id: 'g-1'), gameRow(id: 'g-2')]
+      ..history = [gameRow(id: 'g-1')]
+      ..movesByGame = {
+        'g-1': [
+          {'turn': 0, 'player': 0, 'words': <String>[], 'points': 0,
+            'action': 'pass'},
+        ]
+      }
       ..movesFail = true;
     final repo = await newRepoForWidget(tester, gw);
     await pumpHistory(tester, repo);
 
-    // (1) Ağ hatası: "kaydedilmemiş" DEMEZ — veri sunucuda duruyor olabilir.
+    // Ağ hatası: "kaydedilmemiş" DEMEZ — veri sunucuda duruyor.
     await tester.tap(find.byKey(const ValueKey('moves-g-1')));
     await tester.pumpAndSettle();
     expect(find.textContaining('Bağlantını kontrol'), findsOneWidget);
@@ -540,9 +549,31 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('moves-g-1')));
     await tester.pumpAndSettle();
     expect(gw.movesCalls, ['g-1', 'g-1']);
+    expect(find.text('OYUN GEÇMİŞİ'), findsOneWidget);
+  });
 
-    // (2) Kolon null (kolon eklenmeden önce biten oyun): kaydedilmemiş.
-    expect(find.textContaining('kaydedilmemiş'), findsOneWidget);
+  testWidgets('dökümü olmayan kartta hamle ikonu HİÇ çizilmez',
+      (tester) async {
+    // 12 Ağustos 2026, kullanıcı: "YZ oyunlarda içi boş geliyor". Kural
+    // TÜR bazlı değil VERİ bazlı — aynı listede dökümü olan bir yerel oyun
+    // ikonu göstermeye devam etmeli, yoksa "YZ'de hiç gösterme" gibi
+    // yanlış bir kural da bu testi geçerdi.
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [
+        gameRow(id: 'g-eski'), // kolon eklenmeden önce bitmiş: döküm yok
+        gameRow(id: 'g-yeni'),
+      ]
+      ..movesByGame = {
+        'g-yeni': [
+          {'turn': 0, 'player': 0, 'words': <String>[], 'points': 0,
+            'action': 'pass'},
+        ]
+      };
+    final repo = await newRepoForWidget(tester, gw);
+    await pumpHistory(tester, repo);
+
+    expect(find.byKey(const ValueKey('moves-g-eski')), findsNothing);
+    expect(find.byKey(const ValueKey('moves-g-yeni')), findsOneWidget);
   });
 }
 /// `game_like_stats`'e HİÇ gitmemesi gerektiğini kanıtlayan sahte uç:

@@ -423,14 +423,21 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **Favoriler sekmesi.** Yalnızca beğendiğin oyunları göstermeli —
       başkasının oyununu beğendiysen o da listede olmalı ve satırda
       **senin adın hiçbir yere yapışmamalı** (o satır onun).
-- [ ] **Hamle geçmişi ikonu (12 Ağustos 2026, Parça 65).** HER kartta
-      (sohbet rozetinin aksine) küçük bir döküman ikonu olmalı; dokununca
-      "OYUN GEÇMİŞİ" dökümü tüm detayıyla açılmalı (kelime + ham puan +
-      ×2/×3, Bingo/Sınır İhlali rozetleri, toplam). Web'de AYNI oyunu aç —
-      iki istemci aynı `games.moves` kolonunu okuyor, döküm birebir aynı
-      olmalı. Kolon eklenmeden ÖNCE biten YEREL bir oyunda "kaydedilmemiş"
-      demeli; **uçak modunda** dokununca "kaydedilmemiş" DEĞİL "Bağlantını
+- [ ] **Hamle geçmişi ikonu (12 Ağustos 2026, Parça 65).** Dökümü OLAN
+      kartlarda küçük bir döküman ikonu olmalı; dokununca "OYUN GEÇMİŞİ"
+      dökümü tüm detayıyla açılmalı (kelime + ham puan + ×2/×3,
+      Bingo/Sınır İhlali rozetleri, toplam). Web'de AYNI oyunu aç — iki
+      istemci aynı `games.moves` kolonunu okuyor, döküm birebir aynı
+      olmalı. **Uçak modunda** dokununca "kaydedilmemiş" DEĞİL "Bağlantını
       kontrol edip tekrar dene." demeli (ikisi bilinçli olarak ayrı).
+- [ ] **İkon YALNIZCA dökümü olan kartta (Parça 67).** Kolon 12 Ağustos
+      2026 15:27 UTC'de açıldı; ondan ÖNCE biten YEREL oyunların dökümü
+      kurtarılamıyor. Yani **eski YZ kartlarında ikon HİÇ çıkmamalı** (ilk
+      sürüm çıkarıyor ve boş bir diyalog açıyordu — kullanıcı bunu
+      bildirdi), Canlı kartlarda çıkmalı. **EN KRİTİK KONTROL — kural tür
+      bazlı DEĞİL:** uygulamada yeni bir YZ oyunu sonuna kadar bitir; O
+      kartta ikon ÇIKMALI ve döküm dolu gelmeli. Web'de de aynı kart aynı
+      şekilde davranmalı (tek kaynak: `game_like_stats.has_moves`).
 - [ ] **Sohbet arşivi.** Web'de oynanmış, mesajlaşılmış bir Canlı oyunun
       kartında konuşma balonu rozeti + mesaj sayısı olmalı; dokununca
       dondurulmuş sohbet açılmalı. Sessize aldığın biri varsa isminin
@@ -914,6 +921,24 @@ listesi kök `TESTING.md` bölüm 10.
       çubuğunda birbirinden ayırt edilebildiği; (c) **Tanrı EN ÜST** —
       o kademede ilerleme çubuğu HİÇ çizilmemeli, Destan'da ise Efsane
       (2500) hedefiyle çizilmeli.
+- [ ] **"Nasıl Oynanır?" ekranında rütbe bölümü (Parça 66).** Detaylı
+      Kurallar'da, "Skor Kartı ve Puanlama"nın hemen altında **"Rütbeler ve
+      Ödüller"** başlıklı bir bölüm olmalı: dokuz kademe alt alta, her
+      satırda kademe renginde harf + ad + eşik + (Çaylak hariç) yeşil
+      "(ödül +N)". Tablo `league_rank.dart`'tan ÜRETİLİYOR, elle
+      yazılmıyor — yukarıdaki tabloyla BİREBİR aynı olmalı; ayrışırsa
+      biri elle yazılmış demektir. Bölümde ödülün hayatta bir kez
+      verildiği, rütbenin düşebileceği ve Tanrı'nın en üst kademe olduğu
+      yazmalı; "Skor Kartı ve Puanlama"nın sonunda da -2 cezasının iki
+      kaynağı (Canlı 48 saat, yerel 7 gün) geçmeli. **Web'de birebir aynı
+      bölüm var** (kök `TESTING.md` bölüm 10) — iki ekran ayrışmamalı.
+- [ ] **Bölüm başlıkları BÜYÜK HARF (aynı turda düzeltildi).** Detaylı
+      Kurallar'daki ON bölüm başlığı da ("PUAN TABLOSU", "BÖLGE VERGİSİ",
+      "RÜTBELER VE ÖDÜLLER"…) web gibi büyük harfli olmalı — port bunu
+      Parça 10'dan beri küçük harf çiziyordu. Türkçe kurala dikkat:
+      "NASIL OYNANIR?" (noktalı İ DEĞİL) ve "BÖLGE VERGİSİ" (sondaki İ
+      noktalı) — biri ters çıkarsa `trUpper` yerine native `toUpperCase`
+      kullanılmış demektir.
 - [ ] **Kutlama banner'ı bir kez çıkar.** Görülmemiş bir ödülün varken
       (test için bir satırın `seen_at`'i SQL'le null'a çekilebilir)
       uygulamayı aç: mühür damgalı, konfetili banner ekranın ORTASINDA,

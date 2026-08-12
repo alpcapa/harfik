@@ -859,29 +859,37 @@ class _EntryCard extends StatelessWidget {
                           ),
                         ),
                       ],
-                      // Hamle dökümü — sohbet rozetinin AKSİNE HER kartta
-                      // görünür: her bitmiş oyunun hamlesi var. Dökümün
-                      // kendisi lazy, kart açılmadan çekilmiyor.
-                      const SizedBox(width: 6),
-                      GestureDetector(
-                        key: ValueKey('moves-${entry.id}'),
-                        onTap: onShowMoves,
-                        behavior: HitTestBehavior.opaque,
-                        child: Semantics(
-                          label: 'Hamle geçmişini göster',
-                          button: true,
-                          child: movesLoading
-                              // Sohbet rozetiyle aynı 11px kutuda kalır ki
-                              // yükleme sırasında satır kaymasın.
-                              ? const SizedBox(
-                                  width: 11,
-                                  height: 11,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 1.5, color: _muted),
-                                )
-                              : const DocumentIcon(size: 11, color: _muted),
+                      // Hamle dökümü — YALNIZCA dökümü olan kartta (12
+                      // Ağustos 2026, kullanıcı "YZ oyunlarda içi boş
+                      // geliyor" dedi). İlk sürüm KOŞULSUZ çiziyordu ("her
+                      // bitmiş oyunun hamlesi var") — bu, `games.moves`
+                      // eklenmeden ÖNCE biten oyunları saymıyordu: yerel
+                      // oyunların dökümü geri doldurulamıyor, Canlı oyunlar
+                      // migration'da dolduruldu. Koşul tür bazlı DEĞİL veri
+                      // bazlı — bundan sonra biten YZ oyunlarında ikon
+                      // normal çıkacak. Döküm hâlâ lazy.
+                      if (entry.hasMoves) ...[
+                        const SizedBox(width: 6),
+                        GestureDetector(
+                          key: ValueKey('moves-${entry.id}'),
+                          onTap: onShowMoves,
+                          behavior: HitTestBehavior.opaque,
+                          child: Semantics(
+                            label: 'Hamle geçmişini göster',
+                            button: true,
+                            child: movesLoading
+                                // Sohbet rozetiyle aynı 11px kutuda kalır ki
+                                // yükleme sırasında satır kaymasın.
+                                ? const SizedBox(
+                                    width: 11,
+                                    height: 11,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 1.5, color: _muted),
+                                  )
+                                : const DocumentIcon(size: 11, color: _muted),
+                          ),
                         ),
-                      ),
+                      ],
                       const Spacer(),
                       const SizedBox(
                           width: 40,

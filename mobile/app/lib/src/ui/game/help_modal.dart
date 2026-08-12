@@ -6,9 +6,10 @@
 // yazılmaz. Web metni değişirse buraya da aynen taşınmalı (iki taraf tek
 // kaynaktan üretilmiyor; ayrık ama birebir).
 import 'package:flutter/material.dart';
-import 'package:kelimeki_core/kelimeki_core.dart' show bingoBonus;
+import 'package:kelimeki_core/kelimeki_core.dart' show bingoBonus, trUpper;
 
 import 'modal_shell.dart';
+import '../rank/league_rank.dart';
 import '../tokens.dart';
 
 const Color _text = kText;
@@ -114,9 +115,13 @@ class _Section extends StatelessWidget {
           decoration: const BoxDecoration(
             border: Border(bottom: BorderSide(color: _border)),
           ),
+          // Web `<h3 ... uppercase>` — CSS `text-transform` yerine `trUpper`
+          // (native `toUpperCase` "İ"yi bozar: "Rütbeler" → "RUTBELER").
+          // Port bunu Parça 10'da atlamıştı; 12 Ağustos 2026'da rütbe
+          // bölümü eklenirken web ile yan yana render edilince görüldü.
           child: titleWidget ??
               Text(
-                title!,
+                trUpper(title!),
                 style: const TextStyle(
                   fontFamily: 'SpaceMono',
                   fontSize: 11,
@@ -189,6 +194,57 @@ class _Pill extends StatelessWidget {
 /// Puan tablosu satırı: "1 puan: A(×12) E(×8) …". Joker satırında harf
 /// yerine ★ ikonu gelir (glyph hiçbir bundled fontta yok — taş jokerindeki
 /// aynı karar, bkz. tile_widget.dart).
+/// Rütbe tablosunda tek satır: kademe harfi (kendi renginde) + ad + eşik
+/// + varsa ödül. Web'deki aynı satırın karşılığı.
+class _RankRow extends StatelessWidget {
+  final RankTier tier;
+  const _RankRow({required this.tier});
+
+  @override
+  Widget build(BuildContext context) => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 26,
+            child: Text(
+              tier.letter,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'SpaceMono',
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: tier.color,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text.rich(TextSpan(children: [
+              TextSpan(
+                text: tier.name,
+                style: const TextStyle(
+                    fontFamily: 'SpaceMono',
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: _text),
+              ),
+              TextSpan(
+                text: ' — ${tier.threshold} puan',
+                style: const TextStyle(
+                    fontFamily: 'SpaceMono', fontSize: 12, color: _text),
+              ),
+              if (tier.reward > 0)
+                TextSpan(
+                  text: ' (ödül +${tier.reward})',
+                  style: const TextStyle(
+                      fontFamily: 'SpaceMono', fontSize: 12, color: kGreen),
+                ),
+            ])),
+          ),
+        ],
+      );
+}
+
 class _TileRow extends StatelessWidget {
   final String pts;
   final List<(String, int)> tiles;
@@ -537,6 +593,44 @@ class _DetailedRules extends StatelessWidget {
               'ise sadece birinci **+2** puan alır; ikinci puan almaz. '
               'Beraberlikte aynı sırayı paylaşan oyuncuların hepsi o sıranın '
               'puanını alır.'),
+          _P('Puan kaybettiğin tek durum var: bir oyunu **süresi içinde '
+              'bitirmemek**. Canlı bir oyunda sıran sana geçtikten sonra 48 '
+              'saat hamle yapmazsan, Yapay Zeka\'ya karşı devam eden bir '
+              'oyuna da 7 gün dönmezsen, oyun teslim sayılır ve k-lig '
+              'puanından **2 puan** düşülür. Böyle bir durumda e-postayla '
+              'bilgilendirilirsin.'),
+        ],
+      ),
+      _Section(
+        title: 'Rütbeler ve Ödüller',
+        children: [
+          const _P('k-lig puanın belirli eşikleri geçtikçe bir **rütbe** '
+              'kazanırsın. Rütben, Skor Kartı\'nın başlığında ve k-lig '
+              'sıralamasında adının yanında bir mühür olarak görünür; mühre '
+              'dokunursan puanını, sıradaki rütbeyi ve o hedefe ne kadar '
+              'kaldığını gösteren bir kart açılır.'),
+          // Tablo ELLE YAZILMAZ — tek kaynak `league_rank.dart` (o da SQL'deki
+          // `_award_league_rewards` ve web'in `leagueRank.ts`'iyle elle
+          // senkron). Eşik/ödül değişirse bu ekran kendiliğinden takip eder.
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < kRankTiers.length; i++) ...[
+                if (i > 0) const SizedBox(height: 4),
+                _RankRow(tier: kRankTiers[i]),
+              ],
+            ],
+          ),
+          const _P('Bir eşiğe **ilk kez** ulaştığında yanındaki ödül puanı '
+              'k-lig puanına eklenir; bu ödül hayatta bir kez verilir ve '
+              'puanın sonradan gerilese de geri alınmaz. Ayrıca her 100 '
+              'puanda bir kutlama bildirimi alırsın.'),
+          const _P('Rütbe **düşebilir**: gösterilen mühür her zaman güncel '
+              'puanından hesaplanır, yani yukarıdaki −2\'lik cezalarla bir '
+              'eşiğin altına inersen kademen de iner. Aynı eşiği yeniden '
+              'geçmek ödülü ikinci kez vermez. **Tanrı** en üst rütbedir; '
+              'oraya varan orada kalır.'),
         ],
       ),
       const _Section(

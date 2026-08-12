@@ -668,20 +668,29 @@ export function GameHistoryModal({
                           {entry.message_count}
                         </button>
                       )}
-                      {/* Hamle geçmişi — sohbet rozetinin AKSİNE her kartta
-                          görünür: her bitmiş oyunun hamlesi var. Dökümün
-                          kendisi lazy (`fetchGameMoves`), kart açılmadan
-                          çekilmiyor. */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedMovesGameId(entry.id);
-                        }}
-                        aria-label="Hamle geçmişini göster"
-                        className="flex items-center text-muted shrink-0"
-                      >
-                        <MovesIcon />
-                      </button>
+                      {/* Hamle geçmişi — YALNIZCA dökümü olan kartta (12
+                          Ağustos 2026, kullanıcı bildirdi: "YZ oyunlarda içi
+                          boş geliyor"). İlk sürüm KOŞULSUZ çiziyordu ("her
+                          bitmiş oyunun hamlesi var") — bu, `games.moves`
+                          eklenmeden ÖNCE biten oyunları saymıyordu: yerel
+                          oyunların dökümü geri doldurulamıyor (bitmiş bir
+                          oyunun `moveHistory`'si hiçbir yerde saklanmıyor),
+                          Canlı oyunlar ise migration'da dolduruldu. Koşul
+                          tür bazlı DEĞİL veri bazlı: bundan sonra biten YZ
+                          oyunlarında ikon normal şekilde çıkacak. Dökümün
+                          kendisi hâlâ lazy (`fetchGameMoves`). */}
+                      {entry.has_moves && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedMovesGameId(entry.id);
+                          }}
+                          aria-label="Hamle geçmişini göster"
+                          className="flex items-center text-muted shrink-0"
+                        >
+                          <MovesIcon />
+                        </button>
+                      )}
                     </span>
                     <span className="flex items-center gap-2 shrink-0 ml-auto">
                       <span className="w-9 text-right">Puan</span>

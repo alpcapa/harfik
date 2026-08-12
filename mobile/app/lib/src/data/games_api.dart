@@ -120,6 +120,19 @@ class GameHistoryEntry {
   /// Oyunu toplam kaç kullanıcı beğendi (`game_like_stats`).
   final int likeCount;
 
+  /// Bu oyunun dondurulmuş hamle dökümü var mı (`games.moves is not null`) —
+  /// hamle geçmişi ikonu YALNIZCA true iken çizilir (12 Ağustos 2026,
+  /// kullanıcı "YZ oyunlarda içi boş geliyor" dedi). Döküm ~6.8 KB
+  /// olduğundan liste sorgusuna girmiyor, karar `game_like_stats` toplu
+  /// RPC'sinden geliyor (ek gidiş-dönüş yok).
+  ///
+  /// **Tür kontrolü DEĞİL:** kolon eklenmeden önce biten yerel oyunların
+  /// dökümü kurtarılamıyor (bitmiş bir oyunun `moveHistory`'si hiçbir yerde
+  /// saklanmıyor), Canlı oyunlar migration'da geriye dönük dolduruldu —
+  /// yani bugün YZ kartlarının hepsi false, ama BUNDAN SONRA bitenler
+  /// true olacak.
+  final bool hasMoves;
+
   const GameHistoryEntry({
     required this.id,
     required this.userId,
@@ -134,6 +147,7 @@ class GameHistoryEntry {
     this.messageCount = 0,
     this.likedByMe = false,
     this.likeCount = 0,
+    this.hasMoves = false,
   });
 
   /// Beğeni durumunu değiştirilmiş bir kopya — hem `game_like_stats`
@@ -142,7 +156,8 @@ class GameHistoryEntry {
   GameHistoryEntry withLikes(
           {required bool likedByMe,
           required int likeCount,
-          int? messageCount}) =>
+          int? messageCount,
+          bool? hasMoves}) =>
       GameHistoryEntry(
         id: id,
         userId: userId,
@@ -157,6 +172,7 @@ class GameHistoryEntry {
         messageCount: messageCount ?? this.messageCount,
         likedByMe: likedByMe,
         likeCount: likeCount,
+        hasMoves: hasMoves ?? this.hasMoves,
       );
 
   /// Web `flipLike` — iyimser güncelleme; aynı çağrı geri almak için de
@@ -624,12 +640,13 @@ class GamesRepo {
     if (games.isEmpty || gateway.currentUserId == null) return games;
     try {
       final rows = await gateway.likeStats([for (final g in games) g.id]);
-      final byId = <String, ({int count, bool mine, int msgs})>{};
+      final byId = <String, ({int count, bool mine, int msgs, bool moves})>{};
       for (final r in rows) {
         byId[r['game_id'] as String] = (
           count: (r['like_count'] as num?)?.toInt() ?? 0,
           mine: r['liked_by_me'] == true,
           msgs: (r['message_count'] as num?)?.toInt() ?? 0,
+          moves: r['has_moves'] == true,
         );
       }
       return [
@@ -638,6 +655,7 @@ class GamesRepo {
             likedByMe: byId[g.id]?.mine ?? false,
             likeCount: byId[g.id]?.count ?? 0,
             messageCount: byId[g.id]?.msgs ?? 0,
+            hasMoves: byId[g.id]?.moves ?? false,
           )
       ];
     } catch (e) {

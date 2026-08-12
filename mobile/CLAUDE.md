@@ -2145,6 +2145,115 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        5'e madde eklendi. Migration canlıya uygulandı ve altı değişmezle
        doğrulandı (bkz. kök `CLAUDE.md`).
 
+   - ✅ **Parça 66 — "Nasıl Oynanır?"a rütbe/ödül bölümü + bölüm
+     başlıklarının `uppercase`ı Parça 10'dan beri eksikmiş (12 Ağustos
+     2026, `help_modal.dart` + web `HelpModal.tsx`):** Kullanıcı bir
+     doküman-tazelik denetimi isterken *"mesela rank olayını nasıl oynanır
+     alt kısma ekleyebiliriz"* dedi. Denetim onu doğruladı: k-lig bölümü
+     yalnızca puanın nasıl KAZANILDIĞINI anlatıyordu — -2 cezası, ödül
+     eşikleri ve dokuz rütbe hiçbir yerde yazmıyordu.
+     - **Tablo ELLE YAZILMIYOR, `kRankTiers`ten çiziliyor** (web'de
+       `RANK_TIERS`ten) — eşik/ödül değişirse iki ekran da kendiliğinden
+       takip eder. Bu bilinçli: kademe tablosu zaten ÜÇ KOPYA elle senkron
+       (SQL ↔ `leagueRank.ts` ↔ `league_rank.dart`); "Nasıl Oynanır?"a
+       elle bir tablo yazmak DÖRDÜNCÜ kopyayı açardı ve sessizce
+       ayrışacak ilk yer orası olurdu.
+     - **Metin web'den BİREBİR kopyalandı** (Parça 10'un kuralı: kural
+       metinleri özetlenmez) — `**kalın**` işaretlemesi `_runs()` ile
+       TextSpan'e çevriliyor. Yeni `_RankRow` widget'ı `_TileRow`un hemen
+       öncesinde: 26px'lik ortalanmış harf (kademe renginde) + kalın ad +
+       " — N puan" + yeşil "(ödül +N)".
+     - **YAN BULGU, kod okumasıyla DEĞİL yan yana render'la bulundu:**
+       web'in `<h3 ... uppercase>`ı porta hiç geçmemiş — on bölüm başlığı
+       da ("Puan Tablosu", "Bölge Vergisi"…) küçük harfle çiziliyordu.
+       Parça 10 "web'in yardımcıları birebir taşındı (Section/P/Pill/…)"
+       diyordu, yani niyet buydu, yalnızca `text-transform` atlanmıştı.
+       `trUpper` eklendi — native `toUpperCase` DEĞİL (Türkçe kural:
+       "Nasıl" → "NASIL", noktalı I üretmemeli). **Bu, istenen işin
+       KAPSAMI DIŞINDAYDI ve bilerek yapıldı:** aynı dosyada, tek satır,
+       ve tam da bu projenin en sık tekrarlayan hata sınıfı (sessiz
+       web↔port ayrışması); istenmezse tek satırlık geri alma.
+     - **Ölçüm — iki ekran GERÇEKTEN yan yana render edildi:** mobil
+       tarafta `HelpModal` 420×1400'de pump edilip bölüme kaydırılarak
+       PNG'ye çekildi (geçici harness, sonra silindi); web tarafında
+       `npm run build` çıktısı yerel bir sunucudan Playwright/Chromium'la
+       açılıp aynı bölüme kaydırıldı. Uppercase farkı TAM BURADA görüldü —
+       ekran görüntüsü olmadan iki tarafın kodunu okumak bunu vermezdi
+       (`uppercase` bir CSS sınıfı, Dart'ta karşılığı yok, yani "eksik
+       olan" görünmez bir şeydi).
+     - **Test — negatif eş doğrulamasıyla, İKİ AYRI kanıt:** yeni bir
+       test dokuz kademenin `kRankTiers`ten çizildiğini (harf/ad/eşik/
+       ödül; Çaylak'ta "(ödül +0)" YOK) ve -2 paragrafını doğruluyor;
+       mevcut bölüm-başlığı testi büyük harfli beklentilere çevrildi
+       (metinler ELLE büyük yazıldı ki `trUpper`ı kendisiyle
+       karşılaştıran bir totoloji kurulmasın). `help_modal.dart`
+       `git stash`lenince 2 test GERÇEKTEN düştü (`Found 0 widgets with
+       text "Rütbeler ve Ödüller"`, `Found 0 widgets with text "Ç"`);
+       ayrı bir turda yalnızca `trUpper(title!)` → `title!` çevrilince
+       başlık testi GERÇEKTEN `bölüm yok: NASIL OYNANIR?` ile düştü.
+       İkisi de geri konunca yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       359/359 yeşil** (358'den +1). Web `npm run lint` + `npm run build`
+       temiz. `kelimeki_core`'a hiç dokunulmadı (yalnızca `trUpper`
+       import edildi) — golden vector turu gerekmedi.
+     - **Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor
+       — `mobile/TESTING.md` bölüm 13'e madde eklendi (web'in eşi kök
+       `TESTING.md` bölüm 10'da).
+
+   - ✅ **Parça 67 — hamle ikonu artık yalnızca dökümü OLAN kartta; kullanıcının
+     teşhisi ölçülerek çürütüldü (12 Ağustos 2026, `games_api.dart`,
+     `game_history_modal.dart` + web `api.ts`/`GameHistoryModal.tsx` +
+     `game_like_stats_has_moves` migration'ı):** Kullanıcı bildirdi: *"Tüm
+     oyunlarda ikon var ama YZ oyunlarda içi boş geliyor, canlı oyunlarda
+     dolu geliyor. YZ hiç olmayacaksa onlarda ikonu göstermesek daha iyi."*
+     - **Önerilen düzeltmeyi UYGULAMADIM, çünkü dayandığı varsayım ölçümle
+       çürüdü.** Canlıda: 245 yerel oyunun tamamı `moves is null`, 66 Canlı
+       oyunun tamamı dolu — kullanıcının gözlemi doğru. Ama sebep TÜR değil
+       ZAMANLAMA: en yeni yerel oyun 12:09 UTC'de bitmiş, kolon 15:27'de
+       açılmış (`games_moves_snapshot`), yazan kod 16:04'te deploy edilmiş
+       (#241). Yani kolon var olduğundan beri HİÇ yerel oyun bitmemiş;
+       `buildGameRecord` `moves`u yazıyor ve `saveGame` kaydı
+       `insert({...game})` ile olduğu gibi gönderiyor (ikisi de kaynaktan
+       doğrulandı), dolayısıyla bundan sonra bitenler DOLU olacak.
+       "YZ'de hiç gösterme" kuralı o oyunları kalıcı olarak sakatlardı.
+     - **Kullanıcının NİYETİ yine de doğruydu ve uygulandı:** boş bir
+       diyalog açan ikon kötü bir kontrol. Doğru kural tür bazlı değil veri
+       bazlı — **"dökümü olmayan kartta gösterme"**.
+     - **Karar bilgisi `moves` çekilmeden gerekiyor** (satır başına ~6.8 KB;
+       lazy yükleme tam bu yüzden var), o yüzden kartın öteki rozetlerini
+       zaten besleyen `game_like_stats` RPC'sine `has_moves` eklendi —
+       sayfa başına TEK toplu çağrı, EK GİDİŞ-DÖNÜŞ YOK. `message_count`in
+       Parça 51'de aynı RPC'ye taşınmasıyla birebir aynı desen.
+     - **Sahte uç de gerçek ucun bu kararını taklit ediyor:**
+       `FakeGamesGateway.likeStats` artık `has_moves`u `movesByGame`den
+       türetiyor — Parça 46'nın dersi (sahtenin eksik bir dalı, o dal
+       hakkındaki testleri sessizce anlamsız kılar). Bu olmadan yeni kural
+       testlerde hiç sınanamazdı.
+     - **Ulaşılamaz hale gelen bir test dalı düzeltildi:** eski test "kolon
+       null → 'kaydedilmemiş'" mesajını doğruluyordu; ikon artık o kartta
+       hiç çizilmediğinden o modal UI'dan AÇILAMIYOR. Test, yeni ve gerçek
+       kullanıcı davranışını ölçecek şekilde yeniden yazıldı (dökümü olan
+       kart ikonu gösterir, olmayan göstermez); "kaydedilmemiş" dalı kodda
+       savunma amaçlı duruyor. Ağ hatası dalı KORUNDU — o hâlâ ulaşılabilir
+       (sunucuda döküm var, istek düşüyor), yalnızca kurgusu `movesByGame`
+       dolu olacak şekilde düzeltildi.
+     - **Test — negatif eş doğrulamasıyla:** yeni test aynı listede dökümü
+       OLAN ve OLMAYAN iki kart kuruyor — tek başına "YZ'de gösterme" gibi
+       yanlış bir kural da geçerdi, o yüzden ikisi bir arada.
+       `game_history_modal.dart` `git stash`lenince test GERÇEKTEN
+       kullanıcının bildirdiği semptomu üretti (`Found 1 widget with key
+       [<'moves-g-eski'>]`), geri konunca yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 360/360
+       yeşil** (359'dan +1). Web `npm run lint` temiz. Migration canlıya
+       uygulandı ve gerçek JWT'yle üç kontrolle doğrulandı (Canlı hepsi
+       true, güncel yerel hepsi false, ve **en kritiği** bir YEREL satıra
+       `moves` yazılınca bayrak true'ya döndü — geri alındı).
+       `kelimeki_core`'a hiç dokunulmadı.
+     - **Doğrulama sınırı:** "yeni biten bir YZ oyununda ikon GERÇEKTEN
+       çıkıyor mu" bu ortamdan doğrulanamaz (gerçek oturumda bir oyun
+       bitirmek gerekiyor) — `mobile/TESTING.md` bölüm 5 ve kök
+       `TESTING.md` bölüm 3'e madde eklendi.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

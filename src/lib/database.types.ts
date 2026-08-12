@@ -374,6 +374,16 @@ export interface Game {
    * lazy çekilir.
    */
   moves: HistoryEntry[] | null;
+  /**
+   * `moves is not null` — hamle geçmişi ikonunun ÇİZİLİP çizilmeyeceği
+   * (12 Ağustos 2026). `moves`un kendisi liste sorgusuna girmediğinden bu
+   * karar `game_like_stats` toplu RPC'sinden geliyor (ek gidiş-dönüş yok).
+   * **"YZ oyunlarında gösterme" gibi bir tür kontrolü DEĞİL:** kolon
+   * eklenmeden önce biten yerel oyunlarda kurtarılacak veri olmadığı için
+   * bugün YZ kartlarının hepsi `false`, ama bundan sonra bitenler `true`
+   * olacak — kural her zaman "dökümü var mı", "hangi tür oyun" değil.
+   */
+  has_moves: boolean;
   created_at: string;
 }
 
@@ -434,6 +444,7 @@ export type GameHistoryEntry = Pick<
   | 'surrendered'
   | 'online_game_id'
   | 'message_count'
+  | 'has_moves'
   | 'user_id'
 > & {
   /**
