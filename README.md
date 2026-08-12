@@ -12,6 +12,7 @@
 - **Tam sözlük** — TDK Güncel Türkçe Sözlük (12. baskı) kaynaklı **~63 bin oynanabilir kelime**, anlamlarıyla birlikte.
 - **Türkçe alfabe** — Ç, Ğ, İ, Ö, Ş, Ü dahil tam harf dağılımı ve puanlar. Joker (`?`) desteklenir. Torba, oyuncu sayısından bağımsız olarak sabit 100 taş.
 - **Bingo bonusu** — 7 taşın tamamını tek hamlede kullanınca +25 puan.
+- **k-lig ödül & rütbe sistemi** — Puana bağlı 6 kademeli rütbe mührü (Çaylak 0 → Meraklı 50 → Oyuncu 100 → Usta 200 → Şampiyon 500 → Destan 1000 — damga güncel puandan türetilir, puan gerilerse kademe de düşer) ve aynı eşiklere bağlı tek seferlik ödüller (50 puana ilk ulaşmada +5, 100 → +10, 200 → +25, 500 → +50, 1000 → +100; verilen ödül puan sonradan gerilese de geri alınmaz). Ödül/rütbe/100'lük puan eşikleri, damga+konfeti animasyonlu bir kutlama banner'ıyla bir kez bildirilir.
 - **Dokunmatik** — Mobil öncelikli düzen; harf seç → kareye dokun → **Oyna**.
 
 ## Teknoloji
@@ -66,6 +67,10 @@ src/
 │   ├── GameChatHistoryModal.tsx # oyun içi mesajlaşma: bitmiş bir oyunun dondurulmuş sohbet kaydının salt-okunur görünümü
 │   ├── Leaderboard.tsx          # lider tablosu (k-lig)
 │   ├── KLigMark.tsx             # "k-lig" logosu — statik SVG path (üretilmiş, bkz. scripts/generate-klig-paths.mjs), font bağımsız
+│   ├── RankSeal.tsx             # k-lig rütbe mührü (nömorfik damga SVG — k-lig satırları, Skor Kartı başlığı, ödül banner'ı)
+│   ├── RankInfoModal.tsx        # Skor Kartı'ndaki mühre dokununca açılan rütbe bilgi popup'ı (puan + ödül payı + sıradaki hedef)
+│   ├── RewardBanner.tsx         # k-lig kutlama banner'ı (rütbe atlama / puan eşiği / oyun ödülü — damga+konfeti animasyonu)
+│   ├── LeagueRewardsHost.tsx    # görülmemiş league_rewards kayıtlarını çekip tek birleşik RewardBanner gösteren sürücü
 │   ├── CountBadge.tsx           # ortak kırmızı sayaç rozeti (sekme başlıkları, "Arkadaşlar" satırı vb.)
 │   ├── MeaningModal.tsx         # kelime anlamı penceresi
 │   ├── RemainingTilesModal.tsx  # torbada kalan taşlar
@@ -123,6 +128,7 @@ src/
 │   ├── friendInvite.ts # bekleyen arkadaşlık davet token'ı için tek seferlik localStorage kuyruğu
 │   ├── csvExport.ts    # admin paneli tabloları/grafikleri için CSV indirme yardımcısı
 │   ├── leaguePoints.ts # k-lig puanı hesaplama (GameHistoryModal ve SharedGamePage ortak)
+│   ├── leagueRank.ts   # k-lig rütbe kademeleri (Çaylak→Destan eşikleri/renkleri — sunucudaki _award_league_rewards ile elle senkron)
 │   └── profileFields.ts # cinsiyet seçenekleri, GG/AA/YYYY ↔ ISO tarih dönüşümü (AuthModal ve AccountSettingsModal ortak)
 ├── hooks/
 │   ├── useAuth.tsx        # Supabase auth context

@@ -25,6 +25,7 @@ import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
 import { MoveHistoryModal } from './MoveHistoryModal';
 import { WildcardModal } from './WildcardModal';
 import { FeedbackModal } from './FeedbackModal';
+import { LeagueRewardsHost } from './LeagueRewardsHost';
 import { ChatModal, type ChatParticipant } from './ChatModal';
 import { Avatar } from './Avatar';
 import { Tile as TileComponent } from './Tile';
@@ -44,6 +45,7 @@ import { trLower } from '../utils/turkish';
 import { hasSeenChatIntro, markChatIntroSeen, getChatLastReadAt, markChatRead } from '../utils/onboarding';
 import {
   checkOnlineGameTurnTimeout,
+  createOnlineGame,
   fetchMeaning,
   fetchMyActiveChatReports,
   fetchMyChatMutes,
@@ -174,6 +176,18 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   const [showFeedback, setShowFeedback] = useState(false);
   const [gameOverDismissed, setGameOverDismissed] = useState(false);
   const [showPassConfirm, setShowPassConfirm] = useState(false);
+  /**
+   * Oyun bitince "Tekrar Oyna" akışı: onay → aynı kadroyla yeni bir Canlı
+   * oyun kur (insan koltuklarına davet gider) → sonuç. `error` dolu olan
+   * `sent` fazı sunucunun reddini (ör. artık arkadaş değilseniz) gösterir.
+   */
+  const [rematch, setRematch] = useState<
+    | { phase: 'confirm' }
+    | { phase: 'busy' }
+    | { phase: 'sent'; names: string[]; withAi: boolean }
+    | { phase: 'error'; message: string }
+    | null
+  >(null);
   const [pendingWild, setPendingWild] = useState<
     { r: number; c: number; rackIndex?: number; editing?: boolean } | null
   >(null);
@@ -836,6 +850,43 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     }
   };
 
+  /**
+   * "Tekrar Oyna": biten oyunun kadrosunu AYNEN yeni bir Canlı oyuna taşır.
+   * Sıra `create_online_game`'in üç kısıtına göre kuruluyor: (1) ilk koltuk
+   * ÇAĞIRAN olmak zorunda — biten oyunu ben kurmamış olabilirim, o yüzden
+   * kendimi başa alıyorum; (2) 4 kişilikte YZ yalnız son koltukta olabilir —
+   * insanları kendi aralarındaki sırayla koruyup YZ'leri sona yazmak bunu
+   * kendiliğinden sağlıyor; (3) 2 kişilikte YZ zaten olamaz (biten oyun
+   * geçerliyse yenisi de geçerli). `list_my_online_games`'in eklediği
+   * name/avatar/relation alanları RPC'ye GÖNDERİLMEZ — yalnız type+user_id.
+   */
+  const rematchSlots = (): OnlineGameSlot[] => {
+    const humans = game.slots.filter(
+      (s): s is Extract<OnlineGameSlot, { type: 'human' }> => s.type === 'human',
+    );
+    const ais = game.slots.filter((s) => s.type === 'ai');
+    return [
+      { type: 'human', user_id: myUserId },
+      ...humans.filter((s) => s.user_id !== myUserId).map((s) => ({ type: 'human' as const, user_id: s.user_id })),
+      ...ais.map(() => ({ type: 'ai' as const })),
+    ];
+  };
+
+  const opponentNames = game.slots
+    .filter((s) => s.type === 'human' && s.user_id !== myUserId)
+    .map((s) => (s.type === 'human' ? s.name ?? 'Bir arkadaşın' : ''));
+  const rematchHasAi = game.slots.some((s) => s.type === 'ai');
+
+  const handleRematch = async () => {
+    setRematch({ phase: 'busy' });
+    try {
+      await createOnlineGame(game.player_count as 2 | 4, rematchSlots());
+      setRematch({ phase: 'sent', names: opponentNames, withAi: rematchHasAi });
+    } catch (err) {
+      setRematch({ phase: 'error', message: err instanceof Error ? err.message : 'Davet gönderilemedi.' });
+    }
+  };
+
   const handleConfirmSwap = async () => {
     if (!canAct || busy || !me || state.swapSelection.length === 0) return;
     const letters = state.swapSelection.map((i) => me.rack[i].letter);
@@ -1014,10 +1065,10 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
             {!state.swapMode && (
               state.isGameOver ? (
                 <button
-                  onClick={onBack}
+                  onClick={() => setRematch({ phase: 'confirm' })}
                   className="btn-raised shrink-0 px-5 rounded-lg font-sans text-[15px] font-bold uppercase tracking-[1.2px] bg-accent text-white active:scale-[0.97]"
                 >
-                  Canlı Listesi
+                  Tekrar Oyna
                 </button>
               ) : (
                 <button
@@ -1149,6 +1200,63 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
                 Vazgeç
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {rematch && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+          <div className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none">
+            <p className="text-base font-bold text-text font-sans">Tekrar Oyna</p>
+            {rematch.phase === 'sent' ? (
+              <>
+                <p className="text-sm text-text font-sans leading-relaxed">Davetiniz gönderilmiştir.</p>
+                <p className="text-xs text-muted font-mono leading-relaxed">
+                  {rematch.names.join(', ')} yanıt verince oyun başlayacak.
+                  {rematch.withAi && ' 4. koltuk Yapay Zeka.'}
+                </p>
+                <button
+                  onClick={onBack}
+                  className="btn-raised py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+                >
+                  Tamam
+                </button>
+              </>
+            ) : rematch.phase === 'error' ? (
+              <>
+                <p className="text-sm text-red font-sans leading-relaxed">{rematch.message}</p>
+                <button
+                  onClick={() => setRematch(null)}
+                  className="btn-raised-neutral py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+                >
+                  Kapat
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-text font-sans leading-relaxed">
+                  {opponentNames.join(', ')} ile aynı kadroda yeni bir oyun açılacak ve davet
+                  gönderilecek.
+                  {rematchHasAi && ' 4. koltuk yine Yapay Zeka olacak.'} Emin misin?
+                </p>
+                <div className="flex gap-2 mt-1">
+                  <button
+                    disabled={rematch.phase === 'busy'}
+                    onClick={() => void handleRematch()}
+                    className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-35"
+                  >
+                    {rematch.phase === 'busy' ? 'Gönderiliyor…' : 'Tekrar Oyna'}
+                  </button>
+                  <button
+                    disabled={rematch.phase === 'busy'}
+                    onClick={() => setRematch(null)}
+                    className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-35"
+                  >
+                    Vazgeç
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -1316,6 +1424,12 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       />
 
       {showFeedback && <FeedbackModal source="game_end" onClose={() => setShowFeedback(false)} />}
+
+      {/* k-lig kutlama banner'ı — oyun sürerken bastırılır; oyun bitince
+          suppress düşer ve host otomatik kontrol edip bekleyen kutlamayı
+          gösterir (sunucu, games satırlarını bitişle aynı transaction'da
+          yazdığından ek bir gecikme/tetikleyici gerekmez). */}
+      <LeagueRewardsHost suppress={!state.isGameOver} />
     </div>
   );
 }
