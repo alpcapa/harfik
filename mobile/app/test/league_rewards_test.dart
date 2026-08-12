@@ -328,7 +328,7 @@ void main() {
             FakeStatsGatewayForRank(const {'rank': 4, 'total_score': 88})),
       );
 
-      expect(find.text('Rütben geriledi'), findsOneWidget);
+      expect(find.text('Rütben geriledi!'), findsOneWidget);
       expect(find.text('Kazandıkça geri yükselirsin!'), findsOneWidget);
       // Sayıya iyelik eki YOK — "100 eşiğinin altına" kalıbı.
       final para = tester.widget<Text>(find.byWidgetPredicate((w) =>
@@ -337,9 +337,12 @@ void main() {
       expect(para.textSpan!.toPlainText(),
           'Üzgünüz — puanın 100 eşiğinin altına indi. Yeni rütben: Meraklı');
       // Geri dönüş çubuğunun etiketleri: alt eşik 50, güncel 88, hedef 100.
+      // Hedefte YALNIZCA SAYI — "puan" kelimesi 12 Ağustos 2026'da kalktı
+      // (üstteki cümlede zaten geçiyor, alt alta tekrar oluyordu).
       expect(find.text('50'), findsOneWidget);
       expect(find.text('88'), findsOneWidget);
-      expect(find.text('100 puan'), findsOneWidget);
+      expect(find.text('100'), findsOneWidget);
+      expect(find.text('100 puan'), findsNothing);
       // İki ödül de ALINMIŞ → yeşil + ✓ (geri düşmek ödülü götürmez).
       final badges = tester.widgetList<RewardBadge>(find.byType(RewardBadge));
       expect([for (final b in badges) (b.reward, b.claimed)],
@@ -352,8 +355,8 @@ void main() {
       final gw = FakeRewardsGateway(rows: [rewardRow('rank_down', 100)]);
       await pumpHost(tester,
           gw: gw, stats: StatsRepo(FakeStatsGatewayForRank(null)));
-      expect(find.text('Rütben geriledi'), findsOneWidget);
-      expect(find.text('100 puan'), findsNothing);
+      expect(find.text('Rütben geriledi!'), findsOneWidget);
+      expect(find.byType(RankProgressBar), findsNothing);
     });
   });
 

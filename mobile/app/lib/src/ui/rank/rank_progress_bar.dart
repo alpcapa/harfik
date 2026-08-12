@@ -33,7 +33,10 @@ class RankProgressBar extends StatefulWidget {
   /// Sol etiket (mevcut/alt kademenin eşiği).
   final int fromThreshold;
 
-  /// Sağ etiket (hedef eşik) — "N puan" olarak yazılır.
+  /// Sağ etiket (hedef eşik) — YALNIZCA SAYI (12 Ağustos 2026, kullanıcı
+  /// kararı: ilk sürüm "N puan" yazıyordu; "puan" kelimesi hemen üstteki
+  /// "Sıradaki rütbe: … · N puan" satırında zaten geçtiğinden alt alta
+  /// tekrar oluyordu — sayı kalır, kelime kalkar).
   final int toThreshold;
 
   /// Ortadaki güncel toplam.
@@ -159,7 +162,7 @@ class _RankProgressBarState extends State<RankProgressBar>
               ),
             ),
             _EdgeLabel(
-              text: '${widget.toThreshold} puan',
+              text: '${widget.toThreshold}',
               reward: widget.toReward,
               claimed: widget.toClaimed,
               alignment: CrossAxisAlignment.end,

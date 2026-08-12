@@ -167,7 +167,7 @@ class _RewardBannerState extends State<RewardBanner>
                 ? '${s.milestone}'
                 : '+${s.rewardPoints}';
     final title = rankDown != null
-        ? 'Rütben geriledi'
+        ? 'Rütben geriledi!'
         : s.rankUpTier != null
             ? 'Yeni rütben: ${s.rankUpTier!.name}!'
             : s.milestone != null

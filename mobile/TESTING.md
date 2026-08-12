@@ -883,10 +883,10 @@ listesi kök `TESTING.md` bölüm 10.
       TEK banner çıkmalı: rütbe varsa başlık rütbe, ödül puanı yeşil
       satırda TOPLAM olarak.
 - [ ] **Mühür üç yerde ve aynı kademede.** k-lig listesi satırları (18px,
-      iç kesikli halkasız — harf OKUNABİLİR olmalı), Skor Kartı ve başka
-      bir oyuncunun kartı (34px, başlık ile ✕ ARASINDA ortalı, yazısız).
-      Üçü de GÜNCEL toplam puandan türetildiğinden aynı kademeyi
-      göstermeli.
+      iç kesikli halkasız ve DÜZ çemberli — harf OKUNABİLİR olmalı), Skor
+      Kartı ve başka bir oyuncunun kartı (34px, başlık ile ✕ ARASINDA
+      ortalı, yazısız, dış kenarı TIRTIKLI — noter mührü gibi). Üçü de
+      GÜNCEL toplam puandan türetildiğinden aynı kademeyi göstermeli.
 - [ ] **Mühür popup'ı.** Skor Kartı başlığındaki mühre dokun: damga
       animasyonuyla bilgi popup'ı açılmalı (kademe adı + puan + "+N eşik
       ödülü dahil" + sıradaki rütbe hedefi + hedefe AKAN ilerleme çubuğu;
@@ -902,10 +902,11 @@ listesi kök `TESTING.md` bölüm 10.
       geri gelir ama kutlama İKİNCİ kez ÇIKMAMALI, ödül İKİNCİ kez
       VERİLMEMELİ.
 - [ ] **Rütbe düşüş banner'ı.** Konfetisiz, üzgün banner ("Rütben
-      geriledi … Kazandıkça geri yükselirsin!") + kaybedilen eşiğe geri
-      dönüş çubuğu; hedef etiketi "100 puan" ve altında yeşil "(+10)"+tik
-      (ödül zaten alındı). Görülmemiş OLUMLU bir kutlamayla çakışırsa
-      yalnızca olumlu olan gösterilmeli.
+      geriledi! … Kazandıkça geri yükselirsin!") + kaybedilen eşiğe geri
+      dönüş çubuğu; hedef etiketi YALNIZCA SAYI ("100" — "puan" kelimesi
+      yok, o zaten bir üstteki "Sıradaki rütbe" satırında geçiyor) ve
+      altında yeşil "(+10)"+tik (ödül zaten alındı). Görülmemiş OLUMLU
+      bir kutlamayla çakışırsa yalnızca olumlu olan gösterilmeli.
 - [ ] **Misafirde hiç çıkmaz.** Girişsizken oyun bitir: banner
       görünmemeli, hiçbir ağ isteği atılmamalı. Sonradan giriş yapınca
       (kuyruk sunucuya işlendikten sonraki ilk kontrolde) kutlama

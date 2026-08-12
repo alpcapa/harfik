@@ -1740,6 +1740,33 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        `mobile/TESTING.md` bölüm 13 eklendi (web'in kök `TESTING.md` bölüm
        10'unun mobil eşleniği, artı "web'de görülen kutlama mobilde
        ÇIKMAMALI" çapraz maddesi).
+     - **AYNI GÜN, kullanıcının üç görsel düzeltmesi (ekran görüntüsüyle
+       geldi — üçü de İKİ platforma birden uygulandı, bkz. kök
+       `CLAUDE.md`):**
+       1. **Mührün dış kenarı TIRTIKLI** (referans: testere dişli
+          sertifika damgası) — 24 diş, uç 21.0 / vadi 18.8 viewBox
+          birimi, stroke 2.0. Üç sabit web `RankSeal.tsx` ile ELLE
+          senkron: web aynı üçlüyle bir `<polygon>` üretiyor, port
+          `Path`. **Kompakt mühür (k-lig satırları, <24px) BİLEREK DÜZ
+          çember kaldı** — 18px'te diş derinliği <1px'e düşüp alt-piksel
+          gürültüsüne dönüyor.
+       2. **İlerleme çubuğunun sağ etiketi yalnızca SAYI.** İlk sürüm
+          "100 puan" yazıyordu; "puan" kelimesi hemen ÜSTTEKİ "Sıradaki
+          rütbe: Oyuncu · 100 puan" satırında zaten geçtiğinden alt alta
+          tekrar oluyordu. **Sayının kendisi KALDI** — ilk denemede tüm
+          etiketi kaldırıp kullanıcıya düzelttirdim; istek "sonundaki
+          puan yazısını kaldır"dı, çubuğun eşiğini gizlemek değil.
+       3. **Düşüş banner'ının başlığına ünlem:** "Rütben geriledi!"
+     - **Doğrulama (düzeltmeler sonrası):** `flutter analyze` "No issues
+       found!"; **tam takım 350/350 yeşil** (yeni test eklenmedi, mevcut
+       üç assertion güncellendi: `find.text('Rütben geriledi!')`,
+       `find.text('100')` + `find.text('100 puan')` findsNothing, ve
+       "çubuk gizli" testi artık `find.byType(RankProgressBar)` yokluğunu
+       ölçüyor — eşik metnine bağlı olmadığından etiket bir daha değişirse
+       yanlış yeri işaret etmez). Ekran görüntüsü
+       `build/screenshots/rank_info_modal.png` yeniden üretilip gözle
+       kontrol edildi (tırtıklı mavi mühür, `50` / `83` / `100`
+       etiketleri, solda yeşil `(+5)✓`, sağda gri `(+10)`).
 
 ## Sonraya Bırakılan İşler (mobil)
 
