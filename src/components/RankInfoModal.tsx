@@ -111,7 +111,7 @@ export function RankInfoModal({ tier, totalScore, bonusPoints, onClose }: RankIn
                   <span>{tier.threshold}</span>
                   {tier.reward > 0 &&
                     (rewardAlreadyClaimed(tier, bonusPoints) ? (
-                      <span className="text-green font-bold">(+{tier.reward})✓</span>
+                      <span className="text-green font-bold">(+{tier.reward})<span className="text-[13px] leading-none align-middle">✓</span></span>
                     ) : (
                       <span className="font-bold">(+{tier.reward})</span>
                     ))}
@@ -121,7 +121,7 @@ export function RankInfoModal({ tier, totalScore, bonusPoints, onClose }: RankIn
                   <span>{nextTier.threshold} puan</span>
                   {nextTier.reward > 0 &&
                     (rewardAlreadyClaimed(nextTier, bonusPoints) ? (
-                      <span className="text-green font-bold">(+{nextTier.reward})✓</span>
+                      <span className="text-green font-bold">(+{nextTier.reward})<span className="text-[13px] leading-none align-middle">✓</span></span>
                     ) : (
                       <span className="font-bold">(+{nextTier.reward})</span>
                     ))}
