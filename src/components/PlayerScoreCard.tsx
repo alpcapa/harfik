@@ -7,6 +7,8 @@ import { Avatar } from './Avatar';
 import { GameHistoryModal } from './GameHistoryModal';
 import { Leaderboard } from './Leaderboard';
 import { KLigMark } from './KLigMark';
+import { RankSeal } from './RankSeal';
+import { tierFor } from '../utils/leagueRank';
 import { HowToRegIcon, PersonAddIcon } from './RelationIcons';
 import { useAuth } from '../hooks/useAuth';
 import { useModalA11y } from '../hooks/useModalA11y';
@@ -196,14 +198,18 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
   const name = memberDisplayName(member);
   const stats = statsByTab[tab];
   const totalScore = statsByTab.all?.total_score ?? 0;
+  // Rütbe mührü — ScoreCard'daki aynı kural (rank_tier düşmez; yüklenene
+  // kadar gizli).
+  const rankTier = statsByTab.all !== undefined ? tierFor(statsByTab.all?.rank_tier) : null;
 
   return (
     <Modal title="Skor Kartı" onClose={onClose}>
       <div className="mb-4 flex items-center gap-3">
         <Avatar url={member.avatar_url ?? undefined} name={name} size={44} />
-        <div className="min-w-0 flex-1 flex items-center gap-2">
-          <div className="text-base font-bold text-text truncate">{name}</div>
-          {showFriendButton && (
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <div className="text-base font-bold text-text truncate">{name}</div>
+            {showFriendButton && (
             <button
               type="button"
               onClick={() => setShowFriendConfirm(true)}
@@ -222,6 +228,15 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
             >
               {relation === 'accepted' ? <HowToRegIcon /> : <PersonAddIcon />}
             </button>
+          )}
+          </div>
+          {rankTier && (
+            <div className="flex items-center gap-1 mt-0.5">
+              <RankSeal tier={rankTier} size={14} />
+              <span className="text-[10px] font-mono font-bold" style={{ color: rankTier.color }}>
+                {rankTier.name}
+              </span>
+            </div>
           )}
         </div>
         <button

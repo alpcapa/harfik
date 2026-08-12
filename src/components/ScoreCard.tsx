@@ -5,6 +5,8 @@ import { Avatar } from './Avatar';
 import { GameHistoryModal } from './GameHistoryModal';
 import { Leaderboard } from './Leaderboard';
 import { KLigMark } from './KLigMark';
+import { RankSeal } from './RankSeal';
+import { tierFor } from '../utils/leagueRank';
 import { fetchPlayerStats, fetchMyLeaderboardRank } from '../lib/api';
 import type { PlayerStats, MyLeaderboardRank, Gender } from '../lib/database.types';
 import { useAuth } from '../hooks/useAuth';
@@ -73,6 +75,9 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
   const stats = statsByTab[tab];
 
   const totalScore = statsByTab.all?.total_score ?? 0;
+  // Rütbe mührü — ulaşılan en yüksek kademe (player_stats_overall.rank_tier,
+  // puan gerilese de düşmez). Genel istatistik henüz yüklenmediyse gizli.
+  const rankTier = statsByTab.all !== undefined ? tierFor(statsByTab.all?.rank_tier) : null;
 
   return (
     <Modal title="Skor Kartı" onClose={onClose}>
@@ -80,6 +85,14 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
         <Avatar url={profile?.avatar_url} name={name} size={44} />
         <div className="min-w-0 flex-1">
           <div className="text-base font-bold text-text truncate">{name}</div>
+          {rankTier && (
+            <div className="flex items-center gap-1 mt-0.5">
+              <RankSeal tier={rankTier} size={14} />
+              <span className="text-[10px] font-mono font-bold" style={{ color: rankTier.color }}>
+                {rankTier.name}
+              </span>
+            </div>
+          )}
           {ageGenderLabel && (
             <div className="text-xs font-mono text-muted">{ageGenderLabel}</div>
           )}

@@ -25,6 +25,7 @@ import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
 import { MoveHistoryModal } from './MoveHistoryModal';
 import { WildcardModal } from './WildcardModal';
 import { FeedbackModal } from './FeedbackModal';
+import { LeagueRewardsHost } from './LeagueRewardsHost';
 import { ChatModal, type ChatParticipant } from './ChatModal';
 import { Avatar } from './Avatar';
 import { Tile as TileComponent } from './Tile';
@@ -1423,6 +1424,12 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       />
 
       {showFeedback && <FeedbackModal source="game_end" onClose={() => setShowFeedback(false)} />}
+
+      {/* k-lig kutlama banner'ı — oyun sürerken bastırılır; oyun bitince
+          suppress düşer ve host otomatik kontrol edip bekleyen kutlamayı
+          gösterir (sunucu, games satırlarını bitişle aynı transaction'da
+          yazdığından ek bir gecikme/tetikleyici gerekmez). */}
+      <LeagueRewardsHost suppress={!state.isGameOver} />
     </div>
   );
 }

@@ -461,6 +461,8 @@ export interface LeaderboardRow {
   total_score: number;
   games_played: number;
   wins: number;
+  /** Ulaşılan en yüksek rütbe eşiği (0=Çaylak) — satırdaki mühür rozeti için. */
+  rank_tier: number;
 }
 
 export interface MyLeaderboardRank {
@@ -503,6 +505,37 @@ export interface PlayerStats {
   total_score: number;
   /** Oyuncunun bitirmeden terk ettiği (teslim olduğu) oyun sayısı. */
   surrendered_count: number;
+  /**
+   * Ulaşılan en yüksek rütbe eşiği (0=Çaylak, 25/100/200/500/1000 —
+   * `league_rewards.kind='rank_up'` satırlarının max threshold'u; rütbe
+   * düşmediğinden puan gerilese de sabit kalır). YALNIZCA
+   * `player_stats_overall` view'ında var — mod bazlı `player_stats`
+   * satırlarında undefined (ödül/rütbe moda bölünemez).
+   */
+  rank_tier?: number;
+  /**
+   * total_score'a dahil edilen toplam oyun ödülü puanı (games_reward
+   * satırlarının toplamı) — UI'da "Genel = sekmelerin toplamı + ödül"
+   * farkını açıklamak için. Yalnızca `player_stats_overall`'da var.
+   */
+  bonus_points?: number;
+}
+
+/**
+ * k-lig ödül/rütbe kayıtları (`league_rewards` tablosu) — üç tür:
+ * `games_reward` (kademeli tamamlanan-oyun ödülü, points>0),
+ * `points_milestone` (her 100 puan kutlaması, points=0),
+ * `rank_up` (rütbe eşiği aşımı, points=0). `seen_at` kutlama banner'ının
+ * cihazdan bağımsız "bir kez göster" işareti (bkz. LeagueRewardsHost).
+ */
+export interface LeagueReward {
+  id: string;
+  user_id: string;
+  kind: 'games_reward' | 'points_milestone' | 'rank_up';
+  threshold: number;
+  points: number;
+  seen_at: string | null;
+  created_at: string;
 }
 
 // ── Admin paneli ────────────────────────────────────────────────────────────

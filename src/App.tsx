@@ -8,6 +8,7 @@ import { UserMenu } from './components/UserMenu';
 import { Setup } from './components/Setup';
 import { AddToHomeScreen } from './components/AddToHomeScreen';
 import { LandscapeHint } from './components/LandscapeHint';
+import { LeagueRewardsHost, requestLeagueRewardCheck } from './components/LeagueRewardsHost';
 import { MeaningModal } from './components/MeaningModal';
 import { RemainingTilesModal } from './components/RemainingTilesModal';
 import { MoveHistoryModal } from './components/MoveHistoryModal';
@@ -804,7 +805,11 @@ export default function App() {
     if (!state.isGameOver || state.phase !== 'play') return;
     if (state.players[0]?.surrendered) return;
     const record = buildGameRecord(state, false);
-    if (record) void saveGameDurable(record);
+    // Kayıt sunucuya düşünce k-lig ödül kontrolü — games INSERT trigger'ı
+    // (`games_award_league_rewards`) ödülü aynı transaction'da açtığından
+    // hemen ardından çekmek güvenli. Misafirde kayıt kuyruğa girer, kontrol
+    // boş döner; ödül girişten sonraki flush'ta açılıp ilk kontrolde görünür.
+    if (record) void saveGameDurable(record).then(() => requestLeagueRewardCheck());
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.isGameOver]);
 
@@ -951,6 +956,9 @@ export default function App() {
         </main>
         <AddToHomeScreen />
         <LandscapeHint />
+        {/* k-lig kutlama banner'ı — Setup'ta her zaman gösterilebilir
+            (girişte/geçmişe dönük backfill'de bekleyen ödüller burada çıkar). */}
+        <LeagueRewardsHost />
         {showContactFeedback && (
           <FeedbackModal
             source="general"
@@ -1586,6 +1594,10 @@ export default function App() {
         />
       )}
       <LandscapeHint />
+      {/* k-lig kutlama banner'ı — oyun SÜRERKEN bastırılır (odak çalmasın),
+          oyun bitince suppress düşer ve bekleyen kutlama otomatik gösterilir
+          (oyun-bitti kaydının ardından requestLeagueRewardCheck de tetikler). */}
+      <LeagueRewardsHost suppress={state.phase === 'play' && !state.isGameOver} />
     </div>
   );
 }

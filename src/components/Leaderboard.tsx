@@ -7,6 +7,8 @@ import type { LeaderboardRow, MyLeaderboardRank } from '../lib/database.types';
 import { useAuth } from '../hooks/useAuth';
 import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
 import { KLigMark } from './KLigMark';
+import { RankSeal } from './RankSeal';
+import { tierFor } from '../utils/leagueRank';
 import { shortDisplayName } from '../utils/profileFields';
 
 interface LeaderboardProps {
@@ -151,6 +153,9 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                         className="mr-1 shrink-0"
                       />
                       <span className="flex-1 truncate text-text">{name}</span>
+                      {/* Rütbe mührü — ulaşılan en yüksek kademe (düşmez),
+                          bkz. leagueRank.ts / league_rewards.rank_up. */}
+                      <RankSeal tier={tierFor(r.rank_tier)} size={17} className="shrink-0 mr-0.5" />
                       <span className="w-12 text-right font-bold text-accent shrink-0">
                         {r.total_score?.toLocaleString('tr-TR') ?? '—'}
                       </span>

@@ -341,3 +341,32 @@ uydurma bir Türkçe cümleyle gizlemek hata ayıklamayı imkânsız kılardı.
       "cevap için tıklayın" ile gel, mesaj gönder: gönderim sonrası
       **üyelik teklifi çıkmamalı**, yalnızca teşekkür + "Kapat". (Uygulama
       içinden — oyun sonu, Terms/Privacy — açılan formda teklif hâlâ çıkar.)
+
+## 10. k-lig ödül & rütbe sistemi
+
+Ödül/rütbe kayıtları sunucuda, `games` tablosuna satır ekleyen bir trigger'la
+(`games_award_league_rewards`) açılır; kutlama banner'ının "bir kez göster"
+garantisi `league_rewards.seen_at` ile cihazdan bağımsızdır. Bu zincirin
+büyük kısmı otomatik test edilemiyor (gerçek oturum + gerçek oyun bitişi
+gerekiyor).
+
+- [ ] **Kutlama banner'ı bir kez çıkar.** Görülmemiş bir ödülün varken
+      (test için bir satırın `seen_at`'i SQL'le null'a çekilebilir) siteye
+      gir: mühür damgalı, konfetili banner ekranın ORTASINDA, karartılmış
+      arka planla çıkmalı. "Devam"dan sonra sayfa yenilense de, BAŞKA bir
+      cihazdan girilse de bir daha çıkmamalı.
+- [ ] **Banner oyun ortasında çıkmaz.** Devam eden bir YZ/Canlı oyunun
+      ekranındayken banner asla belirmemeli; oyun bitince (ya da Setup'a
+      dönünce) bekleyen kutlama kendiliğinden gösterilmeli.
+- [ ] **Birleşik özet.** Aynı anda birden fazla görülmemiş kayıt varken
+      (ör. geçmişe dönük backfill) TEK banner çıkmalı: rütbe varsa başlık
+      rütbe, ödül puanı yeşil satırda toplam olarak.
+- [ ] **Ödül toplama doğru.** 50. tamamlanan oyun bitince +5 gelmeli;
+      teslim/terkle biten oyunlar sayacı İLERLETMEMELİ (surrendered satır).
+      Skor Kartı > Genel'de "Toplam puana +N oyun ödülü dahildir." notu ve
+      "Genel = 2 kişilik + 4 kişilik + ödül" toplamı tutmalı.
+- [ ] **Rütbe düşmez.** -2 ceza alıp eşiğin altına inen bir hesabın mührü
+      (k-lig listesi, Skor Kartı, PlayerScoreCard) aynı kademede kalmalı.
+- [ ] **k-lig sırası tutarlı.** Listedeki sıra/puan (leaderboard view) ile
+      "senin sıran" satırı (my_leaderboard_rank RPC) aynı toplamı (ödül
+      dahil) göstermeli.
