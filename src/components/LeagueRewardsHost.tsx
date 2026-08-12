@@ -33,15 +33,13 @@ export function requestLeagueRewardCheck() {
 
 function buildSummary(rows: LeagueReward[]): RewardSummary {
   let rewardPoints = 0;
-  let rewardGamesThreshold: number | undefined;
+  let rewardThreshold: number | undefined;
   let rankUpThreshold: number | undefined;
   let milestone: number | undefined;
   for (const r of rows) {
-    if (r.kind === 'games_reward') {
+    if (r.kind === 'points_reward') {
       rewardPoints += r.points;
-      if (!rewardGamesThreshold || r.threshold > rewardGamesThreshold) {
-        rewardGamesThreshold = r.threshold;
-      }
+      if (!rewardThreshold || r.threshold > rewardThreshold) rewardThreshold = r.threshold;
     } else if (r.kind === 'rank_up') {
       if (!rankUpThreshold || r.threshold > rankUpThreshold) rankUpThreshold = r.threshold;
     } else if (r.kind === 'points_milestone') {
@@ -52,7 +50,7 @@ function buildSummary(rows: LeagueReward[]): RewardSummary {
     rankUpTier: rankUpThreshold ? tierFor(rankUpThreshold) : undefined,
     milestone,
     rewardPoints,
-    rewardGamesThreshold,
+    rewardThreshold,
   };
 }
 

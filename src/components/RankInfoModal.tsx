@@ -71,7 +71,7 @@ export function RankInfoModal({ tier, totalScore, bonusPoints, onClose }: RankIn
           </p>
           {bonusPoints > 0 && (
             <p className="reward-line-anim font-mono text-[11px] font-bold text-green mt-1">
-              +{bonusPoints} oyun ödülü dahil
+              +{bonusPoints} eşik ödülü dahil
             </p>
           )}
           <p className="text-[11px] font-mono text-muted mt-2">
@@ -101,10 +101,21 @@ export function RankInfoModal({ tier, totalScore, bonusPoints, onClose }: RankIn
                   }}
                 />
               </div>
+              {/* Eşik etiketlerinin altında o eşiğin tek seferlik ödülü —
+                  12 Ağustos 2026'dan beri ödüller puan eşiğine bağlı
+                  (RankTier.reward), etiket bu yüzden dürüst. */}
               <div className="flex justify-between text-[9px] font-mono text-muted mt-0.5">
-                <span>{tier.threshold}</span>
+                <span className="flex flex-col items-start leading-tight">
+                  <span>{tier.threshold}</span>
+                  {tier.reward > 0 && <span className="text-green font-bold">(+{tier.reward})</span>}
+                </span>
                 <span className="font-bold text-text">{totalScore}</span>
-                <span>{nextTier.threshold}</span>
+                <span className="flex flex-col items-end leading-tight">
+                  <span>{nextTier.threshold}</span>
+                  {nextTier.reward > 0 && (
+                    <span className="text-green font-bold">(+{nextTier.reward})</span>
+                  )}
+                </span>
               </div>
             </div>
           )}

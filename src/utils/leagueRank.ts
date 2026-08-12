@@ -23,15 +23,22 @@ export interface RankTier {
   color: string;
   /** Bu kademeye ulaşmak için gereken k-lig puanı. */
   threshold: number;
+  /**
+   * Bu puan eşiğine İLK ulaşmada verilen tek seferlik ödül puanı (12 Ağustos
+   * 2026'dan beri ödüller oyun sayısına değil puan eşiğine bağlı —
+   * `points_threshold_rewards` migration'ı). Çaylak'ta 0. Verilmiş ödül,
+   * puan sonradan eşiğin altına inse de geri alınmaz.
+   */
+  reward: number;
 }
 
 export const RANK_TIERS: RankTier[] = [
-  { name: 'Çaylak', letter: 'Ç', color: '#8A93A2', threshold: 0 },
-  { name: 'Meraklı', letter: 'M', color: '#2563EB', threshold: 50 },
-  { name: 'Oyuncu', letter: 'O', color: '#16A34A', threshold: 100 },
-  { name: 'Usta', letter: 'U', color: '#B7791F', threshold: 200 },
-  { name: 'Şampiyon', letter: 'Ş', color: '#F2650F', threshold: 500 },
-  { name: 'Destan', letter: 'D', color: '#DC2626', threshold: 1000 },
+  { name: 'Çaylak', letter: 'Ç', color: '#8A93A2', threshold: 0, reward: 0 },
+  { name: 'Meraklı', letter: 'M', color: '#2563EB', threshold: 50, reward: 5 },
+  { name: 'Oyuncu', letter: 'O', color: '#16A34A', threshold: 100, reward: 10 },
+  { name: 'Usta', letter: 'U', color: '#B7791F', threshold: 200, reward: 25 },
+  { name: 'Şampiyon', letter: 'Ş', color: '#F2650F', threshold: 500, reward: 50 },
+  { name: 'Destan', letter: 'D', color: '#DC2626', threshold: 1000, reward: 100 },
 ];
 
 /**

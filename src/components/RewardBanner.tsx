@@ -19,10 +19,11 @@ export interface RewardSummary {
   rankUpTier?: RankTier;
   /** Ulaşılan en yüksek puan kilometre taşı (100/200/300…, varsa). */
   milestone?: number;
-  /** Kazanılan toplam oyun ödülü puanı (0 = yok). */
+  /** Kazanılan toplam eşik ödülü puanı (0 = yok). */
   rewardPoints: number;
-  /** Ödülü tetikleyen en yüksek tamamlanan-oyun eşiği (50/100/250/500/1000). */
-  rewardGamesThreshold?: number;
+  /** Ödülü tetikleyen en yüksek PUAN eşiği (50/100/200/500/1000 — 12 Ağustos
+   * 2026'dan beri ödüller oyun sayısına değil puan eşiğine bağlı). */
+  rewardThreshold?: number;
 }
 
 // Konfeti parçacıkları — merkezden dışa savrulan 8 nokta (CSS değişkenleriyle
@@ -51,10 +52,10 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  const { rankUpTier, milestone, rewardPoints, rewardGamesThreshold } = summary;
+  const { rankUpTier, milestone, rewardPoints, rewardThreshold } = summary;
 
-  // Öncelik: rütbe atlama > kilometre taşı > yalnızca oyun ödülü.
-  const tier = rankUpTier ?? tierFor(milestone ?? 0);
+  // Öncelik: rütbe atlama > kilometre taşı > yalnızca eşik ödülü.
+  const tier = rankUpTier ?? tierFor(milestone ?? rewardThreshold ?? 0);
   const glyph = rankUpTier
     ? rankUpTier.letter
     : milestone
@@ -64,7 +65,11 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
     ? `Yeni rütben: ${rankUpTier.name}!`
     : milestone
       ? `${milestone} k-lig puanına ulaştın!`
-      : 'Oyun ödülü kazandın!';
+      : 'Eşik ödülü kazandın!';
+  // "X k-lig puanına ulaştın" alt satırı — ulaşılan en yüksek eşik (rütbe/
+  // kilometre taşı/ödül hangisi büyükse). Başlık zaten aynı bilgiyi veren
+  // milestone-only durumda tekrarlanmaz.
+  const reachedPoints = Math.max(rankUpTier?.threshold ?? 0, milestone ?? 0, rewardThreshold ?? 0);
 
   return (
     <div
@@ -87,9 +92,9 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
             <RankSeal tier={tier} glyph={glyph} size={76} />
           </div>
           <h2 className="text-base font-bold text-text">{title}</h2>
-          {rankUpTier && milestone ? (
+          {(rankUpTier || (!milestone && rewardThreshold)) && reachedPoints > 0 ? (
             <p className="text-[11px] font-mono text-muted mt-1">
-              {milestone} k-lig puanına ulaştın
+              {reachedPoints} k-lig puanına ulaştın
             </p>
           ) : null}
           {rewardPoints > 0 && (
@@ -97,11 +102,6 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
               +{rewardPoints} ödül puanı eklendi
             </p>
           )}
-          {rewardPoints > 0 && rewardGamesThreshold ? (
-            <p className="text-[11px] font-mono text-muted mt-1">
-              {rewardGamesThreshold} oyun tamamladın
-            </p>
-          ) : null}
           <button
             type="button"
             onClick={onClose}

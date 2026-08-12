@@ -361,13 +361,15 @@ gerekiyor).
 - [ ] **Birleşik özet.** Aynı anda birden fazla görülmemiş kayıt varken
       (ör. geçmişe dönük backfill) TEK banner çıkmalı: rütbe varsa başlık
       rütbe, ödül puanı yeşil satırda toplam olarak.
-- [ ] **Ödül toplama doğru.** 50. tamamlanan oyun bitince +5 gelmeli;
-      teslim/terkle biten oyunlar sayacı İLERLETMEMELİ (surrendered satır).
-      "Genel = 2 kişilik + 4 kişilik + ödül" toplamı tutmalı.
+- [ ] **Ödül toplama doğru.** 50 k-lig puanına İLK ulaşmada +5 eklenmeli
+      (toplam 55 olur); puan -2 cezalarıyla eşiğin altına inse de verilmiş
+      ödül GERİ ALINMAMALI. "Genel = 2 kişilik + 4 kişilik + ödül" toplamı
+      tutmalı.
 - [ ] **Mühür popup'ı.** Skor Kartı başlığı ile ✕ arasında ortalanmış büyük
       mühre dokun: damga animasyonuyla bilgi popup'ı açılmalı (kademe adı +
-      puan + "+N oyun ödülü dahil" + sıradaki rütbe hedefi + hedefe akan
-      ilerleme çubuğu; en üst kademede çubuk yok) ve İSTENDİĞİ KADAR
+      puan + "+N eşik ödülü dahil" + sıradaki rütbe hedefi + hedefe akan
+      ilerleme çubuğu, eşiklerin altında yeşil "(+5)"/"(+10)" ödül
+      etiketleri; en üst kademede çubuk yok) ve İSTENDİĞİ KADAR
       tekrar açılabilmeli (kutlamanın aksine "bir kez göster" kuralı yok).
       Başkasının kartında da (PlayerScoreCard) aynı mühür/popup çalışmalı.
 - [ ] **Rütbe düşmeli.** -2 ceza alıp eşiğin altına inen bir hesabın mührü

@@ -529,7 +529,8 @@ export interface PlayerStats {
 
 /**
  * k-lig ödül/rütbe kayıtları (`league_rewards` tablosu) — üç tür:
- * `games_reward` (kademeli tamamlanan-oyun ödülü, points>0),
+ * `points_reward` (puan eşiği ödülü — rütbe eşikleriyle aynı liste, 50→+5 …
+ * 1000→+100; 12 Ağustos 2026'ya kadar oyun sayısına bağlı `games_reward`dı),
  * `points_milestone` (her 100 puan kutlaması, points=0),
  * `rank_up` (rütbe eşiği aşımı, points=0). `seen_at` kutlama banner'ının
  * cihazdan bağımsız "bir kez göster" işareti (bkz. LeagueRewardsHost).
@@ -537,7 +538,7 @@ export interface PlayerStats {
 export interface LeagueReward {
   id: string;
   user_id: string;
-  kind: 'games_reward' | 'points_milestone' | 'rank_up';
+  kind: 'points_reward' | 'points_milestone' | 'rank_up';
   threshold: number;
   points: number;
   seen_at: string | null;
