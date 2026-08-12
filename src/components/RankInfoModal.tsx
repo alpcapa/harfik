@@ -48,17 +48,34 @@ export function RankInfoModal({ tier, totalScore, bonusPoints, onClose }: RankIn
       }`}
       onClick={onClose}
     >
+      {/* Gölge `shadow-raised` DEĞİL, `Modal.tsx`'in düz düşen gölgesi (12
+          Ağustos 2026, kullanıcı bildirdi). `shadow-raised`in sol-üst beyaz
+          parıltısı (-2 -2 5 rgba(255,255,255,.85)) nömorfik YÜZEYLER için
+          tasarlandı; karartılmış zeminin (bg-black/40) üstünde yüzen bir
+          kartta çirkin bir hale olarak okunuyordu. RewardBanner'ın kartı da
+          aynı gün aynı gölgeye çekildi — ikisi aynı kart. */}
       <div
         ref={ref}
         role="dialog"
         aria-modal="true"
         aria-label="Rütbe bilgisi"
-        className={`relative w-[280px] max-w-full bg-bg border border-border rounded-2xl px-6 pt-6 pb-5 text-center shadow-raised ${
+        className={`relative w-[280px] max-w-full bg-bg border border-border rounded-2xl px-6 pt-6 pb-5 text-center shadow-[0_20px_45px_rgba(15,23,42,0.5)] ${
           visible ? 'reward-play' : ''
         }`}
         style={{ opacity: visible ? undefined : 0 }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Kapatma: kocaman bir "KAPAT" butonu yerine sağ üstte ✕ (12
+            Ağustos 2026, kullanıcı isteği) — projedeki tüm modallerin
+            (Modal.tsx) kapatma deseni bu; stil oradan birebir alındı. */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Kapat"
+          className="absolute top-2 right-2 text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform focus:outline-none"
+        >
+          ✕
+        </button>
         <div className="reward-card-anim">
           <div className="reward-seal-anim mx-auto mb-2.5 w-[88px] h-[88px] rounded-full bg-panel shadow-raised flex items-center justify-center">
             <RankSeal tier={tier} size={76} />
@@ -134,13 +151,6 @@ export function RankInfoModal({ tier, totalScore, bonusPoints, onClose }: RankIn
               </div>
             </div>
           )}
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn-raised bg-accent text-white border border-accent rounded-md font-sans text-sm font-bold uppercase tracking-[1px] px-8 py-2 mt-4 active:scale-[0.97] transition-transform"
-          >
-            Kapat
-          </button>
         </div>
       </div>
     </div>,

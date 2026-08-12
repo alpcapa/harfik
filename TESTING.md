@@ -366,8 +366,8 @@ gerekiyor).
       ödül GERİ ALINMAMALI. "Genel = 2 kişilik + 4 kişilik + ödül" toplamı
       tutmalı.
 - [ ] **Mühür popup'ı.** Skor Kartı başlığı ile ✕ arasında ortalanmış büyük
-      mühre (dış kenarı TIRTIKLI — noter mührü gibi; k-lig listelerindeki
-      18px'lik küçük mühür ise DÜZ çember) dokun: damga animasyonuyla bilgi popup'ı açılmalı (kademe adı +
+      mühre (dış kenarı TIRTIKLI — noter mührü gibi) dokun: damga
+      animasyonuyla bilgi popup'ı açılmalı (kademe adı +
       puan + "+N eşik ödülü dahil" + sıradaki rütbe hedefi + hedefe akan
       ilerleme çubuğu; en üst kademede çubuk yok). Çubuk etiketleri: sol
       eşiğin ödülü YEŞİL "(+5)✓" (alınmış), hedef eşiğin ödülü GRİ "(+10)"
@@ -375,6 +375,19 @@ gerekiyor).
       KADAR
       tekrar açılabilmeli (kutlamanın aksine "bir kez göster" kuralı yok).
       Başkasının kartında da (PlayerScoreCard) aynı mühür/popup çalışmalı.
+- [ ] **Popup'ta ✕ var, "KAPAT" butonu YOK.** Kapatma yalnızca sağ üstteki
+      ✕ (ve Escape / karartılmış zemine dokunma) ile — kartın altında tam
+      genişlikte bir buton OLMAMALI. Kutlama/düşüş banner'ında ise "DEVAM"
+      butonu KALMALI (o gerçek bir aksiyon: ödülleri görüldü işaretler).
+- [ ] **Kart gölgesinde beyaz hale yok.** Hem bilgi popup'ının hem kutlama/
+      düşüş banner'ının kartı karartılmış zeminde yalnızca yumuşak, koyu
+      bir düşen gölge taşımalı — sol/üst kenarda beyaz bir parıltı (nömorfik
+      `shadow-raised`) GÖRÜNMEMELİ. İkisi aynı kart, biri değişirse öteki de.
+- [ ] **Küçük rozetler de tırtıklı.** k-lig listesi/Skor Kartı satırlarındaki
+      18-20px'lik mühürlerin dış kenarı da testere dişli olmalı (büyük
+      mühürle aynı siluet, 24 diş) — düz çember GÖRÜNMEMELİ. Dişler
+      telefonda net ayrışmalı, harf (özellikle Ç/Ş sedillası) tırtığa
+      DEĞMEMELİ. Fark: küçük mühürde iç kesikli halka yok, harf daha büyük.
 - [ ] **Rütbe düşmeli.** -2 ceza alıp eşiğin altına inen bir hesabın mührü
       (k-lig listesi, Skor Kartı, PlayerScoreCard) bir alt kademeye İNMELİ —
       üç yer de aynı kademeyi göstermeli (hepsi güncel `total_score`'dan
