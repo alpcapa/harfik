@@ -2346,12 +2346,38 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        `TESTING.md`'deki ilgili madde bu iki şeyi birlikte soracak şekilde
        yeniden yazıldı.
 
-   - ✅ **Parça 70 — düşüş banner'ının başlığına üzgün emoji (12 Ağustos
-     2026, `reward_banner.dart` + web `RewardBanner.tsx`):** Kullanıcı,
-     T1 turunu onayladıktan sonra: *"Rütben Geriledi!'nin yanına üzgün
-     emoji koyabiliriz."* Başlık `'Rütben geriledi! 😔'` oldu (pensive
-     face — "Üzgünüz…" alt satırının nazik tonuyla eşleşiyor; 😢 fazla
-     dramatik kalırdı).
+   - ✅ **Parça 70 — banner başlıklarına emoji + KARTIN GENİŞLİĞİ web'den
+     sapmış çıktı (12 Ağustos 2026, `reward_banner.dart` + web
+     `RewardBanner.tsx`):** Kullanıcı iki turda istedi: önce *"Rütben
+     Geriledi!'nin yanına üzgün emoji"*, ardından *"👏 bunu rütbe
+     yükseltmeye, 🎉 bunu da 100'lerde koyabiliriz"*. Üç başlık:
+     `'Rütben geriledi! 😔'` (pensive — "Üzgünüz…" alt satırının nazik
+     tonuyla eşleşiyor; 😢 fazla dramatik kalırdı),
+     `'Yeni rütben: X! 👏'`, `'N k-lig puanına ulaştın! 🎉'`. Dördüncü
+     varyant (`'Eşik ödülü kazandın!'`) BİLEREK emojisiz kaldı — kullanıcı
+     onu saymadı ve pratikte neredeyse hiç görünmüyor (rütbe/kilometre
+     taşı olmadan tek başına ödül).
+     - **Aynı turda "100'lerde de X olmalı" isteği zaten karşılanmıştı:**
+       DEVAM butonu ortak düzendeydi, Parça 69'da kaldırılınca dört
+       varyanttan birden kalkmıştı.
+     - **GERÇEK BULGU — kartın genişliği web'den sapmış, ✕ dışarı
+       taşıyordu:** kutlama ekran görüntüsüne bakınca ✕'in kartın DIŞINDA,
+       gri zeminde durduğu görüldü. Ölçüm sebebi verdi: web'de kart
+       `w-[280px]` ile HER ZAMAN 280, portta ise Stack'in
+       konumlandırılmamış çocuğu GEVŞEK kısıt aldığından **içeriğe göre
+       büzülüyordu** (kutlama 238.5, düşüş 280 — düşüş kartı ilerleme
+       çubuğu sayesinde 280'e ulaştığından orada görünmüyordu).
+       `Positioned(right: 8)` Stack'e göre konumlandığı için dar kartta ✕
+       dışarı düşüyordu. **Bu sapma ✕'ten ÖNCE de vardı**, yalnızca
+       ölçülecek bir kenar olmadığından görünmüyordu. Düzeltme yamayla
+       (✕'i kaydırmak) değil web'e hizalayarak: `width: double.infinity`.
+     - **Ders:** bir ekran görüntüsünü "emoji çıktı mı" diye açıp
+       geçmeyin — Parça 69'un ✕'ini DÜŞÜŞ görüntüsünde doğrulamıştım ve
+       "tamam" demiştim; aynı ✕ KUTLAMA varyantında bozuktu. Bir bileşenin
+       tek varyantını görmek onu doğrulamaz.
+     - **Regresyon testi:** kart genişliğinin 280 olduğu ve ✕'in kart
+       sınırları İÇİNDE kaldığı artık ölçülerek doğrulanıyor (kutlama
+       varyantında — bozuk olan oydu).
      - **Tek satırlık iş DEĞİL — bu projenin ÜÇ KEZ düştüğü tuzağa
        değiyor:** Flutter, tarayıcının aksine **otomatik font fallback
        YAPMAZ**; gömülü SpaceGrotesk'te bu glyph olmadığından fallback'siz

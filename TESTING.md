@@ -503,6 +503,11 @@ gerekiyor).
       türetiliyor). Puan tekrar eşiği aşarsa damga geri gelir ama rütbe
       banner'ı İKİNCİ kez ÇIKMAMALI ve ödül İKİNCİ kez VERİLMEMELİ (her
       eşik hayatta bir kez).
+- [ ] **Başlık emojileri (12 Ağustos 2026).** Rütbe yükselince 👏, 100'lük
+      kilometre taşında 🎉, düşüşte 😔 — üçü de görünmeli. Kart HER
+      varyantta 280px ve ✕ kartın İÇİNDE olmalı (mobil portta kutlama
+      kartı içeriğe göre büzülüp ✕'i dışarı taşırıyordu; web'de kart
+      zaten sabit genişlikte, orada aynı hata YOK).
 - [ ] **Rütbe düşüş banner'ı.** Eşiğin altına inince konfetisiz, üzgün bir
       banner çıkmalı ("Rütben geriledi! 😔 … Kazandıkça geri yükselirsin!" —
       başlıktaki üzgün emoji görünmeli, boş kare DEĞİL) ve

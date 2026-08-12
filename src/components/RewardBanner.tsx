@@ -78,9 +78,9 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
   const title = rankDown
     ? 'Rütben geriledi! 😔'
     : rankUpTier
-      ? `Yeni rütben: ${rankUpTier.name}!`
+      ? `Yeni rütben: ${rankUpTier.name}! 👏`
       : milestone
-        ? `${milestone} k-lig puanına ulaştın!`
+        ? `${milestone} k-lig puanına ulaştın! 🎉`
         : 'Eşik ödülü kazandın!';
   // "X k-lig puanına ulaştın" alt satırı — ulaşılan en yüksek eşik (rütbe/
   // kilometre taşı/ödül hangisi büyükse). Başlık zaten aynı bilgiyi veren

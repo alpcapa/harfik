@@ -175,9 +175,9 @@ class _RewardBannerState extends State<RewardBanner>
         // gerekmiyor, tarayıcı kendi fallback'ini yapıyor.
         ? 'Rütben geriledi! 😔'
         : s.rankUpTier != null
-            ? 'Yeni rütben: ${s.rankUpTier!.name}!'
+            ? 'Yeni rütben: ${s.rankUpTier!.name}! 👏'
             : s.milestone != null
-                ? '${s.milestone} k-lig puanına ulaştın!'
+                ? '${s.milestone} k-lig puanına ulaştın! 🎉'
                 : 'Eşik ödülü kazandın!';
     // "X k-lig puanına ulaştın" alt satırı — ulaşılan en yüksek eşik.
     // Başlık aynı bilgiyi zaten veren milestone-only durumda tekrarlanmaz.
@@ -262,6 +262,17 @@ class _RewardBannerState extends State<RewardBanner>
         clipBehavior: Clip.none,
         children: [
           Container(
+            // web `w-[280px]`: kart HER ZAMAN 280 — içeriğe göre büzülmez.
+            // Port bunu atlamıştı (Stack'in konumlandırılmamış çocuğu GEVŞEK
+            // kısıt alır, yani içeriğe göre daralıyordu); dıştaki
+            // `SizedBox(width: 280)` yalnızca Stack'i sabitliyordu. Sapma
+            // görünmezdi ÇÜNKÜ kutlama kartında ölçülecek bir kenar yoktu —
+            // 12 Ağustos 2026'da ✕ eklenince ortaya çıktı: `Positioned(
+            // right: 8)` Stack'e göre konumlandığından, 238.5px'e büzülen
+            // kutlama kartında ✕ kartın DIŞINDA kalıyordu (düşüş kartı
+            // ilerleme çubuğu sayesinde 280'e ulaştığı için orada
+            // görünmüyordu). Ölçüldü ve ekran görüntüsüyle doğrulandı.
+            width: double.infinity,
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
             decoration: ShapeDecorationWithCssShadows(
               color: kBg,

@@ -947,6 +947,16 @@ listesi kök `TESTING.md` bölüm 10.
       "NASIL OYNANIR?" (noktalı İ DEĞİL) ve "BÖLGE VERGİSİ" (sondaki İ
       noktalı) — biri ters çıkarsa `trUpper` yerine native `toUpperCase`
       kullanılmış demektir.
+- [ ] **Başlık emojileri (12 Ağustos 2026, Parça 70).** Rütbe
+      yükselince **👏** ("Yeni rütben: X! 👏"), 100'lük kilometre
+      taşında **🎉**, düşüşte **😔**. Üçü de GERÇEK emoji olmalı, boş
+      kare (tofu) DEĞİL. (Yalnızca "Eşik ödülü kazandın!" varyantı
+      emojisiz — bilinçli.)
+- [ ] **Kart HER varyantta aynı genişlikte (280) ve ✕ kartın İÇİNDE.**
+      Kutlama, kilometre taşı ve düşüş banner'larını yan yana koy:
+      kart genişliği değişmemeli ve ✕ hiçbirinde kartın dışına
+      taşmamalı. (İlk sürümde kutlama kartı içeriğe göre 238px'e
+      büzülüyor ve ✕ dışarıda kalıyordu — web'de kart her zaman 280.)
 - [ ] **Kutlama banner'ı bir kez çıkar.** Görülmemiş bir ödülün varken
       (test için bir satırın `seen_at`'i SQL'le null'a çekilebilir)
       uygulamayı aç: mühür damgalı, konfetili banner ekranın ORTASINDA,

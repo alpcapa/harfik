@@ -319,7 +319,7 @@ void main() {
       ]);
       await pumpHost(tester, gw: gw);
 
-      expect(find.text('Yeni rütben: Oyuncu!'), findsOneWidget);
+      expect(find.text('Yeni rütben: Oyuncu! 👏'), findsOneWidget);
       expect(find.text('100 k-lig puanına ulaştın'), findsOneWidget);
       expect(find.text('+10 ödül puanı eklendi'), findsOneWidget);
       expect(gw.markSeenCalls, 0, reason: 'işaretleme yalnızca kapatmada');
@@ -334,6 +334,26 @@ void main() {
       // TEK yol; bağlanmazsa banner her açılışta yeniden çıkardı.
       expect(find.widgetWithText(ElevatedButton, 'DEVAM'), findsNothing,
           reason: 'banner\'da tam genişlikte aksiyon butonu olmamalı');
+      // ✕ kartın İÇİNDE olmalı. `Positioned(right: 8)` Stack'e göre
+      // konumlanıyor; kart içeriğe göre büzülürse ✕ dışarı taşar — ilk
+      // sürümde tam bu oldu (kutlama kartı 238.5px'e büzülüyordu, düşüş
+      // kartı ilerleme çubuğu sayesinde 280'e ulaştığından orada
+      // görünmüyordu). Kart artık web'deki gibi HER ZAMAN 280.
+      // `.first` ŞART: mührün 88px'lik nömorfik dairesi de aynı dekorasyonu
+      // kullanıyor; kart ağaçta ondan önce geliyor (genişlik iddiası
+      // yanlış widget'ı yakalarsak zaten düşer).
+      final kart = tester.getRect(find
+          .descendant(
+              of: find.byType(RewardBanner),
+              matching: find.byWidgetPredicate((w) =>
+                  w is Container &&
+                  w.decoration is ShapeDecorationWithCssShadows))
+          .first);
+      final kapat = tester.getRect(find.byType(IconButton));
+      expect(kart.width, 280, reason: 'kart web w-[280px] ile aynı olmalı');
+      expect(kapat.right, lessThanOrEqualTo(kart.right),
+          reason: '✕ kartın dışına taşmamalı');
+      expect(kapat.left, greaterThanOrEqualTo(kart.left));
       await tester.tap(find.byTooltip('Kapat'));
       await tester.pumpAndSettle();
       expect(gw.markSeenCalls, 1);
@@ -357,7 +377,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
       expect(find.byType(RewardBanner), findsOneWidget);
-      expect(find.text('Yeni rütben: Meraklı!'), findsOneWidget);
+      expect(find.text('Yeni rütben: Meraklı! 👏'), findsOneWidget);
     });
 
     testWidgets('misafirde (user yok) hiç sorgulanmaz', (tester) async {
