@@ -1,0 +1,14 @@
+name: kelimeki_core
+description: >-
+  Kelimeki oyun motoru — saf Dart port (kaynak: src/game + src/utils, web).
+  Flutter'a bağımlılığı YOKTUR ve olmamalıdır; ayrıntı için mobile/CLAUDE.md.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.4.0
+
+# BİLİNÇLİ OLARAK SIFIR BAĞIMLILIK (dev dahil): testler package:test yerine
+# düz `dart run test/run_all.dart` ile koşan bağımsız betikler — böylece
+# `dart pub get` ağa hiç çıkmadan (offline) çalışır ve bu ortamda pub.dev
+# erişimi olmasa bile test koşulabilir. Bkz. mobile/CLAUDE.md.

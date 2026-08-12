@@ -39,6 +39,12 @@ oynuyor, SPA fallback çalışıyor) — kapsamlı bir paket değil. Canlı oyun
 mesajlaşma, e-posta bildirimleri gibi iki gerçek oturum ve gerçek gelen kutusu
 gerektiren akışların elle koşulan kontrol listesi: [`TESTING.md`](TESTING.md).
 
+Flutter portunun kendi testleri `mobile/app`'te `flutter test` ile koşar
+(veri katmanı sahte uçlarla sınanır); gerçek Supabase/platform davranışının
+cihazda koşulan listesi: [`mobile/TESTING.md`](mobile/TESTING.md). Derlemeyi
+(imzasız iOS + Android APK) doğrulayan GitHub Actions iş akışı elle
+tetiklenir: `.github/workflows/mobile-build.yml`.
+
 ## Proje Yapısı
 
 ```
@@ -141,6 +147,23 @@ src/
     ├── api.ts             # saveGame, fetchLeaderboard, auth, fetchMeaning
     ├── pwa.ts             # PWA/service worker yardımcıları
     └── database.types.ts  # şema tipleri
+
+mobile/                    # Flutter (iOS+Android) portu — ayrıntı: mobile/CLAUDE.md
+├── kelimeki_core/         # oyun motorunun saf Dart portu (web motoruna eşitliği
+│                          # golden vector testleriyle kanıtlı: dart run test/run_all.dart)
+└── app/                   # Flutter uygulaması: Yapay Zeka'ya karşı oyun uçtan uca
+    │                      # oynanabilir (kurulum/tahta/raf/sürükle-bırak, kurallar,
+    │                      # kelime anlamı, hamle geçmişi), Supabase oturumu
+    │                      # (giriş/kayıt/şifre sıfırlama), bulut kayıt senkronu,
+    │                      # skor kartı/k-lig, oyun geçmişi (tahta önizlemesi,
+    │                      # beğeni, sohbet arşivi, paylaşma), Son Oynadıklarım,
+    │                      # Görüş Bildir, arkadaşlık sistemi (davet linki dahil),
+    │                      # Canlı (çok oyunculu) oyun: davet/kabul + gerçek
+    │                      # zamanlı tahta (mesajlaşma sonraki parça)
+    ├── assets/dictionary/ # üretilmiş asset'ler: words_tr.txt (kaynak
+    │                      # src/data/words.ts — npm run generate-golden-vectors)
+    │                      # ve meanings.db (npm run generate-meanings-db)
+    └── assets/fonts/      # Space Grotesk / Space Mono / Nunito (web'le aynı aileler)
 ```
 
 ## Supabase (opsiyonel)

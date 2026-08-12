@@ -1,0 +1,110 @@
+name: kelimeki
+description: >-
+  Kelimeki — köşelerden başlayan stratejik Türkçe kelime oyunu (iOS/Android).
+  Oyun motoru kelimeki_core paketindedir; mimari kararlar: mobile/CLAUDE.md.
+publish_to: none
+
+# Sürüm ayrıca lib/src/config/env.dart'taki appVersion sabitinde tutulur
+# (mobile_min_supported_version karşılaştırması için) — release'te ikisi
+# BİRLİKTE artırılmalı, bkz. mobile/CLAUDE.md "Sürüm disiplini".
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.4.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Zaten supabase_flutter'ın transitive bağımlılığı — arkadaş daveti
+  # linklerini (kelimeki://davet/...) dinlemek için doğrudan bağımlılığa
+  # alındı (FriendInviteInbox); sürüm kısıtı supabase_flutter'ınkiyle uyumlu.
+  app_links: ^6.4.1
+  # Hesap Ayarları'ndaki profil fotoğrafı değiştirme — yalnızca galeriden
+  # seçim (ImageSource.gallery); kamerayla çekim BİLİNÇLİ kapsam dışı (web
+  # `<input type="file">` de yalnızca dosya seçtiriyor, kamera izni
+  # gerektirmeyen en yakın eşdeğer).
+  image_picker: ^1.1.2
+  kelimeki_core:
+    path: ../kelimeki_core
+  path_provider: ^2.1.5
+  share_plus: ^12.0.2
+  shared_preferences: ^2.5.3
+  sqflite: ^2.4.2
+  sqflite_common_ffi_web: ^1.0.2
+  supabase_flutter: ^2.10.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  # Testlerde SQLite'ı masaüstü VM'de koşturur (cihaz/emülatör gerekmez).
+  sqflite_common_ffi: ^2.3.6
+  # Uygulama ikonu/splash ÜRETİCİLERİ — yalnızca `dart run
+  # flutter_launcher_icons`/`flutter_native_splash:create` çalıştırılırken
+  # kullanılır, derlenmiş uygulamaya hiç girmez. Kaynak görseller
+  # mobile/scripts/generate-app-icon-masters.mjs ile üretilir — bkz.
+  # mobile/CLAUDE.md, "Uygulama İkonu / Splash".
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.7
+
+# ÜRETİCİ YAPILANDIRMASI — kaynak görseller assets/icon/, ikisi de
+# mobile/scripts/generate-app-icon-masters.mjs'in çıktısı (elle düzenlenmez).
+# `icon-source.png`: opak, tam kanama — iOS AppIcon + Android LEGACY ikon.
+# `icon-adaptive-fg.png`: şeffaf, %66 güvenli bölgeye küçültülmüş — Android
+# ADAPTIVE ikonun ön katmanı VE splash görseli (ikisi de aynı güvenli-bölge
+# kısıtına tabi: Android 12+ splash API'si de dairesel bir maskeyle kırpıyor).
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/icon/icon-source.png
+  min_sdk_android: 21
+  remove_alpha_ios: true
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: assets/icon/icon-adaptive-fg.png
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/icon/icon-adaptive-fg.png
+  android_12:
+    image: assets/icon/icon-adaptive-fg.png
+    color: "#ffffff"
+  android: true
+  ios: true
+  web: false # web/ ayrı bir TEST ORTAMI (bkz. CLAUDE.md) — elle kurulmuş
+             # index.html/CanvasKit ayarlarına dokunmasın diye kapalı.
+
+flutter:
+  uses-material-design: true
+  assets:
+    # ÜRETİLMİŞ (elle düzenlenmez): kaynak src/data/words.ts,
+    # `npm run generate-golden-vectors` yeniden üretir. Satır SIRASI
+    # sözleşmedir (YZ determinizmi) — bkz. mobile/CLAUDE.md.
+    - assets/dictionary/words_tr.txt
+    # ÜRETİLMİŞ (elle düzenlenmez): kaynak src/data/meanings.json,
+    # `npm run generate-meanings-db` yeniden üretir. Yanındaki .sha256
+    # kopyanın tazeliğini 5 MB okumadan doğrular (bkz. meaning_store.dart).
+    - assets/dictionary/meanings.db
+    - assets/dictionary/meanings.db.sha256
+  # Web ile aynı üç aile (tailwind fontFamily): sans=Space Grotesk,
+  # mono=Space Mono, tile=Nunito. Google Fonts'tan statik TTF'ler.
+  fonts:
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito-ExtraBold.ttf
+          weight: 800
+    - family: SpaceGrotesk
+      fonts:
+        - asset: assets/fonts/SpaceGrotesk-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/SpaceGrotesk-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/SpaceGrotesk-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/SpaceGrotesk-Bold.ttf
+          weight: 700
+    - family: SpaceMono
+      fonts:
+        - asset: assets/fonts/SpaceMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/SpaceMono-Bold.ttf
+          weight: 700

@@ -1,0 +1,300 @@
+# Mobil (Flutter) derleme doğrulaması.
+#
+# NEDEN VAR: geliştirme ortamında (Claude Code oturumu) Android SDK, Xcode ve
+# CocoaPods YOK — `flutter test` koşuyor ama `flutter build ios/apk` hiç
+# koşmadı. Yani "testler yeşil" ile "uygulama gerçekten derleniyor" arasında
+# doğrulanmamış bir boşluk vardı; özellikle platform eklentileri
+# (sqflite, shared_preferences, supabase_flutter, share_plus, path_provider)
+# ancak gerçek bir pod/gradle derlemesinde patlar.
+#
+# MALİYET: bu depo PUBLIC olduğundan Actions dakikaları ücretsiz ve
+# sınırsız (macOS runner'ları dahil) — özel depolardaki 10x macOS çarpanı
+# burada geçerli DEĞİL. Bu yüzden mobil dosyalara her dokunuşta çalışıyor;
+# derleme kırılırsa aynı gün görülür.
+#
+# TETİKLEYİCİLER: (1) port dalına `mobile/**` push'u — sürekli doğrulama;
+# (2) elle (Actions → Run workflow). İkincisi yalnızca dosya VARSAYILAN
+# DALDA (main) olduğunda Actions sekmesinde belirir (GitHub kuralı) —
+# port dalı main'e girene kadar pratikte (1) çalışıyor.
+#
+# İMZALAMA/TESTFLIGHT: burada YOK ve iOS'u test etmek için GEREKMİYOR.
+# iOS işi iki çıktı üretiyor, ikisi de imzasız: (a) `--no-codesign` cihaz
+# derlemesi — yalnızca "derleniyor mu" kanıtı; (b) SİMÜLATÖR `.app`'i —
+# Appetize.io'ya yüklenip tarayıcıda çalıştırılabiliyor. Apple Developer
+# üyeliği yalnızca GERÇEK CİHAZA kurulum (TestFlight/App Store) için
+# gerekli; o iş üyelik geldiğinde eklenecek (bkz. mobile/TESTING.md,
+# "TestFlight kurulumu").
+#
+# APPETIZE'A OTOMATİK YÜKLEME (7 Ağustos 2026): her Android/iOS derlemesi
+# bittiğinde, `APPETIZE_API_TOKEN` secret'ı varsa, GitHub Release'e az önce
+# yüklenen dosyanın URL'i Appetize'ın REST API'sine POST edilip aynı iki
+# Appetize app'i (sabit public-key) YERİNDE günceller — geliştirici iPad'den
+# çalıştığından ve dosya seçici/sürükle-bırak ile .apk'yı elle yükleme
+# günlerce "400"/"silik dosya" hatasına takıldığından (bkz. mobile/TESTING.md,
+# "Appetize — otomatik yükleme"), bu adım o dansı tamamen ortadan kaldırıyor.
+# Sabit oturum linkleri: mobile/TESTING.md.
+name: Mobil derleme
+
+on:
+  push:
+    branches: [claude/word-game-flutter-port-dr9dos]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-build.yml'
+  workflow_dispatch:
+    inputs:
+      ios:
+        description: 'iOS derlemesi (macOS runner)'
+        type: boolean
+        default: true
+      android:
+        description: 'Android APK derlemesi'
+        type: boolean
+        default: true
+      web:
+        description: 'Web derlemesi (GitHub Pages test ortamı)'
+        type: boolean
+        default: true
+
+# Aynı anda tek çalıştırma yeter; arka arkaya tetiklenirse eskisini iptal et.
+concurrency:
+  group: mobile-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Analiz + testler
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      # Saf Dart motor paketi: golden vector replay testleri (web motoruyla
+      # parite kanıtı). Flutter'a hiç bağlı değil, `dart` ile koşuyor.
+      - name: kelimeki_core testleri
+        working-directory: mobile/kelimeki_core
+        run: |
+          dart pub get
+          dart run test/run_all.dart
+      - name: Uygulama analiz + testleri
+        working-directory: mobile/app
+        run: |
+          flutter pub get
+          dart analyze lib/ test/
+          flutter test
+
+  android:
+    name: Android APK
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.android }}
+    runs-on: ubuntu-latest
+    # Release'e yükleme için (aşağıdaki adım) yazma izni şart.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      # Anahtarlar verilmezse uygulama TAMAMEN OFFLINE moda düşer (web'deki
+      # `configured` bayrağının eşleniği) — derleme doğrulaması için yeterli.
+      # Gerçek bir test derlemesi isteniyorsa depo sırlarına eklenir.
+      - name: APK derle
+        working-directory: mobile/app
+        run: |
+          flutter pub get
+          flutter build apk --release \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kelimeki-apk
+          path: mobile/app/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+      # Artefaktların indirme bağlantısı OTURUM İSTİYOR ve iOS/iPadOS'ta
+      # `.apk` dosya seçicide pasif kalıyor (Safari uzantıyı tanımıyor);
+      # Appetize'ın Android tarafı da yalnızca ham `.apk` kabul ediyor —
+      # zip'i iOS uygulaması sanıp ayrıştıramıyor. Çözüm: derlemeleri
+      # herkese açık DÜZ URL'i olan bir prerelease'e koymak, Appetize'ın
+      # "URL'den yükle" seçeneği doğrudan çekebilsin.
+      - name: Derlemeleri "mobile-latest" prerelease'ine yükle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: mobile/app
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk kelimeki.apk
+          gh release view mobile-latest >/dev/null 2>&1 || \
+            gh release create mobile-latest --prerelease \
+              --target "$GITHUB_SHA" \
+              --title "Mobil test derlemesi (otomatik)" \
+              --notes "Her mobil derlemede ÜZERİNE YAZILIR — sürüm değil, test derlemesidir. Appetize.io'ya URL ile yüklemek için: aşağıdaki dosyanın bağlantısını kopyala."
+          gh release upload mobile-latest kelimeki.apk --clobber
+      # Appetize'a otomatik yükleme (7 Ağustos 2026) — iPad Safari'nin dosya
+      # seçicisi/sürükle-bırak'ı .apk için günlerce "400"/"silik dosya" ile
+      # tıkanıyordu (iOS .apk'nın UTI'sini tanımıyor, çözümü yok). Appetize'ın
+      # REST API'si `{"url": ...}` gövdesiyle çağrılırsa dosyayı SUNUCU
+      # SUNUCUYA kendisi çekiyor — tarayıcı hiç devreye girmiyor.
+      # `public-key` SABİT (aşağıda) — bu, 7 Ağustos'taki keşif koşusunda
+      # public-key VERİLMEDEN oluşturulan app'in anahtarı; artık her koşu
+      # AYNI app'i günceller, session linki (appURL) BİR DAHA DEĞİŞMEZ.
+      # `manageURL` bilerek YAZDIRILMIYOR — Appetize'ın kendi action'ı
+      # (maxep/appetize-upload-action) bunu `setSecret` ile maskeliyor, aynı
+      # ihtiyatı burada da uyguluyoruz. `publicKey`/`appURL` PAYLAŞILABİLİR
+      # (Appetize'ın kendi tasarımı — session linkleri zaten herkese açık).
+      - name: "Appetize'a yükle (Android)"
+        env:
+          APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
+        run: |
+          if [ -z "$APPETIZE_API_TOKEN" ]; then
+            echo "APPETIZE_API_TOKEN secret'ı yok — adım atlanıyor."
+            exit 0
+          fi
+          resp=$(curl -sS -u "${APPETIZE_API_TOKEN}:" \
+            -H "Content-Type: application/json" \
+            -d "{\"url\":\"https://github.com/${{ github.repository }}/releases/download/mobile-latest/kelimeki.apk\",\"platform\":\"android\",\"note\":\"CI otomatik — ${{ github.sha }}\"}" \
+            https://api.appetize.io/v1/apps/oexlhcjxdl6onjr4dewaarnvwa)
+          echo "$resp" | jq '{publicKey, appURL}'
+
+  ios:
+    name: iOS (imzasız)
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.ios }}
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    # Android işi release'i oluşturuyor; ikisi aynı anda `gh release create`
+    # çalıştırıp çakışmasın diye iOS onu bekliyor (yükleme birkaç saniye).
+    needs: android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      # `--no-codesign`: sertifika/profil GEREKTİRMEZ, yalnızca derlemenin
+      # (pod install dahil) çalıştığını kanıtlar. Apple üyeliği olmadan da
+      # koşar. Podfile depoda yok; flutter tooling burada üretir.
+      - name: iOS derle
+        working-directory: mobile/app
+        run: |
+          flutter pub get
+          flutter build ios --release --no-codesign \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+      # SİMÜLATÖR derlemesi — Appetize.io iOS uygulamasını cihaz `.ipa`'sı
+      # olarak DEĞİL simülatör `.app`'i olarak istiyor, ve simülatör
+      # derlemeleri İMZA GEREKTİRMİYOR: Apple Developer üyeliği olmadan da
+      # iOS'u tarayıcıda test edebiliyoruz.
+      #
+      # `--debug` zorunlu: Flutter simülatör için release derlemeyi
+      # desteklemiyor (AOT yok). Sonuç JIT ile çalışır — biraz yavaş, ama
+      # görsel/işlevsel doğrulama için yeterli.
+      - name: iOS simülatör derlemesi (Appetize için)
+        working-directory: mobile/app
+        run: |
+          flutter build ios --simulator --debug \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          # Appetize yüklemesi ZIP bekliyor; `.app` bir klasör olduğundan
+          # sıkıştırmadan yüklenemez. upload-artifact kendi zip'ini
+          # ürettiğinden çift zip oluyor — indirince bir kez açman yeterli,
+          # içinden Runner.app.zip çıkar (Appetize'a O yüklenir).
+          cd build/ios/iphonesimulator
+          zip -ry Runner.app.zip Runner.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kelimeki-ios-simulator
+          path: mobile/app/build/ios/iphonesimulator/Runner.app.zip
+          if-no-files-found: error
+      - name: Simülatör derlemesini prerelease'e yükle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: mobile/app
+        run: |
+          cp build/ios/iphonesimulator/Runner.app.zip kelimeki-ios-simulator.zip
+          gh release upload mobile-latest kelimeki-ios-simulator.zip --clobber
+      # Appetize'a otomatik yükleme — android işindeki aynı adımla birebir
+      # aynı gerekçe/mekanizma. `public-key` sabit: 7 Ağustos'taki keşif
+      # koşusunda oluşturulan iOS app'in anahtarı.
+      - name: "Appetize'a yükle (iOS)"
+        env:
+          APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
+        run: |
+          if [ -z "$APPETIZE_API_TOKEN" ]; then
+            echo "APPETIZE_API_TOKEN secret'ı yok — adım atlanıyor."
+            exit 0
+          fi
+          resp=$(curl -sS -u "${APPETIZE_API_TOKEN}:" \
+            -H "Content-Type: application/json" \
+            -d "{\"url\":\"https://github.com/${{ github.repository }}/releases/download/mobile-latest/kelimeki-ios-simulator.zip\",\"platform\":\"ios\",\"note\":\"CI otomatik — ${{ github.sha }}\"}" \
+            https://api.appetize.io/v1/apps/onpdavcakhztlouyedivwrcrdi)
+          echo "$resp" | jq '{publicKey, appURL}'
+
+  # Web derlemesi — ÜRÜN HEDEFİ DEĞİL, TEST ORTAMI.
+  #
+  # NEDEN VAR: geliştirici iPad'den çalışıyor; elinde ne Mac ne Android cihaz
+  # var. Apple Developer üyeliği (TestFlight) askıda, tarayıcı içi emülatör
+  # (Appetize) ücretsiz katmanda 3 dakikayla sınırlı. Flutter'ın web hedefi
+  # aynı Dart kodunu aynı çizim motoruyla (CanvasKit) koşturuyor — yani
+  # yerleşim/font/gölge/oyun akışı doğrulaması ücretsiz ve süresiz yapılabilir.
+  # Bu iş her mobil push'ta GitHub Pages'e deploy eder, adres sabit kalır.
+  #
+  # NEYİ KANITLAMAZ: platform davranışı. Paylaş sayfası, dosya sistemi,
+  # oturum kalıcılığı, uygulama ikonu, gerçek dokunmatik jestler web'de
+  # FARKLI çalışır — bkz. mobile/TESTING.md, "Web derlemesiyle neyi test
+  # edemezsin". Depolama da farklı bir arka uç kullanır (IndexedDB üstünde
+  # WASM sqlite3, bkz. lib/src/storage/web_db.dart).
+  #
+  # İKİ DEFA ELLE AÇILMASI GEREKEN AYAR (7 Ağustos 2026'da ikisine de
+  # takıldık, ikisi de depo ayarı — kodla çözülemez):
+  #   1. Settings → Pages → Source = "GitHub Actions". Yoksa
+  #      `configure-pages` adımı düşer.
+  #   2. Settings → Environments → github-pages → Deployment branches:
+  #      Pages açıldığında GitHub bu ortamı YALNIZCA VARSAYILAN DALA
+  #      kısıtlıyor. Port dalından deploy edebilmek için kısıt gevşetilmeli
+  #      ("No restriction" ya da `claude/*` kuralı) — aksi halde iş HİÇ ADIM
+  #      ÇALIŞMADAN, ~2 saniyede ve LOGSUZ düşer (bu belirti tanıdık
+  #      gelmezse saatler yakar).
+  web:
+    name: Web (GitHub Pages test ortamı)
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.web }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - uses: actions/configure-pages@v5
+      # `--no-web-resources-cdn`: CanvasKit'i gstatic.com yerine kendi
+      # adresimizden servis eder — dış bağımlılık yok, kısıtlı ağlarda da
+      # açılır. `--base-href`: Pages siteyi /kelimeki/ altında yayınlıyor.
+      # `--pwa-strategy=none`: service worker YOK; her açılışta en son
+      # derleme gelir (test ortamında bayat önbellek en son isteyeceğimiz şey).
+      - name: Web derle
+        working-directory: mobile/app
+        run: |
+          flutter pub get
+          flutter build web --release \
+            --no-web-resources-cdn \
+            --pwa-strategy=none \
+            --base-href /kelimeki/ \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: mobile/app/build/web
+      - id: deploy
+        uses: actions/deploy-pages@v4

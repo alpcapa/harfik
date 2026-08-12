@@ -1,0 +1,57 @@
+// Kelimeki core — k-lig puanı (src/utils/leaguePoints.ts portu).
+
+/// Bir oyuncunun bu oyundan kazandığı k-lig puanı: teslim → -2, 1. → +2,
+/// 2. (yalnızca 2 kişilik değilse) → +1, diğerleri 0.
+int leaguePoints(int rank, int playerCount, {bool surrendered = false}) {
+  if (surrendered) return -2;
+  if (rank == 1) return 2;
+  if (rank == 2 && playerCount != 2) return 1;
+  return 0;
+}
+
+String formatLeaguePoints(int points) =>
+    points > 0 ? '+$points' : (points < 0 ? '$points' : '-');
+
+/// `computeRanks` girdisi — sunucudaki `games.players` jsonb satırının
+/// (GamePlayerSnapshot) core'a bakan yüzü.
+class PlayerSnapshot {
+  final int score;
+  final bool surrendered;
+  const PlayerSnapshot({required this.score, this.surrendered = false});
+}
+
+/// Girdinin sırasından bağımsız, `rankPlayers` ile aynı kural: aktifler puana
+/// göre azalan, teslim olanlar hep sonda. Dönüş girdiyle aynı indekslemede.
+List<int> computeRanks(List<PlayerSnapshot> players) {
+  final withIndex = [
+    for (var i = 0; i < players.length; i++) (p: players[i], index: i)
+  ];
+  final active = withIndex.where((x) => !x.p.surrendered).toList()
+    ..sort((a, b) {
+      final d = b.p.score - a.p.score;
+      return d != 0 ? d : a.index - b.index; // stable-sort eşleniği
+    });
+  final surrendered = withIndex.where((x) => x.p.surrendered).toList()
+    ..sort((a, b) {
+      final d = b.p.score - a.p.score;
+      return d != 0 ? d : a.index - b.index;
+    });
+  final ordered = [...active, ...surrendered];
+
+  final ranks = List<int>.filled(players.length, 1);
+  var rank = 1;
+  int? prevScore;
+  var prevSurrendered = false;
+  for (var pos = 0; pos < ordered.length; pos++) {
+    final x = ordered[pos];
+    if (prevScore == null ||
+        x.p.score != prevScore ||
+        x.p.surrendered != prevSurrendered) {
+      rank = pos + 1;
+    }
+    prevScore = x.p.score;
+    prevSurrendered = x.p.surrendered;
+    ranks[x.index] = rank;
+  }
+  return ranks;
+}
