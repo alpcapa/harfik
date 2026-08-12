@@ -21,10 +21,23 @@ import { preloadWordSet, isWordSetReady } from './data/wordSetLoader';
 import { calcScore, computeInvasionSplit, formatInvalidWordsReason, validatePlacement, validatePlacementStructural } from './utils/validator';
 import { loadGameState, saveGameState, clearGameState, takePendingAbandonedGame, ABANDON_TIMEOUT_MS } from './utils/gameStorage';
 import type { SavedGame } from './utils/gameStorage';
+import type { MirroredSave, ServerRowLike } from './utils/cloudSaveMirror';
+import {
+  classifyCloudSaves,
+  mergeOfflineCloudSaves,
+  putMirroredSave,
+  removeMirroredSave,
+  pendingMirroredSaves,
+  readCloudSaveCache,
+  writeCloudSaveCache,
+  queueCloudSaveDelete,
+  pendingCloudSaveDeletes,
+  unqueueCloudSaveDelete,
+} from './utils/cloudSaveMirror';
 import { buildGameRecord } from './utils/gameRecord';
 import { markQuickStartSeen } from './utils/onboarding';
 import { getFormedWords, getFullWordAt, key } from './utils/board';
-import type { Tile as TileModel } from './game/types';
+import type { GameState, Tile as TileModel } from './game/types';
 import { Tile } from './components/Tile';
 import { trLower } from './utils/turkish';
 import { PLAYER_COLORS } from './game/constants';
@@ -119,9 +132,90 @@ export default function App() {
     saveChainRef.current = next;
     return next;
   };
+
+  // Bir oyunu ÖNCE yerel aynaya, sonra sunucuya yazar (write-behind — bkz.
+  // `cloudSaveMirror.ts`). Yerel yazma neredeyse her zaman başarılı olduğundan
+  // sunucu erişilemese bile hamle kaybolmaz; sunucuya yazılınca ayna silinir,
+  // yani normal (online) akışta ayna hep boş kalır.
+  const writeCloudSave = async (id: string, uid: string, snapshot: GameState): Promise<boolean> => {
+    const mirrored = putMirroredSave(id, uid, snapshot);
+    const ok = await upsertLocalGameSave(id, uid, snapshot);
+    if (ok) {
+      removeMirroredSave(id);
+      return true;
+    }
+    if (!mirrored) {
+      // İkisi de başarısız — bu state HİÇBİR YERDE yok. Sessizce yutmak,
+      // kullanıcının hamlesini kaybettiğini hiç fark etmemesi demek.
+      console.error('[Kelimeki] KAYIP: oyun ne sunucuya ne yerel aynaya yazılabildi.');
+    }
+    return false;
+  };
+
+  // Sunucudan silinemeyen kaydı kalıcı kuyruğa alır ki bir sonraki senkronda
+  // tekrar denensin (aksi halde sunucudaki bitmemiş kopya listede "devam eden
+  // oyun" olarak geri gelirdi). Ayna da her durumda temizlenir — silinmesi
+  // istenen bir oyunu ayna diriltmemeli.
+  const deleteCloudSave = async (id: string, uid: string): Promise<void> => {
+    removeMirroredSave(id);
+    const ok = await deleteLocalGameSave(id);
+    if (ok) unqueueCloudSaveDelete(id, uid);
+    else queueCloudSaveDelete(id, uid);
+  };
   // Misafirin yarıda bırakılmış `savedGame`'ini girişten sonra hesaba
   // taşıyan effect'in (aşağıda) StrictMode/mükerrer-çalışma kilidi.
   const migratingSavedGameRef = useRef(false);
+
+  // Sınıflandırmanın ürettiği satırı UI'ın beklediği `LocalGameSave` şekline
+  // çevirir. `created_at` gerçek sunucu değeri değil oyunun başlangıç anı —
+  // Setup bu alanı okumuyor (yalnızca `updated_at`/`state` kullanılıyor), ama
+  // tipi doldurmak gerekiyor.
+  const toLocalGameSave = (uid: string, r: ServerRowLike): LocalGameSave => ({
+    id: r.id,
+    user_id: uid,
+    state: r.state,
+    player_count: r.state.players.length,
+    created_at: r.state.startedAt,
+    updated_at: new Date(r.updatedAt).toISOString(),
+  });
+
+  // Terk edilmiş bir kayıt için gecikmeli teslim kaydı (-2 k-lig cezası) +
+  // anonim telemetri. Yalnızca gerçekten başlamış (turnCount>=2) oyunlar
+  // cezalandırılır; hiç oynanmamış bir kayıt sessizce silinir, ne ceza ne
+  // telemetri üretir. İki çağıranı var (sunucudan iddia edilen satır ve
+  // yalnızca-aynada kalmış oyun) — mantığın iki kopyaya ayrışmaması için
+  // ortak.
+  const penalizeAbandonedSave = (abandoned: GameState, lastActiveMs: number, uid: string) => {
+    if (abandoned.turnCount < 2) return;
+    const durationSeconds = Math.max(
+      0,
+      Math.round((lastActiveMs - Date.parse(abandoned.startedAt)) / 1000),
+    );
+    void logGameFinish(abandoned.players.length, durationSeconds, abandoned.multiSession, true, uid);
+    const record = buildGameRecord(abandoned, true, 0);
+    if (record) void saveGameDurable(record);
+  };
+
+  // Sunucuya ulaşılamadığında liste: son başarılı önbellek + ayna bindirmesi.
+  // Kullanıcı uçak modunda Setup'a dönünce oyunlarını GÖREBİLMELİ (veri zaten
+  // güvende ama "kayboldu" gibi duruyordu) ve onlara devam edebilmeli.
+  //
+  // **Yalnızca aynayı göstermek YETMEZ:** o zaman offline oynanmamış diğer
+  // oyunlar listeden düşerdi — bir sorunu başkasıyla değişmiş olurduk.
+  //
+  // **Bu dalda CEZA HİÇ uygulanmaz:** 7 günü dolmuş bir satırın gerçekten terk
+  // edilip edilmediği sunucuyla doğrulanmadan bilinemez (başka bir cihaz
+  // oynamış olabilir) ve `claimAbandonedLocalGameSave`'in yarış koruması
+  // offline çalışamaz. Süresi geçmiş satır listeye de ALINMAZ — kullanıcıyı,
+  // bir sonraki çevrimiçi listelemede silinecek bir oyuna devam ettirmeyelim.
+  const buildOfflineCloudSaves = (
+    uid: string,
+    mirrors: MirroredSave[],
+    cutoffMs: number,
+  ): LocalGameSave[] | null => {
+    const rows = mergeOfflineCloudSaves(readCloudSaveCache(uid), mirrors, cutoffMs);
+    return rows === null ? null : rows.map((r) => toLocalGameSave(uid, r));
+  };
 
   // Girişli kullanıcının cloudSaves listesini sunucudan tazeler; bu arada 7
   // gün hareketsiz kalmış (ABANDON_TIMEOUT_MS) kayıtları da atomik olarak
@@ -141,46 +235,79 @@ export default function App() {
     // commit edilmeden dönüp az önce silinen kaydı "Devam Edenler"de bir kez
     // gösterir; kullanıcı sekme değiştirip dönene kadar orada kalırdı.
     await saveChainRef.current.catch(() => {});
-    const saves = await listLocalGameSaves();
     const cutoffMs = Date.now() - ABANDON_TIMEOUT_MS;
     const cutoffIso = new Date(cutoffMs).toISOString();
-    const stillActive: LocalGameSave[] = [];
-    for (const save of saves) {
-      // Güvenlik ağı: normalde bir oyun bitince (isGameOver) aynı anda
-      // sunucudaki satırı da silen autosave effect'i (aşağıda) devreye
-      // girer — ama o silme isteği (ör. sekme kapanınca) hiç ulaşmamış
-      // olabilir. Böyle yarım kalmış "bitmiş ama hâlâ orada duran" bir kayıt
-      // varsa fırsatçı biçimde temizlenir, listeye hiç girmez.
-      if (save.state.phase !== 'play' || save.state.isGameOver) {
-        void enqueueSaveWrite(() => deleteLocalGameSave(save.id));
-        continue;
-      }
-      if (Date.parse(save.updated_at) > cutoffMs) {
-        stillActive.push(save);
-        continue;
-      }
-      // Süresi dolmuş — bu cihaz (ya da aynı anda başka bir cihaz) "iddia"
-      // etmeyi dener. Başka biri zaten silmişse claimed null döner, listeye
-      // hiç eklenmez.
-      const claimedState = await claimAbandonedLocalGameSave(save.id, cutoffIso);
-      if (!claimedState) continue;
-      const durationSeconds = Math.max(
-        0,
-        Math.round((Date.parse(save.updated_at) - Date.parse(claimedState.startedAt)) / 1000),
-      );
-      // Yalnızca gerçekten başlamış (turnCount>=2) bir oyun teslim sayılır ve
-      // -2 k-lig cezası alır; hiç oynanmamış bir kayıt sessizce silinir, ne
-      // ceza ne de telemetri üretir (eskiden bunlar ayrı bir "Terk" serisine
-      // yazılıyordu — kullanıcının kendi isteğiyle terk etmesi 29 Temmuz
-      // 2026'da kaldırıldığından o seri tamamen kaldırıldı).
-      if (claimedState.turnCount >= 2) {
-        // `user` bu noktada zaten dolu (fonksiyon başında `if (!user) return`
-        // ile garanti ediliyor) — logGameFinish'in kendi getUser() ağ turunu tekrarlamasın diye geçiliyor.
-        void logGameFinish(claimedState.players.length, durationSeconds, claimedState.multiSession, true, user.id);
-        const record = buildGameRecord(claimedState, true, 0);
-        if (record) void saveGameDurable(record);
-      }
+
+    // (1) Bekleyen aynaları sunucuya it — LİSTELEMEDEN ÖNCE, ki liste zaten
+    // güncellenmiş satırları görsün. Süresi DOLMUŞ aynayı bilerek İTMİYORUZ:
+    // sunucu `updated_at`i bugüne çekerdi ve 7 gün kuralı sessizce
+    // atlatılırdı ("oyunu açıp interneti kapatıp 10 gün sonra dönersem?").
+    // Öyle bir ayna aşağıdaki döngüye bırakılır; orada son etkinlik anı
+    // max(sunucu, ayna) olarak değerlendirilip ceza uygulanır.
+    for (const m of pendingMirroredSaves(user.id)) {
+      if (m.savedAt <= cutoffMs) continue;
+      await enqueueSaveWrite(() => writeCloudSave(m.id, user.id, m.state));
     }
+    // (2) Bekleyen silmeler — yazmalardan SONRA (silme aynayı zaten
+    // temizliyor), listelemeden ÖNCE (aksi halde liste birazdan silinecek
+    // satırı bir kez daha gösterirdi).
+    for (const id of pendingCloudSaveDeletes(user.id)) {
+      await enqueueSaveWrite(() => deleteCloudSave(id, user.id));
+    }
+
+    const saves = await listLocalGameSaves();
+    const mirrors = pendingMirroredSaves(user.id);
+
+    if (saves === null) {
+      // Sunucuya ulaşılamadı — son başarılı liste + ayna bindirmesiyle çiz.
+      // Ceza BU DALDA HİÇ uygulanmaz (bkz. buildOfflineCloudSaves).
+      setCloudSaves(buildOfflineCloudSaves(user.id, mirrors, cutoffMs));
+      return;
+    }
+
+    // Ne yapılacağının kararı saf bir fonksiyonda (test edilebilir olsun diye);
+    // burada yalnızca o kararın G/Ç'si var.
+    const plan = classifyCloudSaves(
+      saves.map((s) => ({ id: s.id, state: s.state, updatedAt: Date.parse(s.updated_at) })),
+      mirrors,
+      cutoffMs,
+    );
+
+    // Güvenlik ağı: normalde bir oyun bitince (isGameOver) sunucudaki satırı da
+    // silen autosave effect'i devreye girer — ama o silme isteği (ör. sekme
+    // kapanınca) hiç ulaşmamış olabilir. Böyle yarım kalmış kayıtlar fırsatçı
+    // biçimde temizlenir, listeye hiç girmez.
+    for (const id of plan.finished) void enqueueSaveWrite(() => deleteCloudSave(id, user.id));
+    for (const id of plan.orphanFinished) removeMirroredSave(id);
+
+    const stillActive = plan.active.map((r) => toLocalGameSave(user.id, r));
+
+    // Süresi dolmuş sunucu satırları: bu cihaz (ya da aynı anda başka bir
+    // cihaz) "iddia" etmeyi dener. Başka biri zaten silmişse null döner.
+    for (const row of plan.expired) {
+      const claimedState = await claimAbandonedLocalGameSave(row.id, cutoffIso);
+      if (!claimedState) continue;
+      // Ayna da gitmeli: aksi halde satır silindikten sonra bir sonraki
+      // açılışta "yalnızca aynada var" sanılıp oyun DİRİLİR — hem ceza
+      // yazılmış hem oyun devam ediyor olurdu.
+      removeMirroredSave(row.id);
+      penalizeAbandonedSave(claimedState, row.updatedAt, user.id);
+    }
+
+    // Sunucunun HİÇ görmediği (tamamen offline açılmış) oyunlar — yalnızca
+    // aynada varlar; iddia edilecek bir satır yok, ayna cihaza özel olduğundan
+    // yarış da yok, doğrudan cezaya çevrilir.
+    for (const m of plan.orphanExpired) {
+      removeMirroredSave(m.id);
+      penalizeAbandonedSave(m.state, m.savedAt, user.id);
+    }
+
+    // Offline'da listeyi çizebilmek için son BAŞARILI sonucu sakla — sunucu
+    // satırlarını değil BİRLEŞTİRİLMİŞ sonucu (ayna bindirmesi uygulanmış hâli).
+    writeCloudSaveCache(
+      user.id,
+      plan.active.map((r) => ({ id: r.id, state: r.state, updatedAt: r.updatedAt })),
+    );
     setCloudSaves(stillActive);
   };
 
@@ -286,6 +413,11 @@ export default function App() {
             players: savedGame.state.players.map((p, i) => (i === 0 ? { ...p, name: accountName } : p)),
           }
         : savedGame.state;
+    // BİLEREK `writeCloudSave` DEĞİL, doğrudan upsert: bu yolun kendi
+    // dayanıklılığı zaten var (başarısızlıkta `savedGame` olduğu gibi kalır,
+    // bir sonraki mount'ta tekrar denenir). Aynaya da yazsaydık aynı oyun hem
+    // misafir slotunda hem aynada durur, liste onu bir de "yalnızca aynada
+    // olan oyun" sanıp MÜKERRER gösterirdi.
     void enqueueSaveWrite(() => upsertLocalGameSave(id, user.id, stateToUpload))
       .then((ok) => {
         // Yalnızca sunucuya GERÇEKTEN yazıldığı doğrulanınca yerel/bellek
@@ -382,7 +514,7 @@ export default function App() {
         if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
         saveDebounceRef.current = setTimeout(() => {
           saveDebounceRef.current = null;
-          void enqueueSaveWrite(() => upsertLocalGameSave(id, uid, snapshot));
+          void enqueueSaveWrite(() => writeCloudSave(id, uid, snapshot));
         }, 600);
       } else {
         saveGameState(state);
@@ -398,9 +530,12 @@ export default function App() {
       // Bekleyen bir debounce'lu kayıt varsa (yukarıda az önce temizlendi)
       // artık gönderilmeyecek — devam kaydını silme işleminin ardından
       // gecikmeli/eski bir upsert'in onu diriltmesi istenmez.
-      if (activeSaveIdRef.current) {
+      if (activeSaveIdRef.current && user) {
         const id = activeSaveIdRef.current;
-        void enqueueSaveWrite(() => deleteLocalGameSave(id));
+        const uid = user.id;
+        void enqueueSaveWrite(() => deleteCloudSave(id, uid));
+        activeSaveIdRef.current = null;
+      } else if (activeSaveIdRef.current) {
         activeSaveIdRef.current = null;
       }
       if (!savedGame) clearGameState();
@@ -620,7 +755,7 @@ export default function App() {
         clearTimeout(saveDebounceRef.current);
         saveDebounceRef.current = null;
       }
-      void enqueueSaveWrite(() => deleteLocalGameSave(id));
+      void enqueueSaveWrite(() => deleteCloudSave(id, user.id));
       activeSaveIdRef.current = null;
     }
     dispatch({ type: 'ABANDON' });

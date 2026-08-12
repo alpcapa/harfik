@@ -2219,16 +2219,24 @@ export async function uploadAvatar(file: File): Promise<string> {
 // tablosunda tutar, böylece hangi cihazdan girerlerse girsin aynı oyuna devam
 // edebilir ve aynı anda birden fazla oyun açık tutabilirler (bkz. CLAUDE.md).
 
-/** Çağıranın tüm devam eden yerel (YZ) oyun kayıtları, en son güncellenen önce. */
-export async function listLocalGameSaves(): Promise<LocalGameSave[]> {
-  if (!supabase) return [];
+/**
+ * Çağıranın tüm devam eden yerel (YZ) oyun kayıtları, en son güncellenen önce.
+ *
+ * Ağ/RLS hatasında **`null`** döner, boş dizi DEĞİL — çağıran "liste alınamadı"
+ * ile "hiç oyunun yok"u ayırt edebilsin diye (12 Ağustos 2026). Eskiden hatada
+ * `[]` dönüyordu ve çevrimdışı kullanıcı Setup'ta boş bir liste görüyordu:
+ * devam eden oyunları kaybolmuş gibi duruyor ve onlara devam edemiyordu. Aynı
+ * ayrım Flutter portunda da var (`CloudSaveRepo.list` → null, Parça 43).
+ */
+export async function listLocalGameSaves(): Promise<LocalGameSave[] | null> {
+  if (!supabase) return null;
   const { data, error } = await supabase
     .from('local_game_saves')
     .select('*')
     .order('updated_at', { ascending: false });
   if (error) {
     console.error('[Kelimeki] listLocalGameSaves hatası:', error.message);
-    return [];
+    return null;
   }
   return (data as LocalGameSave[]) ?? [];
 }
@@ -2254,11 +2262,24 @@ export async function upsertLocalGameSave(id: string, userId: string, state: Gam
   return true;
 }
 
-/** Bir yerel oyun kaydını siler — oyun normal biçimde bitince ya da 7 günlük terk edilme süpürmesi tarafından çağrılır. */
-export async function deleteLocalGameSave(id: string): Promise<void> {
-  if (!supabase) return;
+/**
+ * Bir yerel oyun kaydını siler — oyun normal biçimde bitince ya da 7 günlük
+ * terk edilme süpürmesi tarafından çağrılır.
+ *
+ * Başarıyı **döner**: çağıran, silinemeyen id'yi kalıcı bir kuyruğa yazıp
+ * sonraki senkronda tekrar deneyebilsin diye (12 Ağustos 2026). Eskiden `void`
+ * dönüyordu, yani offline biten bir oyunun "bu satır silinmeli" bilgisi
+ * hiçbir yerde kalmıyor ve sunucudaki bitmemiş kopya listede "devam eden
+ * oyun" olarak geri geliyordu.
+ */
+export async function deleteLocalGameSave(id: string): Promise<boolean> {
+  if (!supabase) return false;
   const { error } = await supabase.from('local_game_saves').delete().eq('id', id);
-  if (error) console.error('[Kelimeki] deleteLocalGameSave hatası:', error.message);
+  if (error) {
+    console.error('[Kelimeki] deleteLocalGameSave hatası:', error.message);
+    return false;
+  }
+  return true;
 }
 
 /**
