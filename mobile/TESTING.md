@@ -1036,11 +1036,19 @@ listesi kök `TESTING.md` bölüm 10.
       emoji GERÇEK emoji olmalı, boş kare (tofu) DEĞİL.** Boş kare
       görürsen `fontFamilyFallback` düşmüş demektir. Not: web test
       derlemesinde (CanvasKit) emoji ağdan çekilir; ağ kısıtlıysa boş
-      görünebilir — bu native'de YAŞANMAZ, FAZ B'de kesin doğrula. + kaybedilen eşiğe geri
+      görünebilir — bu native'de YAŞANMAZ, FAZ B'de kesin doğrula.
+      Banner'da ayrıca kaybedilen eşiğe geri
       dönüş çubuğu; hedef etiketi YALNIZCA SAYI ("100" — "puan" kelimesi
       yok, o zaten bir üstteki "Sıradaki rütbe" satırında geçiyor) ve
       altında yeşil "(+10)"+tik (ödül zaten alındı). Görülmemiş OLUMLU
       bir kutlamayla çakışırsa yalnızca olumlu olan gösterilmeli.
+      **Test satırını uygulama KAPALIYKEN ekle** — açıkken eklersen host
+      bir sonraki öne-dönüş/kontrolünde banner'ı beklenmedik bir anda
+      gösterir, refleksle kapatılır ve kayıt "görüldü" işaretlenir
+      (12 Ağustos 2026'da tam bu oldu: satır 20:50'de eklendi, 20:51'de
+      kapatıldı, sonra "banner çıkmadı" diye raporlandı — kayıt çoktan
+      harcanmıştı). Kod tarafında SESSİZ bir işaretleme yolu yok:
+      `markSeen` yalnızca gösterilen bir banner kapatılınca çağrılıyor.
 - [ ] **Misafirde hiç çıkmaz.** Girişsizken oyun bitir: banner
       görünmemeli, hiçbir ağ isteği atılmamalı. Sonradan giriş yapınca
       (kuyruk sunucuya işlendikten sonraki ilk kontrolde) kutlama
