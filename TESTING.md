@@ -369,7 +369,7 @@ gerekiyor).
       mühre dokun: damga animasyonuyla bilgi popup'ı açılmalı (kademe adı +
       puan + "+N eşik ödülü dahil" + sıradaki rütbe hedefi + hedefe akan
       ilerleme çubuğu; en üst kademede çubuk yok). Çubuk etiketleri: sol
-      eşiğin ödülü YEŞİL "(+5) ✓" (alınmış), hedef eşiğin ödülü GRİ "(+10)"
+      eşiğin ödülü YEŞİL "(+5)✓" (alınmış), hedef eşiğin ödülü GRİ "(+10)"
       (henüz alınmamış) — yeşil+✓ yalnızca alınmış ödülde. Popup İSTENDİĞİ
       KADAR
       tekrar açılabilmeli (kutlamanın aksine "bir kez göster" kuralı yok).
@@ -386,9 +386,9 @@ gerekiyor).
       çıkmalı (diğer banner'ların aksine tekrarlanabilir). Görülmemiş
       olumlu bir kutlama ile çakışırsa yalnızca olumlu olan gösterilmeli.
       Banner'da kaybedilen eşiğe geri dönüş çubuğu olmalı; hedef etiketi
-      "50 puan" biçiminde ve altında yeşil "(+5) ✓" (ödül + onay işareti =
+      "50 puan" biçiminde ve altında yeşil "(+5)✓" (ödül + onay işareti =
       zaten alındı — kişi geri düşse bile yeşil ✓ kalır). Aynı kural bilgi
-      popup'ında: düşmüş biri mühre dokununca hedef rozeti yeşil "(+N) ✓"
+      popup'ında: düşmüş biri mühre dokununca hedef rozeti yeşil "(+N)✓"
       olmalı — hiç düşmemişte hedef GRİ "(+N)", ✓ yok.
 - [ ] **k-lig sırası tutarlı.** Listedeki sıra/puan (leaderboard view) ile
       "senin sıran" satırı (my_leaderboard_rank RPC) aynı toplamı (ödül

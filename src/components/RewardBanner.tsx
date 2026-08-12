@@ -160,7 +160,7 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
                       {/* Alt kademenin ödülü de (varsa) alınmış durumda —
                           yeşil + ✓ (Çaylak'ta ödül yok, rozet çıkmaz). */}
                       {rankDown.newTier.reward > 0 && (
-                        <span className="text-green font-bold">(+{rankDown.newTier.reward}) ✓</span>
+                        <span className="text-green font-bold">(+{rankDown.newTier.reward})✓</span>
                       )}
                     </span>
                     <span className="font-bold text-text">{rankDown.currentPoints}</span>
@@ -170,7 +170,7 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
                           bile yeşil ✓ kalır, yeniden aşmak ikinci kez vermez
                           (ilk sürümdeki "(0)" yerine kullanıcı fikri). */}
                       <span className="text-green font-bold">
-                        (+{tierFor(rankDown.fromThreshold).reward}) ✓
+                        (+{tierFor(rankDown.fromThreshold).reward})✓
                       </span>
                     </span>
                   </div>
