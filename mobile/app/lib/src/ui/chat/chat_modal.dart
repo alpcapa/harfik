@@ -7,11 +7,10 @@ import 'package:flutter/material.dart';
 import 'chat_thread.dart';
 import '../game/modal_shell.dart';
 import '../tokens.dart';
+import '../form_input.dart';
 
 const _accent = kAccent;
 const _muted = kMuted;
-const _border = kBorder;
-const _bg = kBg;
 const _red = kRed;
 
 const int kChatMaxLength = 200;
@@ -188,20 +187,9 @@ class _ChatModalState extends State<ChatModal> {
             minLines: 2,
             enabled: !_sending,
             onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
-              hintText: 'Mesajınızı girin',
-              filled: true,
-              fillColor: _bg,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              counterText: '', // özel sayaç aşağıda
-              enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: _border)),
-              focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: _accent)),
-            ),
+            style: kInputTextStyle,
+            // counterText: '' — özel sayaç aşağıda (web de öyle).
+            decoration: kInputDecoration(hint: 'Mesajınızı girin'),
           ),
           const SizedBox(height: 4),
           Row(

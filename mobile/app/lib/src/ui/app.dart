@@ -5,6 +5,7 @@ import '../bootstrap.dart';
 import '../config/version_gate.dart';
 import 'auth/reset_password_modal.dart';
 import 'setup/setup_screen.dart';
+import 'theme.dart';
 import 'update_required_screen.dart';
 
 class KelimekiApp extends StatelessWidget {
@@ -15,15 +16,10 @@ class KelimekiApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Kelimeki',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0891B2)),
-        useMaterial3: true,
-        // Web tailwind fontFamily.sans = Space Grotesk; sayfa zemini web'de
-        // BEYAZ (colors.bg) — soluk gri değil (gölge dengesi buna bağlı,
-        // kullanıcı karşılaştırması 6 Ağustos 2026).
-        fontFamily: 'SpaceGrotesk',
-        scaffoldBackgroundColor: Colors.white,
-      ),
+      // Tema TEK yerde (`ui/theme.dart`) — testler de aynı fonksiyonu
+      // kullanıyor, yoksa üründe değişen bir tema testlerde eski hâliyle
+      // render edilip sapma görünmez kalıyor.
+      theme: kelimekiTheme(),
       // Şifre sıfırlama kapısı — web App.tsx'in `if (passwordRecovery)`
       // erken dönüşünün eşleniği. builder Navigator'ı SARDIĞINDAN kapı
       // hangi rota açık olursa olsun (Setup, oyun, açık bir dialog) en

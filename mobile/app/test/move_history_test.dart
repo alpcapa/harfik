@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
 import 'package:kelimeki/src/ui/game/move_history_modal.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
@@ -124,8 +125,7 @@ void main() {
     await setPhoneViewSize(tester, const Size(420, 900));
     final key = GlobalKey();
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: RepaintBoundary(
         key: key,
         child: MoveHistoryModal(state: _stateWithHistory()),
@@ -184,7 +184,7 @@ void main() {
     await setPhoneViewSize(tester, const Size(420, 900));
     final empty = _stateWithHistory().copyWith(moveHistory: const []);
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+      theme: kelimekiTheme(),
       home: MoveHistoryModal(state: empty),
     ));
     await tester.pumpAndSettle();
@@ -226,8 +226,7 @@ void main() {
       moveHistory: const [],
     )));
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: GameScreen(controller: controller, words: words),
     ));
     await tester.pump();

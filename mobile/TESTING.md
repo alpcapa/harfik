@@ -92,6 +92,25 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
       bloğu da `-mt-5` ile kabın `py-6`sının 20'sini geri alıyor. Aradaki
       4, kullanıcının portu tercih ettiği tek yer: **web porta uyduruldu**,
       yani burada web 12 görünüyorsa `-mt-5` geri alınmış demektir.
+- [ ] **Logo altındaki yazı bloğu (13 Ağustos 2026, Parça 77).** Geniş bir
+      ekranda iki platformu yan yana aç: tanıtım paragrafı İKİSİNDE de
+      **4 satır** olmalı ve satır sonları aynı yerde kırılmalı (ilk satır
+      "… kuşat. Ama" ile bitiyor). App'te 5 satıra düşüyorsa Material 3'ün
+      0.25 harf aralığı yine sızmış demektir — aynı kontrol "Nasıl
+      oynanır? · Arkadaşınla paylaş" satırının genişliği için de geçerli.
+- [ ] **Harf aralığı: hiçbir metin web'den geniş DEĞİL (13 Ağustos 2026,
+      Parça 78).** Material 3'ün 0.25 tracking'i tema seviyesinde
+      kapatıldı; bu TÜM ekranların metin genişliğini ~%1-2 daraltıyor.
+      Bölüm 0.5'i koşarken her ekrana bir kez bak: bir yerde satır sonu
+      web'den farklı kırılıyor ya da bir etiket kutusuna sığmıyorsa not al
+      (testler geometriyi doğruluyor ama her ekranı gözle kontrol
+      edemiyor).
+- [ ] **Form alanları (13 Ağustos 2026, Parça 79).** Giriş/kayıt, Hesap
+      Ayarları, Görüş Bildir, arkadaş arama, sohbet ve şikayet kutuları —
+      hepsi AYNI görünmeli: 38px yükseklik, 16 punto, 12px yatay dolgu,
+      odakta mavi çerçeve. Çok satırlı olanlarda (sohbet/şikayet) da aynı
+      dolgu/çerçeve geçerli. Klavye açıkken metnin kutuya dikey ortalı
+      durduğunu da kontrol et.
 - [ ] **Arkadaş onay/bilgi diyalogları.** "Arkadaşlıktan çıkar" gibi bir
       onay diyaloğu aç: kart genişliği ve iç dolgusu web ile aynı olmalı
       (384 kutu, 24 dolgu → içerik 336).

@@ -313,7 +313,12 @@ mobile/
                              # app_database (şema), app_storage (giriş kapısı),
                              # local_save_store (karantinalı kayıt), pending_queue_store,
                              # pending_event_store, chat_read_store, flags_store
-      ui/                    # app.dart, update_required_screen.dart, ve:
+      ui/                    # app.dart, update_required_screen.dart,
+                             # theme.dart (ÜRÜNÜN TEK teması — testler de
+                             # `kelimekiTheme()` kullanır; M3'ün varsayılan
+                             # harf aralığını sıfırlar, bkz. Parça 78),
+                             # form_input.dart (TÜM giriş alanlarının tek
+                             # dekorasyonu/metin stili, bkz. Parça 79), ve:
       ui/auth/               # giriş-kayıt-şifremi-unuttum modalı, hesap
                              # butonu, avatar, Terms/Privacy,
                              # reset_password_modal (recovery kapısı)
@@ -2630,42 +2635,130 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        olduktan SONRA — ikisi farklı zamanlarda yayına girdiğinden ara
        dönemde fark görünebilir).
 
+   - ✅ **Parça 77 — logo altındaki paragraf 5 satır, web'de 4: Material 3'ün
+     0.25 tracking'i (13 Ağustos 2026, `setup_screen.dart`):** Kullanıcı iki
+     ekran görüntüsünü yan yana koydu — app'te "Ama" alt satıra düşüyordu.
+     - **Kök sebep, "Sonraya Bırakılan İşler"de zaten yazılı olan borç:**
+       `ThemeData(useMaterial3: true)` → `bodyMedium.letterSpacing = 0.25`,
+       ve `letterSpacing` YAZMAYAN her `Text` bunu miras alıyor (widget'ın
+       kendi style'ı o alanı `null` bıraktığında `Text` DefaultTextStyle
+       ile MERGE ediyor). Web'de `text-xs font-mono` hiçbir letter-spacing
+       kurmuyor (hesaplanan değer `normal`). 0.25 × ~57 karakter ≈ 14px →
+       satır taşıyor. Ölçüldü: app 80px/5 satır, web 64px/4 satır.
+     - **Düzeltme cerrahi:** paragraf + iki link + ayraç `letterSpacing: 0`.
+       Global çözüm (temanın `textTheme`'ini 0'a çekmek) hâlâ doğru yol ama
+       TÜM ekranların metin genişliğini değiştireceğinden ayrı bir ölçüm/
+       ekran görüntüsü turu istiyor — o madde listede kaldı.
+     - **Ayraç DEĞİŞTİRİLMEDİ, ölçülüp bırakıldı:** web `gap-2` (8+8) ile
+       ayrılmış bir `·` kullanıyor (19.67), portun boşluklu `' · '`i 20.20 —
+       0.5px fark; yeniden yapılandırmak kazanç değil risk olurdu.
+     - **ÖLÇÜM TUZAĞI (bu turda iki kez düşüldü, ikisi de yakalandı):**
+       (1) harness `file://` üzerinden açılınca Chromium woff2'yi CORS ile
+       engelleyip SESSİZCE yedek monospace'e düşüyor — `getComputedStyle`
+       hâlâ "Space Mono" diyor, ama ölçülen advance 0.602 (DejaVu), gerçek
+       Space Mono 0.612. Çözüm: `python3 -m http.server` ile servis et ve
+       canvas `measureText` ile advance'i DOĞRULA. (2) Yalnızca 400
+       ağırlığını `@font-face` edip 700'ü unutunca linkler yedek fontla
+       ölçülüyordu; 700 eklenince web değerleri portunkilerle birebir
+       oturdu (94.25 / 121.19). İlk (hatalı) ölçüm "port %1.6 geniş" gibi
+       görünen sahte bir fark üretmişti — düzeltmeye kalksam gerçek bir
+       hatayı ÜRETECEKTİM.
+     - **Mevcut test bu sapmayı NEDEN göremedi:** "Setup başlık bloğu"
+       testi `fontSize`/`height` DEĞERLERİNİ kontrol ediyordu, ikisi de
+       doğruydu; kırılan şey SONUÇTU (satır sayısı). Parça 72'nin dersinin
+       birebir tekrarı. Yeni test render edilmiş yüksekliği (64 = 4×16) ve
+       üç metnin EFEKTİF `letterSpacing`'ini ölçüyor; eski test de yerinde
+       kaldı (o 390px'lik dar ekranı kapsıyor, yenisi 428px içerik için
+       geniş ekran).
+     - **Negatif eş:** `setup_screen.dart` `git stash`lenince test GERÇEKTEN
+       `Expected: <64> Actual: <80.0>` ile düştü — yani kullanıcının
+       bildirdiği semptomun ta kendisi.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 365/365 yeşil**
+       (364'ten +1). Web'e HİÇ dokunulmadı (yalnızca ölçüm kaynağı olarak
+       kullanıldı); `kelimeki_core`'a dokunulmadı.
+
+   - ✅ **Parça 78 — M3 tracking'i tek kaynaktan kapatıldı; testler artık
+     ÜRÜN temasıyla render ediyor (13 Ağustos 2026, yeni `ui/theme.dart` +
+     `app.dart` + 25 test dosyası):** Parça 77'de Setup'ın bloğu tek tek
+     yamanmıştı; kullanıcı "global letterSpacing düzeltmesini de yap"
+     deyince "Sonraya Bırakılan İşler"deki borç kapatıldı.
+     - **`kelimekiTheme()` (yeni `lib/src/ui/theme.dart`)** ürünün temasını
+       tek yerde tanımlıyor; `zeroTrackingTextTheme` 15 metin stilinin
+       (+`primaryTextTheme`) `letterSpacing`'ini 0'a çekiyor. YALNIZCA
+       tracking sıfırlanıyor — punto/kalınlık/renk Material'ın kendi
+       değerinde kalıyor (onlar zaten ekran ekran açıkça veriliyor).
+     - **Asıl mesele tema DEĞİL, testlerin temayı TAKLİT ETMESİYDİ:** 25
+       test dosyası kendi `ThemeData(fontFamily: 'SpaceGrotesk', …)`ını
+       kuruyordu, yani `app.dart`'ı düzeltmek testlerde HİÇBİR ŞEY
+       değiştirmezdi. 66 çağrı yeri `kelimekiTheme()`e çevrildi; bu aynı
+       zamanda gerçek `colorScheme`i de testlere getirdi (Parça 71'in
+       dersi: gerçek ekranı ölç, taklidini değil).
+     - **Yeni `test/theme_test.dart` üç şeyi kilitliyor** (`color_tokens_test`
+       deseninin tipografi karşılığı): `letterSpacing` yazmayan bir `Text`
+       gerçekten 0 alıyor mu; temanın 15 stili de sıfır mı; ve **hiçbir
+       test dosyası kendi `ThemeData`sını kurmuyor mu** — üçüncüsü olmadan
+       bir sonraki oturum sessizce eski desene döner.
+     - **Negatif eş:** `kelimekiTheme()`in `copyWith`i kaldırılınca ilk iki
+       test GERÇEKTEN düştü (`Expected: <0> Actual: <0.25>` ve
+       `displayLarge tracking taşıyor`), geri konunca yeşile döndü.
+     - **Parça 77'nin yerel `letterSpacing: 0`ları BİLEREK duruyor** —
+       artık gereksizler ama niyeti yerelde okunur kılıyorlar.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 368/368
+       yeşil** (365'ten +3). Ekran görüntüleri yeniden üretilip gözle
+       incelendi (Setup formu, Skor Kartı, Arkadaşlar modalı) — tema
+       değişiminin bozduğu bir yer yok. `kelimeki_core`'a ve web'e hiç
+       dokunulmadı.
+     - **Doğrulama sınırı:** tracking kalkınca metinler ~%1-2 daralıyor;
+       testler geometriyi (428 içerik, 44px sekme, 64px paragraf…) hâlâ
+       doğruluyor ama TÜM ekranların cihazda gözle kontrolü kullanıcıdan
+       bekleniyor — `mobile/TESTING.md` bölüm 0.5'e madde eklendi.
+
+   - ✅ **Parça 79 — giriş alanlarının 8 kopyası tek kaynağa indi; web'in
+     GERÇEK puntosu 14 değil 16'ymış (13 Ağustos 2026, yeni
+     `ui/form_input.dart` + 8 dosya):** Borç listesinin ikinci (ve son
+     mobil) maddesi kapandı.
+     - **Web'de bu stil TEK bir sınıf dizisi** ve dokuz bileşende BİREBİR
+       aynı: `w-full bg-bg border border-border rounded-md px-3 py-2
+       text-sm text-text outline-none focus:border-accent`. Port onu sekiz
+       dosyaya kopyalamış ve kopyalar ayrışmıştı: dolgu **8 ya da 10**,
+       punto **16 ya da tema varsayılanı**, dolgu rengi **beyaz ya da
+       `_bg`**. Parça 54'teki renk sürüklenmesiyle aynı sınıf.
+     - **ÖLÇÜM bir varsayımı düzeltti:** Parça 56 bu maddeyi yazarken
+       puntoyu `text-sm` = 14 sanıyordu. Gerçekte `index.css`teki iOS zoom
+       kuralı (`input, textarea, select { font-size: 16px !important }`)
+       sınıfı EZİYOR — web'de görünen punto **16**. Ölçülen web değerleri:
+       yükseklik **38** · punto **16** · satır **20** · dolgu **8/12** ·
+       çerçeve 1px `#DCE2EA` (odakta `#2563EB`) · yarıçap 6 · zemin beyaz.
+     - **Dikey dolgu 9, 8 DEĞİL — ve bu bir sihirli sayı değil:** CSS'te
+       çerçeve kutunun DIŞINA eklenir (20+16+2 = 38); Flutter'da
+       `OutlineInputBorder` çerçeveyi kutunun İÇİNE boyar, yani 8 dolguyla
+       dış ölçü 36 kalıyordu. 1px çerçeve payı eklenince dış kutu 38 VE
+       çerçevenin içindeki boşluk web'deki gibi 8 oluyor (ölçüldü;
+       `kInputHeight` sabiti bunu adlandırıyor).
+     - **`test/theme_test.dart` iki yeni kontrol aldı:** alanın gerçekten
+       38 yüksekliğinde ve 16/20 puntoda render edildiği + **`lib/` altında
+       ham `InputDecoration(` kurucusu kalmadığı** (regex `kInputDecoration(`
+       çağrılarını yakalamıyor). İkincisi olmadan bir sonraki oturum yeni
+       bir kopya açar ve kimse fark etmez.
+     - **Negatif eş:** dolgu 8'e çekilince yükseklik testi GERÇEKTEN
+       `Expected: <38.0> Actual: <36.0>` ile düştü; tarama regex'i
+       gevşetilince (ham `contains`) sekiz dosya listelenip düştü.
+     - **Temizlik:** kopyalarla birlikte ölü kalan yerel `_border`/`_accent`/
+       `_text`/`_bg` sabitleri ve `reset_password_modal`ın yerel `border()`
+       yardımcısı da silindi (analyze temiz).
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 370/370
+       yeşil** (368'den +2). Ekran görüntüleri yeniden üretilip gözle
+       incelendi (kayıt formu, sohbet kutusu) — alanlar tek tip.
+       `kelimeki_core`'a ve web'e hiç dokunulmadı.
+     - **Doğrulama sınırı:** klavye açıkken gerçek cihazda alanların
+       görünümü (özellikle çok satırlı sohbet/şikayet kutuları) gözle
+       kontrol edilmeli — `mobile/TESTING.md` bölüm 0.5'e madde eklendi.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
 kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
 silinip kendi tarihli parça notuna taşınır.
-
-- **Material 3'ün varsayılan `letterSpacing: 0.25`'i tüm porta sızıyor
-  olabilir (12 Ağustos 2026, Parça 61'de ÖLÇÜLEREK bulundu):** `ThemeData`
-  `useMaterial3: true` olduğundan `TextTheme.bodyMedium` 0.25 tracking
-  taşıyor; `letterSpacing` yazmayan HER `Text` bunu miras alıyor. Web'de
-  bu metinlerde tracking YOK. Parça 61'de somut bir hataya yol açtı:
-  33 karakterlik bir satır tam 8.25px (33×0.25) şişip karta sığmadı ve iki
-  satıra düştü — aynı metin Chromium'da gerçek fontla 222.16px, tek satır.
-  - `ui/rank/` dosyaları düzeltildi (`kNoTracking`); **portun geri kalanı
-    DENETLENMEDİ.** Doğru çözüm muhtemelen tek yerden: `app.dart`'taki
-    `ThemeData`'ya `textTheme: Typography...apply(letterSpacingDelta: ...)`
-    ya da `bodyMedium: TextStyle(letterSpacing: 0)` — ama bu TÜM ekranların
-    metin genişliğini değiştireceğinden ölçülerek (Parça 56'nın Chromium
-    yöntemiyle) ve ekran görüntüleriyle yapılmalı.
-  - Parça 56'nın punto denetiminin gözden kaçırdığı sınıf tam olarak bu:
-    punto DOĞRUYDU, satır genişliği değildi.
-
-- **Metin girişi dolgusu + `InputDecoration`ın 8 kopyası (11 Ağustos 2026,
-  Parça 56 denetiminde bulundu):** Port `contentPadding: h12/v10`
-  kullanıyor, web `px-3 py-2` = h12/**v8**. Kutu yüksekliği web'de tam
-  38px (20 satır + 16 dolgu + 2 çerçeve); portta satır yüksekliği de
-  serbest bırakıldığından ~40-41px. Birebir eşitlemek için İKİSİ birlikte
-  değişmeli: dolgu 8 **ve** giriş metninin `height: 20/14`i.
-  - **Asıl iş bu değil:** aynı `InputDecoration` bloğu **8 dosyada**
-    kopyalanmış (auth_modal, account_settings, reset_password, feedback,
-    friends, chat_modal, chat_settings, live_game_create_form) — Parça
-    54'teki renk sürüklenmesiyle AYNI sınıf risk. Önce ortak bir
-    `kInputDecoration` yardımcısına çekilmeli, düzeltme ondan sonra tek
-    yerden gelir.
-  - Cihazda görsel doğrulama gerektiriyor (Flutter'ın `isDense`/baseline
-    davranışı CSS ile birebir değil), o yüzden Parça 56'ya sığdırılmadı.
 
 - **Kayıt onayı maili kaydın GELDİĞİ kanala dönmeli (10 Ağustos 2026,
   kullanıcı kararı — sözleri: "Kişilerin kayıt başvurusu hangi kanaldan

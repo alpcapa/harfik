@@ -13,6 +13,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/meaning_entry.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/data/meaning_store.dart';
 import 'package:kelimeki/src/ui/game/meaning_modal.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -106,8 +107,7 @@ void main() {
     await setPhoneViewSize(tester, const Size(420, 900));
     final key = GlobalKey();
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: RepaintBoundary(
         key: key,
         child: MeaningModal(lookup: fakeLookup, words: const ['KELİME', 'ABA']),
@@ -140,7 +140,7 @@ void main() {
   testWidgets('sözlükte olmayan kelime: "bulunamadı"', (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+      theme: kelimekiTheme(),
       home: MeaningModal(lookup: fakeLookup, words: const ['ZZZZZZ']),
     ));
     await tester.pump();

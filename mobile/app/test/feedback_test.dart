@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/data/feedback_api.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:kelimeki/src/storage/pending_queue_store.dart';
@@ -189,8 +190,7 @@ void main() {
       final repo = newRepo(gw, Future.value(storage));
       final openedAt = clock;
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(
-            fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+        theme: kelimekiTheme(),
         home: Scaffold(
           body: FeedbackModal(
             auth: auth ?? AuthService.fake(),
@@ -254,8 +254,7 @@ void main() {
       final repo = newRepo(gw, Future.value(storage));
       final openedAt = clock;
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(
-            fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+        theme: kelimekiTheme(),
         home: RepaintBoundary(
           key: key,
           child: Scaffold(
@@ -345,7 +344,7 @@ void main() {
           ((steps.last as Map)['state'] as Map).cast<String, Object?>());
       var opened = 0;
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+        theme: kelimekiTheme(),
         home: Scaffold(
             body: GameOverModal(state: state, onFeedback: () => opened++)),
       ));
@@ -355,7 +354,7 @@ void main() {
 
       // Verilmezse hiç çizilmez (testler/önizlemeler).
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+        theme: kelimekiTheme(),
         home: Scaffold(body: GameOverModal(state: state)),
       ));
       await tester.pump();
@@ -368,8 +367,7 @@ void main() {
       final storage = await tester.runAsync(openTestStorage);
       final repo = newRepo(MemFeedbackGateway(), Future.value(storage));
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(
-            fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+        theme: kelimekiTheme(),
         home: Scaffold(
           body: AuthModal(
               auth: AuthService.fake(),

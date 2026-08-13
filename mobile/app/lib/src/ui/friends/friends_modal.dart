@@ -33,6 +33,7 @@ import '../game/modal_shell.dart';
 import '../game/neo_button.dart';
 import '../score/player_score_card_modal.dart';
 import '../tokens.dart';
+import '../form_input.dart';
 
 const Color _text = kText;
 const Color _muted = kMuted;
@@ -488,21 +489,8 @@ class _FriendsModalState extends State<FriendsModal> {
           controller: _query,
           onChanged: _onQueryChanged,
           autofocus: true,
-          decoration: InputDecoration(
-            isDense: true,
-            filled: true,
-            fillColor: _bg,
-            hintText: 'İsim ya da takma ad ara…',
-            hintStyle: const TextStyle(fontSize: 14, color: Color(0xFF8A93A2)),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(6),
-                borderSide: const BorderSide(color: _border)),
-            focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(6),
-                borderSide: const BorderSide(color: _accent)),
-          ),
+          style: kInputTextStyle,
+          decoration: kInputDecoration(hint: 'İsim ya da takma ad ara…'),
         ),
         const SizedBox(height: 10),
         if (q.length >= 2)

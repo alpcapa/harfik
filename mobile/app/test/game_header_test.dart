@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/ui/game/game_header.dart';
 import 'package:kelimeki/src/ui/game/logo_mark.dart';
 import 'package:kelimeki/src/ui/game/logo_mark_data.dart';
@@ -102,8 +103,7 @@ void main() {
     Future<double> overflowAt(double width, GameState s) async {
       await setPhoneViewSize(tester, Size(width, 200));
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(
-            fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+        theme: kelimekiTheme(),
         home: Scaffold(
           body:
               GameHeader(state: s, onLogoTap: () {}, auth: AuthService.fake()),
@@ -154,8 +154,7 @@ void main() {
     await setPhoneViewSize(tester, const Size(420, 200));
     var logoTapped = false;
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: Scaffold(
         backgroundColor: Colors.white,
         body: RepaintBoundary(

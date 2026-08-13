@@ -11,6 +11,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/bootstrap.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/config/version_gate.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/meaning_store.dart';
@@ -121,8 +122,7 @@ void main() {
     final auth = AuthService.fake(user: fakeUser(), profile: ironman);
     final key = GlobalKey();
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: RepaintBoundary(
           key: key, child: SetupScreen(services: services(auth))),
     ));
@@ -167,8 +167,7 @@ void main() {
     await setPhoneViewSize(tester, const Size(420, 900));
     final auth = AuthService.fake();
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: SetupScreen(services: services(auth)),
     ));
     await tester.pump();
@@ -199,8 +198,7 @@ void main() {
     await setPhoneViewSize(tester, const Size(420, 900));
     final auth = AuthService.fake(user: fakeUser(), profileLoading: true);
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: SetupScreen(services: services(auth)),
     ));
     await tester.pump();

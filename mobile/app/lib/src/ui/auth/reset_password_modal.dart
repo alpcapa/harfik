@@ -16,12 +16,11 @@ import '../../data/auth_service.dart';
 import '../game/modal_shell.dart';
 import '../game/neo_button.dart';
 import '../tokens.dart';
+import '../form_input.dart';
 
 const Color _muted = kMuted;
 const Color _red = kRed;
 const Color _green = kGreen;
-const Color _border = kBorder;
-const Color _accent = kAccent;
 
 class ResetPasswordModal extends StatefulWidget {
   final AuthService auth;
@@ -156,10 +155,6 @@ class _ResetPasswordModalState extends State<ResetPasswordModal> {
     bool autofocus = false,
     ValueChanged<String>? onSubmitted,
   }) {
-    OutlineInputBorder border(Color c) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(color: c),
-        );
     return TextField(
       controller: controller,
       obscureText: true, // web'de bu formda göster/gizle yok
@@ -167,18 +162,8 @@ class _ResetPasswordModalState extends State<ResetPasswordModal> {
       enabled: !_busy,
       onSubmitted: onSubmitted,
       autofillHints: const [AutofillHints.newPassword],
-      decoration: InputDecoration(
-        isDense: true,
-        filled: true,
-        fillColor: Colors.white,
-        hintText: hint,
-        hintStyle: const TextStyle(fontSize: 14, color: Color(0xFF8A93A2)),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        enabledBorder: border(_border),
-        focusedBorder: border(_accent),
-        disabledBorder: border(_border),
-      ),
+      style: kInputTextStyle,
+      decoration: kInputDecoration(hint: hint),
     );
   }
 }

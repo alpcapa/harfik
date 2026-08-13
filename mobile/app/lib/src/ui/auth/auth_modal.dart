@@ -27,11 +27,9 @@ import '../game/modal_shell.dart';
 import '../game/neo_button.dart';
 import 'legal_modals.dart';
 import '../tokens.dart';
-
-const Color _text = kText;
+import '../form_input.dart';
 const Color _muted = kMuted;
 const Color _accent = kAccent;
-const Color _border = kBorder;
 const Color _red = kRed;
 const Color _green = kGreen;
 const Color _gold = kGold; // web text-gold (tailwind.config)
@@ -343,12 +341,11 @@ class _AuthModalState extends State<AuthModal> {
                     initialValue: _gender,
                     onChanged:
                         _busy ? null : (v) => setState(() => _gender = v ?? ''),
-                    decoration: _inputDecoration(),
+                    decoration: kInputDecoration(),
                     // fontFamily şart: Dropdown'un `style`'ı tema fontunu
                     // MİRAS ALMAZ (ButtonStyle.textStyle dersiyle aynı) —
                     // verilmezse cihazda Roboto'ya, testte Ahem bloğuna düşer.
-                    style: const TextStyle(
-                        fontFamily: 'SpaceGrotesk', fontSize: 16, color: _text),
+                    style: kInputTextStyle,
                     items: [
                       const DropdownMenuItem(
                           value: '', child: Text('Belirtilmedi')),
@@ -544,26 +541,6 @@ class _AuthModalState extends State<AuthModal> {
 
   // ── Küçük yapı taşları ──────────────────────────────────────────────────
 
-  InputDecoration _inputDecoration({String? hint, Widget? suffix}) {
-    OutlineInputBorder border(Color c) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(color: c),
-        );
-    return InputDecoration(
-      isDense: true,
-      filled: true,
-      fillColor: Colors.white, // web bg-bg
-      hintText: hint,
-      hintStyle: const TextStyle(fontSize: 14, color: Color(0xFF8A93A2)),
-      counterText: '',
-      suffixIcon: suffix,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      enabledBorder: border(_border),
-      focusedBorder: border(_accent),
-      disabledBorder: border(_border),
-    );
-  }
-
   Widget _field(
     TextEditingController controller, {
     String? hint,
@@ -584,8 +561,8 @@ class _AuthModalState extends State<AuthModal> {
       onChanged: onChanged,
       onSubmitted: onSubmitted,
       enabled: !_busy,
-      style: const TextStyle(fontSize: 16, color: _text), // iOS zoom dersi
-      decoration: _inputDecoration(hint: hint, suffix: suffix),
+      style: kInputTextStyle,
+      decoration: kInputDecoration(hint: hint, suffix: suffix),
     );
   }
 

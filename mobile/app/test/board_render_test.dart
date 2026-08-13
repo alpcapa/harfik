@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/ui/game/board_widget.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/ui/game/tile_widget.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
@@ -45,8 +46,7 @@ Future<void> capturePng(
 Future<void> pumpBoard(WidgetTester tester, GlobalKey key, GameState state,
     {MoveOverlay? overlay}) async {
   await tester.pumpWidget(MaterialApp(
-    theme: ThemeData(
-        fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+    theme: kelimekiTheme(),
     home: Scaffold(
       backgroundColor: Colors.white,
       body: Center(

@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/ui/auth/k_avatar.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/ui/game/player_avatar_row.dart';
 
 import 'support/test_fonts.dart';
@@ -106,7 +107,7 @@ void main() {
       (tester) async {
     final key = GlobalKey();
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: Scaffold(
         body: Center(
           child: RepaintBoundary(

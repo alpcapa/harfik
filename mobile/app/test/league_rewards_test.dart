@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/data/league_rewards_api.dart';
 import 'package:kelimeki/src/data/stats_api.dart';
 import 'package:kelimeki/src/ui/game/neo_box.dart';
@@ -297,8 +298,7 @@ void main() {
   }) async {
     await setPhoneViewSize(tester, const Size(420, 900));
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: LeagueRewardsHost(
         rewards: LeagueRewardsRepo(gw),
         auth: auth ?? AuthService.fake(user: fakeUser()),
@@ -368,7 +368,7 @@ void main() {
 
       // Oyun bitti → suppress düşer → host kendiliğinden kontrol eder.
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+        theme: kelimekiTheme(),
         home: LeagueRewardsHost(
           rewards: LeagueRewardsRepo(gw),
           auth: AuthService.fake(user: fakeUser()),
@@ -434,7 +434,7 @@ void main() {
         {required int total, required int bonus}) async {
       await setPhoneViewSize(tester, const Size(420, 900));
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+        theme: kelimekiTheme(),
         home: Scaffold(
           body: RankInfoModal(
               tier: tierFor(total), totalScore: total, bonusPoints: bonus),
@@ -525,9 +525,7 @@ void main() {
         await setPhoneViewSize(tester, const Size(420, 900));
         final key = GlobalKey();
         await tester.pumpWidget(MaterialApp(
-          theme: ThemeData(
-              fontFamily: 'SpaceGrotesk',
-              scaffoldBackgroundColor: Colors.white),
+          theme: kelimekiTheme(),
           home: RepaintBoundary(key: key, child: w),
         ));
         await tester.pumpAndSettle();

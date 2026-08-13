@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/data/friend_invite_inbox.dart';
 import 'package:kelimeki/src/data/friends_api.dart';
 import 'package:kelimeki/src/data/stats_api.dart';
@@ -251,8 +252,7 @@ void main() {
       await setPhoneViewSize(tester, const Size(420, 900));
       final gw = gateway ?? FakeFriendsGateway();
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(
-            fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+        theme: kelimekiTheme(),
         home: Scaffold(
           body: FriendsModal(
             friends: FriendsRepo(gw),
@@ -465,8 +465,7 @@ void main() {
       final key = GlobalKey();
       // Ekran görüntüsü için yeniden pump (RepaintBoundary ile).
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(
-            fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+        theme: kelimekiTheme(),
         home: RepaintBoundary(
           key: key,
           child: Scaffold(
@@ -536,7 +535,7 @@ void main() {
           {'requester_id': 'r2', 'name': 'Bobola', 'avatar_url': null},
         ];
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+        theme: kelimekiTheme(),
         home: Scaffold(
           body: Center(
             child: AccountButton(
@@ -564,7 +563,7 @@ void main() {
       final gw = FakeFriendsGateway()
         ..relation = {'user_id': 'me', 'status': 'accepted'};
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+        theme: kelimekiTheme(),
         home: Scaffold(
           body: PlayerScoreCardModal(
             stats: StatsRepo(_NullStatsGateway()),
@@ -605,7 +604,7 @@ void main() {
       await setPhoneViewSize(tester, const Size(1200, 900));
       final gw = FakeFriendsGateway()..sendResult = 'pending';
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+        theme: kelimekiTheme(),
         home: Scaffold(
           body: PlayerScoreCardModal(
             stats: StatsRepo(_NullStatsGateway()),
