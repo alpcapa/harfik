@@ -959,24 +959,27 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SizedBox(
-          height: 44,
-          child: NeoButton(
-            label: '+ YENİ YAPAY ZEKA OYUNU AÇ',
-            variant: NeoButtonVariant.orange,
-            fontSize: 14,
-            letterSpacing: 1.5,
-            onPressed: () => setState(() => _creatingLocal = true),
-          ),
+        // Web: `text-sm` (14) + `py-2.5` (10) + satır 20 → kutu tam 40
+        // (port 44'lük bir SizedBox'a sarıyordu); aradaki boşluklar
+        // kapsayıcının `gap-5`inden (20), sekmelerin kendi arası `gap-2`
+        // (8). `LiveGamesTab`'daki ikiziyle BİREBİR aynı (Parça 80).
+        NeoButton(
+          label: '+ YENİ YAPAY ZEKA OYUNU AÇ',
+          variant: NeoButtonVariant.orange,
+          fontSize: 14,
+          lineHeight: 20 / 14,
+          letterSpacing: 1.5,
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          onPressed: () => setState(() => _creatingLocal = true),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
         Row(children: [
           _localSubTabBtn(_LocalSubTab.active, 'Devam Edenler',
               badge: saves?.length ?? 0),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           _localSubTabBtn(_LocalSubTab.recent, 'Son Oynananlar'),
         ]),
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
         switch (_localSubTab) {
           _LocalSubTab.active => saves == null
               ? const Padding(

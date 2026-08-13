@@ -23,6 +23,7 @@ import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
 import 'package:kelimeki/src/ui/game/logo_mark.dart';
+import 'package:kelimeki/src/ui/game/neo_button.dart';
 import 'package:kelimeki/src/ui/setup/setup_screen.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -233,6 +234,41 @@ void main() {
       out.parent.createSync(recursive: true);
       out.writeAsBytesSync(bytes!.buffer.asUint8List());
     });
+  });
+
+  testWidgets(
+      '"+ Yeni …" butonu ve alt sekme satırı web ölçüleriyle aynı (40/20/8/20)',
+      (tester) async {
+    // 13 Ağustos 2026, kullanıcı bildirdi: "yeni oyun aç butonu ile
+    // altındaki devam edenler butonları arasındaki fark web'den daha dar".
+    //
+    // Web'de bu üç boşluğun HİÇBİRİ elle yazılmıyor — kapsayıcının
+    // `gap-5`i (20) ve sekme satırının `gap-2`si (8) veriyor; butonun
+    // yüksekliği de `text-sm` (14/20) + `py-2.5` (10+10) = 40. Port üçünü
+    // de kendi sayılarıyla (12/6/12) yazmış ve butonu 44'lük bir
+    // SizedBox'a sarmıştı. Derlenmiş CSS + Chromium'da ölçüldü:
+    //   buton 40 · buton→sekme 20 · sekmeler arası 8 · sekme→içerik 20
+    //
+    // `LiveGamesTab`'daki ikizi AYNI değerleri kullanıyor (bilinçli kod
+    // tekrarı çifti) — biri değişirse öteki de değişmeli.
+    final gw = MemGateway();
+    await pumpSetup(tester, gw);
+
+    final buton = tester.getRect(
+        find.widgetWithText(NeoButton, '+ YENİ YAPAY ZEKA OYUNU AÇ'));
+    // Sekme KUTUSU (metin, kutunun 10px dolgusunun içinde ortalı — metin
+    // kenarından boşluk ölçmek yanıltıcı olurdu).
+    Rect kutu(String etiket) => tester.getRect(find
+        .ancestor(of: find.text(etiket), matching: find.byType(Stack))
+        .first);
+    final sekme1 = kutu('DEVAM EDENLER');
+    final sekme2 = kutu('SON OYNANANLAR');
+
+    expect(buton.height, 40, reason: 'web text-sm (14/20) + py-2.5 = 40');
+    expect(sekme1.top - buton.bottom, 20, reason: 'web gap-5 = 20');
+    expect(sekme2.left - sekme1.right, 8, reason: 'web gap-2 = 8');
+    expect(sekme1.height, closeTo(38.5, 1),
+        reason: 'web py-2.5 (20) + satır 16.5 + çerçeve = 38.5');
   });
 
   testWidgets('boş liste metni + form aç/Vazgeç döngüsü', (tester) async {

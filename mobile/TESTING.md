@@ -105,6 +105,11 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
       web'den farklı kırılıyor ya da bir etiket kutusuna sığmıyorsa not al
       (testler geometriyi doğruluyor ama her ekranı gözle kontrol
       edemiyor).
+- [ ] **"+ Yeni …" butonu ve alt sekmeler (13 Ağustos 2026, Parça 80).**
+      Her iki sekmede de (Yapay Zeka ile / Arkadaşınla) turuncu butonun
+      yüksekliği ve altındaki sekme satırıyla arasındaki boşluk web ile
+      aynı olmalı; sekmelerin kendi arası da web'deki kadar. Port
+      12/6/12 kullanıyordu, web 20/8/20.
 - [ ] **Form alanları (13 Ağustos 2026, Parça 79).** Giriş/kayıt, Hesap
       Ayarları, Görüş Bildir, arkadaş arama, sohbet ve şikayet kutuları —
       hepsi AYNI görünmeli: 38px yükseklik, 16 punto, 12px yatay dolgu,
