@@ -260,7 +260,12 @@ mobile/
   app/                       # Flutter uygulaması (iskelet — aşağıdaki bölüm)
     pubspec.yaml             # kelimeki_core (path) + supabase_flutter +
                              # sqflite/shared_preferences + share_plus/
-                             # path_provider (paylaşım, 5c) + app_links
+                             # path_provider (paylaşım, 5c — DİKKAT: 13
+                             # Ağustos 2026'dan beri `lib/` altında
+                             # path_provider importu YOK, ama SİLME:
+                             # native'de geçici paylaşım dosyasını
+                             # share_plus onunla yazıyor, bkz. Parça 84)
+                             # + app_links
                              # (davet deep link'i, parça 8) +
                              # sqflite_common_ffi_web (YALNIZCA web test
                              # ortamı — koşullu import'un arkasında, mobil
