@@ -2746,7 +2746,9 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Temizlik:** kopyalarla birlikte ölü kalan yerel `_border`/`_accent`/
        `_text`/`_bg` sabitleri ve `reset_password_modal`ın yerel `border()`
        yardımcısı da silindi (analyze temiz).
-     - Doğrulama: `flutter analyze` "No issues found!"; tam takım yeşil.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 370/370
+       yeşil** (368'den +2). Ekran görüntüleri yeniden üretilip gözle
+       incelendi (kayıt formu, sohbet kutusu) — alanlar tek tip.
        `kelimeki_core`'a ve web'e hiç dokunulmadı.
      - **Doğrulama sınırı:** klavye açıkken gerçek cihazda alanların
        görünümü (özellikle çok satırlı sohbet/şikayet kutuları) gözle
