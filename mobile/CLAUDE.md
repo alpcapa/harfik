@@ -3008,6 +3008,54 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        eklendiği (ve WhatsApp'ın jenerik kart yerine tahtayı gösterdiği)
        cihazda teyit edilmeli — `mobile/TESTING.md` bölüm 6 güncellendi.
 
+   - ✅ **Parça 85 — aksiyon menüsünden ayrı "Vazgeç" paneli kaldırıldı
+     (13 Ağustos 2026, `action_sheet.dart` + web `ActionSheet.tsx`):**
+     Kullanıcı kararı — *"Bence kapat ve vazgeç aynı şey. Paylaş ve Kapat
+     olsun sadece."*
+     - **Önce web kaynağı okundu (kuralın ilk adımı) ve kapsam ölçüldü:**
+       "Vazgeç" bir aksiyon DEĞİL, `ActionSheet` bileşeninin kendi ikinci
+       paneliydi (iOS aksiyon menüsü geleneği) — çağıranlar yalnızca
+       `Paylaş`/`Kapat` geçiyor. İki platformda da **tek kullanım yeri**
+       var (`GameHistoryModal`ın tahta önizlemesi), yani paneli bileşenden
+       düşürmek başka hiçbir ekranı etkilemiyor.
+     - **Kullanıcının önermesi teknik olarak tam doğru değildi ama karar
+       yine de sağlam:** "Kapat" tahta önizlemesini de kapatıyor, "Vazgeç"
+       yalnızca menüyü kapatıp tahtayı açık bırakıyordu. Bu ayrım
+       kullanıcıya hiç görünmüyordu (aynı boy/konumda iki nötr buton),
+       nitekim aynı kullanıcı bir tur önce ikisinin de aynı şeyi yaptığını
+       bildirmişti — ayrımı korumak için ikinci bir buton taşımak, kazandan
+       çok karışıklık üretiyordu.
+     - **Aksiyonsuz çıkış yolu KAYBOLMADI** (bu, kaldırmanın ön koşuluydu):
+       mobilde `showModalBottomSheet`'in varsayılan `isDismissible`/
+       `enableDrag`'i, web'de dış katmanın `onClick={onClose}`'u +
+       `useModalA11y`'nin Escape'i. İkisi de `null` döndürdüğünden hiçbir
+       `onSelect` çalışmıyor — yani "Vazgeç"in DAVRANIŞI duruyor, yalnızca
+       butonu kalktı.
+     - **İki platform AYNI PR'da** (dal `main` tabanlı, stranding riski
+       yok — bkz. Parça Bitirme Kontrol Listesi madde 1). Tek taraflı
+       kaldırmak, bu projenin en sık tekrarlayan hata sınıfını (sessiz
+       web↔port ayrışması) yeniden üretirdi.
+     - **Layout tuzağı:** kalan tek paneli saran `Column`
+       (`crossAxisAlignment: stretch`) SİLİNMEMELİ — `ConstrainedBox`
+       gevşek kısıt verdiğinden panel tek başına bırakılsa metin
+       genişliğine büzülürdü. Yorumla sabitlendi.
+     - **Test — negatif eş doğrulamasıyla:** mevcut menü testinde
+       `find.text('Vazgeç')` artık `findsNothing`; ayrıca YENİ bir test
+       zemine dokunmanın menüyü aksiyonsuz kapattığını (tahta AÇIK kalıyor,
+       `share` çağrılmıyor, `set_game_shared` yazılmıyor) doğruluyor —
+       "kullanıcı kapana kısılmadı" iddiasının kanıtı. `isDismissible:
+       false` geçici olarak eklenince test GERÇEKTEN düştü
+       (`Expected: no matching candidates / Actual: ... "Paylaş"`), geri
+       alınınca yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       379/379 yeşil** (378'den +1). Web `npm run lint` + `npm run build`
+       temiz. `kelimeki_core`'a hiç dokunulmadı.
+     - **`mobile/` DIŞINDA dosya değişti** (`src/components/ActionSheet.tsx`,
+       `CLAUDE.md`) → kök `CLAUDE.md` aynı commit'te güncellendi.
+     - **Doğrulama sınırı:** cihazda görsel teyit (menünün iki butonlu
+       göründüğü + dışarı dokununca aksiyonsuz kapandığı) kullanıcıdan
+       bekleniyor — `mobile/TESTING.md` bölüm 6 güncellendi.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

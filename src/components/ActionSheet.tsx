@@ -14,6 +14,12 @@ interface ActionSheetProps {
   onClose: () => void;
 }
 
+// iOS aksiyon menülerinin klasik ayrı "Vazgeç" paneli 13 Ağustos 2026'da
+// KALDIRILDI (kullanıcı kararı, iki platformda birden): tek kullanım
+// yerinde (`GameHistoryModal`ın tahta önizlemesi) aksiyonlardan biri zaten
+// "Kapat" olduğundan iki buton aynı işi yapıyormuş gibi okunuyordu.
+// Aksiyonsuz çıkış yolu kaybolmadı — zemine dokunmak ve Escape hâlâ
+// `onClose` çağırıyor (aşağıdaki dış `div`in `onClick`i + `useModalA11y`).
 export function ActionSheet({ actions, onClose }: ActionSheetProps) {
   const containerRef = useModalA11y(true, onClose);
   // Modal.tsx'in aksine ActionSheet ekranın ALT ucuna açılıyor — kullanıcı
@@ -61,12 +67,6 @@ export function ActionSheet({ actions, onClose }: ActionSheetProps) {
             </button>
           ))}
         </div>
-        <button
-          onClick={onClose}
-          className="w-full py-3.5 text-[15px] font-mono font-bold text-center text-text bg-panel rounded-xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] active:bg-border/40"
-        >
-          Vazgeç
-        </button>
       </div>
     </div>,
     document.body,

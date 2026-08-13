@@ -539,7 +539,10 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 ## 6. Paylaşma
 
 - [ ] **Paylaş menüsü.** Açık tahta önizlemesine dokun → alttan
-      "Paylaş / Kapat / Vazgeç" menüsü, arka plan kararmış olmalı.
+      **"Paylaş / Kapat"** menüsü, arka plan kararmış olmalı. Ayrı bir
+      "Vazgeç" paneli OLMAMALI (13 Ağustos 2026'da iki platformdan da
+      kaldırıldı, bkz. Parça 85) — web ile yan yana koyunca ikisi de iki
+      butonlu görünmeli.
 - [ ] **Sistem paylaş sayfası.** "Paylaş" → iOS/Android paylaş sayfası
       açılmalı; görsel önizlemesi **skor kutuları + tahta** olmalı.
       **Hiçbir tepki vermemesi bir hatadır** (9 Ağustos 2026'da web
@@ -576,13 +579,15 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       linke tıkla: `kelimeki.com/game/<id>` sayfası **girişsiz** açılmalı
       ve aynı tahtayı göstermeli. (Bu, `set_game_shared` RPC'sinin
       gerçekten çalıştığının kanıtı — bayrak yazılmazsa sayfa boş gelir.)
-- [ ] **Kapat.** Menüden "Kapat" tahtayı kapatmalı; "Vazgeç" ise hiçbir şey
-      yapmadan (tahta AÇIK) menüyü kapatmalı — web `ActionSheet` ile aynı.
-      (13 Ağustos 2026'da kullanıcı ikisinin de tahtayı açık bıraktığını
-      bildirdi; native testte ÖLÇÜLDÜ — "Kapat" tahtayı gerçekten
-      kapatıyor (ScoreBoxRow 1 → 0) ve `menüdeki "Kapat" tahtayı kapatır`
-      testi geçiyor. Cihazda hâlâ kapanmıyorsa tarayıcıya özgü bir dokunuş
-      yayılımı olabilir — o zaman ayrı bir tur gerekir.)
+- [ ] **Kapat.** Menüden "Kapat" tahta önizlemesini kapatmalı.
+      (13 Ağustos 2026'da kullanıcı bunun çalışmadığını bildirdi; native
+      testte ÖLÇÜLDÜ — "Kapat" tahtayı gerçekten kapatıyor (ScoreBoxRow
+      1 → 0) ve ilgili test geçiyor. Cihazda hâlâ kapanmıyorsa tarayıcıya
+      özgü bir dokunuş yayılımı olabilir, ayrı bir tur gerekir.)
+- [ ] **Menüden aksiyonsuz çıkış (eski "Vazgeç"in yerine).** Menü açıkken
+      DIŞINA dokun (ya da aşağı sürükle): menü kapanmalı, tahta önizlemesi
+      AÇIK kalmalı, paylaşım tetiklenMEmeli. Bu, "Vazgeç" butonunun
+      kaldırılmasının kullanıcıyı kapana kıstırmadığının kontrolü.
 - [ ] **Ekranda başka yere dokunmak tüm oyunlar penceresini kapatır** ve
       Skor Kartı'na döner — bu bir port sapması DEĞİL, web `Modal.tsx`'in
       zemin dokunuşu da `onClose` çağırıyor (bkz. bu bölümün 4. maddesi).

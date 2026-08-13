@@ -103,7 +103,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Paylaş'), findsOneWidget);
     expect(find.text('Kapat'), findsOneWidget);
-    expect(find.text('Vazgeç'), findsOneWidget);
+    // 13 Ağustos 2026 — ayrı "Vazgeç" paneli iki platformdan da kaldırıldı
+    // (kullanıcı kararı: aksiyonlardan biri zaten "Kapat", ikisi aynı işi
+    // yapıyormuş gibi okunuyordu). Bkz. Parça 85.
+    expect(find.text('Vazgeç'), findsNothing);
 
     await tester.tap(find.text('Paylaş'));
     await tester.pumpAndSettle();
@@ -168,6 +171,35 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ScoreBoxRow), findsNothing);
+  });
+
+  // "Vazgeç" paneli kalkınca aksiyonsuz çıkış yolu KAYBOLMAMALI —
+  // `showModalBottomSheet`'in zemin dokunuşu hâlâ menüyü kapatmalı ve
+  // hiçbir `onSelect` çalışmamalı (tahta AÇIK kalır, paylaşım gitmez).
+  // Bu, Vazgeç'in kaldırılmasının kullanıcıyı kapana kıstırMADIĞININ kanıtı.
+  testWidgets('zemine dokunmak menüyü aksiyonsuz kapatır (Vazgeç yerine)',
+      (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [gameRow(id: 'g1')]
+      ..snapshots = {'g1': _tiles()};
+    final repo = await newRepoForWidget(tester, gw);
+    final calls = await pumpHistoryWithShare(tester, repo);
+
+    await tester.tap(find.text('01.08.2026'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(ScoreBoxRow));
+    await tester.pumpAndSettle();
+    expect(find.text('Paylaş'), findsOneWidget);
+
+    // Menünün DIŞINA (ekranın üst kenarına) dokun.
+    await tester.tapAt(const Offset(210, 30));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Paylaş'), findsNothing, reason: 'menü kapanmalı');
+    expect(find.byType(ScoreBoxRow), findsOneWidget,
+        reason: 'tahta AÇIK kalmalı — "Kapat" seçilmedi');
+    expect(calls, isEmpty, reason: 'paylaşım tetiklenmemeli');
+    expect(gw.sharedGames, isEmpty);
   });
 
   testWidgets('initialExpandedId: hedef ilk sayfada YOKSA sayfalanır ve açılır',
