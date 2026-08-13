@@ -15,6 +15,10 @@ import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/data/online_games_api.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
+import 'package:kelimeki/src/ui/game/neo_box.dart'
+    show ShapeDecorationWithCssShadows;
+import 'package:kelimeki/src/ui/game/neo_button.dart' show NeoButton;
+import 'package:kelimeki/src/ui/tokens.dart' show kRed;
 import 'package:kelimeki/src/ui/game/board_widget.dart'
     show BoardWidget, DashedBorderPainter;
 import 'package:kelimeki/src/ui/game/rack_widget.dart' show RackWidget;
@@ -817,10 +821,63 @@ void main() {
 
       expect(find.text('Yalnızca arkadaşlarını davet edebilirsin.'),
           findsOneWidget);
-      await tester.tap(find.text('TAMAM'));
+      // web'de hata dalının butonu "Kapat", başarı dalınınki "Tamam"
+      // (OnlineGameScreen.tsx `error` vs `sent` fazı) — port ikisini tek
+      // diyalogda birleştirdiğinden etiket içeriğe göre seçiliyor.
+      expect(find.text('TAMAM'), findsNothing);
+      await tester.tap(find.text('KAPAT'));
       await tester.pumpAndSettle();
       // Hata dalında listeye DÖNÜLMEZ — ekran ayakta kalmalı.
       expect(find.text('TEKRAR OYNA'), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets(
+        'boş taslakta OYNA/GERİ AL AKTİF ve OYNA "Harf yerleştirilmedi." der '
+        '(web: disabled={!canAct} — placed.isEmpty koşulu YOK)', (tester) async {
+      final gw = await pumpScreen(tester, current: 0);
+
+      // Hiç taş yerleştirilmemişken ikisi de tıklanabilir olmalı: butonu
+      // kapatmak, motorun bu durum için ürettiği mesajı ulaşılamaz kılıyordu.
+      expect(
+        tester.widget<NeoButton>(find.widgetWithText(NeoButton, 'OYNA')).onPressed,
+        isNotNull,
+      );
+      expect(
+        tester
+            .widget<NeoButton>(find.widgetWithText(NeoButton, 'GERİ AL'))
+            .onPressed,
+        isNotNull,
+      );
+
+      await tester.tap(find.text('OYNA'));
+      await tester.pumpAndSettle();
+      expect(find.text('Harf yerleştirilmedi.'), findsOneWidget);
+      // Sunucuya hiçbir şey gitmemeli — yalnızca yerel doğrulama konuştu.
+      expect(gw.submitted, isEmpty);
+      await unmount(tester);
+    });
+
+    testWidgets(
+        'sıra rakipteyken banner rengi TOKEN kırmızısından türer (kMoveInvalid '
+        'DEĞİL) + shadow-raised + web dolgusu', (tester) async {
+      await pumpScreen(tester, current: 1);
+      final box = tester.widget<Container>(
+        find
+            .ancestor(
+              of: find.textContaining('SIRA: ESİNER'),
+              matching: find.byType(Container),
+            )
+            .last,
+      );
+      final deco = box.decoration as ShapeDecorationWithCssShadows;
+      // 13 Ağustos 2026'ya kadar burada #E0483A (tahtaya özel kırmızı) vardı;
+      // bandın kendi nabız noktası ve metni ise ZATEN kRed kullanıyordu.
+      expect(deco.color, kRed.withValues(alpha: 0.1));
+      expect(deco.borderColor, kRed.withValues(alpha: 0.4));
+      expect(deco.shadows, isNotEmpty); // web shadow-raised
+      expect(box.padding,
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 12));
       await unmount(tester);
     });
   });

@@ -3236,6 +3236,73 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        bulgusuyla aynı aile. **Kaynak koda inmeden hiçbiri bulunamazdı;**
        üçünde de belirti aynıydı: "hiçbir şey olmuyor".
 
+   - ✅ **Parça 88 — kardeş-ekran denetimi: üç sapma, biri motorun kendi
+     mesajını ulaşılamaz kılıyordu (13 Ağustos 2026, `game_screen.dart`,
+     `online_game_screen.dart`):** `game_screen.dart` ↔ `online_game_screen.dart`
+     çifti "Etki Analizi"nin değişmezi gereği elle senkron tutuluyor ve
+     hiçbir derleyici/test bunu yakalamıyor — planlı bir denetimle üç fark
+     bulundu. **Üçü de web kaynağından TEK TEK doğrulandı**, denetim
+     raporuna güvenilmedi.
+     - **(a) Boş taslakta OYNA/GERİ AL devre dışıydı; web'de değil.**
+       Web: `disabled={!canAct || validating || !wordsReady}` (App.tsx:1450)
+       ve `disabled={!canAct}` (1501) — `placed.isEmpty` koşulu YOK. Port
+       DÖRT yerde birden (iki ekran × iki buton) bu koşulu taşıyordu, artı
+       `online_game_screen.dart:700`'de mesajı yutan bir iç guard.
+       - **Asıl mesele kozmetik değil:** motor bu durum için ÖZEL bir
+         mesaj taşıyor — `validator.dart:57` / `validator.ts:62`,
+         **"Harf yerleştirilmedi."** Butonu kapatmak o mesajı ULAŞILAMAZ
+         kılıyordu; kullanıcı gri bir butonla kalıyor ve sebebini hiçbir
+         yerde okuyamıyordu. Bu, Parça 87'de düzeltilen üç hatanın aynı
+         sınıfı: sessiz ret.
+       - **Web'in KENDİ yazılı gerekçesi de bu yönde:** `OnlineGameScreen.tsx:705-714`
+         (3 Ağustos 2026) *"kullanıcıyı PASİF bir butona basmaya çağıran,
+         sebebi hiçbir yerde yazmayan çelişkili bir ekrandı — özelliği
+         yazan kişiyi bile yanılttı"* diyor. Karar bu yüzden "web'e
+         hizala" oldu; portun davranışını bilinçli bir sapma olarak
+         kaydetmek, motorun taşıdığı mesajı kalıcı olarak ölü kod
+         yapardı.
+     - **(b) Canlı "Sıra: X" bandı YANLIŞ kırmızıyı kullanıyordu ve kendi
+       içinde tutarsızdı.** Zemin/çerçeve `#E0483A` (`kMoveInvalid` —
+       TAHTAYA özel kırmızı) üzerine kuruluydu, **ama yorumu doğru şekilde
+       "web bg-red/10" diyordu**; aynı bandın nabız noktası ve metni ise
+       ZATEN `kRed` (`#DC2626`) kullanıyordu. Yani tek bir bantta iki
+       kırmızı vardı. Parça 54'ün ("her dosyada yerel palet kopyası")
+       taraması bunu göremiyor, çünkü değerler alfa türevi
+       (`0x1A…`/`0x66…`), `Color(0xFF…)` değil. Ayrıca `shadow-raised`
+       hiç yoktu ve dolgu 12/10 idi (web `px-4 py-3` = 16/12). Üçü de
+       düzeltildi; renkler artık `_red.withValues(alpha: 0.1/0.4)` —
+       `move_history_modal.dart:319`'un zaten kullandığı deyim, yani
+       token ilişkisi kodda görünür.
+     - **(c) "Tekrar Oyna" hata dalının butonu "TAMAM" diyordu, web
+       "Kapat".** Web'de bunlar İKİ AYRI dal (`sent` → "Tamam", `error` →
+       "Kapat"); port ikisini tek diyalogda birleştirdiğinden etiket artık
+       içeriğe göre seçiliyor.
+     - **Test — negatif eş doğrulamasıyla, DÖRT ayrı kanıt:** iki lib
+       dosyası birlikte `git stash`lenip testler koşuldu; dördü de
+       GERÇEKTEN düştü — yerel A2 ve Canlı A2 `Expected: not null /
+       Actual: <null>` (buton kapalı), A3 `Found 1 widget with text
+       "TAMAM"`, A1 dekorasyon tipi tutmadığından. Geri konunca yeşile
+       döndü.
+     - **Test yazarken düşülen tuzak (kayda geçsin):** yeni testin
+       `expect(controller.state.turnCount, 0)` iddiası düştü — `craftedState()`
+       sıfırdan başlamıyor (turnCount 2). Kodda değil TESTTE hata vardı;
+       "hamle işlenmemeli" iddiası mutlak bir sayıya değil ÖNCEKİ değere
+       bağlanmalıydı. Bir fikstürün başlangıç durumunu varsaymadan önce
+       oku.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       388/388 yeşil** (385'ten +3; A3 mevcut testin güncellenmesi olduğu
+       için ayrı test SAYILMIYOR). `kelimeki_core`'a ve web'e hiç
+       dokunulmadı — `mobile/` DIŞINDA dosya değişmedi.
+     - **Doğrulama sınırı:** bandın görsel teyidi (yeni kırmızı + gölge +
+       dolgu) cihazda bekleniyor — `mobile/TESTING.md` bölüm 11'e madde
+       eklendi.
+     - **Denetimin "belirsiz" bulguları BİLİNÇLİ olarak kapsam dışı:**
+       30px sabit mesaj satırı, "Kalan Taşlar"ın `myIndex`i, yeni-mesaj
+       popup'ının biçimi ve rematch'in "Gönderiliyor…" durumu — dördü de
+       web'e karşı ölçülmeden "sapma" sayılamaz, ayrı bir tur istiyorlar.
+       Bir bulguyu doğrulamadan düzeltmek bu projede daha önce iki kez
+       geri alındı (Parça 16→17, 39→40).
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

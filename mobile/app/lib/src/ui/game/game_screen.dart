@@ -905,9 +905,21 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                                       padding: const EdgeInsets
                                                           .symmetric(
                                                           horizontal: 20),
-                                                      onPressed: _canAct &&
-                                                              state.placed
-                                                                  .isNotEmpty
+                                                      // web: `disabled={!canAct
+                                                      // || validating ||
+                                                      // !wordsReady}` — taslak
+                                                      // BOŞKEN de aktif.
+                                                      // Bilerek: reducer boş
+                                                      // taslakta "Harf
+                                                      // yerleştirilmedi." diye
+                                                      // ÖZEL bir mesaj üretiyor
+                                                      // (validator.dart:57);
+                                                      // butonu kapatmak o
+                                                      // mesajı ulaşılamaz
+                                                      // kılıp sebebi hiçbir
+                                                      // yerde yazmayan sessiz
+                                                      // bir ret bırakıyordu.
+                                                      onPressed: _canAct
                                                           ? () => _handlePlay(
                                                               moveStatus)
                                                           : null,
@@ -990,9 +1002,11 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                                 Expanded(
                                                   child: NeoButton(
                                                     label: 'GERİ AL',
-                                                    onPressed: _canAct &&
-                                                            state.placed
-                                                                .isNotEmpty
+                                                    // web: `disabled={!canAct}`
+                                                    // — boş taslakta da aktif
+                                                    // (RECALL_ALL zararsız bir
+                                                    // no-op).
+                                                    onPressed: _canAct
                                                         ? () => controller.dispatch(
                                                             const RecallAllAction())
                                                         : null,

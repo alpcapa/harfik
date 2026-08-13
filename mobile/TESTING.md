@@ -854,6 +854,20 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       yeşil/kırmızı çerçeve + puan rozeti çalışmalı, mesaj "Kelime geçerli
       — Sıra: X" demeli, OYNA PASİF olmalı. Rakip oynayınca deneme taşları
       kendiliğinden rafa dönmeli ve OYNA aktifleşmeli.
+- [ ] **"Sıra: X" bandının rengi (13 Ağustos 2026, Parça 88).** Sıra
+      rakipteyken çıkan kırmızı bant, ekrandaki DİĞER kırmızılarla (bandın
+      kendi nabız noktası, hata mesajları) AYNI tonda olmalı — öncesinde
+      zemin/çerçeve tahtaya özel bir kırmızıdan (`#E0483A`) geliyordu, metin
+      ve nokta ise token kırmızısından (`#DC2626`): tek bantta iki ton.
+      Bandın artık kabarık bir gölgesi (`shadow-raised`) ve web'le aynı
+      dolgusu olmalı — web'le yan yana koyup karşılaştır.
+- [ ] **Boş taslakta OYNA/GERİ AL (13 Ağustos 2026, Parça 88).** Sıra
+      SENDEYKEN, hiç taş yerleştirmeden OYNA'ya bas: buton **aktif** olmalı
+      ve mesaj satırında **"Harf yerleştirilmedi."** çıkmalı — gri/tepkisiz
+      bir buton DEĞİL. Sunucuya hiçbir şey gitmemeli (sıra sende kalmalı).
+      GERİ AL de boş taslakta aktif olmalı (basınca hiçbir şey olmaz,
+      zararsız). Aynısını yerel/YZ oyununda da kontrol et — iki ekran bu
+      davranışı paylaşıyor.
 - [ ] **Sürüklerken rakip oynarsa (Parça 58).** Bir taşı PARMAĞINI
       KALDIRMADAN sürüklerken karşı taraftan hamle gelsin: sürükleme o an
       bitmeli — hayalet taş kaybolmalı, rafta boş slot kalmamalı ve sayfa
