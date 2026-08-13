@@ -16,7 +16,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart' show GlobalKey;
+import 'package:flutter/widgets.dart' show BuildContext, GlobalKey, MediaQuery;
 import 'package:share_plus/share_plus.dart';
 
 /// Paylaşım metni — web `SHARE_MESSAGE` birebir. Bilerek üçüncü şahıs:
@@ -26,11 +26,45 @@ const String shareMessage = "Kelimeki'deki şu oyunu görmeni istedim.";
 
 /// [png] null olabilir (yakalama başarısız) — o durumda yalnızca metin+link
 /// paylaşılır; web'in dosyasız `navigator.share` yedeğiyle aynı.
+///
+/// [origin] iPad ankrajı — bkz. [shareOriginFrom]. Bilerek ZORUNLU (nullable
+/// ama adı verilmek zorunda): opsiyonel olsaydı yeni bir çağrı yeri onu
+/// sessizce atlar ve paylaşım YALNIZCA iPad'de, yalnızca gerçek cihazda
+/// ölürdü — derleyicinin yakalayabileceği bir şeyi çalışma anına bırakmak
+/// olurdu.
 typedef ShareBoardFn = Future<void> Function({
   required Uint8List? png,
   required String text,
   required String? url,
+  required Rect? origin,
 });
+
+/// iPad'de paylaş sayfası bir POPOVER olarak açılıyor ve iOS bir ankraj
+/// dikdörtgeni istiyor. share_plus'ın iOS eklentisi (`FPPSharePlusPlugin.m`)
+/// bunu SERT bir koşul olarak uyguluyor: cihaz iPad ise ve origin boşsa ya da
+/// kök view'ın koordinat uzayının dışındaysa paylaşmak yerine
+/// `FlutterError` DÖNDÜRÜYOR — yani ankraj vermemek, iPad'de paylaşımı
+/// tamamen ve SESSİZCE öldürüyor (Dart tarafında `PlatformException`, bizim
+/// `catch`imiz onu yutuyor). iPhone ve Android'de parametre yok sayılıyor,
+/// web'de zaten anlamsız.
+///
+/// Bu, web derlemesinde ASLA görünmez (orada share_plus'ın web eklentisi
+/// `navigator.share`e gidiyor, iOS kanalına hiç uğramıyor) — yani cihaz
+/// testine kadar gizli kalan, platforma özgü bir sınıf.
+Rect shareOriginFrom(BuildContext context) {
+  final screen = Offset.zero & MediaQuery.sizeOf(context);
+  final box = context.findRenderObject();
+  if (box is RenderBox && box.hasSize) {
+    // Ekranla kesiştiriyoruz: iOS ankrajın kök view'ın İÇİNDE olmasını da
+    // şart koşuyor, kaydırma yüzünden kısmen dışarı taşan bir kutu yine
+    // hataya düşerdi.
+    final rect = (box.localToGlobal(Offset.zero) & box.size).intersect(screen);
+    if (rect.width > 0 && rect.height > 0) return rect;
+  }
+  // Yedek: ekranın ortasında minik bir kare — `CGRectIsEmpty` false olsun
+  // ve kök view'ın içinde kalsın diye.
+  return Rect.fromCenter(center: screen.center, width: 1, height: 1);
+}
 
 /// Görsel yakalama — testlerde enjekte edilebilir olması ŞART: `toImage`
 /// gerçek asenkron iş yapıyor ve widget testlerinin sahte zamanında ASLA
@@ -60,6 +94,7 @@ Future<void> shareBoard({
   required Uint8List? png,
   required String text,
   required String? url,
+  required Rect? origin,
 }) async {
   // Web `${text}\n${url}` yedeğiyle aynı gövde: birçok hedef (SMS, not
   // uygulamaları) ayrı bir "url" alanı taşımadığından link metne katılıyor.
@@ -121,6 +156,7 @@ Future<void> shareBoard({
           ],
           fileNameOverrides: const ['kelimeki.png'],
           downloadFallbackEnabled: false,
+          sharePositionOrigin: origin,
         ),
       );
       return;
@@ -130,7 +166,8 @@ Future<void> shareBoard({
   }
 
   try {
-    await SharePlus.instance.share(ShareParams(text: body));
+    await SharePlus.instance
+        .share(ShareParams(text: body, sharePositionOrigin: origin));
   } catch (e) {
     debugPrint('[Kelimeki] paylaşım tamamlanmadı: $e');
   }

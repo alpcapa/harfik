@@ -3056,6 +3056,68 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        göründüğü + dışarı dokununca aksiyonsuz kapandığı) kullanıcıdan
        bekleniyor — `mobile/TESTING.md` bölüm 6 güncellendi.
 
+   - ✅ **Parça 86 — paylaşım iPad'de HİÇ çalışmayacaktı: `sharePositionOrigin`
+     üç çağrı yerinin hiçbirinde verilmiyordu (13 Ağustos 2026,
+     `share_board.dart`, `game_history_modal.dart`, `setup_screen.dart`,
+     `friends_modal.dart`):** Kullanıcının "tüm app geliştirmeleri hem
+     Android hem iOS için geçerli değil mi, her şeyi baştan test etmemiz
+     gerekmeyecek?" sorusunu cevaplarken bulundu — cevabın canlı örneği
+     çıktı.
+     - **Kaynaktan doğrulandı, tahmin değil** (`FPPSharePlusPlugin.m`,
+       satır 418-443): iPad'de paylaş sayfası bir POPOVER ve iOS ankraj
+       istiyor. Eklenti bunu SERT bir koşul olarak uyguluyor —
+       `isIpad && (origin kök view'ın dışında || CGRectIsEmpty(origin))`
+       ise paylaşmak yerine **`FlutterError` DÖNDÜRÜYOR**. Dart tarafında
+       bu `PlatformException`; bizim `catch`imiz onu yutuyor, metin
+       yedeğine düşüyor, o da AYNI sebeple patlıyor → ikinci `catch` →
+       kullanıcıya **hiçbir şey olmuyor**. iPhone ve Android'de parametre
+       yok sayılıyor (`Parameter ignored on other platforms`).
+     - **Neden bugüne kadar görünmedi — ve dersin özeti bu:** kullanıcı
+       cihaz testini GitHub Pages web derlemesinde yapıyor; orada
+       share_plus'ın WEB eklentisi çalışıyor (`navigator.share`), iOS
+       kanalına hiç uğranmıyor. FAZ B (gerçek cihaz) henüz koşulmadı.
+       Yani bu, "aynı Dart kodu iki platformda da aynı çalışır"
+       varsayımının kırıldığı yer: kod TAMAMEN paylaşımlı, kıran şey
+       platform kanalının kendi sözleşmesi.
+     - **ÜÇ çağrı yerinin ÜÇÜ de kırıktı** (yalnızca bugün eklenen görsel
+       paylaşımı değil): `game_history_modal` (tahta paylaşımı),
+       `setup_screen` ("Arkadaşınla paylaş"), `friends_modal` (davet
+       linki — orası `SharePlus.instance`'ı doğrudan çağırıyor). Bir
+       hatayı bulduğunda ÜRETEN mekanizmanın diğer örneklerini de ara
+       (Parça 54'ün dersi) — tek çağrı yerini düzeltmek ötekileri sessizce
+       kırık bırakırdı.
+     - **Ortak `shareOriginFrom(BuildContext)`** (`share_board.dart`):
+       widget'ın kendi `RenderBox`'ından global dikdörtgeni alıp EKRANLA
+       KESİŞTİRİYOR — iOS ankrajın kök view'ın İÇİNDE olmasını da şart
+       koşuyor, kaydırma yüzünden kısmen dışarı taşan bir kutu yine hataya
+       düşerdi. Kutu yoksa/boşsa ekran ortasında 1×1'lik bir yedek (boş
+       OLMAMASI şart, `CGRectIsEmpty`).
+     - **`origin` parametresi BİLEREK ZORUNLU** (`ShareBoardFn` typedef'inde
+       `required Rect?`): opsiyonel olsaydı yeni bir çağrı yeri onu sessizce
+       atlar ve paylaşım yalnızca iPad'de, yalnızca gerçek cihazda ölürdü.
+       Nitekim `flutter analyze` değişiklikten hemen sonra 4 hatayla üç
+       çağrı yerini + iki test sahtesini işaret etti — derleyicinin
+       yakalayabileceği bir şeyi çalışma anına bırakmamak tam olarak bu.
+     - **Test — negatif eş doğrulamasıyla, İKİ AYRI katman:** (a) çağıran
+       katman — `_ShareCall` artık `origin`i de kaydediyor, ankrajın boş
+       OLMADIĞI ve ekranın İÇİNDE kaldığı doğrulanıyor; (b) kanal katmanı —
+       mock'lanan `dev.fluttercommunity.plus/share` çağrısında
+       `originX/Y/Width/Height` alanları bekleniyor. **İlk denemede
+       yalnızca (a) yazılmıştı ve YETERSİZDİ:** o test enjekte edilen sahte
+       `share`i ölçtüğünden `shareBoard`ın `ShareParams`e iletip
+       iletmediğini göremiyordu — `sharePositionOrigin` satırı silinince
+       test GEÇMEYE devam etti. (b) eklenince aynı silme GERÇEKTEN düştü
+       (`Expected: <10.0> / Actual: <null>`). **Ders: bir sözleşmeyi
+       enjekte edilebilir bir sınırın ÜSTÜNDE test etmek, o sınırın
+       ALTINDAKİ iletimi kanıtlamaz** — hangi katmanı ölçtüğünü sor.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       379/379 yeşil** (yeni test yok, mevcut ikisine assertion eklendi).
+       `kelimeki_core`'a ve web'e hiç dokunulmadı.
+     - **Doğrulama sınırı — bu ortamda KANITLANAMAZ:** gerçek bir iPad
+       gerekiyor. Kanıt zinciri kaynak okuması + kanal seviyesinde test;
+       gerçek popover FAZ B'de doğrulanmalı. `mobile/TESTING.md` bölüm 6
+       ve FAZ B'ye maddeler eklendi.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

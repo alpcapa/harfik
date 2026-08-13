@@ -400,7 +400,12 @@ void main() {
       theme: kelimekiTheme(),
       home: SetupScreen(
         services: services(),
-        share: ({required png, required text, required url}) async {
+        share: ({
+          required png,
+          required text,
+          required url,
+          required origin,
+        }) async {
           sharedText = text;
           sharedUrl = url;
         },

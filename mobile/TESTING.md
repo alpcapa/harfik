@@ -1260,6 +1260,14 @@ açar; o zamana kadar tarayıcıda açılırlar (bozuk değil, yalnızca eksik).
       görsel eki taşımalı. Web derlemesinde dosyalı yol hiç çalışmıyordu
       (yalnızca metin+link yedeği), yani bu madde ilk kez GERÇEK olarak
       test ediliyor (bkz. Parça 35).
+- [ ] **iPAD'DE ÜÇ PAYLAŞIM YOLU DA (Parça 86) — bu, iPhone'da test edilse
+      bile KANITLANMAZ.** iPad'de paylaş sayfası popover olarak açılıyor ve
+      iOS ankraj (`sharePositionOrigin`) istiyor; verilmezse share_plus
+      paylaşmak yerine hata döndürüyor ve akış sessizce ölüyor. Üçünü de
+      GERÇEK bir iPad'de dene: (a) oyun geçmişinde tahta paylaşımı,
+      (b) Setup'ta "Arkadaşınla paylaş", (c) Arkadaşlar'da davet linki.
+      Popover ekranda görünmeli (ve makul bir yerden çıkmalı), "hiçbir şey
+      olmadı" bir hatadır.
 - [ ] **Bölüm 8 — uçak modu:** burada native'in web'den DAHA İYİ olması
       bekleniyor, iki şey ayrıca doğrulanmalı:
       (a) uçak modunda **kelime anlamı GELMELİ** (`meanings.db` pakette —

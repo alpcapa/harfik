@@ -29,7 +29,8 @@ class _ShareCall {
   final Uint8List? png;
   final String text;
   final String? url;
-  _ShareCall(this.png, this.text, this.url);
+  final Rect? origin;
+  _ShareCall(this.png, this.text, this.url, this.origin);
 }
 
 List<Map<String, Object?>> _tiles() => [
@@ -65,8 +66,13 @@ void main() {
             playerCount: null,
             currentName: 'Ironman',
             initialExpandedId: initialExpandedId,
-            share: ({required png, required text, required url}) async {
-              calls.add(_ShareCall(png, text, url));
+            share: ({
+              required png,
+              required text,
+              required url,
+              required origin,
+            }) async {
+              calls.add(_ShareCall(png, text, url, origin));
             },
             // Gerçek `toImage` sahte zamanda tamamlanmıyor (bkz.
             // CaptureBoardFn notu) — akış testinde sahte bayt, gerçek
@@ -118,6 +124,19 @@ void main() {
     // Görsel paylaşıma iletildi (yakalayıcı çağrıldı).
     expect(calls.single.png, isNotNull);
     expect(calls.single.png!.length, greaterThan(1000));
+
+    // iPad ankrajı (Parça 86): share_plus'ın iOS eklentisi, iPad'de origin
+    // BOŞ ya da kök view'ın DIŞINDA ise paylaşmak yerine FlutterError
+    // döndürüyor — yani ankraj vermemek paylaşımı sessizce öldürüyor.
+    // Web derlemesinde bu hiç görünmez (orada `navigator.share` kullanılıyor),
+    // o yüzden sözleşme burada pinleniyor.
+    final origin = calls.single.origin;
+    expect(origin, isNotNull);
+    expect(origin!.isEmpty, isFalse, reason: 'CGRectIsEmpty olmamalı');
+    final screen = Offset.zero & tester.view.physicalSize / tester.view.devicePixelRatio;
+    expect(screen.contains(origin.topLeft), isTrue);
+    expect(screen.contains(origin.bottomRight - const Offset(0.01, 0.01)), isTrue,
+        reason: 'ankraj kök view koordinat uzayının İÇİNDE kalmalı');
 
     // Paylaşılacak GÖRSELİN kendisi: aynı düğümü gerçek yakalayıcıyla
     // çekip diske yazıyoruz — ekran görüntüsü, paylaşılan PNG'nin birebir
@@ -363,6 +382,7 @@ void main() {
         png: Uint8List.fromList([1, 2, 3]), // geçerli bayt: dosya yolu denenir
         text: shareMessage,
         url: 'https://kelimeki.com/game/a',
+        origin: const Rect.fromLTWH(10, 20, 30, 40),
       );
     });
 
@@ -423,6 +443,7 @@ void main() {
         png: png,
         text: shareMessage,
         url: 'https://kelimeki.com/game/a',
+        origin: const Rect.fromLTWH(10, 20, 30, 40),
       );
     });
 
@@ -430,6 +451,13 @@ void main() {
     final args = calls.single.arguments as Map;
     expect(args['text'], '$shareMessage\nhttps://kelimeki.com/game/a');
     expect(args['mimeTypes'], ['image/png']);
+    // iPad ankrajı KANALA ulaşmalı (Parça 86) — iOS eklentisi bu dört alanı
+    // okuyup popover sourceRect'ini kuruyor; boş gelirse iPad'de paylaşmak
+    // yerine FlutterError döndürüyor.
+    expect(args['originX'], 10.0);
+    expect(args['originY'], 20.0);
+    expect(args['originWidth'], 30.0);
+    expect(args['originHeight'], 40.0);
 
     final paths = (args['paths'] as List).cast<String>();
     expect(paths, hasLength(1));
