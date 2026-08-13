@@ -2942,6 +2942,11 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        yaptı, sorun çıkmadı.** Kontrol maddeleri (özellikle "saklanan
        dosya ~50-150 KB olmalı") `mobile/TESTING.md` bölüm 12 ve kök
        `TESTING.md` bölüm 9.5'te duruyor — ilerideki bir regresyon için.
+       **Aynı gün kovadan ÖLÇÜLDÜ:** 82 KB ve 123 KB, ikisi de
+       `image/jpeg` — bant tuttu ve mimetype küçültmenin gerçekten
+       koştuğunu kanıtlıyor (koşmasaydı orijinal PNG/HEIC türü kalırdı).
+       Ayrıntı + Parça 82'nin RLS düzeltmesini de doğrulayan zaman
+       damgaları: kök `CLAUDE.md`, "Profil fotoğrafı yükleme".
 
    - ✅ **Parça 84 — paylaşımda tahta görseli HİÇ gitmiyordu: görselli dal
      web'de her seferinde patlıyor, WhatsApp da linkten sitenin GENEL
