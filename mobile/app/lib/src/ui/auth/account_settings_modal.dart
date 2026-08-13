@@ -30,6 +30,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 
 import '../../data/auth_service.dart';
 import '../../data/profile_fields.dart';
+import '../../util/avatar_image.dart';
 import '../../util/avatar_picker.dart';
 import '../game/modal_shell.dart';
 import '../game/neo_button.dart';
@@ -46,6 +47,7 @@ Future<void> showAccountSettingsModal(
   AuthService auth, {
   Future<bool> Function(String nickname)? nicknameChecker,
   PickAvatarFn? pickAvatar,
+  ShrinkAvatarFn? shrinkAvatar,
 }) {
   return showDialog<void>(
     context: context,
@@ -53,6 +55,7 @@ Future<void> showAccountSettingsModal(
       auth: auth,
       nicknameChecker: nicknameChecker,
       pickAvatar: pickAvatar,
+      shrinkAvatar: shrinkAvatar,
     ),
   );
 }
@@ -69,11 +72,17 @@ class AccountSettingsModal extends StatefulWidget {
   /// Test injection'ı — verilmezse gerçek `pickAvatarImage` (galeri).
   final PickAvatarFn? pickAvatar;
 
+  /// Test injection'ı — verilmezse gerçek `shrinkAvatarIfNeeded`. Ayrı
+  /// olmasının sebebi `pickAvatar` ile aynı: `dart:ui` kodeki widget
+  /// testlerinde gerçek görsel baytları istiyor.
+  final ShrinkAvatarFn? shrinkAvatar;
+
   const AccountSettingsModal(
       {super.key,
       required this.auth,
       this.nicknameChecker,
-      this.pickAvatar});
+      this.pickAvatar,
+      this.shrinkAvatar});
 
   @override
   State<AccountSettingsModal> createState() => _AccountSettingsModalState();
@@ -209,8 +218,14 @@ class _AccountSettingsModalState extends State<AccountSettingsModal> {
       _error = null;
       _info = null;
     });
-    final picked = await (widget.pickAvatar ?? pickAvatarImage)();
-    if (picked == null || !mounted) return;
+    final raw = await (widget.pickAvatar ?? pickAvatarImage)();
+    if (raw == null || !mounted) return;
+    // Yüklemeden ÖNCE küçült — 10 MB'lık giriş sınırı yalnızca "ne
+    // seçebilirsin"i belirliyor, SAKLANAN her zaman küçük hâli
+    // (bkz. util/avatar_image.dart). Native'de picker zaten küçülttüğü
+    // için bu çağrı no-op; Flutter web'de asıl işi burası yapıyor.
+    final picked = await (widget.shrinkAvatar ?? shrinkAvatarIfNeeded)(raw);
+    if (!mounted) return;
     setState(() => _uploadingAvatar = true);
     try {
       final url = await widget.auth
@@ -451,7 +466,7 @@ class _AccountSettingsModalState extends State<AccountSettingsModal> {
                     ),
                     const Padding(
                       padding: EdgeInsets.only(top: 4),
-                      child: Text('JPG/PNG, en fazla 2 MB',
+                      child: Text('JPG/PNG, en fazla 10 MB',
                           style: TextStyle(
                               fontFamily: 'SpaceMono',
                               fontSize: 9,

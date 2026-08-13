@@ -15,6 +15,7 @@ import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/ui/auth/account_button.dart';
 import 'package:kelimeki/src/ui/auth/account_settings_modal.dart';
+import 'package:kelimeki/src/util/avatar_image.dart';
 import 'package:kelimeki/src/util/avatar_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
@@ -39,13 +40,17 @@ void main() {
     AuthService auth, {
     Future<bool> Function(String)? checker,
     PickAvatarFn? pickAvatar,
+    ShrinkAvatarFn? shrinkAvatar,
   }) async {
     await setPhoneViewSize(tester, const Size(420, 900));
     await tester.pumpWidget(MaterialApp(
       theme: kelimekiTheme(),
       home: Scaffold(
         body: AccountSettingsModal(
-            auth: auth, nicknameChecker: checker, pickAvatar: pickAvatar),
+            auth: auth,
+            nicknameChecker: checker,
+            pickAvatar: pickAvatar,
+            shrinkAvatar: shrinkAvatar),
       ),
     ));
     await tester.pump();
@@ -194,6 +199,40 @@ void main() {
     expect(find.text('Supabase yapılandırılmadı.'), findsOneWidget);
     expect(find.text('YÜKLENİYOR…'), findsNothing);
     expect(find.text('FOTOĞRAF DEĞİŞTİR'), findsOneWidget);
+  });
+
+  testWidgets(
+      'profil fotoğrafı: seçilen görsel YÜKLEMEDEN ÖNCE küçültme katmanından '
+      'geçer (10 MB yalnızca giriş sınırı — saklanan küçük hâli)',
+      (tester) async {
+    final auth = AuthService.fake(
+      user: fakeUser('me'),
+      profile: const KProfile(id: 'me', displayName: 'ironman'),
+    );
+    final buyuk = PickedImage(
+        bytes: Uint8List(3 * 1024 * 1024), mimeType: 'image/jpeg');
+    PickedImage? shrinkGirdisi;
+    await pumpSettings(
+      tester,
+      auth,
+      pickAvatar: () async => buyuk,
+      shrinkAvatar: (p) async {
+        shrinkGirdisi = p;
+        return PickedImage(
+            bytes: Uint8List(40 * 1024), mimeType: 'image/png');
+      },
+    );
+
+    await tester.tap(find.text('FOTOĞRAF DEĞİŞTİR'));
+    await tester.pumpAndSettle();
+
+    expect(shrinkGirdisi, isNotNull,
+        reason: 'Küçültme katmanı hiç çağrılmadı — 3 MB’lık orijinal olduğu '
+            'gibi yüklenirdi');
+    expect(identical(shrinkGirdisi, buyuk), isTrue);
+    // Akış küçültmeden SONRA da yüklemeye devam etmeli (fake client'ta
+    // beklenen hata mesajı, diğer avatar testleriyle aynı sınır).
+    expect(find.text('Supabase yapılandırılmadı.'), findsOneWidget);
   });
 
   testWidgets('profil fotoğrafı: galeri iptal edilirse (null) hiçbir şey olmaz',

@@ -362,7 +362,12 @@ class AuthService extends ChangeNotifier {
     await c.auth.updateUser(UserAttributes(email: email));
   }
 
-  static const _maxAvatarBytes = 2 * 1024 * 1024;
+  /// GİRİŞ sınırı (kullanıcının seçebileceği azami dosya). 13 Ağustos
+  /// 2026'da 2 MB'dan 10 MB'a çıkarıldı: tipik telefon fotoğrafı 2-12 MB
+  /// arasında ve kullanıcı "2'nin altında resim bulamadım" diye bildirdi.
+  /// SAKLANAN boyut bundan bağımsız — `shrinkAvatarIfNeeded`/native picker
+  /// yüklemeden önce ~512 px'e indiriyor (bkz. `util/avatar_image.dart`).
+  static const _maxAvatarBytes = 10 * 1024 * 1024;
   static const _extByMime = <String, String>{
     'image/jpeg': 'jpg',
     'image/png': 'png',
@@ -385,7 +390,7 @@ class AuthService extends ChangeNotifier {
       throw const AuthException('Lütfen bir görsel dosyası seç.');
     }
     if (bytes.length > _maxAvatarBytes) {
-      throw const AuthException('Görsel 2 MB’den küçük olmalı.');
+      throw const AuthException('Görsel 10 MB’den küçük olmalı.');
     }
     final u = _user;
     if (u == null) throw const AuthException('Oturum açık değil.');

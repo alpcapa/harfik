@@ -958,6 +958,12 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       "Profil fotoğrafı güncellendi." notu + YENİ fotoğraf hem bu modalde
       hem Setup/hesap menüsündeki avatarda görünmeli. Uygulamayı kapatıp
       aç (ya da webde aynı hesaba gir) — fotoğraf kalıcı olmalı.
+- [ ] **Profil fotoğrafı — DEĞİŞTİRME (13 Ağustos 2026, Parça 82).**
+      Zaten avatarı olan bir hesapta fotoğrafı DEĞİŞTİR: 403 /
+      "new row violates row-level security policy" ÇIKMAMALI. (20 Temmuz
+      2026'da `security_hardening` SELECT politikasını düşürünce bu iki
+      platformda da kırılmıştı; `avatars_owner_read` ile düzeltildi —
+      `upsert` var olan satırı görmeyi gerektiriyor.)
 - [ ] **Profil fotoğrafı — RLS.** Yüklenen dosyanın gerçekten `avatars`
       kovasında `<kendi-uid>/avatar.<ext>` yoluna gittiğini (Supabase
       Dashboard → Storage) doğrula; başka bir kullanıcının klasörüne
@@ -966,9 +972,14 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       yaz (aynı hesap, ikinci kez "FOTOĞRAF DEĞİŞTİR"): eski fotoğraf
       önbellekte takılı kalmadan YENİ görsel hemen görünmeli (URL'deki
       `?v=` zaman damgası sayesinde).
-- [ ] **Profil fotoğrafı — sınır kontrolleri.** 2 MB'ı aşan bir görsel
-      seçmeyi dene: "Görsel 2 MB'den küçük olmalı." hatası çıkmalı, hiçbir
-      şey yüklenmemeli. Bir resim-DIŞI dosya (galeri buna izin veriyorsa)
+- [ ] **Profil fotoğrafı — sınır ve küçültme (13 Ağustos 2026, Parça 83).**
+      Galeriden GERÇEK bir telefon fotoğrafı seç (2-10 MB — eskiden bunlar
+      reddediliyordu): yükleme BAŞARILI olmalı. Ardından Supabase Dashboard
+      → Storage → `avatars` → `<uid>/avatar.*` boyutuna bak: **saklanan
+      dosya ~50-150 KB olmalı**, seçtiğin megabaytlar DEĞİL (10 MB yalnızca
+      giriş sınırı, yükleme küçültmeden sonra yapılıyor). Avatar ekranda
+      bulanık/bozuk görünmemeli. 10 MB'ı aşan bir görselde ise "Görsel
+      10 MB'den küçük olmalı." hatası çıkmalı, hiçbir şey yüklenmemeli. Bir resim-DIŞI dosya (galeri buna izin veriyorsa)
       seçilirse "Lütfen bir görsel dosyası seç." hatası çıkmalı.
 
 ## 13. k-lig ödül & rütbe sistemi (Parça 61-62)

@@ -2844,6 +2844,95 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        görsel teyit kullanıcıdan bekleniyor — `mobile/TESTING.md` bölüm
        2'ye madde eklendi.
 
+   - ✅ **Parça 82 — avatar DEĞİŞTİRME 20 Temmuz'dan beri kırıkmış; port
+     hatası DEĞİL, sunucu politikası (13 Ağustos 2026,
+     `avatars_owner_read_for_upsert` migration'ı):** Kullanıcı bölüm 12'yi
+     koşarken fotoğraf güncellemede `StorageException(message: new row
+     violates row-level security policy, statusCode: 403)` aldı.
+     - **Parça 14'ün doğrulama sınırı KAPANDI** ("gerçek Storage upload'ı
+       cihazda doğrulanmalı") — ve kapanır kapanmaz gerçek bir hata buldu.
+     - **Önce web kaynağı okundu, sonra kod karşılaştırıldı:** portun
+       `AuthService.uploadAvatar`'ı web `uploadAvatar` ile birebir (aynı
+       yol `<uid>/avatar.<ext>`, aynı `upsert: true`, aynı MIME/boyut
+       kontrolü). Yani kodda fark yoktu — sorun sunucudaydı.
+     - **Kök sebep ve tam zincir kök `CLAUDE.md`'de** ("Profil fotoğrafı
+       yükleme" maddesi): `security_hardening` (20 Temmuz) `avatars_public_read`
+       SELECT politikasını "kova zaten public, gereksiz" diye düşürmüş;
+       gerekçe okuma için doğru, ama `upsert` = `INSERT ... ON CONFLICT DO
+       UPDATE` ve bu, çakışan satırın GÖRÜNÜR olmasını gerektiriyor.
+     - **Ölçüldü, tahmin edilmedi:** üretimde geri alınan transaction'larla
+       (a) sahibi olan kullanıcı kendi satırını göremiyor (`count = 0`),
+       (b) hata BİREBİR yeniden üretildi (`ERROR: 42501: new row violates
+       row-level security policy for table "objects"`), (c) düzeltmeyle
+       hem üzerine yazma hem yeni uzantıyla ilk yükleme geçti, başkasının
+       klasörü hâlâ 0 satır.
+     - **Teşhis sırasında YAPTIĞIM HATA, kayda geçsin:** ilk denemede RLS'i
+       simüle etmek için yazdığım `DO $$ ... $$` bloğunda `set local role
+       authenticated` YOKTU — blok yükseltilmiş rolle koştu, RLS hiç
+       uygulanmadı ve üretime GERÇEK bir sahte satır (`avatar.png`) yazdı.
+       Fark edilip silindi (`storage.allow_delete_query` ile; storage
+       tabloları doğrudan silmeye karşı trigger'la korumalı), ama
+       `avatar.jpg`'nin `updated_at`'i bugüne kaydı (kozmetik, uygulama o
+       alanı okumuyor). **Ders: RLS'i "simüle eden" bir sorgu, rolü
+       gerçekten değiştirmiyorsa hiçbir şey simüle etmez — üstelik
+       transaction'sız çalışırsa üretime yazar. `begin; set local role
+       authenticated; set local request.jwt.claims = …; … rollback;`
+       kalıbından şaşma.**
+     - **`mobile/` DIŞINDA dosya değişti** (`supabase/migrations/`,
+       `CLAUDE.md`) → kök `CLAUDE.md` aynı commit'te güncellendi (Parça
+       Bitirme Kontrol Listesi madde 1).
+     - **Doğrulama sınırı:** düzeltme SQL seviyesinde kanıtlandı; gerçek
+       istemciyle (cihazda fotoğraf değiştirme) uçtan uca teyit
+       kullanıcıdan bekleniyor.
+
+   - ✅ **Parça 83 — avatar giriş sınırı 10 MB, ama SAKLANAN küçültülüyor
+     (13 Ağustos 2026, yeni `util/avatar_image.dart`, `avatar_picker.dart`,
+     `auth_service.dart`, `account_settings_modal.dart` + web
+     `api.ts`/`AccountSettingsModal.tsx`):** Kullanıcı Parça 82'nin
+     düzeltmesinden hemen sonra *"2 Mb biraz az kalıyor, 2'nin altında
+     resim bulamadım"* dedi. Ölçülen gerçek: iPhone HEIC 1.5-3 MB, iPhone
+     JPEG 2-4 MB, Android 50-200MP 3-12 MB — 2 MB gerçekten dardı.
+     - **Sınırı yükseltmek TEK BAŞINA yanlış çözüm:** 10 MB'lık bir
+       orijinali, hiçbir zaman 96 px'den büyük gösterilmeyen bir avatar
+       için depolamak ve her açılışta indirmek israf. 10 MB artık yalnızca
+       "ne SEÇEBİLİRSİN" sınırı; saklanan her zaman küçültülmüş hâli
+       (~50-150 KB). Kullanıcının sorusuna ("storage problemi olmayacak
+       değil mi?") cevap: hayır — yükleme küçültmeden SONRA yapılıyor.
+     - **Bellek tuzağı — "önce çöz, sonra küçült" YANLIŞ:** 48MP'lik bir
+       görselin ham RGBA'sı ~190 MB. `ui.instantiateImageCodec`'in
+       `targetWidth`'i çözmeyi ZATEN hedef boyutta yapıyor, tepe bellek
+       küçük kalıyor. Ölçekleme bu yüzden kodek seviyesinde.
+     - **İKİ KATMAN, çünkü `image_picker` her yerde aynı davranmıyor
+       (kaynaktan doğrulandı, tahmin değil):** native'de
+       `pickImage(maxWidth/maxHeight/imageQuality)` yeniden boyutlandırmayı
+       platforma yaptırıp küçük bir JPEG döndürüyor; **Flutter web'de bu üç
+       parametre sessizce yok sayılıyor** — `image_picker_for_web`
+       kaynağında birebir yazılı ("not supported on the web ... silently
+       ignored"). GitHub Pages test ortamı tam olarak o dal olduğundan
+       ikinci katman (`shrinkAvatarIfNeeded`) şart. İkinci katman yalnızca
+       400 KB eşiği aşılınca çalışıyor — native'de çalışsaydı küçücük bir
+       JPEG'i PNG'ye çevirip BÜYÜTÜRDÜ (`dart:ui` yalnızca PNG/rawRgba
+       yazabiliyor).
+     - **Kare kırpma BİLİNÇLİ olarak yok:** avatar iki platformda da
+       dairesel `cover` ile gösteriliyor, kırpma görüntüleme anında oluyor;
+       web'in `uploadAvatar`'ı da hiç kırpmıyor.
+     - **Bozuk/çözülemeyen görselde orijinal döner** — küçültme bir
+       iyileştirme, yükleme yolunu kırmamalı; gerçek MIME/boyut doğrulaması
+       zaten `AuthService.uploadAvatar`'da.
+     - **Test — 4 birim + 1 kablo testi:** eşik altı AYNEN geçer (kodek hiç
+       çağrılmaz), eşik üstü küçülür ve hedef kenar kodeke iletilir, kodek
+       patlarsa orijinal döner, yeniden kodlama büyütürse orijinal korunur;
+       ayrıca modal testi seçilen görselin YÜKLEMEDEN ÖNCE küçültme
+       katmanından geçtiğini doğruluyor. Negatif eş: modaldeki çağrı geri
+       alınınca test derleme hatasıyla düştü (parametre yok — kaba ama
+       kesin: kablo yük taşıyor).
+     - **`mobile/` DIŞINDA dosya değişti** (`src/lib/api.ts`,
+       `src/components/AccountSettingsModal.tsx`, `CLAUDE.md`) → kök
+       `CLAUDE.md` aynı commit'te güncellendi; web `npm run lint` temiz.
+     - **Doğrulama sınırı:** gerçek galeriden 10 MB'lık bir fotoğraf seçip
+       yüklemek ve saklanan boyutun küçüldüğünü Storage'da görmek cihazda
+       doğrulanmalı — `mobile/TESTING.md` bölüm 12 güncellendi.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

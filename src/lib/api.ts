@@ -2217,7 +2217,59 @@ export async function setNewPassword(newPassword: string) {
 // zaten yapılıyor — burada ikinci bir savunma katmanı olarak tekrarlanıyor,
 // çünkü uploadAvatar paylaşılan bir kütüphane fonksiyonu ve ileride başka
 // bir çağrı yeri bu kontrolü atlayabilir.
-const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+// GİRİŞ sınırı (kullanıcının seçebileceği azami dosya). 13 Ağustos 2026'da
+// 2 MB'dan 10 MB'a çıkarıldı: tipik telefon fotoğrafı 2-12 MB arasında
+// (iPhone HEIC 1.5-3, iPhone JPEG 2-4, Android 50-200MP 3-12) ve kullanıcı
+// galerisinde 2 MB altı fotoğraf bulamadığını bildirdi. SAKLANAN boyut bundan
+// bağımsız — `shrinkAvatar` yüklemeden önce ~512 px'e indiriyor.
+const MAX_AVATAR_BYTES = 10 * 1024 * 1024;
+// Küçültülmüş avatarın azami kenar uzunluğu; avatar en fazla 36-64 px
+// gösteriliyor, DPR 3'te bile ~192 px — 512 bol bir pay.
+const AVATAR_MAX_EDGE = 512;
+// Bunun altındaki dosyalar olduğu gibi yüklenir (yeniden kodlamak onları
+// büyütebilir).
+const AVATAR_SHRINK_THRESHOLD = 400 * 1024;
+
+/**
+ * Yüklemeden ÖNCE küçültür. Avatar hiçbir zaman 96 px'den büyük
+ * gösterilmediğinden 10 MB'lık bir orijinali depolamak ve her açılışta
+ * indirmek israf olurdu; giriş sınırını yükseltmenin tek başına yanlış
+ * çözüm olmasının sebebi bu.
+ *
+ * Kare KIRPMA yok — avatar zaten `object-cover` ile dairesel gösteriliyor,
+ * kırpma görüntüleme anında oluyor (mobil port da aynı kararı taşıyor).
+ * Çözülemeyen bir dosyada orijinal döner: küçültme bir iyileştirme,
+ * yükleme yolunu kırmamalı.
+ */
+async function shrinkAvatar(file: File): Promise<Blob> {
+  if (file.size <= AVATAR_SHRINK_THRESHOLD) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, AVATAR_MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+    if (scale >= 1) {
+      bitmap.close();
+      return file;
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      bitmap.close();
+      return file;
+    }
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/jpeg', 0.85),
+    );
+    // Beklenmedik şekilde büyüdüyse orijinali koru.
+    if (!blob || blob.size >= file.size) return file;
+    return blob;
+  } catch {
+    return file;
+  }
+}
 const EXT_BY_MIME: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -2228,7 +2280,7 @@ const EXT_BY_MIME: Record<string, string> = {
 export async function uploadAvatar(file: File): Promise<string> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
   if (!file.type.startsWith('image/')) throw new Error('Lütfen bir görsel dosyası seç.');
-  if (file.size > MAX_AVATAR_BYTES) throw new Error('Görsel 2 MB’den küçük olmalı.');
+  if (file.size > MAX_AVATAR_BYTES) throw new Error('Görsel 10 MB’den küçük olmalı.');
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -2237,12 +2289,16 @@ export async function uploadAvatar(file: File): Promise<string> {
   // Dosya adındaki uzantı yerine gerçek MIME tipinden türetiliyor —
   // uzantısız/yanıltıcı bir dosya adı (ör. "photo", "resim.jpeg.txt")
   // önceden path'e olduğu gibi (ör. "avatar.photo") yazılıyordu.
-  const ext = EXT_BY_MIME[file.type] ?? 'png';
+  // Yüklemeden ÖNCE küçült — 10 MB yalnızca "ne seçebilirsin"i belirler,
+  // saklanan her zaman küçük hâlidir.
+  const body = await shrinkAvatar(file);
+  const contentType = body.type || file.type;
+  const ext = EXT_BY_MIME[contentType] ?? 'png';
   const path = `${user.id}/avatar.${ext}`;
 
   const { error: upErr } = await supabase.storage
     .from('avatars')
-    .upload(path, file, { upsert: true, contentType: file.type });
+    .upload(path, body, { upsert: true, contentType });
   if (upErr) throw new Error(upErr.message);
 
   const { data } = supabase.storage.from('avatars').getPublicUrl(path);
