@@ -707,16 +707,22 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                                 stats: widget.services.stats,
                                 games: widget.services.games),
                           ),
-                        // Web: Setup kutusunun `py-6`sı (24) ile logo
-                        // bloğunun `-mt-3`ü (−12) ÜST ÜSTE binip 12 yapıyor
-                        // — o negatif margin gözden kaçarsa hesap 24 çıkar.
-                        // Derlenmiş CSS + Chromium'da iki viewport'ta da
-                        // ölçüldü. Port burada 4 kullanıyordu.
+                        // GİRİŞ/avatar satırı ile logo arası: 4.
+                        //
+                        // Web'de bu sayı Setup kutusunun `py-6`sı (24) ile
+                        // logo bloğunun negatif üst margin'inin farkı — o
+                        // margin gözden kaçarsa hesap 24 çıkar. 13 Ağustos
+                        // 2026'da margin `-mt-3` (−12, arası 12) iken
+                        // `-mt-5`e (−20, arası 4) çekildi: kullanıcı portun
+                        // 4'ünü tercih etti ("web'de ekstra boşluk var"),
+                        // yani bu sefer WEB porta uyduruldu. İki taraf da
+                        // 4; biri değişirse öteki de değişmeli.
                         //
                         // KOŞULSUZ: `auth.configured` false iken web'de de
-                        // GİRİŞ satırı boş bir kutu olarak render edilir,
-                        // yani logonun üstü yine 12 (üst dolgu) + 12 = 24.
-                        const SizedBox(height: 12),
+                        // GİRİŞ satırı boş bir kutu olarak render edilir
+                        // (yalnızca `pt-3`ü kalır), yani logonun üstü yine
+                        // 12 + 4 = 16.
+                        const SizedBox(height: 4),
                         const Center(child: LogoMark(height: 52)),
                         // Web: blok `gap-1` (4px) + paragrafın `mt-4`si (16px)
                         // ÜST ÜSTE binerek 20px yapıyor — Chromium'da ölçüldü.

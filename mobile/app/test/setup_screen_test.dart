@@ -281,8 +281,7 @@ void main() {
     await tester.runAsync(() => storage.close());
   });
 
-  testWidgets('GİRİŞ satırının üstü/altı web ile aynı (12/12)',
-      (tester) async {
+  testWidgets('GİRİŞ satırının üstü/altı web ile aynı (12/4)', (tester) async {
     // 13 Ağustos 2026, kullanıcı yan yana karşılaştırmayla bildirdi: "sağ
     // üstteki giriş butonunun üstündeki boşluk app'de daha fazla, biraz
     // aşağıda duruyor."
@@ -290,13 +289,14 @@ void main() {
     // Web'de bu satır Setup içeriğinden AYRI bir kutu (`App.tsx`):
     //   <div … px-3.5 pt-3>   <UserMenu/>        → ÜSTTE 12
     //   <main><div … px-4 py-6>                  → 24
-    //     <div … -mt-3>  <LogoMark/>             → −12  ⇒ ARADA 12
-    // Yani `py-6`nın 24'ü logo bloğunun NEGATİF margin'iyle yarıya iniyor —
-    // bu `-mt-3` gözden kaçarsa hesap yanlış çıkar. Derlenmiş CSS +
-    // Chromium'da iki viewport'ta (1000/420) ölçüldü: 12.0 ve 12.0.
+    //     <div … -mt-5>  <LogoMark/>             → −20  ⇒ ARADA 4
+    // Yani `py-6`nın 24'ü logo bloğunun NEGATİF margin'iyle eriyor — o
+    // margin gözden kaçarsa hesap 24 çıkar. Derlenmiş CSS + Chromium'da
+    // iki viewport'ta (1000/420) ölçüldü: 12.0 ve 4.0.
     //
-    // Port ise tek sütun kullandığından üstte 24 (kaydırma dolgusu), arada
-    // 4 (AccountButton'ın bottom dolgusu) veriyordu.
+    // Port ise tek sütun kullandığından üstte 24 (kaydırma dolgusu)
+    // veriyordu; ARADAKİ 4'ü baştan doğruydu ve 13 Ağustos 2026'da
+    // kullanıcı onu tercih edince web `-mt-3`ten `-mt-5`e çekildi.
     await setPhoneViewSize(tester, const Size(1000, 800));
     final gw = FakeOnlineGamesGateway();
     await pumpSetup(tester,
@@ -307,8 +307,8 @@ void main() {
     final logo = tester.getRect(find.byType(LogoMark).first);
 
     expect(giris.top - ekran.top, 12, reason: 'GİRİŞ üstü web pt-3 = 12');
-    expect(logo.top - giris.bottom, 12,
-        reason: 'GİRİŞ ile logo arası web py-6 (24) + -mt-3 (−12) = 12');
+    expect(logo.top - giris.bottom, 4,
+        reason: 'GİRİŞ ile logo arası web py-6 (24) + -mt-5 (−20) = 4');
   });
 
   testWidgets(

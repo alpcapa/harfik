@@ -2599,6 +2599,37 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 364/364
        yeşil** (363'ten +1). `kelimeki_core`'a hiç dokunulmadı.
 
+   - ✅ **Parça 76 — logo ile GİRİŞ/avatar satırı arası: bu sefer WEB porta
+     uyduruldu (13 Ağustos 2026, `Setup.tsx` + `setup_screen.dart`):**
+     Kullanıcı: *"App'de kelimeki logosuyla avatar satırı arası ideal şu
+     anda. Ama web'de ekstra bir boşluk var. Web'i app gibi yap."*
+     - **Ölçüm (derlenmiş CSS + Chromium, 420/1000):** web'de GİRİŞ
+       butonunun altı ile logonun üstü arası **12**; portta (o an canlıda
+       olan `main` derlemesi) **4**. Fark 8px.
+     - **Parça 73 ile ÇAKIŞIYORDU ve fark edilmeseydi sessiz bir sapma
+       doğuracaktı:** dün bu boşluğu portta 4'ten 12'ye çıkarıp web'e
+       uydurmuştum (o PR henüz merge edilmediği için kullanıcının cihazda
+       gördüğü hâlâ 4'tü). Yalnızca web'i 4'e çekseydim, #245 merge olunca
+       port 12'ye çıkıp ayrışma TERS yönde geri gelecekti. Bu yüzden
+       ikisi birden 4'e sabitlendi: portun `SizedBox(height: 12)`i 4'e
+       geri alındı, web `-mt-3` → **`-mt-5`** (kabın `py-6`sından 20
+       yiyor). **Parça 73'ün ASIL konusu olan ÜST boşluk (24 → 12)
+       aynen duruyor** — o web'e uyum, bu ondan ayrı bir sayı.
+     - **Yön istisnası bilinçli** (Parça 42'nin emsali): kural "web
+       kanonik" ama kullanıcı açıkça portun görünümünü seçtiğinde web
+       değişir — amaç estetik dayatma değil, sessiz ayrışmayı önlemek.
+     - **Test — negatif eş doğrulamasıyla:** Parça 73'ün testi (`GİRİŞ
+       satırının üstü/altı web ile aynı`) 12/4'e güncellendi; port 12'ye
+       geri çevrilince GERÇEKTEN `Expected: <4> Actual: <12.0>` ile
+       düştü, 4'e alınınca yeşile döndü.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 364/364 yeşil**;
+       web `npm run lint` + `npm run build` temiz. `kelimeki_core`'a hiç
+       dokunulmadı.
+     - **Doğrulama sınırı:** iki tarafın yan yana görsel teyidi
+       kullanıcıdan bekleniyor (web canlıya, port GitHub Pages'e deploy
+       olduktan SONRA — ikisi farklı zamanlarda yayına girdiğinden ara
+       dönemde fark görünebilir).
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
