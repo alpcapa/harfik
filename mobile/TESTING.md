@@ -547,6 +547,16 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       `catch` her şeyi yutuyordu, bkz. Parça 35). Görselli paylaşım o
       platformda mümkün değilse en azından **metin + link** paylaşım
       sayfası açılmalı.
+- [ ] **GÖRSEL GERÇEKTEN GİDİYOR MU? (Parça 84 — 13 Ağustos 2026'da
+      kırıktı).** Paylaşımı WhatsApp/Notlar ile kendine gönder ve GELEN
+      mesaja bak: **tahtanın kendisi** görünmeli. Yalnızca metin+link
+      gelip altında Kelimeki'nin jenerik önizleme kartı çıkıyorsa görselli
+      dal sessizce patlıyor demektir — belirti "yanlış görsel" gibi
+      görünür, gerçekte görsel HİÇ gitmemiştir. (Kök sebep: dosya yazımı
+      `path_provider`/`dart:io` ile yapılıyordu, ikisi de web'de çalışmıyor;
+      artık `XFile.fromData` + `fileNameOverrides` ile share_plus'ın
+      kendisi yazıyor.) Web ile yan yana koy — ikisi AYNI görseli
+      göndermeli.
 - [ ] **İptal ikinci sayfa açmamalı.** Paylaş sayfasını kapat/iptal et →
       arkasından ikinci bir paylaş sayfası AÇILMAMALI (`share_plus`
       iptalde fırlatmaz, yedek zincire düşmemeli).
@@ -566,7 +576,16 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       linke tıkla: `kelimeki.com/game/<id>` sayfası **girişsiz** açılmalı
       ve aynı tahtayı göstermeli. (Bu, `set_game_shared` RPC'sinin
       gerçekten çalıştığının kanıtı — bayrak yazılmazsa sayfa boş gelir.)
-- [ ] **Kapat.** Menüden "Kapat" tahtayı kapatmalı.
+- [ ] **Kapat.** Menüden "Kapat" tahtayı kapatmalı; "Vazgeç" ise hiçbir şey
+      yapmadan (tahta AÇIK) menüyü kapatmalı — web `ActionSheet` ile aynı.
+      (13 Ağustos 2026'da kullanıcı ikisinin de tahtayı açık bıraktığını
+      bildirdi; native testte ÖLÇÜLDÜ — "Kapat" tahtayı gerçekten
+      kapatıyor (ScoreBoxRow 1 → 0) ve `menüdeki "Kapat" tahtayı kapatır`
+      testi geçiyor. Cihazda hâlâ kapanmıyorsa tarayıcıya özgü bir dokunuş
+      yayılımı olabilir — o zaman ayrı bir tur gerekir.)
+- [ ] **Ekranda başka yere dokunmak tüm oyunlar penceresini kapatır** ve
+      Skor Kartı'na döner — bu bir port sapması DEĞİL, web `Modal.tsx`'in
+      zemin dokunuşu da `onClose` çağırıyor (bkz. bu bölümün 4. maddesi).
 
 ## 7. Son Oynadıklarım
 

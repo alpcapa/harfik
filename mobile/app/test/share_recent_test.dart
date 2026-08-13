@@ -342,6 +342,71 @@ void main() {
     expect(args['uri'], isNull);
   });
 
+  // 13 Ağustos 2026 — cihaz testinde "app tahta yerine jenerik Kelimeki
+  // görselini gönderiyor, web gerçek tahtayı gönderiyor" bildirildi. Kök
+  // sebep: görselli dal `dart:io` `File` + `path_provider` ile geçici dosya
+  // yazıyordu, ikisi de Flutter web'de çalışmadığından dal HER SEFERİNDE
+  // patlayıp metin+link yedeğine düşüyordu (WhatsApp da linkten sitenin
+  // GENEL og:image kartını üretiyordu). Bu test görselli dalın GERÇEKTEN
+  // alındığını ve kanala doğru adlı/tipli PNG'nin gittiğini sabitliyor.
+  //
+  // DOĞRULAMA SINIRI (dürüst kayıt): hatanın KENDİSİ bu testte
+  // ÜRETİLEMEZ — native VM'de `dart:io` çalışır, yani eski kod da bu testi
+  // geçerdi. Web tarafı ayrıca gerçek CanvasKit derlemesinde ölçüldü
+  // (bkz. Parça 84 notu). Buradaki değer, sözleşmenin (veri destekli
+  // XFile + fileNameOverrides → doğru ad/tip/bayt) kalıcı olarak
+  // pinlenmesi.
+  testWidgets('görselli paylaşım: kanala kelimeki.png + PNG baytları gider',
+      (tester) async {
+    const shareChannel = MethodChannel('dev.fluttercommunity.plus/share');
+    const pathChannel = MethodChannel('plugins.flutter.io/path_provider');
+    final calls = <MethodCall>[];
+    final tempRoot = Directory.systemTemp.createTempSync('kelimeki_share_');
+
+    tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(shareChannel, (call) async {
+      calls.add(call);
+      return '';
+    });
+    // share_plus, path'i BOŞ olan bir XFile'ı kendisi geçici dizine yazar
+    // (`method_channel_share.dart`, `_getFile`) — yani dosya yazma işi
+    // bizden kütüphaneye geçti; bu mock o yolu açıyor.
+    tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(pathChannel, (call) async {
+      return call.method == 'getTemporaryDirectory' ? tempRoot.path : null;
+    });
+    addTearDown(() {
+      tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(shareChannel, null);
+      tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(pathChannel, null);
+      tempRoot.deleteSync(recursive: true);
+    });
+
+    // Gerçek bir PNG imzası — mimeType tahminine değil bize bağlı olmalı.
+    final png = Uint8List.fromList(
+        [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3]);
+    await tester.runAsync(() async {
+      await shareBoard(
+        png: png,
+        text: shareMessage,
+        url: 'https://kelimeki.com/game/a',
+      );
+    });
+
+    expect(calls, hasLength(1), reason: 'görselli dal metne DÜŞMEMELİ');
+    final args = calls.single.arguments as Map;
+    expect(args['text'], '$shareMessage\nhttps://kelimeki.com/game/a');
+    expect(args['mimeTypes'], ['image/png']);
+
+    final paths = (args['paths'] as List).cast<String>();
+    expect(paths, hasLength(1));
+    // `fileNameOverrides` olmadan native'de ad kaybolur (`cross_file`ın io
+    // uygulaması `name`i yok sayıyor — paket belgesinde yazılı).
+    expect(paths.single, endsWith('/kelimeki.png'));
+    expect(File(paths.single).readAsBytesSync(), png);
+  });
+
   testWidgets('Son Oynadıklarım: hiç bitmiş oyun yoksa bölüm GİZLİ',
       (tester) async {
     final repo =

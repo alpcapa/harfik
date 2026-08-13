@@ -2938,6 +2938,76 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        dosya ~50-150 KB olmalı") `mobile/TESTING.md` bölüm 12 ve kök
        `TESTING.md` bölüm 9.5'te duruyor — ilerideki bir regresyon için.
 
+   - ✅ **Parça 84 — paylaşımda tahta görseli HİÇ gitmiyordu: görselli dal
+     web'de her seferinde patlıyor, WhatsApp da linkten sitenin GENEL
+     og:image kartını üretiyordu (13 Ağustos 2026, `share_board.dart`):**
+     Kullanıcı bölüm 6'yı koşarken iki paylaşımı yan yana koydu —
+     *"App'te paylaş board yerine jenerik Kelimeki gösterimini gönderiyor,
+     web'de oyunun görselini. App'de web gibi paylaşmalı."*
+     - **Web kaynağı önce okundu (kuralın ilk adımı):**
+       `GameHistoryModal.tsx` `handleShare` PNG'yi `new File([blob],
+       'kelimeki.png')` ile kurup `navigator.canShare({files})` dalından
+       paylaşıyor. Yani web GERÇEKTEN dosya paylaşıyor; app'in gönderdiği
+       jenerik kart, metin+link yedeğinin (Parça 35) doğal sonucu —
+       WhatsApp linke bakıp `index.html`'in site geneli `og:image`'ini
+       çiziyor. Yani belirti "yanlış görsel" değil, **görselin HİÇ
+       gitmemesi**.
+     - **Kök sebep:** portun görselli dalı `path_provider`'ın
+       `getTemporaryDirectory()`si + `dart:io` `File` ile geçici dosya
+       yazıyordu; ikisi de Flutter web'de çalışmıyor → dal her seferinde
+       fırlıyor, `catch` metin yedeğine düşüyordu. Parça 35'te eklenen o
+       yedek burada hatayı GİZLEDİ: paylaş sayfası açıldığı için akış
+       "çalışıyor" görünüyordu.
+     - **Düzeltme:** dosya yazımı bizden kütüphaneye taşındı —
+       `XFile.fromData(png, mimeType: 'image/png', name: 'kelimeki.png')`
+       + `fileNameOverrides: const ['kelimeki.png']`. Web'de share_plus
+       baytları `readAsBytes()` ile alıp `navigator.share({files})`e
+       veriyor (web'in AYNI dalı); native'de path boş kaldığından
+       share_plus'ın kendisi geçici dizine yazıyor
+       (`method_channel_share.dart`, `_getFile` — kaynaktan doğrulandı).
+       `fileNameOverrides` ŞART: `cross_file`'ın io uygulaması `name`i YOK
+       SAYIYOR (paket belgesinde yazılı), onsuz native'de ad kayboluyor.
+       Bu kod yolu artık `path_provider`a hiç dokunmuyor (`dart:io` importu
+       da düştü).
+     - **`downloadFallbackEnabled: false` (yalnızca web'de anlamlı):**
+       varsayılan `true` iken `canShare({files})` false dönerse share_plus
+       paylaşmak yerine PNG'yi sessizce İNDİRİYOR; web'in kendi yedeği ise
+       metin+link. `false` ile o durumda fırlayıp bizim yedeğimize
+       düşüyoruz — zincir web `handleShare` ile hizalandı.
+     - **GERÇEK CanvasKit derlemesinde ÖLÇÜLDÜ (Parça 18/27'nin yöntemi;
+       tahminle kapatılmadı):** minik bir web harness'i derlenip
+       Playwright/Chromium'da koşuldu —
+       `getTemporaryDirectory()` **FIRLATTI**, `File(...).writeAsBytes()`
+       **"Unsupported operation: _Namespace"** ile fırlattı,
+       `XFile.fromData(...)` **ÇALIŞTI** (11 bayt, mime/name korunuyor) ve
+       share_plus web eklentisinin `prepareData`'sı **files DOLU** bir
+       `ShareData` üretti — yani `navigator.share({files})` dalı artık
+       gerçekten besleniyor. Harness ve `build/webprobe` iş bitince
+       silindi.
+     - **Test — negatif eş doğrulamasıyla:** `share_recent_test.dart`'a
+       yeni bir test; path_provider kanalı gerçek bir geçici dizine
+       mock'lanıp kanala giden `paths`/`mimeTypes`/`text` ve DİSKTEKİ
+       baytlar doğrulanıyor (`.../kelimeki.png`, `image/png`, birebir PNG).
+       `fileNameOverrides` kaldırılınca test GERÇEKTEN düştü, geri konunca
+       yeşile döndü. Parça 35'in yedek-zincir testi de hâlâ geçiyor
+       (artık `MissingPluginException` bizim kodumuzdan değil share_plus'ın
+       `_getFile`'ından geliyor — sonuç aynı, zincir sağlam).
+     - **`flutter test` bu hatayı YAPISAL OLARAK göremez** (native VM'de
+       `dart:io` çalışır, eski kod da testi geçerdi) — bu yüzden kanıt
+       tarayıcı ölçümü, testin işi sözleşmeyi (veri destekli XFile + doğru
+       ad/tip/bayt) kalıcı olarak pinlemek. Parça 18'in dersinin tekrarı.
+     - **`path_provider` pubspec'te KALDI, bilinçli:** artık `lib/` altında
+       hiçbir import yok, ama native'de geçici dosyayı yazan share_plus
+       onu kullanıyor — yani bağımlılık kayboldu değil, bir katman aşağı
+       indi. Sahip olduğumuz bir özelliğin gereksinimini örtük bırakmamak
+       için bildirimde tutuldu.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       378/378 yeşil** (377'den +1). `kelimeki_core`'a ve web'e hiç
+       dokunulmadı — `mobile/` DIŞINDA dosya değişmedi.
+     - **Doğrulama sınırı:** gerçek paylaş sayfasında görselin gerçekten
+       eklendiği (ve WhatsApp'ın jenerik kart yerine tahtayı gösterdiği)
+       cihazda teyit edilmeli — `mobile/TESTING.md` bölüm 6 güncellendi.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
