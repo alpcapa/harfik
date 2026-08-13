@@ -76,11 +76,11 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
         ? String(milestone)
         : `+${rewardPoints}`;
   const title = rankDown
-    ? 'Rütben geriledi!'
+    ? 'Rütben geriledi! 😔'
     : rankUpTier
-      ? `Yeni rütben: ${rankUpTier.name}!`
+      ? `Yeni rütben: ${rankUpTier.name}! 👏`
       : milestone
-        ? `${milestone} k-lig puanına ulaştın!`
+        ? `${milestone} k-lig puanına ulaştın! 🎉`
         : 'Eşik ödülü kazandın!';
   // "X k-lig puanına ulaştın" alt satırı — ulaşılan en yüksek eşik (rütbe/
   // kilometre taşı/ödül hangisi büyükse). Başlık zaten aynı bilgiyi veren
@@ -195,14 +195,27 @@ export function RewardBanner({ summary, onClose }: RewardBannerProps) {
               )}
             </>
           )}
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn-raised bg-accent text-white border border-accent rounded-md font-sans text-sm font-bold uppercase tracking-[1px] px-8 py-2 mt-4 active:scale-[0.97] transition-transform"
-          >
-            Devam
-          </button>
         </div>
+        {/* Kapatma: tam genişlikte bir "DEVAM" butonu yerine sağ üstte ✕
+            (12 Ağustos 2026, kullanıcı isteği — RankInfoModal'a uygulanan
+            aynı kararın banner'lara da genişletilmesi: "bu banner'larda
+            kapat, devam vb olmamalı, sadece X"). Stil KModal/RankInfoModal
+            ile birebir; iki kart aynı, biri değişirse öteki de.
+            DİKKAT — bu buton yalnızca kapatmıyor: `onClose`
+            `mark_league_rewards_seen`'i çağıran TEK yol (bkz.
+            `LeagueRewardsHost`). "DEVAM" buraya çevrilirken aynı callback'e
+            bağlı kaldı; başka bir kapatma yolu eklenirse (ör. zemine
+            dokunma) o da `onClose`'tan geçmeli, aksi halde banner her
+            açılışta yeniden çıkar. Escape zaten `useModalA11y` üzerinden
+            aynı callback'e bağlı. */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Kapat"
+          className="absolute top-2 right-2 text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform focus:outline-none"
+        >
+          ✕
+        </button>
         {rankDown ? null : (
         <div className="absolute inset-0 pointer-events-none overflow-visible" aria-hidden="true">
           {CONFETTI.map((c, i) => (

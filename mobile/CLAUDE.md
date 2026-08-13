@@ -1803,8 +1803,11 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        7. **Bilgi popup'ında kocaman "KAPAT" butonu kalktı, sağ üste ✕
           geldi** — salt bilgi veren bir popup'ın altına tam genişlikte
           aksiyon butonu konmaz; stil `KModal`ın ✕'inden birebir alındı.
-          **Banner'ın "DEVAM"ı KALDI:** o gerçek bir aksiyon (ödülleri
-          görüldü işaretler).
+          ~~**Banner'ın "DEVAM"ı KALDI:** o gerçek bir aksiyon (ödülleri
+          görüldü işaretler).~~ — **AYNI GÜN geri alındı, bkz. Parça 69:**
+          kullanıcı kuralı banner'lara da genişletti ("bu banner'larda
+          kapat, devam vb olmamalı, sadece X"); işaretleme kaybolmadı, ✕
+          aynı `onClose`'a bağlandı.
        8. **Kuyruklu harfler (Ç/Ş) mühürde alta kaçıyordu — taban çizgisi
           artık MÜREKKEPTEN hesaplanıyor** (kullanıcı: "Ç, Ş gibi altında
           kuyruk olan karakterler ortalı durmuyor, alta daha yakın
@@ -2196,9 +2199,11 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        359/359 yeşil** (358'den +1). Web `npm run lint` + `npm run build`
        temiz. `kelimeki_core`'a hiç dokunulmadı (yalnızca `trUpper`
        import edildi) — golden vector turu gerekmedi.
-     - **Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor
-       — `mobile/TESTING.md` bölüm 13'e madde eklendi (web'in eşi kök
-       `TESTING.md` bölüm 10'da).
+     - ~~**Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor~~
+       — **12 Ağustos 2026'da cihazda KOŞULDU ve GEÇTİ** (dokuz kademe,
+       eşik/ödül değerleri ve büyük harf başlıklar; web'le yan yana
+       ayrışma yok). Kontrol maddeleri `mobile/TESTING.md` bölüm 13'te
+       (web'in eşi kök `TESTING.md` bölüm 10'da).
 
    - ✅ **Parça 67 — hamle ikonu artık yalnızca dökümü OLAN kartta; kullanıcının
      teşhisi ölçülerek çürütüldü (12 Ağustos 2026, `games_api.dart`,
@@ -2249,10 +2254,249 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        true, güncel yerel hepsi false, ve **en kritiği** bir YEREL satıra
        `moves` yazılınca bayrak true'ya döndü — geri alındı).
        `kelimeki_core`'a hiç dokunulmadı.
-     - **Doğrulama sınırı:** "yeni biten bir YZ oyununda ikon GERÇEKTEN
-       çıkıyor mu" bu ortamdan doğrulanamaz (gerçek oturumda bir oyun
-       bitirmek gerekiyor) — `mobile/TESTING.md` bölüm 5 ve kök
-       `TESTING.md` bölüm 3'e madde eklendi.
+     - ~~**Doğrulama sınırı:** "yeni biten bir YZ oyununda ikon GERÇEKTEN
+       çıkıyor mu" bu ortamdan doğrulanamaz~~ — **12 Ağustos 2026'da
+       cihazda KOŞULDU ve GEÇTİ:** yeni bitirilen bir YZ oyununun kartında
+       ikon çıktı, döküm doluydu. Kolon açılalı beri hiç yerel oyun
+       bitmemişti, yani bu, "bundan sonra bitenler DOLU olacak"
+       çıkarımının ilk gerçek uçtan uca kanıtı — Parça 67'nin kullanıcının
+       teşhisini ("YZ'de hiç olmayacak") çürüten ölçümü doğrulandı.
+       Kontrol maddeleri `mobile/TESTING.md` bölüm 5 ve kök `TESTING.md`
+       bölüm 3'te. **Aynı turda dokunma alanı sorunu bildirildi → Parça
+       68.**
+
+   - ✅ **Parça 68 — hamle rozetinin dokunma alanı sohbet rozetinin YARISIYMIŞ
+     (12 Ağustos 2026, `game_history_modal.dart` + web `GameHistoryModal.tsx`):**
+     Parça 67'nin doğrulama sınırı cihazda koşuldu ve **geçti** (yeni bitirilen
+     bir YZ oyununda ikon çıktı, döküm doluydu) — ama aynı turda kullanıcı yeni
+     bir sorun bildirdi: *"hamleler ikonuna elle dokunmakta zorlandım, en az 4-5
+     kere dokunmam gerekti. Tam basamazsan oyun detayları açılıp kapanıyor
+     sürekli. Mesaj ikonu iyi bence, onunla aynı şekilde olabilir."*
+     - **Parça 65 bu şikâyeti ÖNCEDEN yazmıştı** ("cihazda rahatsız ederse İKİ
+       rozet BİRLİKTE büyütülmeli") — yani karar bilinçliydi, yalnızca ölçüsü
+       yanlıştı. O not "aynı boyda" istendiği için hedefleri EŞİT sanıyordu.
+     - **Ölçüm bunu çürüttü, üstelik İKİ platformda birden:** gerçek widget +
+       gerçek fontlarla sohbet **18.8×13.0 = 244px²**, hamle **11×11 = 121px²**
+       — tam yarısı. Web'de aynı yapı, aynı sonuç (derlenmiş CSS + Chromium):
+       sohbet 18.9×13.5 = 255px², hamle 12×12 = 144px². **Fark tesadüf değil
+       yapısal:** sohbet kontrolünün dokunma kutusuna sayı ETİKETİ de dahil
+       (`Row(icon, gap, Text('N'))`), hamle ikonunda etiket yok. İki istemcinin
+       6px'lik boşluğu bile birebir aynı çıktı — kusur ortak, düzeltme de ortak.
+     - **Düzeltme ikonu YERİNDEN OYNATMIYOR:** dolgu eklenip önündeki boşluk
+       aynı kadar kısılıyor (mobil `SizedBox` 6→2 + `horizontal: 4`; web
+       `px-1 py-px` + `-mx-1` negatif margin, yani layout ayak izi hiç
+       değişmiyor). Sonuç: mobil 121→**247px²**, web 144→**280px²**, ikonun
+       görsel konumu ve 6px boşluk BİREBİR aynı (ölçüldü: mobilde kutu sol
+       kenarı 225.6→221.6, +4px dolgu ile ikon yine 225.6'da).
+     - **Dikey neden 13'te kaldı:** satırın kendi yüksekliği zaten 13 (kalp ve
+       sohbet ikisi de 13); daha fazlası satırı, dolayısıyla HER kartı büyütür.
+       44px'lik iOS asgarisi yine UYGULANMADI — Parça 65'in gerekçesi
+       (~13px'lik satırda 44px'lik alan kardeş kontrolleri ve kartın kendi
+       dokunuşunu yutar) hâlâ geçerli, ve kullanıcı çıtayı zaten "mesaj ikonu
+       kadar" diye koydu.
+     - **Test bir SABİTİ değil ORANI kilitliyor:** yeni test iki kutuyu ölçüp
+       `hamle >= sohbet` diyor (+ ikonun görsel konumunun kaymadığını). Sohbet
+       rozeti ileride değişirse hamle rozeti onunla taşınmak ZORUNDA kalır —
+       Parça 65'in "iki rozet birlikte" notunun çalıştırılabilir hâli; yorum
+       satırı bunu sağlamıyordu, nitekim sağlayamadı.
+     - **Negatif eş:** `game_history_modal.dart` `git stash`lenince test
+       GERÇEKTEN kullanıcının semptomunu üretti (`Expected: >= 18.758, Actual:
+       11.0`), geri konunca yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 361/361
+       yeşil** (360'tan +1). Web `npm run lint` + `npm run build` temiz.
+       `kelimeki_core`'a hiç dokunulmadı — golden vector turu gerekmedi.
+     - **Doğrulama sınırı:** "artık rahat dokunuluyor" ancak gerçek parmakla
+       ölçülür — `mobile/TESTING.md` bölüm 5'e madde eklendi.
+
+   - ✅ **Parça 69 — kutlama/düşüş banner'ında "DEVAM" kalktı, yerine ✕
+     (12 Ağustos 2026, `reward_banner.dart` + web `RewardBanner.tsx`):**
+     Kullanıcı, bölüm 13'ün cihaz turunda: *"bence bu banner'larda kapat,
+     devam vb olmamalı, sadece X."* Bu, AYNI GÜN `RankInfoModal`'a verilen
+     kararın (ilk sürümde bilinçli olarak yalnızca popup'a uygulanmıştı)
+     banner'lara genişletilmesi — o notta *"Banner'ın DEVAM'ı KALIR: o
+     gerçek bir aksiyon"* yazıyordu; gerekçe teknik olarak doğruydu ama
+     kullanıcı görsel tutarlılığı tercih etti. Eski karar dört yerde birden
+     yazılıydı (kök + mobil `CLAUDE.md`, kök + mobil `TESTING.md`,
+     `rank_info_modal.dart` yorumu) ve hepsi düzeltildi — bayat kalan bir
+     "KALIR" cümlesi bir sonraki oturumu geri aldırırdı.
+     - **Asıl risk kozmetik DEĞİL:** "DEVAM" yalnızca kapatmıyordu,
+       `onClose` → `LeagueRewardsHost._close` → `markSeen()` zincirini
+       tetikleyen TEK yoldu (`mark_league_rewards_seen`). Butonu silip ✕'i
+       farklı bir yola bağlamak, banner'ı **her açılışta yeniden gösteren**
+       bir hataya yol açardı. ✕ bilerek AYNI `widget.onClose`'a bağlandı;
+       web'de de aynı (`useModalA11y` üzerinden Escape zaten oraya bağlı).
+     - **✕ kopyalanmadı, `RankInfoModal`'dan birebir alındı** (mobilde
+       `IconButton` + `Icons.close` 18px/`kMuted`/`tooltip: 'Kapat'`,
+       webde `Modal.tsx`'in class'ları) — iki kart aynı kart, ikisi
+       birlikte değişir.
+     - **Kapsam sınırı (bilinçli):** "DEVAM" metni başka iki yerde daha
+       var — `FriendSuggestModal` ve sohbet hoşgeldin popup'ı. İkisi de
+       birer ONAY adımı (istek gönder / karşılandı), kapatma butonu değil;
+       kullanıcının cümlesi "bu banner'lar" diyordu. Dokunulmadı.
+     - **Test — negatif eş doğrulamasıyla:** mevcut banner testi ✕'e
+       çevrildi ve iki şeyi birden ölçüyor: tam genişlikte bir aksiyon
+       butonu OLMADIĞI + ✕'in `markSeen`'i HÂLÂ çağırdığı (`markSeenCalls`
+       0 → 1). `reward_banner.dart` `git stash`lenince test GERÇEKTEN düştü
+       (`Found 0 widgets` — ✕ yok), geri konunca yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; tam takım
+       **361/361** yeşil. Web `npm run lint` + `npm run build` temiz.
+       `kelimeki_core`'a dokunulmadı.
+     - **Doğrulama sınırı:** cihazda görsel teyit + "kapattıktan sonra bir
+       daha çıkmıyor" kontrolü kullanıcıdan bekleniyor — kök ve mobil
+       `TESTING.md`'deki ilgili madde bu iki şeyi birlikte soracak şekilde
+       yeniden yazıldı.
+
+   - ✅ **Parça 70 — banner başlıklarına emoji + KARTIN GENİŞLİĞİ web'den
+     sapmış çıktı (12 Ağustos 2026, `reward_banner.dart` + web
+     `RewardBanner.tsx`):** Kullanıcı iki turda istedi: önce *"Rütben
+     Geriledi!'nin yanına üzgün emoji"*, ardından *"👏 bunu rütbe
+     yükseltmeye, 🎉 bunu da 100'lerde koyabiliriz"*. Üç başlık:
+     `'Rütben geriledi! 😔'` (pensive — "Üzgünüz…" alt satırının nazik
+     tonuyla eşleşiyor; 😢 fazla dramatik kalırdı),
+     `'Yeni rütben: X! 👏'`, `'N k-lig puanına ulaştın! 🎉'`. Dördüncü
+     varyant (`'Eşik ödülü kazandın!'`) BİLEREK emojisiz kaldı — kullanıcı
+     onu saymadı ve pratikte neredeyse hiç görünmüyor (rütbe/kilometre
+     taşı olmadan tek başına ödül).
+     - **Aynı turda "100'lerde de X olmalı" isteği zaten karşılanmıştı:**
+       DEVAM butonu ortak düzendeydi, Parça 69'da kaldırılınca dört
+       varyanttan birden kalkmıştı.
+     - **GERÇEK BULGU — kartın genişliği web'den sapmış, ✕ dışarı
+       taşıyordu:** kutlama ekran görüntüsüne bakınca ✕'in kartın DIŞINDA,
+       gri zeminde durduğu görüldü. Ölçüm sebebi verdi: web'de kart
+       `w-[280px]` ile HER ZAMAN 280, portta ise Stack'in
+       konumlandırılmamış çocuğu GEVŞEK kısıt aldığından **içeriğe göre
+       büzülüyordu** (kutlama 238.5, düşüş 280 — düşüş kartı ilerleme
+       çubuğu sayesinde 280'e ulaştığından orada görünmüyordu).
+       `Positioned(right: 8)` Stack'e göre konumlandığı için dar kartta ✕
+       dışarı düşüyordu. **Bu sapma ✕'ten ÖNCE de vardı**, yalnızca
+       ölçülecek bir kenar olmadığından görünmüyordu. Düzeltme yamayla
+       (✕'i kaydırmak) değil web'e hizalayarak: `width: double.infinity`.
+     - **Ders:** bir ekran görüntüsünü "emoji çıktı mı" diye açıp
+       geçmeyin — Parça 69'un ✕'ini DÜŞÜŞ görüntüsünde doğrulamıştım ve
+       "tamam" demiştim; aynı ✕ KUTLAMA varyantında bozuktu. Bir bileşenin
+       tek varyantını görmek onu doğrulamaz.
+     - **Regresyon testi:** kart genişliğinin 280 olduğu ve ✕'in kart
+       sınırları İÇİNDE kaldığı artık ölçülerek doğrulanıyor (kutlama
+       varyantında — bozuk olan oydu).
+     - **Tek satırlık iş DEĞİL — bu projenin ÜÇ KEZ düştüğü tuzağa
+       değiyor:** Flutter, tarayıcının aksine **otomatik font fallback
+       YAPMAZ**; gömülü SpaceGrotesk'te bu glyph olmadığından fallback'siz
+       **tofu (boş kare)** çizilir. Aynı hata daha önce `_StatusLine`'ın
+       ✓'sinde, `help_modal`'ın 🎯'sinde ve ★'da yaşandı. Başlığın
+       `TextStyle`'ına projedeki kurulu liste eklendi:
+       `fontFamilyFallback: ['Noto Color Emoji', 'Apple Color Emoji']`
+       (altı kullanım yeriyle aynı). Fallback yalnızca birincil fontta
+       OLMAYAN glyph'ler için devreye girdiğinden kutlama başlıkları hiç
+       etkilenmiyor. Web tarafında gerek yok — tarayıcı kendi fallback'ini
+       yapıyor.
+     - **Tofu OLMADIĞI okunarak değil GÖRÜLEREK doğrulandı:** ekran
+       görüntüsü testi koşulup PNG açıldı — emoji renkli ve doğru glyph
+       olarak çizilmiş (aynı görüntü Parça 69'un ✕'ini de kanıtladı:
+       sağ üstte ✕, altta DEVAM yok).
+     - **Cihaz uyarısı (Parça 29'un bulgusu, hâlâ geçerli):** Flutter
+       Web/CanvasKit renkli emoji için çalışma anında
+       `fonts.gstatic.com`'dan Noto Color Emoji ÇEKİYOR. GitHub Pages test
+       derlemesi CanvasKit kullandığından, ağın Google Fonts'a erişimi
+       kısıtlıysa emoji BOŞ görünebilir — bu bir kod hatası değil, web
+       test ortamının yapısal sınırı. **Native (iOS/Android) derlemede bu
+       risk YOK** (Skia/Impeller doğrudan işletim sisteminin emoji
+       fontunu kullanır).
+     - Doğrulama: `flutter analyze` temiz; tam takım **361/361** yeşil
+       (iki başlık assertion'ı yeni metne çevrildi); web `npm run lint` +
+       `npm run build` temiz.
+
+   - ✅ **Parça 71 — Skor Kartı başlığında ✕ sola kaymıştı: `Flexible`ın
+     görünmez `flex: 1`'i (12 Ağustos 2026, `modal_shell.dart`):** Kullanıcı
+     mobil ve web Skor Kartı'nın ekran görüntülerini yan yana koyup
+     *"mobilde X kaymış, ayrıca webdeki skor kartla ölçüleri farklı"* dedi.
+     İKİ ayrı iddia vardı; ölçüm birini doğruladı, ötekini çürüttü.
+     - **✕ — GERÇEK port hatası.** Web'de başlık `shrink-0` (doğal
+       genişlik, hiç esnemez). Port bunu `Flexible(child: label)` diye
+       taşımıştı — ama **`Flexible`ın varsayılanı `flex: 1`**: başlık boş
+       alanın YARISINI pay olarak alıyor, `fit: loose` olduğundan doğal
+       genişliğinde kalıyor ve **artan pay yeniden dağıtılmadığından**
+       Row'un sonunda ölü boşluk olarak birikiyordu. Ölçüldü (360px kart):
+       ✕'in merkezi sağ kenardan **75.3px** içerideydi; web'de (derlenmiş
+       CSS + Chromium ile aynı düzen kurulup ölçüldü) **35.0**. Aynı hata
+       mührü de kartın ortasına itiyordu (+12.7; web +35.6 — mühür kartın
+       değil "başlık ile ✕ arasının" ortasında durmalı, kök CLAUDE.md'nin
+       `headerCenter` kararı). Düzeltme: `headerCenter` varken başlık
+       ÇIPLAK widget döner. Sonra: ✕ **32.0**, mühür **+34.3** — web ile
+       ~1-3px içinde. (Kalan 3px, portun ✕ butonunun daha büyük dokunma
+       hedefi taşımasından: 40px buton + 12 sağ dolgu ≈ web'in 28px buton +
+       20 dolgusu. Bilinçli.)
+     - **Yükseklik — port hatası DEĞİL, ölçülerek elendi.** Kullanıcı
+       web'de "TÜM GEÇMİŞ OYUNLAR" linkinin göründüğünü, mobilde kesilip
+       kaydırma gerektiğini bildirdi. Ölçüm: içerik İKİ tarafta da aynı
+       (556px); fark yalnızca SINIRDA. iOS Safari'de CSS `vh` **büyük
+       viewport**'u (tarayıcı çubuklarının altını da) sayar, yani web'in
+       `max-h-[85vh]`'si görünür alanın %85'inden BÜYÜK olabiliyor;
+       Flutter'ın `MediaQuery.sizeOf(context).height`'i ise görünür alan.
+       Aynı iPad'de: Safari görünür yükseklik 683 → modal 580.5 (%85) →
+       **52.5px kesiliyor**. Native'de kesilme YOK: iPad yatay (834),
+       iPad dikey (1194), iPhone dikey (852) — üçünde de modal 633'te
+       (içerik boyu) kalıyor, sınıra hiç dayanmıyor. Yani sorun ASIL
+       ÜRÜNDE yaşanmıyor, yalnızca web test derlemesinde görünüyor.
+       Sabit DEĞİŞTİRİLMEDİ — %85 web'in yazılı kararı ve native'de zaten
+       yetiyor; bir Safari tuhaflığı için iki platformun da davranışını
+       değiştirmek yanlış olurdu. (`score_card_test.dart`de bu zaten
+       "gerçek cihaz boyutlarında kaydırmasız sığar" testiyle korunuyordu.)
+     - **Ders:** web'in `shrink-0`/`flex-1` gibi sınıflarını porta
+       çevirirken Flutter'ın VARSAYILANLARINI oku — `Flexible` "esneme"
+       değil "esneme payı al" demek. Bu, sınıfın adına bakıp doğru
+       göründüğü için gözden kaçan bir sınıf hata.
+     - **Test:** yeni bir regresyon testi ✕'in sağ kenardan uzaklığını ve
+       mührün merkezden sapmasını gerçek `ScoreCardModal` üzerinde
+       ölçüyor (ikisi de web'in ölçülen değerlerine bağlı).
+     - Doğrulama: `flutter analyze` temiz; tam takım **362/362** yeşil
+       (361'den +1). Web'e hiç dokunulmadı (yalnızca ölçüm için kullanıldı).
+
+   - ✅ **Parça 72 — Setup web'den %7.5 GENİŞ'ti: `max-w-[N] px-*` bir
+     BORDER-BOX'tır (13 Ağustos 2026, `setup_screen.dart`,
+     `friends_modal.dart`):** Kullanıcı aynı şikâyeti **ikinci kez**
+     bildirdi: *"tablardan ikisi arasında geçiş yaptığımda butonların,
+     kutuların ölçülerinin farklı olduğunu net görebiliyorum. Daha önce de
+     belirtmiştim ama hala düzelmedi. Tüm app ölçülerini web ile
+     karşılaştır."*
+     - **Parça 29 bunu YARIM düzeltmişti.** O turda sabit 480→460'a
+       çekilmişti; doğru sayı buydu ama **dolgunun yeri yanlıştı.**
+       Tailwind `box-sizing: border-box` altında `max-w-[460px] px-4`
+       demek "dış kutu ≤460, **içerik 460−32 = 428**" demek. Port ise
+       yatay dolguyu `ConstrainedBox`'ın **DIŞINA** (`SingleChildScroll
+       View.padding`) koymuştu → içerik 460, yani web'den **32px (%7.5)
+       geniş**. Kullanıcının ekran görüntülerinden ölçülen oran
+       (780/725 = **1.076**) bu 32px'le birebir örtüştü.
+     - **Testin YEŞİL kalması bu hatanın hayatta kalma sebebiydi:** Parça
+       29'un regresyon testi yalnızca "460'lık bir `ConstrainedBox` var mı"
+       ve "eski 480 kalmamış mı" diye bakıyordu — ikisi de doğruydu, içerik
+       yine de yanlıştı. Test artık GERÇEK genişliği ölçüyor (tam genişlik
+       buton = **428**); negatif eşle doğrulandı (düzeltme geri alınınca
+       `Actual: 460.0`). **Ders: bir kısıtın VARLIĞINI doğrulayan test, o
+       kısıtın SONUCUNU doğrulamaz.**
+     - **Denetim — web'deki `max-w-[…]` kullanan HER yer tek tek
+       karşılaştırıldı:**
+
+       | Web | kutu + dolgu | içerik | Port | Durum |
+       |---|---|---|---|---|
+       | `Setup.tsx:536` | 460 + `px-4` | 428 | dolgu DIŞARIDA | **düzeltildi** |
+       | `Board.tsx:416` | 680 + `px-3` | 656 | 680 + iç 12 | ✓ |
+       | `GameHeader.tsx:89` | 680 + `px-3 py-2.5` | 656 | 680 + 12/10 | ✓ |
+       | `App.tsx:1393` | 680 + `px-3` | 656 | ✓ | ✓ |
+       | `OnlineGameScreen:1013` | 680 + `px-3` | 656 | ✓ | ✓ |
+       | `Modal.tsx:38` | 360 | 360 | 360 | ✓ |
+       | `ActionSheet:43` | 360 | 360 | 360 | ✓ |
+       | Confirm/InfoDialog | `max-w-sm` 384 + `p-6` | 336 | 384 + **20** | **düzeltildi** (24) |
+
+       Yani 680'lik oyun ekranı zinciri (Parça 40'ta düzeltilmişti) baştan
+       DOĞRUYDU — dolgu orada zaten kutunun içinde. Yanlış olan iki yer
+       Setup ve arkadaş diyaloglarıydı.
+     - **Bilinçli bırakılan 2px:** web'de GİRİŞ satırı ayrı bir kutu
+       (`App.tsx:1074`, 460 + `px-3.5`) olduğundan sağ kenarı içerik
+       sütunundan 2px dışarıda; portta AccountButton aynı 16'lık dolgunun
+       içinde, yani içerikle HİZALI. 2px için negatif margin/Transform
+       hilesi yapmaya değmez ve hizalı olması daha doğru görünüyor.
+     - Doğrulama: `flutter analyze` temiz; tam takım **362/362** yeşil.
+       Web'e hiç dokunulmadı (yalnızca kaynak olarak okundu).
 
 ## Sonraya Bırakılan İşler (mobil)
 

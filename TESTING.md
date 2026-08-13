@@ -140,6 +140,14 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       sonuna kadar bitir; O kartta ikon ÇIKMALI ve döküm dolu gelmeli.
       Çıkmıyorsa `buildGameRecord`/`saveGame` zinciri `moves`u yazmıyor
       demektir (yani "YZ'de hiç gösterme" gibi yanlış bir kural kalmış).
+- [ ] **Dokunmatikte ikona tek dokunuşta basılabilmeli (aynı gün, mobil
+      cihaz testinden geldi).** iPad/telefonda parmakla dene: "tam
+      basamazsan kart açılıp kapanıyor" olmamalı. Ölçüt yanındaki **sohbet
+      rozetiyle aynı kolaylık** — dokunma kutuları ölçülerek eşitlendi
+      (280px² vs 255px²). İkonun GÖRSEL konumu ve sohbet rozetiyle
+      arasındaki 6px boşluk değişMEmeli (`-mx-1` negatif margin tam bunun
+      için); kayma varsa dolgu/margin dengesi bozulmuş demektir. Mobil
+      uygulamada aynı kartı aç — iki platform aynı hissi vermeli.
 - [ ] **Karşı tarafta.** Sohbet kapalıyken gelen mesaj için popup (gönderenin
       avatarı + adı + metin) çıkmalı ve **yalnızca elle** kapanmalı; butonda
       kırmızı nokta belirmeli. Sohbeti açınca nokta sıfırlanmalı.
@@ -444,10 +452,15 @@ gerekiyor).
       KADAR
       tekrar açılabilmeli (kutlamanın aksine "bir kez göster" kuralı yok).
       Başkasının kartında da (PlayerScoreCard) aynı mühür/popup çalışmalı.
-- [ ] **Popup'ta ✕ var, "KAPAT" butonu YOK.** Kapatma yalnızca sağ üstteki
-      ✕ (ve Escape / karartılmış zemine dokunma) ile — kartın altında tam
-      genişlikte bir buton OLMAMALI. Kutlama/düşüş banner'ında ise "DEVAM"
-      butonu KALMALI (o gerçek bir aksiyon: ödülleri görüldü işaretler).
+- [ ] **✕ var, "KAPAT"/"DEVAM" butonu YOK — popup'ta DA banner'da DA.**
+      (12 Ağustos 2026, kullanıcı isteği; önce yalnızca popup'a
+      uygulanmıştı, aynı gün kutlama/düşüş banner'ına da genişletildi.)
+      Kapatma yalnızca sağ üstteki ✕ (ve Escape) ile; kartın altında tam
+      genişlikte bir buton OLMAMALI. **KRİTİK — banner'da ✕ yalnızca
+      kapatmıyor:** ödülleri "görüldü" işaretleyen tek yol o. Kapattıktan
+      sonra sayfayı yenile: banner **BİR DAHA ÇIKMAMALI**. Çıkıyorsa ✕
+      `mark_league_rewards_seen`'e bağlanmamış demektir (bilgi popup'ında
+      tam tersi doğru: hiçbir şeye dokunmaz, istendiği kadar açılır).
 - [ ] **Kart gölgesinde beyaz hale yok.** Hem bilgi popup'ının hem kutlama/
       düşüş banner'ının kartı karartılmış zeminde yalnızca yumuşak, koyu
       bir düşen gölge taşımalı — sol/üst kenarda beyaz bir parıltı (nömorfik
@@ -490,8 +503,14 @@ gerekiyor).
       türetiliyor). Puan tekrar eşiği aşarsa damga geri gelir ama rütbe
       banner'ı İKİNCİ kez ÇIKMAMALI ve ödül İKİNCİ kez VERİLMEMELİ (her
       eşik hayatta bir kez).
+- [ ] **Başlık emojileri (12 Ağustos 2026).** Rütbe yükselince 👏, 100'lük
+      kilometre taşında 🎉, düşüşte 😔 — üçü de görünmeli. Kart HER
+      varyantta 280px ve ✕ kartın İÇİNDE olmalı (mobil portta kutlama
+      kartı içeriğe göre büzülüp ✕'i dışarı taşırıyordu; web'de kart
+      zaten sabit genişlikte, orada aynı hata YOK).
 - [ ] **Rütbe düşüş banner'ı.** Eşiğin altına inince konfetisiz, üzgün bir
-      banner çıkmalı ("Rütben geriledi! … Kazandıkça geri yükselirsin!") ve
+      banner çıkmalı ("Rütben geriledi! 😔 … Kazandıkça geri yükselirsin!" —
+      başlıktaki üzgün emoji görünmeli, boş kare DEĞİL) ve
       bir kez gösterilmeli; aynı eşikten İKİNCİ kez düşülürse yeniden
       çıkmalı (diğer banner'ların aksine tekrarlanabilir). Görülmemiş
       olumlu bir kutlama ile çakışırsa yalnızca olumlu olan gösterilmeli.

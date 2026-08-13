@@ -311,7 +311,7 @@ void main() {
   }
 
   group('LeagueRewardsHost — banner akışı', () {
-    testWidgets('görülmemiş ödül → banner; DEVAM işaretler ve kapatır',
+    testWidgets('görülmemiş ödül → banner; ✕ işaretler ve kapatır',
         (tester) async {
       final gw = FakeRewardsGateway(rows: [
         rewardRow('rank_up', 100),
@@ -319,15 +319,42 @@ void main() {
       ]);
       await pumpHost(tester, gw: gw);
 
-      expect(find.text('Yeni rütben: Oyuncu!'), findsOneWidget);
+      expect(find.text('Yeni rütben: Oyuncu! 👏'), findsOneWidget);
       expect(find.text('100 k-lig puanına ulaştın'), findsOneWidget);
       expect(find.text('+10 ödül puanı eklendi'), findsOneWidget);
-      expect(gw.markSeenCalls, 0, reason: 'işaretleme yalnızca DEVAM\'da');
+      expect(gw.markSeenCalls, 0, reason: 'işaretleme yalnızca kapatmada');
       // Kart gölgesi düz düşen gölge — nömorfik beyaz parıltı YOK (bilgi
       // popup'ıyla AYNI kart, ikisi birlikte değişir).
       _expectFloatingCardShadow(tester);
 
-      await tester.tap(find.text('DEVAM'));
+      // 12 Ağustos 2026, kullanıcı isteği: banner'da "DEVAM"/"KAPAT" gibi
+      // tam genişlikte bir buton YOK, yalnızca sağ üstte ✕ (RankInfoModal
+      // ile aynı desen). Buton metni aranmıyor — asıl değişmez ✕'in
+      // `markSeen`'i HÂLÂ çağırması: o, `mark_league_rewards_seen`'e giden
+      // TEK yol; bağlanmazsa banner her açılışta yeniden çıkardı.
+      expect(find.widgetWithText(ElevatedButton, 'DEVAM'), findsNothing,
+          reason: 'banner\'da tam genişlikte aksiyon butonu olmamalı');
+      // ✕ kartın İÇİNDE olmalı. `Positioned(right: 8)` Stack'e göre
+      // konumlanıyor; kart içeriğe göre büzülürse ✕ dışarı taşar — ilk
+      // sürümde tam bu oldu (kutlama kartı 238.5px'e büzülüyordu, düşüş
+      // kartı ilerleme çubuğu sayesinde 280'e ulaştığından orada
+      // görünmüyordu). Kart artık web'deki gibi HER ZAMAN 280.
+      // `.first` ŞART: mührün 88px'lik nömorfik dairesi de aynı dekorasyonu
+      // kullanıyor; kart ağaçta ondan önce geliyor (genişlik iddiası
+      // yanlış widget'ı yakalarsak zaten düşer).
+      final kart = tester.getRect(find
+          .descendant(
+              of: find.byType(RewardBanner),
+              matching: find.byWidgetPredicate((w) =>
+                  w is Container &&
+                  w.decoration is ShapeDecorationWithCssShadows))
+          .first);
+      final kapat = tester.getRect(find.byType(IconButton));
+      expect(kart.width, 280, reason: 'kart web w-[280px] ile aynı olmalı');
+      expect(kapat.right, lessThanOrEqualTo(kart.right),
+          reason: '✕ kartın dışına taşmamalı');
+      expect(kapat.left, greaterThanOrEqualTo(kart.left));
+      await tester.tap(find.byTooltip('Kapat'));
       await tester.pumpAndSettle();
       expect(gw.markSeenCalls, 1);
       expect(find.byType(RewardBanner), findsNothing);
@@ -350,7 +377,7 @@ void main() {
       ));
       await tester.pumpAndSettle();
       expect(find.byType(RewardBanner), findsOneWidget);
-      expect(find.text('Yeni rütben: Meraklı!'), findsOneWidget);
+      expect(find.text('Yeni rütben: Meraklı! 👏'), findsOneWidget);
     });
 
     testWidgets('misafirde (user yok) hiç sorgulanmaz', (tester) async {
@@ -370,7 +397,7 @@ void main() {
             FakeStatsGatewayForRank(const {'rank': 4, 'total_score': 88})),
       );
 
-      expect(find.text('Rütben geriledi!'), findsOneWidget);
+      expect(find.text('Rütben geriledi! 😔'), findsOneWidget);
       expect(find.text('Kazandıkça geri yükselirsin!'), findsOneWidget);
       // Sayıya iyelik eki YOK — "100 eşiğinin altına" kalıbı.
       final para = tester.widget<Text>(find.byWidgetPredicate((w) =>
@@ -397,7 +424,7 @@ void main() {
       final gw = FakeRewardsGateway(rows: [rewardRow('rank_down', 100)]);
       await pumpHost(tester,
           gw: gw, stats: StatsRepo(FakeStatsGatewayForRank(null)));
-      expect(find.text('Rütben geriledi!'), findsOneWidget);
+      expect(find.text('Rütben geriledi! 😔'), findsOneWidget);
       expect(find.byType(RankProgressBar), findsNothing);
     });
   });

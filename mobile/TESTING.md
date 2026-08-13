@@ -76,6 +76,31 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
 
 ## 0.5 Web ile yan yana görsel karşılaştırma (Parça 56)
 
+- [ ] **İçerik sütunu genişliği (13 Ağustos 2026, Parça 72).** GENİŞ bir
+      ekranda (iPad yatay) Setup'ı iki platformda yan yana aç: "YAPAY ZEKA
+      İLE"/"ARKADAŞINLA" butonlarının ve "OYUNU BAŞLAT"ın genişliği
+      BİREBİR aynı olmalı. Web `max-w-[460px] px-4` bir border-box, yani
+      içerik **428** — app daha geniş görünüyorsa dolgu yine kutunun
+      dışına kaçmıştır. (Dar ekranda ikisi zaten aynı; fark yalnızca
+      460+32'den geniş ekranlarda ortaya çıkar, o yüzden telefonda test
+      etmek bu hatayı GÖSTERMEZ.)
+- [ ] **Arkadaş onay/bilgi diyalogları.** "Arkadaşlıktan çıkar" gibi bir
+      onay diyaloğu aç: kart genişliği ve iç dolgusu web ile aynı olmalı
+      (384 kutu, 24 dolgu → içerik 336).
+- [ ] **Modal başlığı: ✕ sağa dayalı (12 Ağustos 2026, Parça 71).** Skor
+      Kartı'nı iki platformda yan yana aç: ✕ kartın sağ kenarına aynı
+      uzaklıkta olmalı ve rütbe mührü kartın ORTASINDA değil, **başlık ile
+      ✕ arasının** ortasında durmalı. (Portta ✕ 40px'lik bir dokunma
+      hedefi taşıdığından buton kutusu web'inkinden büyük — bakılacak şey
+      GLYPH'in konumu.)
+- [ ] **Modal yüksekliği farkı web test derlemesinde NORMAL.** Skor
+      Kartı'nın altındaki "TÜM GEÇMİŞ OYUNLAR" linki web'de görünüp
+      mobilde kesiliyorsa bu bir hata DEĞİL: iOS Safari'de CSS `vh`
+      tarayıcı çubuklarının altını da sayar, Flutter ise yalnızca görünür
+      alanı görür. **Native'de kesilme olmamalı** — FAZ B'de doğrula:
+      iPad yatay/dikey ve iPhone dikeyde modal, içeriğin tamamını
+      kaydırmasız göstermeli.
+
 Bu bölümü bir kez, iki sekmeyi (kelimeki.com ve alpcapa.github.io) AYNI
 hesapla açıp yan yana koyarak koş.
 
@@ -438,6 +463,14 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       bazlı DEĞİL:** uygulamada yeni bir YZ oyunu sonuna kadar bitir; O
       kartta ikon ÇIKMALI ve döküm dolu gelmeli. Web'de de aynı kart aynı
       şekilde davranmalı (tek kaynak: `game_like_stats.has_moves`).
+- [ ] **Hamle ikonuna dokunmak KOLAY olmalı (12 Ağustos 2026, Parça 68).**
+      İkona parmakla bir kerede dokunulabilmeli — "tam basamazsan kart
+      açılıp kapanıyor" olmamalı. Ölçüt: **yanındaki sohbet rozetiyle aynı
+      kolaylıkta** (dokunma kutuları artık eşit: 19×13 vs 18.8×13; ölçülen
+      ve testle korunan bir eşitlik). İkonun GÖRSEL konumu ve sohbet
+      rozetiyle arasındaki 6px boşluk değişMEmeli — kayma varsa dolgunun
+      karşılığında kısılan boşluk yanlış hesaplanmış demektir. Web'de aynı
+      karta bak: iki platform aynı hissi vermeli.
 - [ ] **Sohbet arşivi.** Web'de oynanmış, mesajlaşılmış bir Canlı oyunun
       kartında konuşma balonu rozeti + mesaj sayısı olmalı; dokununca
       dondurulmuş sohbet açılmalı. Sessize aldığın biri varsa isminin
@@ -939,6 +972,16 @@ listesi kök `TESTING.md` bölüm 10.
       "NASIL OYNANIR?" (noktalı İ DEĞİL) ve "BÖLGE VERGİSİ" (sondaki İ
       noktalı) — biri ters çıkarsa `trUpper` yerine native `toUpperCase`
       kullanılmış demektir.
+- [ ] **Başlık emojileri (12 Ağustos 2026, Parça 70).** Rütbe
+      yükselince **👏** ("Yeni rütben: X! 👏"), 100'lük kilometre
+      taşında **🎉**, düşüşte **😔**. Üçü de GERÇEK emoji olmalı, boş
+      kare (tofu) DEĞİL. (Yalnızca "Eşik ödülü kazandın!" varyantı
+      emojisiz — bilinçli.)
+- [ ] **Kart HER varyantta aynı genişlikte (280) ve ✕ kartın İÇİNDE.**
+      Kutlama, kilometre taşı ve düşüş banner'larını yan yana koy:
+      kart genişliği değişmemeli ve ✕ hiçbirinde kartın dışına
+      taşmamalı. (İlk sürümde kutlama kartı içeriğe göre 238px'e
+      büzülüyor ve ✕ dışarıda kalıyordu — web'de kart her zaman 280.)
 - [ ] **Kutlama banner'ı bir kez çıkar.** Görülmemiş bir ödülün varken
       (test için bir satırın `seen_at`'i SQL'le null'a çekilebilir)
       uygulamayı aç: mühür damgalı, konfetili banner ekranın ORTASINDA,
@@ -974,10 +1017,16 @@ listesi kök `TESTING.md` bölüm 10.
       ödülü dahil" + sıradaki rütbe hedefi + hedefe AKAN ilerleme çubuğu;
       en üst kademede çubuk yok). İstendiği kadar tekrar açılabilmeli —
       kutlamanın aksine "bir kez göster" kuralı YOK.
-- [ ] **Popup'ta ✕ var, "KAPAT" butonu YOK.** Kapatma yalnızca sağ
-      üstteki ✕ (ve karartılmış zemine dokunma) ile — kartın altında tam
-      genişlikte bir buton OLMAMALI. Kutlama/düşüş banner'ında ise
-      "DEVAM" KALMALI (o gerçek bir aksiyon: ödülleri görüldü işaretler).
+- [ ] **✕ var, "KAPAT"/"DEVAM" butonu YOK — popup'ta DA banner'da DA.**
+      (12 Ağustos 2026, kullanıcı: "bu banner'larda kapat, devam vb
+      olmamalı, sadece X". Önce yalnızca popup'a uygulanmıştı, aynı gün
+      kutlama/düşüş banner'ına da genişletildi.) Kapatma yalnızca sağ
+      üstteki ✕ ile; kartın altında tam genişlikte bir buton OLMAMALI.
+      **KRİTİK — ✕ yalnızca kapatmıyor:** banner'da ödülleri "görüldü"
+      işaretleyen tek yol o. Kapattıktan sonra uygulamayı yeniden başlat:
+      banner **BİR DAHA ÇIKMAMALI**. Çıkıyorsa ✕ `markSeen`'e bağlanmamış
+      demektir (bilgi popup'ında ise tam tersi doğru: o hiçbir şeye
+      dokunmaz, istendiği kadar açılır).
 - [ ] **Kart gölgesinde beyaz hale yok.** Hem bilgi popup'ının hem
       kutlama/düşüş banner'ının kartı karartılmış zeminde yalnızca
       yumuşak, koyu bir düşen gölge taşımalı — sol/üst kenarda beyaz bir
@@ -994,11 +1043,23 @@ listesi kök `TESTING.md` bölüm 10.
       geri gelir ama kutlama İKİNCİ kez ÇIKMAMALI, ödül İKİNCİ kez
       VERİLMEMELİ.
 - [ ] **Rütbe düşüş banner'ı.** Konfetisiz, üzgün banner ("Rütben
-      geriledi! … Kazandıkça geri yükselirsin!") + kaybedilen eşiğe geri
+      geriledi! 😔 … Kazandıkça geri yükselirsin!") — **başlıktaki üzgün
+      emoji GERÇEK emoji olmalı, boş kare (tofu) DEĞİL.** Boş kare
+      görürsen `fontFamilyFallback` düşmüş demektir. Not: web test
+      derlemesinde (CanvasKit) emoji ağdan çekilir; ağ kısıtlıysa boş
+      görünebilir — bu native'de YAŞANMAZ, FAZ B'de kesin doğrula.
+      Banner'da ayrıca kaybedilen eşiğe geri
       dönüş çubuğu; hedef etiketi YALNIZCA SAYI ("100" — "puan" kelimesi
       yok, o zaten bir üstteki "Sıradaki rütbe" satırında geçiyor) ve
       altında yeşil "(+10)"+tik (ödül zaten alındı). Görülmemiş OLUMLU
       bir kutlamayla çakışırsa yalnızca olumlu olan gösterilmeli.
+      **Test satırını uygulama KAPALIYKEN ekle** — açıkken eklersen host
+      bir sonraki öne-dönüş/kontrolünde banner'ı beklenmedik bir anda
+      gösterir, refleksle kapatılır ve kayıt "görüldü" işaretlenir
+      (12 Ağustos 2026'da tam bu oldu: satır 20:50'de eklendi, 20:51'de
+      kapatıldı, sonra "banner çıkmadı" diye raporlandı — kayıt çoktan
+      harcanmıştı). Kod tarafında SESSİZ bir işaretleme yolu yok:
+      `markSeen` yalnızca gösterilen bir banner kapatılınca çağrılıyor.
 - [ ] **Misafirde hiç çıkmaz.** Girişsizken oyun bitir: banner
       görünmemeli, hiçbir ağ isteği atılmamalı. Sonradan giriş yapınca
       (kuyruk sunucuya işlendikten sonraki ilk kontrolde) kutlama

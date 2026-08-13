@@ -845,7 +845,10 @@ Future<bool> confirmFriendAction(
       // (9 Ağustos 2026, kullanıcı ekran görüntüsüyle bildirdi).
       constraints: const BoxConstraints(maxWidth: 384),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        // web `p-6` = 24 (13 Ağustos 2026: port 20 kullanıyordu — dolgu
+        // kutunun İÇİNDE olduğundan yapı doğruydu ama DEĞER sapmıştı,
+        // içerik 344 yerine 336 olmalı).
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -903,7 +906,10 @@ Future<void> showFriendInfoDialog(BuildContext context, String message) {
       // üst genişlik sınırsızlığı.
       constraints: const BoxConstraints(maxWidth: 384),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        // web `p-6` = 24 (13 Ağustos 2026: port 20 kullanıyordu — dolgu
+        // kutunun İÇİNDE olduğundan yapı doğruydu ama DEĞER sapmıştı,
+        // içerik 344 yerine 336 olmalı).
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,

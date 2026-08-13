@@ -14,6 +14,7 @@ import 'package:kelimeki/src/ui/tokens.dart';
 import 'package:kelimeki/src/ui/score/leaderboard_modal.dart';
 import 'package:kelimeki/src/ui/score/player_score_card_modal.dart';
 import 'package:kelimeki/src/ui/score/score_card_modal.dart';
+import 'package:kelimeki/src/ui/rank/rank_seal.dart';
 import 'package:kelimeki/src/ui/score/score_stats_section.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
@@ -292,6 +293,40 @@ void main() {
       expect(card.height, lessThan(view.height * 0.85),
           reason: '$view: kart %85 sınırına dayanıyor → kaydırma gerekir');
     }
+  });
+
+  testWidgets('Skor Kartı başlığı: ✕ sağa dayalı, mühür başlık ile ✕ arasında',
+      (tester) async {
+    // 12 Ağustos 2026, kullanıcı cihazda bildirdi: "mobilde skor kartta X
+    // kaymış". Kök sebep `KModal._headerTitle`: web'in `shrink-0`'ı porta
+    // `Flexible(child: label)` diye geçmişti, ama `Flexible`ın varsayılanı
+    // `flex: 1` — başlık boş alanın YARISINI pay olarak alıyor, `fit: loose`
+    // olduğundan doğal genişliğinde kalıyor ve ARTAN pay yeniden
+    // dağıtılmadığından Row'un sonunda ölü boşluk olarak birikiyordu.
+    // Ölçüldü: ✕ merkezi sağ kenardan 75.3px içerideydi (web: 35.0).
+    final gw = FakeStatsGateway(
+      stats: {
+        'u-me': {null: statRow(total: 85)}
+      },
+      rank: const {'rank': 1, 'total_score': 85},
+    );
+    final auth = AuthService.fake(user: fakeUser(), profile: ironman);
+    await pumpModal(tester, ScoreCardModal(auth: auth, stats: StatsRepo(gw)));
+
+    final kart = tester.getRect(find.byWidgetPredicate(
+        (w) => w is ConstrainedBox && w.constraints.maxWidth == 360));
+    final kapat = tester.getRect(find.byType(IconButton).first);
+    final muhur = tester.getRect(find.byType(RankSeal).first);
+
+    // Web'de ✕'in merkezi sağ kenardan 35.0px içeride (ölçüldü: p-5 dolgu +
+    // 28px buton). Portta buton daha büyük (40px, dokunma hedefi) ve sağ
+    // dolgu 12 — merkez 32.0'a düşüyor, yani GÖRSEL konum aynı.
+    expect(kart.right - kapat.center.dx, closeTo(32, 4),
+        reason: '✕ sağa dayalı olmalı (web ile aynı görsel konum)');
+    // Mühür kartın ortasında DEĞİL, başlık ile ✕ arasının ortasında —
+    // yani merkezden SAĞDA (web ölçümü: +35.6).
+    expect(muhur.center.dx - kart.center.dx, closeTo(35, 6),
+        reason: 'mühür başlık ile ✕ arasında ortalanmalı');
   });
 
   testWidgets('Skor Kartı: hiç kaydı yoksa boş metin + sıfır kutular',

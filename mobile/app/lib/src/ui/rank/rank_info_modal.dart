@@ -125,7 +125,11 @@ class _RankInfoModalState extends State<RankInfoModal>
                         // Kapatma: kocaman bir "KAPAT" butonu yerine sağ
                         // üstte ✕ (12 Ağustos 2026, kullanıcı isteği) —
                         // projedeki TÜM modallerin (KModal) deseni bu, stil
-                        // oradan birebir alındı. Banner'ın "DEVAM"ı KALIR:
+                        // oradan birebir alındı. Aynı gün kural banner'lara
+                        // da genişledi (`reward_banner.dart`) — orada da
+                        // artık yalnızca ✕ var; oradaki ✕ ayrıca ödülleri
+                        // "görüldü" işaretliyor, buradaki ise salt bilgi
+                        // olduğundan hiçbir şeye dokunmuyor. ESKİ KARAR:
                         // o gerçek bir aksiyon (ödülleri görüldü işaretler).
                         Positioned(
                           top: 8,

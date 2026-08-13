@@ -575,6 +575,47 @@ void main() {
     expect(find.byKey(const ValueKey('moves-g-eski')), findsNothing);
     expect(find.byKey(const ValueKey('moves-g-yeni')), findsOneWidget);
   });
+
+  testWidgets('hamle rozetinin dokunma alanı sohbet rozetinden KÜÇÜK değil',
+      (tester) async {
+    // 12 Ağustos 2026, cihaz testi: "hamleler ikonuna elle dokunmakta
+    // zorlandım, en az 4-5 kere dokunmam gerekti; tam basamazsan oyun
+    // detayları açılıp kapanıyor. Mesaj ikonu iyi bence, onunla aynı
+    // şekilde olabilir."
+    //
+    // Ölçüm kullanıcıyı doğruladı: sohbet 18.8x13.0 = 244px², hamle
+    // 11x11 = 121px² — TAM YARISI. Fark yapısal, tesadüf değil: sohbet
+    // kontrolünün dokunma kutusuna sayı ETİKETİ de dahil, hamle ikonunda
+    // etiket yok. Bu yüzden test bir SABİTİ değil İKİSİNİN ORANINI
+    // kilitliyor — sohbet rozeti ileride değişirse (ör. sayı biçimi)
+    // hamle rozeti onunla birlikte taşınmak zorunda kalsın. Parça 65'in
+    // "İKİ rozet BİRLİKTE büyütülmeli" notunun çalıştırılabilir hâli.
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [gameRow(id: 'g-1')]
+      ..chatCounts['g-1'] = 3 // tek haneli: sohbet kutusunun EN DAR hâli
+      ..movesByGame = {
+        'g-1': [
+          {'turn': 0, 'player': 0, 'words': <String>[], 'points': 0,
+            'action': 'pass'},
+        ]
+      };
+    final repo = await newRepoForWidget(tester, gw);
+    await pumpHistory(tester, repo);
+
+    final sohbet = tester.getRect(find.byKey(const ValueKey('chat-count-g-1')));
+    final hamle = tester.getRect(find.byKey(const ValueKey('moves-g-1')));
+
+    expect(hamle.width, greaterThanOrEqualTo(sohbet.width),
+        reason: 'hamle rozeti sohbet rozetinden dar olmamalı');
+    expect(hamle.height, greaterThanOrEqualTo(sohbet.height),
+        reason: 'hamle rozeti sohbet rozetinden kısa olmamalı');
+
+    // Dolgu görsel konumu KAYDIRMAMALI: ikonun sol kenarı (kutu + 4px
+    // dolgu) sohbet rozetinin sağ kenarından tam 6px sonra başlamalı —
+    // satırdaki öteki boşluklarla aynı (`SizedBox(width: 6)`).
+    expect(hamle.left + 4 - sohbet.right, closeTo(6, 0.5),
+        reason: 'ikonun görsel konumu ve 6px boşluk korunmalı');
+  });
 }
 /// `game_like_stats`'e HİÇ gitmemesi gerektiğini kanıtlayan sahte uç:
 /// çağrılırsa test patlar. `currentUserId` null (misafir).

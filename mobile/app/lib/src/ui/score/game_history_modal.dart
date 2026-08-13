@@ -869,7 +869,10 @@ class _EntryCard extends StatelessWidget {
                       // bazlı — bundan sonra biten YZ oyunlarında ikon
                       // normal çıkacak. Döküm hâlâ lazy.
                       if (entry.hasMoves) ...[
-                        const SizedBox(width: 6),
+                        // 6 DEĞİL 2: aradaki 4px'i aşağıdaki dokunma dolgusu
+                        // tamamlıyor (2 + 4 = 6), yani ikonun GÖRSEL konumu ve
+                        // sohbet rozetiyle arasındaki boşluk değişmiyor.
+                        const SizedBox(width: 2),
                         GestureDetector(
                           key: ValueKey('moves-${entry.id}'),
                           onTap: onShowMoves,
@@ -877,16 +880,38 @@ class _EntryCard extends StatelessWidget {
                           child: Semantics(
                             label: 'Hamle geçmişini göster',
                             button: true,
-                            child: movesLoading
-                                // Sohbet rozetiyle aynı 11px kutuda kalır ki
-                                // yükleme sırasında satır kaymasın.
-                                ? const SizedBox(
-                                    width: 11,
-                                    height: 11,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 1.5, color: _muted),
-                                  )
-                                : const DocumentIcon(size: 11, color: _muted),
+                            // Dokunma dolgusu (12 Ağustos 2026, cihaz testinde
+                            // bulundu — kullanıcı: "en az 4-5 kere dokunmam
+                            // gerekti, tam basamazsan oyun detayları açılıp
+                            // kapanıyor"). Parça 65 bu hedefi bilinçli olarak
+                            // 44px'e çıkarmamıştı ve o gerekçe hâlâ geçerli
+                            // (44px'lik alan ~13px'lik satırda kardeş
+                            // kontrolleri ve kartın kendi dokunuşunu yutar) —
+                            // ama ÖLÇÜM iki kontrolün eşit OLMADIĞINI gösterdi:
+                            // sohbet 18.8x13.0 = 244px², hamle 11x11 = 121px²,
+                            // yani tam yarısı. Fark yapısal: sohbetin kutusuna
+                            // sayı ETİKETİ de dahil, burada etiket yok.
+                            // Kullanıcı kararı: "mesaj ikonu iyi, onunla aynı
+                            // şekilde olabilir" — dolgu tam olarak o kutuya
+                            // eşitliyor (19x13). Dikey 1'de kalıyor çünkü
+                            // satırın kendi yüksekliği zaten 13 (kalp + sohbet
+                            // ikisi de 13); daha fazlası satırı ve dolayısıyla
+                            // HER kartı büyütürdü. Eşitlik `game_likes_test`te
+                            // ölçüyle korunuyor — ikisi tek bir çift.
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 4, vertical: 1),
+                              child: movesLoading
+                                  // Sohbet rozetiyle aynı 11px kutuda kalır ki
+                                  // yükleme sırasında satır kaymasın.
+                                  ? const SizedBox(
+                                      width: 11,
+                                      height: 11,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 1.5, color: _muted),
+                                    )
+                                  : const DocumentIcon(size: 11, color: _muted),
+                            ),
                           ),
                         ),
                       ],

@@ -17,7 +17,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../game/neo_box.dart';
-import '../game/neo_button.dart';
 import '../tokens.dart';
 import 'league_rank.dart';
 import 'rank_progress_bar.dart';
@@ -167,11 +166,18 @@ class _RewardBannerState extends State<RewardBanner>
                 ? '${s.milestone}'
                 : '+${s.rewardPoints}';
     final title = rankDown != null
-        ? 'Rütben geriledi!'
+        // Emoji (12 Ağustos 2026, kullanıcı isteği) — başlığın `Text`'i bu
+        // yüzden `fontFamilyFallback` taşımak ZORUNDA: Flutter, tarayıcının
+        // aksine otomatik font fallback YAPMAZ ve gömülü SpaceGrotesk'te bu
+        // glyph yok, yani fallback'siz TOFU (boş kare) çizilir. Proje bu
+        // tuzağa üç kez düştü (bkz. `mobile/CLAUDE.md`: `_StatusLine`'ın
+        // ✓'si, `help_modal`'ın 🎯'si, ★). Web tarafında böyle bir şey
+        // gerekmiyor, tarayıcı kendi fallback'ini yapıyor.
+        ? 'Rütben geriledi! 😔'
         : s.rankUpTier != null
-            ? 'Yeni rütben: ${s.rankUpTier!.name}!'
+            ? 'Yeni rütben: ${s.rankUpTier!.name}! 👏'
             : s.milestone != null
-                ? '${s.milestone} k-lig puanına ulaştın!'
+                ? '${s.milestone} k-lig puanına ulaştın! 🎉'
                 : 'Eşik ödülü kazandın!';
     // "X k-lig puanına ulaştın" alt satırı — ulaşılan en yüksek eşik.
     // Başlık aynı bilgiyi zaten veren milestone-only durumda tekrarlanmaz.
@@ -231,22 +237,18 @@ class _RewardBannerState extends State<RewardBanner>
                     letterSpacing: kNoTracking,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
+                    // Düşüş başlığındaki 😔 için ŞART (yukarıdaki nota bkz.);
+                    // fallback yalnızca birincil fontta OLMAYAN glyph'ler
+                    // için devreye girdiğinden kutlama başlıklarını hiç
+                    // etkilemiyor. Projedeki diğer altı emoji kullanım
+                    // yeriyle aynı liste.
+                    fontFamilyFallback: ['Noto Color Emoji', 'Apple Color Emoji'],
                     color: kText),
               ),
               if (rankDown != null)
                 ..._rankDownBody(rankDown)
               else
                 ..._celebrationBody(s, reached),
-              const SizedBox(height: 16), // web mt-4
-              NeoButton(
-                label: 'DEVAM',
-                variant: NeoButtonVariant.accent,
-                fontSize: 14,
-                letterSpacing: 1,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
-                onPressed: widget.onClose,
-              ),
             ],
           ),
         ),
@@ -260,6 +262,17 @@ class _RewardBannerState extends State<RewardBanner>
         clipBehavior: Clip.none,
         children: [
           Container(
+            // web `w-[280px]`: kart HER ZAMAN 280 — içeriğe göre büzülmez.
+            // Port bunu atlamıştı (Stack'in konumlandırılmamış çocuğu GEVŞEK
+            // kısıt alır, yani içeriğe göre daralıyordu); dıştaki
+            // `SizedBox(width: 280)` yalnızca Stack'i sabitliyordu. Sapma
+            // görünmezdi ÇÜNKÜ kutlama kartında ölçülecek bir kenar yoktu —
+            // 12 Ağustos 2026'da ✕ eklenince ortaya çıktı: `Positioned(
+            // right: 8)` Stack'e göre konumlandığından, 238.5px'e büzülen
+            // kutlama kartında ✕ kartın DIŞINDA kalıyordu (düşüş kartı
+            // ilerleme çubuğu sayesinde 280'e ulaştığı için orada
+            // görünmüyordu). Ölçüldü ve ekran görüntüsüyle doğrulandı.
+            width: double.infinity,
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
             decoration: ShapeDecorationWithCssShadows(
               color: kBg,
@@ -272,6 +285,29 @@ class _RewardBannerState extends State<RewardBanner>
               borderColor: kBorder,
             ),
             child: content,
+          ),
+          // Kapatma: tam genişlikte bir "DEVAM" butonu yerine sağ üstte ✕
+          // (12 Ağustos 2026, kullanıcı isteği — RankInfoModal'a uygulanan
+          // aynı kararın banner'lara da genişletilmesi: "bu banner'larda
+          // kapat, devam vb olmamalı, sadece X"). Stil KModal/
+          // RankInfoModal ile birebir; iki kart aynı, biri değişirse öteki
+          // de.
+          //
+          // DİKKAT — bu buton yalnızca kapatmıyor: `onClose`
+          // `mark_league_rewards_seen`'i çağıran TEK yol (bkz.
+          // `LeagueRewardsHost._close`). "DEVAM" buraya çevrilirken aynı
+          // callback'e bağlı kaldı; başka bir kapatma yolu eklenirse (ör.
+          // zemine dokunma) o da `onClose`'tan geçmeli, aksi halde banner
+          // her açılışta yeniden çıkar.
+          Positioned(
+            top: 8,
+            right: 8,
+            child: IconButton(
+              visualDensity: VisualDensity.compact,
+              tooltip: 'Kapat',
+              onPressed: widget.onClose,
+              icon: const Icon(Icons.close, size: 18, color: kMuted),
+            ),
           ),
           if (rankDown == null && !_reduced)
             Positioned.fill(child: IgnorePointer(child: _confettiLayer())),
