@@ -2777,8 +2777,9 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        (`find.ancestor(... Stack).first`), metni değil.
      - **Negatif eş:** `setup_screen.dart` `git stash`lenince test
        GERÇEKTEN `Expected: <40> Actual: <44.0>` ile düştü.
-     - Doğrulama: `flutter analyze` temiz; tam takım yeşil.
-       `kelimeki_core`'a ve web'e dokunulmadı.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       371/371 yeşil** (370'ten +1). `kelimeki_core`'a ve web'e
+       dokunulmadı.
 
 ## Sonraya Bırakılan İşler (mobil)
 
