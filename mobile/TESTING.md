@@ -304,6 +304,15 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       "Show menu"; İngilizcesi çıkıyorsa `tooltip: ''` yerine parametre
       tamamen silinmiş demektir (Flutter o durumda kendi varsayılanına
       düşüyor).
+- [ ] **Avatarın vurgusu YUVARLAK (13 Ağustos 2026, Parça 81).** Avatarın
+      üzerine trackpad/fare ile gel ve ayrıca bas: beliren gri vurgu
+      avatarın dairesini izlemeli — yuvarlak avatarın DIŞINDA kare köşeler
+      GÖRÜNMEMELİ. (Kök sebep: `PopupMenuButton`'ın `borderRadius`
+      varsayılanı yok, null bırakılınca ink dikdörtgen boyanıyordu;
+      ölçülen fark basılıyken daire dışında 120 → 0 piksel.) Web'de bu
+      butonun hiç zemin vurgusu yok, yalnızca basınca hafif küçülüyor —
+      portta dairesel bir vurgu OLMASI bilinçli bir fark, kare köşe ise
+      hata.
 - [ ] **Misafir üyelik kutusu.** Setup ekranını misafir (girişsiz) olarak
       aç — hem boş kurulum formunun altında hem (bir oyun yarıda bırakılıp
       "Devam Eden Oyun" görünümüne düşünce) o görünümün altında "Neden

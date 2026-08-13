@@ -263,4 +263,50 @@ void main() {
         reason: 'Kartın altında hâlâ fazladan ~8px boşluk var — '
             'ölçülen=${cardBottom - signOutBottom}');
   });
+
+  testWidgets(
+      'regresyon (Parça 81): yuvarlak avatarın ink vurgusu da DAİRESEL — '
+      'hover/basılı durumda kare köşeler görünmemeli', (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final auth = AuthService.fake(user: _fakeUser(), profile: _ironman);
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: Align(
+          alignment: Alignment.topRight,
+          child: AccountButton(auth: auth),
+        ),
+      ),
+    ));
+    await tester.pump();
+
+    // `PopupMenuButton`, `child` verildiğinde onu
+    // `InkWell(borderRadius: widget.borderRadius, …)` ile sarar
+    // (`popup_menu.dart:1712`) ve bu parametrenin VARSAYILANI YOKTUR.
+    // Null bırakılırsa ink dikdörtgen boyanır ve yuvarlak avatarın dışında
+    // kalan köşeler görünür olur — kullanıcının bildirdiği hata buydu.
+    //
+    // Bu test YAPISAL, çünkü basılı durumu piksel piksel yakalayan bir
+    // test bu binding'de sonlanmıyor (menü açılış animasyonu + M3
+    // InkSparkle `pumpAndSettle`'ı asıyor). Piksel ölçümü bir kez geçici
+    // bir probe ile yapıldı ve düzeltmeyi kanıtladı: basılıyken dairenin
+    // DIŞINDA boyanmış piksel 120 → 0 (dokunulmamış durumda zaten 0).
+    // Parça 34'ün deseni: bir kez ölç, kalıcı testte sözleşmeyi sabitle.
+    final button =
+        tester.widget<PopupMenuButton<String>>(find.byType(PopupMenuButton<String>));
+    final size = tester.getSize(find.byType(PopupMenuButton<String>));
+    expect(button.borderRadius, isNotNull,
+        reason: 'borderRadius null — ink dikdörtgen boyanır, avatarın '
+            'köşeleri görünür');
+    expect(button.borderRadius, BorderRadius.circular(size.width / 2),
+        reason: 'Yarıçap kutunun yarısı olmalı ki kare kutu tam daireye '
+            'kırpılsın — kutu=$size');
+
+    // Aynı yarıçap gerçekten InkWell'e iniyor mu (asıl boyayan o).
+    final ink = tester.widget<InkWell>(find.descendant(
+      of: find.byType(PopupMenuButton<String>),
+      matching: find.byType(InkWell),
+    ));
+    expect(ink.borderRadius, BorderRadius.circular(size.width / 2));
+  });
 }

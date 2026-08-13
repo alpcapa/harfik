@@ -2781,6 +2781,69 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        371/371 yeşil** (370'ten +1). `kelimeki_core`'a ve web'e
        dokunulmadı.
 
+   - ✅ **Parça 81 — yuvarlak avatarın ink vurgusu KAREYDİ: `PopupMenuButton`
+     `borderRadius`unun varsayılanı yok (13 Ağustos 2026,
+     `account_button.dart`):** Kullanıcı bildirdi — *"avatarın üzerine mouse
+     ile gelince ve basınca yuvarlak avatar etrafında karenin köşelerini
+     görebiliyorum. Web'de böyle bir şey olmuyor."*
+     - **Web kaynağı önce okundu (kuralın ilk adımı) ve farkı verdi:**
+       `UserMenu.tsx`'in avatar butonu `rounded-full active:scale-95
+       transition-transform ring-offset-2 focus:outline-none` — yani
+       **hiçbir zemin vurgusu YOK**, tek geri bildirim basınca küçülme.
+     - **Kök sebep SDK kaynağından doğrulandı, tahmin edilmedi:**
+       `PopupMenuButton`, `child` verildiğinde onu
+       `InkWell(borderRadius: widget.borderRadius, …)` ile sarıyor
+       (`popup_menu.dart:1712`) ve `borderRadius` alanının **varsayılan
+       değeri yok** (satır 1350) → `null` → ink DİKDÖRTGEN. Hover/focus/
+       basılı katmanı 32×32 kutuyu boyayıp dairenin dışındaki dört köşeyi
+       görünür kılıyordu.
+     - **ÖLÇÜLDÜ (geçici probe, sonra silindi):** `RepaintBoundary` ile
+       yakalanan karede, avatarın kutusunda dairenin BELİRGİN dışında
+       (yarıçap + 1.5px anti-alias payı) kalan beyaz olmayan piksel sayısı —
+       dokunulmamış **0**, basılı **120** (`#efefef`, tam köşeden başlıyor:
+       `(0,0)`, `(1,0)`…). Düzeltmeden sonra basılı **0**.
+     - **İlk probe YANLIŞ "0" verdi ve bu kendi başına bir ders:** ink
+       efektleri en yakın `Material` ATA'sının render nesnesi tarafından
+       çizilir; `RepaintBoundary` o Material'ın ALTINDAysa yakalanan karede
+       ink HİÇ görünmez. Boundary'nin İÇİNE kendi `Material`'ını koyunca
+       ölçüm gerçeği gösterdi. **Bir "temiz" piksel ölçümü, ölçtüğün
+       katmanın gerçekten o pikselleri boyayan katman olduğunu
+       kanıtlamadan bir şey kanıtlamaz.**
+     - **Düzeltme:** `borderRadius: BorderRadius.circular(avatarSize / 2)`
+       — kutu kare (KAvatar `size × size`; `dot: true` iken bile `Stack`
+       konumlandırılmamış çocuğuna göre boyutlandığından kutu büyümüyor),
+       dolayısıyla yarıçap = yarım kenar tam daire veriyor.
+     - **Kapsam taraması (Parça 54'ün dersi — mekanizmanın DİĞER
+       örneklerini ara):** `PopupMenuButton` kod tabanında TEK yerde
+       (`account_button.dart`). Öteki yuvarlak dokunma hedefleri risksiz —
+       `IconButton` (✕, dişli, şifre göster) Material'da zaten
+       `highlightShape: BoxShape.circle`, `_relationIconButton`
+       (`friends_modal.dart`) hiç ink'siz `GestureDetector`, `InkWell`'in
+       tek doğrudan kullanımı da dikdörtgen olması gereken `ActionSheet`
+       satırı.
+     - **Kalan bilinçli fark:** web'de HİÇ overlay yok (yalnızca
+       `active:scale-95`); portta artık DAİRESEL bir Material overlay'i
+       var. Kaldırmak yerine daireye çekmek seçildi — bildirilen hata
+       "köşeler görünüyor"du ve dokunmatikte hiçbir geri bildirim
+       bırakmamak web'in scale-95'ini de port etmeyi gerektirirdi (ayrı
+       bir iş). Ayrışma burada kayıtlı.
+     - **Test YAPISAL, gerekçesiyle birlikte:** basılı durumu piksel piksel
+       yakalayan bir test bu binding'de SONLANMIYOR (menü açılış animasyonu
+       + M3 `InkSparkle` `pumpAndSettle`'ı asıyor; `Timeout` ile
+       doğrulandı). Bu yüzden kalıcı test `PopupMenuButton.borderRadius`'u
+       VE aynı yarıçapın gerçekten `InkWell`'e indiğini sabitliyor —
+       Parça 34'ün deseninin aynısı (bir kez piksel ölç, kalıcı testte
+       sözleşmeyi pinle).
+     - **Negatif eş:** `account_button.dart` `git stash`lenince test
+       GERÇEKTEN `Expected: not null / Actual: <null>` ile düştü, geri
+       konunca yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       372/372 yeşil** (371'den +1). `kelimeki_core`'a ve web'e
+       dokunulmadı.
+     - **Doğrulama sınırı:** cihazda (gerçek trackpad hover + dokunuş)
+       görsel teyit kullanıcıdan bekleniyor — `mobile/TESTING.md` bölüm
+       2'ye madde eklendi.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

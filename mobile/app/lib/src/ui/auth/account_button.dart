@@ -277,6 +277,18 @@ class _AccountButtonState extends State<AccountButton> {
       // olduğu gibi döndürüp hiç overlay kurmuyor (SDK kaynağından
       // doğrulandı, tahmin değil).
       tooltip: '',
+      // Avatar YUVARLAK ama Flutter'ın ink katmanı varsayılan olarak
+      // DİKDÖRTGEN: `PopupMenuButton`, `child` verildiğinde onu
+      // `InkWell(borderRadius: widget.borderRadius, …)` ile sarıyor
+      // (`popup_menu.dart:1712`) ve bu parametrenin varsayılanı YOK — null
+      // geliyor. Sonuç: hover/focus/basılı vurgusu 32×32 kutuyu boyayıp
+      // dairenin dışında kalan dört köşeyi görünür kılıyordu (ölçüldü:
+      // basılıyken daire dışında 120 piksel #efefef, dokunulmamışken 0).
+      // Web'de bu hiç yaşanmıyor — `UserMenu.tsx`'in butonu `rounded-full`
+      // + `focus:outline-none` ve HİÇ zemin vurgusu taşımıyor (tek geri
+      // bildirim `active:scale-95`). Yarıçap = kutunun yarısı → kare kutu
+      // için tam daire.
+      borderRadius: BorderRadius.circular(avatarSize / 2),
       offset: Offset(0, avatarSize + 8),
       color: _panel,
       shape: RoundedRectangleBorder(
