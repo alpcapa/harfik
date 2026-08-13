@@ -2498,6 +2498,36 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - Doğrulama: `flutter analyze` temiz; tam takım **362/362** yeşil.
        Web'e hiç dokunulmadı (yalnızca kaynak olarak okundu).
 
+   - ✅ **Parça 73 — GİRİŞ satırı 12px aşağıdaydı: web'in `-mt-3`'ü gözden
+     kaçmış (13 Ağustos 2026, `setup_screen.dart`):** Parça 72'nin genişlik
+     düzeltmesi cihazda onaylandıktan hemen sonra kullanıcı: *"sağ üstteki
+     giriş butonunun üstündeki boşluk app'de daha fazla, biraz aşağıda
+     duruyor."*
+     - **Web'de bu ekran İKİ ayrı kutu** (`App.tsx`, kurulum dalı): üstte
+       `px-3.5 pt-3` ile GİRİŞ/avatar satırı, altında `main` içinde
+       `px-4 py-6` ile Setup içeriği. Port tek sütun kullandığından dikey
+       dolguyu `symmetric(vertical: 24)` ile simetrik vermişti → GİRİŞ'in
+       üstü 24 (olması gereken 12).
+     - **Asıl tuzak `py-6`nın 24'ünde DEĞİL:** Setup'ın logo bloğu
+       `-mt-3` (**−12px**) negatif margin taşıyor, yani GİRİŞ ile logo
+       arası 24 değil **12**. Bu görülmezse "arada 24 olmalı" diye yanlış
+       düzeltilirdi. Derlenmiş CSS + Chromium'da iki viewport'ta (1000 ve
+       420) ölçüldü: **12.0 / 12.0** — ikisi de viewport'tan bağımsız.
+     - Düzeltme: kaydırma dolgusu asimetrik (`top: 12, bottom: 24`) ve
+       AccountButton'ın `bottom: 4`'ü yerine KOŞULSUZ bir 12px boşluk
+       (`auth.configured` false iken web'de de satır boş bir kutu olarak
+       render edildiğinden logonun üstü yine 12+12 = 24 kalır).
+     - **Ölçüm neden canlı siteden yapılamadı:** Chromium bu ortamdan
+       `kelimeki.com`a çıkamıyor (`ERR_CONNECTION_RESET`, proxy) — bunun
+       yerine `dist/assets/*.css` ile birebir DOM harness'i kurulup
+       ölçüldü. Yerel `dist`i olduğu gibi servis etmek işe YARAMAZDI:
+       Supabase env'i olmadan `UserMenu` hiç render edilmiyor.
+     - **Test:** yeni bir regresyon testi iki boşluğu da ölçüyor
+       (12/12); düzeltmeden önce GERÇEKTEN düştü (`Expected: <12>,
+       Actual: <24.0>`).
+     - Doğrulama: `flutter analyze` temiz; tam takım **363/363** yeşil
+       (362'den +1). Web'e dokunulmadı.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

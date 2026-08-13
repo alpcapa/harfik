@@ -84,6 +84,12 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
       dışına kaçmıştır. (Dar ekranda ikisi zaten aynı; fark yalnızca
       460+32'den geniş ekranlarda ortaya çıkar, o yüzden telefonda test
       etmek bu hatayı GÖSTERMEZ.)
+- [ ] **GİRİŞ satırının konumu (13 Ağustos 2026, Parça 73).** Sağ üstteki
+      GİRİŞ/avatar butonunun ÜSTÜNDEKİ boşluk ve butonla logo ARASINDAKİ
+      boşluk web'le aynı olmalı (ikisi de 12). App'te buton web'dekinden
+      aşağıda duruyorsa dikey dolgu yine simetrik verilmiş demektir —
+      web'de bu satır Setup içeriğinden AYRI bir kutu (üst 12), logo
+      bloğu da `-mt-3` ile 12'yi geri alıyor.
 - [ ] **Arkadaş onay/bilgi diyalogları.** "Arkadaşlıktan çıkar" gibi bir
       onay diyaloğu aç: kart genişliği ve iç dolgusu web ile aynı olmalı
       (384 kutu, 24 dolgu → içerik 336).

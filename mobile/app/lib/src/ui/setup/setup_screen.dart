@@ -632,7 +632,15 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
             listenable: auth,
             builder: (context, _) => SingleChildScrollView(
               // YATAY dolgu BURADA DEĞİL, 460'lık kutunun İÇİNDE (aşağı bkz.).
-              padding: const EdgeInsets.symmetric(vertical: 24), // web py-6
+              //
+              // Dikey ASİMETRİK, çünkü web'de bu ekran İKİ ayrı kutu
+              // (`App.tsx`): üstte `px-3.5 pt-3` ile GİRİŞ/avatar satırı
+              // (12), altında `px-4 py-6` ile Setup içeriği (24). Portta
+              // tek sütun olduğundan ÜST 12 (GİRİŞ satırının payı), ALT 24.
+              // 13 Ağustos 2026: burada `vertical: 24` yazıyordu, yani GİRİŞ
+              // web'dekinden 12px aşağıda duruyordu (kullanıcı yan yana
+              // karşılaştırmayla bildirdi).
+              padding: const EdgeInsets.only(top: 12, bottom: 24),
               child: Center(
                 child: ConstrainedBox(
                   // Web: `w-full max-w-[460px] px-4 py-6` (Setup.tsx ~536) —
@@ -660,18 +668,25 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                         // Web: Setup'ın üstünde sağa yaslı UserMenu (App.tsx,
                         // kurulum dalı) — GİRİŞ / avatar burada da sağ üstte.
                         if (auth.configured)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: AccountButton(
-                                  feedback: widget.services.feedback,
-                                  friends: widget.services.friends,
-                                  auth: auth,
-                                  stats: widget.services.stats,
-                                  games: widget.services.games),
-                            ),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: AccountButton(
+                                feedback: widget.services.feedback,
+                                friends: widget.services.friends,
+                                auth: auth,
+                                stats: widget.services.stats,
+                                games: widget.services.games),
                           ),
+                        // Web: Setup kutusunun `py-6`sı (24) ile logo
+                        // bloğunun `-mt-3`ü (−12) ÜST ÜSTE binip 12 yapıyor
+                        // — o negatif margin gözden kaçarsa hesap 24 çıkar.
+                        // Derlenmiş CSS + Chromium'da iki viewport'ta da
+                        // ölçüldü. Port burada 4 kullanıyordu.
+                        //
+                        // KOŞULSUZ: `auth.configured` false iken web'de de
+                        // GİRİŞ satırı boş bir kutu olarak render edilir,
+                        // yani logonun üstü yine 12 (üst dolgu) + 12 = 24.
+                        const SizedBox(height: 12),
                         const Center(child: LogoMark(height: 52)),
                         // Web: blok `gap-1` (4px) + paragrafın `mt-4`si (16px)
                         // ÜST ÜSTE binerek 20px yapıyor — Chromium'da ölçüldü.
