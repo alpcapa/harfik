@@ -423,6 +423,15 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     final cloud = widget.services.cloudSaves;
     final user = auth.user;
     if (user == null || cloud == null) return;
+    // ⚠ BU ADIMLARIN HİÇBİRİ LİSTEYİ ENGELLEYEMEZ.
+    // Web'de bunlar ÜÇ AYRI effect (misafir migrasyonu, `flushPendingGames`,
+    // `refreshCloudSaves`); port hepsini tek fonksiyonda ardışık koşturuyor.
+    // 13 Ağustos 2026'da bunun bedeli görüldü: kullanıcı "Yapay Zeka ile"
+    // sekmesinde kalıcı "Yükleniyor…" bildirdi (hesabın SIFIR bulut kaydı
+    // vardı, yani başarılı bir liste boş liste dönmeliydi). Buradaki bir
+    // istisna `_syncCloud`'u yarıda kesiyor, `_cloudSaves` sonsuza dek null
+    // kalıyor ve "Yükleniyor…" TERMİNAL bir duruma dönüşüyordu — üstelik
+    // çağrı `unawaited` olduğundan hata da görünmüyordu.
     final repo = _repo;
     if (repo != null && !auth.profileLoading && !_migratingGuest) {
       _migratingGuest = true;
@@ -433,6 +442,8 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
           accountName: auth.accountName,
         );
         if (moved && mounted) await _refreshSaveStatus();
+      } catch (e) {
+        debugPrint('[Kelimeki] misafir kaydı taşınamadı, listeye devam: $e');
       } finally {
         _migratingGuest = false;
       }
@@ -440,7 +451,14 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     // Kuyrukta bekleyen bitmiş/terk edilmiş oyun kayıtlarını (misafirken
     // ya da offline'da biriken) bu hesaba işle — web'in `flushPendingGames`
     // refleksi (açılış + giriş durumu değişimi).
-    final games = _games ?? await widget.services.games;
+    // `services.games` bir Future — açılışta çözülmediyse/fırladıysa liste
+    // yine çekilmeli (yukarıdaki nota bkz.).
+    GamesRepo? games;
+    try {
+      games = _games ?? await widget.services.games;
+    } catch (e) {
+      debugPrint('[Kelimeki] games deposu alınamadı, listeye devam: $e');
+    }
     if (games != null) unawaited(games.flushPending());
 
     // Offline'da yerel aynada biriken devam eden oyunları ÖNCE sunucuya it
@@ -456,16 +474,28 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     } catch (e) {
       debugPrint('[Kelimeki] ayna itilemedi, listeye devam: $e');
     }
-    final list = await cloud.list(userId: user.id);
-    if (list != null) {
-      // 7 günü dolup bu turda iddia edilen kayıtlar → -2 cezalı teslim
-      // (web refreshCloudSaves'in claim dalı).
-      for (final a in list.abandoned) {
-        await games?.recordAbandoned(a.state, endedAtMs: a.updatedAtMs);
+    CloudSaveList? list;
+    try {
+      list = await cloud.list(userId: user.id);
+      if (list != null) {
+        // 7 günü dolup bu turda iddia edilen kayıtlar → -2 cezalı teslim
+        // (web refreshCloudSaves'in claim dalı). Ceza yazımı FIRLARSA liste
+        // yine çizilmeli — aksi halde tek bir başarısız `games` yazması
+        // ekranı kalıcı "Yükleniyor…"da bırakırdı.
+        for (final a in list.abandoned) {
+          await games?.recordAbandoned(a.state, endedAtMs: a.updatedAtMs);
+        }
       }
+    } catch (e) {
+      debugPrint('[Kelimeki] bulut kaydı listesi/cezası hata verdi: $e');
     }
     if (!mounted || widget.services.auth.user?.id != user.id) return;
-    final pending = await cloud.pendingMirrorCount(user.id);
+    var pending = 0;
+    try {
+      pending = await cloud.pendingMirrorCount(user.id);
+    } catch (e) {
+      debugPrint('[Kelimeki] bekleyen ayna sayısı alınamadı: $e');
+    }
     if (!mounted) return;
     if (list == null && _cloudSaves != null) {
       setState(() => _diagPendingMirrors = pending); // ağ hatası eskiyi ezmesin
@@ -632,7 +662,15 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
             listenable: auth,
             builder: (context, _) => SingleChildScrollView(
               // YATAY dolgu BURADA DEĞİL, 460'lık kutunun İÇİNDE (aşağı bkz.).
-              padding: const EdgeInsets.symmetric(vertical: 24), // web py-6
+              //
+              // Dikey ASİMETRİK, çünkü web'de bu ekran İKİ ayrı kutu
+              // (`App.tsx`): üstte `px-3.5 pt-3` ile GİRİŞ/avatar satırı
+              // (12), altında `px-4 py-6` ile Setup içeriği (24). Portta
+              // tek sütun olduğundan ÜST 12 (GİRİŞ satırının payı), ALT 24.
+              // 13 Ağustos 2026: burada `vertical: 24` yazıyordu, yani GİRİŞ
+              // web'dekinden 12px aşağıda duruyordu (kullanıcı yan yana
+              // karşılaştırmayla bildirdi).
+              padding: const EdgeInsets.only(top: 12, bottom: 24),
               child: Center(
                 child: ConstrainedBox(
                   // Web: `w-full max-w-[460px] px-4 py-6` (Setup.tsx ~536) —
@@ -660,18 +698,31 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                         // Web: Setup'ın üstünde sağa yaslı UserMenu (App.tsx,
                         // kurulum dalı) — GİRİŞ / avatar burada da sağ üstte.
                         if (auth.configured)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: AccountButton(
-                                  feedback: widget.services.feedback,
-                                  friends: widget.services.friends,
-                                  auth: auth,
-                                  stats: widget.services.stats,
-                                  games: widget.services.games),
-                            ),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: AccountButton(
+                                feedback: widget.services.feedback,
+                                friends: widget.services.friends,
+                                auth: auth,
+                                stats: widget.services.stats,
+                                games: widget.services.games),
                           ),
+                        // GİRİŞ/avatar satırı ile logo arası: 4.
+                        //
+                        // Web'de bu sayı Setup kutusunun `py-6`sı (24) ile
+                        // logo bloğunun negatif üst margin'inin farkı — o
+                        // margin gözden kaçarsa hesap 24 çıkar. 13 Ağustos
+                        // 2026'da margin `-mt-3` (−12, arası 12) iken
+                        // `-mt-5`e (−20, arası 4) çekildi: kullanıcı portun
+                        // 4'ünü tercih etti ("web'de ekstra boşluk var"),
+                        // yani bu sefer WEB porta uyduruldu. İki taraf da
+                        // 4; biri değişirse öteki de değişmeli.
+                        //
+                        // KOŞULSUZ: `auth.configured` false iken web'de de
+                        // GİRİŞ satırı boş bir kutu olarak render edilir
+                        // (yalnızca `pt-3`ü kalır), yani logonun üstü yine
+                        // 12 + 4 = 16.
+                        const SizedBox(height: 4),
                         const Center(child: LogoMark(height: 52)),
                         // Web: blok `gap-1` (4px) + paragrafın `mt-4`si (16px)
                         // ÜST ÜSTE binerek 20px yapıyor — Chromium'da ölçüldü.

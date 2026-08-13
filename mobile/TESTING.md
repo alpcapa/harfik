@@ -84,6 +84,14 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
       dışına kaçmıştır. (Dar ekranda ikisi zaten aynı; fark yalnızca
       460+32'den geniş ekranlarda ortaya çıkar, o yüzden telefonda test
       etmek bu hatayı GÖSTERMEZ.)
+- [ ] **GİRİŞ satırının konumu (13 Ağustos 2026, Parça 73 + 76).** Sağ
+      üstteki GİRİŞ/avatar butonunun ÜSTÜNDEKİ boşluk web'le aynı olmalı
+      (**12**); butonla logo ARASI ise **4**. App'te buton web'dekinden
+      aşağıda duruyorsa dikey dolgu yine simetrik verilmiş demektir —
+      web'de bu satır Setup içeriğinden AYRI bir kutu (üst 12), logo
+      bloğu da `-mt-5` ile kabın `py-6`sının 20'sini geri alıyor. Aradaki
+      4, kullanıcının portu tercih ettiği tek yer: **web porta uyduruldu**,
+      yani burada web 12 görünüyorsa `-mt-5` geri alınmış demektir.
 - [ ] **Arkadaş onay/bilgi diyalogları.** "Arkadaşlıktan çıkar" gibi bir
       onay diyaloğu aç: kart genişliği ve iç dolgusu web ile aynı olmalı
       (384 kutu, 24 dolgu → içerik 336).
@@ -370,6 +378,14 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       KESİNTİSİZ olmalı. Çerçevenin yalnızca üst/alt/sağ/sol'da görünüp
       köşegenlerde kaybolması (avatarın "dört kenarı düz" görünmesine yol
       açan eski hata) TEKRARLAMAMALI.
+- [ ] **"Yükleniyor…" hiçbir koşulda TAKILI KALMAMALI (13 Ağustos 2026,
+      Parça 75).** Girişliyken "Yapay Zeka ile" sekmesine geç: liste ya
+      oyunlarını ya da "Devam eden bir Yapay Zeka oyunun yok." göstermeli.
+      Kalıcı spinner bir yükleme yavaşlığı DEĞİL, senkronun bir adımının
+      sessizce patladığı anlamına gelir — o durumda Setup'ın en altındaki
+      teşhis satırını (`depo ok` / `DEPO YOK` / `bekleyen N`) not et.
+      Hesabın hiç kaydı olmaması da geçerli bir test durumu (boş liste
+      metni çıkmalı).
 
 ## 4. Biten oyun kayıtları ve istatistikler
 

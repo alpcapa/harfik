@@ -114,15 +114,27 @@ class SpyFeedbackRepo extends FeedbackRepo {
   }
 }
 
+/// `_syncCloud`'un liste ADIMINDAN sonra gelen bir çağrısı fırlarsa ekranın
+/// kalıcı "Yükleniyor…"da kalmadığını kanıtlamak için (13 Ağustos 2026).
+class ThrowingMirrorCountRepo extends CloudSaveRepo {
+  ThrowingMirrorCountRepo(super.gateway);
+
+  @override
+  Future<int> pendingMirrorCount(String userId) async =>
+      throw Exception('ayna sayacı patladı');
+}
+
 AppServices services(MemGateway gw,
-        {Future<GamesRepo>? games, FeedbackRepo? feedback}) =>
+        {Future<GamesRepo>? games,
+        FeedbackRepo? feedback,
+        CloudSaveRepo? cloud}) =>
     AppServices(
       dictionary: Future.value(SetWordSource(const ['ab', 'aba', 'kelime'])),
       meanings: MeaningStore(bundle: rootBundle),
       auth: AuthService.fake(user: fakeUser(), profile: ironman),
       supabase: null,
       versionGate: VersionGateStatus.ok,
-      cloudSaves: CloudSaveRepo(gw),
+      cloudSaves: cloud ?? CloudSaveRepo(gw),
       games: games,
       feedback: feedback,
     );
@@ -176,13 +188,16 @@ void main() {
   }
 
   Future<void> pumpSetup(WidgetTester tester, MemGateway gw,
-      {Future<GamesRepo>? games, FeedbackRepo? feedback}) async {
+      {Future<GamesRepo>? games,
+      FeedbackRepo? feedback,
+      CloudSaveRepo? cloud}) async {
     await setPhoneViewSize(tester, const Size(420, 950));
     await tester.pumpWidget(MaterialApp(
       theme: ThemeData(
           fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
       home: SetupScreen(
-          services: services(gw, games: games, feedback: feedback)),
+          services:
+              services(gw, games: games, feedback: feedback, cloud: cloud)),
     ));
     await tester.pumpAndSettle();
   }
@@ -481,4 +496,25 @@ void main() {
     expect(spy.flushCalls, 2,
         reason: 'resumed → flushPending yeniden çağrılmalı');
   });
+  testWidgets(
+      'senkronun bir adımı fırlasa da liste ÇİZİLİR — "Yükleniyor…" terminal '
+      'durum DEĞİL', (tester) async {
+    // 13 Ağustos 2026, cihazda bildirildi: "Ironman YZ tabına geçince
+    // Yükleniyor takılı kaldı." Hesabın SIFIR bulut kaydı vardı, yani
+    // başarılı bir liste boş liste dönmeliydi ve ekranda "Devam eden bir
+    // Yapay Zeka oyunun yok." yazmalıydı.
+    //
+    // Kök sebep yapısal: web'de misafir migrasyonu / kuyruk flush'ı /
+    // liste ÜÇ AYRI effect; port hepsini `_syncCloud`ta ardışık koşturuyor
+    // ve aradaki korumasız bir `await` fırlarsa fonksiyon yarıda kesilip
+    // `_cloudSaves` sonsuza dek null kalıyordu (üstelik çağrı `unawaited`
+    // olduğundan hata da görünmüyordu).
+    final gw = MemGateway(); // hiç satır yok — boş liste beklenir
+    await pumpSetup(tester, gw, cloud: ThrowingMirrorCountRepo(gw));
+
+    expect(find.text('Yükleniyor…'), findsNothing,
+        reason: 'bir adım fırlasa da liste çizilmeli');
+    expect(find.text('Devam eden bir Yapay Zeka oyunun yok.'), findsOneWidget);
+  });
+
 }

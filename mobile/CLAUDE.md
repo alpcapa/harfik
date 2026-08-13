@@ -2498,6 +2498,138 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - Doğrulama: `flutter analyze` temiz; tam takım **362/362** yeşil.
        Web'e hiç dokunulmadı (yalnızca kaynak olarak okundu).
 
+   - ✅ **Parça 73 — GİRİŞ satırı 12px aşağıdaydı: web'in `-mt-3`'ü gözden
+     kaçmış (13 Ağustos 2026, `setup_screen.dart`):** Parça 72'nin genişlik
+     düzeltmesi cihazda onaylandıktan hemen sonra kullanıcı: *"sağ üstteki
+     giriş butonunun üstündeki boşluk app'de daha fazla, biraz aşağıda
+     duruyor."*
+     - **Web'de bu ekran İKİ ayrı kutu** (`App.tsx`, kurulum dalı): üstte
+       `px-3.5 pt-3` ile GİRİŞ/avatar satırı, altında `main` içinde
+       `px-4 py-6` ile Setup içeriği. Port tek sütun kullandığından dikey
+       dolguyu `symmetric(vertical: 24)` ile simetrik vermişti → GİRİŞ'in
+       üstü 24 (olması gereken 12).
+     - **Asıl tuzak `py-6`nın 24'ünde DEĞİL:** Setup'ın logo bloğu
+       `-mt-3` (**−12px**) negatif margin taşıyor, yani GİRİŞ ile logo
+       arası 24 değil **12**. Bu görülmezse "arada 24 olmalı" diye yanlış
+       düzeltilirdi. Derlenmiş CSS + Chromium'da iki viewport'ta (1000 ve
+       420) ölçüldü: **12.0 / 12.0** — ikisi de viewport'tan bağımsız.
+     - Düzeltme: kaydırma dolgusu asimetrik (`top: 12, bottom: 24`) ve
+       AccountButton'ın `bottom: 4`'ü yerine KOŞULSUZ bir 12px boşluk
+       (`auth.configured` false iken web'de de satır boş bir kutu olarak
+       render edildiğinden logonun üstü yine 12+12 = 24 kalır).
+     - **Ölçüm neden canlı siteden yapılamadı:** Chromium bu ortamdan
+       `kelimeki.com`a çıkamıyor (`ERR_CONNECTION_RESET`, proxy) — bunun
+       yerine `dist/assets/*.css` ile birebir DOM harness'i kurulup
+       ölçüldü. Yerel `dist`i olduğu gibi servis etmek işe YARAMAZDI:
+       Supabase env'i olmadan `UserMenu` hiç render edilmiyor.
+     - **Test:** yeni bir regresyon testi iki boşluğu da ölçüyor
+       (12/12); düzeltmeden önce GERÇEKTEN düştü (`Expected: <12>,
+       Actual: <24.0>`).
+     - Doğrulama: `flutter analyze` temiz; tam takım **363/363** yeşil
+       (362'den +1). Web'e dokunulmadı.
+     - **CI bu PR'da KIRMIZI döndü ama sebebi bu değişiklik DEĞİLDİ** —
+       aşağıdaki flake; aynı commit'te düzeltildi.
+
+   - ✅ **Parça 74 — sqflite timer flake'i geri döndü, bu kez YANLIŞ YERE
+     pay tanındığı için (13 Ağustos 2026, `online_game_chat_test.dart`):**
+     Parça 73'ün PR'ında (#245) CI'ın `Analiz + testler` işi düştü:
+     `361 tests passed, 2 failed`. Düşen ikisi de
+     `online_game_chat_test.dart`'ın "gerçek depo" grubundaydı ve hata
+     Parça 11/13/64'ten tanıdık: *"A Timer is still pending even after the
+     widget tree was disposed."*
+     - **Benim diff'imle ilgisi yoktu** (yalnızca `setup_screen*`
+       dosyalarına dokunulmuştu) ve bir önceki koşuda (#109) aynı testler
+       geçmişti — yani flake.
+     - **Ama kör bir "yeniden koş" doğru cevap değildi:** CI'ın yığın izi
+       payın YANLIŞ YERDE olduğunu gösterdi. Testlerin sonundaki 200ms'lik
+       `runAsync` payı, testteki yoruma göre modal açılışındaki
+       `_markChatReadTo` yazması için konmuştu; oysa iz
+       `_loadChat` → `_seedInitialUnread` → `ChatReadStore.markRead`'i
+       işaret ediyordu — **EKRAN AÇILIŞINDA** başlayan başka bir yazma.
+       Yüklü bir runner'da o yazma `pumpScreen`den sonra sarkıyor ve
+       sondaki tek pay ona yetmiyor.
+     - **Düzeltme sayıyı şişirmek değil, payı doğru noktaya koymak:**
+       dosyaya ortak bir `drainRealIo(tester)` yardımcısı eklendi
+       (`setup_cloud_test.dart`'takiyle aynı ad/desen), elle yazılmış iki
+       bekleyiş ona çevrildi ve **`pumpScreen`den hemen sonra da**
+       çağrıldı. Yani pay artık her İKİ yazma noktasının ardında.
+     - **Doğrulama sınırı (Parça 64'ün aynısı):** flake yerelde hiç
+       tekrarlamıyor (tam takım 363/363 yeşil), yalnızca CI'ın paylaşımlı
+       runner'ında görülüyor — negatif eş kurulamaz, gerçek kanıt CI'ın
+       yeşile dönmesi.
+
+   - ✅ **Parça 75 — "Yükleniyor…" TERMİNAL bir duruma dönebiliyordu:
+     senkronun herhangi bir adımı fırlarsa liste hiç çizilmiyordu
+     (13 Ağustos 2026, `setup_screen.dart`):** Kullanıcı cihazda bildirdi:
+     *"Ironman YZ tabına geçince 'yükleniyor' takılı kaldı."*
+     - **Önce veri kontrol edildi, koda dalınmadı:** canlıda Ironman'ın
+       `local_game_saves` satırı SIFIR — yani başarılı bir liste boş liste
+       dönmeliydi ve ekranda "Devam eden bir Yapay Zeka oyunun yok."
+       yazmalıydı. `CloudSaveRepo.list()` boş sonuçta null DÖNMÜYOR ve
+       `TableWriteQueue` kilitlenmiyor (ikisi de kaynaktan doğrulandı), yani
+       "sunucu boş döndü, ekran bunu gösteremedi" tek başına bir açıklama
+       değildi.
+     - **Kök sebep YAPISAL, web ile karşılaştırınca çıktı:** web'de misafir
+       migrasyonu, `flushPendingGames` ve `refreshCloudSaves` ÜÇ AYRI
+       effect — biri patlarsa ötekiler yine koşar. Port hepsini tek bir
+       `_syncCloud` içinde ARDIŞIK `await`lerle koşturuyor; liste adımından
+       ÖNCEKİ korumasız bir `await` fırlarsa fonksiyon oracıkta kesiliyor,
+       `_cloudSaves` sonsuza dek `null` kalıyor ve `null` tam olarak
+       "Yükleniyor…" demek. Üstelik çağrı `unawaited` olduğundan hata
+       hiçbir yere düşmüyordu — ekranda tek iz kalıcı spinner.
+     - **Düzeltme — izolasyon, yeni bir mekanizma değil:** senkronun dört
+       riskli adımı (misafir migrasyonu, `services.games` Future'ı,
+       liste+ceza, `pendingMirrorCount`) artık kendi `try`ında; her biri
+       loglanıp AKIŞ DEVAM EDİYOR. Yani hangi adım patlarsa patlasın liste
+       çiziliyor — web'in "ayrı effect" garantisinin tek fonksiyondaki
+       karşılığı. Sıra/semantik değişmedi.
+     - **Test — negatif eş doğrulamasıyla:** `setup_cloud_test.dart`'a
+       `pendingMirrorCount`u fırlatan bir sahte repo (`ThrowingMirrorCountRepo`)
+       + boş bir gateway ile yeni bir test: "Yükleniyor…" YOK, "Devam eden
+       bir Yapay Zeka oyunun yok." VAR. Adımın `try`ı kaldırılınca test
+       GERÇEKTEN kullanıcının semptomunu üretti (`Found 1 widget with text
+       "Yükleniyor…"`), geri konunca yeşile döndü. Test yardımcısına
+       (`services`/`pumpSetup`) opsiyonel bir `cloud` parametresi eklendi —
+       verilmezse mevcut 10 çağrı yeri BİREBİR aynı.
+     - **Bilinçli sınır:** hangi adımın gerçekten patladığı cihazda
+       BİLİNMİYOR (log toplanamadı) — düzeltme bir adımı onarmıyor,
+       "herhangi bir adımın patlaması ekranı kilitlemesin" sınıfını
+       kapatıyor. Aynı belirti tekrarlarsa Setup'ın teşhis satırı (Parça 45)
+       ve `debugPrint` çıktısı ilk bakılacak yer.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 364/364
+       yeşil** (363'ten +1). `kelimeki_core`'a hiç dokunulmadı.
+
+   - ✅ **Parça 76 — logo ile GİRİŞ/avatar satırı arası: bu sefer WEB porta
+     uyduruldu (13 Ağustos 2026, `Setup.tsx` + `setup_screen.dart`):**
+     Kullanıcı: *"App'de kelimeki logosuyla avatar satırı arası ideal şu
+     anda. Ama web'de ekstra bir boşluk var. Web'i app gibi yap."*
+     - **Ölçüm (derlenmiş CSS + Chromium, 420/1000):** web'de GİRİŞ
+       butonunun altı ile logonun üstü arası **12**; portta (o an canlıda
+       olan `main` derlemesi) **4**. Fark 8px.
+     - **Parça 73 ile ÇAKIŞIYORDU ve fark edilmeseydi sessiz bir sapma
+       doğuracaktı:** dün bu boşluğu portta 4'ten 12'ye çıkarıp web'e
+       uydurmuştum (o PR henüz merge edilmediği için kullanıcının cihazda
+       gördüğü hâlâ 4'tü). Yalnızca web'i 4'e çekseydim, #245 merge olunca
+       port 12'ye çıkıp ayrışma TERS yönde geri gelecekti. Bu yüzden
+       ikisi birden 4'e sabitlendi: portun `SizedBox(height: 12)`i 4'e
+       geri alındı, web `-mt-3` → **`-mt-5`** (kabın `py-6`sından 20
+       yiyor). **Parça 73'ün ASIL konusu olan ÜST boşluk (24 → 12)
+       aynen duruyor** — o web'e uyum, bu ondan ayrı bir sayı.
+     - **Yön istisnası bilinçli** (Parça 42'nin emsali): kural "web
+       kanonik" ama kullanıcı açıkça portun görünümünü seçtiğinde web
+       değişir — amaç estetik dayatma değil, sessiz ayrışmayı önlemek.
+     - **Test — negatif eş doğrulamasıyla:** Parça 73'ün testi (`GİRİŞ
+       satırının üstü/altı web ile aynı`) 12/4'e güncellendi; port 12'ye
+       geri çevrilince GERÇEKTEN `Expected: <4> Actual: <12.0>` ile
+       düştü, 4'e alınınca yeşile döndü.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 364/364 yeşil**;
+       web `npm run lint` + `npm run build` temiz. `kelimeki_core`'a hiç
+       dokunulmadı.
+     - **Doğrulama sınırı:** iki tarafın yan yana görsel teyidi
+       kullanıcıdan bekleniyor (web canlıya, port GitHub Pages'e deploy
+       olduktan SONRA — ikisi farklı zamanlarda yayına girdiğinden ara
+       dönemde fark görünebilir).
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

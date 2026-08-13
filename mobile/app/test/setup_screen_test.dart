@@ -22,6 +22,7 @@ import 'package:kelimeki/src/ui/game/neo_button.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:kelimeki/src/ui/auth/auth_modal.dart';
 import 'package:kelimeki/src/ui/game/count_badge.dart';
+import 'package:kelimeki/src/ui/auth/account_button.dart';
 import 'package:kelimeki/src/ui/game/logo_mark.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
 import 'package:kelimeki/src/ui/live/live_games_tab.dart';
@@ -278,6 +279,36 @@ void main() {
     expect(screen.controller.state.turnCount, savedTurn);
     expect(screen.controller.state.multiSession, isTrue);
     await tester.runAsync(() => storage.close());
+  });
+
+  testWidgets('GİRİŞ satırının üstü/altı web ile aynı (12/4)', (tester) async {
+    // 13 Ağustos 2026, kullanıcı yan yana karşılaştırmayla bildirdi: "sağ
+    // üstteki giriş butonunun üstündeki boşluk app'de daha fazla, biraz
+    // aşağıda duruyor."
+    //
+    // Web'de bu satır Setup içeriğinden AYRI bir kutu (`App.tsx`):
+    //   <div … px-3.5 pt-3>   <UserMenu/>        → ÜSTTE 12
+    //   <main><div … px-4 py-6>                  → 24
+    //     <div … -mt-5>  <LogoMark/>             → −20  ⇒ ARADA 4
+    // Yani `py-6`nın 24'ü logo bloğunun NEGATİF margin'iyle eriyor — o
+    // margin gözden kaçarsa hesap 24 çıkar. Derlenmiş CSS + Chromium'da
+    // iki viewport'ta (1000/420) ölçüldü: 12.0 ve 4.0.
+    //
+    // Port ise tek sütun kullandığından üstte 24 (kaydırma dolgusu)
+    // veriyordu; ARADAKİ 4'ü baştan doğruydu ve 13 Ağustos 2026'da
+    // kullanıcı onu tercih edince web `-mt-3`ten `-mt-5`e çekildi.
+    await setPhoneViewSize(tester, const Size(1000, 800));
+    final gw = FakeOnlineGamesGateway();
+    await pumpSetup(tester,
+        liveBadgeServices(AuthService.fake(), OnlineGamesRepo(gw)));
+
+    final ekran = tester.getRect(find.byType(SetupScreen));
+    final giris = tester.getRect(find.byType(AccountButton));
+    final logo = tester.getRect(find.byType(LogoMark).first);
+
+    expect(giris.top - ekran.top, 12, reason: 'GİRİŞ üstü web pt-3 = 12');
+    expect(logo.top - giris.bottom, 4,
+        reason: 'GİRİŞ ile logo arası web py-6 (24) + -mt-5 (−20) = 4');
   });
 
   testWidgets(

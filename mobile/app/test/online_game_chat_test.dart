@@ -105,6 +105,24 @@ Map<String, Object?> stateJson(GameState s) => {
       'started_at': s.startedAt,
     };
 
+/// Gerçek sqflite yazmalarına GERÇEK zaman payı tanır. Sahte zamanda
+/// (`pumpAndSettle`) yazma ilerlemediğinden sqflite'ın ~10 saniyelik
+/// kilit-uyarı `Timer`'ı iptal edilmeden kalır ve widget ağacı sökülünce
+/// "A Timer is still pending" ile test düşer.
+///
+/// 13 Ağustos 2026: CI'da (#111) bu grubun İKİ testi de düştü ve yığın izi
+/// modal açılışındaki `_markChatReadTo`'yu DEĞİL, EKRAN AÇILIŞINDAKİ
+/// `_loadChat` → `_seedInitialUnread` → `ChatReadStore.markRead` yazmasını
+/// gösterdi — yani mevcut pay yalnızca testin SONUNDA tanınıyordu, oysa bu
+/// yazma `pumpScreen` sırasında başlıyor. Pay artık HER İKİ yazma noktasının
+/// ardından tanınıyor. Aynı sınıf: Parça 11 (bu dosya), Parça 13 (50→200ms),
+/// Parça 64 (`setup_cloud_test.dart`'ın `drainRealIo`'su).
+Future<void> drainRealIo(WidgetTester tester) async {
+  await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 200)));
+  await tester.pump();
+}
+
 int _dbSeq = 0;
 
 /// Gerçek SQLite ffi + gerçek SharedPreferences — sqflite'ın açılışı
@@ -327,6 +345,7 @@ void main() {
         (tester) async {
       final storage = await newStorageForWidget(tester);
       await pumpScreen(tester, storage: Future.value(storage));
+      await drainRealIo(tester);
 
       await tester.tap(find.text('Mesajlaşma'));
       await tester.pumpAndSettle();
@@ -346,9 +365,7 @@ void main() {
       // olana kadar bekler. Sahte zamanda `unmount` çağrılırsa bu timer
       // hâlâ bekliyor sayılır ve "Timer is still pending" ile test düşer —
       // kısa bir gerçek-zaman uykusu yazmanın bitmesine yetiyor.
-      await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 200)));
-      await tester.pump();
+      await drainRealIo(tester);
       await unmount(tester);
     });
 
@@ -357,15 +374,14 @@ void main() {
       await tester.runAsync(() => storage.flags.markChatIntroSeen());
 
       await pumpScreen(tester, storage: Future.value(storage));
+      await drainRealIo(tester);
       await tester.tap(find.text('Mesajlaşma'));
       await tester.pumpAndSettle();
       expect(find.text('Oyun içi mesajlaşmaya hoşgeldiniz!'), findsNothing);
       expect(find.text('Henüz mesaj yok. İlk mesajı sen gönder!'),
           findsOneWidget);
       // Aynı gerçek-zaman bekleyişi — bkz. yukarıdaki yorum.
-      await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 200)));
-      await tester.pump();
+      await drainRealIo(tester);
       await unmount(tester);
     });
   });
