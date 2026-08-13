@@ -2754,6 +2754,33 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        görünümü (özellikle çok satırlı sohbet/şikayet kutuları) gözle
        kontrol edilmeli — `mobile/TESTING.md` bölüm 0.5'e madde eklendi.
 
+   - ✅ **Parça 80 — "+ Yeni …" butonu ve alt sekme satırı: üç boşluk da
+     web'den dardı (13 Ağustos 2026, `setup_screen.dart`,
+     `live_games_tab.dart`):** Kullanıcı bildirdi — *"yeni oyun aç butonu
+     ile altındaki devam edenler butonları arasındaki fark web'den daha
+     dar"*.
+     - **Web'de bu boşlukların HİÇBİRİ elle yazılmıyor:** kapsayıcının
+       `gap-5`i (20) butonla sekme satırı ve sekme satırıyla içerik
+       arasını, sekme satırının `gap-2`si (8) de sekmelerin kendi arasını
+       veriyor. Port üçünü de kendi sayılarıyla yazmıştı: **12 / 6 / 12**.
+     - **Aynı turda ikinci bir sapma:** butonun kendisi. Web `text-sm`
+       (14/20) + `py-2.5` → tam **40**; Setup onu 44'lük bir `SizedBox`'a
+       sarıyordu, `LiveGamesTab` ise 13 punto + 12 dolguyla ~39.6 veriyordu
+       — yani iki kardeş ekran birbirinden DE ayrışmıştı. İkisi de web'in
+       değerlerine çekildi (`fontSize: 14`, `lineHeight: 20/14`,
+       `padding: vertical 10`).
+     - Ölçüm derlenmiş CSS + Chromium'da: buton **40** · buton→sekme **20**
+       · sekmeler arası **8** · sekme→içerik **20** · sekme kutusu **38.5**.
+     - **Test tuzağı — sekme METNİNDEN boşluk ölçme:** sekmeler `flex-1`
+       ve metin ortalı olduğundan iki METİN arasındaki mesafe (101.6) kutu
+       aralığıyla (8) hiç ilgili değil. Test kutuyu buluyor
+       (`find.ancestor(... Stack).first`), metni değil.
+     - **Negatif eş:** `setup_screen.dart` `git stash`lenince test
+       GERÇEKTEN `Expected: <40> Actual: <44.0>` ile düştü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       371/371 yeşil** (370'ten +1). `kelimeki_core`'a ve web'e
+       dokunulmadı.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
