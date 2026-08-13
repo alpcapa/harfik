@@ -239,8 +239,8 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
 
   void _scheduleCloudSync() {
     _cloudSyncDebounce?.cancel();
-    _cloudSyncDebounce = Timer(
-        const Duration(milliseconds: 300), () => unawaited(_syncCloud()));
+    _cloudSyncDebounce =
+        Timer(const Duration(milliseconds: 300), () => unawaited(_syncCloud()));
   }
 
   /// Web `fetchPendingLiveGameCounts` + rozet/varsayılan-sekme birleşimi
@@ -623,201 +623,215 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
       auth: auth,
       stats: widget.services.stats,
       child: Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        // Oturum/profil değişince (giriş, çıkış, profil gelmesi) tüm ekran
-        // tazelenir — web'de useAuth context'inin yeniden render etmesiyle
-        // aynı; auth yapılandırılmamışsa hiç notify etmez, maliyeti yok.
-        child: ListenableBuilder(
-          listenable: auth,
-          builder: (context, _) => SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            child: Center(
-              child: ConstrainedBox(
-                // Web: `max-w-[460px]` (Setup.tsx satır ~536) — GameHeader/
-                // Board'un 680px'iyle KARIŞTIRILMAMALI, Setup kendi (daha
-                // dar) sabitini kullanıyor. Burada yanlışlıkla 480 idi —
-                // kullanıcı 9 Ağustos 2026'da web'e kıyasla "setup ekranı
-                // daha geniş duruyor" diye bildirdi (Parça 29).
-                constraints: const BoxConstraints(maxWidth: 460),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Web: Setup'ın üstünde sağa yaslı UserMenu (App.tsx,
-                    // kurulum dalı) — GİRİŞ / avatar burada da sağ üstte.
-                    if (auth.configured)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: AccountButton(
-                              feedback: widget.services.feedback,
-                              friends: widget.services.friends,
-                              auth: auth,
-                              stats: widget.services.stats,
-                              games: widget.services.games),
-                        ),
-                      ),
-                    const Center(child: LogoMark(height: 52)),
-                    // Web: blok `gap-1` (4px) + paragrafın `mt-4`si (16px)
-                    // ÜST ÜSTE binerek 20px yapıyor — Chromium'da ölçüldü.
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Kelimeler kurarak bölgeni genişlet, rakiplerini kuşat. '
-                      'Ama dikkat et: Hamlen rakibinin bölgesine temas ederse, '
-                      'kazandığın puanın bir kısmını onunla paylaşmak zorunda '
-                      'kalırsın. Her hamle bir strateji, her kelime bir mücadele.',
-                      // Web'de bu blok `text-center flex flex-col items-center`
-                      // içinde — paragraf da altındaki link satırı da ORTALI.
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'SpaceMono',
-                        fontSize: 12,
-                        // Web `text-xs` = 12px/16px satır (1.333) — 1.5
-                        // dört satırlık bu blokta 8px fazla yer kaplıyordu.
-                        height: 16 / 12,
-                        color: _muted,
-                      ),
-                    ),
-                    // Web: `gap-1` (4px) + link satırının `mt-3`ü (12px).
-                    const SizedBox(height: 16),
-                    // Web Setup'taki "Nasıl oynanır?" · "Arkadaşınla paylaş"
-                    // satırı — ikisi de font-mono/11px/kalın/accent linkler.
-                    Align(
-                      alignment: Alignment.center,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _InlineLink(
-                            'Nasıl oynanır?',
-                            onTap: () => showHelpModal(context),
-                          ),
-                          const Text(' · ',
-                              style: TextStyle(
-                                  fontFamily: 'SpaceMono',
-                                  fontSize: 11,
-                                  color: _muted)),
-                          _InlineLink('Arkadaşınla paylaş',
-                              onTap: _handleShare),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const _SectionLabel('OYUN TİPİ'),
-                    const SizedBox(height: 8),
-                    Row(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          // Oturum/profil değişince (giriş, çıkış, profil gelmesi) tüm ekran
+          // tazelenir — web'de useAuth context'inin yeniden render etmesiyle
+          // aynı; auth yapılandırılmamışsa hiç notify etmez, maliyeti yok.
+          child: ListenableBuilder(
+            listenable: auth,
+            builder: (context, _) => SingleChildScrollView(
+              // YATAY dolgu BURADA DEĞİL, 460'lık kutunun İÇİNDE (aşağı bkz.).
+              padding: const EdgeInsets.symmetric(vertical: 24), // web py-6
+              child: Center(
+                child: ConstrainedBox(
+                  // Web: `w-full max-w-[460px] px-4 py-6` (Setup.tsx ~536) —
+                  // GameHeader/Board'un 680px'iyle KARIŞTIRILMAMALI, Setup
+                  // kendi (daha dar) sabitini kullanıyor.
+                  //
+                  // ⚠ 460 PADDING'İ İÇERİR. Tailwind'in `box-sizing:
+                  // border-box`'ı altında `max-w-[460px] px-4` demek "dış kutu
+                  // en fazla 460, İÇERİK 460−32 = 428" demek. Port bunu iki
+                  // turda da yanlış anladı: önce sabit 480'di (Parça 29'da
+                  // 460'a çekildi), ama yatay dolgu kutunun DIŞINDA kaldığı
+                  // için içerik hâlâ 460'tı — yani web'den 32px (%7.5) geniş.
+                  // Kullanıcı aynı şikâyeti 13 Ağustos 2026'da tekrarladı
+                  // ("hala düzelmedi"); ekran görüntüsünden ölçülen oran
+                  // (780/725 = 1.076) bu 32px'le birebir örtüştü.
+                  //
+                  // Dar ekranda davranış değişmiyor: kutu ekran kadar (≤460),
+                  // dolgu içeride → içerik = min(ekran, 460) − 32; web de aynı.
+                  constraints: const BoxConstraints(maxWidth: 460),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16), // px-4
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Expanded(
-                          child: _ChoiceButton(
-                            label: 'YAPAY ZEKA İLE',
-                            selected: !_liveView,
-                            onTap: () => setState(() {
-                              _liveView = false;
-                              _localSubTab = _LocalSubTab.active;
-                            }),
+                        // Web: Setup'ın üstünde sağa yaslı UserMenu (App.tsx,
+                        // kurulum dalı) — GİRİŞ / avatar burada da sağ üstte.
+                        if (auth.configured)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: AccountButton(
+                                  feedback: widget.services.feedback,
+                                  friends: widget.services.friends,
+                                  auth: auth,
+                                  stats: widget.services.stats,
+                                  games: widget.services.games),
+                            ),
+                          ),
+                        const Center(child: LogoMark(height: 52)),
+                        // Web: blok `gap-1` (4px) + paragrafın `mt-4`si (16px)
+                        // ÜST ÜSTE binerek 20px yapıyor — Chromium'da ölçüldü.
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Kelimeler kurarak bölgeni genişlet, rakiplerini kuşat. '
+                          'Ama dikkat et: Hamlen rakibinin bölgesine temas ederse, '
+                          'kazandığın puanın bir kısmını onunla paylaşmak zorunda '
+                          'kalırsın. Her hamle bir strateji, her kelime bir mücadele.',
+                          // Web'de bu blok `text-center flex flex-col items-center`
+                          // içinde — paragraf da altındaki link satırı da ORTALI.
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'SpaceMono',
+                            fontSize: 12,
+                            // Web `text-xs` = 12px/16px satır (1.333) — 1.5
+                            // dört satırlık bu blokta 8px fazla yer kaplıyordu.
+                            height: 16 / 12,
+                            color: _muted,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _ChoiceButton(
-                            label: 'ARKADAŞINLA',
-                            selected: _liveView,
-                            badge: _liveActionCount,
-                            onTap: () => setState(() {
-                              _liveView = true;
-                              _localSubTab = _LocalSubTab.active;
-                            }),
+                        // Web: `gap-1` (4px) + link satırının `mt-3`ü (12px).
+                        const SizedBox(height: 16),
+                        // Web Setup'taki "Nasıl oynanır?" · "Arkadaşınla paylaş"
+                        // satırı — ikisi de font-mono/11px/kalın/accent linkler.
+                        Align(
+                          alignment: Alignment.center,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _InlineLink(
+                                'Nasıl oynanır?',
+                                onTap: () => showHelpModal(context),
+                              ),
+                              const Text(' · ',
+                                  style: TextStyle(
+                                      fontFamily: 'SpaceMono',
+                                      fontSize: 11,
+                                      color: _muted)),
+                              _InlineLink('Arkadaşınla paylaş',
+                                  onTap: _handleShare),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        const _SectionLabel('OYUN TİPİ'),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _ChoiceButton(
+                                label: 'YAPAY ZEKA İLE',
+                                selected: !_liveView,
+                                onTap: () => setState(() {
+                                  _liveView = false;
+                                  _localSubTab = _LocalSubTab.active;
+                                }),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _ChoiceButton(
+                                label: 'ARKADAŞINLA',
+                                selected: _liveView,
+                                badge: _liveActionCount,
+                                onTap: () => setState(() {
+                                  _liveView = true;
+                                  _localSubTab = _LocalSubTab.active;
+                                }),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        if (_liveView)
+                          LiveGamesTab(services: widget.services)
+                        else
+                          FutureBuilder<SetWordSource>(
+                            future: widget.services.dictionary,
+                            builder: (context, snap) {
+                              if (snap.hasError) {
+                                return Text('Sözlük yüklenemedi: ${snap.error}',
+                                    style: const TextStyle(color: kRed));
+                              }
+                              final words = snap.data;
+                              // Girişli kullanıcı: liste varsayılan görünüm, form
+                              // yalnızca "+ Yeni" ile açılır (web creatingLocal).
+                              if (auth.user != null &&
+                                  widget.services.cloudSaves != null) {
+                                return _creatingLocal
+                                    ? _buildNewGameForm(words, showCancel: true)
+                                    : _buildCloudListView(words);
+                              }
+                              if (!_saveChecked) {
+                                return const _SectionLabel(
+                                    'KAYITLAR KONTROL EDİLİYOR…');
+                              }
+                              return _savedState != null
+                                  ? _buildSavedGameView(words)
+                                  : _buildNewGameForm(words);
+                            },
+                          ),
+                        const SizedBox(height: 20),
+                        // Web Setup'ın en altındaki hukuki link satırı
+                        // (`text-[10px] font-mono text-muted gap-2`). Port bunu
+                        // hiç taşımamıştı — modaller vardı ama Setup'tan
+                        // ulaşılamıyordu, yalnızca kayıt formundan.
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _LegalLink('Kullanım Koşulları',
+                                onTap: () => showTermsModal(context,
+                                    onFeedback: _openFeedback)),
+                            const SizedBox(width: 8),
+                            const Text('·',
+                                style: TextStyle(
+                                    fontFamily: 'SpaceMono',
+                                    fontSize: 10,
+                                    color: _muted)),
+                            const SizedBox(width: 8),
+                            _LegalLink('Gizlilik Politikası',
+                                onTap: () => showPrivacyModal(context,
+                                    onFeedback: _openFeedback)),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        // Teşhis alt satırı (iskelet HomeScreen'in durum
+                        // panelinden kalan tek iz — cihazda ilk açılış doğrulaması
+                        // için faydalı, göze batmayan tek satır).
+                        FutureBuilder<SetWordSource>(
+                          future: widget.services.dictionary,
+                          builder: (context, snap) => Text(
+                            [
+                              'Sürüm $appVersion',
+                              snap.hasData
+                                  ? 'Sözlük: ${snap.data!.length} kelime'
+                                  : 'Sözlük: yükleniyor…',
+                              widget.services.supabase != null
+                                  ? 'sunucu bağlı'
+                                  : 'offline mod',
+                              _diagStorage,
+                              if (_diagPendingMirrors > 0)
+                                'bekleyen $_diagPendingMirrors',
+                            ].join(' · '),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontFamily: 'SpaceMono',
+                              fontSize: 9,
+                              color: Color(0xFF8A93A2),
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
-                    if (_liveView)
-                      LiveGamesTab(services: widget.services)
-                    else
-                      FutureBuilder<SetWordSource>(
-                        future: widget.services.dictionary,
-                        builder: (context, snap) {
-                          if (snap.hasError) {
-                            return Text('Sözlük yüklenemedi: ${snap.error}',
-                                style:
-                                    const TextStyle(color: kRed));
-                          }
-                          final words = snap.data;
-                          // Girişli kullanıcı: liste varsayılan görünüm, form
-                          // yalnızca "+ Yeni" ile açılır (web creatingLocal).
-                          if (auth.user != null &&
-                              widget.services.cloudSaves != null) {
-                            return _creatingLocal
-                                ? _buildNewGameForm(words, showCancel: true)
-                                : _buildCloudListView(words);
-                          }
-                          if (!_saveChecked) {
-                            return const _SectionLabel(
-                                'KAYITLAR KONTROL EDİLİYOR…');
-                          }
-                          return _savedState != null
-                              ? _buildSavedGameView(words)
-                              : _buildNewGameForm(words);
-                        },
-                      ),
-                    const SizedBox(height: 20),
-                    // Web Setup'ın en altındaki hukuki link satırı
-                    // (`text-[10px] font-mono text-muted gap-2`). Port bunu
-                    // hiç taşımamıştı — modaller vardı ama Setup'tan
-                    // ulaşılamıyordu, yalnızca kayıt formundan.
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _LegalLink('Kullanım Koşulları',
-                            onTap: () => showTermsModal(context,
-                                onFeedback: _openFeedback)),
-                        const SizedBox(width: 8),
-                        const Text('·',
-                            style: TextStyle(
-                                fontFamily: 'SpaceMono',
-                                fontSize: 10,
-                                color: _muted)),
-                        const SizedBox(width: 8),
-                        _LegalLink('Gizlilik Politikası',
-                            onTap: () => showPrivacyModal(context,
-                                onFeedback: _openFeedback)),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Teşhis alt satırı (iskelet HomeScreen'in durum
-                    // panelinden kalan tek iz — cihazda ilk açılış doğrulaması
-                    // için faydalı, göze batmayan tek satır).
-                    FutureBuilder<SetWordSource>(
-                      future: widget.services.dictionary,
-                      builder: (context, snap) => Text(
-                        [
-                          'Sürüm $appVersion',
-                          snap.hasData
-                              ? 'Sözlük: ${snap.data!.length} kelime'
-                              : 'Sözlük: yükleniyor…',
-                          widget.services.supabase != null
-                              ? 'sunucu bağlı'
-                              : 'offline mod',
-                          _diagStorage,
-                          if (_diagPendingMirrors > 0)
-                            'bekleyen $_diagPendingMirrors',
-                        ].join(' · '),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontFamily: 'SpaceMono',
-                          fontSize: 9,
-                          color: Color(0xFF8A93A2),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -927,7 +941,8 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                         for (final save in saves) ...[
                           _SavedGameRow(
                             state: save.state,
-                            subtitle: 'Sıra: ${save.state.players.isNotEmpty ? save.state.players[save.state.current].name : '—'}',
+                            subtitle:
+                                'Sıra: ${save.state.players.isNotEmpty ? save.state.players[save.state.current].name : '—'}',
                             savedAtMs: save.updatedAtMs,
                             // Web: girişli kullanıcıda gerçekten başlamış
                             // oyun için süre dolunca -2'li teslim gerçek/

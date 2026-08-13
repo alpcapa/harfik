@@ -146,6 +146,17 @@ void main() {
             .where((c) => c.constraints.maxWidth == 480),
         isEmpty,
         reason: 'Eski (yanlış) 480px sabiti hâlâ kullanılıyor');
+
+    // ⚠ Yukarıdaki iki iddia YETMEZ — 13 Ağustos 2026'da kullanıcı aynı
+    // şikâyeti ("app web'den geniş duruyor") ikinci kez bildirdiğinde bu
+    // test YEŞİLDİ. Sebep: `max-w-[460px] px-4` Tailwind'de border-box,
+    // yani 460 dolguyu İÇERİR ve içerik 428'dir; port ise yatay dolguyu
+    // ConstrainedBox'ın DIŞINA koyduğundan içerik 460 kalıyordu (%7.5
+    // geniş). Ölçülen değer artık burada: tam genişlik bir buton (Column
+    // `stretch`) tam olarak 428 olmalı.
+    final baslat = tester.getSize(find.widgetWithText(NeoButton, 'OYUNU BAŞLAT'));
+    expect(baslat.width, 428,
+        reason: 'içerik genişliği web ile aynı olmalı: 460 − 2×16 (px-4)');
   });
 
   testWidgets('OYUNU BAŞLAT: Misafir + YZ kadrosuyla GameScreen açılır',

@@ -76,6 +76,17 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
 
 ## 0.5 Web ile yan yana görsel karşılaştırma (Parça 56)
 
+- [ ] **İçerik sütunu genişliği (13 Ağustos 2026, Parça 72).** GENİŞ bir
+      ekranda (iPad yatay) Setup'ı iki platformda yan yana aç: "YAPAY ZEKA
+      İLE"/"ARKADAŞINLA" butonlarının ve "OYUNU BAŞLAT"ın genişliği
+      BİREBİR aynı olmalı. Web `max-w-[460px] px-4` bir border-box, yani
+      içerik **428** — app daha geniş görünüyorsa dolgu yine kutunun
+      dışına kaçmıştır. (Dar ekranda ikisi zaten aynı; fark yalnızca
+      460+32'den geniş ekranlarda ortaya çıkar, o yüzden telefonda test
+      etmek bu hatayı GÖSTERMEZ.)
+- [ ] **Arkadaş onay/bilgi diyalogları.** "Arkadaşlıktan çıkar" gibi bir
+      onay diyaloğu aç: kart genişliği ve iç dolgusu web ile aynı olmalı
+      (384 kutu, 24 dolgu → içerik 336).
 - [ ] **Modal başlığı: ✕ sağa dayalı (12 Ağustos 2026, Parça 71).** Skor
       Kartı'nı iki platformda yan yana aç: ✕ kartın sağ kenarına aynı
       uzaklıkta olmalı ve rütbe mührü kartın ORTASINDA değil, **başlık ile

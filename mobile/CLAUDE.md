@@ -2451,6 +2451,53 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - Doğrulama: `flutter analyze` temiz; tam takım **362/362** yeşil
        (361'den +1). Web'e hiç dokunulmadı (yalnızca ölçüm için kullanıldı).
 
+   - ✅ **Parça 72 — Setup web'den %7.5 GENİŞ'ti: `max-w-[N] px-*` bir
+     BORDER-BOX'tır (13 Ağustos 2026, `setup_screen.dart`,
+     `friends_modal.dart`):** Kullanıcı aynı şikâyeti **ikinci kez**
+     bildirdi: *"tablardan ikisi arasında geçiş yaptığımda butonların,
+     kutuların ölçülerinin farklı olduğunu net görebiliyorum. Daha önce de
+     belirtmiştim ama hala düzelmedi. Tüm app ölçülerini web ile
+     karşılaştır."*
+     - **Parça 29 bunu YARIM düzeltmişti.** O turda sabit 480→460'a
+       çekilmişti; doğru sayı buydu ama **dolgunun yeri yanlıştı.**
+       Tailwind `box-sizing: border-box` altında `max-w-[460px] px-4`
+       demek "dış kutu ≤460, **içerik 460−32 = 428**" demek. Port ise
+       yatay dolguyu `ConstrainedBox`'ın **DIŞINA** (`SingleChildScroll
+       View.padding`) koymuştu → içerik 460, yani web'den **32px (%7.5)
+       geniş**. Kullanıcının ekran görüntülerinden ölçülen oran
+       (780/725 = **1.076**) bu 32px'le birebir örtüştü.
+     - **Testin YEŞİL kalması bu hatanın hayatta kalma sebebiydi:** Parça
+       29'un regresyon testi yalnızca "460'lık bir `ConstrainedBox` var mı"
+       ve "eski 480 kalmamış mı" diye bakıyordu — ikisi de doğruydu, içerik
+       yine de yanlıştı. Test artık GERÇEK genişliği ölçüyor (tam genişlik
+       buton = **428**); negatif eşle doğrulandı (düzeltme geri alınınca
+       `Actual: 460.0`). **Ders: bir kısıtın VARLIĞINI doğrulayan test, o
+       kısıtın SONUCUNU doğrulamaz.**
+     - **Denetim — web'deki `max-w-[…]` kullanan HER yer tek tek
+       karşılaştırıldı:**
+
+       | Web | kutu + dolgu | içerik | Port | Durum |
+       |---|---|---|---|---|
+       | `Setup.tsx:536` | 460 + `px-4` | 428 | dolgu DIŞARIDA | **düzeltildi** |
+       | `Board.tsx:416` | 680 + `px-3` | 656 | 680 + iç 12 | ✓ |
+       | `GameHeader.tsx:89` | 680 + `px-3 py-2.5` | 656 | 680 + 12/10 | ✓ |
+       | `App.tsx:1393` | 680 + `px-3` | 656 | ✓ | ✓ |
+       | `OnlineGameScreen:1013` | 680 + `px-3` | 656 | ✓ | ✓ |
+       | `Modal.tsx:38` | 360 | 360 | 360 | ✓ |
+       | `ActionSheet:43` | 360 | 360 | 360 | ✓ |
+       | Confirm/InfoDialog | `max-w-sm` 384 + `p-6` | 336 | 384 + **20** | **düzeltildi** (24) |
+
+       Yani 680'lik oyun ekranı zinciri (Parça 40'ta düzeltilmişti) baştan
+       DOĞRUYDU — dolgu orada zaten kutunun içinde. Yanlış olan iki yer
+       Setup ve arkadaş diyaloglarıydı.
+     - **Bilinçli bırakılan 2px:** web'de GİRİŞ satırı ayrı bir kutu
+       (`App.tsx:1074`, 460 + `px-3.5`) olduğundan sağ kenarı içerik
+       sütunundan 2px dışarıda; portta AccountButton aynı 16'lık dolgunun
+       içinde, yani içerikle HİZALI. 2px için negatif margin/Transform
+       hilesi yapmaya değmez ve hizalı olması daha doğru görünüyor.
+     - Doğrulama: `flutter analyze` temiz; tam takım **362/362** yeşil.
+       Web'e hiç dokunulmadı (yalnızca kaynak olarak okundu).
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
