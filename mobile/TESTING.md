@@ -92,6 +92,12 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
       bloğu da `-mt-5` ile kabın `py-6`sının 20'sini geri alıyor. Aradaki
       4, kullanıcının portu tercih ettiği tek yer: **web porta uyduruldu**,
       yani burada web 12 görünüyorsa `-mt-5` geri alınmış demektir.
+- [ ] **Logo altındaki yazı bloğu (13 Ağustos 2026, Parça 77).** Geniş bir
+      ekranda iki platformu yan yana aç: tanıtım paragrafı İKİSİNDE de
+      **4 satır** olmalı ve satır sonları aynı yerde kırılmalı (ilk satır
+      "… kuşat. Ama" ile bitiyor). App'te 5 satıra düşüyorsa Material 3'ün
+      0.25 harf aralığı yine sızmış demektir — aynı kontrol "Nasıl
+      oynanır? · Arkadaşınla paylaş" satırının genişliği için de geçerli.
 - [ ] **Arkadaş onay/bilgi diyalogları.** "Arkadaşlıktan çıkar" gibi bir
       onay diyaloğu aç: kart genişliği ve iç dolgusu web ile aynı olmalı
       (384 kutu, 24 dolgu → içerik 336).

@@ -506,4 +506,44 @@ void main() {
     expect(find.text('Kullanım Koşulları'), findsOneWidget);
     expect(find.text('Gizlilik Politikası'), findsOneWidget);
   });
+
+  testWidgets('logo altındaki yazı bloğu web ile aynı: tracking YOK, '
+      'paragraf 4 satır', (tester) async {
+    // 13 Ağustos 2026, kullanıcı iki ekran görüntüsünü yan yana koyup
+    // bildirdi: app'te paragraf 5 satıra düşüyor, web'de 4.
+    //
+    // Kök sebep Material 3'ün `bodyMedium` varsayılanı: `letterSpacing:
+    // 0.25`, ve `letterSpacing` YAZMAYAN her metne miras kalıyor (widget'ın
+    // kendi style'ı `null` bıraktığında `Text` DefaultTextStyle ile MERGE
+    // ediyor). Web'de bu metinlerde tracking yok. 0.25 × ~57 karakter =
+    // ~14px → "Ama" alt satıra düşüyor.
+    //
+    // Ölçüm iki tarafta da GERÇEK fontlarla yapıldı (web: derlenmiş CSS +
+    // Space Mono woff2, HTTP üzerinden — `file://`de tarayıcı fontu CORS
+    // ile engelleyip sessizce yedeğe düşüyor ve ölçüm YANILTICI oluyor;
+    // ayrıca 400 ağırlığını yükleyip 700'ü unutmak linkleri yedek fontla
+    // ölçtürüyordu). Sonuç, 428px içerik genişliğinde:
+    //   paragraf 64px (4 satır) · "Nasıl oynanır?" 94.25 · "Arkadaşınla
+    //   paylaş" 121.19 — port düzeltmeden sonra üçünü de birebir veriyor.
+    //
+    // Bu test SONUCU ölçüyor (satır sayısı), yalnızca girdiyi (fontSize/
+    // height) değil — Parça 72'nin dersi: bir kısıtın VARLIĞINI doğrulayan
+    // test, o kısıtın SONUCUNU doğrulamaz. Mevcut başlık bloğu testi
+    // fontSize/height'ı kontrol ettiği hâlde bu sapmayı göremiyordu.
+    await setPhoneViewSize(tester, const Size(1000, 900));
+    await pumpSetup(tester, services());
+
+    final paraFinder = find.textContaining('Kelimeler kurarak');
+    final para = tester.getRect(paraFinder);
+    expect(para.width, 428, reason: 'içerik genişliği web ile aynı olmalı');
+    expect(para.height, 64,
+        reason: '4 satır × 16px — 80 çıkıyorsa M3 tracking\'i sızmış demektir');
+
+    // Efektif stil (DefaultTextStyle ile birleşmiş hâli) — asıl değişmez.
+    double? trackingOf(Finder f) =>
+        tester.renderObject<RenderParagraph>(f).text.style?.letterSpacing;
+    expect(trackingOf(paraFinder), 0);
+    expect(trackingOf(find.text('Nasıl oynanır?')), 0);
+    expect(trackingOf(find.text('Arkadaşınla paylaş')), 0);
+  });
 }

@@ -741,6 +741,15 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                             // Web `text-xs` = 12px/16px satır (1.333) — 1.5
                             // dört satırlık bu blokta 8px fazla yer kaplıyordu.
                             height: 16 / 12,
+                            // Material 3'ün `bodyMedium` varsayılanı 0.25 harf
+                            // aralığı taşıyor ve `letterSpacing` yazmayan HER
+                            // metne miras kalıyor; web'de bu paragrafta
+                            // tracking YOK (`text-xs font-mono` hiçbir
+                            // letter-spacing kurmuyor, hesaplanan değer
+                            // `normal`). 0.25 × ~57 karakter = ~14px, yani
+                            // "Ama" alt satıra düşüp blok 4 yerine 5 satır
+                            // oluyordu (ölçüldü: 80px'e karşı web'de 64px).
+                            letterSpacing: 0,
                             color: _muted,
                           ),
                         ),
@@ -757,10 +766,15 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                                 'Nasıl oynanır?',
                                 onTap: () => showHelpModal(context),
                               ),
+                              // Web'de ayraç `gap-2` (8+8) ile ayrılmış bir
+                              // `·`; buradaki boşluklu ' · ' ölçülerek aynı
+                              // yere düşüyor (19.8'e karşı web 19.67) —
+                              // yeniden yapılandırmaya gerek yok.
                               const Text(' · ',
                                   style: TextStyle(
                                       fontFamily: 'SpaceMono',
                                       fontSize: 11,
+                                      letterSpacing: 0,
                                       color: _muted)),
                               _InlineLink('Arkadaşınla paylaş',
                                   onTap: _handleShare),
@@ -1258,6 +1272,9 @@ class _InlineLink extends StatelessWidget {
           fontFamily: 'SpaceMono',
           fontSize: 11,
           fontWeight: FontWeight.bold,
+          // Web'de bu linklerde de tracking yok — bkz. paragrafın notu (M3
+          // `bodyMedium` varsayılanı 0.25'i sessizce miras bırakıyor).
+          letterSpacing: 0,
           color: kAccent,
         ),
       ),

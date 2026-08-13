@@ -2630,6 +2630,48 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        olduktan SONRA — ikisi farklı zamanlarda yayına girdiğinden ara
        dönemde fark görünebilir).
 
+   - ✅ **Parça 77 — logo altındaki paragraf 5 satır, web'de 4: Material 3'ün
+     0.25 tracking'i (13 Ağustos 2026, `setup_screen.dart`):** Kullanıcı iki
+     ekran görüntüsünü yan yana koydu — app'te "Ama" alt satıra düşüyordu.
+     - **Kök sebep, "Sonraya Bırakılan İşler"de zaten yazılı olan borç:**
+       `ThemeData(useMaterial3: true)` → `bodyMedium.letterSpacing = 0.25`,
+       ve `letterSpacing` YAZMAYAN her `Text` bunu miras alıyor (widget'ın
+       kendi style'ı o alanı `null` bıraktığında `Text` DefaultTextStyle
+       ile MERGE ediyor). Web'de `text-xs font-mono` hiçbir letter-spacing
+       kurmuyor (hesaplanan değer `normal`). 0.25 × ~57 karakter ≈ 14px →
+       satır taşıyor. Ölçüldü: app 80px/5 satır, web 64px/4 satır.
+     - **Düzeltme cerrahi:** paragraf + iki link + ayraç `letterSpacing: 0`.
+       Global çözüm (temanın `textTheme`'ini 0'a çekmek) hâlâ doğru yol ama
+       TÜM ekranların metin genişliğini değiştireceğinden ayrı bir ölçüm/
+       ekran görüntüsü turu istiyor — o madde listede kaldı.
+     - **Ayraç DEĞİŞTİRİLMEDİ, ölçülüp bırakıldı:** web `gap-2` (8+8) ile
+       ayrılmış bir `·` kullanıyor (19.67), portun boşluklu `' · '`i 20.20 —
+       0.5px fark; yeniden yapılandırmak kazanç değil risk olurdu.
+     - **ÖLÇÜM TUZAĞI (bu turda iki kez düşüldü, ikisi de yakalandı):**
+       (1) harness `file://` üzerinden açılınca Chromium woff2'yi CORS ile
+       engelleyip SESSİZCE yedek monospace'e düşüyor — `getComputedStyle`
+       hâlâ "Space Mono" diyor, ama ölçülen advance 0.602 (DejaVu), gerçek
+       Space Mono 0.612. Çözüm: `python3 -m http.server` ile servis et ve
+       canvas `measureText` ile advance'i DOĞRULA. (2) Yalnızca 400
+       ağırlığını `@font-face` edip 700'ü unutunca linkler yedek fontla
+       ölçülüyordu; 700 eklenince web değerleri portunkilerle birebir
+       oturdu (94.25 / 121.19). İlk (hatalı) ölçüm "port %1.6 geniş" gibi
+       görünen sahte bir fark üretmişti — düzeltmeye kalksam gerçek bir
+       hatayı ÜRETECEKTİM.
+     - **Mevcut test bu sapmayı NEDEN göremedi:** "Setup başlık bloğu"
+       testi `fontSize`/`height` DEĞERLERİNİ kontrol ediyordu, ikisi de
+       doğruydu; kırılan şey SONUÇTU (satır sayısı). Parça 72'nin dersinin
+       birebir tekrarı. Yeni test render edilmiş yüksekliği (64 = 4×16) ve
+       üç metnin EFEKTİF `letterSpacing`'ini ölçüyor; eski test de yerinde
+       kaldı (o 390px'lik dar ekranı kapsıyor, yenisi 428px içerik için
+       geniş ekran).
+     - **Negatif eş:** `setup_screen.dart` `git stash`lenince test GERÇEKTEN
+       `Expected: <64> Actual: <80.0>` ile düştü — yani kullanıcının
+       bildirdiği semptomun ta kendisi.
+     - Doğrulama: `flutter analyze` temiz, **tam takım 365/365 yeşil**
+       (364'ten +1). Web'e HİÇ dokunulmadı (yalnızca ölçüm kaynağı olarak
+       kullanıldı); `kelimeki_core`'a dokunulmadı.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
@@ -2643,8 +2685,12 @@ silinip kendi tarihli parça notuna taşınır.
   bu metinlerde tracking YOK. Parça 61'de somut bir hataya yol açtı:
   33 karakterlik bir satır tam 8.25px (33×0.25) şişip karta sığmadı ve iki
   satıra düştü — aynı metin Chromium'da gerçek fontla 222.16px, tek satır.
-  - `ui/rank/` dosyaları düzeltildi (`kNoTracking`); **portun geri kalanı
-    DENETLENMEDİ.** Doğru çözüm muhtemelen tek yerden: `app.dart`'taki
+  - **13 Ağustos 2026: ikinci kez, bu sefer kullanıcı fark etti** (Parça
+    77) — Setup'ın logo altındaki paragrafı 5 satıra düşüyordu, web'de 4.
+    Yani bu madde teorik bir borç değil, üründe GÖRÜNEN bir fark üretiyor.
+  - `ui/rank/` ve Setup'ın başlık bloğu düzeltildi (`letterSpacing: 0`);
+    **portun geri kalanı DENETLENMEDİ.** Doğru çözüm muhtemelen tek yerden:
+    `app.dart`'taki
     `ThemeData`'ya `textTheme: Typography...apply(letterSpacingDelta: ...)`
     ya da `bodyMedium: TextStyle(letterSpacing: 0)` — ama bu TÜM ekranların
     metin genişliğini değiştireceğinden ölçülerek (Parça 56'nın Chromium
