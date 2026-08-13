@@ -38,7 +38,17 @@ const Map<String, String> _mimeByExt = {
 /// yanlış bir MIME uydurmuyoruz.
 Future<PickedImage?> pickAvatarImage() async {
   final picker = ImagePicker();
-  final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
+  // `maxWidth`/`maxHeight`/`imageQuality` NATIVE'de yeniden boyutlandırmayı
+  // platforma yaptırır (ucuz, çıktı JPEG) — 13 Ağustos 2026'da eklendi,
+  // gerekçe `avatar_image.dart`'ın başlığında. Flutter WEB'de bu üç parametre
+  // sessizce yok sayılıyor (image_picker_for_web kaynağında yazılı), o yüzden
+  // ikinci katman olarak `shrinkAvatarIfNeeded` var.
+  final file = await picker.pickImage(
+    source: ImageSource.gallery,
+    maxWidth: 512,
+    maxHeight: 512,
+    imageQuality: 85,
+  );
   if (file == null) return null;
   final bytes = await file.readAsBytes();
   final ext = file.path.contains('.') ? file.path.split('.').last.toLowerCase() : '';

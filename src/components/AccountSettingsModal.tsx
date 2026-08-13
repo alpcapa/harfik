@@ -75,8 +75,8 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
       setError('Lütfen bir görsel dosyası seç.');
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      setError('Görsel 2 MB’den küçük olmalı.');
+    if (file.size > 10 * 1024 * 1024) {
+      setError('Görsel 10 MB’den küçük olmalı.');
       return;
     }
     setError(null);
@@ -200,7 +200,7 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
           >
             {uploading ? 'Yükleniyor…' : 'Fotoğraf Değiştir'}
           </button>
-          <p className="text-[9px] text-muted font-mono mt-1">JPG/PNG, en fazla 2 MB</p>
+          <p className="text-[9px] text-muted font-mono mt-1">JPG/PNG, en fazla 10 MB</p>
         </div>
         <input
           ref={fileRef}

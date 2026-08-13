@@ -401,6 +401,25 @@ uydurma bir Türkçe cümleyle gizlemek hata ayıklamayı imkânsız kılardı.
       **üyelik teklifi çıkmamalı**, yalnızca teşekkür + "Kapat". (Uygulama
       içinden — oyun sonu, Terms/Privacy — açılan formda teklif hâlâ çıkar.)
 
+## 9.5. Profil fotoğrafı (Hesap Ayarları)
+
+13 Ağustos 2026'da iki şey birden değişti; ikisi de web'de elle
+doğrulanmalı (mobil eşi `mobile/TESTING.md` bölüm 12'de).
+
+- [ ] **Fotoğrafı DEĞİŞTİRME.** Zaten avatarı olan bir hesapta yeni bir
+      fotoğraf yükle: hata ÇIKMAMALI. 20 Temmuz 2026'da `security_hardening`
+      `avatars_public_read` SELECT politikasını düşürünce bu **web'de de**
+      kırılmıştı (`upsert` var olan satırı görmeyi gerektiriyor) ve 13
+      Ağustos'a kadar fark edilmemişti — yalnızca İLK yükleme çalışıyordu.
+      `avatars_owner_read` ile düzeltildi.
+- [ ] **10 MB giriş sınırı + küçültme.** Gerçek bir telefon fotoğrafı
+      (2-10 MB) seç: yükleme başarılı olmalı. Sonra Supabase Dashboard →
+      Storage → `avatars` → `<uid>/avatar.*` boyutuna bak: **saklanan dosya
+      ~50-150 KB olmalı**, seçtiğin megabaytlar DEĞİL — 10 MB yalnızca
+      giriş sınırı, `shrinkAvatar` yüklemeden önce 512 px kenara indirip
+      JPEG'e çeviriyor. Avatar bulanık/bozuk görünmemeli. 10 MB üstünde
+      "Görsel 10 MB'den küçük olmalı." çıkmalı.
+
 ## 10. k-lig ödül & rütbe sistemi
 
 Ödül/rütbe kayıtları sunucuda, `games` tablosuna satır ekleyen bir trigger'la
