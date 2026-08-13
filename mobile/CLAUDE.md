@@ -2527,6 +2527,36 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        Actual: <24.0>`).
      - Doğrulama: `flutter analyze` temiz; tam takım **363/363** yeşil
        (362'den +1). Web'e dokunulmadı.
+     - **CI bu PR'da KIRMIZI döndü ama sebebi bu değişiklik DEĞİLDİ** —
+       aşağıdaki flake; aynı commit'te düzeltildi.
+
+   - ✅ **Parça 74 — sqflite timer flake'i geri döndü, bu kez YANLIŞ YERE
+     pay tanındığı için (13 Ağustos 2026, `online_game_chat_test.dart`):**
+     Parça 73'ün PR'ında (#245) CI'ın `Analiz + testler` işi düştü:
+     `361 tests passed, 2 failed`. Düşen ikisi de
+     `online_game_chat_test.dart`'ın "gerçek depo" grubundaydı ve hata
+     Parça 11/13/64'ten tanıdık: *"A Timer is still pending even after the
+     widget tree was disposed."*
+     - **Benim diff'imle ilgisi yoktu** (yalnızca `setup_screen*`
+       dosyalarına dokunulmuştu) ve bir önceki koşuda (#109) aynı testler
+       geçmişti — yani flake.
+     - **Ama kör bir "yeniden koş" doğru cevap değildi:** CI'ın yığın izi
+       payın YANLIŞ YERDE olduğunu gösterdi. Testlerin sonundaki 200ms'lik
+       `runAsync` payı, testteki yoruma göre modal açılışındaki
+       `_markChatReadTo` yazması için konmuştu; oysa iz
+       `_loadChat` → `_seedInitialUnread` → `ChatReadStore.markRead`'i
+       işaret ediyordu — **EKRAN AÇILIŞINDA** başlayan başka bir yazma.
+       Yüklü bir runner'da o yazma `pumpScreen`den sonra sarkıyor ve
+       sondaki tek pay ona yetmiyor.
+     - **Düzeltme sayıyı şişirmek değil, payı doğru noktaya koymak:**
+       dosyaya ortak bir `drainRealIo(tester)` yardımcısı eklendi
+       (`setup_cloud_test.dart`'takiyle aynı ad/desen), elle yazılmış iki
+       bekleyiş ona çevrildi ve **`pumpScreen`den hemen sonra da**
+       çağrıldı. Yani pay artık her İKİ yazma noktasının ardında.
+     - **Doğrulama sınırı (Parça 64'ün aynısı):** flake yerelde hiç
+       tekrarlamıyor (tam takım 363/363 yeşil), yalnızca CI'ın paylaşımlı
+       runner'ında görülüyor — negatif eş kurulamaz, gerçek kanıt CI'ın
+       yeşile dönmesi.
 
 ## Sonraya Bırakılan İşler (mobil)
 
