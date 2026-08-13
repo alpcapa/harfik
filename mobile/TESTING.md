@@ -376,6 +376,14 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       KESİNTİSİZ olmalı. Çerçevenin yalnızca üst/alt/sağ/sol'da görünüp
       köşegenlerde kaybolması (avatarın "dört kenarı düz" görünmesine yol
       açan eski hata) TEKRARLAMAMALI.
+- [ ] **"Yükleniyor…" hiçbir koşulda TAKILI KALMAMALI (13 Ağustos 2026,
+      Parça 75).** Girişliyken "Yapay Zeka ile" sekmesine geç: liste ya
+      oyunlarını ya da "Devam eden bir Yapay Zeka oyunun yok." göstermeli.
+      Kalıcı spinner bir yükleme yavaşlığı DEĞİL, senkronun bir adımının
+      sessizce patladığı anlamına gelir — o durumda Setup'ın en altındaki
+      teşhis satırını (`depo ok` / `DEPO YOK` / `bekleyen N`) not et.
+      Hesabın hiç kaydı olmaması da geçerli bir test durumu (boş liste
+      metni çıkmalı).
 
 ## 4. Biten oyun kayıtları ve istatistikler
 

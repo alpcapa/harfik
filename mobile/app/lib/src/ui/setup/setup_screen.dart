@@ -423,6 +423,15 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     final cloud = widget.services.cloudSaves;
     final user = auth.user;
     if (user == null || cloud == null) return;
+    // ⚠ BU ADIMLARIN HİÇBİRİ LİSTEYİ ENGELLEYEMEZ.
+    // Web'de bunlar ÜÇ AYRI effect (misafir migrasyonu, `flushPendingGames`,
+    // `refreshCloudSaves`); port hepsini tek fonksiyonda ardışık koşturuyor.
+    // 13 Ağustos 2026'da bunun bedeli görüldü: kullanıcı "Yapay Zeka ile"
+    // sekmesinde kalıcı "Yükleniyor…" bildirdi (hesabın SIFIR bulut kaydı
+    // vardı, yani başarılı bir liste boş liste dönmeliydi). Buradaki bir
+    // istisna `_syncCloud`'u yarıda kesiyor, `_cloudSaves` sonsuza dek null
+    // kalıyor ve "Yükleniyor…" TERMİNAL bir duruma dönüşüyordu — üstelik
+    // çağrı `unawaited` olduğundan hata da görünmüyordu.
     final repo = _repo;
     if (repo != null && !auth.profileLoading && !_migratingGuest) {
       _migratingGuest = true;
@@ -433,6 +442,8 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
           accountName: auth.accountName,
         );
         if (moved && mounted) await _refreshSaveStatus();
+      } catch (e) {
+        debugPrint('[Kelimeki] misafir kaydı taşınamadı, listeye devam: $e');
       } finally {
         _migratingGuest = false;
       }
@@ -440,7 +451,14 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     // Kuyrukta bekleyen bitmiş/terk edilmiş oyun kayıtlarını (misafirken
     // ya da offline'da biriken) bu hesaba işle — web'in `flushPendingGames`
     // refleksi (açılış + giriş durumu değişimi).
-    final games = _games ?? await widget.services.games;
+    // `services.games` bir Future — açılışta çözülmediyse/fırladıysa liste
+    // yine çekilmeli (yukarıdaki nota bkz.).
+    GamesRepo? games;
+    try {
+      games = _games ?? await widget.services.games;
+    } catch (e) {
+      debugPrint('[Kelimeki] games deposu alınamadı, listeye devam: $e');
+    }
     if (games != null) unawaited(games.flushPending());
 
     // Offline'da yerel aynada biriken devam eden oyunları ÖNCE sunucuya it
@@ -456,16 +474,28 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     } catch (e) {
       debugPrint('[Kelimeki] ayna itilemedi, listeye devam: $e');
     }
-    final list = await cloud.list(userId: user.id);
-    if (list != null) {
-      // 7 günü dolup bu turda iddia edilen kayıtlar → -2 cezalı teslim
-      // (web refreshCloudSaves'in claim dalı).
-      for (final a in list.abandoned) {
-        await games?.recordAbandoned(a.state, endedAtMs: a.updatedAtMs);
+    CloudSaveList? list;
+    try {
+      list = await cloud.list(userId: user.id);
+      if (list != null) {
+        // 7 günü dolup bu turda iddia edilen kayıtlar → -2 cezalı teslim
+        // (web refreshCloudSaves'in claim dalı). Ceza yazımı FIRLARSA liste
+        // yine çizilmeli — aksi halde tek bir başarısız `games` yazması
+        // ekranı kalıcı "Yükleniyor…"da bırakırdı.
+        for (final a in list.abandoned) {
+          await games?.recordAbandoned(a.state, endedAtMs: a.updatedAtMs);
+        }
       }
+    } catch (e) {
+      debugPrint('[Kelimeki] bulut kaydı listesi/cezası hata verdi: $e');
     }
     if (!mounted || widget.services.auth.user?.id != user.id) return;
-    final pending = await cloud.pendingMirrorCount(user.id);
+    var pending = 0;
+    try {
+      pending = await cloud.pendingMirrorCount(user.id);
+    } catch (e) {
+      debugPrint('[Kelimeki] bekleyen ayna sayısı alınamadı: $e');
+    }
     if (!mounted) return;
     if (list == null && _cloudSaves != null) {
       setState(() => _diagPendingMirrors = pending); // ağ hatası eskiyi ezmesin

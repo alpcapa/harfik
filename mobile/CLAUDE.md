@@ -2558,6 +2558,47 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        runner'ında görülüyor — negatif eş kurulamaz, gerçek kanıt CI'ın
        yeşile dönmesi.
 
+   - ✅ **Parça 75 — "Yükleniyor…" TERMİNAL bir duruma dönebiliyordu:
+     senkronun herhangi bir adımı fırlarsa liste hiç çizilmiyordu
+     (13 Ağustos 2026, `setup_screen.dart`):** Kullanıcı cihazda bildirdi:
+     *"Ironman YZ tabına geçince 'yükleniyor' takılı kaldı."*
+     - **Önce veri kontrol edildi, koda dalınmadı:** canlıda Ironman'ın
+       `local_game_saves` satırı SIFIR — yani başarılı bir liste boş liste
+       dönmeliydi ve ekranda "Devam eden bir Yapay Zeka oyunun yok."
+       yazmalıydı. `CloudSaveRepo.list()` boş sonuçta null DÖNMÜYOR ve
+       `TableWriteQueue` kilitlenmiyor (ikisi de kaynaktan doğrulandı), yani
+       "sunucu boş döndü, ekran bunu gösteremedi" tek başına bir açıklama
+       değildi.
+     - **Kök sebep YAPISAL, web ile karşılaştırınca çıktı:** web'de misafir
+       migrasyonu, `flushPendingGames` ve `refreshCloudSaves` ÜÇ AYRI
+       effect — biri patlarsa ötekiler yine koşar. Port hepsini tek bir
+       `_syncCloud` içinde ARDIŞIK `await`lerle koşturuyor; liste adımından
+       ÖNCEKİ korumasız bir `await` fırlarsa fonksiyon oracıkta kesiliyor,
+       `_cloudSaves` sonsuza dek `null` kalıyor ve `null` tam olarak
+       "Yükleniyor…" demek. Üstelik çağrı `unawaited` olduğundan hata
+       hiçbir yere düşmüyordu — ekranda tek iz kalıcı spinner.
+     - **Düzeltme — izolasyon, yeni bir mekanizma değil:** senkronun dört
+       riskli adımı (misafir migrasyonu, `services.games` Future'ı,
+       liste+ceza, `pendingMirrorCount`) artık kendi `try`ında; her biri
+       loglanıp AKIŞ DEVAM EDİYOR. Yani hangi adım patlarsa patlasın liste
+       çiziliyor — web'in "ayrı effect" garantisinin tek fonksiyondaki
+       karşılığı. Sıra/semantik değişmedi.
+     - **Test — negatif eş doğrulamasıyla:** `setup_cloud_test.dart`'a
+       `pendingMirrorCount`u fırlatan bir sahte repo (`ThrowingMirrorCountRepo`)
+       + boş bir gateway ile yeni bir test: "Yükleniyor…" YOK, "Devam eden
+       bir Yapay Zeka oyunun yok." VAR. Adımın `try`ı kaldırılınca test
+       GERÇEKTEN kullanıcının semptomunu üretti (`Found 1 widget with text
+       "Yükleniyor…"`), geri konunca yeşile döndü. Test yardımcısına
+       (`services`/`pumpSetup`) opsiyonel bir `cloud` parametresi eklendi —
+       verilmezse mevcut 10 çağrı yeri BİREBİR aynı.
+     - **Bilinçli sınır:** hangi adımın gerçekten patladığı cihazda
+       BİLİNMİYOR (log toplanamadı) — düzeltme bir adımı onarmıyor,
+       "herhangi bir adımın patlaması ekranı kilitlemesin" sınıfını
+       kapatıyor. Aynı belirti tekrarlarsa Setup'ın teşhis satırı (Parça 45)
+       ve `debugPrint` çıktısı ilk bakılacak yer.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 364/364
+       yeşil** (363'ten +1). `kelimeki_core`'a hiç dokunulmadı.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
