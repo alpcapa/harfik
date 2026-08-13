@@ -12,6 +12,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/bootstrap.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/config/version_gate.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/cloud_save_repo.dart';
@@ -193,8 +194,7 @@ void main() {
       CloudSaveRepo? cloud}) async {
     await setPhoneViewSize(tester, const Size(420, 950));
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: SetupScreen(
           services:
               services(gw, games: games, feedback: feedback, cloud: cloud)),
@@ -210,8 +210,7 @@ void main() {
     await setPhoneViewSize(tester, const Size(420, 950));
     final key = GlobalKey();
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: RepaintBoundary(key: key, child: SetupScreen(services: services(gw))),
     ));
     await tester.pumpAndSettle();

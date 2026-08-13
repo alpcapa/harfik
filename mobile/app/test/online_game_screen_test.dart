@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/data/online_games_api.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/ui/game/board_widget.dart'
@@ -346,8 +347,7 @@ void main() {
         screen = RepaintBoundary(key: boundaryKey, child: screen);
       }
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(
-            fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+        theme: kelimekiTheme(),
         home: screen,
       ));
       await tester.pump(); // initState → loadGame (sahte uç, mikrotask)

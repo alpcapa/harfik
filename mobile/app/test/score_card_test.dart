@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/data/stats_api.dart';
 import 'package:kelimeki/src/ui/score/klig_mark.dart';
 import 'package:kelimeki/src/ui/tokens.dart';
@@ -101,8 +102,7 @@ void main() {
       [Size view = const Size(420, 900)]) async {
     await setPhoneViewSize(tester, view);
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: Scaffold(body: modal),
     ));
     await tester.pumpAndSettle();
@@ -161,8 +161,7 @@ void main() {
     await setPhoneViewSize(tester, const Size(420, 900));
     final key = GlobalKey();
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: RepaintBoundary(
         key: key,
         child: Scaffold(
@@ -227,7 +226,7 @@ void main() {
     await setPhoneViewSize(tester, const Size(420, 900));
     final stats = PlayerStats.fromJson(statRow());
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+      theme: kelimekiTheme(),
       home: Scaffold(
         // ÜRETİMDEKİ kısıtı taklit etmek ŞART: modalda çubuk bir
         // SingleChildScrollView'ın Column'unda yaşar, yani SINIRSIZ
@@ -365,8 +364,7 @@ void main() {
     await setPhoneViewSize(tester, const Size(420, 620));
     final key = GlobalKey();
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: RepaintBoundary(
         key: key,
         child: Scaffold(
@@ -426,8 +424,7 @@ void main() {
     // tutuluyor, kaydırma HİÇ SİMÜLE EDİLMİYOR.
     await setPhoneViewSize(tester, const Size(420, 1600));
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: Scaffold(
         body: LeaderboardModal(auth: auth, stats: StatsRepo(gw)),
       ),

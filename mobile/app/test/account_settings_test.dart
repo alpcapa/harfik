@@ -12,6 +12,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/ui/auth/account_button.dart';
 import 'package:kelimeki/src/ui/auth/account_settings_modal.dart';
 import 'package:kelimeki/src/util/avatar_picker.dart';
@@ -41,8 +42,7 @@ void main() {
   }) async {
     await setPhoneViewSize(tester, const Size(420, 900));
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: Scaffold(
         body: AccountSettingsModal(
             auth: auth, nicknameChecker: checker, pickAvatar: pickAvatar),
@@ -225,8 +225,7 @@ void main() {
       profile: const KProfile(id: 'me', displayName: 'ironman'),
     );
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: Scaffold(body: Align(child: AccountButton(auth: auth))),
     ));
     await tester.pump();

@@ -13,6 +13,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/bootstrap.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/config/version_gate.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/meaning_store.dart';
@@ -63,8 +64,7 @@ void main() {
     Future<void> pumpLogin(WidgetTester tester) async {
       await setPhoneViewSize(tester, const Size(420, 900));
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(
-            fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+        theme: kelimekiTheme(),
         home: Scaffold(body: AuthModal(auth: AuthService.fake())),
       ));
       await tester.pump();
@@ -113,8 +113,7 @@ void main() {
       final saved = <String>[];
       var doneCalls = 0;
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(
-            fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+        theme: kelimekiTheme(),
         home: Scaffold(
           body: ResetPasswordModal(
             auth: AuthService.fake(),
@@ -157,8 +156,7 @@ void main() {
         (tester) async {
       await setPhoneViewSize(tester, const Size(420, 900));
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(
-            fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+        theme: kelimekiTheme(),
         home: Scaffold(
           body: ResetPasswordModal(
             auth: AuthService.fake(),

@@ -13,6 +13,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/ui/game/neo_box.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/bootstrap.dart';
 import 'package:kelimeki/src/config/version_gate.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
@@ -295,8 +296,7 @@ void main() {
           key: boundaryKey, child: ColoredBox(color: Colors.white, child: body));
     }
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: Scaffold(body: body),
     ));
     await tester.pump();
@@ -467,8 +467,7 @@ void main() {
       final created = <bool>[];
       final cancelled = <bool>[];
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(
-            fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+        theme: kelimekiTheme(),
         home: Scaffold(
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(12),

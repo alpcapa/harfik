@@ -98,6 +98,13 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
       "… kuşat. Ama" ile bitiyor). App'te 5 satıra düşüyorsa Material 3'ün
       0.25 harf aralığı yine sızmış demektir — aynı kontrol "Nasıl
       oynanır? · Arkadaşınla paylaş" satırının genişliği için de geçerli.
+- [ ] **Harf aralığı: hiçbir metin web'den geniş DEĞİL (13 Ağustos 2026,
+      Parça 78).** Material 3'ün 0.25 tracking'i tema seviyesinde
+      kapatıldı; bu TÜM ekranların metin genişliğini ~%1-2 daraltıyor.
+      Bölüm 0.5'i koşarken her ekrana bir kez bak: bir yerde satır sonu
+      web'den farklı kırılıyor ya da bir etiket kutusuna sığmıyorsa not al
+      (testler geometriyi doğruluyor ama her ekranı gözle kontrol
+      edemiyor).
 - [ ] **Arkadaş onay/bilgi diyalogları.** "Arkadaşlıktan çıkar" gibi bir
       onay diyaloğu aç: kart genişliği ve iç dolgusu web ile aynı olmalı
       (384 kutu, 24 dolgu → içerik 336).

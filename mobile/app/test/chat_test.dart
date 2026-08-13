@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/chat_api.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/ui/chat/chat_modal.dart';
 import 'package:kelimeki/src/ui/chat/chat_settings_modal.dart';
 
@@ -128,8 +129,7 @@ void main() {
             key: boundaryKey, child: ColoredBox(color: Colors.white, child: dialog));
       }
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(
-            fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+        theme: kelimekiTheme(),
         home: Scaffold(body: Center(child: dialog)),
       ));
       await tester.pump();
@@ -273,8 +273,7 @@ void main() {
       final reported = <String>[];
       final withdrawn = <String>[];
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(
-            fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+        theme: kelimekiTheme(),
         home: Scaffold(
           body: ChatSettingsModal(
             gameId: 'g1',

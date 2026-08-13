@@ -12,6 +12,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/bootstrap.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/meaning_store.dart';
 import 'package:kelimeki/src/config/version_gate.dart';
@@ -69,8 +70,7 @@ AppServices liveBadgeServices(AuthService auth, OnlineGamesRepo onlineGames) =>
 
 Future<void> pumpSetup(WidgetTester tester, AppServices s) async {
   await tester.pumpWidget(MaterialApp(
-    theme: ThemeData(
-        fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+    theme: kelimekiTheme(),
     home: SetupScreen(services: s),
   ));
   await tester.pumpAndSettle();
@@ -93,8 +93,7 @@ void main() {
     await setPhoneViewSize(tester, const Size(420, 900));
     final key = GlobalKey();
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: RepaintBoundary(
         key: key,
         child: ColoredBox(
@@ -398,8 +397,7 @@ void main() {
     String? sharedText;
     String? sharedUrl;
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: SetupScreen(
         services: services(),
         share: ({required png, required text, required url}) async {
@@ -422,8 +420,7 @@ void main() {
       'satırı ORTALI (web text-center paritesi)', (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: SetupScreen(services: services()),
     ));
     await tester.pumpAndSettle();
@@ -449,8 +446,7 @@ void main() {
       (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: SetupScreen(services: services()),
     ));
     await tester.pumpAndSettle();

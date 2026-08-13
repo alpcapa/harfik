@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/ui/game/board_widget.dart'
     show BoardWidget, DashedBorderPainter, debugBoardBuildCountForTests;
@@ -96,8 +97,7 @@ Future<GameController> pumpGame(WidgetTester tester, GlobalKey key) async {
       GameController(words: words, autoPlayAi: false, nowIso: () => '');
   controller.dispatch(ResumeSavedAction(craftedState()));
   await tester.pumpWidget(MaterialApp(
-    theme: ThemeData(
-        fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+    theme: kelimekiTheme(),
     home: RepaintBoundary(
       key: key,
       child: GameScreen(
@@ -436,8 +436,7 @@ void main() {
         words: SetWordSource(const ['ab']), autoPlayAi: false, nowIso: () => '');
     c.restore(finalState);
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: GameScreen(controller: c, words: SetWordSource(const ['ab'])),
     ));
     await tester.pumpAndSettle();
@@ -489,8 +488,7 @@ void main() {
         GameController(words: words, autoPlayAi: false, nowIso: () => '');
     controller.restore(finished);
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: GameScreen(
           controller: controller, words: words, auth: AuthService.fake()),
     ));
@@ -531,8 +529,7 @@ void main() {
         ((steps.last as Map)['state'] as Map).cast<String, Object?>());
 
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: Scaffold(
         body: Center(child: GameOverModal(state: finished)),
       ),
@@ -866,7 +863,7 @@ void main() {
     // Dialog overlay'i Navigator'da yaşadığından ekran görüntüsü için modal
     // doğrudan bir widget olarak (showDialog'suz) çizilir.
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+      theme: kelimekiTheme(),
       home: RepaintBoundary(
         key: key,
         child: ColoredBox(
@@ -899,7 +896,7 @@ void main() {
         GameController(words: words, autoPlayAi: false, nowIso: () => '');
     c.dispatch(ResumeSavedAction(craftedState()));
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+      theme: kelimekiTheme(),
       home: GameScreen(controller: c, words: words),
     ));
     await tester.pumpAndSettle();

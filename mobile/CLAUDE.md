@@ -313,7 +313,10 @@ mobile/
                              # app_database (şema), app_storage (giriş kapısı),
                              # local_save_store (karantinalı kayıt), pending_queue_store,
                              # pending_event_store, chat_read_store, flags_store
-      ui/                    # app.dart, update_required_screen.dart, ve:
+      ui/                    # app.dart, update_required_screen.dart,
+                             # theme.dart (ÜRÜNÜN TEK teması — testler de
+                             # `kelimekiTheme()` kullanır; M3'ün varsayılan
+                             # harf aralığını sıfırlar, bkz. Parça 78), ve:
       ui/auth/               # giriş-kayıt-şifremi-unuttum modalı, hesap
                              # butonu, avatar, Terms/Privacy,
                              # reset_password_modal (recovery kapısı)
@@ -2672,31 +2675,47 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        (364'ten +1). Web'e HİÇ dokunulmadı (yalnızca ölçüm kaynağı olarak
        kullanıldı); `kelimeki_core`'a dokunulmadı.
 
+   - ✅ **Parça 78 — M3 tracking'i tek kaynaktan kapatıldı; testler artık
+     ÜRÜN temasıyla render ediyor (13 Ağustos 2026, yeni `ui/theme.dart` +
+     `app.dart` + 25 test dosyası):** Parça 77'de Setup'ın bloğu tek tek
+     yamanmıştı; kullanıcı "global letterSpacing düzeltmesini de yap"
+     deyince "Sonraya Bırakılan İşler"deki borç kapatıldı.
+     - **`kelimekiTheme()` (yeni `lib/src/ui/theme.dart`)** ürünün temasını
+       tek yerde tanımlıyor; `zeroTrackingTextTheme` 15 metin stilinin
+       (+`primaryTextTheme`) `letterSpacing`'ini 0'a çekiyor. YALNIZCA
+       tracking sıfırlanıyor — punto/kalınlık/renk Material'ın kendi
+       değerinde kalıyor (onlar zaten ekran ekran açıkça veriliyor).
+     - **Asıl mesele tema DEĞİL, testlerin temayı TAKLİT ETMESİYDİ:** 25
+       test dosyası kendi `ThemeData(fontFamily: 'SpaceGrotesk', …)`ını
+       kuruyordu, yani `app.dart`'ı düzeltmek testlerde HİÇBİR ŞEY
+       değiştirmezdi. 66 çağrı yeri `kelimekiTheme()`e çevrildi; bu aynı
+       zamanda gerçek `colorScheme`i de testlere getirdi (Parça 71'in
+       dersi: gerçek ekranı ölç, taklidini değil).
+     - **Yeni `test/theme_test.dart` üç şeyi kilitliyor** (`color_tokens_test`
+       deseninin tipografi karşılığı): `letterSpacing` yazmayan bir `Text`
+       gerçekten 0 alıyor mu; temanın 15 stili de sıfır mı; ve **hiçbir
+       test dosyası kendi `ThemeData`sını kurmuyor mu** — üçüncüsü olmadan
+       bir sonraki oturum sessizce eski desene döner.
+     - **Negatif eş:** `kelimekiTheme()`in `copyWith`i kaldırılınca ilk iki
+       test GERÇEKTEN düştü (`Expected: <0> Actual: <0.25>` ve
+       `displayLarge tracking taşıyor`), geri konunca yeşile döndü.
+     - **Parça 77'nin yerel `letterSpacing: 0`ları BİLEREK duruyor** —
+       artık gereksizler ama niyeti yerelde okunur kılıyorlar.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 368/368
+       yeşil** (365'ten +3). Ekran görüntüleri yeniden üretilip gözle
+       incelendi (Setup formu, Skor Kartı, Arkadaşlar modalı) — tema
+       değişiminin bozduğu bir yer yok. `kelimeki_core`'a ve web'e hiç
+       dokunulmadı.
+     - **Doğrulama sınırı:** tracking kalkınca metinler ~%1-2 daralıyor;
+       testler geometriyi (428 içerik, 44px sekme, 64px paragraf…) hâlâ
+       doğruluyor ama TÜM ekranların cihazda gözle kontrolü kullanıcıdan
+       bekleniyor — `mobile/TESTING.md` bölüm 0.5'e madde eklendi.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
 kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
 silinip kendi tarihli parça notuna taşınır.
-
-- **Material 3'ün varsayılan `letterSpacing: 0.25`'i tüm porta sızıyor
-  olabilir (12 Ağustos 2026, Parça 61'de ÖLÇÜLEREK bulundu):** `ThemeData`
-  `useMaterial3: true` olduğundan `TextTheme.bodyMedium` 0.25 tracking
-  taşıyor; `letterSpacing` yazmayan HER `Text` bunu miras alıyor. Web'de
-  bu metinlerde tracking YOK. Parça 61'de somut bir hataya yol açtı:
-  33 karakterlik bir satır tam 8.25px (33×0.25) şişip karta sığmadı ve iki
-  satıra düştü — aynı metin Chromium'da gerçek fontla 222.16px, tek satır.
-  - **13 Ağustos 2026: ikinci kez, bu sefer kullanıcı fark etti** (Parça
-    77) — Setup'ın logo altındaki paragrafı 5 satıra düşüyordu, web'de 4.
-    Yani bu madde teorik bir borç değil, üründe GÖRÜNEN bir fark üretiyor.
-  - `ui/rank/` ve Setup'ın başlık bloğu düzeltildi (`letterSpacing: 0`);
-    **portun geri kalanı DENETLENMEDİ.** Doğru çözüm muhtemelen tek yerden:
-    `app.dart`'taki
-    `ThemeData`'ya `textTheme: Typography...apply(letterSpacingDelta: ...)`
-    ya da `bodyMedium: TextStyle(letterSpacing: 0)` — ama bu TÜM ekranların
-    metin genişliğini değiştireceğinden ölçülerek (Parça 56'nın Chromium
-    yöntemiyle) ve ekran görüntüleriyle yapılmalı.
-  - Parça 56'nın punto denetiminin gözden kaçırdığı sınıf tam olarak bu:
-    punto DOĞRUYDU, satır genişliği değildi.
 
 - **Metin girişi dolgusu + `InputDecoration`ın 8 kopyası (11 Ağustos 2026,
   Parça 56 denetiminde bulundu):** Port `contentPadding: h12/v10`

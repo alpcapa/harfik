@@ -10,6 +10,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/data/chat_api.dart';
 import 'package:kelimeki/src/data/online_games_api.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
@@ -178,8 +179,7 @@ void main() {
       ],
     );
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: OnlineGameScreen(
         game: game(row),
         myUserId: 'me',
@@ -296,7 +296,7 @@ void main() {
         ],
       );
       await tester.pumpWidget(MaterialApp(
-        theme: ThemeData(fontFamily: 'SpaceGrotesk'),
+        theme: kelimekiTheme(),
         home: OnlineGameScreen(
           game: game(row),
           myUserId: 'me',

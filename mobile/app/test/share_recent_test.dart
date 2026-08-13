@@ -12,6 +12,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/games_api.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/ui/score/game_history_modal.dart';
 import 'package:kelimeki/src/util/share_board.dart';
 import 'package:kelimeki/src/ui/score/score_box_row.dart';
@@ -54,8 +55,7 @@ void main() {
     final calls = <_ShareCall>[];
     await setPhoneViewSize(tester, const Size(420, 780));
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: RepaintBoundary(
         key: boundaryKey,
         child: Scaffold(
@@ -239,8 +239,7 @@ void main() {
     final key = GlobalKey();
     await setPhoneViewSize(tester, const Size(420, 520));
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: Scaffold(
         body: RepaintBoundary(
           key: key,
@@ -372,8 +371,7 @@ void main() {
 
     await setPhoneViewSize(tester, const Size(420, 780));
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: Scaffold(
         body: RecentGamesSection(
             games: repo, userId: 'u-me', onlineOnly: false),

@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/games_api.dart';
+import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/ui/chat/chat_thread.dart';
 import 'package:kelimeki/src/ui/chat/game_chat_history_modal.dart';
 import 'package:kelimeki/src/ui/score/game_history_modal.dart';
@@ -90,8 +91,7 @@ void main() {
       {Key? key, Size size = const Size(420, 900)}) async {
     await setPhoneViewSize(tester, size);
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: RepaintBoundary(
         key: key,
         child: Scaffold(
@@ -365,8 +365,7 @@ void main() {
 
     await setPhoneViewSize(tester, const Size(420, 620));
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: Scaffold(
         body: RepaintBoundary(
           key: key,
@@ -427,8 +426,7 @@ void main() {
 
     await setPhoneViewSize(tester, const Size(420, 620));
     await tester.pumpWidget(MaterialApp(
-      theme: ThemeData(
-          fontFamily: 'SpaceGrotesk', scaffoldBackgroundColor: Colors.white),
+      theme: kelimekiTheme(),
       home: Scaffold(
         body: GameChatHistoryModal(
           games: repo,
