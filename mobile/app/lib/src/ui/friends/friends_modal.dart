@@ -34,6 +34,7 @@ import '../game/neo_button.dart';
 import '../score/player_score_card_modal.dart';
 import '../tokens.dart';
 import '../form_input.dart';
+import '../../util/share_board.dart' show shareOriginFrom;
 
 const Color _text = kText;
 const Color _muted = kMuted;
@@ -296,9 +297,12 @@ class _FriendsModalState extends State<FriendsModal> {
     try {
       final url = await widget.friends.inviteUrl();
       if (url == null) return;
+      if (!mounted) return;
+      final anchor = shareOriginFrom(context);
       final share = widget.sharer ??
           (String text) async {
-            await SharePlus.instance.share(ShareParams(text: text));
+            await SharePlus.instance
+                .share(ShareParams(text: text, sharePositionOrigin: anchor));
           };
       await share('$inviteShareText\n$url');
     } finally {

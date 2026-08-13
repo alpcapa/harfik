@@ -4,14 +4,22 @@
 // "en altta çıkıyor, fark edilmiyor bile" demişti); Flutter'ın
 // `showModalBottomSheet`'i ikisini de yerleşik veriyor — barrier rengi ve
 // yukarı kayan geçiş hazır. Bu yüzden port bir widget değil bir çağrı
-// yardımcısı: görsel dil (iki ayrı yuvarlatılmış panel, aralarında ince
-// ayraç, altta ayrı "Vazgeç" paneli) web'le aynı.
+// yardımcısı: görsel dil (yuvarlatılmış panel, aksiyonlar arasında ince
+// ayraç) web'le aynı.
+//
+// iOS aksiyon menülerinin klasik ayrı "Vazgeç" paneli 13 Ağustos 2026'da
+// KALDIRILDI (kullanıcı kararı, web `ActionSheet.tsx` ile AYNI PR'da):
+// tek kullanım yerinde (`GameHistoryModal`ın tahta önizlemesi)
+// aksiyonlardan biri zaten "Kapat" olduğundan iki buton aynı işi yapıyormuş
+// gibi okunuyordu. Aksiyonsuz çıkış yolu kaybolmadı — `showModalBottomSheet`
+// varsayılan olarak zemine dokunmayla (`isDismissible`) ve aşağı sürüklemeyle
+// (`enableDrag`) kapanıyor, ikisi de `null` döndürdüğünden hiçbir `onSelect`
+// çalışmıyor.
 import 'package:flutter/material.dart';
 import '../tokens.dart';
 
 const _panel = kPanel;
 const _border = kBorder;
-const _text = kText;
 const _accent = kAccent;
 const _red = kRed;
 
@@ -42,6 +50,8 @@ Future<void> showActionSheet(
         padding: const EdgeInsets.all(12),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 360),
+          // `stretch` ŞART: `ConstrainedBox` gevşek kısıt verdiğinden panel
+          // tek başına bırakılırsa metin genişliğine büzülür.
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -59,14 +69,6 @@ Future<void> showActionSheet(
                       ),
                     ],
                   ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              _Panel(
-                child: _SheetButton(
-                  label: 'Vazgeç',
-                  color: _text,
-                  onTap: () => Navigator.of(sheetContext).pop(),
                 ),
               ),
             ],

@@ -388,10 +388,15 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
   Future<void> _share(GameHistoryEntry entry) async {
     final shared = await widget.games.markShared(entry.id);
     final png = await (widget.capture ?? captureBoundaryAsPng)(_captureKey);
+    if (!mounted) return;
+    // iPad ankrajı: popover paylaşılan TAHTAYI göstersin; tahta o an
+    // ağaçta değilse modalın kendi kutusuna düşüyoruz.
+    final anchor = shareOriginFrom(_captureKey.currentContext ?? context);
     await (widget.share ?? shareBoard)(
       png: png,
       text: shareMessage,
       url: shared ? '$webOrigin/game/${entry.id}' : null,
+      origin: anchor,
     );
   }
 

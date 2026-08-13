@@ -539,7 +539,10 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 ## 6. Paylaşma
 
 - [ ] **Paylaş menüsü.** Açık tahta önizlemesine dokun → alttan
-      "Paylaş / Kapat / Vazgeç" menüsü, arka plan kararmış olmalı.
+      **"Paylaş / Kapat"** menüsü, arka plan kararmış olmalı. Ayrı bir
+      "Vazgeç" paneli OLMAMALI (13 Ağustos 2026'da iki platformdan da
+      kaldırıldı, bkz. Parça 85) — web ile yan yana koyunca ikisi de iki
+      butonlu görünmeli.
 - [ ] **Sistem paylaş sayfası.** "Paylaş" → iOS/Android paylaş sayfası
       açılmalı; görsel önizlemesi **skor kutuları + tahta** olmalı.
       **Hiçbir tepki vermemesi bir hatadır** (9 Ağustos 2026'da web
@@ -547,6 +550,16 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       `catch` her şeyi yutuyordu, bkz. Parça 35). Görselli paylaşım o
       platformda mümkün değilse en azından **metin + link** paylaşım
       sayfası açılmalı.
+- [ ] **GÖRSEL GERÇEKTEN GİDİYOR MU? (Parça 84 — 13 Ağustos 2026'da
+      kırıktı).** Paylaşımı WhatsApp/Notlar ile kendine gönder ve GELEN
+      mesaja bak: **tahtanın kendisi** görünmeli. Yalnızca metin+link
+      gelip altında Kelimeki'nin jenerik önizleme kartı çıkıyorsa görselli
+      dal sessizce patlıyor demektir — belirti "yanlış görsel" gibi
+      görünür, gerçekte görsel HİÇ gitmemiştir. (Kök sebep: dosya yazımı
+      `path_provider`/`dart:io` ile yapılıyordu, ikisi de web'de çalışmıyor;
+      artık `XFile.fromData` + `fileNameOverrides` ile share_plus'ın
+      kendisi yazıyor.) Web ile yan yana koy — ikisi AYNI görseli
+      göndermeli.
 - [ ] **İptal ikinci sayfa açmamalı.** Paylaş sayfasını kapat/iptal et →
       arkasından ikinci bir paylaş sayfası AÇILMAMALI (`share_plus`
       iptalde fırlatmaz, yedek zincire düşmemeli).
@@ -566,7 +579,18 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       linke tıkla: `kelimeki.com/game/<id>` sayfası **girişsiz** açılmalı
       ve aynı tahtayı göstermeli. (Bu, `set_game_shared` RPC'sinin
       gerçekten çalıştığının kanıtı — bayrak yazılmazsa sayfa boş gelir.)
-- [ ] **Kapat.** Menüden "Kapat" tahtayı kapatmalı.
+- [ ] **Kapat.** Menüden "Kapat" tahta önizlemesini kapatmalı.
+      (13 Ağustos 2026'da kullanıcı bunun çalışmadığını bildirdi; native
+      testte ÖLÇÜLDÜ — "Kapat" tahtayı gerçekten kapatıyor (ScoreBoxRow
+      1 → 0) ve ilgili test geçiyor. Cihazda hâlâ kapanmıyorsa tarayıcıya
+      özgü bir dokunuş yayılımı olabilir, ayrı bir tur gerekir.)
+- [ ] **Menüden aksiyonsuz çıkış (eski "Vazgeç"in yerine).** Menü açıkken
+      DIŞINA dokun (ya da aşağı sürükle): menü kapanmalı, tahta önizlemesi
+      AÇIK kalmalı, paylaşım tetiklenMEmeli. Bu, "Vazgeç" butonunun
+      kaldırılmasının kullanıcıyı kapana kıstırmadığının kontrolü.
+- [ ] **Ekranda başka yere dokunmak tüm oyunlar penceresini kapatır** ve
+      Skor Kartı'na döner — bu bir port sapması DEĞİL, web `Modal.tsx`'in
+      zemin dokunuşu da `onClose` çağırıyor (bkz. bu bölümün 4. maddesi).
 
 ## 7. Son Oynadıklarım
 
@@ -1236,6 +1260,14 @@ açar; o zamana kadar tarayıcıda açılırlar (bozuk değil, yalnızca eksik).
       görsel eki taşımalı. Web derlemesinde dosyalı yol hiç çalışmıyordu
       (yalnızca metin+link yedeği), yani bu madde ilk kez GERÇEK olarak
       test ediliyor (bkz. Parça 35).
+- [ ] **iPAD'DE ÜÇ PAYLAŞIM YOLU DA (Parça 86) — bu, iPhone'da test edilse
+      bile KANITLANMAZ.** iPad'de paylaş sayfası popover olarak açılıyor ve
+      iOS ankraj (`sharePositionOrigin`) istiyor; verilmezse share_plus
+      paylaşmak yerine hata döndürüyor ve akış sessizce ölüyor. Üçünü de
+      GERÇEK bir iPad'de dene: (a) oyun geçmişinde tahta paylaşımı,
+      (b) Setup'ta "Arkadaşınla paylaş", (c) Arkadaşlar'da davet linki.
+      Popover ekranda görünmeli (ve makul bir yerden çıkmalı), "hiçbir şey
+      olmadı" bir hatadır.
 - [ ] **Bölüm 8 — uçak modu:** burada native'in web'den DAHA İYİ olması
       bekleniyor, iki şey ayrıca doğrulanmalı:
       (a) uçak modunda **kelime anlamı GELMELİ** (`meanings.db` pakette —

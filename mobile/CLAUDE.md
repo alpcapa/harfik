@@ -2938,6 +2938,186 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        dosya ~50-150 KB olmalı") `mobile/TESTING.md` bölüm 12 ve kök
        `TESTING.md` bölüm 9.5'te duruyor — ilerideki bir regresyon için.
 
+   - ✅ **Parça 84 — paylaşımda tahta görseli HİÇ gitmiyordu: görselli dal
+     web'de her seferinde patlıyor, WhatsApp da linkten sitenin GENEL
+     og:image kartını üretiyordu (13 Ağustos 2026, `share_board.dart`):**
+     Kullanıcı bölüm 6'yı koşarken iki paylaşımı yan yana koydu —
+     *"App'te paylaş board yerine jenerik Kelimeki gösterimini gönderiyor,
+     web'de oyunun görselini. App'de web gibi paylaşmalı."*
+     - **Web kaynağı önce okundu (kuralın ilk adımı):**
+       `GameHistoryModal.tsx` `handleShare` PNG'yi `new File([blob],
+       'kelimeki.png')` ile kurup `navigator.canShare({files})` dalından
+       paylaşıyor. Yani web GERÇEKTEN dosya paylaşıyor; app'in gönderdiği
+       jenerik kart, metin+link yedeğinin (Parça 35) doğal sonucu —
+       WhatsApp linke bakıp `index.html`'in site geneli `og:image`'ini
+       çiziyor. Yani belirti "yanlış görsel" değil, **görselin HİÇ
+       gitmemesi**.
+     - **Kök sebep:** portun görselli dalı `path_provider`'ın
+       `getTemporaryDirectory()`si + `dart:io` `File` ile geçici dosya
+       yazıyordu; ikisi de Flutter web'de çalışmıyor → dal her seferinde
+       fırlıyor, `catch` metin yedeğine düşüyordu. Parça 35'te eklenen o
+       yedek burada hatayı GİZLEDİ: paylaş sayfası açıldığı için akış
+       "çalışıyor" görünüyordu.
+     - **Düzeltme:** dosya yazımı bizden kütüphaneye taşındı —
+       `XFile.fromData(png, mimeType: 'image/png', name: 'kelimeki.png')`
+       + `fileNameOverrides: const ['kelimeki.png']`. Web'de share_plus
+       baytları `readAsBytes()` ile alıp `navigator.share({files})`e
+       veriyor (web'in AYNI dalı); native'de path boş kaldığından
+       share_plus'ın kendisi geçici dizine yazıyor
+       (`method_channel_share.dart`, `_getFile` — kaynaktan doğrulandı).
+       `fileNameOverrides` ŞART: `cross_file`'ın io uygulaması `name`i YOK
+       SAYIYOR (paket belgesinde yazılı), onsuz native'de ad kayboluyor.
+       Bu kod yolu artık `path_provider`a hiç dokunmuyor (`dart:io` importu
+       da düştü).
+     - **`downloadFallbackEnabled: false` (yalnızca web'de anlamlı):**
+       varsayılan `true` iken `canShare({files})` false dönerse share_plus
+       paylaşmak yerine PNG'yi sessizce İNDİRİYOR; web'in kendi yedeği ise
+       metin+link. `false` ile o durumda fırlayıp bizim yedeğimize
+       düşüyoruz — zincir web `handleShare` ile hizalandı.
+     - **GERÇEK CanvasKit derlemesinde ÖLÇÜLDÜ (Parça 18/27'nin yöntemi;
+       tahminle kapatılmadı):** minik bir web harness'i derlenip
+       Playwright/Chromium'da koşuldu —
+       `getTemporaryDirectory()` **FIRLATTI**, `File(...).writeAsBytes()`
+       **"Unsupported operation: _Namespace"** ile fırlattı,
+       `XFile.fromData(...)` **ÇALIŞTI** (11 bayt, mime/name korunuyor) ve
+       share_plus web eklentisinin `prepareData`'sı **files DOLU** bir
+       `ShareData` üretti — yani `navigator.share({files})` dalı artık
+       gerçekten besleniyor. Harness ve `build/webprobe` iş bitince
+       silindi.
+     - **Test — negatif eş doğrulamasıyla:** `share_recent_test.dart`'a
+       yeni bir test; path_provider kanalı gerçek bir geçici dizine
+       mock'lanıp kanala giden `paths`/`mimeTypes`/`text` ve DİSKTEKİ
+       baytlar doğrulanıyor (`.../kelimeki.png`, `image/png`, birebir PNG).
+       `fileNameOverrides` kaldırılınca test GERÇEKTEN düştü, geri konunca
+       yeşile döndü. Parça 35'in yedek-zincir testi de hâlâ geçiyor
+       (artık `MissingPluginException` bizim kodumuzdan değil share_plus'ın
+       `_getFile`'ından geliyor — sonuç aynı, zincir sağlam).
+     - **`flutter test` bu hatayı YAPISAL OLARAK göremez** (native VM'de
+       `dart:io` çalışır, eski kod da testi geçerdi) — bu yüzden kanıt
+       tarayıcı ölçümü, testin işi sözleşmeyi (veri destekli XFile + doğru
+       ad/tip/bayt) kalıcı olarak pinlemek. Parça 18'in dersinin tekrarı.
+     - **`path_provider` pubspec'te KALDI, bilinçli:** artık `lib/` altında
+       hiçbir import yok, ama native'de geçici dosyayı yazan share_plus
+       onu kullanıyor — yani bağımlılık kayboldu değil, bir katman aşağı
+       indi. Sahip olduğumuz bir özelliğin gereksinimini örtük bırakmamak
+       için bildirimde tutuldu.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       378/378 yeşil** (377'den +1). `kelimeki_core`'a ve web'e hiç
+       dokunulmadı — `mobile/` DIŞINDA dosya değişmedi.
+     - **Doğrulama sınırı:** gerçek paylaş sayfasında görselin gerçekten
+       eklendiği (ve WhatsApp'ın jenerik kart yerine tahtayı gösterdiği)
+       cihazda teyit edilmeli — `mobile/TESTING.md` bölüm 6 güncellendi.
+
+   - ✅ **Parça 85 — aksiyon menüsünden ayrı "Vazgeç" paneli kaldırıldı
+     (13 Ağustos 2026, `action_sheet.dart` + web `ActionSheet.tsx`):**
+     Kullanıcı kararı — *"Bence kapat ve vazgeç aynı şey. Paylaş ve Kapat
+     olsun sadece."*
+     - **Önce web kaynağı okundu (kuralın ilk adımı) ve kapsam ölçüldü:**
+       "Vazgeç" bir aksiyon DEĞİL, `ActionSheet` bileşeninin kendi ikinci
+       paneliydi (iOS aksiyon menüsü geleneği) — çağıranlar yalnızca
+       `Paylaş`/`Kapat` geçiyor. İki platformda da **tek kullanım yeri**
+       var (`GameHistoryModal`ın tahta önizlemesi), yani paneli bileşenden
+       düşürmek başka hiçbir ekranı etkilemiyor.
+     - **Kullanıcının önermesi teknik olarak tam doğru değildi ama karar
+       yine de sağlam:** "Kapat" tahta önizlemesini de kapatıyor, "Vazgeç"
+       yalnızca menüyü kapatıp tahtayı açık bırakıyordu. Bu ayrım
+       kullanıcıya hiç görünmüyordu (aynı boy/konumda iki nötr buton),
+       nitekim aynı kullanıcı bir tur önce ikisinin de aynı şeyi yaptığını
+       bildirmişti — ayrımı korumak için ikinci bir buton taşımak, kazandan
+       çok karışıklık üretiyordu.
+     - **Aksiyonsuz çıkış yolu KAYBOLMADI** (bu, kaldırmanın ön koşuluydu):
+       mobilde `showModalBottomSheet`'in varsayılan `isDismissible`/
+       `enableDrag`'i, web'de dış katmanın `onClick={onClose}`'u +
+       `useModalA11y`'nin Escape'i. İkisi de `null` döndürdüğünden hiçbir
+       `onSelect` çalışmıyor — yani "Vazgeç"in DAVRANIŞI duruyor, yalnızca
+       butonu kalktı.
+     - **İki platform AYNI PR'da** (dal `main` tabanlı, stranding riski
+       yok — bkz. Parça Bitirme Kontrol Listesi madde 1). Tek taraflı
+       kaldırmak, bu projenin en sık tekrarlayan hata sınıfını (sessiz
+       web↔port ayrışması) yeniden üretirdi.
+     - **Layout tuzağı:** kalan tek paneli saran `Column`
+       (`crossAxisAlignment: stretch`) SİLİNMEMELİ — `ConstrainedBox`
+       gevşek kısıt verdiğinden panel tek başına bırakılsa metin
+       genişliğine büzülürdü. Yorumla sabitlendi.
+     - **Test — negatif eş doğrulamasıyla:** mevcut menü testinde
+       `find.text('Vazgeç')` artık `findsNothing`; ayrıca YENİ bir test
+       zemine dokunmanın menüyü aksiyonsuz kapattığını (tahta AÇIK kalıyor,
+       `share` çağrılmıyor, `set_game_shared` yazılmıyor) doğruluyor —
+       "kullanıcı kapana kısılmadı" iddiasının kanıtı. `isDismissible:
+       false` geçici olarak eklenince test GERÇEKTEN düştü
+       (`Expected: no matching candidates / Actual: ... "Paylaş"`), geri
+       alınınca yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       379/379 yeşil** (378'den +1). Web `npm run lint` + `npm run build`
+       temiz. `kelimeki_core`'a hiç dokunulmadı.
+     - **`mobile/` DIŞINDA dosya değişti** (`src/components/ActionSheet.tsx`,
+       `CLAUDE.md`) → kök `CLAUDE.md` aynı commit'te güncellendi.
+     - **Doğrulama sınırı:** cihazda görsel teyit (menünün iki butonlu
+       göründüğü + dışarı dokununca aksiyonsuz kapandığı) kullanıcıdan
+       bekleniyor — `mobile/TESTING.md` bölüm 6 güncellendi.
+
+   - ✅ **Parça 86 — paylaşım iPad'de HİÇ çalışmayacaktı: `sharePositionOrigin`
+     üç çağrı yerinin hiçbirinde verilmiyordu (13 Ağustos 2026,
+     `share_board.dart`, `game_history_modal.dart`, `setup_screen.dart`,
+     `friends_modal.dart`):** Kullanıcının "tüm app geliştirmeleri hem
+     Android hem iOS için geçerli değil mi, her şeyi baştan test etmemiz
+     gerekmeyecek?" sorusunu cevaplarken bulundu — cevabın canlı örneği
+     çıktı.
+     - **Kaynaktan doğrulandı, tahmin değil** (`FPPSharePlusPlugin.m`,
+       satır 418-443): iPad'de paylaş sayfası bir POPOVER ve iOS ankraj
+       istiyor. Eklenti bunu SERT bir koşul olarak uyguluyor —
+       `isIpad && (origin kök view'ın dışında || CGRectIsEmpty(origin))`
+       ise paylaşmak yerine **`FlutterError` DÖNDÜRÜYOR**. Dart tarafında
+       bu `PlatformException`; bizim `catch`imiz onu yutuyor, metin
+       yedeğine düşüyor, o da AYNI sebeple patlıyor → ikinci `catch` →
+       kullanıcıya **hiçbir şey olmuyor**. iPhone ve Android'de parametre
+       yok sayılıyor (`Parameter ignored on other platforms`).
+     - **Neden bugüne kadar görünmedi — ve dersin özeti bu:** kullanıcı
+       cihaz testini GitHub Pages web derlemesinde yapıyor; orada
+       share_plus'ın WEB eklentisi çalışıyor (`navigator.share`), iOS
+       kanalına hiç uğranmıyor. FAZ B (gerçek cihaz) henüz koşulmadı.
+       Yani bu, "aynı Dart kodu iki platformda da aynı çalışır"
+       varsayımının kırıldığı yer: kod TAMAMEN paylaşımlı, kıran şey
+       platform kanalının kendi sözleşmesi.
+     - **ÜÇ çağrı yerinin ÜÇÜ de kırıktı** (yalnızca bugün eklenen görsel
+       paylaşımı değil): `game_history_modal` (tahta paylaşımı),
+       `setup_screen` ("Arkadaşınla paylaş"), `friends_modal` (davet
+       linki — orası `SharePlus.instance`'ı doğrudan çağırıyor). Bir
+       hatayı bulduğunda ÜRETEN mekanizmanın diğer örneklerini de ara
+       (Parça 54'ün dersi) — tek çağrı yerini düzeltmek ötekileri sessizce
+       kırık bırakırdı.
+     - **Ortak `shareOriginFrom(BuildContext)`** (`share_board.dart`):
+       widget'ın kendi `RenderBox`'ından global dikdörtgeni alıp EKRANLA
+       KESİŞTİRİYOR — iOS ankrajın kök view'ın İÇİNDE olmasını da şart
+       koşuyor, kaydırma yüzünden kısmen dışarı taşan bir kutu yine hataya
+       düşerdi. Kutu yoksa/boşsa ekran ortasında 1×1'lik bir yedek (boş
+       OLMAMASI şart, `CGRectIsEmpty`).
+     - **`origin` parametresi BİLEREK ZORUNLU** (`ShareBoardFn` typedef'inde
+       `required Rect?`): opsiyonel olsaydı yeni bir çağrı yeri onu sessizce
+       atlar ve paylaşım yalnızca iPad'de, yalnızca gerçek cihazda ölürdü.
+       Nitekim `flutter analyze` değişiklikten hemen sonra 4 hatayla üç
+       çağrı yerini + iki test sahtesini işaret etti — derleyicinin
+       yakalayabileceği bir şeyi çalışma anına bırakmamak tam olarak bu.
+     - **Test — negatif eş doğrulamasıyla, İKİ AYRI katman:** (a) çağıran
+       katman — `_ShareCall` artık `origin`i de kaydediyor, ankrajın boş
+       OLMADIĞI ve ekranın İÇİNDE kaldığı doğrulanıyor; (b) kanal katmanı —
+       mock'lanan `dev.fluttercommunity.plus/share` çağrısında
+       `originX/Y/Width/Height` alanları bekleniyor. **İlk denemede
+       yalnızca (a) yazılmıştı ve YETERSİZDİ:** o test enjekte edilen sahte
+       `share`i ölçtüğünden `shareBoard`ın `ShareParams`e iletip
+       iletmediğini göremiyordu — `sharePositionOrigin` satırı silinince
+       test GEÇMEYE devam etti. (b) eklenince aynı silme GERÇEKTEN düştü
+       (`Expected: <10.0> / Actual: <null>`). **Ders: bir sözleşmeyi
+       enjekte edilebilir bir sınırın ÜSTÜNDE test etmek, o sınırın
+       ALTINDAKİ iletimi kanıtlamaz** — hangi katmanı ölçtüğünü sor.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       379/379 yeşil** (yeni test yok, mevcut ikisine assertion eklendi).
+       `kelimeki_core`'a ve web'e hiç dokunulmadı.
+     - **Doğrulama sınırı — bu ortamda KANITLANAMAZ:** gerçek bir iPad
+       gerekiyor. Kanıt zinciri kaynak okuması + kanal seviyesinde test;
+       gerçek popover FAZ B'de doğrulanmalı. `mobile/TESTING.md` bölüm 6
+       ve FAZ B'ye maddeler eklendi.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

@@ -7,18 +7,16 @@
 // kayıpsız karşılığı `RepaintBoundary.toImage` — ekstra kütüphane yok,
 // yakalanan şey ekranda görünenin ta kendisi.
 //
-// **Neden ayrı bir dosya ve enjekte edilebilir:** `share_plus` ve
-// `path_provider` platform kanalı kullanıyor, widget testlerinde çalışmaz.
-// `GameHistoryModal` paylaşımı `ShareBoardFn` olarak alıyor; testler sahte
-// bir fonksiyon geçip AKIŞI (markShared → yakala → paylaş) doğruluyor,
-// gerçek kanal cihazda doğrulanıyor.
-import 'dart:io';
+// **Neden ayrı bir dosya ve enjekte edilebilir:** `share_plus` platform
+// kanalı kullanıyor, widget testlerinde çalışmaz. `GameHistoryModal`
+// paylaşımı `ShareBoardFn` olarak alıyor; testler sahte bir fonksiyon geçip
+// AKIŞI (markShared → yakala → paylaş) doğruluyor, gerçek kanal cihazda
+// doğrulanıyor.
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart' show GlobalKey;
-import 'package:path_provider/path_provider.dart';
+import 'package:flutter/widgets.dart' show BuildContext, GlobalKey, MediaQuery;
 import 'package:share_plus/share_plus.dart';
 
 /// Paylaşım metni — web `SHARE_MESSAGE` birebir. Bilerek üçüncü şahıs:
@@ -28,11 +26,45 @@ const String shareMessage = "Kelimeki'deki şu oyunu görmeni istedim.";
 
 /// [png] null olabilir (yakalama başarısız) — o durumda yalnızca metin+link
 /// paylaşılır; web'in dosyasız `navigator.share` yedeğiyle aynı.
+///
+/// [origin] iPad ankrajı — bkz. [shareOriginFrom]. Bilerek ZORUNLU (nullable
+/// ama adı verilmek zorunda): opsiyonel olsaydı yeni bir çağrı yeri onu
+/// sessizce atlar ve paylaşım YALNIZCA iPad'de, yalnızca gerçek cihazda
+/// ölürdü — derleyicinin yakalayabileceği bir şeyi çalışma anına bırakmak
+/// olurdu.
 typedef ShareBoardFn = Future<void> Function({
   required Uint8List? png,
   required String text,
   required String? url,
+  required Rect? origin,
 });
+
+/// iPad'de paylaş sayfası bir POPOVER olarak açılıyor ve iOS bir ankraj
+/// dikdörtgeni istiyor. share_plus'ın iOS eklentisi (`FPPSharePlusPlugin.m`)
+/// bunu SERT bir koşul olarak uyguluyor: cihaz iPad ise ve origin boşsa ya da
+/// kök view'ın koordinat uzayının dışındaysa paylaşmak yerine
+/// `FlutterError` DÖNDÜRÜYOR — yani ankraj vermemek, iPad'de paylaşımı
+/// tamamen ve SESSİZCE öldürüyor (Dart tarafında `PlatformException`, bizim
+/// `catch`imiz onu yutuyor). iPhone ve Android'de parametre yok sayılıyor,
+/// web'de zaten anlamsız.
+///
+/// Bu, web derlemesinde ASLA görünmez (orada share_plus'ın web eklentisi
+/// `navigator.share`e gidiyor, iOS kanalına hiç uğramıyor) — yani cihaz
+/// testine kadar gizli kalan, platforma özgü bir sınıf.
+Rect shareOriginFrom(BuildContext context) {
+  final screen = Offset.zero & MediaQuery.sizeOf(context);
+  final box = context.findRenderObject();
+  if (box is RenderBox && box.hasSize) {
+    // Ekranla kesiştiriyoruz: iOS ankrajın kök view'ın İÇİNDE olmasını da
+    // şart koşuyor, kaydırma yüzünden kısmen dışarı taşan bir kutu yine
+    // hataya düşerdi.
+    final rect = (box.localToGlobal(Offset.zero) & box.size).intersect(screen);
+    if (rect.width > 0 && rect.height > 0) return rect;
+  }
+  // Yedek: ekranın ortasında minik bir kare — `CGRectIsEmpty` false olsun
+  // ve kök view'ın içinde kalsın diye.
+  return Rect.fromCenter(center: screen.center, width: 1, height: 1);
+}
 
 /// Görsel yakalama — testlerde enjekte edilebilir olması ŞART: `toImage`
 /// gerçek asenkron iş yapıyor ve widget testlerinin sahte zamanında ASLA
@@ -62,6 +94,7 @@ Future<void> shareBoard({
   required Uint8List? png,
   required String text,
   required String? url,
+  required Rect? origin,
 }) async {
   // Web `${text}\n${url}` yedeğiyle aynı gövde: birçok hedef (SMS, not
   // uygulamaları) ayrı bir "url" alanı taşımadığından link metne katılıyor.
@@ -81,15 +114,50 @@ Future<void> shareBoard({
   // ikinci bir paylaş sayfası açtırmaz.
   if (png != null) {
     try {
-      // share_plus dosya yolu istiyor; geçici dizine yazıp paylaşıyoruz
-      // (sistem paylaş sayfası kapanınca dosya orada kalır, işletim sistemi
-      // geçici dizini kendi temizler).
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/kelimeki.png');
-      await file.writeAsBytes(png, flush: true);
+      // Baytları DOSYAYA YAZMIYORUZ, `XFile.fromData` ile bellekte veriyoruz —
+      // 13 Ağustos 2026'da cihaz testinde bulunan hatanın düzeltmesi: portun
+      // ilk sürümü `path_provider`'ın `getTemporaryDirectory()`si + `dart:io`
+      // `File`ıyla geçici bir dosya yazıyordu, ikisi de FLUTTER WEB'DE
+      // ÇALIŞMIYOR → dosyalı dal her seferinde patlayıp aşağıdaki metin+link
+      // yedeğine düşüyordu, WhatsApp da linkten sitenin GENEL og:image
+      // kartını üretiyordu; kullanıcı "app tahta yerine jenerik Kelimeki
+      // görseli gönderiyor, web gerçek tahtayı gönderiyor" diye bildirdi.
+      //
+      // GERÇEK CanvasKit derlemesinde ÖLÇÜLDÜ (tahmin değil — bkz. Parça 84):
+      //   getTemporaryDirectory()      → FIRLATIYOR
+      //   File(...).writeAsBytes()     → "Unsupported operation: _Namespace"
+      //   XFile.fromData(...)          → OK (11 bayt, mime/name korunuyor)
+      //   share_plus web prepareData   → OK, ShareData'da files DOLU
+      //
+      // `XFile.fromData` HER İKİ platformda da doğru: web'de share_plus
+      // baytları `readAsBytes()` ile alıp `navigator.share({files})`e veriyor
+      // (web `handleShare`in birebir aynı dalı); native'de path boş kaldığından
+      // share_plus'ın kendisi geçici dizine yazıyor
+      // (`method_channel_share.dart`, `_getFile`) — yani dosya yazma işi
+      // kaybolmadı, yalnızca bizden kütüphaneye taşındı ve bu kod yolu
+      // `path_provider`a hiç dokunmuyor.
+      //
+      // `fileNameOverrides` ŞART: `cross_file`'ın io uygulaması `name`
+      // parametresini YOK SAYIYOR (paket belgesinde yazılı), o olmadan
+      // native'de dosya adı boş/rastgele kalırdı. Web'de `name` zaten
+      // kullanılıyor, override de aynı adı verdiğinden iki taraf eşit.
+      //
+      // `downloadFallbackEnabled: false` YALNIZCA web'de anlamlı (native'de
+      // parametre yok sayılıyor) ve web `handleShare` zinciriyle hizalamak
+      // için: varsayılan `true` iken `navigator.canShare({files})` false
+      // dönerse share_plus paylaşmak yerine PNG'yi sessizce İNDİRİYOR —
+      // web'in kendi yedeği ise metin+link paylaşımı. `false` ile o durumda
+      // fırlıyor ve aşağıdaki yedeğe düşüyoruz.
       await SharePlus.instance.share(
         ShareParams(
-            text: body, files: [XFile(file.path, mimeType: 'image/png')]),
+          text: body,
+          files: [
+            XFile.fromData(png, mimeType: 'image/png', name: 'kelimeki.png')
+          ],
+          fileNameOverrides: const ['kelimeki.png'],
+          downloadFallbackEnabled: false,
+          sharePositionOrigin: origin,
+        ),
       );
       return;
     } catch (e) {
@@ -98,7 +166,8 @@ Future<void> shareBoard({
   }
 
   try {
-    await SharePlus.instance.share(ShareParams(text: body));
+    await SharePlus.instance
+        .share(ShareParams(text: body, sharePositionOrigin: origin));
   } catch (e) {
     debugPrint('[Kelimeki] paylaşım tamamlanmadı: $e');
   }

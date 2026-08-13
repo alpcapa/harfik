@@ -295,6 +295,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
       png: null,
       text: 'Hemen ücretsiz dene!',
       url: '$webOrigin/?ref=arkadas',
+      origin: shareOriginFrom(context),
     );
   }
 

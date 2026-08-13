@@ -29,7 +29,8 @@ class _ShareCall {
   final Uint8List? png;
   final String text;
   final String? url;
-  _ShareCall(this.png, this.text, this.url);
+  final Rect? origin;
+  _ShareCall(this.png, this.text, this.url, this.origin);
 }
 
 List<Map<String, Object?>> _tiles() => [
@@ -65,8 +66,13 @@ void main() {
             playerCount: null,
             currentName: 'Ironman',
             initialExpandedId: initialExpandedId,
-            share: ({required png, required text, required url}) async {
-              calls.add(_ShareCall(png, text, url));
+            share: ({
+              required png,
+              required text,
+              required url,
+              required origin,
+            }) async {
+              calls.add(_ShareCall(png, text, url, origin));
             },
             // Gerçek `toImage` sahte zamanda tamamlanmıyor (bkz.
             // CaptureBoardFn notu) — akış testinde sahte bayt, gerçek
@@ -103,7 +109,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Paylaş'), findsOneWidget);
     expect(find.text('Kapat'), findsOneWidget);
-    expect(find.text('Vazgeç'), findsOneWidget);
+    // 13 Ağustos 2026 — ayrı "Vazgeç" paneli iki platformdan da kaldırıldı
+    // (kullanıcı kararı: aksiyonlardan biri zaten "Kapat", ikisi aynı işi
+    // yapıyormuş gibi okunuyordu). Bkz. Parça 85.
+    expect(find.text('Vazgeç'), findsNothing);
 
     await tester.tap(find.text('Paylaş'));
     await tester.pumpAndSettle();
@@ -115,6 +124,19 @@ void main() {
     // Görsel paylaşıma iletildi (yakalayıcı çağrıldı).
     expect(calls.single.png, isNotNull);
     expect(calls.single.png!.length, greaterThan(1000));
+
+    // iPad ankrajı (Parça 86): share_plus'ın iOS eklentisi, iPad'de origin
+    // BOŞ ya da kök view'ın DIŞINDA ise paylaşmak yerine FlutterError
+    // döndürüyor — yani ankraj vermemek paylaşımı sessizce öldürüyor.
+    // Web derlemesinde bu hiç görünmez (orada `navigator.share` kullanılıyor),
+    // o yüzden sözleşme burada pinleniyor.
+    final origin = calls.single.origin;
+    expect(origin, isNotNull);
+    expect(origin!.isEmpty, isFalse, reason: 'CGRectIsEmpty olmamalı');
+    final screen = Offset.zero & tester.view.physicalSize / tester.view.devicePixelRatio;
+    expect(screen.contains(origin.topLeft), isTrue);
+    expect(screen.contains(origin.bottomRight - const Offset(0.01, 0.01)), isTrue,
+        reason: 'ankraj kök view koordinat uzayının İÇİNDE kalmalı');
 
     // Paylaşılacak GÖRSELİN kendisi: aynı düğümü gerçek yakalayıcıyla
     // çekip diske yazıyoruz — ekran görüntüsü, paylaşılan PNG'nin birebir
@@ -168,6 +190,35 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ScoreBoxRow), findsNothing);
+  });
+
+  // "Vazgeç" paneli kalkınca aksiyonsuz çıkış yolu KAYBOLMAMALI —
+  // `showModalBottomSheet`'in zemin dokunuşu hâlâ menüyü kapatmalı ve
+  // hiçbir `onSelect` çalışmamalı (tahta AÇIK kalır, paylaşım gitmez).
+  // Bu, Vazgeç'in kaldırılmasının kullanıcıyı kapana kıstırMADIĞININ kanıtı.
+  testWidgets('zemine dokunmak menüyü aksiyonsuz kapatır (Vazgeç yerine)',
+      (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [gameRow(id: 'g1')]
+      ..snapshots = {'g1': _tiles()};
+    final repo = await newRepoForWidget(tester, gw);
+    final calls = await pumpHistoryWithShare(tester, repo);
+
+    await tester.tap(find.text('01.08.2026'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(ScoreBoxRow));
+    await tester.pumpAndSettle();
+    expect(find.text('Paylaş'), findsOneWidget);
+
+    // Menünün DIŞINA (ekranın üst kenarına) dokun.
+    await tester.tapAt(const Offset(210, 30));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Paylaş'), findsNothing, reason: 'menü kapanmalı');
+    expect(find.byType(ScoreBoxRow), findsOneWidget,
+        reason: 'tahta AÇIK kalmalı — "Kapat" seçilmedi');
+    expect(calls, isEmpty, reason: 'paylaşım tetiklenmemeli');
+    expect(gw.sharedGames, isEmpty);
   });
 
   testWidgets('initialExpandedId: hedef ilk sayfada YOKSA sayfalanır ve açılır',
@@ -331,6 +382,7 @@ void main() {
         png: Uint8List.fromList([1, 2, 3]), // geçerli bayt: dosya yolu denenir
         text: shareMessage,
         url: 'https://kelimeki.com/game/a',
+        origin: const Rect.fromLTWH(10, 20, 30, 40),
       );
     });
 
@@ -340,6 +392,79 @@ void main() {
         '$shareMessage\nhttps://kelimeki.com/game/a');
     // Dosya yolu YOK — görselli dal başarısız olduğu için metne düşüldü.
     expect(args['uri'], isNull);
+  });
+
+  // 13 Ağustos 2026 — cihaz testinde "app tahta yerine jenerik Kelimeki
+  // görselini gönderiyor, web gerçek tahtayı gönderiyor" bildirildi. Kök
+  // sebep: görselli dal `dart:io` `File` + `path_provider` ile geçici dosya
+  // yazıyordu, ikisi de Flutter web'de çalışmadığından dal HER SEFERİNDE
+  // patlayıp metin+link yedeğine düşüyordu (WhatsApp da linkten sitenin
+  // GENEL og:image kartını üretiyordu). Bu test görselli dalın GERÇEKTEN
+  // alındığını ve kanala doğru adlı/tipli PNG'nin gittiğini sabitliyor.
+  //
+  // DOĞRULAMA SINIRI (dürüst kayıt): hatanın KENDİSİ bu testte
+  // ÜRETİLEMEZ — native VM'de `dart:io` çalışır, yani eski kod da bu testi
+  // geçerdi. Web tarafı ayrıca gerçek CanvasKit derlemesinde ölçüldü
+  // (bkz. Parça 84 notu). Buradaki değer, sözleşmenin (veri destekli
+  // XFile + fileNameOverrides → doğru ad/tip/bayt) kalıcı olarak
+  // pinlenmesi.
+  testWidgets('görselli paylaşım: kanala kelimeki.png + PNG baytları gider',
+      (tester) async {
+    const shareChannel = MethodChannel('dev.fluttercommunity.plus/share');
+    const pathChannel = MethodChannel('plugins.flutter.io/path_provider');
+    final calls = <MethodCall>[];
+    final tempRoot = Directory.systemTemp.createTempSync('kelimeki_share_');
+
+    tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(shareChannel, (call) async {
+      calls.add(call);
+      return '';
+    });
+    // share_plus, path'i BOŞ olan bir XFile'ı kendisi geçici dizine yazar
+    // (`method_channel_share.dart`, `_getFile`) — yani dosya yazma işi
+    // bizden kütüphaneye geçti; bu mock o yolu açıyor.
+    tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(pathChannel, (call) async {
+      return call.method == 'getTemporaryDirectory' ? tempRoot.path : null;
+    });
+    addTearDown(() {
+      tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(shareChannel, null);
+      tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(pathChannel, null);
+      tempRoot.deleteSync(recursive: true);
+    });
+
+    // Gerçek bir PNG imzası — mimeType tahminine değil bize bağlı olmalı.
+    final png = Uint8List.fromList(
+        [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3]);
+    await tester.runAsync(() async {
+      await shareBoard(
+        png: png,
+        text: shareMessage,
+        url: 'https://kelimeki.com/game/a',
+        origin: const Rect.fromLTWH(10, 20, 30, 40),
+      );
+    });
+
+    expect(calls, hasLength(1), reason: 'görselli dal metne DÜŞMEMELİ');
+    final args = calls.single.arguments as Map;
+    expect(args['text'], '$shareMessage\nhttps://kelimeki.com/game/a');
+    expect(args['mimeTypes'], ['image/png']);
+    // iPad ankrajı KANALA ulaşmalı (Parça 86) — iOS eklentisi bu dört alanı
+    // okuyup popover sourceRect'ini kuruyor; boş gelirse iPad'de paylaşmak
+    // yerine FlutterError döndürüyor.
+    expect(args['originX'], 10.0);
+    expect(args['originY'], 20.0);
+    expect(args['originWidth'], 30.0);
+    expect(args['originHeight'], 40.0);
+
+    final paths = (args['paths'] as List).cast<String>();
+    expect(paths, hasLength(1));
+    // `fileNameOverrides` olmadan native'de ad kaybolur (`cross_file`ın io
+    // uygulaması `name`i yok sayıyor — paket belgesinde yazılı).
+    expect(paths.single, endsWith('/kelimeki.png'));
+    expect(File(paths.single).readAsBytesSync(), png);
   });
 
   testWidgets('Son Oynadıklarım: hiç bitmiş oyun yoksa bölüm GİZLİ',
