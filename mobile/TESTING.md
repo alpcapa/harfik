@@ -736,12 +736,21 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **Davet linki.** "Arkadaşını Davet Et" sistem paylaş sayfasını
       açmalı; link `https://kelimeki.com/davet/…` biçiminde olmalı ve
       webde açılıp çalışmalı (üye olmayan kayıt akışına düşmeli).
-- [ ] **Davet linki uygulamada.** Uygulama kuruluyken
-      `kelimeki://davet/<token>` linkine dokun (test için token'ı web
-      linkinden alıp şemayı elle kur, ör. notlara yapıştırıp aç):
-      girişliysen "X ile artık arkadaşsınız" diyaloğu; girişsizsen
-      "giriş yaptığında ekleneceksiniz" önizlemesi, giriş sonrası
-      Setup'ta otomatik kabul.
+- [ ] **Davet linki uygulamada — uygulama AÇIKKEN (sıcak).** Uygulama
+      arka planda AÇIK dururken `kelimeki://davet/<token>` linkine dokun
+      (test için token'ı web linkinden alıp şemayı elle kur, ör. notlara
+      yapıştırıp aç): girişliysen "X ile artık arkadaşsınız" diyaloğu;
+      girişsizsen "giriş yaptığında ekleneceksiniz" önizlemesi, giriş
+      sonrası Setup'ta otomatik kabul.
+- [ ] **Davet linki uygulamada — uygulama KAPALIYKEN (soğuk başlangıç,
+      13 Ağustos 2026, Parça 87).** Uygulamayı görev yöneticisinden
+      TAMAMEN kapat, sonra aynı linke dokun: uygulama açılmalı VE davet
+      işlenmeli. Öncesinde token sessizce kayboluyordu (`AppLinks`in
+      soğuk-başlangıç linkini yalnızca İLK dinleyiciye bir kez basması;
+      o dinleyici supabase_flutter oluyordu) — sıcak akış çalıştığı için
+      görünmüyordu, bu yüzden İKİ maddeyi de ayrı ayrı koş. **Mükerrer
+      kontrolü:** "artık arkadaşsınız" diyaloğu YALNIZCA BİR KEZ
+      çıkmalı, üst üste iki kez DEĞİL.
 - [ ] **PlayerScoreCard simgesi.** k-lig/arkadaş listesinden birinin
       kartını aç: arkadaşsan ismin yanında **yeşil "kişi-onay"** (adam +
       tik) görünmeli — listelerdeki kırmızı "adam-" DEĞİL; bu bilinçli bir
@@ -1005,6 +1014,22 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       bulanık/bozuk görünmemeli. 10 MB'ı aşan bir görselde ise "Görsel
       10 MB'den küçük olmalı." hatası çıkmalı, hiçbir şey yüklenmemeli. Bir resim-DIŞI dosya (galeri buna izin veriyorsa)
       seçilirse "Lütfen bir görsel dosyası seç." hatası çıkmalı.
+- [ ] **Profil fotoğrafı — HEIC (Android'de KRİTİK, 13 Ağustos 2026,
+      Parça 87).** Android'de galeriden bir **HEIC/HEIF** fotoğraf seç
+      (iPhone'dan aktarılmış bir görsel ya da kamerası HEIC'e ayarlı bir
+      cihazın kendi çekimi): yükleme BAŞARILI olmalı. Öncesinde
+      "Lütfen bir görsel dosyası seç." hatası veriyordu — `image_picker`
+      görseli JPEG'e yeniden kodlarken uzantıyı `.heic` bırakıyor, eski kod
+      uzantıya bakıp dosyayı resim SAYMIYORDU. iOS'ta bu sorun hiç yoktu
+      (çıktı her zaman `.jpg`), yine de bir HEIC seçimiyle regresyon
+      kontrolü yap. Kovadaki dosyanın `image/jpeg` olduğunu da doğrula.
+- [ ] **Profil fotoğrafı — izin REDDİ (13 Ağustos 2026, Parça 87).**
+      Ayarlardan uygulamanın galeri/fotoğraf iznini KAPAT, sonra
+      "FOTOĞRAF DEĞİŞTİR"e bas: ekranda **"Fotoğraf seçilemedi. Galeri
+      izni verildiğinden emin ol."** hatası çıkmalı. Öncesinde HİÇBİR ŞEY
+      olmuyordu (ne hata ne yükleniyor göstergesi) — kullanıcı için
+      uygulamanın donduğundan ayırt edilemezdi. İzni geri açıp tekrar
+      dene: normal akış çalışmalı.
 
 ## 13. k-lig ödül & rütbe sistemi (Parça 61-62)
 
@@ -1268,6 +1293,15 @@ açar; o zamana kadar tarayıcıda açılırlar (bozuk değil, yalnızca eksik).
       (b) Setup'ta "Arkadaşınla paylaş", (c) Arkadaşlar'da davet linki.
       Popover ekranda görünmeli (ve makul bir yerden çıkmalı), "hiçbir şey
       olmadı" bir hatadır.
+- [ ] **Bölüm 10 — davet linkinin SOĞUK başlangıcı (Parça 87).** Uygulamayı
+      tamamen kapatıp `kelimeki://davet/<token>` linkine dokun; davet
+      işlenmeli ve diyalog YALNIZCA BİR KEZ çıkmalı. Bu, web derlemesinde
+      test EDİLEMEZ (custom şemayı yalnızca kurulu bir uygulama yakalar),
+      yani ilk kez burada gerçek olarak sınanıyor.
+- [ ] **Bölüm 12 — HEIC avatarı ve galeri izni reddi (Parça 87).**
+      Android'de HEIC bir fotoğrafla yükleme (eskiden reddediliyordu) ve
+      izin kapalıyken görünen Türkçe hata — ikisi de gerçek bir galeri/izin
+      diyaloğu gerektirdiğinden yalnızca cihazda doğrulanabilir.
 - [ ] **Bölüm 8 — uçak modu:** burada native'in web'den DAHA İYİ olması
       bekleniyor, iki şey ayrıca doğrulanmalı:
       (a) uçak modunda **kelime anlamı GELMELİ** (`meanings.db` pakette —

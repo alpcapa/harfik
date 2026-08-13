@@ -671,6 +671,32 @@ void main() {
       // takeAll atomik tüketti — ikinci okuma boş.
       expect(await storage.events.takeAll(friendInviteTokenKind), isEmpty);
     });
+
+    // Parça 87 — soğuk başlangıçta AYNI token iki kez kuyruğa girebiliyor:
+    // `pending_events`in dedup'ı yok (`PendingEventStore.add` düz insert) ve
+    // link hem `uriLinkStream`den hem `getInitialLink()` kurtarmasından
+    // düşebiliyor. Dedup olmadan kullanıcı üst üste iki "artık arkadaşsınız"
+    // diyaloğu görür ve ikinci bir gereksiz RPC atılır.
+    test('parti içinde mükerrer token bir kez işlenir, bozuk kayıt elenir',
+        () {
+      expect(
+        inviteTokensFromEvents([
+          {'token': 'tok-1'},
+          {'token': 'tok-1'}, // soğuk başlangıç: akış + getInitialLink
+          {'token': 'tok-2'},
+          {'token': ''}, // bozuk
+          {'token': 42}, // bozuk
+          <String, Object?>{}, // bozuk
+        ]),
+        ['tok-1', 'tok-2'],
+      );
+      // Dedup PARTİ bazında: kalıcı bir "görüldü" listesi TUTULMUYOR, yani
+      // bir sonraki oturumda aynı linke yeniden dokunmak hâlâ çalışır.
+      expect(inviteTokensFromEvents([
+        {'token': 'tok-1'}
+      ]), ['tok-1']);
+    });
+
   });
 }
 

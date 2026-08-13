@@ -25,6 +25,7 @@ import '../../bootstrap.dart';
 import '../../config/env.dart';
 import '../../data/cloud_save_repo.dart';
 import '../../data/games_api.dart';
+import '../../data/friend_invite_inbox.dart' show inviteTokensFromEvents;
 import '../../storage/pending_event_store.dart' show friendInviteTokenKind;
 import '../friends/friends_modal.dart' show showFriendInfoDialog;
 import '../../game/game_controller.dart';
@@ -330,10 +331,11 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     _processingInvites = true;
     try {
       final s = await storage;
-      final events = await s.events.takeAll(friendInviteTokenKind);
-      for (final e in events) {
-        final token = e['token'];
-        if (token is! String || token.isEmpty) continue;
+      // Mükerrer/bozuk kayıt elemesi saf yardımcıda (gerekçe orada —
+      // soğuk başlangıçta aynı token iki kez kuyruğa girebiliyor).
+      final events =
+          inviteTokensFromEvents(await s.events.takeAll(friendInviteTokenKind));
+      for (final token in events) {
         try {
           final name = await friends.acceptInvite(token);
           if (mounted) {

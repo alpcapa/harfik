@@ -3128,6 +3128,114 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        gerçek popover FAZ B'de doğrulanmalı. `mobile/TESTING.md` bölüm 6
        ve FAZ B'ye maddeler eklendi.
 
+   - ✅ **Parça 87 — üç sessiz hata: HEIC avatar reddi, yutulan galeri
+     izni hatası, kaybolan soğuk-başlangıç davet linki (13 Ağustos 2026,
+     `avatar_picker.dart`, `auth_service.dart`, `account_settings_modal.dart`,
+     `friend_invite_inbox.dart`, `setup_screen.dart`):** Üçü de "hiçbir şey
+     olmuyor" sınıfından — kullanıcıya hata bile göstermeden başarısız
+     oluyorlardı. Üçü de kaynak koddan ölçülerek doğrulandı.
+     - **(a) HEIC seçen Android kullanıcısı avatarını YÜKLEYEMİYORDU — ve
+       sebep "HEIC" DEĞİLDİ.** İlk teşhis "Android'de HEIC baytları
+       geliyor, MIME haritasında yok" idi; `image_picker`ın Android
+       kaynağı okununca ÇÜRÜDÜ: `ImageResizer.java`'nın `shouldScale`ı
+       `maxWidth != null || maxHeight != null || imageQuality < 100` —
+       bizim 512/512/85 parametrelerimizle HER ZAMAN true, yani görsel
+       JPEG'e yeniden kodlanıyor (`saveAsPNG = bitmap.hasAlpha()`, aksi
+       hâlde JPEG). **Ama çıktı `createImageOnExternalDirectory("/scaled_"
+       + outputImageName, ...)` ile yazılıyor — UZANTI KORUNUYOR.** Yani
+       dosya `scaled_IMG_x.heic`, içi JPEG; `XFile.mimeType` de o
+       platformda null. Uzantıya bakan eski kod `application/octet-stream`
+       üretip `uploadAvatar`ın `image/*` kontrolüne takılıyordu: **geçerli
+       bir JPEG, yalan söyleyen bir uzantı yüzünden reddediliyordu.**
+       - **Düzeltme uzantı haritasını genişletmek DEĞİL, baytları okumak:**
+         yeni `sniffImageMime` (JPEG/PNG/GIF/WebP/BMP + ISO-BMFF `ftyp`
+         markası) ve öncelik sırasını sabitleyen `resolveAvatarMime`
+         (baytlar → platformun bildirdiği tip → uzantı). Baytlar asla yalan
+         söylemez ve sunucuya giden şey de zaten onlar.
+       - **HEIC düz bir imzayla YAKALANAMAZ** — ilk baytı `0x00`; `ftyp`
+         offset 4'te, marka 8-12'de. Bu yüzden sniff'te ayrı bir dal var.
+       - **iOS'ta sorun yoktu ve bu da ölçüldü:**
+         `FLTImagePickerMetaDataUtil.getImageMIMETypeFromImageData`
+         yalnızca İLK baytı kokluyor (JPEG/PNG/GIF); HEIC `0x00` ile
+         başladığından `MIMETypeOther` → suffix nil → `kFLTImagePickerDefaultSuffix
+         = @".jpg"`. Flutter web'de ise `maxWidth/maxHeight/imageQuality`
+         sessizce yok sayılıyor (Parça 83'te belgeliydi), yani baytlar
+         GERÇEKTEN HEIC olabiliyor — sniff üç platformda da doğru cevabı
+         verdiği için ayrı dal gerekmedi.
+       - `auth_service.dart`'ın `_extByMime`ine heic/heif/bmp eklendi ki
+         storage yolu (`<uid>/avatar.<ext>`) yanlış adlandırılmasın.
+       - **`resolveAvatarMime` AYRI ve saf bir fonksiyon, çünkü test
+         edilecek sözleşme SIRA:** `pickAvatarImage` platform kanalına
+         bağlı, widget testinde çalışmaz — Parça 86'nın dersi (bir
+         sözleşmeyi enjekte edilebilir sınırın ÜSTÜNDE test etmek, altındaki
+         iletimi kanıtlamaz) burada baştan uygulandı.
+     - **(b) Galeri izni reddedilince EKRANDA HİÇBİR ŞEY olmuyordu.**
+       `pickAvatar`/`shrinkAvatar` çağrıları `try`ın DIŞINDAYDI; izin
+       reddinde `image_picker`ın fırlattığı `PlatformException` en yakın
+       `catch`e hiç uğramadan akışı kesiyor, `_uploadingAvatar` bile
+       kurulmadığından tek bir piksel değişmiyordu. İkisi de `try` içine
+       alındı; Türkçe, eyleme dönük bir hata gösteriliyor ("Fotoğraf
+       seçilemedi. Galeri izni verildiğinden emin ol.") — Parça 45'in
+       "sessiz yutma yok" dersinin aynı sınıfı.
+     - **(c) Uygulama KAPALIYKEN dokunulan davet linki SESSİZCE
+       kayboluyordu.** `friend_invite_inbox.dart`'ın eski başlığı "cold
+       start'ta ilk URI da bu akışa dahil" diyordu — YANLIŞTI ve mekanizma
+       kaynaktan okunarak doğrulandı: `AppLinks` Dart tarafında bir
+       SINGLETON ve tek bir `StreamController.broadcast()` üzerinden
+       çoğullama yapıyor; native taraf (`AppLinksIosPlugin.swift:107`,
+       `AppLinksPlugin.java:133`) soğuk başlangıç linkini `initialLinkSent`
+       bayrağıyla YALNIZCA İLK `onListen`da bir kez akışa basıyor.
+       **Broadcast akışları geç abone olana geçmiş olayları TEKRARLAMAZ.**
+       `bootstrap()`ta bu inbox `await initSupabase()` VE
+       `await checkVersionGate(supabase)` (gerçek bir ağ çağrısı, 5 sn'ye
+       kadar) tamamlandıktan SONRA kuruluyor; supabase_flutter ise
+       `Supabase.initialize` içinde (`detectSessionInUri` varsayılan true)
+       `uriLinkStream`e ondan ÖNCE abone oluyor — yani ilk dinleyici o,
+       bayrağı o tüketiyor.
+       - **Kurtarma yolu `getInitialLink()`:** native tarafta düz bir
+         method-channel okuması (`case "getInitialLink": result(initialLink)`),
+         `initialLinkSent` bayrağını TÜKETMİYOR — supabase'in auth akışını
+         bozmadan aynı URI'yi bir kez daha okuyabiliyoruz. Hata yutuluyor
+         ve loglanıyor: bir davet linki uygulamanın açılışını bloke edemez.
+       - **Mükerrer kayıt riski gerçek ve kapatıldı:** aynı link hem sıcak
+         akıştan hem kurtarmadan düşebiliyor ve `PendingEventStore.add`
+         düz bir insert — dedup'ı YOK. Yeni saf `inviteTokensFromEvents`
+         bir `takeAll` PARTİSİNDEKİ mükerrerleri (ve bozuk kayıtları)
+         eliyor. Dedup **parti bazında**: kalıcı bir "görüldü" listesi
+         TUTULMUYOR, yani bir sonraki oturumda aynı davet linkine yeniden
+         dokunmak hâlâ çalışıyor.
+       - **Widget testi DENENDİ ve TERK EDİLDİ:** `SetupScreen`
+         `pumpAndSettle`ı asıyor (canlı rozet/senkron zamanlayıcıları —
+         Parça 8'in aynı tuzağı); sınırlı `pump` döngüleri de kurtarmadı,
+         test 400 sn zaman aşımına düştü. Bu yüzden karar saf bir fonksiyona
+         çıkarılıp ORADA test edildi — gerekçe fonksiyonun kendi doc
+         yorumunda da yazılı.
+     - **Test — negatif eş doğrulamasıyla, İKİ AYRI kanıt:** (a) için
+       `account_settings_test.dart`'a 5 test (bayt önceliği, HEIC `ftyp`
+       markası, yedek zinciri, picker fırlatması, shrink fırlatması);
+       `resolveAvatarMime`den sniff çağrısı çıkarılınca 2 test GERÇEKTEN
+       düştü (`Expected: 'image/heic' / Actual: 'application/octet-stream'`).
+       (b) için modaldeki `try/catch` geri alınınca iki test de GERÇEKTEN
+       düştü (`Found 0 widgets with text containing Fotoğraf seçilemedi`).
+       (c) için `friends_test.dart`'a saf bir dedup testi.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       385/385 yeşil** (379'dan +6). `kelimeki_core`'a ve web'e hiç
+       dokunulmadı — `mobile/` DIŞINDA dosya değişmedi.
+     - **Doğrulama sınırı:** üçü de gerçek cihaz istiyor — Android'de
+       HEIC seçimi, izin reddi diyaloğu ve `kelimeki://davet/<token>`
+       soğuk başlangıcı (custom şema yalnızca KURULU bir uygulamada
+       yakalanır, web derlemesinde test EDİLEMEZ — Parça 28'in aynı
+       sınırı). `mobile/TESTING.md` bölüm 10/12 ve FAZ B'ye maddeler
+       eklendi.
+     - **Ders — "web'de de böyle" bir savunma DEĞİL, ama "web'de yok" da
+       bir gerekçe değil:** (a) ve (b) web'de yaşanmıyor (tarayıcının
+       dosya seçicisi MIME'i doğru bildiriyor, izin diyaloğu yok), (c)
+       ise web'de kavram olarak yok (deep link yerine gerçek bir sayfa
+       var). Üçü de porta ÖZGÜ, platform kanallarının kendi
+       sözleşmelerinden doğuyor — Parça 86'nın `sharePositionOrigin`
+       bulgusuyla aynı aile. **Kaynak koda inmeden hiçbiri bulunamazdı;**
+       üçünde de belirti aynıydı: "hiçbir şey olmuyor".
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
