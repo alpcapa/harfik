@@ -316,7 +316,9 @@ mobile/
       ui/                    # app.dart, update_required_screen.dart,
                              # theme.dart (ÜRÜNÜN TEK teması — testler de
                              # `kelimekiTheme()` kullanır; M3'ün varsayılan
-                             # harf aralığını sıfırlar, bkz. Parça 78), ve:
+                             # harf aralığını sıfırlar, bkz. Parça 78),
+                             # form_input.dart (TÜM giriş alanlarının tek
+                             # dekorasyonu/metin stili, bkz. Parça 79), ve:
       ui/auth/               # giriş-kayıt-şifremi-unuttum modalı, hesap
                              # butonu, avatar, Terms/Privacy,
                              # reset_password_modal (recovery kapısı)
@@ -2711,26 +2713,50 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        doğruluyor ama TÜM ekranların cihazda gözle kontrolü kullanıcıdan
        bekleniyor — `mobile/TESTING.md` bölüm 0.5'e madde eklendi.
 
+   - ✅ **Parça 79 — giriş alanlarının 8 kopyası tek kaynağa indi; web'in
+     GERÇEK puntosu 14 değil 16'ymış (13 Ağustos 2026, yeni
+     `ui/form_input.dart` + 8 dosya):** Borç listesinin ikinci (ve son
+     mobil) maddesi kapandı.
+     - **Web'de bu stil TEK bir sınıf dizisi** ve dokuz bileşende BİREBİR
+       aynı: `w-full bg-bg border border-border rounded-md px-3 py-2
+       text-sm text-text outline-none focus:border-accent`. Port onu sekiz
+       dosyaya kopyalamış ve kopyalar ayrışmıştı: dolgu **8 ya da 10**,
+       punto **16 ya da tema varsayılanı**, dolgu rengi **beyaz ya da
+       `_bg`**. Parça 54'teki renk sürüklenmesiyle aynı sınıf.
+     - **ÖLÇÜM bir varsayımı düzeltti:** Parça 56 bu maddeyi yazarken
+       puntoyu `text-sm` = 14 sanıyordu. Gerçekte `index.css`teki iOS zoom
+       kuralı (`input, textarea, select { font-size: 16px !important }`)
+       sınıfı EZİYOR — web'de görünen punto **16**. Ölçülen web değerleri:
+       yükseklik **38** · punto **16** · satır **20** · dolgu **8/12** ·
+       çerçeve 1px `#DCE2EA` (odakta `#2563EB`) · yarıçap 6 · zemin beyaz.
+     - **Dikey dolgu 9, 8 DEĞİL — ve bu bir sihirli sayı değil:** CSS'te
+       çerçeve kutunun DIŞINA eklenir (20+16+2 = 38); Flutter'da
+       `OutlineInputBorder` çerçeveyi kutunun İÇİNE boyar, yani 8 dolguyla
+       dış ölçü 36 kalıyordu. 1px çerçeve payı eklenince dış kutu 38 VE
+       çerçevenin içindeki boşluk web'deki gibi 8 oluyor (ölçüldü;
+       `kInputHeight` sabiti bunu adlandırıyor).
+     - **`test/theme_test.dart` iki yeni kontrol aldı:** alanın gerçekten
+       38 yüksekliğinde ve 16/20 puntoda render edildiği + **`lib/` altında
+       ham `InputDecoration(` kurucusu kalmadığı** (regex `kInputDecoration(`
+       çağrılarını yakalamıyor). İkincisi olmadan bir sonraki oturum yeni
+       bir kopya açar ve kimse fark etmez.
+     - **Negatif eş:** dolgu 8'e çekilince yükseklik testi GERÇEKTEN
+       `Expected: <38.0> Actual: <36.0>` ile düştü; tarama regex'i
+       gevşetilince (ham `contains`) sekiz dosya listelenip düştü.
+     - **Temizlik:** kopyalarla birlikte ölü kalan yerel `_border`/`_accent`/
+       `_text`/`_bg` sabitleri ve `reset_password_modal`ın yerel `border()`
+       yardımcısı da silindi (analyze temiz).
+     - Doğrulama: `flutter analyze` "No issues found!"; tam takım yeşil.
+       `kelimeki_core`'a ve web'e hiç dokunulmadı.
+     - **Doğrulama sınırı:** klavye açıkken gerçek cihazda alanların
+       görünümü (özellikle çok satırlı sohbet/şikayet kutuları) gözle
+       kontrol edilmeli — `mobile/TESTING.md` bölüm 0.5'e madde eklendi.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
 kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
 silinip kendi tarihli parça notuna taşınır.
-
-- **Metin girişi dolgusu + `InputDecoration`ın 8 kopyası (11 Ağustos 2026,
-  Parça 56 denetiminde bulundu):** Port `contentPadding: h12/v10`
-  kullanıyor, web `px-3 py-2` = h12/**v8**. Kutu yüksekliği web'de tam
-  38px (20 satır + 16 dolgu + 2 çerçeve); portta satır yüksekliği de
-  serbest bırakıldığından ~40-41px. Birebir eşitlemek için İKİSİ birlikte
-  değişmeli: dolgu 8 **ve** giriş metninin `height: 20/14`i.
-  - **Asıl iş bu değil:** aynı `InputDecoration` bloğu **8 dosyada**
-    kopyalanmış (auth_modal, account_settings, reset_password, feedback,
-    friends, chat_modal, chat_settings, live_game_create_form) — Parça
-    54'teki renk sürüklenmesiyle AYNI sınıf risk. Önce ortak bir
-    `kInputDecoration` yardımcısına çekilmeli, düzeltme ondan sonra tek
-    yerden gelir.
-  - Cihazda görsel doğrulama gerektiriyor (Flutter'ın `isDense`/baseline
-    davranışı CSS ile birebir değil), o yüzden Parça 56'ya sığdırılmadı.
 
 - **Kayıt onayı maili kaydın GELDİĞİ kanala dönmeli (10 Ağustos 2026,
   kullanıcı kararı — sözleri: "Kişilerin kayıt başvurusu hangi kanaldan

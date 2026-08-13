@@ -35,11 +35,9 @@ import '../game/modal_shell.dart';
 import '../game/neo_button.dart';
 import 'k_avatar.dart';
 import '../tokens.dart';
-
-const Color _text = kText;
+import '../form_input.dart';
 const Color _muted = kMuted;
 const Color _accent = kAccent;
-const Color _border = kBorder;
 const Color _red = kRed;
 const Color _green = kGreen;
 
@@ -324,25 +322,6 @@ class _AccountSettingsModalState extends State<AccountSettingsModal> {
     }
   }
 
-  InputDecoration _inputDecoration({String? hint}) {
-    OutlineInputBorder border(Color c) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(color: c),
-        );
-    return InputDecoration(
-      isDense: true,
-      filled: true,
-      fillColor: Colors.white,
-      hintText: hint,
-      hintStyle: const TextStyle(fontSize: 14, color: Color(0xFF8A93A2)),
-      counterText: '',
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      enabledBorder: border(_border),
-      focusedBorder: border(_accent),
-      disabledBorder: border(_border),
-    );
-  }
-
   Widget _field(
     TextEditingController controller, {
     Key? key,
@@ -360,8 +339,8 @@ class _AccountSettingsModalState extends State<AccountSettingsModal> {
       maxLength: maxLength,
       onChanged: onChanged,
       enabled: !_busy,
-      style: const TextStyle(fontSize: 16, color: _text), // iOS zoom dersi
-      decoration: _inputDecoration(hint: hint),
+      style: kInputTextStyle,
+      decoration: kInputDecoration(hint: hint),
     );
   }
 
@@ -530,9 +509,8 @@ class _AccountSettingsModalState extends State<AccountSettingsModal> {
                   initialValue: _gender,
                   onChanged:
                       _busy ? null : (v) => setState(() => _gender = v ?? ''),
-                  decoration: _inputDecoration(),
-                  style: const TextStyle(
-                      fontFamily: 'SpaceGrotesk', fontSize: 16, color: _text),
+                  decoration: kInputDecoration(),
+                  style: kInputTextStyle,
                   items: [
                     const DropdownMenuItem(
                         value: '', child: Text('Belirtilmedi')),

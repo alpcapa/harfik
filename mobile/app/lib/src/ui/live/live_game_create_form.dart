@@ -24,6 +24,7 @@ import '../auth/k_avatar.dart';
 import '../friends/friends_modal.dart';
 import '../game/neo_button.dart';
 import '../tokens.dart';
+import '../form_input.dart';
 
 const Color _text = kText;
 const Color _muted = kMuted;
@@ -351,22 +352,8 @@ class _LiveGameCreateFormState extends State<LiveGameCreateForm> {
           TextField(
             controller: _query,
             onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
-              isDense: true,
-              filled: true,
-              fillColor: Colors.white,
-              hintText: 'İsim ya da takma ad ara…',
-              hintStyle:
-                  const TextStyle(fontSize: 14, color: Color(0xFF8A93A2)),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: _border)),
-              focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: _accent)),
-            ),
+            style: kInputTextStyle,
+            decoration: kInputDecoration(hint: 'İsim ya da takma ad ara…'),
           ),
           const SizedBox(height: 8),
           ConstrainedBox(

@@ -24,6 +24,7 @@ import '../auth/k_avatar.dart';
 import '../game/modal_shell.dart';
 import 'chat_modal.dart' show ChatParticipant;
 import '../tokens.dart';
+import '../form_input.dart';
 
 const _text = kText;
 const _muted = kMuted;
@@ -432,20 +433,8 @@ class _ChatSettingsModalState extends State<ChatSettingsModal> {
           minLines: 3,
           autofocus: true,
           onChanged: (_) => setState(() {}),
-          decoration: InputDecoration(
-            hintText: 'Kısaca açıklayın (zorunlu)…',
-            filled: true,
-            fillColor: _bg,
-            counterText: '',
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(6),
-                borderSide: const BorderSide(color: _border)),
-            focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(6),
-                borderSide: const BorderSide(color: _accent)),
-          ),
+          style: kInputTextStyle,
+          decoration: kInputDecoration(hint: 'Kısaca açıklayın (zorunlu)…'),
         ),
         Align(
           alignment: Alignment.centerRight,

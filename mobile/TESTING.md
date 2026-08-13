@@ -105,6 +105,12 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
       web'den farklı kırılıyor ya da bir etiket kutusuna sığmıyorsa not al
       (testler geometriyi doğruluyor ama her ekranı gözle kontrol
       edemiyor).
+- [ ] **Form alanları (13 Ağustos 2026, Parça 79).** Giriş/kayıt, Hesap
+      Ayarları, Görüş Bildir, arkadaş arama, sohbet ve şikayet kutuları —
+      hepsi AYNI görünmeli: 38px yükseklik, 16 punto, 12px yatay dolgu,
+      odakta mavi çerçeve. Çok satırlı olanlarda (sohbet/şikayet) da aynı
+      dolgu/çerçeve geçerli. Klavye açıkken metnin kutuya dikey ortalı
+      durduğunu da kontrol et.
 - [ ] **Arkadaş onay/bilgi diyalogları.** "Arkadaşlıktan çıkar" gibi bir
       onay diyaloğu aç: kart genişliği ve iç dolgusu web ile aynı olmalı
       (384 kutu, 24 dolgu → içerik 336).

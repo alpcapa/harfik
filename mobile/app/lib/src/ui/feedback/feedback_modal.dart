@@ -22,11 +22,10 @@ import '../game/modal_shell.dart';
 import '../game/neo_button.dart';
 import '../auth/auth_modal.dart';
 import '../tokens.dart';
+import '../form_input.dart';
 
 const Color _text = kText;
 const Color _muted = kMuted;
-const Color _accent = kAccent;
-const Color _border = kBorder;
 const Color _red = kRed;
 
 /// Web MIN_SUBMIT_MS.
@@ -239,7 +238,7 @@ class _FeedbackModalState extends State<FeedbackModal> {
           maxLines: 4,
           maxLength: 2000,
           autofocus: true,
-          decoration: _decoration(hint: 'Mesajın'),
+          decoration: kInputDecoration(hint: 'Mesajın'),
         ),
         const SizedBox(height: 12),
         if (user != null)
@@ -259,7 +258,7 @@ class _FeedbackModalState extends State<FeedbackModal> {
             enabled: !_busy,
             keyboardType: TextInputType.emailAddress,
             autofillHints: const [AutofillHints.email],
-            decoration: _decoration(
+            decoration: kInputDecoration(
                 hint: 'E-posta (yanıt alabilmen için, isteğe bağlı)'),
           ),
         if (_error != null) ...[
@@ -281,22 +280,4 @@ class _FeedbackModalState extends State<FeedbackModal> {
     );
   }
 
-  InputDecoration _decoration({String? hint}) {
-    OutlineInputBorder border(Color c) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide(color: c),
-        );
-    return InputDecoration(
-      isDense: true,
-      filled: true,
-      fillColor: Colors.white,
-      hintText: hint,
-      hintStyle: const TextStyle(fontSize: 14, color: Color(0xFF8A93A2)),
-      counterText: '',
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      enabledBorder: border(_border),
-      focusedBorder: border(_accent),
-      disabledBorder: border(_border),
-    );
-  }
 }
