@@ -2881,9 +2881,11 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **`mobile/` DIŞINDA dosya değişti** (`supabase/migrations/`,
        `CLAUDE.md`) → kök `CLAUDE.md` aynı commit'te güncellendi (Parça
        Bitirme Kontrol Listesi madde 1).
-     - **Doğrulama sınırı:** düzeltme SQL seviyesinde kanıtlandı; gerçek
-       istemciyle (cihazda fotoğraf değiştirme) uçtan uca teyit
-       kullanıcıdan bekleniyor.
+     - ~~**Doğrulama sınırı:** düzeltme SQL seviyesinde kanıtlandı; gerçek
+       istemciyle uçtan uca teyit bekleniyor~~ — **13 Ağustos 2026'da
+       KAPANDI: kullanıcı hem uygulamada hem web'de fotoğrafı birkaç kez
+       değiştirdi, 403 bir daha görülmedi.** Yani düzeltme yalnızca SQL'de
+       değil gerçek storage-api yolunda da çalışıyor.
 
    - ✅ **Parça 83 — avatar giriş sınırı 10 MB, ama SAKLANAN küçültülüyor
      (13 Ağustos 2026, yeni `util/avatar_image.dart`, `avatar_picker.dart`,
@@ -2929,9 +2931,12 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **`mobile/` DIŞINDA dosya değişti** (`src/lib/api.ts`,
        `src/components/AccountSettingsModal.tsx`, `CLAUDE.md`) → kök
        `CLAUDE.md` aynı commit'te güncellendi; web `npm run lint` temiz.
-     - **Doğrulama sınırı:** gerçek galeriden 10 MB'lık bir fotoğraf seçip
-       yüklemek ve saklanan boyutun küçüldüğünü Storage'da görmek cihazda
-       doğrulanmalı — `mobile/TESTING.md` bölüm 12 güncellendi.
+     - ~~**Doğrulama sınırı:** gerçek galeriden fotoğraf seçip saklanan
+       boyutun küçüldüğünü görmek cihazda doğrulanmalı~~ — **13 Ağustos
+       2026'da KAPANDI: kullanıcı iki platformda da birkaç kez yükleme
+       yaptı, sorun çıkmadı.** Kontrol maddeleri (özellikle "saklanan
+       dosya ~50-150 KB olmalı") `mobile/TESTING.md` bölüm 12 ve kök
+       `TESTING.md` bölüm 9.5'te duruyor — ilerideki bir regresyon için.
 
 ## Sonraya Bırakılan İşler (mobil)
 
