@@ -84,7 +84,7 @@ src/
 │   ├── RemainingTilesModal.tsx  # torbada kalan taşlar
 │   ├── WildcardModal.tsx        # joker taşı harf seçimi
 │   ├── FeedbackModal.tsx        # görüş/şikayet bildirme formu
-│   ├── AdminDashboard.tsx       # admin paneli: üyeler, oyunlar, büyüme grafiği, geri bildirim (yalnızca is_admin)
+│   ├── AdminDashboard.tsx       # admin paneli: üyeler, oyunlar, büyüme (aktif oyuncu/aktivasyon/retention), geri bildirim (yalnızca is_admin)
 │   ├── MemberMessageModal.tsx   # admin panelinden bir üyeye serbest metinli mesaj gönderme compose modalı
 │   ├── AdminChatTranscriptModal.tsx # admin paneli Şikayetler sekmesi: bitmiş bir Canlı oyunun tam sohbet dökümü
 │   ├── PlayerScoreCard.tsx      # bir oyuncunun ScoreCard'ının salt-okunur görünümü (admin panelinden ve k-lig'den açılır)

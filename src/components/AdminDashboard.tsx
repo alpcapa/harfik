@@ -9,6 +9,9 @@ import {
   fetchAdminEngagementTotals,
   fetchAdminFriendActivitySeries,
   fetchAdminFriendTotals,
+  fetchAdminActivePlayersSeries,
+  fetchAdminRetentionCohorts,
+  fetchAdminActivationStats,
   fetchAdminGuestSourceBreakdown,
   fetchAdminGuestDeviceBreakdown,
   fetchAdminGuestStandaloneBreakdown,
@@ -30,6 +33,9 @@ import type {
   AdminEngagementTotals,
   AdminFriendActivityPoint,
   AdminFriendTotals,
+  AdminActivePlayersPoint,
+  AdminRetentionCell,
+  AdminActivationStats,
   AdminGuestSourceRow,
   AdminGuestDeviceRow,
   AdminGuestStandaloneRow,
@@ -111,6 +117,13 @@ const FRIEND_SERIES: ChartSeriesDef[] = [
   { key: 'requests_sent', label: 'Gönderilen İstek', color: '#2a78d6' },
   { key: 'friendships_formed', label: 'Kurulan Arkadaşlık', color: '#008300' },
 ];
+// Mavi+amber çifti ölçülerek seçildi (renk körlüğü ayrım testi): mavi+mor
+// deutan'da ΔE 5.2 ile AYIRT EDİLEMİYOR, bu çift ise protan 27.0 / tritan 28.8 /
+// normal 32.9 ile altı kontrolün hepsinden geçiyor. USER_SERIES ile aynı çift.
+const ACTIVE_PLAYER_SERIES: ChartSeriesDef[] = [
+  { key: 'active_28d', label: 'Aktif Oyuncu (28 gün)', color: '#2a78d6' },
+  { key: 'active_in_bucket', label: 'Dönem İçi Aktif', color: '#D97706' },
+];
 
 /**
  * Filtre kombosu — `tabBtn` (Kullanıcı/Oyun) ile AYNI 11px görsel boyutta.
@@ -166,6 +179,27 @@ function AdminSelect({
 
 /** GrowthChart'ın `controls` satırına konan bölüm başlığı — Tablo Görünümü linkiyle aynı hizada. */
 const sectionTitleCls = 'text-[10px] font-mono font-bold uppercase tracking-[1px] text-accent';
+
+/**
+ * Grafik/tablo altındaki açıklama satırı. Bu paneldeki birkaç metrik (aktif
+ * oyuncu, aktivasyon, retention) tanımı bilinmeden YANLIŞ okunabildiğinden
+ * tanım ekranın kendisinde yazıyor — dokümanda kalsa ilk yanlış yorum
+ * kaçınılmaz olurdu.
+ */
+const captionCls = 'text-[9px] font-mono text-muted leading-relaxed';
+
+/**
+ * Saati okunaklı bir etiketе çevirir (ilk oyuna kadar geçen medyan süre).
+ * `formatDuration` BİLEREK kullanılmıyor: o, bir saatin altını "48:00" gibi
+ * saat:dakika biçiminde yazıyor ve "48 saat" diye okunabiliyor — burada
+ * ölçülen şey zaten çoğunlukla dakikalar mertebesinde.
+ */
+function formatHours(hours: number | null): string {
+  if (hours === null) return '—';
+  if (hours < 1) return `${Math.round(hours * 60)} dk`;
+  if (hours < 48) return `${hours.toFixed(1).replace('.', ',')} sa`;
+  return `${(hours / 24).toFixed(1).replace('.', ',')} gün`;
+}
 
 /** "CSV İndir"/"Tablo Görünümü" gibi küçük alt çizgili aksiyon linkleri için ortak stil. */
 const csvLinkCls =
@@ -249,6 +283,132 @@ function GuestBreakdownTable<T extends { visitors: number }>({
               <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">{totalVisitors}</td>
               <td className="py-1.5 text-text font-bold whitespace-nowrap text-center">100.00%</td>
             </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Retention kohort tablosu (Büyüme > Kullanıcı) — satır: kayıt haftası,
+ * sütun: kayıttan sonraki hafta (H0 = kayıt haftasının kendisi).
+ *
+ * Hücrenin zemin tonu TEK bir hueyle (accent) açıktan koyuya gider — kohort
+ * tablolarında gökkuşağı palet bir anti-desendir (renk sırası büyüklük sırası
+ * değildir). Ton yalnızca ikincil bir işaret: oran her hücrede SAYIYLA da
+ * yazıyor, yani bilgi asla renge tek başına bağlı değil (renk körlüğü/baskı).
+ *
+ * Azami ton `MAX_TINT`te durur ve bu ölçülmüş bir sınırdır: `text-text`
+ * (#1B2430) o zeminde 6.7:1 kontrast veriyor (WCAG AA 4.5:1'in üstünde).
+ * Hücre yazısı bu yüzden `text-muted` DEĞİL — muted, 0.25 tonun üstünde
+ * 4.5:1'in altına düşüyor (ölçüldü).
+ */
+const MAX_TINT = 0.55;
+
+function RetentionCohortTable({ cells, csvBaseName }: { cells: AdminRetentionCell[] | null; csvBaseName: string }) {
+  const grid = useMemo(() => {
+    if (!cells) return null;
+    const byWeek = new Map<string, { size: number; offsets: Map<number, number> }>();
+    let maxOffset = -1;
+    for (const c of cells) {
+      let row = byWeek.get(c.cohort_week);
+      if (!row) {
+        row = { size: c.cohort_size, offsets: new Map() };
+        byWeek.set(c.cohort_week, row);
+      }
+      row.offsets.set(c.week_offset, c.active_users);
+      if (c.week_offset > maxOffset) maxOffset = c.week_offset;
+    }
+    // En yeni kohort üstte — taze kohort kaydırmadan görünsün.
+    const weeks = [...byWeek.entries()].sort((a, b) => (a[0] < b[0] ? 1 : -1));
+    return { weeks, maxOffset };
+  }, [cells]);
+
+  if (grid === null) {
+    return <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>;
+  }
+  if (grid.weeks.length === 0 || grid.maxOffset < 0) {
+    return (
+      <div className="text-xs font-mono text-muted text-center py-6">
+        Henüz tamamlanmış bir hafta yok.
+      </div>
+    );
+  }
+
+  // Destructure: `handleExportCsv` bir fonksiyon bildirimi olduğundan TS,
+  // yukarıdaki `grid === null` erken dönüşünün daralttığı tipi closure içinde
+  // korumuyor (TS18047).
+  const { weeks, maxOffset } = grid;
+  const offsets = Array.from({ length: maxOffset + 1 }, (_, i) => i);
+
+  function handleExportCsv() {
+    // Yüzde değil HAM SAYI dışa aktarılıyor: yuvarlama kaybı olmuyor ve
+    // "Üye" sütunu paydayı taşıdığından oran her zaman yeniden hesaplanabilir.
+    downloadCsv(
+      csvFilename(csvBaseName),
+      ['Kohort (kayıt haftası)', 'Üye', ...offsets.map((o) => `H${o}`)],
+      weeks.map(([week, row]) => [
+        week,
+        row.size,
+        ...offsets.map((o) => {
+          const v = row.offsets.get(o);
+          return v === undefined ? '' : v;
+        }),
+      ]),
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <button type="button" onClick={handleExportCsv} className={`${csvLinkCls} self-end`}>
+        CSV İndir
+      </button>
+      <div className="overflow-x-auto">
+        <table className="w-auto text-[11px] font-mono border-collapse">
+          <thead>
+            <tr className="text-left text-muted border-b border-border">
+              <th className="py-1.5 pr-4 font-bold uppercase tracking-[1px] whitespace-nowrap">Kohort</th>
+              <th className="py-1.5 pr-4 font-bold uppercase tracking-[1px] text-center">Üye</th>
+              {offsets.map((o) => (
+                <th key={o} className="py-1.5 px-1.5 font-bold uppercase tracking-[1px] text-center">
+                  H{o}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {weeks.map(([week, row]) => (
+              <tr key={week} className="border-b border-border/50">
+                <td className="py-1.5 pr-4 text-text whitespace-nowrap">
+                  {new Date(week + 'T00:00:00').toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' })}
+                </td>
+                <td className="py-1.5 pr-4 text-muted whitespace-nowrap text-center">{row.size}</td>
+                {offsets.map((o) => {
+                  const active = row.offsets.get(o);
+                  if (active === undefined) {
+                    // Penceresi henüz TAMAMLANMAMIŞ hafta — boş bırakılıyor.
+                    // Yarım bir haftayı çizmek tablonun son köşegenini her zaman
+                    // yalancı bir "düşüş" gibi gösterirdi.
+                    return <td key={o} className="py-1.5 px-1.5" />;
+                  }
+                  const ratio = row.size > 0 ? active / row.size : 0;
+                  return (
+                    <td
+                      key={o}
+                      className="py-1.5 px-1.5 text-text text-center whitespace-nowrap"
+                      style={{
+                        // taban 0.06 (sıfır oranda bile hücre "veri var" desin) → azami MAX_TINT
+                        backgroundColor: `rgba(37, 99, 235, ${(0.06 + (MAX_TINT - 0.06) * ratio).toFixed(3)})`,
+                      }}
+                      title={`${active}/${row.size} üye aktif`}
+                    >
+                      %{Math.round(ratio * 100)}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -352,6 +512,9 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [guestDevices, setGuestDevices] = useState<AdminGuestDeviceRow[] | null>(null);
   const [guestStandalone, setGuestStandalone] = useState<AdminGuestStandaloneRow[] | null>(null);
   const [friendActivity, setFriendActivity] = useState<AdminFriendActivityPoint[] | null>(null);
+  const [activePlayers, setActivePlayers] = useState<AdminActivePlayersPoint[] | null>(null);
+  const [retention, setRetention] = useState<AdminRetentionCell[] | null>(null);
+  const [activation, setActivation] = useState<AdminActivationStats | null>(null);
   const [friendTotals, setFriendTotals] = useState<AdminFriendTotals | null>(null);
   const [gameActivity, setGameActivity] = useState<AdminGameActivityPoint[] | null>(null);
   const [gameGranularity, setGameGranularity] = useState<AdminActivityGranularity>('day');
@@ -410,6 +573,15 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     fetchAdminFriendTotals()
       .then(setFriendTotals)
       .catch((e) => setError(String(e)));
+    // Retention/aktivasyon üstteki periyot kontrollerine BİLEREK bağlı değil:
+    // kohort tablosunun ekseni kayıt haftası (sabit 8 hafta), aktivasyon ise
+    // tüm zamanların oranı — ikisi de "son N gün" penceresiyle anlam değiştirmez.
+    fetchAdminRetentionCohorts(8)
+      .then(setRetention)
+      .catch((e) => setError(String(e)));
+    fetchAdminActivationStats()
+      .then(setActivation)
+      .catch((e) => setError(String(e)));
   }, []);
 
   // Varsayılan tab: bekleyen iş varsa "Geri Bildirim" açık gelsin — panel
@@ -463,6 +635,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       fetchAdminGuestDeviceBreakdown(days).then(setGuestDevices),
       fetchAdminGuestStandaloneBreakdown(days).then(setGuestStandalone),
       fetchAdminFriendActivitySeries(userPeriod, userGranularity).then(setFriendActivity),
+      fetchAdminActivePlayersSeries(userPeriod, userGranularity).then(setActivePlayers),
     ]).catch((e) => setError(String(e)));
   }, [userPeriod, userGranularity]);
 
@@ -951,6 +1124,90 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
               {growthSubTab === 'user' && (
                 <div className="flex flex-col gap-5 pt-2">
+                  <div className="flex flex-col gap-2">
+                    {activePlayers === null ? (
+                      <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>
+                    ) : (
+                      <GrowthChart
+                        data={activePlayers}
+                        granularity={userGranularity}
+                        series={ACTIVE_PLAYER_SERIES}
+                        defaultActiveKeys={['active_28d', 'active_in_bucket']}
+                        controls={<span className={sectionTitleCls}>Aktif Oyuncu</span>}
+                        csvBaseName="kelimeki-aktif-oyuncu"
+                      />
+                    )}
+                    <p className={captionCls}>
+                      Aktif = oyun bitirme, Canlı hamle, sohbet mesajı, beğeni, arkadaşlık isteği ya da Canlı
+                      oyun kurma. Girişli kullanıcı için “uygulamayı açtı” sinyali şemada yok — bu yüzden bu
+                      sayı bilerek MAU değil, uygulamayı açıp hiçbir şey yapmadan çıkanı saymaz.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <span className={sectionTitleCls}>Aktivasyon</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center">
+                        <div className="font-mono text-xl font-bold text-text">
+                          {activation === null
+                            ? '…'
+                            : activation.total_users > 0
+                              ? `%${Math.round((activation.activated_users / activation.total_users) * 100)}`
+                              : '—'}
+                        </div>
+                        <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
+                          Aktivasyon Oranı
+                        </div>
+                      </div>
+                      <div className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center">
+                        <div className="font-mono text-xl font-bold text-text">
+                          {activation === null ? '…' : activation.never_activated}
+                        </div>
+                        <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
+                          Hiç Oyun Bitirmemiş
+                        </div>
+                      </div>
+                      <div className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center">
+                        <div className="font-mono text-xl font-bold text-text">
+                          {activation === null ? '…' : formatHours(activation.median_hours_to_first_game)}
+                        </div>
+                        <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
+                          İlk Oyuna Medyan Süre
+                        </div>
+                      </div>
+                      <div className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center">
+                        <div className="font-mono text-xl font-bold text-text">
+                          {activation === null ? '…' : activation.activated_same_day}
+                        </div>
+                        <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
+                          Aynı Gün Aktive
+                        </div>
+                      </div>
+                    </div>
+                    <p className={captionCls}>
+                      Aktive = en az bir oyunu BİTİRMİŞ üye (yalnızca arkadaşlık isteği gönderen aktif oyuncu
+                      sayılır ama aktive sayılmaz — iki ayrı soru).
+                      {/* Sayıya iyelik eki TAKILMIYOR ("2'i" mi "2'si" mi?) — Türkçe ünlü
+                          uyumu programatik olarak garanti edilemediğinden bu projede
+                          kural, eki gerektirmeyen bir kalıp seçmek (bkz. "Sıra: {isim}"
+                          ve k-lig eşik metinlerindeki aynı karar). */}
+                      {activation === null
+                        ? ''
+                        : ` İlk oyununu bitirme dağılımı — aynı gün: ${activation.activated_same_day}, 1-3 gün içinde: ${activation.activated_within_3_days}, daha sonra: ${activation.activated_later}.`}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <span className={sectionTitleCls}>Retention (Kayıt Haftasına Göre)</span>
+                    <RetentionCohortTable cells={retention} csvBaseName="kelimeki-retention" />
+                    <p className={captionCls}>
+                      Satır: kayıt haftası · Sütun: kayıttan sonraki hafta (H0 = kayıt haftasının kendisi) ·
+                      Hücre: o kohorttan o hafta aktif olan üye oranı. Yalnızca TAMAMLANMIŞ haftalar gösterilir —
+                      yarım bir hafta her zaman yapay olarak düşük görünür ve son köşegeni yalancı bir düşüş gibi
+                      gösterirdi.
+                    </p>
+                  </div>
+
                   <div className="flex flex-col gap-2">
                     <span className={sectionTitleCls}>
                       Ziyaretçi Kaynağı (Son {userPeriod} {PERIOD_UNIT_LABEL[userGranularity]})

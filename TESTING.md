@@ -536,6 +536,43 @@ Gerek de yok: `fetchMyGames` modal açılınca / sekme değişince koşuyor.
       olmadan yukarıdaki üç madde hiçbir şey kanıtlamaz — "her durumda
       yüklenemedi yazan" bir hata da onları geçerdi.
 
+## 9.7. Admin — Aktif Oyuncu / Aktivasyon / Retention (14 Ağustos 2026)
+
+Üç panel Büyüme > Kullanıcı'ya eklendi. Üç RPC de canlıda gerçek admin
+JWT'siyle koşuldu (yetki matrisi dahil); aşağıdakiler yalnızca gerçek
+tarayıcıda görülebilecek olanlar. **Admin hesabı gerekiyor.**
+
+- [ ] **Üçü de yükleniyor.** Admin Paneli → Büyüme → Kullanıcı: "Yeni Üye /
+      Ziyaret"in altında sırasıyla **Aktif Oyuncu** grafiği, **Aktivasyon**
+      (4 kutu), **Retention** tablosu görünmeli. Hiçbiri "Yükleniyor…"da
+      asılı kalmamalı.
+- [ ] **Aktif Oyuncu grafiği iki seri gösteriyor** ("Aktif Oyuncu (28 gün)"
+      mavi, "Dönem İçi Aktif" amber) ve legend'dan tek tek açılıp
+      kapanabiliyor. Altındaki açıklama satırı "…bu sayı bilerek MAU değil"
+      cümlesini içermeli — tanımın ekranda olması bilinçli.
+- [ ] **Periyot/granülerlik kontrolü grafiği GERÇEKTEN değiştiriyor.**
+      Üstteki periyot kombosunu değiştir: Aktif Oyuncu grafiği de yeniden
+      çekilmeli (Yeni Üye/Ziyaret ile aynı kontrolleri paylaşıyor).
+      **Aktivasyon ve Retention DEĞİŞMEMELİ** — ikisi bilerek periyoda bağlı
+      değil (kohortun ekseni kayıt haftası, aktivasyon tüm zamanların oranı).
+- [ ] **Retention tablosu üçgen görünmeli.** En yeni kohort ÜSTTE; sağ üst
+      köşe boş (penceresi tamamlanmamış haftalar hiç çizilmiyor). Bir hücrenin
+      üstüne gel → "3/10 üye aktif" gibi bir ipucu çıkmalı.
+- [ ] **Hücre yazısı HER tonda okunabilir olmalı** — en koyu hücrede bile
+      (%100'e yakın oran) rakam net görünmeli. Ton yalnızca ikincil işaret;
+      oran zaten sayıyla yazıyor.
+- [ ] **CSV'ler ham sayı veriyor.** Retention'da "CSV İndir" → dosyada yüzde
+      DEĞİL aktif üye SAYILARI ve bir "Üye" (payda) sütunu olmalı.
+- [ ] **NEGATİF EŞİ ŞART — admin olmayan hesap.** Sıradan bir hesapla giriş
+      yap: "Admin Paneli" menü satırı HİÇ görünmemeli. (RPC'ler sunucuda
+      ayrıca `Yetkisiz erişim.` fırlatıyor, ama UI'ın da sızdırmadığı
+      görülmeli.)
+
+> **Sayıları okurken:** 23 hesabın 4'ü test hesabı ve 325 oyunun 27'si
+> onlara ait — bunları eleyen bir bayrak YOK (kullanıcı kararı: test verisi
+> sonradan silinecek). Bu ölçekte kohort eğrileri gürültüdür; buradaki amaç
+> enstrümantasyonun ÇALIŞTIĞINI doğrulamak, eğrileri yorumlamak değil.
+
 ## 10. k-lig ödül & rütbe sistemi
 
 Ödül/rütbe kayıtları sunucuda, `games` tablosuna satır ekleyen bir trigger'la
