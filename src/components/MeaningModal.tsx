@@ -2,6 +2,8 @@
 import { Modal } from './Modal';
 import type { WordMeaning } from '../lib/database.types';
 import { trUpper } from '../utils/turkish';
+import { isMeaningDataUnavailable } from '../data/meanings';
+import { OFFLINE_MEANING_NOTICE } from '../utils/offlineNotice';
 
 interface MeaningEntry {
   /** Görüntülenen kelime. */
@@ -32,6 +34,12 @@ function Meanings({ entry }: { entry: MeaningEntry }) {
         ))}
       </ol>
     );
+  }
+  // "Veri indirilemedi" ile "kelime sözlükte yok" AYNI ŞEY DEĞİL: ikisi de
+  // `data: null` üretiyordu ve ekranda aynı mesaj çıkıyordu. Çevrimdışıyken
+  // kelime pekâlâ sözlükte olabilir — biz bakamıyoruz.
+  if (isMeaningDataUnavailable()) {
+    return <p className="font-mono text-xs text-muted">{OFFLINE_MEANING_NOTICE}</p>;
   }
   return (
     <p className="font-mono text-xs text-muted">

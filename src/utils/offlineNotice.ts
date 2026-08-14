@@ -82,3 +82,13 @@ export function isNetworkError(err: unknown): boolean {
     message,
   );
 }
+
+/**
+ * Kelime anlamı penceresi — YALNIZCA WEB. Flutter portuna TAŞINMAZ (ve
+ * `offline_notice.dart`'ta karşılığı YOK): orada anlamlar uygulama
+ * paketindeki SQLite asset'inde, çevrimdışı da çalışıyor. Web'de ise
+ * `meanings.json` 6.3 MB ve precache'e bilerek alınmıyor — herkese 6 MB'lık
+ * bir ön indirme yüklemek bir oyun için orantısız (14 Ağustos 2026).
+ */
+export const OFFLINE_MEANING_NOTICE =
+  'Kelime anlamları için internet bağlantısı gerekiyor.';

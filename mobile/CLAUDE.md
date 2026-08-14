@@ -3965,6 +3965,16 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        **Mekanizma web'den farklı, metin aynı:** web `useOnlineStatus`
        kullanıyor, portta bağlantı API'si olmadığından sinyal `_loadFailed`
        ("son yükleme sunucuya ulaşamadı").
+     - **Aynı turun iki küçük düzeltmesi:** "Hemen oyun aç." metin-içi link
+       DEĞİL gerçek `NeoButton` (turuncu, "+ YENİ YAPAY ZEKA OYUNU AÇ" ile
+       aynı varyant); ve öneri artık `saves == null` iken GÖSTERİLMİYOR —
+       liste bilinmiyorken "hiç oyunun yok" demek erken yargı, çevrimdışıyken
+       ağ denemesi bitince aynadan gerçek liste geliyor.
+     - **Kelime anlamı porta DOKUNMADI:** web'de çevrimdışı "anlamı
+       bulunamadı" çıkıyordu (6.3 MB `meanings.json` precache'te yok) ve
+       oraya web'e ÖZEL bir mesaj eklendi; portta anlamlar
+       `assets/dictionary/meanings.db` ile pakette olduğundan çevrimdışı
+       zaten çalışıyor — eklenecek bir şey yok.
      - **Cihazda doğrulanacak:** iki senaryo da `mobile/TESTING.md` bölüm 11
        ve kök `TESTING.md` bölüm 2'ye eklendi.
 

@@ -18,6 +18,26 @@ type MeaningMap = Record<string, WordMeaning>;
 
 let cache: MeaningMap | null = null;
 let loading: Promise<MeaningMap> | null = null;
+/**
+ * Anlam verisi İNDİRİLEMEDİ mi (kelime sözlükte yok'tan farklı)?
+ *
+ * `meanings.json` 6.3 MB ve service worker precache'inde BİLEREK yok
+ * (herkese 6 MB'lık bir ön indirme yüklemek, bir oyun için orantısız) —
+ * dolayısıyla çevrimdışıyken `fetch` düşüyor ve `getLocalMeaning` null
+ * dönüyor. O null "kelime bulunamadı" ile aynı değerdi, ekranda da aynı
+ * mesaj çıkıyordu ("Bu kelimenin anlamı bulunamadı.") — oysa kelime
+ * sözlükte olabilir, biz bakamıyoruz (14 Ağustos 2026, cihaz testi).
+ *
+ * **Flutter portunda bu sorun YOK ve bu bayrak PORTA TAŞINMAZ:** orada
+ * anlamlar uygulama paketindeki `assets/dictionary/meanings.db` içinde,
+ * yani çevrimdışı da çalışıyor.
+ */
+let loadFailed = false;
+
+/** Son yükleme denemesi başarısız mı — `MeaningModal` mesajı buna göre seçer. */
+export function isMeaningDataUnavailable(): boolean {
+  return loadFailed;
+}
 
 /** Tüm yerel anlam sözlüğünü (bir kez) yükler. */
 async function loadAll(): Promise<MeaningMap> {
@@ -27,11 +47,13 @@ async function loadAll(): Promise<MeaningMap> {
       .then((r) => r.json() as Promise<MeaningMap>)
       .then((m) => {
         cache = m;
+        loadFailed = false;
         return m;
       })
       .catch((err) => {
         console.error('[Kelimeki] anlamlar yüklenemedi:', err);
         loading = null;
+        loadFailed = true;
         return {};
       });
   }
