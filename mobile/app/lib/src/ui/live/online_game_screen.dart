@@ -70,6 +70,7 @@ import '../../data/league_rewards_api.dart';
 import '../rank/league_rewards_host.dart';
 import '../tokens.dart';
 import '../game/invasion_confirm.dart';
+import '../../util/offline_notice.dart';
 
 const Color _muted = kMuted;
 const Color _red = kRed;
@@ -232,6 +233,10 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
       state.copyWith(moveHistory: buildMoveHistory(_moves));
 
   bool _loaded = false;
+
+  /// İlk yükleme sunucuya ulaşamadı — "Yükleniyor…" yerine ne olduğunu
+  /// anlatan panel gösterilir (bkz. `_refresh`).
+  bool _loadFailed = false;
   bool _busy = false;
 
   /// SON gönderim denememin sonucu — reducer'ın `state.message`'ından AYRI
@@ -609,7 +614,16 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   Future<void> _refresh() async {
     if (_mySlot < 0) return;
     final snap = await widget.onlineGames.loadGame(widget.game.id);
-    if (!mounted || snap == null) return; // ağ hatası — ekran korunur
+    if (!mounted) return;
+    if (snap == null) {
+      // Sunucuya ulaşılamadı. Zaten yüklenmiş bir ekran varsa ona
+      // DOKUNMUYORUZ (bayat veri, hiç veriden iyidir) — ama ilk yüklemede
+      // korunacak bir şey YOK ve ekran sonsuz "Yükleniyor…"da asılı
+      // kalıyordu (14 Ağustos 2026, cihaz testi: uçak modunda listeden
+      // Canlı bir oyuna dokunmak).
+      if (!_loaded) setState(() => _loadFailed = true);
+      return;
+    }
     final turnAdvanced = snap.state.turnCount > state.turnCount;
     _controller.dispatch(SyncOnlineStateAction(
       publicState: snap.state,
@@ -626,6 +640,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     setState(() {
       _moves = snap.moves;
       _loaded = true;
+      _loadFailed = false;
     });
 
     if (snap.state.isGameOver) return;
@@ -942,7 +957,11 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     }
   }
 
+  /// Ağ katmanı hatası → ne olduğunu anlatan metin; sunucunun KENDİ reddi
+  /// ("Sıra sende değil." gibi) olduğu gibi gösterilir (bkz.
+  /// `util/offline_notice.dart`, web ile aynı ayrım).
   String _errorText(Object e) {
+    if (isNetworkError(e)) return kOfflineMoveNotice;
     final msg = e.toString();
     return msg.isEmpty ? 'Hamle gönderilemedi.' : msg;
   }
@@ -1276,13 +1295,23 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
 
         final me = _me;
         if (!_loaded || me == null) {
-          return const Scaffold(
+          return Scaffold(
             backgroundColor: Colors.white,
             body: SafeArea(
               child: Center(
-                child: Text('Yükleniyor…',
-                    style: TextStyle(
-                        fontFamily: 'SpaceMono', fontSize: 13, color: _muted)),
+                child: _loadFailed
+                    ? _OfflinePanel(
+                        onRetry: () {
+                          setState(() => _loadFailed = false);
+                          unawaited(_refresh());
+                        },
+                        onBack: () => Navigator.of(context).pop(),
+                      )
+                    : const Text('Yükleniyor…',
+                        style: TextStyle(
+                            fontFamily: 'SpaceMono',
+                            fontSize: 13,
+                            color: _muted)),
               ),
             ),
           );
@@ -1838,6 +1867,80 @@ class _TurnBannerState extends State<_TurnBanner>
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Canlı oyun hiç yüklenemediğinde gösterilen panel — web
+/// `OnlineGameScreen.tsx`'in `loadFailed` dalının karşılığı.
+///
+/// Metinler `util/offline_notice.dart`'tan; iki platformda AYNI olmak
+/// zorunda (bkz. o dosyanın başlığı).
+class _OfflinePanel extends StatelessWidget {
+  final VoidCallback onRetry;
+  final VoidCallback onBack;
+
+  const _OfflinePanel({required this.onRetry, required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 360),
+        child: NeoBox(
+          borderRadius: BorderRadius.circular(16),
+          color: kPanel,
+          outerShadows: const [
+            BoxShadow(
+                color: Color(0x8015233F),
+                blurRadius: 45,
+                offset: Offset(0, 20)),
+          ],
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  kOfflineLiveTitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold, color: kText),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  kOfflineLiveBody,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, height: 1.5, color: kText),
+                ),
+                const SizedBox(height: 16),
+                NeoButton(
+                  label: 'TEKRAR DENE',
+                  variant: NeoButtonVariant.accent,
+                  onPressed: onRetry,
+                ),
+                const SizedBox(height: 8),
+                Center(
+                  child: TextButton(
+                    onPressed: onBack,
+                    child: const Text(
+                      '← CANLI LİSTESİ',
+                      style: TextStyle(
+                          fontFamily: 'SpaceMono',
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                          color: kMuted),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

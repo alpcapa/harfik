@@ -957,6 +957,17 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       ve nokta ise token kırmızısından (`#DC2626`): tek bantta iki ton.
       Bandın artık kabarık bir gölgesi (`shadow-raised`) ve web'le aynı
       dolgusu olmalı — web'le yan yana koyup karşılaştır.
+- [ ] **Çevrimdışı Canlı oyun AÇILIŞI (14 Ağustos 2026, Parça 96).** Uçak
+      modunda "Devam Edenler"den bir Canlı oyuna dokun: ekran
+      "Yükleniyor…"da ASILI KALMAMALI; "Canlı oyun için internet gerekiyor"
+      başlıklı panel + **TEKRAR DENE** + **← CANLI LİSTESİ** çıkmalı.
+      Uçak modunu kapatıp TEKRAR DENE'ye bas → oyun normal açılmalı.
+      Aynısını web'de de dene (iki platform aynı metni gösteriyor).
+- [ ] **Çevrimdışı hamlede METİN (Parça 96).** Uçak modunda OYNA/PAS GEÇ:
+      mesaj satırında **"Bağlantı yok — Canlı oyun için internet
+      gerekiyor."** çıkmalı — ham "ClientException/Failed to fetch" DEĞİL.
+      Karşılaştırma: sunucunun kendi reddi (ör. sıra sende değilken bir
+      şekilde gönderim) hâlâ kendi metniyle görünmeli.
 - [ ] **Gönderim hatası taşlar TAHTADAYKEN de görünür (14 Ağustos 2026,
       Parça 95).** Sıra sendeyken geçerli bir kelime kur, uçak modunu aç ve
       OYNA'ya bas: mesaj satırında bir HATA görünmeli ("Bağlantı yok."

@@ -23,6 +23,12 @@ import { MeaningModal } from './MeaningModal';
 import { RemainingTilesModal } from './RemainingTilesModal';
 import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
 import { MoveHistoryModal } from './MoveHistoryModal';
+import {
+  OFFLINE_LIVE_TITLE,
+  OFFLINE_LIVE_BODY,
+  OFFLINE_MOVE_NOTICE,
+  isNetworkError,
+} from '../utils/offlineNotice';
 import { WildcardModal } from './WildcardModal';
 import { FeedbackModal } from './FeedbackModal';
 import { LeagueRewardsHost } from './LeagueRewardsHost';
@@ -168,6 +174,13 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   const [state, dispatch] = useReducer(onlineGameReducerRef.current, undefined, createInitialState);
   const [moveRows, setMoveRows] = useState<OnlineMoveRow[]>([]);
   const [loaded, setLoaded] = useState(false);
+  // İlk yükleme başarısız olduysa — "ekranı koru" davranışı yalnızca
+  // TAZELEMEDE doğru; ilk yüklemede korunacak bir şey yok ve ekran beyaz
+  // "Yükleniyor…"da asılı kalıyordu (14 Ağustos 2026, cihaz testi).
+  const [loadFailed, setLoadFailed] = useState(false);
+  // Panelin "Tekrar Dene"si effect'in içindeki refresh'i çağırabilsin diye
+  // (App.tsx'teki `refreshCloudSavesRef` deseni).
+  const refreshRef = useRef<() => void>(() => {});
   const [busy, setBusy] = useState(false);
   const [validating, setValidating] = useState(false);
   /**
@@ -331,10 +344,18 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
         getMyOnlineRack(game.id),
         fetchOnlineGameMoves(game.id),
       ]);
-      if (cancelled || !publicState) return;
+      if (cancelled) return;
+      if (!publicState) {
+        // Sunucuya ulaşılamadı. Zaten yüklenmiş bir ekran varsa ona
+        // DOKUNMUYORUZ (bayat veri, hiç veriden iyidir); yüklenmemişse
+        // kullanıcıyı sonsuz "Yükleniyor…"da bırakmak yerine anlatıyoruz.
+        setLoadFailed(true);
+        return;
+      }
       dispatch({ type: 'SYNC_ONLINE_STATE', publicState, myRack, mySlotIndex });
       setMoveRows(rows);
       setLoaded(true);
+      setLoadFailed(false);
 
       if (!publicState.is_game_over && !aiTriggeringRef.current) {
         const currentSlot = game.slots[publicState.current];
@@ -382,6 +403,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       lastForegroundRefresh = now;
       void refresh();
     };
+    refreshRef.current = () => void refresh();
     document.addEventListener('visibilitychange', onForeground);
     window.addEventListener('focus', onForeground);
     window.addEventListener('online', onForeground);
@@ -897,7 +919,15 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
           lostShares: shares.map((s) => ({ to: s.index, amount: s.amount })),
         });
       } catch (err) {
-        setSubmitError(err instanceof Error ? err.message : 'Hamle gönderilemedi.');
+        // Ağ katmanı hatası → ne olduğunu anlatan metin; sunucunun KENDİ
+        // reddi ("Sıra sende değil." gibi) olduğu gibi gösterilir.
+        setSubmitError(
+          isNetworkError(err)
+            ? OFFLINE_MOVE_NOTICE
+            : err instanceof Error
+              ? err.message
+              : 'Hamle gönderilemedi.',
+        );
       } finally {
         setBusy(false);
       }
@@ -920,7 +950,13 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     try {
       await submitMove(game.id, { action: 'pass' });
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Hata oluştu.');
+      setSubmitError(
+        isNetworkError(err)
+          ? OFFLINE_MOVE_NOTICE
+          : err instanceof Error
+            ? err.message
+            : 'Hata oluştu.',
+      );
     } finally {
       setBusy(false);
     }
@@ -971,7 +1007,13 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       await submitMove(game.id, { action: 'exchange', exchangeLetters: letters });
       dispatch({ type: 'TOGGLE_SWAP_MODE' });
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Hata oluştu.');
+      setSubmitError(
+        isNetworkError(err)
+          ? OFFLINE_MOVE_NOTICE
+          : err instanceof Error
+            ? err.message
+            : 'Hata oluştu.',
+      );
     } finally {
       setBusy(false);
     }
@@ -993,8 +1035,30 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
 
   if (!loaded || !me) {
     return (
-      <div className="min-h-[100dvh] w-full flex items-center justify-center">
-        <p className="text-sm text-muted font-mono">Yükleniyor…</p>
+      <div className="min-h-[100dvh] w-full flex items-center justify-center px-4">
+        {loadFailed ? (
+          <div className="shadow-raised bg-panel border border-border rounded-2xl p-6 w-full max-w-sm flex flex-col gap-3 text-center">
+            <p className="text-base font-bold text-text font-sans">{OFFLINE_LIVE_TITLE}</p>
+            <p className="text-sm text-text font-sans leading-relaxed">{OFFLINE_LIVE_BODY}</p>
+            <button
+              onClick={() => {
+                setLoadFailed(false);
+                refreshRef.current();
+              }}
+              className="btn-raised w-full py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+            >
+              Tekrar Dene
+            </button>
+            <button
+              onClick={onBack}
+              className="text-[11px] font-mono font-bold uppercase tracking-[1px] text-muted underline underline-offset-2"
+            >
+              ← Canlı Listesi
+            </button>
+          </div>
+        ) : (
+          <p className="text-sm text-muted font-mono">Yükleniyor…</p>
+        )}
       </div>
     );
   }

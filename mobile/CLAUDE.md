@@ -3895,6 +3895,58 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        akışında henüz koşulmadı; maddeler `mobile/TESTING.md` bölüm 11 ve
        kök `TESTING.md` bölüm 2'ye eklendi.
 
+   - ✅ **Parça 96 — Canlı oyun çevrimdışıyken ne diyor? İki sessiz yol
+     kapatıldı (14 Ağustos 2026, kullanıcı YAYINDAKİ webde bildirdi):**
+     Kullanıcı ana ekrana eklediği webde uçak modunu denedi: (a) listeden
+     hamle bekleyen bir Canlı oyuna dokununca ekran beyaz "Yükleniyor…"da
+     asılı kaldı ve ancak çevrimiçi olunca yüklendi, (b) tahta açıkken
+     hamle yapınca hiçbir şey olmadı. Ardından doğru soruyu sordu:
+     *"Offline sadece YZ oyunlar için mi geçerli? Eğer öyleyse ... bir
+     uyarı gerekir (hem web hem de app için)"*.
+     - **Cevap evet ve bu bir tasarım kararı:** Canlı oyunda tahta/raf/torba
+       sunucuda otoriter (`online_game_states`/`online_game_secrets`);
+       offline dayanıklılık yalnızca yerel/YZ için var (localStorage +
+       `cloudSaveMirror`). Sorun kuralın kendisi değil, kullanıcının bunu
+       yalnızca SESSİZLİKTEN çıkarmak zorunda kalmasıydı.
+     - **(a) Sonsuz "Yükleniyor…" — "ekranı koru" davranışının kapsam
+       hatası.** İki platformda da yükleme başarısız olunca sessizce
+       dönülüyordu (`if (!publicState) return` / `if (snap == null)
+       return; // ağ hatası — ekran korunur`). Bu TAZELEMEDE doğru (bayat
+       veri hiç veriden iyidir) ama İLK yüklemede korunacak bir şey yok:
+       `_loaded` hiç true olmuyor, ekran sonsuza dek yükleniyor kalıyor.
+       Artık ilk yükleme başarısızsa `loadFailed`/`_loadFailed` işaretlenip
+       ne olduğunu anlatan bir panel + **TEKRAR DENE** + **← CANLI LİSTESİ**
+       gösteriliyor; tazeleme davranışı DEĞİŞMEDİ.
+     - **(b) Hamle hatası artık ham ağ metni değil.** Parça 95'in
+       `submitError`i hatayı görünür yapmıştı ama içerik
+       "ClientException: Failed to fetch…" gibi bir şeydi. Artık ağ katmanı
+       hataları kısa bir uyarıya çevriliyor; **sunucunun KENDİ reddi
+       ("Sıra sende değil.") olduğu gibi kalıyor** — bilinmeyen bir hatayı
+       "bağlantı yok" diye maskelemek hata ayıklamayı imkânsız kılardı
+       (aynı ilke: `friendlyAuthMessage`).
+     - **Metinler TEK KAYNAKTA ve testli:** `src/utils/offlineNotice.ts` ↔
+       `mobile/app/lib/src/util/offline_notice.dart`. Yeni
+       `test/offline_notice_test.dart` web dosyasını OKUYUP üç metni de
+       karşılaştırıyor (`color_tokens_test`/`rank_tiers_parity_test`
+       deseni) — biri değişip öteki kalırsa test düşer.
+     - **Metin bilerek "çevrimdışısın" DEMİYOR, "sunucuya ulaşılamıyor"
+       diyor.** Kullanıcının önerdiği cümle "Şu anda çevrimdışısınız"dı ama
+       aynı metin sunucu erişilemez olduğunda da DOĞRU olmak zorunda ve
+       Flutter tarafında gerçek bir bağlantı API'si yok (`useOnlineStatus`
+       portu hâlâ eksik — bkz. "Sonraya Bırakılan İşler"). İçeriğin üç
+       parçası korundu: sorun ne, ne yapmalı, alternatif ne (YZ).
+     - **`isNetworkError` `dart:io` KULLANMIYOR** (web derlemesini kırardı)
+       — tip yerine metin eşlemesi; kalıplar arasında **Safari'nin "Load
+       failed"i** de var, port iPad Safari'de test edildiğinden şart.
+     - **Doğrulama:** `flutter analyze` temiz, **tam takım 420/420** (414'ten
+       +6). `npm run lint`/`build` temiz, Playwright 2/2. **Üç negatif eş:**
+       `_loadFailed` ataması kaldırılınca panel testi "Yükleniyor…" bulup
+       düştü; `isNetworkError` dalı kaldırılınca kısa uyarı bulunamadı;
+       web'deki metin tek kelime değiştirilince parite testi "mesaj satırı
+       metni ayrışmış" dedi.
+     - **Cihazda doğrulanacak:** iki senaryo da `mobile/TESTING.md` bölüm 11
+       ve kök `TESTING.md` bölüm 2'ye eklendi.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 14 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
@@ -3939,6 +3991,8 @@ ankrajı (Parça 86), HEIC seçimi ve galeri izni reddi (Parça 87).
 Son iki günde düzeltme yapıldıkça listeye madde eklendi ama o maddeler
 hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
 
+- **14 Ağustos (Parça 96):** çevrimdışı Canlı oyun — açılışta panel +
+  hamlede açıklayıcı uyarı (iki platform)
 - **14 Ağustos (Parça 95) — Canlı turunun BEŞ düzeltmesi, hiçbiri cihazda
   teyit edilmedi:** boş taslakta OYNA (web Canlı) · gönderim hatasının
   görünmesi (iki platform, uçak modu) · sohbetin ön plana dönüşte

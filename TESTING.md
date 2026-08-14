@@ -95,6 +95,12 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       çıkmalı. Önceden Canlı ekranda hiçbir şey olmuyor, bir önceki metin
       ("Taşlar rafa geri alındı") duruyordu — YZ oyunu bunu baştan doğru
       yapıyordu, iki ekranı yan yana karşılaştır.
+- [ ] **Çevrimdışı Canlı oyun AÇILIŞI (14 Ağustos 2026).** Uçak modunda
+      Setup'tan bir Canlı oyuna dokun: beyaz "Yükleniyor…" ekranında ASILI
+      KALMAMALI — "Canlı oyun için internet gerekiyor" paneli + "Tekrar
+      Dene" + "← Canlı Listesi" çıkmalı. Bağlantı gelince "Tekrar Dene"
+      oyunu açmalı. (Canlı oyun yapısı gereği çevrimiçidir; offline
+      dayanıklılık yalnızca Yapay Zeka oyunları için vardır.)
 - [ ] **Gönderim hatası GÖRÜNÜR (14 Ağustos 2026).** Geçerli bir kelime
       kurup uçak modunda OYNA'ya bas: mesaj satırında bir ağ hatası
       görünmeli — "Oyna tuşuyla kelimeyi onayla." DEĞİL. Alttaki

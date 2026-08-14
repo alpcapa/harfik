@@ -23,6 +23,7 @@ import 'package:kelimeki/src/ui/game/board_widget.dart'
     show BoardWidget, DashedBorderPainter;
 import 'package:kelimeki/src/ui/game/rack_widget.dart' show RackWidget;
 import 'package:kelimeki/src/ui/game/tile_widget.dart' show TileWidget;
+import 'package:kelimeki/src/util/offline_notice.dart';
 import 'package:kelimeki/src/ui/live/online_game_screen.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
@@ -456,6 +457,79 @@ void main() {
       expect(placements, hasLength(6));
       expect(placements.first['r'], 0);
       expect(placements.first['letter'], 'K');
+      await unmount(tester);
+    });
+
+    // Uçak modunda listeden bir Canlı oyuna dokununca ekran sonsuza dek
+    // "Yükleniyor…"da asılı kalıyordu: yükleme başarısız olunca `_refresh`
+    // sessizce dönüyor ("ekran korunur" — TAZELEMEDE doğru, İLK yüklemede
+    // korunacak bir şey yok). Kullanıcı bunu yayındaki webde bildirdi
+    // (14 Ağustos 2026). Negatif eş: `if (!_loaded) _loadFailed = true`
+    // satırı kaldırılırsa bu test düşer.
+    testWidgets('ilk yükleme başarısızsa "Yükleniyor…" yerine panel çıkar',
+        (tester) async {
+      await setPhoneViewSize(tester, const Size(420, 900));
+      final gw = FakeOnlineGamesGateway()
+        ..gameLoadFailWith = Exception('ClientException: Failed to fetch');
+      final row = gameRow(
+        id: 'g1',
+        myId: 'me',
+        status: 'active',
+        slots: [
+          slotHuman('me', name: 'Ironman', relation: 'self'),
+          slotHuman('esiner', name: 'Esiner'),
+        ],
+      );
+      await tester.pumpWidget(MaterialApp(
+        theme: kelimekiTheme(),
+        home: OnlineGameScreen(
+          game: game(row),
+          myUserId: 'me',
+          onlineGames: OnlineGamesRepo(gw),
+          words: words,
+          auth: AuthService.fake(user: fakeUser('me')),
+        ),
+      ));
+      await tester.pump();
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Yükleniyor…'), findsNothing);
+      expect(find.text(kOfflineLiveTitle), findsOneWidget);
+      expect(find.text('TEKRAR DENE'), findsOneWidget);
+      expect(find.text('← CANLI LİSTESİ'), findsOneWidget);
+
+      // Bağlantı dönünce "Tekrar Dene" gerçekten yükleyebilmeli.
+      gw
+        ..gameLoadFailWith = null
+        ..stateRow = stateJson(_baseState(), current: 0)
+        ..rackRows = [for (final tile in myRackTiles) tile.toJson()];
+      await tester.tap(find.text('TEKRAR DENE'));
+      await tester.pumpAndSettle();
+      expect(find.text(kOfflineLiveTitle), findsNothing);
+      expect(find.text('OYNA'), findsOneWidget);
+      await unmount(tester);
+    });
+
+    // Ağ hatasında ham "ClientException: Failed to fetch…" yerine ne olduğunu
+    // anlatan metin; sunucunun KENDİ reddi ise olduğu gibi kalmalı.
+    testWidgets('çevrimdışı hamlede açıklayıcı metin, sunucu reddi ham hâliyle',
+        (tester) async {
+      final gw = await pumpScreen(tester, current: 0);
+      gw.submitFailWith = Exception('ClientException: Failed to fetch');
+      await tester.tap(find.text('PAS GEÇ'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'PAS GEÇ'));
+      await tester.pumpAndSettle();
+      expect(find.text(kOfflineMoveNotice), findsOneWidget);
+      expect(find.textContaining('Failed to fetch'), findsNothing);
+
+      gw.submitFailWith = Exception('Sıra sende değil.');
+      await tester.tap(find.text('PAS GEÇ'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'PAS GEÇ'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Sıra sende değil.'), findsOneWidget);
       await unmount(tester);
     });
 
