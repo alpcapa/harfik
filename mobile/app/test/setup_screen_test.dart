@@ -35,6 +35,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'support/fake_online_gateway.dart';
 import 'support/test_fonts.dart';
 import 'support/test_view.dart';
+import 'package:kelimeki/src/util/online_status.dart';
 
 late SetWordSource words;
 
@@ -49,6 +50,7 @@ Future<AppStorage> openTestStorage() async {
 
 AppServices services({Future<AppStorage>? storage, AuthService? auth}) =>
     AppServices(
+      onlineStatus: OnlineStatus.fake(),
       dictionary: Future.value(words),
       meanings: MeaningStore(bundle: rootBundle),
       auth: auth ?? AuthService(null),
@@ -61,6 +63,7 @@ AppServices services({Future<AppStorage>? storage, AuthService? auth}) =>
 /// depolamasız (bu davranış `local_game_saves`e hiç dokunmuyor).
 AppServices liveBadgeServices(AuthService auth, OnlineGamesRepo onlineGames) =>
     AppServices(
+      onlineStatus: OnlineStatus.fake(),
       dictionary: Future.value(words),
       meanings: MeaningStore(bundle: rootBundle),
       auth: auth,

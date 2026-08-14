@@ -27,6 +27,8 @@ import 'package:kelimeki_core/kelimeki_core.dart' show SetWordSource;
 import 'support/fake_online_gateway.dart';
 import 'support/test_fonts.dart';
 import 'support/test_view.dart';
+import 'package:kelimeki/src/util/online_status.dart';
+import 'package:kelimeki/src/util/offline_notice.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -275,8 +277,10 @@ void main() {
     required String userId,
     required FakeOnlineGamesGateway gateway,
     FakeFriendsGateway? friendsGateway,
+    bool online = true,
   }) =>
       AppServices(
+        onlineStatus: OnlineStatus.fake(online: online),
         dictionary: Future.value(SetWordSource(const [])),
         meanings: MeaningStore(bundle: rootBundle),
         auth: AuthService.fake(user: fakeUser(userId)),
@@ -304,6 +308,22 @@ void main() {
   }
 
   group('LiveGamesTab', () {
+    // Çevrimdışı mesajı ANINDA çıkmalı — bir ağ çağrısının düşmesini
+    // BEKLEMEDEN. Portta karar önce `_loadFailed`e bağlıydı ve uçak modunda
+    // (Supabase auth'un token yenileme tekrarları yüzünden) saniyeler
+    // sürüyordu; kullanıcı "hemen çıkmalı" dedi (14 Ağustos 2026).
+    // Burada sahte uç HİÇ CEVAP VERMİYOR (asılı future) — yani test ancak
+    // karar bağlantı sinyalinden geliyorsa geçer.
+    // Negatif eş: `!services.onlineStatus.online` koşulu kaldırılırsa düşer.
+    testWidgets('çevrimdışıyken mesaj ağ cevabı BEKLENMEDEN çıkar',
+        (tester) async {
+      final gw = FakeOnlineGamesGateway()..listHangs = true;
+      final s = liveServices(userId: 'me', gateway: gw, online: false);
+      await pumpTab(tester, s);
+      expect(find.text(kOfflineNoConnection), findsOneWidget);
+      expect(find.text('Yükleniyor…'), findsNothing);
+    });
+
     testWidgets(
         'varsayılan alt sekme: bekleyen davet varsa Oyun Davetleri + rozet + '
         'ekran görüntüsü', (tester) async {

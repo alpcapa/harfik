@@ -86,6 +86,9 @@ class _LiveGamesTabState extends State<LiveGamesTab>
     _lastUserId = user?.id;
     if (user != null) _snapshot = _liveGamesCache[user.id];
     services.auth.addListener(_onAuthEvent);
+    // Bağlantı durumu değişince mesaj ANINDA görünsün/kalksın (web
+    // `useOnlineStatus`un yeniden render'ı).
+    services.onlineStatus.addListener(_onConnectivity);
     // Öne dönüş tazelenmesi — web visibilitychange/focus/online eşleniği:
     // arka planda websocket askıya alınıp olay kaçmış olabilir.
     WidgetsBinding.instance.addObserver(this);
@@ -102,6 +105,7 @@ class _LiveGamesTabState extends State<LiveGamesTab>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     services.auth.removeListener(_onAuthEvent);
+    services.onlineStatus.removeListener(_onConnectivity);
     _reloadDebounce?.cancel();
     _unsubscribe?.call();
     super.dispose();
@@ -127,6 +131,13 @@ class _LiveGamesTabState extends State<LiveGamesTab>
   void _scheduleReload() {
     _reloadDebounce?.cancel();
     _reloadDebounce = Timer(const Duration(milliseconds: 300), _reload);
+  }
+
+  void _onConnectivity() {
+    if (!mounted) return;
+    setState(() {});
+    // Bağlantı geri geldiyse listeyi hemen tazele.
+    if (services.onlineStatus.online) unawaited(_reload());
   }
 
   Future<void> _reload() async {
@@ -311,7 +322,7 @@ class _LiveGamesTabState extends State<LiveGamesTab>
           _subTabBtn(LiveSubTab.recent, 'Son Oynananlar'),
         ]),
         const SizedBox(height: 20),
-        if (_loadFailed)
+        if (_loadFailed || !services.onlineStatus.online)
           // Canlı oyunun HER parçası (liste, davet, geçmiş) sunucudan
           // geliyor — çevrimdışıyken üç alt sekme de aynı şeyi söyler.
           // Yapay Zeka sekmesi BİLİNÇLİ olarak farklı konuşur (setup_screen).

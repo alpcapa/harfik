@@ -9,11 +9,13 @@ import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/meaning_store.dart';
 import 'package:kelimeki/src/ui/app.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
+import 'package:kelimeki/src/util/online_status.dart';
 
 void main() {
   testWidgets('açılış: Setup ekranı + offline mod + sözlük durumu görünür',
       (tester) async {
     final services = AppServices(
+      onlineStatus: OnlineStatus.fake(),
       dictionary: Future.value(SetWordSource(const ['ab', 'aba', 'kelime'])),
       meanings: MeaningStore(bundle: rootBundle),
       auth: AuthService(null),
@@ -31,6 +33,7 @@ void main() {
   testWidgets('sürüm kapısı: updateRequired tüm uygulamanın yerine geçer',
       (tester) async {
     final services = AppServices(
+      onlineStatus: OnlineStatus.fake(),
       dictionary: Future.value(SetWordSource(const ['ab'])),
       meanings: MeaningStore(bundle: rootBundle),
       auth: AuthService(null),

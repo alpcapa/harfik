@@ -168,6 +168,9 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     _lastAuthUserIdForLiveViewReset =
         _lastUserId; // React'in mount-anı effect'i
     widget.services.auth.addListener(_onAuthEvent);
+    // Bağlantı durumu — çevrimdışı mesajı ANINDA çıksın (web
+    // `useOnlineStatus`; portta önce ağ çağrısının düşmesi bekleniyordu).
+    widget.services.onlineStatus.addListener(_onConnectivity);
     // Kuyruktaki geri bildirimleri tekrar dene — web App.tsx'in mount +
     // 'online' olayındaki flushPendingFeedback refleksi; mobil karşılığı
     // Setup'a her geliş. Oyun kayıtlarının aksine oturum BEKLEMEZ
@@ -380,6 +383,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     widget.services.auth.removeListener(_onAuthEvent);
+    widget.services.onlineStatus.removeListener(_onConnectivity);
     widget.services.inviteInbox?.removeListener(_onInviteEvent);
     _liveBadgeDebounce?.cancel();
     _cloudSyncDebounce?.cancel();
@@ -1051,6 +1055,10 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   /// çıkmaza değil bir seçeneğe yönlendiriliyor (14 Ağustos 2026, kullanıcı
   /// isteği). Link "+ YENİ YAPAY ZEKA OYUNU AÇ" ile AYNI şeyi yapar —
   /// ikisi de `_creatingLocal = true`; biri değişirse öteki de.
+  void _onConnectivity() {
+    if (mounted) setState(() {});
+  }
+
   Widget _offlineAiNotice() => Padding(
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
         child: Column(
@@ -1120,7 +1128,11 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
           // "hiç oyunun yok, yeni aç" demek erken bir yargı — çevrimdışıyken
           // ağ denemesi bitip AYNADAN gerçek liste geliyor ve kullanıcı önce
           // öneriyi, sonra listeyi görüyordu (14 Ağustos 2026, cihaz testi).
-          _LocalSubTab.active when _cloudSavesFailed && saves != null && saves.isEmpty =>
+          _LocalSubTab.active
+              when (_cloudSavesFailed ||
+                      !widget.services.onlineStatus.online) &&
+                  saves != null &&
+                  saves.isEmpty =>
             _offlineAiNotice(),
           _LocalSubTab.active => saves == null
               ? const Padding(
@@ -1175,6 +1187,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                   stats: widget.services.stats,
                   emptyMessage: 'Henüz bitmiş bir Yapay Zeka oyunun yok.',
                   offlineNode: _offlineAiNotice(),
+                  isOffline: !widget.services.onlineStatus.online,
                 )
               : const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),

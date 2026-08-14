@@ -21,6 +21,7 @@ import 'data/stats_api.dart';
 import 'data/meaning_store.dart';
 import 'data/supabase_client.dart';
 import 'storage/app_storage.dart';
+import 'util/online_status.dart';
 
 class AppServices {
   /// Sözlük — açılışta fire-and-forget başlar, oyun başlatma bekler
@@ -39,6 +40,10 @@ class AppServices {
   final AuthService auth;
 
   final VersionGateStatus versionGate;
+
+  /// Bağlantı durumu — web `useOnlineStatus` portu. Çevrimdışı mesajlarının
+  /// ANINDA çıkması için (bkz. util/online_status.dart).
+  final OnlineStatus onlineStatus;
 
   /// Depolama — açılışta fire-and-forget açılır (sözlükle aynı desen);
   /// widget testleri null geçebilir (yalnızca durum satırı gizlenir).
@@ -87,6 +92,7 @@ class AppServices {
   final FeedbackRepo? feedback;
 
   const AppServices({
+    required this.onlineStatus,
     required this.dictionary,
     required this.meanings,
     required this.auth,
@@ -114,6 +120,7 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
   final auth = AuthService(supabase);
   final versionGate = await checkVersionGate(supabase);
   return AppServices(
+    onlineStatus: OnlineStatus(),
     dictionary: dictionary,
     meanings: meanings,
     auth: auth,

@@ -5,6 +5,7 @@ import 'package:kelimeki/src/data/chat_api.dart';
 import 'package:kelimeki/src/data/friends_api.dart';
 import 'package:kelimeki/src/data/online_games_api.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show User;
+import 'dart:async';
 
 class FakeOnlineGamesGateway implements OnlineGamesGateway {
   // ── Liste tarafı (davet/kabul) ──────────────────────────────────────────
@@ -52,10 +53,15 @@ class FakeOnlineGamesGateway implements OnlineGamesGateway {
     if (f != null) throw f;
   }
 
+  /// true ise liste ucu HİÇ CEVAP VERMEZ (asılı future) — "ağ cevabını
+  /// beklemeden karar veriliyor mu?" testleri için.
+  bool listHangs = false;
+
   @override
   Future<List<Map<String, Object?>>> listMine() async {
     _maybeFail();
     listCalls++;
+    if (listHangs) return Completer<List<Map<String, Object?>>>().future;
     return [for (final r in rows) Map<String, Object?>.of(r)];
   }
 
