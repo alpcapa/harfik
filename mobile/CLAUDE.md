@@ -3953,6 +3953,18 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        FARKLI hata sözleşmesini temsil etmiyordu. Ders: aynı düzeltmeyi iki
        platforma uygularken "hata nasıl yüzeye çıkıyor?" sorusunu her
        platform için ayrı sor.
+     - **Sekmelerin kendisi de konuşuyor (aynı gün, ikinci tur):** panelden
+       dönen kullanıcı Canlı sekmelerinde "davetiniz yok"/"Yükleniyor…"
+       görüyordu. Panelin geri butonu hedef adı taşımayan **"Geri Dön"e**
+       çevrildi; `live_games_tab`'ın üç alt sekmesi çevrimdışıyken tek bir
+       **"İnternet bağlantısı yok"** gösteriyor; **YZ sekmesi bilinçli
+       olarak farklı konuşuyor** — orada oynanabilir bir şey var, o yüzden
+       linkli bir öneri ("Hemen oyun aç." → `_creatingLocal = true`, "+ YENİ
+       YAPAY ZEKA OYUNU AÇ" ile aynı). Öneri yalnızca gösterilecek KAYIT
+       YOKKEN çıkar: devam eden YZ oyunları çevrimdışı da oynanabiliyor.
+       **Mekanizma web'den farklı, metin aynı:** web `useOnlineStatus`
+       kullanıyor, portta bağlantı API'si olmadığından sinyal `_loadFailed`
+       ("son yükleme sunucuya ulaşamadı").
      - **Cihazda doğrulanacak:** iki senaryo da `mobile/TESTING.md` bölüm 11
        ve kök `TESTING.md` bölüm 2'ye eklendi.
 

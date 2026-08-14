@@ -29,19 +29,24 @@ void main() {
         reason: 'src/utils/offlineNotice.ts bulunamadı — yol mu değişti?');
   });
 
-  test('üç metin de web ile birebir aynı', () {
+  test('metinlerin HEPSİ web ile birebir aynı', () {
     final source = web.readAsStringSync();
-    // Ayrıştırıcının kendi sessiz başarısızlığına karşı: üçü de okunabilmeli.
-    final title = _readConst(source, 'OFFLINE_LIVE_TITLE');
-    final body = _readConst(source, 'OFFLINE_LIVE_BODY');
-    final move = _readConst(source, 'OFFLINE_MOVE_NOTICE');
-    expect(title, isNotNull, reason: 'OFFLINE_LIVE_TITLE ayrıştırılamadı');
-    expect(body, isNotNull, reason: 'OFFLINE_LIVE_BODY ayrıştırılamadı');
-    expect(move, isNotNull, reason: 'OFFLINE_MOVE_NOTICE ayrıştırılamadı');
-
-    expect(kOfflineLiveTitle, title, reason: 'panel BAŞLIĞI ayrışmış');
-    expect(kOfflineLiveBody, body, reason: 'panel GÖVDESİ ayrışmış');
-    expect(kOfflineMoveNotice, move, reason: 'mesaj satırı metni ayrışmış');
+    // Ad → portun karşılığı. Yeni bir metin eklenirse buraya da eklenmeli;
+    // ayrıştırıcının kendi sessiz başarısızlığına karşı hepsi isNotNull.
+    final pairs = <String, String>{
+      'OFFLINE_LIVE_TITLE': kOfflineLiveTitle,
+      'OFFLINE_LIVE_BODY': kOfflineLiveBody,
+      'OFFLINE_MOVE_NOTICE': kOfflineMoveNotice,
+      'OFFLINE_BACK_LABEL': kOfflineBackLabel,
+      'OFFLINE_NO_CONNECTION': kOfflineNoConnection,
+      'OFFLINE_AI_SUGGESTION': kOfflineAiSuggestion,
+      'OFFLINE_AI_CTA': kOfflineAiCta,
+    };
+    for (final e in pairs.entries) {
+      final web = _readConst(source, e.key);
+      expect(web, isNotNull, reason: '${e.key} ayrıştırılamadı');
+      expect(e.value, web, reason: '${e.key} ayrışmış');
+    }
   });
 
   group('isNetworkError', () {

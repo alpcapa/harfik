@@ -1926,9 +1926,9 @@ class _OfflinePanel extends StatelessWidget {
                 Center(
                   child: TextButton(
                     onPressed: onBack,
-                    child: const Text(
-                      '← CANLI LİSTESİ',
-                      style: TextStyle(
+                    child: Text(
+                      '← ${trUpper(kOfflineBackLabel)}',
+                      style: const TextStyle(
                           fontFamily: 'SpaceMono',
                           fontSize: 11,
                           fontWeight: FontWeight.bold,

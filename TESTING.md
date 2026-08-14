@@ -101,6 +101,13 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       Dene" + "← Canlı Listesi" çıkmalı. Bağlantı gelince "Tekrar Dene"
       oyunu açmalı. (Canlı oyun yapısı gereği çevrimiçidir; offline
       dayanıklılık yalnızca Yapay Zeka oyunları için vardır.)
+- [ ] **Çevrimdışı sekme metinleri (14 Ağustos 2026).** Uçak modundayken
+      Setup'a dön: **Arkadaşınla**'nın üç alt sekmesi de "İnternet bağlantısı
+      yok" demeli ("davetiniz yok"/"Yükleniyor…" DEĞİL). **Yapay Zeka ile**
+      sekmesinde ise, devam eden bir oyunun YOKSA, "…yapay zeka ile çevrimdışı
+      da oynayabilirsin. **Hemen oyun aç.**" çıkmalı; linke dokunmak
+      "+ Yeni Yapay Zeka Oyunu" ile aynı formu açmalı. Devam eden bir YZ
+      oyunun VARSA liste normal görünmeli (çevrimdışı oynanabiliyor).
 - [ ] **Gönderim hatası GÖRÜNÜR (14 Ağustos 2026).** Geçerli bir kelime
       kurup uçak modunda OYNA'ya bas: mesaj satırında bir ağ hatası
       görünmeli — "Oyna tuşuyla kelimeyi onayla." DEĞİL. Alttaki

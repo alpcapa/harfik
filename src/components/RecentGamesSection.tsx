@@ -4,9 +4,10 @@
 // (`GameHistoryModal`) doğrudan o oyunun tahta önizlemesi açık hâlde açar —
 // ayrı bir mini tahta/sohbet gösterimi yazmak yerine mevcut modalın tüm
 // davranışını (paylaş/beğen/sohbet geçmişi) olduğu gibi devralır.
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { GUEST_PLAYER_NAME } from '../game/constants';
 import { useAuth } from '../hooks/useAuth';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { fetchMyGames } from '../lib/api';
 import type { GameHistoryEntry } from '../lib/database.types';
 import { leaguePoints, formatLeaguePoints } from '../utils/leaguePoints';
@@ -61,9 +62,20 @@ interface RecentGamesSectionProps {
    * boş bir mesaj gösterilmesine gerek yok.
    */
   emptyMessage?: string;
+  /**
+   * Çevrimdışıyken, gösterilecek hiç oyun YOKKEN [emptyMessage]/hata metni
+   * yerine render edilir (14 Ağustos 2026). Kullanım yerine göre farklı
+   * konuşulduğu için düğüm olarak alınıyor: Canlı sekmesi düz bir
+   * "İnternet bağlantısı yok" derken Yapay Zeka sekmesi tıklanabilir bir
+   * "Hemen oyun aç." önerisi sunuyor (bkz. `utils/offlineNotice.ts`).
+   * Elde önbellekten gelen bir liste VARSA o gösterilmeye devam eder —
+   * çevrimdışı diye zaten çizilmiş bir listeyi silmek bilgi kaybı olurdu.
+   */
+  offlineNode?: ReactNode;
 }
 
-export function RecentGamesSection({ onlineOnly, emptyMessage }: RecentGamesSectionProps) {
+export function RecentGamesSection({ onlineOnly, emptyMessage, offlineNode }: RecentGamesSectionProps) {
+  const online = useOnlineStatus();
   const { user } = useAuth();
   // 3 Ağustos 2026 — bu bileşen `Setup`/`LiveGamesTab`'ın kendi sekmeleri
   // arasında geçişte UNMOUNT/MOUNT olur (bkz. CLAUDE.md, "yükleniyor uzun
@@ -112,6 +124,10 @@ export function RecentGamesSection({ onlineOnly, emptyMessage }: RecentGamesSect
   // kendi başına bir sekmenin tek içeriğiyse) bunun yerine o metin gösterilir.
   const failedMessage = 'Oyun geçmişi yüklenemedi. Bağlantını kontrol edip tekrar dene.';
   if (!user) return null;
+  // Çevrimdışıyken "yüklenemedi" demek teknik olarak doğru ama kullanıcıya
+  // ne yapacağını söylemiyor — çağıran bir düğüm verdiyse o konuşur.
+  const nothingToShow = !games || games.length === 0;
+  if (nothingToShow && !online && offlineNode) return <>{offlineNode}</>;
   if (!games)
     return emptyMessage ? (
       <p className="text-center text-xs text-muted font-mono py-8">{loadFailed ? failedMessage : 'Yükleniyor…'}</p>

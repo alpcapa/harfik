@@ -53,6 +53,8 @@ import '../auth/legal_modals.dart';
 import '../game/modal_shell.dart';
 import '../feedback/feedback_modal.dart';
 import '../../data/feedback_api.dart';
+import '../../util/offline_notice.dart';
+import 'package:flutter/gestures.dart';
 
 const _panel = kPanel;
 const _border = kBorder;
@@ -153,6 +155,11 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
 
   // Davet linki işleme kilidi + girişsiz önizlemenin tek seferlik bayrağı.
   bool _processingInvites = false;
+
+  /// Bulut kaydı listesi sunucuya ulaşamadı — YZ sekmesi elde gösterilecek
+  /// kayıt yoksa çevrimdışı önerisini gösterir. (Kayıt VARSA liste aynen
+  /// çizilir: devam eden YZ oyunları çevrimdışı da oynanabiliyor.)
+  bool _cloudSavesFailed = false;
   String? _previewedInviteToken;
 
   @override
@@ -505,10 +512,14 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     }
     if (!mounted) return;
     if (list == null && _cloudSaves != null) {
-      setState(() => _diagPendingMirrors = pending); // ağ hatası eskiyi ezmesin
+      setState(() {
+        _cloudSavesFailed = true;
+        _diagPendingMirrors = pending; // ağ hatası eskiyi ezmesin
+      });
       return;
     }
     setState(() {
+      _cloudSavesFailed = list == null;
       _cloudSaves = list?.saves;
       _diagPendingMirrors = pending;
     });
@@ -1035,6 +1046,36 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     );
   }
 
+  /// "Yapay Zeka ile" sekmesinin çevrimdışı hâli — Canlı sekmesinin düz
+  /// "İnternet bağlantısı yok"undan (live_games_tab) BİLİNÇLİ olarak farklı:
+  /// burada gerçekten oynanabilir bir şey var, o yüzden kullanıcı bir
+  /// çıkmaza değil bir seçeneğe yönlendiriliyor (14 Ağustos 2026, kullanıcı
+  /// isteği). Link "+ YENİ YAPAY ZEKA OYUNU AÇ" ile AYNI şeyi yapar —
+  /// ikisi de `_creatingLocal = true`; biri değişirse öteki de.
+  Widget _offlineAiNotice() => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
+        child: Text.rich(
+          TextSpan(children: [
+            const TextSpan(text: '$kOfflineAiSuggestion '),
+            TextSpan(
+              text: kOfflineAiCta,
+              style: const TextStyle(
+                  color: kAccent,
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.underline),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () => setState(() => _creatingLocal = true),
+            ),
+          ]),
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+              fontFamily: 'SpaceMono',
+              fontSize: 11,
+              height: 1.6,
+              color: _muted),
+        ),
+      );
+
   /// Girişli kullanıcının varsayılan görünümü — web Setup'ın `user &&
   /// !creatingLocal` dalı: üstte turuncu "+ Yeni Yapay Zeka Oyunu Aç",
   /// altında "Devam Edenler / Son Oynananlar" sekmeleri — `LiveGamesTab`
@@ -1069,6 +1110,13 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
         ]),
         const SizedBox(height: 20),
         switch (_localSubTab) {
+          // Çevrimdışıyken GÖSTERİLECEK KAYIT VARSA liste aynen çizilir —
+          // devam eden YZ oyunları çevrimdışı da oynanabiliyor (cloud save
+          // aynası), o listeyi uyarıyla değiştirmek gerçek bir yeteneği
+          // gizlerdi. Mesaj yalnızca elde bir şey yokken.
+          _LocalSubTab.active
+              when _cloudSavesFailed && (saves == null || saves.isEmpty) =>
+            _offlineAiNotice(),
           _LocalSubTab.active => saves == null
               ? const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
@@ -1121,6 +1169,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                   currentName: auth.accountName,
                   stats: widget.services.stats,
                   emptyMessage: 'Henüz bitmiş bir Yapay Zeka oyunun yok.',
+                  offlineNode: _offlineAiNotice(),
                 )
               : const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),

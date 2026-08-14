@@ -497,7 +497,7 @@ void main() {
       expect(find.text('Yükleniyor…'), findsNothing);
       expect(find.text(kOfflineLiveTitle), findsOneWidget);
       expect(find.text('TEKRAR DENE'), findsOneWidget);
-      expect(find.text('← CANLI LİSTESİ'), findsOneWidget);
+      expect(find.text('← ${trUpper(kOfflineBackLabel)}'), findsOneWidget);
 
       // Bağlantı dönünce "Tekrar Dene" gerçekten yükleyebilmeli.
       gw

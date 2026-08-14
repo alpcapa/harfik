@@ -38,6 +38,7 @@ import 'live_game_create_form.dart';
 import 'online_game_screen.dart';
 import '../tokens.dart';
 import '../game/neo_box.dart';
+import '../../util/offline_notice.dart';
 
 const Color _text = kText;
 const Color _muted = kMuted;
@@ -66,6 +67,9 @@ class _LiveGamesTabState extends State<LiveGamesTab>
   OnlineGamesSnapshot? _snapshot;
   LiveSubTab _subTab = LiveSubTab.active;
   bool _appliedDefaultTab = false;
+
+  /// Son yükleme sunucuya ulaşamadı — üç alt sekme de "bağlantı yok" der.
+  bool _loadFailed = false;
   bool _creating = false;
   String? _busyInviteId;
   String? _lastUserId;
@@ -136,9 +140,19 @@ class _LiveGamesTabState extends State<LiveGamesTab>
     if (!mounted || seq != _loadSeq || services.auth.user?.id != user.id) {
       return;
     }
-    if (snap == null) return; // ağ hatası — eski liste korunur
+    if (snap == null) {
+      // Ağ hatası — eski liste korunur, ama sekmeler artık bunu SÖYLER
+      // (14 Ağustos 2026): çevrimdışıyken "Devam eden bir Canlı oyunun
+      // yok."/"Yükleniyor…" yanıltıcıydı. Web `useOnlineStatus` ile
+      // (navigator.onLine) karar veriyor; portta bağlantı API'si olmadığından
+      // sinyal "son yükleme sunucuya ulaşamadı" — MEKANİZMA farklı, METİN
+      // aynı (bkz. util/offline_notice.dart).
+      if (mounted) setState(() => _loadFailed = true);
+      return;
+    }
     _liveGamesCache[user.id] = snap;
     setState(() {
+      _loadFailed = false;
       _snapshot = snap;
       // Varsayılan alt sekme — yalnızca taze veriyle (bu setState'e YALNIZCA
       // sunucudan dönen sonuç girer; önbellek hidrasyonu initState'te ve bu
@@ -297,7 +311,12 @@ class _LiveGamesTabState extends State<LiveGamesTab>
           _subTabBtn(LiveSubTab.recent, 'Son Oynananlar'),
         ]),
         const SizedBox(height: 20),
-        if (snap == null)
+        if (_loadFailed)
+          // Canlı oyunun HER parçası (liste, davet, geçmiş) sunucudan
+          // geliyor — çevrimdışıyken üç alt sekme de aynı şeyi söyler.
+          // Yapay Zeka sekmesi BİLİNÇLİ olarak farklı konuşur (setup_screen).
+          _empty(kOfflineNoConnection)
+        else if (snap == null)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
             child: Text('Yükleniyor…',
