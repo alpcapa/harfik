@@ -390,13 +390,24 @@ export async function fetchMyGames(
   // Zeka oyunları (online_game_id null). `RecentGamesSection`'ın "Yapay Zeka
   // ile"/"Arkadaşınla" sekmelerindeki "Son Oynadıklarım" widget'ı için.
   onlineOnly?: boolean,
-): Promise<{ games: GameHistoryEntry[]; hasMore: boolean }> {
-  if (!supabase) return { games: [], hasMore: false };
+  // `failed`: sorgu GERÇEKTEN başarısız oldu mu — boş listeden AYRI taşınır.
+  // İkisi de `games: []` üretiyor ama kullanıcıya söylenecek şey farklı:
+  // çevrimdışı birine "Henüz kayıtlı bir oyunun yok." demek, oyunlarının
+  // silindiğini düşündürür (uygulama kurulabilir bir PWA olduğundan bu
+  // gerçek bir senaryo — `cloudSaveMirror` işinde de aynı gerekçe kabul
+  // edilmişti). `fetchGameBoardSnapshot`/`fetchGameMoves` bu ayrımı zaten
+  // yapıyordu; 14 Ağustos 2026'da liste yoluna da uygulandı (önce mobil
+  // portta bulundu, bkz. `mobile/CLAUDE.md` Parça 90).
+  //
+  // Supabase yapılandırılmamışsa ya da oturum yoksa `failed` FALSE kalır —
+  // onlar bir hata değil, uygulamanın bilinçli offline/misafir hâli.
+): Promise<{ games: GameHistoryEntry[]; hasMore: boolean; failed: boolean }> {
+  if (!supabase) return { games: [], hasMore: false, failed: false };
   const {
     data: { user: viewer },
   } = await supabase.auth.getUser();
   const targetUid = userId ?? viewer?.id;
-  if (!targetUid) return { games: [], hasMore: false };
+  if (!targetUid) return { games: [], hasMore: false, failed: false };
 
   const cols =
     'id, created_at, player_count, players, player_score, ai_score, rank, surrendered, online_game_id, user_id';
@@ -416,7 +427,7 @@ export async function fetchMyGames(
     });
     if (error) {
       console.error('[Kelimeki] fetchMyGames (favoriler) hatası:', error.message);
-      return { games: [], hasMore: false };
+      return { games: [], hasMore: false, failed: true };
     }
     const liked = (data as (Row & { liked_at: string })[]) ?? [];
     rows = liked.slice(0, limit);
@@ -431,7 +442,7 @@ export async function fetchMyGames(
       .range(offset, offset + limit);
     if (error) {
       console.error('[Kelimeki] fetchMyGames hatası:', error.message);
-      return { games: [], hasMore: false };
+      return { games: [], hasMore: false, failed: true };
     }
     const all = (data as Row[]) ?? [];
     rows = all.slice(0, limit);
@@ -489,6 +500,7 @@ export async function fetchMyGames(
       has_moves: stats.get(r.id)?.hasMoves ?? false,
     })),
     hasMore,
+    failed: false,
   };
 }
 

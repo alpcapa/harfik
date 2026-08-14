@@ -428,6 +428,30 @@ doğrulanmalı (mobil eşi `mobile/TESTING.md` bölüm 12'de).
       JPEG'e çeviriyor. Avatar bulanık/bozuk görünmemeli. 10 MB üstünde
       "Görsel 10 MB'den küçük olmalı." çıkmalı.
 
+## 9.6. Oyun geçmişi — ağ hatası (14 Ağustos 2026)
+
+`fetchMyGames` artık boş listeden AYRI bir `failed` bayrağı taşıyor. Web'de
+birim test çatısı olmadığından bu davranışın TEK doğrulaması bu liste
+(derleme tarafında yalnızca `tsc`'nin sözleşmeyi zorladığı kanıtlandı).
+Mobil eşi `mobile/TESTING.md` bölüm 5'te.
+
+- [ ] **Çevrimdışı liste.** DevTools → Network → Offline (ya da uçak modu),
+      sonra Skor Kartı → "Tüm Oyunları Gör": **"Oyun geçmişi yüklenemedi.
+      Bağlantını kontrol edip tekrar dene."** çıkmalı — "Bu kategoride henüz
+      kayıtlı oyun yok." DEĞİL.
+- [ ] **Favoriler sekmesi de aynı.** Aynı çevrimdışı durumda "Favoriler"e
+      geç: orada da "yüklenemedi" çıkmalı ("Henüz favori işaretlediğin bir
+      oyun yok." DEĞİL — o ayrı bir kod yolu, `list_liked_games` RPC'si).
+- [ ] **"Son Oynadıklarım" (Setup).** Çevrimdışıyken Setup → "Son
+      Oynananlar" sekmesi: aynı "yüklenemedi" metni. **Ama önce liste bir
+      kez yüklendiyse** (aynı sekmeye çevrimiçiyken girip çıktıysan)
+      çevrimdışında ESKİ liste görünmeye devam etmeli — başarısız çekim
+      ekrandaki listeyi ezmiyor.
+- [ ] **NEGATİF EŞİ ŞART.** ÇevrimİÇİ, gerçekten hiç oyunu olmayan bir
+      hesapla aynı ekranları aç: orada NORMAL boş mesajlar çıkmalı. Bu
+      olmadan yukarıdaki üç madde hiçbir şey kanıtlamaz — "her durumda
+      yüklenemedi yazan" bir hata da onları geçerdi.
+
 ## 10. k-lig ödül & rütbe sistemi
 
 Ödül/rütbe kayıtları sunucuda, `games` tablosuna satır ekleyen bir trigger'la

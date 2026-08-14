@@ -79,6 +79,9 @@ export function RecentGamesSection({ onlineOnly, emptyMessage }: RecentGamesSect
   );
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
+  // Ağ hatası mı, gerçekten hiç oyun mu yok — ikisi de boş liste üretiyor
+  // ama söylenecek şey farklı (bkz. `fetchMyGames`'in `failed` alanı).
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -87,10 +90,16 @@ export function RecentGamesSection({ onlineOnly, emptyMessage }: RecentGamesSect
     }
     let cancelled = false;
     const key = `${user.id}:${onlineOnly}`;
-    fetchMyGames(null, 0, 5, undefined, false, onlineOnly).then(({ games: rows }) => {
+    fetchMyGames(null, 0, 5, undefined, false, onlineOnly).then(({ games: rows, failed }) => {
       if (cancelled) return;
-      setGames(rows);
-      recentGamesCache.set(key, rows);
+      setLoadFailed(failed);
+      // Başarısız çekim ne önbelleği ne de ekrandaki listeyi EZMELİ — bir
+      // önceki yüklemenin listesi çevrimdışıyken göstermeye devam edilsin.
+      // Elde hiç liste yoksa boş listeyi yazıyoruz ki `loadFailed` dalı
+      // devreye girip hata mesajını gösterebilsin. (Mobil portun
+      // `RecentGamesSection`'ıyla birebir aynı koşul.)
+      if (!failed) recentGamesCache.set(key, rows);
+      setGames((cur) => (!failed || cur === null ? rows : cur));
     });
     return () => {
       cancelled = true;
@@ -101,9 +110,16 @@ export function RecentGamesSection({ onlineOnly, emptyMessage }: RecentGamesSect
   // hiç bitmiş oyun yoksa da bilerek sessizce gizleniyor — boş bir bölüm
   // başlığı göstermenin bir değeri yok. `emptyMessage` verilmişse (bileşen
   // kendi başına bir sekmenin tek içeriğiyse) bunun yerine o metin gösterilir.
+  const failedMessage = 'Oyun geçmişi yüklenemedi. Bağlantını kontrol edip tekrar dene.';
   if (!user) return null;
-  if (!games) return emptyMessage ? <p className="text-center text-xs text-muted font-mono py-8">Yükleniyor…</p> : null;
-  if (games.length === 0) return emptyMessage ? <p className="text-center text-xs text-muted font-mono py-8">{emptyMessage}</p> : null;
+  if (!games)
+    return emptyMessage ? (
+      <p className="text-center text-xs text-muted font-mono py-8">{loadFailed ? failedMessage : 'Yükleniyor…'}</p>
+    ) : null;
+  if (games.length === 0)
+    return emptyMessage ? (
+      <p className="text-center text-xs text-muted font-mono py-8">{loadFailed ? failedMessage : emptyMessage}</p>
+    ) : null;
 
   return (
     <div className="flex flex-col gap-2">

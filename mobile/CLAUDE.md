@@ -3466,6 +3466,18 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
          yeşilken görünmezdi. **Negatif eş:** iki ekranın dalları
          kapatılınca yeni iki test de GERÇEKTEN düştü (`Found 0 widgets
          with text containing yüklenemedi`).
+       - **AYNI GÜN web'e de taşındı (aynı PR):** `fetchMyGames` de artık
+         `failed` döndürüyor, `GameHistoryModal`/`RecentGamesSection` aynı
+         mesajı gösteriyor. İlk sürümde yalnızca mobil düzeltilip web kök
+         `CLAUDE.md`'nin bekleme listesine yazılmıştı; kullanıcı "onu da
+         kapat" deyince aynı dalda bitirildi (dal `main` tabanlı ve zaten
+         web dosyaları içeriyor — ikinci bir dal açmak Kontrol Listesi
+         madde 1'in "teslim et" amacına hizmet etmezdi). Web'de birim test
+         çatısı olmadığından oradaki kanıt farklı: `tsc` sözleşmeyi
+         GERÇEKTEN zorluyor (bir return sitesinden `failed` düşürülünce
+         `TS2741` ile kırıldı — negatif eş), mesaj üretim paketinde iki
+         çağrı yerinde de var, duman testleri geçiyor; davranışın gözle
+         teyidi `TESTING.md` bölüm 9.6'da.
      - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
        398/398 yeşil** (389'dan +9). `kelimeki_core`'a hiç dokunulmadı.
      - **`mobile/` DIŞINDA dosya değişti** (`supabase/migrations/`) → kök
