@@ -535,6 +535,22 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       açık). Kendi katıldığın Canlı oyunlarda rozet + sayı normal
       görünmeli. Aynı hesapla web'de de kontrol et — iki istemci aynı
       RPC'yi (`game_like_stats`) çağırıyor, ayrışmamalı.
+- [ ] **Ağ hatası "oyunun yok" DEMEMELİ (14 Ağustos 2026, Parça 90).**
+      Uçak modunda "Tüm Oyunlarım"ı aç → **"Oyun geçmişi yüklenemedi.
+      Bağlantını kontrol edip tekrar dene."** görünmeli, "Henüz kayıtlı bir
+      oyunun yok." DEĞİL. Aynısını Setup'taki "Son Oynananlar" sekmesinde
+      de kontrol et (aynı bayrağı ayrı okuyan ikinci tüketici).
+      **Negatif eşi ŞART:** çevrimiçiyken gerçekten hiç oyunu olmayan bir
+      hesapla aç — orada normal "hiç oyunun yok" metni çıkmalı, aksi halde
+      bu madde hiçbir şey kanıtlamaz.
+- [ ] **Hukuki metin tazeliği (Parça 90).** Hesap Ayarları/kayıt formundan
+      **Gizlilik Politikası**'nı aç → "Veri Paylaşımı" bölümü sohbet
+      arşivinin **yalnızca o oyunun katılımcılarına ve yönetici ekibine**
+      açık olduğunu söylemeli ("tüm kayıtlı kullanıcılara açıktır" DEĞİL —
+      o cümle 10 Ağustos'tan beri gerçek dışıydı). Alttaki "Son güncelleme"
+      tarihi web'deki `PrivacyModal` ile AYNI olmalı; `flutter test` bunu
+      artık otomatik zorluyor (`test/legal_text_test.dart`), bu madde
+      yalnızca metnin ekranda gerçekten doğru göründüğünün teyidi.
 
 ## 6. Paylaşma
 
@@ -736,12 +752,21 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **Davet linki.** "Arkadaşını Davet Et" sistem paylaş sayfasını
       açmalı; link `https://kelimeki.com/davet/…` biçiminde olmalı ve
       webde açılıp çalışmalı (üye olmayan kayıt akışına düşmeli).
-- [ ] **Davet linki uygulamada.** Uygulama kuruluyken
-      `kelimeki://davet/<token>` linkine dokun (test için token'ı web
-      linkinden alıp şemayı elle kur, ör. notlara yapıştırıp aç):
-      girişliysen "X ile artık arkadaşsınız" diyaloğu; girişsizsen
-      "giriş yaptığında ekleneceksiniz" önizlemesi, giriş sonrası
-      Setup'ta otomatik kabul.
+- [ ] **Davet linki uygulamada — uygulama AÇIKKEN (sıcak).** Uygulama
+      arka planda AÇIK dururken `kelimeki://davet/<token>` linkine dokun
+      (test için token'ı web linkinden alıp şemayı elle kur, ör. notlara
+      yapıştırıp aç): girişliysen "X ile artık arkadaşsınız" diyaloğu;
+      girişsizsen "giriş yaptığında ekleneceksiniz" önizlemesi, giriş
+      sonrası Setup'ta otomatik kabul.
+- [ ] **Davet linki uygulamada — uygulama KAPALIYKEN (soğuk başlangıç,
+      13 Ağustos 2026, Parça 87).** Uygulamayı görev yöneticisinden
+      TAMAMEN kapat, sonra aynı linke dokun: uygulama açılmalı VE davet
+      işlenmeli. Öncesinde token sessizce kayboluyordu (`AppLinks`in
+      soğuk-başlangıç linkini yalnızca İLK dinleyiciye bir kez basması;
+      o dinleyici supabase_flutter oluyordu) — sıcak akış çalıştığı için
+      görünmüyordu, bu yüzden İKİ maddeyi de ayrı ayrı koş. **Mükerrer
+      kontrolü:** "artık arkadaşsınız" diyaloğu YALNIZCA BİR KEZ
+      çıkmalı, üst üste iki kez DEĞİL.
 - [ ] **PlayerScoreCard simgesi.** k-lig/arkadaş listesinden birinin
       kartını aç: arkadaşsan ismin yanında **yeşil "kişi-onay"** (adam +
       tik) görünmeli — listelerdeki kırmızı "adam-" DEĞİL; bu bilinçli bir
@@ -759,6 +784,13 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       oldunuz." / "Arkadaşlık isteği iptal edildi." (karşılıklı anlık kabul
       durumunda "{isim} ile artık arkadaşsınız." — bu mobile özgü, web'de
       karşılığı yok, bilinçli).
+- [ ] **Ağ hatasında SAHTE başarı YOK (13 Ağustos 2026, Parça 89).**
+      Uçak modunu aç, sonra Arkadaşlar'da bir isteği **Reddet** / **Kabul
+      Et** ve birine **arkadaşlık isteği gönder**: üçünde de
+      **"İşlem başarısız oldu."** çıkmalı. Öncesinde sırasıyla "İstek
+      reddedildi." / "Arkadaş oldunuz." / "Arkadaşlık isteğiniz
+      iletilmiştir." gösteriliyordu — hiçbiri gerçekleşmemişken. Uçak
+      modunu kapatıp tekrar dene: normal sonuç mesajları dönmeli.
 - [ ] **Kişiye dokunmak skor kartını açar — ÜÇ sekmede de (11 Ağustos
       2026, Parça 53).** "Arkadaşlarım", "İstekler" ve "Ara & Ekle"
       (hem arama sonucu hem "Tüm Üyeler") satırlarında **avatara/isme**
@@ -767,6 +799,30 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       açmalı (ikisi birbirini yutmamalı). Kartın kendi arkadaşlık
       simgesinden bir işlem yapıp (ör. çıkar) kartı kapatınca satırdaki
       ikon ANINDA yeni duruma dönmeli — eski ikon kalmamalı.
+- [ ] **Moderasyonu arkadaş satırından geri alma (14 Ağustos 2026, Parça
+      91).** Ön koşul: bir Canlı oyunda karşı tarafı sessize al ya da
+      şikayet et (bölüm 11), sonra o oyun **bitsin** (ya da listeden
+      düşsün). Arkadaşlar → "Arkadaşlarım": o kişinin satırında,
+      "arkadaşlıktan çıkar" ikonunun **SOLUNDA** 🚩 (yalnızca sessize
+      aldıysan 🚫) çıkmalı. Dokun → "Kişi Ayarları" paneli; oradan
+      "Şikayeti Geri Çek" / "Sessizden Çıkar" → **onay adımı** → sonuç
+      mesajı. Panel kapanınca ikon **HEMEN** kaybolmalı.
+      **Asıl kanıt burada:** oyun bittikten sonra sohbet penceresine
+      artık girilemediğinden, bu panel olmadan şikayeti geri çekmenin
+      TEK yolu o kişiyle yeni bir oyun açmaktı.
+      **Negatif eş — atlama:** hiçbir moderasyon durumu OLMAYAN bir
+      arkadaşın satırında bu ikon **hiç görünmemeli**. Yalnızca "ikon
+      var" kontrolü, ikonu koşulsuz çizen yanlış bir kural altında da
+      geçerdi.
+      **Kapsam:** panelden YENİ şikayet açılamaz (bilinçli — şikayet
+      hakkında olduğu konuşmaya bağlı); panel bunu söyleyen bir not
+      göstermeli. Emoji fallback'i de burada kontrol edilmiş oluyor —
+      🚫/🚩 boş kare (tofu) çıkmamalı.
+      **14 Ağustos 2026'da koşuldu ve GEÇTİ** (sessizden çıkarma yolu):
+      ikon çıktı, panelden çıkarıldı, ANINDA kalktı. Üretimden teyit —
+      mute tablosu 0 satıra düştü ve provenance oyunu `finished`'dı,
+      yani kısayol tam da tasarlandığı yerde (oyun bittikten sonra)
+      çalıştı.
 
 ## 11. Canlı oyun — davet/kabul + tahta
 
@@ -845,6 +901,30 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       yeşil/kırmızı çerçeve + puan rozeti çalışmalı, mesaj "Kelime geçerli
       — Sıra: X" demeli, OYNA PASİF olmalı. Rakip oynayınca deneme taşları
       kendiliğinden rafa dönmeli ve OYNA aktifleşmeli.
+- [ ] **Terk edilen oyunun -2 cezası "Devam Et"e basınca da yazılmalı
+      (13 Ağustos 2026, Parça 89 — kalıcı testi YOK, elle kontrol şart).**
+      Misafirken bir YZ oyununu `turnCount>=2` olacak kadar oynayıp Setup'a
+      dön; cihaz saatini 7 gün ileri al (ya da 7 gün bekle) ve satır hâlâ
+      görünürken **"Devam Et"e dokun**. Beklenen: satır kaybolur VE terk
+      kaydı üretilir (bu cihazda giriş yapınca Skor Kartı'nda -2'li teslim
+      kaydı görünmeli). Öncesinde bu dal olayı ATOMİK olarak silip çöpe
+      atıyordu — ceza kalıcı olarak kayboluyordu. Karşılaştırma: aynı
+      senaryoyu "Devam Et"e BASMADAN (yalnız Setup'ı açıp kapatarak)
+      koşmak zaten çalışıyordu.
+- [ ] **"Sıra: X" bandının rengi (13 Ağustos 2026, Parça 88).** Sıra
+      rakipteyken çıkan kırmızı bant, ekrandaki DİĞER kırmızılarla (bandın
+      kendi nabız noktası, hata mesajları) AYNI tonda olmalı — öncesinde
+      zemin/çerçeve tahtaya özel bir kırmızıdan (`#E0483A`) geliyordu, metin
+      ve nokta ise token kırmızısından (`#DC2626`): tek bantta iki ton.
+      Bandın artık kabarık bir gölgesi (`shadow-raised`) ve web'le aynı
+      dolgusu olmalı — web'le yan yana koyup karşılaştır.
+- [ ] **Boş taslakta OYNA/GERİ AL (13 Ağustos 2026, Parça 88).** Sıra
+      SENDEYKEN, hiç taş yerleştirmeden OYNA'ya bas: buton **aktif** olmalı
+      ve mesaj satırında **"Harf yerleştirilmedi."** çıkmalı — gri/tepkisiz
+      bir buton DEĞİL. Sunucuya hiçbir şey gitmemeli (sıra sende kalmalı).
+      GERİ AL de boş taslakta aktif olmalı (basınca hiçbir şey olmaz,
+      zararsız). Aynısını yerel/YZ oyununda da kontrol et — iki ekran bu
+      davranışı paylaşıyor.
 - [ ] **Sürüklerken rakip oynarsa (Parça 58).** Bir taşı PARMAĞINI
       KALDIRMADAN sürüklerken karşı taraftan hamle gelsin: sürükleme o an
       bitmeli — hayalet taş kaybolmalı, rafta boş slot kalmamalı ve sayfa
@@ -931,6 +1011,18 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **Rapor geri çekme.** Raporu geri çek → 🚩 kalkmalı, 🚫 (sessize
       alma) AYRI bir durum olduğundan kalmaya devam etmeli (kaldırmak
       istersen ayrıca kapatman gerekir).
+      **Geri çekilen rapor admin'in bekleyen işinden DÜŞMEMELİ (14 Ağustos
+      2026, Parça 90).** Web admin panelinde Geri Bildirim → Şikayetler:
+      kart "Geri Çekildi" rozetiyle görünmeli ama SOLUKLAŞMAMALI, ve hesap
+      menüsündeki "Admin Paneli" satırının kırmızı sayacı azalmamalı — geri
+      çekme raporlayanın kararı, admin'in incelemesi değil. (Bu davranış 4
+      Ağustos'ta yazıldı ama yanlış bir SQL overload'ına uygulandığı için 10
+      gün üretimde hiç çalışmadı; bu madde onun ilk gerçek uçtan uca
+      kontrolü.)
+- [ ] **Canlı davet yanıtı ağ hatasında sessiz KALMAMALI (Parça 90).**
+      Uçak modunda "Oyun Davetleri"nde bir davete Kabul Et ya da Reddet'e
+      bas → **"İşlem başarısız oldu."** görünmeli. Önceden hiçbir şey
+      olmuyordu (kart yerinde duruyor, ekranda açıklama yok).
 - [ ] **Mesaj balonuna dokunma.** Karşı tarafın bir mesaj balonuna
       doğrudan dokun (rozet olmasa bile) → o kişinin ayarlar detayı
       açılmalı. Kendi mesajına dokununca hiçbir şey olmamalı.
@@ -1005,6 +1097,22 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       bulanık/bozuk görünmemeli. 10 MB'ı aşan bir görselde ise "Görsel
       10 MB'den küçük olmalı." hatası çıkmalı, hiçbir şey yüklenmemeli. Bir resim-DIŞI dosya (galeri buna izin veriyorsa)
       seçilirse "Lütfen bir görsel dosyası seç." hatası çıkmalı.
+- [ ] **Profil fotoğrafı — HEIC (Android'de KRİTİK, 13 Ağustos 2026,
+      Parça 87).** Android'de galeriden bir **HEIC/HEIF** fotoğraf seç
+      (iPhone'dan aktarılmış bir görsel ya da kamerası HEIC'e ayarlı bir
+      cihazın kendi çekimi): yükleme BAŞARILI olmalı. Öncesinde
+      "Lütfen bir görsel dosyası seç." hatası veriyordu — `image_picker`
+      görseli JPEG'e yeniden kodlarken uzantıyı `.heic` bırakıyor, eski kod
+      uzantıya bakıp dosyayı resim SAYMIYORDU. iOS'ta bu sorun hiç yoktu
+      (çıktı her zaman `.jpg`), yine de bir HEIC seçimiyle regresyon
+      kontrolü yap. Kovadaki dosyanın `image/jpeg` olduğunu da doğrula.
+- [ ] **Profil fotoğrafı — izin REDDİ (13 Ağustos 2026, Parça 87).**
+      Ayarlardan uygulamanın galeri/fotoğraf iznini KAPAT, sonra
+      "FOTOĞRAF DEĞİŞTİR"e bas: ekranda **"Fotoğraf seçilemedi. Galeri
+      izni verildiğinden emin ol."** hatası çıkmalı. Öncesinde HİÇBİR ŞEY
+      olmuyordu (ne hata ne yükleniyor göstergesi) — kullanıcı için
+      uygulamanın donduğundan ayırt edilemezdi. İzni geri açıp tekrar
+      dene: normal akış çalışmalı.
 
 ## 13. k-lig ödül & rütbe sistemi (Parça 61-62)
 
@@ -1268,6 +1376,15 @@ açar; o zamana kadar tarayıcıda açılırlar (bozuk değil, yalnızca eksik).
       (b) Setup'ta "Arkadaşınla paylaş", (c) Arkadaşlar'da davet linki.
       Popover ekranda görünmeli (ve makul bir yerden çıkmalı), "hiçbir şey
       olmadı" bir hatadır.
+- [ ] **Bölüm 10 — davet linkinin SOĞUK başlangıcı (Parça 87).** Uygulamayı
+      tamamen kapatıp `kelimeki://davet/<token>` linkine dokun; davet
+      işlenmeli ve diyalog YALNIZCA BİR KEZ çıkmalı. Bu, web derlemesinde
+      test EDİLEMEZ (custom şemayı yalnızca kurulu bir uygulama yakalar),
+      yani ilk kez burada gerçek olarak sınanıyor.
+- [ ] **Bölüm 12 — HEIC avatarı ve galeri izni reddi (Parça 87).**
+      Android'de HEIC bir fotoğrafla yükleme (eskiden reddediliyordu) ve
+      izin kapalıyken görünen Türkçe hata — ikisi de gerçek bir galeri/izin
+      diyaloğu gerektirdiğinden yalnızca cihazda doğrulanabilir.
 - [ ] **Bölüm 8 — uçak modu:** burada native'in web'den DAHA İYİ olması
       bekleniyor, iki şey ayrıca doğrulanmalı:
       (a) uçak modunda **kelime anlamı GELMELİ** (`meanings.db` pakette —

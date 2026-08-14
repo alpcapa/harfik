@@ -614,6 +614,22 @@ void main() {
     expect(hamle.left + 4 - sohbet.right, closeTo(6, 0.5),
         reason: 'ikonun görsel konumu ve 6px boşluk korunmalı');
   });
+
+  testWidgets('ağ hatası "hiç oyunun yok" DEĞİL, "yüklenemedi" gösterir',
+      (tester) async {
+    // Çevrimdışı bir kullanıcıya "Kayıt yok." demek YANLIŞ bilgi: oyunları
+    // sunucuda duruyor. `GamesRepo.history` bu yüzden boş listeyle birlikte
+    // bir `failed` bayrağı taşıyor (`boardSnapshot`/`moves`un ikisini de
+    // ayrı taşıması ile aynı gerekçe).
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [gameRow(id: 'g-1')]
+      ..failList = true;
+    final repo = await newRepoForWidget(tester, gw);
+    await pumpHistory(tester, repo);
+
+    expect(find.textContaining('yüklenemedi'), findsOneWidget);
+    expect(find.text('Henüz kayıtlı bir oyunun yok.'), findsNothing);
+  });
 }
 /// `game_like_stats`'e HİÇ gitmemesi gerektiğini kanıtlayan sahte uç:
 /// çağrılırsa test patlar. `currentUserId` null (misafir).

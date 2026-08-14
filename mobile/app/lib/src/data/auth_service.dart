@@ -373,6 +373,9 @@ class AuthService extends ChangeNotifier {
     'image/png': 'png',
     'image/webp': 'webp',
     'image/gif': 'gif',
+    'image/heic': 'heic',
+    'image/heif': 'heif',
+    'image/bmp': 'bmp',
   };
 
   /// Web `uploadAvatar` (src/lib/api.ts) portu — `avatars` kovasına

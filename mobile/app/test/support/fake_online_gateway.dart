@@ -232,6 +232,22 @@ class FakeChatGateway implements ChatGateway {
     return activeReports;
   }
 
+  /// Kişi → kaynak oyun id'si. Sahte uç GERÇEK ucun sözleşmesini taklit
+  /// etmek ZORUNDA (Parça 46'nın dersi): gerçek `myModeration` oyun id'sini
+  /// de döndürüyor ve sessizden çıkarma o id'ye bağlı — sahte yalnızca
+  /// kimlikleri döndürseydi, o bağın kopması testlerde görünmezdi.
+  Map<String, String> moderationMuted = const {};
+  Map<String, String> moderationReported = const {};
+  Object? moderationFailWith;
+
+  @override
+  Future<({Map<String, String> muted, Map<String, String> reported})>
+      myModeration() async {
+    final f = moderationFailWith;
+    if (f != null) throw f;
+    return (muted: moderationMuted, reported: moderationReported);
+  }
+
   @override
   Future<void> setMute(String gameId, String targetUserId, bool muted) async {
     final f = muteFailWith;

@@ -218,13 +218,31 @@ class _AccountSettingsModalState extends State<AccountSettingsModal> {
       _error = null;
       _info = null;
     });
-    final raw = await (widget.pickAvatar ?? pickAvatarImage)();
-    if (raw == null || !mounted) return;
-    // Yüklemeden ÖNCE küçült — 10 MB'lık giriş sınırı yalnızca "ne
-    // seçebilirsin"i belirliyor, SAKLANAN her zaman küçük hâli
-    // (bkz. util/avatar_image.dart). Native'de picker zaten küçülttüğü
-    // için bu çağrı no-op; Flutter web'de asıl işi burası yapıyor.
-    final picked = await (widget.shrinkAvatar ?? shrinkAvatarIfNeeded)(raw);
+    // SEÇİM ve KÜÇÜLTME de `try` İÇİNDE olmak ZORUNDA (13 Ağustos 2026,
+    // bkz. Parça 87): `image_picker` galeri izni reddedilirse ya da
+    // platform kanalı patlarsa `PlatformException` FIRLATIYOR. Bu iki
+    // satır `try`ın dışındayken hata hiçbir yerde yakalanmıyor, kullanıcı
+    // FOTOĞRAF DEĞİŞTİR'e basıyor ve HİÇBİR ŞEY olmuyordu — Parça 35'te
+    // paylaş butonunda düzeltilen "sessizce yutulan aksiyon" sınıfının
+    // aynısı, ve orada olduğu gibi asıl bedeli teşhis edilemez olması.
+    final PickedImage? raw;
+    final PickedImage picked;
+    try {
+      raw = await (widget.pickAvatar ?? pickAvatarImage)();
+      if (raw == null || !mounted) return;
+      // Yüklemeden ÖNCE küçült — 10 MB'lık giriş sınırı yalnızca "ne
+      // seçebilirsin"i belirliyor, SAKLANAN her zaman küçük hâli
+      // (bkz. util/avatar_image.dart). Native'de picker zaten küçülttüğü
+      // için bu çağrı no-op; Flutter web'de asıl işi burası yapıyor.
+      picked = await (widget.shrinkAvatar ?? shrinkAvatarIfNeeded)(raw);
+    } catch (e) {
+      debugPrint('[Kelimeki] avatar seçilemedi: $e');
+      if (mounted) {
+        setState(() => _error =
+            'Fotoğraf seçilemedi. Galeri izni verildiğinden emin ol.');
+      }
+      return;
+    }
     if (!mounted) return;
     setState(() => _uploadingAvatar = true);
     try {

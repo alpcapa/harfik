@@ -127,6 +127,11 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
   /// oyunları listeler (web'in aynı ayrımı).
   bool _favoritesOnly = false;
 
+  /// Son yükleme HATA verdi mi — boş listeden AYRI tutuluyor: çevrimdışı
+  /// açan kullanıcıya "Henüz kayıtlı bir oyunun yok." demek, oyunlarının
+  /// silindiğini düşündürür (13 Ağustos 2026 denetimi, Parça 89).
+  bool _loadFailed = false;
+
   /// gameId → beğenenler (bir kez çekilip önbellekte tutulur; kalbe basmak
   /// bu önbelleği geçersiz kılar ki bir dahaki açılışta güncel liste gelsin).
   final _likers = <String, List<GameLiker>>{};
@@ -191,6 +196,7 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
         favoritesOnly: _favoritesOnly,
       );
       if (!mounted) return;
+      _loadFailed = res.failed;
       acc.addAll(res.games);
       more = res.hasMore;
       offset += res.games.length;
@@ -266,6 +272,10 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
       _entries = [...?(offset == 0 ? null : _entries), ...res.games];
       _hasMore = res.hasMore;
       _loadingMore = false;
+      // Sekme değişimi de bu yoldan geçiyor (offset 0): orada bir ağ
+      // hatası olursa boş liste "favori işaretlediğin oyun yok" diye
+      // görünürdü. Sonraki sayfalarda zaten satır var, mesaj çizilmiyor.
+      _loadFailed = res.failed;
     });
   }
 
@@ -460,11 +470,14 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   child: Center(
                     child: Text(
-                        _favoritesOnly
-                            ? (widget.isMe
-                                ? 'Henüz favori işaretlediğin bir oyun yok.'
-                                : 'Bu oyuncunun henüz favori işaretlediği bir oyun yok.')
-                            : 'Henüz kayıtlı bir oyunun yok.',
+                        _loadFailed
+                            ? 'Oyun geçmişi yüklenemedi. Bağlantını kontrol '
+                                'edip tekrar dene.'
+                            : _favoritesOnly
+                                ? (widget.isMe
+                                    ? 'Henüz favori işaretlediğin bir oyun yok.'
+                                    : 'Bu oyuncunun henüz favori işaretlediği bir oyun yok.')
+                                : 'Henüz kayıtlı bir oyunun yok.',
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                             fontFamily: 'SpaceMono',

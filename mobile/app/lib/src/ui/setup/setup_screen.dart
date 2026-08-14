@@ -25,6 +25,7 @@ import '../../bootstrap.dart';
 import '../../config/env.dart';
 import '../../data/cloud_save_repo.dart';
 import '../../data/games_api.dart';
+import '../../data/friend_invite_inbox.dart' show inviteTokensFromEvents;
 import '../../storage/pending_event_store.dart' show friendInviteTokenKind;
 import '../friends/friends_modal.dart' show showFriendInfoDialog;
 import '../../game/game_controller.dart';
@@ -330,10 +331,11 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     _processingInvites = true;
     try {
       final s = await storage;
-      final events = await s.events.takeAll(friendInviteTokenKind);
-      for (final e in events) {
-        final token = e['token'];
-        if (token is! String || token.isEmpty) continue;
+      // Mükerrer/bozuk kayıt elemesi saf yardımcıda (gerekçe orada —
+      // soğuk başlangıçta aynı token iki kez kuyruğa girebiliyor).
+      final events =
+          inviteTokensFromEvents(await s.events.takeAll(friendInviteTokenKind));
+      for (final token in events) {
         try {
           final name = await friends.acceptInvite(token);
           if (mounted) {
@@ -355,10 +357,12 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   Future<void> _sweepLocalAbandoned() async {
     final repo = _repo;
     if (repo == null) return;
-    final events = await repo.drainAbandonedGames();
-    if (events.isEmpty) return;
+    // `games` ÖNCE çözülüyor: drain yıkıcı (takeAll = SELECT+DELETE), yani
+    // önce boşaltıp sonra "games yoksa dön" demek olayları kaybettirirdi.
     final games = _games ?? await widget.services.games;
     if (games == null) return;
+    final events = await repo.drainAbandonedGames();
+    if (events.isEmpty) return;
     for (final e in events) {
       await games.recordAbandoned(e.state, endedAtMs: e.savedAtMs);
     }
@@ -583,6 +587,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
         games: widget.services.games,
         feedback: widget.services.feedback,
         friends: widget.services.friends,
+        chat: widget.services.chat,
         leagueRewards: widget.services.leagueRewards,
       ),
     ));
@@ -622,7 +627,12 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     final state = await repo.loadSave();
     if (state == null) {
       // Tam bu anda süresi dolmuş/karantinaya düşmüş — görünümü tazele.
-      await repo.drainAbandonedGames();
+      // `_sweepLocalAbandoned()` çağrılmak ZORUNDA, çıplak
+      // `drainAbandonedGames()` DEĞİL: drain `takeAll` ile olayları ATOMİK
+      // olarak SİLİP döndürüyor, yani dönüşü atmak terk edilen oyunun tam
+      // GameState'ini ve ondan üretilecek -2'li `games` kaydını kalıcı
+      // olarak çöpe atardı (13 Ağustos 2026 denetimi, Parça 89).
+      await _sweepLocalAbandoned();
       await _refreshSaveStatus();
       return;
     }
@@ -704,6 +714,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                             child: AccountButton(
                                 feedback: widget.services.feedback,
                                 friends: widget.services.friends,
+                                chat: widget.services.chat,
                                 auth: auth,
                                 stats: widget.services.stats,
                                 games: widget.services.games),

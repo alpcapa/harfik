@@ -13,6 +13,7 @@ import {
   createFriendInviteLink,
   fetchFriendRelation,
   fetchFriends,
+  fetchMyChatModeration,
   fetchIncomingFriendRequests,
   listUsersForFriend,
   removeFriend,
@@ -22,6 +23,7 @@ import {
 } from '../lib/api';
 import type { FriendRow, FriendSearchResult, IncomingFriendRequest } from '../lib/database.types';
 import { PersonAddIcon, PersonRemoveIcon, HourglassIcon, HowToRegIcon } from './RelationIcons';
+import { FriendModerationModal, type FriendModerationTarget } from './FriendModerationModal';
 import { trCompare } from '../utils/turkish';
 
 /** Bir arkadaşı `PlayerScoreCard` açabilecek şekle çevirir — henüz canlı oyun
@@ -215,9 +217,21 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
   const reloadFriends = () => void fetchFriends().then(setFriends);
   const reloadRequests = () => void fetchIncomingFriendRequests().then(setRequests);
 
+  // Sessize aldığım/şikayet ettiğim kişiler — "Arkadaşlarım" satırındaki
+  // 🚫/🚩 ikonunu ve `FriendModerationModal`ı besliyor. Değerler kaynak
+  // oyun id'si: `mute_online_game_participant` sessizden ÇIKARIRKEN bile
+  // geçerli bir ortak oyun istiyor (bkz. `fetchMyChatModeration`).
+  const [moderation, setModeration] = useState<{
+    muted: Map<string, string>;
+    reported: Map<string, string>;
+  }>({ muted: new Map(), reported: new Map() });
+  const [moderationTarget, setModerationTarget] = useState<FriendModerationTarget | null>(null);
+  const reloadModeration = () => void fetchMyChatModeration().then(setModeration);
+
   useEffect(() => {
     reloadFriends();
     reloadRequests();
+    reloadModeration();
   }, []);
 
   // Varsayılan tab: bekleyen bir arkadaşlık isteği varsa "İstekler" açık
@@ -561,6 +575,35 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
               friends.map((f) => (
                 <div key={f.friend_id} className={rowCls}>
                   {personButton(f.friend_id, f.name, f.avatar_url)}
+                  {/* Moderasyon durumu VARSA yönetim ikonu — arkadaşlıktan
+                      çıkar ikonunun SOLUNDA (kullanıcı isteği, 14 Ağustos
+                      2026). Durum yoksa hiç çizilmez: bu bir "geri al"
+                      kısayolu, moderasyon menüsü değil (yeni şikayet
+                      sohbette açılır, bkz. FriendModerationModal). */}
+                  {(moderation.reported.has(f.friend_id) || moderation.muted.has(f.friend_id)) && (
+                    <button
+                      type="button"
+                      aria-label={`${f.name} — ${
+                        moderation.reported.has(f.friend_id) ? 'şikayet edildi' : 'sessize alındı'
+                      }, ayarları aç`}
+                      title={moderation.reported.has(f.friend_id) ? 'Şikayet edildi' : 'Sessize alındı'}
+                      className="shrink-0 w-11 h-11 -my-2 flex items-center justify-center text-sm leading-none active:scale-90 transition-transform"
+                      onClick={() =>
+                        setModerationTarget({
+                          userId: f.friend_id,
+                          name: f.name,
+                          avatarUrl: f.avatar_url,
+                          mutedGameId: moderation.muted.get(f.friend_id),
+                          reported: moderation.reported.has(f.friend_id),
+                        })
+                      }
+                    >
+                      {/* Bayrak, yasak işaretini EZER — sohbetteki rozet
+                          mantığının aynısı (şikayet otomatik sessize de
+                          alıyor, iki ikon birden göstermek gürültü). */}
+                      {moderation.reported.has(f.friend_id) ? '🚩' : '🚫'}
+                    </button>
+                  )}
                   <button
                     type="button"
                     aria-label={`${f.name} — arkadaşlıktan çıkar`}
@@ -670,6 +713,18 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
       </div>
       {selectedFriend && (
         <PlayerScoreCard member={selectedFriend} onClose={closeSelectedFriend} />
+      )}
+
+      {moderationTarget && (
+        <FriendModerationModal
+          target={moderationTarget}
+          onClose={(changed) => {
+            setModerationTarget(null);
+            // Durum değiştiyse ikon hemen kaybolmalı — aksi halde
+            // kullanıcı "geri çektim ama bayrak duruyor" görürdü.
+            if (changed) reloadModeration();
+          }}
+        />
       )}
 
       {confirmRemove && (

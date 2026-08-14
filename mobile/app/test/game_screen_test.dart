@@ -22,6 +22,7 @@ import 'package:kelimeki/src/ui/game/rack_widget.dart';
 import 'package:kelimeki/src/ui/game/remaining_tiles_modal.dart';
 import 'package:kelimeki/src/ui/game/tile_widget.dart';
 import 'package:kelimeki/src/ui/game/wild_letter_sheet.dart';
+import 'package:kelimeki/src/ui/game/neo_button.dart' show NeoButton;
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import 'support/test_fonts.dart';
@@ -1039,5 +1040,35 @@ void main() {
         reason: 'web: Board pb-3 (12) + mesaj kabının pt-1i (4)');
     expect(rack.top - msg.bottom, closeTo(6, 0.5),
         reason: 'web: kabın gap-1.5i');
+  });
+
+  testWidgets(
+      'boş taslakta OYNA/GERİ AL AKTİF ve OYNA "Harf yerleştirilmedi." der '
+      '(web: disabled={!canAct} — placed.isEmpty koşulu YOK)', (tester) async {
+    await setPhoneViewSize(tester, const Size(390, 844));
+    final controller = await pumpGame(tester, GlobalKey());
+
+    // Hiç taş yerleştirilmemişken ikisi de tıklanabilir olmalı. Butonu
+    // kapatmak, motorun TAM BU DURUM için taşıdığı "Harf yerleştirilmedi."
+    // mesajını (validator.dart:57) ulaşılamaz kılıyordu — sebebi hiçbir
+    // yerde yazmayan sessiz bir ret.
+    expect(controller.state.placed, isEmpty);
+    final turnBefore = controller.state.turnCount;
+    expect(
+      tester.widget<NeoButton>(find.widgetWithText(NeoButton, 'OYNA')).onPressed,
+      isNotNull,
+    );
+    expect(
+      tester
+          .widget<NeoButton>(find.widgetWithText(NeoButton, 'GERİ AL'))
+          .onPressed,
+      isNotNull,
+    );
+
+    await tester.tap(find.text('OYNA'));
+    await tester.pumpAndSettle();
+    expect(find.text('Harf yerleştirilmedi.'), findsOneWidget);
+    // Hamle işlenmemeli — sıra hâlâ bende.
+    expect(controller.state.turnCount, turnBefore);
   });
 }

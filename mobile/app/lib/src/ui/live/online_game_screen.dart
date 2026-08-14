@@ -57,6 +57,7 @@ import '../game/game_header.dart';
 import '../game/game_over_modal.dart';
 import '../game/meaning_modal.dart';
 import '../game/move_history_modal.dart';
+import '../game/neo_box.dart';
 import '../game/neo_button.dart';
 import '../game/player_colors.dart';
 import '../game/rack_widget.dart';
@@ -697,7 +698,11 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
 
   Future<void> _handlePlay() async {
     final me = _me;
-    if (!_canAct || _busy || me == null || state.placed.isEmpty) return;
+    // `state.placed.isEmpty` BİLEREK burada YOK: boş taslakta sessizce
+    // dönmek, bir alttaki `validatePlacement`ın ürettiği "Harf
+    // yerleştirilmedi." mesajını ulaşılamaz kılardı (web'de o mesaj
+    // görünüyor). Yerel ekranın karşılığı reducer'ın PLAY dalı.
+    if (!_canAct || _busy || me == null) return;
 
     // Tek yerel doğrulama — web'in structural+remote iki adımının mobil
     // karşılığı (bkz. dosya başındaki "bilinçli sapma" notu).
@@ -850,7 +855,11 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
         actions: [
           FilledButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('TAMAM'),
+            // web'de bu iki durum AYRI dallar: gönderim başarılıysa "Tamam",
+            // sunucu reddettiyse "Kapat" (OnlineGameScreen.tsx, `sent` vs
+            // `error` fazı). Port ikisini tek diyalogda birleştirdiğinden
+            // etiket içeriğe göre seçiliyor.
+            child: Text(error == null ? 'TAMAM' : 'KAPAT'),
           ),
         ],
       ),
@@ -1311,6 +1320,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                           games: widget.games,
                           feedback: widget.feedback,
                           friends: widget.friends,
+                          chat: widget.chat,
                           // Logo yalnızca listeye döner — oyunu BİTİRMEZ.
                           onLogoTap: () => Navigator.of(context).pop(),
                           onPlayerTap:
@@ -1514,10 +1524,11 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                                     padding: const EdgeInsets
                                                         .symmetric(
                                                         horizontal: 20),
-                                                    onPressed: _canAct &&
-                                                            !_busy &&
-                                                            state.placed
-                                                                .isNotEmpty
+                                                    // Boş taslakta da aktif —
+                                                    // gerekçe game_screen.dart'ın
+                                                    // aynı satırında (kardeş
+                                                    // ekran çifti).
+                                                    onPressed: _canAct && !_busy
                                                         ? _handlePlay
                                                         : null,
                                                   ),
@@ -1593,8 +1604,9 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                             Expanded(
                                               child: NeoButton(
                                                 label: 'GERİ AL',
-                                                onPressed: _canEdit &&
-                                                        state.placed.isNotEmpty
+                                                // Boş taslakta da aktif (web
+                                                // `disabled={!canAct}`).
+                                                onPressed: _canEdit
                                                     ? () => _controller.dispatch(
                                                         const RecallAllAction())
                                                     : null,
@@ -1712,11 +1724,18 @@ class _TurnBannerState extends State<_TurnBanner>
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0x1AE0483A), // web bg-red/10
-        border: Border.all(color: const Color(0x66E0483A)), // border-red/40
-        borderRadius: BorderRadius.circular(6),
+      // web: `shadow-raised … border border-red/40 bg-red/10 px-4 py-3`
+      // Renkler `_red` (= tailwind token `#DC2626`) TÜREVİ olmak zorunda:
+      // 13 Ağustos 2026'ya kadar burada `#E0483A` (kMoveInvalid — TAHTAYA
+      // özel kırmızı) sabit yazılıydı, yorumu ise doğru şekilde "bg-red/10"
+      // diyordu. Sonuç, kendi içinde tutarsız bir bant: zemin/çerçeve bir
+      // kırmızı, nabız noktası ve metin (ikisi de `_red`) BAŞKA bir kırmızı.
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: ShapeDecorationWithCssShadows(
+        color: _red.withValues(alpha: 0.1), // web bg-red/10
+        radius: 6,
+        borderColor: _red.withValues(alpha: 0.4), // border-red/40
+        shadows: kRaisedShadows,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,

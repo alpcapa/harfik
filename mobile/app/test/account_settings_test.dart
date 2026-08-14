@@ -278,4 +278,79 @@ void main() {
     expect(find.text('HESAP AYARLARI'), findsOneWidget);
     expect(find.byType(AccountSettingsModal), findsOneWidget);
   });
+
+  // --- Parça 87 -------------------------------------------------------
+  // Android'in `image_picker`ı, `maxWidth/maxHeight/imageQuality` verilince
+  // görseli yeniden kodluyor (JPEG) ama çıktıyı `scaled_<orijinal ad>`
+  // olarak yazıyor — yani HEIC seçen kullanıcıda dosya `.heic` uzantılı
+  // ama İÇİ JPEG oluyor (`ImageResizer.java`). Eski kod uzantıya baktığı
+  // için geçerli bir JPEG'i `application/octet-stream` sanıp yüklemeyi
+  // reddediyordu.
+  test('MIME baytlardan çözülür — uzantı yalan söylese bile', () {
+    final jpeg = Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xE0, 0, 0, 0, 0]);
+    expect(
+      resolveAvatarMime(bytes: jpeg, declaredMime: null, path: '/t/scaled_IMG_1.heic'),
+      'image/jpeg',
+    );
+  });
+
+  test('gerçek HEIC baytları image/heic olarak tanınır (ftyp markası)', () {
+    // Flutter web dalı: picker parametreleri yok sayıldığından baytlar
+    // GERÇEKTEN orijinal formatta geliyor.
+    final heic = Uint8List.fromList([
+      0x00, 0x00, 0x00, 0x18, // kutu boyu
+      0x66, 0x74, 0x79, 0x70, // 'ftyp'
+      0x68, 0x65, 0x69, 0x63, // 'heic'
+    ]);
+    expect(resolveAvatarMime(bytes: heic), 'image/heic');
+    // İlk baytı 0x00 olduğundan hiçbir düz imzayla yakalanamaz; markaya
+    // bakmayan bir uygulama burada null döner.
+    expect(sniffImageMime(heic), isNotNull);
+  });
+
+  test('tanınmayan baytta bildirilen tip, o da yoksa uzantı kullanılır', () {
+    final junk = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(resolveAvatarMime(bytes: junk, declaredMime: 'image/png'), 'image/png');
+    expect(resolveAvatarMime(bytes: junk, path: 'a/b.WebP'), 'image/webp');
+    expect(resolveAvatarMime(bytes: junk, path: 'a/b'), 'application/octet-stream');
+  });
+
+  testWidgets('galeri patlarsa kullanıcıya görünür hata verilir', (tester) async {
+    final auth = AuthService.fake(
+      user: fakeUser('me'),
+      profile: const KProfile(id: 'me', displayName: 'ironman'),
+    );
+    // Gerçek uçta bu, izin reddinde gelen `PlatformException`.
+    await pumpSettings(tester, auth,
+        pickAvatar: () async => throw Exception('izin yok'));
+
+    await tester.tap(find.text('FOTOĞRAF DEĞİŞTİR'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('Fotoğraf seçilemedi'), findsOneWidget);
+    // Buton kilitli kalmamalı — kullanıcı yeniden deneyebilmeli.
+    expect(find.text('YÜKLENİYOR…'), findsNothing);
+    expect(find.text('FOTOĞRAF DEĞİŞTİR'), findsOneWidget);
+  });
+
+  testWidgets('küçültme patlarsa da aynı hata gösterilir', (tester) async {
+    final auth = AuthService.fake(
+      user: fakeUser('me'),
+      profile: const KProfile(id: 'me', displayName: 'ironman'),
+    );
+    await pumpSettings(
+      tester,
+      auth,
+      pickAvatar: () async => PickedImage(
+          bytes: Uint8List.fromList(const [1, 2, 3]), mimeType: 'image/png'),
+      shrinkAvatar: (_) async => throw Exception('kodek yok'),
+    );
+
+    await tester.tap(find.text('FOTOĞRAF DEĞİŞTİR'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('Fotoğraf seçilemedi'), findsOneWidget);
+  });
 }

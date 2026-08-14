@@ -73,6 +73,13 @@ class FakeGamesGateway implements GamesGateway {
 
   final listCalls = <({int offset, int limit, int? playerCount})>[];
 
+  /// Liste çekimi ağ hatasıyla düşsün. Gerçek uç çevrimdışıyken fırlatıyor
+  /// ve "hiç oyunun yok" ile "yüklenemedi" AYRI mesajlar olduğundan
+  /// (bkz. `GamesRepo.history`'nin `failed` bayrağı) sahte uç da bu yolu
+  /// üretebilmek ZORUNDA — Parça 46'nın dersi: sahtenin taklit etmediği
+  /// bir hata yolu, o yol hakkındaki testleri sessizce anlamsız kılar.
+  bool failList = false;
+
   @override
   Future<List<Map<String, Object?>>> listGames({
     required String userId,
@@ -82,6 +89,7 @@ class FakeGamesGateway implements GamesGateway {
     bool? onlineOnly,
   }) async {
     listCalls.add((offset: offset, limit: limit, playerCount: playerCount));
+    if (failList) throw Exception('ağ yok');
     final filtered = [
       for (final r in history)
         if (r['user_id'] == userId &&

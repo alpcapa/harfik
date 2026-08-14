@@ -125,7 +125,7 @@ RankTier? nextTierAfter(RankTier tier) {
 /// `_award_league_rewards` eşikleri her zaman soldan sağa, atlamasız (prefix)
 /// verdiğinden ve verilmiş ödül asla geri alınmadığından toplam, hangi
 /// eşiklerin ödendiğini tekil olarak belirler (5→{50}, 15→{50,100}, 40→
-/// {50,100,200}…).
+/// {50,100,250}…).
 bool rewardAlreadyClaimed(RankTier tier, int bonusPoints) {
   var cum = 0;
   for (final t in kRankTiers) {

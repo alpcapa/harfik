@@ -61,7 +61,7 @@ const double kSealInkAscEm = 0.71;
 const double kSealDescenderEm = 0.21;
 
 /// Bu mühürde basılabilen TEK kuyruklu karakterler. Kademe harfleri kapalı
-/// bir küme (Ç M O U Ş D — `league_rank.dart`), banner glyph'leri ise rakam
+/// bir küme (Ç M O U Ş D E Z T — `league_rank.dart`), banner glyph'leri ise rakam
 /// ve "+". Yeni bir kademe harfi eklenirse burası da gözden geçirilmeli.
 const String kSealDescenderChars = 'ÇŞ';
 

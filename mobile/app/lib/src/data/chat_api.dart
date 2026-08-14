@@ -50,6 +50,20 @@ abstract class ChatGateway {
 
   Future<List<String>> myMutes();
   Future<List<String>> myActiveReports();
+
+  /// Sessize alınan/şikayet edilen kişi → KAYNAK oyun id'si.
+  ///
+  /// Arkadaş listesinden moderasyon durumunu yönetebilmek için (bkz.
+  /// `FriendModerationSheet`). Oyun id'si şart, çünkü
+  /// `mute_online_game_participant` katılımcılık kontrolünü `p_muted`
+  /// dalından ÖNCE yapıyor — sessizden ÇIKARMA bile geçerli bir ortak oyun
+  /// istiyor. Mute/rapor satırının kendisi `online_game_id` taşıyor ve o
+  /// satır ancak ikisi de o oyunun katılımcısıyken yazılabildiğinden
+  /// provenance olarak kullanılabiliyor; sunucuda değişiklik gerekmiyor.
+  /// (Canlıda doğrulandı: BİTMİŞ bir oyunun id'siyle de geçiyor —
+  /// `is_online_game_participant` oyunun status'üne bakmıyor.)
+  Future<({Map<String, String> muted, Map<String, String> reported})>
+      myModeration();
   Future<void> setMute(String gameId, String targetUserId, bool muted);
   Future<void> report(String gameId, String targetUserId, String reason);
   Future<void> withdrawReports(String targetUserId);
@@ -115,6 +129,29 @@ class SupabaseChatGateway implements ChatGateway {
         .select('reported_user_id')
         .filter('withdrawn_at', 'is', null);
     return [for (final r in rows) r['reported_user_id'] as String];
+  }
+
+  @override
+  Future<({Map<String, String> muted, Map<String, String> reported})>
+      myModeration() async {
+    final mutes = await client
+        .from('online_game_message_mutes')
+        .select('muted_user_id, online_game_id');
+    final reports = await client
+        .from('online_game_chat_reports')
+        .select('reported_user_id, online_game_id')
+        .filter('withdrawn_at', 'is', null);
+    final muted = <String, String>{};
+    for (final r in mutes) {
+      muted.putIfAbsent(
+          r['muted_user_id'] as String, () => r['online_game_id'] as String);
+    }
+    final reported = <String, String>{};
+    for (final r in reports) {
+      reported.putIfAbsent(
+          r['reported_user_id'] as String, () => r['online_game_id'] as String);
+    }
+    return (muted: muted, reported: reported);
   }
 
   @override
@@ -197,6 +234,17 @@ class ChatRepo {
       return (await gateway.myActiveReports()).toSet();
     } catch (_) {
       return const {};
+    }
+  }
+
+  /// Ağ hatasında boş haritalar — `myMutes` ile aynı gerekçe: eksik veri
+  /// en fazla ikonu geçici gizler.
+  Future<({Map<String, String> muted, Map<String, String> reported})>
+      myModeration() async {
+    try {
+      return await gateway.myModeration();
+    } catch (_) {
+      return (muted: const <String, String>{}, reported: const <String, String>{});
     }
   }
 

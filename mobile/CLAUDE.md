@@ -260,7 +260,12 @@ mobile/
   app/                       # Flutter uygulaması (iskelet — aşağıdaki bölüm)
     pubspec.yaml             # kelimeki_core (path) + supabase_flutter +
                              # sqflite/shared_preferences + share_plus/
-                             # path_provider (paylaşım, 5c) + app_links
+                             # path_provider (paylaşım, 5c — DİKKAT: 13
+                             # Ağustos 2026'dan beri `lib/` altında
+                             # path_provider importu YOK, ama SİLME:
+                             # native'de geçici paylaşım dosyasını
+                             # share_plus onunla yazıyor, bkz. Parça 84)
+                             # + app_links
                              # (davet deep link'i, parça 8) +
                              # sqflite_common_ffi_web (YALNIZCA web test
                              # ortamı — koşullu import'un arkasında, mobil
@@ -348,7 +353,9 @@ mobile/
                              # Olmalıyım?" kutusu, 7 Ağustos 2026)
       ui/feedback/           # feedback_modal ("Görüş Bildir" formu)
       ui/friends/            # friends_modal (3 sekme + davet paylaşımı +
-                             # paylaşılan onay/sonuç diyalogları)
+                             # paylaşılan onay/sonuç diyalogları) +
+                             # friend_moderation_sheet (satırdaki 🚫/🚩
+                             # ikonundan açılan GERİ ALMA paneli)
       ui/live/               # Canlı oyun: live_games_tab (3 alt sekme +
                              # kartlar), live_game_create_form,
                              # friend_suggest_modal (kabul sonrası öneri),
@@ -2937,6 +2944,11 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        yaptı, sorun çıkmadı.** Kontrol maddeleri (özellikle "saklanan
        dosya ~50-150 KB olmalı") `mobile/TESTING.md` bölüm 12 ve kök
        `TESTING.md` bölüm 9.5'te duruyor — ilerideki bir regresyon için.
+       **Aynı gün kovadan ÖLÇÜLDÜ:** 82 KB ve 123 KB, ikisi de
+       `image/jpeg` — bant tuttu ve mimetype küçültmenin gerçekten
+       koştuğunu kanıtlıyor (koşmasaydı orijinal PNG/HEIC türü kalırdı).
+       Ayrıntı + Parça 82'nin RLS düzeltmesini de doğrulayan zaman
+       damgaları: kök `CLAUDE.md`, "Profil fotoğrafı yükleme".
 
    - ✅ **Parça 84 — paylaşımda tahta görseli HİÇ gitmiyordu: görselli dal
      web'de her seferinde patlıyor, WhatsApp da linkten sitenin GENEL
@@ -3118,11 +3130,481 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        gerçek popover FAZ B'de doğrulanmalı. `mobile/TESTING.md` bölüm 6
        ve FAZ B'ye maddeler eklendi.
 
+   - ✅ **Parça 87 — üç sessiz hata: HEIC avatar reddi, yutulan galeri
+     izni hatası, kaybolan soğuk-başlangıç davet linki (13 Ağustos 2026,
+     `avatar_picker.dart`, `auth_service.dart`, `account_settings_modal.dart`,
+     `friend_invite_inbox.dart`, `setup_screen.dart`):** Üçü de "hiçbir şey
+     olmuyor" sınıfından — kullanıcıya hata bile göstermeden başarısız
+     oluyorlardı. Üçü de kaynak koddan ölçülerek doğrulandı.
+     - **(a) HEIC seçen Android kullanıcısı avatarını YÜKLEYEMİYORDU — ve
+       sebep "HEIC" DEĞİLDİ.** İlk teşhis "Android'de HEIC baytları
+       geliyor, MIME haritasında yok" idi; `image_picker`ın Android
+       kaynağı okununca ÇÜRÜDÜ: `ImageResizer.java`'nın `shouldScale`ı
+       `maxWidth != null || maxHeight != null || imageQuality < 100` —
+       bizim 512/512/85 parametrelerimizle HER ZAMAN true, yani görsel
+       JPEG'e yeniden kodlanıyor (`saveAsPNG = bitmap.hasAlpha()`, aksi
+       hâlde JPEG). **Ama çıktı `createImageOnExternalDirectory("/scaled_"
+       + outputImageName, ...)` ile yazılıyor — UZANTI KORUNUYOR.** Yani
+       dosya `scaled_IMG_x.heic`, içi JPEG; `XFile.mimeType` de o
+       platformda null. Uzantıya bakan eski kod `application/octet-stream`
+       üretip `uploadAvatar`ın `image/*` kontrolüne takılıyordu: **geçerli
+       bir JPEG, yalan söyleyen bir uzantı yüzünden reddediliyordu.**
+       - **Düzeltme uzantı haritasını genişletmek DEĞİL, baytları okumak:**
+         yeni `sniffImageMime` (JPEG/PNG/GIF/WebP/BMP + ISO-BMFF `ftyp`
+         markası) ve öncelik sırasını sabitleyen `resolveAvatarMime`
+         (baytlar → platformun bildirdiği tip → uzantı). Baytlar asla yalan
+         söylemez ve sunucuya giden şey de zaten onlar.
+       - **HEIC düz bir imzayla YAKALANAMAZ** — ilk baytı `0x00`; `ftyp`
+         offset 4'te, marka 8-12'de. Bu yüzden sniff'te ayrı bir dal var.
+       - **iOS'ta sorun yoktu ve bu da ölçüldü:**
+         `FLTImagePickerMetaDataUtil.getImageMIMETypeFromImageData`
+         yalnızca İLK baytı kokluyor (JPEG/PNG/GIF); HEIC `0x00` ile
+         başladığından `MIMETypeOther` → suffix nil → `kFLTImagePickerDefaultSuffix
+         = @".jpg"`. Flutter web'de ise `maxWidth/maxHeight/imageQuality`
+         sessizce yok sayılıyor (Parça 83'te belgeliydi), yani baytlar
+         GERÇEKTEN HEIC olabiliyor — sniff üç platformda da doğru cevabı
+         verdiği için ayrı dal gerekmedi.
+       - `auth_service.dart`'ın `_extByMime`ine heic/heif/bmp eklendi ki
+         storage yolu (`<uid>/avatar.<ext>`) yanlış adlandırılmasın.
+       - **`resolveAvatarMime` AYRI ve saf bir fonksiyon, çünkü test
+         edilecek sözleşme SIRA:** `pickAvatarImage` platform kanalına
+         bağlı, widget testinde çalışmaz — Parça 86'nın dersi (bir
+         sözleşmeyi enjekte edilebilir sınırın ÜSTÜNDE test etmek, altındaki
+         iletimi kanıtlamaz) burada baştan uygulandı.
+     - **(b) Galeri izni reddedilince EKRANDA HİÇBİR ŞEY olmuyordu.**
+       `pickAvatar`/`shrinkAvatar` çağrıları `try`ın DIŞINDAYDI; izin
+       reddinde `image_picker`ın fırlattığı `PlatformException` en yakın
+       `catch`e hiç uğramadan akışı kesiyor, `_uploadingAvatar` bile
+       kurulmadığından tek bir piksel değişmiyordu. İkisi de `try` içine
+       alındı; Türkçe, eyleme dönük bir hata gösteriliyor ("Fotoğraf
+       seçilemedi. Galeri izni verildiğinden emin ol.") — Parça 45'in
+       "sessiz yutma yok" dersinin aynı sınıfı.
+     - **(c) Uygulama KAPALIYKEN dokunulan davet linki SESSİZCE
+       kayboluyordu.** `friend_invite_inbox.dart`'ın eski başlığı "cold
+       start'ta ilk URI da bu akışa dahil" diyordu — YANLIŞTI ve mekanizma
+       kaynaktan okunarak doğrulandı: `AppLinks` Dart tarafında bir
+       SINGLETON ve tek bir `StreamController.broadcast()` üzerinden
+       çoğullama yapıyor; native taraf (`AppLinksIosPlugin.swift:107`,
+       `AppLinksPlugin.java:133`) soğuk başlangıç linkini `initialLinkSent`
+       bayrağıyla YALNIZCA İLK `onListen`da bir kez akışa basıyor.
+       **Broadcast akışları geç abone olana geçmiş olayları TEKRARLAMAZ.**
+       `bootstrap()`ta bu inbox `await initSupabase()` VE
+       `await checkVersionGate(supabase)` (gerçek bir ağ çağrısı, 5 sn'ye
+       kadar) tamamlandıktan SONRA kuruluyor; supabase_flutter ise
+       `Supabase.initialize` içinde (`detectSessionInUri` varsayılan true)
+       `uriLinkStream`e ondan ÖNCE abone oluyor — yani ilk dinleyici o,
+       bayrağı o tüketiyor.
+       - **Kurtarma yolu `getInitialLink()`:** native tarafta düz bir
+         method-channel okuması (`case "getInitialLink": result(initialLink)`),
+         `initialLinkSent` bayrağını TÜKETMİYOR — supabase'in auth akışını
+         bozmadan aynı URI'yi bir kez daha okuyabiliyoruz. Hata yutuluyor
+         ve loglanıyor: bir davet linki uygulamanın açılışını bloke edemez.
+       - **Mükerrer kayıt riski gerçek ve kapatıldı:** aynı link hem sıcak
+         akıştan hem kurtarmadan düşebiliyor ve `PendingEventStore.add`
+         düz bir insert — dedup'ı YOK. Yeni saf `inviteTokensFromEvents`
+         bir `takeAll` PARTİSİNDEKİ mükerrerleri (ve bozuk kayıtları)
+         eliyor. Dedup **parti bazında**: kalıcı bir "görüldü" listesi
+         TUTULMUYOR, yani bir sonraki oturumda aynı davet linkine yeniden
+         dokunmak hâlâ çalışıyor.
+       - **Widget testi DENENDİ ve TERK EDİLDİ:** `SetupScreen`
+         `pumpAndSettle`ı asıyor (canlı rozet/senkron zamanlayıcıları —
+         Parça 8'in aynı tuzağı); sınırlı `pump` döngüleri de kurtarmadı,
+         test 400 sn zaman aşımına düştü. Bu yüzden karar saf bir fonksiyona
+         çıkarılıp ORADA test edildi — gerekçe fonksiyonun kendi doc
+         yorumunda da yazılı.
+     - **Test — negatif eş doğrulamasıyla, İKİ AYRI kanıt:** (a) için
+       `account_settings_test.dart`'a 5 test (bayt önceliği, HEIC `ftyp`
+       markası, yedek zinciri, picker fırlatması, shrink fırlatması);
+       `resolveAvatarMime`den sniff çağrısı çıkarılınca 2 test GERÇEKTEN
+       düştü (`Expected: 'image/heic' / Actual: 'application/octet-stream'`).
+       (b) için modaldeki `try/catch` geri alınınca iki test de GERÇEKTEN
+       düştü (`Found 0 widgets with text containing Fotoğraf seçilemedi`).
+       (c) için `friends_test.dart`'a saf bir dedup testi.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       385/385 yeşil** (379'dan +6). `kelimeki_core`'a ve web'e hiç
+       dokunulmadı — `mobile/` DIŞINDA dosya değişmedi.
+     - **Doğrulama sınırı:** üçü de gerçek cihaz istiyor — Android'de
+       HEIC seçimi, izin reddi diyaloğu ve `kelimeki://davet/<token>`
+       soğuk başlangıcı (custom şema yalnızca KURULU bir uygulamada
+       yakalanır, web derlemesinde test EDİLEMEZ — Parça 28'in aynı
+       sınırı). `mobile/TESTING.md` bölüm 10/12 ve FAZ B'ye maddeler
+       eklendi.
+     - **Ders — "web'de de böyle" bir savunma DEĞİL, ama "web'de yok" da
+       bir gerekçe değil:** (a) ve (b) web'de yaşanmıyor (tarayıcının
+       dosya seçicisi MIME'i doğru bildiriyor, izin diyaloğu yok), (c)
+       ise web'de kavram olarak yok (deep link yerine gerçek bir sayfa
+       var). Üçü de porta ÖZGÜ, platform kanallarının kendi
+       sözleşmelerinden doğuyor — Parça 86'nın `sharePositionOrigin`
+       bulgusuyla aynı aile. **Kaynak koda inmeden hiçbiri bulunamazdı;**
+       üçünde de belirti aynıydı: "hiçbir şey olmuyor".
+
+   - ✅ **Parça 88 — kardeş-ekran denetimi: üç sapma, biri motorun kendi
+     mesajını ulaşılamaz kılıyordu (13 Ağustos 2026, `game_screen.dart`,
+     `online_game_screen.dart`):** `game_screen.dart` ↔ `online_game_screen.dart`
+     çifti "Etki Analizi"nin değişmezi gereği elle senkron tutuluyor ve
+     hiçbir derleyici/test bunu yakalamıyor — planlı bir denetimle üç fark
+     bulundu. **Üçü de web kaynağından TEK TEK doğrulandı**, denetim
+     raporuna güvenilmedi.
+     - **(a) Boş taslakta OYNA/GERİ AL devre dışıydı; web'de değil.**
+       Web: `disabled={!canAct || validating || !wordsReady}` (App.tsx:1450)
+       ve `disabled={!canAct}` (1501) — `placed.isEmpty` koşulu YOK. Port
+       DÖRT yerde birden (iki ekran × iki buton) bu koşulu taşıyordu, artı
+       `online_game_screen.dart:700`'de mesajı yutan bir iç guard.
+       - **Asıl mesele kozmetik değil:** motor bu durum için ÖZEL bir
+         mesaj taşıyor — `validator.dart:57` / `validator.ts:62`,
+         **"Harf yerleştirilmedi."** Butonu kapatmak o mesajı ULAŞILAMAZ
+         kılıyordu; kullanıcı gri bir butonla kalıyor ve sebebini hiçbir
+         yerde okuyamıyordu. Bu, Parça 87'de düzeltilen üç hatanın aynı
+         sınıfı: sessiz ret.
+       - **Web'in KENDİ yazılı gerekçesi de bu yönde:** `OnlineGameScreen.tsx:705-714`
+         (3 Ağustos 2026) *"kullanıcıyı PASİF bir butona basmaya çağıran,
+         sebebi hiçbir yerde yazmayan çelişkili bir ekrandı — özelliği
+         yazan kişiyi bile yanılttı"* diyor. Karar bu yüzden "web'e
+         hizala" oldu; portun davranışını bilinçli bir sapma olarak
+         kaydetmek, motorun taşıdığı mesajı kalıcı olarak ölü kod
+         yapardı.
+     - **(b) Canlı "Sıra: X" bandı YANLIŞ kırmızıyı kullanıyordu ve kendi
+       içinde tutarsızdı.** Zemin/çerçeve `#E0483A` (`kMoveInvalid` —
+       TAHTAYA özel kırmızı) üzerine kuruluydu, **ama yorumu doğru şekilde
+       "web bg-red/10" diyordu**; aynı bandın nabız noktası ve metni ise
+       ZATEN `kRed` (`#DC2626`) kullanıyordu. Yani tek bir bantta iki
+       kırmızı vardı. Parça 54'ün ("her dosyada yerel palet kopyası")
+       taraması bunu göremiyor, çünkü değerler alfa türevi
+       (`0x1A…`/`0x66…`), `Color(0xFF…)` değil. Ayrıca `shadow-raised`
+       hiç yoktu ve dolgu 12/10 idi (web `px-4 py-3` = 16/12). Üçü de
+       düzeltildi; renkler artık `_red.withValues(alpha: 0.1/0.4)` —
+       `move_history_modal.dart:319`'un zaten kullandığı deyim, yani
+       token ilişkisi kodda görünür.
+     - **(c) "Tekrar Oyna" hata dalının butonu "TAMAM" diyordu, web
+       "Kapat".** Web'de bunlar İKİ AYRI dal (`sent` → "Tamam", `error` →
+       "Kapat"); port ikisini tek diyalogda birleştirdiğinden etiket artık
+       içeriğe göre seçiliyor.
+     - **Test — negatif eş doğrulamasıyla, DÖRT ayrı kanıt:** iki lib
+       dosyası birlikte `git stash`lenip testler koşuldu; dördü de
+       GERÇEKTEN düştü — yerel A2 ve Canlı A2 `Expected: not null /
+       Actual: <null>` (buton kapalı), A3 `Found 1 widget with text
+       "TAMAM"`, A1 dekorasyon tipi tutmadığından. Geri konunca yeşile
+       döndü.
+     - **Test yazarken düşülen tuzak (kayda geçsin):** yeni testin
+       `expect(controller.state.turnCount, 0)` iddiası düştü — `craftedState()`
+       sıfırdan başlamıyor (turnCount 2). Kodda değil TESTTE hata vardı;
+       "hamle işlenmemeli" iddiası mutlak bir sayıya değil ÖNCEKİ değere
+       bağlanmalıydı. Bir fikstürün başlangıç durumunu varsaymadan önce
+       oku.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       388/388 yeşil** (385'ten +3; A3 mevcut testin güncellenmesi olduğu
+       için ayrı test SAYILMIYOR). `kelimeki_core`'a ve web'e hiç
+       dokunulmadı — `mobile/` DIŞINDA dosya değişmedi.
+     - **Doğrulama sınırı:** bandın görsel teyidi (yeni kırmızı + gölge +
+       dolgu) cihazda bekleniyor — `mobile/TESTING.md` bölüm 11'e madde
+       eklendi.
+     - **Denetimin "belirsiz" bulguları BİLİNÇLİ olarak kapsam dışı:**
+       30px sabit mesaj satırı, "Kalan Taşlar"ın `myIndex`i, yeni-mesaj
+       popup'ının biçimi ve rematch'in "Gönderiliyor…" durumu — dördü de
+       web'e karşı ölçülmeden "sapma" sayılamaz, ayrı bir tur istiyorlar.
+       Bir bulguyu doğrulamadan düzeltmek bu projede daha önce iki kez
+       geri alındı (Parça 16→17, 39→40).
+
+   - ✅ **Parça 89 — beş paralel denetimin bulguları: bir VERİ KAYBI yolu, üç
+     SAHTE BAŞARI mesajı (13 Ağustos 2026, `setup_screen.dart`,
+     `friends_modal.dart`):** Kullanıcı isteğiyle beş salt-analiz denetimi
+     koşuldu (Türkçe metin paritesi, elle senkron kopyalar, sessiz hata
+     yutma, test kalitesi, sunucu yetkileri). **Raporlar körlemesine
+     UYGULANMADI** — her bulgu kaynaktan tek tek doğrulandı; aşağıdakiler
+     doğrulananlar.
+     - **(a) VERİ KAYBI — `_resumeSavedGame` terk olaylarını tüketip
+       çöpe atıyordu.** `drainAbandonedGames()` `PendingEventStore.takeAll`
+       kullanıyor = **atomik SELECT+DELETE**, yani dönüş değerini atmak
+       olayları KALICI olarak siler. `_resumeSavedGame`'in `state == null`
+       dalı ("tam bu anda süresi doldu") bunu çıplak çağırıp sonucu hiç
+       okumuyordu; oysa olayları -2 cezalı `games` kaydına çeviren tek
+       tüketici `_sweepLocalAbandoned`.
+       - **Tetikleyici somut:** misafir Setup'ta "Devam Eden Oyun" satırı
+         dururken 7 günlük süre dolar, "Devam Et"e dokunur → kayıt olaya
+         çevrilir → bu dal olayı yutar. Terk edilen oyunun tam `GameState`'i
+         ve -2 cezası bir daha üretilemez (bir sonraki açılışta süpürme
+         hiçbir şey bulamaz).
+       - Düzeltme tek satır: `_sweepLocalAbandoned()` çağır.
+       - **Aynı fonksiyonda ikinci, daha dar bir sıralama hatası:**
+         `_sweepLocalAbandoned` ÖNCE drain edip SONRA `games == null` diye
+         dönüyordu — o dalda da olaylar kaybolurdu. `games` artık drain'den
+         ÖNCE çözülüyor. **Kural: yıkıcı bir okuma (`takeAll`) yapmadan
+         önce sonucu tüketecek her şeyin hazır olduğundan emin ol.**
+     - **(b) SAHTE BAŞARI — `FriendsModal` ağ hatasında gerçekleşmemiş
+       sonuçlar bildiriyordu.** Üç akış: `_handleRespond` hatayı tamamen
+       yutup `void` döndüğünden "Arkadaş oldunuz." ve "İstek reddedildi."
+       KOŞULSUZ gösteriliyordu; `_handleSend` hatada `null` dönüyor ve
+       `null != accepted` olduğundan "Arkadaşlık isteğiniz iletilmiştir."
+       çıkıyordu — istek hiç gitmemişken.
+       - **Sessiz retten DAHA KÖTÜ:** kullanıcı yanlış bilgilendiriliyor,
+         üstelik liste tazelenmediğinden ekran mesajla çelişiyor (reddedilen
+         istek yerinde duruyor).
+       - `_handleRespond` artık `bool` dönüyor; üç çağrı yeri de sonucu
+         kontrol ediyor. Hata metni İCAT EDİLMEDİ — `chat_settings_modal`'ın
+         zaten kullandığı `'İşlem başarısız oldu.'` paylaşıldı.
+       - **Aynı dosyadaki `_confirmThenRemoveCandidate`/`_confirmThenCancel`
+         baştan DOĞRUYDU** (başarı diyaloğunu `try` İÇİNDE gösteriyorlar) —
+         yani bu bir desen hatası değil, iki akışın o desenden sapmasıydı.
+     - **Test — negatif eş doğrulamasıyla:** `friends_test.dart`'a ağ
+       hatasında reddetmenin "İstek reddedildi." DEĞİL "İşlem başarısız
+       oldu." dediğini doğrulayan test. `friends_modal.dart` `git stash`
+       lenince GERÇEKTEN düştü (`Found 1 widget with text "İstek
+       reddedildi."` — kullanıcının göreceği sahte başarının ta kendisi).
+     - **Test tuzağı (kayda geçsin):** satır butonu ve onay diyaloğunun
+       kabul butonu ikisi de `trUpper`dan geçiyor → finder `'Reddet'` değil
+       **`'REDDET'`** olmalı. Ayrıca `pumpModal` `FriendsModal` GRUBUNUN
+       içinde tanımlı; testi başka bir gruba eklemek "Method not found"
+       verir.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       389/389 yeşil** (388'den +1). `kelimeki_core`'a dokunulmadı.
+     - **AÇIK BOŞLUK — (a) için test YOK:** düzeltme kaynaktan kanıtlandı
+       (takeAll yıkıcı + tek meşru tüketici `_sweepLocalAbandoned`) ama
+       widget seviyesinde tekrarlanabilir bir kurulum (loadSave null DÖNERKEN
+       kuyrukta olay olması) yazılmadı. `mobile/TESTING.md` bölüm 1'e elle
+       kontrol maddesi eklendi; kalıcı test hâlâ borç.
+     - **Denetimlerin diğer bulguları — durum:**
+       - **Elle senkron kopyalar: TEMİZ.** Rütbe/ödül üç kopya (SQL↔TS↔Dart)
+         birebir, ödül=eşik/10 dokuz kademede de tutuyor, kümülatif toplamlar
+         pairwise farklı; üretilmiş dosyalar bayat değil (motor dosyaları
+         golden'lardan sonra DEĞİŞMEMİŞ); RankSeal geometrisi ve renk paleti
+         senkron. Çıkan üç bayat YORUM ayrı bir commit'te düzeltildi.
+         **Denetimin "kör nokta" dediği `tile-border` (#C7D0DC) DÜZELTİLDİ:**
+         token `src/`'de de hiç kullanılmıyor, yani iki tarafta da ölü —
+         izlenmemesi bir eksiklik değil.
+       - **Sunucu: bir uykuda hata bulundu** (`withdraw_online_game_chat_reports`
+         overload'ı) — Parça 90'da düzeltildi.
+       - **Test kalitesi:** en güçlü bulgu `OnlineApi.submitMove`'un
+         retry/idempotency döngüsünün SIFIR test kapsamı olması — Parça
+         90'da kapatıldı.
+       - **Türkçe metin paritesi:** denetim İKİ kez oturum limitine takıldı,
+         sonuç ALINAMADI — Parça 90'da elle koşuldu ve gerçek bir bulgu
+         çıkardı (Gizlilik Politikası bayattı).
+
+   - ✅ **Parça 90 — Parça 89'un üç açık maddesi kapandı; hukuki metin
+     denetimi bir GİZLİLİK YALANI buldu (14 Ağustos 2026,
+     `fix_withdraw_report_wrong_overload` migration'ı, `online_api.dart`,
+     `legal_modals.dart`, `live_games_tab.dart`, `games_api.dart`,
+     `game_history_modal.dart`, `recent_games_section.dart`):** Parça 89
+     üç işi "sonraya" bırakmıştı (uykudaki sunucu hatası, `OnlineApi`'nin
+     sıfır testi, tamamlanamayan Türkçe metin denetimi); üçü de bu parçada
+     kapandı ve sonuncusu beklenenden ağır bir bulgu çıkardı.
+     - **(a) Sunucu — `withdraw_online_game_chat_reports`'un YANLIŞ
+       overload'ı düzeltilmişti (uygulandı, kanıtlandı).** 4 Ağustos'taki
+       "geri çekme `handled`'a dokunmasın" düzeltmesi, bir gün önce DROP
+       edilmiş 2-arg imzayı `create or replace` ile yeniden yaratıp ona
+       uygulanmıştı; istemcilerin çağırdığı 1-arg sürüm hâlâ
+       `handled = true` yapıyordu. **Bozulmuş veri YOKTU** (son geri çekme
+       04.08 10:49, migration 10:54 — o tarihten beri hiç geri çekme
+       olmamış), yani hata gerçekti ama uykudaydı. Migration 1-arg sürümü
+       düzeltip hortlak overload'ı düşürdü (o overload ayrıca
+       `SECURITY DEFINER` + EXECUTE'u PUBLIC'te — "yeni fonksiyonda önce
+       revoke all" kuralına aykırı bir kalıntı).
+       **Canlıda geri alınan bir transaction'la DAVRANIŞ testi yapıldı**
+       (varlık kontrolü değil): gerçek bir satır (`83535bba…`)
+       `handled=false`a çekilip RPC gerçek raporlayanın kimliğiyle
+       çağrıldı → `withdrawn_at` doldu, `handled` **`false` KALDI**;
+       `rollback` sonrası satırın eski hâline (`handled=true`,
+       `withdrawn_at=null`) döndüğü ayrıca sorgulandı.
+     - **(b) `OnlineApi.submitMove` artık testli** — mobilin ASIL
+       güvenilirlik özelliği (aynı `p_move_id` ile retry) sıfır kapsamdaydı.
+       `OnlineApi.withRpc` test dikişi (`SubmitMoveRpc` typedef'i) +
+       `test/online_api_test.dart` (4 test): aynı id ile yeniden deneme,
+       `PostgrestException`'da tek çağrı + rethrow, `maxAttempts` tükenince
+       hatanın yüzeye çıkması, açık `moveId`. **Negatif eş, İKİ AYRI
+       kanıt:** `final id = moveId ?? uuidV4()` döngünün İÇİNE taşınınca
+       idempotensi testi GERÇEKTEN düştü (`Expected: '31769d3e…' Actual:
+       '43a67f74…'`); `PostgrestException` rethrow'u kaldırılınca çağrı
+       sayısı testi düştü (`Expected: <1> Actual: <3>`). Parça 86'nın
+       dersinin doğrudan uygulaması: ekranın 15 testi `FakeOnlineGamesGateway`
+       sınırının ÜSTÜNDE ölçüyor, döngü o sınırın ALTINDA.
+     - **(c) Türkçe metin denetimi — port, kullanıcıya kendi verisi
+       hakkında GERÇEK OLMAYAN bir şey söylüyordu.** `legal_modals.dart`ın
+       başlığı "METİNLER WEB'DEN BİREBİR KOPYALANMIŞTIR … web metni
+       değişirse buraya da aynen taşınmalı" diyordu ama bunu ZORLAYAN
+       hiçbir şey yoktu ve gerçekten kaçtı: 10 Ağustos'ta
+       `game_chat_archive_participants_only` (Parça 51) sohbet arşivini
+       katılımcı+admin'e kilitledi, web'in Gizlilik Politikası düzeltildi,
+       port ESKİ cümleyi ("mevcut skor/tahta görünürlüğüyle aynı şekilde
+       tüm kayıtlı kullanıcılara açıktır") taşımaya devam etti. Metin
+       web'in bugünkü hâline çekildi, "Son güncelleme" 2 → 10 Ağustos.
+       - **`test/legal_text_test.dart` bunu KALICI olarak zorluyor** —
+         `color_tokens_test.dart`ın tailwind'i okuyan deseninin hukuki
+         metin karşılığı: web'in `TermsModal.tsx`/`PrivacyModal.tsx`
+         dosyalarını OKUYUP kendi "Son güncelleme" tarihlerini portunkiyle
+         karşılaştırıyor (tam metin karşılaştırması satır kaydırma/kaçış
+         farklarıyla kırılgan olurdu; tarih, projenin yerleşik disiplini
+         gereği her metin değişikliğinde güncelleniyor, yani "port bayat
+         mı?" sorusunun güvenilir vekili). Üçüncü test, tarihten bağımsız
+         olarak eski/yanlış cümlenin geri gelmediğini de sabitliyor.
+         **Negatif eş:** metin eski hâline döndürülünce 3 testin 2'si
+         GERÇEKTEN düştü.
+     - **(d) Aynı denetimde bulunan iki SESSİZ HATA daha (Parça 89'un
+       "sahte başarı" sınıfının kardeşleri):**
+       1. **Canlı davet yanıtı ağ hatasında hiçbir şey söylemiyordu**
+          (`live_games_tab.dart`) — `_handleRespond`'ın `catch`i yalnızca
+          logluyordu; kullanıcı Kabul Et/Reddet'e basıyor, kart yerinde
+          duruyor, ekranda hiçbir açıklama yok. Parça 89'un
+          `FriendsModal` için açtığı `kFriendActionFailed` sabiti
+          paylaşıldı (yeni metin icat edilmedi).
+       2. **Oyun geçmişi ağ hatasını "hiç oyunun yok" diye gösteriyordu**
+          — `GamesRepo.history` boş liste dönüp hatayı yutuyordu, iki
+          tüketici de (`GameHistoryModal`, `RecentGamesSection`) bunu
+          "Henüz kayıtlı bir oyunun yok." / "Henüz bitmiş bir Yapay Zeka
+          oyunun yok." diye çiziyordu. **Çevrimdışı bir kullanıcıya bu,
+          oyunlarının silindiğini düşündürür.** Dönüş kaydına `failed`
+          eklendi (`moves`un `ok`/`boardSnapshot`un null ayrımıyla aynı
+          gerekçe — "veri yok" ile "ulaşamadım" AYRI şeyler) ve iki ekran
+          da artık "Oyun geçmişi yüklenemedi. Bağlantını kontrol edip
+          tekrar dene." diyor. `RecentGamesSection` ayrıca başarısız
+          çekimle önbelleği EZMİYOR — önceki mount'un listesi çevrimdışı
+          gösterilmeye devam edebilsin.
+       - **`GameHistoryModal`'da bayrak İKİ yükleme yolunda da set
+         ediliyor** (`_loadInitial` + `_loadPage`): ikincisi sekme
+         değişiminin de (offset 0) yolu, orada bir hata "favori
+         işaretlediğin oyun yok" diye görünürdü.
+       - **`FakeGamesGateway`e `failList` eklendi** — Parça 46'nın dersi:
+         sahtenin taklit etmediği bir hata yolu, o yol hakkındaki testleri
+         sessizce anlamsız kılar; bu hata tam da bu yüzden 398 test
+         yeşilken görünmezdi. **Negatif eş:** iki ekranın dalları
+         kapatılınca yeni iki test de GERÇEKTEN düştü (`Found 0 widgets
+         with text containing yüklenemedi`).
+       - **AYNI GÜN web'e de taşındı (aynı PR):** `fetchMyGames` de artık
+         `failed` döndürüyor, `GameHistoryModal`/`RecentGamesSection` aynı
+         mesajı gösteriyor. İlk sürümde yalnızca mobil düzeltilip web kök
+         `CLAUDE.md`'nin bekleme listesine yazılmıştı; kullanıcı "onu da
+         kapat" deyince aynı dalda bitirildi (dal `main` tabanlı ve zaten
+         web dosyaları içeriyor — ikinci bir dal açmak Kontrol Listesi
+         madde 1'in "teslim et" amacına hizmet etmezdi). Web'de birim test
+         çatısı olmadığından oradaki kanıt farklı: `tsc` sözleşmeyi
+         GERÇEKTEN zorluyor (bir return sitesinden `failed` düşürülünce
+         `TS2741` ile kırıldı — negatif eş), mesaj üretim paketinde iki
+         çağrı yerinde de var, duman testleri geçiyor; davranışın gözle
+         teyidi `TESTING.md` bölüm 9.6'da.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       398/398 yeşil** (389'dan +9). `kelimeki_core`'a hiç dokunulmadı.
+     - **`mobile/` DIŞINDA dosya değişti** (`supabase/migrations/`) → kök
+       `CLAUDE.md` aynı commit'te güncellendi (Kontrol Listesi madde 1).
+     - **Doğrulama sınırı:** ~~(a) gerçek istemciyle uçtan uca (bir şikayeti
+       geri çekip admin panelinde hâlâ "Yeni" göründüğünü doğrulamak)
+       cihazda/web'de teyit edilmeli~~ — **14 Ağustos 2026'da KAPANDI:**
+       kullanıcı gerçek hesapla geri çekti, `handled` `false` kaldı, kart
+       admin panelinde "Yeni" görünüp sayaca dahil oldu, sonra elle okundu
+       işaretlendi. Ayrıntı + çıkarımın nasıl elemeyle yapıldığı: kök
+       `CLAUDE.md`, aynı maddenin sonu. (b) `OnlineApi` testleri sahte bir
+       RPC ile ölçüyor, gerçek PostgREST retry'ı hâlâ Faz 6'nın (çok
+       kullanıcılı harness) işi; (d.2) gerçek ağ kesintisiyle "yüklenemedi"
+       mesajının göründüğü cihazda doğrulanmalı — `mobile/TESTING.md`
+       bölüm 5/11'e maddeler eklendi.
+     - **Ders — bir dosyanın BAŞLIĞINDAKİ "birebir kopyalanmıştır" notu bir
+       garanti DEĞİL, bir niyet beyanıdır.** Bu proje aynı sınıfı renkler
+       (Parça 54 → `color_tokens_test`) ve tipografi (Parça 78 →
+       `theme_test`) için zaten testle bağlamıştı; hukuki metin en uzun
+       süre bağlanmadan kalan ve yanlış olduğunda BEDELİ EN AĞIR olan
+       kopyaydı — kullanıcıya kendi verisinin görünürlüğü hakkında yanlış
+       bilgi veriyordu. Yeni bir "elle senkron" kopya açarken sor: bunu
+       hangi test zorluyor?
+
+   - ✅ **Parça 91 — şikayeti geri çekmenin TEK yolu, raporladığın kişiyle
+     YENİ bir oyun açmaktı (14 Ağustos 2026, yeni
+     `ui/friends/friend_moderation_sheet.dart`, `chat_api.dart`,
+     `friends_modal.dart` + web `FriendModerationModal.tsx`):** Kullanıcı
+     bölüm 10'u koşarken duvara çarptı ve çözümü kendisi tarif etti:
+     *"arkadaşlar listesinde o kişinin satırında arkadaşlıktan çıkart
+     işaretinin soluna bayrak/Sessiz ikonu koymak ve tıklandığında
+     settings'i açmak."*
+     - **Kök sebep bir kod hatası DEĞİL, bir erişim boşluğu:** sessize
+       alma/şikayet 3 Ağustos'tan beri KİŞİ bazlı (oyunlar arası taşınıyor)
+       ama geri almanın giriş noktası hâlâ **AKTİF** bir oyunun sohbet
+       ayarlarıydı (`ChatSettingsModal`, dişli). Oyun bitince
+       `LiveGamesTab` onu listelemiyor, arşiv (`GameChatHistoryModal`)
+       bilerek salt-görsel — yani durum kalıcı, kontrolü ulaşılamaz.
+       **Kalıcı bir durumu geri almanın yolu, o durumun oluştuğu geçici
+       bağlama bağlıysa er ya da geç kapanır** — kişi bazlı yapılırken
+       kontrol de kişi bazlı bir yere taşınmalıydı.
+     - **KAPSAM bilinçli olarak yalnızca GERİ ALMA.** Yeni şikayet burada
+       YOK: bir şikayet hakkında olduğu KONUŞMAYA bağlı
+       (`online_game_chat_reports.online_game_id`) ve admin panelindeki
+       "Sohbeti Görüntüle" o dökümü açıyor — arkadaş listesinden açılan
+       bir şikayet zorunlu olarak ESKİ bir oyuna iliştirilir ve admin
+       ilgisiz bir yazışma okurdu. Bu yüzden ikon da yalnızca durum
+       VARKEN çiziliyor: bu bir kısayol, moderasyon menüsü değil.
+     - **Sunucuda DEĞİŞİKLİK YOK — ama sessizden çıkarma OYUN İD'Sİ
+       İSTİYOR ve bu kaynaktan okunarak bulundu:**
+       `mute_online_game_participant` katılımcılık kontrolünü `p_muted`
+       dalından ÖNCE yapıyor, yani MUTE'u KALDIRMAK bile geçerli bir ortak
+       oyun id'si gerektiriyor. Provenance olarak mute/rapor satırının
+       KENDİ `online_game_id`'si kullanılıyor (o satır ancak ikisi de
+       katılımcıyken yazılabildiğinden geçerliliği garantili) — yeni
+       `ChatRepo.myModeration()` iki tablodan `userId → gameId` haritası
+       döndürüyor. `withdrawReports` zaten kişi bazlı, id İSTEMİYOR.
+     - **Canlıda rol simülasyonuyla doğrulandı (hepsi rollback):** iki
+       tablodan da `online_game_id` okunabiliyor; **BİTMİŞ** bir oyunun
+       id'siyle sessizden çıkarma GEÇİYOR (1 satır → 0) —
+       `is_online_game_participant` oyunun `status`üne bakmıyor, yani
+       kısayol tam da en çok gerektiği yerde çalışıyor. Bu, "eski oyun
+       id'si hâlâ geçerli mi?" sorusunun tahminle değil ölçümle
+       cevaplanması gereken kısmıydı.
+     - **`ChatRepo` zinciri dört yeni durakla threadlendi** (services →
+       Setup/GameScreen/OnlineGameScreen → GameHeader → AccountButton →
+       FriendsModal) ve **`LiveGameCreateForm` da dahil edildi**: o ekran
+       da `showFriendsModal` açıyor ve atlanırsa AYNI satır bir girişte
+       ikonlu, öbüründe ikonsuz görünürdü — bu projenin en sık tekrarlayan
+       hata sınıfı (sessiz ayrışma), burada baştan kapatıldı.
+     - **Test — negatif eş doğrulamasıyla, İKİ AYRI kanıt:** dört yeni
+       test (yalnızca durumu OLAN satırda ikon + konumu "çıkar"ın solunda;
+       panel → onay → geri çekme → ikon KAYBOLUYOR; sessizden çıkarmanın
+       kaydın geldiği oyun id'siyle çağrıldığı; `chat` yokken ikon HİÇ
+       çizilmediği). (1) İkon render koşulu kapatılınca ÜÇÜ GERÇEKTEN
+       düştü — dördüncüsü (yokluk iddiası) doğru şekilde geçmeye devam
+       etti. (2) `if (changed) await _reloadModeration();` kapatılınca
+       kullanıcının göreceği bayat-bayrak semptomu BİREBİR üretildi
+       (`Expected: no matching candidates / Actual: Found 1 widget with
+       text "🚩"`). İkisi de geri konunca yeşile döndü.
+     - **Sahte uç gerçek ucun sözleşmesini taklit ediyor** (Parça 46'nın
+       dersi): `FakeChatGateway.myModeration` yalnızca kimlikleri değil
+       oyun id'sini de döndürüyor — aksi halde "sessizden çıkarma doğru
+       id'yle çağrılıyor mu" sorusu testlerde sorulaMAZDI.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       402/402 yeşil** (398'den +4). `kelimeki_core`'a hiç dokunulmadı.
+     - **`mobile/` DIŞINDA dosya değişti** (web yarısı aynı gün, aynı
+       dalda) → kök `CLAUDE.md` + `TESTING.md` aynı commit'te güncellendi
+       (Parça Bitirme Kontrol Listesi madde 1).
+     - ~~**Doğrulama sınırı:** gerçek `myModeration` sorgusu + gerçek
+       `setMute`/`withdrawReports` RPC'leri mobilde iki hesapla
+       doğrulanmalı~~ — **AYNI GÜN İKİ PLATFORMDA DA KAPANDI.** Web:
+       ikon doğru satırda çıktı, temiz satırda çıkmadı, geri çekme
+       çalıştı ve `handled`'a dokunmadı. Mobil: 🚫 arkadaş satırında
+       çıktı, panelden sessizden çıkarıldı, ikon ANINDA kalktı.
+     - **Mobil turun ürettiği kanıt, "çalıştı" beyanından güçlü:**
+       üretimde `online_game_message_mutes` **0 satıra** düştü ve
+       provenance oyununun (`866eb714…`) durumu **`finished`** — yani
+       sessizden çıkarma BİTMİŞ bir oyunun id'siyle gerçek istemciden
+       geçti. Bu tam olarak özelliğin varlık sebebi: `mute_online_game_participant`
+       katılımcılık kontrolünü `p_muted` dalından ÖNCE yaptığından
+       sessizden ÇIKARMAK bile geçerli bir oyun id'si istiyor, ve o id'nin
+       bitmiş bir oyuna ait olması sorun ETMİYOR. Daha önce yalnızca
+       rollback'li simülasyonla gösterilmişti; artık gerçek uçtan uca.
+       Ayrıca `ChatRepo` kablolaması ve emoji fallback'i (🚫 tofu değil)
+       de bu turda kapandı.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
 kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
 silinip kendi tarihli parça notuna taşınır.
+
+### `HelpModal` metin paritesi denetlenmedi (14 Ağustos 2026)
+
+Parça 90 `TermsModal`/`PrivacyModal` paritesini kalıcı bir testle bağladı
+(`test/legal_text_test.dart`, web'in "Son güncelleme" tarihini okuyor) ama
+`HelpModal`'ın aynı "birebir kopya" sözleşmesi hâlâ yalnızca bir yorum
+satırıyla korunuyor — o dosyada tarih damgası olmadığından aynı vekil
+kullanılamıyor. Parça 66'da eklenen "Rütbeler ve Ödüller" bölümü tabloyu
+`kRankTiers`ten çizdiği için (elle yazılmadığı için) o kısım güvende;
+risk düz kural metinlerinde. Önerilen: web'in `HelpModal.tsx`'inden birkaç
+karakteristik cümleyi okuyup portta bulunduğunu doğrulayan bir test
+(`color_tokens_test` deseni), ya da web tarafına bir "Son güncelleme"
+damgası eklemek.
 
 - **Kayıt onayı maili kaydın GELDİĞİ kanala dönmeli (10 Ağustos 2026,
   kullanıcı kararı — sözleri: "Kişilerin kayıt başvurusu hangi kanaldan

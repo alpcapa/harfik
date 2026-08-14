@@ -249,6 +249,10 @@ export function GameHistoryModal({
       'Sen';
   const [games, setGames] = useState<GameHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  // Son yükleme GERÇEKTEN hata verdi mi — boş listeden ayrı tutuluyor.
+  // Çevrimdışı açan kullanıcıya "henüz kayıtlı oyun yok" demek, oyunlarının
+  // silindiğini düşündürür (bkz. `fetchMyGames`'in `failed` alanı).
+  const [loadFailed, setLoadFailed] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
@@ -460,8 +464,9 @@ export function GameHistoryModal({
       let pages = 0;
       const MAX_PAGES = 25; // ~500 oyun — pratikte hiç ulaşılmaz, sonsuz döngüye karşı güvenlik ağı.
       do {
-        const { games: page, hasMore: hm } = await fetchMyGames(playerCount, offset, PAGE_SIZE, userId, favoritesOnly);
+        const { games: page, hasMore: hm, failed } = await fetchMyGames(playerCount, offset, PAGE_SIZE, userId, favoritesOnly);
         if (cancelled) return;
+        setLoadFailed(failed);
         accumulated = accumulated.concat(page);
         more = hm;
         offset += page.length;
@@ -503,10 +508,11 @@ export function GameHistoryModal({
   const loadMore = useCallback(() => {
     setLoadingMore((already) => {
       if (already) return already;
-      void fetchMyGames(playerCount, gamesLengthRef.current, PAGE_SIZE, userId, favoritesOnly).then(({ games: page, hasMore: more }) => {
+      void fetchMyGames(playerCount, gamesLengthRef.current, PAGE_SIZE, userId, favoritesOnly).then(({ games: page, hasMore: more, failed }) => {
         setGames((cur) => [...cur, ...page]);
         setHasMore(more);
         setLoadingMore(false);
+        setLoadFailed(failed);
       });
       return true;
     });
@@ -579,11 +585,13 @@ export function GameHistoryModal({
         <p className="text-muted text-xs font-mono text-center py-4">Yükleniyor…</p>
       ) : games.length === 0 ? (
         <p className="text-muted text-[10px] font-mono text-center py-4">
-          {favoritesOnly
-            ? userId
-              ? 'Bu oyuncunun henüz favori işaretlediği bir oyun yok.'
-              : 'Henüz favori işaretlediğin bir oyun yok.'
-            : 'Bu kategoride henüz kayıtlı oyun yok.'}
+          {loadFailed
+            ? 'Oyun geçmişi yüklenemedi. Bağlantını kontrol edip tekrar dene.'
+            : favoritesOnly
+              ? userId
+                ? 'Bu oyuncunun henüz favori işaretlediği bir oyun yok.'
+                : 'Henüz favori işaretlediğin bir oyun yok.'
+              : 'Bu kategoride henüz kayıtlı oyun yok.'}
         </p>
       ) : (
         <div ref={scrollRef} className="flex flex-col gap-2 max-h-[65vh] overflow-y-auto pr-1">

@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show trLower, trUpper;
 
 import '../../data/auth_service.dart';
+import '../../data/chat_api.dart';
 import '../../data/feedback_api.dart';
 import '../../data/friends_api.dart';
 import '../../data/online_games_api.dart';
@@ -42,6 +43,12 @@ class LiveGameCreateForm extends StatefulWidget {
   final Future<GamesRepo>? games;
   final FeedbackRepo? feedback;
 
+  /// "Arkadaşlarım" satırındaki moderasyon (sessize alma/şikayet) ikonu için
+  /// — bu ekrandan açılan FriendsModal, hesap menüsünden açılanla AYNI
+  /// görünmek zorunda; geçilmezse aynı satır orada ikonlu burada ikonsuz
+  /// olurdu.
+  final ChatRepo? chat;
+
   final VoidCallback onCancel;
   final VoidCallback onCreated;
 
@@ -55,6 +62,7 @@ class LiveGameCreateForm extends StatefulWidget {
     this.stats,
     this.games,
     this.feedback,
+    this.chat,
   });
 
   @override
@@ -252,6 +260,7 @@ class _LiveGameCreateFormState extends State<LiveGameCreateForm> {
       auth: widget.auth,
       stats: widget.stats,
       games: widget.games,
+      chat: widget.chat,
       initialTab: FriendsTab.search,
     ).then((_) => _reloadFriends());
   }
