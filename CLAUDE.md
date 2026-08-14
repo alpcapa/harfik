@@ -756,8 +756,22 @@ fikirlerin unutulmaması için bir bekleme listesi, kod DEĞİL. Bir madde
 uygulanınca buradan silinip ilgili bölümün kendi tarihli notuna taşınmalı
 (kök `CLAUDE.md`'nin genel "değişiklik = tarihli not" disipliniyle aynı).
 
-Şu an bekleyen madde YOK. (Arkadaş ekle simgesi, Çıkış Yap ikonu ve hesap
-menüsü tooltip'i 9 Ağustos 2026'da; "Tüm Oyunlarım"daki hamle geçmişi ikonu
-12 Ağustos 2026'da uygulandı — kayıtları `UserMenu`,
-`Leaderboard`/`PlayerScoreCard` ve `GameHistoryModal` bölümlerindeki tarihli
-notlara taşındı.)
+- **Oyun geçmişi ağ hatasını "hiç oyunun yok" diye gösteriyor (14 Ağustos
+  2026'da mobil tarafta düzeltildi, web'de DURUYOR):** `fetchMyGames`
+  (`src/lib/api.ts`) hem favoriler hem normal dalda hatayı `console.error`'a
+  yazıp `{games: [], hasMore: false}` dönüyor — çağıran (`GameHistoryModal`,
+  `RecentGamesSection`) bunu gerçekten boş bir listeden ayırt edemediğinden
+  "Henüz kayıtlı bir oyunun yok." basıyor. **Çevrimdışı bir kullanıcıya bu,
+  oyunlarının silindiğini düşündürür** — ve uygulama kurulabilir bir PWA
+  olduğundan bu gerçek bir senaryo (aynı gerekçe `cloudSaveMirror` işinde de
+  kabul edilmişti). Mobil porttaki çözüm: dönüş kaydına bir `failed` bayrağı
+  (`GamesRepo.history`) + iki tüketicinin de ayrı bir mesaj göstermesi
+  ("Oyun geçmişi yüklenemedi. Bağlantını kontrol edip tekrar dene.").
+  Web'de `boardSnapshot`/`moves` zaten bu ayrımı yapıyor (`moves` `ok`
+  taşıyor), yani desen yabancı değil — yalnızca liste yoluna uygulanmamış.
+  Ayrıntı: `mobile/CLAUDE.md`, Parça 90.
+
+(Arkadaş ekle simgesi, Çıkış Yap ikonu ve hesap menüsü tooltip'i 9 Ağustos
+2026'da; "Tüm Oyunlarım"daki hamle geçmişi ikonu 12 Ağustos 2026'da
+uygulandı — kayıtları `UserMenu`, `Leaderboard`/`PlayerScoreCard` ve
+`GameHistoryModal` bölümlerindeki tarihli notlara taşındı.)
