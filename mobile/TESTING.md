@@ -11,6 +11,12 @@ görürsün.
 Kök dizindeki `TESTING.md` (web) ile aynı disipline tabidir: **bir ilerleme
 kaydı değildir**, her sürüm öncesi baştan koşulabilir.
 
+**"Bu turda nereye kadar geldik?" sorusunun cevabı burada DEĞİL** — o,
+tura özgü bir anlık görüntü olduğundan `mobile/CLAUDE.md`'nin **"FAZ A1 —
+Cihaz Testi Tur Durumu"** bölümünde duruyor: hangi bölümler koşuldu,
+hangileri yarım kaldı, hangi maddeler son düzeltmelerden sonra hiç
+koşulmadı. Yeni bir tura başlamadan önce oraya bak.
+
 **Buradan bir bulgu çıktığında düzeltmeye başlamadan önce:** o davranışın
 web'deki karşılığını (`src/`) OKU — bu port web'in birebir kopyası, bulgu
 neredeyse her zaman "web'de nasıl yapıldığına bakılmadan yazılmış bir

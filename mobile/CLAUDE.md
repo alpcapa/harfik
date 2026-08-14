@@ -3804,6 +3804,74 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        `4. kademe (web: "Usta") — EŞİK ayrışmış / Expected: <300> Actual:
        <250>` ile düştü, web dosyası geri alınınca yeşile döndü.
 
+## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 14 Ağustos 2026)
+
+**Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
+o dosyalar "bir ilerleme kaydı değildir, her sürüm öncesi baştan
+koşulabilir" diyor ve bu doğru — ama o yüzden "bu turda nereye kadar
+geldik?" sorusunun cevabı hiçbir yerde yazılı değildi ve yalnızca
+konuşma bağlamında yaşıyordu. Bir oturum kapandığında kayboluyor, sonraki
+oturum ya baştan çıkarım yapıyor ya da yapması gerektiğini hiç bilmiyor.
+
+**Bu bir kalıcı "tik listesi" DEĞİL, TURA ÖZGÜ bir anlık görüntü.** Yeni
+bir tam tur başladığında (yeni sürüm, büyük bir refactor) sıfırlanır.
+Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
+
+### Bölüm bölüm (FAZ A1 = GitHub Pages web derlemesi, iPad Safari)
+
+| Bölüm | Durum | Not |
+|---|---|---|
+| 0 · Derleme / ilk açılış | ✅ | FAZ A0 |
+| 0.5 · Web ile yan yana görsel | ✅ | birçok tur (Parça 29/33/37/56/72-80) |
+| 1 · Oyun (offline çekirdek) | ✅ | Parça 15/20/21/22 buradan çıktı |
+| 2 · Hesap (auth) | ✅ | **9-12 (deep link) FAZ B'ye ertelendi** |
+| 3 · Bulut kayıtları | ✅ | 6/6 — Parça 29 |
+| 4 · Biten oyun kayıtları / istatistik | ✅ | Parça 33; OHP çapraz kontrolü Parça 63 |
+| 5 · Oyun geçmişi | ✅ | Parça 35, sonra 67/68 ek turlar |
+| 6 · Paylaşma | 🟡 | görsel düzeltmesi koşuldu (Parça 84); **iPad ankrajı (Parça 86) gerçek iPad ister → FAZ B** |
+| 7 · Son Oynadıklarım | ❌ | **kayıtta ayrı bir tur YOK** |
+| 8 · Dayanıklılık (uçak modu) | ✅ | 8.2/8.3/8.5/8.6 — Parça 43-46 |
+| 9 · Görüş Bildir | 🟡 | 9.5 geçti (Parça 49); **9.3/9.4 Parça 48 düzeltmesinden sonra tekrar koşulmalı** |
+| 10 · Arkadaşlar | ✅ | tamamı (11 Ağu) + moderasyon geri alma, iki yol (14 Ağu, Parça 91) |
+| 11 · Canlı oyun | 🟡 | gerçek 2 kişilik oyun oynandı (Parça 58/59 oradan çıktı) ama **listenin tamamı koşulmadı** |
+| 12 · Hesap Ayarları | ✅ | avatar RLS + küçültme uçtan uca (Parça 82/83) |
+| 13 · k-lig ödül & rütbe | ✅ | 12 Ağu (Parça 66) |
+
+**FAZ B (gerçek native iOS/Android): HİÇ BAŞLAMADI** — ön koşulları bile
+yapılmadı (imzalama anahtarı, Apple Developer üyeliği, `assetlinks.json`).
+Oraya ertelenmiş bilinen maddeler: `kelimeki://` deep link'leri (davet +
+şifre sıfırlama + kayıt onayı kanalı), paylaş sayfasının iPad popover
+ankrajı (Parça 86), HEIC seçimi ve galeri izni reddi (Parça 87).
+
+### Cihaz turu GÖRMEMİŞ, biriken maddeler
+
+Son iki günde düzeltme yapıldıkça listeye madde eklendi ama o maddeler
+hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
+
+- **14 Ağustos (Parça 90/92):** girişsiz başlatma uyarısı (bölüm 1) ·
+  tahta altındaki "Nasıl Oynanır?" (bölüm 1, İKİ oyun ekranında da) ·
+  OHP hizası + başlık ortalama (bölüm 4 ve kök bölüm 10) · ağ hatasında
+  "yüklenemedi" mesajı (bölüm 5 ve kök 9.6)
+- **13 Ağustos (Parça 72-89):** içerik sütunu genişliği · GİRİŞ satırı
+  konumu · logo altı yazı bloğu · harf aralığı · "+ Yeni …" butonu ve alt
+  sekmeler · form alanları · avatarın YUVARLAK vurgusu · "Yükleniyor…"
+  takılı kalmama · ActionSheet'te "Vazgeç" yokluğu · ağ hatasında sahte
+  başarı yokluğu · "Sıra: X" bandının rengi/gölgesi
+
+**Özel uyarı — kök `TESTING.md` 9.6 ilk koşuşunda DÜŞTÜ** (çevrimdışı hâlâ
+"oyunun yok" diyordu; `getUser()` → `getSession()` ile düzeltildi).
+Düzeltmeden sonra tekrar koşulduğuna dair kayıt YOK — o bölüm baştan
+alınmalı ve **belgede yazan sırayla** (önce önbelleksiz, sonra önbellekli;
+ilk yazılan sıralama yalnızca ikinci dalı kapsıyordu), artı negatif eşi.
+
+### Sıradaki tur için öneri
+
+En yüksek getiri **bölüm 11 (Canlı oyun)** — iki hesap gerektirdiği için
+hep ertelendi, oysa en karmaşık akış ve bugüne kadar oradan çıkan iki
+bulgu (sürüklemede donma → Parça 58, "Tekrar Oyna" → Parça 59) gerçek
+oyundan geldi. Ardından **bölüm 7** (hiç ayrı tur görmemiş, kısa) ve
+**9.6 tekrarı**.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
