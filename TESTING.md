@@ -430,10 +430,22 @@ doğrulanmalı (mobil eşi `mobile/TESTING.md` bölüm 12'de).
 
 ## 9.6. Oyun geçmişi — ağ hatası (14 Ağustos 2026)
 
-`fetchMyGames` artık boş listeden AYRI bir `failed` bayrağı taşıyor. Web'de
-birim test çatısı olmadığından bu davranışın TEK doğrulaması bu liste
-(derleme tarafında yalnızca `tsc`'nin sözleşmeyi zorladığı kanıtlandı).
+`fetchMyGames` artık boş listeden AYRI bir `failed` bayrağı taşıyor.
+`npm run verify-fetch-my-games` sekiz senaryoyu (çevrimdışı, Favoriler'in
+ayrı RPC yolu, misafir, tazelenemeyen token…) sahte bir Supabase ucuyla
+otomatik doğruluyor; aşağıdaki liste bunun GERÇEK tarayıcıdaki teyidi.
 Mobil eşi `mobile/TESTING.md` bölüm 5'te.
+
+**iPad/mobil Safari'de DevTools yok — uçak modu kullan, ama SAYFAYI
+YENİLEME.** Uygulama bir PWA; çevrimdışıyken yenilersen Safari kendi
+"internet yok" sayfasını gösterebilir ve test ettiğin şey uygulama olmaz.
+Gerek de yok: `fetchMyGames` modal açılınca / sekme değişince koşuyor.
+
+> Bu bölümün ilk sürümü CİHAZDA DÜŞTÜ (14 Ağustos 2026): çevrimdışı hâlâ
+> "Bu kategoride henüz kayıtlı oyun yok." çıkıyordu. Sebep `getUser()`in
+> ağa gitmesi, `viewer`ın null dönmesi ve akışın `failed` bayrağı devreye
+> girmeden erken dönmesiydi (`getSession()`e geçilerek düzeltildi). Yani
+> bu maddeler teorik değil — bir kez gerçek bir hata yakaladılar.
 
 - [ ] **Çevrimdışı liste.** DevTools → Network → Offline (ya da uçak modu),
       sonra Skor Kartı → "Tüm Oyunları Gör": **"Oyun geçmişi yüklenemedi.

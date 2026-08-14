@@ -399,15 +399,32 @@ export async function fetchMyGames(
   // yapıyordu; 14 Ağustos 2026'da liste yoluna da uygulandı (önce mobil
   // portta bulundu, bkz. `mobile/CLAUDE.md` Parça 90).
   //
-  // Supabase yapılandırılmamışsa ya da oturum yoksa `failed` FALSE kalır —
-  // onlar bir hata değil, uygulamanın bilinçli offline/misafir hâli.
+  // Supabase yapılandırılmamışsa ya da GERÇEKTEN oturum yoksa `failed` FALSE
+  // kalır — onlar bir hata değil, uygulamanın bilinçli offline/misafir hâli.
 ): Promise<{ games: GameHistoryEntry[]; hasMore: boolean; failed: boolean }> {
   if (!supabase) return { games: [], hasMore: false, failed: false };
-  const {
-    data: { user: viewer },
-  } = await supabase.auth.getUser();
+  // `getUser()` DEĞİL `getSession()` — 14 Ağustos 2026'da cihaz testinde
+  // bulunan hata: `getUser()` her çağrıda `GET /auth/v1/user`'a gidiyor
+  // (auth-js kaynağından doğrulandı), yani ÇEVRİMDIŞIYKEN `viewer` null
+  // dönüyor. `ScoreCard` `userId` prop'u geçmediğinden `targetUid`
+  // undefined kalıyor ve akış aşağıdaki erken dönüşe düşüp "hiç oyunun
+  // yok" gösteriyordu — `failed` bayrağı devreye girmeden ÖNCE, yani bu
+  // fonksiyonun asıl düzeltmesini tamamen atlatarak.
+  //
+  // `getSession()` oturumu YEREL depodan okuyor (ağ yok), ki burada
+  // doğrusu da bu: uid yalnızca bir sorgu FİLTRESİ olarak kullanılıyor,
+  // gerçek yetkilendirme sunucuda RLS'te — üstelik `fetchMyGames` zaten
+  // dışarıdan keyfi bir `userId` kabul ediyor (başkasının kartı böyle
+  // açılıyor), yani uid'nin doğrulanmış olması hiçbir zaman bir güvenlik
+  // sınırı değildi. Yan fayda: her sayfa yüklemesinden bir ağ turu düştü.
+  //
+  // Ayrım artık kesin: misafirde `getSession()` hatasız `session: null`
+  // döner (`failed: false` — doğru), süresi geçmiş bir token'ı çevrimdışı
+  // tazeleyemediğinde ise hata döner (`failed: true` — o da doğru).
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  const viewer = sessionData.session?.user ?? null;
   const targetUid = userId ?? viewer?.id;
-  if (!targetUid) return { games: [], hasMore: false, failed: false };
+  if (!targetUid) return { games: [], hasMore: false, failed: !!sessionError };
 
   const cols =
     'id, created_at, player_count, players, player_score, ai_score, rank, surrendered, online_game_id, user_id';
