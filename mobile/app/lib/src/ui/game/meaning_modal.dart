@@ -7,6 +7,7 @@ import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
 import '../../data/meaning_entry.dart';
 import 'modal_shell.dart';
 import '../tokens.dart';
+import '../../util/offline_notice.dart';
 
 /// Kelime → anlam kaydı (yoksa null). Üretimde `MeaningStore.lookup`;
 /// modal deponun tamamına değil YALNIZCA bu işleve bağlı — widget testleri
@@ -32,8 +33,9 @@ const Color _border = kBorder;
 Future<void> showMeaningModal(
   BuildContext context,
   MeaningLookup lookup,
-  List<String> words,
-) {
+  List<String> words, {
+  bool Function()? isUnavailable,
+}) {
   final unique = <String>[];
   for (final w in words) {
     if (w.length >= 2 && !unique.contains(w)) unique.add(w);
@@ -41,14 +43,24 @@ Future<void> showMeaningModal(
   if (unique.isEmpty) return Future.value();
   return showDialog<void>(
     context: context,
-    builder: (context) => MeaningModal(lookup: lookup, words: unique),
+    builder: (context) =>
+        MeaningModal(lookup: lookup, words: unique, isUnavailable: isUnavailable),
   );
 }
 
 class MeaningModal extends StatefulWidget {
   final MeaningLookup lookup;
   final List<String> words;
-  const MeaningModal({super.key, required this.lookup, required this.words});
+
+  /// Sözlüğün AÇILAMADIĞINI bildiren isteğe bağlı kanca — "kelime bulunamadı"
+  /// ile "sözlüğe bakamadık" ayrımı için (bkz. `MeaningStore.unavailable`).
+  /// Verilmezse eski davranış: her iki durumda da "bulunamadı".
+  final bool Function()? isUnavailable;
+  const MeaningModal(
+      {super.key,
+      required this.lookup,
+      required this.words,
+      this.isUnavailable});
 
   @override
   State<MeaningModal> createState() => _MeaningModalState();
@@ -99,6 +111,7 @@ class _MeaningModalState extends State<MeaningModal> {
             _MeaningBody(
               loading: !_loaded.containsKey(widget.words[i]),
               entry: _loaded[widget.words[i]],
+              unavailable: widget.isUnavailable?.call() ?? false,
             ),
           ],
         ],
@@ -110,7 +123,11 @@ class _MeaningModalState extends State<MeaningModal> {
 class _MeaningBody extends StatelessWidget {
   final bool loading;
   final MeaningEntry? entry;
-  const _MeaningBody({required this.loading, required this.entry});
+
+  /// Sözlük AÇILAMADI mı — "kelime bulunamadı"dan ayrı mesaj için.
+  final bool unavailable;
+  const _MeaningBody(
+      {required this.loading, required this.entry, required this.unavailable});
 
   @override
   Widget build(BuildContext context) {
@@ -122,9 +139,10 @@ class _MeaningBody extends StatelessWidget {
     }
     final e = entry;
     if (e == null || e.meanings.isEmpty) {
-      return const Text(
-        'Bu kelimenin anlamı bulunamadı.',
-        style: TextStyle(fontFamily: 'SpaceMono', fontSize: 12, color: _muted),
+      return Text(
+        unavailable ? kOfflineMeaningNotice : 'Bu kelimenin anlamı bulunamadı.',
+        style: const TextStyle(
+            fontFamily: 'SpaceMono', fontSize: 12, color: _muted),
       );
     }
     return Column(

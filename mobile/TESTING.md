@@ -963,6 +963,16 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       başlıklı panel + **TEKRAR DENE** + **← CANLI LİSTESİ** çıkmalı.
       Uçak modunu kapatıp TEKRAR DENE'ye bas → oyun normal açılmalı.
       Aynısını web'de de dene (iki platform aynı metni gösteriyor).
+- [ ] **Çevrimdışı panel DÜZGÜN çiziliyor (Parça 96).** Uçak modunda bir
+      Canlı oyuna gir: kart İÇERİĞİNE göre küçülmeli — ekran boyu beyaz bir
+      dikdörtgen OLMAMALI (`NeoBox` shrink-wrap etmiyor, o yüzden düz
+      `DecoratedBox` kullanılıyor).
+- [ ] **Çevrimdışı kelime anlamı (Parça 96).** Uçak modunda bir YZ oyununda
+      oynanan kelimeye dokun: "Kelime anlamları için internet bağlantısı
+      gerekiyor." çıkmalı — "Bu kelimenin anlamı bulunamadı." DEĞİL.
+      **NATIVE derlemede (gerçek iOS/Android) bu mesaj HİÇ çıkmamalı:**
+      orada sözlük uygulama paketinde, gerçek anlam gelmeli. Web
+      derlemesinde ise sözlük HTTP ile çekildiğinden mesaj beklenen davranış.
 - [ ] **Çevrimdışı sekme metinleri (Parça 96).** Uçak modunda Setup'a dön:
       ARKADAŞINLA'nın üç alt sekmesi de "İnternet bağlantısı yok" demeli.
       YAPAY ZEKA İLE sekmesinde devam eden oyunun yoksa linkli öneri

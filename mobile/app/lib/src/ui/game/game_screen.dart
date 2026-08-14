@@ -244,7 +244,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       // kelimelerin anlamı gösterilir (web handleCellClick'in ilk dalı).
       final store = widget.meanings;
       if (store == null) return;
-      await showMeaningModal(context, store.lookup, [
+      await showMeaningModal(context, store.lookup, isUnavailable: () => store.unavailable, [
         fullWordAt(state.board, const {}, r, c, 0, 1),
         fullWordAt(state.board, const {}, r, c, 1, 0),
       ]);

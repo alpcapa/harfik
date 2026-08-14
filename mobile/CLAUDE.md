@@ -3975,6 +3975,24 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        oraya web'e ÖZEL bir mesaj eklendi; portta anlamlar
        `assets/dictionary/meanings.db` ile pakette olduğundan çevrimdışı
        zaten çalışıyor — eklenecek bir şey yok.
+     - **App turunda çıkan İKİ düzeltme (aynı gün):**
+       - **Panel BOZUK çiziliyordu** (kullanıcı ekran görüntüsüyle bildirdi):
+         kart ekran boyu beyaz bir dikdörtgene dönüşüyordu. Sebep `NeoBox` —
+         çocuğunu `SizedBox.expand` ile sarıyor, yani gelen kısıtları
+         DOLDURUYOR; boyutu dışarıdan belli olan yerler için tasarlanmış,
+         `Center` altında shrink-wrap ETMİYOR. Düz bir `DecoratedBox`a
+         çevrildi. **Ölçüldü:** kart 420x900 ekranda 900 → **251** px;
+         negatif eş NeoBox geri konunca 900'e dönüyor ve yeni test düşüyor.
+       - **Kelime anlamı çevrimdışı "bulunamadı" diyordu** — ve bu, bir
+         önceki turda YAZDIĞIM iddiayı çürüttü. "Portta sözlük pakette,
+         çevrimdışı çalışır" NATIVE için doğru ama portun test ortamı olan
+         **Flutter web derlemesi** için YANLIŞ: orada asset de HTTP ile
+         çekiliyor (`MeaningStore._openWeb` ilk açılışta 6 MB'ı IndexedDB'ye
+         kopyalar) ve uçak modunda o çekim düşüyor. `MeaningStore` artık
+         açılış hatasını `unavailable` bayrağında tutuyor, modal o durumda
+         web'le AYNI metni gösteriyor (parite testine de eklendi).
+         **Ders: "asset pakette" demek her derleme hedefi için aynı şeyi
+         ifade etmiyor.**
      - **Cihazda doğrulanacak:** iki senaryo da `mobile/TESTING.md` bölüm 11
        ve kök `TESTING.md` bölüm 2'ye eklendi.
 

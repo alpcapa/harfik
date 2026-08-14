@@ -84,11 +84,19 @@ export function isNetworkError(err: unknown): boolean {
 }
 
 /**
- * Kelime anlamı penceresi — YALNIZCA WEB. Flutter portuna TAŞINMAZ (ve
- * `offline_notice.dart`'ta karşılığı YOK): orada anlamlar uygulama
- * paketindeki SQLite asset'inde, çevrimdışı da çalışıyor. Web'de ise
- * `meanings.json` 6.3 MB ve precache'e bilerek alınmıyor — herkese 6 MB'lık
- * bir ön indirme yüklemek bir oyun için orantısız (14 Ağustos 2026).
+ * Kelime anlamı penceresi — sözlük YÜKLENEMEDİĞİNDE ("kelime bulunamadı"dan
+ * farklı). Web'de `meanings.json` 6.3 MB ve precache'e bilerek alınmıyor
+ * (herkese 6 MB'lık ön indirme yüklemek bir oyun için orantısız).
+ *
+ * **DÜZELTME (aynı gün, cihaz testi):** bu yorum önce "YALNIZCA WEB, porta
+ * TAŞINMAZ — orada sözlük pakette, çevrimdışı çalışıyor" diyordu. O iddia
+ * NATIVE için doğru ama portun test ortamı olan **Flutter web derlemesi**
+ * için YANLIŞTI: orada sözlük asset'i de HTTP ile çekiliyor
+ * (`MeaningStore._openWeb` ilk açılışta 6 MB'ı IndexedDB'ye kopyalar) ve
+ * uçak modunda o çekim düşüyor — kullanıcı app'te de "anlamı bulunamadı"
+ * gördü. Metin artık `offline_notice.dart`'ta da var ve parite testine
+ * dahil. **Ders: "asset pakette" demek her derleme hedefi için aynı şeyi
+ * ifade etmiyor.**
  */
 export const OFFLINE_MEANING_NOTICE =
   'Kelime anlamları için internet bağlantısı gerekiyor.';

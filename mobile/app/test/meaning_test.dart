@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kelimeki/src/util/offline_notice.dart';
 import 'package:kelimeki/src/data/meaning_entry.dart';
 import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/data/meaning_store.dart';
@@ -145,5 +146,28 @@ void main() {
     ));
     await tester.pump();
     expect(find.text('Bu kelimenin anlamı bulunamadı.'), findsOneWidget);
+  });
+
+  // "Sözlük AÇILAMADI" ile "kelime sözlükte yok" AYNI ŞEY DEĞİL: ikisi de
+  // `lookup` → null üretiyor ve modal ikisine de "bulunamadı" diyordu.
+  // Kullanıcı bunu cihazda yakaladı (14 Ağustos 2026): Flutter WEB
+  // derlemesinde sözlük asset'i HTTP ile çekildiğinden uçak modunda
+  // açılamıyor, ama kelime pekâlâ sözlükte olabilir.
+  // Negatif eş: `isUnavailable` geçilmezse (ya da yok sayılırsa) düşer.
+  testWidgets('sözlük açılamadıysa FARKLI mesaj', (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: MeaningModal(
+        // Sözlük açılamadığında `lookup` HER kelime için null döner —
+        // sahte uçta bunun karşılığı sözlükte olmayan bir kelime.
+        lookup: fakeLookup,
+        words: const ['ZZZZZZ'],
+        isUnavailable: () => true,
+      ),
+    ));
+    await tester.pump();
+    expect(find.text(kOfflineMeaningNotice), findsOneWidget);
+    expect(find.text('Bu kelimenin anlamı bulunamadı.'), findsNothing);
   });
 }
