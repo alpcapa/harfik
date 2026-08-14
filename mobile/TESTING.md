@@ -818,6 +818,11 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       hakkında olduğu konuşmaya bağlı); panel bunu söyleyen bir not
       göstermeli. Emoji fallback'i de burada kontrol edilmiş oluyor —
       🚫/🚩 boş kare (tofu) çıkmamalı.
+      **14 Ağustos 2026'da koşuldu ve GEÇTİ** (sessizden çıkarma yolu):
+      ikon çıktı, panelden çıkarıldı, ANINDA kalktı. Üretimden teyit —
+      mute tablosu 0 satıra düştü ve provenance oyunu `finished`'dı,
+      yani kısayol tam da tasarlandığı yerde (oyun bittikten sonra)
+      çalıştı.
 
 ## 11. Canlı oyun — davet/kabul + tahta
 

@@ -3569,15 +3569,23 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **`mobile/` DIŞINDA dosya değişti** (web yarısı aynı gün, aynı
        dalda) → kök `CLAUDE.md` + `TESTING.md` aynı commit'te güncellendi
        (Parça Bitirme Kontrol Listesi madde 1).
-     - **Doğrulama sınırı:** gerçek `myModeration` sorgusu + gerçek
-       `setMute`/`withdrawReports` RPC'leri **mobilde** iki hesapla
-       doğrulanmalı — `mobile/TESTING.md` bölüm 10'a madde eklendi.
-       **WEB yarısı aynı gün gerçek hesapla GEÇTİ** (ikon doğru satırda
-       çıktı, temiz satırda çıkmadı, geri çekme çalıştı): yani altta yatan
-       zincirin — `withdraw_online_game_chat_reports`, provenance oyun
-       id'si, bitmiş oyunun id'siyle katılımcılık kontrolü — çalıştığı
-       kanıtlı; mobilde kalan risk yalnızca Dart tarafındaki kablolama
-       (`ChatRepo` zinciri) ve emoji fallback'i.
+     - ~~**Doğrulama sınırı:** gerçek `myModeration` sorgusu + gerçek
+       `setMute`/`withdrawReports` RPC'leri mobilde iki hesapla
+       doğrulanmalı~~ — **AYNI GÜN İKİ PLATFORMDA DA KAPANDI.** Web:
+       ikon doğru satırda çıktı, temiz satırda çıkmadı, geri çekme
+       çalıştı ve `handled`'a dokunmadı. Mobil: 🚫 arkadaş satırında
+       çıktı, panelden sessizden çıkarıldı, ikon ANINDA kalktı.
+     - **Mobil turun ürettiği kanıt, "çalıştı" beyanından güçlü:**
+       üretimde `online_game_message_mutes` **0 satıra** düştü ve
+       provenance oyununun (`866eb714…`) durumu **`finished`** — yani
+       sessizden çıkarma BİTMİŞ bir oyunun id'siyle gerçek istemciden
+       geçti. Bu tam olarak özelliğin varlık sebebi: `mute_online_game_participant`
+       katılımcılık kontrolünü `p_muted` dalından ÖNCE yaptığından
+       sessizden ÇIKARMAK bile geçerli bir oyun id'si istiyor, ve o id'nin
+       bitmiş bir oyuna ait olması sorun ETMİYOR. Daha önce yalnızca
+       rollback'li simülasyonla gösterilmişti; artık gerçek uçtan uca.
+       Ayrıca `ChatRepo` kablolaması ve emoji fallback'i (🚫 tofu değil)
+       de bu turda kapandı.
 
 ## Sonraya Bırakılan İşler (mobil)
 
