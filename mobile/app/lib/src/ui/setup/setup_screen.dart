@@ -605,6 +605,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
         friends: widget.services.friends,
         chat: widget.services.chat,
         leagueRewards: widget.services.leagueRewards,
+        onlineStatus: widget.services.onlineStatus,
       ),
     ));
     await guestSession?.end();

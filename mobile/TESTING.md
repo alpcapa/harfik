@@ -978,6 +978,15 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       YAPAY ZEKA İLE sekmesinde devam eden oyunun yoksa linkli öneri
       ("Hemen oyun aç.") çıkmalı ve link yeni oyun formunu açmalı; devam
       eden oyunun VARSA liste normal görünüp oynanabilmeli.
+- [ ] **Tahta alt şeridinde "Çevrimdışı" uyarısı (14 Ağustos 2026, Parça
+      97).** Bir oyun (YZ ya da Canlı — İKİSİNİ DE dene, ayrı ekranlar)
+      AÇIKKEN uçak modunu aç: şeridin sağında, "Nasıl Oynanır?"ın hemen
+      solunda kırmızı **"Çevrimdışı"** belirmeli — ekrandan çıkıp girmeye
+      GEREK KALMADAN. Puntosu kardeşleriyle (Hamleler · Mesajlaşma · Nasıl
+      Oynanır?) aynı görünmeli, daha küçük değil. Uçak modunu kapat: uyarı
+      kendiliğinden kalkmalı. **Aynısını web'de de kontrol et** — oradaki
+      punto düzeltmesi (#256) de henüz cihazda görülmedi, ikisi birlikte
+      bakılmalı.
 - [ ] **Çevrimdışı hamlede METİN (Parça 96).** Uçak modunda OYNA/PAS GEÇ:
       mesaj satırında **"Bağlantı yok — Canlı oyun için internet
       gerekiyor."** çıkmalı — ham "ClientException/Failed to fetch" DEĞİL.

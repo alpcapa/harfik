@@ -3,9 +3,10 @@
 // handler'ları verildiğinde GestureDetector yerine Listener taşır — dokunuş
 // da sürükleme de ekran katmanının (GameScreen) pointer akışından geçer
 // (web'de Tile'ın onPointerDown/Move/Up prop'larının eşleniği). Alt bilgi
-// şeridi (Hamleler linki + X2/X3 açıklaması) kartın alt bölümü olarak
-// portlandı; "Mesajlaşma" butonu yalnızca Canlı oyunda çıkar (o faz henüz
-// yok, web'de de prop verilmezse hiç render edilmiyor).
+// şeridi (solda "Hamleler" [+ Canlı oyunda "· Mesajlaşma"], sağda
+// "Çevrimdışı" uyarısı ve "Nasıl Oynanır?") kartın alt bölümü olarak
+// portlandı; "Mesajlaşma" butonu yalnızca Canlı oyunda çıkar (web'de de
+// prop verilmezse hiç render edilmiyor).
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
@@ -15,6 +16,7 @@ import 'outline.dart';
 import 'player_colors.dart';
 import 'tile_widget.dart';
 import '../tokens.dart';
+import '../../util/online_status.dart';
 
 /// Yalnızca testler için: `build()` her çağrıldığında bir artar. Sürükleme
 /// sırasında `BoardWidget`'ın gereksiz yere yeniden inşa EDİLMEDİĞİNİ
@@ -109,6 +111,12 @@ class BoardWidget extends StatelessWidget {
   /// hideFooter).
   final bool hideFooter;
 
+  /// Bağlantı durumu — çevrimdışıyken şeridin sağında kırmızı bir
+  /// "Çevrimdışı" uyarısı çıkar. Web'de `Board.tsx` bunu `useOnlineStatus()`
+  /// ile KENDİ İÇİNDE okuyor; Flutter'da hook olmadığından enjekte ediliyor
+  /// (verilmezse — önizlemeler, testlerin çoğu — uyarı hiç çizilmez).
+  final OnlineStatus? onlineStatus;
+
   const BoardWidget({
     super.key,
     required this.state,
@@ -126,6 +134,7 @@ class BoardWidget extends StatelessWidget {
     this.hasUnreadMessage = false,
     this.onOpenHelp,
     this.hideFooter = false,
+    this.onlineStatus,
   });
 
   PlayerColor _colorOfIndex(int playerIndex) =>
@@ -245,7 +254,8 @@ class BoardWidget extends StatelessWidget {
   }
 
   /// Alt bilgi şeridi — solda "Hamleler" (+ Canlı oyunda "· Mesajlaşma"),
-  /// sağda "Nasıl Oynanır?".
+  /// sağda "Çevrimdışı" uyarısı (yalnızca bağlantı yokken) ve
+  /// "Nasıl Oynanır?".
   Widget _footer() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
@@ -325,28 +335,61 @@ class BoardWidget extends StatelessWidget {
               ],
             ],
           ),
-          if (onOpenHelp != null)
-            GestureDetector(
-              onTap: onOpenHelp,
-              behavior: HitTestBehavior.opaque,
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _HelpIcon(),
-                  SizedBox(width: 4),
-                  Text(
-                    'Nasıl Oynanır?',
-                    style: TextStyle(
-                      fontFamily: 'SpaceMono',
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                      color: kAccent,
-                    ),
+          // Sağ grup — web `flex items-center gap-2 justify-end` (8px).
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (onlineStatus != null)
+                ListenableBuilder(
+                  listenable: onlineStatus!,
+                  builder: (context, _) => onlineStatus!.online
+                      ? const SizedBox.shrink()
+                      : const Padding(
+                          padding: EdgeInsets.only(right: 8),
+                          // Punto/aralık, şeritteki KARDEŞ kontrollerle
+                          // (Hamleler · Mesajlaşma · Nasıl Oynanır?) birebir
+                          // aynı — yalnızca rengi farklı. Web'de bu bir kez
+                          // 8px'e düşmüş ve kullanıcı cihazda "belli
+                          // olmuyor" diye bildirmişti (14 Ağustos 2026): tam
+                          // da çevrimdışıyken okunması gereken tek gösterge,
+                          // şeridin en küçük yazısı olmamalı. Bir kardeşin
+                          // puntosu değişirse bu da değişmeli.
+                          child: Text(
+                            'Çevrimdışı',
+                            style: TextStyle(
+                              fontFamily: 'SpaceMono',
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                              color: kRed,
+                            ),
+                          ),
+                        ),
+                ),
+              if (onOpenHelp != null)
+                GestureDetector(
+                  onTap: onOpenHelp,
+                  behavior: HitTestBehavior.opaque,
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _HelpIcon(),
+                      SizedBox(width: 4),
+                      Text(
+                        'Nasıl Oynanır?',
+                        style: TextStyle(
+                          fontFamily: 'SpaceMono',
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                          color: kAccent,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
+            ],
+          ),
         ],
       ),
     );

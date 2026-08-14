@@ -4017,6 +4017,60 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Cihazda doğrulanacak:** iki senaryo da `mobile/TESTING.md` bölüm 11
        ve kök `TESTING.md` bölüm 2'ye eklendi.
 
+   - ✅ **Parça 97 — tahta alt şeridindeki "Çevrimdışı" uyarısı porta hiç
+     girmemişti (14 Ağustos 2026, `board_widget.dart`, `game_screen.dart`,
+     `online_game_screen.dart`, `setup_screen.dart`, `live_games_tab.dart`):**
+     Kullanıcı Parça 96'nın deploy'undan sonra bildirdi: *"Bir de tahta altında
+     çevrimdışı (kırmızı) uyarıyı da göremedim."*
+     - **Web önce okundu (kuralın ilk adımı) ve orada SORUN YOKTU:**
+       `Board.tsx` `useOnlineStatus()`ü KENDİ İÇİNDE çağırıyor ve `!online`
+       iken şeridin sağ grubunda (`gap-2` = 8px, "Nasıl Oynanır?"ın solunda)
+       kırmızı bir "Çevrimdışı" basıyor — bu turda (#256) puntosu da
+       kardeşleriyle eşitlenmişti. Yani bildirilen şey bir REGRESYON değil,
+       portun hiç sahip olmadığı bir gösterge: iki `CLAUDE.md` de bunu
+       "Flutter portunda karşılığı HİÇ YOK" diye zaten yazıyordu.
+     - **Bu parçayı MÜMKÜN KILAN şey Parça 96:** gösterge bir bağlantı sinyali
+       ister ve o sinyal porta dün geldi (`OnlineStatus`). Ondan önce
+       eklenebilecek tek şey `_loadFailed` gibi dolaylı bir vekildi — yerel/YZ
+       oyununda hiç ağ çağrısı olmadığından orada HİÇBİR ZAMAN tetiklenmezdi,
+       yani rozet tam da en çok gerektiği ekranda ölü kalırdı.
+     - **Enjeksiyon, hook değil:** web'de her `Board` göstergeyi kendiliğinden
+       alıyor; Flutter'da `BoardWidget` saf bir widget olduğundan
+       `OnlineStatus? onlineStatus` prop'u eklendi ve İKİ oyun ekranı da
+       (`game_screen.dart` + `online_game_screen.dart` — bilinçli kod tekrarı
+       çifti) geçiyor. Verilmezse uyarı hiç çizilmez: salt-okunur önizlemeler
+       (`hideFooter`) ve mevcut testler etkilenmedi.
+     - **Yalnızca sağ grup `ListenableBuilder` içinde** — gerçek senaryo
+       kullanıcının oyun AÇIKKEN uçak moduna geçmesi; doğrudan okuma o anda
+       hiçbir şey değiştirmezdi (ekran yeniden inşa edilmiyor). Kapsam bilerek
+       dar: Parça 23'ün dersi gereği bağlantı değişimi 169 hücrelik tahtayı
+       yeniden çizmemeli.
+     - **Punto/renk tahminle DEĞİL, web'in sınıflarından birebir:**
+       `text-[12px] font-mono font-bold tracking-[0.5px] text-red` →
+       12/SpaceMono/bold/0.5/`kRed`. Test bunları SABİT SAYIYLA değil
+       KARDEŞİYLE ("Nasıl Oynanır?") karşılaştırıyor — biri değişirse öteki de
+       değişmek zorunda kalıyor (Parça 68'in "sabiti değil oranı kilitle"
+       deseni).
+     - **Test — negatif eş doğrulamasıyla, İKİ AYRI kanıt:** (1)
+       `game_screen_test.dart` — çevrimiçiyken uyarı YOK, ekranı YENİDEN PUMP
+       ETMEDEN bağlantı düşünce ANINDA çıkıyor, stil kardeşiyle aynı, bağlantı
+       dönünce kalkıyor. `ListenableBuilder` düz bir `Builder`a çevrilince test
+       GERÇEKTEN düştü — yani reaktiflik iddiası kanıtlı, "prop var" değil.
+       (2) `online_game_screen_test.dart` — yalnızca KABLOYU ölçen kısa bir
+       test; `onlineStatus: widget.onlineStatus` satırı silinince GERÇEKTEN
+       düştü. İkincisi şart, çünkü iki ekranın ayrışması derleyicinin
+       göremediği klasik hata sınıfı.
+     - **Testte üretim koduna debug setter EKLENMEDİ:** bağlantıyı açıp
+       kapatmak için test-yerel bir `_ToggleOnlineStatus extends OnlineStatus`
+       alt sınıfı (`super.fake()`, platform kanalına hiç dokunmuyor) —
+       `AuthService.debugSetUser` emsali varken üretim yüzeyi büyütülmedi.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 424/424
+       yeşil** (422'den +2). `kelimeki_core`'a hiç dokunulmadı.
+     - **Doğrulama sınırı:** gerçek uçak modunda görsel teyit cihazda
+       yapılmalı — `mobile/TESTING.md` bölüm 11'e madde eklendi. Web'in
+       göstergesi de aynı turda (#256) düzeltilip henüz cihazda
+       görülmediğinden ikisi BİRLİKTE kontrol edilmeli.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 14 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
@@ -4061,6 +4115,9 @@ ankrajı (Parça 86), HEIC seçimi ve galeri izni reddi (Parça 87).
 Son iki günde düzeltme yapıldıkça listeye madde eklendi ama o maddeler
 hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
 
+- **14 Ağustos (Parça 97):** tahta alt şeridindeki kırmızı "Çevrimdışı"
+  uyarısı — portta YENİ, web'de puntosu düzeltildi; iki oyun ekranında da
+  ve iki platformda da bakılmalı
 - **14 Ağustos (Parça 96):** çevrimdışı Canlı oyun — açılışta panel +
   hamlede açıklayıcı uyarı (iki platform)
 - **14 Ağustos (Parça 95) — Canlı turunun BEŞ düzeltmesi, hiçbiri cihazda
@@ -4101,9 +4158,9 @@ kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca burada
 silinip kendi tarihli parça notuna taşınır.
 
 - ~~Bağlantı durumu göstergesi (`useOnlineStatus` portu)~~ — **YAPILDI**
-  (14 Ağustos 2026, Parça 96): `util/online_status.dart` + `connectivity_plus`.
-  Board alt şeridindeki görsel "Çevrimdışı" rozeti HÂLÂ YOK (yalnızca karar
-  mantığı portlandı) — istenirse artık sinyal hazır.
+  (14 Ağustos 2026): karar mantığı Parça 96'da (`util/online_status.dart` +
+  `connectivity_plus`), Board alt şeridindeki görsel "Çevrimdışı" rozeti
+  Parça 97'de.
 - **Kayıt onayı maili kaydın GELDİĞİ kanala dönmeli (10 Ağustos 2026,
   kullanıcı kararı — sözleri: "Kişilerin kayıt başvurusu hangi kanaldan
   geliyorsa o kanala yönlendirilmeleri doğrusu"):** Bugün `signUp()`

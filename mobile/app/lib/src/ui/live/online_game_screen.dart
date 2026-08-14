@@ -71,6 +71,7 @@ import '../rank/league_rewards_host.dart';
 import '../tokens.dart';
 import '../game/invasion_confirm.dart';
 import '../../util/offline_notice.dart';
+import '../../util/online_status.dart';
 
 const Color _muted = kMuted;
 const Color _red = kRed;
@@ -145,6 +146,10 @@ class OnlineGameScreen extends StatefulWidget {
   /// `<LeagueRewardsHost suppress={!state.isGameOver} />` mount'u.
   final LeagueRewardsRepo? leagueRewards;
 
+  /// Bağlantı durumu — Board alt şeridindeki "Çevrimdışı" uyarısı için
+  /// (web'de `Board.tsx` bunu `useOnlineStatus()` ile kendi içinde okuyor).
+  final OnlineStatus? onlineStatus;
+
   const OnlineGameScreen({
     super.key,
     required this.game,
@@ -160,6 +165,7 @@ class OnlineGameScreen extends StatefulWidget {
     this.chat,
     this.storage,
     this.leagueRewards,
+    this.onlineStatus,
   });
 
   @override
@@ -1471,6 +1477,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                           : _openMessaging,
                                       hasUnreadMessage:
                                           _chatState.unreadCount > 0,
+                                      onlineStatus: widget.onlineStatus,
                                       dragHiddenKey: _hiddenSource
                                               is _PlacedSource
                                           ? cellKey(

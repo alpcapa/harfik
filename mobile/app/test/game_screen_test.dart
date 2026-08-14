@@ -18,6 +18,7 @@ import 'package:kelimeki/src/ui/game/game_over_modal.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
 import 'package:kelimeki/src/ui/game/invasion_confirm.dart';
 import 'package:kelimeki/src/ui/tokens.dart';
+import 'package:kelimeki/src/util/online_status.dart';
 import 'package:kelimeki/src/ui/game/rack_widget.dart';
 import 'package:kelimeki/src/ui/game/remaining_tiles_modal.dart';
 import 'package:kelimeki/src/ui/game/tile_widget.dart';
@@ -92,6 +93,23 @@ GameState craftedState() => GameState(
 Finder rackTile(int i) => find.byKey(ValueKey('rack-$i'));
 
 Finder boardCell(int r, int c) => find.byKey(ValueKey('cell-$r-$c'));
+
+/// Bağlantıyı test içinde açıp kapatabilmek için — üretim `OnlineStatus`'una
+/// bir debug setter'ı eklemek yerine alt sınıf; platform kanalına hiç
+/// dokunmaz (`super.fake()`).
+class _ToggleOnlineStatus extends OnlineStatus {
+  _ToggleOnlineStatus() : super.fake();
+
+  bool _v = true;
+
+  @override
+  bool get online => _v;
+
+  void set(bool v) {
+    _v = v;
+    notifyListeners();
+  }
+}
 
 Future<GameController> pumpGame(WidgetTester tester, GlobalKey key) async {
   final controller =
@@ -449,6 +467,49 @@ void main() {
     final newGame = tester.widget<Text>(find.text('TEKRAR OYNA'));
     expect(newGame.style!.fontSize, 15,
         reason: 'web text-[15px] — OYNA\'dan belirgin büyük');
+  });
+
+  testWidgets(
+      'tahta alt şeridinde "Çevrimdışı" uyarısı: bağlantı gidince ANINDA '
+      'çıkar, gelince kalkar; puntosu kardeş kontrollerle aynı', (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final status = _ToggleOnlineStatus();
+    final controller =
+        GameController(words: words, autoPlayAi: false, nowIso: () => '');
+    controller.dispatch(ResumeSavedAction(craftedState()));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: GameScreen(
+        controller: controller,
+        words: words,
+        auth: AuthService.fake(),
+        onlineStatus: status,
+      ),
+    ));
+    await tester.pump();
+
+    expect(find.text('Çevrimdışı'), findsNothing,
+        reason: 'çevrimiçiyken uyarı hiç çizilmemeli');
+
+    // Ekranı YENİDEN PUMP ETMEDEN bağlantıyı düşür — gerçek senaryo bu
+    // (kullanıcı oyun açıkken uçak moduna geçiyor). Yalnızca ListenableBuilder
+    // varsa uyarı görünür; doğrudan okuma bu adımda hiçbir şey değiştirmezdi.
+    status.set(false);
+    await tester.pump();
+
+    expect(find.text('Çevrimdışı'), findsOneWidget);
+    final offline = tester.widget<Text>(find.text('Çevrimdışı')).style!;
+    final sibling = tester.widget<Text>(find.text('Nasıl Oynanır?')).style!;
+    expect(offline.fontSize, sibling.fontSize,
+        reason: 'kardeş kontrollerle aynı punto (web: ikisi de text-[12px])');
+    expect(offline.fontFamily, sibling.fontFamily);
+    expect(offline.fontWeight, sibling.fontWeight);
+    expect(offline.letterSpacing, sibling.letterSpacing);
+    expect(offline.color, kRed, reason: 'web text-red');
+
+    status.set(true);
+    await tester.pump();
+    expect(find.text('Çevrimdışı'), findsNothing);
   });
 
   testWidgets(
