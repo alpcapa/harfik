@@ -4098,10 +4098,10 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ama bu hook'a hiç uygulanmamıştı.
      - **Port da aynı kancayı aldı** (`OnlineStatus` artık
        `WidgetsBindingObserver`, `resumed`'da `refresh()`): `connectivity_plus`
-       akışı da askıdaki uygulamada olay kaçırabilir. **DÜRÜST SINIR — bu
-       yarısı TESTSİZ:** üretim kurucusu platform kanalı istediğinden ve
-       `fake()` bilerek observer kaydetmediğinden bu davranış widget testinde
-       sınanamadı; kanıt yalnızca web tarafında. Cihazda doğrulanmalı.
+       akışı da askıdaki uygulamada olay kaçırabilir. **Bu yarısı TESTSİZ
+       KALDI:** üretim kurucusu platform kanalı istediğinden ve `fake()`
+       bilerek observer kaydetmediğinden davranış widget testinde sınanamadı —
+       ve tam bu yüzden CİHAZ turu onun tek kanıtı oldu (aşağı bkz.).
      - **Ders — "web'de sorun yok" da bir TEŞHİSTİR ve ölçüm ister.** Parça
        34'ün dersi ("ölçmeden YOK SAYMA") burada bir üst basamağa çıktı:
        render'ı doğru olan bir bileşen, onu BESLEYEN durum bayatladığı için
@@ -4110,6 +4110,13 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - Doğrulama: `npm run lint` + `npm run build` temiz, Playwright **3/3**
        (yeni kalıcı regresyon testiyle); `flutter analyze` temiz, tam takım
        **424/424**.
+     - **CİHAZDA DOĞRULANDI (14 Ağustos 2026, kullanıcı): "her şey normal".**
+       Kontrol maddesi uçak modunun Kontrol Merkezi'nden — yani uygulamadan
+       ÇIKARAK — açılmasını istiyor, ki kök sebep tam oydu. **Bu tur, Parça
+       97'nin göstergesini ve Parça 98'in öne-dönüş kancasını AYNI ANDA
+       kapatıyor; portun resume kancası için de tek kanıt bu** (yukarıdaki
+       "testsiz kaldı" notunun karşılığı: test yoksa cihaz turu opsiyonel
+       değildir).
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 14 Ağustos 2026)
 
@@ -4155,9 +4162,6 @@ ankrajı (Parça 86), HEIC seçimi ve galeri izni reddi (Parça 87).
 Son iki günde düzeltme yapıldıkça listeye madde eklendi ama o maddeler
 hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
 
-- **14 Ağustos (Parça 97):** tahta alt şeridindeki kırmızı "Çevrimdışı"
-  uyarısı — portta YENİ, web'de puntosu düzeltildi; iki oyun ekranında da
-  ve iki platformda da bakılmalı
 - **14 Ağustos (Parça 96):** çevrimdışı Canlı oyun — açılışta panel +
   hamlede açıklayıcı uyarı (iki platform)
 - **14 Ağustos (Parça 95) — Canlı turunun BEŞ düzeltmesi, hiçbiri cihazda
