@@ -357,10 +357,12 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   Future<void> _sweepLocalAbandoned() async {
     final repo = _repo;
     if (repo == null) return;
-    final events = await repo.drainAbandonedGames();
-    if (events.isEmpty) return;
+    // `games` ÖNCE çözülüyor: drain yıkıcı (takeAll = SELECT+DELETE), yani
+    // önce boşaltıp sonra "games yoksa dön" demek olayları kaybettirirdi.
     final games = _games ?? await widget.services.games;
     if (games == null) return;
+    final events = await repo.drainAbandonedGames();
+    if (events.isEmpty) return;
     for (final e in events) {
       await games.recordAbandoned(e.state, endedAtMs: e.savedAtMs);
     }
@@ -624,7 +626,12 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     final state = await repo.loadSave();
     if (state == null) {
       // Tam bu anda süresi dolmuş/karantinaya düşmüş — görünümü tazele.
-      await repo.drainAbandonedGames();
+      // `_sweepLocalAbandoned()` çağrılmak ZORUNDA, çıplak
+      // `drainAbandonedGames()` DEĞİL: drain `takeAll` ile olayları ATOMİK
+      // olarak SİLİP döndürüyor, yani dönüşü atmak terk edilen oyunun tam
+      // GameState'ini ve ondan üretilecek -2'li `games` kaydını kalıcı
+      // olarak çöpe atardı (13 Ağustos 2026 denetimi, Parça 89).
+      await _sweepLocalAbandoned();
       await _refreshSaveStatus();
       return;
     }

@@ -3303,11 +3303,133 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        Bir bulguyu doğrulamadan düzeltmek bu projede daha önce iki kez
        geri alındı (Parça 16→17, 39→40).
 
+   - ✅ **Parça 89 — beş paralel denetimin bulguları: bir VERİ KAYBI yolu, üç
+     SAHTE BAŞARI mesajı (13 Ağustos 2026, `setup_screen.dart`,
+     `friends_modal.dart`):** Kullanıcı isteğiyle beş salt-analiz denetimi
+     koşuldu (Türkçe metin paritesi, elle senkron kopyalar, sessiz hata
+     yutma, test kalitesi, sunucu yetkileri). **Raporlar körlemesine
+     UYGULANMADI** — her bulgu kaynaktan tek tek doğrulandı; aşağıdakiler
+     doğrulananlar.
+     - **(a) VERİ KAYBI — `_resumeSavedGame` terk olaylarını tüketip
+       çöpe atıyordu.** `drainAbandonedGames()` `PendingEventStore.takeAll`
+       kullanıyor = **atomik SELECT+DELETE**, yani dönüş değerini atmak
+       olayları KALICI olarak siler. `_resumeSavedGame`'in `state == null`
+       dalı ("tam bu anda süresi doldu") bunu çıplak çağırıp sonucu hiç
+       okumuyordu; oysa olayları -2 cezalı `games` kaydına çeviren tek
+       tüketici `_sweepLocalAbandoned`.
+       - **Tetikleyici somut:** misafir Setup'ta "Devam Eden Oyun" satırı
+         dururken 7 günlük süre dolar, "Devam Et"e dokunur → kayıt olaya
+         çevrilir → bu dal olayı yutar. Terk edilen oyunun tam `GameState`'i
+         ve -2 cezası bir daha üretilemez (bir sonraki açılışta süpürme
+         hiçbir şey bulamaz).
+       - Düzeltme tek satır: `_sweepLocalAbandoned()` çağır.
+       - **Aynı fonksiyonda ikinci, daha dar bir sıralama hatası:**
+         `_sweepLocalAbandoned` ÖNCE drain edip SONRA `games == null` diye
+         dönüyordu — o dalda da olaylar kaybolurdu. `games` artık drain'den
+         ÖNCE çözülüyor. **Kural: yıkıcı bir okuma (`takeAll`) yapmadan
+         önce sonucu tüketecek her şeyin hazır olduğundan emin ol.**
+     - **(b) SAHTE BAŞARI — `FriendsModal` ağ hatasında gerçekleşmemiş
+       sonuçlar bildiriyordu.** Üç akış: `_handleRespond` hatayı tamamen
+       yutup `void` döndüğünden "Arkadaş oldunuz." ve "İstek reddedildi."
+       KOŞULSUZ gösteriliyordu; `_handleSend` hatada `null` dönüyor ve
+       `null != accepted` olduğundan "Arkadaşlık isteğiniz iletilmiştir."
+       çıkıyordu — istek hiç gitmemişken.
+       - **Sessiz retten DAHA KÖTÜ:** kullanıcı yanlış bilgilendiriliyor,
+         üstelik liste tazelenmediğinden ekran mesajla çelişiyor (reddedilen
+         istek yerinde duruyor).
+       - `_handleRespond` artık `bool` dönüyor; üç çağrı yeri de sonucu
+         kontrol ediyor. Hata metni İCAT EDİLMEDİ — `chat_settings_modal`'ın
+         zaten kullandığı `'İşlem başarısız oldu.'` paylaşıldı.
+       - **Aynı dosyadaki `_confirmThenRemoveCandidate`/`_confirmThenCancel`
+         baştan DOĞRUYDU** (başarı diyaloğunu `try` İÇİNDE gösteriyorlar) —
+         yani bu bir desen hatası değil, iki akışın o desenden sapmasıydı.
+     - **Test — negatif eş doğrulamasıyla:** `friends_test.dart`'a ağ
+       hatasında reddetmenin "İstek reddedildi." DEĞİL "İşlem başarısız
+       oldu." dediğini doğrulayan test. `friends_modal.dart` `git stash`
+       lenince GERÇEKTEN düştü (`Found 1 widget with text "İstek
+       reddedildi."` — kullanıcının göreceği sahte başarının ta kendisi).
+     - **Test tuzağı (kayda geçsin):** satır butonu ve onay diyaloğunun
+       kabul butonu ikisi de `trUpper`dan geçiyor → finder `'Reddet'` değil
+       **`'REDDET'`** olmalı. Ayrıca `pumpModal` `FriendsModal` GRUBUNUN
+       içinde tanımlı; testi başka bir gruba eklemek "Method not found"
+       verir.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       389/389 yeşil** (388'den +1). `kelimeki_core`'a dokunulmadı.
+     - **AÇIK BOŞLUK — (a) için test YOK:** düzeltme kaynaktan kanıtlandı
+       (takeAll yıkıcı + tek meşru tüketici `_sweepLocalAbandoned`) ama
+       widget seviyesinde tekrarlanabilir bir kurulum (loadSave null DÖNERKEN
+       kuyrukta olay olması) yazılmadı. `mobile/TESTING.md` bölüm 1'e elle
+       kontrol maddesi eklendi; kalıcı test hâlâ borç.
+     - **Denetimlerin diğer bulguları — durum:**
+       - **Elle senkron kopyalar: TEMİZ.** Rütbe/ödül üç kopya (SQL↔TS↔Dart)
+         birebir, ödül=eşik/10 dokuz kademede de tutuyor, kümülatif toplamlar
+         pairwise farklı; üretilmiş dosyalar bayat değil (motor dosyaları
+         golden'lardan sonra DEĞİŞMEMİŞ); RankSeal geometrisi ve renk paleti
+         senkron. Çıkan üç bayat YORUM ayrı bir commit'te düzeltildi.
+         **Denetimin "kör nokta" dediği `tile-border` (#C7D0DC) DÜZELTİLDİ:**
+         token `src/`'de de hiç kullanılmıyor, yani iki tarafta da ölü —
+         izlenmemesi bir eksiklik değil.
+       - **Sunucu: bir uykuda hata bulundu** (`withdraw_online_game_chat_reports`
+         overload'ı) — ayrıntı ve kanıt aşağıdaki "Sonraya Bırakılan İşler".
+       - **Test kalitesi:** en güçlü bulgu `OnlineApi.submitMove`'un
+         retry/idempotency döngüsünün SIFIR test kapsamı olması — sonraya
+         bırakıldı (aşağı bkz.).
+       - **Türkçe metin paritesi:** denetim İKİ kez oturum limitine takıldı,
+         sonuç ALINAMADI. Hâlâ açık.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
 kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
 silinip kendi tarihli parça notuna taşınır.
+
+### `withdraw_online_game_chat_reports` — UYKUDA sunucu hatası (13 Ağustos 2026)
+
+**Doğrulandı (migration dosyaları + canlı `pg_get_functiondef`):** fonksiyonun
+üretimde İKİ overload'u var ve 4 Ağustos'taki düzeltme YANLIŞ olanına gitmiş.
+- 3 Ağustos (`…person_scoped_chat_moderation`): 2-arg imza DROP edildi, 1-arg
+  (`p_target_user_id`) yaratıldı — o günkü `handled = true` gövdesiyle.
+- 4 Ağustos (`…withdraw_report_keeps_unhandled`): "handled'a dokunma"
+  düzeltmesi `create or replace … (p_game_id uuid, p_target_user_id uuid)`
+  ile yazıldı — yani bir gün önce SİLİNEN 2-arg imzayı YENİDEN YARATTI ve
+  düzeltmeyi ona uyguladı.
+
+Canlı kanıt: `(uuid)` → `handled = true` İÇERİYOR (istemcilerin çağırdığı bu —
+`api.ts:1328`, `chat_api.dart:141`, ikisi de yalnız `p_target_user_id`
+geçiyor); `(uuid, uuid)` → düzeltilmiş gövde, **kimse çağırmıyor**.
+
+**Şu an bozulmuş veri YOK** (ayrıca ölçüldü, denetim bunu kontrol etmemişti):
+son geri çekme `2026-08-04 10:49`, migration `10:54` — o tarihten beri hiç
+geri çekme yapılmamış. Hata gerçek ama **uykuda**; bir sonraki geri çekmede
+tetiklenir ve rapor admin'in bekleyen-iş rozetinden düşer (tam da 4
+Ağustos'ta düzeltilmek istenen davranış).
+
+**İkincil:** hortlak 2-arg overload `SECURITY DEFINER` ve EXECUTE'u
+PUBLIC+anon dahil herkeste (4 Ağustos dosyasında `revoke` yok). Gövdesi
+`auth.uid()` kontrollü olduğundan sömürülebilir değil, ama "yeni fonksiyonda
+önce revoke all" kuralına aykırı.
+
+**Yapılacak:** 1-arg gövdesini `handled`'sız hâle `create or replace` et +
+2-arg overload'u `drop`. Üretime yazma olduğundan kullanıcı onayı bekliyor.
+
+### `OnlineApi.submitMove` retry/idempotency döngüsünün SIFIR testi var
+
+`lib/src/data/online_api.dart` hiçbir test dosyasında geçmiyor. Ekranın 15
+testi `FakeOnlineGamesGateway.submitMove` sınırının ÜSTÜNDE ölçüyor; mobilin
+asıl güvenilirlik özelliği (aynı `p_move_id` ile 3 denemeye kadar retry,
+`PostgrestException`'da rethrow) o sınırın ALTINDA. `final id = moveId ??
+uuidV4()` satırı döngünün İÇİNE taşınsa (her denemede yeni UUID →
+idempotensi tamamen kırılır) **389 testin hiçbiri düşmez** — Parça 86'nın
+dersinin birebir aynı sınıfı. Önerilen: `rpc`'yi enjekte edilebilir yapıp 4
+birim test (aynı id ile retry; PostgrestException'da tek çağrı + rethrow;
+3. denemeden sonra yüzeye çıkma; `moveId` verilince o id).
+
+### Türkçe kullanıcı metni paritesi denetimi hiç tamamlanamadı
+
+İki denemede de oturum limitine takıldı. Öncelik "birebir kopya" sözleşmesi
+olan üç ekran: `HelpModal`, `TermsModal`, `PrivacyModal` — özellikle
+Privacy'nin 10 Ağustos 2026 güncellemesi (sohbet arşivi görünürlüğü) porta
+geçmiş mi.
 
 - **Kayıt onayı maili kaydın GELDİĞİ kanala dönmeli (10 Ağustos 2026,
   kullanıcı kararı — sözleri: "Kişilerin kayıt başvurusu hangi kanaldan

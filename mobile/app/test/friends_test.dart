@@ -523,6 +523,33 @@ void main() {
       expect(gw.deleted, ['f1']);
       expect(find.text('Arkadaşlıktan çıkarıldı.'), findsOneWidget);
     });
+
+    testWidgets(
+        'ağ hatasında SAHTE başarı gösterilmez — reddetme "İşlem başarısız '
+        'oldu." der (13 Ağustos 2026, Parça 89)', (tester) async {
+      final gw = FakeFriendsGateway()
+        ..requestRows = [
+          {'requester_id': 'r1', 'name': 'Esiner', 'avatar_url': null},
+        ];
+      await pumpModal(tester, gateway: gw, initialTab: FriendsTab.requests);
+      await tester.pumpAndSettle();
+
+      // Sunucu bu andan itibaren reddediyor (uçak modu / ağ hatası).
+      gw.failWith = Exception('ağ');
+
+      // Satırdaki buton ve onay diyaloğunun kabul butonu — ikisi de
+      // `trUpper`dan geçtiğinden BÜYÜK harf.
+      await tester.tap(find.text('REDDET'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('REDDET').last);
+      await tester.pumpAndSettle();
+
+      // Eskiden KOŞULSUZ "İstek reddedildi." gösteriliyordu — hata yutulup
+      // kullanıcıya GERÇEKLEŞMEMİŞ bir sonuç bildiriliyordu.
+      expect(find.text('İstek reddedildi.'), findsNothing);
+      expect(find.text('İşlem başarısız oldu.'), findsOneWidget);
+    });
+
   });
 
   group('AccountButton + PlayerScoreCard', () {
@@ -696,6 +723,8 @@ void main() {
         {'token': 'tok-1'}
       ]), ['tok-1']);
     });
+
+
 
   });
 }

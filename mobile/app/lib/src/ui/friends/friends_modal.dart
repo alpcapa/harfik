@@ -49,6 +49,12 @@ enum FriendsTab { friends, requests, search }
 /// Web ALL_USERS_PAGE_SIZE.
 const int kAllUsersPageSize = 20;
 
+/// Onaydan sonra ağ işlemi düşerse gösterilen metin — `chat_settings_modal`
+/// aynı dizeyi kullanıyor, yenisi icat edilmedi. Bir onay diyaloğundan
+/// GEÇMİŞ bir eylemin sessizce (ya da daha kötüsü, sahte bir "başarılı"
+/// mesajıyla) düşmemesi için var.
+const String kFriendActionFailed = 'İşlem başarısız oldu.';
+
 Future<void> showFriendsModal(
   BuildContext context, {
   required FriendsRepo friends,
@@ -278,15 +284,21 @@ class _FriendsModalState extends State<FriendsModal> {
     }
   }
 
-  Future<void> _handleRespond(String requesterId, {required bool accept}) async {
+  /// Başarılıysa `true`. Dönüş değeri ÖNEMLİ: çağıranlar sonuç diyaloğunu
+  /// buna göre seçiyor — eskiden hata yutulup "Arkadaş oldunuz."/"İstek
+  /// reddedildi." KOŞULSUZ gösteriliyordu, yani ağ hatasında kullanıcıya
+  /// gerçekleşmemiş bir sonuç bildiriliyordu (13 Ağustos 2026, Parça 89).
+  Future<bool> _handleRespond(String requesterId, {required bool accept}) async {
     setState(() => _busyId = requesterId);
     try {
       await widget.friends.respond(requesterId, accept: accept);
       _patchRelation(requesterId, accept ? FriendRelation.accepted : null);
       _reloadRequests();
       if (accept) _reloadFriends();
+      return true;
     } catch (e) {
       debugPrint('[Kelimeki] istek yanıtlama hatası: $e');
+      return false;
     } finally {
       if (mounted) setState(() => _busyId = null);
     }
@@ -707,15 +719,20 @@ class _FriendsModalState extends State<FriendsModal> {
     if (!ok || !mounted) return;
     String message;
     if (incoming) {
-      await _handleRespond(u.id, accept: true);
-      message = 'Arkadaş oldunuz.';
+      message = await _handleRespond(u.id, accept: true)
+          ? 'Arkadaş oldunuz.'
+          : kFriendActionFailed;
     } else {
       final result = await _handleSend(u);
       // Karşı taraftan zaten bekleyen bir istek varsa sunucu trigger'ı
       // ilişkiyi anında accepted yapar — mesaj bunu yansıtmalı.
-      message = result == FriendRelation.accepted
-          ? 'Arkadaş oldunuz.'
-          : 'Arkadaşlık isteğiniz iletilmiştir.';
+      // `null` = istek HİÇ gitmedi (bkz. `_handleSend`'in catch dalı);
+      // "iletilmiştir" demek yalan olurdu.
+      message = switch (result) {
+        FriendRelation.accepted => 'Arkadaş oldunuz.',
+        null => kFriendActionFailed,
+        _ => 'Arkadaşlık isteğiniz iletilmiştir.',
+      };
     }
     if (!mounted) return;
     await showFriendInfoDialog(context, message);
@@ -782,8 +799,11 @@ class _FriendsModalState extends State<FriendsModal> {
       confirmLabel: 'Reddet',
     );
     if (!ok || !mounted) return;
-    await _handleRespond(r.requesterId, accept: false);
-    if (mounted) await showFriendInfoDialog(context, 'İstek reddedildi.');
+    final done = await _handleRespond(r.requesterId, accept: false);
+    if (mounted) {
+      await showFriendInfoDialog(
+          context, done ? 'İstek reddedildi.' : kFriendActionFailed);
+    }
   }
 
   Future<void> _confirmThenCancel(FriendCandidate u) async {

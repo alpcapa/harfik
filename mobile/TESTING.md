@@ -768,6 +768,13 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       oldunuz." / "Arkadaşlık isteği iptal edildi." (karşılıklı anlık kabul
       durumunda "{isim} ile artık arkadaşsınız." — bu mobile özgü, web'de
       karşılığı yok, bilinçli).
+- [ ] **Ağ hatasında SAHTE başarı YOK (13 Ağustos 2026, Parça 89).**
+      Uçak modunu aç, sonra Arkadaşlar'da bir isteği **Reddet** / **Kabul
+      Et** ve birine **arkadaşlık isteği gönder**: üçünde de
+      **"İşlem başarısız oldu."** çıkmalı. Öncesinde sırasıyla "İstek
+      reddedildi." / "Arkadaş oldunuz." / "Arkadaşlık isteğiniz
+      iletilmiştir." gösteriliyordu — hiçbiri gerçekleşmemişken. Uçak
+      modunu kapatıp tekrar dene: normal sonuç mesajları dönmeli.
 - [ ] **Kişiye dokunmak skor kartını açar — ÜÇ sekmede de (11 Ağustos
       2026, Parça 53).** "Arkadaşlarım", "İstekler" ve "Ara & Ekle"
       (hem arama sonucu hem "Tüm Üyeler") satırlarında **avatara/isme**
@@ -854,6 +861,16 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       yeşil/kırmızı çerçeve + puan rozeti çalışmalı, mesaj "Kelime geçerli
       — Sıra: X" demeli, OYNA PASİF olmalı. Rakip oynayınca deneme taşları
       kendiliğinden rafa dönmeli ve OYNA aktifleşmeli.
+- [ ] **Terk edilen oyunun -2 cezası "Devam Et"e basınca da yazılmalı
+      (13 Ağustos 2026, Parça 89 — kalıcı testi YOK, elle kontrol şart).**
+      Misafirken bir YZ oyununu `turnCount>=2` olacak kadar oynayıp Setup'a
+      dön; cihaz saatini 7 gün ileri al (ya da 7 gün bekle) ve satır hâlâ
+      görünürken **"Devam Et"e dokun**. Beklenen: satır kaybolur VE terk
+      kaydı üretilir (bu cihazda giriş yapınca Skor Kartı'nda -2'li teslim
+      kaydı görünmeli). Öncesinde bu dal olayı ATOMİK olarak silip çöpe
+      atıyordu — ceza kalıcı olarak kayboluyordu. Karşılaştırma: aynı
+      senaryoyu "Devam Et"e BASMADAN (yalnız Setup'ı açıp kapatarak)
+      koşmak zaten çalışıyordu.
 - [ ] **"Sıra: X" bandının rengi (13 Ağustos 2026, Parça 88).** Sıra
       rakipteyken çıkan kırmızı bant, ekrandaki DİĞER kırmızılarla (bandın
       kendi nabız noktası, hata mesajları) AYNI tonda olmalı — öncesinde
