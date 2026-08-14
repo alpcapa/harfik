@@ -454,11 +454,16 @@ Gerek de yok: `fetchMyGames` modal açılınca / sekme değişince koşuyor.
 - [ ] **Favoriler sekmesi de aynı.** Aynı çevrimdışı durumda "Favoriler"e
       geç: orada da "yüklenemedi" çıkmalı ("Henüz favori işaretlediğin bir
       oyun yok." DEĞİL — o ayrı bir kod yolu, `list_liked_games` RPC'si).
-- [ ] **"Son Oynadıklarım" (Setup).** Çevrimdışıyken Setup → "Son
-      Oynananlar" sekmesi: aynı "yüklenemedi" metni. **Ama önce liste bir
-      kez yüklendiyse** (aynı sekmeye çevrimiçiyken girip çıktıysan)
-      çevrimdışında ESKİ liste görünmeye devam etmeli — başarısız çekim
-      ekrandaki listeyi ezmiyor.
+- [ ] **"Son Oynadıklarım" (Setup) — İKİ dalı da, BU SIRAYLA.** Koşul
+      (`setGames(cur => (!failed || cur === null ? rows : cur))`) iki dallı,
+      ve yalnızca ikincisini test etmek yarım kalır:
+      1. **Önce önbelleksiz:** o oturumda "Son Oynananlar"a HİÇ girmeden
+         çevrimdışı ol ve gir → **"yüklenemedi"** çıkmalı (`cur === null`).
+      2. **Sonra önbellekli:** çevrimiçi ol, sekmeye gir (liste dolsun),
+         tekrar çevrimdışı ol ve gir → **ESKİ liste kalmalı**, hata mesajı
+         DEĞİL (`cur !== null` — başarısız çekim ekrandaki listeyi ezmiyor).
+      (14 Ağustos 2026'da kullanıcı tam bu sırayla koştu; ilk yazdığım
+      sıralama yalnızca 2. dalı kapsıyordu.)
 - [ ] **NEGATİF EŞİ ŞART.** ÇevrimİÇİ, gerçekten hiç oyunu olmayan bir
       hesapla aynı ekranları aç: orada NORMAL boş mesajlar çıkmalı. Bu
       olmadan yukarıdaki üç madde hiçbir şey kanıtlamaz — "her durumda
