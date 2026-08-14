@@ -12,6 +12,12 @@ ilgili alana dokunan bir değişiklikten sonra) baştan koşulabilecek şekilde
 yazıldı. Bir bölümü koşarken sonuçları not almak istersen bu dosyayı değil,
 oturumun kendisini kullan.
 
+**Mobil tarafın "bu turda nereye kadar geldik?" durumu** (hangi bölümler
+koşuldu, hangi maddeler son düzeltmelerden sonra hiç koşulmadı)
+`mobile/CLAUDE.md`'nin **"FAZ A1 — Cihaz Testi Tur Durumu"** bölümünde;
+oradaki liste web'i ilgilendiren birkaç maddeye (9.6 gibi) de işaret
+ediyor.
+
 **Ön koşul:** iki ayrı test hesabı (ör. T1/T2) ve ikisine de erişebildiğin
 gerçek e-posta adresleri. Mailinator gibi geçici kutular font/logo render'ı
 için güvenilir DEĞİL (gelen HTML'i sanitize edip uzak görselleri düşürüyorlar) —
