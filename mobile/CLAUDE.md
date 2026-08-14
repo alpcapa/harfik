@@ -3586,6 +3586,132 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        rollback'li simülasyonla gösterilmişti; artık gerçek uçtan uca.
        Ayrıca `ChatRepo` kablolaması ve emoji fallback'i (🚫 tofu değil)
        de bu turda kapandı.
+     - **İkinci yol (şikayet → geri çekme) de AYNI GÜN mobilde koşuldu ve
+       tasarımın DÖRT durumunu birden gösterdi:** aktif oyunun sohbetinden
+       şikayet (08:19:14) → satırda 🚩 → panelden geri çekme (08:20:11) →
+       ikon **kaybolmadı, 🚫'ye döndü** → sessizden çıkarma → ikon kalktı.
+       Ortadaki adım kullanıcıya önceden söylenmeseydi "geri çektim ama
+       ikon duruyor" diye YANLIŞ bir hata bildirimi üretebilirdi: şikayet
+       otomatik sessize alıyor ve geri çekme mute'a bilinçli olarak
+       dokunmuyor. **Üretimden asıl kanıt `handled` = `false` KALDI** —
+       4 Ağustos'ta yazılıp 10 gün ölü bir overload'da mahsur kalan
+       düzeltmenin mobil istemciden ilk doğrulaması (bkz. Parça 90 (a)).
+     - **Web ↔ mobil metin paritesi VARSAYILMADI, ölçüldü:** kullanıcı
+       paneli mobilde ilk kez görünce "web'e de uyguladık mı?" diye
+       sordu; `FriendModerationModal.tsx` ile `friend_moderation_sheet.dart`
+       13 dize üzerinden karşılaştırıldı (durum cümlesinin üç varyantı,
+       iki buton, onay adımı, iki sonuç mesajı, hata metni, alttaki
+       "şikayet sohbetten yapılır" notu) — **13/13 birebir**. Bu dosya
+       çiftinin `legal_modals.dart` gibi otomatik bir parite testi YOK;
+       biri değişirse öteki elle güncellenmeli.
+
+   - ✅ **Parça 92 — üç kullanıcı isteği, üçü de İKİ platformda birden
+     (14 Ağustos 2026, `setup_screen.dart`, `leaderboard_modal.dart`,
+     `board_widget.dart`, `game_screen.dart`, `online_game_screen.dart` +
+     web `Board.tsx`/`App.tsx`/`OnlineGameScreen.tsx`/`Leaderboard.tsx`):**
+     Kullanıcı: *"1. Mobilde girişsiz YZ oyun başlatınca web'deki uyarı
+     çıkmıyor. 2. Leaderboard OHP kolonunu az daha puan kolonuna
+     yaklaştır. 3. Board altındaki X2/X3 legendları kaldır. Onun yerine
+     board'un sağ alt köşesine Hamleler, Mesajlaşma ile aynı stil, 'Nasıl
+     Oynanır?' ekle."*
+     - **(1) Misafir uyarısı — web'de VARDI, porta hiç girmemişti.** Web
+       `Setup.tsx`'in `handleStart`i giriş yapılmamışsa oyunu BAŞLATMADAN
+       önce bir uyarı açıyor ("Oyunların istatistikleri, k-lig ve
+       arkadaşınla canlı oyun için lütfen giriş yapın." + GİRİŞ YAP /
+       DEVAM); port doğrudan `_startNewGame`e gidiyordu. Kaynak okunup
+       aynı metin/butonlar `KModal(title: '')` ile taşındı (`GameOverModal`
+       emsali — ham `Dialog` kurmak bu projede üç kez geri alındı, bkz.
+       Parça 26/47/50).
+       - **Sonuç ÜÇ DEĞERLİ olmak ZORUNDA:** ilk taslağım "GİRİŞ YAP" ile
+         ✕'i aynı `false`a düşürüyordu, yani ayırt edilemiyorlardı ve
+         yanına gereksiz bir yan-etki bayrağı koymuştum. `_GuestChoice
+         {login, proceed, dismiss}` ile üçü ayrıldı: DEVAM → oyun başlar,
+         GİRİŞ YAP → giriş penceresi açılır ve oyun BAŞLAMAZ (web'de de
+         öyle), ✕/zemin → hiçbir şey olmaz. **Bir diyaloğun dönüşü
+         `bool` ise "iptal" ile "başka bir yola saptı"yı ayıramazsın** —
+         `showDialog<T>` zaten jenerik, enum kullanmanın maliyeti yok.
+       - `auth.loading` iken uyarı GÖSTERİLMEZ (kimlik henüz bilinmiyorken
+         girişli kullanıcıyı yanlışlıkla durdurmamak için) — web'in
+         `profileLoading` beklemesiyle aynı refleks.
+     - **(2) OHP ↔ Puan — sağa hizalı bir sütunu SOLA çekmenin tek yolu
+       SAĞINDAKİNİ daraltmak.** OHP'nin kendi genişliğini büyütmek/
+       küçültmek onu yerinden oynatmaz (metin sağa yaslı; kutu büyüyünce
+       yalnızca sol kenarı büyür). Puan 52 → **44** (web `w-12`→`w-10`);
+       ölçüldü: iki sütunun sağ kenarları arası **44.0 px**, web'de de
+       aynı. Web'de ÜÇ çağrı yeri birden değişmek zorunda (başlık, satır,
+       "senin sıran") — biri atlanırsa hiza bozulur.
+       - **AYNI GÜN ikinci tur — "OHP başlığı ortalı değil" (kullanıcı):**
+         doğruydu ve ÖLÇÜLDÜ: başlığın ink merkezi değerlerin **7.07 px
+         sağındaydı**; kıyas için "Puan"ın kendi sapması yalnızca 1.67 px,
+         yani sorun OHP'ye özgüydü. **Sebep alignment değil GENİŞLİK:**
+         iki dize de sağa yaslıyken merkezleri, genişlik farkının YARISI
+         kadar ayrışır — "OHP" 3 karakter/9px (19.53 px ink), değer 5
+         karakter/11px (33.67); (33.67−19.53)/2 = 7.07. "Puan"da fark
+         tesadüfen küçük (26.05 vs 29.39), o yüzden orada göze batmıyor.
+       - **Çözüm sihirli bir kaydırma DEĞİL, kutuyu içeriğe eşitlemek:**
+         sütun 52 → **`_kOhpColumnWidth = 34`** (değerin ink genişliği) ve
+         başlık `TextAlign.right` → **`center`**. Kutu daralınca SAĞ kenar
+         yerinde kalır (boşluk `Expanded` "Oyuncu"ya gider), yani 44 px'lik
+         OHP↔Puan hizası ve değerlerin konumu HİÇ değişmez. **Değerler
+         sağa yaslı KALMALI** — başlığı ortalamak için değerleri de
+         ortalamak, 1 basamaklı bir ortalamada (`9.50`) ondalık hizasını
+         bozardı. Web'de aynı sayı `w-[34px]`; ölçülen kalan sapma 0.16 px.
+       - **Test SIHIRLI SAYIYI değil SÖZLEŞMEYİ pinliyor** (Parça 81'in
+         deseni): üç parça birden — başlık ve değer kutuları AYNI
+         genişlikte + başlık `center` + değer `right` + **kutu genişliği
+         gerçekten değerin ink genişliği mi** (`TextPainter` ile aynı
+         stille ÖLÇÜLEREK, `closeTo(34, 1)` sabitiyle değil). Üçü birden
+         gerekli: yalnızca genişlik eşitliğine bakan bir test eski hâlde de
+         geçerdi (ikisi de 52'ydi) — nitekim negatif eşte önce o geçti,
+         hatayı `TextAlign` yakaladı (`Expected: TextAlign.center /
+         Actual: TextAlign.right`).
+     - **(3) Tahta alt şeridi.** `- kelime X2 · - kelime X3` legend'ı
+       silinip yerine Hamleler/Mesajlaşma ile AYNI stilde (SpaceMono 12
+       bold, `letterSpacing 0.5`, `kAccent`) bir "Nasıl Oynanır?" butonu
+       kondu; soru-işareti ikonu `_HelpIconPainter` ile web'in SVG
+       path'lerinden birebir çizildi (`RelationIcons` ilkesi — glyph
+       kopyalanmaz, aynı vektör kullanılır). Yeni opsiyonel `onOpenHelp`
+       prop'u; verilmezse buton hiç çizilmez. İKİ oyun ekranı da
+       `showHelpModal(context)` bağladı (bilinçli kod tekrarı çifti).
+       **Bilgi kaybı yok:** X2/X3 zaten tahtanın kendi filigranlarında ve
+       kurallar ekranında yazılı.
+     - **Test — negatif eş doğrulamasıyla, ÜÇÜ AYRI AYRI:** (a)
+       `setup_screen_test.dart` — mevcut "oyun başlar" testi artık uyarıyı
+       görüp DEVAM'a basıyor, artı iki YENİ test (girişli kullanıcıda
+       uyarı HİÇ çıkmamalı; ✕ ne oyun başlatmalı ne giriş penceresi
+       açmalı); (b) `score_card_test.dart`'ın OHP testine iki sütunun
+       sağ kenar farkını 44'e sabitleyen bir assertion; (c)
+       `game_screen_test.dart` — legend metinlerinin YOK, "Nasıl
+       Oynanır?"ın VAR olduğu ve dokununca kuralların açıldığı. Üç lib
+       değişikliği ayrı ayrı geri alınınca üçü de GERÇEKTEN düştü
+       (`Found 0 widgets with text containing lütfen giriş yapın`;
+       `Expected: a numeric value within <0.5> of <44> Actual: <52.0>`;
+       `Found 0 widgets with text "Nasıl Oynanır?"`), geri konunca yeşile
+       döndü.
+     - **Test yazarken düşülen iki tuzak (kayda geçsin):** (1) kurallar
+       penceresinin varsayılan adımı "NASIL OYNANIR?" DEĞİL **"HIZLI
+       BAŞLANGIÇ"** — başlığı tahminle yazan assertion 0 widget buldu;
+       (2) `auth_test.dart`'ın hesap menüsü testi `find.textContaining
+       ('Nasıl Oynanır?')` kullanıyordu ve artık İKİ eşleşme buluyor
+       (menü maddesi + tahta şeridi) — emoji önekiyle TAM eşleşmeye
+       (`'❓  Nasıl Oynanır?'`) çevrildi. **Yeni bir yere var olan bir
+       metni eklerken, o metni arayan MEVCUT testleri de tara.**
+     - **Web duman testi de bu değişiklikle İKİ KEZ kırıldı** (ayrıntı ve
+       kalıcı ders kök `CLAUDE.md`'de): Playwright'ın `getByRole(name:)`
+       eşleşmesi varsayılan olarak büyük/küçük harf DUYARSIZ ALT DİZE
+       arıyor → "Nasıl **Oyna**nır?" `OYNA` butonuyla çakıştı; `exact:
+       true` eklenince bu sefer 0 sonuç, çünkü `exact` aynı zamanda
+       harf DUYARLI ve DOM metni `Oyna` (büyük harf yalnızca CSS
+       `uppercase`). Doğrusu `{ name: 'Oyna', exact: true }`.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       405/405 yeşil** (402'den +3). Web `npm run lint` + `npm run build`
+       + `npm run test` (Playwright, 2 passed) temiz. `kelimeki_core`'a
+       hiç dokunulmadı.
+     - **`mobile/` DIŞINDA dosya değişti** (web yarısı aynı gün, aynı
+       dalda) → kök `CLAUDE.md` + `TESTING.md` aynı commit'te güncellendi
+       (Parça Bitirme Kontrol Listesi madde 1).
+     - **Doğrulama sınırı:** cihazda görsel/dokunma teyidi kullanıcıdan
+       bekleniyor — `mobile/TESTING.md` bölüm 1/4'e maddeler eklendi.
 
 ## Sonraya Bırakılan İşler (mobil)
 

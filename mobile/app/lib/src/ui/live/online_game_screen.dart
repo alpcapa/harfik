@@ -55,6 +55,7 @@ import '../feedback/feedback_modal.dart';
 import '../game/board_widget.dart';
 import '../game/game_header.dart';
 import '../game/game_over_modal.dart';
+import '../game/help_modal.dart';
 import '../game/meaning_modal.dart';
 import '../game/move_history_modal.dart';
 import '../game/neo_box.dart';
@@ -1367,6 +1368,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                           state.copyWith(
                                               moveHistory:
                                                   buildMoveHistory(_moves))),
+                                      onOpenHelp: () => showHelpModal(context),
                                       onOpenMessaging: widget.chat == null
                                           ? null
                                           : _openMessaging,

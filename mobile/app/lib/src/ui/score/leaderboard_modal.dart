@@ -29,6 +29,18 @@ const _panel = kPanel;
 /// Veri yoksa, satırın "Puan" hücresiyle aynı kuralla, "—".
 String formatOhp(double? v) => v == null ? '—' : v.toStringAsFixed(2);
 
+/// OHP sütununun genişliği — DEĞERİN ink genişliğine eşit seçildi
+/// (`12.78` = 5 monospace karakter × 11px × 0.612 ≈ 34). Sebebi hiza:
+/// değerler sağa yaslı, başlık ise ORTALI çiziliyor; kutu tam değer
+/// genişliğinde olunca ikisinin merkezi çakışıyor. Kutu 52 + başlık sağa
+/// yaslı iken başlık, değerlerin ~7px SAĞINDA kalıyordu ("OHP" 3 karakter/
+/// 9px, değer 5 karakter/11px — iki dize de sağa yaslıyken merkezleri
+/// genişlik farkının yarısı kadar ayrışır). Sütunun SAĞ kenarı değişmedi
+/// (daralma yalnızca sol kenarı sağa çeker, boşluk "Oyuncu"ya gider), yani
+/// OHP↔Puan sağ-kenar mesafesi (44) korunuyor. Web `Leaderboard.tsx`'te
+/// aynı sayı `w-[34px]` olarak duruyor — biri değişirse öteki de.
+const double _kOhpColumnWidth = 34;
+
 /// Başlığa dokununca/hover edince görünen açıklama (web ile birebir).
 /// Metin sunucudaki hesabı BİREBİR tarif ediyor: `leaderboard.avg_move_score`
 /// = sum(move_points_sum) / sum(move_count) — yani oyun başına ortalamaların
@@ -163,8 +175,13 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
             },
             behavior: HitTestBehavior.opaque,
             child: const SizedBox(
-              width: 52,
-              child: _HeadLabel('OHP', right: true, underline: true),
+              // Kutu genişliği OHP DEĞERİNİN ink genişliğine eşit
+              // (`12.78` = 5 monospace karakter × 11px × 0.612 ≈ 34) —
+              // sağa hizalı değerlerle ORTALI başlık aynı merkeze düşsün
+              // diye. Bkz. `_kOhpColumnWidth`.
+              width: _kOhpColumnWidth,
+              child: _HeadLabel('OHP',
+                  align: TextAlign.center, underline: true),
             ),
           ),
         ),
@@ -308,7 +325,7 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
                 const SizedBox(width: 28, child: _HeadLabel('SIRA')),
                 const Expanded(child: _HeadLabel('OYUNCU')),
                 _buildOhpHeader(),
-                const SizedBox(width: 52, child: _HeadLabel('PUAN', right: true)),
+                const SizedBox(width: 44, child: _HeadLabel('PUAN', align: TextAlign.right)),
               ]),
             ),
             const SizedBox(height: 4),
@@ -471,17 +488,18 @@ class _BalloonTailPainter extends CustomPainter {
 
 class _HeadLabel extends StatelessWidget {
   final String text;
-  final bool right;
+  final TextAlign align;
 
   /// Noktalı alt çizgi — başlığın dokunulabilir olduğunu belli eder
   /// (web'deki `underline decoration-dotted` ile aynı).
   final bool underline;
-  const _HeadLabel(this.text, {this.right = false, this.underline = false});
+  const _HeadLabel(this.text,
+      {this.align = TextAlign.left, this.underline = false});
 
   @override
   Widget build(BuildContext context) => Text(
         text,
-        textAlign: right ? TextAlign.right : TextAlign.left,
+        textAlign: align,
         style: TextStyle(
           fontFamily: 'SpaceMono',
           fontSize: 9,
@@ -566,14 +584,14 @@ class _Row extends StatelessWidget {
               // (kullanıcı isteği) — asıl sıralama ölçütü olan "Puan"la
               // görsel olarak yarışmasın diye.
               SizedBox(
-                width: 52,
+                width: _kOhpColumnWidth,
                 child: Text(formatOhp(avgMoveScore),
                     textAlign: TextAlign.right,
                     style: const TextStyle(
                         fontFamily: 'SpaceMono', fontSize: 11, color: _muted)),
               ),
               SizedBox(
-                width: 52,
+                width: 44,
                 child: Text('$score',
                     textAlign: TextAlign.right,
                     style: const TextStyle(

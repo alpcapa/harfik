@@ -23,6 +23,7 @@ import '../../game/move_status.dart';
 import 'board_widget.dart';
 import 'game_header.dart';
 import 'game_over_modal.dart';
+import 'help_modal.dart';
 import 'meaning_modal.dart';
 import 'move_history_modal.dart';
 import 'neo_button.dart';
@@ -753,6 +754,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                       gridKey: _gridKey,
                                       onOpenHistory: () =>
                                           showMoveHistoryModal(context, state),
+                                      onOpenHelp: () => showHelpModal(context),
                                       dragHiddenKey: _hiddenSource
                                               is _PlacedSource
                                           ? cellKey(

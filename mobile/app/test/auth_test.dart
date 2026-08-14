@@ -159,7 +159,10 @@ void main() {
     await tester.pumpAndSettle();
     // Menü maddeleri emoji önekli tek Text ('🚪  Çıkış Yap') — textContaining.
     expect(find.textContaining('Çıkış Yap'), findsOneWidget);
-    expect(find.textContaining('Nasıl Oynanır?'), findsOneWidget);
+    // Emoji önekiyle TAM eşleşme şart: 14 Ağustos 2026'dan beri tahtanın alt
+    // şeridinde de "Nasıl Oynanır?" var (X2/X3 legend'ının yerine geçti),
+    // yani `textContaining` artık İKİ eşleşme buluyor.
+    expect(find.text('❓  Nasıl Oynanır?'), findsOneWidget);
   });
 
   testWidgets('Setup çıkışlı (configured): GİRİŞ → giriş penceresi + doğrulama',

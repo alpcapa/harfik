@@ -171,6 +171,20 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       turunda [≈0 ms] oynuyordu — kullanıcı kendi hamlesinin mesajını hiç
       göremiyordu; düzeltme + enjekte edilebilir `aiThinkDelay`, bkz.
       mobile/CLAUDE.md Parça 21).
+- [ ] **Girişsiz başlatınca uyarı (14 Ağustos 2026, Parça 92).** ÇIKIŞ
+      yapmış hâlde "Oyunu Başlat"a bas: web'dekiyle aynı uyarı çıkmalı
+      ("Oyunların istatistikleri, k-lig ve arkadaşınla canlı oyun için
+      lütfen giriş yapın." + GİRİŞ YAP / DEVAM). **Üç yolu da dene:**
+      DEVAM → oyun başlar; GİRİŞ YAP → giriş penceresi açılır ve oyun
+      BAŞLAMAZ; ✕ (ya da zemine dokunma) → hiçbir şey olmaz. Girişliyken
+      bu uyarı HİÇ çıkmamalı.
+- [ ] **Tahta alt şeridi — "Nasıl Oynanır?" (aynı parça).** Tahtanın
+      altında SAĞDA "Nasıl Oynanır?" olmalı; eski `- kelime X2 · -
+      kelime X3` açıklaması HİÇBİR yerde görünmemeli. Dokununca kurallar
+      açılmalı — hem yerel/YZ hem Canlı oyun ekranında ayrı ayrı dene.
+      Yazı stili solundaki "Hamleler" ile birebir aynı olmalı (punto/
+      renk/kalınlık) ve soru-işareti ikonu boş kare DEĞİL gerçek bir
+      daire+soru işareti olarak çizilmeli.
 - [ ] **Sürükle-bırak.** Raftan tahtaya, tahtada taşıma, tahtadan rafa geri
       alma. Hayalet taş parmağın ÜSTÜNDE görünmeli (30px kaldırma).
       **Sürükleme AKICI olmalı — hafif titreme/takılma bir REGRESYONDUR**
@@ -471,6 +485,15 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       BİREBİR AYNI olmalı; ikisi sunucuda aynı ifadeden geliyor, ayrışırsa
       view'lardan biri bozulmuş demektir. Aynı sayı web'de de aynı
       görünmeli (`kelimeki.com` ile yan yana).
+      **Hiza (14 Ağustos 2026, Parça 92):** OHP Puan'a yakın durmalı,
+      aralarında geniş bir boşluk kalmamalı; başlık satırı, liste
+      satırları ve "senin sıran" kısayolu ÜÇÜ DE aynı hizada olmalı.
+      Web ile yan yana koy — iki platformda da aynı (sağ kenarlar arası
+      44px) görünmeli. **"OHP" başlığı, altındaki rakamların TAM ÜSTÜNDE
+      (ortalı) durmalı** — sağa kaymış görünmemeli; 1 basamaklı bir
+      ortalama (`9.50`) 2 basamaklılarla ondalık noktasında hizalı kalmalı
+      (değerler sağa yaslı, yalnızca başlık ortalı). Açıklama balonunun
+      kuyruğu da başlığın merkezini göstermeli.
 - [ ] **Misafir kuyruğu.** Çıkış yap, misafirken bir oyunu BİTİR, sonra
       giriş yap → o oyun hesabına işlenmeli (web'deki Skor Kartı'ndan
       doğrula).
@@ -818,11 +841,21 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       hakkında olduğu konuşmaya bağlı); panel bunu söyleyen bir not
       göstermeli. Emoji fallback'i de burada kontrol edilmiş oluyor —
       🚫/🚩 boş kare (tofu) çıkmamalı.
-      **14 Ağustos 2026'da koşuldu ve GEÇTİ** (sessizden çıkarma yolu):
-      ikon çıktı, panelden çıkarıldı, ANINDA kalktı. Üretimden teyit —
-      mute tablosu 0 satıra düştü ve provenance oyunu `finished`'dı,
-      yani kısayol tam da tasarlandığı yerde (oyun bittikten sonra)
-      çalıştı.
+      **14 Ağustos 2026'da HER İKİ YOL da koşuldu ve GEÇTİ:**
+      - *Sessizden çıkarma:* ikon çıktı, panelden çıkarıldı, ANINDA
+        kalktı. Üretimden teyit — mute tablosu 0 satıra düştü ve
+        provenance oyunu **`finished`**'dı, yani kısayol tam da
+        tasarlandığı yerde (oyun bittikten sonra) çalıştı.
+      - *Şikayet → geri çekme:* aktif bir oyunun sohbetinden şikayet
+        edildi (08:19:14), arkadaş satırında 🚩 çıktı, panelden geri
+        çekildi (08:20:11) → ikon **kaybolmadı, 🚫'ye döndü** (şikayet
+        otomatik sessize aldığından ve geri çekme mute'a dokunmadığından
+        — beklenen davranış), sonra sessizden de çıkarılınca tamamen
+        kalktı. Yani tasarımın DÖRT durumu da tek turda görüldü.
+      **Üretimden okunan asıl kanıt: `handled` = `false` KALDI.** Bu,
+      4 Ağustos'ta yazılıp 10 gün ölü bir SQL overload'ında mahsur kalan
+      düzeltmenin (`fix_withdraw_report_wrong_overload`) **mobil
+      istemciden** ilk doğrulaması — web'de aynı gün, mobilde burada.
 
 ## 11. Canlı oyun — davet/kabul + tahta
 
