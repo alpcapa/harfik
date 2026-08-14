@@ -3993,6 +3993,27 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
          web'le AYNI metni gösteriyor (parite testine de eklendi).
          **Ders: "asset pakette" demek her derleme hedefi için aynı şeyi
          ifade etmiyor.**
+     - **Bağlantı sinyali porta geldi (`connectivity_plus`, kullanıcı
+       onayıyla):** Çevrimdışı mesajı Setup'ta uzunca "Yükleniyor…"dan sonra
+       çıkıyordu — kullanıcı *"hemen çıkmalı bence"* dedi. Kök sebep
+       yapısaldı: port çevrimdışı kararını bir ağ çağrısının BAŞARISIZ
+       olmasını bekleyerek veriyordu (`_loadFailed`) ve uçak modunda Supabase
+       auth'un token yenileme tekrarları bunu saniyelere çıkarıyordu; web ise
+       `navigator.onLine` ile ANINDA karar veriyordu. `util/online_status.dart`
+       (web `useOnlineStatus` portu) `AppServices.onlineStatus` olarak
+       eklendi; `LiveGamesTab`, `SetupScreen` ve `RecentGamesSection` bunu
+       dinliyor. **`_loadFailed` yolları KALDIRILMADI** — ikisi birlikte
+       çalışıyor: bağlantı sinyali HIZLI ama iyimser ("arayüz var" ≠
+       "internet var": captive portal, bozuk DNS), başarısız yükleme YAVAŞ
+       ama kesin; mesaj ikisinden biri doğruysa çıkıyor.
+       - **Testi ağ cevabını beklemediğini KANITLIYOR:** sahte uç asılı bir
+         future dönüyor (`listHangs`), yani test ancak karar bağlantı
+         sinyalinden geliyorsa geçiyor. Negatif eş: koşul kaldırılınca
+         "İnternet bağlantısı yok" bulunamıyor.
+       - **Doğrulama sınırı:** `pubspec.lock` bu ortamda yenilendi (yalnızca
+         yeni paketler + Dart kısıtı; başka sürüm oynaması yok) ama
+         **Android/iOS derlemesi burada koşulamıyor** — plugin'in native
+         tarafı yalnızca CI'daki `mobile-build.yml` ile doğrulanabilir.
      - **Cihazda doğrulanacak:** iki senaryo da `mobile/TESTING.md` bölüm 11
        ve kök `TESTING.md` bölüm 2'ye eklendi.
 
@@ -4079,20 +4100,10 @@ Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı
 kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
 silinip kendi tarihli parça notuna taşınır.
 
-- **Bağlantı durumu göstergesi (`useOnlineStatus` portu) — YOK (14 Ağustos
-  2026, Parça 95'te fark edildi):** Web'in Board alt şeridinde `!online`
-  iken kırmızı bir "Çevrimdışı" yazısı çıkıyor (`Board.tsx`, kaynağı
-  `src/hooks/useOnlineStatus.ts`); portta ne hook ne gösterge var.
-  - **Neden bu turda yapılmadı:** Parça 95'in (2) numaralı düzeltmesi
-    ("gönderim hatası artık görünüyor") kullanıcının bildirdiği asıl
-    şikayeti — uçak modunda uygulamanın hiçbir şey söylememesi — zaten
-    kapatıyor. Ayrıca gösterge yeni bir bağımlılık (`connectivity_plus`)
-    ya da kendi ping mekanizmasını gerektiriyor; istek "fontu düzelt"
-    olduğundan kapsam kendiliğinden genişletilmedi.
-  - **Yapılırsa:** göstergenin puntosu/aralığı alt şeritteki kardeş
-    kontrollerle (Hamleler · Mesajlaşma · Nasıl Oynanır?) BİREBİR aynı
-    olmalı — web 14 Ağustos'ta tam bu sebeple düzeltildi (8px okunmuyordu).
-
+- ~~Bağlantı durumu göstergesi (`useOnlineStatus` portu)~~ — **YAPILDI**
+  (14 Ağustos 2026, Parça 96): `util/online_status.dart` + `connectivity_plus`.
+  Board alt şeridindeki görsel "Çevrimdışı" rozeti HÂLÂ YOK (yalnızca karar
+  mantığı portlandı) — istenirse artık sinyal hazır.
 - **Kayıt onayı maili kaydın GELDİĞİ kanala dönmeli (10 Ağustos 2026,
   kullanıcı kararı — sözleri: "Kişilerin kayıt başvurusu hangi kanaldan
   geliyorsa o kanala yönlendirilmeleri doğrusu"):** Bugün `signUp()`

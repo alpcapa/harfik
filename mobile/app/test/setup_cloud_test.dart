@@ -34,6 +34,7 @@ import 'support/fake_games_gateway.dart';
 import 'support/game_rows.dart' show gameRow;
 import 'support/test_fonts.dart';
 import 'support/test_view.dart';
+import 'package:kelimeki/src/util/online_status.dart';
 
 class MemGateway implements CloudSaveGateway {
   final rows = <String, Map<String, Object?>>{};
@@ -131,6 +132,7 @@ AppServices services(MemGateway gw,
         FeedbackRepo? feedback,
         CloudSaveRepo? cloud}) =>
     AppServices(
+      onlineStatus: OnlineStatus.fake(),
       dictionary: Future.value(SetWordSource(const ['ab', 'aba', 'kelime'])),
       meanings: MeaningStore(bundle: rootBundle),
       auth: AuthService.fake(user: fakeUser(), profile: ironman),

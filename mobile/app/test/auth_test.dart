@@ -22,6 +22,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
 
 import 'support/test_fonts.dart';
 import 'support/test_view.dart';
+import 'package:kelimeki/src/util/online_status.dart';
 
 User fakeUser({String email = 'alp.capa@hotmail.com'}) => User(
       id: 'u-test',
@@ -40,6 +41,7 @@ const ironman = KProfile(
 );
 
 AppServices services(AuthService auth) => AppServices(
+      onlineStatus: OnlineStatus.fake(),
       dictionary: Future.value(SetWordSource(const ['ab', 'aba', 'kelime'])),
       meanings: MeaningStore(bundle: rootBundle),
       auth: auth,

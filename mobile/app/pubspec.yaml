@@ -29,6 +29,13 @@ dependencies:
   path_provider: ^2.1.5
   share_plus: ^12.0.2
   shared_preferences: ^2.5.3
+  # Bağlantı durumu — web `useOnlineStatus` (navigator.onLine) portu.
+  # Neden gerekli (14 Ağustos 2026, cihaz testi): çevrimdışı kararı önceden
+  # bir ağ çağrısının BAŞARISIZ olmasını bekleyerek veriliyordu ve uçak
+  # modunda Supabase auth'un token yenileme denemeleri bunu saniyelere
+  # çıkarıyordu — kullanıcı "hemen çıkmalı" dedi. Web'de karar anında
+  # veriliyor; bu paket portu da aynı hizaya getiriyor.
+  connectivity_plus: ^6.1.0
   sqflite: ^2.4.2
   sqflite_common_ffi_web: ^1.0.2
   supabase_flutter: ^2.10.2

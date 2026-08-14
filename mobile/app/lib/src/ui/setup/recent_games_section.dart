@@ -94,6 +94,10 @@ class RecentGamesSection extends StatefulWidget {
   /// Önbellekten gelen bir liste VARSA o gösterilmeye devam eder.
   final Widget? offlineNode;
 
+  /// Çağıran "şu an çevrimdışıyız" diyor mu (web `useOnlineStatus`)? Bu
+  /// sinyal HIZLI; `_loadFailed` YAVAŞ ama kesin — ikisinden biri yeterli.
+  final bool isOffline;
+
   const RecentGamesSection({
     super.key,
     required this.games,
@@ -103,6 +107,7 @@ class RecentGamesSection extends StatefulWidget {
     this.stats,
     this.emptyMessage,
     this.offlineNode,
+    this.isOffline = false,
   });
 
   @override
@@ -176,7 +181,9 @@ class _RecentGamesSectionState extends State<RecentGamesSection> {
     // Çevrimdışıyken "yüklenemedi" teknik olarak doğru ama ne yapılacağını
     // söylemiyor — çağıran bir düğüm verdiyse o konuşur.
     final offline = widget.offlineNode;
-    if (offline != null && _loadFailed && (games == null || games.isEmpty)) {
+    if (offline != null &&
+        (_loadFailed || widget.isOffline) &&
+        (games == null || games.isEmpty)) {
       return offline;
     }
     if (games == null) {
