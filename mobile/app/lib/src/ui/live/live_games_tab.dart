@@ -238,6 +238,7 @@ class _LiveGamesTabState extends State<LiveGamesTab>
         chat: services.chat,
         storage: services.storage,
         leagueRewards: services.leagueRewards,
+        onlineStatus: services.onlineStatus,
       ),
     ));
     if (mounted) unawaited(_reload());

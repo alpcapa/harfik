@@ -13,6 +13,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/ui/theme.dart';
+import 'package:kelimeki/src/util/online_status.dart';
 import 'package:kelimeki/src/data/online_games_api.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/ui/game/neo_box.dart'
@@ -325,6 +326,7 @@ void main() {
       List<Map<String, Object?>>? moveRows,
       GlobalKey? boundaryKey,
       bool isGameOver = false,
+      OnlineStatus? onlineStatus,
     }) async {
       await setPhoneViewSize(tester, const Size(420, 900));
       final s = _baseState(opponentIsAi: opponentIsAi);
@@ -347,6 +349,7 @@ void main() {
         onlineGames: OnlineGamesRepo(gw),
         words: words,
         auth: AuthService.fake(user: fakeUser('me')),
+        onlineStatus: onlineStatus,
       );
       if (boundaryKey != null) {
         screen = RepaintBoundary(key: boundaryKey, child: screen);
@@ -380,6 +383,19 @@ void main() {
       expect(find.textContaining('SIRA: ESİNER'), findsOneWidget);
       expect(gw.turnTimeoutChecks, ['g1']);
       expect(gw.aiTriggers, isEmpty); // rakip insan
+      await unmount(tester);
+    });
+
+    // Kardeş ekran (game_screen.dart) uyarının KENDİSİNİ ve reaktifliğini
+    // test ediyor; buradaki soru yalnızca KABLO: iki ekran da BoardWidget'a
+    // onlineStatus'u geçmek ZORUNDA (bilinçli kod tekrarı çifti — biri
+    // atlanırsa uyarı yalnızca bir ekranda çıkar ve hiçbir derleyici bunu
+    // yakalamaz).
+    testWidgets('Canlı ekranda da "Çevrimdışı" uyarısı çıkar (kablo)',
+        (tester) async {
+      await pumpScreen(tester,
+          current: 0, onlineStatus: OnlineStatus.fake(online: false));
+      expect(find.text('Çevrimdışı'), findsOneWidget);
       await unmount(tester);
     });
 
