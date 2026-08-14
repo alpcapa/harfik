@@ -1320,6 +1320,49 @@ export async function fetchFinishedGameChatFlags(
 }
 
 /** Bir katılımcıyı sessize alır/sessizden çıkarır (RPC: atomik, katılımcı kontrolü sunucuda). */
+/**
+ * Arkadaş listesinden moderasyon durumunu yönetebilmek için: sessize
+ * alınan/şikayet edilen her kişi için bir de **kaynak oyun id'si** döndürür.
+ *
+ * NEDEN GAME ID GEREKİYOR (14 Ağustos 2026, kullanıcı isteğiyle eklendi):
+ * `mute_online_game_participant` katılımcılık kontrolünü (`is_online_game_
+ * participant`) `p_muted` dalından ÖNCE yapıyor — yani SESSİZDEN ÇIKARMA
+ * bile geçerli bir ortak oyun id'si istiyor. Arkadaş listesinde böyle bir
+ * bağlam yok; ama mute/rapor satırının KENDİSİ `online_game_id` taşıyor ve
+ * o satır ancak ikisi de o oyunun katılımcısıyken yazılabildiğinden
+ * (RPC insert'te zorluyor) provenance olarak kullanılabilir. Sunucuda
+ * hiçbir değişiklik gerekmiyor.
+ *
+ * `fetchMyChatMutes`/`fetchMyActiveChatReports` (yalnızca id kümesi
+ * döndüren, oyun ekranının kullandığı sürümler) BİLEREK dokunulmadan
+ * duruyor — orada oyun id'si zaten elde.
+ */
+export async function fetchMyChatModeration(): Promise<{
+  muted: Map<string, string>;
+  reported: Map<string, string>;
+}> {
+  const empty = { muted: new Map<string, string>(), reported: new Map<string, string>() };
+  if (!supabase) return empty;
+  const [m, r] = await Promise.all([
+    supabase.from('online_game_message_mutes').select('muted_user_id, online_game_id'),
+    supabase
+      .from('online_game_chat_reports')
+      .select('reported_user_id, online_game_id')
+      .is('withdrawn_at', null),
+  ]);
+  if (m.error) console.error('[Kelimeki] fetchMyChatModeration (mutes) hatası:', m.error.message);
+  if (r.error) console.error('[Kelimeki] fetchMyChatModeration (reports) hatası:', r.error.message);
+  const muted = new Map<string, string>();
+  for (const row of (m.data ?? []) as { muted_user_id: string; online_game_id: string }[]) {
+    if (!muted.has(row.muted_user_id)) muted.set(row.muted_user_id, row.online_game_id);
+  }
+  const reported = new Map<string, string>();
+  for (const row of (r.data ?? []) as { reported_user_id: string; online_game_id: string }[]) {
+    if (!reported.has(row.reported_user_id)) reported.set(row.reported_user_id, row.online_game_id);
+  }
+  return { muted, reported };
+}
+
 export async function setChatMute(gameId: string, targetUserId: string, muted: boolean): Promise<void> {
   if (!supabase) return;
   const { error } = await supabase.rpc('mute_online_game_participant', {
