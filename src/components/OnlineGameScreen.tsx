@@ -178,6 +178,10 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   // TAZELEMEDE doğru; ilk yüklemede korunacak bir şey yok ve ekran beyaz
   // "Yükleniyor…"da asılı kalıyordu (14 Ağustos 2026, cihaz testi).
   const [loadFailed, setLoadFailed] = useState(false);
+  // `refresh` effect'in içinde tanımlı ve bağımlılıkları `[game.id,
+  // mySlotIndex]` — `loaded`ı closure'dan okumak İLK render'ın (false)
+  // değerine saplanırdı; "yüklenmiş ekranı koru" kararı bu ref'ten veriliyor.
+  const loadedRef = useRef(false);
   // Panelin "Tekrar Dene"si effect'in içindeki refresh'i çağırabilsin diye
   // (App.tsx'teki `refreshCloudSavesRef` deseni).
   const refreshRef = useRef<() => void>(() => {});
@@ -339,21 +343,40 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     if (mySlotIndex < 0) return;
     let cancelled = false;
     const refresh = async () => {
-      const [publicState, myRack, rows] = await Promise.all([
-        fetchOnlineGameState(game.id),
-        getMyOnlineRack(game.id),
-        fetchOnlineGameMoves(game.id),
-      ]);
+      // Üç çağrının HEPSİ bu try'ın içinde olmak ZORUNDA: `getMyOnlineRack`
+      // hatada `throw` ediyor (`fetchOnlineGameState`/`fetchOnlineGameMoves`
+      // ise null/[] dönüyor). İlk sürümde yalnızca "null döndü" dalı ele
+      // alınmıştı ve çevrimdışıyken rack çağrısı ÖNCE fırladığından
+      // `Promise.all` reddediliyor, `setLoadFailed` satırına hiç
+      // ulaşılmıyordu — ekran yine sonsuz "Yükleniyor…"da kalıyordu
+      // (kullanıcı cihazda bildirdi, 14 Ağustos 2026). Portun `loadGame`'i
+      // üçünü de tek bir try/catch'e aldığından orada bu delik yoktu; testim
+      // de o yüzden geçmişti. Hangi çağrının nasıl başarısız olduğu
+      // kullanıcı için önemsiz — "yükleyemedik" tek bir sonuç.
+      let publicState: Awaited<ReturnType<typeof fetchOnlineGameState>> = null;
+      let myRack: TileModel[] = [];
+      let rows: OnlineMoveRow[] = [];
+      try {
+        [publicState, myRack, rows] = await Promise.all([
+          fetchOnlineGameState(game.id),
+          getMyOnlineRack(game.id),
+          fetchOnlineGameMoves(game.id),
+        ]);
+      } catch (err) {
+        console.error('[Kelimeki] Canlı oyun durumu alınamadı:', err);
+        publicState = null;
+      }
       if (cancelled) return;
       if (!publicState) {
         // Sunucuya ulaşılamadı. Zaten yüklenmiş bir ekran varsa ona
         // DOKUNMUYORUZ (bayat veri, hiç veriden iyidir); yüklenmemişse
         // kullanıcıyı sonsuz "Yükleniyor…"da bırakmak yerine anlatıyoruz.
-        setLoadFailed(true);
+        if (!loadedRef.current) setLoadFailed(true);
         return;
       }
       dispatch({ type: 'SYNC_ONLINE_STATE', publicState, myRack, mySlotIndex });
       setMoveRows(rows);
+      loadedRef.current = true;
       setLoaded(true);
       setLoadFailed(false);
 
