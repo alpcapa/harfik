@@ -48,7 +48,9 @@ import 'membership_perks_box.dart';
 import 'recent_games_section.dart';
 import '../tokens.dart';
 import '../game/neo_box.dart';
+import '../auth/auth_modal.dart';
 import '../auth/legal_modals.dart';
+import '../game/modal_shell.dart';
 import '../feedback/feedback_modal.dart';
 import '../../data/feedback_api.dart';
 
@@ -607,6 +609,80 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     await _syncCloud();
   }
 
+  /// Web `handleStart` paritesi (14 Ağustos 2026 — porta hiç geçmemişti):
+  /// misafir "OYUNU BAŞLAT"a bastığında önce bir giriş uyarısı çıkar.
+  /// `loading` (kimlik henüz çözülüyor) iken uyarı GÖSTERİLMEZ — web'in
+  /// `!loading && !user` koşulu; aksi halde girişli kullanıcı, oturum
+  /// okunurken bastığında haksız yere uyarı görürdü.
+  Future<void> _handleStart(SetWordSource words) async {
+    final auth = widget.services.auth;
+    if (!auth.loading && auth.user == null) {
+      final proceed = await _showGuestWarning();
+      if (!proceed || !mounted) return;
+    }
+    await _startNewGame(words);
+  }
+
+  /// `true` → "Devam" (misafir olarak başlat).
+  ///
+  /// ÜÇ ayrı sonuç var ve ikisi de oyunu başlatMIYOR, o yüzden `bool`
+  /// yetmiyor: "Giriş Yap" giriş penceresini açar, ✕/dışarı dokunuş ise
+  /// kullanıcıyı sessizce kurulum ekranında bırakır (web'de de Escape/✕
+  /// ne oyunu başlatıyor ne giriş açıyor).
+  Future<bool> _showGuestWarning() async {
+    final auth = widget.services.auth;
+    final choice = await showDialog<_GuestChoice>(
+      context: context,
+      builder: (ctx) => KModal(
+        // Web'de bu popup başlıksız (yalnızca ✕). Ham `Dialog` KURULMADI:
+        // bu projede aynı sapma üç kez düzeltildi (Parça 26/47/50) — web
+        // hangi bileşeni kullanıyorsa portta da ortak kabuk kullanılır.
+        title: '',
+        onClose: () => Navigator.of(ctx).pop(_GuestChoice.dismiss),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Oyunların istatistikleri, k-lig ve arkadaşınla canlı oyun '
+              'için lütfen giriş yapın.',
+              style: TextStyle(
+                  fontFamily: 'SpaceGrotesk',
+                  fontSize: 14,
+                  height: 1.625,
+                  color: kText),
+            ),
+            const SizedBox(height: 16),
+            // Kabul butonu SOLDA — web'in düz flex sırası (Parça 25).
+            Row(children: [
+              Expanded(
+                child: NeoButton(
+                  label: 'GİRİŞ YAP',
+                  variant: NeoButtonVariant.accent,
+                  onPressed: () => Navigator.of(ctx).pop(_GuestChoice.login),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: NeoButton(
+                  label: 'DEVAM',
+                  variant: NeoButtonVariant.neutral,
+                  onPressed: () => Navigator.of(ctx).pop(_GuestChoice.proceed),
+                ),
+              ),
+            ]),
+          ],
+        ),
+      ),
+    );
+    // "Giriş Yap" dalı: popup kapandıktan SONRA giriş penceresini aç (web
+    // de önce uyarıyı kapatıp sonra AuthModal'ı açıyor).
+    if (choice == _GuestChoice.login && mounted) {
+      await showLoginModal(context, auth, feedback: widget.services.feedback);
+    }
+    return choice == _GuestChoice.proceed;
+  }
+
   Future<void> _startNewGame(SetWordSource words) async {
     final controller = GameController(words: words);
     // Web doStart paritesi: 1. oyuncu her zaman gerçek kişi — oturum
@@ -1149,7 +1225,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                   variant: NeoButtonVariant.accent,
                   fontSize: 14,
                   letterSpacing: 2,
-                  onPressed: words == null ? null : () => _startNewGame(words),
+                  onPressed: words == null ? null : () => _handleStart(words),
                 ),
               ),
             ),
@@ -1498,3 +1574,7 @@ class _SavedGameRow extends StatelessWidget {
     );
   }
 }
+
+/// Misafir giriş uyarısının üç sonucu — ikisi de oyunu başlatmıyor, bu
+/// yüzden `bool` yetmiyor (bkz. `_showGuestWarning`).
+enum _GuestChoice { login, proceed, dismiss }

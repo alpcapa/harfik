@@ -555,6 +555,18 @@ void main() {
       lessThan(tester.getTopLeft(find.text('PUAN')).dx),
     );
 
+    // 14 Ağustos 2026 (kullanıcı isteği): OHP, Puan'a YAKLAŞTIRILDI.
+    // OHP sağa hizalı olduğundan KENDİ genişliği konumunu etkilemiyor —
+    // onu sağa taşıyan tek şey Puan kutusunun daralması (52 → 44, web'de
+    // w-12 → w-10 ile AYNI 8px). Ölçülen şey bu yüzden OHP'nin SAĞ kenarı
+    // ile satırın sağ kenarı arasındaki mesafe.
+    // İki değer de kendi kutusunda SAĞA hizalı ve kutular Row'da bitişik,
+    // yani aradaki mesafe tam olarak Puan kutusunun genişliği: 52 iken 44.
+    final ohpRight = tester.getBottomRight(find.text('12.78')).dx;
+    final puanRight = tester.getBottomRight(find.text('100')).dx;
+    expect(puanRight - ohpRight, closeTo(44, 0.5),
+        reason: 'OHP, Puan\'a yaklaştırıldı — Puan kutusu 52 değil 44');
+
     // Değer 2 basamak, DÜZ GRİ, kalın DEĞİL ve satırın kendi 14px'inden
     // KÜÇÜK (Puan mavi/kalın/14 kalır — "gri yaptım" iddiası Puan'ı da
     // griye çekseydi bu ikinci blok olmadan geçerdi).

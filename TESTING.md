@@ -77,6 +77,13 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       dönmek (senkron) ya da başka ekrana geçip dönmek metni DEĞİŞTİRMEMELİ;
       özellikle rakibin son hamle özeti ("X: +N puan …") görünmemeli
       (6 Ağustos 2026'da bulunan üç-farklı-mesaj hatası).
+- [ ] **Tahta alt şeridi — "Nasıl Oynanır?" (14 Ağustos 2026).** Tahtanın
+      altında SOLDA "Hamleler" (Canlı'da yanında "· Mesajlaşma"), SAĞDA
+      **"Nasıl Oynanır?"** olmalı; eski `- kelime X2 · - kelime X3`
+      açıklaması HİÇBİR yerde görünmemeli. Dokununca kurallar açılmalı —
+      hem yerel/YZ hem Canlı oyun ekranında ayrı ayrı dene (ikisi farklı
+      kod yolundan açıyor). Yerel ekranda kapatınca oyun normal devam
+      etmeli (kurallar penceresi oyunu etkilemez).
 - [ ] **Sürükle-bırak.** Raftan tahtaya, tahtada taşıma, tahtadan rafa geri
       alma — üçü de çalışmalı (yerel oyundakiyle aynı davranış).
 - [ ] **Realtime.** Karşı taraf oynadığında ekran kendiliğinden güncellenmeli.
@@ -609,3 +616,9 @@ gerekiyor).
 - [ ] **k-lig sırası tutarlı.** Listedeki sıra/puan (leaderboard view) ile
       "senin sıran" satırı (my_leaderboard_rank RPC) aynı toplamı (ödül
       dahil) göstermeli.
+- [ ] **OHP ↔ Puan hizası (14 Ağustos 2026).** k-lig tablosunda OHP sütunu
+      Puan'a yakın durmalı (aralarında geniş bir boşluk kalmamalı) ve
+      başlık satırı / liste satırları / "senin sıran" kısayolu ÜÇÜ DE aynı
+      hizada olmalı — üçü ayrı kod yerinde çizildiğinden biri atlanmışsa
+      sütunlar kayar. Mobil uygulamayla yan yana koy: iki platformda da
+      aynı görünmeli.

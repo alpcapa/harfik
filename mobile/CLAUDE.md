@@ -3605,6 +3605,89 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        çiftinin `legal_modals.dart` gibi otomatik bir parite testi YOK;
        biri değişirse öteki elle güncellenmeli.
 
+   - ✅ **Parça 92 — üç kullanıcı isteği, üçü de İKİ platformda birden
+     (14 Ağustos 2026, `setup_screen.dart`, `leaderboard_modal.dart`,
+     `board_widget.dart`, `game_screen.dart`, `online_game_screen.dart` +
+     web `Board.tsx`/`App.tsx`/`OnlineGameScreen.tsx`/`Leaderboard.tsx`):**
+     Kullanıcı: *"1. Mobilde girişsiz YZ oyun başlatınca web'deki uyarı
+     çıkmıyor. 2. Leaderboard OHP kolonunu az daha puan kolonuna
+     yaklaştır. 3. Board altındaki X2/X3 legendları kaldır. Onun yerine
+     board'un sağ alt köşesine Hamleler, Mesajlaşma ile aynı stil, 'Nasıl
+     Oynanır?' ekle."*
+     - **(1) Misafir uyarısı — web'de VARDI, porta hiç girmemişti.** Web
+       `Setup.tsx`'in `handleStart`i giriş yapılmamışsa oyunu BAŞLATMADAN
+       önce bir uyarı açıyor ("Oyunların istatistikleri, k-lig ve
+       arkadaşınla canlı oyun için lütfen giriş yapın." + GİRİŞ YAP /
+       DEVAM); port doğrudan `_startNewGame`e gidiyordu. Kaynak okunup
+       aynı metin/butonlar `KModal(title: '')` ile taşındı (`GameOverModal`
+       emsali — ham `Dialog` kurmak bu projede üç kez geri alındı, bkz.
+       Parça 26/47/50).
+       - **Sonuç ÜÇ DEĞERLİ olmak ZORUNDA:** ilk taslağım "GİRİŞ YAP" ile
+         ✕'i aynı `false`a düşürüyordu, yani ayırt edilemiyorlardı ve
+         yanına gereksiz bir yan-etki bayrağı koymuştum. `_GuestChoice
+         {login, proceed, dismiss}` ile üçü ayrıldı: DEVAM → oyun başlar,
+         GİRİŞ YAP → giriş penceresi açılır ve oyun BAŞLAMAZ (web'de de
+         öyle), ✕/zemin → hiçbir şey olmaz. **Bir diyaloğun dönüşü
+         `bool` ise "iptal" ile "başka bir yola saptı"yı ayıramazsın** —
+         `showDialog<T>` zaten jenerik, enum kullanmanın maliyeti yok.
+       - `auth.loading` iken uyarı GÖSTERİLMEZ (kimlik henüz bilinmiyorken
+         girişli kullanıcıyı yanlışlıkla durdurmamak için) — web'in
+         `profileLoading` beklemesiyle aynı refleks.
+     - **(2) OHP ↔ Puan — sağa hizalı bir sütunu SOLA çekmenin tek yolu
+       SAĞINDAKİNİ daraltmak.** OHP'nin kendi genişliğini büyütmek/
+       küçültmek onu yerinden oynatmaz (metin sağa yaslı; kutu büyüyünce
+       yalnızca sol kenarı büyür). Puan 52 → **44** (web `w-12`→`w-10`);
+       ölçüldü: iki sütunun sağ kenarları arası **44.0 px**, web'de de
+       aynı. Web'de ÜÇ çağrı yeri birden değişmek zorunda (başlık, satır,
+       "senin sıran") — biri atlanırsa hiza bozulur.
+     - **(3) Tahta alt şeridi.** `- kelime X2 · - kelime X3` legend'ı
+       silinip yerine Hamleler/Mesajlaşma ile AYNI stilde (SpaceMono 12
+       bold, `letterSpacing 0.5`, `kAccent`) bir "Nasıl Oynanır?" butonu
+       kondu; soru-işareti ikonu `_HelpIconPainter` ile web'in SVG
+       path'lerinden birebir çizildi (`RelationIcons` ilkesi — glyph
+       kopyalanmaz, aynı vektör kullanılır). Yeni opsiyonel `onOpenHelp`
+       prop'u; verilmezse buton hiç çizilmez. İKİ oyun ekranı da
+       `showHelpModal(context)` bağladı (bilinçli kod tekrarı çifti).
+       **Bilgi kaybı yok:** X2/X3 zaten tahtanın kendi filigranlarında ve
+       kurallar ekranında yazılı.
+     - **Test — negatif eş doğrulamasıyla, ÜÇÜ AYRI AYRI:** (a)
+       `setup_screen_test.dart` — mevcut "oyun başlar" testi artık uyarıyı
+       görüp DEVAM'a basıyor, artı iki YENİ test (girişli kullanıcıda
+       uyarı HİÇ çıkmamalı; ✕ ne oyun başlatmalı ne giriş penceresi
+       açmalı); (b) `score_card_test.dart`'ın OHP testine iki sütunun
+       sağ kenar farkını 44'e sabitleyen bir assertion; (c)
+       `game_screen_test.dart` — legend metinlerinin YOK, "Nasıl
+       Oynanır?"ın VAR olduğu ve dokununca kuralların açıldığı. Üç lib
+       değişikliği ayrı ayrı geri alınınca üçü de GERÇEKTEN düştü
+       (`Found 0 widgets with text containing lütfen giriş yapın`;
+       `Expected: a numeric value within <0.5> of <44> Actual: <52.0>`;
+       `Found 0 widgets with text "Nasıl Oynanır?"`), geri konunca yeşile
+       döndü.
+     - **Test yazarken düşülen iki tuzak (kayda geçsin):** (1) kurallar
+       penceresinin varsayılan adımı "NASIL OYNANIR?" DEĞİL **"HIZLI
+       BAŞLANGIÇ"** — başlığı tahminle yazan assertion 0 widget buldu;
+       (2) `auth_test.dart`'ın hesap menüsü testi `find.textContaining
+       ('Nasıl Oynanır?')` kullanıyordu ve artık İKİ eşleşme buluyor
+       (menü maddesi + tahta şeridi) — emoji önekiyle TAM eşleşmeye
+       (`'❓  Nasıl Oynanır?'`) çevrildi. **Yeni bir yere var olan bir
+       metni eklerken, o metni arayan MEVCUT testleri de tara.**
+     - **Web duman testi de bu değişiklikle İKİ KEZ kırıldı** (ayrıntı ve
+       kalıcı ders kök `CLAUDE.md`'de): Playwright'ın `getByRole(name:)`
+       eşleşmesi varsayılan olarak büyük/küçük harf DUYARSIZ ALT DİZE
+       arıyor → "Nasıl **Oyna**nır?" `OYNA` butonuyla çakıştı; `exact:
+       true` eklenince bu sefer 0 sonuç, çünkü `exact` aynı zamanda
+       harf DUYARLI ve DOM metni `Oyna` (büyük harf yalnızca CSS
+       `uppercase`). Doğrusu `{ name: 'Oyna', exact: true }`.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       405/405 yeşil** (402'den +3). Web `npm run lint` + `npm run build`
+       + `npm run test` (Playwright, 2 passed) temiz. `kelimeki_core`'a
+       hiç dokunulmadı.
+     - **`mobile/` DIŞINDA dosya değişti** (web yarısı aynı gün, aynı
+       dalda) → kök `CLAUDE.md` + `TESTING.md` aynı commit'te güncellendi
+       (Parça Bitirme Kontrol Listesi madde 1).
+     - **Doğrulama sınırı:** cihazda görsel/dokunma teyidi kullanıcıdan
+       bekleniyor — `mobile/TESTING.md` bölüm 1/4'e maddeler eklendi.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —

@@ -61,6 +61,7 @@ import {
   triggerAiTurn,
 } from '../lib/api';
 import { ChatSettingsModal } from './ChatSettingsModal';
+import { HelpModal } from './HelpModal';
 import type { GameState, HistoryEntry, Tile as TileModel } from '../game/types';
 import type { OnlineGame, OnlineGameMessageRow, OnlineGameSlot, OnlineMoveRow, WordMeaning } from '../lib/database.types';
 
@@ -170,6 +171,10 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   const [busy, setBusy] = useState(false);
   const [validating, setValidating] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  // Tahtanın alt şeridindeki "Nasıl Oynanır?" linki (14 Ağustos 2026) —
+  // yerel ekranda Tutorial'ın state'i yeniden kullanılıyor, burada öyle bir
+  // state olmadığından kendi bayrağı var.
+  const [showHelp, setShowHelp] = useState(false);
   const [showTiles, setShowTiles] = useState(false);
   // Header'daki skor kutusuna dokunulan oyuncunun skor kartı.
   const [scoreCardPlayer, setScoreCardPlayer] = useState<PlayerSummary | null>(null);
@@ -999,6 +1004,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
           onCellClick={handleCellClick}
           moveStatus={moveStatus}
           onOpenHistory={() => setShowHistory(true)}
+          onOpenHelp={() => setShowHelp(true)}
           onOpenMessaging={handleOpenMessaging}
           hasUnreadMessage={unreadCount > 0}
           dragHiddenKey={dragHiddenKey}
@@ -1269,6 +1275,8 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
         <RemainingTilesModal state={state} myIndex={mySlotIndex} onClose={() => setShowTiles(false)} />
       )}
       {showHistory && <MoveHistoryModal state={historyState} onClose={() => setShowHistory(false)} />}
+
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
 
       {showChatIntro && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">

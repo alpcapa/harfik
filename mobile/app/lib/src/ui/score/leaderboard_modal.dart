@@ -308,7 +308,7 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
                 const SizedBox(width: 28, child: _HeadLabel('SIRA')),
                 const Expanded(child: _HeadLabel('OYUNCU')),
                 _buildOhpHeader(),
-                const SizedBox(width: 52, child: _HeadLabel('PUAN', right: true)),
+                const SizedBox(width: 44, child: _HeadLabel('PUAN', right: true)),
               ]),
             ),
             const SizedBox(height: 4),
@@ -573,7 +573,7 @@ class _Row extends StatelessWidget {
                         fontFamily: 'SpaceMono', fontSize: 11, color: _muted)),
               ),
               SizedBox(
-                width: 52,
+                width: 44,
                 child: Text('$score',
                     textAlign: TextAlign.right,
                     style: const TextStyle(

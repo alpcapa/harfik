@@ -181,7 +181,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                 </span>
               )}
             </span>
-            <span className="w-12 text-right">Puan</span>
+            <span className="w-10 text-right">Puan</span>
           </div>
           {rows.length === 0 ? (
             <p className="text-muted text-xs font-mono text-center py-4">
@@ -230,7 +230,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                       <span className="w-12 text-right text-[11px] text-muted shrink-0">
                         {formatOhp(r.avg_move_score)}
                       </span>
-                      <span className="w-12 text-right font-bold text-accent shrink-0">
+                      <span className="w-10 text-right font-bold text-accent shrink-0">
                         {r.total_score?.toLocaleString('tr-TR') ?? '—'}
                       </span>
                     </button>
@@ -274,7 +274,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                 <span className="w-12 text-right text-[11px] text-muted shrink-0">
                   {formatOhp(myRank.avg_move_score)}
                 </span>
-                <span className="w-12 text-right font-bold text-accent shrink-0">
+                <span className="w-10 text-right font-bold text-accent shrink-0">
                   {myRank.total_score.toLocaleString('tr-TR')}
                 </span>
               </button>

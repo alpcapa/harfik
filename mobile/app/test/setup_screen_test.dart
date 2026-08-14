@@ -47,10 +47,11 @@ Future<AppStorage> openTestStorage() async {
   );
 }
 
-AppServices services({Future<AppStorage>? storage}) => AppServices(
+AppServices services({Future<AppStorage>? storage, AuthService? auth}) =>
+    AppServices(
       dictionary: Future.value(words),
       meanings: MeaningStore(bundle: rootBundle),
-      auth: AuthService(null),
+      auth: auth ?? AuthService(null),
       supabase: null,
       versionGate: VersionGateStatus.ok,
       storage: storage,
@@ -166,6 +167,13 @@ void main() {
 
     await tester.tap(find.text('OYUNU BAŞLAT'));
     await tester.pumpAndSettle();
+    // Misafir artık önce giriş uyarısından geçiyor (web `handleStart`
+    // paritesi, 14 Ağustos 2026) — "DEVAM" misafir olarak başlatır.
+    expect(find.textContaining('lütfen giriş yapın'), findsOneWidget);
+    expect(find.byType(GameScreen), findsNothing);
+    await tester.tap(find.text('DEVAM'));
+    await tester.pumpAndSettle();
+
     expect(find.byType(GameScreen), findsOneWidget);
     final screen = tester.widget<GameScreen>(find.byType(GameScreen));
     final players = screen.controller.state.players;
@@ -174,6 +182,35 @@ void main() {
     expect(players[0].isAI, isFalse);
     expect(players[1].name, 'Yapay Zeka 2');
     expect(players[1].isAI, isTrue);
+  });
+
+  // Negatif eş: uyarı KOŞULSUZ gösterilseydi yukarıdaki test de geçerdi.
+  // Girişli kullanıcı uyarıyı HİÇ görmemeli (web `!loading && !user`).
+  testWidgets('girişli kullanıcıda giriş uyarısı ÇIKMAZ — oyun doğrudan açılır',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await pumpSetup(
+        tester, services(auth: AuthService.fake(user: fakeUser('me'))));
+
+    await tester.tap(find.text('OYUNU BAŞLAT'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('lütfen giriş yapın'), findsNothing);
+    expect(find.byType(GameScreen), findsOneWidget);
+  });
+
+  testWidgets('misafir uyarısında ✕ ne oyunu başlatır ne giriş açar',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await pumpSetup(tester, services());
+
+    await tester.tap(find.text('OYUNU BAŞLAT'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Kapat'));
+    await tester.pumpAndSettle();
+
+    // Web'de de Escape/✕ üçüncü bir sonuç: kullanıcı kurulum ekranında kalır.
+    expect(find.byType(GameScreen), findsNothing);
+    expect(find.text('OYUNU BAŞLAT'), findsOneWidget);
   });
 
   testWidgets(

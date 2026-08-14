@@ -1379,6 +1379,10 @@ export default function App() {
         onCellClick={handleCellClick}
         moveStatus={moveStatus}
         onOpenHistory={() => setShowHistory(true)}
+        // Aynı HelpModal'ı Tutorial da kullanıyor; kapanışta
+        // `markQuickStartSeen()` çağrıldığından elle açmak da "görüldü"
+        // sayılır — Setup'ın "Nasıl oynanır?" linkiyle aynı kural.
+        onOpenHelp={() => setShowPostStartTutorial(true)}
         dragHiddenKey={dragHiddenKey}
         dragOverKey={ghost?.overKey ?? null}
         dragOverValid={ghost?.overValid ?? false}

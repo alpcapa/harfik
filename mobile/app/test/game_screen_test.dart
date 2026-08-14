@@ -1071,4 +1071,27 @@ void main() {
     // Hamle işlenmemeli — sıra hâlâ bende.
     expect(controller.state.turnCount, turnBefore);
   });
+
+  // 14 Ağustos 2026 (kullanıcı isteği): tahtanın alt şeridindeki X2/X3
+  // legend'ı kalktı, yerine "Hamleler"/"Mesajlaşma" ile AYNI stilde bir
+  // "Nasıl Oynanır?" linki geldi. Legend'ın taşıdığı bilgi kaybolmuyor —
+  // bonus renkleri tahtada zaten büyük filigranlarla yazılı.
+  testWidgets('board alt şeridi: X2/X3 legend YOK, "Nasıl Oynanır?" VAR ve '
+      'kurallar modalını açıyor', (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await pumpGame(tester, GlobalKey());
+
+    // Legend metinleri tamamen kalkmalı. Çıplak 'X2' aranmıyor: tahtanın
+    // KENDİSİ bonus bölgesinin arkasına büyük bir "X2" filigranı yazıyor
+    // ve o DURUYOR — aranan şey legend satırının açıklama metni.
+    expect(find.text('- kelime X2'), findsNothing);
+    expect(find.text('- kelime X3'), findsNothing);
+
+    expect(find.text('Nasıl Oynanır?'), findsOneWidget);
+    await tester.tap(find.text('Nasıl Oynanır?'));
+    await tester.pumpAndSettle();
+    // HelpModal açıldı mı — varsayılan adımı "Hızlı Başlangıç"
+    // (başlık KModal'dan geçtiği için trUpper).
+    expect(find.text('HIZLI BAŞLANGIÇ'), findsOneWidget);
+  });
 }

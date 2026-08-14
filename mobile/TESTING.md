@@ -171,6 +171,20 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       turunda [≈0 ms] oynuyordu — kullanıcı kendi hamlesinin mesajını hiç
       göremiyordu; düzeltme + enjekte edilebilir `aiThinkDelay`, bkz.
       mobile/CLAUDE.md Parça 21).
+- [ ] **Girişsiz başlatınca uyarı (14 Ağustos 2026, Parça 92).** ÇIKIŞ
+      yapmış hâlde "Oyunu Başlat"a bas: web'dekiyle aynı uyarı çıkmalı
+      ("Oyunların istatistikleri, k-lig ve arkadaşınla canlı oyun için
+      lütfen giriş yapın." + GİRİŞ YAP / DEVAM). **Üç yolu da dene:**
+      DEVAM → oyun başlar; GİRİŞ YAP → giriş penceresi açılır ve oyun
+      BAŞLAMAZ; ✕ (ya da zemine dokunma) → hiçbir şey olmaz. Girişliyken
+      bu uyarı HİÇ çıkmamalı.
+- [ ] **Tahta alt şeridi — "Nasıl Oynanır?" (aynı parça).** Tahtanın
+      altında SAĞDA "Nasıl Oynanır?" olmalı; eski `- kelime X2 · -
+      kelime X3` açıklaması HİÇBİR yerde görünmemeli. Dokununca kurallar
+      açılmalı — hem yerel/YZ hem Canlı oyun ekranında ayrı ayrı dene.
+      Yazı stili solundaki "Hamleler" ile birebir aynı olmalı (punto/
+      renk/kalınlık) ve soru-işareti ikonu boş kare DEĞİL gerçek bir
+      daire+soru işareti olarak çizilmeli.
 - [ ] **Sürükle-bırak.** Raftan tahtaya, tahtada taşıma, tahtadan rafa geri
       alma. Hayalet taş parmağın ÜSTÜNDE görünmeli (30px kaldırma).
       **Sürükleme AKICI olmalı — hafif titreme/takılma bir REGRESYONDUR**
@@ -471,6 +485,11 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       BİREBİR AYNI olmalı; ikisi sunucuda aynı ifadeden geliyor, ayrışırsa
       view'lardan biri bozulmuş demektir. Aynı sayı web'de de aynı
       görünmeli (`kelimeki.com` ile yan yana).
+      **Hiza (14 Ağustos 2026, Parça 92):** OHP Puan'a yakın durmalı,
+      aralarında geniş bir boşluk kalmamalı; başlık satırı, liste
+      satırları ve "senin sıran" kısayolu ÜÇÜ DE aynı hizada olmalı.
+      Web ile yan yana koy — iki platformda da aynı (sağ kenarlar arası
+      44px) görünmeli.
 - [ ] **Misafir kuyruğu.** Çıkış yap, misafirken bir oyunu BİTİR, sonra
       giriş yap → o oyun hesabına işlenmeli (web'deki Skor Kartı'ndan
       doğrula).

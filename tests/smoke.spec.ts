@@ -31,7 +31,14 @@ test('Setup ekranı açılır, 2 kişilik oyun başlar, YZ hamle yapar', async (
     await page.locator('button[aria-label="Kapat"]').last().click();
   }
 
-  const oynaButton = page.getByRole('button', { name: 'OYNA' });
+  // `exact: true` ŞART: Playwright'ın `name` eşleşmesi varsayılan olarak
+  // büyük/küçük harf duyarsız ALT DİZE arıyor, ve 14 Ağustos 2026'dan beri
+  // tahtanın alt şeridinde "Nasıl Oynanır?" var — "oyna" onun da içinde
+  // geçtiğinden locator iki öğeye çözülüp strict mode ihlali veriyordu.
+  // Görünen metin `uppercase` CSS'iyle büyük harf; erişilebilir ad ise DOM
+  // metni, yani "Oyna". `exact: true` aynı zamanda büyük/küçük harfe DUYARLI
+  // olduğundan tam metin yazılmak zorunda.
+  const oynaButton = page.getByRole('button', { name: 'Oyna', exact: true });
   await expect(oynaButton).toBeVisible();
 
   // Onay modalı açılınca sayfada AYNI isimde ikinci bir "Pas Geç" butonu

@@ -98,6 +98,13 @@ class BoardWidget extends StatelessWidget {
   /// sohbet kapalıyken okunmamış mesaj geldiğini belli etmek için.
   final bool hasUnreadMessage;
 
+  /// Alt şeridin SAĞ ucundaki "Nasıl Oynanır?" linki (14 Ağustos 2026,
+  /// kullanıcı isteği) — buraya kadar X2/X3 açıklaması duruyordu. Bonus
+  /// renkleri tahtada zaten büyük filigranlarla yazılı olduğundan legend'ın
+  /// taşıdığı bilgi kaybolmuyor; kurallara her yerden erişim kazanılıyor.
+  /// Verilmezse (salt-okunur önizlemeler) link hiç çizilmez.
+  final VoidCallback? onOpenHelp;
+
   /// Alt bilgi şeridini tamamen gizler — salt-okunur önizlemeler (web
   /// hideFooter).
   final bool hideFooter;
@@ -117,6 +124,7 @@ class BoardWidget extends StatelessWidget {
     this.onOpenHistory,
     this.onOpenMessaging,
     this.hasUnreadMessage = false,
+    this.onOpenHelp,
     this.hideFooter = false,
   });
 
@@ -237,7 +245,7 @@ class BoardWidget extends StatelessWidget {
   }
 
   /// Alt bilgi şeridi — solda "Hamleler" (+ Canlı oyunda "· Mesajlaşma"),
-  /// sağda X2/X3 açıklaması.
+  /// sağda "Nasıl Oynanır?".
   Widget _footer() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
@@ -317,51 +325,32 @@ class BoardWidget extends StatelessWidget {
               ],
             ],
           ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _legendItem(_goldZone, 'X2', '- kelime X2'),
-              const SizedBox(width: 8),
-              _legendItem(_centerZone, 'X3', '- kelime X3'),
-            ],
-          ),
+          if (onOpenHelp != null)
+            GestureDetector(
+              onTap: onOpenHelp,
+              behavior: HitTestBehavior.opaque,
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _HelpIcon(),
+                  SizedBox(width: 4),
+                  Text(
+                    'Nasıl Oynanır?',
+                    style: TextStyle(
+                      fontFamily: 'SpaceMono',
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                      color: kAccent,
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
   }
-
-  Widget _legendItem(Gradient swatch, String label, String desc) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              gradient: swatch,
-              borderRadius: BorderRadius.circular(1),
-            ),
-          ),
-          const SizedBox(width: 3),
-          Text(
-            label,
-            style: const TextStyle(
-              fontFamily: 'SpaceMono',
-              fontSize: 8,
-              fontWeight: FontWeight.bold,
-              color: kMuted,
-            ),
-          ),
-          const SizedBox(width: 3),
-          Text(
-            desc,
-            style: const TextStyle(
-              fontFamily: 'SpaceMono',
-              fontSize: 8,
-              color: Color(0xB35A6673), // web text-muted/70
-            ),
-          ),
-        ],
-      );
 
   Widget _buildCell(
     int r,
@@ -837,4 +826,49 @@ class _ChatBubbleIconPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ChatBubbleIconPainter oldDelegate) => false;
+}
+
+/// "Nasıl Oynanır?" linkinin başındaki soru işareti ikonu — web `HelpIcon`
+/// SVG'sinin (daire + soru işareti kancası + nokta) portu. Path verisi
+/// KOPYALANMAMALI; aynı şeyi açan iki kontrol aynı görünmeli.
+class _HelpIcon extends StatelessWidget {
+  const _HelpIcon();
+
+  @override
+  Widget build(BuildContext context) => const SizedBox(
+        width: 12,
+        height: 12,
+        child: CustomPaint(painter: _HelpIconPainter(kAccent)),
+      );
+}
+
+class _HelpIconPainter extends CustomPainter {
+  final Color color;
+  const _HelpIconPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.width / 24;
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2 * s
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = color;
+    // <circle cx="12" cy="12" r="10" />
+    canvas.drawCircle(Offset(12 * s, 12 * s), 10 * s, paint);
+    // M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3
+    final hook = Path()
+      ..moveTo(9.09 * s, 9 * s)
+      ..arcToPoint(Offset(14.92 * s, 10 * s),
+          radius: Radius.circular(3 * s), clockwise: true)
+      ..cubicTo(14.92 * s, 12 * s, 11.92 * s, 13 * s, 11.92 * s, 13 * s);
+    canvas.drawPath(hook, paint);
+    // M12 17h.01 — yuvarlak uçlu sıfır uzunlukta çizgi = nokta.
+    canvas.drawLine(Offset(12 * s, 17 * s), Offset(12.01 * s, 17 * s), paint);
+  }
+
+  @override
+  bool shouldRepaint(_HelpIconPainter oldDelegate) =>
+      oldDelegate.color != color;
 }

@@ -39,6 +39,14 @@ interface BoardProps {
   onOpenMessaging?: () => void;
   /** `onOpenMessaging` butonunun üstünde küçük bir kırmızı nokta gösterir — sohbet kapalıyken okunmamış mesaj geldiğini belli etmek için. */
   hasUnreadMessage?: boolean;
+  /**
+   * Alt şeridin SAĞ ucundaki "Nasıl Oynanır?" linki (14 Ağustos 2026,
+   * kullanıcı isteği) — buraya kadar X2/X3 açıklaması duruyordu. Kurallar
+   * her zaman erişilebilir olmalı; bonus renkleri zaten tahtada filigranla
+   * yazılı olduğundan legend'ın taşıdığı bilgi kaybolmuyor. Verilmezse
+   * (salt-okunur önizlemeler) link hiç çizilmez.
+   */
+  onOpenHelp?: () => void;
   /** Şu an sürüklenmekte olan, bu tur yerleştirilmiş taşın hücre anahtarı — o hücre boşmuş gibi çizilir. */
   dragHiddenKey?: string | null;
   /** Sürükleme sırasında işaretçinin üzerinde olduğu hücre (bırakma hedefi vurgusu). */
@@ -50,7 +58,7 @@ interface BoardProps {
   onTilePointerMove?: (e: React.PointerEvent<HTMLDivElement>) => void;
   onTilePointerUp?: (e: React.PointerEvent<HTMLDivElement>) => void;
   onTilePointerCancel?: (e: React.PointerEvent<HTMLDivElement>) => void;
-  /** Alt bilgi şeridini (Hamleler linki + Mesajlaşma butonu + X2/X3 açıklaması) gizler — salt-okunur önizlemelerde (bkz. `GameBoardPreview`). */
+  /** Alt bilgi şeridini (Hamleler linki + Mesajlaşma butonu + "Nasıl Oynanır?" linki) gizler — salt-okunur önizlemelerde (bkz. `GameBoardPreview`). */
   hideFooter?: boolean;
   /** Taşları küçük/puan göstermeden çizer — salt-okunur önizlemelerde (bkz. `GameBoardPreview`). */
   compact?: boolean;
@@ -68,12 +76,6 @@ const CENTER_ZONE_STYLE: React.CSSProperties = {
   boxShadow: 'inset 2px 2px 5px rgba(180,80,10,0.35), inset -1px -1px 3px rgba(255,255,255,0.7), 0 2px 4px rgba(180,80,10,0.25)',
 };
 const CENTER_TEXT = 'text-[#7C2D12]';
-
-// Tahtanın hemen altında gösterilen bonus açıklaması.
-const LEGEND = [
-  { label: 'X2', desc: '- kelime X2', bg: 'linear-gradient(135deg, #FDE68A, #FBBF24)', border: 'none' },
-  { label: 'X3', desc: '- kelime X3', bg: 'linear-gradient(135deg, #FDBA74, #F97316)', border: 'none' },
-];
 
 /** Bir oyuncunun ilk hamlesinde mutlaka değmesi gereken köşe hücresindeki ev işareti. */
 function HomeMark({ color }: { color: PlayerColor }) {
@@ -109,11 +111,23 @@ function ChatBubbleIcon({ size = 12 }: { size?: number }) {
   );
 }
 
+/** "Nasıl Oynanır?" linkinin başındaki soru işareti ikonu. */
+function HelpIcon({ size = 12 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+      <path d="M12 17h.01" />
+    </svg>
+  );
+}
+
 export function Board({
   state,
   onCellClick,
   moveStatus,
   onOpenHistory,
+  onOpenHelp,
   onOpenMessaging,
   hasUnreadMessage = false,
   dragHiddenKey = null,
@@ -518,7 +532,7 @@ export function Board({
         )}
       </div>
 
-      {/* Alt bilgi şeridi (Hamleler / Mesajlaşma / X2-X3 açıklaması) — kartın
+      {/* Alt bilgi şeridi (Hamleler / Mesajlaşma / Nasıl Oynanır?) — kartın
           kendi zemini ve gölgesiyle bütünleşik bir alt bölüm; ayrı, asılı
           kalan bir beyaz şerit değil. */}
       {!hideFooter && (
@@ -556,19 +570,15 @@ export function Board({
                 Çevrimdışı
               </div>
             )}
-            {LEGEND.map((item) => (
-              <div
-                key={item.label}
-                className="text-[8px] font-mono flex items-center gap-[3px] text-muted"
+            {onOpenHelp && (
+              <button
+                onClick={onOpenHelp}
+                className="flex items-center gap-1 text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
               >
-                <span
-                  className="w-2 h-2 rounded-[1px]"
-                  style={{ background: item.bg, border: item.border }}
-                />
-                <span className="font-bold">{item.label}</span>
-                <span className="text-muted/70">{item.desc}</span>
-              </div>
-            ))}
+                <HelpIcon />
+                Nasıl Oynanır?
+              </button>
+            )}
           </div>
         </div>
       )}
