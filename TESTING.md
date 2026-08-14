@@ -620,5 +620,9 @@ gerekiyor).
       Puan'a yakın durmalı (aralarında geniş bir boşluk kalmamalı) ve
       başlık satırı / liste satırları / "senin sıran" kısayolu ÜÇÜ DE aynı
       hizada olmalı — üçü ayrı kod yerinde çizildiğinden biri atlanmışsa
-      sütunlar kayar. Mobil uygulamayla yan yana koy: iki platformda da
-      aynı görünmeli.
+      sütunlar kayar. **"OHP" başlığı, altındaki rakamların TAM ÜSTÜNDE
+      (ortalı) durmalı** — sağa kaymış görünmemeli. Mobil uygulamayla yan
+      yana koy: iki platformda da aynı görünmeli.
+      **Negatif eş:** 1 basamaklı bir ortalaması olan bir oyuncu varsa
+      (`9.50` gibi) onun rakamları da 2 basamaklılarla ondalık noktasında
+      hizalı kalmalı — değerler SAĞA yaslı, yalnızca başlık ortalı.

@@ -3640,6 +3640,31 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ölçüldü: iki sütunun sağ kenarları arası **44.0 px**, web'de de
        aynı. Web'de ÜÇ çağrı yeri birden değişmek zorunda (başlık, satır,
        "senin sıran") — biri atlanırsa hiza bozulur.
+       - **AYNI GÜN ikinci tur — "OHP başlığı ortalı değil" (kullanıcı):**
+         doğruydu ve ÖLÇÜLDÜ: başlığın ink merkezi değerlerin **7.07 px
+         sağındaydı**; kıyas için "Puan"ın kendi sapması yalnızca 1.67 px,
+         yani sorun OHP'ye özgüydü. **Sebep alignment değil GENİŞLİK:**
+         iki dize de sağa yaslıyken merkezleri, genişlik farkının YARISI
+         kadar ayrışır — "OHP" 3 karakter/9px (19.53 px ink), değer 5
+         karakter/11px (33.67); (33.67−19.53)/2 = 7.07. "Puan"da fark
+         tesadüfen küçük (26.05 vs 29.39), o yüzden orada göze batmıyor.
+       - **Çözüm sihirli bir kaydırma DEĞİL, kutuyu içeriğe eşitlemek:**
+         sütun 52 → **`_kOhpColumnWidth = 34`** (değerin ink genişliği) ve
+         başlık `TextAlign.right` → **`center`**. Kutu daralınca SAĞ kenar
+         yerinde kalır (boşluk `Expanded` "Oyuncu"ya gider), yani 44 px'lik
+         OHP↔Puan hizası ve değerlerin konumu HİÇ değişmez. **Değerler
+         sağa yaslı KALMALI** — başlığı ortalamak için değerleri de
+         ortalamak, 1 basamaklı bir ortalamada (`9.50`) ondalık hizasını
+         bozardı. Web'de aynı sayı `w-[34px]`; ölçülen kalan sapma 0.16 px.
+       - **Test SIHIRLI SAYIYI değil SÖZLEŞMEYİ pinliyor** (Parça 81'in
+         deseni): üç parça birden — başlık ve değer kutuları AYNI
+         genişlikte + başlık `center` + değer `right` + **kutu genişliği
+         gerçekten değerin ink genişliği mi** (`TextPainter` ile aynı
+         stille ÖLÇÜLEREK, `closeTo(34, 1)` sabitiyle değil). Üçü birden
+         gerekli: yalnızca genişlik eşitliğine bakan bir test eski hâlde de
+         geçerdi (ikisi de 52'ydi) — nitekim negatif eşte önce o geçti,
+         hatayı `TextAlign` yakaladı (`Expected: TextAlign.center /
+         Actual: TextAlign.right`).
      - **(3) Tahta alt şeridi.** `- kelime X2 · - kelime X3` legend'ı
        silinip yerine Hamleler/Mesajlaşma ile AYNI stilde (SpaceMono 12
        bold, `letterSpacing 0.5`, `kAccent`) bir "Nasıl Oynanır?" butonu

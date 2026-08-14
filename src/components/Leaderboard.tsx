@@ -156,7 +156,16 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
           <div className="flex items-center text-[9px] uppercase tracking-[1px] text-muted font-mono px-2 pb-1 gap-1">
             <span className="w-6">Sıra</span>
             <span className="flex-1">Oyuncu</span>
-            <span ref={ohpRef} className="relative w-12 shrink-0">
+            {/* Kutu genişliği OHP DEĞERİNİN ink genişliğine eşit (`12.78` =
+                5 monospace karakter × 11px × 0.612 ≈ 34px) — böylece sağa
+                hizalı değerlerle ORTALI başlık aynı merkeze düşüyor.
+                `w-12`(48) + `text-right` iken başlık, değerlerin 7px sağında
+                kalıyordu ("OHP" 3 karakter/9px, değer 5 karakter/11px; iki
+                dize de sağa yaslıyken merkezleri genişlik farkının yarısı
+                kadar ayrışır). Kutunun SAĞ kenarı değişmedi — daralma
+                yalnızca sol kenarı sağa çekip boşluğu "Oyuncu"ya verir,
+                yani OHP↔Puan hizası (44px) korunuyor. */}
+            <span ref={ohpRef} className="relative w-[34px] shrink-0">
               <button
                 type="button"
                 onClick={() => setOhpHintPinned((v) => !v)}
@@ -164,7 +173,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                 onMouseLeave={() => setOhpHintHover(false)}
                 aria-label={OHP_HINT}
                 aria-expanded={ohpHintOpen}
-                className="w-full text-right uppercase tracking-[1px] underline decoration-dotted underline-offset-2 active:opacity-70"
+                className="w-full text-center uppercase tracking-[1px] underline decoration-dotted underline-offset-2 active:opacity-70"
               >
                 OHP
               </button>
@@ -227,7 +236,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                       {/* OHP düz gri, KALIN DEĞİL ve satırın kendi 14px'inden
                           küçük (kullanıcı isteği) — asıl sıralama ölçütü olan
                           "Puan"la görsel olarak yarışmasın diye. */}
-                      <span className="w-12 text-right text-[11px] text-muted shrink-0">
+                      <span className="w-[34px] text-right text-[11px] text-muted shrink-0">
                         {formatOhp(r.avg_move_score)}
                       </span>
                       <span className="w-10 text-right font-bold text-accent shrink-0">
@@ -271,7 +280,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
               >
                 <span className="w-6 font-bold text-muted shrink-0">{myRank.rank}</span>
                 <span className="flex-1 text-text">Sen</span>
-                <span className="w-12 text-right text-[11px] text-muted shrink-0">
+                <span className="w-[34px] text-right text-[11px] text-muted shrink-0">
                   {formatOhp(myRank.avg_move_score)}
                 </span>
                 <span className="w-10 text-right font-bold text-accent shrink-0">

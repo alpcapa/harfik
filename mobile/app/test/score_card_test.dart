@@ -567,6 +567,29 @@ void main() {
     expect(puanRight - ohpRight, closeTo(44, 0.5),
         reason: 'OHP, Puan\'a yaklaştırıldı — Puan kutusu 52 değil 44');
 
+    // 14 Ağustos 2026 (kullanıcı: "OHP başlığı ortalı değil") — başlık ile
+    // değerin ink MERKEZLERİ çakışmalı. Sözleşme üç parçalı ve üçü birden
+    // gerekli: sütun genişliği DEĞERİN ink genişliğine eşit + değer SAĞA
+    // yaslı + başlık ORTALI. Biri bozulursa merkezler ayrışır (eski hâlde
+    // kutu 52 + başlık sağa yaslıydı, başlık değerin ~7px sağındaydı).
+    final ohpBox = tester.getRect(find.text('12.78'));
+    final hdrBox = tester.getRect(find.text('OHP'));
+    expect(hdrBox.width, closeTo(ohpBox.width, 0.5),
+        reason: 'başlık ve değer AYNI genişlikte kutuda olmalı');
+    expect(tester.widget<Text>(find.text('OHP')).textAlign, TextAlign.center);
+    expect(tester.widget<Text>(find.text('12.78')).textAlign, TextAlign.right);
+    // Kutu genişliği gerçekten değerin ink genişliği mi? (Sabit tahminle
+    // değil, aynı stille ÖLÇÜLEREK — punto/biçim değişirse bu düşer.)
+    final tp = TextPainter(
+      text: const TextSpan(
+        text: '12.78',
+        style: TextStyle(fontFamily: 'SpaceMono', fontSize: 11),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    expect(tp.width, closeTo(ohpBox.width, 1.0),
+        reason: 'sütun genişliği = değerin ink genişliği (≈34)');
+
     // Değer 2 basamak, DÜZ GRİ, kalın DEĞİL ve satırın kendi 14px'inden
     // KÜÇÜK (Puan mavi/kalın/14 kalır — "gri yaptım" iddiası Puan'ı da
     // griye çekseydi bu ikinci blok olmadan geçerdi).

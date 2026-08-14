@@ -489,7 +489,11 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       aralarında geniş bir boşluk kalmamalı; başlık satırı, liste
       satırları ve "senin sıran" kısayolu ÜÇÜ DE aynı hizada olmalı.
       Web ile yan yana koy — iki platformda da aynı (sağ kenarlar arası
-      44px) görünmeli.
+      44px) görünmeli. **"OHP" başlığı, altındaki rakamların TAM ÜSTÜNDE
+      (ortalı) durmalı** — sağa kaymış görünmemeli; 1 basamaklı bir
+      ortalama (`9.50`) 2 basamaklılarla ondalık noktasında hizalı kalmalı
+      (değerler sağa yaslı, yalnızca başlık ortalı). Açıklama balonunun
+      kuyruğu da başlığın merkezini göstermeli.
 - [ ] **Misafir kuyruğu.** Çıkış yap, misafirken bir oyunu BİTİR, sonra
       giriş yap → o oyun hesabına işlenmeli (web'deki Skor Kartı'ndan
       doğrula).
