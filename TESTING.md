@@ -194,6 +194,10 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       yani liste "yeşil" görünüyordu çünkü kimse maddeyi koşmamıştı.
       Koşarken **hesap menüsündeki "Admin Paneli" kırmızı sayacına da bak**,
       yalnızca kartın rengine değil: asıl kırılan şey oydu.
+      **14 Ağustos 2026'da GERÇEK hesapla koşuldu ve GEÇTİ** — geri çekme
+      `handled`'a dokunmadı, kart "Yeni" kaldı, sayaç düşmedi; admin okundu
+      işaretleyince `handled` true'ya döndü. Yani madde artık yalnızca
+      "yeşil görünmüyor", gerçekten kanıtlanmış durumda.
 - [ ] **Admin.** Admin Paneli → Geri Bildirim → Şikayetler: kart "Yeni"
       rozetiyle görünmeli, "Sohbeti Görüntüle" (yalnızca BİTMİŞ oyunlarda)
       dökümü açmalı, "Kişiye Git →" Üyeler tablosunda o satırı vurgulamalı.

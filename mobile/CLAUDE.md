@@ -3484,9 +3484,13 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        398/398 yeşil** (389'dan +9). `kelimeki_core`'a hiç dokunulmadı.
      - **`mobile/` DIŞINDA dosya değişti** (`supabase/migrations/`) → kök
        `CLAUDE.md` aynı commit'te güncellendi (Kontrol Listesi madde 1).
-     - **Doğrulama sınırı:** (a) gerçek istemciyle uçtan uca (bir şikayeti
+     - **Doğrulama sınırı:** ~~(a) gerçek istemciyle uçtan uca (bir şikayeti
        geri çekip admin panelinde hâlâ "Yeni" göründüğünü doğrulamak)
-       cihazda/web'de teyit edilmeli; (b) `OnlineApi` testleri sahte bir
+       cihazda/web'de teyit edilmeli~~ — **14 Ağustos 2026'da KAPANDI:**
+       kullanıcı gerçek hesapla geri çekti, `handled` `false` kaldı, kart
+       admin panelinde "Yeni" görünüp sayaca dahil oldu, sonra elle okundu
+       işaretlendi. Ayrıntı + çıkarımın nasıl elemeyle yapıldığı: kök
+       `CLAUDE.md`, aynı maddenin sonu. (b) `OnlineApi` testleri sahte bir
        RPC ile ölçüyor, gerçek PostgREST retry'ı hâlâ Faz 6'nın (çok
        kullanıcılı harness) işi; (d.2) gerçek ağ kesintisiyle "yüklenemedi"
        mesajının göründüğü cihazda doğrulanmalı — `mobile/TESTING.md`
@@ -3566,8 +3570,14 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        dalda) → kök `CLAUDE.md` + `TESTING.md` aynı commit'te güncellendi
        (Parça Bitirme Kontrol Listesi madde 1).
      - **Doğrulama sınırı:** gerçek `myModeration` sorgusu + gerçek
-       `setMute`/`withdrawReports` RPC'leri cihazda iki hesapla
+       `setMute`/`withdrawReports` RPC'leri **mobilde** iki hesapla
        doğrulanmalı — `mobile/TESTING.md` bölüm 10'a madde eklendi.
+       **WEB yarısı aynı gün gerçek hesapla GEÇTİ** (ikon doğru satırda
+       çıktı, temiz satırda çıkmadı, geri çekme çalıştı): yani altta yatan
+       zincirin — `withdraw_online_game_chat_reports`, provenance oyun
+       id'si, bitmiş oyunun id'siyle katılımcılık kontrolü — çalıştığı
+       kanıtlı; mobilde kalan risk yalnızca Dart tarafındaki kablolama
+       (`ChatRepo` zinciri) ve emoji fallback'i.
 
 ## Sonraya Bırakılan İşler (mobil)
 
