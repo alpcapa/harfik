@@ -984,7 +984,10 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       solunda kırmızı **"Çevrimdışı"** belirmeli — ekrandan çıkıp girmeye
       GEREK KALMADAN. Puntosu kardeşleriyle (Hamleler · Mesajlaşma · Nasıl
       Oynanır?) aynı görünmeli, daha küçük değil. Uçak modunu kapat: uyarı
-      kendiliğinden kalkmalı. **Aynısını web'de de kontrol et** — oradaki
+      kendiliğinden kalkmalı. **Uçak modunu Kontrol Merkezi'nden aç (yani
+      uygulamadan ÇIKARAK) — Parça 98'in kök sebebi tam buydu:** uygulama
+      askıdayken bağlantı olayı kaçırılıyor, öne dönüşte durum yeniden
+      okunmazsa uyarı hiç çıkmıyor. **Aynısını web'de de kontrol et** — oradaki
       punto düzeltmesi (#256) de henüz cihazda görülmedi, ikisi birlikte
       bakılmalı.
 - [ ] **Çevrimdışı hamlede METİN (Parça 96).** Uçak modunda OYNA/PAS GEÇ:

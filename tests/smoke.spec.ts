@@ -64,3 +64,48 @@ test('Bilinmeyen bir path da uygulamayı normal açar (SPA fallback)', async ({ 
   await page.goto('/bu-path-hic-yok');
   await expect(page.getByText('OYUNU BAŞLAT')).toBeVisible();
 });
+
+// 14 Ağustos 2026 — kullanıcı cihazda (ana ekrana eklenmiş PWA, iPad)
+// tahtanın altındaki kırmızı "Çevrimdışı" uyarısını göremediğini İKİ KEZ
+// bildirdi. Kök sebep rozette değil `useOnlineStatus`'taydı: yalnızca
+// `online`/`offline` OLAYLARINI dinliyordu, ve uçak modunu açmak için
+// Kontrol Merkezi'ne çıkıldığında sayfa askıya alındığından olay JS'e hiç
+// ulaşmıyor, durum sonsuza dek bayat `true` kalıyordu. Bu test tam o
+// senaryoyu üretir: navigator.onLine'ı OLAY ATEŞLEMEDEN false yapar, sonra
+// kullanıcının uygulamaya dönüşünü (visibilitychange) taklit eder.
+test('Öne dönüşte bağlantı durumu yeniden okunur (kaçırılan offline olayı)', async ({
+  page,
+}) => {
+  page.on('dialog', (dialog) => dialog.accept());
+
+  await page.addInitScript(() => {
+    (window as unknown as { __online: boolean }).__online = true;
+    Object.defineProperty(Navigator.prototype, 'onLine', {
+      get: () => (window as unknown as { __online: boolean }).__online,
+      configurable: true,
+    });
+  });
+
+  await page.goto('/');
+  await page.getByText('OYUNU BAŞLAT').click();
+  const devamButton = page.getByRole('button', { name: 'Devam', exact: true });
+  if (await devamButton.isVisible().catch(() => false)) await devamButton.click();
+  const quickstartHeading = page.getByRole('heading', { name: /hızlı başlangıç/i });
+  if (await quickstartHeading.isVisible().catch(() => false)) {
+    await page.locator('button[aria-label="Kapat"]').last().click();
+  }
+  await expect(page.getByRole('button', { name: 'Oyna', exact: true })).toBeVisible();
+
+  const offlineLabel = page.getByText('Çevrimdışı', { exact: true });
+  await expect(offlineLabel).toHaveCount(0);
+
+  // Bağlantı gitti ama olay KAÇIRILDI (sayfa askıdaydı).
+  await page.evaluate(() => {
+    (window as unknown as { __online: boolean }).__online = false;
+  });
+  await expect(offlineLabel).toHaveCount(0);
+
+  // Kullanıcı uygulamaya döner → durum yeniden okunmalı.
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await expect(offlineLabel).toBeVisible();
+});

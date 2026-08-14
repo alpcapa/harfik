@@ -4071,6 +4071,46 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        göstergesi de aynı turda (#256) düzeltilip henüz cihazda
        görülmediğinden ikisi BİRLİKTE kontrol edilmeli.
 
+   - ✅ **Parça 98 — asıl kök sebep rozette DEĞİL bağlantı durumundaydı: kaçırılan
+     `offline` olayı kalıcı kayıptı (14 Ağustos 2026, `useOnlineStatus.ts`,
+     `online_status.dart`):** Kullanıcı AYNI bulguyu ikinci kez bildirdi
+     (*"tahta altında çevrimdışı (kırmızı) uyarıyı da göremedim"*) — Parça
+     97'de portun eksik göstergesini eklemiştim ama o turda web için
+     *"sorun yok"* demiştim ve bunu KODU OKUYARAK söylemiştim.
+     - **Bu sefer ÖLÇÜLDÜ:** `npm run build` + gerçek uygulama Chromium'da
+       açılıp bir YZ oyunu başlatıldı, `context.setOffline(true)` ile uçak
+       modu simüle edildi — rozet çıktı (12px, `rgb(220,38,38)`, Space Mono,
+       kardeşinden 8px). Yani web'in RENDER'ı gerçekten doğruydu.
+     - **Ama hook'ta gerçek bir boşluk vardı:** `useOnlineStatus` YALNIZCA
+       `online`/`offline` olaylarını dinliyordu. Kullanıcı ana ekrana eklenmiş
+       PWA'da test ediyor ve uçak modunu açmak için Kontrol Merkezi'ne
+       çıkıyor — sayfa o anda askıya alınıyor, olay JS'e hiç ulaşmıyor, durum
+       bayat `true` kalıyor ve rozet BİR DAHA çıkmıyor.
+     - **Senaryo gerçek tarayıcıda BİREBİR üretildi:** `navigator.onLine`
+       `addInitScript` ile kontrol edilebilir yapılıp OLAY ATEŞLENMEDEN false
+       çekildi → rozet yok; `visibilitychange` gönderildi → rozet çıktı.
+       **Negatif eş:** düzeltme `git stash`lenip yeniden derlenince öne
+       dönüşten sonra da rozet ÇIKMADI (0) — kullanıcının gördüğü semptomun
+       ta kendisi.
+     - **Bu, kaçırılan olayın bu projede kalıcı kayba dönüştüğü ÜÇÜNCÜ yer:**
+       sohbet Realtime'ı (Parça 95) ve bulut senkronu (Parça 44) aynı çareyi
+       almıştı — "öne dönüşte gerçeği yeniden oku". Gerekçe iki kez yazılmış
+       ama bu hook'a hiç uygulanmamıştı.
+     - **Port da aynı kancayı aldı** (`OnlineStatus` artık
+       `WidgetsBindingObserver`, `resumed`'da `refresh()`): `connectivity_plus`
+       akışı da askıdaki uygulamada olay kaçırabilir. **DÜRÜST SINIR — bu
+       yarısı TESTSİZ:** üretim kurucusu platform kanalı istediğinden ve
+       `fake()` bilerek observer kaydetmediğinden bu davranış widget testinde
+       sınanamadı; kanıt yalnızca web tarafında. Cihazda doğrulanmalı.
+     - **Ders — "web'de sorun yok" da bir TEŞHİSTİR ve ölçüm ister.** Parça
+       34'ün dersi ("ölçmeden YOK SAYMA") burada bir üst basamağa çıktı:
+       render'ı doğru olan bir bileşen, onu BESLEYEN durum bayatladığı için
+       hiç görünmeyebilir. Kullanıcı aynı şeyi ikinci kez bildiriyorsa
+       kapatmadan önce zinciri UÇTAN UCA koştur.
+     - Doğrulama: `npm run lint` + `npm run build` temiz, Playwright **3/3**
+       (yeni kalıcı regresyon testiyle); `flutter analyze` temiz, tam takım
+       **424/424**.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 14 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**

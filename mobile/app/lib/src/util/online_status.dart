@@ -18,16 +18,26 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
-class OnlineStatus extends ChangeNotifier {
+class OnlineStatus extends ChangeNotifier with WidgetsBindingObserver {
   bool _online;
   StreamSubscription<List<ConnectivityResult>>? _sub;
+  final Connectivity _connectivity = Connectivity();
+  bool _observing = false;
 
   /// Gerçek bağlantıyı dinler. Başlangıçta iyimser (`true`): ilk ölçüm
   /// gelene kadar "çevrimdışı" demek, çevrimiçi kullanıcıya bir kare
   /// yanlış mesaj göstermek olurdu.
   OnlineStatus() : _online = true {
+    // Öne dönüşte durumu YENİDEN OKU — akış tabanlı durumun bilinen zaafı:
+    // uygulama askıdayken (uçak modunu açmak için Ayarlar'a çıkmak tam bu)
+    // olay kaçırılırsa bir daha oynatılmaz ve durum bayat kalır. Web'in
+    // `useOnlineStatus`'u aynı gün aynı sebeple aynı kancayı aldı; bu
+    // projede kaçırılan olay iki kez daha kalıcı kayıp üretmişti (sohbet
+    // Realtime'ı, bulut senkronu).
+    WidgetsBinding.instance.addObserver(this);
+    _observing = true;
     unawaited(_start());
   }
 
@@ -36,14 +46,23 @@ class OnlineStatus extends ChangeNotifier {
 
   bool get online => _online;
 
-  Future<void> _start() async {
-    final c = Connectivity();
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(refresh());
+  }
+
+  /// Bağlantı durumunu platformdan yeniden okur (öne dönüş kancası).
+  Future<void> refresh() async {
     try {
-      _apply(await c.checkConnectivity());
+      _apply(await _connectivity.checkConnectivity());
     } catch (_) {
-      // Platform kanalı yoksa (bazı test/derleme ortamları) iyimser kal.
+      // Platform kanalı yoksa mevcut durumu koru.
     }
-    _sub = c.onConnectivityChanged.listen(_apply, onError: (_) {});
+  }
+
+  Future<void> _start() async {
+    await refresh();
+    _sub = _connectivity.onConnectivityChanged.listen(_apply, onError: (_) {});
   }
 
   void _apply(List<ConnectivityResult> results) {
@@ -59,6 +78,7 @@ class OnlineStatus extends ChangeNotifier {
 
   @override
   void dispose() {
+    if (_observing) WidgetsBinding.instance.removeObserver(this);
     unawaited(_sub?.cancel());
     super.dispose();
   }
