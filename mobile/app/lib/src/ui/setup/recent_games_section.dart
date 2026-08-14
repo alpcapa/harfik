@@ -106,6 +106,11 @@ class _RecentGamesSectionState extends State<RecentGamesSection> {
   late final String _cacheKey = '${widget.userId}:${widget.onlineOnly}';
   late List<GameHistoryEntry>? _games = _recentCache[_cacheKey];
 
+  /// Ağ hatası mı, yoksa gerçekten hiç oyun mu yok? İkisi de boş liste
+  /// üretiyor ama kullanıcıya söylenecek şey farklı — "oyunun yok" demek
+  /// çevrimdışı bir kullanıcıya YANLIŞ bilgi.
+  bool _loadFailed = false;
+
   @override
   void initState() {
     super.initState();
@@ -121,8 +126,13 @@ class _RecentGamesSectionState extends State<RecentGamesSection> {
       onlineOnly: widget.onlineOnly,
     );
     if (!mounted) return;
-    _recentCache[_cacheKey] = res.games;
-    setState(() => _games = res.games);
+    // Başarısız çekim önbelleği EZMEMELİ — bir önceki mount'un listesi
+    // (varsa) çevrimdışıyken göstermeye devam edilebilir.
+    if (!res.failed) _recentCache[_cacheKey] = res.games;
+    setState(() {
+      _loadFailed = res.failed;
+      if (!res.failed || _games == null) _games = res.games;
+    });
   }
 
   Future<void> _openHistory({String? focusId}) => showGameHistory(
@@ -154,8 +164,16 @@ class _RecentGamesSectionState extends State<RecentGamesSection> {
     // eklenen eski kullanım biçimi) bölüm SESSİZCE gizlenir; verilmişse
     // (kendi başına bir sekme içeriği — Parça 28) "Yükleniyor…"/mesaj
     // gösterilir.
-    if (games == null) return _emptyOrHidden('Yükleniyor…');
-    if (games.isEmpty) return _emptyOrHidden(widget.emptyMessage ?? '');
+    if (games == null) {
+      return _emptyOrHidden(_loadFailed
+          ? 'Oyun geçmişi yüklenemedi. Bağlantını kontrol edip tekrar dene.'
+          : 'Yükleniyor…');
+    }
+    if (games.isEmpty) {
+      return _emptyOrHidden(_loadFailed
+          ? 'Oyun geçmişi yüklenemedi. Bağlantını kontrol edip tekrar dene.'
+          : (widget.emptyMessage ?? ''));
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

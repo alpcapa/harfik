@@ -249,7 +249,7 @@ class PrivacyModal extends StatelessWidget {
       child: _StackedSections([
         const _P('Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, '
             'hangi verileri topladığımızı, nasıl kullandığımızı ve '
-            'haklarınızı açıklar. Son güncelleme: 2 Ağustos 2026.'),
+            'haklarınızı açıklar. Son güncelleme: 10 Ağustos 2026.'),
         const _Section('1. Veri Sorumlusu', [
           _P('Kelimeki, herhangi bir şirket ya da tüzel kişilik '
               'bulunmaksızın, bağımsız bir geliştirici tarafından bireysel '
@@ -325,9 +325,10 @@ class PrivacyModal extends StatelessWidget {
               'görülebilir hale gelir; bu paylaşım geri alınamaz. Canlı '
               'oyunlarda gönderdiğiniz oyun içi sohbet mesajları o oyundaki '
               'diğer katılımcılara gerçek zamanlı olarak görünür ve oyun '
-              'bittikten sonra oyun kaydının bir parçası olarak (mevcut '
-              'skor/tahta görünürlüğüyle aynı şekilde, tüm kayıtlı '
-              'kullanıcılara açık) saklanır.'),
+              'bittikten sonra da saklanır; bu yazışmalar YALNIZCA o oyunun '
+              'katılımcılarına ve (şikayet incelemesi amacıyla) yönetici '
+              'ekibine açıktır — oyunun skoru ve tahtası tüm kayıtlı '
+              'kullanıcılara görünür olsa bile sohbet içeriği görünmez.'),
           _P('Bir Canlı oyunda kimi sessize aldığınız yalnızca size '
               'görünür, diğer katılımcılar (sessize alınan kişi dahil) bunu '
               'hiçbir zaman göremez. Gönderdiğiniz uygunsuz paylaşım '

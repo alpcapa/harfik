@@ -172,6 +172,14 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       admin ne yaşandığını görüp okundu işaretlemeyi kendisi seçmeli. (Bir
       dönem geri çekme otomatik `handled=true` yapıyordu; rapor admin hiç
       bakmadan "incelenmiş" görünüyordu.)
+      **Bu madde 14 Ağustos 2026'ya kadar hiç GEÇMİYORDU ve kimse fark
+      etmedi:** 4 Ağustos'taki düzeltme yanlış bir SQL overload'ına
+      uygulanmış, istemcinin çağırdığı sürüm 10 gün boyunca `handled=true`
+      yapmaya devam etmişti (`fix_withdraw_report_wrong_overload`). Bu
+      pencerede hiç geri çekme yapılmadığı için bozulan veri olmadı —
+      yani liste "yeşil" görünüyordu çünkü kimse maddeyi koşmamıştı.
+      Koşarken **hesap menüsündeki "Admin Paneli" kırmızı sayacına da bak**,
+      yalnızca kartın rengine değil: asıl kırılan şey oydu.
 - [ ] **Admin.** Admin Paneli → Geri Bildirim → Şikayetler: kart "Yeni"
       rozetiyle görünmeli, "Sohbeti Görüntüle" (yalnızca BİTMİŞ oyunlarda)
       dökümü açmalı, "Kişiye Git →" Üyeler tablosunda o satırı vurgulamalı.

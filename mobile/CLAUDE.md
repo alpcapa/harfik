@@ -3370,12 +3370,121 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
          token `src/`'de de hiç kullanılmıyor, yani iki tarafta da ölü —
          izlenmemesi bir eksiklik değil.
        - **Sunucu: bir uykuda hata bulundu** (`withdraw_online_game_chat_reports`
-         overload'ı) — ayrıntı ve kanıt aşağıdaki "Sonraya Bırakılan İşler".
+         overload'ı) — Parça 90'da düzeltildi.
        - **Test kalitesi:** en güçlü bulgu `OnlineApi.submitMove`'un
-         retry/idempotency döngüsünün SIFIR test kapsamı olması — sonraya
-         bırakıldı (aşağı bkz.).
+         retry/idempotency döngüsünün SIFIR test kapsamı olması — Parça
+         90'da kapatıldı.
        - **Türkçe metin paritesi:** denetim İKİ kez oturum limitine takıldı,
-         sonuç ALINAMADI. Hâlâ açık.
+         sonuç ALINAMADI — Parça 90'da elle koşuldu ve gerçek bir bulgu
+         çıkardı (Gizlilik Politikası bayattı).
+
+   - ✅ **Parça 90 — Parça 89'un üç açık maddesi kapandı; hukuki metin
+     denetimi bir GİZLİLİK YALANI buldu (14 Ağustos 2026,
+     `fix_withdraw_report_wrong_overload` migration'ı, `online_api.dart`,
+     `legal_modals.dart`, `live_games_tab.dart`, `games_api.dart`,
+     `game_history_modal.dart`, `recent_games_section.dart`):** Parça 89
+     üç işi "sonraya" bırakmıştı (uykudaki sunucu hatası, `OnlineApi`'nin
+     sıfır testi, tamamlanamayan Türkçe metin denetimi); üçü de bu parçada
+     kapandı ve sonuncusu beklenenden ağır bir bulgu çıkardı.
+     - **(a) Sunucu — `withdraw_online_game_chat_reports`'un YANLIŞ
+       overload'ı düzeltilmişti (uygulandı, kanıtlandı).** 4 Ağustos'taki
+       "geri çekme `handled`'a dokunmasın" düzeltmesi, bir gün önce DROP
+       edilmiş 2-arg imzayı `create or replace` ile yeniden yaratıp ona
+       uygulanmıştı; istemcilerin çağırdığı 1-arg sürüm hâlâ
+       `handled = true` yapıyordu. **Bozulmuş veri YOKTU** (son geri çekme
+       04.08 10:49, migration 10:54 — o tarihten beri hiç geri çekme
+       olmamış), yani hata gerçekti ama uykudaydı. Migration 1-arg sürümü
+       düzeltip hortlak overload'ı düşürdü (o overload ayrıca
+       `SECURITY DEFINER` + EXECUTE'u PUBLIC'te — "yeni fonksiyonda önce
+       revoke all" kuralına aykırı bir kalıntı).
+       **Canlıda geri alınan bir transaction'la DAVRANIŞ testi yapıldı**
+       (varlık kontrolü değil): gerçek bir satır (`83535bba…`)
+       `handled=false`a çekilip RPC gerçek raporlayanın kimliğiyle
+       çağrıldı → `withdrawn_at` doldu, `handled` **`false` KALDI**;
+       `rollback` sonrası satırın eski hâline (`handled=true`,
+       `withdrawn_at=null`) döndüğü ayrıca sorgulandı.
+     - **(b) `OnlineApi.submitMove` artık testli** — mobilin ASIL
+       güvenilirlik özelliği (aynı `p_move_id` ile retry) sıfır kapsamdaydı.
+       `OnlineApi.withRpc` test dikişi (`SubmitMoveRpc` typedef'i) +
+       `test/online_api_test.dart` (4 test): aynı id ile yeniden deneme,
+       `PostgrestException`'da tek çağrı + rethrow, `maxAttempts` tükenince
+       hatanın yüzeye çıkması, açık `moveId`. **Negatif eş, İKİ AYRI
+       kanıt:** `final id = moveId ?? uuidV4()` döngünün İÇİNE taşınınca
+       idempotensi testi GERÇEKTEN düştü (`Expected: '31769d3e…' Actual:
+       '43a67f74…'`); `PostgrestException` rethrow'u kaldırılınca çağrı
+       sayısı testi düştü (`Expected: <1> Actual: <3>`). Parça 86'nın
+       dersinin doğrudan uygulaması: ekranın 15 testi `FakeOnlineGamesGateway`
+       sınırının ÜSTÜNDE ölçüyor, döngü o sınırın ALTINDA.
+     - **(c) Türkçe metin denetimi — port, kullanıcıya kendi verisi
+       hakkında GERÇEK OLMAYAN bir şey söylüyordu.** `legal_modals.dart`ın
+       başlığı "METİNLER WEB'DEN BİREBİR KOPYALANMIŞTIR … web metni
+       değişirse buraya da aynen taşınmalı" diyordu ama bunu ZORLAYAN
+       hiçbir şey yoktu ve gerçekten kaçtı: 10 Ağustos'ta
+       `game_chat_archive_participants_only` (Parça 51) sohbet arşivini
+       katılımcı+admin'e kilitledi, web'in Gizlilik Politikası düzeltildi,
+       port ESKİ cümleyi ("mevcut skor/tahta görünürlüğüyle aynı şekilde
+       tüm kayıtlı kullanıcılara açıktır") taşımaya devam etti. Metin
+       web'in bugünkü hâline çekildi, "Son güncelleme" 2 → 10 Ağustos.
+       - **`test/legal_text_test.dart` bunu KALICI olarak zorluyor** —
+         `color_tokens_test.dart`ın tailwind'i okuyan deseninin hukuki
+         metin karşılığı: web'in `TermsModal.tsx`/`PrivacyModal.tsx`
+         dosyalarını OKUYUP kendi "Son güncelleme" tarihlerini portunkiyle
+         karşılaştırıyor (tam metin karşılaştırması satır kaydırma/kaçış
+         farklarıyla kırılgan olurdu; tarih, projenin yerleşik disiplini
+         gereği her metin değişikliğinde güncelleniyor, yani "port bayat
+         mı?" sorusunun güvenilir vekili). Üçüncü test, tarihten bağımsız
+         olarak eski/yanlış cümlenin geri gelmediğini de sabitliyor.
+         **Negatif eş:** metin eski hâline döndürülünce 3 testin 2'si
+         GERÇEKTEN düştü.
+     - **(d) Aynı denetimde bulunan iki SESSİZ HATA daha (Parça 89'un
+       "sahte başarı" sınıfının kardeşleri):**
+       1. **Canlı davet yanıtı ağ hatasında hiçbir şey söylemiyordu**
+          (`live_games_tab.dart`) — `_handleRespond`'ın `catch`i yalnızca
+          logluyordu; kullanıcı Kabul Et/Reddet'e basıyor, kart yerinde
+          duruyor, ekranda hiçbir açıklama yok. Parça 89'un
+          `FriendsModal` için açtığı `kFriendActionFailed` sabiti
+          paylaşıldı (yeni metin icat edilmedi).
+       2. **Oyun geçmişi ağ hatasını "hiç oyunun yok" diye gösteriyordu**
+          — `GamesRepo.history` boş liste dönüp hatayı yutuyordu, iki
+          tüketici de (`GameHistoryModal`, `RecentGamesSection`) bunu
+          "Henüz kayıtlı bir oyunun yok." / "Henüz bitmiş bir Yapay Zeka
+          oyunun yok." diye çiziyordu. **Çevrimdışı bir kullanıcıya bu,
+          oyunlarının silindiğini düşündürür.** Dönüş kaydına `failed`
+          eklendi (`moves`un `ok`/`boardSnapshot`un null ayrımıyla aynı
+          gerekçe — "veri yok" ile "ulaşamadım" AYRI şeyler) ve iki ekran
+          da artık "Oyun geçmişi yüklenemedi. Bağlantını kontrol edip
+          tekrar dene." diyor. `RecentGamesSection` ayrıca başarısız
+          çekimle önbelleği EZMİYOR — önceki mount'un listesi çevrimdışı
+          gösterilmeye devam edebilsin.
+       - **`GameHistoryModal`'da bayrak İKİ yükleme yolunda da set
+         ediliyor** (`_loadInitial` + `_loadPage`): ikincisi sekme
+         değişiminin de (offset 0) yolu, orada bir hata "favori
+         işaretlediğin oyun yok" diye görünürdü.
+       - **`FakeGamesGateway`e `failList` eklendi** — Parça 46'nın dersi:
+         sahtenin taklit etmediği bir hata yolu, o yol hakkındaki testleri
+         sessizce anlamsız kılar; bu hata tam da bu yüzden 398 test
+         yeşilken görünmezdi. **Negatif eş:** iki ekranın dalları
+         kapatılınca yeni iki test de GERÇEKTEN düştü (`Found 0 widgets
+         with text containing yüklenemedi`).
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       398/398 yeşil** (389'dan +9). `kelimeki_core`'a hiç dokunulmadı.
+     - **`mobile/` DIŞINDA dosya değişti** (`supabase/migrations/`) → kök
+       `CLAUDE.md` aynı commit'te güncellendi (Kontrol Listesi madde 1).
+     - **Doğrulama sınırı:** (a) gerçek istemciyle uçtan uca (bir şikayeti
+       geri çekip admin panelinde hâlâ "Yeni" göründüğünü doğrulamak)
+       cihazda/web'de teyit edilmeli; (b) `OnlineApi` testleri sahte bir
+       RPC ile ölçüyor, gerçek PostgREST retry'ı hâlâ Faz 6'nın (çok
+       kullanıcılı harness) işi; (d.2) gerçek ağ kesintisiyle "yüklenemedi"
+       mesajının göründüğü cihazda doğrulanmalı — `mobile/TESTING.md`
+       bölüm 5/11'e maddeler eklendi.
+     - **Ders — bir dosyanın BAŞLIĞINDAKİ "birebir kopyalanmıştır" notu bir
+       garanti DEĞİL, bir niyet beyanıdır.** Bu proje aynı sınıfı renkler
+       (Parça 54 → `color_tokens_test`) ve tipografi (Parça 78 →
+       `theme_test`) için zaten testle bağlamıştı; hukuki metin en uzun
+       süre bağlanmadan kalan ve yanlış olduğunda BEDELİ EN AĞIR olan
+       kopyaydı — kullanıcıya kendi verisinin görünürlüğü hakkında yanlış
+       bilgi veriyordu. Yeni bir "elle senkron" kopya açarken sor: bunu
+       hangi test zorluyor?
 
 ## Sonraya Bırakılan İşler (mobil)
 
@@ -3383,53 +3492,18 @@ Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı
 kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
 silinip kendi tarihli parça notuna taşınır.
 
-### `withdraw_online_game_chat_reports` — UYKUDA sunucu hatası (13 Ağustos 2026)
+### `HelpModal` metin paritesi denetlenmedi (14 Ağustos 2026)
 
-**Doğrulandı (migration dosyaları + canlı `pg_get_functiondef`):** fonksiyonun
-üretimde İKİ overload'u var ve 4 Ağustos'taki düzeltme YANLIŞ olanına gitmiş.
-- 3 Ağustos (`…person_scoped_chat_moderation`): 2-arg imza DROP edildi, 1-arg
-  (`p_target_user_id`) yaratıldı — o günkü `handled = true` gövdesiyle.
-- 4 Ağustos (`…withdraw_report_keeps_unhandled`): "handled'a dokunma"
-  düzeltmesi `create or replace … (p_game_id uuid, p_target_user_id uuid)`
-  ile yazıldı — yani bir gün önce SİLİNEN 2-arg imzayı YENİDEN YARATTI ve
-  düzeltmeyi ona uyguladı.
-
-Canlı kanıt: `(uuid)` → `handled = true` İÇERİYOR (istemcilerin çağırdığı bu —
-`api.ts:1328`, `chat_api.dart:141`, ikisi de yalnız `p_target_user_id`
-geçiyor); `(uuid, uuid)` → düzeltilmiş gövde, **kimse çağırmıyor**.
-
-**Şu an bozulmuş veri YOK** (ayrıca ölçüldü, denetim bunu kontrol etmemişti):
-son geri çekme `2026-08-04 10:49`, migration `10:54` — o tarihten beri hiç
-geri çekme yapılmamış. Hata gerçek ama **uykuda**; bir sonraki geri çekmede
-tetiklenir ve rapor admin'in bekleyen-iş rozetinden düşer (tam da 4
-Ağustos'ta düzeltilmek istenen davranış).
-
-**İkincil:** hortlak 2-arg overload `SECURITY DEFINER` ve EXECUTE'u
-PUBLIC+anon dahil herkeste (4 Ağustos dosyasında `revoke` yok). Gövdesi
-`auth.uid()` kontrollü olduğundan sömürülebilir değil, ama "yeni fonksiyonda
-önce revoke all" kuralına aykırı.
-
-**Yapılacak:** 1-arg gövdesini `handled`'sız hâle `create or replace` et +
-2-arg overload'u `drop`. Üretime yazma olduğundan kullanıcı onayı bekliyor.
-
-### `OnlineApi.submitMove` retry/idempotency döngüsünün SIFIR testi var
-
-`lib/src/data/online_api.dart` hiçbir test dosyasında geçmiyor. Ekranın 15
-testi `FakeOnlineGamesGateway.submitMove` sınırının ÜSTÜNDE ölçüyor; mobilin
-asıl güvenilirlik özelliği (aynı `p_move_id` ile 3 denemeye kadar retry,
-`PostgrestException`'da rethrow) o sınırın ALTINDA. `final id = moveId ??
-uuidV4()` satırı döngünün İÇİNE taşınsa (her denemede yeni UUID →
-idempotensi tamamen kırılır) **389 testin hiçbiri düşmez** — Parça 86'nın
-dersinin birebir aynı sınıfı. Önerilen: `rpc`'yi enjekte edilebilir yapıp 4
-birim test (aynı id ile retry; PostgrestException'da tek çağrı + rethrow;
-3. denemeden sonra yüzeye çıkma; `moveId` verilince o id).
-
-### Türkçe kullanıcı metni paritesi denetimi hiç tamamlanamadı
-
-İki denemede de oturum limitine takıldı. Öncelik "birebir kopya" sözleşmesi
-olan üç ekran: `HelpModal`, `TermsModal`, `PrivacyModal` — özellikle
-Privacy'nin 10 Ağustos 2026 güncellemesi (sohbet arşivi görünürlüğü) porta
-geçmiş mi.
+Parça 90 `TermsModal`/`PrivacyModal` paritesini kalıcı bir testle bağladı
+(`test/legal_text_test.dart`, web'in "Son güncelleme" tarihini okuyor) ama
+`HelpModal`'ın aynı "birebir kopya" sözleşmesi hâlâ yalnızca bir yorum
+satırıyla korunuyor — o dosyada tarih damgası olmadığından aynı vekil
+kullanılamıyor. Parça 66'da eklenen "Rütbeler ve Ödüller" bölümü tabloyu
+`kRankTiers`ten çizdiği için (elle yazılmadığı için) o kısım güvende;
+risk düz kural metinlerinde. Önerilen: web'in `HelpModal.tsx`'inden birkaç
+karakteristik cümleyi okuyup portta bulunduğunu doğrulayan bir test
+(`color_tokens_test` deseni), ya da web tarafına bir "Son güncelleme"
+damgası eklemek.
 
 - **Kayıt onayı maili kaydın GELDİĞİ kanala dönmeli (10 Ağustos 2026,
   kullanıcı kararı — sözleri: "Kişilerin kayıt başvurusu hangi kanaldan

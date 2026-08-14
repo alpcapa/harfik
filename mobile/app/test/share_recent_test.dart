@@ -511,6 +511,34 @@ void main() {
     // Hedef oyunun tahtası ayrıca dokunmaya gerek kalmadan AÇIK geldi.
     expect(find.byType(ScoreBoxRow), findsOneWidget);
   });
+
+  testWidgets('Son Oynadıklarım: ağ hatası "oyunun yok" DEĞİL "yüklenemedi"',
+      (tester) async {
+    // Çevrimdışıyken "Henüz bitmiş bir Yapay Zeka oyunun yok." demek
+    // YANLIŞ bilgi — oyunlar sunucuda duruyor. Sunucu boş liste döndüğü
+    // durumla ayrışması için `history` bir `failed` bayrağı taşıyor.
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [gameRow(id: 'g-ai')]
+      ..failList = true;
+    final repo = await newRepoForWidget(tester, gw);
+
+    await setPhoneViewSize(tester, const Size(420, 520));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: RecentGamesSection(
+          games: repo,
+          userId: 'u-me',
+          onlineOnly: false,
+          emptyMessage: 'Henüz bitmiş bir Yapay Zeka oyunun yok.',
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('yüklenemedi'), findsOneWidget);
+    expect(find.text('Henüz bitmiş bir Yapay Zeka oyunun yok.'), findsNothing);
+  });
 }
 
 /// `set_game_shared` düşen uç — link olmadan paylaşılmalı.

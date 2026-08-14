@@ -3,13 +3,41 @@
 // aynı sınıfa eklenecek.
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../util/uuid.dart';
 
+/// `client.rpc` çağrısının test kancası — bkz. `OnlineApi.withRpc`.
+typedef SubmitMoveRpc = Future<void> Function(Map<String, Object?> params);
+
 class OnlineApi {
-  final SupabaseClient client;
-  OnlineApi(this.client);
+  final SupabaseClient? client;
+  final SubmitMoveRpc? _rpc;
+
+  OnlineApi(SupabaseClient this.client) : _rpc = null;
+
+  /// YALNIZCA testler için: gerçek RPC yerine bir fonksiyon koyar.
+  ///
+  /// Gerekçe (13 Ağustos 2026 denetimi): `submitMove`ın retry/idempotency
+  /// döngüsü — aynı `p_move_id` ile yeniden deneme, `PostgrestException`da
+  /// rethrow — mobilin ASIL güvenilirlik özelliği, ama ekran testlerinin
+  /// tamamı `FakeOnlineGamesGateway.submitMove` sınırının ÜSTÜNDE ölçüyor.
+  /// Bu kanca olmadan `final id = moveId ?? uuidV4()` satırı döngünün İÇİNE
+  /// taşınsa (her denemede YENİ uuid → idempotensi tamamen kırılır,
+  /// sunucuda çifte hamle riski geri gelir) tek bir test bile düşmüyordu.
+  @visibleForTesting
+  OnlineApi.withRpc(SubmitMoveRpc rpc)
+      : client = null,
+        _rpc = rpc;
+
+  Future<void> _send(Map<String, Object?> params) {
+    final custom = _rpc;
+    if (custom != null) return custom(params);
+    return client!
+        .rpc<void>('submit_move', params: params)
+        .timeout(const Duration(seconds: 15));
+  }
 
   /// Hamle gönderimi — HER çağrı bir `p_move_id` UUID'si taşır
   /// (20260805225619 migration'ı). Bu sayede ağ hatasında AYNI id ile
@@ -38,7 +66,7 @@ class OnlineApi {
     while (true) {
       attempt++;
       try {
-        await client.rpc<void>('submit_move', params: {
+        await _send({
           'p_game_id': gameId,
           'p_action': action,
           if (placements != null) 'p_placements': placements,
@@ -48,7 +76,7 @@ class OnlineApi {
           'p_base_points': basePoints,
           'p_lost_shares': lostShares,
           'p_move_id': id,
-        }).timeout(const Duration(seconds: 15));
+        });
         return;
       } on PostgrestException {
         rethrow; // sunucu kararı — yeniden deneme anlamsız/yanlış

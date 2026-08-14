@@ -599,7 +599,13 @@ class GamesRepo {
   /// [favoritesOnly] true iken liste artık hedefin SAHİP OLDUĞU değil
   /// BEĞENDİĞİ oyunlardır (web'in aynı ayrımı) — kendi oyunu da başkasının
   /// oyunu da olabilir, sıralama beğenilme anına göredir.
-  Future<({List<GameHistoryEntry> games, bool hasMore})> history({
+  /// `failed`: sorgu HATA verdi (boş sonuç DEĞİL). Ayrım kullanıcıya
+  /// görünür — boş liste "Henüz kayıtlı bir oyunun yok." demek, hata ise
+  /// bunu demek YANLIŞ bilgi olur (çevrimdışı açan kullanıcı oyunlarının
+  /// silindiğini sanır). Aynı ayrım `friends_api`/`stats_api`'de `null`
+  /// dönüşüyle yapılıyor; burada sayfalama alanları da taşındığından
+  /// bayrak tercih edildi (13 Ağustos 2026 denetimi, Parça 89).
+  Future<({List<GameHistoryEntry> games, bool hasMore, bool failed})> history({
     required String userId,
     required int? playerCount,
     required int offset,
@@ -624,10 +630,10 @@ class GamesRepo {
       final page = hasMore ? rows.sublist(0, limit) : rows;
       var games = [for (final r in page) GameHistoryEntry.fromJson(r)];
       games = await _mergeLikeStats(games);
-      return (games: games, hasMore: hasMore);
+      return (games: games, hasMore: hasMore, failed: false);
     } catch (e) {
       debugPrint('[Kelimeki] oyun geçmişi alınamadı: $e');
-      return (games: const <GameHistoryEntry>[], hasMore: false);
+      return (games: const <GameHistoryEntry>[], hasMore: false, failed: true);
     }
   }
 

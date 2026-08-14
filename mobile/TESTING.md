@@ -535,6 +535,22 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       açık). Kendi katıldığın Canlı oyunlarda rozet + sayı normal
       görünmeli. Aynı hesapla web'de de kontrol et — iki istemci aynı
       RPC'yi (`game_like_stats`) çağırıyor, ayrışmamalı.
+- [ ] **Ağ hatası "oyunun yok" DEMEMELİ (14 Ağustos 2026, Parça 90).**
+      Uçak modunda "Tüm Oyunlarım"ı aç → **"Oyun geçmişi yüklenemedi.
+      Bağlantını kontrol edip tekrar dene."** görünmeli, "Henüz kayıtlı bir
+      oyunun yok." DEĞİL. Aynısını Setup'taki "Son Oynananlar" sekmesinde
+      de kontrol et (aynı bayrağı ayrı okuyan ikinci tüketici).
+      **Negatif eşi ŞART:** çevrimiçiyken gerçekten hiç oyunu olmayan bir
+      hesapla aç — orada normal "hiç oyunun yok" metni çıkmalı, aksi halde
+      bu madde hiçbir şey kanıtlamaz.
+- [ ] **Hukuki metin tazeliği (Parça 90).** Hesap Ayarları/kayıt formundan
+      **Gizlilik Politikası**'nı aç → "Veri Paylaşımı" bölümü sohbet
+      arşivinin **yalnızca o oyunun katılımcılarına ve yönetici ekibine**
+      açık olduğunu söylemeli ("tüm kayıtlı kullanıcılara açıktır" DEĞİL —
+      o cümle 10 Ağustos'tan beri gerçek dışıydı). Alttaki "Son güncelleme"
+      tarihi web'deki `PrivacyModal` ile AYNI olmalı; `flutter test` bunu
+      artık otomatik zorluyor (`test/legal_text_test.dart`), bu madde
+      yalnızca metnin ekranda gerçekten doğru göründüğünün teyidi.
 
 ## 6. Paylaşma
 
@@ -971,6 +987,18 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **Rapor geri çekme.** Raporu geri çek → 🚩 kalkmalı, 🚫 (sessize
       alma) AYRI bir durum olduğundan kalmaya devam etmeli (kaldırmak
       istersen ayrıca kapatman gerekir).
+      **Geri çekilen rapor admin'in bekleyen işinden DÜŞMEMELİ (14 Ağustos
+      2026, Parça 90).** Web admin panelinde Geri Bildirim → Şikayetler:
+      kart "Geri Çekildi" rozetiyle görünmeli ama SOLUKLAŞMAMALI, ve hesap
+      menüsündeki "Admin Paneli" satırının kırmızı sayacı azalmamalı — geri
+      çekme raporlayanın kararı, admin'in incelemesi değil. (Bu davranış 4
+      Ağustos'ta yazıldı ama yanlış bir SQL overload'ına uygulandığı için 10
+      gün üretimde hiç çalışmadı; bu madde onun ilk gerçek uçtan uca
+      kontrolü.)
+- [ ] **Canlı davet yanıtı ağ hatasında sessiz KALMAMALI (Parça 90).**
+      Uçak modunda "Oyun Davetleri"nde bir davete Kabul Et ya da Reddet'e
+      bas → **"İşlem başarısız oldu."** görünmeli. Önceden hiçbir şey
+      olmuyordu (kart yerinde duruyor, ekranda açıklama yok).
 - [ ] **Mesaj balonuna dokunma.** Karşı tarafın bir mesaj balonuna
       doğrudan dokun (rozet olmasa bile) → o kişinin ayarlar detayı
       açılmalı. Kendi mesajına dokununca hiçbir şey olmamalı.

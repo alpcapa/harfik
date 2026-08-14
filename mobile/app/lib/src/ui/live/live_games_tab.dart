@@ -32,6 +32,7 @@ import '../game/count_badge.dart';
 import '../game/neo_button.dart';
 import '../game/player_avatar_row.dart';
 import '../setup/recent_games_section.dart';
+import '../friends/friends_modal.dart' show showFriendInfoDialog, kFriendActionFailed;
 import 'friend_suggest_modal.dart';
 import 'live_game_create_form.dart';
 import 'online_game_screen.dart';
@@ -178,7 +179,11 @@ class _LiveGamesTabState extends State<LiveGamesTab>
       }
       await _reload(); // web: busy göstergesi liste tazelenene dek kalır
     } catch (e) {
+      // Kullanıcı bir davete KABUL ET/REDDET dedi; hata yalnızca loglanırsa
+      // spinner söner, kart aynen durur ve ekranda hiçbir açıklama olmaz —
+      // "bastım, olmadı" (13 Ağustos 2026 denetimi, Parça 89).
       debugPrint('[Kelimeki] respondInvite hatası: $e');
+      if (mounted) await showFriendInfoDialog(context, kFriendActionFailed);
     } finally {
       if (mounted) setState(() => _busyInviteId = null);
     }
