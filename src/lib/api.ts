@@ -37,6 +37,7 @@ import type {
   AdminGuestDeviceRow,
   AdminGuestStandaloneRow,
   AdminMember,
+  AdminPlatformRow,
   AdminRetentionCell,
   AdminUserActivityPoint,
   BoardSnapshotTile,
@@ -66,6 +67,7 @@ import type {
   WordMeaning,
 } from './database.types';
 import { getLocalMeaning } from '../data/meanings';
+import { CLIENT_PLATFORM } from '../utils/platform';
 import { trCompare, trLower } from '../utils/turkish';
 import type { GameState, HistoryEntry, Tile } from '../game/types';
 
@@ -1102,6 +1104,31 @@ export async function checkInviteExpiry(gameId: string): Promise<void> {
   if (error) console.error('[Kelimeki] checkInviteExpiry hatası:', error.message);
 }
 
+/**
+ * Bu oyunda ÇAĞIRANIN hangi istemciden oynadığını kaydeder
+ * (`online_game_clients`, oyun+kullanıcı başına tek satır, upsert). Yerel
+ * oyunlarda platformu `games.platform` taşıyor ama Canlı oyunlarda o satırı
+ * SUNUCU (`_finish_online_game_records`) yazdığından istemcinin kim olduğu
+ * oraya hiç ulaşmıyor — bu yüzden Canlı taraf ayrı bir tabloya, oyun
+ * açılırken bir kez yazıyor (mobil lansmanı ölçülebilsin diye, 14 Ağustos
+ * 2026).
+ *
+ * `submit_move`e bir parametre EKLENMEDİ bilinçli olarak: o, projenin en
+ * kritik ve en uzun RPC'si ve lansman öncesi imzasını değiştirmenin riski
+ * kazancından büyük. Ayrıca telemetri olduğundan tamamen fire-and-forget —
+ * RPC yetkisiz/geçersiz girdide sessizce no-op döner (exception fırlatmaz),
+ * burada da hata yalnızca loglanır: bir telemetri hatası hiçbir zaman oyunu
+ * etkilemez.
+ */
+export async function setOnlineGamePlatform(gameId: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.rpc('set_online_game_platform', {
+    p_game_id: gameId,
+    p_platform: CLIENT_PLATFORM,
+  });
+  if (error) console.error('[Kelimeki] setOnlineGamePlatform hatası:', error.message);
+}
+
 /** Çağıranın KENDİ rafı (`get_my_online_rack` RPC'si) — başka hiçbir oyuncununki hiçbir zaman döndürülmez. */
 export async function getMyOnlineRack(gameId: string): Promise<Tile[]> {
   if (!supabase) return [];
@@ -1829,6 +1856,22 @@ export async function fetchAdminGuestDeviceBreakdown(days = 30): Promise<AdminGu
     throw new Error(error.message);
   }
   return (data as AdminGuestDeviceRow[]) ?? [];
+}
+
+/**
+ * Son `days` günde biten oyunların istemci (platform) dökümü — kaç oyun ve
+ * kaç ayrı üye (yalnızca admin — Büyüme > Kullanıcı).
+ *
+ * İki kaynaktan çözülüyor: yerel oyunlarda `games.platform` (istemci
+ * yazıyor), Canlı oyunlarda `online_game_clients` (o satırı sunucu
+ * yazdığından istemcinin kim olduğu oraya ulaşmıyor). Kolondan önce biten
+ * oyunlar `'bilinmiyor'` olarak toplanır.
+ */
+export async function fetchAdminPlatformBreakdown(days = 30): Promise<AdminPlatformRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('admin_platform_breakdown', { p_days: days });
+  if (error) throw new Error(error.message);
+  return (data as AdminPlatformRow[]) ?? [];
 }
 
 /**

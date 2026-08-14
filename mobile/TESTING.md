@@ -581,6 +581,19 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       artık otomatik zorluyor (`test/legal_text_test.dart`), bu madde
       yalnızca metnin ekranda gerçekten doğru göründüğünün teyidi.
 
+- [ ] **Platform telemetrisi (14 Ağustos 2026).** Uygulamada bir YZ oyunu
+      SONUNA kadar bitir (yarıda bırakma — satır ancak bitince yazılıyor).
+      Sonra kelimeki.com'da admin hesabıyla Admin Paneli → Büyüme →
+      Kullanıcı → **Platform** tablosuna bak: native derlemede `iOS`/
+      `Android`, GitHub Pages web derlemesinde `App (Tarayıcı)` satırının
+      "Oyun" sayısı 1 artmalı — `Web` satırı DEĞİL (o, kelimeki.com'dan
+      oynananlar). Bu, portun kendi platformunu gerçekten yazdığının tek
+      uçtan uca kanıtı; kolon geriye dönük doldurulamıyor.
+- [ ] **Canlı oyunda da yazılıyor.** Bir Canlı oyunu aç (bitirmeye gerek
+      YOK — satır oyun açılırken yazılıyor) ve bitiminde aynı tabloda kendi
+      istemcinin satırında görün. Rakip web'den oynadıysa iki AYRI satır
+      artmalı.
+
 ## 6. Paylaşma
 
 - [ ] **Paylaş menüsü.** Açık tahta önizlemesine dokun → alttan

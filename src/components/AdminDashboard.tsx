@@ -14,6 +14,7 @@ import {
   fetchAdminActivationStats,
   fetchAdminGuestSourceBreakdown,
   fetchAdminGuestDeviceBreakdown,
+  fetchAdminPlatformBreakdown,
   fetchAdminGuestStandaloneBreakdown,
   fetchAdminFeedback,
   markFeedbackHandled,
@@ -38,6 +39,7 @@ import type {
   AdminActivationStats,
   AdminGuestSourceRow,
   AdminGuestDeviceRow,
+  AdminPlatformRow,
   AdminGuestStandaloneRow,
   AdminActivityGranularity,
   AdminFeedbackRow,
@@ -290,6 +292,89 @@ function GuestBreakdownTable<T extends { visitors: number }>({
   );
 }
 
+const PLATFORM_LABELS: Record<string, string> = {
+  web: 'Web',
+  ios: 'iOS (App)',
+  android: 'Android (App)',
+  'app-web': 'App (Tarayıcı)',
+  bilinmiyor: 'Bilinmiyor',
+};
+
+/**
+ * Platform dökümü (Büyüme > Kullanıcı) — son N günde biten oyunların hangi
+ * istemciden oynandığı. `GuestBreakdownTable`den AYRI, çünkü orası tek
+ * metrikli ("Ziyaretçi") ve misafir ziyaretlerini sayıyor; bu tablo İKİ
+ * metrik taşıyor (oyun ve ayrı üye) ve girişli kullanıcıları ölçüyor.
+ *
+ * "Bilinmiyor" satırı GİZLENMEZ: kolon eklenmeden önce biten oyunlar ve
+ * masaüstü gibi yayınlanmayan hedefler oraya düşüyor — satırı düşürmek
+ * yüzdeleri yalancı yapardı.
+ */
+function PlatformBreakdownTable({ rows }: { rows: AdminPlatformRow[] | null }) {
+  if (rows === null) {
+    return <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>;
+  }
+  if (rows.length === 0) {
+    return (
+      <div className="text-xs font-mono text-muted text-center py-6">
+        Bu aralıkta biten oyun yok.
+      </div>
+    );
+  }
+  const totalGames = rows.reduce((sum, r) => sum + r.games, 0);
+  const label = (p: string) => PLATFORM_LABELS[p] ?? p;
+  const pct = (n: number) => (totalGames > 0 ? ((n / totalGames) * 100).toFixed(2) : '0.00');
+
+  function handleExportCsv() {
+    downloadCsv(
+      csvFilename('kelimeki-platform'),
+      ['Platform', 'Oyun', 'Oyuncu', '%'],
+      [
+        ...rows!.map((r) => [label(r.platform), r.games, r.players, pct(r.games)]),
+        ['TOPLAM', totalGames, '', '100.00'],
+      ],
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <button type="button" onClick={handleExportCsv} className={`${csvLinkCls} self-end`}>
+        CSV İndir
+      </button>
+      <div className="overflow-x-auto">
+        <table className="w-auto text-[11px] font-mono border-collapse">
+          <thead>
+            <tr className="text-left text-muted border-b border-border">
+              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px]">Platform</th>
+              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Oyun</th>
+              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Oyuncu</th>
+              <th className="py-1.5 font-bold uppercase tracking-[1px] text-center">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.platform} className="border-b border-border/50">
+                <td className="py-1.5 pr-8 text-text whitespace-nowrap">{label(r.platform)}</td>
+                <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">{r.games}</td>
+                <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">{r.players}</td>
+                <td className="py-1.5 text-muted whitespace-nowrap text-center">{pct(r.games)}%</td>
+              </tr>
+            ))}
+            <tr className="border-b border-border/50">
+              <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap">TOPLAM</td>
+              <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">
+                {totalGames}
+              </td>
+              <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">—</td>
+              <td className="py-1.5 text-text font-bold whitespace-nowrap text-center">100.00%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Retention kohort tablosu (Büyüme > Kullanıcı) — satır: kayıt haftası,
  * sütun: kayıttan sonraki hafta (H0 = kayıt haftasının kendisi).
@@ -510,6 +595,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [userPeriod, setUserPeriod] = useState<number>(30);
   const [guestSources, setGuestSources] = useState<AdminGuestSourceRow[] | null>(null);
   const [guestDevices, setGuestDevices] = useState<AdminGuestDeviceRow[] | null>(null);
+  const [platforms, setPlatforms] = useState<AdminPlatformRow[] | null>(null);
   const [guestStandalone, setGuestStandalone] = useState<AdminGuestStandaloneRow[] | null>(null);
   const [friendActivity, setFriendActivity] = useState<AdminFriendActivityPoint[] | null>(null);
   const [activePlayers, setActivePlayers] = useState<AdminActivePlayersPoint[] | null>(null);
@@ -633,6 +719,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       fetchAdminUserActivitySeries(userPeriod, userGranularity).then(setUserActivity),
       fetchAdminGuestSourceBreakdown(days).then(setGuestSources),
       fetchAdminGuestDeviceBreakdown(days).then(setGuestDevices),
+      fetchAdminPlatformBreakdown(days).then(setPlatforms),
       fetchAdminGuestStandaloneBreakdown(days).then(setGuestStandalone),
       fetchAdminFriendActivitySeries(userPeriod, userGranularity).then(setFriendActivity),
       fetchAdminActivePlayersSeries(userPeriod, userGranularity).then(setActivePlayers),
@@ -1235,6 +1322,18 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       }
                       csvBaseName="kelimeki-cihaz"
                     />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <span className={sectionTitleCls}>
+                      Platform (Son {userPeriod} {PERIOD_UNIT_LABEL[userGranularity]})
+                    </span>
+                    <PlatformBreakdownTable rows={platforms} />
+                    <p className={captionCls}>
+                      Biten oyunların hangi istemciden oynandığı — yukarıdaki "Cihaz" tablosundan farklı bir
+                      soru: orası misafir ziyaretlerinde tarayıcının mobil mi masaüstü mü olduğunu sayar, bu
+                      tablo girişli oyuncunun app'ten mi web'den mi oynadığını. Bu kolon 14 Ağustos 2026'da
+                      eklendi; öncesinde biten oyunlar "Bilinmiyor" satırında toplanır.
+                    </p>
                   </div>
                   <div className="flex flex-col gap-2">
                     <span className={sectionTitleCls}>

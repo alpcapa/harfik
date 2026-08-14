@@ -2849,7 +2849,8 @@
      "points": 0,
      "action": "pass"
     }
-   ]
+   ],
+   "platform": "web"
   }
  },
  "abandonedSurrender": {
@@ -4276,7 +4277,8 @@
       }
      ]
     }
-   ]
+   ],
+   "platform": "web"
   }
  },
  "fixedId": "11111111-2222-3333-4444-555555555555",

@@ -62,6 +62,7 @@ import {
   getMyOnlineRack,
   isValidWordRemote,
   sendOnlineGameMessage,
+  setOnlineGamePlatform,
   submitMove,
   subscribeOnlineGameMessages,
   subscribeOnlineGameState,
@@ -339,6 +340,20 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   // check_turn_timeout no-op'tur süre dolmadıysa — burada da aynı "kendi
   // ardışık refresh'lerini üst üste bindirme" korumasını taşıyor.
   const timeoutCheckingRef = useRef(false);
+
+  // Platform telemetrisi (14 Ağustos 2026) — bu oyunda BU kullanıcının hangi
+  // istemciden (web/ios/android/app-web) oynadığını oyun başına bir kez
+  // yazar. Yerel oyunlarda bu bilgi `games.platform` ile geliyor ama Canlı'da
+  // o satırı sunucu yazdığından istemci oraya hiç ulaşamıyor; mobil lansmanı
+  // ölçülebilsin diye ayrı bir tablo (`online_game_clients`) kullanılıyor.
+  // BİLEREK refresh() döngüsünün DIŞINDA, kendi effect'inde: telemetri, oyun
+  // durumu senkronuyla aynı kod yolunu paylaşmamalı (bir hatası oyunu
+  // etkilemesin) ve her Realtime olayında tekrar yazılmasının anlamı yok —
+  // upsert olduğundan mükerrer çağrı zararsız, sadece gereksiz.
+  useEffect(() => {
+    if (mySlotIndex < 0) return;
+    void setOnlineGamePlatform(game.id);
+  }, [game.id, mySlotIndex]);
 
   useEffect(() => {
     if (mySlotIndex < 0) return;

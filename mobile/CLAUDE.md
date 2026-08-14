@@ -363,6 +363,9 @@ mobile/
                              # ile sürükleme/joker/mesaj desenini PAYLAŞIR,
                              # biri değişirse öteki de güncellenmeli)
       util/semver.dart, util/uuid.dart, util/share_board.dart,
+      util/platform.dart      # bu istemcinin platformu (ios/android/app-web) —
+                             # telemetri; web `src/utils/platform.ts` karşılığı,
+                             # değer kümesi sunucu kısıtıyla ELLE senkron
     util/avatar_picker.dart # profil fotoğrafı seçimi (image_picker sarmalayıcısı,
                              # yalnızca galeri) — enjekte edilebilir PickAvatarFn
     android/ ios/            # flutter create çıktısı + elle değişiklikler (aşağı bkz.)
@@ -4117,6 +4120,74 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        kapatıyor; portun resume kancası için de tek kanıt bu** (yukarıdaki
        "testsiz kaldı" notunun karşılığı: test yoksa cihaz turu opsiyonel
        değildir).
+
+   - ✅ **Parça 99 — port artık hangi istemci olduğunu SÖYLÜYOR: platform
+     telemetrisi (14 Ağustos 2026, yeni `util/platform.dart`,
+     `game_record.dart`, `online_games_api.dart`, `online_game_screen.dart`):**
+     Kullanıcı isteği ("Platform column'u da ekle"). Sunucu tarafı ve web
+     yarısı aynı gün eklendi (bkz. kök `CLAUDE.md`); bu parça portun yarısı.
+     - **Neden ŞİMDİ:** `games` satırında istemciyi söyleyen hiçbir alan
+       yoktu ve bu alan geriye dönük DOLDURULAMAZ — port yayına çıktıktan
+       sonra eklenirse lansmanın ilk günleri sonsuza dek ölçülemez kalırdı.
+       Port yazmazsa satırlar boş platformla gider, yani bu değişikliğin
+       varlık sebebi tam olarak portun kendisi.
+     - **`dart:io`'nun `Platform.isIOS`'ü KULLANILMADI** — `dart:io` web
+       derlemesinde yok, import etmek `flutter build web`i kırardı (portun
+       test ortamı `mobile-build.yml`de gerçekten derleniyor). `kIsWeb` +
+       `defaultTargetPlatform` her hedefte çalışıyor.
+     - **Bilinmeyen hedefte `null`, uydurma değer DEĞİL:** masaüstü
+       (macOS/Windows/Linux) yayınlanmıyor ama sunucudaki check kısıtında
+       olmayan bir değer yollamak `games` insert'ini DÜŞÜRÜR — yani bir
+       telemetri alanı yüzünden oyun KAYDI (skor, k-lig, hamle dökümü)
+       kaybolur. Sütun nullable, `null` satırı sorunsuz kaydediyor.
+     - **Yerel taraf `NewGameRecord`ta bir ALAN, `toJson`da hesaplanan bir
+       değer DEĞİL:** kayıt çevrimdışı kuyruğa serileşip günler sonra
+       gönderilebiliyor ve satır oyunun GERÇEKTEN oynandığı istemciyi
+       anlatmalı (web de kuyruğa aynı şekilde yazıyor). Alan eklenmeden
+       önce kuyruğa girmiş kayıtlarda `null` — `fromJson` bunu tolere
+       ediyor, kayıt yine gönderiliyor.
+     - **Canlı taraf AYRI bir tabloya yazıyor** (`online_game_clients`):
+       Canlı'da `games` satırını SUNUCU yazdığından istemcinin kim olduğu
+       oraya hiç ulaşmıyor. `reportPlatform` oyun ekranının `initState`inde
+       BİR KEZ, `_refresh()` döngüsünün DIŞINDA kendi satırında çağrılıyor
+       — telemetri, oyun durumu senkronuyla aynı kod yolunu paylaşmamalı
+       (hatası oyunu etkilemesin) ve her Realtime olayında tekrar yazmanın
+       anlamı yok (upsert olduğundan mükerrer çağrı zararsız, sadece
+       gereksiz). Hata TAMAMEN yutuluyor; sunucu da yetkisiz/geçersiz
+       girdide sessizce no-op dönüyor (canlıda doğrulandı).
+     - **`submit_move`'a parametre EKLENMEDİ** — projenin en kritik RPC'si,
+       lansman öncesi imza değişikliğinin riski kazancından büyük; gerekçe
+       ve ölçüm kök `CLAUDE.md`'de.
+     - **Değer kümesi testle bağlandı:** `test/client_platform_parity_test.dart`
+       migration SQL'ini OKUYUP `kClientPlatforms` ile karşılaştırıyor
+       (`color_tokens_test`/`rank_tiers_parity_test` deseni) — kısıt üç
+       yerde geçtiğinden üçü de ayrı ayrı sayılıyor, ve `currentPlatform`ın
+       her hedefte kümede (ya da null) kaldığı ayrıca doğrulanıyor.
+     - **Fikstür `platform` HARİÇ karşılaştırılıyor:** `web_game_record.json`
+       iki istemcinin AYNI satırı ürettiğini kanıtlar, ama bu alan tanımı
+       gereği farklı olmak ZORUNDA. Test onu ayırıp kalan 20 sütunu bayt
+       bayt karşılaştırıyor ve ayrıca "iki taraf da yazıyor + değerler
+       kümede + BİRBİRİNDEN farklı" diyor — sonuncusu olmadan port web'in
+       sabitini kopyalasa test geçerdi. Fikstürün `record` yarısı web'in
+       ÜRETİM kodu koşturularak yeniden üretildi (Parça 65'in cerrahi
+       yöntemi; anlamsal diff yalnızca iki `"platform": "web"` satırı).
+     - **Negatif eş, İKİ AYRI kanıt:** `kClientPlatforms`e sahte bir değer
+       eklenince parite testi GERÇEKTEN düştü (`does not contain 'desktop'`);
+       `NewGameRecord.toJson`dan `platform` çıkarılınca iki fikstür testi de
+       GERÇEKTEN düştü (`port platformu yazmıyor — lansman ölçülemez kalır`).
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 427/427
+       yeşil** (424'ten +3). `kelimeki_core`'a hiç dokunulmadı.
+     - **`mobile/` DIŞINDA dosya değişti** (web yarısı + migration + admin
+       paneli + Gizlilik Politikası) → kök `CLAUDE.md`/`README.md`/
+       `TESTING.md` aynı commit'te güncellendi (Kontrol Listesi madde 1).
+     - **Gizlilik metni İKİ tarafta birden güncellendi** — yeni bir kişisel
+       veri toplandığında `PrivacyModal`/`legal_modals.dart` güncellenmek
+       ZORUNDA (proje kuralı) ve `legal_text_test.dart` "Son güncelleme"
+       tarihlerini karşılaştırdığından port bayat kalsa test düşerdi.
+     - **Doğrulama sınırı:** gerçek bir cihazdan oynanan oyunun `ios`/
+       `android` satırına düştüğü ancak cihazda görülebilir —
+       `mobile/TESTING.md` bölüm 5'e ve kök `TESTING.md` 9.8'e maddeler
+       eklendi.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 14 Ağustos 2026)
 

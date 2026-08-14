@@ -329,6 +329,16 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
         widget.onlineGames.subscribeGame(widget.game.id, () => _refresh());
     _periodic = Timer.periodic(_periodicRefresh, (_) => _refresh());
     unawaited(_loadChat());
+    // Platform telemetrisi — bu oyunda BU kullanıcının hangi istemciden
+    // (ios/android/app-web) oynadığını oyun başına bir kez yazar. Yerelde bu
+    // bilgi `games.platform` ile gidiyor ama Canlı'da o satırı sunucu
+    // yazdığından istemci oraya hiç ulaşamıyor; mobil lansmanı ölçülebilsin
+    // diye ayrı bir tablo kullanılıyor (web `setOnlineGamePlatform` ile aynı).
+    // BİLEREK `_refresh()` döngüsünün DIŞINDA: telemetri, oyun durumu
+    // senkronuyla aynı kod yolunu paylaşmamalı (hatası oyunu etkilemesin) ve
+    // her Realtime olayında tekrar yazmanın anlamı yok — upsert olduğundan
+    // mükerrer çağrı zararsız, sadece gereksiz.
+    unawaited(widget.onlineGames.reportPlatform(widget.game.id));
   }
 
   @override

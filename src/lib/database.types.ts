@@ -400,6 +400,14 @@ export interface SharedGameData {
   created_at: string;
 }
 
+/**
+ * Kaydı yazan istemci. `'app-web'`, Flutter portunun web TEST derlemesi —
+ * ürün değil, geliştiricinin cihazsız test ortamı; gerçek web trafiğiyle
+ * karışmasın diye bilerek ayrı bir değer (bkz. `mobile/CLAUDE.md`, "Web
+ * Derlemesi — ÜRÜN DEĞİL, TEST ORTAMI").
+ */
+export type ClientPlatform = 'web' | 'ios' | 'android' | 'app-web';
+
 /** games tablosuna eklenecek yeni kayıt. */
 export type NewGame = Pick<
   Game,
@@ -429,6 +437,16 @@ export type NewGame = Pick<
   players?: GamePlayerSnapshot[];
   board_snapshot?: BoardSnapshotTile[];
   moves?: HistoryEntry[];
+  /**
+   * Bu kaydı YAZAN istemci (14 Ağustos 2026) — mobil lansmanı ölçülebilsin diye.
+   * Web her zaman `'web'`, Flutter portu `'ios'`/`'android'`/`'app-web'` yazar
+   * (sonuncusu portun web TEST derlemesi — gerçek web trafiğini kirletmesin diye
+   * ayrı bir değer). YALNIZCA yerel (YZ) oyunlarda dolu: Canlı oyunların `games`
+   * satırını sunucu yazdığından orada null kalır ve platform ayrı bir tablodan
+   * (`online_game_clients`, `setOnlineGamePlatform` ile yazılır) çözülür.
+   * İstemcinin bu kolon üzerinde SELECT yetkisi YOK — yalnızca yazabilir.
+   */
+  platform?: ClientPlatform;
 };
 
 /** Oyun geçmişi listesinde gösterilecek alanlar. */
@@ -643,6 +661,24 @@ export interface AdminGuestSourceRow {
 export interface AdminGuestDeviceRow {
   device_type: string;
   visitors: number;
+}
+
+/**
+ * admin_platform_breakdown RPC çıktısındaki tek satır (Büyüme > Kullanıcı) —
+ * son N günde biten oyunların hangi İSTEMCİDEN oynandığı.
+ *
+ * `guest_visits.device_type`ten TAMAMEN ayrı bir soru: o, oturum KAPALIYKEN
+ * yazılıyor ve "tarayıcı mobil mi masaüstü mü" diyor; bu ise girişli
+ * kullanıcının "app mi web mi" sorusunu yanıtlıyor — mobil lansmanı ancak
+ * bununla ölçülebiliyor.
+ *
+ * `platform` bu kolonun eklenmesinden ÖNCE biten oyunlarda null; RPC onları
+ * `'bilinmiyor'` olarak toplar (satır düşürmek toplamı yalancı yapardı).
+ */
+export interface AdminPlatformRow {
+  platform: string;
+  games: number;
+  players: number;
 }
 
 /**

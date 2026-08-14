@@ -9,6 +9,7 @@ import type { GameState } from '../game/types';
 import type { GameResult, NewGame } from '../lib/database.types';
 import { rankPlayers } from './ranking';
 import { serializeBoardSnapshot } from './boardSnapshot';
+import { CLIENT_PLATFORM } from './platform';
 
 export function buildGameRecord(
   state: GameState,
@@ -71,5 +72,11 @@ export function buildGameRecord(
     // (`invasionFrom` vergi satırları dahil) — modal onları kart olarak
     // göstermiyor ama toplam puana katıyor, atılırlarsa toplamlar bozulur.
     moves: state.moveHistory,
+    // İstemci platformu — mobil lansmanının ölçülebilmesi için (14 Ağustos
+    // 2026). Değer `platform.ts`ten geliyor (web'de sabit 'web'); Flutter
+    // portunun karşılığı `game_record.dart`'ta `currentPlatform` (ios/android/
+    // app-web). Canlı oyunlarda bu satırı SUNUCU yazdığından orada null
+    // kalır — platform `online_game_clients`ten çözülür.
+    platform: CLIENT_PLATFORM,
   };
 }

@@ -573,6 +573,35 @@ tarayıcıda görülebilecek olanlar. **Admin hesabı gerekiyor.**
 > sonradan silinecek). Bu ölçekte kohort eğrileri gürültüdür; buradaki amaç
 > enstrümantasyonun ÇALIŞTIĞINI doğrulamak, eğrileri yorumlamak değil.
 
+## 9.8. Admin — Platform dökümü (14 Ağustos 2026)
+
+Girişli bir kullanıcının oyunu APP'ten mi WEB'den mi oynadığını ölçen yeni
+kolon. Sunucu tarafı canlıda rollback'li senaryolarla doğrulandı (iki kaynak,
+yetki matrisi, geçersiz değer); aşağıdakiler yalnızca gerçek istemcide
+görülebilecek olanlar.
+
+- [ ] **Tablo yükleniyor.** Admin Paneli → Büyüme → Kullanıcı: "Cihaz"ın
+      hemen altında **Platform** tablosu (Platform / Oyun / Oyuncu / %).
+      Altındaki açıklama satırı "Cihaz"dan farkını anlatmalı.
+- [ ] **Web'den oynanan yeni bir oyun `Web` satırına düşüyor.** kelimeki.com'da
+      girişliyken bir YZ oyunu BİTİR (yarıda bırakma — satır ancak oyun
+      bitince yazılıyor), sonra paneli aç: `Web` satırının "Oyun" sayısı 1
+      artmalı. Toplam da artmalı, `Bilinmiyor` DEĞİŞMEMELİ.
+- [ ] **Uygulamadan oynanan oyun `iOS`/`Android` satırına düşüyor.** Aynı
+      şeyi mobil uygulamada yap (GitHub Pages web derlemesinde `App (Tarayıcı)`
+      satırına düşer — o da doğru davranış, uygulamanın tarayıcıdaki hâli).
+- [ ] **Canlı oyun da sayılıyor.** İki hesapla bir Canlı oyunu SONUNA kadar
+      bitir; her katılımcı KENDİ oynadığı istemcinin satırına düşmeli (biri
+      web'den biri app'ten oynadıysa iki farklı satır).
+- [ ] **"Bilinmiyor" satırı GİZLENMEMELİ.** Kolon 14 Ağustos 2026'da eklendi;
+      öncesinde biten ~300 oyun orada toplanıyor. Satırı görmüyorsan tablo
+      yanlış filtreliyor demektir — yüzdeler de yalancı olur.
+- [ ] **CSV İndir** çalışmalı; dosyada Platform/Oyun/Oyuncu/% sütunları ve bir
+      TOPLAM satırı olmalı.
+- [ ] **Gizlilik metni güncel.** Gizlilik Politikası → "Toplanan Veriler"de
+      "Bir oyunu hangi istemciden oynadığınız…" maddesi olmalı, "Son
+      güncelleme: 14 Ağustos 2026" yazmalı (mobil uygulamadaki metin de AYNI).
+
 ## 10. k-lig ödül & rütbe sistemi
 
 Ödül/rütbe kayıtları sunucuda, `games` tablosuna satır ekleyen bir trigger'la
