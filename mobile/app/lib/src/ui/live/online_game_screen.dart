@@ -1008,7 +1008,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     if (state.board[r][c] != null) {
       final store = widget.meanings;
       if (store == null) return;
-      await showMeaningModal(context, store.lookup, [
+      await showMeaningModal(context, store.lookup, isUnavailable: () => store.unavailable, [
         fullWordAt(state.board, const {}, r, c, 0, 1),
         fullWordAt(state.board, const {}, r, c, 1, 0),
       ]);
@@ -1889,15 +1889,23 @@ class _OfflinePanel extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 360),
-        child: NeoBox(
-          borderRadius: BorderRadius.circular(16),
-          color: kPanel,
-          outerShadows: const [
-            BoxShadow(
-                color: Color(0x8015233F),
-                blurRadius: 45,
-                offset: Offset(0, 20)),
-          ],
+        // NeoBox KULLANILMIYOR: çocuğunu `SizedBox.expand` ile sarıyor, yani
+        // gelen kısıtları DOLDURUYOR — boyutu dışarıdan belli olan yerler
+        // için tasarlanmış. `Center` altında bu, kartı ekran boyu bir beyaz
+        // dikdörtgene çeviriyordu (14 Ağustos 2026, kullanıcı cihazda
+        // "bozuk" diye bildirdi). Burada kart İÇERİĞİNE göre küçülmeli.
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: kPanel,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: kBorder),
+            boxShadow: const [
+              BoxShadow(
+                  color: Color(0x8015233F),
+                  blurRadius: 45,
+                  offset: Offset(0, 20)),
+            ],
+          ),
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(

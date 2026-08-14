@@ -77,3 +77,10 @@ bool isNetworkError(Object? e) {
       s.contains('connection refused') ||
       s.contains('timeoutexception');
 }
+
+/// Kelime anlamı penceresi — sözlük AÇILAMADIĞINDA (kelime bulunamadı'dan
+/// farklı). Flutter WEB derlemesinde sözlük asset'i HTTP ile çekildiğinden
+/// uçak modunda ulaşılamıyor; native'de asset pakette olduğu için bu dal
+/// pratikte ulaşılamaz.
+const kOfflineMeaningNotice =
+    'Kelime anlamları için internet bağlantısı gerekiyor.';

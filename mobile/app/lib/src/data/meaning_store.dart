@@ -38,6 +38,12 @@ class MeaningStore {
   Database? _db;
   Future<Database?>? _opening;
 
+  bool _openFailed = false;
+
+  /// Sözlük AÇILAMADI mı (kelime bulunamadı'dan farklı)? Modal mesajı buna
+  /// göre seçer — web `isMeaningDataUnavailable` ile aynı ayrım.
+  bool get unavailable => _openFailed;
+
   MeaningStore({
     required AssetBundle bundle,
     DatabaseFactory? factory,
@@ -115,10 +121,18 @@ class MeaningStore {
         options: OpenDatabaseOptions(readOnly: true, singleInstance: false),
       );
       _db = db;
+      _openFailed = false;
       return db;
     } catch (e) {
-      // Anlam gösterimi oyunun çalışması için kritik değil — asset/dosya
-      // sorununda modal "anlam bulunamadı" der, oyun akışı bozulmaz.
+      // Anlam gösterimi oyunun çalışması için kritik değil; oyun akışı
+      // bozulmaz. AMA "sözlük açılamadı" ile "kelime sözlükte yok" AYNI
+      // ŞEY DEĞİL — ikisi de null dönüyordu ve modal ikisine de "anlamı
+      // bulunamadı" diyordu. Kullanıcı bunu cihazda yakaladı (14 Ağustos
+      // 2026): Flutter WEB derlemesinde sözlük asset'i HTTP ile çekiliyor
+      // (`_openWeb` ilk açılışta 6 MB'ı IndexedDB'ye kopyalar) ve uçak
+      // modunda o çekim düşüyor. Native'de asset uygulama paketinde
+      // olduğundan bu dal pratikte ulaşılamaz.
+      _openFailed = true;
       _opening = null;
       return null;
     }

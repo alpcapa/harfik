@@ -497,6 +497,17 @@ void main() {
       expect(find.text('Yükleniyor…'), findsNothing);
       expect(find.text(kOfflineLiveTitle), findsOneWidget);
       expect(find.text('TEKRAR DENE'), findsOneWidget);
+      // Kart İÇERİĞİNE göre küçülmeli. `NeoBox` çocuğunu `SizedBox.expand`
+      // ile sarıyor (boyutu dışarıdan belli olan yerler için) — `Center`
+      // altında kullanılınca kartı ekran boyu beyaz bir dikdörtgene
+      // çeviriyordu (14 Ağustos 2026, kullanıcı cihazda "bozuk" bildirdi).
+      // Negatif eş: DecoratedBox yerine NeoBox konursa yükseklik 251 → 900.
+      final card = find
+          .ancestor(
+              of: find.text(kOfflineLiveTitle),
+              matching: find.byType(DecoratedBox))
+          .first;
+      expect(tester.getSize(card).height, lessThan(400));
       expect(find.text('← ${trUpper(kOfflineBackLabel)}'), findsOneWidget);
 
       // Bağlantı dönünce "Tekrar Dene" gerçekten yükleyebilmeli.

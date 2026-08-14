@@ -41,6 +41,7 @@ void main() {
       'OFFLINE_NO_CONNECTION': kOfflineNoConnection,
       'OFFLINE_AI_SUGGESTION': kOfflineAiSuggestion,
       'OFFLINE_AI_CTA': kOfflineAiCta,
+      'OFFLINE_MEANING_NOTICE': kOfflineMeaningNotice,
     };
     for (final e in pairs.entries) {
       final web = _readConst(source, e.key);
