@@ -3944,6 +3944,15 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        düştü; `isNetworkError` dalı kaldırılınca kısa uyarı bulunamadı;
        web'deki metin tek kelime değiştirilince parite testi "mesaj satırı
        metni ayrışmış" dedi.
+     - **(a)'nın WEB yarısı ilk sürümde İŞE YARAMADI (aynı gün, cihazda
+       bildirildi):** yalnızca "null döndü" dalı ele alınmıştı, oysa web'de
+       `getMyOnlineRack` hatada `throw` ediyor → `Promise.all` reddediliyor →
+       `setLoadFailed` satırına hiç ulaşılmıyordu. Üç çağrı tek try/catch'e
+       alındı. **Portta bu delik yoktu** (`loadGame` zaten üçünü de sarıyor)
+       ve Flutter testi tam bu yüzden geçmişti — test doğruydu, web'in
+       FARKLI hata sözleşmesini temsil etmiyordu. Ders: aynı düzeltmeyi iki
+       platforma uygularken "hata nasıl yüzeye çıkıyor?" sorusunu her
+       platform için ayrı sor.
      - **Cihazda doğrulanacak:** iki senaryo da `mobile/TESTING.md` bölüm 11
        ve kök `TESTING.md` bölüm 2'ye eklendi.
 
