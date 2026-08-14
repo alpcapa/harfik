@@ -18,6 +18,8 @@ import { LogoMark } from './LogoMark';
 import { PlayerAvatarRow, type AvatarRowPlayer } from './PlayerAvatarRow';
 import { PlayerBadge } from './PlayerBadge';
 import { RecentGamesSection } from './RecentGamesSection';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { OFFLINE_AI_SUGGESTION, OFFLINE_AI_CTA } from '../utils/offlineNotice';
 import { TermsModal } from './TermsModal';
 import { PrivacyModal } from './PrivacyModal';
 import type { LocalGameSave, OnlineGame } from '../lib/database.types';
@@ -282,6 +284,7 @@ export function Setup({
   // akışıyla BİREBİR AYNI desen). Misafirde bu buton hiç yok — tek slot
   // olduğundan form zaten doğrudan gösteriliyor (aşağıya bkz.).
   const [creatingLocal, setCreatingLocal] = useState(false);
+  const online = useOnlineStatus();
   // "Yapay Zeka ile" liste görünümünün Devam Edenler/Son Oynananlar tabı —
   // `LiveGamesTab`'daki (Arkadaşınla) BİREBİR AYNI çözüm, buraya da aynı
   // gerekçeyle taşındı: çok sayıda devam eden YZ oyunu olan biri için "Son
@@ -488,6 +491,27 @@ export function Setup({
     }
   };
 
+  /**
+   * "Yapay Zeka ile" sekmesinin çevrimdışı hâli — Canlı sekmesinin düz
+   * "İnternet bağlantısı yok"undan (LiveGamesTab) BİLİNÇLİ olarak farklı:
+   * burada gerçekten oynanabilir bir şey var, o yüzden kullanıcı bir
+   * çıkmaza değil bir seçeneğe yönlendiriliyor (14 Ağustos 2026, kullanıcı
+   * isteği). Link "+ Yeni Yapay Zeka Oyunu" butonuyla AYNI şeyi yapar —
+   * ikisi de `setCreatingLocal(true)`; biri değişirse öteki de.
+   */
+  const offlineAiNotice = (
+    <p className="text-center text-xs text-muted font-mono py-8 leading-relaxed">
+      {OFFLINE_AI_SUGGESTION}{' '}
+      <button
+        type="button"
+        onClick={() => setCreatingLocal(true)}
+        className="text-accent font-bold underline underline-offset-2 active:opacity-70"
+      >
+        {OFFLINE_AI_CTA}
+      </button>
+    </p>
+  );
+
   return (
     <>
     {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
@@ -656,7 +680,13 @@ export function Setup({
           </div>
 
           {localSubTab === 'active' ? (
-            cloudSaves === null ? (
+            // Çevrimdışıyken GÖSTERİLECEK KAYIT VARSA liste aynen çizilir —
+            // devam eden YZ oyunları çevrimdışı da oynanabiliyor (bkz.
+            // `cloudSaveMirror`), o listeyi bir uyarıyla değiştirmek gerçek
+            // bir yeteneği gizlerdi. Mesaj yalnızca elde bir şey yokken.
+            !online && (cloudSaves === null || cloudSaves.length === 0) ? (
+              offlineAiNotice
+            ) : cloudSaves === null ? (
               <p className="text-center text-xs text-muted font-mono py-8">Yükleniyor…</p>
             ) : cloudSaves.length === 0 ? (
               <p className="text-center text-xs text-muted font-mono py-8">
@@ -680,7 +710,11 @@ export function Setup({
               </div>
             )
           ) : (
-            <RecentGamesSection onlineOnly={false} emptyMessage="Henüz bitmiş bir Yapay Zeka oyunun yok." />
+            <RecentGamesSection
+              onlineOnly={false}
+              emptyMessage="Henüz bitmiş bir Yapay Zeka oyunun yok."
+              offlineNode={offlineAiNotice}
+            />
           )}
         </>
       ) : (

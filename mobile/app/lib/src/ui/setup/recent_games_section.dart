@@ -86,6 +86,14 @@ class RecentGamesSection extends StatefulWidget {
   /// eklenen eski kullanım biçiminde (artık yok) hâlâ null bırakılabilir.
   final String? emptyMessage;
 
+  /// Son yükleme sunucuya ULAŞAMADIĞINDA ve gösterilecek oyun YOKKEN
+  /// [emptyMessage]/hata metni yerine render edilir (web `offlineNode`,
+  /// 14 Ağustos 2026). Düğüm olarak alınıyor çünkü kullanım yerine göre
+  /// farklı konuşuluyor: Canlı sekmesi düz "İnternet bağlantısı yok" derken
+  /// Yapay Zeka sekmesi tıklanabilir bir "Hemen oyun aç." önerisi sunuyor.
+  /// Önbellekten gelen bir liste VARSA o gösterilmeye devam eder.
+  final Widget? offlineNode;
+
   const RecentGamesSection({
     super.key,
     required this.games,
@@ -94,6 +102,7 @@ class RecentGamesSection extends StatefulWidget {
     this.currentName,
     this.stats,
     this.emptyMessage,
+    this.offlineNode,
   });
 
   @override
@@ -164,6 +173,12 @@ class _RecentGamesSectionState extends State<RecentGamesSection> {
     // eklenen eski kullanım biçimi) bölüm SESSİZCE gizlenir; verilmişse
     // (kendi başına bir sekme içeriği — Parça 28) "Yükleniyor…"/mesaj
     // gösterilir.
+    // Çevrimdışıyken "yüklenemedi" teknik olarak doğru ama ne yapılacağını
+    // söylemiyor — çağıran bir düğüm verdiyse o konuşur.
+    final offline = widget.offlineNode;
+    if (offline != null && _loadFailed && (games == null || games.isEmpty)) {
+      return offline;
+    }
     if (games == null) {
       return _emptyOrHidden(_loadFailed
           ? 'Oyun geçmişi yüklenemedi. Bağlantını kontrol edip tekrar dene.'

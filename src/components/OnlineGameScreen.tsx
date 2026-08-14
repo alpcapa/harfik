@@ -27,6 +27,7 @@ import {
   OFFLINE_LIVE_TITLE,
   OFFLINE_LIVE_BODY,
   OFFLINE_MOVE_NOTICE,
+  OFFLINE_BACK_LABEL,
   isNetworkError,
 } from '../utils/offlineNotice';
 import { WildcardModal } from './WildcardModal';
@@ -1076,7 +1077,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
               onClick={onBack}
               className="text-[11px] font-mono font-bold uppercase tracking-[1px] text-muted underline underline-offset-2"
             >
-              ← Canlı Listesi
+              ← {OFFLINE_BACK_LABEL}
             </button>
           </div>
         ) : (

@@ -963,6 +963,11 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       başlıklı panel + **TEKRAR DENE** + **← CANLI LİSTESİ** çıkmalı.
       Uçak modunu kapatıp TEKRAR DENE'ye bas → oyun normal açılmalı.
       Aynısını web'de de dene (iki platform aynı metni gösteriyor).
+- [ ] **Çevrimdışı sekme metinleri (Parça 96).** Uçak modunda Setup'a dön:
+      ARKADAŞINLA'nın üç alt sekmesi de "İnternet bağlantısı yok" demeli.
+      YAPAY ZEKA İLE sekmesinde devam eden oyunun yoksa linkli öneri
+      ("Hemen oyun aç.") çıkmalı ve link yeni oyun formunu açmalı; devam
+      eden oyunun VARSA liste normal görünüp oynanabilmeli.
 - [ ] **Çevrimdışı hamlede METİN (Parça 96).** Uçak modunda OYNA/PAS GEÇ:
       mesaj satırında **"Bağlantı yok — Canlı oyun için internet
       gerekiyor."** çıkmalı — ham "ClientException/Failed to fetch" DEĞİL.

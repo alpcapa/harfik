@@ -42,6 +42,8 @@ import type { OnlineGame, OnlineGameSlot } from '../lib/database.types';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
 import { CountBadge } from './CountBadge';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { OFFLINE_NO_CONNECTION } from '../utils/offlineNotice';
 import { PlayerAvatarRow } from './PlayerAvatarRow';
 import { FriendSuggestModal } from './FriendSuggestModal';
 import { LiveGameCreateForm } from './LiveGameCreateForm';
@@ -374,6 +376,7 @@ interface LiveGamesTabProps {
 
 export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   const { user, loading: authLoading } = useAuth();
+  const online = useOnlineStatus();
   // null = henüz çekilmedi (yükleniyor), [] = çekildi ama hiç oyun yok.
   // İlk değer, varsa bu kullanıcı için önbellekteki son bilinen listeden
   // geliyor (bkz. `liveGamesCache` tanımındaki not) — yeniden mount'ta
@@ -728,7 +731,19 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
         ))}
       </div>
 
-      {games === null ? (
+      {/* Çevrimdışıyken ÜÇ alt sekme de aynı şeyi söyler: Canlı oyunun her
+          parçası (liste, davet, geçmiş) sunucudan geliyor, dolayısıyla
+          "Devam eden bir Canlı oyunun yok." / "Yükleniyor…" gibi metinler
+          çevrimdışıyken YANILTICI — kullanıcı bunu bizzat bildirdi
+          (14 Ağustos 2026): oyun ekranından geri dönünce "davetiniz yok"
+          ve "yükleniyor" görüyordu. Bayat bir liste göstermek de çözüm
+          değil; o listeden bir oyuna dokunmak zaten "bağlantı yok"
+          paneline çıkıyor (bkz. OnlineGameScreen). Yapay Zeka sekmesi
+          BİLİNÇLİ olarak farklı konuşur — orada çevrimdışı oynanabilir bir
+          şey var (bkz. Setup.tsx). */}
+      {!online ? (
+        <p className="text-center text-xs text-muted font-mono py-8">{OFFLINE_NO_CONNECTION}</p>
+      ) : games === null ? (
         <p className="text-center text-xs text-muted font-mono py-8">Yükleniyor…</p>
       ) : subTab === 'active' ? (
         active.length === 0 ? (

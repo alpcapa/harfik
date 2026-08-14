@@ -28,6 +28,26 @@ const kOfflineLiveBody =
 /// Mesaj satırına sığacak kısa hâli.
 const kOfflineMoveNotice = 'Bağlantı yok — Canlı oyun için internet gerekiyor.';
 
+/// Panelin geri butonu — bilerek HEDEF ADI TAŞIMIYOR ("Canlı Listesi"
+/// değil): çevrimdışıyken o listeye dönünce Canlı sekmeleri zaten "bağlantı
+/// yok" diyor (kullanıcı: "geri gitmek için yazan Canlı listesi çok saçma").
+const kOfflineBackLabel = 'Geri Dön';
+
+/// Canlı sekmelerinin (Devam Edenler/Oyun Davetleri/Son Oynananlar) hâli.
+const kOfflineNoConnection = 'İnternet bağlantısı yok';
+
+/// Yapay Zeka sekmesi çevrimdışıyken FARKLI konuşur: orada gerçekten
+/// oynanabilir bir şey var, o yüzden kullanıcı bir çıkmaza değil bir
+/// seçeneğe yönlendiriliyor. [kOfflineAiCta] ayrı bir sabit çünkü LİNK
+/// olarak render ediliyor — dokunuşu "+ Yeni Yapay Zeka Oyunu" ile aynı.
+///
+/// Yalnızca gösterilecek kayıt YOKKEN çıkar: devam eden YZ oyunları
+/// çevrimdışı da listelenip oynanabiliyor, o listeyi bir uyarıyla
+/// değiştirmek gerçek bir yeteneği gizlerdi.
+const kOfflineAiSuggestion =
+    'İnternet bağlantısı yok ama sorun değil, yapay zeka ile çevrimdışı da oynayabilirsin.';
+const kOfflineAiCta = 'Hemen oyun aç.';
+
 /// Hata "sunucuya hiç ulaşamadık" mı, yoksa sunucunun kendi reddi mi?
 ///
 /// Ayrım şart: `submit_move`'un iş kuralı hataları ("Sıra sende değil.",
@@ -42,6 +62,10 @@ const kOfflineMoveNotice = 'Bağlantı yok — Canlı oyun için internet gereki
 /// `Load failed` (**Safari'nin fetch hata metni** — port iPad Safari'de
 /// test edildiğinden bu şart).
 bool isNetworkError(Object? e) {
+  // `toLowerCase` burada Türkçe değişmezini İHLAL ETMİYOR (bkz. tarama
+  // listesi): karşılaştırılan şey kullanıcıya gösterilecek Türkçe bir metin
+  // değil, ASCII kalıplara bakılan bir istisna dizesi. Türkçe bir sunucu
+  // mesajı ("Sıra sende değil.") bu kalıpların hiçbirine denk gelmez.
   final s = e.toString().toLowerCase();
   return s.contains('socketexception') ||
       s.contains('clientexception') ||

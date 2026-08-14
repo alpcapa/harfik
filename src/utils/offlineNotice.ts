@@ -34,6 +34,33 @@ export const OFFLINE_MOVE_NOTICE =
   'Bağlantı yok — Canlı oyun için internet gerekiyor.';
 
 /**
+ * Panelin geri butonu. Bilerek HEDEF ADI TAŞIMIYOR ("Canlı Listesi" değil):
+ * çevrimdışıyken o listeye dönünce Canlı sekmeleri zaten "bağlantı yok"
+ * diyor, yani kullanıcıya var olmayan bir yere gidiyormuş izlenimi vermek
+ * yanlıştı (14 Ağustos 2026, kullanıcı: "geri gitmek için yazan Canlı
+ * listesi çok saçma").
+ */
+export const OFFLINE_BACK_LABEL = 'Geri Dön';
+
+/** Canlı sekmelerinin (Devam Edenler/Oyun Davetleri/Son Oynananlar) hâli. */
+export const OFFLINE_NO_CONNECTION = 'İnternet bağlantısı yok';
+
+/**
+ * Yapay Zeka sekmesi çevrimdışıyken FARKLI konuşur: orada gerçekten
+ * oynanabilir bir şey var (yerel oyun tamamen çevrimdışı çalışır), o yüzden
+ * kullanıcı bir çıkmaza değil bir seçeneğe yönlendiriliyor. [OFFLINE_AI_CTA]
+ * ayrı bir sabit çünkü LİNK olarak render ediliyor — dokunuşu "+ Yeni Yapay
+ * Zeka Oyunu" butonuyla aynı şeyi yapar.
+ *
+ * Yalnızca gösterilecek bir kayıt YOKKEN çıkar: devam eden YZ oyunları
+ * çevrimdışıyken de listelenip oynanabiliyor (bkz. `cloudSaveMirror`), o
+ * listeyi bir uyarıyla değiştirmek gerçek bir yeteneği gizlerdi.
+ */
+export const OFFLINE_AI_SUGGESTION =
+  'İnternet bağlantısı yok ama sorun değil, yapay zeka ile çevrimdışı da oynayabilirsin.';
+export const OFFLINE_AI_CTA = 'Hemen oyun aç.';
+
+/**
  * Hata "sunucuya hiç ulaşamadık" mı, yoksa sunucunun kendi reddi mi?
  *
  * Ayrım şart: `submit_move`'un iş kuralı hataları ("Sıra sende değil.",
