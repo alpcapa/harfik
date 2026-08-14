@@ -23,6 +23,7 @@ import 'package:kelimeki/src/ui/game/board_widget.dart'
     show BoardWidget, DashedBorderPainter;
 import 'package:kelimeki/src/ui/game/rack_widget.dart' show RackWidget;
 import 'package:kelimeki/src/ui/game/tile_widget.dart' show TileWidget;
+import 'package:kelimeki/src/util/offline_notice.dart';
 import 'package:kelimeki/src/ui/live/online_game_screen.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
@@ -459,6 +460,112 @@ void main() {
       await unmount(tester);
     });
 
+    // Uçak modunda listeden bir Canlı oyuna dokununca ekran sonsuza dek
+    // "Yükleniyor…"da asılı kalıyordu: yükleme başarısız olunca `_refresh`
+    // sessizce dönüyor ("ekran korunur" — TAZELEMEDE doğru, İLK yüklemede
+    // korunacak bir şey yok). Kullanıcı bunu yayındaki webde bildirdi
+    // (14 Ağustos 2026). Negatif eş: `if (!_loaded) _loadFailed = true`
+    // satırı kaldırılırsa bu test düşer.
+    testWidgets('ilk yükleme başarısızsa "Yükleniyor…" yerine panel çıkar',
+        (tester) async {
+      await setPhoneViewSize(tester, const Size(420, 900));
+      final gw = FakeOnlineGamesGateway()
+        ..gameLoadFailWith = Exception('ClientException: Failed to fetch');
+      final row = gameRow(
+        id: 'g1',
+        myId: 'me',
+        status: 'active',
+        slots: [
+          slotHuman('me', name: 'Ironman', relation: 'self'),
+          slotHuman('esiner', name: 'Esiner'),
+        ],
+      );
+      await tester.pumpWidget(MaterialApp(
+        theme: kelimekiTheme(),
+        home: OnlineGameScreen(
+          game: game(row),
+          myUserId: 'me',
+          onlineGames: OnlineGamesRepo(gw),
+          words: words,
+          auth: AuthService.fake(user: fakeUser('me')),
+        ),
+      ));
+      await tester.pump();
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Yükleniyor…'), findsNothing);
+      expect(find.text(kOfflineLiveTitle), findsOneWidget);
+      expect(find.text('TEKRAR DENE'), findsOneWidget);
+      expect(find.text('← CANLI LİSTESİ'), findsOneWidget);
+
+      // Bağlantı dönünce "Tekrar Dene" gerçekten yükleyebilmeli.
+      gw
+        ..gameLoadFailWith = null
+        ..stateRow = stateJson(_baseState(), current: 0)
+        ..rackRows = [for (final tile in myRackTiles) tile.toJson()];
+      await tester.tap(find.text('TEKRAR DENE'));
+      await tester.pumpAndSettle();
+      expect(find.text(kOfflineLiveTitle), findsNothing);
+      expect(find.text('OYNA'), findsOneWidget);
+      await unmount(tester);
+    });
+
+    // Ağ hatasında ham "ClientException: Failed to fetch…" yerine ne olduğunu
+    // anlatan metin; sunucunun KENDİ reddi ise olduğu gibi kalmalı.
+    testWidgets('çevrimdışı hamlede açıklayıcı metin, sunucu reddi ham hâliyle',
+        (tester) async {
+      final gw = await pumpScreen(tester, current: 0);
+      gw.submitFailWith = Exception('ClientException: Failed to fetch');
+      await tester.tap(find.text('PAS GEÇ'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'PAS GEÇ'));
+      await tester.pumpAndSettle();
+      expect(find.text(kOfflineMoveNotice), findsOneWidget);
+      expect(find.textContaining('Failed to fetch'), findsNothing);
+
+      gw.submitFailWith = Exception('Sıra sende değil.');
+      await tester.tap(find.text('PAS GEÇ'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'PAS GEÇ'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Sıra sende değil.'), findsOneWidget);
+      await unmount(tester);
+    });
+
+    // Gönderim hatası, taşlar TAHTADAYKEN de görünmeli. Mevcut "sunucu reddi
+    // mesaj satırına düşer" testi PAS GEÇ kullandığından bu hatayı yapısal
+    // olarak göremiyordu: pas'ta tahta boş, dolayısıyla `myTurnNote` hiç
+    // devreye girmiyor. Oysa OYNA reddedilince taşlar tahtada kalır, taslak
+    // geçerli olmaya devam eder ve türetilen not hatayı yutuyordu — uçak
+    // modunda kullanıcının gördüğü tam olarak buydu (14 Ağustos 2026).
+    // Negatif eş: `_submitError` yerine `_setMessage` kullanılırsa düşer.
+    testWidgets('OYNA reddedilirse hata taşlar tahtadayken de görünür',
+        (tester) async {
+      final gw = await pumpScreen(tester, current: 0);
+      gw.submitFailWith = Exception('Bağlantı yok.');
+
+      for (var c = 0; c < 6; c++) {
+        await tester.tap(rackTile(0));
+        await tester.pump();
+        await tester.tap(boardCell(0, c));
+        await tester.pump();
+      }
+      expect(find.text('Oyna tuşuyla kelimeyi onayla.'), findsOneWidget);
+
+      await tester.tap(find.text('OYNA'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Bağlantı yok.'), findsOneWidget);
+      expect(find.text('Oyna tuşuyla kelimeyi onayla.'), findsNothing);
+
+      // Taslağa dokunulunca hata geçmişe ait olur (web `placedSignature`).
+      await tester.tap(boardCell(0, 5)); // taşı geri al
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Bağlantı yok.'), findsNothing);
+      await unmount(tester);
+    });
+
     testWidgets(
         'sürükleme sırasında sayfa kaymıyor (game_screen.dart ile aynı düzeltme)',
         (tester) async {
@@ -759,6 +866,49 @@ void main() {
           findsOneWidget);
 
       // Formu da kapat ki dispose'da bekleyen bir route kalmasın.
+      await tester.tap(find.byTooltip('Kapat'));
+      await tester.pumpAndSettle();
+      await unmount(tester);
+    });
+
+    // Oyun sonu modalındaki "Oyun Geçmişi" SUNUCUDAN gelen hamleleri
+    // göstermeli. Canlı'da reducer'ın `moveHistory`si boş olduğundan, modal
+    // ham `state`i alırsa "Henüz kazanılmış bir puan yok." der — tahta
+    // altındaki "Hamleler" linki ise doğru listeyi gösterir; kullanıcı bu
+    // ayrışmayı cihazda bildirdi (14 Ağustos 2026). Negatif eş: GameOverModal
+    // `onOpenHistory` yerine `state`i kendisi kullanırsa bu test düşer.
+    testWidgets('GameOver → Oyun Geçmişi sunucudaki hamleleri gösterir',
+        (tester) async {
+      await pumpScreen(
+        tester,
+        isGameOver: true,
+        moveRows: [
+          {
+            'turn': 0,
+            'player_index': 1,
+            'action': 'play',
+            'words': ['ARA'],
+            'points': 13,
+            'lost_shares': const [],
+            'tile_count': 3,
+            'finish_joker_count': 0,
+            'bingo': false,
+          }
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('OYUN GEÇMİŞİ'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Henüz kazanılmış bir puan yok.'), findsNothing);
+      expect(find.textContaining('ARA'), findsWidgets);
+
+      await tester.tap(find.byTooltip('Kapat').last); // hamle geçmişi
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Kapat')); // GameOver
+      await tester.pumpAndSettle();
+      // GameOver kapanışı "Görüş Bildir" formunu açıyor (bkz. üstteki test).
       await tester.tap(find.byTooltip('Kapat'));
       await tester.pumpAndSettle();
       await unmount(tester);

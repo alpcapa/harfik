@@ -532,7 +532,7 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       theme: kelimekiTheme(),
       home: Scaffold(
-        body: Center(child: GameOverModal(state: finished)),
+        body: Center(child: GameOverModal(state: finished, onOpenHistory: () {})),
       ),
     ));
     await tester.pumpAndSettle();
@@ -869,7 +869,7 @@ void main() {
         key: key,
         child: ColoredBox(
           color: Colors.white,
-          child: Center(child: GameOverModal(state: finished)),
+          child: Center(child: GameOverModal(state: finished, onOpenHistory: () {})),
         ),
       ),
     ));

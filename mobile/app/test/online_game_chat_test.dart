@@ -256,6 +256,38 @@ void main() {
       await unmount(tester);
     });
 
+    // Realtime kanalı arka planda askıya alınırsa o sırada gelen mesaj
+    // KALICI olarak kaybolur (postgres_changes canlı bir akış, kaçırılan
+    // olayı tekrar oynatmaz) — oyun state'i bunu resume tazelemesiyle
+    // kurtarıyordu, sohbet kurtarmıyordu: tek çare ekrandan çıkıp girmekti
+    // (14 Ağustos 2026, iki cihazla yazışırken bildirildi).
+    // Negatif eş: `didChangeAppLifecycleState`ten `_fetchChat()` çağrısı
+    // kaldırılırsa bu test düşer.
+    testWidgets('ön plana dönüşte sohbet tazelenir (kaçırılan mesaj gelir)',
+        (tester) async {
+      final h = await pumpScreen(tester);
+      expect(h.chatGw.messagesCalls, 1);
+
+      // Arka plandayken bir mesaj geldi: sunucuda var ama Realtime olayı
+      // bu istemciye HİÇ ulaşmadı (insertListener bilerek çağrılmıyor).
+      h.chatGw.rows = [
+        chatRow(id: 'm1', senderUserId: 'esiner', message: 'Kaçırılan mesaj')
+      ];
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump();
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+
+      expect(h.chatGw.messagesCalls, greaterThan(1));
+      // Popup AÇILMAMALI (yalnızca Realtime dalı açar) ama mesaj sohbette
+      // olmalı — okunmamış rozeti kullanıcıyı zaten oraya çağırıyor.
+      expect(find.text('CEVAP VER'), findsNothing);
+      await tester.tap(find.text('Mesajlaşma').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Kaçırılan mesaj'), findsOneWidget);
+      await unmount(tester);
+    });
+
     testWidgets(
         'Realtime: sessize alınmamış mesaj → kırmızı nokta + popup; '
         'CEVAP VER sohbeti açar', (tester) async {

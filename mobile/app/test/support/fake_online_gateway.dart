@@ -196,8 +196,12 @@ class FakeChatGateway implements ChatGateway {
   int subscribeCount = 0;
   int unsubscribeCount = 0;
 
+  /// Kaç kez çekildi — ön plana dönüş tazelemesi bunu artırmalı.
+  int messagesCalls = 0;
+
   @override
   Future<List<Map<String, Object?>>> messages(String gameId) async {
+    messagesCalls++;
     final f = messagesFailWith;
     if (f != null) throw f;
     return rows;

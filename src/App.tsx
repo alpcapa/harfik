@@ -840,6 +840,20 @@ export default function App() {
 
   // Sunucu kelime doğrulaması sırasında true — butonu devre dışı bırakır.
   const [validating, setValidating] = useState(false);
+  /**
+   * Son "Oyna" denemesinin sunucu kaynaklı reddi — `OnlineGameScreen`'deki
+   * `submitError`in yerel karşılığı, aynı gerekçeyle (14 Ağustos 2026).
+   *
+   * Buradaki TEK ulaşılabilir dal sunucu sözlüğünün kelimeyi reddetmesi:
+   * `moveStatus` YEREL sözlükle hesaplandığından, iki sözlük ayrışırsa
+   * (`src/data/words.ts` ↔ `public.words`, ayrı üretilen iki kaynak) taslak
+   * yerelde geçerli görünür, aşağıdaki "Oyna tuşuyla kelimeyi onayla."
+   * türetilir ve sunucunun "… sözlükte yok" mesajı hiç görünmeden hamle
+   * sessizce gerçekleşmez. Mobil portun yerel ekranında bu dal YOK (tüm
+   * sözlük pakette, sunucuya hiç sorulmuyor) — bu yüzden orası bilerek
+   * değişmedi.
+   */
+  const [submitError, setSubmitError] = useState<string | null>(null);
   // Sunucu doğrulaması başarılıysa true; reducer'a skipWordCheck iletilir.
   const pendingSkipWordCheck = useRef(false);
 
@@ -993,6 +1007,16 @@ export default function App() {
     return () => clearTimeout(t);
   }, [aiTurn, wordsReady, state.current, state.turnCount]);
 
+  // Taslak değiştiği an son "Oyna" denemesinin reddi geçmişe aittir
+  // (OnlineGameScreen'deki `placedSignature` effect'iyle aynı).
+  const placedSignature = Object.entries(state.placed)
+    .map(([k, t]) => `${k}:${t.letter}${t.wildLetter ?? ''}`)
+    .sort()
+    .join('|');
+  useEffect(() => {
+    setSubmitError(null);
+  }, [placedSignature]);
+
   // Oyna'ya basmadan önce, tahtaya konan taşların anlık geçerlilik/puan
   // çerçevesi (yeşil/kırmızı). Yerel sözlükle kontrol edilir; sunucu
   // doğrulaması yalnızca Oyna'ya basınca (handlePlay) çalışır.
@@ -1038,16 +1062,20 @@ export default function App() {
   // metnini üstüne yazıyor, satır da moveStatus geçerli diye bunu YEŞİL
   // basıyordu (metin/renk çelişkisi). Geçerli taslak = her zaman
   // "Oyna tuşuyla kelimeyi onayla." — bayat imperatif mesaj gölgede kalır.
+  // `submitError` türetilen nottan ÖNCE gelir — taslak yerelde geçerli
+  // kalsa bile sunucunun reddi görünmek zorunda (bkz. tanımındaki gerekçe).
   const liveMessage = moveStatus && !moveStatus.valid && moveStatus.reason
     ? moveStatus.reason
-    : moveStatus?.valid
+    : submitError ?? (moveStatus?.valid
       ? 'Oyna tuşuyla kelimeyi onayla.'
-      : state.message;
+      : state.message);
   const liveMessageType = moveStatus && !moveStatus.valid && moveStatus.reason
     ? 'err'
-    : moveStatus?.valid
-      ? 'ok'
-      : state.messageType;
+    : submitError
+      ? 'err'
+      : moveStatus?.valid
+        ? 'ok'
+        : state.messageType;
 
   // ── Şifre sıfırlama ────────────────────────────────────────────────────────
   // Sıfırlama e-postasındaki bağlantı tıklanıp bu sekmede recovery oturumu
@@ -1330,11 +1358,7 @@ export default function App() {
         }
         if (serverOk) {
           if (invalidWords.length > 0) {
-            dispatch({
-              type: 'SET_MESSAGE',
-              message: formatInvalidWordsReason(invalidWords),
-              messageType: 'err',
-            });
+            setSubmitError(formatInvalidWordsReason(invalidWords));
             return;
           }
           // Tüm kelimeler sunucuda onaylandı, yerel kontrol atla.

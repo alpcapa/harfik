@@ -70,6 +70,7 @@ import '../../data/league_rewards_api.dart';
 import '../rank/league_rewards_host.dart';
 import '../tokens.dart';
 import '../game/invasion_confirm.dart';
+import '../../util/offline_notice.dart';
 
 const Color _muted = kMuted;
 const Color _red = kRed;
@@ -220,8 +221,45 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
 
   GameState get state => _controller.state;
 
+  /// Hamle geçmişi ekranlarına verilecek state — web `OnlineGameScreen.tsx`'in
+  /// `historyState`inin birebir karşılığı.
+  ///
+  /// Canlı oyunda reducer'ın `moveHistory`si BOŞTUR (hamleler sunucudan
+  /// `online_game_moves` ile geliyor, `SyncOnlineStateAction` geçmişi
+  /// taşımıyor) — geçmişi gösteren HER çağrı yeri bu getter'ı kullanmalı,
+  /// ham `state`i DEĞİL. Tahta altındaki "Hamleler" linki bunu baştan doğru
+  /// yapıyordu, oyun sonu modalı yapmıyordu (14 Ağustos 2026, cihaz testi).
+  GameState get _historyState =>
+      state.copyWith(moveHistory: buildMoveHistory(_moves));
+
   bool _loaded = false;
+
+  /// İlk yükleme sunucuya ulaşamadı — "Yükleniyor…" yerine ne olduğunu
+  /// anlatan panel gösterilir (bkz. `_refresh`).
+  bool _loadFailed = false;
   bool _busy = false;
+
+  /// SON gönderim denememin sonucu — reducer'ın `state.message`'ından AYRI
+  /// (web `OnlineGameScreen.tsx` `submitError`; oradaki uzun gerekçe geçerli).
+  ///
+  /// Özet: `myTurnNote` "geçerli taslak + sıra sende" iken mesaj satırını
+  /// koşulsuz türetiyor. Hamle reddedilince taşlar tahtada kaldığından taslak
+  /// hâlâ geçerli oluyor ve `_setMessage` ile yazılan hata hiçbir zaman
+  /// görünmüyordu — uçak modunda OYNA "GÖNDERİLİYOR" deyip sessizce eski
+  /// hâline dönüyordu (14 Ağustos 2026, cihaz testi). Hata bayat değil,
+  /// kullanıcının az önce bastığı butonun sonucu.
+  String? _submitError;
+
+  /// Taslağın imzası — değiştiği an [_submitError] geçmişe aittir.
+  String get _placedSignature {
+    final parts = [
+      for (final e in state.placed.entries)
+        '${e.key}:${e.value.letter}${e.value.wildLetter ?? ''}'
+    ]..sort();
+    return parts.join('|');
+  }
+
+  String? _lastPlacedSignature;
   List<OnlineMoveRow> _moves = const [];
   bool _gameOverShown = false;
 
@@ -306,6 +344,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     if (last != null && now.difference(last) < _foregroundDebounce) return;
     _lastForeground = now;
     unawaited(_refresh());
+    unawaited(_fetchChat());
   }
 
   @override
@@ -326,6 +365,24 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   /// tablo) — ilk yükte tüm sohbeti + mute/rapor setlerini çeker, sonrasında
   /// yeni mesajları INSERT olayıyla dinler (web'in aynı ayrımı).
   Future<void> _loadChat() async {
+    await _fetchChat();
+    final chat = widget.chat;
+    if (chat == null || _mySlot < 0 || !mounted) return;
+    _unsubscribeChat = chat.subscribe(widget.game.id, _onChatMessage);
+  }
+
+  /// Yalnızca VERİYİ tazeler — aboneliğe dokunmaz, bu yüzden ön plana
+  /// dönüşte tekrar tekrar çağrılabilir.
+  ///
+  /// Oyun state'i üç yoldan kurtarılıyordu (Realtime + periyodik + resume,
+  /// bkz. `didChangeAppLifecycleState`) ama sohbet YALNIZCA Realtime'a
+  /// bağlıydı; oysa kaçırılan olayın kalıcı kaybolması iki tablo için de
+  /// geçerli. Arka planda websocket askıya alınınca gelen mesaj hiç
+  /// görünmüyor, tek çare ekrandan çıkıp girmekti — kullanıcı bunu iki
+  /// cihazla yazışırken bildirdi (14 Ağustos 2026). Popup BİLEREK
+  /// tetiklenmiyor (yalnızca `_onChatMessage` açar): arka planda biriken beş
+  /// mesaj için beş popup değil, tek bir okunmamış rozeti.
+  Future<void> _fetchChat() async {
     final chat = widget.chat;
     if (chat == null || _mySlot < 0) return;
     final results = await Future.wait([
@@ -348,7 +405,6 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     _chatState.update(
         messages: msgs, mutedUserIds: mutes, reportedUserIds: reported);
     await _seedInitialUnread(msgs, mutes);
-    _unsubscribeChat = chat.subscribe(widget.game.id, _onChatMessage);
   }
 
   /// Bu cihazda bu oyun için "en son okunan mesaj" damgası hiç yoksa (özellik
@@ -558,7 +614,16 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   Future<void> _refresh() async {
     if (_mySlot < 0) return;
     final snap = await widget.onlineGames.loadGame(widget.game.id);
-    if (!mounted || snap == null) return; // ağ hatası — ekran korunur
+    if (!mounted) return;
+    if (snap == null) {
+      // Sunucuya ulaşılamadı. Zaten yüklenmiş bir ekran varsa ona
+      // DOKUNMUYORUZ (bayat veri, hiç veriden iyidir) — ama ilk yüklemede
+      // korunacak bir şey YOK ve ekran sonsuz "Yükleniyor…"da asılı
+      // kalıyordu (14 Ağustos 2026, cihaz testi: uçak modunda listeden
+      // Canlı bir oyuna dokunmak).
+      if (!_loaded) setState(() => _loadFailed = true);
+      return;
+    }
     final turnAdvanced = snap.state.turnCount > state.turnCount;
     _controller.dispatch(SyncOnlineStateAction(
       publicState: snap.state,
@@ -575,6 +640,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     setState(() {
       _moves = snap.moves;
       _loaded = true;
+      _loadFailed = false;
     });
 
     if (snap.state.isGameOver) return;
@@ -694,8 +760,9 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
 
   // ── Eylemler ────────────────────────────────────────────────────────────
 
-  void _setMessage(String message, MessageKind kind) => _controller
-      .dispatch(SetMessageAction(message: message, messageType: kind));
+  // `_setMessage` kaldırıldı (14 Ağustos 2026): bu ekranın YAZDIĞI her mesaj
+  // bir gönderim/doğrulama sonucuydu ve hepsi artık `_submitError`e gidiyor.
+  // `state.message` yalnızca reducer'ın kendi anlatımını taşıyor.
 
   Future<void> _handlePlay() async {
     final me = _me;
@@ -711,7 +778,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     final result = validatePlacement(state.board, state.placed, _mySlot,
         me.corners, isFirstMove(pinned), widget.words);
     if (!result.valid) {
-      _setMessage(result.reason ?? 'Geçersiz hamle.', MessageKind.err);
+      setState(() => _submitError = result.reason ?? 'Geçersiz hamle.');
       return;
     }
 
@@ -756,7 +823,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
         ],
       );
     } catch (e) {
-      if (mounted) _setMessage(_errorText(e), MessageKind.err);
+      if (mounted) setState(() => _submitError = _errorText(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -788,7 +855,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
       await widget.onlineGames
           .submitMove(gameId: widget.game.id, action: 'pass');
     } catch (e) {
-      if (mounted) _setMessage(_errorText(e), MessageKind.err);
+      if (mounted) setState(() => _submitError = _errorText(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -884,13 +951,17 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
       // rafı yenileyecek (web aynı sırayı izliyor).
       if (mounted) _controller.dispatch(const ToggleSwapModeAction());
     } catch (e) {
-      if (mounted) _setMessage(_errorText(e), MessageKind.err);
+      if (mounted) setState(() => _submitError = _errorText(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
+  /// Ağ katmanı hatası → ne olduğunu anlatan metin; sunucunun KENDİ reddi
+  /// ("Sıra sende değil." gibi) olduğu gibi gösterilir (bkz.
+  /// `util/offline_notice.dart`, web ile aynı ayrım).
   String _errorText(Object e) {
+    if (isNetworkError(e)) return kOfflineMoveNotice;
     final msg = e.toString();
     return msg.isEmpty ? 'Hamle gönderilemedi.' : msg;
   }
@@ -1212,15 +1283,35 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
       // motorundan bağımsız da yeniden çizilebilmeli.
       listenable: Listenable.merge([_controller, _chatState]),
       builder: (context, _) {
+        // Taslak değiştiyse son gönderimin hatası artık geçmişe ait (web'in
+        // `placedSignature` effect'inin karşılığı). `setState` YOK: değer bu
+        // build'in kendi çıktısında kullanılıyor, ayrıca bir kare gerekmiyor
+        // — bu builder zaten taslağı değiştiren dispatch yüzünden çalışıyor.
+        final signature = _placedSignature;
+        if (_lastPlacedSignature != null && _lastPlacedSignature != signature) {
+          _submitError = null;
+        }
+        _lastPlacedSignature = signature;
+
         final me = _me;
         if (!_loaded || me == null) {
-          return const Scaffold(
+          return Scaffold(
             backgroundColor: Colors.white,
             body: SafeArea(
               child: Center(
-                child: Text('Yükleniyor…',
-                    style: TextStyle(
-                        fontFamily: 'SpaceMono', fontSize: 13, color: _muted)),
+                child: _loadFailed
+                    ? _OfflinePanel(
+                        onRetry: () {
+                          setState(() => _loadFailed = false);
+                          unawaited(_refresh());
+                        },
+                        onBack: () => Navigator.of(context).pop(),
+                      )
+                    : const Text('Yükleniyor…',
+                        style: TextStyle(
+                            fontFamily: 'SpaceMono',
+                            fontSize: 13,
+                            color: _muted)),
               ),
             ),
           );
@@ -1240,6 +1331,8 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                 feedback: widget.feedback,
                 source: FeedbackSource.gameEnd);
             await showGameOverModal(context, state,
+                onOpenHistory: () =>
+                    showMoveHistoryModal(context, _historyState),
                 onFeedback: auth == null ? null : openFeedback);
             if (!mounted || auth == null) return;
             openFeedback();
@@ -1266,24 +1359,31 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
             ? 'Oyna tuşuyla kelimeyi onayla.'
             : null;
         final last = _lastMoveMessage;
+        // `_submitError` türetilmiş notlardan ÖNCE gelir (bkz. alanın
+        // tanımındaki gerekçe) — taslak geçerli kalsa bile son gönderimin
+        // hatası görünmek zorunda. Web'deki sıralamanın birebir aynısı.
+        final submitError = _submitError;
         final liveMessage = invalid
             ? moveStatus.reason!
             : state.isGameOver
                 ? 'Oyun bitti.'
-                : offTurnNote ??
+                : submitError ??
+                    offTurnNote ??
                     myTurnNote ??
                     (state.message.isNotEmpty ? state.message : last.text);
         final liveKind = invalid
             ? MessageKind.err
-            : offTurnNote != null
-                ? MessageKind.warn
-                : valid
-                    ? MessageKind.ok
-                    : state.isGameOver
-                        ? MessageKind.none
-                        : state.message.isNotEmpty
-                            ? state.messageType
-                            : last.kind;
+            : state.isGameOver
+                ? MessageKind.none
+                : submitError != null
+                    ? MessageKind.err
+                    : offTurnNote != null
+                        ? MessageKind.warn
+                        : valid
+                            ? MessageKind.ok
+                            : state.message.isNotEmpty
+                                ? state.messageType
+                                : last.kind;
 
         return LeagueRewardsHost(
           rewards: widget.leagueRewards,
@@ -1364,10 +1464,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                       onCellTap: _handleCellTap,
                                       gridKey: _gridKey,
                                       onOpenHistory: () => showMoveHistoryModal(
-                                          context,
-                                          state.copyWith(
-                                              moveHistory:
-                                                  buildMoveHistory(_moves))),
+                                          context, _historyState),
                                       onOpenHelp: () => showHelpModal(context),
                                       onOpenMessaging: widget.chat == null
                                           ? null
@@ -1770,6 +1867,80 @@ class _TurnBannerState extends State<_TurnBanner>
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Canlı oyun hiç yüklenemediğinde gösterilen panel — web
+/// `OnlineGameScreen.tsx`'in `loadFailed` dalının karşılığı.
+///
+/// Metinler `util/offline_notice.dart`'tan; iki platformda AYNI olmak
+/// zorunda (bkz. o dosyanın başlığı).
+class _OfflinePanel extends StatelessWidget {
+  final VoidCallback onRetry;
+  final VoidCallback onBack;
+
+  const _OfflinePanel({required this.onRetry, required this.onBack});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 360),
+        child: NeoBox(
+          borderRadius: BorderRadius.circular(16),
+          color: kPanel,
+          outerShadows: const [
+            BoxShadow(
+                color: Color(0x8015233F),
+                blurRadius: 45,
+                offset: Offset(0, 20)),
+          ],
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  kOfflineLiveTitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold, color: kText),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  kOfflineLiveBody,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14, height: 1.5, color: kText),
+                ),
+                const SizedBox(height: 16),
+                NeoButton(
+                  label: 'TEKRAR DENE',
+                  variant: NeoButtonVariant.accent,
+                  onPressed: onRetry,
+                ),
+                const SizedBox(height: 8),
+                Center(
+                  child: TextButton(
+                    onPressed: onBack,
+                    child: const Text(
+                      '← CANLI LİSTESİ',
+                      style: TextStyle(
+                          fontFamily: 'SpaceMono',
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                          color: kMuted),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
