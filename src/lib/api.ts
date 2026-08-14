@@ -20,6 +20,8 @@
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from './supabase';
 import type {
+  AdminActivationStats,
+  AdminActivePlayersPoint,
   AdminActivityGranularity,
   AdminChatReportRow,
   AdminMemberActivityLogRow,
@@ -35,6 +37,7 @@ import type {
   AdminGuestDeviceRow,
   AdminGuestStandaloneRow,
   AdminMember,
+  AdminRetentionCell,
   AdminUserActivityPoint,
   BoardSnapshotTile,
   FeedbackSource,
@@ -1741,6 +1744,57 @@ export async function fetchAdminFriendTotals(): Promise<AdminFriendTotals | null
     throw new Error(error.message);
   }
   const row = (data as AdminFriendTotals[] | null)?.[0];
+  return row ?? null;
+}
+
+/**
+ * Aktif oyuncu serisi (yalnızca admin — Büyüme > Kullanıcı): kova içi benzersiz
+ * aktif üye + kovanın sonunda biten 28 günlük yuvarlanan pencere. "Aktif"in
+ * tanımı ve bunun neden bilerek "MAU" olmadığı: `AdminActivePlayersPoint`.
+ */
+export async function fetchAdminActivePlayersSeries(
+  periods: number,
+  granularity: AdminActivityGranularity,
+): Promise<AdminActivePlayersPoint[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('admin_active_players_series', {
+    p_periods: periods,
+    p_granularity: granularity,
+  });
+  if (error) {
+    // Admin panelindeki .catch(setError) zinciri buna güveniyor —
+    // hata yutulursa admin gerçek bir RPC/izin hatasını asla göremez.
+    throw new Error(error.message);
+  }
+  return (data as AdminActivePlayersPoint[]) ?? [];
+}
+
+/**
+ * Retention kohortları (yalnızca admin — Büyüme > Kullanıcı): kayıt haftasına
+ * göre, uzun (long) biçimde hücreler. Yalnızca TAMAMLANMIŞ haftalar döner —
+ * gerekçesi `AdminRetentionCell`'de.
+ */
+export async function fetchAdminRetentionCohorts(cohorts = 8): Promise<AdminRetentionCell[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('admin_retention_cohorts', { p_cohorts: cohorts });
+  if (error) {
+    throw new Error(error.message);
+  }
+  return (data as AdminRetentionCell[]) ?? [];
+}
+
+/**
+ * Aktivasyon istatistikleri (yalnızca admin — Büyüme > Kullanıcı): kaç üye hiç
+ * oyun bitirmemiş ve ilk oyuna kadar ne kadar sürmüş. Aktivasyonun aktif
+ * oyuncudan neden FARKLI tanımlı olduğu: `AdminActivationStats`.
+ */
+export async function fetchAdminActivationStats(): Promise<AdminActivationStats | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('admin_activation_stats');
+  if (error) {
+    throw new Error(error.message);
+  }
+  const row = (data as AdminActivationStats[] | null)?.[0];
   return row ?? null;
 }
 

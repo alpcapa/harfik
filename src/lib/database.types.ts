@@ -760,6 +760,75 @@ export interface AdminFriendTotals {
   total_invite_signups: number;
 }
 
+/**
+ * admin_active_players_series RPC çıktısındaki tek kova (Büyüme > Kullanıcı).
+ *
+ * **"Aktif oyuncu" TANIMI (sunucuda `_admin_user_activity` view'ı, TEK kaynak):**
+ * kullanıcı şu ÜRÜN eylemlerinden birini yaptığı an aktiftir — oyun bitirme,
+ * Canlı hamle, Canlı sohbet mesajı, beğeni, arkadaşlık isteği, Canlı oyun kurma.
+ *
+ * `active_in_bucket`: o kovanın İÇİNDE aktif olan benzersiz kullanıcı (günlük
+ * granülerlikte DAU, haftalıkta WAU).
+ * `active_28d`: kovanın SONUNDA biten 28 günlük yuvarlanan pencerede aktif olan
+ * benzersiz kullanıcı. 28 gün (30 değil) bilinçli — tam dört hafta olduğundan
+ * hafta-içi/hafta-sonu dalgalanması pencereye eşit dağılır.
+ *
+ * **Bu "MAU" DEĞİL, bilerek:** girişli kullanıcı için "uygulamayı açtı" sinyali
+ * şemada YOK (`guest_visits` yalnızca oturum kapalıyken yazılıyor,
+ * `auth.users.last_sign_in_at` üzerine yazılan tek bir kolon, `auth.refresh_tokens`
+ * ~26 günde budanıyor, `auth.audit_log_entries` boş — dördü de 14 Ağustos 2026'da
+ * ölçüldü). Yani buradaki sayı uygulamayı açıp hiçbir şey yapmadan çıkanı SAYMAZ.
+ * Gerekçenin tamamı migration başlığında: `20260814195803_admin_growth_retention_activation`.
+ */
+export interface AdminActivePlayersPoint {
+  bucket: string;
+  active_in_bucket: number;
+  active_28d: number;
+}
+
+/**
+ * admin_retention_cohorts RPC çıktısındaki tek HÜCRE (Büyüme > Kullanıcı) —
+ * uzun (long) biçim: pivotlamayı istemci yapar.
+ *
+ * `cohort_week`: kaydın oluştuğu haftanın başı (İstanbul). `cohort_size`: o
+ * haftada kaydolan üye sayısı. `week_offset`: kayıttan kaç hafta sonra (0 =
+ * kayıt haftasının kendisi). `active_users`: o kohorttan, o hafta AKTİF olan
+ * (yukarıdaki tanım) benzersiz üye sayısı.
+ *
+ * **Yalnızca TAMAMLANMIŞ haftalar döner** — penceresi henüz bitmemiş bir hafta
+ * her zaman yapay olarak düşük görünür ve tablonun son köşegenini yalancı bir
+ * "düşüş" gibi gösterirdi.
+ */
+export interface AdminRetentionCell {
+  cohort_week: string;
+  cohort_size: number;
+  week_offset: number;
+  active_users: number;
+}
+
+/**
+ * admin_activation_stats RPC çıktısı (Büyüme > Kullanıcı) — "kayıt oldu ama hiç
+ * oyun bitirmedi" ve ilk oyuna kadar geçen süre.
+ *
+ * **Aktivasyon, aktif oyuncudan FARKLI tanımlı ve bu bilinçli:** buradaki soru
+ * "hiç oyun BİTİRDİ mi" (`games` satırı), "herhangi bir şey yaptı mı" değil.
+ * Yalnızca arkadaşlık isteği göndermiş bir üye aktif oyuncu SAYILIR ama aktive
+ * olmuş SAYILMAZ. İki farklı soru, iki farklı tanım — biri ötekine "tutarlılık"
+ * gerekçesiyle uydurulMAMALI.
+ *
+ * `median_hours_to_first_game`, yalnızca aktive olmuş üyeler üzerinden hesaplanır
+ * (hiç oynamayanlar medyanı sonsuza çekmesin diye) ve hiç aktivasyon yoksa null'dır.
+ */
+export interface AdminActivationStats {
+  total_users: number;
+  activated_users: number;
+  never_activated: number;
+  activated_same_day: number;
+  activated_within_3_days: number;
+  activated_later: number;
+  median_hours_to_first_game: number | null;
+}
+
 /** "Görüş Bildir" formunun hangi bağlamdan gönderildiği. */
 export type FeedbackSource = 'game_end' | 'general';
 
