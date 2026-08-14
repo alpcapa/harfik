@@ -500,16 +500,21 @@ export function Setup({
    * ikisi de `setCreatingLocal(true)`; biri değişirse öteki de.
    */
   const offlineAiNotice = (
-    <p className="text-center text-xs text-muted font-mono py-8 leading-relaxed">
-      {OFFLINE_AI_SUGGESTION}{' '}
+    <div className="flex flex-col items-center gap-4 py-8">
+      <p className="text-center text-xs text-muted font-mono leading-relaxed">
+        {OFFLINE_AI_SUGGESTION}
+      </p>
+      {/* Metin-içi link DEĞİL gerçek buton (kullanıcı isteği, 14 Ağustos
+          2026) — dokunma hedefi tam boy ve "+ Yeni Yapay Zeka Oyunu"yla
+          aynı görsel ağırlıkta. Davranışı da aynı: setCreatingLocal(true). */}
       <button
         type="button"
         onClick={() => setCreatingLocal(true)}
-        className="text-accent font-bold underline underline-offset-2 active:opacity-70"
+        className="btn-raised btn-raised-orange w-full py-3 rounded-md bg-orange text-white font-sans text-sm font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
       >
         {OFFLINE_AI_CTA}
       </button>
-    </p>
+    </div>
   );
 
   return (
@@ -684,7 +689,13 @@ export function Setup({
             // devam eden YZ oyunları çevrimdışı da oynanabiliyor (bkz.
             // `cloudSaveMirror`), o listeyi bir uyarıyla değiştirmek gerçek
             // bir yeteneği gizlerdi. Mesaj yalnızca elde bir şey yokken.
-            !online && (cloudSaves === null || cloudSaves.length === 0) ? (
+            // `cloudSaves === null` BİLEREK dışarıda: liste henüz
+            // bilinmiyorken "hiç oyunun yok, yeni aç" demek erken bir
+            // yargı — çevrimdışıyken ağ denemesi ~3sn sürüp ardından
+            // AYNADAN gerçek liste geliyor ve kullanıcı önce öneriyi,
+            // sonra listeyi görüyordu (14 Ağustos 2026, cihaz testi).
+            // Bilinmiyorken "Yükleniyor…" doğru cevap.
+            !online && cloudSaves !== null && cloudSaves.length === 0 ? (
               offlineAiNotice
             ) : cloudSaves === null ? (
               <p className="text-center text-xs text-muted font-mono py-8">Yükleniyor…</p>

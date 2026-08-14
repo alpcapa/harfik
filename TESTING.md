@@ -108,6 +108,13 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       da oynayabilirsin. **Hemen oyun aç.**" çıkmalı; linke dokunmak
       "+ Yeni Yapay Zeka Oyunu" ile aynı formu açmalı. Devam eden bir YZ
       oyunun VARSA liste normal görünmeli (çevrimdışı oynanabiliyor).
+- [ ] **Çevrimdışı kelime anlamı (14 Ağustos 2026, WEB'e özel).** Uçak
+      modunda bir YZ oyununda oynanan kelimeye dokun: "Kelime anlamları için
+      internet bağlantısı gerekiyor." çıkmalı — "Bu kelimenin anlamı
+      bulunamadı." DEĞİL (kelime sözlükte olabilir, veri indirilemiyor:
+      `meanings.json` 6.3 MB, precache'e bilerek alınmıyor). Çevrimiçiyken
+      gerçekten sözlükte olmayan bir kelimede hâlâ "bulunamadı" demeli.
+      **Uygulamada (Flutter) bu mesaj HİÇ çıkmamalı** — orada sözlük pakette.
 - [ ] **Gönderim hatası GÖRÜNÜR (14 Ağustos 2026).** Geçerli bir kelime
       kurup uçak modunda OYNA'ya bas: mesaj satırında bir ağ hatası
       görünmeli — "Oyna tuşuyla kelimeyi onayla." DEĞİL. Alttaki

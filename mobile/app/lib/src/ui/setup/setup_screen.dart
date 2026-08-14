@@ -54,7 +54,6 @@ import '../game/modal_shell.dart';
 import '../feedback/feedback_modal.dart';
 import '../../data/feedback_api.dart';
 import '../../util/offline_notice.dart';
-import 'package:flutter/gestures.dart';
 
 const _panel = kPanel;
 const _border = kBorder;
@@ -1054,25 +1053,28 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   /// ikisi de `_creatingLocal = true`; biri değişirse öteki de.
   Widget _offlineAiNotice() => Padding(
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
-        child: Text.rich(
-          TextSpan(children: [
-            const TextSpan(text: '$kOfflineAiSuggestion '),
-            TextSpan(
-              text: kOfflineAiCta,
-              style: const TextStyle(
-                  color: kAccent,
-                  fontWeight: FontWeight.bold,
-                  decoration: TextDecoration.underline),
-              recognizer: TapGestureRecognizer()
-                ..onTap = () => setState(() => _creatingLocal = true),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              kOfflineAiSuggestion,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontFamily: 'SpaceMono',
+                  fontSize: 11,
+                  height: 1.6,
+                  color: _muted),
             ),
-          ]),
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-              fontFamily: 'SpaceMono',
-              fontSize: 11,
-              height: 1.6,
-              color: _muted),
+            const SizedBox(height: 16),
+            // Metin-içi link DEĞİL gerçek buton (kullanıcı isteği,
+            // 14 Ağustos 2026) — dokunma hedefi tam boy ve "+ YENİ YAPAY
+            // ZEKA OYUNU AÇ" ile aynı görsel ağırlıkta/varyantta.
+            NeoButton(
+              label: trUpper(kOfflineAiCta),
+              variant: NeoButtonVariant.orange,
+              onPressed: () => setState(() => _creatingLocal = true),
+            ),
+          ],
         ),
       );
 
@@ -1114,8 +1116,11 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
           // devam eden YZ oyunları çevrimdışı da oynanabiliyor (cloud save
           // aynası), o listeyi uyarıyla değiştirmek gerçek bir yeteneği
           // gizlerdi. Mesaj yalnızca elde bir şey yokken.
-          _LocalSubTab.active
-              when _cloudSavesFailed && (saves == null || saves.isEmpty) =>
+          // `saves == null` BİLEREK dışarıda: liste henüz bilinmiyorken
+          // "hiç oyunun yok, yeni aç" demek erken bir yargı — çevrimdışıyken
+          // ağ denemesi bitip AYNADAN gerçek liste geliyor ve kullanıcı önce
+          // öneriyi, sonra listeyi görüyordu (14 Ağustos 2026, cihaz testi).
+          _LocalSubTab.active when _cloudSavesFailed && saves != null && saves.isEmpty =>
             _offlineAiNotice(),
           _LocalSubTab.active => saves == null
               ? const Padding(
