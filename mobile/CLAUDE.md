@@ -3766,6 +3766,44 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        YOK`), web dosyası geri alınınca yeşile döndü. `kelimeki_core`'a ve
        üretim koduna hiç dokunulmadı — yalnızca yeni bir test.
 
+   - ✅ **Parça 94 — rütbe tablosunun TS ↔ Dart yarısı da testle bağlandı
+     (14 Ağustos 2026, yeni `test/rank_tiers_parity_test.dart`):** Parça
+     93'ün açtığı soruyu ("bu 'elle senkron' kopyayı hangi test zorluyor?")
+     projedeki EN ÇOK uyarılan kopyaya sordum ve cevap "hiçbiri" çıktı.
+     - **Mevcut testler bu ayrışmayı yapısal olarak GÖREMİYORDU:**
+       `league_rewards_test.dart` yalnızca İÇ tutarlılığı ölçüyor (ödül =
+       eşik/10, kümülatif toplamların farklılığı, sınır davranışı). Web'de
+       bir eşik değişip portta değişmese o testlerin HEPSİ geçmeye devam
+       ederdi — kural kendi içinde tutarlı kalır, yalnızca iki platform
+       ayrışırdı. Üç dosyanın da başlığındaki "hiçbir derleyici/test bunu
+       yakalamaz" cümlesi kelimesi kelimesine doğruydu.
+     - **Test `color_tokens_test`in desenini izliyor:** web'in
+       `src/utils/leagueRank.ts`'ini OKUYUP `RANK_TIERS` satırlarını
+       ayrıştırıyor ve `kRankTiers` ile alan alan karşılaştırıyor
+       (ad/harf/eşik/ödül/renk). **Renk karşılaştırması çözülmüş değer
+       üzerinden** — web hex literal yazıyor, port palet token'ı
+       (`kAccent` gibi) kullanıyor; yanlış token seçilirse yakalanır.
+     - **Ayrıştırıcı kendi sessiz başarısızlığına karşı korunuyor** (Parça
+       93'ün aynı refleksi): satır sayısına ≥9 alt sınırı var, yani TS
+       dosyası yeniden düzenlenip regex 0 eşleşme bulursa test "geçemez".
+     - **SQL yarısı BİLİNÇLİ kapsam dışı ve bu teste yazıldı:**
+       `_award_league_rewards`ın güncel tanımı tek bir migration dosyasında
+       DURMUYOR (sonraki migration'lar fonksiyonu yeniden yazıyor), yani
+       "şu an canlıda ne var" sorusu ancak veritabanına sorularak
+       yanıtlanır — bir birim testi bunu yapamaz. Eşik/ödül değiştiren her
+       migration canlıda ayrıca doğrulanmaya devam edecek.
+     - **Bayat iddialar aynı commit'te düzeltildi:** üç dosya (`leagueRank.ts`,
+       `league_rank.dart`, kök `CLAUDE.md`) hâlâ "hiçbir derleyici/test bunu
+       yakalamaz" diyordu — artık yarısı yanlış. Üçü de "TS ↔ Dart testli,
+       SQL korumasız" olarak güncellendi. **Bir korumayı eklerken onun
+       yokluğunu anlatan cümleleri de ara** — aksi halde bir sonraki oturum
+       var olan testi bilmeden çalışır.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 411/411
+       yeşil** (409'dan +2) — tablo şu an GERÇEKTEN senkron. **Negatif eş:**
+       TS'te Usta'nın eşiği 250→300 yapılınca test GERÇEKTEN
+       `4. kademe (web: "Usta") — EŞİK ayrışmış / Expected: <300> Actual:
+       <250>` ile düştü, web dosyası geri alınınca yeşile döndü.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
