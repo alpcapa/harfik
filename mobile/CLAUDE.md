@@ -3586,6 +3586,24 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        rollback'li simülasyonla gösterilmişti; artık gerçek uçtan uca.
        Ayrıca `ChatRepo` kablolaması ve emoji fallback'i (🚫 tofu değil)
        de bu turda kapandı.
+     - **İkinci yol (şikayet → geri çekme) de AYNI GÜN mobilde koşuldu ve
+       tasarımın DÖRT durumunu birden gösterdi:** aktif oyunun sohbetinden
+       şikayet (08:19:14) → satırda 🚩 → panelden geri çekme (08:20:11) →
+       ikon **kaybolmadı, 🚫'ye döndü** → sessizden çıkarma → ikon kalktı.
+       Ortadaki adım kullanıcıya önceden söylenmeseydi "geri çektim ama
+       ikon duruyor" diye YANLIŞ bir hata bildirimi üretebilirdi: şikayet
+       otomatik sessize alıyor ve geri çekme mute'a bilinçli olarak
+       dokunmuyor. **Üretimden asıl kanıt `handled` = `false` KALDI** —
+       4 Ağustos'ta yazılıp 10 gün ölü bir overload'da mahsur kalan
+       düzeltmenin mobil istemciden ilk doğrulaması (bkz. Parça 90 (a)).
+     - **Web ↔ mobil metin paritesi VARSAYILMADI, ölçüldü:** kullanıcı
+       paneli mobilde ilk kez görünce "web'e de uyguladık mı?" diye
+       sordu; `FriendModerationModal.tsx` ile `friend_moderation_sheet.dart`
+       13 dize üzerinden karşılaştırıldı (durum cümlesinin üç varyantı,
+       iki buton, onay adımı, iki sonuç mesajı, hata metni, alttaki
+       "şikayet sohbetten yapılır" notu) — **13/13 birebir**. Bu dosya
+       çiftinin `legal_modals.dart` gibi otomatik bir parite testi YOK;
+       biri değişirse öteki elle güncellenmeli.
 
 ## Sonraya Bırakılan İşler (mobil)
 
