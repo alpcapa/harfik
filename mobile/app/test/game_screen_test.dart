@@ -164,7 +164,6 @@ void main() {
     expect(controller.state.players[0].score, 7);
     expect(controller.state.players[0].longestWord, 'KELİME');
     expect(controller.state.placed, isEmpty);
-    final turnBefore = controller.state.turnCount;
     expect(controller.state.current, 1); // sıra YZ'de (autoPlayAi kapalı)
   });
 
@@ -194,7 +193,6 @@ void main() {
     await tester.tap(find.text('GERİ AL'));
     await tester.pump();
     expect(controller.state.placed, isEmpty);
-    final turnBefore = controller.state.turnCount;
     expect(controller.state.players[0].rack.length, 7);
   });
 
@@ -231,7 +229,6 @@ void main() {
     await tester.tap(find.byKey(const Key('wild-recall')));
     await tester.pumpAndSettle();
     expect(controller.state.placed, isEmpty);
-    final turnBefore = controller.state.turnCount;
     expect(
         controller.state.players[0].rack.any((t) => t.letter == '?'), isTrue);
   });

@@ -89,8 +89,11 @@ export function tierFor(value: number | null | undefined): RankTier {
  * verdiğinden ve verilmiş ödül asla geri alınmadığından, toplam hangi
  * eşiklerin ödendiğini tekil olarak belirler (5→{50}, 15→{50,100}, 40→
  * {50,100,250}…). Puan eşiğin altına düşüp yeniden yaklaşan biri için
- * ilerleme çubuğu hedef etiketi bununla "(+10)" yerine "(0)" gösterir —
- * kişi tekrar ödül alacağını sanmasın (12 Ağustos 2026, kullanıcı isteği).
+ * ilerleme çubuğu hedef etiketini bununla YEŞİL "(+N)✓" gösterir (nötr
+ * gri "(+N)" yerine) — ödülün alındığını, yeniden aşmanın ikinci kez
+ * vermeyeceğini anlatır. NOT: bu satır bir dönem "(0) gösterir" diyordu;
+ * o, aynı gün denenip BIRAKILAN ara sürümdü ("(0)" bir eksiklik gibi
+ * okunuyordu) — `RankInfoModal.tsx` hiçbir zaman 0 basmıyor.
  */
 export function rewardAlreadyClaimed(tier: RankTier, bonusPoints: number): boolean {
   let cum = 0;
