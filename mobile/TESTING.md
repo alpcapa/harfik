@@ -957,6 +957,27 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       ve nokta ise token kırmızısından (`#DC2626`): tek bantta iki ton.
       Bandın artık kabarık bir gölgesi (`shadow-raised`) ve web'le aynı
       dolgusu olmalı — web'le yan yana koyup karşılaştır.
+- [ ] **Gönderim hatası taşlar TAHTADAYKEN de görünür (14 Ağustos 2026,
+      Parça 95).** Sıra sendeyken geçerli bir kelime kur, uçak modunu aç ve
+      OYNA'ya bas: mesaj satırında bir HATA görünmeli ("Bağlantı yok."
+      benzeri bir ağ hatası) — "Oyna tuşuyla kelimeyi onayla." DEĞİL ve
+      sessizlik hiç değil. Taşlar tahtada kalmaya devam eder. Sonra bir
+      taşa dokunup taslağı değiştir: hata kaybolmalı (geçmişe ait).
+      Aynısını web'de de kontrol et (iki ekran bu davranışı paylaşıyor).
+      Öncesinde port "GÖNDERİLİYOR" deyip ~5sn sonra sessizce eski hâline
+      dönüyordu, web hiçbir şey yapmıyordu.
+- [ ] **Oyun sonu → "Oyun Geçmişi" DOLU gelir (14 Ağustos 2026, Parça 95).**
+      Canlı bir oyunu bitir, GameOver modalındaki "OYUN GEÇMİŞİ"ne dokun:
+      oyunun tüm hamleleri listelenmeli. "Henüz kazanılmış bir puan yok."
+      görüyorsan regresyon — kıyas için tahta altındaki "Hamleler" linki
+      (aynı listeyi göstermeli) ve YZ oyununun oyun sonu modalı.
+- [ ] **Sohbet ön plana dönüşte tazelenir (14 Ağustos 2026, Parça 95).**
+      İki cihaz/sekmeyle: app'i arka plana al (ana ekrana çık ya da başka
+      bir sekmeye geç), karşı taraftan web'den mesaj gönder, sonra app'e
+      DÖN. Mesaj kendiliğinden gelmeli — oyundan çıkıp tekrar girmeye
+      GEREK KALMADAN. Popup ÇIKMAMALI (arka planda birikenler için tek bir
+      okunmamış rozeti); sohbeti açınca mesaj listede olmalı. Bu, iPad'de
+      iki Safari sekmesi arasında gidip gelerek de üretilebilir.
 - [ ] **Boş taslakta OYNA/GERİ AL (13 Ağustos 2026, Parça 88).** Sıra
       SENDEYKEN, hiç taş yerleştirmeden OYNA'ya bas: buton **aktif** olmalı
       ve mesaj satırında **"Harf yerleştirilmedi."** çıkmalı — gri/tepkisiz

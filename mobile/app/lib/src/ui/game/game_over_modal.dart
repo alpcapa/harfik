@@ -7,26 +7,44 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import 'modal_shell.dart';
-import 'move_history_modal.dart';
 import 'player_badge.dart';
 import 'player_colors.dart';
 import '../tokens.dart';
 
 Future<void> showGameOverModal(BuildContext context, GameState state,
-    {VoidCallback? onFeedback}) {
+    {required VoidCallback onOpenHistory, VoidCallback? onFeedback}) {
   return showDialog<void>(
     context: context,
-    builder: (context) => GameOverModal(state: state, onFeedback: onFeedback),
+    builder: (context) => GameOverModal(
+        state: state, onOpenHistory: onOpenHistory, onFeedback: onFeedback),
   );
 }
 
 class GameOverModal extends StatelessWidget {
   final GameState state;
 
+  /// "Oyun Geçmişi" linki — web GameOver `onOpenHistory`.
+  ///
+  /// Bilerek ZORUNLU bir callback: hangi `GameState`in hamle geçmişinin
+  /// gösterileceğine EBEVEYN karar verir (web'in aynı ayrımı — `App.tsx`
+  /// kendi `state`ini, `OnlineGameScreen.tsx` sunucu satırlarından türettiği
+  /// `historyState`i geçiyor). Önceden bu widget doğrudan
+  /// `showMoveHistoryModal(context, state)` çağırıyordu; Canlı oyunda o
+  /// `state` reducer'ın state'i ve `moveHistory`si BOŞ olduğundan (hamleler
+  /// sunucudan `online_game_moves` ile geliyor) oyun sonu modalından açılan
+  /// geçmiş "Henüz kazanılmış bir puan yok." diyordu — aynı ekranın tahta
+  /// altındaki "Hamleler" linki ise doğru listeyi gösteriyordu (14 Ağustos
+  /// 2026, cihaz testi).
+  final VoidCallback onOpenHistory;
+
   /// "Görüş Bildir" linki — web GameOver `onOpenFeedback`.
   final VoidCallback? onFeedback;
 
-  const GameOverModal({super.key, required this.state, this.onFeedback});
+  const GameOverModal(
+      {super.key,
+      required this.state,
+      required this.onOpenHistory,
+      this.onFeedback});
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +125,7 @@ class GameOverModal extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               TextButton(
-                onPressed: () => showMoveHistoryModal(context, state),
+                onPressed: onOpenHistory,
                 child: const Text(
                   'OYUN GEÇMİŞİ',
                   style: TextStyle(

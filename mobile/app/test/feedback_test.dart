@@ -346,7 +346,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         theme: kelimekiTheme(),
         home: Scaffold(
-            body: GameOverModal(state: state, onFeedback: () => opened++)),
+            body: GameOverModal(state: state, onOpenHistory: () {}, onFeedback: () => opened++)),
       ));
       await tester.pump();
       await tester.tap(find.text('GÖRÜŞ BİLDİR'));
@@ -355,7 +355,7 @@ void main() {
       // Verilmezse hiç çizilmez (testler/önizlemeler).
       await tester.pumpWidget(MaterialApp(
         theme: kelimekiTheme(),
-        home: Scaffold(body: GameOverModal(state: state)),
+        home: Scaffold(body: GameOverModal(state: state, onOpenHistory: () {})),
       ));
       await tester.pump();
       expect(find.text('GÖRÜŞ BİLDİR'), findsNothing);

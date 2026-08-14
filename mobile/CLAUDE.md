@@ -3804,6 +3804,97 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        `4. kademe (web: "Usta") — EŞİK ayrışmış / Expected: <300> Actual:
        <250>` ile düştü, web dosyası geri alınınca yeşile döndü.
 
+   - ✅ **Parça 95 — Canlı oyun cihaz turu (TESTING.md bölüm 11): beş bulgu,
+     ÜÇÜ web'de (14 Ağustos 2026):** Bölüm 11 ilk kez iki gerçek hesapla
+     baştan koşuldu. Çıkan beş bulgunun yalnızca ikisi porta özgüydü; üçü
+     web'in kendi hatasıydı ve port ya doğru davranıyordu ya da aynı hatayı
+     web'den miras almıştı. **Bu turun en genel dersi:** paylaşılan bir
+     kuralı "her zaman türet" diye sağlamlaştırırken, o kanalı kullanan
+     MEŞRU/TAZE mesajların da yutulup yutulmadığını sor.
+     - **(1) Boş taslakta OYNA — web'in Canlı ekranı sessizdi (web
+       düzeltmesi).** `OnlineGameScreen.tsx:760`'ta `if
+       (placedCoords.length === 0) return;` vardı: hiç taş koymadan OYNA'ya
+       basınca hiçbir şey olmuyor, mesaj satırında bir önceki metin
+       ("Taşlar rafa geri alındı") duruyordu. **Port BU KONUDA ZATEN
+       DOĞRUYDU** — Parça 88'de bu guard bilerek kaldırılmış ve
+       `_handlePlay`e gerekçesi yazılmıştı; web'in Canlı ekranı geride
+       kalmıştı (yerel ekran `App.tsx` de doğruydu: PLAY'i reducer'a
+       dispatch ediyor, reducer aynı validator'dan "Harf yerleştirilmedi."
+       üretiyor). Guard kaldırıldı; `validatePlacementStructural` zaten boş
+       taslakta doğru mesajı döndürüyor ve `moveStatus` boş taslakta `null`
+       olduğundan mesaj görünür oluyor.
+     - **(2) Gönderim hatası mesaj satırında HİÇ görünmüyordu (İKİ
+       platformda birden — en ciddi bulgu).** Uçak modunda kelime koyup
+       OYNA'ya basınca web'de hiçbir şey olmuyor, portta "GÖNDERİLİYOR"
+       ~5sn sonra sessizce eski hâline dönüyordu. Kök sebep 6 Ağustos'taki
+       `myTurnValidNote`/`myTurnNote` kuralı: "geçerli taslak + sıra sende"
+       iken mesaj satırı KOŞULSUZ türetiliyor. O kural bayat mesajlara
+       karşı doğruydu ama **gönderim hatası bayat değil** — kullanıcının az
+       önce bastığı butonun sonucu; hamle reddedilince taşlar tahtada
+       kaldığından taslak hâlâ geçerli oluyor ve hata sonsuza dek
+       görünmüyordu. Çözüm iki tarafta da aynı: hatalar reducer'ın
+       `state.message`ına DEĞİL ayrı bir `submitError`/`_submitError`
+       kanalına yazılıyor ve türetilen notlardan ÖNCE geliyor; taslağın
+       imzası (hücre+harf+jokerin harfi) değiştiği an sıfırlanıyor.
+       Reducer'a hiç dokunulmadı (motor dosyası — golden vector paritesi).
+       **`App.tsx`e de uygulandı** çünkü orada ulaşılabilir bir dal var:
+       sunucu sözlüğü kelimeyi reddederse (`moveStatus` YEREL sözlükle
+       hesaplandığından taslak geçerli görünür) mesaj yutuluyordu. **Portun
+       yerel ekranı bilerek DEĞİŞMEDİ** — orada sözlük tamamen pakette,
+       sunucuya hiç sorulmuyor, yani ulaşılabilir bir gönderim hatası YOK;
+       eklemek ölü kod olurdu.
+     - **(3) Sohbet ön plana dönüşte tazelenmiyordu (İKİ platformda
+       birden).** Kullanıcı "app'den web'e mesajlar anında gidiyor ama
+       web'den app'e gelmiyor, setup'a çıkıp girince geliyor" dedi.
+       Asimetrinin sebebi kanal değil KURTARMA yolları: oyun state'i ÜÇ
+       yoldan tazeleniyor (Realtime + periyodik + ön plana dönüş) ama
+       sohbet YALNIZCA Realtime'a bağlıydı — oysa "arka planda websocket
+       askıya alınır, kaçırılan olay bir daha oynatılmaz" gerekçesi (web
+       `OnlineGameScreen.tsx`'te 340-345'te yazılı) iki tablo için de
+       aynen geçerli. iPad'de iki Safari sekmesi arasında gidip gelmek tam
+       da bu durumu üretiyor: web sekmesine yazarken app sekmesi arka
+       planda. Aynı üçlü dinleyici + aynı 1sn debounce sohbete de kuruldu
+       (portta `didChangeAppLifecycleState`'in resume dalına `_fetchChat()`).
+       **Popup bilerek tetiklenmiyor** — arka planda biriken beş mesaj için
+       beş popup değil, tek okunmamış rozeti; abonelik de yeniden
+       kurulmuyor (`_loadChat` = veri + abonelik, `_fetchChat` = yalnız veri).
+     - **(4) Oyun sonu modalının hamle geçmişi Canlı'da BOŞ (port
+       düzeltmesi).** "Oyun Geçmişi" linki "Henüz kazanılmış bir puan yok."
+       diyordu, ama AYNI ekranın tahta altındaki "Hamleler" linki dolu
+       listeyi gösteriyordu. Yapısal sapma: web'in `GameOver`u
+       `onOpenHistory`i bir **callback** olarak alıp HANGİ state'in
+       gösterileceğini ebeveyne bırakıyor (`App.tsx` kendi state'ini,
+       `OnlineGameScreen.tsx` sunucu satırlarından türettiği `historyState`i
+       geçiyor); port bu kararı widget'ın İÇİNE gömüp `state`i doğrudan
+       kullanıyordu — Canlı'da reducer'ın `moveHistory`si boş olduğundan
+       sonuç boş liste. `onOpenHistory` artık ZORUNLU parametre (iki çağrı
+       yeri de kararı vermek zorunda) ve iki yer de tek bir `_historyState`
+       getter'ından besleniyor.
+     - **(5) "Çevrimdışı" rozeti okunmuyordu (web, kullanıcı isteği).**
+       Board alt şeridindeki gösterge `text-[8px]`ti; kardeşleri
+       (Hamleler · Mesajlaşma · Nasıl Oynanır?) `text-[12px] font-mono
+       font-bold tracking-[0.5px]`. Tam da çevrimdışıyken okunması gereken
+       tek gösterge şeridin en küçük yazısıydı — kardeşlerle birebir aynı
+       sınıflara çekildi (yalnız rengi farklı). **Portta bu göstergenin
+       KARŞILIĞI HİÇ YOK** (`useOnlineStatus` porta hiç girmemiş); bulgu
+       (2)'nin düzeltmesi "app hiçbir şey söylemiyor" kısmını kapattığından
+       ayrı bir bağlantı göstergesi eklemek bu turun kapsamına alınmadı —
+       "Sonraya Bırakılan İşler"e yazıldı.
+     - **Doğrulama:** `flutter analyze` temiz; **tam takım 414/414 yeşil**
+       (411'den +3 — üçü de yeni). `npm run lint` + `npm run build` temiz,
+       Playwright duman testleri 2/2. **Üç negatif eş ayrı ayrı koşuldu:**
+       (a) GameOver'a `_historyState` yerine `state` geçilince yeni test
+       düştü; (b) `submitError` türetilen notlardan SONRAYA alınınca
+       "Bağlantı yok." bulunamadı (kullanıcının gördüğü semptomun birebir
+       kendisi); (c) resume dalından `_fetchChat()` çıkarılınca sohbet
+       tazeleme testi düştü. **Mevcut "sunucu reddi mesaj satırına düşer"
+       testinin bu hatayı neden göremediği kayda değer:** o test PAS GEÇ
+       kullanıyor, pas'ta tahta boş, dolayısıyla `myTurnNote` hiç devreye
+       girmiyor — yeni test taşları TAHTADA bırakarak reddettiriyor.
+     - **Cihazda doğrulanacak:** beş düzeltmenin hiçbiri gerçek iki-hesap
+       akışında henüz koşulmadı; maddeler `mobile/TESTING.md` bölüm 11 ve
+       kök `TESTING.md` bölüm 2'ye eklendi.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 14 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
@@ -3833,7 +3924,7 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | 8 · Dayanıklılık (uçak modu) | ✅ | 8.2/8.3/8.5/8.6 — Parça 43-46 |
 | 9 · Görüş Bildir | 🟡 | 9.5 geçti (Parça 49); **9.3/9.4 Parça 48 düzeltmesinden sonra tekrar koşulmalı** |
 | 10 · Arkadaşlar | ✅ | tamamı (11 Ağu) + moderasyon geri alma, iki yol (14 Ağu, Parça 91) |
-| 11 · Canlı oyun | 🟡 | gerçek 2 kişilik oyun oynandı (Parça 58/59 oradan çıktı) ama **listenin tamamı koşulmadı** |
+| 11 · Canlı oyun | 🟡 | **14 Ağu: davet/kabul + tahta bölümü baştan koşuldu (Parça 95, 5 bulgu) — mesajlaşma alt bölümü ve tekil/SQL maddeleri hâlâ koşulmadı**; düzeltmelerin cihaz teyidi bekliyor |
 | 12 · Hesap Ayarları | ✅ | avatar RLS + küçültme uçtan uca (Parça 82/83) |
 | 13 · k-lig ödül & rütbe | ✅ | 12 Ağu (Parça 66) |
 
@@ -3848,6 +3939,11 @@ ankrajı (Parça 86), HEIC seçimi ve galeri izni reddi (Parça 87).
 Son iki günde düzeltme yapıldıkça listeye madde eklendi ama o maddeler
 hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
 
+- **14 Ağustos (Parça 95) — Canlı turunun BEŞ düzeltmesi, hiçbiri cihazda
+  teyit edilmedi:** boş taslakta OYNA (web Canlı) · gönderim hatasının
+  görünmesi (iki platform, uçak modu) · sohbetin ön plana dönüşte
+  tazelenmesi (iki platform) · oyun sonu → Oyun Geçmişi (port) ·
+  "Çevrimdışı" rozetinin puntosu (web)
 - **14 Ağustos (Parça 90/92):** girişsiz başlatma uyarısı (bölüm 1) ·
   tahta altındaki "Nasıl Oynanır?" (bölüm 1, İKİ oyun ekranında da) ·
   OHP hizası + başlık ortalama (bölüm 4 ve kök bölüm 10) · ağ hatasında
@@ -3866,10 +3962,12 @@ ilk yazılan sıralama yalnızca ikinci dalı kapsıyordu), artı negatif eşi.
 
 ### Sıradaki tur için öneri
 
-En yüksek getiri **bölüm 11 (Canlı oyun)** — iki hesap gerektirdiği için
-hep ertelendi, oysa en karmaşık akış ve bugüne kadar oradan çıkan iki
-bulgu (sürüklemede donma → Parça 58, "Tekrar Oyna" → Parça 59) gerçek
-oyundan geldi. Ardından **bölüm 7** (hiç ayrı tur görmemiş, kısa) ve
+Bölüm 11'in **davet/kabul + tahta** kısmı 14 Ağustos'ta koşuldu ve tek
+turda beş bulgu çıkardı (Parça 95) — öneri doğru çıktı. Sırada, aynı
+bölümün henüz koşulmamış kısımları var: **mesajlaşma alt bölümü** (11
+maddesinin çoğu; Parça 95'in sohbet düzeltmesi tam da orayı ilgilendiriyor)
+ve **tekil/SQL maddeleri** (ret, hesap değişimi, süresi dolmuş davet,
+48 saat süre aşımı). Ardından **bölüm 7** (hiç ayrı tur görmemiş, kısa) ve
 **9.6 tekrarı**.
 
 ## Sonraya Bırakılan İşler (mobil)
@@ -3877,6 +3975,20 @@ oyundan geldi. Ardından **bölüm 7** (hiç ayrı tur görmemiş, kısa) ve
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
 kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
 silinip kendi tarihli parça notuna taşınır.
+
+- **Bağlantı durumu göstergesi (`useOnlineStatus` portu) — YOK (14 Ağustos
+  2026, Parça 95'te fark edildi):** Web'in Board alt şeridinde `!online`
+  iken kırmızı bir "Çevrimdışı" yazısı çıkıyor (`Board.tsx`, kaynağı
+  `src/hooks/useOnlineStatus.ts`); portta ne hook ne gösterge var.
+  - **Neden bu turda yapılmadı:** Parça 95'in (2) numaralı düzeltmesi
+    ("gönderim hatası artık görünüyor") kullanıcının bildirdiği asıl
+    şikayeti — uçak modunda uygulamanın hiçbir şey söylememesi — zaten
+    kapatıyor. Ayrıca gösterge yeni bir bağımlılık (`connectivity_plus`)
+    ya da kendi ping mekanizmasını gerektiriyor; istek "fontu düzelt"
+    olduğundan kapsam kendiliğinden genişletilmedi.
+  - **Yapılırsa:** göstergenin puntosu/aralığı alt şeritteki kardeş
+    kontrollerle (Hamleler · Mesajlaşma · Nasıl Oynanır?) BİREBİR aynı
+    olmalı — web 14 Ağustos'ta tam bu sebeple düzeltildi (8px okunmuyordu).
 
 - **Kayıt onayı maili kaydın GELDİĞİ kanala dönmeli (10 Ağustos 2026,
   kullanıcı kararı — sözleri: "Kişilerin kayıt başvurusu hangi kanaldan

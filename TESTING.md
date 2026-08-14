@@ -90,6 +90,22 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       hem yerel/YZ hem Canlı oyun ekranında ayrı ayrı dene (ikisi farklı
       kod yolundan açıyor). Yerel ekranda kapatınca oyun normal devam
       etmeli (kurallar penceresi oyunu etkilemez).
+- [ ] **Boş taslakta OYNA (14 Ağustos 2026).** Sıra sendeyken hiç taş
+      koymadan OYNA'ya bas: mesaj satırında **"Harf yerleştirilmedi."**
+      çıkmalı. Önceden Canlı ekranda hiçbir şey olmuyor, bir önceki metin
+      ("Taşlar rafa geri alındı") duruyordu — YZ oyunu bunu baştan doğru
+      yapıyordu, iki ekranı yan yana karşılaştır.
+- [ ] **Gönderim hatası GÖRÜNÜR (14 Ağustos 2026).** Geçerli bir kelime
+      kurup uçak modunda OYNA'ya bas: mesaj satırında bir ağ hatası
+      görünmeli — "Oyna tuşuyla kelimeyi onayla." DEĞİL. Alttaki
+      **"Çevrimdışı"** yazısı da alt şeritteki öteki linklerle (Hamleler ·
+      Mesajlaşma · Nasıl Oynanır?) AYNI puntoda olmalı; belirgin şekilde
+      küçükse regresyon. Sonra bir taşı oynat: hata kaybolmalı. Aynı
+      kontrol PAS GEÇ/DEĞİŞTİR için de geçerli.
+- [ ] **Sohbet ön plana dönüşte tazelenir (14 Ağustos 2026).** Oyun ekranı
+      AÇIKKEN sekmeyi/uygulamayı arka plana al, karşı taraftan mesaj
+      gönder, sonra geri dön: mesaj kendiliğinden gelmeli (oyundan çıkıp
+      girmek gerekmemeli). Popup çıkmamalı, yalnız okunmamış kırmızı nokta.
 - [ ] **Sürükle-bırak.** Raftan tahtaya, tahtada taşıma, tahtadan rafa geri
       alma — üçü de çalışmalı (yerel oyundakiyle aynı davranış).
 - [ ] **Realtime.** Karşı taraf oynadığında ekran kendiliğinden güncellenmeli.

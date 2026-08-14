@@ -565,8 +565,13 @@ export function Board({
             )}
           </div>
           <div className="flex items-center gap-2 justify-end flex-wrap">
+            {/* Punto/aralık, alt şeritteki KARDEŞ kontrollerle (Hamleler ·
+                Mesajlaşma · Nasıl Oynanır?) birebir aynı — yalnızca rengi
+                farklı. Önceden 8px'ti ve kullanıcı cihazda "belli olmuyor"
+                diye bildirdi (14 Ağustos 2026): tam da çevrimdışıyken
+                okunması gereken tek gösterge, şeridin en küçük yazısıydı. */}
             {!online && (
-              <div className="text-[8px] font-mono font-bold text-red flex items-center">
+              <div className="text-[12px] font-mono font-bold tracking-[0.5px] text-red flex items-center shrink-0">
                 Çevrimdışı
               </div>
             )}

@@ -459,6 +459,39 @@ void main() {
       await unmount(tester);
     });
 
+    // Gönderim hatası, taşlar TAHTADAYKEN de görünmeli. Mevcut "sunucu reddi
+    // mesaj satırına düşer" testi PAS GEÇ kullandığından bu hatayı yapısal
+    // olarak göremiyordu: pas'ta tahta boş, dolayısıyla `myTurnNote` hiç
+    // devreye girmiyor. Oysa OYNA reddedilince taşlar tahtada kalır, taslak
+    // geçerli olmaya devam eder ve türetilen not hatayı yutuyordu — uçak
+    // modunda kullanıcının gördüğü tam olarak buydu (14 Ağustos 2026).
+    // Negatif eş: `_submitError` yerine `_setMessage` kullanılırsa düşer.
+    testWidgets('OYNA reddedilirse hata taşlar tahtadayken de görünür',
+        (tester) async {
+      final gw = await pumpScreen(tester, current: 0);
+      gw.submitFailWith = Exception('Bağlantı yok.');
+
+      for (var c = 0; c < 6; c++) {
+        await tester.tap(rackTile(0));
+        await tester.pump();
+        await tester.tap(boardCell(0, c));
+        await tester.pump();
+      }
+      expect(find.text('Oyna tuşuyla kelimeyi onayla.'), findsOneWidget);
+
+      await tester.tap(find.text('OYNA'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Bağlantı yok.'), findsOneWidget);
+      expect(find.text('Oyna tuşuyla kelimeyi onayla.'), findsNothing);
+
+      // Taslağa dokunulunca hata geçmişe ait olur (web `placedSignature`).
+      await tester.tap(boardCell(0, 5)); // taşı geri al
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Bağlantı yok.'), findsNothing);
+      await unmount(tester);
+    });
+
     testWidgets(
         'sürükleme sırasında sayfa kaymıyor (game_screen.dart ile aynı düzeltme)',
         (tester) async {
@@ -759,6 +792,49 @@ void main() {
           findsOneWidget);
 
       // Formu da kapat ki dispose'da bekleyen bir route kalmasın.
+      await tester.tap(find.byTooltip('Kapat'));
+      await tester.pumpAndSettle();
+      await unmount(tester);
+    });
+
+    // Oyun sonu modalındaki "Oyun Geçmişi" SUNUCUDAN gelen hamleleri
+    // göstermeli. Canlı'da reducer'ın `moveHistory`si boş olduğundan, modal
+    // ham `state`i alırsa "Henüz kazanılmış bir puan yok." der — tahta
+    // altındaki "Hamleler" linki ise doğru listeyi gösterir; kullanıcı bu
+    // ayrışmayı cihazda bildirdi (14 Ağustos 2026). Negatif eş: GameOverModal
+    // `onOpenHistory` yerine `state`i kendisi kullanırsa bu test düşer.
+    testWidgets('GameOver → Oyun Geçmişi sunucudaki hamleleri gösterir',
+        (tester) async {
+      await pumpScreen(
+        tester,
+        isGameOver: true,
+        moveRows: [
+          {
+            'turn': 0,
+            'player_index': 1,
+            'action': 'play',
+            'words': ['ARA'],
+            'points': 13,
+            'lost_shares': const [],
+            'tile_count': 3,
+            'finish_joker_count': 0,
+            'bingo': false,
+          }
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('OYUN GEÇMİŞİ'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Henüz kazanılmış bir puan yok.'), findsNothing);
+      expect(find.textContaining('ARA'), findsWidgets);
+
+      await tester.tap(find.byTooltip('Kapat').last); // hamle geçmişi
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Kapat')); // GameOver
+      await tester.pumpAndSettle();
+      // GameOver kapanışı "Görüş Bildir" formunu açıyor (bkz. üstteki test).
       await tester.tap(find.byTooltip('Kapat'));
       await tester.pumpAndSettle();
       await unmount(tester);

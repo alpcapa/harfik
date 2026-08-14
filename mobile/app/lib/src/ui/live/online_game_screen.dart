@@ -220,8 +220,41 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
 
   GameState get state => _controller.state;
 
+  /// Hamle geçmişi ekranlarına verilecek state — web `OnlineGameScreen.tsx`'in
+  /// `historyState`inin birebir karşılığı.
+  ///
+  /// Canlı oyunda reducer'ın `moveHistory`si BOŞTUR (hamleler sunucudan
+  /// `online_game_moves` ile geliyor, `SyncOnlineStateAction` geçmişi
+  /// taşımıyor) — geçmişi gösteren HER çağrı yeri bu getter'ı kullanmalı,
+  /// ham `state`i DEĞİL. Tahta altındaki "Hamleler" linki bunu baştan doğru
+  /// yapıyordu, oyun sonu modalı yapmıyordu (14 Ağustos 2026, cihaz testi).
+  GameState get _historyState =>
+      state.copyWith(moveHistory: buildMoveHistory(_moves));
+
   bool _loaded = false;
   bool _busy = false;
+
+  /// SON gönderim denememin sonucu — reducer'ın `state.message`'ından AYRI
+  /// (web `OnlineGameScreen.tsx` `submitError`; oradaki uzun gerekçe geçerli).
+  ///
+  /// Özet: `myTurnNote` "geçerli taslak + sıra sende" iken mesaj satırını
+  /// koşulsuz türetiyor. Hamle reddedilince taşlar tahtada kaldığından taslak
+  /// hâlâ geçerli oluyor ve `_setMessage` ile yazılan hata hiçbir zaman
+  /// görünmüyordu — uçak modunda OYNA "GÖNDERİLİYOR" deyip sessizce eski
+  /// hâline dönüyordu (14 Ağustos 2026, cihaz testi). Hata bayat değil,
+  /// kullanıcının az önce bastığı butonun sonucu.
+  String? _submitError;
+
+  /// Taslağın imzası — değiştiği an [_submitError] geçmişe aittir.
+  String get _placedSignature {
+    final parts = [
+      for (final e in state.placed.entries)
+        '${e.key}:${e.value.letter}${e.value.wildLetter ?? ''}'
+    ]..sort();
+    return parts.join('|');
+  }
+
+  String? _lastPlacedSignature;
   List<OnlineMoveRow> _moves = const [];
   bool _gameOverShown = false;
 
@@ -306,6 +339,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     if (last != null && now.difference(last) < _foregroundDebounce) return;
     _lastForeground = now;
     unawaited(_refresh());
+    unawaited(_fetchChat());
   }
 
   @override
@@ -326,6 +360,24 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   /// tablo) — ilk yükte tüm sohbeti + mute/rapor setlerini çeker, sonrasında
   /// yeni mesajları INSERT olayıyla dinler (web'in aynı ayrımı).
   Future<void> _loadChat() async {
+    await _fetchChat();
+    final chat = widget.chat;
+    if (chat == null || _mySlot < 0 || !mounted) return;
+    _unsubscribeChat = chat.subscribe(widget.game.id, _onChatMessage);
+  }
+
+  /// Yalnızca VERİYİ tazeler — aboneliğe dokunmaz, bu yüzden ön plana
+  /// dönüşte tekrar tekrar çağrılabilir.
+  ///
+  /// Oyun state'i üç yoldan kurtarılıyordu (Realtime + periyodik + resume,
+  /// bkz. `didChangeAppLifecycleState`) ama sohbet YALNIZCA Realtime'a
+  /// bağlıydı; oysa kaçırılan olayın kalıcı kaybolması iki tablo için de
+  /// geçerli. Arka planda websocket askıya alınınca gelen mesaj hiç
+  /// görünmüyor, tek çare ekrandan çıkıp girmekti — kullanıcı bunu iki
+  /// cihazla yazışırken bildirdi (14 Ağustos 2026). Popup BİLEREK
+  /// tetiklenmiyor (yalnızca `_onChatMessage` açar): arka planda biriken beş
+  /// mesaj için beş popup değil, tek bir okunmamış rozeti.
+  Future<void> _fetchChat() async {
     final chat = widget.chat;
     if (chat == null || _mySlot < 0) return;
     final results = await Future.wait([
@@ -348,7 +400,6 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     _chatState.update(
         messages: msgs, mutedUserIds: mutes, reportedUserIds: reported);
     await _seedInitialUnread(msgs, mutes);
-    _unsubscribeChat = chat.subscribe(widget.game.id, _onChatMessage);
   }
 
   /// Bu cihazda bu oyun için "en son okunan mesaj" damgası hiç yoksa (özellik
@@ -694,8 +745,9 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
 
   // ── Eylemler ────────────────────────────────────────────────────────────
 
-  void _setMessage(String message, MessageKind kind) => _controller
-      .dispatch(SetMessageAction(message: message, messageType: kind));
+  // `_setMessage` kaldırıldı (14 Ağustos 2026): bu ekranın YAZDIĞI her mesaj
+  // bir gönderim/doğrulama sonucuydu ve hepsi artık `_submitError`e gidiyor.
+  // `state.message` yalnızca reducer'ın kendi anlatımını taşıyor.
 
   Future<void> _handlePlay() async {
     final me = _me;
@@ -711,7 +763,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     final result = validatePlacement(state.board, state.placed, _mySlot,
         me.corners, isFirstMove(pinned), widget.words);
     if (!result.valid) {
-      _setMessage(result.reason ?? 'Geçersiz hamle.', MessageKind.err);
+      setState(() => _submitError = result.reason ?? 'Geçersiz hamle.');
       return;
     }
 
@@ -756,7 +808,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
         ],
       );
     } catch (e) {
-      if (mounted) _setMessage(_errorText(e), MessageKind.err);
+      if (mounted) setState(() => _submitError = _errorText(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -788,7 +840,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
       await widget.onlineGames
           .submitMove(gameId: widget.game.id, action: 'pass');
     } catch (e) {
-      if (mounted) _setMessage(_errorText(e), MessageKind.err);
+      if (mounted) setState(() => _submitError = _errorText(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -884,7 +936,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
       // rafı yenileyecek (web aynı sırayı izliyor).
       if (mounted) _controller.dispatch(const ToggleSwapModeAction());
     } catch (e) {
-      if (mounted) _setMessage(_errorText(e), MessageKind.err);
+      if (mounted) setState(() => _submitError = _errorText(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -1212,6 +1264,16 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
       // motorundan bağımsız da yeniden çizilebilmeli.
       listenable: Listenable.merge([_controller, _chatState]),
       builder: (context, _) {
+        // Taslak değiştiyse son gönderimin hatası artık geçmişe ait (web'in
+        // `placedSignature` effect'inin karşılığı). `setState` YOK: değer bu
+        // build'in kendi çıktısında kullanılıyor, ayrıca bir kare gerekmiyor
+        // — bu builder zaten taslağı değiştiren dispatch yüzünden çalışıyor.
+        final signature = _placedSignature;
+        if (_lastPlacedSignature != null && _lastPlacedSignature != signature) {
+          _submitError = null;
+        }
+        _lastPlacedSignature = signature;
+
         final me = _me;
         if (!_loaded || me == null) {
           return const Scaffold(
@@ -1240,6 +1302,8 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                 feedback: widget.feedback,
                 source: FeedbackSource.gameEnd);
             await showGameOverModal(context, state,
+                onOpenHistory: () =>
+                    showMoveHistoryModal(context, _historyState),
                 onFeedback: auth == null ? null : openFeedback);
             if (!mounted || auth == null) return;
             openFeedback();
@@ -1266,24 +1330,31 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
             ? 'Oyna tuşuyla kelimeyi onayla.'
             : null;
         final last = _lastMoveMessage;
+        // `_submitError` türetilmiş notlardan ÖNCE gelir (bkz. alanın
+        // tanımındaki gerekçe) — taslak geçerli kalsa bile son gönderimin
+        // hatası görünmek zorunda. Web'deki sıralamanın birebir aynısı.
+        final submitError = _submitError;
         final liveMessage = invalid
             ? moveStatus.reason!
             : state.isGameOver
                 ? 'Oyun bitti.'
-                : offTurnNote ??
+                : submitError ??
+                    offTurnNote ??
                     myTurnNote ??
                     (state.message.isNotEmpty ? state.message : last.text);
         final liveKind = invalid
             ? MessageKind.err
-            : offTurnNote != null
-                ? MessageKind.warn
-                : valid
-                    ? MessageKind.ok
-                    : state.isGameOver
-                        ? MessageKind.none
-                        : state.message.isNotEmpty
-                            ? state.messageType
-                            : last.kind;
+            : state.isGameOver
+                ? MessageKind.none
+                : submitError != null
+                    ? MessageKind.err
+                    : offTurnNote != null
+                        ? MessageKind.warn
+                        : valid
+                            ? MessageKind.ok
+                            : state.message.isNotEmpty
+                                ? state.messageType
+                                : last.kind;
 
         return LeagueRewardsHost(
           rewards: widget.leagueRewards,
@@ -1364,10 +1435,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                       onCellTap: _handleCellTap,
                                       gridKey: _gridKey,
                                       onOpenHistory: () => showMoveHistoryModal(
-                                          context,
-                                          state.copyWith(
-                                              moveHistory:
-                                                  buildMoveHistory(_moves))),
+                                          context, _historyState),
                                       onOpenHelp: () => showHelpModal(context),
                                       onOpenMessaging: widget.chat == null
                                           ? null

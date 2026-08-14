@@ -170,6 +170,34 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [validating, setValidating] = useState(false);
+  /**
+   * SON gönderim denememin sonucu — `state.message`'tan AYRI tutuluyor
+   * (14 Ağustos 2026, cihaz testi: uçak modunda OYNA'ya basınca hiçbir şey
+   * olmuyordu).
+   *
+   * Sebep: aşağıdaki `myTurnValidNote` (6 Ağustos 2026) "geçerli taslak +
+   * sıra sende" iken mesaj satırını KOŞULSUZ türetiyor — bu, bayat
+   * `state.message`'ların satırı ele geçirmesini engellemek için doğru bir
+   * kural, ama gönderim hatasını da yutuyordu: hamle reddedilince taşlar
+   * tahtada kaldığından taslak HÂLÂ geçerli oluyor ve `SET_MESSAGE` ile
+   * yazılan hata hiçbir zaman görünmüyordu. Hata BAYAT DEĞİL — kullanıcının
+   * az önce bastığı butonun sonucu, dolayısıyla türetilen nottan önce gelir.
+   *
+   * Taslak her değiştiğinde sıfırlanır (aşağıdaki effect): kullanıcı taşı
+   * oynatmaya başladığı an hata artık geçmişe aittir. `state.message`'a
+   * yazmak yerine ayrı bir state olması, reducer'ın (motor dosyası — golden
+   * vector paritesi) hiç değişmemesini de sağlıyor.
+   */
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  // Taslağın imzası — hücre + harf (joker harfi değişince de tazelensin diye
+  // `wildLetter` dahil). Değiştiği an son gönderimin hatası geçmişe aittir.
+  const placedSignature = Object.entries(state.placed)
+    .map(([k, t]) => `${k}:${t.letter}${t.wildLetter ?? ''}`)
+    .sort()
+    .join('|');
+  useEffect(() => {
+    setSubmitError(null);
+  }, [placedSignature]);
   const [showHistory, setShowHistory] = useState(false);
   // Tahtanın alt şeridindeki "Nasıl Oynanır?" linki (14 Ağustos 2026) —
   // yerel ekranda Tutorial'ın state'i yeniden kullanılıyor, burada öyle bir
@@ -385,7 +413,11 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     // — ikisi ayrı/bağımsız fetch olsaydı hangi önce bittiği garanti
     // olmadığından, soğuk yüklemede sessize alınmış birinin mesajı yanlışlıkla
     // bir an için okunmamış sayılabilirdi.
-    void Promise.all([
+    // Ön plana dönüşte de çağrılabilsin diye bir fonksiyona alındı — aşağıya
+    // bkz. Realtime kanalı askıya alınırsa kaçırılan mesaj kalıcı olarak
+    // kaybolduğundan ilk yükleme tek başına yetmiyor.
+    const loadMessages = () => {
+      void Promise.all([
       // Kişi bazlı (oyuna göre filtrelenmez) — bu kişiyi başka bir oyunda
       // sessize almış/rapor etmişsem burada da işaretli gelir.
       fetchMyChatMutes(),
@@ -422,7 +454,9 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
         (r) => r.sender_user_id !== myUserId && r.created_at > lastReadAt && !mutes.has(r.sender_user_id),
       ).length;
       setUnreadCount(unread);
-    });
+      });
+    };
+    loadMessages();
     const unsubscribe = subscribeOnlineGameMessages(game.id, (row) => {
       setChatMessages((cur) => (cur.some((m) => m.id === row.id) ? cur : [...cur, row]));
       setShowChat((open) => {
@@ -433,9 +467,34 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
         return open;
       });
     });
+    // Oyun state'i üç yoldan kurtarılıyordu (Realtime + periyodik tarama +
+    // ön plana dönüş, yukarıdaki effect) ama SOHBET yalnızca Realtime'a
+    // bağlıydı — oysa kaçırılan olayın kalıcı olarak kaybolması (postgres_
+    // changes canlı bir akıştır, tekrar oynatılmaz) her iki tablo için de
+    // geçerli. Sonuç: sekme/ekran arka plandayken gelen mesaj hiç görünmüyor,
+    // tek çare oyundan çıkıp tekrar girmekti — kullanıcı bunu iki cihazla
+    // yazışırken bildirdi (14 Ağustos 2026): "web'den app'e atılan mesajlar
+    // anında çıkmıyor, setup'a çıkıp girince geliyor". Aynı üçlü dinleyici +
+    // aynı 1sn debounce buraya da kuruldu.
+    // Popup BİLEREK tetiklenmiyor (yalnızca Realtime dalı açar) — arka planda
+    // biriken beş mesaj için beş popup değil, tek bir okunmamış rozeti.
+    let lastForegroundChatLoad = 0;
+    const onForeground = () => {
+      if (document.visibilityState !== 'visible') return;
+      const now = Date.now();
+      if (now - lastForegroundChatLoad < 1000) return;
+      lastForegroundChatLoad = now;
+      loadMessages();
+    };
+    document.addEventListener('visibilitychange', onForeground);
+    window.addEventListener('focus', onForeground);
+    window.addEventListener('online', onForeground);
     return () => {
       cancelled = true;
       unsubscribe();
+      document.removeEventListener('visibilitychange', onForeground);
+      window.removeEventListener('focus', onForeground);
+      window.removeEventListener('online', onForeground);
     };
   }, [game.id, mySlotIndex, myUserId]);
 
@@ -699,9 +758,10 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     };
   }, [moveRows, state.players]);
 
-  // Sunucu/doğrulama hatası bir SET_MESSAGE ile burada anlık olarak
-  // (bir sonraki senkrona kadar) `state.message`'a yazılır — doluysa o,
-  // yukarıdaki hesaplanan son-hamle mesajının önüne geçer. Oyun bittiyse
+  // Sunucu/doğrulama hatası `state.message`'a DEĞİL `submitError`e yazılır
+  // (bkz. o state'in tanımındaki gerekçe) ve türetilmiş notların önüne
+  // geçer; `state.message` yalnızca reducer'ın kendi anlatımını taşır ve
+  // doluysa hesaplanan son-hamle mesajının önüne geçer. Oyun bittiyse
   // (endGame'in yerel karşılığı) gameReducer.ts'teki `endGame()` gibi bu her
   // şeyin önüne geçip kesin olarak "Oyun bitti." gösterir — son hamlenin
   // sonucu değil (o GameOver ekranının arkasında kalır).
@@ -737,32 +797,43 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     moveStatus?.valid && canAct && !state.isGameOver
       ? 'Oyna tuşuyla kelimeyi onayla.'
       : null;
+  // `submitError` türetilmiş notlardan ÖNCE gelir (bkz. tanımındaki gerekçe):
+  // taslak geçerli kalsa bile son gönderimin hatası görünmek zorunda.
   const liveMessage = moveStatus && !moveStatus.valid && moveStatus.reason
     ? moveStatus.reason
     : state.isGameOver
       ? 'Oyun bitti.'
-      : offTurnValidNote ?? myTurnValidNote ?? (state.message || lastMoveMessage.message);
+      : submitError ?? offTurnValidNote ?? myTurnValidNote ?? (state.message || lastMoveMessage.message);
   const liveMessageType = moveStatus && !moveStatus.valid && moveStatus.reason
     ? 'err'
-    : offTurnValidNote
-      ? 'warn'
-      : moveStatus?.valid
-        ? 'ok'
-        : state.isGameOver
-          ? ''
-          : state.message
-            ? state.messageType
-            : lastMoveMessage.messageType;
+    : state.isGameOver
+      ? ''
+      : submitError
+        ? 'err'
+        : offTurnValidNote
+          ? 'warn'
+          : moveStatus?.valid
+            ? 'ok'
+            : state.message
+              ? state.messageType
+              : lastMoveMessage.messageType;
 
   const handlePlay = async () => {
     if (!wordsReady || !canAct || busy || !me) return;
     const placedCoords = Object.keys(state.placed).map((k) => k.split(',').map(Number) as [number, number]);
-    if (placedCoords.length === 0) return;
-
+    // `placedCoords.length === 0` için sessiz bir erken dönüş BİLEREK YOK
+    // (14 Ağustos 2026, cihaz testi): boş taslakta dönmek, hemen aşağıdaki
+    // `validatePlacementStructural`ın ürettiği "Harf yerleştirilmedi."
+    // mesajını ulaşılamaz kılıyordu — OYNA hiçbir şey yapmıyor, mesaj
+    // satırında bir önceki metin ("Taşlar rafa geri alındı") duruyordu.
+    // Yerel oyunda (App.tsx) böyle bir guard hiç yoktu: orası PLAY'i
+    // reducer'a dispatch ediyor, reducer da aynı validator'dan geçip mesajı
+    // yazıyor. Mobil port bu kararı Parça 88'de zaten almıştı
+    // (online_game_screen.dart `_handlePlay` — oradaki yorum da bunu anlatıyor).
     const structural = validatePlacementStructural(state.board, state.placed, state.current, me.corners, isFirstMove(state));
     let words = structural.words ?? [];
     if (!structural.valid) {
-      dispatch({ type: 'SET_MESSAGE', message: structural.reason ?? 'Geçersiz hamle.', messageType: 'err' });
+      setSubmitError(structural.reason ?? 'Geçersiz hamle.');
       return;
     }
 
@@ -786,13 +857,13 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
         setValidating(false);
       }
       if (serverOk && invalidWords.length > 0) {
-        dispatch({ type: 'SET_MESSAGE', message: formatInvalidWordsReason(invalidWords), messageType: 'err' });
+        setSubmitError(formatInvalidWordsReason(invalidWords));
         return;
       }
       if (!serverOk) {
         const local = validatePlacement(state.board, state.placed, state.current, me.corners, isFirstMove(state));
         if (!local.valid) {
-          dispatch({ type: 'SET_MESSAGE', message: local.reason ?? 'Geçersiz hamle.', messageType: 'err' });
+          setSubmitError(local.reason ?? 'Geçersiz hamle.');
           return;
         }
         words = local.words ?? words;
@@ -800,7 +871,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     } else {
       const local = validatePlacement(state.board, state.placed, state.current, me.corners, isFirstMove(state));
       if (!local.valid) {
-        dispatch({ type: 'SET_MESSAGE', message: local.reason ?? 'Geçersiz hamle.', messageType: 'err' });
+        setSubmitError(local.reason ?? 'Geçersiz hamle.');
         return;
       }
       words = local.words ?? words;
@@ -826,7 +897,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
           lostShares: shares.map((s) => ({ to: s.index, amount: s.amount })),
         });
       } catch (err) {
-        dispatch({ type: 'SET_MESSAGE', message: err instanceof Error ? err.message : 'Hamle gönderilemedi.', messageType: 'err' });
+        setSubmitError(err instanceof Error ? err.message : 'Hamle gönderilemedi.');
       } finally {
         setBusy(false);
       }
@@ -849,7 +920,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     try {
       await submitMove(game.id, { action: 'pass' });
     } catch (err) {
-      dispatch({ type: 'SET_MESSAGE', message: err instanceof Error ? err.message : 'Hata oluştu.', messageType: 'err' });
+      setSubmitError(err instanceof Error ? err.message : 'Hata oluştu.');
     } finally {
       setBusy(false);
     }
@@ -900,7 +971,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       await submitMove(game.id, { action: 'exchange', exchangeLetters: letters });
       dispatch({ type: 'TOGGLE_SWAP_MODE' });
     } catch (err) {
-      dispatch({ type: 'SET_MESSAGE', message: err instanceof Error ? err.message : 'Hata oluştu.', messageType: 'err' });
+      setSubmitError(err instanceof Error ? err.message : 'Hata oluştu.');
     } finally {
       setBusy(false);
     }

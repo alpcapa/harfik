@@ -631,6 +631,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 feedback: widget.feedback,
                 source: FeedbackSource.gameEnd);
             await showGameOverModal(context, state,
+                // Yerel oyunda hamle geçmişi reducer'ın kendi state'inde —
+                // tahta altındaki "Hamleler" linkiyle AYNI kaynak.
+                onOpenHistory: () => showMoveHistoryModal(context, state),
                 onFeedback: auth == null ? null : openFeedback);
             if (!mounted || auth == null) return;
             openFeedback();
