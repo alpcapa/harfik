@@ -9,9 +9,17 @@
 // ⚠ ÜÇ KOPYA ELLE SENKRON: buradaki liste, web'in `leagueRank.ts`'i ve
 // SQL'deki `(values ...)` listeleri tek kaynak DEĞİL (SQL ↔ TS ↔ Dart
 // arasında paylaşım mümkün olmadığından). Biri değişirse üçü birden
-// değişmeli — hiçbir derleyici/test bunu yakalamaz. Son senkron: 12 Ağustos
-// 2026, `rank_tiers_efsane_uzayli_tanri` migration'ı (Usta 200→250; üstüne
+// değişmeli. Son senkron: 12 Ağustos 2026,
+// `rank_tiers_efsane_uzayli_tanri` migration'ı (Usta 200→250; üstüne
 // Efsane 2500 / Uzaylı 5000 / Tanrı 10000).
+//
+// 14 Ağustos 2026'dan beri TS ↔ Dart yarısı ARTIK TESTLİ:
+// `test/rank_tiers_parity_test.dart` web'in `leagueRank.ts`'ini okuyup bu
+// listeyle satır satır karşılaştırıyor (ad/harf/renk/eşik/ödül). Bir kademe
+// eklerken/değiştirirken o test rehberdir — düşerse ayrışma vardır.
+// **SQL yarısı hâlâ korumasız** (`_award_league_rewards`ın güncel tanımı tek
+// bir migration dosyasında durmuyor); eşik/ödül değiştiren her migration
+// canlıda ayrıca doğrulanmalı.
 //
 // Rütbe DÜŞMELİ (12 Ağustos 2026, kullanıcı kararı): gösterilen kademe her
 // zaman GÜNCEL toplam puandan (`tierFor`) türetilir; puan -2 cezalarıyla

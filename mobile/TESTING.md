@@ -3,7 +3,7 @@
 Bu dosya, `flutter test`'in **yapısı gereği** kapsayamadığı her şey içindir:
 gerçek Supabase (auth/RLS/RPC), gerçek platform kanalları (paylaş sayfası,
 dosya sistemi), gerçek derleme ve gerçek cihaz davranışı. Otomatik testler
-(142 test) veri katmanını **sahte uçlarla** sınıyor — yani "testler yeşil"
+(409 test) veri katmanını **sahte uçlarla** sınıyor — yani "testler yeşil"
 demek "sunucuyla gerçekten konuşuyor" demek DEĞİL. Bir sütun adı ya da RPC
 parametresi yanlışsa liste sessizce boş döner ve bunu yalnızca burada
 görürsün.

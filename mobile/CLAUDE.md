@@ -3713,24 +3713,102 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Doğrulama sınırı:** cihazda görsel/dokunma teyidi kullanıcıdan
        bekleniyor — `mobile/TESTING.md` bölüm 1/4'e maddeler eklendi.
 
+   - ✅ **Parça 93 — `HelpModal` metin paritesi: denetlendi (TEMİZ çıktı) ve
+     artık bir testle bağlı (14 Ağustos 2026, yeni
+     `test/help_text_parity_test.dart`):** "Sonraya Bırakılan İşler"in ilk
+     maddesi kapandı. Parça 90 hukuki metinleri bağlamıştı; `HelpModal`'ın
+     aynı "birebir kopya" sözleşmesi hâlâ yalnızca bir YORUM satırıyla
+     korunuyordu — ve o sözleşme bu projede bir kez zaten kırılmıştı
+     (Gizlilik metni dört gün bayat kalıp kullanıcıya kendi verisi hakkında
+     yanlış bilgi verdi).
+     - **Denetim sonucu TEMİZ:** 11/11 bölüm başlığı, 9/9 Hızlı Başlangıç
+       maddesi portta var; paragrafların 30/40'ı normalize edilmiş hâliyle
+       BİREBİR, kalan 10'un hepsi açıklanabilir (9'u uzunluk filtresine
+       takılan bölüm başlığı, 1'i iki tarafın da KENDİ motorundan okuduğu
+       `BINGO_BONUS`/`$bingoBonus`). Yani düzeltilecek bir sapma YOKTU —
+       değerli olan bulgu değil, bundan sonrasını koruyan test.
+     - **Vekil olarak "Son güncelleme" KULLANILAMADI** (hukuki metinlerdeki
+       çözüm): `HelpModal.tsx`te öyle bir damga yok. Onun yerine metnin
+       YAPISI vekil alındı — web'de makine-okunur duran `<Section title="…">`
+       ve `<QuickItem icon="…">` listeleri porta karşı doğrulanıyor. Bu, asıl
+       korkulan hata sınıfını tam olarak yakalıyor: **web'e yeni bir bölüm
+       eklenip porta eklenmemesi.** Parça 66'nın "Rütbeler ve Ödüller"i tam
+       böyle kaçabilirdi.
+     - **Test kendi regex'ine karşı da korunuyor:** başlık/ikon sayısına bir
+       ALT SINIR (≥11 / ≥9) konuldu — web JSX'i yeniden düzenlenirse regex
+       sessizce 0 eşleşme bulup "geçemez". Bu, `legal_text_test`in
+       `isNotNull` kontrolüyle aynı refleks.
+     - **İki ek değişmez de pinlendi:** rütbe tablosunun İKİ tarafta da elle
+       yazılmadığı (`RANK_TIERS`/`kRankTiers` — dördüncü bir elle senkron
+       kopya açılırsa eşik değişiminde ilk sessizce ayrışacak yer orası) ve
+       bingo bonusunun motordan okunduğu.
+     - **DÜRÜST SINIR (teste de yazıldı):** bu test var olan bir paragrafın
+       İÇİNDEKİ cümle değişikliğini YAKALAMAZ. Tam metin karşılaştırması
+       JSX ↔ Dart arasında kırılgan olurdu (web cümleyi `<strong>`larla
+       parçalıyor, port `**` ile işaretliyor; biri `{BINGO_BONUS}` diğeri
+       `$bingoBonus` gömüyor) — o ayrışma elle denetim istiyor, bugünkü tur
+       onu yaptı.
+     - **Denetim aracının kendisi İKİ KEZ yanlış cevap verdi, ikisi de
+       ölçümle yakalandı — kayda değer:** (1) ilk çıkarıcı web'i
+       `export function HelpModal`ten dilimliyordu, ama o fonksiyon dosyanın
+       SONUNDA (satır 415), içerik ondan önceki const'larda → "web paragraf:
+       0" ile TÜM metin elenmişti; (2) Dart tarafında bitişik dize
+       birleştirmesi (`'a'\n'b'`) hesaba katılmayınca her paragraf parçalara
+       bölünüp 137 sahte "eksik" üretti. **Ders: bir parite denetimi
+       "fark bulundu" derse önce ARACI şüphelen** — bu iki artefakt
+       düzeltilmeden önce rapor, gerçekte var olmayan onlarca eksik
+       gösteriyordu; körlemesine "düzeltmeye" kalksaydım çalışan metni
+       bozardım.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 409/409
+       yeşil** (405'ten +4). **Negatif eş:** web'e sahte bir
+       `<Section title="Yepyeni Bölüm">` eklenince test GERÇEKTEN korkulan
+       hata mesajıyla düştü (`Web'de "Yepyeni Bölüm" bölümü var, portta
+       YOK`), web dosyası geri alınınca yeşile döndü. `kelimeki_core`'a ve
+       üretim koduna hiç dokunulmadı — yalnızca yeni bir test.
+
+   - ✅ **Parça 94 — rütbe tablosunun TS ↔ Dart yarısı da testle bağlandı
+     (14 Ağustos 2026, yeni `test/rank_tiers_parity_test.dart`):** Parça
+     93'ün açtığı soruyu ("bu 'elle senkron' kopyayı hangi test zorluyor?")
+     projedeki EN ÇOK uyarılan kopyaya sordum ve cevap "hiçbiri" çıktı.
+     - **Mevcut testler bu ayrışmayı yapısal olarak GÖREMİYORDU:**
+       `league_rewards_test.dart` yalnızca İÇ tutarlılığı ölçüyor (ödül =
+       eşik/10, kümülatif toplamların farklılığı, sınır davranışı). Web'de
+       bir eşik değişip portta değişmese o testlerin HEPSİ geçmeye devam
+       ederdi — kural kendi içinde tutarlı kalır, yalnızca iki platform
+       ayrışırdı. Üç dosyanın da başlığındaki "hiçbir derleyici/test bunu
+       yakalamaz" cümlesi kelimesi kelimesine doğruydu.
+     - **Test `color_tokens_test`in desenini izliyor:** web'in
+       `src/utils/leagueRank.ts`'ini OKUYUP `RANK_TIERS` satırlarını
+       ayrıştırıyor ve `kRankTiers` ile alan alan karşılaştırıyor
+       (ad/harf/eşik/ödül/renk). **Renk karşılaştırması çözülmüş değer
+       üzerinden** — web hex literal yazıyor, port palet token'ı
+       (`kAccent` gibi) kullanıyor; yanlış token seçilirse yakalanır.
+     - **Ayrıştırıcı kendi sessiz başarısızlığına karşı korunuyor** (Parça
+       93'ün aynı refleksi): satır sayısına ≥9 alt sınırı var, yani TS
+       dosyası yeniden düzenlenip regex 0 eşleşme bulursa test "geçemez".
+     - **SQL yarısı BİLİNÇLİ kapsam dışı ve bu teste yazıldı:**
+       `_award_league_rewards`ın güncel tanımı tek bir migration dosyasında
+       DURMUYOR (sonraki migration'lar fonksiyonu yeniden yazıyor), yani
+       "şu an canlıda ne var" sorusu ancak veritabanına sorularak
+       yanıtlanır — bir birim testi bunu yapamaz. Eşik/ödül değiştiren her
+       migration canlıda ayrıca doğrulanmaya devam edecek.
+     - **Bayat iddialar aynı commit'te düzeltildi:** üç dosya (`leagueRank.ts`,
+       `league_rank.dart`, kök `CLAUDE.md`) hâlâ "hiçbir derleyici/test bunu
+       yakalamaz" diyordu — artık yarısı yanlış. Üçü de "TS ↔ Dart testli,
+       SQL korumasız" olarak güncellendi. **Bir korumayı eklerken onun
+       yokluğunu anlatan cümleleri de ara** — aksi halde bir sonraki oturum
+       var olan testi bilmeden çalışır.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 411/411
+       yeşil** (409'dan +2) — tablo şu an GERÇEKTEN senkron. **Negatif eş:**
+       TS'te Usta'nın eşiği 250→300 yapılınca test GERÇEKTEN
+       `4. kademe (web: "Usta") — EŞİK ayrışmış / Expected: <300> Actual:
+       <250>` ile düştü, web dosyası geri alınınca yeşile döndü.
+
 ## Sonraya Bırakılan İşler (mobil)
 
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
 kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
 silinip kendi tarihli parça notuna taşınır.
-
-### `HelpModal` metin paritesi denetlenmedi (14 Ağustos 2026)
-
-Parça 90 `TermsModal`/`PrivacyModal` paritesini kalıcı bir testle bağladı
-(`test/legal_text_test.dart`, web'in "Son güncelleme" tarihini okuyor) ama
-`HelpModal`'ın aynı "birebir kopya" sözleşmesi hâlâ yalnızca bir yorum
-satırıyla korunuyor — o dosyada tarih damgası olmadığından aynı vekil
-kullanılamıyor. Parça 66'da eklenen "Rütbeler ve Ödüller" bölümü tabloyu
-`kRankTiers`ten çizdiği için (elle yazılmadığı için) o kısım güvende;
-risk düz kural metinlerinde. Önerilen: web'in `HelpModal.tsx`'inden birkaç
-karakteristik cümleyi okuyup portta bulunduğunu doğrulayan bir test
-(`color_tokens_test` deseni), ya da web tarafına bir "Son güncelleme"
-damgası eklemek.
 
 - **Kayıt onayı maili kaydın GELDİĞİ kanala dönmeli (10 Ağustos 2026,
   kullanıcı kararı — sözleri: "Kişilerin kayıt başvurusu hangi kanaldan

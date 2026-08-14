@@ -11,8 +11,17 @@
 // `mobile/app/lib/src/ui/rank/league_rank.dart`'ı ve SQL'deki
 // `_award_league_rewards` (values ...) listeleri tek kaynak DEĞİL (SQL ↔ TS ↔
 // Dart arasında paylaşım mümkün olmadığından). Biri değişirse ÜÇÜ birden
-// değişmeli — hiçbir derleyici/test bunu yakalamaz. Son senkron: 12 Ağustos
-// 2026 (`rank_tiers_efsane_uzayli_tanri` migration'ı).
+// değişmeli. Son senkron: 12 Ağustos 2026
+// (`rank_tiers_efsane_uzayli_tanri` migration'ı).
+//
+// 14 Ağustos 2026'dan beri TS ↔ Dart yarısı ARTIK TESTLİ:
+// `mobile/app/test/rank_tiers_parity_test.dart` BU DOSYAYI okuyup portun
+// `kRankTiers`iyle satır satır karşılaştırıyor (ad/harf/renk/eşik/ödül).
+// Yani buradaki bir değişikliği porta taşımayı unutursan mobil test paketi
+// düşer. **SQL yarısı hâlâ korumasız** — `_award_league_rewards`ın güncel
+// tanımı tek bir migration dosyasında durmadığından (sonraki migration'lar
+// fonksiyonu yeniden yazıyor) bir birim testi onu okuyamaz; eşik/ödül
+// değiştiren her migration canlıda ayrıca doğrulanmalı.
 //
 // Rütbe DÜŞMELİ (12 Ağustos 2026, kullanıcı kararı — ilk sürüm "düşmez"di):
 // gösterilen kademe her zaman GÜNCEL k-lig puanından (`total_score`)
