@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import '../../data/auth_service.dart';
+import '../../data/chat_api.dart';
 import '../../data/feedback_api.dart';
 import '../../data/friends_api.dart';
 import '../../data/games_api.dart';
@@ -37,6 +38,7 @@ class GameHeader extends StatelessWidget {
 
   /// Hesap menüsündeki "Arkadaşlar" satırı + rozet için.
   final FriendsRepo? friends;
+  final ChatRepo? chat;
 
   /// Verilirse insan koltuklarının kutuları tıklanabilir olur (Canlı oyunda
   /// skor kartı — web onPlayerClick'in eşleniği; yerel oyunda verilmez).
@@ -52,6 +54,7 @@ class GameHeader extends StatelessWidget {
     this.games,
     this.feedback,
     this.friends,
+    this.chat,
   });
 
   @override
@@ -131,6 +134,7 @@ class GameHeader extends StatelessWidget {
                     games: games,
                     feedback: feedback,
                     friends: friends,
+                    chat: chat,
                     girisFontSize: girisFontSize,
                     girisPaddingX: girisPaddingX,
                     girisPaddingY: girisPaddingY,

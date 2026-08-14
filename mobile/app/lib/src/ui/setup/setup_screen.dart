@@ -587,6 +587,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
         games: widget.services.games,
         feedback: widget.services.feedback,
         friends: widget.services.friends,
+        chat: widget.services.chat,
         leagueRewards: widget.services.leagueRewards,
       ),
     ));
@@ -713,6 +714,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                             child: AccountButton(
                                 feedback: widget.services.feedback,
                                 friends: widget.services.friends,
+                                chat: widget.services.chat,
                                 auth: auth,
                                 stats: widget.services.stats,
                                 games: widget.services.games),

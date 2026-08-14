@@ -353,7 +353,9 @@ mobile/
                              # Olmalıyım?" kutusu, 7 Ağustos 2026)
       ui/feedback/           # feedback_modal ("Görüş Bildir" formu)
       ui/friends/            # friends_modal (3 sekme + davet paylaşımı +
-                             # paylaşılan onay/sonuç diyalogları)
+                             # paylaşılan onay/sonuç diyalogları) +
+                             # friend_moderation_sheet (satırdaki 🚫/🚩
+                             # ikonundan açılan GERİ ALMA paneli)
       ui/live/               # Canlı oyun: live_games_tab (3 alt sekme +
                              # kartlar), live_game_create_form,
                              # friend_suggest_modal (kabul sonrası öneri),
@@ -3497,6 +3499,75 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        kopyaydı — kullanıcıya kendi verisinin görünürlüğü hakkında yanlış
        bilgi veriyordu. Yeni bir "elle senkron" kopya açarken sor: bunu
        hangi test zorluyor?
+
+   - ✅ **Parça 91 — şikayeti geri çekmenin TEK yolu, raporladığın kişiyle
+     YENİ bir oyun açmaktı (14 Ağustos 2026, yeni
+     `ui/friends/friend_moderation_sheet.dart`, `chat_api.dart`,
+     `friends_modal.dart` + web `FriendModerationModal.tsx`):** Kullanıcı
+     bölüm 10'u koşarken duvara çarptı ve çözümü kendisi tarif etti:
+     *"arkadaşlar listesinde o kişinin satırında arkadaşlıktan çıkart
+     işaretinin soluna bayrak/Sessiz ikonu koymak ve tıklandığında
+     settings'i açmak."*
+     - **Kök sebep bir kod hatası DEĞİL, bir erişim boşluğu:** sessize
+       alma/şikayet 3 Ağustos'tan beri KİŞİ bazlı (oyunlar arası taşınıyor)
+       ama geri almanın giriş noktası hâlâ **AKTİF** bir oyunun sohbet
+       ayarlarıydı (`ChatSettingsModal`, dişli). Oyun bitince
+       `LiveGamesTab` onu listelemiyor, arşiv (`GameChatHistoryModal`)
+       bilerek salt-görsel — yani durum kalıcı, kontrolü ulaşılamaz.
+       **Kalıcı bir durumu geri almanın yolu, o durumun oluştuğu geçici
+       bağlama bağlıysa er ya da geç kapanır** — kişi bazlı yapılırken
+       kontrol de kişi bazlı bir yere taşınmalıydı.
+     - **KAPSAM bilinçli olarak yalnızca GERİ ALMA.** Yeni şikayet burada
+       YOK: bir şikayet hakkında olduğu KONUŞMAYA bağlı
+       (`online_game_chat_reports.online_game_id`) ve admin panelindeki
+       "Sohbeti Görüntüle" o dökümü açıyor — arkadaş listesinden açılan
+       bir şikayet zorunlu olarak ESKİ bir oyuna iliştirilir ve admin
+       ilgisiz bir yazışma okurdu. Bu yüzden ikon da yalnızca durum
+       VARKEN çiziliyor: bu bir kısayol, moderasyon menüsü değil.
+     - **Sunucuda DEĞİŞİKLİK YOK — ama sessizden çıkarma OYUN İD'Sİ
+       İSTİYOR ve bu kaynaktan okunarak bulundu:**
+       `mute_online_game_participant` katılımcılık kontrolünü `p_muted`
+       dalından ÖNCE yapıyor, yani MUTE'u KALDIRMAK bile geçerli bir ortak
+       oyun id'si gerektiriyor. Provenance olarak mute/rapor satırının
+       KENDİ `online_game_id`'si kullanılıyor (o satır ancak ikisi de
+       katılımcıyken yazılabildiğinden geçerliliği garantili) — yeni
+       `ChatRepo.myModeration()` iki tablodan `userId → gameId` haritası
+       döndürüyor. `withdrawReports` zaten kişi bazlı, id İSTEMİYOR.
+     - **Canlıda rol simülasyonuyla doğrulandı (hepsi rollback):** iki
+       tablodan da `online_game_id` okunabiliyor; **BİTMİŞ** bir oyunun
+       id'siyle sessizden çıkarma GEÇİYOR (1 satır → 0) —
+       `is_online_game_participant` oyunun `status`üne bakmıyor, yani
+       kısayol tam da en çok gerektiği yerde çalışıyor. Bu, "eski oyun
+       id'si hâlâ geçerli mi?" sorusunun tahminle değil ölçümle
+       cevaplanması gereken kısmıydı.
+     - **`ChatRepo` zinciri dört yeni durakla threadlendi** (services →
+       Setup/GameScreen/OnlineGameScreen → GameHeader → AccountButton →
+       FriendsModal) ve **`LiveGameCreateForm` da dahil edildi**: o ekran
+       da `showFriendsModal` açıyor ve atlanırsa AYNI satır bir girişte
+       ikonlu, öbüründe ikonsuz görünürdü — bu projenin en sık tekrarlayan
+       hata sınıfı (sessiz ayrışma), burada baştan kapatıldı.
+     - **Test — negatif eş doğrulamasıyla, İKİ AYRI kanıt:** dört yeni
+       test (yalnızca durumu OLAN satırda ikon + konumu "çıkar"ın solunda;
+       panel → onay → geri çekme → ikon KAYBOLUYOR; sessizden çıkarmanın
+       kaydın geldiği oyun id'siyle çağrıldığı; `chat` yokken ikon HİÇ
+       çizilmediği). (1) İkon render koşulu kapatılınca ÜÇÜ GERÇEKTEN
+       düştü — dördüncüsü (yokluk iddiası) doğru şekilde geçmeye devam
+       etti. (2) `if (changed) await _reloadModeration();` kapatılınca
+       kullanıcının göreceği bayat-bayrak semptomu BİREBİR üretildi
+       (`Expected: no matching candidates / Actual: Found 1 widget with
+       text "🚩"`). İkisi de geri konunca yeşile döndü.
+     - **Sahte uç gerçek ucun sözleşmesini taklit ediyor** (Parça 46'nın
+       dersi): `FakeChatGateway.myModeration` yalnızca kimlikleri değil
+       oyun id'sini de döndürüyor — aksi halde "sessizden çıkarma doğru
+       id'yle çağrılıyor mu" sorusu testlerde sorulaMAZDI.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       402/402 yeşil** (398'den +4). `kelimeki_core`'a hiç dokunulmadı.
+     - **`mobile/` DIŞINDA dosya değişti** (web yarısı aynı gün, aynı
+       dalda) → kök `CLAUDE.md` + `TESTING.md` aynı commit'te güncellendi
+       (Parça Bitirme Kontrol Listesi madde 1).
+     - **Doğrulama sınırı:** gerçek `myModeration` sorgusu + gerçek
+       `setMute`/`withdrawReports` RPC'leri cihazda iki hesapla
+       doğrulanmalı — `mobile/TESTING.md` bölüm 10'a madde eklendi.
 
 ## Sonraya Bırakılan İşler (mobil)
 

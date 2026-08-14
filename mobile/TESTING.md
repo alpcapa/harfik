@@ -799,6 +799,25 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       açmalı (ikisi birbirini yutmamalı). Kartın kendi arkadaşlık
       simgesinden bir işlem yapıp (ör. çıkar) kartı kapatınca satırdaki
       ikon ANINDA yeni duruma dönmeli — eski ikon kalmamalı.
+- [ ] **Moderasyonu arkadaş satırından geri alma (14 Ağustos 2026, Parça
+      91).** Ön koşul: bir Canlı oyunda karşı tarafı sessize al ya da
+      şikayet et (bölüm 11), sonra o oyun **bitsin** (ya da listeden
+      düşsün). Arkadaşlar → "Arkadaşlarım": o kişinin satırında,
+      "arkadaşlıktan çıkar" ikonunun **SOLUNDA** 🚩 (yalnızca sessize
+      aldıysan 🚫) çıkmalı. Dokun → "Kişi Ayarları" paneli; oradan
+      "Şikayeti Geri Çek" / "Sessizden Çıkar" → **onay adımı** → sonuç
+      mesajı. Panel kapanınca ikon **HEMEN** kaybolmalı.
+      **Asıl kanıt burada:** oyun bittikten sonra sohbet penceresine
+      artık girilemediğinden, bu panel olmadan şikayeti geri çekmenin
+      TEK yolu o kişiyle yeni bir oyun açmaktı.
+      **Negatif eş — atlama:** hiçbir moderasyon durumu OLMAYAN bir
+      arkadaşın satırında bu ikon **hiç görünmemeli**. Yalnızca "ikon
+      var" kontrolü, ikonu koşulsuz çizen yanlış bir kural altında da
+      geçerdi.
+      **Kapsam:** panelden YENİ şikayet açılamaz (bilinçli — şikayet
+      hakkında olduğu konuşmaya bağlı); panel bunu söyleyen bir not
+      göstermeli. Emoji fallback'i de burada kontrol edilmiş oluyor —
+      🚫/🚩 boş kare (tofu) çıkmamalı.
 
 ## 11. Canlı oyun — davet/kabul + tahta
 

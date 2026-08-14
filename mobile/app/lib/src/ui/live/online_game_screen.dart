@@ -1320,6 +1320,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                           games: widget.games,
                           feedback: widget.feedback,
                           friends: widget.friends,
+                          chat: widget.chat,
                           // Logo yalnızca listeye döner — oyunu BİTİRMEZ.
                           onLogoTap: () => Navigator.of(context).pop(),
                           onPlayerTap:

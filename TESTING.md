@@ -167,6 +167,20 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       rozetleri orada da görünmeli (durum oyuna değil kişiye bağlı).
 - [ ] **Geri çekme.** "Raporu Geri Çek" → onay. Bayrak kalkmalı; sessize alma
       bundan etkilenmemeli (bağımsız). Aynı kişi tekrar raporlanabilmeli.
+- [ ] **Oyun BİTTİKTEN sonra geri alma (14 Ağustos 2026).** Şikayet ettiğin
+      kişiyle oyun bitsin (ya da listeden düşsün). Hesap menüsü → Arkadaşlar →
+      "Arkadaşlarım": o kişinin satırında, "arkadaşlıktan çıkar" ikonunun
+      **SOLUNDA** 🚩 (yalnızca sessize aldıysan 🚫) çıkmalı; dokununca
+      "Kişi Ayarları" paneli açılmalı ve oradan şikayet geri çekilip/sessizden
+      çıkılabilmeli. Panel kapanınca ikon **HEMEN** kaybolmalı.
+      **Negatif eş:** hiçbir moderasyon durumu OLMAYAN bir arkadaşın satırında
+      bu ikon **hiç görünmemeli** — ikisini birlikte kontrol et, yoksa
+      "koşulsuz çizen" bir hata da geçer gibi görünür.
+      Bu, o güne kadar kapalı olan tek yolun açılması: geri almanın tek girişi
+      AKTİF bir oyunun sohbet ayarlarıydı, yani şikayeti geri çekmek için
+      raporladığın kişiyle yeni bir oyun açman gerekiyordu.
+      **Yeni şikayet buradan açılAMAZ** (bilinçli — şikayet konuşmaya bağlı);
+      panel bunu söyleyen bir not göstermeli.
 - [ ] **Geri çekilen rapor admin'de hâlâ "okunmamış".** Kart "Geri Çekildi"
       rozetini alır ama soluklaşMAmalı ve bekleyen sayaçlarından düşMEmeli —
       admin ne yaşandığını görüp okundu işaretlemeyi kendisi seçmeli. (Bir

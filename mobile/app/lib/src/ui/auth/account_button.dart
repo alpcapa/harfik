@@ -17,6 +17,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/auth_service.dart';
+import '../../data/chat_api.dart';
 import '../../data/feedback_api.dart';
 import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
@@ -55,6 +56,9 @@ class AccountButton extends StatefulWidget {
   /// null ise "Arkadaşlar" satırı hiç çizilmez.
   final FriendsRepo? friends;
 
+  /// Arkadaş satırındaki moderasyon (🚫/🚩) ikonu için — null ise ikon yok.
+  final ChatRepo? chat;
+
   /// GİRİŞ butonunun akıcı ölçüleri — GameHeader kendi clamp değerlerini
   /// geçer; Setup varsayılan (maksimum) değerleri kullanır (web UserMenu
   /// iki ekranda da aynı bileşen/aynı akıcı sistem).
@@ -70,6 +74,7 @@ class AccountButton extends StatefulWidget {
     this.games,
     this.feedback,
     this.friends,
+    this.chat,
     this.girisFontSize = 11,
     this.girisPaddingX = 8,
     this.girisPaddingY = 12,
@@ -312,7 +317,8 @@ class _AccountButtonState extends State<AccountButton> {
                       friends: friends,
                       auth: auth,
                       stats: stats,
-                      games: games)
+                      games: games,
+                      chat: widget.chat)
                   // Web UserMenu deseni: modal kapanınca sayaç tazelenir
                   // (içeride istek yanıtlanmış olabilir).
                   .then((_) => _refreshRequestCount());

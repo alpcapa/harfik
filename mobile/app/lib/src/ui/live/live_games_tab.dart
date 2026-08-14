@@ -253,6 +253,7 @@ class _LiveGamesTabState extends State<LiveGamesTab>
         stats: services.stats,
         games: services.games,
         feedback: services.feedback,
+        chat: services.chat,
         onCancel: () => setState(() => _creating = false),
         onCreated: () {
           setState(() => _creating = false);

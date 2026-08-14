@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
+import 'package:kelimeki/src/data/chat_api.dart';
 import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/data/friend_invite_inbox.dart';
 import 'package:kelimeki/src/data/friends_api.dart';
@@ -23,6 +24,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
+import 'support/fake_online_gateway.dart';
 import 'support/test_fonts.dart';
 import 'support/test_view.dart';
 
@@ -248,6 +250,7 @@ void main() {
       FriendsTab? initialTab,
       Future<void> Function(String)? sharer,
       bool withStats = false,
+      FakeChatGateway? chat,
     }) async {
       await setPhoneViewSize(tester, const Size(420, 900));
       final gw = gateway ?? FakeFriendsGateway();
@@ -260,6 +263,9 @@ void main() {
             // stats yoksa isim/avatara dokunuş pasif kalır (offline dalı) —
             // skor kartı testleri açıkça withStats: true geçiyor.
             stats: withStats ? StatsRepo(_NullStatsGateway()) : null,
+            // chat yoksa moderasyon ikonu HİÇ çizilmez (web'de de aynı
+            // dal) — ikon testleri açıkça bir sahte uç geçiyor.
+            chat: chat == null ? null : ChatRepo(chat),
             initialTab: initialTab,
             sharer: sharer,
           ),
@@ -550,6 +556,115 @@ void main() {
       expect(find.text('İşlem başarısız oldu.'), findsOneWidget);
     });
 
+    // 14 Ağustos 2026 — moderasyon ikonu. Kullanıcı cihaz testinde şu duvara
+    // çarptı: sessize alma/şikayet 3 Ağustos'tan beri KİŞİ bazlı, ama geri
+    // almanın tek giriş noktası o kişiyle AKTİF bir oyunun sohbet ayarlarıydı
+    // — oyun bitince ulaşılamıyordu. İkon o kısayolu açıyor.
+    testWidgets(
+        'Arkadaşlarım: yalnızca moderasyon durumu OLAN satırda ikon çıkar',
+        (tester) async {
+      final gw = FakeFriendsGateway()
+        ..friendsRows = [
+          {'friend_id': 'a', 'name': 'Esiner', 'avatar_url': null},
+          {'friend_id': 'b', 'name': 'Ironman', 'avatar_url': null},
+          {'friend_id': 'c', 'name': 'Temiz', 'avatar_url': null},
+        ];
+      final chat = FakeChatGateway()
+        ..moderationMuted = const {'a': 'g1'}
+        ..moderationReported = const {'b': 'g2'};
+
+      await pumpModal(
+          tester, gateway: gw, initialTab: FriendsTab.friends, chat: chat);
+      await tester.pumpAndSettle();
+
+      // Sessize alınan → 🚫, şikayet edilen → 🚩, temiz satır → HİÇBİRİ.
+      // Üçü BİR ARADA: tek başına "ikon var" iddiası, ikonu KOŞULSUZ çizen
+      // yanlış bir kural altında da geçerdi.
+      expect(find.text('🚫'), findsOneWidget);
+      expect(find.text('🚩'), findsOneWidget);
+
+      // İkon "çıkar"ın SOLUNDA (kullanıcı isteği) — konum ölçülerek
+      // sabitleniyor, yorumla değil.
+      final flagX = tester.getCenter(find.text('🚩')).dx;
+      final removeX = tester
+          .getCenter(find.bySemanticsLabel('Ironman — arkadaşlıktan çıkar'))
+          .dx;
+      expect(flagX, lessThan(removeX));
+    });
+
+    testWidgets(
+        'moderasyon ikonu → panel → şikayeti geri çek → ikon KAYBOLUR',
+        (tester) async {
+      final gw = FakeFriendsGateway()
+        ..friendsRows = [
+          {'friend_id': 'a', 'name': 'Esiner', 'avatar_url': null},
+        ];
+      final chat = FakeChatGateway()
+        ..moderationReported = const {'a': 'g1'};
+
+      await pumpModal(
+          tester, gateway: gw, initialTab: FriendsTab.friends, chat: chat);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('🚩'));
+      await tester.pumpAndSettle();
+      expect(find.text('Bu kişiyi şikayet ettiniz.'), findsOneWidget);
+
+      await tester.tap(find.text('Şikayeti Geri Çek'));
+      await tester.pumpAndSettle();
+      // Onay adımı ATLANMAZ — kazara dokunuş bir şikayeti düşürmemeli.
+      expect(find.text('Emin misiniz?'), findsOneWidget);
+      await tester.tap(find.text('Geri Çek'));
+      await tester.pumpAndSettle();
+
+      // Geri çekme KİŞİ bazlı: RPC oyun id'si İSTEMİYOR.
+      expect(chat.withdrawnCalls, ['a']);
+      expect(find.text('Şikayetiniz geri çekildi.'), findsOneWidget);
+
+      // Sunucu artık temiz — panel kapanınca ikon HEMEN gitmeli, aksi halde
+      // kullanıcı "geri çektim ama bayrak duruyor" görürdü.
+      chat.moderationReported = const {};
+      await tester.tap(find.text('Tamam'));
+      await tester.pumpAndSettle();
+      expect(find.text('🚩'), findsNothing);
+    });
+
+    testWidgets('sessizden çıkarma, kaydın geldiği oyun id\'siyle çağrılır',
+        (tester) async {
+      final gw = FakeFriendsGateway()
+        ..friendsRows = [
+          {'friend_id': 'a', 'name': 'Esiner', 'avatar_url': null},
+        ];
+      // `mute_online_game_participant` katılımcılık kontrolünü `p_muted`
+      // dalından ÖNCE yapıyor — sessizden ÇIKARMAK bile geçerli bir ortak
+      // oyun id'si istiyor. Sahte uç bu bağı taşıdığından test onu ölçebiliyor.
+      final chat = FakeChatGateway()..moderationMuted = const {'a': 'g7'};
+
+      await pumpModal(
+          tester, gateway: gw, initialTab: FriendsTab.friends, chat: chat);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('🚫'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sessizden Çıkar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sessizden Çıkar').last);
+      await tester.pumpAndSettle();
+
+      expect(chat.mutedCalls, [('g7', 'a', false)]);
+    });
+
+    testWidgets('chat verilmezse ikon HİÇ çizilmez (offline/dürüstlük dalı)',
+        (tester) async {
+      final gw = FakeFriendsGateway()
+        ..friendsRows = [
+          {'friend_id': 'a', 'name': 'Esiner', 'avatar_url': null},
+        ];
+      await pumpModal(tester, gateway: gw, initialTab: FriendsTab.friends);
+      await tester.pumpAndSettle();
+      expect(find.text('🚫'), findsNothing);
+      expect(find.text('🚩'), findsNothing);
+    });
   });
 
   group('AccountButton + PlayerScoreCard', () {
