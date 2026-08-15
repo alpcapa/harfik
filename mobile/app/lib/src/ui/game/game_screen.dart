@@ -21,6 +21,7 @@ import '../feedback/feedback_modal.dart';
 import '../../game/game_controller.dart';
 import '../../game/move_status.dart';
 import 'board_widget.dart';
+import 'dialog_shell.dart';
 import 'game_header.dart';
 import 'game_over_modal.dart';
 import 'help_modal.dart';
@@ -309,28 +310,15 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   /// `_saveId`'yi null'ladığından yeni oyun kendiliğinden yeni bir id alır —
   /// burada ek bir şey yapmak gerekmiyor.
   Future<void> _handleRematch() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tekrar Oyna'),
-        content: Text(
-          '${state.players.length} kişilik, Yapay Zeka\'ya karşı yeni bir '
+    // Kabul butonu SOLDA (Parça 25 kuralı) — showKConfirm bunu garanti eder.
+    final ok = await showKConfirm(
+      context,
+      title: 'Tekrar Oyna',
+      message: '${state.players.length} kişilik, Yapay Zeka\'ya karşı yeni bir '
           'oyun başlatılacak. Emin misin?',
-        ),
-        // Kabul butonu SOLDA (Parça 25 kuralı).
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('TEKRAR OYNA'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('VAZGEÇ'),
-          ),
-        ],
-      ),
+      confirmLabel: 'TEKRAR OYNA',
     );
-    if (ok != true || !mounted) return;
+    if (!ok || !mounted) return;
     controller.dispatch(StartAction([
       for (final p in state.players) PlayerSetup(name: p.name, isAI: p.isAI),
     ]));
@@ -338,25 +326,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _handlePass() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Pas Geçiyorsun!'),
-        content: const Text(
-            'Pas geçmek istediğinden emin misin? Sıran diğer oyuncuya geçer.'),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('PAS GEÇ'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('VAZGEÇ'),
-          ),
-        ],
-      ),
+    final ok = await showKConfirm(
+      context,
+      title: 'Pas Geçiyorsun!',
+      message: 'Pas geçmek istediğinden emin misin? Sıran diğer oyuncuya geçer.',
+      confirmLabel: 'PAS GEÇ',
     );
-    if (ok == true) controller.dispatch(const PassAction());
+    if (ok) controller.dispatch(const PassAction());
   }
 
   // ── Sürükleme geometrisi/akışı ────────────────────────────────────────

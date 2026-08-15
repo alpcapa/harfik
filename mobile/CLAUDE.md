@@ -420,7 +420,10 @@ mobile/
                              # reset_password_modal (recovery kapısı)
       ui/game/               # tahta/raf/header/modaller (oyun ekranının
                              # tamamı) + PAYLAŞILAN küçük parçalar:
-                             # modal_shell, neo_box/neo_button, player_badge,
+                             # modal_shell (KModal — başlıklı 360px pencere),
+                             # dialog_shell (KDialogCard — 384px onay/uyarı
+                             # kartı; İKİSİ AYRI, web'de de öyle),
+                             # neo_box/neo_button, player_badge,
                              # player_avatar_row, action_sheet, count_badge
       ui/score/              # skor kartı, k-lig, oyuncu kartı, oyun geçmişi,
                              # score_box_row (paylaşılan görselin üst şeridi)
@@ -4358,6 +4361,74 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        zaten doğru); `kelimeki_core`'a dokunulmadı.
      - **Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor —
        `mobile/TESTING.md` bölüm 11'e madde eklendi.
+
+   - ✅ **Parça 102 — SEKİZ diyalog düz `AlertDialog`'du: site diliyle hiç
+     alakası yoktu (15 Ağustos 2026, yeni `ui/game/dialog_shell.dart` +
+     `ui/game/{game_screen,invasion_confirm}.dart`,
+     `ui/live/online_game_screen.dart`, `ui/friends/friends_modal.dart`):**
+     Kullanıcı bölüm 11'in mesajlaşma turunda yeni-mesaj popup'ının ekran
+     görüntüsünü gönderip *"çıkan popup bizim site genelinde kullandığımız
+     tasarımlarla alakası yok. Başka uyarı pencerelerinde de benzer durumu
+     gördüm. App'deki tüm uyarı pencerelerini tarayıp web ile uyumlu hale
+     getir"* dedi.
+     - **Aynı turda bildirilen İKİNCİ şey bir hata DEĞİLDİ ve kaynaktan
+       doğrulandı:** *"popup çıktığı için kırmızı nokta çıkmıyor, okumuş
+       kabul ediyor."* Gözlem doğru, davranış bilinçli ve web'de de aynı —
+       `closeMessagePopup` (web) ve `_showNewMessagePopup`'ın dönüşü (port)
+       popup kapanınca mesajı okundu işaretliyor; web'de gerekçesi yorumda
+       yazılı (*"popup'taki mesaj zaten doğrudan ekranda gösterildiğinden…
+       aksi halde kırmızı nokta popup kapatıldıktan sonra da kalıcı
+       kalıyordu"*). Nokta mesaj geldiği an çıkıyor, yalnızca popup'ın
+       altında kalıyor. Düzeltilecek bir şey yok.
+     - **Web'de İKİ ayrı kabuk var ve port yalnızca birini taşımıştı:**
+       `Modal.tsx` (başlıklı, ✕'li, ayraçlı 360px pencere → `KModal`) ve
+       `App.tsx`/`OnlineGameScreen.tsx`/`FriendsModal.tsx`'in satır içi
+       `fixed inset-0 z-[200]` onay popup'ları (384px kart). **Üç web
+       dosyası da BİREBİR AYNI sınıfları taşıyor**, yani tek bir kanonik
+       kart var — port onu hiç port etmemiş, sekiz yerde ham `AlertDialog`
+       kullanmıştı (Material varsayılanı: beyaz kart, Material tipografisi,
+       mavi metin butonları).
+     - **Değerler ölçüldü, tahmin edilmedi** (Parça 33'ün dersi): derlenmiş
+       `dist/assets/*.css` gerçek DOM'a uygulanıp Chromium'da okundu — kart
+       384/24/16 + `#B8C2D1` + `0 20px 45px rgba(15,23,42,.5)`, başlık
+       16/700, gövde 14/1.625, boşluklar 16 ve 20, buton 12/tracking 1/
+       dikey 10/yükseklik 38. **İlk harness sessizce yedeğe düştü** (CSS
+       yolu `file://`de çözülmedi, her şey tarayıcı varsayılanı çıktı) —
+       Parça 77'nin aynı tuzağı; HTTP'den servis edilince düzeldi.
+     - **`friends_modal.dart` kartı elle çizmişti ve O DA sapmıştı**
+       (başlık 15, gövde 13/1.5, buton 11, kart gölgesi yok) — yani desen
+       kod tabanında vardı ama tek kaynak değildi. Şimdi on çağrı yerinin
+       (8 AlertDialog + bu 2) hepsi `dialog_shell.dart`tan geçiyor.
+     - **İki YAPISAL bulgu, ikisi de yeni testin ÖLÇÜMÜYLE çıktı:**
+       1. **`Dialog`ın varsayılan `insetPadding`i yanlardan 40**, web'in
+          kaplaması `px-4` = 16. Dar ekranda fark gerçek: 420px'lik bir
+          telefonda web kartı 384 çizerken port 340'a sıkışıyordu.
+       2. **`DecoratedBox`, `Decoration.padding`i ONURLANDIRMIYOR** —
+          yalnızca `Container` ediyor. Çerçeve içeriğin üstüne binip içerik
+          334 yerine 336 oluyordu; web `border-box` olduğundan 334 doğru.
+     - **Test — negatif eş doğrulamasıyla, İKİ AYRI kanıt:** yeni
+       `dialog_shell_test.dart` (5 test + 1 ekran görüntüsü) kart
+       geometrisini/tipografisini/buton sırasını ölçüyor VE `lib/` altında
+       ham `AlertDialog` kalmadığını tarıyor (`color_tokens_test`/
+       `theme_test`in kaynak tarayan deseni — bu olmadan yeni bir
+       AlertDialog sessizce girer). `invasion_confirm.dart`'ta `KDialogCard`
+       geçici olarak `AlertDialog`a çevrilince tarama GERÇEKTEN dosyayı adıyla
+       işaret ederek düştü; `insetPadding` satırı kaldırılınca buton
+       genişliği GERÇEKTEN 334 → 290 düştü. İkisi de geri konunca yeşile
+       döndü.
+     - **Mevcut testlerde çıkan tuzak:** diyalog butonları artık Material
+       değil `NeoButton`, ve alt şeritte de AYNI etiketli NeoButton'lar var
+       (PAS GEÇ / TEKRAR OYNA) — `find.widgetWithText(NeoButton, 'PAS GEÇ')`
+       iki eşleşme veriyor. Diyalog dokunuşları artık
+       `find.descendant(of: find.byType(KDialogCard), …)` ile kapsamlı;
+       alt şerit butonlarını da saran ilk (fazla geniş) regex düzeltildi.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 436/436
+       yeşil** (428'den +8). `kelimeki_core`'a hiç dokunulmadı; web'e hiç
+       dokunulmadı (yalnızca ölçüm kaynağı olarak okundu).
+     - **Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor.
+       Ekran görüntüsü `build/screenshots/dialog_message_popup.png` olarak
+       üretilip gözle incelendi (panel zemin, düşen gölge, accent CEVAP VER
+       + nötr KAPAT) — `mobile/TESTING.md` bölüm 11'e madde eklendi.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 14 Ağustos 2026)
 

@@ -23,6 +23,7 @@ import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
 import 'package:kelimeki/src/ui/game/logo_mark.dart';
+import 'package:kelimeki/src/ui/game/dialog_shell.dart' show KDialogCard;
 import 'package:kelimeki/src/ui/game/neo_button.dart';
 import 'package:kelimeki/src/ui/game/count_badge.dart';
 import 'package:kelimeki/src/ui/setup/setup_screen.dart';
@@ -487,7 +488,7 @@ void main() {
     }
     await tester.tap(find.text('TEKRAR OYNA'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'TEKRAR OYNA'));
+    await tester.tap(find.descendant(of: find.byType(KDialogCard), matching: find.widgetWithText(NeoButton, 'TEKRAR OYNA')));
     await tester.pumpAndSettle();
 
     // Aynı kadroyla TAZE bir oyun.

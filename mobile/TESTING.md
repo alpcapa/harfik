@@ -1106,6 +1106,18 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **Gönder/al gerçek zamanlı.** İki hesapla (biri web olabilir) aynı
       Canlı oyunu aç, mobilden mesaj gönder → web'de ~1sn içinde görünmeli
       (ve tersi). Mesajlar en YENİ üstte sıralanmalı.
+- [ ] **Uyarı pencerelerinin tasarımı (Parça 102).** Yeni mesaj popup'ı,
+      sohbet tanıtımı, "Pas Geçiyorsun!", "Tekrar Oyna", "Sınır İhlali!" ve
+      arkadaşlık onayları — HEPSİ web'in kartıyla aynı görünmeli: panel
+      zemini, yumuşak düşen gölge, yuvarlatılmış köşe, altta MAVİ dolgulu
+      kabul + gri nötr vazgeç butonu (Material'ın beyaz kartı ve mavi METİN
+      butonları DEĞİL). Kabul butonu her zaman SOLDA. Dar bir telefonda kart
+      ekranın iki yanında yalnızca 16px boşluk bırakmalı (eskiden 40'tı).
+      Referans görüntü: `mobile/app/build/screenshots/dialog_message_popup.png`.
+- [ ] **Popup kapanınca nokta temizlenir (HATA DEĞİL).** Popup çıktıysa
+      kapatmak (CEVAP VER / KAPAT — ikisi de) o mesajı okundu sayar, yani
+      kırmızı nokta kalmaz. Bu bilinçli ve web'de de aynı; noktanın kalıcı
+      olduğu tek durum susturulmuş göndericidir (popup hiç çıkmaz).
 - [ ] **Popup + rozet.** Sohbet KAPALIYKEN karşı taraf mesaj gönderirse
       Board'daki "Mesajlaşma" butonunda kırmızı nokta + bir popup
       ("CEVAP VER"/"KAPAT") çıkmalı; CEVAP VER sohbeti açmalı. Sohbet
