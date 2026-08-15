@@ -8,4 +8,5 @@
 export const EXTRA_MEANINGS = {
   amerika: "Amerika Birleşik Devletleri'nin günlük dilde kullanılan adı.",
   kore: "Asya'da tarihî bir bölge ve yarımada; Kuzey Kore ile Güney Kore'nin ortak adı.",
+  is: 'Eski Türkçede ve halk ağzında sahip, iye, malik ("ıssız" sözcüğü bu kökten türemiştir).',
 };

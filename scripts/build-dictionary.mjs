@@ -39,6 +39,7 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { PROPER_NOUNS } from './proper-nouns.mjs';
+import { EXTRA_WORDS } from './extra-words.mjs';
 import { EXTRA_MEANINGS } from './extra-meanings.mjs';
 import { PROTECTED_WORDS } from './protected-words.mjs';
 
@@ -165,6 +166,16 @@ for await (const line of rl) {
 for (const [word, meaning] of Object.entries(PROPER_NOUNS)) {
   if (!dict.has(word)) {
     dict.set(word, { pos: null, meanings: [meaning] });
+  }
+}
+
+// GTS'te hiç geçmeyen ama oynanabilir sayılan sözcükler (bkz.
+// extra-words.mjs başlığı). PROPER_NOUNS ile aynı "zaten varsa dokunma"
+// kuralı; ayrı dosya olmasının sebebi kapsam — orası yalnızca coğrafi/özel
+// adlar için.
+for (const [word, entry] of Object.entries(EXTRA_WORDS)) {
+  if (!dict.has(word)) {
+    dict.set(word, { pos: entry.pos ?? null, meanings: [...entry.meanings] });
   }
 }
 

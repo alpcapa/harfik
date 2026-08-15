@@ -1,28 +1,41 @@
-// Kelimeki — scripts/proper-nouns.mjs listesini mevcut sözlüğe uygular.
+// Kelimeki — elle tutulan kelime/anlam listelerini mevcut sözlüğe uygular.
 // =====================================================================
 // build-dictionary.mjs, GTS kaynağının (gts.json, ~100 MB) indirilmesini
-// gerektirir ve repoda tutulmaz. proper-nouns.mjs listesini güncelleyip
-// GTS'i yeniden indirmeden uygulamak için bu betik kullanılır: mevcut
-// src/data/meanings.json'ı okur, proper-nouns.mjs'teki maddeleri (yalnızca
-// henüz sözlükte olmayanları) ekler ve şu çıktıları yeniden üretir:
+// gerektirir ve repoda tutulmaz. Elle tutulan listeleri GTS'i yeniden
+// indirmeden uygulamak için bu betik kullanılır: mevcut
+// src/data/meanings.json'ı okur, aşağıdaki üç listeyi uygular ve çıktıları
+// yeniden üretir.
+//
+//   proper-nouns.mjs   — ülke/başkent/şehir/dil adları   (yoksa EKLE)
+//   extra-words.mjs    — GTS'te hiç geçmeyen sözcükler   (yoksa EKLE)
+//   extra-meanings.mjs — VAR OLAN kelimeye ek anlam      (varsa GÜNCELLE)
+//
+// Üçüncüsü bu betiğe 15 Ağustos 2026'da eklendi: o güne dek ek anlamları
+// yalnızca GTS'li tam üretim uyguluyordu, yani 100 MB'lık kaynak olmadan
+// var olan bir kelimeye anlam eklemenin YOLU YOKTU.
 //
 //   src/data/words.ts       — build-dictionary.mjs ile birebir aynı biçimde
 //   src/data/meanings.json  —            "
-//   supabase/migrations/<damga>_add_proper_nouns.sql
-//                           — yalnızca bu çalıştırmada eklenen kelimeler için
-//                             yeni bir migration (ana seed dosyası değişmez)
+//   supabase/migrations/<damga>_add_words.sql
+//                           — yalnızca bu çalıştırmada eklenen/güncellenen
+//                             maddeler için yeni bir migration (ana seed
+//                             dosyası değişmez)
 //
 // Kullanım:
 //   node scripts/augment-dictionary.mjs
 //
 // GTS kaynağıyla tam yeniden üretim yapıldığında (build-dictionary.mjs),
-// proper-nouns.mjs zaten otomatik olarak birleştirilir; bu betik yalnızca
-// GTS kaynağı olmadan proper-nouns.mjs güncellemelerini uygulamak içindir.
+// üç liste de zaten otomatik olarak birleştirilir; bu betik yalnızca GTS
+// kaynağı olmadan aynı sonucu almak içindir. **Yeni bir liste dosyası
+// eklenirse İKİ betiğe birden tanıtılmalı** — yalnızca buraya eklemek,
+// ileride yapılacak bir tam üretimde o maddelerin sessizce düşmesi demektir.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PROPER_NOUNS } from './proper-nouns.mjs';
+import { EXTRA_WORDS } from './extra-words.mjs';
+import { EXTRA_MEANINGS } from './extra-meanings.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -43,8 +56,35 @@ for (const [word, meaning] of Object.entries(PROPER_NOUNS)) {
   }
 }
 
-if (added.length === 0) {
-  console.log('Eklenecek yeni kelime yok (proper-nouns.mjs zaten tamamı sözlükte).');
+// extra-words.mjs — proper-nouns ile AYNI "zaten varsa dokunma" kuralı;
+// tek fark biçimin `{pos, meanings[]}` olması (protected-words.mjs gibi).
+for (const [word, entry] of Object.entries(EXTRA_WORDS)) {
+  if (!dict.has(word)) {
+    dict.set(word, { pos: entry.pos ?? null, meanings: [...entry.meanings] });
+    added.push(word);
+  }
+}
+
+// extra-meanings.mjs — build-dictionary.mjs'teki davranışın birebir aynısı:
+// kelime VARSA anlam listesine eklenir (mükerrer değilse), YOKSA yeni madde
+// olarak açılır. Bunlar `added` değil `updated` sayılır, çünkü migration'da
+// insert değil güncelleme üretirler.
+const updated = [];
+for (const [word, meaning] of Object.entries(EXTRA_MEANINGS)) {
+  const existing = dict.get(word);
+  if (existing) {
+    if (!existing.meanings.includes(meaning)) {
+      existing.meanings.push(meaning);
+      updated.push(word);
+    }
+  } else {
+    dict.set(word, { pos: null, meanings: [meaning] });
+    added.push(word);
+  }
+}
+
+if (added.length === 0 && updated.length === 0) {
+  console.log('Yapacak bir şey yok — listelerin tamamı sözlüğe zaten uygulanmış.');
   process.exit(0);
 }
 
@@ -95,17 +135,21 @@ function timestamp() {
   );
 }
 
-const addedSorted = added.slice().sort(collator.compare);
+// Eklenen ve güncellenen maddeler AYNI upsert'ten geçer: `on conflict do
+// update` zaten var olan satırın anlamlarını da tazeliyor, yani ek anlam
+// için ayrı bir UPDATE ifadesi gerekmiyor.
+const touchedSorted = [...new Set([...added, ...updated])].sort(collator.compare);
 const BATCH = 500;
 const out = [];
-out.push('-- Kelimeki — dünya ülkeleri, başkentleri, büyük şehirleri ve diller');
-out.push('-- Kaynak: scripts/proper-nouns.mjs (scripts/augment-dictionary.mjs ile üretildi).');
-out.push(`-- ${addedSorted.length} yeni madde.`);
+out.push('-- Kelimeki — elle tutulan kelime/anlam listelerinin uygulanması');
+out.push('-- Kaynak: scripts/{proper-nouns,extra-words,extra-meanings}.mjs');
+out.push('--         (scripts/augment-dictionary.mjs ile üretildi).');
+out.push(`-- ${added.length} yeni madde, ${updated.length} anlam güncellemesi.`);
 out.push('-- Tekrar çalıştırmaya güvenli (ON CONFLICT DO UPDATE).');
 out.push('');
 
-for (let i = 0; i < addedSorted.length; i += BATCH) {
-  const chunk = addedSorted.slice(i, i + BATCH);
+for (let i = 0; i < touchedSorted.length; i += BATCH) {
+  const chunk = touchedSorted.slice(i, i + BATCH);
   out.push('insert into public.words (word, len, points, pos, meanings) values');
   const rows = chunk.map((w) => {
     const d = dict.get(w);
@@ -126,12 +170,14 @@ for (let i = 0; i < addedSorted.length; i += BATCH) {
 
 const migrationPath = path.join(
   ROOT,
-  `supabase/migrations/${timestamp()}_add_proper_nouns.sql`,
+  `supabase/migrations/${timestamp()}_add_words.sql`,
 );
 fs.writeFileSync(migrationPath, out.join('\n'));
 
-console.log(`Sözlükte zaten vardı (dokunulmadı) : ${Object.keys(PROPER_NOUNS).length - added.length}`);
-console.log(`Yeni eklenen                       : ${added.length}`);
+const listeToplam = Object.keys(PROPER_NOUNS).length + Object.keys(EXTRA_WORDS).length;
+console.log(`Sözlükte zaten vardı (dokunulmadı) : ${listeToplam - added.length}`);
+console.log(`Yeni eklenen                       : ${added.length}  [${added.join(', ')}]`);
+console.log(`Anlamı güncellenen                 : ${updated.length}  [${updated.join(', ')}]`);
 console.log(`Toplam oynanabilir kelime          : ${words.length}`);
 console.log(`Yazıldı: ${path.relative(ROOT, wordsPath)}`);
 console.log(`Yazıldı: ${path.relative(ROOT, meaningsPath)}`);

@@ -223,7 +223,7 @@ Yukarıdaki tüm e-posta gönderen fonksiyonlar `noreply@kelimeki.com` adresinde
 ## Sözlük Verisi
 
 Kelimeler ve anlamları **TDK Güncel Türkçe Sözlük (12. baskı)** kaynaklıdır;
-[ogun/guncel-turkce-sozluk](https://github.com/ogun/guncel-turkce-sozluk) (MIT lisansı) üzerinden alınmıştır. Ham dökümdeki çok sözcüklü maddeler birleştirilir ("dulavrat otu" → "dulavratotu"); ardından yalnızca Türk alfabesi harfleri içeren 2–25 harfli tokenlar tutularak süzülür. Çok sözcüklü atasözü/deyim/özel isim gibi oynanamayacak maddeler sonradan ayrıca temizlenmiştir (bkz. `supabase/migrations/2026071913*_remove_*`), bu yüzden güncel liste ilk süzülen haliyle aynı değildir — **~63 bin oynanabilir kelime**. TDK'de eksik olan başlıca dünya ülkesi/başkent/dil adları `scripts/proper-nouns.mjs` ile ayrıca eklenir.
+[ogun/guncel-turkce-sozluk](https://github.com/ogun/guncel-turkce-sozluk) (MIT lisansı) üzerinden alınmıştır. Ham dökümdeki çok sözcüklü maddeler birleştirilir ("dulavrat otu" → "dulavratotu"); ardından yalnızca Türk alfabesi harfleri içeren 2–25 harfli tokenlar tutularak süzülür. Çok sözcüklü atasözü/deyim/özel isim gibi oynanamayacak maddeler sonradan ayrıca temizlenmiştir (bkz. `supabase/migrations/2026071913*_remove_*`), bu yüzden güncel liste ilk süzülen haliyle aynı değildir — **~63 bin oynanabilir kelime**. TDK'de eksik olan başlıca dünya ülkesi/başkent/dil adları `scripts/proper-nouns.mjs`, GTS'te hiç geçmeyen diğer oynanabilir sözcükler `scripts/extra-words.mjs`, var olan bir kelimeye eklenen günlük dildeki anlamlar ise `scripts/extra-meanings.mjs` ile tamamlanır — üçü de `npm run augment-dictionary` ile 100 MB'lık GTS kaynağı indirilmeden uygulanabilir.
 
 Üretilen dosyaları yeniden oluşturmak için:
 

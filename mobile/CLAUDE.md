@@ -293,7 +293,7 @@ yalnızca şüpheli widget'ı render eden bir harness derle; harness'i ve
    web JSON'u fetch edip TAMAMINI RAM'de tutuyor; mobilde bu 6.5 MB'lık bir
    parse gecikmesi + onlarca MB kalıcı bellek demekti. Asset build-time'da
    tek tablolu bir SQLite'a çevriliyor (`npm run generate-meanings-db` →
-   `mobile/app/assets/dictionary/meanings.db`, 63.890 kelime, **5.26 MB ham
+   `mobile/app/assets/dictionary/meanings.db`, 63.895 kelime, **5.26 MB ham
    / ~2.0 MB gzip** — ölçüldü), uygulama sorgu anında TEK SATIR okuyor:
    açılış maliyeti sıfır, bellek maliyeti sıfıra yakın. Auth fazı gelince
    web'in iki yollu sırası kurulabilir (önce Supabase `word_meaning` RPC,
