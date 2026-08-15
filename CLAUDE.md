@@ -403,11 +403,19 @@ madde eklemek için GTS'e gerek OLMAYAN yol: üç listeden birine yaz, sonra
 | `scripts/extra-meanings.mjs` | VAR OLAN kelimeye ek anlam | varsa listeye ekler |
 
 **Hangisini seçeceğini kelimenin sözlükte olup olmadığı belirler, tahminle
-değil ÖLÇEREK:** eklemek istediğin kelime zaten oynanabiliyor olabilir (15
-Ağustos'ta `is` böyle çıktı — "kara leke" anlamıyla zaten vardı, istenen
-*sahip/iye* karşılığı yeni kelime değil ek anlamdı). Önce `meanings.json` +
-`public.words` ikisine birden bak; ikisi ayrışmış olabilir (bkz. "id"/"pi"
-vakası, `20260705153000` migration'ı).
+değil ÖLÇEREK.** Önce `meanings.json` + `public.words` ikisine birden bak;
+ikisi ayrışmış olabilir (bkz. "id"/"pi" vakası, `20260705153000`).
+
+**15 Ağustos 2026'da bu adım YANLIŞ yapıldı ve düzeltmesi iki migration
+tuttu — dersi burada:** kullanıcı *sahip/iye* anlamıyla "ıs" (ı ile) istedi;
+ben sözlükte "is" (i ile — kurum/kara leke) maddesini bulup "kelime zaten
+var, demek ki ek anlam istiyor" diye yorumladım ve anlamı YANLIŞ kelimeye
+ekledim. **Türkçede i/ı ayrımı iki ayrı kelime demektir** — `ıssız`
+(= sahipsiz) ı'lı olandan türer. Bu proje `trUpper`/`trLower` kuralıyla bu
+riski zaten tanıyor; sözlüğe dokunurken de geçerli: eklenecek kelimeyi
+**verilen harfle** ara, benzerini bulunca "aynıdır" varsayma. Kontrol
+kolay — `is_valid_word('IS')` ile `is_valid_word('İS')` FARKLI kelimelere
+çözülür ve sunucu bunu doğru yapıyor (ölçüldü).
 
 `augment-dictionary` üç çıktı üretir: `words.ts`, `meanings.json` ve
 YALNIZCA o çalıştırmada değişen maddeler için yeni bir migration

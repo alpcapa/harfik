@@ -8,5 +8,12 @@
 export const EXTRA_MEANINGS = {
   amerika: "Amerika Birleşik Devletleri'nin günlük dilde kullanılan adı.",
   kore: "Asya'da tarihî bir bölge ve yarımada; Kuzey Kore ile Güney Kore'nin ortak adı.",
-  is: 'Eski Türkçede ve halk ağzında sahip, iye, malik ("ıssız" sözcüğü bu kökten türemiştir).',
 };
+
+// DİKKAT (15 Ağustos 2026) — "is" ile "ıs" AYRI kelimelerdir:
+//   is  (i ile) = dumanın bıraktığı kara leke, kurum  → GTS'te zaten var
+//   ıs  (ı ile) = sahip, iye, malik ("ıssız" bundan)  → extra-words.mjs'te
+// Sahip/iye anlamı bir kez yanlışlıkla buraya, "is"in anlam listesine
+// eklendi; "ıs" yeni bir madde olduğundan doğru yer extra-words.mjs.
+// Türkçe i/ı ayrımını gözden kaçırmak bu projede yerleşik bir risk
+// (bkz. trUpper/trLower kuralı) — bir kelime eklemeden önce ölç.

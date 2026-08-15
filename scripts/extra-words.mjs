@@ -49,4 +49,11 @@ export const EXTRA_WORDS = {
       'İstem dışı kas hareketi veya alışkanlık hâline gelmiş garip bir davranışı (tiki) olan kimse.',
     ],
   },
+  // "is" (i ile, kurum/kara leke) ile KARIŞTIRMA — o GTS'te zaten var ve
+  // anlamlarına dokunulmadı. Bu madde ı ile başlar; "ıssız" (= sahipsiz)
+  // sözcüğü de bu kökten türer.
+  ıs: {
+    pos: 'a.',
+    meanings: ['Eski Türkçede ve halk ağzında sahip, iye, malik.'],
+  },
 };
