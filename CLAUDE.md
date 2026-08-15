@@ -792,6 +792,50 @@ Aylardır CLAUDE.md'nin çeşitli yerlerinde ayrı ayrı "kesin sebebi netleşti
 1. **Import yolu — kök sebep artık netleşti:** Araç, verdiğin `entrypoint_path`i olduğu gibi kullanmıyor, tüm dosyaları örtük bir `source/` klasörünün altına yerleştiriyor. Doğru/kararlı tarif: `entrypoint_path: "source/index.ts"` VER, entrypoint dosyasının adını da `"source/index.ts"` YAP (böylece gerçekte `source/source/index.ts`e iner) ve kardeş bağımlılık dosyalarını (`_shared/email.ts` gibi) **hiçbir `source/` öneki OLMADAN** adlandır (böylece `source/_shared/email.ts`e iner) — bu durumda `source/source/index.ts`'ten `source/_shared/email.ts`'e giden doğru göreli yol her zaman `'../_shared/email.ts'`dir. `'./_shared/email.ts'` kullanan 6 fonksiyonun (`notify-account-banned`, `notify-account-unbanned`, `notify-deadline-warnings`, `notify-friend-request-reminders`, `notify-local-game-abandoned`, `notify-turn-timeout-surrender`) bugüne kadar hiç patlamadan çalışmasının sebebi, o fonksiyonların ilk deploy'unda bu tarifin (muhtemelen) tutarlı uygulanmamış olması, yani dosyaların gerçekte BEKLENENDEN farklı bir iç içe klasör yapısına yerleşmiş olmasıydı — CLAUDE.md'de "CI/CLI deploy'a geçilirse 6 fonksiyon anında bozulur" diye zaten öngörülmüştü, bu doğru bir öngörüydü. **Düzeltme:** 6 fonksiyonun hepsi `'../_shared/email.ts'`e çevrilip yukarıdaki tarifle yeniden deploy edildi — artık 11 Edge Function'ın tamamı aynı, tek doğru importu kullanıyor.
 2. **`verify_jwt` — aracın kendi varsayılanı `true`, parametre REQUIRED değilse bile geçilmezse önceki deploy'un değerini KORUMUYOR:** Bu araçla (CLI/`supabase functions deploy` değil) yapılan bir redeploy'da `verify_jwt` parametresi verilmezse, önceden `false` olan bir fonksiyon SESSİZCE `true`'ya döner — kod hiç değişmese bile. Bu, `notify-deadline-warnings`i (cron tarafından JWT'siz çağrılıyor, `verify_jwt:false` olması ŞART) bu incelemenin bir yan etkisi olarak neredeyse kırıyordu: fonksiyonun kodunu (CRON_SECRET kontrolü, satır başına try/catch) güncelleyip `verify_jwt` belirtmeden deploy edince araç onu `true`'ya çevirdi, `list_edge_functions`'la fark edilip aynı anda ikinci bir deploy'la (bu kez `verify_jwt: false` açıkça verilerek) geri alındı — production'a hiç sızmadı ama neredeyse pg_cron'un 15 dakikada bir 401 almaya başlamasına yol açıyordu. **Kural: `deploy_edge_function`'ı çağırmadan ÖNCE her zaman `list_edge_functions`/`get_edge_function` ile fonksiyonun MEVCUT `verify_jwt` değerini kontrol et ve deploy çağrısına AYNI değeri açıkça geçir — asla parametreyi atlayıp aracın varsayılanına (`true`) güvenme.** Projedeki `verify_jwt:false` olması gereken üç fonksiyon: `notify-deadline-warnings`, `notify-friend-request-reminders` (ikisi de pg_cron'dan JWT'siz çağrılıyor), `notify-turn-timeout-surrender` (Postgres'in kendisinden `net.http_post` ile JWT'siz çağrılıyor) — geri kalan sekizi `true`.
 
+## Sonraya Bırakılan Ürün Fikirleri (karar verildi, henüz yapılmadı)
+
+Bir alt bölümden farkı: orası mobil porttan gelen "web geride kaldı"
+maddeleri, burası İKİ platformu birden ilgilendiren ve bilinçli olarak
+ertelenmiş ürün fikirleri. Bir madde yapılınca buradan silinip ilgili
+bölümün kendi tarihli notuna taşınır.
+
+- **k-lig puan grafiği (14 Ağustos 2026, kullanıcı fikri — "sonra yaparız"):**
+  Skor Kartı'nda "Oyuncu İstatistikleri" başlığının EN SAĞINA bir link;
+  basınca kişinin k-lig puanının zaman içindeki seyrini gösteren bir grafik
+  açılır. Ödül/rütbe olayları grafiğin üstünde etiket olarak işaretlenir.
+  - **YALNIZCA AKTİF HAREKETLER ÇİZİLİR (kullanıcı kararı):** puan
+    getirmeyen oyunlar (2 kişilikte ikincilik = 0) grafiğe HİÇ girmez.
+    Gerekçe ölçümle sabit: aktif oyuncularda oyunların **~%40'ı 0 puan**,
+    yani ham "oyun sırası" ekseni uzun düz platolar üretiyordu. Eksen bu
+    yüzden "kaçıncı oyun" DEĞİL, olay bazlı olmalı. **Atmak güvenli, çünkü
+    o oyunlar toplama sıfır katkı veriyor** — grafiğin son noktası yine
+    `total_score` ile birebir kalır.
+  - **Veri ZATEN var, yeni yazma/kişisel veri YOK** (Terms/Privacy'ye
+    dokunmaz): seri `games`ten `player_stats`ın ifadesiyle
+    (`surrendered → -2`, `rank=1 → 2`, `rank=2 && player_count<>2 → 1`,
+    diğer → 0) kümülatif olarak kurulur, üstüne `league_rewards`'ın
+    `points_reward` satırları binlenir. **14 Ağustos 2026'da canlıda
+    doğrulandı: bu yeniden hesap 15/15 kullanıcıda
+    `player_stats_overall.total_score` ile TAM eşleşti** — yani grafik
+    Skor Kartı'ndaki sayıyla çelişemez. Etiketlerin kaynağı da hazır:
+    `league_rewards`'ın `rank_up`/`rank_down`/`points_milestone` satırları.
+  - **NEDEN ERTELENDİ — ve ertelemenin maliyeti SIFIR:** `games.created_at`
+    durduğu sürece seri her zaman GERİYE DÖNÜK, tam geçmişle kurulabilir
+    (platform kolonunun tam tersi — o doldurulamadığı için lansman öncesi
+    yapılmak zorundaydı). Bugün fikri zayıflatan iki şey de kendiliğinden
+    düzeliyor: (a) 15 kullanıcının yalnızca 4'ünde dolu bir grafik çıkacak
+    kadar oyun var (101/63/55/47; kalan 11'inin 11 ya da daha az oyunu var,
+    6'sında ≤3); (b) etiketler bugün neredeyse boş — `league_rewards`'ta
+    TOPLAM 6 satır var (3 kişide birer Meraklı/50 `rank_up` + ödülü),
+    **sıfır** kilometre taşı (kimse 100'e ulaşmadı) ve **sıfır** rütbe
+    düşüşü. Ironman 91'de; 100 geçilir geçilmez ilk kilometre taşı + Oyuncu
+    rütbesi doğacak ve etiketler anlam kazanmaya başlayacak.
+  - **Yapılırken iki not:** (1) web + port AYNI PR'da — ikisi de aynı Skor
+    Kartı'nı taşıyor, tek taraflı yapmak bu projenin en sık hatasını
+    (sessiz ayrışma) üretir; (2) `PlayerScoreCard` aynı bölümü kullandığından
+    grafik BAŞKASININ kartında da görünür — yeni bir sızıntı değil (o veri
+    girişli herkese zaten açık) ama bilerek karar verilmeli.
+
 ## Web'de Yapılacak İşler (mobil porttan gelen fikirler, henüz yapılmadı)
 
 Mobil port (bkz. `mobile/CLAUDE.md`) cihaz testi sırasında bazen web'de de
