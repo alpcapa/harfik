@@ -908,6 +908,13 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       davet varsa (test için `created_at` SQL ile geriye çekilebilir)
       liste açılınca kendiliğinden kaybolmalı (`check_invite_expiry`) —
       davetLİnin listesinde de (hayalet davet regresyonu).
+- [ ] **Setup'taki "Yapay Zeka ile (N)" rozeti (15 Ağustos 2026, Parça
+      101).** Girişliyken devam eden N adet YZ oyunun varken kurulum
+      ekranını aç: "YAPAY ZEKA İLE" sekme butonunun sağ üstünde N rozeti
+      olmalı ve bu sayı hemen altındaki **"DEVAM EDENLER" alt sekmesinin
+      rozetiyle AYNI** olmalı (kapsayan sekme = kapsananların toplamı).
+      Regresyon belirtisi: alt sekmede sayı var, üstteki sekmede hiç yok.
+      Misafirken tek slot olduğundan rozet 0 ya da 1 olur.
 - [ ] **Setup'taki "Arkadaşınla (N)" rozeti.** Bekleyen bir davetin/sırası
       sende olan bir oyunun varken uygulamayı aç: kurulum ekranındaki
       "ARKADAŞINLA" sekme butonunun sağ üst köşesinde kırmızı bir sayı

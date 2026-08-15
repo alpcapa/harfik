@@ -100,6 +100,16 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   /// listesini ayrıca çeker — küçük bir tekrar fetch pahası web'in de
   /// kabul ettiği bir ödün.
   int _liveActionCount = 0;
+
+  /// "Yapay Zeka ile (N)" rozeti — web `Setup.tsx`'teki `localSaveCount` ile
+  /// BİREBİR aynı formül: girişli kullanıcıda devam eden bulut kaydı sayısı,
+  /// misafirde tek slot olduğundan 0 ya da 1. Bu, "Devam Edenler" alt
+  /// sekmesinin rozetiyle AYNI sayı olmak zorunda — kapsayan sekmenin
+  /// rozeti kapsananların toplamıdır (kök `CLAUDE.md`, `CountBadge`
+  /// "toplama kuralı"); ayrışırlarsa zincir kopar.
+  int get _localSaveCount => widget.services.auth.user != null
+      ? (_cloudSaves?.length ?? 0)
+      : (_savedState != null ? 1 : 0);
   Timer? _liveBadgeDebounce;
 
   /// Öne dönüşte bulut senkronunun debounce'u — bekleyen timer dispose'ta
@@ -893,6 +903,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                               child: _ChoiceButton(
                                 label: 'YAPAY ZEKA İLE',
                                 selected: !_liveView,
+                                badge: _localSaveCount,
                                 onTap: () => setState(() {
                                   _liveView = false;
                                   _localSubTab = _LocalSubTab.active;

@@ -24,6 +24,7 @@ import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
 import 'package:kelimeki/src/ui/game/logo_mark.dart';
 import 'package:kelimeki/src/ui/game/neo_button.dart';
+import 'package:kelimeki/src/ui/game/count_badge.dart';
 import 'package:kelimeki/src/ui/setup/setup_screen.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -291,6 +292,34 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('OYUNCU SAYISI'), findsNothing);
     expect(find.text('Devam eden bir Yapay Zeka oyunun yok.'), findsOneWidget);
+  });
+
+  testWidgets(
+      '"YAPAY ZEKA İLE" sekmesinin rozeti "Devam Edenler" ile AYNI sayı '
+      '(kapsayan sekme = kapsananların toplamı)', (tester) async {
+    final gw = MemGateway();
+    await seedSave(gw, 'save-1');
+    await seedSave(gw, 'save-2');
+    await pumpSetup(tester, gw);
+
+    // Rozet bir sekme butonunun KENDİ Stack'inde yaşıyor (yalnızca metnin
+    // değil tüm kutunun üzerinde) — en yakın Stack atası o. `_ChoiceButton`
+    // rozetsizken Stack'i hiç kurmuyor, yani "rozet yok" = Stack yok.
+    int? badgeOf(String label) {
+      final stack =
+          find.ancestor(of: find.text(label), matching: find.byType(Stack));
+      if (stack.evaluate().isEmpty) return null;
+      final badge = find.descendant(
+          of: stack.first, matching: find.byType(CountBadge));
+      if (badge.evaluate().isEmpty) return null;
+      return tester.widget<CountBadge>(badge.first).count;
+    }
+
+    // İkisi de 2 olmalı; alt sekmeninkini de ölçüyoruz ki "üstteki rozeti
+    // ekledim" iddiası, ikisi ayrışsa da geçmesin.
+    expect(badgeOf('DEVAM EDENLER'), 2);
+    expect(badgeOf('YAPAY ZEKA İLE'), 2);
+    await drainRealIo(tester);
   });
 
   testWidgets(

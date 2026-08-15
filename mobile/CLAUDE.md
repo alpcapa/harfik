@@ -4236,6 +4236,38 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        açıyor" kontrolü (2 kişilikte görünmez). Maddeler `mobile/TESTING.md`
        bölüm 11 ve kök `TESTING.md` bölüm 3'e eklendi.
 
+   - ✅ **Parça 101 — "Yapay Zeka ile" sekme rozeti porta hiç girmemişti
+     (15 Ağustos 2026, `setup_screen.dart`):** Kullanıcı bölüm 11 turunda
+     ekran görüntüsüyle bildirdi: *"YZ bekleyen 2 oyun olmasına ve devam
+     edenlerde 2 yazmasına rağmen ana tabda sayı yok."*
+     - **Web kaynağı önce okundu (kuralın ilk adımı) ve kullanıcıyı
+       doğruladı:** `Setup.tsx`'in OYUN TİPİ satırı İKİ sekmeye de rozet
+       veriyor — `{label:'Yapay Zeka ile', badge: localSaveCount}` ve
+       `{label:'Arkadaşınla', badge: liveActionCount}`. Port yalnızca
+       ikincisini taşımıştı; `YAPAY ZEKA İLE` butonuna `badge` hiç
+       geçilmiyordu, `_ChoiceButton` de `badge<=0` iken Stack'i hiç
+       kurmadığından rozet TAMAMEN yoktu (soluk/sıfır değil, yok).
+     - **Formül web'den birebir:** `_localSaveCount` = girişliyse
+       `_cloudSaves?.length ?? 0`, misafirse `_savedState != null ? 1 : 0`
+       (web `user ? (cloudSaves?.length ?? 0) : savedGame ? 1 : 0`).
+     - **Bu, `CountBadge`'in "toplama kuralı"nın somut örneği** (kök
+       `CLAUDE.md`): kapsayan sekmenin rozeti kapsananların toplamı olmak
+       zorunda. Burada "Devam Edenler" alt sekmesi 2 gösterirken onu
+       KAPSAYAN "Yapay Zeka ile" hiçbir şey göstermiyordu — kullanıcının
+       gördüğü tutarsızlık tam olarak zincirin kopmasıydı.
+     - **Test İKİ rozeti birden ölçüyor**, yalnızca yenisini değil:
+       `badgeOf('DEVAM EDENLER') == badgeOf('YAPAY ZEKA İLE') == 2`.
+       Yalnızca üsttekine bakan bir test, ikisi ayrışsa da geçerdi — asıl
+       korunması gereken değişmez sayının kendisi değil EŞİTLİĞİ.
+     - **Negatif eş:** `setup_screen.dart` `git stash`lenince test
+       GERÇEKTEN kullanıcının semptomunu üretti (`Expected: <2> / Actual:
+       <null>` — yani rozet hiç yok), geri konunca yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       428/428 yeşil** (427'den +1). Web'e hiç dokunulmadı (orada rozet
+       zaten doğru); `kelimeki_core`'a dokunulmadı.
+     - **Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor —
+       `mobile/TESTING.md` bölüm 11'e madde eklendi.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 14 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
@@ -4280,6 +4312,8 @@ ankrajı (Parça 86), HEIC seçimi ve galeri izni reddi (Parça 87).
 Son iki günde düzeltme yapıldıkça listeye madde eklendi ama o maddeler
 hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
 
+- **15 Ağustos (Parça 101):** "YAPAY ZEKA İLE" sekme rozeti = "Devam
+  Edenler" alt sekmesinin rozetiyle aynı sayı
 - **15 Ağustos (Parça 100):** susturulmuş gönderende kırmızı nokta ÇIKMALI
   (popup çıkmamalı); 4 kişilik oyunda susturulmamış gönderende ikisi de
   çıkmalı (iki platform)
