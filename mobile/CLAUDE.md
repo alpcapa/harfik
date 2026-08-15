@@ -4111,6 +4111,25 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
          yeni paketler + Dart kısıtı; başka sürüm oynaması yok) ama
          **Android/iOS derlemesi burada koşulamıyor** — plugin'in native
          tarafı yalnızca CI'daki `mobile-build.yml` ile doğrulanabilir.
+     - **Yan etki, 15 Ağustos 2026'da cihaz turunda ölçüldü — bu değişiklik
+       AYNI GÜN yazılmış BAŞKA bir test maddesini geçersiz kıldı:** Parça
+       90, "uçak modunda bir Canlı davete Kabul Et/Reddet'e bas → 'İşlem
+       başarısız oldu.' çıkmalı" maddesini eklemişti; birkaç saat sonra bu
+       parça `LiveGamesTab`'ın ÜÇ alt sekmesini de çevrimdışı kapısının
+       arkasına aldığından davet kartı artık hiç çizilmiyor — basılacak bir
+       buton yok. Kullanıcı doğru olanın bu olduğunu belirtti ("bu şekilde
+       iyi bence"): hata sonrası açıklama yerine en baştan "burada
+       yapılacak bir şey yok" demek. **`kFriendActionFailed` ölü kod
+       DEĞİL** — bağlantı sinyali "online" derken isteğin düştüğü durumlar
+       (captive portal, sunucu/RLS hatası, sekme çizildikten sonra kopan
+       bağlantı) hâlâ o dala düşüyor; ayrıca `FriendsModal`'ın kendi yanıt
+       akışında çevrimdışı kapısı HİÇ YOK (grep ile doğrulandı), yani Parça
+       89'un maddesi orada aynen geçerli. Kod değişmedi, `mobile/TESTING.md`
+       bölüm 11'deki madde gerçeğe çekildi.
+       **Ders:** bir ekranı çevrimdışı kapısının arkasına alırken, o ekranın
+       İÇİNDEKİ kontroller hakkında yazılmış test maddelerini de tara — kapı
+       onları sessizce ulaşılamaz kılıyor ve madde bir sonraki turda "hata"
+       gibi görünüyor.
      - **Cihazda doğrulanacak:** iki senaryo da `mobile/TESTING.md` bölüm 11
        ve kök `TESTING.md` bölüm 2'ye eklendi.
 
