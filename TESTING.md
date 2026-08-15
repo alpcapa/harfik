@@ -150,6 +150,15 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       Setup'a uğramadan aynı kadroyla taze bir oyun açılmalı. **Aynı ekranda
       iki oyunu üst üste bitir** — Skor Kartı → "Tüm Oyunlarım"da İKİSİ de
       görünmeli (Flutter portunda burada sessiz bir kayıt kaybı bulunmuştu).
+- [ ] **Biten oyunun "Hamleler" dökümü SON hamleyi içermeli (15 Ağustos 2026).**
+      Bir Canlı oyunu gerçekten sonuna kadar oyna (rafını torba boşken bitiren
+      taraf ol ya da rakibin bitirmesini bekle), sonra Skor Kartı → "Tüm
+      Oyunlarım" → o kartın hamle ikonu. **Dökümdeki en son satır, oyunu
+      BİTİREN hamle olmalı** — kendi son hamlen değil. Aynı kontrolü teslimle
+      biten bir oyunda da yap (48 saatlik süre aşımı, bkz. bölüm 4): son satır
+      "Teslim" olmalı. Arşiv `online_game_moves`'tan üretildiğinden buradaki
+      bir eksik, oyunun kendisini değil yalnızca kaydı bozar — yani oyun doğru
+      bitmiş görünse bile bu maddeyi ayrıca koş.
 
 ## 3. Oyun içi mesajlaşma
 
