@@ -55,6 +55,97 @@ Commit'ten önce, sırayla:
    üreticisi değiştiyse ilgili `npm run generate-*` — ikisi de opsiyonel
    değil.
 
+## Deploy Doğrulaması (ZORUNLU — "cihazda göreceksin" demeden önce)
+
+Kullanıcı isteği (15 Ağustos 2026): *"bu yaşanan deploy sorunlarını kalıcı
+olarak çözecek bir sistem geliştir"*. O gün aynı hata İKİ KEZ tekrarlandı:
+düzeltme yazıldı, testler yeşildi, kullanıcı cihazda **bayat bir derlemeyi**
+test edip "düzelmemiş" dedi. Kod doğruydu; sitede yoktu.
+
+**Kural bu projede ZATEN vardı** (Parça 19: *"bir 'deploy oldu mu?' kontrolü
+teşhisin parçasıdır"*) ve yine atlandı. Bu yüzden çözüm bir kural DEĞİL, bir
+MEKANİZMA: derleme kimliği artık ürünün İÇİNDE.
+
+### Nerede ne yayınlanır
+
+| Yüzey | Nereden yayınlanır | Ne zaman |
+|---|---|---|
+| `kelimeki.com` (web app) | Vercel | `main`'e her merge |
+| `alpcapa.github.io/kelimeki` (Flutter test ortamı) | Actions `mobile-build.yml` → Pages | YALNIZCA `main`'e push **ve** `mobile/**` değiştiyse |
+| Supabase (migration/Edge Function) | MCP ile doğrudan | Anında — dal/merge ile İLGİSİZ |
+
+**Feature dalındaki bir commit sitede ASLA görünmez.** Bir PR açmak da
+yetmez (workflow PR'da bilerek yayınlamıyor). Üçüncü satır tersine bir tuzak:
+sunucu değişikliği anında canlıdır, yani istemci düzeltmesi henüz yokken
+sunucu davranışı değişmiş olabilir.
+
+### Derleme kimliği — ekran görüntüsü sorunun cevabını taşır
+
+- **Flutter:** Setup'ın teşhis satırı `Derleme a1b2c3d · 15.08 11:42` ile
+  başlıyor (`env.dart` → `buildSha`/`buildTime`, CI `--dart-define` ile
+  veriyor; yerel derlemede `Derleme yerel`).
+- **Web:** `<meta name="kelimeki-build">` + `window.__KELIMEKI_BUILD__`
+  (`vite.config.ts`, Vercel `VERCEL_GIT_COMMIT_SHA`). Görünmez — normal
+  kullanıcıya bir sha göstermenin anlamı yok; devtools/`view-source` yeter.
+
+**Kullanıcıya bir düzeltmenin cihazda görüneceğini söylemeden önce o sha'yı
+iste ya da ekran görüntüsünden oku.** Eşleşmiyorsa tartışılacak bir hata
+yok — deploy bekleniyor demektir.
+
+### Bu ortamın sınırı (kritik — buradaki tek gözlem yolu MCP)
+
+`curl`/`bash` bu oturumdan **ne `api.github.com`'a ne siteye** çıkabiliyor
+(proxy 403, token'la bile). Yani:
+
+- Bash tabanlı bir "deploy izleyici" **sessizce ölü kalır** ve sessizlik
+  "hâlâ çalışıyor" gibi görünür — 15 Ağustos'ta tam bu kuruldu ve fark
+  edilmeseydi 40 dakika boş beklenecekti.
+- Koşu durumu YALNIZCA GitHub MCP araçlarıyla okunabilir
+  (`actions_list` → `list_workflow_runs`, `pull_request_read`).
+- Siteyi ben açıp bakamam. **Ekran görüntüsü tek enstrümandır** — derleme
+  kimliğinin ürüne gömülmesinin asıl gerekçesi budur.
+
+### Merge sonrası dal hijyeni (bugünün ikinci hatası)
+
+`main` squash merge kullanıyor. Merge edilmiş bir dala yeni commit
+eklemeye devam etmek, aynı işi İKİ kez var eder ve bir sonraki merge'de
+çakışma üretir. 15 Ağustos'ta bunun bedeli yalnızca çakışma da olmadı:
+`AdminDashboard.tsx` "auto-merging" dedi ama 126 satırlık bir bloğu
+**iki kez** yazdı; `tsc` yakaladı (`TS2393`/`TS2451`).
+
+**Her merge'den SONRA dalı sıfırla:**
+`git fetch origin main && git checkout -B <dal> origin/main`
+
+**Ve bir squash-merge çakışmasını çözerken derleyiciye güvenme:**
+tekrarlanan JSX'i hiçbir şey yakalamaz. `npm run lint` + mükerrer
+bildirim/kullanım taraması (`grep -c` ile her yeni bileşen "1 bildirim +
+1 kullanım" mı) şart.
+
+### PR'da CI koşmazsa
+
+MCP ile açılan PR'larda GitHub `pull_request` iş akışını tetiklemeyebiliyor
+(15 Ağustos, PR #266: tek bir `mobile-build` koşusu oluşmadı). O durumda
+merge etmeden önce native derlemeyi doğrulamak için Actions → Run workflow
+→ dal seç → **`web: false`** (yalnızca derler, paylaşılan siteyi
+DEĞİŞTİRMEZ). Yeni bir platform eklentisi eklenmediyse bu adım atlanabilir,
+ama atlandığı commit'te bunu açıkça söyle.
+
+**PR #267'de CI koştu ve İLK denemede Android'i düşürdü — kaydı önemli:**
+`--dart-define=BUILD_TIME=${{ ... }}` TIRNAKSIZDI ve değer boşluk taşıyor
+(`15.08 11:58`); kabuk onu ikiye bölüp ikinci parçayı hedef dosya sandı
+(`Target file "11:58" not found.`, 32 saniyede düştü). **Yerelde
+görünmüyordu:** `flutter test` bu define'ları hiç kullanmıyor ve ben
+YAML'ı yalnızca PyYAML ile ayrıştırıp "adım var" diye doğrulamıştım —
+derleme komutunu koşmamıştım. Düzeltme sekiz satırda argümanı tırnağa
+almak; **negatif eş yerelde kuruldu** (`flutter build web` ile önce hata
+birebir üretildi, sonra tırnaklı hâlin derlendiği VE iki sabitin de
+`main.dart.js`'e gömüldüğü ölçüldü — `buildLabel` çalışma anında
+hesaplandığından birleşik dize aranmaz, iki sabit ayrı ayrı aranır).
+**Ders: bir workflow adımının YAML'ı geçerli olması, ürettiği KABUK
+SATIRININ doğru olduğunu kanıtlamaz** — değeri boşluk/özel karakter
+taşıyabilen her `--dart-define`/argüman tırnaklanmalı ve mümkünse o
+komut yerelde bir kez gerçekten koşturulmalı.
+
 ## Sorun Bildirildiğinde İLK ADIM: "web'de bu nasıl yapılmış?"
 
 Kullanıcı kararı (9 Ağustos 2026, sözleri birebir): *"Bizim webde çalışan
