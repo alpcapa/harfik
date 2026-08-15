@@ -19994,6 +19994,7 @@ evrimleşmek
 evrişik
 evropiyum
 evsaf
+evsel
 evseme
 evsemek
 evsin
@@ -26672,6 +26673,7 @@ hüzzam
 ırmaklaşma
 ırmaklaşmak
 ırz
+ıs
 ısfahan
 ısı
 ısıalan
@@ -37124,6 +37126,7 @@ likidite
 likit
 likorinoz
 likör
+lila
 lim
 lima
 limaki
@@ -37393,6 +37396,7 @@ lüzumsuz
 lüzumsuzca
 lüzumsuzluk
 lyon
+ma
 maada
 maaile
 maalesef
@@ -42100,6 +42104,7 @@ nikotin
 nikris
 nikriz
 niksar
+nil
 nilüfer
 nilüfergiller
 nim
@@ -56769,6 +56774,7 @@ tik
 tike
 tikel
 tikellik
+tikli
 tiksinç
 tiksindirici
 tiksindiricilik

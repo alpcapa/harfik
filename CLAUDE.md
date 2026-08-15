@@ -389,6 +389,57 @@ Kullanıcının Android kullanan bir tanıdığı iki ayrı sorun bildirdi (ekra
   **Bu düzeltme geriye dönük olarak "şu an zaten takılı kalmış" kullanıcıları anında kurtarmaz** — onların tarayıcısında hâlâ ESKİ service worker/JS çalıştığından, güncelleme uygulama kararını hâlâ ESKİ (hatalı) mantık veriyor; yeni düzeltme ancak bir kez uygulandıktan SONRA devreye girebilir (tavuk-yumurta). Böyle sıkışmış biri için pratik çözüm: yarım kalan oyunu bitirmek/terk etmek (en geç 7 gün içinde `ABANDON_TIMEOUT_MS` kendiliğinden temizler, bir sonraki visibilitychange/focus/saatlik kontrolde güncelleme uygulanır) ya da tarayıcıda site verisini/önbelleği elle temizlemek.
 - **Play Protect "Anladım" engeli — WebAPK'nin hedef Android SDK sürümüyle ilgili, bizim tarafımızdan düzeltilemez:** Chrome'un "Ana Ekrana Ekle"si, kurulabilir bir PWA için gerçek (küçük) bir APK sarmalayıcı (**WebAPK**) üretir — bunu Google'ın kendi WebAPK Minter servisi, CİHAZDAKİ Chrome/Android System WebView sürümüne göre oluşturur. Google Play Protect'in "daha eski bir Android sürümü için geliştirilmiş" uyarısı APK'nın hedef SDK sürümüne bakıyor — bu değer bizim `manifest.webmanifest`'imizden DEĞİL, o cihazdaki WebAPK üretim şablonundan geliyor; site tarafında kontrol edilemez. `vite.config.ts`'teki PWA manifest'i (name/short_name/description/icons 192+512+maskable/display/scope/start_url) baştan sona kontrol edildi, eksik/bozuk bir şey bulunmadı — kurulabilirlik kriterleri zaten sağlanıyordu. Yine de iki küçük, doğru ama muhtemelen bu uyarıyı düzeltmeyecek iyileştirme yapıldı: `id: '/'` eklendi (modern manifest spesifikasyonunun önerdiği, Chrome'un kurulu uygulamayı sürümler arasında doğru tanımasını sağlayan alan) ve `lang: 'tr'` eklendi (öncesinde vite-plugin-pwa'nın varsayılanı olan `"en"` sızıyordu — Türkçe bir uygulama için yanlıştı, `<html lang="tr">` ile tutarsızdı). Bu iki alan zaten olması gereken düzeltmelerdi ama kullanıcıya AÇIKÇA belirtilen sınır şu: **gerçek çözüm o cihazda Chrome/Android System WebView'i Play Store'dan güncellemek** — bu, aynı uyarının başka sitelerde de yaşandığı, yaygın raporlanan bir Chrome/WebAPK altyapı davranışı, Kelimeki'ye özgü değil.
 
+## Sözlüğe Kelime/Anlam Ekleme (15 Ağustos 2026)
+
+`src/data/words.ts` ÜRETİLMİŞ bir dosyadır ve elle düzenlenmez; tam üretim
+(`npm run build:dict`) 100 MB'lık GTS kaynağını ister ve o repoda YOK. Elle
+madde eklemek için GTS'e gerek OLMAYAN yol: üç listeden birine yaz, sonra
+`npm run augment-dictionary`.
+
+| Liste | Ne için | Kural |
+|---|---|---|
+| `scripts/proper-nouns.mjs` | ülke/başkent/şehir/dil adları | zaten varsa dokunma |
+| `scripts/extra-words.mjs` | GTS'te hiç geçmeyen diğer sözcükler | zaten varsa dokunma |
+| `scripts/extra-meanings.mjs` | VAR OLAN kelimeye ek anlam | varsa listeye ekler |
+
+**Hangisini seçeceğini kelimenin sözlükte olup olmadığı belirler, tahminle
+değil ÖLÇEREK.** Önce `meanings.json` + `public.words` ikisine birden bak;
+ikisi ayrışmış olabilir (bkz. "id"/"pi" vakası, `20260705153000`).
+
+**15 Ağustos 2026'da bu adım YANLIŞ yapıldı ve düzeltmesi iki migration
+tuttu — dersi burada:** kullanıcı *sahip/iye* anlamıyla "ıs" (ı ile) istedi;
+ben sözlükte "is" (i ile — kurum/kara leke) maddesini bulup "kelime zaten
+var, demek ki ek anlam istiyor" diye yorumladım ve anlamı YANLIŞ kelimeye
+ekledim. **Türkçede i/ı ayrımı iki ayrı kelime demektir** — `ıssız`
+(= sahipsiz) ı'lı olandan türer. Bu proje `trUpper`/`trLower` kuralıyla bu
+riski zaten tanıyor; sözlüğe dokunurken de geçerli: eklenecek kelimeyi
+**verilen harfle** ara, benzerini bulunca "aynıdır" varsayma. Kontrol
+kolay — `is_valid_word('IS')` ile `is_valid_word('İS')` FARKLI kelimelere
+çözülür ve sunucu bunu doğru yapıyor (ölçüldü).
+
+`augment-dictionary` üç çıktı üretir: `words.ts`, `meanings.json` ve
+YALNIZCA o çalıştırmada değişen maddeler için yeni bir migration
+(`<damga>_add_words.sql`, ana seed dosyasına dokunmaz). Ardından **zincirin
+kalanı zorunlu** — her halkanın atlanması ayrı bir arıza üretir:
+
+| Adım | Atlanırsa |
+|---|---|
+| `npm run generate-golden-vectors` + `dart run test/run_all.dart` | `words_tr.txt` bayat kalır → mobil YZ farklı kelime seçer, parite testleri düşer |
+| Migration'ı canlıya uygula + `list_migrations` ile dosya adını eşleştir | Kelime yerelde YEŞİL görünür ama OYNA'da sunucu reddeder (`is_valid_word` tabloda bulamaz) |
+| `npm run generate-meanings-db` | Mobilde taşa dokununca "anlamı bulunamadı" |
+| `README.md` kelime sayısı / `mobile/CLAUDE.md`'deki somut rakam | Doküman koddan kopar (bu proje bunu bir kez 92.503 ↔ ~64 bin farkıyla yaşadı) |
+
+**Yeni bir liste dosyası açılırsa İKİ betiğe birden tanıtılmalı**
+(`augment-dictionary.mjs` VE `build-dictionary.mjs`) — yalnızca birincisine
+eklemek, ileride GTS ile yapılacak bir tam üretimde o maddelerin SESSİZCE
+düşmesi demektir. `extra-words.mjs` eklenirken ikisi birden bağlandı.
+
+**Yayılma gecikmesi (bilinçli):** migration uygulanır uygulanmaz kelime
+web'de oynanabilir olur; mobil sözlük uygulama paketinin İÇİNDE olduğundan
+orada ancak yeni bir sürüm çıkınca geçerli olur. Bugün mobil yalnızca test
+ortamı olduğundan sorun değil — mağazaya çıkıldığında bu, "web'de kabul
+edilen kelimeyi mobil reddediyor" olarak görünür.
+
 ## Kelime Listesi Code-Splitting'i
 
 `src/data/words.ts` (~63k kelime, ~860 KB kaynak) 24 Temmuz 2026'ya kadar `validator.ts` ve `ai.ts` tarafından **statik** `import` ile çekiliyordu — `vite.config.ts`'te `manualChunks` olmadığından bu, PageSpeed'in mobilde ölçtüğü ana JS paketine (~395 KiB transfer, 102 KiB'ı "unused") gömülüyor, Setup ekranı daha render olmadan indirilip parse ediliyordu. Artık `src/data/wordSetLoader.ts` üzerinden ayrı bir chunk (`words-*.js`) olarak dinamik `import()` ile geliyor:
