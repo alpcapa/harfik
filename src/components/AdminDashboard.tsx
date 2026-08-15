@@ -1073,6 +1073,50 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
               )}
             </div>
           )}
+
+          {/* Geri Bildirim'in alt sekmeleri + filtre satırı, Büyüme'dekiyle
+              AYNI şekilde kaydırma kabının DIŞINDA (sabit başlık bölgesinde)
+              duruyor — uzun bir listede aşağı inince filtreler gözden
+              kaybolmasın diye (kullanıcı isteği, 15 Ağustos 2026). */}
+          {tab === 'feedback' && (
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-1.5">
+                <button className={tabBtn(feedbackSubTab === 'inbox')} onClick={() => setFeedbackSubTab('inbox')}>
+                  Gelen Kutusu
+                  {unhandledFeedbackCount > 0 && (
+                    <CountBadge count={unhandledFeedbackCount} className="absolute -top-1 -right-1" />
+                  )}
+                </button>
+                <button className={tabBtn(feedbackSubTab === 'flags')} onClick={() => setFeedbackSubTab('flags')}>
+                  Şikayetler
+                  {unhandledChatReportCount > 0 && (
+                    <CountBadge count={unhandledChatReportCount} className="absolute -top-1 -right-1" />
+                  )}
+                </button>
+              </div>
+
+              {feedbackSubTab === 'inbox' && (
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex gap-1.5">
+                    <button className={tabBtn(feedbackOriginFilter === 'all')} onClick={() => setFeedbackOriginFilter('all')}>
+                      Tümü
+                    </button>
+                    <button className={tabBtn(feedbackOriginFilter === 'user')} onClick={() => setFeedbackOriginFilter('user')}>
+                      Gelen
+                    </button>
+                    <button className={tabBtn(feedbackOriginFilter === 'admin')} onClick={() => setFeedbackOriginFilter('admin')}>
+                      Gönderilen
+                    </button>
+                  </div>
+                  {filteredFeedback && filteredFeedback.length > 0 && (
+                    <button type="button" onClick={exportFeedbackCsv} className={csvLinkCls}>
+                      CSV İndir
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="overflow-y-auto min-h-0 px-5 pt-4 pb-5 flex flex-col gap-4">
@@ -1463,42 +1507,8 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
           {tab === 'feedback' && (
             <>
-              <div className="flex gap-1.5">
-                <button className={tabBtn(feedbackSubTab === 'inbox')} onClick={() => setFeedbackSubTab('inbox')}>
-                  Gelen Kutusu
-                  {unhandledFeedbackCount > 0 && (
-                    <CountBadge count={unhandledFeedbackCount} className="absolute -top-1 -right-1" />
-                  )}
-                </button>
-                <button className={tabBtn(feedbackSubTab === 'flags')} onClick={() => setFeedbackSubTab('flags')}>
-                  Şikayetler
-                  {unhandledChatReportCount > 0 && (
-                    <CountBadge count={unhandledChatReportCount} className="absolute -top-1 -right-1" />
-                  )}
-                </button>
-              </div>
-
               {feedbackSubTab === 'inbox' && (
             <>
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex gap-1.5">
-                  <button className={tabBtn(feedbackOriginFilter === 'all')} onClick={() => setFeedbackOriginFilter('all')}>
-                    Tümü
-                  </button>
-                  <button className={tabBtn(feedbackOriginFilter === 'user')} onClick={() => setFeedbackOriginFilter('user')}>
-                    Gelen
-                  </button>
-                  <button className={tabBtn(feedbackOriginFilter === 'admin')} onClick={() => setFeedbackOriginFilter('admin')}>
-                    Gönderilen
-                  </button>
-                </div>
-                {filteredFeedback && filteredFeedback.length > 0 && (
-                  <button type="button" onClick={exportFeedbackCsv} className={csvLinkCls}>
-                    CSV İndir
-                  </button>
-                )}
-              </div>
-
               {feedback === null ? (
                 <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>
               ) : feedback.length === 0 ? (
