@@ -1106,6 +1106,18 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **Gönder/al gerçek zamanlı.** İki hesapla (biri web olabilir) aynı
       Canlı oyunu aç, mobilden mesaj gönder → web'de ~1sn içinde görünmeli
       (ve tersi). Mesajlar en YENİ üstte sıralanmalı.
+- [ ] **Uyarı pencerelerinin tasarımı (Parça 102).** Yeni mesaj popup'ı,
+      sohbet tanıtımı, "Pas Geçiyorsun!", "Tekrar Oyna", "Sınır İhlali!" ve
+      arkadaşlık onayları — HEPSİ web'in kartıyla aynı görünmeli: panel
+      zemini, yumuşak düşen gölge, yuvarlatılmış köşe, altta MAVİ dolgulu
+      kabul + gri nötr vazgeç butonu (Material'ın beyaz kartı ve mavi METİN
+      butonları DEĞİL). Kabul butonu her zaman SOLDA. Dar bir telefonda kart
+      ekranın iki yanında yalnızca 16px boşluk bırakmalı (eskiden 40'tı).
+      Referans görüntü: `mobile/app/build/screenshots/dialog_message_popup.png`.
+- [ ] **Popup kapanınca nokta temizlenir (HATA DEĞİL).** Popup çıktıysa
+      kapatmak (CEVAP VER / KAPAT — ikisi de) o mesajı okundu sayar, yani
+      kırmızı nokta kalmaz. Bu bilinçli ve web'de de aynı; noktanın kalıcı
+      olduğu tek durum susturulmuş göndericidir (popup hiç çıkmaz).
 - [ ] **Popup + rozet.** Sohbet KAPALIYKEN karşı taraf mesaj gönderirse
       Board'daki "Mesajlaşma" butonunda kırmızı nokta + bir popup
       ("CEVAP VER"/"KAPAT") çıkmalı; CEVAP VER sohbeti açmalı. Sohbet
@@ -1141,10 +1153,20 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       Ağustos'ta yazıldı ama yanlış bir SQL overload'ına uygulandığı için 10
       gün üretimde hiç çalışmadı; bu madde onun ilk gerçek uçtan uca
       kontrolü.)
-- [ ] **Canlı davet yanıtı ağ hatasında sessiz KALMAMALI (Parça 90).**
-      Uçak modunda "Oyun Davetleri"nde bir davete Kabul Et ya da Reddet'e
-      bas → **"İşlem başarısız oldu."** görünmeli. Önceden hiçbir şey
-      olmuyordu (kart yerinde duruyor, ekranda açıklama yok).
+- [ ] **Çevrimdışıyken davete BASILAMAZ (15 Ağustos 2026'da ölçüldü —
+      madde bu yönde DÜZELTİLDİ).** Uçak modunda "Oyun Davetleri" alt
+      sekmesi tek bir **"İnternet bağlantısı yok"** ekranı göstermeli;
+      davet kartı (dolayısıyla Kabul Et/Reddet) hiç çizilmemeli. Çevrimiçi
+      olunca kart geri gelmeli.
+      **Bu madde bir dönem "uçak modunda davete bas → 'İşlem başarısız
+      oldu.' çıkmalı" diyordu ve YANLIŞTI:** o metin Parça 90'da yazıldı,
+      AYNI GÜN Parça 96 sekmeyi çevrimdışı kapısının arkasına aldı ve
+      senaryo ulaşılamaz hâle geldi. `kFriendActionFailed` yine de ölü kod
+      DEĞİL — bağlantı sinyali "online" derken isteğin düştüğü durumlar
+      (captive portal, sunucu/RLS hatası, sekme çizildikten sonra kopan
+      bağlantı) hâlâ o dala düşüyor; orada mesaj görünmeli.
+      **Arkadaşlık isteklerinin (FriendsModal) yanıtı bu kapının DIŞINDA**
+      — orada çevrimdışı gate YOK, bkz. bölüm 10'daki kendi maddesi.
 - [ ] **Mesaj balonuna dokunma.** Karşı tarafın bir mesaj balonuna
       doğrudan dokun (rozet olmasa bile) → o kişinin ayarlar detayı
       açılmalı. Kendi mesajına dokununca hiçbir şey olmamalı.

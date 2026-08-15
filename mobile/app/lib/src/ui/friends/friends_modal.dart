@@ -30,6 +30,7 @@ import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../auth/k_avatar.dart';
 import '../game/count_badge.dart';
+import '../game/dialog_shell.dart';
 import '../game/modal_shell.dart';
 import '../game/neo_button.dart';
 import '../score/player_score_card_modal.dart';
@@ -922,107 +923,21 @@ Future<bool> confirmFriendAction(
   required String title,
   required String message,
   required String confirmLabel,
-}) async {
-  final ok = await showDialog<bool>(
-    context: context,
-    builder: (context) => Dialog(
-      backgroundColor: kPanel,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFB8C2D1)),
-      ),
-      // Web `ConfirmDialog`: `max-w-sm` (384px) — Flutter'ın `Dialog`ı
-      // VARSAYILAN OLARAK yalnızca `minWidth: 280` taşıyor, üst sınır YOK
-      // (kaynak: dialog.dart, `constraints ?? ... ?? BoxConstraints
-      // (minWidth: 280.0)`). Geniş bir ekranda (iPad) bu, `insetPadding`in
-      // bıraktığı TÜM genişliğe yayılıp diyaloğu "upuzun" gösteriyordu
-      // (9 Ağustos 2026, kullanıcı ekran görüntüsüyle bildirdi).
-      constraints: const BoxConstraints(maxWidth: 384),
-      child: Padding(
-        // web `p-6` = 24 (13 Ağustos 2026: port 20 kullanıyordu — dolgu
-        // kutunun İÇİNDE olduğundan yapı doğruydu ama DEĞER sapmıştı,
-        // içerik 344 yerine 336 olmalı).
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.bold, color: _text)),
-            const SizedBox(height: 10),
-            Text(message,
-                style: const TextStyle(
-                    fontSize: 13, height: 1.5, color: _text)),
-            const SizedBox(height: 16),
-            Row(children: [
-              Expanded(
-                child: NeoButton(
-                  label: trUpper(confirmLabel),
-                  variant: NeoButtonVariant.accent,
-                  fontSize: 11,
-                  letterSpacing: 1,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  onPressed: () => Navigator.of(context).pop(true),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: NeoButton(
-                  label: 'VAZGEÇ',
-                  variant: NeoButtonVariant.neutral,
-                  fontSize: 11,
-                  letterSpacing: 1,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  onPressed: () => Navigator.of(context).pop(false),
-                ),
-              ),
-            ]),
-          ],
-        ),
-      ),
-    ),
+}) {
+  // Web `ConfirmDialog` (FriendsModal.tsx) App.tsx'in onay popup'larıyla
+  // BİREBİR AYNI sınıfları taşıyor — yani tek kanonik kart var, o da
+  // `dialog_shell.dart`. Bu dosya bir dönem kartı ELLE çizdi ve değerleri
+  // sapmıştı (başlık 15/gövde 13/buton 11, gölge yok); 15 Ağustos 2026'da
+  // ortak kabuğa bağlandı.
+  return showKConfirm(
+    context,
+    title: title,
+    message: message,
+    confirmLabel: trUpper(confirmLabel),
   );
-  return ok ?? false;
 }
 
 /// Web InfoDialog — tek "Tamam" butonlu sonuç mesajı.
 Future<void> showFriendInfoDialog(BuildContext context, String message) {
-  return showDialog<void>(
-    context: context,
-    builder: (context) => Dialog(
-      backgroundColor: kPanel,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFB8C2D1)),
-      ),
-      // bkz. confirmFriendAction'daki aynı gerekçe — Dialog'un varsayılan
-      // üst genişlik sınırsızlığı.
-      constraints: const BoxConstraints(maxWidth: 384),
-      child: Padding(
-        // web `p-6` = 24 (13 Ağustos 2026: port 20 kullanıyordu — dolgu
-        // kutunun İÇİNDE olduğundan yapı doğruydu ama DEĞER sapmıştı,
-        // içerik 344 yerine 336 olmalı).
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(message,
-                style: const TextStyle(
-                    fontSize: 13, height: 1.5, color: _text)),
-            const SizedBox(height: 16),
-            NeoButton(
-              label: 'TAMAM',
-              variant: NeoButtonVariant.accent,
-              fontSize: 11,
-              letterSpacing: 1,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
+  return showKInfo(context, message: message);
 }

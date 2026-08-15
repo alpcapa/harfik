@@ -53,6 +53,7 @@ import '../chat/chat_modal.dart';
 import '../chat/chat_settings_modal.dart';
 import '../feedback/feedback_modal.dart';
 import '../game/board_widget.dart';
+import '../game/dialog_shell.dart';
 import '../game/game_header.dart';
 import '../game/game_over_modal.dart';
 import '../game/help_modal.dart';
@@ -495,22 +496,15 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     final flags = storageFuture == null ? null : (await storageFuture).flags;
     if (!mounted) return;
     if (flags != null && !flags.seenChatIntro) {
-      final proceed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Oyun içi mesajlaşmaya hoşgeldiniz!'),
-          content: const Text(
-              'Buradan gruba mesaj atabilirsiniz. Mesaj herkesin ekranında '
-              'popup şeklinde gözükür. Haydi, ilk mesajını gönder!'),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('DEVAM'),
-            ),
-          ],
-        ),
+      // Tek butonlu kart — web'de de buton TAM GENİŞLİK (showKInfo).
+      await showKInfo(
+        context,
+        title: 'Oyun içi mesajlaşmaya hoşgeldiniz!',
+        message: 'Buradan gruba mesaj atabilirsiniz. Mesaj herkesin ekranında '
+            'popup şeklinde gözükür. Haydi, ilk mesajını gönder!',
+        buttonLabel: 'DEVAM',
       );
-      if (proceed != true || !mounted) return;
+      if (!mounted) return;
       await flags.markChatIntroSeen();
     }
     _openChatModal();
@@ -601,23 +595,33 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
               : _chatParticipants
                   .where((p) => p.userId == popup.senderUserId)
                   .firstOrNull;
-          return AlertDialog(
+          // Web'de başlık avatar + isim satırı (28px avatar, 14px kalın
+          // isim), gövde düz mesaj metni, altta CEVAP VER (accent) + KAPAT.
+          return KDialogCard(
             title: Row(children: [
-              KAvatar(url: sender?.avatarUrl, name: sender?.name ?? 'Oyuncu'),
+              KAvatar(
+                  url: sender?.avatarUrl,
+                  name: sender?.name ?? 'Oyuncu',
+                  size: 28),
               const SizedBox(width: 8),
               Expanded(
                   child: Text(sender?.name ?? 'Oyuncu',
-                      overflow: TextOverflow.ellipsis)),
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: kText))),
             ]),
-            content: Text(popup?.message ?? ''),
+            content: Text(popup?.message ?? '', style: kDialogBodyStyle),
             actions: [
-              TextButton(
+              kDialogButton(
+                label: 'CEVAP VER',
+                variant: NeoButtonVariant.accent,
                 onPressed: () => Navigator.of(context).pop('reply'),
-                child: const Text('CEVAP VER'),
               ),
-              TextButton(
+              kDialogButton(
+                label: 'KAPAT',
                 onPressed: () => Navigator.of(context).pop('close'),
-                child: const Text('KAPAT'),
               ),
             ],
           );
@@ -853,25 +857,13 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
 
   Future<void> _handlePass() async {
     if (!_canAct || _busy) return;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Pas Geçiyorsun!'),
-        content: const Text(
-            'Pas geçmek istediğinden emin misin? Sıran diğer oyuncuya geçer.'),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('PAS GEÇ'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('VAZGEÇ'),
-          ),
-        ],
-      ),
+    final ok = await showKConfirm(
+      context,
+      title: 'Pas Geçiyorsun!',
+      message: 'Pas geçmek istediğinden emin misin? Sıran diğer oyuncuya geçer.',
+      confirmLabel: 'PAS GEÇ',
     );
-    if (ok != true || !mounted) return;
+    if (!ok || !mounted) return;
     setState(() => _busy = true);
     try {
       await widget.onlineGames
@@ -895,29 +887,16 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
           s.name ?? 'Bir arkadaşın'
     ];
     final withAi = widget.game.slots.any((s) => s.isAi);
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tekrar Oyna'),
-        content: Text(
-          '${names.join(', ')} ile aynı kadroda yeni bir oyun açılacak ve '
+    // Kabul butonu SOLDA (Parça 25 kuralı) — showKConfirm bunu garanti eder.
+    final ok = await showKConfirm(
+      context,
+      title: 'Tekrar Oyna',
+      message: '${names.join(', ')} ile aynı kadroda yeni bir oyun açılacak ve '
           'davet gönderilecek.'
           '${withAi ? ' 4. koltuk yine Yapay Zeka olacak.' : ''} Emin misin?',
-        ),
-        // Kabul butonu SOLDA (Parça 25 kuralı — web'in düzeniyle aynı).
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('TEKRAR OYNA'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('VAZGEÇ'),
-          ),
-        ],
-      ),
+      confirmLabel: 'TEKRAR OYNA',
     );
-    if (ok != true || !mounted) return;
+    if (!ok || !mounted) return;
     setState(() => _busy = true);
     String? error;
     try {
@@ -934,25 +913,18 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
       if (mounted) setState(() => _busy = false);
     }
     if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tekrar Oyna'),
-        content: Text(error ??
-            'Davetiniz gönderilmiştir.\n\n'
-                '${names.join(', ')} yanıt verince oyun başlayacak.'
-                '${withAi ? ' 4. koltuk Yapay Zeka.' : ''}'),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
-            // web'de bu iki durum AYRI dallar: gönderim başarılıysa "Tamam",
-            // sunucu reddettiyse "Kapat" (OnlineGameScreen.tsx, `sent` vs
-            // `error` fazı). Port ikisini tek diyalogda birleştirdiğinden
-            // etiket içeriğe göre seçiliyor.
-            child: Text(error == null ? 'TAMAM' : 'KAPAT'),
-          ),
-        ],
-      ),
+    await showKInfo(
+      context,
+      title: 'Tekrar Oyna',
+      message: error ??
+          'Davetiniz gönderilmiştir.\n\n'
+              '${names.join(', ')} yanıt verince oyun başlayacak.'
+              '${withAi ? ' 4. koltuk Yapay Zeka.' : ''}',
+      // web'de bu iki durum AYRI dallar: gönderim başarılıysa "Tamam",
+      // sunucu reddettiyse "Kapat" (OnlineGameScreen.tsx, `sent` vs `error`
+      // fazı). Port ikisini tek diyalogda birleştirdiğinden etiket içeriğe
+      // göre seçiliyor.
+      buttonLabel: error == null ? 'TAMAM' : 'KAPAT',
     );
     // Başarıda listeye dön — yeni oyun "Rakip Bekleniyor" kovasında görünür.
     if (error == null && mounted) Navigator.of(context).pop();

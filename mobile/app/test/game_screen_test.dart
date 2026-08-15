@@ -23,7 +23,9 @@ import 'package:kelimeki/src/ui/game/rack_widget.dart';
 import 'package:kelimeki/src/ui/game/remaining_tiles_modal.dart';
 import 'package:kelimeki/src/ui/game/tile_widget.dart';
 import 'package:kelimeki/src/ui/game/wild_letter_sheet.dart';
-import 'package:kelimeki/src/ui/game/neo_button.dart' show NeoButton;
+import 'package:kelimeki/src/ui/game/dialog_shell.dart' show KDialogCard;
+import 'package:kelimeki/src/ui/game/neo_button.dart'
+    show NeoButton, NeoButtonVariant;
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import 'support/test_fonts.dart';
@@ -378,11 +380,18 @@ void main() {
     );
 
     // Buton sırası web'le aynı: kabul (PAS GEÇ) solda, VAZGEÇ sağda —
-    // AlertDialog.actions liste sırasıyla soldan sağa dizilir.
-    final acceptBtn = find.widgetWithText(FilledButton, 'PAS GEÇ');
-    final cancelBtn = find.widgetWithText(TextButton, 'VAZGEÇ');
+    // KDialogCard actions'ı liste sırasıyla soldan sağa diziyor. Butonlar
+    // artık Material değil NeoButton (web `btn-raised`/`btn-raised-neutral`,
+    // 15 Ağustos 2026 diyalog kabuğu) ve kabul olanın accent varyantı
+    // taşıması da sözleşmenin parçası.
+    final acceptBtn = find.descendant(of: find.byType(KDialogCard), matching: find.widgetWithText(NeoButton, 'PAS GEÇ'));
+    final cancelBtn = find.descendant(of: find.byType(KDialogCard), matching: find.widgetWithText(NeoButton, 'VAZGEÇ'));
     expect(acceptBtn, findsOneWidget);
     expect(cancelBtn, findsOneWidget);
+    expect(tester.widget<NeoButton>(acceptBtn).variant,
+        NeoButtonVariant.accent);
+    expect(tester.widget<NeoButton>(cancelBtn).variant,
+        NeoButtonVariant.neutral);
     expect(
       tester.getTopLeft(acceptBtn).dx,
       lessThan(tester.getTopLeft(cancelBtn).dx),
@@ -829,7 +838,7 @@ void main() {
 
     await tester.tap(find.text('TEKRAR OYNA'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'TEKRAR OYNA'));
+    await tester.tap(find.descendant(of: find.byType(KDialogCard), matching: find.widgetWithText(NeoButton, 'TEKRAR OYNA')));
     await tester.pumpAndSettle();
 
     expect(controller.state.isGameOver, isFalse);

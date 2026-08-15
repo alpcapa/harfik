@@ -18,6 +18,7 @@ import 'package:kelimeki/src/data/online_games_api.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/ui/game/neo_box.dart'
     show ShapeDecorationWithCssShadows;
+import 'package:kelimeki/src/ui/game/dialog_shell.dart' show KDialogCard;
 import 'package:kelimeki/src/ui/game/neo_button.dart' show NeoButton;
 import 'package:kelimeki/src/ui/tokens.dart' show kRed;
 import 'package:kelimeki/src/ui/game/board_widget.dart'
@@ -546,7 +547,7 @@ void main() {
       gw.submitFailWith = Exception('ClientException: Failed to fetch');
       await tester.tap(find.text('PAS GEÇ'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'PAS GEÇ'));
+      await tester.tap(find.descendant(of: find.byType(KDialogCard), matching: find.widgetWithText(NeoButton, 'PAS GEÇ')));
       await tester.pumpAndSettle();
       expect(find.text(kOfflineMoveNotice), findsOneWidget);
       expect(find.textContaining('Failed to fetch'), findsNothing);
@@ -554,7 +555,7 @@ void main() {
       gw.submitFailWith = Exception('Sıra sende değil.');
       await tester.tap(find.text('PAS GEÇ'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'PAS GEÇ'));
+      await tester.tap(find.descendant(of: find.byType(KDialogCard), matching: find.widgetWithText(NeoButton, 'PAS GEÇ')));
       await tester.pumpAndSettle();
       expect(find.textContaining('Sıra sende değil.'), findsOneWidget);
       await unmount(tester);
@@ -801,7 +802,7 @@ void main() {
 
       await tester.tap(find.text('PAS GEÇ'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'PAS GEÇ'));
+      await tester.tap(find.descendant(of: find.byType(KDialogCard), matching: find.widgetWithText(NeoButton, 'PAS GEÇ')));
       await tester.pumpAndSettle();
       expect(gw.submitted.single['action'], 'pass');
       await unmount(tester);
@@ -813,7 +814,7 @@ void main() {
 
       await tester.tap(find.text('PAS GEÇ'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'PAS GEÇ'));
+      await tester.tap(find.descendant(of: find.byType(KDialogCard), matching: find.widgetWithText(NeoButton, 'PAS GEÇ')));
       await tester.pumpAndSettle();
       expect(find.textContaining('Sıra sende değil.'), findsOneWidget);
       await unmount(tester);
@@ -963,7 +964,7 @@ void main() {
 
       await tester.tap(find.text('TEKRAR OYNA'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'TEKRAR OYNA'));
+      await tester.tap(find.descendant(of: find.byType(KDialogCard), matching: find.widgetWithText(NeoButton, 'TEKRAR OYNA')));
       await tester.pumpAndSettle();
 
       expect(gw.createdCounts, [2]);
@@ -993,7 +994,7 @@ void main() {
 
       await tester.tap(find.text('TEKRAR OYNA'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(FilledButton, 'TEKRAR OYNA'));
+      await tester.tap(find.descendant(of: find.byType(KDialogCard), matching: find.widgetWithText(NeoButton, 'TEKRAR OYNA')));
       await tester.pumpAndSettle();
 
       expect(find.text('Yalnızca arkadaşlarını davet edebilirsin.'),

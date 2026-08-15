@@ -11,6 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import '../tokens.dart';
+import 'dialog_shell.dart';
+import 'neo_button.dart';
 
 /// "Sınır İhlali!" onayı. `true` → oyuncu OYNA dedi.
 ///
@@ -48,21 +50,21 @@ Future<bool> showInvasionConfirm(
 
   final ok = await showDialog<bool>(
     context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Sınır İhlali!'),
+    builder: (context) => KDialogCard(
+      title: const Text('Sınır İhlali!', style: kDialogTitleStyle),
       content: Text.rich(TextSpan(
-          style: const TextStyle(
-              fontFamily: 'SpaceGrotesk', fontSize: 14, color: kText),
+          style: kDialogBodyStyle.copyWith(fontFamily: 'SpaceGrotesk'),
           children: spans)),
       actions: [
         // Kabul butonu SOLDA — web'in düz flex sırası (bkz. Parça 25).
-        FilledButton(
+        kDialogButton(
+          label: 'OYNA',
+          variant: NeoButtonVariant.accent,
           onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('OYNA'),
         ),
-        TextButton(
+        kDialogButton(
+          label: 'VAZGEÇ',
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('VAZGEÇ'),
         ),
       ],
     ),
