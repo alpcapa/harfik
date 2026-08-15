@@ -28,6 +28,7 @@ import 'package:kelimeki_core/kelimeki_core.dart'
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'online_api.dart';
+import '../util/platform.dart';
 import '../util/uuid.dart';
 
 enum OnlineGameStatus { pending, active, finished, abandoned }
@@ -270,6 +271,14 @@ abstract class OnlineGamesGateway {
   /// hesaplanır (rafı hiçbir istemciye gitmez, web güvenlik kararı).
   Future<void> triggerAiTurn(String gameId);
 
+  /// Bu oyunda ÇAĞIRANIN hangi istemciden oynadığını kaydeder
+  /// (`online_game_clients`, oyun+kullanıcı başına tek satır, upsert).
+  /// Yerelde platformu `games.platform` taşıyor ama Canlı'da o satırı SUNUCU
+  /// yazdığından istemcinin kim olduğu oraya hiç ulaşmıyor — mobil lansmanı
+  /// ölçülebilsin diye ayrı bir tabloya, oyun açılırken bir kez yazılır.
+  /// Web `setOnlineGamePlatform` ile aynı sözleşme.
+  Future<void> setPlatform(String gameId, String platform);
+
   Future<void> submitMove({
     required String gameId,
     required String action,
@@ -396,6 +405,12 @@ class SupabaseOnlineGamesGateway implements OnlineGamesGateway {
   @override
   Future<void> triggerAiTurn(String gameId) async {
     await client.functions.invoke('play-ai-turn', body: {'game_id': gameId});
+  }
+
+  @override
+  Future<void> setPlatform(String gameId, String platform) async {
+    await client.rpc<void>('set_online_game_platform',
+        params: {'p_game_id': gameId, 'p_platform': platform});
   }
 
   @override
@@ -570,6 +585,20 @@ class OnlineGamesRepo {
 
   Future<void> sweepTurnTimeout(String gameId) =>
       gateway.checkTurnTimeout(gameId).timeout(_callTimeout);
+
+  /// Platform telemetrisi — TAMAMEN fire-and-forget: bilinmeyen bir hedefte
+  /// (masaüstü) hiç çağrılmaz, hata yalnızca yutulur. Bir telemetri hatası
+  /// hiçbir zaman oyunu etkilememeli; sunucu tarafı da yetkisiz/geçersiz
+  /// girdide sessizce no-op dönüyor.
+  Future<void> reportPlatform(String gameId) async {
+    final p = currentPlatform;
+    if (p == null) return;
+    try {
+      await gateway.setPlatform(gameId, p).timeout(_callTimeout);
+    } catch (_) {
+      // yoksay
+    }
+  }
 
   /// Hamle gönderimi — hata FIRLATILIR (ekran mesaj satırında gösterir).
   Future<void> submitMove({

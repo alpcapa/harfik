@@ -363,6 +363,9 @@ mobile/
                              # ile sürükleme/joker/mesaj desenini PAYLAŞIR,
                              # biri değişirse öteki de güncellenmeli)
       util/semver.dart, util/uuid.dart, util/share_board.dart,
+      util/platform.dart      # bu istemcinin platformu (ios/android/app-web) —
+                             # telemetri; web `src/utils/platform.ts` karşılığı,
+                             # değer kümesi sunucu kısıtıyla ELLE senkron
     util/avatar_picker.dart # profil fotoğrafı seçimi (image_picker sarmalayıcısı,
                              # yalnızca galeri) — enjekte edilebilir PickAvatarFn
     android/ ios/            # flutter create çıktısı + elle değişiklikler (aşağı bkz.)
@@ -4118,6 +4121,153 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        "testsiz kaldı" notunun karşılığı: test yoksa cihaz turu opsiyonel
        değildir).
 
+   - ✅ **Parça 99 — port artık hangi istemci olduğunu SÖYLÜYOR: platform
+     telemetrisi (14 Ağustos 2026, yeni `util/platform.dart`,
+     `game_record.dart`, `online_games_api.dart`, `online_game_screen.dart`):**
+     Kullanıcı isteği ("Platform column'u da ekle"). Sunucu tarafı ve web
+     yarısı aynı gün eklendi (bkz. kök `CLAUDE.md`); bu parça portun yarısı.
+     - **Neden ŞİMDİ:** `games` satırında istemciyi söyleyen hiçbir alan
+       yoktu ve bu alan geriye dönük DOLDURULAMAZ — port yayına çıktıktan
+       sonra eklenirse lansmanın ilk günleri sonsuza dek ölçülemez kalırdı.
+       Port yazmazsa satırlar boş platformla gider, yani bu değişikliğin
+       varlık sebebi tam olarak portun kendisi.
+     - **`dart:io`'nun `Platform.isIOS`'ü KULLANILMADI** — `dart:io` web
+       derlemesinde yok, import etmek `flutter build web`i kırardı (portun
+       test ortamı `mobile-build.yml`de gerçekten derleniyor). `kIsWeb` +
+       `defaultTargetPlatform` her hedefte çalışıyor.
+     - **Bilinmeyen hedefte `null`, uydurma değer DEĞİL:** masaüstü
+       (macOS/Windows/Linux) yayınlanmıyor ama sunucudaki check kısıtında
+       olmayan bir değer yollamak `games` insert'ini DÜŞÜRÜR — yani bir
+       telemetri alanı yüzünden oyun KAYDI (skor, k-lig, hamle dökümü)
+       kaybolur. Sütun nullable, `null` satırı sorunsuz kaydediyor.
+     - **Yerel taraf `NewGameRecord`ta bir ALAN, `toJson`da hesaplanan bir
+       değer DEĞİL:** kayıt çevrimdışı kuyruğa serileşip günler sonra
+       gönderilebiliyor ve satır oyunun GERÇEKTEN oynandığı istemciyi
+       anlatmalı (web de kuyruğa aynı şekilde yazıyor). Alan eklenmeden
+       önce kuyruğa girmiş kayıtlarda `null` — `fromJson` bunu tolere
+       ediyor, kayıt yine gönderiliyor.
+     - **Canlı taraf AYRI bir tabloya yazıyor** (`online_game_clients`):
+       Canlı'da `games` satırını SUNUCU yazdığından istemcinin kim olduğu
+       oraya hiç ulaşmıyor. `reportPlatform` oyun ekranının `initState`inde
+       BİR KEZ, `_refresh()` döngüsünün DIŞINDA kendi satırında çağrılıyor
+       — telemetri, oyun durumu senkronuyla aynı kod yolunu paylaşmamalı
+       (hatası oyunu etkilemesin) ve her Realtime olayında tekrar yazmanın
+       anlamı yok (upsert olduğundan mükerrer çağrı zararsız, sadece
+       gereksiz). Hata TAMAMEN yutuluyor; sunucu da yetkisiz/geçersiz
+       girdide sessizce no-op dönüyor (canlıda doğrulandı).
+     - **`submit_move`'a parametre EKLENMEDİ** — projenin en kritik RPC'si,
+       lansman öncesi imza değişikliğinin riski kazancından büyük; gerekçe
+       ve ölçüm kök `CLAUDE.md`'de.
+     - **Değer kümesi testle bağlandı:** `test/client_platform_parity_test.dart`
+       migration SQL'ini OKUYUP `kClientPlatforms` ile karşılaştırıyor
+       (`color_tokens_test`/`rank_tiers_parity_test` deseni) — kısıt üç
+       yerde geçtiğinden üçü de ayrı ayrı sayılıyor, ve `currentPlatform`ın
+       her hedefte kümede (ya da null) kaldığı ayrıca doğrulanıyor.
+     - **Fikstür `platform` HARİÇ karşılaştırılıyor:** `web_game_record.json`
+       iki istemcinin AYNI satırı ürettiğini kanıtlar, ama bu alan tanımı
+       gereği farklı olmak ZORUNDA. Test onu ayırıp kalan 20 sütunu bayt
+       bayt karşılaştırıyor ve ayrıca "iki taraf da yazıyor + değerler
+       kümede + BİRBİRİNDEN farklı" diyor — sonuncusu olmadan port web'in
+       sabitini kopyalasa test geçerdi. Fikstürün `record` yarısı web'in
+       ÜRETİM kodu koşturularak yeniden üretildi (Parça 65'in cerrahi
+       yöntemi; anlamsal diff yalnızca iki `"platform": "web"` satırı).
+     - **Negatif eş, İKİ AYRI kanıt:** `kClientPlatforms`e sahte bir değer
+       eklenince parite testi GERÇEKTEN düştü (`does not contain 'desktop'`);
+       `NewGameRecord.toJson`dan `platform` çıkarılınca iki fikstür testi de
+       GERÇEKTEN düştü (`port platformu yazmıyor — lansman ölçülemez kalır`).
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 427/427
+       yeşil** (424'ten +3). `kelimeki_core`'a hiç dokunulmadı.
+     - **`mobile/` DIŞINDA dosya değişti** (web yarısı + migration + admin
+       paneli + Gizlilik Politikası) → kök `CLAUDE.md`/`README.md`/
+       `TESTING.md` aynı commit'te güncellendi (Kontrol Listesi madde 1).
+     - **Gizlilik metni İKİ tarafta birden güncellendi** — yeni bir kişisel
+       veri toplandığında `PrivacyModal`/`legal_modals.dart` güncellenmek
+       ZORUNDA (proje kuralı) ve `legal_text_test.dart` "Son güncelleme"
+       tarihlerini karşılaştırdığından port bayat kalsa test düşerdi.
+     - **Doğrulama sınırı:** gerçek bir cihazdan oynanan oyunun `ios`/
+       `android` satırına düştüğü ancak cihazda görülebilir —
+       `mobile/TESTING.md` bölüm 5'e ve kök `TESTING.md` 9.8'e maddeler
+       eklendi.
+
+   - ✅ **Parça 100 — kırmızı nokta artık mute'tan BAĞIMSIZ: susturulan
+     kişinin mesajı da rozeti artırır, yalnızca popup bastırılır (15 Ağustos
+     2026, `online_game_screen.dart`, `board_widget.dart` + web
+     `OnlineGameScreen.tsx`):** Bölüm 11'in mesajlaşma turunda kullanıcı önce
+     "T2 sessizdeymiş, o yüzden mesaj çıkmadı" dedi, sonra doğru soruyu
+     sordu ("mute etmiş kişide, mute edilmiş kişiden gelen mesaj kırmızı
+     nokta çıkarmıyor ama diğerlerinden gelirse çıkıyor mu?") ve ardından
+     ürün kararını kendisi verdi.
+     - **Bu bir hata düzeltmesi DEĞİL, bilinçli bir davranış değişikliği.**
+       Eski davranış (mute ikisini birden bastırır) web'de de portta da
+       tutarlıydı ve gerekçesi yazılıydı. Kullanıcının gerekçesi daha
+       güçlü çıktı: taciz vektörü POPUP; nokta rahatsız etmiyor, üstelik
+       susturulan kişinin ne yazdığını görmek şikayet etmenin ön koşulu
+       olabilir. Tam alıntı ve üç ayaklı gerekçe kök `CLAUDE.md`'de
+       ("Oyun İçi Mesajlaşma — Faz 2", ilk madde).
+     - **İKİ yerde birden değişti, tek yer YETMEZDİ:** ilk yüklemedeki
+       tohumlama (`_seedInitialUnread`) ve Realtime dalı (`_onChatMessage`).
+       Yalnızca birini değiştirmek, uygulama KAPALIYKEN gelen mesajlarla
+       AÇIKKEN gelenler arasında sessiz bir tutarsızlık üretirdi — aynı
+       kullanıcı aynı mesaj için bir gelişte nokta görür, ötekinde görmezdi.
+     - **`mutes` parametresi `_seedInitialUnread`'den KALDIRILDI**, imzada
+       ölü bir argüman olarak bırakılmadı; çağıran onu zaten `_chatState`e
+       (rozetler + popup kapısı) yüklemeye devam ediyor.
+     - **Mevcut testler bu değişikliği YAKALAYAMAZDI ve bu kayda değer:**
+       iki mute testi de yalnızca popup'ın açılMAdığını ölçüyordu; rozete
+       hiç bakmıyorlardı. Yani filtre yanlışlıkla "sohbet geneli sessize
+       alma"ya dönüşse bile takım yeşil kalırdı. Rozet için üretim koduna
+       bir `ValueKey('chat-unread-dot')` eklendi (projedeki `like-count-*`/
+       `moves-*` deseni) ve iki test de artık noktayı ölçüyor: susturulan
+       gönderende **popup YOK + nokta VAR**, susturulmamışta **ikisi de
+       VAR** (ikincisi olmadan "hiç nokta çıkmıyor" gibi ters bir regresyon
+       da geçerdi).
+     - **Negatif eş:** `online_game_screen.dart` `git stash`lenince mute
+       testi GERÇEKTEN düştü (`chat-unread-dot` bulunamadı), geri konunca
+       yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 427/427
+       yeşil** (yeni test yok — mevcut iki teste assertion eklendi). Web
+       `npm run lint` + `npm run build` + `npm run test` (Playwright 3/3)
+       temiz. `kelimeki_core`'a hiç dokunulmadı.
+     - **`mobile/` DIŞINDA dosya değişti** (web yarısı aynı gün, aynı
+       dalda) → kök `CLAUDE.md` + iki `TESTING.md` aynı commit'te
+       güncellendi (Parça Bitirme Kontrol Listesi madde 1).
+     - **Doğrulama sınırı:** iki gerçek hesapla cihazda teyit bekleniyor —
+       özellikle 4 kişilik bir oyunda "susturulmamış gönderen hâlâ popup
+       açıyor" kontrolü (2 kişilikte görünmez). Maddeler `mobile/TESTING.md`
+       bölüm 11 ve kök `TESTING.md` bölüm 3'e eklendi.
+
+   - ✅ **Parça 101 — "Yapay Zeka ile" sekme rozeti porta hiç girmemişti
+     (15 Ağustos 2026, `setup_screen.dart`):** Kullanıcı bölüm 11 turunda
+     ekran görüntüsüyle bildirdi: *"YZ bekleyen 2 oyun olmasına ve devam
+     edenlerde 2 yazmasına rağmen ana tabda sayı yok."*
+     - **Web kaynağı önce okundu (kuralın ilk adımı) ve kullanıcıyı
+       doğruladı:** `Setup.tsx`'in OYUN TİPİ satırı İKİ sekmeye de rozet
+       veriyor — `{label:'Yapay Zeka ile', badge: localSaveCount}` ve
+       `{label:'Arkadaşınla', badge: liveActionCount}`. Port yalnızca
+       ikincisini taşımıştı; `YAPAY ZEKA İLE` butonuna `badge` hiç
+       geçilmiyordu, `_ChoiceButton` de `badge<=0` iken Stack'i hiç
+       kurmadığından rozet TAMAMEN yoktu (soluk/sıfır değil, yok).
+     - **Formül web'den birebir:** `_localSaveCount` = girişliyse
+       `_cloudSaves?.length ?? 0`, misafirse `_savedState != null ? 1 : 0`
+       (web `user ? (cloudSaves?.length ?? 0) : savedGame ? 1 : 0`).
+     - **Bu, `CountBadge`'in "toplama kuralı"nın somut örneği** (kök
+       `CLAUDE.md`): kapsayan sekmenin rozeti kapsananların toplamı olmak
+       zorunda. Burada "Devam Edenler" alt sekmesi 2 gösterirken onu
+       KAPSAYAN "Yapay Zeka ile" hiçbir şey göstermiyordu — kullanıcının
+       gördüğü tutarsızlık tam olarak zincirin kopmasıydı.
+     - **Test İKİ rozeti birden ölçüyor**, yalnızca yenisini değil:
+       `badgeOf('DEVAM EDENLER') == badgeOf('YAPAY ZEKA İLE') == 2`.
+       Yalnızca üsttekine bakan bir test, ikisi ayrışsa da geçerdi — asıl
+       korunması gereken değişmez sayının kendisi değil EŞİTLİĞİ.
+     - **Negatif eş:** `setup_screen.dart` `git stash`lenince test
+       GERÇEKTEN kullanıcının semptomunu üretti (`Expected: <2> / Actual:
+       <null>` — yani rozet hiç yok), geri konunca yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım
+       428/428 yeşil** (427'den +1). Web'e hiç dokunulmadı (orada rozet
+       zaten doğru); `kelimeki_core`'a dokunulmadı.
+     - **Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor —
+       `mobile/TESTING.md` bölüm 11'e madde eklendi.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 14 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
@@ -4162,6 +4312,11 @@ ankrajı (Parça 86), HEIC seçimi ve galeri izni reddi (Parça 87).
 Son iki günde düzeltme yapıldıkça listeye madde eklendi ama o maddeler
 hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
 
+- **15 Ağustos (Parça 101):** "YAPAY ZEKA İLE" sekme rozeti = "Devam
+  Edenler" alt sekmesinin rozetiyle aynı sayı
+- **15 Ağustos (Parça 100):** susturulmuş gönderende kırmızı nokta ÇIKMALI
+  (popup çıkmamalı); 4 kişilik oyunda susturulmamış gönderende ikisi de
+  çıkmalı (iki platform)
 - **14 Ağustos (Parça 96):** çevrimdışı Canlı oyun — açılışta panel +
   hamlede açıklayıcı uyarı (iki platform)
 - **14 Ağustos (Parça 95) — Canlı turunun BEŞ düzeltmesi, hiçbiri cihazda

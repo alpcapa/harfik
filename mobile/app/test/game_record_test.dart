@@ -17,6 +17,7 @@ import 'package:kelimeki/src/data/game_record.dart';
 import 'package:kelimeki/src/data/games_api.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:kelimeki/src/storage/pending_queue_store.dart';
+import 'package:kelimeki/src/util/platform.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -69,13 +70,33 @@ void main() {
     );
   }
 
+  /// `platform` HARİÇ karşılaştırma — o alan, satırdaki TEK bilinçli
+  /// istemci farkı (web `'web'`, port ios/android/app-web) ve zaten
+  /// varlık sebebi bu. Kalan 20 sütun hâlâ bayt bayt eşleşmek zorunda;
+  /// alanın kendisi aşağıda AYRICA doğrulanıyor (iki taraf da yazmalı,
+  /// değerler kısıtın izin verdiği kümede olmalı ve BİRBİRİNDEN farklı
+  /// olmalı — aksi halde port web'in sabitini kopyalamış olurdu).
+  void expectSameRowExceptPlatform(
+      NewGameRecord record, Map<String, Object?> expected) {
+    final actual = record.toJson();
+    expect(actual.containsKey('platform'), isTrue,
+        reason: 'port platformu yazmıyor — lansman ölçülemez kalır');
+    expect(expected.containsKey('platform'), isTrue,
+        reason: 'fikstür bayat: web artık platform yazıyor, yeniden üret');
+    expect(kClientPlatforms, contains(actual['platform']));
+    expect(kClientPlatforms, contains(expected['platform']));
+    expect(actual['platform'], isNot(expected['platform']));
+    expect(jsonEncode({...actual}..remove('platform')),
+        jsonEncode({...expected}..remove('platform')));
+  }
+
   group('buildGameRecord ↔ web üretim kodu (fikstür karşılaştırması)', () {
     test('normal biten oyun: satır BİREBİR aynı', () {
       final (state, expected) = scenario('finishedNormal');
       final record = buildGameRecord(state,
           surrendered: false, newId: () => fixedId, now: () => fixedNow);
       expect(record, isNotNull);
-      expect(jsonEncode(record!.toJson()), jsonEncode(expected));
+      expectSameRowExceptPlatform(record!, expected);
       // Fikstürün gerçekten zengin olduğunun kanıtı (boş bir tahta
       // karşılaştırması bir şey ispatlamazdı).
       expect(record.boardSnapshot.length, greaterThan(90));
@@ -91,7 +112,7 @@ void main() {
           newId: () => fixedId,
           now: () => fixedNow);
       expect(record, isNotNull);
-      expect(jsonEncode(record!.toJson()), jsonEncode(expected));
+      expectSameRowExceptPlatform(record!, expected);
       // Teslim olan oyuncu 0 puanla EN SONA düşer (rankPlayers kuralı) ve
       // sonuç her zaman 'lose' (rank'tan bağımsız).
       expect(record.result, GameResult.lose);

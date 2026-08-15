@@ -329,6 +329,16 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
         widget.onlineGames.subscribeGame(widget.game.id, () => _refresh());
     _periodic = Timer.periodic(_periodicRefresh, (_) => _refresh());
     unawaited(_loadChat());
+    // Platform telemetrisi — bu oyunda BU kullanıcının hangi istemciden
+    // (ios/android/app-web) oynadığını oyun başına bir kez yazar. Yerelde bu
+    // bilgi `games.platform` ile gidiyor ama Canlı'da o satırı sunucu
+    // yazdığından istemci oraya hiç ulaşamıyor; mobil lansmanı ölçülebilsin
+    // diye ayrı bir tablo kullanılıyor (web `setOnlineGamePlatform` ile aynı).
+    // BİLEREK `_refresh()` döngüsünün DIŞINDA: telemetri, oyun durumu
+    // senkronuyla aynı kod yolunu paylaşmamalı (hatası oyunu etkilemesin) ve
+    // her Realtime olayında tekrar yazmanın anlamı yok — upsert olduğundan
+    // mükerrer çağrı zararsız, sadece gereksiz.
+    unawaited(widget.onlineGames.reportPlatform(widget.game.id));
   }
 
   @override
@@ -410,7 +420,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     ];
     _chatState.update(
         messages: msgs, mutedUserIds: mutes, reportedUserIds: reported);
-    await _seedInitialUnread(msgs, mutes);
+    await _seedInitialUnread(msgs);
   }
 
   /// Bu cihazda bu oyun için "en son okunan mesaj" damgası hiç yoksa (özellik
@@ -419,8 +429,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   /// mesaja (yoksa şimdiye) oturtulup okunmamış sayaç 0'da kalır; kırmızı
   /// nokta yalnızca BUNDAN SONRA gelecek gerçek yeni mesajlar için çıkar
   /// (web `getChatLastReadAt`/`markChatRead` ilk-ziyaret düzeltmesi).
-  Future<void> _seedInitialUnread(
-      List<ChatMessage> msgs, Set<String> mutes) async {
+  Future<void> _seedInitialUnread(List<ChatMessage> msgs) async {
     final storageFuture = widget.storage;
     final store = storageFuture == null ? null : (await storageFuture).chatRead;
     final lastReadMs =
@@ -435,11 +444,16 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
       if (mounted) _chatState.update(unreadCount: 0);
       return;
     }
+    // Sessize alma kırmızı noktayı ETKİLEMEZ (15 Ağustos 2026, kullanıcı
+    // kararı) — mute yalnızca POPUP'ı bastırır. Gerekçe: oyunu bölen ve taciz
+    // vektörü olan şey popup; alttaki nokta rahatsız etmiyor ve kullanıcı
+    // susturduğu kişinin ne yazdığını görmek isteyebilir (şikayet için bile).
+    // Mute seti bu yüzden buraya artık hiç geçmiyor; çağıran onu yalnızca
+    // rozetler (🚫/🚩) ve popup kapısı için yüklemeye devam ediyor.
     final unread = msgs
         .where((m) =>
             m.senderUserId != widget.myUserId &&
-            DateTime.parse(m.createdAt).millisecondsSinceEpoch > lastReadMs &&
-            !mutes.contains(m.senderUserId))
+            DateTime.parse(m.createdAt).millisecondsSinceEpoch > lastReadMs)
         .length;
     if (mounted) _chatState.update(unreadCount: unread);
   }
@@ -458,9 +472,11 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
       unawaited(_markChatReadTo(row.createdAt));
       return;
     }
+    // Nokta HER gönderen için artar; popup yalnızca susturulmamış kişiler
+    // için açılır (bkz. _seedInitialUnread'deki gerekçe).
+    _chatState.update(unreadCount: _chatState.unreadCount + 1);
     if (_chatState.mutedUserIds.contains(row.senderUserId)) return;
-    _chatState.update(
-        newMessagePopup: msg, unreadCount: _chatState.unreadCount + 1);
+    _chatState.update(newMessagePopup: msg);
     if (!_popupDialogActive) unawaited(_showNewMessagePopup());
   }
 

@@ -249,7 +249,7 @@ class PrivacyModal extends StatelessWidget {
       child: _StackedSections([
         const _P('Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, '
             'hangi verileri topladığımızı, nasıl kullandığımızı ve '
-            'haklarınızı açıklar. Son güncelleme: 10 Ağustos 2026.'),
+            'haklarınızı açıklar. Son güncelleme: 14 Ağustos 2026.'),
         const _Section('1. Veri Sorumlusu', [
           _P('Kelimeki, herhangi bir şirket ya da tüzel kişilik '
               'bulunmaksızın, bağımsız bir geliştirici tarafından bireysel '
@@ -280,6 +280,10 @@ class PrivacyModal extends StatelessWidget {
             'Canlı oyunlarda gönderdiğiniz oyun içi sohbet mesajları',
             'Bir Canlı oyunda kimleri sessize aldığınız ve gönderdiğiniz '
                 'uygunsuz paylaşım şikayetleri (şikayetin nedeni dahil)',
+            'Bir oyunu hangi istemciden oynadığınız (web sitesi ya da mobil '
+                'uygulama) — yalnızca hangi platformun ne kadar kullanıldığını '
+                'ölçmek için; cihaz kimliği, marka/model ya da işletim sistemi '
+                'sürümü gibi hiçbir ek bilgi toplanmaz',
           ]),
         ]),
         const _Section('3. Verilerin Kullanım Amacı ve Hukuki Sebebi', [

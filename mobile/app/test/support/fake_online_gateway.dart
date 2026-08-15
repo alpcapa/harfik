@@ -37,6 +37,12 @@ class FakeOnlineGamesGateway implements OnlineGamesGateway {
 
   final submitted = <Map<String, Object?>>[];
   final aiTriggers = <String>[];
+
+  /// `set_online_game_platform` çağrıları — (gameId, platform).
+  final platformReports = <(String, String)>[];
+
+  /// Telemetri hatasının oyunu ETKİLEMEDİĞİNİ kanıtlamak için.
+  Object? platformFailWith;
   int gameStateCalls = 0;
   int gameSubscribeCount = 0;
   int gameUnsubscribeCount = 0;
@@ -141,6 +147,13 @@ class FakeOnlineGamesGateway implements OnlineGamesGateway {
     final f = aiFailWith;
     if (f != null) throw f;
     aiTriggers.add(gameId);
+  }
+
+  @override
+  Future<void> setPlatform(String gameId, String platform) async {
+    final f = platformFailWith;
+    if (f != null) throw f;
+    platformReports.add((gameId, platform));
   }
 
   @override

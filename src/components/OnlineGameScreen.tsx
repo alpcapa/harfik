@@ -62,6 +62,7 @@ import {
   getMyOnlineRack,
   isValidWordRemote,
   sendOnlineGameMessage,
+  setOnlineGamePlatform,
   submitMove,
   subscribeOnlineGameMessages,
   subscribeOnlineGameState,
@@ -340,6 +341,20 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   // ardışık refresh'lerini üst üste bindirme" korumasını taşıyor.
   const timeoutCheckingRef = useRef(false);
 
+  // Platform telemetrisi (14 Ağustos 2026) — bu oyunda BU kullanıcının hangi
+  // istemciden (web/ios/android/app-web) oynadığını oyun başına bir kez
+  // yazar. Yerel oyunlarda bu bilgi `games.platform` ile geliyor ama Canlı'da
+  // o satırı sunucu yazdığından istemci oraya hiç ulaşamıyor; mobil lansmanı
+  // ölçülebilsin diye ayrı bir tablo (`online_game_clients`) kullanılıyor.
+  // BİLEREK refresh() döngüsünün DIŞINDA, kendi effect'inde: telemetri, oyun
+  // durumu senkronuyla aynı kod yolunu paylaşmamalı (bir hatası oyunu
+  // etkilemesin) ve her Realtime olayında tekrar yazılmasının anlamı yok —
+  // upsert olduğundan mükerrer çağrı zararsız, sadece gereksiz.
+  useEffect(() => {
+    if (mySlotIndex < 0) return;
+    void setOnlineGamePlatform(game.id);
+  }, [game.id, mySlotIndex]);
+
   useEffect(() => {
     if (mySlotIndex < 0) return;
     let cancelled = false;
@@ -455,10 +470,10 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     if (mySlotIndex < 0) return;
     let cancelled = false;
     // Mute/rapor setleri ile mesaj listesi BİRLİKTE (Promise.all) çekiliyor
-    // ki aşağıdaki ilk "okunmamış" hesaplaması güncel mute setini kullansın
-    // — ikisi ayrı/bağımsız fetch olsaydı hangi önce bittiği garanti
-    // olmadığından, soğuk yüklemede sessize alınmış birinin mesajı yanlışlıkla
-    // bir an için okunmamış sayılabilirdi.
+    // ki baloncukların yanındaki 🚫/🚩 rozetleri mesajlarla AYNI anda
+    // görünsün — ikisi ayrı/bağımsız fetch olsaydı hangisinin önce bittiği
+    // garanti olmadığından, soğuk yüklemede rozetsiz bir an oluşabilirdi.
+    // (Okunmamış sayacı 15 Ağustos 2026'dan beri mute'a bakmıyor, aşağı bkz.)
     // Ön plana dönüşte de çağrılabilsin diye bir fonksiyona alındı — aşağıya
     // bkz. Realtime kanalı askıya alınırsa kaçırılan mesaj kalıcı olarak
     // kaybolduğundan ilk yükleme tek başına yetmiyor.
@@ -493,11 +508,13 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
         setUnreadCount(0);
         return;
       }
-      // Faz 2: sessize alınmış birinin geçmiş mesajları da (mute'tan önce
-      // gelmiş olsalar bile) okunmamış sayılmıyor — mute'un amacı zaten bu
-      // kişiden rahatsız olunmasını engellemek.
+      // Sessize alma kırmızı noktayı ETKİLEMEZ (15 Ağustos 2026, kullanıcı
+      // kararı) — mute yalnızca POPUP'ı bastırır. Gerekçe: oyunu bölen ve
+      // taciz vektörü olan şey popup; alttaki nokta rahatsız etmiyor, üstelik
+      // kullanıcı susturduğu kişinin ne yazdığını görmek isteyebilir (şikayet
+      // etmek için bile). Önceden mute ikisini birden bastırıyordu.
       const unread = rows.filter(
-        (r) => r.sender_user_id !== myUserId && r.created_at > lastReadAt && !mutes.has(r.sender_user_id),
+        (r) => r.sender_user_id !== myUserId && r.created_at > lastReadAt,
       ).length;
       setUnreadCount(unread);
       });
@@ -506,9 +523,11 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     const unsubscribe = subscribeOnlineGameMessages(game.id, (row) => {
       setChatMessages((cur) => (cur.some((m) => m.id === row.id) ? cur : [...cur, row]));
       setShowChat((open) => {
-        if (!open && !mutedUserIdsRef.current.has(row.sender_user_id)) {
-          setNewMessagePopup(row);
+        if (!open) {
+          // Nokta HER gönderen için artar; popup yalnızca susturulmamış
+          // kişiler için açılır (bkz. yukarıdaki gerekçe).
           setUnreadCount((n) => n + 1);
+          if (!mutedUserIdsRef.current.has(row.sender_user_id)) setNewMessagePopup(row);
         }
         return open;
       });

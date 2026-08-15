@@ -581,6 +581,19 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       artık otomatik zorluyor (`test/legal_text_test.dart`), bu madde
       yalnızca metnin ekranda gerçekten doğru göründüğünün teyidi.
 
+- [ ] **Platform telemetrisi (14 Ağustos 2026).** Uygulamada bir YZ oyunu
+      SONUNA kadar bitir (yarıda bırakma — satır ancak bitince yazılıyor).
+      Sonra kelimeki.com'da admin hesabıyla Admin Paneli → Büyüme →
+      Kullanıcı → **Platform** tablosuna bak: native derlemede `iOS`/
+      `Android`, GitHub Pages web derlemesinde `App (Tarayıcı)` satırının
+      "Oyun" sayısı 1 artmalı — `Web` satırı DEĞİL (o, kelimeki.com'dan
+      oynananlar). Bu, portun kendi platformunu gerçekten yazdığının tek
+      uçtan uca kanıtı; kolon geriye dönük doldurulamıyor.
+- [ ] **Canlı oyunda da yazılıyor.** Bir Canlı oyunu aç (bitirmeye gerek
+      YOK — satır oyun açılırken yazılıyor) ve bitiminde aynı tabloda kendi
+      istemcinin satırında görün. Rakip web'den oynadıysa iki AYRI satır
+      artmalı.
+
 ## 6. Paylaşma
 
 - [ ] **Paylaş menüsü.** Açık tahta önizlemesine dokun → alttan
@@ -895,6 +908,13 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       davet varsa (test için `created_at` SQL ile geriye çekilebilir)
       liste açılınca kendiliğinden kaybolmalı (`check_invite_expiry`) —
       davetLİnin listesinde de (hayalet davet regresyonu).
+- [ ] **Setup'taki "Yapay Zeka ile (N)" rozeti (15 Ağustos 2026, Parça
+      101).** Girişliyken devam eden N adet YZ oyunun varken kurulum
+      ekranını aç: "YAPAY ZEKA İLE" sekme butonunun sağ üstünde N rozeti
+      olmalı ve bu sayı hemen altındaki **"DEVAM EDENLER" alt sekmesinin
+      rozetiyle AYNI** olmalı (kapsayan sekme = kapsananların toplamı).
+      Regresyon belirtisi: alt sekmede sayı var, üstteki sekmede hiç yok.
+      Misafirken tek slot olduğundan rozet 0 ya da 1 olur.
 - [ ] **Setup'taki "Arkadaşınla (N)" rozeti.** Bekleyen bir davetin/sırası
       sende olan bir oyunun varken uygulamayı aç: kurulum ekranındaki
       "ARKADAŞINLA" sekme butonunun sağ üst köşesinde kırmızı bir sayı
@@ -1098,9 +1118,13 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **Sessize alma.** Dişli ikonundan bir katılımcıyı seç → "Kişiyi
       Sessize Al" → onay → 🚫 rozeti hem ayarlar listesinde hem o kişinin
       mesaj balonlarının yanında görünmeli. O kişiden yeni bir mesaj
-      gelirse popup AÇILMAMALI ama mesaj sohbet geçmişinde görünmeye
-      devam etmeli. Aynı kişiyle BAŞKA bir Canlı oyun aç — sessize alma
-      hâlâ geçerli olmalı (durum kişiye bağlı, oyuna değil).
+      gelirse **popup AÇILMAMALI** ama **kırmızı nokta ÇIKMALI**
+      (15 Ağustos 2026 kararı: mute yalnızca popup'ı bastırır) ve mesaj
+      sohbet geçmişinde görünmeye devam etmeli. Aynı oyunda
+      susturulMAMIŞ başka biri yazarsa hem nokta hem popup çıkmalı
+      (4 kişilik bir oyunda kontrol edilebilir). Aynı kişiyle BAŞKA bir
+      Canlı oyun aç — sessize alma hâlâ geçerli olmalı (durum kişiye
+      bağlı, oyuna değil).
 - [ ] **Raporlama.** Bir katılımcıyı raporla (neden yaz → onayla) →
       "Şikayetiniz iletildi." ekranı; kişi otomatik sessize de alınmalı
       (🚩 rozeti). Web admin panelinde Geri Bildirim → Şikayetler

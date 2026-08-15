@@ -8,6 +8,8 @@
 // biçim SÖZLEŞME.
 import 'package:kelimeki_core/kelimeki_core.dart';
 
+import '../util/platform.dart';
+
 /// Web `GameResult` — `games.result` sütunu.
 enum GameResult { win, lose, tie }
 
@@ -87,6 +89,16 @@ class NewGameRecord {
   /// şekilde dolduruyor; biri değişirse öteki de değişmeli.
   final List<HistoryEntry> moves;
 
+  /// Bu kaydı üreten istemci (`'ios'`/`'android'`/`'app-web'`; bilinmeyen bir
+  /// hedefte null) — mobil lansmanı ölçülebilsin diye. Web `gameRecord.ts` de
+  /// aynı sütunu dolduruyor (orada sabit `'web'`).
+  ///
+  /// Bir ALAN, `toJson` içinde hesaplanan bir değer DEĞİL: kayıt çevrimdışı
+  /// kuyruğa (`kelimeki:pending-games`) serileşip günler sonra gönderilebiliyor
+  /// ve o satır oyunun GERÇEKTEN oynandığı istemciyi anlatmalı — web de
+  /// platformu kuyruğa aynı şekilde yazıyor.
+  final String? platform;
+
   const NewGameRecord({
     required this.id,
     required this.createdAt,
@@ -105,6 +117,7 @@ class NewGameRecord {
     required this.players,
     required this.boardSnapshot,
     required this.moves,
+    required this.platform,
   });
 
   /// PostgREST'e giden satır (sütun adları). `user_id` BURADA YOK — çağıran
@@ -127,6 +140,7 @@ class NewGameRecord {
         'players': [for (final p in players) p.toJson()],
         'board_snapshot': [for (final t in boardSnapshot) t.toJson()],
         'moves': [for (final m in moves) m.toJson()],
+        'platform': platform,
       };
 
   factory NewGameRecord.fromJson(Map<String, Object?> j) => NewGameRecord(
@@ -156,6 +170,9 @@ class NewGameRecord {
           for (final m in (j['moves'] as List? ?? const []))
             HistoryEntry.fromJson((m as Map).cast<String, Object?>())
         ],
+        // Bu alan eklenmeden ÖNCE kuyruğa girmiş kayıtlarda YOK — null kalır
+        // (sütun nullable), kayıt yine gönderilir.
+        platform: j['platform'] as String?,
       );
 }
 
@@ -308,5 +325,6 @@ NewGameRecord? buildGameRecord(
     ],
     boardSnapshot: serializeBoardSnapshot(state.board),
     moves: state.moveHistory,
+    platform: currentPlatform,
   );
 }

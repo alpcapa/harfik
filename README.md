@@ -134,6 +134,7 @@ src/
 │   ├── feedbackSync.ts # geri bildirim formu için çevrimdışı kuyruk
 │   ├── onboarding.ts   # ilk açılış hızlı başlangıç ipucu bayrağı
 │   ├── visitTracking.ts # anonim misafir ziyaret kimliği, cihaz/standalone tespiti, UTM kaynağı
+│   ├── platform.ts     # bu istemcinin platformu ('web') — telemetri, tek kaynak
 │   ├── shareBoardImage.ts # bir DOM düğümünü (tahta önizlemesi) paylaşılabilir PNG'ye çevirir (html-to-image)
 │   ├── friendInvite.ts # bekleyen arkadaşlık davet token'ı için tek seferlik localStorage kuyruğu
 │   ├── csvExport.ts    # admin paneli tabloları/grafikleri için CSV indirme yardımcısı
