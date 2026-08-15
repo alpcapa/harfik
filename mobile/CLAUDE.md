@@ -130,6 +130,22 @@ merge etmeden önce native derlemeyi doğrulamak için Actions → Run workflow
 DEĞİŞTİRMEZ). Yeni bir platform eklentisi eklenmediyse bu adım atlanabilir,
 ama atlandığı commit'te bunu açıkça söyle.
 
+**PR #267'de CI koştu ve İLK denemede Android'i düşürdü — kaydı önemli:**
+`--dart-define=BUILD_TIME=${{ ... }}` TIRNAKSIZDI ve değer boşluk taşıyor
+(`15.08 11:58`); kabuk onu ikiye bölüp ikinci parçayı hedef dosya sandı
+(`Target file "11:58" not found.`, 32 saniyede düştü). **Yerelde
+görünmüyordu:** `flutter test` bu define'ları hiç kullanmıyor ve ben
+YAML'ı yalnızca PyYAML ile ayrıştırıp "adım var" diye doğrulamıştım —
+derleme komutunu koşmamıştım. Düzeltme sekiz satırda argümanı tırnağa
+almak; **negatif eş yerelde kuruldu** (`flutter build web` ile önce hata
+birebir üretildi, sonra tırnaklı hâlin derlendiği VE iki sabitin de
+`main.dart.js`'e gömüldüğü ölçüldü — `buildLabel` çalışma anında
+hesaplandığından birleşik dize aranmaz, iki sabit ayrı ayrı aranır).
+**Ders: bir workflow adımının YAML'ı geçerli olması, ürettiği KABUK
+SATIRININ doğru olduğunu kanıtlamaz** — değeri boşluk/özel karakter
+taşıyabilen her `--dart-define`/argüman tırnaklanmalı ve mümkünse o
+komut yerelde bir kez gerçekten koşturulmalı.
+
 ## Sorun Bildirildiğinde İLK ADIM: "web'de bu nasıl yapılmış?"
 
 Kullanıcı kararı (9 Ağustos 2026, sözleri birebir): *"Bizim webde çalışan

@@ -155,8 +155,8 @@ jobs:
         run: |
           flutter pub get
           flutter build apk --release \
-            --dart-define=BUILD_SHA=${{ steps.stamp.outputs.sha }} \
-            --dart-define=BUILD_TIME=${{ steps.stamp.outputs.time }} \
+            "--dart-define=BUILD_SHA=${{ steps.stamp.outputs.sha }}" \
+            "--dart-define=BUILD_TIME=${{ steps.stamp.outputs.time }}" \
             --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
             --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
       - uses: actions/upload-artifact@v4
@@ -245,8 +245,8 @@ jobs:
         run: |
           flutter pub get
           flutter build ios --release --no-codesign \
-            --dart-define=BUILD_SHA=${{ steps.stamp.outputs.sha }} \
-            --dart-define=BUILD_TIME=${{ steps.stamp.outputs.time }} \
+            "--dart-define=BUILD_SHA=${{ steps.stamp.outputs.sha }}" \
+            "--dart-define=BUILD_TIME=${{ steps.stamp.outputs.time }}" \
             --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
             --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
       # SİMÜLATÖR derlemesi — Appetize.io iOS uygulamasını cihaz `.ipa`'sı
@@ -261,8 +261,8 @@ jobs:
         working-directory: mobile/app
         run: |
           flutter build ios --simulator --debug \
-            --dart-define=BUILD_SHA=${{ steps.stamp.outputs.sha }} \
-            --dart-define=BUILD_TIME=${{ steps.stamp.outputs.time }} \
+            "--dart-define=BUILD_SHA=${{ steps.stamp.outputs.sha }}" \
+            "--dart-define=BUILD_TIME=${{ steps.stamp.outputs.time }}" \
             --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
             --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
           # Appetize yüklemesi ZIP bekliyor; `.app` bir klasör olduğundan
@@ -374,8 +374,8 @@ jobs:
             --no-web-resources-cdn \
             --pwa-strategy=none \
             --base-href /kelimeki/ \
-            --dart-define=BUILD_SHA=${{ steps.stamp.outputs.sha }} \
-            --dart-define=BUILD_TIME=${{ steps.stamp.outputs.time }} \
+            "--dart-define=BUILD_SHA=${{ steps.stamp.outputs.sha }}" \
+            "--dart-define=BUILD_TIME=${{ steps.stamp.outputs.time }}" \
             --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
             --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
       - uses: actions/upload-pages-artifact@v3
