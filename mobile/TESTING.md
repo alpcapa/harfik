@@ -1111,9 +1111,13 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 - [ ] **Sessize alma.** Dişli ikonundan bir katılımcıyı seç → "Kişiyi
       Sessize Al" → onay → 🚫 rozeti hem ayarlar listesinde hem o kişinin
       mesaj balonlarının yanında görünmeli. O kişiden yeni bir mesaj
-      gelirse popup AÇILMAMALI ama mesaj sohbet geçmişinde görünmeye
-      devam etmeli. Aynı kişiyle BAŞKA bir Canlı oyun aç — sessize alma
-      hâlâ geçerli olmalı (durum kişiye bağlı, oyuna değil).
+      gelirse **popup AÇILMAMALI** ama **kırmızı nokta ÇIKMALI**
+      (15 Ağustos 2026 kararı: mute yalnızca popup'ı bastırır) ve mesaj
+      sohbet geçmişinde görünmeye devam etmeli. Aynı oyunda
+      susturulMAMIŞ başka biri yazarsa hem nokta hem popup çıkmalı
+      (4 kişilik bir oyunda kontrol edilebilir). Aynı kişiyle BAŞKA bir
+      Canlı oyun aç — sessize alma hâlâ geçerli olmalı (durum kişiye
+      bağlı, oyuna değil).
 - [ ] **Raporlama.** Bir katılımcıyı raporla (neden yaz → onayla) →
       "Şikayetiniz iletildi." ekranı; kişi otomatik sessize de alınmalı
       (🚩 rozeti). Web admin panelinde Geri Bildirim → Şikayetler

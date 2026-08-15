@@ -293,10 +293,13 @@ void main() {
         'CEVAP VER sohbeti açar', (tester) async {
       final h = await pumpScreen(tester);
       // Board hasUnreadMessage başta false.
+      expect(find.byKey(const ValueKey('chat-unread-dot')), findsNothing);
       h.chatGw.insertListener!(
           chatRow(id: 'm1', senderUserId: 'esiner', message: 'Merhaba!'));
       await tester.pump();
       await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('chat-unread-dot')), findsOneWidget);
 
       // Popup: gönderen adı + mesaj + iki buton.
       expect(find.text('Esiner'), findsOneWidget);
@@ -312,8 +315,9 @@ void main() {
       await unmount(tester);
     });
 
-    testWidgets('sessize alınmış gönderenin mesajı popup AÇMAZ ama thread\'e girer',
-        (tester) async {
+    testWidgets(
+        'sessize alınmış gönderenin mesajı popup AÇMAZ ama kırmızı nokta '
+        'ÇIKAR ve thread\'e girer', (tester) async {
       final onlineGw = FakeOnlineGamesGateway()
         ..stateRow = stateJson(_baseState());
       final chatGw = FakeChatGateway()..mutes = ['esiner'];
@@ -341,11 +345,16 @@ void main() {
       await tester.pump();
       await tester.pump();
 
+      expect(find.byKey(const ValueKey('chat-unread-dot')), findsNothing);
+
       chatGw.insertListener!(
           chatRow(id: 'm1', senderUserId: 'esiner', message: 'Gizli mesaj'));
       await tester.pump();
       await tester.pumpAndSettle();
       expect(find.text('CEVAP VER'), findsNothing); // popup açılmadı
+      // Ama kırmızı nokta ÇIKAR — mute yalnızca popup'ı bastırır
+      // (15 Ağustos 2026, kullanıcı kararı).
+      expect(find.byKey(const ValueKey('chat-unread-dot')), findsOneWidget);
 
       await tester.tap(find.text('Mesajlaşma'));
       await tester.pumpAndSettle();

@@ -321,6 +321,7 @@ class BoardWidget extends StatelessWidget {
                           top: -4,
                           right: -4,
                           child: Container(
+                            key: const ValueKey('chat-unread-dot'),
                             width: 10,
                             height: 10,
                             decoration: const BoxDecoration(

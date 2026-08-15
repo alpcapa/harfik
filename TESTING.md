@@ -204,8 +204,11 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       nokta çıkmalı. Hiç yeni mesaj yokken **çıkmamalı** (ilk sürümde yanlış
       pozitif veriyordu).
 - [ ] **Sessize alma.** Sohbet başlığındaki dişli → kişi → "Kişiyi Sessize Al"
-      → onay. Artık o kişiden popup/kırmızı nokta gelmemeli, ama mesajları
-      sohbette görünmeye devam etmeli. İsminin yanında 🚫 çıkmalı.
+      → onay. Artık o kişiden **popup ÇIKMAMALI**, ama **kırmızı nokta
+      ÇIKMALI** (15 Ağustos 2026 kararı: mute yalnızca popup'ı bastırır) ve
+      mesajları sohbette görünmeye devam etmeli. İsminin yanında 🚫 çıkmalı.
+      Aynı oyunda susturulMAMIŞ başka biri yazarsa hem nokta hem popup
+      çıkmalı (4 kişilik bir oyunda kontrol edilebilir).
 - [ ] **Rapor etme.** Aynı panelden neden yazıp gönder → onay → **"Şikayetiniz
       iletildi."** ekranı. Rozet 🚩'a dönmeli (rapor otomatik olarak sessize
       de alır). Raporlanan kişide **hiçbir değişiklik olmamalı** (bilinçli:

@@ -4189,6 +4189,53 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        `mobile/TESTING.md` bölüm 5'e ve kök `TESTING.md` 9.8'e maddeler
        eklendi.
 
+   - ✅ **Parça 100 — kırmızı nokta artık mute'tan BAĞIMSIZ: susturulan
+     kişinin mesajı da rozeti artırır, yalnızca popup bastırılır (15 Ağustos
+     2026, `online_game_screen.dart`, `board_widget.dart` + web
+     `OnlineGameScreen.tsx`):** Bölüm 11'in mesajlaşma turunda kullanıcı önce
+     "T2 sessizdeymiş, o yüzden mesaj çıkmadı" dedi, sonra doğru soruyu
+     sordu ("mute etmiş kişide, mute edilmiş kişiden gelen mesaj kırmızı
+     nokta çıkarmıyor ama diğerlerinden gelirse çıkıyor mu?") ve ardından
+     ürün kararını kendisi verdi.
+     - **Bu bir hata düzeltmesi DEĞİL, bilinçli bir davranış değişikliği.**
+       Eski davranış (mute ikisini birden bastırır) web'de de portta da
+       tutarlıydı ve gerekçesi yazılıydı. Kullanıcının gerekçesi daha
+       güçlü çıktı: taciz vektörü POPUP; nokta rahatsız etmiyor, üstelik
+       susturulan kişinin ne yazdığını görmek şikayet etmenin ön koşulu
+       olabilir. Tam alıntı ve üç ayaklı gerekçe kök `CLAUDE.md`'de
+       ("Oyun İçi Mesajlaşma — Faz 2", ilk madde).
+     - **İKİ yerde birden değişti, tek yer YETMEZDİ:** ilk yüklemedeki
+       tohumlama (`_seedInitialUnread`) ve Realtime dalı (`_onChatMessage`).
+       Yalnızca birini değiştirmek, uygulama KAPALIYKEN gelen mesajlarla
+       AÇIKKEN gelenler arasında sessiz bir tutarsızlık üretirdi — aynı
+       kullanıcı aynı mesaj için bir gelişte nokta görür, ötekinde görmezdi.
+     - **`mutes` parametresi `_seedInitialUnread`'den KALDIRILDI**, imzada
+       ölü bir argüman olarak bırakılmadı; çağıran onu zaten `_chatState`e
+       (rozetler + popup kapısı) yüklemeye devam ediyor.
+     - **Mevcut testler bu değişikliği YAKALAYAMAZDI ve bu kayda değer:**
+       iki mute testi de yalnızca popup'ın açılMAdığını ölçüyordu; rozete
+       hiç bakmıyorlardı. Yani filtre yanlışlıkla "sohbet geneli sessize
+       alma"ya dönüşse bile takım yeşil kalırdı. Rozet için üretim koduna
+       bir `ValueKey('chat-unread-dot')` eklendi (projedeki `like-count-*`/
+       `moves-*` deseni) ve iki test de artık noktayı ölçüyor: susturulan
+       gönderende **popup YOK + nokta VAR**, susturulmamışta **ikisi de
+       VAR** (ikincisi olmadan "hiç nokta çıkmıyor" gibi ters bir regresyon
+       da geçerdi).
+     - **Negatif eş:** `online_game_screen.dart` `git stash`lenince mute
+       testi GERÇEKTEN düştü (`chat-unread-dot` bulunamadı), geri konunca
+       yeşile döndü.
+     - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 427/427
+       yeşil** (yeni test yok — mevcut iki teste assertion eklendi). Web
+       `npm run lint` + `npm run build` + `npm run test` (Playwright 3/3)
+       temiz. `kelimeki_core`'a hiç dokunulmadı.
+     - **`mobile/` DIŞINDA dosya değişti** (web yarısı aynı gün, aynı
+       dalda) → kök `CLAUDE.md` + iki `TESTING.md` aynı commit'te
+       güncellendi (Parça Bitirme Kontrol Listesi madde 1).
+     - **Doğrulama sınırı:** iki gerçek hesapla cihazda teyit bekleniyor —
+       özellikle 4 kişilik bir oyunda "susturulmamış gönderen hâlâ popup
+       açıyor" kontrolü (2 kişilikte görünmez). Maddeler `mobile/TESTING.md`
+       bölüm 11 ve kök `TESTING.md` bölüm 3'e eklendi.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 14 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
@@ -4233,6 +4280,9 @@ ankrajı (Parça 86), HEIC seçimi ve galeri izni reddi (Parça 87).
 Son iki günde düzeltme yapıldıkça listeye madde eklendi ama o maddeler
 hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
 
+- **15 Ağustos (Parça 100):** susturulmuş gönderende kırmızı nokta ÇIKMALI
+  (popup çıkmamalı); 4 kişilik oyunda susturulmamış gönderende ikisi de
+  çıkmalı (iki platform)
 - **14 Ağustos (Parça 96):** çevrimdışı Canlı oyun — açılışta panel +
   hamlede açıklayıcı uyarı (iki platform)
 - **14 Ağustos (Parça 95) — Canlı turunun BEŞ düzeltmesi, hiçbiri cihazda
