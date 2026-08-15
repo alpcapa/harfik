@@ -12,6 +12,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/bootstrap.dart';
+import 'package:kelimeki/src/config/env.dart';
 import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/meaning_store.dart';
@@ -586,5 +587,25 @@ void main() {
     expect(trackingOf(paraFinder), 0);
     expect(trackingOf(find.text('Nasıl oynanır?')), 0);
     expect(trackingOf(find.text('Arkadaşınla paylaş')), 0);
+  });
+
+  testWidgets(
+      'teşhis satırı DERLEME kimliğini gösterir (bayat derlemeyi ekran '
+      'görüntüsünden ayırt edebilmek için)', (tester) async {
+    // 15 Ağustos 2026: kullanıcı iki kez BAYAT bir derlemeyi test edip
+    // "düzelmemiş" diye bildirdi — ekranda hangi kodun çalıştığını söyleyen
+    // hiçbir şey yoktu. Etiket CI'da `--dart-define=BUILD_SHA=...` ile
+    // dolar; testte tanım olmadığından `yerel` yazmalı.
+    await setPhoneViewSize(tester, const Size(420, 950));
+    await pumpSetup(tester, services());
+    expect(find.textContaining('Derleme yerel'), findsOneWidget);
+  });
+
+  test('formatBuildLabel — CI damgası, yalnız sha, ve yerel derleme', () {
+    expect(formatBuildLabel('', ''), 'yerel');
+    expect(formatBuildLabel('', '15.08 11:42'), 'yerel',
+        reason: 'sha yoksa saat tek başına bir kimlik DEĞİL');
+    expect(formatBuildLabel('a1b2c3d', ''), 'a1b2c3d');
+    expect(formatBuildLabel('a1b2c3d', '15.08 11:42'), 'a1b2c3d · 15.08 11:42');
   });
 }

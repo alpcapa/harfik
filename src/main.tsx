@@ -6,6 +6,11 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { SharedGamePage } from './components/SharedGamePage';
 import { FriendInvitePage } from './components/FriendInvitePage';
 
+// Derleme kimliği — hangi commit'in çalıştığı devtools'tan tek satırda
+// okunabilsin diye (bkz. vite.config.ts, `BUILD_ID`'nin varlık gerekçesi).
+// Normal kullanıcıya hiçbir şey göstermez.
+window.__KELIMEKI_BUILD__ = __KELIMEKI_BUILD__;
+
 // Kendi sunucumuzdan servis edilen yazı tipleri (Google'a gidip gelmek yok).
 // Türkçe için yalnızca latin + latin-ext alt kümeleri yüklenir.
 //

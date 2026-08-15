@@ -2,10 +2,42 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+/**
+ * Bu derlemenin kimliği — Vercel `VERCEL_GIT_COMMIT_SHA`'yı her derlemede
+ * veriyor; yerelde boş kalır ve `yerel` yazar.
+ *
+ * NEDEN VAR (15 Ağustos 2026): "düzelttim" ile "canlıda görünüyor" arasındaki
+ * boşluk gerçek zaman yaktı — kullanıcı BAYAT bir derlemeyi test edip
+ * "düzelmemiş" diye bildirdi. Bu değer `<meta name="kelimeki-build">` ve
+ * `window.__KELIMEKI_BUILD__` olarak yayınlanıyor: bir sekmede hangi
+ * commit'in çalıştığı artık kod okumadan, tek bakışta doğrulanabiliyor.
+ * Mobil portun görünür karşılığı: Setup teşhis satırındaki "Derleme …"
+ * (bkz. `mobile/app/lib/src/config/env.dart`, `buildSha`).
+ */
+// `@types/node` bu projede yok (istemci tarafı tsconfig'i) — tek bir env
+// okuması için bağımlılık eklemek yerine yerel bildirim yeterli.
+declare const process: { env: Record<string, string | undefined> };
+
+const BUILD_ID =
+  (process.env.VERCEL_GIT_COMMIT_SHA ?? '').slice(0, 7) || 'yerel';
+
 // https://vitejs.dev/config/
 export default defineConfig({
+  define: {
+    __KELIMEKI_BUILD__: JSON.stringify(BUILD_ID),
+  },
   plugins: [
     react(),
+    {
+      // Derleme kimliğini HTML'e gömer — `view-source` ya da devtools'ta
+      // görünür, normal kullanıcıya hiçbir şey göstermez.
+      name: 'kelimeki-build-stamp',
+      transformIndexHtml: (html: string) =>
+        html.replace(
+          '</head>',
+          `  <meta name="kelimeki-build" content="${BUILD_ID}" />\n  </head>`,
+        ),
+    },
     VitePWA({
       registerType: 'prompt',
       injectRegister: false,

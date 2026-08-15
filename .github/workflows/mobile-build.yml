@@ -129,6 +129,16 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      # Derleme kimliği — arayüzdeki teşhis satırına gömülür ki bir ekran
+      # görüntüsü "hangi commit çalışıyor" sorusunu KENDİ BAŞINA yanıtlasın
+      # (bkz. mobile/CLAUDE.md, "Deploy Doğrulaması"). `pull_request`
+      # olayında `github.sha` MERGE commit'idir — gerçek head'i kullan,
+      # yoksa ekrandaki sha hiçbir dalda bulunmayan bir commit'i gösterir.
+      - id: stamp
+        run: |
+          SHA=$(git rev-parse --short "${{ github.event.pull_request.head.sha || github.sha }}")
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "time=$(date -u '+%d.%m %H:%M')" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -145,6 +155,8 @@ jobs:
         run: |
           flutter pub get
           flutter build apk --release \
+            --dart-define=BUILD_SHA=${{ steps.stamp.outputs.sha }} \
+            --dart-define=BUILD_TIME=${{ steps.stamp.outputs.time }} \
             --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
             --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
       - uses: actions/upload-artifact@v4
@@ -211,6 +223,16 @@ jobs:
     needs: android
     steps:
       - uses: actions/checkout@v4
+      # Derleme kimliği — arayüzdeki teşhis satırına gömülür ki bir ekran
+      # görüntüsü "hangi commit çalışıyor" sorusunu KENDİ BAŞINA yanıtlasın
+      # (bkz. mobile/CLAUDE.md, "Deploy Doğrulaması"). `pull_request`
+      # olayında `github.sha` MERGE commit'idir — gerçek head'i kullan,
+      # yoksa ekrandaki sha hiçbir dalda bulunmayan bir commit'i gösterir.
+      - id: stamp
+        run: |
+          SHA=$(git rev-parse --short "${{ github.event.pull_request.head.sha || github.sha }}")
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "time=$(date -u '+%d.%m %H:%M')" >> "$GITHUB_OUTPUT"
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -223,6 +245,8 @@ jobs:
         run: |
           flutter pub get
           flutter build ios --release --no-codesign \
+            --dart-define=BUILD_SHA=${{ steps.stamp.outputs.sha }} \
+            --dart-define=BUILD_TIME=${{ steps.stamp.outputs.time }} \
             --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
             --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
       # SİMÜLATÖR derlemesi — Appetize.io iOS uygulamasını cihaz `.ipa`'sı
@@ -237,6 +261,8 @@ jobs:
         working-directory: mobile/app
         run: |
           flutter build ios --simulator --debug \
+            --dart-define=BUILD_SHA=${{ steps.stamp.outputs.sha }} \
+            --dart-define=BUILD_TIME=${{ steps.stamp.outputs.time }} \
             --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
             --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
           # Appetize yüklemesi ZIP bekliyor; `.app` bir klasör olduğundan
@@ -320,6 +346,16 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      # Derleme kimliği — arayüzdeki teşhis satırına gömülür ki bir ekran
+      # görüntüsü "hangi commit çalışıyor" sorusunu KENDİ BAŞINA yanıtlasın
+      # (bkz. mobile/CLAUDE.md, "Deploy Doğrulaması"). `pull_request`
+      # olayında `github.sha` MERGE commit'idir — gerçek head'i kullan,
+      # yoksa ekrandaki sha hiçbir dalda bulunmayan bir commit'i gösterir.
+      - id: stamp
+        run: |
+          SHA=$(git rev-parse --short "${{ github.event.pull_request.head.sha || github.sha }}")
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "time=$(date -u '+%d.%m %H:%M')" >> "$GITHUB_OUTPUT"
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -338,6 +374,8 @@ jobs:
             --no-web-resources-cdn \
             --pwa-strategy=none \
             --base-href /kelimeki/ \
+            --dart-define=BUILD_SHA=${{ steps.stamp.outputs.sha }} \
+            --dart-define=BUILD_TIME=${{ steps.stamp.outputs.time }} \
             --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
             --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
       - uses: actions/upload-pages-artifact@v3

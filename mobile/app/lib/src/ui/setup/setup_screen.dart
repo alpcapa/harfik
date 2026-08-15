@@ -984,6 +984,11 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                           future: widget.services.dictionary,
                           builder: (context, snap) => Text(
                             [
+                              // Derleme kimliği SÜRÜMDEN ÖNCE geliyor:
+                              // ekran görüntüsünde ilk okunan şey "hangi
+                              // kod çalışıyor" olmalı (bkz. env.dart,
+                              // `buildSha`'nın varlık gerekçesi).
+                              'Derleme $buildLabel',
                               'Sürüm $appVersion',
                               snap.hasData
                                   ? 'Sözlük: ${snap.data!.length} kelime'

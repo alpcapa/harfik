@@ -87,6 +87,38 @@ komutluk bir grep taraması da var.
 
 Anlamlı bir değişiklik yapıldığında (yeni dosya/component/util/hook, klasör yapısı değişikliği, sözlük kelime sayısı gibi somut rakamlar, migration/akış değişikliği vb.) **standart olarak** hem bu dosyayı (`CLAUDE.md`) hem de `README.md`'yi kontrol et ve gerekiyorsa aynı PR'da güncelle — özellikle "Klasör Yapısı" (burada) ve "Proje Yapısı" (`README.md`) ağaçları, ve `README.md`'deki kelime sayısı gibi rakamlar zamanla koddan kopabiliyor (23 Temmuz 2026'da fark edildi: README hâlâ eski **92.503** kelime rakamını taşıyordu, gerçek liste sonradan yapılan çok-sözcüklü madde temizlikleriyle ~64 bine düşmüştü; ayrıca `ErrorBoundary`/`PlayerBadge`/`useModalA11y`/`useOnlineStatus`/`gameStorage`/`gameSync`/`feedbackSync`/`onboarding`/`ranking`/`visitTracking` gibi dosyalar hiç listeye girmemişti). Bu bir "fırsat bulunca yapılır" işi değil — migration senkron kontrolü (aşağıda, "Migration'lar" bölümü) gibi asıl işin bir parçası say.
 
+## Deploy Doğrulaması — "düzelttim" ≠ "canlıda"
+
+Kullanıcı isteği (15 Ağustos 2026): *"bu yaşanan deploy sorunlarını kalıcı
+olarak çözecek bir sistem geliştir"*. O gün aynı hata İKİ KEZ tekrarlandı:
+düzeltme yazıldı, testler yeşildi, kullanıcı **BAYAT bir derlemeyi** test
+edip "düzelmemiş" dedi. Kural (Parça 19: *"'deploy oldu mu?' kontrolü
+teşhisin parçasıdır"*) zaten vardı ve yine atlandı — bu yüzden çözüm bir
+kural değil bir MEKANİZMA: derleme kimliği artık ürünün İÇİNDE.
+
+| Yüzey | Nereden | Ne zaman |
+|---|---|---|
+| `kelimeki.com` | Vercel | `main`'e her merge |
+| `alpcapa.github.io/kelimeki` (Flutter test ortamı) | Actions `mobile-build.yml` → Pages | YALNIZCA `main`'e push **ve** `mobile/**` değiştiyse |
+| Supabase (migration / Edge Function) | MCP ile doğrudan | Anında — dal/merge ile İLGİSİZ |
+
+**Feature dalındaki bir commit sitede ASLA görünmez**; PR açmak da yetmez
+(workflow PR'da bilerek yayınlamıyor). Üçüncü satır tersine bir tuzak:
+sunucu değişikliği anında canlıdır, yani istemci düzeltmesi henüz yokken
+sunucu davranışı değişmiş olabilir.
+
+**Derleme kimliği:** web'de `<meta name="kelimeki-build">` +
+`window.__KELIMEKI_BUILD__` (`vite.config.ts`, Vercel
+`VERCEL_GIT_COMMIT_SHA`; yerelde `yerel`) — görünmez, çünkü normal
+kullanıcıya sha göstermenin anlamı yok, devtools/`view-source` yeter.
+Mobilde GÖRÜNÜR karşılığı Setup teşhis satırındaki `Derleme a1b2c3d · …`
+(`mobile/app/lib/src/config/env.dart`, CI `--dart-define` ile veriyor).
+**Bir düzeltmenin kullanıcıda görüneceğini söylemeden önce o sha'yı iste
+ya da ekran görüntüsünden oku** — eşleşmiyorsa tartışılacak bir hata yok,
+deploy bekleniyor demektir. Ayrıntı (bu oturumun gözlem sınırı, merge
+sonrası dal hijyeni, PR'da CI koşmazsa ne yapılacağı):
+`mobile/CLAUDE.md` → "Deploy Doğrulaması".
+
 ## Flutter / Mobil Port (`mobile/`)
 
 5 Ağustos 2026'da başladı — iOS+Android için Flutter portu. **Tüm port
