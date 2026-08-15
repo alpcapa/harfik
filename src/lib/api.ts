@@ -1866,6 +1866,13 @@ export async function fetchAdminGuestDeviceBreakdown(days = 30): Promise<AdminGu
  * yazıyor), Canlı oyunlarda `online_game_clients` (o satırı sunucu
  * yazdığından istemcinin kim olduğu oraya ulaşmıyor). Kolondan önce biten
  * oyunlar `'bilinmiyor'` olarak toplanır.
+ *
+ * ŞU AN HİÇBİR YERDEN ÇAĞRILMIYOR (15 Ağustos 2026) — ölü kod DEĞİL,
+ * bilinçli bir bekleme: admin panelindeki "Platform" tablosu kaldırıldı
+ * (kolon 14 Ağustos'ta eklendiğinden oyunların ezici çoğunluğu hâlâ
+ * "Bilinmiyor"du), ama VERİ TOPLAMA sürüyor. Uygulamalar mağazaya çıkınca
+ * döküm web/iOS/Android/diğer olarak yeniden yapılandırılıp bu sarmalayıcı
+ * tekrar bağlanacak. Silmeden önce o karara bak.
  */
 export async function fetchAdminPlatformBreakdown(days = 30): Promise<AdminPlatformRow[]> {
   if (!supabase) return [];
@@ -1878,6 +1885,15 @@ export async function fetchAdminPlatformBreakdown(days = 30): Promise<AdminPlatf
  * Son `days` gün içinde ana ekrana eklenip eklenmediğine (standalone) göre
  * benzersiz misafir ziyaretçi sayısını döner (yalnızca admin — Büyüme >
  * Kullanıcı).
+ *
+ * ŞU AN HİÇBİR YERDEN ÇAĞRILMIYOR (15 Ağustos 2026) — "Ana Ekrana Ekleme"
+ * tablosu kullanıcı kararıyla kaldırıldı. Gerekçe metrik değil YAPISAL:
+ * `guest_visits` yalnızca GİRİŞSİZKEN yazılıyor (RLS insert'i yalnız `anon`
+ * rolüne açık), oysa PWA'yı ana ekrana ekleyenler tipik olarak girişli
+ * kullanıcılar — yani bu döküm hedef kitleyi hiçbir zaman ölçemezdi.
+ * Doğru ölçüm, kurulum bilgisini girişli kullanıcı için de kaydetmeyi
+ * gerektirir; o da yeni bir kişisel veri alanı demek, `PrivacyModal` ile
+ * birlikte ayrıca karara bağlanmalı. `is_standalone` yazılmaya devam ediyor.
  */
 export async function fetchAdminGuestStandaloneBreakdown(days = 30): Promise<AdminGuestStandaloneRow[]> {
   if (!supabase) return [];
