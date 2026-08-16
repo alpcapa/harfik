@@ -4501,10 +4501,14 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        oturumda bu ancak CI'da görülür; PR'ı merge etmeden CI'ı beklemek
        (ya da en azından merge sonrası run'ı KONTROL ETMEK) şart.
        Düzeltme `60d2113` ile merge edildi, dört job da yeşil.
-     - **Web yarısı 16 Ağustos 2026'da gerçek cihazda teyit edildi**
-       (avatar rozetinin toplamı, oyun ekranında kırpılmaması, sohbet
-       rozetinin sayması). **Mobil tarafın cihaz teyidi hâlâ bekliyor** —
-       `mobile/TESTING.md` bölüm 10 (avatar) ve 11 (sohbet rozeti).
+     - **16 Ağustos 2026 — İKİ PLATFORM DA gerçek cihazda teyit edildi.**
+       Web: avatar rozetinin toplamı, oyun ekranında kırpılmaması, sohbet
+       rozetinin sayması ve "Nasıl Oynanır?" ile çakışmaması. Mobil
+       (`mobile/TESTING.md` bölüm 10 + 11): arkadaşlık isteğinde avatarda
+       nokta değil SAYI, menüdeki "Arkadaşlar" rozetiyle aynı sayı; sohbet
+       kapalıyken gelen mesajda sayaç, ikinci mesajda **2**; sohbet açılınca
+       sıfırlanması ve uygulama kapat/aç sonrası geri gelmemesi; susturulmuş
+       gönderende popup YOK ama rozet ARTIYOR.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 14 Ağustos 2026)
 
@@ -4550,16 +4554,12 @@ ankrajı (Parça 86), HEIC seçimi ve galeri izni reddi (Parça 87).
 Son iki günde düzeltme yapıldıkça listeye madde eklendi ama o maddeler
 hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
 
-- **16 Ağustos (Parça 103):** avatarda ve sohbet butonunda artık NOKTA değil
-  SAYI rozeti — bölüm 10 (arkadaşlık isteği gelince avatarda sayı) ve bölüm
-  11 (sohbet kapalıyken gelen mesaj; İKİ mesajda rozet **2** olmalı;
-  susturulmuş gönderende popup yok ama rozet artmalı). **Web yarısı
-  16 Ağustos'ta cihazda teyit edildi, mobil yarısı koşulmadı.**
 - **15 Ağustos (Parça 101):** "YAPAY ZEKA İLE" sekme rozeti = "Devam
   Edenler" alt sekmesinin rozetiyle aynı sayı
-- **15 Ağustos (Parça 100):** susturulmuş gönderende kırmızı nokta ÇIKMALI
-  (popup çıkmamalı); 4 kişilik oyunda susturulmamış gönderende ikisi de
-  çıkmalı (iki platform)
+- ~~**15 Ağustos (Parça 100):** susturulmuş gönderende rozet ÇIKMALI (popup
+  çıkmamalı)~~ → **16 Ağustos'ta iki platformda da koşuldu** (Parça 103
+  turuyla birlikte). 4 kişilik oyunda "susturulmamış gönderende ikisi de
+  çıkmalı" kontrolü hâlâ koşulmadı — 2 kişilikte görünmüyor.
 - **14 Ağustos (Parça 96):** çevrimdışı Canlı oyun — açılışta panel +
   hamlede açıklayıcı uyarı (iki platform)
 - **14 Ağustos (Parça 95) — Canlı turunun BEŞ düzeltmesi, hiçbiri cihazda
