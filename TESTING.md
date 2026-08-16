@@ -635,10 +635,18 @@ toplamların korunması); aşağıdakiler gerçek istemcide görülmesi gerekenl
 - [ ] **Tablo yükleniyor ve zaman filtresine bağlı.** Admin Paneli → Büyüme →
       Kullanıcı: "Kaynak Hunisi (Son N …)" başlığı üstteki granülerlik/periyot
       seçimini takip etmeli; seçim değişince sayılar değişmeli.
-- [ ] **Bugünkü beklenen tablo.** "Kişi" sütunu yalnızca `direkt`/`arkadas`
-      satırlarında dolu; "Üye"/"Oyun" ise TAMAMEN **Bilinmiyor** satırında
-      (damga 16 Ağustos 2026'da eklendi, geriye dönük doldurulamıyor). Bu
-      DOĞRU davranış — "veri kayıp" değil.
+- [ ] **Bugünkü beklenen tablo — İKİ satır: `direkt` ve `arkadas`.**
+      "Bilinmiyor" satırı OLMAMALI: 16 Ağustos 2026'da damgalama öncesi 23
+      üyenin hepsi `arkadas` olarak dolduruldu (hesap sahibinin bilgisi:
+      o tarihe kadar üyelerin tamamı davetle geldi). Bilinmiyor ancak
+      damgalamayan bir istemciden (bugün: mobil uygulama) kayıt gelirse
+      yeniden belirir.
+- [ ] **`arkadas` satırında Üye yüzdesi %100'ü AŞIYOR ve bu HATA DEĞİL.**
+      Ziyaretçi ucu yalnızca Setup'taki paylaş butonunun `?ref=arkadas`
+      linkiyle gelenleri sayıyor, üye ucu ise ağırlıkla `/davet/:token`
+      davet linkinden gelenleri — o path `?ref=` taşımadığından ziyaretçi
+      tarafı sistematik olarak eksik. Sayı %104 civarındaysa doğru
+      çalışıyor demektir.
 - [ ] **Yeni bir kayıt kaynağını damgalıyor.** Gizli sekmede
       `kelimeki.com/?ref=instagram` aç, sonra ORADAN üye ol → panelde
       `instagram` satırı belirmeli, "Üye" 1 olmalı. Aynı hesapla bir oyun
@@ -664,8 +672,9 @@ toplamların korunması); aşağıdakiler gerçek istemcide görülmesi gerekenl
       Aynı satırda oyun=25 ama oynayan kişi=4 ise "Oyun" yüzdesi %62.5 DEĞİL
       **%10.0** (4/40) olmalı. Oynayan kişi sayısını CSV'den doğrula.
 - [ ] **Kişi = 0 olan satırda oran "—" olmalı** (0.0% ya da sonsuz DEĞİL).
-      Bugün `bilinmiyor` satırı tam bu durumda: kişi 0, üye 23 → "Üye" ve
-      "Oyun" hücreleri "—" göstermeli.
+      Backfill sonrası bu durumda bir satır KALMADI; kontrol etmek için
+      damgalamayan bir istemciden (mobil uygulama) bir kayıt bekle ya da
+      SQL'de tek satırlık bir örnekle rollback içinde dene.
 - [ ] **CSV düğmeden bağımsız.** Yüzde modundayken "CSV İndir" → dosyada yine
       HAM SAYILAR olmalı (yüzde değil).
 - [ ] **CSV İndir** çalışmalı; dosyada Kaynak/Kişi/Üye/Oyun/**Oynayan Kişi**
