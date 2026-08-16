@@ -94,7 +94,15 @@ const GRANULARITY_TO_DAYS: Record<AdminActivityGranularity, number> = {
 
 const USER_SERIES: ChartSeriesDef[] = [
   { key: 'signups', label: 'Yeni Üye', color: '#2a78d6' },
-  { key: 'guest_visits', label: 'Ziyaret', color: '#D97706' },
+  // "M." = misafir. `guest_visits` satırı YALNIZCA oturum kapalıyken yazılıyor
+  // (`App.tsx`: `if (... || authLoading || user) return;` + RLS insert'i yalnız
+  // `anon` rolünde), yani bu seri tanımı gereği çıkış yapmış ziyaretçiyi
+  // sayıyor. Etiket 16 Ağustos 2026'da bu yüzden netleştirildi: kullanıcı
+  // "ziyaretler kayıtlı mı misafir mi belli olmuyor" diye sordu ve Kayıtlı/
+  // Misafir filtresi eklemek YANILTICI olurdu — "Kayıtlı" her zaman 0
+  // çıkardı, çünkü girişli kullanıcının "uygulamayı açtı" sinyali bu şemada
+  // HİÇ YOK (bkz. kök CLAUDE.md, "Bu bilerek MAU DEĞİL").
+  { key: 'guest_visits', label: 'M. Ziyaret', color: '#D97706' },
 ];
 const GAME_COUNT_SERIES: ChartSeriesDef[] = [
   { key: 'games_finished', label: 'Bitirilen', color: '#008300' },
@@ -1334,8 +1342,12 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                     data={userActivity}
                     granularity={userGranularity}
                     series={USER_SERIES}
-                    defaultActiveKeys={['signups']}
-                    controls={<span className={sectionTitleCls}>Yeni Üye / Ziyaret</span>}
+                    // İKİSİ de açık gelir (16 Ağustos 2026, kullanıcı isteği):
+                    // "yeni üye 0 ama ziyaret var" ilişkisi ancak iki seri
+                    // birlikte çizilince okunuyor — misafir serisini elle
+                    // açmak gerekiyordu.
+                    defaultActiveKeys={['signups', 'guest_visits']}
+                    controls={<span className={sectionTitleCls}>Yeni Üye / M. Ziyaret</span>}
                     csvBaseName="kelimeki-yeni-uye-ziyaret"
                   />
                 ))}
