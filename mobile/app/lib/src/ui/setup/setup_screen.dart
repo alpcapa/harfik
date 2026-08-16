@@ -747,8 +747,32 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     // autosave yeni satır açmak yerine aynı satırı güncellesin. State olduğu
     // gibi uygulanır — web RESUME_SAVED de multiSession İŞARETLEMEZ (yalnızca
     // misafirin localStorage yükleyicisi işaretliyor; bilinçli aynı davranış).
+    //
+    // TEK sapma (16 Ağustos 2026): açmadan hemen önce, bu satır için aynada
+    // DAHA YENİ bir state bekliyor mu diye sorulur. `_cloudSaves` bir anlık
+    // görüntü; oyundan çıkışta tazelenmesi `_syncCloud`un ağ adımlarını
+    // bekliyor ve uçak modunda o adımlar saniyelerce zaman aşımına oynuyor.
+    // O pencerede aynı satıra tekrar dokunmak oyunu BAYAT state'le açıyor,
+    // `CloudGameSession` da kurulur kurulmaz o bayat state'i aynaya geri
+    // yazıp offline hamleleri KALICI olarak siliyordu (bkz.
+    // `CloudSaveRepo.newerPendingState`). Liste tazeyse bu çağrı null döner
+    // ve hiçbir şey değişmez.
+    final user = widget.services.auth.user;
+    final cloud = widget.services.cloudSaves;
+    var state = save.state;
+    if (user != null && cloud != null) {
+      try {
+        final fresher = await cloud.newerPendingState(
+            save.id, user.id, save.updatedAtMs);
+        if (fresher != null) state = fresher;
+      } catch (e) {
+        // Depo okunamadıysa elimizdekiyle devam — oyunu açmayı engelleme.
+        debugPrint('[Kelimeki] taze ayna okunamadı, listedeki state ile: $e');
+      }
+    }
+    if (!mounted) return;
     final controller = GameController(words: words);
-    controller.restore(save.state);
+    controller.restore(state);
     await _openGame(controller, words, resumeCloudId: save.id);
   }
 
@@ -997,6 +1021,12 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                                   ? 'sunucu bağlı'
                                   : 'offline mod',
                               _diagStorage,
+                              // -1 = sayaç OKUNAMADI (depo erişilemedi).
+                              // "bekleyen 0" ile karıştırılmamalı: ilk
+                              // sürümde ikisi de 0 görünüyordu ve cihazda
+                              // "ayna gerçekten boş mu?" sorusu
+                              // yanıtlanamıyordu (16 Ağustos 2026).
+                              if (_diagPendingMirrors < 0) 'bekleyen ?',
                               if (_diagPendingMirrors > 0)
                                 'bekleyen $_diagPendingMirrors',
                             ].join(' · '),

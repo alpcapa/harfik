@@ -437,6 +437,10 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       Kalıcı spinner bir yükleme yavaşlığı DEĞİL, senkronun bir adımının
       sessizce patladığı anlamına gelir — o durumda Setup'ın en altındaki
       teşhis satırını (`depo ok` / `DEPO YOK` / `bekleyen N`) not et.
+      **`bekleyen ?` ile `bekleyen 0` AYNI ŞEY DEĞİL:** ilki "sayacı
+      okuyamadım" (depo erişilemedi), ikincisi "gerçekten bekleyen yok" —
+      hiç yazmaması da 0 demektir (16 Ağustos 2026'ya kadar ikisi de 0
+      görünüyordu ve bir teşhis turu bu yüzden sonuçsuz kaldı).
       Hesabın hiç kaydı olmaması da geçerli bir test durumu (boş liste
       metni çıkmalı).
 
@@ -689,6 +693,16 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       demektir. Süresi dolmuş bir kayıt bu ekranda listelenMEmeli ve
       offline'dayken **-2 cezası uygulanMAmalı** (ceza ancak ağ dönünce
       yazılır).
+- [ ] **Uçak modunda ÇIK–GİR: hamle kaybolmamalı (16 Ağustos 2026, Parça
+      105).** Bu, hatanın bulunduğu senaryonun birebir kendisi — **hızlı**
+      koş, bekleme: uçak modundayken "Devam Edenler"den var olan bir oyunu
+      aç (4 kişilik olması şart değil), **bir hamle yap**, hemen logoya
+      basıp Setup'a dön ve **listeyi beklemeden AYNI satıra tekrar dokun**.
+      Oyun az önceki hamlenle açılmalı, "ilk hâline" dönMEmeli. Sonra ağı
+      aç → web'de aynı oyunda o hamle görünmeli. (Liste bir anlık
+      görüntüdür; uçak modunda tazelenmesi ağ zaman aşımını bekler ve o
+      pencerede bayat satırla açılan oyun, aynadaki taze state'i geri
+      yazarak SİLİYORDU.)
 - [ ] **Tamamen offline açılan oyun da kaybolmamalı.** Uçak modundayken
       YENİ bir YZ oyunu aç, birkaç hamle yap. Ağı aç + yeniden başlat →
       oyun listede olmalı (sunucu onu hiç görmemişti).

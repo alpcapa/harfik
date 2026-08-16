@@ -558,6 +558,102 @@ void main() {
     await storage.db.close();
   });
 
+  // ——— Parça 105: BAYAT bir liste satırından devam etmek, offline oynanan
+  // hamleleri KALICI olarak siliyordu (kullanıcı 16 Ağustos 2026 cihaz
+  // testinde buldu: "uçak modunda devam eden 4 kişilik YZ oyunda yaptığım
+  // hamleyi geri çıkıp girince hatırlamadı… ilk haline geri dönüyor").
+
+  /// Kullanıcının Setup'ta gördüğü satırı (bir ANLIK GÖRÜNTÜ) üretir, sonra
+  /// uçak modunda bir hamle oynar — yani yalnızca aynaya yazar.
+  Future<(CloudSave stale, GameState played)> staleRowThenOfflineMove(
+      CloudSaveRepo repo, FakeGateway gw) async {
+    final start = newPlayState(name: 'Ironman');
+    expect(await repo.upsert('id-1', 'user-1', start), isTrue);
+    final stale = (await repo.list(userId: 'user-1'))!.saves.single;
+
+    gw.offline = true;
+    clock += 1000;
+    final played = start.copyWith(turnCount: start.turnCount + 3);
+    expect(await repo.upsert('id-1', 'user-1', played), isFalse,
+        reason: 'uçak modu: sunucuya yazılamaz, aynada bekler');
+    return (stale, played);
+  }
+
+  test('bayat satırdan devam offline hamleleri SİLMEZ (ayna daha yeniyse '
+      'oyun onunla açılır)', () async {
+    final (repo, gw, storage) = await newMirroredRepo();
+    final (stale, played) = await staleRowThenOfflineMove(repo, gw);
+    // Depo çalışırken sayaç GERÇEK adedi verir (yukarıdaki -1 ile karşıt eş).
+    expect(await repo.pendingMirrorCount('user-1'), 1);
+
+    // Kullanıcı, liste HENÜZ tazelenmeden (uçak modunda `_syncCloud`ın ağ
+    // adımları saniyelerce zaman aşımına oynuyor) aynı satıra dokunuyor.
+    final fresher =
+        await repo.newerPendingState('id-1', 'user-1', stale.updatedAtMs);
+    expect(fresher, isNotNull,
+        reason: 'aynadaki state sunucu satırından yeni — o açılmalı');
+    expect(fresher!.turnCount, played.turnCount);
+
+    // Oyun O state'le açılır; oturum kurulur kurulmaz mevcut state'i geri
+    // yazdığından (CloudGameSession kurucusundaki `_onChange`) offline
+    // hamleler korunmalı.
+    final controller = newController();
+    controller.restore(fresher);
+    final session = CloudGameSession(controller, repo, 'user-1',
+        resumeSaveId: 'id-1', debounce: Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+    await repo.idle;
+    session.detach();
+
+    final list = await repo.list(userId: 'user-1');
+    expect(list!.saves.single.state.turnCount, played.turnCount,
+        reason: 'devam ederken bayat state aynayı EZMEMELİ');
+    await storage.db.close();
+  });
+
+  test('MEKANİZMA: bayat state ile devam edilirse ayna GERÇEKTEN eziliyor',
+      () async {
+    // Guard'ın neden gerektiğini kanıtlar — kullanıcının gördüğü kayıp
+    // budur. Yukarıdaki testin negatif eşi: `newerPendingState` sorulmazsa
+    // (ya da null dönerse) elde kalan tek state bayat olandır.
+    final (repo, gw, storage) = await newMirroredRepo();
+    final (stale, played) = await staleRowThenOfflineMove(repo, gw);
+
+    final controller = newController();
+    controller.restore(stale.state); // ← BAYAT satır
+    final session = CloudGameSession(controller, repo, 'user-1',
+        resumeSaveId: 'id-1', debounce: Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+    await repo.idle;
+    session.detach();
+
+    final list = await repo.list(userId: 'user-1');
+    expect(list!.saves.single.state.turnCount, stale.state.turnCount);
+    expect(list.saves.single.state.turnCount, isNot(played.turnCount),
+        reason: 'offline hamleler kalıcı olarak silinmiş olurdu');
+    await storage.db.close();
+  });
+
+  test('taze listede newerPendingState null döner (gereksiz yeniden yükleme '
+      'yok)', () async {
+    final (repo, gw, storage) = await newMirroredRepo();
+    final (_, played) = await staleRowThenOfflineMove(repo, gw);
+
+    // Offline liste ayna bindirmesini ZATEN uygulamış olur; o satırla
+    // dokunulduğunda damgalar eşittir, yani değiştirilecek bir şey yok.
+    final fresh = (await repo.list(userId: 'user-1'))!.saves.single;
+    expect(fresh.state.turnCount, played.turnCount);
+    expect(
+        await repo.newerPendingState('id-1', 'user-1', fresh.updatedAtMs),
+        isNull);
+
+    // Aynası olmayan bir satırda da null.
+    gw.offline = false;
+    expect(await repo.upsert('id-2', 'user-1', newPlayState()), isTrue);
+    expect(await repo.newerPendingState('id-2', 'user-1', 0), isNull);
+    await storage.db.close();
+  });
+
   // ——— Parça 45: depo açılamadığında (web'de sqflite'ın wasm/js dosyaları
   // offline inemiyor; native'de disk dolu/bozulma) ayna yazması `upsert`in
   // ilk satırıydı ve `try`ın DIŞINDAYDI — çağrı `unawaited` olduğundan
@@ -587,7 +683,9 @@ void main() {
     expect(list, isNotNull);
     expect(list!.saves.single.id, 'id-1');
     expect(await repo.flushMirrored('user-1'), 0);
-    expect(await repo.pendingMirrorCount('user-1'), 0);
+    // -1 = "sayacı OKUYAMADIM", 0 DEĞİL. Teşhis satırı bu ikisini ayırt
+    // edemezse cihazdaki "bekleyen 0" hiçbir şey kanıtlamaz (Parça 105).
+    expect(await repo.pendingMirrorCount('user-1'), -1);
   });
 
   test('depo VE sunucu birlikte düşerse upsert false döner (sessiz değil)',

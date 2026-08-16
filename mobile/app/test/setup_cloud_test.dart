@@ -129,6 +129,25 @@ class ThrowingMirrorCountRepo extends CloudSaveRepo {
       throw Exception('ayna sayacı patladı');
 }
 
+/// `_resumeCloudSave`ın oyunu açmadan ÖNCE aynayı sorup sormadığını ölçer
+/// (Parça 105). Kararın kendisi `cloud_save_test.dart`ta repo katmanında
+/// kanıtlanıyor; buradaki soru KABLO: Setup gerçekten soruyor mu ve dönen
+/// state'i KULLANIYOR mu (Parça 86'nın dersi — bir sözleşmeyi enjekte
+/// edilebilir sınırın ÜSTÜNDE test etmek, altındaki iletimi kanıtlamaz).
+class FresherStateRepo extends CloudSaveRepo {
+  FresherStateRepo(super.gateway, this.fresher);
+
+  final GameState fresher;
+  int calls = 0;
+
+  @override
+  Future<GameState?> newerPendingState(
+      String id, String userId, int knownUpdatedAtMs) async {
+    calls++;
+    return fresher;
+  }
+}
+
 AppServices services(MemGateway gw,
         {Future<GamesRepo>? games,
         FeedbackRepo? feedback,
@@ -392,6 +411,29 @@ void main() {
     await tester.tap(find.byType(LogoMark));
     await tester.pumpAndSettle();
     expect(find.text('SENİN HAMLEN BEKLENİYOR'), findsOneWidget);
+  });
+
+  testWidgets('satırdan devam: aynada DAHA YENİ state varsa oyun ONUNLA '
+      'açılır (bayat satır offline hamleleri silmez)', (tester) async {
+    final gw = MemGateway();
+    final seeded = await seedSave(gw, 'save-1');
+    // Uçak modunda oynanmış, sunucuya yazılamamış hâl — listedeki satır
+    // hâlâ eski (kullanıcı 16 Ağustos 2026 cihaz testinde bunu buldu).
+    final fresher = seeded.copyWith(turnCount: seeded.turnCount + 3);
+    final cloud = FresherStateRepo(gw, fresher);
+    await pumpSetup(tester, gw, cloud: cloud);
+
+    await tester.tap(find.text('SENİN HAMLEN BEKLENİYOR'));
+    await tester.pumpAndSettle();
+    expect(find.text('OYNA'), findsOneWidget);
+    expect(cloud.calls, 1, reason: 'oyun açılmadan ÖNCE ayna sorulmalı');
+
+    // CloudGameSession kurulur kurulmaz mevcut state'i yazar — satırda TAZE
+    // tur sayısı olmalı; bayat state açılsaydı sunucu/ayna ezilirdi.
+    await tester.pump(const Duration(milliseconds: 700));
+    final saved = gameStateFromJson(
+        (gw.rows['save-1']!['state'] as Map).cast<String, Object?>());
+    expect(saved.turnCount, fresher.turnCount);
   });
 
   testWidgets('7 günü dolan bulut kaydı: iddia edilir → -2 cezalı teslim kaydı',

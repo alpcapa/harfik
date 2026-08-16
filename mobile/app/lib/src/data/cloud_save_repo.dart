@@ -468,10 +468,51 @@ class CloudSaveRepo {
   /// (10 Ağustos 2026). "Hamlelerim kayboldu" tipi bir şikayette depo
   /// çalışıyor mu / ayna birikmiş mi sorusunu cihazda görünür kılıyor;
   /// bu olmadan aynı sınıf sorun ancak tahminle tartışılabiliyordu.
+  ///
+  /// Depoya ULAŞILAMAZSA **-1** döner, 0 DEĞİL (16 Ağustos 2026): ilk
+  /// sürümde ikisi de 0'a düşüyordu, yani cihazdaki "bekleyen 0" hem
+  /// "gerçekten bekleyen yok" hem "sayacı okuyamadım" anlamına
+  /// gelebiliyordu — teşhis için var olan bir gösterge tam da teşhis
+  /// gereken anda belirsizdi. Çağıran bunu ayrı göstermeli.
   Future<int> pendingMirrorCount(String userId) async {
+    // Ayna HİÇ yapılandırılmamışsa (üretimde olmaz; testler/önizlemeler)
+    // bekleyen de olamaz — bu "okuyamadım" DEĞİL, bilinen bir 0.
+    if (mirrorStore == null) return 0;
     var n = 0;
-    await _tryMirror((m) async => n = (await m.pending(userId)).length);
-    return n;
+    final ok =
+        await _tryMirror((m) async => n = (await m.pending(userId)).length);
+    return ok ? n : -1;
+  }
+
+  /// Bu id için AYNADA bekleyen (sunucuya yazılamamış) state — çağıranın
+  /// elindeki satırdan GERÇEKTEN yeniyse. Yoksa null.
+  ///
+  /// **Neden var (16 Ağustos 2026, kullanıcı cihaz testinde buldu):** Setup
+  /// listesi bir anlık görüntüdür; oyundan çıkıldıktan sonra tazelenmesi
+  /// `flushMirrored`+`list()` zincirini bekler ve uçak modunda o zincirdeki
+  /// ağ çağrıları saniyelerce zaman aşımına oynar. O pencerede kullanıcı
+  /// AYNI satıra tekrar dokunursa oyunu BAYAT state'le açıyorduk; üstelik
+  /// `CloudGameSession` kurulur kurulmaz o bayat state'i aynaya geri
+  /// yazdığından (kurucudaki `_onChange()`) offline oynanan hamleler
+  /// KALICI olarak siliniyordu — kullanıcının gördüğü "ilk haline geri
+  /// dönüyor" tam olarak buydu.
+  ///
+  /// Karşılaştırma `list()`in online dalındaki kuralın AYNISI
+  /// (`mine.savedAtMs > updatedAtMs`), bilerek: taze bir listede satır
+  /// zaten aynadan gelmiş olur (damgalar eşit → null döner, gereksiz
+  /// yeniden yükleme yok), başka bir cihazın yazdığı DAHA YENİ sunucu
+  /// satırını da eski bir aynayla ezmez.
+  Future<GameState?> newerPendingState(
+      String id, String userId, int knownUpdatedAtMs) async {
+    MirroredSave? found;
+    await _tryMirror((m) async {
+      for (final x in await m.pending(userId)) {
+        if (x.id == id) found = x;
+      }
+    });
+    final f = found;
+    if (f == null || f.savedAtMs <= knownUpdatedAtMs) return null;
+    return f.state;
   }
 
   /// [userId] verilirse, silme başarısız olduğunda kalıcı kuyruğa yazılır ve
