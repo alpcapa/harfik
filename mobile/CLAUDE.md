@@ -4627,11 +4627,17 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        enjekte edilebilir sınırın ÜSTÜNDE test etmek altındaki iletimi
        kanıtlamaz). `pendingMirrorCount`ın -1'i ile gerçek sayıyı dönen
        yolu karşıt eş olarak aynı dosyada duruyor.
-     - **Doğrulama sınırı — bu oturumda Flutter YOK** (`flutter: command
-       not found`, Parça 103/104'ün aynı sınırı): `flutter analyze`/
-       `flutter test` KOŞULAMADI, kanıt CI'ın (`mobile-build.yml`) yeşile
-       dönmesi. Cihaz teyidi `mobile/TESTING.md` bölüm 8'e madde olarak
-       eklendi — **hızlı** koşulmalı (bekleyerek koşulursa liste tazelenir
+     - **Doğrulama — bu oturumda Flutter YOK** (`flutter: command not
+       found`, Parça 103/104'ün aynı sınırı): `flutter analyze`/
+       `flutter test` KOŞULAMADI, kanıt CI oldu — PR #274'te dördü de
+       yeşil (analiz + **440 test**, 436'dan +4; Android APK; iOS
+       imzasız; web derlemesi). Merge sha `6b71eaa`.
+     - **CİHAZDA DOĞRULANDI (16 Ağustos 2026, kullanıcı):** uçak modunda
+       var olan bir oyuna girip hamle yapıp çıkıp hemen tekrar girildiğinde
+       hamle DURDU — *"Kaydetti bu sefer. Çalışıyor."* Yani düzeltme
+       yalnızca repo katmanında değil gerçek akışta da çalışıyor;
+       `mobile/TESTING.md` bölüm 8'deki madde ilerideki bir regresyon için
+       duruyor (**hızlı** koşulmalı — bekleyerek koşulursa liste tazelenir
        ve senaryo hiç oluşmaz).
      - **Ders — "repo katmanı testli ve geçiyor" bir SONUÇ değil bir
        ELEME:** doğru soru "bu veriyi kim ne zaman OKUYOR ve okuduğu şey ne
@@ -4668,7 +4674,7 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | 5 · Oyun geçmişi | ✅ | Parça 35, sonra 67/68 ek turlar |
 | 6 · Paylaşma | 🟡 | görsel düzeltmesi koşuldu (Parça 84); **iPad ankrajı (Parça 86) gerçek iPad ister → FAZ B** |
 | 7 · Son Oynadıklarım | ✅ | 16 Ağu (Blok 7) |
-| 8 · Dayanıklılık (uçak modu) | 🟡 | 8.2/8.3/8.5/8.6 — Parça 43-46; **16 Ağu: uçak modunda ÇIK–GİR hamleyi siliyordu (Parça 105) — düzeltme cihazda henüz koşulmadı** |
+| 8 · Dayanıklılık (uçak modu) | ✅ | 8.2/8.3/8.5/8.6 — Parça 43-46; 16 Ağu: uçak modunda ÇIK–GİR hamleyi siliyordu (Parça 105) → düzeltme **aynı gün cihazda doğrulandı** |
 | 9 · Görüş Bildir | 🟡 | 9.5 geçti (Parça 49); **9.3/9.4 Parça 48 düzeltmesinden sonra tekrar koşulmalı** |
 | 10 · Arkadaşlar | ✅ | tamamı (11 Ağu) + moderasyon geri alma, iki yol (14 Ağu, Parça 91) |
 | 11 · Canlı oyun | 🟡 | **14 Ağu: davet/kabul + tahta bölümü baştan koşuldu (Parça 95, 5 bulgu) — mesajlaşma alt bölümü ve tekil/SQL maddeleri hâlâ koşulmadı**; düzeltmelerin cihaz teyidi bekliyor |
@@ -4686,11 +4692,13 @@ ankrajı (Parça 86), HEIC seçimi ve galeri izni reddi (Parça 87).
 Son iki günde düzeltme yapıldıkça listeye madde eklendi ama o maddeler
 hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
 
-- **16 Ağustos (Parça 105) — EN ÖNCELİKLİ, veri kaybı:** uçak modunda
-  var olan bir oyunu aç → bir hamle yap → logoya bas → **listeyi
-  beklemeden** aynı satıra tekrar dokun; hamle DURMALI (bkz. TESTING.md
-  bölüm 8). Aynı turda teşhis satırında `bekleyen ?` ile `bekleyen 0`
-  ayrımını da gözle doğrula.
+- ~~**16 Ağustos (Parça 105) — veri kaybı:** uçak modunda var olan bir
+  oyunu aç → hamle yap → çık → **listeyi beklemeden** tekrar gir~~ →
+  **16 Ağustos'ta AYNI GÜN cihazda koşuldu ve GEÇTİ** (*"Kaydetti bu
+  sefer. Çalışıyor."*). Madde `TESTING.md` bölüm 8'de regresyon için
+  duruyor — **hızlı** koşulmalı, beklenirse liste tazelenir ve senaryo
+  hiç oluşmaz. Teşhis satırındaki `bekleyen ?` ↔ `bekleyen 0` ayrımı
+  hâlâ gözle doğrulanmadı.
 - ~~**15 Ağustos (Parça 101):** "YAPAY ZEKA İLE" sekme rozeti = "Devam
   Edenler" alt sekmesinin rozetiyle aynı sayı~~ → **16 Ağustos'ta Blok 7
   turunda koşuldu.**
@@ -4726,15 +4734,15 @@ ilk yazılan sıralama yalnızca ikinci dalı kapsıyordu), artı negatif eşi.
 
 Bölüm 11'in **davet/kabul + tahta** kısmı 14 Ağustos'ta koşuldu ve tek
 turda beş bulgu çıkardı (Parça 95); 16 Ağustos'taki Blok 7 turu bölüm 7 ile
-uçak modu adımlarını kapsadı ve **veri kaybına yol açan tek bulgu** çıkardı
-(Parça 105).
+uçak modu adımlarını kapsadı, **veri kaybına yol açan tek bulgu** çıkardı
+(Parça 105) ve düzeltmesi AYNI GÜN cihazda doğrulandı — yani şu an bilinen
+bir veri kaybı yolu YOK.
 
-Sıradaki tur **Parça 105'in düzeltmesiyle başlamalı** (TESTING.md bölüm 8,
-"uçak modunda ÇIK–GİR") — kayıp yaşanan tek yol o. Ardından bölüm 11'in
-henüz koşulmamış kısımları: **mesajlaşma alt bölümü** (11 maddesinin çoğu;
-Parça 95'in sohbet düzeltmesi tam da orayı ilgilendiriyor) ve **tekil/SQL
-maddeleri** (ret, hesap değişimi, süresi dolmuş davet, 48 saat süre
-aşımı). Sonra **9.6 tekrarı**.
+Sıradaki tur bölüm 11'in henüz koşulmamış kısımlarıyla başlamalı:
+**mesajlaşma alt bölümü** (11 maddesinin çoğu; Parça 95'in sohbet
+düzeltmesi tam da orayı ilgilendiriyor) ve **tekil/SQL maddeleri** (ret,
+hesap değişimi, süresi dolmuş davet, 48 saat süre aşımı). Sonra **9.6
+tekrarı** (belgede yazan sırayla + negatif eşi).
 
 ## Sonraya Bırakılan İşler (mobil)
 
