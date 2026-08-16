@@ -144,6 +144,20 @@ Future<AppStorage> newStorageForWidget(WidgetTester tester) async {
   return storage;
 }
 
+/// Board alt şeridindeki okunmamış-mesaj rozetinin gösterdiği sayı.
+/// 16 Ağustos 2026'ya kadar burada sayısız bir kırmızı nokta vardı; rozet
+/// sayaca çevrilince testin de sayıyı görmesi gerekti (yalnızca "var/yok"
+/// kontrolü, sayacın hiç artmadığı bir regresyonu yakalayamazdı).
+String _badgeText() => (find
+        .descendant(
+          of: find.byKey(const ValueKey('chat-unread-badge')),
+          matching: find.byType(Text),
+        )
+        .evaluate()
+        .single
+        .widget as Text)
+    .data!;
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   sqfliteFfiInit();
@@ -289,17 +303,17 @@ void main() {
     });
 
     testWidgets(
-        'Realtime: sessize alınmamış mesaj → kırmızı nokta + popup; '
+        'Realtime: sessize alınmamış mesaj → sayaç rozeti + popup; '
         'CEVAP VER sohbeti açar', (tester) async {
       final h = await pumpScreen(tester);
-      // Board hasUnreadMessage başta false.
-      expect(find.byKey(const ValueKey('chat-unread-dot')), findsNothing);
+      // Board rozeti başta yok (unreadMessageCount 0).
+      expect(find.byKey(const ValueKey('chat-unread-badge')), findsNothing);
       h.chatGw.insertListener!(
           chatRow(id: 'm1', senderUserId: 'esiner', message: 'Merhaba!'));
       await tester.pump();
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey('chat-unread-dot')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-unread-badge')), findsOneWidget);
 
       // Popup: gönderen adı + mesaj + iki buton.
       expect(find.text('Esiner'), findsOneWidget);
@@ -316,7 +330,7 @@ void main() {
     });
 
     testWidgets(
-        'sessize alınmış gönderenin mesajı popup AÇMAZ ama kırmızı nokta '
+        'sessize alınmış gönderenin mesajı popup AÇMAZ ama sayaç rozeti '
         'ÇIKAR ve thread\'e girer', (tester) async {
       final onlineGw = FakeOnlineGamesGateway()
         ..stateRow = stateJson(_baseState());
@@ -345,16 +359,25 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.byKey(const ValueKey('chat-unread-dot')), findsNothing);
+      expect(find.byKey(const ValueKey('chat-unread-badge')), findsNothing);
 
       chatGw.insertListener!(
           chatRow(id: 'm1', senderUserId: 'esiner', message: 'Gizli mesaj'));
       await tester.pump();
       await tester.pumpAndSettle();
       expect(find.text('CEVAP VER'), findsNothing); // popup açılmadı
-      // Ama kırmızı nokta ÇIKAR — mute yalnızca popup'ı bastırır
+      // Ama rozet ÇIKAR — mute yalnızca popup'ı bastırır
       // (15 Ağustos 2026, kullanıcı kararı).
-      expect(find.byKey(const ValueKey('chat-unread-dot')), findsOneWidget);
+      expect(find.byKey(const ValueKey('chat-unread-badge')), findsOneWidget);
+      expect(_badgeText(), '1');
+
+      // Rozet SAYAR — 16 Ağustos 2026'da sayısız kırmızı nokta yerine
+      // `CountBadge` geldi (kullanıcı: "insanlar noktayı farketmiyor").
+      chatGw.insertListener!(
+          chatRow(id: 'm2', senderUserId: 'esiner', message: 'Gizli mesaj 2'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+      expect(_badgeText(), '2');
 
       await tester.tap(find.text('Mesajlaşma'));
       await tester.pumpAndSettle();

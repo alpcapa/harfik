@@ -125,7 +125,7 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
 - [ ] **Sohbet ön plana dönüşte tazelenir (14 Ağustos 2026).** Oyun ekranı
       AÇIKKEN sekmeyi/uygulamayı arka plana al, karşı taraftan mesaj
       gönder, sonra geri dön: mesaj kendiliğinden gelmeli (oyundan çıkıp
-      girmek gerekmemeli). Popup çıkmamalı, yalnız okunmamış kırmızı nokta.
+      girmek gerekmemeli). Popup çıkmamalı, yalnız okunmamış sayacı artmalı.
 - [ ] **Sürükle-bırak.** Raftan tahtaya, tahtada taşıma, tahtadan rafa geri
       alma — üçü de çalışmalı (yerel oyundakiyle aynı davranış).
 - [ ] **Realtime.** Karşı taraf oynadığında ekran kendiliğinden güncellenmeli.
@@ -150,6 +150,15 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       Setup'a uğramadan aynı kadroyla taze bir oyun açılmalı. **Aynı ekranda
       iki oyunu üst üste bitir** — Skor Kartı → "Tüm Oyunlarım"da İKİSİ de
       görünmeli (Flutter portunda burada sessiz bir kayıt kaybı bulunmuştu).
+- [ ] **Biten oyunun "Hamleler" dökümü SON hamleyi içermeli (15 Ağustos 2026).**
+      Bir Canlı oyunu gerçekten sonuna kadar oyna (rafını torba boşken bitiren
+      taraf ol ya da rakibin bitirmesini bekle), sonra Skor Kartı → "Tüm
+      Oyunlarım" → o kartın hamle ikonu. **Dökümdeki en son satır, oyunu
+      BİTİREN hamle olmalı** — kendi son hamlen değil. Aynı kontrolü teslimle
+      biten bir oyunda da yap (48 saatlik süre aşımı, bkz. bölüm 4): son satır
+      "Teslim" olmalı. Arşiv `online_game_moves`'tan üretildiğinden buradaki
+      bir eksik, oyunun kendisini değil yalnızca kaydı bozar — yani oyun doğru
+      bitmiş görünse bile bu maddeyi ayrıca koş.
 
 ## 3. Oyun içi mesajlaşma
 
@@ -199,15 +208,19 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       uygulamada aynı kartı aç — iki platform aynı hissi vermeli.
 - [ ] **Karşı tarafta.** Sohbet kapalıyken gelen mesaj için popup (gönderenin
       avatarı + adı + metin) çıkmalı ve **yalnızca elle** kapanmalı; butonda
-      kırmızı nokta belirmeli. Sohbeti açınca nokta sıfırlanmalı.
-- [ ] **Geç giriş.** Uygulama kapalıyken mesaj gelsin; tekrar girince kırmızı
-      nokta çıkmalı. Hiç yeni mesaj yokken **çıkmamalı** (ilk sürümde yanlış
-      pozitif veriyordu).
+      **sayı rozeti** belirmeli (16 Ağustos 2026'ya kadar sayısız bir
+      noktaydı). İKİ mesaj gelirse rozet **2** göstermeli; sohbeti açınca
+      sıfırlanıp kaybolmalı. Rozet "Mesajlaşma" etiketinin son harflerini
+      kapatır — bilinen ve kabul edilen bedel, kırpılma DEĞİL; ama sağdaki
+      "Nasıl Oynanır?" ile ÇAKIŞMAMALI (dar bir telefonda kontrol et).
+- [ ] **Geç giriş.** Uygulama kapalıyken mesaj gelsin; tekrar girince rozet
+      doğru sayıyla çıkmalı. Hiç yeni mesaj yokken **çıkmamalı** (ilk sürümde
+      yanlış pozitif veriyordu).
 - [ ] **Sessize alma.** Sohbet başlığındaki dişli → kişi → "Kişiyi Sessize Al"
-      → onay. Artık o kişiden **popup ÇIKMAMALI**, ama **kırmızı nokta
-      ÇIKMALI** (15 Ağustos 2026 kararı: mute yalnızca popup'ı bastırır) ve
-      mesajları sohbette görünmeye devam etmeli. İsminin yanında 🚫 çıkmalı.
-      Aynı oyunda susturulMAMIŞ başka biri yazarsa hem nokta hem popup
+      → onay. Artık o kişiden **popup ÇIKMAMALI**, ama **rozet ARTMALI**
+      (15 Ağustos 2026 kararı: mute yalnızca popup'ı bastırır) ve mesajları
+      sohbette görünmeye devam etmeli. İsminin yanında 🚫 çıkmalı.
+      Aynı oyunda susturulMAMIŞ başka biri yazarsa hem rozet hem popup
       çıkmalı (4 kişilik bir oyunda kontrol edilebilir).
 - [ ] **Rapor etme.** Aynı panelden neden yazıp gönder → onay → **"Şikayetiniz
       iletildi."** ekranı. Rozet 🚩'a dönmeli (rapor otomatik olarak sessize
@@ -384,9 +397,14 @@ tek turda, gerçekten bekleyen bir iş varken kontrol et.
       "Yapay Zeka ile"/"Arkadaşınla" ve bunların alt sekmeleri, `FriendsModal`
       → "İstekler". Hepsi sağ üst köşede yuvarlak rozet olmalı; başlığa
       gömülü " (N)" biçiminde bir sayı **hiçbir yerde kalmamalı**.
-- [ ] **Sayı değil, nokta olması gerekenler.** Board footer'ındaki
-      "Mesajlaşma" (okunmamış mesaj) ve `UserMenu` avatarı — bunlar
-      boolean gösterge, sayı taşımaz, bu doğru davranış.
+- [ ] **Eski noktalar da artık sayı gösteriyor (16 Ağustos 2026).** Board
+      footer'ındaki "Mesajlaşma" ve `UserMenu` avatarı — ikisi de sayısız
+      kırmızı noktaydı, kullanıcı fark edilmediklerini bildirince `CountBadge`e
+      çevrildi. **Avatar rozeti TOPLAMDIR:** bekleyen arkadaşlık isteği +
+      (admin isen) bekleyen geri bildirim/şikayet; menüyü aç, içerideki
+      "Arkadaşlar" ve "Admin Paneli" rozetlerinin toplamı avatardakine eşit
+      olmalı. Rozet avatarın sağ üst köşesinden taşar (bu doğru); GameHeader'ın
+      yatay kaydırılan şeridinde **kırpılmamalı** — oyun ekranında da kontrol et.
 - [ ] **Rozet olMAması gerekenler.** "Değiştir (N)" (seçili taş sayısı) ve
       "Arkadaşlarını Seç (N/3)" (seçim ilerlemesi) — bunlar bekleyen iş değil,
       metin içinde kalmalı.
@@ -578,10 +596,12 @@ tarayıcıda görülebilecek olanlar. **Admin hesabı gerekiyor.**
 
 ## 9.8. Admin — Platform dökümü (14 Ağustos 2026)
 
-Girişli bir kullanıcının oyunu APP'ten mi WEB'den mi oynadığını ölçen yeni
-kolon. Sunucu tarafı canlıda rollback'li senaryolarla doğrulandı (iki kaynak,
-yetki matrisi, geçersiz değer); aşağıdakiler yalnızca gerçek istemcide
-görülebilecek olanlar.
+> **TABLO 15 Ağustos 2026'da PANELDEN KALDIRILDI** (kullanıcı kararı: bugün
+> karar verdirecek bir şey söylemiyor, uygulamalar mağazaya çıkınca
+> web/iOS/Android/diğer olarak yeniden yapılandırılacak). **Veri toplanmaya
+> DEVAM EDİYOR** (`games.platform` + `online_game_clients`), yani aşağıdaki
+> UI maddeleri şu an KOŞULAMAZ — tablo geri geldiğinde geçerli olacaklar.
+> Doğrulama o güne kadar SQL'den yapılır.
 
 - [ ] **Tablo yükleniyor.** Admin Paneli → Büyüme → Kullanıcı: "Cihaz"ın
       hemen altında **Platform** tablosu (Platform / Oyun / Oyuncu / %).
@@ -602,8 +622,71 @@ görülebilecek olanlar.
 - [ ] **CSV İndir** çalışmalı; dosyada Platform/Oyun/Oyuncu/% sütunları ve bir
       TOPLAM satırı olmalı.
 - [ ] **Gizlilik metni güncel.** Gizlilik Politikası → "Toplanan Veriler"de
-      "Bir oyunu hangi istemciden oynadığınız…" maddesi olmalı, "Son
-      güncelleme: 14 Ağustos 2026" yazmalı (mobil uygulamadaki metin de AYNI).
+      "Bir oyunu hangi istemciden oynadığınız…" maddesi olmalı (mobil
+      uygulamadaki metin de AYNI).
+
+## 9.9. Admin — Kaynak Hunisi (16 Ağustos 2026)
+
+"Ziyaretçi Kaynağı" tablosunun yerini aldı: kaynak → **Kişi** → **Üye** →
+**Oyun**. İlk sütun eskisiyle aynı sayı. Sunucu tarafı canlıda rollback'li
+senaryolarla doğrulandı (yetki matrisi, damgalama, write-once trigger,
+toplamların korunması); aşağıdakiler gerçek istemcide görülmesi gerekenler.
+
+- [ ] **Tablo yükleniyor ve zaman filtresine bağlı.** Admin Paneli → Büyüme →
+      Kullanıcı: "Kaynak Hunisi (Son N …)" başlığı üstteki granülerlik/periyot
+      seçimini takip etmeli; seçim değişince sayılar değişmeli.
+- [ ] **Bugünkü beklenen tablo — İKİ satır: `direkt` ve `arkadas`.**
+      "Bilinmiyor" satırı OLMAMALI: 16 Ağustos 2026'da damgalama öncesi 23
+      üyeden 22'si `arkadas`, hesap sahibi ise `direkt` olarak dolduruldu
+      (hesap sahibinin bilgisi: o tarihe kadar üyelerin tamamı davetle geldi,
+      kendisi hariç). Bilinmiyor ancak
+      damgalamayan bir istemciden (bugün: mobil uygulama) kayıt gelirse
+      yeniden belirir.
+- [ ] **`arkadas` satırının %100'ü bir ölçüm DEĞİL, tesadüf.** Ziyaretçi ucu
+      yalnızca Setup'taki paylaş butonunun `?ref=arkadas` linkiyle gelenleri
+      sayıyor, üye ucu ise ağırlıkla `/davet/:token` davet linkinden
+      gelenleri — o path `?ref=` taşımadığından iki uç aynı popülasyonu
+      ölçmüyor. "Kanal kusursuz dönüyor" diye OKUMA.
+- [ ] **`direkt` satırında tam 1 üye olmalı (hesap sahibi).** Projeyi kuran
+      hesap kimse tarafından davet edilmedi; geri kalan 22 üye `arkadas`.
+- [ ] **Yeni bir kayıt kaynağını damgalıyor.** Gizli sekmede
+      `kelimeki.com/?ref=instagram` aç, sonra ORADAN üye ol → panelde
+      `instagram` satırı belirmeli, "Üye" 1 olmalı. Aynı hesapla bir oyun
+      bitir → aynı satırın "Oyun"u 1 olmalı.
+- [ ] **`?ref=` olmadan üye olan `Direkt`e düşmeli** (Bilinmiyor'a DEĞİL) —
+      ikisi bilinçli olarak ayrı: Bilinmiyor = damgalanmamış (eski üyeler ve
+      mobil uygulama kayıtları).
+- [ ] **İlk temas kazanır.** Önce `?ref=instagram` ile gel, sonra siteyi
+      `?ref=` olmadan (ya da başka bir ref ile) tekrar aç ve ANCAK O ZAMAN üye
+      ol → kaynak hâlâ `instagram` olmalı.
+- [ ] **TOPLAM satırı tutuyor mu.** Üç sütunun toplamı, satırların toplamına
+      eşit olmalı; "Üye" toplamı o dönemdeki yeni üye sayısıyla (Yeni Üye/Ziyaret
+      grafiği) tutarlı olmalı.
+- [ ] **`% / Sayı` düğmesi dönüşümlü çalışmalı.** Tablonun sağ üstünde, "CSV
+      İndir"in yanında. Bas → üç sütun birden yüzdeye dönmeli; tekrar bas →
+      sayılara dönmeli. Aktif mod her zaman vurgulu (mavi/kalın) olmalı, yani
+      hangi moddasın bakınca anlaşılmalı.
+- [ ] **Yüzdelerin TABANI sütuna göre farklı.** "Kişi" sütunu SÜTUN payı
+      (TOPLAM satırı **100.0%**); "Üye" ve "Oyun" ise o SATIRIN "Kişi"sine
+      göre dönüşüm. Doğrulaması kolay: kişi=40, üye=6 olan bir satırda "Üye"
+      **%15.0** göstermeli.
+- [ ] **"Oyun" yüzdesi oyun ADEDİNDEN değil, OYNAYAN KİŞİDEN hesaplanmalı.**
+      Aynı satırda oyun=25 ama oynayan kişi=4 ise "Oyun" yüzdesi %62.5 DEĞİL
+      **%10.0** (4/40) olmalı. Oynayan kişi sayısını CSV'den doğrula.
+- [ ] **Kişi = 0 olan satırda oran "—" olmalı** (0.0% ya da sonsuz DEĞİL).
+      Backfill sonrası bu durumda bir satır KALMADI; kontrol etmek için
+      damgalamayan bir istemciden (mobil uygulama) bir kayıt bekle ya da
+      SQL'de tek satırlık bir örnekle rollback içinde dene.
+- [ ] **CSV düğmeden bağımsız.** Yüzde modundayken "CSV İndir" → dosyada yine
+      HAM SAYILAR olmalı (yüzde değil).
+- [ ] **CSV İndir** çalışmalı; dosyada Kaynak/Kişi/Üye/Oyun/**Oynayan Kişi**
+      sütunları ve bir TOPLAM satırı olmalı.
+- [ ] **Açıklama satırı okunuyor mu.** Tablonun altındaki metin "Kişi"/"Üye"/
+      "Oyun" tanımlarını, kohort OLMADIĞINI ve Bilinmiyor/Direkt farkını
+      anlatmalı — bu tablo bu not olmadan kolayca yanlış okunur.
+- [ ] **Gizlilik metni güncel.** Gizlilik Politikası → "Toplanan Veriler"de
+      kaynak etiketi maddesi olmalı ve "Son güncelleme: 16 Ağustos 2026"
+      yazmalı (mobil uygulamadaki metin de AYNI).
 
 ## 10. k-lig ödül & rütbe sistemi
 

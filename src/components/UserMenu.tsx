@@ -179,14 +179,17 @@ export function UserMenu() {
               …
             </span>
           ) : (
-            /* Menü kapalıyken de fark edilsin diye avatardaki nokta, menü
-               içindeki rozetlerin herhangi birini yansıtır — arkadaşlık
-               isteği ya da (admin ise) bekleyen geri bildirim/şikayet. */
+            /* Menü kapalıyken de fark edilsin diye avatardaki rozet, menü
+               içindeki rozetlerin TOPLAMIDIR — arkadaşlık isteği + (admin
+               ise) bekleyen geri bildirim/şikayet. Bu, `CountBadge`'in
+               "kapsayanın rozeti kapsananların toplamıdır" kuralının aynen
+               uygulanması; 16 Ağustos 2026'ya kadar sayısız bir noktaydı ve
+               kullanıcılar fark etmiyordu. */
             <Avatar
               url={profile?.avatar_url}
               name={name}
               size={32}
-              dot={incomingRequestCount > 0 || adminPendingCount > 0}
+              badgeCount={incomingRequestCount + adminPendingCount}
             />
           )}
         </button>

@@ -4449,6 +4449,41 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        üretilip gözle incelendi (panel zemin, düşen gölge, accent CEVAP VER
        + nötr KAPAT) — `mobile/TESTING.md` bölüm 11'e madde eklendi.
 
+   - ✅ **Parça 103 — sayısız kırmızı noktalar `CountBadge`e çevrildi
+     (16 Ağustos 2026, `board_widget.dart` + `k_avatar.dart` + web
+     `Board.tsx`/`Avatar.tsx`):** Kullanıcı *"insanlar mesajlarda çıkan
+     kırmızı noktayı farketmiyorlar. Onu da her yerde kullandığımız sayılı
+     olana döndürmek nasıl olur? Bir de avatardakini"* dedi.
+     - **Bilinçli bir kararın tersine çevrilmesi, hata düzeltmesi DEĞİL.**
+       İki gösterge de kök `CLAUDE.md`'de "var/yok bilgisi taşıyor, adet
+       değil" gerekçesiyle açıkça `CountBadge` DIŞINDA tutulmuştu ve o
+       gerekçe hâlâ tutarlı — ama fark edilmeyen bir gösterge, doğru
+       sınıflandırılmış olsa da işe yaramıyor. Eski gerekçe silinmedi,
+       tarihiyle birlikte "tersine çevrildi" olarak duruyor.
+     - **Sayı zaten vardı, boolean'a indiriliyordu:** `_chatState.unreadCount`
+       ve `_incomingRequests`. Prop'lar `BoardWidget.unreadMessageCount` ve
+       `KAvatar.badgeCount` oldu (`hasUnreadMessage`/`dot` kalktı).
+     - **Web ile kasıtlı fark:** web avatar rozeti arkadaşlık isteği +
+       admin bekleyen işinin TOPLAMI; portta admin paneli olmadığından
+       (bilinçli, "Üst Düzey Kararlar" #3) tek kaynak arkadaşlık isteği.
+     - **Konum web'de ÖLÇÜLEREK seçildi, ikisine birden uygulandı:** rozet
+       satır içi OLAMAZ — şeride ~20px eklerdi ve 360px'lik bir telefonda
+       "Mesajlaşma" ile "Nasıl Oynanır?" arasında yalnızca 7.8px boşluk var.
+       `top/right: -4` ile rozetin sağ kenarı en dar durumda 3.8px pay
+       bırakıyor (iki haneli sayıda da — rozet sağdan sabitli). Beyaz halka
+       (web `ring-2 ring-panel`) rozeti altındaki mavi etiketten ayırıyor.
+     - **Test anahtarı yeniden adlandırıldı** (`chat-unread-dot` →
+       `chat-unread-badge`) ve iki mute testinden biri artık SAYIYI ölçüyor:
+       ikinci bir mesaj gelince rozet `1`→`2` olmalı. Parça 100'de eklenen
+       "var/yok" kontrolü tek başına, sayacın hiç artmadığı bir regresyonu
+       yakalayamazdı.
+     - **Doğrulama sınırı:** bu oturumun konteynerinde Flutter SDK YOK
+       (`flutter: command not found`), yani `flutter analyze`/`flutter test`
+       KOŞULAMADI — Dart yarısı ancak `mobile-build.yml` PR'da koştuğunda
+       doğrulanır. Web yarısı tam doğrulandı: `npm run lint`, `npm run
+       build`, Playwright 3/3 ve derlenmiş CSS + Chromium ile geometri
+       ölçümü. Cihazda görsel teyit kullanıcıdan bekleniyor.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 14 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**

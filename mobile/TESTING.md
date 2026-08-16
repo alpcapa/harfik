@@ -763,7 +763,8 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 
 - [ ] **Modal + rozet.** Girişliyken hesap menüsünde "Arkadaşlar" satırı
       görünmeli; başka bir hesaptan sana istek gönderilince (web'den
-      gönderilebilir) satırda kırmızı sayı rozeti + avatarda kırmızı nokta
+      gönderilebilir) satırda kırmızı sayı rozeti + **avatarda aynı sayıyı
+      gösteren rozet** (16 Ağustos 2026'ya kadar sayısız bir noktaydı)
       çıkmalı (tazelenme: uygulamayı yeniden açınca ya da modalı açıp
       kapatınca — Realtime bilinçli yok, web'de de yok).
 - [ ] **Varsayılan sekme.** Bekleyen istek varken modal "İstekler"
@@ -1114,26 +1115,28 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       butonları DEĞİL). Kabul butonu her zaman SOLDA. Dar bir telefonda kart
       ekranın iki yanında yalnızca 16px boşluk bırakmalı (eskiden 40'tı).
       Referans görüntü: `mobile/app/build/screenshots/dialog_message_popup.png`.
-- [ ] **Popup kapanınca nokta temizlenir (HATA DEĞİL).** Popup çıktıysa
+- [ ] **Popup kapanınca rozet temizlenir (HATA DEĞİL).** Popup çıktıysa
       kapatmak (CEVAP VER / KAPAT — ikisi de) o mesajı okundu sayar, yani
-      kırmızı nokta kalmaz. Bu bilinçli ve web'de de aynı; noktanın kalıcı
-      olduğu tek durum susturulmuş göndericidir (popup hiç çıkmaz).
+      rozet kalmaz. Bu bilinçli ve web'de de aynı; rozetin kalıcı olduğu tek
+      durum susturulmuş göndericidir (popup hiç çıkmaz).
 - [ ] **Popup + rozet.** Sohbet KAPALIYKEN karşı taraf mesaj gönderirse
-      Board'daki "Mesajlaşma" butonunda kırmızı nokta + bir popup
-      ("CEVAP VER"/"KAPAT") çıkmalı; CEVAP VER sohbeti açmalı. Sohbet
-      AÇIKKEN gelen mesaj popup AÇMADAN doğrudan listeye eklenmeli.
+      Board'daki "Mesajlaşma" butonunda **sayı rozeti** + bir popup
+      ("CEVAP VER"/"KAPAT") çıkmalı; CEVAP VER sohbeti açmalı. İKİ mesaj
+      gelirse rozet **2** göstermeli. Rozet etiketin son harflerini kapatır
+      (kabul edilen bedel) ama sağdaki "Nasıl Oynanır?" ile ÇAKIŞMAMALI.
+      Sohbet AÇIKKEN gelen mesaj popup AÇMADAN doğrudan listeye eklenmeli.
 - [ ] **Rozet kalıcılığı (uygulama yeniden başlatma).** Karşı taraf mesaj
       gönderdikten SONRA uygulamayı tamamen kapat, aç, aynı oyuna gir —
-      kırmızı nokta hâlâ görünmeli (okundu damgası `chat_last_read`
-      tablosunda, cihaza özel). Sohbeti aç → nokta kaybolmalı; uygulamayı
-      tekrar kapat/aç → nokta bir daha ÇIKMAMALI (aynı mesajlar için).
+      rozet hâlâ görünmeli (okundu damgası `chat_last_read` tablosunda,
+      cihaza özel). Sohbeti aç → rozet kaybolmalı; uygulamayı tekrar kapat/aç
+      → rozet bir daha ÇIKMAMALI (aynı mesajlar için).
 - [ ] **Sessize alma.** Dişli ikonundan bir katılımcıyı seç → "Kişiyi
       Sessize Al" → onay → 🚫 rozeti hem ayarlar listesinde hem o kişinin
       mesaj balonlarının yanında görünmeli. O kişiden yeni bir mesaj
-      gelirse **popup AÇILMAMALI** ama **kırmızı nokta ÇIKMALI**
+      gelirse **popup AÇILMAMALI** ama **rozet ARTMALI**
       (15 Ağustos 2026 kararı: mute yalnızca popup'ı bastırır) ve mesaj
       sohbet geçmişinde görünmeye devam etmeli. Aynı oyunda
-      susturulMAMIŞ başka biri yazarsa hem nokta hem popup çıkmalı
+      susturulMAMIŞ başka biri yazarsa hem rozet hem popup çıkmalı
       (4 kişilik bir oyunda kontrol edilebilir). Aynı kişiyle BAŞKA bir
       Canlı oyun aç — sessize alma hâlâ geçerli olmalı (durum kişiye
       bağlı, oyuna değil).

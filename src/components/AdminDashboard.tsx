@@ -12,7 +12,7 @@ import {
   fetchAdminActivePlayersSeries,
   fetchAdminRetentionCohorts,
   fetchAdminActivationStats,
-  fetchAdminGuestSourceBreakdown,
+  fetchAdminSourceFunnel,
   fetchAdminGuestDeviceBreakdown,
   fetchAdminFeedback,
   markFeedbackHandled,
@@ -35,7 +35,7 @@ import type {
   AdminActivePlayersPoint,
   AdminRetentionCell,
   AdminActivationStats,
-  AdminGuestSourceRow,
+  AdminSourceFunnelRow,
   AdminGuestDeviceRow,
   AdminActivityGranularity,
   AdminFeedbackRow,
@@ -289,6 +289,169 @@ function GuestBreakdownTable<T extends { visitors: number }>({
 }
 
 /**
+ * Kaynak hunisi (Büyüme > Kullanıcı): kaynak → kişi → üye → oyun.
+ *
+ * "Ziyaretçi Kaynağı" tablosunun yerini aldı (16 Ağustos 2026, kullanıcı
+ * isteği). İlk sütun eskisiyle AYNI sayı; üzerine iki adım eklendi.
+ *
+ * SÜTUNLAR İKİ AYRI KAYNAKTAN GELİYOR ve bu bilinçli: "Kişi" anonim
+ * `guest_visits`ten, "Üye"/"Oyun" ise kayıt anında profile damgalanan
+ * `profiles.signup_utm_source`tan. Aralarında join YOK — ziyaret satırlarını
+ * hesaba bağlamak `PrivacyModal`daki anonimlik taahhüdünü bozardı. Bunun
+ * doğal sonucu: bir satırda yalnızca ziyaretçi ya da yalnızca üye olabilir.
+ *
+ * `% / Sayı` düğmesi (16 Ağustos 2026, kullanıcı isteği: "basınca değerden
+ * yüzdeye dönsün, basınca % sayı olsun, dönüşümlü çalışsın") üç sütunu birden
+ * çevirir. Düğme iki etiketi de gösterip aktif olanı vurguluyor: tek kelimelik
+ * bir düğme ("%") "şu an yüzde mi gösteriyorum, yoksa basınca yüzdeye mi
+ * geçerim" belirsizliğini taşırdı.
+ *
+ * YÜZDELERİN TABANI SÜTUNA GÖRE DEĞİŞİR (aynı gün, kullanıcının ikinci
+ * turu: *"kişi %'ye dönünce toplamın yüzdesini göstersin. Ama üye yüzdesi
+ * kişinin % kaçı üye olmuş, oyun yüzdesi de kişinin % kaçı oyun oynamışı
+ * göstersin."*):
+ *   - **Kişi** = sütun payı (o kaynak tüm ziyaretçilerin yüzde kaçı),
+ *   - **Üye**  = `üye / kişi` — o kaynaktan gelenlerin yüzde kaçı üye oldu,
+ *   - **Oyun** = `oynayan kişi / kişi` — yüzde kaçı oyun oynadı.
+ *
+ * "Oyun" sütunu sayı modunda oyun ADEDİNİ, yüzde modunda OYNAYAN KİŞİ oranını
+ * gösterir — taban bilinçli olarak farklı, çünkü "kişilerin yüzde kaçı
+ * oynadı" sorusu oyun adediyle yanıtlanamaz (bir kişi 50 oyun oynayabilir,
+ * `oyun / kişi` %100'ü kolayca aşar ve başka bir şey ölçer). Bu yüzden RPC
+ * ayrı bir `players` (benzersiz oynayan) ölçüsü döndürüyor.
+ *
+ * SINIR: `üye/kişi` ve `oynayan/kişi` yalnızca İKİ UCU DA damgalanmış bir
+ * kaynakta gerçek bir dönüşüm oranıdır — `?ref=instagram` ile gelen ziyaretçi
+ * de oradan üye olan hesap da aynı etiketi taşıdığı için anlamlı. `kişi = 0`
+ * olan satırlarda (ör. damgalama öncesi üyelerin toplandığı "bilinmiyor")
+ * oran HİÇ hesaplanmaz, "—" gösterilir; sıfıra bölmek yerine "bilinmiyor"
+ * demek doğrusu. Oran %100'ü aşabilir (iki ölçü ayrı dimension) ve bu bir
+ * hata değil — ekrandaki açıklama satırı bunu da söylüyor.
+ *
+ * CSV her zaman HAM SAYI verir (düğmeden bağımsız) — retention tablosundaki
+ * aynı karar: yuvarlama kaybı olmaz, yüzde zaten yeniden hesaplanabilir.
+ * `players` tabloda yalnızca yüzdenin içinde görünür, CSV'de ayrı bir sütun.
+ */
+function SourceFunnelTable({ rows }: { rows: AdminSourceFunnelRow[] | null }) {
+  const [asPercent, setAsPercent] = useState(false);
+  if (rows === null) {
+    return <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>;
+  }
+  if (rows.length === 0) {
+    return (
+      <div className="text-xs font-mono text-muted text-center py-6">
+        Bu aralıkta veri yok.
+      </div>
+    );
+  }
+  const total = rows.reduce(
+    (acc, row) => ({
+      visitors: acc.visitors + row.visitors,
+      signups: acc.signups + row.signups,
+      games: acc.games + row.games,
+      players: acc.players + row.players,
+    }),
+    { visitors: 0, signups: 0, games: 0, players: 0 },
+  );
+
+  function handleExportCsv() {
+    downloadCsv(
+      csvFilename('kelimeki-kaynak-funnel'),
+      ['Kaynak', 'Kişi', 'Üye', 'Oyun', 'Oynayan Kişi'],
+      [
+        ...rows!.map((row) => [row.source, row.visitors, row.signups, row.games, row.players]),
+        ['TOPLAM', total.visitors, total.signups, total.games, total.players],
+      ],
+    );
+  }
+
+  const pct = (value: number, base: number) =>
+    `${((value / base) * 100).toFixed(1)}%`;
+
+  /** "Kişi" sütunu — yüzdesi SÜTUN payı. */
+  function visitorCell(value: number): string {
+    if (!asPercent) return String(value);
+    return total.visitors > 0 ? pct(value, total.visitors) : '0.0%';
+  }
+
+  /**
+   * "Üye"/"Oyun" sütunları — yüzdeleri SATIR YÖNÜNDE dönüşüm oranı, tabanı o
+   * satırın "Kişi"si. Taban 0 ise oran yok ("—"): sıfıra bölmek yerine
+   * bilinmediğini söylemek doğrusu (bugün "bilinmiyor" satırı tam bu durumda).
+   */
+  function conversionCell(value: number, rowVisitors: number, percentOf: number): string {
+    if (!asPercent) return String(value);
+    if (rowVisitors <= 0) return '—';
+    return pct(percentOf, rowVisitors);
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-end gap-3">
+        <button
+          type="button"
+          onClick={() => setAsPercent((v) => !v)}
+          aria-pressed={asPercent}
+          aria-label={asPercent ? 'Sayıya dön' : 'Yüzdeye çevir'}
+          /* `py-1 -my-1`: dokunma alanı 13.5 → 21.5px olurken layout ayak izi
+             DEĞİŞMİYOR (negatif margin dolguyu birebir geri alıyor) — aynı
+             desen "Tüm Oyunlarım"daki hamle ikonunda da kullanıldı. Kardeşi
+             olan "CSV İndir" de aynı payı alıyor ki ikisi asimetrik olmasın. */
+          className="text-[9px] font-mono uppercase tracking-[0.5px] py-1 -my-1 active:opacity-70 transition-opacity shrink-0"
+        >
+          <span className={asPercent ? 'text-accent font-bold' : 'text-muted'}>%</span>
+          <span className="text-muted"> / </span>
+          <span className={asPercent ? 'text-muted' : 'text-accent font-bold'}>Sayı</span>
+        </button>
+        <button type="button" onClick={handleExportCsv} className={`${csvLinkCls} py-1 -my-1`}>
+          CSV İndir
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-auto text-[11px] font-mono border-collapse">
+          <thead>
+            <tr className="text-left text-muted border-b border-border">
+              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px]">Kaynak</th>
+              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Kişi</th>
+              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Üye</th>
+              <th className="py-1.5 font-bold uppercase tracking-[1px] text-center">Oyun</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.source} className="border-b border-border/50">
+                <td className="py-1.5 pr-8 text-text whitespace-nowrap">{row.source}</td>
+                <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">
+                  {visitorCell(row.visitors)}
+                </td>
+                <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">
+                  {conversionCell(row.signups, row.visitors, row.signups)}
+                </td>
+                <td className="py-1.5 text-muted whitespace-nowrap text-center">
+                  {conversionCell(row.games, row.visitors, row.players)}
+                </td>
+              </tr>
+            ))}
+            <tr className="border-b border-border/50">
+              <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap">TOPLAM</td>
+              <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">
+                {visitorCell(total.visitors)}
+              </td>
+              <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">
+                {conversionCell(total.signups, total.visitors, total.signups)}
+              </td>
+              <td className="py-1.5 text-text font-bold whitespace-nowrap text-center">
+                {conversionCell(total.games, total.visitors, total.players)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Retention kohort tablosu (Büyüme > Kullanıcı) — satır: kayıt haftası,
  * sütun: kayıttan sonraki hafta (H0 = kayıt haftasının kendisi).
  *
@@ -506,7 +669,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [userActivity, setUserActivity] = useState<AdminUserActivityPoint[] | null>(null);
   const [userGranularity, setUserGranularity] = useState<AdminActivityGranularity>('day');
   const [userPeriod, setUserPeriod] = useState<number>(30);
-  const [guestSources, setGuestSources] = useState<AdminGuestSourceRow[] | null>(null);
+  const [sourceFunnel, setSourceFunnel] = useState<AdminSourceFunnelRow[] | null>(null);
   const [guestDevices, setGuestDevices] = useState<AdminGuestDeviceRow[] | null>(null);
   const [friendActivity, setFriendActivity] = useState<AdminFriendActivityPoint[] | null>(null);
   const [activePlayers, setActivePlayers] = useState<AdminActivePlayersPoint[] | null>(null);
@@ -628,7 +791,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     const days = userPeriod * GRANULARITY_TO_DAYS[userGranularity];
     Promise.all([
       fetchAdminUserActivitySeries(userPeriod, userGranularity).then(setUserActivity),
-      fetchAdminGuestSourceBreakdown(days).then(setGuestSources),
+      fetchAdminSourceFunnel(days).then(setSourceFunnel),
       fetchAdminGuestDeviceBreakdown(days).then(setGuestDevices),
       fetchAdminFriendActivitySeries(userPeriod, userGranularity).then(setFriendActivity),
       fetchAdminActivePlayersSeries(userPeriod, userGranularity).then(setActivePlayers),
@@ -1250,16 +1413,30 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
                   <div className="flex flex-col gap-2">
                     <span className={sectionTitleCls}>
-                      Ziyaretçi Kaynağı (Son {userPeriod} {PERIOD_UNIT_LABEL[userGranularity]})
+                      Kaynak Hunisi (Son {userPeriod} {PERIOD_UNIT_LABEL[userGranularity]})
                     </span>
-                    <GuestBreakdownTable
-                      columnLabel="Kaynak"
-                      emptyLabel="Bu aralıkta misafir ziyareti yok."
-                      rows={guestSources}
-                      getKey={(row) => row.source}
-                      getLabel={(row) => row.source}
-                      csvBaseName="kelimeki-ziyaretci-kaynagi"
-                    />
+                    <SourceFunnelTable rows={sourceFunnel} />
+                    {/* Tanım ekranın KENDİSİNDE yazıyor — dokümanda kalsaydı ilk
+                        yanlış yorum kaçınılmazdı (retention/aktif oyuncu panellerinde
+                        aynı karar). */}
+                    <p className="text-[10px] font-mono text-muted leading-relaxed max-w-[560px]">
+                      <b>Kişi</b> = o kaynaktan gelen benzersiz misafir ziyaretçi;{' '}
+                      <b>Üye</b> = o kaynak damgasıyla açılan hesap; <b>Oyun</b> = o
+                      hesapların bitirdiği oyun. Pencere her adıma kendi olay tarihinden
+                      uygulanır (kohort değil): 2 ay önce üye olup bugün oynayan biri
+                      "Oyun"a girer, "Üye"ye girmez.{' '}
+                      <b>Bilinmiyor</b> = kaynak damgası olmayan hesaplar — bu özellik
+                      16 Ağustos 2026'da eklendi ve geriye dönük doldurulamıyor, ayrıca
+                      mobil uygulamadan gelen kayıtlar henüz damgalanmıyor.{' '}
+                      <b>Direkt</b> = web'e <code>?ref=</code> olmadan geliş. "Kişi" ile
+                      "Üye" iki ayrı ölçümdür (ziyaretler anonim, hesaba bağlanmaz).{' '}
+                      <b>% / Sayı</b> düğmesi üç sütunu birden çevirir: <b>Kişi</b> yüzdesi o
+                      sütunun payı, <b>Üye</b> ve <b>Oyun</b> yüzdeleri ise o satırın
+                      "Kişi"sine göre dönüşüm — sırasıyla kaçının üye olduğu ve kaçının oyun
+                      oynadığı (oyun ADEDİ değil, oynayan KİŞİ). Kişi 0 ise oran hesaplanmaz
+                      ("—"); iki ucu da damgalanmamış kaynaklarda oran %100'ü aşabilir. CSV
+                      her zaman ham sayı verir (oynayan kişi sayısı da ayrı bir sütun olarak).
+                    </p>
                   </div>
                   <div className="flex flex-col gap-2">
                     <span className={sectionTitleCls}>

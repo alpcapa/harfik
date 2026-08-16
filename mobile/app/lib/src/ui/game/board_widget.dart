@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
+import 'count_badge.dart';
 import 'neo_box.dart';
 import 'outline.dart';
 import 'player_colors.dart';
@@ -96,9 +97,11 @@ class BoardWidget extends StatelessWidget {
   /// edilmez, Oyun İçi Mesajlaşma yerelde kapsam dışı.
   final VoidCallback? onOpenMessaging;
 
-  /// `onOpenMessaging` butonunun üstünde küçük bir kırmızı nokta —
-  /// sohbet kapalıyken okunmamış mesaj geldiğini belli etmek için.
-  final bool hasUnreadMessage;
+  /// `onOpenMessaging` butonunun sağ üstünde okunmamış mesaj SAYISI
+  /// (`CountBadge`). 16 Ağustos 2026'ya kadar sayısız bir kırmızı noktaydı;
+  /// kullanıcı fark edilmediğini bildirince iki platformda birden projenin
+  /// öteki rozetleriyle aynı görsele çekildi.
+  final int unreadMessageCount;
 
   /// Alt şeridin SAĞ ucundaki "Nasıl Oynanır?" linki (14 Ağustos 2026,
   /// kullanıcı isteği) — buraya kadar X2/X3 açıklaması duruyordu. Bonus
@@ -131,7 +134,7 @@ class BoardWidget extends StatelessWidget {
     this.gridKey,
     this.onOpenHistory,
     this.onOpenMessaging,
-    this.hasUnreadMessage = false,
+    this.unreadMessageCount = 0,
     this.onOpenHelp,
     this.hideFooter = false,
     this.onlineStatus,
@@ -316,18 +319,23 @@ class BoardWidget extends StatelessWidget {
                           ),
                         ],
                       ),
-                      if (hasUnreadMessage)
+                      // Konum web'de ölçülerek seçildi (`-top-1 -right-1`):
+                      // rozet satır içi olsaydı şeride ~20px eklerdi ve dar
+                      // telefonlarda "Nasıl Oynanır?" ile çakışırdı. Beyaz
+                      // halka web'in `ring-2 ring-panel`i — rozet altındaki
+                      // mavi etiketten ayrışsın diye.
+                      if (unreadMessageCount > 0)
                         Positioned(
                           top: -4,
                           right: -4,
                           child: Container(
-                            key: const ValueKey('chat-unread-dot'),
-                            width: 10,
-                            height: 10,
+                            key: const ValueKey('chat-unread-badge'),
+                            padding: const EdgeInsets.all(2),
                             decoration: const BoxDecoration(
-                              color: kRed,
+                              color: Colors.white,
                               shape: BoxShape.circle,
                             ),
+                            child: CountBadge(count: unreadMessageCount),
                           ),
                         ),
                     ],
