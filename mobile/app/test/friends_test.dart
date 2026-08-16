@@ -18,6 +18,7 @@ import 'package:kelimeki/src/data/stats_api.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:kelimeki/src/storage/pending_event_store.dart';
 import 'package:kelimeki/src/ui/auth/account_button.dart';
+import 'package:kelimeki/src/ui/auth/k_avatar.dart';
 import 'package:kelimeki/src/ui/friends/friends_modal.dart';
 import 'package:kelimeki/src/ui/score/player_score_card_modal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -668,7 +669,7 @@ void main() {
   });
 
   group('AccountButton + PlayerScoreCard', () {
-    testWidgets('menüde Arkadaşlar satırı + rozet + avatar noktası',
+    testWidgets('menüde Arkadaşlar satırı + rozet; avatarda da AYNI sayı',
         (tester) async {
       await setPhoneViewSize(tester, const Size(420, 900));
       final gw = FakeFriendsGateway()
@@ -695,7 +696,18 @@ void main() {
       await tester.tap(find.byType(AccountButton));
       await tester.pumpAndSettle();
       expect(find.textContaining('Arkadaşlar'), findsOneWidget);
-      expect(find.text('2'), findsOneWidget); // rozet
+      // 16 Ağustos 2026: avatardaki sayısız kırmızı nokta da `CountBadge`e
+      // çevrildi, yani "2" artık İKİ yerde yazıyor — menü satırında ve
+      // avatarın üstünde. Bunu `findsNWidgets(2)` ile geçiştirmek zayıf
+      // olurdu (hangisinin hangisi olduğunu söylemez); ikisi ayrı ayrı
+      // ölçülüyor. Avatar rozeti web'de arkadaşlık isteği + admin bekleyen
+      // işinin TOPLAMI; portta admin paneli olmadığından tek kaynak istek.
+      expect(
+        find.descendant(of: find.byType(KAvatar), matching: find.text('2')),
+        findsOneWidget,
+        reason: 'avatar rozeti bekleyen istek sayısını göstermeli',
+      );
+      expect(find.text('2'), findsNWidgets(2)); // menü satırı + avatar
     });
 
     testWidgets(
