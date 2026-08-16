@@ -4477,12 +4477,34 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ikinci bir mesaj gelince rozet `1`→`2` olmalı. Parça 100'de eklenen
        "var/yok" kontrolü tek başına, sayacın hiç artmadığı bir regresyonu
        yakalayamazdı.
-     - **Doğrulama sınırı:** bu oturumun konteynerinde Flutter SDK YOK
-       (`flutter: command not found`), yani `flutter analyze`/`flutter test`
-       KOŞULAMADI — Dart yarısı ancak `mobile-build.yml` PR'da koştuğunda
-       doğrulanır. Web yarısı tam doğrulandı: `npm run lint`, `npm run
-       build`, Playwright 3/3 ve derlenmiş CSS + Chromium ile geometri
-       ölçümü. Cihazda görsel teyit kullanıcıdan bekleniyor.
+     - **Doğrulama sınırı ve SONUCU — bu sınır AYNI GÜN gerçekleşti:** bu
+       oturumun konteynerinde Flutter SDK YOK (`flutter: command not
+       found`), yani `flutter analyze`/`flutter test` KOŞULAMADI. Web yarısı
+       tam doğrulandı (`npm run lint`, `npm run build`, Playwright 3/3,
+       derlenmiş CSS + Chromium ölçümü) ama **Dart yarısı `main`'e merge
+       edilince CI'da DÜŞTÜ**: `mobile-build.yml`, `b2ca8fa`ta 434 geçti
+       **2 düştü**. `flutter analyze` temizdi, `kelimeki_core`/Android/iOS
+       job'ları geçti — düşen yalnızca iki widget testiydi ve ikisi de
+       üretim kodu hatası DEĞİL, bu değişikliğin test beklentilerine
+       yansıtılmamış olmasıydı:
+       - `friends_test`: avatar da artık sayı gösterdiğinden `"2"` İKİ yerde
+         (menü satırı + avatar) → `findsOneWidget` düştü. Düzeltme
+         `findsNWidgets(2)` ile geçiştirilMEdi; avatar rozeti `KAvatar` alt
+         ağacında AYRICA ölçülüyor, böylece hangi "2"nin hangisi olduğu
+         testten okunuyor ve rozet yanlış yere düşerse test yine yakalar.
+       - `online_game_chat_test`: sayacın `1→2` arttığını ölçmek için aynı
+         susturulmuş gönderenden ikinci mesaj eklenmişti, dolayısıyla
+         thread'de iki 🚫 rozeti var → `findsNWidgets(2)`.
+       **Ders:** bir görsel göstergeyi "var/yok"tan "sayı"ya çevirmek, o
+       göstergeyi ölçen HER testin beklentisini de değiştirir — aynı sayı
+       artık birden fazla yerde yazıyor olabilir. Flutter koşulamayan bir
+       oturumda bu ancak CI'da görülür; PR'ı merge etmeden CI'ı beklemek
+       (ya da en azından merge sonrası run'ı KONTROL ETMEK) şart.
+       Düzeltme `60d2113` ile merge edildi, dört job da yeşil.
+     - **Web yarısı 16 Ağustos 2026'da gerçek cihazda teyit edildi**
+       (avatar rozetinin toplamı, oyun ekranında kırpılmaması, sohbet
+       rozetinin sayması). **Mobil tarafın cihaz teyidi hâlâ bekliyor** —
+       `mobile/TESTING.md` bölüm 10 (avatar) ve 11 (sohbet rozeti).
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 14 Ağustos 2026)
 
@@ -4528,6 +4550,11 @@ ankrajı (Parça 86), HEIC seçimi ve galeri izni reddi (Parça 87).
 Son iki günde düzeltme yapıldıkça listeye madde eklendi ama o maddeler
 hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
 
+- **16 Ağustos (Parça 103):** avatarda ve sohbet butonunda artık NOKTA değil
+  SAYI rozeti — bölüm 10 (arkadaşlık isteği gelince avatarda sayı) ve bölüm
+  11 (sohbet kapalıyken gelen mesaj; İKİ mesajda rozet **2** olmalı;
+  susturulmuş gönderende popup yok ama rozet artmalı). **Web yarısı
+  16 Ağustos'ta cihazda teyit edildi, mobil yarısı koşulmadı.**
 - **15 Ağustos (Parça 101):** "YAPAY ZEKA İLE" sekme rozeti = "Devam
   Edenler" alt sekmesinin rozetiyle aynı sayı
 - **15 Ağustos (Parça 100):** susturulmuş gönderende kırmızı nokta ÇIKMALI
