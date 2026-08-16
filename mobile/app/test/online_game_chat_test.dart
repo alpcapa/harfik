@@ -382,7 +382,10 @@ void main() {
       await tester.tap(find.text('Mesajlaşma'));
       await tester.pumpAndSettle();
       expect(find.text('Gizli mesaj'), findsOneWidget); // ama thread'de var
-      expect(find.text('🚫'), findsOneWidget); // rozet
+      // Rozet her balonda çizilir; yukarıda sayacı 2'ye çıkarmak için AYNI
+      // susturulmuş gönderenden ikinci bir mesaj eklendiğinden 🚫 de iki tane.
+      expect(find.text('Gizli mesaj 2'), findsOneWidget);
+      expect(find.text('🚫'), findsNWidgets(2)); // rozet, mesaj başına bir
       await unmount(tester);
     });
 
