@@ -1125,6 +1125,14 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       gelirse rozet **2** göstermeli. Rozet etiketin son harflerini kapatır
       (kabul edilen bedel) ama sağdaki "Nasıl Oynanır?" ile ÇAKIŞMAMALI.
       Sohbet AÇIKKEN gelen mesaj popup AÇMADAN doğrudan listeye eklenmeli.
+- [ ] **Popup kendiliğinden KAPANMAZ; zemine dokunmak da kapatmaz
+      (Parça 104).** Popup çıktıktan sonra hiçbir şeye dokunmadan bekle —
+      kapanmamalı (otomatik kapanma YOK, web'de de yok). Sonra popup'ın
+      DIŞINDA bir yere (tahta/başlık) dokun — yine kapanmamalı; kapanmanın
+      tek yolu CEVAP VER / KAPAT. **Bu madde 16 Ağustos 2026'da eklendi:**
+      Flutter'ın `showDialog` varsayılanı zemin dokunuşuyla kapanmaktı,
+      web'de ise popup'ın zemini tıklanamaz. Bildirilen bir hata değil,
+      kod incelemesinde bulundu (bkz. `mobile/CLAUDE.md`, Parça 104).
 - [ ] **Rozet kalıcılığı (uygulama yeniden başlatma).** Karşı taraf mesaj
       gönderdikten SONRA uygulamayı tamamen kapat, aç, aynı oyuna gir —
       rozet hâlâ görünmeli (okundu damgası `chat_last_read` tablosunda,

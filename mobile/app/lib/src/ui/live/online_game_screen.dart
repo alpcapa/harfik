@@ -586,6 +586,15 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     _popupDialogActive = true;
     final result = await showDialog<String>(
       context: context,
+      // Web'de bu popup'ın zemini TIKLANAMAZ (`fixed inset-0` kabında hiç
+      // `onClick` yok) — kapatmanın tek yolu ✕ / CEVAP VER / KAPAT.
+      // Flutter'ın varsayılanı ise `barrierDismissible: true`, yani ekranın
+      // herhangi bir yerine dokunmak popup'ı kapatıyordu: kullanıcı için
+      // bu, mesajın "kendiliğinden gidiyor" gibi görünmesi demek. İki
+      // görünür buton olduğundan kapana kısılma riski YOK (bkz. Parça 85 —
+      // ActionSheet'te zemin dokunuşu bilerek AÇIK bırakılmıştı, orada
+      // aksiyonsuz çıkış için başka yol kalmıyordu).
+      barrierDismissible: false,
       builder: (_) => ListenableBuilder(
         listenable: _chatState,
         builder: (context, _) {

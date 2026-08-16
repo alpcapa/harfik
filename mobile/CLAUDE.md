@@ -4477,12 +4477,95 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ikinci bir mesaj gelince rozet `1`→`2` olmalı. Parça 100'de eklenen
        "var/yok" kontrolü tek başına, sayacın hiç artmadığı bir regresyonu
        yakalayamazdı.
-     - **Doğrulama sınırı:** bu oturumun konteynerinde Flutter SDK YOK
-       (`flutter: command not found`), yani `flutter analyze`/`flutter test`
-       KOŞULAMADI — Dart yarısı ancak `mobile-build.yml` PR'da koştuğunda
-       doğrulanır. Web yarısı tam doğrulandı: `npm run lint`, `npm run
-       build`, Playwright 3/3 ve derlenmiş CSS + Chromium ile geometri
-       ölçümü. Cihazda görsel teyit kullanıcıdan bekleniyor.
+     - **Doğrulama sınırı ve SONUCU — bu sınır AYNI GÜN gerçekleşti:** bu
+       oturumun konteynerinde Flutter SDK YOK (`flutter: command not
+       found`), yani `flutter analyze`/`flutter test` KOŞULAMADI. Web yarısı
+       tam doğrulandı (`npm run lint`, `npm run build`, Playwright 3/3,
+       derlenmiş CSS + Chromium ölçümü) ama **Dart yarısı `main`'e merge
+       edilince CI'da DÜŞTÜ**: `mobile-build.yml`, `b2ca8fa`ta 434 geçti
+       **2 düştü**. `flutter analyze` temizdi, `kelimeki_core`/Android/iOS
+       job'ları geçti — düşen yalnızca iki widget testiydi ve ikisi de
+       üretim kodu hatası DEĞİL, bu değişikliğin test beklentilerine
+       yansıtılmamış olmasıydı:
+       - `friends_test`: avatar da artık sayı gösterdiğinden `"2"` İKİ yerde
+         (menü satırı + avatar) → `findsOneWidget` düştü. Düzeltme
+         `findsNWidgets(2)` ile geçiştirilMEdi; avatar rozeti `KAvatar` alt
+         ağacında AYRICA ölçülüyor, böylece hangi "2"nin hangisi olduğu
+         testten okunuyor ve rozet yanlış yere düşerse test yine yakalar.
+       - `online_game_chat_test`: sayacın `1→2` arttığını ölçmek için aynı
+         susturulmuş gönderenden ikinci mesaj eklenmişti, dolayısıyla
+         thread'de iki 🚫 rozeti var → `findsNWidgets(2)`.
+       **Ders:** bir görsel göstergeyi "var/yok"tan "sayı"ya çevirmek, o
+       göstergeyi ölçen HER testin beklentisini de değiştirir — aynı sayı
+       artık birden fazla yerde yazıyor olabilir. Flutter koşulamayan bir
+       oturumda bu ancak CI'da görülür; PR'ı merge etmeden CI'ı beklemek
+       (ya da en azından merge sonrası run'ı KONTROL ETMEK) şart.
+       Düzeltme `60d2113` ile merge edildi, dört job da yeşil.
+     - **16 Ağustos 2026 — İKİ PLATFORM DA gerçek cihazda teyit edildi.**
+       Web: avatar rozetinin toplamı, oyun ekranında kırpılmaması, sohbet
+       rozetinin sayması ve "Nasıl Oynanır?" ile çakışmaması. Mobil
+       (`mobile/TESTING.md` bölüm 10 + 11): arkadaşlık isteğinde avatarda
+       nokta değil SAYI, menüdeki "Arkadaşlar" rozetiyle aynı sayı; sohbet
+       kapalıyken gelen mesajda sayaç, ikinci mesajda **2**; sohbet açılınca
+       sıfırlanması ve uygulama kapat/aç sonrası geri gelmemesi; susturulmuş
+       gönderende popup YOK ama rozet ARTIYOR.
+
+   - ✅ **Parça 104 — yeni mesaj popup'ı ZEMİNE dokununca kapanıyordu; web'de
+     zemin tıklanamaz (16 Ağustos 2026, `online_game_screen.dart`):**
+     **Bildirilen bir hata DEĞİL — bir yanlış anlamanın yan ürünü, kayda
+     öyle geçsin.** Kullanıcı iki cihazlı mesajlaşma turunu koşup *"Popup
+     geldi ve gitti"* dedi; ben bunu "kendiliğinden kayboldu" diye okudum,
+     oysa "iki taraf da mesaj attı ve göründü" demekti — yani madde
+     GEÇMİŞTİ. Araştırma yine de gerçek bir web↔port sapması buldu ve
+     düzeltildi; ama bu bölümü bir kullanıcı şikayeti sanan bir sonraki
+     oturum yanlış bir izin peşine düşer.
+     - **Önce "otomatik kapanma" arandı ve KOD ÜZERİNDEN ELENDİ:**
+       `_showNewMessagePopup` içinde ne `Timer` ne `Future.delayed` var;
+       `_fetchChat`/`_seedInitialUnread` `newMessagePopup`a HİÇ dokunmuyor
+       (yalnızca `messages`/`unreadCount`), yani ön plana dönüşteki
+       tazeleme (Parça 95) dialog route'unu kapatamaz; `Navigator.pop`
+       çağıran altı yerin hiçbiri bu popup'ın yolunda değil. Yani mesaj
+       "kendiliğinden" gitmiyor.
+     - **Geriye kalan TEK buton-dışı çıkış yolu barrier'dı ve o gerçek bir
+       web sapması:** web'de popup `fixed inset-0 z-[200]` bir kapta ve o
+       kabın **hiç `onClick`i yok** (`OnlineGameScreen.tsx:1482`) — kapatma
+       yalnızca ✕ / CEVAP VER / KAPAT. Flutter'ın `showDialog`ı ise
+       VARSAYILAN olarak `barrierDismissible: true`, yani ekranın herhangi
+       bir yerine (tahtaya, başlığa) dokunmak popup'ı kapatıyordu. Kullanıcı
+       için bu, mesajın kendiliğinden kaybolması gibi görünür — üstelik
+       kapanış `unreadCount: 0` + `markChatRead` de yaptığından geriye
+       rozet bile kalmıyor, yani mesaj hiç görünmemiş gibi oluyor.
+       `barrierDismissible: false` eklendi.
+     - **Parça 85'in "kapana kısılma" gerekçesi burada GEÇERSİZ ve bu
+       bilinçli:** orada (ActionSheet) zemin dokunuşu aksiyonsuz çıkışın
+       TEK yoluydu, o yüzden bilerek açık bırakılmıştı; burada iki görünür
+       buton var ve KAPAT web'in ✕'iyle aynı işi yapıyor. Web'deki ✕ porta
+       EKLENMEDİ — `KDialogCard`'ın kapatma ikonu yok ve KAPAT onunla
+       fonksiyonel olarak özdeş.
+     - **Test — mevcut popup testine eklendi:** zemine (`tapAt(Offset(5,5))`)
+       dokunulunca popup'ın DURDUĞU doğrulanıyor. Düzeltme olmadan bu
+       assertion kullanıcının tarif ettiği semptomu birebir üretir (popup ve
+       mesaj ekrandan kaybolur).
+     - **Doğrulama sınırı — Parça 103'ün dersi HÂLÂ geçerli:** bu oturumun
+       konteynerinde Flutter SDK YOK (`flutter: command not found`), yani
+       `flutter analyze`/`flutter test` KOŞULAMADI; kanıt CI'ın
+       (`mobile-build.yml`) yeşile dönmesi. Cihazda görsel teyit
+       `mobile/TESTING.md` bölüm 11'e madde olarak eklendi.
+     - **Kapsam dışı (bilinçli):** `showKConfirm`/`showKInfo` hâlâ
+       varsayılan `barrierDismissible: true` — onlar kullanıcının KENDİ
+       başlattığı onay/bilgi kartları ve zemin dokunuşu orada "vazgeç"e
+       eşdeğer; zararsız. Zararlı olan, kullanıcının istemediği bir anda
+       ÜSTÜNE gelen bir bildirimin kazara kapanmasıydı.
+     - **Ders — bir test turu raporunu "hata bildirimi" diye okumadan önce
+       maddenin BEKLENEN sonucunu oku.** `mobile/TESTING.md` bölüm 11'in
+       ilgili maddesi zaten "iki taraf da mesaj atabilmeli" diyordu; kısa
+       bir "geldi ve gitti" cevabını o maddeye göre yorumlamak yerine
+       kendi hipotezime göre yorumladım ve kullanıcıya "bu hata" dedim.
+       Bu, Parça 36'nın dersinin (bir isteğin kapsamını KENDİN daraltma)
+       simetriği: **kullanıcının cevabına kendin bir şikayet EKLEME.**
+       Bedeli burada küçüktü (tek satırlık, gerçek bir sapmayı kapatan bir
+       değişiklik) ama aynı refleks bir sonraki turda çalışan bir şeyi
+       "düzeltmeye" kalkabilir.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 14 Ağustos 2026)
 
@@ -4530,9 +4613,10 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
 
 - **15 Ağustos (Parça 101):** "YAPAY ZEKA İLE" sekme rozeti = "Devam
   Edenler" alt sekmesinin rozetiyle aynı sayı
-- **15 Ağustos (Parça 100):** susturulmuş gönderende kırmızı nokta ÇIKMALI
-  (popup çıkmamalı); 4 kişilik oyunda susturulmamış gönderende ikisi de
-  çıkmalı (iki platform)
+- ~~**15 Ağustos (Parça 100):** susturulmuş gönderende rozet ÇIKMALI (popup
+  çıkmamalı)~~ → **16 Ağustos'ta iki platformda da koşuldu** (Parça 103
+  turuyla birlikte). 4 kişilik oyunda "susturulmamış gönderende ikisi de
+  çıkmalı" kontrolü hâlâ koşulmadı — 2 kişilikte görünmüyor.
 - **14 Ağustos (Parça 96):** çevrimdışı Canlı oyun — açılışta panel +
   hamlede açıklayıcı uyarı (iki platform)
 - **14 Ağustos (Parça 95) — Canlı turunun BEŞ düzeltmesi, hiçbiri cihazda
