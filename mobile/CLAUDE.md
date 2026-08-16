@@ -4344,10 +4344,15 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **`mobile/` DIŞINDA dosya değişti** (web yarısı aynı gün, aynı
        dalda) → kök `CLAUDE.md` + iki `TESTING.md` aynı commit'te
        güncellendi (Parça Bitirme Kontrol Listesi madde 1).
-     - **Doğrulama sınırı:** iki gerçek hesapla cihazda teyit bekleniyor —
+     - ~~**Doğrulama sınırı:** iki gerçek hesapla cihazda teyit bekleniyor —
        özellikle 4 kişilik bir oyunda "susturulmamış gönderen hâlâ popup
-       açıyor" kontrolü (2 kişilikte görünmez). Maddeler `mobile/TESTING.md`
-       bölüm 11 ve kök `TESTING.md` bölüm 3'e eklendi.
+       açıyor" kontrolü~~ → **16 Ağustos 2026'da cihazda KOŞULDU ve GEÇTİ**,
+       4 kişilik kontrol dahil. Yani kararın iki yarısı da gerçek uçla
+       kanıtlandı: susturulanda popup YOK/rozet VAR, susturulmayanda İKİSİ
+       de var — filtrenin yanlışlıkla "sohbet geneli sessize alma"ya
+       dönüşmediğinin tek gerçek kanıtı bu ikinci yarı (2 kişilikte
+       görünmez). Maddeler `mobile/TESTING.md` bölüm 11 ve kök
+       `TESTING.md` bölüm 3'te.
 
    - ✅ **Parça 101 — "Yapay Zeka ile" sekme rozeti porta hiç girmemişti
      (15 Ağustos 2026, `setup_screen.dart`):** Kullanıcı bölüm 11 turunda
@@ -4444,10 +4449,14 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - Doğrulama: `flutter analyze` "No issues found!"; **tam takım 436/436
        yeşil** (428'den +8). `kelimeki_core`'a hiç dokunulmadı; web'e hiç
        dokunulmadı (yalnızca ölçüm kaynağı olarak okundu).
-     - **Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor.
+     - ~~**Doğrulama sınırı:** cihazda görsel teyit kullanıcıdan bekleniyor.~~
        Ekran görüntüsü `build/screenshots/dialog_message_popup.png` olarak
        üretilip gözle incelendi (panel zemin, düşen gölge, accent CEVAP VER
-       + nötr KAPAT) — `mobile/TESTING.md` bölüm 11'e madde eklendi.
+       + nötr KAPAT) → **16 Ağustos 2026'da cihazda KOŞULDU ve GEÇTİ**
+       (`mobile/TESTING.md` bölüm 11, "Uyarı pencerelerinin tasarımı" —
+       yeni mesaj popup'ı, sohbet tanıtımı, "Pas Geçiyorsun!", "Tekrar
+       Oyna", "Sınır İhlali!" ve arkadaşlık onaylarının HEPSİ tek turda
+       kontrol edildi). Sekiz ham `AlertDialog`ın hiçbiri geride kalmamış.
 
    - ✅ **Parça 103 — sayısız kırmızı noktalar `CountBadge`e çevrildi
      (16 Ağustos 2026, `board_widget.dart` + `k_avatar.dart` + web
@@ -4549,8 +4558,11 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Doğrulama sınırı — Parça 103'ün dersi HÂLÂ geçerli:** bu oturumun
        konteynerinde Flutter SDK YOK (`flutter: command not found`), yani
        `flutter analyze`/`flutter test` KOŞULAMADI; kanıt CI'ın
-       (`mobile-build.yml`) yeşile dönmesi. Cihazda görsel teyit
-       `mobile/TESTING.md` bölüm 11'e madde olarak eklendi.
+       (`mobile-build.yml`) yeşile dönmesi. **Cihazda 16 Ağustos 2026'da
+       KOŞULDU ve GEÇTİ** — popup ne kendiliğinden kapandı ne de zemine
+       (tahta/başlık) dokununca; tek kapanma yolu CEVAP VER / KAPAT.
+       Bildirilen bir hata değildi, kod incelemesinde bulunmuştu; yine de
+       gerçek bir sapmaydı ve artık uçtan uca doğrulandı.
      - **Kapsam dışı (bilinçli):** `showKConfirm`/`showKInfo` hâlâ
        varsayılan `barrierDismissible: true` — onlar kullanıcının KENDİ
        başlattığı onay/bilgi kartları ve zemin dokunuşu orada "vazgeç"e
@@ -4677,7 +4689,7 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | 8 · Dayanıklılık (uçak modu) | ✅ | 8.2/8.3/8.5/8.6 — Parça 43-46; 16 Ağu: uçak modunda ÇIK–GİR hamleyi siliyordu (Parça 105) → düzeltme **aynı gün cihazda doğrulandı** |
 | 9 · Görüş Bildir | 🟡 | 9.5 geçti (Parça 49); **9.3/9.4 Parça 48 düzeltmesinden sonra tekrar koşulmalı** |
 | 10 · Arkadaşlar | ✅ | tamamı (11 Ağu) + moderasyon geri alma, iki yol (14 Ağu, Parça 91) |
-| 11 · Canlı oyun | 🟡 | **14 Ağu: davet/kabul + tahta bölümü baştan koşuldu (Parça 95, 5 bulgu) — mesajlaşma alt bölümü ve tekil/SQL maddeleri hâlâ koşulmadı**; düzeltmelerin cihaz teyidi bekliyor |
+| 11 · Canlı oyun | 🟡 | 14 Ağu: davet/kabul + tahta koşuldu (Parça 95, 5 bulgu). **16 Ağu: mesajlaşma alt bölümünün 14 maddesi de koşuldu — hepsi geçti, sıfır bulgu** (Parça 11/100/102/104'ün doğrulama sınırları kapandı). **Kalan: tekil/SQL maddeleri** — ret, hesap değişimi, süresi dolmuş davet, 48 saat sıra aşımı |
 | 12 · Hesap Ayarları | ✅ | avatar RLS + küçültme uçtan uca (Parça 82/83) |
 | 13 · k-lig ödül & rütbe | ✅ | 12 Ağu (Parça 66) |
 
@@ -4704,8 +4716,11 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   turunda koşuldu.**
 - ~~**15 Ağustos (Parça 100):** susturulmuş gönderende rozet ÇIKMALI (popup
   çıkmamalı)~~ → **16 Ağustos'ta iki platformda da koşuldu** (Parça 103
-  turuyla birlikte). 4 kişilik oyunda "susturulmamış gönderende ikisi de
-  çıkmalı" kontrolü hâlâ koşulmadı — 2 kişilikte görünmüyor.
+  turuyla birlikte); **4 kişilik "susturulmamış gönderende ikisi de
+  çıkmalı" kontrolü de 16 Ağustos'ta mesajlaşma turunda koşuldu.**
+- ~~**16 Ağustos (Parça 102/104):** sekiz diyaloğun web kartına çekilmesi
+  (kabul butonu solda, mavi dolgu) + popup'ın zemin dokunuşuyla
+  kapanmaması~~ → **16 Ağustos'ta mesajlaşma turunda koşuldu.**
 - ~~**14 Ağustos (Parça 96):** çevrimdışı Canlı oyun — açılışta panel +
   hamlede açıklayıcı uyarı (iki platform)~~ → **16 Ağustos'ta Blok 7
   turunda koşuldu** (uçak modu adımlarıyla birlikte).
@@ -4732,17 +4747,25 @@ ilk yazılan sıralama yalnızca ikinci dalı kapsıyordu), artı negatif eşi.
 
 ### Sıradaki tur için öneri
 
-Bölüm 11'in **davet/kabul + tahta** kısmı 14 Ağustos'ta koşuldu ve tek
-turda beş bulgu çıkardı (Parça 95); 16 Ağustos'taki Blok 7 turu bölüm 7 ile
-uçak modu adımlarını kapsadı, **veri kaybına yol açan tek bulgu** çıkardı
-(Parça 105) ve düzeltmesi AYNI GÜN cihazda doğrulandı — yani şu an bilinen
-bir veri kaybı yolu YOK.
+Bölüm 11 iki turda kapanmaya çok yaklaştı: **davet/kabul + tahta** 14
+Ağustos'ta koşulup beş bulgu çıkardı (Parça 95); **mesajlaşma alt bölümü**
+16 Ağustos'ta 14 maddeyle koşuldu ve **sıfır bulgu** çıkardı — dört ayrı
+parçanın (11/100/102/104) aylardır açık duran doğrulama sınırları tek
+turda kapandı. Aynı gün Blok 7 turu bölüm 7 + uçak modunu kapsadı ve
+**veri kaybına yol açan tek bulguyu** (Parça 105) çıkarıp düzeltmesi AYNI
+GÜN doğrulandı — yani şu an bilinen bir veri kaybı yolu YOK.
 
-Sıradaki tur bölüm 11'in henüz koşulmamış kısımlarıyla başlamalı:
-**mesajlaşma alt bölümü** (11 maddesinin çoğu; Parça 95'in sohbet
-düzeltmesi tam da orayı ilgilendiriyor) ve **tekil/SQL maddeleri** (ret,
-hesap değişimi, süresi dolmuş davet, 48 saat süre aşımı). Sonra **9.6
-tekrarı** (belgede yazan sırayla + negatif eşi).
+Sıradaki tur, kalan üç 🟡'yi kapatmalı ve **hepsi kısa**:
+1. **Bölüm 11'in tekil/SQL maddeleri** — ret, hesap değişimi, süresi
+   dolmuş davet (SQL ile `created_at` geriye çekilir), 48 saat sıra aşımı.
+2. **9.3/9.4** — Parça 48'in düzeltmesinden (oyun sonu ekranını kapatmak
+   Görüş Bildir formunu açar) sonra hiç koşulmadı.
+3. **Kök `TESTING.md` 9.6** — belgede yazan sırayla (önce önbelleksiz,
+   sonra önbellekli) + negatif eşi.
+
+Ardından FAZ A1 biter; geriye yalnızca **FAZ B** kalır ve onun ön koşulları
+(imzalama anahtarı, Apple Developer üyeliği, `assetlinks.json`) hâlâ
+yapılmadı. Bölüm 6'nın 🟡'si de zaten oraya bağlı (iPad paylaş ankrajı).
 
 ## Sonraya Bırakılan İşler (mobil)
 
@@ -6247,10 +6270,15 @@ silinip kendi tarihli parça notuna taşınır.
        görünürlüğü, storage'sız sohbet akışı + Realtime popup/rozet/mute
        bastırma/canlı güncelleme, gerçek depoyla ilk-ziyaret tanıtımı +
        kalıcılık). **Tam takım 232/232 yeşil**, analyze + değişmez
-       taraması temiz. **Doğrulama sınırı:** iki gerçek oturumlu tarayıcı
+       taraması temiz. ~~**Doğrulama sınırı:** iki gerçek oturumlu tarayıcı
        arasında Realtime mesaj/mute/rapor akışı bu ortamdan test
-       EDİLEMEDİ — cihazda iki hesapla doğrulanmalı, TESTING.md'ye ayrı
-       bölüm eklendi.
+       EDİLEMEDİ~~ — **16 Ağustos 2026'da iki gerçek hesapla cihazda
+       KOŞULDU ve GEÇTİ** (`mobile/TESTING.md` bölüm 11 → Mesajlaşma, 14
+       maddenin tamamı: gerçek zamanlı gönder/al, tanıtım bayrağının
+       hesaba özel olması, popup+rozet, rozet kalıcılığı, sessize alma,
+       raporlama, geri çekme, arşiv tutarlılığı). Bu parçanın YAZILDIĞI
+       gün (7 Ağustos) açık bırakılan en büyük sınır — dokuz gün sonra
+       kapandı.
    - ✅ **Parça 12 — Setup'taki "Arkadaşınla (N)" rozeti + girişte Canlı
      sekmesi varsayılanı + "Arkadaşınla paylaş" (7 Ağustos 2026,
      `data/online_games_api.dart`, `ui/setup/setup_screen.dart`,
