@@ -1130,8 +1130,9 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       kapanmamalı (otomatik kapanma YOK, web'de de yok). Sonra popup'ın
       DIŞINDA bir yere (tahta/başlık) dokun — yine kapanmamalı; kapanmanın
       tek yolu CEVAP VER / KAPAT. **Bu madde 16 Ağustos 2026'da eklendi:**
-      Flutter'ın `showDialog` varsayılanı zemin dokunuşuyla kapanmaktı ve
-      kullanıcı "popup geldi ve gitti" diye bildirdi.
+      Flutter'ın `showDialog` varsayılanı zemin dokunuşuyla kapanmaktı,
+      web'de ise popup'ın zemini tıklanamaz. Bildirilen bir hata değil,
+      kod incelemesinde bulundu (bkz. `mobile/CLAUDE.md`, Parça 104).
 - [ ] **Rozet kalıcılığı (uygulama yeniden başlatma).** Karşı taraf mesaj
       gönderdikten SONRA uygulamayı tamamen kapat, aç, aynı oyuna gir —
       rozet hâlâ görünmeli (okundu damgası `chat_last_read` tablosunda,

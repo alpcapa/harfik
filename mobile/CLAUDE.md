@@ -4512,8 +4512,13 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
 
    - ✅ **Parça 104 — yeni mesaj popup'ı ZEMİNE dokununca kapanıyordu; web'de
      zemin tıklanamaz (16 Ağustos 2026, `online_game_screen.dart`):**
-     Kullanıcı iki ayrı cihazla mesajlaşma turunu koşarken *"Popup geldi ve
-     gitti"* dedi.
+     **Bildirilen bir hata DEĞİL — bir yanlış anlamanın yan ürünü, kayda
+     öyle geçsin.** Kullanıcı iki cihazlı mesajlaşma turunu koşup *"Popup
+     geldi ve gitti"* dedi; ben bunu "kendiliğinden kayboldu" diye okudum,
+     oysa "iki taraf da mesaj attı ve göründü" demekti — yani madde
+     GEÇMİŞTİ. Araştırma yine de gerçek bir web↔port sapması buldu ve
+     düzeltildi; ama bu bölümü bir kullanıcı şikayeti sanan bir sonraki
+     oturum yanlış bir izin peşine düşer.
      - **Önce "otomatik kapanma" arandı ve KOD ÜZERİNDEN ELENDİ:**
        `_showNewMessagePopup` içinde ne `Timer` ne `Future.delayed` var;
        `_fetchChat`/`_seedInitialUnread` `newMessagePopup`a HİÇ dokunmuyor
@@ -4551,6 +4556,16 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        başlattığı onay/bilgi kartları ve zemin dokunuşu orada "vazgeç"e
        eşdeğer; zararsız. Zararlı olan, kullanıcının istemediği bir anda
        ÜSTÜNE gelen bir bildirimin kazara kapanmasıydı.
+     - **Ders — bir test turu raporunu "hata bildirimi" diye okumadan önce
+       maddenin BEKLENEN sonucunu oku.** `mobile/TESTING.md` bölüm 11'in
+       ilgili maddesi zaten "iki taraf da mesaj atabilmeli" diyordu; kısa
+       bir "geldi ve gitti" cevabını o maddeye göre yorumlamak yerine
+       kendi hipotezime göre yorumladım ve kullanıcıya "bu hata" dedim.
+       Bu, Parça 36'nın dersinin (bir isteğin kapsamını KENDİN daraltma)
+       simetriği: **kullanıcının cevabına kendin bir şikayet EKLEME.**
+       Bedeli burada küçüktü (tek satırlık, gerçek bir sapmayı kapatan bir
+       değişiklik) ama aynı refleks bir sonraki turda çalışan bir şeyi
+       "düzeltmeye" kalkabilir.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 14 Ağustos 2026)
 
