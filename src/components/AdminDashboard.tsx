@@ -298,20 +298,39 @@ function GuestBreakdownTable<T extends { visitors: number }>({
  * `guest_visits`ten, "Üye"/"Oyun" ise kayıt anında profile damgalanan
  * `profiles.signup_utm_source`tan. Aralarında join YOK — ziyaret satırlarını
  * hesaba bağlamak `PrivacyModal`daki anonimlik taahhüdünü bozardı. Bunun
- * doğal sonucu: bir satırda yalnızca ziyaretçi ya da yalnızca üye olabilir,
- * ve dönüşüm oranı ("Kişi → Üye") ancak İKİ ucu da damgalanmış bir kaynakta
- * anlamlıdır. Bu yüzden SATIR YÖNÜNDE bir oran sütunu YOK.
+ * doğal sonucu: bir satırda yalnızca ziyaretçi ya da yalnızca üye olabilir.
  *
  * `% / Sayı` düğmesi (16 Ağustos 2026, kullanıcı isteği: "basınca değerden
  * yüzdeye dönsün, basınca % sayı olsun, dönüşümlü çalışsın") üç sütunu birden
- * çevirir. Yüzde her zaman **SÜTUN payıdır** ("ziyaretçilerin %8'i bu
- * kaynaktan"), satır yönünde bir dönüşüm oranı DEĞİL — yukarıdaki gerekçe
- * hâlâ geçerli. Düğme iki etiketi de gösterip aktif olanı vurguluyor: tek
- * kelimelik bir düğme ("%") "şu an yüzde mi gösteriyorum, yoksa basınca
- * yüzdeye mi geçerim" belirsizliğini taşırdı.
+ * çevirir. Düğme iki etiketi de gösterip aktif olanı vurguluyor: tek kelimelik
+ * bir düğme ("%") "şu an yüzde mi gösteriyorum, yoksa basınca yüzdeye mi
+ * geçerim" belirsizliğini taşırdı.
+ *
+ * YÜZDELERİN TABANI SÜTUNA GÖRE DEĞİŞİR (aynı gün, kullanıcının ikinci
+ * turu: *"kişi %'ye dönünce toplamın yüzdesini göstersin. Ama üye yüzdesi
+ * kişinin % kaçı üye olmuş, oyun yüzdesi de kişinin % kaçı oyun oynamışı
+ * göstersin."*):
+ *   - **Kişi** = sütun payı (o kaynak tüm ziyaretçilerin yüzde kaçı),
+ *   - **Üye**  = `üye / kişi` — o kaynaktan gelenlerin yüzde kaçı üye oldu,
+ *   - **Oyun** = `oynayan kişi / kişi` — yüzde kaçı oyun oynadı.
+ *
+ * "Oyun" sütunu sayı modunda oyun ADEDİNİ, yüzde modunda OYNAYAN KİŞİ oranını
+ * gösterir — taban bilinçli olarak farklı, çünkü "kişilerin yüzde kaçı
+ * oynadı" sorusu oyun adediyle yanıtlanamaz (bir kişi 50 oyun oynayabilir,
+ * `oyun / kişi` %100'ü kolayca aşar ve başka bir şey ölçer). Bu yüzden RPC
+ * ayrı bir `players` (benzersiz oynayan) ölçüsü döndürüyor.
+ *
+ * SINIR: `üye/kişi` ve `oynayan/kişi` yalnızca İKİ UCU DA damgalanmış bir
+ * kaynakta gerçek bir dönüşüm oranıdır — `?ref=instagram` ile gelen ziyaretçi
+ * de oradan üye olan hesap da aynı etiketi taşıdığı için anlamlı. `kişi = 0`
+ * olan satırlarda (ör. damgalama öncesi üyelerin toplandığı "bilinmiyor")
+ * oran HİÇ hesaplanmaz, "—" gösterilir; sıfıra bölmek yerine "bilinmiyor"
+ * demek doğrusu. Oran %100'ü aşabilir (iki ölçü ayrı dimension) ve bu bir
+ * hata değil — ekrandaki açıklama satırı bunu da söylüyor.
  *
  * CSV her zaman HAM SAYI verir (düğmeden bağımsız) — retention tablosundaki
  * aynı karar: yuvarlama kaybı olmaz, yüzde zaten yeniden hesaplanabilir.
+ * `players` tabloda yalnızca yüzdenin içinde görünür, CSV'de ayrı bir sütun.
  */
 function SourceFunnelTable({ rows }: { rows: AdminSourceFunnelRow[] | null }) {
   const [asPercent, setAsPercent] = useState(false);
@@ -330,25 +349,40 @@ function SourceFunnelTable({ rows }: { rows: AdminSourceFunnelRow[] | null }) {
       visitors: acc.visitors + row.visitors,
       signups: acc.signups + row.signups,
       games: acc.games + row.games,
+      players: acc.players + row.players,
     }),
-    { visitors: 0, signups: 0, games: 0 },
+    { visitors: 0, signups: 0, games: 0, players: 0 },
   );
 
   function handleExportCsv() {
     downloadCsv(
       csvFilename('kelimeki-kaynak-funnel'),
-      ['Kaynak', 'Kişi', 'Üye', 'Oyun'],
+      ['Kaynak', 'Kişi', 'Üye', 'Oyun', 'Oynayan Kişi'],
       [
-        ...rows!.map((row) => [row.source, row.visitors, row.signups, row.games]),
-        ['TOPLAM', total.visitors, total.signups, total.games],
+        ...rows!.map((row) => [row.source, row.visitors, row.signups, row.games, row.players]),
+        ['TOPLAM', total.visitors, total.signups, total.games, total.players],
       ],
     );
   }
 
-  /** Hücre içeriği — yüzde her zaman SÜTUN payı (bkz. bileşen yorumu). */
-  function cell(value: number, columnTotal: number): string {
+  const pct = (value: number, base: number) =>
+    `${((value / base) * 100).toFixed(1)}%`;
+
+  /** "Kişi" sütunu — yüzdesi SÜTUN payı. */
+  function visitorCell(value: number): string {
     if (!asPercent) return String(value);
-    return `${columnTotal > 0 ? ((value / columnTotal) * 100).toFixed(1) : '0.0'}%`;
+    return total.visitors > 0 ? pct(value, total.visitors) : '0.0%';
+  }
+
+  /**
+   * "Üye"/"Oyun" sütunları — yüzdeleri SATIR YÖNÜNDE dönüşüm oranı, tabanı o
+   * satırın "Kişi"si. Taban 0 ise oran yok ("—"): sıfıra bölmek yerine
+   * bilinmediğini söylemek doğrusu (bugün "bilinmiyor" satırı tam bu durumda).
+   */
+  function conversionCell(value: number, rowVisitors: number, percentOf: number): string {
+    if (!asPercent) return String(value);
+    if (rowVisitors <= 0) return '—';
+    return pct(percentOf, rowVisitors);
   }
 
   return (
@@ -388,26 +422,26 @@ function SourceFunnelTable({ rows }: { rows: AdminSourceFunnelRow[] | null }) {
               <tr key={row.source} className="border-b border-border/50">
                 <td className="py-1.5 pr-8 text-text whitespace-nowrap">{row.source}</td>
                 <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">
-                  {cell(row.visitors, total.visitors)}
+                  {visitorCell(row.visitors)}
                 </td>
                 <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">
-                  {cell(row.signups, total.signups)}
+                  {conversionCell(row.signups, row.visitors, row.signups)}
                 </td>
                 <td className="py-1.5 text-muted whitespace-nowrap text-center">
-                  {cell(row.games, total.games)}
+                  {conversionCell(row.games, row.visitors, row.players)}
                 </td>
               </tr>
             ))}
             <tr className="border-b border-border/50">
               <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap">TOPLAM</td>
               <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">
-                {cell(total.visitors, total.visitors)}
+                {visitorCell(total.visitors)}
               </td>
               <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">
-                {cell(total.signups, total.signups)}
+                {conversionCell(total.signups, total.visitors, total.signups)}
               </td>
               <td className="py-1.5 text-text font-bold whitespace-nowrap text-center">
-                {cell(total.games, total.games)}
+                {conversionCell(total.games, total.visitors, total.players)}
               </td>
             </tr>
           </tbody>
@@ -1395,10 +1429,13 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       16 Ağustos 2026'da eklendi ve geriye dönük doldurulamıyor, ayrıca
                       mobil uygulamadan gelen kayıtlar henüz damgalanmıyor.{' '}
                       <b>Direkt</b> = web'e <code>?ref=</code> olmadan geliş. "Kişi" ile
-                      "Üye" iki ayrı ölçümdür (ziyaretler anonim, hesaba bağlanmaz), bu
-                      yüzden satır yönünde bir dönüşüm oranı gösterilmiyor. <b>% / Sayı</b>
-                      düğmesi üç sütunu birden çevirir; yüzde her zaman o SÜTUNUN payıdır
-                      ("ziyaretçilerin %8'i bu kaynaktan"). CSV her zaman ham sayı verir.
+                      "Üye" iki ayrı ölçümdür (ziyaretler anonim, hesaba bağlanmaz).{' '}
+                      <b>% / Sayı</b> düğmesi üç sütunu birden çevirir: <b>Kişi</b> yüzdesi o
+                      sütunun payı, <b>Üye</b> ve <b>Oyun</b> yüzdeleri ise o satırın
+                      "Kişi"sine göre dönüşüm — sırasıyla kaçının üye olduğu ve kaçının oyun
+                      oynadığı (oyun ADEDİ değil, oynayan KİŞİ). Kişi 0 ise oran hesaplanmaz
+                      ("—"); iki ucu da damgalanmamış kaynaklarda oran %100'ü aşabilir. CSV
+                      her zaman ham sayı verir (oynayan kişi sayısı da ayrı bir sütun olarak).
                     </p>
                   </div>
                   <div className="flex flex-col gap-2">

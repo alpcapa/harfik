@@ -662,6 +662,14 @@ export interface AdminSourceFunnelRow {
   visitors: number;
   signups: number;
   games: number;
+  /**
+   * O kaynağın damgasını taşıyan, pencerede EN AZ BİR oyun bitirmiş BENZERSİZ
+   * kullanıcı sayısı — `games` (oyun ADEDİ) ile karıştırılmamalı. "Kişilerin
+   * yüzde kaçı oyun oynamış" sorusu ancak bununla yanıtlanabilir; oyun adedi
+   * bir kişinin 50 oyun oynamasıyla %100'ü kolayca aşardı. Tabloda yalnızca
+   * yüzde modunda (ve CSV'de) görünür.
+   */
+  players: number;
 }
 
 /**

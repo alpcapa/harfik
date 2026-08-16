@@ -653,18 +653,23 @@ toplamların korunması); aşağıdakiler gerçek istemcide görülmesi gerekenl
       eşit olmalı; "Üye" toplamı o dönemdeki yeni üye sayısıyla (Yeni Üye/Ziyaret
       grafiği) tutarlı olmalı.
 - [ ] **`% / Sayı` düğmesi dönüşümlü çalışmalı.** Tablonun sağ üstünde, "CSV
-      İndir"in yanında. Bas → üç sütun birden yüzdeye dönmeli ve TOPLAM satırı
-      üçünde de **100.0%** göstermeli; tekrar bas → sayılara dönmeli. Aktif
-      mod her zaman vurgulu (mavi/kalın) olmalı, yani hangi moddasın bakınca
-      anlaşılmalı.
-- [ ] **Yüzde SÜTUN payı, dönüşüm oranı DEĞİL.** `direkt` satırında "Kişi"
-      yüzdesi tüm ziyaretçilere oranını göstermeli (ör. %91.8) — o kaynağın
-      "kaç ziyaretçisi üye oldu"su DEĞİL. Satır yönünde bir oran hiçbir yerde
-      gösterilmemeli.
+      İndir"in yanında. Bas → üç sütun birden yüzdeye dönmeli; tekrar bas →
+      sayılara dönmeli. Aktif mod her zaman vurgulu (mavi/kalın) olmalı, yani
+      hangi moddasın bakınca anlaşılmalı.
+- [ ] **Yüzdelerin TABANI sütuna göre farklı.** "Kişi" sütunu SÜTUN payı
+      (TOPLAM satırı **100.0%**); "Üye" ve "Oyun" ise o SATIRIN "Kişi"sine
+      göre dönüşüm. Doğrulaması kolay: kişi=40, üye=6 olan bir satırda "Üye"
+      **%15.0** göstermeli.
+- [ ] **"Oyun" yüzdesi oyun ADEDİNDEN değil, OYNAYAN KİŞİDEN hesaplanmalı.**
+      Aynı satırda oyun=25 ama oynayan kişi=4 ise "Oyun" yüzdesi %62.5 DEĞİL
+      **%10.0** (4/40) olmalı. Oynayan kişi sayısını CSV'den doğrula.
+- [ ] **Kişi = 0 olan satırda oran "—" olmalı** (0.0% ya da sonsuz DEĞİL).
+      Bugün `bilinmiyor` satırı tam bu durumda: kişi 0, üye 23 → "Üye" ve
+      "Oyun" hücreleri "—" göstermeli.
 - [ ] **CSV düğmeden bağımsız.** Yüzde modundayken "CSV İndir" → dosyada yine
       HAM SAYILAR olmalı (yüzde değil).
-- [ ] **CSV İndir** çalışmalı; dosyada Kaynak/Kişi/Üye/Oyun sütunları ve bir
-      TOPLAM satırı olmalı.
+- [ ] **CSV İndir** çalışmalı; dosyada Kaynak/Kişi/Üye/Oyun/**Oynayan Kişi**
+      sütunları ve bir TOPLAM satırı olmalı.
 - [ ] **Açıklama satırı okunuyor mu.** Tablonun altındaki metin "Kişi"/"Üye"/
       "Oyun" tanımlarını, kohort OLMADIĞINI ve Bilinmiyor/Direkt farkını
       anlatmalı — bu tablo bu not olmadan kolayca yanlış okunur.
