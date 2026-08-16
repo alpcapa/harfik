@@ -637,16 +637,18 @@ toplamların korunması); aşağıdakiler gerçek istemcide görülmesi gerekenl
       seçimini takip etmeli; seçim değişince sayılar değişmeli.
 - [ ] **Bugünkü beklenen tablo — İKİ satır: `direkt` ve `arkadas`.**
       "Bilinmiyor" satırı OLMAMALI: 16 Ağustos 2026'da damgalama öncesi 23
-      üyenin hepsi `arkadas` olarak dolduruldu (hesap sahibinin bilgisi:
-      o tarihe kadar üyelerin tamamı davetle geldi). Bilinmiyor ancak
+      üyeden 22'si `arkadas`, hesap sahibi ise `direkt` olarak dolduruldu
+      (hesap sahibinin bilgisi: o tarihe kadar üyelerin tamamı davetle geldi,
+      kendisi hariç). Bilinmiyor ancak
       damgalamayan bir istemciden (bugün: mobil uygulama) kayıt gelirse
       yeniden belirir.
-- [ ] **`arkadas` satırında Üye yüzdesi %100'ü AŞIYOR ve bu HATA DEĞİL.**
-      Ziyaretçi ucu yalnızca Setup'taki paylaş butonunun `?ref=arkadas`
-      linkiyle gelenleri sayıyor, üye ucu ise ağırlıkla `/davet/:token`
-      davet linkinden gelenleri — o path `?ref=` taşımadığından ziyaretçi
-      tarafı sistematik olarak eksik. Sayı %104 civarındaysa doğru
-      çalışıyor demektir.
+- [ ] **`arkadas` satırının %100'ü bir ölçüm DEĞİL, tesadüf.** Ziyaretçi ucu
+      yalnızca Setup'taki paylaş butonunun `?ref=arkadas` linkiyle gelenleri
+      sayıyor, üye ucu ise ağırlıkla `/davet/:token` davet linkinden
+      gelenleri — o path `?ref=` taşımadığından iki uç aynı popülasyonu
+      ölçmüyor. "Kanal kusursuz dönüyor" diye OKUMA.
+- [ ] **`direkt` satırında tam 1 üye olmalı (hesap sahibi).** Projeyi kuran
+      hesap kimse tarafından davet edilmedi; geri kalan 22 üye `arkadas`.
 - [ ] **Yeni bir kayıt kaynağını damgalıyor.** Gizli sekmede
       `kelimeki.com/?ref=instagram` aç, sonra ORADAN üye ol → panelde
       `instagram` satırı belirmeli, "Üye" 1 olmalı. Aynı hesapla bir oyun
