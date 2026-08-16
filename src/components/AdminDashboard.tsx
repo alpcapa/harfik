@@ -7,6 +7,7 @@ import {
   fetchAdminGameActivitySeries,
   fetchAdminEngagementActivitySeries,
   fetchAdminEngagementTotals,
+  fetchAdminAiBalance,
   fetchAdminFriendActivitySeries,
   fetchAdminFriendTotals,
   fetchAdminActivePlayersSeries,
@@ -30,6 +31,7 @@ import type {
   AdminGameSourceType,
   AdminEngagementActivityPoint,
   AdminEngagementTotals,
+  AdminAiBalanceRow,
   AdminFriendActivityPoint,
   AdminFriendTotals,
   AdminActivePlayersPoint,
@@ -104,16 +106,44 @@ const USER_SERIES: ChartSeriesDef[] = [
   // HİÇ YOK (bkz. kök CLAUDE.md, "Bu bilerek MAU DEĞİL").
   { key: 'guest_visits', label: 'M. Ziyaret', color: '#D97706' },
 ];
+// Aynı Oturum / Çok Oturumlu kırılımı buradan 16 Ağustos 2026'da KALDIRILDI
+// (kullanıcı sordu: "çok oturumlu tam olarak ne demek?"). Ölçüldü: bayrak
+// (`GameState.multiSession`) yalnızca `loadGameState()` içinde işaretleniyor,
+// yani uygulama GERÇEKTEN kapanıp localStorage'dan devam edildiğinde —
+// Setup'a çıkıp hemen dönmek saymaz (o yol belleği kullanır). Girişli
+// kullanıcıda ise 31 Temmuz'daki bulut kayıtlarından beri localStorage hiç
+// kullanılmıyor, dolayısıyla bayrak fiilen ölü: canlıda son "girişli + çok
+// oturumlu" kayıt 2 Ağustos, 9 Ağustos'tan beri hiçbir türden yok.
+// `admin_game_activity_series` ayrıca TÜM Canlı oyunları koşulsuz "çok
+// oturumlu" tarafına yazıyor (`+ o.cnt_done`) — sonuçta bu iki seri, hemen
+// üstteki Toplam/Canlı/Yapay Zeka filtresinin YAPTIĞI ayrımı yanlış bir
+// etiketle tekrarlıyordu. Sunucu üç sütunu döndürmeye devam ediyor; burada
+// yalnızca okunmuyor.
 const GAME_COUNT_SERIES: ChartSeriesDef[] = [
   { key: 'games_finished', label: 'Bitirilen', color: '#008300' },
-  { key: 'games_finished_same_session', label: 'Bitirilen (Aynı Oturum)', color: '#0891B2' },
-  { key: 'games_finished_multi_session', label: 'Bitirilen (Çok Oturumlu)', color: '#7c3aed' },
   { key: 'games_surrendered', label: 'Teslim', color: '#D97706' },
 ];
+// Süre grafiğinde AYNI kırılım KALIYOR — orada gerçek iş yapıyor: Canlı
+// oyunlar 48 saatlik sıra penceresi yüzünden günlere yayılıyor ve tek bir
+// ortalamaya katılırlarsa "bir oyun ne kadar sürer" sayısı anlamsızlaşıyor.
+// Değişen yalnızca ETİKET: seriler "oturum" değil, sürenin günlere yayılıp
+// yayılmadığını anlatıyor.
+//
+// ORTALAMA → MEDYAN (16 Ağustos 2026, `admin_game_duration_median`):
+// dağılım aşırı çarpık olduğundan ortalama bilgi taşımıyordu — "tek
+// oturumda" biten 200 yerel oyunda ortalama 246,6 dk, medyan 18,1 dk.
+// p90 varsayılan KAPALI: medyanın gizlediği kuyruğu isteyen açar,
+// grafiğin normal okuması dört çizgiyle kalabalıklaşmasın.
 const DURATION_SERIES: ChartSeriesDef[] = [
-  { key: 'avg_duration_seconds', label: 'Genel', color: '#7c3aed' },
-  { key: 'avg_duration_same_session_seconds', label: 'Aynı Oturum', color: '#0891B2' },
-  { key: 'avg_duration_multi_session_seconds', label: 'Çok Oturumlu', color: '#DC2626' },
+  { key: 'med_duration_seconds', label: 'Genel', color: '#7c3aed' },
+  { key: 'med_duration_same_session_seconds', label: 'Tek Oturumda', color: '#0891B2' },
+  { key: 'med_duration_multi_session_seconds', label: 'Günlere Yayılan', color: '#DC2626' },
+  { key: 'p90_duration_seconds', label: 'Uzun kuyruk (p90)', color: '#8A93A2' },
+];
+const DURATION_DEFAULT_KEYS = [
+  'med_duration_seconds',
+  'med_duration_same_session_seconds',
+  'med_duration_multi_session_seconds',
 ];
 const ENGAGEMENT_SERIES: ChartSeriesDef[] = [
   { key: 'likes', label: 'Beğeni', color: '#DC2626' },
@@ -692,6 +722,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [gamePlayerCount, setGamePlayerCount] = useState<GameSubTab>('total');
   const [engagementActivity, setEngagementActivity] = useState<AdminEngagementActivityPoint[] | null>(null);
   const [engagementTotals, setEngagementTotals] = useState<AdminEngagementTotals | null>(null);
+  const [aiBalance, setAiBalance] = useState<AdminAiBalanceRow[] | null>(null);
   const [memberSearch, setMemberSearch] = useState('');
   const [sortKey, setSortKey] = useState<MemberSortKey>('created_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
@@ -737,6 +768,12 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       .catch((e) => setError(String(e)));
     fetchAdminEngagementTotals()
       .then(setEngagementTotals)
+      .catch((e) => setError(String(e)));
+    // YZ dengesi de retention/aktivasyon gibi periyot kontrollerine bağlı
+    // DEĞİL: tüm zamanların dağılımı, "son N gün" penceresiyle anlam
+    // değiştirmez (bugünkü hacimde günlük kırılım zaten gürültü olurdu).
+    fetchAdminAiBalance()
+      .then(setAiBalance)
       .catch((e) => setError(String(e)));
     fetchAdminFriendTotals()
       .then(setFriendTotals)
@@ -1559,15 +1596,25 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         controls={<span className={sectionTitleCls}>Oyun Sayısı</span>}
                         csvBaseName="kelimeki-oyun-sayisi"
                       />
-                      <GrowthChart
-                        data={gameActivity}
-                        granularity={gameGranularity}
-                        series={DURATION_SERIES}
-                        defaultActiveKeys={DURATION_SERIES.map((s) => s.key)}
-                        formatValue={formatDuration}
-                        controls={<span className={sectionTitleCls}>Ortalama Oyun Süresi</span>}
-                        csvBaseName="kelimeki-ortalama-oyun-suresi"
-                      />
+                      <div className="flex flex-col gap-2">
+                        <GrowthChart
+                          data={gameActivity}
+                          granularity={gameGranularity}
+                          series={DURATION_SERIES}
+                          defaultActiveKeys={DURATION_DEFAULT_KEYS}
+                          formatValue={formatDuration}
+                          controls={<span className={sectionTitleCls}>Oyun Süresi (Medyan)</span>}
+                          csvBaseName="kelimeki-oyun-suresi-medyan"
+                        />
+                        <p className={captionCls}>
+                          Medyan — yarısı bundan kısa, yarısı uzun. Ortalama bilerek kullanılmıyor: dağılım
+                          çarpık (açık unutulan oyunlar) ve ortalamayı tipik oyunun kat kat üstüne çekiyor.
+                          “Uzun kuyruk (p90)” serisini açarsan en uzun %10'un nerede başladığını görürsün.
+                          Canlı oyunlar 48 saatlik sıra penceresi nedeniyle her zaman “günlere yayılan”
+                          tarafında sayılır; “tek oturumda” yalnızca uygulama hiç kapatılmadan bitirilen
+                          Yapay Zeka oyunlarını kapsar.
+                        </p>
+                      </div>
                     </>
                   )}
 
@@ -1601,6 +1648,54 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         Toplam Paylaşılan Oyun
                       </div>
                     </div>
+                  </div>
+
+                  {/* YZ Dengesi — 16 Ağustos 2026. Veri `games`te baştan beri
+                      vardı ama hiçbir yerde gösterilmiyordu; oysa bu, YZ'ye
+                      (`src/utils/ai.ts` / `kelimeki_core`) dokunan her
+                      değişikliğin regresyonunu yakalayan tek sayı. Rastgele
+                      referansı (2 kişilikte %50, 4 kişilikte %25) BİLEREK
+                      ekranda yazıyor — onsuz "%31" alarm verici görünürken
+                      aslında rastgelenin üstünde. */}
+                  <div className="flex flex-col gap-2">
+                    <span className={sectionTitleCls}>YZ Dengesi</span>
+                    {aiBalance === null ? (
+                      <div className="text-xs font-mono text-muted text-center py-4">Yükleniyor…</div>
+                    ) : aiBalance.length === 0 ? (
+                      <div className="text-xs font-mono text-muted text-center py-4">
+                        Henüz Yapay Zeka'ya karşı tamamlanmış oyun yok.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        {aiBalance.map((r) => {
+                          const rate = r.games > 0 ? Math.round((100 * r.wins) / r.games) : null;
+                          const baseline = Math.round(100 / r.players);
+                          return (
+                            <div
+                              key={r.players}
+                              className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center"
+                            >
+                              <div className="font-mono text-xl font-bold text-text">
+                                {rate === null ? '—' : `%${rate}`}
+                              </div>
+                              <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
+                                {r.players} Kişilik — İnsan Kazanma
+                              </div>
+                              <div className="text-[8px] font-mono text-muted mt-0.5">
+                                {r.wins}G / {r.ties}B / {r.losses}M · rastgele %{baseline}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <p className={captionCls}>
+                      Yalnızca Yapay Zeka'ya karşı oynanan, teslimle bitmemiş oyunlar. Teslim satırları
+                      hariç — onlar bir beceri sonucu değil, 7 günlük terk-edilme cezasının kaydı; dahil
+                      edilseler YZ olduğundan güçlü görünürdü. Sayıyı “rastgele” değerine göre oku:
+                      insan oranı onun belirgin altındaysa YZ fazla güçlü, çok üstündeyse fazla zayıf
+                      demektir.
+                    </p>
                   </div>
                 </>
               )}

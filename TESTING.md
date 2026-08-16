@@ -688,6 +688,53 @@ toplamların korunması); aşağıdakiler gerçek istemcide görülmesi gerekenl
       kaynak etiketi maddesi olmalı ve "Son güncelleme: 16 Ağustos 2026"
       yazmalı (mobil uygulamadaki metin de AYNI).
 
+## 9.10. Admin — Oyun Süresi (Medyan) + YZ Dengesi (16 Ağustos 2026)
+
+İki değişiklik: süre grafiği ORTALAMADAN medyana geçti (+ p90 serisi) ve
+Büyüme > Oyun'a yeni bir "YZ Dengesi" paneli eklendi. Sunucu tarafı canlıda
+gerçek admin JWT'siyle doğrulandı (yetki matrisi, dönen değerlerin bağımsız
+ölçümle birebir eşleşmesi); aşağıdakiler gerçek istemcide görülmesi
+gerekenler.
+
+- [ ] **Grafik başlığı "Oyun Süresi (Medyan)" olmalı** — "Ortalama Oyun
+      Süresi" YAZMAMALI. Legend'da üç seri açık (**Genel**, **Tek Oturumda**,
+      **Günlere Yayılan**) + **Uzun kuyruk (p90)** KAPALI gelmeli.
+- [ ] **Sayı gerçekten düştü mü.** Yerel/tek oturum kovasında değer saatler
+      değil DAKİKALAR mertebesinde olmalı (ölçüm anında ~18 dk; eski ortalama
+      ~247 dk gösteriyordu). Saatlerce süren bir değer görürsen ortalamaya
+      geri dönülmüş demektir.
+- [ ] **p90 legend'ı açılınca medyanın belirgin ÜSTÜNDE bir eğri çizmeli**
+      (kuyruk gerçek: ölçüm anında 49 oyun 1 saatten, 7 oyun 1 günden uzundu).
+      p90 medyanın altında çıkıyorsa seriler karışmış demektir.
+- [ ] **Hiç biten oyunu olmayan kovada süre 0 DEĞİL, boş olmalı** (grafikte
+      nokta yok / tabloda "—"). 0 dakika "çok hızlı bitmiş oyun" gibi okunur.
+- [ ] **Kaynak filtresi hâlâ çalışıyor.** Toplam / Canlı / Yapay Zeka arasında
+      geçiş yapınca süre değerleri değişmeli; "Toplam", iki kaynağın ham
+      sürelerinin TEK bir medyanı olmalı (iki medyanın ortalaması DEĞİL —
+      Toplam genelde iki kaynağın arasında bir yerde çıkar, ikisinin tam
+      ortasında değil).
+- [ ] **CSV İndir** çalışmalı; başlıkta ortalama değil medyan/p90 sütunları
+      olmalı.
+- [ ] **YZ Dengesi paneli görünüyor.** Büyüme > Oyun'un üst kısmında, beğeni/
+      paylaşma kutularının altında iki kutu: "2 Kişilik — İnsan Kazanma" ve
+      "4 Kişilik — İnsan Kazanma".
+- [ ] **Her kutuda rastgele referansı YAZMALI** — 2 kişilikte "rastgele %50",
+      4 kişilikte "rastgele %25". Bu satır olmadan 4 kişilikteki düşük yüzde
+      yanlış okunur.
+- [ ] **Sayılar tutarlı mı.** Kutudaki `NG / NB / NM` toplamı, o oyuncu
+      sayısındaki teslimsiz yerel oyun sayısına eşit olmalı; yüzde =
+      G / (G+B+M).
+- [ ] **Teslim olunan oyunlar sayılmamalı.** 7 günlük terk cezası almış bir
+      oyun (bkz. bölüm 4) bu panelde ne "M" ne toplam sayıya girmeli — süre
+      aşımıyla biten bir oyundan sonra sayılar DEĞİŞMEMELİ.
+- [ ] **Canlı oyunlar sayılmamalı.** Bir Canlı oyun bitir → YZ Dengesi
+      sayıları değişmemeli (panel yalnızca Yapay Zeka'ya karşı oynananları
+      kapsıyor).
+- [ ] **Hiç yerel oyun yokken** panel "Henüz Yapay Zeka'ya karşı tamamlanmış
+      oyun yok." demeli — boş kutular ya da "%0" DEĞİL.
+- [ ] **Admin olmayan hesap panele hiç giremiyor** (menüde "Admin Paneli"
+      satırı yok) — bu iki RPC de admin dışına kapalı.
+
 ## 10. k-lig ödül & rütbe sistemi
 
 Ödül/rütbe kayıtları sunucuda, `games` tablosuna satır ekleyen bir trigger'la
