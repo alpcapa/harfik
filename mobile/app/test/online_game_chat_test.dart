@@ -321,6 +321,14 @@ void main() {
       expect(find.text('CEVAP VER'), findsOneWidget);
       expect(find.text('KAPAT'), findsOneWidget);
 
+      // Zemine dokunmak popup'ı KAPATMAZ — web'de de kapatmıyor (kabın
+      // hiç onClick'i yok). Flutter'ın varsayılanı bunun tersi olduğundan
+      // kullanıcıya mesaj "kendiliğinden kayboluyor" gibi görünüyordu.
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+      expect(find.text('Merhaba!'), findsOneWidget);
+      expect(find.text('CEVAP VER'), findsOneWidget);
+
       await tester.tap(find.text('CEVAP VER'));
       await tester.pumpAndSettle();
       // Sohbet açıldı, mesaj thread'de.

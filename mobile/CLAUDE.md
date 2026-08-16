@@ -4510,6 +4510,48 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        sıfırlanması ve uygulama kapat/aç sonrası geri gelmemesi; susturulmuş
        gönderende popup YOK ama rozet ARTIYOR.
 
+   - ✅ **Parça 104 — yeni mesaj popup'ı ZEMİNE dokununca kapanıyordu; web'de
+     zemin tıklanamaz (16 Ağustos 2026, `online_game_screen.dart`):**
+     Kullanıcı iki ayrı cihazla mesajlaşma turunu koşarken *"Popup geldi ve
+     gitti"* dedi.
+     - **Önce "otomatik kapanma" arandı ve KOD ÜZERİNDEN ELENDİ:**
+       `_showNewMessagePopup` içinde ne `Timer` ne `Future.delayed` var;
+       `_fetchChat`/`_seedInitialUnread` `newMessagePopup`a HİÇ dokunmuyor
+       (yalnızca `messages`/`unreadCount`), yani ön plana dönüşteki
+       tazeleme (Parça 95) dialog route'unu kapatamaz; `Navigator.pop`
+       çağıran altı yerin hiçbiri bu popup'ın yolunda değil. Yani mesaj
+       "kendiliğinden" gitmiyor.
+     - **Geriye kalan TEK buton-dışı çıkış yolu barrier'dı ve o gerçek bir
+       web sapması:** web'de popup `fixed inset-0 z-[200]` bir kapta ve o
+       kabın **hiç `onClick`i yok** (`OnlineGameScreen.tsx:1482`) — kapatma
+       yalnızca ✕ / CEVAP VER / KAPAT. Flutter'ın `showDialog`ı ise
+       VARSAYILAN olarak `barrierDismissible: true`, yani ekranın herhangi
+       bir yerine (tahtaya, başlığa) dokunmak popup'ı kapatıyordu. Kullanıcı
+       için bu, mesajın kendiliğinden kaybolması gibi görünür — üstelik
+       kapanış `unreadCount: 0` + `markChatRead` de yaptığından geriye
+       rozet bile kalmıyor, yani mesaj hiç görünmemiş gibi oluyor.
+       `barrierDismissible: false` eklendi.
+     - **Parça 85'in "kapana kısılma" gerekçesi burada GEÇERSİZ ve bu
+       bilinçli:** orada (ActionSheet) zemin dokunuşu aksiyonsuz çıkışın
+       TEK yoluydu, o yüzden bilerek açık bırakılmıştı; burada iki görünür
+       buton var ve KAPAT web'in ✕'iyle aynı işi yapıyor. Web'deki ✕ porta
+       EKLENMEDİ — `KDialogCard`'ın kapatma ikonu yok ve KAPAT onunla
+       fonksiyonel olarak özdeş.
+     - **Test — mevcut popup testine eklendi:** zemine (`tapAt(Offset(5,5))`)
+       dokunulunca popup'ın DURDUĞU doğrulanıyor. Düzeltme olmadan bu
+       assertion kullanıcının tarif ettiği semptomu birebir üretir (popup ve
+       mesaj ekrandan kaybolur).
+     - **Doğrulama sınırı — Parça 103'ün dersi HÂLÂ geçerli:** bu oturumun
+       konteynerinde Flutter SDK YOK (`flutter: command not found`), yani
+       `flutter analyze`/`flutter test` KOŞULAMADI; kanıt CI'ın
+       (`mobile-build.yml`) yeşile dönmesi. Cihazda görsel teyit
+       `mobile/TESTING.md` bölüm 11'e madde olarak eklendi.
+     - **Kapsam dışı (bilinçli):** `showKConfirm`/`showKInfo` hâlâ
+       varsayılan `barrierDismissible: true` — onlar kullanıcının KENDİ
+       başlattığı onay/bilgi kartları ve zemin dokunuşu orada "vazgeç"e
+       eşdeğer; zararsız. Zararlı olan, kullanıcının istemediği bir anda
+       ÜSTÜNE gelen bir bildirimin kazara kapanmasıydı.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 14 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
