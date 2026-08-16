@@ -1,6 +1,7 @@
 // Kelimeki — profil küçük resmi (fotoğraf ya da baş harf yedeği)
 import { useEffect, useState } from 'react';
 import { trUpper } from '../utils/turkish';
+import { CountBadge } from './CountBadge';
 
 interface AvatarProps {
   url?: string | null;
@@ -9,12 +10,17 @@ interface AvatarProps {
   size?: number;
   className?: string;
   /**
-   * Sağ üst köşede küçük kırmızı bir nokta gösterir (ör. bekleyen
-   * arkadaşlık isteği). Varsayılan false — mevcut tüm kullanım yerlerinde
-   * (ScoreCard/PlayerScoreCard/Leaderboard vb.) görünümü hiç değiştirmez,
-   * yalnızca `dot` açıkça true verilince ekstra bir sarmalayıcı devreye girer.
+   * Sağ üst köşede bekleyen iş SAYISINI gösterir (`CountBadge`). Varsayılan
+   * 0 — mevcut tüm kullanım yerlerinde (ScoreCard/PlayerScoreCard/Leaderboard
+   * vb.) görünümü hiç değiştirmez, yalnızca >0 verilince ekstra bir
+   * sarmalayıcı devreye girer.
+   *
+   * 16 Ağustos 2026'ya kadar bu bir `dot?: boolean` idi ve bilinçli olarak
+   * `CountBadge` DEĞİLDİ ("var/yok bilgisi taşıyor, adet değil"). Kullanıcı
+   * kırmızı noktaların fark edilmediğini bildirince karar tersine çevrildi —
+   * bkz. kök CLAUDE.md, `CountBadge`.
    */
-  dot?: boolean;
+  badgeCount?: number;
 }
 
 /** İsim/e-postadan baş harf(ler)i türetir. */
@@ -28,7 +34,7 @@ function initials(name?: string | null): string {
   return trUpper(base.slice(0, 2));
 }
 
-export function Avatar({ url, name, size = 32, className = '', dot = false }: AvatarProps) {
+export function Avatar({ url, name, size = 32, className = '', badgeCount = 0 }: AvatarProps) {
   const [broken, setBroken] = useState(false);
   // `url` değişince (ör. kullanıcı yeni bir profil fotoğrafı yükleyince)
   // önceki bir yükleme hatasının `broken` bayrağı sıfırlanmıyordu — aynı
@@ -71,21 +77,17 @@ export function Avatar({ url, name, size = 32, className = '', dot = false }: Av
       </span>
     );
 
-  if (!dot) return inner;
+  if (badgeCount <= 0) return inner;
 
-  // 4 Ağustos 2026 — kullanıcı isteğiyle bir tık büyütüldü (taban 8→10px,
-  // oran 0.30→0.34). Board footer'ındaki "Mesajlaşma" noktasıyla (8→10px)
-  // aynı turda değişti; ikisi de "var/yok" bilgisi taşıyan aynı sınıf
-  // gösterge olduğundan boyutları birbirine yakın kalmalı.
-  const dotSize = Math.max(10, Math.round(size * 0.34));
+  // Konum, projedeki diğer TÜM rozetlerle aynı (`absolute -top-1 -right-1`,
+  // bkz. Setup sekmeleri) — rozet köşeden taşar, avatarın yüzünü kapatmaz.
+  // `ring` (border değil) bilinçli: `CountBadge`'in kutusu `border-box`
+  // olduğundan border eklemek 16px'lik daireyi içeriden yiyip rakamı
+  // küçültürdü; ring layout'a hiç dokunmuyor.
   return (
     <span className="relative inline-flex shrink-0">
       {inner}
-      <span
-        aria-hidden
-        style={{ width: dotSize, height: dotSize }}
-        className="absolute top-0 right-0 rounded-full bg-red border-2 border-panel"
-      />
+      <CountBadge count={badgeCount} className="absolute -top-1 -right-1 ring-2 ring-panel" />
     </span>
   );
 }

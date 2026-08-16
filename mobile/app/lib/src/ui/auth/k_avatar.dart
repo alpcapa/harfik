@@ -2,6 +2,7 @@
 // yoksa isimden türetilen baş harfler (Türkçe trUpper ile), boş isimde "?".
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
+import '../game/count_badge.dart';
 import '../tokens.dart';
 
 const Color _panel = kPanel;
@@ -34,13 +35,14 @@ class KAvatar extends StatefulWidget {
   final String? name;
   final double size;
 
-  /// Sağ üstte küçük kırmızı nokta — web `Avatar`'ın `dot` prop'u:
-  /// SAYI taşımayan, "var/yok" bilgisi (bekleyen arkadaşlık isteği).
-  /// Bilinçli olarak CountBadge DEĞİL (web'in aynı ayrımı).
-  final bool dot;
+  /// Sağ üstte bekleyen iş SAYISI — web `Avatar`'ın `badgeCount` prop'u.
+  /// 16 Ağustos 2026'ya kadar sayısız bir noktaydı (`dot`) ve bilinçli
+  /// olarak `CountBadge` DEĞİLDİ; kullanıcı noktaların fark edilmediğini
+  /// bildirince iki platformda birden rozete çevrildi.
+  final int badgeCount;
 
   const KAvatar(
-      {super.key, this.url, this.name, this.size = 32, this.dot = false});
+      {super.key, this.url, this.name, this.size = 32, this.badgeCount = 0});
 
   @override
   State<KAvatar> createState() => _KAvatarState();
@@ -65,21 +67,22 @@ class _KAvatarState extends State<KAvatar> {
   @override
   Widget build(BuildContext context) {
     final avatar = _circle();
-    if (!widget.dot) return avatar;
-    final d = (widget.size * 0.34).clamp(10.0, 14.0);
+    if (widget.badgeCount <= 0) return avatar;
+    // Konum, projedeki diğer tüm rozetlerle aynı (`top: -4, right: -4` —
+    // web'in `-top-1 -right-1`'i). Beyaz halka web'deki `ring-2 ring-panel`
+    // karşılığı: rozet avatarın kenarından ayrışsın diye.
     return Stack(clipBehavior: Clip.none, children: [
       avatar,
       Positioned(
-        top: -1,
-        right: -1,
+        top: -4,
+        right: -4,
         child: Container(
-          width: d,
-          height: d,
-          decoration: BoxDecoration(
-            color: kRed,
+          padding: const EdgeInsets.all(2),
+          decoration: const BoxDecoration(
+            color: Colors.white,
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 1.5),
           ),
+          child: CountBadge(count: widget.badgeCount),
         ),
       ),
     ]);

@@ -125,7 +125,7 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
 - [ ] **Sohbet ön plana dönüşte tazelenir (14 Ağustos 2026).** Oyun ekranı
       AÇIKKEN sekmeyi/uygulamayı arka plana al, karşı taraftan mesaj
       gönder, sonra geri dön: mesaj kendiliğinden gelmeli (oyundan çıkıp
-      girmek gerekmemeli). Popup çıkmamalı, yalnız okunmamış kırmızı nokta.
+      girmek gerekmemeli). Popup çıkmamalı, yalnız okunmamış sayacı artmalı.
 - [ ] **Sürükle-bırak.** Raftan tahtaya, tahtada taşıma, tahtadan rafa geri
       alma — üçü de çalışmalı (yerel oyundakiyle aynı davranış).
 - [ ] **Realtime.** Karşı taraf oynadığında ekran kendiliğinden güncellenmeli.
@@ -208,15 +208,19 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       uygulamada aynı kartı aç — iki platform aynı hissi vermeli.
 - [ ] **Karşı tarafta.** Sohbet kapalıyken gelen mesaj için popup (gönderenin
       avatarı + adı + metin) çıkmalı ve **yalnızca elle** kapanmalı; butonda
-      kırmızı nokta belirmeli. Sohbeti açınca nokta sıfırlanmalı.
-- [ ] **Geç giriş.** Uygulama kapalıyken mesaj gelsin; tekrar girince kırmızı
-      nokta çıkmalı. Hiç yeni mesaj yokken **çıkmamalı** (ilk sürümde yanlış
-      pozitif veriyordu).
+      **sayı rozeti** belirmeli (16 Ağustos 2026'ya kadar sayısız bir
+      noktaydı). İKİ mesaj gelirse rozet **2** göstermeli; sohbeti açınca
+      sıfırlanıp kaybolmalı. Rozet "Mesajlaşma" etiketinin son harflerini
+      kapatır — bilinen ve kabul edilen bedel, kırpılma DEĞİL; ama sağdaki
+      "Nasıl Oynanır?" ile ÇAKIŞMAMALI (dar bir telefonda kontrol et).
+- [ ] **Geç giriş.** Uygulama kapalıyken mesaj gelsin; tekrar girince rozet
+      doğru sayıyla çıkmalı. Hiç yeni mesaj yokken **çıkmamalı** (ilk sürümde
+      yanlış pozitif veriyordu).
 - [ ] **Sessize alma.** Sohbet başlığındaki dişli → kişi → "Kişiyi Sessize Al"
-      → onay. Artık o kişiden **popup ÇIKMAMALI**, ama **kırmızı nokta
-      ÇIKMALI** (15 Ağustos 2026 kararı: mute yalnızca popup'ı bastırır) ve
-      mesajları sohbette görünmeye devam etmeli. İsminin yanında 🚫 çıkmalı.
-      Aynı oyunda susturulMAMIŞ başka biri yazarsa hem nokta hem popup
+      → onay. Artık o kişiden **popup ÇIKMAMALI**, ama **rozet ARTMALI**
+      (15 Ağustos 2026 kararı: mute yalnızca popup'ı bastırır) ve mesajları
+      sohbette görünmeye devam etmeli. İsminin yanında 🚫 çıkmalı.
+      Aynı oyunda susturulMAMIŞ başka biri yazarsa hem rozet hem popup
       çıkmalı (4 kişilik bir oyunda kontrol edilebilir).
 - [ ] **Rapor etme.** Aynı panelden neden yazıp gönder → onay → **"Şikayetiniz
       iletildi."** ekranı. Rozet 🚩'a dönmeli (rapor otomatik olarak sessize
@@ -393,9 +397,14 @@ tek turda, gerçekten bekleyen bir iş varken kontrol et.
       "Yapay Zeka ile"/"Arkadaşınla" ve bunların alt sekmeleri, `FriendsModal`
       → "İstekler". Hepsi sağ üst köşede yuvarlak rozet olmalı; başlığa
       gömülü " (N)" biçiminde bir sayı **hiçbir yerde kalmamalı**.
-- [ ] **Sayı değil, nokta olması gerekenler.** Board footer'ındaki
-      "Mesajlaşma" (okunmamış mesaj) ve `UserMenu` avatarı — bunlar
-      boolean gösterge, sayı taşımaz, bu doğru davranış.
+- [ ] **Eski noktalar da artık sayı gösteriyor (16 Ağustos 2026).** Board
+      footer'ındaki "Mesajlaşma" ve `UserMenu` avatarı — ikisi de sayısız
+      kırmızı noktaydı, kullanıcı fark edilmediklerini bildirince `CountBadge`e
+      çevrildi. **Avatar rozeti TOPLAMDIR:** bekleyen arkadaşlık isteği +
+      (admin isen) bekleyen geri bildirim/şikayet; menüyü aç, içerideki
+      "Arkadaşlar" ve "Admin Paneli" rozetlerinin toplamı avatardakine eşit
+      olmalı. Rozet avatarın sağ üst köşesinden taşar (bu doğru); GameHeader'ın
+      yatay kaydırılan şeridinde **kırpılmamalı** — oyun ekranında da kontrol et.
 - [ ] **Rozet olMAması gerekenler.** "Değiştir (N)" (seçili taş sayısı) ve
       "Arkadaşlarını Seç (N/3)" (seçim ilerlemesi) — bunlar bekleyen iş değil,
       metin içinde kalmalı.

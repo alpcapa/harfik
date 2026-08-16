@@ -1184,7 +1184,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
           onOpenHistory={() => setShowHistory(true)}
           onOpenHelp={() => setShowHelp(true)}
           onOpenMessaging={handleOpenMessaging}
-          hasUnreadMessage={unreadCount > 0}
+          unreadMessageCount={unreadCount}
           dragHiddenKey={dragHiddenKey}
           dragOverKey={ghost?.overKey ?? null}
           dragOverValid={ghost?.overValid ?? false}

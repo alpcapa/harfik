@@ -15,6 +15,7 @@ import { key } from '../utils/board';
 import { buildRoundedOutlinePath } from '../utils/outline';
 import { computeAllTerritories } from '../utils/validator';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { CountBadge } from './CountBadge';
 import { Tile } from './Tile';
 
 // Dış hat köşe yarıçapı (ızgara birimi) — köşe bloğundaki dışbükey köşelerle
@@ -37,8 +38,13 @@ interface BoardProps {
    * Faz 1, YZ'ye karşı yerel oyunlarda kapsam dışı).
    */
   onOpenMessaging?: () => void;
-  /** `onOpenMessaging` butonunun üstünde küçük bir kırmızı nokta gösterir — sohbet kapalıyken okunmamış mesaj geldiğini belli etmek için. */
-  hasUnreadMessage?: boolean;
+  /**
+   * `onOpenMessaging` butonunun sağ üstünde okunmamış mesaj SAYISINI
+   * gösterir (`CountBadge`). 16 Ağustos 2026'ya kadar sayısız bir kırmızı
+   * noktaydı; kullanıcı "insanlar fark etmiyor" diye bildirince projedeki
+   * öteki rozetlerle aynı görsele çekildi (bkz. kök CLAUDE.md, `CountBadge`).
+   */
+  unreadMessageCount?: number;
   /**
    * Alt şeridin SAĞ ucundaki "Nasıl Oynanır?" linki (14 Ağustos 2026,
    * kullanıcı isteği) — buraya kadar X2/X3 açıklaması duruyordu. Kurallar
@@ -129,7 +135,7 @@ export function Board({
   onOpenHistory,
   onOpenHelp,
   onOpenMessaging,
-  hasUnreadMessage = false,
+  unreadMessageCount = 0,
   dragHiddenKey = null,
   dragOverKey = null,
   dragOverValid = false,
@@ -554,10 +560,19 @@ export function Board({
                 >
                   <ChatBubbleIcon />
                   Mesajlaşma
-                  {hasUnreadMessage && (
-                    <span
-                      className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red"
-                      aria-hidden
+                  {/* Konum ÖLÇÜLEREK seçildi, tercihle değil: rozet mutlak
+                      konumlu olmak ZORUNDA (satır içi olsaydı 20px eklerdi
+                      ve 360px'lik bir telefonda "Nasıl Oynanır?" ile çakışan
+                      şerit zaten yalnızca 7.8px boşluk taşıyor). Aynı
+                      sebeple sağa taşma 4px'ten (`-right-1`) fazla olamaz.
+                      `ring-2 ring-panel`: rozet, altındaki mavi etiketten
+                      ayrışsın diye — halkasız hâli ölçüm turunda okunaksız
+                      çıktı. Etiketin son iki harfini kapatması bilinen ve
+                      kabul edilen bedel. */}
+                  {unreadMessageCount > 0 && (
+                    <CountBadge
+                      count={unreadMessageCount}
+                      className="absolute -top-1 -right-1 ring-2 ring-panel"
                     />
                   )}
                 </button>

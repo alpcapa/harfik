@@ -504,8 +504,10 @@ class _AccountButtonState extends State<AccountButton> {
         url: auth.profile?.avatarUrl,
         name: auth.menuName,
         size: avatarSize,
-        // Web Avatar `dot`: bekleyen iş VAR/YOK göstergesi (sayı değil).
-        dot: _incomingRequests > 0,
+        // Web Avatar `badgeCount`: menü içindeki rozetlerin toplamı. Portta
+        // admin paneli olmadığından (bilinçli, bkz. mobile/CLAUDE.md) tek
+        // kaynak arkadaşlık isteği — web ayrıca admin bekleyen işini ekler.
+        badgeCount: _incomingRequests,
       ),
     );
   }

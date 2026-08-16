@@ -1271,10 +1271,10 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     }
 
     return ListenableBuilder(
-      // `_chatState` de dinleniyor: Board footer'ının okunmamış-mesaj kırmızı
-      // noktası (`hasUnreadMessage`) sohbet kapalıyken gelen bir mesajla
-      // tetiklenir, bu tetiklemenin ekrana yansıması için tahta oyun
-      // motorundan bağımsız da yeniden çizilebilmeli.
+      // `_chatState` de dinleniyor: Board footer'ının okunmamış-mesaj rozeti
+      // (`unreadMessageCount`) sohbet kapalıyken gelen bir mesajla tetiklenir,
+      // bu tetiklemenin ekrana yansıması için tahta oyun motorundan bağımsız
+      // da yeniden çizilebilmeli.
       listenable: Listenable.merge([_controller, _chatState]),
       builder: (context, _) {
         // Taslak değiştiyse son gönderimin hatası artık geçmişe ait (web'in
@@ -1463,8 +1463,8 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                       onOpenMessaging: widget.chat == null
                                           ? null
                                           : _openMessaging,
-                                      hasUnreadMessage:
-                                          _chatState.unreadCount > 0,
+                                      unreadMessageCount:
+                                          _chatState.unreadCount,
                                       onlineStatus: widget.onlineStatus,
                                       dragHiddenKey: _hiddenSource
                                               is _PlacedSource
