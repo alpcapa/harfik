@@ -961,6 +961,64 @@ bölümün kendi tarihli notuna taşınır.
     grafik BAŞKASININ kartında da görünür — yeni bir sızıntı değil (o veri
     girişli herkese zaten açık) ama bilerek karar verilmeli.
 
+- **Hata telemetrisi — istemci tarafı çökme/başarısızlık kaydı (16 Ağustos
+  2026, kullanıcı onayı; MAĞAZA ÇIKIŞINA yakın yapılacak):**
+  **Bu, Supabase'in sunucu loglarıyla KARIŞTIRILMAMALI.** Postgres/Edge
+  Function/API hataları zaten Supabase'in kendi loglarında duruyor (MCP
+  `query_logs` + Dashboard) — eksik olan, kullanıcının CİHAZINDA olup hiçbir
+  sunucuya ulaşmayan hatalar. Bugün onların TAMAMI şuraya gidiyor:
+  `console.error` (web'de **81** çağrı yeri), `ErrorBoundary.componentDidCatch`
+  (kök çökme yakalayıcısı — yalnızca console'a yazıyor) ve portta
+  `debugPrint` (**74** çağrı yeri). Üçü de kullanıcının cihazında ölüyor:
+  **kimse görmüyor, aranamıyor, "kaç kişide oldu" sorusu sorulamıyor.**
+  - **Neden ŞİMDİ değil, mağaza çıkışına yakın:** bugün kullanıcı tabanı 23
+    üye ve büyük kısmı hesap sahibinin arkadaşı; her hata elle, cihazda,
+    kullanıcıyla konuşarak bulunuyor. Mağazaya çıkıldığında konuşamayacağın
+    kullanıcılar, elinde olmayan cihazlarda hata alacak — telemetri tam o an
+    tek görme yolu olur. **Geriye dönük doldurulamaz** (`games.platform` ile
+    aynı sınıf), yani ÇIKIŞTAN ÖNCE kurulmalı; ama bugün kurulursa gürültü
+    kalibrasyonu gerçek trafik olmadan yapılamaz.
+  - **Bu projede bedeli ÖLÇÜLMÜŞ bir eksik, teorik değil:** Parça 45'te
+    (mobil) "depo açılamadı → offline hamleler sessizce kayboldu" teşhisi
+    tahminle yapılmak zorunda kaldı ve Setup'a sırf görebilmek için bir
+    teşhis satırı EKLENDİ; avatar yükleme 20 Temmuz'dan 13 Ağustos'a kadar
+    403 veriyordu ve kimse fotoğrafını değiştirmediği için üç hafta
+    görünmedi; `fetchMyGames` çevrimdışıyken "hiç oyunun yok" diyordu.
+    Üçünde de sunucuda hiçbir iz YOKTU — hata istemcide doğup istemcide
+    öldü.
+  - **Ne KAYDEDİLİR:** yakalanmamış istisnalar, yakalanmamış promise
+    reddi (`unhandledrejection`), `ErrorBoundary`nin yakaladıkları, ve
+    BİLİNÇLİ olarak "bu olmamalıydı" denen noktalar (ör.
+    `cloud_save_repo`'nun "KAYIP" logu, ayna yazma hatası).
+  - **Ne kaydedilMEZ — asıl tasarım kararı bu:** BEKLENEN/ele alınmış
+    durumlar. Çevrimdışılık, `isNetworkError`'a düşen her şey, sunucunun
+    KENDİ reddi (`'Sıra sende değil.'`) telemetriye girmemeli; girerse
+    gürültü sinyali boğar ve panel bir daha açılmaz. Bir kayıt "birinin
+    bakması gereken bir şey" demek olmalı.
+  - **Yüzeyle birlikte gelen üç zorunluluk:** (1) fire-and-forget, asla
+    `await` edilmez, asla fırlatmaz — bir telemetri hatası uygulamayı
+    etkileyemez (`setOnlineGamePlatform`/`logGameFinish` deseni); (2)
+    tekrar bastırma + hız sınırı ŞART — bir çökme döngüsü aksi halde
+    binlerce satır yazar (`ErrorBoundary`'nin kendi yorumunda bu döngü
+    zaten tanımlı); (3) derleme kimliği (`window.__KELIMEKI_BUILD__` /
+    `buildSha`) her kayda EKLENMELİ — "Deploy Doğrulaması" bölümünün
+    tamamı zaten bu soruyu (kullanıcı hangi derlemeyi görüyor?) çözmek
+    için var, telemetri onu bedavaya alır.
+  - **Nerede saklanır — iki seçenek, ilki bu projenin desenine uyuyor:**
+    (a) kendi `client_errors` tablomuz — `guest_visits`/`game_finishes`
+    ile aynı kalıp (anonim, yalnızca insert eden RLS, admin panelinde
+    okunur); (b) Sentry gibi bir hizmet — daha zengin (stack sembolü,
+    gruplama) ama yeni bir bağımlılık ve ÜÇÜNCÜ TARAFA veri aktarımı,
+    yani gizlilik metninde çok daha ağır bir değişiklik.
+  - **Gizlilik metni ZORUNLU olarak değişir** (yeni kişisel veri kuralı):
+    `PrivacyModal` + portun `legal_modals.dart`'ı AYNI PR'da —
+    `legal_text_test.dart` "Son güncelleme" tarihlerini karşılaştırdığından
+    port bayat kalırsa mobil test paketi düşer.
+  - **Yapılırken:** web + port AYNI PR'da (tek taraflı yapmak bu projenin
+    en sık hatasını üretir) ve panelde ham satır listesi DEĞİL en azından
+    "aynı hata kaç kişide, hangi derlemede" kırılımı gösterilmeli — ham
+    liste ilk yüz satırdan sonra okunmaz hâle gelir.
+
 ## Web'de Yapılacak İşler (mobil porttan gelen fikirler, henüz yapılmadı)
 
 Mobil port (bkz. `mobile/CLAUDE.md`) cihaz testi sırasında bazen web'de de
