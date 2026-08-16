@@ -652,6 +652,17 @@ toplamların korunması); aşağıdakiler gerçek istemcide görülmesi gerekenl
 - [ ] **TOPLAM satırı tutuyor mu.** Üç sütunun toplamı, satırların toplamına
       eşit olmalı; "Üye" toplamı o dönemdeki yeni üye sayısıyla (Yeni Üye/Ziyaret
       grafiği) tutarlı olmalı.
+- [ ] **`% / Sayı` düğmesi dönüşümlü çalışmalı.** Tablonun sağ üstünde, "CSV
+      İndir"in yanında. Bas → üç sütun birden yüzdeye dönmeli ve TOPLAM satırı
+      üçünde de **100.0%** göstermeli; tekrar bas → sayılara dönmeli. Aktif
+      mod her zaman vurgulu (mavi/kalın) olmalı, yani hangi moddasın bakınca
+      anlaşılmalı.
+- [ ] **Yüzde SÜTUN payı, dönüşüm oranı DEĞİL.** `direkt` satırında "Kişi"
+      yüzdesi tüm ziyaretçilere oranını göstermeli (ör. %91.8) — o kaynağın
+      "kaç ziyaretçisi üye oldu"su DEĞİL. Satır yönünde bir oran hiçbir yerde
+      gösterilmemeli.
+- [ ] **CSV düğmeden bağımsız.** Yüzde modundayken "CSV İndir" → dosyada yine
+      HAM SAYILAR olmalı (yüzde değil).
 - [ ] **CSV İndir** çalışmalı; dosyada Kaynak/Kişi/Üye/Oyun sütunları ve bir
       TOPLAM satırı olmalı.
 - [ ] **Açıklama satırı okunuyor mu.** Tablonun altındaki metin "Kişi"/"Üye"/

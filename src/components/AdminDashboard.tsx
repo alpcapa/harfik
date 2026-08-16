@@ -300,9 +300,21 @@ function GuestBreakdownTable<T extends { visitors: number }>({
  * hesaba bağlamak `PrivacyModal`daki anonimlik taahhüdünü bozardı. Bunun
  * doğal sonucu: bir satırda yalnızca ziyaretçi ya da yalnızca üye olabilir,
  * ve dönüşüm oranı ("Kişi → Üye") ancak İKİ ucu da damgalanmış bir kaynakta
- * anlamlıdır. Bu yüzden oran sütunu YOK — yanıltıcı olurdu; sayılar ham.
+ * anlamlıdır. Bu yüzden SATIR YÖNÜNDE bir oran sütunu YOK.
+ *
+ * `% / Sayı` düğmesi (16 Ağustos 2026, kullanıcı isteği: "basınca değerden
+ * yüzdeye dönsün, basınca % sayı olsun, dönüşümlü çalışsın") üç sütunu birden
+ * çevirir. Yüzde her zaman **SÜTUN payıdır** ("ziyaretçilerin %8'i bu
+ * kaynaktan"), satır yönünde bir dönüşüm oranı DEĞİL — yukarıdaki gerekçe
+ * hâlâ geçerli. Düğme iki etiketi de gösterip aktif olanı vurguluyor: tek
+ * kelimelik bir düğme ("%") "şu an yüzde mi gösteriyorum, yoksa basınca
+ * yüzdeye mi geçerim" belirsizliğini taşırdı.
+ *
+ * CSV her zaman HAM SAYI verir (düğmeden bağımsız) — retention tablosundaki
+ * aynı karar: yuvarlama kaybı olmaz, yüzde zaten yeniden hesaplanabilir.
  */
 function SourceFunnelTable({ rows }: { rows: AdminSourceFunnelRow[] | null }) {
+  const [asPercent, setAsPercent] = useState(false);
   if (rows === null) {
     return <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>;
   }
@@ -333,11 +345,34 @@ function SourceFunnelTable({ rows }: { rows: AdminSourceFunnelRow[] | null }) {
     );
   }
 
+  /** Hücre içeriği — yüzde her zaman SÜTUN payı (bkz. bileşen yorumu). */
+  function cell(value: number, columnTotal: number): string {
+    if (!asPercent) return String(value);
+    return `${columnTotal > 0 ? ((value / columnTotal) * 100).toFixed(1) : '0.0'}%`;
+  }
+
   return (
     <div className="flex flex-col gap-1.5">
-      <button type="button" onClick={handleExportCsv} className={`${csvLinkCls} self-end`}>
-        CSV İndir
-      </button>
+      <div className="flex items-center justify-end gap-3">
+        <button
+          type="button"
+          onClick={() => setAsPercent((v) => !v)}
+          aria-pressed={asPercent}
+          aria-label={asPercent ? 'Sayıya dön' : 'Yüzdeye çevir'}
+          /* `py-1 -my-1`: dokunma alanı 13.5 → 21.5px olurken layout ayak izi
+             DEĞİŞMİYOR (negatif margin dolguyu birebir geri alıyor) — aynı
+             desen "Tüm Oyunlarım"daki hamle ikonunda da kullanıldı. Kardeşi
+             olan "CSV İndir" de aynı payı alıyor ki ikisi asimetrik olmasın. */
+          className="text-[9px] font-mono uppercase tracking-[0.5px] py-1 -my-1 active:opacity-70 transition-opacity shrink-0"
+        >
+          <span className={asPercent ? 'text-accent font-bold' : 'text-muted'}>%</span>
+          <span className="text-muted"> / </span>
+          <span className={asPercent ? 'text-muted' : 'text-accent font-bold'}>Sayı</span>
+        </button>
+        <button type="button" onClick={handleExportCsv} className={`${csvLinkCls} py-1 -my-1`}>
+          CSV İndir
+        </button>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-auto text-[11px] font-mono border-collapse">
           <thead>
@@ -352,16 +387,28 @@ function SourceFunnelTable({ rows }: { rows: AdminSourceFunnelRow[] | null }) {
             {rows.map((row) => (
               <tr key={row.source} className="border-b border-border/50">
                 <td className="py-1.5 pr-8 text-text whitespace-nowrap">{row.source}</td>
-                <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">{row.visitors}</td>
-                <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">{row.signups}</td>
-                <td className="py-1.5 text-muted whitespace-nowrap text-center">{row.games}</td>
+                <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">
+                  {cell(row.visitors, total.visitors)}
+                </td>
+                <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">
+                  {cell(row.signups, total.signups)}
+                </td>
+                <td className="py-1.5 text-muted whitespace-nowrap text-center">
+                  {cell(row.games, total.games)}
+                </td>
               </tr>
             ))}
             <tr className="border-b border-border/50">
               <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap">TOPLAM</td>
-              <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">{total.visitors}</td>
-              <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">{total.signups}</td>
-              <td className="py-1.5 text-text font-bold whitespace-nowrap text-center">{total.games}</td>
+              <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">
+                {cell(total.visitors, total.visitors)}
+              </td>
+              <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">
+                {cell(total.signups, total.signups)}
+              </td>
+              <td className="py-1.5 text-text font-bold whitespace-nowrap text-center">
+                {cell(total.games, total.games)}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -1349,7 +1396,9 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       mobil uygulamadan gelen kayıtlar henüz damgalanmıyor.{' '}
                       <b>Direkt</b> = web'e <code>?ref=</code> olmadan geliş. "Kişi" ile
                       "Üye" iki ayrı ölçümdür (ziyaretler anonim, hesaba bağlanmaz), bu
-                      yüzden dönüşüm oranı gösterilmiyor.
+                      yüzden satır yönünde bir dönüşüm oranı gösterilmiyor. <b>% / Sayı</b>
+                      düğmesi üç sütunu birden çevirir; yüzde her zaman o SÜTUNUN payıdır
+                      ("ziyaretçilerin %8'i bu kaynaktan"). CSV her zaman ham sayı verir.
                     </p>
                   </div>
                   <div className="flex flex-col gap-2">
