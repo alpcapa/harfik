@@ -12,7 +12,7 @@ import {
   fetchAdminActivePlayersSeries,
   fetchAdminRetentionCohorts,
   fetchAdminActivationStats,
-  fetchAdminGuestSourceBreakdown,
+  fetchAdminSourceFunnel,
   fetchAdminGuestDeviceBreakdown,
   fetchAdminFeedback,
   markFeedbackHandled,
@@ -35,7 +35,7 @@ import type {
   AdminActivePlayersPoint,
   AdminRetentionCell,
   AdminActivationStats,
-  AdminGuestSourceRow,
+  AdminSourceFunnelRow,
   AdminGuestDeviceRow,
   AdminActivityGranularity,
   AdminFeedbackRow,
@@ -289,6 +289,88 @@ function GuestBreakdownTable<T extends { visitors: number }>({
 }
 
 /**
+ * Kaynak hunisi (Büyüme > Kullanıcı): kaynak → kişi → üye → oyun.
+ *
+ * "Ziyaretçi Kaynağı" tablosunun yerini aldı (16 Ağustos 2026, kullanıcı
+ * isteği). İlk sütun eskisiyle AYNI sayı; üzerine iki adım eklendi.
+ *
+ * SÜTUNLAR İKİ AYRI KAYNAKTAN GELİYOR ve bu bilinçli: "Kişi" anonim
+ * `guest_visits`ten, "Üye"/"Oyun" ise kayıt anında profile damgalanan
+ * `profiles.signup_utm_source`tan. Aralarında join YOK — ziyaret satırlarını
+ * hesaba bağlamak `PrivacyModal`daki anonimlik taahhüdünü bozardı. Bunun
+ * doğal sonucu: bir satırda yalnızca ziyaretçi ya da yalnızca üye olabilir,
+ * ve dönüşüm oranı ("Kişi → Üye") ancak İKİ ucu da damgalanmış bir kaynakta
+ * anlamlıdır. Bu yüzden oran sütunu YOK — yanıltıcı olurdu; sayılar ham.
+ */
+function SourceFunnelTable({ rows }: { rows: AdminSourceFunnelRow[] | null }) {
+  if (rows === null) {
+    return <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>;
+  }
+  if (rows.length === 0) {
+    return (
+      <div className="text-xs font-mono text-muted text-center py-6">
+        Bu aralıkta veri yok.
+      </div>
+    );
+  }
+  const total = rows.reduce(
+    (acc, row) => ({
+      visitors: acc.visitors + row.visitors,
+      signups: acc.signups + row.signups,
+      games: acc.games + row.games,
+    }),
+    { visitors: 0, signups: 0, games: 0 },
+  );
+
+  function handleExportCsv() {
+    downloadCsv(
+      csvFilename('kelimeki-kaynak-funnel'),
+      ['Kaynak', 'Kişi', 'Üye', 'Oyun'],
+      [
+        ...rows!.map((row) => [row.source, row.visitors, row.signups, row.games]),
+        ['TOPLAM', total.visitors, total.signups, total.games],
+      ],
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <button type="button" onClick={handleExportCsv} className={`${csvLinkCls} self-end`}>
+        CSV İndir
+      </button>
+      <div className="overflow-x-auto">
+        <table className="w-auto text-[11px] font-mono border-collapse">
+          <thead>
+            <tr className="text-left text-muted border-b border-border">
+              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px]">Kaynak</th>
+              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Kişi</th>
+              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Üye</th>
+              <th className="py-1.5 font-bold uppercase tracking-[1px] text-center">Oyun</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.source} className="border-b border-border/50">
+                <td className="py-1.5 pr-8 text-text whitespace-nowrap">{row.source}</td>
+                <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">{row.visitors}</td>
+                <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">{row.signups}</td>
+                <td className="py-1.5 text-muted whitespace-nowrap text-center">{row.games}</td>
+              </tr>
+            ))}
+            <tr className="border-b border-border/50">
+              <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap">TOPLAM</td>
+              <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">{total.visitors}</td>
+              <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">{total.signups}</td>
+              <td className="py-1.5 text-text font-bold whitespace-nowrap text-center">{total.games}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Retention kohort tablosu (Büyüme > Kullanıcı) — satır: kayıt haftası,
  * sütun: kayıttan sonraki hafta (H0 = kayıt haftasının kendisi).
  *
@@ -506,7 +588,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [userActivity, setUserActivity] = useState<AdminUserActivityPoint[] | null>(null);
   const [userGranularity, setUserGranularity] = useState<AdminActivityGranularity>('day');
   const [userPeriod, setUserPeriod] = useState<number>(30);
-  const [guestSources, setGuestSources] = useState<AdminGuestSourceRow[] | null>(null);
+  const [sourceFunnel, setSourceFunnel] = useState<AdminSourceFunnelRow[] | null>(null);
   const [guestDevices, setGuestDevices] = useState<AdminGuestDeviceRow[] | null>(null);
   const [friendActivity, setFriendActivity] = useState<AdminFriendActivityPoint[] | null>(null);
   const [activePlayers, setActivePlayers] = useState<AdminActivePlayersPoint[] | null>(null);
@@ -628,7 +710,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     const days = userPeriod * GRANULARITY_TO_DAYS[userGranularity];
     Promise.all([
       fetchAdminUserActivitySeries(userPeriod, userGranularity).then(setUserActivity),
-      fetchAdminGuestSourceBreakdown(days).then(setGuestSources),
+      fetchAdminSourceFunnel(days).then(setSourceFunnel),
       fetchAdminGuestDeviceBreakdown(days).then(setGuestDevices),
       fetchAdminFriendActivitySeries(userPeriod, userGranularity).then(setFriendActivity),
       fetchAdminActivePlayersSeries(userPeriod, userGranularity).then(setActivePlayers),
@@ -1250,16 +1332,25 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
 
                   <div className="flex flex-col gap-2">
                     <span className={sectionTitleCls}>
-                      Ziyaretçi Kaynağı (Son {userPeriod} {PERIOD_UNIT_LABEL[userGranularity]})
+                      Kaynak Hunisi (Son {userPeriod} {PERIOD_UNIT_LABEL[userGranularity]})
                     </span>
-                    <GuestBreakdownTable
-                      columnLabel="Kaynak"
-                      emptyLabel="Bu aralıkta misafir ziyareti yok."
-                      rows={guestSources}
-                      getKey={(row) => row.source}
-                      getLabel={(row) => row.source}
-                      csvBaseName="kelimeki-ziyaretci-kaynagi"
-                    />
+                    <SourceFunnelTable rows={sourceFunnel} />
+                    {/* Tanım ekranın KENDİSİNDE yazıyor — dokümanda kalsaydı ilk
+                        yanlış yorum kaçınılmazdı (retention/aktif oyuncu panellerinde
+                        aynı karar). */}
+                    <p className="text-[10px] font-mono text-muted leading-relaxed max-w-[560px]">
+                      <b>Kişi</b> = o kaynaktan gelen benzersiz misafir ziyaretçi;{' '}
+                      <b>Üye</b> = o kaynak damgasıyla açılan hesap; <b>Oyun</b> = o
+                      hesapların bitirdiği oyun. Pencere her adıma kendi olay tarihinden
+                      uygulanır (kohort değil): 2 ay önce üye olup bugün oynayan biri
+                      "Oyun"a girer, "Üye"ye girmez.{' '}
+                      <b>Bilinmiyor</b> = kaynak damgası olmayan hesaplar — bu özellik
+                      16 Ağustos 2026'da eklendi ve geriye dönük doldurulamıyor, ayrıca
+                      mobil uygulamadan gelen kayıtlar henüz damgalanmıyor.{' '}
+                      <b>Direkt</b> = web'e <code>?ref=</code> olmadan geliş. "Kişi" ile
+                      "Üye" iki ayrı ölçümdür (ziyaretler anonim, hesaba bağlanmaz), bu
+                      yüzden dönüşüm oranı gösterilmiyor.
+                    </p>
                   </div>
                   <div className="flex flex-col gap-2">
                     <span className={sectionTitleCls}>

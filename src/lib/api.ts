@@ -33,7 +33,7 @@ import type {
   AdminGameActivityPoint,
   AdminGameScope,
   AdminGameSourceType,
-  AdminGuestSourceRow,
+  AdminSourceFunnelRow,
   AdminGuestDeviceRow,
   AdminGuestStandaloneRow,
   AdminMember,
@@ -69,6 +69,7 @@ import type {
 import { getLocalMeaning } from '../data/meanings';
 import { CLIENT_PLATFORM } from '../utils/platform';
 import { trCompare, trLower } from '../utils/turkish';
+import { getStoredUtmSource } from '../utils/visitTracking';
 import type { GameState, HistoryEntry, Tile } from '../game/types';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1826,20 +1827,20 @@ export async function fetchAdminActivationStats(): Promise<AdminActivationStats 
 }
 
 /**
- * Son `days` gün içinde kaynak (`?ref=` etiketi) başına benzersiz misafir
- * ziyaretçi sayısını döner (yalnızca admin — Büyüme > Kullanıcı). `?ref=`
- * ile hiç gelinmemiş ziyaretler "direkt" olarak gruplanır.
+ * Kaynak hunisi: son `days` gün içinde kaynak başına kişi → üye → oyun
+ * (yalnızca admin — Büyüme > Kullanıcı). `admin_guest_source_breakdown`
+ * RPC'sinin yerini aldı (o RPC veritabanında duruyor ama artık çağrılmıyor); ilk sütun onunla AYNI sayıyı taşır, üzerine iki adım ekler.
+ * Ayrıntılı sözleşme: `AdminSourceFunnelRow`.
  */
-export async function fetchAdminGuestSourceBreakdown(days = 30): Promise<AdminGuestSourceRow[]> {
+export async function fetchAdminSourceFunnel(days = 30): Promise<AdminSourceFunnelRow[]> {
   if (!supabase) return [];
-  const { data, error } = await supabase.rpc('admin_guest_source_breakdown', { p_days: days });
+  const { data, error } = await supabase.rpc('admin_source_funnel', { p_days: days });
   if (error) {
-    // Admin panelindeki .catch(setError) zinciri buna güveniyor —
-    // önceden burada [] /null dönülüp hata yutuluyordu, admin gerçek
-    // bir RPC/izin hatasını asla göremiyordu (bkz. kod incelemesi).
+    // Admin panelindeki .catch(setError) zinciri buna güveniyor — hatayı
+    // yutup boş dizi dönmek gerçek bir RPC/izin hatasını gizlerdi.
     throw new Error(error.message);
   }
-  return (data as AdminGuestSourceRow[]) ?? [];
+  return (data as AdminSourceFunnelRow[]) ?? [];
 }
 
 /**
@@ -2277,6 +2278,13 @@ export async function signUp(
           gender: gender || null,
           birthDate: birthDate || null,
           marketingConsent,
+          // Büyüme > Kullanıcı funnel'ının "üye"/"oyun" adımları buna
+          // dayanıyor (`profiles.signup_utm_source`, 16 Ağustos 2026).
+          // `?ref=` HİÇ yoksa bile AÇIKÇA 'direkt' gönderiliyor: sunucuda
+          // null, "bu istemci hiç damgalamadı" (eski üyeler, web dışı
+          // istemciler) anlamına geliyor ve funnel'da "Bilinmiyor"a
+          // düşüyor — uygulama kayıtları "Direkt"i şişirmesin diye.
+          utmSource: getStoredUtmSource() ?? 'direkt',
         },
         signup_channel: channel,
         display_name: nickname,

@@ -596,10 +596,12 @@ tarayıcıda görülebilecek olanlar. **Admin hesabı gerekiyor.**
 
 ## 9.8. Admin — Platform dökümü (14 Ağustos 2026)
 
-Girişli bir kullanıcının oyunu APP'ten mi WEB'den mi oynadığını ölçen yeni
-kolon. Sunucu tarafı canlıda rollback'li senaryolarla doğrulandı (iki kaynak,
-yetki matrisi, geçersiz değer); aşağıdakiler yalnızca gerçek istemcide
-görülebilecek olanlar.
+> **TABLO 15 Ağustos 2026'da PANELDEN KALDIRILDI** (kullanıcı kararı: bugün
+> karar verdirecek bir şey söylemiyor, uygulamalar mağazaya çıkınca
+> web/iOS/Android/diğer olarak yeniden yapılandırılacak). **Veri toplanmaya
+> DEVAM EDİYOR** (`games.platform` + `online_game_clients`), yani aşağıdaki
+> UI maddeleri şu an KOŞULAMAZ — tablo geri geldiğinde geçerli olacaklar.
+> Doğrulama o güne kadar SQL'den yapılır.
 
 - [ ] **Tablo yükleniyor.** Admin Paneli → Büyüme → Kullanıcı: "Cihaz"ın
       hemen altında **Platform** tablosu (Platform / Oyun / Oyuncu / %).
@@ -620,8 +622,44 @@ görülebilecek olanlar.
 - [ ] **CSV İndir** çalışmalı; dosyada Platform/Oyun/Oyuncu/% sütunları ve bir
       TOPLAM satırı olmalı.
 - [ ] **Gizlilik metni güncel.** Gizlilik Politikası → "Toplanan Veriler"de
-      "Bir oyunu hangi istemciden oynadığınız…" maddesi olmalı, "Son
-      güncelleme: 14 Ağustos 2026" yazmalı (mobil uygulamadaki metin de AYNI).
+      "Bir oyunu hangi istemciden oynadığınız…" maddesi olmalı (mobil
+      uygulamadaki metin de AYNI).
+
+## 9.9. Admin — Kaynak Hunisi (16 Ağustos 2026)
+
+"Ziyaretçi Kaynağı" tablosunun yerini aldı: kaynak → **Kişi** → **Üye** →
+**Oyun**. İlk sütun eskisiyle aynı sayı. Sunucu tarafı canlıda rollback'li
+senaryolarla doğrulandı (yetki matrisi, damgalama, write-once trigger,
+toplamların korunması); aşağıdakiler gerçek istemcide görülmesi gerekenler.
+
+- [ ] **Tablo yükleniyor ve zaman filtresine bağlı.** Admin Paneli → Büyüme →
+      Kullanıcı: "Kaynak Hunisi (Son N …)" başlığı üstteki granülerlik/periyot
+      seçimini takip etmeli; seçim değişince sayılar değişmeli.
+- [ ] **Bugünkü beklenen tablo.** "Kişi" sütunu yalnızca `direkt`/`arkadas`
+      satırlarında dolu; "Üye"/"Oyun" ise TAMAMEN **Bilinmiyor** satırında
+      (damga 16 Ağustos 2026'da eklendi, geriye dönük doldurulamıyor). Bu
+      DOĞRU davranış — "veri kayıp" değil.
+- [ ] **Yeni bir kayıt kaynağını damgalıyor.** Gizli sekmede
+      `kelimeki.com/?ref=instagram` aç, sonra ORADAN üye ol → panelde
+      `instagram` satırı belirmeli, "Üye" 1 olmalı. Aynı hesapla bir oyun
+      bitir → aynı satırın "Oyun"u 1 olmalı.
+- [ ] **`?ref=` olmadan üye olan `Direkt`e düşmeli** (Bilinmiyor'a DEĞİL) —
+      ikisi bilinçli olarak ayrı: Bilinmiyor = damgalanmamış (eski üyeler ve
+      mobil uygulama kayıtları).
+- [ ] **İlk temas kazanır.** Önce `?ref=instagram` ile gel, sonra siteyi
+      `?ref=` olmadan (ya da başka bir ref ile) tekrar aç ve ANCAK O ZAMAN üye
+      ol → kaynak hâlâ `instagram` olmalı.
+- [ ] **TOPLAM satırı tutuyor mu.** Üç sütunun toplamı, satırların toplamına
+      eşit olmalı; "Üye" toplamı o dönemdeki yeni üye sayısıyla (Yeni Üye/Ziyaret
+      grafiği) tutarlı olmalı.
+- [ ] **CSV İndir** çalışmalı; dosyada Kaynak/Kişi/Üye/Oyun sütunları ve bir
+      TOPLAM satırı olmalı.
+- [ ] **Açıklama satırı okunuyor mu.** Tablonun altındaki metin "Kişi"/"Üye"/
+      "Oyun" tanımlarını, kohort OLMADIĞINI ve Bilinmiyor/Direkt farkını
+      anlatmalı — bu tablo bu not olmadan kolayca yanlış okunur.
+- [ ] **Gizlilik metni güncel.** Gizlilik Politikası → "Toplanan Veriler"de
+      kaynak etiketi maddesi olmalı ve "Son güncelleme: 16 Ağustos 2026"
+      yazmalı (mobil uygulamadaki metin de AYNI).
 
 ## 10. k-lig ödül & rütbe sistemi
 

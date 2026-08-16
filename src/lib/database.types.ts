@@ -641,15 +641,27 @@ export interface AdminUserActivityPoint {
 }
 
 /**
- * admin_guest_source_breakdown RPC çıktısındaki tek satır (Büyüme >
- * Kullanıcı) — son N gün içinde bir `?ref=` kaynağından (bkz.
- * `src/utils/visitTracking.ts`) kaç benzersiz misafir ziyaretçi geldiğini
- * gösterir. `?ref=` ile hiç gelinmemiş ziyaretler `source: 'direkt'` olarak
- * gruplanır.
+ * admin_source_funnel RPC çıktısındaki tek satır (Büyüme > Kullanıcı) —
+ * kaynak başına kişi (benzersiz misafir ziyaretçi) → üye (kayıt) → oyun
+ * (biten oyun) hunisi.
+ *
+ * İki AYRI dimension yan yana duruyor, aralarında JOIN YOK: `visitors`
+ * anonim `guest_visits.utm_source`'tan, `signups`/`games` ise kayıt anında
+ * profile damgalanan `profiles.signup_utm_source`'tan geliyor (bkz.
+ * `20260816…_source_funnel` migration'ı). Bu yüzden bir kaynağın yalnızca
+ * ziyaretçisi ya da yalnızca üyesi olabilir.
+ *
+ * `'bilinmiyor'` = profil damgalanmamış (bu özellikten önceki üyeler ve
+ * bugün Flutter portundan gelen kayıtlar); `'direkt'` = `?ref=` olmadan
+ * web'den geliş. İkisi bilinçli olarak AYRI.
+ *
+ * Pencere her adıma KENDİ olay tarihinden uygulanır (kohort değil).
  */
-export interface AdminGuestSourceRow {
+export interface AdminSourceFunnelRow {
   source: string;
   visitors: number;
+  signups: number;
+  games: number;
 }
 
 /**
