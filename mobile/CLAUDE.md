@@ -4567,7 +4567,82 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        değişiklik) ama aynı refleks bir sonraki turda çalışan bir şeyi
        "düzeltmeye" kalkabilir.
 
-## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 14 Ağustos 2026)
+   - ✅ **Parça 105 — BAYAT bir liste satırından devam etmek offline oynanan
+     hamleleri KALICI olarak siliyordu (16 Ağustos 2026,
+     `cloud_save_repo.dart`, `setup_screen.dart`):** Kullanıcı Blok 7
+     turunda bildirdi: *"uçak modunda devam eden 4 kişilik yz oyunda
+     yaptığım hamleyi geri çıkıp girince hatırlamadı. 2 kişilik yeni oyun
+     açtım, oynadım, geri çıkıp tekrar girdiğimde sorun yoktu onda. Ama 4
+     kişilik oyunda … aynı sonuç. İlk haline geri dönüyor."*
+     - **Kalıcılık katmanı SAĞLAMDI ve bunu doğrulamak teşhisin yarısıydı:**
+       `origin/main` = kullanıcının test ettiği derleme (`1c0bd39`) ve
+       kalıcılık dosyalarında fark yok; `_offlineList`in "ayna KOŞULSUZ
+       kazanır" kuralı ve aynı id'nin hem önbellekte hem aynada olduğu
+       senaryo `cloud_save_test.dart`ta ZATEN testli ve geçiyordu. Yani
+       hata repo katmanında değil, onu ÇAĞIRAN akıştaydı.
+     - **Kök sebep — Setup listesi bir ANLIK GÖRÜNTÜ, ama `_resumeCloudSave`
+       ona sorgusuz güveniyordu.** Oyundan çıkışta liste `_syncCloud` ile
+       tazeleniyor; o zincir `flushMirrored` + `list()` yani İKİ ağ
+       çağrısı, ve uçak modunda bunlar hemen düşmüyor, zaman aşımına
+       oynuyor. O pencerede kullanıcı aynı satıra tekrar dokunursa oyun
+       PRE-GAME state'le açılıyor — üstelik `CloudGameSession` kurulur
+       kurulmaz mevcut state'i yazdığından (kurucudaki `_onChange()`) o
+       bayat state 600 ms sonra AYNAYI EZİYOR ve offline hamleler
+       kurtarılamaz biçimde siliniyordu. Belirti bire bir "ilk haline
+       geri dönüyor".
+     - **Asimetriyi de tam olarak bu açıklıyor** (ve teşhisi doğrulayan
+       şey buydu): YENİ açılan 2 kişilik oyunun satırı çıkıştan ÖNCEKİ
+       listede YOKTU, yani kullanıcı satır belirene kadar — yani
+       `_syncCloud` bitene kadar — beklemek ZORUNDAYDI ve o noktada liste
+       tazeydi. Devam eden oyunun satırı ise zaten ekrandaydı; hemen
+       dokunmak mümkündü. Yani hata "4 kişilik"e değil "listede ZATEN
+       duran satıra" bağlı.
+     - **Düzeltme — `CloudSaveRepo.newerPendingState(id, userId,
+       knownUpdatedAtMs)`:** `_resumeCloudSave` açmadan hemen önce "bu id
+       için aynada daha yeni bir state var mı?" diye soruyor ve varsa onu
+       restore ediyor. Karşılaştırma `list()`in online dalındaki kuralın
+       AYNISI (`savedAtMs > updatedAtMs`) — bilerek: taze bir listede
+       satır zaten aynadan geldiğinden damgalar eşit olur ve null döner
+       (gereksiz yeniden yükleme yok), başka bir cihazın yazdığı DAHA YENİ
+       sunucu satırı da eski bir aynayla ezilmez. Depo okunamazsa
+       elimizdekiyle devam edilir — oyunu açmayı engellemiyor.
+     - **`CloudGameSession`'ın kurucudaki ilk yazması BİLEREK DURUYOR.**
+       Onu "resumeSaveId varsa atla" diye kapatmak da hasarı azaltırdı ama
+       yanlış katman olurdu: web'in autosave effect'i de RESUME_SAVED
+       sonrası yazıyor (satırın `updated_at`i tazelenip 7 günlük terk
+       süresi geri itiliyor). Doğru düzeltme, yazılan state'in TAZE
+       olmasını garanti etmek.
+     - **Teşhis satırının belirsizliği de kapatıldı** — bu tur onun
+       yüzünden bir el kaybetti: kullanıcı `depo ok, bekleyen 0` bildirdi
+       ama `pendingMirrorCount` depo erişilemediğinde de **0** dönüyordu,
+       yani o "0" hiçbir şey kanıtlamıyordu. Artık ulaşılamazsa **-1**
+       dönüyor ve teşhis satırı `bekleyen ?` yazıyor.
+     - **Test — negatif eş MEKANİZMAYI KANITLAYAN ayrı bir test olarak:**
+       `cloud_save_test.dart`a üç test (bayat satırdan devam hamleleri
+       silmiyor; **MEKANİZMA testi** — bayat state ile devam edilirse ayna
+       GERÇEKTEN eziliyor, yani guard cargo-cult değil; taze listede
+       `newerPendingState` null dönüyor) ve `setup_cloud_test.dart`a bir
+       KABLO testi (`FresherStateRepo` — Setup gerçekten soruyor mu ve
+       dönen state'i kullanıyor mu; Parça 86'nın dersi: sözleşmeyi
+       enjekte edilebilir sınırın ÜSTÜNDE test etmek altındaki iletimi
+       kanıtlamaz). `pendingMirrorCount`ın -1'i ile gerçek sayıyı dönen
+       yolu karşıt eş olarak aynı dosyada duruyor.
+     - **Doğrulama sınırı — bu oturumda Flutter YOK** (`flutter: command
+       not found`, Parça 103/104'ün aynı sınırı): `flutter analyze`/
+       `flutter test` KOŞULAMADI, kanıt CI'ın (`mobile-build.yml`) yeşile
+       dönmesi. Cihaz teyidi `mobile/TESTING.md` bölüm 8'e madde olarak
+       eklendi — **hızlı** koşulmalı (bekleyerek koşulursa liste tazelenir
+       ve senaryo hiç oluşmaz).
+     - **Ders — "repo katmanı testli ve geçiyor" bir SONUÇ değil bir
+       ELEME:** doğru soru "bu veriyi kim ne zaman OKUYOR ve okuduğu şey ne
+       kadar taze?" idi. Bu projenin kalıcılık katmanı bir yıl boyunca
+       "yazma yolu" üzerinden düşünüldü (ayna, önbellek, silme kuyruğu);
+       kaybın gerçekleştiği yer ise OKUMA yoluydu — ekranda duran bir
+       anlık görüntü. Bir ekran, elindeki veriyle YAZMA başlatıyorsa o
+       verinin tazeliği bir varsayım değil, kontrol edilmesi gereken bir
+       ön koşuldur.
+
+## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 16 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
 o dosyalar "bir ilerleme kaydı değildir, her sürüm öncesi baştan
@@ -4592,8 +4667,8 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | 4 · Biten oyun kayıtları / istatistik | ✅ | Parça 33; OHP çapraz kontrolü Parça 63 |
 | 5 · Oyun geçmişi | ✅ | Parça 35, sonra 67/68 ek turlar |
 | 6 · Paylaşma | 🟡 | görsel düzeltmesi koşuldu (Parça 84); **iPad ankrajı (Parça 86) gerçek iPad ister → FAZ B** |
-| 7 · Son Oynadıklarım | ❌ | **kayıtta ayrı bir tur YOK** |
-| 8 · Dayanıklılık (uçak modu) | ✅ | 8.2/8.3/8.5/8.6 — Parça 43-46 |
+| 7 · Son Oynadıklarım | ✅ | 16 Ağu (Blok 7) |
+| 8 · Dayanıklılık (uçak modu) | 🟡 | 8.2/8.3/8.5/8.6 — Parça 43-46; **16 Ağu: uçak modunda ÇIK–GİR hamleyi siliyordu (Parça 105) — düzeltme cihazda henüz koşulmadı** |
 | 9 · Görüş Bildir | 🟡 | 9.5 geçti (Parça 49); **9.3/9.4 Parça 48 düzeltmesinden sonra tekrar koşulmalı** |
 | 10 · Arkadaşlar | ✅ | tamamı (11 Ağu) + moderasyon geri alma, iki yol (14 Ağu, Parça 91) |
 | 11 · Canlı oyun | 🟡 | **14 Ağu: davet/kabul + tahta bölümü baştan koşuldu (Parça 95, 5 bulgu) — mesajlaşma alt bölümü ve tekil/SQL maddeleri hâlâ koşulmadı**; düzeltmelerin cihaz teyidi bekliyor |
@@ -4611,14 +4686,21 @@ ankrajı (Parça 86), HEIC seçimi ve galeri izni reddi (Parça 87).
 Son iki günde düzeltme yapıldıkça listeye madde eklendi ama o maddeler
 hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
 
-- **15 Ağustos (Parça 101):** "YAPAY ZEKA İLE" sekme rozeti = "Devam
-  Edenler" alt sekmesinin rozetiyle aynı sayı
+- **16 Ağustos (Parça 105) — EN ÖNCELİKLİ, veri kaybı:** uçak modunda
+  var olan bir oyunu aç → bir hamle yap → logoya bas → **listeyi
+  beklemeden** aynı satıra tekrar dokun; hamle DURMALI (bkz. TESTING.md
+  bölüm 8). Aynı turda teşhis satırında `bekleyen ?` ile `bekleyen 0`
+  ayrımını da gözle doğrula.
+- ~~**15 Ağustos (Parça 101):** "YAPAY ZEKA İLE" sekme rozeti = "Devam
+  Edenler" alt sekmesinin rozetiyle aynı sayı~~ → **16 Ağustos'ta Blok 7
+  turunda koşuldu.**
 - ~~**15 Ağustos (Parça 100):** susturulmuş gönderende rozet ÇIKMALI (popup
   çıkmamalı)~~ → **16 Ağustos'ta iki platformda da koşuldu** (Parça 103
   turuyla birlikte). 4 kişilik oyunda "susturulmamış gönderende ikisi de
   çıkmalı" kontrolü hâlâ koşulmadı — 2 kişilikte görünmüyor.
-- **14 Ağustos (Parça 96):** çevrimdışı Canlı oyun — açılışta panel +
-  hamlede açıklayıcı uyarı (iki platform)
+- ~~**14 Ağustos (Parça 96):** çevrimdışı Canlı oyun — açılışta panel +
+  hamlede açıklayıcı uyarı (iki platform)~~ → **16 Ağustos'ta Blok 7
+  turunda koşuldu** (uçak modu adımlarıyla birlikte).
 - **14 Ağustos (Parça 95) — Canlı turunun BEŞ düzeltmesi, hiçbiri cihazda
   teyit edilmedi:** boş taslakta OYNA (web Canlı) · gönderim hatasının
   görünmesi (iki platform, uçak modu) · sohbetin ön plana dönüşte
@@ -4643,12 +4725,16 @@ ilk yazılan sıralama yalnızca ikinci dalı kapsıyordu), artı negatif eşi.
 ### Sıradaki tur için öneri
 
 Bölüm 11'in **davet/kabul + tahta** kısmı 14 Ağustos'ta koşuldu ve tek
-turda beş bulgu çıkardı (Parça 95) — öneri doğru çıktı. Sırada, aynı
-bölümün henüz koşulmamış kısımları var: **mesajlaşma alt bölümü** (11
-maddesinin çoğu; Parça 95'in sohbet düzeltmesi tam da orayı ilgilendiriyor)
-ve **tekil/SQL maddeleri** (ret, hesap değişimi, süresi dolmuş davet,
-48 saat süre aşımı). Ardından **bölüm 7** (hiç ayrı tur görmemiş, kısa) ve
-**9.6 tekrarı**.
+turda beş bulgu çıkardı (Parça 95); 16 Ağustos'taki Blok 7 turu bölüm 7 ile
+uçak modu adımlarını kapsadı ve **veri kaybına yol açan tek bulgu** çıkardı
+(Parça 105).
+
+Sıradaki tur **Parça 105'in düzeltmesiyle başlamalı** (TESTING.md bölüm 8,
+"uçak modunda ÇIK–GİR") — kayıp yaşanan tek yol o. Ardından bölüm 11'in
+henüz koşulmamış kısımları: **mesajlaşma alt bölümü** (11 maddesinin çoğu;
+Parça 95'in sohbet düzeltmesi tam da orayı ilgilendiriyor) ve **tekil/SQL
+maddeleri** (ret, hesap değişimi, süresi dolmuş davet, 48 saat süre
+aşımı). Sonra **9.6 tekrarı**.
 
 ## Sonraya Bırakılan İşler (mobil)
 
