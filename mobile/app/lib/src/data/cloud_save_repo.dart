@@ -475,6 +475,9 @@ class CloudSaveRepo {
   /// gelebiliyordu — teşhis için var olan bir gösterge tam da teşhis
   /// gereken anda belirsizdi. Çağıran bunu ayrı göstermeli.
   Future<int> pendingMirrorCount(String userId) async {
+    // Ayna HİÇ yapılandırılmamışsa (üretimde olmaz; testler/önizlemeler)
+    // bekleyen de olamaz — bu "okuyamadım" DEĞİL, bilinen bir 0.
+    if (mirrorStore == null) return 0;
     var n = 0;
     final ok =
         await _tryMirror((m) async => n = (await m.pending(userId)).length);
