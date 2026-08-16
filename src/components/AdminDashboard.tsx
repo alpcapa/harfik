@@ -834,6 +834,16 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     if (s === 'online') setGameScope('registered');
   }
 
+  // Aynı kısıtın TERSİ (16 Ağustos 2026, kullanıcı fark etti): kilit uzun
+  // süre tek yönlüydü — Misafir seçiliyken kaynak kombosu hâlâ "Canlı"yı
+  // gösteriyordu ve seçilince scope SESSİZCE "Kayıtlı"ya atlıyordu, yani
+  // kullanıcının az önce seçtiği filtre habersizce değişiyordu. Misafir bir
+  // Canlı oyun olamayacağından o kombinasyon zaten her zaman 0 satır döner.
+  function selectGameScope(s: AdminGameScope) {
+    setGameScope(s);
+    if (s === 'guest') setGameSource('local');
+  }
+
   function toggleSort(key: MemberSortKey) {
     if (sortKey === key) {
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -1094,15 +1104,20 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                   <AdminSelect
                     value={gameSource}
                     onChange={(v) => selectGameSource(v as AdminGameSourceType)}
-                    options={[
-                      { value: 'total', label: 'Toplam' },
-                      { value: 'online', label: 'Canlı' },
-                      { value: 'local', label: 'Yapay Zeka' },
-                    ]}
+                    disabled={gameScope === 'guest'}
+                    options={
+                      gameScope === 'guest'
+                        ? [{ value: 'local', label: 'Yapay Zeka' }]
+                        : [
+                            { value: 'total', label: 'Toplam' },
+                            { value: 'online', label: 'Canlı' },
+                            { value: 'local', label: 'Yapay Zeka' },
+                          ]
+                    }
                   />
                   <AdminSelect
                     value={gameScope}
-                    onChange={(v) => setGameScope(v as AdminGameScope)}
+                    onChange={(v) => selectGameScope(v as AdminGameScope)}
                     disabled={gameSource === 'online'}
                     options={
                       gameSource === 'online'
