@@ -104,16 +104,32 @@ const USER_SERIES: ChartSeriesDef[] = [
   // HİÇ YOK (bkz. kök CLAUDE.md, "Bu bilerek MAU DEĞİL").
   { key: 'guest_visits', label: 'M. Ziyaret', color: '#D97706' },
 ];
+// Aynı Oturum / Çok Oturumlu kırılımı buradan 16 Ağustos 2026'da KALDIRILDI
+// (kullanıcı sordu: "çok oturumlu tam olarak ne demek?"). Ölçüldü: bayrak
+// (`GameState.multiSession`) yalnızca `loadGameState()` içinde işaretleniyor,
+// yani uygulama GERÇEKTEN kapanıp localStorage'dan devam edildiğinde —
+// Setup'a çıkıp hemen dönmek saymaz (o yol belleği kullanır). Girişli
+// kullanıcıda ise 31 Temmuz'daki bulut kayıtlarından beri localStorage hiç
+// kullanılmıyor, dolayısıyla bayrak fiilen ölü: canlıda son "girişli + çok
+// oturumlu" kayıt 2 Ağustos, 9 Ağustos'tan beri hiçbir türden yok.
+// `admin_game_activity_series` ayrıca TÜM Canlı oyunları koşulsuz "çok
+// oturumlu" tarafına yazıyor (`+ o.cnt_done`) — sonuçta bu iki seri, hemen
+// üstteki Toplam/Canlı/Yapay Zeka filtresinin YAPTIĞI ayrımı yanlış bir
+// etiketle tekrarlıyordu. Sunucu üç sütunu döndürmeye devam ediyor; burada
+// yalnızca okunmuyor.
 const GAME_COUNT_SERIES: ChartSeriesDef[] = [
   { key: 'games_finished', label: 'Bitirilen', color: '#008300' },
-  { key: 'games_finished_same_session', label: 'Bitirilen (Aynı Oturum)', color: '#0891B2' },
-  { key: 'games_finished_multi_session', label: 'Bitirilen (Çok Oturumlu)', color: '#7c3aed' },
   { key: 'games_surrendered', label: 'Teslim', color: '#D97706' },
 ];
+// Süre grafiğinde AYNI kırılım KALIYOR — orada gerçek iş yapıyor: Canlı
+// oyunlar 48 saatlik sıra penceresi yüzünden günlere yayılıyor ve tek bir
+// ortalamaya katılırlarsa "bir oyun ne kadar sürer" sayısı anlamsızlaşıyor.
+// Değişen yalnızca ETİKET: seriler "oturum" değil, sürenin günlere yayılıp
+// yayılmadığını anlatıyor.
 const DURATION_SERIES: ChartSeriesDef[] = [
   { key: 'avg_duration_seconds', label: 'Genel', color: '#7c3aed' },
-  { key: 'avg_duration_same_session_seconds', label: 'Aynı Oturum', color: '#0891B2' },
-  { key: 'avg_duration_multi_session_seconds', label: 'Çok Oturumlu', color: '#DC2626' },
+  { key: 'avg_duration_same_session_seconds', label: 'Tek Oturumda', color: '#0891B2' },
+  { key: 'avg_duration_multi_session_seconds', label: 'Günlere Yayılan', color: '#DC2626' },
 ];
 const ENGAGEMENT_SERIES: ChartSeriesDef[] = [
   { key: 'likes', label: 'Beğeni', color: '#DC2626' },
@@ -1559,15 +1575,22 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         controls={<span className={sectionTitleCls}>Oyun Sayısı</span>}
                         csvBaseName="kelimeki-oyun-sayisi"
                       />
-                      <GrowthChart
-                        data={gameActivity}
-                        granularity={gameGranularity}
-                        series={DURATION_SERIES}
-                        defaultActiveKeys={DURATION_SERIES.map((s) => s.key)}
-                        formatValue={formatDuration}
-                        controls={<span className={sectionTitleCls}>Ortalama Oyun Süresi</span>}
-                        csvBaseName="kelimeki-ortalama-oyun-suresi"
-                      />
+                      <div className="flex flex-col gap-2">
+                        <GrowthChart
+                          data={gameActivity}
+                          granularity={gameGranularity}
+                          series={DURATION_SERIES}
+                          defaultActiveKeys={DURATION_SERIES.map((s) => s.key)}
+                          formatValue={formatDuration}
+                          controls={<span className={sectionTitleCls}>Ortalama Oyun Süresi</span>}
+                          csvBaseName="kelimeki-ortalama-oyun-suresi"
+                        />
+                        <p className={captionCls}>
+                          Canlı oyunlar 48 saatlik sıra penceresi nedeniyle her zaman “günlere yayılan”
+                          tarafında sayılır; “tek oturumda” yalnızca uygulama hiç kapatılmadan bitirilen
+                          Yapay Zeka oyunlarını kapsar.
+                        </p>
+                      </div>
                     </>
                   )}
 
