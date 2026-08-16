@@ -741,7 +741,7 @@ export type AdminGameSourceType = 'total' | 'online' | 'local';
  * isteğiyle terk etmesi 29 Temmuz 2026'da kaldırıldığından ayrı bir "Terk"
  * serisi (eski `games_abandoned`) 3 Ağustos 2026'da tamamen kaldırıldı —
  * hiç oynanmamış (turnCount<2) bir kayıt artık ceza da telemetri de
- * üretmiyor. avg_duration_* alanları da yalnızca teslimsiz tamamlanan
+ * üretmiyor. Medyan ve p90 alanları da yalnızca teslimsiz tamamlanan
  * oyunlar üzerinden hesaplanır ve o kovada hiç biten oyun yoksa null döner
  * (0 değil). same_session: hiç kapatılıp devam ettirilmemiş oyunlar;
  * multi_session: en az bir kez kapatılıp localStorage'dan devam ettirilmiş
@@ -749,6 +749,22 @@ export type AdminGameSourceType = 'total' | 'online' | 'local';
  * göre kesilir (`admin_game_istanbul_tz_and_surrender_split` migration'ı).
  * "Başlatılan" (eski `game_starts`) hiçbir yerde ihtiyaç görülmediği için
  * 20 Temmuz 2026'da tamamen kaldırıldı (tablo dahil).
+ *
+ * **16 Ağustos 2026 — süre alanları ORTALAMADAN MEDYANA geçti**
+ * (`admin_game_duration_median` migration'ı). Gerekçe canlıda ölçüldü:
+ * dağılım aşırı çarpık, "tek oturumda" biten 200 yerel oyunda ortalama
+ * 246,6 dk iken medyan 18,1 dk (13 kat) — 49 oyun 1 saatten, 7 oyun 1
+ * GÜNDEN uzun (açık unutulmuş / Setup'a çıkılıp günler sonra dönülmüş).
+ * Panel "ortalama oyun süresi ≈ 4 saat" diyordu, tipik oyun 18 dakika.
+ * `p90_duration_seconds` medyanın gizlediği kuyruğu gösterir.
+ * **Medyan iki kaynaktan BİRLEŞTİRİLEMEZ** (ortalama sum/count ile
+ * kurulabiliyordu): RPC bu yüzden yerel + Canlı ham süreleri tek bir
+ * union'da toplayıp percentile'ı orada hesaplıyor.
+ *
+ * `games_finished_same_session`/`_multi_session` sunucuda DURUYOR ama
+ * istemci Oyun Sayısı grafiğinde artık ÇİZMİYOR (bkz. kök CLAUDE.md,
+ * "Aynı Oturum / Çok Oturumlu kırılımı") — süre tarafında ise kırılım
+ * kalıyor, yalnızca etiketi "Tek Oturumda / Günlere Yayılan" oldu.
  */
 export interface AdminGameActivityPoint {
   bucket: string;
@@ -756,9 +772,30 @@ export interface AdminGameActivityPoint {
   games_finished_same_session: number;
   games_finished_multi_session: number;
   games_surrendered: number;
-  avg_duration_seconds: number | null;
-  avg_duration_same_session_seconds: number | null;
-  avg_duration_multi_session_seconds: number | null;
+  med_duration_seconds: number | null;
+  med_duration_same_session_seconds: number | null;
+  med_duration_multi_session_seconds: number | null;
+  p90_duration_seconds: number | null;
+}
+
+/**
+ * admin_ai_balance RPC çıktısındaki tek satır (Büyüme > Oyun, "YZ Dengesi").
+ * Yerel (Yapay Zeka'ya karşı) oyunlarda İNSANIN sonuç dağılımı, oyuncu
+ * sayısı bazında. Teslim olan satırlar HARİÇ — onlar bir beceri sonucu
+ * değil, 7 günlük terk-edilme cezasının kaydı; içeri alınsalardı YZ
+ * olduğundan güçlü görünürdü.
+ *
+ * Okurken referans nokta ŞART: rastgele bir sonuçta beklenen kazanma
+ * oranı 2 kişilikte %50, 4 kişilikte %25'tir. Ölçüm anındaki değerler
+ * (16 Ağustos 2026): 2 kişilik %57 (95/167), 4 kişilik %31 (29/93) —
+ * yani insan iki modda da rastgelenin biraz üstünde, denge makul.
+ */
+export interface AdminAiBalanceRow {
+  players: number;
+  games: number;
+  wins: number;
+  ties: number;
+  losses: number;
 }
 
 /**

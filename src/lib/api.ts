@@ -27,6 +27,7 @@ import type {
   AdminMemberActivityLogRow,
   AdminEngagementActivityPoint,
   AdminEngagementTotals,
+  AdminAiBalanceRow,
   AdminFeedbackRow,
   AdminFriendActivityPoint,
   AdminFriendTotals,
@@ -1734,6 +1735,23 @@ export async function fetchAdminEngagementTotals(): Promise<AdminEngagementTotal
   }
   const row = (data as AdminEngagementTotals[] | null)?.[0];
   return row ?? null;
+}
+
+/**
+ * YZ zorluk dengesi: yerel (Yapay Zeka'ya karşı) oyunlarda insanın
+ * kazanma/berabere/kaybetme dağılımı, oyuncu sayısı bazında (yalnızca
+ * admin — Büyüme > Oyun). Teslim satırları hariç; ayrıntı ve okuma
+ * referansı için bkz. `AdminAiBalanceRow`.
+ */
+export async function fetchAdminAiBalance(): Promise<AdminAiBalanceRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('admin_ai_balance');
+  if (error) {
+    // Diğer admin fetcher'larıyla aynı sözleşme: hatayı YUTMA, panelin
+    // .catch(setError) zincirine bırak.
+    throw new Error(error.message);
+  }
+  return (data as AdminAiBalanceRow[] | null) ?? [];
 }
 
 /**
