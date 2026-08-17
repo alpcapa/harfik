@@ -4687,7 +4687,7 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | 6 · Paylaşma | 🟡 | görsel düzeltmesi koşuldu (Parça 84); **iPad ankrajı (Parça 86) gerçek iPad ister → FAZ B** |
 | 7 · Son Oynadıklarım | ✅ | 16 Ağu (Blok 7) |
 | 8 · Dayanıklılık (uçak modu) | ✅ | 8.2/8.3/8.5/8.6 — Parça 43-46; 16 Ağu: uçak modunda ÇIK–GİR hamleyi siliyordu (Parça 105) → düzeltme **aynı gün cihazda doğrulandı** |
-| 9 · Görüş Bildir | 🟡 | 9.5 geçti (Parça 49); **9.3/9.4 Parça 48 düzeltmesinden sonra tekrar koşulmalı** |
+| 9 · Görüş Bildir | ✅ | **17 Ağu: bölümün TAMAMI koşuldu, sıfır bulgu** (Parça 48'in "kapatmak da formu açar" düzeltmesi dahil). Tek kısmi madde: üyelik teklifi kayıt formunu açıyor ✓ ama o turda kayıt TAMAMLANMADI (24 saatte yeni `auth.users` yok) — zincirin geri kalanı 10 Ağu'da ayrıca kanıtlı (`signup_channel='form'` olan 1 üye), o yüzden açık bırakılmadı |
 | 10 · Arkadaşlar | ✅ | tamamı (11 Ağu) + moderasyon geri alma, iki yol (14 Ağu, Parça 91) |
 | 11 · Canlı oyun | ✅ | 14 Ağu: davet/kabul + tahta koşuldu (Parça 95, 5 bulgu). **16 Ağu: mesajlaşma alt bölümünün 14 maddesi de koşuldu — hepsi geçti, sıfır bulgu** (Parça 11/100/102/104'ün doğrulama sınırları kapandı). **17 Ağu: ret + hesap değişimi de koşuldu — sıfır bulgu.** Geriye YALNIZCA SQL isteyen iki madde kaldı (süresi dolmuş davet, 48 saat sıra aşımı) — onlar cihaz turunun değil ortak bir SQL turunun işi |
 | 12 · Hesap Ayarları | ✅ | avatar RLS + küçültme uçtan uca (Parça 82/83) |
@@ -4771,14 +4771,18 @@ hesap değişimi (17 Ağu, sıfır bulgu). Aynı turda Parça 95'in beş
 düzeltmesinin hepsi de cihazda teyit edildi, yani **14 Ağustos'tan beri
 biriken Canlı borcu tamamen kapandı.**
 
-**Ağ hatası / offline kümesi de 17 Ağustos'ta kapandı** (kök 9.6 +
-mobil bölüm 5 + bölüm 8 çık-gir). Geriye iki küme kaldı:
+**17 Ağustos'ta üç küme birden kapandı:** ağ hatası/offline (kök 9.6 +
+mobil bölüm 5 + bölüm 8), Canlı (bölüm 11) ve Görüş Bildir (bölüm 9).
+Geriye kalan:
 
-1. **Görüş Bildir** (bölüm 9, 7 madde) ve **Parça 90/92 kalanları**
-   (girişsiz başlatma uyarısı · tahta altındaki "Nasıl Oynanır?" İKİ oyun
-   ekranında da · OHP hizası + başlık ortalama).
+1. **Parça 90/92 kalanları** — girişsiz başlatma uyarısı (bölüm 1) · tahta
+   altındaki "Nasıl Oynanır?" (bölüm 1, İKİ oyun ekranında da) · OHP hizası
+   + başlık ortalama (bölüm 4 ve kök bölüm 10).
 2. **Görsel yan yana** (bölüm 0.5, Parça 72-89'un 11 maddesi) — en düşük
    riskli grup, sona bırakılabilir.
+
+Ayrıca kök `TESTING.md` **9.10** yeniden koşulmalı: YZ Dengesi 17
+Ağustos'ta 2 kutudan 3'e çıktı (İkincilik) ve etiketler değişti.
 
 **Cihaz turuna AİT OLMAYAN, ortak SQL turu bekleyenler:** süresi dolmuş
 davet süpürmesi (7 gün), 48 saat sıra aşımı → otomatik teslim + `-2` +
