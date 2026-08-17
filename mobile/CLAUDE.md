@@ -4689,7 +4689,7 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | 8 · Dayanıklılık (uçak modu) | ✅ | 8.2/8.3/8.5/8.6 — Parça 43-46; 16 Ağu: uçak modunda ÇIK–GİR hamleyi siliyordu (Parça 105) → düzeltme **aynı gün cihazda doğrulandı** |
 | 9 · Görüş Bildir | 🟡 | 9.5 geçti (Parça 49); **9.3/9.4 Parça 48 düzeltmesinden sonra tekrar koşulmalı** |
 | 10 · Arkadaşlar | ✅ | tamamı (11 Ağu) + moderasyon geri alma, iki yol (14 Ağu, Parça 91) |
-| 11 · Canlı oyun | 🟡 | 14 Ağu: davet/kabul + tahta koşuldu (Parça 95, 5 bulgu). **16 Ağu: mesajlaşma alt bölümünün 14 maddesi de koşuldu — hepsi geçti, sıfır bulgu** (Parça 11/100/102/104'ün doğrulama sınırları kapandı). **Kalan: tekil/SQL maddeleri** — ret, hesap değişimi, süresi dolmuş davet, 48 saat sıra aşımı |
+| 11 · Canlı oyun | ✅ | 14 Ağu: davet/kabul + tahta koşuldu (Parça 95, 5 bulgu). **16 Ağu: mesajlaşma alt bölümünün 14 maddesi de koşuldu — hepsi geçti, sıfır bulgu** (Parça 11/100/102/104'ün doğrulama sınırları kapandı). **17 Ağu: ret + hesap değişimi de koşuldu — sıfır bulgu.** Geriye YALNIZCA SQL isteyen iki madde kaldı (süresi dolmuş davet, 48 saat sıra aşımı) — onlar cihaz turunun değil ortak bir SQL turunun işi |
 | 12 · Hesap Ayarları | ✅ | avatar RLS + küçültme uçtan uca (Parça 82/83) |
 | 13 · k-lig ödül & rütbe | ✅ | 12 Ağu (Parça 66) |
 
@@ -4731,11 +4731,15 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   **9.10 bu yüzden yeniden koşulmalı** — YZ Dengesi artık 2 değil 3 kutu ve
   etiketler `Kazanma` → `Birincilik` oldu; bölümün YZ Dengesi maddeleri
   buna göre yeniden yazıldı.
-- **14 Ağustos (Parça 95) — Canlı turunun BEŞ düzeltmesi, hiçbiri cihazda
+- ~~**14 Ağustos (Parça 95) — Canlı turunun BEŞ düzeltmesi, hiçbiri cihazda
   teyit edilmedi:** boş taslakta OYNA (web Canlı) · gönderim hatasının
   görünmesi (iki platform, uçak modu) · sohbetin ön plana dönüşte
   tazelenmesi (iki platform) · oyun sonu → Oyun Geçmişi (port) ·
-  "Çevrimdışı" rozetinin puntosu (web)
+  "Çevrimdışı" rozetinin puntosu (web)~~ → **17 Ağustos'ta BEŞİ DE tek
+  turda koşuldu, hepsi geçti, sıfır bulgu.** Sohbet tazelemesi bilerek İKİ
+  YÖNDE denendi (web→port ve port→web) — kullanıcının ilk raporu tam da
+  asimetrikti (bir yön çalışıyor, öteki çalışmıyordu), tek yön koşmak o
+  hatayı bir kez daha kaçırırdı.
 - **14 Ağustos (Parça 90/92):** girişsiz başlatma uyarısı (bölüm 1) ·
   tahta altındaki "Nasıl Oynanır?" (bölüm 1, İKİ oyun ekranında da) ·
   OHP hizası + başlık ortalama (bölüm 4 ve kök bölüm 10) · ağ hatasında
@@ -4754,13 +4758,28 @@ ilk yazılan sıralama yalnızca ikinci dalı kapsıyordu), artı negatif eşi.
 
 ### Sıradaki tur için öneri
 
-Bölüm 11 iki turda kapanmaya çok yaklaştı: **davet/kabul + tahta** 14
-Ağustos'ta koşulup beş bulgu çıkardı (Parça 95); **mesajlaşma alt bölümü**
-16 Ağustos'ta 14 maddeyle koşuldu ve **sıfır bulgu** çıkardı — dört ayrı
-parçanın (11/100/102/104) aylardır açık duran doğrulama sınırları tek
-turda kapandı. Aynı gün Blok 7 turu bölüm 7 + uçak modunu kapsadı ve
-**veri kaybına yol açan tek bulguyu** (Parça 105) çıkarıp düzeltmesi AYNI
-GÜN doğrulandı — yani şu an bilinen bir veri kaybı yolu YOK.
+**Bölüm 11 KAPANDI** (17 Ağustos): üç turda bitti — davet/kabul + tahta
+(14 Ağu, beş bulgu → Parça 95), mesajlaşma (16 Ağu, sıfır bulgu), ret +
+hesap değişimi (17 Ağu, sıfır bulgu). Aynı turda Parça 95'in beş
+düzeltmesinin hepsi de cihazda teyit edildi, yani **14 Ağustos'tan beri
+biriken Canlı borcu tamamen kapandı.**
+
+Geriye kalan üç küme, azalan öncelikle:
+
+1. **Ağ hatası / offline** — kök `TESTING.md` **9.6** bir kez koşulup
+   DÜŞTÜ, düzeltildi ve düzeltmeden sonra HİÇ koşulmadı; belgede yazan
+   SIRAYLA (önce önbelleksiz) + negatif eşiyle koşulmalı. Yanına mobil
+   bölüm 5'in ağ-hatası maddesi ve bölüm 8'in çık-gir regresyonu
+   (**hızlı** koşulmalı, beklenirse senaryo hiç oluşmaz).
+2. **Görüş Bildir** (bölüm 9, 7 madde) ve **Parça 90/92 kalanları**.
+3. **Görsel yan yana** (bölüm 0.5, Parça 72-89'un 11 maddesi) — en düşük
+   riskli grup, sona bırakılabilir.
+
+**Cihaz turuna AİT OLMAYAN, ortak SQL turu bekleyenler:** süresi dolmuş
+davet süpürmesi (7 gün), 48 saat sıra aşımı → otomatik teslim + `-2` +
+uyarı e-postası. İkisi de satırların geriye tarihlenmesini gerektiriyor.
+
+Şu an bilinen bir veri kaybı yolu YOK (Parça 105 aynı gün doğrulandı).
 
 Sıradaki tur, kalan üç 🟡'yi kapatmalı ve **hepsi kısa**:
 1. **Bölüm 11'in tekil/SQL maddeleri** — ret, hesap değişimi, süresi
