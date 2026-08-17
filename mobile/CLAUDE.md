@@ -4869,7 +4869,7 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | Bölüm | Durum | Not |
 |---|---|---|
 | 0 · Derleme / ilk açılış | ✅ | FAZ A0 |
-| 0.5 · Web ile yan yana görsel | 🟡 | birçok tur (Parça 29/33/37/56/72-80). **17 Ağu (Blok 6):** k-lig nokta boşluğu, avatar↔logo (kapatıldı), tahta filigranlarının puntosu/fontu + header avatar hizası (Parça 106), filigranların taşların altında kalması (Parça 107), Setup'taki parantezli puanın kaldırılması ve tahta↔raf boşluğu (ikisi web-only, port kanonik alındı) — hepsi yapıldı; **iki PORT maddesi (Parça 106 filigran puntosu/fontu + 107 katman sırası) cihazda KOŞULDU ve geçti**, kalan web maddeleri henüz görülmedi. Ayrıca Hesap Ayarları'ndaki fotoğraf butonu (tam genişlik + kalın) — **dalda bekliyor, merge edilmedi**. Parça 72-89'un 11 maddesi hâlâ koşulmadı |
+| 0.5 · Web ile yan yana görsel | 🟡 | birçok tur (Parça 29/33/37/56/72-80). **17 Ağu (Blok 6):** k-lig nokta boşluğu, avatar↔logo (kapatıldı), tahta filigranlarının puntosu/fontu + header avatar hizası (Parça 106), filigranların taşların altında kalması (Parça 107), Setup'taki parantezli puanın kaldırılması ve tahta↔raf boşluğu (ikisi web-only, port kanonik alındı) — **17 Ağu'daki bu kümenin TAMAMI aynı gün cihazda koşuldu ve geçti, sıfır bulgu.** Turdan iki YENİ web işi çıktı (Hesap Ayarları fotoğraf butonu; raf başlığındaki swap aksiyon metninin kaldırılması) — **dalda bekliyor, merge edilmedi.** Geriye yalnızca Parça 72-89'un 11 maddesi kaldı |
 | 1 · Oyun (offline çekirdek) | ✅ | Parça 15/20/21/22 buradan çıktı |
 | 2 · Hesap (auth) | ✅ | **9-12 (deep link) FAZ B'ye ertelendi** |
 | 3 · Bulut kayıtları | ✅ | 6/6 — Parça 29 |
@@ -4969,23 +4969,20 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   uyarısının yanlış modal kabuğuydu (yukarıdaki nota bkz.); OHP hizası ve
   başlık ortalama iki platformda yan yana doğrulandı. Kök **9.10** da yeni
   üç kutulu YZ Dengesi hâliyle yeniden koşuldu.
-- **17 Ağustos (Parça 106-107 + aynı bloğun web işi):** ~~tahta
-  filigranlarının puntosu/fontu (port) · filigranların taşların ALTINDA
-  kalması (port, Parça 107)~~ → **İKİSİ DE aynı gün iPad'de koşuldu ve
-  GEÇTİ** (köşe rakamları + X2 aynı boy/font, X3 hücreyi doldurmuyor,
-  filigranlar taşların altında) — Flutter SDK'sız yazıldıkları için
-  negatif eşleri kurulamamıştı, tek gerçek kanıt bu tur oldu. Kalanlar:
-  header avatarının dikey hizası (web, yalnız
-  FOTOĞRAFLI hesapta) · Setup'ta oyuncu satırında parantezli puanın
-  olmaması (web) · tahta↔raf boşluğunun iki tarafta da 40px olması (web
-  porta uyduruldu; mesaj kutusu artık `min-h-[30px]`) · **raf başlığı:**
-  "7 harf" İKİ tarafta da yok, web'de ad artık BÜYÜK HARF DEĞİL
-  (`Ironman`), başlık↔taş arası iki tarafta da 13px (web'e `pt-[7px]`
-  eklendi) · **rafın altındaki aksiyon satırı** (port, Parça 108):
-  tracking 1.2 · satır 1.5 · swap boşluğu 6 · TORBA dahil hepsi EŞİT
-  yükseklikte. Üçü de `main`'e merge edildi (`cd6c016`) ama **hiçbiri
-  merge sonrası cihazda görülmedi** — Pages/Vercel deploy'u beklendikten
-  sonra bakılmalı, derleme sha'sı `cd6c016…` olmalı.
+- ~~**17 Ağustos (Parça 106-107 + aynı bloğun web işi)**~~ → **KÜMENİN
+  TAMAMI 17 Ağustos'ta iPad'de koşuldu ve GEÇTİ, sıfır bulgu:** tahta
+  filigranlarının puntosu/fontu + katman sırası (port, Parça 106/107 —
+  köşe rakamları ve X2 aynı boy/font, X3 hücreyi doldurmuyor, filigranlar
+  taşların altında) · header avatarının dikey hizası (web, FOTOĞRAFLI
+  hesapla) · Setup'ta parantezli puanın olmaması (web) · tahta↔raf
+  boşluğu 40px (web porta uyduruldu) · raf başlığı üçlüsü ("7 harf" yok,
+  ad BÜYÜK HARF değil, başlık↔taş 13px) · rafın altındaki aksiyon satırı
+  (port, Parça 108 — TORBA dahil eşit yükseklik, 6px boşluklar).
+  **106/107 için bu tur tek gerçek kanıttı** (Flutter SDK'sız yazıldılar,
+  negatif eşleri kurulamamıştı). Aynı turda çıkan İKİ yeni web işi
+  (Hesap Ayarları'ndaki fotoğraf butonu: tam genişlik + kalın; raf
+  başlığındaki swap aksiyon metninin kaldırılması) **dalda bekliyor,
+  merge EDİLMEDİ** — dolayısıyla henüz cihazda görülmedi.
 - **13 Ağustos (Parça 72-89):** içerik sütunu genişliği · GİRİŞ satırı
   konumu · logo altı yazı bloğu · harf aralığı · "+ Yeni …" butonu ve alt
   sekmeler · form alanları · avatarın YUVARLAK vurgusu · "Yükleniyor…"
