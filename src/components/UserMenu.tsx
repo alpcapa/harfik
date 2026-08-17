@@ -172,7 +172,22 @@ export function UserMenu() {
           // (9 Ağustos 2026) — mobil porttaki `tooltip` de aynı anda.
           aria-label="Hesap menüsü"
           aria-expanded={open}
-          className="rounded-full active:scale-95 transition-transform ring-offset-2 focus:outline-none disabled:cursor-not-allowed"
+          // `flex` ŞART, kozmetik değil: `<button>` varsayılan olarak
+          // inline-block ve fotoğraflı avatar bir `<img>` (inline-level) —
+          // araya bir satır kutusu girip ALTINA taban çizgisi boşluğu
+          // ekliyor, yani buton 32px değil 39px oluyor ve resim o kutunun
+          // ÜSTÜNE yaslanıyor. Kabı `items-center` ile ortalayan header
+          // 39px'lik kutuyu ortaladığından fotoğraf skor kutularının
+          // merkezinden 3.5px YUKARIDA kalıyordu (ölçüldü: derlenmiş CSS +
+          // Chromium, 17 Ağustos 2026 — kullanıcı cihazda bildirdi, mobil
+          // portta hiç yaşanmıyor). `flex` satır kutusunu tamamen kaldırıyor.
+          // ÖLÇÜM, "hangi avatar" sorusunun cevabını da verdi: yalnızca
+          // profil FOTOĞRAFI olan hesaplarda görünüyor. Baş harf yedeği
+          // (`display:flex`, blok seviyesi) ve rozetli sarmalayıcı
+          // (`inline-flex`, taban çizgisi metnin kendi taban çizgisi) 32px
+          // kalıyor — `<img>`in taban çizgisi ise ALT KENARI olduğundan
+          // strut'ın tüm iniş payı (7px) altına ekleniyor.
+          className="rounded-full flex active:scale-95 transition-transform ring-offset-2 focus:outline-none disabled:cursor-not-allowed"
         >
           {identityLoading ? (
             <span className="w-8 h-8 rounded-full bg-panel border border-border flex items-center justify-center text-muted text-[10px] font-mono">

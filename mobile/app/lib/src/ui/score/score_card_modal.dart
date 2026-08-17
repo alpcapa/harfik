@@ -180,11 +180,20 @@ class _ScoreCardModalState extends State<ScoreCardModal> {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      [
-                        if (_myRank != null) '#${_myRank!.rank} ·',
-                        '$totalScore puan',
-                      ].join(' '),
+                    Text.rich(
+                      TextSpan(children: [
+                        if (_myRank != null) ...[
+                          TextSpan(text: '#${_myRank!.rank}'),
+                          // Web `mx-0.5` = 2px. Boşluk KARAKTERİ DEĞİL: Space Mono'da
+                          // bir boşluk ~0.6em (13px'te ~7.8) eder ve iki yanda ~6px
+                          // fazla açar — 17 Ağustos 2026 görsel turunda kullanıcı
+                          // "nokta sağı ve solu web'e göre daha açık" diye bildirdi.
+                          const WidgetSpan(child: SizedBox(width: 2)),
+                          const TextSpan(text: '·'),
+                          const WidgetSpan(child: SizedBox(width: 2)),
+                        ],
+                        TextSpan(text: '$totalScore puan'),
+                      ]),
                       style: const TextStyle(
                           fontFamily: 'SpaceMono',
                           fontSize: 13,

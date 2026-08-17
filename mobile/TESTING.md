@@ -82,6 +82,23 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
 
 ## 0.5 Web ile yan yana görsel karşılaştırma (Parça 56)
 
+- [ ] **Tahta filigranları (17 Ağustos 2026, Parça 106).** Bir oyun aç ve
+      tahtayı iki platformda yan yana koy: (a) köşelerdeki soluk oyuncu
+      RAKAMLARI aynı büyüklükte ve aynı yazı tipinde (Space Mono) olmalı —
+      app'te belirgin KÜÇÜK görünüyorsa punto yine kutuya sığdırılıyor
+      demektir; (b) merkezdeki büyük **X2** filigranı aynı büyüklükte
+      olmalı (eskiden app'te BÜYÜKTÜ); (c) tam ortadaki turuncu hücrenin
+      **X3** etiketi hücreyi DOLDURMAMALI, web'deki gibi küçük kalmalı
+      (azami 12px — app'te eskiden ~37px, üç katıydı). Fark yalnızca
+      punto/font; renk ve saydamlık zaten aynıydı. **Geniş bir ekranda
+      (iPad) bak** — üç formül de `clamp` tavanına orada oturuyor.
+- [ ] **Header'da avatarın dikey hizası (17 Ağustos 2026, Parça 106) —
+      bu madde WEB'i sınıyor, portu değil.** Profil FOTOĞRAFI olan bir
+      hesapla oyun ekranını iki platformda aç: sağ üstteki avatarın dikey
+      merkezi, yanındaki skor kutularının merkeziyle aynı hizada olmalı.
+      Web'de 3.5px yukarıda duruyorsa `UserMenu`'deki butondan `flex`
+      düşmüş demektir. **Baş harfli (fotoğrafsız) bir hesapla test etmek
+      bu hatayı GÖSTERMEZ** — sapma yalnızca `<img>` avatarda oluşuyor.
 - [ ] **İçerik sütunu genişliği (13 Ağustos 2026, Parça 72).** GENİŞ bir
       ekranda (iPad yatay) Setup'ı iki platformda yan yana aç: "YAPAY ZEKA
       İLE"/"ARKADAŞINLA" butonlarının ve "OYUNU BAŞLAT"ın genişliği

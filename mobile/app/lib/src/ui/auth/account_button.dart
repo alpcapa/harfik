@@ -408,7 +408,16 @@ class _AccountButtonState extends State<AccountButton> {
                                 child: Text.rich(
                                   TextSpan(children: [
                                     TextSpan(text: '#${_myRank!.rank}'),
-                                    const TextSpan(text: ' · '),
+                                    // Web `mx-0.5` = 2px; boşluk KARAKTERİ
+                                    // Space Mono'da ~0.6em eder ve iki yanda
+                                    // ~6px fazla açar (17 Ağustos 2026 görsel
+                                    // turu — aynı sapma iki skor kartında da
+                                    // vardı, ÜÇÜ BİRLİKTE düzeltildi).
+                                    const WidgetSpan(
+                                        child: SizedBox(width: 2)),
+                                    const TextSpan(text: '·'),
+                                    const WidgetSpan(
+                                        child: SizedBox(width: 2)),
                                     TextSpan(text: '${_myRank!.totalScore}'),
                                     const TextSpan(
                                       text: ' puan',

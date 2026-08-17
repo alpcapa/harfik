@@ -515,6 +515,13 @@ doğrulanmalı (mobil eşi `mobile/TESTING.md` bölüm 12'de).
       giriş sınırı, `shrinkAvatar` yüklemeden önce 512 px kenara indirip
       JPEG'e çeviriyor. Avatar bulanık/bozuk görünmemeli. 10 MB üstünde
       "Görsel 10 MB'den küçük olmalı." çıkmalı.
+- [ ] **Oyun ekranında avatarın dikey hizası (17 Ağustos 2026).** Profil
+      FOTOĞRAFI olan bir hesapla bir oyuna gir: sağ üstteki avatarın dikey
+      merkezi, solundaki skor kutularının merkeziyle aynı hizada olmalı.
+      3.5px yukarıda duruyorsa `UserMenu`'deki avatar butonundan `flex`
+      düşmüş demektir (`<img>` inline-level olduğundan butona taban çizgisi
+      payı ekleniyor — ayrıntı `CLAUDE.md`, `UserMenu`). **Baş harfli
+      (fotoğrafsız) bir hesap bu hatayı GÖSTERMEZ.**
 
 ## 9.6. Oyun geçmişi — ağ hatası (14 Ağustos 2026)
 
