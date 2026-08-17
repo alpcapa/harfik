@@ -1213,8 +1213,10 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
               </span>
             </div>
           ) : (
+            /* Yükseklik App.tsx'teki kardeşiyle BİREBİR aynı olmak zorunda —
+               gerekçe ve ölçüm orada yazılı (17 Ağustos 2026, port paritesi). */
             <div
-              className={`text-[11px] font-mono font-bold text-center min-h-[15px] py-0.5 ${MESSAGE_COLORS[liveMessageType]}`}
+              className={`text-[11px] font-mono font-bold text-center min-h-[30px] py-0.5 flex items-center justify-center ${MESSAGE_COLORS[liveMessageType]}`}
             >
               {liveMessage}
             </div>

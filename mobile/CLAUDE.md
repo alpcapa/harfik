@@ -4807,7 +4807,7 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | Bölüm | Durum | Not |
 |---|---|---|
 | 0 · Derleme / ilk açılış | ✅ | FAZ A0 |
-| 0.5 · Web ile yan yana görsel | 🟡 | birçok tur (Parça 29/33/37/56/72-80). **17 Ağu (Blok 6):** k-lig nokta boşluğu, avatar↔logo (kapatıldı), tahta filigranlarının puntosu/fontu + header avatar hizası (Parça 106), filigranların taşların altında kalması (Parça 107), Setup'taki parantezli puanın kaldırılması (web-only, port zaten öyleydi) — hepsi yapıldı, **hiçbiri merge sonrası cihazda görülmedi**; Parça 72-89'un 11 maddesi hâlâ koşulmadı |
+| 0.5 · Web ile yan yana görsel | 🟡 | birçok tur (Parça 29/33/37/56/72-80). **17 Ağu (Blok 6):** k-lig nokta boşluğu, avatar↔logo (kapatıldı), tahta filigranlarının puntosu/fontu + header avatar hizası (Parça 106), filigranların taşların altında kalması (Parça 107), Setup'taki parantezli puanın kaldırılması ve tahta↔raf boşluğu (ikisi web-only, port kanonik alındı) — hepsi yapıldı, **hiçbiri merge sonrası cihazda görülmedi**; Parça 72-89'un 11 maddesi hâlâ koşulmadı |
 | 1 · Oyun (offline çekirdek) | ✅ | Parça 15/20/21/22 buradan çıktı |
 | 2 · Hesap (auth) | ✅ | **9-12 (deep link) FAZ B'ye ertelendi** |
 | 3 · Bulut kayıtları | ✅ | 6/6 — Parça 29 |
@@ -4911,7 +4911,8 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   filigranlarının puntosu/fontu (port) · filigranların taşların ALTINDA
   kalması (port, Parça 107) · header avatarının dikey hizası (web, yalnız
   FOTOĞRAFLI hesapta) · Setup'ta oyuncu satırında parantezli puanın
-  olmaması (web). Üçü de `main`'e merge edildi (`cd6c016`) ama **hiçbiri
+  olmaması (web) · tahta↔raf boşluğunun iki tarafta da 40px olması (web
+  porta uyduruldu; mesaj kutusu artık `min-h-[30px]`). Üçü de `main`'e merge edildi (`cd6c016`) ama **hiçbiri
   merge sonrası cihazda görülmedi** — Pages/Vercel deploy'u beklendikten
   sonra bakılmalı, derleme sha'sı `cd6c016…` olmalı.
 - **13 Ağustos (Parça 72-89):** içerik sütunu genişliği · GİRİŞ satırı

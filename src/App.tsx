@@ -1419,8 +1419,17 @@ export default function App() {
       />
 
       <div className="w-full max-w-[680px] px-3 pb-3 pt-1 flex flex-col gap-1.5">
+        {/* `min-h-[30px] flex items-center`: mesaj satırı Flutter portundaki
+            sabit 30px'lik kutunun (SizedBox+Center) eşleniği — kullanıcı iki
+            ekranı yan yana koyup tahta↔raf boşluğunu web'de DAR buldu ve
+            portun değerini seçti (17 Ağustos 2026). ÖLÇÜLDÜ: eski `min-h-[15px]`
+            bağlayıcı değildi, gerçek yükseklik satır yüksekliğinden geliyordu
+            (16.5 + py-0.5 = 20.5), yani tahta kartının altı ile raf arası
+            web'de 30.5 / portta 40 idi. `min-h` (sabit `h` DEĞİL): mesaj iki
+            satıra taşarsa kutu büyüsün, kırpılmasın — port orada `maxLines: 2`
+            ile kesiyor, tek satırlık normal durumda ikisi birebir aynı. */}
         <div
-          className={`text-[11px] font-mono font-bold text-center min-h-[15px] py-0.5 ${
+          className={`text-[11px] font-mono font-bold text-center min-h-[30px] py-0.5 flex items-center justify-center ${
             MESSAGE_COLORS[liveMessageType]
           }`}
         >

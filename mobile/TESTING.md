@@ -92,6 +92,15 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
       demektir — o toplam k-lig ödüllerini (`bonus_points`) İÇERMEDİĞİNDEN
       gerçek puandan sapar (ölçülen fark 92 ↔ 97); doğru sayı hesap
       menüsündeki k-lig satırında (ayrıntı: kök `CLAUDE.md`, `Setup`).
+- [ ] **Tahta ile raf arasındaki boşluk (17 Ağustos 2026) — bu madde
+      WEB'i sınıyor, portu değil.** Bir oyunu iki platformda yan yana aç:
+      tahta kartının ALTI ile raf kartının ÜSTÜ arasındaki mesafe aynı
+      olmalı (ölçülen hedef **40px** = 4 + 30px'lik mesaj kutusu + 6).
+      Web'de dar görünüyorsa mesaj satırının `min-h-[30px]`i düşmüş
+      demektir — eski `min-h-[15px]` bağlayıcı değildi ve gerçek yükseklik
+      20.5px'e düşüyordu. **İki satıra taşan uzun bir mesajda** (ör. çok
+      kelimeli, vergi paylı bir hamle) web kutusu büyür, port `maxLines: 2`
+      ile keser — o durumda küçük bir fark olması BEKLENEN.
 - [ ] **Filigranlar taşların ÜSTÜNE binmemeli (17 Ağustos 2026, Parça
       107).** Köşe bölgesine ve merkezdeki X2 bölgesine taş konmuş bir oyun
       aç: soluk köşe rakamı ve **X2** yalnızca BOŞ hücrelerde görünmeli,
