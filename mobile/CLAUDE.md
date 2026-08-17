@@ -4716,8 +4716,14 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        (eski `Text`lerin `style.fontSize`'ı `null`), ama bu gösterilmedi —
        tek kanıt CI (`mobile-build.yml`). Web yarısı tam doğrulandı
        (`npm run lint`, `npm run build`, Playwright 3/3, Chromium ölçümü).
-     - **Cihazda doğrulanacak:** iki `TESTING.md`'ye maddeler eklendi.
-       Port değişikliği Pages'e ancak `main`'e merge sonrası çıkar.
+     - ~~**Cihazda doğrulanacak:** iki `TESTING.md`'ye maddeler eklendi.~~
+       → **17 Ağustos 2026'da iPad'de KOŞULDU ve GEÇTİ:** köşe rakamları
+       iki tarafta aynı boy/font, merkez **X2** aynı boy ve **X3 hücreyi
+       DOLDURMUYOR** (web'in 12px tavanına oturuyor). Yani `FittedBox`tan
+       `fluidSize`a geçiş gerçek CanvasKit'te de web'le aynı sonucu
+       veriyor — negatif eşin kurulamadığı (Flutter SDK'sız oturum) bu
+       parçada tek gerçek kanıt buydu. **Header avatarının dikey hizası
+       AYNI turda koşulmadı** (o web-only ve FOTOĞRAFLI hesap ister).
      - **CI'ın YAKALADIĞI hata bu parçadan DEĞİL, bir önceki dalda merge
        bekleyen commit'lerden çıktı (kayda değer):** PR #277'nin ilk
        koşusunda **442 geçti, 1 düştü** — `score_card_test.dart`'ın
@@ -4786,8 +4792,12 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Doğrulama sınırı — Parça 106'nın aynısı:** bu oturumun
        konteynerinde Flutter SDK YOK (`flutter: command not found`), yani
        `flutter analyze`/`flutter test` KOŞULAMADI ve **negatif eş
-       kurulamadı**; tek kanıt CI. Cihazda görsel teyit de bekleniyor
-       (`mobile/TESTING.md` 0.5'e madde eklendi).
+       kurulamadı**; tek kanıt CI. ~~Cihazda görsel teyit de bekleniyor~~
+       → **17 Ağustos 2026'da iPad'de KOŞULDU ve GEÇTİ:** filigranlar
+       taşların ALTINDA kalıyor, dış hatlar üstünde. Bu, `ClipPath` +
+       `PathFillType.evenOdd` çözümünün gerçek CanvasKit'te de çalıştığının
+       tek kanıtı — Parça 18'in dersi gereği PathOps kullanılmamıştı ve
+       `flutter test` (native Skia) bu farkı yapısal olarak göremezdi.
 
    - ✅ **Parça 108 — rafın ALTINDAKİ aksiyon satırı web'den dört noktada
      sapmıştı (17 Ağustos 2026, `game_screen.dart`,
@@ -4857,7 +4867,7 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | Bölüm | Durum | Not |
 |---|---|---|
 | 0 · Derleme / ilk açılış | ✅ | FAZ A0 |
-| 0.5 · Web ile yan yana görsel | 🟡 | birçok tur (Parça 29/33/37/56/72-80). **17 Ağu (Blok 6):** k-lig nokta boşluğu, avatar↔logo (kapatıldı), tahta filigranlarının puntosu/fontu + header avatar hizası (Parça 106), filigranların taşların altında kalması (Parça 107), Setup'taki parantezli puanın kaldırılması ve tahta↔raf boşluğu (ikisi web-only, port kanonik alındı) — hepsi yapıldı, **hiçbiri merge sonrası cihazda görülmedi**; Parça 72-89'un 11 maddesi hâlâ koşulmadı |
+| 0.5 · Web ile yan yana görsel | 🟡 | birçok tur (Parça 29/33/37/56/72-80). **17 Ağu (Blok 6):** k-lig nokta boşluğu, avatar↔logo (kapatıldı), tahta filigranlarının puntosu/fontu + header avatar hizası (Parça 106), filigranların taşların altında kalması (Parça 107), Setup'taki parantezli puanın kaldırılması ve tahta↔raf boşluğu (ikisi web-only, port kanonik alındı) — hepsi yapıldı; **iki PORT maddesi (Parça 106 filigran puntosu/fontu + 107 katman sırası) cihazda KOŞULDU ve geçti**, kalan web maddeleri henüz görülmedi. Ayrıca Hesap Ayarları'ndaki fotoğraf butonu (tam genişlik + kalın) — **dalda bekliyor, merge edilmedi**. Parça 72-89'un 11 maddesi hâlâ koşulmadı |
 | 1 · Oyun (offline çekirdek) | ✅ | Parça 15/20/21/22 buradan çıktı |
 | 2 · Hesap (auth) | ✅ | **9-12 (deep link) FAZ B'ye ertelendi** |
 | 3 · Bulut kayıtları | ✅ | 6/6 — Parça 29 |
@@ -4957,9 +4967,13 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   uyarısının yanlış modal kabuğuydu (yukarıdaki nota bkz.); OHP hizası ve
   başlık ortalama iki platformda yan yana doğrulandı. Kök **9.10** da yeni
   üç kutulu YZ Dengesi hâliyle yeniden koşuldu.
-- **17 Ağustos (Parça 106-107 + aynı bloğun web işi):** tahta
+- **17 Ağustos (Parça 106-107 + aynı bloğun web işi):** ~~tahta
   filigranlarının puntosu/fontu (port) · filigranların taşların ALTINDA
-  kalması (port, Parça 107) · header avatarının dikey hizası (web, yalnız
+  kalması (port, Parça 107)~~ → **İKİSİ DE aynı gün iPad'de koşuldu ve
+  GEÇTİ** (köşe rakamları + X2 aynı boy/font, X3 hücreyi doldurmuyor,
+  filigranlar taşların altında) — Flutter SDK'sız yazıldıkları için
+  negatif eşleri kurulamamıştı, tek gerçek kanıt bu tur oldu. Kalanlar:
+  header avatarının dikey hizası (web, yalnız
   FOTOĞRAFLI hesapta) · Setup'ta oyuncu satırında parantezli puanın
   olmaması (web) · tahta↔raf boşluğunun iki tarafta da 40px olması (web
   porta uyduruldu; mesaj kutusu artık `min-h-[30px]`) · **raf başlığı:**
