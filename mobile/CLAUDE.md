@@ -4683,7 +4683,7 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | 2 · Hesap (auth) | ✅ | **9-12 (deep link) FAZ B'ye ertelendi** |
 | 3 · Bulut kayıtları | ✅ | 6/6 — Parça 29 |
 | 4 · Biten oyun kayıtları / istatistik | ✅ | Parça 33; OHP çapraz kontrolü Parça 63 |
-| 5 · Oyun geçmişi | ✅ | Parça 35, sonra 67/68 ek turlar |
+| 5 · Oyun geçmişi | ✅ | Parça 35, sonra 67/68 ek turlar; **17 Ağu: ağ hatası maddesi (Parça 90) de koşuldu** |
 | 6 · Paylaşma | 🟡 | görsel düzeltmesi koşuldu (Parça 84); **iPad ankrajı (Parça 86) gerçek iPad ister → FAZ B** |
 | 7 · Son Oynadıklarım | ✅ | 16 Ağu (Blok 7) |
 | 8 · Dayanıklılık (uçak modu) | ✅ | 8.2/8.3/8.5/8.6 — Parça 43-46; 16 Ağu: uçak modunda ÇIK–GİR hamleyi siliyordu (Parça 105) → düzeltme **aynı gün cihazda doğrulandı** |
@@ -4707,10 +4707,10 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
 - ~~**16 Ağustos (Parça 105) — veri kaybı:** uçak modunda var olan bir
   oyunu aç → hamle yap → çık → **listeyi beklemeden** tekrar gir~~ →
   **16 Ağustos'ta AYNI GÜN cihazda koşuldu ve GEÇTİ** (*"Kaydetti bu
-  sefer. Çalışıyor."*). Madde `TESTING.md` bölüm 8'de regresyon için
-  duruyor — **hızlı** koşulmalı, beklenirse liste tazelenir ve senaryo
-  hiç oluşmaz. Teşhis satırındaki `bekleyen ?` ↔ `bekleyen 0` ayrımı
-  hâlâ gözle doğrulanmadı.
+  sefer. Çalışıyor."*), **17 Ağustos'ta regresyon olarak bir kez daha
+  koşuldu ve teşhis satırındaki `bekleyen ?` ↔ `bekleyen 0` ayrımı da
+  gözle doğrulandı.** Madde `TESTING.md` bölüm 8'de duruyor — **hızlı**
+  koşulmalı, beklenirse liste tazelenir ve senaryo hiç oluşmaz.
 - ~~**15 Ağustos (Parça 101):** "YAPAY ZEKA İLE" sekme rozeti = "Devam
   Edenler" alt sekmesinin rozetiyle aynı sayı~~ → **16 Ağustos'ta Blok 7
   turunda koşuldu.**
@@ -4750,11 +4750,18 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   takılı kalmama · ActionSheet'te "Vazgeç" yokluğu · ağ hatasında sahte
   başarı yokluğu · "Sıra: X" bandının rengi/gölgesi
 
-**Özel uyarı — kök `TESTING.md` 9.6 ilk koşuşunda DÜŞTÜ** (çevrimdışı hâlâ
-"oyunun yok" diyordu; `getUser()` → `getSession()` ile düzeltildi).
-Düzeltmeden sonra tekrar koşulduğuna dair kayıt YOK — o bölüm baştan
-alınmalı ve **belgede yazan sırayla** (önce önbelleksiz, sonra önbellekli;
-ilk yazılan sıralama yalnızca ikinci dalı kapsıyordu), artı negatif eşi.
+~~**Özel uyarı — kök `TESTING.md` 9.6 ilk koşuşunda DÜŞTÜ**~~ →
+**17 Ağustos'ta baştan koşuldu ve GEÇTİ** (negatif eşi dahil: admin →
+Üyeler → sıfır oyunlu bir üyenin kartı → çevrimİÇİ boş liste normal mesaj
+veriyor). Tur, kodda değil **belgede** bir hata çıkardı: 3. madde
+çevrimdışı + boş önbellekte "yüklenemedi" bekliyordu, oysa aynı gün
+eklenen çevrimdışı öneri (`offlineNode`) araya giriyor ve "Hemen oyun aç."
+çıkıyor; ayrıca "Arkadaşınla → Son Oynananlar" çevrimdışı HİÇ
+çizilmiyor (`LiveGamesTab`'ın `!online` dalı üç alt sekmeyi birden kısa
+devre yapıyor), yani orada "eski liste kalmalı" beklentisi anlamsızdı.
+Madde düzeltildi. **Bu, "koşulmamış madde bir şey kanıtlamaz"ın somut
+örneği** — 14 Ağustos'tan 17 Ağustos'a kadar belge yanlıştı ve kimse
+görmedi.
 
 ### Sıradaki tur için öneri
 
@@ -4764,15 +4771,13 @@ hesap değişimi (17 Ağu, sıfır bulgu). Aynı turda Parça 95'in beş
 düzeltmesinin hepsi de cihazda teyit edildi, yani **14 Ağustos'tan beri
 biriken Canlı borcu tamamen kapandı.**
 
-Geriye kalan üç küme, azalan öncelikle:
+**Ağ hatası / offline kümesi de 17 Ağustos'ta kapandı** (kök 9.6 +
+mobil bölüm 5 + bölüm 8 çık-gir). Geriye iki küme kaldı:
 
-1. **Ağ hatası / offline** — kök `TESTING.md` **9.6** bir kez koşulup
-   DÜŞTÜ, düzeltildi ve düzeltmeden sonra HİÇ koşulmadı; belgede yazan
-   SIRAYLA (önce önbelleksiz) + negatif eşiyle koşulmalı. Yanına mobil
-   bölüm 5'in ağ-hatası maddesi ve bölüm 8'in çık-gir regresyonu
-   (**hızlı** koşulmalı, beklenirse senaryo hiç oluşmaz).
-2. **Görüş Bildir** (bölüm 9, 7 madde) ve **Parça 90/92 kalanları**.
-3. **Görsel yan yana** (bölüm 0.5, Parça 72-89'un 11 maddesi) — en düşük
+1. **Görüş Bildir** (bölüm 9, 7 madde) ve **Parça 90/92 kalanları**
+   (girişsiz başlatma uyarısı · tahta altındaki "Nasıl Oynanır?" İKİ oyun
+   ekranında da · OHP hizası + başlık ortalama).
+2. **Görsel yan yana** (bölüm 0.5, Parça 72-89'un 11 maddesi) — en düşük
    riskli grup, sona bırakılabilir.
 
 **Cihaz turuna AİT OLMAYAN, ortak SQL turu bekleyenler:** süresi dolmuş
