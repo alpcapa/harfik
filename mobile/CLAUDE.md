@@ -4739,6 +4739,56 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        oturumda Flutter SDK'sının olmamasıyla birleşince (yerelde
        `flutter test` de koşulamıyor) tek doğrulama yolunu PR'a bağlıyor.
 
+   - ✅ **Parça 107 — filigranlar TAŞLARIN ÜSTÜNE biniyordu: web'in z-index
+     sırası porta hiç geçmemişti (17 Ağustos 2026, `board_widget.dart`):**
+     Kullanıcı Parça 106'nın deploy'undan sonra iki ekranı yan yana koyup
+     bildirdi: *"Web'de watermark'lar taşların üstünden görünmeyecek şekilde
+     ayarlamıştık, app'de hâlâ görünüyorlar."* Ekran görüntüsünde X2
+     filigranı `E Ğ E` taşlarının üzerinden geçiyordu.
+     - **Web önce okundu (kuralın ilk adımı) ve TAM katman sırasını verdi:**
+       `Board.tsx`'te taş içeren hücreler `relative z-[5]` alıyor ve o
+       satırın kendi yorumu gerekçeyi yazıyor ("köşe/bonus filigranları
+       (z-index:auto) taşın ÜZERİNDE boyanmasın diye"); dış hat SVG'si ve
+       puan rozeti ise `z-10`. Yani sıra: **arka planlar → filigran →
+       taşlar → dış hatlar**. Filigran DOM'da en sonda olduğu hâlde taşın
+       altında kalıyor, çünkü tek belirleyici z-index.
+     - **Portta bu sıra otomatik değil:** Flutter'da z-index yok, `Stack`
+       çocuk sırası = boyama sırası. Port ızgara → dış hatlar → filigran
+       diye diziyordu, yani filigran HER ŞEYİN üstünde. İki sapma birden:
+       taşların üstüne biniyordu (bildirilen) ve dış hatların üstüne
+       biniyordu (bildirilmedi, çok daha silik).
+     - **Çözüm — taşları ayrı katmana taşımak DEĞİL, filigranı kesmek:**
+       filigran katmanı ızgaradan sonra ama dış hatlardan ÖNCE çiziliyor ve
+       bir `ClipPath` ile taş bulunan hücreler kesiliyor
+       (`_WatermarkClipper`). Sonuç "taşın altında" ile görsel olarak aynı;
+       alternatif (ızgarayı biri arka planlar biri taşlar için iki kez
+       inşa etmek) 169 hücreyi iki katına çıkarırdı — Parça 23'te sürükleme
+       sırasındaki tek fazladan ızgara inşasının bile ölçülebilir bir
+       maliyeti olduğu görülmüştü.
+     - **Delik `PathFillType.evenOdd` ile, `Path.combine`/PathOps ile
+       DEĞİL** — Parça 18'in dersi: PathOps CanvasKit'te deliği sessizce
+       kaybediyor, native Skia'da çalışıyor, yani `flutter test` o hata
+       sınıfını GÖREMEZ. `neo_box.dart` zaten aynı deyimi kullanıyor.
+     - **`dragHiddenKey` bilerek kesilmiyor:** o hücre boş çiziliyor (bkz.
+       `_buildCell`), dolayısıyla filigran orada GÖRÜNMELİ. Kural
+       `_buildCell`in koşuluyla birebir aynı: bayrak yalnızca `placed`
+       taşını gizler, `board` taşını DEĞİL — testi yazarken önce bunu
+       ters kurup düzelttim.
+     - **Kesme kutusu ızgara geometrisinden türetiliyor** (13 hücre, 3px
+       boşluk); `_gap` sabiti `GridView`in `mainAxisSpacing`/
+       `crossAxisSpacing` değeriyle ELLE senkron — biri değişirse kesilen
+       kutular hücrelerden kayar, bu yüzden sabitin yanına yazıldı.
+     - **Test:** `board_render_test.dart`'a yeni bir test — clipper'ın
+       ürettiği path'te onaylanmış taşın ve taslak taşın merkezi
+       `contains == false`, sürüklenen taslağın kaynağı ile boş köşe/bonus
+       hücreleri `contains == true`. Yani "filigran nerede çizilir"
+       sorusunu ekran görüntüsüne bakmadan yanıtlıyor.
+     - **Doğrulama sınırı — Parça 106'nın aynısı:** bu oturumun
+       konteynerinde Flutter SDK YOK (`flutter: command not found`), yani
+       `flutter analyze`/`flutter test` KOŞULAMADI ve **negatif eş
+       kurulamadı**; tek kanıt CI. Cihazda görsel teyit de bekleniyor
+       (`mobile/TESTING.md` 0.5'e madde eklendi).
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
@@ -4757,7 +4807,7 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | Bölüm | Durum | Not |
 |---|---|---|
 | 0 · Derleme / ilk açılış | ✅ | FAZ A0 |
-| 0.5 · Web ile yan yana görsel | 🟡 | birçok tur (Parça 29/33/37/56/72-80). **17 Ağu (Blok 6):** k-lig nokta boşluğu, avatar↔logo (kapatıldı), tahta filigranları + header avatar hizası (Parça 106), Setup'taki parantezli puanın kaldırılması (web-only, port zaten öyleydi) — beşi de yapıldı, **hiçbiri merge sonrası cihazda görülmedi**; Parça 72-89'un 11 maddesi hâlâ koşulmadı |
+| 0.5 · Web ile yan yana görsel | 🟡 | birçok tur (Parça 29/33/37/56/72-80). **17 Ağu (Blok 6):** k-lig nokta boşluğu, avatar↔logo (kapatıldı), tahta filigranlarının puntosu/fontu + header avatar hizası (Parça 106), filigranların taşların altında kalması (Parça 107), Setup'taki parantezli puanın kaldırılması (web-only, port zaten öyleydi) — hepsi yapıldı, **hiçbiri merge sonrası cihazda görülmedi**; Parça 72-89'un 11 maddesi hâlâ koşulmadı |
 | 1 · Oyun (offline çekirdek) | ✅ | Parça 15/20/21/22 buradan çıktı |
 | 2 · Hesap (auth) | ✅ | **9-12 (deep link) FAZ B'ye ertelendi** |
 | 3 · Bulut kayıtları | ✅ | 6/6 — Parça 29 |
@@ -4857,8 +4907,9 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   uyarısının yanlış modal kabuğuydu (yukarıdaki nota bkz.); OHP hizası ve
   başlık ortalama iki platformda yan yana doğrulandı. Kök **9.10** da yeni
   üç kutulu YZ Dengesi hâliyle yeniden koşuldu.
-- **17 Ağustos (Parça 106 + aynı bloğun web işi):** tahta filigranlarının
-  puntosu/fontu (port) · header avatarının dikey hizası (web, yalnız
+- **17 Ağustos (Parça 106-107 + aynı bloğun web işi):** tahta
+  filigranlarının puntosu/fontu (port) · filigranların taşların ALTINDA
+  kalması (port, Parça 107) · header avatarının dikey hizası (web, yalnız
   FOTOĞRAFLI hesapta) · Setup'ta oyuncu satırında parantezli puanın
   olmaması (web). Üçü de `main`'e merge edildi (`cd6c016`) ama **hiçbiri
   merge sonrası cihazda görülmedi** — Pages/Vercel deploy'u beklendikten

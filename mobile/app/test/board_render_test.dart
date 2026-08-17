@@ -225,4 +225,63 @@ void main() {
     expect(styleOf('X2').fontSize, closeTo(93.6, 0.01));
     expect(styleOf('X3').fontSize, closeTo(7.41, 0.01));
   });
+
+  // Web'de taşlar `relative z-[5]` ile filigranın ÜSTÜNDE boyanır; portta
+  // filigran ızgaradan sonra çizildiğinden taşların üstüne biniyordu
+  // (17 Ağustos 2026, kullanıcı iki ekranı yan yana koyup bildirdi).
+  testWidgets('filigran taşların üstüne binmez, boş hücrelerde görünür',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(834, 1100));
+
+    // Köşe filigranının ("1") alanına üç taş: biri onaylanmış (board), biri
+    // taslak (placed), biri de o an SÜRÜKLENEN taslağın kaynağı. Sonuncusu
+    // boş çizildiğinden (bkz. `_buildCell`) filigran orada görünmeli.
+    final board = createEmptyBoard();
+    board[0][0] = const Tile(letter: 'K', pts: 1);
+    final state = emptyBoardState().copyWith(
+      board: board,
+      placed: {
+        cellKey(2, 2): const Tile(letter: 'E', pts: 1),
+        cellKey(1, 1): const Tile(letter: 'R', pts: 1),
+      },
+    );
+
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: Center(
+          child: SizedBox(
+            width: 680,
+            height: 680,
+            child: BoardWidget(
+              state: state,
+              hideFooter: true,
+              dragHiddenKey: cellKey(1, 1),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.pump();
+
+    final clip = tester
+        .widget<ClipPath>(find.byKey(const ValueKey('board-watermarks')));
+    final size = tester.getSize(find.byKey(const ValueKey('board-watermarks')));
+    final path = clip.clipper!.getClip(size);
+
+    // Hücre merkezini ızgara geometrisinden hesapla (13 hücre, 3px boşluk).
+    Offset centerOf(int r, int c) {
+      final cell = (size.width - 3 * 12) / 13;
+      return Offset(c * (cell + 3) + cell / 2, r * (cell + 3) + cell / 2);
+    }
+
+    // Taşın olduğu hücreler kesiliyor → filigran orada ÇİZİLMEZ.
+    expect(path.contains(centerOf(0, 0)), isFalse); // onaylanmış taş
+    expect(path.contains(centerOf(2, 2)), isFalse); // taslak taş
+    // Sürüklenen taslağın kaynağı boş çizildiğinden kesilmemeli.
+    expect(path.contains(centerOf(1, 1)), isTrue);
+    // Boş köşe hücresi ve bonus bölgesi hücresi: filigran görünür.
+    expect(path.contains(centerOf(0, 3)), isTrue);
+    expect(path.contains(centerOf(6, 6)), isTrue);
+  });
 }
