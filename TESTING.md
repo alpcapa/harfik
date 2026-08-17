@@ -810,6 +810,17 @@ gerekenler.
       oyun yok." demeli — boş kutular ya da "%0" DEĞİL.
 - [ ] **Admin olmayan hesap panele hiç giremiyor** (menüde "Admin Paneli"
       satırı yok) — bu iki RPC de admin dışına kapalı.
+- [ ] **YZ güçlendi: 2 kişilik birincilik oranı ZAMANLA DÜŞMELİ
+      (17 Ağustos 2026, bkz. `mobile/CLAUDE.md` Parça 109).** YZ'nin
+      sağ-alt köşedeki ilk hamle kısıtı kaldırıldı — 2 kişilikte YZ HER
+      ZAMAN o köşede olduğundan bu panel, düzeltmenin gerçek oyunlarda
+      işe yarayıp yaramadığını gösteren TEK ölçüm. Düzeltme öncesi değer
+      **%57** (95/167) idi; bundan sonra bitirilen oyunlarda oranın
+      rastgeleye (%50) doğru inmesi BEKLENEN davranış, regresyon DEĞİL.
+      **Panel kümülatif olduğundan tek bir oyunla okunmaz** — 20-30 yeni
+      oyun birikene kadar sayıya bakıp karar verme. 4 kişilik kutular bu
+      değişiklikten çok daha az etkilenir (orada YZ koltuklarının yalnızca
+      biri köşe 3'te).
 
 ## 9.11. Admin — metrik tanımı `?` rozetleri (17 Ağustos 2026)
 

@@ -254,6 +254,16 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       satırlarından yeniden üretiliyor). Negatif eş: sıradan bir hamlede
       bu parantez görünmemeli. Web'de AYNI hamleyi yap — metin birebir
       aynı olmalı.
+- [ ] **Sağ-alttaki YZ artık ilk hamlede kısıtlı değil (17 Ağustos 2026,
+      Parça 109).** 2 kişilik bir oyun aç (YZ her zaman sağ-alt köşededir)
+      ve YZ'nin İLK hamlesine bak: kelime, ev karesinden (12,12) SOLA
+      ve/veya YUKARI, yani merkeze doğru uzayabilmeli. Eskiden YZ orada
+      en fazla 4 taş koyabiliyordu ve neredeyse hep sonuncu bitiriyordu.
+      **Bu tek bir oyunda kanıtlanmaz** (rafa bağlı) — birkaç oyun oyna ve
+      YZ'nin açılış puanlarının 2 kişilikte (köşe 3) ile 4 kişilikte
+      (köşe 0/1/2 de var) belirgin şekilde ayrışMADIĞINA bak. Negatif eş:
+      YZ'nin ilk kelimesi HER ZAMAN evden sağa/aşağı gidiyorsa düzeltme
+      deploy olmamış demektir (derleme sha'sını kontrol et).
 - [ ] **Girişsiz başlatınca uyarı (14 Ağustos 2026, Parça 92).** ÇIKIŞ
       yapmış hâlde "Oyunu Başlat"a bas: web'dekiyle aynı uyarı çıkmalı
       ("Oyunların istatistikleri, k-lig ve arkadaşınla canlı oyun için

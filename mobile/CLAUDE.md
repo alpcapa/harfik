@@ -865,10 +865,12 @@ bağlı değil.)
     oyunlarında snapshot her 5 adımda bir alındığından o hamlenin `message`
     alanı hiçbir snapshot'a düşmüyordu — yani metin korumasızdı; bingo notu
     eklenirken fixture'lar yeniden üretilip SIFIR fark çıkması bunu ortaya
-    çıkardı. **YZ'nin bingo yapabilmesi için SOL-ÜST köşede (0) olması
-    şart:** `tryCornerStart` (ai.ts) başlangıç hücresini köşe bloğunun
-    İÇİNDEN seçip kelimeyi sağa/aşağı uzatıyor, yani sağ-alt köşede 7
-    harflik bir ilk hamle tahtadan taşıyor ve YZ en fazla 4 taş koyabiliyor.
+    çıkardı. **Fixture YZ'yi SOL-ÜST köşeye (0) kuruyor — ama bu artık bir
+    ZORUNLULUK değil, yalnızca fixture'ın kurulumu.** Yazıldığı gün öyleydi
+    ve gerekçesi burada yazılıydı ("`tryCornerStart` başlangıç hücresini
+    köşe bloğunun İÇİNDEN seçip kelimeyi sağa/aşağı uzatıyor, sağ-alt
+    köşede 7 harflik ilk hamle tahtadan taşıyor"); AYNI GÜN o kısıt
+    kaldırıldı (bkz. Parça 109), artık dört köşeden de bingo mümkün.
   - `reducer_crafted_ai_exchange.json` — YZ'nin "hamle yok → raf değiştir"
     dalı (yalnız B'lerden raf hiçbir kelime heceleyemez; doğal oyunda nadir).
   - `reducer_sync.json` — SYNC_ONLINE_STATE birleşme mantığı: aynı
@@ -4860,6 +4862,59 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        taranıp doğrulandı, tek gerçek kanıt CI. Cihazda görsel teyit
        bekleniyor (`mobile/TESTING.md` 0.5).
 
+   - ✅ **Parça 109 — sağ-alt köşedeki YZ her oyuna 29 puan geride
+     başlıyordu: `tryCornerStart` kelimeyi yalnızca evden İLERİ uzatıyordu
+     (17 Ağustos 2026, `find_move.dart` + web `ai.ts`):** Kullanıcı
+     *"sağ alttaki YZ genelde hep sonuncu oluyor. Benim de dikkatimi
+     çekmişti. Bunu düzelt acil."* dedi.
+     - **Kural okundu, sonra ölçüldü (bu sırayla).** `validatePlacement`
+       ilk hamlede YALNIZCA "konan hücrelerden biri ev karesi olsun" diyor
+       — yön ya da "4×4 blokta başla" şartı YOK. Yani kısıt oyunun değil
+       `tryCornerStart`'ın kendi döngüsünündü; üstelik tutarsızlık YZ'nin
+       İÇİNDEYDİ: `tryPlace` (çapalı hamleler) baştan beri `idx` döngüsüyle
+       kelimeyi iki yöne de uzatıyordu.
+     - **Ölçüm (üretim `findAIMove`, raf `A B A R T M A`, boş tahta):**
+       köşe 0/1/2 → `7 taş "ABARTMA" 35 puan`; **köşe 3 → `4 taş "ABAT"
+       6 puan`.** 2 kişilikte YZ HER ZAMAN köşe 3'te (`cornersFor`), yani
+       bu her oyunda tekrarlanan 29 puanlık bir açılış handikabıydı.
+       Düzeltmeden sonra dört köşe de 7 taş / 35 puan (köşe 3: `12,6 …
+       12,12`, merkeze doğru).
+     - **Düzeltme:** kelimenin HANGİ harfinin eve denk geleceği (`idx`)
+       tek tek deneniyor; kelime evden geriye ve ileriye uzayabiliyor.
+     - **Döngü SIRASI sözleşmedir, iki motorda da aynı yazıldı**
+       (`for W → for idx → for horiz in [true,false]`): `consider` eşit
+       puanda İLK bulunanı tutuyor (strict `>`), sıra ayrışırsa iki motor
+       farklı hamle seçer ve parite SESSİZCE kırılır — golden vector
+       karşılaştırması bunu ancak o senaryo tetiklenirse yakalar.
+     - **Golden vector'lar yeniden üretildi; DÖRT fixture değişti ve
+       dördü de açıklandı** (üçü besbelli, dördüncüsü değildi):
+       `reducer_ai2`/`reducer_ai4`/`reducer_sync` — ilk fark 5. adımdaki
+       `AI_PLAY`, yani köşe 3'ün ilk hamlesi. **`reducer_human2` ise SIFIR
+       `AI_PLAY` içeriyor ve yine de değişti** — sebebi `humanScenario`'nun
+       "geçerli hamleler"i `playBestMove` ile, yani üretim `findAIMove`'unu
+       İNSAN adına çağırarak oynatması; 2 kişilikte 2. oyuncu köşe 3'te
+       olduğundan o çağrı da `tryCornerStart`'a düşüyor. `JE` (11 puan)
+       evden hem dikey (`11,12→12,12`) hem yatay (`12,11→12,12`)
+       kurulabiliyor, ikisi de AYNI puan → "ilk bulunan kazanır" artık
+       yatayı seçiyor. Tahta değişince senaryonun DİNAMİK koordinatları
+       (`findEmptyCell` ve sağ-komşu taraması) kayıyor. Finaller aynı.
+       **Ders: bir fixture'da `AI_PLAY` olmaması, o senaryonun YZ'ye
+       dokunmadığı anlamına GELMEZ** — üretici kelime aramasını insan
+       hamlelerini üretmek için de kullanıyor.
+     - **Kapsam dışı, kullanıcıya bildirildi:** `getWordPool` havuzu 2-7
+       harfle sınırlı, yani YZ 8+ harfli bir kelimeyi çapaya ekleyerek
+       bile kurmuyor (kurallara uygun olurdu). Bu ayrı bir karar; bu
+       parçada DEĞİŞMEDİ.
+     - **Doğrulama sınırı — Parça 106/107/108'in aynısı:** bu oturumun
+       konteynerinde Flutter/Dart SDK YOK (`flutter: command not found`),
+       yani `dart run test/run_all.dart` KOŞULAMADI — **motor değişikliği
+       olduğu hâlde Dart yarısının tek kanıtı CI.** Web yarısı tam
+       doğrulandı (`npm run lint`, `npm run build`, Playwright 3/3, ölçüm
+       betiği). Dart portu satır satır web'e karşı okundu; `cornerBounds`
+       artık kullanılmıyor (Dart'ta kütüphane importu olduğundan
+       kullanılmayan-import hatası doğurmuyor, web'de import satırından
+       çıkarıldı).
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
@@ -5002,10 +5057,16 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   birikmişti ve hepsi ölçülerek yazılmış (derlenmiş CSS + Chromium)
   düzeltmelerdi — cihaz turu hiçbirinde bir sapma bulmadı.
 
-**Bu liste artık BOŞ** — 17 Ağustos akşamı itibarıyla cihaz turu görmemiş
-biriken madde kalmadı. Yeni bir düzeltme yazıldığında buraya yine madde
-eklenmeli (kural değişmedi: yazıldığı gün cihazda görülmemiş her düzeltme
-burada birikir).
+- **17 Ağustos (Parça 109) — YZ'nin sağ-alt köşe handikabı:** 2 kişilik
+  bir oyunda YZ'nin İLK hamlesi artık evden sola/yukarı da uzayabilmeli
+  (bkz. `mobile/TESTING.md` bölüm 1). Ölçüm boş tahtada yapıldı, gerçek
+  oyun akışında gözle teyit edilmedi; ayrıca bu parçanın Dart yarısı
+  Flutter SDK'sız bir oturumda yazıldığından `dart run test/run_all.dart`
+  hiç koşulmadı — CI dışında kanıtı yok.
+
+Liste bir gün BOŞALIRSA öyle kalmasını bekleme: yeni bir düzeltme
+yazıldığında buraya yine madde eklenmeli (kural değişmedi: yazıldığı gün
+cihazda görülmemiş her düzeltme burada birikir).
 
 ~~**Özel uyarı — kök `TESTING.md` 9.6 ilk koşuşunda DÜŞTÜ**~~ →
 **17 Ağustos'ta baştan koşuldu ve GEÇTİ** (negatif eşi dahil: admin →
