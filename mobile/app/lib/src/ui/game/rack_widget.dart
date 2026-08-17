@@ -91,17 +91,20 @@ class RackWidget extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
-                swapMode
-                    ? '${swapSelection.length} seçili'
-                    : '${tiles.length} harf',
-                style: const TextStyle(
-                  color: Color(0xFF8A93A2),
-                  fontFamily: 'SpaceMono',
-                  fontSize: 9,
-                  letterSpacing: 1.5,
+              // Taş sayısı ("7 harf") 17 Ağustos 2026'da kullanıcı isteğiyle
+              // İKİ platformdan da kaldırıldı — rafta zaten görünen bir şeyi
+              // tekrar yazıyordu. Swap modundaki seçim sayacı bir DURUM
+              // bilgisi taşıdığından kalıyor (web Rack.tsx de öyle).
+              if (swapMode)
+                Text(
+                  '${swapSelection.length} seçili',
+                  style: const TextStyle(
+                    color: Color(0xFF8A93A2),
+                    fontFamily: 'SpaceMono',
+                    fontSize: 9,
+                    letterSpacing: 1.5,
+                  ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 6),

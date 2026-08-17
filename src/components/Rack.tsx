@@ -48,18 +48,29 @@ export function Rack({
         boxShadow: '5px 5px 14px rgba(163,177,198,0.65), -3px -3px 10px rgba(255,255,255,0.9)',
       }}
     >
-      <div className="flex justify-between text-[9px] uppercase tracking-[1.5px] font-mono mb-1.5">
+      {/* `uppercase` YOK (17 Ağustos 2026, kullanıcı isteği: "Web'i app'le aynı
+          yap"): Flutter portu (rack_widget.dart) adı olduğu gibi yazıyor.
+          Kullanıcının "bold yazılmış" dediği fark AĞIRLIKTAN DEĞİL büyük
+          harften geliyordu — ölçüldü, iki taraf da 700; bu yüzden `font-bold`
+          KALDI, kaldırmak porttan ayrışma üretirdi. */}
+      <div className="flex justify-between text-[9px] tracking-[1.5px] font-mono mb-1.5">
         <span className="font-bold" style={{ color: swapMode ? '#D97706' : color.text }}>
           {swapMode ? `${title} — değiştirilecek taşları seç` : title}
         </span>
-        <span className="text-muted">
-          {swapMode
-            ? `${swapSelection.length} seçili`
-            : `${tiles.length} harf`}
-        </span>
+        {/* Taş sayısı ("7 harf") kaldırıldı — aynı gün, aynı istek: rafta zaten
+            görünen bir şeyi tekrar yazıyordu. Swap modundaki seçim sayacı bir
+            DURUM bilgisi taşıdığından kalıyor (port da öyle). */}
+        {swapMode && (
+          <span className="text-muted">{`${swapSelection.length} seçili`}</span>
+        )}
       </div>
+      {/* `pt-[7px]` + `min-h-[53px]`: portun raf kutusu seçili taşın 7px yukarı
+          kalkması için yer AYIRIYOR (`SizedBox(height: 53)` + bottomCenter),
+          web ise `-translate-y-[7px]` ile başlığın üstüne taşıyordu. Kullanıcı
+          portun görünümünü seçti; ölçülen başlık→taş arası 6 → 13px, ikisi
+          birebir. */}
       <div
-        className="min-h-[46px]"
+        className="min-h-[53px] pt-[7px]"
         style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${tiles.length || 1}, 1fr)`,

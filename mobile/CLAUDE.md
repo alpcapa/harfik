@@ -4912,7 +4912,10 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   kalması (port, Parça 107) · header avatarının dikey hizası (web, yalnız
   FOTOĞRAFLI hesapta) · Setup'ta oyuncu satırında parantezli puanın
   olmaması (web) · tahta↔raf boşluğunun iki tarafta da 40px olması (web
-  porta uyduruldu; mesaj kutusu artık `min-h-[30px]`). Üçü de `main`'e merge edildi (`cd6c016`) ama **hiçbiri
+  porta uyduruldu; mesaj kutusu artık `min-h-[30px]`) · **raf başlığı:**
+  "7 harf" İKİ tarafta da yok, web'de ad artık BÜYÜK HARF DEĞİL
+  (`Ironman`), başlık↔taş arası iki tarafta da 13px (web'e `pt-[7px]`
+  eklendi). Üçü de `main`'e merge edildi (`cd6c016`) ama **hiçbiri
   merge sonrası cihazda görülmedi** — Pages/Vercel deploy'u beklendikten
   sonra bakılmalı, derleme sha'sı `cd6c016…` olmalı.
 - **13 Ağustos (Parça 72-89):** içerik sütunu genişliği · GİRİŞ satırı
