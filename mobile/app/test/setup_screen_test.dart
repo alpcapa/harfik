@@ -348,7 +348,7 @@ void main() {
     await tester.runAsync(() => storage.close());
   });
 
-  testWidgets('GİRİŞ satırının üstü/altı web ile aynı (12/4)', (tester) async {
+  testWidgets('GİRİŞ satırının üstü/altı web ile aynı (12/0)', (tester) async {
     // 13 Ağustos 2026, kullanıcı yan yana karşılaştırmayla bildirdi: "sağ
     // üstteki giriş butonunun üstündeki boşluk app'de daha fazla, biraz
     // aşağıda duruyor."
@@ -374,8 +374,11 @@ void main() {
     final logo = tester.getRect(find.byType(LogoMark).first);
 
     expect(giris.top - ekran.top, 12, reason: 'GİRİŞ üstü web pt-3 = 12');
-    expect(logo.top - giris.bottom, 4,
-        reason: 'GİRİŞ ile logo arası web py-6 (24) + -mt-5 (−20) = 4');
+    // 17 Ağustos 2026: kullanıcı Blok 6 görsel turunda 4'ü de kaldırdı
+    // (*"az boşluk bize alt kısımda daha fazla yer kazandırır"*). İKİ taraf
+    // birlikte indi — web `-mt-5` → `-mt-6`, portta `SizedBox` silindi.
+    expect(logo.top - giris.bottom, 0,
+        reason: 'GİRİŞ ile logo arası web py-6 (24) + -mt-6 (−24) = 0');
   });
 
   testWidgets(
