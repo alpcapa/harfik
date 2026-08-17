@@ -1480,6 +1480,17 @@ ve platform başına tek seferlik ön koşullar var).
 - **Gerçek dokunmatik jestler.** Sürükle-bırağın parmak altındaki hissi,
   30px kaldırma, jest çakışmaları — fare/trackpad ile ölçülemez.
 - **Performans.** Farklı derleyici (dart2js), farklı GPU yolu.
+- **Yükseklik oranına bağlı her ölçü (`vh` ↔ `MediaQuery.height`).**
+  17 Ağustos 2026'da k-lig modali web ile yan yana konunca web 10 satır
+  gösterirken port 8,5 gösteriyordu. Kabuk değerlerinin HEPSİ eşleşiyor
+  (360 · %85 · yarıçap 12 · gövde dolgusu · liste sınırı %50) — fark, aynı
+  "%50"nin iki tarafta FARKLI bir yüksekliğe uygulanmasından: Safari `vh`'yi
+  tarayıcı çubukları DAHİL düzen viewport'una göre çözüyor, Flutter ise
+  `MediaQuery.sizeOf(context).height` ile görünen tuvali alıyor. Ölçüldü
+  (kartın 360px'i ölçek referansı): web 558 / port 510 CSS px.
+  **Bunu bulgu olarak açma ve portu Safari'ye uydurma** — native derlemede
+  tarayıcı çubuğu olmadığından iki taraf zaten aynı yüksekliğe çözülür;
+  uydurmak native'i BOZAR. Gerçek karşılaştırma FAZ B'de, cihazda yapılmalı.
 
 ### İlk açılışta doğrula
 
