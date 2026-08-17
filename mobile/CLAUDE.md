@@ -4687,7 +4687,7 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | 6 · Paylaşma | 🟡 | görsel düzeltmesi koşuldu (Parça 84); **iPad ankrajı (Parça 86) gerçek iPad ister → FAZ B** |
 | 7 · Son Oynadıklarım | ✅ | 16 Ağu (Blok 7) |
 | 8 · Dayanıklılık (uçak modu) | ✅ | 8.2/8.3/8.5/8.6 — Parça 43-46; 16 Ağu: uçak modunda ÇIK–GİR hamleyi siliyordu (Parça 105) → düzeltme **aynı gün cihazda doğrulandı** |
-| 9 · Görüş Bildir | ✅ | **17 Ağu: bölümün TAMAMI koşuldu, sıfır bulgu** (Parça 48'in "kapatmak da formu açar" düzeltmesi dahil). Tek kısmi madde: üyelik teklifi kayıt formunu açıyor ✓ ama o turda kayıt TAMAMLANMADI (24 saatte yeni `auth.users` yok) — zincirin geri kalanı 10 Ağu'da ayrıca kanıtlı (`signup_channel='form'` olan 1 üye), o yüzden açık bırakılmadı |
+| 9 · Görüş Bildir | ✅ | **17 Ağu: bölümün TAMAMI koşuldu, sıfır bulgu** (Parça 48'in "kapatmak da formu açar" düzeltmesi dahil). "Üyelik teklifi → kayıt" ikinci turda gerçekten tamamlandı: `T4` açıldı, `signup_channel='form'`, ve misafirken oynanan oyun kuyruktan hesaba doğru işlendi (oyun 10:08, hesap 10:10 — `created_at` gerçek bitiş anını taşıdığından kayıt kronolojik doğru yere oturdu, `platform='app-web'`) |
 | 10 · Arkadaşlar | ✅ | tamamı (11 Ağu) + moderasyon geri alma, iki yol (14 Ağu, Parça 91) |
 | 11 · Canlı oyun | ✅ | 14 Ağu: davet/kabul + tahta koşuldu (Parça 95, 5 bulgu). **16 Ağu: mesajlaşma alt bölümünün 14 maddesi de koşuldu — hepsi geçti, sıfır bulgu** (Parça 11/100/102/104'ün doğrulama sınırları kapandı). **17 Ağu: ret + hesap değişimi de koşuldu — sıfır bulgu.** Geriye YALNIZCA SQL isteyen iki madde kaldı (süresi dolmuş davet, 48 saat sıra aşımı) — onlar cihaz turunun değil ortak bir SQL turunun işi |
 | 12 · Hesap Ayarları | ✅ | avatar RLS + küçültme uçtan uca (Parça 82/83) |
@@ -4698,6 +4698,16 @@ yapılmadı (imzalama anahtarı, Apple Developer üyeliği, `assetlinks.json`).
 Oraya ertelenmiş bilinen maddeler: `kelimeki://` deep link'leri (davet +
 şifre sıfırlama + kayıt onayı kanalı), paylaş sayfasının iPad popover
 ankrajı (Parça 86), HEIC seçimi ve galeri izni reddi (Parça 87).
+
+> **17 Ağustos 2026 — kayıt onayı deep link'inin YOKLUĞU cihazda bizzat
+> gözlendi (bulgu değil, ertelemenin somut bedeli):** portta misafirken
+> Görüş Bildir'den e-posta verilip üye olununca, onay e-postasındaki bağlantı
+> doğal olarak `kelimeki.com`'u açtı — uygulamayı değil. Üstelik o sekmede
+> BAŞKA bir hesap (T2) açık olduğundan kullanıcı önce onun oturumunu gördü.
+> Elle app sekmesine geçip yeni hesapla giriş yapmak sorunu çözdü ve
+> misafir kuyruğu bozulmadan hesaba işlendi. **Mağazaya çıkışta bu akış
+> kabul edilemez** — FAZ B'de `kelimeki://` kanalı kurulunca yeniden
+> koşulmalı.
 
 ### Cihaz turu GÖRMEMİŞ, biriken maddeler
 
