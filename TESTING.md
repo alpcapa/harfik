@@ -542,16 +542,47 @@ Gerek de yok: `fetchMyGames` modal açılınca / sekme değişince koşuyor.
 - [ ] **Favoriler sekmesi de aynı.** Aynı çevrimdışı durumda "Favoriler"e
       geç: orada da "yüklenemedi" çıkmalı ("Henüz favori işaretlediğin bir
       oyun yok." DEĞİL — o ayrı bir kod yolu, `list_liked_games` RPC'si).
-- [ ] **"Son Oynadıklarım" (Setup) — İKİ dalı da, BU SIRAYLA.** Koşul
-      (`setGames(cur => (!failed || cur === null ? rows : cur))`) iki dallı,
-      ve yalnızca ikincisini test etmek yarım kalır:
+
+> **Beklenen (hata DEĞİL): "Tümü"de mesaj ~5 sn gecikiyor, "Favoriler"de
+> anında çıkıyor.** 17 Ağustos 2026 cihaz turunda gözlendi ve kabul edildi.
+> Muhtemel sebep iki yolun HTTP metodunun farklı olması — "Tümü"
+> `from('games').select()` ile **GET**, "Favoriler" `list_liked_games`
+> RPC'siyle **POST** gönderiyor; tarayıcılar bağlantı hatasında idempotent
+> istekleri (GET) yeniden deniyor, POST'u denemiyor. Bekleme her "Tümü"
+> dönüşünde tekrarlıyor (tek seferlik bir önbellek etkisi değil). Ölçülerek
+> KANITLANMADI; düzeltmek istenirse yol açık: `GameHistoryModal` çevrimdışı
+> olduğunu `useOnlineStatus` ile baştan bilip çekimi hiç denemez, mesajı
+> anında gösterir ve bağlantı dönünce kendiliğinden tazeler.
+- [ ] **"Son Oynananlar" — YALNIZCA "Yapay Zeka ile" sekmesinde, İKİ dalı
+      da, BU SIRAYLA.** `RecentGamesSection` çevrimdışıyken SADECE orada
+      render ediliyor (aşağıdaki Canlı maddesine bkz.), ve koşulu
+      (`setGames(cur => (!failed || cur === null ? rows : cur))`) iki
+      dallı — yalnızca ikincisini test etmek yarım kalır:
       1. **Önce önbelleksiz:** o oturumda "Son Oynananlar"a HİÇ girmeden
-         çevrimdışı ol ve gir → **"yüklenemedi"** çıkmalı (`cur === null`).
+         çevrimdışı ol ve gir → **"İnternet bağlantısı yok ama sorun değil,
+         yapay zeka ile çevrimdışı da oynayabilirsin." + "Hemen oyun aç."**
+         çıkmalı. **"yüklenemedi" DEĞİL** — `RecentGamesSection`
+         `nothingToShow && !online && offlineNode` iken çağıranın verdiği
+         düğümü gösteriyor, çünkü çevrimdışıyken "yüklenemedi" demek doğru
+         ama kullanıcıya ne yapacağını söylemiyor.
       2. **Sonra önbellekli:** çevrimiçi ol, sekmeye gir (liste dolsun),
-         tekrar çevrimdışı ol ve gir → **ESKİ liste kalmalı**, hata mesajı
-         DEĞİL (`cur !== null` — başarısız çekim ekrandaki listeyi ezmiyor).
-      (14 Ağustos 2026'da kullanıcı tam bu sırayla koştu; ilk yazdığım
-      sıralama yalnızca 2. dalı kapsıyordu.)
+         tekrar çevrimdışı ol ve gir → **ESKİ liste kalmalı** (`cur !== null`
+         — başarısız çekim ekrandaki listeyi ezmiyor); öneri de çıkmamalı,
+         çünkü gösterilecek bir şey VAR.
+      (Bu maddenin ilk sürümü 1. dalda "yüklenemedi" bekliyordu ve YANLIŞTI:
+      madde 14 Ağustos 2026'da `failed` bayrağıyla birlikte yazıldı, AYNI
+      GÜN daha sonra eklenen çevrimdışı öneri [`offlineNode`] onu geçersiz
+      kıldı ve bölüm o günden beri hiç koşulmadığı için 17 Ağustos'a kadar
+      fark edilmedi. `RecentGamesSection`'da "yüklenemedi" artık yalnızca
+      çevrimİÇİ ama çekim başarısızken görünebilir.)
+- [ ] **Canlı sekmesinde "Son Oynananlar" ÇEVRİMDIŞI HİÇ ÇİZİLMEZ — bu
+      doğru davranış.** "Arkadaşınla"da uçak modu: üç alt sekme de (Devam
+      Edenler / Oyun Davetleri / Son Oynananlar) tek bir **"İnternet
+      bağlantısı yok"** gösterir; `LiveGamesTab`'ın `!online` dalı hepsini
+      birden kısa devre yapıyor, yani orada "eski liste kalmalı" diye bir
+      beklenti YOK. Önceden dolu olan liste kaybolur — bilinçli: Canlı
+      tarafın her parçası sunucudan geliyor ve o listeden bir oyuna dokunmak
+      zaten "bağlantı yok" paneline çıkıyor.
 - [ ] **NEGATİF EŞİ ŞART.** ÇevrimİÇİ, gerçekten hiç oyunu olmayan bir
       hesapla aynı ekranları aç: orada NORMAL boş mesajlar çıkmalı. Bu
       olmadan yukarıdaki üç madde hiçbir şey kanıtlamaz — "her durumda
@@ -569,8 +600,9 @@ tarayıcıda görülebilecek olanlar. **Admin hesabı gerekiyor.**
       asılı kalmamalı.
 - [ ] **Aktif Oyuncu grafiği iki seri gösteriyor** ("Aktif Oyuncu (28 gün)"
       mavi, "Dönem İçi Aktif" amber) ve legend'dan tek tek açılıp
-      kapanabiliyor. Altındaki açıklama satırı "…bu sayı bilerek MAU değil"
-      cümlesini içermeli — tanımın ekranda olması bilinçli.
+      kapanabiliyor. Tanım artık altta paragraf DEĞİL: "CSV İndir"in solundaki
+      `?` rozetine dokun → popup'ta "…bu sayı bilerek MAU değil" cümlesi
+      çıkmalı (17 Ağustos 2026'da taşındı).
 - [ ] **Periyot/granülerlik kontrolü grafiği GERÇEKTEN değiştiriyor.**
       Üstteki periyot kombosunu değiştir: Aktif Oyuncu grafiği de yeniden
       çekilmeli (Yeni Üye/Ziyaret ile aynı kontrolleri paylaşıyor).
@@ -594,36 +626,47 @@ tarayıcıda görülebilecek olanlar. **Admin hesabı gerekiyor.**
 > sonradan silinecek). Bu ölçekte kohort eğrileri gürültüdür; buradaki amaç
 > enstrümantasyonun ÇALIŞTIĞINI doğrulamak, eğrileri yorumlamak değil.
 
-## 9.8. Admin — Platform dökümü (14 Ağustos 2026)
+## 9.8. Admin — Platform dökümü (14 Ağustos 2026) — **PARK EDİLDİ**
 
 > **TABLO 15 Ağustos 2026'da PANELDEN KALDIRILDI** (kullanıcı kararı: bugün
 > karar verdirecek bir şey söylemiyor, uygulamalar mağazaya çıkınca
 > web/iOS/Android/diğer olarak yeniden yapılandırılacak). **Veri toplanmaya
-> DEVAM EDİYOR** (`games.platform` + `online_game_clients`), yani aşağıdaki
-> UI maddeleri şu an KOŞULAMAZ — tablo geri geldiğinde geçerli olacaklar.
-> Doğrulama o güne kadar SQL'den yapılır.
+> DEVAM EDİYOR** (`games.platform` + `online_game_clients`).
+>
+> Aşağıdaki UI maddeleri bilerek **kutusuz** — bugün koşulacak bir iş
+> DEĞİLLER, tablo geri geldiğinde çevrilecek bir taslaktırlar. Doğrulama o
+> güne kadar SQL'den yapılır. Bu bölümdeki tek KOŞULABİLİR madde en alttaki
+> gizlilik metni kontrolü (veri toplandığı sürece geçerli).
 
-- [ ] **Tablo yükleniyor.** Admin Paneli → Büyüme → Kullanıcı: "Cihaz"ın
-      hemen altında **Platform** tablosu (Platform / Oyun / Oyuncu / %).
-      Altındaki açıklama satırı "Cihaz"dan farkını anlatmalı.
-- [ ] **Web'den oynanan yeni bir oyun `Web` satırına düşüyor.** kelimeki.com'da
-      girişliyken bir YZ oyunu BİTİR (yarıda bırakma — satır ancak oyun
-      bitince yazılıyor), sonra paneli aç: `Web` satırının "Oyun" sayısı 1
-      artmalı. Toplam da artmalı, `Bilinmiyor` DEĞİŞMEMELİ.
-- [ ] **Uygulamadan oynanan oyun `iOS`/`Android` satırına düşüyor.** Aynı
-      şeyi mobil uygulamada yap (GitHub Pages web derlemesinde `App (Tarayıcı)`
-      satırına düşer — o da doğru davranış, uygulamanın tarayıcıdaki hâli).
-- [ ] **Canlı oyun da sayılıyor.** İki hesapla bir Canlı oyunu SONUNA kadar
-      bitir; her katılımcı KENDİ oynadığı istemcinin satırına düşmeli (biri
-      web'den biri app'ten oynadıysa iki farklı satır).
-- [ ] **"Bilinmiyor" satırı GİZLENMEMELİ.** Kolon 14 Ağustos 2026'da eklendi;
-      öncesinde biten ~300 oyun orada toplanıyor. Satırı görmüyorsan tablo
-      yanlış filtreliyor demektir — yüzdeler de yalancı olur.
-- [ ] **CSV İndir** çalışmalı; dosyada Platform/Oyun/Oyuncu/% sütunları ve bir
-      TOPLAM satırı olmalı.
+**Tablo geri geldiğinde koşulacaklar (bugün DEĞİL):**
+
+- **Tablo yükleniyor.** Admin Paneli → Büyüme → Kullanıcı: "Cihaz"ın
+  hemen altında **Platform** tablosu (Platform / Oyun / Oyuncu / %).
+  "Cihaz"dan farkı ekranda yazmalı — 17 Ağustos 2026'dan beri tablonun
+  altındaki paragrafta değil, "CSV İndir"in solundaki `?` popup'ında
+  (bkz. 9.11), yani tablo geri gelirken `HINTS`e kendi girdisi de eklenmeli.
+- **Web'den oynanan yeni bir oyun `Web` satırına düşüyor.** kelimeki.com'da
+  girişliyken bir YZ oyunu BİTİR (yarıda bırakma — satır ancak oyun
+  bitince yazılıyor), sonra paneli aç: `Web` satırının "Oyun" sayısı 1
+  artmalı. Toplam da artmalı, `Bilinmiyor` DEĞİŞMEMELİ.
+- **Uygulamadan oynanan oyun `iOS`/`Android` satırına düşüyor.** Aynı
+  şeyi mobil uygulamada yap (GitHub Pages web derlemesinde `App (Tarayıcı)`
+  satırına düşer — o da doğru davranış, uygulamanın tarayıcıdaki hâli).
+- **Canlı oyun da sayılıyor.** İki hesapla bir Canlı oyunu SONUNA kadar
+  bitir; her katılımcı KENDİ oynadığı istemcinin satırına düşmeli (biri
+  web'den biri app'ten oynadıysa iki farklı satır).
+- **"Bilinmiyor" satırı GİZLENMEMELİ.** Kolon 14 Ağustos 2026'da eklendi;
+  öncesinde biten ~300 oyun orada toplanıyor. Satırı görmüyorsan tablo
+  yanlış filtreliyor demektir — yüzdeler de yalancı olur.
+- **CSV İndir** çalışmalı; dosyada Platform/Oyun/Oyuncu/% sütunları ve bir
+  TOPLAM satırı olmalı.
+
+**Bugün koşulabilir:**
+
 - [ ] **Gizlilik metni güncel.** Gizlilik Politikası → "Toplanan Veriler"de
       "Bir oyunu hangi istemciden oynadığınız…" maddesi olmalı (mobil
-      uygulamadaki metin de AYNI).
+      uygulamadaki metin de AYNI). Tablo panelde olmasa da veri
+      toplandığından bu madde metinde KALMALI.
 
 ## 9.9. Admin — Kaynak Hunisi (16 Ağustos 2026)
 
@@ -681,9 +724,11 @@ toplamların korunması); aşağıdakiler gerçek istemcide görülmesi gerekenl
       HAM SAYILAR olmalı (yüzde değil).
 - [ ] **CSV İndir** çalışmalı; dosyada Kaynak/Kişi/Üye/Oyun/**Oynayan Kişi**
       sütunları ve bir TOPLAM satırı olmalı.
-- [ ] **Açıklama satırı okunuyor mu.** Tablonun altındaki metin "Kişi"/"Üye"/
-      "Oyun" tanımlarını, kohort OLMADIĞINI ve Bilinmiyor/Direkt farkını
-      anlatmalı — bu tablo bu not olmadan kolayca yanlış okunur.
+- [ ] **`?` popup'ı okunuyor mu.** Tanım artık tablonun altında paragraf
+      DEĞİL — "CSV İndir"in sağındaki `?` rozetine dokun: popup "Kişi"/"Üye"/
+      "Oyun" tanımlarını, kohort OLMADIĞINI, Bilinmiyor/Direkt farkını ve
+      oranın %100'ü aşabileceğini anlatmalı. Bu tablo bu not olmadan kolayca
+      yanlış okunur.
 - [ ] **Gizlilik metni güncel.** Gizlilik Politikası → "Toplanan Veriler"de
       kaynak etiketi maddesi olmalı ve "Son güncelleme: 16 Ağustos 2026"
       yazmalı (mobil uygulamadaki metin de AYNI).
@@ -716,14 +761,27 @@ gerekenler.
 - [ ] **CSV İndir** çalışmalı; başlıkta ortalama değil medyan/p90 sütunları
       olmalı.
 - [ ] **YZ Dengesi paneli görünüyor.** Büyüme > Oyun'un üst kısmında, beğeni/
-      paylaşma kutularının altında iki kutu: "2 Kişilik — İnsan Kazanma" ve
-      "4 Kişilik — İnsan Kazanma".
+      paylaşma kutularının altında **ÜÇ** kutu: "2 Kişilik — İnsan Birincilik",
+      "4 Kişilik — İnsan Birincilik" ve "4 Kişilik — İnsan İkincilik"
+      (üçüncüsü 17 Ağustos 2026'da eklendi).
+- [ ] **2 kişilikte İKİNCİLİK kutusu OLMAMALI.** Orada rank=2 kaybetmenin
+      kendisi (canlıda ölçüldü: ikincilik sayısı = kayıp sayısı) ve k-lig
+      puanı getirmiyor — kutu çıkıyorsa filtre atlanmış demektir.
 - [ ] **Her kutuda rastgele referansı YAZMALI** — 2 kişilikte "rastgele %50",
-      4 kişilikte "rastgele %25". Bu satır olmadan 4 kişilikteki düşük yüzde
-      yanlış okunur.
-- [ ] **Sayılar tutarlı mı.** Kutudaki `NG / NB / NM` toplamı, o oyuncu
-      sayısındaki teslimsiz yerel oyun sayısına eşit olmalı; yüzde =
-      G / (G+B+M).
+      4 kişilikte "rastgele %25" (ikincilik kutusunda da %25: rastgele bir
+      sonuçta 1. olmak da 2. olmak da aynı olasılıkta). Bu satır olmadan
+      4 kişilikteki düşük yüzde yanlış okunur.
+- [ ] **Sayılar tutarlı mı.** Birincilik kutusundaki `NG / NB / NM` toplamı,
+      o oyuncu sayısındaki teslimsiz yerel oyun sayısına eşit olmalı; yüzde =
+      G / (G+B+M). İkincilik kutusundaki `N/M`nin paydası (M) aynı sayı
+      olmalı — iki kutu AYNI oyun kümesini bölüyor.
+- [ ] **Üç kutu aynı yükseklikte ve taşmıyor.** Telefonda etiketler 2-3
+      satıra sarabilir, bu normal; kutular birbirinden farklı boyda olmamalı
+      ve sayfa YANA kaymamalı.
+- [ ] **`?` popup'ı toplamı anlatmalı.** Başlığın yanındaki `?`: metin,
+      asıl denge sayısının birincilik + ikincilik TOPLAMI olduğunu ve
+      rastgele karşılığının %50 olduğunu söylemeli. (Ölçüm anında 4 kişilik:
+      %31 + %18 = %49-50 bandı, yani neredeyse tam rastgele.)
 - [ ] **Teslim olunan oyunlar sayılmamalı.** 7 günlük terk cezası almış bir
       oyun (bkz. bölüm 4) bu panelde ne "M" ne toplam sayıya girmeli — süre
       aşımıyla biten bir oyundan sonra sayılar DEĞİŞMEMELİ.
@@ -734,6 +792,36 @@ gerekenler.
       oyun yok." demeli — boş kutular ya da "%0" DEĞİL.
 - [ ] **Admin olmayan hesap panele hiç giremiyor** (menüde "Admin Paneli"
       satırı yok) — bu iki RPC de admin dışına kapalı.
+
+## 9.11. Admin — metrik tanımı `?` rozetleri (17 Ağustos 2026)
+
+Grafik/tablo altındaki uzun açıklama paragrafları kaldırılıp tek bir popup'a
+taşındı. Ekranda kalan tek "açıklama" aktivasyonun DAĞILIM satırı — o bir
+açıklama değil veri.
+
+- [ ] **Her CSV'nin yanında bir `?` var — 11 yer.** 6 grafik (Yeni Üye/Ziyaret,
+      Aktif Oyuncu, Arkadaşlık, Oyun Sayısı, Oyun Süresi, Beğeni/Paylaşma) +
+      3 tablo (Retention, Kaynak Hunisi, Cihaz) + 2 liste (Üyeler, Geri
+      Bildirim). `?` her zaman "CSV İndir"in SOLUNDA.
+- [ ] **CSV'si olmayan iki panelde `?` başlığın yanında:** "Aktivasyon" ve
+      "YZ Dengesi". Bu ikisi CSV'ye bağlansaydı açıklamaları kaybolurdu.
+      Toplam 13 rozet; her birinin `HINTS`te kendi metni var, ikisi aynı
+      metni göstermemeli.
+- [ ] **`?` bir DAİRE, elips değil** ve bulunduğu satırı büyütmemeli — kontrol
+      satırının yüksekliği "CSV İndir"in tek başına olduğu hâlle aynı kalmalı.
+- [ ] **Popup açılıyor ve kapanıyor.** Dokun → başlık + metin; "Kapat" ve
+      Escape kapatmalı. Panelin kendisi kapanMAMALI (iç içe dialog).
+- [ ] **Veri YOKKEN de `?` görünmeli.** Periyodu hiç veri olmayan bir aralığa
+      çek (ör. en kısa periyot + boş bir kova): tablo "Bu aralıkta veri yok."
+      derken `?` hâlâ orada olmalı — "bu grafik neyi sayıyor?" sorusu tam da
+      o anda sorulur. (CSV'nin kaybolması BEKLENEN: indirilecek satır yok.)
+- [ ] **Aktivasyonun dağılım satırı EKRANDA kalmalı** ("İlk oyununu bitirme
+      dağılımı — aynı gün: N · 1-3 gün: N · sonra: N"). Bu veri, popup'a
+      taşınMAMALI; popup yalnızca "Aktive = …" tanımını anlatmalı.
+- [ ] **Uzun metin taşmıyor.** "Kaynak Hunisi" popup'ı en uzunu — telefonda
+      kart ekrana sığmalı, sığmıyorsa kartın KENDİSİ kaydırılabilmeli (panel
+      değil).
+- [ ] **Hiçbir grafiğin altında artık hikaye paragrafı YOK.**
 
 ## 10. k-lig ödül & rütbe sistemi
 

@@ -21,6 +21,8 @@ import 'package:kelimeki/src/data/online_games_api.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/game/local_game_repo.dart';
 import 'package:kelimeki/src/ui/game/neo_button.dart';
+import 'package:kelimeki/src/ui/game/dialog_shell.dart';
+import 'package:kelimeki/src/ui/game/modal_shell.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:kelimeki/src/ui/auth/auth_modal.dart';
 import 'package:kelimeki/src/ui/game/count_badge.dart';
@@ -202,6 +204,31 @@ void main() {
     expect(find.byType(GameScreen), findsOneWidget);
   });
 
+  // 17 Ağustos 2026, cihaz testi — kullanıcı: *"çıkan popup başlıksız"*.
+  // Web'de bu uyarı ortak `Modal.tsx`'i KULLANMIYOR; `Setup.tsx` içinde elle
+  // kurulmuş 384px'lik onay kartı (`max-w-sm`/`rounded-2xl`/`p-6`, ✕ köşede
+  // `absolute`). Port `KModal`a `title: ''` geçmişti — niyet doğruydu ama
+  // kabuk başlık bandını yine de çizdiğinden üstte boş bir alan + ayraç
+  // kalıyordu. Bu test yanlış kabuğa dönüşü yakalar.
+  testWidgets('misafir uyarısı KModal DEĞİL web onay kartını kullanır',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await pumpSetup(tester, services());
+
+    await tester.tap(find.text('OYUNU BAŞLAT'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(KDialogCard), findsOneWidget);
+    expect(find.byType(KModal), findsNothing,
+        reason: 'başlıklı/ayraçlı kabuk bu kartta üstte boş bir bant bırakır');
+    // ✕ kartın kendi köşesinde durmalı (web `absolute top-3 right-3`), yani
+    // gövde metniyle AYNI hizada değil onun ÜSTÜNDE ve SAĞINDA.
+    final kapat = tester.getCenter(find.byTooltip('Kapat'));
+    final govde = tester.getTopLeft(find.textContaining('lütfen giriş yapın'));
+    expect(kapat.dx, greaterThan(govde.dx),
+        reason: '✕ gövdenin sağında olmalı');
+  });
+
   testWidgets('misafir uyarısında ✕ ne oyunu başlatır ne giriş açar',
       (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));
@@ -321,7 +348,7 @@ void main() {
     await tester.runAsync(() => storage.close());
   });
 
-  testWidgets('GİRİŞ satırının üstü/altı web ile aynı (12/4)', (tester) async {
+  testWidgets('GİRİŞ satırının üstü/altı web ile aynı (12/0)', (tester) async {
     // 13 Ağustos 2026, kullanıcı yan yana karşılaştırmayla bildirdi: "sağ
     // üstteki giriş butonunun üstündeki boşluk app'de daha fazla, biraz
     // aşağıda duruyor."
@@ -347,8 +374,11 @@ void main() {
     final logo = tester.getRect(find.byType(LogoMark).first);
 
     expect(giris.top - ekran.top, 12, reason: 'GİRİŞ üstü web pt-3 = 12');
-    expect(logo.top - giris.bottom, 4,
-        reason: 'GİRİŞ ile logo arası web py-6 (24) + -mt-5 (−20) = 4');
+    // 17 Ağustos 2026: kullanıcı Blok 6 görsel turunda 4'ü de kaldırdı
+    // (*"az boşluk bize alt kısımda daha fazla yer kazandırır"*). İKİ taraf
+    // birlikte indi — web `-mt-5` → `-mt-6`, portta `SizedBox` silindi.
+    expect(logo.top - giris.bottom, 0,
+        reason: 'GİRİŞ ile logo arası web py-6 (24) + -mt-6 (−24) = 0');
   });
 
   testWidgets(

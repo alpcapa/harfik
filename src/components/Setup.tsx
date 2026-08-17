@@ -564,11 +564,11 @@ export function Setup({
 
     <div className="w-full max-w-[460px] px-4 py-6 flex flex-col gap-5">
       {/* `-mt-5` (−20px), kaptaki `py-6`nın (24px) üst yarısını yiyerek
-          GİRİŞ/avatar satırı ile logo arasını 4px'e indirir — 13 Ağustos
+          GİRİŞ/avatar satırı ile logo arasını 0'a indirir (17 Ağustos 2026; 13 Ağustos'ta 4'tü) — 13 Ağustos
           2026, kullanıcı isteği: "App'de logoyla avatar satırı arası ideal,
           web'de ekstra boşluk var". Mobil port da AYNI 4px'i kullanıyor
           (`setup_screen.dart`); biri değişirse öteki de değişmeli. */}
-      <div className="text-center flex flex-col items-center gap-1 -mt-5">
+      <div className="text-center flex flex-col items-center gap-1 -mt-6">
         <h1 className="flex flex-col items-center gap-1" style={{ margin: 0 }}>
           <LogoMark height={52} />
           <span className="sr-only">

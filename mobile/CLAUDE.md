@@ -4660,7 +4660,7 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        verinin tazeliği bir varsayım değil, kontrol edilmesi gereken bir
        ön koşuldur.
 
-## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 16 Ağustos 2026)
+## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
 o dosyalar "bir ilerleme kaydı değildir, her sürüm öncesi baştan
@@ -4683,13 +4683,13 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | 2 · Hesap (auth) | ✅ | **9-12 (deep link) FAZ B'ye ertelendi** |
 | 3 · Bulut kayıtları | ✅ | 6/6 — Parça 29 |
 | 4 · Biten oyun kayıtları / istatistik | ✅ | Parça 33; OHP çapraz kontrolü Parça 63 |
-| 5 · Oyun geçmişi | ✅ | Parça 35, sonra 67/68 ek turlar |
+| 5 · Oyun geçmişi | ✅ | Parça 35, sonra 67/68 ek turlar; **17 Ağu: ağ hatası maddesi (Parça 90) de koşuldu** |
 | 6 · Paylaşma | 🟡 | görsel düzeltmesi koşuldu (Parça 84); **iPad ankrajı (Parça 86) gerçek iPad ister → FAZ B** |
 | 7 · Son Oynadıklarım | ✅ | 16 Ağu (Blok 7) |
 | 8 · Dayanıklılık (uçak modu) | ✅ | 8.2/8.3/8.5/8.6 — Parça 43-46; 16 Ağu: uçak modunda ÇIK–GİR hamleyi siliyordu (Parça 105) → düzeltme **aynı gün cihazda doğrulandı** |
-| 9 · Görüş Bildir | 🟡 | 9.5 geçti (Parça 49); **9.3/9.4 Parça 48 düzeltmesinden sonra tekrar koşulmalı** |
+| 9 · Görüş Bildir | ✅ | **17 Ağu: bölümün TAMAMI koşuldu, sıfır bulgu** (Parça 48'in "kapatmak da formu açar" düzeltmesi dahil). "Üyelik teklifi → kayıt" ikinci turda gerçekten tamamlandı: `T4` açıldı, `signup_channel='form'`, ve misafirken oynanan oyun kuyruktan hesaba doğru işlendi (oyun 10:08, hesap 10:10 — `created_at` gerçek bitiş anını taşıdığından kayıt kronolojik doğru yere oturdu, `platform='app-web'`) |
 | 10 · Arkadaşlar | ✅ | tamamı (11 Ağu) + moderasyon geri alma, iki yol (14 Ağu, Parça 91) |
-| 11 · Canlı oyun | 🟡 | 14 Ağu: davet/kabul + tahta koşuldu (Parça 95, 5 bulgu). **16 Ağu: mesajlaşma alt bölümünün 14 maddesi de koşuldu — hepsi geçti, sıfır bulgu** (Parça 11/100/102/104'ün doğrulama sınırları kapandı). **Kalan: tekil/SQL maddeleri** — ret, hesap değişimi, süresi dolmuş davet, 48 saat sıra aşımı |
+| 11 · Canlı oyun | ✅ | 14 Ağu: davet/kabul + tahta koşuldu (Parça 95, 5 bulgu). **16 Ağu: mesajlaşma alt bölümünün 14 maddesi de koşuldu — hepsi geçti, sıfır bulgu** (Parça 11/100/102/104'ün doğrulama sınırları kapandı). **17 Ağu: ret + hesap değişimi de koşuldu — sıfır bulgu.** Geriye YALNIZCA SQL isteyen iki madde kaldı (süresi dolmuş davet, 48 saat sıra aşımı) — onlar cihaz turunun değil ortak bir SQL turunun işi |
 | 12 · Hesap Ayarları | ✅ | avatar RLS + küçültme uçtan uca (Parça 82/83) |
 | 13 · k-lig ödül & rütbe | ✅ | 12 Ağu (Parça 66) |
 
@@ -4699,6 +4699,36 @@ Oraya ertelenmiş bilinen maddeler: `kelimeki://` deep link'leri (davet +
 şifre sıfırlama + kayıt onayı kanalı), paylaş sayfasının iPad popover
 ankrajı (Parça 86), HEIC seçimi ve galeri izni reddi (Parça 87).
 
+> **17 Ağustos 2026 — kayıt onayı deep link'inin YOKLUĞU cihazda bizzat
+> gözlendi (bulgu değil, ertelemenin somut bedeli):** portta misafirken
+> Görüş Bildir'den e-posta verilip üye olununca, onay e-postasındaki bağlantı
+> doğal olarak `kelimeki.com`'u açtı — uygulamayı değil. Üstelik o sekmede
+> BAŞKA bir hesap (T2) açık olduğundan kullanıcı önce onun oturumunu gördü.
+> Elle app sekmesine geçip yeni hesapla giriş yapmak sorunu çözdü ve
+> misafir kuyruğu bozulmadan hesaba işlendi. **Mağazaya çıkışta bu akış
+> kabul edilemez** — FAZ B'de `kelimeki://` kanalı kurulunca yeniden
+> koşulmalı.
+
+
+> **17 Ağustos 2026 — Blok 5'in ilk bulgusu: misafir uyarısı YANLIŞ kabukla
+> çiziliyordu.** Kullanıcı ekran görüntüsüyle bildirdi: *"çıkan popup
+> başlıksız"* — kartın üstünde boş bir bant ve bir ayraç duruyordu.
+> **Kök sebep kabuk seçimi:** web'de İKİ ayrı kabuk var (bkz.
+> `dialog_shell.dart` başlığı) ve bu uyarı ortak `Modal.tsx`'i KULLANMIYOR;
+> `Setup.tsx` içinde elle kurulmuş 384px'lik onay kartı
+> (`max-w-sm`/`rounded-2xl`/`p-6`, ✕ köşede `absolute`). Port `KModal`a
+> `title: ''` geçmişti — yorumunda niyet doğru yazılıydı ("web'de bu popup
+> başlıksız") ama `KModal` başlık bandını boş başlıkla da çiziyor.
+> **Düzeltme:** uyarı `KDialogCard`a taşındı; kabuğa opsiyonel bir `onClose`
+> eklendi (✕ 28×28, kart kenarından 12px — web `top-3 right-3`; gövdeye
+> web'in `pr-6`sı). `onClose` verilmeyen 8 kullanım yeri BİREBİR aynı kaldı
+> (dolgu Container'dan çocuğa taşındı, görsel sonuç aynı). Regresyon testi:
+> `setup_screen_test.dart` → *"misafir uyarısı KModal DEĞİL web onay kartını
+> kullanır"*.
+> **Ders:** bir modalı porta taşırken "web'de başlık var mı?" yetmez, önce
+> **"web hangi kabuğu kullanıyor?"** sorulmalı — bu projede web'in iki
+> kabuğu var ve biri ortak bileşen değil, ekranın kendi içinde.
+
 ### Cihaz turu GÖRMEMİŞ, biriken maddeler
 
 Son iki günde düzeltme yapıldıkça listeye madde eklendi ama o maddeler
@@ -4707,10 +4737,10 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
 - ~~**16 Ağustos (Parça 105) — veri kaybı:** uçak modunda var olan bir
   oyunu aç → hamle yap → çık → **listeyi beklemeden** tekrar gir~~ →
   **16 Ağustos'ta AYNI GÜN cihazda koşuldu ve GEÇTİ** (*"Kaydetti bu
-  sefer. Çalışıyor."*). Madde `TESTING.md` bölüm 8'de regresyon için
-  duruyor — **hızlı** koşulmalı, beklenirse liste tazelenir ve senaryo
-  hiç oluşmaz. Teşhis satırındaki `bekleyen ?` ↔ `bekleyen 0` ayrımı
-  hâlâ gözle doğrulanmadı.
+  sefer. Çalışıyor."*), **17 Ağustos'ta regresyon olarak bir kez daha
+  koşuldu ve teşhis satırındaki `bekleyen ?` ↔ `bekleyen 0` ayrımı da
+  gözle doğrulandı.** Madde `TESTING.md` bölüm 8'de duruyor — **hızlı**
+  koşulmalı, beklenirse liste tazelenir ve senaryo hiç oluşmaz.
 - ~~**15 Ağustos (Parça 101):** "YAPAY ZEKA İLE" sekme rozeti = "Devam
   Edenler" alt sekmesinin rozetiyle aynı sayı~~ → **16 Ağustos'ta Blok 7
   turunda koşuldu.**
@@ -4724,36 +4754,78 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
 - ~~**14 Ağustos (Parça 96):** çevrimdışı Canlı oyun — açılışta panel +
   hamlede açıklayıcı uyarı (iki platform)~~ → **16 Ağustos'ta Blok 7
   turunda koşuldu** (uçak modu adımlarıyla birlikte).
-- **14 Ağustos (Parça 95) — Canlı turunun BEŞ düzeltmesi, hiçbiri cihazda
+- ~~**16-17 Ağustos — kök `TESTING.md`'nin İKİ yeni admin bölümü hiç
+  koşulmadı:** 9.10 + 9.11~~ → **17 Ağustos'ta koşuldu, ikisi de tamamen
+  GEÇTİ** (PR #276 preview'ında, admin hesabıyla). Sıfır bulgu; tek çıktı
+  bir ürün isteği oldu: 4 kişiliğe "İkincilik" kutusu (aynı gün eklendi).
+  **9.10 bu yüzden yeniden koşulmalı** — YZ Dengesi artık 2 değil 3 kutu ve
+  etiketler `Kazanma` → `Birincilik` oldu; bölümün YZ Dengesi maddeleri
+  buna göre yeniden yazıldı.
+- ~~**14 Ağustos (Parça 95) — Canlı turunun BEŞ düzeltmesi, hiçbiri cihazda
   teyit edilmedi:** boş taslakta OYNA (web Canlı) · gönderim hatasının
   görünmesi (iki platform, uçak modu) · sohbetin ön plana dönüşte
   tazelenmesi (iki platform) · oyun sonu → Oyun Geçmişi (port) ·
-  "Çevrimdışı" rozetinin puntosu (web)
-- **14 Ağustos (Parça 90/92):** girişsiz başlatma uyarısı (bölüm 1) ·
+  "Çevrimdışı" rozetinin puntosu (web)~~ → **17 Ağustos'ta BEŞİ DE tek
+  turda koşuldu, hepsi geçti, sıfır bulgu.** Sohbet tazelemesi bilerek İKİ
+  YÖNDE denendi (web→port ve port→web) — kullanıcının ilk raporu tam da
+  asimetrikti (bir yön çalışıyor, öteki çalışmıyordu), tek yön koşmak o
+  hatayı bir kez daha kaçırırdı.
+- ~~**14 Ağustos (Parça 90/92):** girişsiz başlatma uyarısı (bölüm 1) ·
   tahta altındaki "Nasıl Oynanır?" (bölüm 1, İKİ oyun ekranında da) ·
   OHP hizası + başlık ortalama (bölüm 4 ve kök bölüm 10) · ağ hatasında
-  "yüklenemedi" mesajı (bölüm 5 ve kök 9.6)
+  "yüklenemedi" mesajı (bölüm 5 ve kök 9.6)~~ → **17 Ağustos'ta DÖRDÜ DE
+  koşuldu** (ağ hatası Blok 3'te, kalan üçü Blok 5'te). Tek bulgu misafir
+  uyarısının yanlış modal kabuğuydu (yukarıdaki nota bkz.); OHP hizası ve
+  başlık ortalama iki platformda yan yana doğrulandı. Kök **9.10** da yeni
+  üç kutulu YZ Dengesi hâliyle yeniden koşuldu.
 - **13 Ağustos (Parça 72-89):** içerik sütunu genişliği · GİRİŞ satırı
   konumu · logo altı yazı bloğu · harf aralığı · "+ Yeni …" butonu ve alt
   sekmeler · form alanları · avatarın YUVARLAK vurgusu · "Yükleniyor…"
   takılı kalmama · ActionSheet'te "Vazgeç" yokluğu · ağ hatasında sahte
   başarı yokluğu · "Sıra: X" bandının rengi/gölgesi
 
-**Özel uyarı — kök `TESTING.md` 9.6 ilk koşuşunda DÜŞTÜ** (çevrimdışı hâlâ
-"oyunun yok" diyordu; `getUser()` → `getSession()` ile düzeltildi).
-Düzeltmeden sonra tekrar koşulduğuna dair kayıt YOK — o bölüm baştan
-alınmalı ve **belgede yazan sırayla** (önce önbelleksiz, sonra önbellekli;
-ilk yazılan sıralama yalnızca ikinci dalı kapsıyordu), artı negatif eşi.
+~~**Özel uyarı — kök `TESTING.md` 9.6 ilk koşuşunda DÜŞTÜ**~~ →
+**17 Ağustos'ta baştan koşuldu ve GEÇTİ** (negatif eşi dahil: admin →
+Üyeler → sıfır oyunlu bir üyenin kartı → çevrimİÇİ boş liste normal mesaj
+veriyor). Tur, kodda değil **belgede** bir hata çıkardı: 3. madde
+çevrimdışı + boş önbellekte "yüklenemedi" bekliyordu, oysa aynı gün
+eklenen çevrimdışı öneri (`offlineNode`) araya giriyor ve "Hemen oyun aç."
+çıkıyor; ayrıca "Arkadaşınla → Son Oynananlar" çevrimdışı HİÇ
+çizilmiyor (`LiveGamesTab`'ın `!online` dalı üç alt sekmeyi birden kısa
+devre yapıyor), yani orada "eski liste kalmalı" beklentisi anlamsızdı.
+Madde düzeltildi. **Bu, "koşulmamış madde bir şey kanıtlamaz"ın somut
+örneği** — 14 Ağustos'tan 17 Ağustos'a kadar belge yanlıştı ve kimse
+görmedi.
 
 ### Sıradaki tur için öneri
 
-Bölüm 11 iki turda kapanmaya çok yaklaştı: **davet/kabul + tahta** 14
-Ağustos'ta koşulup beş bulgu çıkardı (Parça 95); **mesajlaşma alt bölümü**
-16 Ağustos'ta 14 maddeyle koşuldu ve **sıfır bulgu** çıkardı — dört ayrı
-parçanın (11/100/102/104) aylardır açık duran doğrulama sınırları tek
-turda kapandı. Aynı gün Blok 7 turu bölüm 7 + uçak modunu kapsadı ve
-**veri kaybına yol açan tek bulguyu** (Parça 105) çıkarıp düzeltmesi AYNI
-GÜN doğrulandı — yani şu an bilinen bir veri kaybı yolu YOK.
+**Bölüm 11 KAPANDI** (17 Ağustos): üç turda bitti — davet/kabul + tahta
+(14 Ağu, beş bulgu → Parça 95), mesajlaşma (16 Ağu, sıfır bulgu), ret +
+hesap değişimi (17 Ağu, sıfır bulgu). Aynı turda Parça 95'in beş
+düzeltmesinin hepsi de cihazda teyit edildi, yani **14 Ağustos'tan beri
+biriken Canlı borcu tamamen kapandı.**
+
+**17 Ağustos'ta üç küme birden kapandı:** ağ hatası/offline (kök 9.6 +
+mobil bölüm 5 + bölüm 8), Canlı (bölüm 11) ve Görüş Bildir (bölüm 9).
+**17 Ağustos akşamı Parça 90/92 kalanları da bitti (Blok 5).** Geriye
+TEK bir cihaz turu kaldı:
+
+1. **Görsel yan yana** (bölüm 0.5, Parça 72-89'un 11 maddesi) — en düşük
+   riskli grup.
+
+Sonrasında cihaz turu DEĞİL ortak bir **SQL turu** var: süresi dolmuş davet
+süpürmesi (7 gün) ve 48 saat sıra aşımı → otomatik teslim + `-2` + uyarı
+e-postası. İkisi de satırların geriye tarihlenmesini gerektiriyor.
+
+**Merge bekleyen tek doğrulama:** misafir uyarısının modal kabuğu düzeltmesi
+Pages'e ancak `main`'e merge'ten sonra çıkar (workflow PR'da yayınlamıyor),
+o yüzden cihazda hâlâ eski hâli görünüyor — merge sonrası bir kez bakılmalı.
+
+**Cihaz turuna AİT OLMAYAN, ortak SQL turu bekleyenler:** süresi dolmuş
+davet süpürmesi (7 gün), 48 saat sıra aşımı → otomatik teslim + `-2` +
+uyarı e-postası. İkisi de satırların geriye tarihlenmesini gerektiriyor.
+
+Şu an bilinen bir veri kaybı yolu YOK (Parça 105 aynı gün doğrulandı).
 
 Sıradaki tur, kalan üç 🟡'yi kapatmalı ve **hepsi kısa**:
 1. **Bölüm 11'in tekil/SQL maddeleri** — ret, hesap değişimi, süresi

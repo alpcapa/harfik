@@ -1,5 +1,5 @@
 // Kelimeki — admin paneli: üyeler ve oyun istatistikleri
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
   fetchAdminMembers,
@@ -217,10 +217,227 @@ function AdminSelect({
 const sectionTitleCls = 'text-[10px] font-mono font-bold uppercase tracking-[1px] text-accent';
 
 /**
- * Grafik/tablo altındaki açıklama satırı. Bu paneldeki birkaç metrik (aktif
- * oyuncu, aktivasyon, retention) tanımı bilinmeden YANLIŞ okunabildiğinden
- * tanım ekranın kendisinde yazıyor — dokümanda kalsa ilk yanlış yorum
- * kaçınılmaz olurdu.
+ * Metrik tanımları — 16 Ağustos 2026'ya kadar grafiklerin ALTINDA paragraf
+ * olarak duruyordu. Tanımın ekranın kendisinde yaşaması hâlâ doğru (dokümanda
+ * kalsa ilk yanlış yorum kaçınılmaz olurdu) ama beş uzun paragraf paneli
+ * "hikaye" gibi gösteriyordu (kullanıcı isteği) — metinler buraya taşındı,
+ * ekranda yalnızca bir `?` duruyor.
+ *
+ * **Kapsam kararı:** `?` her CSV'nin yanında — yani tanımı olmayan altı yere
+ * de yazıldı, panel tek tip olsun diye. CSV'si OLMAYAN iki panelde
+ * (Aktivasyon, YZ Dengesi) `?` bölüm başlığının yanında: o ikisinin açıklaması
+ * yalnızca CSV'lere bakılsaydı hiçbir yere düşmeden kaybolurdu.
+ */
+const HINTS: Record<string, { title: string; body: ReactNode }> = {
+  'yeni-uye-ziyaret': {
+    title: 'Yeni Üye / Ziyaret',
+    body: (
+      <>
+        <b>Kayıtlı</b> = o kovada açılan hesap sayısı. <b>M. Ziyaret</b> = o kovadaki benzersiz
+        MİSAFİR ziyaretçi (girişsizken üretilen anonim bir cihaz kimliği; aynı kişi farklı
+        cihaz/tarayıcıda ayrı sayılır). Girişli kullanıcının "uygulamayı açtı" sinyali şemada
+        olmadığından bu iki seri Kayıtlı/Misafir diye bölünemez — ziyaret satırı tanımı gereği
+        yalnızca misafirdir.
+      </>
+    ),
+  },
+  'aktif-oyuncu': {
+    title: 'Aktif Oyuncu',
+    body: (
+      <>
+        <b>Aktif</b> = oyun bitirme, Canlı hamle, sohbet mesajı, beğeni, arkadaşlık isteği ya da
+        Canlı oyun kurma. <b>Kova içi</b> o dönemde aktif olanı, <b>28 günlük</b> kovanın sonunda
+        biten 28 günlük pencereyi sayar (dört tam hafta — hafta içi/sonu dalgalanması pencereye
+        eşit dağılsın diye 30 değil).
+        <br />
+        <br />
+        Bu sayı bilerek <b>MAU değil</b>: girişli kullanıcı için "uygulamayı açtı" sinyali şemada
+        yok, yani uygulamayı açıp hiçbir şey yapmadan çıkan sayılmaz.
+      </>
+    ),
+  },
+  aktivasyon: {
+    title: 'Aktivasyon',
+    body: (
+      <>
+        <b>Aktive</b> = en az bir oyunu BİTİRMİŞ üye. Aktif Oyuncu'dan farklı bir soru: yalnızca
+        arkadaşlık isteği gönderen biri aktif oyuncu SAYILIR ama aktive SAYILMAZ.
+        <br />
+        <br />
+        Süre negatif çıkabilir ve bu bir hata değil: misafirken bitirilen bir oyun kişi sonradan
+        üye olunca hesabına işleniyor ve oyunun gerçek bitiş anı hesaptan eski olabiliyor — sıfıra
+        kırpılıyor.
+      </>
+    ),
+  },
+  retention: {
+    title: 'Retention (Kayıt Haftasına Göre)',
+    body: (
+      <>
+        <b>Satır</b> = kayıt haftası · <b>Sütun</b> = kayıttan sonraki hafta (H0 = kayıt
+        haftasının kendisi) · <b>Hücre</b> = o kohorttan o hafta aktif olan üye oranı. "Aktif"in
+        tanımı Aktif Oyuncu panelindekiyle AYNI kaynaktan geliyor.
+        <br />
+        <br />
+        Yalnızca TAMAMLANMIŞ haftalar gösterilir — yarım bir hafta her zaman yapay olarak düşük
+        görünür ve tablonun son köşegenini yalancı bir düşüş gibi gösterirdi.
+        <br />
+        <br />
+        Hücre tonu yalnızca ikincil bir işaret; oran her hücrede sayıyla da yazıyor. CSV yüzde
+        değil HAM SAYI indirir (yuvarlama kaybı olmasın diye — payda "Üye" sütununda).
+      </>
+    ),
+  },
+  'kaynak-hunisi': {
+    title: 'Kaynak Hunisi',
+    body: (
+      <>
+        <b>Kişi</b> = o kaynaktan gelen benzersiz misafir ziyaretçi; <b>Üye</b> = o kaynak
+        damgasıyla açılan hesap; <b>Oyun</b> = o hesapların bitirdiği oyun. Pencere her adıma
+        KENDİ olay tarihinden uygulanır (kohort değil): 2 ay önce üye olup bugün oynayan biri
+        "Oyun"a girer, "Üye"ye girmez.
+        <br />
+        <br />
+        <b>Direkt</b> = web'e <code>?ref=</code> olmadan geliş. <b>Bilinmiyor</b> = kaynak damgası
+        olmayan hesaplar — damgalama 16 Ağustos 2026'da eklendi, geriye dönük doldurulamıyor ve
+        mobil uygulamadan gelen kayıtlar henüz damgalanmıyor.
+        <br />
+        <br />
+        "Kişi" ile "Üye" İKİ AYRI ölçüm (ziyaretler anonim, hesaba bağlanmaz) — bu yüzden oran
+        %100'ü aşabilir ve bu bir hata değildir.
+        <br />
+        <br />
+        <b>% / Sayı</b> düğmesi üç sütunu birden çevirir: <b>Kişi</b> yüzdesi o sütunun payı,{' '}
+        <b>Üye</b> ve <b>Oyun</b> yüzdeleri ise o satırın "Kişi"sine göre dönüşüm — sırasıyla
+        kaçının üye olduğu ve kaçının oyun oynadığı (oyun ADEDİ değil, oynayan KİŞİ). Kişi 0 ise
+        oran hesaplanmaz, "—" gösterilir. CSV her zaman ham sayı indirir.
+      </>
+    ),
+  },
+  cihaz: {
+    title: 'Cihaz',
+    body: (
+      <>
+        Misafir ziyaretçilerin tarayıcısı mobil mi masaüstü mü. <b>"App mi web mi" DEĞİL</b> — bu
+        satır yalnızca oturum KAPALIYKEN yazılıyor, yani girişli kullanıcıları ve mobil
+        uygulamayı hiç kapsamıyor.
+      </>
+    ),
+  },
+  arkadaslik: {
+    title: 'Arkadaşlık',
+    body: (
+      <>
+        <b>Gönderilen istek</b> = o kovada açılan arkadaşlık isteği. <b>Kurulan arkadaşlık</b> = o
+        kovada KABUL EDİLEN istek — kabul, isteğin gönderildiği kovada değil yanıtlandığı kovada
+        sayılır, yani iki seri aynı kovada eşleşmek zorunda değil.
+      </>
+    ),
+  },
+  'oyun-sayisi': {
+    title: 'Oyun Sayısı',
+    body: (
+      <>
+        <b>Bitirilen</b> = torba+raf boşalarak ya da pas turuyla gerçekten sonuna kadar oynanmış
+        oyunlar. <b>Teslim</b> = süre aşımıyla biten oyunlar (yerelde 7 gün, Canlı'da 48 saatlik
+        sıra penceresi) — gerçek bir oyun süresi yansıtmadıklarından "Bitirilen"e karışmaz ve süre
+        grafiğine hiç girmezler.
+        <br />
+        <br />
+        Üstteki kombolar birlikte çalışır: kaynak (Toplam/Canlı/Yapay Zeka), kapsam
+        (Toplam/Kayıtlı/Misafir) ve oyuncu sayısı. Canlı ile Misafir birlikte seçilemez — Canlı
+        oyunda tüm katılımcılar girişlidir.
+      </>
+    ),
+  },
+  'oyun-suresi': {
+    title: 'Oyun Süresi (Medyan)',
+    body: (
+      <>
+        <b>Medyan</b> — yarısı bundan kısa, yarısı uzun. Ortalama BİLEREK kullanılmıyor: dağılım
+        çarpık (açık unutulan oyunlar) ve ortalamayı tipik oyunun kat kat üstüne çekiyor —
+        ölçüldüğünde ortalama 246,6 dk iken medyan 18,1 dk çıkmıştı.
+        <br />
+        <br />
+        <b>Uzun kuyruk (p90)</b> serisini açarsan en uzun %10'un nerede başladığını görürsün.
+        <br />
+        <br />
+        <b>Günlere Yayılan</b> = Canlı oyunlar (48 saatlik sıra penceresi nedeniyle her zaman bu
+        tarafta) + uygulama kapatılıp devam edilen yerel oyunlar. <b>Tek Oturumda</b> yalnızca
+        uygulama hiç kapatılmadan bitirilen Yapay Zeka oyunlarını kapsar.
+        <br />
+        <br />
+        Hiç biten oyunu olmayan kovada değer 0 değil BOŞ döner — 0 dakika "çok hızlı bitmiş oyun"
+        gibi okunurdu.
+      </>
+    ),
+  },
+  'begeni-paylasma': {
+    title: 'Beğeni / Paylaşma',
+    body: (
+      <>
+        <b>Beğeni</b> = o kovada basılan kalp. <b>Paylaşma</b> = o kovada İLK KEZ paylaşılan oyun.
+        <br />
+        <br />
+        25 Temmuz 2026'dan önce paylaşılmış oyunlarda paylaşım tarihi tutulmuyordu; onlar hiçbir
+        kovaya düşmez ama yukarıdaki toplam paylaşılan oyun sayısına dahildir — iki sayının
+        birbirini tutmaması bu yüzden beklenen bir durum.
+      </>
+    ),
+  },
+  'yz-dengesi': {
+    title: 'YZ Dengesi',
+    body: (
+      <>
+        Yapay Zeka'ya karşı oynanan, teslimle bitmemiş oyunlarda İNSANIN derece oranı. Teslim
+        satırları hariç — onlar bir beceri sonucu değil, 7 günlük terk-edilme cezasının kaydı;
+        dahil edilseler YZ olduğundan güçlü görünürdü. Canlı oyunlar hiç sayılmaz.
+        <br />
+        <br />
+        Sayıyı kutudaki <b>"rastgele"</b> değerine göre oku: insan oranı onun belirgin ALTINDAysa
+        YZ fazla güçlü, çok ÜSTÜNDEyse fazla zayıf demektir. Bu, YZ algoritmasına dokunan bir
+        değişikliğin regresyonunu yakalayan tek sayı.
+        <br />
+        <br />
+        <b>İkincilik yalnızca 4 kişilikte var</b>, çünkü k-lig puanı orada ikinciliğe de veriliyor
+        (2 kişilikte ikinci olmak kaybetmekle aynı şey, puan getirmez). Dengeyi asıl anlatan sayı
+        bu ikisinin TOPLAMI: insan "puan alan" ilk iki dereceye ne sıklıkla giriyor? Rastgele bir
+        sonuçta bu %50 olurdu — birincilik ve ikincilik yüzdelerini toplayıp o değerle karşılaştır.
+      </>
+    ),
+  },
+  uyeler: {
+    title: 'Üyeler',
+    body: (
+      <>
+        Tüm kayıtlı kullanıcılar. <b>Kanal</b>, kaydın hangi formdan geldiğini söyler
+        (Direkt/Form) — Kaynak Hunisi'ndeki kaynak damgasıyla KARIŞTIRILMAMALI, ikisi bağımsız.
+        <br />
+        <br />
+        CSV ekranda görüneni indirir: arama ve sıralama uygulanmış hâli.
+      </>
+    ),
+  },
+  'geri-bildirim': {
+    title: 'Geri Bildirim',
+    body: (
+      <>
+        <b>Gelen</b> = kullanıcıların gönderdiği görüşler. <b>Gönderilen</b> = admin'in "Mesaj
+        Gönder" ile yolladıkları (kayıt olarak burada durur, yanıtlanmaz).
+        <br />
+        <br />
+        CSV ekranda görüneni indirir: seçili filtre uygulanmış hâli.
+      </>
+    ),
+  },
+};
+
+type HintId = keyof typeof HINTS;
+
+/**
+ * Grafik/tablo altındaki tek satırlık VERİ notu. Artık açıklama için
+ * kullanılmıyor (o metinler `HINTS`e taşındı) — geriye yalnızca kutulara
+ * sığmayan aktivasyon dağılımı kaldı.
  */
 const captionCls = 'text-[9px] font-mono text-muted leading-relaxed';
 
@@ -241,6 +458,36 @@ function formatHours(hours: number | null): string {
 const csvLinkCls =
   'text-[9px] font-mono uppercase tracking-[0.5px] text-muted underline underline-offset-2 active:opacity-70 transition-opacity shrink-0';
 
+/**
+ * Metrik tanımını açan `?` rozeti — her CSV'nin yanında, CSV'si olmayan iki
+ * panelde bölüm başlığının yanında.
+ *
+ * Görsel dil `ScoreCard`/`PlayerScoreCard`'daki k-lig "?" rozetinden alındı
+ * (yuvarlak, `border-muted`) — yeni bir gösterge icat edilmedi. Boyut oradaki
+ * 14px yerine 13px: kardeşi olan "CSV İndir" 9px'lik bir satır ve 14px rozet
+ * o satırı büyütüyordu.
+ *
+ * `py-1 -my-1`: dokunma alanını büyütürken layout ayak izini DEĞİŞTİRMİYOR
+ * (negatif margin dolguyu birebir geri alıyor) — `SourceFunnelTable`'ın
+ * "% / Sayı" düğmesindeki aynı desen.
+ */
+function InfoHint({ id, onOpen }: { id: HintId; onOpen: (id: HintId) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(id)}
+      aria-label={`${HINTS[id].title} — bu nedir?`}
+      className="shrink-0 p-1 -m-1 active:opacity-70 transition-opacity"
+    >
+      {/* Daire İÇ span'de: dolgu doğrudan butona verilseydi `rounded-full`
+          15×23'lük bir elips üretirdi. */}
+      <span className="w-[13px] h-[13px] rounded-full border border-muted text-muted text-[9px] font-mono leading-none flex items-center justify-center">
+        ?
+      </span>
+    </button>
+  );
+}
+
 /** CSV dosya adına (uzantısız temel isim) bugünün tarihini ekler — ör. "kelimeki-uyeler-2026-07-25.csv". */
 function csvFilename(baseName: string): string {
   return `${baseName}-${new Date().toISOString().slice(0, 10)}.csv`;
@@ -258,6 +505,7 @@ function GuestBreakdownTable<T extends { visitors: number }>({
   getKey,
   getLabel,
   csvBaseName,
+  infoHint,
 }: {
   columnLabel: string;
   emptyLabel: string;
@@ -265,12 +513,19 @@ function GuestBreakdownTable<T extends { visitors: number }>({
   getKey: (row: T) => string;
   getLabel: (row: T) => string;
   csvBaseName: string;
+  infoHint?: ReactNode;
 }) {
-  if (rows === null) {
-    return <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>;
-  }
-  if (rows.length === 0) {
-    return <div className="text-xs font-mono text-muted text-center py-6">{emptyLabel}</div>;
+  // Boş/yüklenirken de `?` çizilir — "bu tablo neyi sayıyor?" sorusu tam da
+  // hiç veri yokken sorulur (CSV ise indirilecek satır olmadan gizleniyor).
+  if (rows === null || rows.length === 0) {
+    return (
+      <div className="flex flex-col gap-1.5">
+        {infoHint && <div className="self-end">{infoHint}</div>}
+        <div className="text-xs font-mono text-muted text-center py-6">
+          {rows === null ? 'Yükleniyor…' : emptyLabel}
+        </div>
+      </div>
+    );
   }
   const totalVisitors = rows.reduce((sum, row) => sum + row.visitors, 0);
   const visibleRows = rows;
@@ -292,9 +547,12 @@ function GuestBreakdownTable<T extends { visitors: number }>({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <button type="button" onClick={handleExportCsv} className={`${csvLinkCls} self-end`}>
-        CSV İndir
-      </button>
+      <div className="flex items-center justify-end gap-2">
+        {infoHint}
+        <button type="button" onClick={handleExportCsv} className={csvLinkCls}>
+          CSV İndir
+        </button>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-auto text-[11px] font-mono border-collapse">
           <thead>
@@ -370,15 +628,22 @@ function GuestBreakdownTable<T extends { visitors: number }>({
  * aynı karar: yuvarlama kaybı olmaz, yüzde zaten yeniden hesaplanabilir.
  * `players` tabloda yalnızca yüzdenin içinde görünür, CSV'de ayrı bir sütun.
  */
-function SourceFunnelTable({ rows }: { rows: AdminSourceFunnelRow[] | null }) {
+function SourceFunnelTable({
+  rows,
+  infoHint,
+}: {
+  rows: AdminSourceFunnelRow[] | null;
+  infoHint?: ReactNode;
+}) {
   const [asPercent, setAsPercent] = useState(false);
-  if (rows === null) {
-    return <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>;
-  }
-  if (rows.length === 0) {
+  // Boş/yüklenirken de `?` çizilir (GuestBreakdownTable ile aynı gerekçe).
+  if (rows === null || rows.length === 0) {
     return (
-      <div className="text-xs font-mono text-muted text-center py-6">
-        Bu aralıkta veri yok.
+      <div className="flex flex-col gap-1.5">
+        {infoHint && <div className="self-end">{infoHint}</div>}
+        <div className="text-xs font-mono text-muted text-center py-6">
+          {rows === null ? 'Yükleniyor…' : 'Bu aralıkta veri yok.'}
+        </div>
       </div>
     );
   }
@@ -444,6 +709,7 @@ function SourceFunnelTable({ rows }: { rows: AdminSourceFunnelRow[] | null }) {
         <button type="button" onClick={handleExportCsv} className={`${csvLinkCls} py-1 -my-1`}>
           CSV İndir
         </button>
+        {infoHint}
       </div>
       <div className="overflow-x-auto">
         <table className="w-auto text-[11px] font-mono border-collapse">
@@ -505,7 +771,15 @@ function SourceFunnelTable({ rows }: { rows: AdminSourceFunnelRow[] | null }) {
  */
 const MAX_TINT = 0.55;
 
-function RetentionCohortTable({ cells, csvBaseName }: { cells: AdminRetentionCell[] | null; csvBaseName: string }) {
+function RetentionCohortTable({
+  cells,
+  csvBaseName,
+  infoHint,
+}: {
+  cells: AdminRetentionCell[] | null;
+  csvBaseName: string;
+  infoHint?: ReactNode;
+}) {
   const grid = useMemo(() => {
     if (!cells) return null;
     const byWeek = new Map<string, { size: number; offsets: Map<number, number> }>();
@@ -524,13 +798,14 @@ function RetentionCohortTable({ cells, csvBaseName }: { cells: AdminRetentionCel
     return { weeks, maxOffset };
   }, [cells]);
 
-  if (grid === null) {
-    return <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>;
-  }
-  if (grid.weeks.length === 0 || grid.maxOffset < 0) {
+  // Boş/yüklenirken de `?` çizilir (GuestBreakdownTable ile aynı gerekçe).
+  if (grid === null || grid.weeks.length === 0 || grid.maxOffset < 0) {
     return (
-      <div className="text-xs font-mono text-muted text-center py-6">
-        Henüz tamamlanmış bir hafta yok.
+      <div className="flex flex-col gap-1.5">
+        {infoHint && <div className="self-end">{infoHint}</div>}
+        <div className="text-xs font-mono text-muted text-center py-6">
+          {grid === null ? 'Yükleniyor…' : 'Henüz tamamlanmış bir hafta yok.'}
+        </div>
       </div>
     );
   }
@@ -560,9 +835,12 @@ function RetentionCohortTable({ cells, csvBaseName }: { cells: AdminRetentionCel
 
   return (
     <div className="flex flex-col gap-1.5">
-      <button type="button" onClick={handleExportCsv} className={`${csvLinkCls} self-end`}>
-        CSV İndir
-      </button>
+      <div className="flex items-center justify-end gap-2">
+        {infoHint}
+        <button type="button" onClick={handleExportCsv} className={csvLinkCls}>
+          CSV İndir
+        </button>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-auto text-[11px] font-mono border-collapse">
           <thead>
@@ -740,6 +1018,8 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
   const [transcriptGameId, setTranscriptGameId] = useState<string | null>(null);
   const [banTarget, setBanTarget] = useState<{ id: string; name: string; banned: boolean } | null>(null);
+  /** Açık metrik tanımı popup'ı (`?` rozetleri) — tek state, tek dialog. */
+  const [hint, setHint] = useState<HintId | null>(null);
   const [banBusy, setBanBusy] = useState(false);
   const [banError, setBanError] = useState<string | null>(null);
   const [highlightedMemberId, setHighlightedMemberId] = useState<string | null>(null);
@@ -747,6 +1027,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const panelRef = useModalA11y(true, onClose);
   const feedbackDeleteRef = useModalA11y(!!feedbackToDelete, () => setFeedbackToDelete(null));
   const banConfirmRef = useModalA11y(!!banTarget, () => setBanTarget(null));
+  const hintRef = useModalA11y(!!hint, () => setHint(null));
 
   useEffect(() => {
     if (tab !== 'members' || !highlightedMemberId) return;
@@ -969,6 +1250,42 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
         : feedback?.filter((f) => f.origin === feedbackOriginFilter) ?? null,
     [feedback, feedbackOriginFilter],
   );
+
+  /**
+   * "YZ Dengesi" kutuları. Satır başına bir kutu DEĞİL: 4 kişilik oyunlar
+   * ikinci bir "İkincilik" kutusu daha üretiyor (17 Ağustos 2026, kullanıcı
+   * isteği) — 4 kişilikte k-lig ikinciliğe de puan verdiğinden yalnız
+   * birinciliğe bakmak "insan puan alıyor mu" sorusunun yarısını ölçüyordu.
+   *
+   * İkincilik kutusu 2 kişilikte BİLEREK YOK: orada rank=2 kaybetmenin
+   * kendisi (canlıda ölçüldü: second_places === losses) ve k-lig puanı
+   * getirmiyor, yani kutu yeni bir şey söylemeyip kayıp oranını ikinci kez
+   * yazardı.
+   *
+   * Rastgele referansı iki kutuda da `100 / oyuncu sayısı`: rastgele bir
+   * sonuçta 1. olma da 2. olma da aynı olasılıkta (4 kişilikte %25).
+   */
+  const aiBalanceCards = useMemo(() => {
+    const cards: { key: string; rate: number | null; label: string; detail: string }[] = [];
+    for (const r of aiBalance ?? []) {
+      const baseline = Math.round(100 / r.players);
+      cards.push({
+        key: `${r.players}-first`,
+        rate: r.games > 0 ? Math.round((100 * r.wins) / r.games) : null,
+        label: `${r.players} Kişilik — İnsan Birincilik`,
+        detail: `${r.wins}G / ${r.ties}B / ${r.losses}M · rastgele %${baseline}`,
+      });
+      if (r.players > 2) {
+        cards.push({
+          key: `${r.players}-second`,
+          rate: r.games > 0 ? Math.round((100 * r.second_places) / r.games) : null,
+          label: `${r.players} Kişilik — İnsan İkincilik`,
+          detail: `${r.second_places}/${r.games} · rastgele %${baseline}`,
+        });
+      }
+    }
+    return cards;
+  }, [aiBalance]);
 
   function exportFeedbackCsv() {
     if (!filteredFeedback || filteredFeedback.length === 0) return;
@@ -1240,11 +1557,14 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       Gönderilen
                     </button>
                   </div>
-                  {filteredFeedback && filteredFeedback.length > 0 && (
-                    <button type="button" onClick={exportFeedbackCsv} className={csvLinkCls}>
-                      CSV İndir
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {filteredFeedback && filteredFeedback.length > 0 && (
+                      <button type="button" onClick={exportFeedbackCsv} className={csvLinkCls}>
+                        CSV İndir
+                      </button>
+                    )}
+                    <InfoHint id="geri-bildirim" onOpen={setHint} />
+                  </div>
                 </div>
               )}
             </div>
@@ -1353,13 +1673,14 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                 </div>
               )}
               <div className="flex items-center justify-between gap-2">
-                {filteredMembers && filteredMembers.length > 0 ? (
-                  <button type="button" onClick={exportMembersCsv} className={csvLinkCls}>
-                    CSV İndir
-                  </button>
-                ) : (
-                  <span />
-                )}
+                <div className="flex items-center gap-2 shrink-0">
+                  {filteredMembers && filteredMembers.length > 0 && (
+                    <button type="button" onClick={exportMembersCsv} className={csvLinkCls}>
+                      CSV İndir
+                    </button>
+                  )}
+                  <InfoHint id="uyeler" onOpen={setHint} />
+                </div>
                 <div className="text-[10px] font-mono text-muted text-right">
                   {memberSearch.trim() && members
                     ? `${filteredMembers?.length ?? 0} / ${members.length} üye`
@@ -1386,6 +1707,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                     defaultActiveKeys={['signups', 'guest_visits']}
                     controls={<span className={sectionTitleCls}>Yeni Üye / M. Ziyaret</span>}
                     csvBaseName="kelimeki-yeni-uye-ziyaret"
+                    infoHint={<InfoHint id="yeni-uye-ziyaret" onOpen={setHint} />}
                   />
                 ))}
 
@@ -1402,17 +1724,19 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         defaultActiveKeys={['active_28d', 'active_in_bucket']}
                         controls={<span className={sectionTitleCls}>Aktif Oyuncu</span>}
                         csvBaseName="kelimeki-aktif-oyuncu"
+                        infoHint={<InfoHint id="aktif-oyuncu" onOpen={setHint} />}
                       />
                     )}
-                    <p className={captionCls}>
-                      Aktif = oyun bitirme, Canlı hamle, sohbet mesajı, beğeni, arkadaşlık isteği ya da Canlı
-                      oyun kurma. Girişli kullanıcı için “uygulamayı açtı” sinyali şemada yok — bu yüzden bu
-                      sayı bilerek MAU değil, uygulamayı açıp hiçbir şey yapmadan çıkanı saymaz.
-                    </p>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <span className={sectionTitleCls}>Aktivasyon</span>
+                    {/* CSV'si olmayan iki panelden biri — `?` bölüm başlığının
+                        yanında; yalnızca CSV'lere bakılsaydı bu açıklama
+                        hiçbir yere düşmeden kaybolurdu. */}
+                    <div className="flex items-center gap-2">
+                      <span className={sectionTitleCls}>Aktivasyon</span>
+                      <InfoHint id="aktivasyon" onOpen={setHint} />
+                    </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center">
                         <div className="font-mono text-xl font-bold text-text">
@@ -1451,56 +1775,38 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         </div>
                       </div>
                     </div>
-                    <p className={captionCls}>
-                      Aktive = en az bir oyunu BİTİRMİŞ üye (yalnızca arkadaşlık isteği gönderen aktif oyuncu
-                      sayılır ama aktive sayılmaz — iki ayrı soru).
-                      {/* Sayıya iyelik eki TAKILMIYOR ("2'i" mi "2'si" mi?) — Türkçe ünlü
-                          uyumu programatik olarak garanti edilemediğinden bu projede
-                          kural, eki gerektirmeyen bir kalıp seçmek (bkz. "Sıra: {isim}"
-                          ve k-lig eşik metinlerindeki aynı karar). */}
-                      {activation === null
-                        ? ''
-                        : ` İlk oyununu bitirme dağılımı — aynı gün: ${activation.activated_same_day}, 1-3 gün içinde: ${activation.activated_within_3_days}, daha sonra: ${activation.activated_later}.`}
-                    </p>
+                    {/* Bu satır bir AÇIKLAMA değil VERİ — kutulara sığmayan üçlü
+                        dağılım. Tanım `?`e taşındı ama sayıları da oraya gömmek
+                        canlı veriyi bir tıklamanın arkasına saklardı.
+                        Sayıya iyelik eki TAKILMIYOR ("2'i" mi "2'si" mi?) —
+                        Türkçe ünlü uyumu programatik olarak garanti
+                        edilemediğinden kural, eki gerektirmeyen bir kalıp
+                        seçmek (bkz. "Sıra: {isim}" ve k-lig eşik metinleri). */}
+                    {activation !== null && (
+                      <p className={captionCls}>
+                        İlk oyununu bitirme dağılımı — aynı gün: {activation.activated_same_day} · 1-3
+                        gün: {activation.activated_within_3_days} · sonra: {activation.activated_later}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex flex-col gap-2">
                     <span className={sectionTitleCls}>Retention (Kayıt Haftasına Göre)</span>
-                    <RetentionCohortTable cells={retention} csvBaseName="kelimeki-retention" />
-                    <p className={captionCls}>
-                      Satır: kayıt haftası · Sütun: kayıttan sonraki hafta (H0 = kayıt haftasının kendisi) ·
-                      Hücre: o kohorttan o hafta aktif olan üye oranı. Yalnızca TAMAMLANMIŞ haftalar gösterilir —
-                      yarım bir hafta her zaman yapay olarak düşük görünür ve son köşegeni yalancı bir düşüş gibi
-                      gösterirdi.
-                    </p>
+                    <RetentionCohortTable
+                      cells={retention}
+                      csvBaseName="kelimeki-retention"
+                      infoHint={<InfoHint id="retention" onOpen={setHint} />}
+                    />
                   </div>
 
                   <div className="flex flex-col gap-2">
                     <span className={sectionTitleCls}>
                       Kaynak Hunisi (Son {userPeriod} {PERIOD_UNIT_LABEL[userGranularity]})
                     </span>
-                    <SourceFunnelTable rows={sourceFunnel} />
-                    {/* Tanım ekranın KENDİSİNDE yazıyor — dokümanda kalsaydı ilk
-                        yanlış yorum kaçınılmazdı (retention/aktif oyuncu panellerinde
-                        aynı karar). */}
-                    <p className="text-[10px] font-mono text-muted leading-relaxed max-w-[560px]">
-                      <b>Kişi</b> = o kaynaktan gelen benzersiz misafir ziyaretçi;{' '}
-                      <b>Üye</b> = o kaynak damgasıyla açılan hesap; <b>Oyun</b> = o
-                      hesapların bitirdiği oyun. Pencere her adıma kendi olay tarihinden
-                      uygulanır (kohort değil): 2 ay önce üye olup bugün oynayan biri
-                      "Oyun"a girer, "Üye"ye girmez.{' '}
-                      <b>Bilinmiyor</b> = kaynak damgası olmayan hesaplar — bu özellik
-                      16 Ağustos 2026'da eklendi ve geriye dönük doldurulamıyor, ayrıca
-                      mobil uygulamadan gelen kayıtlar henüz damgalanmıyor.{' '}
-                      <b>Direkt</b> = web'e <code>?ref=</code> olmadan geliş. "Kişi" ile
-                      "Üye" iki ayrı ölçümdür (ziyaretler anonim, hesaba bağlanmaz).{' '}
-                      <b>% / Sayı</b> düğmesi üç sütunu birden çevirir: <b>Kişi</b> yüzdesi o
-                      sütunun payı, <b>Üye</b> ve <b>Oyun</b> yüzdeleri ise o satırın
-                      "Kişi"sine göre dönüşüm — sırasıyla kaçının üye olduğu ve kaçının oyun
-                      oynadığı (oyun ADEDİ değil, oynayan KİŞİ). Kişi 0 ise oran hesaplanmaz
-                      ("—"); iki ucu da damgalanmamış kaynaklarda oran %100'ü aşabilir. CSV
-                      her zaman ham sayı verir (oynayan kişi sayısı da ayrı bir sütun olarak).
-                    </p>
+                    <SourceFunnelTable
+                      rows={sourceFunnel}
+                      infoHint={<InfoHint id="kaynak-hunisi" onOpen={setHint} />}
+                    />
                   </div>
                   <div className="flex flex-col gap-2">
                     <span className={sectionTitleCls}>
@@ -1515,6 +1821,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         row.device_type === 'mobile' ? 'Mobil' : row.device_type === 'desktop' ? 'Masaüstü' : 'Bilinmiyor'
                       }
                       csvBaseName="kelimeki-cihaz"
+                      infoHint={<InfoHint id="cihaz" onOpen={setHint} />}
                     />
                   </div>
                   {/* "Platform" ve "Ana Ekrana Ekleme" tabloları 15 Ağustos 2026'da
@@ -1542,6 +1849,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         defaultActiveKeys={['requests_sent', 'friendships_formed']}
                         controls={<span className={sectionTitleCls}>Arkadaşlık</span>}
                         csvBaseName="kelimeki-arkadaslik"
+                        infoHint={<InfoHint id="arkadaslik" onOpen={setHint} />}
                       />
                     )}
                     <div className="grid grid-cols-2 gap-2">
@@ -1595,6 +1903,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         defaultActiveKeys={['games_finished']}
                         controls={<span className={sectionTitleCls}>Oyun Sayısı</span>}
                         csvBaseName="kelimeki-oyun-sayisi"
+                        infoHint={<InfoHint id="oyun-sayisi" onOpen={setHint} />}
                       />
                       <div className="flex flex-col gap-2">
                         <GrowthChart
@@ -1605,15 +1914,8 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                           formatValue={formatDuration}
                           controls={<span className={sectionTitleCls}>Oyun Süresi (Medyan)</span>}
                           csvBaseName="kelimeki-oyun-suresi-medyan"
+                          infoHint={<InfoHint id="oyun-suresi" onOpen={setHint} />}
                         />
-                        <p className={captionCls}>
-                          Medyan — yarısı bundan kısa, yarısı uzun. Ortalama bilerek kullanılmıyor: dağılım
-                          çarpık (açık unutulan oyunlar) ve ortalamayı tipik oyunun kat kat üstüne çekiyor.
-                          “Uzun kuyruk (p90)” serisini açarsan en uzun %10'un nerede başladığını görürsün.
-                          Canlı oyunlar 48 saatlik sıra penceresi nedeniyle her zaman “günlere yayılan”
-                          tarafında sayılır; “tek oturumda” yalnızca uygulama hiç kapatılmadan bitirilen
-                          Yapay Zeka oyunlarını kapsar.
-                        </p>
                       </div>
                     </>
                   )}
@@ -1628,6 +1930,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       defaultActiveKeys={['likes', 'shares']}
                       controls={<span className={sectionTitleCls}>Beğeni / Paylaşma</span>}
                       csvBaseName="kelimeki-begeni-paylasma"
+                      infoHint={<InfoHint id="begeni-paylasma" onOpen={setHint} />}
                     />
                   )}
 
@@ -1656,9 +1959,17 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       değişikliğin regresyonunu yakalayan tek sayı. Rastgele
                       referansı (2 kişilikte %50, 4 kişilikte %25) BİLEREK
                       ekranda yazıyor — onsuz "%31" alarm verici görünürken
-                      aslında rastgelenin üstünde. */}
+                      aslında rastgelenin üstünde.
+                      17 Ağustos 2026'da 4 kişilik için bir de "İkincilik"
+                      kutusu eklendi (kullanıcı isteği): k-lig orada ikinciliğe
+                      de puan verdiğinden yalnız birinciliğe bakmak "insan
+                      puan alıyor mu" sorusunun yarısını ölçüyordu. */}
                   <div className="flex flex-col gap-2">
-                    <span className={sectionTitleCls}>YZ Dengesi</span>
+                    {/* CSV'si olmayan ikinci panel — `?` başlığın yanında. */}
+                    <div className="flex items-center gap-2">
+                      <span className={sectionTitleCls}>YZ Dengesi</span>
+                      <InfoHint id="yz-dengesi" onOpen={setHint} />
+                    </div>
                     {aiBalance === null ? (
                       <div className="text-xs font-mono text-muted text-center py-4">Yükleniyor…</div>
                     ) : aiBalance.length === 0 ? (
@@ -1666,36 +1977,33 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         Henüz Yapay Zeka'ya karşı tamamlanmış oyun yok.
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 gap-2">
-                        {aiBalance.map((r) => {
-                          const rate = r.games > 0 ? Math.round((100 * r.wins) / r.games) : null;
-                          const baseline = Math.round(100 / r.players);
-                          return (
-                            <div
-                              key={r.players}
-                              className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center"
-                            >
-                              <div className="font-mono text-xl font-bold text-text">
-                                {rate === null ? '—' : `%${rate}`}
-                              </div>
-                              <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
-                                {r.players} Kişilik — İnsan Kazanma
-                              </div>
-                              <div className="text-[8px] font-mono text-muted mt-0.5">
-                                {r.wins}G / {r.ties}B / {r.losses}M · rastgele %{baseline}
-                              </div>
+                      /* Kutu sayısı satır sayısına bağlı (1-3) olduğundan
+                         sütun sayısı inline `style` ile veriliyor: Tailwind
+                         yalnızca KAYNAKTA geçen sınıfları üretir, çalışma
+                         anında kurulan bir `grid-cols-${n}` sessizce
+                         uygulanmazdı (bkz. CountBadge'in ölçüm tuzağı). */
+                      <div
+                        className="grid gap-2"
+                        style={{
+                          gridTemplateColumns: `repeat(${Math.min(aiBalanceCards.length, 3)}, minmax(0, 1fr))`,
+                        }}
+                      >
+                        {aiBalanceCards.map((c) => (
+                          <div
+                            key={c.key}
+                            className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center"
+                          >
+                            <div className="font-mono text-xl font-bold text-text">
+                              {c.rate === null ? '—' : `%${c.rate}`}
                             </div>
-                          );
-                        })}
+                            <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
+                              {c.label}
+                            </div>
+                            <div className="text-[8px] font-mono text-muted mt-0.5">{c.detail}</div>
+                          </div>
+                        ))}
                       </div>
                     )}
-                    <p className={captionCls}>
-                      Yalnızca Yapay Zeka'ya karşı oynanan, teslimle bitmemiş oyunlar. Teslim satırları
-                      hariç — onlar bir beceri sonucu değil, 7 günlük terk-edilme cezasının kaydı; dahil
-                      edilseler YZ olduğundan güçlü görünürdü. Sayıyı “rastgele” değerine göre oku:
-                      insan oranı onun belirgin altındaysa YZ fazla güçlü, çok üstündeyse fazla zayıf
-                      demektir.
-                    </p>
                   </div>
                 </>
               )}
@@ -2070,6 +2378,34 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                 Vazgeç
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {hint && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center px-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            ref={hintRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${HINTS[hint].title} tanımı`}
+            tabIndex={-1}
+            className="w-full max-w-sm max-h-[80vh] overflow-y-auto bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-3"
+          >
+            <p className="text-base font-bold text-text font-sans">{HINTS[hint].title}</p>
+            {/* Gövde `font-sans` 13px: `captionCls`in 9px mono'su bir paragraf
+                için okunaksız — ekranda değil popup'ta olduğundan yer sıkıntısı
+                yok. */}
+            <div className="text-[13px] text-text font-sans leading-relaxed">{HINTS[hint].body}</div>
+            <button
+              onClick={() => setHint(null)}
+              className="btn-raised-neutral mt-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:opacity-70 transition-opacity"
+            >
+              Kapat
+            </button>
           </div>
         </div>
       )}
