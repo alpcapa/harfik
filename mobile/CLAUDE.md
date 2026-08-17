@@ -1009,11 +1009,15 @@ farklılık platform kısıtından doğuyor. **Bir sonraki oturum bunları "eksi
 sanıp web'e dokunmasın.** Yalnızca ölçülebilir yeni bir fayda (gerçek bir
 kullanıcı şikâyeti, ölçülen bir hata) çıkarsa yeniden değerlendirilir.
 
-- **Raf başlığındaki swap aksiyon metni** — `src/components/Rack.tsx`
-  swap modunda başlığı `` `${title} — değiştirilecek taşları seç` ``
-  yapıyor; aynı talimat zaten tahtanın altındaki mesaj satırında var.
-  Uygulamada kaldırıldı (kullanıcı isteği), web'de duruyor ve bir sorun
-  üretmiyor.
+- ~~**Raf başlığındaki swap aksiyon metni**~~ → **ARTIK FARK YOK
+  (17 Ağustos 2026):** kullanıcı Blok 6 görsel turunda iki ekranı yan yana
+  koyup metni web'den de kaldırttı (*"ismin yanında ayrıca mesaj yazmamalı,
+  mesaj satırında zaten yazıyor"*) — yani 6 Ağustos'ta port için verilen
+  karar on bir gün sonra web'e de uygulandı. `Rack.tsx` artık koşulsuz
+  yalnızca adı basıyor. Bilgi kaybı yok, ölçüldü: swap modu adın altın
+  rengi (`#D97706`), sağdaki "N seçili" sayacı, mesaj satırındaki talimat
+  ve DEĞİŞTİR/VAZGEÇ butonlarıyla belli. Portta bu davranışı koruyan bir
+  test zaten var (`game_screen_test.dart` → `findsNothing`).
 - **Anlam metnindeki `►`** — uygulama bunu `→` ile değiştiriyor (bkz.
   Parça 9). Web'de aynı karakter duruyor ve DÜZGÜN çiziliyor: tarayıcılar
   karakter bazında sistem yedeğine düşer (Chromium'da ekran görüntüsüyle
@@ -1025,10 +1029,8 @@ kullanıcı şikâyeti, ölçülen bir hata) çıkarsa yeniden değerlendirilir.
 Eski (silinmiş) başlık: "Web'de Bekleyen Küçük Düzeltmeler" — o hâliyle
 liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti.
 
-- **Raf başlığındaki swap aksiyon metni** — `src/components/Rack.tsx`
-  swap modunda başlığı `` `${title} — değiştirilecek taşları seç` ``
-  yapıyor; aynı talimat zaten tahtanın altındaki mesaj satırında var.
-  Uygulamada kaldırıldı (bkz. aşağıdaki parça günlüğü), web'de duruyor.
+- ~~**Raf başlığındaki swap aksiyon metni**~~ → kapandı, yukarıdaki
+  (17 Ağustos 2026) nota bkz. — metin web'den de kaldırıldı.
 - **Anlam metnindeki `►` (opsiyonel, web BOZUK DEĞİL)** — uygulama bunu
   `→` ile değiştiriyor (bkz. Parça 9). Web'de aynı karakter duruyor ve
   DÜZGÜN çiziliyor: tarayıcılar karakter bazında sistem yedeğine düşer
@@ -4716,8 +4718,14 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        (eski `Text`lerin `style.fontSize`'ı `null`), ama bu gösterilmedi —
        tek kanıt CI (`mobile-build.yml`). Web yarısı tam doğrulandı
        (`npm run lint`, `npm run build`, Playwright 3/3, Chromium ölçümü).
-     - **Cihazda doğrulanacak:** iki `TESTING.md`'ye maddeler eklendi.
-       Port değişikliği Pages'e ancak `main`'e merge sonrası çıkar.
+     - ~~**Cihazda doğrulanacak:** iki `TESTING.md`'ye maddeler eklendi.~~
+       → **17 Ağustos 2026'da iPad'de KOŞULDU ve GEÇTİ:** köşe rakamları
+       iki tarafta aynı boy/font, merkez **X2** aynı boy ve **X3 hücreyi
+       DOLDURMUYOR** (web'in 12px tavanına oturuyor). Yani `FittedBox`tan
+       `fluidSize`a geçiş gerçek CanvasKit'te de web'le aynı sonucu
+       veriyor — negatif eşin kurulamadığı (Flutter SDK'sız oturum) bu
+       parçada tek gerçek kanıt buydu. **Header avatarının dikey hizası
+       AYNI turda koşulmadı** (o web-only ve FOTOĞRAFLI hesap ister).
      - **CI'ın YAKALADIĞI hata bu parçadan DEĞİL, bir önceki dalda merge
        bekleyen commit'lerden çıktı (kayda değer):** PR #277'nin ilk
        koşusunda **442 geçti, 1 düştü** — `score_card_test.dart`'ın
@@ -4786,8 +4794,12 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Doğrulama sınırı — Parça 106'nın aynısı:** bu oturumun
        konteynerinde Flutter SDK YOK (`flutter: command not found`), yani
        `flutter analyze`/`flutter test` KOŞULAMADI ve **negatif eş
-       kurulamadı**; tek kanıt CI. Cihazda görsel teyit de bekleniyor
-       (`mobile/TESTING.md` 0.5'e madde eklendi).
+       kurulamadı**; tek kanıt CI. ~~Cihazda görsel teyit de bekleniyor~~
+       → **17 Ağustos 2026'da iPad'de KOŞULDU ve GEÇTİ:** filigranlar
+       taşların ALTINDA kalıyor, dış hatlar üstünde. Bu, `ClipPath` +
+       `PathFillType.evenOdd` çözümünün gerçek CanvasKit'te de çalıştığının
+       tek kanıtı — Parça 18'in dersi gereği PathOps kullanılmamıştı ve
+       `flutter test` (native Skia) bu farkı yapısal olarak göremezdi.
 
    - ✅ **Parça 108 — rafın ALTINDAKİ aksiyon satırı web'den dört noktada
      sapmıştı (17 Ağustos 2026, `game_screen.dart`,
@@ -4857,7 +4869,7 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | Bölüm | Durum | Not |
 |---|---|---|
 | 0 · Derleme / ilk açılış | ✅ | FAZ A0 |
-| 0.5 · Web ile yan yana görsel | 🟡 | birçok tur (Parça 29/33/37/56/72-80). **17 Ağu (Blok 6):** k-lig nokta boşluğu, avatar↔logo (kapatıldı), tahta filigranlarının puntosu/fontu + header avatar hizası (Parça 106), filigranların taşların altında kalması (Parça 107), Setup'taki parantezli puanın kaldırılması ve tahta↔raf boşluğu (ikisi web-only, port kanonik alındı) — hepsi yapıldı, **hiçbiri merge sonrası cihazda görülmedi**; Parça 72-89'un 11 maddesi hâlâ koşulmadı |
+| 0.5 · Web ile yan yana görsel | ✅ | **17 Ağu'da (Blok 6) KAPANDI — bölümün TAMAMI koşuldu, sıfır bulgu.** Öncesi: birçok tur (Parça 29/33/37/56/72-80). **17 Ağu:** k-lig nokta boşluğu, avatar↔logo (kapatıldı), tahta filigranlarının puntosu/fontu + header avatar hizası (Parça 106), filigranların taşların altında kalması (Parça 107), Setup'taki parantezli puanın kaldırılması ve tahta↔raf boşluğu (ikisi web-only, port kanonik alındı) — **17 Ağu'daki bu kümenin TAMAMI aynı gün cihazda koşuldu ve geçti, sıfır bulgu.** Turdan iki YENİ web işi çıktı (Hesap Ayarları fotoğraf butonu; raf başlığındaki swap aksiyon metninin kaldırılması) — **dalda bekliyor, merge edilmedi.** Geriye yalnızca Parça 72-89'un 11 maddesi kaldı |
 | 1 · Oyun (offline çekirdek) | ✅ | Parça 15/20/21/22 buradan çıktı |
 | 2 · Hesap (auth) | ✅ | **9-12 (deep link) FAZ B'ye ertelendi** |
 | 3 · Bulut kayıtları | ✅ | 6/6 — Parça 29 |
@@ -4957,24 +4969,33 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   uyarısının yanlış modal kabuğuydu (yukarıdaki nota bkz.); OHP hizası ve
   başlık ortalama iki platformda yan yana doğrulandı. Kök **9.10** da yeni
   üç kutulu YZ Dengesi hâliyle yeniden koşuldu.
-- **17 Ağustos (Parça 106-107 + aynı bloğun web işi):** tahta
-  filigranlarının puntosu/fontu (port) · filigranların taşların ALTINDA
-  kalması (port, Parça 107) · header avatarının dikey hizası (web, yalnız
-  FOTOĞRAFLI hesapta) · Setup'ta oyuncu satırında parantezli puanın
-  olmaması (web) · tahta↔raf boşluğunun iki tarafta da 40px olması (web
-  porta uyduruldu; mesaj kutusu artık `min-h-[30px]`) · **raf başlığı:**
-  "7 harf" İKİ tarafta da yok, web'de ad artık BÜYÜK HARF DEĞİL
-  (`Ironman`), başlık↔taş arası iki tarafta da 13px (web'e `pt-[7px]`
-  eklendi) · **rafın altındaki aksiyon satırı** (port, Parça 108):
-  tracking 1.2 · satır 1.5 · swap boşluğu 6 · TORBA dahil hepsi EŞİT
-  yükseklikte. Üçü de `main`'e merge edildi (`cd6c016`) ama **hiçbiri
-  merge sonrası cihazda görülmedi** — Pages/Vercel deploy'u beklendikten
-  sonra bakılmalı, derleme sha'sı `cd6c016…` olmalı.
-- **13 Ağustos (Parça 72-89):** içerik sütunu genişliği · GİRİŞ satırı
+- ~~**17 Ağustos (Parça 106-107 + aynı bloğun web işi)**~~ → **KÜMENİN
+  TAMAMI 17 Ağustos'ta iPad'de koşuldu ve GEÇTİ, sıfır bulgu:** tahta
+  filigranlarının puntosu/fontu + katman sırası (port, Parça 106/107 —
+  köşe rakamları ve X2 aynı boy/font, X3 hücreyi doldurmuyor, filigranlar
+  taşların altında) · header avatarının dikey hizası (web, FOTOĞRAFLI
+  hesapla) · Setup'ta parantezli puanın olmaması (web) · tahta↔raf
+  boşluğu 40px (web porta uyduruldu) · raf başlığı üçlüsü ("7 harf" yok,
+  ad BÜYÜK HARF değil, başlık↔taş 13px) · rafın altındaki aksiyon satırı
+  (port, Parça 108 — TORBA dahil eşit yükseklik, 6px boşluklar).
+  **106/107 için bu tur tek gerçek kanıttı** (Flutter SDK'sız yazıldılar,
+  negatif eşleri kurulamamıştı). Aynı turda çıkan İKİ yeni web işi
+  (Hesap Ayarları'ndaki fotoğraf butonu: tam genişlik + kalın; raf
+  başlığındaki swap aksiyon metninin kaldırılması) **dalda bekliyor,
+  merge EDİLMEDİ** — dolayısıyla henüz cihazda görülmedi.
+- ~~**13 Ağustos (Parça 72-89):** içerik sütunu genişliği · GİRİŞ satırı
   konumu · logo altı yazı bloğu · harf aralığı · "+ Yeni …" butonu ve alt
   sekmeler · form alanları · avatarın YUVARLAK vurgusu · "Yükleniyor…"
   takılı kalmama · ActionSheet'te "Vazgeç" yokluğu · ağ hatasında sahte
-  başarı yokluğu · "Sıra: X" bandının rengi/gölgesi
+  başarı yokluğu · "Sıra: X" bandının rengi/gölgesi~~ → **17 Ağustos'ta
+  ON BİRİ DE koşuldu ve GEÇTİ, sıfır bulgu.** Bunlar dört gün boyunca
+  birikmişti ve hepsi ölçülerek yazılmış (derlenmiş CSS + Chromium)
+  düzeltmelerdi — cihaz turu hiçbirinde bir sapma bulmadı.
+
+**Bu liste artık BOŞ** — 17 Ağustos akşamı itibarıyla cihaz turu görmemiş
+biriken madde kalmadı. Yeni bir düzeltme yazıldığında buraya yine madde
+eklenmeli (kural değişmedi: yazıldığı gün cihazda görülmemiş her düzeltme
+burada birikir).
 
 ~~**Özel uyarı — kök `TESTING.md` 9.6 ilk koşuşunda DÜŞTÜ**~~ →
 **17 Ağustos'ta baştan koşuldu ve GEÇTİ** (negatif eşi dahil: admin →
@@ -4997,43 +5018,31 @@ hesap değişimi (17 Ağu, sıfır bulgu). Aynı turda Parça 95'in beş
 düzeltmesinin hepsi de cihazda teyit edildi, yani **14 Ağustos'tan beri
 biriken Canlı borcu tamamen kapandı.**
 
-**17 Ağustos'ta üç küme birden kapandı:** ağ hatası/offline (kök 9.6 +
-mobil bölüm 5 + bölüm 8), Canlı (bölüm 11) ve Görüş Bildir (bölüm 9).
-**17 Ağustos akşamı Parça 90/92 kalanları da bitti (Blok 5).** Geriye
-TEK bir cihaz turu kaldı:
+**17 Ağustos'ta DÖRT küme birden kapandı:** ağ hatası/offline (kök 9.6 +
+mobil bölüm 5 + bölüm 8), Canlı (bölüm 11), Görüş Bildir (bölüm 9) ve —
+akşam, Blok 5 + Blok 6 ile — Parça 90/92'nin kalanları ve **görsel yan
+yana karşılaştırmanın TAMAMI (bölüm 0.5)**.
 
-1. **Görsel yan yana** (bölüm 0.5, Parça 72-89'un 11 maddesi) — en düşük
-   riskli grup. **Buna Parça 106'nın iki maddesi de eklendi** (tahta
-   filigranlarının puntosu/fontu, header avatarının dikey hizası): ikisi de
-   ÖLÇÜLEREK düzeltildi ama merge edilene kadar cihazda görülemez — Pages
-   yalnızca `main`'e push'ta yeniden derliyor, web ise Vercel'e merge'te
-   çıkıyor.
+### FAZ A1'İN CİHAZ TURLARI BİTTİ (17 Ağustos 2026)
 
-Sonrasında cihaz turu DEĞİL ortak bir **SQL turu** var: süresi dolmuş davet
-süpürmesi (7 gün) ve 48 saat sıra aşımı → otomatik teslim + `-2` + uyarı
-e-postası. İkisi de satırların geriye tarihlenmesini gerektiriyor.
+Koşulacak cihaz maddesi KALMADI. Geriye üç şey kaldı ve **hiçbiri bir
+cihaz turu değil**:
 
-**Merge bekleyen tek doğrulama:** misafir uyarısının modal kabuğu düzeltmesi
-Pages'e ancak `main`'e merge'ten sonra çıkar (workflow PR'da yayınlamıyor),
-o yüzden cihazda hâlâ eski hâli görünüyor — merge sonrası bir kez bakılmalı.
-
-**Cihaz turuna AİT OLMAYAN, ortak SQL turu bekleyenler:** süresi dolmuş
-davet süpürmesi (7 gün), 48 saat sıra aşımı → otomatik teslim + `-2` +
-uyarı e-postası. İkisi de satırların geriye tarihlenmesini gerektiriyor.
+1. **Merge bekleyen iki web işi** (Blok 6 turundan çıktı, dalda duruyor):
+   Hesap Ayarları'ndaki fotoğraf butonu (tam genişlik + kalın) ve raf
+   başlığındaki swap aksiyon metninin kaldırılması. `main`'e girmeden
+   cihazda görülemezler (Vercel yalnızca merge'te yayınlıyor) — merge
+   sonrası tek bir bakış yeter, ikisi de `mobile/TESTING.md` 0.5'te.
+2. **Ortak SQL turu:** süresi dolmuş davet süpürmesi (7 gün,
+   `check_invite_expiry`) ve 48 saat sıra aşımı → otomatik teslim + `-2` +
+   uyarı e-postası (`check_turn_timeout` + `notify-turn-timeout-surrender`).
+   İkisi de satırların Supabase MCP ile geriye tarihlenmesini gerektiriyor;
+   bölüm 11'in kalan tek borcu bu.
+3. **FAZ B** (gerçek native iOS/Android) — ön koşulları hâlâ yapılmadı
+   (imzalama anahtarı, Apple Developer üyeliği, `assetlinks.json`).
+   Bölüm 6'nın 🟡'si de oraya bağlı (iPad paylaş ankrajı, Parça 86).
 
 Şu an bilinen bir veri kaybı yolu YOK (Parça 105 aynı gün doğrulandı).
-
-Sıradaki tur, kalan üç 🟡'yi kapatmalı ve **hepsi kısa**:
-1. **Bölüm 11'in tekil/SQL maddeleri** — ret, hesap değişimi, süresi
-   dolmuş davet (SQL ile `created_at` geriye çekilir), 48 saat sıra aşımı.
-2. **9.3/9.4** — Parça 48'in düzeltmesinden (oyun sonu ekranını kapatmak
-   Görüş Bildir formunu açar) sonra hiç koşulmadı.
-3. **Kök `TESTING.md` 9.6** — belgede yazan sırayla (önce önbelleksiz,
-   sonra önbellekli) + negatif eşi.
-
-Ardından FAZ A1 biter; geriye yalnızca **FAZ B** kalır ve onun ön koşulları
-(imzalama anahtarı, Apple Developer üyeliği, `assetlinks.json`) hâlâ
-yapılmadı. Bölüm 6'nın 🟡'si de zaten oraya bağlı (iPad paylaş ankrajı).
 
 ## Sonraya Bırakılan İşler (mobil)
 
@@ -5501,9 +5510,10 @@ silinip kendi tarihli parça notuna taşınır.
      istemedi — aksiyon metni zaten tahtanın altındaki mesaj satırında
      ("Değiştireceğin taşları seç, sonra "Değiştir"e bas."). Flutter'da
      kaldırıldı; başlık her durumda yalnızca ad (swap modunda rengi hâlâ
-     turuncuya dönüyor, sağdaki "N seçili" duruyor). **Web'de aynı satır
-     kaldırılana kadar bu bilinçli bir sapmadır** — parite tablosuna
-     bakarken "port eksik" sanılmasın.
+     turuncuya dönüyor, sağdaki "N seçili" duruyor). ~~**Web'de aynı satır
+     kaldırılana kadar bu bilinçli bir sapmadır**~~ → **17 Ağustos 2026'da
+     web'den de kaldırıldı, sapma kapandı** (kullanıcı Blok 6 turunda aynı
+     gerekçeyi tekrarladı).
    - ✅ **Parça 8 — hamle geçmişi modalı + Board alt bilgi şeridi
      (6 Ağustos 2026):** `MoveHistoryModal.tsx` portu (`move_history_modal.
      dart`) — veri tamamen `GameState.moveHistory`'den geldiğinden (motorla

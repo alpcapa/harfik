@@ -69,12 +69,13 @@ class RackWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Flexible(
-                // Yalnızca oyuncunun adı — web'de swap modunda buraya bir de
-                // "— değiştirilecek taşları seç" ekleniyor (Rack.tsx), ama
-                // kullanıcı 6 Ağustos 2026'da bunu istemedi: aksiyon metni
-                // zaten tahtanın altındaki mesaj satırında yazıyor, rafta
-                // tekrar edilmesi gereksiz. Web'de de aynı satır kaldırılana
-                // kadar bilinçli bir sapma (bkz. mobile/CLAUDE.md).
+                // Yalnızca oyuncunun adı. Web de swap modunda buraya bir
+                // "— değiştirilecek taşları seç" ekliyordu; kullanıcı
+                // 6 Ağustos 2026'da portta, 17 Ağustos 2026'da web'de
+                // (Rack.tsx) kaldırttı — aksiyon metni zaten tahtanın
+                // altındaki mesaj satırında yazıyor, rafta tekrar edilmesi
+                // gereksiz. İKİ TARAF ARTIK AYNI: geri eklenecekse ikisine
+                // birden eklenmeli.
                 child: Text(
                   title,
                   overflow: TextOverflow.ellipsis,

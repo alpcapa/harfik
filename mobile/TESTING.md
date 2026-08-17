@@ -120,6 +120,13 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
       6px. **DEĞİŞTİR'e bas:** swap satırındaki DEĞİŞTİR ↔ VAZGEÇ boşluğu da
       6px olmalı (portta 8'di). Port butonları web'den **2px kısa kalabilir**
       — bu BİLİNÇLİ (web'in çerçevesi yer kaplıyor, portunki kaplamıyor).
+- [ ] **Hesap Ayarları: "FOTOĞRAF DEĞİŞTİR" butonu (17 Ağustos 2026) — bu
+      madde WEB'i sınıyor, portu değil.** Hesap menüsü → Hesap Ayarları'nı
+      iki platformda yan yana aç: buton avatarın sağındaki BOŞLUĞUN
+      TAMAMINI doldurmalı (sağ kenarı, altındaki "JPG/PNG, en fazla 10 MB"
+      satırının hizaladığı sağ kenarla aynı), yazısı ortada **ve KALIN**
+      (iki tarafta da 700). Web'de içeriğine göre daralıyorsa
+      `w-full`/`flex-1`, ince görünüyorsa `font-bold` düşmüş demektir.
 - [ ] **Filigranlar taşların ÜSTÜNE binmemeli (17 Ağustos 2026, Parça
       107).** Köşe bölgesine ve merkezdeki X2 bölgesine taş konmuş bir oyun
       aç: soluk köşe rakamı ve **X2** yalnızca BOŞ hücrelerde görünmeli,
