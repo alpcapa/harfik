@@ -4789,6 +4789,56 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        kurulamadı**; tek kanıt CI. Cihazda görsel teyit de bekleniyor
        (`mobile/TESTING.md` 0.5'e madde eklendi).
 
+   - ✅ **Parça 108 — rafın ALTINDAKİ aksiyon satırı web'den dört noktada
+     sapmıştı (17 Ağustos 2026, `game_screen.dart`,
+     `online_game_screen.dart`):** Kullanıcı Blok 6 turunda bildirdi:
+     *"Rafın altındaki butonlar da farklı. Web'in aynısı olmalı."* Bu sefer
+     yön normal (web kanonik) — port düzeltildi, web'e HİÇ dokunulmadı.
+     - **Web ÖLÇÜLDÜ (derlenmiş CSS + Chromium), sınıflardan zihnen
+       türetilmedi** (Parça 33'ün dersi): `font-sans` (Space Grotesk) ·
+       11px · 700 · **tracking 1.2px** · **line-height 16.5px (=1.5)** ·
+       dolgu 10/6 · radius 6 · **gap 6** · buton yüksekliği **41.5**.
+     - **Dört sapma:**
+       | | web | port (öncesi) |
+       |---|---|---|
+       | tracking | **1.2** | 1.0 (NeoButton varsayılanı) |
+       | satır yüksekliği | **1.5** | 1.2 (varsayılan) |
+       | swap satırı boşluğu | **6** (`gap-1.5`) | 8 |
+       | buton yükseklikleri | flex `stretch` → **hepsi eşit** | `Row` varsayılanı `center` → TORBA ötekilerden uzun |
+     - **Sonuncusu tek başına en sinsi olanı ve tam da düzeltmenin YAN
+       ETKİSİYDİ:** TORBA'nın 13px'lik sayacı satır yüksekliğini belirliyor
+       (web'de 19.5px). Yalnızca tracking/satır düzeltilseydi fark 2.4 →
+       **3px**e çıkıp YENİ bir görünür tutarsızlık üretecekti. Web'de bunu
+       flex'in `align-items: stretch` varsayılanı kapatıyor; Flutter `Row`
+       varsayılanı `center` olduğundan `IntrinsicHeight` +
+       `CrossAxisAlignment.stretch` şart (çıplak `stretch` sınırsız
+       yükseklikte patlar — raf satırında öğrenilen aynı ders).
+     - **NeoButton'ın VARSAYILANLARINA dokunulmadı** (Parça 37'nin deseni):
+       değerler yalnızca ölçülen 14 çağrı yerine geçiliyor. Tarandı —
+       varsayılana güvenen başka 4 çağrı yeri var
+       (`friend_moderation_sheet` ×3, `setup_screen` ×1) ve onların web
+       karşılığı ölçülmedi; varsayılanı değiştirmek onları da sessizce
+       kaydırırdı.
+     - **Kapsam BİLİNÇLİ olarak 2px genişletildi:** raf ↔ OYNA arası da 8'di,
+       web `flex gap-1.5 items-stretch` = **6**. Aynı satır ailesi, tek
+       karakterlik ölçülmüş bir düzeltme — gerekçesi burada yazılı olduğu
+       için yapıldı (Parça 53'ün kuralı: kapsamı kendi genişletmek de
+       daraltmak kadar riskli, ama gerekçe yazılırsa meşru).
+     - **Kalan 2px BİLİNÇLİ (Parça 37'nin emsali):** web 41.5, port 39.5 —
+       fark tam olarak web'in `border`ının yer kaplaması; portta çerçeve
+       `foregroundDecoration`da ve layout'a değmiyor. Telafi için 1px dolgu
+       EKLENMEDİ (çerçeve bir gün decoration'a taşınırsa iki kez sayılacak
+       bir sihirli sayı olurdu).
+     - **Test:** `game_screen_test.dart`'a yeni bir test — dört butonun
+       punto/tracking/satır yüksekliği, 6px boşluk, ve **TORBA'nın ötekilerle
+       AYNI yükseklikte** olduğu. Sonuncusu olmadan tracking düzeltmesi
+       yukarıdaki 3px'lik regresyonu üretip yine geçerdi.
+     - **Doğrulama sınırı — Parça 106/107'nin aynısı:** bu oturumun
+       konteynerinde Flutter SDK YOK, `dart analyze`/`flutter test`
+       KOŞULAMADI ve **negatif eş kurulamadı**; parantez dengesi elle
+       taranıp doğrulandı, tek gerçek kanıt CI. Cihazda görsel teyit
+       bekleniyor (`mobile/TESTING.md` 0.5).
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
@@ -4915,7 +4965,9 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   porta uyduruldu; mesaj kutusu artık `min-h-[30px]`) · **raf başlığı:**
   "7 harf" İKİ tarafta da yok, web'de ad artık BÜYÜK HARF DEĞİL
   (`Ironman`), başlık↔taş arası iki tarafta da 13px (web'e `pt-[7px]`
-  eklendi). Üçü de `main`'e merge edildi (`cd6c016`) ama **hiçbiri
+  eklendi) · **rafın altındaki aksiyon satırı** (port, Parça 108):
+  tracking 1.2 · satır 1.5 · swap boşluğu 6 · TORBA dahil hepsi EŞİT
+  yükseklikte. Üçü de `main`'e merge edildi (`cd6c016`) ama **hiçbiri
   merge sonrası cihazda görülmedi** — Pages/Vercel deploy'u beklendikten
   sonra bakılmalı, derleme sha'sı `cd6c016…` olmalı.
 - **13 Ağustos (Parça 72-89):** içerik sütunu genişliği · GİRİŞ satırı
