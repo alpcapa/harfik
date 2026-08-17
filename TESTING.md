@@ -569,8 +569,9 @@ tarayıcıda görülebilecek olanlar. **Admin hesabı gerekiyor.**
       asılı kalmamalı.
 - [ ] **Aktif Oyuncu grafiği iki seri gösteriyor** ("Aktif Oyuncu (28 gün)"
       mavi, "Dönem İçi Aktif" amber) ve legend'dan tek tek açılıp
-      kapanabiliyor. Altındaki açıklama satırı "…bu sayı bilerek MAU değil"
-      cümlesini içermeli — tanımın ekranda olması bilinçli.
+      kapanabiliyor. Tanım artık altta paragraf DEĞİL: "CSV İndir"in solundaki
+      `?` rozetine dokun → popup'ta "…bu sayı bilerek MAU değil" cümlesi
+      çıkmalı (16 Ağustos 2026'da taşındı).
 - [ ] **Periyot/granülerlik kontrolü grafiği GERÇEKTEN değiştiriyor.**
       Üstteki periyot kombosunu değiştir: Aktif Oyuncu grafiği de yeniden
       çekilmeli (Yeni Üye/Ziyaret ile aynı kontrolleri paylaşıyor).
@@ -681,9 +682,11 @@ toplamların korunması); aşağıdakiler gerçek istemcide görülmesi gerekenl
       HAM SAYILAR olmalı (yüzde değil).
 - [ ] **CSV İndir** çalışmalı; dosyada Kaynak/Kişi/Üye/Oyun/**Oynayan Kişi**
       sütunları ve bir TOPLAM satırı olmalı.
-- [ ] **Açıklama satırı okunuyor mu.** Tablonun altındaki metin "Kişi"/"Üye"/
-      "Oyun" tanımlarını, kohort OLMADIĞINI ve Bilinmiyor/Direkt farkını
-      anlatmalı — bu tablo bu not olmadan kolayca yanlış okunur.
+- [ ] **`?` popup'ı okunuyor mu.** Tanım artık tablonun altında paragraf
+      DEĞİL — "CSV İndir"in sağındaki `?` rozetine dokun: popup "Kişi"/"Üye"/
+      "Oyun" tanımlarını, kohort OLMADIĞINI, Bilinmiyor/Direkt farkını ve
+      oranın %100'ü aşabileceğini anlatmalı. Bu tablo bu not olmadan kolayca
+      yanlış okunur.
 - [ ] **Gizlilik metni güncel.** Gizlilik Politikası → "Toplanan Veriler"de
       kaynak etiketi maddesi olmalı ve "Son güncelleme: 16 Ağustos 2026"
       yazmalı (mobil uygulamadaki metin de AYNI).
@@ -734,6 +737,33 @@ gerekenler.
       oyun yok." demeli — boş kutular ya da "%0" DEĞİL.
 - [ ] **Admin olmayan hesap panele hiç giremiyor** (menüde "Admin Paneli"
       satırı yok) — bu iki RPC de admin dışına kapalı.
+
+## 9.11. Admin — metrik tanımı `?` rozetleri (16 Ağustos 2026)
+
+Grafik/tablo altındaki uzun açıklama paragrafları kaldırılıp tek bir popup'a
+taşındı. Ekranda kalan tek "açıklama" aktivasyonun DAĞILIM satırı — o bir
+açıklama değil veri.
+
+- [ ] **Her CSV'nin yanında bir `?` var.** Büyüme > Kullanıcı ve Büyüme >
+      Oyun'daki tüm grafikler + Cihaz/Kaynak Hunisi/Retention tabloları +
+      Üyeler ve Geri Bildirim listeleri — dokuz+iki yer.
+- [ ] **CSV'si olmayan iki panelde `?` başlığın yanında:** "Aktivasyon" ve
+      "YZ Dengesi". Bu ikisi CSV'ye bağlansaydı açıklamaları kaybolurdu.
+- [ ] **`?` bir DAİRE, elips değil** ve bulunduğu satırı büyütmemeli — kontrol
+      satırının yüksekliği "CSV İndir"in tek başına olduğu hâlle aynı kalmalı.
+- [ ] **Popup açılıyor ve kapanıyor.** Dokun → başlık + metin; "Kapat" ve
+      Escape kapatmalı. Panelin kendisi kapanMAMALI (iç içe dialog).
+- [ ] **Veri YOKKEN de `?` görünmeli.** Periyodu hiç veri olmayan bir aralığa
+      çek (ör. en kısa periyot + boş bir kova): tablo "Bu aralıkta veri yok."
+      derken `?` hâlâ orada olmalı — "bu grafik neyi sayıyor?" sorusu tam da
+      o anda sorulur. (CSV'nin kaybolması BEKLENEN: indirilecek satır yok.)
+- [ ] **Aktivasyonun dağılım satırı EKRANDA kalmalı** ("İlk oyununu bitirme
+      dağılımı — aynı gün: N · 1-3 gün: N · sonra: N"). Bu veri, popup'a
+      taşınMAMALI; popup yalnızca "Aktive = …" tanımını anlatmalı.
+- [ ] **Uzun metin taşmıyor.** "Kaynak Hunisi" popup'ı en uzunu — telefonda
+      kart ekrana sığmalı, sığmıyorsa kartın KENDİSİ kaydırılabilmeli (panel
+      değil).
+- [ ] **Hiçbir grafiğin altında artık hikaye paragrafı YOK.**
 
 ## 10. k-lig ödül & rütbe sistemi
 

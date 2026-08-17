@@ -21,6 +21,8 @@ interface GrowthChartProps<T extends { bucket: string }> {
   formatValue?: (v: number) => string;
   /** Verilirse "CSV İndir" linki gösterilir — dosya adının (uzantısız) temeli, tarih otomatik eklenir. */
   csvBaseName?: string;
+  /** Metrik tanımını açan `?` rozeti (AdminDashboard'ın `InfoHint`'i) — CSV linkinin solunda. */
+  infoHint?: React.ReactNode;
 }
 
 /** Satırdan dinamik bir seri anahtarının değerini okur — T'nin tam alan kümesi statik olarak bilinmez. */
@@ -69,6 +71,7 @@ export function GrowthChart<T extends { bucket: string }>({
   controls,
   formatValue = (v) => String(v),
   csvBaseName,
+  infoHint,
 }: GrowthChartProps<T>) {
   const [showTable, setShowTable] = useState(false);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
@@ -187,6 +190,10 @@ export function GrowthChart<T extends { bucket: string }>({
       <div className="flex items-center flex-wrap gap-x-2 gap-y-1.5">
         {controls}
         <div className="flex items-center gap-2 ml-auto shrink-0">
+          {/* Metrik tanımını açan `?` — CSV'nin SOLUNDA, veri boş olsa da
+              çizilir: "bu grafik neyi sayıyor?" sorusu tam da hiç veri
+              yokken sorulur (CSV ise indirilecek satır olmadan gizleniyor). */}
+          {infoHint}
           {csvBaseName && n > 0 && (
             <button
               type="button"
