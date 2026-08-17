@@ -21,6 +21,8 @@ import 'package:kelimeki/src/data/online_games_api.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/game/local_game_repo.dart';
 import 'package:kelimeki/src/ui/game/neo_button.dart';
+import 'package:kelimeki/src/ui/game/dialog_shell.dart';
+import 'package:kelimeki/src/ui/game/modal_shell.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:kelimeki/src/ui/auth/auth_modal.dart';
 import 'package:kelimeki/src/ui/game/count_badge.dart';
@@ -200,6 +202,31 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('lütfen giriş yapın'), findsNothing);
     expect(find.byType(GameScreen), findsOneWidget);
+  });
+
+  // 17 Ağustos 2026, cihaz testi — kullanıcı: *"çıkan popup başlıksız"*.
+  // Web'de bu uyarı ortak `Modal.tsx`'i KULLANMIYOR; `Setup.tsx` içinde elle
+  // kurulmuş 384px'lik onay kartı (`max-w-sm`/`rounded-2xl`/`p-6`, ✕ köşede
+  // `absolute`). Port `KModal`a `title: ''` geçmişti — niyet doğruydu ama
+  // kabuk başlık bandını yine de çizdiğinden üstte boş bir alan + ayraç
+  // kalıyordu. Bu test yanlış kabuğa dönüşü yakalar.
+  testWidgets('misafir uyarısı KModal DEĞİL web onay kartını kullanır',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await pumpSetup(tester, services());
+
+    await tester.tap(find.text('OYUNU BAŞLAT'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(KDialogCard), findsOneWidget);
+    expect(find.byType(KModal), findsNothing,
+        reason: 'başlıklı/ayraçlı kabuk bu kartta üstte boş bir bant bırakır');
+    // ✕ kartın kendi köşesinde durmalı (web `absolute top-3 right-3`), yani
+    // gövde metniyle AYNI hizada değil onun ÜSTÜNDE ve SAĞINDA.
+    final kapat = tester.getCenter(find.byTooltip('Kapat'));
+    final govde = tester.getTopLeft(find.textContaining('lütfen giriş yapın'));
+    expect(kapat.dx, greaterThan(govde.dx),
+        reason: '✕ gövdenin sağında olmalı');
   });
 
   testWidgets('misafir uyarısında ✕ ne oyunu başlatır ne giriş açar',

@@ -4709,6 +4709,26 @@ ankrajı (Parça 86), HEIC seçimi ve galeri izni reddi (Parça 87).
 > kabul edilemez** — FAZ B'de `kelimeki://` kanalı kurulunca yeniden
 > koşulmalı.
 
+
+> **17 Ağustos 2026 — Blok 5'in ilk bulgusu: misafir uyarısı YANLIŞ kabukla
+> çiziliyordu.** Kullanıcı ekran görüntüsüyle bildirdi: *"çıkan popup
+> başlıksız"* — kartın üstünde boş bir bant ve bir ayraç duruyordu.
+> **Kök sebep kabuk seçimi:** web'de İKİ ayrı kabuk var (bkz.
+> `dialog_shell.dart` başlığı) ve bu uyarı ortak `Modal.tsx`'i KULLANMIYOR;
+> `Setup.tsx` içinde elle kurulmuş 384px'lik onay kartı
+> (`max-w-sm`/`rounded-2xl`/`p-6`, ✕ köşede `absolute`). Port `KModal`a
+> `title: ''` geçmişti — yorumunda niyet doğru yazılıydı ("web'de bu popup
+> başlıksız") ama `KModal` başlık bandını boş başlıkla da çiziyor.
+> **Düzeltme:** uyarı `KDialogCard`a taşındı; kabuğa opsiyonel bir `onClose`
+> eklendi (✕ 28×28, kart kenarından 12px — web `top-3 right-3`; gövdeye
+> web'in `pr-6`sı). `onClose` verilmeyen 8 kullanım yeri BİREBİR aynı kaldı
+> (dolgu Container'dan çocuğa taşındı, görsel sonuç aynı). Regresyon testi:
+> `setup_screen_test.dart` → *"misafir uyarısı KModal DEĞİL web onay kartını
+> kullanır"*.
+> **Ders:** bir modalı porta taşırken "web'de başlık var mı?" yetmez, önce
+> **"web hangi kabuğu kullanıyor?"** sorulmalı — bu projede web'in iki
+> kabuğu var ve biri ortak bileşen değil, ekranın kendi içinde.
+
 ### Cihaz turu GÖRMEMİŞ, biriken maddeler
 
 Son iki günde düzeltme yapıldıkça listeye madde eklendi ama o maddeler

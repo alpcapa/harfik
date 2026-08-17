@@ -71,11 +71,23 @@ class KDialogCard extends StatelessWidget {
   /// HER ZAMAN ilk sırada = SOLDA (Parça 25 — web'in JSX sırası).
   final List<Widget> actions;
 
+  /// Verilirse sağ üste bir ✕ konur (web: `absolute top-3 right-3`, 28×28).
+  ///
+  /// Web'de bu kartların ÇOĞUNDA ✕ YOK — vazgeçme yolu zaten "VAZGEÇ"
+  /// butonu (kök `CLAUDE.md`: *"Vazgeç'i zaten olan dialoglara ayrıca X
+  /// eklenmedi, gereksiz"*). ✕ yalnızca iptal butonu OLMAYAN kartta var:
+  /// Setup'ın "Giriş Yap / Devam" uyarısı — orada Escape'in "Devam"a
+  /// basılmış gibi davranması yanlış olurdu, o yüzden ayrı bir "sadece
+  /// kapat" yolu gerekiyor. Yeni bir kullanım yeri eklerken önce web'de
+  /// gerçekten ✕ olup olmadığına bak.
+  final VoidCallback? onClose;
+
   const KDialogCard({
     super.key,
     this.title,
     this.content,
     this.actions = const [],
+    this.onClose,
   });
 
   @override
@@ -84,7 +96,12 @@ class KDialogCard extends StatelessWidget {
     if (title != null) children.add(title!);
     if (content != null) {
       if (children.isNotEmpty) children.add(const SizedBox(height: 16));
-      children.add(content!);
+      // ✕ varken gövde onun ALTINA girmesin — web'de aynı paragraf `pr-6`
+      // (24) taşıyor. Butonlara uygulanMAZ (web'de de satırın dolgusu yok).
+      children.add(onClose == null
+          ? content!
+          : Padding(
+              padding: const EdgeInsets.only(right: 24), child: content!));
     }
     if (actions.isNotEmpty) {
       // web: `gap-4` (16) + butonlar satırının kendi `mt-1`i (4).
@@ -139,13 +156,48 @@ class KDialogCard extends StatelessWidget {
           borderWidth: 1,
           shadows: kFloatingCardShadows,
         ),
-        padding: const EdgeInsets.all(kDialogPadding),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: children,
+        // Dolgu Container'da DEĞİL çocukta: ✕ kartın kenarından 12px içeride
+        // durmalı (web `top-3 right-3`), oysa Container'ın 24'lük dolgusu
+        // içindeki bir `Positioned` 36'ya düşerdi. `onClose` yokken sonuç
+        // birebir aynı — yalnızca dolgunun yeri değişti.
+        child: _withCloseButton(
+          Padding(
+            padding: const EdgeInsets.all(kDialogPadding),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: children,
+            ),
+          ),
         ),
       ),
+    );
+  }
+
+  /// `onClose` yoksa gövdeyi olduğu gibi döner (sıfır davranış farkı).
+  Widget _withCloseButton(Widget body) {
+    if (onClose == null) return body;
+    return Stack(
+      children: [
+        body,
+        Positioned(
+          top: 12,
+          right: 12,
+          child: SizedBox(
+            width: 28, // web `w-7 h-7`
+            height: 28,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              tooltip: 'Kapat',
+              onPressed: onClose,
+              // KModal'ın ✕'iyle AYNI glyph/boy/renk — web'de ikisi de
+              // `text-lg text-muted` (`modal_shell.dart`).
+              icon: const Icon(Icons.close, size: 18, color: kMuted),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -50,7 +50,7 @@ import '../tokens.dart';
 import '../game/neo_box.dart';
 import '../auth/auth_modal.dart';
 import '../auth/legal_modals.dart';
-import '../game/modal_shell.dart';
+import '../game/dialog_shell.dart';
 import '../feedback/feedback_modal.dart';
 import '../../data/feedback_api.dart';
 import '../../util/offline_notice.dart';
@@ -658,46 +658,33 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     final auth = widget.services.auth;
     final choice = await showDialog<_GuestChoice>(
       context: context,
-      builder: (ctx) => KModal(
-        // Web'de bu popup başlıksız (yalnızca ✕). Ham `Dialog` KURULMADI:
-        // bu projede aynı sapma üç kez düzeltildi (Parça 26/47/50) — web
-        // hangi bileşeni kullanıyorsa portta da ortak kabuk kullanılır.
-        title: '',
+      // `KModal` DEĞİL `KDialogCard` — 17 Ağustos 2026, cihaz testinde
+      // bulundu (kullanıcı: *"çıkan popup başlıksız"*). Web'de İKİ ayrı
+      // kabuk var (bkz. `dialog_shell.dart` başlığı) ve bu uyarı ortak
+      // `Modal.tsx`'i KULLANMIYOR: `Setup.tsx` içinde elle kurulmuş
+      // 384px'lik onay kartı (`max-w-sm`/`rounded-2xl`/`p-6`, ✕ köşede
+      // `absolute`). Port başlangıçta `KModal`a `title: ''` geçmişti —
+      // niyet doğruydu ("web'de başlıksız") ama kabuk başlık bandını yine
+      // de çizdiğinden üstte boş bir alan + ayraç kalıyordu.
+      builder: (ctx) => KDialogCard(
         onClose: () => Navigator.of(ctx).pop(_GuestChoice.dismiss),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Oyunların istatistikleri, k-lig ve arkadaşınla canlı oyun '
-              'için lütfen giriş yapın.',
-              style: TextStyle(
-                  fontFamily: 'SpaceGrotesk',
-                  fontSize: 14,
-                  height: 1.625,
-                  color: kText),
-            ),
-            const SizedBox(height: 16),
-            // Kabul butonu SOLDA — web'in düz flex sırası (Parça 25).
-            Row(children: [
-              Expanded(
-                child: NeoButton(
-                  label: 'GİRİŞ YAP',
-                  variant: NeoButtonVariant.accent,
-                  onPressed: () => Navigator.of(ctx).pop(_GuestChoice.login),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: NeoButton(
-                  label: 'DEVAM',
-                  variant: NeoButtonVariant.neutral,
-                  onPressed: () => Navigator.of(ctx).pop(_GuestChoice.proceed),
-                ),
-              ),
-            ]),
-          ],
+        content: const Text(
+          'Oyunların istatistikleri, k-lig ve arkadaşınla canlı oyun '
+          'için lütfen giriş yapın.',
+          style: kDialogBodyStyle,
         ),
+        // Kabul butonu SOLDA — web'in düz flex sırası (Parça 25).
+        actions: [
+          kDialogButton(
+            label: 'GİRİŞ YAP',
+            variant: NeoButtonVariant.accent,
+            onPressed: () => Navigator.of(ctx).pop(_GuestChoice.login),
+          ),
+          kDialogButton(
+            label: 'DEVAM',
+            onPressed: () => Navigator.of(ctx).pop(_GuestChoice.proceed),
+          ),
+        ],
       ),
     );
     // "Giriş Yap" dalı: popup kapandıktan SONRA giriş penceresini aç (web
