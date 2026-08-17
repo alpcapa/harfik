@@ -201,7 +201,7 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="btn-raised-neutral w-full bg-panel border border-border text-text rounded-md px-3 py-1.5 text-[10px] font-mono uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+            className="btn-raised-neutral w-full bg-panel border border-border text-text rounded-md px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
           >
             {uploading ? 'Yükleniyor…' : 'Fotoğraf Değiştir'}
           </button>
