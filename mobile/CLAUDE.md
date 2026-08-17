@@ -4660,7 +4660,7 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        verinin tazeliği bir varsayım değil, kontrol edilmesi gereken bir
        ön koşuldur.
 
-## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 16 Ağustos 2026)
+## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
 o dosyalar "bir ilerleme kaydı değildir, her sürüm öncesi baştan
@@ -4724,6 +4724,12 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
 - ~~**14 Ağustos (Parça 96):** çevrimdışı Canlı oyun — açılışta panel +
   hamlede açıklayıcı uyarı (iki platform)~~ → **16 Ağustos'ta Blok 7
   turunda koşuldu** (uçak modu adımlarıyla birlikte).
+- **16-17 Ağustos — kök `TESTING.md`'nin İKİ yeni admin bölümü hiç
+  koşulmadı (yalnız web, admin hesabı ister):** **9.10** Oyun Süresi
+  medyana geçti + YZ Dengesi paneli · **9.11** metrik tanımlarının `?`
+  popup'ına taşınması (13 rozet). Portta admin paneli bilinçli olarak YOK,
+  yani bunlar bir cihaz turuna değil web'de admin girişine bağlı. (Aynı
+  günün 9.9 Kaynak Hunisi bölümü gerçek cihazda admin hesabıyla koşuldu.)
 - **14 Ağustos (Parça 95) — Canlı turunun BEŞ düzeltmesi, hiçbiri cihazda
   teyit edilmedi:** boş taslakta OYNA (web Canlı) · gönderim hatasının
   görünmesi (iki platform, uçak modu) · sohbetin ön plana dönüşte

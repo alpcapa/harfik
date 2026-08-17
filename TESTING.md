@@ -571,7 +571,7 @@ tarayıcıda görülebilecek olanlar. **Admin hesabı gerekiyor.**
       mavi, "Dönem İçi Aktif" amber) ve legend'dan tek tek açılıp
       kapanabiliyor. Tanım artık altta paragraf DEĞİL: "CSV İndir"in solundaki
       `?` rozetine dokun → popup'ta "…bu sayı bilerek MAU değil" cümlesi
-      çıkmalı (16 Ağustos 2026'da taşındı).
+      çıkmalı (17 Ağustos 2026'da taşındı).
 - [ ] **Periyot/granülerlik kontrolü grafiği GERÇEKTEN değiştiriyor.**
       Üstteki periyot kombosunu değiştir: Aktif Oyuncu grafiği de yeniden
       çekilmeli (Yeni Üye/Ziyaret ile aynı kontrolleri paylaşıyor).
@@ -595,36 +595,47 @@ tarayıcıda görülebilecek olanlar. **Admin hesabı gerekiyor.**
 > sonradan silinecek). Bu ölçekte kohort eğrileri gürültüdür; buradaki amaç
 > enstrümantasyonun ÇALIŞTIĞINI doğrulamak, eğrileri yorumlamak değil.
 
-## 9.8. Admin — Platform dökümü (14 Ağustos 2026)
+## 9.8. Admin — Platform dökümü (14 Ağustos 2026) — **PARK EDİLDİ**
 
 > **TABLO 15 Ağustos 2026'da PANELDEN KALDIRILDI** (kullanıcı kararı: bugün
 > karar verdirecek bir şey söylemiyor, uygulamalar mağazaya çıkınca
 > web/iOS/Android/diğer olarak yeniden yapılandırılacak). **Veri toplanmaya
-> DEVAM EDİYOR** (`games.platform` + `online_game_clients`), yani aşağıdaki
-> UI maddeleri şu an KOŞULAMAZ — tablo geri geldiğinde geçerli olacaklar.
-> Doğrulama o güne kadar SQL'den yapılır.
+> DEVAM EDİYOR** (`games.platform` + `online_game_clients`).
+>
+> Aşağıdaki UI maddeleri bilerek **kutusuz** — bugün koşulacak bir iş
+> DEĞİLLER, tablo geri geldiğinde çevrilecek bir taslaktırlar. Doğrulama o
+> güne kadar SQL'den yapılır. Bu bölümdeki tek KOŞULABİLİR madde en alttaki
+> gizlilik metni kontrolü (veri toplandığı sürece geçerli).
 
-- [ ] **Tablo yükleniyor.** Admin Paneli → Büyüme → Kullanıcı: "Cihaz"ın
-      hemen altında **Platform** tablosu (Platform / Oyun / Oyuncu / %).
-      Altındaki açıklama satırı "Cihaz"dan farkını anlatmalı.
-- [ ] **Web'den oynanan yeni bir oyun `Web` satırına düşüyor.** kelimeki.com'da
-      girişliyken bir YZ oyunu BİTİR (yarıda bırakma — satır ancak oyun
-      bitince yazılıyor), sonra paneli aç: `Web` satırının "Oyun" sayısı 1
-      artmalı. Toplam da artmalı, `Bilinmiyor` DEĞİŞMEMELİ.
-- [ ] **Uygulamadan oynanan oyun `iOS`/`Android` satırına düşüyor.** Aynı
-      şeyi mobil uygulamada yap (GitHub Pages web derlemesinde `App (Tarayıcı)`
-      satırına düşer — o da doğru davranış, uygulamanın tarayıcıdaki hâli).
-- [ ] **Canlı oyun da sayılıyor.** İki hesapla bir Canlı oyunu SONUNA kadar
-      bitir; her katılımcı KENDİ oynadığı istemcinin satırına düşmeli (biri
-      web'den biri app'ten oynadıysa iki farklı satır).
-- [ ] **"Bilinmiyor" satırı GİZLENMEMELİ.** Kolon 14 Ağustos 2026'da eklendi;
-      öncesinde biten ~300 oyun orada toplanıyor. Satırı görmüyorsan tablo
-      yanlış filtreliyor demektir — yüzdeler de yalancı olur.
-- [ ] **CSV İndir** çalışmalı; dosyada Platform/Oyun/Oyuncu/% sütunları ve bir
-      TOPLAM satırı olmalı.
+**Tablo geri geldiğinde koşulacaklar (bugün DEĞİL):**
+
+- **Tablo yükleniyor.** Admin Paneli → Büyüme → Kullanıcı: "Cihaz"ın
+  hemen altında **Platform** tablosu (Platform / Oyun / Oyuncu / %).
+  "Cihaz"dan farkı ekranda yazmalı — 17 Ağustos 2026'dan beri tablonun
+  altındaki paragrafta değil, "CSV İndir"in solundaki `?` popup'ında
+  (bkz. 9.11), yani tablo geri gelirken `HINTS`e kendi girdisi de eklenmeli.
+- **Web'den oynanan yeni bir oyun `Web` satırına düşüyor.** kelimeki.com'da
+  girişliyken bir YZ oyunu BİTİR (yarıda bırakma — satır ancak oyun
+  bitince yazılıyor), sonra paneli aç: `Web` satırının "Oyun" sayısı 1
+  artmalı. Toplam da artmalı, `Bilinmiyor` DEĞİŞMEMELİ.
+- **Uygulamadan oynanan oyun `iOS`/`Android` satırına düşüyor.** Aynı
+  şeyi mobil uygulamada yap (GitHub Pages web derlemesinde `App (Tarayıcı)`
+  satırına düşer — o da doğru davranış, uygulamanın tarayıcıdaki hâli).
+- **Canlı oyun da sayılıyor.** İki hesapla bir Canlı oyunu SONUNA kadar
+  bitir; her katılımcı KENDİ oynadığı istemcinin satırına düşmeli (biri
+  web'den biri app'ten oynadıysa iki farklı satır).
+- **"Bilinmiyor" satırı GİZLENMEMELİ.** Kolon 14 Ağustos 2026'da eklendi;
+  öncesinde biten ~300 oyun orada toplanıyor. Satırı görmüyorsan tablo
+  yanlış filtreliyor demektir — yüzdeler de yalancı olur.
+- **CSV İndir** çalışmalı; dosyada Platform/Oyun/Oyuncu/% sütunları ve bir
+  TOPLAM satırı olmalı.
+
+**Bugün koşulabilir:**
+
 - [ ] **Gizlilik metni güncel.** Gizlilik Politikası → "Toplanan Veriler"de
       "Bir oyunu hangi istemciden oynadığınız…" maddesi olmalı (mobil
-      uygulamadaki metin de AYNI).
+      uygulamadaki metin de AYNI). Tablo panelde olmasa da veri
+      toplandığından bu madde metinde KALMALI.
 
 ## 9.9. Admin — Kaynak Hunisi (16 Ağustos 2026)
 
@@ -738,17 +749,20 @@ gerekenler.
 - [ ] **Admin olmayan hesap panele hiç giremiyor** (menüde "Admin Paneli"
       satırı yok) — bu iki RPC de admin dışına kapalı.
 
-## 9.11. Admin — metrik tanımı `?` rozetleri (16 Ağustos 2026)
+## 9.11. Admin — metrik tanımı `?` rozetleri (17 Ağustos 2026)
 
 Grafik/tablo altındaki uzun açıklama paragrafları kaldırılıp tek bir popup'a
 taşındı. Ekranda kalan tek "açıklama" aktivasyonun DAĞILIM satırı — o bir
 açıklama değil veri.
 
-- [ ] **Her CSV'nin yanında bir `?` var.** Büyüme > Kullanıcı ve Büyüme >
-      Oyun'daki tüm grafikler + Cihaz/Kaynak Hunisi/Retention tabloları +
-      Üyeler ve Geri Bildirim listeleri — dokuz+iki yer.
+- [ ] **Her CSV'nin yanında bir `?` var — 11 yer.** 6 grafik (Yeni Üye/Ziyaret,
+      Aktif Oyuncu, Arkadaşlık, Oyun Sayısı, Oyun Süresi, Beğeni/Paylaşma) +
+      3 tablo (Retention, Kaynak Hunisi, Cihaz) + 2 liste (Üyeler, Geri
+      Bildirim). `?` her zaman "CSV İndir"in SOLUNDA.
 - [ ] **CSV'si olmayan iki panelde `?` başlığın yanında:** "Aktivasyon" ve
       "YZ Dengesi". Bu ikisi CSV'ye bağlansaydı açıklamaları kaybolurdu.
+      Toplam 13 rozet; her birinin `HINTS`te kendi metni var, ikisi aynı
+      metni göstermemeli.
 - [ ] **`?` bir DAİRE, elips değil** ve bulunduğu satırı büyütmemeli — kontrol
       satırının yüksekliği "CSV İndir"in tek başına olduğu hâlle aynı kalmalı.
 - [ ] **Popup açılıyor ve kapanıyor.** Dokun → başlık + metin; "Kapat" ve

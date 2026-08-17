@@ -32,6 +32,10 @@ npm run build    # üretim derlemesi (dist/)
 npm run preview  # derlemeyi yerelde önizle
 npm run lint     # TypeScript tip kontrolü
 npm run test     # Playwright duman testleri (tests/smoke.spec.ts)
+
+# Birim test çatısı yok; riskli saf mantık ayrı doğrulama betikleriyle sınanır:
+npm run verify-cloud-save-mirror # bulut kaydının çevrimdışı karar mantığı
+npm run verify-fetch-my-games    # oyun geçmişi: ağ hatası ↔ boş liste ayrımı
 ```
 
 `npm run test` kritik yolu kontrol eder (uygulama açılıyor, oyun başlıyor, YZ
@@ -84,7 +88,7 @@ src/
 │   ├── RemainingTilesModal.tsx  # torbada kalan taşlar
 │   ├── WildcardModal.tsx        # joker taşı harf seçimi
 │   ├── FeedbackModal.tsx        # görüş/şikayet bildirme formu
-│   ├── AdminDashboard.tsx       # admin paneli: üyeler, oyunlar, büyüme (aktif oyuncu/aktivasyon/retention), geri bildirim (yalnızca is_admin)
+│   ├── AdminDashboard.tsx       # admin paneli: üyeler, oyunlar, büyüme (aktif oyuncu/aktivasyon/retention/kaynak hunisi/YZ dengesi), geri bildirim + şikayetler (yalnızca is_admin); metrik tanımları "?" rozetlerinin açtığı popup'ta
 │   ├── MemberMessageModal.tsx   # admin panelinden bir üyeye serbest metinli mesaj gönderme compose modalı
 │   ├── AdminChatTranscriptModal.tsx # admin paneli Şikayetler sekmesi: bitmiş bir Canlı oyunun tam sohbet dökümü
 │   ├── PlayerScoreCard.tsx      # bir oyuncunun ScoreCard'ının salt-okunur görünümü (admin panelinden ve k-lig'den açılır)
@@ -99,6 +103,7 @@ src/
 │   ├── LiveGamesTab.tsx         # Canlı sekmesi: davet bekleyen/aktif/rakip bekleyen oyun listesi + Kabul/Reddet
 │   ├── LiveGameCreateForm.tsx   # Canlı oyun kurulumu: oyuncu sayısı + arkadaş seçici + davet gönderme
 │   ├── FriendSuggestModal.tsx   # bir Canlı davet kabul edildikten sonra, henüz arkadaş olunmayan katılımcılara toplu istek gönderme önerisi
+│   ├── FriendModerationModal.tsx # arkadaş satırındaki 🚫/🚩 rozetinden açılan geri alma paneli (sessizden çıkar / raporu geri çek)
 │   ├── OnlineGameScreen.tsx     # gerçek Canlı oyun ekranı — Board/Rack/GameHeader'ı Supabase state'ine (Realtime) bağlar
 │   ├── RelationIcons.tsx        # arkadaşlık ilişkisi ikonları (ekle · istek gönderildi · kabul et · çıkar) — FriendsModal ve PlayerScoreCard ortak, path Flutter portuyla aynı fonttan
 │   ├── Avatar.tsx               # profil fotoğrafı bileşeni
@@ -114,7 +119,7 @@ src/
 ├── data/
 │   ├── words.ts          # Türkçe kelime listesi (~63 bin kelime, üretilmiş)
 │   ├── wordSetLoader.ts  # words.ts'i ayrı bir chunk olarak lazy-load eder
-│   ├── meanings.json     # kelime → anlamlar (tembel yüklenir, ~9 MB)
+│   ├── meanings.json     # kelime → anlamlar (tembel yüklenir, ~6,2 MB — service worker precache'inde BİLEREK yok)
 │   ├── meanings.ts       # anlam yükleyici
 │   └── tiles.ts          # Türkçe harf dağılımı ve puanlar (100 taş)
 ├── utils/
@@ -124,7 +129,7 @@ src/
 │   ├── boardSnapshot.ts # oyun sonu tahtasının games.board_snapshot JSON'una serileştirilmesi/geri yüklenmesi
 │   ├── bag.ts          # taş torbası (buildBag, drawTiles)
 │   ├── outline.ts      # bölge/bonus dış hat SVG path üretimi
-│   ├── turkish.ts      # trUpper / trLower (i/İ, ı/I dönüşümü)
+│   ├── turkish.ts      # trUpper / trLower (i/İ, ı/I dönüşümü) + trCompare (Türkçe alfabetik sıralama)
 │   ├── random.ts       # karıştırma
 │   ├── ranking.ts      # oyun sonu sıralama (teslim olanlar en sona)
 │   ├── gameRecord.ts   # buildGameRecord — bir GameState'ten games tablosuna yazılacak kaydı üretir (canlı oyun bitişi ve gecikmeli terk-edilme kaydı ortak)
@@ -135,6 +140,7 @@ src/
 │   ├── onboarding.ts   # ilk açılış hızlı başlangıç ipucu bayrağı
 │   ├── visitTracking.ts # anonim misafir ziyaret kimliği, cihaz/standalone tespiti, UTM kaynağı
 │   ├── platform.ts     # bu istemcinin platformu ('web') — telemetri, tek kaynak
+│   ├── offlineNotice.ts # sunucuya ulaşılamadığında gösterilen metinler + ağ hatası tespiti (Flutter portuyla testli olarak senkron)
 │   ├── shareBoardImage.ts # bir DOM düğümünü (tahta önizlemesi) paylaşılabilir PNG'ye çevirir (html-to-image)
 │   ├── friendInvite.ts # bekleyen arkadaşlık davet token'ı için tek seferlik localStorage kuyruğu
 │   ├── csvExport.ts    # admin paneli tabloları/grafikleri için CSV indirme yardımcısı
