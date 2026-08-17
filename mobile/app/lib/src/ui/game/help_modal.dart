@@ -355,7 +355,7 @@ class _QuickStart extends StatelessWidget {
       children: [
         const _QuickItem(
           icon: '🎯',
-          text: '2 ya da 4 oyuncuyla, **Yapay Zekâ**\'ya veya arkadaşlarına '
+          text: '2 ya da 4 oyuncuyla, **Yapay Zeka**\'ya veya arkadaşlarına '
               'karşı oynanır.',
         ),
         const SizedBox(height: 8),
@@ -434,7 +434,7 @@ class _DetailedRules extends StatelessWidget {
       const _Section(
         title: 'Nasıl Oynanır?',
         children: [
-          _P('Kelimeki, Yapay Zekâ\'ya veya arkadaşlarına karşı oynanan '
+          _P('Kelimeki, Yapay Zeka\'ya veya arkadaşlarına karşı oynanan '
               'strateji odaklı bir kelime oyunudur. Her oyuncu kendi '
               'köşesinden başlar; kurduğu her kelimeyle puan toplar, '
               'bölgesini büyütür ve tahtanın merkezine doğru ilerleyerek '

@@ -96,7 +96,7 @@ function QuickStart({ onDetailedClick }: { onDetailedClick: () => void }) {
   return (
     <div className="flex flex-col gap-2">
       <QuickItem icon="🎯">
-        2 ya da 4 oyuncuyla, <strong>Yapay Zekâ</strong>'ya veya arkadaşlarına karşı oynanır.
+        2 ya da 4 oyuncuyla, <strong>Yapay Zeka</strong>'ya veya arkadaşlarına karşı oynanır.
       </QuickItem>
       <QuickItem icon="🏠">
         Kendi bölgenden başlar, tahtanın <strong>ortasına doğru</strong> bölgeni
@@ -142,7 +142,7 @@ function DetailedRules() {
     <div className="flex flex-col gap-5">
       <Section title="Nasıl Oynanır?">
         <P>
-          Kelimeki, Yapay Zekâ'ya veya arkadaşlarına karşı oynanan strateji odaklı bir kelime
+          Kelimeki, Yapay Zeka'ya veya arkadaşlarına karşı oynanan strateji odaklı bir kelime
           oyunudur. Her oyuncu
           kendi köşesinden başlar; kurduğu her kelimeyle puan toplar, bölgesini büyütür ve
           tahtanın merkezine doğru ilerleyerek üstünlük kurmaya çalışır.
