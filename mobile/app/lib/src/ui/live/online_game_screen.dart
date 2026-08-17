@@ -1546,97 +1546,97 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                         const EdgeInsets.fromLTRB(12, 6, 12, 0),
                                     child: IntrinsicHeight(
                                       child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: [
-                                          Expanded(
-                                            child: KeyedSubtree(
-                                              key: _rackKey,
-                                              child: RackWidget(
-                                                tiles: me.rack,
-                                                selectedTile:
-                                                    state.selectedTile,
-                                                onSelect: (i) {
-                                                  if (state.swapMode) {
-                                                    if (!_canAct) return;
-                                                    _controller.dispatch(
-                                                        ToggleSwapTileAction(
-                                                            i));
-                                                  } else {
-                                                    if (!_canEdit) return;
-                                                    _controller.dispatch(
-                                                        SelectTileAction(i));
-                                                  }
-                                                },
-                                                title: me.name,
-                                                color: _colorOf(_mySlot),
-                                                swapMode: state.swapMode,
-                                                swapSelection:
-                                                    state.swapSelection,
-                                                dragHiddenIndex:
-                                                    _hiddenSource is _RackSource
-                                                        ? (_hiddenSource
-                                                                as _RackSource)
-                                                            .index
-                                                        : null,
-                                                onTilePointerDown: (i, e) =>
-                                                    _beginTileDrag(
-                                                        _RackSource(
-                                                            i, me.rack[i]),
-                                                        e),
-                                                onTilePointerMove:
-                                                    _moveTileDrag,
-                                                onTilePointerUp: _endTileDrag,
-                                                onTilePointerCancel:
-                                                    _cancelTileDrag,
-                                              ),
-                                            ),
-                                          ),
-                                          if (!state.swapMode) ...[
-                                            const SizedBox(width: 8),
-                                            state.isGameOver
-                                                // Web (OnlineGameScreen.tsx
-                                                // ~1018): tek satır,
-                                                // `text-[15px]` + `px-5` —
-                                                // OYNA'dan (12px) belirgin
-                                                // BÜYÜK olması bilinçli, raf
-                                                // (`flex-1 min-w-0`) buna
-                                                // göre daralıyor. Port
-                                                // `\n` ile iki satıra bölüp
-                                                // 12px'te bırakmıştı.
-                                                ? NeoButton(
-                                                    label: 'TEKRAR OYNA',
-                                                    variant:
-                                                        NeoButtonVariant.accent,
-                                                    fontSize: 15,
-                                                    letterSpacing: 1.2,
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 20),
-                                                    onPressed: _handleRematch,
-                                                  )
-                                                : NeoButton(
-                                                    label: _busy
-                                                        ? 'GÖNDERİLİYOR…'
-                                                        : 'OYNA',
-                                                    variant:
-                                                        NeoButtonVariant.accent,
-                                                    fontSize:
-                                                        12, // web text-[12px]
-                                                    letterSpacing: 1.2,
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 20),
-                                                    // Boş taslakta da aktif —
-                                                    // gerekçe game_screen.dart'ın
-                                                    // aynı satırında (kardeş
-                                                    // ekran çifti).
-                                                    onPressed: _canAct && !_busy
-                                                        ? _handlePlay
-                                                        : null,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.stretch,
+                                            children: [
+                                              Expanded(
+                                                child: KeyedSubtree(
+                                                  key: _rackKey,
+                                                  child: RackWidget(
+                                                    tiles: me.rack,
+                                                    selectedTile:
+                                                        state.selectedTile,
+                                                    onSelect: (i) {
+                                                      if (state.swapMode) {
+                                                        if (!_canAct) return;
+                                                        _controller.dispatch(
+                                                            ToggleSwapTileAction(
+                                                                i));
+                                                      } else {
+                                                        if (!_canEdit) return;
+                                                        _controller.dispatch(
+                                                            SelectTileAction(i));
+                                                      }
+                                                    },
+                                                    title: me.name,
+                                                    color: _colorOf(_mySlot),
+                                                    swapMode: state.swapMode,
+                                                    swapSelection:
+                                                        state.swapSelection,
+                                                    dragHiddenIndex:
+                                                        _hiddenSource is _RackSource
+                                                            ? (_hiddenSource
+                                                                    as _RackSource)
+                                                                .index
+                                                            : null,
+                                                    onTilePointerDown: (i, e) =>
+                                                        _beginTileDrag(
+                                                            _RackSource(
+                                                                i, me.rack[i]),
+                                                            e),
+                                                    onTilePointerMove:
+                                                        _moveTileDrag,
+                                                    onTilePointerUp: _endTileDrag,
+                                                    onTilePointerCancel:
+                                                        _cancelTileDrag,
                                                   ),
-                                          ],
-                                        ],
+                                                ),
+                                              ),
+                                              if (!state.swapMode) ...[
+                                                const SizedBox(width: 6),
+                                                state.isGameOver
+                                                    // Web (OnlineGameScreen.tsx
+                                                    // ~1018): tek satır,
+                                                    // `text-[15px]` + `px-5` —
+                                                    // OYNA'dan (12px) belirgin
+                                                    // BÜYÜK olması bilinçli, raf
+                                                    // (`flex-1 min-w-0`) buna
+                                                    // göre daralıyor. Port
+                                                    // `\n` ile iki satıra bölüp
+                                                    // 12px'te bırakmıştı.
+                                                    ? NeoButton(
+                                                        label: 'TEKRAR OYNA',
+                                                        variant:
+                                                            NeoButtonVariant.accent,
+                                                        fontSize: 15,
+                                                        letterSpacing: 1.2,
+                                                        padding: const EdgeInsets
+                                                            .symmetric(
+                                                            horizontal: 20),
+                                                        onPressed: _handleRematch,
+                                                      )
+                                                    : NeoButton(
+                                                        label: _busy
+                                                            ? 'GÖNDERİLİYOR…'
+                                                            : 'OYNA',
+                                                        variant:
+                                                            NeoButtonVariant.accent,
+                                                        fontSize:
+                                                            12, // web text-[12px]
+                                                        letterSpacing: 1.2,
+                                                        padding: const EdgeInsets
+                                                            .symmetric(
+                                                            horizontal: 20),
+                                                        // Boş taslakta da aktif —
+                                                        // gerekçe game_screen.dart'ın
+                                                        // aynı satırında (kardeş
+                                                        // ekran çifti).
+                                                        onPressed: _canAct && !_busy
+                                                            ? _handlePlay
+                                                            : null,
+                                                      ),
+                                              ],
+                                            ],
                                       ),
                                     ),
                                   ),
@@ -1649,6 +1649,8 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                         ? Row(children: [
                                             Expanded(
                                               child: NeoButton(
+                                                letterSpacing: 1.2,
+                                                lineHeight: 1.5,
                                                 label: state.swapSelection
                                                         .isNotEmpty
                                                     ? 'DEĞİŞTİR (${state.swapSelection.length})'
@@ -1662,9 +1664,11 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                                     : null,
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
+                                            const SizedBox(width: 6),
                                             Expanded(
                                               child: NeoButton(
+                                                letterSpacing: 1.2,
+                                                lineHeight: 1.5,
                                                 label: 'VAZGEÇ',
                                                 onPressed: _canAct
                                                     ? () => _controller.dispatch(
@@ -1673,9 +1677,18 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                               ),
                                             ),
                                           ])
-                                        : Row(children: [
+                                        // IntrinsicHeight + stretch: game_screen.dart ile AYNI sebep — web'in
+                                        // flex satırı butonları EN UZUNA (TORBA'nın 13px sayacı) eşitliyor,
+                                        // Flutter Row varsayılanı `center` bunu yapmıyor (bkz. orada).
+                                        : IntrinsicHeight(
+                                            child: Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.stretch,
+                                            children: [
                                             Expanded(
                                               child: NeoButton(
+                                                letterSpacing: 1.2,
+                                                lineHeight: 1.5,
                                                 label: 'PAS GEÇ',
                                                 onPressed: _canAct && !_busy
                                                     ? _handlePass
@@ -1685,6 +1698,8 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                             const SizedBox(width: 6),
                                             Expanded(
                                               child: NeoButton(
+                                                letterSpacing: 1.2,
+                                                lineHeight: 1.5,
                                                 label: 'DEĞİŞTİR',
                                                 onPressed: _canAct &&
                                                         state.bag.isNotEmpty
@@ -1696,6 +1711,8 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                             const SizedBox(width: 6),
                                             Expanded(
                                               child: NeoButton(
+                                                letterSpacing: 1.2,
+                                                lineHeight: 1.5,
                                                 label: 'KARIŞTIR',
                                                 onPressed: _canEdit
                                                     ? () => _controller.dispatch(
@@ -1706,6 +1723,8 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                             const SizedBox(width: 6),
                                             Expanded(
                                               child: NeoButton(
+                                                letterSpacing: 1.2,
+                                                lineHeight: 1.5,
                                                 label: 'GERİ AL',
                                                 // Boş taslakta da aktif (web
                                                 // `disabled={!canAct}`).
@@ -1718,6 +1737,8 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                             const SizedBox(width: 6),
                                             Expanded(
                                               child: NeoButton(
+                                                letterSpacing: 1.2,
+                                                lineHeight: 1.5,
                                                 label:
                                                     'TORBA ${state.bag.length}',
                                                 // Web App.tsx ~1360 (bkz.
@@ -1744,7 +1765,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                                         _mySlot),
                                               ),
                                             ),
-                                          ]),
+                                          ])),
                                   ),
                                 ],
                               )),

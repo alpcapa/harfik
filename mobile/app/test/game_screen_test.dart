@@ -485,6 +485,37 @@ void main() {
   });
 
   testWidgets(
+      'rafın ALTINDAKİ aksiyon satırı web ile aynı: 11px/1.2 tracking/1.5 '
+      'satır, 6px boşluk ve EŞİT yükseklik (TORBA dahil)', (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await pumpGame(tester, GlobalKey());
+
+    // Web (ölçüldü — derlenmiş CSS + Chromium): `text-[11px] font-bold
+    // tracking-[1.2px]` + gövdeden miras `line-height: 1.5` (=16.5px).
+    for (final label in const ['PAS GEÇ', 'DEĞİŞTİR', 'KARIŞTIR', 'GERİ AL']) {
+      final st = tester.widget<Text>(find.text(label)).style!;
+      expect(st.fontSize, 11, reason: '$label puntosu');
+      expect(st.letterSpacing, 1.2, reason: '$label tracking (web 1.2px)');
+      expect(st.height, 1.5, reason: '$label satır yüksekliği (web 1.5)');
+    }
+
+    // Boşluk web `gap-1.5` = 6px.
+    final pas = tester.getRect(find.widgetWithText(NeoButton, 'PAS GEÇ'));
+    final degis = tester.getRect(find.widgetWithText(NeoButton, 'DEĞİŞTİR'));
+    expect(degis.left - pas.right, closeTo(6, 0.01), reason: 'web gap-1.5');
+
+    // TORBA'nın 13px'lik sayacı satırı yükseltiyor; web'de flex `stretch`
+    // hepsini EN UZUNA eşitliyor. Bu assertion olmadan tracking/satır
+    // düzeltmesi TORBA'yı 3px uzun bırakan bir regresyon üretirdi.
+    final torba = tester.getRect(find.byWidgetPredicate(
+        (w) => w is NeoButton && w.label.startsWith('TORBA')));
+    expect(torba.height, pas.height,
+        reason: 'web flex stretch — TORBA ötekilerle aynı boyda');
+    expect(pas.height, greaterThan(30),
+        reason: '1.5 satır + 10px dolgu; 1.2 satırda ~33px kalıyordu');
+  });
+
+  testWidgets(
       'tahta alt şeridinde "Çevrimdışı" uyarısı: bağlantı gidince ANINDA '
       'çıkar, gelince kalkar; puntosu kardeş kontrollerle aynı', (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));

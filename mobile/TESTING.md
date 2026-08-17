@@ -111,6 +111,15 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
       "7 harf"i kaldırırken fazlası silinmiş demektir. Seçili taş yukarı
       kalkarken **adın üstüne binmemeli** (web'e portun 7px'lik rezervi
       eklendi).
+- [ ] **Rafın ALTINDAKİ buton satırı (17 Ağustos 2026, Parça 108) — bu madde
+      PORTU sınıyor.** İki platformu yan yana aç: PAS GEÇ / DEĞİŞTİR /
+      KARIŞTIR / GERİ AL / TORBA butonlarının **yazı boyu, harf aralığı ve
+      YÜKSEKLİĞİ** aynı görünmeli; özellikle **TORBA ötekilerden uzun
+      OLMAMALI** (13px'lik mavi sayaç satırı yükseltiyor, web flex ile
+      hepsini eşitliyor). Butonlar arası boşluk ve **raf ↔ OYNA arası** da
+      6px. **DEĞİŞTİR'e bas:** swap satırındaki DEĞİŞTİR ↔ VAZGEÇ boşluğu da
+      6px olmalı (portta 8'di). Port butonları web'den **2px kısa kalabilir**
+      — bu BİLİNÇLİ (web'in çerçevesi yer kaplıyor, portunki kaplamıyor).
 - [ ] **Filigranlar taşların ÜSTÜNE binmemeli (17 Ağustos 2026, Parça
       107).** Köşe bölgesine ve merkezdeki X2 bölgesine taş konmuş bir oyun
       aç: soluk köşe rakamı ve **X2** yalnızca BOŞ hücrelerde görünmeli,

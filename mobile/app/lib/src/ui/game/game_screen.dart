@@ -813,111 +813,111 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                       // (stretch, Column içinde sınırsız yükseklikte patlar).
                                       child: IntrinsicHeight(
                                         child: Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.stretch,
-                                          children: [
-                                            Expanded(
-                                              child: KeyedSubtree(
-                                                key:
-                                                    _rackKey, // rafa-bırak alanı
-                                                child: RackWidget(
-                                                  tiles: state
-                                                      .players[_rackIndex].rack,
-                                                  selectedTile:
-                                                      state.selectedTile,
-                                                  onSelect: (i) {
-                                                    if (!_canAct) return;
-                                                    controller.dispatch(state
-                                                            .swapMode
-                                                        ? ToggleSwapTileAction(
-                                                            i)
-                                                        : SelectTileAction(i));
-                                                  },
-                                                  title: state
-                                                      .players[_rackIndex].name,
-                                                  color: _colorOf(_rackIndex),
-                                                  swapMode: state.swapMode,
-                                                  swapSelection:
-                                                      state.swapSelection,
-                                                  // `_hiddenSource` (dragHiddenKey
-                                                  // ile aynı kaynak/gerekçe).
-                                                  dragHiddenIndex: _hiddenSource
-                                                          is _RackSource
-                                                      ? (_hiddenSource
-                                                              as _RackSource)
-                                                          .index
-                                                      : null,
-                                                  onTilePointerDown: (i, e) =>
-                                                      _beginTileDrag(
-                                                          _RackSource(
-                                                              i,
-                                                              state
-                                                                  .players[
-                                                                      _rackIndex]
-                                                                  .rack[i]),
-                                                          e),
-                                                  onTilePointerMove:
-                                                      _moveTileDrag,
-                                                  onTilePointerUp: _endTileDrag,
-                                                  onTilePointerCancel:
-                                                      _cancelTileDrag,
-                                                ),
-                                              ),
-                                            ),
-                                            if (!state.swapMode) ...[
-                                              const SizedBox(width: 8),
-                                              state.isGameOver
-                                                  // Web (App.tsx ~1291): tek
-                                                  // satır "Yeni Oyun Aç",
-                                                  // `text-[15px]` + `px-5` —
-                                                  // OYNA'dan (12px) belirgin
-                                                  // BÜYÜK olması bilinçli,
-                                                  // raf (`flex-1 min-w-0`)
-                                                  // buna göre daralıyor. Port
-                                                  // `\n` ile iki satıra bölüp
-                                                  // 13px'te bırakmıştı.
-                                                  ? NeoButton(
-                                                      label: 'TEKRAR OYNA',
-                                                      variant: NeoButtonVariant
-                                                          .accent,
-                                                      fontSize: 15,
-                                                      letterSpacing: 1.2,
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                          horizontal: 20),
-                                                      onPressed: _handleRematch,
-                                                    )
-                                                  : NeoButton(
-                                                      label: 'OYNA',
-                                                      variant: NeoButtonVariant
-                                                          .accent,
-                                                      fontSize:
-                                                          12, // web text-[12px]
-                                                      letterSpacing: 1.2,
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                          horizontal: 20),
-                                                      // web: `disabled={!canAct
-                                                      // || validating ||
-                                                      // !wordsReady}` — taslak
-                                                      // BOŞKEN de aktif.
-                                                      // Bilerek: reducer boş
-                                                      // taslakta "Harf
-                                                      // yerleştirilmedi." diye
-                                                      // ÖZEL bir mesaj üretiyor
-                                                      // (validator.dart:57);
-                                                      // butonu kapatmak o
-                                                      // mesajı ulaşılamaz
-                                                      // kılıp sebebi hiçbir
-                                                      // yerde yazmayan sessiz
-                                                      // bir ret bırakıyordu.
-                                                      onPressed: _canAct
-                                                          ? () => _handlePlay(
-                                                              moveStatus)
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.stretch,
+                                              children: [
+                                                Expanded(
+                                                  child: KeyedSubtree(
+                                                    key:
+                                                        _rackKey, // rafa-bırak alanı
+                                                    child: RackWidget(
+                                                      tiles: state
+                                                          .players[_rackIndex].rack,
+                                                      selectedTile:
+                                                          state.selectedTile,
+                                                      onSelect: (i) {
+                                                        if (!_canAct) return;
+                                                        controller.dispatch(state
+                                                                .swapMode
+                                                            ? ToggleSwapTileAction(
+                                                                i)
+                                                            : SelectTileAction(i));
+                                                      },
+                                                      title: state
+                                                          .players[_rackIndex].name,
+                                                      color: _colorOf(_rackIndex),
+                                                      swapMode: state.swapMode,
+                                                      swapSelection:
+                                                          state.swapSelection,
+                                                      // `_hiddenSource` (dragHiddenKey
+                                                      // ile aynı kaynak/gerekçe).
+                                                      dragHiddenIndex: _hiddenSource
+                                                              is _RackSource
+                                                          ? (_hiddenSource
+                                                                  as _RackSource)
+                                                              .index
                                                           : null,
+                                                      onTilePointerDown: (i, e) =>
+                                                          _beginTileDrag(
+                                                              _RackSource(
+                                                                  i,
+                                                                  state
+                                                                      .players[
+                                                                          _rackIndex]
+                                                                      .rack[i]),
+                                                              e),
+                                                      onTilePointerMove:
+                                                          _moveTileDrag,
+                                                      onTilePointerUp: _endTileDrag,
+                                                      onTilePointerCancel:
+                                                          _cancelTileDrag,
                                                     ),
-                                            ],
-                                          ],
+                                                  ),
+                                                ),
+                                                if (!state.swapMode) ...[
+                                                  const SizedBox(width: 6),
+                                                  state.isGameOver
+                                                      // Web (App.tsx ~1291): tek
+                                                      // satır "Yeni Oyun Aç",
+                                                      // `text-[15px]` + `px-5` —
+                                                      // OYNA'dan (12px) belirgin
+                                                      // BÜYÜK olması bilinçli,
+                                                      // raf (`flex-1 min-w-0`)
+                                                      // buna göre daralıyor. Port
+                                                      // `\n` ile iki satıra bölüp
+                                                      // 13px'te bırakmıştı.
+                                                      ? NeoButton(
+                                                          label: 'TEKRAR OYNA',
+                                                          variant: NeoButtonVariant
+                                                              .accent,
+                                                          fontSize: 15,
+                                                          letterSpacing: 1.2,
+                                                          padding: const EdgeInsets
+                                                              .symmetric(
+                                                              horizontal: 20),
+                                                          onPressed: _handleRematch,
+                                                        )
+                                                      : NeoButton(
+                                                          label: 'OYNA',
+                                                          variant: NeoButtonVariant
+                                                              .accent,
+                                                          fontSize:
+                                                              12, // web text-[12px]
+                                                          letterSpacing: 1.2,
+                                                          padding: const EdgeInsets
+                                                              .symmetric(
+                                                              horizontal: 20),
+                                                          // web: `disabled={!canAct
+                                                          // || validating ||
+                                                          // !wordsReady}` — taslak
+                                                          // BOŞKEN de aktif.
+                                                          // Bilerek: reducer boş
+                                                          // taslakta "Harf
+                                                          // yerleştirilmedi." diye
+                                                          // ÖZEL bir mesaj üretiyor
+                                                          // (validator.dart:57);
+                                                          // butonu kapatmak o
+                                                          // mesajı ulaşılamaz
+                                                          // kılıp sebebi hiçbir
+                                                          // yerde yazmayan sessiz
+                                                          // bir ret bırakıyordu.
+                                                          onPressed: _canAct
+                                                              ? () => _handlePlay(
+                                                                  moveStatus)
+                                                              : null,
+                                                        ),
+                                                ],
+                                              ],
                                         ),
                                       ),
                                     ),
@@ -933,6 +933,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                               children: [
                                                 Expanded(
                                                   child: NeoButton(
+                                                    letterSpacing: 1.2,
+                                                    lineHeight: 1.5,
                                                     label: state.swapSelection
                                                             .isNotEmpty
                                                         ? 'DEĞİŞTİR (${state.swapSelection.length})'
@@ -947,9 +949,11 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                                         : null,
                                                   ),
                                                 ),
-                                                const SizedBox(width: 8),
+                                                const SizedBox(width: 6),
                                                 Expanded(
                                                   child: NeoButton(
+                                                    letterSpacing: 1.2,
+                                                    lineHeight: 1.5,
                                                     label: 'VAZGEÇ',
                                                     onPressed: _canAct
                                                         ? () => controller.dispatch(
@@ -959,10 +963,22 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                                 ),
                                               ],
                                             )
-                                          : Row(
+                                          // IntrinsicHeight + stretch: web'de bu satır bir flex kutusu ve
+                                          // `align-items: stretch` varsayılanı butonları EN UZUNA eşitliyor —
+                                          // TORBA'nın 13px'lik sayacı satır yüksekliğini 19.5px'e çektiğinden
+                                          // (ölçüldü) ötekiler de onunla aynı boyda. Flutter'da Row varsayılanı
+                                          // `center`, yani her buton kendi boyunda kalıp TORBA 3px uzun çıkardı.
+                                          // Sınırsız yükseklikte çıplak `stretch` patlar (raf satırındaki aynı
+                                          // ders), o yüzden IntrinsicHeight şart.
+                                          : IntrinsicHeight(
+                                              child: Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.stretch,
                                               children: [
                                                 Expanded(
                                                   child: NeoButton(
+                                                    letterSpacing: 1.2,
+                                                    lineHeight: 1.5,
                                                     label: 'PAS GEÇ',
                                                     onPressed: _canAct
                                                         ? _handlePass
@@ -972,6 +988,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                                 const SizedBox(width: 6),
                                                 Expanded(
                                                   child: NeoButton(
+                                                    letterSpacing: 1.2,
+                                                    lineHeight: 1.5,
                                                     label: 'DEĞİŞTİR',
                                                     onPressed: _canAct &&
                                                             state.bag.isNotEmpty
@@ -983,6 +1001,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                                 const SizedBox(width: 6),
                                                 Expanded(
                                                   child: NeoButton(
+                                                    letterSpacing: 1.2,
+                                                    lineHeight: 1.5,
                                                     label: 'KARIŞTIR',
                                                     onPressed: _canAct
                                                         ? () => controller.dispatch(
@@ -993,6 +1013,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                                 const SizedBox(width: 6),
                                                 Expanded(
                                                   child: NeoButton(
+                                                    letterSpacing: 1.2,
+                                                    lineHeight: 1.5,
                                                     label: 'GERİ AL',
                                                     // web: `disabled={!canAct}`
                                                     // — boş taslakta da aktif
@@ -1007,6 +1029,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                                 const SizedBox(width: 6),
                                                 Expanded(
                                                   child: NeoButton(
+                                                    letterSpacing: 1.2,
+                                                    lineHeight: 1.5,
                                                     label:
                                                         'TORBA ${state.bag.length}',
                                                     // Web App.tsx ~1360: <span
@@ -1041,7 +1065,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                                   ),
                                                 ),
                                               ],
-                                            ),
+                                            )),
                                     ),
                                   ],
                                 ],
