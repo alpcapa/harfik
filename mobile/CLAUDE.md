@@ -4770,10 +4770,14 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   YÖNDE denendi (web→port ve port→web) — kullanıcının ilk raporu tam da
   asimetrikti (bir yön çalışıyor, öteki çalışmıyordu), tek yön koşmak o
   hatayı bir kez daha kaçırırdı.
-- **14 Ağustos (Parça 90/92):** girişsiz başlatma uyarısı (bölüm 1) ·
+- ~~**14 Ağustos (Parça 90/92):** girişsiz başlatma uyarısı (bölüm 1) ·
   tahta altındaki "Nasıl Oynanır?" (bölüm 1, İKİ oyun ekranında da) ·
   OHP hizası + başlık ortalama (bölüm 4 ve kök bölüm 10) · ağ hatasında
-  "yüklenemedi" mesajı (bölüm 5 ve kök 9.6)
+  "yüklenemedi" mesajı (bölüm 5 ve kök 9.6)~~ → **17 Ağustos'ta DÖRDÜ DE
+  koşuldu** (ağ hatası Blok 3'te, kalan üçü Blok 5'te). Tek bulgu misafir
+  uyarısının yanlış modal kabuğuydu (yukarıdaki nota bkz.); OHP hizası ve
+  başlık ortalama iki platformda yan yana doğrulandı. Kök **9.10** da yeni
+  üç kutulu YZ Dengesi hâliyle yeniden koşuldu.
 - **13 Ağustos (Parça 72-89):** içerik sütunu genişliği · GİRİŞ satırı
   konumu · logo altı yazı bloğu · harf aralığı · "+ Yeni …" butonu ve alt
   sekmeler · form alanları · avatarın YUVARLAK vurgusu · "Yükleniyor…"
@@ -4803,16 +4807,19 @@ biriken Canlı borcu tamamen kapandı.**
 
 **17 Ağustos'ta üç küme birden kapandı:** ağ hatası/offline (kök 9.6 +
 mobil bölüm 5 + bölüm 8), Canlı (bölüm 11) ve Görüş Bildir (bölüm 9).
-Geriye kalan:
+**17 Ağustos akşamı Parça 90/92 kalanları da bitti (Blok 5).** Geriye
+TEK bir cihaz turu kaldı:
 
-1. **Parça 90/92 kalanları** — girişsiz başlatma uyarısı (bölüm 1) · tahta
-   altındaki "Nasıl Oynanır?" (bölüm 1, İKİ oyun ekranında da) · OHP hizası
-   + başlık ortalama (bölüm 4 ve kök bölüm 10).
-2. **Görsel yan yana** (bölüm 0.5, Parça 72-89'un 11 maddesi) — en düşük
-   riskli grup, sona bırakılabilir.
+1. **Görsel yan yana** (bölüm 0.5, Parça 72-89'un 11 maddesi) — en düşük
+   riskli grup.
 
-Ayrıca kök `TESTING.md` **9.10** yeniden koşulmalı: YZ Dengesi 17
-Ağustos'ta 2 kutudan 3'e çıktı (İkincilik) ve etiketler değişti.
+Sonrasında cihaz turu DEĞİL ortak bir **SQL turu** var: süresi dolmuş davet
+süpürmesi (7 gün) ve 48 saat sıra aşımı → otomatik teslim + `-2` + uyarı
+e-postası. İkisi de satırların geriye tarihlenmesini gerektiriyor.
+
+**Merge bekleyen tek doğrulama:** misafir uyarısının modal kabuğu düzeltmesi
+Pages'e ancak `main`'e merge'ten sonra çıkar (workflow PR'da yayınlamıyor),
+o yüzden cihazda hâlâ eski hâli görünüyor — merge sonrası bir kez bakılmalı.
 
 **Cihaz turuna AİT OLMAYAN, ortak SQL turu bekleyenler:** süresi dolmuş
 davet süpürmesi (7 gün), 48 saat sıra aşımı → otomatik teslim + `-2` +
