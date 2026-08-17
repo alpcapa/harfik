@@ -194,6 +194,7 @@ void main() {
     'reducer_ai4',
     'reducer_human2',
     'reducer_crafted_finish',
+    'reducer_crafted_bingo',
     'reducer_crafted_ai_exchange',
     'reducer_sync',
   ]) {

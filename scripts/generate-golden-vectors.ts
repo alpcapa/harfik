@@ -347,6 +347,60 @@ function craftedFinishScenario(): void {
 }
 
 /**
+ * Bingo (7 taşın hepsi tek hamlede) — hem İNSAN hem YZ mesaj şablonu.
+ *
+ * NEDEN AYRI BİR SENARYO: `reducer_ai4` bingo İÇERİYOR ama YZ oyunlarında
+ * snapshot her 5 adımda bir alındığından o hamlenin `message` alanı hiçbir
+ * snapshot'a düşmüyor — yani bingo mesaj metni golden vector'larla KORUNMUYORDU
+ * (17 Ağustos 2026'da bingo notu eklenirken fark edildi: fixture'lar yeniden
+ * üretildiğinde sıfır fark çıktı). Metin dört yerde birden yaşadığından
+ * (gameReducer insan + YZ dalı, OnlineGameScreen, ve ikisinin Dart portu)
+ * korumasız bırakmak sessiz ayrışma davetiydi.
+ */
+function craftedBingoScenario(): void {
+  const run = new Runner(31, 1);
+  const st = JSON.parse(JSON.stringify(serState(createInitialState()))) as GameState;
+  st.phase = 'play';
+  st.bonuses = { '6,6': 'tw' };
+  // YZ SOL-ÜST köşede (0), insan SAĞ-ALT köşede (3) — sıra bilinçli:
+  // `tryCornerStart` (ai.ts) başlangıç hücresini köşe bloğunun İÇİNDEN seçip
+  // kelimeyi sağa/aşağı uzatıyor, yani sağ-alt köşede 7 harflik bir ilk hamle
+  // tahtadan taşar ve YZ asla bingo yapamaz. Sol-üstte (0,0)→(0,6) sığıyor.
+  st.players = [
+    {
+      name: 'Yapay Zeka 2', corners: [0], colorIndex: 0, isAI: true, surrendered: false,
+      rack: [
+        { letter: 'A', pts: 1 }, { letter: 'B', pts: 3 }, { letter: 'L', pts: 1 },
+        { letter: 'A', pts: 1 }, { letter: 'L', pts: 1 }, { letter: 'I', pts: 2 },
+        { letter: 'K', pts: 1 },
+      ] as Tile[],
+      score: 0, bestMoveScore: 0, bestWordScore: 0, longestWord: '', moveCount: 0, moveScoreSum: 0,
+    },
+    {
+      name: 'Bingocu', corners: [3], colorIndex: 1, isAI: false, surrendered: false,
+      rack: [
+        { letter: 'A', pts: 1 }, { letter: 'B', pts: 3 }, { letter: 'A', pts: 1 },
+        { letter: 'R', pts: 1 }, { letter: 'T', pts: 1 }, { letter: 'M', pts: 2 },
+        { letter: 'A', pts: 1 },
+      ] as Tile[],
+      score: 0, bestMoveScore: 0, bestWordScore: 0, longestWord: '', moveCount: 0, moveScoreSum: 0,
+    },
+  ] as Player[];
+  st.bag = Array.from({ length: 14 }, () => ({ letter: 'E', pts: 1 })) as Tile[];
+  st.current = 0;
+  st.turnCount = 0;
+  run.dispatch({ type: 'RESUME_SAVED', state: st });
+  // YZ: rafı tam bir kelime hecelediğinden en yüksek puanlı hamle 7 taşlıdır.
+  run.dispatch({ type: 'AI_PLAY' });
+  // İnsan: 7 taşın tamamı, köşe hücresine (12,12) değerek → Bingo.
+  for (let c = 6; c <= 12; c++) {
+    run.dispatch({ type: 'PLACE_TILE', r: 12, c, rackIndex: 0 });
+  }
+  run.dispatch({ type: 'PLAY', skipWordCheck: true });
+  run.finish('reducer_crafted_bingo');
+}
+
+/**
  * YZ'nin "hamle yok → raf değiştir" dalı (torba doluyken) — doğal oyunlarda
  * nadiren tetiklenir, burada garanti edilir: yalnız B'lerden oluşan bir rafla
  * hiçbir kelime hecelenemez (ilk hamle, köşe adayları boş küme).
@@ -604,6 +658,7 @@ async function main(): Promise<void> {
   aiScenario('reducer_ai4', 99, 4, 8); // 8. hamleden önce 2. koltuk teslim olur
   humanScenario();
   craftedFinishScenario();
+  craftedBingoScenario();
   craftedAiExchangeScenario();
   syncScenario();
   setRandomSource(); // Math.random'a geri dön

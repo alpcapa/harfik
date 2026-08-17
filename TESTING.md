@@ -83,6 +83,17 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       dönmek (senkron) ya da başka ekrana geçip dönmek metni DEĞİŞTİRMEMELİ;
       özellikle rakibin son hamle özeti ("X: +N puan …") görünmemeli
       (6 Ağustos 2026'da bulunan üç-farklı-mesaj hatası).
+- [ ] **Bingo bonusu mesajda yazıyor (17 Ağustos 2026).** Rafın 7 taşını
+      birden koyup OYNA'ya bas → mesaj satırında `(Bingo bonusu +25)`
+      görünmeli. **DÖRT yerde ayrı ayrı koş, biri ötekini kanıtlamaz:**
+      (a) yerel oyunda KENDİ hamlende, (b) yerel oyunda **YZ** bingo
+      yapınca (`Yapay Zeka 2 "…" oynadı. +N puan. (Bingo bonusu +25)`),
+      (c) Canlı oyunda kendi hamlende, (d) Canlı oyunda **rakibin** bingo'su
+      geldiğinde — Canlı ekran mesajı reducer'dan DEĞİL `online_game_moves`
+      satırlarından yeniden üretiyor, yani ayrı bir kod yolu.
+      Negatif eş: bingo OLMAYAN sıradan bir hamlede bu parantez
+      görünmemeli. Jokerli bitiş bonusu ile ASLA aynı mesajda olamaz
+      (7 joker gerekirdi, torbada 2 var).
 - [ ] **Tahta alt şeridi — "Nasıl Oynanır?" (14 Ağustos 2026).** Tahtanın
       altında SOLDA "Hamleler" (Canlı'da yanında "· Mesajlaşma"), SAĞDA
       **"Nasıl Oynanır?"** olmalı; eski `- kelime X2 · - kelime X3`
