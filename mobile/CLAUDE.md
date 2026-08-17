@@ -4869,7 +4869,7 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | Bölüm | Durum | Not |
 |---|---|---|
 | 0 · Derleme / ilk açılış | ✅ | FAZ A0 |
-| 0.5 · Web ile yan yana görsel | 🟡 | birçok tur (Parça 29/33/37/56/72-80). **17 Ağu (Blok 6):** k-lig nokta boşluğu, avatar↔logo (kapatıldı), tahta filigranlarının puntosu/fontu + header avatar hizası (Parça 106), filigranların taşların altında kalması (Parça 107), Setup'taki parantezli puanın kaldırılması ve tahta↔raf boşluğu (ikisi web-only, port kanonik alındı) — **17 Ağu'daki bu kümenin TAMAMI aynı gün cihazda koşuldu ve geçti, sıfır bulgu.** Turdan iki YENİ web işi çıktı (Hesap Ayarları fotoğraf butonu; raf başlığındaki swap aksiyon metninin kaldırılması) — **dalda bekliyor, merge edilmedi.** Geriye yalnızca Parça 72-89'un 11 maddesi kaldı |
+| 0.5 · Web ile yan yana görsel | ✅ | **17 Ağu'da (Blok 6) KAPANDI — bölümün TAMAMI koşuldu, sıfır bulgu.** Öncesi: birçok tur (Parça 29/33/37/56/72-80). **17 Ağu:** k-lig nokta boşluğu, avatar↔logo (kapatıldı), tahta filigranlarının puntosu/fontu + header avatar hizası (Parça 106), filigranların taşların altında kalması (Parça 107), Setup'taki parantezli puanın kaldırılması ve tahta↔raf boşluğu (ikisi web-only, port kanonik alındı) — **17 Ağu'daki bu kümenin TAMAMI aynı gün cihazda koşuldu ve geçti, sıfır bulgu.** Turdan iki YENİ web işi çıktı (Hesap Ayarları fotoğraf butonu; raf başlığındaki swap aksiyon metninin kaldırılması) — **dalda bekliyor, merge edilmedi.** Geriye yalnızca Parça 72-89'un 11 maddesi kaldı |
 | 1 · Oyun (offline çekirdek) | ✅ | Parça 15/20/21/22 buradan çıktı |
 | 2 · Hesap (auth) | ✅ | **9-12 (deep link) FAZ B'ye ertelendi** |
 | 3 · Bulut kayıtları | ✅ | 6/6 — Parça 29 |
@@ -4983,11 +4983,19 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   (Hesap Ayarları'ndaki fotoğraf butonu: tam genişlik + kalın; raf
   başlığındaki swap aksiyon metninin kaldırılması) **dalda bekliyor,
   merge EDİLMEDİ** — dolayısıyla henüz cihazda görülmedi.
-- **13 Ağustos (Parça 72-89):** içerik sütunu genişliği · GİRİŞ satırı
+- ~~**13 Ağustos (Parça 72-89):** içerik sütunu genişliği · GİRİŞ satırı
   konumu · logo altı yazı bloğu · harf aralığı · "+ Yeni …" butonu ve alt
   sekmeler · form alanları · avatarın YUVARLAK vurgusu · "Yükleniyor…"
   takılı kalmama · ActionSheet'te "Vazgeç" yokluğu · ağ hatasında sahte
-  başarı yokluğu · "Sıra: X" bandının rengi/gölgesi
+  başarı yokluğu · "Sıra: X" bandının rengi/gölgesi~~ → **17 Ağustos'ta
+  ON BİRİ DE koşuldu ve GEÇTİ, sıfır bulgu.** Bunlar dört gün boyunca
+  birikmişti ve hepsi ölçülerek yazılmış (derlenmiş CSS + Chromium)
+  düzeltmelerdi — cihaz turu hiçbirinde bir sapma bulmadı.
+
+**Bu liste artık BOŞ** — 17 Ağustos akşamı itibarıyla cihaz turu görmemiş
+biriken madde kalmadı. Yeni bir düzeltme yazıldığında buraya yine madde
+eklenmeli (kural değişmedi: yazıldığı gün cihazda görülmemiş her düzeltme
+burada birikir).
 
 ~~**Özel uyarı — kök `TESTING.md` 9.6 ilk koşuşunda DÜŞTÜ**~~ →
 **17 Ağustos'ta baştan koşuldu ve GEÇTİ** (negatif eşi dahil: admin →
@@ -5010,43 +5018,31 @@ hesap değişimi (17 Ağu, sıfır bulgu). Aynı turda Parça 95'in beş
 düzeltmesinin hepsi de cihazda teyit edildi, yani **14 Ağustos'tan beri
 biriken Canlı borcu tamamen kapandı.**
 
-**17 Ağustos'ta üç küme birden kapandı:** ağ hatası/offline (kök 9.6 +
-mobil bölüm 5 + bölüm 8), Canlı (bölüm 11) ve Görüş Bildir (bölüm 9).
-**17 Ağustos akşamı Parça 90/92 kalanları da bitti (Blok 5).** Geriye
-TEK bir cihaz turu kaldı:
+**17 Ağustos'ta DÖRT küme birden kapandı:** ağ hatası/offline (kök 9.6 +
+mobil bölüm 5 + bölüm 8), Canlı (bölüm 11), Görüş Bildir (bölüm 9) ve —
+akşam, Blok 5 + Blok 6 ile — Parça 90/92'nin kalanları ve **görsel yan
+yana karşılaştırmanın TAMAMI (bölüm 0.5)**.
 
-1. **Görsel yan yana** (bölüm 0.5, Parça 72-89'un 11 maddesi) — en düşük
-   riskli grup. **Buna Parça 106'nın iki maddesi de eklendi** (tahta
-   filigranlarının puntosu/fontu, header avatarının dikey hizası): ikisi de
-   ÖLÇÜLEREK düzeltildi ama merge edilene kadar cihazda görülemez — Pages
-   yalnızca `main`'e push'ta yeniden derliyor, web ise Vercel'e merge'te
-   çıkıyor.
+### FAZ A1'İN CİHAZ TURLARI BİTTİ (17 Ağustos 2026)
 
-Sonrasında cihaz turu DEĞİL ortak bir **SQL turu** var: süresi dolmuş davet
-süpürmesi (7 gün) ve 48 saat sıra aşımı → otomatik teslim + `-2` + uyarı
-e-postası. İkisi de satırların geriye tarihlenmesini gerektiriyor.
+Koşulacak cihaz maddesi KALMADI. Geriye üç şey kaldı ve **hiçbiri bir
+cihaz turu değil**:
 
-**Merge bekleyen tek doğrulama:** misafir uyarısının modal kabuğu düzeltmesi
-Pages'e ancak `main`'e merge'ten sonra çıkar (workflow PR'da yayınlamıyor),
-o yüzden cihazda hâlâ eski hâli görünüyor — merge sonrası bir kez bakılmalı.
-
-**Cihaz turuna AİT OLMAYAN, ortak SQL turu bekleyenler:** süresi dolmuş
-davet süpürmesi (7 gün), 48 saat sıra aşımı → otomatik teslim + `-2` +
-uyarı e-postası. İkisi de satırların geriye tarihlenmesini gerektiriyor.
+1. **Merge bekleyen iki web işi** (Blok 6 turundan çıktı, dalda duruyor):
+   Hesap Ayarları'ndaki fotoğraf butonu (tam genişlik + kalın) ve raf
+   başlığındaki swap aksiyon metninin kaldırılması. `main`'e girmeden
+   cihazda görülemezler (Vercel yalnızca merge'te yayınlıyor) — merge
+   sonrası tek bir bakış yeter, ikisi de `mobile/TESTING.md` 0.5'te.
+2. **Ortak SQL turu:** süresi dolmuş davet süpürmesi (7 gün,
+   `check_invite_expiry`) ve 48 saat sıra aşımı → otomatik teslim + `-2` +
+   uyarı e-postası (`check_turn_timeout` + `notify-turn-timeout-surrender`).
+   İkisi de satırların Supabase MCP ile geriye tarihlenmesini gerektiriyor;
+   bölüm 11'in kalan tek borcu bu.
+3. **FAZ B** (gerçek native iOS/Android) — ön koşulları hâlâ yapılmadı
+   (imzalama anahtarı, Apple Developer üyeliği, `assetlinks.json`).
+   Bölüm 6'nın 🟡'si de oraya bağlı (iPad paylaş ankrajı, Parça 86).
 
 Şu an bilinen bir veri kaybı yolu YOK (Parça 105 aynı gün doğrulandı).
-
-Sıradaki tur, kalan üç 🟡'yi kapatmalı ve **hepsi kısa**:
-1. **Bölüm 11'in tekil/SQL maddeleri** — ret, hesap değişimi, süresi
-   dolmuş davet (SQL ile `created_at` geriye çekilir), 48 saat sıra aşımı.
-2. **9.3/9.4** — Parça 48'in düzeltmesinden (oyun sonu ekranını kapatmak
-   Görüş Bildir formunu açar) sonra hiç koşulmadı.
-3. **Kök `TESTING.md` 9.6** — belgede yazan sırayla (önce önbelleksiz,
-   sonra önbellekli) + negatif eşi.
-
-Ardından FAZ A1 biter; geriye yalnızca **FAZ B** kalır ve onun ön koşulları
-(imzalama anahtarı, Apple Developer üyeliği, `assetlinks.json`) hâlâ
-yapılmadı. Bölüm 6'nın 🟡'si de zaten oraya bağlı (iPad paylaş ankrajı).
 
 ## Sonraya Bırakılan İşler (mobil)
 
