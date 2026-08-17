@@ -5034,6 +5034,16 @@ Koşulacak cihaz maddesi KALMADI ve **ortak SQL turu da aynı gün koşuldu**
 2. **FAZ B** (gerçek native iOS/Android) — ön koşulları hâlâ yapılmadı
    (imzalama anahtarı, Apple Developer üyeliği, `assetlinks.json`).
    Bölüm 6'nın 🟡'si de oraya bağlı (iPad paylaş ankrajı, Parça 86).
+   **17 Ağustos 2026 — üçü de kapalı olduğu için gerçek tur ERTELENDİ**
+   (kullanıcı kararı: Android cihaz yok, Apple üyeliği şimdilik
+   aktifleştirilmeyecek). O gün yalnızca bir TRİYAJ yapıldı:
+   `mobile/TESTING.md` → "Appetize triyajı" — hangi maddenin emülatörde
+   gerçekten kanıtlanabildiği, hangisinin yalnızca yanlış güven vereceği
+   madde madde ayrıldı. **Android imzalama anahtarı bilerek ÜRETİLMEDİ:**
+   üretim anahtarı kaybedilirse uygulama Play Store'da bir daha asla
+   güncellenemez, yani üretimi/yedeklenmesi hesap sahibinin kararı —
+   `assetlinks.json` de onun SHA-256'sına bağlı olduğundan sırayla
+   beklemede.
 
 Şu an bilinen bir veri kaybı yolu YOK (Parça 105 aynı gün doğrulandı).
 
