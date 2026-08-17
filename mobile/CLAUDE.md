@@ -4718,6 +4718,26 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        (`npm run lint`, `npm run build`, Playwright 3/3, Chromium ölçümü).
      - **Cihazda doğrulanacak:** iki `TESTING.md`'ye maddeler eklendi.
        Port değişikliği Pages'e ancak `main`'e merge sonrası çıkar.
+     - **CI'ın YAKALADIĞI hata bu parçadan DEĞİL, bir önceki dalda merge
+       bekleyen commit'lerden çıktı (kayda değer):** PR #277'nin ilk
+       koşusunda **442 geçti, 1 düştü** — `score_card_test.dart`'ın
+       `find.text('#3 · 8 puan')` beklentisi (`Found 0 widgets`). Sebep
+       Parça 106 değil, 17 Ağustos sabahındaki "k-lig satırındaki nokta
+       boşluğu" commit'i: satır düz `Text`ten `Text.rich`e çevrilip
+       ayırıcının iki yanına 2px'lik `WidgetSpan` konmuştu (web `mx-0.5`),
+       yani düz metin artık `'#3·8 puan'` — ama testi güncellenmemişti.
+       **O üç commit hiç CI görmemişti**: PR #276 merge edildikten SONRA
+       aynı dala push edildiklerinden `pull_request` tetikleyicisi bir daha
+       çalışmamıştı (workflow yalnızca `main`'e push ve PR'da koşuyor).
+       Test artık literal dize yerine SÖZLEŞMEYİ ölçüyor — düz metin
+       `'#3·8 puan'` VE ayırıcının iki yanındaki boşlukların 2px'lik
+       `WidgetSpan` olduğu (boşluk karakteri DEĞİL), yani o commit'in asıl
+       iddiasını da koruyor.
+     - **Ders:** merge edilmiş bir PR'ın dalına eklenen commit'ler sessizce
+       CI'sız kalıyor. Bir dala "merge sonrası" commit atıldıysa, o dal
+       yeni bir PR'a girene kadar hiçbir şey doğrulanmamıştır — bu, bu
+       oturumda Flutter SDK'sının olmamasıyla birleşince (yerelde
+       `flutter test` de koşulamıyor) tek doğrulama yolunu PR'a bağlıyor.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 

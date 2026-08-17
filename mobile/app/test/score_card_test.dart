@@ -176,7 +176,24 @@ void main() {
     // Doğum tarihi + cinsiyet → "Y:36/C:E" (yaş bugüne göre hesaplanır).
     expect(find.textContaining('/C:E'), findsOneWidget);
     // k-lig satırı: sıra + Genel sekmesinin lig puanı + "?" bilgi rozeti.
-    expect(find.text('#3 · 8 puan'), findsOneWidget);
+    // Satır artık düz bir `Text` DEĞİL `Text.rich` — ayırıcının iki yanındaki
+    // boşluk web'in `mx-0.5`'i (2px WidgetSpan), boşluk KARAKTERİ değil
+    // (17 Ağustos 2026, Blok 6 madde 9; Space Mono'da bir boşluk 13px'te
+    // ~7.8px eder ve kullanıcı "nokta sağı ve solu web'e göre daha açık"
+    // diye bildirmişti). Bu yüzden `find.text('#3 · 8 puan')` ARTIK
+    // EŞLEŞMEZ; test hem metni hem 2px'lik boşluğu doğruluyor.
+    final kligLine = tester.widgetList<Text>(find.byType(Text)).firstWhere(
+        (w) =>
+            w.textSpan?.toPlainText(includePlaceholders: false).contains('#3') ??
+            false);
+    expect(kligLine.textSpan!.toPlainText(includePlaceholders: false),
+        '#3·8 puan');
+    final gaps =
+        (kligLine.textSpan! as TextSpan).children!.whereType<WidgetSpan>();
+    expect(gaps.length, 2);
+    for (final g in gaps) {
+      expect((g.child as SizedBox).width, 2);
+    }
     expect(find.byType(KLigInfoBadge), findsOneWidget);
     // Web `KLigMark`'ın `color` prop varsayılanı mavi (`KLIG_COLOR`) —
     // kapsayan `text-muted` div'i SVG fill'ini etkilemiyor (bkz. dosyadaki
