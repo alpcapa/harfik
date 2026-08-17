@@ -4,7 +4,7 @@ import { GUEST_PLAYER_NAME, PLAYER_COLORS } from '../game/constants';
 import type { PlayerSetup } from '../game/gameReducer';
 import { useAuth } from '../hooks/useAuth';
 import { useModalA11y } from '../hooks/useModalA11y';
-import { fetchPlayerStats, subscribeMyOnlineGames } from '../lib/api';
+import { subscribeMyOnlineGames } from '../lib/api';
 import { hasSeenQuickStart, markQuickStartSeen } from '../utils/onboarding';
 import { ABANDON_TIMEOUT_MS, type SavedGame } from '../utils/gameStorage';
 import { fetchPendingLiveGameCounts } from '../utils/pendingLiveGames';
@@ -446,28 +446,18 @@ export function Setup({
     }
   };
 
-  // Toplam puan (isim yanında gösterilen) tüm oyun modlarının (2/4 kişilik)
-  // toplamıdır — seçili sekmeye göre değişmez.
-  const [accountTotalScore, setAccountTotalScore] = useState<number | undefined>(undefined);
-  useEffect(() => {
-    if (!user) {
-      setAccountTotalScore(undefined);
-      return;
-    }
-    let cancelled = false;
-    Promise.all([fetchPlayerStats(2), fetchPlayerStats(4)]).then(([s2, s4]) => {
-      if (cancelled) return;
-      if (!s2 && !s4) {
-        setAccountTotalScore(undefined);
-        return;
-      }
-      setAccountTotalScore((s2?.total_score ?? 0) + (s4?.total_score ?? 0));
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
-
+  // 17 Ağustos 2026 — hesap adının yanındaki parantezli toplam puan KALDIRILDI
+  // (kullanıcı isteği: "gerçek puan değil, düzeltme, oradan kaldır").
+  // Sayı `player_stats`in İKİ mod satırını (2+4 kişilik) topluyordu; k-lig
+  // ödül sistemi (11 Ağustos 2026) geldiğinden beri bu toplam `bonus_points`
+  // İÇERMİYOR — yani kullanıcının her yerde gördüğü gerçek lig puanından
+  // (`player_stats_overall.total_score`; k-lig listesi, hesap menüsü, Skor
+  // Kartı) eksik kalıyordu. Ekran görüntüsündeki 92 ↔ 97 farkı tam olarak
+  // kazanılmış 5 puanlık eşik ödülüydü. Doğru sayıyı göstermek mümkündü ama
+  // kullanıcı bunun yerine göstergenin tamamen kalkmasını istedi — oyun
+  // kurulum satırının işi kadroyu göstermek, puanı değil; puan zaten hesap
+  // menüsünde ve Skor Kartı'nda var. Flutter portunda bu gösterge hiç
+  // OLMADIĞINDAN kaldırma aynı zamanda bir web↔port ayrışmasını da kapatıyor.
   const doStart = () => {
     const list: PlayerSetup[] = Array.from({ length: count }, (_, i) => {
       // 1. oyuncu her zaman gerçek kişidir (giriş yapıldıysa hesap adıyla,
@@ -783,9 +773,6 @@ export function Setup({
                   {isAccount ? (
                     <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
                       {accountName}
-                      {accountTotalScore !== undefined && (
-                        <span className="font-mono font-normal text-muted"> ({accountTotalScore})</span>
-                      )}
                     </span>
                   ) : isPending ? (
                     <span className="flex-1 min-w-0 font-sans text-sm font-bold text-muted truncate animate-pulse">
