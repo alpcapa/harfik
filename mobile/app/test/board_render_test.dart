@@ -20,6 +20,7 @@ import 'package:kelimeki/src/ui/game/tile_widget.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import 'support/test_fonts.dart';
+import 'support/test_view.dart';
 
 GameState loadFixtureState(String name) {
   final golden = jsonDecode(
@@ -79,6 +80,70 @@ Future<void> pumpBoard(WidgetTester tester, GlobalKey key, GameState state,
   await tester.pump();
 }
 
+
+/// Boş tahtalı, 2 kişilik bir oyun — filigranlar (köşe numarası / X2 / X3)
+/// yalnızca BOŞ hücrelerde çizildiğinden bitmiş bir fixture bunun için
+/// kullanılamaz (merkez hücre dolu olabilir).
+GameState emptyBoardState() {
+  Player p(String name, int index) => Player(
+        name: name,
+        corners: cornersFor(2)[index],
+        colorIndex: index,
+        isAI: index != 0,
+        surrendered: false,
+        rack: const [],
+        score: 0,
+        bestMoveScore: 0,
+        bestWordScore: 0,
+        longestWord: '',
+        moveCount: 0,
+        moveScoreSum: 0,
+      );
+  return GameState(
+    phase: GamePhase.play,
+    startedAt: '',
+    multiSession: false,
+    endReason: EndReason.normal,
+    board: createEmptyBoard(),
+    bag: const [],
+    bonuses: buildInitialBonuses(),
+    placed: const {},
+    players: [p('Ironman', 0), p('Yapay Zeka 2', 1)],
+    current: 0,
+    turnCount: 0,
+    consecutivePasses: 0,
+    isGameOver: false,
+    message: '',
+    messageType: MessageKind.none,
+    selectedTile: null,
+    swapMode: false,
+    swapSelection: const [],
+    lastMoveCells: const [],
+    moveHistory: const [],
+  );
+}
+
+/// Filigran testleri için: tahtayı gerçek genişliğinde (web'in
+/// `max-w-[680px]` kartı gibi) çizer — `pumpBoard`ın sabit 560'ı ve 90px
+/// payı burada yanıltıcı olurdu.
+Future<void> pumpBoardSized(
+    WidgetTester tester, GameState state, double side) async {
+  await tester.pumpWidget(MaterialApp(
+    theme: kelimekiTheme(),
+    home: Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: SizedBox(
+          width: side,
+          height: side,
+          child: BoardWidget(state: state, hideFooter: true),
+        ),
+      ),
+    ),
+  ));
+  await tester.pump();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -119,5 +184,45 @@ void main() {
     expect(find.text('+23'), findsOneWidget);
 
     await capturePng(tester, key, 'build/screenshots/board_ai2_overlay.png');
+  });
+
+  // Web'de filigran puntosu kutuya SIĞDIRILMIYOR, ekran genişliğine bağlı bir
+  // `clamp` (Board.tsx): köşe `clamp(80px,32vw,220px)`, X2
+  // `clamp(60px,24vw,165px)`, X3 `clamp(7px,1.9vw,12px)`. Aşağıdaki sayılar
+  // ELLE HESAPLANMADI — derlenmiş CSS + Chromium ile ölçüldü (17 Ağustos
+  // 2026). Port 17 Ağustos'a kadar `FittedBox` kullanıyordu (punto kutunun
+  // oranından çıkıyordu) ve köşe/X2 için `fontFamily` hiç vermiyordu (tema
+  // SpaceGrotesk'ine düşüyordu) — kullanıcı iki ekranı yan yana koyup
+  // bildirdi.
+  testWidgets('filigran puntoları web ile aynı — geniş ekran (clamp tavanı)',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(834, 1100));
+    await pumpBoardSized(tester, emptyBoardState(), 680);
+    expect(tester.takeException(), isNull);
+
+    TextStyle styleOf(String s) => tester.widget<Text>(find.text(s)).style!;
+
+    expect(styleOf('1').fontSize, closeTo(220, 0.01));
+    expect(styleOf('1').fontFamily, 'SpaceMono');
+    expect(styleOf('1').height, 1); // web: leading-none
+    expect(styleOf('X2').fontSize, closeTo(165, 0.01));
+    expect(styleOf('X2').fontFamily, 'SpaceMono');
+    expect(styleOf('X2').height, 1);
+    expect(styleOf('X3').fontSize, closeTo(12, 0.01));
+    expect(styleOf('X3').fontFamily, 'SpaceMono');
+  });
+
+  testWidgets('filigran puntoları web ile aynı — dar ekran (clamp ortası)',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(390, 844));
+    await pumpBoardSized(tester, emptyBoardState(), 374);
+    expect(tester.takeException(), isNull);
+
+    TextStyle styleOf(String s) => tester.widget<Text>(find.text(s)).style!;
+
+    // 390px'te ölçülen web değerleri: 124.8 / 93.6 / 7.41.
+    expect(styleOf('1').fontSize, closeTo(124.8, 0.01));
+    expect(styleOf('X2').fontSize, closeTo(93.6, 0.01));
+    expect(styleOf('X3').fontSize, closeTo(7.41, 0.01));
   });
 }

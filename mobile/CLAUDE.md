@@ -4660,6 +4660,65 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        verinin tazeliği bir varsayım değil, kontrol edilmesi gereken bir
        ön koşuldur.
 
+   - ✅ **Parça 106 — tahta filigranları KUTUYA sığdırılıyordu (web'de punto
+     ekran genişliğine bağlı) + fontu da yanlıştı; ayrıca web'in avatar
+     hizası bozuktu (17 Ağustos 2026, `board_widget.dart` + web
+     `UserMenu.tsx`):** Blok 6'nın (görsel yan yana) kalan iki maddesi.
+     Kullanıcı iki ekranı yan yana koyup köşe rakamlarının ve X2/X3
+     filigranlarının "farklı boyut/tasarımda" olduğunu, ayrıca web'de
+     avatarın skor kutularının merkezine göre yukarıda durduğunu bildirdi.
+     - **(a) Filigranlar — üç ayrı sapma, ikisi gözle görünmeyen türden.**
+       Web (`Board.tsx`) puntoyu kutuya SIĞDIRMIYOR, `clamp` ile ekran
+       genişliğine bağlıyor: köşe `clamp(80px,32vw,220px)`, X2
+       `clamp(60px,24vw,165px)`, X3 `clamp(7px,1.9vw,12px)`; ilk ikisi
+       `font-mono` + `leading-none`. Port ise `FittedBox` kullanıyordu
+       (punto kutunun oranından çıkıyor) ve **köşe/X2 için `fontFamily` hiç
+       vermiyordu** — yani yazı tipi temanın SpaceGrotesk'ine düşüyordu.
+       Kullanıcının "tasarım da farklı" demesinin sebebi buydu; punto farkı
+       ise yön yön değişiyordu: köşe rakamı web'den KÜÇÜK (kutu 4/13 ×
+       satır yüksekliği), X2 ve özellikle X3 ise BÜYÜK — X3 48px'lik bir
+       hücreyi doldurduğundan ~37px, web'in azami 12px'inin üç katı.
+     - **Düzeltme sihirli sayı içermiyor:** üç `clamp` de `fluidSize` ile
+       birebir taşındı (Parça 24'ün `tile_widget.dart`'ta kullandığı aynı
+       desen — `vw` girdisi `MediaQuery.sizeOf(context).width`), `fontFamily:
+       'SpaceMono'` ve `height: 1` (=`leading-none`) eklendi.
+     - **`Center` + `OverflowBox` ŞART:** köşe rakamının satır kutusu
+       (220) kendi 4/13'lük alanından (680px'lik tahtada ~203) BÜYÜK ve
+       web'de de taşıyor; `FractionallySizedBox` çocuğuna TIGHT kısıt
+       verdiğinden araya konmazsa yazı ortalanmak yerine kutunun üstünden
+       çizilirdi. Rakamın MÜREKKEBİ (~0.7em = 154) kutuya sığdığından
+       görünür bir kırpma yok.
+     - **(b) Avatar hizası — bu sefer WEB yanlıştı, port doğruydu.**
+       `<button>` varsayılan `inline-block` ve fotoğraflı hesapta `Avatar`
+       bir `<img>` (inline-level) döndürüyor → satır kutusu → resmin ALTINA
+       7px taban çizgisi payı → buton 39px ve resim üste yaslı → header'ın
+       `items-center`'ı 39px'lik kabı ortalayınca fotoğraf skor kutusu
+       merkezinin **3.5px üstünde** kalıyor. Butona `flex` eklendi.
+       Ayrıntı + ölçüm: kök `CLAUDE.md`, `UserMenu` maddesi.
+     - **ÖLÇÜM, iki madde için de tahminin yerini aldı** (derlenmiş
+       `dist/assets/*.css` + Chromium, 390/834/1194): filigran puntoları
+       124.8/93.6/7.41 ve 220/165/12 olarak okundu; avatar merkezi
+       düzeltmeden önce 26 (kutu 29.5), sonra üç genişlikte de birebir eşit.
+       Ölçüm ayrıca hatanın KAPSAMINI daralttı: avatar sapması yalnızca
+       profil FOTOĞRAFI olan hesaplarda var (baş harf yedeği `display:flex`,
+       rozetli sarmalayıcı `inline-flex` — ikisi de 32px kalıyor).
+     - **Test:** `board_render_test.dart`'a iki test (geniş ekranda clamp
+       tavanı 220/165/12 + `fontFamily`/`height`; dar ekranda clamp ortası
+       124.8/93.6/7.41). Filigranlar yalnızca BOŞ hücrelerde çizildiğinden
+       bitmiş bir golden fixture kullanılamaz — testler boş tahtalı bir
+       `emptyBoardState()` ile ve tahtayı gerçek genişliğinde (680/374)
+       çizen ayrı bir `pumpBoardSized` ile koşuyor (`pumpBoard`ın sabit 560
+       kutusu ve 90px payı burada yanıltıcı olurdu).
+     - **Doğrulama sınırı — DÜRÜST KAYIT:** bu oturumun konteynerinde
+       Flutter SDK YOK (`flutter: command not found`, Parça 103/104/105'in
+       aynı sınırı), yani `flutter analyze`/`flutter test` KOŞULAMADI ve
+       **negatif eş kurulamadı**; testler eski kodda zorunlu olarak düşerdi
+       (eski `Text`lerin `style.fontSize`'ı `null`), ama bu gösterilmedi —
+       tek kanıt CI (`mobile-build.yml`). Web yarısı tam doğrulandı
+       (`npm run lint`, `npm run build`, Playwright 3/3, Chromium ölçümü).
+     - **Cihazda doğrulanacak:** iki `TESTING.md`'ye maddeler eklendi.
+       Port değişikliği Pages'e ancak `main`'e merge sonrası çıkar.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
@@ -4678,7 +4737,7 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | Bölüm | Durum | Not |
 |---|---|---|
 | 0 · Derleme / ilk açılış | ✅ | FAZ A0 |
-| 0.5 · Web ile yan yana görsel | ✅ | birçok tur (Parça 29/33/37/56/72-80) |
+| 0.5 · Web ile yan yana görsel | 🟡 | birçok tur (Parça 29/33/37/56/72-80). **17 Ağu (Blok 6):** k-lig nokta boşluğu, avatar↔logo (kapatıldı), tahta filigranları + header avatar hizası (Parça 106) — dördü de yapıldı, **hiçbiri merge sonrası cihazda görülmedi**; Parça 72-89'un 11 maddesi hâlâ koşulmadı |
 | 1 · Oyun (offline çekirdek) | ✅ | Parça 15/20/21/22 buradan çıktı |
 | 2 · Hesap (auth) | ✅ | **9-12 (deep link) FAZ B'ye ertelendi** |
 | 3 · Bulut kayıtları | ✅ | 6/6 — Parça 29 |
@@ -4811,7 +4870,11 @@ mobil bölüm 5 + bölüm 8), Canlı (bölüm 11) ve Görüş Bildir (bölüm 9)
 TEK bir cihaz turu kaldı:
 
 1. **Görsel yan yana** (bölüm 0.5, Parça 72-89'un 11 maddesi) — en düşük
-   riskli grup.
+   riskli grup. **Buna Parça 106'nın iki maddesi de eklendi** (tahta
+   filigranlarının puntosu/fontu, header avatarının dikey hizası): ikisi de
+   ÖLÇÜLEREK düzeltildi ama merge edilene kadar cihazda görülemez — Pages
+   yalnızca `main`'e push'ta yeniden derliyor, web ise Vercel'e merge'te
+   çıkıyor.
 
 Sonrasında cihaz turu DEĞİL ortak bir **SQL turu** var: süresi dolmuş davet
 süpürmesi (7 gün) ve 48 saat sıra aşımı → otomatik teslim + `-2` + uyarı

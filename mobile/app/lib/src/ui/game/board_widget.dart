@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import 'count_badge.dart';
+import 'fluid.dart';
 import 'neo_box.dart';
 import 'outline.dart';
 import 'player_colors.dart';
@@ -147,6 +148,11 @@ class BoardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     if (kDebugMode) debugBoardBuildCountForTests++;
     final players = state.players;
+    // Filigranların (köşe numarası / X2 / X3) puntosu web'de EKRAN
+    // GENİŞLİĞİNE bağlı (`clamp(min, N vw, max)`, Board.tsx) — kutuya
+    // sığdırılmış DEĞİL. Aynı `vw` girdisi burada da MediaQuery'den okunur
+    // (tile_widget.dart'ın board harf/puan puntosuyla birebir aynı desen).
+    final screenWidth = MediaQuery.sizeOf(context).width;
 
     // Bölgeler: köşe + kendi taşlarıyla genişleyen alan (core'dan).
     final territories = computeAllTerritories(state.board, players);
@@ -229,7 +235,7 @@ class BoardWidget extends StatelessWidget {
                       for (var r = 0; r < boardSize; r++)
                         for (var c = 0; c < boardSize; c++)
                           _buildCell(r, c, territoryOwner, homeCellColor,
-                              lastMoveSet, currentColor),
+                              lastMoveSet, currentColor, screenWidth),
                     ],
                   ),
                   // Bölge/hamle dış hatları — ızgara alanının tamamını kaplayan
@@ -243,7 +249,8 @@ class BoardWidget extends StatelessWidget {
                   if (!compact)
                     Positioned.fill(
                         child: IgnorePointer(
-                            child: _watermarks(cornerColor, cornerNumber))),
+                            child: _watermarks(
+                                cornerColor, cornerNumber, screenWidth))),
                   if (moveOverlay != null && moveOverlay!.cells.isNotEmpty)
                     Positioned.fill(child: IgnorePointer(child: _moveBadge())),
                 ],
@@ -411,6 +418,7 @@ class BoardWidget extends StatelessWidget {
     Map<String, PlayerColor> homeCellColor,
     Set<String> lastMoveSet,
     PlayerColor currentColor,
+    double screenWidth,
   ) {
     final k = cellKey(r, c);
     final boardTile = state.board[r][c];
@@ -493,16 +501,19 @@ class BoardWidget extends StatelessWidget {
             child: child,
           );
       if (isCenter && !compact) {
-        content = const Center(
-          child: FittedBox(
-            child: Text(
-              'X3',
-              style: TextStyle(
-                color: _centerText,
-                fontFamily: 'SpaceMono',
-                fontWeight: FontWeight.bold,
-                fontSize: 10,
-              ),
+        // Web: `text-[clamp(7px,1.9vw,12px)]` (Board.tsx, merkez hücrenin
+        // kendi etiketi). ÖNCEDEN `FittedBox` ile hücreyi dolduruyordu —
+        // 48px'lik bir hücrede bu ~37px'e denk geliyor, web'in azami 12px'inin
+        // üç katı (kullanıcı cihazda "boyut/tasarım farklı" diye bildirdi,
+        // 17 Ağustos 2026).
+        content = Center(
+          child: Text(
+            'X3',
+            style: TextStyle(
+              color: _centerText,
+              fontFamily: 'SpaceMono',
+              fontWeight: FontWeight.bold,
+              fontSize: fluidSize(screenWidth, 7, 0, 1.9, 12),
             ),
           ),
         );
@@ -579,9 +590,27 @@ class BoardWidget extends StatelessWidget {
   }
 
   /// Köşe numarası + X2 filigranları (web'deki soluk arka yazılar).
-  Widget _watermarks(List<PlayerColor?> cornerColor, List<int?> cornerNumber) {
+  ///
+  /// Web (`Board.tsx`) bu iki yazıyı kutuya SIĞDIRMIYOR: punto ekran
+  /// genişliğine bağlı bir `clamp` (köşe `clamp(80px,32vw,220px)`, X2
+  /// `clamp(60px,24vw,165px)`), yazı tipi `font-mono` (Space Mono) ve satır
+  /// yüksekliği `leading-none` (=1). Port 17 Ağustos 2026'ya kadar
+  /// `FittedBox` kullanıyordu — yani punto kutunun oranına göre çıkıyor,
+  /// üstelik `fontFamily` hiç verilmediğinden yazı tipi de temanın
+  /// SpaceGrotesk'i oluyordu; kullanıcı iki ekranı yan yana koyup farkı
+  /// bildirdi. Ölçülen web değerleri (derlenmiş CSS + Chromium): 390px'te
+  /// 124.8/93.6, 834px ve üstünde 220/165.
+  ///
+  /// `Center` + `OverflowBox`: köşe rakamının satır kutusu (220) kendi
+  /// 4/13'lük alanından (680px'lik tahtada ~203) büyük olabiliyor — web'de
+  /// de taşıyor. `FractionallySizedBox` çocuğuna TIGHT kısıt verdiğinden,
+  /// araya konmazsa yazı ortalanmak yerine kutunun üstünden çizilirdi.
+  Widget _watermarks(List<PlayerColor?> cornerColor, List<int?> cornerNumber,
+      double screenWidth) {
     const cornerFrac = cornerSize / boardSize;
     const zoneFrac = (boardSize - 2 * cornerSize) / boardSize;
+    final cornerFont = fluidSize(screenWidth, 80, 0, 32, 220);
+    final zoneFont = fluidSize(screenWidth, 60, 0, 24, 165);
     return Stack(
       children: [
         for (var i = 0; i < 4; i++)
@@ -596,12 +625,19 @@ class BoardWidget extends StatelessWidget {
                 heightFactor: cornerFrac,
                 child: Opacity(
                   opacity: 0.20,
-                  child: FittedBox(
-                    child: Text(
-                      '${cornerNumber[i]}',
-                      style: TextStyle(
-                        color: cornerColor[i]!.base,
-                        fontWeight: FontWeight.bold,
+                  child: Center(
+                    child: OverflowBox(
+                      maxWidth: double.infinity,
+                      maxHeight: double.infinity,
+                      child: Text(
+                        '${cornerNumber[i]}',
+                        style: TextStyle(
+                          color: cornerColor[i]!.base,
+                          fontFamily: 'SpaceMono',
+                          fontWeight: FontWeight.bold,
+                          fontSize: cornerFont,
+                          height: 1,
+                        ),
                       ),
                     ),
                   ),
@@ -614,12 +650,19 @@ class BoardWidget extends StatelessWidget {
             heightFactor: zoneFrac,
             child: Opacity(
               opacity: 0.28,
-              child: FittedBox(
-                child: const Text(
-                  'X2',
-                  style: TextStyle(
-                    color: Color(0xFF92660A),
-                    fontWeight: FontWeight.bold,
+              child: Center(
+                child: OverflowBox(
+                  maxWidth: double.infinity,
+                  maxHeight: double.infinity,
+                  child: Text(
+                    'X2',
+                    style: TextStyle(
+                      color: const Color(0xFF92660A),
+                      fontFamily: 'SpaceMono',
+                      fontWeight: FontWeight.bold,
+                      fontSize: zoneFont,
+                      height: 1,
+                    ),
                   ),
                 ),
               ),
