@@ -1065,6 +1065,51 @@ bölümün kendi tarihli notuna taşınır.
     "aynı hata kaç kişide, hangi derlemede" kırılımı gösterilmeli — ham
     liste ilk yüz satırdan sonra okunmaz hâle gelir.
 
+- **Taranabilir `/nasil-oynanir` sayfası (17 Ağustos 2026, kullanıcı
+  kararı: "ileride yapılacak işlere ekle, o zaman değerlendiririz"):**
+  Sitenin EN ZENGİN açıklayıcı içeriği (`HelpModal.tsx` — kurallar, bölge
+  mekaniği, puanlama, rütbeler) yalnızca kullanıcı modalı AÇINCA render
+  oluyor, yani taranabilir HTML'de hiç yok. Fikir o içeriği kendi
+  URL'inde de yayınlamak.
+  - **Tetikleyen somut gözlem (aynı gün, kullanıcının üç ekran
+    görüntüsü):** Google'ın organik sonucu ve AI Overview'ı Kelimeki'yi
+    DOĞRU anlatıyordu, ama **AI Mode** tamamen uydurdu — "kelime bulucu
+    ve sözlük platformu", Scrabble/Kelimelik yardımcısı, jokerli arama,
+    puan hesaplama... hiçbiri bizde yok. Kullanıcı "yanlış" geri bildirimi
+    verdi. Üç ölçülebilir sebep: (1) Google "kelimeki"yi hâlâ marka olarak
+    tanımıyor — arama sonucunda *"Including results for kelimeler"*
+    yazıyor; (2) o isim alanında Türkçe kelime-bulucu/sözlük siteleri
+    baskın, model boşluğu onlarla doldurmuş; (3) sitede grounding yapacak
+    metin çok az — tek sayfa, kısa bir paragraf.
+  - **ASIL KARAR NOKTASI — client-render mi statik HTML mi:** Mimari
+    değişiklik GEREKMİYOR, `main.tsx` zaten router'sız path eşlemesi
+    yapıyor (`/game/:id`, `/davet/:token`) ve `vercel.json` rewrite'ı her
+    path'i `index.html`'e yolluyor; üçüncü bir dal birkaç satır. AMA
+    client-side render Googlebot'u memnun eder (JS render ettiği kanıtlı —
+    SERP snippet'i `Setup.tsx`'in sayfa içi metninden geliyor, meta
+    description'dan DEĞİL), **JS çalıştırmayan AI/LLM crawler'ları için
+    boş sayfa demektir** — yani sorunu doğuran şeyi tam olarak ıskalar.
+    Gerçek çözüm build-time statik üretim (og-image script'iyle aynı
+    kalıp, `dist/nasil-oynanir/index.html`). Vercel'in statik dosyayı
+    rewrite'tan ÖNCE servis ettiği DOĞRULANMALI (dokümanda öyle yazıyor,
+    bu ortamdan test edilemedi).
+  - **Etki analizi — derleyicinin göremeyeceği üç bağ (yapmadan önce
+    oku):** (1) **`mobile/app/test/help_text_parity_test.dart:31` doğrudan
+    `src/components/HelpModal.tsx`'i OKUYOR** ve `<Section title="…">` /
+    `<QuickItem icon="…">` regex'leriyle tarıyor — içeriği başka bir
+    dosyaya çıkarmak o testi düşürür, üstelik web'e dokunduğun için hiç
+    bakmayacağın mobil tarafta; (2) içerik TEK KAYNAKTA kalmalı, modal ve
+    sayfa AYNI bileşeni tüketmeli — iki kopya bu projenin en sık
+    tekrarlayan hata sınıfı (renk paleti/rütbe tablosu/hukuki metin üçü de
+    böyle ayrışmıştı); (3) yeni sayfanın KENDİ title/description'ı olmalı,
+    yoksa SPA'nın genel meta'sını miras alır ve SEO kazancının yarısı
+    gider. Ayrıca `sitemap.xml` (şu an tek URL) ve PWA precache listesi
+    (`vite.config.ts`) kontrol edilmeli; Flutter portunun `help_modal.dart`
+    metinleri de aynı kaynağa bağlı.
+  - **Bu bir REINDEX işi DEĞİL:** aynı bölümün (SEO) "marka karışıklığı
+    reindex ile çözülmez, organik arama/backlink ile zamanla düzelir"
+    notu hâlâ geçerli — bu sayfa o süreci hızlandıran bir içerik işi.
+
 ## Web'de Yapılacak İşler (mobil porttan gelen fikirler, henüz yapılmadı)
 
 Mobil port (bkz. `mobile/CLAUDE.md`) cihaz testi sırasında bazen web'de de
