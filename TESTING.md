@@ -542,6 +542,17 @@ Gerek de yok: `fetchMyGames` modal açılınca / sekme değişince koşuyor.
 - [ ] **Favoriler sekmesi de aynı.** Aynı çevrimdışı durumda "Favoriler"e
       geç: orada da "yüklenemedi" çıkmalı ("Henüz favori işaretlediğin bir
       oyun yok." DEĞİL — o ayrı bir kod yolu, `list_liked_games` RPC'si).
+
+> **Beklenen (hata DEĞİL): "Tümü"de mesaj ~5 sn gecikiyor, "Favoriler"de
+> anında çıkıyor.** 17 Ağustos 2026 cihaz turunda gözlendi ve kabul edildi.
+> Muhtemel sebep iki yolun HTTP metodunun farklı olması — "Tümü"
+> `from('games').select()` ile **GET**, "Favoriler" `list_liked_games`
+> RPC'siyle **POST** gönderiyor; tarayıcılar bağlantı hatasında idempotent
+> istekleri (GET) yeniden deniyor, POST'u denemiyor. Bekleme her "Tümü"
+> dönüşünde tekrarlıyor (tek seferlik bir önbellek etkisi değil). Ölçülerek
+> KANITLANMADI; düzeltmek istenirse yol açık: `GameHistoryModal` çevrimdışı
+> olduğunu `useOnlineStatus` ile baştan bilip çekimi hiç denemez, mesajı
+> anında gösterir ve bağlantı dönünce kendiliğinden tazeler.
 - [ ] **"Son Oynananlar" — YALNIZCA "Yapay Zeka ile" sekmesinde, İKİ dalı
       da, BU SIRAYLA.** `RecentGamesSection` çevrimdışıyken SADECE orada
       render ediliyor (aşağıdaki Canlı maddesine bkz.), ve koşulu
