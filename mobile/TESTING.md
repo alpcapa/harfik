@@ -1629,6 +1629,51 @@ kurulmaz test edilebilir. `https://kelimeki.com/davet/...` biçimindeki
 davet linkleri ise ancak assetlinks/AASA yayınlandıktan sonra uygulamayı
 açar; o zamana kadar tarayıcıda açılırlar (bozuk değil, yalnızca eksik).
 
+### Appetize triyajı — ne KANITLAR, ne kanıtlaMAZ (17 Ağustos 2026)
+
+Ön koşulların üçü de (Apple üyeliği, Android cihaz, imzalama anahtarı)
+henüz açık değil; gerçek tur ertelendi. Bu arada Appetize'da neyin
+koşulabileceği aşağıda ayıklandı. **Bir maddenin "gerçek cihaz ister"
+olması Appetize'ın değil MADDENİN kendi özelliği** — bu yüzden liste
+kaynaktan çıkarılabildi, emülatöre girmeden.
+
+**İki taraf aynı şey DEĞİL** (`.github/workflows/mobile-build.yml`):
+Android'e gerçek bir `.apk` yükleniyor (emülatör), iOS'a ise
+`flutter build ios --simulator --debug` çıktısı — yani **iOS tarafı DEBUG
+bir simülatör derlemesi.** Performansla ilgili hiçbir şey orada
+ölçülemez; Android emülatörü de gerçek GPU değil.
+
+**3 dakikalık sınır bir kısıt değil bir PLANLAMA gereği:** her oturum TEK
+bir kümeyi hedeflemeli, adımlar önceden yazılmalı. "Girip bakarım" 3
+dakikada hiçbir şey bitirmiyor.
+
+| Madde | Appetize | Not |
+|---|---|---|
+| İkon / splash / portre kilidi | ✅ | Android adaptive maske launcher'a göre değişir; emülatörü yatay çevirip aç |
+| 🤖 robot avatarı + ❓⚙️👥📊🚪 + 🏆 | ✅ **değerli** | Parça 29'un CanvasKit ağ bağımlılığı native'de YOK; iOS ile Android'in emoji görüntüsü farklıdır ve bu hata DEĞİL |
+| Setup teşhis satırı `depo ok` | ✅ **değerli** | Tek bakışta Parça 45'in native sqflite kanalını kanıtlıyor (web'de WASM ağdan geliyordu) |
+| Uçak modunda kelime anlamı | ✅ | `meanings.db` pakette; Android emülatöründe uçak modu ayarlardan açılabilir |
+| Android geri tuşu / geri jesti | ✅ | Kodda `PopScope` HİÇ yok, hiç denenmedi — emülatör bunu tam karşılıyor |
+| Galeri izni REDDİ (Türkçe hata) | ✅ | İzin diyaloğu emülatörde gerçek |
+| iOS güvenli alan (çentik / Dynamic Island) | 🟡 | Simülatörde cihaz tipi seçilebiliyorsa; panelden bak |
+| Paylaş sayfası açılıyor mu | 🟡 | Sayfa açılır ama hedef uygulama yok — "eki taşıyor mu" kısmen görülür |
+| Oturum kalıcılığı | 🟡 | Uygulamayı öldürüp açmak emülatörde olur, ama Appetize OTURUMU bitince her şey sıfırlanır — ikisini karıştırma |
+| Klavye / Türkçe karakterler | 🟡 | Emülatör klavyesi gerçek IME değil |
+| Soğuk başlangıç `kelimeki://davet/<token>` | ❓ | Appetize'ın "launch URL" parametresi varsa koşulabilir — **doğrulanmadı**, panelden bakılmalı |
+| **iPad paylaş popover ankrajı (Parça 86)** | ❌ | Maddenin kendisi "iPhone'da test edilse bile KANITLANMAZ" diyor; iPad cihaz tipi şart |
+| **Sürükle-bırak hissi / performans** | ❌ | Emülatör GPU + iOS DEBUG derlemesi; ölçüm anlamsız, yanlış güven verir |
+| **HEIC avatarı** | ❌ | Emülatör galerisinde HEIC dosyası yok; gerçek fotoğraf gerekiyor |
+| **Sözlük yükleme SÜRESİ** | ❌ | "Yükleniyor mu" sorusu ✅, "ne kadar sürüyor" ❌ |
+| assetlinks / AASA sonrası davet linki | ⛔ | Ön koşula bloke (imzalama anahtarı / Apple üyeliği) |
+
+**Cihaz beklemeden yapılabilecek tek gerçek hazırlık, bilerek YAPILMADI:**
+Android imzalama anahtarı. Sebebi teknik değil: bu ÜRETİM imzalama
+anahtarı ve kaybedilirse uygulama Play Store'da **bir daha asla
+güncellenemez**. Üretilmesi, yedeklenmesi ve GitHub secret'larına
+konması hesap sahibinin kendi kararı olmalı; bir oturum bunu kendiliğinden
+üretmemeli. `assetlinks.json` de onun SHA-256'sına bağlı olduğundan
+sırayla o beklemede.
+
 ### Her iki cihazda da koşulacak (aynı madde, iki kez)
 
 - [ ] **Bölüm 0 — ilk açılış:** uygulama ikonu (adaptive maske Android'de
