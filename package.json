@@ -14,6 +14,7 @@
     "augment-dictionary": "node scripts/augment-dictionary.mjs",
     "generate-golden-vectors": "esbuild scripts/generate-golden-vectors.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/golden-gen.mjs --log-level=error && node node_modules/.cache/kelimeki/golden-gen.mjs",
     "generate-icons": "node scripts/generate-icons.mjs",
+    "generate-og-image": "node scripts/generate-og-image.mjs",
     "generate-meanings-db": "node scripts/generate-meanings-db.mjs",
     "generate-logo-paths": "node scripts/generate-logo-paths.mjs",
     "generate-klig-paths": "node scripts/generate-klig-paths.mjs",
