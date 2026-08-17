@@ -992,6 +992,15 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       davet varsa (test için `created_at` SQL ile geriye çekilebilir)
       liste açılınca kendiliğinden kaybolmalı (`check_invite_expiry`) —
       davetLİnin listesinde de (hayalet davet regresyonu).
+      **Test davetini `create_online_game` RPC'siyle kur** (istemciden
+      DEĞİL): davet e-postasını istemci gönderdiğinden RPC doğrudan
+      çağrıldığında kimseye mail gitmez. **Gerçek bir kullanıcının
+      bekleyen davetini ASLA kullanma** — süpürme onu da iptal eder.
+      **17 Ağustos 2026'da koşuldu ve GEÇTİ** (tek kullanımlık T1→T2
+      daveti `abandoned`'a döndü, sonra tamamen silindi; `game_invites`
+      satırı tasarım gereği `pending` kalıyor — kovaların hepsi
+      `online_games.status`'e de baktığından davet hiçbir listede
+      görünmüyor).
 - [ ] **Setup'taki "Yapay Zeka ile (N)" rozeti (15 Ağustos 2026, Parça
       101).** Girişliyken devam eden N adet YZ oyunun varken kurulum
       ekranını aç: "YAPAY ZEKA İLE" sekme butonunun sağ üstünde N rozeti
@@ -1167,10 +1176,22 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       moduna al/aç ya da zayıf şebekede dene: aynı hamle İKİ KEZ
       işlenmemeli (skor bir kez artmalı), "Sıra sende değil." gibi sahte
       bir hata çıkmamalı.
-- [ ] **Süre aşımı.** Sırası gelenin 48 saati dolmuşsa (SQL ile
-      `turn_deadline` geriye çekilerek test edilebilir) ekran açılınca
-      otomatik teslim işlemeli ve oyun doğru şekilde sonlanmalı/devam
-      etmeli (2 kişilikte biter, 4 kişilikte sıra ilerler).
+- [ ] **Süre aşımı — İKİ DALI DA koş, biri ötekini kanıtlamaz.** Sırası
+      gelenin 48 saati dolmuşsa (SQL ile `turn_deadline` geriye çekilerek)
+      "Arkadaşınla" sekmesini açmak süpürmeyi tetiklemeli. **2 kişilik:**
+      oyun BİTER (`status='finished'`, `end_reason='surrender'`), teslim
+      olanın skoru 0 + rafı torbaya döner, kalanın skorundan kendi raf
+      puanı düşülür, `games` satırları yazılır (teslim eden rank 2 / lose),
+      k-lig **−2**, ve teslim olana **uyarı e-postası** gider. **4 kişilik:**
+      oyun BİTMEZ — sıra bir sonraki teslim olmamış koltuğa geçer,
+      `turn_count` +1, `turn_deadline` yeniden 48 saate kurulur ve **mail
+      GİTMEZ** (mail yalnızca oyun gerçekten bittiğinde). Her iki dalda da
+      `online_game_states.bag_count` gerçek torbaya EŞİT olmalı (4 Ağustos
+      `check_turn_timeout_bag_count` regresyonu — hata iki dalda da vardı,
+      yalnızca 4 kişilikte görünüyordu).
+      **17 Ağustos 2026'da koşuldu ve GEÇTİ** (2 kişilik: torba 70→77,
+      k-lig 10→8, `net._http_response` `{"ok":true,"sent":1}` ve mail
+      ulaştı; 4 kişilik: torba 65→72, oyun `active` kaldı, mail yok).
 - [ ] **Logo çıkışı teslim DEĞİL.** Oyun içinde logoya bas: yalnızca Canlı
       listesine dönmeli, oyun bitmemeli, sıra/skor değişmemeli.
 - [ ] **Oyun sonu.** Oyun bitince GameOver modalı + kapatınca "CANLI

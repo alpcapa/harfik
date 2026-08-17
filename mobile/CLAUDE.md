@@ -4869,7 +4869,7 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | Bölüm | Durum | Not |
 |---|---|---|
 | 0 · Derleme / ilk açılış | ✅ | FAZ A0 |
-| 0.5 · Web ile yan yana görsel | ✅ | **17 Ağu'da (Blok 6) KAPANDI — bölümün TAMAMI koşuldu, sıfır bulgu.** Öncesi: birçok tur (Parça 29/33/37/56/72-80). **17 Ağu:** k-lig nokta boşluğu, avatar↔logo (kapatıldı), tahta filigranlarının puntosu/fontu + header avatar hizası (Parça 106), filigranların taşların altında kalması (Parça 107), Setup'taki parantezli puanın kaldırılması ve tahta↔raf boşluğu (ikisi web-only, port kanonik alındı) — **17 Ağu'daki bu kümenin TAMAMI aynı gün cihazda koşuldu ve geçti, sıfır bulgu.** Turdan iki YENİ web işi çıktı (Hesap Ayarları fotoğraf butonu; raf başlığındaki swap aksiyon metninin kaldırılması) — **dalda bekliyor, merge edilmedi.** Geriye yalnızca Parça 72-89'un 11 maddesi kaldı |
+| 0.5 · Web ile yan yana görsel | ✅ | **17 Ağu'da (Blok 6) KAPANDI — bölümün TAMAMI koşuldu, sıfır bulgu.** Öncesi: birçok tur (Parça 29/33/37/56/72-80). **17 Ağu:** k-lig nokta boşluğu, avatar↔logo (kapatıldı), tahta filigranlarının puntosu/fontu + header avatar hizası (Parça 106), filigranların taşların altında kalması (Parça 107), Setup'taki parantezli puanın kaldırılması ve tahta↔raf boşluğu (ikisi web-only, port kanonik alındı) — **17 Ağu'daki bu kümenin TAMAMI aynı gün cihazda koşuldu ve geçti, sıfır bulgu.** Turdan iki YENİ web işi çıktı (Hesap Ayarları fotoğraf butonu: tam genişlik + kalın; raf başlığındaki swap aksiyon metninin kaldırılması) — **17 Ağu'da PR #282 ile `main`'e merge edildi**, deploy sonrası tek bir bakışla teyit edilecek |
 | 1 · Oyun (offline çekirdek) | ✅ | Parça 15/20/21/22 buradan çıktı |
 | 2 · Hesap (auth) | ✅ | **9-12 (deep link) FAZ B'ye ertelendi** |
 | 3 · Bulut kayıtları | ✅ | 6/6 — Parça 29 |
@@ -4880,7 +4880,7 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | 8 · Dayanıklılık (uçak modu) | ✅ | 8.2/8.3/8.5/8.6 — Parça 43-46; 16 Ağu: uçak modunda ÇIK–GİR hamleyi siliyordu (Parça 105) → düzeltme **aynı gün cihazda doğrulandı** |
 | 9 · Görüş Bildir | ✅ | **17 Ağu: bölümün TAMAMI koşuldu, sıfır bulgu** (Parça 48'in "kapatmak da formu açar" düzeltmesi dahil). "Üyelik teklifi → kayıt" ikinci turda gerçekten tamamlandı: `T4` açıldı, `signup_channel='form'`, ve misafirken oynanan oyun kuyruktan hesaba doğru işlendi (oyun 10:08, hesap 10:10 — `created_at` gerçek bitiş anını taşıdığından kayıt kronolojik doğru yere oturdu, `platform='app-web'`) |
 | 10 · Arkadaşlar | ✅ | tamamı (11 Ağu) + moderasyon geri alma, iki yol (14 Ağu, Parça 91) |
-| 11 · Canlı oyun | ✅ | 14 Ağu: davet/kabul + tahta koşuldu (Parça 95, 5 bulgu). **16 Ağu: mesajlaşma alt bölümünün 14 maddesi de koşuldu — hepsi geçti, sıfır bulgu** (Parça 11/100/102/104'ün doğrulama sınırları kapandı). **17 Ağu: ret + hesap değişimi de koşuldu — sıfır bulgu.** Geriye YALNIZCA SQL isteyen iki madde kaldı (süresi dolmuş davet, 48 saat sıra aşımı) — onlar cihaz turunun değil ortak bir SQL turunun işi |
+| 11 · Canlı oyun | ✅ | 14 Ağu: davet/kabul + tahta koşuldu (Parça 95, 5 bulgu). **16 Ağu: mesajlaşma alt bölümünün 14 maddesi de koşuldu — hepsi geçti, sıfır bulgu** (Parça 11/100/102/104'ün doğrulama sınırları kapandı). **17 Ağu: ret + hesap değişimi de koşuldu — sıfır bulgu.** **17 Ağu akşamı: SQL isteyen son iki madde de koşuldu (süresi dolmuş davet + 48 saat sıra aşımı, iki dalıyla) — bölüm TAMAMEN kapandı, sıfır bulgu** |
 | 12 · Hesap Ayarları | ✅ | avatar RLS + küçültme uçtan uca (Parça 82/83) |
 | 13 · k-lig ödül & rütbe | ✅ | 12 Ağu (Parça 66) |
 
@@ -4981,8 +4981,9 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   **106/107 için bu tur tek gerçek kanıttı** (Flutter SDK'sız yazıldılar,
   negatif eşleri kurulamamıştı). Aynı turda çıkan İKİ yeni web işi
   (Hesap Ayarları'ndaki fotoğraf butonu: tam genişlik + kalın; raf
-  başlığındaki swap aksiyon metninin kaldırılması) **dalda bekliyor,
-  merge EDİLMEDİ** — dolayısıyla henüz cihazda görülmedi.
+  başlığındaki swap aksiyon metninin kaldırılması) **17 Ağustos'ta PR #282
+  ile `main`'e merge edildi** — Vercel deploy'undan sonra tek bir bakışla
+  teyit edilecek (`mobile/TESTING.md` 0.5).
 - ~~**13 Ağustos (Parça 72-89):** içerik sütunu genişliği · GİRİŞ satırı
   konumu · logo altı yazı bloğu · harf aralığı · "+ Yeni …" butonu ve alt
   sekmeler · form alanları · avatarın YUVARLAK vurgusu · "Yükleniyor…"
@@ -5025,24 +5026,49 @@ yana karşılaştırmanın TAMAMI (bölüm 0.5)**.
 
 ### FAZ A1'İN CİHAZ TURLARI BİTTİ (17 Ağustos 2026)
 
-Koşulacak cihaz maddesi KALMADI. Geriye üç şey kaldı ve **hiçbiri bir
-cihaz turu değil**:
+Koşulacak cihaz maddesi KALMADI ve **ortak SQL turu da aynı gün koşuldu**
+(aşağıya bkz.). Geriye tek bir şey kaldı ve o da bir cihaz turu değil:
 
-1. **Merge bekleyen iki web işi** (Blok 6 turundan çıktı, dalda duruyor):
-   Hesap Ayarları'ndaki fotoğraf butonu (tam genişlik + kalın) ve raf
-   başlığındaki swap aksiyon metninin kaldırılması. `main`'e girmeden
-   cihazda görülemezler (Vercel yalnızca merge'te yayınlıyor) — merge
-   sonrası tek bir bakış yeter, ikisi de `mobile/TESTING.md` 0.5'te.
-2. **Ortak SQL turu:** süresi dolmuş davet süpürmesi (7 gün,
-   `check_invite_expiry`) ve 48 saat sıra aşımı → otomatik teslim + `-2` +
-   uyarı e-postası (`check_turn_timeout` + `notify-turn-timeout-surrender`).
-   İkisi de satırların Supabase MCP ile geriye tarihlenmesini gerektiriyor;
-   bölüm 11'in kalan tek borcu bu.
-3. **FAZ B** (gerçek native iOS/Android) — ön koşulları hâlâ yapılmadı
+1. ~~Merge bekleyen iki web işi~~ → PR #282 ile `main`'de; ~~ortak SQL
+   turu~~ → koşuldu (aşağı).
+2. **FAZ B** (gerçek native iOS/Android) — ön koşulları hâlâ yapılmadı
    (imzalama anahtarı, Apple Developer üyeliği, `assetlinks.json`).
    Bölüm 6'nın 🟡'si de oraya bağlı (iPad paylaş ankrajı, Parça 86).
 
 Şu an bilinen bir veri kaybı yolu YOK (Parça 105 aynı gün doğrulandı).
+
+### Ortak SQL turu — koşuldu ve GEÇTİ (17 Ağustos 2026)
+
+Bölüm 11'in kalan iki maddesi, satırların Supabase MCP ile geriye
+tarihlenmesini gerektiriyordu; üç senaryo kurulup süpürme GERÇEK
+uygulamadan (T1 → "Arkadaşınla") tetiklendi. Üçü de tahminlerle birebir
+uyuştu:
+
+| Senaryo | Ölçülen sonuç |
+|---|---|
+| Süresi dolmuş davet (`create_online_game` ile kurulan tek kullanımlık T1→T2, `created_at` −8 gün) | `online_games.status` → `abandoned`; `game_invites` satırı tasarım gereği `pending` kaldı, davet hiçbir kovada görünmedi |
+| 2 kişilik sıra aşımı (T1↔T2, sıra T1'de) | Oyun `finished`/`end_reason='surrender'`; T1 skor 0 + raf torbaya (**70 → 77**, `bag_count` 77); T2 22 → 10 (kendi raf puanı düşüldü); `games` satırları T2 rank 1 win / T1 rank 2 lose+surrendered; T1 k-lig **10 → 8**, oyun sayısı 12 → 13; `net._http_response` **`{"ok":true,"sent":1}`** ve mail T1'in gerçek kutusuna ulaştı |
+| 4 kişilik sıra aşımı (T1+T2+T3+YZ, sıra T3'te) | Oyun `active` KALDI; T3 teslim/skor 0/raf 0; sıra 2 → **3** (YZ koltuğu), tur 2 → 3, `turn_deadline` +48s; torba **65 → 72** ve `bag_count` **72**; **mail GİTMEDİ** |
+
+**Bu tur İKİ eski doğrulama sınırını birden kapattı** (ayrıntı kök
+`CLAUDE.md`): `notify-turn-timeout-surrender`ın pg_net → Edge Function →
+Brevo zinciri bugüne dek yalnızca rollback'li bir simülasyonla
+gösterilmişti; `check_turn_timeout_bag_count` düzeltmesinin kanıtı da
+yalnızca migration'ın kendi backfill'iydi.
+
+**Kurulum disiplini — bir daha koşulursa aynısı geçerli:** (a) test daveti
+`create_online_game` RPC'siyle kuruldu, istemciden DEĞİL — davet e-postası
+istemciden gönderildiğinden bu yol kimseye mail atmıyor; (b) **gerçek bir
+kullanıcının bekleyen daveti ASLA kullanılmaz** (o turda üretimde tam da
+öyle bir davet vardı ve süpürme onu da iptal ederdi) — kurulumdan sonra
+"süresi geçmiş görünen satırların HEPSİ benim mi?" diye ayrı bir tarama
+koşuldu; (c) tek kullanımlık davet doğrulamadan sonra silindi, iki gerçek
+test oyunu ise (artık meşru birer oyun kaydı olduklarından) bırakıldı.
+
+**İki dalı da koşmak ŞART, biri ötekini kanıtlamaz:** `bag_count` hatası
+İKİ dalda da vardı ama yalnızca 4 kişilikte kullanıcıya görünüyordu; mail
+ise yalnızca 2 kişilik dalda üretiliyor — tek dal koşmak, fonksiyonun maili
+KOŞULSUZ gönderip göndermediğini de ayırt edemezdi.
 
 ## Sonraya Bırakılan İşler (mobil)
 
