@@ -129,7 +129,7 @@ const html = `<!DOCTYPE html>
       <path d="M8 7 Q55 1 110 7 Q165 13 212 7" stroke="#2563EB" stroke-width="3.5" stroke-linecap="round" fill="none"/>
     </svg>
     <h1>Stratejik Türkçe Kelime Oyunu</h1>
-    <p>2 ya da 4 oyuncuyla, yapay zekaya karşı oynanan stratejik kelime oyunu</p>
+    <p>2 ya da 4 oyuncuyla, yapay zekaya ve arkadaşlarına karşı oynanan stratejik kelime oyunu</p>
     <div class="tiles">
       ${TILES.map((t) => `<div class="tile"><span class="letter">${t.l}</span><span class="pts">${t.p}</span></div>`).join('\n      ')}
     </div>
