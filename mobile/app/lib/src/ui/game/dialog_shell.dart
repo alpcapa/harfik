@@ -156,18 +156,19 @@ class KDialogCard extends StatelessWidget {
           borderWidth: 1,
           shadows: kFloatingCardShadows,
         ),
-        // Dolgu Container'da DEĞİL çocukta: ✕ kartın kenarından 12px içeride
-        // durmalı (web `top-3 right-3`), oysa Container'ın 24'lük dolgusu
-        // içindeki bir `Positioned` 36'ya düşerdi. `onClose` yokken sonuç
-        // birebir aynı — yalnızca dolgunun yeri değişti.
+        // Dolgu ✕ YOKKEN Container'da kalır (mevcut 8 çağrı yerinin ağacı
+        // ve `dialog_shell_test`in `Container.padding == all(24)` kontratı
+        // AYNEN korunuyor — 17 Ağustos 2026'da bu ikisini ayırmayan ilk
+        // sürüm CI'da o testi düşürdü). ✕ VARSA dolgu çocuğa iner: aksi
+        // halde Container'ın 24'ü içindeki bir `Positioned` kartın
+        // kenarından 12 değil 36 uzakta çizilirdi (web `top-3 right-3`).
+        padding:
+            onClose == null ? const EdgeInsets.all(kDialogPadding) : null,
         child: _withCloseButton(
-          Padding(
-            padding: const EdgeInsets.all(kDialogPadding),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: children,
-            ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: children,
           ),
         ),
       ),
@@ -179,7 +180,8 @@ class KDialogCard extends StatelessWidget {
     if (onClose == null) return body;
     return Stack(
       children: [
-        body,
+        Padding(
+            padding: const EdgeInsets.all(kDialogPadding), child: body),
         Positioned(
           top: 12,
           right: 12,
