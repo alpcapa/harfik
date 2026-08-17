@@ -1674,6 +1674,61 @@ konması hesap sahibinin kendi kararı olmalı; bir oturum bunu kendiliğinden
 üretmemeli. `assetlinks.json` de onun SHA-256'sına bağlı olduğundan
 sırayla o beklemede.
 
+### Appetize koşu planları — 3 dakikaya göre YAZILMIŞ (17 Ağustos 2026)
+
+Ücretsiz katman oturumu **3 dakikada** kesiyor ve her oturum SIFIRDAN
+açılıyor: oturum kapanınca giriş de gidiyor. Bu yüzden "girip bakarım"
+hiçbir şey bitirmiyor — aşağıdaki koşular önceden yazıldı ve **girişsiz
+olanlar önce**, çünkü e-posta/şifre yazmak 3 dakikanın büyük kısmını
+yiyor.
+
+**Koşu 1 — açılış kimliği (girişsiz, Android):**
+1. Launcher'da **ikon** (adaptive maske launcher'a göre değişir), sonra
+   **splash**.
+2. Emülatörü **yatay** çevirip aç → portre kilidi tutmalı.
+3. Setup'ın en alt satırı: `Derleme <sha> · … · **depo ok**` — tek
+   bakışta Parça 45'in native sqflite kanalını kanıtlar (`DEPO YOK`
+   yazıyorsa dur, kalan maddeler anlamsız). Sha'yı da not al: hangi
+   derlemeye baktığın buradan okunur.
+4. **Android geri tuşu + geri jesti** — kodda `PopScope` HİÇ yok, hiç
+   denenmedi: Setup'ta uygulamadan çıkıyor mu, modal açıkken modalı mı
+   kapatıyor?
+
+**Koşu 2 — oyun + emoji + anlam (girişsiz, Android):**
+1. Setup → "Nasıl oynanır?" → Hızlı Başlangıç: **🎯 🏠 🔗** tofu (boş
+   kare) DEĞİL. Native'de Parça 29'un CanvasKit ağ bağımlılığı YOK — bu
+   koşunun asıl kanıtı bu.
+2. Yeni YZ oyunu (2 kişilik) → birkaç hamle → **joker** koy: seçici
+   ortalanmış kart (alttan sayfa DEĞİL), hücreler makul boyda.
+3. Onaylanmış bir taşa dokun → **kelime anlamı** gelmeli. Sonra uçak
+   modunu açıp tekrar dene: yine gelmeli (`meanings.db` pakette — web
+   derlemesinde gelmiyordu, fark tam burada görünür).
+4. Logoya bas → Setup'ta "Devam Eden Oyun" satırında **🤖** robot
+   avatarları.
+
+**Koşu 3 — hesap (girişli, Android):** giriş bilgilerini panoya önceden
+kopyala; oturumun ilk 30 saniyesi giriş yapmaya gider.
+1. Hesap menüsü: **👥 📊 ❓ ⚙️ 🚪** — beşi de tofu değil, satırlar tek
+   satırda (Parça 30).
+2. Hesap Ayarları → "Fotoğraf Değiştir" → izin diyaloğunu **REDDET** →
+   Türkçe hata çıkmalı ("Fotoğraf seçilemedi. Galeri izni verildiğinden
+   emin ol.", Parça 87). İzni verip HEIC bir dosya seçmek ayrı bir
+   koşu — emülatör galerisinde HEIC yoksa bu madde **atlanır** (gerçek
+   cihaz işi).
+
+**Koşu 4 — iOS (simülatör):** burada **hiçbir performans/akıcılık
+maddesi koşulmaz** — derleme `--simulator --debug`.
+1. Güvenli alan: çentik/Dynamic Island header'ı kırpıyor mu (panelde
+   cihaz tipi seçilebiliyorsa iPhone 15 Pro).
+2. Paylaş: oyun geçmişinde bir kartı aç → Paylaş → **sayfa açılıyor mu**
+   (hedef uygulama yok, "eki taşıyor mu" ancak kısmen görülür).
+3. **iPad seçilebiliyorsa** Parça 86'nın popover ankrajı — seçilemiyorsa
+   bu madde FAZ B'de kalır, iPhone'da koşmak KANITLAMAZ.
+
+**Panelden bakılacak tek şey:** Appetize'ın "launch URL" parametresi
+varsa `kelimeki://davet/<token>` soğuk başlangıcı koşulabilir
+(doğrulanmadı). Yoksa deep link maddelerinin tamamı FAZ B'ye kalır.
+
 ### Her iki cihazda da koşulacak (aynı madde, iki kez)
 
 - [ ] **Bölüm 0 — ilk açılış:** uygulama ikonu (adaptive maske Android'de
