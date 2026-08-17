@@ -860,6 +860,15 @@ bağlı değil.)
     no-op action'lar, ABANDON.
   - `reducer_crafted_finish.json` — elle kurgulanmış bitiş: yalnız-joker
     bitiş bonusu (+50), X3 çarpanı, oyun sonu raf puanı düşümü.
+  - `reducer_crafted_bingo.json` — Bingo mesaj metni, HEM insan HEM YZ
+    şablonu (17 Ağustos 2026). `reducer_ai4` bingo İÇERİYOR ama YZ
+    oyunlarında snapshot her 5 adımda bir alındığından o hamlenin `message`
+    alanı hiçbir snapshot'a düşmüyordu — yani metin korumasızdı; bingo notu
+    eklenirken fixture'lar yeniden üretilip SIFIR fark çıkması bunu ortaya
+    çıkardı. **YZ'nin bingo yapabilmesi için SOL-ÜST köşede (0) olması
+    şart:** `tryCornerStart` (ai.ts) başlangıç hücresini köşe bloğunun
+    İÇİNDEN seçip kelimeyi sağa/aşağı uzatıyor, yani sağ-alt köşede 7
+    harflik bir ilk hamle tahtadan taşıyor ve YZ en fazla 4 taş koyabiliyor.
   - `reducer_crafted_ai_exchange.json` — YZ'nin "hamle yok → raf değiştir"
     dalı (yalnız B'lerden raf hiçbir kelime heceleyemez; doğal oyunda nadir).
   - `reducer_sync.json` — SYNC_ONLINE_STATE birleşme mantığı: aynı

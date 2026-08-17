@@ -38,7 +38,7 @@ import { Avatar } from './Avatar';
 import { Tile as TileComponent } from './Tile';
 import { createInitialState, gameReducer, isFirstMove, type Action } from '../game/gameReducer';
 import { isWordSetReady } from '../data/wordSetLoader';
-import { PLAYER_COLORS, jokerFinishBonus } from '../game/constants';
+import { BINGO_BONUS, PLAYER_COLORS, jokerFinishBonus } from '../game/constants';
 import {
   calcScore,
   calcWordRawScores,
@@ -811,6 +811,10 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     }
     const finishBonus = jokerFinishBonus(row.finish_joker_count);
     const finishBonusNote = finishBonus > 0 ? ` (jokerli bitiş bonusu +${finishBonus})` : '';
+    // Bingo notu — reducer'ın PLAY şablonuyla BİREBİR aynı olmak zorunda
+    // (bkz. gameReducer.ts). Bayrak zaten satırda geliyor; `BINGO_BONUS`
+    // puanı `row.points`'in içinde, not yalnızca onu açıklıyor.
+    const bingoNote = row.bingo ? ` (Bingo bonusu +${BINGO_BONUS})` : '';
     const shares = row.lost_shares ?? [];
     const bonusNote =
       shares.length > 0
@@ -818,7 +822,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
         : '';
     const pts = row.points - finishBonus;
     return {
-      message: `${moverName}: +${pts} puan${bonusNote}${finishBonusNote} Kelimeler: ${row.words.join(', ')}`,
+      message: `${moverName}: +${pts} puan${bonusNote}${bingoNote}${finishBonusNote} Kelimeler: ${row.words.join(', ')}`,
       messageType: 'ok',
     };
   }, [moveRows, state.players]);

@@ -186,6 +186,11 @@ typedef _MoveMessageCtx = ({
   List<InvasionShare> shares,
   int finishBonus,
   List<String> words,
+
+  /// Rafın 7 taşı birden kullanıldı mı (Bingo). `bingoBonus` puanı zaten
+  /// `basePts`'in İÇİNDE (calcScore ekliyor) — mesajdaki not yalnızca o
+  /// puanın nereden geldiğini açıklıyor, ikinci kez eklemiyor.
+  bool bingo,
 });
 
 /// PLAY ve AI_PLAY ortak çekirdeği — TS `applyPlacement` ile aynı sözleşme.
@@ -219,6 +224,10 @@ GameState _applyPlacement(
   rack.addAll(drawTiles(bag, rackSize - rack.length));
 
   final placedTiles = placedMap.values.toList();
+  // Bingo ile jokerli bitiş bonusu AYNI hamlede oluşamaz: jokerli bitiş tüm
+  // taşların joker olmasını ister, torbada yalnızca 2 joker var; bingo ise 7
+  // taş ister. Yani mesaja en fazla tek bir bonus parantezi eklenir.
+  final isBingo = placedTiles.length >= rackSize;
   final jokerCount = placedTiles.where((t) => t.wild).length;
   final onlyJokers = placedTiles.isNotEmpty && jokerCount == placedTiles.length;
   final finishesGame = rack.isEmpty && bag.isEmpty;
@@ -275,10 +284,15 @@ GameState _applyPlacement(
       shares,
       finishJokerCount: finishBonus > 0 ? jokerCount : null,
       wordScores: wordRawScores,
-      bingo: placedTiles.length >= rackSize,
+      bingo: isBingo,
     ),
-    message: buildMessage(
-        (pts: pts, shares: shares, finishBonus: finishBonus, words: wordsList)),
+    message: buildMessage((
+      pts: pts,
+      shares: shares,
+      finishBonus: finishBonus,
+      words: wordsList,
+      bingo: isBingo,
+    )),
     messageType: MessageKind.ok,
   );
 }
@@ -505,10 +519,11 @@ class GameEngine {
               final bonusNote = ctx.shares.isNotEmpty
                   ? ' (${ctx.shares.map((s) => '${s.amount} puanı ${state.players[s.index].name} kaptı').join(', ')})'
                   : '';
+              final bingoNote = ctx.bingo ? ' (Bingo bonusu +$bingoBonus)' : '';
               final finishBonusNote = ctx.finishBonus > 0
                   ? ' (jokerli bitiş bonusu +${ctx.finishBonus})'
                   : '';
-              return '${me.name}: +${ctx.pts} puan$bonusNote$finishBonusNote Kelimeler: ${ctx.words.join(', ')}';
+              return '${me.name}: +${ctx.pts} puan$bonusNote$bingoNote$finishBonusNote Kelimeler: ${ctx.words.join(', ')}';
             },
           );
           return _advanceTurn(moved);
@@ -747,10 +762,11 @@ class GameEngine {
         final invasionNote = ctx.shares.isNotEmpty
             ? ' (${ctx.shares.map((s) => '${s.amount} puanı ${state.players[s.index].name} kaptı').join(', ')})'
             : '';
+        final bingoNote = ctx.bingo ? ' (Bingo bonusu +$bingoBonus)' : '';
         final finishBonusNote = ctx.finishBonus > 0
             ? ' (jokerli bitiş bonusu +${ctx.finishBonus})'
             : '';
-        return '${me.name} "${move.word}" oynadı. +${ctx.pts} puan.$invasionNote$finishBonusNote';
+        return '${me.name} "${move.word}" oynadı. +${ctx.pts} puan.$invasionNote$bingoNote$finishBonusNote';
       },
     );
     return _advanceTurn(moved);

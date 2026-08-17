@@ -781,6 +781,10 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     final finishBonus = jokerFinishBonus(row.finishJokerCount);
     final finishNote =
         finishBonus > 0 ? ' (jokerli bitiş bonusu +$finishBonus)' : '';
+    // Bingo notu — reducer'ın PLAY şablonuyla BİREBİR aynı olmak zorunda
+    // (bkz. kelimeki_core/lib/src/engine/reducer.dart). Bayrak zaten satırda
+    // geliyor; `bingoBonus` puanı `row.points`'in içinde, not onu açıklıyor.
+    final bingoNote = row.bingo ? ' (Bingo bonusu +$bingoBonus)' : '';
     final shares = row.lostShares;
     final bonusNote = shares.isEmpty
         ? ''
@@ -788,7 +792,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     final pts = row.points - finishBonus;
     return (
       text:
-          '$mover: +$pts puan$bonusNote$finishNote Kelimeler: ${row.words.join(', ')}',
+          '$mover: +$pts puan$bonusNote$bingoNote$finishNote Kelimeler: ${row.words.join(', ')}',
       kind: MessageKind.ok
     );
   }

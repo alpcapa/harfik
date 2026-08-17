@@ -1,5 +1,6 @@
 // Kelimeki — useReducer ile çok oyunculu (yerel) oyun durumu yönetimi
 import {
+  BINGO_BONUS,
   MAX_PASS_ROUNDS,
   PLAYER_COLORS,
   RACK_SIZE,
@@ -325,6 +326,12 @@ function applyPlacement(
     shares: { index: number; amount: number }[];
     finishBonus: number;
     words: string[];
+    /**
+     * Rafın 7 taşı birden kullanıldı mı (Bingo). `BINGO_BONUS` puanı zaten
+     * `basePts`'in İÇİNDE (calcScore ekliyor) — mesajdaki not yalnızca o
+     * 25'in nereden geldiğini açıklıyor, ikinci kez eklemiyor.
+     */
+    bingo: boolean;
   }) => string,
 ): GameState {
   const me = state.players[state.current];
@@ -356,6 +363,10 @@ function applyPlacement(
   // jokerse, jokerli bitiş bonusu eklenir (köşe vergisine tabi değildir).
   // Jokerle birlikte normal bir harf de oynandıysa bonus yok.
   const placedTiles = Object.values(placedMap);
+  // Bingo ile jokerli bitiş bonusu AYNI hamlede oluşamaz: jokerli bitiş tüm
+  // taşların joker olmasını ister, torbada yalnızca 2 joker var; bingo ise 7
+  // taş ister. Yani mesaja en fazla tek bir bonus parantezi eklenir.
+  const isBingo = placedTiles.length >= RACK_SIZE;
   const jokerCount = placedTiles.filter((t) => t.wild).length;
   const onlyJokers = placedTiles.length > 0 && jokerCount === placedTiles.length;
   const finishesGame = rack.length === 0 && bag.length === 0;
@@ -412,9 +423,15 @@ function applyPlacement(
       shares,
       finishBonus > 0 ? jokerCount : undefined,
       wordRawScores,
-      placedTiles.length >= RACK_SIZE,
+      isBingo,
     ),
-    message: buildMessage({ pts, shares, finishBonus, words: formed.map((f) => f.word) }),
+    message: buildMessage({
+      pts,
+      shares,
+      finishBonus,
+      words: formed.map((f) => f.word),
+      bingo: isBingo,
+    }),
     messageType: 'ok',
   };
 }
@@ -671,12 +688,13 @@ export function gameReducer(state: GameState, action: Action): GameState {
         state.placed,
         me.rack,
         basePts,
-        ({ pts, shares, finishBonus, words }) => {
+        ({ pts, shares, finishBonus, words, bingo }) => {
           const bonusNote = shares.length > 0
             ? ` (${shares.map((s) => `${s.amount} puanı ${state.players[s.index].name} kaptı`).join(', ')})`
             : '';
+          const bingoNote = bingo ? ` (Bingo bonusu +${BINGO_BONUS})` : '';
           const finishBonusNote = finishBonus > 0 ? ` (jokerli bitiş bonusu +${finishBonus})` : '';
-          return `${me.name}: +${pts} puan${bonusNote}${finishBonusNote} Kelimeler: ${words.join(', ')}`;
+          return `${me.name}: +${pts} puan${bonusNote}${bingoNote}${finishBonusNote} Kelimeler: ${words.join(', ')}`;
         },
       );
       return advanceTurn(moved);
@@ -788,12 +806,13 @@ export function gameReducer(state: GameState, action: Action): GameState {
         placedMap,
         rackAfterRemoval,
         move.score,
-        ({ pts, shares, finishBonus }) => {
+        ({ pts, shares, finishBonus, bingo }) => {
           const invasionNote = shares.length > 0
             ? ` (${shares.map((s) => `${s.amount} puanı ${state.players[s.index].name} kaptı`).join(', ')})`
             : '';
+          const bingoNote = bingo ? ` (Bingo bonusu +${BINGO_BONUS})` : '';
           const finishBonusNote = finishBonus > 0 ? ` (jokerli bitiş bonusu +${finishBonus})` : '';
-          return `${me.name} "${move.word}" oynadı. +${pts} puan.${invasionNote}${finishBonusNote}`;
+          return `${me.name} "${move.word}" oynadı. +${pts} puan.${invasionNote}${bingoNote}${finishBonusNote}`;
         },
       );
       return advanceTurn(moved);

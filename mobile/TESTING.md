@@ -246,6 +246,14 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       turunda [≈0 ms] oynuyordu — kullanıcı kendi hamlesinin mesajını hiç
       göremiyordu; düzeltme + enjekte edilebilir `aiThinkDelay`, bkz.
       mobile/CLAUDE.md Parça 21).
+- [ ] **Bingo bonusu mesajda yazıyor (17 Ağustos 2026).** Rafın 7 taşını
+      birden koyup OYNA → mesaj satırında `(Bingo bonusu +25)`. **YZ'nin
+      bingo'sunda da yazmalı** (`Yapay Zeka 2 "…" oynadı. +N puan.
+      (Bingo bonusu +25)`) — ayrı bir şablon. Canlı oyundaki karşılığı
+      bölüm 11'de, orası ÜÇÜNCÜ bir kod yolu (mesaj `online_game_moves`
+      satırlarından yeniden üretiliyor). Negatif eş: sıradan bir hamlede
+      bu parantez görünmemeli. Web'de AYNI hamleyi yap — metin birebir
+      aynı olmalı.
 - [ ] **Girişsiz başlatınca uyarı (14 Ağustos 2026, Parça 92).** ÇIKIŞ
       yapmış hâlde "Oyunu Başlat"a bas: web'dekiyle aynı uyarı çıkmalı
       ("Oyunların istatistikleri, k-lig ve arkadaşınla canlı oyun için
@@ -1049,6 +1057,13 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       solda, VAZGEÇ sağda — bkz. mobile/CLAUDE.md Parça 25; metin bölüm
       1'deki gibi renkli vurgulu) ve kabul edilen pay rakibin skoruna
       geçmeli.
+- [ ] **Bingo bonusu Canlı'da da yazıyor (17 Ağustos 2026).** 7 taşı birden
+      koyup OYNA → mesaj satırında `(Bingo bonusu +25)`. **Rakibin bingo'su
+      geldiğinde de yazmalı** — Canlı ekranı mesajı reducer'dan DEĞİL
+      `online_game_moves` satırlarından yeniden üretiyor (`row.bingo`), yani
+      yerel oyundan TAMAMEN ayrı bir kod yolu; bölüm 1'de geçmesi burayı
+      kanıtlamaz. Web'de aynı oyunu açıp metnin birebir aynı olduğunu
+      doğrula (dört kopya: iki reducer + iki Canlı ekran).
 - [ ] **Sıra sende değilken egzersiz.** Rakibi beklerken taş yerleştir:
       yeşil/kırmızı çerçeve + puan rozeti çalışmalı, mesaj "Kelime geçerli
       — Sıra: X" demeli, OYNA PASİF olmalı. Rakip oynayınca deneme taşları
