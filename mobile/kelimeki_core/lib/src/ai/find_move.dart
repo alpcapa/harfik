@@ -151,40 +151,45 @@ AIMove? findAIMove(
 
   // Verilen köşeden, mevcut taşlardan bağımsız yeni kelimeyle başlayan tüm
   // yerleşimler (ilk hamle).
+  //
+  // İlk hamlenin TEK şartı, konan hücrelerden birinin ev karesi olması — yön
+  // ya da "4x4 blokta başla" şartı yok (bkz. validatePlacement). Bu yüzden
+  // kelimenin HANGİ harfinin (`idx`) eve denk geleceği tek tek denenir; kelime
+  // evden her iki yöne de uzayabilir. Döngü sırası web `tryCornerStart` ile
+  // BİREBİR aynı olmak zorunda: `consider` eşit puanda İLK bulunanı tuttuğundan
+  // sıra değişirse iki motor farklı hamle seçer ve parite sessizce kırılır.
   void tryCornerStart(int homeCorner) {
-    final b = cornerBounds(homeCorner);
     final home = cornerCell(homeCorner);
-    for (var sr = b.r0; sr <= b.r1; sr++) {
-      for (var sc = b.c0; sc <= b.c1; sc++) {
-        for (final W in candidates()) {
-          for (final horiz in [true, false]) {
-            final er = horiz ? sr : sr + W.length - 1;
-            final ec = horiz ? sc + W.length - 1 : sc;
-            if (er >= boardSize || ec >= boardSize) continue;
-            var ok = true;
-            var touchesCorner = false;
-            final positions = <Cell>[];
-            for (var i = 0; i < W.length; i++) {
-              final rr = horiz ? sr : sr + i;
-              final cc = horiz ? sc + i : sc;
-              if (board[rr][cc] != null) {
-                ok = false;
-                break;
-              }
-              if (rr == home.$1 && cc == home.$2) touchesCorner = true;
-              positions.add((rr, cc));
+    for (final W in candidates()) {
+      for (var idx = 0; idx < W.length; idx++) {
+        for (final horiz in [true, false]) {
+          final sr = horiz ? home.$1 : home.$1 - idx;
+          final sc = horiz ? home.$2 - idx : home.$2;
+          if (sr < 0 || sc < 0) continue;
+          final er = horiz ? sr : sr + W.length - 1;
+          final ec = horiz ? sc + W.length - 1 : sc;
+          if (er >= boardSize || ec >= boardSize) continue;
+          var ok = true;
+          final positions = <Cell>[];
+          for (var i = 0; i < W.length; i++) {
+            final rr = horiz ? sr : sr + i;
+            final cc = horiz ? sc + i : sc;
+            if (board[rr][cc] != null) {
+              ok = false;
+              break;
             }
-            if (!ok || !touchesCorner) continue;
-            final tiles = _consumeRack(W.split(''), rackLetters, owner);
-            if (tiles == null) continue;
-            consider(
-              [
-                for (var i = 0; i < positions.length; i++)
-                  Placement(r: positions[i].$1, c: positions[i].$2, tile: tiles[i]),
-              ],
-              W,
-            );
+            positions.add((rr, cc));
           }
+          if (!ok) continue;
+          final tiles = _consumeRack(W.split(''), rackLetters, owner);
+          if (tiles == null) continue;
+          consider(
+            [
+              for (var i = 0; i < positions.length; i++)
+                Placement(r: positions[i].$1, c: positions[i].$2, tile: tiles[i]),
+            ],
+            W,
+          );
         }
       }
     }
