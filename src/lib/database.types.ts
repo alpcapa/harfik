@@ -789,6 +789,17 @@ export interface AdminGameActivityPoint {
  * oranı 2 kişilikte %50, 4 kişilikte %25'tir. Ölçüm anındaki değerler
  * (16 Ağustos 2026): 2 kişilik %57 (95/167), 4 kişilik %31 (29/93) —
  * yani insan iki modda da rastgelenin biraz üstünde, denge makul.
+ *
+ * `second_places` 17 Ağustos 2026'da eklendi: 4 kişilikte k-lig ikinciliğe
+ * de puan verdiğinden (`player_stats`: rank=2 AND player_count<>2 THEN 1)
+ * yalnızca birinciliğe bakmak "insan puan alıyor mu" sorusunun yarısını
+ * ölçüyordu. Tanım `player_stats.second_places` ile BİREBİR aynı ifade
+ * (`count(*) filter (where rank = 2)`) — aynı metriğin iki yerde sessizce
+ * ayrışmaması için; biri değişirse öteki de değişmeli.
+ *
+ * 2 kişilikte bu alan DOLU ama ANLAMSIZ: orada rank=2 kaybetmekle aynı şey
+ * (ölçüldü: 75 = losses) ve k-lig puanı getirmez — UI onu bilerek yalnızca
+ * 4 kişilik satır için gösteriyor.
  */
 export interface AdminAiBalanceRow {
   players: number;
@@ -796,6 +807,7 @@ export interface AdminAiBalanceRow {
   wins: number;
   ties: number;
   losses: number;
+  second_places: number;
 }
 
 /**

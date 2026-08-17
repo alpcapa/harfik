@@ -730,14 +730,27 @@ gerekenler.
 - [ ] **CSV İndir** çalışmalı; başlıkta ortalama değil medyan/p90 sütunları
       olmalı.
 - [ ] **YZ Dengesi paneli görünüyor.** Büyüme > Oyun'un üst kısmında, beğeni/
-      paylaşma kutularının altında iki kutu: "2 Kişilik — İnsan Kazanma" ve
-      "4 Kişilik — İnsan Kazanma".
+      paylaşma kutularının altında **ÜÇ** kutu: "2 Kişilik — İnsan Birincilik",
+      "4 Kişilik — İnsan Birincilik" ve "4 Kişilik — İnsan İkincilik"
+      (üçüncüsü 17 Ağustos 2026'da eklendi).
+- [ ] **2 kişilikte İKİNCİLİK kutusu OLMAMALI.** Orada rank=2 kaybetmenin
+      kendisi (canlıda ölçüldü: ikincilik sayısı = kayıp sayısı) ve k-lig
+      puanı getirmiyor — kutu çıkıyorsa filtre atlanmış demektir.
 - [ ] **Her kutuda rastgele referansı YAZMALI** — 2 kişilikte "rastgele %50",
-      4 kişilikte "rastgele %25". Bu satır olmadan 4 kişilikteki düşük yüzde
-      yanlış okunur.
-- [ ] **Sayılar tutarlı mı.** Kutudaki `NG / NB / NM` toplamı, o oyuncu
-      sayısındaki teslimsiz yerel oyun sayısına eşit olmalı; yüzde =
-      G / (G+B+M).
+      4 kişilikte "rastgele %25" (ikincilik kutusunda da %25: rastgele bir
+      sonuçta 1. olmak da 2. olmak da aynı olasılıkta). Bu satır olmadan
+      4 kişilikteki düşük yüzde yanlış okunur.
+- [ ] **Sayılar tutarlı mı.** Birincilik kutusundaki `NG / NB / NM` toplamı,
+      o oyuncu sayısındaki teslimsiz yerel oyun sayısına eşit olmalı; yüzde =
+      G / (G+B+M). İkincilik kutusundaki `N/M`nin paydası (M) aynı sayı
+      olmalı — iki kutu AYNI oyun kümesini bölüyor.
+- [ ] **Üç kutu aynı yükseklikte ve taşmıyor.** Telefonda etiketler 2-3
+      satıra sarabilir, bu normal; kutular birbirinden farklı boyda olmamalı
+      ve sayfa YANA kaymamalı.
+- [ ] **`?` popup'ı toplamı anlatmalı.** Başlığın yanındaki `?`: metin,
+      asıl denge sayısının birincilik + ikincilik TOPLAMI olduğunu ve
+      rastgele karşılığının %50 olduğunu söylemeli. (Ölçüm anında 4 kişilik:
+      %31 + %18 = %49-50 bandı, yani neredeyse tam rastgele.)
 - [ ] **Teslim olunan oyunlar sayılmamalı.** 7 günlük terk cezası almış bir
       oyun (bkz. bölüm 4) bu panelde ne "M" ne toplam sayıya girmeli — süre
       aşımıyla biten bir oyundan sonra sayılar DEĞİŞMEMELİ.

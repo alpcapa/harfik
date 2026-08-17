@@ -4724,12 +4724,13 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
 - ~~**14 Ağustos (Parça 96):** çevrimdışı Canlı oyun — açılışta panel +
   hamlede açıklayıcı uyarı (iki platform)~~ → **16 Ağustos'ta Blok 7
   turunda koşuldu** (uçak modu adımlarıyla birlikte).
-- **16-17 Ağustos — kök `TESTING.md`'nin İKİ yeni admin bölümü hiç
-  koşulmadı (yalnız web, admin hesabı ister):** **9.10** Oyun Süresi
-  medyana geçti + YZ Dengesi paneli · **9.11** metrik tanımlarının `?`
-  popup'ına taşınması (13 rozet). Portta admin paneli bilinçli olarak YOK,
-  yani bunlar bir cihaz turuna değil web'de admin girişine bağlı. (Aynı
-  günün 9.9 Kaynak Hunisi bölümü gerçek cihazda admin hesabıyla koşuldu.)
+- ~~**16-17 Ağustos — kök `TESTING.md`'nin İKİ yeni admin bölümü hiç
+  koşulmadı:** 9.10 + 9.11~~ → **17 Ağustos'ta koşuldu, ikisi de tamamen
+  GEÇTİ** (PR #276 preview'ında, admin hesabıyla). Sıfır bulgu; tek çıktı
+  bir ürün isteği oldu: 4 kişiliğe "İkincilik" kutusu (aynı gün eklendi).
+  **9.10 bu yüzden yeniden koşulmalı** — YZ Dengesi artık 2 değil 3 kutu ve
+  etiketler `Kazanma` → `Birincilik` oldu; bölümün YZ Dengesi maddeleri
+  buna göre yeniden yazıldı.
 - **14 Ağustos (Parça 95) — Canlı turunun BEŞ düzeltmesi, hiçbiri cihazda
   teyit edilmedi:** boş taslakta OYNA (web Canlı) · gönderim hatasının
   görünmesi (iki platform, uçak modu) · sohbetin ön plana dönüşte

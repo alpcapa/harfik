@@ -389,7 +389,7 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
     title: 'YZ Dengesi',
     body: (
       <>
-        Yapay Zeka'ya karşı oynanan, teslimle bitmemiş oyunlarda İNSANIN kazanma oranı. Teslim
+        Yapay Zeka'ya karşı oynanan, teslimle bitmemiş oyunlarda İNSANIN derece oranı. Teslim
         satırları hariç — onlar bir beceri sonucu değil, 7 günlük terk-edilme cezasının kaydı;
         dahil edilseler YZ olduğundan güçlü görünürdü. Canlı oyunlar hiç sayılmaz.
         <br />
@@ -397,6 +397,12 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
         Sayıyı kutudaki <b>"rastgele"</b> değerine göre oku: insan oranı onun belirgin ALTINDAysa
         YZ fazla güçlü, çok ÜSTÜNDEyse fazla zayıf demektir. Bu, YZ algoritmasına dokunan bir
         değişikliğin regresyonunu yakalayan tek sayı.
+        <br />
+        <br />
+        <b>İkincilik yalnızca 4 kişilikte var</b>, çünkü k-lig puanı orada ikinciliğe de veriliyor
+        (2 kişilikte ikinci olmak kaybetmekle aynı şey, puan getirmez). Dengeyi asıl anlatan sayı
+        bu ikisinin TOPLAMI: insan "puan alan" ilk iki dereceye ne sıklıkla giriyor? Rastgele bir
+        sonuçta bu %50 olurdu — birincilik ve ikincilik yüzdelerini toplayıp o değerle karşılaştır.
       </>
     ),
   },
@@ -1245,6 +1251,42 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     [feedback, feedbackOriginFilter],
   );
 
+  /**
+   * "YZ Dengesi" kutuları. Satır başına bir kutu DEĞİL: 4 kişilik oyunlar
+   * ikinci bir "İkincilik" kutusu daha üretiyor (17 Ağustos 2026, kullanıcı
+   * isteği) — 4 kişilikte k-lig ikinciliğe de puan verdiğinden yalnız
+   * birinciliğe bakmak "insan puan alıyor mu" sorusunun yarısını ölçüyordu.
+   *
+   * İkincilik kutusu 2 kişilikte BİLEREK YOK: orada rank=2 kaybetmenin
+   * kendisi (canlıda ölçüldü: second_places === losses) ve k-lig puanı
+   * getirmiyor, yani kutu yeni bir şey söylemeyip kayıp oranını ikinci kez
+   * yazardı.
+   *
+   * Rastgele referansı iki kutuda da `100 / oyuncu sayısı`: rastgele bir
+   * sonuçta 1. olma da 2. olma da aynı olasılıkta (4 kişilikte %25).
+   */
+  const aiBalanceCards = useMemo(() => {
+    const cards: { key: string; rate: number | null; label: string; detail: string }[] = [];
+    for (const r of aiBalance ?? []) {
+      const baseline = Math.round(100 / r.players);
+      cards.push({
+        key: `${r.players}-first`,
+        rate: r.games > 0 ? Math.round((100 * r.wins) / r.games) : null,
+        label: `${r.players} Kişilik — İnsan Birincilik`,
+        detail: `${r.wins}G / ${r.ties}B / ${r.losses}M · rastgele %${baseline}`,
+      });
+      if (r.players > 2) {
+        cards.push({
+          key: `${r.players}-second`,
+          rate: r.games > 0 ? Math.round((100 * r.second_places) / r.games) : null,
+          label: `${r.players} Kişilik — İnsan İkincilik`,
+          detail: `${r.second_places}/${r.games} · rastgele %${baseline}`,
+        });
+      }
+    }
+    return cards;
+  }, [aiBalance]);
+
   function exportFeedbackCsv() {
     if (!filteredFeedback || filteredFeedback.length === 0) return;
     downloadCsv(
@@ -1917,7 +1959,11 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       değişikliğin regresyonunu yakalayan tek sayı. Rastgele
                       referansı (2 kişilikte %50, 4 kişilikte %25) BİLEREK
                       ekranda yazıyor — onsuz "%31" alarm verici görünürken
-                      aslında rastgelenin üstünde. */}
+                      aslında rastgelenin üstünde.
+                      17 Ağustos 2026'da 4 kişilik için bir de "İkincilik"
+                      kutusu eklendi (kullanıcı isteği): k-lig orada ikinciliğe
+                      de puan verdiğinden yalnız birinciliğe bakmak "insan
+                      puan alıyor mu" sorusunun yarısını ölçüyordu. */}
                   <div className="flex flex-col gap-2">
                     {/* CSV'si olmayan ikinci panel — `?` başlığın yanında. */}
                     <div className="flex items-center gap-2">
@@ -1931,27 +1977,31 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         Henüz Yapay Zeka'ya karşı tamamlanmış oyun yok.
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 gap-2">
-                        {aiBalance.map((r) => {
-                          const rate = r.games > 0 ? Math.round((100 * r.wins) / r.games) : null;
-                          const baseline = Math.round(100 / r.players);
-                          return (
-                            <div
-                              key={r.players}
-                              className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center"
-                            >
-                              <div className="font-mono text-xl font-bold text-text">
-                                {rate === null ? '—' : `%${rate}`}
-                              </div>
-                              <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
-                                {r.players} Kişilik — İnsan Kazanma
-                              </div>
-                              <div className="text-[8px] font-mono text-muted mt-0.5">
-                                {r.wins}G / {r.ties}B / {r.losses}M · rastgele %{baseline}
-                              </div>
+                      /* Kutu sayısı satır sayısına bağlı (1-3) olduğundan
+                         sütun sayısı inline `style` ile veriliyor: Tailwind
+                         yalnızca KAYNAKTA geçen sınıfları üretir, çalışma
+                         anında kurulan bir `grid-cols-${n}` sessizce
+                         uygulanmazdı (bkz. CountBadge'in ölçüm tuzağı). */
+                      <div
+                        className="grid gap-2"
+                        style={{
+                          gridTemplateColumns: `repeat(${Math.min(aiBalanceCards.length, 3)}, minmax(0, 1fr))`,
+                        }}
+                      >
+                        {aiBalanceCards.map((c) => (
+                          <div
+                            key={c.key}
+                            className="btn-raised-neutral bg-bg border border-border rounded-md py-3 px-1 text-center"
+                          >
+                            <div className="font-mono text-xl font-bold text-text">
+                              {c.rate === null ? '—' : `%${c.rate}`}
                             </div>
-                          );
-                        })}
+                            <div className="text-[8px] uppercase tracking-[1px] text-muted font-mono mt-0.5">
+                              {c.label}
+                            </div>
+                            <div className="text-[8px] font-mono text-muted mt-0.5">{c.detail}</div>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
