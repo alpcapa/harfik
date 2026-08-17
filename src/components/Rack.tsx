@@ -54,8 +54,17 @@ export function Rack({
           harften geliyordu — ölçüldü, iki taraf da 700; bu yüzden `font-bold`
           KALDI, kaldırmak porttan ayrışma üretirdi. */}
       <div className="flex justify-between text-[9px] tracking-[1.5px] font-mono mb-1.5">
+        {/* Yalnızca oyuncunun adı — swap modunda buraya bir de
+            "— değiştirilecek taşları seç" ekleniyordu. 17 Ağustos 2026'da
+            kullanıcı isteğiyle KALDIRILDI: aynı talimat zaten tahtanın
+            altındaki mesaj satırında yazıyor ("Değiştireceğin taşları seç,
+            sonra "Değiştir"e bas."), ismin yanında tekrar edilmesi gereksizdi.
+            Swap modu yine dört yerden belli: adın altın rengi, sağdaki
+            "N seçili" sayacı, mesaj satırı ve DEĞİŞTİR/VAZGEÇ butonları.
+            Flutter portu bunu 6 Ağustos 2026'da kaldırmıştı — o gün bilinçli
+            bir sapma olarak kaydedilmişti, artık iki taraf aynı. */}
         <span className="font-bold" style={{ color: swapMode ? '#D97706' : color.text }}>
-          {swapMode ? `${title} — değiştirilecek taşları seç` : title}
+          {title}
         </span>
         {/* Taş sayısı ("7 harf") kaldırıldı — aynı gün, aynı istek: rafta zaten
             görünen bir şeyi tekrar yazıyordu. Swap modundaki seçim sayacı bir

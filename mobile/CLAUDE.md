@@ -1009,11 +1009,15 @@ farklılık platform kısıtından doğuyor. **Bir sonraki oturum bunları "eksi
 sanıp web'e dokunmasın.** Yalnızca ölçülebilir yeni bir fayda (gerçek bir
 kullanıcı şikâyeti, ölçülen bir hata) çıkarsa yeniden değerlendirilir.
 
-- **Raf başlığındaki swap aksiyon metni** — `src/components/Rack.tsx`
-  swap modunda başlığı `` `${title} — değiştirilecek taşları seç` ``
-  yapıyor; aynı talimat zaten tahtanın altındaki mesaj satırında var.
-  Uygulamada kaldırıldı (kullanıcı isteği), web'de duruyor ve bir sorun
-  üretmiyor.
+- ~~**Raf başlığındaki swap aksiyon metni**~~ → **ARTIK FARK YOK
+  (17 Ağustos 2026):** kullanıcı Blok 6 görsel turunda iki ekranı yan yana
+  koyup metni web'den de kaldırttı (*"ismin yanında ayrıca mesaj yazmamalı,
+  mesaj satırında zaten yazıyor"*) — yani 6 Ağustos'ta port için verilen
+  karar on bir gün sonra web'e de uygulandı. `Rack.tsx` artık koşulsuz
+  yalnızca adı basıyor. Bilgi kaybı yok, ölçüldü: swap modu adın altın
+  rengi (`#D97706`), sağdaki "N seçili" sayacı, mesaj satırındaki talimat
+  ve DEĞİŞTİR/VAZGEÇ butonlarıyla belli. Portta bu davranışı koruyan bir
+  test zaten var (`game_screen_test.dart` → `findsNothing`).
 - **Anlam metnindeki `►`** — uygulama bunu `→` ile değiştiriyor (bkz.
   Parça 9). Web'de aynı karakter duruyor ve DÜZGÜN çiziliyor: tarayıcılar
   karakter bazında sistem yedeğine düşer (Chromium'da ekran görüntüsüyle
@@ -1025,10 +1029,8 @@ kullanıcı şikâyeti, ölçülen bir hata) çıkarsa yeniden değerlendirilir.
 Eski (silinmiş) başlık: "Web'de Bekleyen Küçük Düzeltmeler" — o hâliyle
 liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti.
 
-- **Raf başlığındaki swap aksiyon metni** — `src/components/Rack.tsx`
-  swap modunda başlığı `` `${title} — değiştirilecek taşları seç` ``
-  yapıyor; aynı talimat zaten tahtanın altındaki mesaj satırında var.
-  Uygulamada kaldırıldı (bkz. aşağıdaki parça günlüğü), web'de duruyor.
+- ~~**Raf başlığındaki swap aksiyon metni**~~ → kapandı, yukarıdaki
+  (17 Ağustos 2026) nota bkz. — metin web'den de kaldırıldı.
 - **Anlam metnindeki `►` (opsiyonel, web BOZUK DEĞİL)** — uygulama bunu
   `→` ile değiştiriyor (bkz. Parça 9). Web'de aynı karakter duruyor ve
   DÜZGÜN çiziliyor: tarayıcılar karakter bazında sistem yedeğine düşer
@@ -5515,9 +5517,10 @@ silinip kendi tarihli parça notuna taşınır.
      istemedi — aksiyon metni zaten tahtanın altındaki mesaj satırında
      ("Değiştireceğin taşları seç, sonra "Değiştir"e bas."). Flutter'da
      kaldırıldı; başlık her durumda yalnızca ad (swap modunda rengi hâlâ
-     turuncuya dönüyor, sağdaki "N seçili" duruyor). **Web'de aynı satır
-     kaldırılana kadar bu bilinçli bir sapmadır** — parite tablosuna
-     bakarken "port eksik" sanılmasın.
+     turuncuya dönüyor, sağdaki "N seçili" duruyor). ~~**Web'de aynı satır
+     kaldırılana kadar bu bilinçli bir sapmadır**~~ → **17 Ağustos 2026'da
+     web'den de kaldırıldı, sapma kapandı** (kullanıcı Blok 6 turunda aynı
+     gerekçeyi tekrarladı).
    - ✅ **Parça 8 — hamle geçmişi modalı + Board alt bilgi şeridi
      (6 Ağustos 2026):** `MoveHistoryModal.tsx` portu (`move_history_modal.
      dart`) — veri tamamen `GameState.moveHistory`'den geldiğinden (motorla
