@@ -191,12 +191,17 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
       {/* Profil fotoğrafı */}
       <div className="flex items-center gap-3 mb-4">
         <Avatar url={profile?.avatar_url} name={name} size={56} />
-        <div>
+        {/* `flex-1` + `w-full` (17 Ağustos 2026, kullanıcı isteği: "App'deki
+            uzun daha iyi sanki, web'i o şekilde yapabiliriz"): buton eskiden
+            içeriğine göre daralıyordu (`inline-block`), Flutter portu ise
+            (`account_settings_modal.dart`) onu `Expanded` içinde kalan
+            genişliğe yayıyor. İki taraf artık aynı — biri değişirse öteki de. */}
+        <div className="flex-1 min-w-0">
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
-            className="btn-raised-neutral bg-panel border border-border text-text rounded-md px-3 py-1.5 text-[10px] font-mono uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
+            className="btn-raised-neutral w-full bg-panel border border-border text-text rounded-md px-3 py-1.5 text-[10px] font-mono uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-50"
           >
             {uploading ? 'Yükleniyor…' : 'Fotoğraf Değiştir'}
           </button>
