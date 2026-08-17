@@ -198,6 +198,18 @@ class BoardWidget extends StatelessWidget {
         ),
     ];
 
+    // Filigranın ALTINDA kalması gereken hücreler: taş bulunan her hücre.
+    // `dragHiddenKey` bilerek dışarıda — o hücre boş çiziliyor (bkz.
+    // `_buildCell`), dolayısıyla filigran orada GÖRÜNMELİ.
+    final occupiedCells = <({int r, int c})>[
+      for (var r = 0; r < boardSize; r++)
+        for (var c = 0; c < boardSize; c++)
+          if (state.board[r][c] != null ||
+              (cellKey(r, c) != dragHiddenKey &&
+                  state.placed[cellKey(r, c)] != null))
+            (r: r, c: c),
+    ];
+
     // Web: kart (zemin + gölge) ızgarayı VE alt bilgi şeridini birlikte
     // sarar — şerit ayrı/asılı bir beyaz bant değil, kartın alt bölümü.
     return Container(
@@ -238,19 +250,36 @@ class BoardWidget extends StatelessWidget {
                               lastMoveSet, currentColor, screenWidth),
                     ],
                   ),
+                  // KATMAN SIRASI web'in z-index'lerinden geliyor (Board.tsx):
+                  // hücre arka planları → filigran (z-auto) → TAŞLAR
+                  // (`relative z-[5]`) → dış hatlar (`z-10`). Flutter'da
+                  // z-index yok, sıra boyama sırasıdır; filigran ızgaradan
+                  // SONRA çizildiğinden taşların üstüne biniyordu (kullanıcı
+                  // 17 Ağustos 2026'da iki ekranı yan yana koyup bildirdi).
+                  // Taşları ayrı bir katmana taşımak yerine filigran, taş
+                  // bulunan hücreler KESİLEREK çiziliyor — sonuç "taşın
+                  // altında" ile görsel olarak aynı, ızgara tek geçişte
+                  // kalıyor (169 hücre iki kez inşa edilmiyor).
+                  if (!compact)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: ClipPath(
+                          key: const ValueKey('board-watermarks'),
+                          clipper: _WatermarkClipper(occupiedCells),
+                          child: _watermarks(
+                              cornerColor, cornerNumber, screenWidth),
+                        ),
+                      ),
+                    ),
                   // Bölge/hamle dış hatları — ızgara alanının tamamını kaplayan
                   // tek katman (web'deki tek SVG'nin eşleniği), dokunuşları
-                  // engellemez.
+                  // engellemez. Web'de `z-10`, yani taşların VE filigranın
+                  // üstünde; bu yüzden filigrandan SONRA geliyor.
                   Positioned.fill(
                     child: IgnorePointer(
                       child: CustomPaint(painter: _OutlinesPainter(outlines)),
                     ),
                   ),
-                  if (!compact)
-                    Positioned.fill(
-                        child: IgnorePointer(
-                            child: _watermarks(
-                                cornerColor, cornerNumber, screenWidth))),
                   if (moveOverlay != null && moveOverlay!.cells.isNotEmpty)
                     Positioned.fill(child: IgnorePointer(child: _moveBadge())),
                 ],
@@ -760,6 +789,47 @@ class DashedBorderPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(DashedBorderPainter old) => old.color != color;
+}
+
+/// Filigran katmanını, TAŞ BULUNAN hücreleri dışarıda bırakacak şekilde
+/// kırpar — web'de taşların `relative z-[5]` ile filigranın üstüne çıkması
+/// buna karşılık geliyor (Board.tsx).
+///
+/// Delik `Path.combine`/PathOps ile DEĞİL `PathFillType.evenOdd` ile ifade
+/// ediliyor: Parça 18'de ölçüldü, PathOps CanvasKit'te deliği sessizce
+/// kaybedebiliyor (native Skia'da sorunsuz çalışırken) — yani `flutter test`
+/// bu hata sınıfını göremez.
+class _WatermarkClipper extends CustomClipper<Path> {
+  const _WatermarkClipper(this.occupied);
+
+  /// Taş bulunan hücrelerin (satır, sütun) çiftleri.
+  final List<({int r, int c})> occupied;
+
+  /// `GridView`in `mainAxisSpacing`/`crossAxisSpacing` değeriyle AYNI olmak
+  /// zorunda — biri değişirse öteki de değişmeli, aksi halde kesilen kutular
+  /// hücrelerden kayar.
+  static const _gap = 3.0;
+
+  @override
+  Path getClip(Size size) {
+    final path = Path()..fillType = PathFillType.evenOdd;
+    path.addRect(Offset.zero & size);
+    final cellW = (size.width - _gap * (boardSize - 1)) / boardSize;
+    final cellH = (size.height - _gap * (boardSize - 1)) / boardSize;
+    for (final o in occupied) {
+      path.addRect(Rect.fromLTWH(
+        o.c * (cellW + _gap),
+        o.r * (cellH + _gap),
+        cellW,
+        cellH,
+      ));
+    }
+    return path;
+  }
+
+  @override
+  bool shouldReclip(_WatermarkClipper old) =>
+      !listEquals(old.occupied, occupied);
 }
 
 class _OutlinesPainter extends CustomPainter {

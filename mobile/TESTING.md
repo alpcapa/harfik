@@ -92,6 +92,13 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
       demektir — o toplam k-lig ödüllerini (`bonus_points`) İÇERMEDİĞİNDEN
       gerçek puandan sapar (ölçülen fark 92 ↔ 97); doğru sayı hesap
       menüsündeki k-lig satırında (ayrıntı: kök `CLAUDE.md`, `Setup`).
+- [ ] **Filigranlar taşların ÜSTÜNE binmemeli (17 Ağustos 2026, Parça
+      107).** Köşe bölgesine ve merkezdeki X2 bölgesine taş konmuş bir oyun
+      aç: soluk köşe rakamı ve **X2** yalnızca BOŞ hücrelerde görünmeli,
+      taşların üzerinden GEÇMEMELİ (web'de taşlar `z-[5]` ile filigranın
+      üstünde). Bölge/hamle dış hatları ise filigranın ÜSTÜNDE kalmalı
+      (web `z-10`). **Sürüklerken de bak:** bir taslak taşı parmakla
+      kaldırdığında kaynak hücre boş çizilir, o hücrede filigran GÖRÜNMELİ.
 - [ ] **Tahta filigranları (17 Ağustos 2026, Parça 106).** Bir oyun aç ve
       tahtayı iki platformda yan yana koy: (a) köşelerdeki soluk oyuncu
       RAKAMLARI aynı büyüklükte ve aynı yazı tipinde (Space Mono) olmalı —
