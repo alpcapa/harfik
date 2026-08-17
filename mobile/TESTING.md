@@ -82,6 +82,16 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
 
 ## 0.5 Web ile yan yana görsel karşılaştırma (Parça 56)
 
+- [ ] **Setup'ta oyuncu satırında PUAN olmamalı (17 Ağustos 2026) — bu
+      madde WEB'i sınıyor, portu değil.** GİRİŞLİ bir hesapla "Yapay Zeka
+      ile" → "+ Yeni Yapay Zeka Oyunu" formunu aç: 1. koltuk satırında
+      yalnızca ad görünmeli, yanında `Ironman (92)` gibi parantezli bir
+      sayı OLMAMALI. **Portta bu gösterim zaten hiç yoktu**, yani madde
+      aynı zamanda "iki taraf artık aynı" kontrolü. Sayı geri gelirse
+      `Setup.tsx`'e `accountTotalScore` benzeri bir hesap geri konmuş
+      demektir — o toplam k-lig ödüllerini (`bonus_points`) İÇERMEDİĞİNDEN
+      gerçek puandan sapar (ölçülen fark 92 ↔ 97); doğru sayı hesap
+      menüsündeki k-lig satırında (ayrıntı: kök `CLAUDE.md`, `Setup`).
 - [ ] **Tahta filigranları (17 Ağustos 2026, Parça 106).** Bir oyun aç ve
       tahtayı iki platformda yan yana koy: (a) köşelerdeki soluk oyuncu
       RAKAMLARI aynı büyüklükte ve aynı yazı tipinde (Space Mono) olmalı —

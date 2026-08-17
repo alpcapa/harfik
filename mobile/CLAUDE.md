@@ -4757,7 +4757,7 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | Bölüm | Durum | Not |
 |---|---|---|
 | 0 · Derleme / ilk açılış | ✅ | FAZ A0 |
-| 0.5 · Web ile yan yana görsel | 🟡 | birçok tur (Parça 29/33/37/56/72-80). **17 Ağu (Blok 6):** k-lig nokta boşluğu, avatar↔logo (kapatıldı), tahta filigranları + header avatar hizası (Parça 106) — dördü de yapıldı, **hiçbiri merge sonrası cihazda görülmedi**; Parça 72-89'un 11 maddesi hâlâ koşulmadı |
+| 0.5 · Web ile yan yana görsel | 🟡 | birçok tur (Parça 29/33/37/56/72-80). **17 Ağu (Blok 6):** k-lig nokta boşluğu, avatar↔logo (kapatıldı), tahta filigranları + header avatar hizası (Parça 106), Setup'taki parantezli puanın kaldırılması (web-only, port zaten öyleydi) — beşi de yapıldı, **hiçbiri merge sonrası cihazda görülmedi**; Parça 72-89'un 11 maddesi hâlâ koşulmadı |
 | 1 · Oyun (offline çekirdek) | ✅ | Parça 15/20/21/22 buradan çıktı |
 | 2 · Hesap (auth) | ✅ | **9-12 (deep link) FAZ B'ye ertelendi** |
 | 3 · Bulut kayıtları | ✅ | 6/6 — Parça 29 |
@@ -4857,6 +4857,12 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   uyarısının yanlış modal kabuğuydu (yukarıdaki nota bkz.); OHP hizası ve
   başlık ortalama iki platformda yan yana doğrulandı. Kök **9.10** da yeni
   üç kutulu YZ Dengesi hâliyle yeniden koşuldu.
+- **17 Ağustos (Parça 106 + aynı bloğun web işi):** tahta filigranlarının
+  puntosu/fontu (port) · header avatarının dikey hizası (web, yalnız
+  FOTOĞRAFLI hesapta) · Setup'ta oyuncu satırında parantezli puanın
+  olmaması (web). Üçü de `main`'e merge edildi (`cd6c016`) ama **hiçbiri
+  merge sonrası cihazda görülmedi** — Pages/Vercel deploy'u beklendikten
+  sonra bakılmalı, derleme sha'sı `cd6c016…` olmalı.
 - **13 Ağustos (Parça 72-89):** içerik sütunu genişliği · GİRİŞ satırı
   konumu · logo altı yazı bloğu · harf aralığı · "+ Yeni …" butonu ve alt
   sekmeler · form alanları · avatarın YUVARLAK vurgusu · "Yükleniyor…"
