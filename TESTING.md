@@ -542,16 +542,36 @@ Gerek de yok: `fetchMyGames` modal açılınca / sekme değişince koşuyor.
 - [ ] **Favoriler sekmesi de aynı.** Aynı çevrimdışı durumda "Favoriler"e
       geç: orada da "yüklenemedi" çıkmalı ("Henüz favori işaretlediğin bir
       oyun yok." DEĞİL — o ayrı bir kod yolu, `list_liked_games` RPC'si).
-- [ ] **"Son Oynadıklarım" (Setup) — İKİ dalı da, BU SIRAYLA.** Koşul
-      (`setGames(cur => (!failed || cur === null ? rows : cur))`) iki dallı,
-      ve yalnızca ikincisini test etmek yarım kalır:
+- [ ] **"Son Oynananlar" — YALNIZCA "Yapay Zeka ile" sekmesinde, İKİ dalı
+      da, BU SIRAYLA.** `RecentGamesSection` çevrimdışıyken SADECE orada
+      render ediliyor (aşağıdaki Canlı maddesine bkz.), ve koşulu
+      (`setGames(cur => (!failed || cur === null ? rows : cur))`) iki
+      dallı — yalnızca ikincisini test etmek yarım kalır:
       1. **Önce önbelleksiz:** o oturumda "Son Oynananlar"a HİÇ girmeden
-         çevrimdışı ol ve gir → **"yüklenemedi"** çıkmalı (`cur === null`).
+         çevrimdışı ol ve gir → **"İnternet bağlantısı yok ama sorun değil,
+         yapay zeka ile çevrimdışı da oynayabilirsin." + "Hemen oyun aç."**
+         çıkmalı. **"yüklenemedi" DEĞİL** — `RecentGamesSection`
+         `nothingToShow && !online && offlineNode` iken çağıranın verdiği
+         düğümü gösteriyor, çünkü çevrimdışıyken "yüklenemedi" demek doğru
+         ama kullanıcıya ne yapacağını söylemiyor.
       2. **Sonra önbellekli:** çevrimiçi ol, sekmeye gir (liste dolsun),
-         tekrar çevrimdışı ol ve gir → **ESKİ liste kalmalı**, hata mesajı
-         DEĞİL (`cur !== null` — başarısız çekim ekrandaki listeyi ezmiyor).
-      (14 Ağustos 2026'da kullanıcı tam bu sırayla koştu; ilk yazdığım
-      sıralama yalnızca 2. dalı kapsıyordu.)
+         tekrar çevrimdışı ol ve gir → **ESKİ liste kalmalı** (`cur !== null`
+         — başarısız çekim ekrandaki listeyi ezmiyor); öneri de çıkmamalı,
+         çünkü gösterilecek bir şey VAR.
+      (Bu maddenin ilk sürümü 1. dalda "yüklenemedi" bekliyordu ve YANLIŞTI:
+      madde 14 Ağustos 2026'da `failed` bayrağıyla birlikte yazıldı, AYNI
+      GÜN daha sonra eklenen çevrimdışı öneri [`offlineNode`] onu geçersiz
+      kıldı ve bölüm o günden beri hiç koşulmadığı için 17 Ağustos'a kadar
+      fark edilmedi. `RecentGamesSection`'da "yüklenemedi" artık yalnızca
+      çevrimİÇİ ama çekim başarısızken görünebilir.)
+- [ ] **Canlı sekmesinde "Son Oynananlar" ÇEVRİMDIŞI HİÇ ÇİZİLMEZ — bu
+      doğru davranış.** "Arkadaşınla"da uçak modu: üç alt sekme de (Devam
+      Edenler / Oyun Davetleri / Son Oynananlar) tek bir **"İnternet
+      bağlantısı yok"** gösterir; `LiveGamesTab`'ın `!online` dalı hepsini
+      birden kısa devre yapıyor, yani orada "eski liste kalmalı" diye bir
+      beklenti YOK. Önceden dolu olan liste kaybolur — bilinçli: Canlı
+      tarafın her parçası sunucudan geliyor ve o listeden bir oyuna dokunmak
+      zaten "bağlantı yok" paneline çıkıyor.
 - [ ] **NEGATİF EŞİ ŞART.** ÇevrimİÇİ, gerçekten hiç oyunu olmayan bir
       hesapla aynı ekranları aç: orada NORMAL boş mesajlar çıkmalı. Bu
       olmadan yukarıdaki üç madde hiçbir şey kanıtlamaz — "her durumda
