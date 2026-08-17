@@ -308,6 +308,11 @@ void main() {
     final key = GlobalKey();
     final controller = await pumpGame(tester, key);
 
+    // Raf başlığında taş sayısı YOK (17 Ağustos 2026, iki platformdan da
+    // kaldırıldı) — ama swap modundaki seçim sayacı KALMALI; ikisi bir arada
+    // olmazsa "hepsini sildim" gibi bir regresyon da bu testi geçerdi.
+    expect(find.text('7 harf'), findsNothing);
+
     await tester.tap(find.text('DEĞİŞTİR'));
     await tester.pump();
     expect(controller.state.swapMode, isTrue);
@@ -325,6 +330,7 @@ void main() {
     await tester.pump();
     expect(controller.state.swapSelection, [0, 2]);
     expect(find.text('DEĞİŞTİR (2)'), findsOneWidget);
+    expect(find.text('2 seçili'), findsOneWidget);
 
     await tester.runAsync(() async {
       final boundary =

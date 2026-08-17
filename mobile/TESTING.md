@@ -92,6 +92,25 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
       demektir — o toplam k-lig ödüllerini (`bonus_points`) İÇERMEDİĞİNDEN
       gerçek puandan sapar (ölçülen fark 92 ↔ 97); doğru sayı hesap
       menüsündeki k-lig satırında (ayrıntı: kök `CLAUDE.md`, `Setup`).
+- [ ] **Tahta ile raf arasındaki boşluk (17 Ağustos 2026) — bu madde
+      WEB'i sınıyor, portu değil.** Bir oyunu iki platformda yan yana aç:
+      tahta kartının ALTI ile raf kartının ÜSTÜ arasındaki mesafe aynı
+      olmalı (ölçülen hedef **40px** = 4 + 30px'lik mesaj kutusu + 6).
+      Web'de dar görünüyorsa mesaj satırının `min-h-[30px]`i düşmüş
+      demektir — eski `min-h-[15px]` bağlayıcı değildi ve gerçek yükseklik
+      20.5px'e düşüyordu. **İki satıra taşan uzun bir mesajda** (ör. çok
+      kelimeli, vergi paylı bir hamle) web kutusu büyür, port `maxLines: 2`
+      ile keser — o durumda küçük bir fark olması BEKLENEN.
+- [ ] **Raf başlığı (17 Ağustos 2026) — üç şey birden.** İki platformu yan
+      yana aç: (a) sağda **"7 harf" YAZMAMALI** (ikisinde de kaldırıldı);
+      (b) oyuncunun adı **büyük harfe çevrilmemiş** olmalı (`Ironman`,
+      `IRONMAN` değil) ve iki tarafta da aynı kalınlıkta görünmeli — ikisi
+      de 700, fark yalnızca büyük harften geliyordu; (c) **ad ile taşların
+      arası iki tarafta da aynı** (13px). **DEĞİŞTİR'e basıp iki taş seç:**
+      sağda **"2 seçili" ÇIKMALI** — bu sayaç bilerek KALDI, çıkmıyorsa
+      "7 harf"i kaldırırken fazlası silinmiş demektir. Seçili taş yukarı
+      kalkarken **adın üstüne binmemeli** (web'e portun 7px'lik rezervi
+      eklendi).
 - [ ] **Filigranlar taşların ÜSTÜNE binmemeli (17 Ağustos 2026, Parça
       107).** Köşe bölgesine ve merkezdeki X2 bölgesine taş konmuş bir oyun
       aç: soluk köşe rakamı ve **X2** yalnızca BOŞ hücrelerde görünmeli,
