@@ -831,7 +831,12 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                                 stats: widget.services.stats,
                                 games: widget.services.games),
                           ),
-                        // GİRİŞ/avatar satırı ile logo arası: 4.
+                        // GİRİŞ/avatar satırı ile logo arası: 0 (17 Ağustos 2026).
+                        // Kullanıcı isteği: *"az boşluk bize alt kısımda
+                        // daha fazla yer kazandırır"*. 13 Ağustos'ta 4'e
+                        // çekilmişti; İKİ taraf birlikte 0'a indi — yalnız
+                        // biri indirilse kodda eşit olan iki sayı gerçekten
+                        // ayrışırdı. Web karşılığı: logo bloğunun `-mt-6`sı.
                         //
                         // Web'de bu sayı Setup kutusunun `py-6`sı (24) ile
                         // logo bloğunun negatif üst margin'inin farkı — o
@@ -846,7 +851,6 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                         // GİRİŞ satırı boş bir kutu olarak render edilir
                         // (yalnızca `pt-3`ü kalır), yani logonun üstü yine
                         // 12 + 4 = 16.
-                        const SizedBox(height: 4),
                         const Center(child: LogoMark(height: 52)),
                         // Web: blok `gap-1` (4px) + paragrafın `mt-4`si (16px)
                         // ÜST ÜSTE binerek 20px yapıyor — Chromium'da ölçüldü.
