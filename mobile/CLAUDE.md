@@ -113,11 +113,19 @@ yok — deploy bekleniyor demektir.
 - **"İptal edildi" ≠ "düştü" ve bu ayrım ekran görüntüsünde GÖRÜNMEZ:**
   aynı gün kullanıcı iOS işini kırmızı ikonla görüp "iOS'da sorun var"
   dedi; koşunun tamamı **Cancelled** idi ve iOS 38 saniyede "Cache Flutter"
-  adımında ölmüştü — yani hiç derlemeye başlamamıştı. Sebep workflow'un
-  kendi `concurrency: cancel-in-progress` kuralıydı: aynı PR'a atılan bir
-  sonraki commit önceki koşuyu iptal ediyor. Bir işin kırmızısını "hata"
-  saymadan önce **koşunun `conclusion` alanına** ve o işin hangi ADIMDA
-  öldüğüne bak.
+  adımında ölmüştü — yani hiç derlemeye başlamamıştı. Bir işin kırmızısını
+  "hata" saymadan önce **koşunun `conclusion` alanına** ve o işin hangi
+  ADIMDA öldüğüne bak.
+- **`cancel-in-progress`i İKİ ayrı şey tetikliyor ve ikincisi sezgiye
+  aykırı (18 Ağustos 2026'da ölçüldü):** (a) aynı PR'a atılan bir sonraki
+  commit; (b) **ESKİ bir koşunun arayüzden "Re-run"lanması** — yeniden
+  deneme AYNI concurrency grubuna (`mobile-build-refs/pull/N/merge`) girdiği
+  için o an ÇALIŞAN daha yeni koşuyu iptal ediyor. O gün bu ikisi
+  birbirine karıştı: ben yeni bir koşu tetiklerken kullanıcı bir öncekini
+  yeniden başlattı, benim koşum saniyesi saniyesine (23:06:52) iptal oldu
+  ve dışarıdan "sebepsiz iptal" gibi göründü. Bir iptali açıklarken
+  koşunun `run_attempt` alanına da bak: 1'den büyükse birileri yeniden
+  başlatmış demektir.
 - Siteyi ben açıp bakamam. **Ekran görüntüsü tek enstrümandır** — derleme
   kimliğinin ürüne gömülmesinin asıl gerekçesi budur.
 
