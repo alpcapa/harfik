@@ -1149,6 +1149,11 @@ export default function App() {
               Düğme ÇIPLAK `←` (18 Ağustos 2026, aynı gün ikinci tur, kullanıcı
               kararı) — erişilebilir ad `aria-label` üzerinden ("Tanıtım
               sayfası") doğru anlatılıyor, yalnızca GÖRÜNÜR metin sadeleşti.
+              Punto/kutu `Modal.tsx`'in ✕ kapatma butonuyla AYNI ölçek
+              (`text-lg`/`text-xl` bandı, `w-7 h-7` dokunma kutusu) — kullanıcı
+              "bit kadar" (10px) bulunca aynı gün bir sonraki turda büyütüldü,
+              icat edilmiş yeni bir sayı değil, projedeki mevcut köşe-ikon
+              dilinin tekrarı.
 
               YALNIZCA GİRİŞSİZ kullanıcıda render ediliyor (aynı gün, üçüncü
               tur — kullanıcı sordu: "girişli kullanıcıda da geri ok çıkmamalı,
@@ -1168,7 +1173,7 @@ export default function App() {
             <a
               href="/?tanitim=1"
               aria-label="Tanıtım sayfası"
-              className="shrink-0 font-mono text-[10px] text-muted active:scale-[0.97] transition-transform"
+              className="shrink-0 w-7 h-7 flex items-center justify-center rounded font-mono text-xl leading-none text-muted active:scale-90 transition-transform"
             >
               ←
             </a>
