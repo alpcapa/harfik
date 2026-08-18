@@ -5067,6 +5067,27 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        footer'da 2 değil 1 `Text('·')` kalır), ama bu bir çıkarım, ölçüm
        değil.
 
+   - ✅ **Parça 111 — misafir giriş uyarısındaki buton "DEVAM" → "OYNA"**
+     (18 Ağustos 2026, kullanıcı bildirdi; web `Setup.tsx` ile AYNI PR).
+     - **Neden:** uyarı metni üyeliğin faydalarını sayıyor ("istatistikler,
+       k-lig ve arkadaşınla canlı oyun için lütfen giriş yapın"), bu yüzden
+       "DEVAM" o cümlenin DEVAMI gibi okunup *"devam edersem üyeliğe
+       gider"* izlenimi veriyordu — kullanıcının sözleri: *"Yazıyı okuyunca
+       devama basmak üyeliğe götürecekmiş gibi düşündürüyor."* Yeni etiket
+       ne olacağını söylüyor: misafir olarak oyun başlar.
+     - **Davranış HİÇ değişmedi** — `_GuestChoice.proceed` dalı, ✕/dışarı
+       dokunuşun oyunu başlatMAması, "GİRİŞ YAP"ın giriş penceresini
+       açması aynı. Değişen tek şey `kDialogButton`ın `label`ı.
+     - **Test:** `setup_screen_test.dart`'taki misafir akışı `find.text('OYNA')`e
+       çevrildi ve ayrıca `expect(find.text('DEVAM'), findsNothing)` eklendi —
+       yalnızca yeni etiketi aramak, eski etiket bir şekilde ekranda kalsaydı
+       (ör. ikinci bir kopya) bunu göremezdi.
+     - **Doğrulama sınırı:** bu oturumda Flutter/Dart SDK YOK (`flutter` ve
+       `dart` bulunamadı), yani port testleri yerelde KOŞULAMADI — Dart
+       yarısının kanıtı CI. Web yarısı ölçüldü: `tsc` temiz, Playwright
+       18/18 yeşil ve negatif eş (modal locator'ı bozulunca ilgili İKİ test
+       GERÇEKTEN düştü, üçüncü bir test etkilenmedi) koşuldu.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**

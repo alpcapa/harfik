@@ -34,8 +34,15 @@ test('Setup ekranı açılır, 2 kişilik oyun başlar, YZ hamle yapar', async (
 
   await page.getByText('OYUNU BAŞLAT').click();
 
-  // Misafir girişi onay modalı — her zaman çıkmayabilir.
-  const devamButton = page.getByRole('button', { name: 'Devam', exact: true });
+  // Misafir girişi onay modalı — her zaman çıkmayabilir. Butonun metni
+  // 18 Ağustos 2026'da "Devam"dan "Oyna"ya çevrildi (kullanıcı: "Devam"
+  // üyeliğe götürecekmiş gibi okunuyordu); oyun ekranındaki OYNA da aynı
+  // erişilebilir adı taşıdığından locator modalın kendi `aria-label`ıyla
+  // DARALTILMAK ZORUNDA — aksi halde ikisi bir arada olmasa bile niyet
+  // belirsiz kalır ve ileride biri strict-mode ihlaline dönüşür.
+  const devamButton = page
+    .getByLabel('Giriş uyarısı')
+    .getByRole('button', { name: 'Oyna', exact: true });
   if (await devamButton.isVisible().catch(() => false)) {
     await devamButton.click();
   }
@@ -107,7 +114,9 @@ test('Öne dönüşte bağlantı durumu yeniden okunur (kaçırılan offline ola
   await donenKullanici(page);
   await page.goto('/');
   await page.getByText('OYUNU BAŞLAT').click();
-  const devamButton = page.getByRole('button', { name: 'Devam', exact: true });
+  const devamButton = page
+    .getByLabel('Giriş uyarısı')
+    .getByRole('button', { name: 'Oyna', exact: true });
   if (await devamButton.isVisible().catch(() => false)) await devamButton.click();
   const quickstartHeading = page.getByRole('heading', { name: /hızlı başlangıç/i });
   if (await quickstartHeading.isVisible().catch(() => false)) {

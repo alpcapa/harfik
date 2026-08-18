@@ -1054,6 +1054,15 @@ doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
       `CLAUDE.md`, "AYNI GÜN İKİ KEZ YANLIŞ FONT"). Ekran görüntüsü alıp
       karşılaştırmak en hızlı yol.
 
+- [ ] **Tahta GENİŞ ama METİN öteki bölümlerle hizalı (yatay tablet /
+      geniş tarayıcı — mobilde görünmez).** Sayfayı 834px ve üstü bir
+      genişlikte aç: tahta bilerek öteki bölümlerden GENİŞ (gerçek oyunla
+      aynı kutu = aynı harf oranı, daraltma yasak), ama "TAHTAYA BİR BAK /
+      Oyun tam olarak böyle görünüyor" başlığı ile tahta altı açıklamalar
+      "Nasıl oynanır?" ve "Merak edilenler" başlıklarıyla AYNI sol kenardan
+      başlamalı. 18 Ağustos 2026'da başlık 114px sola taşıyordu; ölçülen
+      düzeltilmiş değerler 834'te 203, 1194'te 383 (üç bölüm de aynı).
+
 - [ ] **Tahta altı açıklamalar ve renk legend'ı ORTALI.** İki tahtanın
       altındaki paragraflar sola yapışık DEĞİL ortalı olmalı; renk
       legend'ı geniş ekranda da ortalanmalı (sabit iki sütun değil, akan

@@ -267,10 +267,14 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
 - [ ] **Girişsiz başlatınca uyarı (14 Ağustos 2026, Parça 92).** ÇIKIŞ
       yapmış hâlde "Oyunu Başlat"a bas: web'dekiyle aynı uyarı çıkmalı
       ("Oyunların istatistikleri, k-lig ve arkadaşınla canlı oyun için
-      lütfen giriş yapın." + GİRİŞ YAP / DEVAM). **Üç yolu da dene:**
-      DEVAM → oyun başlar; GİRİŞ YAP → giriş penceresi açılır ve oyun
+      lütfen giriş yapın." + GİRİŞ YAP / **OYNA**). **Üç yolu da dene:**
+      OYNA → oyun başlar; GİRİŞ YAP → giriş penceresi açılır ve oyun
       BAŞLAMAZ; ✕ (ya da zemine dokunma) → hiçbir şey olmaz. Girişliyken
-      bu uyarı HİÇ çıkmamalı.
+      bu uyarı HİÇ çıkmamalı. **Butonun metni 18 Ağustos 2026'da "DEVAM"dan
+      "OYNA"ya çevrildi** (kullanıcı: uyarı metni üyeliği anlattığından
+      "Devam" üyeliğe götürecekmiş gibi okunuyordu) — ekranda "DEVAM"
+      görüyorsan derleme bayat demektir, sha'yı kontrol et. Web'de de aynı
+      etiket; ikisi birlikte değişmeli.
 - [ ] **Tahta alt şeridi — "Nasıl Oynanır?" (aynı parça).** Tahtanın
       altında SAĞDA "Nasıl Oynanır?" olmalı; eski `- kelime X2 · -
       kelime X3` açıklaması HİÇBİR yerde görünmemeli. Dokununca kurallar
