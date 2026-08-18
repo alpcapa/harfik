@@ -850,40 +850,51 @@ export function Setup({
           kullanıcı için `null` döner), o yüzden bu satırın kaldırılması
           misafir tarafında hiçbir görsel fark yaratmıyor. */}
 
-      {/* `flex-wrap` bir emniyet ağı — 356px'in altındaki viewport'larda
-          (320/344 gibi) üç öğe tek satıra sığmıyor; ÖLÇÜLDÜ, `gap-x-2 gap-y-1`
-          320'de iki satıra sarıp yatay taşmayı 0'da tutuyor, 356+ genişlikte
-          hiçbir şey değişmiyor. */}
-      <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[10px] font-mono text-muted">
-        <button onClick={() => setShowTerms(true)} className="hover:underline active:opacity-70 transition-opacity">
-          Kullanım Koşulları
-        </button>
-        <span>·</span>
-        <button onClick={() => setShowPrivacy(true)} className="hover:underline active:opacity-70 transition-opacity">
-          Gizlilik Politikası
-        </button>
-        {/* 17 Ağustos 2026 — yalnızca GİRİŞLİ kullanıcıda: üstteki "Arkadaşınla
-            paylaş"ın yeni yeri (misafirde üst blok yerinde kaldığından burada
-            YOK, aksi halde misafir aynı işlevi iki yerde görürdü). Etiket
-            BİLEREK "Paylaş" — "Arkadaşını Davet Et" `FriendsModal.tsx`'te
-            ZATEN başka bir özelliği (kişiye özel `/davet/:token` arkadaşlık
-            daveti, `?ref=` taşımaz) anlatıyor; aynı ismi iki farklı özelliğe
-            vermek karıştırır. `handleShare`'i OLDUĞU GİBİ çağırıyor —
-            kendi başına bir paylaşım yolu YAZMA, aksi halde `?ref=arkadas`
-            (admin panelindeki "Kaynak Hunisi"nin ziyaretçi ucunu besleyen tek
-            üretici) sessizce kaybolur. */}
-        {user && (
-          <>
-            <span>·</span>
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-1 hover:underline active:opacity-70 transition-opacity"
-            >
-              <ShareIcon size={12} />
-              {shareCopied ? 'Link kopyalandı!' : 'Paylaş'}
-            </button>
-          </>
-        )}
+      {/* Alt satır Landing.tsx'in "Son çağrı" footer'ıyla AYNI iki katmanlı
+          yapı: hukuki linkler + hemen altında "© Kelimeki" (18 Ağustos 2026,
+          kullanıcı isteği: "setup altındaki footer'ın altına 'c Kelimeki'
+          (tanıtımdaki gibi) olsun") — `gap-1` ikisini tek bir footer bloğu
+          gibi gruplar, dıştaki kabın `gap-5`'i (üstteki içerikle arasını)
+          hiç etkilemez. */}
+      <div className="flex flex-col items-center gap-1">
+        {/* `flex-wrap` bir emniyet ağı — 356px'in altındaki viewport'larda
+            (320/344 gibi) üç öğe tek satıra sığmıyor; ÖLÇÜLDÜ, `gap-x-2 gap-y-1`
+            320'de iki satıra sarıp yatay taşmayı 0'da tutuyor, 356+ genişlikte
+            hiçbir şey değişmiyor. */}
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[10px] font-mono text-muted">
+          <button onClick={() => setShowTerms(true)} className="hover:underline active:opacity-70 transition-opacity">
+            Kullanım Koşulları
+          </button>
+          <span>·</span>
+          <button onClick={() => setShowPrivacy(true)} className="hover:underline active:opacity-70 transition-opacity">
+            Gizlilik Politikası
+          </button>
+          {/* 17 Ağustos 2026 — yalnızca GİRİŞLİ kullanıcıda: üstteki "Arkadaşınla
+              paylaş"ın yeni yeri (misafirde üst blok yerinde kaldığından burada
+              YOK, aksi halde misafir aynı işlevi iki yerde görürdü). Etiket
+              BİLEREK "Paylaş" — "Arkadaşını Davet Et" `FriendsModal.tsx`'te
+              ZATEN başka bir özelliği (kişiye özel `/davet/:token` arkadaşlık
+              daveti, `?ref=` taşımaz) anlatıyor; aynı ismi iki farklı özelliğe
+              vermek karıştırır. `handleShare`'i OLDUĞU GİBİ çağırıyor —
+              kendi başına bir paylaşım yolu YAZMA, aksi halde `?ref=arkadas`
+              (admin panelindeki "Kaynak Hunisi"nin ziyaretçi ucunu besleyen tek
+              üretici) sessizce kaybolur. */}
+          {user && (
+            <>
+              <span>·</span>
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-1 hover:underline active:opacity-70 transition-opacity"
+              >
+                <ShareIcon size={12} />
+                {shareCopied ? 'Link kopyalandı!' : 'Paylaş'}
+              </button>
+            </>
+          )}
+        </div>
+        <p className="font-mono text-[10px] text-muted" style={{ margin: 0 }}>
+          © Kelimeki
+        </p>
       </div>
     </div>
     </>
