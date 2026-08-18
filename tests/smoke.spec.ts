@@ -199,6 +199,27 @@ test('İkinci ziyaret (aynı localStorage) → katman HİÇ görünmez', async (
   await expect(page.getByText('OYUNU BAŞLAT')).toBeVisible();
 });
 
+// Kayıtlı bir kullanıcı Supabase oturumunu `localStorage`'da taşır
+// (`sb-<proje-ref>-auth-token`) ve tarayıcı onu otomatik geri yükler — yani
+// "otomatik giriş yapan" kullanıcı katmanı HİÇ görmemeli, deneyimi
+// bugünküyle birebir aynı kalmalı (kullanıcı sorusu, 18 Ağustos 2026).
+// Kapı proje ref'ini sabit yazmıyor, `sb-` öneki + `-auth-token` sonekiyle
+// tarıyor; test ikisini de kapsıyor ki ref değişse bile kural bozulmasın.
+test('Supabase oturumu olan (otomatik giriş) kullanıcı katmanı görmez', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    localStorage.setItem(
+      'sb-xvqlizifakkkoqahaxsg-auth-token',
+      JSON.stringify({ access_token: 'sahte' }),
+    );
+  });
+
+  await page.goto('/');
+
+  await expect(page.locator('#karsilama')).toHaveCount(0);
+  await expect(page.getByText('OYUNU BAŞLAT')).toBeVisible();
+});
+
 test('/game/:id paylaşılan oyun sayfası açılır, katman görünmez', async ({ page }) => {
   await page.goto('/game/00000000-0000-0000-0000-000000000000');
 

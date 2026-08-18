@@ -259,7 +259,7 @@ function Kutu({ sayi, etiket }: { sayi: string; etiket: string }) {
 
 function Rozet({ renk, metin }: { renk: string; metin: string }) {
   return (
-    <li className="flex items-center gap-2 text-[11px] leading-tight">
+    <li className="flex shrink-0 items-center gap-2 text-[11px] leading-tight">
       <span
         aria-hidden="true"
         className="shrink-0 w-3.5 h-3.5 rounded-[3px] border border-border"
@@ -434,11 +434,21 @@ export function Landing() {
                       ]}
                     />
                   </div>
-                  <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 list-none p-0 m-0">
+                  {/* 18 Ağustos 2026 — kullanıcı isteği ("resimlerin altındaki
+                      yazılar sola yapışmış, ortala hepsini"): `grid-cols-2`
+                      yerine ortalanmış bir flex satırı. ÖLÇÜLDÜ, seçim
+                      buna dayanıyor: iki öğenin içeriği 166.1px, grid'in
+                      sütunu 360px'te yalnızca 158px — yani metin sütunun
+                      içinde SARIYORDU (yükseklik 27.5) ve orada
+                      `justify-center` hiçbir şey değiştirmezdi. Flex+wrap ile
+                      360'ta iki öğe alt alta ama her biri TEK satır ve
+                      ortalı; 390 ve üstünde ikisi yan yana ve grup olarak
+                      ortalı. */}
+                  <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 list-none p-0 m-0">
                     <Rozet renk="#FDE68A" metin="X2 — Kelime puanının 2 katı" />
                     <Rozet renk="#F97316" metin="X3 — Kelime puanının 3 katı" />
                   </ul>
-                  <p className="text-[12px] leading-relaxed text-muted" style={{ margin: 0 }}>
+                  <p className="text-[12px] leading-relaxed text-muted text-center" style={{ margin: 0 }}>
                     Köşenden başla, orta bölgedeki sarı alana ulaş, puanlarını
                     ikiye hatta üçe katla. Rakip bölgesine değen hamle yaparsan
                     kazandığının üçte birini ona vergi olarak ödersin.
@@ -459,7 +469,7 @@ export function Landing() {
                       ]}
                     />
                   </div>
-                  <p className="text-[12px] leading-relaxed text-muted" style={{ margin: 0 }}>
+                  <p className="text-[12px] leading-relaxed text-muted text-center" style={{ margin: 0 }}>
                     Dilersen 3 yapay zekaya veya 3 arkadaşına karşı oyna, gücünü
                     sına. 3 oyuncuyu yenmenin keyfi bir başka ama ikinci bile
                     olsan k-lig puanı kazanırsın.
