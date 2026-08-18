@@ -467,8 +467,8 @@ void main() {
     testWidgets(
         'isimlerin yanında rütbe mührü (18 Ağustos 2026) — 18px, satırın '
         '14px puntosuna göre; ekle/çıkar ikonunun SOLUNDA', (tester) async {
-      final gw = _FakeFriendsGateway()
-        ..friendRows = [
+      final gw = FakeFriendsGateway()
+        ..friendsRows = [
           {'friend_id': 'f1', 'name': 'Bobola', 'avatar_url': null},
         ];
       await pumpModal(tester,
