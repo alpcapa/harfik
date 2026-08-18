@@ -5000,6 +5000,41 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ~52.7×15px, ≈356px'te ikinci satıra sarıyor, negatif eş ile
        — `flex-wrap` kaldırılınca 320px'te GERÇEKTEN yatay taşma
        oluştuğu doğrulanıp geri eklendi).
+     - **AYNI GÜN bulunan eksik: footer'da AYRAÇ yoktu (`·`) — "birebir"
+       isteğinin ihlali.** Web girişli footer'da `Kullanım Koşulları ·
+       Gizlilik Politikası · [ikon] Paylaş` çiziyor: `Setup.tsx`'te
+       `<span>·</span>` ile "Paylaş" butonu AYNI `{user && (<>…</>)}`
+       fragment'ının içinde, yani girişlide İKİ ayraç var, misafirde BİR.
+       Port yalnızca butonu taşımış, ayracı atlamıştı → `… Gizlilik
+       Politikası [ikon] Paylaş`. Kullanıcının kuralı açıktı ("Bu model
+       birebir app'lerde de çalışacak değil mi? O şekilde istiyorum"),
+       yani bu kozmetik bir ayrıntı değil doğrudan bir sapma. Düzeltme:
+       `if (auth.user != null)` koşuluna bağlı ikinci bir `Text('·')` —
+       stil yukarıdaki mevcut ayraçla BİREBİR aynı (SpaceMono/10/`_muted`),
+       yeni bir stil yazılmadı.
+     - **Bunun DÖRT test yeşilken hayatta kalmasının sebebi ölçülebilir:**
+       eklenen testlerin hepsi metnin VARLIĞINI (`find.text('Paylaş')`)
+       doğruluyordu; hiçbiri maddeler ARASINDAKİ tutkalı (ayraç/boşluk)
+       ölçmüyordu. Artık iki footer testi ayraç SAYISINI de ölçüyor —
+       misafirde `findsOneWidget`, girişlide `findsNWidgets(2)`. Finder
+       güvenli: logo altındaki misafir link satırı BOŞLUKLU `' · '`
+       kullanıyor (`setup_screen.dart:921`) ve teşhis satırı
+       `.join(' · ')` ile TEK bir `Text` üretiyor, ikisi de bu finder'a
+       takılmıyor; `account_button`/`score_card`/`player_score_card`'daki
+       `TextSpan(text: '·')`'lar ise `Text.rich`in tam metnine gömülü
+       olduğundan eşleşmiyor (hepsi grep'lenerek doğrulandı).
+     - **Ders — "birebir" bir port isteğinde MADDELERİ karşılaştırmak
+       yetmez, ARALARINDAKİ tutkalı (ayraç, boşluk, sıra) da karşılaştır;**
+       ve içerik varlığını doğrulayan bir test, bu sınıf bir farkı
+       yapısal olarak GÖREMEZ (kök `CLAUDE.md`'nin "negatif eş" dersinin
+       kardeşi: aradığın şeyin YOKLUĞUNDA da geçen bir kontrol bir şey
+       kanıtlamaz).
+     - **Doğrulama sınırı (bu düzeltmeye özgü):** bu oturumda da Flutter/
+       Dart SDK YOK, yani spec'in istediği negatif eş (ayracı geri silip
+       testin GERÇEKTEN düştüğünü görmek) yerelde KURULAMADI — tek kanıt
+       CI. Testin düşeceği aritmetik olarak kesin (ayraç silinince girişli
+       footer'da 2 değil 1 `Text('·')` kalır), ama bu bir çıkarım, ölçüm
+       değil.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 

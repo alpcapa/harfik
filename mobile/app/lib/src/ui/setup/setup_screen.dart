@@ -1037,6 +1037,17 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                             // UTM'li genel bir tahta/site linki paylaşıyor —
                             // admin panelindeki "Kaynak Hunisi" bu parametreye
                             // bağlı, korunması şart.
+                            // Ayraç da AYNI koşula bağlı: web'de bu ikisi tek
+                            // bir `{user && (<>…</>)}` bloğunda, yani girişli
+                            // footer'da İKİ ayraç var (Koşullar · Gizlilik ·
+                            // Paylaş), misafirde BİR. Stil yukarıdaki ilk
+                            // ayraçla birebir aynı — yeni bir stil yazma.
+                            if (auth.user != null)
+                              const Text('·',
+                                  style: TextStyle(
+                                      fontFamily: 'SpaceMono',
+                                      fontSize: 10,
+                                      color: _muted)),
                             if (auth.user != null)
                               GestureDetector(
                                 onTap: _handleShare,

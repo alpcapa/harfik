@@ -669,6 +669,14 @@ void main() {
     expect(find.text('Kullanım Koşulları'), findsOneWidget);
     expect(find.text('Gizlilik Politikası'), findsOneWidget);
     expect(find.text('Paylaş'), findsNothing);
+
+    // Ayraç SAYISI da ölçülüyor: metnin VARLIĞINI doğrulayan bir test,
+    // aradaki tutkalın (ayraç/boşluk) web'den sapmasını göremez — nitekim
+    // ilk sürümde girişli footer'da ayraç EKSİKTİ ve dört test birden
+    // yeşil kalmıştı. Misafirde tam BİR ayraç var (Koşullar · Gizlilik).
+    // Not: logo altındaki misafir link satırı BOŞLUKLU ' · ' kullanıyor,
+    // yani bu finder'a takılmıyor (ölçüldü).
+    expect(find.text('·'), findsOneWidget);
   });
 
   testWidgets(
@@ -698,6 +706,10 @@ void main() {
     await tester.scrollUntilVisible(find.text('Kullanım Koşulları'), 200,
         scrollable: find.byType(Scrollable).first);
     expect(find.text('Paylaş'), findsOneWidget);
+
+    // Girişlide İKİ ayraç olmak zorunda (Koşullar · Gizlilik · Paylaş) —
+    // web'de bu ikisi tek bir `{user && (<>…</>)}` bloğunda duruyor.
+    expect(find.text('·'), findsNWidgets(2));
 
     await tester.tap(find.text('Paylaş'));
     await tester.pump();
