@@ -37,8 +37,11 @@ const CACHE_DIR = path.join(ROOT, 'node_modules', '.cache', 'kelimeki');
  * Modül İKİ fonksiyon export ediyor (`renderLandingHtml` + `renderFaqJsonLd`,
  * 18 Ağustos 2026'da eklendi) — ikisi de aynı `SSS` dizisini tükettiğinden
  * TEK build/import yeterli, iki ayrı esbuild çağrısı gerekmiyor.
+ *
+ * ⚠ ÇAĞRILARI SERİLEŞTİREN sarmalayıcı için aşağıdaki `loadLandingModule`a
+ * bak — bu fonksiyon DOĞRUDAN çağrılmamalı.
  */
-async function loadLandingModule() {
+async function buildAndImportLandingModule() {
   mkdirSync(CACHE_DIR, { recursive: true });
   const outfile = path.join(CACHE_DIR, 'landing-render.mjs');
   await build({
@@ -63,6 +66,44 @@ async function loadLandingModule() {
   // olduğundan (her derlemede yeni bir dosya bırakmıyoruz) `npm run dev`'de
   // katman düzenlenince yeniden okunması buna bağlı.
   return import(/* @vite-ignore */ `file://${outfile}?t=${Date.now()}`);
+}
+
+/**
+ * Derleme + import'u TEK SIRAYA dizer.
+ *
+ * ⚠ NEDEN: `transformIndexHtml` dev sunucusunda HER `/` isteğinde çalışıyor ve
+ * yukarıdaki fonksiyon her seferinde AYNI `outfile`a yazıp onu import ediyor.
+ * İki istek aynı anda gelirse (Playwright duman testleri `fullyParallel` ve CI'da
+ * 2 worker ile koşuyor — yani ilk iki test sayfayı neredeyse aynı anda açıyor)
+ * derleme B, import A dosyayı okurken onu KESİP baştan yazıyor; yarım okunan
+ * modülün export'u olmadığından `mod.renderLandingHtml is not a function`
+ * fırlıyor ve Vite 500 dönüyor — sayfanın başlığı "Error" oluyor.
+ *
+ * Bu, 18 Ağustos 2026'da `main`'de bir kez GERÇEKLEŞTİ (koşu 32196434157, 18
+ * testin 1'i düştü; AYNI ağaç PR'da geçmişti — yani bir flake, kod hatası
+ * değil). Bu ortamda 120 eşzamanlı istekle yeniden ÜRETİLEMEDİ (disk/önbellek
+ * hızlı), yani düzeltme "ölçülen bir hata"nın değil ÖLÇÜLEN BİR YARIŞ
+ * PENCERESİNİN kapatılması: aynı dosyaya yazan ve onu okuyan iki iş
+ * serileşmedikçe sıra garanti değildir (kök CLAUDE.md'nin `local_game_saves`
+ * dersi, portun `TableWriteQueue`'su ve web'in `enqueueSaveWrite`i aynı kural).
+ *
+ * Maliyet dev sunucusunda ölçüldü: derleme+import ~50 ms, yani eşzamanlı
+ * isteklerde tek sıra gecikmesi ihmal edilebilir (ve yalnızca `/` isteklerinde).
+ */
+let landingChain = Promise.resolve();
+
+function loadLandingModule() {
+  // Zincir hata durumunda KIRILMAMALI: bir derleme patlarsa sonraki istek yine
+  // denenebilmeli, bu yüzden zincirin kendisi her zaman "başarılı"ya çekiliyor.
+  const result = landingChain.then(
+    buildAndImportLandingModule,
+    buildAndImportLandingModule,
+  );
+  landingChain = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
 }
 
 /**
