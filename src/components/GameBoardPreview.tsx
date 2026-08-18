@@ -10,23 +10,21 @@ interface GameBoardPreviewProps {
   /** Verilirse tahtaya tıklanabilir olur (ör. kapat/paylaş aksiyon menüsünü açmak için). */
   onClick?: () => void;
   /**
-   * Tahtanın filigranları: köşelerdeki büyük 1/2/3/4, merkezdeki X2 ve
-   * ortadaki X3 etiketi. Varsayılanı `false` — `GameHistoryModal` kart
-   * açılımı ve `SharedGamePage` KÜÇÜK bir önizleme çiziyor, orada
-   * filigranlar okunaksız bir kalabalık üretiyordu.
+   * `Board`'un `compact` modu — küçük harfler, puan üst simgesi yok, köşe
+   * oyuncu-numarası filigranı yok, merkezdeki "X2" ve ortadaki "X3" yok.
    *
-   * Karşılama katmanı (`src/landing/Landing.tsx`) bunu `true` geçiyor
-   * (18 Ağustos 2026, kullanıcı isteği: *"Tanıtımda 2 veya 4 kişilik oyun
-   * görsellerinde watermark'lar yok. Oyunun birebir aynı görüntüsü
-   * olmalı."*).
+   * Varsayılanı `true`: ilk iki kullanım yeri (`GameHistoryModal` kart
+   * açılımı, `SharedGamePage`) tahtayı KÜÇÜK bir önizleme olarak çiziyor.
    *
-   * ⚠ Taş boyutunu DEĞİŞTİRMEZ. İlk denemede bunun yerine `compact`
-   * tamamen kapatılmıştı ve harfler de büyüyüp puan üst simgeleri geldi —
-   * kullanıcı "sadece filigranı düzelt demiştim" diye bildirdi. `Board`'da
-   * iki kavram artık ayrı prop: `compact` taşları, `showMarks` filigranları
-   * yönetiyor. Bu bileşen taşları HER ZAMAN `compact` çiziyor.
+   * Karşılama katmanı `false` geçiyor — orada tahta bir önizleme değil
+   * oyunun vitrini ve kullanıcının şartı "oyunun birebir aynı görüntüsü".
+   * ⚠ Bunun DOĞRU görünmesi tahtanın gerçek oyunla AYNI GENİŞLİKTE
+   * olmasına bağlı: harf boyutu `vw` tabanlı bir clamp (`Tile.tsx`), hücre
+   * ise kabın genişliğine bağlı. Dar bir kapta `compact={false}` harfleri
+   * orantısız büyük gösterir (18 Ağustos 2026'da tam bu yaşandı). Bkz.
+   * `Landing.tsx`'te tahta bölümünün metin kolonunun dışına alınması.
    */
-  showMarks?: boolean;
+  compact?: boolean;
 }
 
 const noop = () => {};
@@ -36,7 +34,7 @@ export function GameBoardPreview({
   playerCount,
   players,
   onClick,
-  showMarks = false,
+  compact = true,
 }: GameBoardPreviewProps) {
   const state = buildSnapshotGameState(snapshot, playerCount, players);
   return (
@@ -48,8 +46,7 @@ export function GameBoardPreview({
           moveStatus={null}
           onOpenHistory={noop}
           hideFooter
-          compact
-          showMarks={showMarks}
+          compact={compact}
         />
       </div>
     </div>
