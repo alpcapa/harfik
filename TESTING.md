@@ -1075,14 +1075,17 @@ doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
       ve "Gizlilik Politikası" → uygulamaya geçip DOĞRU pencereyi açmalı,
       pencere kapanınca URL'de `?kosullar=1`/`?gizlilik=1` KALMAMALI.
 
-- [ ] **Setup'ta tam genişlikte "Paylaş" butonu (18 Ağustos 2026).** Sayfanın
-      en altında, footer'ın (Kullanım Koşulları/Gizlilik/© Kelimeki) hemen
-      üstünde, `Landing.tsx`'in Oyna/Giriş CTA çiftiyle AYNI stilde büyük bir
-      "Paylaş" butonu olmalı — hem GİRİŞSİZ hem GİRİŞLİ hesapta (öncekinin
-      aksine artık iki ayrı küçük metin linki YOK: misafirde logonun
-      altındaki "Nasıl oynanır? · Arkadaşınla paylaş" satırından "Arkadaşınla
-      paylaş" kalktı — yalnızca "Nasıl oynanır?" kaldı; girişlide footer'daki
-      küçük "· Paylaş" metin linki de kalktı). Dokununca native paylaşım
-      sayfası açılmalı (mobil) ya da link panoya kopyalanıp buton metni 2
-      saniyeliğine "Link kopyalandı!" olmalı (masaüstü) — kopyalanan linkte
-      `?ref=arkadas` OLMALI.
+- [ ] **Setup footer'ında üçüncü madde: "Paylaş" (18 Ağustos 2026).**
+      Footer'ın hukuki linkler satırı artık "Kullanım Koşulları · Gizlilik
+      Politikası · Paylaş" — üçü de AYNI küçük metin-linki görünümünde
+      (BÜYÜK/tam genişlikte bir buton DEĞİL — bir önceki denemede öyle
+      yapılmıştı, kullanıcı "buton istemedim, tanıtım footerındakinin
+      aynısını istedim" diyerek düzeltti). Hem GİRİŞSİZ hem GİRİŞLİ hesapta
+      görünmeli (öncekinin aksine artık iki ayrı küçük metin linki YOK:
+      misafirde logonun altındaki "Nasıl oynanır? · Arkadaşınla paylaş"
+      satırından "Arkadaşınla paylaş" kalktı — yalnızca "Nasıl oynanır?"
+      kaldı; girişlide footer'da AYRICA duran eski koşullu "· Paylaş" de tek,
+      koşulsuz maddeye indirgendi). Dokununca native paylaşım sayfası
+      açılmalı (mobil) ya da link panoya kopyalanıp buton metni 2 saniyeliğine
+      "Link kopyalandı!" olmalı (masaüstü) — kopyalanan linkte `?ref=arkadas`
+      OLMALI.

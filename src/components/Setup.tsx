@@ -849,27 +849,6 @@ export function Setup({
           kullanıcı için `null` döner), o yüzden bu satırın kaldırılması
           misafir tarafında hiçbir görsel fark yaratmıyor. */}
 
-      {/* Tam genişlikte "Paylaş" butonu (18 Ağustos 2026, kullanıcı isteği:
-          "arkadaşınla paylaş linkini de kaldırıp tanıtımdaki gibi alta
-          paylaş koyalım") — `Landing.tsx`'teki `Giris` bileşeninin (Oyna/
-          Giriş CTA çifti) BİREBİR AYNI stili (`btn-raised-neutral`,
-          `font-mono font-bold uppercase tracking-[1px] rounded-xl`), yalnızca
-          etiket farklı. Önceden İKİ AYRI giriş noktası vardı — misafirde logo
-          altında küçük bir metin linki, girişlide footer'da başka küçük bir
-          metin linki — ikisi de kaldırıldı, tek bir büyük buton ikisinin
-          yerine geçti. `handleShare` girişten bağımsız çalıştığından (bkz.
-          fonksiyonun kendi tanımı) `user &&` gibi bir koşula BAĞLANMADI —
-          herkes aynı butonu görüyor. Sayfanın EN ALTINDA, footer'ın hemen
-          üstünde — `mainView`/`creatingLocal` gibi iç sekme durumlarından
-          bağımsız, her zaman render edilen tek bloğun (footer ile aynı) bir
-          parçası. */}
-      <button
-        onClick={handleShare}
-        className="w-full btn-raised-neutral bg-panel border border-border text-text font-mono font-bold uppercase tracking-[1px] rounded-xl px-5 py-3.5 text-[13px] leading-none active:scale-[0.97] transition-transform"
-      >
-        {shareCopied ? 'Link kopyalandı!' : 'Paylaş'}
-      </button>
-
       {/* Alt satır Landing.tsx'in "Son çağrı" footer'ıyla AYNI iki katmanlı
           yapı: hukuki linkler + hemen altında "© Kelimeki" (18 Ağustos 2026,
           kullanıcı isteği: "setup altındaki footer'ın altına 'c Kelimeki'
@@ -888,6 +867,20 @@ export function Setup({
           <span>·</span>
           <button onClick={() => setShowPrivacy(true)} className="hover:underline active:opacity-70 transition-opacity">
             Gizlilik Politikası
+          </button>
+          {/* "Paylaş" (18 Ağustos 2026, aynı gün üçüncü tur — kullanıcı: "Yanlış
+              anladın, buton istemedim. Tanıtım footerındakinin aynısını
+              istedim") — önceki tur bunu tam genişlikte, `Landing.tsx`'in
+              Oyna/Giriş CTA'sıyla aynı stilde bir BUTON yapmıştı; kullanıcı
+              bunun yerine footer'ın KENDİSİNDEKİ (Kullanım Koşulları/
+              Gizlilik Politikası) küçük metin linki stilini istedi. Üçüncü
+              madde olarak AYNI satıra, AYNI className'le eklendi — yeni bir
+              stil icat edilmedi. `handleShare` girişten bağımsız çalıştığından
+              (bkz. fonksiyonun kendi tanımı) `user &&` gibi bir koşula
+              BAĞLANMADI, misafir/girişli aynı satırı görüyor. */}
+          <span>·</span>
+          <button onClick={handleShare} className="hover:underline active:opacity-70 transition-opacity">
+            {shareCopied ? 'Link kopyalandı!' : 'Paylaş'}
           </button>
         </div>
         <p className="font-mono text-[10px] text-muted" style={{ margin: 0 }}>
