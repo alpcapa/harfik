@@ -100,8 +100,24 @@ yok — deploy bekleniyor demektir.
 - Bash tabanlı bir "deploy izleyici" **sessizce ölü kalır** ve sessizlik
   "hâlâ çalışıyor" gibi görünür — 15 Ağustos'ta tam bu kuruldu ve fark
   edilmeseydi 40 dakika boş beklenecekti.
-- Koşu durumu YALNIZCA GitHub MCP araçlarıyla okunabilir
+- Koşu durumu YALNIZCA GitHub MCP araçlarıyla **okunabilir**
   (`actions_list` → `list_workflow_runs`, `pull_request_read`).
+- **Ama TETİKLENEMEZ (18 Ağustos 2026'da ölçüldü):** bu oturumun tokeni
+  Actions'a yazamıyor — `rerun_workflow_run` ve `run_workflow` (dispatch)
+  ikisi de **403 "Resource not accessible by integration"** döner. Yani
+  iptal edilmiş/eksik kalmış bir koşuyu ben yeniden başlatamam; yeni bir
+  koşu ancak dala GERÇEK bir commit push edilerek (`paths` filtresine takılan
+  bir dosya değişerek) ya da kullanıcının Actions arayüzünden "Re-run"
+  demesiyle doğar. **CI'ı kışkırtmak için boş commit ATMA** — kök
+  CLAUDE.md'nin PR kuralı bunu açıkça yasaklıyor.
+- **"İptal edildi" ≠ "düştü" ve bu ayrım ekran görüntüsünde GÖRÜNMEZ:**
+  aynı gün kullanıcı iOS işini kırmızı ikonla görüp "iOS'da sorun var"
+  dedi; koşunun tamamı **Cancelled** idi ve iOS 38 saniyede "Cache Flutter"
+  adımında ölmüştü — yani hiç derlemeye başlamamıştı. Sebep workflow'un
+  kendi `concurrency: cancel-in-progress` kuralıydı: aynı PR'a atılan bir
+  sonraki commit önceki koşuyu iptal ediyor. Bir işin kırmızısını "hata"
+  saymadan önce **koşunun `conclusion` alanına** ve o işin hangi ADIMDA
+  öldüğüne bak.
 - Siteyi ben açıp bakamam. **Ekran görüntüsü tek enstrümandır** — derleme
   kimliğinin ürüne gömülmesinin asıl gerekçesi budur.
 
