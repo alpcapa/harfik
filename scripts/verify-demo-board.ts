@@ -12,8 +12,12 @@
 //   2. ≥2 uzunluktaki HER yatay ve dikey dizilim `src/data/words.ts`te var.
 //   3. Her harf gerçekten torbada olan bir harf (`TILE_DATA`).
 //   4. Her oyuncunun taşları kendi EV karesinden başlayarak ortogonal olarak
-//      bağlı — yani `computeTerritory` gerçekten o bölgeyi çiziyor (kopuk bir
-//      taş, tanıtım tahtasında bölge dış hattını sessizce eksik bırakırdı).
+//      bağlı — YALNIZCA `*_BAGIMSIZ` listesinde AÇIKÇA bildirilenler hariç.
+//      Kontrol İKİ YÖNLÜ (küme eşitliği): ana zincirden kopan bir taş da,
+//      yanlışlıkla zincire yapışıp artık izole OLMAYAN bir "bağımsız" taş da
+//      hata verir. Birincisi bölge dış hattını sessizce eksik bırakırdı,
+//      ikincisi tanıtımın anlattığı kuralı (izole taş bölge kazandırmaz)
+//      yalanlardı.
 //   5. Tahtadaki her koltuk gerçekten kullanılıyor (4 kişilik tanıtımda bir
 //      köşe boş kalırsa görsel "3 rakip" mesajını taşımaz).
 //
@@ -29,7 +33,12 @@ import type { BoardSnapshotTile } from '../src/lib/database.types';
 const SOZLUK = new Set(WORD_LIST.map((w) => trLower(w)));
 let hata = 0;
 
-function tahtayiDogrula(baslik: string, playerCount: number, tiles: BoardSnapshotTile[]): void {
+function tahtayiDogrula(
+  baslik: string,
+  playerCount: number,
+  tiles: BoardSnapshotTile[],
+  bagimsizHucreler: string[],
+): void {
   const bildir = (mesaj: string): void => {
     hata++;
     console.log(`  ✗ ${mesaj}`);
@@ -71,6 +80,7 @@ function tahtayiDogrula(baslik: string, playerCount: number, tiles: BoardSnapsho
 
   // ── 4 + 5: her koltuk dolu mu ve ev karesinden bağlı mı ─────────────────
   const KOSELER = cornersFor(playerCount);
+  let izoleSayisi = 0;
   for (let koltuk = 0; koltuk < playerCount; koltuk++) {
     const toplam = tiles.filter((t) => t.o === koltuk).length;
     if (toplam === 0) {
@@ -97,17 +107,38 @@ function tahtayiDogrula(baslik: string, playerCount: number, tiles: BoardSnapsho
         yigin.push([rr, cc]);
       }
     }
-    if (gorulen.size !== toplam) {
-      bildir(`${koltuk + 1}. oyuncunun ${toplam - gorulen.size} taşı ev karesine bağlı değil`);
+    // Zincire bağlanmayanlar, TAM OLARAK bildirilen izole hücreler olmalı.
+    const kopuk = tiles
+      .filter((t) => t.o === koltuk && !gorulen.has(`${t.r},${t.c}`))
+      .map((t) => `${t.r},${t.c}`);
+    const beklenen = new Set(
+      bagimsizHucreler.filter((k) => {
+        const [r, c] = k.split(',').map(Number);
+        return sahip[r][c] === koltuk;
+      }),
+    );
+    for (const k of kopuk) {
+      if (!beklenen.has(k)) bildir(`${koltuk + 1}. oyuncunun (${k}) taşı zincire bağlı DEĞİL ama izole olarak da bildirilmemiş`);
     }
+    for (const k of beklenen) {
+      if (!kopuk.includes(k)) bildir(`(${k}) izole bildirildi ama ${koltuk + 1}. oyuncunun zincirine BAĞLI`);
+    }
+    izoleSayisi += beklenen.size;
   }
 
-  console.log(`${baslik} — ${tiles.length} taş, ${bulunan.length} kelime:`);
+  console.log(
+    `${baslik} — ${tiles.length} taş, ${bulunan.length} kelime, ${izoleSayisi} izole taş:`,
+  );
   for (const k of bulunan) console.log(`  ✓ ${k}`);
 }
 
-for (const { playerCount, tiles } of DEMO_BOARDS) {
-  tahtayiDogrula(`${playerCount} kişilik tanıtım tahtası`, playerCount, tiles);
+for (const { playerCount, tiles, bagimsizHucreler } of DEMO_BOARDS) {
+  tahtayiDogrula(
+    `${playerCount} kişilik tanıtım tahtası`,
+    playerCount,
+    tiles,
+    bagimsizHucreler,
+  );
 }
 
 if (hata) {

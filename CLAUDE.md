@@ -405,14 +405,27 @@ oluşuyor. İki tasarım kararı kayda değer:
   orta kareye girmiş ve oyun daha ilerlemiş … 1-2 rakip bölgeye değen hamle
   koy"):** boş bir açılış tahtası ne bölge genişlemesini ne de sınır
   ihlalini gösterebiliyordu. 2 kişilikte 1. oyuncu merkezi geçip `NAİL` ile
-  RAKİBİN 4×4 bloğuna giriyor (43 taş); 4 kişilikte DÖRT oyuncu da merkez
+  RAKİBİN 4×4 bloğuna giriyor (52 taş); 4 kişilikte DÖRT oyuncu da merkez
   bölgeye uzanıyor ve iki temas noktası var — `ATAMAN` (2. oyuncunun A'sı +
   1. oyuncunun N'si) ve `KIRK` (3. oyuncunun K'si + 4. oyuncunun IRK'ı),
-  yani vergiyi doğuran durum tahtada GÖRÜNÜYOR (62 taş).
+  yani vergiyi doğuran durum tahtada GÖRÜNÜYOR (70 taş).
   **Tahtalar elle çözülmedi:** `node_modules/.cache/…/solver.ts` benzeri bir
   arama betiğiyle, her aday kelime TÜM tahtaya karşı doğrulanarak seçildi —
-  kesişmelerin ürettiği kaza kelimeleri (ör. `İS`, `LE`) ancak böyle
+  kesişmelerin ürettiği kaza kelimeleri (ör. `İS`, `LE`, `AN`) ancak böyle
   görülüyor. Sonuç yine `npm run verify-demo-board` ile kilitli.
+- **İZOLE (bağımsız) hamleler — dördüncü tur, kullanıcı isteği: "bölge
+  dışında diğer oyuncular tarafından eklenmiş 3-4 bağımsız hamle de
+  gösterelim".** Her tahtada, sahibinin KENDİ zincirine bağlı OLMAYAN 4
+  hamle var (2 kişilikte 9, 4 kişilikte 8 taş). Bu, kuralın gözle görülmesi
+  en zor yüzü: rakip bölgeye konan ama kendi zincirine BAĞLANMAYAN bir taş o
+  kareyi ELE GEÇİRMEZ — kendi rengini korur, kare rakibin tonlamasında kalır.
+  Tahtada bu, "rakip tonlamasının üstünde duran yabancı renkli taş" olarak
+  görünüyor ve `Board.tsx` bunu zaten doğru çiziyor (ayrı bir kod gerekmedi).
+  Taşlar `*_BAGIMSIZ` listelerinde AYRI duruyor; doğrulayıcı bağlantısızlığı
+  **İKİ YÖNLÜ küme eşitliğiyle** sınıyor — ana zincirden kopan bir taş da,
+  yanlışlıkla zincire yapışıp artık izole OLMAYAN bir "bağımsız" taş da hata
+  verir. **Negatif eş:** bir izole bildirimini kaldırmak 2, ana zincirdeki
+  bir kelimeyi izole diye bildirmek 3 hata üretti.
 - **Tahtanın kelimeleri ÖLÇEREK doğrulanıyor:** `npm run verify-demo-board`
   ≥2 uzunluktaki TÜM yatay/dikey dizilimleri `src/data/words.ts`e karşı sınar,
   ayrıca her oyuncunun taşlarının EV karesinden ortogonal bağlı olduğunu
@@ -433,9 +446,9 @@ TEK KAYNAKTA (`LogoMark.tsx`in dışa açtığı sabitler; o dosya
 `generate-logo-paths.mjs` tarafından üretiliyor) — uygulama tarafı bu sprite'ı
 KULLANMAZ, orada logo tek kez çiziliyor.
 
-**Sayfa bütçesi (ölçüldü):** `dist/index.html` ham 223.8 KB / **gzip 19.47 KB**
+**Sayfa bütçesi (ölçüldü):** `dist/index.html` ham 229.4 KB / **gzip 19.66 KB**
 (tek tahtalı ilk sürüm 130.8 KB / 15.84 KB idi; ikinci tahta ~3.2 KB, iki
-tahtanın dolulaşması ~0.4 KB gzip ekledi).
+tahtanın dolulaşması + izole hamleler ~0.6 KB gzip ekledi).
 Bölüm 2'nin "< 15 KB" notu yer tutucu içeriğe göre yazılmıştı; gerçek içerikle
 kırılım şu — logo 5.2 KB, tahta 3.3 KB, rütbe mühürleri 0.3 KB, kalan metin/
 düzen ~7 KB. Karşılaştırma: katmanı gören ziyaretçi bugün toplam ~25 KB gzip

@@ -15,6 +15,17 @@
 // `src/data/words.ts`e karşı sınar ve her oyuncunun taşlarının kendi EV
 // karesinden ortogonal bağlı olduğunu kontrol eder.
 //
+// BAĞIMSIZ (İZOLE) HAMLELER: her tahtada, sahibinin KENDİ zincirine BAĞLI
+// OLMAYAN 3-4 taş var (kullanıcı isteği, 18 Ağustos 2026: "bölge dışında
+// diğer oyuncular tarafından eklenmiş 3-4 bağımsız hamle de gösterelim").
+// Bu, kuralın gözle görülmesi zor ama önemli bir yüzü: rakip bölgeye konan
+// ama kendi zincirine bağlanMAYAN bir taş o bölgeyi ELE GEÇİRMEZ — kendi
+// rengini korur, ama altındaki kare rakibin kalır. Tahtada bu, "rakip
+// tonlamasının üstünde duran yabancı renkli taş" olarak görünüyor.
+// ⚠ Bu taşlar `*_BAGIMSIZ` listelerinde AYRI duruyor ve doğrulayıcı
+// bağlantısızlığı İKİ YÖNLÜ kontrol ediyor: ana zincirden kopan bir taş da,
+// yanlışlıkla zincire yapışan bir "bağımsız" taş da hata verir.
+//
 // İKİ TAHTA VAR (18 Ağustos 2026, kullanıcı isteği — kaydırmalı iki görsel):
 //   • 2 kişilik — 1. oyuncu merkezi geçip RAKİBİN köşe bloğuna girmiş.
 //   • 4 kişilik — dört köşe birden dolu, DÖRDÜ de merkeze uzanmış; iki ayrı
@@ -50,6 +61,14 @@ const IKI_KISILIK: Yerlesim = [
   [10, 10, 'yatay', 'SES', 1],
 ];
 
+/** 2 kişilik tahtadaki izole hamleler — hiçbiri sahibinin zincirine değmiyor. */
+const IKI_KISILIK_BAGIMSIZ: Yerlesim = [
+  [1, 0, 'yatay', 'ARA', 1], // (1,1)-(1,2): 1. oyuncunun köşe bloğunun İÇİ
+  [0, 5, 'dikey', 'EFE', 1], // (1,5)-(2,5): sahipsiz alan
+  [7, 0, 'dikey', 'KAR', 1], // (8,0)-(9,0)
+  [11, 7, 'yatay', 'KOD', 0], // (11,9): 2. oyuncunun köşe bloğunun İÇİ
+];
+
 // ── 4 kişilik: 0 sol-üst, 1 sağ-üst, 2 sol-alt, 3 sağ-alt ─────────────────
 // Ev kareleri sırasıyla (0,0) · (0,12) · (12,0) · (12,12). DÖRT oyuncunun da
 // merkezdeki 5×5 X2 bölgesine (satır/sütun 4-8) uzanmış olması KASITLI —
@@ -83,34 +102,61 @@ const DORT_KISILIK: Yerlesim = [
   [8, 8, 'yatay', 'IRK', 3],
 ];
 
+/** 4 kişilik tahtadaki izole hamleler — dördü de BAŞKA bir köşenin dibinde. */
+const DORT_KISILIK_BAGIMSIZ: Yerlesim = [
+  [1, 0, 'yatay', 'ARA', 3], // (1,1)-(1,2): 1. oyuncunun bloğunun içi
+  [0, 12, 'dikey', 'NARİN', 2], // (3,12)-(4,12): 2. oyuncunun bloğunun kenarı
+  [8, 0, 'dikey', 'PADOK', 1], // (8,0)-(10,0): 3. oyuncunun bloğunun içi
+  [9, 11, 'dikey', 'NE', 0], // (9,11): 4. oyuncunun bloğunun içi — tek taş
+];
+
 // JOKER TAŞI BİLEREK YOK: `Tile.tsx` joker taşını ayrı çizmiyor (yalnızca
 // puanı 0), `compact` modda da puanlar hiç gösterilmiyor — yani tanıtım
 // tahtasına konan bir joker ziyaretçiye HİÇBİR ŞEY anlatmazdı. (Denendi ve
 // ekran görüntüsüyle doğrulandı: normal taştan ayırt edilemiyordu.)
 
-function uret(yerlesim: Yerlesim): BoardSnapshotTile[] {
-  const tiles: BoardSnapshotTile[] = [];
-  const dolu = new Set<string>();
-  for (const [r, c, yon, kelime, sahip] of yerlesim) {
-    const harfler = Array.from(kelime);
-    for (let i = 0; i < harfler.length; i++) {
-      const rr = yon === 'yatay' ? r : r + i;
-      const cc = yon === 'yatay' ? c + i : c;
-      const key = `${rr},${cc}`;
-      // Kesişen kelimeler ortak harfi paylaşır — ikinci kez yazılmaz.
-      if (dolu.has(key)) continue;
-      dolu.add(key);
-      tiles.push({ r: rr, c: cc, l: harfler[i], o: sahip });
-    }
-  }
-  return tiles;
+export interface DemoBoard {
+  playerCount: number;
+  tiles: BoardSnapshotTile[];
+  /** İzole hamlelerin GERÇEKTEN yeni açtığı hücreler ("r,c"). */
+  bagimsizHucreler: string[];
 }
 
-export const DEMO_TILES_2: BoardSnapshotTile[] = uret(IKI_KISILIK);
-export const DEMO_TILES_4: BoardSnapshotTile[] = uret(DORT_KISILIK);
+/**
+ * Yerleşim listelerini taşlara çevirir. ÖNCE ana zincirler, SONRA izole
+ * hamleler yazılıyor: kesişen harfler ilk yazana ait kalsın diye (izole bir
+ * kelime var olan bir taşın üstünden geçtiğinde o taşın sahibi DEĞİŞMEZ,
+ * gerçek oyunda da öyle).
+ */
+function tahtaUret(playerCount: number, ana: Yerlesim, bagimsiz: Yerlesim): DemoBoard {
+  const tiles: BoardSnapshotTile[] = [];
+  const dolu = new Set<string>();
+  const bagimsizHucreler: string[] = [];
+  const yaz = (yerlesim: Yerlesim, izole: boolean): void => {
+    for (const [r, c, yon, kelime, sahip] of yerlesim) {
+      const harfler = Array.from(kelime);
+      for (let i = 0; i < harfler.length; i++) {
+        const rr = yon === 'yatay' ? r : r + i;
+        const cc = yon === 'yatay' ? c + i : c;
+        const key = `${rr},${cc}`;
+        // Kesişen kelimeler ortak harfi paylaşır — ikinci kez yazılmaz.
+        if (dolu.has(key)) continue;
+        dolu.add(key);
+        tiles.push({ r: rr, c: cc, l: harfler[i], o: sahip });
+        if (izole) bagimsizHucreler.push(key);
+      }
+    }
+  };
+  yaz(ana, false);
+  yaz(bagimsiz, true);
+  return { playerCount, tiles, bagimsizHucreler };
+}
 
-/** Doğrulama betiğinin (ve tanıtım sayfasının) tükettiği ortak liste. */
-export const DEMO_BOARDS: { playerCount: number; tiles: BoardSnapshotTile[] }[] = [
-  { playerCount: 2, tiles: DEMO_TILES_2 },
-  { playerCount: 4, tiles: DEMO_TILES_4 },
-];
+const IKI = tahtaUret(2, IKI_KISILIK, IKI_KISILIK_BAGIMSIZ);
+const DORT = tahtaUret(4, DORT_KISILIK, DORT_KISILIK_BAGIMSIZ);
+
+export const DEMO_TILES_2: BoardSnapshotTile[] = IKI.tiles;
+export const DEMO_TILES_4: BoardSnapshotTile[] = DORT.tiles;
+
+/** Doğrulama betiğinin tükettiği ortak liste. */
+export const DEMO_BOARDS: DemoBoard[] = [IKI, DORT];

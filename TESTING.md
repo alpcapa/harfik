@@ -1021,7 +1021,10 @@ maddeler var (bkz. `CLAUDE.md` → "Karşılama Katmanı").
       ortadaki altın X2 alanı ve tam merkezdeki turuncu X3 karesi
       görünmeli. Kelimelerin sözlükte olduğu `npm run verify-demo-board`
       ile ölçülüyor, ama tahtanın dar ekranda KIRPILMADIĞI gözle
-      bakılmalı.
+      bakılmalı. İki tahtada da BAŞKA renkte, tek başına duran taşlar
+      olmalı (izole hamleler) — o taşın ALTINDAKİ kare hâlâ bölge
+      sahibinin tonunda görünmeli; taşın rengi bölgeyi ele geçirmiş gibi
+      GÖRÜNMEMELİ.
 
 - [ ] **Sayfadaki tüm çağrı düğmeleri çalışıyor.** Kahraman "HEMEN
       OYNA", sayfa sonundaki "OYUNA BAŞLA" ve "GİRİŞ YAP" düğmelerinin
