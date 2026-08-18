@@ -706,6 +706,45 @@ davranışını değiştirmeden) hiçbir testi düşürmedi — yani duman testl
 gerçekten SEMANTİĞE bağlı olduğu, kozmetik bir diff'e değil, ayrıca
 doğrulandı.
 
+### Eklentinin derleme+import'u SERİLEŞTİRİLDİ (19 Ağustos 2026)
+
+**Web CI `main`'de bir kez kırmızıya döndü ve sebebi kod DEĞİL bir yarıştı**
+(koşu 32196434157, 18 testin 1'i). Dev sunucusu logunda tek satır:
+`[vite] Internal server error: mod.renderLandingHtml is not a function` —
+sayfanın başlığı `"Error"` olduğundan `toHaveTitle(/Kelimeki/)` düştü.
+
+**Kök sebep:** `scripts/landing-plugin.js`'in `transformIndexHtml`'i dev
+sunucusunda HER `/` isteğinde esbuild ile AYNI dosyaya
+(`node_modules/.cache/kelimeki/landing-render.mjs`) yazıp onu import ediyordu.
+Playwright `fullyParallel` ve CI'da **2 worker** ile koşuyor, yani ilk iki test
+sayfayı neredeyse aynı anda açıyor: derleme B, import A dosyayı okurken onu
+kesip baştan yazınca yarım okunan modülde export bulunmuyor. Zaman damgaları
+bunu doğruluyor — hata testler başladıktan **2 saniye sonra**, ilk testte.
+
+**Bunun bir flake olduğu ÖLÇÜLEREK kanıtlandı, varsayılmadı:** `main`'e merge
+edilen ağaç (`28b93ac`) ile PR başının (`4c3a7be`) diff'i **BOŞ**, ve PR
+koşusunda aynı testler geçmişti; ondan önceki 12 web-ci koşusunun hepsi yeşil.
+
+**Düzeltme — yeni bir mekanizma değil, projenin kendi kuralının tekrarı:**
+derleme+import artık tek bir promise zincirinden geçiyor (`loadLandingModule`),
+yani iki derleme asla üst üste binmiyor. Aynı satıra/dosyaya yazan ve onu okuyan
+iki iş serileşmedikçe sıra garanti DEĞİLDİR — `local_game_saves` yarışı
+(`enqueueSaveWrite`) ve portun `TableWriteQueue`'su aynı dersin başka
+yüzleri.
+
+**Doğrulama:** eklentinin `handler`'ı 12 kez EŞZAMANLI çağrılıp içeriye
+konan bir sayaçla ölçüldü — düzeltmeden sonra azami eşzamanlı derleme **1**,
+üretilen HTML'lerin hepsi doğru; **negatif eş:** serileştirme kaldırılınca aynı
+ölçüm **12** veriyor. Maliyet ölçüldü: derleme+import ~50 ms, yalnızca `/`
+isteklerinde ve yalnızca dev sunucusunda (derlemede `transformIndexHtml` tek kez
+çalışıyor). `npm run lint` + `npm run build` temiz, Playwright **18/18**.
+
+**Bu ortamda hatanın KENDİSİ yeniden üretilemedi** (120 eşzamanlı istek, sonra
+doğrudan 72 eşzamanlı derleme/import — sıfır hata; disk ve sayfa önbelleği
+burada CI runner'ından hızlı). Yani kapatılan şey gözlenen bir çökme değil
+ÖLÇÜLEN BİR YARIŞ PENCERESİ — bir daha görülürse ilk bakılacak yer bu değil,
+`vite.config.ts`'in başka bir `transformIndexHtml` tüketicisidir.
+
 ### `index.html` boyut kararı — ölçüldü, içerik KORUNDU
 
 | | değer |
