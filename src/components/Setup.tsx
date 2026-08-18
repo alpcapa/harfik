@@ -18,6 +18,8 @@ import { LogoMark } from './LogoMark';
 import { PlayerAvatarRow, type AvatarRowPlayer } from './PlayerAvatarRow';
 import { PlayerBadge } from './PlayerBadge';
 import { RecentGamesSection } from './RecentGamesSection';
+import { ShareIcon } from './RelationIcons';
+import { shareKelimekiLink } from '../utils/shareLink';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { OFFLINE_AI_SUGGESTION, OFFLINE_AI_CTA } from '../utils/offlineNotice';
 import { TermsModal } from './TermsModal';
@@ -420,29 +422,18 @@ export function Setup({
     setShowHelp(false);
   };
 
-  // Arkadaşa paylaşılan link ?ref=arkadas taşır — admin panelindeki
-  // "Ziyaretçi Kaynağı" dökümünde (bkz. src/utils/visitTracking.ts,
-  // admin_guest_source_breakdown) diğer sosyal kaynaklardan ayrı bir satır
-  // olarak görünür. Mobilde native paylaşım sayfası varsa onu kullanır;
-  // yoksa (çoğu masaüstü tarayıcı) linki panoya kopyalayıp kısa bir
-  // "Kopyalandı" geri bildirimi gösterir.
+  // `shareKelimekiLink` (`src/utils/shareLink.ts`) — Setup.tsx VE karşılama
+  // katmanının main.tsx'i (React DEĞİL, düz JS) AYNI fonksiyonu paylaşıyor;
+  // link `?ref=arkadas` taşımak ZORUNDA (admin panelindeki "Ziyaretçi
+  // Kaynağı"/"Kaynak Hunisi" dökümlerinin ziyaretçi ucunu besleyen TEK
+  // üretici) — kendi başına bir paylaşım yolu yazmak bu etiketi sessizce
+  // kaybettirebilirdi (18 Ağustos 2026'da tam bu tekrarlanan hatayı önlemek
+  // için ortak dosyaya çıkarıldı).
   const handleShare = async () => {
-    const url = `${window.location.origin}/?ref=arkadas`;
-    const text = 'Hemen ücretsiz dene!';
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'Kelimeki', text, url });
-      } catch {
-        // kullanıcı paylaşım sayfasını iptal etti — yoksay
-      }
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(url);
+    const result = await shareKelimekiLink();
+    if (result === 'copied') {
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2000);
-    } catch {
-      // panoya erişim yoksa sessizce yoksay
     }
   };
 
@@ -868,18 +859,23 @@ export function Setup({
           <button onClick={() => setShowPrivacy(true)} className="hover:underline active:opacity-70 transition-opacity">
             Gizlilik Politikası
           </button>
-          {/* "Paylaş" (18 Ağustos 2026, aynı gün üçüncü tur — kullanıcı: "Yanlış
-              anladın, buton istemedim. Tanıtım footerındakinin aynısını
-              istedim") — önceki tur bunu tam genişlikte, `Landing.tsx`'in
-              Oyna/Giriş CTA'sıyla aynı stilde bir BUTON yapmıştı; kullanıcı
-              bunun yerine footer'ın KENDİSİNDEKİ (Kullanım Koşulları/
-              Gizlilik Politikası) küçük metin linki stilini istedi. Üçüncü
-              madde olarak AYNI satıra, AYNI className'le eklendi — yeni bir
-              stil icat edilmedi. `handleShare` girişten bağımsız çalıştığından
-              (bkz. fonksiyonun kendi tanımı) `user &&` gibi bir koşula
-              BAĞLANMADI, misafir/girişli aynı satırı görüyor. */}
+          {/* "Paylaş" (18 Ağustos 2026, aynı gün üçüncü/dördüncü tur —
+              kullanıcı: "Yanlış anladın, buton istemedim. Tanıtım
+              footerındakinin aynısını istedim", sonra: "Daha önce tanıtım
+              sayfasına universal paylaş ikonlu paylaş linki koymuştuk...
+              İki tarafa da ikonlu şekilde koy") — küçük metin linki stili
+              (Kullanım Koşulları/Gizlilik Politikası ile AYNI className)
+              korunuyor, yalnızca başına `ShareIcon` eklendi — Landing.tsx'in
+              footer'ındaki AYNI ikonla (aşağı bkz.), `fill="currentColor"`
+              olduğundan satırın `text-muted` rengini otomatik miras alıyor.
+              `handleShare` girişten bağımsız çalıştığından `user &&` gibi
+              bir koşula BAĞLANMADI, misafir/girişli aynı satırı görüyor. */}
           <span>·</span>
-          <button onClick={handleShare} className="hover:underline active:opacity-70 transition-opacity">
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1 hover:underline active:opacity-70 transition-opacity"
+          >
+            <ShareIcon size={12} />
             {shareCopied ? 'Link kopyalandı!' : 'Paylaş'}
           </button>
         </div>

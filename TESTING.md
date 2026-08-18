@@ -1075,17 +1075,29 @@ doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
       ve "Gizlilik Politikası" → uygulamaya geçip DOĞRU pencereyi açmalı,
       pencere kapanınca URL'de `?kosullar=1`/`?gizlilik=1` KALMAMALI.
 
-- [ ] **Setup footer'ında üçüncü madde: "Paylaş" (18 Ağustos 2026).**
+- [ ] **Setup footer'ında üçüncü madde: ikonlu "Paylaş" (18 Ağustos 2026).**
       Footer'ın hukuki linkler satırı artık "Kullanım Koşulları · Gizlilik
-      Politikası · Paylaş" — üçü de AYNI küçük metin-linki görünümünde
+      Politikası · 🔗 Paylaş" — üçü de AYNI küçük metin-linki görünümünde
       (BÜYÜK/tam genişlikte bir buton DEĞİL — bir önceki denemede öyle
       yapılmıştı, kullanıcı "buton istemedim, tanıtım footerındakinin
-      aynısını istedim" diyerek düzeltti). Hem GİRİŞSİZ hem GİRİŞLİ hesapta
-      görünmeli (öncekinin aksine artık iki ayrı küçük metin linki YOK:
-      misafirde logonun altındaki "Nasıl oynanır? · Arkadaşınla paylaş"
-      satırından "Arkadaşınla paylaş" kalktı — yalnızca "Nasıl oynanır?"
-      kaldı; girişlide footer'da AYRICA duran eski koşullu "· Paylaş" de tek,
-      koşulsuz maddeye indirgendi). Dokununca native paylaşım sayfası
-      açılmalı (mobil) ya da link panoya kopyalanıp buton metni 2 saniyeliğine
-      "Link kopyalandı!" olmalı (masaüstü) — kopyalanan linkte `?ref=arkadas`
-      OLMALI.
+      aynısını istedim" diyerek düzeltti), yalnızca "Paylaş"ın önünde küçük
+      bir paylaşım ikonu var (kullanıcı: "İki tarafa da ikonlu şekilde koy").
+      Hem GİRİŞSİZ hem GİRİŞLİ hesapta görünmeli (öncekinin aksine artık iki
+      ayrı küçük metin linki YOK: misafirde logonun altındaki "Nasıl
+      oynanır? · Arkadaşınla paylaş" satırından "Arkadaşınla paylaş" kalktı
+      — yalnızca "Nasıl oynanır?" kaldı; girişlide footer'da AYRICA duran
+      eski koşullu "· Paylaş" de tek, koşulsuz maddeye indirgendi). Dokununca
+      native paylaşım sayfası açılmalı (mobil) ya da link panoya kopyalanıp
+      buton metni 2 saniyeliğine "Link kopyalandı!" olmalı (masaüstü) —
+      kopyalanan linkte `?ref=arkadas` OLMALI.
+- [ ] **Karşılama katmanının (tanıtım/Landing) footer'ında AYNI ikonlu
+      "Paylaş" (18 Ağustos 2026).** Katman görünürken (girişsiz, temiz
+      `localStorage`) sayfayı en alta kaydır → footer "Kullanım Koşulları ·
+      Gizlilik Politikası · 🔗 Paylaş" göstermeli, Setup'takiyle BİREBİR AYNI
+      ikon/stil. Landing.tsx React state/olay handler'ı barındırmadığından
+      (statik HTML) bu düğme `main.tsx`'teki `paylasiKur()` ile bağlanıyor —
+      dokununca uygulamaya HİÇ GEÇMEMELİ (`?giris=1`/`?kosullar=1` gibi bir
+      geçiş YOK), doğrudan katman modundayken native paylaşım/panoya
+      kopyalama açılmalı; kopyalamada buton metni 2 saniyeliğine "Link
+      kopyalandı!" olmalı ve ikon KAYBOLMAMALI (yalnızca metin span'i
+      değişiyor).

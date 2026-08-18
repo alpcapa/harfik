@@ -28,6 +28,7 @@
 import { LandingLogo, LandingLogoDefs } from './LandingLogo';
 import { GameBoardPreview } from '../components/GameBoardPreview';
 import { RankSeal } from '../components/RankSeal';
+import { ShareIcon } from '../components/RelationIcons';
 import { RANK_TIERS } from '../utils/leagueRank';
 import { PLAYER_COLORS } from '../game/constants';
 import { DEMO_TILES_2, DEMO_TILES_4 } from './demoBoard';
@@ -581,11 +582,18 @@ export function Landing() {
                 <Giris etiket="Giriş Yap" />
               </div>
 
-              {/* Hukuki alt satır — `Setup.tsx`'in kendi footer'ıyla AYNI iki
-                  bağlantı. Katmanda React state olmadığından modal burada
-                  açılamaz: düğmeler uygulamaya geçip ilgili pencereyi
-                  açtırıyor (`?kosullar=1` / `?gizlilik=1`, `?giris=1` ile
-                  birebir aynı kalıp — bkz. `main.tsx` → `gec`). */}
+              {/* Hukuki alt satır — `Setup.tsx`'in kendi footer'ıyla AYNI üç
+                  bağlantı (18 Ağustos 2026'ya kadar iki bağlantıydı, o gün
+                  "Paylaş" eklendi — kullanıcı: "İki tarafa da ikonlu şekilde
+                  koy"). Katmanda React state/olay handler'ı olmadığından
+                  (bkz. dosya başlığı) hiçbiri kendi tıklamasını burada işleyemez:
+                  Kullanım Koşulları/Gizlilik Politikası uygulamaya geçip ilgili
+                  pencereyi açtırıyor (`?kosullar=1` / `?gizlilik=1`, `?giris=1`
+                  ile birebir aynı kalıp — bkz. `main.tsx` → `gec`); "Paylaş" ise
+                  uygulamaya HİÇ geçmiyor — `main.tsx`'teki `paylasiKur()` doğrudan
+                  `shareKelimekiLink()`i (`src/utils/shareLink.ts`, Setup.tsx'in
+                  KENDİ "Paylaş" linkiyle AYNI fonksiyon) çağırıp native paylaşım/
+                  clipboard'ı burada, katman modunda iken açıyor. */}
               <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 pt-4 font-mono text-[10px] text-muted">
                 <button type="button" data-kelimeki-kosullar="" className="underline-offset-2 hover:underline">
                   Kullanım Koşulları
@@ -593,6 +601,21 @@ export function Landing() {
                 <span aria-hidden="true">·</span>
                 <button type="button" data-kelimeki-gizlilik="" className="underline-offset-2 hover:underline">
                   Gizlilik Politikası
+                </button>
+                <span aria-hidden="true">·</span>
+                <button
+                  type="button"
+                  id="karsilama-paylas"
+                  data-kelimeki-paylas=""
+                  className="flex items-center gap-1 underline-offset-2 hover:underline"
+                >
+                  <ShareIcon size={12} />
+                  {/* `main.tsx`'teki `paylasiKur()` yalnızca bu span'in metnini
+                      2 saniyeliğine "Link kopyalandı!" yapıyor (Setup.tsx'in
+                      `shareCopied` state'iyle AYNI geri bildirim) — düğmenin
+                      TAMAMINA `textContent` yazmak yukarıdaki `ShareIcon`'u da
+                      silerdi. */}
+                  <span data-kelimeki-paylas-metin>Paylaş</span>
                 </button>
               </div>
               <p className="font-mono text-[10px] text-muted" style={{ margin: 0 }}>

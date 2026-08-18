@@ -40,6 +40,7 @@ import './fonts/nunito-tile.css';
 import './index.css';
 
 import { SEEN_INTRO_KEY } from './utils/onboarding';
+import { shareKelimekiLink } from './utils/shareLink';
 import {
   captureUtmSource,
   getDeviceType,
@@ -162,6 +163,32 @@ function tahtaNoktalariKur(): void {
 }
 
 /**
+ * Footer'daki "Paylaş" (18 Ağustos 2026, kullanıcı isteği: "İki tarafa da
+ * ikonlu şekilde koy" — Setup.tsx'teki ikonlu "Paylaş"ın karşılığı burada
+ * eksikti). `bagla()`'nın aksine `gec()` ÇAĞIRMIYOR — bu düğme uygulamaya
+ * HİÇ geçmiyor, native paylaşım/panoya kopyalama doğrudan katman modundayken
+ * gerçekleşiyor. `shareKelimekiLink()` (`src/utils/shareLink.ts`) Setup.tsx'in
+ * KENDİ "Paylaş" linkiyle AYNI fonksiyon — `?ref=arkadas` etiketinin tek
+ * üreticisi olma özelliğini burada da koruyor, ayrı bir paylaşım yolu
+ * YAZILMADI.
+ */
+function paylasiKur(): void {
+  document.querySelectorAll<HTMLButtonElement>('[data-kelimeki-paylas]').forEach((el) => {
+    const metin = el.querySelector<HTMLElement>('[data-kelimeki-paylas-metin]');
+    el.addEventListener('click', () => {
+      void shareKelimekiLink().then((sonuc) => {
+        if (sonuc !== 'copied' || !metin) return;
+        const eskiMetin = metin.textContent;
+        metin.textContent = 'Link kopyalandı!';
+        setTimeout(() => {
+          metin.textContent = eskiMetin;
+        }, 2000);
+      });
+    });
+  });
+}
+
+/**
  * Misafir ziyaret pingi — karşılama katmanı modunda `App.tsx` hiç mount
  * edilmediğinden oradaki `logGuestVisit` effect'i çalışmaz ve admin
  * panelindeki Büyüme > Kullanıcı "M. Ziyaret" serisi SESSİZCE düşerdi;
@@ -237,4 +264,5 @@ if (document.documentElement.classList.contains('uygulama-modu')) {
   bagla('data-kelimeki-gizlilik', 'gizlilik');
   logoParkiKur();
   tahtaNoktalariKur();
+  paylasiKur();
 }
