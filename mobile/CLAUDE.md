@@ -1017,7 +1017,7 @@ listesinin TERSİ bir durum: burada web'in ÇÖZDÜĞÜ bir şeyi app'in eskisi
 gibi bırakması değil, web'de YENİ bir özellik var ve app'te hiç YOK — üç
 madde:
 
-1. **Kurulum ekranındaki `←` (tanıtım sayfasına dönüş) düğmesi web'e
+1. **Kurulum ekranındaki `<` (tanıtım sayfasına dönüş) düğmesi web'e
    özgüdür, BİLİNÇLİ ayrışmadır — porta EKLENMEYECEK.** Uygulamada
    karşılama katmanı hiç olmadığından bu düğmenin gideceği bir yer de yok;
    bir sonraki denetimde biri "port geride kalmış" deyip düğmeyi porta

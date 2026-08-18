@@ -989,7 +989,7 @@ gerekiyor).
 
 Otomatik testler (`npm run test`, `tests/smoke.spec.ts`, **17 test**) katmanın
 tüm yollarını kapsıyor (kapı dalları + geçiş + öznitelikle bağlama + logo
-park efekti + `←` düğmesiyle geri dönüş + hukuki pencereler + tahta
+park efekti + `<` düğmesiyle geri dönüş + hukuki pencereler + tahta
 şeridi + `FAQPage` JSON-LD/`h1` tekilliği) ve `.github/workflows/web-ci.yml`
 ile her PR'da/`main`e push'ta otomatik koşuyor — burada YALNIZCA bu ortamdan
 doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
@@ -1009,7 +1009,7 @@ doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
          katman GÖRÜNMELİ. (1) ile aynı cihazda art arda denenirse
          `display-mode` sinyalinin gerçekten ayrımı yaptığı, tesadüf
          olmadığı kanıtlanmış olur.
-      3. Setup'taki `←` düğmesine dokun → katman geri gelmeli;
+      3. Setup'taki `<` düğmesine dokun → katman geri gelmeli;
          oradan "Hemen Oyna"ya bas → tekrar Setup'a dönmeli.
 
 - [ ] **Başlık kilitli kalıyor + logo park efekti gerçek parmakla akıcı.**
@@ -1055,17 +1055,18 @@ doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
       (yarım kalmamalı). Otomatik test `scrollLeft`i JS ile ayarlıyor —
       gerçek dokunmatik jestin akıcılığını ve snap'i ölçemez.
 
-- [ ] **Kurulum ekranındaki `←` düğmesi geri döndürüyor — YALNIZCA
+- [ ] **Kurulum ekranındaki `<` düğmesi geri döndürüyor — YALNIZCA
       GİRİŞSİZ (misafir) hesapta.** "Hemen Oyna" ile uygulamaya geç, sol
-      üstteki `←` düğmesine dokun → karşılama katmanı geri gelmeli (sayfa
+      üstteki `<` düğmesine dokun → karşılama katmanı geri gelmeli (sayfa
       yeniden yükleniyor, bu normal). Sonra tekrar "Hemen Oyna"ya bas ve
       SAYFAYI YENİLE → uygulamada kalmalısın, katman geri GELMEMELİ
       (`?tanitim=1` URL'den temizleniyor). **18 Ağustos 2026'da ikon →
-      `← Tanıtım` metne, sonra AYNI GÜN çıplak `←`'ye döndü, sonra AYNI GÜN
-      girişli hesapta TAMAMEN GİZLENDİ** (bkz. `CLAUDE.md`, "Setup'taki `←`
+      `← Tanıtım` metne, sonra AYNI GÜN çıplak `←`'ye, sonra AYNI GÜN
+      girişli hesapta TAMAMEN GİZLENDİ, sonra AYNI GÜN büyütülüp `←`
+      glyph'i düz `<`'ye çevrildi** (bkz. `CLAUDE.md`, "Setup'taki `<`
       düğmesi artık YALNIZCA girişsiz kullanıcıda görünüyor").
       **Girişli hesapla dene — düğme HİÇ GÖRÜNMEMELİ:** Setup ekranını
-      girişli aç, sol üstte `←` OLMAMALI, sağda yalnızca avatar menüsü
+      girişli aç, sol üstte `<` OLMAMALI, sağda yalnızca avatar menüsü
       olmalı (satır ortalanmadan sağa yaslı kalmalı — kutunun tek çocuğu
       avatar). Girişsiz hesaba geç (Çıkış Yap) → aynı ekranda düğme GERİ
       GELMELİ.

@@ -1146,14 +1146,19 @@ export default function App() {
               tam bir yeniden yükleme — `?tanitim=1` kapıya "bu sefer katmanı
               göster" diyen tek sinyal (bkz. scripts/landing-plugin.js).
 
-              Düğme ÇIPLAK `←` (18 Ağustos 2026, aynı gün ikinci tur, kullanıcı
-              kararı) — erişilebilir ad `aria-label` üzerinden ("Tanıtım
-              sayfası") doğru anlatılıyor, yalnızca GÖRÜNÜR metin sadeleşti.
-              Punto/kutu `Modal.tsx`'in ✕ kapatma butonuyla AYNI ölçek
-              (`text-lg`/`text-xl` bandı, `w-7 h-7` dokunma kutusu) — kullanıcı
-              "bit kadar" (10px) bulunca aynı gün bir sonraki turda büyütüldü,
-              icat edilmiş yeni bir sayı değil, projedeki mevcut köşe-ikon
-              dilinin tekrarı.
+              Düğme ÇIPLAK bir ok karakteri (18 Ağustos 2026, aynı gün ikinci
+              tur, kullanıcı kararı) — erişilebilir ad `aria-label` üzerinden
+              ("Tanıtım sayfası") doğru anlatılıyor, yalnızca GÖRÜNÜR metin
+              sadeleşti. Punto/kutu `Modal.tsx`'in ✕ kapatma butonuyla AYNI
+              ölçek (`text-lg`/`text-xl` bandı, `w-7 h-7` dokunma kutusu) —
+              kullanıcı "bit kadar" (10px) bulunca aynı gün bir sonraki turda
+              büyütüldü, icat edilmiş yeni bir sayı değil, projedeki mevcut
+              köşe-ikon dilinin tekrarı.
+
+              Glyph `←` (ok Unicode karakteri) → düz `<` (18 Ağustos 2026,
+              aynı gün beşinci tur, kullanıcı: "O oku sevmedim. < kullan
+              yerine") — yalnızca görünen KARAKTER değişti, `aria-label`/
+              davranış/boyut AYNI kaldı.
 
               YALNIZCA GİRİŞSİZ kullanıcıda render ediliyor (aynı gün, üçüncü
               tur — kullanıcı sordu: "girişli kullanıcıda da geri ok çıkmamalı,
@@ -1175,7 +1180,7 @@ export default function App() {
               aria-label="Tanıtım sayfası"
               className="shrink-0 w-7 h-7 flex items-center justify-center rounded font-mono text-xl leading-none text-muted active:scale-90 transition-transform"
             >
-              ←
+              &lt;
             </a>
           )}
           <UserMenu />

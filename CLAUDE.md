@@ -643,7 +643,15 @@ dilinin tekrarı. **Ölçüldü** (derlenmiş CSS + Chromium, 360/390/834): kutu
 dolgusuyla hizalı (14px); ekran görüntüsüyle de doğrulandı, logo/açıklama
 paragrafıyla çakışma yok.
 
-### Setup'taki `←` düğmesi artık YALNIZCA girişsiz kullanıcıda görünüyor
+**Glyph (aynı gün, beşinci tur):** Kullanıcı Unicode ok karakterini
+(`←`) sevmedi — *"O oku sevmedim. < kullan yerine"*. Görünen karakter düz
+`<` (JSX'te `&lt;` olarak yazılıyor, çıplak `<` metin içinde bir etiket
+başlangıcıyla karışırdı) — `aria-label`/boyut/davranış hiçbiri değişmedi,
+yalnızca glyph. Bu projede artık "geri" göstergesi olarak İKİ farklı
+karakter var ve bu BİLEREK: Canlı oyun ekranındaki (`OnlineGameScreen.tsx`)
+kendi "←" göstergesi ayrı bir buton/senaryo, bu değişiklik ona dokunmadı.
+
+### Setup'taki `<` düğmesi artık YALNIZCA girişsiz kullanıcıda görünüyor
 
 Kullanıcı sordu (18 Ağustos 2026): *"girişli olarak setup ekranından geri
 yaptığımda giriş butonu çıkıyor tekrar. Bu normal mi?"* — kök sebep açıklandı
@@ -685,7 +693,7 @@ kapı bu durumda araya girmiyordu.
 bağlama sözleşmesi"), yani OYNA'ya bastıktan sonra **tarayıcının kendi Geri
 tuşu karşılama sayfasına DÖNMÜYOR** — siteden çıkıyor. `?tanitim=1` linki
 ise `pushState` gerektirmeyen düz bir `<a href>` navigasyonu, yani AYNI
-ekranda iki "geri" (tarayıcı Geri tuşu ile `←` düğmesi) farklı
+ekranda iki "geri" (tarayıcı Geri tuşu ile `<` düğmesi) farklı
 davranıyor. `pushState`e geçmek mümkün ama katman DOM'dan silindiğinden geri
 dönüş ayrıca bir `popstate` → yeniden yükleme zinciri gerektirir — nadir
 görülecek bir senaryo için orantısız. **BİLİNÇLİ OLARAK olduğu gibi
@@ -694,7 +702,7 @@ kalkışmamalı.
 
 ### İki platform artık görünür biçimde farklı — bilerek
 
-Uygulamada (Flutter portu) karşılama katmanı yok ve `←` düğmesinin
+Uygulamada (Flutter portu) karşılama katmanı yok ve `<` düğmesinin
 bir karşılığı da yok/olmayacak. Bu artık gözle görülür bir ayrışma
 (`mobile/CLAUDE.md`'ye üç maddelik not düşüldü — bkz. orada "Karşılama
 Katmanı — web'e özgü, bilinçli ayrışma"): (1) düğme web'e özgü, porta
@@ -937,7 +945,7 @@ mobile/         # Flutter portu — kelimeki_core (saf Dart motor) + üretilmiş
   **Bu iş sırasında bulunan gerçek bir bulgu — web'de İKİ ayrı yeşil var:** tailwind token `green: #16A34A` (`text-green` ile kullanılan; ✓ ikonu, "Senin Hamlen Bekleniyor" gibi metinler) ve `Board.tsx`'te hardcoded `#1FA05C` (sürükleme/hamle durumu dış hattı, `moveColor`). Flutter portu ikincisini KOPYALAYIP kendi tek `_green`'i yapmış ve 12 yerde kullanıyor — bazıları doğru (tahta/mesaj), bazıları değil (✓ ikonu web'de token'ı kullanıyor). ✓ ikonu portta düzeltildi; **kalan 11 kullanım yeri site site denetlenmedi** — ayrı bir tur gerektiriyor (bkz. `mobile/CLAUDE.md`, Parça 42).
   **Not:** bu buton yalnızca `PlayerScoreCard.tsx`'te var — `ScoreCard.tsx` kendi kartın olduğundan hiç arkadaşlık simgesi taşımıyor, yani "iki kopya birlikte güncellenmeli" gibi bir senkron yükü yok.
 - **`Setup`** — Oyun başlangıç ekranı. "Nasıl oynanır?" linki burada da bulunur.
-  **Karşılama sayfasına dönüş girişi web ve mobil portta BİLEREK farklı yerde** (18 Ağustos 2026): web başlıkta bir `←` düğmesi taşırken, yalnızca girişsiz kullanıcıda (bkz. "Karşılama Katmanı — Sertleştirme"), portta bu girişin planlanan karşılığı Setup başlığına DEĞİL hesap menüsüne gelecek — bkz. `mobile/CLAUDE.md`.
+  **Karşılama sayfasına dönüş girişi web ve mobil portta BİLEREK farklı yerde** (18 Ağustos 2026): web başlıkta bir `<` düğmesi taşırken, yalnızca girişsiz kullanıcıda (bkz. "Karşılama Katmanı — Sertleştirme"), portta bu girişin planlanan karşılığı Setup başlığına DEĞİL hesap menüsüne gelecek — bkz. `mobile/CLAUDE.md`.
   **Girişli kullanıcıda logo altındaki tanıtım metni/linkler kalktı, footer'a "Paylaş" eklendi (18 Ağustos 2026, kullanıcı isteği — "Bölüm 1: Girişli/Setup" spesifikasyonu):** Logonun hemen altındaki tanıtım paragrafı ("Kelimeler kurarak bölgeni genişlet…") ve "Nasıl oynanır? · Arkadaşınla paylaş" satırı artık **yalnızca misafir (girişsiz) kullanıcıda** görünüyor — girişli kullanıcı logonun ardından doğrudan "OYUN TİPİ" başlığını görüyor. Misafirin ekranı (ölçümler dahil) **byte-for-byte değişmedi**: logo→"OYUN TİPİ" arası hâlâ 152.50px (390px genişlikte) / 136.50px (834px genişlikte), footer hâlâ yalnızca "Kullanım Koşulları · Gizlilik Politikası". **Girişli için ölçülen değer: logo→"OYUN TİPİ" arası TAM 20.00px** — kapsayıcının kendi `flex flex-col gap-5`i bunu otomatik veriyor; çocukları (paragraf+link satırı) kaldırmak dışında **hiçbir telafi edici `mt-*`/`gap` EKLENMEDİ** — bir sonraki oturum "boşluk az/çok" diye bir marj eklemeye kalkışırsa bu, kapsayıcının kendi boşluğunu ikinci kez sayan bir hata olur.
   **Footer'a üçüncü madde: "Paylaş" (yalnızca girişli).** İsim BİLEREK "Arkadaşını Davet Et" DEĞİL — o, `FriendsModal`'daki AYRI bir özelliğin (kalıcı davet linki/token'ı, `create_friend_invite_link`) adı; burada tıklanan buton genel bir site/tahta linkini paylaşıyor, aynı ismi kullanmak iki farklı özelliği karıştırırdı. Buton **mevcut `handleShare` fonksiyonunu değiştirmeden çağırıyor** — yeni bir paylaşım akışı YAZILMADI — yani `?ref=arkadas` UTM parametresi (admin panelindeki "Kaynak Hunisi" analizi buna bağlı, bkz. "Büyüme > Kullanıcı") korunuyor. İkon `Icons.share`in (Material, U+E593 `share_baseline`) Flutter'ın KENDİ fontundan fontTools ile çıkarılmış path'i — `RelationIcons.tsx`'e yeni `ShareIcon` olarak eklendi, aynı dosyanın "codepoint'i hafızadan yazma" uyarısına uyularak önce çıkarılıp render edilerek görsel olarak doğrulandı, tahmin edilmedi. Ölçülen buton boyutu ~52.7×15px; footer satırı `gap-2`ten **`flex-wrap gap-x-2 gap-y-1`e** çevrildi — güvenlik ağı, ≈356px altındaki dar ekranlarda üç madde tek satıra sığmayınca ikinci satıra sarsın diye (negatif eş ile doğrulandı: `flex-wrap` geçici kaldırılınca 320px'te GERÇEKTEN yatay taşma oluştu, geri eklenince düzeldi). "Link kopyalandı!" (2 saniyelik clipboard-fallback geri bildirimi) DOKUNULMADI/KISALTILMADI — yalnızca dar masaüstü genişliklerinde kısa süreliğine iki satıra sarıyor, yatay taşma yok, ölçülüp güvenli bulundu.
   **Mobil port AYNI PR'da birebir uygulandı** (`mobile/CLAUDE.md`, Parça 110) — Setup'ın `SizedBox(height: 20)`'si (link satırından sonraki, "OYUN TİPİ"nin hemen üstündeki) zaten portun 20px'lik boşluğunu taşıyordu, girişlide koşulsuz bırakıldı; footer'daki `Row` `Wrap`e çevrildi ve "Paylaş" mevcut `_handleShare`'i (aynı `?ref=arkadas` linkini) çağırıyor. **İki taraf birlikte değişmek zorunda** — biri güncellenip diğeri unutulursa web↔port ayrışması bu projenin en sık tekrarlayan hata sınıfı olur.
