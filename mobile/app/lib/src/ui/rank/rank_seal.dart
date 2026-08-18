@@ -83,28 +83,29 @@ bool sealShowsRing(String text, {required bool compact}) =>
 /// Ortadaki metnin viewBox birimindeki puntosu (web `fontSizeFor` ile aynı
 /// merdiven).
 ///
-/// ÖLÇÜLMÜŞ tavanlar, tahmin değil: en geniş mürekkep kutusu M (Space
-/// Grotesk 700'de 0.91 em genişlik, 0.33 em yarı yükseklik) → merkezden
-/// azami uzaklık 0.562 em. Halka çizilirken iç kenar 10.35 (11 − 1.3/2),
-/// yani tek harf tavanı 18.4 → 18; halkasız (kompakt) iç sınır vadi −
-/// stroke/2 = 11.675 → tavan 20.8 → 20.5. Rakamlı glyph'lerde halka hiç
-/// çizilmediğinden sınır vadi: "+50" 0.815 em → 13, "1000" 1.0 → 10.5,
-/// "+1000" 1.29 → 8.5.
+/// ÖLÇÜLMÜŞ tavanlar, tahmin değil: web tarafında gerçek rozet 20× büyütülüp
+/// siyah zeminde render edildi ve beyaz harfin HER pikseli madalyon
+/// poligonuna karşı tarandı. Ölçülen paylar (viewBox birimi): tek harf
+/// halkanın iç kenarına en kötü Ç'de +1.28; banner glyph'lerinin en kötüsü
+/// "+1000" poligonun 0.28 dışında ama 2 birimlik kenar stroke'unun 0.72
+/// içinde. M PLUS'ın rakamları eski fonttan geniş olduğundan çok karakterli
+/// basamaklar küçüldü (13 → 12, 10.5 → 9.5, 8.5 → 8); tek harf AYNI kaldı.
 double sealFontSize(String text, {required bool compact}) {
   final n = text.length;
   if (n <= 1) return compact ? 20.5 : 18;
-  if (n <= 3) return 13;
-  if (n <= 4) return 10.5;
-  return 8.5;
+  if (n <= 3) return 12;
+  if (n <= 4) return 9.5;
+  return 8;
 }
 
-/// Büyük harflerin mürekkep tepesi, em cinsinden — ÖLÇÜLDÜ (Space Grotesk
-/// 700, Chromium `canvas.measureText`in `actualBoundingBox*` alanları):
-/// .65–.66 (Ş .72, standart taşma). Tek sabit olarak ortalama alındı.
-const double kSealInkAscEm = 0.66;
+/// Büyük harflerin mürekkep tepesi, em cinsinden — ÖLÇÜLDÜ (M PLUS Rounded 1c
+/// ExtraBold, Chromium `canvas.measureText`in `actualBoundingBox*` alanları):
+/// kademe harflerinde .740–.750. Aralık bu fontta çok dar olduğundan tek sabit
+/// yeterli; basılabilen HER glyph için azami merkezleme sapması 0.0075 em.
+const double kSealInkAscEm = 0.745;
 
-/// Sedillanın taban çizgisi ALTINA inmesi, em cinsinden (aynı ölçüm: .21–.22).
-const double kSealDescenderEm = 0.215;
+/// Sedillanın taban çizgisi ALTINA inmesi, em cinsinden (aynı ölçüm: Ç/Ş .220).
+const double kSealDescenderEm = 0.22;
 
 /// Bu rozette basılabilen TEK kuyruklu karakterler. Kademe harfleri kapalı
 /// bir küme (Ç M O U Ş D E Z T — `league_rank.dart`), banner glyph'leri ise
@@ -237,8 +238,9 @@ class _RankSealPainter extends CustomPainter {
       text: TextSpan(
         text: text,
         style: TextStyle(
-          fontFamily: 'SpaceGrotesk',
-          fontWeight: FontWeight.bold,
+          // Yalnızca bu rozete özgü, alt kümelenmiş font (bkz. pubspec.yaml).
+          fontFamily: 'MPlusRounded1c',
+          fontWeight: FontWeight.w800,
           fontSize: fontSize * s,
           color: Colors.white,
         ),

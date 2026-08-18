@@ -72,34 +72,49 @@ function darken(hex: string, f = 0.86) {
 }
 
 // ── Metin ─────────────────────────────────────────────────────────────────
-// Yazı tipi Space Mono'dan Space Grotesk 700'e çekildi (18 Ağustos 2026):
-// mono, madalyonun daralan iç kutusunda harfi gereksiz inceltiyordu. İkisi de
-// zaten yüklü aileler, ek ağ maliyeti yok.
+// Yazı tipi M PLUS Rounded 1c ExtraBold (18 Ağustos 2026, kullanıcı seçimi:
+// "daha basık ve yuvarlak hatlı bir font"). Altı aday GERÇEK rozetin içinde
+// render edilip gösterildi; seçilen bu. Font bu proje için YENİ ve alt
+// kümelenmiş olarak taşınıyor (6.3 KB) — bkz. src/fonts/mplus-rounded-seal.css
+// ve kök CLAUDE.md → "Rütbe Rozeti Fontu".
 //
-// Ölçüler ÖLÇÜLDÜ, tahmin değil (Chromium, gerçek Space Grotesk 700,
-// `canvas.measureText`in `actualBoundingBox*` alanları, em cinsinden):
-// büyük harflerin mürekkep tepesi .65–.66 (Ş .72, standart taşma),
-// sedillanın taban altına inmesi .21–.22. Tek sabit çift olarak ortalamalar
-// alındı; sapma en kötü harfte (Ş) 0.03 em, 34px'te ~0.4 px.
-const INK_ASC_EM = 0.66;
-const DESCENDER_EM = 0.215;
+// ⚠ Flutter portu AYNI fontu `assets/fonts/`ten yüklüyor; iki taraf da
+// aşağıdaki sabitleri ELLE paylaşıyor.
+//
+// Ölçüler ÖLÇÜLDÜ, tahmin değil (Chromium, gerçek font, `canvas.measureText`in
+// `actualBoundingBox*` alanları, em cinsinden): kademe harflerinin mürekkep
+// tepesi .740–.750, sedillanın (Ç/Ş) taban altına inmesi .220. Aralık bu fontta
+// çok dar olduğundan tek sabit çift yeterli — basılabilen HER glyph (dokuz
+// kademe harfi + tüm banner rakamları) için azami merkezleme sapması
+// 0.0075 em, yani 76px'lik banner mühründe 0.23 px (eski Space Grotesk'te
+// 0.03 em idi).
+const INK_ASC_EM = 0.745;
+const DESCENDER_EM = 0.22;
 const DESCENDER_CHARS = /[ÇŞ]/;
 const baselineY = (text: string, fontSize: number) =>
   CY + ((INK_ASC_EM - (DESCENDER_CHARS.test(text) ? DESCENDER_EM : 0)) / 2) * fontSize;
 
-// Punto merdiveni de ÖLÇÜLMÜŞ bir tavan: en geniş mürekkep kutusu M
-// (0.91 em genişlik, 0.33 em yarı yükseklik) → merkezden azami uzaklık
-// 0.562 em. Halka çizilirken iç kenar 10.35 (11 − 1.3/2), yani tek harf
-// için tavan 18.4 → 18; halkasız (kompakt) iç sınır vadi − stroke/2 =
-// 11.675 → tavan 20.8 → 20.5. Rakamlı glyph'lerde halka hiç çizilmediğinden
-// sınır vadi: "+50" 0.815 em/harf-kutusu → 13, "1000" 1.0 → 10.5,
-// "+1000" 1.29 → 8.5.
+// Punto merdiveni de ÖLÇÜLMÜŞ bir tavan — ve bu sefer hesapla DEĞİL, gerçek
+// rozet 20× büyütülüp SİYAH zeminde render edilip beyaz harfin HER pikseli
+// madalyon poligonuna karşı taranarak ölçüldü. Bu ayrım önemli: `textAnchor
+// ="middle"` mürekkebi değil ADVANCE kutusunu ortalar, yani yan boşlukları
+// asimetrik bir glyph ("+1000" gibi) hesaptan birkaç onda birim daha dışarı
+// taşar — yalnızca `measureText` ile hesaplanan bir tavan bunu göremiyordu.
+//
+// Ölçülen paylar (viewBox birimi): tek harf halkanın iç kenarına (11 − 1.3/2)
+// en kötü Ç'de +1.28; banner glyph'lerinin en kötüsü "+1000" poligonun 0.28
+// DIŞINDA ama madalyonun 2 birimlik kenar stroke'unun (aynı renk, dolguyla
+// birlikte tek bir disk) 0.72 İÇİNDE — geri kalan hepsi poligonun içinde.
+//
+// M PLUS'ın rakamları Space Grotesk'ten belirgin geniş olduğundan çok
+// karakterli basamaklar küçüldü (13 → 12, 10.5 → 9.5, 8.5 → 8); tek harf
+// AYNI kaldı (18 / kompakt 20.5 — ölçülen tavanlar hâlâ rahat tutuyor).
 function fontSizeFor(text: string, compact: boolean) {
   const n = text.length;
   if (n <= 1) return compact ? 20.5 : 18;
-  if (n <= 3) return 13;
-  if (n <= 4) return 10.5;
-  return 8.5;
+  if (n <= 3) return 12;
+  if (n <= 4) return 9.5;
+  return 8;
 }
 
 interface RankSealProps {
@@ -155,8 +170,8 @@ export function RankSeal({ tier, size = 20, glyph, className }: RankSealProps) {
         x="22"
         y={baselineY(text, fontSize)}
         textAnchor="middle"
-        fontFamily="'Space Grotesk', sans-serif"
-        fontWeight="700"
+        fontFamily="'M PLUS Rounded 1c', sans-serif"
+        fontWeight="800"
         fontSize={fontSize}
         fill="#fff"
       >

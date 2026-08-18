@@ -379,6 +379,12 @@ mobile/
                              # Uygulama paketinin İÇİNDE, çünkü Flutter paket
                              # kökü dışından asset kabul etmez — kelimeki_core
                              # testleri de TEK kopya kalsın diye buradan okur.
+    assets/fonts/            # Space Grotesk / Space Mono / Nunito (web'le aynı
+                             # aileler) + MPLUSRounded1c-ExtraBold-subset.ttf:
+                             # ÜRETİLMİŞ alt küme, YALNIZCA rütbe rozetinin
+                             # harfi; web'in src/fonts/files/ kopyasıyla aynı
+                             # subset (yeni bir kademe harfi eklenirse ikisi de
+                             # yeniden üretilmeli — bkz. Parça 114)
     lib/main.dart            # portre kilidi + bootstrap + runApp
     lib/src/
       bootstrap.dart         # AppServices: sözlük Future'ı + supabase + sürüm kapısı
@@ -5181,6 +5187,63 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Cihazda doğrulanacak:** iki `TESTING.md`'nin ilgili maddeleri yeni
        tasarıma göre yeniden yazıldı (eski "tırtık her boyda" maddesi artık
        geçersiz).
+     - ⚠️ **Bu parçanın font/punto/metrik notları AYNI GÜN Parça 114 ile
+       DEĞİŞTİ** — aşağıya bkz. (yazı tipi artık Space Grotesk 700 değil,
+       `kSealInkAscEm` .66 değil).
+
+   - ✅ **Parça 114 — rozetin İÇİNDEKİ font: M PLUS Rounded 1c ExtraBold
+     (18 Ağustos 2026, `rank_seal.dart`, `pubspec.yaml`,
+     `test/support/test_fonts.dart`, yeni `assets/fonts/…-subset.ttf`
+     + web `RankSeal.tsx`/`src/fonts/`, AYNI PR):** Parça 113'ün rozeti
+     onaylandıktan hemen sonra kullanıcı: *"Yanlız içindeki font hoşuma
+     gitmedi. Daha basık ve yuvarlak hatlı bir font bulalım. Alternatif
+     ver bir kaç tane."* Altı aday GERÇEK rozetin içinde render edilip
+     gösterildi (tarif edilerek değil — Parça 52'nin kum saati kararıyla
+     aynı yöntem), kullanıcı M PLUS Rounded 1c 800'ü seçti.
+     - **İKİ platform AYNI alt kümeyi taşıyor** (`pyftsubset`, 108 glyph):
+       web 6.3 KB woff2, port **14.4 KB ttf** (`assets/fonts/
+       MPLUSRounded1c-ExtraBold-subset.ttf`, `pubspec.yaml`'da
+       `MPlusRounded1c` / weight 800). Kaynak TTF 3.6 MB — alt kümeleme
+       zorunlu, dosya ÜRETİLMİŞ. Komut ve gerekçe kök `CLAUDE.md` →
+       "Rütbe Rozeti Fontu".
+     - **GİZLİ BAĞ — yeni bir kademe HARFİ eklenirse subset yeniden
+       üretilmeli.** Portta bunun bedeli web'den AĞIR: Flutter otomatik
+       font fallback YAPMAZ, kapsam dışı bir glyph **TOFU (boş kare)**
+       çizer (bu proje aynı dersi ✓/★/🤖'da üç kez yaşadı). Bugünkü
+       aralık ASCII + tüm Türkçe harfleri kapsıyor.
+     - **`test_fonts.dart` da yüklemek ZORUNDA:** `flutter_test` pubspec
+       fontlarını otomatik yüklemiyor (Parça 1'in dersi) — `loadAppFonts`
+       bu aileyi yüklemezse mühürdeki harf Ahem bloğuna döner ve
+       `league_rewards_test`in MÜREKKEP-ORTALAMA testi (piksel tarayan
+       test) sessizce anlamsızlaşır: blok her zaman kusursuz ortalıdır.
+     - **Sabitler yeniden ÖLÇÜLDÜ, taşınmadı** (web tarafında gerçek
+       fontla, `canvas.measureText`in `actualBoundingBox*` alanları):
+       `kSealInkAscEm` .66 → **.745**, `kSealDescenderEm` .215 → **.22**.
+       Bu fontta aralık çok dar — basılabilen HER glyph için azami
+       merkezleme sapması 0.0075 em (eski fontta 0.03 em).
+     - **Punto merdiveni DEĞİŞTİ ve bu sefer PİKSELLE ölçüldü:** tek harf
+       **18** / kompakt **20.5** (AYNI kaldı), 2-3 karakter 13 → **12**,
+       4 karakter 10.5 → **9.5**, 5+ 8.5 → **8**. M PLUS'ın rakamları
+       Space Grotesk'ten belirgin geniş. **Ders:** `textAnchor="middle"`
+       (ve `TextPainter`ın ortalaması) mürekkebi değil ADVANCE kutusunu
+       ortalar — yan boşlukları asimetrik bir glyph (`+1000`) yalnızca
+       `measureText`le hesaplanan bir tavandan taşar; ilk ladder (12/10/
+       8.5) tam bu yüzden beş glyph'te poligonu deliyordu ve bu ancak
+       gerçek rozet 20× büyütülüp beyaz pikselleri poligona karşı
+       taranarak görüldü.
+     - **Test:** `league_rewards_test.dart`'ın `sealFontSize` beklentileri
+       yeni merdivene çekildi (20.5 / 18 / 12 / 12 / 9.5 / 8). Mühür
+       geometrisi/ilkel sayımı DEĞİŞMEDİ.
+     - **Doğrulama sınırı — Parça 113'ün aynısı:** bu oturumda Flutter/
+       Dart SDK YOK, `flutter analyze`/`flutter test` KOŞULAMADI ve
+       **negatif eş kurulamadı** — Dart yarısının tek kanıtı CI. Web
+       yarısı tam doğrulandı (`tsc`, `npm run build`, Playwright 18/18,
+       gerçek üretim bileşeniyle 9 kademe × 4 boy + 8 banner glyph'i
+       render edilip gözle denetlendi; bütçe ham **254.096** / gzip
+       **22.248** bayt + ayrı 6.268 baytlık font asset'i).
+     - **Cihazda doğrulanacak:** mühürdeki harfin TOFU olmadığı ve iki
+       platformda AYNI göründüğü (özellikle Ç/Ş sedillası ve banner'ın
+       `+1000` glyph'i) — `mobile/TESTING.md` bölüm 13.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
@@ -5331,7 +5394,9 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   Flutter SDK'sız bir oturumda yazıldığından `dart run test/run_all.dart`
   hiç koşulmadı — CI dışında kanıtı yok.
 
-- **18 Ağustos (Parça 113) — yeni rütbe rozeti:** k-lig listesi (18px),
+- **18 Ağustos (Parça 113-114) — yeni rütbe rozeti + içindeki yeni font
+  (M PLUS Rounded 1c 800; harf TOFU olmamalı, iki platformda aynı
+  görünmeli — özellikle Ç/Ş ve banner'ın `+1000`'i):** k-lig listesi (18px),
   Skor Kartı/oyuncu kartı başlığı (34px) ve kutlama/düşüş banner'ı (76px)
   artık dalgalı disk + kurdele; eski tırtıklı mühür hiçbir yerde kalmamalı,
   küçük rozette halka YOK, banner'ın rakamlı glyph'lerinde de yok. Web ile

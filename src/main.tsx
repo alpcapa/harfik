@@ -35,6 +35,10 @@ window.__KELIMEKI_BUILD__ = __KELIMEKI_BUILD__;
 import './fonts/space-grotesk-inline.css';
 import './fonts/space-mono-inline.css';
 import './fonts/nunito-tile.css';
+// Rütbe rozetinin (RankSeal) içindeki harf — alt kümelenmiş 6.3 KB'lık
+// tek dosya. Karşılama katmanında da dokuz rozet çizildiğinden bu import
+// burada (boot.tsx'te DEĞİL) duruyor.
+import './fonts/mplus-rounded-seal.css';
 
 // Karşılama katmanı da Tailwind kullanıyor — bu import KALIR.
 import './index.css';

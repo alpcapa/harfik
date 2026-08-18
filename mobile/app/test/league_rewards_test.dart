@@ -584,16 +584,16 @@ void main() {
       expect(sealIsCompact(24), isFalse);
       expect(sealIsCompact(34), isFalse);
       expect(sealIsCompact(76), isFalse);
-      // Tek harf kompaktta BÜYÜR (halka çizilmediğinden iç sınır vadi):
-      // 20.5 vs tam boyda 18 — ikisi de ÖLÇÜLMÜŞ tavan (bkz. sealFontSize'ın
-      // doc yorumu; en geniş mürekkep kutusu M, 0.562 em azami yarıçap).
+      // Tek harf kompaktta BÜYÜR (halka çizilmediğinden sınır madalyonun
+      // kendi poligonu): 20.5 vs tam boyda 18 — ikisi de ÖLÇÜLMÜŞ tavan
+      // (bkz. sealFontSize'ın doc yorumu; en kötü glyph Ç, 0.558 em).
       expect(sealFontSize('Ç', compact: true), 20.5);
       expect(sealFontSize('Ç', compact: false), 18);
-      // Banner glyph'leri: halka HİÇ çizilmediğinden sınır vadi.
-      expect(sealFontSize('50', compact: false), 13);
-      expect(sealFontSize('+5', compact: false), 13);
-      expect(sealFontSize('+100', compact: false), 10.5);
-      expect(sealFontSize('+1000', compact: false), 8.5);
+      // Banner glyph'leri: halka HİÇ çizilmediğinden sınır poligon.
+      expect(sealFontSize('50', compact: false), 12);
+      expect(sealFontSize('+5', compact: false), 12);
+      expect(sealFontSize('+100', compact: false), 9.5);
+      expect(sealFontSize('+1000', compact: false), 8);
     });
 
     test('iç halka yalnızca tam boyda VE tek harfte çizilir', () {

@@ -162,6 +162,10 @@ src/
 │   ├── OzellikIkonlari.tsx # "Neler var" bölümündeki altı özellik ikonu — Material DEĞİL, ilkel şekillerden (portta karşılığı yok; bkz. dosya başlığı)
 │   ├── demoBoard.ts    # tanıtım tahtalarının (2 ve 4 kişilik) taşları — gerçek Board.tsx ile render edilir, npm run verify-demo-board ile sözlüğe karşı doğrulanır
 │   └── render.tsx      # renderToStaticMarkup sarmalayıcısı — Vite eklentisi (scripts/landing-plugin.js) Node'da çağırır
+├── fonts/
+│   ├── *.css              # kendi sunucumuzdan servis edilen @font-face tanımları (main.tsx import eder)
+│   └── files/             # .woff2 dosyaları — mplus-rounded-1c-800-subset.woff2 ÜRETİLMİŞ
+│                          # (yalnızca RankSeal'ın harfi; yeniden üretimi: CLAUDE.md → "Rütbe Rozeti Fontu")
 ├── hooks/
 │   ├── useAuth.tsx        # Supabase auth context
 │   ├── useModalA11y.ts    # modal odak hapsi, Escape, dialog yığını
@@ -192,6 +196,9 @@ mobile/                    # Flutter (iOS+Android) portu — ayrıntı: mobile/C
     │                      # src/data/words.ts — npm run generate-golden-vectors)
     │                      # ve meanings.db (npm run generate-meanings-db)
     └── assets/fonts/      # Space Grotesk / Space Mono / Nunito (web'le aynı aileler)
+                           # + MPLUSRounded1c-ExtraBold-subset.ttf — YALNIZCA k-lig
+                           # rütbe rozetinin harfi; ÜRETİLMİŞ (alt kümelenmiş),
+                           # web'in src/fonts/files/ kopyasıyla aynı subset
 ```
 
 ## Supabase (opsiyonel)

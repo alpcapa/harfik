@@ -115,3 +115,11 @@ flutter:
           weight: 400
         - asset: assets/fonts/SpaceMono-Bold.ttf
           weight: 700
+    # YALNIZCA k-lig rütbe rozetinin (rank_seal.dart) ortasındaki harf/rakam.
+    # ÜRETİLMİŞ/ALT KÜMELENMİŞ dosya (3.6 MB → 14 KB) — elle düzenlenmez,
+    # yeniden üretme komutu kök CLAUDE.md → "Rütbe Rozeti Fontu". Web tarafı
+    # AYNI alt kümenin woff2'sini kullanıyor (src/fonts/mplus-rounded-seal.css).
+    - family: MPlusRounded1c
+      fonts:
+        - asset: assets/fonts/MPLUSRounded1c-ExtraBold-subset.ttf
+          weight: 800

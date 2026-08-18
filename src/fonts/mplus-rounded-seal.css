@@ -1,0 +1,29 @@
+/* M PLUS Rounded 1c ExtraBold — YALNIZCA k-lig rütbe rozetinin (RankSeal)
+   ortasındaki harf/rakam için. Kullanıcı isteği (18 Ağustos 2026): rozetin
+   içindeki yazı "daha basık ve yuvarlak hatlı" olsun; altı aday gerçek
+   rozetin içinde render edilip bu seçildi.
+
+   ⚠ ÜRETİLMİŞ DOSYA — `files/mplus-rounded-1c-800-subset.woff2` elle
+   düzenlenmez. Kaynak fontun TAMAMI 3.6 MB (8201 glyph — Japonca bir
+   font); yalnızca Basic Latin + Türkçe ekleri alt kümelenerek 6.3 KB'a
+   indirildi. Yeniden üretme komutu ve gerekçesi: kök CLAUDE.md →
+   "Rütbe Rozeti Fontu". YENİ BİR KADEME HARFİ EKLENİRSE (bkz.
+   src/utils/leagueRank.ts) alt küme yeniden üretilmeli — kapsam dışı bir
+   harf tarayıcıda yedek fonta düşer ve rozet öteki kademelerden farklı
+   görünür.
+
+   unicode-range BİLEREK YOK: bu tek bir dosya (latin + latin-ext bir
+   arada), yani nunito-tile.css'teki "yanlış alt kümede aranıp sistem
+   fontuna düşme" tuzağı burada yapısal olarak oluşamaz — tarayıcı
+   kapsam dışı bir karakteri normal yedek zinciriyle çözer.
+
+   font-display: swap — öteki fontlarla aynı; rozet ilk boyamada yedek
+   fontla çıkıp sonra bu fonta geçebilir. Kabul edilen bedel: harf
+   madalyonun İÇİNDE ve ortalanmış, yani sıçrama düzeni kaydırmıyor. */
+@font-face {
+  font-family: 'M PLUS Rounded 1c';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('./files/mplus-rounded-1c-800-subset.woff2') format('woff2');
+}

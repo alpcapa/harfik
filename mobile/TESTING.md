@@ -1511,6 +1511,12 @@ listesi kök `TESTING.md` bölüm 10.
       orada daha büyük). Banner'ın rakamlı glyph'lerinde ("+1000") halka
       hiçbir boyda çizilmez. **Web'deki rozetle yan yana bak — ikisi
       BİREBİR aynı olmalı** (aynı sabitler iki dosyada elle senkron).
+- [ ] **Harfin yazı tipi: M PLUS Rounded 1c 800 (18 Ağustos 2026 — öncesi
+      Space Grotesk).** Harf yuvarlak hatlı ve basık görünmeli. **Portta
+      asıl risk TOFU:** Flutter otomatik font fallback YAPMAZ, yani alt
+      kümede olmayan bir glyph BOŞ KARE olarak çizilir — özellikle Ç ve Ş
+      mühürlerine bak. Rakamlı banner glyph'i ("+1000") madalyonun dışına
+      TAŞMAMALI. Web'deki rozetle yan yana bak: aynı font, aynı punto.
 - [ ] **Harf dikeyde ortalı — kuyruklu olanlar dahil.** Ç ve Ş (sedillalı)
       mühürlerde harf, dairenin dikey ORTASINDA durmalı — alta kaçmış
       GÖRÜNMEMELİ. Ç ile M/O/U/D aynı hizada olmalı. Üç boyu da kontrol et

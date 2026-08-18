@@ -940,6 +940,13 @@ gerekiyor).
       açık renkli ince bir halka VAR, 18px'lik k-lig satırlarında YOK
       (harf orada daha büyük). Banner'ın rakamlı glyph'lerinde ("+1000")
       halka HİÇBİR boyda çizilmez — rakamlar halkaya sığmıyor.
+- [ ] **Harfin yazı tipi: yuvarlak hatlı (M PLUS Rounded 1c 800, 18 Ağustos
+      2026 — öncesi Space Grotesk).** Harf basık ve yuvarlak köşeli
+      görünmeli; kutu/tofu ya da düz bir yedek fonta düşmüş ince bir glyph
+      GÖRÜNMEMELİ. En kolay kontrolü rakamlarda yapılır: banner'ın
+      "+1000"/"10000" glyph'i madalyonun dışına TAŞMAMALI. (Font
+      `font-display: swap` ile geliyor; ilk boyamada bir kare yedek fontla
+      çizilmesi normal, kalıcı olması değil.)
 - [ ] **Harf dikeyde ortalı — kuyruklu olanlar dahil.** Ç ve Ş (sedillalı)
       dairede M/O/U/D ile AYNI ölçüde ortalı durmalı; alta yakın/aşağı
       kaymış görünmemeli. Kolay kontrol: k-lig listesinde Çaylak ve
