@@ -1109,12 +1109,13 @@ doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
       legend'ı geniş ekranda da ortalanmalı (sabit iki sütun değil, akan
       satır) ve dar ekranda kırılmadan sarmalı.
 
-- [ ] **Sayfadaki tüm çağrı düğmeleri çalışıyor.** Kahraman "HEMEN
-      OYNA", sayfa sonundaki "OYUNA BAŞLA" ve "GİRİŞ YAP" düğmelerinin
-      üçü de uygulamaya geçirmeli (ikincisi giriş penceresini açmalı).
-      Yeni bir düğme eklendiyse `data-kelimeki-oyna` / `data-kelimeki-giris`
-      özniteliğini taşıdığından emin ol — id ile eklenen bir düğme
-      SESSİZCE ölü kalır.
+- [ ] **Sayfadaki tüm çağrı düğmeleri çalışıyor.** Kahraman "HEMEN OYNA"
+      ve sayfa sonundaki "OYUNA BAŞLA" uygulamaya geçirmeli; şeritteki
+      "GİRİŞ" giriş penceresini açmalı. **Sayfa sonunda ARTIK ikinci bir
+      GİRİŞ düğmesi YOK** (18 Ağustos 2026, kullanıcı isteği) — orada
+      yalnızca "OYUNA BAŞLA" olmalı. Yeni bir düğme eklendiyse
+      `data-kelimeki-oyna` / `data-kelimeki-giris` özniteliğini
+      taşıdığından emin ol — id ile eklenen bir düğme SESSİZCE ölü kalır.
 
 - [ ] **SSS kutuları açılıp kapanıyor.** Native `<details>` kullanılıyor,
       JS yok; soruya dokununca cevap açılmalı.

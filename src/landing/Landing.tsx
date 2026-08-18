@@ -92,7 +92,8 @@ const KELIME_SAYISI = '63.000';
 export const SSS: { soru: string; cevap: string }[] = [
   {
     soru: 'Ücretli mi?',
-    cevap: 'Hayır. Kelimeki tamamen ücretsiz; reklam ya da oyun içi satın alma yok.',
+    cevap:
+      'Hayır. Kelimeki tamamen ücretsiz; reklam ya da oyun içi satın alma olmayan bir oyundur.',
   },
   {
     soru: 'Üye olmadan oynayabilir miyim?',
@@ -101,7 +102,7 @@ export const SSS: { soru: string; cevap: string }[] = [
   },
   {
     soru: 'Hangi kelimeler geçerli?',
-    cevap: `TDK Güncel Türkçe Sözlük kaynaklı ${KELIME_SAYISI}'den fazla madde. Özel isimler ve çok sözcüklü maddeler listede yok. Tahtadaki bir kelimeye dokunarak anlamını da görebilirsin.`,
+    cevap: `TDK Güncel Türkçe Sözlük kaynaklı ${KELIME_SAYISI}'den fazla kelime. Özel isimler ve çok sözcüklü kelimeler listede yok. İstediğin zaman tahtadaki bir kelimeye dokunarak anlamını da görebilirsin.`,
   },
   {
     soru: 'Klasik kelime oyunlarından farkı ne?',
@@ -129,18 +130,6 @@ function Oyna({ etiket, id }: { etiket: string; id?: string }) {
       type="button"
       data-kelimeki-oyna=""
       className="w-full btn-raised bg-accent border border-accent text-white font-mono font-bold uppercase tracking-[1px] rounded-xl px-5 py-3.5 text-[13px] leading-none active:scale-[0.97] transition-transform"
-    >
-      {etiket}
-    </button>
-  );
-}
-
-function Giris({ etiket }: { etiket: string }) {
-  return (
-    <button
-      type="button"
-      data-kelimeki-giris=""
-      className="w-full btn-raised-neutral bg-panel border border-border text-text font-mono font-bold uppercase tracking-[1px] rounded-xl px-5 py-3.5 text-[13px] leading-none active:scale-[0.97] transition-transform"
     >
       {etiket}
     </button>
@@ -407,7 +396,7 @@ export function Landing() {
               </h1>
 
               <p className="text-[19px] font-bold leading-snug" style={{ margin: 0 }}>
-                Kelime kur, bölgeni büyüt, tahtayı ele geçir.
+                Kelime bul, bölgeni büyüt, tahtayı ele geçir.
               </p>
 
               <p className="text-[13px] leading-relaxed text-muted" style={{ margin: 0 }}>
@@ -571,25 +560,25 @@ export function Landing() {
                 <Adim
                   no={1}
                   baslik="Köşenden başla"
-                  metin="İlk kelimen köşendeki ev karesine değmek zorunda. Herkes kendi köşesinden açılır."
+                  metin="İlk kelimen köşendeki ev karesine değmek zorunda. Herkes kendi köşesinden başlar."
                   izgara={['AAA~.', '~~~~.', '~~~~.', '~~~~.', '.....']}
                 />
                 <Adim
                   no={2}
                   baslik="Bölgeni büyüt"
-                  metin="Köşenden kesintisiz zincirlenen her taş bölgeni büyütür. Bölge sabit değil; oynadıkça yayılır."
+                  metin="Köşenden kesintisiz bağlanan her taş bölgeni büyütür. Bölgen sabit bir alan değildir, sen oynadıkça büyür."
                   izgara={['AAAA.', '~~~A.', '~~~A.', '~~~A.', '...A.']}
                 />
                 <Adim
                   no={3}
                   baslik="Merkeze oyna"
-                  metin="Ortadaki 5×5 bölge kelime puanını ikiye, tam merkezdeki tek kare üçe katlar."
+                  metin="Ortadaki 5×5 bölge kelime puanını ikiye, tam merkezdeki tek kare ise üçe katlar. Oraya git!"
                   izgara={['..A..', '.###.', '.#*#.', '.###.', '.....']}
                 />
                 <Adim
                   no={4}
                   baslik="Sınır ihlal vergisine dikkat!"
-                  metin="İlk hamle dışında rakibin bölgesine değen/giren hamle de yapabilirsin ama vergisini ödersin, unutma!"
+                  metin="İlk hamleden sonra istediğin zaman rakibin bölgesine değen/giren hamle yapabilirsin; ama vergisini ödersin, unutma!"
                   izgara={['.....', '.bbb.', '.bAb.', '.bbb.', '.....']}
                 />
               </ol>
@@ -606,7 +595,7 @@ export function Landing() {
                 <Ozellik
                   ikon={<IkiKisiIkon />}
                   baslik="Arkadaşınla canlı oyna"
-                  metin="Oyun daveti gönder, ister canlı, ister 48 saat içinde hamle yaparak rahatça oyna."
+                  metin="Oyun aç, davet gönder, ister canlı, ister 48 saat içinde hamle yaparak rahatça oyna."
                 />
                 <Ozellik
                   ikon={<SohbetIkon />}
@@ -616,17 +605,17 @@ export function Landing() {
                 <Ozellik
                   ikon={<CevrimdisiIkon />}
                   baslik="Çevrimdışı da oynar"
-                  metin="Yapay zekaya karşı internet bağlantısı olmadan da oynayabilirsin."
+                  metin="Yapay zekaya karşı internet bağlantısı olmadan da oynayabilirsin. Canlı oyun için İnternet gerekiyor."
                 />
                 <Ozellik
                   ikon={<TahtaIkon />}
                   baslik="Kelime denemesi"
-                  metin="Sıra sendeyken veya rakipteyken tahtada kelime denemeleri yapabilirsin."
+                  metin="Sıra sendeyken veya rakipteyken tahtada her zaman kelime denemeleri yapabilirsin."
                 />
                 <Ozellik
                   ikon={<MadalyaIkon />}
                   baslik="k-lig ve rütbeler"
-                  metin="Kazandıkça puan toplarsın; eşikleri geçtikçe rütbeni yükseltir, puanları toplarsın."
+                  metin="Kazandıkça puan toplar; puan topladıkça eşikleri geçip rütbeni yükseltir, bonusları kaparsın."
                 />
               </ul>
             </Bolum>
@@ -673,7 +662,6 @@ export function Landing() {
               </p>
               <div className="w-full flex flex-col gap-2 pt-1">
                 <Oyna etiket="Oyuna Başla" />
-                <Giris etiket="Giriş Yap" />
               </div>
 
               {/* Hukuki alt satır — `Setup.tsx`'in kendi footer'ıyla AYNI üç
