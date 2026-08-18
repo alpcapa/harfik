@@ -31,6 +31,7 @@ import { trLower, trUpper, trCompare } from '../src/utils/turkish';
 import { preloadWordSet } from '../src/data/wordSetLoader';
 import { WORD_LIST } from '../src/data/words';
 import { TILE_DATA, letterPoints } from '../src/data/tiles';
+import { remainingTiles } from '../src/utils/bag';
 import { key, type Board, type Placed } from '../src/utils/board';
 
 const ROOT = process.cwd();
@@ -611,6 +612,77 @@ function rankingVectors(): void {
   console.log(`ranking: ${cases.length} durum`);
 }
 
+/**
+ * "Kalan Taşlar" (TORBA) dökümü — `remainingTiles`.
+ *
+ * 18 Ağustos 2026'ya kadar bu fonksiyonun HİÇ parite kapsaması yoktu ve tam o
+ * gün iki tarafta birden aynı hata bulundu: bu turda tahtaya konmuş ama henüz
+ * onaylanmamış taşlar (`state.placed`) hiçbir kovaya düşmediğinden "dışarıda"
+ * (rakibin elinde) sayılıyordu. Vektörler bekleyen taşlı ve jokerli durumları
+ * bilerek içeriyor.
+ */
+function remainingTilesVectors(): void {
+  const rnd = mulberry32(777);
+  const letters = Object.keys(TILE_DATA);
+  const mk = (letter: string, wild: boolean): Tile =>
+    wild
+      ? ({ letter: '?', pts: 0, wild: true, wildLetter: letter } as Tile)
+      : ({ letter, pts: TILE_DATA[letter].pts } as Tile);
+
+  const cases: Record<string, unknown>[] = [];
+  for (let i = 0; i < 60; i++) {
+    // Dağılımdan rastgele bir alt küme çekip tahta / raf / bekleyen diye böl.
+    const pool: string[] = [];
+    for (const [letter, { cnt }] of Object.entries(TILE_DATA)) {
+      for (let k = 0; k < cnt; k++) pool.push(letter);
+    }
+    for (let k = pool.length - 1; k > 0; k--) {
+      const j = Math.floor(rnd() * (k + 1));
+      [pool[k], pool[j]] = [pool[j], pool[k]];
+    }
+    const nBoard = Math.floor(rnd() * 90);
+    const nRack = Math.floor(rnd() * 8);
+    const nPlaced = Math.floor(rnd() * 5);
+
+    const board: (Tile | null)[][] = Array.from({ length: 13 }, () =>
+      Array.from({ length: 13 }, () => null),
+    );
+    const boardEnc: unknown[] = [];
+    for (let k = 0; k < nBoard; k++) {
+      const letter = pool[k];
+      // Jokerler tahtada her zaman bir harfe çevrilmiş görünür.
+      const wild = letter === '?';
+      const shown = wild ? letters[1 + Math.floor(rnd() * (letters.length - 1))] : letter;
+      const tile = mk(wild ? shown : letter, wild);
+      const r = Math.floor(k / 13);
+      const c = k % 13;
+      board[r][c] = tile;
+      boardEnc.push([r, c, wild ? shown : letter, wild]);
+    }
+    const rack: Tile[] = [];
+    const rackEnc: unknown[] = [];
+    for (let k = nBoard; k < nBoard + nRack; k++) {
+      const letter = pool[k];
+      rack.push(mk(letter, false)); // raftaki joker HAM '?' olarak durur
+      rackEnc.push([letter, false]);
+    }
+    const placed: Tile[] = [];
+    const placedEnc: unknown[] = [];
+    for (let k = nBoard + nRack; k < nBoard + nRack + nPlaced; k++) {
+      const letter = pool[k];
+      const wild = letter === '?';
+      const shown = wild ? letters[1 + Math.floor(rnd() * (letters.length - 1))] : letter;
+      placed.push(mk(wild ? shown : letter, wild));
+      placedEnc.push([wild ? shown : letter, wild]);
+    }
+
+    const rows = remainingTiles(board, rack, placed).map((r) => [r.letter, r.pts, r.count]);
+    cases.push({ board: boardEnc, rack: rackEnc, placed: placedEnc, rows });
+  }
+  writeFileSync(join(GOLDENS, 'remaining_tiles.json'), JSON.stringify({ cases }));
+  console.log(`remaining_tiles: ${cases.length} durum`);
+}
+
 function turkishVectors(): void {
   const words = [
     'İSTANBUL', 'istanbul', 'DİYARBAKIR', 'IĞDIR', 'ırmak', 'IRMAK', 'içim',
@@ -654,6 +726,7 @@ async function main(): Promise<void> {
   invasionFormulaVectors();
   rankingVectors();
   scoringVectors();
+  remainingTilesVectors();
   aiScenario('reducer_ai2', 12345, 2);
   aiScenario('reducer_ai4', 99, 4, 8); // 8. hamleden önce 2. koltuk teslim olur
   humanScenario();

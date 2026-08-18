@@ -39,13 +39,20 @@ function tileKey(t: Tile): string {
 }
 
 /**
- * "Dışarıda" kalan taşları döndürür: tüm dağılımdan tahtadaki taşlar ve
- * verilen rafftaki (bakan oyuncunun) taşlar çıkarılır. Sonuçta torbadaki
- * ve diğer oyuncuların elindeki (görünmeyen) taşlar kalır.
+ * "Dışarıda" kalan taşları döndürür: tüm dağılımdan tahtadaki taşlar,
+ * verilen raftaki (bakan oyuncunun) taşlar ve bu turda tahtaya konmuş ama
+ * henüz onaylanmamış taşlar çıkarılır. Sonuçta torbadaki ve diğer
+ * oyuncuların elindeki (görünmeyen) taşlar kalır.
+ *
+ * `placedTiles` ATLANMAMALI: bekleyen taşlar `PLACE_TILE` ile raftan ÇIKAR
+ * ama `board`a ancak `PLAY` onayıyla yazılır (`state.placed`da beklerler) —
+ * sayılmazlarsa iki kova arasındaki bu boşlukta "dışarıda" görünür ve
+ * rakibin elinde sanılırlar (18 Ağustos 2026'da bildirilen hata).
  */
 export function remainingTiles(
   board: (Tile | null)[][],
   myRack: Tile[],
+  placedTiles: Tile[] = [],
 ): RemainingLetter[] {
   const counts: Record<string, number> = {};
   for (const [letter, { cnt }] of Object.entries(TILE_DATA)) counts[letter] = cnt;
@@ -56,6 +63,7 @@ export function remainingTiles(
   };
   for (const row of board) for (const cell of row) if (cell) dec(cell);
   for (const t of myRack) dec(t);
+  for (const t of placedTiles) dec(t);
 
   return Object.entries(TILE_DATA).map(([letter, { pts }]) => ({
     letter,

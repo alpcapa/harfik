@@ -72,6 +72,11 @@ jobs:
 
       - run: npm run lint
 
+      # Saf fonksiyon kontrolü: "Kalan Taşlar" dökümü ile oyun sonu raf
+      # düşümü arasındaki değişmez (bkz. kök `CLAUDE.md` → "Kalan Taşlar").
+      # Playwright'a gerek yok, saniyeler sürüyor — lint'in hemen yanında.
+      - run: npm run verify-remaining-tiles
+
       - run: npm run build
 
       # Bu ortamdaki geliştirme oturumunun aksine (bkz. playwright.config.ts),

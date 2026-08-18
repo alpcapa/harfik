@@ -83,6 +83,21 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       dönmek (senkron) ya da başka ekrana geçip dönmek metni DEĞİŞTİRMEMELİ;
       özellikle rakibin son hamle özeti ("X: +N puan …") görünmemeli
       (6 Ağustos 2026'da bulunan üç-farklı-mesaj hatası).
+- [ ] **"Kalan Taşlar" (TORBA) dökümü bekleyen taşları rakibe yazmamalı
+      (18 Ağustos 2026'da bulunan hata).** Tahtaya birkaç taş koy ama OYNA'ya
+      **basma**, sonra `TORBA` düğmesine dokun: "toplam N taş dışarıda"
+      sayısı, taşları koymadan ÖNCEKİ sayıyla **aynı** kalmalı (her bekleyen
+      taş için 1 artıyorsa hata geri gelmiş demektir). Taşları rafa geri
+      alınca da aynı sayı. **Joker eşi:** bir jokeri bir harfe (ör. `A`)
+      çevirip masaya koy — dökümdeki `A` sayısı artmamalı, dışarıdaki joker
+      sayısı 1 azalmalı.
+      **Asıl değişmez oyun sonunda ölçülür:** torba boşken, son hamleni
+      onaylamadan hemen önce dökümdeki toplam PUANI hesapla (adet × puan),
+      sonra OYNA'ya bas — bitiş kartında rakibin yanında yazan negatif sayı
+      o puanla **birebir aynı** olmalı. Kullanıcı bu hatayı tam böyle
+      yakaladı (10 saydı, kartta -7 gördü).
+      **İKİ ekranda da koş:** yerel/YZ oyunu VE Canlı oyun (Canlı'da ayrıca
+      sıra sende DEĞİLKEN yapılan "egzersiz" yerleştirmeleriyle).
 - [ ] **Bingo bonusu mesajda yazıyor (17 Ağustos 2026).** Rafın 7 taşını
       birden koyup OYNA'ya bas → mesaj satırında `(Bingo bonusu +25)`
       görünmeli. **DÖRT yerde ayrı ayrı koş, biri ötekini kanıtlamaz:**

@@ -27,7 +27,11 @@ class RemainingTilesModal extends StatelessWidget {
   Widget build(BuildContext context) {
     final myRack =
         myIndex < state.players.length ? state.players[myIndex].rack : <Tile>[];
-    final rows = remainingTiles(state.board, myRack);
+    // Bekleyen (bu turda konmuş, henüz onaylanmamış) taşlar da ÇIKARILMALI —
+    // raftan çıkmış ama tahtaya yazılmamış olduklarından, verilmezse rakibin
+    // elinde sayılırlar (bkz. `remainingTiles` notu).
+    final rows =
+        remainingTiles(state.board, myRack, state.placed.values.toList());
     var total = 0;
     for (final r in rows) {
       total += r.count;

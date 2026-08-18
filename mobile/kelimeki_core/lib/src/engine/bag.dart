@@ -35,8 +35,14 @@ class RemainingLetter {
 
 String _tileKey(Tile t) => (t.wild || t.letter == '?') ? '?' : t.letter;
 
-/// "Dışarıda" kalan taşlar: dağılımdan tahta + bakanın rafı düşülür.
-List<RemainingLetter> remainingTiles(Board board, List<Tile> myRack) {
+/// "Dışarıda" kalan taşlar: dağılımdan tahta + bakanın rafı + bu turda
+/// konmuş ama henüz onaylanmamış (`state.placed`) taşlar düşülür.
+///
+/// `placedTiles` ATLANMAMALI: bekleyen taşlar raftan ÇIKAR ama tahtaya ancak
+/// onayla yazılır — sayılmazlarsa "dışarıda" görünüp rakibin elinde sanılırlar
+/// (web `src/utils/bag.ts` ile aynı düzeltme).
+List<RemainingLetter> remainingTiles(Board board, List<Tile> myRack,
+    [List<Tile> placedTiles = const []]) {
   final counts = <String, int>{
     for (final e in tileData.entries) e.key: e.value.cnt
   };
@@ -51,6 +57,9 @@ List<RemainingLetter> remainingTiles(Board board, List<Tile> myRack) {
     }
   }
   for (final t in myRack) {
+    dec(t);
+  }
+  for (final t in placedTiles) {
     dec(t);
   }
 

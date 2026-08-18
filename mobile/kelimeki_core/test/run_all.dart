@@ -148,6 +148,47 @@ void testScoring() {
   }
 }
 
+/// "Kalan Taşlar" (TORBA) dökümü paritesi — `remainingTiles`.
+///
+/// Bu fonksiyonun 18 Ağustos 2026'ya kadar hiç parite kapsaması yoktu; tam o
+/// gün iki tarafta birden aynı hata bulundu (bekleyen `placed` taşlar
+/// "dışarıda" sayılıyordu). Vektörler bekleyen taşlı ve jokerli durumları
+/// içeriyor.
+void testRemainingTiles() {
+  final g = loadGolden('remaining_tiles');
+  Tile decode(String shown, bool wild) => wild
+      ? Tile(letter: '?', pts: 0, wild: true, wildLetter: shown)
+      : Tile(letter: shown, pts: tileData[shown]!.pts);
+
+  var ci = 0;
+  for (final c in g['cases'] as List) {
+    final m = (c as Map).cast<String, Object?>();
+    final board = <List<Tile?>>[
+      for (var r = 0; r < 13; r++) List<Tile?>.filled(13, null)
+    ];
+    for (final e in m['board'] as List) {
+      final row = e as List;
+      board[row[0] as int][row[1] as int] =
+          decode(row[2] as String, row[3] as bool);
+    }
+    final rack = [
+      for (final e in m['rack'] as List)
+        decode((e as List)[0] as String, e[1] as bool)
+    ];
+    final placed = [
+      for (final e in m['placed'] as List)
+        decode((e as List)[0] as String, e[1] as bool)
+    ];
+    final got = [
+      for (final r in remainingTiles(board, rack, placed))
+        [r.letter, r.pts, r.count]
+    ];
+    final d = jsonDiff(m['rows'], jsonDecode(jsonEncode(got)));
+    check(d == null, () => 'remaining_tiles[$ci]: fark $d');
+    ci++;
+  }
+}
+
 void testReducerScenario(String name) {
   final g = loadGolden(name);
   final seed = g['seed'] as int;
@@ -189,6 +230,7 @@ void main() {
   testInvasionFormula();
   testRanking();
   testScoring();
+  testRemainingTiles();
   for (final name in [
     'reducer_ai2',
     'reducer_ai4',
