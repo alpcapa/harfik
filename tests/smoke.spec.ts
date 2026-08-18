@@ -292,6 +292,16 @@ test('Ev düğmesi karşılama katmanına geri döndürür (?tanitim=1)', async 
   await expect(page.locator('#karsilama')).toBeVisible();
   expect(await page.evaluate((k) => localStorage.getItem(k as string), SEEN_INTRO_KEY)).toBe('1');
 
+  // ⚠ Bu bekleme ŞART (18 Ağustos 2026'da gerçek bir flake olarak görüldü):
+  // yukarıdaki "Tanıtım sayfası" tıklaması TAM BİR YENİDEN YÜKLEME başlatıyor
+  // ve OYNA düğmesi katmanın PRERENDER EDİLMİŞ statik HTML'inde zaten var —
+  // yani Playwright'ın görünürlük/tıklanabilirlik kontrolleri, `main.tsx`
+  // henüz çalışıp `[data-kelimeki-oyna]`ya dinleyiciyi BAĞLAMADAN önce
+  // geçiyor. O anda atılan tık sessizce hiçbir şey yapmıyor ve test bir
+  // sonraki satırda düşüyor. `load`, modül script'i ve bağımlılıkları
+  // çalıştıktan sonra tetiklendiğinden dinleyicinin varlığını garanti eder.
+  await page.waitForLoadState('load');
+
   // Geçişte URL temizleniyor — yenilemede kullanıcı katmana geri düşmemeli.
   await page.locator('[data-kelimeki-oyna]').first().click();
   await expect(page.getByText('OYUNU BAŞLAT')).toBeVisible();

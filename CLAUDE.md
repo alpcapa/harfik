@@ -385,11 +385,28 @@ oynanır" + altı özellik kartı + dokuz k-lig rütbesi + SSS + son çağrıdan
 oluşuyor. İki tasarım kararı kayda değer:
 
 - **Tahta bir ekran görüntüsü ya da elle çizim DEĞİL** — üretimdeki
-  `GameBoardPreview` → `Board` (`hideFooter compact`) sunucuda render ediliyor
+  `GameBoardPreview` → `Board` (`hideFooter`, **`compact={false}`**) sunucuda render ediliyor
   (`src/landing/demoBoard.ts` yalnızca taşları veriyor). Köşe tonlaması, bölge
   dış hattı, X2 bölgesi ve X3 hücresi tek kaynaktan geliyor; ikinci bir tahta
   çizimi bu kod tabanının en sık tekrarlayan hata sınıfını (sessiz ayrışma)
-  büyütürdü. Aynı ilkeyle rütbeler gerçek `RankSeal` + `RANK_TIERS`, mini
+  büyütürdü.
+
+  **`compact` KAPALI (18 Ağustos 2026, kullanıcı bildirdi):** İlk sürüm
+  `GameBoardPreview`'ın varsayılanını (`compact`) kullanıyordu ve o mod tam
+  olarak filigranları kısıyor — köşelerdeki büyük "1/2/3/4" oyuncu numarası,
+  merkezdeki büyük "X2" ve ortadaki hücrenin "X3" etiketi, artı taşların puan
+  üst simgesi. Kullanıcının sözleri: *"Tanıtımda 2 veya 4 kişilik oyun
+  görsellerinde watermark'lar yok. Oyunun birebir aynı görüntüsü olmalı."*
+  Haklıydı: katmanda tahta bir "önizleme" değil oyunun VİTRİNİ, gerçek oyunda
+  görünen her şey görünmeli. `GameBoardPreview`'a opsiyonel bir `compact`
+  prop'u eklendi — **varsayılanı `true`**, yani iki eski kullanım yeri
+  (`GameHistoryModal` kart açılımı, `SharedGamePage`) hiç değişmedi; yalnızca
+  `Landing.tsx` `false` geçiyor. `Board.tsx`'e DOKUNULMADI (`compact` orada
+  zaten bir prop'tu). **Ölçüldü:** katmanın tahta kabı da gerçek oyun
+  ekranıyla aynı `max-w-[680px] px-3` kutusunda, yani filigranların `vw`
+  tabanlı `clamp()` boyutları iki yerde aynı düşüyor — 390px'te iki tahta da
+  ekran görüntüsüyle karşılaştırılıp doğrulandı. Maliyet: `index.html`
+  233.038 → 251.268 ham bayt, gzip 21.192 → 21.812 (**+620 B**). Aynı ilkeyle rütbeler gerçek `RankSeal` + `RANK_TIERS`, mini
   şemaların renkleri `PLAYER_COLORS`.
 - **İKİ tahta, yan yana kaydırmalı (aynı gün ikinci tur, kullanıcı isteği):**
   2 kişilik ve 4 kişilik. **Kaydırma tamamen CSS** — `overflow-x-auto` +
