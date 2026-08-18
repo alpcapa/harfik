@@ -11,11 +11,22 @@
 // her iki görünümünde de (Devam Eden Oyun / boş form) "Neden Ücretsiz Üye
 // Olmalıyım?" kutusu (`MembershipPerksBox`, 7 Ağustos 2026). "Nasıl oynanır?"
 // linki kurallar modalını açar; yanındaki "Arkadaşınla paylaş" web'in
-// `handleShare`'i (`?ref=arkadas` linki, sistem paylaş sayfası). "Arkadaşınla"
-// sekmesi web'in `liveActionCount` rozetini taşır (bekleyen davet + sırası
-// çağıranda olan aktif oyun) ve girişte, dikkat bekleyen bir şey varsa, sekme
-// otomatik "Arkadaşınla"ya geçer (web `appliedLoginDefaultRef`, hesap başına
-// bir kez) — 7 Ağustos 2026.
+// `handleShare`'i (`?ref=arkadas` linki, sistem paylaş sayfası).
+//
+// 17 Ağustos 2026 — GİRİŞLİ/MİSAFİR ekranı ikiye ayrıldı (web'deki aynı gün
+// verilen kararla birebir): logonun altındaki tanıtım paragrafı + "Nasıl
+// oynanır? · Arkadaşınla paylaş" satırı artık YALNIZCA MİSAFİRDE görünüyor;
+// girişli kullanıcı doğrudan "OYUN TİPİ" başlığını görüyor. En alttaki hukuki
+// link satırına ("Kullanım Koşulları · Gizlilik Politikası") GİRİŞLİ
+// kullanıcı için üçüncü bir madde eklendi: "Paylaş" (web `Icons.share`
+// glyph'i + `handleShare` — misafirdeki "Arkadaşınla paylaş" linkiyle AYNI
+// fonksiyonu, aynı `?ref=arkadas` bağlantısını kullanır, yeni bir paylaşım
+// yolu YAZILMADI). Misafirin footer'ı BİREBİR ESKİSİ GİBİ (iki madde) kalıyor.
+//
+// "Arkadaşınla" sekmesi web'in `liveActionCount` rozetini taşır (bekleyen
+// davet + sırası çağıranda olan aktif oyun) ve girişte, dikkat bekleyen bir
+// şey varsa, sekme otomatik "Arkadaşınla"ya geçer (web
+// `appliedLoginDefaultRef`, hesap başına bir kez) — 7 Ağustos 2026.
 import 'dart:async' show Timer, unawaited;
 
 import 'package:flutter/material.dart';
@@ -852,63 +863,80 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                         // (yalnızca `pt-3`ü kalır), yani logonun üstü yine
                         // 12 + 4 = 16.
                         const Center(child: LogoMark(height: 52)),
-                        // Web: blok `gap-1` (4px) + paragrafın `mt-4`si (16px)
-                        // ÜST ÜSTE binerek 20px yapıyor — Chromium'da ölçüldü.
-                        const SizedBox(height: 20),
-                        const Text(
-                          'Kelimeler kurarak bölgeni genişlet, rakiplerini kuşat. '
-                          'Ama dikkat et: Hamlen rakibinin bölgesine temas ederse, '
-                          'kazandığın puanın bir kısmını onunla paylaşmak zorunda '
-                          'kalırsın. Her hamle bir strateji, her kelime bir mücadele.',
-                          // Web'de bu blok `text-center flex flex-col items-center`
-                          // içinde — paragraf da altındaki link satırı da ORTALI.
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: 'SpaceMono',
-                            fontSize: 12,
-                            // Web `text-xs` = 12px/16px satır (1.333) — 1.5
-                            // dört satırlık bu blokta 8px fazla yer kaplıyordu.
-                            height: 16 / 12,
-                            // Material 3'ün `bodyMedium` varsayılanı 0.25 harf
-                            // aralığı taşıyor ve `letterSpacing` yazmayan HER
-                            // metne miras kalıyor; web'de bu paragrafta
-                            // tracking YOK (`text-xs font-mono` hiçbir
-                            // letter-spacing kurmuyor, hesaplanan değer
-                            // `normal`). 0.25 × ~57 karakter = ~14px, yani
-                            // "Ama" alt satıra düşüp blok 4 yerine 5 satır
-                            // oluyordu (ölçüldü: 80px'e karşı web'de 64px).
-                            letterSpacing: 0,
-                            color: _muted,
+                        // 17 Ağustos 2026 — GİRİŞLİ kullanıcıda bu blok
+                        // (tanıtım paragrafı + "Nasıl oynanır? · Arkadaşınla
+                        // paylaş" satırı) HİÇ gösterilmiyor: web'in aynı
+                        // gün verdiği kararla birebir (kök CLAUDE.md, Setup
+                        // notu — kullanıcı: "Girişli kullanıcılarda Kelimeki
+                        // logosunun altındaki tanıtım yazısı ve linkler
+                        // kalksın"). Bu SizedBox (ve içindeki paragraf/link
+                        // satırı) yalnızca MİSAFİRDE render edilir — web'de
+                        // `gap-1` (4px) + paragrafın `mt-4`ü (16px) üst üste
+                        // binerek 20px veriyor (Chromium'da ölçüldü).
+                        if (auth.user == null) ...[
+                          const SizedBox(height: 20),
+                          const Text(
+                            'Kelimeler kurarak bölgeni genişlet, rakiplerini kuşat. '
+                            'Ama dikkat et: Hamlen rakibinin bölgesine temas ederse, '
+                            'kazandığın puanın bir kısmını onunla paylaşmak zorunda '
+                            'kalırsın. Her hamle bir strateji, her kelime bir mücadele.',
+                            // Web'de bu blok `text-center flex flex-col items-center`
+                            // içinde — paragraf da altındaki link satırı da ORTALI.
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'SpaceMono',
+                              fontSize: 12,
+                              // Web `text-xs` = 12px/16px satır (1.333) — 1.5
+                              // dört satırlık bu blokta 8px fazla yer kaplıyordu.
+                              height: 16 / 12,
+                              // Material 3'ün `bodyMedium` varsayılanı 0.25 harf
+                              // aralığı taşıyor ve `letterSpacing` yazmayan HER
+                              // metne miras kalıyor; web'de bu paragrafta
+                              // tracking YOK (`text-xs font-mono` hiçbir
+                              // letter-spacing kurmuyor, hesaplanan değer
+                              // `normal`). 0.25 × ~57 karakter = ~14px, yani
+                              // "Ama" alt satıra düşüp blok 4 yerine 5 satır
+                              // oluyordu (ölçüldü: 80px'e karşı web'de 64px).
+                              letterSpacing: 0,
+                              color: _muted,
+                            ),
                           ),
-                        ),
-                        // Web: `gap-1` (4px) + link satırının `mt-3`ü (12px).
-                        const SizedBox(height: 16),
-                        // Web Setup'taki "Nasıl oynanır?" · "Arkadaşınla paylaş"
-                        // satırı — ikisi de font-mono/11px/kalın/accent linkler.
-                        Align(
-                          alignment: Alignment.center,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _InlineLink(
-                                'Nasıl oynanır?',
-                                onTap: () => showHelpModal(context),
-                              ),
-                              // Web'de ayraç `gap-2` (8+8) ile ayrılmış bir
-                              // `·`; buradaki boşluklu ' · ' ölçülerek aynı
-                              // yere düşüyor (19.8'e karşı web 19.67) —
-                              // yeniden yapılandırmaya gerek yok.
-                              const Text(' · ',
-                                  style: TextStyle(
-                                      fontFamily: 'SpaceMono',
-                                      fontSize: 11,
-                                      letterSpacing: 0,
-                                      color: _muted)),
-                              _InlineLink('Arkadaşınla paylaş',
-                                  onTap: _handleShare),
-                            ],
+                          // Web: `gap-1` (4px) + link satırının `mt-3`ü (12px).
+                          const SizedBox(height: 16),
+                          // Web Setup'taki "Nasıl oynanır?" · "Arkadaşınla paylaş"
+                          // satırı — ikisi de font-mono/11px/kalın/accent linkler.
+                          Align(
+                            alignment: Alignment.center,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _InlineLink(
+                                  'Nasıl oynanır?',
+                                  onTap: () => showHelpModal(context),
+                                ),
+                                // Web'de ayraç `gap-2` (8+8) ile ayrılmış bir
+                                // `·`; buradaki boşluklu ' · ' ölçülerek aynı
+                                // yere düşüyor (19.8'e karşı web 19.67) —
+                                // yeniden yapılandırmaya gerek yok.
+                                const Text(' · ',
+                                    style: TextStyle(
+                                        fontFamily: 'SpaceMono',
+                                        fontSize: 11,
+                                        letterSpacing: 0,
+                                        color: _muted)),
+                                _InlineLink('Arkadaşınla paylaş',
+                                    onTap: _handleShare),
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
+                        // Girişli kullanıcıda yukarıdaki blok tamamen
+                        // KALKTIĞINDAN, logo ile "OYUN TİPİ" arasında kalan
+                        // TEK boşluk bu SizedBox — Chromium'da ÖLÇÜLDÜ: web'de
+                        // paragraf/link satırı kalkınca logo→"OYUN TİPİ" arası
+                        // TAM 20.00px (kapsayıcının kendi `gap-5`i). Buraya
+                        // TELAFİ EDİCİ bir marj EKLEMEDİK — çocukları kaldırmak
+                        // otomatik olarak bu değeri veriyor, elle ayarlanmadı.
                         const SizedBox(height: 20),
                         const _SectionLabel('OYUN TİPİ'),
                         const SizedBox(height: 8),
@@ -973,22 +1001,72 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                         // (`text-[10px] font-mono text-muted gap-2`). Port bunu
                         // hiç taşımamıştı — modaller vardı ama Setup'tan
                         // ulaşılamıyordu, yalnızca kayıt formundan.
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        //
+                        // 17 Ağustos 2026 — üçüncü bir madde eklendi: GİRİŞLİ
+                        // kullanıcı için "Paylaş" (bkz. aşağı). Web'in flex-wrap
+                        // güvenlik ağının Flutter karşılığı: `Row` yerine `Wrap`
+                        // kullanılıyor ki üç madde de sığmayan dar bir ekranda
+                        // satır TAŞMASI (Flutter'da bu debug'da sarı/siyah
+                        // çubuk, release'de kırpma demek — web'in sessizce
+                        // kaydırdığı bir taşmadan çok daha görünür bir hata)
+                        // yerine ikinci satıra sarsın.
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 8,
+                          runSpacing: 4,
                           children: [
                             _LegalLink('Kullanım Koşulları',
                                 onTap: () => showTermsModal(context,
                                     onFeedback: _openFeedback)),
-                            const SizedBox(width: 8),
                             const Text('·',
                                 style: TextStyle(
                                     fontFamily: 'SpaceMono',
                                     fontSize: 10,
                                     color: _muted)),
-                            const SizedBox(width: 8),
                             _LegalLink('Gizlilik Politikası',
                                 onTap: () => showPrivacyModal(context,
                                     onFeedback: _openFeedback)),
+                            // Yalnızca GİRİŞLİ kullanıcı — misafirin footer'ı
+                            // BİREBİR eskisi gibi kalıyor (yukarıdaki iki madde,
+                            // hiçbir ek boşluk/ayraç yok). "Paylaş" adı
+                            // BİLEREK "Arkadaşını Davet Et" DEĞİL — o,
+                            // FriendsModal'daki AYRI bir özelliğin (kalıcı
+                            // davet token'ı) adı; burada web'in mevcut
+                            // `handleShare`'i (aynen çağrılıyor, yeni bir
+                            // paylaşım fonksiyonu YAZILMADI) `?ref=arkadas`
+                            // UTM'li genel bir tahta/site linki paylaşıyor —
+                            // admin panelindeki "Kaynak Hunisi" bu parametreye
+                            // bağlı, korunması şart.
+                            // Ayraç da AYNI koşula bağlı: web'de bu ikisi tek
+                            // bir `{user && (<>…</>)}` bloğunda, yani girişli
+                            // footer'da İKİ ayraç var (Koşullar · Gizlilik ·
+                            // Paylaş), misafirde BİR. Stil yukarıdaki ilk
+                            // ayraçla birebir aynı — yeni bir stil yazma.
+                            if (auth.user != null)
+                              const Text('·',
+                                  style: TextStyle(
+                                      fontFamily: 'SpaceMono',
+                                      fontSize: 10,
+                                      color: _muted)),
+                            if (auth.user != null)
+                              GestureDetector(
+                                onTap: _handleShare,
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.share, size: 12, color: _muted),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Paylaş',
+                                      style: TextStyle(
+                                        fontFamily: 'SpaceMono',
+                                        fontSize: 10,
+                                        color: _muted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                           ],
                         ),
                         const SizedBox(height: 12),

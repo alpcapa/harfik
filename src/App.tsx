@@ -5,6 +5,9 @@ import { Board } from './components/Board';
 import { Rack } from './components/Rack';
 import { GameOver } from './components/GameOver';
 import { UserMenu } from './components/UserMenu';
+import { TermsModal } from './components/TermsModal';
+import { PrivacyModal } from './components/PrivacyModal';
+import { AuthModal } from './components/AuthModal';
 import { Setup } from './components/Setup';
 import { AddToHomeScreen } from './components/AddToHomeScreen';
 import { LandscapeHint } from './components/LandscapeHint';
@@ -645,6 +648,35 @@ export default function App() {
     window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : ''));
   }, []);
 
+  // Karşılama katmanının (18 Ağustos 2026) "Giriş" butonundan gelen istek.
+  // `AuthModal`'ı açan state `UserMenu`'nün İÇİNDE (`setModal('auth')`) ve
+  // dışarıdan tetiklenecek bir yolu yok; katman da React ağacının DIŞINDA
+  // (statik HTML, bkz. src/landing/). Aradaki köprü olarak `?contact=1`'in
+  // BİREBİR aynı kalıbı kullanılıyor: parametre okunur, pencere açılır,
+  // parametre `history.replaceState` ile URL'den temizlenir.
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  // Katmanın alt satırındaki hukuki bağlantılar da AYNI köprüden geçiyor
+  // (`?kosullar=1` / `?gizlilik=1`) — o iki pencere `Setup.tsx`'in kendi
+  // state'inde yaşadığından dışarıdan açılamıyor, bu yüzden burada ayrıca
+  // render ediliyorlar. Üç parametre tek effect'te okunuyor: aynı anda
+  // yalnızca biri gelebilir ve hepsi tek bir `replaceState` ile temizlenmeli.
+  const [landingLegal, setLandingLegal] = useState<'terms' | 'privacy' | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const giris = params.get('giris') === '1';
+    const kosullar = params.get('kosullar') === '1';
+    const gizlilik = params.get('gizlilik') === '1';
+    if (!giris && !kosullar && !gizlilik) return;
+    if (giris) setShowLoginModal(true);
+    if (kosullar) setLandingLegal('terms');
+    else if (gizlilik) setLandingLegal('privacy');
+    params.delete('giris');
+    params.delete('kosullar');
+    params.delete('gizlilik');
+    const rest = params.toString();
+    window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : ''));
+  }, []);
+
   // Oyun sonu ekranı kapatıldı mı (X'e basıldı mı) — board'u görmek için.
   const [gameOverDismissed, setGameOverDismissed] = useState(false);
   useEffect(() => {
@@ -1097,9 +1129,60 @@ export default function App() {
 
   // ── Kurulum ekranı ─────────────────────────────────────────────────────────
   if (state.phase === 'setup') {
+    // Yalnızca GİRİŞSİZ (misafir) kullanıcıya gösterilir — bkz. aşağıdaki
+    // yorum. `authLoading` sırasında da `false`: `UserMenu`'nün kendi
+    // GİRİŞ/avatar kararıyla aynı "önce bilmeden gösterme" deseni.
+    const showTanitimLink = !authLoading && !user;
     return (
       <div className="min-h-[100dvh] w-full flex flex-col items-center overflow-x-hidden">
-        <div className="w-full max-w-[460px] flex items-center justify-end px-3.5 pt-3">
+        <div
+          className={`w-full max-w-[460px] flex items-center px-3.5 pt-3 ${
+            showTanitimLink ? 'justify-between' : 'justify-end'
+          }`}
+        >
+          {/* Karşılama sayfasına dönüş (18 Ağustos 2026, kullanıcı isteği:
+              "Hemen Oynaya basınca geri gelemiyorsun"). Katman DOM'dan
+              siliniyor (bkz. main.tsx), dolayısıyla geri dönmenin tek yolu
+              tam bir yeniden yükleme — `?tanitim=1` kapıya "bu sefer katmanı
+              göster" diyen tek sinyal (bkz. scripts/landing-plugin.js).
+
+              Düğme ÇIPLAK bir ok karakteri (18 Ağustos 2026, aynı gün ikinci
+              tur, kullanıcı kararı) — erişilebilir ad `aria-label` üzerinden
+              ("Tanıtım sayfası") doğru anlatılıyor, yalnızca GÖRÜNÜR metin
+              sadeleşti. Punto/kutu `Modal.tsx`'in ✕ kapatma butonuyla AYNI
+              ölçek (`text-lg`/`text-xl` bandı, `w-7 h-7` dokunma kutusu) —
+              kullanıcı "bit kadar" (10px) bulunca aynı gün bir sonraki turda
+              büyütüldü, icat edilmiş yeni bir sayı değil, projedeki mevcut
+              köşe-ikon dilinin tekrarı.
+
+              Glyph `←` (ok Unicode karakteri) → düz `<` (18 Ağustos 2026,
+              aynı gün beşinci tur, kullanıcı: "O oku sevmedim. < kullan
+              yerine") — yalnızca görünen KARAKTER değişti, `aria-label`/
+              davranış/boyut AYNI kaldı.
+
+              YALNIZCA GİRİŞSİZ kullanıcıda render ediliyor (aynı gün, üçüncü
+              tur — kullanıcı sordu: "girişli kullanıcıda da geri ok çıkmamalı,
+              öyle değil mi?"). Sebep: `?tanitim=1` dönen-kullanıcı sinyallerini
+              (oturum DAHİL) bilerek atlıyor, yani girişli biri bu düğmeye
+              basarsa `Landing.tsx`'in statik (auth'tan habersiz) başlığındaki
+              GİRİŞ butonunu görüyordu — kendi oturumu açıkken bile. Katmanı
+              auth-farkında yapmak (`Landing.tsx`'in "hiçbir hook/tarayıcı
+              globali YOK" temel kısıtını ihlal ederdi) yerine, bu escape
+              hatch'in girişli bir kullanıcı için zaten bir değeri olmadığı
+              (kapı zaten girişliyi hiç göstermeden uygulamaya alıyor —
+              düğme yalnızca `?tanitim=1` ile bunu BİLEREK deliyor) kabul
+              edilip düğme koşulsuz gizlendi. `authLoading` sırasında da
+              gizli — `UserMenu`'nün kendi GİRİŞ/avatar kararıyla aynı
+              "önce bilmeden gösterme" deseni. */}
+          {showTanitimLink && (
+            <a
+              href="/?tanitim=1"
+              aria-label="Tanıtım sayfası"
+              className="shrink-0 w-7 h-7 flex items-center justify-center rounded font-mono text-xl leading-none text-muted active:scale-90 transition-transform"
+            >
+              &lt;
+            </a>
+          )}
           <UserMenu />
         </div>
         <main className="w-full flex flex-col items-center">
@@ -1130,6 +1213,9 @@ export default function App() {
             onClose={() => setShowContactFeedback(false)}
           />
         )}
+        {showLoginModal && <AuthModal onClose={() => setShowLoginModal(false)} />}
+        {landingLegal === 'terms' && <TermsModal onClose={() => setLandingLegal(null)} />}
+        {landingLegal === 'privacy' && <PrivacyModal onClose={() => setLandingLegal(null)} />}
       </div>
     );
   }

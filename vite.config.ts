@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { kelimekiLanding } from './scripts/landing-plugin.js';
 
 /**
  * Bu derlemenin kimliği — Vercel `VERCEL_GIT_COMMIT_SHA`'yı her derlemede
@@ -38,6 +39,12 @@ export default defineConfig({
           `  <meta name="kelimeki-build" content="${BUILD_ID}" />\n  </head>`,
         ),
     },
+    // Karşılama katmanı — `index.html`'in gövdesine statik HTML, `<head>`'e
+    // senkron kapı script'i enjekte eder. YALNIZCA EKLEME yapar; aşağıdaki
+    // manifest alanlarına (`id`/`start_url`/`scope`/`display`) ve service
+    // worker ayarlarına dokunmaz. Neden derleme sonrası bir script değil de
+    // eklenti olduğu: scripts/landing-plugin.js başlığı.
+    kelimekiLanding(),
     VitePWA({
       registerType: 'prompt',
       injectRegister: false,

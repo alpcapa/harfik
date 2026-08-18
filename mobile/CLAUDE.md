@@ -1007,6 +1007,37 @@ tıklayıp Start'a basma) doğrulaması kullanıcının kendi cihazından
 bekleniyor — bu ortamdan `appetize.io` erişilemediğinden ben açıp
 göremiyorum.
 
+## Karşılama Katmanı (web) — bilinçli ayrışma, portta YOK (18 Ağustos 2026)
+
+Web'e 18 Ağustos 2026'da girişsiz ilk ziyaretçiye gösterilen bir karşılama/
+tanıtım katmanı eklendi (kök `CLAUDE.md` → "Karşılama Katmanı" bölümleri —
+kapı script'i, statik HTML prerender, tanıtım tahtaları, k-lig mühürleri,
+SSS). Bu bölüm önceki "Web ↔ Uygulama Arasındaki Kabul Edilmiş Farklar"
+listesinin TERSİ bir durum: burada web'in ÇÖZDÜĞÜ bir şeyi app'in eskisi
+gibi bırakması değil, web'de YENİ bir özellik var ve app'te hiç YOK — üç
+madde:
+
+1. **Kurulum ekranındaki `<` (tanıtım sayfasına dönüş) düğmesi web'e
+   özgüdür, BİLİNÇLİ ayrışmadır — porta EKLENMEYECEK.** Uygulamada
+   karşılama katmanı hiç olmadığından bu düğmenin gideceği bir yer de yok;
+   bir sonraki denetimde biri "port geride kalmış" deyip düğmeyi porta
+   eklemeye kalkışmasın diye
+   bu not burada duruyor.
+2. **Uygulamanın kendi ilk açılış/tanıtım ekranı AYRI ve planlı bir iş** —
+   ana port spesifikasyonu (PORT_BRIEF) bunu *"Setup'ın ÖNÜNE eklenen yeni
+   bir ekran, kalıcı bir 'bir daha gösterme' bayrağıyla; mevcut ekranlar
+   değişmez; mağaza çıkışından önce bitmeli"* olarak tarif ediyor ve aynı
+   hikâye omurgasını (web'in karşılama katmanındaki metin/görseller)
+   kullanacak. Bu iş şu an başlamadı.
+3. **O ekran geldiğinde bile Setup başlığına bir ok/düğme KONMAYACAK.**
+   Native bir uygulamada kök ekranın sol üstündeki geri oku navigasyon
+   yığınını POP etmek demektir; Setup zaten kök ekran ve iOS'ta bu,
+   sistemin kendi geri hareketiyle (edge-swipe) çakışırdı. Tanıtıma dönüş
+   yerine **hesap menüsüne** ("Nasıl Oynanır?"in hemen yanına) gelecek —
+   port o menüyü zaten bilgilendirici maddeler için kullanıyor (k-lig, Skor
+   Kartı, Arkadaşlar, Nasıl Oynanır?, Hesap Ayarları), başlık geometrisine
+   hiç dokunmaz ve senkron tutulması gereken yeni bir şekil yaratmaz.
+
 ## Web ↔ Uygulama Arasındaki Kabul Edilmiş Farklar
 
 Port sırasında fark edilen, uygulamada ÇÖZÜLMÜŞ ama web'de bilinçli olarak
@@ -4914,6 +4945,127 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        artık kullanılmıyor (Dart'ta kütüphane importu olduğundan
        kullanılmayan-import hatası doğurmuyor, web'de import satırından
        çıkarıldı).
+
+   - ✅ **Parça 110 — Setup girişli/misafir ayrımı + footer'a "Paylaş"
+     (17 Ağustos 2026, `setup_screen.dart`, `setup_screen_test.dart`;
+     web `Setup.tsx` AYNI PR'da):** İsteğin kaynağı bölüm 1 spesifikasyonu —
+     kullanıcının sözleri: *"Girişli kullanıcılarda Kelimeki logosunun
+     altındaki tanıtım yazısı ve linkler kalksın… Bu model birebir app'lerde
+     de çalışacak değil mi? O şekilde istiyorum."* İki değişiklik, ikisi de
+     yalnızca girişli kullanıcıyı ilgilendiriyor — misafirin görünümüne
+     KESİNLİKLE dokunulmadı.
+     - **(1) Logonun altındaki tanıtım paragrafı + "Nasıl oynanır? ·
+       Arkadaşınla paylaş" satırı artık YALNIZCA `auth.user == null`
+       (misafir) iken render ediliyor.** İki `SizedBox(height:20)` vardı:
+       biri logo↔paragraf arasında, biri link satırı↔"OYUN TİPİ" arasında.
+       **İlk denemede İKİSİ de koşulsuz bırakılmıştı** — bu, girişli
+       kullanıcıda 40px'lik bir boşluk üretirdi (web'de tam 20px olması
+       gerekirken). Kendi kendine yakalandı: yalnızca İKİNCİ SizedBox
+       (link satırından sonraki, "OYUN TİPİ"nin hemen üstündeki) koşulsuz
+       bırakıldı — spec'in "portun 20 px'i ZATEN elle yazılmış, silme,
+       yerinde bırak" talimatının işaret ettiği tam olarak bu satır. İlk
+       SizedBox (logo↔paragraf arası) paragraf/link bloğunun İÇİNE, guest
+       şartına taşındı — girişlide artık HİÇBİR telafi marjı olmadan logo
+       doğrudan tek bir 20px'lik boşlukla "OYUN TİPİ"ye bağlanıyor (web'in
+       ölçülen değeriyle birebir: 20.00px, misafirde 152.50/136.50px'lik
+       ölçümler DEĞİŞMEDİ çünkü o dal aynen duruyor).
+     - **(2) Footer'daki hukuki link satırı `Row`dan `Wrap`e çevrildi**
+       (`alignment: WrapAlignment.center, spacing: 8, runSpacing: 4`) —
+       web'in `flex-wrap` güvenlik ağının Flutter karşılığı. Flutter'da bir
+       `Row` taşması `RenderFlex overflowed` (debug'da sarı/siyah çubuk,
+       release'de kırpma) demek — web'in sessizce yatay kaydırdığı bir
+       taşmadan çok daha görünür/yıkıcı bir hata sınıfı, bu yüzden `Wrap`
+       zorunlu bir güvenlik önlemi (yalnızca web'i taklit etmek için değil).
+       Girişli kullanıcı için üçüncü bir madde eklendi: **"Paylaş"** —
+       `Icon(Icons.share, size:12, color:_muted)` + `SizedBox(width:4)` +
+       `Text('Paylaş', fontFamily:'SpaceMono', fontSize:10, color:_muted)`,
+       hukuki linklerle AYNI punto/renk (`_LegalLink` ile görsel dil
+       tutarlı, ama kendisi tıklanabilir bir link stilinde değil — web'in
+       glyph+metin ikilisiyle birebir). Dokununca **mevcut `_handleShare`**
+       ÇAĞIRILIYOR (yeni bir paylaşım fonksiyonu YAZILMADI) — bu, misafirin
+       "Arkadaşınla paylaş" linkiyle BİREBİR AYNI çağrı
+       (`(widget.share ?? shareBoard)(png: null, text: 'Hemen ücretsiz
+       dene!', url: '$webOrigin/?ref=arkadas', origin:
+       shareOriginFrom(context))`), yani admin panelindeki "Kaynak
+       Hunisi"nin dayandığı `?ref=arkadas` UTM parametresi korunuyor.
+     - **Adı BİLEREK "Arkadaşını Davet Et" DEĞİL "Paylaş"** — o isim
+       `FriendsModal`'daki AYRI bir özelliğin (kalıcı davet token'ı,
+       `create_friend_invite_link`) adı; bu buton genel bir site/tahta
+       linkini `?ref=arkadas` ile paylaşıyor, isim çakışması kafa
+       karıştırırdı.
+     - **`webOrigin` sabiti** (env.dart) `https://kelimeki.com` — mevcut
+       "Arkadaşınla paylaş" testinde zaten `sharedUrl` ==
+       `'https://kelimeki.com/?ref=arkadas'` diye doğrulanmıştı, yeni
+       "Paylaş" testi AYNI beklentiyi taşıyor.
+     - **Test — 4 yeni test, negatif eş gerektirmeyen ama davranışı iki
+       yönden (var/yok) sınayan çiftler:** girişlide paragraf/link YOK +
+       logo→"OYUN TİPİ" tam 20px; misafirde paragraf/link HÂLÂ var
+       (mevcut testler zaten bunu sınıyordu, ek bir "misafirde" testi
+       netlik için eklendi); footer'da "Paylaş" misafirde YOK, girişlide
+       VAR ve dokununca `_handleShare`'i doğru parametrelerle çağırıyor.
+       Mevcut GUEST-variant testler (`'"Arkadaşınla paylaş" ?ref=arkadas
+       linkini paylaşır'`, `'tanıtım paragrafı … ORTALI'`, `'Setup başlık
+       bloğu ve hukuki alt satır web ile aynı'`, `'logo altındaki yazı
+       bloğu…'`) HİÇ DEĞİŞTİRİLMEDİ — hepsi `services()` (auth yok, yani
+       `auth.user == null`) kullandığından yeni koşulun `if` dalına
+       girmeye devam ediyorlar.
+     - **`mobile/` DIŞINDA dosya değişti** (`src/components/Setup.tsx`,
+       yeni `src/components/RelationIcons.tsx`'teki `ShareIcon`, kök
+       `CLAUDE.md`) → aynı PR'da, aynı commit'te teslim edildi (Parça
+       Bitirme Kontrol Listesi madde 1) — port dalında mahsur kalma
+       riski yok.
+     - **Web tarafındaki `ShareIcon`** Flutter'ın KENDİ `Icons.share`
+       (U+E593, `share_baseline`) glyph'inden fontTools ile çıkarılıp
+       web'e taşındı — `RelationIcons.tsx`'in kendi belgelediği yöntemle
+       (unitsPerEm 512 → 24'lük viewBox, y ekseni ters) ve render edilip
+       GÖRSEL olarak doğrulandı (bu dosyanın kendi başlığındaki "codepoint
+       hafızadan yazılırsa yanlış glyph çizilir" uyarısı gereği).
+     - **Doğrulama sınırı — bu oturumda Flutter/Dart SDK YOK**
+       (`flutter: command not found`, Parça 103-109'un aynı sınırı):
+       `flutter analyze`/`flutter test` KOŞULAMADI; değişiklikler elle
+       (bracket/paren dengesi + tam diff okuması) doğrulandı, tek gerçek
+       kanıt CI (`mobile-build.yml`). Web yarısı `npm run lint` +
+       `npm run build` + Playwright duman testleriyle (3/3) doğrulandı,
+       ayrıca derlenmiş CSS + Chromium ile GERÇEK ölçüm yapıldı (guest
+       152.50/136.50px değişmedi; girişli 20.00px; footer buton
+       ~52.7×15px, ≈356px'te ikinci satıra sarıyor, negatif eş ile
+       — `flex-wrap` kaldırılınca 320px'te GERÇEKTEN yatay taşma
+       oluştuğu doğrulanıp geri eklendi).
+     - **AYNI GÜN bulunan eksik: footer'da AYRAÇ yoktu (`·`) — "birebir"
+       isteğinin ihlali.** Web girişli footer'da `Kullanım Koşulları ·
+       Gizlilik Politikası · [ikon] Paylaş` çiziyor: `Setup.tsx`'te
+       `<span>·</span>` ile "Paylaş" butonu AYNI `{user && (<>…</>)}`
+       fragment'ının içinde, yani girişlide İKİ ayraç var, misafirde BİR.
+       Port yalnızca butonu taşımış, ayracı atlamıştı → `… Gizlilik
+       Politikası [ikon] Paylaş`. Kullanıcının kuralı açıktı ("Bu model
+       birebir app'lerde de çalışacak değil mi? O şekilde istiyorum"),
+       yani bu kozmetik bir ayrıntı değil doğrudan bir sapma. Düzeltme:
+       `if (auth.user != null)` koşuluna bağlı ikinci bir `Text('·')` —
+       stil yukarıdaki mevcut ayraçla BİREBİR aynı (SpaceMono/10/`_muted`),
+       yeni bir stil yazılmadı.
+     - **Bunun DÖRT test yeşilken hayatta kalmasının sebebi ölçülebilir:**
+       eklenen testlerin hepsi metnin VARLIĞINI (`find.text('Paylaş')`)
+       doğruluyordu; hiçbiri maddeler ARASINDAKİ tutkalı (ayraç/boşluk)
+       ölçmüyordu. Artık iki footer testi ayraç SAYISINI de ölçüyor —
+       misafirde `findsOneWidget`, girişlide `findsNWidgets(2)`. Finder
+       güvenli: logo altındaki misafir link satırı BOŞLUKLU `' · '`
+       kullanıyor (`setup_screen.dart:921`) ve teşhis satırı
+       `.join(' · ')` ile TEK bir `Text` üretiyor, ikisi de bu finder'a
+       takılmıyor; `account_button`/`score_card`/`player_score_card`'daki
+       `TextSpan(text: '·')`'lar ise `Text.rich`in tam metnine gömülü
+       olduğundan eşleşmiyor (hepsi grep'lenerek doğrulandı).
+     - **Ders — "birebir" bir port isteğinde MADDELERİ karşılaştırmak
+       yetmez, ARALARINDAKİ tutkalı (ayraç, boşluk, sıra) da karşılaştır;**
+       ve içerik varlığını doğrulayan bir test, bu sınıf bir farkı
+       yapısal olarak GÖREMEZ (kök `CLAUDE.md`'nin "negatif eş" dersinin
+       kardeşi: aradığın şeyin YOKLUĞUNDA da geçen bir kontrol bir şey
+       kanıtlamaz).
+     - **Doğrulama sınırı (bu düzeltmeye özgü):** bu oturumda da Flutter/
+       Dart SDK YOK, yani spec'in istediği negatif eş (ayracı geri silip
+       testin GERÇEKTEN düştüğünü görmek) yerelde KURULAMADI — tek kanıt
+       CI. Testin düşeceği aritmetik olarak kesin (ayraç silinince girişli
+       footer'da 2 değil 1 `Text('·')` kalır), ama bu bir çıkarım, ölçüm
+       değil.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 

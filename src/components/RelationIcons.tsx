@@ -87,3 +87,18 @@ export function PersonRemoveIcon({ size = 20 }: RelationIconProps) {
     </svg>
   );
 }
+
+/**
+ * Material `Icons.share` (U+E593, `share_baseline` — glyph adı MaterialIcons
+ * codepoints dosyasında böyle). Universal paylaş simgesi (üç düğüm + iki
+ * çizgi). Setup footer'ındaki "Paylaş" düğmesi kullanıyor — burada
+ * `aria-hidden`, çünkü yanında zaten görünür bir metin etiketi var (diğer
+ * ilişki ikonlarının aksine, `aria-label` gerekmiyor).
+ */
+export function ShareIcon({ size = 20 }: RelationIconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M18.0 16.078125C17.25 16.078125 16.546875 16.359375 16.03125 16.828125L8.90625 12.703125C8.953125 12.46875 9.0 12.234375 9.0 12.0C9.0 11.765625 8.953125 11.53125 8.90625 11.296875L15.9375 7.171875C16.5 7.6875 17.203125 8.015625 18.0 8.015625C19.640625 8.015625 21.0 6.65625 21.0 5.015625C21.0 3.328125 19.640625 2.015625 18.0 2.015625C16.359375 2.015625 15.0 3.328125 15.0 5.015625C15.0 5.25 15.046875 5.484375 15.09375 5.71875L8.0625 9.796875C7.5 9.328125 6.796875 9.0 6.0 9.0C4.359375 9.0 3.0 10.359375 3.0 12.0C3.0 13.640625 4.359375 15.0 6.0 15.0C6.796875 15.0 7.5 14.671875 8.0625 14.203125L15.140625 18.328125C15.09375 18.5625 15.09375 18.796875 15.09375 18.984375C15.09375 20.625 16.40625 21.9375 18.0 21.9375C19.59375 21.9375 20.90625 20.625 20.90625 18.984375C20.90625 17.390625 19.59375 16.078125 18.0 16.078125Z" />
+    </svg>
+  );
+}

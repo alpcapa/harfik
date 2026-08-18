@@ -36,6 +36,7 @@ npm run test     # Playwright duman testleri (tests/smoke.spec.ts)
 # Birim test çatısı yok; riskli saf mantık ayrı doğrulama betikleriyle sınanır:
 npm run verify-cloud-save-mirror # bulut kaydının çevrimdışı karar mantığı
 npm run verify-fetch-my-games    # oyun geçmişi: ağ hatası ↔ boş liste ayrımı
+npm run verify-demo-board        # karşılama katmanındaki tanıtım tahtası sözlüğe karşı doğrulanır
 ```
 
 `npm run test` kritik yolu kontrol eder (uygulama açılıyor, oyun başlıyor, YZ
@@ -50,10 +51,16 @@ cihazda koşulan listesi: [`mobile/TESTING.md`](mobile/TESTING.md). Derlemeyi
 `mobile/**` dokunan her PR'da ve `main`e her push'ta otomatik koşar:
 `.github/workflows/mobile-build.yml`.
 
+Web tarafında `lint`+`build`+`test`'i koşturan ayrı bir iş akışı var
+(18 Ağustos 2026'da eklendi — `src/**`/`scripts/**`/`tests/**` dokunan her
+PR'da ve `main`e her push'ta): `.github/workflows/web-ci.yml`.
+
 ## Proje Yapısı
 
 ```
 src/
+├── main.tsx                     # ince kabuk: fontlar + derleme kimliği + "karşılama katmanı mı, uygulama mı" kararı
+├── boot.tsx                     # uygulamanın gerçek açılışı (React ağacı, PWA, /game//davet path eşlemesi) — main.tsx DİNAMİK import eder
 ├── components/
 │   ├── Board.tsx                # 13×13 oyun tahtası (köşe renkleri, dinamik bölge hatları, bonus bölgesi)
 │   ├── Rack.tsx                 # oyuncunun harf kutusu
@@ -148,6 +155,11 @@ src/
 │   ├── leagueRank.ts   # k-lig rütbe kademeleri (Çaylak→Tanrı, 9 kademe: eşik/renk/ödül — sunucudaki _award_league_rewards VE portun league_rank.dart'ı ile ELLE senkron, üç kopya)
 │   ├── pendingLiveGames.ts # Canlı taraftaki "bekleyen iş" sayısı (bekleyen davet + sırası sende olan oyun) — Setup rozeti ve PWA ikon rozeti ortak
 │   └── profileFields.ts # cinsiyet seçenekleri, GG/AA/YYYY ↔ ISO tarih dönüşümü (AuthModal ve AccountSettingsModal ortak)
+├── landing/
+│   ├── Landing.tsx     # karşılama katmanının tamamı (derleme/dev zamanında statik HTML'e render edilip index.html'e gömülür) — SUNUCUDA render edilir, hook/olay/tarayıcı globali YOK
+│   ├── LandingLogo.tsx # logoyu üç kez çizmek için SVG sprite'ı (path verisi LogoMark'tan; üç ham kopya gzip'te 10 KB yiyordu)
+│   ├── demoBoard.ts    # tanıtım tahtalarının (2 ve 4 kişilik) taşları — gerçek Board.tsx ile render edilir, npm run verify-demo-board ile sözlüğe karşı doğrulanır
+│   └── render.tsx      # renderToStaticMarkup sarmalayıcısı — Vite eklentisi (scripts/landing-plugin.js) Node'da çağırır
 ├── hooks/
 │   ├── useAuth.tsx        # Supabase auth context
 │   ├── useModalA11y.ts    # modal odak hapsi, Escape, dialog yığını

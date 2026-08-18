@@ -252,4 +252,66 @@ select {
   #root > * {
     flex-shrink: 0;
   }
+
+  /* ── Karşılama katmanı (18 Ağustos 2026) ────────────────────────────────
+     `#karsilama`, `#root`'un TAM KARŞILIĞI olmak zorunda: yukarıdaki
+     `body { position: fixed; overflow: hidden }` kuralı yüzünden bu sayfada
+     BELGE hiç kaydırılmıyor — gerçek kaydırma kabı `#root`. Katman onun
+     KARDEŞİ olduğundan kendi kabını kurmazsa hiç kaydırılamaz (kilitli
+     başlığın `sticky`si de kaydırma kabı olmadan hiçbir şey yapmaz).
+     `overflow-x: hidden` bilinçli olarak BURADA — iç sarmalayıcıya konsaydı
+     CSS kuralı gereği `overflow-y` de `visible`likten çıkıp o düğümü ikinci
+     bir kaydırma kabına çevirir ve `sticky` görünür şekilde takılmazdı. */
+  #karsilama {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #karsilama > * {
+    flex-shrink: 0;
+  }
+
+  /* Logo park efekti (18 Ağustos 2026, kullanıcı isteği): kahraman logo
+     kilitli şeridin altına girdiği an, şeridin ORTA yuvasındaki küçük kopya
+     belirir. Kopya HTML'de her zaman var (statik render) — görünürlüğü
+     yalnızca bu iki kural belirliyor; sınıfı `main.tsx`'teki
+     `IntersectionObserver` ekliyor/kaldırıyor.
+
+     Yuva her koşulda AYNI yeri kaplar (`flex-1`), yani logo görünüp
+     kaybolurken düğmeler oynamaz — geçiş sırasında bir düzen sıçraması yok. */
+  #karsilama-logo-yuvasi > svg {
+    opacity: 0;
+    transform: translateY(3px) scale(0.9);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+
+  #karsilama.logo-parkli #karsilama-logo-yuvasi > svg {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #karsilama-logo-yuvasi > svg {
+      transition: none;
+      transform: none;
+    }
+  }
+
+  /* İki mod birbirini dışlar. Sınıfı `<head>`'deki SENKRON kapı script'i
+     (bkz. scripts/landing-plugin.js) gövde ayrıştırılmadan ekliyor, yani
+     karar İLK BOYAMADAN ÖNCE veriliyor — titreme yok. Aynı no-FOUC kalıbı
+     yukarıdaki `color-scheme` kararında da kullanılıyor. */
+  .uygulama-modu #karsilama {
+    display: none;
+  }
+
+  html:not(.uygulama-modu) #root {
+    display: none;
+  }
 }

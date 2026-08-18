@@ -460,9 +460,9 @@ Her birinde gerçekten bekleyen bir iş varken ekranı **kapatıp yeniden aç**.
       dönmeli.
 - [ ] **Dokunmatikte yapışkan hover (11 Ağustos 2026).** Telefon/tablette
       Setup'ın altındaki "Kullanım Koşulları"na dokun, modalı kapat: linkin
-      altında **kalıcı bir çizgi kalmamalı**. Aynısı "Nasıl oynanır?",
-      "Arkadaşınla paylaş" ve menü satırları için de geçerli. Masaüstünde
-      fareyle üzerine gelince alt çizgi HÂLÂ çıkmalı (o davranış korunuyor).
+      altında **kalıcı bir çizgi kalmamalı**. Aynısı "Nasıl oynanır?" ve menü
+      satırları için de geçerli. Masaüstünde fareyle üzerine gelince alt
+      çizgi HÂLÂ çıkmalı (o davranış korunuyor).
 - [ ] **Admin paneli.** Bekleyen geri bildirim/şikayet varsa "Geri Bildirim"
       açık gelmeli (yoksa "Büyüme"). Gelen kutusunda bekleyen yokken yalnızca
       şikayet varsa doğrudan **"Şikayetler"** alt sekmesi açılmalı — aksi
@@ -984,3 +984,120 @@ gerekiyor).
       **Negatif eş:** 1 basamaklı bir ortalaması olan bir oyuncu varsa
       (`9.50` gibi) onun rakamları da 2 basamaklılarla ondalık noktasında
       hizalı kalmalı — değerler SAĞA yaslı, yalnızca başlık ortalı.
+
+## 11. Karşılama katmanı (18 Ağustos 2026)
+
+Otomatik testler (`npm run test`, `tests/smoke.spec.ts`, **17 test**) katmanın
+tüm yollarını kapsıyor (kapı dalları + geçiş + öznitelikle bağlama + logo
+park efekti + `<` düğmesiyle geri dönüş + hukuki pencereler + tahta
+şeridi + `FAQPage` JSON-LD/`h1` tekilliği) ve `.github/workflows/web-ci.yml`
+ile her PR'da/`main`e push'ta otomatik koşuyor — burada YALNIZCA bu ortamdan
+doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
+→ "Karşılama Katmanı").
+
+- [ ] **Kurulu PWA doğrudan uygulamaya açılıyor — üç adım, sırayla.**
+      Kapının bu dalı (`display-mode: standalone` / iOS
+      `navigator.standalone`) yalnızca GERÇEK kurulu bir PWA'da tetiklenir;
+      masaüstü Chromium'da CDP ile emüle edilemedi (kapı, `matchMedia`/
+      `navigator.standalone`i sahteleyen bir init script'iyle doğrulandı —
+      bkz. `CLAUDE.md`, "Doğrulama sınırı" — ama gerçek cihaz teyidi hiç
+      yapılmadı).
+      1. Ana ekrandaki kurulu PWA'yı aç → karşılama katmanı HİÇ
+         görünmemeli, doğrudan Setup gelmeli.
+      2. **Negatif eş — aynı cihazda:** tarayıcı sekmesinden (ana ekran
+         ikonundan DEĞİL, temiz bir `localStorage`la) `kelimeki.com`a git →
+         katman GÖRÜNMELİ. (1) ile aynı cihazda art arda denenirse
+         `display-mode` sinyalinin gerçekten ayrımı yaptığı, tesadüf
+         olmadığı kanıtlanmış olur.
+      3. Setup'taki `<` düğmesine dokun → katman geri gelmeli;
+         oradan "Hemen Oyna"ya bas → tekrar Setup'a dönmeli.
+
+- [ ] **Başlık kilitli kalıyor + logo park efekti gerçek parmakla akıcı.**
+      Katmanı gördüğün bir cihazda sayfayı yavaşça aşağı kaydır: OYNA/GİRİŞ
+      düğmelerini taşıyan şerit ekranın EN ÜSTÜNDE sabit kalmalı (sayfa
+      geri kalanı onun altından akmalı, `position: sticky`) — kaydırma
+      boyunca hiç kaybolmamalı ya da titrememeli. Aynı kaydırmada kelimeki
+      logosu şeridin altına girdiği anda şeridin ORTASINDA küçülmüş hâli
+      belirmeli, yukarı dönünce kaybolmalı. Düğmeler bu sırada YERİNDEN
+      OYNAMAMALI (yuva sabit genişlikte). Otomatik test sınıfın
+      eklendiğini/kalktığını ve `opacity`yi ölçüyor ama gerçek dokunmatik
+      kaydırmanın akıcılığını ölçemez.
+
+- [ ] **İki başlık düğmesi gözle de aynı.** OYNA ve GİRİŞ aynı boyda,
+      aynı mavi, aynı gölge ağırlığında görünmeli (18 Ağustos 2026'da
+      bildirilen fark buydu — kutular zaten aynıydı, gölge farklıydı).
+
+- [ ] **Tanıtım tahtası doğru okunuyor.** "Oyun tam olarak böyle
+      görünüyor" bölümündeki tahtada KELİME/IRMAK/ZAMAN/KONAK/SES/OYUN ve
+      dikey KAPI/KUZEY/KAS/SON okunabilmeli; iki bölgenin dış hattı,
+      ortadaki altın X2 alanı ve tam merkezdeki turuncu X3 karesi
+      görünmeli. Kelimelerin sözlükte olduğu `npm run verify-demo-board`
+      ile ölçülüyor, ama tahtanın dar ekranda KIRPILMADIĞI gözle
+      bakılmalı. İki tahtada da BAŞKA renkte, tek başına duran taşlar
+      olmalı (izole hamleler) — o taşın ALTINDAKİ kare hâlâ bölge
+      sahibinin tonunda görünmeli; taşın rengi bölgeyi ele geçirmiş gibi
+      GÖRÜNMEMELİ.
+
+- [ ] **Sayfadaki tüm çağrı düğmeleri çalışıyor.** Kahraman "HEMEN
+      OYNA", sayfa sonundaki "OYUNA BAŞLA" ve "GİRİŞ YAP" düğmelerinin
+      üçü de uygulamaya geçirmeli (ikincisi giriş penceresini açmalı).
+      Yeni bir düğme eklendiyse `data-kelimeki-oyna` / `data-kelimeki-giris`
+      özniteliğini taşıdığından emin ol — id ile eklenen bir düğme
+      SESSİZCE ölü kalır.
+
+- [ ] **SSS kutuları açılıp kapanıyor.** Native `<details>` kullanılıyor,
+      JS yok; soruya dokununca cevap açılmalı.
+
+- [ ] **Tahta şeridi PARMAKLA kayıyor.** "Oyun tam olarak böyle görünüyor"
+      bölümündeki tahtayı sola çek → 4 kişilik tahta gelmeli, alttaki iki
+      noktadan ikincisi maviye dönmeli; geri çekince ilki. Kaydırma CSS
+      `scroll-snap` ile yapılıyor, yani her görsel TAM ortalanmış durmalı
+      (yarım kalmamalı). Otomatik test `scrollLeft`i JS ile ayarlıyor —
+      gerçek dokunmatik jestin akıcılığını ve snap'i ölçemez.
+
+- [ ] **Kurulum ekranındaki `<` düğmesi geri döndürüyor — YALNIZCA
+      GİRİŞSİZ (misafir) hesapta.** "Hemen Oyna" ile uygulamaya geç, sol
+      üstteki `<` düğmesine dokun → karşılama katmanı geri gelmeli (sayfa
+      yeniden yükleniyor, bu normal). Sonra tekrar "Hemen Oyna"ya bas ve
+      SAYFAYI YENİLE → uygulamada kalmalısın, katman geri GELMEMELİ
+      (`?tanitim=1` URL'den temizleniyor). **18 Ağustos 2026'da ikon →
+      `← Tanıtım` metne, sonra AYNI GÜN çıplak `←`'ye, sonra AYNI GÜN
+      girişli hesapta TAMAMEN GİZLENDİ, sonra AYNI GÜN büyütülüp `←`
+      glyph'i düz `<`'ye çevrildi** (bkz. `CLAUDE.md`, "Setup'taki `<`
+      düğmesi artık YALNIZCA girişsiz kullanıcıda görünüyor").
+      **Girişli hesapla dene — düğme HİÇ GÖRÜNMEMELİ:** Setup ekranını
+      girişli aç, sol üstte `<` OLMAMALI, sağda yalnızca avatar menüsü
+      olmalı (satır ortalanmadan sağa yaslı kalmalı — kutunun tek çocuğu
+      avatar). Girişsiz hesaba geç (Çıkış Yap) → aynı ekranda düğme GERİ
+      GELMELİ.
+
+- [ ] **Katmanın alt satırındaki hukuki bağlantılar.** "Kullanım Koşulları"
+      ve "Gizlilik Politikası" → uygulamaya geçip DOĞRU pencereyi açmalı,
+      pencere kapanınca URL'de `?kosullar=1`/`?gizlilik=1` KALMAMALI.
+
+- [ ] **Setup footer'ında üçüncü madde: ikonlu "Paylaş" (18 Ağustos 2026).**
+      Footer'ın hukuki linkler satırı artık "Kullanım Koşulları · Gizlilik
+      Politikası · 🔗 Paylaş" — üçü de AYNI küçük metin-linki görünümünde
+      (BÜYÜK/tam genişlikte bir buton DEĞİL — bir önceki denemede öyle
+      yapılmıştı, kullanıcı "buton istemedim, tanıtım footerındakinin
+      aynısını istedim" diyerek düzeltti), yalnızca "Paylaş"ın önünde küçük
+      bir paylaşım ikonu var (kullanıcı: "İki tarafa da ikonlu şekilde koy").
+      Hem GİRİŞSİZ hem GİRİŞLİ hesapta görünmeli (öncekinin aksine artık iki
+      ayrı küçük metin linki YOK: misafirde logonun altındaki "Nasıl
+      oynanır? · Arkadaşınla paylaş" satırından "Arkadaşınla paylaş" kalktı
+      — yalnızca "Nasıl oynanır?" kaldı; girişlide footer'da AYRICA duran
+      eski koşullu "· Paylaş" de tek, koşulsuz maddeye indirgendi). Dokununca
+      native paylaşım sayfası açılmalı (mobil) ya da link panoya kopyalanıp
+      buton metni 2 saniyeliğine "Link kopyalandı!" olmalı (masaüstü) —
+      kopyalanan linkte `?ref=arkadas` OLMALI.
+- [ ] **Karşılama katmanının (tanıtım/Landing) footer'ında AYNI ikonlu
+      "Paylaş" (18 Ağustos 2026).** Katman görünürken (girişsiz, temiz
+      `localStorage`) sayfayı en alta kaydır → footer "Kullanım Koşulları ·
+      Gizlilik Politikası · 🔗 Paylaş" göstermeli, Setup'takiyle BİREBİR AYNI
+      ikon/stil. Landing.tsx React state/olay handler'ı barındırmadığından
+      (statik HTML) bu düğme `main.tsx`'teki `paylasiKur()` ile bağlanıyor —
+      dokununca uygulamaya HİÇ GEÇMEMELİ (`?giris=1`/`?kosullar=1` gibi bir
+      geçiş YOK), doğrudan katman modundayken native paylaşım/panoya
+      kopyalama açılmalı; kopyalamada buton metni 2 saniyeliğine "Link
+      kopyalandı!" olmalı ve ikon KAYBOLMAMALI (yalnızca metin span'i
+      değişiyor).

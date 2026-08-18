@@ -18,6 +18,8 @@ import { LogoMark } from './LogoMark';
 import { PlayerAvatarRow, type AvatarRowPlayer } from './PlayerAvatarRow';
 import { PlayerBadge } from './PlayerBadge';
 import { RecentGamesSection } from './RecentGamesSection';
+import { ShareIcon } from './RelationIcons';
+import { shareKelimekiLink } from '../utils/shareLink';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { OFFLINE_AI_SUGGESTION, OFFLINE_AI_CTA } from '../utils/offlineNotice';
 import { TermsModal } from './TermsModal';
@@ -420,29 +422,18 @@ export function Setup({
     setShowHelp(false);
   };
 
-  // Arkadaşa paylaşılan link ?ref=arkadas taşır — admin panelindeki
-  // "Ziyaretçi Kaynağı" dökümünde (bkz. src/utils/visitTracking.ts,
-  // admin_guest_source_breakdown) diğer sosyal kaynaklardan ayrı bir satır
-  // olarak görünür. Mobilde native paylaşım sayfası varsa onu kullanır;
-  // yoksa (çoğu masaüstü tarayıcı) linki panoya kopyalayıp kısa bir
-  // "Kopyalandı" geri bildirimi gösterir.
+  // `shareKelimekiLink` (`src/utils/shareLink.ts`) — Setup.tsx VE karşılama
+  // katmanının main.tsx'i (React DEĞİL, düz JS) AYNI fonksiyonu paylaşıyor;
+  // link `?ref=arkadas` taşımak ZORUNDA (admin panelindeki "Ziyaretçi
+  // Kaynağı"/"Kaynak Hunisi" dökümlerinin ziyaretçi ucunu besleyen TEK
+  // üretici) — kendi başına bir paylaşım yolu yazmak bu etiketi sessizce
+  // kaybettirebilirdi (18 Ağustos 2026'da tam bu tekrarlanan hatayı önlemek
+  // için ortak dosyaya çıkarıldı).
   const handleShare = async () => {
-    const url = `${window.location.origin}/?ref=arkadas`;
-    const text = 'Hemen ücretsiz dene!';
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'Kelimeki', text, url });
-      } catch {
-        // kullanıcı paylaşım sayfasını iptal etti — yoksay
-      }
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(url);
+    const result = await shareKelimekiLink();
+    if (result === 'copied') {
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2000);
-    } catch {
-      // panoya erişim yoksa sessizce yoksay
     }
   };
 
@@ -565,27 +556,42 @@ export function Setup({
             Kelimeki — Ücretsiz Online Türkçe Stratejik Kelime Bulmaca Oyunu
           </span>
         </h1>
-        <p className="text-muted text-xs font-mono mt-4">
-          Kelimeler kurarak bölgeni genişlet, rakiplerini kuşat. Ama dikkat et:
-          Hamlen rakibinin bölgesine temas ederse, kazandığın puanın bir
-          kısmını onunla paylaşmak zorunda kalırsın. Her hamle bir strateji,
-          her kelime bir mücadele.
-        </p>
-        <div className="mt-3 flex items-center gap-2">
-          <button
-            onClick={() => setShowHelp(true)}
-            className="font-mono text-[11px] font-bold text-accent hover:underline active:opacity-70 transition-opacity"
-          >
-            Nasıl oynanır?
-          </button>
-          <span className="text-muted text-[11px]" aria-hidden="true">·</span>
-          <button
-            onClick={handleShare}
-            className="font-mono text-[11px] font-bold text-accent hover:underline active:opacity-70 transition-opacity"
-          >
-            {shareCopied ? 'Link kopyalandı!' : 'Arkadaşınla paylaş'}
-          </button>
-        </div>
+        {/* 17 Ağustos 2026 — bu iki öğe (tanıtım paragrafı, "Nasıl oynanır?")
+            yalnızca MİSAFİR (girişsiz) kullanıcıda görünür. Kullanıcı isteği:
+            "girişli ise logo altındaki yazıları olmayan, direkt oyun tipi
+            başlığından itibaren başlayan versiyonu görecek." Girişli
+            kullanıcının erişimi kaybolmuyor — "Nasıl oynanır?" hesap
+            menüsünde ve oyun içi tahta şeridinde duruyor. ÖLÇÜLDÜ: bu blok
+            kalkınca logo altı → "OYUN TİPİ" arası kabın kendi `gap-5`'i
+            (20px) kadar kalıyor — telafi amaçlı ekstra bir `mt-*`/`gap`
+            EKLEME.
+
+            "Arkadaşınla paylaş" burada 18 Ağustos 2026'da kaldırıldı
+            (kullanıcı isteği: "arkadaşınla paylaş linkini de kaldırıp
+            tanıtımdaki gibi alta paylaş koyalım") — küçük bir metin linki
+            yerine sayfanın en altında, footer'ın hemen üstünde Landing'in
+            Oyna/Giriş CTA butonlarıyla AYNI stilde tam genişlikte bir "Paylaş"
+            butonu var (aşağı bkz., footer'ın hemen üstü) — artık girişli/
+            girişsiz FARK ETMEKSİZİN aynı tek giriş noktası, önceden ikisi
+            farklı yerdeydi (misafir burada, girişli footer'da). */}
+        {!user && (
+          <>
+            <p className="text-muted text-xs font-mono mt-4">
+              Kelimeler kurarak bölgeni genişlet, rakiplerini kuşat. Ama dikkat et:
+              Hamlen rakibinin bölgesine temas ederse, kazandığın puanın bir
+              kısmını onunla paylaşmak zorunda kalırsın. Her hamle bir strateji,
+              her kelime bir mücadele.
+            </p>
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                onClick={() => setShowHelp(true)}
+                className="font-mono text-[11px] font-bold text-accent hover:underline active:opacity-70 transition-opacity"
+              >
+                Nasıl oynanır?
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex flex-col gap-2">
@@ -834,14 +840,48 @@ export function Setup({
           kullanıcı için `null` döner), o yüzden bu satırın kaldırılması
           misafir tarafında hiçbir görsel fark yaratmıyor. */}
 
-      <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-muted">
-        <button onClick={() => setShowTerms(true)} className="hover:underline active:opacity-70 transition-opacity">
-          Kullanım Koşulları
-        </button>
-        <span>·</span>
-        <button onClick={() => setShowPrivacy(true)} className="hover:underline active:opacity-70 transition-opacity">
-          Gizlilik Politikası
-        </button>
+      {/* Alt satır Landing.tsx'in "Son çağrı" footer'ıyla AYNI iki katmanlı
+          yapı: hukuki linkler + hemen altında "© Kelimeki" (18 Ağustos 2026,
+          kullanıcı isteği: "setup altındaki footer'ın altına 'c Kelimeki'
+          (tanıtımdaki gibi) olsun") — `gap-1` ikisini tek bir footer bloğu
+          gibi gruplar, dıştaki kabın `gap-5`'i (üstteki içerikle arasını)
+          hiç etkilemez. */}
+      <div className="flex flex-col items-center gap-1">
+        {/* `flex-wrap` bir emniyet ağı — 356px'in altındaki viewport'larda
+            (320/344 gibi) üç öğe tek satıra sığmıyor; ÖLÇÜLDÜ, `gap-x-2 gap-y-1`
+            320'de iki satıra sarıp yatay taşmayı 0'da tutuyor, 356+ genişlikte
+            hiçbir şey değişmiyor. */}
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[10px] font-mono text-muted">
+          <button onClick={() => setShowTerms(true)} className="hover:underline active:opacity-70 transition-opacity">
+            Kullanım Koşulları
+          </button>
+          <span>·</span>
+          <button onClick={() => setShowPrivacy(true)} className="hover:underline active:opacity-70 transition-opacity">
+            Gizlilik Politikası
+          </button>
+          {/* "Paylaş" (18 Ağustos 2026, aynı gün üçüncü/dördüncü tur —
+              kullanıcı: "Yanlış anladın, buton istemedim. Tanıtım
+              footerındakinin aynısını istedim", sonra: "Daha önce tanıtım
+              sayfasına universal paylaş ikonlu paylaş linki koymuştuk...
+              İki tarafa da ikonlu şekilde koy") — küçük metin linki stili
+              (Kullanım Koşulları/Gizlilik Politikası ile AYNI className)
+              korunuyor, yalnızca başına `ShareIcon` eklendi — Landing.tsx'in
+              footer'ındaki AYNI ikonla (aşağı bkz.), `fill="currentColor"`
+              olduğundan satırın `text-muted` rengini otomatik miras alıyor.
+              `handleShare` girişten bağımsız çalıştığından `user &&` gibi
+              bir koşula BAĞLANMADI, misafir/girişli aynı satırı görüyor. */}
+          <span>·</span>
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1 hover:underline active:opacity-70 transition-opacity"
+          >
+            <ShareIcon size={12} />
+            {shareCopied ? 'Link kopyalandı!' : 'Paylaş'}
+          </button>
+        </div>
+        <p className="font-mono text-[10px] text-muted" style={{ margin: 0 }}>
+          © Kelimeki
+        </p>
       </div>
     </div>
     </>
