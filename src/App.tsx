@@ -1140,23 +1140,18 @@ export default function App() {
               Sağ taraf DEĞİŞMEDİ: girişsizken GİRİŞ, girişliyken avatar
               menüsü — ikisi de `UserMenu`'nün kendi dalları.
 
-              `← Tanıtım` METİN, çıplak ev/ok ikonu DEĞİL (18 Ağustos 2026,
-              denetim sonrası düzeltme). İki sorun vardı: (1) burada bir ev
-              ikonu kullanmak, `Board.tsx`'teki köşe BAŞLANGIÇ karesi
-              işaretiyle (`HomeMark`) AYNI glyph'i ilgisiz iki anlamda
-              çalıştırıyordu — bu projenin kendi kuralı (`RelationIcons.tsx`)
-              aynı glyph iki şey anlattığında görsel ayrım ZORUNLU tutuyor,
-              burada hiç yoktu; (2) "home" olgusal olarak yanlıştı — dönen
-              kullanıcı için `/` zaten uygulamanın kendisi, karşılama sayfası
-              bir "ev" değil GERİ dönülen bir yer. Metin `text-[10px]`/
-              `font-mono` — footer'daki hukuki bağlantılarla aynı görsel
-              ağırlık, başlıkta ikinci bir vurgu yaratmasın diye. */}
+              Düğme ÇIPLAK `←` (18 Ağustos 2026, aynı gün ikinci tur, kullanıcı
+              kararı) — denetim turunda önce `← Tanıtım` metnine geçilmişti
+              ("çıplak ok yanlış yönlendirir" gerekçesiyle), ama kullanıcı
+              açıkça yalnızca oku istedi; erişilebilir ad hâlâ `aria-label`
+              üzerinden ("Tanıtım sayfası") doğru anlatılıyor, yalnızca
+              GÖRÜNÜR metin sadeleşti. */}
           <a
             href="/?tanitim=1"
             aria-label="Tanıtım sayfası"
             className="shrink-0 font-mono text-[10px] text-muted active:scale-[0.97] transition-transform"
           >
-            ← Tanıtım
+            ←
           </a>
           <UserMenu />
         </div>

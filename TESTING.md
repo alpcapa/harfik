@@ -989,7 +989,7 @@ gerekiyor).
 
 Otomatik testler (`npm run test`, `tests/smoke.spec.ts`, **17 test**) katmanın
 tüm yollarını kapsıyor (kapı dalları + geçiş + öznitelikle bağlama + logo
-park efekti + `← Tanıtım` düğmesiyle geri dönüş + hukuki pencereler + tahta
+park efekti + `←` düğmesiyle geri dönüş + hukuki pencereler + tahta
 şeridi + `FAQPage` JSON-LD/`h1` tekilliği) ve `.github/workflows/web-ci.yml`
 ile her PR'da/`main`e push'ta otomatik koşuyor — burada YALNIZCA bu ortamdan
 doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
@@ -1009,7 +1009,7 @@ doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
          katman GÖRÜNMELİ. (1) ile aynı cihazda art arda denenirse
          `display-mode` sinyalinin gerçekten ayrımı yaptığı, tesadüf
          olmadığı kanıtlanmış olur.
-      3. Setup'taki `← Tanıtım` düğmesine dokun → katman geri gelmeli;
+      3. Setup'taki `←` düğmesine dokun → katman geri gelmeli;
          oradan "Hemen Oyna"ya bas → tekrar Setup'a dönmeli.
 
 - [ ] **Başlık kilitli kalıyor + logo park efekti gerçek parmakla akıcı.**
@@ -1055,19 +1055,23 @@ doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
       (yarım kalmamalı). Otomatik test `scrollLeft`i JS ile ayarlıyor —
       gerçek dokunmatik jestin akıcılığını ve snap'i ölçemez.
 
-- [ ] **Kurulum ekranındaki `← Tanıtım` düğmesi geri döndürüyor.** "Hemen
-      Oyna" ile uygulamaya geç, sol üstteki `← Tanıtım` metnine dokun →
+- [ ] **Kurulum ekranındaki `←` düğmesi geri döndürüyor.** "Hemen
+      Oyna" ile uygulamaya geç, sol üstteki `←` düğmesine dokun →
       karşılama katmanı geri gelmeli (sayfa yeniden yükleniyor, bu normal).
       Sonra tekrar "Hemen Oyna"ya bas ve SAYFAYI YENİLE → uygulamada
       kalmalısın, katman geri GELMEMELİ (`?tanitim=1` URL'den
-      temizleniyor). **18 Ağustos 2026'da ikon → metne çevrildi** (bir ev
-      glyph'i `Board.tsx`teki köşe başlangıç işaretiyle çakışıyordu) —
-      düğme artık bir ok karakteri değil, TEK BAŞINA `←` da değil, `←
-      Tanıtım` yazısı; footer'daki hukuki bağlantılarla aynı küçük/soluk
-      görsel ağırlıkta olmalı, başlıkta göze çarpmamalı.
-      **Girişli hesapla da dene:** düğme yine solda, sağda avatar menüsü
-      durmalı (GİRİŞ değil) — tarayıcının Geri tuşuyla KARIŞTIRMA, ikisi
-      farklı davranır (bkz. `CLAUDE.md`, "Kayda geçen yan not").
+      temizleniyor). **18 Ağustos 2026'da ikon → `← Tanıtım` metne, sonra
+      AYNI GÜN kullanıcı isteğiyle çıplak `←`'ye döndü** (bkz. `CLAUDE.md`,
+      "Başlıktaki düğme… (nihai)") — görünür metin yalnızca ok karakteri,
+      `aria-label="Tanıtım sayfası"` erişilebilir ad olarak duruyor.
+      **Girişli hesapla da dene:** Setup'taki düğme yine solda, SETUP'IN
+      SAĞINDAKİ menü avatar olmalı (GİRİŞ değil) — tarayıcının Geri
+      tuşuyla KARIŞTIRMA, ikisi farklı davranır (bkz. `CLAUDE.md`, "Kayda
+      geçen yan not"). Düğmeye basıp karşılama katmanına dönünce KATMANIN
+      KENDİ başlığında GİRİŞ görmen NORMAL — o başlık derleme zamanında
+      üretilen statik HTML, oturum durumunu hiç bilmiyor; `?tanitim=1`
+      bilerek oturum sinyalini de atlıyor (bkz. `CLAUDE.md`, "Setup'a
+      girişliyken `?tanitim=1`e gidince GİRİŞ butonu görünüyor").
 
 - [ ] **Katmanın alt satırındaki hukuki bağlantılar.** "Kullanım Koşulları"
       ve "Gizlilik Politikası" → uygulamaya geçip DOĞRU pencereyi açmalı,

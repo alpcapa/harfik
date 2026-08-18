@@ -604,36 +604,61 @@ bir maliyeti bu açık kararın üstüne çıkarmak yanlış önceliklendirme ol
 tahta silmeye kalkışmasın diye rakam güncellendi: gerçekleşen ~19.3 KB gzip,
 takas hâlâ açıkça lehte (19.3 KB HTML ↔ 410 KB tam uygulama JS'i).
 
-### Başlıktaki düğme: ev ikonu → `← Tanıtım` metni
+### Başlıktaki düğme: ev ikonu → `← Tanıtım` metni → çıplak `←` (nihai)
 
-Kurulum ekranının sol üstündeki düğme bir ev/ok GLYPH'i değil, **metin**
-oldu. Üç sebep:
+Kurulum ekranının sol üstündeki düğme önce bir ev/ok GLYPH'iydi (Bölüm 2),
+sonra denetim turunda **metne** (`← Tanıtım`) çevrildi, sonra AYNI GÜN
+kullanıcı isteğiyle tekrar **çıplak `←`**'ye döndü — bu üçüncüsü nihai.
 
-1. **Glyph çakışması vardı:** düğme `Board.tsx`'teki `HomeMark`in AYNI
-   vektörünü (köşe başlangıç karesi işareti) çiziyordu — aynı glyph iki
-   ilgisiz anlamda. Bu projenin kendi kuralı (`RelationIcons.tsx`) aynı
-   glyph'in iki farklı eylemi anlattığı her yerde renk ayrımını ZORUNLU
-   tutuyor (bkz. "Bileşen Notları"); burada hiçbir ayrım yoktu.
-2. **"Ev" olgusal olarak yanlıştı:** dönen kullanıcı için `/` zaten
-   uygulamanın KENDİSİ — karşılama sayfası bir "ev" değil, GERİ dönülen bir
-   yer.
-3. **İhtiyacın kendisi zaten "geri":** düğmeyi doğuran istek birebir *"Hemen
-   Oynaya basınca geri gelemiyorsun"* — bir hedefe GİTME değil bir
-   KURTARMA.
+**Metne geçişin gerekçesi (artık geçersiz, tarihsel kayıt):** ev/ok
+GLYPH'inin `Board.tsx`'teki `HomeMark` ile AYNI vektörü çizmesi
+(`RelationIcons.tsx`'in "aynı glyph iki anlam taşıyorsa ayrım ZORUNLU"
+kuralını ihlal ediyordu) ve "ev" kelimesinin olgusal olarak yanlış olması
+("/" dönen kullanıcı için zaten uygulamanın kendisi). O turda "çıplak `←`
+da native alışkanlıkla 'bir adım geri' der, Setup bir kök ekran, orada geri
+gidilecek önceki ekran yok" diye çıplak ok da elenmişti.
 
-**Çıplak `←` da tercih edilmedi** — kök ekranın sol üstündeki yalın bir ok
-native alışkanlıkla "bir adım geri" der, oysa Setup bir kök ekran ve orada
-geri gidilecek bir "önceki ekran" yok; `← Tanıtım` ne olacağını tam
-söylüyor. Metin `text-[10px]`/`font-mono`/`text-muted` — footer'daki hukuki
-bağlantılarla aynı görsel ağırlıkta, başlıkta ikinci bir vurgu yaratmasın
-diye. `HOME_MARK_PATH` export'u `Board.tsx`'ten GERİ ALINDI (tek tüketicisi
-buydu, path yeniden satır içine alındı) — `aria-label="Tanıtım sayfası"` ve
-davranış (`<a href="/?tanitim=1">`, tam yeniden yükleme) değişmedi,
-`tests/smoke.spec.ts` zaten `getByLabel` ile buluyordu.
+**Kullanıcı bu son gerekçeyi kabul etmedi (18 Ağustos 2026, aynı gün ikinci
+tur):** *"Setup'daki tanıtım yazan geri butonunu sadece geri ok (<) şeklinde
+bırakalım."* — canlı tercih, dokümandaki tasarım kararının önüne geçer.
+Düğme artık yalnızca `←` gösteriyor; `aria-label="Tanıtım sayfası"` DURUYOR
+(erişilebilir ad hâlâ doğru anlatıyor, yalnızca görünür metin sadeleşti).
+`HOME_MARK_PATH` export'u `Board.tsx`'ten GERİ ALINDI (tek tüketicisi
+buydu) ve bu revizyonla da geri GELMEDİ — davranış (`<a href="/?tanitim=1">`,
+tam yeniden yükleme) hiç değişmedi, `tests/smoke.spec.ts` zaten `getByLabel`
+ile buluyor, metin değişikliğinden etkilenmiyor.
 
-**Ölçüldü** (derlenmiş CSS + Chromium, 360/390/834): satırda yatay taşma
-**0**; metin `UserMenu`'nün genişliğinden bağımsız, üç genişlikte de sabit
-27 px satır yüksekliği.
+**Ders:** bu doküman "çıplak `←` bilerek reddedildi" diye yazıp bir sonraki
+oturumu ondan caydırmayı hedeflemişti — ama kullanıcının canlı, açık isteği
+her zaman dokümandaki bir tasarım kararının önündedir. Bir sonraki oturum
+bu satırı "geri dönüldü" diye tekrar metne çevirmeye kalkışmamalı.
+
+### Setup'a girişliyken `?tanitim=1`e gidince GİRİŞ butonu görünüyor — BEKLENEN
+
+Kullanıcı sordu (18 Ağustos 2026): *"girişli olarak setup ekranından geri
+yaptığımda giriş butonu çıkıyor tekrar. Bu normal mi?"* — **Evet, normal ve
+kasıtlı.** Sebep `?tanitim=1`in kendi tanımında zaten yazılı: bu parametre
+öteki TÜM dönen-kullanıcı sinyallerini (`seen-intro`/yarım oyun/**oturum**/
+PWA) BİLEREK atlıyor (bkz. "Kapı" bölümü) — aksi halde girişli bir kullanıcı
+bu düğmeye bassa bile kapı onu anında tekrar uygulamaya iter, tanıtım sayfası
+hiç görünmez, düğmenin kendisi işlevsiz kalırdı.
+
+Landing katmanının başlığındaki GİRİŞ (`#karsilama-giris`) STATİK, derleme
+zamanında üretilen düz HTML — `Landing.tsx` sunucuda (Node'da) render
+ediliyor, hiçbir tarayıcı globaline/auth durumuna erişimi yok, dolayısıyla
+oturum açık olsa da olmasa da HER ZAMAN aynı "GİRİŞ" düğmesini basar. Bu,
+kullanıcının uygulama içindeki gerçek oturum durumunu YALANLAMIYOR — yalnızca
+o an render edilen sayfa (tanıtım) girişli/girişsiz ayrımı hiç bilmiyor.
+Düğmeye basılırsa `gec('giris')` uygulamaya `?giris=1` ile döner ve
+`AuthModal` açılır — girişli biri için bu gereksiz bir adım ama zararsız
+(modal kapatılabilir, oturum bozulmaz).
+
+**Bilerek değiştirilmedi:** landing header'ının auth-farkında hale
+getirilmesi (ör. girişliyse GİRİŞ yerine avatar göstermek) katmanın "hiçbir
+hook/olay/tarayıcı globali YOK, sunucuda statik render edilir" temel
+kısıtını (`Landing.tsx` dosya başlığı) ihlal eder ve `?tanitim=1`in KENDİ
+amacına (dönen kullanıcıya normal bir İLK-ziyaret önizlemesi göstermek)
+aykırı düşer.
 
 ### Kayda geçen yan not — tarayıcının Geri tuşu farklı davranıyor
 
