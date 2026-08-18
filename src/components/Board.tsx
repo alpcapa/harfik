@@ -68,6 +68,22 @@ interface BoardProps {
   hideFooter?: boolean;
   /** Taşları küçük/puan göstermeden çizer — salt-okunur önizlemelerde (bkz. `GameBoardPreview`). */
   compact?: boolean;
+  /**
+   * Tahtanın "filigranları": köşelerdeki büyük 1/2/3/4 oyuncu numarası,
+   * merkezdeki büyük X2 ve ortadaki hücrenin X3 etiketi.
+   *
+   * Varsayılanı `!compact` — yani ELLE VERİLMEZSE davranış eskisiyle birebir
+   * aynı: gerçek oyunda görünür, `compact` önizlemelerde görünmez.
+   *
+   * Ayrı bir prop olmasının sebebi 18 Ağustos 2026'da yaşanan bir hata:
+   * karşılama katmanında filigranlar istendiğinde `compact` tamamen
+   * kapatılmıştı, ama `compact` İKİ işi birden yapıyor — filigranları gizlemek
+   * VE taşları küçültüp puan üst simgesini kaldırmak (satır ~271, `Tile`).
+   * Sonuçta tanıtım tahtasının harfleri de büyüyüp puan simgeleri geldi;
+   * kullanıcı "sadece filigranı düzelt demiştim" diye bildirdi. İki kavram
+   * artık ayrı: `compact` TAŞLARI, `showMarks` FİLİGRANLARI yönetir.
+   */
+  showMarks?: boolean;
 }
 
 // Merkezdeki x2 bonus bölgesi altın rengi — nömorfik, diğer köşe tonlarıyla
@@ -145,7 +161,10 @@ export function Board({
   onTilePointerCancel,
   hideFooter = false,
   compact = false,
+  showMarks,
 }: BoardProps) {
+  // Verilmezse eski davranış: filigranlar `compact`in tersiyle gider.
+  const filigranGoster = showMarks ?? !compact;
   const online = useOnlineStatus();
   const { board, placed, bonuses, players, current } = state;
 
@@ -285,7 +304,7 @@ export function Board({
         // hücre bunun dışında, turuncu zemin + kendi X3 etiketiyle öne çıkar.
         classes.push('cursor-pointer');
         style = bonus ? { ...CENTER_ZONE_STYLE } : { ...GOLD_ZONE_STYLE };
-        if (bonus && !compact) {
+        if (bonus && filigranGoster) {
           classes.push(CENTER_TEXT, 'text-[clamp(7px,1.9vw,12px)]');
           content = BONUS_LABELS[bonus];
         }
@@ -483,7 +502,7 @@ export function Board({
             köşelerde filigranı hücre alanının üstüne, alt köşelerde
             altına kaydırıyordu (ölçüldü: üstte -3.3px, altta +2.9px —
             toplam ~6px, tam da 10-4 farkı). */}
-        {!compact && (
+        {filigranGoster && (
           <div className="pointer-events-none absolute inset-[10px]">
             {[0, 1, 2, 3].map((i) => {
               const col = cornerColor[i];
@@ -518,7 +537,7 @@ export function Board({
             inset-[10px]: yukarıdaki köşe filigranı notuyla aynı sebep — grid'in
             kendi p-[10px] dolgusuyla eşleşmesi gerekiyor. Compact (önizleme)
             varyantında köşe numaralarıyla birlikte hiç gösterilmez. */}
-        {!compact && (
+        {filigranGoster && (
           <div className="pointer-events-none absolute inset-[10px]">
             <div
               className="absolute flex items-center justify-center font-mono font-bold leading-none"

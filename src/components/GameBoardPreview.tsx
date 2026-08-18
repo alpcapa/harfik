@@ -10,24 +10,23 @@ interface GameBoardPreviewProps {
   /** Verilirse tahtaya tıklanabilir olur (ör. kapat/paylaş aksiyon menüsünü açmak için). */
   onClick?: () => void;
   /**
-   * `Board`'un `compact` modu — küçük harfler, puan üst simgesi yok, köşe
-   * oyuncu-numarası filigranı yok, merkezdeki büyük "X2" filigranı ve
-   * ortadaki "X3" etiketi yok.
+   * Tahtanın filigranları: köşelerdeki büyük 1/2/3/4, merkezdeki X2 ve
+   * ortadaki X3 etiketi. Varsayılanı `false` — `GameHistoryModal` kart
+   * açılımı ve `SharedGamePage` KÜÇÜK bir önizleme çiziyor, orada
+   * filigranlar okunaksız bir kalabalık üretiyordu.
    *
-   * Varsayılan `true`, çünkü bu bileşenin ilk iki kullanım yeri
-   * (`GameHistoryModal`'daki oyun kartı açılımı ve `SharedGamePage`) tahtayı
-   * KÜÇÜK bir önizleme olarak çiziyor — orada filigranlar okunaksız bir
-   * kalabalık üretiyordu.
-   *
-   * Karşılama katmanı (`src/landing/Landing.tsx`) bunu **`false`** geçiyor
+   * Karşılama katmanı (`src/landing/Landing.tsx`) bunu `true` geçiyor
    * (18 Ağustos 2026, kullanıcı isteği: *"Tanıtımda 2 veya 4 kişilik oyun
    * görsellerinde watermark'lar yok. Oyunun birebir aynı görüntüsü
-   * olmalı."*) — orada tahta bir "önizleme" değil, oyunun vitrini; gerçek
-   * oyunda görünen HER şey görünmeli. Ölçüldü: katmanın tahta kabı da
-   * gerçek oyun ekranıyla aynı `max-w-[680px] px-3` kutusunda, yani
-   * filigranların `vw` tabanlı `clamp()` boyutları iki yerde aynı düşüyor.
+   * olmalı."*).
+   *
+   * ⚠ Taş boyutunu DEĞİŞTİRMEZ. İlk denemede bunun yerine `compact`
+   * tamamen kapatılmıştı ve harfler de büyüyüp puan üst simgeleri geldi —
+   * kullanıcı "sadece filigranı düzelt demiştim" diye bildirdi. `Board`'da
+   * iki kavram artık ayrı prop: `compact` taşları, `showMarks` filigranları
+   * yönetiyor. Bu bileşen taşları HER ZAMAN `compact` çiziyor.
    */
-  compact?: boolean;
+  showMarks?: boolean;
 }
 
 const noop = () => {};
@@ -37,13 +36,21 @@ export function GameBoardPreview({
   playerCount,
   players,
   onClick,
-  compact = true,
+  showMarks = false,
 }: GameBoardPreviewProps) {
   const state = buildSnapshotGameState(snapshot, playerCount, players);
   return (
     <div onClick={onClick} className={onClick ? 'cursor-pointer' : undefined}>
       <div className="pointer-events-none">
-        <Board state={state} onCellClick={noop} moveStatus={null} onOpenHistory={noop} hideFooter compact={compact} />
+        <Board
+          state={state}
+          onCellClick={noop}
+          moveStatus={null}
+          onOpenHistory={noop}
+          hideFooter
+          compact
+          showMarks={showMarks}
+        />
       </div>
     </div>
   );

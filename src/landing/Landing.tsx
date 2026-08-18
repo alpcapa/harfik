@@ -427,7 +427,7 @@ export function Landing() {
                     <GameBoardPreview
                       snapshot={DEMO_TILES_2}
                       playerCount={2}
-                      compact={false}
+                      showMarks
                       players={[
                         { name: 'Sen', score: 0, is_ai: false, colorIndex: 0 },
                         { name: 'Rakip', score: 0, is_ai: false, colorIndex: 1 },
@@ -460,7 +460,7 @@ export function Landing() {
                     <GameBoardPreview
                       snapshot={DEMO_TILES_4}
                       playerCount={4}
-                      compact={false}
+                      showMarks
                       players={[
                         { name: 'Sen', score: 0, is_ai: false, colorIndex: 0 },
                         { name: '2. oyuncu', score: 0, is_ai: false, colorIndex: 1 },
