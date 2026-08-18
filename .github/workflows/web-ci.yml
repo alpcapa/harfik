@@ -1,0 +1,82 @@
+# Web CI — lint + build + Playwright duman testleri.
+#
+# NEDEN VAR (18 Ağustos 2026): `mobile-build.yml` yalnızca Flutter portunu
+# kapsıyor; web tarafında (`npm run lint`/`build`/`test`) HİÇBİR otomatik
+# kontrol yoktu — bu proje aylardır yalnızca geliştirme oturumunda elle
+# koşulan komutlara güveniyordu. Bu, karşılama katmanı (bkz. kök `CLAUDE.md`
+# → "Karşılama Katmanı") eklendiğinden beri özellikle riskli: dolaşımdaki
+# `/game/:id` ve `/davet/:token` bağlantılarının kırılmadığını kanıtlayan
+# TEK şey `tests/smoke.spec.ts`teki duman testleri, ve onları hiçbir otomatik
+# kontrol koşturmuyordu — `<head>`'e enjekte edilen kapı script'inde
+# (`scripts/landing-plugin.js`) tek satırlık bir regresyon sessizce merge
+# edilebilirdi.
+#
+# TETİKLEYİCİ: yalnızca web'i ilgilendiren dosyalar değiştiğinde (mobil
+# port kendi workflow'unda kapsanıyor, `mobile/**` burada YOK).
+name: Web CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'public/**'
+      - 'index.html'
+      - 'vite.config.ts'
+      - 'tailwind.config.js'
+      - 'playwright.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/web-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'public/**'
+      - 'index.html'
+      - 'vite.config.ts'
+      - 'tailwind.config.js'
+      - 'playwright.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/web-ci.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run build
+
+      # Bu ortamdaki geliştirme oturumunun aksine (bkz. playwright.config.ts),
+      # runner'da Chromium önceden kurulu değil — burada kendi tarayıcısını
+      # kuruyor. `--with-deps` sistem kütüphanelerini de (fontconfig vb.)
+      # yükler, aksi halde Chromium ubuntu-latest'te başlamadan patlar.
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run test
+        env:
+          CI: true
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore

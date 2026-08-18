@@ -987,25 +987,37 @@ gerekiyor).
 
 ## 11. Karşılama katmanı (18 Ağustos 2026)
 
-Otomatik testler (`npm run test`, `tests/smoke.spec.ts`) katmanın on iki
-yolunu da kapsıyor (kapı dalları + geçiş + öznitelikle bağlama + logo park
-efekti + ev düğmesiyle geri dönüş + hukuki pencereler + tahta şeridi) —
-burada YALNIZCA bu ortamdan doğrulanamayan ya da gözle bakılması gereken
-maddeler var (bkz. `CLAUDE.md` → "Karşılama Katmanı").
+Otomatik testler (`npm run test`, `tests/smoke.spec.ts`, **17 test**) katmanın
+tüm yollarını kapsıyor (kapı dalları + geçiş + öznitelikle bağlama + logo
+park efekti + `← Tanıtım` düğmesiyle geri dönüş + hukuki pencereler + tahta
+şeridi + `FAQPage` JSON-LD/`h1` tekilliği) ve `.github/workflows/web-ci.yml`
+ile her PR'da/`main`e push'ta otomatik koşuyor — burada YALNIZCA bu ortamdan
+doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
+→ "Karşılama Katmanı").
 
-- [ ] **Kurulu PWA doğrudan uygulamaya açılıyor.** `kelimeki.com`u ana
-      ekrana ekle, `localStorage`ı TEMİZ bir cihazda (ya da site verisini
-      silip yeniden ekleyerek) ikonundan aç → karşılama katmanı HİÇ
-      görünmemeli, doğrudan Setup gelmeli. Kapının bu dalı
-      (`display-mode: standalone` / iOS `navigator.standalone`) yalnızca
-      GERÇEK kurulu bir PWA'da tetiklenir; masaüstü Chromium'da CDP ile
-      emüle edilemedi.
-      **Negatif eş:** aynı cihazda tarayıcı sekmesinden (ana ekran
-      ikonundan DEĞİL) `kelimeki.com`a git → katman GÖRÜNMELİ.
+- [ ] **Kurulu PWA doğrudan uygulamaya açılıyor — üç adım, sırayla.**
+      Kapının bu dalı (`display-mode: standalone` / iOS
+      `navigator.standalone`) yalnızca GERÇEK kurulu bir PWA'da tetiklenir;
+      masaüstü Chromium'da CDP ile emüle edilemedi (kapı, `matchMedia`/
+      `navigator.standalone`i sahteleyen bir init script'iyle doğrulandı —
+      bkz. `CLAUDE.md`, "Doğrulama sınırı" — ama gerçek cihaz teyidi hiç
+      yapılmadı).
+      1. Ana ekrandaki kurulu PWA'yı aç → karşılama katmanı HİÇ
+         görünmemeli, doğrudan Setup gelmeli.
+      2. **Negatif eş — aynı cihazda:** tarayıcı sekmesinden (ana ekran
+         ikonundan DEĞİL, temiz bir `localStorage`la) `kelimeki.com`a git →
+         katman GÖRÜNMELİ. (1) ile aynı cihazda art arda denenirse
+         `display-mode` sinyalinin gerçekten ayrımı yaptığı, tesadüf
+         olmadığı kanıtlanmış olur.
+      3. Setup'taki `← Tanıtım` düğmesine dokun → katman geri gelmeli;
+         oradan "Hemen Oyna"ya bas → tekrar Setup'a dönmeli.
 
-- [ ] **Logo park efekti gerçek parmakla akıcı.** Katmanı gördüğün bir
-      cihazda sayfayı yavaşça aşağı kaydır: kelimeki logosu kilitli
-      şeridin altına girdiği anda şeridin ORTASINDA küçülmüş hâli
+- [ ] **Başlık kilitli kalıyor + logo park efekti gerçek parmakla akıcı.**
+      Katmanı gördüğün bir cihazda sayfayı yavaşça aşağı kaydır: OYNA/GİRİŞ
+      düğmelerini taşıyan şerit ekranın EN ÜSTÜNDE sabit kalmalı (sayfa
+      geri kalanı onun altından akmalı, `position: sticky`) — kaydırma
+      boyunca hiç kaybolmamalı ya da titrememeli. Aynı kaydırmada kelimeki
+      logosu şeridin altına girdiği anda şeridin ORTASINDA küçülmüş hâli
       belirmeli, yukarı dönünce kaybolmalı. Düğmeler bu sırada YERİNDEN
       OYNAMAMALI (yuva sabit genişlikte). Otomatik test sınıfın
       eklendiğini/kalktığını ve `opacity`yi ölçüyor ama gerçek dokunmatik
@@ -1043,13 +1055,19 @@ maddeler var (bkz. `CLAUDE.md` → "Karşılama Katmanı").
       (yarım kalmamalı). Otomatik test `scrollLeft`i JS ile ayarlıyor —
       gerçek dokunmatik jestin akıcılığını ve snap'i ölçemez.
 
-- [ ] **Kurulum ekranındaki ev düğmesi geri döndürüyor.** "Hemen Oyna" ile
-      uygulamaya geç, sol üstteki gri ev ikonuna dokun → karşılama katmanı
-      geri gelmeli (sayfa yeniden yükleniyor, bu normal). Sonra tekrar
-      "Hemen Oyna"ya bas ve SAYFAYI YENİLE → uygulamada kalmalısın, katman
-      geri GELMEMELİ (`?tanitim=1` URL'den temizleniyor).
-      **Girişli hesapla da dene:** ev ikonu yine solda, sağda avatar menüsü
-      durmalı (GİRİŞ değil).
+- [ ] **Kurulum ekranındaki `← Tanıtım` düğmesi geri döndürüyor.** "Hemen
+      Oyna" ile uygulamaya geç, sol üstteki `← Tanıtım` metnine dokun →
+      karşılama katmanı geri gelmeli (sayfa yeniden yükleniyor, bu normal).
+      Sonra tekrar "Hemen Oyna"ya bas ve SAYFAYI YENİLE → uygulamada
+      kalmalısın, katman geri GELMEMELİ (`?tanitim=1` URL'den
+      temizleniyor). **18 Ağustos 2026'da ikon → metne çevrildi** (bir ev
+      glyph'i `Board.tsx`teki köşe başlangıç işaretiyle çakışıyordu) —
+      düğme artık bir ok karakteri değil, TEK BAŞINA `←` da değil, `←
+      Tanıtım` yazısı; footer'daki hukuki bağlantılarla aynı küçük/soluk
+      görsel ağırlıkta olmalı, başlıkta göze çarpmamalı.
+      **Girişli hesapla da dene:** düğme yine solda, sağda avatar menüsü
+      durmalı (GİRİŞ değil) — tarayıcının Geri tuşuyla KARIŞTIRMA, ikisi
+      farklı davranır (bkz. `CLAUDE.md`, "Kayda geçen yan not").
 
 - [ ] **Katmanın alt satırındaki hukuki bağlantılar.** "Kullanım Koşulları"
       ve "Gizlilik Politikası" → uygulamaya geçip DOĞRU pencereyi açmalı,

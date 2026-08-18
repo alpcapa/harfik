@@ -535,6 +535,189 @@ bir ekran hiç yok (`mobile/` bu bölümde de hiç değişmedi), yani madde
 uygulamalarda zaten görünemez. Porta bir gün benzer bir tanıtım ekranı
 eklenirse bu madde oraya TAŞINMAMALI.
 
+## Karşılama Katmanı — Sertleştirme (18 Ağustos 2026)
+
+İçerik/efekt turları bitince (yukarıdaki Bölüm 2/3) bağımsız bir denetim
+üç somut açık buldu — bunlar kapatıldı.
+
+### CI'da HİÇBİR web kontrolü koşmuyordu
+
+`.github/workflows/` altında yalnızca `mobile-build.yml` (Flutter) ve
+`branch-cleanup.yml` vardı; `npm run lint`/`build`/`test` hiçbir workflow'da
+çalışmıyordu. Bu, karşılama katmanı eklendiğinden beri özellikle riskliydi:
+dolaşımdaki `/game/:id` ve `/davet/:token` bağlantılarının kırılmadığını
+kanıtlayan TEK şey `tests/smoke.spec.ts`, ve onu hiçbir otomatik kontrol
+koşturmuyordu — `<head>`'e enjekte edilen kapı script'inde
+(`scripts/landing-plugin.js`) tek satırlık bir regresyon sessizce merge
+edilebilirdi.
+
+**`.github/workflows/web-ci.yml` eklendi** — `mobile-build.yml` ile aynı
+tetikleyici deseni (push+PR → `main`, `paths` filtresi; bu sefer `src/**`,
+`scripts/**`, `tests/**`, `public/**`, `index.html`, `vite.config.ts`,
+`tailwind.config.js`, `playwright.config.ts`, `package*.json`). Adımlar:
+`npm ci` → `lint` → `build` → Playwright'ı kur (`--with-deps chromium`) →
+`test`.
+
+**`playwright.config.ts`'teki `executablePath` bu geliştirme ortamına ÖZGÜ
+bir yoldu (`/opt/pw-browsers/chromium`) — GitHub Actions runner'ında bu yol
+YOK.** `process.env.CI ? undefined : '/opt/pw-browsers/chromium'` yapıldı:
+CI'da Playwright'ın kendi kurduğu (bundled) tarayıcı kullanılıyor, bu
+ortamdaki yerel davranış hiç değişmedi (testler hâlâ yerelde 17/17 yeşil).
+
+**Negatif eş — CI'ın gerçekten bir şey kanıtladığı ayrı ayrı doğrulandı:**
+kapının `seen-intro`/`game-state` dalını geçici olarak boş bırakınca
+(`if(l.getItem(...)) return g();` → boş dize) **4 test GERÇEKTEN düştü**
+(ikisi mevcut uygulama testleri — "Setup ekranı açılır…" ve "Öne dönüşte
+bağlantı durumu…" — dolayısıyla ONLAR da fiilen kapıya bağımlı olduğunu
+kanıtladı). Yalnızca satırın içine zararsız bir yorum eklemek (kodun
+davranışını değiştirmeden) hiçbir testi düşürmedi — yani duman testlerinin
+gerçekten SEMANTİĞE bağlı olduğu, kozmetik bir diff'e değil, ayrıca
+doğrulandı.
+
+### `index.html` boyut kararı — ölçüldü, içerik KORUNDU
+
+| | değer |
+|---|---|
+| `dist/index.html` ham | 229.4 KB (bunun 222.7 KB'ı `#karsilama` bloğu = %97) |
+| gzip | **19.28 KB** |
+| Bölüm 2'nin ilk hedefi | `< 15 KB` gzip (yer tutucu içeriğe göre yazılmıştı) |
+| İki tam tahtanın (Bölüm 3'te eklenen) gzip payı | ~6.9 KB (toplamın ~%36'sı) |
+
+**Dönen kullanıcıda gerçek maliyet ÖLÇÜLDÜ (Chromium, 4x CPU kısıtlaması,
+`Element.prototype.remove` sarmalanarak `navigationStart → #karsilama.remove()`
+zamanı ölçüldü, N=8, medyan alındı):** tam sayfa **144.3 ms**; `#karsilama`
+içi boşaltılmış bir kontrol derlemesinde **74.2 ms** — aradaki **~70 ms**
+fark, dönen kullanıcının hiç görmeyeceği iki 13×13 tahtayı ayrıştırıp DOM'a
+kurup sonra silmenin bedeli. Bu, "önemsiz" sayılamayacak, ama tek seferlik
+ve boyanmadan önceki bir maliyet (kapı script'i `uygulama-modu` sınıfını
+İLK BOYAMADAN ÖNCE eklediğinden, `#karsilama` dönen kullanıcıya HİÇ
+görünmüyor — CSS ile baştan gizli).
+
+**Karar: içerik KORUNDU, hedef gerçekleşen değere güncellendi.** Sebep
+performans değil ÜRÜN kararı — iki tam tahta (`demoBoard.ts`) kullanıcının
+AYNI oturumda birkaç kez, açıkça ve tekrar tekrar büyütüldü (önce tek tahta,
+sonra iki, sonra oyun ortası + sınır ihlali, sonra izole hamleler) —
+"Landing'de kaç tahta gerekiyor?" sorusu bu kod tabanında zaten cevaplanmış
+durumda ve cevap "ikisi de kalsın, zenginleşsin" oldu. 70 ms'lik tek seferlik
+bir maliyeti bu açık kararın üstüne çıkarmak yanlış önceliklendirme olurdu.
+**Hedef artık `< 15 KB` DEĞİL** — bu doküman bir daha "hedefi tuttur" diye
+tahta silmeye kalkışmasın diye rakam güncellendi: gerçekleşen ~19.3 KB gzip,
+takas hâlâ açıkça lehte (19.3 KB HTML ↔ 410 KB tam uygulama JS'i).
+
+### Başlıktaki düğme: ev ikonu → `← Tanıtım` metni
+
+Kurulum ekranının sol üstündeki düğme bir ev/ok GLYPH'i değil, **metin**
+oldu. Üç sebep:
+
+1. **Glyph çakışması vardı:** düğme `Board.tsx`'teki `HomeMark`in AYNI
+   vektörünü (köşe başlangıç karesi işareti) çiziyordu — aynı glyph iki
+   ilgisiz anlamda. Bu projenin kendi kuralı (`RelationIcons.tsx`) aynı
+   glyph'in iki farklı eylemi anlattığı her yerde renk ayrımını ZORUNLU
+   tutuyor (bkz. "Bileşen Notları"); burada hiçbir ayrım yoktu.
+2. **"Ev" olgusal olarak yanlıştı:** dönen kullanıcı için `/` zaten
+   uygulamanın KENDİSİ — karşılama sayfası bir "ev" değil, GERİ dönülen bir
+   yer.
+3. **İhtiyacın kendisi zaten "geri":** düğmeyi doğuran istek birebir *"Hemen
+   Oynaya basınca geri gelemiyorsun"* — bir hedefe GİTME değil bir
+   KURTARMA.
+
+**Çıplak `←` da tercih edilmedi** — kök ekranın sol üstündeki yalın bir ok
+native alışkanlıkla "bir adım geri" der, oysa Setup bir kök ekran ve orada
+geri gidilecek bir "önceki ekran" yok; `← Tanıtım` ne olacağını tam
+söylüyor. Metin `text-[10px]`/`font-mono`/`text-muted` — footer'daki hukuki
+bağlantılarla aynı görsel ağırlıkta, başlıkta ikinci bir vurgu yaratmasın
+diye. `HOME_MARK_PATH` export'u `Board.tsx`'ten GERİ ALINDI (tek tüketicisi
+buydu, path yeniden satır içine alındı) — `aria-label="Tanıtım sayfası"` ve
+davranış (`<a href="/?tanitim=1">`, tam yeniden yükleme) değişmedi,
+`tests/smoke.spec.ts` zaten `getByLabel` ile buluyordu.
+
+**Ölçüldü** (derlenmiş CSS + Chromium, 360/390/834): satırda yatay taşma
+**0**; metin `UserMenu`'nün genişliğinden bağımsız, üç genişlikte de sabit
+27 px satır yüksekliği.
+
+### Kayda geçen yan not — tarayıcının Geri tuşu farklı davranıyor
+
+`gec()` geçişi `history.replaceState` kullanıyor (bkz. yukarıdaki "Buton
+bağlama sözleşmesi"), yani OYNA'ya bastıktan sonra **tarayıcının kendi Geri
+tuşu karşılama sayfasına DÖNMÜYOR** — siteden çıkıyor. `?tanitim=1` linki
+ise `pushState` gerektirmeyen düz bir `<a href>` navigasyonu, yani AYNI
+ekranda iki "geri" (tarayıcı Geri tuşu ile `← Tanıtım` düğmesi) farklı
+davranıyor. `pushState`e geçmek mümkün ama katman DOM'dan silindiğinden geri
+dönüş ayrıca bir `popstate` → yeniden yükleme zinciri gerektirir — nadir
+görülecek bir senaryo için orantısız. **BİLİNÇLİ OLARAK olduğu gibi
+bırakıldı** — bir sonraki oturum bunu hata sanıp `pushState`e geçirmeye
+kalkışmamalı.
+
+### İki platform artık görünür biçimde farklı — bilerek
+
+Uygulamada (Flutter portu) karşılama katmanı yok ve `← Tanıtım` düğmesinin
+bir karşılığı da yok/olmayacak. Bu artık gözle görülür bir ayrışma
+(`mobile/CLAUDE.md`'ye üç maddelik not düşüldü — bkz. orada "Karşılama
+Katmanı — web'e özgü, bilinçli ayrışma"): (1) düğme web'e özgü, porta
+eklenMEyecek; (2) uygulamanın kendi ilk açılış/tanıtım ekranı AYRI ve planlı
+bir iş, mağaza çıkışından önce ele alınacak; (3) o ekran geldiğinde bile
+Setup başlığına bir ok/düğme KONMAYACAK — native bir uygulamada kök ekranın
+sol üstündeki geri oku navigasyon yığınını pop eder ve Setup zaten kök
+ekran, iOS'ta sistem geri hareketiyle çakışırdı; dönüş hesap menüsüne
+("Nasıl Oynanır?"in yanına) gelecek.
+
+### SEO cilası — üç küçük, bağımsız eksik
+
+Katmanın asıl amacı (ham HTML'de gerçek metin) zaten tutmuştu — `dist/index.html`
+**712 kelime** taranabilir metin taşıyor (öncesi: yalnızca `noscript`teki iki
+cümle), Kelimeki'yi tanımlayan cümle ilk 200 karakterde, başlık hiyerarşisi
+temiz (5×`h2`, 10×`h3`), kapı script'i crawler'ı engellemiyor (Googlebot'ta
+`localStorage` boş çıkar, katman görünür kalır). Kalan üç eksik:
+
+- **İki `<h1>` vardı.** `noscript` bloğunun kendi `<h1>`'i (yalnızca JS
+  kapalıyken görünür) ile katmanın kahraman `<h1>`'i (LogoMark'ın sr-only
+  başlığı) ham HTML'de AYNI ANDA duruyordu — crawler'a aynı iddianın iki
+  farklı ifadesini gösteriyordu. `noscript`teki gerekçe zaten ARTIK
+  GEÇERSİZDİ: 1 Ağustos 2026'da "ham HTML'de hiç metin yok, içerik yok
+  sanılıyor" korkusuyla eklenmişti, ama aynı gün eklenen karşılama katmanı
+  bu boşluğu zaten dolduruyor. `noscript`teki `<h1>` bir `<p>`ye indirildi
+  (blok SİLİNMEDİ — JS'i kapalı gerçek bir kullanıcıya "JavaScript
+  gerekiyor" demek hâlâ doğru, gerekçesi artık indeksleme değil
+  erişilebilirlik). **Ölçüldü:** ham HTML'deki gerçek (yorum İÇİNDE değil)
+  `<h1>` sayısı artık **1**.
+- **Altı gerçek SSS var ama `FAQPage` yapılandırılmış verisi yoktu.**
+  `<head>`'deki ld+json yalnızca `WebApplication` taşıyordu. Google FAQ
+  zengin sonuçlarını 2023'te büyük ölçüde kısıtladığından mavi-link kazancı
+  beklenmiyor — kazanç varlık anlama ve LLM/AI crawler'ları tarafında
+  (bu işin çıkış noktası zaten oydu: AI Mode Kelimeki'yi "kelime
+  bulucu/sözlük platformu" sanıyordu). **Metinler İKİNCİ KEZ yazılmadı** —
+  altı soru `Landing.tsx`'te `export const SSS` dizisine çıkarıldı, hem
+  ekrandaki `<details>` kutuları (`.map`) hem `render.tsx`'in yeni
+  `renderFaqJsonLd()`'si aynı diziyi tüketiyor. **`src/` altında
+  `dangerouslySetInnerHTML` kuralı BOZULMADI:** JSON-LD, `Landing.tsx`
+  içinden değil `scripts/landing-plugin.js`'ten (mevcut `WebApplication`
+  bloğunun yanına) düz bir `<script>` string'i olarak enjekte ediliyor —
+  React'in render ağacı hiç `dangerouslySetInnerHTML` görmüyor. `<`
+  karakterleri `<`'ye kaçırılıyor (bir cevap metnindeki `<` bir gün
+  `</script>`i erkenden kapatabilirdi). **Doğrulandı:** üretilen JSON
+  `JSON.parse` edilip altı `Question`ın metinleri ekrandaki altı soruyla
+  BİREBİR karşılaştırılıyor (`tests/smoke.spec.ts`), negatif eş ile de
+  (bir soruya sahte bir sonek eklenince test GERÇEKTEN düştü).
+- **İki tahta demosu ekran okuyucuda harf çorbasıydı.** Rütbe mühürlerine
+  doğru desen (`role="img"` + `aria-label`, 9 adet) uygulanmıştı ama iki
+  tahta demosuna UYGULANMAMIŞTI — 13×13 = 169 hücrenin her biri tek tek
+  okunuyor, taranabilir metne `K E L İ M E A R A…` diye giriyordu.
+  `Landing.tsx`'teki sarmalayıcı `<div>`lere `role="img"` + açıklayıcı
+  `aria-label` eklendi (`role="img"` çocuk düğümlere inmeyi keser).
+  **`Board.tsx`'e DOKUNULMADI** — öznitelik yalnızca katmanın kendi
+  sarmalayıcısında; `Board` gerçek oyunda etkileşimli bir yüzey, orada bir
+  "resim" değil.
+
+**Negatif eş — üçü de ayrı ayrı doğrulandı:** `Landing.tsx`'teki tek
+`<h1>`'i geçici olarak `<div>`ye çevirmek ilgili testi GERÇEKTEN düşürdü;
+`render.tsx`'te bir soru metnine sahte bir sonek eklemek FAQ eşleşme
+testini GERÇEKTEN düşürdü.
+
+**CI'a eklendi, `verify-*` script'i GEREKMEDİ** — üç kontrol de
+`tests/smoke.spec.ts`e iki yeni test olarak eklendi (`h1`/`role="img"`
+sayımı + FAQ eşleşmesi), `.github/workflows/web-ci.yml` ile her PR'da
+otomatik koşuyor.
+
 ## Klasör Yapısı
 
 ```
@@ -710,6 +893,7 @@ mobile/         # Flutter portu — kelimeki_core (saf Dart motor) + üretilmiş
   **Bu iş sırasında bulunan gerçek bir bulgu — web'de İKİ ayrı yeşil var:** tailwind token `green: #16A34A` (`text-green` ile kullanılan; ✓ ikonu, "Senin Hamlen Bekleniyor" gibi metinler) ve `Board.tsx`'te hardcoded `#1FA05C` (sürükleme/hamle durumu dış hattı, `moveColor`). Flutter portu ikincisini KOPYALAYIP kendi tek `_green`'i yapmış ve 12 yerde kullanıyor — bazıları doğru (tahta/mesaj), bazıları değil (✓ ikonu web'de token'ı kullanıyor). ✓ ikonu portta düzeltildi; **kalan 11 kullanım yeri site site denetlenmedi** — ayrı bir tur gerektiriyor (bkz. `mobile/CLAUDE.md`, Parça 42).
   **Not:** bu buton yalnızca `PlayerScoreCard.tsx`'te var — `ScoreCard.tsx` kendi kartın olduğundan hiç arkadaşlık simgesi taşımıyor, yani "iki kopya birlikte güncellenmeli" gibi bir senkron yükü yok.
 - **`Setup`** — Oyun başlangıç ekranı. "Nasıl oynanır?" linki burada da bulunur.
+  **Karşılama sayfasına dönüş girişi web ve mobil portta BİLEREK farklı yerde** (18 Ağustos 2026): web başlıkta bir `← Tanıtım` düğmesi taşırken (bkz. "Karşılama Katmanı — Sertleştirme"), portta bu girişin planlanan karşılığı Setup başlığına DEĞİL hesap menüsüne gelecek — bkz. `mobile/CLAUDE.md`.
   **Girişli kullanıcıda logo altındaki tanıtım metni/linkler kalktı, footer'a "Paylaş" eklendi (18 Ağustos 2026, kullanıcı isteği — "Bölüm 1: Girişli/Setup" spesifikasyonu):** Logonun hemen altındaki tanıtım paragrafı ("Kelimeler kurarak bölgeni genişlet…") ve "Nasıl oynanır? · Arkadaşınla paylaş" satırı artık **yalnızca misafir (girişsiz) kullanıcıda** görünüyor — girişli kullanıcı logonun ardından doğrudan "OYUN TİPİ" başlığını görüyor. Misafirin ekranı (ölçümler dahil) **byte-for-byte değişmedi**: logo→"OYUN TİPİ" arası hâlâ 152.50px (390px genişlikte) / 136.50px (834px genişlikte), footer hâlâ yalnızca "Kullanım Koşulları · Gizlilik Politikası". **Girişli için ölçülen değer: logo→"OYUN TİPİ" arası TAM 20.00px** — kapsayıcının kendi `flex flex-col gap-5`i bunu otomatik veriyor; çocukları (paragraf+link satırı) kaldırmak dışında **hiçbir telafi edici `mt-*`/`gap` EKLENMEDİ** — bir sonraki oturum "boşluk az/çok" diye bir marj eklemeye kalkışırsa bu, kapsayıcının kendi boşluğunu ikinci kez sayan bir hata olur.
   **Footer'a üçüncü madde: "Paylaş" (yalnızca girişli).** İsim BİLEREK "Arkadaşını Davet Et" DEĞİL — o, `FriendsModal`'daki AYRI bir özelliğin (kalıcı davet linki/token'ı, `create_friend_invite_link`) adı; burada tıklanan buton genel bir site/tahta linkini paylaşıyor, aynı ismi kullanmak iki farklı özelliği karıştırırdı. Buton **mevcut `handleShare` fonksiyonunu değiştirmeden çağırıyor** — yeni bir paylaşım akışı YAZILMADI — yani `?ref=arkadas` UTM parametresi (admin panelindeki "Kaynak Hunisi" analizi buna bağlı, bkz. "Büyüme > Kullanıcı") korunuyor. İkon `Icons.share`in (Material, U+E593 `share_baseline`) Flutter'ın KENDİ fontundan fontTools ile çıkarılmış path'i — `RelationIcons.tsx`'e yeni `ShareIcon` olarak eklendi, aynı dosyanın "codepoint'i hafızadan yazma" uyarısına uyularak önce çıkarılıp render edilerek görsel olarak doğrulandı, tahmin edilmedi. Ölçülen buton boyutu ~52.7×15px; footer satırı `gap-2`ten **`flex-wrap gap-x-2 gap-y-1`e** çevrildi — güvenlik ağı, ≈356px altındaki dar ekranlarda üç madde tek satıra sığmayınca ikinci satıra sarsın diye (negatif eş ile doğrulandı: `flex-wrap` geçici kaldırılınca 320px'te GERÇEKTEN yatay taşma oluştu, geri eklenince düzeldi). "Link kopyalandı!" (2 saniyelik clipboard-fallback geri bildirimi) DOKUNULMADI/KISALTILMADI — yalnızca dar masaüstü genişliklerinde kısa süreliğine iki satıra sarıyor, yatay taşma yok, ölçülüp güvenli bulundu.
   **Mobil port AYNI PR'da birebir uygulandı** (`mobile/CLAUDE.md`, Parça 110) — Setup'ın `SizedBox(height: 20)`'si (link satırından sonraki, "OYUN TİPİ"nin hemen üstündeki) zaten portun 20px'lik boşluğunu taşıyordu, girişlide koşulsuz bırakıldı; footer'daki `Row` `Wrap`e çevrildi ve "Paylaş" mevcut `_handleShare`'i (aynı `?ref=arkadas` linkini) çağırıyor. **İki taraf birlikte değişmek zorunda** — biri güncellenip diğeri unutulursa web↔port ayrışması bu projenin en sık tekrarlayan hata sınıfı olur.

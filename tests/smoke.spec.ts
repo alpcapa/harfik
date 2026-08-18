@@ -322,3 +322,33 @@ test('Tanıtım tahtası şeridi iki görsel ve iki nokta taşır', async ({ pag
   await expect(page.locator('#karsilama-tahta-noktalar > span').nth(1)).toHaveClass(/bg-accent/);
   await expect(page.locator('#karsilama-tahta-noktalar > span').first()).toHaveClass(/bg-border/);
 });
+
+test('FAQPage JSON-LD, ekrandaki altı soruyla birebir eşleşir', async ({ page }) => {
+  await page.goto('/');
+
+  // Metinler `SSS` dizisinden (src/landing/Landing.tsx) TEK KAYNAKTAN
+  // üretiliyor (bkz. render.tsx → renderFaqJsonLd) — bu test o senkronun
+  // gerçekten tuttuğunu, sayfanın kendi HTML'inden okuyarak kanıtlıyor.
+  const faq = await page.evaluate(() => {
+    const scripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
+    for (const s of scripts) {
+      const data = JSON.parse(s.textContent ?? '{}');
+      if (data['@type'] === 'FAQPage') return data;
+    }
+    return null;
+  });
+  expect(faq).not.toBeNull();
+  const jsonSorular = faq.mainEntity.map((q: { name: string }) => q.name);
+
+  const ekranSorular = await page.locator('#karsilama summary').allTextContents();
+
+  expect(jsonSorular).toEqual(ekranSorular);
+  expect(jsonSorular.length).toBe(6);
+});
+
+test('Sayfada tek bir h1 var, tahta demoları role="img" taşıyor', async ({ page }) => {
+  await page.goto('/');
+
+  await expect(page.locator('h1')).toHaveCount(1);
+  await expect(page.locator('[role="img"][aria-label*="oyun tahtası"]')).toHaveCount(2);
+});

@@ -87,17 +87,24 @@
     </script>
   </head>
   <body>
-    <!-- Uygulama tamamen istemci tarafında (React) render ediliyor —
-         JS'i güvenilir çalıştırmayan/az çalıştıran crawler'lar (ör. Bing)
-         için, ham HTML'de <head>'deki meta/title dışında hiçbir statik
-         metin olmaması "içerik yok" gibi algılanıp indekslemeyi
-         engelleyebiliyor (1 Ağustos 2026'da Bing Webmaster Tools'ta
-         "issues preventing indexation" olarak gözlemlendi). Bu blok
-         yalnızca JS ÇALIŞMAZSA görünür — normal kullanıcı deneyimini
-         hiç etkilemez, yalnızca crawler'lara gerçek bir metin sinyali verir. -->
+    <!-- Bu blok yalnızca JS ÇALIŞMAZSA görünür — normal kullanıcı
+         deneyimini hiç etkilemez, gerçek JS'siz bir ziyaretçiye (ya da
+         Bing gibi JS'i güvenilir çalıştırmayan bir crawler'a) "JavaScript
+         gerekiyor" der.
+
+         ⚠ 18 Ağustos 2026'ya kadar burada bir `<h1>` vardı — o tarihte
+         gerekçe ARTIK GEÇERSİZ oldu: `<h1>` "ham HTML'de hiç statik metin
+         yok, içerik yok sanılıyor" (1 Ağustos 2026, Bing Webmaster Tools)
+         korkusuyla eklenmişti, ama aynı gün eklenen karşılama katmanı
+         (bkz. `src/landing/`, kök `CLAUDE.md` → "Karşılama Katmanı") ham
+         HTML'e GERÇEK ~712 kelimelik bir metin gövdesi ve KENDİ `<h1>`'ini
+         (LogoMark'ın sr-only başlığı) getirdi. İki `<h1>` aynı anda ham
+         HTML'de duruyordu — crawler'a aynı iddianın iki farklı ifadesini
+         (biri "…Kelime Bulmaca Oyunu", biri "…Kelime Oyunu") gösteriyordu.
+         Bu blok `<p>`ye indirildi; artık sayfada TEK `<h1>` var. -->
     <noscript>
       <div style="max-width: 600px; margin: 48px auto; padding: 0 20px; font-family: sans-serif; color: #1B2430; text-align: center;">
-        <h1>Kelimeki — Ücretsiz Online Türkçe Stratejik Kelime Oyunu</h1>
+        <p style="font-size: 1.4em; font-weight: 700; margin: 0 0 12px;">Kelimeki — Ücretsiz Online Türkçe Stratejik Kelime Oyunu</p>
         <p>2 veya 4 kişi, yapay zekaya ve arkadaşlarına karşı oynanan stratejik bir Türkçe kelime oyunu. Kelimeki'yi oynamak için tarayıcınızda JavaScript'i etkinleştirmeniz gerekiyor.</p>
       </div>
     </noscript>

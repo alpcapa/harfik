@@ -1,7 +1,7 @@
 // Kelimeki — ana uygulama: kurulum, çok oyunculu sıra akışı ve düzen
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { GameHeader } from './components/GameHeader';
-import { Board, HOME_MARK_PATH } from './components/Board';
+import { Board } from './components/Board';
 import { Rack } from './components/Rack';
 import { GameOver } from './components/GameOver';
 import { UserMenu } from './components/UserMenu';
@@ -1138,15 +1138,25 @@ export default function App() {
               tam bir yeniden yükleme — `?tanitim=1` kapıya "bu sefer katmanı
               göster" diyen tek sinyal (bkz. scripts/landing-plugin.js).
               Sağ taraf DEĞİŞMEDİ: girişsizken GİRİŞ, girişliyken avatar
-              menüsü — ikisi de `UserMenu`'nün kendi dalları. */}
+              menüsü — ikisi de `UserMenu`'nün kendi dalları.
+
+              `← Tanıtım` METİN, çıplak ev/ok ikonu DEĞİL (18 Ağustos 2026,
+              denetim sonrası düzeltme). İki sorun vardı: (1) burada bir ev
+              ikonu kullanmak, `Board.tsx`'teki köşe BAŞLANGIÇ karesi
+              işaretiyle (`HomeMark`) AYNI glyph'i ilgisiz iki anlamda
+              çalıştırıyordu — bu projenin kendi kuralı (`RelationIcons.tsx`)
+              aynı glyph iki şey anlattığında görsel ayrım ZORUNLU tutuyor,
+              burada hiç yoktu; (2) "home" olgusal olarak yanlıştı — dönen
+              kullanıcı için `/` zaten uygulamanın kendisi, karşılama sayfası
+              bir "ev" değil GERİ dönülen bir yer. Metin `text-[10px]`/
+              `font-mono` — footer'daki hukuki bağlantılarla aynı görsel
+              ağırlık, başlıkta ikinci bir vurgu yaratmasın diye. */}
           <a
             href="/?tanitim=1"
             aria-label="Tanıtım sayfası"
-            className="shrink-0 flex items-center justify-center text-muted p-1 -m-1 active:scale-[0.97] transition-transform"
+            className="shrink-0 font-mono text-[10px] text-muted active:scale-[0.97] transition-transform"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d={HOME_MARK_PATH} />
-            </svg>
+            ← Tanıtım
           </a>
           <UserMenu />
         </div>

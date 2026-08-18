@@ -51,6 +51,10 @@ cihazda koşulan listesi: [`mobile/TESTING.md`](mobile/TESTING.md). Derlemeyi
 `mobile/**` dokunan her PR'da ve `main`e her push'ta otomatik koşar:
 `.github/workflows/mobile-build.yml`.
 
+Web tarafında `lint`+`build`+`test`'i koşturan ayrı bir iş akışı var
+(18 Ağustos 2026'da eklendi — `src/**`/`scripts/**`/`tests/**` dokunan her
+PR'da ve `main`e her push'ta): `.github/workflows/web-ci.yml`.
+
 ## Proje Yapısı
 
 ```

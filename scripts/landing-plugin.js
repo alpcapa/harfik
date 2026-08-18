@@ -28,15 +28,17 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CACHE_DIR = path.join(ROOT, 'node_modules', '.cache', 'kelimeki');
 
 /**
- * Karşılama katmanını (`src/landing/render.tsx`) Node'da render eder.
+ * `src/landing/render.tsx`'i esbuild ile Node'da çalışacak şekilde paketleyip
+ * import eder. Bileşen `.tsx` ama bu eklenti Node'da çalışıyor — bu kod
+ * tabanının kendi kalıbını izliyoruz: `scripts/verify-cloud-save-mirror.ts`
+ * ve `scripts/verify-fetch-my-games.ts` de ÜRETİM kodunu esbuild ile
+ * paketleyip node'da koşuyor. Yeni bir çatı (Next.js/Astro) EKLENMEDİ.
  *
- * Bileşen `.tsx` (Bölüm 3 gerçek `Board.tsx`'i kullanacak) ama bu eklenti
- * Node'da çalışıyor — bu kod tabanının kendi kalıbını izliyoruz:
- * `scripts/verify-cloud-save-mirror.ts` ve `scripts/verify-fetch-my-games.ts`
- * de ÜRETİM kodunu esbuild ile paketleyip node'da koşuyor. Yeni bir çatı
- * (Next.js/Astro) EKLENMEDİ.
+ * Modül İKİ fonksiyon export ediyor (`renderLandingHtml` + `renderFaqJsonLd`,
+ * 18 Ağustos 2026'da eklendi) — ikisi de aynı `SSS` dizisini tükettiğinden
+ * TEK build/import yeterli, iki ayrı esbuild çağrısı gerekmiyor.
  */
-async function renderLanding() {
+async function loadLandingModule() {
   mkdirSync(CACHE_DIR, { recursive: true });
   const outfile = path.join(CACHE_DIR, 'landing-render.mjs');
   await build({
@@ -60,8 +62,7 @@ async function renderLanding() {
   // Sorgu parametresi Node'un ESM modül önbelleğini kırar — dosya adı sabit
   // olduğundan (her derlemede yeni bir dosya bırakmıyoruz) `npm run dev`'de
   // katman düzenlenince yeniden okunması buna bağlı.
-  const mod = await import(/* @vite-ignore */ `file://${outfile}?t=${Date.now()}`);
-  return mod.renderLandingHtml();
+  return import(/* @vite-ignore */ `file://${outfile}?t=${Date.now()}`);
 }
 
 /**
@@ -129,7 +130,8 @@ export function kelimekiLanding() {
     transformIndexHtml: {
       order: 'post',
       async handler(html, ctx) {
-        const landing = await renderLanding();
+        const mod = await loadLandingModule();
+        const landing = mod.renderLandingHtml();
 
         // Dönen kullanıcı `main.tsx`'ten `boot-*.js`'e DİNAMİK import ile
         // gidiyor; bu, önlem alınmazsa ilk boyamaya fazladan bir ağ turu
@@ -141,10 +143,16 @@ export function kelimekiLanding() {
           ? Object.keys(ctx.bundle).find((f) => /(^|\/)assets\/boot-[^/]+\.js$/.test(f))
           : null;
 
-        const head = `    <script>${kapiScript(bootChunk ? `/${bootChunk}` : null)}</script>\n`;
+        const gate = `    <script>${kapiScript(bootChunk ? `/${bootChunk}` : null)}</script>\n`;
+
+        // `FAQPage` yapılandırılmış verisi (18 Ağustos 2026, SEO denetimi) —
+        // mevcut `WebApplication` ld+json bloğunun (index.html'de statik)
+        // hemen yanına. Metinler `SSS` (Landing.tsx) dizisinden geliyor,
+        // ikinci kez yazılmıyor — bkz. render.tsx'teki `renderFaqJsonLd`.
+        const faq = `    <script type="application/ld+json">${mod.renderFaqJsonLd()}</script>\n`;
 
         return html
-          .replace('</head>', `${head}  </head>`)
+          .replace('</head>', `${gate}${faq}  </head>`)
           .replace('<div id="root"></div>', `${landing}\n    <div id="root"></div>`);
       },
     },

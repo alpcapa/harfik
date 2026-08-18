@@ -72,6 +72,45 @@ const PARK_LOGO_HEIGHT = `calc(2 * ${GIRIS_PADDING_Y} + ${GIRIS_FONT_SIZE} + 2px
 // Güncel Tutma".)
 const KELIME_SAYISI = '63.000';
 
+/**
+ * SSS metinleri — TEK KAYNAK. Hem ekrandaki `<details>` kutuları (aşağıda,
+ * `.map`) hem `render.tsx`'in ürettiği `FAQPage` JSON-LD'si (18 Ağustos
+ * 2026, SEO denetimi) bu diziyi tüketir. Metinleri schema için İKİNCİ KEZ
+ * yazmak bu kod tabanının en sık tekrarlayan hata sınıfını (iki kopyanın
+ * sessizce ayrışması — bkz. CLAUDE.md'deki renk paleti/rütbe tablosu/hukuki
+ * metin örnekleri) yeniden üretirdi.
+ */
+export const SSS: { soru: string; cevap: string }[] = [
+  {
+    soru: 'Ücretli mi?',
+    cevap: 'Hayır. Kelimeki tamamen ücretsiz; reklam ya da oyun içi satın alma yok.',
+  },
+  {
+    soru: 'Üye olmadan oynayabilir miyim?',
+    cevap:
+      'Evet. Yapay zekaya karşı oynamak için hesap gerekmiyor. Üye olursan oyun geçmişin, k-lig puanın ve arkadaş listen cihazlar arasında taşınır; arkadaşınla canlı oyun ise üyelik ister.',
+  },
+  {
+    soru: 'Hangi kelimeler geçerli?',
+    cevap: `TDK Güncel Türkçe Sözlük kaynaklı ${KELIME_SAYISI}'den fazla madde. Özel isimler ve çok sözcüklü maddeler listede yok. Tahtadaki bir kelimeye dokunarak anlamını da görebilirsin.`,
+  },
+  {
+    soru: 'Klasik kelime oyunlarından farkı ne?',
+    cevap:
+      'Tahtanın köşeleri oyunculara ait ve herkes kendi köşesinden başlayıp bölgesini büyütüyor. Rakibin bölgesine oynamak serbest, ama kazandığın puanın bir kısmı o bölgenin sahibine geçiyor — yani nereye oynadığın en az ne oynadığın kadar önemli.',
+  },
+  {
+    soru: 'Uygulama indirmem gerekiyor mu?',
+    cevap:
+      "Hayır, tarayıcıda çalışıyor. İstersen telefonundaki 'Ana Ekrana Ekle' seçeneğiyle uygulama gibi de kurabilirsin.",
+  },
+  {
+    soru: 'Arkadaşımla aynı anda çevrimiçi olmamız gerekiyor mu?',
+    cevap:
+      'Hayır. Canlı oyunlar sırayla oynanır ve her hamle için 48 saat süre vardır. Tabii ki aynı anda bağlı iki oyuncu canlı da oynayabilir; bu gerçekten son derece keyiflidir.',
+  },
+];
+
 /* ────────────────────────────────────────────────────────────────────────── */
 
 function Oyna({ etiket, id }: { etiket: string; id?: string }) {
@@ -374,14 +413,25 @@ export function Landing() {
                 className="flex gap-4 overflow-x-auto snap-x snap-mandatory no-scrollbar py-2 -my-2"
               >
                 <div className="snap-center shrink-0 w-full flex flex-col gap-3">
-                  <GameBoardPreview
-                    snapshot={DEMO_TILES_2}
-                    playerCount={2}
-                    players={[
-                      { name: 'Sen', score: 0, is_ai: false, colorIndex: 0 },
-                      { name: 'Rakip', score: 0, is_ai: false, colorIndex: 1 },
-                    ]}
-                  />
+                  {/* `role="img"` + `aria-label`: aksi halde 13×13 = 169
+                      hücrenin her biri tek tek ekran okuyucuya (ve
+                      crawler'ın taranabilir metnine "K E L İ M E A R A…"
+                      diye harf çorbası olarak) okunur. `role="img"` çocuk
+                      düğümlere inmeyi keser — `RankSeal`'daki 9 mühürde
+                      kullanılan desenin aynısı. `Board.tsx`'e DOKUNULMADI:
+                      öznitelik yalnızca bu katmanın kendi sarmalayıcısında —
+                      gerçek oyunda tahta bir "resim" değil etkileşimli bir
+                      yüzey. */}
+                  <div role="img" aria-label="2 kişilik oyun tahtası örneği — KELİME, IRMAK, ZAMAN gibi kelimelerle dolu 13×13 tahta">
+                    <GameBoardPreview
+                      snapshot={DEMO_TILES_2}
+                      playerCount={2}
+                      players={[
+                        { name: 'Sen', score: 0, is_ai: false, colorIndex: 0 },
+                        { name: 'Rakip', score: 0, is_ai: false, colorIndex: 1 },
+                      ]}
+                    />
+                  </div>
                   <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 list-none p-0 m-0">
                     <Rozet renk="#FDE68A" metin="X2 — Kelime puanının 2 katı" />
                     <Rozet renk="#F97316" metin="X3 — Kelime puanının 3 katı" />
@@ -394,16 +444,18 @@ export function Landing() {
                 </div>
 
                 <div className="snap-center shrink-0 w-full flex flex-col gap-3">
-                  <GameBoardPreview
-                    snapshot={DEMO_TILES_4}
-                    playerCount={4}
-                    players={[
-                      { name: 'Sen', score: 0, is_ai: false, colorIndex: 0 },
-                      { name: '2. oyuncu', score: 0, is_ai: false, colorIndex: 1 },
-                      { name: '3. oyuncu', score: 0, is_ai: false, colorIndex: 2 },
-                      { name: '4. oyuncu', score: 0, is_ai: false, colorIndex: 3 },
-                    ]}
-                  />
+                  <div role="img" aria-label="4 kişilik oyun tahtası örneği — dört köşeden başlayıp merkeze uzanan, KELİME, BALKON, KUZEY, OYUN gibi kelimelerle dolu 13×13 tahta">
+                    <GameBoardPreview
+                      snapshot={DEMO_TILES_4}
+                      playerCount={4}
+                      players={[
+                        { name: 'Sen', score: 0, is_ai: false, colorIndex: 0 },
+                        { name: '2. oyuncu', score: 0, is_ai: false, colorIndex: 1 },
+                        { name: '3. oyuncu', score: 0, is_ai: false, colorIndex: 2 },
+                        { name: '4. oyuncu', score: 0, is_ai: false, colorIndex: 3 },
+                      ]}
+                    />
+                  </div>
                   <p className="text-[12px] leading-relaxed text-muted" style={{ margin: 0 }}>
                     Dilersen 3 yapay zekaya veya 3 arkadaşına karşı oyna, gücünü
                     sına. 3 oyuncuyu yenmenin keyfi bir başka ama ikinci bile
@@ -512,30 +564,9 @@ export function Landing() {
             {/* ── SSS ──────────────────────────────────────────────────── */}
             <Bolum ustBaslik="Sık sorulanlar" baslik="Merak edilenler">
               <div className="flex flex-col gap-2">
-                <Soru
-                  soru="Ücretli mi?"
-                  cevap="Hayır. Kelimeki tamamen ücretsiz; reklam ya da oyun içi satın alma yok."
-                />
-                <Soru
-                  soru="Üye olmadan oynayabilir miyim?"
-                  cevap="Evet. Yapay zekaya karşı oynamak için hesap gerekmiyor. Üye olursan oyun geçmişin, k-lig puanın ve arkadaş listen cihazlar arasında taşınır; arkadaşınla canlı oyun ise üyelik ister."
-                />
-                <Soru
-                  soru="Hangi kelimeler geçerli?"
-                  cevap={`TDK Güncel Türkçe Sözlük kaynaklı ${KELIME_SAYISI}'den fazla madde. Özel isimler ve çok sözcüklü maddeler listede yok. Tahtadaki bir kelimeye dokunarak anlamını da görebilirsin.`}
-                />
-                <Soru
-                  soru="Klasik kelime oyunlarından farkı ne?"
-                  cevap="Tahtanın köşeleri oyunculara ait ve herkes kendi köşesinden başlayıp bölgesini büyütüyor. Rakibin bölgesine oynamak serbest, ama kazandığın puanın bir kısmı o bölgenin sahibine geçiyor — yani nereye oynadığın en az ne oynadığın kadar önemli."
-                />
-                <Soru
-                  soru="Uygulama indirmem gerekiyor mu?"
-                  cevap="Hayır, tarayıcıda çalışıyor. İstersen telefonundaki 'Ana Ekrana Ekle' seçeneğiyle uygulama gibi de kurabilirsin."
-                />
-                <Soru
-                  soru="Arkadaşımla aynı anda çevrimiçi olmamız gerekiyor mu?"
-                  cevap="Hayır. Canlı oyunlar sırayla oynanır ve her hamle için 48 saat süre vardır. Tabii ki aynı anda bağlı iki oyuncu canlı da oynayabilir; bu gerçekten son derece keyiflidir."
-                />
+                {SSS.map((s) => (
+                  <Soru key={s.soru} soru={s.soru} cevap={s.cevap} />
+                ))}
               </div>
             </Bolum>
 

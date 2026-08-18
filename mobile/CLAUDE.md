@@ -1007,6 +1007,36 @@ tıklayıp Start'a basma) doğrulaması kullanıcının kendi cihazından
 bekleniyor — bu ortamdan `appetize.io` erişilemediğinden ben açıp
 göremiyorum.
 
+## Karşılama Katmanı (web) — bilinçli ayrışma, portta YOK (18 Ağustos 2026)
+
+Web'e 18 Ağustos 2026'da girişsiz ilk ziyaretçiye gösterilen bir karşılama/
+tanıtım katmanı eklendi (kök `CLAUDE.md` → "Karşılama Katmanı" bölümleri —
+kapı script'i, statik HTML prerender, tanıtım tahtaları, k-lig mühürleri,
+SSS). Bu bölüm önceki "Web ↔ Uygulama Arasındaki Kabul Edilmiş Farklar"
+listesinin TERSİ bir durum: burada web'in ÇÖZDÜĞÜ bir şeyi app'in eskisi
+gibi bırakması değil, web'de YENİ bir özellik var ve app'te hiç YOK — üç
+madde:
+
+1. **Kurulum ekranındaki `← Tanıtım` düğmesi web'e özgüdür, BİLİNÇLİ
+   ayrışmadır — porta EKLENMEYECEK.** Uygulamada karşılama katmanı hiç
+   olmadığından bu düğmenin gideceği bir yer de yok; bir sonraki denetimde
+   biri "port geride kalmış" deyip düğmeyi porta eklemeye kalkışmasın diye
+   bu not burada duruyor.
+2. **Uygulamanın kendi ilk açılış/tanıtım ekranı AYRI ve planlı bir iş** —
+   ana port spesifikasyonu (PORT_BRIEF) bunu *"Setup'ın ÖNÜNE eklenen yeni
+   bir ekran, kalıcı bir 'bir daha gösterme' bayrağıyla; mevcut ekranlar
+   değişmez; mağaza çıkışından önce bitmeli"* olarak tarif ediyor ve aynı
+   hikâye omurgasını (web'in karşılama katmanındaki metin/görseller)
+   kullanacak. Bu iş şu an başlamadı.
+3. **O ekran geldiğinde bile Setup başlığına bir ok/düğme KONMAYACAK.**
+   Native bir uygulamada kök ekranın sol üstündeki geri oku navigasyon
+   yığınını POP etmek demektir; Setup zaten kök ekran ve iOS'ta bu,
+   sistemin kendi geri hareketiyle (edge-swipe) çakışırdı. Tanıtıma dönüş
+   yerine **hesap menüsüne** ("Nasıl Oynanır?"in hemen yanına) gelecek —
+   port o menüyü zaten bilgilendirici maddeler için kullanıyor (k-lig, Skor
+   Kartı, Arkadaşlar, Nasıl Oynanır?, Hesap Ayarları), başlık geometrisine
+   hiç dokunmaz ve senkron tutulması gereken yeni bir şekil yaratmaz.
+
 ## Web ↔ Uygulama Arasındaki Kabul Edilmiş Farklar
 
 Port sırasında fark edilen, uygulamada ÇÖZÜLMÜŞ ama web'de bilinçli olarak
