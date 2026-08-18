@@ -353,7 +353,7 @@ export function Landing() {
         </div>
 
         <main className="w-full flex flex-col items-center">
-          <div className="w-full max-w-[460px] px-4 py-6 flex flex-col gap-9">
+          <div className="w-full max-w-[460px] px-4 pt-6 flex flex-col gap-9">
             {/* ── Kahraman ─────────────────────────────────────────────────
                 `-mt-6` (−24px) kaptaki `py-6`nın üst yarısını yiyerek başlık
                 satırı ile logo arasını 0'a indirir — `Setup.tsx`'teki AYNI
@@ -390,6 +390,25 @@ export function Landing() {
               <Kutu sayi="2–4" etiket="Oyuncu" />
               <Kutu sayi="Ücretsiz" etiket="Fiyat" />
             </div>
+          </div>
+
+          {/* ⚠ Tahta bölümü BİLEREK 460px'lik metin kolonunun DIŞINDA
+              (18 Ağustos 2026, kullanıcı: "Bu sefer de küçük oldu. Normal
+              oyundaki gibi olmalı"). Sebebi ölçüldü: taş harfi `vw` tabanlı
+              bir `clamp` (`Tile.tsx`), hücre ise KABIN genişliğine bağlı.
+              Tahta metin kolonunun içindeyken 390px viewport'ta 334px
+              oluyordu (kolonun `px-4`ü + tahtanın kendi `px-3`ü), gerçek
+              oyunda ise 366px — yani harf/hücre oranı tutmuyordu: compact
+              varyant 0.36, normal varyant 0.58, gerçek oyun 0.53. İki tur
+              boyunca yanlış yerde (font boyutunda) arandı; sorun tahtanın
+              DAR olmasıydı. Bölüm kendi kabına alınınca içindeki
+              `max-w-[680px] px-3` (GameBoardPreview -> Board, gerçek oyunun
+              kullandığı AYNI kutu) devreye giriyor ve geometri her
+              genişlikte gerçek oyunla birebir eşleşiyor.
+
+              Negatif margin ile çözülemezdi: `-mx-4` yalnızca dolguyu
+              yiyor, ebeveynin `max-w-[460px]`ini aşamıyor. */}
+          <div className="w-full max-w-[680px] px-3 my-9 flex flex-col">
 
             {/* ── Tahta ────────────────────────────────────────────────────
                 İKİ görsel, yan yana kaydırmalı (kullanıcı isteği, 18 Ağustos
@@ -411,7 +430,13 @@ export function Landing() {
             <Bolum ustBaslik="Tahtaya bir bak" baslik="Oyun tam olarak böyle görünüyor">
               <div
                 id="karsilama-tahta-serit"
-                className="flex gap-4 overflow-x-auto snap-x snap-mandatory no-scrollbar py-2 -my-2"
+                /* `-mx-3`: metinler kabın `px-3`ünde hizalı kalsın ama ŞERİT
+                   o dolgudan çıksın — böylece tahtanın KENDİ `max-w-[680px]
+                   px-3` kutusu (gerçek oyunun kullandığı aynı kutu) devreye
+                   girip geometri birebir eşleşiyor. Negatif margin burada
+                   çalışıyor çünkü yalnızca DOLGUYU yiyor; ebeveynin
+                   `max-w`ini aşmaya çalışmıyor. */
+                className="flex gap-4 overflow-x-auto snap-x snap-mandatory no-scrollbar py-2 -my-2 -mx-3"
               >
                 <div className="snap-center shrink-0 w-full flex flex-col gap-3">
                   {/* `role="img"` + `aria-label`: aksi halde 13×13 = 169
@@ -488,6 +513,9 @@ export function Landing() {
                 <span className="block w-1.5 h-1.5 rounded-full bg-border transition-colors" />
               </div>
             </Bolum>
+          </div>
+
+          <div className="w-full max-w-[460px] px-4 pb-6 flex flex-col gap-9">
 
             {/* ── Nasıl oynanır ────────────────────────────────────────── */}
             <Bolum id="nasil-oynanir" ustBaslik="Dört adımda" baslik="Nasıl oynanır?">
