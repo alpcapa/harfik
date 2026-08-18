@@ -1,8 +1,25 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 // Kelimeki — kritik yol duman testleri. Amaç kapsamlı bir test paketi değil,
 // "uygulama açılıyor, bir oyun başlatılabiliyor, YZ hamle yapabiliyor"
 // düzeyinde bir güven: launch öncesi/deploy sonrası hızlı bir sağlık kontrolü.
+
+// 18 Ağustos 2026 — karşılama katmanı eklendikten sonra `/` artık TEMİZ bir
+// tarayıcıda uygulamayı DEĞİL katmanı gösteriyor (bkz. scripts/landing-plugin.js
+// içindeki kapı script'i). Uygulamayı test eden aşağıdaki senaryolar bu yüzden
+// kendilerini "dönen kullanıcı" olarak işaretliyor — kapının okuduğu anahtarın
+// AYNISI (`src/utils/onboarding.ts` → SEEN_INTRO_KEY).
+const SEEN_INTRO_KEY = 'kelimeki:seen-intro';
+
+async function donenKullanici(page: Page): Promise<void> {
+  await page.addInitScript((key) => {
+    try {
+      localStorage.setItem(key as string, '1');
+    } catch {
+      // depolama kapalıysa kapı zaten katmanı gösterir; test o durumu ölçmüyor
+    }
+  }, SEEN_INTRO_KEY);
+}
 
 test('Setup ekranı açılır, 2 kişilik oyun başlar, YZ hamle yapar', async ({ page }) => {
   // Pas geçme onayı artık native window.confirm() DEĞİL, uygulama içi bir
@@ -11,6 +28,7 @@ test('Setup ekranı açılır, 2 kişilik oyun başlar, YZ hamle yapar', async (
   // güvenlik ağı olarak duruyor.
   page.on('dialog', (dialog) => dialog.accept());
 
+  await donenKullanici(page);
   await page.goto('/');
   await expect(page).toHaveTitle(/Kelimeki/);
 
@@ -86,6 +104,7 @@ test('Öne dönüşte bağlantı durumu yeniden okunur (kaçırılan offline ola
     });
   });
 
+  await donenKullanici(page);
   await page.goto('/');
   await page.getByText('OYUNU BAŞLAT').click();
   const devamButton = page.getByRole('button', { name: 'Devam', exact: true });
@@ -108,4 +127,109 @@ test('Öne dönüşte bağlantı durumu yeniden okunur (kaçırılan offline ola
   // Kullanıcı uygulamaya döner → durum yeniden okunmalı.
   await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
   await expect(offlineLabel).toBeVisible();
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Karşılama katmanı (18 Ağustos 2026) — Bölüm 2'nin ASIL işi bu regresyon
+// paketi: katmanın kendisi bir yer tutucu, ama önüne geçtiği yollar (dolaşımda
+// olan `/game/:id` ve `/davet/:token` linkleri, kurulu PWA, yarım kalmış yerel
+// oyunu olan kullanıcı) kırılırsa bunu HİÇBİR mevcut test yakalamıyordu.
+// Kapı script'i: scripts/landing-plugin.js.
+// ─────────────────────────────────────────────────────────────────────────────
+
+test('Temiz localStorage ile / → karşılama katmanı görünür, uygulama yüklenmez', async ({
+  page,
+}) => {
+  await page.goto('/');
+
+  await expect(page.locator('#karsilama')).toBeVisible();
+  await expect(page.locator('#karsilama-oyna')).toBeVisible();
+  await expect(page.locator('#karsilama-giris')).toBeVisible();
+
+  // `#root` hem gizli hem BOŞ olmalı: gizli olması kapının CSS'ini, boş
+  // olması React ağacının hiç mount edilmediğini (yani uygulama paketinin
+  // indirilmediğini) kanıtlıyor — ikisi ayrı iddia.
+  await expect(page.locator('#root')).toBeHidden();
+  expect(await page.locator('#root').innerHTML()).toBe('');
+  await expect(page.getByText('OYUNU BAŞLAT')).toHaveCount(0);
+});
+
+test('OYNA → Setup açılır, seen-intro yazılır, sayfa YENİDEN YÜKLENMEZ', async ({ page }) => {
+  await page.goto('/');
+
+  // Sayfa yeniden yüklenirse bu değişken kaybolur — geçişin `location.href`
+  // ile değil dinamik import ile yapıldığının kanıtı.
+  await page.evaluate(() => {
+    (window as unknown as { __gecisSondasi?: boolean }).__gecisSondasi = true;
+  });
+
+  await page.locator('#karsilama-oyna').click();
+
+  await expect(page.getByText('OYUNU BAŞLAT')).toBeVisible();
+  await expect(page.locator('#karsilama')).toHaveCount(0);
+  expect(await page.evaluate((k) => localStorage.getItem(k as string), SEEN_INTRO_KEY)).toBe('1');
+  expect(
+    await page.evaluate(() => (window as unknown as { __gecisSondasi?: boolean }).__gecisSondasi),
+  ).toBe(true);
+});
+
+test('GİRİŞ → giriş penceresi açılır, URL\'de ?giris=1 KALMAZ', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#karsilama-giris').click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Giriş', exact: true })).toBeVisible();
+
+  // App.tsx parametreyi `history.replaceState` ile temizliyor (`?contact=1`
+  // ile aynı kalıp) — yenilemede pencere tekrar açılmasın diye.
+  await expect.poll(() => new URL(page.url()).search).toBe('');
+});
+
+test('İkinci ziyaret (aynı localStorage) → katman HİÇ görünmez', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#karsilama-oyna').click();
+  await expect(page.getByText('OYUNU BAŞLAT')).toBeVisible();
+
+  await page.goto('/');
+
+  await expect(page.locator('#karsilama')).toHaveCount(0);
+  await expect(page.getByText('OYUNU BAŞLAT')).toBeVisible();
+});
+
+test('/game/:id paylaşılan oyun sayfası açılır, katman görünmez', async ({ page }) => {
+  await page.goto('/game/00000000-0000-0000-0000-000000000000');
+
+  await expect(page.locator('#karsilama')).toHaveCount(0);
+  await expect(page.getByLabel('Kelimeki anasayfa')).toBeVisible();
+  // Supabase bu test ortamında yapılandırılmadığından sayfa "bulunamadı"
+  // dalına düşüyor — önemli olan SharedGamePage'in render OLMASI.
+  await expect(page.getByText(/Bu oyun bulunamadı|Yükleniyor/)).toBeVisible();
+  await expect(page.getByText('OYUNU BAŞLAT')).toHaveCount(0);
+});
+
+test('/davet/:token arkadaşlık davet sayfası açılır, katman görünmez', async ({ page }) => {
+  await page.goto('/davet/abcdef1234567890');
+
+  await expect(page.locator('#karsilama')).toHaveCount(0);
+  await expect(page.getByLabel('Kelimeki anasayfa')).toBeVisible();
+  await expect(page.getByText(/Bu davet linki geçersiz|Yükleniyor/)).toBeVisible();
+  await expect(page.getByText('OYUNU BAŞLAT')).toHaveCount(0);
+});
+
+test('Yarım kalmış yerel oyun (kelimeki:game-state) varsa katman görünmez', async ({ page }) => {
+  await page.addInitScript(() => {
+    try {
+      // İçeriğin geçerli bir GameState olması gerekmiyor: kapı yalnızca
+      // anahtarın VARLIĞINA bakıyor (bozuk kaydı `loadGameState` zaten eliyor).
+      localStorage.setItem('kelimeki:game-state', '{"version":1}');
+    } catch {
+      // yoksay
+    }
+  });
+
+  await page.goto('/');
+
+  await expect(page.locator('#karsilama')).toHaveCount(0);
+  await expect(page.getByText('OYUNU BAŞLAT')).toBeVisible();
 });

@@ -5,6 +5,7 @@ import { Board } from './components/Board';
 import { Rack } from './components/Rack';
 import { GameOver } from './components/GameOver';
 import { UserMenu } from './components/UserMenu';
+import { AuthModal } from './components/AuthModal';
 import { Setup } from './components/Setup';
 import { AddToHomeScreen } from './components/AddToHomeScreen';
 import { LandscapeHint } from './components/LandscapeHint';
@@ -645,6 +646,22 @@ export default function App() {
     window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : ''));
   }, []);
 
+  // Karşılama katmanının (18 Ağustos 2026) "Giriş" butonundan gelen istek.
+  // `AuthModal`'ı açan state `UserMenu`'nün İÇİNDE (`setModal('auth')`) ve
+  // dışarıdan tetiklenecek bir yolu yok; katman da React ağacının DIŞINDA
+  // (statik HTML, bkz. src/landing/). Aradaki köprü olarak `?contact=1`'in
+  // BİREBİR aynı kalıbı kullanılıyor: parametre okunur, pencere açılır,
+  // parametre `history.replaceState` ile URL'den temizlenir.
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('giris') !== '1') return;
+    setShowLoginModal(true);
+    params.delete('giris');
+    const rest = params.toString();
+    window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : ''));
+  }, []);
+
   // Oyun sonu ekranı kapatıldı mı (X'e basıldı mı) — board'u görmek için.
   const [gameOverDismissed, setGameOverDismissed] = useState(false);
   useEffect(() => {
@@ -1130,6 +1147,7 @@ export default function App() {
             onClose={() => setShowContactFeedback(false)}
           />
         )}
+        {showLoginModal && <AuthModal onClose={() => setShowLoginModal(false)} />}
       </div>
     );
   }

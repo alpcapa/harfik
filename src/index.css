@@ -252,4 +252,40 @@ select {
   #root > * {
     flex-shrink: 0;
   }
+
+  /* ── Karşılama katmanı (18 Ağustos 2026) ────────────────────────────────
+     `#karsilama`, `#root`'un TAM KARŞILIĞI olmak zorunda: yukarıdaki
+     `body { position: fixed; overflow: hidden }` kuralı yüzünden bu sayfada
+     BELGE hiç kaydırılmıyor — gerçek kaydırma kabı `#root`. Katman onun
+     KARDEŞİ olduğundan kendi kabını kurmazsa hiç kaydırılamaz (kilitli
+     başlığın `sticky`si de kaydırma kabı olmadan hiçbir şey yapmaz).
+     `overflow-x: hidden` bilinçli olarak BURADA — iç sarmalayıcıya konsaydı
+     CSS kuralı gereği `overflow-y` de `visible`likten çıkıp o düğümü ikinci
+     bir kaydırma kabına çevirir ve `sticky` görünür şekilde takılmazdı. */
+  #karsilama {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #karsilama > * {
+    flex-shrink: 0;
+  }
+
+  /* İki mod birbirini dışlar. Sınıfı `<head>`'deki SENKRON kapı script'i
+     (bkz. scripts/landing-plugin.js) gövde ayrıştırılmadan ekliyor, yani
+     karar İLK BOYAMADAN ÖNCE veriliyor — titreme yok. Aynı no-FOUC kalıbı
+     yukarıdaki `color-scheme` kararında da kullanılıyor. */
+  .uygulama-modu #karsilama {
+    display: none;
+  }
+
+  html:not(.uygulama-modu) #root {
+    display: none;
+  }
 }

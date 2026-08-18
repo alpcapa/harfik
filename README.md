@@ -54,6 +54,8 @@ cihazda koşulan listesi: [`mobile/TESTING.md`](mobile/TESTING.md). Derlemeyi
 
 ```
 src/
+├── main.tsx                     # ince kabuk: fontlar + derleme kimliği + "karşılama katmanı mı, uygulama mı" kararı
+├── boot.tsx                     # uygulamanın gerçek açılışı (React ağacı, PWA, /game//davet path eşlemesi) — main.tsx DİNAMİK import eder
 ├── components/
 │   ├── Board.tsx                # 13×13 oyun tahtası (köşe renkleri, dinamik bölge hatları, bonus bölgesi)
 │   ├── Rack.tsx                 # oyuncunun harf kutusu
@@ -148,6 +150,9 @@ src/
 │   ├── leagueRank.ts   # k-lig rütbe kademeleri (Çaylak→Tanrı, 9 kademe: eşik/renk/ödül — sunucudaki _award_league_rewards VE portun league_rank.dart'ı ile ELLE senkron, üç kopya)
 │   ├── pendingLiveGames.ts # Canlı taraftaki "bekleyen iş" sayısı (bekleyen davet + sırası sende olan oyun) — Setup rozeti ve PWA ikon rozeti ortak
 │   └── profileFields.ts # cinsiyet seçenekleri, GG/AA/YYYY ↔ ISO tarih dönüşümü (AuthModal ve AccountSettingsModal ortak)
+├── landing/
+│   ├── Landing.tsx    # karşılama katmanı (derleme/dev zamanında statik HTML'e render edilip index.html'e gömülür)
+│   └── render.tsx     # renderToStaticMarkup sarmalayıcısı — Vite eklentisi (scripts/landing-plugin.js) Node'da çağırır
 ├── hooks/
 │   ├── useAuth.tsx        # Supabase auth context
 │   ├── useModalA11y.ts    # modal odak hapsi, Escape, dialog yığını

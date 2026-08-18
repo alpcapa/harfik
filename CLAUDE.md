@@ -157,10 +157,166 @@ ilgilendiren iki kanca:
   üreticisi için var — üretim kodu hiç çağırmaz, davranış değişmedi
   (varsayılan `Math.random`).
 
+## Karşılama Katmanı — Bölüm 2: iskele (18 Ağustos 2026)
+
+Uygulamanın ÖNÜNE, ilk gelen ziyaretçiye gösterilen bir tanıtım/karşılama
+katmanı kondu. **Bu bölümde amaç görsel değil: boruyu kurmak ve hiçbir şeyi
+kırmadığını KANITLAMAK** — içerik bilinçli olarak yer tutucu (gerçek hikâye/
+SEO metni, tahta demosu, logo park efekti, OG kartı Bölüm 3'ün işi).
+
+**Neden var:** 17 Ağustos'ta ölçülen somut boşluk — Google'ın AI Mode'u
+Kelimeki'yi "kelime bulucu ve sözlük platformu" diye tamamen uydurdu (bkz.
+"Sonraya Bırakılan Ürün Fikirleri" → `/nasil-oynanir`). Sitenin ham HTML'inde
+neredeyse hiç metin yok: `index.html` boş bir `#root` gönderiyor, JS
+çalıştırmayan crawler'lar hiçbir şey görmüyordu. Katman, ham HTML'e gerçek
+metin koyan ilk yüzey.
+
+**Kullanıcının çizdiği sınır (17 Ağustos 2026, sözleri):** *"Mevcut durum
+korunmalı… Onlarda değişiklik istemiyorum. İstediğim sadece mevcut yapının
+önüne bir tanıtım/karşılama layer'ı koymak. Hatta giriş yapmış kişi bunu hiç
+görmesin bile, direkt setup'la başlasın."* Bu yüzden DOKUNULMAYANLAR:
+`vercel.json` rewrite'ları, PWA manifest'inin `id`/`start_url`/`scope`/
+`display` alanları, service worker'ın `navigateFallback`'i ve
+`registerType:'prompt'`, `App.tsx`/`Setup.tsx`/`gameReducer.ts`/`src/game/`/
+`src/utils/`, migration/RLS/Edge Function, ve **`mobile/`** (port bu bölümde
+HİÇ değişmedi).
+
+**İki bilinçli istisna:** (1) `src/main.tsx`'in ikiye bölünmesi (zorunlu,
+aşağı bkz.); (2) `App.tsx`'e `?giris=1` okuyan bir effect — kullanıcı 18
+Ağustos'ta açıkça onayladı ("Anladım ok'dir"), emsali `App.tsx`'in zaten
+okuduğu `?contact=1`.
+
+### Kapı (gate) — kararı İLK BOYAMADAN ÖNCE veren senkron script
+
+`<head>`'e gömülü ~400 baytlık düz JS (`scripts/landing-plugin.js` →
+`kapiScript`). Gövde ayrıştırılmadan çalışır, `<html>`e `uygulama-modu`
+sınıfını ekler; `index.css`teki `.uygulama-modu #karsilama{display:none}` ve
+`html:not(.uygulama-modu) #root{display:none}` ile katman görünüp KAYBOLMAZ
+(FOUC yok). `localStorage` erişimi `try/catch` içinde OLMAK ZORUNDA — gizli
+sekmede fırlarsa sayfa hiç boyanmaz.
+
+| Sinyal | Anlamı |
+|---|---|
+| `location.pathname !== '/'` | Dolaşımdaki `/game/:id` ve `/davet/:token` linkleri — katman ASLA araya girmez |
+| `kelimeki:seen-intro` | Katmanı bir kez geçmiş (`src/utils/onboarding.ts` → `SEEN_INTRO_KEY`; adı kapıda ELLE tekrarlanıyor, script o modülü import edemez) |
+| `kelimeki:game-state` | Yarım kalmış yerel oyunu var |
+| `sb-*-auth-token` taraması | Giriş yapmış (proje ref'i sabit yazılmadı — env değişirse kapı yine doğru çalışır) |
+| `navigator.standalone` / `display-mode: standalone` | Ana ekrana eklemiş (kurulu PWA doğrudan uygulamaya açılır) |
+
+**`kelimeki:anon-id` BİLEREK listede YOK:** kapı NİYETE bakar, görmeye değil.
+Olsaydı hiç oynamadan çıkan bir ziyaretçi ikinci gelişinde "dönen kullanıcı"
+sayılırdı — o kimliği misafir-ziyaret pingi zaten ilk ziyarette üretiyor.
+
+### Enjeksiyon neden bir Vite eklentisi (derleme sonrası script DEĞİL)
+
+`playwright.config.ts` duman testlerini `npm run dev` üzerinde koşturuyor.
+Yalnızca `dist`e yazan bir çözümde katman dev sunucusunda HİÇ var olmaz; yani
+`tests/smoke.spec.ts` onu göremez ve katman tamamen bozukken bile testler
+yeşil kalır. `transformIndexHtml` Vite'ın HEM `serve` HEM `build` modunda
+çalıştırdığı kanca — doğru yer orası. Katmanın kendisi `.tsx`
+(`src/landing/Landing.tsx`) ve Node'da `renderToStaticMarkup` ile HTML'e
+çevriliyor; esbuild-paketle-sonra-node deseni bu kod tabanının kendi kalıbı
+(`scripts/verify-cloud-save-mirror.ts`). Yeni bir çatı (Next/Astro) EKLENMEDİ.
+
+### `main.tsx` → `main.tsx` + `boot.tsx` (zorunlu ayrım)
+
+`index.html` `main.tsx`'i `<script type="module">` ile çağırıyor, yani paket
+`createRoot`'a hiç gelmeden İNİYOR. Katmanı gören ziyaretçiye 0 KB uygulama
+JS'i göndermenin TEK yolu import'un KENDİSİNİN dinamik olması. `boot.tsx`
+içeriği satır satır eski `main.tsx`'tir (ağaç, sıra, `StrictMode`,
+`ErrorBoundary`, path regex'leri); `main.tsx`'te yalnızca fontlar, derleme
+kimliği ve kapı kararı kaldı.
+
+**Uygulama modunda `#karsilama` DOM'dan SİLİNİYOR** (yalnızca CSS ile
+gizlenmiyor) — Bölüm 3'te içerik büyüyecek, dönen kullanıcının ağacında ölü
+bir kopya taşımanın faydası yok.
+
+**ÖLÇÜLEN BULGU — `modulepreload` etiketi statik yazılınca hedefi deliyordu:**
+ilk sürüm `<link rel="modulepreload" href="/assets/boot-*.js">`i doğrudan
+`<head>`e koyuyordu; ölçüm katmanı gören ziyaretçinin de o parçayı (≈220 KB
+gzip) indirdiğini gösterdi. Etiket artık kapı script'inin `g()` dalında,
+yani YALNIZCA uygulama modunda ekleniyor. Ölçüm: katman modunda `boot-*.js`
+ve `words-*.js` istekleri **0**, service worker kaydı **0**; uygulama modunda
+boot TEK ağ transferiyle (preload + dinamik import aynı isteğe düşüyor,
+`performance.getEntriesByType('resource')` ile doğrulandı) ~19 ms'de
+başlıyor ve service worker normal şekilde kayıtlı (**1**).
+
+### `guest_visits`in artık İKİ yazarı var
+
+Katman modunda `App.tsx` hiç mount edilmediğinden oradaki `logGuestVisit`
+effect'i çalışmaz ve admin panelindeki Büyüme > Kullanıcı "M. Ziyaret" serisi
+SESSİZCE düşerdi — üstelik tam da o serinin var olma sebebi olan kitle (kayıt
+olmadan gelip bakıp giden ziyaretçi) artık hiç sayılmazdı. `main.tsx` bu
+insert'i Supabase SDK'sı (54 KB gzip) yerine düz `fetch` ile atıyor: RLS'te
+`guest_visits_insert_anon` zaten `anon` rolüne yetkili, anon anahtarı da
+paketde/`preconnect`te açık — yeni bir sır ifşası yok. Günde-bir-kez koruması
+`visitTracking.ts`in ortak damgasını kullandığından mükerrer sayım olmuyor.
+**⚠ Tabloya kolon eklenirse İKİSİ de (`main.tsx` ve `src/lib/api.ts`'teki
+`logGuestVisit`) güncellenmeli.**
+
+### Kaydırma mimarisi — gerçek kaydırma kabı `#root`, `body` DEĞİL
+
+`index.css`te `html, body { height:100%; overflow:hidden }` + `body {
+position:fixed; inset:0 }`. Yani `#karsilama` da `#root`u AYNALAMAK zorunda
+(`height:100%; overflow-y:auto`), aksi halde `position: sticky` başlık
+çalışmaz. `overflow-x: hidden` `#karsilama`nın KENDİSİNDE olmalı — iç bir
+sarmalayıcıya konsa `overflow-y` `auto`ya hesaplanıp ikinci bir kaydırma
+alanı doğar ve sticky yine kırılır.
+
+### Başlık (kullanıcı spesifikasyonu, 18 Ağustos 2026)
+
+*"İlk gelen header'da sağda giriş butonu solda play (OYNA) butonu görecek.
+Hatta header'ı kilitle, sayfa altına girsin. Kelimeki logosu da … kaybolduğu
+anda oyna ve giriş butonun arasına küçülmüş olarak yerleşsin."* Bu bölümde
+yalnızca YAPI kuruldu: kilitli (sticky) başlık + solda OYNA + sağda GİRİŞ +
+ortada BOŞ/rezerve bir yuva (`#karsilama-logo-yuvasi`). Logonun oraya park
+etme efekti Bölüm 3'ün işi. Buton ölçüleri `UserMenu.tsx`'in akıcı
+`clamp()` sabitlerinden DEĞERCE kopyalandı (aynı 375/465 uç noktalı sistem).
+
+**Ölçüldü** (derlenmiş CSS + Chromium, DPR 2, `document.fonts.ready`):
+390px'te başlık yüksekliği **40.98** (hedef 41.0 ± 0.5), başlık altı → logo
+üstü **0.00** (360/390/834'te ayrı ayrı), orta yuva 265.59px boş, yatay taşma
+yok; kaydırmada başlığın üst kenarı 390 ve 834'te **0**'da sabit kalıyor.
+`dist/index.html` gzip **9.27 KB** (< 15 KB).
+
+### Regresyon — asıl iş bu
+
+`tests/smoke.spec.ts`e yedi test eklendi: temiz `localStorage`ta katman
+görünür + `#root` BOŞ (React hiç mount olmuyor); OYNA → Setup açılır,
+`seen-intro` yazılır ve **sayfa yeniden yüklenmez** (geçiş `location.href`
+ile değil dinamik import'la); GİRİŞ → giriş penceresi açılır ve `?giris=1`
+URL'de KALMAZ; ikinci ziyaret → katman hiç görünmez; `/game/:id` ve
+`/davet/:token` → ilgili sayfa render olur, katman görünmez;
+`kelimeki:game-state` doluyken katman görünmez. Mevcut üç test kendini
+"dönen kullanıcı" olarak işaretliyor (`donenKullanici` yardımcısı) — aksi
+halde artık katmanı görürlerdi.
+
+**Negatif eş kuruldu (iki ayrı tur):** (a) kapının `pathname` ve
+`seen-intro||game-state` koşulları kapatılınca **7 test** düştü — dördü yeni,
+üçü MEVCUT uygulama testleri (yani onlar artık gerçekten kapıya bağlı);
+(b) katman HTML'inin gövdeye enjeksiyonu kaldırılınca **4 test** düştü.
+İkisi de geri alınınca 10/10 yeşil.
+
+**Doğrulanan non-regresyonlar (ölçüldü, varsayılmadı):**
+`dist/manifest.webmanifest` değişiklik öncesiyle **bayt bayt aynı**;
+`navigateFallback` hâlâ `createHandlerBoundToURL("index.html")`; `vercel.json`
+diff'i **sıfır**; precache 17 → 18 girdi ve fark yalnızca bilinçli JS parça
+bölünmesi (`index-*.js` → `index-*.js` + `boot-*.js`).
+
+**Doğrulama sınırı:** `display-mode: standalone` bu ortamdaki Chromium'da
+CDP ile emüle EDİLEMİYOR (denendi, `matchMedia` hep `browser` diyor) — kapının
+PWA dalı, kapıdan ÖNCE koşan bir init script'iyle `matchMedia`/
+`navigator.standalone` sahtelenerek doğrulandı (üçü de uygulama moduna geçti).
+Gerçek kurulu bir PWA'da teyit cihazda yapılmalı; `TESTING.md` bölüm 1'e
+madde eklendi.
+
 ## Klasör Yapısı
 
 ```
 src/
+  main.tsx      # ince kabuk: fontlar + derleme kimliği + kapı kararı (katman mı uygulama mı)
+  boot.tsx      # uygulamanın gerçek açılışı — main.tsx DİNAMİK import eder (bkz. "Karşılama Katmanı")
+  landing/      # karşılama katmanı (Landing.tsx + render.tsx; derleme zamanında statik HTML)
   components/   # React UI bileşenleri
   game/         # Oyun mantığı ve durum yönetimi
     constants.ts    # Tahta sabitleri, köşe hesapları, bonus konumları

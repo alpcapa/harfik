@@ -65,3 +65,14 @@ export function markChatRead(gameId: string, lastMessageAt: string): void {
     // yoksay
   }
 }
+
+// Karşılama katmanı (18 Ağustos 2026) — ilk gelen ziyaretçiye gösterilen
+// tanıtım/karşılama sayfasını geçen kullanıcı bir daha görmez. Anahtar adı
+// yukarıdaki iki kardeşinin kalıbını izliyor.
+//
+// Bu değer `src/main.tsx`'in geçiş fonksiyonu (`gec`) ve `<head>`'deki
+// senkron kapı script'i (bkz. scripts/landing-plugin.js) tarafından
+// PAYLAŞILIYOR — kapı script'i HTML'e gömülü düz JS olduğundan bu modülü
+// import EDEMEZ; adı orada elle tekrarlanıyor ve bu sabitle senkron
+// tutulmak zorunda (eklentinin kendi yorumunda da yazılı).
+export const SEEN_INTRO_KEY = 'kelimeki:seen-intro';

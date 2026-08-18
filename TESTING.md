@@ -984,3 +984,19 @@ gerekiyor).
       **Negatif eş:** 1 basamaklı bir ortalaması olan bir oyuncu varsa
       (`9.50` gibi) onun rakamları da 2 basamaklılarla ondalık noktasında
       hizalı kalmalı — değerler SAĞA yaslı, yalnızca başlık ortalı.
+
+## 11. Karşılama katmanı (18 Ağustos 2026)
+
+Otomatik testler (`npm run test`, `tests/smoke.spec.ts`) katmanın yedi
+yolunu da kapsıyor — burada YALNIZCA bu ortamdan doğrulanamayan tek madde
+var (bkz. `CLAUDE.md` → "Karşılama Katmanı", doğrulama sınırı).
+
+- [ ] **Kurulu PWA doğrudan uygulamaya açılıyor.** `kelimeki.com`u ana
+      ekrana ekle, `localStorage`ı TEMİZ bir cihazda (ya da site verisini
+      silip yeniden ekleyerek) ikonundan aç → karşılama katmanı HİÇ
+      görünmemeli, doğrudan Setup gelmeli. Kapının bu dalı
+      (`display-mode: standalone` / iOS `navigator.standalone`) yalnızca
+      GERÇEK kurulu bir PWA'da tetiklenir; masaüstü Chromium'da CDP ile
+      emüle edilemedi.
+      **Negatif eş:** aynı cihazda tarayıcı sekmesinden (ana ekran
+      ikonundan DEĞİL) `kelimeki.com`a git → katman GÖRÜNMELİ.
