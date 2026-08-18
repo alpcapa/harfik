@@ -91,7 +91,7 @@ jobs:
     name: Analiz + testler
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -128,7 +128,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Derleme kimliği — arayüzdeki teşhis satırına gömülür ki bir ekran
       # görüntüsü "hangi commit çalışıyor" sorusunu KENDİ BAŞINA yanıtlasın
       # (bkz. mobile/CLAUDE.md, "Deploy Doğrulaması"). `pull_request`
@@ -139,7 +139,7 @@ jobs:
           SHA=$(git rev-parse --short "${{ github.event.pull_request.head.sha || github.sha }}")
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
           echo "time=$(date -u '+%d.%m %H:%M')" >> "$GITHUB_OUTPUT"
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -159,7 +159,7 @@ jobs:
             "--dart-define=BUILD_TIME=${{ steps.stamp.outputs.time }}" \
             --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
             --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: kelimeki-apk
           path: mobile/app/build/app/outputs/flutter-apk/app-release.apk
@@ -222,7 +222,7 @@ jobs:
     # çalıştırıp çakışmasın diye iOS onu bekliyor (yükleme birkaç saniye).
     needs: android
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Derleme kimliği — arayüzdeki teşhis satırına gömülür ki bir ekran
       # görüntüsü "hangi commit çalışıyor" sorusunu KENDİ BAŞINA yanıtlasın
       # (bkz. mobile/CLAUDE.md, "Deploy Doğrulaması"). `pull_request`
@@ -271,7 +271,7 @@ jobs:
           # içinden Runner.app.zip çıkar (Appetize'a O yüklenir).
           cd build/ios/iphonesimulator
           zip -ry Runner.app.zip Runner.app
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: kelimeki-ios-simulator
           path: mobile/app/build/ios/iphonesimulator/Runner.app.zip
@@ -345,7 +345,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Derleme kimliği — arayüzdeki teşhis satırına gömülür ki bir ekran
       # görüntüsü "hangi commit çalışıyor" sorusunu KENDİ BAŞINA yanıtlasın
       # (bkz. mobile/CLAUDE.md, "Deploy Doğrulaması"). `pull_request`
@@ -378,6 +378,12 @@ jobs:
             "--dart-define=BUILD_TIME=${{ steps.stamp.outputs.time }}" \
             --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
             --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+      # ⚠ Bu üç Pages action'ı (configure-pages / upload-pages-artifact /
+      # deploy-pages) 18 Ağustos 2026'daki sürüm yükseltmesinde BİLEREK
+      # dokunulmadan bırakıldı: bu iş yalnızca `workflow_dispatch` ile
+      # koşuyor, yani bir PR'da DOĞRULANAMAZ. Doğrulanamayan bir major
+      # sürüm atlaması, kapatmaya çalıştığı uyarıdan daha büyük bir risk.
+      # Yükseltilecekse ayrı bir turda, işi elle tetikleyip yeşil görerek.
       - uses: actions/upload-pages-artifact@v3
         with:
           path: mobile/app/build/web
