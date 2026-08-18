@@ -402,12 +402,44 @@ oluşuyor. İki tasarım kararı kayda değer:
   prop'u eklendi — **varsayılanı `true`**, yani iki eski kullanım yeri
   (`GameHistoryModal` kart açılımı, `SharedGamePage`) hiç değişmedi; yalnızca
   `Landing.tsx` `false` geçiyor. `Board.tsx`'e DOKUNULMADI (`compact` orada
-  zaten bir prop'tu). **Ölçüldü:** katmanın tahta kabı da gerçek oyun
-  ekranıyla aynı `max-w-[680px] px-3` kutusunda, yani filigranların `vw`
-  tabanlı `clamp()` boyutları iki yerde aynı düşüyor — 390px'te iki tahta da
-  ekran görüntüsüyle karşılaştırılıp doğrulandı. Maliyet: `index.html`
-  233.038 → 251.268 ham bayt, gzip 21.192 → 21.812 (**+620 B**). Aynı ilkeyle rütbeler gerçek `RankSeal` + `RANK_TIERS`, mini
-  şemaların renkleri `PLAYER_COLORS`.
+  zaten bir prop'tu).
+
+  **AYNI GÜN İKİ KEZ YANLIŞ FONT — ve kök sebep font DEĞİL GENİŞLİKTİ.** Bu,
+  bu bölümdeki en pahalı hata; sırayla: (1) `compact`'i kapatınca kullanıcı
+  *"harf fontları çok büyük kullanmışsın… Sadece filigranı düzelt dedim"*
+  dedi — çünkü `compact` TEK bir bayrakla ÜÇ şeyi birden yönetiyor (taş harf
+  puntosu, puan üst simgesi, filigranlar); (2) puntoyu kısınca bu sefer
+  *"küçük oldu, normal oyundaki gibi olmalı"* geldi. Doğru teşhis ancak
+  ÖLÇÜNCE çıktı: `Tile.tsx` harfi `vw` tabanlı bir `clamp()` ile çiziyor ama
+  hücre boyu KABIN genişliğinden türüyor — yani aynı `clamp()` dar bir kapta
+  orantısız görünür. Katmanın tahtası o sırada metin sütununun
+  (`max-w-[460px] px-4`) içindeydi ve 390px'te **334px**'e düşüyordu, gerçek
+  oyun ekranı ise **366px** (`max-w-[680px] px-3`); harf/hücre oranı 0.58 ve
+  küçültülmüş sürümde 0.36 iken oyunun kendi oranı 0.53'tü. **Düzeltme
+  fontta değil düzende:** tahta bölümü metin sütununun DIŞINA, kendi
+  `max-w-[680px] px-3` sarmalayıcısına alındı ve kaydırma şeridine `-mx-3`
+  verildi (şerit o dolgudan çıkıp tahtanın kendi kutusunu kullanabilsin
+  diye). **Ölçüldü** (derlenmiş CSS + Chromium, DPR 2, `document.fonts.ready`,
+  `http://` üzerinden — `file://` mutlak asset yollarını çözemediğinden TÜM
+  puntoları 16px okur, ilk ölçüm turu tam bu yüzden çöpe gitti): 390px'te
+  tahta **366.00** px / hücre 28.2 / harf **14.82** / puan üst simgesi 6.24;
+  834px ve üstünde **656.00** / 24 / 10 — üçü de gerçek oyun ekranıyla
+  birebir. Yatay taşma 320/390/834/1194'te **0**. Maliyet: `dist/index.html`
+  ham **252.108** bayt / gzip **21.687**.
+
+  **Ders:** iki platform ya da iki ekran arasında "font yanlış görünüyor"
+  şikâyetinde önce KABIN genişliğini ölç — `vw` tabanlı bir `clamp()` iki
+  farklı genişlikte aynı değeri üretmez, ve punto ile oynamak semptomu
+  kovalayıp asıl farkı gizler. Aynı ilkeyle rütbeler gerçek `RankSeal` +
+  `RANK_TIERS`, mini şemaların renkleri `PLAYER_COLORS`.
+
+  **Tahta altı açıklamalar ORTALI, legend tek satırda akıyor (aynı gün,
+  kullanıcı isteği: *"bu resimlerin altındaki yazılar sola yapışmış. Ortala
+  hepsini."*):** iki tahtanın altındaki açıklama paragrafları `text-center`
+  aldı; bunların altındaki renk legend'ı `grid grid-cols-2`den
+  `flex flex-wrap items-center justify-center` + öğe başına `shrink-0`'a
+  geçti — sabit iki sütun geniş ekranda ortada değil solda kalıyordu, sarma
+  ise dar ekranda kırılmadan çalışıyor.
 - **İKİ tahta, yan yana kaydırmalı (aynı gün ikinci tur, kullanıcı isteği):**
   2 kişilik ve 4 kişilik. **Kaydırma tamamen CSS** — `overflow-x-auto` +
   `snap-x snap-mandatory`, her görsel `w-full`. `main.tsx` YALNIZCA alttaki
@@ -463,9 +495,13 @@ TEK KAYNAKTA (`LogoMark.tsx`in dışa açtığı sabitler; o dosya
 `generate-logo-paths.mjs` tarafından üretiliyor) — uygulama tarafı bu sprite'ı
 KULLANMAZ, orada logo tek kez çiziliyor.
 
-**Sayfa bütçesi (ölçüldü):** `dist/index.html` ham 229.4 KB / **gzip 19.66 KB**
-(tek tahtalı ilk sürüm 130.8 KB / 15.84 KB idi; ikinci tahta ~3.2 KB, iki
-tahtanın dolulaşması + izole hamleler ~0.6 KB gzip ekledi).
+**Sayfa bütçesi (ölçüldü, 18 Ağustos 2026 — filigranlar açıldıktan ve tahta
+kendi genişliğine taşındıktan SONRAKİ nihai değer):** `dist/index.html` ham
+**252.1 KB** / **gzip 21.69 KB** (tek tahtalı ilk sürüm 130.8 KB / 15.84 KB
+idi; ikinci tahta ~3.2 KB, iki tahtanın dolulaşması + izole hamleler ~0.6 KB,
+filigran/puan üst simgesi ~0.6 KB gzip ekledi). **Bu rakam ölçülürken
+`dist`i `http://` üzerinden aç** — `file://` mutlak asset yollarını
+çözemediğinden ölçüm sessizce yanlış çıkar.
 Bölüm 2'nin "< 15 KB" notu yer tutucu içeriğe göre yazılmıştı; gerçek içerikle
 kırılım şu — logo 5.2 KB, tahta 3.3 KB, rütbe mühürleri 0.3 KB, kalan metin/
 düzen ~7 KB. Karşılaştırma: katmanı gören ziyaretçi bugün toplam ~25 KB gzip
@@ -591,7 +627,22 @@ tetikleyici deseni (push+PR → `main`, `paths` filtresi; bu sefer `src/**`,
 bir yoldu (`/opt/pw-browsers/chromium`) — GitHub Actions runner'ında bu yol
 YOK.** `process.env.CI ? undefined : '/opt/pw-browsers/chromium'` yapıldı:
 CI'da Playwright'ın kendi kurduğu (bundled) tarayıcı kullanılıyor, bu
-ortamdaki yerel davranış hiç değişmedi (testler hâlâ yerelde 17/17 yeşil).
+ortamdaki yerel davranış hiç değişmedi (testler hâlâ yerelde yeşil — paket
+o gün 17, bugün **18 test**).
+
+**Action sürümleri Node 20 uyarısından çıkarıldı (18 Ağustos 2026, kullanıcı
+iki ekran görüntüsüyle bildirdi):** GitHub, Actions çalıştırmalarında
+*"Node.js 20 actions are deprecated"* ve `setup-java` için ayrı bir
+kullanımdan kaldırma uyarısı basıyordu — bunlar HATA değil UYARI'ydı (iş
+akışları yeşil geçiyordu), ama her koşuda gürültü üretiyordu. Dört action
+güncellendi: `actions/checkout` v4→**v7**, `actions/setup-java` v4→**v5**,
+`actions/upload-artifact` v4→**v7**, `actions/setup-node` v4→**v7** (her
+birinin güncel majoru ve kırıcı değişiklik notu okunarak). **Pages üçlüsü
+(`configure-pages`/`upload-pages-artifact`/`deploy-pages`) ve
+`github-script` BİLEREK dokunulmadı** — o işler PR'da hiç koşmadığından
+(yalnızca `main`'e push'ta), yükseltmenin doğrulanabileceği bir yer yoktu ve
+yayın yolunu doğrulanmamış bir sürüme taşımak orantısız risk olurdu.
+`subosito/flutter-action` v2'de kaldı (kendi majoru zaten güncel).
 
 **Negatif eş — CI'ın gerçekten bir şey kanıtladığı ayrı ayrı doğrulandı:**
 kapının `seen-intro`/`game-state` dalını geçici olarak boş bırakınca
@@ -607,10 +658,10 @@ doğrulandı.
 
 | | değer |
 |---|---|
-| `dist/index.html` ham | 229.4 KB (bunun 222.7 KB'ı `#karsilama` bloğu = %97) |
-| gzip | **19.28 KB** |
+| `dist/index.html` ham | **252.1 KB** (bunun ezici çoğunluğu `#karsilama` bloğu) |
+| gzip | **21.69 KB** |
 | Bölüm 2'nin ilk hedefi | `< 15 KB` gzip (yer tutucu içeriğe göre yazılmıştı) |
-| İki tam tahtanın (Bölüm 3'te eklenen) gzip payı | ~6.9 KB (toplamın ~%36'sı) |
+| İki tam tahtanın (Bölüm 3'te eklenen) gzip payı | ~6.9 KB |
 
 **Dönen kullanıcıda gerçek maliyet ÖLÇÜLDÜ (Chromium, 4x CPU kısıtlaması,
 `Element.prototype.remove` sarmalanarak `navigationStart → #karsilama.remove()`
@@ -630,8 +681,11 @@ sonra iki, sonra oyun ortası + sınır ihlali, sonra izole hamleler) —
 durumda ve cevap "ikisi de kalsın, zenginleşsin" oldu. 70 ms'lik tek seferlik
 bir maliyeti bu açık kararın üstüne çıkarmak yanlış önceliklendirme olurdu.
 **Hedef artık `< 15 KB` DEĞİL** — bu doküman bir daha "hedefi tuttur" diye
-tahta silmeye kalkışmasın diye rakam güncellendi: gerçekleşen ~19.3 KB gzip,
-takas hâlâ açıkça lehte (19.3 KB HTML ↔ 410 KB tam uygulama JS'i).
+tahta silmeye kalkışmasın diye rakam güncellendi: gerçekleşen **~21.7 KB
+gzip**, takas hâlâ açıkça lehte (21.7 KB HTML ↔ 410 KB tam uygulama JS'i).
+(Bu satır bir dönem 19.3 KB diyordu; filigranların açılması ve tahtanın
+kendi genişliğine taşınması rakamı yukarı çekti — ikisi de kullanıcının
+açık isteğiydi, bkz. Bölüm 3'teki tahta notu.)
 
 ### Başlıktaki düğme: ev ikonu → `← Tanıtım` metni → çıplak `←` (nihai)
 
@@ -798,6 +852,25 @@ testini GERÇEKTEN düşürdü.
 `tests/smoke.spec.ts`e iki yeni test olarak eklendi (`h1`/`role="img"`
 sayımı + FAQ eşleşmesi), `.github/workflows/web-ci.yml` ile her PR'da
 otomatik koşuyor.
+
+### Otomatik giriş yapan kullanıcı katmanı GÖRMEZ — ölçüldü, testle kilitli
+
+Kullanıcı sordu (18 Ağustos 2026): *"Daha önce kayıtlı olup otomatik giriş
+yapanlar tanıtımı görmeden gene giriş yapıyor olacaklar mı? Olsa iyi olur.
+Deneyimin bozulmasını istemem. Çözmek için garip işler yapma."* — Cevap:
+evet, ve bunun için hiçbir şey yapmak gerekmedi; kapının `sb-*-auth-token`
+taraması bunu zaten karşılıyor (bkz. "Kapı" tablosu). **Dört senaryo gerçek
+tarayıcıda ölçüldü:** anahtar hiç yokken → katman; gerçek proje ref'iyle
+oturum anahtarı → uygulama; BAŞKA bir proje ref'i → uygulama (tarama ref'i
+sabit yazmıyor, `sb-…-auth-token` desenine bakıyor); parçalanmış (`.0`
+sonekli) anahtar → katman — **sonuncusu bir açık DEĞİL**: supabase-js
+2.108.2 `localStorage`'da oturumu parçalamıyor (yalnızca çerez depolarında
+yapıyor), yani üretimde o şekil hiç oluşmuyor.
+
+`tests/smoke.spec.ts`e kalıcı bir regresyon testi eklendi (paket 17 →
+**18 test**): `addInitScript` ile gerçek desende bir oturum anahtarı
+yazılınca katman HİÇ görünmüyor, `#root` doluyor. **Negatif eş:** kapının
+oturum tarama dalı kaldırılınca test GERÇEKTEN düşüyor.
 
 ## Klasör Yapısı
 

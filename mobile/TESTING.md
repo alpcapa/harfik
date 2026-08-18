@@ -728,6 +728,18 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       linke tıkla: `kelimeki.com/game/<id>` sayfası **girişsiz** açılmalı
       ve aynı tahtayı göstermeli. (Bu, `set_game_shared` RPC'sinin
       gerçekten çalıştığının kanıtı — bayrak yazılmazsa sayfa boş gelir.)
+- [ ] **Setup footer'ındaki "Paylaş" (18 Ağustos 2026, Parça 110) —
+      YALNIZCA GİRİŞLİ hesapta.** Girişli aç: kurulum ekranının en
+      altındaki satır "Kullanım Koşulları · Gizlilik Politikası · Paylaş"
+      olmalı — **ayraçlar dahil üç madde** (ilk sürümde `·` unutulmuştu,
+      "web ile birebir" isteğinin ihlaliydi). Dokun → native paylaş
+      sayfası açılmalı; paylaşılan link `https://kelimeki.com/?ref=arkadas`
+      OLMALI (kendine gönderip metni oku). **Negatif eş:** çıkış yap →
+      aynı satırda "Paylaş" ve ondan önceki `·` HİÇ olmamalı, yalnızca iki
+      hukuki link kalmalı. **Web'deki ikon porta BİLEREK taşınmadı** — app
+      footer'ında "Paylaş"ın önünde paylaşım ikonu YOK, bu bir eksik
+      değil kayıtlı bir ayrışma (bkz. kök `CLAUDE.md`, Setup footer notu).
+
 - [ ] **Kapat.** Menüden "Kapat" tahta önizlemesini kapatmalı.
       (13 Ağustos 2026'da kullanıcı bunun çalışmadığını bildirdi; native
       testte ÖLÇÜLDÜ — "Kapat" tahtayı gerçekten kapatıyor (ScoreBoxRow
