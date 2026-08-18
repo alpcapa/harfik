@@ -539,15 +539,17 @@ TEK KAYNAKTA (`LogoMark.tsx`in dışa açtığı sabitler; o dosya
 `generate-logo-paths.mjs` tarafından üretiliyor) — uygulama tarafı bu sprite'ı
 KULLANMAZ, orada logo tek kez çiziliyor.
 
-**Sayfa bütçesi (ölçüldü, 18 Ağustos 2026 — özellik ikonları eklendikten
-SONRAKİ nihai değer; 18 Ağustos 2026'da rütbe rozeti roset tasarımına
-geçince yeniden ölçüldü — ham **254.1 KB** / **gzip 22.25 KB**, yani
-ham −814 / gzip +103 bayt):** `dist/index.html` ham **255.0 KB** / **gzip
-22.15 KB** (tek tahtalı ilk sürüm 130.8 KB / 15.84 KB idi; ikinci tahta
+**Sayfa bütçesi — güncel ölçüm (18 Ağustos 2026, metin turu + sayfa sonu
+GİRİŞ düğmesinin kaldırılmasından SONRAKİ nihai değer): `dist/index.html`
+ham **254.0 KB** / **gzip 22.13 KB**.** Aynı gün üç ara ölçüm daha yapıldı,
+sırasıyla: özellik ikonları eklendikten sonra ham 255.0 KB / gzip 22.15 KB
+(tek tahtalı ilk sürüm 130.8 KB / 15.84 KB idi; ikinci tahta
 ~3.2 KB, iki tahtanın dolulaşması + izole hamleler ~0.6 KB, filigran/puan üst
 simgesi ~0.6 KB, altı özellik ikonu 0.42 KB gzip ekledi — sonuncusu
 öncesi/sonrası iki ayrı derlemeyle ölçüldü: 252.264/21.730 → 254.958/22.147
-bayt). **Bu rakam ölçülürken
+bayt); rütbe rozeti roset tasarımına geçince ham 254.1 KB / gzip 22.25 KB
+(ham −814 / gzip +103); font M PLUS Rounded 1c'ye çevrilince 254.1 KB /
+22.25 KB (değişmedi). **Bu rakam ölçülürken
 `dist`i `http://` üzerinden aç** — `file://` mutlak asset yollarını
 çözemediğinden ölçüm sessizce yanlış çıkar.
 Bölüm 2'nin "< 15 KB" notu yer tutucu içeriğe göre yazılmıştı; gerçek içerikle
@@ -731,8 +733,8 @@ sonra iki, sonra oyun ortası + sınır ihlali, sonra izole hamleler) —
 durumda ve cevap "ikisi de kalsın, zenginleşsin" oldu. 70 ms'lik tek seferlik
 bir maliyeti bu açık kararın üstüne çıkarmak yanlış önceliklendirme olurdu.
 **Hedef artık `< 15 KB` DEĞİL** — bu doküman bir daha "hedefi tuttur" diye
-tahta silmeye kalkışmasın diye rakam güncellendi: gerçekleşen **~22.3 KB
-gzip**, takas hâlâ açıkça lehte (21.7 KB HTML ↔ 410 KB tam uygulama JS'i).
+tahta silmeye kalkışmasın diye rakam güncellendi: gerçekleşen **~22.1 KB
+gzip**, takas hâlâ açıkça lehte (22 KB HTML ↔ 410 KB tam uygulama JS'i).
 (Bu satır bir dönem 19.3 KB diyordu; filigranların açılması ve tahtanın
 kendi genişliğine taşınması rakamı yukarı çekti — ikisi de kullanıcının
 açık isteğiydi, bkz. Bölüm 3'teki tahta notu.)

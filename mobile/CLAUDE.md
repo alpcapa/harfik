@@ -5452,6 +5452,16 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   yan yana bak (iki dosya elle senkron). Parça yazılırken Flutter SDK
   olmadığından Dart yarısı yalnızca CI ile doğrulandı.
 
+- **18 Ağustos (Parça 115) — mühür artık İSİMLERİN yanında, yedi yüzey:**
+  hesap menüsü başlığı (18px) · Skor Kartı (20px) · oyuncu kartı (20px) ·
+  Setup'taki hesap koltuğu (18px) · Arkadaşlar'ın ÜÇ sekmesi (18px) ·
+  "+ Yeni Canlı Oyun" arkadaş seçici (18px) · oyun daveti katılımcıları
+  (16px). Skor kartlarında artık İKİ mühür var (34px başlık + 20px isim),
+  ikisi aynı kademeyi göstermeli. Ayrıca "puan bilinmiyor" ile "0 puan"
+  ayrımı: liste açılırken bir an için herkesin yanında Çaylak BELİRMEMELİ,
+  YZ/misafir koltuğunda mühür HİÇ olmamalı. Bu parça da Flutter SDK'sız
+  bir oturumda yazıldı — Dart yarısının tek kanıtı CI.
+
 Liste bir gün BOŞALIRSA öyle kalmasını bekleme: yeni bir düzeltme
 yazıldığında buraya yine madde eklenmeli (kural değişmedi: yazıldığı gün
 cihazda görülmemiş her düzeltme burada birikir).
