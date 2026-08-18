@@ -401,6 +401,18 @@ oluşuyor. İki tasarım kararı kayda değer:
   değişmiyor). 4 kişilik tahta "3 rakibe karşı" mesajını taşıyor ve
   doğrulayıcı her koltuğun GERÇEKTEN dolu olduğunu ayrıca kontrol ediyor —
   boş bir köşe o mesajı sessizce yalanlardı.
+- **İki tahta da OYUN ORTALARINDA (üçüncü tur, kullanıcı isteği: "her oyuncu
+  orta kareye girmiş ve oyun daha ilerlemiş … 1-2 rakip bölgeye değen hamle
+  koy"):** boş bir açılış tahtası ne bölge genişlemesini ne de sınır
+  ihlalini gösterebiliyordu. 2 kişilikte 1. oyuncu merkezi geçip `NAİL` ile
+  RAKİBİN 4×4 bloğuna giriyor (43 taş); 4 kişilikte DÖRT oyuncu da merkez
+  bölgeye uzanıyor ve iki temas noktası var — `ATAMAN` (2. oyuncunun A'sı +
+  1. oyuncunun N'si) ve `KIRK` (3. oyuncunun K'si + 4. oyuncunun IRK'ı),
+  yani vergiyi doğuran durum tahtada GÖRÜNÜYOR (62 taş).
+  **Tahtalar elle çözülmedi:** `node_modules/.cache/…/solver.ts` benzeri bir
+  arama betiğiyle, her aday kelime TÜM tahtaya karşı doğrulanarak seçildi —
+  kesişmelerin ürettiği kaza kelimeleri (ör. `İS`, `LE`) ancak böyle
+  görülüyor. Sonuç yine `npm run verify-demo-board` ile kilitli.
 - **Tahtanın kelimeleri ÖLÇEREK doğrulanıyor:** `npm run verify-demo-board`
   ≥2 uzunluktaki TÜM yatay/dikey dizilimleri `src/data/words.ts`e karşı sınar,
   ayrıca her oyuncunun taşlarının EV karesinden ortogonal bağlı olduğunu
@@ -421,9 +433,9 @@ TEK KAYNAKTA (`LogoMark.tsx`in dışa açtığı sabitler; o dosya
 `generate-logo-paths.mjs` tarafından üretiliyor) — uygulama tarafı bu sprite'ı
 KULLANMAZ, orada logo tek kez çiziliyor.
 
-**Sayfa bütçesi (ölçüldü):** `dist/index.html` ham 215.8 KB / **gzip 19.07 KB**
-(tek tahtalı ilk sürüm 130.8 KB / 15.84 KB idi; ikinci tahta ~3.2 KB gzip
-ekledi).
+**Sayfa bütçesi (ölçüldü):** `dist/index.html` ham 223.8 KB / **gzip 19.47 KB**
+(tek tahtalı ilk sürüm 130.8 KB / 15.84 KB idi; ikinci tahta ~3.2 KB, iki
+tahtanın dolulaşması ~0.4 KB gzip ekledi).
 Bölüm 2'nin "< 15 KB" notu yer tutucu içeriğe göre yazılmıştı; gerçek içerikle
 kırılım şu — logo 5.2 KB, tahta 3.3 KB, rütbe mühürleri 0.3 KB, kalan metin/
 düzen ~7 KB. Karşılaştırma: katmanı gören ziyaretçi bugün toplam ~25 KB gzip
@@ -446,6 +458,22 @@ işaretinin AYNISI) — path kopyalansaydı iki ev sessizce ayrışırdı
 (`RelationIcons` ile aynı ilke). Satırın sağ tarafı DEĞİŞMEDİ: `UserMenu`
 girişsizken GİRİŞ, girişliyken avatar menüsünü çiziyor (`justify-end` →
 `justify-between`).
+
+### Şeritteki logo TAM ORTADA — `flex-1` yetmiyor
+
+Kullanıcı (18 Ağustos 2026, üçüncü tur): *"Kelimeki logosu header'da tam
+ortalı durmuyor."* Doğru: yuva `flex-1` iken logo, şeridin GİRİŞ
+düğmesinden ARTA KALAN alanının ortasında duruyor — yani sayfanın gerçek
+ortasının (GİRİŞ genişliği + boşluk) ÷ 2 kadar solunda. Yuva
+`absolute inset-0 … justify-center pointer-events-none` yapıldı, GİRİŞ
+`ml-auto` ile sağda kaldı.
+
+**Ölçüldü** (derlenmiş CSS + Chromium, 320/390/834): logonun yatay merkezi
+şeridin merkeziyle ve KAHRAMAN logonun merkeziyle birebir aynı
+(160 / 195 / 417); park hâlinde logo yüksekliği GİRİŞ'le birebir
+(27.39/27.38 · 29.00/28.98 · 37/37) ve dikey merkezleri de eşit; şerit
+yüksekliği DEĞİŞMEDİ (yalnızca düğme belirliyor, logo mutlak konumda).
+En dar ekranda logo ile GİRİŞ arası 62.6 px — çakışma yok.
 
 ### Buton bağlama sözleşmesi (yeni)
 

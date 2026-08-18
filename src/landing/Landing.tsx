@@ -266,16 +266,24 @@ export function Landing() {
             Sticky sarmalayıcı TAM GENİŞLİK, iç şerit `max-w-[460px]` — ikisini
             tek elemanda birleştirmek şeridi ekranın soluna yapıştırırdı. */}
         <div id="karsilama-serit" className="sticky top-0 z-20 w-full flex justify-center bg-bg">
-          <div className="w-full max-w-[460px] flex items-center gap-2 px-3.5 py-3">
+          <div className="relative w-full max-w-[460px] flex items-center px-3.5 py-3">
             {/* LOGO YUVASI — logonun "park ettiği" yer. Kullanıcı isteği (18
                 Ağustos 2026): "Kelimeki logosu … kaybolduğu anda … küçülmüş
                 olarak yerleşsin."
 
                 Şeritte BİR TEK giriş düğmesi var: sayfanın tepesindeki büyük
                 "HEMEN OYNA" dururken başlıkta ikinci bir OYNA gereksizdi
-                (kullanıcı isteği, aynı gün) — kaldırıldı. Yuva `flex-1`
-                olduğundan logo, şeridin GİRİŞ'ten arta kalan alanının
-                ortasında duruyor.
+                (kullanıcı isteği, aynı gün) — kaldırıldı.
+
+                ⚠ Yuva AKIŞTA DEĞİL, `absolute inset-0`: `flex-1` ile
+                konulduğunda logo şeridin GİRİŞ'ten ARTA KALAN alanının
+                ortasında duruyordu, yani sayfanın gerçek ortasının
+                (GİRİŞ genişliği ÷ 2) kadar solunda — kullanıcı bunu "tam
+                ortalı durmuyor" diye bildirdi. Mutlak konumla logo şeridin
+                TAMAMINA göre ortalanıyor; şeridin yüksekliğini yine yalnızca
+                düğme belirliyor (logo onunla aynı boyda) ve
+                `pointer-events-none` dokunuşların altındaki alana geçmesini
+                sağlıyor.
 
                 Logo BURADA HER ZAMAN VAR (statik HTML); yalnızca görünürlüğü
                 CSS'te (`index.css` → `.logo-parkli`). `main.tsx`'teki
@@ -286,7 +294,7 @@ export function Landing() {
                 zamanında şeridin `offsetHeight`'inden okunuyor. */}
             <div
               id="karsilama-logo-yuvasi"
-              className="flex-1 min-w-0 flex items-center justify-center"
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
               aria-hidden="true"
             >
               <LandingLogo height={PARK_LOGO_HEIGHT} className="block" />
@@ -296,7 +304,7 @@ export function Landing() {
               id="karsilama-giris"
               type="button"
               data-kelimeki-giris=""
-              className={BASLIK_BUTON}
+              className={`${BASLIK_BUTON} ml-auto`}
               style={BUTON_OLCU}
             >
               Giriş
@@ -375,12 +383,13 @@ export function Landing() {
                     ]}
                   />
                   <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 list-none p-0 m-0">
-                    <Rozet renk="#FDE68A" metin="X2 — kelime puanı iki katı" />
-                    <Rozet renk="#F97316" metin="X3 — tam merkezdeki kare" />
+                    <Rozet renk="#FDE68A" metin="X2 — Kelime puanının 2 katı" />
+                    <Rozet renk="#F97316" metin="X3 — Kelime puanının 3 katı" />
                   </ul>
                   <p className="text-[12px] leading-relaxed text-muted" style={{ margin: 0 }}>
                     Köşenden başla, orta bölgedeki sarı alana ulaş, puanlarını
-                    ikiye hatta üçe katla.
+                    ikiye hatta üçe katla. Rakip bölgesine değen hamle yaparsan
+                    kazandığının üçte birini ona vergi olarak ödersin.
                   </p>
                 </div>
 
@@ -396,8 +405,9 @@ export function Landing() {
                     ]}
                   />
                   <p className="text-[12px] leading-relaxed text-muted" style={{ margin: 0 }}>
-                    Dilersen 3 yapay zekaya karşı veya 3 arkadaşına karşı oyna,
-                    gücünü sına. 3 oyuncuyu yenmenin keyfi bir başka.
+                    Dilersen 3 yapay zekaya veya 3 arkadaşına karşı oyna, gücünü
+                    sına. 3 oyuncuyu yenmenin keyfi bir başka ama ikinci bile
+                    olsan k-lig puanı kazanırsın.
                   </p>
                 </div>
               </div>
@@ -437,8 +447,8 @@ export function Landing() {
                 />
                 <Adim
                   no={4}
-                  baslik="Bölge vergisini hesaba kat"
-                  metin="Rakibin bölgesine girmek — hatta sınırına değmek — serbesttir, ama o hamlenin puanının bir kısmı bölgenin sahibine geçer. Kaç rakibin bölgesiyle temas ettiğine göre elinde kalan pay küçülür."
+                  baslik="Sınır ihlal vergisine dikkat!"
+                  metin="İlk hamle dışında rakibin bölgesine değen/giren hamle de yapabilirsin ama vergisini ödersin, unutma!"
                   izgara={['.....', '.bbb.', '.bAb.', '.bbb.', '.....']}
                 />
               </ol>
@@ -448,12 +458,12 @@ export function Landing() {
             <Bolum ustBaslik="Neler var" baslik="Kelimeki'de neler yapabilirsin?">
               <ul className="grid grid-cols-2 gap-2 list-none p-0 m-0">
                 <Ozellik
-                  baslik="Yapay zekaya karşı"
-                  metin="Kurabildiği en yüksek puanlı kelimeyi arayan bir rakip. 2 ya da 4 kişilik."
+                  baslik="Yapay zekaya karşı oyna"
+                  metin="Kurabildiği en yüksek puanlı kelimeyi arayan amansız bir rakip. İster 1 rakip, ister 3 rakibe karşı oyna."
                 />
                 <Ozellik
-                  baslik="Arkadaşınla canlı"
-                  metin="Oyun daveti gönder, ister canlı, ister 48 saat içinde hamle yaparak rahat rahat oyna."
+                  baslik="Arkadaşınla canlı oyna"
+                  metin="Oyun daveti gönder, ister canlı, ister 48 saat içinde hamle yaparak rahatça oyna."
                 />
                 <Ozellik
                   baslik="Oyun içi sohbet"
@@ -469,7 +479,7 @@ export function Landing() {
                 />
                 <Ozellik
                   baslik="k-lig ve rütbeler"
-                  metin="Kazandıkça puan toplarsın; eşikleri geçtikçe rütben yükselir."
+                  metin="Kazandıkça puan toplarsın; eşikleri geçtikçe rütbeni yükseltir, puanları toplarsın."
                 />
               </ul>
             </Bolum>
