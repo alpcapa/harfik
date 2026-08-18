@@ -1129,30 +1129,50 @@ export default function App() {
 
   // ── Kurulum ekranı ─────────────────────────────────────────────────────────
   if (state.phase === 'setup') {
+    // Yalnızca GİRİŞSİZ (misafir) kullanıcıya gösterilir — bkz. aşağıdaki
+    // yorum. `authLoading` sırasında da `false`: `UserMenu`'nün kendi
+    // GİRİŞ/avatar kararıyla aynı "önce bilmeden gösterme" deseni.
+    const showTanitimLink = !authLoading && !user;
     return (
       <div className="min-h-[100dvh] w-full flex flex-col items-center overflow-x-hidden">
-        <div className="w-full max-w-[460px] flex items-center justify-between px-3.5 pt-3">
+        <div
+          className={`w-full max-w-[460px] flex items-center px-3.5 pt-3 ${
+            showTanitimLink ? 'justify-between' : 'justify-end'
+          }`}
+        >
           {/* Karşılama sayfasına dönüş (18 Ağustos 2026, kullanıcı isteği:
               "Hemen Oynaya basınca geri gelemiyorsun"). Katman DOM'dan
               siliniyor (bkz. main.tsx), dolayısıyla geri dönmenin tek yolu
               tam bir yeniden yükleme — `?tanitim=1` kapıya "bu sefer katmanı
               göster" diyen tek sinyal (bkz. scripts/landing-plugin.js).
-              Sağ taraf DEĞİŞMEDİ: girişsizken GİRİŞ, girişliyken avatar
-              menüsü — ikisi de `UserMenu`'nün kendi dalları.
 
               Düğme ÇIPLAK `←` (18 Ağustos 2026, aynı gün ikinci tur, kullanıcı
-              kararı) — denetim turunda önce `← Tanıtım` metnine geçilmişti
-              ("çıplak ok yanlış yönlendirir" gerekçesiyle), ama kullanıcı
-              açıkça yalnızca oku istedi; erişilebilir ad hâlâ `aria-label`
-              üzerinden ("Tanıtım sayfası") doğru anlatılıyor, yalnızca
-              GÖRÜNÜR metin sadeleşti. */}
-          <a
-            href="/?tanitim=1"
-            aria-label="Tanıtım sayfası"
-            className="shrink-0 font-mono text-[10px] text-muted active:scale-[0.97] transition-transform"
-          >
-            ←
-          </a>
+              kararı) — erişilebilir ad `aria-label` üzerinden ("Tanıtım
+              sayfası") doğru anlatılıyor, yalnızca GÖRÜNÜR metin sadeleşti.
+
+              YALNIZCA GİRİŞSİZ kullanıcıda render ediliyor (aynı gün, üçüncü
+              tur — kullanıcı sordu: "girişli kullanıcıda da geri ok çıkmamalı,
+              öyle değil mi?"). Sebep: `?tanitim=1` dönen-kullanıcı sinyallerini
+              (oturum DAHİL) bilerek atlıyor, yani girişli biri bu düğmeye
+              basarsa `Landing.tsx`'in statik (auth'tan habersiz) başlığındaki
+              GİRİŞ butonunu görüyordu — kendi oturumu açıkken bile. Katmanı
+              auth-farkında yapmak (`Landing.tsx`'in "hiçbir hook/tarayıcı
+              globali YOK" temel kısıtını ihlal ederdi) yerine, bu escape
+              hatch'in girişli bir kullanıcı için zaten bir değeri olmadığı
+              (kapı zaten girişliyi hiç göstermeden uygulamaya alıyor —
+              düğme yalnızca `?tanitim=1` ile bunu BİLEREK deliyor) kabul
+              edilip düğme koşulsuz gizlendi. `authLoading` sırasında da
+              gizli — `UserMenu`'nün kendi GİRİŞ/avatar kararıyla aynı
+              "önce bilmeden gösterme" deseni. */}
+          {showTanitimLink && (
+            <a
+              href="/?tanitim=1"
+              aria-label="Tanıtım sayfası"
+              className="shrink-0 font-mono text-[10px] text-muted active:scale-[0.97] transition-transform"
+            >
+              ←
+            </a>
+          )}
           <UserMenu />
         </div>
         <main className="w-full flex flex-col items-center">

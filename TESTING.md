@@ -1055,23 +1055,20 @@ doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
       (yarım kalmamalı). Otomatik test `scrollLeft`i JS ile ayarlıyor —
       gerçek dokunmatik jestin akıcılığını ve snap'i ölçemez.
 
-- [ ] **Kurulum ekranındaki `←` düğmesi geri döndürüyor.** "Hemen
-      Oyna" ile uygulamaya geç, sol üstteki `←` düğmesine dokun →
-      karşılama katmanı geri gelmeli (sayfa yeniden yükleniyor, bu normal).
-      Sonra tekrar "Hemen Oyna"ya bas ve SAYFAYI YENİLE → uygulamada
-      kalmalısın, katman geri GELMEMELİ (`?tanitim=1` URL'den
-      temizleniyor). **18 Ağustos 2026'da ikon → `← Tanıtım` metne, sonra
-      AYNI GÜN kullanıcı isteğiyle çıplak `←`'ye döndü** (bkz. `CLAUDE.md`,
-      "Başlıktaki düğme… (nihai)") — görünür metin yalnızca ok karakteri,
-      `aria-label="Tanıtım sayfası"` erişilebilir ad olarak duruyor.
-      **Girişli hesapla da dene:** Setup'taki düğme yine solda, SETUP'IN
-      SAĞINDAKİ menü avatar olmalı (GİRİŞ değil) — tarayıcının Geri
-      tuşuyla KARIŞTIRMA, ikisi farklı davranır (bkz. `CLAUDE.md`, "Kayda
-      geçen yan not"). Düğmeye basıp karşılama katmanına dönünce KATMANIN
-      KENDİ başlığında GİRİŞ görmen NORMAL — o başlık derleme zamanında
-      üretilen statik HTML, oturum durumunu hiç bilmiyor; `?tanitim=1`
-      bilerek oturum sinyalini de atlıyor (bkz. `CLAUDE.md`, "Setup'a
-      girişliyken `?tanitim=1`e gidince GİRİŞ butonu görünüyor").
+- [ ] **Kurulum ekranındaki `←` düğmesi geri döndürüyor — YALNIZCA
+      GİRİŞSİZ (misafir) hesapta.** "Hemen Oyna" ile uygulamaya geç, sol
+      üstteki `←` düğmesine dokun → karşılama katmanı geri gelmeli (sayfa
+      yeniden yükleniyor, bu normal). Sonra tekrar "Hemen Oyna"ya bas ve
+      SAYFAYI YENİLE → uygulamada kalmalısın, katman geri GELMEMELİ
+      (`?tanitim=1` URL'den temizleniyor). **18 Ağustos 2026'da ikon →
+      `← Tanıtım` metne, sonra AYNI GÜN çıplak `←`'ye döndü, sonra AYNI GÜN
+      girişli hesapta TAMAMEN GİZLENDİ** (bkz. `CLAUDE.md`, "Setup'taki `←`
+      düğmesi artık YALNIZCA girişsiz kullanıcıda görünüyor").
+      **Girişli hesapla dene — düğme HİÇ GÖRÜNMEMELİ:** Setup ekranını
+      girişli aç, sol üstte `←` OLMAMALI, sağda yalnızca avatar menüsü
+      olmalı (satır ortalanmadan sağa yaslı kalmalı — kutunun tek çocuğu
+      avatar). Girişsiz hesaba geç (Çıkış Yap) → aynı ekranda düğme GERİ
+      GELMELİ.
 
 - [ ] **Katmanın alt satırındaki hukuki bağlantılar.** "Kullanım Koşulları"
       ve "Gizlilik Politikası" → uygulamaya geçip DOĞRU pencereyi açmalı,

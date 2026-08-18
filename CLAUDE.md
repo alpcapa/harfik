@@ -633,32 +633,41 @@ oturumu ondan caydırmayı hedeflemişti — ama kullanıcının canlı, açık 
 her zaman dokümandaki bir tasarım kararının önündedir. Bir sonraki oturum
 bu satırı "geri dönüldü" diye tekrar metne çevirmeye kalkışmamalı.
 
-### Setup'a girişliyken `?tanitim=1`e gidince GİRİŞ butonu görünüyor — BEKLENEN
+### Setup'taki `←` düğmesi artık YALNIZCA girişsiz kullanıcıda görünüyor
 
 Kullanıcı sordu (18 Ağustos 2026): *"girişli olarak setup ekranından geri
-yaptığımda giriş butonu çıkıyor tekrar. Bu normal mi?"* — **Evet, normal ve
-kasıtlı.** Sebep `?tanitim=1`in kendi tanımında zaten yazılı: bu parametre
-öteki TÜM dönen-kullanıcı sinyallerini (`seen-intro`/yarım oyun/**oturum**/
-PWA) BİLEREK atlıyor (bkz. "Kapı" bölümü) — aksi halde girişli bir kullanıcı
-bu düğmeye bassa bile kapı onu anında tekrar uygulamaya iter, tanıtım sayfası
-hiç görünmez, düğmenin kendisi işlevsiz kalırdı.
+yaptığımda giriş butonu çıkıyor tekrar. Bu normal mi?"* — kök sebep açıklandı
+(bkz. aşağıdaki tarihsel not), ardından AYNI GÜN üçüncü turda kullanıcı asıl
+soruyu sordu: *"O zaman girişli kullanıcı da geri oku da çıkmamalı, öyle
+değil mi?"* — **Evet, doğru çıkarım.** `App.tsx`'teki `showTanitimLink`
+(`!authLoading && !user`) artık düğmeyi girişli hesapta hiç RENDER ETMİYOR;
+satır boşken `UserMenu` sağda kalsın diye kap `justify-between`den
+`justify-end`e geçiyor (aksi halde tek çocuklu bir `justify-between` `flex`
+kutusu tek öğeyi SOLA iterdi). `authLoading` sırasında da gizli — `UserMenu`
+kendi GİRİŞ/avatar kararında zaten aynı "önce bilmeden gösterme" desenini
+kullanıyor.
 
-Landing katmanının başlığındaki GİRİŞ (`#karsilama-giris`) STATİK, derleme
-zamanında üretilen düz HTML — `Landing.tsx` sunucuda (Node'da) render
-ediliyor, hiçbir tarayıcı globaline/auth durumuna erişimi yok, dolayısıyla
-oturum açık olsa da olmasa da HER ZAMAN aynı "GİRİŞ" düğmesini basar. Bu,
-kullanıcının uygulama içindeki gerçek oturum durumunu YALANLAMIYOR — yalnızca
-o an render edilen sayfa (tanıtım) girişli/girişsiz ayrımı hiç bilmiyor.
-Düğmeye basılırsa `gec('giris')` uygulamaya `?giris=1` ile döner ve
-`AuthModal` açılır — girişli biri için bu gereksiz bir adım ama zararsız
-(modal kapatılabilir, oturum bozulmaz).
+**Neden bu, katmanı auth-farkında yapmaktan (`Landing.tsx`'in statik
+başlığına oturum kontrolü eklemekten) daha iyi bir çözüm:** o yol
+`Landing.tsx`'in "hiçbir hook/olay/tarayıcı globali YOK, sunucuda statik
+render edilir" temel kısıtını ihlal ederdi. Buradaki gerçek soru "bu escape
+hatch'in girişli bir kullanıcı için değeri ne?" idi — cevap: hiç. Kapı
+zaten girişli kullanıcıyı katmanı HİÇ göstermeden uygulamaya alıyor (bkz.
+"Kapı" bölümü); `?tanitim=1` düğmesi tam olarak bu davranışı BİLEREK deldiği
+için var oluyordu (misafirin "Hemen Oyna"dan pişman olup geri dönmesi için),
+ve girişli bir kullanıcının o davranışı delmesi gereken bir senaryo yok.
+Düğmeyi tamamen kaldırmak, statik header'ı yamalamaktan daha az riskli VE
+daha doğru bir çözüm.
 
-**Bilerek değiştirilmedi:** landing header'ının auth-farkında hale
-getirilmesi (ör. girişliyse GİRİŞ yerine avatar göstermek) katmanın "hiçbir
-hook/olay/tarayıcı globali YOK, sunucuda statik render edilir" temel
-kısıtını (`Landing.tsx` dosya başlığı) ihlal eder ve `?tanitim=1`in KENDİ
-amacına (dönen kullanıcıya normal bir İLK-ziyaret önizlemesi göstermek)
-aykırı düşer.
+**Tarihsel not — kök sebep (artık yalnızca `?tanitim=1`e ELLE giden ya da
+eski bir sekme/bookmark'tan gelen girişli kullanıcı için geçerli, normal
+UI akışında bir daha karşılaşılmaz):** Landing katmanının başlığındaki GİRİŞ
+(`#karsilama-giris`) STATİK, derleme zamanında üretilen düz HTML —
+`Landing.tsx` sunucuda (Node'da) render ediliyor, hiçbir tarayıcı
+globaline/auth durumuna erişimi yok, dolayısıyla oturum açık olsa da olmasa
+da HER ZAMAN aynı "GİRİŞ" düğmesini basar; `?tanitim=1` dönen-kullanıcı
+sinyallerini (`seen-intro`/yarım oyun/**oturum**/PWA) BİLEREK atladığından
+kapı bu durumda araya girmiyordu.
 
 ### Kayda geçen yan not — tarayıcının Geri tuşu farklı davranıyor
 
