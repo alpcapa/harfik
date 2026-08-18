@@ -233,3 +233,47 @@ test('Yarım kalmış yerel oyun (kelimeki:game-state) varsa katman görünmez',
   await expect(page.locator('#karsilama')).toHaveCount(0);
   await expect(page.getByText('OYUNU BAŞLAT')).toBeVisible();
 });
+
+// ── Bölüm 3: içerik + logo park efekti ────────────────────────────────────
+// Yukarıdaki testler BORUYU (kapı → geçiş → yönlendirme) kanıtlıyor; bu ikisi
+// Bölüm 3'te eklenen İÇERİĞİN ve efektin gerçekten çalıştığını kanıtlıyor.
+
+test('Sayfa sonundaki OYNA da uygulamaya geçirir (öznitelikle bağlama)', async ({ page }) => {
+  await page.goto('/');
+
+  // Kahraman ve sayfa sonundaki düğmelerin id'si YOK — `main.tsx` onları
+  // `[data-kelimeki-oyna]` ile topluca bağlıyor. Bu test o sözleşmeyi
+  // koruyor: yeni bir düğme id ile eklenirse (öznitelik unutulursa) sessizce
+  // ölü kalırdı.
+  const oynaDugmeleri = page.locator('[data-kelimeki-oyna]');
+  await expect(oynaDugmeleri).toHaveCount(3); // başlık + kahraman + sayfa sonu
+  await oynaDugmeleri.last().click();
+
+  await expect(page.getByText('OYUNU BAŞLAT')).toBeVisible();
+  await expect(page.locator('#karsilama')).toHaveCount(0);
+});
+
+test('Kaydırınca logo kilitli başlığa park eder, tepede park etmez', async ({ page }) => {
+  await page.goto('/');
+
+  const katman = page.locator('#karsilama');
+  const parkYuvasi = page.locator('#karsilama-logo-yuvasi svg');
+
+  // Tepedeyken kahraman logo görünür — park eden kopya gizli.
+  await expect(katman).not.toHaveClass(/logo-parkli/);
+  await expect(parkYuvasi).toHaveCSS('opacity', '0');
+
+  // Gerçek kaydırma kabı `#karsilama` (belge değil — bkz. index.css).
+  await page.evaluate(() => {
+    document.getElementById('karsilama')!.scrollTop = 900;
+  });
+
+  await expect(katman).toHaveClass(/logo-parkli/);
+  await expect(parkYuvasi).toHaveCSS('opacity', '1');
+
+  // Geri dönünce efekt geri alınır (tek yönlü bir bayrak değil).
+  await page.evaluate(() => {
+    document.getElementById('karsilama')!.scrollTop = 0;
+  });
+  await expect(katman).not.toHaveClass(/logo-parkli/);
+});

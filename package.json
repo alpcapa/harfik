@@ -19,7 +19,8 @@
     "generate-logo-paths": "node scripts/generate-logo-paths.mjs",
     "generate-klig-paths": "node scripts/generate-klig-paths.mjs",
     "verify-cloud-save-mirror": "esbuild scripts/verify-cloud-save-mirror.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-cloud-save-mirror.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-cloud-save-mirror.mjs",
-    "verify-fetch-my-games": "node scripts/run-verify-fetch-my-games.mjs"
+    "verify-fetch-my-games": "node scripts/run-verify-fetch-my-games.mjs",
+    "verify-demo-board": "esbuild scripts/verify-demo-board.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-demo-board.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-demo-board.mjs"
   },
   "dependencies": {
     "@fontsource/nunito": "^5.2.7",

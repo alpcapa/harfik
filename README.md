@@ -36,6 +36,7 @@ npm run test     # Playwright duman testleri (tests/smoke.spec.ts)
 # Birim test çatısı yok; riskli saf mantık ayrı doğrulama betikleriyle sınanır:
 npm run verify-cloud-save-mirror # bulut kaydının çevrimdışı karar mantığı
 npm run verify-fetch-my-games    # oyun geçmişi: ağ hatası ↔ boş liste ayrımı
+npm run verify-demo-board        # karşılama katmanındaki tanıtım tahtası sözlüğe karşı doğrulanır
 ```
 
 `npm run test` kritik yolu kontrol eder (uygulama açılıyor, oyun başlıyor, YZ
@@ -151,8 +152,10 @@ src/
 │   ├── pendingLiveGames.ts # Canlı taraftaki "bekleyen iş" sayısı (bekleyen davet + sırası sende olan oyun) — Setup rozeti ve PWA ikon rozeti ortak
 │   └── profileFields.ts # cinsiyet seçenekleri, GG/AA/YYYY ↔ ISO tarih dönüşümü (AuthModal ve AccountSettingsModal ortak)
 ├── landing/
-│   ├── Landing.tsx    # karşılama katmanı (derleme/dev zamanında statik HTML'e render edilip index.html'e gömülür)
-│   └── render.tsx     # renderToStaticMarkup sarmalayıcısı — Vite eklentisi (scripts/landing-plugin.js) Node'da çağırır
+│   ├── Landing.tsx     # karşılama katmanının tamamı (derleme/dev zamanında statik HTML'e render edilip index.html'e gömülür) — SUNUCUDA render edilir, hook/olay/tarayıcı globali YOK
+│   ├── LandingLogo.tsx # logoyu üç kez çizmek için SVG sprite'ı (path verisi LogoMark'tan; üç ham kopya gzip'te 10 KB yiyordu)
+│   ├── demoBoard.ts    # tanıtım tahtasının taşları — gerçek Board.tsx ile render edilir, npm run verify-demo-board ile sözlüğe karşı doğrulanır
+│   └── render.tsx      # renderToStaticMarkup sarmalayıcısı — Vite eklentisi (scripts/landing-plugin.js) Node'da çağırır
 ├── hooks/
 │   ├── useAuth.tsx        # Supabase auth context
 │   ├── useModalA11y.ts    # modal odak hapsi, Escape, dialog yığını

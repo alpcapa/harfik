@@ -277,6 +277,32 @@ select {
     flex-shrink: 0;
   }
 
+  /* Logo park efekti (18 Ağustos 2026, kullanıcı isteği): kahraman logo
+     kilitli şeridin altına girdiği an, şeridin ORTA yuvasındaki küçük kopya
+     belirir. Kopya HTML'de her zaman var (statik render) — görünürlüğü
+     yalnızca bu iki kural belirliyor; sınıfı `main.tsx`'teki
+     `IntersectionObserver` ekliyor/kaldırıyor.
+
+     Yuva her koşulda AYNI yeri kaplar (`flex-1`), yani logo görünüp
+     kaybolurken düğmeler oynamaz — geçiş sırasında bir düzen sıçraması yok. */
+  #karsilama-logo-yuvasi > svg {
+    opacity: 0;
+    transform: translateY(3px) scale(0.9);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+
+  #karsilama.logo-parkli #karsilama-logo-yuvasi > svg {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #karsilama-logo-yuvasi > svg {
+      transition: none;
+      transform: none;
+    }
+  }
+
   /* İki mod birbirini dışlar. Sınıfı `<head>`'deki SENKRON kapı script'i
      (bkz. scripts/landing-plugin.js) gövde ayrıştırılmadan ekliyor, yani
      karar İLK BOYAMADAN ÖNCE veriliyor — titreme yok. Aynı no-FOUC kalıbı

@@ -23,6 +23,7 @@ npm run generate-golden-vectors  # Flutter portu parite fixture'ları (bkz. "Flu
 npm run generate-meanings-db     # Flutter portu için meanings.json → SQLite asset'i
 npm run verify-cloud-save-mirror # Bulut kaydı offline karar mantığı (saf fonksiyon kontrolleri)
 npm run verify-fetch-my-games    # Oyun geçmişi: ağ hatası ↔ boş liste ayrımı (sahte Supabase ucu)
+npm run verify-demo-board        # Karşılama katmanındaki tanıtım tahtası sözlüğe karşı doğrulanır
 npm run augment-dictionary       # Sözlüğe elle madde ekleme (GTS'siz — bkz. "Sözlüğe Kelime/Anlam Ekleme")
 npm run build:dict               # Sözlüğün TAM üretimi — 100 MB'lık GTS kaynağını ister
 npm run generate-logo-paths      # LogoMark.tsx + portun logo_mark_data.dart'ını birlikte üretir
@@ -310,13 +311,131 @@ PWA dalı, kapıdan ÖNCE koşan bir init script'iyle `matchMedia`/
 Gerçek kurulu bir PWA'da teyit cihazda yapılmalı; `TESTING.md` bölüm 1'e
 madde eklendi.
 
+## Karşılama Katmanı — Bölüm 3: içerik ve efekt (18 Ağustos 2026)
+
+Bölüm 2 boruyu kurmuştu; içerik bilinçli olarak yer tutucuydu. Kullanıcı aynı
+gün üç eksik bildirdi (sözleri): *"1. Oyna butonu giriş butonu ile aynı
+yükseklikte olmalı. 2. Scroll edince kelimeki logosu küçülüp headera
+yerleşmiyor. 3. Tanıtım alanı sadece düz text'den ibaret. Oranın tasarımı
+yapılmalı, görsellerle desteklenmeli."* Bölüm 3 bu üçünü kapatıyor.
+Bölüm 2'nin DOKUNULMAYANLAR listesi aynen geçerli — bu bölümde de
+`vercel.json`, PWA manifest'i, service worker ayarları, `App.tsx`/`Setup.tsx`/
+`src/game/`/`src/utils/`, migration/RLS/Edge Function ve **`mobile/`** HİÇ
+değişmedi (ölçüldü, aşağı bkz.).
+
+### 1) İki başlık düğmesi — sorun yükseklik DEĞİL gölge ağırlığıydı
+
+ÖLÇÜLDÜ (derlenmiş CSS + Chromium, 320/360/390/834/1194): iki düğmenin kutusu
+zaten BİREBİR aynıydı — 27.38 / 27.38 / 28.98 / 37.00 / 37.00 px, ikisi de
+`top: 12`, aynı `font-size`/`padding`/`border-width`. Gözle görülen fark
+Bölüm 2'de GİRİŞ'e verilen `btn-raised-neutral`ın hafif gölgesi ile OYNA'nın
+`btn-raised` ağır gölgesi arasındaydı (piksel taramasıyla görsel ayak izi
+39.67 vs 33.67 px çıkmıştı). Düzeltme GİRİŞ'i `btn-raised bg-accent
+border-accent text-white`e çekmek — bu aynı zamanda **uygulamayla pariteyi
+geri getiriyor**: `UserMenu.tsx:145`'teki gerçek GİRİŞ düğmesi de accent/mavi.
+Yani Bölüm 2'deki nötr çizim sessiz bir sapmaydı.
+
+**Ders:** "aynı yükseklikte değil" bir teşhis değil bir SEMPTOM — kutuyu
+ölçmeden gölgeye/paletle ilgili bir farkı yükseklik sanmak kolay.
+
+### 2) Logo park efekti — eşik SABİT DEĞİL, görünürlük izleniyor
+
+Kullanıcının Bölüm 2'de tarif ettiği efekt (*"logo … kaybolduğu anda oyna ve
+giriş butonun arasına küçülmüş olarak yerleşsin"*) artık çalışıyor. Küçük
+kopya şeridin ORTA yuvasında **her zaman HTML'de var**; yalnızca görünürlüğü
+CSS'te (`#karsilama-logo-yuvasi > svg` → `opacity/transform`,
+`.logo-parkli` ile açılıyor, `prefers-reduced-motion` guard'lı).
+
+Tetikleyici `main.tsx`'teki `logoParkiKur()`: bir `IntersectionObserver`
+kahraman logoyu (`#karsilama-logo`) izliyor.
+- **`root` belge DEĞİL `#karsilama`** — bu sayfada belge hiç kaydırılmıyor
+  (`body { position: fixed; overflow: hidden }`), varsayılan viewport köküyle
+  gözlemci hiçbir zaman tetiklenmezdi.
+- **`rootMargin` çalışma zamanında şeridin `offsetHeight`'inden okunuyor**;
+  sabit bir kaydırma eşiği YANLIŞ olurdu, çünkü şerit yüksekliği akışkan
+  (39.38 → 49 px arası ölçüldü) ve Bölüm 2'de ölçülen "şerit altı → logo üstü
+  = 0.00 px" değişmezi eşiği tamamen şeridin boyuna bağlıyor.
+- Pencere yeniden boyutlandırılınca gözlemci baştan kuruluyor (`rootMargin`
+  bir kez okunan bir sayı, `vw` tabanlı yükseklikte bayatlar).
+
+**Park eden logo şeridin yüksekliğini DEĞİŞTİRMİYOR** (ölçüldü: 13 / 14.04 /
+17 px, düğmelerin belirgin altında; şerit yükseklikleri Bölüm 2'deki
+değerlerle bayt bayt aynı kaldı) — yani "şerit altı → logo üstü = 0.00"
+değişmezi korunuyor ve efekt kaydırmanın ilk pikselinde başlıyor.
+
+### 3) İçerik — gerçek `Board.tsx` ile tanıtım tahtası
+
+Sayfa artık kahraman + rakam şeridi + **canlı tahta** + üç adımlık "Nasıl
+oynanır" + altı özellik kartı + dokuz k-lig rütbesi + SSS + son çağrıdan
+oluşuyor. İki tasarım kararı kayda değer:
+
+- **Tahta bir ekran görüntüsü ya da elle çizim DEĞİL** — üretimdeki
+  `GameBoardPreview` → `Board` (`hideFooter compact`) sunucuda render ediliyor
+  (`src/landing/demoBoard.ts` yalnızca taşları veriyor). Köşe tonlaması, bölge
+  dış hattı, X2 bölgesi ve X3 hücresi tek kaynaktan geliyor; ikinci bir tahta
+  çizimi bu kod tabanının en sık tekrarlayan hata sınıfını (sessiz ayrışma)
+  büyütürdü. Aynı ilkeyle rütbeler gerçek `RankSeal` + `RANK_TIERS`, mini
+  şemaların renkleri `PLAYER_COLORS`.
+- **Tahtanın kelimeleri ÖLÇEREK doğrulanıyor:** `npm run verify-demo-board`
+  ≥2 uzunluktaki TÜM yatay/dikey dizilimleri `src/data/words.ts`e karşı sınar,
+  ayrıca her oyuncunun taşlarının EV karesinden ortogonal bağlı olduğunu
+  (yoksa bölge dış hattı sessizce eksik çizilirdi) kontrol eder. Kesişen
+  kelimelerin ürettiği "kaza kelimeleri" tam olarak gözle KAÇIRILAN şey.
+  Negatif eş: bir harfi bozmak 3, bir kelimeyi kopartmak 2 kontrol düşürüyor.
+- **Joker taşı BİLEREK YOK:** `Tile.tsx` jokeri ayrı çizmiyor (yalnızca puanı
+  0) ve `compact` modda puanlar hiç gösterilmiyor — denendi, ekran
+  görüntüsünde normal taştan ayırt edilemedi, yani hiçbir şey anlatmıyordu.
+
+**Logo sprite'ı (`src/landing/LandingLogo.tsx`) — ÖLÇÜLMÜŞ bir zorunluluk:**
+`LogoMark` her çağrıda 11.760 baytlık path verisini yazıyor ve logo sayfada üç
+yerde geçiyor; gzip kopyaları BİRLEŞTİREMİYOR (aralarındaki mesafe deflate'in
+32 KB penceresini aşıyor). Ölçüldü: üç kopya `dist/index.html`in gzip
+boyutunun **10.377 baytını** yiyordu. Path bir kez `<defs>`e konup diğerleri
+`<use>` ile bağlanınca sayfa **21.13 → 15.84 KB gzip**e düştü. Vektör hâlâ
+TEK KAYNAKTA (`LogoMark.tsx`in dışa açtığı sabitler; o dosya
+`generate-logo-paths.mjs` tarafından üretiliyor) — uygulama tarafı bu sprite'ı
+KULLANMAZ, orada logo tek kez çiziliyor.
+
+**Sayfa bütçesi (ölçüldü):** `dist/index.html` ham 130.8 KB / **gzip 15.84 KB**.
+Bölüm 2'nin "< 15 KB" notu yer tutucu içeriğe göre yazılmıştı; gerçek içerikle
+kırılım şu — logo 5.2 KB, tahta 3.3 KB, rütbe mühürleri 0.3 KB, kalan metin/
+düzen ~7 KB. Karşılaştırma: katmanı gören ziyaretçi bugün toplam ~25 KB gzip
+indiriyor (HTML + CSS + minik giriş JS'i), uygulamanın kendisi 410 KB.
+
+### Buton bağlama sözleşmesi (yeni)
+
+Sayfada artık ÜÇ "Oyna" ve İKİ "Giriş" düğmesi var. `main.tsx` hepsini
+`[data-kelimeki-oyna]` / `[data-kelimeki-giris]` SEÇİCİSİYLE bağlıyor —
+**yeni bir düğme eklerken id değil bu öznitelik verilmeli**, aksi halde düğme
+sessizce ölü kalır. Başlıktaki ikisi ayrıca id taşımaya devam ediyor
+(`tests/smoke.spec.ts` onları id ile buluyor).
+
+### Regresyon
+
+`tests/smoke.spec.ts` 10 → **12 test**: (a) sayfa sonundaki OYNA da uygulamaya
+geçiriyor ve sayfada tam 3 `[data-kelimeki-oyna]` var (öznitelik sözleşmesini
+koruyor); (b) tepede `logo-parkli` YOK ve park kopyası `opacity: 0`,
+kaydırınca ikisi de dönüyor, geri çıkınca geri alınıyor (tek yönlü bir bayrak
+değil). **Negatif eş:** seçici id'ye geri çevrilip `logoParkiKur()` çağrısı
+kaldırılınca İKİ test de GERÇEKTEN düştü.
+
+**Doğrulanan non-regresyonlar (ölçüldü):** katman modunda `boot`/`words`
+istekleri **0** ve service worker kaydı **0**, uygulama modunda sırasıyla 1/1/1;
+`vercel.json` diff'i **sıfır**; `navigateFallback` hâlâ
+`createHandlerBoundToURL("index.html")`; precache 18 girdi; 320 px'te yatay
+taşma **0**; kaydırmada şeridin üst kenarı beş genişlikte de **0**'da sabit.
+
 ## Klasör Yapısı
 
 ```
 src/
   main.tsx      # ince kabuk: fontlar + derleme kimliği + kapı kararı (katman mı uygulama mı)
   boot.tsx      # uygulamanın gerçek açılışı — main.tsx DİNAMİK import eder (bkz. "Karşılama Katmanı")
-  landing/      # karşılama katmanı (Landing.tsx + render.tsx; derleme zamanında statik HTML)
+  landing/      # karşılama katmanı — derleme zamanında statik HTML (bkz. "Karşılama Katmanı")
+    Landing.tsx     # sayfanın tamamı; SUNUCUDA render edilir (hook/olay/tarayıcı globali YOK)
+    LandingLogo.tsx # logoyu üç kez çizmek için SVG sprite (path verisi LogoMark'tan)
+    demoBoard.ts    # tanıtım tahtasının taşları — `npm run verify-demo-board` ile doğrulanır
+    render.tsx      # `renderToStaticMarkup` sarmalayıcısı (Node'da koşar)
   components/   # React UI bileşenleri
   game/         # Oyun mantığı ve durum yönetimi
     constants.ts    # Tahta sabitleri, köşe hesapları, bonus konumları

@@ -987,9 +987,10 @@ gerekiyor).
 
 ## 11. Karşılama katmanı (18 Ağustos 2026)
 
-Otomatik testler (`npm run test`, `tests/smoke.spec.ts`) katmanın yedi
-yolunu da kapsıyor — burada YALNIZCA bu ortamdan doğrulanamayan tek madde
-var (bkz. `CLAUDE.md` → "Karşılama Katmanı", doğrulama sınırı).
+Otomatik testler (`npm run test`, `tests/smoke.spec.ts`) katmanın dokuz
+yolunu da kapsıyor (kapı dalları + geçiş + öznitelikle bağlama + logo park
+efekti) — burada YALNIZCA bu ortamdan doğrulanamayan ya da gözle
+bakılması gereken maddeler var (bkz. `CLAUDE.md` → "Karşılama Katmanı").
 
 - [ ] **Kurulu PWA doğrudan uygulamaya açılıyor.** `kelimeki.com`u ana
       ekrana ekle, `localStorage`ı TEMİZ bir cihazda (ya da site verisini
@@ -1000,3 +1001,33 @@ var (bkz. `CLAUDE.md` → "Karşılama Katmanı", doğrulama sınırı).
       emüle edilemedi.
       **Negatif eş:** aynı cihazda tarayıcı sekmesinden (ana ekran
       ikonundan DEĞİL) `kelimeki.com`a git → katman GÖRÜNMELİ.
+
+- [ ] **Logo park efekti gerçek parmakla akıcı.** Katmanı gördüğün bir
+      cihazda sayfayı yavaşça aşağı kaydır: kelimeki logosu kilitli
+      şeridin altına girdiği anda şeridin ORTASINDA küçülmüş hâli
+      belirmeli, yukarı dönünce kaybolmalı. Düğmeler bu sırada YERİNDEN
+      OYNAMAMALI (yuva sabit genişlikte). Otomatik test sınıfın
+      eklendiğini/kalktığını ve `opacity`yi ölçüyor ama gerçek dokunmatik
+      kaydırmanın akıcılığını ölçemez.
+
+- [ ] **İki başlık düğmesi gözle de aynı.** OYNA ve GİRİŞ aynı boyda,
+      aynı mavi, aynı gölge ağırlığında görünmeli (18 Ağustos 2026'da
+      bildirilen fark buydu — kutular zaten aynıydı, gölge farklıydı).
+
+- [ ] **Tanıtım tahtası doğru okunuyor.** "Oyun tam olarak böyle
+      görünüyor" bölümündeki tahtada KELİME/IRMAK/ZAMAN/KONAK/SES/OYUN ve
+      dikey KAPI/KUZEY/KAS/SON okunabilmeli; iki bölgenin dış hattı,
+      ortadaki altın X2 alanı ve tam merkezdeki turuncu X3 karesi
+      görünmeli. Kelimelerin sözlükte olduğu `npm run verify-demo-board`
+      ile ölçülüyor, ama tahtanın dar ekranda KIRPILMADIĞI gözle
+      bakılmalı.
+
+- [ ] **Sayfadaki tüm çağrı düğmeleri çalışıyor.** Kahraman "HEMEN
+      OYNA", sayfa sonundaki "OYUNA BAŞLA" ve "GİRİŞ YAP" düğmelerinin
+      üçü de uygulamaya geçirmeli (ikincisi giriş penceresini açmalı).
+      Yeni bir düğme eklendiyse `data-kelimeki-oyna` / `data-kelimeki-giris`
+      özniteliğini taşıdığından emin ol — id ile eklenen bir düğme
+      SESSİZCE ölü kalır.
+
+- [ ] **SSS kutuları açılıp kapanıyor.** Native `<details>` kullanılıyor,
+      JS yok; soruya dokununca cevap açılmalı.

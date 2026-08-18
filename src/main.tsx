@@ -83,6 +83,49 @@ function gec(niyet: 'oyna' | 'giris'): void {
 }
 
 /**
+ * Logo park efekti (18 Ağustos 2026, kullanıcı isteği): kahraman logo kilitli
+ * şeridin altına girdiği an, şeridin ORTA yuvasındaki küçük kopya belirir
+ * ("kaybolduğu anda oyna ve giriş butonun arasına küçülmüş olarak yerleşsin").
+ *
+ * Tetikleyici SABİT BİR KAYDIRMA EŞİĞİ DEĞİL: ölçüldü, şeridin ALTI ile
+ * kahraman logonun ÜSTÜ arası tam 0.00 px ve şerit yüksekliği akışkan
+ * (`clamp`) — yani eşik ekran genişliğine göre değişir ve sabit yazılırsa
+ * bazı genişliklerde erken/geç tetiklenir. Bunun yerine logonun görünürlüğü
+ * izleniyor ve `rootMargin` çalışma zamanında şeridin `offsetHeight`'inden
+ * okunuyor.
+ *
+ * `root` BELGE DEĞİL `#karsilama`: bu sayfada belge hiç kaydırılmıyor
+ * (`index.css` → `body { position: fixed; overflow: hidden }`), gerçek
+ * kaydırma kabı katmanın kendisi. Varsayılan (viewport) kök ile gözlemci
+ * hiçbir zaman tetiklenmezdi.
+ *
+ * Yeniden boyutlandırmada gözlemci baştan kuruluyor — `rootMargin` bir kez
+ * okunan bir sayı ve şerit yüksekliği `vw` tabanlı olduğundan döndürmede
+ * bayatlar.
+ */
+function logoParkiKur(): void {
+  const katman = document.getElementById('karsilama');
+  const serit = document.getElementById('karsilama-serit');
+  const logo = document.getElementById('karsilama-logo');
+  if (!katman || !serit || !logo) return;
+  if (typeof IntersectionObserver === 'undefined') return;
+
+  let gozlemci: IntersectionObserver | null = null;
+  const kur = (): void => {
+    gozlemci?.disconnect();
+    gozlemci = new IntersectionObserver(
+      (girisler) => {
+        for (const g of girisler) katman.classList.toggle('logo-parkli', !g.isIntersecting);
+      },
+      { root: katman, rootMargin: `-${serit.offsetHeight}px 0px 0px 0px`, threshold: 0 },
+    );
+    gozlemci.observe(logo);
+  };
+  kur();
+  window.addEventListener('resize', kur);
+}
+
+/**
  * Misafir ziyaret pingi — karşılama katmanı modunda `App.tsx` hiç mount
  * edilmediğinden oradaki `logGuestVisit` effect'i çalışmaz ve admin
  * panelindeki Büyüme > Kullanıcı "M. Ziyaret" serisi SESSİZCE düşerdi;
@@ -143,6 +186,15 @@ if (document.documentElement.classList.contains('uygulama-modu')) {
   // yapıyor, ama karşılama katmanında uygulama hiç mount edilmiyor.
   captureUtmSource();
   misafirZiyaretiBildir();
-  document.getElementById('karsilama-oyna')?.addEventListener('click', () => gec('oyna'));
-  document.getElementById('karsilama-giris')?.addEventListener('click', () => gec('giris'));
+  // Sayfada birden fazla "Oyna"/"Giriş" düğmesi var (başlık + kahraman +
+  // sayfa sonu). Hepsi öznitelikle bağlanıyor — id ile bağlamak yalnızca
+  // başlıktakileri yakalardı ve yeni bir düğme eklendiğinde SESSİZCE ölü
+  // kalırdı (bkz. Landing.tsx'in "buton bağlama sözleşmesi" notu).
+  document
+    .querySelectorAll<HTMLElement>('[data-kelimeki-oyna]')
+    .forEach((el) => el.addEventListener('click', () => gec('oyna')));
+  document
+    .querySelectorAll<HTMLElement>('[data-kelimeki-giris]')
+    .forEach((el) => el.addEventListener('click', () => gec('giris')));
+  logoParkiKur();
 }
