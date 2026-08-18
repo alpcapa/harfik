@@ -174,10 +174,12 @@ void main() {
     await tester.tap(find.text('OYUNU BAŞLAT'));
     await tester.pumpAndSettle();
     // Misafir artık önce giriş uyarısından geçiyor (web `handleStart`
-    // paritesi, 14 Ağustos 2026) — "DEVAM" misafir olarak başlatır.
+    // paritesi, 14 Ağustos 2026) — "OYNA" misafir olarak başlatır
+    // (18 Ağustos 2026'ya kadar "DEVAM"dı; web ile birlikte değişti).
     expect(find.textContaining('lütfen giriş yapın'), findsOneWidget);
     expect(find.byType(GameScreen), findsNothing);
-    await tester.tap(find.text('DEVAM'));
+    expect(find.text('DEVAM'), findsNothing);
+    await tester.tap(find.text('OYNA'));
     await tester.pumpAndSettle();
 
     expect(find.byType(GameScreen), findsOneWidget);

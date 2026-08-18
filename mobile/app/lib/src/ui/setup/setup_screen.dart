@@ -659,7 +659,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     await _startNewGame(words);
   }
 
-  /// `true` → "Devam" (misafir olarak başlat).
+  /// `true` → "Oyna" (misafir olarak başlat).
   ///
   /// ÜÇ ayrı sonuç var ve ikisi de oyunu başlatMIYOR, o yüzden `bool`
   /// yetmiyor: "Giriş Yap" giriş penceresini açar, ✕/dışarı dokunuş ise
@@ -692,7 +692,11 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
             onPressed: () => Navigator.of(ctx).pop(_GuestChoice.login),
           ),
           kDialogButton(
-            label: 'DEVAM',
+            // "DEVAM" DEĞİL "OYNA" (18 Ağustos 2026, kullanıcı bildirdi;
+            // web `Setup.tsx` ile AYNI turda değişti): uyarı metni
+            // üyeliğin faydalarını anlattığından "Devam" cümlenin devamı
+            // gibi okunup "üyeliğe devam et" izlenimi veriyordu.
+            label: 'OYNA',
             onPressed: () => Navigator.of(ctx).pop(_GuestChoice.proceed),
           ),
         ],

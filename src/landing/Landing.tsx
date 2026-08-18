@@ -143,16 +143,28 @@ function Bolum({
   baslik,
   ustBaslik,
   id,
+  baslikClassName = '',
   children,
 }: {
   baslik: string;
   ustBaslik?: string;
   id?: string;
+  /**
+   * Yalnızca BAŞLIK bloğunu daraltmak için (18 Ağustos 2026, kullanıcı
+   * bildirdi: yatay tablette tahta bölümü "diğer bölümlerden büyük"
+   * duruyordu). Tahta bölümü, taş harfleri gerçek oyunla birebir olsun
+   * diye kendi `max-w-[680px]` kabında yaşıyor (bkz. o kabın yorumu) —
+   * ama BAŞLIĞIN da o genişlikte olması gerekmiyordu ve 834px'te öteki
+   * bölüm başlıklarından 114px sola taşıyordu. Ölçüldü: bu prop ile
+   * 834/1194'te başlığın sol kenarı öteki başlıklarla BİREBİR aynı.
+   * Verilmezse hiçbir bölüm etkilenmez.
+   */
+  baslikClassName?: string;
   children: React.ReactNode;
 }) {
   return (
     <section id={id} className="w-full flex flex-col gap-3">
-      <div className="flex flex-col gap-0.5">
+      <div className={`flex flex-col gap-0.5${baslikClassName ? ` ${baslikClassName}` : ''}`}>
         {ustBaslik ? (
           <span className="font-mono text-[9px] uppercase tracking-[1.5px] text-accent">
             {ustBaslik}
@@ -427,7 +439,15 @@ export function Landing() {
                 `py-2 -my-2`: kaydırma kabı dikeyde de kırpar (CSS'te bir eksen
                 `auto` ise diğeri de `visible` kalamaz) — tahtanın gölgesi
                 kesilmesin diye içeriden pay veriliyor, dış ölçü değişmiyor. */}
-            <Bolum ustBaslik="Tahtaya bir bak" baslik="Oyun tam olarak böyle görünüyor">
+            <Bolum
+              ustBaslik="Tahtaya bir bak"
+              baslik="Oyun tam olarak böyle görünüyor"
+              /* 428 = öteki bölümlerin metin genişliği (`max-w-[460px]`
+                 eksi `px-4`). Tahtanın KENDİSİ geniş kalıyor — bu bilinçli
+                 (gerçek oyunla aynı kutu = aynı harf oranı, bkz. yukarısı);
+                 daraltılan yalnızca metin. */
+              baslikClassName="w-full max-w-[428px] mx-auto"
+            >
               <div
                 id="karsilama-tahta-serit"
                 /* `-mx-3`: metinler kabın `px-3`ünde hizalı kalsın ama ŞERİT
@@ -469,11 +489,11 @@ export function Landing() {
                       360'ta iki öğe alt alta ama her biri TEK satır ve
                       ortalı; 390 ve üstünde ikisi yan yana ve grup olarak
                       ortalı. */}
-                  <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 list-none p-0 m-0">
+                  <ul className="w-full max-w-[428px] mx-auto flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 list-none p-0 m-0">
                     <Rozet renk="#FDE68A" metin="X2 — Kelime puanının 2 katı" />
                     <Rozet renk="#F97316" metin="X3 — Kelime puanının 3 katı" />
                   </ul>
-                  <p className="text-[12px] leading-relaxed text-muted text-center" style={{ margin: 0 }}>
+                  <p className="w-full max-w-[428px] mx-auto text-[12px] leading-relaxed text-muted text-center" style={{ marginTop: 0, marginBottom: 0 }}>
                     Köşenden başla, orta bölgedeki sarı alana ulaş, puanlarını
                     ikiye hatta üçe katla. Rakip bölgesine değen hamle yaparsan
                     kazandığının üçte birini ona vergi olarak ödersin.
@@ -494,7 +514,7 @@ export function Landing() {
                       ]}
                     />
                   </div>
-                  <p className="text-[12px] leading-relaxed text-muted text-center" style={{ margin: 0 }}>
+                  <p className="w-full max-w-[428px] mx-auto text-[12px] leading-relaxed text-muted text-center" style={{ marginTop: 0, marginBottom: 0 }}>
                     Dilersen 3 yapay zekaya veya 3 arkadaşına karşı oyna, gücünü
                     sına. 3 oyuncuyu yenmenin keyfi bir başka ama ikinci bile
                     olsan k-lig puanı kazanırsın.

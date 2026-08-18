@@ -987,10 +987,11 @@ gerekiyor).
 
 ## 11. Karşılama katmanı (18 Ağustos 2026)
 
-Otomatik testler (`npm run test`, `tests/smoke.spec.ts`, **17 test**) katmanın
+Otomatik testler (`npm run test`, `tests/smoke.spec.ts`, **18 test**) katmanın
 tüm yollarını kapsıyor (kapı dalları + geçiş + öznitelikle bağlama + logo
 park efekti + `<` düğmesiyle geri dönüş + hukuki pencereler + tahta
-şeridi + `FAQPage` JSON-LD/`h1` tekilliği) ve `.github/workflows/web-ci.yml`
+şeridi + `FAQPage` JSON-LD/`h1` tekilliği + oturum anahtarı varken katmanın
+HİÇ görünmemesi) ve `.github/workflows/web-ci.yml`
 ile her PR'da/`main`e push'ta otomatik koşuyor — burada YALNIZCA bu ortamdan
 doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
 → "Karşılama Katmanı").
@@ -1013,30 +1014,59 @@ doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
          oradan "Hemen Oyna"ya bas → tekrar Setup'a dönmeli.
 
 - [ ] **Başlık kilitli kalıyor + logo park efekti gerçek parmakla akıcı.**
-      Katmanı gördüğün bir cihazda sayfayı yavaşça aşağı kaydır: OYNA/GİRİŞ
-      düğmelerini taşıyan şerit ekranın EN ÜSTÜNDE sabit kalmalı (sayfa
+      Katmanı gördüğün bir cihazda sayfayı yavaşça aşağı kaydır: GİRİŞ
+      düğmesini taşıyan şerit ekranın EN ÜSTÜNDE sabit kalmalı (sayfa
       geri kalanı onun altından akmalı, `position: sticky`) — kaydırma
       boyunca hiç kaybolmamalı ya da titrememeli. Aynı kaydırmada kelimeki
       logosu şeridin altına girdiği anda şeridin ORTASINDA küçülmüş hâli
       belirmeli, yukarı dönünce kaybolmalı. Düğmeler bu sırada YERİNDEN
-      OYNAMAMALI (yuva sabit genişlikte). Otomatik test sınıfın
-      eklendiğini/kalktığını ve `opacity`yi ölçüyor ama gerçek dokunmatik
-      kaydırmanın akıcılığını ölçemez.
+      OYNAMAMALI. Otomatik test sınıfın eklendiğini/kalktığını ve
+      `opacity`yi ölçüyor ama gerçek dokunmatik kaydırmanın akıcılığını
+      ölçemez.
 
-- [ ] **İki başlık düğmesi gözle de aynı.** OYNA ve GİRİŞ aynı boyda,
-      aynı mavi, aynı gölge ağırlığında görünmeli (18 Ağustos 2026'da
-      bildirilen fark buydu — kutular zaten aynıydı, gölge farklıydı).
+- [ ] **Şeritte YALNIZCA GİRİŞ var, logo TAM ORTADA.** Başlıktaki OYNA
+      düğmesi 18 Ağustos 2026'da kaldırıldı (kahramandaki "HEMEN OYNA"
+      dururken ikincisi gereksizdi) — şeridin sağında GİRİŞ, ortasında
+      (park ettiğinde) logo olmalı. Logonun yatay merkezi sayfanın gerçek
+      ortasında durmalı, GİRİŞ'ten arta kalan alanın ortasında DEĞİL; park
+      hâlindeki logo GİRİŞ ile aynı yükseklikte görünmeli.
 
-- [ ] **Tanıtım tahtası doğru okunuyor.** "Oyun tam olarak böyle
-      görünüyor" bölümündeki tahtada KELİME/IRMAK/ZAMAN/KONAK/SES/OYUN ve
-      dikey KAPI/KUZEY/KAS/SON okunabilmeli; iki bölgenin dış hattı,
-      ortadaki altın X2 alanı ve tam merkezdeki turuncu X3 karesi
+- [ ] **Tanıtım tahtası GERÇEK oyunla birebir aynı görünüyor.** "Oyun tam
+      olarak böyle görünüyor" bölümündeki tahtada KELİME/IRMAK/ZAMAN/
+      BALKON/NEDEN/KOLAY gibi kelimeler okunabilmeli; iki bölgenin dış
+      hattı, ortadaki altın X2 alanı ve tam merkezdeki turuncu X3 karesi
       görünmeli. Kelimelerin sözlükte olduğu `npm run verify-demo-board`
       ile ölçülüyor, ama tahtanın dar ekranda KIRPILMADIĞI gözle
       bakılmalı. İki tahtada da BAŞKA renkte, tek başına duran taşlar
       olmalı (izole hamleler) — o taşın ALTINDAKİ kare hâlâ bölge
       sahibinin tonunda görünmeli; taşın rengi bölgeyi ele geçirmiş gibi
       GÖRÜNMEMELİ.
+
+- [ ] **Filigranlar VE harf puanları görünüyor, harfler oyundakiyle aynı
+      boyda (18 Ağustos 2026'da üç turda düzeltildi — en sık tekrarlayan
+      hata burası).** Gerçek bir oyun ekranıyla yan yana koy: (a) köşelerde
+      büyük "1/2/3/4" oyuncu numarası filigranı, (b) merkezde büyük "X2"
+      ve tam ortadaki hücrede "X3" etiketi, (c) HER taşın sağ üstünde
+      küçük puan rakamı, (d) harf puntosu oyundakiyle AYNI — ne büyük ne
+      küçük. Dördü de aynı `compact={false}` bayrağına bağlı ama (d) ayrıca
+      tahtanın KABINA bağlı: kap gerçek oyunla aynı `max-w-[680px] px-3`
+      olmazsa harf `vw` tabanlı `clamp()` yüzünden orantısız çıkar (bkz.
+      `CLAUDE.md`, "AYNI GÜN İKİ KEZ YANLIŞ FONT"). Ekran görüntüsü alıp
+      karşılaştırmak en hızlı yol.
+
+- [ ] **Tahta GENİŞ ama METİN öteki bölümlerle hizalı (yatay tablet /
+      geniş tarayıcı — mobilde görünmez).** Sayfayı 834px ve üstü bir
+      genişlikte aç: tahta bilerek öteki bölümlerden GENİŞ (gerçek oyunla
+      aynı kutu = aynı harf oranı, daraltma yasak), ama "TAHTAYA BİR BAK /
+      Oyun tam olarak böyle görünüyor" başlığı ile tahta altı açıklamalar
+      "Nasıl oynanır?" ve "Merak edilenler" başlıklarıyla AYNI sol kenardan
+      başlamalı. 18 Ağustos 2026'da başlık 114px sola taşıyordu; ölçülen
+      düzeltilmiş değerler 834'te 203, 1194'te 383 (üç bölüm de aynı).
+
+- [ ] **Tahta altı açıklamalar ve renk legend'ı ORTALI.** İki tahtanın
+      altındaki paragraflar sola yapışık DEĞİL ortalı olmalı; renk
+      legend'ı geniş ekranda da ortalanmalı (sabit iki sütun değil, akan
+      satır) ve dar ekranda kırılmadan sarmalı.
 
 - [ ] **Sayfadaki tüm çağrı düğmeleri çalışıyor.** Kahraman "HEMEN
       OYNA", sayfa sonundaki "OYUNA BAŞLA" ve "GİRİŞ YAP" düğmelerinin

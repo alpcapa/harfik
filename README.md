@@ -1,6 +1,6 @@
 # Kelimeki
 
-**Kelimeki**, köşe bölgeleri ve akıllı yapay zekâ rakiple oynanan, mobil öncelikli **Türkçe kelime oyunudur**. Vite + React + TypeScript + Tailwind CSS ile geliştirilmiştir.
+**Kelimeki**, köşe bölgeleri ve akıllı yapay zeka rakiple oynanan, mobil öncelikli **Türkçe kelime oyunudur**. Vite + React + TypeScript + Tailwind CSS ile geliştirilmiştir.
 
 ## Oyun
 

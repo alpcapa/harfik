@@ -267,10 +267,14 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
 - [ ] **Girişsiz başlatınca uyarı (14 Ağustos 2026, Parça 92).** ÇIKIŞ
       yapmış hâlde "Oyunu Başlat"a bas: web'dekiyle aynı uyarı çıkmalı
       ("Oyunların istatistikleri, k-lig ve arkadaşınla canlı oyun için
-      lütfen giriş yapın." + GİRİŞ YAP / DEVAM). **Üç yolu da dene:**
-      DEVAM → oyun başlar; GİRİŞ YAP → giriş penceresi açılır ve oyun
+      lütfen giriş yapın." + GİRİŞ YAP / **OYNA**). **Üç yolu da dene:**
+      OYNA → oyun başlar; GİRİŞ YAP → giriş penceresi açılır ve oyun
       BAŞLAMAZ; ✕ (ya da zemine dokunma) → hiçbir şey olmaz. Girişliyken
-      bu uyarı HİÇ çıkmamalı.
+      bu uyarı HİÇ çıkmamalı. **Butonun metni 18 Ağustos 2026'da "DEVAM"dan
+      "OYNA"ya çevrildi** (kullanıcı: uyarı metni üyeliği anlattığından
+      "Devam" üyeliğe götürecekmiş gibi okunuyordu) — ekranda "DEVAM"
+      görüyorsan derleme bayat demektir, sha'yı kontrol et. Web'de de aynı
+      etiket; ikisi birlikte değişmeli.
 - [ ] **Tahta alt şeridi — "Nasıl Oynanır?" (aynı parça).** Tahtanın
       altında SAĞDA "Nasıl Oynanır?" olmalı; eski `- kelime X2 · -
       kelime X3` açıklaması HİÇBİR yerde görünmemeli. Dokununca kurallar
@@ -728,6 +732,18 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       linke tıkla: `kelimeki.com/game/<id>` sayfası **girişsiz** açılmalı
       ve aynı tahtayı göstermeli. (Bu, `set_game_shared` RPC'sinin
       gerçekten çalıştığının kanıtı — bayrak yazılmazsa sayfa boş gelir.)
+- [ ] **Setup footer'ındaki "Paylaş" (18 Ağustos 2026, Parça 110) —
+      YALNIZCA GİRİŞLİ hesapta.** Girişli aç: kurulum ekranının en
+      altındaki satır "Kullanım Koşulları · Gizlilik Politikası · Paylaş"
+      olmalı — **ayraçlar dahil üç madde** (ilk sürümde `·` unutulmuştu,
+      "web ile birebir" isteğinin ihlaliydi). Dokun → native paylaş
+      sayfası açılmalı; paylaşılan link `https://kelimeki.com/?ref=arkadas`
+      OLMALI (kendine gönderip metni oku). **Negatif eş:** çıkış yap →
+      aynı satırda "Paylaş" ve ondan önceki `·` HİÇ olmamalı, yalnızca iki
+      hukuki link kalmalı. **Web'deki ikon porta BİLEREK taşınmadı** — app
+      footer'ında "Paylaş"ın önünde paylaşım ikonu YOK, bu bir eksik
+      değil kayıtlı bir ayrışma (bkz. kök `CLAUDE.md`, Setup footer notu).
+
 - [ ] **Kapat.** Menüden "Kapat" tahta önizlemesini kapatmalı.
       (13 Ağustos 2026'da kullanıcı bunun çalışmadığını bildirdi; native
       testte ÖLÇÜLDÜ — "Kapat" tahtayı gerçekten kapatıyor (ScoreBoxRow

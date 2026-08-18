@@ -408,10 +408,17 @@ export function Setup({
     };
   }, [user, onMainViewChange]);
 
-  // "Giriş Yap" / "Devam" ikisi de anlamlı birer karar, gerçek bir "vazgeç"
-  // değil — bu yüzden Escape/X, oyunu misafir olarak başlatmadan ("Devam"
+  // "Giriş Yap" / "Oyna" ikisi de anlamlı birer karar, gerçek bir "vazgeç"
+  // değil — bu yüzden Escape/X, oyunu misafir olarak başlatmadan ("Oyna"
   // gibi) ya da giriş ekranını açmadan ("Giriş Yap" gibi) sadece popup'ı
   // kapatıp kullanıcıyı kurulum ekranında bırakır.
+  //
+  // Buton "DEVAM" DEĞİL "OYNA" (18 Ağustos 2026, kullanıcı bildirdi):
+  // uyarı metni üyeliğin faydalarını anlattığından "Devam", cümlenin
+  // devamı gibi okunup "üyeliğe devam et" izlenimi veriyordu. "Oyna" ne
+  // olacağını söylüyor — misafir olarak oyun başlar. Flutter portundaki
+  // eşi (`setup_screen.dart`, `_showGuestWarning`) AYNI turda değişti;
+  // ikisi birlikte değişmeli.
   const closeWarningPopup = () => setShowWarningPopup(false);
   const warningPopupRef = useModalA11y(showWarningPopup, closeWarningPopup);
 
@@ -536,7 +543,7 @@ export function Setup({
               onClick={() => { setShowWarningPopup(false); doStart(); }}
               className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
             >
-              Devam
+              Oyna
             </button>
           </div>
         </div>
