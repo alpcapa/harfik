@@ -5291,6 +5291,16 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        Playwright **18/18**, ve gerçek Chromium ölçümü (kutular
        16.00/18.00/20.00, boşluk 6.00, dikey merkezler isimle aynı, yatay
        taşma 0; dokuz kademe harfi de tofu'suz).
+     - **CI'ın SÖYLEDİĞİ (bu parça yazıldıktan sonra ölçüldü):** `dart
+       analyze lib/ test/` temiz ve **454 test yeşil**; web derlemesi de
+       geçti. **Ama ilk koşuda DÜŞTÜ** ve sebebi tam da bu sınırdı:
+       eklenen test var olmayan bir sahte uç adı (`_FakeFriendsGateway`)
+       ve var olmayan bir alan adı (`friendRows`, doğrusu `friendsRows`)
+       kullanıyordu — Flutter SDK'sı olan bir oturumda `dart analyze`
+       bunu saniyeler içinde yakalardı. **Ders: SDK'sız bir oturumda
+       yazılan Dart testinde, kullanılan HER sahte uç/alan adını kaynağa
+       karşı grep'le doğrula** — "kodu okudum, doğru görünüyor" burada
+       derleyicinin yerini tutmuyor.
      - **Cihazda doğrulanacak:** yedi yüzeyde mühürün göründüğü ve doğru
        kademeyi çizdiği — `mobile/TESTING.md` bölüm 13'e madde eklendi.
 
