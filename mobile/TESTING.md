@@ -246,6 +246,15 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       turunda [≈0 ms] oynuyordu — kullanıcı kendi hamlesinin mesajını hiç
       göremiyordu; düzeltme + enjekte edilebilir `aiThinkDelay`, bkz.
       mobile/CLAUDE.md Parça 21).
+- [ ] **"Kalan Taşlar" (TORBA) bekleyen taşları rakibe yazmamalı
+      (18 Ağustos 2026, Parça 112).** TORBA'ya dokun ve "toplam N taş
+      dışarıda" sayısını not al; sonra tahtaya birkaç taş koy ama OYNA'ya
+      **basma**, TORBA'yı tekrar aç — sayı **DEĞİŞMEMELİ** (her bekleyen taş
+      için 1 artıyorsa hata geri gelmiş). Joker eşi: jokeri bir harfe çevirip
+      masaya koy → o harfin sayısı artmamalı. **Asıl değişmez oyun sonunda:**
+      torba boşken son hamleni onaylamadan dökümün toplam PUANINI hesapla,
+      OYNA'ya bas → bitiş kartında rakibin negatif sayısı birebir aynı olmalı.
+      Web'de de aynı oyunu koş — iki taraf aynı sayıyı vermeli.
 - [ ] **Bingo bonusu mesajda yazıyor (17 Ağustos 2026).** Rafın 7 taşını
       birden koyup OYNA → mesaj satırında `(Bingo bonusu +25)`. **YZ'nin
       bingo'sunda da yazmalı** (`Yapay Zeka 2 "…" oynadı. +N puan.

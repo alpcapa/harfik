@@ -847,6 +847,13 @@ bağlı değil.)
   - `scoring.json` — 6 el yapımı kenar durumu (X3 merkez, X2 bölge, X3'ün
     X2'yi yutması, çapraz kelime, bingo, jokerler) + 60 rastgele
     (geçerlilik aranmayan — fark testi) calcScore/calcWordRawScores durumu.
+  - `remaining_tiles.json` — `remainingTiles` ("Kalan Taşlar"/TORBA dökümü),
+    60 rastgele durum: tahta + bakanın rafı + **bekleyen (`state.placed`)
+    taşlar**, tahtadaki ve masadaki jokerler dahil. 18 Ağustos 2026'da
+    eklendi; o güne kadar bu fonksiyonun HİÇ parite kapsaması yoktu ve tam o
+    gün iki tarafta birden aynı hata bulundu (bekleyen taşlar "dışarıda"
+    sayılıyordu — bkz. Parça 112). Üçüncü parametre atlanırsa fixture
+    düşer.
   - `reducer_ai2.json` — 2 kişilik tam YZ oyunu, doğal bitişe kadar (33
     hamle: 32 kelime + 1 pas, 3 bölge vergisi satırı, skorlar 189-189).
   - `reducer_ai4.json` — 4 kişilik tam YZ oyunu + 8. hamlede SURRENDER
@@ -5087,6 +5094,34 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        yarısının kanıtı CI. Web yarısı ölçüldü: `tsc` temiz, Playwright
        18/18 yeşil ve negatif eş (modal locator'ı bozulunca ilgili İKİ test
        GERÇEKTEN düştü, üçüncü bir test etkilenmedi) koşuldu.
+
+   - ✅ **Parça 112 — "Kalan Taşlar" (TORBA) dökümü bekleyen taşları
+     RAKİBİN eline yazıyordu** (18 Ağustos 2026, kullanıcı bildirdi;
+     web `bag.ts`/`RemainingTilesModal.tsx` ile AYNI PR).
+     - **Semptom:** kullanıcı torba boşken, son hamlesini onaylamadan önce
+       YZ'nin elinde kalacak taşları sayıp **10 puan** buldu; bitiş kartında
+       **-7** gördü ve "hata mı var?" diye sordu.
+     - **Bitiş kartı DOĞRUYDU** (`endGame` rakibin gerçek rafını topluyor) —
+       yanlış olan DÖKÜMDÜ. Kök sebep bir kova boşluğu: `PLACE_TILE` taşı
+       raftan ÇIKARIP `state.placed`e koyuyor, `board`a ancak `PLAY` yazıyor;
+       `remainingTiles` yalnızca `board` + `myRack`i düştüğünden o aradaki
+       taşlar "dışarıda" (= rakipte) sayılıyordu. Fark tam olarak masadaki
+       bekleyen taşların puanıydı (10 − 7 = 3).
+     - **Port birebir aynı hatayı taşıyordu** — `bag.dart` web'in doğrudan
+       portu olduğundan kusur da portlanmıştı; `remainingTiles(board, myRack,
+       [placedTiles = const []])` ve modalın `state.placed.values.toList()`
+       geçmesiyle iki taraf birlikte düzeltildi.
+     - **Bu fonksiyonun HİÇ parite kapsaması yoktu** — `remaining_tiles.json`
+       (60 durum, bekleyen taşlı ve jokerli) eklendi ve `run_all.dart` onu
+       tüketiyor. Ayrıca `game_screen_test.dart`'a widget regresyonu: taş koy
+       → TORBA → **93** kalmalı (düzeltmeden önce 94). Web tarafında
+       `npm run verify-remaining-tiles` üretim reducer'ıyla 13 kontrol
+       koşuyor ve negatif eşte 7'si GERÇEKTEN düşüyor.
+     - **Mevcut golden fixture'lar DEĞİŞMEDİ** (ölçüldü — reducer davranışı
+       aynı, yalnızca yeni fixture eklendi).
+     - **Doğrulama sınırı:** bu oturumda Flutter/Dart SDK YOK, port testleri
+       yerelde KOŞULAMADI — Dart yarısının kanıtı CI. Web yarısı ölçüldü
+       (`tsc` temiz, `npm run build` temiz, Playwright 18/18, verify 13/13).
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 

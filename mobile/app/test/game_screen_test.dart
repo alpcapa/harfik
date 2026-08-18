@@ -423,6 +423,27 @@ void main() {
   });
 
   testWidgets(
+      'Kalan Taşlar: tahtaya konmuş ama ONAYLANMAMIŞ taş rakibin elinde '
+      'sayılmaz (18 Ağu 2026 hatası — kullanıcı son hamlesinden önce 10 puan '
+      'sayıp bitişte -7 gördü)', (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final controller = await pumpGame(tester, GlobalKey());
+
+    await tester.tap(rackTile(0)); // K
+    await tester.pump();
+    await tester.tap(boardCell(0, 0)); // 0. oyuncunun ev karesi
+    await tester.pump();
+    expect(controller.state.placed.length, 1, reason: 'taş bekliyor olmalı');
+
+    await tester.tap(find.text('TORBA 6')); // torba değişmedi
+    await tester.pumpAndSettle();
+    // Taş raftan çıktı ama HÂLÂ bende: 100 − tahta 0 − raf 6 − bekleyen 1 = 93.
+    // Düzeltmeden önce 94 çıkıyor, yani bekleyen taş rakibe yazılıyordu.
+    expect(find.textContaining('93'), findsOneWidget);
+    expect(find.textContaining('94'), findsNothing);
+  });
+
+  testWidgets(
       'Kalan Taşlar KModal kabuğunda: 360px kart + web h-12 (48px) hücre '
       '(Parça 50: ham Dialog iPad\'de kartı ekrana yayıp taşları '
       'devleştiriyordu)', (tester) async {

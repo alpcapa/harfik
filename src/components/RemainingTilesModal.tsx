@@ -14,7 +14,10 @@ interface RemainingTilesModalProps {
 
 export function RemainingTilesModal({ state, myIndex, onClose }: RemainingTilesModalProps) {
   const myRack = state.players[myIndex]?.rack ?? [];
-  const rows = remainingTiles(state.board, myRack);
+  // Bekleyen (bu turda konmuş, henüz onaylanmamış) taşlar da ÇIKARILMALI —
+  // raftan çıkmış ama board'a yazılmamış olduklarından, verilmezse rakibin
+  // elinde sayılırlar (bkz. `remainingTiles` notu).
+  const rows = remainingTiles(state.board, myRack, Object.values(state.placed));
   const total = rows.reduce((s, r) => s + r.count, 0);
 
   return (
