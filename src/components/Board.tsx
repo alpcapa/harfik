@@ -84,6 +84,14 @@ const CENTER_ZONE_STYLE: React.CSSProperties = {
 const CENTER_TEXT = 'text-[#7C2D12]';
 
 /** Bir oyuncunun ilk hamlesinde mutlaka değmesi gereken köşe hücresindeki ev işareti. */
+/**
+ * Ev (köşe başlangıç karesi) işaretinin vektörü. DIŞA AÇIK, çünkü kurulum
+ * ekranındaki "karşılama sayfasına dön" düğmesi (18 Ağustos 2026) AYNI evi
+ * çiziyor — path'i kopyalamak iki evin sessizce ayrışmasına yol açardı
+ * (`RelationIcons` ile aynı ilke).
+ */
+export const HOME_MARK_PATH = 'M12 2.5 1.5 11h3V21h6v-6h3v6h6V11h3L12 2.5Z';
+
 function HomeMark({ color }: { color: PlayerColor }) {
   return (
     <svg
@@ -92,7 +100,7 @@ function HomeMark({ color }: { color: PlayerColor }) {
       style={{ opacity: 0.85 }}
       fill={color.base}
     >
-      <path d="M12 2.5 1.5 11h3V21h6v-6h3v6h6V11h3L12 2.5Z" />
+      <path d={HOME_MARK_PATH} />
     </svg>
   );
 }

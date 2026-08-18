@@ -143,8 +143,10 @@ test('Temiz localStorage ile / → karşılama katmanı görünür, uygulama yü
   await page.goto('/');
 
   await expect(page.locator('#karsilama')).toBeVisible();
-  await expect(page.locator('#karsilama-oyna')).toBeVisible();
   await expect(page.locator('#karsilama-giris')).toBeVisible();
+  // Şeritte OYNA YOK — sayfanın tepesindeki büyük "HEMEN OYNA" dururken
+  // başlıkta ikinci bir kopya gereksizdi (18 Ağustos 2026, kullanıcı isteği).
+  await expect(page.locator('#karsilama-oyna')).toHaveCount(0);
 
   // `#root` hem gizli hem BOŞ olmalı: gizli olması kapının CSS'ini, boş
   // olması React ağacının hiç mount edilmediğini (yani uygulama paketinin
@@ -163,7 +165,7 @@ test('OYNA → Setup açılır, seen-intro yazılır, sayfa YENİDEN YÜKLENMEZ'
     (window as unknown as { __gecisSondasi?: boolean }).__gecisSondasi = true;
   });
 
-  await page.locator('#karsilama-oyna').click();
+  await page.locator('[data-kelimeki-oyna]').first().click();
 
   await expect(page.getByText('OYUNU BAŞLAT')).toBeVisible();
   await expect(page.locator('#karsilama')).toHaveCount(0);
@@ -188,7 +190,7 @@ test('GİRİŞ → giriş penceresi açılır, URL\'de ?giris=1 KALMAZ', async (
 
 test('İkinci ziyaret (aynı localStorage) → katman HİÇ görünmez', async ({ page }) => {
   await page.goto('/');
-  await page.locator('#karsilama-oyna').click();
+  await page.locator('[data-kelimeki-oyna]').first().click();
   await expect(page.getByText('OYUNU BAŞLAT')).toBeVisible();
 
   await page.goto('/');
@@ -246,7 +248,7 @@ test('Sayfa sonundaki OYNA da uygulamaya geçirir (öznitelikle bağlama)', asyn
   // koruyor: yeni bir düğme id ile eklenirse (öznitelik unutulursa) sessizce
   // ölü kalırdı.
   const oynaDugmeleri = page.locator('[data-kelimeki-oyna]');
-  await expect(oynaDugmeleri).toHaveCount(3); // başlık + kahraman + sayfa sonu
+  await expect(oynaDugmeleri).toHaveCount(2); // kahraman + sayfa sonu
   await oynaDugmeleri.last().click();
 
   await expect(page.getByText('OYUNU BAŞLAT')).toBeVisible();
@@ -276,4 +278,47 @@ test('Kaydırınca logo kilitli başlığa park eder, tepede park etmez', async 
     document.getElementById('karsilama')!.scrollTop = 0;
   });
   await expect(katman).not.toHaveClass(/logo-parkli/);
+});
+
+test('Ev düğmesi karşılama katmanına geri döndürür (?tanitim=1)', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('[data-kelimeki-oyna]').first().click();
+  await expect(page.getByText('OYUNU BAŞLAT')).toBeVisible();
+
+  // Katman DOM'dan siliniyor, yani geri dönüş tam bir yeniden yükleme —
+  // `?tanitim=1` kapıya "bu sefer katmanı göster" diyen TEK sinyal, çünkü
+  // `seen-intro` bu noktada yazılmış durumda.
+  await page.getByLabel('Tanıtım sayfası').click();
+  await expect(page.locator('#karsilama')).toBeVisible();
+  expect(await page.evaluate((k) => localStorage.getItem(k as string), SEEN_INTRO_KEY)).toBe('1');
+
+  // Geçişte URL temizleniyor — yenilemede kullanıcı katmana geri düşmemeli.
+  await page.locator('[data-kelimeki-oyna]').first().click();
+  await expect(page.getByText('OYUNU BAŞLAT')).toBeVisible();
+  await expect.poll(() => new URL(page.url()).search).toBe('');
+});
+
+test('Katmanın hukuki bağlantıları uygulamada ilgili pencereyi açar', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('[data-kelimeki-gizlilik]').click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: /Gizlilik/ })).toBeVisible();
+  await expect.poll(() => new URL(page.url()).search).toBe('');
+});
+
+test('Tanıtım tahtası şeridi iki görsel ve iki nokta taşır', async ({ page }) => {
+  await page.goto('/');
+
+  const serit = page.locator('#karsilama-tahta-serit');
+  await expect(serit.locator('> div')).toHaveCount(2);
+  await expect(page.locator('#karsilama-tahta-noktalar > span')).toHaveCount(2);
+
+  // Kaydırma CSS ile; JS yalnızca noktayı güncelliyor.
+  await serit.evaluate((el) => {
+    el.scrollLeft = el.clientWidth + 16;
+  });
+  await expect(page.locator('#karsilama-tahta-noktalar > span').nth(1)).toHaveClass(/bg-accent/);
+  await expect(page.locator('#karsilama-tahta-noktalar > span').first()).toHaveClass(/bg-border/);
 });

@@ -30,7 +30,7 @@ import { GameBoardPreview } from '../components/GameBoardPreview';
 import { RankSeal } from '../components/RankSeal';
 import { RANK_TIERS } from '../utils/leagueRank';
 import { PLAYER_COLORS } from '../game/constants';
-import { DEMO_TILES } from './demoBoard';
+import { DEMO_TILES_2, DEMO_TILES_4 } from './demoBoard';
 
 // `UserMenu.tsx:33-35`'ten BİREBİR kopyalandı — kodu import etmiyoruz
 // (bu katman `UserMenu`'yü, dolayısıyla Supabase SDK'sını yüklememeli),
@@ -54,20 +54,17 @@ const BUTON_OLCU = {
 const BUTON_TABAN =
   'shrink-0 font-mono uppercase tracking-[0.5px] rounded-md border font-bold leading-none active:scale-[0.97] transition-transform';
 
-// Başlıktaki İKİ düğme de AYNI görünür — `UserMenu.tsx:145`'teki uygulama içi
-// GİRİŞ düğmesi de accent/mavi olduğundan bu aynı zamanda katmanı uygulamayla
-// hizalıyor. (18 Ağustos 2026: GİRİŞ bir süre nötr çizilmişti; kullanıcı
-// "Oyna butonu giriş butonu ile aynı yükseklikte olmalı" diye bildirdi.
-// ÖLÇÜLDÜ — kutular 360/390/834 genişliklerinde zaten BİREBİR aynıydı
-// (27.38 / 28.98 / 37.00 px, ikisi de `top: 12`); gözle görünen fark
-// `btn-raised`ın ağır gölgesi ile `btn-raised-neutral`ın hafif gölgesi
-// arasındaydı. Yani düzeltilen şey yükseklik değil GÖLGE AĞIRLIĞIydı.)
+// Şeritteki GİRİŞ düğmesi `UserMenu.tsx:145`'teki uygulama içi GİRİŞ
+// düğmesiyle BİREBİR aynı (accent/mavi + `btn-raised`) — katman uygulamayla
+// hizalı kalsın diye.
 const BASLIK_BUTON = `${BUTON_TABAN} btn-raised bg-accent border-accent text-white`;
 
-// Park eden logonun yüksekliği — düğmelerin (27–37 px) belirgin şekilde
-// altında kalmalı ki şeridin yüksekliğini DEĞİŞTİRMESİN (yükseklik
-// düğmelerden gelmeye devam ediyor).
-const PARK_LOGO_HEIGHT = 'clamp(13px, 3.6vw, 17px)';
+// Park eden logo, GİRİŞ düğmesiyle TAM AYNI yükseklikte (kullanıcı isteği,
+// 18 Ağustos 2026: "kelimeki logosunu giriş butonuna eşit yüksekliğe
+// çekebiliriz"). Sabit bir piksel YAZILMIYOR — düğmenin kendi akışkan
+// formülünden türetiliyor (2 × dikey dolgu + punto + 2 × 1 px çerçeve), yani
+// `GIRIS_*` sabitleri değişirse logo kendiliğinden takip eder.
+const PARK_LOGO_HEIGHT = `calc(2 * ${GIRIS_PADDING_Y} + ${GIRIS_FONT_SIZE} + 2px)`;
 
 // `src/data/words.ts` bugün 63.896 madde taşıyor; yuvarlanmış hâli hem burada
 // hem SSS'te kullanılıyor. Liste büyürse İKİSİ de tek yerden değişsin diye
@@ -138,7 +135,8 @@ function Bolum({
  *
  * Harf sözlüğü — her satır 5 karakter:
  *   `.` boş · `~` 1. oyuncunun bölgesi (taşsız) · `#` altın X2 zemini
- *   `*` merkezdeki X3 karesi · `A` 1. oyuncunun taşı · `B` 2. oyuncunun taşı
+ *   `*` merkezdeki X3 karesi · `b` 2. oyuncunun bölgesi (taşsız)
+ *   `A` 1. oyuncunun taşı · `B` 2. oyuncunun taşı
  */
 function MiniIzgara({ satirlar }: { satirlar: string[] }) {
   const zemin: Record<string, string> = {
@@ -146,6 +144,7 @@ function MiniIzgara({ satirlar }: { satirlar: string[] }) {
     '~': PLAYER_COLORS[0].zone,
     '#': '#FDE68A',
     '*': '#F97316',
+    b: PLAYER_COLORS[1].zone,
     A: PLAYER_COLORS[0].base,
     B: PLAYER_COLORS[1].base,
   };
@@ -267,28 +266,23 @@ export function Landing() {
             Sticky sarmalayıcı TAM GENİŞLİK, iç şerit `max-w-[460px]` — ikisini
             tek elemanda birleştirmek şeridi ekranın soluna yapıştırırdı. */}
         <div id="karsilama-serit" className="sticky top-0 z-20 w-full flex justify-center bg-bg">
-          <div className="w-full max-w-[460px] flex items-center gap-2 px-3.5 pt-3">
-            <button
-              id="karsilama-oyna"
-              type="button"
-              data-kelimeki-oyna=""
-              className={BASLIK_BUTON}
-              style={BUTON_OLCU}
-            >
-              Oyna
-            </button>
+          <div className="w-full max-w-[460px] flex items-center gap-2 px-3.5 py-3">
+            {/* LOGO YUVASI — logonun "park ettiği" yer. Kullanıcı isteği (18
+                Ağustos 2026): "Kelimeki logosu … kaybolduğu anda … küçülmüş
+                olarak yerleşsin."
 
-            {/* ORTA YUVA — logonun "park ettiği" yer. Kullanıcı isteği (18
-                Ağustos 2026): "Kelimeki logosu … kaybolduğu anda oyna ve
-                giriş butonun arasına küçülmüş olarak yerleşsin."
+                Şeritte BİR TEK giriş düğmesi var: sayfanın tepesindeki büyük
+                "HEMEN OYNA" dururken başlıkta ikinci bir OYNA gereksizdi
+                (kullanıcı isteği, aynı gün) — kaldırıldı. Yuva `flex-1`
+                olduğundan logo, şeridin GİRİŞ'ten arta kalan alanının
+                ortasında duruyor.
 
                 Logo BURADA HER ZAMAN VAR (statik HTML); yalnızca görünürlüğü
                 CSS'te (`index.css` → `.logo-parkli`). `main.tsx`'teki
                 `IntersectionObserver`, kahraman logo şeridin altına girdiği an
                 sınıfı ekliyor. Sabit bir kaydırma eşiği ("120 px sonra")
-                YANLIŞ olurdu: ölçüldü, şeridin ALTI ile kahraman logonun ÜSTÜ
-                arası TAM 0.00 px ve şerit yüksekliği akışkan — eşik ekran
-                genişliğine göre değişir. `rootMargin` da bu yüzden çalışma
+                YANLIŞ olurdu: şerit yüksekliği akışkan, yani eşik ekran
+                genişliğine göre değişir — `rootMargin` bu yüzden çalışma
                 zamanında şeridin `offsetHeight`'inden okunuyor. */}
             <div
               id="karsilama-logo-yuvasi"
@@ -329,15 +323,14 @@ export function Landing() {
               </p>
 
               <p className="text-[13px] leading-relaxed text-muted" style={{ margin: 0 }}>
-                Kelimeki, 13×13'lük bir tahtada köşelerden başlayan özgün bir
-                mekanikle oynanan Türkçe kelime oyunudur. {KELIME_SAYISI}'den fazla
-                kelimelik TDK sözlüğüyle, yapay zekaya ya da arkadaşlarına karşı.
+                Kelimeki, 2 veya 4 kişi yapay zekaya veya arkadaşlarına karşı
+                oynanabilen, strateji odaklı Türkçe kelime oyunudur.
               </p>
 
               <div className="w-full flex flex-col gap-2 pt-1">
                 <Oyna etiket="Hemen Oyna" />
                 <span className="font-mono text-[10px] text-muted">
-                  Ücretsiz · Kurulum yok · Üyeliksiz başlar
+                  Ücretsiz · Kurulum yok · Üyelik gerekmez
                 </span>
               </div>
             </div>
@@ -351,37 +344,78 @@ export function Landing() {
             </div>
 
             {/* ── Tahta ────────────────────────────────────────────────────
-                Bu bir ekran görüntüsü DEĞİL: üretimdeki `Board.tsx`'in
-                sunucuda render edilmiş hâli (taşlar `demoBoard.ts`'te).
-                Yani ziyaretçinin gördüğü tahta, oyuna girdiğinde göreceğiyle
-                birebir aynı bileşendir — köşe tonlaması, bölge dış hattı,
-                ev işareti, X2/X3 hepsi tek kaynaktan. */}
+                İKİ görsel, yan yana kaydırmalı (kullanıcı isteği, 18 Ağustos
+                2026): 2 kişilik ve 4 kişilik tahta. Kaydırma tamamen CSS —
+                `overflow-x-auto` + `snap-x snap-mandatory`, hiç JS yok.
+                `main.tsx` yalnızca ALTTAKİ İKİ NOKTAYI güncelliyor (hangi
+                görselde olduğun anlaşılsın diye); nokta güncellemesi düşse
+                bile kaydırma çalışmaya devam eder.
+
+                Tahtalar ekran görüntüsü DEĞİL: üretimdeki `Board.tsx`'in
+                sunucuda render edilmiş hâli (taşlar `demoBoard.ts`'te, her
+                kelimesi `npm run verify-demo-board` ile sözlüğe karşı
+                doğrulanıyor). Köşe tonlaması, bölge dış hattı, ev işareti,
+                X2/X3 hepsi tek kaynaktan.
+
+                `py-2 -my-2`: kaydırma kabı dikeyde de kırpar (CSS'te bir eksen
+                `auto` ise diğeri de `visible` kalamaz) — tahtanın gölgesi
+                kesilmesin diye içeriden pay veriliyor, dış ölçü değişmiyor. */}
             <Bolum ustBaslik="Tahtaya bir bak" baslik="Oyun tam olarak böyle görünüyor">
-              <p className="text-[12px] leading-relaxed text-muted" style={{ margin: 0 }}>
-                İki oyuncu karşılıklı köşelerden başladı; ikisi de ortadaki bonus
-                bölgesine uzandı. Renkli alanlar kimin nereyi ele geçirdiğini
-                gösteriyor — bundan sonrası bölge kapma yarışı.
-              </p>
-              <GameBoardPreview
-                snapshot={DEMO_TILES}
-                playerCount={2}
-                players={[
-                  { name: 'Sen', score: 0, is_ai: false, colorIndex: 0 },
-                  { name: 'Rakip', score: 0, is_ai: false, colorIndex: 1 },
-                ]}
-              />
-              <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 list-none p-0 m-0">
-                <Rozet renk={PLAYER_COLORS[0].base} metin="1. oyuncunun taşları" />
-                <Rozet renk={PLAYER_COLORS[1].base} metin="2. oyuncunun taşları" />
-                <Rozet renk={PLAYER_COLORS[0].zone} metin="Ele geçirilmiş bölge" />
-                <Rozet renk="#DDE4EE" metin="Henüz kimsenin değil" />
-                <Rozet renk="#FDE68A" metin="X2 — kelime puanı iki katı" />
-                <Rozet renk="#F97316" metin="X3 — tam merkezdeki kare" />
-              </ul>
+              <div
+                id="karsilama-tahta-serit"
+                className="flex gap-4 overflow-x-auto snap-x snap-mandatory no-scrollbar py-2 -my-2"
+              >
+                <div className="snap-center shrink-0 w-full flex flex-col gap-3">
+                  <GameBoardPreview
+                    snapshot={DEMO_TILES_2}
+                    playerCount={2}
+                    players={[
+                      { name: 'Sen', score: 0, is_ai: false, colorIndex: 0 },
+                      { name: 'Rakip', score: 0, is_ai: false, colorIndex: 1 },
+                    ]}
+                  />
+                  <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 list-none p-0 m-0">
+                    <Rozet renk="#FDE68A" metin="X2 — kelime puanı iki katı" />
+                    <Rozet renk="#F97316" metin="X3 — tam merkezdeki kare" />
+                  </ul>
+                  <p className="text-[12px] leading-relaxed text-muted" style={{ margin: 0 }}>
+                    Köşenden başla, orta bölgedeki sarı alana ulaş, puanlarını
+                    ikiye hatta üçe katla.
+                  </p>
+                </div>
+
+                <div className="snap-center shrink-0 w-full flex flex-col gap-3">
+                  <GameBoardPreview
+                    snapshot={DEMO_TILES_4}
+                    playerCount={4}
+                    players={[
+                      { name: 'Sen', score: 0, is_ai: false, colorIndex: 0 },
+                      { name: '2. oyuncu', score: 0, is_ai: false, colorIndex: 1 },
+                      { name: '3. oyuncu', score: 0, is_ai: false, colorIndex: 2 },
+                      { name: '4. oyuncu', score: 0, is_ai: false, colorIndex: 3 },
+                    ]}
+                  />
+                  <p className="text-[12px] leading-relaxed text-muted" style={{ margin: 0 }}>
+                    Dilersen 3 yapay zekaya karşı veya 3 arkadaşına karşı oyna,
+                    gücünü sına. 3 oyuncuyu yenmenin keyfi bir başka.
+                  </p>
+                </div>
+              </div>
+
+              {/* Kaydığı anlaşılsın diye iki nokta. `aria-hidden` — bilgi
+                  taşımıyor, kaydırma kabının kendisi zaten erişilebilir. */}
+              <div
+                id="karsilama-tahta-noktalar"
+                aria-hidden="true"
+                className="flex items-center justify-center gap-1.5"
+              >
+                <span className="block w-1.5 h-1.5 rounded-full bg-accent transition-colors" />
+                <span className="block w-1.5 h-1.5 rounded-full bg-border transition-colors" />
+              </div>
             </Bolum>
 
             {/* ── Nasıl oynanır ────────────────────────────────────────── */}
-            <Bolum id="nasil-oynanir" ustBaslik="Üç adımda" baslik="Nasıl oynanır?">
+            <Bolum id="nasil-oynanir" ustBaslik="Dört adımda" baslik="Nasıl oynanır?">
               <ol className="list-none p-0 m-0 flex flex-col gap-2.5">
                 <Adim
                   no={1}
@@ -397,9 +431,15 @@ export function Landing() {
                 />
                 <Adim
                   no={3}
-                  baslik="Merkezi ve rakibi zorla"
-                  metin="Ortadaki 5×5 bölge kelime puanını ikiye, tam merkez üçe katlar. Rakibin bölgesine oynamak serbesttir — ama puanın bir kısmı ona geçer."
-                  izgara={['..A..', '.###.', '.#*#.', '.###.', '..B..']}
+                  baslik="Merkeze oyna"
+                  metin="Ortadaki 5×5 bölge kelime puanını ikiye, tam merkezdeki tek kare üçe katlar."
+                  izgara={['..A..', '.###.', '.#*#.', '.###.', '.....']}
+                />
+                <Adim
+                  no={4}
+                  baslik="Bölge vergisini hesaba kat"
+                  metin="Rakibin bölgesine girmek — hatta sınırına değmek — serbesttir, ama o hamlenin puanının bir kısmı bölgenin sahibine geçer. Kaç rakibin bölgesiyle temas ettiğine göre elinde kalan pay küçülür."
+                  izgara={['.....', '.bbb.', '.bAb.', '.bbb.', '.....']}
                 />
               </ol>
             </Bolum>
@@ -409,11 +449,11 @@ export function Landing() {
               <ul className="grid grid-cols-2 gap-2 list-none p-0 m-0">
                 <Ozellik
                   baslik="Yapay zekaya karşı"
-                  metin="Rafından kurabildiği en yüksek puanlı kelimeyi arayan bir rakip. 2 ya da 4 kişilik."
+                  metin="Kurabildiği en yüksek puanlı kelimeyi arayan bir rakip. 2 ya da 4 kişilik."
                 />
                 <Ozellik
                   baslik="Arkadaşınla canlı"
-                  metin="Davet gönder, sıra sana geçince oyna. Aynı anda çevrimiçi olmanız gerekmez."
+                  metin="Oyun daveti gönder, ister canlı, ister 48 saat içinde hamle yaparak rahat rahat oyna."
                 />
                 <Ozellik
                   baslik="Oyun içi sohbet"
@@ -421,11 +461,11 @@ export function Landing() {
                 />
                 <Ozellik
                   baslik="Çevrimdışı da oynar"
-                  metin="Yapay zeka oyunu internetsiz sürer; bağlantı gelince kaldığın yerden senkronlanır."
+                  metin="Yapay zekaya karşı internet bağlantısı olmadan da oynayabilirsin."
                 />
                 <Ozellik
-                  baslik="Kelime anlamları"
-                  metin="Tahtadaki bir kelimeye dokun, sözlükteki anlamını orada gör."
+                  baslik="Kelime denemesi"
+                  metin="Sıra sendeyken veya rakipteyken tahtada kelime denemeleri yapabilirsin."
                 />
                 <Ozellik
                   baslik="k-lig ve rütbeler"
@@ -484,7 +524,7 @@ export function Landing() {
                 />
                 <Soru
                   soru="Arkadaşımla aynı anda çevrimiçi olmamız gerekiyor mu?"
-                  cevap="Hayır. Canlı oyunlar sırayla oynanır ve her hamle için 48 saat süre vardır; sıra sana geçtiğinde e-posta ile haber verilir."
+                  cevap="Hayır. Canlı oyunlar sırayla oynanır ve her hamle için 48 saat süre vardır. Tabii ki aynı anda bağlı iki oyuncu canlı da oynayabilir; bu gerçekten son derece keyiflidir."
                 />
               </div>
             </Bolum>
@@ -493,12 +533,30 @@ export function Landing() {
             <section className="w-full flex flex-col items-center gap-3 text-center border-t border-border pt-7">
               <LandingLogo height={34} className="block" />
               <p className="text-[13px] leading-relaxed text-muted" style={{ margin: 0 }}>
-                Bir tahta seni bekliyor. İlk kelimeni köşenden kur.
+                Oyun seni bekliyor. Mücadeleye hazır mısın?
               </p>
               <div className="w-full flex flex-col gap-2 pt-1">
                 <Oyna etiket="Oyuna Başla" />
                 <Giris etiket="Giriş Yap" />
               </div>
+
+              {/* Hukuki alt satır — `Setup.tsx`'in kendi footer'ıyla AYNI iki
+                  bağlantı. Katmanda React state olmadığından modal burada
+                  açılamaz: düğmeler uygulamaya geçip ilgili pencereyi
+                  açtırıyor (`?kosullar=1` / `?gizlilik=1`, `?giris=1` ile
+                  birebir aynı kalıp — bkz. `main.tsx` → `gec`). */}
+              <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 pt-4 font-mono text-[10px] text-muted">
+                <button type="button" data-kelimeki-kosullar="" className="underline-offset-2 hover:underline">
+                  Kullanım Koşulları
+                </button>
+                <span aria-hidden="true">·</span>
+                <button type="button" data-kelimeki-gizlilik="" className="underline-offset-2 hover:underline">
+                  Gizlilik Politikası
+                </button>
+              </div>
+              <p className="font-mono text-[10px] text-muted" style={{ margin: 0 }}>
+                © Kelimeki
+              </p>
             </section>
           </div>
         </main>

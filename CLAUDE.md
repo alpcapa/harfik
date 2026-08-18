@@ -199,6 +199,7 @@ sekmede fırlarsa sayfa hiç boyanmaz.
 | Sinyal | Anlamı |
 |---|---|
 | `location.pathname !== '/'` | Dolaşımdaki `/game/:id` ve `/davet/:token` linkleri — katman ASLA araya girmez |
+| `?tanitim=1` | Kurulum ekranındaki ev düğmesinin bilinçli geri dönüşü — aşağıdaki TÜM sinyalleri atlar (Bölüm 3) |
 | `kelimeki:seen-intro` | Katmanı bir kez geçmiş (`src/utils/onboarding.ts` → `SEEN_INTRO_KEY`; adı kapıda ELLE tekrarlanıyor, script o modülü import edemez) |
 | `kelimeki:game-state` | Yarım kalmış yerel oyunu var |
 | `sb-*-auth-token` taraması | Giriş yapmış (proje ref'i sabit yazılmadı — env değişirse kapı yine doğru çalışır) |
@@ -338,6 +339,16 @@ Yani Bölüm 2'deki nötr çizim sessiz bir sapmaydı.
 **Ders:** "aynı yükseklikte değil" bir teşhis değil bir SEMPTOM — kutuyu
 ölçmeden gölgeye/paletle ilgili bir farkı yükseklik sanmak kolay.
 
+**Aynı gün ikinci tur — başlıktaki OYNA tamamen KALKTI (kullanıcı isteği):**
+*"Sayfanın üstünde büyük Hemen Oyna butonu olduğu için header'ın sağındaki
+Oyna butonu gereksiz oldu."* Şeritte artık yalnızca GİRİŞ var; logo yuvası
+`flex-1` olduğundan logo GİRİŞ'ten arta kalan alanın ortasında duruyor.
+Aynı turda şeride ALT boşluk verildi (`pt-3` → `py-3`) — GİRİŞ düğmesi
+şeridin alt kenarına değiyordu. **Ölçüldü:** şerit 39.38/40.98/49 →
+**51.39/53.00/61.00** px (320/390/834); kaydırmada üst kenar hâlâ 0'da
+sabit, "şerit altı → kahraman logo üstü" hâlâ **0.00** (aradaki nefes artık
+şeridin KENDİ alt dolgusundan geliyor, bu yüzden değişmez bozulmadı).
+
 ### 2) Logo park efekti — eşik SABİT DEĞİL, görünürlük izleniyor
 
 Kullanıcının Bölüm 2'de tarif ettiği efekt (*"logo … kaybolduğu anda oyna ve
@@ -358,10 +369,14 @@ kahraman logoyu (`#karsilama-logo`) izliyor.
 - Pencere yeniden boyutlandırılınca gözlemci baştan kuruluyor (`rootMargin`
   bir kez okunan bir sayı, `vw` tabanlı yükseklikte bayatlar).
 
-**Park eden logo şeridin yüksekliğini DEĞİŞTİRMİYOR** (ölçüldü: 13 / 14.04 /
-17 px, düğmelerin belirgin altında; şerit yükseklikleri Bölüm 2'deki
-değerlerle bayt bayt aynı kaldı) — yani "şerit altı → logo üstü = 0.00"
-değişmezi korunuyor ve efekt kaydırmanın ilk pikselinde başlıyor.
+**Park eden logo GİRİŞ düğmesiyle TAM AYNI yükseklikte** (kullanıcı isteği,
+aynı gün ikinci tur: *"kelimeki logosunu giriş butonuna eşit yüksekliğe
+çekebiliriz"*). Sabit piksel YAZILMIYOR — düğmenin kendi akışkan
+formülünden türetiliyor: `calc(2 × dikey dolgu + punto + 2px)`. Ölçüldü,
+üç genişlikte de düğmeyle birebir: **27.38 / 28.98 / 37.00** px (ölçüm
+`getBoundingClientRect` ile yapılırsa park etmemiş hâlin `scale(0.9)`unu
+hesaba kat — ham değerler 24.65/26.10/33.30 çıkar). `GIRIS_*` sabitleri
+değişirse logo kendiliğinden takip eder.
 
 ### 3) İçerik — gerçek `Board.tsx` ile tanıtım tahtası
 
@@ -376,6 +391,16 @@ oluşuyor. İki tasarım kararı kayda değer:
   çizimi bu kod tabanının en sık tekrarlayan hata sınıfını (sessiz ayrışma)
   büyütürdü. Aynı ilkeyle rütbeler gerçek `RankSeal` + `RANK_TIERS`, mini
   şemaların renkleri `PLAYER_COLORS`.
+- **İKİ tahta, yan yana kaydırmalı (aynı gün ikinci tur, kullanıcı isteği):**
+  2 kişilik ve 4 kişilik. **Kaydırma tamamen CSS** — `overflow-x-auto` +
+  `snap-x snap-mandatory`, her görsel `w-full`. `main.tsx` YALNIZCA alttaki
+  iki noktayı güncelliyor (`tahtaNoktalariKur`); o kod hiç çalışmasa bile
+  şerit kaydırılabilir kalır, nokta bir bağımlılık değil göstergedir.
+  Şeride `py-2 -my-2` veriliyor: bir eksende `overflow-x: auto` olan bir kap
+  dikeyde de kırpar, yani tahtanın gölgesi payı olmadan kesilirdi (dış ölçü
+  değişmiyor). 4 kişilik tahta "3 rakibe karşı" mesajını taşıyor ve
+  doğrulayıcı her koltuğun GERÇEKTEN dolu olduğunu ayrıca kontrol ediyor —
+  boş bir köşe o mesajı sessizce yalanlardı.
 - **Tahtanın kelimeleri ÖLÇEREK doğrulanıyor:** `npm run verify-demo-board`
   ≥2 uzunluktaki TÜM yatay/dikey dizilimleri `src/data/words.ts`e karşı sınar,
   ayrıca her oyuncunun taşlarının EV karesinden ortogonal bağlı olduğunu
@@ -396,34 +421,78 @@ TEK KAYNAKTA (`LogoMark.tsx`in dışa açtığı sabitler; o dosya
 `generate-logo-paths.mjs` tarafından üretiliyor) — uygulama tarafı bu sprite'ı
 KULLANMAZ, orada logo tek kez çiziliyor.
 
-**Sayfa bütçesi (ölçüldü):** `dist/index.html` ham 130.8 KB / **gzip 15.84 KB**.
+**Sayfa bütçesi (ölçüldü):** `dist/index.html` ham 215.8 KB / **gzip 19.07 KB**
+(tek tahtalı ilk sürüm 130.8 KB / 15.84 KB idi; ikinci tahta ~3.2 KB gzip
+ekledi).
 Bölüm 2'nin "< 15 KB" notu yer tutucu içeriğe göre yazılmıştı; gerçek içerikle
 kırılım şu — logo 5.2 KB, tahta 3.3 KB, rütbe mühürleri 0.3 KB, kalan metin/
 düzen ~7 KB. Karşılaştırma: katmanı gören ziyaretçi bugün toplam ~25 KB gzip
 indiriyor (HTML + CSS + minik giriş JS'i), uygulamanın kendisi 410 KB.
 
+### Geri dönüş — kurulum ekranındaki ev düğmesi
+
+Kullanıcı (18 Ağustos 2026): *"Hemen Oynaya basınca geri gelemiyorsun."*
+Katman `gec()` içinde DOM'dan SİLİNİYOR (Bölüm 2 kararı), yani geri dönmek
+bir React geçişi değil TAM BİR YENİDEN YÜKLEME gerektiriyor — ve o noktada
+`seen-intro` yazılmış olduğundan kapı kullanıcıyı doğrudan uygulamaya alırdı.
+Bu yüzden kapıya TEK bir kaçış deliği eklendi: **`?tanitim=1`**, öteki tüm
+dönen-kullanıcı sinyallerini (seen-intro / yarım oyun / oturum / PWA) bilerek
+atlar. `gec()` geçişte URL'yi HER durumda temizlediğinden bir sonraki
+açılışta yine uygulamaya düşülür — parametre yapışkan değil.
+
+Düğme `App.tsx`'in kurulum başlığında, sol uçta: gri bir ev ikonu. **Vektör
+`Board.tsx`'ten geliyor** (`HOME_MARK_PATH`, oradaki köşe "ev karesi"
+işaretinin AYNISI) — path kopyalansaydı iki ev sessizce ayrışırdı
+(`RelationIcons` ile aynı ilke). Satırın sağ tarafı DEĞİŞMEDİ: `UserMenu`
+girişsizken GİRİŞ, girişliyken avatar menüsünü çiziyor (`justify-end` →
+`justify-between`).
+
 ### Buton bağlama sözleşmesi (yeni)
 
-Sayfada artık ÜÇ "Oyna" ve İKİ "Giriş" düğmesi var. `main.tsx` hepsini
-`[data-kelimeki-oyna]` / `[data-kelimeki-giris]` SEÇİCİSİYLE bağlıyor —
-**yeni bir düğme eklerken id değil bu öznitelik verilmeli**, aksi halde düğme
-sessizce ölü kalır. Başlıktaki ikisi ayrıca id taşımaya devam ediyor
-(`tests/smoke.spec.ts` onları id ile buluyor).
+Sayfada İKİ "Oyna" (kahraman + sayfa sonu), İKİ "Giriş" (şerit + sayfa sonu)
+ve İKİ hukuki bağlantı var. `main.tsx` hepsini ÖZNİTELİKLE bağlıyor:
+`data-kelimeki-oyna` / `-giris` / `-kosullar` / `-gizlilik` — **yeni bir
+düğme eklerken id değil bu öznitelik verilmeli**, aksi halde düğme sessizce
+ölü kalır. Şeritteki GİRİŞ ayrıca `id="karsilama-giris"` taşıyor
+(`tests/smoke.spec.ts` onu id ile buluyor).
+
+**Hukuki bağlantılar neden köprüden geçiyor:** Kullanım Koşulları/Gizlilik
+pencereleri `Setup.tsx`'in kendi state'inde yaşıyor ve katman React ağacının
+DIŞINDA (statik HTML) — dolayısıyla katmandan açılamıyorlar. Düğmeler
+`?kosullar=1` / `?gizlilik=1` ile uygulamaya geçiriyor; `App.tsx` bunu
+`?giris=1`/`?contact=1` ile BİREBİR aynı kalıpta okuyup pencereyi kendisi
+render ediyor ve parametreyi `history.replaceState` ile temizliyor. Üç
+parametre TEK effect'te okunuyor — aynı anda yalnızca biri gelebilir ve
+hepsi tek bir `replaceState` ile silinmeli.
 
 ### Regresyon
 
-`tests/smoke.spec.ts` 10 → **12 test**: (a) sayfa sonundaki OYNA da uygulamaya
-geçiriyor ve sayfada tam 3 `[data-kelimeki-oyna]` var (öznitelik sözleşmesini
+`tests/smoke.spec.ts` 10 → **15 test**: (a) sayfa sonundaki OYNA da uygulamaya
+geçiriyor ve sayfada tam 2 `[data-kelimeki-oyna]` var (öznitelik sözleşmesini
 koruyor); (b) tepede `logo-parkli` YOK ve park kopyası `opacity: 0`,
 kaydırınca ikisi de dönüyor, geri çıkınca geri alınıyor (tek yönlü bir bayrak
-değil). **Negatif eş:** seçici id'ye geri çevrilip `logoParkiKur()` çağrısı
-kaldırılınca İKİ test de GERÇEKTEN düştü.
+değil); (c) kurulum ekranındaki ev düğmesi katmana geri döndürüyor ve
+sonraki geçişte `?tanitim=1` URL'den siliniyor; (d) hukuki bağlantı doğru
+pencereyi açıyor ve parametre temizleniyor; (e) tahta şeridi iki görsel + iki
+nokta taşıyor ve kaydırınca aktif nokta değişiyor. **Negatif eş — beşi de
+ayrı ayrı düşürüldü:** seçici id'ye çevrilince, `logoParkiKur()` kaldırılınca,
+kapının `?tanitim=1` dalı silinince, `setLandingLegal` kaldırılınca ve
+`tahtaNoktalariKur()` çağrısı kaldırılınca ilgili testler GERÇEKTEN düştü.
 
 **Doğrulanan non-regresyonlar (ölçüldü):** katman modunda `boot`/`words`
 istekleri **0** ve service worker kaydı **0**, uygulama modunda sırasıyla 1/1/1;
 `vercel.json` diff'i **sıfır**; `navigateFallback` hâlâ
-`createHandlerBoundToURL("index.html")`; precache 18 girdi; 320 px'te yatay
-taşma **0**; kaydırmada şeridin üst kenarı beş genişlikte de **0**'da sabit.
+`createHandlerBoundToURL("index.html")`; manifest `id`/`start_url`/`scope`
+aynı; precache 18 girdi; 320 px'te yatay taşma **0**; kaydırmada şeridin üst
+kenarı beş genişlikte de **0**'da sabit. `mobile/` altında **sıfır**
+değişiklik.
+
+**BİLİNÇLİ OLARAK YAPILMAYAN — SSS'teki "Uygulama indirmem gerekiyor mu?":**
+Kullanıcı bu maddenin *"app'lerde çıkmaması"* gerektiğini söyledi. Madde
+KALDI, çünkü karşılama katmanı YALNIZCA web'de var — Flutter portunda böyle
+bir ekran hiç yok (`mobile/` bu bölümde de hiç değişmedi), yani madde
+uygulamalarda zaten görünemez. Porta bir gün benzer bir tanıtım ekranı
+eklenirse bu madde oraya TAŞINMAMALI.
 
 ## Klasör Yapısı
 

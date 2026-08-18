@@ -1,10 +1,12 @@
 // Kelimeki — ana uygulama: kurulum, çok oyunculu sıra akışı ve düzen
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { GameHeader } from './components/GameHeader';
-import { Board } from './components/Board';
+import { Board, HOME_MARK_PATH } from './components/Board';
 import { Rack } from './components/Rack';
 import { GameOver } from './components/GameOver';
 import { UserMenu } from './components/UserMenu';
+import { TermsModal } from './components/TermsModal';
+import { PrivacyModal } from './components/PrivacyModal';
 import { AuthModal } from './components/AuthModal';
 import { Setup } from './components/Setup';
 import { AddToHomeScreen } from './components/AddToHomeScreen';
@@ -653,11 +655,24 @@ export default function App() {
   // BİREBİR aynı kalıbı kullanılıyor: parametre okunur, pencere açılır,
   // parametre `history.replaceState` ile URL'den temizlenir.
   const [showLoginModal, setShowLoginModal] = useState(false);
+  // Katmanın alt satırındaki hukuki bağlantılar da AYNI köprüden geçiyor
+  // (`?kosullar=1` / `?gizlilik=1`) — o iki pencere `Setup.tsx`'in kendi
+  // state'inde yaşadığından dışarıdan açılamıyor, bu yüzden burada ayrıca
+  // render ediliyorlar. Üç parametre tek effect'te okunuyor: aynı anda
+  // yalnızca biri gelebilir ve hepsi tek bir `replaceState` ile temizlenmeli.
+  const [landingLegal, setLandingLegal] = useState<'terms' | 'privacy' | null>(null);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('giris') !== '1') return;
-    setShowLoginModal(true);
+    const giris = params.get('giris') === '1';
+    const kosullar = params.get('kosullar') === '1';
+    const gizlilik = params.get('gizlilik') === '1';
+    if (!giris && !kosullar && !gizlilik) return;
+    if (giris) setShowLoginModal(true);
+    if (kosullar) setLandingLegal('terms');
+    else if (gizlilik) setLandingLegal('privacy');
     params.delete('giris');
+    params.delete('kosullar');
+    params.delete('gizlilik');
     const rest = params.toString();
     window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : ''));
   }, []);
@@ -1116,7 +1131,23 @@ export default function App() {
   if (state.phase === 'setup') {
     return (
       <div className="min-h-[100dvh] w-full flex flex-col items-center overflow-x-hidden">
-        <div className="w-full max-w-[460px] flex items-center justify-end px-3.5 pt-3">
+        <div className="w-full max-w-[460px] flex items-center justify-between px-3.5 pt-3">
+          {/* Karşılama sayfasına dönüş (18 Ağustos 2026, kullanıcı isteği:
+              "Hemen Oynaya basınca geri gelemiyorsun"). Katman DOM'dan
+              siliniyor (bkz. main.tsx), dolayısıyla geri dönmenin tek yolu
+              tam bir yeniden yükleme — `?tanitim=1` kapıya "bu sefer katmanı
+              göster" diyen tek sinyal (bkz. scripts/landing-plugin.js).
+              Sağ taraf DEĞİŞMEDİ: girişsizken GİRİŞ, girişliyken avatar
+              menüsü — ikisi de `UserMenu`'nün kendi dalları. */}
+          <a
+            href="/?tanitim=1"
+            aria-label="Tanıtım sayfası"
+            className="shrink-0 flex items-center justify-center text-muted p-1 -m-1 active:scale-[0.97] transition-transform"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d={HOME_MARK_PATH} />
+            </svg>
+          </a>
           <UserMenu />
         </div>
         <main className="w-full flex flex-col items-center">
@@ -1148,6 +1179,8 @@ export default function App() {
           />
         )}
         {showLoginModal && <AuthModal onClose={() => setShowLoginModal(false)} />}
+        {landingLegal === 'terms' && <TermsModal onClose={() => setLandingLegal(null)} />}
+        {landingLegal === 'privacy' && <PrivacyModal onClose={() => setLandingLegal(null)} />}
       </div>
     );
   }

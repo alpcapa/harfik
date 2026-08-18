@@ -64,7 +64,17 @@ function baslat(): void {
  * sırada katman kalkınca sayfa aniden kısalır, tarayıcı kaydırma konumunu
  * kendi düzeltir ve kullanıcı uygulamayı ortasından görür.
  */
-function gec(niyet: 'oyna' | 'giris'): void {
+type Niyet = 'oyna' | 'giris' | 'kosullar' | 'gizlilik';
+
+/** Niyetin `App.tsx`'e taşındığı sorgu parametresi ("oyna"da yok). */
+const NIYET_PARAM: Record<Niyet, string> = {
+  oyna: '',
+  giris: '?giris=1',
+  kosullar: '?kosullar=1',
+  gizlilik: '?gizlilik=1',
+};
+
+function gec(niyet: Niyet): void {
   try {
     localStorage.setItem(SEEN_INTRO_KEY, '1');
   } catch {
@@ -72,11 +82,12 @@ function gec(niyet: 'oyna' | 'giris'): void {
     // yine de çalışmalı.
   }
   window.scrollTo(0, 0);
-  if (niyet === 'giris') {
-    // `App.tsx` bunu okuyup giriş penceresini açar ve parametreyi
-    // `history.replaceState` ile temizler — `?contact=1` ile aynı kalıp.
-    window.history.replaceState(null, '', window.location.pathname + '?giris=1');
-  }
+  // URL HER DURUMDA yeniden yazılıyor: yalnızca niyeti taşımak için değil,
+  // kurulum ekranındaki ev düğmesinin eklediği `?tanitim=1`i de temizlemek
+  // için (aksi halde bir yenilemede kullanıcı katmana geri düşerdi).
+  // `App.tsx` parametreyi okuyup `history.replaceState` ile siliyor —
+  // `?contact=1` ile aynı kalıp.
+  window.history.replaceState(null, '', window.location.pathname + NIYET_PARAM[niyet]);
   document.documentElement.classList.add('uygulama-modu');
   document.getElementById('karsilama')?.remove();
   baslat();
@@ -123,6 +134,31 @@ function logoParkiKur(): void {
   };
   kur();
   window.addEventListener('resize', kur);
+}
+
+/**
+ * Tanıtım tahtası şeridinin altındaki iki nokta (18 Ağustos 2026, kullanıcı
+ * isteği: "altta 2 nokta olsun ki kaydığı anlaşılsın").
+ *
+ * KAYDIRMANIN KENDİSİ TAMAMEN CSS (`overflow-x-auto` + `snap-x`); burada
+ * yapılan tek şey hangi görselde olunduğunu noktalara yansıtmak. Bu fonksiyon
+ * hiç çalışmasa bile şerit kaydırılabilir kalır — nokta, bir bağımlılık değil
+ * bir göstergedir.
+ */
+function tahtaNoktalariKur(): void {
+  const serit = document.getElementById('karsilama-tahta-serit');
+  const noktalar = document.getElementById('karsilama-tahta-noktalar');
+  if (!serit || !noktalar) return;
+  const nokta = Array.from(noktalar.children) as HTMLElement[];
+  const guncelle = (): void => {
+    // Bir "sayfa" = şeridin görünür genişliği (her görsel `w-full`).
+    const aktif = Math.round(serit.scrollLeft / Math.max(1, serit.clientWidth));
+    nokta.forEach((n, i) => {
+      n.classList.toggle('bg-accent', i === aktif);
+      n.classList.toggle('bg-border', i !== aktif);
+    });
+  };
+  serit.addEventListener('scroll', guncelle, { passive: true });
 }
 
 /**
@@ -190,11 +226,15 @@ if (document.documentElement.classList.contains('uygulama-modu')) {
   // sayfa sonu). Hepsi öznitelikle bağlanıyor — id ile bağlamak yalnızca
   // başlıktakileri yakalardı ve yeni bir düğme eklendiğinde SESSİZCE ölü
   // kalırdı (bkz. Landing.tsx'in "buton bağlama sözleşmesi" notu).
-  document
-    .querySelectorAll<HTMLElement>('[data-kelimeki-oyna]')
-    .forEach((el) => el.addEventListener('click', () => gec('oyna')));
-  document
-    .querySelectorAll<HTMLElement>('[data-kelimeki-giris]')
-    .forEach((el) => el.addEventListener('click', () => gec('giris')));
+  const bagla = (oznitelik: string, niyet: Niyet): void => {
+    document
+      .querySelectorAll<HTMLElement>(`[${oznitelik}]`)
+      .forEach((el) => el.addEventListener('click', () => gec(niyet)));
+  };
+  bagla('data-kelimeki-oyna', 'oyna');
+  bagla('data-kelimeki-giris', 'giris');
+  bagla('data-kelimeki-kosullar', 'kosullar');
+  bagla('data-kelimeki-gizlilik', 'gizlilik');
   logoParkiKur();
+  tahtaNoktalariKur();
 }

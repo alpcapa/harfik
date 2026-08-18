@@ -98,12 +98,18 @@ function kapiScript(bootHref) {
     `var d=document.documentElement,l=localStorage,g=function(){d.classList.add('uygulama-modu');${preload}};` +
     // 1) Ana sayfa dışındaki her yol: /game/:id, /davet/:token — katman hiç görünmez.
     `if(location.pathname!=='/')return g();` +
-    // 2) Katmanı zaten geçmiş VEYA yarım kalmış yerel oyunu var.
+    // 2) `?tanitim=1` — kurulum ekranındaki ev düğmesinin bilinçli geri
+    //    dönüşü. Katman DOM'dan silindiği için geri gelmenin tek yolu tam bir
+    //    yeniden yükleme; bu parametre de dönen kullanıcı sinyallerini
+    //    (seen-intro/oturum/PWA) BİLEREK atlayan tek kapıdır. `gec()` geçişte
+    //    URL'yi temizlediğinden bir sonraki açılışta yine uygulamaya düşülür.
+    `if(location.search.indexOf('tanitim=1')>=0)return;` +
+    // 3) Katmanı zaten geçmiş VEYA yarım kalmış yerel oyunu var.
     `if(l.getItem('kelimeki:seen-intro')||l.getItem('kelimeki:game-state'))return g();` +
-    // 3) Supabase oturumu var (giriş yapmış).
+    // 4) Supabase oturumu var (giriş yapmış).
     `for(var i=0;i<l.length;i++){var k=l.key(i);` +
     `if(k&&k.indexOf('sb-')===0&&k.slice(-11)==='-auth-token')return g();}` +
-    // 4) Ana ekrana eklemiş (PWA standalone).
+    // 5) Ana ekrana eklemiş (PWA standalone).
     `if(navigator.standalone===true||matchMedia('(display-mode: standalone)').matches)return g();` +
     `}catch(e){}}())`;
 }

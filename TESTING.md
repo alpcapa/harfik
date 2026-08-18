@@ -987,10 +987,11 @@ gerekiyor).
 
 ## 11. Karşılama katmanı (18 Ağustos 2026)
 
-Otomatik testler (`npm run test`, `tests/smoke.spec.ts`) katmanın dokuz
+Otomatik testler (`npm run test`, `tests/smoke.spec.ts`) katmanın on iki
 yolunu da kapsıyor (kapı dalları + geçiş + öznitelikle bağlama + logo park
-efekti) — burada YALNIZCA bu ortamdan doğrulanamayan ya da gözle
-bakılması gereken maddeler var (bkz. `CLAUDE.md` → "Karşılama Katmanı").
+efekti + ev düğmesiyle geri dönüş + hukuki pencereler + tahta şeridi) —
+burada YALNIZCA bu ortamdan doğrulanamayan ya da gözle bakılması gereken
+maddeler var (bkz. `CLAUDE.md` → "Karşılama Katmanı").
 
 - [ ] **Kurulu PWA doğrudan uygulamaya açılıyor.** `kelimeki.com`u ana
       ekrana ekle, `localStorage`ı TEMİZ bir cihazda (ya da site verisini
@@ -1031,3 +1032,22 @@ bakılması gereken maddeler var (bkz. `CLAUDE.md` → "Karşılama Katmanı").
 
 - [ ] **SSS kutuları açılıp kapanıyor.** Native `<details>` kullanılıyor,
       JS yok; soruya dokununca cevap açılmalı.
+
+- [ ] **Tahta şeridi PARMAKLA kayıyor.** "Oyun tam olarak böyle görünüyor"
+      bölümündeki tahtayı sola çek → 4 kişilik tahta gelmeli, alttaki iki
+      noktadan ikincisi maviye dönmeli; geri çekince ilki. Kaydırma CSS
+      `scroll-snap` ile yapılıyor, yani her görsel TAM ortalanmış durmalı
+      (yarım kalmamalı). Otomatik test `scrollLeft`i JS ile ayarlıyor —
+      gerçek dokunmatik jestin akıcılığını ve snap'i ölçemez.
+
+- [ ] **Kurulum ekranındaki ev düğmesi geri döndürüyor.** "Hemen Oyna" ile
+      uygulamaya geç, sol üstteki gri ev ikonuna dokun → karşılama katmanı
+      geri gelmeli (sayfa yeniden yükleniyor, bu normal). Sonra tekrar
+      "Hemen Oyna"ya bas ve SAYFAYI YENİLE → uygulamada kalmalısın, katman
+      geri GELMEMELİ (`?tanitim=1` URL'den temizleniyor).
+      **Girişli hesapla da dene:** ev ikonu yine solda, sağda avatar menüsü
+      durmalı (GİRİŞ değil).
+
+- [ ] **Katmanın alt satırındaki hukuki bağlantılar.** "Kullanım Koşulları"
+      ve "Gizlilik Politikası" → uygulamaya geçip DOĞRU pencereyi açmalı,
+      pencere kapanınca URL'de `?kosullar=1`/`?gizlilik=1` KALMAMALI.
