@@ -460,9 +460,9 @@ Her birinde gerçekten bekleyen bir iş varken ekranı **kapatıp yeniden aç**.
       dönmeli.
 - [ ] **Dokunmatikte yapışkan hover (11 Ağustos 2026).** Telefon/tablette
       Setup'ın altındaki "Kullanım Koşulları"na dokun, modalı kapat: linkin
-      altında **kalıcı bir çizgi kalmamalı**. Aynısı "Nasıl oynanır?",
-      "Arkadaşınla paylaş" ve menü satırları için de geçerli. Masaüstünde
-      fareyle üzerine gelince alt çizgi HÂLÂ çıkmalı (o davranış korunuyor).
+      altında **kalıcı bir çizgi kalmamalı**. Aynısı "Nasıl oynanır?" ve menü
+      satırları için de geçerli. Masaüstünde fareyle üzerine gelince alt
+      çizgi HÂLÂ çıkmalı (o davranış korunuyor).
 - [ ] **Admin paneli.** Bekleyen geri bildirim/şikayet varsa "Geri Bildirim"
       açık gelmeli (yoksa "Büyüme"). Gelen kutusunda bekleyen yokken yalnızca
       şikayet varsa doğrudan **"Şikayetler"** alt sekmesi açılmalı — aksi
@@ -1074,3 +1074,15 @@ doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
 - [ ] **Katmanın alt satırındaki hukuki bağlantılar.** "Kullanım Koşulları"
       ve "Gizlilik Politikası" → uygulamaya geçip DOĞRU pencereyi açmalı,
       pencere kapanınca URL'de `?kosullar=1`/`?gizlilik=1` KALMAMALI.
+
+- [ ] **Setup'ta tam genişlikte "Paylaş" butonu (18 Ağustos 2026).** Sayfanın
+      en altında, footer'ın (Kullanım Koşulları/Gizlilik/© Kelimeki) hemen
+      üstünde, `Landing.tsx`'in Oyna/Giriş CTA çiftiyle AYNI stilde büyük bir
+      "Paylaş" butonu olmalı — hem GİRİŞSİZ hem GİRİŞLİ hesapta (öncekinin
+      aksine artık iki ayrı küçük metin linki YOK: misafirde logonun
+      altındaki "Nasıl oynanır? · Arkadaşınla paylaş" satırından "Arkadaşınla
+      paylaş" kalktı — yalnızca "Nasıl oynanır?" kaldı; girişlide footer'daki
+      küçük "· Paylaş" metin linki de kalktı). Dokununca native paylaşım
+      sayfası açılmalı (mobil) ya da link panoya kopyalanıp buton metni 2
+      saniyeliğine "Link kopyalandı!" olmalı (masaüstü) — kopyalanan linkte
+      `?ref=arkadas` OLMALI.
