@@ -18,6 +18,7 @@ import { LogoMark } from './LogoMark';
 import { PlayerAvatarRow, type AvatarRowPlayer } from './PlayerAvatarRow';
 import { PlayerBadge } from './PlayerBadge';
 import { RecentGamesSection } from './RecentGamesSection';
+import { ShareIcon } from './RelationIcons';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { OFFLINE_AI_SUGGESTION, OFFLINE_AI_CTA } from '../utils/offlineNotice';
 import { TermsModal } from './TermsModal';
@@ -565,27 +566,42 @@ export function Setup({
             Kelimeki — Ücretsiz Online Türkçe Stratejik Kelime Bulmaca Oyunu
           </span>
         </h1>
-        <p className="text-muted text-xs font-mono mt-4">
-          Kelimeler kurarak bölgeni genişlet, rakiplerini kuşat. Ama dikkat et:
-          Hamlen rakibinin bölgesine temas ederse, kazandığın puanın bir
-          kısmını onunla paylaşmak zorunda kalırsın. Her hamle bir strateji,
-          her kelime bir mücadele.
-        </p>
-        <div className="mt-3 flex items-center gap-2">
-          <button
-            onClick={() => setShowHelp(true)}
-            className="font-mono text-[11px] font-bold text-accent hover:underline active:opacity-70 transition-opacity"
-          >
-            Nasıl oynanır?
-          </button>
-          <span className="text-muted text-[11px]" aria-hidden="true">·</span>
-          <button
-            onClick={handleShare}
-            className="font-mono text-[11px] font-bold text-accent hover:underline active:opacity-70 transition-opacity"
-          >
-            {shareCopied ? 'Link kopyalandı!' : 'Arkadaşınla paylaş'}
-          </button>
-        </div>
+        {/* 17 Ağustos 2026 — bu üç öğe (tanıtım paragrafı, "Nasıl oynanır?",
+            "Arkadaşınla paylaş") yalnızca MİSAFİR (girişsiz) kullanıcıda
+            görünür. Kullanıcı isteği: "girişli ise logo altındaki yazıları
+            olmayan, direkt oyun tipi başlığından itibaren başlayan versiyonu
+            görecek." Girişli kullanıcının erişimi kaybolmuyor — "Nasıl
+            oynanır?" hesap menüsünde ve oyun içi tahta şeridinde duruyor;
+            "Arkadaşınla paylaş" aynı `handleShare`'le (dolayısıyla aynı
+            `?ref=arkadas` metrik etiketiyle) footer'a taşındı (aşağı bkz.).
+            ÖLÇÜLDÜ: bu blok kalkınca logo altı → "OYUN TİPİ" arası kabın
+            kendi `gap-5`'i (20px) kadar kalıyor — telafi amaçlı ekstra bir
+            `mt-*`/`gap` EKLEME. */}
+        {!user && (
+          <>
+            <p className="text-muted text-xs font-mono mt-4">
+              Kelimeler kurarak bölgeni genişlet, rakiplerini kuşat. Ama dikkat et:
+              Hamlen rakibinin bölgesine temas ederse, kazandığın puanın bir
+              kısmını onunla paylaşmak zorunda kalırsın. Her hamle bir strateji,
+              her kelime bir mücadele.
+            </p>
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                onClick={() => setShowHelp(true)}
+                className="font-mono text-[11px] font-bold text-accent hover:underline active:opacity-70 transition-opacity"
+              >
+                Nasıl oynanır?
+              </button>
+              <span className="text-muted text-[11px]" aria-hidden="true">·</span>
+              <button
+                onClick={handleShare}
+                className="font-mono text-[11px] font-bold text-accent hover:underline active:opacity-70 transition-opacity"
+              >
+                {shareCopied ? 'Link kopyalandı!' : 'Arkadaşınla paylaş'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex flex-col gap-2">
@@ -834,7 +850,11 @@ export function Setup({
           kullanıcı için `null` döner), o yüzden bu satırın kaldırılması
           misafir tarafında hiçbir görsel fark yaratmıyor. */}
 
-      <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-muted">
+      {/* `flex-wrap` bir emniyet ağı — 356px'in altındaki viewport'larda
+          (320/344 gibi) üç öğe tek satıra sığmıyor; ÖLÇÜLDÜ, `gap-x-2 gap-y-1`
+          320'de iki satıra sarıp yatay taşmayı 0'da tutuyor, 356+ genişlikte
+          hiçbir şey değişmiyor. */}
+      <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[10px] font-mono text-muted">
         <button onClick={() => setShowTerms(true)} className="hover:underline active:opacity-70 transition-opacity">
           Kullanım Koşulları
         </button>
@@ -842,6 +862,28 @@ export function Setup({
         <button onClick={() => setShowPrivacy(true)} className="hover:underline active:opacity-70 transition-opacity">
           Gizlilik Politikası
         </button>
+        {/* 17 Ağustos 2026 — yalnızca GİRİŞLİ kullanıcıda: üstteki "Arkadaşınla
+            paylaş"ın yeni yeri (misafirde üst blok yerinde kaldığından burada
+            YOK, aksi halde misafir aynı işlevi iki yerde görürdü). Etiket
+            BİLEREK "Paylaş" — "Arkadaşını Davet Et" `FriendsModal.tsx`'te
+            ZATEN başka bir özelliği (kişiye özel `/davet/:token` arkadaşlık
+            daveti, `?ref=` taşımaz) anlatıyor; aynı ismi iki farklı özelliğe
+            vermek karıştırır. `handleShare`'i OLDUĞU GİBİ çağırıyor —
+            kendi başına bir paylaşım yolu YAZMA, aksi halde `?ref=arkadas`
+            (admin panelindeki "Kaynak Hunisi"nin ziyaretçi ucunu besleyen tek
+            üretici) sessizce kaybolur. */}
+        {user && (
+          <>
+            <span>·</span>
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-1 hover:underline active:opacity-70 transition-opacity"
+            >
+              <ShareIcon size={12} />
+              {shareCopied ? 'Link kopyalandı!' : 'Paylaş'}
+            </button>
+          </>
+        )}
       </div>
     </div>
     </>

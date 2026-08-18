@@ -4915,6 +4915,92 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        kullanılmayan-import hatası doğurmuyor, web'de import satırından
        çıkarıldı).
 
+   - ✅ **Parça 110 — Setup girişli/misafir ayrımı + footer'a "Paylaş"
+     (17 Ağustos 2026, `setup_screen.dart`, `setup_screen_test.dart`;
+     web `Setup.tsx` AYNI PR'da):** İsteğin kaynağı bölüm 1 spesifikasyonu —
+     kullanıcının sözleri: *"Girişli kullanıcılarda Kelimeki logosunun
+     altındaki tanıtım yazısı ve linkler kalksın… Bu model birebir app'lerde
+     de çalışacak değil mi? O şekilde istiyorum."* İki değişiklik, ikisi de
+     yalnızca girişli kullanıcıyı ilgilendiriyor — misafirin görünümüne
+     KESİNLİKLE dokunulmadı.
+     - **(1) Logonun altındaki tanıtım paragrafı + "Nasıl oynanır? ·
+       Arkadaşınla paylaş" satırı artık YALNIZCA `auth.user == null`
+       (misafir) iken render ediliyor.** İki `SizedBox(height:20)` vardı:
+       biri logo↔paragraf arasında, biri link satırı↔"OYUN TİPİ" arasında.
+       **İlk denemede İKİSİ de koşulsuz bırakılmıştı** — bu, girişli
+       kullanıcıda 40px'lik bir boşluk üretirdi (web'de tam 20px olması
+       gerekirken). Kendi kendine yakalandı: yalnızca İKİNCİ SizedBox
+       (link satırından sonraki, "OYUN TİPİ"nin hemen üstündeki) koşulsuz
+       bırakıldı — spec'in "portun 20 px'i ZATEN elle yazılmış, silme,
+       yerinde bırak" talimatının işaret ettiği tam olarak bu satır. İlk
+       SizedBox (logo↔paragraf arası) paragraf/link bloğunun İÇİNE, guest
+       şartına taşındı — girişlide artık HİÇBİR telafi marjı olmadan logo
+       doğrudan tek bir 20px'lik boşlukla "OYUN TİPİ"ye bağlanıyor (web'in
+       ölçülen değeriyle birebir: 20.00px, misafirde 152.50/136.50px'lik
+       ölçümler DEĞİŞMEDİ çünkü o dal aynen duruyor).
+     - **(2) Footer'daki hukuki link satırı `Row`dan `Wrap`e çevrildi**
+       (`alignment: WrapAlignment.center, spacing: 8, runSpacing: 4`) —
+       web'in `flex-wrap` güvenlik ağının Flutter karşılığı. Flutter'da bir
+       `Row` taşması `RenderFlex overflowed` (debug'da sarı/siyah çubuk,
+       release'de kırpma) demek — web'in sessizce yatay kaydırdığı bir
+       taşmadan çok daha görünür/yıkıcı bir hata sınıfı, bu yüzden `Wrap`
+       zorunlu bir güvenlik önlemi (yalnızca web'i taklit etmek için değil).
+       Girişli kullanıcı için üçüncü bir madde eklendi: **"Paylaş"** —
+       `Icon(Icons.share, size:12, color:_muted)` + `SizedBox(width:4)` +
+       `Text('Paylaş', fontFamily:'SpaceMono', fontSize:10, color:_muted)`,
+       hukuki linklerle AYNI punto/renk (`_LegalLink` ile görsel dil
+       tutarlı, ama kendisi tıklanabilir bir link stilinde değil — web'in
+       glyph+metin ikilisiyle birebir). Dokununca **mevcut `_handleShare`**
+       ÇAĞIRILIYOR (yeni bir paylaşım fonksiyonu YAZILMADI) — bu, misafirin
+       "Arkadaşınla paylaş" linkiyle BİREBİR AYNI çağrı
+       (`(widget.share ?? shareBoard)(png: null, text: 'Hemen ücretsiz
+       dene!', url: '$webOrigin/?ref=arkadas', origin:
+       shareOriginFrom(context))`), yani admin panelindeki "Kaynak
+       Hunisi"nin dayandığı `?ref=arkadas` UTM parametresi korunuyor.
+     - **Adı BİLEREK "Arkadaşını Davet Et" DEĞİL "Paylaş"** — o isim
+       `FriendsModal`'daki AYRI bir özelliğin (kalıcı davet token'ı,
+       `create_friend_invite_link`) adı; bu buton genel bir site/tahta
+       linkini `?ref=arkadas` ile paylaşıyor, isim çakışması kafa
+       karıştırırdı.
+     - **`webOrigin` sabiti** (env.dart) `https://kelimeki.com` — mevcut
+       "Arkadaşınla paylaş" testinde zaten `sharedUrl` ==
+       `'https://kelimeki.com/?ref=arkadas'` diye doğrulanmıştı, yeni
+       "Paylaş" testi AYNI beklentiyi taşıyor.
+     - **Test — 4 yeni test, negatif eş gerektirmeyen ama davranışı iki
+       yönden (var/yok) sınayan çiftler:** girişlide paragraf/link YOK +
+       logo→"OYUN TİPİ" tam 20px; misafirde paragraf/link HÂLÂ var
+       (mevcut testler zaten bunu sınıyordu, ek bir "misafirde" testi
+       netlik için eklendi); footer'da "Paylaş" misafirde YOK, girişlide
+       VAR ve dokununca `_handleShare`'i doğru parametrelerle çağırıyor.
+       Mevcut GUEST-variant testler (`'"Arkadaşınla paylaş" ?ref=arkadas
+       linkini paylaşır'`, `'tanıtım paragrafı … ORTALI'`, `'Setup başlık
+       bloğu ve hukuki alt satır web ile aynı'`, `'logo altındaki yazı
+       bloğu…'`) HİÇ DEĞİŞTİRİLMEDİ — hepsi `services()` (auth yok, yani
+       `auth.user == null`) kullandığından yeni koşulun `if` dalına
+       girmeye devam ediyorlar.
+     - **`mobile/` DIŞINDA dosya değişti** (`src/components/Setup.tsx`,
+       yeni `src/components/RelationIcons.tsx`'teki `ShareIcon`, kök
+       `CLAUDE.md`) → aynı PR'da, aynı commit'te teslim edildi (Parça
+       Bitirme Kontrol Listesi madde 1) — port dalında mahsur kalma
+       riski yok.
+     - **Web tarafındaki `ShareIcon`** Flutter'ın KENDİ `Icons.share`
+       (U+E593, `share_baseline`) glyph'inden fontTools ile çıkarılıp
+       web'e taşındı — `RelationIcons.tsx`'in kendi belgelediği yöntemle
+       (unitsPerEm 512 → 24'lük viewBox, y ekseni ters) ve render edilip
+       GÖRSEL olarak doğrulandı (bu dosyanın kendi başlığındaki "codepoint
+       hafızadan yazılırsa yanlış glyph çizilir" uyarısı gereği).
+     - **Doğrulama sınırı — bu oturumda Flutter/Dart SDK YOK**
+       (`flutter: command not found`, Parça 103-109'un aynı sınırı):
+       `flutter analyze`/`flutter test` KOŞULAMADI; değişiklikler elle
+       (bracket/paren dengesi + tam diff okuması) doğrulandı, tek gerçek
+       kanıt CI (`mobile-build.yml`). Web yarısı `npm run lint` +
+       `npm run build` + Playwright duman testleriyle (3/3) doğrulandı,
+       ayrıca derlenmiş CSS + Chromium ile GERÇEK ölçüm yapıldı (guest
+       152.50/136.50px değişmedi; girişli 20.00px; footer buton
+       ~52.7×15px, ≈356px'te ikinci satıra sarıyor, negatif eş ile
+       — `flex-wrap` kaldırılınca 320px'te GERÇEKTEN yatay taşma
+       oluştuğu doğrulanıp geri eklendi).
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**

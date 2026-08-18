@@ -619,6 +619,93 @@ void main() {
     expect(trackingOf(find.text('Arkadaşınla paylaş')), 0);
   });
 
+  // 17 Ağustos 2026 — girişli/misafir Setup ekranı ikiye ayrıldı: logonun
+  // altındaki tanıtım paragrafı + "Nasıl oynanır? · Arkadaşınla paylaş"
+  // satırı yalnızca MİSAFİRDE görünüyor; girişli kullanıcı doğrudan "OYUN
+  // TİPİ" başlığını görüyor ve logo→"OYUN TİPİ" arası TAM 20px (web'de
+  // Chromium'da ölçüldü — kapsayıcının kendi `gap-5`i, telafi edici marj
+  // eklenmedi).
+  testWidgets(
+      'girişli kullanıcıda logo altındaki paragraf/link satırı YOK, '
+      'logo→"OYUN TİPİ" arası tam 20px', (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await pumpSetup(
+        tester, services(auth: AuthService.fake(user: fakeUser('me'))));
+
+    expect(find.textContaining('Kelimeler kurarak'), findsNothing);
+    expect(find.text('Nasıl oynanır?'), findsNothing);
+    expect(find.text('Arkadaşınla paylaş'), findsNothing);
+
+    final logo = tester.getRect(find.byType(LogoMark).first);
+    final oyunTipi = tester.getRect(find.text('OYUN TİPİ'));
+    expect(oyunTipi.top - logo.bottom, closeTo(20, 1.5));
+  });
+
+  // Negatif eş: misafirde bu blok KOŞULSUZ gösterilseydi yukarıdaki test de
+  // geçerdi — misafirin görünümü BİREBİR eskisi gibi kalmalı (mevcut
+  // "logo altındaki yazı bloğu"/"tanıtım paragrafı … ORTALI" testleri zaten
+  // bunu doğruluyor, burada yalnızca "OYUN TİPİ" doğrudan logonun altına
+  // sızmadığını ekliyoruz).
+  testWidgets('misafirde logo altındaki paragraf/link satırı HÂLÂ görünür',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await pumpSetup(tester, services());
+
+    expect(find.textContaining('Kelimeler kurarak'), findsOneWidget);
+    expect(find.text('Nasıl oynanır?'), findsOneWidget);
+    expect(find.text('Arkadaşınla paylaş'), findsOneWidget);
+  });
+
+  // Web footer'a üçüncü madde 17 Ağustos 2026'da eklendi: yalnızca GİRİŞLİ
+  // kullanıcı için "Paylaş" — misafirin footer'ı BİREBİR eskisi gibi (iki
+  // madde) kalmalı.
+  testWidgets('footer: "Paylaş" yalnızca GİRİŞLİ kullanıcıda, misafirde YOK',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 950));
+    await pumpSetup(tester, services());
+
+    await tester.scrollUntilVisible(find.text('Kullanım Koşulları'), 200,
+        scrollable: find.byType(Scrollable).first);
+    expect(find.text('Kullanım Koşulları'), findsOneWidget);
+    expect(find.text('Gizlilik Politikası'), findsOneWidget);
+    expect(find.text('Paylaş'), findsNothing);
+  });
+
+  testWidgets(
+      'footer: girişli kullanıcıda "Paylaş" görünür ve mevcut handleShare\'i '
+      '(?ref=arkadas) ÇAĞIRIR — yeni bir paylaşım yolu yazılmadı',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 950));
+    String? sharedText;
+    String? sharedUrl;
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: SetupScreen(
+        services: services(auth: AuthService.fake(user: fakeUser('me'))),
+        share: ({
+          required png,
+          required text,
+          required url,
+          required origin,
+        }) async {
+          sharedText = text;
+          sharedUrl = url;
+        },
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(find.text('Kullanım Koşulları'), 200,
+        scrollable: find.byType(Scrollable).first);
+    expect(find.text('Paylaş'), findsOneWidget);
+
+    await tester.tap(find.text('Paylaş'));
+    await tester.pump();
+
+    expect(sharedText, 'Hemen ücretsiz dene!');
+    expect(sharedUrl, 'https://kelimeki.com/?ref=arkadas');
+  });
+
   testWidgets(
       'teşhis satırı DERLEME kimliğini gösterir (bayat derlemeyi ekran '
       'görüntüsünden ayırt edebilmek için)', (tester) async {
