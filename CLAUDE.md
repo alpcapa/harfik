@@ -508,6 +508,27 @@ oluşuyor. İki tasarım kararı kayda değer:
   0) ve `compact` modda puanlar hiç gösterilmiyor — denendi, ekran
   görüntüsünde normal taştan ayırt edilemedi, yani hiçbir şey anlatmıyordu.
 
+**"Neler var" altı kutusunun ikonları (`src/landing/OzellikIkonlari.tsx`,
+18 Ağustos 2026, kullanıcı isteği: "6 kutuya uygun ikonlar koyalım. Başlığın
+hemen yanına minik, yazı kadar."):** Başlığın SOLUNDA, 13px (başlık
+`text-[12px]`, yani "yazı kadar"), `text-accent`. Hizalama `items-start` +
+1px nudge — `items-center` DEĞİL: 390px'te kart iç genişliği ~151px ve altı
+başlıktan beşi iki satıra sarıyor, ortalanan ikon o iki satırın arasına
+düşüp ilk satırla bağını koparıyordu.
+
+**İkonlar `RelationIcons.tsx`'e EKLENMEDİ ve bu bilinçli.** Oradaki kural
+("path'i kopyalama, buraya ekle") Material glyph'lerinin Flutter portuyla
+BİREBİR aynı vektör olmasından doğuyor; bu altı ikonun portta karşılığı yok
+ve olmayacak (karşılama katmanı web'e özgü). Material path'lerini hafızadan
+yazmak ise bu kod tabanında bir kez denenip yanlış glyph üretmişti ve bu
+ortamda çıkarılacak bir `MaterialIcons-Regular.otf` yok — o yüzden ikonlar
+ilkel şekillerden (daire/dikdörtgen/çizgi/yay) kurulup gerçek Chromium
+render'ıyla gözle denetlendi (390 ve 834 px, DPR 3). **Ölçüldü:** SVG kutusu
+iki genişlikte de 13×13, başlıkla arası 6px, yatay taşma 0; wifi-off ikonu
+ilk turda okunmaz çıktı (yaylar parçalıydı), tek merkezli iki temiz yaya
+çevrildi. Maliyet ham +2.7 KB / gzip +0.42 KB (yukarıdaki bütçe satırı buna
+göre güncellendi).
+
 **Logo sprite'ı (`src/landing/LandingLogo.tsx`) — ÖLÇÜLMÜŞ bir zorunluluk:**
 `LogoMark` her çağrıda 11.760 baytlık path verisini yazıyor ve logo sayfada üç
 yerde geçiyor; gzip kopyaları BİRLEŞTİREMİYOR (aralarındaki mesafe deflate'in
@@ -518,11 +539,13 @@ TEK KAYNAKTA (`LogoMark.tsx`in dışa açtığı sabitler; o dosya
 `generate-logo-paths.mjs` tarafından üretiliyor) — uygulama tarafı bu sprite'ı
 KULLANMAZ, orada logo tek kez çiziliyor.
 
-**Sayfa bütçesi (ölçüldü, 18 Ağustos 2026 — filigranlar açıldıktan ve tahta
-kendi genişliğine taşındıktan SONRAKİ nihai değer):** `dist/index.html` ham
-**252.3 KB** / **gzip 21.73 KB** (tek tahtalı ilk sürüm 130.8 KB / 15.84 KB
-idi; ikinci tahta ~3.2 KB, iki tahtanın dolulaşması + izole hamleler ~0.6 KB,
-filigran/puan üst simgesi ~0.6 KB gzip ekledi). **Bu rakam ölçülürken
+**Sayfa bütçesi (ölçüldü, 18 Ağustos 2026 — özellik ikonları eklendikten
+SONRAKİ nihai değer):** `dist/index.html` ham **255.0 KB** / **gzip
+22.15 KB** (tek tahtalı ilk sürüm 130.8 KB / 15.84 KB idi; ikinci tahta
+~3.2 KB, iki tahtanın dolulaşması + izole hamleler ~0.6 KB, filigran/puan üst
+simgesi ~0.6 KB, altı özellik ikonu 0.42 KB gzip ekledi — sonuncusu
+öncesi/sonrası iki ayrı derlemeyle ölçüldü: 252.264/21.730 → 254.958/22.147
+bayt). **Bu rakam ölçülürken
 `dist`i `http://` üzerinden aç** — `file://` mutlak asset yollarını
 çözemediğinden ölçüm sessizce yanlış çıkar.
 Bölüm 2'nin "< 15 KB" notu yer tutucu içeriğe göre yazılmıştı; gerçek içerikle
@@ -681,8 +704,8 @@ doğrulandı.
 
 | | değer |
 |---|---|
-| `dist/index.html` ham | **252.3 KB** (bunun ezici çoğunluğu `#karsilama` bloğu) |
-| gzip | **21.73 KB** |
+| `dist/index.html` ham | **255.0 KB** (bunun ezici çoğunluğu `#karsilama` bloğu) |
+| gzip | **22.15 KB** |
 | Bölüm 2'nin ilk hedefi | `< 15 KB` gzip (yer tutucu içeriğe göre yazılmıştı) |
 | İki tam tahtanın (Bölüm 3'te eklenen) gzip payı | ~6.9 KB |
 
@@ -704,7 +727,7 @@ sonra iki, sonra oyun ortası + sınır ihlali, sonra izole hamleler) —
 durumda ve cevap "ikisi de kalsın, zenginleşsin" oldu. 70 ms'lik tek seferlik
 bir maliyeti bu açık kararın üstüne çıkarmak yanlış önceliklendirme olurdu.
 **Hedef artık `< 15 KB` DEĞİL** — bu doküman bir daha "hedefi tuttur" diye
-tahta silmeye kalkışmasın diye rakam güncellendi: gerçekleşen **~21.7 KB
+tahta silmeye kalkışmasın diye rakam güncellendi: gerçekleşen **~22.1 KB
 gzip**, takas hâlâ açıkça lehte (21.7 KB HTML ↔ 410 KB tam uygulama JS'i).
 (Bu satır bir dönem 19.3 KB diyordu; filigranların açılması ve tahtanın
 kendi genişliğine taşınması rakamı yukarı çekti — ikisi de kullanıcının
@@ -904,6 +927,7 @@ src/
   landing/      # karşılama katmanı — derleme zamanında statik HTML (bkz. "Karşılama Katmanı")
     Landing.tsx     # sayfanın tamamı; SUNUCUDA render edilir (hook/olay/tarayıcı globali YOK)
     LandingLogo.tsx # logoyu üç kez çizmek için SVG sprite (path verisi LogoMark'tan)
+    OzellikIkonlari.tsx # "Neler var" altı özellik ikonu (Material DEĞİL — ilkel şekiller, portta karşılığı yok)
     demoBoard.ts    # tanıtım tahtasının taşları — `npm run verify-demo-board` ile doğrulanır
     render.tsx      # `renderToStaticMarkup` sarmalayıcısı (Node'da koşar)
   components/   # React UI bileşenleri

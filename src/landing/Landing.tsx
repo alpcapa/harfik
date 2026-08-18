@@ -32,6 +32,14 @@ import { ShareIcon } from '../components/RelationIcons';
 import { RANK_TIERS } from '../utils/leagueRank';
 import { PLAYER_COLORS } from '../game/constants';
 import { DEMO_TILES_2, DEMO_TILES_4 } from './demoBoard';
+import {
+  CevrimdisiIkon,
+  IkiKisiIkon,
+  MadalyaIkon,
+  RobotIkon,
+  SohbetIkon,
+  TahtaIkon,
+} from './OzellikIkonlari';
 
 // `UserMenu.tsx:33-35`'ten BİREBİR kopyalandı — kodu import etmiyoruz
 // (bu katman `UserMenu`'yü, dolayısıyla Supabase SDK'sını yüklememeli),
@@ -245,11 +253,31 @@ function Adim({
   );
 }
 
-function Ozellik({ baslik, metin }: { baslik: string; metin: string }) {
+/**
+ * `ikon` başlığın HEMEN SOLUNDA, başlık puntosu kadar (13px) duruyor —
+ * kullanıcı isteği (18 Ağustos 2026): "Başlığın hemen yanına minik, yazı
+ * kadar." Hizalama `items-start` + 1px'lik bir nudge: başlık dar kartlarda
+ * (390px'te iç genişlik ~151px) neredeyse her zaman iki satıra sarıyor,
+ * `items-center` ikonu o iki satırın ortasına düşürüp ilk satırla ilişkisini
+ * koparıyordu.
+ */
+function Ozellik({
+  baslik,
+  metin,
+  ikon,
+}: {
+  baslik: string;
+  metin: string;
+  ikon: React.ReactNode;
+}) {
   return (
     <li className="bg-panel border border-border rounded-xl p-3 shadow-raised flex flex-col gap-1">
-      <h3 className="text-[12px] font-bold leading-tight" style={{ margin: 0 }}>
-        {baslik}
+      <h3
+        className="text-[12px] font-bold leading-tight flex items-start gap-1.5"
+        style={{ margin: 0 }}
+      >
+        <span className="shrink-0 mt-[1px] text-accent">{ikon}</span>
+        <span className="min-w-0">{baslik}</span>
       </h3>
       <p className="text-[11px] leading-relaxed text-muted" style={{ margin: 0 }}>
         {metin}
@@ -571,26 +599,32 @@ export function Landing() {
             <Bolum ustBaslik="Neler var" baslik="Kelimeki'de neler yapabilirsin?">
               <ul className="grid grid-cols-2 gap-2 list-none p-0 m-0">
                 <Ozellik
+                  ikon={<RobotIkon />}
                   baslik="Yapay zekaya karşı oyna"
                   metin="Kurabildiği en yüksek puanlı kelimeyi arayan amansız bir rakip. İster 1 rakip, ister 3 rakibe karşı oyna."
                 />
                 <Ozellik
+                  ikon={<IkiKisiIkon />}
                   baslik="Arkadaşınla canlı oyna"
                   metin="Oyun daveti gönder, ister canlı, ister 48 saat içinde hamle yaparak rahatça oyna."
                 />
                 <Ozellik
+                  ikon={<SohbetIkon />}
                   baslik="Oyun içi sohbet"
                   metin="Canlı oyunlarda masadan ayrılmadan yazışın; rahatsız eden olursa sessize al ya da bildir."
                 />
                 <Ozellik
+                  ikon={<CevrimdisiIkon />}
                   baslik="Çevrimdışı da oynar"
                   metin="Yapay zekaya karşı internet bağlantısı olmadan da oynayabilirsin."
                 />
                 <Ozellik
+                  ikon={<TahtaIkon />}
                   baslik="Kelime denemesi"
                   metin="Sıra sendeyken veya rakipteyken tahtada kelime denemeleri yapabilirsin."
                 />
                 <Ozellik
+                  ikon={<MadalyaIkon />}
                   baslik="k-lig ve rütbeler"
                   metin="Kazandıkça puan toplarsın; eşikleri geçtikçe rütbeni yükseltir, puanları toplarsın."
                 />
