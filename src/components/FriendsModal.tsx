@@ -25,6 +25,8 @@ import type { FriendRow, FriendSearchResult, IncomingFriendRequest } from '../li
 import { PersonAddIcon, PersonRemoveIcon, HourglassIcon, HowToRegIcon } from './RelationIcons';
 import { FriendModerationModal, type FriendModerationTarget } from './FriendModerationModal';
 import { trCompare } from '../utils/turkish';
+import { RankSeal } from './RankSeal';
+import { useRankScores } from '../hooks/useRankScores';
 
 /** Bir arkadaşı `PlayerScoreCard` açabilecek şekle çevirir — henüz canlı oyun
  * olmadığından arkadaş eklemenin somut faydası şu an bu: kişinin skor
@@ -166,7 +168,7 @@ const ALL_USERS_PAGE_SIZE = 20;
 
 const rowCls = 'flex items-center gap-2.5 bg-bg rounded-md px-2.5 py-2';
 const listCls = 'flex flex-col gap-1.5';
-const nameCls = 'flex-1 min-w-0 text-sm text-text font-bold truncate';
+const nameCls = 'min-w-0 text-sm text-text font-bold truncate';
 const smallBtn =
   'shrink-0 btn-raised rounded-md py-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.5px] active:scale-[0.97] transition-transform disabled:opacity-50';
 
@@ -211,6 +213,15 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
   const [allUsers, setAllUsers] = useState<FriendSearchResult[] | null>(null);
   const [allUsersHasMore, setAllUsersHasMore] = useState(true);
   const [allUsersLoadingMore, setAllUsersLoadingMore] = useState(false);
+  // Üç sekmedeki TÜM isimlerin rütbe mührü için tek toplu çekim
+  // (`personButton` hepsini bu tek yardımcıdan okuyor). Liste büyüdükçe
+  // (sonsuz kaydırma) anahtar değişip eksikler ekleniyor.
+  const rankTierOf = useRankScores([
+    ...(friends ?? []).map((f) => f.friend_id),
+    ...(requests ?? []).map((r) => r.requester_id),
+    ...results.map((u) => u.id),
+    ...(allUsers ?? []).map((u) => u.id),
+  ]);
   const allUsersScrollRef = useRef<HTMLDivElement | null>(null);
   const allUsersSentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -503,16 +514,25 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
    * tam da orada gerekiyor. Kart kapanınca ilişki yeniden okunuyor: kullanıcı
    * kartın İÇİNDEN arkadaş ekleyip çıkabildiğinden (`PlayerScoreCard`'ın
    * kendi simgesi) arkadaki satırın ikonu yoksa bayat kalırdı. */
-  const personButton = (id: string, name: string, avatarUrl: string | null) => (
-    <button
-      type="button"
-      onClick={() => setSelectedFriend(toPlayerSummary(id, name, avatarUrl))}
-      className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:opacity-70 transition-opacity"
-    >
-      <Avatar url={avatarUrl} name={name} size={32} />
-      <span className={nameCls}>{name}</span>
-    </button>
-  );
+  const personButton = (id: string, name: string, avatarUrl: string | null) => {
+    const tier = rankTierOf(id);
+    return (
+      <button
+        type="button"
+        onClick={() => setSelectedFriend(toPlayerSummary(id, name, avatarUrl))}
+        className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:opacity-70 transition-opacity"
+      >
+        <Avatar url={avatarUrl} name={name} size={32} />
+        <span className="flex-1 min-w-0 flex items-center gap-1.5">
+          <span className={nameCls}>{name}</span>
+          {/* Rütbe mührü — üç sekme de bu tek yardımcıyı kullandığından
+              (Arkadaşlarım / İstekler / Ara & Ekle) tek yerde eklemek
+              üçünü birden kapsıyor. */}
+          {tier && <RankSeal tier={tier} size={18} className="shrink-0" />}
+        </span>
+      </button>
+    );
+  };
 
   const closeSelectedFriend = () => {
     const id = selectedFriend?.id;

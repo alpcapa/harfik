@@ -43,6 +43,9 @@ import '../../game/game_controller.dart';
 import '../../game/local_game_repo.dart';
 import '../../storage/local_save_store.dart' show abandonTimeout;
 import '../../util/share_board.dart';
+import '../rank/league_rank.dart';
+import '../rank/rank_scores.dart';
+import '../rank/rank_seal.dart';
 import '../game/count_badge.dart';
 import '../game/game_screen.dart';
 import '../game/help_modal.dart';
@@ -182,9 +185,16 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   bool _cloudSavesFailed = false;
   String? _previewedInviteToken;
 
+  /// Hesap sahibinin rütbe mührü için k-lig puanı (18 Ağustos 2026).
+  /// `leaderboard` view'ından toplu okunur — ödül puanı DAHİL; 17
+  /// Ağustos'ta kaldırılan parantezli `player_stats` toplamıyla
+  /// KARIŞTIRMA (o, ödülleri saymadığı için gerçek puandan kopmuştu).
+  late final RankScores _rankScores;
+
   @override
   void initState() {
     super.initState();
+    _rankScores = RankScores(widget.services.stats)..addListener(_onRankScores);
     _lastUserId = widget.services.auth.user?.id;
     _lastAuthUserIdForLiveViewReset =
         _lastUserId; // React'in mount-anı effect'i
@@ -409,7 +419,13 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     _liveBadgeDebounce?.cancel();
     _cloudSyncDebounce?.cancel();
     _unsubscribeLiveBadge?.call();
+    _rankScores.removeListener(_onRankScores);
+    _rankScores.dispose();
     super.dispose();
+  }
+
+  void _onRankScores() {
+    if (mounted) setState(() {});
   }
 
   void _onAuthEvent() {
@@ -781,6 +797,10 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final auth = widget.services.auth;
+    // Rütbe mührü için puan iste — `ensure` yalnızca EKSİK id'ler için ağa
+    // gider ve `notifyListeners`ı bir sonraki microtask'a erteler, bu
+    // yüzden build içinden çağrılması güvenli.
+    _rankScores.ensure([auth.user?.id]);
     // k-lig kutlama banner'ı — Setup'ta bastırma YOK (girişte / geçmişe
     // dönük backfill'de bekleyen ödüller burada çıkar). Oyun ekranları bu
     // ekranın ÜZERİNE push edildiğinden ve host'lar yığının en üstekini
@@ -1397,6 +1417,8 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
             accountName: widget.services.auth.accountName,
             accountAvatarUrl: widget.services.auth.profile?.avatarUrl,
             accountPending: widget.services.auth.accountPending,
+            accountRankTier:
+                _rankScores.tierOf(widget.services.auth.user?.id),
           ),
         ],
         const SizedBox(height: 20),
@@ -1573,11 +1595,16 @@ class _PlayerRow extends StatelessWidget {
   final String? accountAvatarUrl;
   final bool accountPending;
 
+  /// Hesap sahibinin rütbesi — puan henüz bilinmiyorsa null (mühür
+  /// çizilmez). "0 puan" ile "henüz yüklenmedi" AYRI şeyler.
+  final RankTier? accountRankTier;
+
   const _PlayerRow({
     required this.index,
     this.accountName,
     this.accountAvatarUrl,
     this.accountPending = false,
+    this.accountRankTier,
   });
 
   @override
@@ -1612,14 +1639,24 @@ class _PlayerRow extends StatelessWidget {
             PlayerBadge(index: index),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              name,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: isPending ? _muted : _text,
-              ),
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    name,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: isPending ? _muted : _text,
+                    ),
+                  ),
+                ),
+                if (isAccount && accountRankTier != null) ...[
+                  const SizedBox(width: 6),
+                  RankSeal(tier: accountRankTier!, size: 18),
+                ],
+              ],
             ),
           ),
           Text(

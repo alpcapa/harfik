@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/ui/theme.dart';
+import 'package:kelimeki/src/ui/rank/rank_seal.dart';
 import 'package:kelimeki/src/data/friends_api.dart';
 import 'package:kelimeki/src/data/stats_api.dart';
 import 'package:kelimeki/src/ui/auth/account_button.dart';
@@ -39,6 +40,10 @@ class _FakeStatsGateway implements StatsGateway {
   @override
   Future<Map<String, Object?>?> myLeaderboardRank(String userId) async =>
       {'rank': 3, 'total_score': 47};
+
+  @override
+  Future<List<Map<String, Object?>>> rankScores(List<String> userIds) async =>
+      [for (final id in userIds) {'user_id': id, 'total_score': 47}];
 }
 
 class _FakeFriendsGateway implements FriendsGateway {
@@ -308,5 +313,24 @@ void main() {
       matching: find.byType(InkWell),
     ));
     expect(ink.borderRadius, BorderRadius.circular(size.width / 2));
+  });
+  testWidgets(
+      'hesap menüsünde ismin YANINDA rütbe mührü var (18 Ağustos 2026) — '
+      '18px, k-lig satırındaki 34px başlık mührüyle KARIŞTIRMA',
+      (tester) async {
+    final stats = StatsRepo(_FakeStatsGateway());
+    await pumpMenu(tester, stats: stats);
+
+    // Sahte uç 47 puan döndürüyor → Çaylak. Puan ZATEN `myRank`ta olduğundan
+    // ekstra bir sorgu yok; mühür ismin hemen sağında.
+    final seals = tester.widgetList<RankSeal>(find.byType(RankSeal)).toList();
+    expect(seals, isNotEmpty, reason: 'isim yanında mühür çizilmemiş');
+    expect(seals.first.size, 18,
+        reason: 'boy satırın 14px puntosuna göre ölçüldü (web ile aynı)');
+
+    // Mühür ismin SAĞINDA olmalı, solunda değil.
+    final nameX = tester.getTopRight(find.text('Ironman')).dx;
+    final sealX = tester.getTopLeft(find.byType(RankSeal).first).dx;
+    expect(sealX, greaterThanOrEqualTo(nameX));
   });
 }

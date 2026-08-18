@@ -79,6 +79,10 @@ class FakeStatsGatewayForRank implements StatsGateway {
 
   @override
   Future<Map<String, Object?>?> myLeaderboardRank(String userId) async => rank;
+
+  @override
+  Future<List<Map<String, Object?>>> rankScores(List<String> userIds) async =>
+      const [];
 }
 
 User fakeUser([String id = 'u-me']) => User(

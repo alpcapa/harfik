@@ -918,6 +918,21 @@ gerekiyor).
       KADAR
       tekrar açılabilmeli (kutlamanın aksine "bir kez göster" kuralı yok).
       Başkasının kartında da (PlayerScoreCard) aynı mühür/popup çalışmalı.
+- [ ] **Mühür artık İSİMLERİN yanında da — yedi yüzey (18 Ağustos 2026).**
+      Hepsinde ismin SAĞINDA, isimle aynı dikey merkezde ve satırın
+      puntosuna göre boyutlanmış olmalı: hesap (avatar) menüsünün başlığı
+      (18px) · Skor Kartı'ndaki kendi ismin (20px) · başka bir oyuncunun
+      kartı (20px) · Setup'ta 1. koltuktaki hesap adı (18px) · Arkadaşlar
+      penceresinin ÜÇ sekmesi de (18px — "Arkadaşlarım", "İstekler",
+      "Ara & Ekle") · "+ Yeni Canlı Oyun"daki arkadaş seçici (18px) · Oyun
+      davetleri kartındaki katılımcı isimleri (16px). **Skor kartlarında
+      artık İKİ mühür var** — başlıktaki 34px'lik tıklanabilir mühür VE
+      ismin yanındaki 20px'lik; ikisi AYNI kademeyi göstermeli.
+- [ ] **"Puan bilinmiyor" ile "0 puan" AYRI.** Hiç oyun bitirmemiş bir
+      kullanıcının yanında **Çaylak (Ç)** mührü çıkmalı (o gerçekten 0
+      puan — `leaderboard` view'ında satırı YOK, 0 sayılıyor). Ama liste
+      ilk açılırken, puanlar gelmeden bir an için HERKESİN yanında Çaylak
+      mührü BELİRMEMELİ. YZ koltuklarında ve misafirde mühür HİÇ olmamalı.
 - [ ] **✕ var, "KAPAT"/"DEVAM" butonu YOK — popup'ta DA banner'da DA.**
       (12 Ağustos 2026, kullanıcı isteği; önce yalnızca popup'a
       uygulanmıştı, aynı gün kutlama/düşüş banner'ına da genişletildi.)

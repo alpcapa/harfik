@@ -434,6 +434,8 @@ mobile/
       ui/score/              # skor kartı, k-lig, oyuncu kartı, oyun geçmişi,
                              # score_box_row (paylaşılan görselin üst şeridi)
       ui/rank/               # k-lig rütbe/ödül katmanı (Parça 61-62):
+                             # rank_scores (isim yanındaki mührün puan
+                             # kaynağı — leaderboard view'ı, toplu),
                              # league_rank (9 kademelik eşik/ödül tablosu —
                              # SQL ve leagueRank.ts ile ELLE senkron, ÜÇ
                              # kopya!), rank_seal (roset CustomPainter),
@@ -5244,6 +5246,53 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Cihazda doğrulanacak:** mühürdeki harfin TOFU olmadığı ve iki
        platformda AYNI göründüğü (özellikle Ç/Ş sedillası ve banner'ın
        `+1000` glyph'i) — `mobile/TESTING.md` bölüm 13.
+
+   - ✅ **Parça 115 — rütbe mührü İSİMLERİN yanına da geldi: yedi yüzey, tek
+     toplu sorgu (18 Ağustos 2026, yeni `ui/rank/rank_scores.dart`,
+     `data/stats_api.dart`, `account_button.dart`, `score_card_modal.dart`,
+     `player_score_card_modal.dart`, `setup_screen.dart`, `friends_modal.dart`,
+     `live_game_create_form.dart`, `live_games_tab.dart` + web yarısı AYNI
+     PR'da):** Kullanıcı isteği (tam metni kök `CLAUDE.md` → "Rütbe mührü
+     artık İSİMLERİN yanında da").
+     - **Migration GEREKMEDİ:** `leaderboard` view'ı `user_id`+`total_score`
+       veriyor ve `security_invoker = false` ile kilitli RLS'i bypass
+       ediyor; yeni `StatsGateway.rankScores(userIds)` tek `in` sorgusuyla
+       toplu okuyor. **`player_stats`in mod bazlı toplamıyla KARIŞTIRMA** —
+       o ödülleri saymadığı için 17 Ağustos'ta Setup'tan kaldırılmıştı;
+       `leaderboard.total_score` ödül DAHİL, yani mühür hesap menüsündeki
+       k-lig satırıyla ayrışamaz.
+     - **`RankScores` (ChangeNotifier), Riverpod/Bloc yok** (karar #5):
+       `tierOf(id)` puan bilinmiyorsa `null` döner (mühür HİÇ çizilmez —
+       "0 puan" ile "henüz yüklenmedi" AYRI şeyler), `ensure(ids)` yalnızca
+       EKSİK id'ler için ağa gider ve `notifyListeners`ı bir sonraki
+       microtask'a erteler; bu yüzden `build` içinden çağrılabilir
+       ("setState during build" hatası doğmaz).
+     - **Boylar satırın PUNTOSUNA bağlı ve web tarafında ÖLÇÜLDÜ** (derlenmiş
+       CSS + Chromium): 12px isim → **16**, 14px → **18**, 16px → **20**.
+       Üç sayı da iki platformda ELLE senkron — biri değişirse öteki de.
+     - **Başlıktaki 34px'lik mühür KALDI** (o tıklanabilir, `RankInfoModal`'ı
+       açar). Bu yüzden `score_card_test.dart`'ın mevcut geometri testi
+       artık `find.byType(RankSeal).first` yerine **BOYA göre** seçiyor —
+       kartta iki mühür var, sıraya güvenmek kırılgan.
+     - **`_PendingGameCard` StatelessWidget olduğundan lookup FONKSİYON
+         olarak geçiliyor** (`tierOf`), web'de aynı yerde context kullanıldı
+       (orada satır bileşeni dört seviye aşağıda). Üç çağrı yerinin ÜÇÜ de
+       geçmek zorunda — biri atlanırsa mühür yalnızca bir kovada çıkar.
+     - **Testler:** hesap menüsü (18px + ismin sağında), `FriendsModal`
+       ("Arkadaşlarım" satırı), `ScoreCard` (20px isim mührü + 34px başlık
+       mührünün DURDUĞU). Beş sahte `StatsGateway` de yeni metodu uygulamak
+       zorunda kaldı; `score_card_test`inki gerçek ucun INNER JOIN'ini
+       taklit ediyor (`rows`ta olmayan id sonuçta YOK — Parça 46'nın dersi).
+     - **Doğrulama sınırı — DÜRÜST KAYIT:** bu oturumun konteynerinde
+       Flutter/Dart SDK YOK (`which flutter dart` → boş), yani
+       `flutter analyze`/`flutter test` KOŞULAMADI ve **negatif eş
+       kurulamadı** — Dart yarısının tek kanıtı CI (Parça 103-114'ün aynı
+       sınırı). Web yarısı tam doğrulandı: `npm run lint`, `npm run build`,
+       Playwright **18/18**, ve gerçek Chromium ölçümü (kutular
+       16.00/18.00/20.00, boşluk 6.00, dikey merkezler isimle aynı, yatay
+       taşma 0; dokuz kademe harfi de tofu'suz).
+     - **Cihazda doğrulanacak:** yedi yüzeyde mühürün göründüğü ve doğru
+       kademeyi çizdiği — `mobile/TESTING.md` bölüm 13'e madde eklendi.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 

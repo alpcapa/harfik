@@ -1502,6 +1502,22 @@ listesi kök `TESTING.md` bölüm 10.
       Skor Kartı ve başka bir oyuncunun kartı (34px, başlık ile ✕ ARASINDA
       ortalı, yazısız). Üçü de GÜNCEL toplam puandan türetildiğinden aynı
       kademeyi göstermeli.
+- [ ] **Mühür artık İSİMLERİN yanında da — yedi yüzey (18 Ağustos 2026,
+      Parça 115).** Hepsinde ismin SAĞINDA, isimle aynı dikey merkezde ve
+      satırın puntosuna göre boyutlanmış olmalı: hesap menüsünün başlığı
+      (18px) · Skor Kartı'ndaki kendi ismin (20px) · başka bir oyuncunun
+      kartı (20px) · Setup'ta 1. koltuktaki hesap adı (18px) · Arkadaşlar
+      modalının ÜÇ sekmesi de (18px — "Arkadaşlarım", "İstekler",
+      "Ara & Ekle") · "+ Yeni Canlı Oyun" arkadaş seçici (18px) · Oyun
+      davetleri kartındaki katılımcı isimleri (16px). **Skor kartlarında
+      artık İKİ mühür var** — başlıktaki 34px'lik tıklanabilir mühür VE
+      ismin yanındaki 20px'lik; ikisi AYNI kademeyi göstermeli.
+- [ ] **"Puan bilinmiyor" ile "0 puan" AYRI (aynı parça).** Hiç oyun
+      bitirmemiş bir kullanıcının yanında **Çaylak (Ç)** mührü çıkmalı
+      (o gerçekten 0 puan). Ama liste ilk açılırken, puanlar gelmeden bir
+      an için HERKESİN yanında Çaylak mührü BELİRMEMELİ — mühür yalnızca
+      puan bilindikten sonra çizilir. YZ koltuklarında ve misafirde mühür
+      HİÇ olmamalı.
 - [ ] **Rozet: dalgalı disk + iki kurdele kuyruğu (18 Ağustos 2026 — eski
       tırtıklı/noter mührü TAMAMEN bırakıldı).** Her boyda AYNI siluet:
       dolu, dalgalı kenarlı bir disk + altında V kesikli iki kurdele;

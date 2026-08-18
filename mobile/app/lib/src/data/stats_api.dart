@@ -178,6 +178,10 @@ abstract class StatsGateway {
   Future<List<Map<String, Object?>>> leaderboard(int limit, int offset);
 
   Future<Map<String, Object?>?> myLeaderboardRank(String userId);
+
+  /// Verilen kullanıcıların k-lig toplam puanları (`leaderboard` view'ından
+  /// `user_id,total_score`) — isimlerin yanındaki rütbe mührü için.
+  Future<List<Map<String, Object?>>> rankScores(List<String> userIds);
 }
 
 class SupabaseStatsGateway implements StatsGateway {
@@ -218,6 +222,15 @@ class SupabaseStatsGateway implements StatsGateway {
     final row = data is List && data.isNotEmpty ? data.first : data;
     return row is Map ? row.cast<String, Object?>() : null;
   }
+
+  @override
+  Future<List<Map<String, Object?>>> rankScores(List<String> userIds) async {
+    final rows = await client
+        .from('leaderboard')
+        .select('user_id,total_score')
+        .inFilter('user_id', userIds);
+    return [for (final r in rows) (r as Map).cast<String, Object?>()];
+  }
 }
 
 class StatsRepo {
@@ -244,6 +257,32 @@ class StatsRepo {
     } catch (e) {
       debugPrint('[Kelimeki] leaderboard hatası: $e');
       return const [];
+    }
+  }
+
+  /// Web `fetchRankScores` portu — isimlerin yanındaki rütbe mührü için
+  /// TOPLU puan çekimi (satır başına istek YOK).
+  ///
+  /// **Yeni bir migration gerekmedi:** `leaderboard` view'ı zaten girişli
+  /// herkese açık ve `total_score` ödül puanlarını da içeriyor, yani mühür
+  /// Skor Kartı'ndaki k-lig puanıyla AYNI sayıdan türüyor.
+  ///
+  /// View `games`e INNER JOIN yaptığından hiç oyun bitirmemiş kullanıcı
+  /// sonuçta YOKTUR — çağıran eksik id'yi 0 (Çaylak) saymalı. Hata durumunda
+  /// `null` döner ("bilinmiyor"): mühür o zaman HİÇ çizilmemeli, aksi halde
+  /// liste bir an herkesi Çaylak gösterir.
+  Future<Map<String, int>?> rankScores(List<String> userIds) async {
+    final ids = userIds.where((id) => id.isNotEmpty).toSet().toList();
+    if (ids.isEmpty) return const {};
+    try {
+      final rows = await gateway.rankScores(ids);
+      return {
+        for (final r in rows)
+          (r['user_id'] as String): ((r['total_score'] as num?) ?? 0).toInt(),
+      };
+    } catch (e) {
+      debugPrint('[Kelimeki] rankScores hatası: $e');
+      return null;
     }
   }
 

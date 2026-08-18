@@ -21,6 +21,8 @@ import { Leaderboard } from './Leaderboard';
 import { AdminDashboard } from './AdminDashboard';
 import { KLigMark } from './KLigMark';
 import { FriendsModal } from './FriendsModal';
+import { RankSeal } from './RankSeal';
+import { tierFor } from '../utils/leagueRank';
 
 type ActiveModal = 'auth' | 'account' | 'score' | 'help' | 'league' | 'admin' | 'friends' | null;
 
@@ -214,7 +216,16 @@ export function UserMenu() {
             <div className="flex items-center gap-2.5 px-3 py-3 border-b border-border">
               <Avatar url={profile?.avatar_url} name={name} size={36} />
               <div className="min-w-0">
-                <div className="text-sm font-bold text-text truncate">{name}</div>
+                {/* Rütbe mührü — k-lig satırındaki `myRank.total_score`in
+                    ta kendisinden türetiliyor, ek bir sorgu YOK. Bu boyda
+                    `RankSeal` kompakt çizer (halkasız, büyük harf); ölçü
+                    k-lig listesindeki 18px ile aynı. */}
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-sm font-bold text-text truncate">{name}</span>
+                  {myRank && (
+                    <RankSeal tier={tierFor(myRank.total_score)} size={18} className="shrink-0" />
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => {

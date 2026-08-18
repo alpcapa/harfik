@@ -33,6 +33,9 @@ import '../game/count_badge.dart';
 import '../game/dialog_shell.dart';
 import '../game/modal_shell.dart';
 import '../game/neo_button.dart';
+import '../rank/league_rank.dart';
+import '../rank/rank_scores.dart';
+import '../rank/rank_seal.dart';
 import '../score/player_score_card_modal.dart';
 import '../tokens.dart';
 import '../form_input.dart';
@@ -138,9 +141,18 @@ class _FriendsModalState extends State<FriendsModal> {
   String? _busyId;
   bool _inviteBusy = false;
 
+  /// Üç sekmedeki isimlerin yanındaki rütbe mührü için k-lig puanı
+  /// (18 Ağustos 2026). `ensure` yalnızca eksik id'leri sorar.
+  late final RankScores _rankScores;
+
+  void _onRankScores() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
+    _rankScores = RankScores(widget.stats)..addListener(_onRankScores);
     _reloadFriends();
     _reloadRequests();
     unawaited(_reloadModeration());
@@ -154,6 +166,8 @@ class _FriendsModalState extends State<FriendsModal> {
     _searchTimer?.cancel();
     _query.dispose();
     _allUsersScroll.dispose();
+    _rankScores.removeListener(_onRankScores);
+    _rankScores.dispose();
     super.dispose();
   }
 
@@ -452,11 +466,25 @@ class _FriendsModalState extends State<FriendsModal> {
         child: child,
       );
 
-  Widget _name(String s) => Expanded(
-        child: Text(s,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-                fontSize: 14, fontWeight: FontWeight.bold, color: _text)),
+  /// Ad + (biliniyorsa) rütbe mührü. Boy 18, satırın 14px puntosuna göre —
+  /// ölçüm web tarafında yapıldı, iki platform aynı değeri kullanıyor.
+  Widget _name(String s, RankTier? tier) => Expanded(
+        child: Row(
+          children: [
+            Flexible(
+              child: Text(s,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: _text)),
+            ),
+            if (tier != null) ...[
+              const SizedBox(width: 6),
+              RankSeal(tier: tier, size: 18),
+            ],
+          ],
+        ),
       );
 
   /// Sessize aldığım/şikayet ettiğim kişiler → kaynak oyun id'si.
@@ -676,6 +704,7 @@ class _FriendsModalState extends State<FriendsModal> {
   /// kendi simgesi) arkadaki satırın ikonu yoksa bayat kalırdı.
   Widget _personButton(String id, String name, String? avatarUrl) {
     final stats = widget.stats;
+    _rankScores.ensure([id]);
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -702,7 +731,7 @@ class _FriendsModalState extends State<FriendsModal> {
         child: Row(children: [
           KAvatar(url: avatarUrl, name: name, size: 32),
           const SizedBox(width: 10),
-          _name(name),
+          _name(name, _rankScores.tierOf(id)),
         ]),
       ),
     );

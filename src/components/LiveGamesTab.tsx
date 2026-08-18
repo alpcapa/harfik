@@ -48,6 +48,8 @@ import { PlayerAvatarRow } from './PlayerAvatarRow';
 import { FriendSuggestModal } from './FriendSuggestModal';
 import { LiveGameCreateForm } from './LiveGameCreateForm';
 import { RecentGamesSection } from './RecentGamesSection';
+import { RankSeal } from './RankSeal';
+import { RankTierProvider, useRankTier } from '../hooks/useRankScores';
 
 type SubTab = 'active' | 'invites' | 'recent';
 
@@ -140,10 +142,18 @@ function participantLabel(slot: HumanSlot, game: OnlineGame): string {
 }
 
 function ParticipantRow({ slot, game }: { slot: HumanSlot; game: OnlineGame }) {
+  // Rütbe mührü context'ten okunuyor: bu satır listeyi tutan
+  // `LiveGamesTab`'tan dört kat uzakta (GameRow/PendingSection →
+  // PendingGameCard → burası), prop drilling yerine tek bir sağlayıcı.
+  // Boy 16, çünkü isim 12px (14px isimlerde 18 kullanılıyor).
+  const tier = useRankTier(slot.user_id);
   return (
     <div className="flex items-center gap-2">
       <Avatar url={slot.avatar_url} name={slot.name} size={22} />
-      <span className="flex-1 min-w-0 text-xs text-text truncate">{slot.name ?? 'Oyuncu'}</span>
+      <span className="flex-1 min-w-0 flex items-center gap-1.5">
+        <span className="min-w-0 text-xs text-text truncate">{slot.name ?? 'Oyuncu'}</span>
+        {tier && <RankSeal tier={tier} size={16} className="shrink-0" />}
+      </span>
       <span className="text-[9px] font-mono uppercase tracking-[0.5px] text-muted shrink-0">
         {participantLabel(slot, game)}
       </span>
@@ -692,7 +702,14 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
     { key: 'recent', label: 'Son Oynananlar', badge: 0 },
   ];
 
+  // Davet/bekleme kartlarındaki TÜM insan koltuklarının puanları tek çekimde
+  // (ParticipantRow bunları context'ten okuyor).
+  const participantIds = (games ?? []).flatMap((g) =>
+    g.slots.filter((s): s is HumanSlot => s.type === 'human').map((s) => s.user_id),
+  );
+
   return (
+    <RankTierProvider userIds={participantIds}>
     <div className="w-full flex flex-col gap-5">
       {suggestCandidates && (
         <FriendSuggestModal candidates={suggestCandidates} onDone={() => setSuggestCandidates(null)} />
@@ -781,5 +798,6 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
         <RecentGamesSection onlineOnly emptyMessage="Henüz bitmiş bir Canlı oyunun yok." />
       )}
     </div>
+    </RankTierProvider>
   );
 }

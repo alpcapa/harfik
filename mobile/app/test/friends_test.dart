@@ -15,6 +15,7 @@ import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/data/friend_invite_inbox.dart';
 import 'package:kelimeki/src/data/friends_api.dart';
 import 'package:kelimeki/src/data/stats_api.dart';
+import 'package:kelimeki/src/ui/rank/rank_seal.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:kelimeki/src/storage/pending_event_store.dart';
 import 'package:kelimeki/src/ui/auth/account_button.dart';
@@ -463,6 +464,28 @@ void main() {
       expect(find.byType(PlayerScoreCardModal), findsOneWidget);
     });
 
+    testWidgets(
+        'isimlerin yanında rütbe mührü (18 Ağustos 2026) — 18px, satırın '
+        '14px puntosuna göre; ekle/çıkar ikonunun SOLUNDA', (tester) async {
+      final gw = _FakeFriendsGateway()
+        ..friendRows = [
+          {'friend_id': 'f1', 'name': 'Bobola', 'avatar_url': null},
+        ];
+      await pumpModal(tester,
+          gateway: gw, initialTab: FriendsTab.friends, withStats: true);
+      // Sahte uç boş liste döndürüyor → puan 0 → Çaylak (yine de BİLİNEN
+      // bir puan; "henüz yüklenmedi" ile karıştırılmamalı).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final seals = tester.widgetList<RankSeal>(find.byType(RankSeal)).toList();
+      expect(seals, isNotEmpty, reason: 'isim yanında mühür çizilmemiş');
+      expect(seals.first.size, 18);
+      expect(tester.getTopLeft(find.byType(RankSeal).first).dx,
+          greaterThanOrEqualTo(tester.getTopRight(find.text('Bobola')).dx),
+          reason: 'mühür ismin SAĞINDA olmalı');
+    });
+
     testWidgets('davet butonu: link + metin paylaş ucuna gider + görüntü',
         (tester) async {
       final shared = <String>[];
@@ -868,4 +891,8 @@ class _NullStatsGateway implements StatsGateway {
   Future<Map<String, Object?>?> playerStats(
           String userId, int? playerCount) async =>
       null;
+
+  @override
+  Future<List<Map<String, Object?>>> rankScores(List<String> userIds) async =>
+      const [];
 }
