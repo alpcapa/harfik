@@ -931,11 +931,15 @@ gerekiyor).
       düşüş banner'ının kartı karartılmış zeminde yalnızca yumuşak, koyu
       bir düşen gölge taşımalı — sol/üst kenarda beyaz bir parıltı (nömorfik
       `shadow-raised`) GÖRÜNMEMELİ. İkisi aynı kart, biri değişirse öteki de.
-- [ ] **Küçük rozetler de tırtıklı.** k-lig listesi/Skor Kartı satırlarındaki
-      18-20px'lik mühürlerin dış kenarı da testere dişli olmalı (büyük
-      mühürle aynı siluet, 24 diş) — düz çember GÖRÜNMEMELİ. Dişler
-      telefonda net ayrışmalı, harf (özellikle Ç/Ş sedillası) tırtığa
-      DEĞMEMELİ. Fark: küçük mühürde iç kesikli halka yok, harf daha büyük.
+- [ ] **Rozet: dalgalı disk + iki kurdele kuyruğu (18 Ağustos 2026 — eski
+      tırtıklı/noter mührü TAMAMEN bırakıldı, kullanıcı referans görsel
+      verdi).** Her boyda AYNI siluet: dolu, dalgalı kenarlı bir disk +
+      altında V kesikli iki kurdele; kurdele diskten bir tık KOYU.
+      Testere dişli/ince tırtıklı eski mühür HİÇBİR yerde kalmamalı.
+      Fark yalnızca iç halkada: 34/76px'lik rozetlerde harfin etrafında
+      açık renkli ince bir halka VAR, 18px'lik k-lig satırlarında YOK
+      (harf orada daha büyük). Banner'ın rakamlı glyph'lerinde ("+1000")
+      halka HİÇBİR boyda çizilmez — rakamlar halkaya sığmıyor.
 - [ ] **Harf dikeyde ortalı — kuyruklu olanlar dahil.** Ç ve Ş (sedillalı)
       dairede M/O/U/D ile AYNI ölçüde ortalı durmalı; alta yakın/aşağı
       kaymış görünmemeli. Kolay kontrol: k-lig listesinde Çaylak ve

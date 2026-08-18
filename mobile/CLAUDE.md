@@ -430,7 +430,7 @@ mobile/
       ui/rank/               # k-lig rütbe/ödül katmanı (Parça 61-62):
                              # league_rank (9 kademelik eşik/ödül tablosu —
                              # SQL ve leagueRank.ts ile ELLE senkron, ÜÇ
-                             # kopya!), rank_seal (mühür CustomPainter),
+                             # kopya!), rank_seal (roset CustomPainter),
                              # rank_header_seal (skor kartlarının başlık
                              # mührü), rank_progress_bar (PAYLAŞILAN çubuk +
                              # RewardBadge), reward_banner (kutlama/düşüş),
@@ -5123,6 +5123,65 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        yerelde KOŞULAMADI — Dart yarısının kanıtı CI. Web yarısı ölçüldü
        (`tsc` temiz, `npm run build` temiz, Playwright 18/18, verify 13/13).
 
+   - ✅ **Parça 113 — k-lig rütbe rozeti yeniden tasarlandı: tırtıklı mühür
+     bırakıldı, yerine kurdeleli roset (18 Ağustos 2026, `rank_seal.dart`
+     + web `RankSeal.tsx`, AYNI PR):** Kullanıcı: *"Bizim rütbe badge'leri
+     beğenmiyorum. Özellikle ince tırtıklar çok kötü. Bana … altı kurdeleli
+     badge alternatifleri ver 3 tane. Bizim standart font kullanmak şart
+     değil… Albenili ama egzajere değil, basit ama şık bir şey."*
+     - **Üç alternatif sunuldu (dolu madalya / çizgisel rozet / altıgen
+       madalyon) ve ÜÇÜ DE seçilmedi.** Kullanıcı bunun yerine bir
+       **referans görsel** gönderdi (klasik ödül roseti: dolu dalgalı disk +
+       içte açık halka + V kesikli iki kurdele) ve *"Bundan istiyorum.
+       Rengini sen ayarla"*, ardından *"Bu imajı birebir kopyala ve ona
+       giydir"* dedi. Yani tasarım kararı benim üç önerimden değil, o
+       görselin oranlarından türetildi — **bir tasarım isteğinde kullanıcı
+       kendi referansını verirse, hazırladığın alternatifleri savunma;
+       referansı ölçüp kopyala.**
+     - **İki dosya AYNI sabit setini taşıyor ve ELLE senkron** (`CY=16.6`,
+       `TIP_R=15`, `VALLEY_R=12.675`, `LOBES=14`, `EDGE_W=2`, `RING_R=11`,
+       `RING_W=1.3`, beş noktalı kurdele poligonu, `darken`/`sealRibbonColor`
+       ×0.86) — web bir `<polygon>`, port bir `Path` çiziyor. Biri
+       değişirse öteki de değişmeli; ayrıntılı gerekçeler kök `CLAUDE.md`'de.
+     - **CanvasKit güvenliği baştan kuruldu (Parça 18'in dersi):**
+       `Path.combine`/PathOps HİÇ kullanılmıyor — eski mührün kesikli iç
+       halkası yay yay çiziliyordu, yeni halka düz bir `drawCircle`, o
+       karmaşa tamamen kalktı.
+     - **Punto merdiveni ÖLÇÜLDÜ, tahmin edilmedi** (web tarafında gerçek
+       Space Grotesk 700 ile `canvas.measureText`): tek harf tam boyda
+       **18** / kompaktta **20.5**, "+50" **13**, "1000" **10.5**, "+1000"
+       **8.5**. Yeni `sealShowsRing(text, {compact})` — halka yalnızca tam
+       boyda VE tek harfte; rakamlı glyph'ler halkaya sığmıyor.
+     - **`String.length` KULLANILDI, `.characters` DEĞİL** — web `text.length`
+       (UTF-16) ile birebir parite; basılabilen tüm glyph'ler (Ç M O U Ş D
+       E Z T, rakamlar, '+') tek kod birimi, ayrıca `characters` doğrudan
+       bir bağımlılık değil.
+     - **`sealBaselineEm` korundu ama sabitleri yeni fonta göre yeniden
+       ölçüldü** (`kSealInkAscEm` .71→**.66**, `kSealDescenderEm` .21→**.215**)
+       — 12 Ağustos'ta öğrenilen "harf FONT metriklerinden değil MÜREKKEP
+       kutusundan ortalanır" kuralı aynen geçerli, yalnızca yazı tipi
+       Space Mono'dan Space Grotesk 700'e geçtiği için sayılar değişti.
+     - **Test:** `league_rewards_test.dart`'ın mühür testleri yeni tasarıma
+       çekildi — punto merdiveni + `sealShowsRing` (yeni test); ilkel sayımı
+       artık **4 `drawPath`** (iki kurdele + madalyon dolgu + madalyon kenar)
+       ve halka `drawCircle` (tam boyda 1, kompaktta 0), `drawArc` her iki
+       boyda da **0**; mürekkep-ortalama testi merkezi `kSealCy`'ye,
+       tarama sınırını halkanın içine (10.2) ve mürekkep tespitini BEYAZ
+       harfe (`green > 160`, madalyon dolgusu artık kademe rengi) çekti.
+     - **Doğrulama sınırı — DÜRÜST KAYIT:** bu oturumun konteynerinde
+       Flutter/Dart SDK YOK (`flutter`/`dart` bulunamadı, Parça 103-112'nin
+       aynı sınırı): `flutter analyze`/`flutter test` KOŞULAMADI ve
+       **negatif eş kurulamadı** — Dart yarısının tek kanıtı CI. Web yarısı
+       tam doğrulandı: `tsc` temiz, `npm run build` temiz, Playwright
+       **18/18**, ve GERÇEK üretim bileşeni (esbuild → `renderToStaticMarkup`
+       → Chromium/DPR 2) dokuz kademe × dört boy + dört banner glyph'iyle
+       render edilip gözle denetlendi. Tanıtım sayfası bütçesi ölçüldü:
+       `dist/index.html` ham **254.144** / gzip **22.250** bayt (öncesi
+       254.958 / 22.147 — ham −814, gzip +103; ihmal edilebilir).
+     - **Cihazda doğrulanacak:** iki `TESTING.md`'nin ilgili maddeleri yeni
+       tasarıma göre yeniden yazıldı (eski "tırtık her boyda" maddesi artık
+       geçersiz).
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
@@ -5271,6 +5330,13 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   oyun akışında gözle teyit edilmedi; ayrıca bu parçanın Dart yarısı
   Flutter SDK'sız bir oturumda yazıldığından `dart run test/run_all.dart`
   hiç koşulmadı — CI dışında kanıtı yok.
+
+- **18 Ağustos (Parça 113) — yeni rütbe rozeti:** k-lig listesi (18px),
+  Skor Kartı/oyuncu kartı başlığı (34px) ve kutlama/düşüş banner'ı (76px)
+  artık dalgalı disk + kurdele; eski tırtıklı mühür hiçbir yerde kalmamalı,
+  küçük rozette halka YOK, banner'ın rakamlı glyph'lerinde de yok. Web ile
+  yan yana bak (iki dosya elle senkron). Parça yazılırken Flutter SDK
+  olmadığından Dart yarısı yalnızca CI ile doğrulandı.
 
 Liste bir gün BOŞALIRSA öyle kalmasını bekleme: yeni bir düzeltme
 yazıldığında buraya yine madde eklenmeli (kural değişmedi: yazıldığı gün

@@ -1502,11 +1502,15 @@ listesi kök `TESTING.md` bölüm 10.
       Skor Kartı ve başka bir oyuncunun kartı (34px, başlık ile ✕ ARASINDA
       ortalı, yazısız). Üçü de GÜNCEL toplam puandan türetildiğinden aynı
       kademeyi göstermeli.
-- [ ] **Tırtık HER BOYDA.** k-lig listesindeki 18px'lik küçük mühürlerin
-      dış kenarı da testere dişli olmalı (büyük mühürle aynı siluet, 24
-      diş) — düz çember GÖRÜNMEMELİ. Dişler telefonda net ayrışmalı, harf
-      (özellikle Ç/Ş sedillası) tırtığa DEĞMEMELİ ve OKUNABİLİR kalmalı.
-      Fark: küçük mühürde iç kesikli halka yok, harf daha büyük.
+- [ ] **Rozet: dalgalı disk + iki kurdele kuyruğu (18 Ağustos 2026 — eski
+      tırtıklı/noter mührü TAMAMEN bırakıldı).** Her boyda AYNI siluet:
+      dolu, dalgalı kenarlı bir disk + altında V kesikli iki kurdele;
+      kurdele diskten bir tık KOYU. Testere dişli eski mühür HİÇBİR yerde
+      kalmamalı. Fark yalnızca iç halkada: 34/76px'te harfin etrafında
+      açık renkli ince bir halka VAR, 18px'lik k-lig satırında YOK (harf
+      orada daha büyük). Banner'ın rakamlı glyph'lerinde ("+1000") halka
+      hiçbir boyda çizilmez. **Web'deki rozetle yan yana bak — ikisi
+      BİREBİR aynı olmalı** (aynı sabitler iki dosyada elle senkron).
 - [ ] **Harf dikeyde ortalı — kuyruklu olanlar dahil.** Ç ve Ş (sedillalı)
       mühürlerde harf, dairenin dikey ORTASINDA durmalı — alta kaçmış
       GÖRÜNMEMELİ. Ç ile M/O/U/D aynı hizada olmalı. Üç boyu da kontrol et
