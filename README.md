@@ -87,7 +87,7 @@ src/
 │   ├── GameChatHistoryModal.tsx # oyun içi mesajlaşma: bitmiş bir oyunun dondurulmuş sohbet kaydının salt-okunur görünümü
 │   ├── Leaderboard.tsx          # lider tablosu (k-lig)
 │   ├── KLigMark.tsx             # "k-lig" logosu — statik SVG path (üretilmiş, bkz. scripts/generate-klig-paths.mjs), font bağımsız
-│   ├── RankSeal.tsx             # k-lig rütbe mührü (nömorfik damga SVG — k-lig satırları, Skor Kartı başlığı, ödül banner'ı)
+│   ├── RankSeal.tsx             # k-lig rütbe rozeti (kurdeleli roset SVG — k-lig satırları, Skor Kartı başlığı, tanıtım sayfası, ödül banner'ı)
 │   ├── RankInfoModal.tsx        # Skor Kartı'ndaki mühre dokununca açılan rütbe bilgi popup'ı (puan + ödül payı + sıradaki hedef)
 │   ├── RewardBanner.tsx         # k-lig kutlama/düşüş banner'ı (rütbe atlama · puan eşiği ödülü · 100'lük kilometre taşı · rütbe gerileme — damga+konfeti animasyonu)
 │   ├── LeagueRewardsHost.tsx    # görülmemiş league_rewards kayıtlarını çekip tek birleşik RewardBanner gösteren sürücü
@@ -159,14 +159,20 @@ src/
 ├── landing/
 │   ├── Landing.tsx     # karşılama katmanının tamamı (derleme/dev zamanında statik HTML'e render edilip index.html'e gömülür) — SUNUCUDA render edilir, hook/olay/tarayıcı globali YOK
 │   ├── LandingLogo.tsx # logoyu üç kez çizmek için SVG sprite'ı (path verisi LogoMark'tan; üç ham kopya gzip'te 10 KB yiyordu)
+│   ├── OzellikIkonlari.tsx # "Neler var" bölümündeki altı özellik ikonu — Material DEĞİL, ilkel şekillerden (portta karşılığı yok; bkz. dosya başlığı)
 │   ├── demoBoard.ts    # tanıtım tahtalarının (2 ve 4 kişilik) taşları — gerçek Board.tsx ile render edilir, npm run verify-demo-board ile sözlüğe karşı doğrulanır
 │   └── render.tsx      # renderToStaticMarkup sarmalayıcısı — Vite eklentisi (scripts/landing-plugin.js) Node'da çağırır
+├── fonts/
+│   ├── *.css              # kendi sunucumuzdan servis edilen @font-face tanımları (main.tsx import eder)
+│   └── files/             # .woff2 dosyaları — mplus-rounded-1c-800-subset.woff2 ÜRETİLMİŞ
+│                          # (yalnızca RankSeal'ın harfi; yeniden üretimi: CLAUDE.md → "Rütbe Rozeti Fontu")
 ├── hooks/
 │   ├── useAuth.tsx        # Supabase auth context
 │   ├── useModalA11y.ts    # modal odak hapsi, Escape, dialog yığını
 │   ├── useOnlineStatus.ts # çevrimiçi/çevrimdışı durumu izler
 │   ├── useNicknameAvailability.ts # takma isim uygunluğu (debounce'lu RPC kontrolü, AuthModal + AccountSettingsModal ortak)
-│   └── useAppIconBadge.ts # PWA ikonu üzerinde Badge API ile kırmızı yuvarlak/beyaz sayı rozeti
+│   ├── useAppIconBadge.ts # PWA ikonu üzerinde Badge API ile kırmızı yuvarlak/beyaz sayı rozeti
+│   └── useRankScores.tsx  # isimlerin yanındaki rütbe mührü için k-lig puanı (toplu, leaderboard view'ı)
 └── lib/
     ├── supabase.ts        # Supabase istemcisi
     ├── api.ts             # saveGame, fetchLeaderboard, auth, fetchMeaning
@@ -191,6 +197,9 @@ mobile/                    # Flutter (iOS+Android) portu — ayrıntı: mobile/C
     │                      # src/data/words.ts — npm run generate-golden-vectors)
     │                      # ve meanings.db (npm run generate-meanings-db)
     └── assets/fonts/      # Space Grotesk / Space Mono / Nunito (web'le aynı aileler)
+                           # + MPLUSRounded1c-ExtraBold-subset.ttf — YALNIZCA k-lig
+                           # rütbe rozetinin harfi; ÜRETİLMİŞ (alt kümelenmiş),
+                           # web'in src/fonts/files/ kopyasıyla aynı subset
 ```
 
 ## Supabase (opsiyonel)

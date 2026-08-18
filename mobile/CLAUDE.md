@@ -100,8 +100,32 @@ yok — deploy bekleniyor demektir.
 - Bash tabanlı bir "deploy izleyici" **sessizce ölü kalır** ve sessizlik
   "hâlâ çalışıyor" gibi görünür — 15 Ağustos'ta tam bu kuruldu ve fark
   edilmeseydi 40 dakika boş beklenecekti.
-- Koşu durumu YALNIZCA GitHub MCP araçlarıyla okunabilir
+- Koşu durumu YALNIZCA GitHub MCP araçlarıyla **okunabilir**
   (`actions_list` → `list_workflow_runs`, `pull_request_read`).
+- **Ama TETİKLENEMEZ (18 Ağustos 2026'da ölçüldü):** bu oturumun tokeni
+  Actions'a yazamıyor — `rerun_workflow_run` ve `run_workflow` (dispatch)
+  ikisi de **403 "Resource not accessible by integration"** döner. Yani
+  iptal edilmiş/eksik kalmış bir koşuyu ben yeniden başlatamam; yeni bir
+  koşu ancak dala GERÇEK bir commit push edilerek (`paths` filtresine takılan
+  bir dosya değişerek) ya da kullanıcının Actions arayüzünden "Re-run"
+  demesiyle doğar. **CI'ı kışkırtmak için boş commit ATMA** — kök
+  CLAUDE.md'nin PR kuralı bunu açıkça yasaklıyor.
+- **"İptal edildi" ≠ "düştü" ve bu ayrım ekran görüntüsünde GÖRÜNMEZ:**
+  aynı gün kullanıcı iOS işini kırmızı ikonla görüp "iOS'da sorun var"
+  dedi; koşunun tamamı **Cancelled** idi ve iOS 38 saniyede "Cache Flutter"
+  adımında ölmüştü — yani hiç derlemeye başlamamıştı. Bir işin kırmızısını
+  "hata" saymadan önce **koşunun `conclusion` alanına** ve o işin hangi
+  ADIMDA öldüğüne bak.
+- **`cancel-in-progress`i İKİ ayrı şey tetikliyor ve ikincisi sezgiye
+  aykırı (18 Ağustos 2026'da ölçüldü):** (a) aynı PR'a atılan bir sonraki
+  commit; (b) **ESKİ bir koşunun arayüzden "Re-run"lanması** — yeniden
+  deneme AYNI concurrency grubuna (`mobile-build-refs/pull/N/merge`) girdiği
+  için o an ÇALIŞAN daha yeni koşuyu iptal ediyor. O gün bu ikisi
+  birbirine karıştı: ben yeni bir koşu tetiklerken kullanıcı bir öncekini
+  yeniden başlattı, benim koşum saniyesi saniyesine (23:06:52) iptal oldu
+  ve dışarıdan "sebepsiz iptal" gibi göründü. Bir iptali açıklarken
+  koşunun `run_attempt` alanına da bak: 1'den büyükse birileri yeniden
+  başlatmış demektir.
 - Siteyi ben açıp bakamam. **Ekran görüntüsü tek enstrümandır** — derleme
   kimliğinin ürüne gömülmesinin asıl gerekçesi budur.
 
@@ -379,6 +403,12 @@ mobile/
                              # Uygulama paketinin İÇİNDE, çünkü Flutter paket
                              # kökü dışından asset kabul etmez — kelimeki_core
                              # testleri de TEK kopya kalsın diye buradan okur.
+    assets/fonts/            # Space Grotesk / Space Mono / Nunito (web'le aynı
+                             # aileler) + MPLUSRounded1c-ExtraBold-subset.ttf:
+                             # ÜRETİLMİŞ alt küme, YALNIZCA rütbe rozetinin
+                             # harfi; web'in src/fonts/files/ kopyasıyla aynı
+                             # subset (yeni bir kademe harfi eklenirse ikisi de
+                             # yeniden üretilmeli — bkz. Parça 114)
     lib/main.dart            # portre kilidi + bootstrap + runApp
     lib/src/
       bootstrap.dart         # AppServices: sözlük Future'ı + supabase + sürüm kapısı
@@ -428,9 +458,11 @@ mobile/
       ui/score/              # skor kartı, k-lig, oyuncu kartı, oyun geçmişi,
                              # score_box_row (paylaşılan görselin üst şeridi)
       ui/rank/               # k-lig rütbe/ödül katmanı (Parça 61-62):
+                             # rank_scores (isim yanındaki mührün puan
+                             # kaynağı — leaderboard view'ı, toplu),
                              # league_rank (9 kademelik eşik/ödül tablosu —
                              # SQL ve leagueRank.ts ile ELLE senkron, ÜÇ
-                             # kopya!), rank_seal (mühür CustomPainter),
+                             # kopya!), rank_seal (roset CustomPainter),
                              # rank_header_seal (skor kartlarının başlık
                              # mührü), rank_progress_bar (PAYLAŞILAN çubuk +
                              # RewardBadge), reward_banner (kutlama/düşüş),
@@ -5123,6 +5155,179 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        yerelde KOŞULAMADI — Dart yarısının kanıtı CI. Web yarısı ölçüldü
        (`tsc` temiz, `npm run build` temiz, Playwright 18/18, verify 13/13).
 
+   - ✅ **Parça 113 — k-lig rütbe rozeti yeniden tasarlandı: tırtıklı mühür
+     bırakıldı, yerine kurdeleli roset (18 Ağustos 2026, `rank_seal.dart`
+     + web `RankSeal.tsx`, AYNI PR):** Kullanıcı: *"Bizim rütbe badge'leri
+     beğenmiyorum. Özellikle ince tırtıklar çok kötü. Bana … altı kurdeleli
+     badge alternatifleri ver 3 tane. Bizim standart font kullanmak şart
+     değil… Albenili ama egzajere değil, basit ama şık bir şey."*
+     - **Üç alternatif sunuldu (dolu madalya / çizgisel rozet / altıgen
+       madalyon) ve ÜÇÜ DE seçilmedi.** Kullanıcı bunun yerine bir
+       **referans görsel** gönderdi (klasik ödül roseti: dolu dalgalı disk +
+       içte açık halka + V kesikli iki kurdele) ve *"Bundan istiyorum.
+       Rengini sen ayarla"*, ardından *"Bu imajı birebir kopyala ve ona
+       giydir"* dedi. Yani tasarım kararı benim üç önerimden değil, o
+       görselin oranlarından türetildi — **bir tasarım isteğinde kullanıcı
+       kendi referansını verirse, hazırladığın alternatifleri savunma;
+       referansı ölçüp kopyala.**
+     - **İki dosya AYNI sabit setini taşıyor ve ELLE senkron** (`CY=16.6`,
+       `TIP_R=15`, `VALLEY_R=12.675`, `LOBES=14`, `EDGE_W=2`, `RING_R=11`,
+       `RING_W=1.3`, beş noktalı kurdele poligonu, `darken`/`sealRibbonColor`
+       ×0.86) — web bir `<polygon>`, port bir `Path` çiziyor. Biri
+       değişirse öteki de değişmeli; ayrıntılı gerekçeler kök `CLAUDE.md`'de.
+     - **CanvasKit güvenliği baştan kuruldu (Parça 18'in dersi):**
+       `Path.combine`/PathOps HİÇ kullanılmıyor — eski mührün kesikli iç
+       halkası yay yay çiziliyordu, yeni halka düz bir `drawCircle`, o
+       karmaşa tamamen kalktı.
+     - **Punto merdiveni ÖLÇÜLDÜ, tahmin edilmedi** (web tarafında gerçek
+       Space Grotesk 700 ile `canvas.measureText`): tek harf tam boyda
+       **18** / kompaktta **20.5**, "+50" **13**, "1000" **10.5**, "+1000"
+       **8.5**. Yeni `sealShowsRing(text, {compact})` — halka yalnızca tam
+       boyda VE tek harfte; rakamlı glyph'ler halkaya sığmıyor.
+     - **`String.length` KULLANILDI, `.characters` DEĞİL** — web `text.length`
+       (UTF-16) ile birebir parite; basılabilen tüm glyph'ler (Ç M O U Ş D
+       E Z T, rakamlar, '+') tek kod birimi, ayrıca `characters` doğrudan
+       bir bağımlılık değil.
+     - **`sealBaselineEm` korundu ama sabitleri yeni fonta göre yeniden
+       ölçüldü** (`kSealInkAscEm` .71→**.66**, `kSealDescenderEm` .21→**.215**)
+       — 12 Ağustos'ta öğrenilen "harf FONT metriklerinden değil MÜREKKEP
+       kutusundan ortalanır" kuralı aynen geçerli, yalnızca yazı tipi
+       Space Mono'dan Space Grotesk 700'e geçtiği için sayılar değişti.
+     - **Test:** `league_rewards_test.dart`'ın mühür testleri yeni tasarıma
+       çekildi — punto merdiveni + `sealShowsRing` (yeni test); ilkel sayımı
+       artık **4 `drawPath`** (iki kurdele + madalyon dolgu + madalyon kenar)
+       ve halka `drawCircle` (tam boyda 1, kompaktta 0), `drawArc` her iki
+       boyda da **0**; mürekkep-ortalama testi merkezi `kSealCy`'ye,
+       tarama sınırını halkanın içine (10.2) ve mürekkep tespitini BEYAZ
+       harfe (`green > 160`, madalyon dolgusu artık kademe rengi) çekti.
+     - **Doğrulama sınırı — DÜRÜST KAYIT:** bu oturumun konteynerinde
+       Flutter/Dart SDK YOK (`flutter`/`dart` bulunamadı, Parça 103-112'nin
+       aynı sınırı): `flutter analyze`/`flutter test` KOŞULAMADI ve
+       **negatif eş kurulamadı** — Dart yarısının tek kanıtı CI. Web yarısı
+       tam doğrulandı: `tsc` temiz, `npm run build` temiz, Playwright
+       **18/18**, ve GERÇEK üretim bileşeni (esbuild → `renderToStaticMarkup`
+       → Chromium/DPR 2) dokuz kademe × dört boy + dört banner glyph'iyle
+       render edilip gözle denetlendi. Tanıtım sayfası bütçesi ölçüldü:
+       `dist/index.html` ham **254.144** / gzip **22.250** bayt (öncesi
+       254.958 / 22.147 — ham −814, gzip +103; ihmal edilebilir).
+     - **Cihazda doğrulanacak:** iki `TESTING.md`'nin ilgili maddeleri yeni
+       tasarıma göre yeniden yazıldı (eski "tırtık her boyda" maddesi artık
+       geçersiz).
+     - ⚠️ **Bu parçanın font/punto/metrik notları AYNI GÜN Parça 114 ile
+       DEĞİŞTİ** — aşağıya bkz. (yazı tipi artık Space Grotesk 700 değil,
+       `kSealInkAscEm` .66 değil).
+
+   - ✅ **Parça 114 — rozetin İÇİNDEKİ font: M PLUS Rounded 1c ExtraBold
+     (18 Ağustos 2026, `rank_seal.dart`, `pubspec.yaml`,
+     `test/support/test_fonts.dart`, yeni `assets/fonts/…-subset.ttf`
+     + web `RankSeal.tsx`/`src/fonts/`, AYNI PR):** Parça 113'ün rozeti
+     onaylandıktan hemen sonra kullanıcı: *"Yanlız içindeki font hoşuma
+     gitmedi. Daha basık ve yuvarlak hatlı bir font bulalım. Alternatif
+     ver bir kaç tane."* Altı aday GERÇEK rozetin içinde render edilip
+     gösterildi (tarif edilerek değil — Parça 52'nin kum saati kararıyla
+     aynı yöntem), kullanıcı M PLUS Rounded 1c 800'ü seçti.
+     - **İKİ platform AYNI alt kümeyi taşıyor** (`pyftsubset`, 108 glyph):
+       web 6.3 KB woff2, port **14.4 KB ttf** (`assets/fonts/
+       MPLUSRounded1c-ExtraBold-subset.ttf`, `pubspec.yaml`'da
+       `MPlusRounded1c` / weight 800). Kaynak TTF 3.6 MB — alt kümeleme
+       zorunlu, dosya ÜRETİLMİŞ. Komut ve gerekçe kök `CLAUDE.md` →
+       "Rütbe Rozeti Fontu".
+     - **GİZLİ BAĞ — yeni bir kademe HARFİ eklenirse subset yeniden
+       üretilmeli.** Portta bunun bedeli web'den AĞIR: Flutter otomatik
+       font fallback YAPMAZ, kapsam dışı bir glyph **TOFU (boş kare)**
+       çizer (bu proje aynı dersi ✓/★/🤖'da üç kez yaşadı). Bugünkü
+       aralık ASCII + tüm Türkçe harfleri kapsıyor.
+     - **`test_fonts.dart` da yüklemek ZORUNDA:** `flutter_test` pubspec
+       fontlarını otomatik yüklemiyor (Parça 1'in dersi) — `loadAppFonts`
+       bu aileyi yüklemezse mühürdeki harf Ahem bloğuna döner ve
+       `league_rewards_test`in MÜREKKEP-ORTALAMA testi (piksel tarayan
+       test) sessizce anlamsızlaşır: blok her zaman kusursuz ortalıdır.
+     - **Sabitler yeniden ÖLÇÜLDÜ, taşınmadı** (web tarafında gerçek
+       fontla, `canvas.measureText`in `actualBoundingBox*` alanları):
+       `kSealInkAscEm` .66 → **.745**, `kSealDescenderEm` .215 → **.22**.
+       Bu fontta aralık çok dar — basılabilen HER glyph için azami
+       merkezleme sapması 0.0075 em (eski fontta 0.03 em).
+     - **Punto merdiveni DEĞİŞTİ ve bu sefer PİKSELLE ölçüldü:** tek harf
+       **18** / kompakt **20.5** (AYNI kaldı), 2-3 karakter 13 → **12**,
+       4 karakter 10.5 → **9.5**, 5+ 8.5 → **8**. M PLUS'ın rakamları
+       Space Grotesk'ten belirgin geniş. **Ders:** `textAnchor="middle"`
+       (ve `TextPainter`ın ortalaması) mürekkebi değil ADVANCE kutusunu
+       ortalar — yan boşlukları asimetrik bir glyph (`+1000`) yalnızca
+       `measureText`le hesaplanan bir tavandan taşar; ilk ladder (12/10/
+       8.5) tam bu yüzden beş glyph'te poligonu deliyordu ve bu ancak
+       gerçek rozet 20× büyütülüp beyaz pikselleri poligona karşı
+       taranarak görüldü.
+     - **Test:** `league_rewards_test.dart`'ın `sealFontSize` beklentileri
+       yeni merdivene çekildi (20.5 / 18 / 12 / 12 / 9.5 / 8). Mühür
+       geometrisi/ilkel sayımı DEĞİŞMEDİ.
+     - **Doğrulama sınırı — Parça 113'ün aynısı:** bu oturumda Flutter/
+       Dart SDK YOK, `flutter analyze`/`flutter test` KOŞULAMADI ve
+       **negatif eş kurulamadı** — Dart yarısının tek kanıtı CI. Web
+       yarısı tam doğrulandı (`tsc`, `npm run build`, Playwright 18/18,
+       gerçek üretim bileşeniyle 9 kademe × 4 boy + 8 banner glyph'i
+       render edilip gözle denetlendi; bütçe ham **254.096** / gzip
+       **22.248** bayt + ayrı 6.268 baytlık font asset'i).
+     - **Cihazda doğrulanacak:** mühürdeki harfin TOFU olmadığı ve iki
+       platformda AYNI göründüğü (özellikle Ç/Ş sedillası ve banner'ın
+       `+1000` glyph'i) — `mobile/TESTING.md` bölüm 13.
+
+   - ✅ **Parça 115 — rütbe mührü İSİMLERİN yanına da geldi: yedi yüzey, tek
+     toplu sorgu (18 Ağustos 2026, yeni `ui/rank/rank_scores.dart`,
+     `data/stats_api.dart`, `account_button.dart`, `score_card_modal.dart`,
+     `player_score_card_modal.dart`, `setup_screen.dart`, `friends_modal.dart`,
+     `live_game_create_form.dart`, `live_games_tab.dart` + web yarısı AYNI
+     PR'da):** Kullanıcı isteği (tam metni kök `CLAUDE.md` → "Rütbe mührü
+     artık İSİMLERİN yanında da").
+     - **Migration GEREKMEDİ:** `leaderboard` view'ı `user_id`+`total_score`
+       veriyor ve `security_invoker = false` ile kilitli RLS'i bypass
+       ediyor; yeni `StatsGateway.rankScores(userIds)` tek `in` sorgusuyla
+       toplu okuyor. **`player_stats`in mod bazlı toplamıyla KARIŞTIRMA** —
+       o ödülleri saymadığı için 17 Ağustos'ta Setup'tan kaldırılmıştı;
+       `leaderboard.total_score` ödül DAHİL, yani mühür hesap menüsündeki
+       k-lig satırıyla ayrışamaz.
+     - **`RankScores` (ChangeNotifier), Riverpod/Bloc yok** (karar #5):
+       `tierOf(id)` puan bilinmiyorsa `null` döner (mühür HİÇ çizilmez —
+       "0 puan" ile "henüz yüklenmedi" AYRI şeyler), `ensure(ids)` yalnızca
+       EKSİK id'ler için ağa gider ve `notifyListeners`ı bir sonraki
+       microtask'a erteler; bu yüzden `build` içinden çağrılabilir
+       ("setState during build" hatası doğmaz).
+     - **Boylar satırın PUNTOSUNA bağlı ve web tarafında ÖLÇÜLDÜ** (derlenmiş
+       CSS + Chromium): 12px isim → **16**, 14px → **18**, 16px → **20**.
+       Üç sayı da iki platformda ELLE senkron — biri değişirse öteki de.
+     - **Başlıktaki 34px'lik mühür KALDI** (o tıklanabilir, `RankInfoModal`'ı
+       açar). Bu yüzden `score_card_test.dart`'ın mevcut geometri testi
+       artık `find.byType(RankSeal).first` yerine **BOYA göre** seçiyor —
+       kartta iki mühür var, sıraya güvenmek kırılgan.
+     - **`_PendingGameCard` StatelessWidget olduğundan lookup FONKSİYON
+         olarak geçiliyor** (`tierOf`), web'de aynı yerde context kullanıldı
+       (orada satır bileşeni dört seviye aşağıda). Üç çağrı yerinin ÜÇÜ de
+       geçmek zorunda — biri atlanırsa mühür yalnızca bir kovada çıkar.
+     - **Testler:** hesap menüsü (18px + ismin sağında), `FriendsModal`
+       ("Arkadaşlarım" satırı), `ScoreCard` (20px isim mührü + 34px başlık
+       mührünün DURDUĞU). Beş sahte `StatsGateway` de yeni metodu uygulamak
+       zorunda kaldı; `score_card_test`inki gerçek ucun INNER JOIN'ini
+       taklit ediyor (`rows`ta olmayan id sonuçta YOK — Parça 46'nın dersi).
+     - **Doğrulama sınırı — DÜRÜST KAYIT:** bu oturumun konteynerinde
+       Flutter/Dart SDK YOK (`which flutter dart` → boş), yani
+       `flutter analyze`/`flutter test` KOŞULAMADI ve **negatif eş
+       kurulamadı** — Dart yarısının tek kanıtı CI (Parça 103-114'ün aynı
+       sınırı). Web yarısı tam doğrulandı: `npm run lint`, `npm run build`,
+       Playwright **18/18**, ve gerçek Chromium ölçümü (kutular
+       16.00/18.00/20.00, boşluk 6.00, dikey merkezler isimle aynı, yatay
+       taşma 0; dokuz kademe harfi de tofu'suz).
+     - **CI'ın SÖYLEDİĞİ (bu parça yazıldıktan sonra ölçüldü):** `dart
+       analyze lib/ test/` temiz ve **454 test yeşil**; web derlemesi de
+       geçti. **Ama ilk koşuda DÜŞTÜ** ve sebebi tam da bu sınırdı:
+       eklenen test var olmayan bir sahte uç adı (`_FakeFriendsGateway`)
+       ve var olmayan bir alan adı (`friendRows`, doğrusu `friendsRows`)
+       kullanıyordu — Flutter SDK'sı olan bir oturumda `dart analyze`
+       bunu saniyeler içinde yakalardı. **Ders: SDK'sız bir oturumda
+       yazılan Dart testinde, kullanılan HER sahte uç/alan adını kaynağa
+       karşı grep'le doğrula** — "kodu okudum, doğru görünüyor" burada
+       derleyicinin yerini tutmuyor.
+     - **Cihazda doğrulanacak:** yedi yüzeyde mühürün göründüğü ve doğru
+       kademeyi çizdiği — `mobile/TESTING.md` bölüm 13'e madde eklendi.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
@@ -5271,6 +5476,25 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   oyun akışında gözle teyit edilmedi; ayrıca bu parçanın Dart yarısı
   Flutter SDK'sız bir oturumda yazıldığından `dart run test/run_all.dart`
   hiç koşulmadı — CI dışında kanıtı yok.
+
+- **18 Ağustos (Parça 113-114) — yeni rütbe rozeti + içindeki yeni font
+  (M PLUS Rounded 1c 800; harf TOFU olmamalı, iki platformda aynı
+  görünmeli — özellikle Ç/Ş ve banner'ın `+1000`'i):** k-lig listesi (18px),
+  Skor Kartı/oyuncu kartı başlığı (34px) ve kutlama/düşüş banner'ı (76px)
+  artık dalgalı disk + kurdele; eski tırtıklı mühür hiçbir yerde kalmamalı,
+  küçük rozette halka YOK, banner'ın rakamlı glyph'lerinde de yok. Web ile
+  yan yana bak (iki dosya elle senkron). Parça yazılırken Flutter SDK
+  olmadığından Dart yarısı yalnızca CI ile doğrulandı.
+
+- **18 Ağustos (Parça 115) — mühür artık İSİMLERİN yanında, yedi yüzey:**
+  hesap menüsü başlığı (18px) · Skor Kartı (20px) · oyuncu kartı (20px) ·
+  Setup'taki hesap koltuğu (18px) · Arkadaşlar'ın ÜÇ sekmesi (18px) ·
+  "+ Yeni Canlı Oyun" arkadaş seçici (18px) · oyun daveti katılımcıları
+  (16px). Skor kartlarında artık İKİ mühür var (34px başlık + 20px isim),
+  ikisi aynı kademeyi göstermeli. Ayrıca "puan bilinmiyor" ile "0 puan"
+  ayrımı: liste açılırken bir an için herkesin yanında Çaylak BELİRMEMELİ,
+  YZ/misafir koltuğunda mühür HİÇ olmamalı. Bu parça da Flutter SDK'sız
+  bir oturumda yazıldı — Dart yarısının tek kanıtı CI.
 
 Liste bir gün BOŞALIRSA öyle kalmasını bekleme: yeni bir düzeltme
 yazıldığında buraya yine madde eklenmeli (kural değişmedi: yazıldığı gün

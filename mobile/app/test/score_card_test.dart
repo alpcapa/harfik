@@ -45,6 +45,15 @@ class FakeStatsGateway implements StatsGateway {
 
   @override
   Future<Map<String, Object?>?> myLeaderboardRank(String userId) async => rank;
+
+  /// Gerçek uç gibi: `leaderboard` view'ı `games`e INNER JOIN yaptığından
+  /// hiç oyunu olmayan (yani `rows`ta bulunmayan) id sonuçta YOKTUR.
+  @override
+  Future<List<Map<String, Object?>>> rankScores(List<String> userIds) async => [
+        for (final r in rows)
+          if (userIds.contains(r['user_id']))
+            {'user_id': r['user_id'], 'total_score': r['total_score']},
+      ];
 }
 
 Map<String, Object?> statRow({
@@ -332,7 +341,10 @@ void main() {
     final kart = tester.getRect(find.byWidgetPredicate(
         (w) => w is ConstrainedBox && w.constraints.maxWidth == 360));
     final kapat = tester.getRect(find.byType(IconButton).first);
-    final muhur = tester.getRect(find.byType(RankSeal).first);
+    // 18 Ağustos 2026'dan beri kartta İKİ mühür var (başlıktaki 34px +
+    // ismin yanındaki 20px) — sıraya güvenme, BOYA göre seç.
+    final muhur = tester.getRect(
+        find.byWidgetPredicate((w) => w is RankSeal && w.size == 34));
 
     // Web'de ✕'in merkezi sağ kenardan 35.0px içeride (ölçüldü: p-5 dolgu +
     // 28px buton). Portta buton daha büyük (40px, dokunma hedefi) ve sağ
@@ -343,6 +355,28 @@ void main() {
     // yani merkezden SAĞDA (web ölçümü: +35.6).
     expect(muhur.center.dx - kart.center.dx, closeTo(35, 6),
         reason: 'mühür başlık ile ✕ arasında ortalanmalı');
+  });
+
+  testWidgets(
+      'Skor Kartı: ismin yanında da 20px rütbe mührü (18 Ağustos 2026) — '
+      'başlıktaki 34px mühür DURUYOR, o tıklanabilir olan', (tester) async {
+    final gw = FakeStatsGateway(
+      stats: {
+        'u-me': {null: statRow(total: 85)}
+      },
+      rank: const {'rank': 1, 'total_score': 85},
+    );
+    final auth = AuthService.fake(user: fakeUser(), profile: ironman);
+    await pumpModal(tester, ScoreCardModal(auth: auth, stats: StatsRepo(gw)));
+
+    expect(find.byWidgetPredicate((w) => w is RankSeal && w.size == 34),
+        findsOneWidget,
+        reason: 'başlık mührü kaybolmamalı');
+    final name = find.byWidgetPredicate((w) => w is RankSeal && w.size == 20);
+    expect(name, findsOneWidget, reason: 'isim yanında mühür çizilmemiş');
+    expect(tester.getTopLeft(name).dx,
+        greaterThanOrEqualTo(tester.getTopRight(find.text('Ironman')).dx),
+        reason: 'mühür ismin SAĞINDA olmalı');
   });
 
   testWidgets('Skor Kartı: hiç kaydı yoksa boş metin + sıfır kutular',
@@ -679,5 +713,8 @@ class _ThrowingGateway implements StatsGateway {
       Future.error(Exception('ağ'));
   @override
   Future<Map<String, Object?>?> myLeaderboardRank(String userId) =>
+      Future.error(Exception('ağ'));
+  @override
+  Future<List<Map<String, Object?>>> rankScores(List<String> userIds) =>
       Future.error(Exception('ağ'));
 }

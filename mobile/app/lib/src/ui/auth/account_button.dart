@@ -26,6 +26,8 @@ import '../friends/friends_modal.dart';
 import '../game/count_badge.dart';
 import '../game/help_modal.dart';
 import '../game/neo_box.dart';
+import '../rank/league_rank.dart';
+import '../rank/rank_seal.dart';
 import '../score/klig_mark.dart';
 import '../score/leaderboard_modal.dart';
 import '../score/score_card_modal.dart';
@@ -386,13 +388,29 @@ class _AccountButtonState extends State<AccountButton> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        auth.menuName,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: _text),
+                      // Rütbe mührü ismin HEMEN YANINDA (web `UserMenu.tsx`
+                      // ile aynı yer). Puan ZATEN elde (`_myRank`) —
+                      // ekstra bir sorgu YOK. 18px, satırın 14px'lik
+                      // puntosuna göre ölçüldü (web'de de aynı).
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              auth.menuName,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: _text),
+                            ),
+                          ),
+                          if (_myRank != null) ...[
+                            const SizedBox(width: 6),
+                            RankSeal(
+                                tier: tierFor(_myRank!.totalScore), size: 18),
+                          ],
+                        ],
                       ),
                       if (stats != null && _myRank != null) ...[
                         const SizedBox(height: 2),

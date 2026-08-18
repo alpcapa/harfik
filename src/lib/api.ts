@@ -273,6 +273,44 @@ export async function fetchMyLeaderboardRank(userId: string): Promise<MyLeaderbo
 }
 
 /**
+ * Verilen kullanıcıların k-lig TOPLAM PUANLARINI toplu döner — isimlerin
+ * yanına konan rütbe mührü (`RankSeal` + `tierFor`) için. Sayfa başına TEK
+ * sorgu; satır başına istek atılmaz.
+ *
+ * **Yeni bir migration GEREKMEDİ:** `leaderboard` view'ı zaten
+ * `security_invoker = false` ile `profiles`/`games`in kilitli RLS'ini
+ * bypass edip girişli herkese açık ve tam olarak bu iki kolonu taşıyor.
+ * `total_score` ödül puanlarını (`league_rewards`) da İÇERİR — yani mühür,
+ * hesap menüsündeki/Skor Kartı'ndaki k-lig puanıyla aynı sayıdan türüyor.
+ * (Mod bazlı `player_stats` toplamı bu sayıyı VERMEZ, bkz. kök CLAUDE.md'nin
+ * 17 Ağustos 2026'daki "parantezli puan" notu.)
+ *
+ * **View `games`e INNER JOIN yapıyor**, yani hiç oyun bitirmemiş bir
+ * kullanıcı sonuçta YOKTUR — çağıran eksik id'yi 0 (Çaylak) saymalı.
+ * Dönüş `null` ise "henüz bilinmiyor" demektir (yapılandırılmamış istemci ya
+ * da ağ hatası) ve o durumda mühür HİÇ çizilmemeli — aksi halde herkes bir
+ * an Çaylak görünür.
+ */
+export async function fetchRankScores(userIds: string[]): Promise<Map<string, number> | null> {
+  if (!supabase) return null;
+  const ids = Array.from(new Set(userIds.filter(Boolean)));
+  if (ids.length === 0) return new Map();
+  const { data, error } = await supabase
+    .from('leaderboard')
+    .select('user_id,total_score')
+    .in('user_id', ids);
+  if (error) {
+    console.error('[Kelimeki] fetchRankScores hatası:', error.message);
+    return null;
+  }
+  const map = new Map<string, number>();
+  for (const row of (data as { user_id: string; total_score: number | null }[]) ?? []) {
+    map.set(row.user_id, Number(row.total_score ?? 0));
+  }
+  return map;
+}
+
+/**
  * Oturum açan kullanıcının henüz görmediği k-lig ödül/rütbe kayıtları —
  * kutlama banner'ı (LeagueRewardsHost) için. RLS SELECT'i tüm girişli
  * kullanıcılara açık olduğundan (rütbe herkese görünür lig verisinin

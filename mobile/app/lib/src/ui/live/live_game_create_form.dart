@@ -24,6 +24,9 @@ import '../../data/stats_api.dart';
 import '../auth/k_avatar.dart';
 import '../friends/friends_modal.dart';
 import '../game/neo_button.dart';
+import '../rank/league_rank.dart';
+import '../rank/rank_scores.dart';
+import '../rank/rank_seal.dart';
 import '../tokens.dart';
 import '../form_input.dart';
 
@@ -81,9 +84,18 @@ class _LiveGameCreateFormState extends State<LiveGameCreateForm> {
   ({List<String> names, bool withAi})? _sentTo;
   String? _lastUserId;
 
+  /// Arkadaş seçicideki isimlerin yanındaki rütbe mührü (18 Ağustos
+  /// 2026) — davet edeceğin kişinin rütbesini seçim anında görürsün.
+  late final RankScores _rankScores;
+
+  void _onRankScores() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
+    _rankScores = RankScores(widget.stats)..addListener(_onRankScores);
     _lastUserId = widget.auth.user?.id;
     widget.auth.addListener(_onAuthEvent);
     _reloadFriends();
@@ -93,6 +105,8 @@ class _LiveGameCreateFormState extends State<LiveGameCreateForm> {
   void dispose() {
     widget.auth.removeListener(_onAuthEvent);
     _query.dispose();
+    _rankScores.removeListener(_onRankScores);
+    _rankScores.dispose();
     super.dispose();
   }
 
@@ -116,6 +130,7 @@ class _LiveGameCreateFormState extends State<LiveGameCreateForm> {
           _friends ??= const [];
         }
       });
+      _rankScores.ensure((_friends ?? const []).map((x) => x.friendId));
     });
   }
 
@@ -397,6 +412,7 @@ class _LiveGameCreateFormState extends State<LiveGameCreateForm> {
                         checked: _selected.contains(f.friendId),
                         enabled: true,
                         onTap: () => _toggleFriend(f.friendId),
+                        tier: _rankScores.tierOf(f.friendId),
                       ),
                   ];
                 })(),
@@ -493,6 +509,7 @@ class _LiveGameCreateFormState extends State<LiveGameCreateForm> {
     required bool checked,
     required bool enabled,
     required VoidCallback onTap,
+    RankTier? tier,
   }) {
     return Opacity(
       key: key,
@@ -512,12 +529,21 @@ class _LiveGameCreateFormState extends State<LiveGameCreateForm> {
             avatar,
             const SizedBox(width: 10),
             Expanded(
-              child: Text(name,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: _text)),
+              child: Row(children: [
+                Flexible(
+                  child: Text(name,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: _text)),
+                ),
+                // YZ satırında tier null — robot koltuğunun rütbesi yok.
+                if (tier != null) ...[
+                  const SizedBox(width: 6),
+                  RankSeal(tier: tier, size: 18),
+                ],
+              ]),
             ),
             Container(
               width: 16,

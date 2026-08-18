@@ -14,6 +14,8 @@ import type { FriendRow, OnlineGameSlot } from '../lib/database.types';
 import { trLower } from '../utils/turkish';
 import { Avatar } from './Avatar';
 import { FriendsModal } from './FriendsModal';
+import { RankSeal } from './RankSeal';
+import { useRankScores } from '../hooks/useRankScores';
 
 interface LiveGameCreateFormProps {
   onCancel: () => void;
@@ -45,6 +47,8 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
   const { user } = useAuth();
   const [playerCount, setPlayerCount] = useState<2 | 4>(2);
   const [friends, setFriends] = useState<FriendRow[] | null>(null);
+  // Arkadaş seçicideki isimlerin rütbe mührü — tek toplu çekim.
+  const rankTierOf = useRankScores((friends ?? []).map((f) => f.friend_id));
   const [selected, setSelected] = useState<string[]>([]);
   const [showAiRow, setShowAiRow] = useState(false);
   const [aiSelected, setAiSelected] = useState(false);
@@ -231,7 +235,12 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
                       className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel text-left transition-transform active:scale-[0.99] shrink-0"
                     >
                       <Avatar url={f.avatar_url} name={f.name} size={28} />
-                      <span className="flex-1 min-w-0 text-sm font-bold text-text truncate">{f.name}</span>
+                      <span className="flex-1 min-w-0 flex items-center gap-1.5">
+                        <span className="min-w-0 text-sm font-bold text-text truncate">{f.name}</span>
+                        {rankTierOf(f.friend_id) && (
+                          <RankSeal tier={rankTierOf(f.friend_id)!} size={18} className="shrink-0" />
+                        )}
+                      </span>
                       <CheckMark checked={isSelected} />
                     </button>
                   );

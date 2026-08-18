@@ -918,6 +918,21 @@ gerekiyor).
       KADAR
       tekrar açılabilmeli (kutlamanın aksine "bir kez göster" kuralı yok).
       Başkasının kartında da (PlayerScoreCard) aynı mühür/popup çalışmalı.
+- [ ] **Mühür artık İSİMLERİN yanında da — yedi yüzey (18 Ağustos 2026).**
+      Hepsinde ismin SAĞINDA, isimle aynı dikey merkezde ve satırın
+      puntosuna göre boyutlanmış olmalı: hesap (avatar) menüsünün başlığı
+      (18px) · Skor Kartı'ndaki kendi ismin (20px) · başka bir oyuncunun
+      kartı (20px) · Setup'ta 1. koltuktaki hesap adı (18px) · Arkadaşlar
+      penceresinin ÜÇ sekmesi de (18px — "Arkadaşlarım", "İstekler",
+      "Ara & Ekle") · "+ Yeni Canlı Oyun"daki arkadaş seçici (18px) · Oyun
+      davetleri kartındaki katılımcı isimleri (16px). **Skor kartlarında
+      artık İKİ mühür var** — başlıktaki 34px'lik tıklanabilir mühür VE
+      ismin yanındaki 20px'lik; ikisi AYNI kademeyi göstermeli.
+- [ ] **"Puan bilinmiyor" ile "0 puan" AYRI.** Hiç oyun bitirmemiş bir
+      kullanıcının yanında **Çaylak (Ç)** mührü çıkmalı (o gerçekten 0
+      puan — `leaderboard` view'ında satırı YOK, 0 sayılıyor). Ama liste
+      ilk açılırken, puanlar gelmeden bir an için HERKESİN yanında Çaylak
+      mührü BELİRMEMELİ. YZ koltuklarında ve misafirde mühür HİÇ olmamalı.
 - [ ] **✕ var, "KAPAT"/"DEVAM" butonu YOK — popup'ta DA banner'da DA.**
       (12 Ağustos 2026, kullanıcı isteği; önce yalnızca popup'a
       uygulanmıştı, aynı gün kutlama/düşüş banner'ına da genişletildi.)
@@ -931,11 +946,22 @@ gerekiyor).
       düşüş banner'ının kartı karartılmış zeminde yalnızca yumuşak, koyu
       bir düşen gölge taşımalı — sol/üst kenarda beyaz bir parıltı (nömorfik
       `shadow-raised`) GÖRÜNMEMELİ. İkisi aynı kart, biri değişirse öteki de.
-- [ ] **Küçük rozetler de tırtıklı.** k-lig listesi/Skor Kartı satırlarındaki
-      18-20px'lik mühürlerin dış kenarı da testere dişli olmalı (büyük
-      mühürle aynı siluet, 24 diş) — düz çember GÖRÜNMEMELİ. Dişler
-      telefonda net ayrışmalı, harf (özellikle Ç/Ş sedillası) tırtığa
-      DEĞMEMELİ. Fark: küçük mühürde iç kesikli halka yok, harf daha büyük.
+- [ ] **Rozet: dalgalı disk + iki kurdele kuyruğu (18 Ağustos 2026 — eski
+      tırtıklı/noter mührü TAMAMEN bırakıldı, kullanıcı referans görsel
+      verdi).** Her boyda AYNI siluet: dolu, dalgalı kenarlı bir disk +
+      altında V kesikli iki kurdele; kurdele diskten bir tık KOYU.
+      Testere dişli/ince tırtıklı eski mühür HİÇBİR yerde kalmamalı.
+      Fark yalnızca iç halkada: 34/76px'lik rozetlerde harfin etrafında
+      açık renkli ince bir halka VAR, 18px'lik k-lig satırlarında YOK
+      (harf orada daha büyük). Banner'ın rakamlı glyph'lerinde ("+1000")
+      halka HİÇBİR boyda çizilmez — rakamlar halkaya sığmıyor.
+- [ ] **Harfin yazı tipi: yuvarlak hatlı (M PLUS Rounded 1c 800, 18 Ağustos
+      2026 — öncesi Space Grotesk).** Harf basık ve yuvarlak köşeli
+      görünmeli; kutu/tofu ya da düz bir yedek fonta düşmüş ince bir glyph
+      GÖRÜNMEMELİ. En kolay kontrolü rakamlarda yapılır: banner'ın
+      "+1000"/"10000" glyph'i madalyonun dışına TAŞMAMALI. (Font
+      `font-display: swap` ile geliyor; ilk boyamada bir kare yedek fontla
+      çizilmesi normal, kalıcı olması değil.)
 - [ ] **Harf dikeyde ortalı — kuyruklu olanlar dahil.** Ç ve Ş (sedillalı)
       dairede M/O/U/D ile AYNI ölçüde ortalı durmalı; alta yakın/aşağı
       kaymış görünmemeli. Kolay kontrol: k-lig listesinde Çaylak ve
@@ -1083,12 +1109,13 @@ doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
       legend'ı geniş ekranda da ortalanmalı (sabit iki sütun değil, akan
       satır) ve dar ekranda kırılmadan sarmalı.
 
-- [ ] **Sayfadaki tüm çağrı düğmeleri çalışıyor.** Kahraman "HEMEN
-      OYNA", sayfa sonundaki "OYUNA BAŞLA" ve "GİRİŞ YAP" düğmelerinin
-      üçü de uygulamaya geçirmeli (ikincisi giriş penceresini açmalı).
-      Yeni bir düğme eklendiyse `data-kelimeki-oyna` / `data-kelimeki-giris`
-      özniteliğini taşıdığından emin ol — id ile eklenen bir düğme
-      SESSİZCE ölü kalır.
+- [ ] **Sayfadaki tüm çağrı düğmeleri çalışıyor.** Kahraman "HEMEN OYNA"
+      ve sayfa sonundaki "OYUNA BAŞLA" uygulamaya geçirmeli; şeritteki
+      "GİRİŞ" giriş penceresini açmalı. **Sayfa sonunda ARTIK ikinci bir
+      GİRİŞ düğmesi YOK** (18 Ağustos 2026, kullanıcı isteği) — orada
+      yalnızca "OYUNA BAŞLA" olmalı. Yeni bir düğme eklendiyse
+      `data-kelimeki-oyna` / `data-kelimeki-giris` özniteliğini
+      taşıdığından emin ol — id ile eklenen bir düğme SESSİZCE ölü kalır.
 
 - [ ] **SSS kutuları açılıp kapanıyor.** Native `<details>` kullanılıyor,
       JS yok; soruya dokununca cevap açılmalı.

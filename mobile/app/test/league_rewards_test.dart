@@ -79,6 +79,10 @@ class FakeStatsGatewayForRank implements StatsGateway {
 
   @override
   Future<Map<String, Object?>?> myLeaderboardRank(String userId) async => rank;
+
+  @override
+  Future<List<Map<String, Object?>>> rankScores(List<String> userIds) async =>
+      const [];
 }
 
 User fakeUser([String id = 'u-me']) => User(
@@ -584,18 +588,28 @@ void main() {
       expect(sealIsCompact(24), isFalse);
       expect(sealIsCompact(34), isFalse);
       expect(sealIsCompact(76), isFalse);
-      // Tek harf kompaktta BÜYÜR (okunurluk düzeltmesi). Tam boydaki 23 ise
-      // iç kesikli halkanın (r=16) ölçülmüş tavanı — 24'te Ç/Ş'nin sedillası
-      // halkayı taşıyor (bkz. sealFontSize'ın doc yorumu).
-      expect(sealFontSize('Ç', compact: true), 27);
-      expect(sealFontSize('Ç', compact: false), 23);
-      // Banner glyph'leri: "50"/"+5" orta, "+100" küçük.
-      expect(sealFontSize('50', compact: false), 14);
-      expect(sealFontSize('+5', compact: false), 14);
-      expect(sealFontSize('+100', compact: false), 11);
+      // Tek harf kompaktta BÜYÜR (halka çizilmediğinden sınır madalyonun
+      // kendi poligonu): 20.5 vs tam boyda 18 — ikisi de ÖLÇÜLMÜŞ tavan
+      // (bkz. sealFontSize'ın doc yorumu; en kötü glyph Ç, 0.558 em).
+      expect(sealFontSize('Ç', compact: true), 20.5);
+      expect(sealFontSize('Ç', compact: false), 18);
+      // Banner glyph'leri: halka HİÇ çizilmediğinden sınır poligon.
+      expect(sealFontSize('50', compact: false), 12);
+      expect(sealFontSize('+5', compact: false), 12);
+      expect(sealFontSize('+100', compact: false), 9.5);
+      expect(sealFontSize('+1000', compact: false), 8);
     });
 
-    testWidgets('tırtık her boyda; iç halka yalnızca tam boyda', (tester) async {
+    test('iç halka yalnızca tam boyda VE tek harfte çizilir', () {
+      // Rakamlı glyph'ler ("1000", "+1000") halkanın içine sığmıyor;
+      // sığdırmak için küçültmek de onları okunmaz yapıyordu.
+      expect(sealShowsRing('Ç', compact: false), isTrue);
+      expect(sealShowsRing('Ç', compact: true), isFalse);
+      expect(sealShowsRing('50', compact: false), isFalse);
+      expect(sealShowsRing('+1000', compact: false), isFalse);
+    });
+
+    testWidgets('kurdele her boyda; iç halka yalnızca tam boyda', (tester) async {
       await setPhoneViewSize(tester, const Size(200, 200));
       await tester.pumpWidget(const MaterialApp(
         home: Scaffold(
@@ -632,18 +646,18 @@ void main() {
       expect(
           seals.map((p) => p.size), [const Size(18, 18), const Size(34, 34)]);
 
-      // Dış kenar HER BOYDA tırtıklı (12 Ağustos 2026, kullanıcı isteği):
-      // iki mühür de dış hattı `drawPath` ile çiziyor, HİÇBİRİ `drawCircle`
-      // kullanmıyor. Tek fark iç kesikli halka — o yalnızca tam boyda var
-      // (`drawArc`), kompaktta hiç çizilmiyor.
+      // Roset HER BOYDA aynı siluet: iki kurdele kuyruğu + madalyon dolgusu
+      // + madalyon kenarı = 4 `drawPath`. Tek fark iç açık halka — o yalnızca
+      // TAM BOYDA çizilir (`drawCircle`), kompaktta hiç çizilmez. Eski
+      // tırtıklı mühürdeki kesikli halka (`drawArc`) tamamen kalktı.
       final compact = _recordSeal(seals.first, const Size(18, 18));
       final full = _recordSeal(seals.last, const Size(34, 34));
+      expect(compact.paths, 4);
+      expect(full.paths, 4);
       expect(compact.circles, 0);
-      expect(full.circles, 0);
-      expect(compact.paths, 2); // dolgu + kenar
-      expect(full.paths, 2);
+      expect(full.circles, 1);
       expect(compact.arcs, 0);
-      expect(full.arcs, greaterThan(0));
+      expect(full.arcs, 0);
     });
 
     testWidgets('harf MÜREKKEPTEN ortalanır — kuyruklu Ç düz M ile aynı hizada',
@@ -681,21 +695,21 @@ void main() {
               key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
           final image = await boundary.toImage();
           final data = (await image.toByteData())!;
-          // Mühür -6° eğik olduğundan RepaintBoundary kutusu 44*scale'den
-          // biraz büyük; merkez her zaman kutunun ortası.
-          final cx = image.width / 2, cy = image.height / 2;
-          // YALNIZCA iç bölge taranır (r < 15 viewBox birimi): dışarıda
-          // tırtıklı kenar, 16'da kesikli halka var — ikisi de harfle aynı
-          // renkte. Harfin azami yarıçapı ölçülen 12.61, yani rahat sığıyor.
-          final limit = 15 * scale;
+          // Madalyonun merkezi kutunun ortası DEĞİL: alt üçte bir kurdeleye
+          // ayrıldığından merkez viewBox'ta kSealCy'de (16.6/44).
+          final s = image.width / 44.0;
+          final cx = image.width / 2, cy = kSealCy * s;
+          // YALNIZCA halkanın İÇİ taranır (r < 10.2 viewBox birimi): halka
+          // (r=11, kalınlık 1.3) da açık renkli, harfle aynı kanala düşer.
+          final limit = 10.2 * s;
           double top = double.infinity, bottom = -double.infinity;
           for (var y = 0; y < image.height; y++) {
             for (var x = 0; x < image.width; x++) {
               final dx = x + 0.5 - cx, dy = y + 0.5 - cy;
               if (dx * dx + dy * dy > limit * limit) continue;
               final i = (y * image.width + x) * 4;
-              // Zemin kPanel (#F5F7FA); harf kRed — kırmızı kanal düşük.
-              if (data.getUint8(i + 1) < 128) {
+              // Madalyon dolgusu kRed (yeşil kanal 0x26); harf BEYAZ.
+              if (data.getUint8(i + 1) > 160) {
                 if (y < top) top = y.toDouble();
                 if (y > bottom) bottom = y.toDouble();
               }
@@ -703,7 +717,7 @@ void main() {
           }
           expect(top.isFinite, isTrue, reason: "$letter için mürekkep bulunamadı");
           // viewBox birimine çevir, merkeze göre sapma.
-          return ((top + bottom + 1) / 2 - cy) / scale;
+          return ((top + bottom + 1) / 2 - cy) / s;
         }) as double;
       }
 

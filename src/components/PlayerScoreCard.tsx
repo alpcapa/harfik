@@ -227,6 +227,10 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <div className="text-base font-bold text-text truncate">{name}</div>
+            {/* Rütbe mührü — ScoreCard'daki aynı karar (18 Ağustos 2026):
+                başlıktaki 34px'lik dokunulabilir mühür KALIR, bu yalnızca
+                ismin yanındaki rozettir. */}
+            {rankTier && <RankSeal tier={rankTier} size={20} className="shrink-0" />}
             {showFriendButton && (
             <button
               type="button"

@@ -17,6 +17,8 @@ import { LiveGamesTab } from './LiveGamesTab';
 import { LogoMark } from './LogoMark';
 import { PlayerAvatarRow, type AvatarRowPlayer } from './PlayerAvatarRow';
 import { PlayerBadge } from './PlayerBadge';
+import { RankSeal } from './RankSeal';
+import { useRankScores } from '../hooks/useRankScores';
 import { RecentGamesSection } from './RecentGamesSection';
 import { ShareIcon } from './RelationIcons';
 import { shareKelimekiLink } from '../utils/shareLink';
@@ -213,6 +215,11 @@ export function Setup({
   onResumeCloudSave,
 }: SetupProps) {
   const { user, profile, loading, profileLoading } = useAuth();
+  // 1. koltuktaki hesap sahibinin rütbe mührü. Puan `leaderboard`
+  // view'ından geliyor, yani ÖDÜL puanları dahil — 17 Ağustos 2026'da
+  // kaldırılan parantezli sayı `player_stats` mod toplamıydı ve o, ödülleri
+  // İÇERMEDİĞİ için gerçek k-lig puanından sapıyordu (bkz. kök CLAUDE.md).
+  const rankTierOf = useRankScores([user?.id]);
   // Oturum açıldıysa 1. oyuncu her zaman hesap sahibidir. Profil henüz
   // çekilmediyse (profileLoading) e-posta önekine düşmüyoruz — aksi halde
   // sayfa her açılışta profil gelene kadar bir anlık yanlış/geçici bir isim
@@ -784,8 +791,13 @@ export function Setup({
                   )}
 
                   {isAccount ? (
-                    <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
-                      {accountName}
+                    <span className="flex-1 min-w-0 flex items-center gap-1.5">
+                      <span className="font-sans text-sm font-bold text-text truncate">
+                        {accountName}
+                      </span>
+                      {rankTierOf(user?.id) && (
+                        <RankSeal tier={rankTierOf(user?.id)!} size={18} className="shrink-0" />
+                      )}
                     </span>
                   ) : isPending ? (
                     <span className="flex-1 min-w-0 font-sans text-sm font-bold text-muted truncate animate-pulse">

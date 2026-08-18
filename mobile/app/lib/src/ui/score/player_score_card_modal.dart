@@ -21,7 +21,9 @@ import '../auth/k_avatar.dart';
 import '../friends/friends_modal.dart'
     show confirmFriendAction, showFriendInfoDialog;
 import '../game/modal_shell.dart';
+import '../rank/league_rank.dart';
 import '../rank/rank_header_seal.dart';
+import '../rank/rank_seal.dart';
 import 'game_history_modal.dart';
 import 'klig_mark.dart';
 import 'leaderboard_modal.dart';
@@ -327,6 +329,16 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
                               fontWeight: FontWeight.bold,
                               color: _text)),
                     ),
+                    // Rütbe mührü ismin YANINDA (Skor Kartı ile aynı
+                    // kural/boy) — arkadaşlık ikonundan ÖNCE, yani isme
+                    // bitişik. Başlıktaki 34px'lik mühür duruyor.
+                    if (_loaded.contains(StatsTab.all)) ...[
+                      const SizedBox(width: 6),
+                      RankSeal(
+                          tier: tierFor(
+                              _statsByTab[StatsTab.all]?.totalScore ?? 0),
+                          size: 20),
+                    ],
                     if (_relationIcon() case final icon?) icon,
                   ],
                 ),

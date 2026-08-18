@@ -508,6 +508,27 @@ oluşuyor. İki tasarım kararı kayda değer:
   0) ve `compact` modda puanlar hiç gösterilmiyor — denendi, ekran
   görüntüsünde normal taştan ayırt edilemedi, yani hiçbir şey anlatmıyordu.
 
+**"Neler var" altı kutusunun ikonları (`src/landing/OzellikIkonlari.tsx`,
+18 Ağustos 2026, kullanıcı isteği: "6 kutuya uygun ikonlar koyalım. Başlığın
+hemen yanına minik, yazı kadar."):** Başlığın SOLUNDA, 13px (başlık
+`text-[12px]`, yani "yazı kadar"), `text-accent`. Hizalama `items-start` +
+1px nudge — `items-center` DEĞİL: 390px'te kart iç genişliği ~151px ve altı
+başlıktan beşi iki satıra sarıyor, ortalanan ikon o iki satırın arasına
+düşüp ilk satırla bağını koparıyordu.
+
+**İkonlar `RelationIcons.tsx`'e EKLENMEDİ ve bu bilinçli.** Oradaki kural
+("path'i kopyalama, buraya ekle") Material glyph'lerinin Flutter portuyla
+BİREBİR aynı vektör olmasından doğuyor; bu altı ikonun portta karşılığı yok
+ve olmayacak (karşılama katmanı web'e özgü). Material path'lerini hafızadan
+yazmak ise bu kod tabanında bir kez denenip yanlış glyph üretmişti ve bu
+ortamda çıkarılacak bir `MaterialIcons-Regular.otf` yok — o yüzden ikonlar
+ilkel şekillerden (daire/dikdörtgen/çizgi/yay) kurulup gerçek Chromium
+render'ıyla gözle denetlendi (390 ve 834 px, DPR 3). **Ölçüldü:** SVG kutusu
+iki genişlikte de 13×13, başlıkla arası 6px, yatay taşma 0; wifi-off ikonu
+ilk turda okunmaz çıktı (yaylar parçalıydı), tek merkezli iki temiz yaya
+çevrildi. Maliyet ham +2.7 KB / gzip +0.42 KB (yukarıdaki bütçe satırı buna
+göre güncellendi).
+
 **Logo sprite'ı (`src/landing/LandingLogo.tsx`) — ÖLÇÜLMÜŞ bir zorunluluk:**
 `LogoMark` her çağrıda 11.760 baytlık path verisini yazıyor ve logo sayfada üç
 yerde geçiyor; gzip kopyaları BİRLEŞTİREMİYOR (aralarındaki mesafe deflate'in
@@ -518,11 +539,17 @@ TEK KAYNAKTA (`LogoMark.tsx`in dışa açtığı sabitler; o dosya
 `generate-logo-paths.mjs` tarafından üretiliyor) — uygulama tarafı bu sprite'ı
 KULLANMAZ, orada logo tek kez çiziliyor.
 
-**Sayfa bütçesi (ölçüldü, 18 Ağustos 2026 — filigranlar açıldıktan ve tahta
-kendi genişliğine taşındıktan SONRAKİ nihai değer):** `dist/index.html` ham
-**252.3 KB** / **gzip 21.73 KB** (tek tahtalı ilk sürüm 130.8 KB / 15.84 KB
-idi; ikinci tahta ~3.2 KB, iki tahtanın dolulaşması + izole hamleler ~0.6 KB,
-filigran/puan üst simgesi ~0.6 KB gzip ekledi). **Bu rakam ölçülürken
+**Sayfa bütçesi — güncel ölçüm (18 Ağustos 2026, metin turu + sayfa sonu
+GİRİŞ düğmesinin kaldırılmasından SONRAKİ nihai değer): `dist/index.html`
+ham **254.0 KB** / **gzip 22.13 KB**.** Aynı gün üç ara ölçüm daha yapıldı,
+sırasıyla: özellik ikonları eklendikten sonra ham 255.0 KB / gzip 22.15 KB
+(tek tahtalı ilk sürüm 130.8 KB / 15.84 KB idi; ikinci tahta
+~3.2 KB, iki tahtanın dolulaşması + izole hamleler ~0.6 KB, filigran/puan üst
+simgesi ~0.6 KB, altı özellik ikonu 0.42 KB gzip ekledi — sonuncusu
+öncesi/sonrası iki ayrı derlemeyle ölçüldü: 252.264/21.730 → 254.958/22.147
+bayt); rütbe rozeti roset tasarımına geçince ham 254.1 KB / gzip 22.25 KB
+(ham −814 / gzip +103); font M PLUS Rounded 1c'ye çevrilince 254.1 KB /
+22.25 KB (değişmedi). **Bu rakam ölçülürken
 `dist`i `http://` üzerinden aç** — `file://` mutlak asset yollarını
 çözemediğinden ölçüm sessizce yanlış çıkar.
 Bölüm 2'nin "< 15 KB" notu yer tutucu içeriğe göre yazılmıştı; gerçek içerikle
@@ -566,8 +593,10 @@ En dar ekranda logo ile GİRİŞ arası 62.6 px — çakışma yok.
 
 ### Buton bağlama sözleşmesi (yeni)
 
-Sayfada İKİ "Oyna" (kahraman + sayfa sonu), İKİ "Giriş" (şerit + sayfa sonu)
-ve İKİ hukuki bağlantı var. `main.tsx` hepsini ÖZNİTELİKLE bağlıyor:
+Sayfada İKİ "Oyna" (kahraman + sayfa sonu), TEK "Giriş" (yalnızca şeritte —
+sayfa sonundaki ikinci GİRİŞ 18 Ağustos 2026'da kullanıcı isteğiyle
+kaldırıldı; `Giris` bileşeni de tek tüketicisi kalmadığı için silindi,
+`noUnusedLocals` zaten derlemede yakalardı) ve İKİ hukuki bağlantı var. `main.tsx` hepsini ÖZNİTELİKLE bağlıyor:
 `data-kelimeki-oyna` / `-giris` / `-kosullar` / `-gizlilik` — **yeni bir
 düğme eklerken id değil bu öznitelik verilmeli**, aksi halde düğme sessizce
 ölü kalır. Şeritteki GİRİŞ ayrıca `id="karsilama-giris"` taşıyor
@@ -681,8 +710,8 @@ doğrulandı.
 
 | | değer |
 |---|---|
-| `dist/index.html` ham | **252.3 KB** (bunun ezici çoğunluğu `#karsilama` bloğu) |
-| gzip | **21.73 KB** |
+| `dist/index.html` ham | **254.0 KB** (bunun ezici çoğunluğu `#karsilama` bloğu) |
+| gzip | **22.13 KB** |
 | Bölüm 2'nin ilk hedefi | `< 15 KB` gzip (yer tutucu içeriğe göre yazılmıştı) |
 | İki tam tahtanın (Bölüm 3'te eklenen) gzip payı | ~6.9 KB |
 
@@ -704,8 +733,8 @@ sonra iki, sonra oyun ortası + sınır ihlali, sonra izole hamleler) —
 durumda ve cevap "ikisi de kalsın, zenginleşsin" oldu. 70 ms'lik tek seferlik
 bir maliyeti bu açık kararın üstüne çıkarmak yanlış önceliklendirme olurdu.
 **Hedef artık `< 15 KB` DEĞİL** — bu doküman bir daha "hedefi tuttur" diye
-tahta silmeye kalkışmasın diye rakam güncellendi: gerçekleşen **~21.7 KB
-gzip**, takas hâlâ açıkça lehte (21.7 KB HTML ↔ 410 KB tam uygulama JS'i).
+tahta silmeye kalkışmasın diye rakam güncellendi: gerçekleşen **~22.1 KB
+gzip**, takas hâlâ açıkça lehte (22 KB HTML ↔ 410 KB tam uygulama JS'i).
 (Bu satır bir dönem 19.3 KB diyordu; filigranların açılması ve tahtanın
 kendi genişliğine taşınması rakamı yukarı çekti — ikisi de kullanıcının
 açık isteğiydi, bkz. Bölüm 3'teki tahta notu.)
@@ -904,6 +933,7 @@ src/
   landing/      # karşılama katmanı — derleme zamanında statik HTML (bkz. "Karşılama Katmanı")
     Landing.tsx     # sayfanın tamamı; SUNUCUDA render edilir (hook/olay/tarayıcı globali YOK)
     LandingLogo.tsx # logoyu üç kez çizmek için SVG sprite (path verisi LogoMark'tan)
+    OzellikIkonlari.tsx # "Neler var" altı özellik ikonu (Material DEĞİL — ilkel şekiller, portta karşılığı yok)
     demoBoard.ts    # tanıtım tahtasının taşları — `npm run verify-demo-board` ile doğrulanır
     render.tsx      # `renderToStaticMarkup` sarmalayıcısı (Node'da koşar)
   components/   # React UI bileşenleri
@@ -914,7 +944,10 @@ src/
   utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, cloudSaveMirror, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields, platform, offlineNotice...)
   data/         # Kelime listesi (~63k), harf dağılımı, kelime anlamları, wordSetLoader (lazy chunk)
   lib/          # Supabase istemcisi ve API sarmalayıcısı
-  hooks/        # useAuth, useModalA11y, useOnlineStatus, useAppIconBadge, useNicknameAvailability
+  fonts/        # @font-face tanımları (main.tsx import eder) + files/*.woff2 — bunlardan
+                # mplus-rounded-1c-800-subset.woff2 ÜRETİLMİŞ, yalnızca RankSeal'ın harfi
+                # (yeniden üretimi: "k-lig Ödül & Rütbe Sistemi" → Rütbe Rozeti Fontu)
+  hooks/        # useAuth, useModalA11y, useOnlineStatus, useAppIconBadge, useNicknameAvailability, useRankScores
 mobile/         # Flutter portu — kelimeki_core (saf Dart motor) + üretilmiş
                 # sözlük asset'i + golden vector fixture'ları (bkz. mobile/CLAUDE.md)
 ```
@@ -1362,7 +1395,82 @@ Kullanıcı onaylı tasarım (3 konseptten "Mühür" seçildi; eşikler/ödül t
 
 **`total_score` artık ÜÇ sunucu tarafında da ödül dahil:** `player_stats_overall`, `leaderboard` view'ları ve `my_leaderboard_rank` RPC'si (sıralama penceresi dahil) — biri atlanırsa liste ile "senin sıran" satırı ayrışır. **Mod bazlı `player_stats` BİLEREK değişmedi** (ödül moda bölünemez) — yani eski "Genel lig puanı = 2 kişilik + 4 kişilik sekmelerin toplamı" değişmezi artık "… + ödül puanı"dır; `player_stats_overall`'a eklenen `bonus_points` kolonu bu farkı taşır; kullanıcıya "+N eşik ödülü dahil" bilgisi `RankInfoModal`'da gösterilir (12 Ağustos 2026'ya kadar `ScoreStatsSection`'ın Genel sekmesinde dipnottu, mühür popup'ı gelince oradan kaldırıldı). View'lara sona eklenen diğer kolon `rank_tier` (max rank_up threshold, 0=Çaylak) — `LeaderboardRow.rank_tier` ve `PlayerStats.rank_tier?` (yalnızca overall'da var, tip bu yüzden opsiyonel); 12 Ağustos 2026'dan beri UI bu kolonu OKUMUYOR (düşmeli sürüm, yukarı bkz.), kutlama-geçmişi kaydı olarak duruyor.
 
-**İstemci parçaları:** `src/utils/leagueRank.ts` (eşik/isim/renk/ÖDÜL tablosu — `RankTier.reward` eşiğin tek seferlik ödülünü de taşır; **ÜÇ KOPYA ELLE SENKRON:** bu dosya, sunucudaki `_award_league_rewards` içindeki `(values ...)` listeleri ve Flutter portunun `mobile/app/lib/src/ui/rank/league_rank.dart`'ı — SQL↔TS↔Dart tek kaynak yapılamadı; biri değişirse ÜÇÜ birden değişmeli. **14 Ağustos 2026'dan beri TS ↔ Dart yarısı TESTLİ** — `mobile/app/test/rank_tiers_parity_test.dart` `leagueRank.ts`'i okuyup portun `kRankTiers`iyle satır satır karşılaştırıyor (ad/harf/renk/eşik/ödül), yani bir kademeyi web'de değiştirip porta taşımamak mobil test paketini düşürür; **SQL yarısı hâlâ korumasız** (`_award_league_rewards`ın güncel tanımı tek bir migration dosyasında durmadığından bir birim testi onu okuyamaz — eşik/ödül değiştiren her migration canlıda ayrıca doğrulanmalı). Ayrıca kümülatif ödüller (0/5/15/40/90/190/440/940/1940) BİRBİRİNDEN FARKLI olmak zorunda — `rewardAlreadyClaimed` ödenen eşik kümesini yalnızca toplamdan türetiyor, iki farklı prefix aynı toplamı verirse o çıkarım bozulur), `RankSeal.tsx` (nömorfik mühür SVG — path kopyalanmaz, `RelationIcons` ilkesi; **yerleşim 12 Ağustos 2026'da aynı gün ÜÇ karar geçirdi:** ismin altında ayrı satır → ismin hemen yanında → başlığın sağında/✕'e bitişik → nihai: ScoreCard/PlayerScoreCard'da BAŞLIK İLE ✕ ARASINDA ORTALI, büyük [34px] ve YAZISIZ — bunun için `Modal`'a `headerAction`'dan (✕'e bitişik sağda durur, ChatModal'ın dişlisi onu kullanıyor, DOKUNULMADI) ayrı bir `headerCenter` yuvası eklendi (verilmezse `justify-between` eski davranışı korur) — kademe adı artık kartta hiç yazılmıyor, dokununca `RankInfoModal` açılıyor; k-lig satırlarında isim yanında 18px. **Kompakt çizim:** `size < 24` iken iç kesikli halka çizilmez ve harf büyütülür [19→27] — 17px'lik mühürde harf ~7px'e düşüp okunmuyordu, kullanıcı bildirdi. **Dış kenar TIRTIKLI (12 Ağustos 2026, kullanıcı isteği — referans: testere dişli sertifika damgası):** 24 diş, uç 21.0 / vadi 18.8 viewBox birimi, stroke 2.0 + `strokeLinejoin="round"` (miter olsaydı sivri uçlarda uzun diken çıkardı). Nokta listesi elle YAZILMAZ, üç sabitten `SCALLOP_POINTS`la üretilir; **Flutter portu [`mobile/app/lib/src/ui/rank/rank_seal.dart`] AYNI üç sabitle bir `Path` çiziyor — ikisi BİRLİKTE değişmeli.** **Tırtık HER BOYDA — aynı gün ikinci karar (kullanıcı: "leaderboard'daki küçük rozetlerde tırtık olamıyor mu?"):** ilk sürümde kompakt mühür düz çemberdi, gerekçesi "18px'te diş derinliği <1px, alt-piksel gürültüsüne döner" idi — bu ÖLÇÜLMEDEN yazılmış ve YANLIŞTI, hesap DPR 1 varsayıyordu; retinada (DPR 3) 0.9 CSS px = 2.7 cihaz pikseli, dişler net çıkıyor (18px/DPR3 render edilip büyütülerek doğrulandı). Diş sayısı da bilerek aynı (24) — tek siluet, tek sabit seti). **Ortadaki harfin puntosu 12 Ağustos 2026'da kullanıcı isteğiyle tam boyda 19→23 çıkarıldı — sayı ÖLÇÜLDÜ, tahmin değil:** kademe harflerinin (Ç M O U Ş D) `getBBox`'ı gerçek Space Mono 700 ile Chromium'da okundu, merkeze en uzak köşe Ç'de 23'te **15.48** / 24'te **16.20** — iç kesikli halka r=16 olduğundan 24'te Ç/Ş'nin sedillası halkayı taşıyor. Kompakt boy **27'de KALDI**: tırtık her boya yayılınca oradaki sınır daraldı (düz çemberin iç kenarı 19.25 → vadi iç kenarı 18.8 − 1.0 = **17.8**) ve harfin bbox köşesi 27'de 18.17, yani KUTU taşıyor — ama kutunun köşesi boş: aynı harfler 20× ölçekte render edilip PİKSEL taranınca en uzak MÜREKKEP 27'de **16.56** (Ç; Ş 16.47, M 13.16, D 12.79, U 11.13, O 11.11), sınıra 1.24 birim var. **Ders: yuvarlak harflerde bbox köşesini sınır sanmak yanlış pozitif üretir — ölçüm mürekkeple yapılmalı**. Aynı gün üçüncü karar: **harf artık MÜREKKEP kutusundan ortalanıyor, `dominantBaseline="central"` KALDIRILDI** (kullanıcı bildirdi: "Ç, Ş gibi altında kuyruk olan karakterler ortalı durmuyor, alta daha yakın duruyor"). `central` mürekkebi değil FONT metriklerini (ascent/descent) ortalıyor; ölçüm iki ayrı sapma gösterdi — TÜM harfler ~1.2 birim aşağıdaydı (tek başına fark edilmeyecek kadar küçük) ve Ç/Ş sedilla yüzünden ~2.5 birim DAHA aşağıdaydı, gözle görülen buydu. Yeni taban çizgisi `22 + (INK_ASC_EM − descender)/2 × fontSize`; iki sabit de em cinsinden ölçüldü (`canvas.measureText`): büyük harflerin mürekkep tepesi .70–.72 → tek sabit **.71**, sedillanın taban altına inmesi **.21**. Sonuç ölçüldü: azami sapma 3.98 → **0.32** (kompakt) ve 3.45 → **0.27** (tam boy); harf başına tablo GEREKMEDİ. Yan etki: mürekkep merkeze geldiğinden Ç'nin azami yarıçapı 16.56 → **12.61**'e düştü, yani yukarıdaki 23/27 tavanları artık çok daha rahat — punto DEĞİŞTİRİLMEDİ, kullanıcı mevcut boyu onayladı, ama bir dahaki büyütme isteğinde eski tavan hesabı yeniden yapılmalı [o hesap harfin AŞAĞIDA durduğu hâle göreydi]), `RankInfoModal.tsx` (mühre dokununca açılan bilgi popup'ı — RewardBanner'ın kart düzeni/`reward-*` animasyonlarıyla her açılışta yeniden damgalanır ama `seen_at`'e dokunmaz [salt bilgi, tekrar tekrar açılabilir]: kademe adı + güncel puan + "+N eşik ödülü dahil" + sıradaki rütbe hedefi + hedefe İLERLEME ÇUBUĞU (mevcut eşik→sonraki eşik oranı, dolgu rengi SIRADAKİ kademenin rengi, altında eşik/puan/eşik etiketleri ve eşiklerin altında o eşiğin ödül rozeti — hedef etiketi YALNIZCA SAYI ("100"). **12 Ağustos 2026'da kullanıcı isteğiyle sondaki "puan" kelimesi kaldırıldı:** "Sıradaki rütbe: Oyuncu · 100 puan" satırı ZATEN hemen üstte duruyor, alt alta tekrar oluyordu. `RewardBanner`'ın düşüş çubuğu da aynı kurala çekildi — ikisi aynı görsel, birlikte değişmeli. **Rozet renk kuralı (aynı gün ÜÇ sürüm geçirdi — hedefte yeşil "(+N)" → alınmışsa nötr "(0)" → nihai):** YEŞİL + aynı boyda ✓ yalnızca ALINMIŞ ödülde (sol eşik her zaman; hedef eşik yalnızca düşüp yeniden yaklaşan kişide — kişi geri düşse bile yeşil ✓ kalır, ödül geri alınmadığından), henüz alınmamış hedef ödülü GRİ "(+N)". "Alınmış mı" bilgisi ekstra sorgusuz, `rewardAlreadyClaimed`'in (leagueRank.ts) `bonus_points` toplamından prefix çıkarımıyla (ödüller her zaman soldan sağa atlamasız verildiğinden toplam, ödenen eşik kümesini tekil belirler); dolgu `visible` bir rAF sonrası true olduğundan 0'dan gerçek orana width-transition'la akar — en üst kademede çubuk yok, "En yüksek rütbedesin!"). **Kapatma ✕, kocaman "KAPAT" butonu DEĞİL (12 Ağustos 2026, kullanıcı isteği):** sağ üstte, `Modal.tsx`'in kapatma butonuyla birebir aynı stil — projedeki her modalın deseni bu, salt bilgi veren bir popup'ın altına tam genişlikte bir aksiyon butonu koymak yanlıştı. **Aynı gün ikinci karar — kural banner'lara da genişledi (kullanıcı: "bence bu banner'larda kapat, devam vb olmamalı, sadece X"):** `RewardBanner`'ın "DEVAM"ı da kaldırıldı, yerine AYNI ✕ geldi. İlk sürüm "DEVAM" KALIR demişti (gerekçe: o gerçek bir aksiyon, ödülleri görüldü işaretler) — gerekçe teknik olarak doğruydu ama kullanıcı görsel tutarlılığı tercih etti; **işaretleme kaybolmadı, ✕ AYNI `onClose`'a bağlandı** (`mark_league_rewards_seen`'e giden TEK yol, bkz. `LeagueRewardsHost`). Banner'a yeni bir kapatma yolu eklenirse (ör. zemine dokunma) o da `onClose`'tan geçmeli, aksi halde banner her açılışta yeniden çıkar. Escape zaten `useModalA11y` üzerinden aynı callback'e bağlı. **Kart gölgesi `shadow-raised` DEĞİL, `Modal.tsx`'in düz düşen gölgesi (`0 20px 45px rgba(15,23,42,.5)`, aynı gün kullanıcı bildirdi: "üst ve sol tarafındaki beyaz gölge iyi durmuyor"):** `shadow-raised`in sol-üst beyaz parıltısı (`-2 -2 5 rgba(255,255,255,.85)`) nömorfik YÜZEYLER için tasarlandı, karartılmış zeminde (bg-black/40) yüzen bir kartta hale gibi okunuyordu — `RewardBanner`'ın kartı da aynı gün aynı gölgeye çekildi, ikisi aynı kart; `Modal` portal'ı z-[150] olduğundan bu popup z-[200] ile ayrıca portal'lanır — ScoreStatsSection'daki eski "+N dahildir" dipnotu buraya taşınıp oradan kaldırıldı), `RewardBanner.tsx` (damga+konfeti animasyonu — `index.css`'teki `reward-*` keyframe'leri; ActionSheet dersleri uygulandı: ekran ORTASI + karartma + rAF sonrası `visible`; `prefers-reduced-motion` guard'lı), `LeagueRewardsHost.tsx` (görülmemiş satırları çekip TEK birleşik banner gösterir — geçmişe dönük backfill'de bile satır başına ayrı popup yok; "Devam" hepsini işaretler).
+**İstemci parçaları:** `src/utils/leagueRank.ts` (eşik/isim/renk/ÖDÜL tablosu — `RankTier.reward` eşiğin tek seferlik ödülünü de taşır; **ÜÇ KOPYA ELLE SENKRON:** bu dosya, sunucudaki `_award_league_rewards` içindeki `(values ...)` listeleri ve Flutter portunun `mobile/app/lib/src/ui/rank/league_rank.dart`'ı — SQL↔TS↔Dart tek kaynak yapılamadı; biri değişirse ÜÇÜ birden değişmeli. **14 Ağustos 2026'dan beri TS ↔ Dart yarısı TESTLİ** — `mobile/app/test/rank_tiers_parity_test.dart` `leagueRank.ts`'i okuyup portun `kRankTiers`iyle satır satır karşılaştırıyor (ad/harf/renk/eşik/ödül), yani bir kademeyi web'de değiştirip porta taşımamak mobil test paketini düşürür; **SQL yarısı hâlâ korumasız** (`_award_league_rewards`ın güncel tanımı tek bir migration dosyasında durmadığından bir birim testi onu okuyamaz — eşik/ödül değiştiren her migration canlıda ayrıca doğrulanmalı). Ayrıca kümülatif ödüller (0/5/15/40/90/190/440/940/1940) BİRBİRİNDEN FARKLI olmak zorunda — `rewardAlreadyClaimed` ödenen eşik kümesini yalnızca toplamdan türetiyor, iki farklı prefix aynı toplamı verirse o çıkarım bozulur), `RankSeal.tsx` (rozet SVG — path/daire kopyalanmaz, `RelationIcons` ilkesi; **yerleşim 12 Ağustos 2026'da aynı gün ÜÇ karar geçirdi:** ismin altında ayrı satır → ismin hemen yanında → başlığın sağında/✕'e bitişik → nihai: ScoreCard/PlayerScoreCard'da BAŞLIK İLE ✕ ARASINDA ORTALI, büyük [34px] ve YAZISIZ — bunun için `Modal`'a `headerAction`'dan (✕'e bitişik sağda durur, ChatModal'ın dişlisi onu kullanıyor, DOKUNULMADI) ayrı bir `headerCenter` yuvası eklendi (verilmezse `justify-between` eski davranışı korur) — kademe adı artık kartta hiç yazılmıyor, dokununca `RankInfoModal` açılıyor; k-lig satırlarında isim yanında 18px, tanıtım sayfasında 30px, banner'da 76px.
+  **18 Ağustos 2026 — TIRTIKLI MÜHÜR TASARIMI TAMAMEN BIRAKILDI.** Kullanıcı: *"Bizim rütbe badge'leri beğenmiyorum. Özellikle ince tırtıklar çok kötü. Bana … altı kurdeleli badge alternatifleri ver 3 tane… Albenili ama egzajere değil, basit ama şık bir şey."* Üç alternatif (dolu madalya / çizgisel rozet / altıgen madalyon) sunuldu, kullanıcı ÜÇÜNÜ DE seçmeyip bir **referans görsel** gönderdi (klasik ödül roseti: dolu dalgalı disk + içte açık halka + V kesikli iki kurdele kuyruğu) ve *"Bundan istiyorum. Rengini sen ayarla"* + *"Bu imajı birebir kopyala ve ona giydir"* dedi. Bugünkü tasarım o referansın oranlarından türetildi; renk kademeden (`RankTier.color`) gelir, kurdele aynı rengin bir tık koyusu (`darken`, ×0.86). **Öncekinden korunan TEK şey harf/glyph API'si** (`tier` + opsiyonel `glyph`) — çağrı yerlerinin hiçbiri değişmedi.
+  **Geometri (viewBox 44×44, hepsi ELLE senkron ikizi `mobile/app/lib/src/ui/rank/rank_seal.dart` ile — biri değişirse öteki de):** madalyon merkezi `CY=16.6` (alt üçte bir kurdeleye ayrıldı), uç yarıçapı `TIP_R=15`, vadi `VALLEY_R=12.675` (0.845×uç), `LOBES=14`, kenar `EDGE_W=2` + `strokeLinejoin="round"` (lob uçları yumuşasın); iç halka `RING_R=11`/`RING_W=1.3`, `#F5F7FA` %92 opak. Kurdele üstü madalyonun ARKASINDA başlar (`TAIL_TOP=25`), aşağı inerken dışa açılır (`TAIL_SPLAY`), alt ucu V kesiktir (`TAIL_NOTCH`) ve 43.4'e iner — uç yarıçapı 15 + stroke'un yarısı 1 = 16 ile birlikte 44'lük kutuya kırpılmadan sığar. Lob noktaları elle YAZILMAZ, üç sabitten üretilir. **Döndürme YOK** (eski mührün `-6deg` eğimi kalktı).
+  **İç halka yalnızca TAM BOYDA ve TEK harfte çizilir** (`showRing = !compact && text.length <= 1`): rakamlı banner glyph'leri ("1000", "+1000") halkanın içine sığmıyor, sığdırmak için küçültmek de onları okunmaz yapıyordu. Kompakt eşiği eskisi gibi `size < 24`.
+  **Punto merdiveni ÖLÇÜLMÜŞ tavanlar, tahmin değil — ve hesapla DEĞİL, PİKSELLE:** gerçek rozet 20× büyütülüp SİYAH zeminde render edilip beyaz harfin HER pikseli madalyon poligonuna karşı tarandı. Bu ayrım önemli: `textAnchor="middle"` mürekkebi değil ADVANCE kutusunu ortalar, yani yan boşlukları asimetrik bir glyph ("+1000" gibi) yalnızca `measureText`le hesaplanan bir tavandan birkaç onda birim daha dışarı taşar — ilk ladder (12/10/8.5) tam bu yüzden beş glyph'te poligonu deliyordu (`+1000` 1001 piksel). Nihai merdiven: tek harf **18** / kompakt **20.5**, 2-3 karakter **12**, 4 karakter **9.5**, 5+ **8**. Ölçülen paylar (viewBox birimi): tek harf halkanın iç kenarına (11 − 1.3/2) en kötü Ç'de **+1.28**; banner glyph'lerinin en kötüsü "+1000" poligonun 0.28 DIŞINDA ama madalyonun 2 birimlik kenar stroke'unun (aynı renk, dolguyla birlikte tek bir disk) 0.72 İÇİNDE — geri kalan hepsi poligonun içinde. M PLUS'ın rakamları eski fonttan belirgin geniş olduğundan çok karakterli basamaklar küçüldü (13 → 12, 10.5 → 9.5, 8.5 → 8); tek harf AYNI kaldı.
+  **Yazı tipi — Rütbe Rozeti Fontu: M PLUS Rounded 1c ExtraBold (18 Ağustos 2026, kullanıcı seçimi).** Roset tasarımı bittiği gün kullanıcı *"Yanlız içindeki font hoşuma gitmedi. Daha basık ve yuvarlak hatlı bir font bulalım. Alternatif ver bir kaç tane."* dedi; altı aday GERÇEK rozetin içinde render edilip gösterildi, seçilen bu. Öncesi Space Mono → Space Grotesk 700 idi (o geçişin gerekçesi: mono, madalyonun daralan iç kutusunda harfi gereksiz inceltiyordu). **Fredoka ELENDİ — Ş (U+015E) glyph'i YOK;** bir aday fontun kademe harflerini (Ç M O U Ş D E Z T) kapsayıp kapsamadığı, latin + latin-ext alt kümelerinin cmap BİRLEŞİMİ alınarak ölçülmeli (tek alt kümeye bakmak sahte "eksik" verir).
+  **Font ÜRETİLMİŞ bir alt küme, elle indirilmez** — kaynak TTF 3.6 MB / 8201 glyph, taşınan **6.3 KB woff2** (web) ve **14.4 KB ttf** (Flutter), 108 glyph. Yeniden üretimi (`pip install fonttools brotli`):
+  ```bash
+  curl -sSL -o /tmp/mplus.ttf "https://raw.githubusercontent.com/google/fonts/main/ofl/mplusrounded1c/MPLUSRounded1c-ExtraBold.ttf"
+  UNIS="U+0020-007E,U+00C7,U+00D6,U+00DC,U+00E7,U+00F6,U+00FC,U+011E,U+011F,U+0130,U+0131,U+015E,U+015F"
+  pyftsubset /tmp/mplus.ttf --unicodes="$UNIS" --layout-features='' --no-hinting --desubroutinize \
+    --flavor=woff2 --output-file=src/fonts/files/mplus-rounded-1c-800-subset.woff2
+  pyftsubset /tmp/mplus.ttf --unicodes="$UNIS" --layout-features='' --no-hinting --desubroutinize \
+    --output-file=mobile/app/assets/fonts/MPLUSRounded1c-ExtraBold-subset.ttf
+  ```
+  **GİZLİ BAĞ — yeni bir kademe HARFİ eklenirse subset yeniden üretilmeli** (`league_rewards_points_check` tavanı gibi, derleyicinin göremeyeceği bir değişmez): bugünkü aralık tüm Türkçe harfleri + ASCII'yi kapsıyor, ama kapsam dışı bir glyph seçilirse rozet web'de yedek fonta düşer, **Flutter'da TOFU (boş kare) çizer** (port otomatik font fallback YAPMAZ — bkz. `_StatusLine`'ın ✓ dersi). `src/fonts/mplus-rounded-seal.css` `main.tsx`ten (boot.tsx'ten DEĞİL) import ediliyor: karşılama katmanında da dokuz rozet çiziliyor. **`public/fonts`a KONMADI/precache EDİLMEDİ** — Nunito emsali (bundle'lanmış, içerik-hash'li, precache'siz); `font-display: swap` ile en kötü ihtimalle bir kare yedek fontla çizilir.
+  **Ölçülen bütçe:** `dist/index.html` ham **253.998** / gzip **22.134** bayt (font swap öncesi 254.144 / 22.250 — yani sayfa büyümedi; 18 Ağustos 2026'daki metin turu ve sayfa sonu GİRİŞ düğmesinin kaldırılmasıyla ham −98 / gzip −114 bayt daha indi), artı ayrı bir 6.268 baytlık font asset'i.
+  **Harf MÜREKKEP kutusundan ortalanır, `dominant-baseline="central"` KULLANILMAZ** (12 Ağustos 2026'da eski mühürde öğrenilen ders aynen geçerli: `central` mürekkebi değil FONT metriklerini ortalıyor ve Ç/Ş sedilla yüzünden gözle görülür şekilde alta kaçıyordu). Taban çizgisi `CY + (INK_ASC_EM − varsa DESCENDER_EM)/2 × fontSize`; iki sabit de em cinsinden ÖLÇÜLDÜ (Chromium, gerçek M PLUS Rounded 1c ExtraBold, `canvas.measureText`in `actualBoundingBox*` alanları) — kademe harflerinin mürekkep tepesi .740–.750 → **INK_ASC_EM = .745**, sedillanın (Ç/Ş) taban altına inmesi .220 → **DESCENDER_EM = .22**. Harf başına tablo gerekmedi ve bu fontta aralık çok dar: basılabilen HER glyph için azami merkezleme sapması **0.0075 em** (76px'lik banner mühründe 0.23 px; eski Space Grotesk'te 0.03 em idi). Piksel taramasıyla doğrulandı: tek harflerde en kötü dikey sapma **0.225** viewBox birimi, halkaya en dar pay **+1.277** (Ç)., `RankInfoModal.tsx` (mühre dokununca açılan bilgi popup'ı — RewardBanner'ın kart düzeni/`reward-*` animasyonlarıyla her açılışta yeniden damgalanır ama `seen_at`'e dokunmaz [salt bilgi, tekrar tekrar açılabilir]: kademe adı + güncel puan + "+N eşik ödülü dahil" + sıradaki rütbe hedefi + hedefe İLERLEME ÇUBUĞU (mevcut eşik→sonraki eşik oranı, dolgu rengi SIRADAKİ kademenin rengi, altında eşik/puan/eşik etiketleri ve eşiklerin altında o eşiğin ödül rozeti — hedef etiketi YALNIZCA SAYI ("100"). **12 Ağustos 2026'da kullanıcı isteğiyle sondaki "puan" kelimesi kaldırıldı:** "Sıradaki rütbe: Oyuncu · 100 puan" satırı ZATEN hemen üstte duruyor, alt alta tekrar oluyordu. `RewardBanner`'ın düşüş çubuğu da aynı kurala çekildi — ikisi aynı görsel, birlikte değişmeli. **Rozet renk kuralı (aynı gün ÜÇ sürüm geçirdi — hedefte yeşil "(+N)" → alınmışsa nötr "(0)" → nihai):** YEŞİL + aynı boyda ✓ yalnızca ALINMIŞ ödülde (sol eşik her zaman; hedef eşik yalnızca düşüp yeniden yaklaşan kişide — kişi geri düşse bile yeşil ✓ kalır, ödül geri alınmadığından), henüz alınmamış hedef ödülü GRİ "(+N)". "Alınmış mı" bilgisi ekstra sorgusuz, `rewardAlreadyClaimed`'in (leagueRank.ts) `bonus_points` toplamından prefix çıkarımıyla (ödüller her zaman soldan sağa atlamasız verildiğinden toplam, ödenen eşik kümesini tekil belirler); dolgu `visible` bir rAF sonrası true olduğundan 0'dan gerçek orana width-transition'la akar — en üst kademede çubuk yok, "En yüksek rütbedesin!"). **Kapatma ✕, kocaman "KAPAT" butonu DEĞİL (12 Ağustos 2026, kullanıcı isteği):** sağ üstte, `Modal.tsx`'in kapatma butonuyla birebir aynı stil — projedeki her modalın deseni bu, salt bilgi veren bir popup'ın altına tam genişlikte bir aksiyon butonu koymak yanlıştı. **Aynı gün ikinci karar — kural banner'lara da genişledi (kullanıcı: "bence bu banner'larda kapat, devam vb olmamalı, sadece X"):** `RewardBanner`'ın "DEVAM"ı da kaldırıldı, yerine AYNI ✕ geldi. İlk sürüm "DEVAM" KALIR demişti (gerekçe: o gerçek bir aksiyon, ödülleri görüldü işaretler) — gerekçe teknik olarak doğruydu ama kullanıcı görsel tutarlılığı tercih etti; **işaretleme kaybolmadı, ✕ AYNI `onClose`'a bağlandı** (`mark_league_rewards_seen`'e giden TEK yol, bkz. `LeagueRewardsHost`). Banner'a yeni bir kapatma yolu eklenirse (ör. zemine dokunma) o da `onClose`'tan geçmeli, aksi halde banner her açılışta yeniden çıkar. Escape zaten `useModalA11y` üzerinden aynı callback'e bağlı. **Kart gölgesi `shadow-raised` DEĞİL, `Modal.tsx`'in düz düşen gölgesi (`0 20px 45px rgba(15,23,42,.5)`, aynı gün kullanıcı bildirdi: "üst ve sol tarafındaki beyaz gölge iyi durmuyor"):** `shadow-raised`in sol-üst beyaz parıltısı (`-2 -2 5 rgba(255,255,255,.85)`) nömorfik YÜZEYLER için tasarlandı, karartılmış zeminde (bg-black/40) yüzen bir kartta hale gibi okunuyordu — `RewardBanner`'ın kartı da aynı gün aynı gölgeye çekildi, ikisi aynı kart; `Modal` portal'ı z-[150] olduğundan bu popup z-[200] ile ayrıca portal'lanır — ScoreStatsSection'daki eski "+N dahildir" dipnotu buraya taşınıp oradan kaldırıldı), `RewardBanner.tsx` (damga+konfeti animasyonu — `index.css`'teki `reward-*` keyframe'leri; ActionSheet dersleri uygulandı: ekran ORTASI + karartma + rAF sonrası `visible`; `prefers-reduced-motion` guard'lı), `LeagueRewardsHost.tsx` (görülmemiş satırları çekip TEK birleşik banner gösterir — geçmişe dönük backfill'de bile satır başına ayrı popup yok; "Devam" hepsini işaretler).
+
+### Rütbe mührü artık İSİMLERİN yanında da (18 Ağustos 2026)
+
+Kullanıcı isteği: *"Bu badgeleri yeni canlı oyun aç'da çıkan arkadaşını
+ekledeki isimlere uygula. Oyun davetlerinde isimlerin yanına koy. Skor
+kartında ismin yanına koy. YZ ile oyun açtaki isme koy. Arkadaşlardaki
+isimlere koy. Ara & Ekle'deki isimlere koy. Avatar menüdeki ismin yanına
+koy. … Font sizelarına uygun boy kullan."* Yedi yüzey de aynı PR'da,
+İKİ platformda birden.
+
+**Migration GEREKMEDİ — puan zaten yayınlanmış bir view'da:** `leaderboard`
+`user_id` + `total_score` döndürüyor, `security_invoker = false` olduğundan
+kilitli `profiles`/`games` RLS'ini bypass ediyor ve `authenticated`e açık.
+Yeni `fetchRankScores(userIds)` (`src/lib/api.ts` / portta
+`StatsRepo.rankScores`) bunu TEK `in` sorgusuyla toplu okuyor.
+**`player_stats`in mod bazlı toplamıyla KARIŞTIRMA:** 17 Ağustos 2026'da
+Setup'tan tam da o yüzden bir sayı kaldırılmıştı (ödül puanlarını saymadığı
+için gerçek k-lig puanından kopuyordu) — `leaderboard.total_score` ödül
+DAHİL, yani mühür hesap menüsündeki k-lig satırıyla asla ayrışmaz.
+
+**`null` ≠ `0` ve bu bir sözleşme:** puan gelene kadar tier `null` döner ve
+mühür HİÇ çizilmez; view INNER JOIN'li olduğundan hiç oyun bitirmemiş bir
+kullanıcı sonuçta YOKTUR ve 0 sayılır (gerçekten Çaylak). Bu ayrım olmasa
+liste bir an herkesi Çaylak gösterip sonra düzelirdi.
+
+**Boylar ÖLÇÜLDÜ** (derlenmiş CSS + Chromium, DPR 2, `document.fonts.ready`,
+`http://` üzerinden) ve satırın kendi puntosuna bağlı: 12px isim → **16**,
+14px isim → **18**, 16px isim → **20**. Ölçülen kutular birebir
+16.00/18.00/20.00, isimle arası `gap-1.5` = 6.00, dikey merkezler isimle
+AYNI, yatay taşma 0. Aynı üç sayı portta da elle yazılı — biri değişirse
+öteki de.
+
+| Yüzey | Boy | Puan nereden |
+|---|---|---|
+| `UserMenu` dropdown başlığı | 18 | `myRank` (zaten elde, EK SORGU YOK) |
+| `ScoreCard` / `PlayerScoreCard` isim satırı | 20 | kartın kendi "Genel" satırı |
+| `Setup` hesap koltuğu | 18 | `useRankScores` / `RankScores` |
+| `FriendsModal` (üç sekme birden) | 18 | aynı |
+| `LiveGameCreateForm` arkadaş seçici | 18 | aynı |
+| `LiveGamesTab` davet/bekleme kartları | 16 | aynı |
+
+**Başlıktaki 34px'lik mühür KALDI** — o TIKLANABİLİR (`RankInfoModal`'ı
+açar); isim yanındaki yalnızca kimliğin parçası. İkisini karıştıran bir
+test yazma: `find.byType(RankSeal).first` artık iki mührün hangisini
+bulduğunu garanti etmez, BOYA göre seç.
+
+**İki tüketim biçimi, tek çekim** (`src/hooks/useRankScores.tsx`): tek
+bileşenli yerler `useRankScores([ids])` hook'unu, `LiveGamesTab` ise
+`RankTierProvider`/`useRankTier` context'ini kullanıyor — orada satır
+bileşeni dört seviye aşağıda ve iki ayrı modül düzeyinde çağrı yeri var,
+prop drilling ikinci bir kaynak açardı. Portta karşılığı
+`mobile/app/lib/src/ui/rank/rank_scores.dart` (`ChangeNotifier`); `ensure`
+yalnızca EKSİK id'ler için ağa gider ve bildirimini bir sonraki microtask'a
+ertelediğinden `build` içinden çağrılabilir.
+
+**`FriendsModal`'da yakalanan düzen tuzağı:** ad `<span>`i `flex-1`
+taşıyordu; yeni `flex-1` sarmalayıcının İÇİNDE kalsaydı mühür ismin yanına
+değil satırın en sağına itilirdi. `flex-1` sarmalayıcıya taşındı.
 
 **Host'un mount haritası App.tsx'in erken return'leri yüzünden üç yer:** Setup dalı (suppress'siz — girişteki backfill kutlaması burada çıkar), yerel oyun dalı (`suppress={phase==='play' && !isGameOver}`) ve `OnlineGameScreen` (`suppress={!state.isGameOver}`) — dallar birbirini dışladığından aynı anda tek host yaşar, modül seviyesindeki `requestLeagueRewardCheck()` köprüsü bu yüzden güvenli. `suppress` düşünce host kendiliğinden kontrol eder (oyun bitişinde ekstra tetikleyici gerekmez); yerel oyunda ayrıca `saveGameDurable(record).then(() => requestLeagueRewardCheck())` kayıt sunucuya düşer düşmez kontrolü öne çeker (trigger ödülü aynı transaction'da açtığından yarış yok — bkz. `local_game_saves` yazma/okuma yarışı dersi, burada sıralama sunucu tarafında garantili). Öne dönüş dinleyicileri projedeki standart üçlü + 300ms debounce. Misafirde host no-op (kayıt kuyruğa girer, ödül girişten sonraki flush'ta açılır).
 

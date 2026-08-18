@@ -31,6 +31,9 @@ import '../auth/k_avatar.dart';
 import '../game/count_badge.dart';
 import '../game/neo_button.dart';
 import '../game/player_avatar_row.dart';
+import '../rank/league_rank.dart';
+import '../rank/rank_scores.dart';
+import '../rank/rank_seal.dart';
 import '../setup/recent_games_section.dart';
 import '../friends/friends_modal.dart' show showFriendInfoDialog, kFriendActionFailed;
 import 'friend_suggest_modal.dart';
@@ -79,9 +82,19 @@ class _LiveGamesTabState extends State<LiveGamesTab>
 
   AppServices get services => widget.services;
 
+  /// Davet/bekleme kartlarındaki isimlerin yanındaki rütbe mührü
+  /// (18 Ağustos 2026). Kartlar StatelessWidget olduğundan lookup bir
+  /// fonksiyon olarak aşağı geçiliyor.
+  late final RankScores _rankScores;
+
+  void _onRankScores() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
+    _rankScores = RankScores(services.stats)..addListener(_onRankScores);
     final user = services.auth.user;
     _lastUserId = user?.id;
     if (user != null) _snapshot = _liveGamesCache[user.id];
@@ -108,6 +121,8 @@ class _LiveGamesTabState extends State<LiveGamesTab>
     services.onlineStatus.removeListener(_onConnectivity);
     _reloadDebounce?.cancel();
     _unsubscribe?.call();
+    _rankScores.removeListener(_onRankScores);
+    _rankScores.dispose();
     super.dispose();
   }
 
@@ -296,6 +311,14 @@ class _LiveGamesTabState extends State<LiveGamesTab>
     final active = activeBucket(games, turns);
     final waiting = waitingBucket(games);
     final acceptedWaiting = acceptedWaitingBucket(games);
+    // Kartlarda gösterilecek katılımcıların rütbe puanı — `ensure` yalnızca
+    // EKSİK id'ler için ağa gider ve bildirimini bir sonraki microtask'a
+    // ertelediğinden build içinden çağrılması güvenli.
+    _rankScores.ensure([
+      for (final g in [...invites, ...waiting, ...acceptedWaiting])
+        for (final sl in g.slots)
+          if (!sl.isAi) sl.userId,
+    ]);
     final myTurns = myTurnCount(games, turns);
 
     return Column(
@@ -367,6 +390,7 @@ class _LiveGamesTabState extends State<LiveGamesTab>
                                   '${g.creatorSlot?.name ?? 'Bir arkadaşın'} seni ${g.playerCount} kişilik oyuna davet etti',
                               busy: _busyInviteId == g.myInviteId,
                               onRespond: (a) => _handleRespond(g, a),
+                              tierOf: _rankScores.tierOf,
                             ),
                         ]),
                       if (acceptedWaiting.isNotEmpty)
@@ -375,6 +399,7 @@ class _LiveGamesTabState extends State<LiveGamesTab>
                             _PendingGameCard(
                                 key: ValueKey('aw-${g.id}'),
                                 game: g,
+                                tierOf: _rankScores.tierOf,
                                 title: '${g.playerCount} Kişilik Oyun'),
                         ]),
                       if (waiting.isNotEmpty)
@@ -383,6 +408,7 @@ class _LiveGamesTabState extends State<LiveGamesTab>
                             _PendingGameCard(
                                 key: ValueKey('w-${g.id}'),
                                 game: g,
+                                tierOf: _rankScores.tierOf,
                                 title: '${g.playerCount} Kişilik Oyun'),
                         ]),
                     ],
@@ -568,10 +594,14 @@ class _PendingGameCard extends StatelessWidget {
   final String title;
   final bool busy;
   final void Function(bool accept)? onRespond;
+
+  /// Katılımcının rütbesi — puan bilinmiyorsa null (mühür çizilmez).
+  final RankTier? Function(String? userId) tierOf;
   const _PendingGameCard({
     super.key,
     required this.game,
     required this.title,
+    required this.tierOf,
     this.busy = false,
     this.onRespond,
   });
@@ -635,9 +665,18 @@ class _PendingGameCard extends StatelessWidget {
                 KAvatar(url: s.avatarUrl, name: s.name, size: 22),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(s.name ?? 'Oyuncu',
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12, color: _text)),
+                  child: Row(children: [
+                    Flexible(
+                      child: Text(s.name ?? 'Oyuncu',
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12, color: _text)),
+                    ),
+                    // 16px — satırın 12px'lik puntosuna göre (web ile aynı).
+                    if (tierOf(s.userId) case final t?) ...[
+                      const SizedBox(width: 6),
+                      RankSeal(tier: t, size: 16),
+                    ],
+                  ]),
                 ),
                 Text(trUpper(participantLabel(s, game)),
                     style: const TextStyle(

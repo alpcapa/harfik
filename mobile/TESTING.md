@@ -1502,11 +1502,37 @@ listesi kök `TESTING.md` bölüm 10.
       Skor Kartı ve başka bir oyuncunun kartı (34px, başlık ile ✕ ARASINDA
       ortalı, yazısız). Üçü de GÜNCEL toplam puandan türetildiğinden aynı
       kademeyi göstermeli.
-- [ ] **Tırtık HER BOYDA.** k-lig listesindeki 18px'lik küçük mühürlerin
-      dış kenarı da testere dişli olmalı (büyük mühürle aynı siluet, 24
-      diş) — düz çember GÖRÜNMEMELİ. Dişler telefonda net ayrışmalı, harf
-      (özellikle Ç/Ş sedillası) tırtığa DEĞMEMELİ ve OKUNABİLİR kalmalı.
-      Fark: küçük mühürde iç kesikli halka yok, harf daha büyük.
+- [ ] **Mühür artık İSİMLERİN yanında da — yedi yüzey (18 Ağustos 2026,
+      Parça 115).** Hepsinde ismin SAĞINDA, isimle aynı dikey merkezde ve
+      satırın puntosuna göre boyutlanmış olmalı: hesap menüsünün başlığı
+      (18px) · Skor Kartı'ndaki kendi ismin (20px) · başka bir oyuncunun
+      kartı (20px) · Setup'ta 1. koltuktaki hesap adı (18px) · Arkadaşlar
+      modalının ÜÇ sekmesi de (18px — "Arkadaşlarım", "İstekler",
+      "Ara & Ekle") · "+ Yeni Canlı Oyun" arkadaş seçici (18px) · Oyun
+      davetleri kartındaki katılımcı isimleri (16px). **Skor kartlarında
+      artık İKİ mühür var** — başlıktaki 34px'lik tıklanabilir mühür VE
+      ismin yanındaki 20px'lik; ikisi AYNI kademeyi göstermeli.
+- [ ] **"Puan bilinmiyor" ile "0 puan" AYRI (aynı parça).** Hiç oyun
+      bitirmemiş bir kullanıcının yanında **Çaylak (Ç)** mührü çıkmalı
+      (o gerçekten 0 puan). Ama liste ilk açılırken, puanlar gelmeden bir
+      an için HERKESİN yanında Çaylak mührü BELİRMEMELİ — mühür yalnızca
+      puan bilindikten sonra çizilir. YZ koltuklarında ve misafirde mühür
+      HİÇ olmamalı.
+- [ ] **Rozet: dalgalı disk + iki kurdele kuyruğu (18 Ağustos 2026 — eski
+      tırtıklı/noter mührü TAMAMEN bırakıldı).** Her boyda AYNI siluet:
+      dolu, dalgalı kenarlı bir disk + altında V kesikli iki kurdele;
+      kurdele diskten bir tık KOYU. Testere dişli eski mühür HİÇBİR yerde
+      kalmamalı. Fark yalnızca iç halkada: 34/76px'te harfin etrafında
+      açık renkli ince bir halka VAR, 18px'lik k-lig satırında YOK (harf
+      orada daha büyük). Banner'ın rakamlı glyph'lerinde ("+1000") halka
+      hiçbir boyda çizilmez. **Web'deki rozetle yan yana bak — ikisi
+      BİREBİR aynı olmalı** (aynı sabitler iki dosyada elle senkron).
+- [ ] **Harfin yazı tipi: M PLUS Rounded 1c 800 (18 Ağustos 2026 — öncesi
+      Space Grotesk).** Harf yuvarlak hatlı ve basık görünmeli. **Portta
+      asıl risk TOFU:** Flutter otomatik font fallback YAPMAZ, yani alt
+      kümede olmayan bir glyph BOŞ KARE olarak çizilir — özellikle Ç ve Ş
+      mühürlerine bak. Rakamlı banner glyph'i ("+1000") madalyonun dışına
+      TAŞMAMALI. Web'deki rozetle yan yana bak: aynı font, aynı punto.
 - [ ] **Harf dikeyde ortalı — kuyruklu olanlar dahil.** Ç ve Ş (sedillalı)
       mühürlerde harf, dairenin dikey ORTASINDA durmalı — alta kaçmış
       GÖRÜNMEMELİ. Ç ile M/O/U/D aynı hizada olmalı. Üç boyu da kontrol et

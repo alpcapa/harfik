@@ -60,6 +60,10 @@ Future<void> loadAppFonts() async {
     'assets/fonts/SpaceMono-Regular.ttf',
     'assets/fonts/SpaceMono-Bold.ttf',
   ]);
+  // Yalnızca k-lig rütbe rozetinde kullanılıyor — yüklenmezse mührün harfi
+  // Ahem bloğuna döner ve mürekkep-ortalama testi (rank_seal) anlamsızlaşır.
+  await _loadFamily('MPlusRounded1c',
+      ['assets/fonts/MPLUSRounded1c-ExtraBold-subset.ttf']);
 }
 
 /// Eski ad — çağıranlar için geriye dönük sarmalayıcı (SDK Roboto'suna artık
