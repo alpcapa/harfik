@@ -108,15 +108,6 @@ class _IntroScreenState extends State<IntroScreen> {
             //
             // Sabit üst boşluk: `_Sayfa`nın kendi `top: 8` dolgusu tek
             // başına sayfayı ekranın tepesine yapıştırıyordu.
-            const SizedBox(height: 24),
-            // LOGO SAYFALARIN DEĞİL EKRANIN parçası (19 Ağustos 2026,
-            // kullanıcı isteği: "Bütünlük açısından ilk slayttaki kelimeki
-            // logosunu tüm slaytlara taşıyabiliriz"). PageView'ın DIŞINDA,
-            // sabit: dört slaytta da aynı yerde durur, kaymaz ve dört kez
-            // kopyalanmaz. Web'in karşılama katmanındaki kilitli şeridin
-            // (sticky header) porttaki karşılığı; oradaki park efekti
-            // burada YOK, çünkü slaytlar tek ekran boyunda.
-            const LogoMark(height: 52),
             const SizedBox(height: 16),
             Expanded(
               child: PageView(
@@ -917,10 +908,23 @@ class _Sayfa extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // LOGO SAYFANIN İÇİNDE (19 Ağustos 2026, kullanıcı kararı — iki tur):
+    // önce PageView'ın DIŞINDA, sabit üst alandaydı ("bütünlük açısından
+    // ilk slayttaki logoyu tüm slaytlara taşıyabiliriz"), ama içerik
+    // ortalanınca logo yerinde kaldığı için logo ile başlık arasında
+    // görünür bir kopukluk açıldı. Artık logo ortalanan bloğun İLK
+    // öğesi: logo + başlık + kutular tek blok olarak birlikte
+    // ortalanıyor. Dört sayfa da aynı deseni kullandığından logo yine
+    // dört slaytta da var ve 1. slaytta konumu DEĞİŞMEDİ (orası
+    // ortalanmıyor ve içerik zaten ekranı dolduruyor).
     final kolon = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
-      children: children,
+      children: [
+        const LogoMark(height: 52),
+        const SizedBox(height: 16),
+        ...children,
+      ],
     );
     if (!ortala) {
       return SingleChildScrollView(
