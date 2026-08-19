@@ -219,19 +219,32 @@ class _HosGeldinSayfasi extends StatelessWidget {
                   color: kText,
                 ),
               ),
-              SizedBox(height: 12),
+              SizedBox(height: 10),
               Text(
                 'Kelimeki, 2 veya 4 kişi yapay zekaya veya arkadaşlarına '
                 'karşı oynanabilen, strateji odaklı Türkçe kelime oyunudur.',
                 textAlign: TextAlign.center,
+                // `applyHeightToLastDescent: false` — 19 Ağustos 2026,
+                // kullanıcı: *"Tahtaya bak 2. slaytta direkt butonların
+                // altındayken 1. slaytta ekstra bir satır boşluk var."*
+                // ÖLÇÜLDÜ: iki slayttaki `SizedBox` de birebir 16'ydı, yani
+                // fark yapısal DEĞİL optikti — `height: 1.6` satır kutusu son
+                // satırın ALTINA da leading koyuyor (gerçek Space Grotesk'le
+                // 2.8px), 2. slayttaki kutuların ise sert kenarı var. Sihirli
+                // bir sayıyla telafi etmek yerine leading'in kendisi
+                // kapatılıyor: kutu artık descender'da bitiyor.
+                textHeightBehavior:
+                    TextHeightBehavior(applyHeightToLastDescent: false),
                 style: TextStyle(fontSize: 13, height: 1.6, color: kMuted),
               ),
             ],
           ),
         ),
-        // Web'de bu bölüm `my-9` (36px) ile ayrılıyor; portta 16 — slayt
+        // Web'de bu bölüm `my-9` (36px) ile ayrılıyor; portta 12 — slayt
         // tek ekrana sığmak zorunda (web'de sayfa sonsuz kaydırılıyor).
-        const SizedBox(height: 16),
+        // 2. slayttaki eşiyle AYNI sayı olmak zorunda (kullanıcı ikisinin
+        // aynı görünmesini istedi).
+        const SizedBox(height: 12),
         const _TahtaBolumu(
           taslar: kDemoTiles2,
           oyuncuSayisi: 2,
@@ -415,7 +428,8 @@ class _TahtaBolumu extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 12),
+        // Tahta → legend 12 → 8.
+        const SizedBox(height: 8),
         _Kolon(
           child: Column(
             children: [
@@ -445,11 +459,16 @@ class _TahtaBolumu extends StatelessWidget {
                         metin: 'X3 — Kelime puanının 3 katı'),
                   ],
                 ),
-                const SizedBox(height: 12),
+                // Legend → açıklama 12 → 8.
+                const SizedBox(height: 8),
               ],
               Text(
                 aciklama,
                 textAlign: TextAlign.center,
+                // Slaydın SON öğesi — son satırın altındaki leading doğrudan
+                // slayt yüksekliğine biniyor (yukarıdaki aynı gerekçe).
+                textHeightBehavior:
+                    const TextHeightBehavior(applyHeightToLastDescent: false),
                 style: const TextStyle(fontSize: 12, height: 1.6, color: kMuted),
               ),
             ],
@@ -525,9 +544,9 @@ class _DortKisilikSayfasi extends StatelessWidget {
         // çocuk arasına zaten 16px koyuyor, yani kutular 1. slayttaki
         // gibi bir metin bloğunun değil doğrudan logonun altında duruyor.
         _Kolon(child: _Kutular()),
-        // Kutu → tahta mesafesi 1. slayttakiyle AYNI (16): iki slaytta da
+        // Kutu → tahta mesafesi 1. slayttakiyle AYNI (12): iki slaytta da
         // "kutular tahtaya yakın" ilişkisi korunsun.
-        SizedBox(height: 16),
+        SizedBox(height: 12),
         _TahtaBolumu(
           taslar: kDemoTiles4,
           oyuncuSayisi: 4,
@@ -1044,7 +1063,8 @@ class _Sayfa extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const LogoMark(height: 52),
-        const SizedBox(height: 16),
+        // 16 → 12 (19 Ağustos 2026, taşma turu).
+        const SizedBox(height: 12),
         ...children,
       ],
     );
