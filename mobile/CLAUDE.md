@@ -5740,6 +5740,45 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        - `kIntroPageCount` 4 → **5**; nokta göstergesi ve testler bu
          sabiti okuduğundan başka hiçbir yerde sayı güncellenmedi.
 
+   - ✅ **Parça 119 — 1. slayt HÂLÂ kayıyordu: dört rakam kutusu 2. slayda
+     taşındı (19 Ağustos 2026, `intro_screen.dart`,
+     `intro_screen_test.dart`):** Kullanıcı cihazda gördü — *"1. slayt hâlâ
+     aşağıya kayıyor ve bu app mantığına aykırı. Şöyle yapalım: 1.
+     slayttaki board'un üstündeki 4 kutuyu (63K kelime vb) 2. slayt board
+     üstüne taşıyalım… Böylece 2 slayt daha dengeli içeriğe sahip olacak ve
+     aşağıya kaymayacak. Diğer 3 slayt aynı kalıyor."* Aynen uygulandı.
+     - **Parça 118'in "ÖLÇÜLDÜ (390×844): … KAYDIRMADAN tek ekranda"
+       cümlesi YANLIŞMIŞ.** O turda tahta başlığı kısaltılıp boşluklar
+       daraltılmıştı ve sonuç ölçülmüş gibi yazılmıştı, ama gerçek cihaz
+       aksini gösterdi. Bu ortamda Flutter SDK olmadığından o "ölçüm"
+       gerçek bir çalıştırmaya dayanamazdı — **bir sonraki oturum bu tür
+       bir cümleyi, arkasında koşulmuş bir komut yoksa yazmasın.**
+     - **Denge:** 1. slayttan kutular + üstündeki 20px boşluk (~78px)
+       düştü; 2. slayt yalnızca tahtadan ibaret olduğu için zaten boştu ve
+       o kadar doldu. İki slayt da logo → içerik → tahta ritmini koruyor;
+       kutu → tahta mesafesi iki slaytta da AYNI (16).
+     - **`_Sayfa`nın `ortala` bayrağı KALDIRILDI.** Beş slaydın beşi de
+       artık `true` geçiyordu — tek değerli bir bayrak, bir sonraki
+       oturumu artık var olmayan bir ayrımı ("1. slayt ortalanmaz") geri
+       getirmeye çağıran ölü yapılandırmadır. Davranış tek; kaydırma
+       fallback'i (`SingleChildScrollView`) DURUYOR, daha küçük/dar
+       ekranlarda hâlâ devreye girebilir.
+     - **ASIL KAZANIM BİR TEST:** `intro_screen_test.dart`e slaydın DİKEY
+       `maxScrollExtent`ini ölçen bir kontrol eklendi (420×900'de iki
+       tahtalı slayt için de 0 bekleniyor). Bu, o dosyadaki içerik
+       testlerinin GÖREMEDİĞİ sınıf: "hangi metin hangi slaytta" ölçen
+       assertion'lar, iki slayt da ekrandan taşarken de yeşil kalır —
+       nitekim Parça 118'den beri öyle kaldılar. Yardımcı `.first`
+       KULLANMIYOR (PageView bir gün komşu sayfayı canlı tutarsa ölçüm
+       sessizce yanlış slayda kayardı) ve Scrollable'ı eksenine bakarak
+       seçiyor (PageView'ınki yatay). Hata mesajı taşan piksel sayısını
+       yazıyor — CI kırmızıya dönerse ne kadar kısaltmak gerektiği doğrudan
+       görünür.
+     - **Doğrulama sınırı — DÜRÜST KAYIT:** Flutter/Dart SDK yine YOK,
+       `flutter test` KOŞULAMADI; yeni testin GEÇTİĞİ de, taşımanın kaymayı
+       gerçekten sıfırladığı da bu oturumda kanıtlanamadı. Tek kanıt CI
+       (Parça 103-118'in aynı sınırı) ve ardından cihazda gözle teyit.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
