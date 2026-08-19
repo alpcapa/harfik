@@ -174,14 +174,16 @@ class TermsModal extends StatelessWidget {
       child: _StackedSections([
         const _P(
             "Kelimeki'ye kaydolarak aşağıdaki koşulları okuduğunuzu ve kabul "
-            'ettiğinizi beyan edersiniz. Son güncelleme: 2 Ağustos 2026.'),
+            'ettiğinizi beyan edersiniz. Son güncelleme: 19 Ağustos 2026.'),
         const _Section('1. Hizmet Sağlayıcı ve Kapsam', [
           _P('Kelimeki, herhangi bir şirket ya da tüzel kişilik '
               'bulunmaksızın, bağımsız bir geliştirici tarafından bireysel '
               'olarak geliştirilmekte ve işletilmektedir; faaliyet merkezi '
               "Sarıyer, İstanbul'dur. Hizmet, Türkçe kelimelerle oynanan "
-              'çevrimiçi bir kelime oyunudur ve oyun tahtası, lider tablosu, '
-              'arkadaşlık ve kullanıcı hesabı özelliklerini kapsar. Hizmet '
+              'çevrimiçi bir kelime oyunudur ve oyun tahtası, Yapay Zeka\'ya '
+              'karşı ya da arkadaşlarınla gerçek zamanlı oynanan Canlı oyun, '
+              'oyun içi mesajlaşma, lider tablosu (k-lig), arkadaşlık ve '
+              'kullanıcı hesabı özelliklerini kapsar. Hizmet '
               'ücretsizdir ve herhangi bir bildirimde bulunmaksızın '
               'değiştirilebilir ya da sonlandırılabilir.'),
         ]),
@@ -249,7 +251,7 @@ class PrivacyModal extends StatelessWidget {
       child: _StackedSections([
         const _P('Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, '
             'hangi verileri topladığımızı, nasıl kullandığımızı ve '
-            'haklarınızı açıklar. Son güncelleme: 16 Ağustos 2026.'),
+            'haklarınızı açıklar. Son güncelleme: 19 Ağustos 2026.'),
         const _Section('1. Veri Sorumlusu', [
           _P('Kelimeki, herhangi bir şirket ya da tüzel kişilik '
               'bulunmaksızın, bağımsız bir geliştirici tarafından bireysel '
@@ -265,7 +267,7 @@ class PrivacyModal extends StatelessWidget {
           _Bullets([
             'Ad ve soyad',
             'E-posta adresi',
-            'Takma isim (isteğe bağlı)',
+            'Takma isim (zorunlu — oyunlarda ve k-lig\'de herkese görünür)',
             'Cinsiyet (isteğe bağlı)',
             'Doğum tarihi (isteğe bağlı)',
             'Profil fotoğrafı (isteğe bağlı)',
@@ -278,6 +280,9 @@ class PrivacyModal extends StatelessWidget {
                 'gönderdiğiniz/aldığınız arkadaşlık istekleri, davet '
                 'linkinizin kullanım verisi)',
             'Canlı oyunlarda gönderdiğiniz oyun içi sohbet mesajları',
+            '"Görüş Bildir" formundan ilettiğiniz mesajlar ve size yanıt '
+                'verebilmemiz için formda belirttiğiniz e-posta adresi — '
+                'girişsiz (misafir) gönderdiğinizde de saklanır',
             'Bir Canlı oyunda kimleri sessize aldığınız ve gönderdiğiniz '
                 'uygunsuz paylaşım şikayetleri (şikayetin nedeni dahil)',
             'Bir oyunu hangi istemciden oynadığınız (web sitesi ya da mobil '
@@ -318,10 +323,15 @@ class PrivacyModal extends StatelessWidget {
               'bağlıdır, işaretlemeseniz de hizmeti eksiksiz '
               'kullanabilirsiniz; bu onayı Hesap Ayarları\'ndaki aynı onay '
               'kutusundan istediğiniz zaman verebilir ya da geri '
-              'çekebilirsiniz. Altyapı hizmeti olarak Supabase '
-              'kullanılmaktadır; bu kapsamda veriler Supabase\'in '
-              'sunucularında saklanır ve bu sunucular yurt dışında '
-              'bulunabilir. Böyle bir durumda aktarım, KVKK m.9\'da aranan '
+              'çekebilirsiniz. Hizmetin sunulabilmesi için üç altyapı '
+              'sağlayıcısından yararlanılır: veritabanı, kimlik doğrulama ve '
+              'dosya saklama için Supabase; e-posta bildirimlerinin (kayıt '
+              'onayı, şifre sıfırlama, arkadaşlık/oyun daveti, süre uyarısı, '
+              'destek yanıtı) gönderilmesi için Brevo — bu kapsamda yalnızca '
+              'adınız/takma isminiz ve e-posta adresiniz iletilir; sitenin ve '
+              'uygulamanın yayınlanması için Vercel. Bu sağlayıcıların '
+              'sunucuları yurt dışında bulunabilir. Böyle bir durumda '
+              'aktarım, KVKK m.9\'da aranan '
               '(yeterli korumanın bulunduğu ülke veya uygun güvencelerin '
               'sağlanması gibi) şartlara uygun şekilde yapılır. Yasal '
               'zorunluluk halinde yetkili makamlarla paylaşım yapılabilir.'),
@@ -348,8 +358,11 @@ class PrivacyModal extends StatelessWidget {
               'bildirilmez.'),
         ]),
         const _Section('5. Veri Saklama Süresi', [
-          _P('Verileriniz hesabınız aktif olduğu sürece saklanır. '
-              'Hesabınızı silmeniz durumunda tüm kişisel verileriniz 30 gün '
+          _P('Verileriniz hesabınız aktif olduğu sürece saklanır. Uygulama '
+              'içinde kendi kendine hesap silme özelliği henüz bulunmuyor; '
+              'hesabınızın ve kişisel verilerinizin silinmesini istiyorsanız '
+              '8. bölümdeki "Görüş Bildir" kanalından talep edebilirsiniz. '
+              'Talebiniz üzerine tüm kişisel verileriniz en geç 30 gün '
               'içinde kalıcı olarak silinir.'),
         ]),
         const _Section('6. Çerezler ve Yerel Depolama', [

@@ -28,7 +28,7 @@ export function TermsModal({ onClose }: TermsModalProps) {
       <div className="flex flex-col gap-5">
         <P>
           Kelimeki'ye kaydolarak aşağıdaki koşulları okuduğunuzu ve kabul ettiğinizi beyan edersiniz.
-          Son güncelleme: 2 Ağustos 2026.
+          Son güncelleme: 19 Ağustos 2026.
         </P>
 
         <Section title="1. Hizmet Sağlayıcı ve Kapsam">
@@ -36,8 +36,9 @@ export function TermsModal({ onClose }: TermsModalProps) {
             Kelimeki, herhangi bir şirket ya da tüzel kişilik bulunmaksızın, bağımsız bir geliştirici
             tarafından bireysel olarak geliştirilmekte ve işletilmektedir; faaliyet merkezi
             Sarıyer, İstanbul'dur. Hizmet, Türkçe kelimelerle oynanan çevrimiçi bir kelime
-            oyunudur ve oyun tahtası, lider tablosu, arkadaşlık ve kullanıcı hesabı özelliklerini
-            kapsar. Hizmet ücretsizdir ve herhangi bir bildirimde bulunmaksızın değiştirilebilir
+            oyunudur ve oyun tahtası, Yapay Zeka'ya karşı ya da arkadaşlarınla gerçek zamanlı
+            oynanan Canlı oyun, oyun içi mesajlaşma, lider tablosu (k-lig), arkadaşlık ve
+            kullanıcı hesabı özelliklerini kapsar. Hizmet ücretsizdir ve herhangi bir bildirimde bulunmaksızın değiştirilebilir
             ya da sonlandırılabilir.
           </P>
         </Section>

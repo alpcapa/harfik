@@ -5527,6 +5527,19 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   (birebir piksel değil), o yüzden düşen bir test yok; ölçüm web tarafında
   yapıldı, Dart yarısının kanıtı yine CI.
 
+- **19 Ağustos — hukuki metin denetimi, port AYNI PR'da:** web'in Kullanım
+  Koşulları ve Gizlilik Politikası beş yerde koddan kopmuştu (takma ismin
+  artık zorunlu olması; Brevo/Vercel'in aktarım bölümünde hiç anılmaması;
+  var olmayan bir self-servis hesap silme vaadi; "Görüş Bildir" formunun
+  toplanan veriler listesinde olmaması; Terms'in kapsam cümlesinde Canlı
+  oyun + mesajlaşmanın eksikliği). Beşi de `legal_modals.dart`a birebir
+  taşındı ve İKİ tarih de **19 Ağustos 2026** oldu — `legal_text_test.dart`
+  yalnızca TARİH eşitliğini koruduğundan, portu güncellemeden web'i
+  değiştirmek testi düşürürdü ama metni güncelleyip tarihi unutmak da
+  ayrışmayı gizlerdi; ikisi birlikte değişmeli. **Hesap silme özelliği
+  portta da YOK** — mağaza çıkışından önce kapatılması gereken bir madde
+  (bkz. kök `CLAUDE.md` → "Sonraya Bırakılan Ürün Fikirleri").
+
 Liste bir gün BOŞALIRSA öyle kalmasını bekleme: yeni bir düzeltme
 yazıldığında buraya yine madde eklenmeli (kural değişmedi: yazıldığı gün
 cihazda görülmemiş her düzeltme burada birikir).
