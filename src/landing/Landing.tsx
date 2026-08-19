@@ -625,7 +625,7 @@ export function Landing() {
                 eşik/ad/renk değişirse bu sayfa kendiliğinden takip eder —
                 `HelpModal`'ın "Rütbeler ve Ödüller" bölümüyle aynı ilke.
                 Mühürler de gerçek `RankSeal` bileşeni, ayrı bir çizim değil. */}
-            <Bolum ustBaslik="k-lig" baslik="Çaylak'tan Tanrı'ya dokuz rütbe">
+            <Bolum ustBaslik="k-lig" baslik="Çaylak'tan Kozmik'e dokuz rütbe">
               <p className="text-[12px] leading-relaxed text-muted" style={{ margin: 0 }}>
                 Kazandığın her oyun k-lig puanı getirir. Eşiği geçtiğin an rütben
                 yükselir ve o eşiğe özel, bir kereye mahsus bir ödül puanı

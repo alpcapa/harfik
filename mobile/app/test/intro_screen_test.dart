@@ -190,7 +190,7 @@ void main() {
 
       // 4. slayt: dokuz rütbe — liste `kRankTiers`ten çiziliyor, elle
       // yazılmıyor (eşik/ad değişirse ekran kendiliğinden takip eder).
-      expect(find.text("Çaylak'tan Tanrı'ya dokuz rütbe"), findsOneWidget);
+      expect(find.text("Çaylak'tan Kozmik'e dokuz rütbe"), findsOneWidget);
       expect(find.byType(RankSeal), findsNWidgets(kRankTiers.length));
       expect(find.text(kRankTiers.first.name), findsOneWidget);
       expect(find.text(kRankTiers.last.name), findsOneWidget);

@@ -1532,11 +1532,11 @@ listesi kök `TESTING.md` bölüm 10.
       | Destan | D | 1000 | +100 | kırmızı |
       | Efsane | E | 2500 | +250 | çivit |
       | Uzaylı | **Z** | 5000 | +500 | camgöbeği |
-      | Tanrı | T | 10000 | +1000 | parlak altın |
+      | Kozmik | K | 10000 | +1000 | parlak altın |
 
       Üç şeye ayrıca bak: (a) Uzaylı'nın harfi **Z** (U DEĞİL — o Usta'da);
       (b) üç yeni rengin (çivit/camgöbeği/parlak altın) mühürde ve ilerleme
-      çubuğunda birbirinden ayırt edilebildiği; (c) **Tanrı EN ÜST** —
+      çubuğunda birbirinden ayırt edilebildiği; (c) **Kozmik EN ÜST** —
       o kademede ilerleme çubuğu HİÇ çizilmemeli, Destan'da ise Efsane
       (2500) hedefiyle çizilmeli.
 - [ ] **"Nasıl Oynanır?" ekranında rütbe bölümü (Parça 66).** Detaylı
@@ -1546,7 +1546,7 @@ listesi kök `TESTING.md` bölüm 10.
       "(ödül +N)". Tablo `league_rank.dart`'tan ÜRETİLİYOR, elle
       yazılmıyor — yukarıdaki tabloyla BİREBİR aynı olmalı; ayrışırsa
       biri elle yazılmış demektir. Bölümde ödülün hayatta bir kez
-      verildiği, rütbenin düşebileceği ve Tanrı'nın en üst kademe olduğu
+      verildiği, rütbenin düşebileceği ve Kozmik'in en üst kademe olduğu
       yazmalı; "Skor Kartı ve Puanlama"nın sonunda da -2 cezasının iki
       kaynağı (Canlı 48 saat, yerel 7 gün) geçmeli. **Web'de birebir aynı
       bölüm var** (kök `TESTING.md` bölüm 10) — iki ekran ayrışmamalı.

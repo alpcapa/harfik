@@ -337,7 +337,7 @@ function DetailedRules() {
           Rütbe <strong>düşebilir</strong>: gösterilen mühür her zaman güncel puanından
           hesaplanır, yani yukarıdaki −2'lik cezalarla bir eşiğin altına inersen kademen
           de iner. Aynı eşiği yeniden geçmek ödülü ikinci kez vermez.{' '}
-          <strong>Tanrı</strong> en üst rütbedir; oraya varan orada kalır.
+          <strong>Kozmik</strong> en üst rütbedir; oraya varan orada kalır.
         </P>
       </Section>
 

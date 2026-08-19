@@ -11,7 +11,7 @@
 // arasında paylaşım mümkün olmadığından). Biri değişirse üçü birden
 // değişmeli. Son senkron: 12 Ağustos 2026,
 // `rank_tiers_efsane_uzayli_tanri` migration'ı (Usta 200→250; üstüne
-// Efsane 2500 / Uzaylı 5000 / Tanrı 10000).
+// Efsane 2500 / Uzaylı 5000 / Kozmik 10000).
 //
 // 14 Ağustos 2026'dan beri TS ↔ Dart yarısı ARTIK TESTLİ:
 // `test/rank_tiers_parity_test.dart` web'in `leagueRank.ts`'ini okuyup bu
@@ -96,12 +96,14 @@ const kRankTiers = <RankTier>[
   // 2026, kullanıcı kararı).
   RankTier(
       name: 'Uzaylı', letter: 'Z', color: kCyan, threshold: 5000, reward: 500),
-  // Tanrı EN ÜST kademe — üstüne kademe eklenmez, oraya varan orada kalır.
+  // Kozmik EN ÜST kademe — üstüne kademe eklenmez, oraya varan orada kalır.
+  // (19 Ağustos 2026'ya kadar adı "Tanrı"ydı — gerekçe ve elenen alternatifler
+  // için bkz. web'deki `src/utils/leagueRank.ts`, aynı satır.)
   // Ödülü (1000) `league_rewards_points_check`'in tavanına (points <= 1000)
   // TAM oturuyor: bir üst kademe eklenecekse o kısıt da büyütülmeli.
   RankTier(
-      name: 'Tanrı',
-      letter: 'T',
+      name: 'Kozmik',
+      letter: 'K',
       color: kGoldBright,
       threshold: 10000,
       reward: 1000),

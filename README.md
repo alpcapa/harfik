@@ -12,7 +12,7 @@
 - **Tam sözlük** — TDK Güncel Türkçe Sözlük (12. baskı) kaynaklı **~63 bin oynanabilir kelime**, anlamlarıyla birlikte.
 - **Türkçe alfabe** — Ç, Ğ, İ, Ö, Ş, Ü dahil tam harf dağılımı ve puanlar. Joker (`?`) desteklenir. Torba, oyuncu sayısından bağımsız olarak sabit 100 taş.
 - **Bingo bonusu** — 7 taşın tamamını tek hamlede kullanınca +25 puan.
-- **k-lig ödül & rütbe sistemi** — Puana bağlı 9 kademeli rütbe mührü (Çaylak 0 → Meraklı 50 → Oyuncu 100 → Usta 250 → Şampiyon 500 → Destan 1000 → Efsane 2500 → Uzaylı 5000 → Tanrı 10000 — damga güncel puandan türetilir, puan gerilerse kademe de düşer; Tanrı en üst kademedir) ve aynı eşiklere bağlı tek seferlik ödüller (**ödül = eşik/10**: 50 → +5, 100 → +10, 250 → +25, 500 → +50, 1000 → +100, 2500 → +250, 5000 → +500, 10000 → +1000; verilen ödül puan sonradan gerilese de geri alınmaz). Ödül/rütbe/100'lük puan eşikleri, damga+konfeti animasyonlu bir kutlama banner'ıyla bir kez bildirilir; rütbe gerilerse üzgün bir bilgilendirme banner'ı çıkar. Kademelerin ve ödüllerin tam listesi oyun içindeki "Nasıl oynanır?" ekranında da var.
+- **k-lig ödül & rütbe sistemi** — Puana bağlı 9 kademeli rütbe mührü (Çaylak 0 → Meraklı 50 → Oyuncu 100 → Usta 250 → Şampiyon 500 → Destan 1000 → Efsane 2500 → Uzaylı 5000 → Kozmik 10000 — damga güncel puandan türetilir, puan gerilerse kademe de düşer; Kozmik en üst kademedir) ve aynı eşiklere bağlı tek seferlik ödüller (**ödül = eşik/10**: 50 → +5, 100 → +10, 250 → +25, 500 → +50, 1000 → +100, 2500 → +250, 5000 → +500, 10000 → +1000; verilen ödül puan sonradan gerilese de geri alınmaz). Ödül/rütbe/100'lük puan eşikleri, damga+konfeti animasyonlu bir kutlama banner'ıyla bir kez bildirilir; rütbe gerilerse üzgün bir bilgilendirme banner'ı çıkar. Kademelerin ve ödüllerin tam listesi oyun içindeki "Nasıl oynanır?" ekranında da var.
 - **Dokunmatik** — Mobil öncelikli düzen; harf seç → kareye dokun → **Oyna**.
 
 ## Teknoloji
@@ -163,7 +163,7 @@ src/
 │   ├── friendInvite.ts # bekleyen arkadaşlık davet token'ı için tek seferlik localStorage kuyruğu
 │   ├── csvExport.ts    # admin paneli tabloları/grafikleri için CSV indirme yardımcısı
 │   ├── leaguePoints.ts # k-lig puanı hesaplama (GameHistoryModal ve SharedGamePage ortak)
-│   ├── leagueRank.ts   # k-lig rütbe kademeleri (Çaylak→Tanrı, 9 kademe: eşik/renk/ödül — sunucudaki _award_league_rewards VE portun league_rank.dart'ı ile ELLE senkron, üç kopya)
+│   ├── leagueRank.ts   # k-lig rütbe kademeleri (Çaylak→Kozmik, 9 kademe: eşik/renk/ödül — sunucudaki _award_league_rewards VE portun league_rank.dart'ı ile ELLE senkron, üç kopya)
 │   ├── pendingLiveGames.ts # Canlı taraftaki "bekleyen iş" sayısı (bekleyen davet + sırası sende olan oyun) — Setup rozeti ve PWA ikon rozeti ortak
 │   └── profileFields.ts # cinsiyet seçenekleri, GG/AA/YYYY ↔ ISO tarih dönüşümü (AuthModal ve AccountSettingsModal ortak)
 ├── landing/

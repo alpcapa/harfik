@@ -56,7 +56,7 @@ void main() {
       'green': kGreen.toARGB32(),
       'red': kRed.toARGB32(),
       'void': kVoid.toARGB32(),
-      // Parça 62: k-lig'in üç üst kademesi (Efsane/Uzaylı/Tanrı).
+      // Parça 62: k-lig'in üç üst kademesi (Efsane/Uzaylı/Kozmik).
       'indigo': kIndigo.toARGB32(),
       'cyan': kCyan.toARGB32(),
       'gold-bright': kGoldBright.toARGB32(),
