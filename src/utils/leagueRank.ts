@@ -70,10 +70,17 @@ export const RANK_TIERS: RankTier[] = [
   // gösterdiğinden iki kademe yalnızca renkleriyle ayrışırdı (12 Ağustos
   // 2026, kullanıcı kararı).
   { name: 'Uzaylı', letter: 'Z', color: '#06B6D4', threshold: 5000, reward: 500 },
-  // Tanrı EN ÜST kademe — üstüne kademe eklenmez, oraya varan orada kalır.
+  // Kozmik EN ÜST kademe — üstüne kademe eklenmez, oraya varan orada kalır.
+  // (19 Ağustos 2026'ya kadar adı "Tanrı"ydı; kullanıcı, birkaç oyuncudan
+  // gelen geri bildirim üzerine politik/dinî tartışma doğurmayan bir ad
+  // istedi. "Evrensel" harf olarak ELENDİ — E, Efsane'de kullanılıyor ve
+  // mühür tek glyph gösteriyor, Uzaylı'nın Z olma gerekçesiyle aynı kısıt.
+  // "Galaktik" yerine "Kozmik": galaksi değil evrenin tamamı, yani
+  // Uzaylı'nın üstünde gerçek bir ölçek artışı. Eşik/ödül/renk DEĞİŞMEDİ,
+  // yalnızca ad ve harf — bu yüzden migration gerekmedi.)
   // Ödülü (1000) `league_rewards_points_check`'in tavanına (points <= 1000)
   // TAM oturuyor: bir üst kademe eklenecekse o kısıt da büyütülmeli.
-  { name: 'Tanrı', letter: 'T', color: '#EAB308', threshold: 10000, reward: 1000 },
+  { name: 'Kozmik', letter: 'K', color: '#EAB308', threshold: 10000, reward: 1000 },
 ];
 
 /**

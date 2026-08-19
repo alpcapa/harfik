@@ -630,7 +630,7 @@ class _DetailedRules extends StatelessWidget {
           const _P('Rütbe **düşebilir**: gösterilen mühür her zaman güncel '
               'puanından hesaplanır, yani yukarıdaki −2\'lik cezalarla bir '
               'eşiğin altına inersen kademen de iner. Aynı eşiği yeniden '
-              'geçmek ödülü ikinci kez vermez. **Tanrı** en üst rütbedir; '
+              'geçmek ödülü ikinci kez vermez. **Kozmik** en üst rütbedir; '
               'oraya varan orada kalır.'),
         ],
       ),

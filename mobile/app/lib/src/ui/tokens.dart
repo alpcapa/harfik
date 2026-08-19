@@ -26,7 +26,7 @@ const kGreen = Color(0xFF16A34A);
 const kRed = Color(0xFFDC2626);
 const kVoid = Color(0xFFE8EBEF);
 
-/// k-lig'in üç üst kademesinin damga renkleri (Efsane/Uzaylı/Tanrı, 12
+/// k-lig'in üç üst kademesinin damga renkleri (Efsane/Uzaylı/Kozmik, 12
 /// Ağustos 2026). Palet kırmızıya kadar doluydu; bu üçü tailwind'e de token
 /// olarak eklendi ki "her kademe rengi bir palet token'ıdır" değişmezi
 /// kırılmasın (kanonik kaynak yine `tailwind.config.js`).

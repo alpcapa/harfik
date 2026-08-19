@@ -864,7 +864,7 @@ class _RutbeSayfasi extends StatelessWidget {
             children: [
               const _BolumBasligi(
                 ustBaslik: 'k-lig',
-                baslik: 'Çaylak\'tan Tanrı\'ya dokuz rütbe',
+                baslik: 'Çaylak\'tan Kozmik\'e dokuz rütbe',
               ),
               const SizedBox(height: 12),
               const Text(

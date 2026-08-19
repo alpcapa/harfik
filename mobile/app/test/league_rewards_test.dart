@@ -116,9 +116,9 @@ void main() {
       expect(tierFor(4999).name, 'Efsane');
       expect(tierFor(5000).name, 'Uzaylı');
       expect(tierFor(9999).name, 'Uzaylı');
-      expect(tierFor(10000).name, 'Tanrı');
-      // Tanrı EN ÜST kademe: üstünde hiçbir eşik yok, oraya varan orada kalır.
-      expect(tierFor(999999).name, 'Tanrı');
+      expect(tierFor(10000).name, 'Kozmik');
+      // Kozmik EN ÜST kademe: üstünde hiçbir eşik yok, oraya varan orada kalır.
+      expect(tierFor(999999).name, 'Kozmik');
     });
 
     test('negatif puan ve null Çaylak\'a düşer (-2 cezaları mümkün kılıyor)',
@@ -149,7 +149,7 @@ void main() {
       for (final t in kRankTiers) {
         expect(t.reward, t.threshold ~/ 10, reason: '${t.name} eşik/10 değil');
       }
-      // Tanrı'nın ödülü league_rewards_points_check'in tavanına (1000) TAM
+      // Kozmik'in ödülü league_rewards_points_check'in tavanına (1000) TAM
       // oturuyor — bir üst kademe eklenirse o kısıt da büyütülmeli.
       expect(kRankTiers.last.reward, 1000);
     });
@@ -174,7 +174,7 @@ void main() {
       expect(nextTierAfter(tierFor(0))!.name, 'Meraklı');
       expect(nextTierAfter(tierFor(500))!.name, 'Destan');
       expect(nextTierAfter(tierFor(1000))!.name, 'Efsane');
-      expect(nextTierAfter(tierFor(5000))!.name, 'Tanrı');
+      expect(nextTierAfter(tierFor(5000))!.name, 'Kozmik');
       expect(nextTierAfter(tierFor(10000)), isNull);
     });
   });
@@ -197,7 +197,7 @@ void main() {
       // 190 → Destan'a kadar hepsi, Efsane henüz değil
       expect(rewardAlreadyClaimed(t(1000), 190), isTrue);
       expect(rewardAlreadyClaimed(t(2500), 190), isFalse);
-      // 1940 → Tanrı dahil hepsi
+      // 1940 → Kozmik dahil hepsi
       expect(rewardAlreadyClaimed(t(10000), 1940), isTrue);
     });
 
@@ -470,11 +470,12 @@ void main() {
     });
 
     testWidgets('en üst kademede çubuk yok', (tester) async {
-      // En üst kademe 12 Ağustos 2026'dan beri Tanrı (10000) — bu test
+      // En üst kademe 12 Ağustos 2026'dan beri 10000 (19 Ağustos'a kadar
+      // "Tanrı", o gün "Kozmik" oldu) — bu test
       // önceden 1200/Destan kullanıyordu ve üç yeni kademe eklenince
       // DOĞRU şekilde düştü (Destan artık en üst değil, çubuk çiziliyor).
       await pumpInfo(tester, total: 12000, bonus: 1940);
-      expect(find.text('Tanrı'), findsOneWidget);
+      expect(find.text('Kozmik'), findsOneWidget);
       expect(find.text('En yüksek rütbedesin!'), findsOneWidget);
       expect(find.byType(RankProgressBar), findsNothing);
     });

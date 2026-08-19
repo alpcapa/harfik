@@ -968,7 +968,7 @@ gerekiyor).
       Şampiyon satırlarını Oyuncu/Ustaca ile yan yana karşılaştır.
 - [ ] **Dokuz kademe ve eşikleri.** Çaylak 0 (Ç) · Meraklı 50 (M) · Oyuncu
       100 (O) · Usta **250** (U) · Şampiyon 500 (Ş) · Destan 1000 (D) ·
-      Efsane **2500** (E) · Uzaylı **5000** (Z) · Tanrı **10000** (T).
+      Efsane **2500** (E) · Uzaylı **5000** (Z) · Kozmik **10000** (K).
       Ödül her eşikte eşik/10 (+5/+10/+25/+50/+100/+250/+500/+1000).
       Usta 12 Ağustos 2026'da 200'den 250'ye çekildi — eski 200 eşiği
       HİÇBİR yerde görünmemeli. Uzaylı'nın harfi **Z** (Usta'nın U'suyla
@@ -981,7 +981,7 @@ gerekiyor).
       ÜRETİLİYOR, elle yazılmıyor — yani yukarıdaki maddede doğruladığın
       eşik/ödüllerle BİREBİR aynı olmalı; ayrışırsa biri elle yazılmış
       demektir. Aynı bölümde ödülün hayatta bir kez verildiği, rütbenin
-      düşebileceği ve Tanrı'nın en üst kademe olduğu yazmalı; "Skor Kartı
+      düşebileceği ve Kozmik'in en üst kademe olduğu yazmalı; "Skor Kartı
       ve Puanlama"nın sonunda da -2 cezasının üç kaynağı (Canlı 48 saat,
       yerel 7 gün) geçmeli. **Mobil portta da birebir aynı bölüm var**
       (`mobile/TESTING.md` bölüm 13) — iki ekran ayrışmamalı.

@@ -2092,6 +2092,12 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      10000 Tanrı olsun. Ödül puanları da aynı mantığa göre ayarla.
      Tanrı'dan sonra hep tanrı olarak kalsın."* Yeni bir mekanizma YOK;
      üç kopyalı tablo (SQL ↔ TS ↔ Dart) genişletildi.
+     - ⚠ **En üst kademenin ADI 19 Ağustos 2026'da "Kozmik" oldu** (harfi
+       de T → K). Yukarıdaki alıntı ve bu parçanın geri kalanı o günkü
+       gerçeği yansıtan TARİHSEL kayıt, bilerek değiştirilmedi — güncel
+       tablo için `league_rank.dart`/`leagueRank.ts`'e bak. Eşik/ödül/renk
+       değişmediğinden migration gerekmedi; gerekçe ve elenen alternatifler
+       kök `CLAUDE.md`'nin "k-lig Ödül & Rütbe Sistemi" bölümünde.
      - **Ödül = eşik/10 kuralı bu değişiklikle tabloya TAM oturdu.**
        Kural zaten 5 kademede geçerliydi, TEK kırık üye Usta'ydı (200
        eşik / 25 ödül). Kullanıcının eşiği 250'ye çekmesi onu farkında
