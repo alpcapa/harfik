@@ -106,9 +106,13 @@ yazıldıktan sonra tanıtım bir daha ÇIKMAZ.
 - [ ] **1. ve 2. slayt KAYDIRMADAN tamamen sığıyor** — parmakla aşağı
       çekince slayt İÇİNDE dikey bir kayma OLMAMALI (yatay geçiş elbette
       var), açıklamanın son satırı alt kenarda kesilmemeli. Bu maddeyi
-      birden fazla ekran boyunda dene (küçük telefon + büyük telefon):
-      widget testi yalnızca 420×900'ü güvence altına alıyor, daha dar/kısa
-      ekranlarda kaydırma fallback'i bilerek duruyor.
+      birden fazla ekran boyunda dene (küçük telefon + büyük telefon) ve
+      **GitHub Pages web derlemesini iOS Safari'de de** aç: orada durum
+      çubuğu + alt adres çubuğu görünür yüksekliği ~150px kısaltıyor ve
+      1. slayt 19 Ağustos 2026'da tam bu yüzden bir satır taşıyordu
+      (widget testi o gün 420×900'de yeşildi). Test artık 420×900 VE
+      430×740 boylarında koşuyor; bunlardan da dar/kısa bir yüzeyde
+      kaydırma fallback'i bilerek duruyor.
 - [ ] **Logo BEŞ sayfada da var** ve BEŞİNDE de içerikle BİRLİKTE
       dikeyde ortalanıyor (logo ile başlık arası her sayfada aynı; logo
       yukarıda asılı kalıp aralarında boşluk açılmamalı). 1. sayfa Parça
