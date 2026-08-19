@@ -25,6 +25,7 @@ import '../../data/friends_api.dart';
 import '../friends/friends_modal.dart';
 import '../game/count_badge.dart';
 import '../game/help_modal.dart';
+import '../intro/intro_screen.dart';
 import '../game/neo_box.dart';
 import '../rank/league_rank.dart';
 import '../rank/rank_seal.dart';
@@ -337,6 +338,18 @@ class _AccountButtonState extends State<AccountButton> {
             }
           case 'help':
             showHelpModal(context);
+          case 'intro':
+            // Hesap menüsünden açmak bir "tekrar gösterim" DEĞİL, kullanıcının
+            // kendi isteği — `seenIntro` bayrağına DOKUNULMAZ (bkz.
+            // FlagsStore). Web'in Setup başlığındaki `<` düğmesinin porttaki
+            // karşılığı burası; başlığa ok konmadı (native'de kök ekranın
+            // geri oku navigasyon yığınını pop eder ve iOS'ta sistem geri
+            // hareketiyle çakışır — bkz. mobile/CLAUDE.md "Karşılama Katmanı").
+            Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (ctx) => IntroScreen(
+                onDone: () => Navigator.of(ctx).pop(),
+              ),
+            ));
           case 'settings':
             showAccountSettingsModal(context, auth);
           case 'signout':
@@ -497,6 +510,15 @@ class _AccountButtonState extends State<AccountButton> {
           child: SizedBox(
             width: _menuItemWidth,
             child: _menuLabel('❓  Nasıl Oynanır?'),
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'intro',
+          height: _menuItemHeight,
+          padding: _menuItemPadding,
+          child: SizedBox(
+            width: _menuItemWidth,
+            child: _menuLabel('✨  Tanıtım'),
           ),
         ),
         PopupMenuItem<String>(

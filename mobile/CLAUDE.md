@@ -448,6 +448,13 @@ mobile/
       ui/auth/               # giriş-kayıt-şifremi-unuttum modalı, hesap
                              # butonu, avatar, Terms/Privacy,
                              # reset_password_modal (recovery kapısı)
+      ui/intro/              # intro_screen.dart — İLK AÇILIŞ tanıtımı
+                             # (Parça 116): 4 sayfalık PageView, Setup'ın
+                             # ÖNÜNDE; kapısı app.dart'taki _HomeGate,
+                             # bayrağı FlagsStore.seenIntro. Metinler web'in
+                             # karşılama katmanından (Landing.tsx) BİREBİR —
+                             # web metni değişirse buraya elle taşınmalı
+                             # (bunu zorlayan bir test YOK)
       ui/game/               # tahta/raf/header/modaller (oyun ekranının
                              # tamamı) + PAYLAŞILAN küçük parçalar:
                              # modal_shell (KModal — başlıklı 360px pencere),
@@ -1046,7 +1053,7 @@ tıklayıp Start'a basma) doğrulaması kullanıcının kendi cihazından
 bekleniyor — bu ortamdan `appetize.io` erişilemediğinden ben açıp
 göremiyorum.
 
-## Karşılama Katmanı (web) — bilinçli ayrışma, portta YOK (18 Ağustos 2026)
+## Karşılama Katmanı (web) — bilinçli ayrışma (18 Ağustos 2026, 19'unda güncellendi)
 
 Web'e 18 Ağustos 2026'da girişsiz ilk ziyaretçiye gösterilen bir karşılama/
 tanıtım katmanı eklendi (kök `CLAUDE.md` → "Karşılama Katmanı" bölümleri —
@@ -1062,20 +1069,22 @@ madde:
    bir sonraki denetimde biri "port geride kalmış" deyip düğmeyi porta
    eklemeye kalkışmasın diye
    bu not burada duruyor.
-2. **Uygulamanın kendi ilk açılış/tanıtım ekranı AYRI ve planlı bir iş** —
-   ana port spesifikasyonu (PORT_BRIEF) bunu *"Setup'ın ÖNÜNE eklenen yeni
+2. ~~**Uygulamanın kendi ilk açılış/tanıtım ekranı AYRI ve planlı bir
+   iş**~~ → **19 Ağustos 2026'da YAPILDI (Parça 116, `ui/intro/`).**
+   Ana port spesifikasyonu (PORT_BRIEF) bunu *"Setup'ın ÖNÜNE eklenen yeni
    bir ekran, kalıcı bir 'bir daha gösterme' bayrağıyla; mevcut ekranlar
-   değişmez; mağaza çıkışından önce bitmeli"* olarak tarif ediyor ve aynı
-   hikâye omurgasını (web'in karşılama katmanındaki metin/görseller)
-   kullanacak. Bu iş şu an başlamadı.
-3. **O ekran geldiğinde bile Setup başlığına bir ok/düğme KONMAYACAK.**
+   değişmez; mağaza çıkışından önce bitmeli"* diye tarif ediyordu — üçü de
+   aynen uygulandı. Web'in karşılama katmanından yalnızca METİN taşındı;
+   katmanın kendisi (statik HTML prerender, kapı script'i, SEO/paylaşım
+   yüzeyleri, iki tahta demosu) porta taşınMADI ve taşınmayacak.
+3. **O ekran geldi ve Setup başlığına yine de bir ok/düğme KONMADI.**
    Native bir uygulamada kök ekranın sol üstündeki geri oku navigasyon
    yığınını POP etmek demektir; Setup zaten kök ekran ve iOS'ta bu,
    sistemin kendi geri hareketiyle (edge-swipe) çakışırdı. Tanıtıma dönüş
-   yerine **hesap menüsüne** ("Nasıl Oynanır?"in hemen yanına) gelecek —
+   **hesap menüsünde** ("Nasıl Oynanır?"ın hemen altında, `✨  Tanıtım`) —
    port o menüyü zaten bilgilendirici maddeler için kullanıyor (k-lig, Skor
    Kartı, Arkadaşlar, Nasıl Oynanır?, Hesap Ayarları), başlık geometrisine
-   hiç dokunmaz ve senkron tutulması gereken yeni bir şekil yaratmaz.
+   hiç dokunmuyor ve senkron tutulması gereken yeni bir şekil yaratmıyor.
 
 ## Web ↔ Uygulama Arasındaki Kabul Edilmiş Farklar
 
@@ -5328,6 +5337,85 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Cihazda doğrulanacak:** yedi yüzeyde mühürün göründüğü ve doğru
        kademeyi çizdiği — `mobile/TESTING.md` bölüm 13'e madde eklendi.
 
+   - ✅ **Parça 116 — portun KENDİ ilk açılış tanıtımı: `IntroScreen` +
+     hesap menüsünde "Tanıtım" (19 Ağustos 2026, yeni
+     `ui/intro/intro_screen.dart`, `storage/flags_store.dart`,
+     `ui/app.dart`, `ui/auth/account_button.dart`):** Kullanıcı web'in
+     GitHub Pages derlemesine bakıp sordu — *"girişsiz setupda geri ok yok
+     değil mi?"*, sonra asıl noktayı koydu: *"Ama bence olmalı sanki.
+     App'e gelenler tanıtım görmeyecek mi?"* Sunulan üç seçenekten
+     **"Tam tanıtım ekranını şimdi yapalım"** seçildi.
+     - **Sezgi ÖLÇÜLDÜ ve doğru çıktı:** grep taraması portun ne bir
+       tanıtım ekranı ne de web'deki otomatik "Hızlı Başlangıç" popup'ı
+       taşıdığını gösterdi — `FlagsStore.seenQuickstart` depoda VAR ve
+       `storage_test.dart`'ta test EDİLİYOR ama **hiçbir UI tüketicisi
+       YOK**. Yani uygulamaya ilk gelen, oyunun ne olduğunu hiçbir yerde
+       okumadan doğrudan "OYUNU BAŞLAT"a bakıyordu.
+     - **Web'in karşılama katmanı OLDUĞU GİBİ port EDİLMEDİ ve bu bilinçli:**
+       o katmanın yarısı web'e özgü bir amaca hizmet ediyor (ham HTML'de
+       taranabilir metin, SEO, OG kartı, kapı script'i, `?ref=` paylaşımı).
+       Porta taşınan şey HİKÂYE: kahraman cümlesi + dört rakam kutusu,
+       "Nasıl oynanır?" dört adımı (metinleri ve 5×5 mini ızgaraları
+       `Landing.tsx`ten BİREBİR), dokuz k-lig rütbesi. **Metinler ELLE
+       SENKRON** — bunu zorlayan bir test YOK (`help_text_parity_test`
+       yalnızca `HelpModal`'ı kapsıyor).
+     - **Mini ızgara gerçek `BoardWidget` DEĞİL, 25 küçük kareden ibaret**
+       (web'in `MiniIzgara`'sının aynısı): tam tahtayı çizmek 169 hücre +
+       territory hesabı demek ve tanıtımda anlatılan şey geometri değil
+       KURAL. Renkler `playerColors`/`tokens.dart`tan geliyor, yerel kopya
+       açılmadı (Parça 54'ün kuralı).
+     - **Rütbe tablosu ELLE YAZILMADI**, `kRankTiers` + `RankSeal(size:30)`
+       ile çiziliyor — dördüncü bir senkron kopya açmamak için (SQL ↔ TS ↔
+       Dart zaten üç kopya). Kelime sayısı web'in `KELIME_SAYISI` sabitiyle
+       aynı değeri taşıyan tek bir `kKelimeSayisi` sabitinde.
+     - **Kapı (`_HomeGate`, `app.dart`) web'in kapı script'inden YAPISAL
+       olarak farklı ve bu kayda değer:** web kararı `<head>`teki senkron
+       bir script ile İLK BOYAMADAN ÖNCE veriyor (FOUC yok); portta bayrak
+       SharedPreferences'ta, yani asenkron. Bu yüzden karar verilene kadar
+       hiçbir şey boyanmıyor (`_showIntro == null` → düz `kBg` ekranı).
+       **`services.storage == null` ise kapı HİÇ devreye girmiyor** —
+       mevcut testlerin ve önizlemelerin hiçbiri `storage` geçmiyor
+       (grep'le doğrulandı), dolayısıyla bu değişiklik onların davranışını
+       bit düzeyinde değiştirmedi. Depo AÇILAMAZSA da tanıtım GÖSTERİLMEZ:
+       bayrak yazılamayacağı için her açılışta tekrar çıkardı (Parça 45'in
+       "ayna kendisi bir kayıp yoluna dönüşebiliyordu" dersinin kardeşi —
+       yeni bir katman, hata durumunda kullanıcıyı kilitleyen bir döngü
+       kurmamalı).
+     - **Bayrak `seen_quickstart` DEĞİL yeni bir `seen_intro`** (web'in
+       `kelimeki:seen-intro` anahtarının karşılığı): ikisi farklı şeyler —
+       biri "tanıtımı gördü", öteki web'de oyun İÇİNDE çıkan hızlı
+       başlangıç popup'ı. Aynı bayrağı paylaşmak, ileride quickstart porta
+       gelirse ikisini birbirine kilitlerdi.
+     - **Hesap menüsündeki "✨  Tanıtım" bayrağa DOKUNMUYOR** — oradan
+       açmak bir "tekrar gösterim" değil kullanıcının kendi isteği; ekran
+       `Navigator.push` ile açılıp `onDone`da pop ediliyor. Setup başlığına
+       ok KONMADI (gerekçe: "Karşılama Katmanı" bölümü madde 3).
+     - **Test — 5 yeni test (`intro_screen_test.dart`) + 1 kablo testi
+       (`account_button_test.dart`):** dört sayfa/DEVAM/BAŞLA/"Atla",
+       kapının üç dalı (ilk açılış → tanıtım + bayrak GERÇEKTEN yazılıyor;
+       ikinci açılış → doğrudan Setup; depo yok → doğrudan Setup) ve menü
+       maddesinin `IntroScreen`'i açtığı. Kapı testleri GERÇEK `AppStorage`
+       (sqflite ffi) kullanıyor — bayrağın yazıldığını sahte bir depoyla
+       "kanıtlamak" hiçbir şey kanıtlamaz; her birinin sonunda
+       `drainRealIo` var (Parça 11/13/64/74'ün dersi).
+     - **Mevcut bir testi kırmadan önce düzeltildi:** `account_button_test`
+       satır aralığı testi "Hesap Ayarları − Nasıl Oynanır?"ı TEK bir satır
+       aralığı sayıyordu; araya "Tanıtım" girince o fark ikiye katlanırdı.
+       Ölçüm iki ayrı aralığa bölündü, sıra testine de yeni madde eklendi.
+     - **Doğrulama sınırı — DÜRÜST KAYIT:** bu oturumun konteynerinde
+       Flutter/Dart SDK YOK (`which flutter dart` → boş), yani
+       `flutter analyze`/`flutter test` KOŞULAMADI ve **negatif eş
+       kurulamadı** — Dart yarısının tek kanıtı CI (Parça 103-115'in aynı
+       sınırı). Buna karşılık kullanılan HER sembol (sahte uç adları, alan
+       adları, `AppStorage.open` imzası, `AppServices` parametreleri)
+       kaynağa karşı grep'lendi — Parça 115'te CI'ı düşüren tam olarak bu
+       adımın atlanmasıydı. Parantez dengesi de betikle tarandı.
+     - **Cihazda doğrulanacak:** temiz kurulumda tanıtımın çıkması, "Atla"/
+       "BAŞLA" sonrası bir daha ÇIKMAMASI, menüden her zaman açılabilmesi,
+       mini ızgaraların ve dokuz rütbe mührünün doğru çizilmesi (mühür
+       fontu M PLUS — TOFU riski, Parça 114) — `mobile/TESTING.md` bölüm
+       0.4 (yeni) eklendi.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
@@ -5543,6 +5631,20 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   hesap açtıran uygulamalarda ZORUNLU tutuyor — yani madde artık hukuki
   değil, **mağaza çıkışına bağlı bir port işi**; kaskad zinciri ve
   gerekçenin tamamı kök `CLAUDE.md` → "Sonraya Bırakılan Ürün Fikirleri".
+
+- **19 Ağustos (Parça 116) — portun kendi ilk açılış tanıtımı
+  (`IntroScreen`):** temiz kurulumda (uygulamayı sil/yeniden kur ya da
+  site verisini temizle) Setup'tan ÖNCE dört sayfalık tanıtım çıkmalı;
+  "Atla" ve son sayfadaki "BAŞLA" ikisi de Setup'a düşürmeli ve bir daha
+  ASLA çıkmamalı (uygulamayı kapat-aç ile de). Hesap menüsündeki
+  `✨ Tanıtım` her zaman açmalı ve o yol bayrağı DEĞİŞTİRMEMELİ (menüden
+  açıp kapattıktan sonra uygulamayı yeniden başlat — tanıtım yine
+  çıkmamalı). Görsel: 2./3. sayfadaki 5×5 mini ızgaraların renkleri, son
+  sayfadaki DOKUZ rütbe mührünün harfleri TOFU (boş kare) OLMAMALI (mühür
+  fontu M PLUS alt kümesi — Parça 114'ün riski) ve dar bir ekranda dört
+  rakam kutusu alt satıra sarmalı, "RenderFlex overflowed" çubuğu
+  ÇIKMAMALI. Bu parça Flutter SDK'sız bir oturumda yazıldı — Dart
+  yarısının CI dışında kanıtı yok.
 
 Liste bir gün BOŞALIRSA öyle kalmasını bekleme: yeni bir düzeltme
 yazıldığında buraya yine madde eklenmeli (kural değişmedi: yazıldığı gün

@@ -80,6 +80,37 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
       test etmek istersen o satırı geçici olarak `99.0.0` yapıp uygulamayı
       yeniden aç: "güncelleme gerekli" ekranı çıkmalı — sonra geri al.)
 
+## 0.4 İlk açılış tanıtımı — `IntroScreen` (Parça 116)
+
+Web'in karşılama katmanının porttaki karşılığı. **Temiz bir kurulum
+gerekiyor:** uygulamayı silip yeniden kur (ya da web test derlemesinde
+site verisini temizle) — bayrak (`seen_intro`, SharedPreferences) bir kez
+yazıldıktan sonra tanıtım bir daha ÇIKMAZ.
+
+- [ ] **İlk açılışta Setup'tan ÖNCE tanıtım çıkıyor.** Dört sayfa:
+      (1) logo + "Kelime bul, bölgeni büyüt, tahtayı ele geçir." + dört
+      rakam kutusu, (2) "Nasıl oynanır?" 1-2. adım, (3) 3-4. adım,
+      (4) dokuz k-lig rütbesi. Alt düğme ilk üç sayfada **DEVAM**, son
+      sayfada **BAŞLA**; sağ üstteki **Atla** yalnızca son sayfada
+      KAYBOLUYOR (aynı işi yapan iki düğme olmasın diye).
+- [ ] **"Atla" ve "BAŞLA" ikisi de Setup'a düşürüyor** ve **bir daha
+      ASLA çıkmıyor** — uygulamayı tamamen kapatıp yeniden aç, doğrudan
+      Setup gelmeli. (Bayrak yazılmıyorsa tanıtım her açılışta çıkar; bu
+      maddenin asıl ölçtüğü şey o.)
+- [ ] **Hesap menüsündeki `✨ Tanıtım` her zaman açıyor** ("Nasıl
+      Oynanır?"ın hemen altında). Açıp kapattıktan SONRA uygulamayı
+      yeniden başlat — tanıtım yine ÇIKMAMALI (menüden açmak bayrağa
+      dokunmaz).
+- [ ] **Setup başlığında ok/geri düğmesi YOK** — bu bilinçli bir ayrışma
+      (web'de `<` var). Bkz. mobile/CLAUDE.md "Karşılama Katmanı".
+- [ ] **Görsel:** 2. ve 3. sayfadaki 5×5 mini ızgaralar renkli çiziliyor
+      (boş/bonus/merkez + iki oyuncu rengi); son sayfadaki dokuz mührün
+      harfleri (Ç M O U Ş D E Z T) TOFU (boş kare) DEĞİL — mühür fontu
+      ayrı bir alt küme, eksik glyph riski gerçek (bkz. Parça 114).
+- [ ] **Dar ekran:** en küçük cihazında/pencerende dört rakam kutusu alt
+      satıra sarmalı; sarı-siyah "RenderFlex overflowed" çubuğu
+      GÖRÜNMEMELİ.
+
 ## 0.5 Web ile yan yana görsel karşılaştırma (Parça 56)
 
 - [ ] **Setup'ta oyuncu satırında PUAN olmamalı (17 Ağustos 2026) — bu

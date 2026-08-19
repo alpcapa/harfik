@@ -1,7 +1,7 @@
 // Hesap menüsü (AccountButton) — web UserMenu.tsx paritesi (Parça 28).
 // Kapsam: isim başlığının altındaki tıklanabilir k-lig satırı (AYRI bir
 // "Sıralama" listesi maddesi DEĞİL), madde sırası (Arkadaşlar → Skor Kartı
-// → Nasıl Oynanır? → Hesap Ayarları → Çıkış Yap) ve Çıkış Yap'ın kendi
+// → Nasıl Oynanır? → Tanıtım → Hesap Ayarları → Çıkış Yap) ve Çıkış Yap'ın kendi
 // üstündeki çizgi. Gerçek Supabase ağı YOK — StatsGateway/FriendsGateway
 // sahte.
 import 'package:flutter/material.dart';
@@ -12,6 +12,7 @@ import 'package:kelimeki/src/ui/rank/rank_seal.dart';
 import 'package:kelimeki/src/data/friends_api.dart';
 import 'package:kelimeki/src/data/stats_api.dart';
 import 'package:kelimeki/src/ui/auth/account_button.dart';
+import 'package:kelimeki/src/ui/intro/intro_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
 import 'support/test_fonts.dart';
@@ -123,7 +124,8 @@ void main() {
 
   testWidgets(
       'regresyon (Parça 28): madde sırası web ile aynı — Arkadaşlar → '
-      'Skor Kartı → Nasıl Oynanır? → Hesap Ayarları → (çizgi) → Çıkış Yap',
+      'Skor Kartı → Nasıl Oynanır? → Tanıtım → Hesap Ayarları → (çizgi) → '
+      'Çıkış Yap',
       (tester) async {
     final stats = StatsRepo(_FakeStatsGateway());
     final friends = FriendsRepo(_FakeFriendsGateway());
@@ -139,7 +141,11 @@ void main() {
     expect(friendsY, lessThan(scoreY),
         reason: 'Arkadaşlar, Skor Kartı\'ndan ÖNCE gelmeli (web sırası)');
     expect(scoreY, lessThan(helpY));
-    expect(helpY, lessThan(settingsY));
+    final introY = topOf(find.textContaining('Tanıtım'));
+    expect(helpY, lessThan(introY),
+        reason: 'Tanıtım, "Nasıl Oynanır?"ın hemen altında (kayıt kararı: '
+            'tanıtıma dönüş Setup başlığına DEĞİL hesap menüsüne gelir)');
+    expect(introY, lessThan(settingsY));
     expect(settingsY, lessThan(signOutY));
     // Çıkış Yap'ın kendi üstünde tek bir çizgi olmalı — isim başlığının
     // altında DEĞİL (eski davranış), Hesap Ayarları ile Çıkış Yap arasında.
@@ -190,8 +196,10 @@ void main() {
           topOf(find.textContaining('Arkadaşlar')),
       topOf(find.textContaining('Nasıl Oynanır?')) -
           topOf(find.textContaining('Skor Kartı')),
-      topOf(find.textContaining('Hesap Ayarları')) -
+      topOf(find.textContaining('Tanıtım')) -
           topOf(find.textContaining('Nasıl Oynanır?')),
+      topOf(find.textContaining('Hesap Ayarları')) -
+          topOf(find.textContaining('Tanıtım')),
     ];
     // İki satıra sarmış bir madde bu farkı ~17px daha büyük yapardı
     // (ölçülen: sarmadan 38-39px, sararsa 54-72px) — tüm satırlar AYNI
@@ -332,5 +340,19 @@ void main() {
     final nameX = tester.getTopRight(find.text('Ironman')).dx;
     final sealX = tester.getTopLeft(find.byType(RankSeal).first).dx;
     expect(sealX, greaterThanOrEqualTo(nameX));
+  });
+
+  testWidgets(
+      '"Tanıtım" maddesi IntroScreen\'i açar (19 Ağustos 2026) — porta '
+      'özgü giriş noktası; Setup başlığına ok KONMADI, bkz. '
+      'mobile/CLAUDE.md "Karşılama Katmanı"', (tester) async {
+    final stats = StatsRepo(_FakeStatsGateway());
+    await pumpMenu(tester, stats: stats);
+
+    expect(find.byType(IntroScreen), findsNothing);
+    await tester.tap(find.textContaining('Tanıtım'));
+    await tester.pumpAndSettle();
+    expect(find.byType(IntroScreen), findsOneWidget,
+        reason: 'menü maddesi bağlanmamış — kablo kopuk');
   });
 }
