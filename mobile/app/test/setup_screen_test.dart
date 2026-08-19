@@ -674,6 +674,23 @@ void main() {
     final legal = tester.getRect(find.text('Kullanım Koşulları'));
     final copy = tester.getRect(find.text('© Kelimeki'));
     expect(copy.top, greaterThan(legal.bottom));
+
+    // ...ve ORTALI. 19 Ağustos 2026'da kullanıcı cihazda sola yapışmış
+    // gördü: kapsayıcı Column `CrossAxisAlignment.stretch` olduğundan bu
+    // Text tam genişliği kaplıyor ve `textAlign` verilmezse varsayılan
+    // `start`, yani SOLA hizalanıyor.
+    //
+    // ⚠ BURADA GEOMETRİK BİR ORTALAMA KONTROLÜ İŞE YARAMAZ — tam da bu
+    // yüzden hata satır eklendiği günden beri testten kaçtı: `stretch`
+    // altında Text'in RenderBox'ı zaten tam genişlikte, yani `getRect(...).center.dx` iki
+    // durumda da ekran merkezini verir; sola kaçan şey KUTU değil kutunun
+    // İÇİNDEKİ glyph'ler. Bu yüzden boyamayı belirleyen özelliğin kendisi
+    // ölçülüyor. Aynı sebeple yukarıdaki `copy.top > legal.bottom` kontrolü
+    // de bu sapmayı göremiyordu — dikey sıra doğruydu.
+    expect(tester.widget<Text>(find.text('© Kelimeki')).textAlign,
+        TextAlign.center,
+        reason: 'Telif satırı web\'de ortalı; `stretch` Column altında bunu '
+            'sağlayan tek şey textAlign.center.');
   });
 
   testWidgets(

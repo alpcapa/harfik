@@ -1119,8 +1119,17 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                         // aşağıdaki teşhis satırı web'de hiç yok, onun
                         // boşluğu eskisi gibi 12px kalıyor.
                         const SizedBox(height: 12),
+                        // `textAlign` ŞART: kapsayıcı Column
+                        // `CrossAxisAlignment.stretch` olduğundan bu Text tam
+                        // genişliği kaplıyor ve varsayılan hizası `start`,
+                        // yani SOLA yapışıyor (19 Ağustos 2026, kullanıcı
+                        // cihazda bildirdi — web'de satır ortalı). Üstündeki
+                        // hukuki satır `WrapAlignment.center` ile, altındaki
+                        // teşhis satırı da `TextAlign.center` ile zaten
+                        // ortalıydı; atlanan tek satır buydu.
                         const Text(
                           '© Kelimeki',
+                          textAlign: TextAlign.center,
                           style: TextStyle(
                             fontFamily: 'SpaceMono',
                             fontSize: 10,

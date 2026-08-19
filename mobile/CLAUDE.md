@@ -5477,6 +5477,24 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        footer'ıyla aynı stille (`SpaceMono` 10px, `_muted`) ve aynı 12px
        boşlukla (web `gap-3`, ÖLÇÜLMÜŞ değer) eklendi. Web'de karşılığı
        olmayan teşhis satırı en altta kalmaya devam ediyor.
+       - ⚠ **AYNI GÜN BULUNAN HATA — satır SOLA yapışıyordu** (kullanıcı
+         cihazda gördü, ekran görüntüsüyle bildirdi; web'de ortalı).
+         `textAlign` unutulmuştu: kapsayıcı `Column`
+         `CrossAxisAlignment.stretch` olduğundan `Text` tam genişliği
+         kaplıyor ve varsayılan hizası `start`. Üstündeki hukuki satır
+         `WrapAlignment.center` ile, ALTINDAKİ teşhis satırı da
+         `TextAlign.center` ile zaten ortalıydı — atlanan tek satır buydu,
+         yani iki komşusunun arasında sessizce ayrıştı.
+       - **Bu tür bir sapmayı GEOMETRİYLE ölçemezsin.** `stretch` altında
+         `getRect(...).center.dx` iki durumda da ekran merkezini verir;
+         kayan şey kutu DEĞİL kutunun içindeki glyph'ler. Mevcut footer
+         testi de bu yüzden yeşil kalmıştı (o yalnızca telif satırının
+         hukuki satırın ALTINDA olduğunu ölçüyor — dikey sıra doğruydu).
+         Regresyon testi bu yüzden boyamayı belirleyen özelliğin kendisini
+         ölçüyor: `tester.widget<Text>(...).textAlign == TextAlign.center`
+         (aynı dosyada zaten kullanılan bir kalıp, yeni bir yöntem
+         icat edilmedi). Hizayı `Center`/`Align` ile sağlayan yeni bir
+         footer satırı eklenirse bu assertion da ona göre güncellenmeli.
      - **GÖRÜNÜR SONUÇ, bilerek:** logo altı link satırı YALNIZCA
        MİSAFİRDE çiziliyor (17 Ağustos kararı), yani girişli kullanıcının
        artık tanıtıma dönüş yolu YOK. Bu bir kayıp gibi görünüyor ama
