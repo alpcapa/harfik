@@ -80,18 +80,33 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
       test etmek istersen o satırı geçici olarak `99.0.0` yapıp uygulamayı
       yeniden aç: "güncelleme gerekli" ekranı çıkmalı — sonra geri al.)
 
-## 0.4 İlk açılış tanıtımı — `IntroScreen` (Parça 116 + 117)
+## 0.4 İlk açılış tanıtımı — `IntroScreen` (Parça 116 + 117 + 118)
 
 Web'in karşılama katmanının porttaki karşılığı. **Temiz bir kurulum
 gerekiyor:** uygulamayı silip yeniden kur (ya da web test derlemesinde
 site verisini temizle) — bayrak (`seen_intro`, SharedPreferences) bir kez
 yazıldıktan sonra tanıtım bir daha ÇIKMAZ.
 
-- [ ] **İlk açılışta Setup'tan ÖNCE tanıtım çıkıyor.** Dört sayfa:
+- [ ] **İlk açılışta Setup'tan ÖNCE tanıtım çıkıyor.** Dört sayfa
+      (19 Ağustos 2026'da yeniden düzenlendi — Parça 118):
       (1) logo + "Kelime bul, bölgeni büyüt, tahtayı ele geçir." + dört
-      rakam kutusu, (2) "Nasıl oynanır?" 1-2. adım, (3) 3-4. adım,
-      (4) dokuz k-lig rütbesi. Alt düğme ilk üç sayfada **DEVAM**, son
-      sayfada **HEMEN OYNA**.
+      rakam kutusu + **"Tahtaya bir bak"** bölümü (2 kişilik tahta, X2/X3
+      legend'ı ve altındaki açıklama), (2) "Nasıl oynanır?" DÖRT adım
+      birden, (3) "Neler var" ALTI özellik kutusu, (4) dokuz k-lig
+      rütbesi. Alt düğme ilk üç sayfada **DEVAM**, son sayfada
+      **HEMEN OYNA**.
+- [ ] **1. slayttaki tahta gerçek oyun tahtasıyla AYNI görünüyor** —
+      web'in "Tahtaya bir bak" bölümüyle yan yana koy: harfler ve hücreler
+      aynı oranda, köşe rakamı/X2 filigranı ve X3 hücresi görünür, taşlar
+      taşların ALTINDA kalan filigranlarla doğru katmanda. **Harfler
+      belirgin şekilde küçük/büyük görünüyorsa sebep font değil KABIN
+      GENİŞLİĞİDİR** (tahta 680'lik kendi kabında olmalı, 460'lık metin
+      sütununda değil — web bu tuzağa iki kez düştü).
+- [ ] **3. slaytta altı kutunun ALTISI da ikonlu** (robot, iki kişi,
+      konuşma balonu, üstü çizili wifi, tahta, madalya) ve ikon başlığın
+      SOLUNDA, başlıkla aynı boyda. Boş kare/eksik ikon OLMAMALI.
+- [ ] **4. slaytta dokuz rütbe kutusu var** ve her birinde mühür + ad +
+      eşik puanı okunuyor.
 - [ ] **ATLAMA YOK.** Dört sayfanın HİÇBİRİNDE "Atla" (ya da başka bir
       geçme/kapatma) düğmesi olmamalı — tanıtımın tek çıkışı son
       sayfadaki **HEMEN OYNA**. (19 Ağustos 2026 kullanıcı kararı.)
@@ -120,9 +135,13 @@ yazıldıktan sonra tanıtım bir daha ÇIKMAZ.
       (boş/bonus/merkez + iki oyuncu rengi); son sayfadaki dokuz mührün
       harfleri (Ç M O U Ş D E Z T) TOFU (boş kare) DEĞİL — mühür fontu
       ayrı bir alt küme, eksik glyph riski gerçek (bkz. Parça 114).
-- [ ] **Dar ekran:** en küçük cihazında/pencerende dört rakam kutusu alt
-      satıra sarmalı; sarı-siyah "RenderFlex overflowed" çubuğu
-      GÖRÜNMEMELİ.
+- [ ] **Dar ekran (320-360 px):** dört rakam kutusundaki metinler
+      küçülerek sığmalı ("Ücretsiz" dahil), altı özellik kutusu ve dokuz
+      rütbe kutusu kırpılmamalı; sarı-siyah "RenderFlex overflowed"
+      çubuğu HİÇBİR slaytta GÖRÜNMEMELİ.
+- [ ] **Yatay taşma yok:** dört slaytın hiçbirinde sağa/sola kaydırma
+      oluşmamalı (tahta slaydı dahil — o 680'lik kabıyla ekrandan geniş
+      OLMAMALI, dar ekranda küçülmeli).
 
 ## 0.5 Web ile yan yana görsel karşılaştırma (Parça 56)
 

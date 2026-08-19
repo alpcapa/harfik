@@ -22,6 +22,7 @@ npm run lint    # tsc --noEmit (ayrı bir ESLint kurulumu yok)
 npm run test    # Playwright duman testleri (tests/smoke.spec.ts)
 npm run generate-golden-vectors  # Flutter portu parite fixture'ları (bkz. "Flutter / Mobil Port")
 npm run generate-meanings-db     # Flutter portu için meanings.json → SQLite asset'i
+npm run generate-demo-board-dart # Karşılama tahtası → portun intro ekranı için demo_board_data.dart
 npm run verify-cloud-save-mirror # Bulut kaydı offline karar mantığı (saf fonksiyon kontrolleri)
 npm run verify-fetch-my-games    # Oyun geçmişi: ağ hatası ↔ boş liste ayrımı (sahte Supabase ucu)
 npm run verify-demo-board        # Karşılama katmanındaki tanıtım tahtası sözlüğe karşı doğrulanır
@@ -519,8 +520,13 @@ düşüp ilk satırla bağını koparıyordu.
 
 **İkonlar `RelationIcons.tsx`'e EKLENMEDİ ve bu bilinçli.** Oradaki kural
 ("path'i kopyalama, buraya ekle") Material glyph'lerinin Flutter portuyla
-BİREBİR aynı vektör olmasından doğuyor; bu altı ikonun portta karşılığı yok
-ve olmayacak (karşılama katmanı web'e özgü). Material path'lerini hafızadan
+BİREBİR aynı vektör olmasından doğuyor; bu altı ikon ise Material DEĞİL.
+**Bu satır bir dönem "portta karşılığı yok ve olmayacak" diyordu — 19 Ağustos
+2026'da GEÇERSİZLEŞTİ:** kullanıcı portun tanıtım ekranının "webin aynısı
+(6 kutu)" olmasını isteyince ikonlar `mobile/app/lib/src/ui/intro/
+ozellik_ikonlari.dart`'a `CustomPainter` olarak taşındı (yine `Icons.*`
+DEĞİL — port `Icons.*` kullansaydı iki platform FARKLI vektör çizerdi).
+İki dosya artık ELLE SENKRON; bunu zorlayan bir test YOK. Material path'lerini hafızadan
 yazmak ise bu kod tabanında bir kez denenip yanlış glyph üretmişti ve bu
 ortamda çıkarılacak bir `MaterialIcons-Regular.otf` yok — o yüzden ikonlar
 ilkel şekillerden (daire/dikdörtgen/çizgi/yay) kurulup gerçek Chromium
@@ -1022,8 +1028,9 @@ src/
   landing/      # karşılama katmanı — derleme zamanında statik HTML (bkz. "Karşılama Katmanı")
     Landing.tsx     # sayfanın tamamı; SUNUCUDA render edilir (hook/olay/tarayıcı globali YOK)
     LandingLogo.tsx # logoyu üç kez çizmek için SVG sprite (path verisi LogoMark'tan)
-    OzellikIkonlari.tsx # "Neler var" altı özellik ikonu (Material DEĞİL — ilkel şekiller, portta karşılığı yok)
-    demoBoard.ts    # tanıtım tahtasının taşları — `npm run verify-demo-board` ile doğrulanır
+    OzellikIkonlari.tsx # "Neler var" altı özellik ikonu (Material DEĞİL — ilkel şekiller; portun ozellik_ikonlari.dart'ıyla ELLE senkron)
+    demoBoard.ts    # tanıtım tahtasının taşları — `npm run verify-demo-board` ile doğrulanır;
+                    # 2 kişilik tahta `npm run generate-demo-board-dart` ile porta da üretilir
     render.tsx      # `renderToStaticMarkup` sarmalayıcısı (Node'da koşar)
   components/   # React UI bileşenleri
   game/         # Oyun mantığı ve durum yönetimi
