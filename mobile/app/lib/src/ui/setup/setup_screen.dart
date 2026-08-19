@@ -10,18 +10,19 @@
 // Oyun" satırı (avatarlar + Sıra: + kalan süre) ve 7 gün paragrafı; misafirin
 // her iki görünümünde de (Devam Eden Oyun / boş form) "Neden Ücretsiz Üye
 // Olmalıyım?" kutusu (`MembershipPerksBox`, 7 Ağustos 2026). "Nasıl oynanır?"
-// linki kurallar modalını açar; yanındaki "Arkadaşınla paylaş" web'in
-// `handleShare`'i (`?ref=arkadas` linki, sistem paylaş sayfası).
+// linki kurallar modalını açar; yanındaki "Tanıtım" `IntroScreen`'i yeniden
+// gösterir (bayrağa dokunmadan).
 //
 // 17 Ağustos 2026 — GİRİŞLİ/MİSAFİR ekranı ikiye ayrıldı (web'deki aynı gün
-// verilen kararla birebir): logonun altındaki tanıtım paragrafı + "Nasıl
-// oynanır? · Arkadaşınla paylaş" satırı artık YALNIZCA MİSAFİRDE görünüyor;
-// girişli kullanıcı doğrudan "OYUN TİPİ" başlığını görüyor. En alttaki hukuki
-// link satırına ("Kullanım Koşulları · Gizlilik Politikası") GİRİŞLİ
-// kullanıcı için üçüncü bir madde eklendi: "Paylaş" (web `Icons.share`
-// glyph'i + `handleShare` — misafirdeki "Arkadaşınla paylaş" linkiyle AYNI
-// fonksiyonu, aynı `?ref=arkadas` bağlantısını kullanır, yeni bir paylaşım
-// yolu YAZILMADI). Misafirin footer'ı BİREBİR ESKİSİ GİBİ (iki madde) kalıyor.
+// verilen kararla birebir): logonun altındaki tanıtım paragrafı + link satırı
+// artık YALNIZCA MİSAFİRDE görünüyor; girişli kullanıcı doğrudan "OYUN TİPİ"
+// başlığını görüyor.
+//
+// 19 Ağustos 2026 (kullanıcı isteği) — iki değişiklik: (a) misafir link
+// satırındaki "Arkadaşınla paylaş" FOOTER'a taşındı ve oradaki "Paylaş"
+// artık GİRİŞTEN BAĞIMSIZ (web `Setup.tsx` de onu `user &&` koşuluna
+// bağlamıyor); boşalan yere "Tanıtım" linki kondu. (b) Footer'ın altına
+// web'in "Son çağrı" bölümündeki gibi bir "© Kelimeki" satırı eklendi.
 //
 // "Arkadaşınla" sekmesi web'in `liveActionCount` rozetini taşır (bekleyen
 // davet + sırası çağıranda olan aktif oyun) ve girişte, dikkat bekleyen bir
@@ -49,6 +50,7 @@ import '../rank/rank_seal.dart';
 import '../game/count_badge.dart';
 import '../game/game_screen.dart';
 import '../game/help_modal.dart';
+import '../intro/intro_screen.dart';
 import '../game/logo_mark.dart';
 import '../game/neo_button.dart';
 import '../game/player_badge.dart';
@@ -339,6 +341,21 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
       text: 'Hemen ücretsiz dene!',
       url: '$webOrigin/?ref=arkadas',
       origin: shareOriginFrom(context),
+    );
+  }
+
+  /// Tanıtım ekranını YENİDEN açar (19 Ağustos 2026, kullanıcı isteği:
+  /// menüdeki "Tanıtım" maddesi kaldırılıp logo altındaki link satırına
+  /// taşındı — "Arkadaşınla paylaş"ın yerine).
+  ///
+  /// `seenIntro` bayrağına DOKUNMAZ: bayrak "ilk açılışta gösterildi mi"
+  /// sorusunun cevabı, buradan açmak kullanıcının kendi isteği. `onDone`
+  /// bu yolda yalnızca pop eder — Setup'a "geçiş" yok, zaten Setup'tayız.
+  void _openIntro() {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (ctx) => IntroScreen(onDone: () => Navigator.of(ctx).pop()),
+      ),
     );
   }
 
@@ -927,8 +944,9 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                           ),
                           // Web: `gap-1` (4px) + link satırının `mt-3`ü (12px).
                           const SizedBox(height: 16),
-                          // Web Setup'taki "Nasıl oynanır?" · "Arkadaşınla paylaş"
-                          // satırı — ikisi de font-mono/11px/kalın/accent linkler.
+                          // Web Setup'taki "Nasıl oynanır?" · <ikinci link>
+                          // satırı — ikisi de font-mono/11px/kalın/accent
+                          // linkler.
                           Align(
                             alignment: Alignment.center,
                             child: Row(
@@ -948,8 +966,14 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                                         fontSize: 11,
                                         letterSpacing: 0,
                                         color: _muted)),
-                                _InlineLink('Arkadaşınla paylaş',
-                                    onTap: _handleShare),
+                                // 19 Ağustos 2026 (kullanıcı isteği):
+                                // buradaki "Arkadaşınla paylaş" footer'a
+                                // taşındı (aşağı bkz.), yerine tanıtıma
+                                // dönüş linki kondu. Bu yol `seenIntro`
+                                // bayrağına DOKUNMAZ — kullanıcının kendi
+                                // isteğiyle açılan bir tekrar gösterim,
+                                // "ilk açılış" değil (bkz. FlagsStore).
+                                _InlineLink('Tanıtım', onTap: _openIntro),
                               ],
                             ),
                           ),
@@ -1050,48 +1074,58 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                             _LegalLink('Gizlilik Politikası',
                                 onTap: () => showPrivacyModal(context,
                                     onFeedback: _openFeedback)),
-                            // Yalnızca GİRİŞLİ kullanıcı — misafirin footer'ı
-                            // BİREBİR eskisi gibi kalıyor (yukarıdaki iki madde,
-                            // hiçbir ek boşluk/ayraç yok). "Paylaş" adı
-                            // BİLEREK "Arkadaşını Davet Et" DEĞİL — o,
+                            // 19 Ağustos 2026: "Paylaş" artık GİRİŞTEN
+                            // BAĞIMSIZ — web `Setup.tsx` de onu `user &&`
+                            // gibi bir koşula BAĞLAMIYOR (`handleShare`
+                            // oturumdan bağımsız çalışıyor), yani misafir de
+                            // girişli de aynı üç maddeli satırı görüyor.
+                            // Ad BİLEREK "Arkadaşını Davet Et" DEĞİL — o,
                             // FriendsModal'daki AYRI bir özelliğin (kalıcı
                             // davet token'ı) adı; burada web'in mevcut
                             // `handleShare`'i (aynen çağrılıyor, yeni bir
                             // paylaşım fonksiyonu YAZILMADI) `?ref=arkadas`
                             // UTM'li genel bir tahta/site linki paylaşıyor —
                             // admin panelindeki "Kaynak Hunisi" bu parametreye
-                            // bağlı, korunması şart.
-                            // Ayraç da AYNI koşula bağlı: web'de bu ikisi tek
-                            // bir `{user && (<>…</>)}` bloğunda, yani girişli
-                            // footer'da İKİ ayraç var (Koşullar · Gizlilik ·
-                            // Paylaş), misafirde BİR. Stil yukarıdaki ilk
-                            // ayraçla birebir aynı — yeni bir stil yazma.
-                            if (auth.user != null)
-                              const Text('·',
-                                  style: TextStyle(
+                            // bağlı, korunması şart. Ayraç stili yukarıdaki
+                            // ilk ayraçla birebir aynı — yeni bir stil yazma.
+                            const Text('·',
+                                style: TextStyle(
+                                    fontFamily: 'SpaceMono',
+                                    fontSize: 10,
+                                    color: _muted)),
+                            GestureDetector(
+                              onTap: _handleShare,
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.share, size: 12, color: _muted),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Paylaş',
+                                    style: TextStyle(
                                       fontFamily: 'SpaceMono',
                                       fontSize: 10,
-                                      color: _muted)),
-                            if (auth.user != null)
-                              GestureDetector(
-                                onTap: _handleShare,
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.share, size: 12, color: _muted),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Paylaş',
-                                      style: TextStyle(
-                                        fontFamily: 'SpaceMono',
-                                        fontSize: 10,
-                                        color: _muted,
-                                      ),
+                                      color: _muted,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
+                            ),
                           ],
+                        ),
+                        // Web'in "Son çağrı" footer'ıyla aynı telif satırı
+                        // (`font-mono text-[10px] text-muted`). Hukuki
+                        // satırla arası web'de `gap-3` = 12px (ÖLÇÜLDÜ) —
+                        // aşağıdaki teşhis satırı web'de hiç yok, onun
+                        // boşluğu eskisi gibi 12px kalıyor.
+                        const SizedBox(height: 12),
+                        const Text(
+                          '© Kelimeki',
+                          style: TextStyle(
+                            fontFamily: 'SpaceMono',
+                            fontSize: 10,
+                            color: _muted,
+                          ),
                         ),
                         const SizedBox(height: 12),
                         // Teşhis alt satırı (iskelet HomeScreen'in durum
@@ -1538,7 +1572,7 @@ class _ChoiceButton extends StatelessWidget {
 }
 
 /// Web'in `font-mono text-[11px] font-bold text-accent hover:underline`
-/// linkleri — "Nasıl oynanır?" / "Arkadaşınla paylaş" satırında paylaşılıyor.
+/// linkleri — "Nasıl oynanır?" / "Tanıtım" satırında paylaşılıyor.
 /// Setup'ın en altındaki hukuki linkler — web `text-[10px] font-mono
 /// text-muted` (accent DEĞİL, `_InlineLink`'ten bu yüzden ayrı).
 class _LegalLink extends StatelessWidget {

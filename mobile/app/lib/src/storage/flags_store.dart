@@ -20,7 +20,7 @@ class FlagsStore {
 
   /// İlk açılış tanıtımı (`IntroScreen`) bir kez gösterildi mi — web'in
   /// karşılama katmanındaki `kelimeki:seen-intro` anahtarının karşılığı
-  /// (19 Ağustos 2026). Hesap menüsündeki "Tanıtım" satırı bu bayrağa
+  /// (19 Ağustos 2026). Setup'taki "Tanıtım" linki bu bayrağa
   /// DOKUNMAZ: oradan açmak bir tekrar gösterim değil, kullanıcının kendi
   /// isteği.
   bool get seenIntro => prefs.getBool(_seenIntro) ?? false;

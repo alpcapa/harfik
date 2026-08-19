@@ -1,7 +1,8 @@
 // İlk açılış tanıtımı (`IntroScreen`) + kapısı (`app.dart`'taki _HomeGate).
 //
 // Ölçülen sözleşme üç parça:
-//  1) ekranın kendisi — dört sayfa, DEVAM ilerletir, son sayfada BAŞLA;
+//  1) ekranın kendisi — dört sayfa, DEVAM ilerletir, son sayfada HEMEN OYNA
+//     (ve HİÇBİR yerde atlama yok: tanıtımın TEK çıkışı o düğme);
 //  2) kapı — bayrak YOKKEN tanıtım, VARKEN doğrudan Setup;
 //  3) bayrak GERÇEKTEN yazılıyor (yoksa tanıtım her açılışta çıkardı).
 //
@@ -68,8 +69,8 @@ void main() {
   sqfliteFfiInit();
 
   group('IntroScreen', () {
-    testWidgets('dört sayfa: DEVAM ilerletir, son sayfada BAŞLA çıkar ve '
-        'onDone çağrılır', (tester) async {
+    testWidgets('dört sayfa: DEVAM ilerletir, son sayfada HEMEN OYNA çıkar ve '
+        'onDone çağrılır; atlama YOK', (tester) async {
       await setPhoneViewSize(tester, const Size(420, 900));
       var done = 0;
       await tester.pumpWidget(MaterialApp(
@@ -77,40 +78,31 @@ void main() {
         home: IntroScreen(onDone: () => done++),
       ));
 
-      // İlk sayfa: kahraman cümlesi + "Atla" + DEVAM.
-      // Kahraman cümlesinin TAMAMI aranıyor (`textContaining` DEĞİL):
-      // 2. sayfadaki "Bölgeni büyüt" adımı da aynı alt dizeyi taşıyor,
-      // PageView komşu sayfayı da inşa ederse eşleşme ikiye çıkardı.
+      // İlk sayfa: kahraman cümlesi + DEVAM. Kahraman cümlesinin TAMAMI
+      // aranıyor (`textContaining` DEĞİL): 2. sayfadaki "Bölgeni büyüt"
+      // adımı da aynı alt dizeyi taşıyor, PageView komşu sayfayı da inşa
+      // ederse eşleşme ikiye çıkardı.
       expect(find.text('Kelime bul, bölgeni büyüt, tahtayı ele geçir.'),
           findsOneWidget);
-      expect(find.text('Atla'), findsOneWidget);
       expect(find.text('DEVAM'), findsOneWidget);
-      expect(find.text('BAŞLA'), findsNothing);
+      expect(find.text('HEMEN OYNA'), findsNothing);
+      // Atlama YOK — 19 Ağustos 2026 kullanıcı kararı. Bu iddia her
+      // sayfada tekrarlanıyor (aşağı bkz.), çünkü tek bir sayfada
+      // yokluğunu görmek başka bir sayfada durduğunu ekarte etmez.
+      expect(find.text('Atla'), findsNothing);
 
       for (var i = 0; i < kIntroPageCount - 1; i++) {
         await tester.tap(find.text('DEVAM'));
         await tester.pumpAndSettle();
+        expect(find.text('Atla'), findsNothing);
       }
 
-      // Son sayfa: BAŞLA, "Atla" YOK (aynı işi yapan iki kontrol olmasın).
-      expect(find.text('BAŞLA'), findsOneWidget);
+      // Son sayfa: tanıtımın TEK çıkışı.
+      expect(find.text('HEMEN OYNA'), findsOneWidget);
       expect(find.text('DEVAM'), findsNothing);
-      expect(find.text('Atla'), findsNothing);
       expect(done, 0);
 
-      await tester.tap(find.text('BAŞLA'));
-      await tester.pumpAndSettle();
-      expect(done, 1);
-    });
-
-    testWidgets('"Atla" ilk sayfadan da bitirir', (tester) async {
-      await setPhoneViewSize(tester, const Size(420, 900));
-      var done = 0;
-      await tester.pumpWidget(MaterialApp(
-        theme: kelimekiTheme(),
-        home: IntroScreen(onDone: () => done++),
-      ));
-      await tester.tap(find.text('Atla'));
+      await tester.tap(find.text('HEMEN OYNA'));
       await tester.pumpAndSettle();
       expect(done, 1);
     });
@@ -130,7 +122,13 @@ void main() {
       expect(find.byType(IntroScreen), findsOneWidget);
       expect(find.byType(SetupScreen), findsNothing);
 
-      await tester.tap(find.text('Atla'));
+      // Tanıtımın TEK çıkışı son sayfadaki düğme — kapı testinin de o
+      // yoldan geçmesi gerekiyor (atlama kaldırıldı).
+      for (var i = 0; i < kIntroPageCount - 1; i++) {
+        await tester.tap(find.text('DEVAM'));
+        await tester.pumpAndSettle();
+      }
+      await tester.tap(find.text('HEMEN OYNA'));
       await tester.pumpAndSettle();
 
       expect(find.byType(IntroScreen), findsNothing);

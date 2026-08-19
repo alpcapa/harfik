@@ -19,7 +19,8 @@
 // SETUP BAŞLIĞINA GERİ OKU KONMADI (web'de var, portta YOK — bkz.
 // mobile/CLAUDE.md "Karşılama Katmanı"): native'de kök ekranın sol üstündeki
 // geri oku navigasyon yığınını pop eder ve iOS'ta sistem geri hareketiyle
-// çakışır. Tanıtıma dönüş hesap menüsündeki "Tanıtım" satırından.
+// çakışır. Tanıtıma dönüş Setup'ın logo altındaki "Tanıtım" linkinden
+// (yalnız misafirde — bkz. mobile/CLAUDE.md, Parça 117).
 import 'package:flutter/material.dart';
 
 import '../game/logo_mark.dart';
@@ -40,9 +41,10 @@ const int kIntroPageCount = 4;
 const String kKelimeSayisi = '63.000';
 
 class IntroScreen extends StatefulWidget {
-  /// Tanıtım bittiğinde (ya da "Atla"ya basıldığında) çağrılır. İlk açılışta
-  /// bayrağı yazıp Setup'a geçmek çağıranın işi; hesap menüsünden açıldığında
-  /// yalnızca `Navigator.pop`.
+  /// Son sayfadaki "HEMEN OYNA"ya basıldığında çağrılır — tanıtımın TEK
+  /// çıkışı bu (atlama yok). İlk açılışta bayrağı yazıp Setup'a geçmek
+  /// çağıranın işi; Setup'taki "Tanıtım" linkinden açıldığında yalnızca
+  /// `Navigator.pop`.
   final VoidCallback onDone;
 
   const IntroScreen({super.key, required this.onDone});
@@ -85,31 +87,17 @@ class _IntroScreenState extends State<IntroScreen> {
             constraints: const BoxConstraints(maxWidth: 460),
             child: Column(
               children: [
-                // "Atla" — son sayfada yerini alttaki "BAŞLA" aldığından
-                // gizleniyor; satırın kendisi DURUYOR ki sayfalar arasında
-                // içerik yukarı/aşağı zıplamasın.
-                SizedBox(
-                  height: 44,
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: _isLast
-                        ? const SizedBox.shrink()
-                        : Padding(
-                            padding: const EdgeInsets.only(right: 14),
-                            child: TextButton(
-                              onPressed: widget.onDone,
-                              child: const Text(
-                                'Atla',
-                                style: TextStyle(
-                                  fontFamily: 'SpaceMono',
-                                  fontSize: 12,
-                                  color: kMuted,
-                                ),
-                              ),
-                            ),
-                          ),
-                  ),
-                ),
+                // ATLAMA YOK (19 Ağustos 2026, kullanıcı isteği: "sadece
+                // introyu atlama olmasın. Sonuna kadar geçip Hemen Oyna ...
+                // ile setup'a gitmeli"). İlk sürümde sağ üstte bir "Atla"
+                // vardı; tanıtımın TEK çıkışı artık son sayfadaki "HEMEN
+                // OYNA". Bu, web'in karşılama katmanıyla da tutarlı: orada
+                // da kapatma/atlama düğmesi yok, sayfa okunur ve "HEMEN
+                // OYNA" ile uygulamaya geçilir.
+                //
+                // Sabit üst boşluk: `_Sayfa`nın kendi `top: 8` dolgusu tek
+                // başına sayfayı ekranın tepesine yapıştırıyordu.
+                const SizedBox(height: 24),
                 Expanded(
                   child: PageView(
                     controller: _controller,
@@ -134,7 +122,7 @@ class _IntroScreenState extends State<IntroScreen> {
                   child: SizedBox(
                     width: double.infinity,
                     child: NeoButton(
-                      label: _isLast ? 'BAŞLA' : 'DEVAM',
+                      label: _isLast ? 'HEMEN OYNA' : 'DEVAM',
                       onPressed: _next,
                       variant: NeoButtonVariant.accent,
                       fontSize: 13,

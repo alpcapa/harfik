@@ -449,8 +449,11 @@ mobile/
                              # butonu, avatar, Terms/Privacy,
                              # reset_password_modal (recovery kapısı)
       ui/intro/              # intro_screen.dart — İLK AÇILIŞ tanıtımı
-                             # (Parça 116): 4 sayfalık PageView, Setup'ın
-                             # ÖNÜNDE; kapısı app.dart'taki _HomeGate,
+                             # (Parça 116/117): 4 sayfalık PageView, Setup'ın
+                             # ÖNÜNDE; ATLAMA YOK, tek çıkış son sayfadaki
+                             # "HEMEN OYNA". Tekrar açma yolu Setup'ın logo
+                             # altı link satırı ("Tanıtım", yalnız misafir);
+                             # kapısı app.dart'taki _HomeGate,
                              # bayrağı FlagsStore.seenIntro. Metinler web'in
                              # karşılama katmanından (Landing.tsx) BİREBİR —
                              # web metni değişirse buraya elle taşınmalı
@@ -1081,10 +1084,15 @@ madde:
    Native bir uygulamada kök ekranın sol üstündeki geri oku navigasyon
    yığınını POP etmek demektir; Setup zaten kök ekran ve iOS'ta bu,
    sistemin kendi geri hareketiyle (edge-swipe) çakışırdı. Tanıtıma dönüş
-   **hesap menüsünde** ("Nasıl Oynanır?"ın hemen altında, `✨  Tanıtım`) —
-   port o menüyü zaten bilgilendirici maddeler için kullanıyor (k-lig, Skor
-   Kartı, Arkadaşlar, Nasıl Oynanır?, Hesap Ayarları), başlık geometrisine
-   hiç dokunmuyor ve senkron tutulması gereken yeni bir şekil yaratmıyor.
+   **Setup'ın logo altındaki link satırında** ("Nasıl oynanır? · Tanıtım")
+   — 19 Ağustos 2026'da kullanıcı isteğiyle hesap menüsünden oraya taşındı;
+   boşalan yere geçen "Arkadaşınla paylaş" ise footer'a indi (bkz. Parça
+   117). Başlık geometrisine hâlâ dokunulmuyor.
+   **Yan sonuç, bilerek:** o satır YALNIZCA MİSAFİRDE görünüyor (17 Ağustos
+   kararı), yani girişli kullanıcının tanıtıma dönüş yolu YOK. Web'deki
+   `<` düğmesi de aynı şekilde yalnızca girişsizde çiziliyor (kök
+   `CLAUDE.md` → "Setup'taki `<` düğmesi artık YALNIZCA girişsiz
+   kullanıcıda görünüyor"), yani bu bir sapma değil parite.
 
 ## Web ↔ Uygulama Arasındaki Kabul Edilmiş Farklar
 
@@ -5390,6 +5398,9 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        açmak bir "tekrar gösterim" değil kullanıcının kendi isteği; ekran
        `Navigator.push` ile açılıp `onDone`da pop ediliyor. Setup başlığına
        ok KONMADI (gerekçe: "Karşılama Katmanı" bölümü madde 3).
+       **BU MADDE AYNI GÜN DEĞİŞTİ — bkz. Parça 117:** menü girişi
+       kaldırılıp Setup'ın logo altı link satırına taşındı; "bayrağa
+       dokunmuyor" kuralı aynen geçerli.
      - **Test — 5 yeni test (`intro_screen_test.dart`) + 1 kablo testi
        (`account_button_test.dart`):** dört sayfa/DEVAM/BAŞLA/"Atla",
        kapının üç dalı (ilk açılış → tanıtım + bayrak GERÇEKTEN yazılıyor;
@@ -5410,11 +5421,75 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        adları, `AppStorage.open` imzası, `AppServices` parametreleri)
        kaynağa karşı grep'lendi — Parça 115'te CI'ı düşüren tam olarak bu
        adımın atlanmasıydı. Parantez dengesi de betikle tarandı.
-     - **Cihazda doğrulanacak:** temiz kurulumda tanıtımın çıkması, "Atla"/
-       "BAŞLA" sonrası bir daha ÇIKMAMASI, menüden her zaman açılabilmesi,
+     - **Cihazda doğrulanacak (AYNI GÜN Parça 117 ile güncellendi):**
+       temiz kurulumda tanıtımın çıkması, "HEMEN OYNA" sonrası bir daha
+       ÇIKMAMASI, Setup'taki "Tanıtım" linkinden her zaman açılabilmesi,
        mini ızgaraların ve dokuz rütbe mührünün doğru çizilmesi (mühür
        fontu M PLUS — TOFU riski, Parça 114) — `mobile/TESTING.md` bölüm
        0.4 (yeni) eklendi.
+
+   - ✅ **Parça 117 — tanıtımdan ATLAMA kaldırıldı; "Tanıtım" menüden
+     Setup'ın link satırına, "Paylaş" oradan footer'a taşındı; footer'a
+     "© Kelimeki" eklendi (19 Ağustos 2026, `intro_screen.dart`,
+     `account_button.dart`, `setup_screen.dart`):** Parça 116'nın ekranını
+     gören kullanıcı üç değişiklik istedi (sözleri): *"sadece introyu
+     atlama olmasın. Sonuna kadar geçip Hemen Oyna ya da Oyun Başlat vb ile
+     setup'a gitmeli. Tanıtımı menüye koymak yerine, paylaş'ı universal
+     ikonuyla beraber web'deki gibi footer'a alıp, onun yerine mi koysak.
+     Footer'ın altına da "c Kelimeki" olsun"*.
+     - **(a) Atlama YOK, tek çıkış son sayfadaki düğme.** Sağ üstteki
+       "Atla" satırı tamamen kalktı; son sayfanın düğmesi `BAŞLA` →
+       **`HEMEN OYNA`**. Satırın yerine sabit bir `SizedBox(height: 24)`
+       kondu — `_Sayfa`nın kendi `top: 8` dolgusu tek başına sayfayı
+       ekranın tepesine yapıştırıyordu; yani 44px'lik kontrolü silmek
+       dikey ritmi de bozuyordu. Karar web'in karşılama katmanıyla da
+       tutarlı: orada da bir kapatma/atlama düğmesi yok.
+     - **(b) "Tanıtım" hesap menüsünden Setup'a taşındı.**
+       `account_button.dart`'tan üç dokunuş birden çıkarıldı (import,
+       `case 'intro'`, `PopupMenuItem`); Setup'ın logo altı link
+       satırındaki "Arkadaşınla paylaş"ın yerini aldı ve o paylaşım
+       footer'a indi. `seenIntro` bayrağına DOKUNMAMA kuralı aynen taşındı
+       (`_openIntro` yalnızca `Navigator.push` + `pop`).
+     - **(c) Footer'daki "Paylaş" artık GİRİŞTEN BAĞIMSIZ — bu bir kapsam
+       genişletmesi değil, WEB'İN KENDİ davranışı.** `Setup.tsx` okundu:
+       o buton `{user && …}` gibi bir koşula BAĞLI DEĞİL (`handleShare`
+       oturumdan bağımsız çalışıyor, kod yorumunda da yazılı). Port 17
+       Ağustos'ta onu yanlışlıkla girişliye kilitlemişti; iki
+       `if (auth.user != null)` guard'ı (ayraç + düğme) kaldırıldı.
+       Misafirin footer'ı artık üç maddeli.
+     - **(d) "© Kelimeki"** hukuki satırın altına, web'in "Son çağrı"
+       footer'ıyla aynı stille (`SpaceMono` 10px, `_muted`) ve aynı 12px
+       boşlukla (web `gap-3`, ÖLÇÜLMÜŞ değer) eklendi. Web'de karşılığı
+       olmayan teşhis satırı en altta kalmaya devam ediyor.
+     - **GÖRÜNÜR SONUÇ, bilerek:** logo altı link satırı YALNIZCA
+       MİSAFİRDE çiziliyor (17 Ağustos kararı), yani girişli kullanıcının
+       artık tanıtıma dönüş yolu YOK. Bu bir kayıp gibi görünüyor ama
+       web'le PARİTE: oradaki `<` düğmesi de yalnızca girişsizde
+       render ediliyor ve gerekçesi kök `CLAUDE.md`'de yazılı (girişli
+       kullanıcı için o kaçış deliğinin değeri yok — kapı onu zaten
+       katmanı hiç göstermeden uygulamaya alıyor).
+     - **Test:** `intro_screen_test.dart` — "Atla" testi silindi, kalan
+       testler dört sayfayı gezip `HEMEN OYNA`ya basıyor ve **her sayfada**
+       `Atla` yokluğunu ölçüyor (tek bir sayfada yokluğunu görmek onu
+       başka bir sayfada ekarte etmez); kapı testi de aynı yoldan geçiyor.
+       `account_button_test.dart` Parça 116'dan önceki hâline döndü (sıra/
+       aralık ölçümleri) + "Tanıtım" menüde YOK assertion'ı.
+       `setup_screen_test.dart`: link satırı testi artık `IntroScreen`
+       açılışını ölçüyor, footer testleri misafirde de "Paylaş" + İKİ
+       ayraç + "© Kelimeki" bekliyor (telif satırının hukuki satırın
+       ALTINDA olduğu geometriyle doğrulanıyor).
+     - **Doğrulama sınırı — DÜRÜST KAYIT:** bu oturumun konteynerinde de
+       Flutter/Dart SDK YOK, yani `flutter analyze`/`flutter test`
+       KOŞULAMADI ve **negatif eş kurulamadı** — tek kanıt CI (Parça
+       103-116'nın aynı sınırı). Kullanılan her sembol
+       (`IntroScreen`/`kIntroPageCount`/`_InlineLink`/`pumpSetup`/
+       `pumpMenu`) kaynağa karşı grep'lendi ve dört dosyanın parantez
+       dengesi betikle tarandı.
+     - **Cihazda doğrulanacak:** tanıtımda hiçbir sayfada atlama olmaması,
+       "HEMEN OYNA"nın Setup'a düşürüp bayrağı yazması, Setup'taki
+       "Tanıtım" linkinin (misafirde) tanıtımı açması, footer'ın üç madde +
+       "© Kelimeki" göstermesi ve "Paylaş"ın misafirde de çalışması —
+       `mobile/TESTING.md` bölüm 0.4 güncellendi.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
@@ -5632,14 +5707,17 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   değil, **mağaza çıkışına bağlı bir port işi**; kaskad zinciri ve
   gerekçenin tamamı kök `CLAUDE.md` → "Sonraya Bırakılan Ürün Fikirleri".
 
-- **19 Ağustos (Parça 116) — portun kendi ilk açılış tanıtımı
+- **19 Ağustos (Parça 116 + 117) — portun kendi ilk açılış tanıtımı
   (`IntroScreen`):** temiz kurulumda (uygulamayı sil/yeniden kur ya da
   site verisini temizle) Setup'tan ÖNCE dört sayfalık tanıtım çıkmalı;
-  "Atla" ve son sayfadaki "BAŞLA" ikisi de Setup'a düşürmeli ve bir daha
-  ASLA çıkmamalı (uygulamayı kapat-aç ile de). Hesap menüsündeki
-  `✨ Tanıtım` her zaman açmalı ve o yol bayrağı DEĞİŞTİRMEMELİ (menüden
-  açıp kapattıktan sonra uygulamayı yeniden başlat — tanıtım yine
-  çıkmamalı). Görsel: 2./3. sayfadaki 5×5 mini ızgaraların renkleri, son
+  HİÇBİR sayfada atlama düğmesi OLMAMALI, tek çıkış son sayfadaki
+  **"HEMEN OYNA"** ve ondan sonra tanıtım bir daha ASLA çıkmamalı
+  (uygulamayı kapat-aç ile de). Setup'ın logo altındaki **"Tanıtım"**
+  linki (yalnız MİSAFİRDE) her zaman açmalı ve o yol bayrağı
+  DEĞİŞTİRMEMELİ (oradan açıp kapattıktan sonra uygulamayı yeniden
+  başlat — tanıtım yine çıkmamalı). Footer'da üç madde (Kullanım
+  Koşulları · Gizlilik Politikası · Paylaş — "Paylaş" MİSAFİRDE DE) ve
+  altında "© Kelimeki" olmalı. Görsel: 2./3. sayfadaki 5×5 mini ızgaraların renkleri, son
   sayfadaki DOKUZ rütbe mührünün harfleri TOFU (boş kare) OLMAMALI (mühür
   fontu M PLUS alt kümesi — Parça 114'ün riski) ve dar bir ekranda dört
   rakam kutusu alt satıra sarmalı, "RenderFlex overflowed" çubuğu
