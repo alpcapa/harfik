@@ -89,12 +89,22 @@ yazıldıktan sonra tanıtım bir daha ÇIKMAZ.
 
 - [ ] **İlk açılışta Setup'tan ÖNCE tanıtım çıkıyor.** Dört sayfa
       (19 Ağustos 2026'da yeniden düzenlendi — Parça 118):
-      (1) logo + "Kelime bul, bölgeni büyüt, tahtayı ele geçir." + dört
+      (1) "Kelime bul, bölgeni büyüt, tahtayı ele geçir." + dört
       rakam kutusu + **"Tahtaya bir bak"** bölümü (2 kişilik tahta, X2/X3
       legend'ı ve altındaki açıklama), (2) "Nasıl oynanır?" DÖRT adım
       birden, (3) "Neler var" ALTI özellik kutusu, (4) dokuz k-lig
-      rütbesi. Alt düğme ilk üç sayfada **DEVAM**, son sayfada
-      **HEMEN OYNA**.
+      rütbesi.
+- [ ] **Logo DÖRT sayfada da, hep AYNI yerde** (üstte, sabit) ve sayfa
+      değiştirirken yerinden oynamıyor — `PageView`ın dışında duruyor.
+- [ ] **Alt şeritte ara sayfalarda YALNIZCA nokta göstergesi var**, hiçbir
+      düğme yok; **HEMEN OYNA yalnızca 4. sayfada** çıkıyor (19 Ağustos
+      2026 kullanıcı kararı: "alttaki kocaman Devam butonu çok
+      gereksiz"). İlerleme parmakla kaydırarak.
+- [ ] **Masaüstü tarayıcıda da (GitHub Pages test ortamı) FARE ile
+      sürüklenebiliyor** — dört sayfa da gezilip son sayfaya
+      ulaşılabilmeli. Flutter'ın varsayılan davranışı fareyi kaydırma
+      cihazı SAYMAZ; bu olmazsa DEVAM düğmesi de kalktığı için tanıtımda
+      kilitli kalınır.
 - [ ] **1. slayttaki tahta gerçek oyun tahtasıyla AYNI görünüyor** —
       web'in "Tahtaya bir bak" bölümüyle yan yana koy: harfler ve hücreler
       aynı oranda, köşe rakamı/X2 filigranı ve X3 hücresi görünür, taşlar

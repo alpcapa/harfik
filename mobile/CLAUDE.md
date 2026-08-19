@@ -5614,6 +5614,45 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        (bounded) esnetir, bir `Row`da DİKEYDE (unbounded) — aynı satırı
        Column'dan Row'a kopyalarken bu ayrım sessizce tersine döner ve
        SDK'sız bir oturumda yalnızca CI yakalar.
+     - **CANLIDA GÖRÜNCE ÜÇÜNCÜ TUR — alt düğme kalktı, logo dört slayta
+       taşındı (19 Ağustos 2026, aynı gün, kullanıcının sözleri):**
+       *"Alttaki kocaman Devam butonu çok gereksiz. Altta sadece ince bir
+       nokta alanı bıraksak herkes parmakla ilerleyeceğini bilir sadece en
+       son slaytta Hemen Oyna olabilir. Diğer 2-3-4 slaytların alt
+       kısımlarında büyük boşluk var. Bütünlük açısından ilk slayttaki
+       kelimeki logosunu tüm slaytlara taşıyabiliriz."*
+       - **`DEVAM` tamamen kalktı**, ilerleme yalnızca `PageView`
+         kaydırması; alt şeritte yalnız nokta göstergesi kaldı ve son
+         sayfada `HEMEN OYNA` çıkıyor. Kazanılan ~60px doğrudan içeriğe
+         gitti — 1. slaytta tahtanın neredeyse tamamı ilk ekrana sığıyor
+         (öncesinde alt satırları kesiliyordu). Nokta göstergesi artık hem
+         konum hem TEK gezinme ipucu.
+       - **`LogoMark` `PageView`ın DIŞINA, sabit üst alana alındı** —
+         sayfa başına kopyalanmadı: dört slaytta da tek örnek, birebir
+         aynı yerde (web'in kilitli şeridinin porttaki karşılığı; oradaki
+         park efekti YOK, slaytlar tek ekran boyunda). 1. slaydın
+         görünümü değişmedi, yalnızca logosu bir kat yukarı taşındı.
+       - **YAKALANAN GERÇEK TUZAK — `PageView` fareyle SÜRÜKLENMİYORDU:**
+         Flutter'ın varsayılan `ScrollBehavior`ı web/masaüstünde fareyi
+         `dragDevices`e almaz. `DEVAM` durduğu sürece görünmezdi; kalktığı
+         an `alpcapa.github.io`'yu bilgisayardan açan biri slaytlar
+         arasında hiç ilerleyemez, atlama da olmadığından tanıtımda
+         KİLİTLİ kalırdı (çıkışın tek yolu son sayfadaki düğme).
+         `PageView`a tüm `PointerDeviceKind`leri kabul eden bir
+         `scrollBehavior` verildi; telefonda davranış birebir aynı.
+         **Bu, ekran görüntüsü alınırken ortaya çıktı** — ilk turda dört
+         kare de birbirinin AYNISI çıktı, çünkü kaydırma hiç işlemiyordu.
+       - **Testler yeni sözleşmeye çekildi** (`intro_screen_test.dart`):
+         ilerleme artık `tester.drag(find.byType(PageView), ...)`, ve
+         ölçülen üç yeni iddia var — ara sayfalarda HİÇBİR `NeoButton`
+         yok, `LogoMark` her sayfada TEK kopya (sayfa başına kopyalansaydı
+         bu sayı 1'de kalmazdı), düğme yalnızca son sayfada çıkıyor.
+       - **BU OTURUMDA ARTIK SDK VAR:** Flutter stable (3.47) kaba
+         kuruldu, yani `flutter analyze` + `flutter test` GERÇEKTEN
+         koşuldu (`intro_screen_test` + `setup_screen_test` 29/29) ve
+         ekran görüntüleri gerçek `flutter build web` çıktısından,
+         Chromium'la 390×844/DPR 2'de alındı — mockup DEĞİL. Parça
+         103-118'in "tek kanıt CI" sınırı bu iş için geçerli değil.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 

@@ -26,6 +26,7 @@
 // geri oku navigasyon yığınını pop eder ve iOS'ta sistem geri hareketiyle
 // çakışır. Tanıtıma dönüş Setup'ın logo altındaki link satırından
 // (yalnız misafirde — bkz. mobile/CLAUDE.md, Parça 117).
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 
 import '../../data/game_record.dart';
@@ -86,17 +87,6 @@ class _IntroScreenState extends State<IntroScreen> {
 
   bool get _isLast => _page >= kIntroPageCount - 1;
 
-  void _next() {
-    if (_isLast) {
-      widget.onDone();
-      return;
-    }
-    _controller.nextPage(
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -113,9 +103,28 @@ class _IntroScreenState extends State<IntroScreen> {
             // Sabit üst boşluk: `_Sayfa`nın kendi `top: 8` dolgusu tek
             // başına sayfayı ekranın tepesine yapıştırıyordu.
             const SizedBox(height: 24),
+            // LOGO SAYFALARIN DEĞİL EKRANIN parçası (19 Ağustos 2026,
+            // kullanıcı isteği: "Bütünlük açısından ilk slayttaki kelimeki
+            // logosunu tüm slaytlara taşıyabiliriz"). PageView'ın DIŞINDA,
+            // sabit: dört slaytta da aynı yerde durur, kaymaz ve dört kez
+            // kopyalanmaz. Web'in karşılama katmanındaki kilitli şeridin
+            // (sticky header) porttaki karşılığı; oradaki park efekti
+            // burada YOK, çünkü slaytlar tek ekran boyunda.
+            const LogoMark(height: 52),
+            const SizedBox(height: 16),
             Expanded(
               child: PageView(
                 controller: _controller,
+                // FARE İLE DE SÜRÜKLENEBİLİR OLMAK ZORUNDA: Flutter'ın
+                // varsayılan `ScrollBehavior`ı web/masaüstünde fareyi
+                // `dragDevices`e ALMAZ. Telefonda fark etmez (dokunma
+                // zaten var), ama DEVAM düğmesi kalktığı an masaüstü
+                // tarayıcıda — yani GitHub Pages test ortamında —
+                // tanıtımdan çıkışın TEK yolu olan son sayfaya hiçbir
+                // şekilde ulaşılamazdı (atlama da yok).
+                scrollBehavior: ScrollConfiguration.of(context).copyWith(
+                  dragDevices: PointerDeviceKind.values.toSet(),
+                ),
                 onPageChanged: (i) => setState(() => _page = i),
                 children: const [
                   _HosGeldinSayfasi(),
@@ -125,24 +134,39 @@ class _IntroScreenState extends State<IntroScreen> {
                 ],
               ),
             ),
-            _Noktalar(aktif: _page),
-            // Butonun kabı da metin sütunuyla aynı genişlikte — geniş bir
-            // ekranda (tablet) kenardan kenara uzamasın.
-            _Kolon(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 12, bottom: 16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: NeoButton(
-                    label: _isLast ? 'HEMEN OYNA' : 'DEVAM',
-                    onPressed: _next,
-                    variant: NeoButtonVariant.accent,
-                    fontSize: 13,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+            // ARA SAYFALARDA DÜĞME YOK (19 Ağustos 2026, kullanıcı
+            // isteği: "Alttaki kocaman Devam butonu çok gereksiz. Altta
+            // sadece ince bir nokta alanı bıraksak herkes parmakla
+            // ilerleyeceğini bilir; sadece en son slaytta Hemen Oyna
+            // olabilir"). Nokta göstergesi artık hem konum hem tek
+            // gezinme ipucu — ilerleme parmakla (`PageView` kaydırması).
+            // Bu, alttan ~60px'i geri kazanıyor: slaytlar o kadar
+            // uzuyor, 1. slayttaki tahta o kadar çok görünüyor.
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: _Noktalar(aktif: _page),
+            ),
+            // Son sayfada tanıtımın TEK çıkışı. Kabı metin sütunuyla aynı
+            // genişlikte — geniş bir ekranda (tablet) kenardan kenara
+            // uzamasın.
+            if (_isLast)
+              _Kolon(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12, bottom: 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: NeoButton(
+                      label: 'HEMEN OYNA',
+                      onPressed: widget.onDone,
+                      variant: NeoButtonVariant.accent,
+                      fontSize: 13,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
                   ),
                 ),
-              ),
-            ),
+              )
+            else
+              const SizedBox(height: 16),
           ],
         ),
       ),
@@ -164,8 +188,6 @@ class _HosGeldinSayfasi extends StatelessWidget {
         _Kolon(
           child: Column(
             children: const [
-              LogoMark(height: 52),
-              SizedBox(height: 16),
               Text(
                 // Web kahraman cümlesi (Landing.tsx) — birebir.
                 'Kelime bul, bölgeni büyüt, tahtayı ele geçir.',
