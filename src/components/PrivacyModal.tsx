@@ -147,7 +147,7 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
         <Section title="5. Veri Saklama Süresi">
           <P>
             Verileriniz hesabınız aktif olduğu sürece saklanır. Uygulama içinde kendi kendine
-            hesap silme özelliği henüz bulunmuyor; hesabınızın ve kişisel verilerinizin
+            hesap silme özelliği bulunmuyor; hesabınızın ve kişisel verilerinizin
             silinmesini istiyorsanız 8. bölümdeki "Görüş Bildir" kanalından talep
             edebilirsiniz. Talebiniz üzerine tüm kişisel verileriniz en geç 30 gün içinde
             kalıcı olarak silinir.

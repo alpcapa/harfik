@@ -359,7 +359,7 @@ class PrivacyModal extends StatelessWidget {
         ]),
         const _Section('5. Veri Saklama Süresi', [
           _P('Verileriniz hesabınız aktif olduğu sürece saklanır. Uygulama '
-              'içinde kendi kendine hesap silme özelliği henüz bulunmuyor; '
+              'içinde kendi kendine hesap silme özelliği bulunmuyor; '
               'hesabınızın ve kişisel verilerinizin silinmesini istiyorsanız '
               '8. bölümdeki "Görüş Bildir" kanalından talep edebilirsiniz. '
               'Talebiniz üzerine tüm kişisel verileriniz en geç 30 gün '

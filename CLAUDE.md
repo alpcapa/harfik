@@ -1967,9 +1967,21 @@ bölümün kendi tarihli notuna taşınır.
   `admin_ban_log`; bir kısmı cascade, bir kısmı değil, ve silinen kişi
   BAŞKALARININ bitmiş oyun kayıtlarında (`games.players` snapshot'ı) isimle
   duruyor — o satırlar başka kullanıcıların kendi verisi olduğundan
-  silinemez, en fazla anonimleştirilebilir. Mağaza çıkışından önce
-  kapatılması gereken bir madde (App Store/Play, hesap açtıran uygulamalarda
-  uygulama içi silme yolu ŞART koşuyor).
+  silinemez, en fazla anonimleştirilebilir.
+  **KULLANICI KARARI (19 Ağustos 2026): web için geliştirme YAPILMAYACAK** —
+  sözleriyle: *"Legal olarak silme hakkı zorunluluğu yoksa bildirim üzerine
+  aksiyon yeterlidir ve geliştirme gerekmez."* Bu HUKUKEN doğru: KVKK m.7/m.11
+  (ve GDPR m.17) silme HAKKI veriyor ama uygulama içi bir silme BUTONU şart
+  koşmuyor; talebin 30 gün içinde karşılanması yeterli, politikanın 5. bölümü
+  de tam olarak bunu anlatıyor. **Maddenin listede kalma sebebi hukuk değil
+  MAĞAZA KURALI:** Apple App Store Review Guideline 5.1.1(v) (Haziran
+  2022'den beri) ve Google Play'in veri silme şartı (2024'ten beri), hesap
+  açtıran uygulamalarda uygulama İÇİNDEN başlatılabilen bir silme yolu
+  istiyor — yasa değil yayın kapısı, karşılanmazsa inceleme reddediliyor.
+  Yani: web'de gerekmez, **mobil mağaza çıkışında gerekir**; o gün iki
+  mağazanın güncel politikası bir kez daha teyit edilmeli (bu satır 19 Ağustos
+  2026'daki bilgiye dayanıyor, mağaza kuralları değişebiliyor). Bir sonraki
+  oturum bunu "hukuki eksik" diye yeniden açmasın.
 
 - **Hata telemetrisi — istemci tarafı çökme/başarısızlık kaydı (16 Ağustos
   2026, kullanıcı onayı; MAĞAZA ÇIKIŞINA yakın yapılacak):**

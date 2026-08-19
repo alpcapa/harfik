@@ -5537,8 +5537,12 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   yalnızca TARİH eşitliğini koruduğundan, portu güncellemeden web'i
   değiştirmek testi düşürürdü ama metni güncelleyip tarihi unutmak da
   ayrışmayı gizlerdi; ikisi birlikte değişmeli. **Hesap silme özelliği
-  portta da YOK** — mağaza çıkışından önce kapatılması gereken bir madde
-  (bkz. kök `CLAUDE.md` → "Sonraya Bırakılan Ürün Fikirleri").
+  portta da YOK ve web için YAPILMAYACAK (kullanıcı kararı, aynı gün):**
+  KVKK/GDPR uygulama içi silme butonu şart koşmuyor, talep üzerine silme
+  yeterli. AMA Apple 5.1.1(v) ve Google Play'in veri silme şartı bunu
+  hesap açtıran uygulamalarda ZORUNLU tutuyor — yani madde artık hukuki
+  değil, **mağaza çıkışına bağlı bir port işi**; kaskad zinciri ve
+  gerekçenin tamamı kök `CLAUDE.md` → "Sonraya Bırakılan Ürün Fikirleri".
 
 Liste bir gün BOŞALIRSA öyle kalmasını bekleme: yeni bir düzeltme
 yazıldığında buraya yine madde eklenmeli (kural değişmedi: yazıldığı gün
