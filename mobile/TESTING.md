@@ -88,18 +88,32 @@ site verisini temizle) — bayrak (`seen_intro`, SharedPreferences) bir kez
 yazıldıktan sonra tanıtım bir daha ÇIKMAZ.
 
 - [ ] **İlk açılışta Setup'tan ÖNCE tanıtım çıkıyor.** BEŞ sayfa
-      (19 Ağustos 2026'da yeniden düzenlendi — Parça 118):
-      (1) "Kelime bul, bölgeni büyüt, tahtayı ele geçir." + dört
-      rakam kutusu + **"TAHTAYA BİR BAK"** bölümü (2 kişilik tahta, X2/X3
-      legend'ı ve altındaki açıklama) — bu slayt KAYDIRMADAN tamamen
-      sığmalı, açıklamanın son satırı alt kenarda kesilmemeli,
-      (2) **4 kişilik tahta** + altındaki açıklama (X2/X3 legend'ı burada
+      (19 Ağustos 2026'da yeniden düzenlendi — Parça 118 + 119):
+      (1) "Kelime bul, bölgeni büyüt, tahtayı ele geçir." + tanım
+      paragrafı + **"TAHTAYA BİR BAK"** bölümü (2 kişilik tahta, X2/X3
+      legend'ı ve altındaki açıklama),
+      (2) **dört rakam kutusu** (63.000+ / 13×13 / 2–4 / Ücretsiz) +
+      **4 kişilik tahta** + altındaki açıklama (X2/X3 legend'ı burada
       TEKRARLANMAZ), (3) "Nasıl oynanır?" DÖRT adım birden, (4) "Neler
       var" ALTI özellik kutusu, (5) dokuz k-lig rütbesi.
-- [ ] **Logo BEŞ sayfada da var** ve 2-5. sayfalarda içerikle BİRLİKTE
+      **Rakam kutuları 19 Ağustos 2026'da 1. slayttan 2.'ye TAŞINDI**
+      (Parça 119) — 1. slayt tek ekrana sığmayıp kayıyordu, 2. slayt ise
+      yalnızca tahtadan ibaret olduğu için boş duruyordu.
+- [ ] **1. slayttaki X2/X3 legend'i YAN YANA** (web'de de öyle; port
+      19 Ağustos 2026'ya kadar bunu alt alta çiziyordu — `Wrap` değil elle
+      dikey `Column` kodlanmıştı). Çok dar bir telefonda (≈375px ve altı)
+      alta sarması DOĞRU davranış; web de 320px'te sarıyor.
+- [ ] **1. ve 2. slayt KAYDIRMADAN tamamen sığıyor** — parmakla aşağı
+      çekince slayt İÇİNDE dikey bir kayma OLMAMALI (yatay geçiş elbette
+      var), açıklamanın son satırı alt kenarda kesilmemeli. Bu maddeyi
+      birden fazla ekran boyunda dene (küçük telefon + büyük telefon):
+      widget testi yalnızca 420×900'ü güvence altına alıyor, daha dar/kısa
+      ekranlarda kaydırma fallback'i bilerek duruyor.
+- [ ] **Logo BEŞ sayfada da var** ve BEŞİNDE de içerikle BİRLİKTE
       dikeyde ortalanıyor (logo ile başlık arası her sayfada aynı; logo
-      yukarıda asılı kalıp aralarında boşluk açılmamalı). 1. sayfada
-      içerik ekranı doldurduğundan logo tepede.
+      yukarıda asılı kalıp aralarında boşluk açılmamalı). 1. sayfa Parça
+      119'a kadar bunun DIŞINDAYDI (orası ekranı dolduruyordu); rakam
+      kutuları 2. slayda taşınınca o istisna kalktı.
 - [ ] **Alt şeritte ara sayfalarda YALNIZCA nokta göstergesi var** (BEŞ
       nokta), hiçbir düğme yok; **HEMEN OYNA yalnızca 5. sayfada** çıkıyor
       (19 Ağustos 2026 kullanıcı kararı: "alttaki kocaman Devam butonu çok
@@ -147,7 +161,9 @@ yazıldıktan sonra tanıtım bir daha ÇIKMAZ.
       oradan kaldırılıp Setup'ın link satırına taşındı.
 - [ ] **Footer üç madde + telif:** `Kullanım Koşulları · Gizlilik
       Politikası · Paylaş` (aralarında iki `·`) ve HEMEN ALTINDA
-      "© Kelimeki". **"Paylaş" MİSAFİRDE DE görünmeli** (web'de de
+      "© Kelimeki" — telif satırı ORTALI olmalı, sola yapışmamalı
+      (19 Ağustos 2026'da öyleydi: `textAlign` unutulmuştu).
+      **"Paylaş" MİSAFİRDE DE görünmeli** (web'de de
       girişten bağımsız) ve dokununca sistem paylaş sayfasını
       `?ref=arkadas` linkiyle açmalı.
 - [ ] **Setup başlığında ok/geri düğmesi YOK** — bu bilinçli bir ayrışma
@@ -156,8 +172,9 @@ yazıldıktan sonra tanıtım bir daha ÇIKMAZ.
       (boş/bonus/merkez + iki oyuncu rengi); son sayfadaki dokuz mührün
       harfleri (Ç M O U Ş D E Z T) TOFU (boş kare) DEĞİL — mühür fontu
       ayrı bir alt küme, eksik glyph riski gerçek (bkz. Parça 114).
-- [ ] **Dar ekran (320-360 px):** dört rakam kutusundaki metinler
-      küçülerek sığmalı ("Ücretsiz" dahil), altı özellik kutusu ve dokuz
+- [ ] **Dar ekran (320-360 px):** 2. slayttaki dört rakam kutusunun
+      metinleri küçülerek sığmalı ("Ücretsiz" dahil; kutular Parça 119'da
+      1. slayttan buraya taşındı), altı özellik kutusu ve dokuz
       rütbe kutusu kırpılmamalı; sarı-siyah "RenderFlex overflowed"
       çubuğu HİÇBİR slaytta GÖRÜNMEMELİ.
 - [ ] **Yatay taşma yok:** beş slaydın hiçbirinde sağa/sola kaydırma

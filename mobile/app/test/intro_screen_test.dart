@@ -29,6 +29,7 @@ import 'package:kelimeki/src/ui/rank/rank_seal.dart';
 import 'package:kelimeki/src/ui/setup/setup_screen.dart';
 import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/util/online_status.dart';
+import 'support/test_fonts.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -39,6 +40,28 @@ Future<void> drainRealIo(WidgetTester tester) async {
   await tester
       .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
   await tester.pump();
+}
+
+/// Ekrandaki tahtayı taşıyan slaydın DİKEY kaydırma payı (0 = slayt tek
+/// ekrana sığıyor). `find.ancestor` en yakından uzağa yürüdüğünden ilk
+/// DİKEY eşleşme slaydın kendi `SingleChildScrollView`ı olur; `PageView`in
+/// kendi Scrollable'ı yatay olduğundan eksene bakmak onu eliyor (sırayı
+/// varsaymak yerine ölçüt koymak, PageView bir gün araya başka bir
+/// kaydırma görünümü girerse testin sessizce yanlış şeyi ölçmesini
+/// engelliyor).
+double dikeyKayma(Finder icerik) {
+  // `.first` KULLANILMIYOR: `PageView` bir gün komşu sayfayı da canlı
+  // tutarsa iki tahta birden bulunur ve ölçüm sessizce YANLIŞ slayda
+  // kayar. Ölçmeden önce tek eşleşme şart koşuluyor — bugün doğru olduğu
+  // aynı dosyadaki içerik testinin `findsOneWidget`leriyle de sabit.
+  expect(icerik, findsOneWidget,
+      reason: 'kaydırma ölçümü tek bir slayda ait olmalı');
+  for (final el
+      in find.ancestor(of: icerik, matching: find.byType(Scrollable)).evaluate()) {
+    final st = (el as StatefulElement).state as ScrollableState;
+    if (st.position.axis == Axis.vertical) return st.position.maxScrollExtent;
+  }
+  fail('slaydın dikey kaydırma görünümü bulunamadı');
 }
 
 /// Sonraki slayta parmakla geç — 19 Ağustos 2026'dan beri ara sayfalarda
@@ -80,6 +103,18 @@ AppServices services({Future<AppStorage>? storage}) => AppServices(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   sqfliteFfiInit();
+  // GERÇEK FONTLAR ŞART — bu dosya artık GEOMETRİ ölçüyor (slayt kaydırma
+  // payı, legend'in yan yana olup olmadığı). `flutter_test` pubspec'teki
+  // fontları OTOMATİK YÜKLEMEZ: varsayılan Ahem'de her glyph
+  // fontSize×fontSize bir bloktur, yani 27 karakterlik legend metni 11px'te
+  // 297px yer kaplar (gerçek Space Grotesk'te 144px — web'de ölçüldü).
+  // Ahem'le ölçmek iki testi de UYDURMA bir düzende sınardı: metinler daha
+  // çok satıra sarıp slaydı şişirir, legend hiçbir genişlikte yan yana
+  // sığmaz. Nitekim ilk sürümde tam bu oldu (CI: 1. slayt 29px taşıyor,
+  // legend üstleri 730 ve 750). Ölçüm yapan kardeş testlerin hepsi
+  // (`board_render_test`, `game_header_test`, `account_button_test`…)
+  // baştan beri bu satırı taşıyor.
+  setUpAll(loadAppFonts);
 
   group('IntroScreen', () {
     testWidgets('beş sayfa: parmakla ilerler, ara sayfalarda düğme YOK, son '
@@ -145,23 +180,29 @@ void main() {
         home: IntroScreen(onDone: () {}),
       ));
 
-      // 1. slayt: kahraman + dört rakam kutusu + GERÇEK tahta.
+      // 1. slayt: kahraman + GERÇEK tahta. Rakam kutuları 19 Ağustos
+      // 2026'da 2. slayda TAŞINDI — `13×13` burada ARANMIYOR, yokluğu
+      // aşağıda ölçülüyor (taşımanın negatif eşi).
       // Tahta bölümünün başlığı YALNIZCA üst başlık — 19 Ağustos 2026'da
       // "Oyun tam olarak böyle görünüyor" kaldırıldı (slayt tek ekrana
       // sığsın diye); kalktığının kanıtı ikinci satır.
       expect(find.text('TAHTAYA BİR BAK'), findsOneWidget);
       expect(find.text('Oyun tam olarak böyle görünüyor'), findsNothing);
       expect(find.byType(BoardWidget), findsOneWidget);
-      expect(find.text('13×13'), findsOneWidget);
+      expect(find.text('13×13'), findsNothing);
       expect(find.text('X2 — Kelime puanının 2 katı'), findsOneWidget);
 
       await kaydir(tester);
 
-      // 2. slayt: 4 kişilik tahta + KENDİ açıklaması (19 Ağustos 2026,
-      // kullanıcı isteği). Web'in aynı bölümünün ikinci görseli; metin
-      // oradan birebir. Legend (X2/X3) burada TEKRARLANMIYOR — web de
-      // tekrarlamıyor, yani bu satır aynı zamanda o kararın negatif eşi.
+      // 2. slayt: dört rakam kutusu + 4 kişilik tahta + KENDİ açıklaması
+      // (19 Ağustos 2026, kullanıcı isteği). Web'in aynı bölümünün ikinci
+      // görseli; metin oradan birebir. Legend (X2/X3) burada
+      // TEKRARLANMIYOR — web de tekrarlamıyor, yani bu satır aynı zamanda
+      // o kararın negatif eşi.
       expect(find.byType(BoardWidget), findsOneWidget);
+      expect(find.text('13×13'), findsOneWidget);
+      expect(find.text('$kKelimeSayisi+'), findsOneWidget);
+      expect(find.text('Ücretsiz'), findsOneWidget);
       expect(find.textContaining('3 yapay zekaya veya 3 arkadaşına karşı'),
           findsOneWidget);
       expect(find.text('X2 — Kelime puanının 2 katı'), findsNothing);
@@ -194,6 +235,69 @@ void main() {
       expect(find.byType(RankSeal), findsNWidgets(kRankTiers.length));
       expect(find.text(kRankTiers.first.name), findsOneWidget);
       expect(find.text(kRankTiers.last.name), findsOneWidget);
+    });
+
+    // 19 Ağustos 2026, kullanıcının ASIL şikâyeti: *"1. slayt hâlâ aşağıya
+    // kayıyor ve bu app mantığına aykırı."* Rakam kutularının 2. slayda
+    // taşınması tam olarak bunu çözmek için yapıldı — yani düzeltmenin
+    // ölçüsü "kutular nerede" DEĞİL, "slayt kayıyor mu".
+    //
+    // İÇERİK TESTİ BUNU GÖREMEZ: hangi metnin hangi slaytta olduğunu
+    // ölçen assertion'lar, iki slayt da ekrandan taşarken de yeşil kalır.
+    // Bu yüzden ayrı bir test ve ölçülen şey doğrudan kaydırma payı.
+    //
+    // Kaydırma FALLBACK'İ bilerek duruyor (`SingleChildScrollView`
+    // kalktı sanılmasın): bundan daha küçük/daha dar bir ekranda içerik
+    // yine taşabilir ve o zaman kaydırmak kırpmaktan iyidir. Test bunu
+    // yaygın bir telefon boyunda güvence altına alıyor, "her cihazda"
+    // değil — dürüst sınır.
+    testWidgets('tahtalı iki slayt tek ekrana sığar (aşağı kaymaz)',
+        (tester) async {
+      await setPhoneViewSize(tester, const Size(420, 900));
+      await tester.pumpWidget(MaterialApp(
+        theme: kelimekiTheme(),
+        home: IntroScreen(onDone: () {}),
+      ));
+
+      final ilk = dikeyKayma(find.byType(BoardWidget));
+      expect(ilk, 0,
+          reason: '1. slayt $ilk px taşıyor — rakam kutuları 2. slayda '
+              'taşınmıştı tam da bunun için; içerik yeniden büyüdüyse ya '
+              'kısalt ya da taşımayı gözden geçir.');
+
+      await kaydir(tester);
+
+      final ikinci = dikeyKayma(find.byType(BoardWidget));
+      expect(ikinci, 0,
+          reason: '2. slayt $ikinci px taşıyor — rakam kutuları buraya '
+              'eklenince sığmaz olduysa denge yanlış kurulmuş demektir.');
+    });
+
+    // 19 Ağustos 2026, kullanıcı bildirdi: *"X2, X3 legendlar alt alta
+    // gelmiş. Webde yan yana."* Port bunu baştan DİKEY kodlamıştı (iki
+    // rozet arasında `SizedBox(height: 6)`), yani sığsa bile alt alta
+    // duruyordu; artık web'in `flex-wrap`ının karşılığı olan `Wrap`.
+    //
+    // METİN VARLIĞI YETMEZ: iki rozetin de EKRANDA olduğunu ölçen mevcut
+    // assertion, ikisi alt alta dururken de yeşildi — bu yüzden ölçülen
+    // şey KONUM. Web'de eşik ~349px (ölçüldü: 320'de sarıyor, 360'ta yan
+    // yana); portta metin sütunu 16+16 dolgu yediğinden eşik ~380px, yani
+    // çok dar telefonlarda ALT ALTA düşmesi doğru davranış — bu test
+    // yaygın bir boyda (420) yan yana durduğunu güvence altına alıyor.
+    testWidgets('1. slayt: X2/X3 legend\'i YAN YANA (web gibi)',
+        (tester) async {
+      await setPhoneViewSize(tester, const Size(420, 900));
+      await tester.pumpWidget(MaterialApp(
+        theme: kelimekiTheme(),
+        home: IntroScreen(onDone: () {}),
+      ));
+
+      final x2 = tester.getRect(find.text('X2 — Kelime puanının 2 katı'));
+      final x3 = tester.getRect(find.text('X3 — Kelime puanının 3 katı'));
+      expect(x2.top, x3.top,
+          reason: 'aynı satırda olmalı; üstleri ${x2.top} ve ${x3.top}');
+      expect(x3.left, greaterThan(x2.right),
+          reason: 'X3, X2\'nin SAĞINDA olmalı (üst üste binmemeli)');
     });
   });
 

@@ -7,12 +7,21 @@
 //
 // BEŞ SLAYT (19 Ağustos 2026, kullanıcı spesifikasyonu — ilk sürüm yalnızca
 // metindi ve reddedildi: *"Bu tanıtım değil kaçırım olmuş"*):
-//   1. kahraman + dört rakam kutusu + GERÇEK tahta ("Tahtaya bir bak")
-//   2. 4 kişilik tahta + açıklaması (web'de aynı bölümün ikinci görseli)
+//   1. kahraman (başlık + tanım) + GERÇEK 2 kişilik tahta ("Tahtaya bir bak")
+//   2. dört rakam kutusu + 4 kişilik tahta + açıklaması (web'de aynı
+//      bölümün ikinci görseli)
 //   3. "Nasıl oynanır?" — dört adım
 //   4. "Neler var" — altı özellik kutusu
 //   5. "k-lig" — dokuz rütbe
-// Dördü de `src/landing/Landing.tsx`'in AYNI bölümlerinin portu; metinler,
+//
+// RAKAM KUTULARI 19 Ağustos 2026'da 1. slayttan 2.'ye TAŞINDI (kullanıcı:
+// *"1. slayt hâlâ aşağıya kayıyor ve bu app mantığına aykırı … 4 kutuyu 2.
+// slayt board üstüne taşıyalım"*): 1. slayt tek ekrana sığmayıp kayıyordu,
+// 2. slayt ise yalnızca tahtadan ibaret olduğu için boş duruyordu. Web'de
+// böyle bir kısıt YOK — orası sonsuz kaydırılan tek bir sayfa, kutular
+// kahramanın hemen altında duruyor; bu, portun kendi düzen kararı.
+//
+// Beşi de `src/landing/Landing.tsx`'in AYNI bölümlerinin portu; metinler,
 // ölçüler, renkler ve yerleşim oradan BİREBİR alınır — biri değişirse öteki
 // de değişmeli (bunu zorlayan bir test YOK, kural metinlerinde
 // `help_modal.dart` ile aynı disiplin).
@@ -175,7 +184,7 @@ class _IntroScreenState extends State<IntroScreen> {
 }
 
 // ---------------------------------------------------------------------------
-// Sayfa 1 — kahraman + rakamlar + tahta
+// Sayfa 1 — kahraman + tahta (rakam kutuları 2. sayfada)
 // ---------------------------------------------------------------------------
 
 class _HosGeldinSayfasi extends StatelessWidget {
@@ -206,14 +215,11 @@ class _HosGeldinSayfasi extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13, height: 1.6, color: kMuted),
               ),
-              SizedBox(height: 20),
-              _Kutular(),
             ],
           ),
         ),
-        // Web'de bu bölüm `my-9` (36px) ile ayrılıyor; portta 16 —
-        // kullanıcı tahtanın rakam kutularına YAKLAŞMASINI istedi
-        // (yukarıdaki aynı gerekçe: slayt tek ekrana sığmalı).
+        // Web'de bu bölüm `my-9` (36px) ile ayrılıyor; portta 16 — slayt
+        // tek ekrana sığmak zorunda (web'de sayfa sonsuz kaydırılıyor).
         const SizedBox(height: 16),
         const _TahtaBolumu(
           taslar: kDemoTiles2,
@@ -232,6 +238,8 @@ class _HosGeldinSayfasi extends StatelessWidget {
 }
 
 /// Web'in dört rakam kutusu (`Landing.tsx` → `Kutu`, `flex gap-2`).
+/// Web'de kahramanın hemen altında; portta 2. slaydın tepesinde (19 Ağustos
+/// 2026 — bkz. `_DortKisilikSayfasi`).
 class _Kutular extends StatelessWidget {
   const _Kutular();
 
@@ -401,11 +409,31 @@ class _TahtaBolumu extends StatelessWidget {
           child: Column(
             children: [
               if (rozetler) ...[
-                const _Rozet(
-                    renk: Color(0xFFFDE68A), metin: 'X2 — Kelime puanının 2 katı'),
-                const SizedBox(height: 6),
-                const _Rozet(
-                    renk: Color(0xFFF97316), metin: 'X3 — Kelime puanının 3 katı'),
+                // WEB'DE YAN YANA (19 Ağustos 2026, kullanıcı bildirdi:
+                // *"X2, X3 legendlar alt alta gelmiş. Webde yan yana.
+                // Ekrana sığmayınca alta mı atıyor?"* — HAYIR, port bunu
+                // baştan DİKEY kodlamıştı: iki `_Rozet` arasına
+                // `SizedBox(height: 6)` konmuştu, yani sığsa da alt alta
+                // duruyordu). Web `flex flex-wrap items-center
+                // justify-center gap-x-4 gap-y-1.5` kullanıyor; bunun
+                // Flutter karşılığı `Wrap` — sığdığında yan yana,
+                // sığmadığında alta sarar.
+                //
+                // Boşluklar web'den birebir: gap-x-4 = 16, gap-y-1.5 = 6.
+                const Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 16,
+                  runSpacing: 6,
+                  children: [
+                    _Rozet(
+                        renk: Color(0xFFFDE68A),
+                        metin: 'X2 — Kelime puanının 2 katı'),
+                    _Rozet(
+                        renk: Color(0xFFF97316),
+                        metin: 'X3 — Kelime puanının 3 katı'),
+                  ],
+                ),
                 const SizedBox(height: 12),
               ],
               Text(
@@ -442,11 +470,17 @@ class _Rozet extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Flexible(
-          child: Text(
-            metin,
-            style: const TextStyle(fontSize: 11, height: 1.25, color: kMuted),
-          ),
+        // `Flexible` DEĞİL düz `Text`: `Wrap` çocuklarına SINIRSIZ genişlik
+        // kısıtı verir ve sınırsız kısıt altında flex'li bir çocuk
+        // "RenderFlex children have non-zero flex but incoming width
+        // constraints are unbounded" ile patlar. Web'de de karşılığı yok —
+        // orada `<li>` `shrink-0`, yani metin zaten sarmıyor. Tek bir
+        // rozet en dar ekranda bile taşmıyor: WEB'de gerçek tarayıcıyla
+        // ölçülen öğe genişliği 166px (aynı font, Space Grotesk 11px) ve
+        // 320px'lik bir ekranda bile portun metin sütunu 288px.
+        Text(
+          metin,
+          style: const TextStyle(fontSize: 11, height: 1.25, color: kMuted),
         ),
       ],
     );
@@ -454,7 +488,7 @@ class _Rozet extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Sayfa 2 — 4 kişilik tahta
+// Sayfa 2 — dört rakam kutusu + 4 kişilik tahta
 // ---------------------------------------------------------------------------
 
 /// Web'in karşılama katmanında bu, 1. slayttaki tahtanın YANINDA yatay
@@ -467,10 +501,22 @@ class _DortKisilikSayfasi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Sayfa(
-      // 1. slaydın aksine ortalanıyor: buradaki içerik (tahta + üç satır)
-      // ekranı doldurmuyor, altta ~600px boşluk kalıyordu.
-      ortala: true,
       children: const [
+        // Dört rakam kutusu 19 Ağustos 2026'da 1. slayttan BURAYA taşındı
+        // (kullanıcı: *"1. slayt hâlâ aşağıya kayıyor ve bu app mantığına
+        // aykırı … 4 kutuyu 2. slayt board üstüne taşıyalım, böylece 2
+        // slayt daha dengeli içeriğe sahip olacak"*). İki slaydın da
+        // yüksekliği tek ekrana yaklaştı: 1. slayttan ~78px (kutular +
+        // üstündeki 20px boşluk) düştü, 2. slayt o kadar doldu — orası
+        // zaten ortalanmış bir tahtayla epey boş duruyordu.
+        //
+        // Kutuların ÜSTÜNDE ayrıca boşluk YOK: `_Sayfa` logo ile ilk
+        // çocuk arasına zaten 16px koyuyor, yani kutular 1. slayttaki
+        // gibi bir metin bloğunun değil doğrudan logonun altında duruyor.
+        _Kolon(child: _Kutular()),
+        // Kutu → tahta mesafesi 1. slayttakiyle AYNI (16): iki slaytta da
+        // "kutular tahtaya yakın" ilişkisi korunsun.
+        SizedBox(height: 16),
         _TahtaBolumu(
           taslar: kDemoTiles4,
           oyuncuSayisi: 4,
@@ -546,7 +592,6 @@ class _NasilOynanirSayfasi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Sayfa(
-      ortala: true,
       children: const [
         _Kolon(
           child: Column(
@@ -748,7 +793,6 @@ class _NelerVarSayfasi extends StatelessWidget {
     ];
 
     return _Sayfa(
-      ortala: true,
       children: [
         _Kolon(
           child: Column(
@@ -856,7 +900,6 @@ class _RutbeSayfasi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Sayfa(
-      ortala: true,
       children: [
         _Kolon(
           child: Column(
@@ -958,18 +1001,22 @@ class _Sayfa extends StatelessWidget {
 
   /// İçerik ekrandan KISAYSA dikeyde ortalanır (19 Ağustos 2026, kullanıcı
   /// isteği: "diğer slaytlarda logo altı tüm içerikleri ortalarsan nasıl
-  /// gözükür"). 2/3/4. slaytlar böyle — alttaki boşluk üste/alta eşit
-  /// dağılıyor. 1. SLAYT BİLEREK HARİÇ: orası zaten ekranı tam dolduruyor,
-  /// ortalamanın görünür bir etkisi olmadığı gibi tahtayı da kıpırdatırdı.
+  /// gözükür") — alttaki boşluk üste/alta eşit dağılıyor.
+  ///
+  /// Bu bir dönem `ortala` adında opsiyonel bir bayraktı ve 1. slayt
+  /// BİLEREK dışarıdaydı (orası ekranı tam dolduruyordu). Rakam kutuları
+  /// 2. slayda taşınınca 1. slayt da kısaldı ve beş slaydın beşi birden
+  /// bayrağı `true` geçmeye başladı — tek değerli bir bayrak, bir sonraki
+  /// oturumu artık var olmayan bir ayrımı geri getirmeye çağıran ölü
+  /// yapılandırmadır; o yüzden kaldırıldı, davranış tek.
   ///
   /// `ConstrainedBox(minHeight) → Center` deseni `IntrinsicHeight`
   /// GEREKTİRMEZ: kaydırma görünümü dikeyde sınırsız kısıt verdiğinden
   /// `Center` çocuğunun boyuna oturur, `minHeight` de onu en az bir ekran
-  /// boyuna çeker — yani içerik uzunsa hiçbir şey değişmez, kısaysa
+  /// boyuna çeker — yani içerik uzunsa hiçbir şey değişmez (kaydırma
+  /// fallback'i DURUYOR, küçük ekranlarda hâlâ devreye girebilir), kısaysa
   /// ortalanır.
-  final bool ortala;
-
-  const _Sayfa({required this.children, this.ortala = false});
+  const _Sayfa({required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -979,9 +1026,8 @@ class _Sayfa extends StatelessWidget {
     // ortalanınca logo yerinde kaldığı için logo ile başlık arasında
     // görünür bir kopukluk açıldı. Artık logo ortalanan bloğun İLK
     // öğesi: logo + başlık + kutular tek blok olarak birlikte
-    // ortalanıyor. Dört sayfa da aynı deseni kullandığından logo yine
-    // dört slaytta da var ve 1. slaytta konumu DEĞİŞMEDİ (orası
-    // ortalanmıyor ve içerik zaten ekranı dolduruyor).
+    // ortalanıyor. Beş sayfa da aynı deseni kullandığından logo beş
+    // slaytta da var ve hepsi aynı şekilde ortalanıyor.
     final kolon = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -991,12 +1037,6 @@ class _Sayfa extends StatelessWidget {
         ...children,
       ],
     );
-    if (!ortala) {
-      return SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: kolon,
-      );
-    }
     return LayoutBuilder(
       builder: (context, kisit) => SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 8),

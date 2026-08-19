@@ -5477,6 +5477,24 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        footer'ıyla aynı stille (`SpaceMono` 10px, `_muted`) ve aynı 12px
        boşlukla (web `gap-3`, ÖLÇÜLMÜŞ değer) eklendi. Web'de karşılığı
        olmayan teşhis satırı en altta kalmaya devam ediyor.
+       - ⚠ **AYNI GÜN BULUNAN HATA — satır SOLA yapışıyordu** (kullanıcı
+         cihazda gördü, ekran görüntüsüyle bildirdi; web'de ortalı).
+         `textAlign` unutulmuştu: kapsayıcı `Column`
+         `CrossAxisAlignment.stretch` olduğundan `Text` tam genişliği
+         kaplıyor ve varsayılan hizası `start`. Üstündeki hukuki satır
+         `WrapAlignment.center` ile, ALTINDAKİ teşhis satırı da
+         `TextAlign.center` ile zaten ortalıydı — atlanan tek satır buydu,
+         yani iki komşusunun arasında sessizce ayrıştı.
+       - **Bu tür bir sapmayı GEOMETRİYLE ölçemezsin.** `stretch` altında
+         `getRect(...).center.dx` iki durumda da ekran merkezini verir;
+         kayan şey kutu DEĞİL kutunun içindeki glyph'ler. Mevcut footer
+         testi de bu yüzden yeşil kalmıştı (o yalnızca telif satırının
+         hukuki satırın ALTINDA olduğunu ölçüyor — dikey sıra doğruydu).
+         Regresyon testi bu yüzden boyamayı belirleyen özelliğin kendisini
+         ölçüyor: `tester.widget<Text>(...).textAlign == TextAlign.center`
+         (aynı dosyada zaten kullanılan bir kalıp, yeni bir yöntem
+         icat edilmedi). Hizayı `Center`/`Align` ile sağlayan yeni bir
+         footer satırı eklenirse bu assertion da ona göre güncellenmeli.
      - **GÖRÜNÜR SONUÇ, bilerek:** logo altı link satırı YALNIZCA
        MİSAFİRDE çiziliyor (17 Ağustos kararı), yani girişli kullanıcının
        artık tanıtıma dönüş yolu YOK. Bu bir kayıp gibi görünüyor ama
@@ -5721,6 +5739,102 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
          yazmak, doğrulanmayan ikinci bir kaynak demek olurdu.
        - `kIntroPageCount` 4 → **5**; nokta göstergesi ve testler bu
          sabiti okuduğundan başka hiçbir yerde sayı güncellenmedi.
+
+   - ✅ **Parça 119 — 1. slayt HÂLÂ kayıyordu: dört rakam kutusu 2. slayda
+     taşındı (19 Ağustos 2026, `intro_screen.dart`,
+     `intro_screen_test.dart`):** Kullanıcı cihazda gördü — *"1. slayt hâlâ
+     aşağıya kayıyor ve bu app mantığına aykırı. Şöyle yapalım: 1.
+     slayttaki board'un üstündeki 4 kutuyu (63K kelime vb) 2. slayt board
+     üstüne taşıyalım… Böylece 2 slayt daha dengeli içeriğe sahip olacak ve
+     aşağıya kaymayacak. Diğer 3 slayt aynı kalıyor."* Aynen uygulandı.
+     - **Parça 118'in "ÖLÇÜLDÜ (390×844): … KAYDIRMADAN tek ekranda"
+       cümlesi YANLIŞMIŞ.** O turda tahta başlığı kısaltılıp boşluklar
+       daraltılmıştı ve sonuç ölçülmüş gibi yazılmıştı, ama gerçek cihaz
+       aksini gösterdi. Bu ortamda Flutter SDK olmadığından o "ölçüm"
+       gerçek bir çalıştırmaya dayanamazdı — **bir sonraki oturum bu tür
+       bir cümleyi, arkasında koşulmuş bir komut yoksa yazmasın.**
+     - **Denge:** 1. slayttan kutular + üstündeki 20px boşluk (~78px)
+       düştü; 2. slayt yalnızca tahtadan ibaret olduğu için zaten boştu ve
+       o kadar doldu. İki slayt da logo → içerik → tahta ritmini koruyor;
+       kutu → tahta mesafesi iki slaytta da AYNI (16).
+     - **`_Sayfa`nın `ortala` bayrağı KALDIRILDI.** Beş slaydın beşi de
+       artık `true` geçiyordu — tek değerli bir bayrak, bir sonraki
+       oturumu artık var olmayan bir ayrımı ("1. slayt ortalanmaz") geri
+       getirmeye çağıran ölü yapılandırmadır. Davranış tek; kaydırma
+       fallback'i (`SingleChildScrollView`) DURUYOR, daha küçük/dar
+       ekranlarda hâlâ devreye girebilir.
+     - **ASIL KAZANIM BİR TEST:** `intro_screen_test.dart`e slaydın DİKEY
+       `maxScrollExtent`ini ölçen bir kontrol eklendi (420×900'de iki
+       tahtalı slayt için de 0 bekleniyor). Bu, o dosyadaki içerik
+       testlerinin GÖREMEDİĞİ sınıf: "hangi metin hangi slaytta" ölçen
+       assertion'lar, iki slayt da ekrandan taşarken de yeşil kalır —
+       nitekim Parça 118'den beri öyle kaldılar. Yardımcı `.first`
+       KULLANMIYOR (PageView bir gün komşu sayfayı canlı tutarsa ölçüm
+       sessizce yanlış slayda kayardı) ve Scrollable'ı eksenine bakarak
+       seçiyor (PageView'ınki yatay). Hata mesajı taşan piksel sayısını
+       yazıyor — CI kırmızıya dönerse ne kadar kısaltmak gerektiği doğrudan
+       görünür.
+     - **AYNI TURDA İKİNCİ BULGU — X2/X3 legend'ı alt alta duruyordu.**
+       Kullanıcı sordu: *"Ekrana sığmayınca alta mı atıyor?"* — **HAYIR.**
+       Port legend'ı baştan DİKEY kodlamıştı (iki `_Rozet` arasına
+       `SizedBox(height: 6)`), yani sığsa da alt alta duruyordu; web ise
+       `flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5`
+       kullanıyor. Flutter karşılığı `Wrap` (spacing 16 / runSpacing 6 —
+       web'in iki gap'i birebir).
+       - **Web'in sarma eşiği ÖLÇÜLDÜ** (derlenmiş `dist` + Chromium,
+         `http://` üzerinden, sekiz genişlikte): her öğe **166.1px**, ikisi
+         + 16px gap = **348.2** → 320px'te SARIYOR, 360px ve üstünde YAN
+         YANA. Yani web'de pratikte her telefonda yan yana.
+       - **Portun eşiği web'inkinden YÜKSEK ve bu bilinçli:** legend
+         `_Kolon`un içinde, yani 16+16 dolgu yiyor (web'in `ul`i dar
+         ekranda tam viewport genişliğinde — ölçümde `kap` 320-414 arası
+         viewport'a eşit çıktı). Port ~380px altında sarar. Dolguyu
+         legend için delmek metin sütunu düzenini bozardı; sarmak zaten
+         doğru davranış.
+       - **`_Rozet`ten `Flexible` KALKMAK ZORUNDAYDI:** `Wrap` çocuklarına
+         SINIRSIZ genişlik kısıtı verir ve orada flex'li bir çocuk
+         "RenderFlex children have non-zero flex but incoming width
+         constraints are unbounded" ile patlar. Web'de de karşılığı yok
+         (`<li>` `shrink-0`).
+       - **Testi KONUM ölçüyor, varlık değil:** iki rozetin ekranda
+         olduğunu ölçen mevcut assertion, ikisi alt alta dururken de
+         yeşildi — bu hatanın aylarca görünmemesinin sebebi tam olarak bu.
+         Yeni test iki rozetin `top`unun eşit ve X3'ün X2'nin sağında
+         olduğunu ölçüyor (420×900).
+       - Yan fayda: bir satır eksildiğinden 1. slayt ~20px daha kısaldı.
+
+     - ⚠ **İKİ YENİ TEST İLK CI KOŞUSUNDA DÜŞTÜ — sebep üründe DEĞİL
+       TESTTEYDİ: `intro_screen_test.dart` GERÇEK FONTLARI YÜKLEMİYORDU.**
+       Taslak PR #301'in "Analiz + testler" işi: `459 passed, 2 failed` —
+       *"1. slayt 29.0 px taşıyor"* ve *"aynı satırda olmalı; üstleri 730.0
+       ve 750.0"*. İkisi de UYDURMA bir düzeni ölçüyordu.
+       - `flutter_test` pubspec'teki fontları OTOMATİK YÜKLEMEZ;
+         varsayılan **Ahem**'de her glyph `fontSize × fontSize` bir
+         BLOKTUR. 27 karakterlik legend metni 11px'te **297px** yer kaplar
+         — gerçek Space Grotesk'te **144px** (web'de ölçüldü). Yani
+         legend test ortamında HİÇBİR genişlikte yan yana sığamazdı, ve
+         bütün paragraflar fazladan satırlara sarıp slaydı şişiriyordu:
+         29px'lik "taşma" gerçek cihazın değil Ahem'in geometrisiydi.
+       - Düzeltme yeni bir mekanizma DEĞİL, projenin kendi altyapısı:
+         `setUpAll(loadAppFonts)` (`test/support/test_fonts.dart`).
+         Ölçüm yapan kardeş testlerin hepsi (`board_render_test`,
+         `game_header_test`, `account_button_test`, `chat_test`…) baştan
+         beri bu satırı taşıyor; `intro_screen_test` bugüne kadar YALNIZCA
+         metin varlığı ölçtüğü için ihtiyaç duymamıştı — geometri ölçmeye
+         başladığı an ihtiyaç doğdu.
+       - **KURAL:** bir teste ilk kez `getRect`/`getSize`/kaydırma payı
+         gibi bir GEOMETRİ ölçümü eklerken, o dosyanın `loadAppFonts`
+         çağırıp çağırmadığını KONTROL ET. Çağırmıyorsa ölçtüğün şey
+         ürünün düzeni değil Ahem'in düzenidir — ve test ya sahte bir
+         kırmızı (buradaki gibi) ya da daha kötüsü sahte bir yeşil verir.
+       - Yan fayda: bu tur, "test yazdım ama koşamadım" durumunda taslak
+         PR'ın gerçekten iş gördüğünü gösterdi — hata üretime hiç
+         çıkmadan, ilk CI koşusunda yakalandı.
+
+     - **Doğrulama sınırı — DÜRÜST KAYIT:** Flutter/Dart SDK yine YOK,
+       `flutter test` KOŞULAMADI; yeni testin GEÇTİĞİ de, taşımanın kaymayı
+       gerçekten sıfırladığı da bu oturumda kanıtlanamadı. Tek kanıt CI
+       (Parça 103-118'in aynı sınırı) ve ardından cihazda gözle teyit.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
