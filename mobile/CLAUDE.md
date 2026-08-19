@@ -5653,6 +5653,37 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
          ekran görüntüleri gerçek `flutter build web` çıktısından,
          Chromium'la 390×844/DPR 2'de alındı — mockup DEĞİL. Parça
          103-118'in "tek kanıt CI" sınırı bu iş için geçerli değil.
+     - **DÖRDÜNCÜ TUR — 1. slayt tek ekrana sığdırıldı, kutular
+       dengelendi (19 Ağustos 2026, kullanıcı ekran görüntüsüne bakıp
+       tarif etti):** *"Birinci slayttaki tahtaya bir bak kalsın sadece,
+       oyuna bir bak gitsin ve üstündeki kutulara yakınlaşsın. Böylece tam
+       sığacaktır. Bir slaytlarda kutuların daraltıp, aralarındaki
+       boşlukları biraz açıp dengeli yapmaya çalış."*
+       - Tahta bölümünün `h2`si ("Oyun tam olarak böyle görünüyor")
+         KALDIRILDI, yalnız üst başlık kaldı; rakam kutularıyla arası
+         36 → **16**, üst başlıkla tahta arası 12 → **8**. Sonuç ÖLÇÜLDÜ
+         (390×844): tahta + X2/X3 legend'ı + üç satırlık açıklama artık
+         KAYDIRMADAN tek ekranda. `_BolumBasligi`in `baslik`ı bu yüzden
+         nullable oldu.
+       - Kartlar daraldı, araları açıldı: adım/özellik kartı dolgusu
+         12 → **10**, adım kartları arası 10 → **14**, özellik ve rütbe
+         ızgaralarının boşluğu 8 → **12**, rütbe kutusu dikey dolgusu
+         10 → **8**.
+       - **Bunlar web'in DEĞERLERİNDEN bilinçli sapma** (web'de o bölümler
+         sonsuz kaydırılan tek bir sayfanın parçası, portta her slayt tek
+         ekrana sığmak zorunda). Metin/renk/yapı paritesi aynen duruyor;
+         sapan yalnızca boşluk ölçüleri.
+       - **YAN BULGU — üst başlıklar TÜRKÇE BÜYÜK HARF kuralını
+         çiğniyordu:** Dart'ın `toUpperCase()`i `KELIME`/`FIYAT`/
+         `TAHTAYA BIR BAK`/`K-LIG` üretiyordu (noktasız I). Web'de
+         dönüşümü CSS `text-transform: uppercase` yapıyor ve
+         `<html lang="tr">` sayesinde tarayıcı Türkçe kuralını uyguluyor —
+         Chromium'da ÖLÇÜLDÜ: web `KELİME` / `TAHTAYA BİR BAK` / `K-LİG`
+         basıyor. Portun tamamında `toUpperCase()`in yalnızca İKİ kullanım
+         yeri vardı ve ikisi de bu dosyadaydı; ikisi de
+         `kelimeki_core`'un `trUpper`ına çevrildi. **Yeni bir başlık
+         eklerken `toUpperCase()` YAZMA** — kök CLAUDE.md'nin "Türkçe Dil
+         Notu" kuralı Dart tarafında da geçerli.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 

@@ -28,6 +28,12 @@
 // (yalnız misafirde — bkz. mobile/CLAUDE.md, Parça 117).
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
+// `trUpper`: BÜYÜK harfe çevirirken i→İ / ı→I. Dart'ın kendi
+// `toUpperCase()`i Türkçe'yi bilmez ve web ile SESSİZ bir ayrışma üretir —
+// orada dönüşümü CSS `text-transform: uppercase` yapıyor ve `<html
+// lang="tr">` sayesinde tarayıcı Türkçe kuralını uyguluyor (ölçüldü:
+// web "TAHTAYA BİR BAK" / "K-LİG" / "KELİME" basıyor).
+import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
 
 import '../../data/game_record.dart';
 import '../game/board_widget.dart';
@@ -211,8 +217,10 @@ class _HosGeldinSayfasi extends StatelessWidget {
             ],
           ),
         ),
-        // Web'de bu bölüm `my-9` (36px) ile ayrılıyor.
-        const SizedBox(height: 36),
+        // Web'de bu bölüm `my-9` (36px) ile ayrılıyor; portta 16 —
+        // kullanıcı tahtanın rakam kutularına YAKLAŞMASINI istedi
+        // (yukarıdaki aynı gerekçe: slayt tek ekrana sığmalı).
+        const SizedBox(height: 16),
         const _TahtaBolumu(),
       ],
     );
@@ -290,7 +298,7 @@ class _Kutu extends StatelessWidget {
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
-              etiket.toUpperCase(),
+              trUpper(etiket),
               style: const TextStyle(
                 fontFamily: 'SpaceMono',
                 fontSize: 8,
@@ -340,13 +348,17 @@ class _TahtaBolumu extends StatelessWidget {
 
     return Column(
       children: [
+        // Yalnızca üst başlık (19 Ağustos 2026, kullanıcı isteği:
+        // "birinci slayttaki tahtaya bir bak kalsın sadece, oyuna bir bak
+        // gitsin ve üstündeki kutulara yakınlaşsın; böylece tam
+        // sığacaktır"). Web'de o `h2` duruyor — orası sonsuz kaydırılan
+        // bir sayfa, burada slaydın tamamı tek ekrana sığmak zorunda ve
+        // iki satırlık başlık tam olarak tahtanın alt sırasını
+        // kesiyordu.
         const _Kolon(
-          child: _BolumBasligi(
-            ustBaslik: 'Tahtaya bir bak',
-            baslik: 'Oyun tam olarak böyle görünüyor',
-          ),
+          child: _BolumBasligi(ustBaslik: 'Tahtaya bir bak'),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: _kTahtaGenisligi),
@@ -489,11 +501,11 @@ class _NasilOynanirSayfasi extends StatelessWidget {
               ),
               SizedBox(height: 12),
               _AdimKarti(adim: _adim1),
-              SizedBox(height: 10),
+              SizedBox(height: 14),
               _AdimKarti(adim: _adim2),
-              SizedBox(height: 10),
+              SizedBox(height: 14),
               _AdimKarti(adim: _adim3),
-              SizedBox(height: 10),
+              SizedBox(height: 14),
               _AdimKarti(adim: _adim4),
             ],
           ),
@@ -519,7 +531,7 @@ class _AdimKarti extends StatelessWidget {
         shadows: kRaisedShadows,
         borderColor: kBorder,
       ),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -694,13 +706,13 @@ class _NelerVarSayfasi extends StatelessWidget {
               // (`GridView` sabit bir en-boy oranı ister) ve sayfa zaten
               // kaydırılabilir bir Column.
               for (var i = 0; i < kutular.length; i += 2) ...[
-                if (i > 0) const SizedBox(height: 8),
+                if (i > 0) const SizedBox(height: 12),
                 IntrinsicHeight(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Expanded(child: kutular[i]),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 12),
                       Expanded(child: kutular[i + 1]),
                     ],
                   ),
@@ -735,7 +747,7 @@ class _Ozellik extends StatelessWidget {
         shadows: kRaisedShadows,
         borderColor: kBorder,
       ),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -807,13 +819,13 @@ class _RutbeSayfasi extends StatelessWidget {
               // YAZILMIYOR (eşik/ad/renk değişirse bu ekran kendiliğinden
               // takip eder; web'in aynı kuralı). Web `grid-cols-3 gap-2`.
               for (var i = 0; i < kRankTiers.length; i += 3) ...[
-                if (i > 0) const SizedBox(height: 8),
+                if (i > 0) const SizedBox(height: 12),
                 IntrinsicHeight(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       for (var j = i; j < i + 3; j++) ...[
-                        if (j > i) const SizedBox(width: 8),
+                        if (j > i) const SizedBox(width: 12),
                         Expanded(child: _RutbeKutusu(tier: kRankTiers[j])),
                       ],
                     ],
@@ -843,7 +855,7 @@ class _RutbeKutusu extends StatelessWidget {
         shadows: kRaisedShadows,
         borderColor: kBorder,
       ),
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -920,8 +932,11 @@ class _Kolon extends StatelessWidget {
 /// Web `Bolum`un başlık bloğu (`gap-0.5` = 2px).
 class _BolumBasligi extends StatelessWidget {
   final String ustBaslik;
-  final String baslik;
-  const _BolumBasligi({required this.ustBaslik, required this.baslik});
+
+  /// `null` ise yalnızca üst başlık çizilir — 1. slayttaki tahta bölümü
+  /// böyle (bkz. oradaki gerekçe).
+  final String? baslik;
+  const _BolumBasligi({required this.ustBaslik, this.baslik});
 
   @override
   Widget build(BuildContext context) {
@@ -930,7 +945,7 @@ class _BolumBasligi extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          ustBaslik.toUpperCase(),
+          trUpper(ustBaslik),
           style: const TextStyle(
             fontFamily: 'SpaceMono',
             fontSize: 9,
@@ -939,16 +954,18 @@ class _BolumBasligi extends StatelessWidget {
             color: kAccent,
           ),
         ),
-        const SizedBox(height: 2),
-        Text(
-          baslik,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-            height: 1.25,
-            color: kText,
+        if (baslik != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            baslik!,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+              height: 1.25,
+              color: kText,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

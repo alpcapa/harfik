@@ -90,8 +90,9 @@ yazıldıktan sonra tanıtım bir daha ÇIKMAZ.
 - [ ] **İlk açılışta Setup'tan ÖNCE tanıtım çıkıyor.** Dört sayfa
       (19 Ağustos 2026'da yeniden düzenlendi — Parça 118):
       (1) "Kelime bul, bölgeni büyüt, tahtayı ele geçir." + dört
-      rakam kutusu + **"Tahtaya bir bak"** bölümü (2 kişilik tahta, X2/X3
-      legend'ı ve altındaki açıklama), (2) "Nasıl oynanır?" DÖRT adım
+      rakam kutusu + **"TAHTAYA BİR BAK"** bölümü (2 kişilik tahta, X2/X3
+      legend'ı ve altındaki açıklama) — bu slayt KAYDIRMADAN tamamen
+      sığmalı, açıklamanın son satırı alt kenarda kesilmemeli, (2) "Nasıl oynanır?" DÖRT adım
       birden, (3) "Neler var" ALTI özellik kutusu, (4) dokuz k-lig
       rütbesi.
 - [ ] **Logo DÖRT sayfada da, hep AYNI yerde** (üstte, sabit) ve sayfa
@@ -117,6 +118,10 @@ yazıldıktan sonra tanıtım bir daha ÇIKMAZ.
       SOLUNDA, başlıkla aynı boyda. Boş kare/eksik ikon OLMAMALI.
 - [ ] **4. slaytta dokuz rütbe kutusu var** ve her birinde mühür + ad +
       eşik puanı okunuyor.
+- [ ] **Üst başlıklar TÜRKÇE büyük harfle:** `KELİME` · `FİYAT` ·
+      `TAHTAYA BİR BAK` · `K-LİG` — noktasız `I` görürsen (`KELIME`,
+      `K-LIG`) `trUpper` yerine `toUpperCase()` sızmış demektir (web CSS
+      + `lang="tr"` ile doğrusunu basıyor, yan yana koyunca ayrışır).
 - [ ] **ATLAMA YOK.** Dört sayfanın HİÇBİRİNDE "Atla" (ya da başka bir
       geçme/kapatma) düğmesi olmamalı — tanıtımın tek çıkışı son
       sayfadaki **HEMEN OYNA**. (19 Ağustos 2026 kullanıcı kararı.)

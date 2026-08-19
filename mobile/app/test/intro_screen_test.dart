@@ -146,7 +146,11 @@ void main() {
       ));
 
       // 1. slayt: kahraman + dört rakam kutusu + GERÇEK tahta.
-      expect(find.text('Oyun tam olarak böyle görünüyor'), findsOneWidget);
+      // Tahta bölümünün başlığı YALNIZCA üst başlık — 19 Ağustos 2026'da
+      // "Oyun tam olarak böyle görünüyor" kaldırıldı (slayt tek ekrana
+      // sığsın diye); kalktığının kanıtı ikinci satır.
+      expect(find.text('TAHTAYA BİR BAK'), findsOneWidget);
+      expect(find.text('Oyun tam olarak böyle görünüyor'), findsNothing);
       expect(find.byType(BoardWidget), findsOneWidget);
       expect(find.text('13×13'), findsOneWidget);
       expect(find.text('X2 — Kelime puanının 2 katı'), findsOneWidget);
