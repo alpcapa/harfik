@@ -203,17 +203,26 @@ class _Kutular extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: const [
-        Expanded(child: _Kutu(sayi: '$kKelimeSayisi+', etiket: 'Kelime')),
-        SizedBox(width: 8),
-        Expanded(child: _Kutu(sayi: '13×13', etiket: 'Tahta')),
-        SizedBox(width: 8),
-        Expanded(child: _Kutu(sayi: '2–4', etiket: 'Oyuncu')),
-        SizedBox(width: 8),
-        Expanded(child: _Kutu(sayi: 'Ücretsiz', etiket: 'Fiyat')),
-      ],
+    // `IntrinsicHeight` ŞART: `crossAxisAlignment: stretch` bir Row'da
+    // DİKEY eksende esnetir ve bu sayfa kaydırılabilir bir Column'un
+    // içinde (yükseklik sınırsız) — sarmalayıcı olmadan Flutter
+    // "BoxConstraints forces an infinite height" ile patlar. Kardeş
+    // ızgaralar (`_NelerVarSayfasi`, `_RutbeSayfasi`) aynı deseni
+    // kullanıyor; dördü de eşit yükseklik alsın diye stretch korunuyor
+    // (web'de `flex`in varsayılan `align-items: stretch`i).
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: const [
+          Expanded(child: _Kutu(sayi: '$kKelimeSayisi+', etiket: 'Kelime')),
+          SizedBox(width: 8),
+          Expanded(child: _Kutu(sayi: '13×13', etiket: 'Tahta')),
+          SizedBox(width: 8),
+          Expanded(child: _Kutu(sayi: '2–4', etiket: 'Oyuncu')),
+          SizedBox(width: 8),
+          Expanded(child: _Kutu(sayi: 'Ücretsiz', etiket: 'Fiyat')),
+        ],
+      ),
     );
   }
 }

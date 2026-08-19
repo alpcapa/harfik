@@ -5596,6 +5596,24 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ekranıyla AYNI harf/hücre oranında çizilmesi, dokuz rütbe mührünün
        TOFU olmaması ve dar ekranda "RenderFlex overflowed" çubuğu
        çıkmaması — `mobile/TESTING.md` bölüm 0.4 güncellendi.
+     - **CI İLK KOŞUDA DÜŞTÜ ve sebebi tam da o "tek kanıt CI" sınırıydı
+       (PR #298, koşu 32246388405 — 455 geçti, 4 düştü):** ilk slayttaki
+       dört rakam kutusunun `Row`u `crossAxisAlignment: stretch` taşıyordu
+       ve sayfa kaydırılabilir bir `Column` içinde (yükseklik SINIRSIZ) —
+       Flutter `BoxConstraints forces an infinite height` ile patlıyor,
+       yani IntroScreen'in İLK sayfası hiç render EDİLEMİYORDU (dört
+       başarısızlığın dördü de o sayfaya dokunan testler: üç
+       `intro_screen_test` + `setup_screen_test`'in "Tanıtım linki"
+       testi). **Bu ders bu kod tabanında ZATEN üç kez yazılıydı** (Parça
+       3'ün raf satırı, Parça 4'ün skor kutuları, Parça 24) ve aynı
+       dosyanın öteki İKİ ızgarası (`_NelerVarSayfasi`, `_RutbeSayfasi`)
+       doğru şekilde `IntrinsicHeight` ile sarılmıştı — atlanan yalnızca
+       bu üçüncüsüydü. Düzeltme: `_Kutular`ın `Row`u da `IntrinsicHeight`
+       içine alındı (stretch KORUNDU — dört kutu web'deki gibi eşit
+       yükseklikte kalmalı). **Ders:** `stretch` bir `Column`da yatayda
+       (bounded) esnetir, bir `Row`da DİKEYDE (unbounded) — aynı satırı
+       Column'dan Row'a kopyalarken bu ayrım sessizce tersine döner ve
+       SDK'sız bir oturumda yalnızca CI yakalar.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
