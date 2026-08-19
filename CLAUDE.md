@@ -17,6 +17,7 @@ Türkçe kelime oyunu. 13×13 tahtada köşe bölgeleriyle oynanan özgün bir m
 ```bash
 npm run build   # TypeScript derleme + üretim build
 npm run dev     # Geliştirme sunucusu
+npm run preview # Üretim derlemesini yerelde önizle
 npm run lint    # tsc --noEmit (ayrı bir ESLint kurulumu yok)
 npm run test    # Playwright duman testleri (tests/smoke.spec.ts)
 npm run generate-golden-vectors  # Flutter portu parite fixture'ları (bkz. "Flutter / Mobil Port")
@@ -637,6 +638,43 @@ ayrı ayrı düşürüldü:** seçici id'ye çevrilince, `logoParkiKur()` kaldı
 kapının `?tanitim=1` dalı silinince, `setLandingLegal` kaldırılınca ve
 `tahtaNoktalariKur()` çağrısı kaldırılınca ilgili testler GERÇEKTEN düştü.
 
+### Doküman denetimi — README/`.md` turu (19 Ağustos 2026)
+
+Kullanıcı sordu: *"Readme ve tüm md'ler güncel mi?"* Altı `.md` dosyası
+(kök `CLAUDE.md`, `README.md`, `TESTING.md`, `PORT_BRIEF.md`,
+`mobile/CLAUDE.md`, `mobile/TESTING.md`) koda karşı tarandı. **En değerli
+bulgu bir eksik değil, bir YANLIŞTI:**
+
+- **`README.md`'deki bölge vergisi payı YANLIŞTI** — *"iki farklı bölgeyle
+  birden etkileşirse üç kişi eşit paylaşır: herkese 1/3"* diyordu; motor
+  (`computeInvasionSplit`) n=2'de payı `basePts*(n+1)/(6n)` = **1/4** yapıp
+  oynayana **1/2** bırakıyor. Yani README yıllardır kuralı yanlış anlatıyordu
+  ve bu, `CLAUDE.md`/`HelpModal`'ın ikisiyle de çelişiyordu (ikisi doğruydu).
+  Genel formülle birlikte düzeltildi.
+- `README.md`'de **üretilmiş dosya komutları hiç yoktu** (`generate-logo-paths`,
+  `generate-klig-paths`, `generate-icons`, `generate-og-image`,
+  `generate-golden-vectors`, `generate-meanings-db`). Tam bu boşluk 17 Ağustos'ta
+  `og-image`'ın haftalarca bayat kalmasına yol açmıştı — artık ikisinde de var.
+- `README.md` ağacına `shareLink.ts`, `CLAUDE.md`'nin utils satırına
+  `shareLink`/`pendingLiveGames`, komut tablosuna `npm run preview` eklendi;
+  `web-ci.yml` adım özeti `verify-remaining-tiles`i atlıyordu.
+- **`PORT_BRIEF.md` DONDURULDU.** 5 Ağustos'ta port planlaması için bir kez
+  çıkarılmış bir envanter; bugün `src/` altında orada geçmeyen **19 dosya**
+  var (karşılama katmanı, k-lig ödül/rütbe katmanı, `cloudSaveMirror`,
+  `offlineNotice`, `platform`, `shareLink`…). Güncellemek yerine başına
+  "donmuş anlık görüntü, yaşayan doküman değil, güncel yapı için README/
+  CLAUDE.md'ye bak" uyarısı kondu — LOC tablosunu her değişiklikte tazelemek
+  sürdürülebilir değil, ama sessizce yanlış kalması da kabul edilemezdi.
+- **Temiz çıkanlar:** `TESTING.md` (bölüm 11'e kadar güncel — 15 Ağustos'taki
+  "mute yalnızca popup'ı bastırır, rozet yine artar" kararı bile maddeye
+  yazılmış), `mobile/TESTING.md`, `mobile/CLAUDE.md`, README'nin kelime sayısı
+  (**~63 bin**; `words.ts` gerçekte 63.896) ve k-lig rütbe/ödül tablosu.
+
+**Ders:** bir doküman "eksik" olabilir (yeni dosya listeye girmemiş) ya da
+"yanlış" olabilir (kuralı hatalı anlatıyor) — ikincisi çok daha pahalı ve
+yalnızca metni KODA karşı okuyarak bulunuyor; dosya listesi karşılaştırması
+onu asla yakalamaz.
+
 **Doğrulanan non-regresyonlar (ölçüldü):** katman modunda `boot`/`words`
 istekleri **0** ve service worker kaydı **0**, uygulama modunda sırasıyla 1/1/1;
 `vercel.json` diff'i **sıfır**; `navigateFallback` hâlâ
@@ -672,8 +710,8 @@ edilebilirdi.
 tetikleyici deseni (push+PR → `main`, `paths` filtresi; bu sefer `src/**`,
 `scripts/**`, `tests/**`, `public/**`, `index.html`, `vite.config.ts`,
 `tailwind.config.js`, `playwright.config.ts`, `package*.json`). Adımlar:
-`npm ci` → `lint` → `build` → Playwright'ı kur (`--with-deps chromium`) →
-`test`.
+`npm ci` → `lint` → `verify-remaining-tiles` → `build` → Playwright'ı kur
+(`--with-deps chromium`) → `test`.
 
 **`playwright.config.ts`'teki `executablePath` bu geliştirme ortamına ÖZGÜ
 bir yoldu (`/opt/pw-browsers/chromium`) — GitHub Actions runner'ında bu yol
@@ -980,7 +1018,7 @@ src/
     constants.ts    # Tahta sabitleri, köşe hesapları, bonus konumları
     gameReducer.ts  # useReducer tabanlı oyun state makinesi
     types.ts        # GameState, Player, Tile tipleri
-  utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, cloudSaveMirror, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields, platform, offlineNotice...)
+  utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, cloudSaveMirror, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields, platform, offlineNotice, shareLink, pendingLiveGames...)
   data/         # Kelime listesi (~63k), harf dağılımı, kelime anlamları, wordSetLoader (lazy chunk)
   lib/          # Supabase istemcisi ve API sarmalayıcısı
   fonts/        # @font-face tanımları (main.tsx import eder) + files/*.woff2 — bunlardan

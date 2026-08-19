@@ -1,5 +1,21 @@
 # Kelimeki — Port Inventory
 
+> **DONMUŞ ANLIK GÖRÜNTÜ — 5 Ağustos 2026 (Flutter portunun başlangıcı).**
+> Bu dosya port planlaması için bir kez çıkarılmış bir envanterdir; yaşayan
+> doküman DEĞİL ve kasıtlı olarak güncellenmiyor (LOC sayıları ve dosya
+> listesi o günkü ağaca ait). 19 Ağustos 2026 itibarıyla `src/` altında
+> burada GEÇMEYEN 19 dosya var — karşılama katmanı (`Landing.tsx`,
+> `LandingLogo.tsx`, `OzellikIkonlari.tsx`, `demoBoard.ts`, `render.tsx`,
+> `boot.tsx`), k-lig ödül/rütbe katmanı (`RankSeal.tsx`,
+> `RankInfoModal.tsx`, `RewardBanner.tsx`, `LeagueRewardsHost.tsx`,
+> `leagueRank.ts`, `useRankScores.tsx`), `cloudSaveMirror.ts`,
+> `offlineNotice.ts`, `platform.ts`, `shareLink.ts`,
+> `FriendModerationModal.tsx`, `RelationIcons.tsx`, `database.types.ts`.
+> **Güncel yapı için `README.md` → "Proje Yapısı" ve `CLAUDE.md` →
+> "Klasör Yapısı"na bak; port kararlarının yaşayan kaydı
+> `mobile/CLAUDE.md`.** Buradaki hiçbir satırı bugünün gerçeği sayma;
+> tarihsel bir kayıt olarak duruyor.
+
 Accurate as of repo state on disk (commit checked out in this session). No recommendations — inventory only.
 
 ## 1. Modules
