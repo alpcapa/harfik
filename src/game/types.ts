@@ -47,7 +47,7 @@ export interface Player {
   score: number;
   /**
    * Bu oyundaki en yüksek tek hamle puanı (tek veya çok kelimeli, harf/kelime
-   * çarpanları dahil) — köşe vergisi kesintisinden ÖNCEKİ brüt puan.
+   * çarpanları dahil) — bölge vergisi kesintisinden ÖNCEKİ brüt puan.
    */
   bestMoveScore: number;
   /**
@@ -61,7 +61,7 @@ export interface Player {
   /** Bu oyunda oynanan (geçilmemiş) hamle sayısı. */
   moveCount: number;
   /**
-   * Bu oyunda oynanan hamlelerin brüt puanları toplamı (köşe vergisi ve raf
+   * Bu oyunda oynanan hamlelerin brüt puanları toplamı (bölge vergisi ve raf
    * düşümü hariç) — "ortalama hamle puanı" istatistiği için.
    */
   moveScoreSum: number;
@@ -143,7 +143,7 @@ export interface HistoryEntry {
   /** Bu puanı skoruna ekleyen oyuncu. */
   player: Owner;
   /**
-   * Oynanan kelime(ler). Köşe vergisi bonusu satırlarında (`invasionFrom`
+   * Oynanan kelime(ler). Bölge vergisi bonusu satırlarında (`invasionFrom`
    * dolu) bu, vergiyi tetikleyen hamlede oynanan kelime(ler)dir — `player`in
    * kendisi oynamamıştır, sadece bölgesine giren/değen hamlede geçen kelime.
    */
@@ -159,7 +159,7 @@ export interface HistoryEntry {
   points: number;
   /**
    * Doluysa: bu puan kendi hamlesinden değil, `invasionFrom` oyuncusunun
-   * `player`in köşesine girmesinden ya da sınırına değmesinden (köşe vergisi)
+   * `player`in köşesine girmesinden ya da sınırına değmesinden (bölge vergisi)
    * geldi.
    */
   invasionFrom?: Owner;

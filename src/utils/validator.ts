@@ -265,7 +265,7 @@ export function computeAllTerritories(board: Board, players: Player[]): Set<stri
 }
 
 /**
- * Rakip bölge(ler)ine sınır vergisini hesaplar. Bu tur konan taşlardan biri
+ * Rakip bölge(ler)ine ödenecek bölge vergisini hesaplar. Bu tur konan taşlardan biri
  * bir rakip bölgesinin içine düşüyorsa (girme) ya da dışarıdan sınırına
  * bitişikse (değme), kazanılan puandan bir pay bölge sahibine gider. Bölge
  * artık sabit 5x5 köşe değil, `computeAllTerritories` ile hesaplanan —

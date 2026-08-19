@@ -367,8 +367,8 @@ class _QuickStart extends StatelessWidget {
         const SizedBox(height: 8),
         const _QuickItem(
           icon: '🔗',
-          text: 'Yeni kelimeler tahtadaki mevcut harflere (rakiplerinki dahil) '
-              'bağlanmalıdır.',
+          text: 'Yeni kelimeler tahtadaki mevcut harflere bağlanmalıdır. '
+              '(Senin veya rakibinin)',
         ),
         const SizedBox(height: 8),
         const _QuickItem(
@@ -379,8 +379,8 @@ class _QuickStart extends StatelessWidget {
         const SizedBox(height: 8),
         const _QuickItem(
           icon: '✨',
-          text: 'Ortadaki 5×5 bonus bölgesi puanlarını **ikiye**, **üçe** '
-              'katlar.',
+          text: 'Ortadaki 5×5 bonus bölgesi puanlarını **ikiye** veya '
+              '**üçe** katlar.',
         ),
         const SizedBox(height: 8),
         _QuickItem(
@@ -408,7 +408,8 @@ class _QuickStart extends StatelessWidget {
         const SizedBox(height: 8),
         const _QuickItem(
           icon: '📖',
-          text: 'Sadece **TDK sözlüğündeki** Türkçe kelimeler geçerlidir.',
+          text: 'Sadece **TDK sözlüğündeki** Türkçe kelimeler geçerlidir. '
+              '(Birkaç istisna dışında)',
         ),
         const SizedBox(height: 8),
         const _QuickItem(

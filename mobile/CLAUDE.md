@@ -5496,6 +5496,21 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   YZ/misafir koltuğunda mühür HİÇ olmamalı. Bu parça da Flutter SDK'sız
   bir oturumda yazıldı — Dart yarısının tek kanıtı CI.
 
+- **19 Ağustos (kozmetik metin turu) — "Nasıl Oynanır?"ın Hızlı Başlangıç'ında
+  üç madde web'de yeniden yazıldı, port AYNI PR'da birebir güncellendi:**
+  bağlanma maddesinin parantezi sona alındı ("… bağlanmalıdır. (Senin veya
+  rakibinin)"), bonus maddesi "ikiye, üçe" → **"ikiye veya üçe"**, TDK
+  maddesine **"(Birkaç istisna dışında)"** eklendi. **`help_text_parity_test`
+  bunu YAKALAMAZ** — o yalnızca bölüm başlıklarını ve madde ikonlarını
+  karşılaştırıyor (kendi dosya başlığında "var olan bir paragrafın İÇİNDEKİ
+  cümle değişimi" açıkça sınır olarak yazılı), yani cümle senkronu ELLE
+  yapılmak zorunda. Aynı turda `kelimeki_core`'un `validator.dart`'ındaki
+  yorum "sınır vergisi" → "bölge vergisi" olarak web'le hizalandı (kök
+  `CLAUDE.md` → "Bölge vergisi" maddesindeki terminoloji notu: `sınır ihlali`
+  EYLEM, `bölge vergisi` BEDEL — üçüncü bir terim üretme). Kod davranışı
+  değişmedi. Bu parça da Flutter SDK'sız bir oturumda yazıldı — Dart
+  yarısının tek kanıtı CI.
+
 Liste bir gün BOŞALIRSA öyle kalmasını bekleme: yeni bir düzeltme
 yazıldığında buraya yine madde eklenmeli (kural değişmedi: yazıldığı gün
 cihazda görülmemiş her düzeltme burada birikir).

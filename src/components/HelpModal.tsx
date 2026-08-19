@@ -103,14 +103,14 @@ function QuickStart({ onDetailedClick }: { onDetailedClick: () => void }) {
         genişletirsin.
       </QuickItem>
       <QuickItem icon="🔗">
-        Yeni kelimeler tahtadaki mevcut harflere (rakiplerinki dahil) bağlanmalıdır.
+        Yeni kelimeler tahtadaki mevcut harflere bağlanmalıdır. (Senin veya rakibinin)
       </QuickItem>
       <QuickItem icon="💰">
         Rakip bölgesine değen/giren hamlede, <strong>bölge vergisi</strong> ödersin.
       </QuickItem>
       <QuickItem icon="✨">
-        Ortadaki 5×5 bonus bölgesi puanlarını <strong>ikiye</strong>, <strong>üçe</strong>{' '}
-        katlar.
+        Ortadaki 5×5 bonus bölgesi puanlarını <strong>ikiye</strong> veya{' '}
+        <strong>üçe</strong> katlar.
       </QuickItem>
       <QuickItem icon="🎁">
         7 taşını tek hamlede koyarsan <strong>+{BINGO_BONUS} Bingo bonus</strong> kazanırsın.
@@ -121,7 +121,8 @@ function QuickStart({ onDetailedClick }: { onDetailedClick: () => void }) {
         jokerse ve onunla bitirirsen <strong>+25/+50 bonus</strong> kazanırsın.
       </QuickItem>
       <QuickItem icon="📖">
-        Sadece <strong>TDK sözlüğündeki</strong> Türkçe kelimeler geçerlidir.
+        Sadece <strong>TDK sözlüğündeki</strong> Türkçe kelimeler geçerlidir.{' '}
+        (Birkaç istisna dışında)
       </QuickItem>
       <QuickItem icon="🏁">
         Harf kutunu bitirir ve torbada başka taş kalmazsa oyun biter. Art arda 2 tur pas
