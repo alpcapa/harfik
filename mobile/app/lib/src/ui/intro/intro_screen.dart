@@ -117,9 +117,15 @@ class _IntroScreenState extends State<IntroScreen> {
             // "HEMEN OYNA". Bu, web'in karşılama katmanıyla da tutarlı:
             // orada da kapatma/atlama düğmesi yok.
             //
-            // Sabit üst boşluk: `_Sayfa`nın kendi `top: 8` dolgusu tek
-            // başına sayfayı ekranın tepesine yapıştırıyordu.
-            const SizedBox(height: 16),
+            // Üst boşluk 16 → **8** (19 Ağustos 2026, kullanıcı: *"hâlâ 1
+            // satır aşağıda kalıyor. Aşağıdaki swipe noktaları alanını biraz
+            // daha kısaltamaz mıyız?"*). Bu boşluğun ESKİ gerekçesi
+            // ("`_Sayfa`nın `top: 8` dolgusu tek başına sayfayı tepeye
+            // yapıştırıyordu") sayfalar DİKEYDE ORTALANMAYA başlayınca
+            // geçersizleşti: içerik sığdığında `Center` boşluğu zaten eşit
+            // dağıtıyor, sığmadığında ise bu boşluk yalnızca yer çalıyor —
+            // yani tam da sorun yaşanan durumda zararlı.
+            const SizedBox(height: 8),
             Expanded(
               child: PageView(
                 controller: _controller,
@@ -152,7 +158,8 @@ class _IntroScreenState extends State<IntroScreen> {
             // Bu, alttan ~60px'i geri kazanıyor: slaytlar o kadar
             // uzuyor, 1. slayttaki tahta o kadar çok görünüyor.
             Padding(
-              padding: const EdgeInsets.only(top: 8),
+              // 8 → 6: nokta şeridini içerikten ayırmaya yetiyor.
+              padding: const EdgeInsets.only(top: 6),
               child: _Noktalar(aktif: _page),
             ),
             // Son sayfada tanıtımın TEK çıkışı. Kabı metin sütunuyla aynı
@@ -175,7 +182,11 @@ class _IntroScreenState extends State<IntroScreen> {
                 ),
               )
             else
-              const SizedBox(height: 16),
+              // 16 → 8. Yalnızca ARA sayfaları etkiler; son sayfada bu dalın
+              // yerini HEMEN OYNA düğmesi (kendi `top: 12, bottom: 16`
+              // dolgusuyla) alıyor, oraya DOKUNULMADI — orası zaten en kısa
+              // slayt ve düğmenin dokunma alanı daralmamalı.
+              const SizedBox(height: 8),
           ],
         ),
       ),
@@ -1039,11 +1050,14 @@ class _Sayfa extends StatelessWidget {
     );
     return LayoutBuilder(
       builder: (context, kisit) => SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        // 8 → 4 (19 Ağustos 2026, aynı tur): slaydın kendi nefes payı;
+        // logo zaten kabın en üstünde ve şeritler dışarıda.
+        padding: const EdgeInsets.symmetric(vertical: 4),
         child: ConstrainedBox(
-          // −16: yukarıdaki dikey dolgu iki kez sayılmasın, aksi halde
-          // içerik tam sığdığında sayfa 16px kaydırılabilir olurdu.
-          constraints: BoxConstraints(minHeight: kisit.maxHeight - 16),
+          // −8: yukarıdaki dikey dolgu (4+4) iki kez sayılmasın, aksi halde
+          // içerik tam sığdığında sayfa 8px kaydırılabilir olurdu. Bu sayı
+          // dolgunun İKİ KATI olmak ZORUNDA — dolgu değişirse burası da.
+          constraints: BoxConstraints(minHeight: kisit.maxHeight - 8),
           child: Center(child: kolon),
         ),
       ),

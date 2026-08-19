@@ -251,27 +251,37 @@ void main() {
     // yine taşabilir ve o zaman kaydırmak kırpmaktan iyidir. Test bunu
     // yaygın bir telefon boyunda güvence altına alıyor, "her cihazda"
     // değil — dürüst sınır.
-    testWidgets('tahtalı iki slayt tek ekrana sığar (aşağı kaymaz)',
-        (tester) async {
-      await setPhoneViewSize(tester, const Size(420, 900));
-      await tester.pumpWidget(MaterialApp(
-        theme: kelimekiTheme(),
-        home: IntroScreen(onDone: () {}),
-      ));
+    // BOYUT LİSTESİ (19 Ağustos 2026'da genişletildi): 420×900 tek başına
+    // YETMİYORDU — kullanıcı GitHub Pages web derlemesini iOS Safari'de
+    // açtığında 1. slayt hâlâ bir satır taşıyordu, çünkü Safari'nin durum
+    // çubuğu + alt adres çubuğu görünür yüksekliği ~150px kısaltıyor ve
+    // test o yüzeyi hiç temsil etmiyordu. İkinci boy tam olarak onu
+    // temsil ediyor: geniş bir telefon (430) ama KISA görünür alan (740).
+    const boylar = [Size(420, 900), Size(430, 740)];
+    for (final boy in boylar) {
+      testWidgets(
+          'tahtalı iki slayt tek ekrana sığar — ${boy.width.toInt()}×'
+          '${boy.height.toInt()} (aşağı kaymaz)', (tester) async {
+        await setPhoneViewSize(tester, boy);
+        await tester.pumpWidget(MaterialApp(
+          theme: kelimekiTheme(),
+          home: IntroScreen(onDone: () {}),
+        ));
 
-      final ilk = dikeyKayma(find.byType(BoardWidget));
-      expect(ilk, 0,
-          reason: '1. slayt $ilk px taşıyor — rakam kutuları 2. slayda '
-              'taşınmıştı tam da bunun için; içerik yeniden büyüdüyse ya '
-              'kısalt ya da taşımayı gözden geçir.');
+        final ilk = dikeyKayma(find.byType(BoardWidget));
+        expect(ilk, 0,
+            reason: '$boy: 1. slayt $ilk px taşıyor — kroma (üst boşluk, '
+                'nokta şeridi, sayfa dolgusu) ve içeriğe bak; taşan piksel '
+                'sayısı ne kadar kısaltmak gerektiğini doğrudan söylüyor.');
 
-      await kaydir(tester);
+        await kaydir(tester);
 
-      final ikinci = dikeyKayma(find.byType(BoardWidget));
-      expect(ikinci, 0,
-          reason: '2. slayt $ikinci px taşıyor — rakam kutuları buraya '
-              'eklenince sığmaz olduysa denge yanlış kurulmuş demektir.');
-    });
+        final ikinci = dikeyKayma(find.byType(BoardWidget));
+        expect(ikinci, 0,
+            reason: '$boy: 2. slayt $ikinci px taşıyor — rakam kutuları '
+                'buraya eklenince sığmaz olduysa denge yanlış kurulmuş.');
+      });
+    }
 
     // 19 Ağustos 2026, kullanıcı bildirdi: *"X2, X3 legendlar alt alta
     // gelmiş. Webde yan yana."* Port bunu baştan DİKEY kodlamıştı (iki

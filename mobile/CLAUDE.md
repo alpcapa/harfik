@@ -5831,6 +5831,45 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
          PR'ın gerçekten iş gördüğünü gösterdi — hata üretime hiç
          çıkmadan, ilk CI koşusunda yakalandı.
 
+     - ⚠ **TESTİ GEÇTİ AMA CİHAZDA HÂLÂ TAŞIYORDU — test boyu yüzeyi
+       temsil etmiyordu (19 Ağustos 2026, aynı gün, merge SONRASI).**
+       Kullanıcı GitHub Pages web derlemesini iOS Safari'de açtı: 1.
+       slaydın açıklama metninin son satırı kesiliyordu. Test 420×900'de
+       yeşildi; **Safari'nin durum çubuğu + alt adres çubuğu görünür
+       yüksekliği ~150px kısaltıyor** ve o yüzey hiç test edilmiyordu.
+       - **Slaydın gerçek yüksekliği ÖLÇÜLDÜ** (gerçek Space Grotesk/Space
+         Mono ttf'leri Chromium'a yüklenip portun `_Kolon` stilleri —
+         19/13/12/9px, height 1.3/1.6/1.6/1.5 — birebir kurularak, sonra
+         sabit yükseklikler koddan toplanarak): içerik **686/710/701 px**
+         (390/414/430 genişlik), krom **47 px**, yani gereken ekran
+         **733-757 px** + güvenli alanlar. **Isınma turu ŞART:** ilk
+         `document.fonts.ready` fontlar hiç İSTENMEDEN çözülüyor, o yüzden
+         ilk ölçüm yedek fontla çıkıyor — ilk turda 390'ın başlığı
+         414'ünkinden KISA göründü, yani daha geniş sütun daha çok satır
+         demek oluyordu; imkânsız bir sonuç ölçümün bozuk olduğunu
+         söyledi.
+       - **Kullanıcının önerisi uygulandı (krom kısaldı, içeriğe
+         dokunulmadı): 47 → 29 px.** Üst boşluk 16 → **8**, nokta şeridi
+         üst dolgusu 8 → **6**, ara sayfaların alt boşluğu 16 → **8**;
+         ayrıca `_Sayfa`nın dikey dolgusu 8 → **4** (ve `minHeight`
+         telafisi −16 → **−8**; o sayı dolgunun İKİ KATI olmak zorunda).
+         Toplam **26 px** kazanıldı — bir açıklama satırı 19.2 px.
+       - **Üst boşluğun gerekçesi zaten GEÇERSİZDİ:** yorumu *"`_Sayfa`nın
+         `top: 8` dolgusu tek başına sayfayı tepeye yapıştırıyordu"*
+         diyordu, ama sayfalar bu turda dikeyde ORTALANMAYA başlamıştı —
+         içerik sığdığında `Center` boşluğu zaten eşit dağıtıyor,
+         sığmadığında ise o boşluk yalnızca yer çalıyor.
+       - **SON SAYFANIN düğme dalına DOKUNULMADI** (`top: 12, bottom: 16`):
+         orası zaten en kısa slayt ve HEMEN OYNA'nın dokunma alanı
+         daralmamalı.
+       - **Test artık İKİ boyda koşuyor:** 420×900 ve **430×740** —
+         ikincisi tam olarak "geniş telefon ama kısa görünür alan"
+         durumunu, yani kullanıcının baktığı yüzeyi temsil ediyor.
+         **DERS:** bir düzen testinin boyu, ürünün gerçekten göründüğü EN
+         DAR/EN KISA yüzeyi temsil etmiyorsa test yeşil olsa da hiçbir şey
+         garanti etmez; burada "yeşil test + bozuk cihaz" tam olarak bu
+         yüzden oldu.
+
      - **Doğrulama sınırı — DÜRÜST KAYIT:** Flutter/Dart SDK yine YOK,
        `flutter test` KOŞULAMADI; yeni testin GEÇTİĞİ de, taşımanın kaymayı
        gerçekten sıfırladığı da bu oturumda kanıtlanamadı. Tek kanıt CI
