@@ -5870,6 +5870,35 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
          garanti etmez; burada "yeşil test + bozuk cihaz" tam olarak bu
          yüzden oldu.
 
+     - ⚠ **ÜÇÜNCÜ TUR — "1. slaytta ekstra bir satır boşluk var" (kullanıcı,
+       merge sonrası cihazda; scroll hâlâ çalışıyordu).** Kullanıcının
+       teşhisi: *"Tahtaya bak 2. slaytta direkt butonların altındayken 1.
+       slaytta ekstra bir satır boşluk var. Onu da 2. slayt gibi yaparsan
+       düzelecek."*
+       - **ÖLÇÜLDÜ ve teşhis KISMEN çürüdü:** iki slayttaki `SizedBox` de
+         BİREBİR 16'ydı, yani fark yapısal değil **optik** — `height: 1.6`
+         satır kutusu son satırın ALTINA da leading koyuyor (gerçek Space
+         Grotesk'le **2.8px**), 2. slayttaki kutuların ise sert kenarı var.
+         Yani "bir satır" değil ~3px; tek başına kaydırmayı durdurmaya
+         yetmezdi.
+       - **Sihirli sayıyla telafi EDİLMEDİ:** `Text.textHeightBehavior`ın
+         `applyHeightToLastDescent: false`'u tam bu iş için var — kutu
+         descender'da bitiyor, iki slayt gerçekten aynı hizaya geliyor.
+         Kahraman paragrafına ve tahta altı açıklamaya uygulandı
+         (ikincisi slaydın SON öğesi, oradaki leading doğrudan yüksekliğe
+         biniyordu).
+       - **Asıl taşma için boşluklar kırpıldı** (içerik metnine
+         DOKUNULMADI): logo→içerik 16→**12**, başlık→paragraf 12→**10**,
+         paragraf/kutular→tahta bölümü 16→**12** (İKİ slaytta da aynı
+         sayı — kullanıcı ikisinin aynı görünmesini istedi), tahta→legend
+         12→**8**, legend→açıklama 12→**8**. Leading'lerle birlikte
+         toplam **~23px**.
+       - **Test boyları sıkılaştırıldı: 420×900, 430×710, 414×720.**
+         **414 EN KÖTÜ DURUM, en dar ekran DEĞİL** — orada kahraman
+         başlığı iki satıra sarıyor ama tahta yine geniş; 430'da başlık
+         tek satıra sığdığından slayt daha KISA. "Daha dar ekran = daha
+         zor" sezgisi burada yanlış ve bu ancak ölçerek görüldü.
+
      - **Doğrulama sınırı — DÜRÜST KAYIT:** Flutter/Dart SDK yine YOK,
        `flutter test` KOŞULAMADI; yeni testin GEÇTİĞİ de, taşımanın kaymayı
        gerçekten sıfırladığı da bu oturumda kanıtlanamadı. Tek kanıt CI

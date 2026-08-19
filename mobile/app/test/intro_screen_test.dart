@@ -257,7 +257,14 @@ void main() {
     // çubuğu + alt adres çubuğu görünür yüksekliği ~150px kısaltıyor ve
     // test o yüzeyi hiç temsil etmiyordu. İkinci boy tam olarak onu
     // temsil ediyor: geniş bir telefon (430) ama KISA görünür alan (740).
-    const boylar = [Size(420, 900), Size(430, 740)];
+    //
+    // 19 Ağustos 2026, üçüncü tur: boşluklar kırpılıp metinlerin son satır
+    // leading'i kaldırıldıktan sonra (~23px) eşik düştü, o yüzden boylar da
+    // sıkılaştırıldı. **414 EN KÖTÜ DURUM, en dar ekran DEĞİL:** orada
+    // kahraman başlığı iki satıra sarıyor AMA tahta zaten geniş (390-24);
+    // 430'da başlık tek satıra sığdığından slayt daha kısa. Yani "daha dar
+    // ekran = daha zor" sezgisi burada YANLIŞ, ölçümle bulundu.
+    const boylar = [Size(420, 900), Size(430, 710), Size(414, 720)];
     for (final boy in boylar) {
       testWidgets(
           'tahtalı iki slayt tek ekrana sığar — ${boy.width.toInt()}×'
