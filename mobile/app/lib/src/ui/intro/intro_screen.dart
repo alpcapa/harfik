@@ -490,6 +490,7 @@ class _NasilOynanirSayfasi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Sayfa(
+      ortala: true,
       children: const [
         _Kolon(
           child: Column(
@@ -501,11 +502,11 @@ class _NasilOynanirSayfasi extends StatelessWidget {
               ),
               SizedBox(height: 12),
               _AdimKarti(adim: _adim1),
-              SizedBox(height: 14),
+              SizedBox(height: 18),
               _AdimKarti(adim: _adim2),
-              SizedBox(height: 14),
+              SizedBox(height: 18),
               _AdimKarti(adim: _adim3),
-              SizedBox(height: 14),
+              SizedBox(height: 18),
               _AdimKarti(adim: _adim4),
             ],
           ),
@@ -536,7 +537,7 @@ class _AdimKarti extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _MiniIzgara(satirlar: adim.izgara),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -691,6 +692,7 @@ class _NelerVarSayfasi extends StatelessWidget {
     ];
 
     return _Sayfa(
+      ortala: true,
       children: [
         _Kolon(
           child: Column(
@@ -706,13 +708,13 @@ class _NelerVarSayfasi extends StatelessWidget {
               // (`GridView` sabit bir en-boy oranı ister) ve sayfa zaten
               // kaydırılabilir bir Column.
               for (var i = 0; i < kutular.length; i += 2) ...[
-                if (i > 0) const SizedBox(height: 12),
+                if (i > 0) const SizedBox(height: 16),
                 IntrinsicHeight(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Expanded(child: kutular[i]),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 14),
                       Expanded(child: kutular[i + 1]),
                     ],
                   ),
@@ -798,6 +800,7 @@ class _RutbeSayfasi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Sayfa(
+      ortala: true,
       children: [
         _Kolon(
           child: Column(
@@ -819,13 +822,13 @@ class _RutbeSayfasi extends StatelessWidget {
               // YAZILMIYOR (eşik/ad/renk değişirse bu ekran kendiliğinden
               // takip eder; web'in aynı kuralı). Web `grid-cols-3 gap-2`.
               for (var i = 0; i < kRankTiers.length; i += 3) ...[
-                if (i > 0) const SizedBox(height: 12),
+                if (i > 0) const SizedBox(height: 16),
                 IntrinsicHeight(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       for (var j = i; j < i + 3; j++) ...[
-                        if (j > i) const SizedBox(width: 12),
+                        if (j > i) const SizedBox(width: 14),
                         Expanded(child: _RutbeKutusu(tier: kRankTiers[j])),
                       ],
                     ],
@@ -896,15 +899,44 @@ class _RutbeKutusu extends StatelessWidget {
 /// Sayfaların ortak iskeleti: taşarsa kaydırılabilir.
 class _Sayfa extends StatelessWidget {
   final List<Widget> children;
-  const _Sayfa({required this.children});
+
+  /// İçerik ekrandan KISAYSA dikeyde ortalanır (19 Ağustos 2026, kullanıcı
+  /// isteği: "diğer slaytlarda logo altı tüm içerikleri ortalarsan nasıl
+  /// gözükür"). 2/3/4. slaytlar böyle — alttaki boşluk üste/alta eşit
+  /// dağılıyor. 1. SLAYT BİLEREK HARİÇ: orası zaten ekranı tam dolduruyor,
+  /// ortalamanın görünür bir etkisi olmadığı gibi tahtayı da kıpırdatırdı.
+  ///
+  /// `ConstrainedBox(minHeight) → Center` deseni `IntrinsicHeight`
+  /// GEREKTİRMEZ: kaydırma görünümü dikeyde sınırsız kısıt verdiğinden
+  /// `Center` çocuğunun boyuna oturur, `minHeight` de onu en az bir ekran
+  /// boyuna çeker — yani içerik uzunsa hiçbir şey değişmez, kısaysa
+  /// ortalanır.
+  final bool ortala;
+
+  const _Sayfa({required this.children, this.ortala = false});
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: children,
+    final kolon = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: children,
+    );
+    if (!ortala) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: kolon,
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, kisit) => SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: ConstrainedBox(
+          // −16: yukarıdaki dikey dolgu iki kez sayılmasın, aksi halde
+          // içerik tam sığdığında sayfa 16px kaydırılabilir olurdu.
+          constraints: BoxConstraints(minHeight: kisit.maxHeight - 16),
+          child: Center(child: kolon),
+        ),
       ),
     );
   }
