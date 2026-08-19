@@ -46,6 +46,7 @@ npm run generate-icons       # favicon / app icon (public/) — og-image DEĞİL
 npm run generate-og-image    # public/og-image.png (sosyal paylaşım kartı)
 npm run generate-golden-vectors  # Flutter portu parite fixture'ları (motor değişince ZORUNLU)
 npm run generate-meanings-db     # meanings.json → portun SQLite asset'i
+npm run generate-demo-board-dart # karşılama tahtası → portun tanıtım ekranı için demo_board_data.dart
 ```
 
 `npm run test` kritik yolu kontrol eder (uygulama açılıyor, oyun başlıyor, YZ
@@ -168,8 +169,8 @@ src/
 ├── landing/
 │   ├── Landing.tsx     # karşılama katmanının tamamı (derleme/dev zamanında statik HTML'e render edilip index.html'e gömülür) — SUNUCUDA render edilir, hook/olay/tarayıcı globali YOK
 │   ├── LandingLogo.tsx # logoyu üç kez çizmek için SVG sprite'ı (path verisi LogoMark'tan; üç ham kopya gzip'te 10 KB yiyordu)
-│   ├── OzellikIkonlari.tsx # "Neler var" bölümündeki altı özellik ikonu — Material DEĞİL, ilkel şekillerden (portta karşılığı yok; bkz. dosya başlığı)
-│   ├── demoBoard.ts    # tanıtım tahtalarının (2 ve 4 kişilik) taşları — gerçek Board.tsx ile render edilir, npm run verify-demo-board ile sözlüğe karşı doğrulanır
+│   ├── OzellikIkonlari.tsx # "Neler var" bölümündeki altı özellik ikonu — Material DEĞİL, ilkel şekillerden (portun ozellik_ikonlari.dart'ıyla ELLE senkron)
+│   ├── demoBoard.ts    # tanıtım tahtalarının (2 ve 4 kişilik) taşları — gerçek Board.tsx ile render edilir, npm run verify-demo-board ile sözlüğe karşı doğrulanır; 2 kişilik olanı npm run generate-demo-board-dart ile porta da üretilir
 │   └── render.tsx      # renderToStaticMarkup sarmalayıcısı — Vite eklentisi (scripts/landing-plugin.js) Node'da çağırır
 ├── fonts/
 │   ├── *.css              # kendi sunucumuzdan servis edilen @font-face tanımları (main.tsx import eder)
@@ -208,6 +209,9 @@ mobile/                    # Flutter (iOS+Android) portu — ayrıntı: mobile/C
     ├── assets/dictionary/ # üretilmiş asset'ler: words_tr.txt (kaynak
     │                      # src/data/words.ts — npm run generate-golden-vectors)
     │                      # ve meanings.db (npm run generate-meanings-db)
+    ├── lib/src/ui/intro/  # ilk açılış tanıtımı; demo_board_data.dart ÜRETİLMİŞ
+    │                      # (kaynak src/landing/demoBoard.ts —
+    │                      # npm run generate-demo-board-dart)
     └── assets/fonts/      # Space Grotesk / Space Mono / Nunito (web'le aynı aileler)
                            # + MPLUSRounded1c-ExtraBold-subset.ttf — YALNIZCA k-lig
                            # rütbe rozetinin harfi; ÜRETİLMİŞ (alt kümelenmiş),

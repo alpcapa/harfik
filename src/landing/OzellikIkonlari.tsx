@@ -6,9 +6,15 @@
  * ⚠ BU DOSYA `RelationIcons.tsx` DEĞİL — ve bu bilinçli. Oradaki ikonlar
  * Flutter'ın `MaterialIcons-Regular.otf`'undan çıkarılmış Material glyph'leri;
  * gerekçesi portun AYNI vektörü `Icons.*` ile çizmesi, yani parite. Buradaki
- * altı ikonun portta bir karşılığı YOK ve olamaz: karşılama katmanı web'e
- * özgü (bkz. CLAUDE.md → "Karşılama Katmanı — web'e özgü, bilinçli
- * ayrışma"). Material path'lerini hafızadan yazmak ise bu kod tabanında bir
+ * altı ikon ise Material DEĞİL, ilkel şekillerden kurulu.
+ *
+ * ⚠ 19 Ağustos 2026'dan beri PORTTA KARŞILIĞI VAR ve İKİSİ ELLE SENKRON:
+ * `mobile/app/lib/src/ui/intro/ozellik_ikonlari.dart` aynı şekilleri
+ * `CustomPainter` ile çiziyor (yine `Icons.*` DEĞİL — o, iki platformda
+ * FARKLI vektör demek olurdu). Bu dosya bir dönem "portta karşılığı YOK ve
+ * olamaz" diyordu; kullanıcı portun tanıtım ekranını "webin aynısı (6 kutu)"
+ * isteyince o karar geçersizleşti. Biri değişirse öteki de değişmeli — bunu
+ * zorlayan bir test YOK. Material path'lerini hafızadan yazmak ise bu kod tabanında bir
  * kez denenip yanlış glyph üretmişti (bkz. `RelationIcons.tsx` başlığı) ve bu
  * ortamda çıkarılacak bir font dosyası yok — o yüzden ikonlar ezberden path
  * değil, DOĞRULANABİLİR ilkel şekillerden (daire/dikdörtgen/çizgi/yay)

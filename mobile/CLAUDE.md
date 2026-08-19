@@ -449,15 +449,24 @@ mobile/
                              # butonu, avatar, Terms/Privacy,
                              # reset_password_modal (recovery kapısı)
       ui/intro/              # intro_screen.dart — İLK AÇILIŞ tanıtımı
-                             # (Parça 116/117): 4 sayfalık PageView, Setup'ın
-                             # ÖNÜNDE; ATLAMA YOK, tek çıkış son sayfadaki
-                             # "HEMEN OYNA". Tekrar açma yolu Setup'ın logo
-                             # altı link satırı ("Tanıtım", yalnız misafir);
-                             # kapısı app.dart'taki _HomeGate,
-                             # bayrağı FlagsStore.seenIntro. Metinler web'in
-                             # karşılama katmanından (Landing.tsx) BİREBİR —
-                             # web metni değişirse buraya elle taşınmalı
-                             # (bunu zorlayan bir test YOK)
+                             # (Parça 116/117/118): 4 sayfalık PageView,
+                             # Setup'ın ÖNÜNDE; ATLAMA YOK, tek çıkış son
+                             # sayfadaki "HEMEN OYNA". Tekrar açma yolu
+                             # Setup'ın logo altı link satırı ("Tanıtım",
+                             # yalnız misafir); kapısı app.dart'taki
+                             # _HomeGate, bayrağı FlagsStore.seenIntro.
+                             # Metinler web'in karşılama katmanından
+                             # (Landing.tsx) BİREBİR — web metni değişirse
+                             # buraya elle taşınmalı (bunu zorlayan bir test
+                             # YOK). Yanındaki iki dosya:
+                             #   demo_board_data.dart — ÜRETİLMİŞ (kaynak
+                             #     src/landing/demoBoard.ts, DEMO_TILES_2;
+                             #     npm run generate-demo-board-dart)
+                             #   ozellik_ikonlari.dart — "Neler var" altı
+                             #     özellik ikonu; web'in OzellikIkonlari.tsx'i
+                             #     ile ELLE senkron (Material DEĞİL, ilkel
+                             #     şekiller — Icons.* iki platformda FARKLI
+                             #     vektör demek olurdu)
       ui/game/               # tahta/raf/header/modaller (oyun ekranının
                              # tamamı) + PAYLAŞILAN küçük parçalar:
                              # modal_shell (KModal — başlıklı 360px pencere),
@@ -5491,6 +5500,121 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        "© Kelimeki" göstermesi ve "Paylaş"ın misafirde de çalışması —
        `mobile/TESTING.md` bölüm 0.4 güncellendi.
 
+   - ✅ **Parça 118 — tanıtım ekranı BAŞTAN yazıldı: kullanıcı ilk sürümü
+     reddetti, dört slaytın içeriğini kendisi tarif etti (19 Ağustos 2026,
+     `ui/intro/intro_screen.dart` yeniden yazıldı + yeni
+     `ui/intro/demo_board_data.dart` [ÜRETİLMİŞ] +
+     `ui/intro/ozellik_ikonlari.dart`; web tarafında yeni
+     `scripts/generate-demo-board-dart.ts`):** Parça 116/117'nin ekranı
+     GitHub Pages'e çıkınca kullanıcı ilk slaydı görüp reddetti (sözleri):
+     *"Bu tanıtım değil kaçırım olmuş. Bunu göre devam etmez. İlk sayfada
+     alttaki boş alanda oyun görseli şart. Webdeki gibi tahtaya bir bak
+     bölümünü (sadece ilk 2 kişilik olanı altta yazılarıyla) koy. 2 ve 3
+     birleşip 2. slayt olmalı. (Dört bölümde: Nasıl oynanır aynı şekilde 4
+     kutu) 3. Slayt: neler var bölümü (webin aynısı 6 kutu) 4. Slayt: k-lig
+     bölümü. (Webin aynı gösterim şekliyle (9 kutu) görüntü, tarz, font,
+     renk herşey weble aynı olsun.*
+     - **Şikâyet estetik değil YAPISALDI:** ilk slayt logo + kahraman +
+       paragraf + dört rakam kutusundan ibaretti ve altında koca bir boşluk
+       kalıyordu; ekranın ürünü GÖSTERDİĞİ tek yer yoktu. Sayfa sayısı aynı
+       (4) kaldı ama içerik tamamen web'in karşılama katmanının bölümlerine
+       eşlendi: (1) kahraman + rakamlar + **"Tahtaya bir bak"** (yalnız 2
+       kişilik tahta, X2/X3 legend'ı ve altındaki açıklamayla), (2) "Nasıl
+       oynanır?" DÖRT adım (eski 2. ve 3. slayt birleşti), (3) "Neler var"
+       ALTI kutu, (4) k-lig DOKUZ rütbe.
+     - **Tahta ekran görüntüsü/çizim DEĞİL, gerçek `BoardWidget`** —
+       `buildSnapshotGameState(kDemoTiles2, 2, [...])` ile besleniyor, yani
+       köşe tonlaması/bölge dış hattı/X2/X3/ev işareti oyunda ne
+       görünüyorsa birebir o. Web de aynı kararı verdi (`GameBoardPreview`
+       → `Board`); ikinci bir "tanıtım tahtası" çizimi bu kod tabanının en
+       sık tekrarlayan hata sınıfını (sessiz ayrışma) büyütürdü.
+     - **Taşlar ELLE KOPYALANMADI, ÜRETİLİYOR:** `npm run
+       generate-demo-board-dart` `src/landing/demoBoard.ts`in
+       `DEMO_TILES_2`sini okuyup `demo_board_data.dart`ı yazıyor
+       (`generate-golden-vectors`/`generate-logo-paths` ile aynı
+       esbuild+node deseni). Gerekçe: o tahtanın her yatay/dikey diziliminin
+       gerçek bir Türkçe kelime olduğunu YALNIZCA `npm run
+       verify-demo-board` kanıtlıyor ve o betik TS tarafını okuyor — elle
+       bir kopya, doğrulanmayan ikinci bir kaynak demek olurdu. **Web
+       tahtası değişirse bu komut yeniden koşulmalı** (kök `CLAUDE.md`'nin
+       komut tablosuna ve iki README ağacına eklendi).
+     - **460/680 kısıtı EKRANDAN alınıp SAYFA İÇERİĞİNE taşındı — bu, tahta
+       slaydının ön koşuluydu.** Parça 116'da tüm `IntroScreen` tek bir
+       `ConstrainedBox(maxWidth: 460)` içindeydi; tahta orada kalsaydı 428
+       px'lik bir kaba sıkışırdı ve `Tile.tsx`'in `vw` tabanlı `clamp()`ı
+       yüzünden harf/hücre oranı gerçek oyundan sapardı — **web bu tuzağa
+       İKİ KEZ düştü** (kök `CLAUDE.md` → "kök sebep font DEĞİL GENİŞLİKTİ")
+       ve çözümü tahtayı metin sütununun DIŞINA, kendi `max-w-[680px] px-3`
+       kabına almaktı. Port aynısını yapıyor: `_Kolon` (460, yatay dolgu
+       İÇERİDE — `max-w-[460px] px-4` bir border-box'tır, Parça 72'nin
+       dersi) metin için, tahta için ayrı bir 680'lik `ConstrainedBox`.
+     - **Altı özellik ikonu porta TAŞINDI ve bu bir karar DEĞİŞİKLİĞİ:**
+       web'in `OzellikIkonlari.tsx`'i "portta karşılığı YOK ve olmayacak"
+       diyordu; "webin aynısı (6 kutu)" isteği onu geçersiz kıldı. Port
+       `Icons.*` KULLANMIYOR — web ikonları Material glyph'i değil, ilkel
+       şekillerden (daire/dikdörtgen/çizgi/yay) kurulu; `Icons.*` iki
+       platformda FARKLI vektör demek olurdu (`RelationIcons` ilkesinin
+       tersten uygulanması). Aynı şekiller `CustomPainter` ile çiziliyor.
+       **İki dosya ELLE SENKRON, zorlayan test YOK.**
+     - **`OzellikIkonTuru` enum'ı + `OzellikIkon.turden` fabrikası** eklendi:
+       altı kart bir `const` veri listesinde taşınıyor ve fabrikalar `const`
+       olamıyor. Yeni bir ikon eklenirse İKİSİ de (enum + `turden`)
+       güncellenmeli.
+     - **Rütbe tablosu yine `kRankTiers` + `RankSeal`den çiziliyor** (elle
+       yazılmadı) — SQL ↔ TS ↔ Dart zaten üç kopya, dördüncüsünü açmak
+       eşik/ödül değişiminde ilk sessizce ayrışacak yeri üretirdi.
+     - **`GridView` yerine `IntrinsicHeight(Row(stretch, Expanded…))`**
+       (özellik kartları 2 sütun, rütbeler 3 sütun): kart yükseklikleri
+       içeriğe göre değişiyor ve sayfa zaten kaydırılabilir bir `Column` —
+       sabit en-boy oranlı bir ızgara ya kırpardı ya boşluk bırakırdı.
+     - **Dar ekran koruması:** rakam kutularının sayısı/etiketi ve rütbe
+       adları `FittedBox(scaleDown)` içinde — 320 px'te "Ücretsiz" 14 px
+       mono ile taşıyor ve Flutter'da taşma "RenderFlex overflowed" çubuğu
+       demek (web'in sessiz yatay kaydırmasından çok daha görünür bir hata,
+       Parça 110'un dersi).
+     - **Test — `intro_screen_test.dart`e dört slaydın İÇERİĞİNİ ölçen yeni
+       bir test:** tahta (`BoardWidget` + "13×13" + X2 legend'ı), dört adımın
+       dördü, altı özellikten ikisi, ve `RankSeal` sayısının
+       `kRankTiers.length` olduğu. **Yakalanan finder tuzağı:** 2. slaytta
+       "Köşenden başla" ARANMIYOR — 1. slayttaki tahta açıklaması da aynı
+       cümleyle başlıyor ve `PageView` komşu sayfayı önbellekte tutuyor;
+       iddia adımın gövde metnine ("İlk kelimen köşendeki ev karesine")
+       bağlandı.
+     - **Doğrulama sınırı — DÜRÜST KAYIT:** bu oturumun konteynerinde de
+       Flutter/Dart SDK YOK (`which flutter dart` → boş), yani
+       `flutter analyze`/`flutter test` KOŞULAMADI ve **negatif eş
+       kurulamadı** — Dart yarısının tek kanıtı CI (Parça 103-117'nin aynı
+       sınırı). Buna karşılık Parça 115'in dersi uygulandı: kullanılan HER
+       sembol (`BoardWidget` alanları, `buildSnapshotGameState`,
+       `GamePlayerSnapshot`, `RankTier`/`RankSeal`, `NeoButton`,
+       `ShapeDecorationWithCssShadows`/`kRaisedShadows`, `playerColors`,
+       `LogoMark`, tokenlar) kaynağa karşı grep'lendi ve iki dosyanın
+       parantez dengesi betikle tarandı. Üretilen `demo_board_data.dart`
+       52 taşıyla TS kaynağına birebir eşleşiyor (üretici tarafından
+       yazıldı, elle düzenlenmedi).
+     - **Cihazda doğrulanacak:** dört slaydın içeriği, tahtanın gerçek oyun
+       ekranıyla AYNI harf/hücre oranında çizilmesi, dokuz rütbe mührünün
+       TOFU olmaması ve dar ekranda "RenderFlex overflowed" çubuğu
+       çıkmaması — `mobile/TESTING.md` bölüm 0.4 güncellendi.
+     - **CI İLK KOŞUDA DÜŞTÜ ve sebebi tam da o "tek kanıt CI" sınırıydı
+       (PR #298, koşu 32246388405 — 455 geçti, 4 düştü):** ilk slayttaki
+       dört rakam kutusunun `Row`u `crossAxisAlignment: stretch` taşıyordu
+       ve sayfa kaydırılabilir bir `Column` içinde (yükseklik SINIRSIZ) —
+       Flutter `BoxConstraints forces an infinite height` ile patlıyor,
+       yani IntroScreen'in İLK sayfası hiç render EDİLEMİYORDU (dört
+       başarısızlığın dördü de o sayfaya dokunan testler: üç
+       `intro_screen_test` + `setup_screen_test`'in "Tanıtım linki"
+       testi). **Bu ders bu kod tabanında ZATEN üç kez yazılıydı** (Parça
+       3'ün raf satırı, Parça 4'ün skor kutuları, Parça 24) ve aynı
+       dosyanın öteki İKİ ızgarası (`_NelerVarSayfasi`, `_RutbeSayfasi`)
+       doğru şekilde `IntrinsicHeight` ile sarılmıştı — atlanan yalnızca
+       bu üçüncüsüydü. Düzeltme: `_Kutular`ın `Row`u da `IntrinsicHeight`
+       içine alındı (stretch KORUNDU — dört kutu web'deki gibi eşit
+       yükseklikte kalmalı). **Ders:** `stretch` bir `Column`da yatayda
+       (bounded) esnetir, bir `Row`da DİKEYDE (unbounded) — aynı satırı
+       Column'dan Row'a kopyalarken bu ayrım sessizce tersine döner ve
+       SDK'sız bir oturumda yalnızca CI yakalar.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
@@ -5707,7 +5831,7 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   değil, **mağaza çıkışına bağlı bir port işi**; kaskad zinciri ve
   gerekçenin tamamı kök `CLAUDE.md` → "Sonraya Bırakılan Ürün Fikirleri".
 
-- **19 Ağustos (Parça 116 + 117) — portun kendi ilk açılış tanıtımı
+- **19 Ağustos (Parça 116 + 117 + 118) — portun kendi ilk açılış tanıtımı
   (`IntroScreen`):** temiz kurulumda (uygulamayı sil/yeniden kur ya da
   site verisini temizle) Setup'tan ÖNCE dört sayfalık tanıtım çıkmalı;
   HİÇBİR sayfada atlama düğmesi OLMAMALI, tek çıkış son sayfadaki
@@ -5721,7 +5845,12 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   sayfadaki DOKUZ rütbe mührünün harfleri TOFU (boş kare) OLMAMALI (mühür
   fontu M PLUS alt kümesi — Parça 114'ün riski) ve dar bir ekranda dört
   rakam kutusu alt satıra sarmalı, "RenderFlex overflowed" çubuğu
-  ÇIKMAMALI. Bu parça Flutter SDK'sız bir oturumda yazıldı — Dart
+  ÇIKMAMALI. **Parça 118 ile içerik BAŞTAN yazıldı, o yüzden bu madde
+  eskisinden geniş:** 1. slaytta "Tahtaya bir bak" tahtası (gerçek oyun
+  ekranıyla AYNI harf/hücre oranında, filigranlar taşların ALTINDA),
+  2. slaytta DÖRT adım, 3. slaytta ALTI özellik kutusu (hepsi ikonlu,
+  boş kare YOK), 4. slaytta DOKUZ rütbe. Dar ekranda yatay taşma da
+  olmamalı. Üç parça da Flutter SDK'sız oturumlarda yazıldı — Dart
   yarısının CI dışında kanıtı yok.
 
 Liste bir gün BOŞALIRSA öyle kalmasını bekleme: yeni bir düzeltme
