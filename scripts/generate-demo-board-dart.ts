@@ -1,5 +1,5 @@
-// Kelimeki — karşılama katmanındaki 2 kişilik tanıtım tahtasını Flutter
-// portuna ÜRETİR (`mobile/app/lib/src/ui/intro/demo_board_data.dart`).
+// Kelimeki — karşılama katmanındaki tanıtım tahtalarını (2 VE 4 kişilik)
+// Flutter portuna ÜRETİR (`mobile/app/lib/src/ui/intro/demo_board_data.dart`).
 //
 // NEDEN ÜRETİLİYOR (elle yazılmıyor): aynı tahta artık İKİ istemcide birden
 // gösteriliyor — web'in karşılama katmanı ve portun ilk açılış tanıtımı
@@ -13,33 +13,41 @@
 // (`src/landing/demoBoard.ts` değişirse ZORUNLU — `verify-demo-board` ile
 // birlikte koşulmalı.)
 //
-// Yalnızca 2 kişilik tahta üretiliyor: tanıtım ekranı kullanıcı isteğiyle
-// (19 Ağustos 2026) yalnızca onu gösteriyor. 4 kişilik de gerekirse aynı
-// yerden eklenir.
+// İKİ tahta da üretiliyor: tanıtım ekranı 19 Ağustos 2026'da kullanıcı
+// isteğiyle 4 kişilik tahtayı da ayrı bir slayt olarak gösteriyor ("webdeki
+// 4 oyunculu görseli ve altındaki yazıyı da 2. slayt yap").
 import { writeFileSync } from 'node:fs';
-import { DEMO_TILES_2 } from '../src/landing/demoBoard';
+import { DEMO_TILES_2, DEMO_TILES_4 } from '../src/landing/demoBoard';
+import type { BoardSnapshotTile } from '../src/utils/boardSnapshot';
 
 const HEDEF = 'mobile/app/lib/src/ui/intro/demo_board_data.dart';
 
-const satirlar = DEMO_TILES_2.map(
-  (t) => `  BoardSnapshotTile(r: ${t.r}, c: ${t.c}, l: '${t.l}', o: ${t.o}),`,
-).join('\n');
+const dizi = (tiles: BoardSnapshotTile[]) =>
+  tiles
+    .map((t) => `  BoardSnapshotTile(r: ${t.r}, c: ${t.c}, l: '${t.l}', o: ${t.o}),`)
+    .join('\n');
 
 const icerik = `// ÜRETİLMİŞ DOSYA — ELLE DÜZENLEME.
 //
-// Kaynak: src/landing/demoBoard.ts (\`DEMO_TILES_2\`)
+// Kaynak: src/landing/demoBoard.ts (\`DEMO_TILES_2\` + \`DEMO_TILES_4\`)
 // Yeniden üret: npm run generate-demo-board-dart
 //
-// Web'in karşılama katmanındaki 2 kişilik tanıtım tahtası. Her yatay/dikey
+// Web'in karşılama katmanındaki 2 ve 4 kişilik tanıtım tahtaları. Her yatay/dikey
 // dizilimin gerçek bir Türkçe kelime olduğu ve izole hamlelerin gerçekten
 // izole kaldığı \`npm run verify-demo-board\` ile ÖLÇÜLEREK doğrulanıyor —
 // bu dosya o doğrulanmış kaynaktan üretildiği için ayrıca sınanmıyor.
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 const List<BoardSnapshotTile> kDemoTiles2 = [
-${satirlar}
+${dizi(DEMO_TILES_2)}
+];
+
+const List<BoardSnapshotTile> kDemoTiles4 = [
+${dizi(DEMO_TILES_4)}
 ];
 `;
 
 writeFileSync(HEDEF, icerik, 'utf8');
-console.log(`${HEDEF} yazıldı (${DEMO_TILES_2.length} taş).`);
+console.log(
+  `${HEDEF} yazıldı (2 kişilik ${DEMO_TILES_2.length}, 4 kişilik ${DEMO_TILES_4.length} taş).`,
+);

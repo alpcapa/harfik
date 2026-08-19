@@ -1,7 +1,7 @@
 // İlk açılış tanıtımı (`IntroScreen`) + kapısı (`app.dart`'taki _HomeGate).
 //
 // Ölçülen sözleşme üç parça:
-//  1) ekranın kendisi — dört sayfa, PARMAKLA ilerlenir (ara sayfalarda
+//  1) ekranın kendisi — beş sayfa, PARMAKLA ilerlenir (ara sayfalarda
 //     düğme YOK), son sayfada HEMEN OYNA çıkar, logo dört sayfada da
 //     görünür (ve HİÇBİR yerde atlama yok: tanıtımın TEK çıkışı o düğme);
 //  2) kapı — bayrak YOKKEN tanıtım, VARKEN doğrudan Setup;
@@ -82,7 +82,7 @@ void main() {
   sqfliteFfiInit();
 
   group('IntroScreen', () {
-    testWidgets('dört sayfa: parmakla ilerler, ara sayfalarda düğme YOK, son '
+    testWidgets('beş sayfa: parmakla ilerler, ara sayfalarda düğme YOK, son '
         'sayfada HEMEN OYNA çıkar ve onDone çağrılır; atlama YOK',
         (tester) async {
       await setPhoneViewSize(tester, const Size(420, 900));
@@ -137,8 +137,8 @@ void main() {
     // bölümünü koy… 3. slayt: neler var (6 kutu), 4. slayt: k-lig
     // (9 kutu)". Her slaytta o slayta ÖZGÜ bir işaret aranıyor; PageView
     // komşu sayfayı da inşa edebildiğinden başlıklar bilerek benzersiz.
-    testWidgets('dört slaydın içeriği: tahta · dört adım · altı özellik · '
-        'dokuz rütbe', (tester) async {
+    testWidgets('beş slaydın içeriği: 2 kişilik tahta · 4 kişilik tahta · '
+        'dört adım · altı özellik · dokuz rütbe', (tester) async {
       await setPhoneViewSize(tester, const Size(420, 900));
       await tester.pumpWidget(MaterialApp(
         theme: kelimekiTheme(),
@@ -154,6 +154,17 @@ void main() {
       expect(find.byType(BoardWidget), findsOneWidget);
       expect(find.text('13×13'), findsOneWidget);
       expect(find.text('X2 — Kelime puanının 2 katı'), findsOneWidget);
+
+      await kaydir(tester);
+
+      // 2. slayt: 4 kişilik tahta + KENDİ açıklaması (19 Ağustos 2026,
+      // kullanıcı isteği). Web'in aynı bölümünün ikinci görseli; metin
+      // oradan birebir. Legend (X2/X3) burada TEKRARLANMIYOR — web de
+      // tekrarlamıyor, yani bu satır aynı zamanda o kararın negatif eşi.
+      expect(find.byType(BoardWidget), findsOneWidget);
+      expect(find.textContaining('3 yapay zekaya veya 3 arkadaşına karşı'),
+          findsOneWidget);
+      expect(find.text('X2 — Kelime puanının 2 katı'), findsNothing);
 
       await kaydir(tester);
 

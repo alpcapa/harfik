@@ -460,7 +460,8 @@ mobile/
                              # buraya elle taşınmalı (bunu zorlayan bir test
                              # YOK). Yanındaki iki dosya:
                              #   demo_board_data.dart — ÜRETİLMİŞ (kaynak
-                             #     src/landing/demoBoard.ts, DEMO_TILES_2;
+                             #     src/landing/demoBoard.ts, DEMO_TILES_2
+                             #     + DEMO_TILES_4;
                              #     npm run generate-demo-board-dart)
                              #   ozellik_ikonlari.dart — "Neler var" altı
                              #     özellik ikonu; web'in OzellikIkonlari.tsx'i
@@ -5684,6 +5685,36 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
          `kelimeki_core`'un `trUpper`ına çevrildi. **Yeni bir başlık
          eklerken `toUpperCase()` YAZMA** — kök CLAUDE.md'nin "Türkçe Dil
          Notu" kuralı Dart tarafında da geçerli.
+     - **BEŞİNCİ TUR — dikey ortalama (üç varyant denendi) ve BEŞİNCİ
+       SLAYT: 4 kişilik tahta (19 Ağustos 2026, aynı gün):**
+       - Kullanıcı 2/3/4. slaytların altındaki boşluğu sordu; üç hâl de
+         gerçek derlemeden ekran görüntüsüyle gösterildi ve **C seçildi**:
+         (A) logo sabit + ortalama yok → boşluk altta toplanıyor;
+         (B) logo sabit + içerik ortalı → logo ile başlık arasında
+         GÖRÜNÜR bir kopukluk açılıyor (ölçüldü, ~250px); (C) logo da
+         ortalanan bloğun İLK öğesi → kopukluk yok, boşluk üste taşınıyor.
+         Yani logo bir tur önce `PageView`ın DIŞINDAYDI, şimdi `_Sayfa`nın
+         içinde — bir üstteki maddedeki "sabit üst alan" kararı bu turda
+         GEÇERSİZLEŞTİ.
+       - `_Sayfa`ya `ortala` bayrağı: `ConstrainedBox(minHeight) → Center`.
+         **`IntrinsicHeight` GEREKMİYOR** — kaydırma görünümü dikeyde
+         sınırsız kısıt verdiğinden `Center` çocuğunun boyuna oturur,
+         `minHeight` onu en az bir ekran boyuna çeker; içerik uzunsa
+         hiçbir şey değişmez. 1. slayt BİLEREK ortalanmıyor (kullanıcı
+         "ilk slayt böyle kalsın" dedi ve orası zaten ekranı dolduruyor).
+       - **BEŞİNCİ SLAYT** (kullanıcı: *"webdeki 4 oyunculu görseli ve
+         altındaki yazıyı da 2. slayt yap. Diğerleri 3-4-5 olsun"*): web'in
+         karşılama katmanında bu, 1. slayttaki tahtanın yanındaki yatay
+         kaydırmalı ikinci görsel; portta ayrı bir slayt oldu. Metin
+         web'den BİREBİR. X2/X3 legend'ı burada TEKRARLANMIYOR — web de
+         tekrarlamıyor, ve testte bunun negatif eşi var.
+       - **Taşlar yine ELLE KOPYALANMADI:** `generate-demo-board-dart`
+         artık `DEMO_TILES_4`ü de yazıyor (`kDemoTiles4`, 70 taş).
+         `_TahtaBolumu` parametrik hâle geldi (taşlar/oyuncu sayısı/
+         erişim etiketi/açıklama/legend) — ikinci bir tahta bileşeni
+         yazmak, doğrulanmayan ikinci bir kaynak demek olurdu.
+       - `kIntroPageCount` 4 → **5**; nokta göstergesi ve testler bu
+         sabiti okuduğundan başka hiçbir yerde sayı güncellenmedi.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 

@@ -1030,7 +1030,7 @@ src/
     LandingLogo.tsx # logoyu üç kez çizmek için SVG sprite (path verisi LogoMark'tan)
     OzellikIkonlari.tsx # "Neler var" altı özellik ikonu (Material DEĞİL — ilkel şekiller; portun ozellik_ikonlari.dart'ıyla ELLE senkron)
     demoBoard.ts    # tanıtım tahtasının taşları — `npm run verify-demo-board` ile doğrulanır;
-                    # 2 kişilik tahta `npm run generate-demo-board-dart` ile porta da üretilir
+                    # iki tahta da (2 ve 4 kişilik) `npm run generate-demo-board-dart` ile porta üretilir
     render.tsx      # `renderToStaticMarkup` sarmalayıcısı (Node'da koşar)
   components/   # React UI bileşenleri
   game/         # Oyun mantığı ve durum yönetimi

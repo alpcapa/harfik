@@ -5,12 +5,13 @@
 // Setup'a düşüyor, oyunun ne olduğunu hiçbir yerde okumadan "OYUNU BAŞLAT"
 // görüyordu. Kullanıcı sordu: *"App'e gelenler tanıtım görmeyecek mi?"*
 //
-// DÖRT SLAYT (19 Ağustos 2026, kullanıcı spesifikasyonu — ilk sürüm yalnızca
+// BEŞ SLAYT (19 Ağustos 2026, kullanıcı spesifikasyonu — ilk sürüm yalnızca
 // metindi ve reddedildi: *"Bu tanıtım değil kaçırım olmuş"*):
 //   1. kahraman + dört rakam kutusu + GERÇEK tahta ("Tahtaya bir bak")
-//   2. "Nasıl oynanır?" — dört adım
-//   3. "Neler var" — altı özellik kutusu
-//   4. "k-lig" — dokuz rütbe
+//   2. 4 kişilik tahta + açıklaması (web'de aynı bölümün ikinci görseli)
+//   3. "Nasıl oynanır?" — dört adım
+//   4. "Neler var" — altı özellik kutusu
+//   5. "k-lig" — dokuz rütbe
 // Dördü de `src/landing/Landing.tsx`'in AYNI bölümlerinin portu; metinler,
 // ölçüler, renkler ve yerleşim oradan BİREBİR alınır — biri değişirse öteki
 // de değişmeli (bunu zorlayan bir test YOK, kural metinlerinde
@@ -33,7 +34,8 @@ import 'package:flutter/material.dart';
 // orada dönüşümü CSS `text-transform: uppercase` yapıyor ve `<html
 // lang="tr">` sayesinde tarayıcı Türkçe kuralını uyguluyor (ölçüldü:
 // web "TAHTAYA BİR BAK" / "K-LİG" / "KELİME" basıyor).
-import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
+import 'package:kelimeki_core/kelimeki_core.dart'
+    show BoardSnapshotTile, trUpper;
 
 import '../../data/game_record.dart';
 import '../game/board_widget.dart';
@@ -49,7 +51,7 @@ import 'ozellik_ikonlari.dart';
 
 /// Tanıtımın sayfa sayısı — nokta göstergesi ve "son sayfa mı" kararı bunu
 /// kullanır (testler de bu sabiti okuyor, elle 4 yazılmıyor).
-const int kIntroPageCount = 4;
+const int kIntroPageCount = 5;
 
 /// Sözlük büyüklüğü — web `Landing.tsx`'teki `KELIME_SAYISI` ile ELLE
 /// senkron (orada da düz bir sabit; `words_tr.txt` derleme anında
@@ -125,6 +127,7 @@ class _IntroScreenState extends State<IntroScreen> {
                 onPageChanged: (i) => setState(() => _page = i),
                 children: const [
                   _HosGeldinSayfasi(),
+                  _DortKisilikSayfasi(),
                   _NasilOynanirSayfasi(),
                   _NelerVarSayfasi(),
                   _RutbeSayfasi(),
@@ -212,7 +215,17 @@ class _HosGeldinSayfasi extends StatelessWidget {
         // kullanıcı tahtanın rakam kutularına YAKLAŞMASINI istedi
         // (yukarıdaki aynı gerekçe: slayt tek ekrana sığmalı).
         const SizedBox(height: 16),
-        const _TahtaBolumu(),
+        const _TahtaBolumu(
+          taslar: kDemoTiles2,
+          oyuncuSayisi: 2,
+          erisimEtiketi: '2 kişilik oyun tahtası örneği — KELİME, IRMAK, '
+              'ZAMAN gibi kelimelerle dolu 13×13 tahta',
+          aciklama: 'Köşenden başla, orta bölgedeki sarı alana ulaş, '
+              'puanlarını ikiye hatta üçe katla. Rakip bölgesine değen '
+              'hamle yaparsan kazandığının üçte birini ona vergi olarak '
+              'ödersin.',
+          rozetler: true,
+        ),
       ],
     );
   }
@@ -312,28 +325,46 @@ class _Kutu extends StatelessWidget {
 /// (`npm run generate-demo-board-dart`) — kelimelerin gerçekten sözlükte
 /// olduğunu `npm run verify-demo-board` ölçüyor.
 class _TahtaBolumu extends StatelessWidget {
-  const _TahtaBolumu();
+  /// Taşlar — `demo_board_data.dart`taki iki üretilmiş listeden biri.
+  final List<BoardSnapshotTile> taslar;
+  final int oyuncuSayisi;
+
+  /// Ekran okuyucu etiketi (tahta `role="img"` gibi TEK bir görsel sayılır;
+  /// aksi halde 169 hücre tek tek okunurdu — web'in aynı kararı).
+  final String erisimEtiketi;
+
+  /// Tahtanın altındaki açıklama — web'de her iki tahtanın kendi metni var.
+  final String aciklama;
+
+  /// X2/X3 legend'ı yalnızca 2 kişilik tahtada; web de ikinci tahtada
+  /// tekrarlamıyor.
+  final bool rozetler;
+
+  const _TahtaBolumu({
+    required this.taslar,
+    required this.oyuncuSayisi,
+    required this.erisimEtiketi,
+    required this.aciklama,
+    this.rozetler = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final state = buildSnapshotGameState(
-      kDemoTiles2,
-      2,
-      const [
-        GamePlayerSnapshot(
-          name: 'Sen',
-          score: 0,
-          isAi: false,
-          surrendered: false,
-          colorIndex: 0,
-        ),
-        GamePlayerSnapshot(
-          name: 'Rakip',
-          score: 0,
-          isAi: false,
-          surrendered: false,
-          colorIndex: 1,
-        ),
+      taslar,
+      oyuncuSayisi,
+      [
+        for (var i = 0; i < oyuncuSayisi; i++)
+          GamePlayerSnapshot(
+            // İsimler tahtada GÖRÜNMÜYOR (`hideFooter`, skor kutuları yok)
+            // — yalnızca `buildSnapshotGameState` bir oyuncu listesi
+            // istediği için var; renk `colorIndex`ten geliyor.
+            name: i == 0 ? 'Sen' : '${i + 1}. oyuncu',
+            score: 0,
+            isAi: false,
+            surrendered: false,
+            colorIndex: i,
+          ),
       ],
     );
 
@@ -357,8 +388,7 @@ class _TahtaBolumu extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Semantics(
                 image: true,
-                label: '2 kişilik oyun tahtası örneği — KELİME, IRMAK, ZAMAN '
-                    'gibi kelimelerle dolu 13×13 tahta',
+                label: erisimEtiketi,
                 child: ExcludeSemantics(
                   child: BoardWidget(state: state, hideFooter: true),
                 ),
@@ -367,19 +397,21 @@ class _TahtaBolumu extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        const _Kolon(
+        _Kolon(
           child: Column(
             children: [
-              _Rozet(renk: Color(0xFFFDE68A), metin: 'X2 — Kelime puanının 2 katı'),
-              SizedBox(height: 6),
-              _Rozet(renk: Color(0xFFF97316), metin: 'X3 — Kelime puanının 3 katı'),
-              SizedBox(height: 12),
+              if (rozetler) ...[
+                const _Rozet(
+                    renk: Color(0xFFFDE68A), metin: 'X2 — Kelime puanının 2 katı'),
+                const SizedBox(height: 6),
+                const _Rozet(
+                    renk: Color(0xFFF97316), metin: 'X3 — Kelime puanının 3 katı'),
+                const SizedBox(height: 12),
+              ],
               Text(
-                'Köşenden başla, orta bölgedeki sarı alana ulaş, puanlarını '
-                'ikiye hatta üçe katla. Rakip bölgesine değen hamle yaparsan '
-                'kazandığının üçte birini ona vergi olarak ödersin.',
+                aciklama,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, height: 1.6, color: kMuted),
+                style: const TextStyle(fontSize: 12, height: 1.6, color: kMuted),
               ),
             ],
           ),
@@ -422,7 +454,40 @@ class _Rozet extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Sayfa 2 — "Nasıl oynanır?" (dört adım)
+// Sayfa 2 — 4 kişilik tahta
+// ---------------------------------------------------------------------------
+
+/// Web'in karşılama katmanında bu, 1. slayttaki tahtanın YANINDA yatay
+/// kaydırmalı ikinci görsel; portta ayrı bir slayt (19 Ağustos 2026,
+/// kullanıcı isteği: "webdeki 4 oyunculu görseli ve altındaki yazıyı da
+/// 2. slayt yap"). Metin web'den BİREBİR.
+class _DortKisilikSayfasi extends StatelessWidget {
+  const _DortKisilikSayfasi();
+
+  @override
+  Widget build(BuildContext context) {
+    return _Sayfa(
+      // 1. slaydın aksine ortalanıyor: buradaki içerik (tahta + üç satır)
+      // ekranı doldurmuyor, altta ~600px boşluk kalıyordu.
+      ortala: true,
+      children: const [
+        _TahtaBolumu(
+          taslar: kDemoTiles4,
+          oyuncuSayisi: 4,
+          erisimEtiketi: '4 kişilik oyun tahtası örneği — dört köşeden '
+              'başlayıp merkeze uzanan, KELİME, BALKON, KUZEY, OYUN gibi '
+              'kelimelerle dolu 13×13 tahta',
+          aciklama: 'Dilersen 3 yapay zekaya veya 3 arkadaşına karşı oyna, '
+              'gücünü sına. 3 oyuncuyu yenmenin keyfi bir başka ama ikinci '
+              'bile olsan k-lig puanı kazanırsın.',
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Sayfa 3 — "Nasıl oynanır?" (dört adım)
 // ---------------------------------------------------------------------------
 
 /// Tek bir "Nasıl oynanır" adımı — metinler `Landing.tsx`'in `<Adim>`
@@ -635,7 +700,7 @@ class _MiniIzgara extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Sayfa 3 — "Neler var" (altı özellik)
+// Sayfa 4 — "Neler var" (altı özellik)
 // ---------------------------------------------------------------------------
 
 class _NelerVarSayfasi extends StatelessWidget {
@@ -782,7 +847,7 @@ class _Ozellik extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Sayfa 4 — k-lig rütbeleri
+// Sayfa 5 — k-lig rütbeleri
 // ---------------------------------------------------------------------------
 
 class _RutbeSayfasi extends StatelessWidget {
