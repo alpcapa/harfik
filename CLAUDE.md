@@ -918,12 +918,24 @@ Uygulamada (Flutter portu) karşılama katmanı yok ve `<` düğmesinin
 bir karşılığı da yok/olmayacak. Bu artık gözle görülür bir ayrışma
 (`mobile/CLAUDE.md`'ye üç maddelik not düşüldü — bkz. orada "Karşılama
 Katmanı — web'e özgü, bilinçli ayrışma"): (1) düğme web'e özgü, porta
-eklenMEyecek; (2) uygulamanın kendi ilk açılış/tanıtım ekranı AYRI ve planlı
-bir iş, mağaza çıkışından önce ele alınacak; (3) o ekran geldiğinde bile
-Setup başlığına bir ok/düğme KONMAYACAK — native bir uygulamada kök ekranın
-sol üstündeki geri oku navigasyon yığınını pop eder ve Setup zaten kök
-ekran, iOS'ta sistem geri hareketiyle çakışırdı; dönüş hesap menüsüne
-("Nasıl Oynanır?"in yanına) gelecek.
+eklenMEyecek; (2) uygulamanın kendi ilk açılış/tanıtım ekranı AYRI bir iş
+olarak planlanmıştı ve **19 Ağustos 2026'da YAPILDI** — portun kendi
+`IntroScreen`'i (4 sayfalık `PageView`: hoş geldin + rakamlar, "Nasıl
+oynanır?" dört adım, dokuz k-lig rütbesi; ATLAMA YOK — tek çıkış son
+sayfadaki "HEMEN OYNA") ilk açılışta Setup'ın ÖNÜNE giriyor, kalıcı
+`seen_intro` bayrağıyla bir kez gösteriliyor (ayrıntı:
+`mobile/CLAUDE.md`, Parça 116 + 117). Metinler bu
+katmandan BİREBİR taşındı, ama katmanın kendisi (SEO/paylaşım için var
+olan statik HTML, kapı script'i, tahta demoları) porta taşınMADI; (3) o
+ekran geldiğinde bile Setup başlığına bir ok/düğme KONMADI — native bir
+uygulamada kök ekranın sol üstündeki geri oku navigasyon yığınını pop
+eder ve Setup zaten kök ekran, iOS'ta sistem geri hareketiyle
+çakışırdı; dönüş Setup'ın logo altındaki link satırında ("Nasıl
+oynanır? · Tanıtım") — 19 Ağustos 2026'da hesap menüsünden oraya
+taşındı, boşalan yeri alan "Arkadaşınla paylaş" da footer'a indi.
+**Yan sonuç, bilerek:** o satır yalnızca MİSAFİRDE çizildiğinden
+girişli kullanıcının tanıtıma dönüş yolu yok — web'deki `<` düğmesi de
+aynı şekilde girişsize özel, yani sapma değil parite.
 
 ### SEO cilası — üç küçük, bağımsız eksik
 

@@ -11,11 +11,20 @@ class FlagsStore {
   final SharedPreferences prefs;
   FlagsStore(this.prefs);
 
+  static const _seenIntro = 'seen_intro';
   static const _seenQuickstart = 'seen_quickstart';
   static const _seenChatIntro = 'seen_chat_intro';
   static const _anonId = 'anon_id';
   static const _anonVisitDate = 'anon_visit_date';
   static const _utmSource = 'utm_source';
+
+  /// İlk açılış tanıtımı (`IntroScreen`) bir kez gösterildi mi — web'in
+  /// karşılama katmanındaki `kelimeki:seen-intro` anahtarının karşılığı
+  /// (19 Ağustos 2026). Setup'taki "Tanıtım" linki bu bayrağa
+  /// DOKUNMAZ: oradan açmak bir tekrar gösterim değil, kullanıcının kendi
+  /// isteği.
+  bool get seenIntro => prefs.getBool(_seenIntro) ?? false;
+  Future<void> markIntroSeen() => prefs.setBool(_seenIntro, true);
 
   bool get seenQuickstart => prefs.getBool(_seenQuickstart) ?? false;
   Future<void> markQuickstartSeen() => prefs.setBool(_seenQuickstart, true);

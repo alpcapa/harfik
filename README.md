@@ -201,7 +201,10 @@ mobile/                    # Flutter (iOS+Android) portu — ayrıntı: mobile/C
     │                      # Görüş Bildir, arkadaşlık sistemi (davet linki dahil),
     │                      # Canlı (çok oyunculu) oyun: davet/kabul + gerçek
     │                      # zamanlı tahta + oyun içi mesajlaşma (sessize alma/
-    │                      # raporlama dahil). Admin paneli BİLİNÇLİ olarak yok.
+    │                      # raporlama dahil), ilk açılış tanıtımı (4 sayfalık
+    │                      # IntroScreen — web'in karşılama katmanının porta
+    │                      # taşınan hikâye kısmı). Admin paneli BİLİNÇLİ olarak
+    │                      # yok.
     ├── assets/dictionary/ # üretilmiş asset'ler: words_tr.txt (kaynak
     │                      # src/data/words.ts — npm run generate-golden-vectors)
     │                      # ve meanings.db (npm run generate-meanings-db)

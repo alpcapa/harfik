@@ -80,6 +80,50 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
       test etmek istersen o satırı geçici olarak `99.0.0` yapıp uygulamayı
       yeniden aç: "güncelleme gerekli" ekranı çıkmalı — sonra geri al.)
 
+## 0.4 İlk açılış tanıtımı — `IntroScreen` (Parça 116 + 117)
+
+Web'in karşılama katmanının porttaki karşılığı. **Temiz bir kurulum
+gerekiyor:** uygulamayı silip yeniden kur (ya da web test derlemesinde
+site verisini temizle) — bayrak (`seen_intro`, SharedPreferences) bir kez
+yazıldıktan sonra tanıtım bir daha ÇIKMAZ.
+
+- [ ] **İlk açılışta Setup'tan ÖNCE tanıtım çıkıyor.** Dört sayfa:
+      (1) logo + "Kelime bul, bölgeni büyüt, tahtayı ele geçir." + dört
+      rakam kutusu, (2) "Nasıl oynanır?" 1-2. adım, (3) 3-4. adım,
+      (4) dokuz k-lig rütbesi. Alt düğme ilk üç sayfada **DEVAM**, son
+      sayfada **HEMEN OYNA**.
+- [ ] **ATLAMA YOK.** Dört sayfanın HİÇBİRİNDE "Atla" (ya da başka bir
+      geçme/kapatma) düğmesi olmamalı — tanıtımın tek çıkışı son
+      sayfadaki **HEMEN OYNA**. (19 Ağustos 2026 kullanıcı kararı.)
+- [ ] **"HEMEN OYNA" Setup'a düşürüyor** ve tanıtım **bir daha ASLA
+      çıkmıyor** — uygulamayı tamamen kapatıp yeniden aç, doğrudan Setup
+      gelmeli. (Bayrak yazılmıyorsa tanıtım her açılışta çıkar; bu
+      maddenin asıl ölçtüğü şey o.)
+- [ ] **Setup'ın logo altındaki "Tanıtım" linki her zaman açıyor**
+      ("Nasıl oynanır? · Tanıtım" satırı). Açıp kapattıktan SONRA
+      uygulamayı yeniden başlat — tanıtım yine ÇIKMAMALI (bu yol bayrağa
+      dokunmaz).
+- [ ] **O satır YALNIZCA MİSAFİRDE var** — giriş yaptıktan sonra logo
+      altındaki paragraf ve link satırı hiç çizilmiyor, yani girişli
+      kullanıcının tanıtıma dönüş yolu YOK. Bu bilinçli ve web ile
+      PARİTE (orada `<` düğmesi de yalnızca girişsizde çiziliyor).
+- [ ] **Hesap menüsünde "Tanıtım" maddesi YOK** — 19 Ağustos 2026'da
+      oradan kaldırılıp Setup'ın link satırına taşındı.
+- [ ] **Footer üç madde + telif:** `Kullanım Koşulları · Gizlilik
+      Politikası · Paylaş` (aralarında iki `·`) ve HEMEN ALTINDA
+      "© Kelimeki". **"Paylaş" MİSAFİRDE DE görünmeli** (web'de de
+      girişten bağımsız) ve dokununca sistem paylaş sayfasını
+      `?ref=arkadas` linkiyle açmalı.
+- [ ] **Setup başlığında ok/geri düğmesi YOK** — bu bilinçli bir ayrışma
+      (web'de `<` var). Bkz. mobile/CLAUDE.md "Karşılama Katmanı".
+- [ ] **Görsel:** 2. ve 3. sayfadaki 5×5 mini ızgaralar renkli çiziliyor
+      (boş/bonus/merkez + iki oyuncu rengi); son sayfadaki dokuz mührün
+      harfleri (Ç M O U Ş D E Z T) TOFU (boş kare) DEĞİL — mühür fontu
+      ayrı bir alt küme, eksik glyph riski gerçek (bkz. Parça 114).
+- [ ] **Dar ekran:** en küçük cihazında/pencerende dört rakam kutusu alt
+      satıra sarmalı; sarı-siyah "RenderFlex overflowed" çubuğu
+      GÖRÜNMEMELİ.
+
 ## 0.5 Web ile yan yana görsel karşılaştırma (Parça 56)
 
 - [ ] **Setup'ta oyuncu satırında PUAN olmamalı (17 Ağustos 2026) — bu

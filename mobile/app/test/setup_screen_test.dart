@@ -29,6 +29,7 @@ import 'package:kelimeki/src/ui/game/count_badge.dart';
 import 'package:kelimeki/src/ui/auth/account_button.dart';
 import 'package:kelimeki/src/ui/game/logo_mark.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
+import 'package:kelimeki/src/ui/intro/intro_screen.dart';
 import 'package:kelimeki/src/ui/live/live_games_tab.dart';
 import 'package:kelimeki/src/ui/setup/setup_screen.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
@@ -464,37 +465,24 @@ void main() {
     expect(find.byType(LiveGamesTab), findsOneWidget);
   });
 
-  testWidgets('"Arkadaşınla paylaş" ?ref=arkadas linkini paylaşır',
-      (tester) async {
+  // 19 Ağustos 2026: logo altındaki satırın ikinci linki "Arkadaşınla
+  // paylaş" DEĞİL "Tanıtım" (paylaşım footer'a taşındı, bkz. aşağıdaki
+  // footer testleri). Link `seenIntro` bayrağına DOKUNMAZ — bu, kapının
+  // "ilk açılış" kararından bağımsız, kullanıcının kendi isteğiyle
+  // açtığı bir tekrar gösterim.
+  testWidgets('"Tanıtım" linki IntroScreen\'i açar', (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));
-    String? sharedText;
-    String? sharedUrl;
-    await tester.pumpWidget(MaterialApp(
-      theme: kelimekiTheme(),
-      home: SetupScreen(
-        services: services(),
-        share: ({
-          required png,
-          required text,
-          required url,
-          required origin,
-        }) async {
-          sharedText = text;
-          sharedUrl = url;
-        },
-      ),
-    ));
+    await pumpSetup(tester, services());
+
+    expect(find.byType(IntroScreen), findsNothing);
+    await tester.tap(find.text('Tanıtım'));
     await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Arkadaşınla paylaş'));
-    await tester.pump();
-
-    expect(sharedText, 'Hemen ücretsiz dene!');
-    expect(sharedUrl, 'https://kelimeki.com/?ref=arkadas');
+    expect(find.byType(IntroScreen), findsOneWidget,
+        reason: 'link bağlanmamış — kablo kopuk');
   });
 
   testWidgets(
-      'tanıtım paragrafı ve "Nasıl oynanır? · Arkadaşınla paylaş" '
+      'tanıtım paragrafı ve "Nasıl oynanır? · Tanıtım" '
       'satırı ORTALI (web text-center paritesi)', (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));
     await tester.pumpWidget(MaterialApp(
@@ -597,8 +585,9 @@ void main() {
     // ile engelleyip sessizce yedeğe düşüyor ve ölçüm YANILTICI oluyor;
     // ayrıca 400 ağırlığını yükleyip 700'ü unutmak linkleri yedek fontla
     // ölçtürüyordu). Sonuç, 428px içerik genişliğinde:
-    //   paragraf 64px (4 satır) · "Nasıl oynanır?" 94.25 · "Arkadaşınla
-    //   paylaş" 121.19 — port düzeltmeden sonra üçünü de birebir veriyor.
+    //   paragraf 64px (4 satır) · "Nasıl oynanır?" 94.25 — port
+    //   düzeltmeden sonra ikisini de birebir veriyor. (İkinci link
+    //   19 Ağustos 2026'da "Arkadaşınla paylaş"tan "Tanıtım"a döndü.)
     //
     // Bu test SONUCU ölçüyor (satır sayısı), yalnızca girdiyi (fontSize/
     // height) değil — Parça 72'nin dersi: bir kısıtın VARLIĞINI doğrulayan
@@ -618,11 +607,11 @@ void main() {
         tester.renderObject<RenderParagraph>(f).text.style?.letterSpacing;
     expect(trackingOf(paraFinder), 0);
     expect(trackingOf(find.text('Nasıl oynanır?')), 0);
-    expect(trackingOf(find.text('Arkadaşınla paylaş')), 0);
+    expect(trackingOf(find.text('Tanıtım')), 0);
   });
 
   // 17 Ağustos 2026 — girişli/misafir Setup ekranı ikiye ayrıldı: logonun
-  // altındaki tanıtım paragrafı + "Nasıl oynanır? · Arkadaşınla paylaş"
+  // altındaki tanıtım paragrafı + "Nasıl oynanır? · Tanıtım"
   // satırı yalnızca MİSAFİRDE görünüyor; girişli kullanıcı doğrudan "OYUN
   // TİPİ" başlığını görüyor ve logo→"OYUN TİPİ" arası TAM 20px (web'de
   // Chromium'da ölçüldü — kapsayıcının kendi `gap-5`i, telafi edici marj
@@ -636,7 +625,7 @@ void main() {
 
     expect(find.textContaining('Kelimeler kurarak'), findsNothing);
     expect(find.text('Nasıl oynanır?'), findsNothing);
-    expect(find.text('Arkadaşınla paylaş'), findsNothing);
+    expect(find.text('Tanıtım'), findsNothing);
 
     final logo = tester.getRect(find.byType(LogoMark).first);
     final oyunTipi = tester.getRect(find.text('OYUN TİPİ'));
@@ -655,14 +644,14 @@ void main() {
 
     expect(find.textContaining('Kelimeler kurarak'), findsOneWidget);
     expect(find.text('Nasıl oynanır?'), findsOneWidget);
-    expect(find.text('Arkadaşınla paylaş'), findsOneWidget);
+    expect(find.text('Tanıtım'), findsOneWidget);
   });
 
-  // Web footer'a üçüncü madde 17 Ağustos 2026'da eklendi: yalnızca GİRİŞLİ
-  // kullanıcı için "Paylaş" — misafirin footer'ı BİREBİR eskisi gibi (iki
-  // madde) kalmalı.
-  testWidgets('footer: "Paylaş" yalnızca GİRİŞLİ kullanıcıda, misafirde YOK',
-      (tester) async {
+  // 19 Ağustos 2026 (kullanıcı isteği): "Paylaş" artık GİRİŞTEN BAĞIMSIZ —
+  // web `Setup.tsx` de onu `user &&` koşuluna bağlamıyor. Yani misafir de
+  // girişli de AYNI üç maddeli footer'ı görüyor.
+  testWidgets('footer: "Paylaş" misafirde de görünür (giriş şartı YOK) ve '
+      'altında "© Kelimeki" satırı var', (tester) async {
     await setPhoneViewSize(tester, const Size(420, 950));
     await pumpSetup(tester, services());
 
@@ -670,21 +659,26 @@ void main() {
         scrollable: find.byType(Scrollable).first);
     expect(find.text('Kullanım Koşulları'), findsOneWidget);
     expect(find.text('Gizlilik Politikası'), findsOneWidget);
-    expect(find.text('Paylaş'), findsNothing);
+    expect(find.text('Paylaş'), findsOneWidget);
+    expect(find.text('© Kelimeki'), findsOneWidget);
 
     // Ayraç SAYISI da ölçülüyor: metnin VARLIĞINI doğrulayan bir test,
     // aradaki tutkalın (ayraç/boşluk) web'den sapmasını göremez — nitekim
-    // ilk sürümde girişli footer'da ayraç EKSİKTİ ve dört test birden
-    // yeşil kalmıştı. Misafirde tam BİR ayraç var (Koşullar · Gizlilik).
+    // 17 Ağustos'taki ilk sürümde girişli footer'da ayraç EKSİKTİ ve dört
+    // test birden yeşil kalmıştı. Üç maddede tam İKİ ayraç var.
     // Not: logo altındaki misafir link satırı BOŞLUKLU ' · ' kullanıyor,
     // yani bu finder'a takılmıyor (ölçüldü).
-    expect(find.text('·'), findsOneWidget);
+    expect(find.text('·'), findsNWidgets(2));
+
+    // Telif satırı hukuki satırın ALTINDA (web'in "Son çağrı" footer'ı).
+    final legal = tester.getRect(find.text('Kullanım Koşulları'));
+    final copy = tester.getRect(find.text('© Kelimeki'));
+    expect(copy.top, greaterThan(legal.bottom));
   });
 
   testWidgets(
-      'footer: girişli kullanıcıda "Paylaş" görünür ve mevcut handleShare\'i '
-      '(?ref=arkadas) ÇAĞIRIR — yeni bir paylaşım yolu yazılmadı',
-      (tester) async {
+      'footer: "Paylaş" mevcut handleShare\'i (?ref=arkadas) ÇAĞIRIR — '
+      'yeni bir paylaşım yolu yazılmadı', (tester) async {
     await setPhoneViewSize(tester, const Size(420, 950));
     String? sharedText;
     String? sharedUrl;
@@ -709,9 +703,9 @@ void main() {
         scrollable: find.byType(Scrollable).first);
     expect(find.text('Paylaş'), findsOneWidget);
 
-    // Girişlide İKİ ayraç olmak zorunda (Koşullar · Gizlilik · Paylaş) —
-    // web'de bu ikisi tek bir `{user && (<>…</>)}` bloğunda duruyor.
+    // Üç madde → İKİ ayraç (Koşullar · Gizlilik · Paylaş).
     expect(find.text('·'), findsNWidgets(2));
+    expect(find.text('© Kelimeki'), findsOneWidget);
 
     await tester.tap(find.text('Paylaş'));
     await tester.pump();

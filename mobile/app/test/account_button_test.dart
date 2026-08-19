@@ -123,7 +123,8 @@ void main() {
 
   testWidgets(
       'regresyon (Parça 28): madde sırası web ile aynı — Arkadaşlar → '
-      'Skor Kartı → Nasıl Oynanır? → Hesap Ayarları → (çizgi) → Çıkış Yap',
+      'Skor Kartı → Nasıl Oynanır? → Hesap Ayarları → (çizgi) → '
+      'Çıkış Yap',
       (tester) async {
     final stats = StatsRepo(_FakeStatsGateway());
     final friends = FriendsRepo(_FakeFriendsGateway());
@@ -141,6 +142,9 @@ void main() {
     expect(scoreY, lessThan(helpY));
     expect(helpY, lessThan(settingsY));
     expect(settingsY, lessThan(signOutY));
+    // "Tanıtım" burada YOK — 19 Ağustos 2026'da menüden çıkarılıp Setup'ın
+    // logo altı link satırına taşındı (bkz. setup_screen_test.dart).
+    expect(find.textContaining('Tanıtım'), findsNothing);
     // Çıkış Yap'ın kendi üstünde tek bir çizgi olmalı — isim başlığının
     // altında DEĞİL (eski davranış), Hesap Ayarları ile Çıkış Yap arasında.
     // Çizgi artık bir `PopupMenuDivider` DEĞİL (bkz. Parça 30 testleri) —
@@ -333,4 +337,5 @@ void main() {
     final sealX = tester.getTopLeft(find.byType(RankSeal).first).dx;
     expect(sealX, greaterThanOrEqualTo(nameX));
   });
+
 }
