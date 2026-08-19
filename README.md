@@ -170,7 +170,7 @@ src/
 │   ├── Landing.tsx     # karşılama katmanının tamamı (derleme/dev zamanında statik HTML'e render edilip index.html'e gömülür) — SUNUCUDA render edilir, hook/olay/tarayıcı globali YOK
 │   ├── LandingLogo.tsx # logoyu üç kez çizmek için SVG sprite'ı (path verisi LogoMark'tan; üç ham kopya gzip'te 10 KB yiyordu)
 │   ├── OzellikIkonlari.tsx # "Neler var" bölümündeki altı özellik ikonu — Material DEĞİL, ilkel şekillerden (portun ozellik_ikonlari.dart'ıyla ELLE senkron)
-│   ├── demoBoard.ts    # tanıtım tahtalarının (2 ve 4 kişilik) taşları — gerçek Board.tsx ile render edilir, npm run verify-demo-board ile sözlüğe karşı doğrulanır; 2 kişilik olanı npm run generate-demo-board-dart ile porta da üretilir
+│   ├── demoBoard.ts    # tanıtım tahtalarının (2 ve 4 kişilik) taşları — gerçek Board.tsx ile render edilir, npm run verify-demo-board ile sözlüğe karşı doğrulanır; ikisi de npm run generate-demo-board-dart ile porta üretilir
 │   └── render.tsx      # renderToStaticMarkup sarmalayıcısı — Vite eklentisi (scripts/landing-plugin.js) Node'da çağırır
 ├── fonts/
 │   ├── *.css              # kendi sunucumuzdan servis edilen @font-face tanımları (main.tsx import eder)

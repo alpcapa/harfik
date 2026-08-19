@@ -5,12 +5,13 @@
 // Setup'a düşüyor, oyunun ne olduğunu hiçbir yerde okumadan "OYUNU BAŞLAT"
 // görüyordu. Kullanıcı sordu: *"App'e gelenler tanıtım görmeyecek mi?"*
 //
-// DÖRT SLAYT (19 Ağustos 2026, kullanıcı spesifikasyonu — ilk sürüm yalnızca
+// BEŞ SLAYT (19 Ağustos 2026, kullanıcı spesifikasyonu — ilk sürüm yalnızca
 // metindi ve reddedildi: *"Bu tanıtım değil kaçırım olmuş"*):
 //   1. kahraman + dört rakam kutusu + GERÇEK tahta ("Tahtaya bir bak")
-//   2. "Nasıl oynanır?" — dört adım
-//   3. "Neler var" — altı özellik kutusu
-//   4. "k-lig" — dokuz rütbe
+//   2. 4 kişilik tahta + açıklaması (web'de aynı bölümün ikinci görseli)
+//   3. "Nasıl oynanır?" — dört adım
+//   4. "Neler var" — altı özellik kutusu
+//   5. "k-lig" — dokuz rütbe
 // Dördü de `src/landing/Landing.tsx`'in AYNI bölümlerinin portu; metinler,
 // ölçüler, renkler ve yerleşim oradan BİREBİR alınır — biri değişirse öteki
 // de değişmeli (bunu zorlayan bir test YOK, kural metinlerinde
@@ -26,7 +27,15 @@
 // geri oku navigasyon yığınını pop eder ve iOS'ta sistem geri hareketiyle
 // çakışır. Tanıtıma dönüş Setup'ın logo altındaki link satırından
 // (yalnız misafirde — bkz. mobile/CLAUDE.md, Parça 117).
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
+// `trUpper`: BÜYÜK harfe çevirirken i→İ / ı→I. Dart'ın kendi
+// `toUpperCase()`i Türkçe'yi bilmez ve web ile SESSİZ bir ayrışma üretir —
+// orada dönüşümü CSS `text-transform: uppercase` yapıyor ve `<html
+// lang="tr">` sayesinde tarayıcı Türkçe kuralını uyguluyor (ölçüldü:
+// web "TAHTAYA BİR BAK" / "K-LİG" / "KELİME" basıyor).
+import 'package:kelimeki_core/kelimeki_core.dart'
+    show BoardSnapshotTile, trUpper;
 
 import '../../data/game_record.dart';
 import '../game/board_widget.dart';
@@ -42,7 +51,7 @@ import 'ozellik_ikonlari.dart';
 
 /// Tanıtımın sayfa sayısı — nokta göstergesi ve "son sayfa mı" kararı bunu
 /// kullanır (testler de bu sabiti okuyor, elle 4 yazılmıyor).
-const int kIntroPageCount = 4;
+const int kIntroPageCount = 5;
 
 /// Sözlük büyüklüğü — web `Landing.tsx`'teki `KELIME_SAYISI` ile ELLE
 /// senkron (orada da düz bir sabit; `words_tr.txt` derleme anında
@@ -86,17 +95,6 @@ class _IntroScreenState extends State<IntroScreen> {
 
   bool get _isLast => _page >= kIntroPageCount - 1;
 
-  void _next() {
-    if (_isLast) {
-      widget.onDone();
-      return;
-    }
-    _controller.nextPage(
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -112,37 +110,63 @@ class _IntroScreenState extends State<IntroScreen> {
             //
             // Sabit üst boşluk: `_Sayfa`nın kendi `top: 8` dolgusu tek
             // başına sayfayı ekranın tepesine yapıştırıyordu.
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             Expanded(
               child: PageView(
                 controller: _controller,
+                // FARE İLE DE SÜRÜKLENEBİLİR OLMAK ZORUNDA: Flutter'ın
+                // varsayılan `ScrollBehavior`ı web/masaüstünde fareyi
+                // `dragDevices`e ALMAZ. Telefonda fark etmez (dokunma
+                // zaten var), ama DEVAM düğmesi kalktığı an masaüstü
+                // tarayıcıda — yani GitHub Pages test ortamında —
+                // tanıtımdan çıkışın TEK yolu olan son sayfaya hiçbir
+                // şekilde ulaşılamazdı (atlama da yok).
+                scrollBehavior: ScrollConfiguration.of(context).copyWith(
+                  dragDevices: PointerDeviceKind.values.toSet(),
+                ),
                 onPageChanged: (i) => setState(() => _page = i),
                 children: const [
                   _HosGeldinSayfasi(),
+                  _DortKisilikSayfasi(),
                   _NasilOynanirSayfasi(),
                   _NelerVarSayfasi(),
                   _RutbeSayfasi(),
                 ],
               ),
             ),
-            _Noktalar(aktif: _page),
-            // Butonun kabı da metin sütunuyla aynı genişlikte — geniş bir
-            // ekranda (tablet) kenardan kenara uzamasın.
-            _Kolon(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 12, bottom: 16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: NeoButton(
-                    label: _isLast ? 'HEMEN OYNA' : 'DEVAM',
-                    onPressed: _next,
-                    variant: NeoButtonVariant.accent,
-                    fontSize: 13,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+            // ARA SAYFALARDA DÜĞME YOK (19 Ağustos 2026, kullanıcı
+            // isteği: "Alttaki kocaman Devam butonu çok gereksiz. Altta
+            // sadece ince bir nokta alanı bıraksak herkes parmakla
+            // ilerleyeceğini bilir; sadece en son slaytta Hemen Oyna
+            // olabilir"). Nokta göstergesi artık hem konum hem tek
+            // gezinme ipucu — ilerleme parmakla (`PageView` kaydırması).
+            // Bu, alttan ~60px'i geri kazanıyor: slaytlar o kadar
+            // uzuyor, 1. slayttaki tahta o kadar çok görünüyor.
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: _Noktalar(aktif: _page),
+            ),
+            // Son sayfada tanıtımın TEK çıkışı. Kabı metin sütunuyla aynı
+            // genişlikte — geniş bir ekranda (tablet) kenardan kenara
+            // uzamasın.
+            if (_isLast)
+              _Kolon(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12, bottom: 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: NeoButton(
+                      label: 'HEMEN OYNA',
+                      onPressed: widget.onDone,
+                      variant: NeoButtonVariant.accent,
+                      fontSize: 13,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
                   ),
                 ),
-              ),
-            ),
+              )
+            else
+              const SizedBox(height: 16),
           ],
         ),
       ),
@@ -164,8 +188,6 @@ class _HosGeldinSayfasi extends StatelessWidget {
         _Kolon(
           child: Column(
             children: const [
-              LogoMark(height: 52),
-              SizedBox(height: 16),
               Text(
                 // Web kahraman cümlesi (Landing.tsx) — birebir.
                 'Kelime bul, bölgeni büyüt, tahtayı ele geçir.',
@@ -189,9 +211,21 @@ class _HosGeldinSayfasi extends StatelessWidget {
             ],
           ),
         ),
-        // Web'de bu bölüm `my-9` (36px) ile ayrılıyor.
-        const SizedBox(height: 36),
-        const _TahtaBolumu(),
+        // Web'de bu bölüm `my-9` (36px) ile ayrılıyor; portta 16 —
+        // kullanıcı tahtanın rakam kutularına YAKLAŞMASINI istedi
+        // (yukarıdaki aynı gerekçe: slayt tek ekrana sığmalı).
+        const SizedBox(height: 16),
+        const _TahtaBolumu(
+          taslar: kDemoTiles2,
+          oyuncuSayisi: 2,
+          erisimEtiketi: '2 kişilik oyun tahtası örneği — KELİME, IRMAK, '
+              'ZAMAN gibi kelimelerle dolu 13×13 tahta',
+          aciklama: 'Köşenden başla, orta bölgedeki sarı alana ulaş, '
+              'puanlarını ikiye hatta üçe katla. Rakip bölgesine değen '
+              'hamle yaparsan kazandığının üçte birini ona vergi olarak '
+              'ödersin.',
+          rozetler: true,
+        ),
       ],
     );
   }
@@ -268,7 +302,7 @@ class _Kutu extends StatelessWidget {
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
-              etiket.toUpperCase(),
+              trUpper(etiket),
               style: const TextStyle(
                 fontFamily: 'SpaceMono',
                 fontSize: 8,
@@ -291,40 +325,62 @@ class _Kutu extends StatelessWidget {
 /// (`npm run generate-demo-board-dart`) — kelimelerin gerçekten sözlükte
 /// olduğunu `npm run verify-demo-board` ölçüyor.
 class _TahtaBolumu extends StatelessWidget {
-  const _TahtaBolumu();
+  /// Taşlar — `demo_board_data.dart`taki iki üretilmiş listeden biri.
+  final List<BoardSnapshotTile> taslar;
+  final int oyuncuSayisi;
+
+  /// Ekran okuyucu etiketi (tahta `role="img"` gibi TEK bir görsel sayılır;
+  /// aksi halde 169 hücre tek tek okunurdu — web'in aynı kararı).
+  final String erisimEtiketi;
+
+  /// Tahtanın altındaki açıklama — web'de her iki tahtanın kendi metni var.
+  final String aciklama;
+
+  /// X2/X3 legend'ı yalnızca 2 kişilik tahtada; web de ikinci tahtada
+  /// tekrarlamıyor.
+  final bool rozetler;
+
+  const _TahtaBolumu({
+    required this.taslar,
+    required this.oyuncuSayisi,
+    required this.erisimEtiketi,
+    required this.aciklama,
+    this.rozetler = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final state = buildSnapshotGameState(
-      kDemoTiles2,
-      2,
-      const [
-        GamePlayerSnapshot(
-          name: 'Sen',
-          score: 0,
-          isAi: false,
-          surrendered: false,
-          colorIndex: 0,
-        ),
-        GamePlayerSnapshot(
-          name: 'Rakip',
-          score: 0,
-          isAi: false,
-          surrendered: false,
-          colorIndex: 1,
-        ),
+      taslar,
+      oyuncuSayisi,
+      [
+        for (var i = 0; i < oyuncuSayisi; i++)
+          GamePlayerSnapshot(
+            // İsimler tahtada GÖRÜNMÜYOR (`hideFooter`, skor kutuları yok)
+            // — yalnızca `buildSnapshotGameState` bir oyuncu listesi
+            // istediği için var; renk `colorIndex`ten geliyor.
+            name: i == 0 ? 'Sen' : '${i + 1}. oyuncu',
+            score: 0,
+            isAi: false,
+            surrendered: false,
+            colorIndex: i,
+          ),
       ],
     );
 
     return Column(
       children: [
+        // Yalnızca üst başlık (19 Ağustos 2026, kullanıcı isteği:
+        // "birinci slayttaki tahtaya bir bak kalsın sadece, oyuna bir bak
+        // gitsin ve üstündeki kutulara yakınlaşsın; böylece tam
+        // sığacaktır"). Web'de o `h2` duruyor — orası sonsuz kaydırılan
+        // bir sayfa, burada slaydın tamamı tek ekrana sığmak zorunda ve
+        // iki satırlık başlık tam olarak tahtanın alt sırasını
+        // kesiyordu.
         const _Kolon(
-          child: _BolumBasligi(
-            ustBaslik: 'Tahtaya bir bak',
-            baslik: 'Oyun tam olarak böyle görünüyor',
-          ),
+          child: _BolumBasligi(ustBaslik: 'Tahtaya bir bak'),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: _kTahtaGenisligi),
@@ -332,8 +388,7 @@ class _TahtaBolumu extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Semantics(
                 image: true,
-                label: '2 kişilik oyun tahtası örneği — KELİME, IRMAK, ZAMAN '
-                    'gibi kelimelerle dolu 13×13 tahta',
+                label: erisimEtiketi,
                 child: ExcludeSemantics(
                   child: BoardWidget(state: state, hideFooter: true),
                 ),
@@ -342,19 +397,21 @@ class _TahtaBolumu extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        const _Kolon(
+        _Kolon(
           child: Column(
             children: [
-              _Rozet(renk: Color(0xFFFDE68A), metin: 'X2 — Kelime puanının 2 katı'),
-              SizedBox(height: 6),
-              _Rozet(renk: Color(0xFFF97316), metin: 'X3 — Kelime puanının 3 katı'),
-              SizedBox(height: 12),
+              if (rozetler) ...[
+                const _Rozet(
+                    renk: Color(0xFFFDE68A), metin: 'X2 — Kelime puanının 2 katı'),
+                const SizedBox(height: 6),
+                const _Rozet(
+                    renk: Color(0xFFF97316), metin: 'X3 — Kelime puanının 3 katı'),
+                const SizedBox(height: 12),
+              ],
               Text(
-                'Köşenden başla, orta bölgedeki sarı alana ulaş, puanlarını '
-                'ikiye hatta üçe katla. Rakip bölgesine değen hamle yaparsan '
-                'kazandığının üçte birini ona vergi olarak ödersin.',
+                aciklama,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, height: 1.6, color: kMuted),
+                style: const TextStyle(fontSize: 12, height: 1.6, color: kMuted),
               ),
             ],
           ),
@@ -397,7 +454,40 @@ class _Rozet extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Sayfa 2 — "Nasıl oynanır?" (dört adım)
+// Sayfa 2 — 4 kişilik tahta
+// ---------------------------------------------------------------------------
+
+/// Web'in karşılama katmanında bu, 1. slayttaki tahtanın YANINDA yatay
+/// kaydırmalı ikinci görsel; portta ayrı bir slayt (19 Ağustos 2026,
+/// kullanıcı isteği: "webdeki 4 oyunculu görseli ve altındaki yazıyı da
+/// 2. slayt yap"). Metin web'den BİREBİR.
+class _DortKisilikSayfasi extends StatelessWidget {
+  const _DortKisilikSayfasi();
+
+  @override
+  Widget build(BuildContext context) {
+    return _Sayfa(
+      // 1. slaydın aksine ortalanıyor: buradaki içerik (tahta + üç satır)
+      // ekranı doldurmuyor, altta ~600px boşluk kalıyordu.
+      ortala: true,
+      children: const [
+        _TahtaBolumu(
+          taslar: kDemoTiles4,
+          oyuncuSayisi: 4,
+          erisimEtiketi: '4 kişilik oyun tahtası örneği — dört köşeden '
+              'başlayıp merkeze uzanan, KELİME, BALKON, KUZEY, OYUN gibi '
+              'kelimelerle dolu 13×13 tahta',
+          aciklama: 'Dilersen 3 yapay zekaya veya 3 arkadaşına karşı oyna, '
+              'gücünü sına. 3 oyuncuyu yenmenin keyfi bir başka ama ikinci '
+              'bile olsan k-lig puanı kazanırsın.',
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Sayfa 3 — "Nasıl oynanır?" (dört adım)
 // ---------------------------------------------------------------------------
 
 /// Tek bir "Nasıl oynanır" adımı — metinler `Landing.tsx`'in `<Adim>`
@@ -456,6 +546,7 @@ class _NasilOynanirSayfasi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Sayfa(
+      ortala: true,
       children: const [
         _Kolon(
           child: Column(
@@ -467,11 +558,11 @@ class _NasilOynanirSayfasi extends StatelessWidget {
               ),
               SizedBox(height: 12),
               _AdimKarti(adim: _adim1),
-              SizedBox(height: 10),
+              SizedBox(height: 18),
               _AdimKarti(adim: _adim2),
-              SizedBox(height: 10),
+              SizedBox(height: 18),
               _AdimKarti(adim: _adim3),
-              SizedBox(height: 10),
+              SizedBox(height: 18),
               _AdimKarti(adim: _adim4),
             ],
           ),
@@ -497,12 +588,12 @@ class _AdimKarti extends StatelessWidget {
         shadows: kRaisedShadows,
         borderColor: kBorder,
       ),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _MiniIzgara(satirlar: adim.izgara),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -609,7 +700,7 @@ class _MiniIzgara extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Sayfa 3 — "Neler var" (altı özellik)
+// Sayfa 4 — "Neler var" (altı özellik)
 // ---------------------------------------------------------------------------
 
 class _NelerVarSayfasi extends StatelessWidget {
@@ -657,6 +748,7 @@ class _NelerVarSayfasi extends StatelessWidget {
     ];
 
     return _Sayfa(
+      ortala: true,
       children: [
         _Kolon(
           child: Column(
@@ -672,13 +764,13 @@ class _NelerVarSayfasi extends StatelessWidget {
               // (`GridView` sabit bir en-boy oranı ister) ve sayfa zaten
               // kaydırılabilir bir Column.
               for (var i = 0; i < kutular.length; i += 2) ...[
-                if (i > 0) const SizedBox(height: 8),
+                if (i > 0) const SizedBox(height: 16),
                 IntrinsicHeight(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Expanded(child: kutular[i]),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 14),
                       Expanded(child: kutular[i + 1]),
                     ],
                   ),
@@ -713,7 +805,7 @@ class _Ozellik extends StatelessWidget {
         shadows: kRaisedShadows,
         borderColor: kBorder,
       ),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -755,7 +847,7 @@ class _Ozellik extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Sayfa 4 — k-lig rütbeleri
+// Sayfa 5 — k-lig rütbeleri
 // ---------------------------------------------------------------------------
 
 class _RutbeSayfasi extends StatelessWidget {
@@ -764,6 +856,7 @@ class _RutbeSayfasi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Sayfa(
+      ortala: true,
       children: [
         _Kolon(
           child: Column(
@@ -785,13 +878,13 @@ class _RutbeSayfasi extends StatelessWidget {
               // YAZILMIYOR (eşik/ad/renk değişirse bu ekran kendiliğinden
               // takip eder; web'in aynı kuralı). Web `grid-cols-3 gap-2`.
               for (var i = 0; i < kRankTiers.length; i += 3) ...[
-                if (i > 0) const SizedBox(height: 8),
+                if (i > 0) const SizedBox(height: 16),
                 IntrinsicHeight(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       for (var j = i; j < i + 3; j++) ...[
-                        if (j > i) const SizedBox(width: 8),
+                        if (j > i) const SizedBox(width: 14),
                         Expanded(child: _RutbeKutusu(tier: kRankTiers[j])),
                       ],
                     ],
@@ -821,7 +914,7 @@ class _RutbeKutusu extends StatelessWidget {
         shadows: kRaisedShadows,
         borderColor: kBorder,
       ),
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -862,15 +955,57 @@ class _RutbeKutusu extends StatelessWidget {
 /// Sayfaların ortak iskeleti: taşarsa kaydırılabilir.
 class _Sayfa extends StatelessWidget {
   final List<Widget> children;
-  const _Sayfa({required this.children});
+
+  /// İçerik ekrandan KISAYSA dikeyde ortalanır (19 Ağustos 2026, kullanıcı
+  /// isteği: "diğer slaytlarda logo altı tüm içerikleri ortalarsan nasıl
+  /// gözükür"). 2/3/4. slaytlar böyle — alttaki boşluk üste/alta eşit
+  /// dağılıyor. 1. SLAYT BİLEREK HARİÇ: orası zaten ekranı tam dolduruyor,
+  /// ortalamanın görünür bir etkisi olmadığı gibi tahtayı da kıpırdatırdı.
+  ///
+  /// `ConstrainedBox(minHeight) → Center` deseni `IntrinsicHeight`
+  /// GEREKTİRMEZ: kaydırma görünümü dikeyde sınırsız kısıt verdiğinden
+  /// `Center` çocuğunun boyuna oturur, `minHeight` de onu en az bir ekran
+  /// boyuna çeker — yani içerik uzunsa hiçbir şey değişmez, kısaysa
+  /// ortalanır.
+  final bool ortala;
+
+  const _Sayfa({required this.children, this.ortala = false});
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: children,
+    // LOGO SAYFANIN İÇİNDE (19 Ağustos 2026, kullanıcı kararı — iki tur):
+    // önce PageView'ın DIŞINDA, sabit üst alandaydı ("bütünlük açısından
+    // ilk slayttaki logoyu tüm slaytlara taşıyabiliriz"), ama içerik
+    // ortalanınca logo yerinde kaldığı için logo ile başlık arasında
+    // görünür bir kopukluk açıldı. Artık logo ortalanan bloğun İLK
+    // öğesi: logo + başlık + kutular tek blok olarak birlikte
+    // ortalanıyor. Dört sayfa da aynı deseni kullandığından logo yine
+    // dört slaytta da var ve 1. slaytta konumu DEĞİŞMEDİ (orası
+    // ortalanmıyor ve içerik zaten ekranı dolduruyor).
+    final kolon = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const LogoMark(height: 52),
+        const SizedBox(height: 16),
+        ...children,
+      ],
+    );
+    if (!ortala) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: kolon,
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, kisit) => SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: ConstrainedBox(
+          // −16: yukarıdaki dikey dolgu iki kez sayılmasın, aksi halde
+          // içerik tam sığdığında sayfa 16px kaydırılabilir olurdu.
+          constraints: BoxConstraints(minHeight: kisit.maxHeight - 16),
+          child: Center(child: kolon),
+        ),
       ),
     );
   }
@@ -898,8 +1033,11 @@ class _Kolon extends StatelessWidget {
 /// Web `Bolum`un başlık bloğu (`gap-0.5` = 2px).
 class _BolumBasligi extends StatelessWidget {
   final String ustBaslik;
-  final String baslik;
-  const _BolumBasligi({required this.ustBaslik, required this.baslik});
+
+  /// `null` ise yalnızca üst başlık çizilir — 1. slayttaki tahta bölümü
+  /// böyle (bkz. oradaki gerekçe).
+  final String? baslik;
+  const _BolumBasligi({required this.ustBaslik, this.baslik});
 
   @override
   Widget build(BuildContext context) {
@@ -908,7 +1046,7 @@ class _BolumBasligi extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          ustBaslik.toUpperCase(),
+          trUpper(ustBaslik),
           style: const TextStyle(
             fontFamily: 'SpaceMono',
             fontSize: 9,
@@ -917,16 +1055,18 @@ class _BolumBasligi extends StatelessWidget {
             color: kAccent,
           ),
         ),
-        const SizedBox(height: 2),
-        Text(
-          baslik,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-            height: 1.25,
-            color: kText,
+        if (baslik != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            baslik!,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+              height: 1.25,
+              color: kText,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

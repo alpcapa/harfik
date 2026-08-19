@@ -87,14 +87,28 @@ gerekiyor:** uygulamayı silip yeniden kur (ya da web test derlemesinde
 site verisini temizle) — bayrak (`seen_intro`, SharedPreferences) bir kez
 yazıldıktan sonra tanıtım bir daha ÇIKMAZ.
 
-- [ ] **İlk açılışta Setup'tan ÖNCE tanıtım çıkıyor.** Dört sayfa
+- [ ] **İlk açılışta Setup'tan ÖNCE tanıtım çıkıyor.** BEŞ sayfa
       (19 Ağustos 2026'da yeniden düzenlendi — Parça 118):
-      (1) logo + "Kelime bul, bölgeni büyüt, tahtayı ele geçir." + dört
-      rakam kutusu + **"Tahtaya bir bak"** bölümü (2 kişilik tahta, X2/X3
-      legend'ı ve altındaki açıklama), (2) "Nasıl oynanır?" DÖRT adım
-      birden, (3) "Neler var" ALTI özellik kutusu, (4) dokuz k-lig
-      rütbesi. Alt düğme ilk üç sayfada **DEVAM**, son sayfada
-      **HEMEN OYNA**.
+      (1) "Kelime bul, bölgeni büyüt, tahtayı ele geçir." + dört
+      rakam kutusu + **"TAHTAYA BİR BAK"** bölümü (2 kişilik tahta, X2/X3
+      legend'ı ve altındaki açıklama) — bu slayt KAYDIRMADAN tamamen
+      sığmalı, açıklamanın son satırı alt kenarda kesilmemeli,
+      (2) **4 kişilik tahta** + altındaki açıklama (X2/X3 legend'ı burada
+      TEKRARLANMAZ), (3) "Nasıl oynanır?" DÖRT adım birden, (4) "Neler
+      var" ALTI özellik kutusu, (5) dokuz k-lig rütbesi.
+- [ ] **Logo BEŞ sayfada da var** ve 2-5. sayfalarda içerikle BİRLİKTE
+      dikeyde ortalanıyor (logo ile başlık arası her sayfada aynı; logo
+      yukarıda asılı kalıp aralarında boşluk açılmamalı). 1. sayfada
+      içerik ekranı doldurduğundan logo tepede.
+- [ ] **Alt şeritte ara sayfalarda YALNIZCA nokta göstergesi var** (BEŞ
+      nokta), hiçbir düğme yok; **HEMEN OYNA yalnızca 5. sayfada** çıkıyor
+      (19 Ağustos 2026 kullanıcı kararı: "alttaki kocaman Devam butonu çok
+      gereksiz"). İlerleme parmakla kaydırarak.
+- [ ] **Masaüstü tarayıcıda da (GitHub Pages test ortamı) FARE ile
+      sürüklenebiliyor** — beş sayfa da gezilip son sayfaya
+      ulaşılabilmeli. Flutter'ın varsayılan davranışı fareyi kaydırma
+      cihazı SAYMAZ; bu olmazsa DEVAM düğmesi de kalktığı için tanıtımda
+      kilitli kalınır.
 - [ ] **1. slayttaki tahta gerçek oyun tahtasıyla AYNI görünüyor** —
       web'in "Tahtaya bir bak" bölümüyle yan yana koy: harfler ve hücreler
       aynı oranda, köşe rakamı/X2 filigranı ve X3 hücresi görünür, taşlar
@@ -102,12 +116,19 @@ yazıldıktan sonra tanıtım bir daha ÇIKMAZ.
       belirgin şekilde küçük/büyük görünüyorsa sebep font değil KABIN
       GENİŞLİĞİDİR** (tahta 680'lik kendi kabında olmalı, 460'lık metin
       sütununda değil — web bu tuzağa iki kez düştü).
-- [ ] **3. slaytta altı kutunun ALTISI da ikonlu** (robot, iki kişi,
+- [ ] **2. slayttaki 4 kişilik tahtada DÖRT köşe de dolu** ve dört ayrı
+      oyuncu rengi görünüyor (bölge dış hatları dahil) — web'in aynı
+      görseliyle yan yana koy.
+- [ ] **4. slaytta altı kutunun ALTISI da ikonlu** (robot, iki kişi,
       konuşma balonu, üstü çizili wifi, tahta, madalya) ve ikon başlığın
       SOLUNDA, başlıkla aynı boyda. Boş kare/eksik ikon OLMAMALI.
-- [ ] **4. slaytta dokuz rütbe kutusu var** ve her birinde mühür + ad +
+- [ ] **5. slaytta dokuz rütbe kutusu var** ve her birinde mühür + ad +
       eşik puanı okunuyor.
-- [ ] **ATLAMA YOK.** Dört sayfanın HİÇBİRİNDE "Atla" (ya da başka bir
+- [ ] **Üst başlıklar TÜRKÇE büyük harfle:** `KELİME` · `FİYAT` ·
+      `TAHTAYA BİR BAK` · `K-LİG` — noktasız `I` görürsen (`KELIME`,
+      `K-LIG`) `trUpper` yerine `toUpperCase()` sızmış demektir (web CSS
+      + `lang="tr"` ile doğrusunu basıyor, yan yana koyunca ayrışır).
+- [ ] **ATLAMA YOK.** Beş sayfanın HİÇBİRİNDE "Atla" (ya da başka bir
       geçme/kapatma) düğmesi olmamalı — tanıtımın tek çıkışı son
       sayfadaki **HEMEN OYNA**. (19 Ağustos 2026 kullanıcı kararı.)
 - [ ] **"HEMEN OYNA" Setup'a düşürüyor** ve tanıtım **bir daha ASLA
@@ -139,7 +160,7 @@ yazıldıktan sonra tanıtım bir daha ÇIKMAZ.
       küçülerek sığmalı ("Ücretsiz" dahil), altı özellik kutusu ve dokuz
       rütbe kutusu kırpılmamalı; sarı-siyah "RenderFlex overflowed"
       çubuğu HİÇBİR slaytta GÖRÜNMEMELİ.
-- [ ] **Yatay taşma yok:** dört slaytın hiçbirinde sağa/sola kaydırma
+- [ ] **Yatay taşma yok:** beş slaydın hiçbirinde sağa/sola kaydırma
       oluşmamalı (tahta slaydı dahil — o 680'lik kabıyla ekrandan geniş
       OLMAMALI, dar ekranda küçülmeli).
 

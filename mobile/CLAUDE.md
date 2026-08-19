@@ -460,7 +460,8 @@ mobile/
                              # buraya elle taşınmalı (bunu zorlayan bir test
                              # YOK). Yanındaki iki dosya:
                              #   demo_board_data.dart — ÜRETİLMİŞ (kaynak
-                             #     src/landing/demoBoard.ts, DEMO_TILES_2;
+                             #     src/landing/demoBoard.ts, DEMO_TILES_2
+                             #     + DEMO_TILES_4;
                              #     npm run generate-demo-board-dart)
                              #   ozellik_ikonlari.dart — "Neler var" altı
                              #     özellik ikonu; web'in OzellikIkonlari.tsx'i
@@ -5614,6 +5615,106 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        (bounded) esnetir, bir `Row`da DİKEYDE (unbounded) — aynı satırı
        Column'dan Row'a kopyalarken bu ayrım sessizce tersine döner ve
        SDK'sız bir oturumda yalnızca CI yakalar.
+     - **CANLIDA GÖRÜNCE ÜÇÜNCÜ TUR — alt düğme kalktı, logo dört slayta
+       taşındı (19 Ağustos 2026, aynı gün, kullanıcının sözleri):**
+       *"Alttaki kocaman Devam butonu çok gereksiz. Altta sadece ince bir
+       nokta alanı bıraksak herkes parmakla ilerleyeceğini bilir sadece en
+       son slaytta Hemen Oyna olabilir. Diğer 2-3-4 slaytların alt
+       kısımlarında büyük boşluk var. Bütünlük açısından ilk slayttaki
+       kelimeki logosunu tüm slaytlara taşıyabiliriz."*
+       - **`DEVAM` tamamen kalktı**, ilerleme yalnızca `PageView`
+         kaydırması; alt şeritte yalnız nokta göstergesi kaldı ve son
+         sayfada `HEMEN OYNA` çıkıyor. Kazanılan ~60px doğrudan içeriğe
+         gitti — 1. slaytta tahtanın neredeyse tamamı ilk ekrana sığıyor
+         (öncesinde alt satırları kesiliyordu). Nokta göstergesi artık hem
+         konum hem TEK gezinme ipucu.
+       - **`LogoMark` `PageView`ın DIŞINA, sabit üst alana alındı** —
+         sayfa başına kopyalanmadı: dört slaytta da tek örnek, birebir
+         aynı yerde (web'in kilitli şeridinin porttaki karşılığı; oradaki
+         park efekti YOK, slaytlar tek ekran boyunda). 1. slaydın
+         görünümü değişmedi, yalnızca logosu bir kat yukarı taşındı.
+       - **YAKALANAN GERÇEK TUZAK — `PageView` fareyle SÜRÜKLENMİYORDU:**
+         Flutter'ın varsayılan `ScrollBehavior`ı web/masaüstünde fareyi
+         `dragDevices`e almaz. `DEVAM` durduğu sürece görünmezdi; kalktığı
+         an `alpcapa.github.io`'yu bilgisayardan açan biri slaytlar
+         arasında hiç ilerleyemez, atlama da olmadığından tanıtımda
+         KİLİTLİ kalırdı (çıkışın tek yolu son sayfadaki düğme).
+         `PageView`a tüm `PointerDeviceKind`leri kabul eden bir
+         `scrollBehavior` verildi; telefonda davranış birebir aynı.
+         **Bu, ekran görüntüsü alınırken ortaya çıktı** — ilk turda dört
+         kare de birbirinin AYNISI çıktı, çünkü kaydırma hiç işlemiyordu.
+       - **Testler yeni sözleşmeye çekildi** (`intro_screen_test.dart`):
+         ilerleme artık `tester.drag(find.byType(PageView), ...)`, ve
+         ölçülen üç yeni iddia var — ara sayfalarda HİÇBİR `NeoButton`
+         yok, `LogoMark` her sayfada TEK kopya (sayfa başına kopyalansaydı
+         bu sayı 1'de kalmazdı), düğme yalnızca son sayfada çıkıyor.
+       - **BU OTURUMDA ARTIK SDK VAR:** Flutter stable (3.47) kaba
+         kuruldu, yani `flutter analyze` + `flutter test` GERÇEKTEN
+         koşuldu (`intro_screen_test` + `setup_screen_test` 29/29) ve
+         ekran görüntüleri gerçek `flutter build web` çıktısından,
+         Chromium'la 390×844/DPR 2'de alındı — mockup DEĞİL. Parça
+         103-118'in "tek kanıt CI" sınırı bu iş için geçerli değil.
+     - **DÖRDÜNCÜ TUR — 1. slayt tek ekrana sığdırıldı, kutular
+       dengelendi (19 Ağustos 2026, kullanıcı ekran görüntüsüne bakıp
+       tarif etti):** *"Birinci slayttaki tahtaya bir bak kalsın sadece,
+       oyuna bir bak gitsin ve üstündeki kutulara yakınlaşsın. Böylece tam
+       sığacaktır. Bir slaytlarda kutuların daraltıp, aralarındaki
+       boşlukları biraz açıp dengeli yapmaya çalış."*
+       - Tahta bölümünün `h2`si ("Oyun tam olarak böyle görünüyor")
+         KALDIRILDI, yalnız üst başlık kaldı; rakam kutularıyla arası
+         36 → **16**, üst başlıkla tahta arası 12 → **8**. Sonuç ÖLÇÜLDÜ
+         (390×844): tahta + X2/X3 legend'ı + üç satırlık açıklama artık
+         KAYDIRMADAN tek ekranda. `_BolumBasligi`in `baslik`ı bu yüzden
+         nullable oldu.
+       - Kartlar daraldı, araları açıldı: adım/özellik kartı dolgusu
+         12 → **10**, adım kartları arası 10 → **14**, özellik ve rütbe
+         ızgaralarının boşluğu 8 → **12**, rütbe kutusu dikey dolgusu
+         10 → **8**.
+       - **Bunlar web'in DEĞERLERİNDEN bilinçli sapma** (web'de o bölümler
+         sonsuz kaydırılan tek bir sayfanın parçası, portta her slayt tek
+         ekrana sığmak zorunda). Metin/renk/yapı paritesi aynen duruyor;
+         sapan yalnızca boşluk ölçüleri.
+       - **YAN BULGU — üst başlıklar TÜRKÇE BÜYÜK HARF kuralını
+         çiğniyordu:** Dart'ın `toUpperCase()`i `KELIME`/`FIYAT`/
+         `TAHTAYA BIR BAK`/`K-LIG` üretiyordu (noktasız I). Web'de
+         dönüşümü CSS `text-transform: uppercase` yapıyor ve
+         `<html lang="tr">` sayesinde tarayıcı Türkçe kuralını uyguluyor —
+         Chromium'da ÖLÇÜLDÜ: web `KELİME` / `TAHTAYA BİR BAK` / `K-LİG`
+         basıyor. Portun tamamında `toUpperCase()`in yalnızca İKİ kullanım
+         yeri vardı ve ikisi de bu dosyadaydı; ikisi de
+         `kelimeki_core`'un `trUpper`ına çevrildi. **Yeni bir başlık
+         eklerken `toUpperCase()` YAZMA** — kök CLAUDE.md'nin "Türkçe Dil
+         Notu" kuralı Dart tarafında da geçerli.
+     - **BEŞİNCİ TUR — dikey ortalama (üç varyant denendi) ve BEŞİNCİ
+       SLAYT: 4 kişilik tahta (19 Ağustos 2026, aynı gün):**
+       - Kullanıcı 2/3/4. slaytların altındaki boşluğu sordu; üç hâl de
+         gerçek derlemeden ekran görüntüsüyle gösterildi ve **C seçildi**:
+         (A) logo sabit + ortalama yok → boşluk altta toplanıyor;
+         (B) logo sabit + içerik ortalı → logo ile başlık arasında
+         GÖRÜNÜR bir kopukluk açılıyor (ölçüldü, ~250px); (C) logo da
+         ortalanan bloğun İLK öğesi → kopukluk yok, boşluk üste taşınıyor.
+         Yani logo bir tur önce `PageView`ın DIŞINDAYDI, şimdi `_Sayfa`nın
+         içinde — bir üstteki maddedeki "sabit üst alan" kararı bu turda
+         GEÇERSİZLEŞTİ.
+       - `_Sayfa`ya `ortala` bayrağı: `ConstrainedBox(minHeight) → Center`.
+         **`IntrinsicHeight` GEREKMİYOR** — kaydırma görünümü dikeyde
+         sınırsız kısıt verdiğinden `Center` çocuğunun boyuna oturur,
+         `minHeight` onu en az bir ekran boyuna çeker; içerik uzunsa
+         hiçbir şey değişmez. 1. slayt BİLEREK ortalanmıyor (kullanıcı
+         "ilk slayt böyle kalsın" dedi ve orası zaten ekranı dolduruyor).
+       - **BEŞİNCİ SLAYT** (kullanıcı: *"webdeki 4 oyunculu görseli ve
+         altındaki yazıyı da 2. slayt yap. Diğerleri 3-4-5 olsun"*): web'in
+         karşılama katmanında bu, 1. slayttaki tahtanın yanındaki yatay
+         kaydırmalı ikinci görsel; portta ayrı bir slayt oldu. Metin
+         web'den BİREBİR. X2/X3 legend'ı burada TEKRARLANMIYOR — web de
+         tekrarlamıyor, ve testte bunun negatif eşi var.
+       - **Taşlar yine ELLE KOPYALANMADI:** `generate-demo-board-dart`
+         artık `DEMO_TILES_4`ü de yazıyor (`kDemoTiles4`, 70 taş).
+         `_TahtaBolumu` parametrik hâle geldi (taşlar/oyuncu sayısı/
+         erişim etiketi/açıklama/legend) — ikinci bir tahta bileşeni
+         yazmak, doğrulanmayan ikinci bir kaynak demek olurdu.
+       - `kIntroPageCount` 4 → **5**; nokta göstergesi ve testler bu
+         sabiti okuduğundan başka hiçbir yerde sayı güncellenmedi.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 

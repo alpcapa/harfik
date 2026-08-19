@@ -1,8 +1,9 @@
 // İlk açılış tanıtımı (`IntroScreen`) + kapısı (`app.dart`'taki _HomeGate).
 //
 // Ölçülen sözleşme üç parça:
-//  1) ekranın kendisi — dört sayfa, DEVAM ilerletir, son sayfada HEMEN OYNA
-//     (ve HİÇBİR yerde atlama yok: tanıtımın TEK çıkışı o düğme);
+//  1) ekranın kendisi — beş sayfa, PARMAKLA ilerlenir (ara sayfalarda
+//     düğme YOK), son sayfada HEMEN OYNA çıkar, logo dört sayfada da
+//     görünür (ve HİÇBİR yerde atlama yok: tanıtımın TEK çıkışı o düğme);
 //  2) kapı — bayrak YOKKEN tanıtım, VARKEN doğrudan Setup;
 //  3) bayrak GERÇEKTEN yazılıyor (yoksa tanıtım her açılışta çıkardı).
 //
@@ -20,6 +21,8 @@ import 'package:kelimeki/src/data/meaning_store.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:kelimeki/src/ui/app.dart';
 import 'package:kelimeki/src/ui/game/board_widget.dart';
+import 'package:kelimeki/src/ui/game/logo_mark.dart';
+import 'package:kelimeki/src/ui/game/neo_button.dart';
 import 'package:kelimeki/src/ui/intro/intro_screen.dart';
 import 'package:kelimeki/src/ui/rank/league_rank.dart';
 import 'package:kelimeki/src/ui/rank/rank_seal.dart';
@@ -36,6 +39,13 @@ Future<void> drainRealIo(WidgetTester tester) async {
   await tester
       .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
   await tester.pump();
+}
+
+/// Sonraki slayta parmakla geç — 19 Ağustos 2026'dan beri ara sayfalarda
+/// düğme YOK, ilerlemenin TEK yolu `PageView` kaydırması.
+Future<void> kaydir(WidgetTester tester) async {
+  await tester.drag(find.byType(PageView), const Offset(-400, 0));
+  await tester.pumpAndSettle();
 }
 
 /// Gerçek depo — `AppStorage.open` gerçek I/O olduğundan `runAsync` köprüsü
@@ -72,8 +82,9 @@ void main() {
   sqfliteFfiInit();
 
   group('IntroScreen', () {
-    testWidgets('dört sayfa: DEVAM ilerletir, son sayfada HEMEN OYNA çıkar ve '
-        'onDone çağrılır; atlama YOK', (tester) async {
+    testWidgets('beş sayfa: parmakla ilerler, ara sayfalarda düğme YOK, son '
+        'sayfada HEMEN OYNA çıkar ve onDone çağrılır; atlama YOK',
+        (tester) async {
       await setPhoneViewSize(tester, const Size(420, 900));
       var done = 0;
       await tester.pumpWidget(MaterialApp(
@@ -81,23 +92,33 @@ void main() {
         home: IntroScreen(onDone: () => done++),
       ));
 
-      // İlk sayfa: kahraman cümlesi + DEVAM. Kahraman cümlesinin TAMAMI
+      // İlk sayfa: kahraman cümlesi. Cümlenin TAMAMI
       // aranıyor (`textContaining` DEĞİL): 2. sayfadaki "Bölgeni büyüt"
       // adımı da aynı alt dizeyi taşıyor, PageView komşu sayfayı da inşa
       // ederse eşleşme ikiye çıkardı.
       expect(find.text('Kelime bul, bölgeni büyüt, tahtayı ele geçir.'),
           findsOneWidget);
-      expect(find.text('DEVAM'), findsOneWidget);
+      // Ara sayfalarda HİÇBİR düğme yok — ne DEVAM ne HEMEN OYNA (19
+      // Ağustos 2026 kullanıcı kararı: "altta sadece ince bir nokta
+      // alanı"). Nokta göstergesi dört sayfada da duruyor.
+      expect(find.text('DEVAM'), findsNothing);
       expect(find.text('HEMEN OYNA'), findsNothing);
+      expect(find.byType(NeoButton), findsNothing);
+      // Logo ekranın (PageView'ın DEĞİL) parçası: dört sayfada da tek
+      // kopya görünür — sayfa başına kopyalansaydı bu sayı 1'de kalmazdı.
+      expect(find.byType(LogoMark), findsOneWidget);
       // Atlama YOK — 19 Ağustos 2026 kullanıcı kararı. Bu iddia her
       // sayfada tekrarlanıyor (aşağı bkz.), çünkü tek bir sayfada
       // yokluğunu görmek başka bir sayfada durduğunu ekarte etmez.
       expect(find.text('Atla'), findsNothing);
 
       for (var i = 0; i < kIntroPageCount - 1; i++) {
-        await tester.tap(find.text('DEVAM'));
-        await tester.pumpAndSettle();
+        await kaydir(tester);
         expect(find.text('Atla'), findsNothing);
+        expect(find.byType(LogoMark), findsOneWidget);
+        // Son sayfaya varana kadar düğme çıkmamalı.
+        expect(find.byType(NeoButton),
+            i == kIntroPageCount - 2 ? findsOneWidget : findsNothing);
       }
 
       // Son sayfa: tanıtımın TEK çıkışı.
@@ -116,8 +137,8 @@ void main() {
     // bölümünü koy… 3. slayt: neler var (6 kutu), 4. slayt: k-lig
     // (9 kutu)". Her slaytta o slayta ÖZGÜ bir işaret aranıyor; PageView
     // komşu sayfayı da inşa edebildiğinden başlıklar bilerek benzersiz.
-    testWidgets('dört slaydın içeriği: tahta · dört adım · altı özellik · '
-        'dokuz rütbe', (tester) async {
+    testWidgets('beş slaydın içeriği: 2 kişilik tahta · 4 kişilik tahta · '
+        'dört adım · altı özellik · dokuz rütbe', (tester) async {
       await setPhoneViewSize(tester, const Size(420, 900));
       await tester.pumpWidget(MaterialApp(
         theme: kelimekiTheme(),
@@ -125,13 +146,27 @@ void main() {
       ));
 
       // 1. slayt: kahraman + dört rakam kutusu + GERÇEK tahta.
-      expect(find.text('Oyun tam olarak böyle görünüyor'), findsOneWidget);
+      // Tahta bölümünün başlığı YALNIZCA üst başlık — 19 Ağustos 2026'da
+      // "Oyun tam olarak böyle görünüyor" kaldırıldı (slayt tek ekrana
+      // sığsın diye); kalktığının kanıtı ikinci satır.
+      expect(find.text('TAHTAYA BİR BAK'), findsOneWidget);
+      expect(find.text('Oyun tam olarak böyle görünüyor'), findsNothing);
       expect(find.byType(BoardWidget), findsOneWidget);
       expect(find.text('13×13'), findsOneWidget);
       expect(find.text('X2 — Kelime puanının 2 katı'), findsOneWidget);
 
-      await tester.tap(find.text('DEVAM'));
-      await tester.pumpAndSettle();
+      await kaydir(tester);
+
+      // 2. slayt: 4 kişilik tahta + KENDİ açıklaması (19 Ağustos 2026,
+      // kullanıcı isteği). Web'in aynı bölümünün ikinci görseli; metin
+      // oradan birebir. Legend (X2/X3) burada TEKRARLANMIYOR — web de
+      // tekrarlamıyor, yani bu satır aynı zamanda o kararın negatif eşi.
+      expect(find.byType(BoardWidget), findsOneWidget);
+      expect(find.textContaining('3 yapay zekaya veya 3 arkadaşına karşı'),
+          findsOneWidget);
+      expect(find.text('X2 — Kelime puanının 2 katı'), findsNothing);
+
+      await kaydir(tester);
 
       // 2. slayt: dört adımın DÖRDÜ de tek sayfada (eski sürümde ikişer
       // ikişer iki sayfaya bölünmüştü).
@@ -144,16 +179,14 @@ void main() {
       expect(find.textContaining('Merkeze oyna'), findsOneWidget);
       expect(find.textContaining('Bölge vergisine dikkat!'), findsOneWidget);
 
-      await tester.tap(find.text('DEVAM'));
-      await tester.pumpAndSettle();
+      await kaydir(tester);
 
       // 3. slayt: altı özellik kutusu.
       expect(find.text("Kelimeki'de neler yapabilirsin?"), findsOneWidget);
       expect(find.text('Yapay zekaya karşı oyna'), findsOneWidget);
       expect(find.text('k-lig ve rütbeler'), findsOneWidget);
 
-      await tester.tap(find.text('DEVAM'));
-      await tester.pumpAndSettle();
+      await kaydir(tester);
 
       // 4. slayt: dokuz rütbe — liste `kRankTiers`ten çiziliyor, elle
       // yazılmıyor (eşik/ad değişirse ekran kendiliğinden takip eder).
@@ -181,8 +214,7 @@ void main() {
       // Tanıtımın TEK çıkışı son sayfadaki düğme — kapı testinin de o
       // yoldan geçmesi gerekiyor (atlama kaldırıldı).
       for (var i = 0; i < kIntroPageCount - 1; i++) {
-        await tester.tap(find.text('DEVAM'));
-        await tester.pumpAndSettle();
+        await kaydir(tester);
       }
       await tester.tap(find.text('HEMEN OYNA'));
       await tester.pumpAndSettle();
