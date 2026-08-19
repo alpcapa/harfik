@@ -29,6 +29,7 @@ import 'package:kelimeki/src/ui/rank/rank_seal.dart';
 import 'package:kelimeki/src/ui/setup/setup_screen.dart';
 import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/util/online_status.dart';
+import 'support/test_fonts.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -102,6 +103,18 @@ AppServices services({Future<AppStorage>? storage}) => AppServices(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   sqfliteFfiInit();
+  // GERÇEK FONTLAR ŞART — bu dosya artık GEOMETRİ ölçüyor (slayt kaydırma
+  // payı, legend'in yan yana olup olmadığı). `flutter_test` pubspec'teki
+  // fontları OTOMATİK YÜKLEMEZ: varsayılan Ahem'de her glyph
+  // fontSize×fontSize bir bloktur, yani 27 karakterlik legend metni 11px'te
+  // 297px yer kaplar (gerçek Space Grotesk'te 144px — web'de ölçüldü).
+  // Ahem'le ölçmek iki testi de UYDURMA bir düzende sınardı: metinler daha
+  // çok satıra sarıp slaydı şişirir, legend hiçbir genişlikte yan yana
+  // sığmaz. Nitekim ilk sürümde tam bu oldu (CI: 1. slayt 29px taşıyor,
+  // legend üstleri 730 ve 750). Ölçüm yapan kardeş testlerin hepsi
+  // (`board_render_test`, `game_header_test`, `account_button_test`…)
+  // baştan beri bu satırı taşıyor.
+  setUpAll(loadAppFonts);
 
   group('IntroScreen', () {
     testWidgets('beş sayfa: parmakla ilerler, ara sayfalarda düğme YOK, son '

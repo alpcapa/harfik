@@ -5803,6 +5803,34 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
          olduğunu ölçüyor (420×900).
        - Yan fayda: bir satır eksildiğinden 1. slayt ~20px daha kısaldı.
 
+     - ⚠ **İKİ YENİ TEST İLK CI KOŞUSUNDA DÜŞTÜ — sebep üründe DEĞİL
+       TESTTEYDİ: `intro_screen_test.dart` GERÇEK FONTLARI YÜKLEMİYORDU.**
+       Taslak PR #301'in "Analiz + testler" işi: `459 passed, 2 failed` —
+       *"1. slayt 29.0 px taşıyor"* ve *"aynı satırda olmalı; üstleri 730.0
+       ve 750.0"*. İkisi de UYDURMA bir düzeni ölçüyordu.
+       - `flutter_test` pubspec'teki fontları OTOMATİK YÜKLEMEZ;
+         varsayılan **Ahem**'de her glyph `fontSize × fontSize` bir
+         BLOKTUR. 27 karakterlik legend metni 11px'te **297px** yer kaplar
+         — gerçek Space Grotesk'te **144px** (web'de ölçüldü). Yani
+         legend test ortamında HİÇBİR genişlikte yan yana sığamazdı, ve
+         bütün paragraflar fazladan satırlara sarıp slaydı şişiriyordu:
+         29px'lik "taşma" gerçek cihazın değil Ahem'in geometrisiydi.
+       - Düzeltme yeni bir mekanizma DEĞİL, projenin kendi altyapısı:
+         `setUpAll(loadAppFonts)` (`test/support/test_fonts.dart`).
+         Ölçüm yapan kardeş testlerin hepsi (`board_render_test`,
+         `game_header_test`, `account_button_test`, `chat_test`…) baştan
+         beri bu satırı taşıyor; `intro_screen_test` bugüne kadar YALNIZCA
+         metin varlığı ölçtüğü için ihtiyaç duymamıştı — geometri ölçmeye
+         başladığı an ihtiyaç doğdu.
+       - **KURAL:** bir teste ilk kez `getRect`/`getSize`/kaydırma payı
+         gibi bir GEOMETRİ ölçümü eklerken, o dosyanın `loadAppFonts`
+         çağırıp çağırmadığını KONTROL ET. Çağırmıyorsa ölçtüğün şey
+         ürünün düzeni değil Ahem'in düzenidir — ve test ya sahte bir
+         kırmızı (buradaki gibi) ya da daha kötüsü sahte bir yeşil verir.
+       - Yan fayda: bu tur, "test yazdım ama koşamadım" durumunda taslak
+         PR'ın gerçekten iş gördüğünü gösterdi — hata üretime hiç
+         çıkmadan, ilk CI koşusunda yakalandı.
+
      - **Doğrulama sınırı — DÜRÜST KAYIT:** Flutter/Dart SDK yine YOK,
        `flutter test` KOŞULAMADI; yeni testin GEÇTİĞİ de, taşımanın kaymayı
        gerçekten sıfırladığı da bu oturumda kanıtlanamadı. Tek kanıt CI
