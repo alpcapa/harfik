@@ -5510,6 +5510,12 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   EYLEM, `bölge vergisi` BEDEL — üçüncü bir terim üretme). Kod davranışı
   değişmedi. Bu parça da Flutter SDK'sız bir oturumda yazıldı — Dart
   yarısının tek kanıtı CI.
+  Aynı turda Detaylı Kurallar'ın "Genel Bakış" paragrafındaki son cümle de
+  iki tarafta birden netleştirildi: rakibin KELİMESİNE değmek tek başına
+  vergi doğurmuyor, karar yalnızca BÖLGE temasına bakıyor (`validator`ın
+  `computeInvasionSplit`i taşa değil `computeAllTerritories` kümelerine
+  bakar) — yani hiçbir bölgeye ait olmayan izole bir rakip taşına bitişik
+  oynamak ücretsiz.
 
 Liste bir gün BOŞALIRSA öyle kalmasını bekleme: yeni bir düzeltme
 yazıldığında buraya yine madde eklenmeli (kural değişmedi: yazıldığı gün

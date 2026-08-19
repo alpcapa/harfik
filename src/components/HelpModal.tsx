@@ -154,9 +154,9 @@ function DetailedRules() {
           başka bir oyuncunun bölgesine temas ederse, kazandığın puanın üçte birini o
           oyuncuyla paylaşırsın. Bu nedenle en iyi strateji, mümkün olduğunca kendi bölgeni
           büyütürken rakiplerinin genişlemesini zorlaştıracak hamleler yapmaktır. Oyuncuların
-          kontrol ettiği bölgeler kalın çizgilerle gösterilir. Hamlen herhangi bir oyuncunun
-          bölgesine temas etmiyorsa puan paylaşımı olmaz ve kazandığın puanın tamamı sana
-          kalır.
+          kontrol ettiği bölgeler kalın çizgilerle gösterilir. Hamlen herhangi bir rakip
+          oyuncunun kelimesine değse bile, bölge teması yoksa puan paylaşımı olmaz ve tüm
+          puan sana kalır.
         </P>
       </Section>
 
