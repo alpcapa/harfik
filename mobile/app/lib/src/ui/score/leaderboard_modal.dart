@@ -571,7 +571,7 @@ class _Row extends StatelessWidget {
                               fontSize: 14,
                               color: _text)),
                     ),
-                    const SizedBox(width: 6), // web gap-1.5
+                    const SizedBox(width: 4), // web gap-1
                     // Rütbe mührü — GÜNCEL puandan türetilir (düşmeli sürüm),
                     // ismin hemen yanında. Bu boyda RankSeal KOMPAKT çizer
                     // (iç halkasız, büyük harf) — 12 Ağustos 2026 okunurluk

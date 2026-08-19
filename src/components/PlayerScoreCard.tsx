@@ -226,11 +226,17 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
         <Avatar url={member.avatar_url ?? undefined} name={name} size={44} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <div className="text-base font-bold text-text truncate">{name}</div>
-            {/* Rütbe mührü — ScoreCard'daki aynı karar (18 Ağustos 2026):
-                başlıktaki 34px'lik dokunulabilir mühür KALIR, bu yalnızca
-                ismin yanındaki rozettir. */}
-            {rankTier && <RankSeal tier={rankTier} size={20} className="shrink-0" />}
+            {/* Ad + mühür AYRI bir sarmalayıcıda (`gap-1` = 4px, 19 Ağustos
+                2026): dıştaki `gap-2` arkadaşlık ikonunu ismin/mührün
+                grubundan ayırıyor — ikisi tek kapta olsaydı mührü isme
+                yaklaştırmak ikonu da yaklaştırırdı. */}
+            <div className="flex items-center gap-1 min-w-0">
+              <div className="text-base font-bold text-text truncate">{name}</div>
+              {/* Rütbe mührü — ScoreCard'daki aynı karar (18 Ağustos 2026):
+                  başlıktaki 34px'lik dokunulabilir mühür KALIR, bu yalnızca
+                  ismin yanındaki rozettir. */}
+              {rankTier && <RankSeal tier={rankTier} size={20} className="shrink-0" />}
+            </div>
             {showFriendButton && (
             <button
               type="button"

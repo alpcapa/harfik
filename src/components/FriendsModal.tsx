@@ -523,7 +523,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
         className="flex-1 min-w-0 flex items-center gap-2.5 text-left active:opacity-70 transition-opacity"
       >
         <Avatar url={avatarUrl} name={name} size={32} />
-        <span className="flex-1 min-w-0 flex items-center gap-1.5">
+        <span className="flex-1 min-w-0 flex items-center gap-1">
           <span className={nameCls}>{name}</span>
           {/* Rütbe mührü — üç sekme de bu tek yardımcıyı kullandığından
               (Arkadaşlarım / İstekler / Ara & Ekle) tek yerde eklemek

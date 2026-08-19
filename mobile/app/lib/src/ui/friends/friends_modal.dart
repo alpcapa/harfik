@@ -480,7 +480,7 @@ class _FriendsModalState extends State<FriendsModal> {
                       color: _text)),
             ),
             if (tier != null) ...[
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               RankSeal(tier: tier, size: 18),
             ],
           ],

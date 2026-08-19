@@ -673,7 +673,7 @@ class _PendingGameCard extends StatelessWidget {
                     ),
                     // 16px — satırın 12px'lik puntosuna göre (web ile aynı).
                     if (tierOf(s.userId) case final t?) ...[
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
                       RankSeal(tier: t, size: 16),
                     ],
                   ]),

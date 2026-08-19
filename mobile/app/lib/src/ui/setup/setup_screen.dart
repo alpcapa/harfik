@@ -1653,7 +1653,7 @@ class _PlayerRow extends StatelessWidget {
                   ),
                 ),
                 if (isAccount && accountRankTier != null) ...[
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
                   RankSeal(tier: accountRankTier!, size: 18),
                 ],
               ],

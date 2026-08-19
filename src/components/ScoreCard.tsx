@@ -108,7 +108,7 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
               34px'lik mühür KALDI — o dokunulabilir ve `RankInfoModal`ı
               açıyor; buradaki yalnızca kimliğin yanındaki rozet. Boy 20,
               çünkü isim 16px (k-lig listesindeki 14px isim için 18). */}
-          <div className="flex items-center gap-1.5 min-w-0">
+          <div className="flex items-center gap-1 min-w-0">
             <span className="text-base font-bold text-text truncate">{name}</span>
             {rankTier && <RankSeal tier={rankTier} size={20} className="shrink-0" />}
           </div>

@@ -1488,6 +1488,18 @@ liste bir an herkesi Çaylak gösterip sonra düzelirdi.
 AYNI, yatay taşma 0. Aynı üç sayı portta da elle yazılı — biri değişirse
 öteki de.
 
+**İsimle arası 6 → 4px (19 Ağustos 2026, kullanıcı: "isimlerin yanına
+koyduğumuz tüm badge'ler ile isim arasını biraz yakınlaştır"):** web'de
+`gap-1.5` → **`gap-1`**, portta `SizedBox(width: 6)` → **4**; sekiz yüzeyin
+sekizi de, İKİ tarafta birden. Boylar (16/18/20) DEĞİŞMEDİ. **Ölçüldü**
+(derlenmiş `dist/assets/*.css` + Chromium, DPR 2, `http://`): üç sarmalayıcı
+biçiminde de ad↔mühür **4.00** px. **`PlayerScoreCard` yapısal bir istisna:**
+orada ad, mühür ve arkadaşlık ikonu TEK bir `gap-2` kabındaydı — kabı
+daraltmak ikonu da isme yaklaştırırdı, o yüzden ad+mühür `gap-1`lik AYRI bir
+sarmalayıcıya alındı (`ScoreCard`'ın zaten kullandığı yapı); ölçüldü, mühür
+ile ikon arası **8.00** px'te KALDI. Portun `player_score_card_modal.dart`'ı
+mührü zaten 6px ile çiziyordu (web 8px'ti), yani bu tur o sessiz ayrışmayı
+da kapattı — iki taraf artık 4.
 | Yüzey | Boy | Puan nereden |
 |---|---|---|
 | `UserMenu` dropdown başlığı | 18 | `myRank` (zaten elde, EK SORGU YOK) |

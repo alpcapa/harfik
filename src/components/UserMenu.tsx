@@ -220,7 +220,7 @@ export function UserMenu() {
                     ta kendisinden türetiliyor, ek bir sorgu YOK. Bu boyda
                     `RankSeal` kompakt çizer (halkasız, büyük harf); ölçü
                     k-lig listesindeki 18px ile aynı. */}
-                <div className="flex items-center gap-1.5 min-w-0">
+                <div className="flex items-center gap-1 min-w-0">
                   <span className="text-sm font-bold text-text truncate">{name}</span>
                   {myRank && (
                     <RankSeal tier={tierFor(myRank.total_score)} size={18} className="shrink-0" />

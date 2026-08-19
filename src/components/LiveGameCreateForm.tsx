@@ -235,7 +235,7 @@ export function LiveGameCreateForm({ onCancel, onCreated }: LiveGameCreateFormPr
                       className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel text-left transition-transform active:scale-[0.99] shrink-0"
                     >
                       <Avatar url={f.avatar_url} name={f.name} size={28} />
-                      <span className="flex-1 min-w-0 flex items-center gap-1.5">
+                      <span className="flex-1 min-w-0 flex items-center gap-1">
                         <span className="min-w-0 text-sm font-bold text-text truncate">{f.name}</span>
                         {rankTierOf(f.friend_id) && (
                           <RankSeal tier={rankTierOf(f.friend_id)!} size={18} className="shrink-0" />

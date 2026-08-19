@@ -5517,6 +5517,16 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   bakar) — yani hiçbir bölgeye ait olmayan izole bir rakip taşına bitişik
   oynamak ücretsiz.
 
+- **19 Ağustos — isim yanındaki mühürler isme yaklaştı (kullanıcı isteği,
+  web + port aynı PR):** sekiz yüzeyde de `SizedBox(width: 6)` → **4**
+  (web `gap-1.5` → `gap-1`). Mühür BOYLARI (16/18/20) değişmedi. Yan fayda:
+  `player_score_card_modal.dart` zaten 6px kullanıyordu ama web'in aynı
+  yeri 8px'ti (ad+mühür+arkadaşlık ikonu tek `gap-2` kabındaydı) — web o
+  turda ad+mühür için ayrı bir sarmalayıcı aldı, yani sessiz bir ayrışma
+  kapandı. Mevcut testler mührün yalnızca ismin SAĞINDA olduğunu sınıyor
+  (birebir piksel değil), o yüzden düşen bir test yok; ölçüm web tarafında
+  yapıldı, Dart yarısının kanıtı yine CI.
+
 Liste bir gün BOŞALIRSA öyle kalmasını bekleme: yeni bir düzeltme
 yazıldığında buraya yine madde eklenmeli (kural değişmedi: yazıldığı gün
 cihazda görülmemiş her düzeltme burada birikir).

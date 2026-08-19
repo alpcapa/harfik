@@ -406,7 +406,7 @@ class _AccountButtonState extends State<AccountButton> {
                             ),
                           ),
                           if (_myRank != null) ...[
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 4),
                             RankSeal(
                                 tier: tierFor(_myRank!.totalScore), size: 18),
                           ],

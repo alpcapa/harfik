@@ -791,7 +791,7 @@ export function Setup({
                   )}
 
                   {isAccount ? (
-                    <span className="flex-1 min-w-0 flex items-center gap-1.5">
+                    <span className="flex-1 min-w-0 flex items-center gap-1">
                       <span className="font-sans text-sm font-bold text-text truncate">
                         {accountName}
                       </span>
