@@ -259,6 +259,33 @@ void main() {
           reason: '2. slayt $ikinci px taşıyor — rakam kutuları buraya '
               'eklenince sığmaz olduysa denge yanlış kurulmuş demektir.');
     });
+
+    // 19 Ağustos 2026, kullanıcı bildirdi: *"X2, X3 legendlar alt alta
+    // gelmiş. Webde yan yana."* Port bunu baştan DİKEY kodlamıştı (iki
+    // rozet arasında `SizedBox(height: 6)`), yani sığsa bile alt alta
+    // duruyordu; artık web'in `flex-wrap`ının karşılığı olan `Wrap`.
+    //
+    // METİN VARLIĞI YETMEZ: iki rozetin de EKRANDA olduğunu ölçen mevcut
+    // assertion, ikisi alt alta dururken de yeşildi — bu yüzden ölçülen
+    // şey KONUM. Web'de eşik ~349px (ölçüldü: 320'de sarıyor, 360'ta yan
+    // yana); portta metin sütunu 16+16 dolgu yediğinden eşik ~380px, yani
+    // çok dar telefonlarda ALT ALTA düşmesi doğru davranış — bu test
+    // yaygın bir boyda (420) yan yana durduğunu güvence altına alıyor.
+    testWidgets('1. slayt: X2/X3 legend\'i YAN YANA (web gibi)',
+        (tester) async {
+      await setPhoneViewSize(tester, const Size(420, 900));
+      await tester.pumpWidget(MaterialApp(
+        theme: kelimekiTheme(),
+        home: IntroScreen(onDone: () {}),
+      ));
+
+      final x2 = tester.getRect(find.text('X2 — Kelime puanının 2 katı'));
+      final x3 = tester.getRect(find.text('X3 — Kelime puanının 3 katı'));
+      expect(x2.top, x3.top,
+          reason: 'aynı satırda olmalı; üstleri ${x2.top} ve ${x3.top}');
+      expect(x3.left, greaterThan(x2.right),
+          reason: 'X3, X2\'nin SAĞINDA olmalı (üst üste binmemeli)');
+    });
   });
 
   group('kapı (_HomeGate)', () {

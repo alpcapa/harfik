@@ -5774,6 +5774,35 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        seçiyor (PageView'ınki yatay). Hata mesajı taşan piksel sayısını
        yazıyor — CI kırmızıya dönerse ne kadar kısaltmak gerektiği doğrudan
        görünür.
+     - **AYNI TURDA İKİNCİ BULGU — X2/X3 legend'ı alt alta duruyordu.**
+       Kullanıcı sordu: *"Ekrana sığmayınca alta mı atıyor?"* — **HAYIR.**
+       Port legend'ı baştan DİKEY kodlamıştı (iki `_Rozet` arasına
+       `SizedBox(height: 6)`), yani sığsa da alt alta duruyordu; web ise
+       `flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5`
+       kullanıyor. Flutter karşılığı `Wrap` (spacing 16 / runSpacing 6 —
+       web'in iki gap'i birebir).
+       - **Web'in sarma eşiği ÖLÇÜLDÜ** (derlenmiş `dist` + Chromium,
+         `http://` üzerinden, sekiz genişlikte): her öğe **166.1px**, ikisi
+         + 16px gap = **348.2** → 320px'te SARIYOR, 360px ve üstünde YAN
+         YANA. Yani web'de pratikte her telefonda yan yana.
+       - **Portun eşiği web'inkinden YÜKSEK ve bu bilinçli:** legend
+         `_Kolon`un içinde, yani 16+16 dolgu yiyor (web'in `ul`i dar
+         ekranda tam viewport genişliğinde — ölçümde `kap` 320-414 arası
+         viewport'a eşit çıktı). Port ~380px altında sarar. Dolguyu
+         legend için delmek metin sütunu düzenini bozardı; sarmak zaten
+         doğru davranış.
+       - **`_Rozet`ten `Flexible` KALKMAK ZORUNDAYDI:** `Wrap` çocuklarına
+         SINIRSIZ genişlik kısıtı verir ve orada flex'li bir çocuk
+         "RenderFlex children have non-zero flex but incoming width
+         constraints are unbounded" ile patlar. Web'de de karşılığı yok
+         (`<li>` `shrink-0`).
+       - **Testi KONUM ölçüyor, varlık değil:** iki rozetin ekranda
+         olduğunu ölçen mevcut assertion, ikisi alt alta dururken de
+         yeşildi — bu hatanın aylarca görünmemesinin sebebi tam olarak bu.
+         Yeni test iki rozetin `top`unun eşit ve X3'ün X2'nin sağında
+         olduğunu ölçüyor (420×900).
+       - Yan fayda: bir satır eksildiğinden 1. slayt ~20px daha kısaldı.
+
      - **Doğrulama sınırı — DÜRÜST KAYIT:** Flutter/Dart SDK yine YOK,
        `flutter test` KOŞULAMADI; yeni testin GEÇTİĞİ de, taşımanın kaymayı
        gerçekten sıfırladığı da bu oturumda kanıtlanamadı. Tek kanıt CI

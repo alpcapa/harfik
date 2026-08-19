@@ -99,6 +99,10 @@ yazıldıktan sonra tanıtım bir daha ÇIKMAZ.
       **Rakam kutuları 19 Ağustos 2026'da 1. slayttan 2.'ye TAŞINDI**
       (Parça 119) — 1. slayt tek ekrana sığmayıp kayıyordu, 2. slayt ise
       yalnızca tahtadan ibaret olduğu için boş duruyordu.
+- [ ] **1. slayttaki X2/X3 legend'i YAN YANA** (web'de de öyle; port
+      19 Ağustos 2026'ya kadar bunu alt alta çiziyordu — `Wrap` değil elle
+      dikey `Column` kodlanmıştı). Çok dar bir telefonda (≈375px ve altı)
+      alta sarması DOĞRU davranış; web de 320px'te sarıyor.
 - [ ] **1. ve 2. slayt KAYDIRMADAN tamamen sığıyor** — parmakla aşağı
       çekince slayt İÇİNDE dikey bir kayma OLMAMALI (yatay geçiş elbette
       var), açıklamanın son satırı alt kenarda kesilmemeli. Bu maddeyi

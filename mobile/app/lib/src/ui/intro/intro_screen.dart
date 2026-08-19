@@ -409,11 +409,31 @@ class _TahtaBolumu extends StatelessWidget {
           child: Column(
             children: [
               if (rozetler) ...[
-                const _Rozet(
-                    renk: Color(0xFFFDE68A), metin: 'X2 — Kelime puanının 2 katı'),
-                const SizedBox(height: 6),
-                const _Rozet(
-                    renk: Color(0xFFF97316), metin: 'X3 — Kelime puanının 3 katı'),
+                // WEB'DE YAN YANA (19 Ağustos 2026, kullanıcı bildirdi:
+                // *"X2, X3 legendlar alt alta gelmiş. Webde yan yana.
+                // Ekrana sığmayınca alta mı atıyor?"* — HAYIR, port bunu
+                // baştan DİKEY kodlamıştı: iki `_Rozet` arasına
+                // `SizedBox(height: 6)` konmuştu, yani sığsa da alt alta
+                // duruyordu). Web `flex flex-wrap items-center
+                // justify-center gap-x-4 gap-y-1.5` kullanıyor; bunun
+                // Flutter karşılığı `Wrap` — sığdığında yan yana,
+                // sığmadığında alta sarar.
+                //
+                // Boşluklar web'den birebir: gap-x-4 = 16, gap-y-1.5 = 6.
+                const Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 16,
+                  runSpacing: 6,
+                  children: [
+                    _Rozet(
+                        renk: Color(0xFFFDE68A),
+                        metin: 'X2 — Kelime puanının 2 katı'),
+                    _Rozet(
+                        renk: Color(0xFFF97316),
+                        metin: 'X3 — Kelime puanının 3 katı'),
+                  ],
+                ),
                 const SizedBox(height: 12),
               ],
               Text(
@@ -450,11 +470,17 @@ class _Rozet extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Flexible(
-          child: Text(
-            metin,
-            style: const TextStyle(fontSize: 11, height: 1.25, color: kMuted),
-          ),
+        // `Flexible` DEĞİL düz `Text`: `Wrap` çocuklarına SINIRSIZ genişlik
+        // kısıtı verir ve sınırsız kısıt altında flex'li bir çocuk
+        // "RenderFlex children have non-zero flex but incoming width
+        // constraints are unbounded" ile patlar. Web'de de karşılığı yok —
+        // orada `<li>` `shrink-0`, yani metin zaten sarmıyor. Tek bir
+        // rozet en dar ekranda bile taşmıyor: WEB'de gerçek tarayıcıyla
+        // ölçülen öğe genişliği 166px (aynı font, Space Grotesk 11px) ve
+        // 320px'lik bir ekranda bile portun metin sütunu 288px.
+        Text(
+          metin,
+          style: const TextStyle(fontSize: 11, height: 1.25, color: kMuted),
         ),
       ],
     );
