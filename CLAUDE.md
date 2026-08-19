@@ -1971,6 +1971,11 @@ Aylardır CLAUDE.md'nin çeşitli yerlerinde ayrı ayrı "kesin sebebi netleşti
 
 ## Sonraya Bırakılan Ürün Fikirleri (karar verildi, henüz yapılmadı)
 
+> **Sıralı yürütme planı ayrı bir dosyada: `ROADMAP.md`.** Burası *ne* ve
+> *neden ertelendi*; orası *hangi sırayla, hangi modelle, hangi tuzaklarla*.
+> Yeni bir oturum işe başlarken önce onu okusun — bir madde bitince oradan
+> silinip kaydı buraya/ilgili bölüme taşınır.
+
 Bir alt bölümden farkı: orası mobil porttan gelen "web geride kaldı"
 maddeleri, burası İKİ platformu birden ilgilendiren ve bilinçli olarak
 ertelenmiş ürün fikirleri. Bir madde yapılınca buradan silinip ilgili
