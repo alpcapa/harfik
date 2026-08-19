@@ -577,7 +577,7 @@ export function Landing() {
                 />
                 <Adim
                   no={4}
-                  baslik="Sınır ihlal vergisine dikkat!"
+                  baslik="Bölge vergisine dikkat!"
                   metin="İlk hamleden sonra istediğin zaman rakibin bölgesine değen/giren hamle yapabilirsin; ama vergisini ödersin, unutma!"
                   izgara={['.....', '.bbb.', '.bAb.', '.bbb.', '.....']}
                 />

@@ -540,7 +540,7 @@ class _LiveGameCreateFormState extends State<LiveGameCreateForm> {
                 ),
                 // YZ satırında tier null — robot koltuğunun rütbesi yok.
                 if (tier != null) ...[
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
                   RankSeal(tier: tier, size: 18),
                 ],
               ]),

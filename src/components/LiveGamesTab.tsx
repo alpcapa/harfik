@@ -150,7 +150,7 @@ function ParticipantRow({ slot, game }: { slot: HumanSlot; game: OnlineGame }) {
   return (
     <div className="flex items-center gap-2">
       <Avatar url={slot.avatar_url} name={slot.name} size={22} />
-      <span className="flex-1 min-w-0 flex items-center gap-1.5">
+      <span className="flex-1 min-w-0 flex items-center gap-1">
         <span className="min-w-0 text-xs text-text truncate">{slot.name ?? 'Oyuncu'}</span>
         {tier && <RankSeal tier={tier} size={16} className="shrink-0" />}
       </span>

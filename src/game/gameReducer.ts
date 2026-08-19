@@ -360,7 +360,7 @@ function applyPlacement(
   rack.push(...drawTiles(bag, RACK_SIZE - rack.length));
 
   // Bu hamle rafı + torbayı tamamen bitiriyorsa ve oynanan taşların TAMAMI
-  // jokerse, jokerli bitiş bonusu eklenir (köşe vergisine tabi değildir).
+  // jokerse, jokerli bitiş bonusu eklenir (bölge vergisine tabi değildir).
   // Jokerle birlikte normal bir harf de oynandıysa bonus yok.
   const placedTiles = Object.values(placedMap);
   // Bingo ile jokerli bitiş bonusu AYNI hamlede oluşamaz: jokerli bitiş tüm

@@ -155,7 +155,7 @@ class _ScoreCardModalState extends State<ScoreCardModal> {
                                   color: _text)),
                         ),
                         if (_loaded.contains(StatsTab.all)) ...[
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 4),
                           RankSeal(tier: tierFor(totalScore), size: 20),
                         ],
                       ],

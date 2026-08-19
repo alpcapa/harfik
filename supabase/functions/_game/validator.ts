@@ -103,7 +103,7 @@ export function computeAllTerritories(board: Board, players: Player[]): Set<stri
   });
 }
 
-/** Rakip bölge(ler)ine sınır vergisini hesaplar (bkz. src/utils/validator.ts'teki tam not). */
+/** Rakip bölge(ler)ine ödenecek bölge vergisini hesaplar (bkz. src/utils/validator.ts'teki tam not). */
 export function computeInvasionSplit(
   coords: [number, number][],
   ownerIndex: number,

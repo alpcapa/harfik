@@ -225,7 +225,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                         size={22}
                         className="mr-1 shrink-0"
                       />
-                      <span className="flex-1 min-w-0 flex items-center gap-1.5">
+                      <span className="flex-1 min-w-0 flex items-center gap-1">
                         <span className="truncate text-text">{name}</span>
                         {/* Rütbe mührü — GÜNCEL puandan türetilir (düşmeli
                             sürüm, bkz. leagueRank.ts), ismin hemen yanında.

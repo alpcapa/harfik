@@ -333,7 +333,7 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
                     // kural/boy) — arkadaşlık ikonundan ÖNCE, yani isme
                     // bitişik. Başlıktaki 34px'lik mühür duruyor.
                     if (_loaded.contains(StatsTab.all)) ...[
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
                       RankSeal(
                           tier: tierFor(
                               _statsByTab[StatsTab.all]?.totalScore ?? 0),

@@ -28,7 +28,7 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
       <div className="flex flex-col gap-5">
         <P>
           Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, hangi verileri topladığımızı,
-          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 16 Ağustos 2026</P>
+          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 19 Ağustos 2026</P>
 
         <Section title="1. Veri Sorumlusu">
           <P>
@@ -46,7 +46,7 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
           <ul className="text-xs font-sans text-text leading-relaxed list-disc list-inside flex flex-col gap-1">
             <li>Ad ve soyad</li>
             <li>E-posta adresi</li>
-            <li>Takma isim (isteğe bağlı)</li>
+            <li>Takma isim (zorunlu — oyunlarda ve k-lig'de herkese görünür)</li>
             <li>Cinsiyet (isteğe bağlı)</li>
             <li>Doğum tarihi (isteğe bağlı)</li>
             <li>Profil fotoğrafı (isteğe bağlı)</li>
@@ -61,6 +61,11 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
               arkadaşlık istekleri, davet linkinizin kullanım verisi)
             </li>
             <li>Canlı oyunlarda gönderdiğiniz oyun içi sohbet mesajları</li>
+            <li>
+              "Görüş Bildir" formundan ilettiğiniz mesajlar ve size yanıt verebilmemiz için
+              formda belirttiğiniz e-posta adresi — girişsiz (misafir) gönderdiğinizde de
+              saklanır
+            </li>
             <li>
               Bir Canlı oyunda kimleri sessize aldığınız ve gönderdiğiniz uygunsuz paylaşım
               şikayetleri (şikayetin nedeni dahil)
@@ -106,9 +111,13 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             "Pazarlama iletişimi almayı kabul ediyorum" kutusunu işaretlerseniz, size pazarlama/
             tanıtım amaçlı iletişim gönderilebilir — bu kutu isteğe bağlıdır, işaretlemeseniz de
             hizmeti eksiksiz kullanabilirsiniz; bu onayı Hesap Ayarları'ndaki aynı onay kutusundan
-            istediğiniz zaman verebilir ya da geri çekebilirsiniz. Altyapı hizmeti olarak Supabase
-            kullanılmaktadır; bu kapsamda veriler
-            Supabase'in sunucularında saklanır ve bu sunucular yurt dışında bulunabilir. Böyle bir
+            istediğiniz zaman verebilir ya da geri çekebilirsiniz. Hizmetin sunulabilmesi için üç
+            altyapı sağlayıcısından yararlanılır: veritabanı, kimlik doğrulama ve dosya
+            saklama için <strong>Supabase</strong>; e-posta bildirimlerinin (kayıt onayı, şifre
+            sıfırlama, arkadaşlık/oyun daveti, süre uyarısı, destek yanıtı) gönderilmesi için
+            <strong>Brevo</strong> — bu kapsamda yalnızca adınız/takma isminiz ve e-posta
+            adresiniz iletilir; sitenin ve uygulamanın yayınlanması için <strong>Vercel</strong>.
+            Bu sağlayıcıların sunucuları yurt dışında bulunabilir. Böyle bir
             durumda aktarım, KVKK m.9'da aranan (yeterli korumanın bulunduğu ülke veya uygun
             güvencelerin sağlanması gibi) şartlara uygun şekilde yapılır. Yasal zorunluluk halinde
             yetkili makamlarla paylaşım yapılabilir.
@@ -137,8 +146,11 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
 
         <Section title="5. Veri Saklama Süresi">
           <P>
-            Verileriniz hesabınız aktif olduğu sürece saklanır. Hesabınızı silmeniz durumunda
-            tüm kişisel verileriniz 30 gün içinde kalıcı olarak silinir.
+            Verileriniz hesabınız aktif olduğu sürece saklanır. Uygulama içinde kendi kendine
+            hesap silme özelliği bulunmuyor; hesabınızın ve kişisel verilerinizin
+            silinmesini istiyorsanız 8. bölümdeki "Görüş Bildir" kanalından talep
+            edebilirsiniz. Talebiniz üzerine tüm kişisel verileriniz en geç 30 gün içinde
+            kalıcı olarak silinir.
           </P>
         </Section>
 

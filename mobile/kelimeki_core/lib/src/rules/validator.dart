@@ -259,7 +259,7 @@ Set<String> _territoryFor(Player p, int i, List<Set<String>> chains) {
 /// (invasion_formula.json, basePts 0..1500 × n 1..3) bunu kanıtlar.
 int invasionShare(int basePts, int n) => ((basePts * (n + 1)) / (6 * n)).round();
 
-/// Rakip bölge(ler)ine sınır vergisi: her bölge sahibinin payı
+/// Rakip bölge(ler)ine ödenecek bölge vergisi: her bölge sahibinin payı
 /// round(basePts*(n+1)/(6n)); yuvarlama farkı oynayanda kalır.
 /// `shares` sırası dokunulan bölgelerin KEŞİF sırasıdır (TS Set insertion
 /// order) — moveHistory satır sırası buna bağlı.

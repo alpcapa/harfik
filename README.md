@@ -7,7 +7,7 @@
 - **13×13 tahta** — çapraz kelime yerleştirmeli klasik bir tahta oyunu mekaniği; ortadaki 5×5 altın bölge her kelimeyi x2 yapar, tam merkez ayrıca X3 (üç kat kelime).
 - **Köşe bölgeleri** — Her oyuncu 4×4'lük bir köşeden başlar (2 kişilik oyunda sol-üst ↔ sağ-alt, 4 kişilik oyunda dört köşenin her biri bir oyuncuda). İlk hamle köşenin ev işaretli tek karesine değmek zorundadır. İlk hamleden sonra bir rakibin bölgesine taş koymanın hiçbir ön koşulu yok — her zaman serbest.
 - **Genişleyen bölge** — Bir oyuncunun bölgesi 4×4 köşeyle sınırlı değil; köşesinden başlayıp yalnızca kendi taşlarıyla ortogonal olarak bağlı hücrelere doğru genişler, her hamleden sonra yeniden hesaplanır. Rakip bölgesine vergi ödeyerek konan bir taş, kendi zincirine bağlıysa artık oynayanın bölgesine geçer.
-- **Bölge vergisi** — Bir hamle rakip bölgesinin içine düşerse (girme) ya da dışarıdan sınırına bitişik olursa (değme), hamlenin puanının 1/3'ü bölge sahibine aktarılır, 2/3'ü oynayanda kalır (iki farklı bölgeyle birden etkileşirse üç kişi eşit paylaşır: herkese 1/3). Hamle öncesinde onay penceresi gösterilir.
+- **Bölge vergisi** — Bir hamle rakip bölgesinin içine düşerse (girme) ya da dışarıdan sınırına bitişik olursa (değme), hamlenin puanından bir pay bölge sahibine aktarılır. Etkileşilen rakip bölge sayısına (n) göre: n=1'de 2/3 oynayanda kalır, 1/3 bölge sahibine gider; n=2'de yarısı oynayanda kalır, kalan yarısı iki sahip arasında eşit bölünür (kişi başı 1/4); n=3'te 1/3 oynayanda kalır, kalan 2/3 üç sahip arasında eşit bölünür (kişi başı 2/9) — genel formül `basePts*(n+1)/(6n)`. Hamle öncesinde onay penceresi gösterilir.
 - **Akıllı YZ** — Rafından heceleyebildiği, sözlükçe geçerli en yüksek puanlı hamleyi arar; çapraz kelimeleri de doğrular.
 - **Tam sözlük** — TDK Güncel Türkçe Sözlük (12. baskı) kaynaklı **~63 bin oynanabilir kelime**, anlamlarıyla birlikte.
 - **Türkçe alfabe** — Ç, Ğ, İ, Ö, Ş, Ü dahil tam harf dağılımı ve puanlar. Joker (`?`) desteklenir. Torba, oyuncu sayısından bağımsız olarak sabit 100 taş.
@@ -38,6 +38,14 @@ npm run verify-cloud-save-mirror # bulut kaydının çevrimdışı karar mantı�
 npm run verify-fetch-my-games    # oyun geçmişi: ağ hatası ↔ boş liste ayrımı
 npm run verify-demo-board        # karşılama katmanındaki tanıtım tahtası sözlüğe karşı doğrulanır
 npm run verify-remaining-tiles   # "Kalan Taşlar" dökümü ↔ oyun sonu raf düşümü
+
+# Üretilmiş dosyalar — kaynağı değişince ELLE yeniden üretilir:
+npm run generate-logo-paths  # LogoMark.tsx + portun logo_mark_data.dart'ı (tek komut, iki taraf)
+npm run generate-klig-paths  # KLigMark.tsx + portun klig_mark_data.dart'ı
+npm run generate-icons       # favicon / app icon (public/) — og-image DEĞİL
+npm run generate-og-image    # public/og-image.png (sosyal paylaşım kartı)
+npm run generate-golden-vectors  # Flutter portu parite fixture'ları (motor değişince ZORUNLU)
+npm run generate-meanings-db     # meanings.json → portun SQLite asset'i
 ```
 
 `npm run test` kritik yolu kontrol eder (uygulama açılıyor, oyun başlıyor, YZ
@@ -150,6 +158,7 @@ src/
 │   ├── platform.ts     # bu istemcinin platformu ('web') — telemetri, tek kaynak
 │   ├── offlineNotice.ts # sunucuya ulaşılamadığında gösterilen metinler + ağ hatası tespiti (Flutter portuyla testli olarak senkron)
 │   ├── shareBoardImage.ts # bir DOM düğümünü (tahta önizlemesi) paylaşılabilir PNG'ye çevirir (html-to-image)
+│   ├── shareLink.ts    # ?ref=arkadas etiketli davet linki + native paylaşım/panoya kopyalama (Setup ve karşılama katmanı ORTAK — iki ayrı uygulama sessizce ayrışmasın diye)
 │   ├── friendInvite.ts # bekleyen arkadaşlık davet token'ı için tek seferlik localStorage kuyruğu
 │   ├── csvExport.ts    # admin paneli tabloları/grafikleri için CSV indirme yardımcısı
 │   ├── leaguePoints.ts # k-lig puanı hesaplama (GameHistoryModal ve SharedGamePage ortak)

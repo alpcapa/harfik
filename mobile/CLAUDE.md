@@ -5496,6 +5496,54 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   YZ/misafir koltuğunda mühür HİÇ olmamalı. Bu parça da Flutter SDK'sız
   bir oturumda yazıldı — Dart yarısının tek kanıtı CI.
 
+- **19 Ağustos (kozmetik metin turu) — "Nasıl Oynanır?"ın Hızlı Başlangıç'ında
+  üç madde web'de yeniden yazıldı, port AYNI PR'da birebir güncellendi:**
+  bağlanma maddesinin parantezi sona alındı ("… bağlanmalıdır. (Senin veya
+  rakibinin)"), bonus maddesi "ikiye, üçe" → **"ikiye veya üçe"**, TDK
+  maddesine **"(Birkaç istisna dışında)"** eklendi. **`help_text_parity_test`
+  bunu YAKALAMAZ** — o yalnızca bölüm başlıklarını ve madde ikonlarını
+  karşılaştırıyor (kendi dosya başlığında "var olan bir paragrafın İÇİNDEKİ
+  cümle değişimi" açıkça sınır olarak yazılı), yani cümle senkronu ELLE
+  yapılmak zorunda. Aynı turda `kelimeki_core`'un `validator.dart`'ındaki
+  yorum "sınır vergisi" → "bölge vergisi" olarak web'le hizalandı (kök
+  `CLAUDE.md` → "Bölge vergisi" maddesindeki terminoloji notu: `sınır ihlali`
+  EYLEM, `bölge vergisi` BEDEL — üçüncü bir terim üretme). Kod davranışı
+  değişmedi. Bu parça da Flutter SDK'sız bir oturumda yazıldı — Dart
+  yarısının tek kanıtı CI.
+  Aynı turda Detaylı Kurallar'ın "Genel Bakış" paragrafındaki son cümle de
+  iki tarafta birden netleştirildi: rakibin KELİMESİNE değmek tek başına
+  vergi doğurmuyor, karar yalnızca BÖLGE temasına bakıyor (`validator`ın
+  `computeInvasionSplit`i taşa değil `computeAllTerritories` kümelerine
+  bakar) — yani hiçbir bölgeye ait olmayan izole bir rakip taşına bitişik
+  oynamak ücretsiz.
+
+- **19 Ağustos — isim yanındaki mühürler isme yaklaştı (kullanıcı isteği,
+  web + port aynı PR):** sekiz yüzeyde de `SizedBox(width: 6)` → **4**
+  (web `gap-1.5` → `gap-1`). Mühür BOYLARI (16/18/20) değişmedi. Yan fayda:
+  `player_score_card_modal.dart` zaten 6px kullanıyordu ama web'in aynı
+  yeri 8px'ti (ad+mühür+arkadaşlık ikonu tek `gap-2` kabındaydı) — web o
+  turda ad+mühür için ayrı bir sarmalayıcı aldı, yani sessiz bir ayrışma
+  kapandı. Mevcut testler mührün yalnızca ismin SAĞINDA olduğunu sınıyor
+  (birebir piksel değil), o yüzden düşen bir test yok; ölçüm web tarafında
+  yapıldı, Dart yarısının kanıtı yine CI.
+
+- **19 Ağustos — hukuki metin denetimi, port AYNI PR'da:** web'in Kullanım
+  Koşulları ve Gizlilik Politikası beş yerde koddan kopmuştu (takma ismin
+  artık zorunlu olması; Brevo/Vercel'in aktarım bölümünde hiç anılmaması;
+  var olmayan bir self-servis hesap silme vaadi; "Görüş Bildir" formunun
+  toplanan veriler listesinde olmaması; Terms'in kapsam cümlesinde Canlı
+  oyun + mesajlaşmanın eksikliği). Beşi de `legal_modals.dart`a birebir
+  taşındı ve İKİ tarih de **19 Ağustos 2026** oldu — `legal_text_test.dart`
+  yalnızca TARİH eşitliğini koruduğundan, portu güncellemeden web'i
+  değiştirmek testi düşürürdü ama metni güncelleyip tarihi unutmak da
+  ayrışmayı gizlerdi; ikisi birlikte değişmeli. **Hesap silme özelliği
+  portta da YOK ve web için YAPILMAYACAK (kullanıcı kararı, aynı gün):**
+  KVKK/GDPR uygulama içi silme butonu şart koşmuyor, talep üzerine silme
+  yeterli. AMA Apple 5.1.1(v) ve Google Play'in veri silme şartı bunu
+  hesap açtıran uygulamalarda ZORUNLU tutuyor — yani madde artık hukuki
+  değil, **mağaza çıkışına bağlı bir port işi**; kaskad zinciri ve
+  gerekçenin tamamı kök `CLAUDE.md` → "Sonraya Bırakılan Ürün Fikirleri".
+
 Liste bir gün BOŞALIRSA öyle kalmasını bekleme: yeni bir düzeltme
 yazıldığında buraya yine madde eklenmeli (kural değişmedi: yazıldığı gün
 cihazda görülmemiş her düzeltme burada birikir).

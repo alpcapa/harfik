@@ -791,7 +791,7 @@ export function Setup({
                   )}
 
                   {isAccount ? (
-                    <span className="flex-1 min-w-0 flex items-center gap-1.5">
+                    <span className="flex-1 min-w-0 flex items-center gap-1">
                       <span className="font-sans text-sm font-bold text-text truncate">
                         {accountName}
                       </span>
@@ -862,10 +862,14 @@ export function Setup({
       {/* Alt satır Landing.tsx'in "Son çağrı" footer'ıyla AYNI iki katmanlı
           yapı: hukuki linkler + hemen altında "© Kelimeki" (18 Ağustos 2026,
           kullanıcı isteği: "setup altındaki footer'ın altına 'c Kelimeki'
-          (tanıtımdaki gibi) olsun") — `gap-1` ikisini tek bir footer bloğu
+          (tanıtımdaki gibi) olsun") — `gap-3` ikisini tek bir footer bloğu
           gibi gruplar, dıştaki kabın `gap-5`'i (üstteki içerikle arasını)
-          hiç etkilemez. */}
-      <div className="flex flex-col items-center gap-1">
+          hiç etkilemez. 19 Ağustos 2026'da `gap-1`den `gap-3`e çekildi
+          (kullanıcı: "tanıtım sayfasındaki kadar boşluk olsun") — Landing'in
+          "Son çağrı" section'ı da hukuki satır ile "© Kelimeki" arasını kendi
+          `gap-3`üyle veriyor, yani iki footer artık BİREBİR aynı (ölçüldü:
+          4.0 → 12.0px). Biri değişirse öteki de değişmeli. */}
+      <div className="flex flex-col items-center gap-3">
         {/* `flex-wrap` bir emniyet ağı — 356px'in altındaki viewport'larda
             (320/344 gibi) üç öğe tek satıra sığmıyor; ÖLÇÜLDÜ, `gap-x-2 gap-y-1`
             320'de iki satıra sarıp yatay taşmayı 0'da tutuyor, 356+ genişlikte
