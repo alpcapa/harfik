@@ -1941,6 +1941,19 @@ npm run generate-reel                  # kelimeki-reel.mp4 (bkz. aşağıdaki re
   Tag YOK (bilinçli), dolayısıyla platform üyeliğe göre optimize edemez —
   hedef "Trafik", optimizasyon "açılış sayfası görüntüleme".
 
+### Facebook sayfa kapağı (`scripts/kapak/`, 20 Ağustos 2026)
+
+`marketing/sponsored-2026-08/kelimeki-fb-kapak.png` (1640×624).
+`npm run generate-fb-cover`.
+
+**⚠ Facebook kapağı İKİ FARKLI kırpılıyor** — masaüstünde geniş-alçak
+(~820×312), telefonda dar-yüksek (~640×360) — ve masaüstünde profil fotoğrafı
+SOL ALT köşeyi örtüyor. Tasarım bu yüzden "ortada güvenli kutu + kenarlarda
+taşan dekor": okunması gereken her şey ortadaki 480 px'lik şeritte, iki yandaki
+tahtalar bilerek kadraj dışına taşıyor. **Ölçüldü:** güvenli kutu x 170–650,
+telefon kırpması x 90–730 → tamamen içeride. Betik bu kontrolü her çalıştırmada
+tekrar ediyor, "sığdı" varsayılmıyor.
+
 ### Reel (`scripts/reel/`, 20 Ağustos 2026)
 
 Instagram "trial reel" denemesi için 1080×1920 / 9.4 sn MP4

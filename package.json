@@ -23,6 +23,7 @@
     "verify-remaining-tiles": "esbuild scripts/verify-remaining-tiles.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-remaining-tiles.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-remaining-tiles.mjs",
     "generate-demo-board-dart": "esbuild scripts/generate-demo-board-dart.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/generate-demo-board-dart.mjs --log-level=error && node node_modules/.cache/kelimeki/generate-demo-board-dart.mjs",
     "generate-reel": "node scripts/reel/build.mjs",
+    "generate-fb-cover": "node scripts/kapak/build.mjs",
     "verify-demo-board": "esbuild scripts/verify-demo-board.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-demo-board.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-demo-board.mjs"
   },
   "dependencies": {
