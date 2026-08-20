@@ -477,6 +477,14 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       düğmesiyle render olduğunu bildirdi — modal ortak `KModal` kabuğuna
       taşınmadan kendi ham `Dialog`'unu kuruyordu, bkz. mobile/CLAUDE.md
       Parça 26).
+- [ ] **Oyun sonu kartında k-lig sütunu + kırpılan ad (Parça 120).**
+      Başlıklar soldan sağa **KALAN · TOPLAM · k-lig**; kazananın k-lig
+      hücresi **+2**, 2 kişilikte ikinci **-**. Teslim olan satırda **-2**
+      k-lig sütununda olmalı (KALAN'da DEĞİL). 4 kişilik bir oyunda
+      "Yapay Zeka 1" gibi uzun adlar satırı sarmadan `…` ile kırpılmalı,
+      kart hiçbir genişlikte taşmamalı; alttaki hamle sayısı etiketin
+      yanında/ortalı olmalı. **Web ile yan yana bak** — sayılar iki tarafta
+      ELLE senkron.
 - [ ] **Oyun sonu butonu BÜYÜR (Parça 50).** Oyun bitince raf satırındaki
       mavi buton "YENİ OYUN AÇ" olmalı: **tek satır** ve OYNA'dan belirgin
       **daha büyük punto** (web `text-[15px]` ↔ OYNA `text-[12px]`); raf

@@ -93,11 +93,25 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       sayısı 1 azalmalı.
       **Asıl değişmez oyun sonunda ölçülür:** torba boşken, son hamleni
       onaylamadan hemen önce dökümdeki toplam PUANI hesapla (adet × puan),
-      sonra OYNA'ya bas — bitiş kartında rakibin yanında yazan negatif sayı
-      o puanla **birebir aynı** olmalı. Kullanıcı bu hatayı tam böyle
+      sonra OYNA'ya bas — bitiş kartının **"Kalan" sütununda** rakibin yanında
+      yazan negatif sayı o puanla **birebir aynı** olmalı (en sağdaki
+      **k-lig** sütunundaki sayıyla KARIŞTIRMA — o oyunun lig katkısı). Kullanıcı bu hatayı tam böyle
       yakaladı (10 saydı, kartta -7 gördü).
       **İKİ ekranda da koş:** yerel/YZ oyunu VE Canlı oyun (Canlı'da ayrıca
       sıra sende DEĞİLKEN yapılan "egzersiz" yerleştirmeleriyle).
+- [ ] **Oyun sonu kartında k-lig sütunu (20 Ağustos 2026).** Bir oyunu
+      sonuna kadar bitir. Kartta soldan sağa **Kalan · Toplam · k-lig**
+      başlıkları olmalı; kazananın k-lig hücresi **+2**, 2 kişilikte ikincinin
+      **-** (puan yok, ceza da yok). **Teslim olan varsa** (4 kişilik, süre
+      aşımı) onun satırında **-2** k-lig sütununda durmalı — "Kalan"da DEĞİL;
+      kullanıcının "kaybeden -2 aldı, kazanan puan almadı" diye bildirdiği
+      karışıklık tam olarak buydu ve kart o gün DOĞRUYDU, yalnızca lig
+      katkısını göstermiyordu.
+- [ ] **Uzun ad kartı TAŞIRMAZ.** 4 kişilik bir YZ oyunu bitir: "Yapay Zeka 1"
+      gibi uzun adlar satırı ikiye sarmadan `…` ile kırpılmalı ve skor kartın
+      sağ kenarından ASLA taşmamalı (dar bir telefonda/dar pencerede bak —
+      hata tam olarak 320px'te görünüyordu). Alt satırdaki hamle sayısı
+      etiketin YANINDA ve ortalı olmalı, satırın iki ucunda değil.
 - [ ] **Bingo bonusu mesajda yazıyor (17 Ağustos 2026).** Rafın 7 taşını
       birden koyup OYNA'ya bas → mesaj satırında `(Bingo bonusu +25)`
       görünmeli. **DÖRT yerde ayrı ayrı koş, biri ötekini kanıtlamaz:**

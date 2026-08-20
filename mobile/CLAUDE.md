@@ -5904,6 +5904,65 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        gerçekten sıfırladığı da bu oturumda kanıtlanamadı. Tek kanıt CI
        (Parça 103-118'in aynı sınırı) ve ardından cihazda gözle teyit.
 
+   - ✅ **Parça 120 — oyun sonu kartına k-lig sütunu + ad artık kırpılıyor
+     (20 Ağustos 2026, `game_over_modal.dart` + web `GameOver.tsx`, AYNI
+     PR):** Kullanıcı webde bitmiş bir oyunun kartında kaybedenin yanındaki
+     **-2**'yi k-lig cezası sanıp "kazanan neden puan almamış? Etki
+     analizine ne oldu?" diye sordu.
+     - **Önce ÖLÇÜLDÜ, koda dokunulmadı — ve HATA YOKTU:** o -2 rafta kalan
+       taşların düşümü (`GameOver.tsx:43`, başlığı zaten "KALAN"), sunucuda
+       kazanan `rank 1`/`win`/**+2** almış (k-lig 121 → 123), kaybeden
+       `rank 2`/`lose`/**0** (2 kişilikte ikincilik puan getirmez —
+       `player_stats`'ın yazılı kuralı), `surrendered` ikisinde de `false`.
+       Kullanıcı kanıtı görünce kabul etti. **Ders: "bir şeyi bozmuşsun"
+       suçlaması da bir HİPOTEZDİR** — savunmaya geçmeden ve "düzeltmeye"
+       kalkmadan önce ölç; burada "düzeltme" çalışan bir puanlamayı
+       bozacaktı.
+     - **Ama karışıklık MEŞRU'ydu ve ürün olarak kapatıldı:** kart oyunun
+       k-lig'e KATKISINI hiçbir yerde göstermiyordu, dolayısıyla tek görünen
+       eksi sayı ceza gibi okunuyordu. En sağa `leaguePoints`/
+       `formatLeaguePoints`'tan (oyun kartlarıyla AYNI fonksiyonlar) beslenen
+       bir k-lig sütunu eklendi — elle hesap YOK, yani kart ile Skor Kartı
+       sessizce ayrışamaz.
+     - **Aynı turda ONARILAN, ÖNCEDEN de var olan düzen hatası:** ad
+       kırpılmıyordu — uzun bir ad ("Yapay Zeka 1"; ad alanının uzunluk
+       sınırı YOK) satırı ikiye sarıp 320px'te skoru kartın DIŞINA
+       taşırıyordu. Yeni sütun bunu büyütürdü, birlikte düzeltildi.
+     - **Genişlikler MÜREKKEPLE ölçüldü, tahminle değil:** "Kalan" başlığı
+       28.9 → 32; skor "271" 20px mono'da **36.7** → 40 (36'da sayı kutusunu
+       birebir doldurup soldaki eksiye yapışıyor, "-2208" gibi okunuyordu);
+       "k-lig" 20.0 → 24. Ada yer açmak için başlık 10→**9**, skor 22→**20**,
+       sütun araları 6→**4**.
+     - **Kullanıcı SİMÜLASYON İSTEDİ ("yer daralacak, uzun isimde ne olacağını
+       göster önce") ve bu işin şeklini değiştirdi:** web'in ÜRETİM
+       `<GameOver>`i Node'da `renderToStaticMarkup` ile beş senaryo × üç
+       genişlikte render edilip derlenmiş CSS'le Chromium'da ölçüldü/ekran
+       görüntüsü alındı — kod yazılmadan ÖNCE. Ölçülen: 390px'te 16
+       karakterlik ad bile kırpılmıyor, 360px'te yalnız 13+, 320px'te uzun
+       adlar kırpılıyor; **taşma her genişlikte 0**, satır 23px sabit.
+     - **İki karar simülasyona bakılarak verildi:** (a) 320px + teslim uç
+       durumu OLDUĞU GİBİ bırakıldı (ad erken kırpılıyor, taşma/bilgi kaybı
+       yok); (b) "KALAN TAŞ"ı iki satıra bölmek DENENDİ ve geri alındı
+       ("altlı üstlü kötü duruyor") — başlık tek satır "Kalan"/`KALAN`.
+       Ayrıca alttaki hamle sayısı satırın iki ucundan alınıp etiketin
+       YANINA çekildi (8px, ortalı).
+     - **Portun `_PlayerRow`u artık `playerCount` alıyor** (k-lig puanı için)
+       ve ad `Expanded`+`Flexible`+`ellipsis` ile kırpılıyor; `_ColHeader`
+       9 punto. Genişlik/punto sayıları iki tarafta ELLE senkron.
+     - **Mevcut Dart testleri DEĞİŞMEDİ ve bu kontrol EDİLDİ** (`_PlayerRow`
+       dosya-private, `GameOverModal`'ın imzası aynı, `'Toplam hamle'`/
+       `'(TESLİM)'` metinleri duruyor) — grep ile doğrulandı, varsayılmadı.
+     - **Doğrulama sınırı — DÜRÜST KAYIT:** bu oturumda da Flutter/Dart SDK
+       YOK (`which flutter dart` → boş), yani `flutter analyze`/`flutter test`
+       KOŞULAMADI ve **negatif eş kurulamadı** — Dart yarısının tek kanıtı CI
+       (Parça 103-119'un aynı sınırı). Web yarısı tam doğrulandı:
+       `npm run lint` + `npm run build` temiz, Playwright **18/18**, ve
+       gerçek üretim bileşeniyle üç genişlikte ölçüm + ekran görüntüsü.
+     - **Cihazda doğrulanacak:** bir oyunu bitirip kartta k-lig sütununun
+       çıktığı, teslim olan satırda **-2**'nin k-lig sütununda (Kalan'da
+       DEĞİL) durduğu ve uzun adların kırpıldığı — `mobile/TESTING.md`
+       bölüm 1.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
@@ -6154,6 +6213,15 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   satırı görünmeli. Skor Kartı'ndaki metrik etiketi de **"Ortalama Hamle
   Puanı (OHP)"** olmalı (dar ekranda kutuyu taşırmadan sarmalı). Flutter
   SDK'sız bir oturumda yazıldı — Dart yarısının CI dışında kanıtı yok.
+
+- **20 Ağustos (Parça 120) — oyun sonu kartı:** bir oyunu sonuna kadar
+  bitir; kartta en sağda **k-lig** sütunu olmalı (kazanan `+2`, 2 kişilikte
+  ikinci `-`), teslim olan satırda **-2** k-lig sütununda durmalı (soldaki
+  "Kalan" sütununda DEĞİL — kullanıcının karıştırdığı tam olarak buydu),
+  ve uzun bir ad ("Yapay Zeka 1", 4 kişilikte) satırı sarmadan `…` ile
+  kırpılmalı, hiçbir genişlikte kart taşmamalı. Alt satırdaki hamle sayısı
+  etiketin yanında/ortalı olmalı. Flutter SDK'sız bir oturumda yazıldı —
+  Dart yarısının CI dışında kanıtı yok.
 
 Liste bir gün BOŞALIRSA öyle kalmasını bekleme: yeni bir düzeltme
 yazıldığında buraya yine madde eklenmeli (kural değişmedi: yazıldığı gün
