@@ -1047,6 +1047,7 @@ src/
                 # mplus-rounded-1c-800-subset.woff2 ÜRETİLMİŞ, yalnızca RankSeal'ın harfi
                 # (yeniden üretimi: "k-lig Ödül & Rütbe Sistemi" → Rütbe Rozeti Fontu)
   hooks/        # useAuth, useModalA11y, useOnlineStatus, useAppIconBadge, useNicknameAvailability, useRankScores
+marketing/      # reklam/tanıtım çıktıları (üretilmiş PNG + metin) — uygulamaya girmez
 mobile/         # Flutter portu — kelimeki_core (saf Dart motor) + üretilmiş
                 # sözlük asset'i + golden vector fixture'ları (bkz. mobile/CLAUDE.md)
 ```
@@ -1893,6 +1894,51 @@ Kullanıcı isteği: hem Canlı oyunlarda sırası gelen oyuncuya (48 saatlik `t
 Büyük/küçük harf dönüşümünde **mutlaka** `trUpper()` / `trLower()` (`src/utils/turkish.ts`) kullanılmalı. Native `toUpperCase()`/`toLowerCase()` i/İ ve ı/I harflerini yanlış dönüştürür.
 
 Alfabetik sıralamada da aynı sebeple native `<`/`localeCompare()` (locale verilmeden) yerine **mutlaka** `trCompare()` (`src/utils/turkish.ts`, `localeCompare(..., 'tr')` sarmalayıcısı) kullanılmalı — aksi halde ş/ğ/ü/ö/ç/ı/İ gibi harfler yanlış sıralanır (`AdminDashboard.tsx`'teki Üyeler tablosunda zaten bu desen kullanılıyordu, `trCompare` bunu 1 Ağustos 2026'da paylaşılan bir yardımcıya çıkardı). **Arkadaş seçim listeleri** (`FriendsModal.tsx`'in Arkadaşlarım/Ara & Ekle sekmeleri, `LiveGameCreateForm.tsx`'in arkadaş seçici, `FriendSuggestModal.tsx`) bu tarihte fark edilen bir hatayla düzeltildi: `fetchFriends()` (`list_friends` RPC'si) isme göre değil `responded_at desc`'e (en son kabul edilen önce) göre dönüyordu, `searchUsersForFriend`/`listUsersForFriend` ise backend'in `order by name`'i veritabanının varsayılan (Türkçe'ye özel olmayan) collation'ına güveniyordu — üçü de artık `trCompare` ile client tarafında (yeniden) sıralanıyor; "Tüm Üyeler" sayfalı listesinde bu sıralama her yeni sayfa geldiğinde TÜM birikmiş listeye uygulanıyor (yalnızca son sayfaya değil), aksi halde backend collation'ının sayfa sınırlarında Türkçe harfleri yanlış gruplaması düzelmeden kalırdı. `list_incoming_friend_requests` (İstekler sekmesi) bilerek dokunulmadı — bir seçim listesi değil, `created_at desc` (en yeni istek önce) burada daha anlamlı.
+
+## Reklam Görselleri (`scripts/sponsored-post/`, 20 Ağustos 2026)
+
+Kullanıcının kendi network'üne yaptığı organik paylaşım beğeni aldı ama tek
+bir üyelik/oyun getirmedi; bunun üzerine 6 gün × 433 TL'lik sponsorlu bir
+carousel için 5 kare görsel üretildi (1080×1080, 2× ölçek). Çıktılar
+`marketing/sponsored-2026-08/` (5 PNG + `metin.md`: LinkedIn ve Meta metin/
+hashtag setleri, reklam kurulum notları).
+
+```bash
+npm run build                          # derlenmiş CSS ŞART (aşağı bkz.)
+node scripts/sponsored-post/build.mjs  # 5 PNG'yi yeniden yazar
+```
+
+- **Görseller çizim DEĞİL, üretim bileşenlerinin sunucuda render'ı** —
+  tahtalar `GameBoardPreview`→`Board` (`compact={false}`, `demoBoard.ts`),
+  rütbeler `RankSeal` + `RANK_TIERS`, logo `LandingLogo`, adım şemalarının
+  renkleri `PLAYER_COLORS`. Karşılama katmanının gerekçesiyle aynı: ikinci
+  bir "tanıtım çizimi" sessiz ayrışma üretirdi. Palet/rütbe/tahta değişirse
+  tek komutla takip ederler.
+- **⚠ Poster dosyasında Tailwind sınıfı KULLANILMAZ, yalnızca inline `style`.**
+  `tailwind.config.js`in `content`i `./index.html` + `./src/**/*.{ts,tsx}` —
+  `scripts/` altındaki bir `text-[52px]` derlenmiş CSS'e HİÇ girmez ve
+  sessizce uygulanmaz (`CountBadge`in `-right-2` tuzağının aynısı). İçe
+  aktarılan üretim bileşenlerinin sınıfları `src/` tarandığı için zaten
+  `dist` CSS'inde; `shadow-raised`/`btn-raised` de öyle.
+- **⚠ Tahta `transform: scale` ile büyütülür, kap genişliğiyle DEĞİL.**
+  `Board` `max-w-[680px]`, harf ise `vw` tabanlı bir `clamp` (`Tile.tsx`) —
+  kabı oynatmak harf/hücre oranını bozar (18 Ağustos 2026'da karşılama
+  katmanında yaşanan hata). Sayfa `http://` üzerinden açılıyor (`file://`
+  tüm puntoları 16px okur, bkz. aynı bölüm).
+- **Metinler `Landing.tsx`ten KOPYA DEĞİL** — reklam kopyası sayfa
+  kopyasından kısadır. İkisi arasında senkron yükümlülüğü YOK; tek kaynak
+  zorunluluğu yalnızca VERİ için (rütbe tablosu, palet, tahta taşları).
+- **Ölçüldü** (Chromium, 1080 viewport, `document.fonts.ready`): beş karede de
+  dikey/yatay taşma **0** — `Slide` `overflow:hidden` olduğundan taşma sessizce
+  kırpılırdı, "sığdı" varsayılamaz.
+- **`?ref=` ölçüm notu (`metin.md`de de yazılı):** kampanya URL'i
+  `kelimeki.com/?ref=meta` gibi olmalı. `captureUtmSource`
+  (`src/utils/visitTracking.ts`) YALNIZCA `?ref=` okuyor; platformların
+  eklediği `utm_source=...` bu projede hiçbir yere yazılmaz, yani `?ref=`
+  yoksa trafik admin panelindeki **Kaynak Hunisi**'nde "direkt" satırına
+  düşer ve kampanya ayırt edilemez. Sitede Meta pixel'i / LinkedIn Insight
+  Tag YOK (bilinçli), dolayısıyla platform üyeliğe göre optimize edemez —
+  hedef "Trafik", optimizasyon "açılış sayfası görüntüleme".
 
 ## SEO
 
