@@ -127,7 +127,51 @@ kampanyada `?ref=instagram` bunu kalıcı olarak çözer.
 
 ---
 
-## 6 · Görselleri yeniden üretmek
+## 6 · Trial reel — `kelimeki-reel.mp4`
+
+**Dosya:** 1080×1920, 9.4 sn, H.264 + sessiz ses izi, ~450 KB.
+**Üretimi:** `npm run build && npm run generate-reel`.
+
+Video çizim ya da ekran kaydı DEĞİL: Playwright üretim uygulamasını gerçekten
+sürüyor — kayıtlı bir oyun ortası açılıyor, taşlar raftan tahtaya
+sürükleniyor, OYNA'ya basılıyor, yapay zeka cevabını veriyor. Yani ekranda
+görünen her şey oyunun kendisi.
+
+Akış: dolu tahta (kanca) → 6 taş sürüklenir → tahta yeşile döner, **+50**
+rozeti çıkar → OYNA → skor 148'den 198'e → yapay zeka cevap verir → kapanış
+kartı. Alt şeritte her karede `kelimeki.com` duruyor.
+
+**Oynanan kelime ARKADAŞ ve bu tesadüf değil** — hem reklamın mesajıyla
+örtüşüyor hem de hamlenin geçerliliği elle seçilmedi: `scripts/reel/senaryo.ts`
+üretim yapay zekasını (`findAIMove`) çağırıp bu rafın en iyi hamlesini ölçtü.
+
+### Reel açıklaması
+
+> Kelime oyunu, ama asıl soru şu: NEREYE koyacaksın? 🧩
+>
+> Köşenden başla, bölgeni büyüt. Rakibin alanına girmek serbest — ama vergisini ödersin 😏
+>
+> Ücretsiz, kurulum yok. Link profilde 👆
+>
+> #kelimeoyunu #zekaoyunu #bulmaca #türkçe #ücretsizoyun
+
+### Yayınlarken üç not
+
+1. **Bio linkine AYRI etiket koy:** `https://kelimeki.com/?ref=ig-bio`.
+   Reel organik, ücretli kampanya `?ref=instagram` kullanıyor; aynı etiketi
+   paylaşırlarsa ikisi hunide tek satıra karışır ve hangisinin üye getirdiği
+   ayırt edilemez. `?ref=` ilk temasta saklandığından bu ayrımı sonradan
+   düzeltmek mümkün değil.
+2. **Reel'de açıklamadaki link tıklanabilir değil** — dönüşüm yolu reel →
+   profil → bio linki. Bio'da link yoksa video ne kadar izlenirse izlensin
+   sıfır trafik üretir.
+3. **Müziği Instagram'ın kendi düzenleyicisinde ekle.** Video sessiz (yalnızca
+   uyumluluk için boş bir ses izi var); trend bir ses seçmek reels
+   dağıtımında ölçülebilir fark yaratıyor.
+
+---
+
+## 7 · Görselleri yeniden üretmek
 
 ```bash
 npm run build                          # derlenmiş CSS gerekli

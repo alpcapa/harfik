@@ -1906,6 +1906,7 @@ hashtag setleri, reklam kurulum notları).
 ```bash
 npm run build                          # derlenmiş CSS ŞART (aşağı bkz.)
 node scripts/sponsored-post/build.mjs  # 5 PNG'yi yeniden yazar
+npm run generate-reel                  # kelimeki-reel.mp4 (bkz. aşağıdaki reel notu)
 ```
 
 - **Görseller çizim DEĞİL, üretim bileşenlerinin sunucuda render'ı** —
@@ -1939,6 +1940,46 @@ node scripts/sponsored-post/build.mjs  # 5 PNG'yi yeniden yazar
   düşer ve kampanya ayırt edilemez. Sitede Meta pixel'i / LinkedIn Insight
   Tag YOK (bilinçli), dolayısıyla platform üyeliğe göre optimize edemez —
   hedef "Trafik", optimizasyon "açılış sayfası görüntüleme".
+
+### Reel (`scripts/reel/`, 20 Ağustos 2026)
+
+Instagram "trial reel" denemesi için 1080×1920 / 9.4 sn MP4
+(`marketing/sponsored-2026-08/kelimeki-reel.mp4`). Video **ÜRETİM
+UYGULAMASININ kendisi sürülerek** üretiliyor: Playwright kayıtlı bir oyun
+ortasını açıyor, taşları raftan tahtaya sürüklüyor, OYNA'ya basıyor, YZ
+cevabını veriyor.
+
+- **Sahne elle yazılmadı, ÖLÇÜLDÜ.** `scripts/reel/senaryo.ts` üretim
+  YZ'sini (`findAIMove`) tanıtım tahtasına karşı çağırıp oynanabilir
+  hamleleri listeliyor; seçilen hamle (7. sütunda dikey **ARKADAŞ**, 50 puan)
+  böylece sözlük/bitişiklik/puan açısından motorun kendisiyle garantili.
+  Elle "şu kelimeyi şuraya koyayım" demek, çekim sırasında tahtanın kırmızıya
+  dönmesiyle sonuçlanabilirdi.
+- **⚠ `buildSnapshotGameState` `isGameOver: true` DÖNER** (bitmiş oyun
+  önizlemeleri için yazıldı). Sahne onu `false`a çekmezse `loadGameState`
+  kaydı "bitmiş" sayıp null dönüyor ve App ilk effect'te localStorage'ı
+  SİLİYOR — ölçüldü: 4215 bayt yazılıyor, ~1 sn sonra null, Setup'ta
+  "Devam Eden Oyun" satırı hiç çıkmıyor.
+- **⚠ Kapanış kartı AYRI BİR CONTEXT'te render edilmeli.** Uygulamayı açan
+  bağlamda PWA service worker'ı kayıtlı ve `navigateFallback` bilinmeyen her
+  navigasyona `index.html` döndürüyor; ilk sürümde videonun son 2 saniyesi
+  kapanış kartı yerine Setup ekranını gösterdi.
+- **⚠ Sürükleme hedefi +30 px AŞAĞIDA** (`DRAG_LIFT`) — bu tuzak bu dokümanda
+  zaten kayıtlı, betik onu telafi ediyor.
+- **Taş SIRASI görsel bir karar:** yukarıdan aşağı dizmek ara adımlarda
+  "ARKAD geçerli bir kelime değil" kırmızısını saniyelerce ekranda tutuyordu.
+  Mevcut A'nın ALTINDAN başlayınca ara adımlar gerçek kelime oluyor
+  (AD ✓ ADA ✓ ADAŞ ✓), doğrulama satırı hamlenin çoğunda yeşil kalıyor.
+- **Kare kare (stop-motion) yakalanıyor, `recordVideo` DEĞİL:** o, videoyu
+  viewport boyunda kaydedip büyütürken taş harflerini bulanıklaştırırdı;
+  `page.screenshot` + `deviceScaleFactor: 2` gerçek 1080×1920 üretiyor.
+  Kareler ffmpeg'in concat demuxer'ıyla, her karenin kendi süresiyle
+  birleşiyor (bekleme = tek dosya + uzun süre).
+- **Uygulama içeriği 540 px genişlikte 819 px sürüyor** (ölçüldü), kare ise
+  9:16. Artan yer boş bırakılmıyor: altta kalıcı bir `kelimeki.com` şeridi
+  bindiriliyor (`renderBantHtml`).
+- **ffmpeg bu ortamda apt ile kuruldu** — Playwright'ın kendi ffmpeg'i
+  (`/opt/pw-browsers/ffmpeg-1011`) yalnızca VP8/webm derlenmiş, H.264 yok.
 
 ## SEO
 
