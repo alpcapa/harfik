@@ -2135,6 +2135,21 @@ bölümün kendi tarihli notuna taşınır.
   2026'daki bilgiye dayanıyor, mağaza kuralları değişebiliyor). Bir sonraki
   oturum bunu "hukuki eksik" diye yeniden açmasın.
 
+- **"Oyun başladı" olayı — reklam harcamasından ÖNCE (20 Ağustos 2026,
+  ölçülerek karar verildi; sıralı planı `ROADMAP.md` #9):** Bugün yalnızca
+  BİTMİŞ oyun kaydediliyor; `game_starts` tablosu 20 Temmuz 2026'da
+  kaldırılmıştı ("hiçbir yerde ihtiyaç görülmedi" — o gün doğruydu, ücretli
+  trafik gelince yanlış oldu). İlk Instagram kampanyası bu boşluğu görünür
+  kıldı: `instagram` etiketiyle **80 kişi / 0 üye / 0 oyun** (Supabase'ten
+  doğrulandı, panel doğru çalışıyor). Ama yerel oyunun medyan süresi **18,1
+  dakika** ve huninin "Oyun" sütunu misafir oyunlarını tanım gereği hiç
+  görmüyor — yani "0 oyun" büyük olasılıkla "kimse BİTİRMEDİ" demek. Sonuç:
+  "açılış sayfası mı çalışmıyor, oyun mu fazla uzun bir taahhüt?" sorusu
+  bugünkü veriyle AYRILAMIYOR. Anonim, misafir dahil, `?ref=` etiketli bir
+  başlangıç olayı bunu ayırır. **Geriye dönük doldurulamaz**
+  (`games.platform` ile aynı sınıf) — bir sonraki harcamadan önce eklenmeli;
+  web + port AYNI PR'da, aksi halde mobil trafik sessizce eksik sayılır.
+
 - **Hata telemetrisi — istemci tarafı çökme/başarısızlık kaydı (16 Ağustos
   2026, kullanıcı onayı; MAĞAZA ÇIKIŞINA yakın yapılacak):**
   **Bu, Supabase'in sunucu loglarıyla KARIŞTIRILMAMALI.** Postgres/Edge
