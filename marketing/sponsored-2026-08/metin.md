@@ -10,7 +10,7 @@ Kare oran hem LinkedIn hem Instagram/Facebook carousel'inde çalışır.
 
 | # | Kare | Görevi |
 |---|---|---|
-| 1 | Logo + "Kelime bul, bölgeni büyüt, tahtayı ele geçir." + rakamlar | Durdurucu: bu ne, kime |
+| 1 | Logo + "Kelime bul, bölgeni büyüt, tahtayı ele geçir." + sağ üstte 4 kişilik tahta + rakamlar | Durdurucu: bu ne, kime |
 | 2 | Gerçek 2 kişilik tahta + X2/X3 | Kanıt: ekran görüntüsü değil, oyunun kendisi |
 | 3 | Dört adım (köşe → bölge → merkez → vergi) | **Asıl fark** — neden başka bir kelime oyunu değil |
 | 4 | 4 kişilik tahta + YZ / canlı / sohbet | Kiminle oynanır (48 saat kuralı itirazı kapatıyor) |

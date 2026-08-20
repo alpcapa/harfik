@@ -151,6 +151,9 @@ function Slide({ no, children }: { no: number; children: React.ReactNode }) {
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
+        // Kare 1'in sağ üstündeki tahta MUTLAK konumlu — akışa girseydi
+        // dikeyde ortalanan metin bloğunu yerinden oynatırdı.
+        position: 'relative',
       }}
     >
       {children}
@@ -399,6 +402,32 @@ export function SponsoredPost() {
 
       {/* ── 1 · Kanca ──────────────────────────────────────────────────── */}
       <Slide no={1}>
+        {/* Sağ üst köşe boştu; kanca karesinde oyundan HİÇ görüntü yoktu.
+            ⚠ Ölçü tahminle DEĞİL mürekkeple seçildi (1080 CSS px): kahraman
+            başlığın KUTUSU tam genişlikte, ama en uzun satırının mürekkebi
+            x=647'de bitiyor ve üçüncü satır y=443'te başlıyor. İlk deneme
+            (scale 0.52, top 100) tahtayı x=662'ye koyuyordu — yatayda yalnızca
+            15 px kalıyor ve tahtanın alt kenarı üçüncü satırın hizasına
+            giriyordu. Bugünkü değerlerle tahta 690–1016 × 96–422: metinle
+            yatay boşluk ~43 px ve üçüncü satırla dikey ÇAKIŞMA HİÇ YOK.
+            Mutlak konumlu olduğundan dikeyde ortalanan metin bloğuna
+            dokunmuyor. */}
+        <div style={{ position: 'absolute', top: 96, right: PAD_X }} aria-hidden="true">
+          <Tahta scale={0.48}>
+            <GameBoardPreview
+              snapshot={DEMO_TILES_4}
+              playerCount={4}
+              compact={false}
+              players={[
+                { name: 'Sen', score: 0, is_ai: false, colorIndex: 0 },
+                { name: '2. oyuncu', score: 0, is_ai: false, colorIndex: 1 },
+                { name: '3. oyuncu', score: 0, is_ai: false, colorIndex: 2 },
+                { name: '4. oyuncu', score: 0, is_ai: false, colorIndex: 3 },
+              ]}
+            />
+          </Tahta>
+        </div>
+
         <div
           style={{
             flex: 1,
