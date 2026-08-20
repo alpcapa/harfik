@@ -47,7 +47,8 @@ const double _kOhpColumnWidth = 34;
 /// ortalaması DEĞİL, tüm hamlelerin tek havuzdaki ortalaması. İfade
 /// değişirse bu cümle de değişmeli (web `OHP_HINT` ile ELLE senkron).
 const ohpHint =
-    'Ortalama Hamle Puanı tüm oyunlarda yapılan tüm hamlelerin ortalamasıdır.';
+    'Ortalama Hamle Puanı tüm oyunlarda yapılan tüm hamlelerin ortalamasıdır. '
+    'Puanlar eşitse OHP yüksek olan üstte sıralanır.';
 
 /// Web INITIAL_PAGE_SIZE / PAGE_SIZE — ilk açılışta "ilk 10", sonra 20'şer.
 const _initialPageSize = 10;
@@ -289,7 +290,7 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
         children: [
           const Text(
             'k-lig, senin gibi kayıtlı kullanıcıların aldığı puanlara göre '
-            'oluşan bir yarışmadır.',
+            'oluşan bir yarışmadır. Puanlar eşitse OHP yüksek olan üstte.',
             textAlign: TextAlign.center,
             style: TextStyle(
                 fontFamily: 'SpaceMono',
@@ -351,7 +352,12 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
                   }
                   final r = rows[i];
                   return _Row(
-                    rank: i + 1,
+                    // Sıra SUNUCUDAN (`k_lig_siralama.sira`), listedeki
+                    // indeksten DEĞİL — "senin sıran" satırı ve Skor Kartı
+                    // başlığı da aynı sayıyı aynı view'dan okuyor. İndeksten
+                    // türetmek eşit puanlılarda ikisini ayrıştırıyordu
+                    // (20 Ağustos 2026, web ile aynı düzeltme).
+                    rank: r.sira,
                     name: r.shortName,
                     avatarUrl: r.avatarUrl,
                     score: r.totalScore,

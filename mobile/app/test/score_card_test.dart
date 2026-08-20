@@ -40,7 +40,15 @@ class FakeStatsGateway implements StatsGateway {
   @override
   Future<List<Map<String, Object?>>> leaderboard(int limit, int offset) async {
     pageRequests.add((limit: limit, offset: offset));
-    return rows.skip(offset).take(limit).toList();
+    // Gerçek uç gibi: sıra SUNUCUDAN gelir (`k_lig_siralama.sira`), istemci
+    // onu listedeki indeksten türetmez. Fikstür `sira` vermediyse burada
+    // konumdan damgalanır (fikstürlerin `rows`u zaten sıralı) — açıkça
+    // verilmişse dokunulmaz, böylece "indeksten türetmiyor" negatif eşi
+    // yazılabiliyor.
+    return [
+      for (final (i, r) in rows.skip(offset).take(limit).indexed)
+        {'sira': offset + i + 1, ...r},
+    ];
   }
 
   @override
@@ -496,6 +504,59 @@ void main() {
     expect(find.text('89'), findsOneWidget); // gerçek puanı — myRank'in 89'u değil
   });
 
+  testWidgets(
+      'regresyon (20 Ağustos 2026): sıra numarası SUNUCUDAN okunuyor, '
+      'listedeki indeksten TÜRETİLMİYOR — eşit puanlılar OHP\'ye göre '
+      'ayrıştığından liste ile Skor Kartı\'ndaki "#sıra" ancak böyle aynı '
+      'sayıyı gösterir (kullanıcı bildirdi: aynı oyuncu listede 13., kendi '
+      'kartında #10 görünüyordu)', (tester) async {
+    // Fikstür `sira`yı AÇIKÇA veriyor ve bilerek indeksle ÇAKIŞMIYOR:
+    // indeksten türeten bir uygulama 1/2/3 çizerdi.
+    final gw = FakeStatsGateway(
+      rows: const [
+        {
+          'sira': 10,
+          'user_id': 'u-a',
+          'display_name': 'T3',
+          'total_score': 20,
+          'avg_move_score': 12.79
+        },
+        {
+          'sira': 11,
+          'user_id': 'u-b',
+          'display_name': 'Tess',
+          'total_score': 20,
+          'avg_move_score': 10.59
+        },
+        {
+          'sira': 12,
+          'user_id': 'u-c',
+          'display_name': 'Bobola',
+          'total_score': 20,
+          'avg_move_score': 10.15
+        },
+      ],
+    );
+    await pumpModal(
+      tester,
+      LeaderboardModal(
+        auth: AuthService.fake(user: fakeUser(), profile: ironman),
+        stats: StatsRepo(gw),
+      ),
+    );
+
+    expect(find.text('10'), findsOneWidget);
+    expect(find.text('11'), findsOneWidget);
+    expect(find.text('12'), findsOneWidget);
+    // Negatif eş: indeksten türetilseydi bunlar çizilirdi.
+    expect(find.text('1'), findsNothing);
+    expect(find.text('2'), findsNothing);
+    expect(find.text('3'), findsNothing);
+    // Eşit puanda sıra OHP'ye göre: yüksek OHP üstte.
+    expect(find.text('12.79'), findsOneWidget);
+    expect(find.text('10.15'), findsOneWidget);
+  });
+
   testWidgets('k-lig: satıra dokunmak o oyuncunun kartını açar',
       (tester) async {
     final gw = FakeStatsGateway(
@@ -664,7 +725,8 @@ void main() {
     // bağlanan bir assertion, widget balonu hiç göstermese bile derlenir
     // — negatif eş kanıtlanamazdı.
     const hint =
-        'Ortalama Hamle Puanı tüm oyunlarda yapılan tüm hamlelerin ortalamasıdır.';
+        'Ortalama Hamle Puanı tüm oyunlarda yapılan tüm hamlelerin ortalamasıdır. '
+        'Puanlar eşitse OHP yüksek olan üstte sıralanır.';
     expect(find.text(hint), findsNothing);
     await tester.tap(find.text('OHP'));
     await tester.pumpAndSettle();

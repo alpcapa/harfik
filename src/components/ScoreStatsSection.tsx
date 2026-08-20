@@ -72,7 +72,10 @@ export function buildScoreCells(
     { label: 'En İyi Hamle Puanı', value: stats?.best_move_score ?? 0, cls: 'text-accent' },
     { label: 'En Yüksek Puanlı Kelime', value: stats?.best_word_score ?? 0, cls: 'text-gold' },
     {
-      label: 'Ortalama Hamle Puanı',
+      // "(OHP)" — k-lig listesindeki OHP sütunuyla AYNI sayı olduğunu
+      // söyleyen tek ipucu bu; iki ekran arasındaki bağı kuran etiket
+      // (kullanıcı isteği, 20 Ağustos 2026).
+      label: 'Ortalama Hamle Puanı (OHP)',
       value: Number(stats?.avg_move_score ?? 0).toFixed(2),
       cls: 'text-accent',
     },

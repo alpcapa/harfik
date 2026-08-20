@@ -236,16 +236,25 @@ export async function logGuestVisit(
 }
 
 /**
- * Liderlik tablosunu sayfalı biçimde döner (toplam puana göre azalan).
- * `Leaderboard` bileşeni önce ilk 10'u, sonra kaydırdıkça `offset`'i
- * artırarak listenin sonuna kadar lazy-load ile devam eder.
+ * Liderlik tablosunu sayfalı biçimde döner. `Leaderboard` bileşeni önce ilk
+ * 10'u, sonra kaydırdıkça `offset`'i artırarak listenin sonuna kadar lazy-load
+ * ile devam eder.
+ *
+ * **Kaynak `leaderboard` DEĞİL `k_lig_siralama`** (20 Ağustos 2026): sıra artık
+ * sunucuda tek bir yerde hesaplanıyor (`sira`), eşit puanlılar OHP'ye göre
+ * ayrışıyor. Öncesinde sıralama YALNIZCA `total_score`'a göreydi; eşitlikte
+ * satır sırası Postgres'in keyfine kalıyordu ve SORGUDAN SORGUYA
+ * DEĞİŞEBİLİYORDU — yani `.range()` ile sayfalanan bu listede bir satır iki
+ * kez görünebilir ya da hiç görünmeyebilirdi. Ekrandaki sıra numarası da
+ * dizideki indeksten (`i + 1`) değil bu kolondan geliyor, çünkü aynı sayıyı
+ * `my_leaderboard_rank` de bu view'dan okuyor.
  */
 export async function fetchLeaderboard(limit = 10, offset = 0): Promise<LeaderboardRow[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
-    .from('leaderboard')
+    .from('k_lig_siralama')
     .select('*')
-    .order('total_score', { ascending: false })
+    .order('sira', { ascending: true })
     .range(offset, offset + limit - 1);
   if (error) {
     console.error('[Kelimeki] fetchLeaderboard hatası:', error.message);
@@ -254,7 +263,12 @@ export async function fetchLeaderboard(limit = 10, offset = 0): Promise<Leaderbo
   return (data as LeaderboardRow[]) ?? [];
 }
 
-/** Oturum açan kullanıcının toplam puana göre sırasını döner. */
+/**
+ * Oturum açan kullanıcının k-lig sırasını döner — listedeki (`fetchLeaderboard`)
+ * sayıyla BİREBİR AYNI olmak zorunda: ikisi de `k_lig_siralama` view'ından
+ * okuyor. Öncesinde RPC `rank()` kullanıyordu, yani eşit puanlı herkese AYNI
+ * sırayı veriyordu (Bobola listede 13., kendi kartında "#10" görünüyordu).
+ */
 export async function fetchMyLeaderboardRank(userId: string): Promise<MyLeaderboardRank | null> {
   if (!supabase) return null;
   const { data, error } = await supabase.rpc('my_leaderboard_rank', { p_user_id: userId });

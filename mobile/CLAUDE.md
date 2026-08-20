@@ -6142,6 +6142,19 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   olmamalı. Üç parça da Flutter SDK'sız oturumlarda yazıldı — Dart
   yarısının CI dışında kanıtı yok.
 
+- **20 Ağustos (Parça 119) — k-lig sırası artık SUNUCUDAN (`k_lig_siralama`):**
+  k-lig listesindeki sıra numarası ile o oyuncunun Skor Kartı başlığındaki
+  "#sıra" AYNI sayı olmalı — özellikle EŞİT PUANLI oyuncularda (kullanıcı
+  webde bildirdi: aynı kişi listede 13., kendi kartında #10). Port artık
+  sırayı listedeki indeksten türetmiyor, `LeaderboardRow.sira`yı okuyor;
+  gerekçenin tamamı kök `CLAUDE.md` → `Leaderboard` bölümü. Cihazda
+  kontrol: eşit puanlı iki oyuncunun sırası OHP'ye göre ayrışmalı (yüksek
+  OHP üstte), listede görülen sıra o kişinin kartını açınca başlıkta AYNI
+  çıkmalı, ve k-lig açıklamasında "Puanlar eşitse OHP yüksek olan üstte."
+  satırı görünmeli. Skor Kartı'ndaki metrik etiketi de **"Ortalama Hamle
+  Puanı (OHP)"** olmalı (dar ekranda kutuyu taşırmadan sarmalı). Flutter
+  SDK'sız bir oturumda yazıldı — Dart yarısının CI dışında kanıtı yok.
+
 Liste bir gün BOŞALIRSA öyle kalmasını bekleme: yeni bir düzeltme
 yazıldığında buraya yine madde eklenmeli (kural değişmedi: yazıldığı gün
 cihazda görülmemiş her düzeltme burada birikir).
