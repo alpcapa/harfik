@@ -39,7 +39,8 @@ function formatOhp(v: number | null | undefined): string {
 // ortalaması DEĞİL, tüm hamlelerin tek bir havuzdaki ortalaması (ağırlıklı).
 // İfade değişirse bu cümle de değişmeli.
 const OHP_HINT =
-  'Ortalama Hamle Puanı tüm oyunlarda yapılan tüm hamlelerin ortalamasıdır.';
+  'Ortalama Hamle Puanı tüm oyunlarda yapılan tüm hamlelerin ortalamasıdır. ' +
+  'Puanlar eşitse OHP yüksek olan üstte sıralanır.';
 
 function rowToPlayerSummary(r: LeaderboardRow): PlayerSummary {
   return {
@@ -148,6 +149,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
     >
       <p className="text-[11px] text-muted font-mono text-center mb-3 leading-relaxed">
         k-lig, senin gibi kayıtlı kullanıcıların aldığı puanlara göre oluşan bir yarışmadır.
+        Puanlar eşitse OHP yüksek olan üstte.
       </p>
       {rows === null ? (
         <p className="text-muted text-xs font-mono text-center py-6">Yükleniyor…</p>
@@ -198,7 +200,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
             </p>
           ) : (
             <ol ref={scrollRef} className="flex flex-col gap-1 max-h-[50vh] overflow-y-auto pr-1">
-              {rows.map((r, i) => {
+              {rows.map((r) => {
                 const me = user && r.user_id === user.id;
                 const name = rowName(r);
                 return (
@@ -211,13 +213,18 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                         me ? 'bg-accent/10 border border-accent' : 'bg-bg',
                       ].join(' ')}
                     >
+                      {/* Sıra SUNUCUDAN geliyor (`k_lig_siralama.sira`), dizideki
+                          indeksten DEĞİL — "senin sıran" kısayolu ve Skor Kartı
+                          başlığı da aynı sayıyı aynı view'dan okuyor. İndeksten
+                          türetmek, eşit puanlılarda ikisinin ayrışmasına yol
+                          açıyordu (20 Ağustos 2026). */}
                       <span
                         className={[
                           'w-6 font-bold shrink-0',
-                          i === 0 ? 'text-gold' : i < 3 ? 'text-accent' : 'text-muted',
+                          r.sira === 1 ? 'text-gold' : r.sira <= 3 ? 'text-accent' : 'text-muted',
                         ].join(' ')}
                       >
-                        {i + 1}
+                        {r.sira}
                       </span>
                       <Avatar
                         url={r.avatar_url}

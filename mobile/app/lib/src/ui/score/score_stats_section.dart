@@ -56,7 +56,9 @@ class _Cell {
     _Cell('En Yüksek Oyun Puanı', '${s?.bestScore ?? 0}', color: _gold),
     _Cell('En İyi Hamle Puanı', '${s?.bestMoveScore ?? 0}', color: _accent),
     _Cell('En Yüksek Puanlı Kelime', '${s?.bestWordScore ?? 0}', color: _gold),
-    _Cell('Ortalama Hamle Puanı',
+    // "(OHP)" — k-lig listesindeki OHP sütunuyla AYNI sayı olduğunu söyleyen
+    // tek ipucu bu (kullanıcı isteği, 20 Ağustos 2026; web ile birebir).
+    _Cell('Ortalama Hamle Puanı (OHP)',
         (s?.avgMoveScore ?? 0).toStringAsFixed(2), color: _accent),
     _Cell('En Uzun Kelime', s?.longestWord ?? '—', span2: true),
   ];

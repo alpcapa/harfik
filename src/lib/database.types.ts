@@ -496,6 +496,13 @@ export interface WordMeaning {
 }
 
 export interface LeaderboardRow {
+  /**
+   * k-lig sırası — sunucuda (`k_lig_siralama` view'ı) hesaplanır: puan desc,
+   * eşitse OHP desc, o da eşitse user_id. **Dizideki indeksten (`i + 1`)
+   * TÜRETİLMEZ** — `my_leaderboard_rank` de aynı view'dan okuduğundan liste
+   * ile "senin sıran"/Skor Kartı başlığı ancak böyle aynı sayıyı gösterir.
+   */
+  sira: number;
   user_id: string;
   username: string | null;
   first_name: string | null;
@@ -523,6 +530,7 @@ export interface LeaderboardRow {
 }
 
 export interface MyLeaderboardRank {
+  /** `k_lig_siralama.sira` ile AYNI sayı — bkz. `LeaderboardRow.sira`. */
   rank: number;
   total_score: number;
   /**

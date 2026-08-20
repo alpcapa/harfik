@@ -892,7 +892,23 @@ gerekiyor).
       Hamle Puanı" ile BİREBİR aynı olmalı — ikisi aynı SQL ifadesinden
       geliyor, ayrışırlarsa biri bozulmuş demektir. Listede kendi satırın
       görünmeyecek kadar aşağıdaysan alttaki "senin sıran" kısayolunda da
-      OHP dolu olmalı (boş/hizasız DEĞİL).
+      OHP dolu olmalı (boş/hizasız DEĞİL). Balon metninin sonunda artık
+      "Puanlar eşitse OHP yüksek olan üstte sıralanır." cümlesi de olmalı
+      (20 Ağustos 2026).
+- [ ] **Sıra numarası liste ile Skor Kartı'nda AYNI (20 Ağustos 2026).**
+      Bu, bildirilen hatanın kendisi: eşit puanlı oyuncular vardı ve aynı
+      kişi listede 13., kendi kartında "#10" görünüyordu. Kontrol: k-lig
+      listesinde **aynı puana sahip** iki oyuncu bul (bugün canlıda 2 puanlı
+      dört kişi var), sıralarının OHP'ye göre ayrıştığını doğrula (yüksek
+      OHP ÜSTTE), sonra alttakinin satırına dokunup kartını aç — başlıktaki
+      "#sıra" listede gördüğün sayının AYNISI olmalı. Kendi hesabınla da
+      yap: listede kaçıncıysan hesap menüsündeki/Skor Kartı'ndaki sayı o
+      olmalı. **İkinci kontrol (sayfalama):** listeyi sonuna kadar kaydır —
+      hiçbir oyuncu İKİ KEZ görünmemeli ve kimse atlanmamalı (eski sıralama
+      eşitlikte kararsızdı, `.range()` ile sayfalanınca bu mümkündü).
+      Açıklama satırında "Puanlar eşitse OHP yüksek olan üstte." yazmalı.
+      Skor Kartı'ndaki metrik etiketi de "Ortalama Hamle Puanı (OHP)"
+      olmalı — dar bir telefonda kutuyu taşırmadan sarmalı.
 - [ ] **Kutlama banner'ı bir kez çıkar.** Görülmemiş bir ödülün varken
       (test için bir satırın `seen_at`'i SQL'le null'a çekilebilir) siteye
       gir: mühür damgalı, konfetili banner ekranın ORTASINDA, karartılmış

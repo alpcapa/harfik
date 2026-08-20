@@ -99,6 +99,12 @@ class PlayerStats {
 
 /// Web `LeaderboardRow` — `leaderboard` view satırı.
 class LeaderboardRow {
+  /// k-lig sırası — SUNUCUDA hesaplanır (`k_lig_siralama.sira`): puan desc,
+  /// eşitse OHP desc, o da eşitse user_id. Listedeki indeksten (`i + 1`)
+  /// TÜRETİLMEZ; `my_leaderboard_rank` de aynı view'dan okuduğundan liste ile
+  /// "senin sıran"/Skor Kartı başlığı ancak böyle aynı sayıyı gösterir.
+  final int sira;
+
   final String userId;
   final String? displayName;
   final String? firstName;
@@ -113,6 +119,7 @@ class LeaderboardRow {
   final double? avgMoveScore;
 
   const LeaderboardRow({
+    required this.sira,
     required this.userId,
     required this.displayName,
     required this.firstName,
@@ -130,6 +137,7 @@ class LeaderboardRow {
           : 'Anonim';
 
   factory LeaderboardRow.fromJson(Map<String, Object?> j) => LeaderboardRow(
+        sira: (j['sira'] as num?)?.toInt() ?? 0,
         userId: j['user_id'] as String,
         displayName: j['display_name'] as String?,
         firstName: j['first_name'] as String?,
@@ -207,10 +215,15 @@ class SupabaseStatsGateway implements StatsGateway {
 
   @override
   Future<List<Map<String, Object?>>> leaderboard(int limit, int offset) async {
+    // Kaynak `leaderboard` DEĞİL `k_lig_siralama` (20 Ağustos 2026): sıra
+    // sunucuda tek yerde hesaplanıyor ve eşit puanlılar OHP'ye göre ayrışıyor.
+    // Öncesinde sıralama yalnızca `total_score`'a göreydi; eşitlikte satır
+    // sırası sorgudan sorguya değişebildiğinden `range()` ile sayfalanan bu
+    // listede bir satır iki kez görünebilir ya da hiç görünmeyebilirdi.
     final rows = await client
-        .from('leaderboard')
+        .from('k_lig_siralama')
         .select()
-        .order('total_score', ascending: false)
+        .order('sira', ascending: true)
         .range(offset, offset + limit - 1);
     return [for (final r in rows) (r as Map).cast<String, Object?>()];
   }
