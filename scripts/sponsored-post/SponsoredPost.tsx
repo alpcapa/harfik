@@ -438,7 +438,13 @@ export function SponsoredPost() {
             gap: 34,
           }}
         >
-          <LandingLogo height={96} />
+          {/* 96 → 160 (kullanıcı isteği). Sınırı ÖLÇEREK seçildi: metin kolonu
+              901 px, içerik 716 px, yani 185 px boşluk vardı — 64 px'lik
+              büyüme onu 121'e indiriyor (üstte/altta ~61). Yatayda logo
+              64→559'a uzuyor; başlığın mürekkebi (647) ve sağ üstteki
+              tahtanın sol kenarı (690) hâlâ ötesinde, yani ne hiyerarşi ne
+              de çakışma bozuluyor. */}
+          <LandingLogo height={160} />
           <h1
             style={{
               margin: 0,
