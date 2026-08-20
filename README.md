@@ -189,6 +189,9 @@ src/
     ├── pwa.ts             # PWA/service worker yardımcıları
     └── database.types.ts  # şema tipleri
 
+marketing/                 # reklam/tanıtım çıktıları — üretilmiş PNG + metin;
+                           # uygulamaya girmez (node scripts/sponsored-post/build.mjs)
+
 mobile/                    # Flutter (iOS+Android) portu — ayrıntı: mobile/CLAUDE.md
 ├── kelimeki_core/         # oyun motorunun saf Dart portu (web motoruna eşitliği
 │                          # golden vector testleriyle kanıtlı: dart run test/run_all.dart)
