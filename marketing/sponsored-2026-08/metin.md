@@ -1,8 +1,9 @@
 # Sponsorlu gönderi — 6 gün × 433 TL/gün (≈ 2.598 TL)
 
+**Platform:** Instagram (kullanıcı kararı, 20 Ağustos 2026 — tek platformda
+koşturulacak).
 **Hedef:** kelimeki.com'a trafik → üyelik → oyun.
 **Görseller:** `kelimeki-01…05.png`, 1080×1080 (2× ölçek: 2160×2160), carousel sırası 1→5.
-Kare oran hem LinkedIn hem Instagram/Facebook carousel'inde çalışır.
 
 ---
 
@@ -21,7 +22,40 @@ gitmeyebiliyor, 3. karede bırakan da adresi görmüş oluyor.
 
 ---
 
-## 2 · Gönderi metni — LinkedIn
+## 2 · Gönderi metni — Instagram (kampanya metni)
+
+> Kelime bul, bölgeni büyüt, tahtayı ele geçir 🧩
+>
+> 13×13'lük tahtanın dört köşesi oyuncuların. Kendi köşenden başlıyor, koyduğun her taşla bölgeni büyütüyorsun. Rakibin bölgesine oynayabilirsin — ama vergisini ödersin 😏
+>
+> 🔹 63.000+ kelime (TDK kaynaklı)
+> 🔹 2 veya 4 kişi: yapay zekaya ya da arkadaşlarına karşı
+> 🔹 Her hamle için 48 saat — aynı anda çevrimiçi olmak gerekmiyor
+> 🔹 Ücretsiz · kurulum yok · reklam yok
+>
+> 👉 kelimeki.com
+>
+> #kelimeoyunu #zekaoyunu #bulmaca #türkçe #ücretsizoyun
+
+**Neden bu beş:** Instagram'da hashtag artık erişimin küçük bir parçası;
+konuyu tarif eden az sayıda alakalı etiket, uzun bir listeden daha temiz
+görünüyor ve gönderiyi spam'e yakın göstermiyor. İlk satır feed'de kesilmeden
+görünen tek satır — kanca orada.
+
+### Kısa varyant (A/B testi için)
+
+> Bu bir kelime oyunu ama asıl soru şu: kelimeyi NEREYE koyacaksın? 🧩
+>
+> Köşenden başla, bölgeni büyüt, rakibinin alanına girmeyi göze al (vergisi var 😏).
+> Ücretsiz, kurulum yok, tarayıcıda çalışıyor.
+>
+> 👉 kelimeki.com
+>
+> #kelimeoyunu #zekaoyunu #bulmaca #türkçe #ücretsizoyun
+
+---
+
+## 3 · LinkedIn varyantı — KAMPANYA DIŞI, organik paylaşım için
 
 > Türkçe kelime oyunlarında herkes aynı soruyu soruyor: "en yüksek puanlı kelime hangisi?"
 >
@@ -44,59 +78,30 @@ optimum; fazlası erişimi düşürüyor.
 
 ---
 
-## 3 · Gönderi metni — Instagram / Facebook
-
-> Kelime bul, bölgeni büyüt, tahtayı ele geçir 🧩
->
-> 13×13'lük tahtanın dört köşesi oyuncuların. Kendi köşenden başlıyor, koyduğun her taşla bölgeni büyütüyorsun. Rakibin bölgesine oynayabilirsin — ama vergisini ödersin 😏
->
-> 🔹 63.000+ kelime (TDK kaynaklı)
-> 🔹 2 veya 4 kişi: yapay zekaya ya da arkadaşlarına karşı
-> 🔹 Her hamle için 48 saat — aynı anda çevrimiçi olmak gerekmiyor
-> 🔹 Ücretsiz · kurulum yok · reklam yok
->
-> 👉 kelimeki.com
->
-> #kelimeoyunu #kelimeoyunları #türkçe #zekaoyunu #bulmaca #kelime #oyun #türkçeoyun #stratejioyunu #beyinjimnastiği #oyunönerisi #ücretsizoyun #bulmacaoyunu #mobiloyun #webgame
-
-### Kısa varyant (A/B testi için)
-
-> Bu bir kelime oyunu ama asıl soru şu: kelimeyi NEREYE koyacaksın? 🧩
->
-> Köşenden başla, bölgeni büyüt, rakibinin alanına girmeyi göze al (vergisi var 😏).
-> Ücretsiz, kurulum yok, tarayıcıda çalışıyor.
->
-> 👉 kelimeki.com
-
----
-
 ## 4 · Reklam kurulumu — atlanırsa kampanya ölçülemez
 
 **1) Hedef URL'de mutlaka `?ref=` kullan.**
 
 ```
-https://kelimeki.com/?ref=meta
-https://kelimeki.com/?ref=linkedin
+https://kelimeki.com/?ref=instagram
 ```
 
 Site kaynak etiketini **yalnızca `?ref=` parametresinden** okuyor
-(`src/utils/visitTracking.ts` → `captureUtmSource`). Meta/LinkedIn'in
+(`src/utils/visitTracking.ts` → `captureUtmSource`). Meta'nın
 otomatik eklediği `utm_source=...` bu projede **hiçbir yere yazılmaz** —
 `?ref=` yoksa ziyaretçi admin panelindeki huniye "direkt" olarak düşer ve
 kampanyanın getirdiği trafiği ayırt edemezsin. (Platformun kendi utm
 parametrelerini ayrıca eklemesi sorun değil, yeter ki `ref=` de olsun.)
 
-**2) Kampanya hedefi:** Sitede kurulu bir Meta pixel'i / LinkedIn Insight Tag
-**yok** (bilinçli: üçüncü taraf izleyici kullanılmıyor). Dolayısıyla platform
+**2) Kampanya hedefi:** Sitede kurulu bir Meta pixel'i **yok** (bilinçli: üçüncü taraf izleyici kullanılmıyor). Dolayısıyla platform
 "üyelik" için optimize edemez. Hedefi **Trafik** seç ve optimizasyonu
 **"Açılış sayfası görüntüleme"** yap — "Link tıklaması" tıklayıp sayfa
 açılmadan çıkanları da sayıyor, aradaki fark bu bütçede ciddi.
 
 **3) CTA butonu:** "Oyna" varsa o; yoksa "Daha fazla bilgi".
-LinkedIn'de "Siteyi ziyaret et".
 
 **4) Sonucu nereden okuyacaksın:** Admin paneli → **Büyüme › Kullanıcı ›
-Kaynak Hunisi**. Kampanyadan sonra `meta` / `linkedin` satırı belirir ve
+Kaynak Hunisi**. Kampanyadan sonra `instagram` satırı belirir ve
 kaynak başına **Kişi → Üye → Oyun** üçlüsünü verir; zaman filtresi
 (Son 7/30 gün) yukarıdaki kontrollerden geliyor.
 
@@ -108,18 +113,17 @@ korunur, yani huni kampanyayı **eksik** sayar — asla fazla saymaz.
 
 ## 5 · Bütçe hakkında bir not
 
-433 TL/gün'ü iki platforma bölmek yerine **tek platformda koşturmanı**
-öneririm: 6 gün × ~216 TL'lik iki ayrı kampanya, her ikisinde de öğrenme
-aşamasını tamamlamaya yetmeyen bir hacim üretir. Diğer platformda aynı
-görselleri organik paylaş; hangisinin çalıştığını gördükten sonra bütçeyi
-oraya kaydır.
+Bütçenin tamamı tek platformda (Instagram) koşuyor — bölünseydi 6 gün ×
+~216 TL'lik iki kampanya, ikisinde de öğrenme aşamasını tamamlamaya
+yetmeyen bir hacim üretirdi. LinkedIn'de aynı görselleri organik paylaş;
+hangisinin çalıştığını gördükten sonra bütçeyi oraya kaydırabilirsin.
 
 **Geçen haftanın "kimse üye olmadı" gözlemi ölçülebilir:** paylaşımı
 Setup/Tanıtım'daki "Paylaş" düğmesiyle yaptıysan link `?ref=arkadas`
 taşıyordu ve o satır zaten Kaynak Hunisi'nde duruyor. Düz kopyalanmış bir
 link kullandıysan trafik "direkt" satırında birikmiştir; o durumda gerçekten
 "kimse gelmedi" mi yoksa "geldi ama etiketsiz mi" ayırt edilemez — bu
-kampanyada `?ref=meta` bunu kalıcı olarak çözer.
+kampanyada `?ref=instagram` bunu kalıcı olarak çözer.
 
 ---
 
