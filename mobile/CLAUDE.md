@@ -6034,9 +6034,20 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        karşılığı yok. Web tarafında asıl hata buradaydı: `captureUtmSource`
        `App.tsx`'teydi ve `/davet/:token` route'u `App`'i hiç mount etmiyor,
        yani etiket konsa bile kaydedilmiyordu; çağrı `boot.tsx`e taşındı.
-     - **Dart tarafında test yok** (tek satırlık bir dize değişikliği; davranış
-       testi web'de, `tests/smoke.spec.ts`te). Flutter SDK yine bu ortamda
-       YOK — kanıt CI.
+     - **CI'da 2 test düştü ve HATA BENDEYDİ:** `friends_test.dart` eski URL'i
+       İKİ yerde kilitliyordu (`buildInviteUrl` beklentisi + paylaşım
+       metninin panoya kopyalanan hâli). Ürünü değiştirip onu kilitleyen
+       testleri güncellememek klasik bir regresyon — üstelik etki analizinde
+       `parseInviteToken`ın etkilenmediğini OKUYARAK doğrulamıştım ama portun
+       TESTLERİNİ hiç grep'lememiştim. **Ders: bir dizeyi/URL'i değiştirirken
+       `grep -rn "<eski dize>" mobile/app/test` da koş** — kök `CLAUDE.md`'nin
+       "aynı fixture'a bakan testler" maddesi tam bunu diyor.
+     - Düzeltirken ilk test GÜÇLENDİRİLDİ: artık yalnızca dizeyi değil,
+       etiketli linkin `parseInviteToken` ile hâlâ doğru token'a çözüldüğünü
+       de sınıyor (yani sorgu parametresinin ayrıştırmayı bozmadığı artık
+       yorumda değil TESTTE yazılı).
+     - **Flutter SDK bu ortamda YOK** — hem değişikliğin hem düzeltmenin
+       kanıtı CI.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 

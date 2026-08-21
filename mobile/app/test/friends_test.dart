@@ -169,8 +169,15 @@ void main() {
       expect(parseInviteToken(Uri.parse('kelimeki://davet/a/b')), isNull);
     });
 
-    test('buildInviteUrl web biçimiyle birebir', () {
-      expect(buildInviteUrl('tok'), 'https://kelimeki.com/davet/tok');
+    test('buildInviteUrl web biçimiyle birebir — `?ref=arkadas` DAHİL', () {
+      // Etiket ZORUNLU (21 Ağustos 2026, ROADMAP #7): olmadan davetle gelip
+      // üye olan herkes admin panelindeki Kaynak Hunisi'nde `direkt` satırına
+      // düşüyor ve gerçek doğrudan trafiği şişiriyor. Web'in
+      // `FriendsModal.tsx`'indeki aynı fonksiyonla birebir olmak zorunda.
+      expect(buildInviteUrl('tok'), 'https://kelimeki.com/davet/tok?ref=arkadas');
+      // Etiketli link uygulamaya düşerse token yine doğru çözülmeli —
+      // `uri.pathSegments` sorgu dizesini içermez.
+      expect(parseInviteToken(Uri.parse(buildInviteUrl('tok'))), 'tok');
     });
   });
 
@@ -516,7 +523,7 @@ void main() {
       await tester.tap(find.text('ARKADAŞINI DAVET ET'));
       await tester.pumpAndSettle();
       expect(shared.single,
-          '$inviteShareText\nhttps://kelimeki.com/davet/tok-123');
+          '$inviteShareText\nhttps://kelimeki.com/davet/tok-123?ref=arkadas');
 
       await tester.runAsync(() async {
         final boundary =
