@@ -5969,7 +5969,9 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        `_ColHeader` web'in değerine çekildi.
      - **Portun `_PlayerRow`u artık `playerCount` alıyor** (k-lig puanı için)
        ve ad `Expanded`+`Flexible`+`ellipsis` ile kırpılıyor; `_ColHeader`
-       9 punto. Genişlik/punto sayıları iki tarafta ELLE senkron.
+       9 punto. Genişlik/punto sayıları iki tarafta ELLE senkron —
+       **21 Ağu 2026'dan beri GENİŞLİKLER `layout_parity_test.dart` ile
+       zorlanıyor** (Parça 127); puntolar hâlâ korumasız.
      - **Mevcut Dart testleri DEĞİŞMEDİ ve bu kontrol EDİLDİ** (`_PlayerRow`
        dosya-private, `GameOverModal`'ın imzası aynı, `'Toplam hamle'`/
        `'(TESLİM)'` metinleri duruyor) — grep ile doğrulandı, varsayılmadı.
@@ -6152,7 +6154,9 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ikisini birden kapsıyor.
      - **Sabitler ELLE SENKRON:** `kBackFontSize` (11) ve `kBackGap` (3) ↔
        web `BACK_FONT_SIZE`/`BACK_GAP`; renk `kText` ↔ `text-text`. Biri
-       değişirse öteki de değişmeli, bunu zorlayan bir test YOK.
+       değişirse öteki de değişmeli — **21 Ağu 2026'dan beri iki SAYIYI
+       `layout_parity_test.dart` zorluyor** (Parça 127); renk hâlâ
+       korumasız.
      - **Sol kenar hizası:** header'ın 12px yatay dolgusu = Board'unki, yani
        etiket tahtanın sol kenarıyla hizalı. **⚠ Board'un yatay dolgusu
        değişirse hiza sessizce bozulur.**
@@ -6191,6 +6195,48 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Test:** `live_games_test.dart` — 7 kural kontrolü (kullanıcının
        bildirdiği vaka dahil) + `pendingCounts` ağ hatasında null.
      - **Flutter SDK bu ortamda YOK** — Dart yarısının kanıtı CI.
+
+   - ✅ **Parça 127 — düzen paritesi artık CI'da (21 Ağustos 2026,
+     `layout_parity_test.dart`):** Kullanıcı sordu: *"Web ve app her konuda
+     paralel değil mi? Her seferinde o eksik bu diyip duruyorsun. Emin ol."*
+     Ölçüldü ve o an hepsi tutuyordu — ama **pariteyi KORUYAN bir mekanizma
+     yoktu.** Bugüne kadar yalnızca beş web dosyası (`HelpModal`,
+     Terms/Privacy, `offlineNotice`, `leagueRank`, migration SQL'i) ve golden
+     vector'lar zorlanıyordu; düzen SAYILARININ hepsi "ELLE SENKRON, zorlayan
+     test YOK" notuyla yaşıyordu. Yeni test o notu **on çiftte** geçersiz
+     kılıyor: Dart testi WEB kaynağını okuyup regex'le sayıyı çekiyor ve port
+     sabitiyle karşılaştırıyor (`rank_tiers_parity_test.dart` deseni).
+     - **Kapsam (altı grup):** (1) `GameHeader`/`UserMenu`'nün 375/465 akıcı
+       ailesi — 11 çift (`PLAYER_BOX_WIDTH`…`LOGO_HEIGHT` + üç `GIRIS_*`);
+       (2) `Board` filigranları (köşe rakamı / X2 / X3); (3) `GameOver` sağ
+       blok sütunları (29/37/20); (4) k-lig OHP sütunu (34); (5) tekrar
+       gecikmeleri + otomatik merdiven + çevrimdışı doğrulama süresi;
+       (6) "← Geri" puntosu ve boşluğu (11/3).
+     - **⚠ EN ÖNEMLİ KURAL — bir değer BULUNAMAZSA test DÜŞER, geçmez.**
+       `_pick`/`_pickAll` her çağrıda varlığı `expect` ediyor; aksi halde
+       web'de bir sabitin adı değişince test SESSİZCE hiçbir şey
+       karşılaştırmaz ve yeşil kalır ("boşa geçen test" — bu kod tabanında
+       `rank_tiers_parity_test`'in alt sınır kontrolüyle zaten tanınan risk).
+     - **ÖLÇÜLEN HATA — "Board.tsx'teki TÜM clamp'leri say, üç tane olmalı"
+       YANLIŞTI.** İlk sürüm tam bunu yapıyordu ve doğrulama koşusunda düştü:
+       dosyada **BEŞ** `calc()`siz clamp var — üç filigran + hücrenin taban
+       puntosu + "+puan" rozeti — ve son ikisinin portta akıcı bir karşılığı
+       YOK. Düzeltme: her filigran ÇİZDİĞİ ŞEYE çapalanıyor (`{num}`, `X2`,
+       `'X3'`), sayıya değil. **Ders: parite testinde ADET saymak kırılgan,
+       İÇERİĞE çapalamak sağlam.**
+     - **`calc()`siz clamp ↔ `fluidSize`:** `clamp(MIN, Bvw, MAX)` portta
+       `fluidSize(w, MIN, 0, B, MAX)` demek; test A parametresinin
+       gerçekten `0` olduğunu ayrıca kontrol ediyor.
+     - **KAPSAM DIŞI (dürüst sınır):** `TESLIM_FONT_SIZE` — portta akıcı bir
+       karşılığı YOK (`FittedBox` ile çözülüyor), karşılaştırılacak sayı da
+       yok. Renk/metin/ikon paritesi kendi testlerinde. `RankSeal` geometrisi,
+       `ozellik_ikonlari.dart` ve `decideInitialMainView` HÂLÂ korumasız —
+       onlar sayı çifti değil, yapı/algoritma kopyası.
+     - **Flutter SDK bu ortamda YOK** — testin kendisi üç yoldan doğrulandı:
+       (a) her regex'in gerçek kaynak dosyalara karşı Python'da yeniden
+       koşturulması (grup 2 hatasını bu yakaladı), (b) Dart dosyasının
+       ayraç dengesi, (c) her çapanın `grep`le kaynağında teyidi. Dart
+       yarısının kanıtı yine CI.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
