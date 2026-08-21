@@ -6294,6 +6294,14 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        (`readRepoFile`/`pick`/`pickAll`) — üç parite testi paylaşıyor. Daha
        eski üç parite testi (`help_text`/`legal_text`/`rank_tiers`) kendi
        okuyucularını taşımaya devam ediyor; onlara dokunulmadı.
+     - **⚠ CI GERÇEK BİR HATA BULDU — prototipleme MANTIĞI doğrular, DİLİ
+       değil.** İkon ayrıştırıcısı önce Python'da yazılıp Dart'a çevrildi;
+       Python'da `Match.end()` bir METOT, Dart'ta `Match.end` bir GETTER.
+       Prototipin API şekli olduğu gibi kopyalanınca `dart analyze` iki
+       hatayla düştü (artı iki gereksiz `!` uyarısı — `flutter analyze`
+       uyarıyı da hata sayıyor). Ders: çeviriden sonra getter/metot ayrımı
+       ayrıca taranmalı; bu tur için `.isEmpty()/.length()/.keys()` gibi
+       yaygın karışıklıklar mekanik olarak da tarandı.
      - **Flutter SDK bu ortamda YOK** — dört doğrulama yolu: (a) her
        ayrıştırıcı önce Python'da gerçek dosyalara karşı koşturuldu (ikon
        karşılaştırmasında İKİ parser hatamı bu yakaladı: `final ad = Path()…`

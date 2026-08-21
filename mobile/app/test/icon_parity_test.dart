@@ -27,6 +27,13 @@
 // KAPSAM DIŞI: renk (çağırandan miras, `color_tokens_test`in işi), boy
 // (varsayılan 13), `strokeWidth`/`strokeCap` gibi Paint ayarları ve
 // `aria-hidden`. Burada yalnızca GEOMETRİ karşılaştırılıyor.
+//
+// ⚠ TRANSKRİPSİYON TUZAĞI (CI 21 Ağustos 2026'da yakaladı): bu ayrıştırıcı
+// önce Python'da prototiplendi ve oradan Dart'a çevrildi — Python'da
+// `Match.end()` bir METOT, Dart'ta `Match.end` bir GETTER. Prototipin API
+// şekli olduğu gibi kopyalanınca `dart analyze` düştü. Prototipleme yöntemi
+// MANTIĞI doğruluyor, DİLİ değil; çeviriden sonra getter/metot ayrımı ayrıca
+// taranmalı.
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/web_source.dart';
@@ -139,8 +146,8 @@ List<String> _parseSvgPath(String d) {
         final v = take(4);
         final a = cmd == 'S' ? v : [v[0] + x, v[1] + y, v[2] + x, v[3] + y];
         // Düz (smooth) eğri: ilk kontrol noktası öncekinin YANSIMASI.
-        final r1x = c2x == null ? x : 2 * x - c2x!;
-        final r1y = c2y == null ? y : 2 * y - c2y!;
+        final r1x = c2x == null ? x : 2 * x - c2x;
+        final r1y = c2y == null ? y : 2 * y - c2y;
         segs.add('C ${_f(x)} ${_f(y)} ${_f(r1x)} ${_f(r1y)} '
             '${_f(a[0])} ${_f(a[1])} ${_f(a[2])} ${_f(a[3])}');
         c2x = a[0];
@@ -229,7 +236,7 @@ List<String> _dartPath(String src) {
   double x = 0, y = 0;
   final opRe = RegExp(r'\.\.(moveTo|lineTo|cubicTo|arcToPoint)\(');
   for (final m in opRe.allMatches(src)) {
-    final arg = _balanced(src, m.end());
+    final arg = _balanced(src, m.end);
     switch (m.group(1)) {
       case 'moveTo':
         final v = _nums(arg);
@@ -301,7 +308,7 @@ Map<String, List<String>> _dartIcons(String src) {
     final items = <String>[];
     final callRe = RegExp(r'canvas\.draw(Line|RRect|Circle|Path)\s*\(');
     for (final c in callRe.allMatches(body)) {
-      final arg = _balanced(body, c.end());
+      final arg = _balanced(body, c.end);
       final kind =
           RegExp(r',\s*fill\s*,?\s*$').hasMatch(arg) ? 'fill' : 'stroke';
       switch (c.group(1)) {
