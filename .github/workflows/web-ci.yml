@@ -32,6 +32,7 @@ on:
     paths:
       - 'src/**'
       - 'scripts/**'
+      - 'supabase/migrations/**'
       - 'tests/**'
       - 'public/**'
       - 'index.html'
@@ -46,6 +47,7 @@ on:
     paths:
       - 'src/**'
       - 'scripts/**'
+      - 'supabase/migrations/**'
       - 'tests/**'
       - 'public/**'
       - 'index.html'
@@ -95,6 +97,14 @@ jobs:
       # Golden ÜRETİLMİŞ bir dosya, yani TS kuralı değişip golden yeniden
       # üretilmezse Dart testi ESKİ tabloya karşı geçerdi. Bu adım o deliği
       # kapatıyor: üreticiyi koşup dosyanın tazeliğini zorluyor.
+      # k-lig kademe/ödül tablosu ÜÇ KOPYA elle senkron (SQL ↔ TS ↔ Dart).
+      # TS ↔ Dart yarısı portun `rank_tiers_parity_test.dart`ı ile kilitli;
+      # bu adım SQL yarısını kilitliyor — geçerli tanımı taşıyan migration'ı
+      # ada göre bulup `(values ...)` listelerini TS tablosuyla karşılaştırır.
+      # ⚠ Bu yüzden `paths` listesinde `supabase/migrations/**` de var:
+      # yalnızca migration değişen bir PR'da da koşmak ZORUNDA.
+      - run: npm run verify-league-tiers
+
       - run: npm run generate-initial-main-view-golden
       - name: Golden tazeliği (initial_main_view)
         run: |

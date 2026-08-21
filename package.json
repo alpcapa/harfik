@@ -27,7 +27,8 @@
     "generate-reel": "node scripts/reel/build.mjs",
     "generate-fb-cover": "node scripts/kapak/build.mjs",
     "verify-demo-board": "esbuild scripts/verify-demo-board.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-demo-board.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-demo-board.mjs",
-    "generate-initial-main-view-golden": "node scripts/run-generate-initial-main-view-golden.mjs"
+    "generate-initial-main-view-golden": "node scripts/run-generate-initial-main-view-golden.mjs",
+    "verify-league-tiers": "node scripts/verify-league-tiers.mjs"
   },
   "dependencies": {
     "@fontsource/nunito": "^5.2.7",
