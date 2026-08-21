@@ -1468,10 +1468,36 @@ edilen kelimeyi mobil reddediyor" olarak görünür.
       sunucuda render edilip, 320/390/834/1194): tablo **1816.6 px**, kap
       246–598 px, yani yatay kaydırma 1219–1571 px — **sayfa taşması her
       genişlikte 0** (kaydırma tablonun kendi `overflow-x-auto` kabında
-      kalıyor) ve satır yüksekliği 33.5 px'te sabit. Uzun bir kaydırma bu
-      isteğin doğal bedeli; ilk kolonu `sticky` yapmak yönelimi kolaylaştırır
-      ama satırın koşullu arka planıyla (vurgu/hover) çakışıyor, o yüzden
-      YAPILMADI.
+      kalıyor) ve satır yüksekliği 33.5 px'te sabit.
+    - **İSİM KOLONU SABİT (aynı gün, kullanıcı isteği: *"sola doğru
+      kaydırınca isim kolonunu sabitleyebilir miyiz? Tabloda kişiyi takip
+      etmek zor oluyor."*).** İlk sürümde bu bilerek YAPILMAMIŞTI (satırın
+      koşullu arka planıyla çakışma gerekçesiyle) — kullanıcı isteyince
+      çakışma çözülerek eklendi. `STICKY_NAME_CELL`, hem `<th>`e hem `<td>`ye
+      veriliyor; üç ayrıntı zorunlu:
+      - **Opak zemin (`bg-panel`).** Sabit hücre altındakilerin ÜSTÜNDE
+        durur; saydam kalırsa kayan metin içinden geçer.
+      - **Satır tonu AYRI BİR KATMAN.** Vurgu (`bg-accent/20`, "Kişiye Git →"
+        akışı) ve hover (`bg-bg/60`) saydam olduğundan opak zeminin üstüne
+        `absolute inset-0` bir `<span>` ile biniyor (`tr`de `group`,
+        span'de `group-hover:`). Aksi halde tam o hücrede vurgu/hover
+        KAYBOLURDU — sabit kolonu eklememe gerekçesi buydu, çözümü bu.
+      - **Genişlik kapaklı (`max-w-[150px] truncate`).** İsim alanının
+        uzunluk sınırı YOK ve bu kolon tablonun en genişi; kapaksız bir sabit
+        kolon 320px'te (kap 246px) görünür alanın TAMAMINI yerdi. ÖLÇÜLDÜ:
+        üretimdeki en uzun ad **18 karakter** (~131px), ortalama 12 — yani
+        150px bugünkü hiçbir adı kırpmıyor; uç durumda `truncate` +
+        `title`. Kalan görünür alan 96 / 166 / 448 px (320/390/834).
+      - **Ayraç `border-r` DEĞİL `box-shadow`.** `border-r` DENENDİ ve
+        ÇİZİLMEDİ: tablo `border-collapse: collapse` olduğundan kenarlık
+        hücreye değil TABLOYA ait olur ve kaydıkça sabit hücrenin altında
+        kalır. `shadow-[1px_0_0_0_#DCE2EA]` hücreyle birlikte taşınıyor;
+        renk `border` token'ının değeri — Tailwind gölge yardımcısı token
+        adı kabul etmiyor, biri değişirse öteki de değişmeli.
+      - **Doğrulandı:** kap 900px kaydırıldıktan SONRA hücrenin sol kenarı
+        hâlâ 0'da (üç genişlikte de), `position: sticky` hem th hem td'de,
+        zemin `rgb(245,247,250)`, vurgulu satırın sabit hücresinde ton
+        katmanı `rgba(37,99,235,0.2)` olarak ölçüldü.
     - **Hukuki metin DEĞİŞMEDİ ve bu bilinçli:** yeni bir veri TOPLANMIYOR,
       yalnızca zaten toplanan alanlar admin'e gösteriliyor; `PrivacyModal`
       bu alanları "Toplanan Veriler"de zaten sayıyor ve panel `is_admin()`

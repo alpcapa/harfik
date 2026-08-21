@@ -1064,6 +1064,36 @@ function memberChannelLabel(m: AdminMember) {
 const BOS = '—';
 
 /**
+ * Üyeler tablosunda İSİM kolonu yana kaydırırken SABİT kalır (21 Ağustos
+ * 2026, kullanıcı isteği: *"sola doğru kaydırınca isim kolonunu
+ * sabitleyebilir miyiz? Tabloda kişiyi takip etmek zor oluyor."*). Tablo 18
+ * kolonla ~1800px olduğundan sağa kaydırırken hangi satırın kime ait olduğu
+ * kayboluyordu.
+ *
+ * İki zorunluluk:
+ * - **Opak zemin ŞART.** `sticky` hücre altındaki hücrelerin ÜSTÜNDE durur;
+ *   arka planı saydam kalırsa kayan metin içinden geçer. Zemin `bg-panel`,
+ *   yani modal gövdesinin kendi rengi.
+ * - **GENİŞLİK KAPAKLANMALI.** İsim alanının uzunluk sınırı YOK ve bu kolon
+ *   tablonun en genişi; kapaklanmazsa 320px'lik bir ekranda (tablo kabı
+ *   246px) sabitlenen kolon görünür alanın TAMAMINI yer ve geri kalan 17
+ *   kolon hiç görünmez. Ölçüldü: üretimdeki en uzun ad 18 karakter (~131px),
+ *   yani 150px bugünkü hiçbir adı kırpmıyor — yalnızca uç durumlar `truncate`
+ *   ile kısalır ve tam hâli `title`da kalır.
+ * - **Sağ kenardaki ayraç `border-r` DEĞİL `box-shadow`.** Sabit hücre kayan
+ *   içeriğin üstünde durduğundan ikisi arasında hiçbir sınır yoktu ve
+ *   kırpılmış bir ad altından geçen kolonun metnine yapışık görünüyordu
+ *   (ölçüm turunda ekran görüntüsünde yakalandı). `border-r` DENENDİ ve
+ *   ÇİZİLMEDİ: tablo `border-collapse: collapse` olduğundan kenarlık hücreye
+ *   değil TABLOYA ait olur, yani kaydıkça yerinde kalıp sabit hücrenin
+ *   altında kaybolur. Gölge hücrenin kendisiyle birlikte taşınıyor. Renk
+ *   `border` token'ının değeri (#DCE2EA) — Tailwind gölge yardımcısı token
+ *   adı kabul etmiyor, biri değişirse öteki de değişmeli.
+ */
+const STICKY_NAME_CELL =
+  'sticky left-0 z-[1] bg-panel max-w-[150px] truncate shadow-[1px_0_0_0_#DCE2EA]';
+
+/**
  * Cinsiyet etiketi. Kaynak `GENDER_OPTIONS` (kayıt formu ve Hesap Ayarları
  * ile AYNI liste) — ikinci bir eşleme yazmak, seçenekler değişince sessizce
  * ayrışırdı. `'unspecified'` formda seçilebilir DEĞİL ama şema kabul
@@ -1856,7 +1886,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                   <table className="w-full text-[11px] font-mono border-collapse">
                     <thead>
                       <tr className="text-left text-muted border-b border-border">
-                        <SortHeader label="İsim" sortKeyFor="name" />
+                        <SortHeader label="İsim" sortKeyFor="name" className={STICKY_NAME_CELL} />
                         <SortHeader label="Nickname" sortKeyFor="nickname" />
                         <SortHeader label="E-posta" sortKeyFor="email" />
                         {/* Kayıt formunun geri kalanı + izinler (21 Ağustos
@@ -1890,11 +1920,27 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                           key={m.id}
                           id={`admin-member-row-${m.id}`}
                           onClick={() => setSelectedMember(m)}
-                          className={`border-b border-border/50 cursor-pointer hover:bg-bg/60 active:opacity-70 transition-colors ${
+                          className={`group border-b border-border/50 cursor-pointer hover:bg-bg/60 active:opacity-70 transition-colors ${
                             highlightedMemberId === m.id ? 'bg-accent/20' : ''
                           }`}
                         >
-                          <td className="py-2 pr-3 text-text whitespace-nowrap">{memberName(m)}</td>
+                          {/* Sabit isim hücresi. Satırın vurgu/hover tonu
+                              hücrenin OPAK zemininin üstüne ayrı bir katmanla
+                              biniyor — aksi halde sabit hücre `bg-panel`de
+                              kalır ve "Kişiye Git →" vurgusu ya da hover tam
+                              o hücrede kaybolurdu (satır tonları saydam). */}
+                          <td
+                            title={memberName(m)}
+                            className={`relative py-2 pr-3 text-text whitespace-nowrap ${STICKY_NAME_CELL}`}
+                          >
+                            <span
+                              aria-hidden="true"
+                              className={`absolute inset-0 pointer-events-none transition-colors group-hover:bg-bg/60 ${
+                                highlightedMemberId === m.id ? 'bg-accent/20' : ''
+                              }`}
+                            />
+                            <span className="relative">{memberName(m)}</span>
+                          </td>
                           <td className="py-2 pr-3 text-text whitespace-nowrap">{memberNickname(m)}</td>
                           <td className="py-2 pr-3 text-text whitespace-nowrap">{m.email ?? BOS}</td>
                           <td className="py-2 pr-3 text-muted whitespace-nowrap">{memberGenderLabel(m)}</td>

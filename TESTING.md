@@ -917,6 +917,16 @@ Tablo artık kayıt formunun tüm alanlarını ve izinleri taşıyor (18 kolon).
 
 - [ ] **Tablo yana kaydırılıyor, SAYFA kaymıyor.** Kaydırma tablonun kendi
       kabında kalmalı; panelin kendisi ya da arka plan yatay kaymamalı.
+- [ ] **İsim kolonu SABİT.** Sağa doğru kaydır: İsim hem başlıkta hem her
+      satırda solda kalmalı, altından geçen içerik onun İÇİNDEN görünmemeli
+      (zemin opak) ve sağ kenarında ince bir ayraç çizgisi olmalı.
+- [ ] **Sabit hücre satırın tonunu ALIYOR.** Bir şikayet kartından "Kişiye
+      Git →" ile gel: vurgulanan satırın İSİM hücresi de mavi tonlanmalı,
+      beyaz kalmamalı. (Farede: satırın üstüne gelince hover tonu da isim
+      hücresini kapsamalı.)
+- [ ] **Uzun ad taşırmıyor.** 18 karakterden uzun bir ada sahip hesapta isim
+      kırpılıp `...` ile bitmeli; sabit kolon geri kalan kolonları ekrandan
+      İTMEMELİ (telefonda bile en az birkaç kolon görünür kalmalı).
 - [ ] **Girilmemiş her alan `—`.** Cinsiyet/Doğum/Kaynak/Davet Eden'i boş
       bir hesapta kontrol et — boş hücre değil tire görünmeli.
 - [ ] **`Koşullar` neredeyse herkeste "Evet".** Kayıt formunda zorunlu
