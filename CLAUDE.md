@@ -25,6 +25,7 @@ npm run generate-meanings-db     # Flutter portu için meanings.json → SQLite 
 npm run generate-demo-board-dart # Karşılama tahtası → portun intro ekranı için demo_board_data.dart
 npm run verify-cloud-save-mirror # Bulut kaydı offline karar mantığı (saf fonksiyon kontrolleri)
 npm run verify-fetch-my-games    # Oyun geçmişi: ağ hatası ↔ boş liste ayrımı (sahte Supabase ucu)
+npm run verify-live-games-load    # Canlı oyun listesi: düşen istek sessizce tekrarlanır (boş liste sanılmaz)
 npm run verify-demo-board        # Karşılama katmanındaki tanıtım tahtası sözlüğe karşı doğrulanır
 npm run verify-remaining-tiles   # "Kalan Taşlar" dökümü ↔ oyun sonu raf düşümü değişmezi
 npm run verify-error-reporting   # istemci hata telemetrisi: ne kaydedilir/kaydedilmez, tekrar bastırma, hız sınırı
@@ -1295,6 +1296,16 @@ mobile/         # Flutter portu — kelimeki_core (saf Dart motor) + üretilmiş
 - **`GameHeader` skor kutuları** — sırası gelen oyuncunun çerçevesi 2px, diğerleri 1px (28 Temmuz 2026, birkaç adımda son hâlini aldı). Sırasıyla: (1) önce `boxShadow: inset` 2.5px/1.5px idi — kullanıcı geri bildirimiyle diğerleri 0.75px'e düşürüldü, ama alt piksel `inset` kalınlıkları kenarlar arasında asimetrik render ediyordu (sol/üst kenarlar sağ/alttan kalın); `ScoreBoxRow`taki (`GameHistoryModal.tsx`) aynı dersle tutarlı şekilde gerçek bir CSS `border`a (2px/1px) geçildi. (2) Yalnızca çerçeve kalınlığı yeterince ayrışmadığından sırası gelen kutuya `transform: scale` + `filter: drop-shadow` ile bir "pop" efekti denendi — ama bu, kutuyu üst şeridin (`overflow-x-auto` — CSS'in bir eksen `auto` ise diğerini de `auto` sayma kuralı yüzünden dikeyde de kırpan, `UserMenu`'nün eski dropdown sorununa bkz.) sınırları dışına taşırıp KESİYORDU, üstelik parıltının yayılımı komşu kutuya kadar uzanıyordu. Nihai çözüm: `transform`/`filter` tamamen kaldırıldı; `shadow-raised` class'ının katmanları (className'inkini ezdiği için) inline tekrarlanıp üzerine `BOX_GAP`'in (min 6px) altında kalacak kadar dar (4px bulanıklık, yayılım yok) bir renkli parıltı katmanı eklendi — artık ne kesiliyor ne komşuya taşıyor. (3) **31 Temmuz 2026'nın "çamur gibi duruyor" geri bildirimiyle bu parıltı da kaldırılıp gerçek bir `border`a (2px aktif/0.5px pasif) dönüldü** — ama bu, 1 Ağustos 2026'da kullanıcı ekran görüntüsüyle bulunan yeni bir hataya yol açtı: Tailwind'in `box-sizing:border-box`'ı altında `border` genişliği kutunun İÇ içerik alanından düşüldüğünden, YZ'nin dar kutusunda (max 43px) aktif/pasif arasındaki 1.5px'lik fark (her kenarda) 3 haneli bir skoru sırası AI'dayken (border kalınken) "1…" diye kırpılmaya zorluyor, sıra insana geçip border incelince (genişlik geri açılınca) kendiliğinden düzeliyordu — kullanıcı bunu "YZ oynarken skor kutusu kısa süre böyle görünüp sonra normale dönüyor" diye tarif etti. **Düzeltme:** `border` yerine layout'a hiç dokunmayan `outline` (+ kutunun tam kenarına oturacak negatif `outlineOffset`) kullanılıyor — aynı 2px/0.5px görünümü koruyor ama içerik genişliği artık aktif/pasif durumdan tamamen bağımsız, kırpma imkansız hale geldi.
   **Teslim gösterimi netleştirildi (6 Ağustos 2026, Flutter portundaki GameHeader çalışması sırasında kullanıcı kararı):** Öncesinde teslim olan oyuncunun kutusunda "Teslim" etiket puntosuyla (`LABEL_FONT_SIZE`, 6-8px) yazılıyor ve kutu skor satırı kısa kaldığından diğerlerinden ~10px kısa oluyordu. Artık yeni bir `TESLIM_FONT_SIZE` (aynı 375/465 uç noktalı sistem, 11-16px — skor puntosu kullanılamıyor çünkü 6 karakterlik TESLİM insan kutusuna sığmıyor, Space Mono ~0.6em/karakter hesabıyla türetildi) + `lineHeight: SCORE_FONT_SIZE` ile puan alanını dolduruyor ve kutu diğerleriyle BİREBİR aynı boyda kalıyor. %45 soluklaştırma (`opacity: 0.45`) bilinçli olarak DURUYOR — kutu tasarımı aynı, yalnızca solgun. Flutter portu (`mobile/app/.../game_header.dart`) aynı kararı FittedBox/SizedBox ile uyguluyor, iki taraf aynı görünüyor (bkz. `mobile/CLAUDE.md`).
   **Canlı oyunda skor kutuları tıklanabilir (3 Ağustos 2026):** Kullanıcı isteğiyle, Canlı bir oyunda header'daki bir skor kutusuna dokunmak o oyuncunun `PlayerScoreCard`'ını açıyor (k-lig/beğenenler/arkadaşlar listelerinden açılanla aynı bileşen). `GameHeader`'a eklenen opsiyonel `onPlayerClick?: (index: number) => void` prop'u verilmezse kutular eskisi gibi düz `div` kalıyor — yani **yerel/YZ oyun ekranı (`App.tsx`) hiç etkilenmiyor**, prop'u geçmiyor. YZ koltukları için ayrı bir "hangi indeksler tıklanabilir" prop'una gerek olmadı: `Player.isAI` zaten state'te, `GameHeader` kutuyu yalnızca `onPlayerClick && !p.isAI` iken `button`a çeviriyor. Kimlik `state.players`'tan DEĞİL `game.slots`'tan alınıyor (`OnlineGameScreen.handlePlayerBoxClick`) — online state'in public kopyası yalnızca görünen adı taşır, `user_id` taşımaz; `PlayerSummary` de `likerToPlayerSummary` (`GameHistoryModal`) ile aynı desende dolduruluyor (sunucu `list_my_online_games`'te adı zaten kısa kimlik kuralıyla hesapladığından `display_name`'e yazılıyor, ad/soyad boş). **`div`→`button` dönüşümünün kutu geometrisini bozmadığı ölçülerek doğrulandı** (74×31.5 ve 43×31.5, iki etikette de birebir aynı) — Tailwind preflight `button`'ın varsayılan border/background/font'unu sıfırladığından yukarıdaki 1 Ağustos genişlik-kayması sınıfındaki bir hata tekrarlamıyor.
+- **`GameHeader` — logonun altında "← Geri" (21 Ağustos 2026, kullanıcı isteği: *"Bazı kullanıcılar oyundan setup'a dönüşü bulamıyor"*):** Logo BAŞTAN BERİ Setup'a dönüyordu (`handleLogoClick`) — eksik olan davranış değil **GÖRÜNÜRLÜKTÜ**. Etiket logoyla AYNI `<button>`ın içinde, yani dokunma alanı ikisini birden kapsıyor (kullanıcı şartı: *"Logo alanı da dahil basıldığında"*).
+  - **Prop YOK, koşulsuz çiziliyor.** `GameHeader`ın TEK kullanım yeri iki oyun ekranı (`App.tsx` + `OnlineGameScreen.tsx`) ve ikisi de bunu istiyor; opsiyonel bir bayrak bu kod tabanının en sık hatasını (o iki dosyanın sessizce ayrışması) davet ederdi.
+  - **Etiket AKIŞIN DIŞINDA (`absolute`) ve bu, kullanıcının açık şartı:** ilk sürüm akışta duruyordu, header'ı **+28px** büyütüp tahtayı aşağı itiyordu ve `items-center` yüzünden skor kutularını logodan **14px** aşağı kaydırıyordu — reddedildi (*"Olmamış. Header'ı bozmadan…"*). Yerini logo altında ZATEN var olan 16px'lik boşluk (header `py-2.5` + Board `pt-1.5`) açıyor; **fazladan dolgu EKLENMEDİ**, header ve tahta bir piksel bile oynamıyor.
+  - **`left-0` — tahtanın sol kenarına hizalı (kullanıcı isteği):** logo butonunun sol kenarı header'ın `px-3`ü, Board kabı da aynı `px-3`ü kullanıyor, yani ikisi de 12px. Ortalanmış bir etiket logonun genişliğine göre kayardı. **⚠ Board'un yatay dolgusu değişirse bu hiza sessizce bozulur — ikisi birlikte değişmeli.**
+  - **İnce ve KOYU:** 11px, normal ağırlık, `text-text` (#1B2430). İlk deneme kalın + accent'ti ve reddedildi — bu bir aksiyon düğmesi değil, var olan bir dokunuşun sessiz etiketi. Gri (`text-muted`) ve siyah varyantlar yan yana render edilip kullanıcı **siyahı seçti**. Yeni punto/renk icat edilmedi.
+  - **`exitDisabled` için ayrı stil GEREKMİYOR** — etiket butonun içinde olduğundan butonun `disabled:opacity-40`ı onu da soluyor.
+  - **ÖLÇÜLDÜ** (derlenmiş CSS + Chromium, 390px, öncesi/sonrası): başlık yüksekliği **49.33 → 49.33**, tahta kartının üstü **55.33 → 55.33**, skor kutusu merkezi ile logo merkezi **24.66 / 24.66**, etiketin sol kenarı **12** = tahtanın sol kenarı **12** (fark **0**), punto 11 / ağırlık 400 / renk `rgb(27,36,48)`, yatay taşma **0**. Etiketin altı ile tahta kartı arası 2px — çakışma yok.
+  - **Regresyon:** `tests/smoke.spec.ts` 21 → **22 test** (etiket görünür + logo butonunun İÇİNDE + dokununca Setup'a döner). **Negatif eş, ikisi de ayrı ayrı düşürüldü:** `<span>` kaldırılınca ve etiket butonun DIŞINA taşınınca test GERÇEKTEN düşüyor. **Test tuzağı:** Setup'ın başlığı DOM'da `Oyun Tipi`, ekranda büyük harf görünmesi CSS `uppercase`inden geliyor — `getByText('OYUN TİPİ')` HİÇ eşleşmez (bu kod tabanında kayıtlı tuzak, "Oyna"/"Nasıl Oynanır?" vakasının kardeşi).
+  - **Flutter portu AYNI PR'da (`mobile/CLAUDE.md`, Parça 125) ve BİR NOKTADA bilinçli olarak ayrışıyor:** Flutter'da kutusunun DIŞINA taşan bir çocuk dokunuş ALMAZ (`RenderBox.hitTest` önce `size.contains`e bakar), yani web'in "absolute + tıklanabilir" birleşimi birebir taşınamıyor. Portta etiket LOGONUN kendi kutusuna çapalı (`Stack` + `Clip.none`), yani konum/boşluk/hiza weble aynı ve header yine hiç büyümüyor — **tek sapma etiketin portta TIKLANABİLİR OLMAMASI** (kaçış yolu logo, etiket onu gösteren ipucu). **İlk deneme CI'da düştü ve gerçek bir hata buldu:** etiket header'ın dış Stack'ine konup konumu stack'in üstünden hesaplanınca, Row logodan uzun olduğunda (360px'te 48px) logo ortalanıp aşağı kayıyor ve etiket onun ÜSTÜNE biniyordu.
+
 - **`HelpModal`** — Oyun kuralları sayfası. Türkçe, kapsamlı.
   **Hızlı Başlangıç'ta üç madde yeniden yazıldı (19 Ağustos 2026, kullanıcı isteği, İKİ platformda birden):** (1) `"…mevcut harflere (rakiplerinki dahil) bağlanmalıdır."` → **`"Yeni kelimeler tahtadaki mevcut harflere bağlanmalıdır. (Senin veya rakibinin)"`** — parantez cümlenin ortasından sonuna alındı, okuma akışı kesilmiyor; (2) `"puanlarını ikiye, üçe katlar"` → **`"ikiye veya üçe katlar"`** (virgül "hem ikiye hem üçe" gibi okunuyordu, oysa çarpanlar birleşmiyor — bkz. "Merkez bonus bölgesi"); (3) TDK maddesine **`(Birkaç istisna dışında)`** eklendi — "Sözlük" bölümü zaten "TDK sözlüğünde olmayan ama bulmacalarda sık kullanılan bazı kelimeler eklenmiştir" diyordu, hızlı başlangıç bunu gizliyordu. **Yazım:** kullanıcı "bir kaç" yazdı, metne TDK yazımıyla (bitişik) **"Birkaç"** girildi — tam da TDK sözlüğünü işaret eden cümlede ayrık yazmak tutarsız olurdu. Portun `help_modal.dart`'ı AYNI PR'da güncellendi (kural metinleri birebir kopyadır); `help_text_parity_test.dart` yalnızca bölüm başlıklarını/madde ikonlarını karşılaştırdığından bu tür bir CÜMLE değişimini yakalamaz — port elle senkronlanmak zorunda.
   **Detaylı Kurallar'da bir cümle netleştirildi (aynı gün, kullanıcı isteği):** "Genel Bakış"ın son cümlesi `"Hamlen herhangi bir oyuncunun bölgesine temas etmiyorsa…"` → **`"Hamlen herhangi bir rakip oyuncunun kelimesine değse bile, bölge teması yoksa puan paylaşımı olmaz ve tüm puan sana kalır."`** Ayrım motorla birebir uyuşuyor ve ÖLÇÜLDÜ değil OKUNDU (`computeInvasionSplit`, `src/utils/validator.ts`): vergi kararı YALNIZCA `computeAllTerritories`'in döndürdüğü bölge kümelerine bakıyor, tahtadaki taşa değil — yani hiçbir bölgeye ait olmayan bir rakip taşına (ör. rakibin kendi zincirine bağlanmamış izole taşı, bkz. "Genişleyen bölge") bitişik oynamak vergi doğurmaz. Eski cümle bunu söylemiyordu ve oyuncular "rakibin harfine değdim, vergi ödedim" sanabiliyordu. Port `help_modal.dart` aynı PR'da güncellendi.
@@ -2051,6 +2062,90 @@ Kullanıcı isteği: hem Canlı oyunlarda sırası gelen oyuncuya (48 saatlik `t
   **Bulunan hata (4 Ağustos 2026) — "ayrı bir istisna kodu gerekmedi" varsayımı BAŞTAN BERİ YANLIŞTI:** Bu madde, `game_invites`'a dokunmamanın güvenli olduğunu şu gerekçeyle savunuyordu: "`list_my_online_games`'in tüm mevcut filtrelerinde (`active`/`pending` kontrolleri) `abandoned` hiçbirine düşmez, oyun listeden doğal olarak kaybolur". Bu cümle yazıldığı gün de doğru değildi — `LiveGamesTab.tsx`'teki DÖRT kovadan üçü (`active`, `waiting`, `acceptedWaiting`) gerçekten `g.status`'e bakıyor ama `invites` kovası SADECE `my_role`/`my_invite_status`'e bakıyordu. Sonuç: süresi dolup iptal edilen bir davet KURANIN listesinden doğru şekilde kalkıyor, ama DAVETLİNİN "Davet Bekliyor" listesinde sonsuza dek duruyordu — üstelik "BUGÜN İPTAL EDİLİR" etiketiyle, yani istemci verinin süresinin dolduğunu bilip kartı yine de çiziyordu. Aynı eksik iki yerde daha vardı: `fetchPendingLiveGameCounts` (`src/utils/pendingLiveGames.ts`) — hayalet davet Setup'taki "Arkadaşınla (N)" rozetini, PWA ikon rozetini (`useAppIconBadge`) ve girişte otomatik Canlı sekmesine geçiren `inviteCount > 0` koşulunu şişiriyordu — ve `LiveGamesTab`'ın varsayılan alt sekme seçimi (`hasInvites`), kullanıcıyı bomboş bir "Oyun Davetleri" sekmesine düşürebiliyordu. Üçüne de `g.status === 'pending'` eklendi. **Veri bozulması yoktu:** `respond_to_game_invite`'ın kabul dalı zaten `where id = v_game_id and status = 'pending'` içerdiğinden `abandoned` bir oyun diriltilemiyordu (`init_online_game_state` hiç çağrılmıyordu) — ama "Kabul Et"e basılırsa `game_invites` satırı yine de `accepted`'a çekildiğinden kart sessizce kaybolup hiçbir oyun başlamıyordu, yani kullanıcı için kafa karıştırıcı bir çıkmazdı. **Ders:** "şu filtre zaten bunu eler, ayrı kod gerekmez" gibi bir gerekçeyi yazmadan önce filtrelerin HEPSİNİ tek tek okuyun — burada dördün üçü gerçekten eliyordu, gözden kaçan tek istisna yeterliydi. Özelliğin eklendiği 29 Temmuz'dan bu yana hiç fark edilmemesinin sebebi de bu: 7 günlük süre gerçek kullanımda daha yeni dolmaya başlıyordu, TESTING.md bölüm 4 elle koşulup süre yapay olarak geçmişe çekilene kadar kimse bu yola girmemişti.
 - **UI:** `checkInviteExpiry(gameId)` (`src/lib/api.ts`) RPC'yi çağırır. `LiveGamesTab.tsx`'teki `loadGames` artık aktif-oyun sıra-zaman-aşımı süpürmesiyle AYNI turda, `pending` oyunlardan `created_at + ABANDON_TIMEOUT_MS <= now()` olanları da (client-side ön kontrol, gereksiz RPC'den kaçınmak için) tespit edip `check_invite_expiry`'yi tetikliyor, sonra listeyi bir kez daha tazeliyor — iki süpürme (turn-timeout + invite-expiry) tek bir `Promise.all`'da birleşti, ayrı ayrı ikinci bir round-trip gerekmedi. `PendingGameCard`'daki her davet/bekleme kartının başlığının altına artık `remainingInviteDays` ile hesaplanan bir kalan-süre satırı eklendi (Setup'taki `remainingDays` ile aynı ilke/süre — ≤1 günde kırmızı/kalın). **4 Ağustos 2026 — metin tutarlılığı:** süre dolduğunda "Bugün iptal edilir" yazıyordu; hem yanlıştı (iptal gelecekte değil, süre ZATEN dolmuş) hem de projenin diğer sayaçlarıyla ("Süresi doldu - teslim oldu", `remainingTimeLabel`) tutarsızdı — "Süresi doldu" oldu. Kalan süre metni de "N gün M saat kaldı" yerine `remainingTimeLabel`/`SavedGameRow` kalıbına ("... sonra iptal edilecek" — süre + o sürenin sonunda NE olacağı) hizalandı. Süresi dolmuş bir davetin bu etiketle görünmesi artık yalnızca geçici bir durum: `invites` kovasındaki status filtresi (yukarı bkz.) onu süpürme çalışır çalışmaz listeden düşürüyor — hem "Davet Bekliyor" (yanıt bekleyen) hem "Kabul Ettin — Diğerleri Bekleniyor"/"Rakip Bekleniyor" kartlarında görünür, çünkü `PendingGameCard` üçünde de aynı bileşen.
 - **Doğrulama (production'da, disposable test verisiyle):** Migration uygulanıp `list_migrations`'daki gerçek versiyonla dosya adı eşleştirildikten sonra, gerçek test hesaplarıyla (T1 kurucu, T2 davetli) sahte bir `online_games` satırı `created_at = now() - 8 gün` ile eklenip `check_invite_expiry`'nin davetli tarafından çağrılması `status`'u `pending`'den `abandoned`'a çevirdiği doğrulandı; `created_at = now() - 2 gün` olan (henüz süresi dolmamış) bir satırda RPC'nin no-op kaldığı (status hâlâ `pending`) ayrıca doğrulandı; taraf olmayan üçüncü bir hesabın (Ironman) çağrısının `'Bu oyunun tarafı değilsin.'` hatasıyla reddedildiği doğrulandı. Test verisi sonra tamamen silindi.
+
+## Düşen istek "hiç oyunun yok" DEMEZ (21 Ağustos 2026)
+
+**Vaka:** Kullanıcının yanındaki **BeckyH**, sırası KENDİSİNDEYKEN uygulamayı
+açtı ve "Arkadaşınla" sekmesinde *"Devam eden bir Canlı oyunun yok."* gördü.
+Oyun ~9 dakika sonra kendiliğinden belirdi; arada YZ'ye karşı bir oyun açıp
+oynadı.
+
+**Teşhis ÖLÇÜLDÜ, tahmin edilmedi.** Sunucu tarafı TEMİZ: o oturumdaki 16
+`list_my_online_games` çağrısının 16'sı **200** döndü ve **aktif oyunu
+İÇERİYORDU** — kanıt, her birinin hemen ardından gelen
+`online_game_states?...in.(<oyun id>)` isteği (`fetchOnlineGameTurns` boş
+listede HİÇ istek atmaz, yani o istek listenin dolu geldiğinin kanıtı).
+`client_errors` **0 satır** (JS çökmesi yok), `game_starts` satırları o günün
+derlemesini koşturduğunu gösteriyor. Telefonunun IP'si oturum boyunca
+**31.143.14.211 ↔ 178.250.94.110** arasında gidip geliyordu.
+
+**Kök sebep (çıkarım, açıkça çıkarım):** ağ değişimi (WiFi↔hücresel) uçuştaki
+bir isteği yarıda kesti; `listMyOnlineGames` hatayı YUTUP `[]` döndü ve UI
+bunu "gerçekten hiç oyun yok" diye okudu. **Tekrar deneme YOKTU** ve listeyi
+yeniden tetikleyen tek şey öne dönüş/Realtime olduğundan yanlış ekran KALDI.
+**İkinci bulgu:** düşen yükleme `appliedDefaultTabRef`i de sessizce TÜKETTİ,
+yani "girişte Canlı sekmesini aç" kararı o oturum için bir daha çalışamadı —
+büyük olasılıkla YZ oyunu açmasının sebebi bu.
+
+**Kullanıcının koyduğu sınır (sözleriyle):** *"Oraya İnternet bağlantısı yok
+çıkartmak da doğru değil çünkü başka yerlere girince bunun doğru olmadığını
+görecekler."* — yani düzeltme etiketi değiştirmek DEĞİL, sorunu gerçekten
+çözmek zorundaydı. Onaylanan ölçüt: **kullanıcı hiçbir zaman gerçek olmayan
+bir şey görmemeli ve iyileşmek için hiçbir şey yapmak zorunda kalmamalı.**
+
+### Dört katman (hepsi İKİ platformda)
+
+| Katman | Ne yapar |
+|---|---|
+| **Ağ-özel tekrar** (`retryOnNetworkFailure` / `_fetchWithRetry`) | Düşen istek **400 ms** ve **1200 ms** sonra sessizce tekrarlanır. Anlık kesintiyi kullanıcı hiç görmeden kapatır. |
+| **`[]` ≠ `null` ayrımı** | `listMyOnlineGames`/`fetchOnlineGameTurns`/`fetchOnlineGameDeadlines` artık hatada **`null`** döner. `[]` yalnızca "sunucu gerçekten boş dedi" demektir. |
+| **Otomatik merdiven** (3/8/20/30 sn, son basamak tekrarlanır) | Kesinti sürerse UI kendi kendine denemeye devam eder — kullanıcının hiçbir şey yapması gerekmez. Yalnızca sekme GÖRÜNÜRKEN kurulur. |
+| **Yeniden bağlanma kancası** (`onResubscribe`) | Realtime kanalı koparsa o sırada yayınlanan olaylar KALICI kayıptır (28 Temmuz dersi); yeniden bağlanmanın kendisi bir tazeleme sinyali olarak kullanılıyor. |
+
+### Ne YAZILIR — üç ayrı cümle, üçü de doğru
+
+- `OFFLINE_NO_CONNECTION` — YALNIZCA `navigator.onLine === false` iken.
+- `LOAD_FAILED_NOTICE` (*"Oyunların şu an yüklenemedi."*) + **Tekrar Dene** —
+  bağlantı VAR ama elde gösterilecek hiç liste yok.
+- `STALE_DATA_NOTICE` (*"Güncellenemedi"*) — liste ekranda ama tazelenemedi;
+  veri **bayat, yanlış değil**. İnce bir şerit, dokunma hedefi DEĞİL.
+
+**"Hiç oyunun yok" artık YALNIZCA sunucu gerçekten boş dediğinde çıkar.**
+
+### Yakalanan yan hatalar
+
+- **Tek başarısız yükleme `appliedDefaultTabRef`i tüketiyordu** (`Setup.tsx`)
+  ve `useAppIconBadge` rozeti sıfırlıyordu — ikisi de artık `counts === null`
+  iken erken dönüyor, son bilinen değeri koruyor.
+- **`useOnlineStatus` asimetrik debounce aldı:** çevrimdışıya geçiş **1500
+  ms** doğrulanmadan uygulanmaz, çevrimiçi ANINDA uygulanır. Sebep ölçüldü:
+  `navigator.onLine` spesifikasyona göre `false` iken gerçekten bağlantısız,
+  ama **ağ değişimi anında** kısa bir `false` penceresi doğuyor ve o pencerede
+  uçuştaki istekler iptal ediliyor — sunucuda HİÇBİR iz bırakmadan. İlk ölçüm
+  BİLEREK debounce edilmez (soğuk açılışta uyarı hemen çıkmalı).
+- **`isNetworkError`e `PostgrestError` NESNESİ verilmez, `error.message`
+  verilir** — nesne `"[object Object]"`e serileşir ve hiçbir kalıba uymaz,
+  yani tekrar deneme sessizce hiç çalışmazdı.
+
+### Doğrulama
+
+`npm run verify-live-games-load` — 15 kontrol, ÜRETİM fonksiyonlarını sahte
+bir Supabase ucuyla koşturuyor: ağ hatası → `null` + **3** çağrı; boş liste →
+`[]` + **1** çağrı; **ilk istek düşüp ikincisi başarılı** (kullanıcının
+vakası) → liste geliyor; sunucunun KENDİ reddi → tekrar YOK; yapılandırılmamış
+istemci → `[]` (hata değil). **Negatif eş ölçüldü:** tekrar katmanı
+kaldırılınca **4** kontrol, `null` yerine `[]` dönülünce **3** kontrol
+GERÇEKTEN düşüyor. `tests/smoke.spec.ts`e ayrıca "kısa kesinti çevrimdışı
+uyarısı ÜRETMEZ" testi eklendi (paket 20 → **21**); debounce kaldırılınca
+düşüyor. CI'a eklendi (`web-ci.yml`).
+
+**Duman testiyle sınanamayan kısım ve sebebi:** bu kod yolu oturum açmış bir
+kullanıcı istiyor, dev sunucusunda Supabase yapılandırılmadığından tarayıcıda
+ulaşılamıyor — `verify-*` betiği deseninin (esbuild + node) var olma sebebi bu.
+
+**Mobil portun karşılığı:** `mobile/CLAUDE.md`, Parça 118 — aynı gecikmeler,
+aynı üç metin (`offline_notice.dart` ↔ `offlineNotice.ts`, parite testi
+karşılaştırıyor), aynı merdiven.
 
 ## Oyun İçi Mesajlaşma — Faz 1 (yalnızca Canlı oyunlar)
 

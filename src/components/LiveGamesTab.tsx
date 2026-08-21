@@ -43,7 +43,12 @@ import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
 import { CountBadge } from './CountBadge';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import { OFFLINE_NO_CONNECTION } from '../utils/offlineNotice';
+import {
+  LOAD_FAILED_NOTICE,
+  OFFLINE_NO_CONNECTION,
+  RETRY_LABEL,
+  STALE_DATA_NOTICE,
+} from '../utils/offlineNotice';
 import { PlayerAvatarRow } from './PlayerAvatarRow';
 import { FriendSuggestModal } from './FriendSuggestModal';
 import { LiveGameCreateForm } from './LiveGameCreateForm';
@@ -402,6 +407,12 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   const [deadlines, setDeadlines] = useState<Record<string, string | null>>(
     () => (user ? (liveGamesCache.get(user.id)?.deadlines ?? {}) : {}),
   );
+  // Son yükleme ağ katmanında düştü mü. `games`'i EZMİYOR: elde liste varsa
+  // liste yerinde kalır ve üstünde yalnızca "Güncellenemedi" şeridi görünür;
+  // elde hiçbir şey yoksa "yüklenemedi" paneli çıkar. Eskiden başarısız bir
+  // istek `[]` olarak geldiğinden ekran "Devam eden bir Canlı oyunun yok."
+  // diyordu — sunucunun gerçekten boş dediği durumdan ayırt edilemiyordu.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [busyInviteId, setBusyInviteId] = useState<string | null>(null);
@@ -436,6 +447,39 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   // değiştiğinden (aşağı bkz.) sıfırlama kararı buna göre veriliyor.
   const lastUserIdRef = useRef<string | null>(user?.id ?? null);
 
+  // Otomatik yeniden deneme merdiveni — kullanıcı "Tekrar Dene"ye basmak
+  // ZORUNDA kalmasın diye. Bir yükleme düştüğünde ekran kendi kendini
+  // onarır: 3s → 8s → 20s → sonra 30s'de bir. Yalnızca sekme GÖRÜNÜRKEN
+  // zamanlanır (arka planda pil/veri yakmaz; öne dönüşte zaten
+  // `scheduleReload` tetikleniyor). Bu merdiven olmadan tek bir düşen istek
+  // kalıcı bir yanlış ekrana dönüşüyordu: `loadGames`'i yeniden çağıran tek
+  // şey öne dönüş ya da bir Realtime olayıydı ve ekrana bakıp bekleyen
+  // birinde ikisi de olmuyor (21 Ağustos 2026 vakası — kullanıcı oyununu
+  // ~9 dakika bulamadı).
+  const AUTO_RETRY_STEPS_MS = [3000, 8000, 20000, 30000];
+  const autoRetryStepRef = useRef(0);
+  const autoRetryTimerRef = useRef<number | null>(null);
+  const clearAutoRetry = () => {
+    if (autoRetryTimerRef.current != null) {
+      window.clearTimeout(autoRetryTimerRef.current);
+      autoRetryTimerRef.current = null;
+    }
+  };
+  // `loadGames` ile karşılıklı bağımlı olduklarından (merdiven loadGames'i
+  // çağırır, loadGames merdiveni kurar) çağrı bir ref üzerinden yapılıyor.
+  const loadGamesRef = useRef<(t?: { current: boolean }) => void>(() => {});
+  const scheduleAutoRetry = () => {
+    if (autoRetryTimerRef.current != null) return;
+    if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+    const step = Math.min(autoRetryStepRef.current, AUTO_RETRY_STEPS_MS.length - 1);
+    const delay = AUTO_RETRY_STEPS_MS[step];
+    autoRetryStepRef.current = step + 1;
+    autoRetryTimerRef.current = window.setTimeout(() => {
+      autoRetryTimerRef.current = null;
+      loadGamesRef.current(cancelledRef.current);
+    }, delay);
+  };
+
   // Listeyi çeker, aktif oyunların sırasını/son tarihini yükler; süresi
   // ZATEN dolmuş bir sıra varsa `check_turn_timeout`'u (no-op değilse
   // otomatik teslim uygulanır), 7 gündür yanıtlanmamış bir davet/oyun varsa
@@ -446,6 +490,15 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   const loadGames = async (cancelledRef?: { current: boolean }) => {
     const rows = await listMyOnlineGames();
     if (cancelledRef?.current) return;
+    if (rows === null) {
+      // ELDE VAR OLANI EZME. `setGames([])` demek "sunucu boş dedi" demekti.
+      setLoadFailed(true);
+      scheduleAutoRetry();
+      return;
+    }
+    setLoadFailed(false);
+    clearAutoRetry();
+    autoRetryStepRef.current = 0;
     setGames(rows);
     setHasFreshGames(true);
 
@@ -459,16 +512,29 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
       return;
     }
 
-    const [turnMap, deadlineMap] =
+    // Tip açıkça yazılmak zorunda: `[{}, {}]` dalı olmasa çıkarım doğru
+    // çalışırdı, onunla birlikte birleşim `{}`e düşüp indekslemeyi kırıyor.
+    const [turnMap, deadlineMap]: [
+      Record<string, number> | null,
+      Record<string, string | null> | null,
+    ] =
       activeIds.length > 0
         ? await Promise.all([fetchOnlineGameTurns(activeIds), fetchOnlineGameDeadlines(activeIds)])
         : [{}, {}];
     if (cancelledRef?.current) return;
-    setTurns(turnMap);
-    setDeadlines(deadlineMap);
+    // Liste geldi ama sıra/son tarih gelmediyse SON BİLİNENİ koru: boş
+    // haritayla ezmek "sıra sende"yi sessizce "sıra rakipte"ye çevirirdi
+    // (`turns[g.id] === mySlotIndex(g)` false kalır) — kullanıcıya yanlış bir
+    // gerçeklik anlatıp beklemesine yol açan, listeden daha kötü bir hata.
+    if (turnMap === null || deadlineMap === null) {
+      setLoadFailed(true);
+      scheduleAutoRetry();
+    }
+    if (turnMap !== null) setTurns(turnMap);
+    if (deadlineMap !== null) setDeadlines(deadlineMap);
 
     const expiredTurns = activeIds.filter((id) => {
-      const d = deadlineMap[id];
+      const d = deadlineMap?.[id];
       return d && new Date(d).getTime() <= Date.now();
     });
     if (expiredTurns.length === 0 && expiredInviteIds.length === 0) return;
@@ -479,6 +545,11 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
     if (cancelledRef?.current) return;
     const rows2 = await listMyOnlineGames();
     if (cancelledRef?.current) return;
+    if (rows2 === null) {
+      setLoadFailed(true);
+      scheduleAutoRetry();
+      return;
+    }
     setGames(rows2);
     const activeIds2 = rows2.filter((g) => g.status === 'active').map((g) => g.id);
     if (activeIds2.length === 0) {
@@ -491,12 +562,29 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
       fetchOnlineGameDeadlines(activeIds2),
     ]);
     if (cancelledRef?.current) return;
-    setTurns(turnMap2);
-    setDeadlines(deadlineMap2);
+    if (turnMap2 === null || deadlineMap2 === null) {
+      setLoadFailed(true);
+      scheduleAutoRetry();
+    }
+    if (turnMap2 !== null) setTurns(turnMap2);
+    if (deadlineMap2 !== null) setDeadlines(deadlineMap2);
+  };
+  loadGamesRef.current = (t) => {
+    void loadGames(t);
   };
 
   const reload = () => {
     void loadGames(cancelledRef.current);
+  };
+
+  // "Tekrar Dene" — merdiven zaten arka planda deniyor, bu yalnızca sabırsız
+  // kullanıcı için. Merdiveni sıfırlamak şart: elle deneme başarısız olursa
+  // otomatik zincir en baştan (3s) devam etsin, 30s'lik son basamaktan değil.
+  const handleManualRetry = () => {
+    clearAutoRetry();
+    autoRetryStepRef.current = 0;
+    setLoadFailed(false);
+    reload();
   };
 
   // Bir daveti gönderilen/kabul edilen/reddedilen taraf bu sekmeyi zaten
@@ -552,7 +640,9 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
     const token = { current: false };
     cancelledRef.current = token;
     void loadGames(token);
-    const unsubscribe = subscribeMyOnlineGames(scheduleReload);
+    // İkinci parametre: soket yeniden bağlandığında (ağ değişimi/uyanma)
+    // kaçırılan olaylar kalıcı kayıp olduğundan gerçeği yeniden okuyoruz.
+    const unsubscribe = subscribeMyOnlineGames(scheduleReload, scheduleReload);
     // Mobil tarayıcılar (özellikle iOS Safari) arka plana alınan bir
     // sekmenin Realtime websocket'ini askıya alabiliyor — o sırada gelen
     // bir davet/kabul olayı kaçırılabilir (bkz. OnlineGameScreen'deki aynı
@@ -574,6 +664,7 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
       window.removeEventListener('focus', onForeground);
       window.removeEventListener('online', onForeground);
       if (reloadTimeoutRef.current != null) window.clearTimeout(reloadTimeoutRef.current);
+      clearAutoRetry();
     };
   }, [user]);
 
@@ -761,8 +852,33 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
       {!online ? (
         <p className="text-center text-xs text-muted font-mono py-8">{OFFLINE_NO_CONNECTION}</p>
       ) : games === null ? (
-        <p className="text-center text-xs text-muted font-mono py-8">Yükleniyor…</p>
-      ) : subTab === 'active' ? (
+        // Elde HİÇ liste yok. `loadFailed` ile "henüz gelmedi"yi ayırmak
+        // şart: ikisi de "Yükleniyor…" gösterseydi ekran sonsuza dek asılı
+        // kalırdı (14 Ağustos 2026'da oyun ekranında yaşanan aynı hata).
+        loadFailed ? (
+          <div className="flex flex-col items-center gap-3 py-8">
+            <p className="text-center text-xs text-muted font-mono">{LOAD_FAILED_NOTICE}</p>
+            <button
+              onClick={handleManualRetry}
+              className="btn-raised py-2.5 px-6 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+            >
+              {RETRY_LABEL}
+            </button>
+          </div>
+        ) : (
+          <p className="text-center text-xs text-muted font-mono py-8">Yükleniyor…</p>
+        )
+      ) : (
+        <>
+          {/* Liste DOĞRU, yalnızca bayat — o yüzden ekranı kaplamayan ince
+              bir not. Kullanıcının yapması gereken bir şey yok; merdiven
+              arka planda deniyor ve başarınca bu şerit kendiliğinden kalkar. */}
+          {loadFailed && (
+            <p className="text-center text-[10px] text-muted font-mono uppercase tracking-[0.5px]">
+              {STALE_DATA_NOTICE}
+            </p>
+          )}
+          {subTab === 'active' ? (
         active.length === 0 ? (
           <p className="text-center text-xs text-muted font-mono py-8">Devam eden bir Canlı oyunun yok.</p>
         ) : (
@@ -794,8 +910,10 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
             <PendingSection title="Bekleyen Oyunlar" games={waiting} />
           </>
         )
-      ) : (
-        <RecentGamesSection onlineOnly emptyMessage="Henüz bitmiş bir Canlı oyunun yok." />
+          ) : (
+            <RecentGamesSection onlineOnly emptyMessage="Henüz bitmiş bir Canlı oyunun yok." />
+          )}
+        </>
       )}
     </div>
     </RankTierProvider>

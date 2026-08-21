@@ -71,8 +71,23 @@ class _LiveGamesTabState extends State<LiveGamesTab>
   LiveSubTab _subTab = LiveSubTab.active;
   bool _appliedDefaultTab = false;
 
-  /// Son yükleme sunucuya ulaşamadı — üç alt sekme de "bağlantı yok" der.
+  /// Son yükleme sunucuya ulaşamadı. Bu, "çevrimdışısın" DEMEK DEĞİLDİR:
+  /// tek bir düşen isteğe bakıp öyle demek, başka yerde bağlantısı çalışan
+  /// kullanıcıya yalan söylemek olurdu (21 Ağustos 2026 kullanıcı kararı).
   bool _loadFailed = false;
+
+  /// Sessiz otomatik yeniden deneme merdiveni — web `AUTO_RETRY_STEPS_MS`
+  /// ile AYNI. `_reload`ın kendi retry'ı (repo katmanı, ~1.6 sn) ANLIK bir
+  /// kesintiyi kapatır; bu merdiven ise kesinti sürerse kullanıcı HİÇBİR
+  /// ŞEY yapmadan iyileşmeyi sürdürür. Son basamak tekrarlanır.
+  static const List<Duration> autoRetrySteps = [
+    Duration(seconds: 3),
+    Duration(seconds: 8),
+    Duration(seconds: 20),
+    Duration(seconds: 30),
+  ];
+  int _autoRetryStep = 0;
+  Timer? _autoRetryTimer;
   bool _creating = false;
   String? _busyInviteId;
   String? _lastUserId;
@@ -106,7 +121,11 @@ class _LiveGamesTabState extends State<LiveGamesTab>
     // arka planda websocket askıya alınıp olay kaçmış olabilir.
     WidgetsBinding.instance.addObserver(this);
     _reload();
-    _unsubscribe = services.onlineGames?.gateway.subscribe(_scheduleReload);
+    // İkinci geçiş, kanalın KOPUP yeniden bağlanması: kopukken yayınlanan
+    // olaylar kayıptır, o yüzden yeniden bağlanmanın kendisi bir tazeleme
+    // sinyalidir (web `subscribeMyOnlineGames`in aynı kancası).
+    _unsubscribe = services.onlineGames?.gateway
+        .subscribe(_scheduleReload, onResubscribe: _scheduleReload);
   }
 
   @override
@@ -120,6 +139,7 @@ class _LiveGamesTabState extends State<LiveGamesTab>
     services.auth.removeListener(_onAuthEvent);
     services.onlineStatus.removeListener(_onConnectivity);
     _reloadDebounce?.cancel();
+    _autoRetryTimer?.cancel();
     _unsubscribe?.call();
     _rankScores.removeListener(_onRankScores);
     _rankScores.dispose();
@@ -148,6 +168,30 @@ class _LiveGamesTabState extends State<LiveGamesTab>
     _reloadDebounce = Timer(const Duration(milliseconds: 300), _reload);
   }
 
+  void _clearAutoRetry() {
+    _autoRetryTimer?.cancel();
+    _autoRetryTimer = null;
+    _autoRetryStep = 0;
+  }
+
+  void _scheduleAutoRetry() {
+    _autoRetryTimer?.cancel();
+    final i = _autoRetryStep < autoRetrySteps.length
+        ? _autoRetryStep
+        : autoRetrySteps.length - 1;
+    if (_autoRetryStep < autoRetrySteps.length) _autoRetryStep++;
+    _autoRetryTimer = Timer(autoRetrySteps[i], () {
+      _autoRetryTimer = null;
+      if (mounted) unawaited(_reload());
+    });
+  }
+
+  /// "Tekrar Dene" — merdiveni başa sarar (kullanıcı beklemeyi seçmedi).
+  void _handleManualRetry() {
+    _clearAutoRetry();
+    unawaited(_reload());
+  }
+
   void _onConnectivity() {
     if (!mounted) return;
     setState(() {});
@@ -167,16 +211,20 @@ class _LiveGamesTabState extends State<LiveGamesTab>
       return;
     }
     if (snap == null) {
-      // Ağ hatası — eski liste korunur, ama sekmeler artık bunu SÖYLER
-      // (14 Ağustos 2026): çevrimdışıyken "Devam eden bir Canlı oyunun
-      // yok."/"Yükleniyor…" yanıltıcıydı. Web `useOnlineStatus` ile
-      // (navigator.onLine) karar veriyor; portta bağlantı API'si olmadığından
-      // sinyal "son yükleme sunucuya ulaşamadı" — MEKANİZMA farklı, METİN
-      // aynı (bkz. util/offline_notice.dart).
-      if (mounted) setState(() => _loadFailed = true);
+      // Yükleme düştü. Eski liste KORUNUR ve ekranda kalır — üstüne yalnızca
+      // "Güncellenemedi" şeridi biner (14 Ağustos'ta burada `kOffline...`
+      // gösteriliyordu; 21 Ağustos'ta kaldırıldı: bağlantısı çalışan
+      // kullanıcıya "internet yok" demek YANLIŞ bilgiydi). Elde hiç liste
+      // yoksa ayrı bir panel + "Tekrar Dene" çıkar; her iki durumda da
+      // merdiven kullanıcı hiçbir şey yapmadan denemeyi sürdürür.
+      if (mounted) {
+        setState(() => _loadFailed = true);
+        _scheduleAutoRetry();
+      }
       return;
     }
     _liveGamesCache[user.id] = snap;
+    _clearAutoRetry();
     setState(() {
       _loadFailed = false;
       _snapshot = snap;
@@ -346,11 +394,48 @@ class _LiveGamesTabState extends State<LiveGamesTab>
           _subTabBtn(LiveSubTab.recent, 'Son Oynananlar'),
         ]),
         const SizedBox(height: 20),
-        if (_loadFailed || !services.onlineStatus.online)
+        // Liste ekranda ama tazelenemedi: veri BAYAT, yanlış değil. Şerit
+        // bunu söyler ve elle deneme yolunu açık tutar; merdiven zaten
+        // arka planda denemeye devam ediyor.
+        if (_loadFailed && snap != null && services.onlineStatus.online) ...[
+          // Web `text-[10px] uppercase tracking-[0.5px]` ile aynı — ekranı
+          // kaplamayan ince bir not, dokunma hedefi DEĞİL: kullanıcının
+          // yapması gereken bir şey yok, merdiven arka planda deniyor ve
+          // başarınca şerit kendiliğinden kalkar.
+          Text(
+            trUpper(kStaleDataNotice),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                fontFamily: 'SpaceMono',
+                fontSize: 10,
+                letterSpacing: 0.5,
+                color: _muted),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (!services.onlineStatus.online)
           // Canlı oyunun HER parçası (liste, davet, geçmiş) sunucudan
           // geliyor — çevrimdışıyken üç alt sekme de aynı şeyi söyler.
           // Yapay Zeka sekmesi BİLİNÇLİ olarak farklı konuşur (setup_screen).
           _empty(kOfflineNoConnection)
+        else if (_loadFailed && snap == null)
+          // Elde gösterilecek HİÇBİR liste yok: tek dürüst cümle "yüklenemedi"
+          // — "hiç oyunun yok" da "internet yok" da yanlış olurdu.
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _empty(kLoadFailedNotice),
+              NeoButton(
+                label: trUpper(kRetryLabel),
+                variant: NeoButtonVariant.accent,
+                fontSize: 14,
+                lineHeight: 20 / 14,
+                letterSpacing: 1.5,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                onPressed: _handleManualRetry,
+              ),
+            ],
+          )
         else if (snap == null)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),

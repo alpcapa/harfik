@@ -12,9 +12,17 @@ import '../../data/friends_api.dart';
 import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../auth/account_button.dart';
+import '../tokens.dart';
 import 'fluid.dart';
 import 'logo_mark.dart';
 import 'player_colors.dart';
+
+/// "← Geri" etiketi — web `GameHeader.tsx`in BACK_FONT_SIZE/BACK_GAP'i.
+/// İnce (normal ağırlık) ve KOYU (paletin ana metin rengi); kullanıcı
+/// gri ve siyah varyantları yan yana görüp siyahı seçti (21 Ağustos 2026).
+/// Web'le ELLE senkron — biri değişirse öteki de değişmeli.
+const double kBackFontSize = 11;
+const double kBackGap = 3;
 
 class GameHeader extends StatelessWidget {
   final GameState state;
@@ -75,13 +83,56 @@ class GameHeader extends StatelessWidget {
     final girisPaddingX = fluidSize(w, 6, -2.33, 2.22, 8);
     final girisPaddingY = fluidSize(w, 8.7, -5.05, 3.67, 12);
 
+    // Web `GameHeader.tsx`: etiket akışın DIŞINDA (absolute), header'ın
+    // yüksekliğine hiç dokunmuyor. Port bunu logonun KENDİ kutusuna
+    // çapalanmış bir Stack ile yapıyor (`Clip.none` — etiket kutunun altına
+    // taşar). Böylece etiket, Row ne kadar uzun olursa olsun HER ZAMAN
+    // logonun tam altında kalır ve header/tahta bir piksel oynamaz.
+    //
+    // ⚠ ÖNCEKİ DENEME BAŞARISIZDI ve dersi kayda değer: etiket header'ın
+    // dış Stack'ine konup konumu STACK'İN ÜSTÜNDEN hesaplanmıştı. Ama Row,
+    // logodan belirgin biçimde uzun (CI'da 360px'te 48 px — GİRİŞ/avatar ve
+    // skor kutusu satır yükseklikleri logodan büyük) ve logo o Row içinde
+    // ORTALANDIĞINDAN aşağı kayıyor; etiket sabit konumda kalınca logonun
+    // ÜSTÜNE BİNİYORDU. Konum artık logonun kendi kutusuna göre.
+    //
+    // ⚠ BİLİNÇLİ SAPMA — etiket portta TIKLANABİLİR DEĞİL: Flutter'da
+    // kutusunun dışına taşan bir çocuk dokunuş almaz (`RenderBox.hitTest`
+    // önce `size.contains`e bakıyor) ve bunu aşmanın tek yolu Row'un
+    // yüksekliğini ya da hizasını bozmaktan geçiyordu. Kaçış yolu webdeki
+    // gibi zaten LOGO; etiket onu GÖSTEREN bir ipucu. Webde tek bir
+    // `<button>` ikisini birden kapsıyor.
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
         children: [
+          // Etiket LOGONUN kutusuna çapalı — Row'un yüksekliğine de,
+          // hizasına da dokunmuyor.
           GestureDetector(
             onTap: onLogoTap,
-            child: LogoMark(height: logoHeight),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                LogoMark(height: logoHeight),
+                Positioned(
+                  // `left: 0`: header'ın 12px yatay dolgusu Board'unkiyle
+                  // aynı, yani etiket tahtanın sol kenarıyla hizalı.
+                  // ⚠ Board'un yatay dolgusu değişirse hiza sessizce bozulur.
+                  left: 0,
+                  top: logoHeight + kBackGap,
+                  child: Text(
+                    '← Geri',
+                    style: TextStyle(
+                      fontFamily: 'SpaceMono',
+                      fontSize: kBackFontSize,
+                      height: 1,
+                      color: kText,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(width: 8),
           // Web justify-between'in ikinci çocuğu tek bir SAĞ GRUP: kutular +

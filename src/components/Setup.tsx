@@ -376,10 +376,13 @@ export function Setup({
       if (inviteCount > 0 || myTurnCount > 0) onMainViewChange('live');
     };
     const refresh = () => {
-      fetchPendingLiveGameCounts().then(({ inviteCount, myTurnCount }) => {
-        if (cancelled) return;
-        setLiveActionCount(inviteCount + myTurnCount);
-        applyLoginDefaultOnce(inviteCount, myTurnCount);
+      fetchPendingLiveGameCounts().then((counts) => {
+        // `null` = sayılar bilinmiyor (ağ). Son bilinen rozet KORUNUR ve
+        // tek seferlik giriş kararı TÜKETİLMEZ — bir sonraki başarılı
+        // tazeleme (retry merdiveni/öne dönüş/Realtime) hâlâ uygulayabilsin.
+        if (cancelled || counts === null) return;
+        setLiveActionCount(counts.inviteCount + counts.myTurnCount);
+        applyLoginDefaultOnce(counts.inviteCount, counts.myTurnCount);
       });
     };
     // 300ms debounce — `LiveGamesTab`'daki aynı desen/gerekçe. Tek bir olay

@@ -83,6 +83,12 @@ jobs:
       # çalışıyor, dev sunucusunda yapılandırılmamış.
       - run: npm run verify-error-reporting
 
+      # Canlı oyun listesinin "geçici ağ hatası ↔ gerçekten boş" ayrımı ve
+      # sessiz yeniden deneme (21 Ağustos 2026 vakası). Duman testiyle
+      # sınanamıyor: bu kod yolu oturum açmış bir kullanıcı istiyor, dev
+      # sunucusunda Supabase yapılandırılmadığından tarayıcıda ulaşılamıyor.
+      - run: npm run verify-live-games-load
+
       - run: npm run build
 
       # Bu ortamdaki geliştirme oturumunun aksine (bkz. playwright.config.ts),

@@ -36,6 +36,7 @@ npm run test     # Playwright duman testleri (tests/smoke.spec.ts)
 # Birim test çatısı yok; riskli saf mantık ayrı doğrulama betikleriyle sınanır:
 npm run verify-cloud-save-mirror # bulut kaydının çevrimdışı karar mantığı
 npm run verify-fetch-my-games    # oyun geçmişi: ağ hatası ↔ boş liste ayrımı
+npm run verify-live-games-load    # canlı oyun listesi: düşen istek sessizce tekrarlanır
 npm run verify-demo-board        # karşılama katmanındaki tanıtım tahtası sözlüğe karşı doğrulanır
 npm run verify-remaining-tiles   # "Kalan Taşlar" dökümü ↔ oyun sonu raf düşümü
 npm run verify-error-reporting   # istemci hata telemetrisi: ne kaydedilir/kaydedilmez, tekrar bastırma, hız sınırı

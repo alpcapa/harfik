@@ -37,14 +37,39 @@ export interface FakeSpec {
   rpcError?: Record<string, Err>;
   /** true: `supabase` null (anahtarlar yapılandırılmamış). */
   noClient?: boolean;
+  /**
+   * Kaçıncı AĞ çağrılarının düşeceği (1'den başlayarak, `from`+`rpc` ortak
+   * sayaç). Yeniden deneme mantığını ölçmek için: `[1]` = ilk deneme düşer,
+   * ikincisi başarılı olmalı. `offline` her çağrıyı düşürür; bu ise
+   * "geçici" düşmeyi (ağ değişiminde iptal edilen fetch) temsil ediyor.
+   */
+  failCalls?: number[];
 }
 
 const NET: Err = { message: 'TypeError: Failed to fetch' };
 
 let spec: FakeSpec = {};
+let netCalls = 0;
+
+/**
+ * O ana kadar yapılan ağ çağrısı sayısı (`from` + `rpc`). Yeniden denemenin
+ * GERÇEKTEN olup olmadığını ölçmek için — "sonuç doğru geldi" tek başına
+ * retry'ın çalıştığını kanıtlamaz.
+ */
+export function __netCalls(): number {
+  return netCalls;
+}
+
+/** Bu çağrı düşecek mi? Sayacı da ilerletir. */
+function shouldFail(): boolean {
+  netCalls += 1;
+  if (spec.offline) return true;
+  return (spec.failCalls ?? []).includes(netCalls);
+}
 
 export function __setFake(next: FakeSpec): void {
   spec = next;
+  netCalls = 0;
   // `api.ts` `if (!supabase)` diye bakıyor; bir Proxy her zaman truthy
   // olduğundan o dal ancak GERÇEKTEN null atayarak test edilebilir.
   // ESM canlı bağlaması sayesinde yeniden atama import edene de yansıyor.
@@ -53,9 +78,7 @@ export function __setFake(next: FakeSpec): void {
 
 function builder() {
   const result = () =>
-    spec.offline
-      ? { data: null, error: NET }
-      : { data: spec.rows ?? [], error: null };
+    shouldFail() ? { data: null, error: NET } : { data: spec.rows ?? [], error: null };
   const chain: Record<string, unknown> = {};
   for (const m of ['select', 'eq', 'is', 'not', 'order', 'range', 'in', 'limit']) {
     chain[m] = () => chain;
@@ -80,7 +103,7 @@ const client = {
   },
   from: () => builder(),
   rpc: async (name: string) => {
-    if (spec.offline) return { data: null, error: NET };
+    if (shouldFail()) return { data: null, error: NET };
     const err = spec.rpcError?.[name];
     if (err) return { data: null, error: err };
     return { data: spec.rpcData?.[name] ?? [], error: null };

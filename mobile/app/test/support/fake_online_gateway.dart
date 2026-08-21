@@ -63,10 +63,21 @@ class FakeOnlineGamesGateway implements OnlineGamesGateway {
   /// beklemeden karar veriliyor mu?" testleri için.
   bool listHangs = false;
 
+  /// İlk N `listMine()` çağrısı AĞ hatasıyla düşer, sonrakiler normal —
+  /// "yarıda kalan istek boş liste gibi okunmasın" (21 Ağustos 2026).
+  int netFailFirst = 0;
+  int netFailCalls = 0;
+
   @override
   Future<List<Map<String, Object?>>> listMine() async {
-    _maybeFail();
+    // Sayaç EN BAŞTA: "tekrar denendi mi?" testleri düşen denemeleri de
+    // saymak zorunda.
     listCalls++;
+    _maybeFail();
+    if (netFailCalls < netFailFirst) {
+      netFailCalls++;
+      throw Exception('ClientException: Failed to fetch');
+    }
     if (listHangs) return Completer<List<Map<String, Object?>>>().future;
     return [for (final r in rows) Map<String, Object?>.of(r)];
   }
@@ -123,10 +134,19 @@ class FakeOnlineGamesGateway implements OnlineGamesGateway {
   }
 
   @override
-  void Function() subscribe(void Function() onChange) {
+  void Function() subscribe(void Function() onChange,
+      {void Function()? onResubscribe}) {
     subscribeCount++;
+    lastOnChange = onChange;
+    lastOnResubscribe = onResubscribe;
     return () => unsubscribeCount++;
   }
+
+  /// Testler "sunucudan Realtime olayı geldi"yi buradan sürer.
+  void Function()? lastOnChange;
+
+  /// Testler kanalın KOPUP yeniden bağlanmasını buradan taklit eder.
+  void Function()? lastOnResubscribe;
 
   @override
   Future<Map<String, Object?>?> gameState(String gameId) async {

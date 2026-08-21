@@ -22,7 +22,7 @@ import 'package:kelimeki/src/data/meaning_store.dart';
 import 'package:kelimeki/src/data/online_games_api.dart';
 import 'package:kelimeki/src/ui/live/live_game_create_form.dart';
 import 'package:kelimeki/src/ui/live/live_games_tab.dart';
-import 'package:kelimeki_core/kelimeki_core.dart' show SetWordSource;
+import 'package:kelimeki_core/kelimeki_core.dart' show SetWordSource, trUpper;
 
 import 'support/fake_online_gateway.dart';
 import 'support/test_fonts.dart';
@@ -216,6 +216,69 @@ void main() {
       expect(await OnlineGamesRepo(gw, nowMs: () => nowMs).load(), isNull);
     });
 
+    // 21 Ağustos 2026 vakası: ağ değişiminde (WiFi↔hücresel) yarıda kalan
+    // istek boş liste gibi okunuyor, kullanıcıya sırası kendisindeyken
+    // "Devam eden bir Canlı oyunun yok." deniyordu. Gecikme enjekte
+    // ediliyor — testler gerçek zamanlayıcı beklemesin (bekleyen-timer
+    // flake sınıfı).
+    Future<void> noDelay(Duration _) async {}
+
+    test('load: yarıda kalan İLK istek sessizce tekrarlanır', () async {
+      final gw = FakeOnlineGamesGateway()
+        ..netFailFirst = 1
+        ..rows = [gameRow(id: 'g1', myId: 'me', status: 'active')]
+        ..turnRows = [
+          {'online_game_id': 'g1', 'current': 0},
+        ];
+      final repo = OnlineGamesRepo(gw, nowMs: () => nowMs, delay: noDelay);
+      final snap = await repo.load();
+      expect(snap, isNotNull, reason: 'düşen istek boş liste gibi okunmamalı');
+      expect(snap!.games, hasLength(1));
+      expect(gw.listCalls, 2, reason: 'bir kez tekrar denendi');
+    });
+
+    test('load: iki ardışık ağ hatası da tekrarlanır', () async {
+      final gw = FakeOnlineGamesGateway()
+        ..netFailFirst = 2
+        ..rows = [gameRow(id: 'g1', myId: 'me', status: 'active')]
+        ..turnRows = [
+          {'online_game_id': 'g1', 'current': 0},
+        ];
+      final repo = OnlineGamesRepo(gw, nowMs: () => nowMs, delay: noDelay);
+      expect((await repo.load())!.games, hasLength(1));
+      expect(gw.listCalls, 3);
+    });
+
+    test('load: üç deneme de düşerse null — uydurma boş liste YOK', () async {
+      final gw = FakeOnlineGamesGateway()..netFailFirst = 99;
+      final repo = OnlineGamesRepo(gw, nowMs: () => nowMs, delay: noDelay);
+      expect(await repo.load(), isNull);
+      expect(gw.listCalls, 3, reason: 'merdiven 2 gecikme + son deneme');
+    });
+
+    test('load: sunucunun KENDİ reddi tekrarlanMAZ', () async {
+      // Kapsam bilerek dar: yetki/kural reddini tekrarlamak yalnızca
+      // gecikme üretir, sonucu değiştirmez.
+      final gw = FakeOnlineGamesGateway()
+        ..failWith = Exception('Yalnızca arkadaşlarını davet edebilirsin.');
+      final repo = OnlineGamesRepo(gw, nowMs: () => nowMs, delay: noDelay);
+      expect(await repo.load(), isNull);
+      expect(gw.listCalls, 1);
+    });
+
+    test('subscribe: kanal kopup yeniden bağlanınca tazeleme sinyali gelir',
+        () async {
+      // Kopuk kanal olay YAYINLAMAZ ve kopukken olanları sonradan
+      // oynatMAZ — yeniden bağlanmanın kendisi tek kurtarma sinyali.
+      final gw = FakeOnlineGamesGateway();
+      var yenidenBaglandi = 0;
+      gw.subscribe(() {}, onResubscribe: () => yenidenBaglandi++);
+      expect(gw.lastOnResubscribe, isNotNull,
+          reason: 'tüketici kancayı GERÇEKTEN geçmeli');
+      gw.lastOnResubscribe!();
+      expect(yenidenBaglandi, 1);
+    });
+
     test('create: RPC + notify fire-and-forget (bildirim hatası yutulur)',
         () async {
       final gw = FakeOnlineGamesGateway()..notifyFailWith = Exception('brevo');
@@ -322,6 +385,49 @@ void main() {
       await pumpTab(tester, s);
       expect(find.text(kOfflineNoConnection), findsOneWidget);
       expect(find.text('Yükleniyor…'), findsNothing);
+    });
+
+    // 21 Ağustos 2026: bağlantı ÇALIŞIRKEN yükleme düşerse "İnternet
+    // bağlantısı yok" demek YANLIŞ bilgi (kullanıcı kararı) — başka bir
+    // sayfaya girip çalıştığını gören kişi uygulamaya güvenmez.
+    // Negatif eş: `_loadFailed` dalı yine `kOfflineNoConnection` gösterirse
+    // ilk iki expect birden düşer.
+    testWidgets('bağlantı varken yükleme düşerse "internet yok" DEMEZ',
+        (tester) async {
+      final gw = FakeOnlineGamesGateway()..failWith = Exception('sunucu');
+      final s = liveServices(userId: 'me', gateway: gw, online: true);
+      await pumpTab(tester, s);
+      await tester.pump();
+      expect(find.text(kOfflineNoConnection), findsNothing);
+      expect(find.text(kLoadFailedNotice), findsOneWidget);
+      expect(find.text(trUpper(kRetryLabel)), findsOneWidget);
+      // Bekleyen otomatik denemeyi bırakma (bekleyen-timer flake sınıfı).
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('elde liste varken tazeleme düşerse liste KALIR + bayat notu',
+        (tester) async {
+      final gw = FakeOnlineGamesGateway()
+        ..rows = [gameRow(id: 'g1', myId: 'me', status: 'active')]
+        ..turnRows = [
+          {'online_game_id': 'g1', 'current': 1},
+        ];
+      final s = liveServices(userId: 'me', gateway: gw, online: true);
+      await pumpTab(tester, s);
+      await tester.pump();
+      expect(find.text('Devam eden bir Canlı oyunun yok.'), findsNothing);
+      expect(find.text(trUpper(kStaleDataNotice)), findsNothing);
+
+      // Şimdi tazeleme düşsün — liste ekranda KALMALI. Tetikleyici gerçek
+      // yol: Realtime olayı → 300ms debounce → _reload.
+      gw.failWith = Exception('sunucu');
+      gw.lastOnChange!();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
+      expect(find.text(trUpper(kStaleDataNotice)), findsOneWidget);
+      expect(find.text(kLoadFailedNotice), findsNothing);
+      expect(find.text(kOfflineNoConnection), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
     });
 
     testWidgets(

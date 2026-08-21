@@ -6085,6 +6085,83 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        Tarihler `legal_text_test.dart` ile kilitli.
      - **Flutter SDK bu ortamda YOK** — Dart yarısının kanıtı CI.
 
+   - ✅ **Parça 124 — düşen istek "hiç oyunun yok" DEMEZ (21 Ağustos 2026,
+     web + port AYNI PR):** Kullanıcının yanındaki gerçek bir oyuncu, sırası
+     KENDİSİNDEYKEN Canlı sekmesinde *"Devam eden bir Canlı oyunun yok."*
+     gördü; oyun ~9 dakika sonra kendiliğinden geldi. Kök sebep ve dört
+     katmanın tamamı kök `CLAUDE.md` → "Düşen istek 'hiç oyunun yok' DEMEZ"
+     bölümünde (sunucu logları oradan ölçüldü: 16/16 çağrı 200 ve oyunu
+     İÇERİYORDU; kırılan şey ağ değişiminde yarıda kalan istekti).
+     - **`OnlineGamesRepo._fetchWithRetry`** — web `retryOnNetworkFailure`
+       ile AYNI gecikmeler (**400 / 1200 ms**) ve AYNI dar kapsam: yalnızca
+       `isNetworkError` eşleşirse tekrarlanır; sunucunun KENDİ reddi
+       (yetki/kural) tekrarlanmaz. Gecikme testlere enjekte edilebiliyor
+       (`delay:`) — aksi halde testler gerçek zamanlayıcı beklerdi
+       (bekleyen-timer flake sınıfı).
+     - **`OnlineGamesGateway.subscribe`'a `onResubscribe` kancası:** kanal
+       KOPUP yeniden bağlanınca çağrılır, İLK `subscribed` atlanır. Kopuk
+       kanal olay yayınlamaz ve kopukken olanları sonradan OYNATMAZ (28
+       Temmuz dersi), yani yeniden bağlanmanın kendisi tek kurtarma sinyali.
+       **`subscribeGame`'e DOKUNULMADI** — o tek oyunun kendi kanalı, aynı
+       dosyada ve karıştırması kolay.
+     - **`LiveGamesTab` artık ÜÇ ayrı cümle kuruyor:** çevrimdışı →
+       `kOfflineNoConnection` (değişmedi); bağlantı var + elde liste YOK →
+       `kLoadFailedNotice` + **TEKRAR DENE**; liste VAR ama tazelenemedi →
+       liste EKRANDA KALIR + ince `kStaleDataNotice` şeridi. **14 Ağustos'ta
+       burada `kOfflineNoConnection` gösteriliyordu ve bu 21 Ağustos'ta
+       KALDIRILDI** — bağlantısı çalışan kullanıcıya "internet yok" demek
+       yanlış bilgiydi (kullanıcının kendi itirazı). Üç metin de
+       `offline_notice.dart`ta ve `offline_notice_test.dart` onları web
+       dosyasını OKUYARAK karşılaştırıyor.
+     - **Otomatik merdiven** (3/8/20/30 sn, son basamak tekrarlanır) web ile
+       aynı; `dispose()` timer'ı iptal ediyor.
+     - **Testler:** `live_games_test.dart`e 5 repo + 2 widget testi
+       (ilk istek düşüp ikincisi başarılı → liste GELİYOR; üç deneme de
+       düşerse null; sunucu reddi tekrarlanmaz; yeniden bağlanma sinyali;
+       bağlantı varken "internet yok" DEMEZ; liste varken bayat notu).
+       Sahte gateway'e `netFailFirst` + `lastOnChange`/`lastOnResubscribe`
+       eklendi.
+     - **Flutter SDK bu ortamda YOK** — Dart yarısının kanıtı CI.
+
+   - ✅ **Parça 125 — logonun altında "← Geri" (21 Ağustos 2026, web + port
+     AYNI PR):** Kullanıcı bildirdi: *"Bazı kullanıcılar oyundan setup'a
+     dönüşü bulamıyor."* Logo baştan beri Setup'a dönüyordu — eksik olan
+     davranış değil GÖRÜNÜRLÜKTÜ. Karar zinciri ve web ölçümleri kök
+     `CLAUDE.md` → "`GameHeader` — logonun altında '← Geri'".
+     - **BU, WEB'İ BİREBİR TAŞIYAMADIĞIMIZ nadir yerlerden biri.** Webde
+       etiket `absolute` — header'ın yüksekliğine hiç dokunmuyor VE logoyla
+       aynı `<button>`ın içinde olduğundan tıklanabilir. Flutter'da bu
+       birleşim YOK: kutusunun DIŞINA taşan bir çocuk dokunuş ALMAZ
+       (`RenderBox.hitTest` önce `size.contains`e bakıyor), oysa etiketin de
+       tıklanabilir olması kullanıcının açık şartıydı.
+     - **Çözüm — etiket LOGONUN KENDİ kutusuna çapalı** (logo `Stack` +
+       `Clip.none`), header'ın dış kutusuna DEĞİL. Böylece Row ne kadar uzun
+       olursa olsun etiket her zaman logonun tam altında; header ve tahta
+       bir piksel oynamıyor (webdeki 0px sapmanın aynısı).
+     - **⚠ İLK DENEME CI'DA DÜŞTÜ ve gerçek bir hata buldu:** etiket
+       header'ın dış Stack'ine konup konumu STACK'İN ÜSTÜNDEN
+       hesaplanmıştı. Ama Row logodan belirgin biçimde uzun (CI'da 360px'te
+       **48px** — GİRİŞ/avatar ve skor kutusu satır yükseklikleri logodan
+       büyük) ve logo o Row içinde ORTALANDIĞINDAN aşağı kayıyor; sabit
+       konumdaki etiket logonun ÜSTÜNE BİNİYORDU. Bu ortamda Flutter SDK
+       olmadığından ancak CI gösterebildi.
+     - **⚠ BİLİNÇLİ SAPMA — etiket portta TIKLANABİLİR DEĞİL:** kutusunun
+       dışına taşan çocuk dokunuş almıyor ve bunu aşmanın tek yolu Row'un
+       yüksekliğini/hizasını bozmaktan geçiyordu. Kaçış yolu webdeki gibi
+       zaten LOGO; etiket onu GÖSTEREN bir ipucu. Webde tek bir `<button>`
+       ikisini birden kapsıyor.
+     - **Sabitler ELLE SENKRON:** `kBackFontSize` (11) ve `kBackGap` (3) ↔
+       web `BACK_FONT_SIZE`/`BACK_GAP`; renk `kText` ↔ `text-text`. Biri
+       değişirse öteki de değişmeli, bunu zorlayan bir test YOK.
+     - **Sol kenar hizası:** header'ın 12px yatay dolgusu = Board'unki, yani
+       etiket tahtanın sol kenarıyla hizalı. **⚠ Board'un yatay dolgusu
+       değişirse hiza sessizce bozulur.**
+     - **Testler** (`game_header_test.dart`, 2 yeni): görünür + logonun
+       hemen altında + sol kenar 12 + dokunuş logoyla AYNI eylemi yapıyor
+       (iki ayrı `GestureDetector`, tek eylem); ve 360/390/834'te skor
+       kutusunun logoyla dikey hizası BOZULMUYOR + taşma istisnası yok.
+     - **Flutter SDK bu ortamda YOK** — Dart yarısının kanıtı CI.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**

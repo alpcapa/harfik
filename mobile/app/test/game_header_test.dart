@@ -89,6 +89,85 @@ void main() {
     expect(() => parseSvgPath('10 20 L5 5'), throwsFormatException);
   });
 
+  // Kullanıcı isteği (21 Ağustos 2026): oyundan Setup'a dönüş bulunamıyordu.
+  // Logo zaten dönüyordu — eksik olan GÖRÜNÜRLÜKTÜ. Etiket logonun KENDİ
+  // kutusuna çapalı (Stack + Clip.none), böylece Row ne kadar uzun olursa
+  // olsun her zaman logonun tam altında kalıyor ve header/tahta oynamıyor.
+  //
+  // ⚠ Bu testin ilk sürümü CI'da düştü ve iki gerçek hata buldu: (1) etiket
+  // header'ın dış Stack'ine konunca, Row logodan uzun olduğunda (360px'te
+  // 48px) logo aşağı kayıp etiketin ÜSTÜNE biniyordu; (2) `find.text('YZ 2')`
+  // kutuyu değil kutunun üst satırındaki ETİKETİ buluyor, yani hiza
+  // karşılaştırması yanlış referansa bakıyordu. İkisi de burada kilitli.
+  testWidgets('"← Geri" logonun altında, tahtanın sol kenarına hizalı',
+      (tester) async {
+    // Girişli hesap (avatar/GİRİŞ) Row'u logodan UZUN yapıyor — çakışmayı
+    // ancak bu durumda görebiliyoruz, o yüzden auth ŞART.
+    for (final w in [360.0, 390.0, 834.0]) {
+      await setPhoneViewSize(tester, Size(w, 400));
+      var tiklandi = 0;
+      await tester.pumpWidget(MaterialApp(
+        theme: kelimekiTheme(),
+        home: Scaffold(
+          body: GameHeader(
+              state: headerState(),
+              onLogoTap: () => tiklandi++,
+              auth: AuthService.fake()),
+        ),
+      ));
+      await tester.pump();
+      expect(tester.takeException(), isNull, reason: '$w px taşma vermemeli');
+
+      final etiket = find.text('← Geri');
+      expect(etiket, findsOneWidget);
+
+      final logo = tester.getRect(find.byType(LogoMark));
+      final e = tester.getRect(etiket);
+
+      // Sol kenar: header'ın 12px yatay dolgusu = Board'unki.
+      expect(e.left, closeTo(12, 0.5), reason: '$w px: tahtanın sol kenarı');
+      expect(logo.left, closeTo(12, 0.5));
+
+      // "Hemen altında" — ve HER ZAMAN logonun ALTINDA (çakışma yok).
+      expect(e.top - logo.bottom, closeTo(kBackGap, 0.6),
+          reason: '$w px: etiket logonun kutusuna çapalı olmalı');
+
+      // Kaçış yolu logo (portta etiket dokunuş almıyor — kutunun dışına
+      // taştığından; kod yorumunda gerekçesi yazılı).
+      await tester.tap(find.byType(LogoMark));
+      expect(tiklandi, 1, reason: '$w px: logoya dokunmak Setup\'a dönmeli');
+    }
+  });
+
+  // Etiket eklenirken skor kutularının logoyla hizası BOZULMAMALIYDI
+  // ("header'ı bozmadan" — kullanıcının şartı).
+  testWidgets('etiket skor kutularının logo hizasını bozmuyor',
+      (tester) async {
+    for (final w in [360.0, 390.0, 834.0]) {
+      await setPhoneViewSize(tester, Size(w, 400));
+      await tester.pumpWidget(MaterialApp(
+        theme: kelimekiTheme(),
+        home: Scaffold(
+          body: GameHeader(
+              state: headerState(),
+              onLogoTap: () {},
+              auth: AuthService.fake()),
+        ),
+      ));
+      await tester.pump();
+      expect(tester.takeException(), isNull, reason: '$w px taşma vermemeli');
+
+      // ⚠ `find.text('YZ 2')` KUTUYU DEĞİL üst satırdaki etiketi bulur —
+      // merkezi kutunun merkezinin üstünde kalır ve karşılaştırma yanlış
+      // çıkar (CI ilk turda tam bu yüzden düştü: 360px'te 17.5 vs 24.0).
+      // Kutunun kendi `ValueKey`i tek doğru referans.
+      final logo = tester.getRect(find.byType(LogoMark));
+      final kutu = tester.getRect(find.byKey(const ValueKey('player-box-1')));
+      expect(kutu.center.dy, closeTo(logo.center.dy, 1.0),
+          reason: '$w px: skor kutusu logoyla aynı hizada kalmalı');
+    }
+  });
+
   testWidgets(
       '4 kutu + GİRİŞ 375-465 aralığında kaydırmasız sığar (web garantisi)',
       (tester) async {

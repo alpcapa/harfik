@@ -1,4 +1,4 @@
-// `verify-fetch-my-games.ts`i bundle'layıp koşan sürücü.
+// `verify-live-games-load.ts`i bundle'layıp koşan sürücü.
 //
 // esbuild'in CLI `--alias`'ı GÖRELİ yol kabul etmiyor ("Invalid alias name"),
 // bu yüzden JS API'si + bir `onResolve` eklentisi kullanılıyor: `src/lib/api`in
@@ -9,11 +9,11 @@ import { pathToFileURL } from 'node:url';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 
-const out = path.resolve('node_modules/.cache/kelimeki/verify-fetch-my-games.mjs');
+const out = path.resolve('node_modules/.cache/kelimeki/verify-live-games-load.mjs');
 mkdirSync(path.dirname(out), { recursive: true });
 
 await build({
-  entryPoints: ['scripts/verify-fetch-my-games.ts'],
+  entryPoints: ['scripts/verify-live-games-load.ts'],
   bundle: true,
   platform: 'node',
   format: 'esm',
@@ -37,5 +37,13 @@ await build({
     },
   ],
 });
+
+// `reportClientError` (api.ts artık onu çağırıyor) modül gövdesinde değil
+// çağrıldığında `window.location`a bakıyor — node'da bir kabuk şart.
+globalThis.window = {
+  location: { pathname: '/' },
+  __KELIMEKI_BUILD__: 'verify',
+  addEventListener: () => {},
+};
 
 await import(pathToFileURL(out).href);
