@@ -1342,7 +1342,7 @@ adresi DOĞRULANDIĞINDA** gönderilir — bu ayrım testin tamamını belirliyo
       "e-posta bildirimleri"ni kapatmış bir hesap yeni bir adresi
       doğrularsa mail gitmemeli.
 
-## 15. Canlı liste — düşen istek (21 Ağustos 2026)
+## 13. Canlı liste — düşen istek (21 Ağustos 2026)
 
 > Gerçek vaka: sırası KENDİSİNDE olan bir oyuncu "Devam eden bir Canlı
 > oyunun yok." gördü. Ölçüt: **kullanıcı hiçbir zaman gerçek olmayan bir
@@ -1370,7 +1370,7 @@ adresi DOĞRULANDIĞINDA** gönderilir — bu ayrım testin tamamını belirliyo
       açılışta ağ bir an kesilse bile "Arkadaşınla" sekmesi açılmalı (düşen
       yükleme bu kararı bir daha TÜKETMEMELİ).
 
-## 16. Oyundan Setup'a dönüş — "← Geri" (21 Ağustos 2026)
+## 14. Oyundan Setup'a dönüş — "← Geri" (21 Ağustos 2026)
 
 - [ ] **Görünür:** Oyun ekranında logonun hemen altında ince, koyu bir
       "← Geri" yazıyor ve tahtanın sol kenarıyla hizalı duruyor.
@@ -1382,7 +1382,7 @@ adresi DOĞRULANDIĞINDA** gönderilir — bu ayrım testin tamamını belirliyo
 - [ ] **Canlı oyunda da var:** Aynı etiket Canlı oyun ekranında da
       görünüyor ve oradan Canlı listesine döndürüyor.
 
-## 17. Giriş varsayılanı — hangi sekme açılıyor (21 Ağustos 2026)
+## 15. Giriş varsayılanı — hangi sekme açılıyor (21 Ağustos 2026)
 
 - [ ] **YZ boş + Canlı oyun var:** Devam eden YZ oyunu OLMAYAN, ama devam
       eden Canlı oyunu OLAN bir hesapla gir → "Arkadaşınla" açık gelmeli,

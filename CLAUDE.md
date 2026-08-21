@@ -2136,7 +2136,8 @@ bir şey görmemeli ve iyileşmek için hiçbir şey yapmak zorunda kalmamalı.*
 
 ### Doğrulama
 
-`npm run verify-live-games-load` — 15 kontrol, ÜRETİM fonksiyonlarını sahte
+`npm run verify-live-games-load` — **22 kontrol** (15'i bu vaka, 7'si aynı
+gün eklenen giriş varsayılanı kuralı), ÜRETİM fonksiyonlarını sahte
 bir Supabase ucuyla koşturuyor: ağ hatası → `null` + **3** çağrı; boş liste →
 `[]` + **1** çağrı; **ilk istek düşüp ikincisi başarılı** (kullanıcının
 vakası) → liste geliyor; sunucunun KENDİ reddi → tekrar YOK; yapılandırılmamış
