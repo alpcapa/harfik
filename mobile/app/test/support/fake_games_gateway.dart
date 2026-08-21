@@ -7,6 +7,7 @@ class FakeGamesGateway implements GamesGateway {
   /// null = misafir (oturum yok) — flush ağa hiç dokunmaz.
   String? userId;
   final inserted = <Map<String, Object?>>[];
+  final starts = <Map<String, Object?>>[];
   final finishes = <Map<String, Object?>>[];
   final notified = <({String gameId, int playerCount})>[];
 
@@ -38,6 +39,11 @@ class FakeGamesGateway implements GamesGateway {
     }
     inserted.add({...row, 'user_id': uid});
     return (id: id, alreadyExisted: false);
+  }
+
+  @override
+  Future<void> logGameStart({required int playerCount}) async {
+    starts.add({'player_count': playerCount});
   }
 
   @override

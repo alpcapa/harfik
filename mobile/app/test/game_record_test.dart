@@ -253,5 +253,28 @@ void main() {
       );
       expect(gw.finishes.single['duration_seconds'], 7200);
     });
+
+    test('logStart: başlangıç sayacı gider ve HATA OYUNU ETKİLEMEZ', () async {
+      // ROADMAP #9 — `game_starts`. Web `logGameStart` paritesi.
+      final gw = FakeGamesGateway(userId: 'u-1');
+      final repo = await newRepo(gw);
+      await repo.logStart(playerCount: 4);
+      expect(gw.starts.single['player_count'], 4);
+
+      // Best-effort duruş: gateway fırlatsa bile `logStart` fırlatmamalı —
+      // telemetri hiçbir koşulda oyun başlatmayı düşüremez.
+      final patlak = _ThrowingStartGateway();
+      final repo2 = GamesRepo(patlak, await openQueue(),
+          newId: () => fixedId, now: () => fixedNow);
+      await expectLater(repo2.logStart(playerCount: 2), completes);
+    });
   });
+}
+
+/// `logGameStart` fırlatan sahte uç — yalnızca yukarıdaki dayanıklılık
+/// kontrolü için.
+class _ThrowingStartGateway extends FakeGamesGateway {
+  @override
+  Future<void> logGameStart({required int playerCount}) async =>
+      throw Exception('ağ hatası');
 }

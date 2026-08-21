@@ -251,7 +251,7 @@ class PrivacyModal extends StatelessWidget {
       child: _StackedSections([
         const _P('Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, '
             'hangi verileri topladığımızı, nasıl kullandığımızı ve '
-            'haklarınızı açıklar. Son güncelleme: 19 Ağustos 2026.'),
+            'haklarınızı açıklar. Son güncelleme: 21 Ağustos 2026.'),
         const _Section('1. Veri Sorumlusu', [
           _P('Kelimeki, herhangi bir şirket ya da tüzel kişilik '
               'bulunmaksızın, bağımsız bir geliştirici tarafından bireysel '
@@ -377,12 +377,16 @@ class PrivacyModal extends StatelessWidget {
               'ya da kayıt olursanız bu bekleyen sonuçlar otomatik olarak '
               'hesabınıza aktarılıp sunucuya gönderilir. Reklam veya '
               'pazarlama amaçlı herhangi bir çerez ya da izleme teknolojisi '
-              'kullanılmamaktadır. Girişsiz (misafir) ziyaretlerde, kaç '
-              'benzersiz ziyaretçimiz olduğunu anlayabilmek için cihazınızda '
+              'kullanılmamaktadır. Kaç benzersiz ziyaretçimiz olduğunu ve '
+              'kaç kişinin oyuna başladığını anlayabilmek için cihazınızda '
               'rastgele, kimliğinizle hiçbir şekilde ilişkilendirilmeyen '
-              'anonim bir kod üretilir; bu kodla birlikte yalnızca kaba '
-              'cihaz tipi (mobil/masaüstü) ve varsa bir paylaşım linkindeki '
-              'kaynak etiketi sunucuya iletilir — bu veri hiçbir üçüncü '
+              'anonim bir kod üretilir. Bu kod iki durumda sunucuya iletilir: '
+              'girişsiz (misafir) ziyaretlerde kaba cihaz tipiyle '
+              '(mobil/masaüstü) birlikte, ve yapay zekaya karşı bir oyun '
+              'başlattığınızda oyuncu sayısıyla birlikte — ikisinde de varsa '
+              'bir paylaşım linkindeki kaynak etiketi eklenir. Oyun '
+              'başlangıcı kaydı giriş yapmış olsanız da tutulur, ancak '
+              'kayıtta hesap kimliğiniz YER ALMAZ: bu veri hiçbir üçüncü '
               'tarafla paylaşılmaz ve hesabınızla asla eşleştirilmez. Yazı '
               'tipleri de dahil tüm statik içerikler kendi sunucularımızdan '
               'sağlanır; üçüncü taraf (ör. Google Fonts) çağrısı yapılmaz.'),

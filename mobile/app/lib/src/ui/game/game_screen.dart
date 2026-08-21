@@ -7,6 +7,7 @@
 // kuralları, local_game_repo.dart) — ekran yalnızca oynatır. Parça parça
 // Tahtadaki onaylanmış bir taşa dokunmak, o hücreden geçen kelimelerin
 // anlamını gösterir (meanings deposu verilmişse).
+import 'dart:async' show unawaited;
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
@@ -319,10 +320,27 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       confirmLabel: 'TEKRAR OYNA',
     );
     if (!ok || !mounted) return;
+    final playerCount = state.players.length;
     controller.dispatch(StartAction([
       for (final p in state.players) PlayerSetup(name: p.name, isAI: p.isAI),
     ]));
     setState(() => _gameOverShown = false);
+    // Anonim başlangıç sayacı — Setup'taki "Oyunu Başlat" ile AYNI olay
+    // (web'de ikisi de tek bir `startLocalGame` yardımcısından geçiyor).
+    unawaited(_logGameStart(playerCount));
+  }
+
+  /// `game_starts` sayaç satırı — `setup_screen.dart`taki eşiyle aynı
+  /// sözleşme: fire-and-forget ve HİÇBİR koşulda fırlatmaz. `logStart` zaten
+  /// gateway hatasını yutuyor; buradaki try/catch `widget.games` FUTURE'ının
+  /// reddedilme ihtimali için (`unawaited` hatayı yutmaz).
+  Future<void> _logGameStart(int playerCount) async {
+    try {
+      final games = await widget.games;
+      await games?.logStart(playerCount: playerCount);
+    } catch (_) {
+      // Telemetri hiçbir koşulda oyunu etkilemez.
+    }
   }
 
   Future<void> _handlePass() async {

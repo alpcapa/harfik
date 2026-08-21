@@ -28,7 +28,7 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
       <div className="flex flex-col gap-5">
         <P>
           Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, hangi verileri topladığımızı,
-          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 19 Ağustos 2026</P>
+          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 21 Ağustos 2026</P>
 
         <Section title="1. Veri Sorumlusu">
           <P>
@@ -164,10 +164,13 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             depoda bekletilir; aynı cihazda daha sonra giriş yapar ya da kayıt olursanız bu
             bekleyen sonuçlar otomatik olarak hesabınıza aktarılıp sunucuya gönderilir. Reklam
             veya pazarlama amaçlı herhangi bir çerez ya da izleme teknolojisi kullanılmamaktadır.
-            Girişsiz (misafir) ziyaretlerde, kaç benzersiz ziyaretçimiz olduğunu anlayabilmek
+            Kaç benzersiz ziyaretçimiz olduğunu ve kaç kişinin oyuna başladığını anlayabilmek
             için cihazınızda rastgele, kimliğinizle hiçbir şekilde ilişkilendirilmeyen anonim bir
-            kod üretilir; bu kodla birlikte yalnızca kaba cihaz tipi (mobil/masaüstü) ve varsa bir
-            paylaşım linkindeki kaynak etiketi sunucuya iletilir — bu veri hiçbir üçüncü tarafla
+            kod üretilir. Bu kod iki durumda sunucuya iletilir: girişsiz (misafir) ziyaretlerde
+            kaba cihaz tipiyle (mobil/masaüstü) birlikte, ve yapay zekaya karşı bir oyun
+            başlattığınızda oyuncu sayısıyla birlikte — ikisinde de varsa bir paylaşım
+            linkindeki kaynak etiketi eklenir. Oyun başlangıcı kaydı giriş yapmış olsanız da
+            tutulur, ancak kayıtta hesap kimliğiniz YER ALMAZ: bu veri hiçbir üçüncü tarafla
             paylaşılmaz ve hesabınızla asla eşleştirilmez. Yazı tipleri de dahil tüm statik
             içerikler kendi sunucularımızdan sağlanır; üçüncü taraf (ör. Google Fonts) çağrısı
             yapılmaz.

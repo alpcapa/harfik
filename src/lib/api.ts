@@ -206,6 +206,46 @@ export async function logGameFinish(
 }
 
 /**
+ * Başlatılan bir YEREL (YZ'ye karşı) oyunu anonim olarak kaydeder —
+ * `game_starts` tablosu, admin panelindeki Kaynak Hunisi'nin "Başlayan"
+ * adımı için (ROADMAP #9, 21 Ağustos 2026).
+ *
+ * NEDEN VAR: huninin son adımı bugüne kadar kördü. Yalnızca BİTMİŞ oyun
+ * kaydediliyordu, yerel oyunun medyan süresi 18,1 dakika, ve "Oyun" sütunu
+ * misafir oyunlarını tanım gereği hiç göremiyor (`games` satırı yalnızca
+ * girişli kullanıcı için açılıyor) — yani reklamdan gelen soğuk trafikte
+ * "0 oyun" büyük olasılıkla "kimse BİTİRMEDİ" demekti, "kimse oynamadı"
+ * değil. İkisi tamamen farklı aksiyon gerektiriyor.
+ *
+ * ⚠ `user_id` GÖNDERİLMEZ ve tabloda böyle bir kolon YOK — bilinçli bir
+ * gizlilik kararı: `PrivacyModal` bölüm 6, anonim cihaz kodu için
+ * "hesabınızla ASLA eşleştirilmez" diyor, `anon_id` ile `user_id`'yi aynı
+ * satıra koymak tam olarak o eşleştirmeyi yapardı.
+ *
+ * `utmSource` HİÇ NULL GÖNDERİLMEZ: `?ref=` yoksa bile açıkça `'direkt'`
+ * yazılır (`signUp`'taki aynı sözleşme). Sunucuda null yalnızca
+ * "damgalamayan istemci" (bugün Flutter portu) anlamına gelir ve
+ * 'bilinmiyor' olarak sayılır — bu ayrım olmadan port satırları 'direkt'
+ * satırını sessizce şişirirdi.
+ *
+ * Fire-and-forget: telemetri hatası oyunu ASLA etkilemez (`logGameFinish`/
+ * `setOnlineGamePlatform` ile aynı duruş).
+ */
+export async function logGameStart(
+  playerCount: number,
+  anonId: string | null,
+  utmSource: string | null,
+): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase
+    .from('game_starts')
+    .insert({ anon_id: anonId, player_count: playerCount, utm_source: utmSource ?? 'direkt' });
+  if (error) {
+    console.error('[Kelimeki] logGameStart hatası:', error.message);
+  }
+}
+
+/**
  * Misafir (girişsiz) bir ziyareti anonim olarak kaydeder — admin panelinin
  * Büyüme > Kullanıcı grafiğindeki "Ziyaret" serisi için (bkz.
  * `src/utils/visitTracking.ts`). `anonId`, cihazda `localStorage`'da

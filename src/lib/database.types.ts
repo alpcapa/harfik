@@ -668,6 +668,22 @@ export interface AdminUserActivityPoint {
 export interface AdminSourceFunnelRow {
   source: string;
   visitors: number;
+  /**
+   * Pencerede o kaynaktan BAŞLATILAN yerel (YZ) oyun ADEDİ — `game_starts`
+   * (ROADMAP #9). `games`ten (BİTMİŞ oyun) bilinçli olarak ayrı: yerel oyunun
+   * medyan süresi 18,1 dakika olduğundan reklamdan gelen soğuk bir ziyaretçi
+   * çoğu zaman oynar ama BİTİRMEZ; ayrıca `games` misafir oyunlarını tanım
+   * gereği hiç görmez (o satır yalnızca girişli kullanıcı için açılır).
+   */
+  starts: number;
+  /**
+   * O oyunları başlatan BENZERSİZ CİHAZ sayısı (`game_starts.anon_id`).
+   * `visitors` ile AYNI kimlikten sayıldığından `starters / visitors` bu
+   * tablodaki TEK gerçek cihaz-bazlı dönüşüm oranıdır — `signups`/`players`
+   * ise `profiles.signup_utm_source` üzerinden gelir, yani ayrı bir dimension.
+   * Tabloda yalnızca yüzde modunda (ve CSV'de) görünür.
+   */
+  starters: number;
   signups: number;
   games: number;
   /**

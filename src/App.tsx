@@ -20,6 +20,7 @@ import { HelpModal } from './components/HelpModal';
 import { FeedbackModal } from './components/FeedbackModal';
 import { ResetPasswordModal } from './components/ResetPasswordModal';
 import { createInitialState, gameReducer, isFirstMove } from './game/gameReducer';
+import type { PlayerSetup } from './game/gameReducer';
 import { preloadWordSet, isWordSetReady } from './data/wordSetLoader';
 import { calcScore, computeInvasionSplit, formatInvalidWordsReason, validatePlacement, validatePlacementStructural } from './utils/validator';
 import { loadGameState, saveGameState, clearGameState, takePendingAbandonedGame, ABANDON_TIMEOUT_MS } from './utils/gameStorage';
@@ -49,6 +50,7 @@ import {
   isValidWordRemote,
   isSupabaseConfigured,
   logGameFinish,
+  logGameStart,
   logGuestVisit,
   acceptFriendInvite,
   listLocalGameSaves,
@@ -705,6 +707,26 @@ export default function App() {
   // görülmemişse, oyun ekranı açılır açılmaz burada gösterilir.
   const [showPostStartTutorial, setShowPostStartTutorial] = useState(false);
 
+  /**
+   * YEREL (YZ) bir oyunun BAŞLATILMASI — `START` dispatch eden İKİ yer de
+   * (Setup'ın "Oyunu Başlat"ı ve oyun sonu "Tekrar Oyna") buradan geçer.
+   *
+   * Tek bir yardımcıda toplanmasının sebebi telemetri: `game_starts`
+   * satırını yazan yer burası (bkz. `logGameStart`, ROADMAP #9). İki çağrı
+   * yerini ayrı ayrı yamamak, ileride üçüncü bir başlatma yolu eklendiğinde
+   * sessizce eksik sayıma yol açardı — huninin "Başlayan" adımı da o gün
+   * kimseye söylemeden bozulurdu.
+   *
+   * `RESUME_SAVED` BİLEREK dahil DEĞİL: devam eden bir oyuna dönmek yeni bir
+   * başlangıç değil, aksi halde aynı oyun her cihaz/oturum dönüşünde tekrar
+   * sayılırdı.
+   */
+  const startLocalGame = (players: PlayerSetup[]) => {
+    dispatch({ type: 'START', players });
+    // Fire-and-forget: telemetri hatası oyunu etkilemez.
+    void logGameStart(players.length, getOrCreateAnonId(), getStoredUtmSource());
+  };
+
   // Setup'taki "Devam Eden Oyun" satırına tıklanınca: kaydı reducer'a
   // uygulayıp `savedGame`'i temizler — bundan sonra yukarıdaki save/clear
   // effect'i tamamen `state`e göre çalışır (bkz. o effect'teki not).
@@ -1195,7 +1217,7 @@ export default function App() {
             cloudSaves={user ? cloudSaves : null}
             onResumeCloudSave={handleResumeCloudSave}
             onStart={(players, showTutorial) => {
-              dispatch({ type: 'START', players });
+              startLocalGame(players);
               if (showTutorial) setShowPostStartTutorial(true);
             }}
           />
@@ -1737,10 +1759,7 @@ export default function App() {
                   // Aynı kadro: biten oyunun oyuncu adları/YZ bayrakları
                   // Setup'ın `doStart`'ının ürettiğinin AYNISI, yeniden
                   // hesaplamaya gerek yok.
-                  dispatch({
-                    type: 'START',
-                    players: state.players.map((p) => ({ name: p.name, isAI: p.isAI })),
-                  });
+                  startLocalGame(state.players.map((p) => ({ name: p.name, isAI: p.isAI })));
                 }}
                 className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
               >

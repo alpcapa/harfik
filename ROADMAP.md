@@ -1,4 +1,4 @@
-# Kelimeki — Sıradaki İşler (19 Ağustos 2026)
+# Kelimeki — Sıradaki İşler (21 Ağustos 2026)
 
 **Bu dosya bir FİKİR LİSTESİ DEĞİL, sıralı bir yürütme planı.** Kök
 `CLAUDE.md`'deki "Sonraya Bırakılan Ürün Fikirleri" bölümü *ne* yapılacağını
@@ -8,9 +8,14 @@ ve *neden* ertelendiğini anlatır; burası *hangi sırayla*, *hangi modelle* ve
 Bir madde bitince buradan SİLİNİR ve kaydı ilgili bölümün kendi tarihli
 notuna taşınır (projenin genel "değişiklik = tarihli not" disiplini).
 
-**Durum (19 Ağustos 2026):** `main` yeşil, yarım kalan iş yok. FAZ A1 cihaz
-turu Bölüm 6 (Paylaşma, iPad popover) hariç kapalı. Web + port paritesi
-güncel.
+**Durum (21 Ağustos 2026):** `main` yeşil. FAZ A1 cihaz turu Bölüm 6
+(Paylaşma, iPad popover) hariç kapalı. Web + port paritesi güncel.
+
+**21 Ağustos'ta kapanan madde:** eski #9 ("Oyun başladı" olayı) yapıldı —
+`game_starts` tablosu + Kaynak Hunisi'ne "Başlayan" sütunu, web + port.
+Kaydı kök `CLAUDE.md` → Kaynak Hunisi bölümünde. Bir sonraki reklam
+harcaması artık ölçülebilir; kalan maddelerin numaraları DEĞİŞMEDİ
+(1-8 aynı).
 
 ---
 
@@ -234,53 +239,6 @@ turunda kapanır.
 
 ---
 
-## 9. "Oyun başladı" olayı — **REKLAM HARCAMASINDAN ÖNCE**
-
-**Model: Sonnet 5, efor `medium`.** Web + port + tek migration.
-
-**Neden acil:** 20 Ağustos 2026'da Instagram kampanyası ölçüldü ve huninin
-son adımı KÖR çıktı — `instagram` etiketiyle **80 kişi / 0 üye / 0 oyun**,
-ayrıca kaynağı bilinmeyen 1 misafir oyun bitirme. Panel doğru çalışıyor
-(veri Supabase'ten teyit edildi), sorun ölçülen ŞEYDE:
-
-- Bugün yalnızca **bitmiş** oyun kaydediliyor. "Oyun başladı" olayı YOK —
-  `game_starts` tablosu 20 Temmuz 2026'da "hiçbir yerde ihtiyaç görülmedi"
-  gerekçesiyle kaldırılmıştı (`remove_game_starts_add_session_split_counts`).
-  O gün doğruydu; ücretli trafik gelince yanlış oldu.
-- Yerel oyunun medyan süresi **18,1 dakika** (16 Ağustos 2026 ölçümü).
-  Reklamdan gelen soğuk bir ziyaretçinin ilk temasta bunu bitirmesini
-  beklemek gerçekçi değil — yani "0 oyun" büyük olasılıkla "kimse
-  BİTİRMEDİ" demek, "kimse oynamadı" değil.
-- Huninin "Oyun" sütunu zaten misafir oyunlarını göremiyor (`games` satırı
-  yalnızca girişli kullanıcı için açılıyor), o yüzden misafir ağırlıklı bir
-  kampanyada o sütun tanım gereği 0.
-
-**Sonuç:** "açılış sayfası mı çalışmıyor, yoksa oyun mu fazla uzun bir
-taahhüt?" sorusu bugünkü veriyle ayrılamıyor. İkisi tamamen farklı aksiyon
-gerektiriyor.
-
-**Geriye dönük doldurulamaz** (`games.platform` ve `profiles.signup_utm_source`
-ile aynı sınıf) — bir sonraki reklam harcamasından ÖNCE eklenmeli, aksi halde
-o harcama da ölçülemez.
-
-**Kapsam:** misafir dahil, anonim, append-only bir olay; `guest_visits` ve
-`game_finishes` ile aynı şekil (kişisel veri yok). Yanına `?ref=` etiketi
-(`getStoredUtmSource()`) ve oyuncu sayısı konmalı ki huninin Kişi → Oyun
-adımı kaynak bazında okunabilsin.
-
-**Etki analizi — atlanmaması gerekenler:**
-1. **İKİ istemci yazacak** (web `App.tsx` + portun oyun başlatma yolu) —
-   yalnız web'e eklemek mobil trafiği sessizce eksik sayar.
-2. **Yeni bir kişisel veri mi?** Anonim ve mevcut `game_finishes` ile aynı
-   şekilde olduğundan `PrivacyModal`'ın "oyun istatistikleri" başlığı
-   büyük olasılıkla yetiyor; yine de metin okunmalı ve gerekiyorsa
-   port `legal_modals.dart` ile AYNI PR'da güncellenmeli
-   (`legal_text_test.dart` tarihleri karşılaştırıyor).
-3. **RLS:** insert yalnız `anon` + `authenticated`, select yalnız
-   `is_admin()` — `guest_visits`in deseni.
-4. **Admin paneli:** Kaynak Hunisi'ne "Başlayan" sütunu ya da Büyüme › Oyun'a
-   ayrı bir seri; tanım ekranın KENDİSİNDE (`?` popup'ı) yazmalı — "başlayan"
-   ile "bitiren" arasındaki farkı ilk okuyan yanlış yorumlar.
 
 ---
 

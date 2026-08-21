@@ -292,10 +292,24 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
     title: 'Kaynak Hunisi',
     body: (
       <>
-        <b>Kişi</b> = o kaynaktan gelen benzersiz misafir ziyaretçi; <b>Üye</b> = o kaynak
-        damgasıyla açılan hesap; <b>Oyun</b> = o hesapların bitirdiği oyun. Pencere her adıma
-        KENDİ olay tarihinden uygulanır (kohort değil): 2 ay önce üye olup bugün oynayan biri
-        "Oyun"a girer, "Üye"ye girmez.
+        <b>Kişi</b> = o kaynaktan gelen benzersiz misafir ziyaretçi; <b>Başlayan</b> = o
+        kaynaktan BAŞLATILAN yerel (YZ) oyun; <b>Üye</b> = o kaynak damgasıyla açılan hesap;
+        <b>Oyun</b> = o hesapların BİTİRDİĞİ oyun. Pencere her adıma KENDİ olay tarihinden
+        uygulanır (kohort değil): 2 ay önce üye olup bugün oynayan biri "Oyun"a girer, "Üye"ye
+        girmez.
+        <br />
+        <br />
+        <b>Başlayan ile Oyun'u karıştırma.</b> "Başlayan" oyuna OTURAN kişiyi sayar (misafir
+        dahil), "Oyun" ise yalnızca BİTİRİLMİŞ ve yalnızca GİRİŞLİ kullanıcının oyununu. Yerel
+        oyunun medyan süresi 18,1 dakika olduğundan reklamdan gelen soğuk bir ziyaretçi çoğu
+        zaman oynar ama bitirmez — "Başlayan" yüksek + "Oyun" 0 ise açılış sayfası çalışıyor,
+        oyun uzun geliyor demektir; ikisi de 0 ise sorun açılış sayfasında.
+        <br />
+        <br />
+        Yüzde modunda <b>Başlayan</b> = başlatan benzersiz CİHAZ / kişi. <b>Kişi</b> ile aynı
+        anonim koddan sayıldığı için bu, tablodaki tek gerçek cihaz-bazlı dönüşüm oranı;
+        "Üye"/"Oyun" oranları ise ayrı bir kaynaktan (kayıt damgası) gelir. Mobil uygulama
+        henüz damgalamadığından oradan gelen başlangıçlar "bilinmiyor" satırına düşer.
         <br />
         <br />
         <b>Direkt</b> = web'e <code>?ref=</code> olmadan geliş. <b>Bilinmiyor</b> = kaynak damgası
@@ -585,7 +599,7 @@ function GuestBreakdownTable<T extends { visitors: number }>({
 }
 
 /**
- * Kaynak hunisi (Büyüme > Kullanıcı): kaynak → kişi → üye → oyun.
+ * Kaynak hunisi (Büyüme > Kullanıcı): kaynak → kişi → başlayan → üye → oyun.
  *
  * "Ziyaretçi Kaynağı" tablosunun yerini aldı (16 Ağustos 2026, kullanıcı
  * isteği). İlk sütun eskisiyle AYNI sayı; üzerine iki adım eklendi.
@@ -606,9 +620,18 @@ function GuestBreakdownTable<T extends { visitors: number }>({
  * turu: *"kişi %'ye dönünce toplamın yüzdesini göstersin. Ama üye yüzdesi
  * kişinin % kaçı üye olmuş, oyun yüzdesi de kişinin % kaçı oyun oynamışı
  * göstersin."*):
- *   - **Kişi** = sütun payı (o kaynak tüm ziyaretçilerin yüzde kaçı),
- *   - **Üye**  = `üye / kişi` — o kaynaktan gelenlerin yüzde kaçı üye oldu,
- *   - **Oyun** = `oynayan kişi / kişi` — yüzde kaçı oyun oynadı.
+ *   - **Kişi**     = sütun payı (o kaynak tüm ziyaretçilerin yüzde kaçı),
+ *   - **Başlayan** = `başlatan cihaz / kişi` — yüzde kaçı oyuna oturdu,
+ *   - **Üye**      = `üye / kişi` — o kaynaktan gelenlerin yüzde kaçı üye oldu,
+ *   - **Oyun**     = `oynayan kişi / kişi` — yüzde kaçı oyun BİTİRDİ.
+ *
+ * "Başlayan" 21 Ağustos 2026'da eklendi (ROADMAP #9) ve huninin KÖR olan
+ * adımını kapatıyor: ilk Instagram kampanyasında 80 kişi / 0 üye / 0 oyun
+ * ölçüldü, ama "Oyun" hem yalnızca BİTMİŞ oyunu hem yalnızca GİRİŞLİ
+ * kullanıcıyı sayıyor — yani o 0, "kimse oynamadı" mı "kimse bitirmedi" mi
+ * ayırt edilemiyordu. `game_starts` misafiri de sayıyor ve etiketini
+ * ziyaretle AYNI anonim koddan alıyor, dolayısıyla `başlatan / kişi` bu
+ * tablodaki tek gerçek cihaz-bazlı dönüşüm oranı.
  *
  * "Oyun" sütunu sayı modunda oyun ADEDİNİ, yüzde modunda OYNAYAN KİŞİ oranını
  * gösterir — taban bilinçli olarak farklı, çünkü "kişilerin yüzde kaçı
@@ -650,20 +673,38 @@ function SourceFunnelTable({
   const total = rows.reduce(
     (acc, row) => ({
       visitors: acc.visitors + row.visitors,
+      starts: acc.starts + row.starts,
+      starters: acc.starters + row.starters,
       signups: acc.signups + row.signups,
       games: acc.games + row.games,
       players: acc.players + row.players,
     }),
-    { visitors: 0, signups: 0, games: 0, players: 0 },
+    { visitors: 0, starts: 0, starters: 0, signups: 0, games: 0, players: 0 },
   );
 
   function handleExportCsv() {
     downloadCsv(
       csvFilename('kelimeki-kaynak-funnel'),
-      ['Kaynak', 'Kişi', 'Üye', 'Oyun', 'Oynayan Kişi'],
+      ['Kaynak', 'Kişi', 'Başlayan Oyun', 'Başlatan Kişi', 'Üye', 'Oyun', 'Oynayan Kişi'],
       [
-        ...rows!.map((row) => [row.source, row.visitors, row.signups, row.games, row.players]),
-        ['TOPLAM', total.visitors, total.signups, total.games, total.players],
+        ...rows!.map((row) => [
+          row.source,
+          row.visitors,
+          row.starts,
+          row.starters,
+          row.signups,
+          row.games,
+          row.players,
+        ]),
+        [
+          'TOPLAM',
+          total.visitors,
+          total.starts,
+          total.starters,
+          total.signups,
+          total.games,
+          total.players,
+        ],
       ],
     );
   }
@@ -717,6 +758,9 @@ function SourceFunnelTable({
             <tr className="text-left text-muted border-b border-border">
               <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px]">Kaynak</th>
               <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Kişi</th>
+              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">
+                Başlayan
+              </th>
               <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Üye</th>
               <th className="py-1.5 font-bold uppercase tracking-[1px] text-center">Oyun</th>
             </tr>
@@ -727,6 +771,9 @@ function SourceFunnelTable({
                 <td className="py-1.5 pr-8 text-text whitespace-nowrap">{row.source}</td>
                 <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">
                   {visitorCell(row.visitors)}
+                </td>
+                <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">
+                  {conversionCell(row.starts, row.visitors, row.starters)}
                 </td>
                 <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">
                   {conversionCell(row.signups, row.visitors, row.signups)}
@@ -740,6 +787,9 @@ function SourceFunnelTable({
               <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap">TOPLAM</td>
               <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">
                 {visitorCell(total.visitors)}
+              </td>
+              <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">
+                {conversionCell(total.starts, total.visitors, total.starters)}
               </td>
               <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">
                 {conversionCell(total.signups, total.visitors, total.signups)}

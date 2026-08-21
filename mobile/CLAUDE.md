@@ -5988,6 +5988,39 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        kolonun sağına yapışık göründüğü** (özellikle k-lig `-` gösterirken
        skorun ortalı DURMADIĞI) — `mobile/TESTING.md` bölüm 1.
 
+   - ✅ **Parça 121 — "Oyun başladı" telemetrisi (`game_starts`), web + port
+     AYNI PR (21 Ağustos 2026, ROADMAP #9):** İlk Instagram kampanyasında
+     huninin son adımı KÖR çıktı (`instagram`: 80 kişi / 0 üye / 0 oyun).
+     Panel doğruydu; ölçülen ŞEY eksikti — yalnızca BİTMİŞ oyun kaydediliyor,
+     yerel oyunun medyanı 18,1 dk, ve "Oyun" sütunu misafir oyunlarını tanım
+     gereği hiç görmüyor. Yani "açılış sayfası mı çalışmıyor, oyun mu fazla
+     uzun bir taahhüt?" sorusu ayrılamıyordu.
+     - **Portun payı:** `GamesGateway.logGameStart` + `GamesRepo.logStart`
+       (web `logGameStart` paritesi) ve `StartAction` dispatch eden İKİ ekran
+       da onu çağırıyor — `setup_screen.dart` (`_logGameStart`) ve
+       `game_screen.dart` ("Tekrar Oyna"). Biri atlanırsa huni sessizce eksik
+       sayar; web'de aynı risk tek bir `startLocalGame` yardımcısıyla
+       kapatıldı.
+     - **Port `anon_id`/`?ref=` GÖNDERMİYOR ve bu bilinçli:** web'in
+       `visitTracking.ts`inin karşılığı porta hiç girmedi. İkisi de null
+       gidiyor, satır sunucuda `'bilinmiyor'` kaynağına düşüyor — `'direkt'`e
+       yazmak web'in gerçek doğrudan trafiğini şişirirdi. Port mağazaya
+       çıkarken damgalama eklenirse `SupabaseGamesGateway.logGameStart` de
+       güncellenmeli.
+     - **Şemada `user_id` YOK** — `legal_modals.dart` bölüm 6'daki "anonim kod
+       hesabınızla ASLA eşleştirilmez" taahhüdü bunu yasaklıyor. Metin bu
+       PR'da genişletildi (kod artık oyun başlangıcında da, girişliyken de
+       gidiyor — ama hesap kimliği olmadan) ve tarih İKİ tarafta birden 21
+       Ağustos'a çekildi; `legal_text_test.dart` zaten bunu zorluyordu.
+     - **Yeni Dart testi:** `game_record_test.dart` → `logStart` sayaç satırını
+       yazıyor VE gateway fırlatsa bile `logStart` fırlatmıyor (telemetri
+       hiçbir koşulda oyun başlatmayı düşüremez).
+     - **Doğrulama sınırı:** Flutter/Dart SDK bu ortamda yine YOK, Dart yarısı
+       yalnızca CI'da koşuyor. Sunucu tarafı canlıda rollback'li senaryolarla
+       ölçüldü (anon yazabiliyor/okuyamıyor, girişli okuyamıyor, admin
+       olmayan RPC `Yetkisiz erişim.`, damgasız satır `bilinmiyor`a düşüyor).
+     - **Cihazda doğrulanacak:** `mobile/TESTING.md` bölüm 4.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**

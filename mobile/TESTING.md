@@ -662,6 +662,13 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 
 ## 4. Biten oyun kayıtları ve istatistikler
 
+- [ ] **"Oyun başladı" sayacı (Parça 121, 21 Ağustos 2026).** Mobilde bir
+      YZ oyunu BAŞLAT, bitirmeden çık. Web'de admin panelinde Büyüme →
+      Kullanıcı → Kaynak Hunisi'nde **`bilinmiyor`** satırının "Başlayan"
+      değeri 1 artmalı — `direkt` DEĞİL. Port `?ref=`/anon kod damgası
+      taşımadığından bu doğru davranış; `direkt`e düşüyorsa web'in gerçek
+      doğrudan trafiği şişiyor demektir. "Oyun" sütunu (bitmiş oyun)
+      DEĞİŞMEMELİ. Oyun sonu "Tekrar Oyna" da aynı şekilde 1 artırmalı.
 - [ ] **Oyun bitir → webde gör.** Mobilde bir oyunu sonuna kadar oyna.
       Web'deki Skor Kartı'nda oyun sayısı artmalı, k-lig puanı doğru
       değişmeli (2 kişilikte 1.=+2, 2.=0).

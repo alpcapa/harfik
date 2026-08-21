@@ -723,10 +723,29 @@ tarayıcıda görülebilecek olanlar. **Admin hesabı gerekiyor.**
 
 ## 9.9. Admin — Kaynak Hunisi (16 Ağustos 2026)
 
-"Ziyaretçi Kaynağı" tablosunun yerini aldı: kaynak → **Kişi** → **Üye** →
-**Oyun**. İlk sütun eskisiyle aynı sayı. Sunucu tarafı canlıda rollback'li
-senaryolarla doğrulandı (yetki matrisi, damgalama, write-once trigger,
-toplamların korunması); aşağıdakiler gerçek istemcide görülmesi gerekenler.
+"Ziyaretçi Kaynağı" tablosunun yerini aldı: kaynak → **Kişi** → **Başlayan**
+→ **Üye** → **Oyun**. İlk sütun eskisiyle aynı sayı. Sunucu tarafı canlıda
+rollback'li senaryolarla doğrulandı (yetki matrisi, damgalama, write-once
+trigger, toplamların korunması); aşağıdakiler gerçek istemcide görülmesi
+gerekenler.
+
+- [ ] **"Başlayan" sütunu gerçekten sayıyor (21 Ağustos 2026, ROADMAP #9).**
+      Misafirken (çıkış yapıp) yapay zekaya karşı bir oyun BAŞLAT, hemen
+      logoya basıp çık — bitirmene gerek YOK. Admin panelinde Kaynak
+      Hunisi'nde o cihazın kaynağının (`?ref=` ile gelmediysen `direkt`)
+      "Başlayan" değeri 1 ARTMALI, "Oyun" değeri DEĞİŞMEMELİ. Bu ayrım işin
+      bütün sebebi: "Oyun" yalnızca BİTMİŞ ve yalnızca GİRİŞLİ kullanıcının
+      oyununu sayıyor.
+- [ ] **Aynı cihazda ikinci oyun: "Başlayan" 2, ama yüzde modunda cihaz
+      sayısı 1 kalmalı.** `%` düğmesine bas — "Başlayan" yüzdesi başlatan
+      benzersiz CİHAZ / kişi oranıdır, oyun adedi değil.
+- [ ] **"Tekrar Oyna" da bir başlangıçtır.** Bir oyunu bitirip kartın
+      altındaki "Tekrar Oyna"ya bas → "Başlayan" yine artmalı. (Web'de her
+      iki yol da tek bir `startLocalGame` yardımcısından geçiyor; portta iki
+      ekran da `GamesRepo.logStart` çağırıyor.)
+- [ ] **Devam eden oyuna DÖNMEK bir başlangıç DEĞİL.** Yarım bırakılmış bir
+      oyunu "Devam Eden Oyun" satırından sürdür → "Başlayan" ARTMAMALI.
+      Artıyorsa aynı oyun her oturum dönüşünde tekrar sayılıyor demektir.
 
 - [ ] **Tablo yükleniyor ve zaman filtresine bağlı.** Admin Paneli → Büyüme →
       Kullanıcı: "Kaynak Hunisi (Son N …)" başlığı üstteki granülerlik/periyot
