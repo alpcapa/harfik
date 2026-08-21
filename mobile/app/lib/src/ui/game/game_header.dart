@@ -12,9 +12,17 @@ import '../../data/friends_api.dart';
 import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../auth/account_button.dart';
+import '../tokens.dart';
 import 'fluid.dart';
 import 'logo_mark.dart';
 import 'player_colors.dart';
+
+/// "← Geri" etiketi — web `GameHeader.tsx`in BACK_FONT_SIZE/BACK_GAP'i.
+/// İnce (normal ağırlık) ve KOYU (paletin ana metin rengi); kullanıcı
+/// gri ve siyah varyantları yan yana görüp siyahı seçti (21 Ağustos 2026).
+/// Web'le ELLE senkron — biri değişirse öteki de değişmeli.
+const double kBackFontSize = 11;
+const double kBackGap = 3;
 
 class GameHeader extends StatelessWidget {
   final GameState state;
@@ -75,77 +83,138 @@ class GameHeader extends StatelessWidget {
     final girisPaddingX = fluidSize(w, 6, -2.33, 2.22, 8);
     final girisPaddingY = fluidSize(w, 8.7, -5.05, 3.67, 12);
 
+    // Web `GameHeader.tsx`: etiket akışın DIŞINDA (absolute), header'ın
+    // yüksekliğine hiç dokunmuyor. Flutter'da bunun birebir karşılığı YOK —
+    // kutusunun DIŞINA taşan bir çocuk dokunuş ALMAZ (`RenderBox.hitTest`
+    // önce `size.contains`e bakıyor), oysa etiketin de tıklanabilir olması
+    // kullanıcının şartı ("logo alanı da dahil"). Bu yüzden port bir Stack
+    // kullanıyor.
+    //
+    // ⚠ Row'a `Positioned(height: logoHeight)` VERİLMİYOR ve bu bilinçli:
+    // `AccountButton`ın avatarı 32px, logo ise 465px'in altında 32'den KISA
+    // (390px'te 29.33) — Row o yüksekliğe kilitlenseydi taşardı. Row
+    // Stack'in KONUMLANMAMIŞ çocuğu olarak duruyor, yani kendi doğal
+    // yüksekliğini ve kendi iç hizasını AYNEN koruyor; Stack'in yüksekliğini
+    // gerektiğinde büyüten şey yanındaki görünmez taban kutusu.
+    // Etiketin konumu Row'un değil LOGONUN altına göre hesaplanıyor.
+    //
+    // Bedeli: header'ın alt dolgusu 10 → 0'a indirildikten sonra kalan
+    // ~4px'lik büyüme (webde 0). Bilinçli ve ölçülü bir sapma.
+    final stackHeight = logoHeight + kBackGap + kBackFontSize;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: onLogoTap,
-            child: LogoMark(height: logoHeight),
-          ),
-          const SizedBox(width: 8),
-          // Web justify-between'in ikinci çocuğu tek bir SAĞ GRUP: kutular +
-          // GİRİŞ/avatar birbirine bitişik (gap-2) ve sağa yaslı — artan
-          // boşluk logo ile kutuların ARASINA düşer, kutuların sağına değil
-          // (kullanıcı iPhone karşılaştırmasıyla bildirdi).
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                // Web güvenlik ağıyla aynı: sığmazsa şerit görünmez biçimde
-                // yatay kaydırılır (satır kırmak yerine), 0. kutu her zaman
-                // erişilebilir. GİRİŞ/avatar bu kaydırma kabının DIŞINDA —
-                // web'deki aynı ders (UserMenu overflow kabının içindeyken
-                // dropdown'ı kırpılıyordu).
-                Flexible(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    reverse: false,
+      padding: const EdgeInsets.only(left: 12, right: 12, top: 10),
+      child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            // Yalnızca TABAN yükseklik için — Stack konumlanmamış
+            // çocuklarının en büyüğüne göre boyutlanır.
+            SizedBox(height: stackHeight),
+            SizedBox(
+              width: double.infinity,
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: onLogoTap,
+                    child: LogoMark(height: logoHeight),
+                  ),
+                  const SizedBox(width: 8),
+                  // Web justify-between'in ikinci çocuğu tek bir SAĞ GRUP: kutular +
+                  // GİRİŞ/avatar birbirine bitişik (gap-2) ve sağa yaslı — artan
+                  // boşluk logo ile kutuların ARASINA düşer, kutuların sağına değil
+                  // (kullanıcı iPhone karşılaştırmasıyla bildirdi).
+                  Expanded(
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        for (var i = 0; i < state.players.length; i++) ...[
-                          if (i > 0) SizedBox(width: boxGap),
-                          _PlayerBox(
-                            player: state.players[i],
-                            index: i,
-                            active: i == state.current,
-                            width: state.players[i].isAI
-                                ? yzBoxWidth
-                                : playerBoxWidth,
-                            paddingX: boxPaddingX,
-                            paddingY: boxPaddingY,
-                            labelFontSize: labelFontSize,
-                            scoreFontSize: scoreFontSize,
-                            onTap:
-                                (onPlayerTap != null && !state.players[i].isAI)
-                                    ? () => onPlayerTap!(i)
-                                    : null,
+                        // Web güvenlik ağıyla aynı: sığmazsa şerit görünmez biçimde
+                        // yatay kaydırılır (satır kırmak yerine), 0. kutu her zaman
+                        // erişilebilir. GİRİŞ/avatar bu kaydırma kabının DIŞINDA —
+                        // web'deki aynı ders (UserMenu overflow kabının içindeyken
+                        // dropdown'ı kırpılıyordu).
+                        Flexible(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            reverse: false,
+                            child: Row(
+                              children: [
+                                for (var i = 0; i < state.players.length; i++) ...[
+                                  if (i > 0) SizedBox(width: boxGap),
+                                  _PlayerBox(
+                                    player: state.players[i],
+                                    index: i,
+                                    active: i == state.current,
+                                    width: state.players[i].isAI
+                                        ? yzBoxWidth
+                                        : playerBoxWidth,
+                                    paddingX: boxPaddingX,
+                                    paddingY: boxPaddingY,
+                                    labelFontSize: labelFontSize,
+                                    scoreFontSize: scoreFontSize,
+                                    onTap:
+                                        (onPlayerTap != null && !state.players[i].isAI)
+                                            ? () => onPlayerTap!(i)
+                                            : null,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (auth != null && auth!.configured) ...[
+                          const SizedBox(width: 8),
+                          AccountButton(
+                            auth: auth!,
+                            stats: stats,
+                            games: games,
+                            feedback: feedback,
+                            friends: friends,
+                            chat: chat,
+                            girisFontSize: girisFontSize,
+                            girisPaddingX: girisPaddingX,
+                            girisPaddingY: girisPaddingY,
+                            avatarSize: 32,
                           ),
                         ],
                       ],
                     ),
                   ),
-                ),
-                if (auth != null && auth!.configured) ...[
-                  const SizedBox(width: 8),
-                  AccountButton(
-                    auth: auth!,
-                    stats: stats,
-                    games: games,
-                    feedback: feedback,
-                    friends: friends,
-                    chat: chat,
-                    girisFontSize: girisFontSize,
-                    girisPaddingX: girisPaddingX,
-                    girisPaddingY: girisPaddingY,
-                    avatarSize: 32,
-                  ),
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
-      ),
+            // ⚠ ÖLÇÜLEN KÜÇÜK SAPMA: konum Stack'in ÜSTÜNDEN hesaplanıyor,
+            // logonun gerçek alt kenarından değil. Row logodan uzun bir
+            // çocuk taşıyorsa (girişli hesapta avatar 32px, logo 465px'in
+            // altında daha kısa) logo Row içinde ORTALANDIĞINDAN birkaç px
+            // aşağı kayar ve aradaki boşluk 3 yerine ~1.7'ye düşer. Webde
+            // etiket butonun `top-full`ü olduğundan bu sapma YOK. Row'un
+            // yüksekliği çalışma anında bilinemediği için kabul edildi;
+            // çakışma hiçbir genişlikte oluşmuyor (testle sabit).
+            //
+            // Etiket logoyla AYNI dokunuş hedefinde değil ama AYNI eylemi
+            // yapıyor (web'de tek bir <button>, burada iki GestureDetector) —
+            // Flutter'da tek bir hedef, Row'un yüksekliğini büyütmeden
+            // kurulamıyor. `left: 0`: header'ın 12px'lik yatay dolgusu
+            // Board'unkiyle aynı, yani etiket tahtanın sol kenarıyla hizalı.
+            // ⚠ Board'un yatay dolgusu değişirse bu hiza sessizce bozulur.
+            Positioned(
+              left: 0,
+              top: logoHeight + kBackGap,
+              child: GestureDetector(
+                onTap: onLogoTap,
+                child: Text(
+                  '← Geri',
+                  style: TextStyle(
+                    fontFamily: 'SpaceMono',
+                    fontSize: kBackFontSize,
+                    height: 1,
+                    color: kText,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
     );
   }
 }

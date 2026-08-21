@@ -64,12 +64,12 @@ const BOX_PADDING_Y = 'clamp(2.7px, calc(-0.63px + 0.89vw), 3.5px)';
 // (bkz. LogoMark.tsx/generate-logo-paths.mjs) SVG width/height attribute'u
 // yerine CSS height + aspect-ratio kullanıyor.
 const LOGO_HEIGHT = 'clamp(28px, calc(-5.33px + 8.89vw), 36px)';
-// "← Geri" etiketi — İNCE ve GRİ (kullanıcı isteği, 21 Ağustos 2026).
+// "← Geri" etiketi — İNCE ve KOYU (kullanıcı isteği, 21 Ağustos 2026;
+// gri ve siyah varyantlar yan yana render edilip siyah seçildi).
 // Kalın/accent bir ilk deneme reddedildi: bu bir aksiyon düğmesi değil,
-// zaten var olan bir dokunuşun (logo → Setup) sessiz etiketi.
-// 11px + `text-muted` bu kod tabanının kendi "küçük gri not" dili
-// (`_empty` metinleri, footer bağlantıları) — yeni bir punto icat
-// edilmedi.
+// zaten var olan bir dokunuşun (logo → Setup) sessiz etiketi. 11px, normal
+// ağırlık; renk paletin ana metin rengi (`text` token'ı) — yeni bir punto
+// ya da renk icat edilmedi.
 const BACK_FONT_SIZE = '11px';
 // Logo ile etiket arası — "hemen altına".
 const BACK_GAP = 3;
@@ -77,14 +77,6 @@ const BACK_GAP = 3;
 interface GameHeaderProps {
   state: GameState;
   onLogoClick?: () => void;
-  /**
-   * Logonun ALTINA görünür bir "← Geri" etiketi koyar (21 Ağustos 2026,
-   * kullanıcı isteği: *"Bazı kullanıcılar oyundan setup'a dönüşü
-   * bulamıyor"*). Logo zaten Setup'a dönüyordu — eksik olan davranış
-   * değil GÖRÜNÜRLÜKTÜ; etiket logoyla AYNI butonun içinde, yani dokunma
-   * alanı ikisini birden kapsıyor.
-   */
-  showBack?: boolean;
   /** true iken çıkış devre dışı — ör. teslim olup YZ'leri izlerken oyundan
    *  çıkılamaz, oyunun bitmesi beklenmek zorunda. */
   exitDisabled?: boolean;
@@ -100,13 +92,7 @@ interface GameHeaderProps {
   onPlayerClick?: (index: number) => void;
 }
 
-export function GameHeader({
-  state,
-  onLogoClick,
-  exitDisabled,
-  onPlayerClick,
-  showBack,
-}: GameHeaderProps) {
+export function GameHeader({ state, onLogoClick, exitDisabled, onPlayerClick }: GameHeaderProps) {
   const { players, current } = state;
   return (
     <header className="w-full max-w-[680px] flex items-center justify-between gap-2 px-3 py-2.5">
@@ -116,24 +102,26 @@ export function GameHeader({
         className="relative shrink-0 flex flex-col items-center leading-none active:opacity-70 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed disabled:active:opacity-40"
         aria-label="Oyundan çık">
         <LogoMark height={LOGO_HEIGHT} />
-        {showBack && (
-          // Etiket AKIŞIN DIŞINDA (absolute): header'ın yüksekliğine hiç
-          // dokunmuyor, yani skor kutularının hizası ve tahtanın konumu
-          // DEĞİŞMİYOR ("header'ı bozmadan"). Yerini, logo altında zaten
-          // var olan 16px'lik boşluk (header `py-2.5` + Board `pt-1.5`)
-          // açıyor — fazladan dolgu EKLENMEDİ.
-          //
-          // `left-0`: butonun sol kenarı = header'ın `px-3`ü = Board
-          // kabının `px-3`ü, yani etiket tahtanın sol kenarıyla BİREBİR
-          // hizalı (kullanıcı isteği). Ortalanmış bir etiket logonun
-          // genişliğine göre kayardı.
-          <span
-            className="absolute top-full left-0 whitespace-nowrap font-mono leading-none text-muted"
-            style={{ fontSize: BACK_FONT_SIZE, marginTop: BACK_GAP }}
-          >
-            ← Geri
-          </span>
-        )}
+        {/* Etiket AKIŞIN DIŞINDA (absolute): header'ın yüksekliğine hiç
+            dokunmuyor, yani skor kutularının hizası ve tahtanın konumu
+            DEĞİŞMİYOR ("header'ı bozmadan" — kullanıcının şartı). Yerini,
+            logo altında ZATEN var olan 16px'lik boşluk (header `py-2.5` +
+            Board `pt-1.5`) açıyor; fazladan dolgu EKLENMEDİ.
+
+            `left-0`: butonun sol kenarı = header'ın `px-3`ü = Board kabının
+            `px-3`ü, yani etiket tahtanın sol kenarıyla BİREBİR hizalı
+            (kullanıcı isteği). Ortalanmış bir etiket logonun genişliğine
+            göre kayardı. ⚠ Board'un yatay dolgusu değişirse bu hiza
+            sessizce bozulur — ikisi birlikte değişmeli.
+
+            `exitDisabled` iken ayrı bir stil GEREKMİYOR: etiket butonun
+            İÇİNDE olduğundan butonun `disabled:opacity-40`ı onu da soluyor. */}
+        <span
+          className="absolute top-full left-0 whitespace-nowrap font-mono leading-none text-text"
+          style={{ fontSize: BACK_FONT_SIZE, marginTop: BACK_GAP }}
+        >
+          ← Geri
+        </span>
       </button>
 
       {/* Akıcı boyutlandırma 375px'te (bkz. yukarı) neredeyse tam sığdırsa

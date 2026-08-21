@@ -6123,6 +6123,42 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        eklendi.
      - **Flutter SDK bu ortamda YOK** — Dart yarısının kanıtı CI.
 
+   - ✅ **Parça 125 — logonun altında "← Geri" (21 Ağustos 2026, web + port
+     AYNI PR):** Kullanıcı bildirdi: *"Bazı kullanıcılar oyundan setup'a
+     dönüşü bulamıyor."* Logo baştan beri Setup'a dönüyordu — eksik olan
+     davranış değil GÖRÜNÜRLÜKTÜ. Karar zinciri ve web ölçümleri kök
+     `CLAUDE.md` → "`GameHeader` — logonun altında '← Geri'".
+     - **BU, WEB'İ BİREBİR TAŞIYAMADIĞIMIZ nadir yerlerden biri.** Webde
+       etiket `absolute` — header'ın yüksekliğine hiç dokunmuyor VE logoyla
+       aynı `<button>`ın içinde olduğundan tıklanabilir. Flutter'da bu
+       birleşim YOK: kutusunun DIŞINA taşan bir çocuk dokunuş ALMAZ
+       (`RenderBox.hitTest` önce `size.contains`e bakıyor), oysa etiketin de
+       tıklanabilir olması kullanıcının açık şartıydı.
+     - **Çözüm `Stack`:** Stack etiketi de kapsayacak kadar yüksek (görünmez
+       bir taban `SizedBox` ile), Row ise Stack'in KONUMLANMAMIŞ çocuğu
+       olarak kendi doğal yüksekliğini ve iç hizasını AYNEN koruyor.
+       **⚠ Row'a `Positioned(height: logoHeight)` VERİLMEDİ ve bu bilinçli:**
+       `AccountButton`ın avatarı 32px, logo 465px'in altında daha kısa
+       (390px'te 29.33) — kilitlenseydi taşardı. Testte bu negatif eşle
+       korunuyor.
+     - **ÖLÇÜLEN İKİ SAPMA (webde YOK, ikisi de kabul edildi):** (1) header
+       alt dolgusu 10 → 0'a indirildikten sonra kalan ~4px büyüme; (2)
+       girişli hesapta avatar logodan uzun olduğunda logo Row içinde
+       ortalanıp aşağı kayıyor ve boşluk 3 → ~1.7'ye düşüyor (webde etiket
+       butonun `top-full`ü olduğundan bu olmuyor). Çakışma hiçbir genişlikte
+       yok — test bunu ölçüyor.
+     - **Sabitler ELLE SENKRON:** `kBackFontSize` (11) ve `kBackGap` (3) ↔
+       web `BACK_FONT_SIZE`/`BACK_GAP`; renk `kText` ↔ `text-text`. Biri
+       değişirse öteki de değişmeli, bunu zorlayan bir test YOK.
+     - **Sol kenar hizası:** header'ın 12px yatay dolgusu = Board'unki, yani
+       etiket tahtanın sol kenarıyla hizalı. **⚠ Board'un yatay dolgusu
+       değişirse hiza sessizce bozulur.**
+     - **Testler** (`game_header_test.dart`, 2 yeni): görünür + logonun
+       hemen altında + sol kenar 12 + dokunuş logoyla AYNI eylemi yapıyor
+       (iki ayrı `GestureDetector`, tek eylem); ve 360/390/834'te skor
+       kutusunun logoyla dikey hizası BOZULMUYOR + taşma istisnası yok.
+     - **Flutter SDK bu ortamda YOK** — Dart yarısının kanıtı CI.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**

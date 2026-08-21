@@ -89,6 +89,92 @@ void main() {
     expect(() => parseSvgPath('10 20 L5 5'), throwsFormatException);
   });
 
+  // Kullanıcı isteği (21 Ağustos 2026): oyundan Setup'a dönüş bulunamıyordu.
+  // Logo zaten dönüyordu — eksik olan GÖRÜNÜRLÜKTÜ. Web'de etiket akışın
+  // dışında (absolute); portta Flutter kutusunun dışına taşan çocuk dokunuş
+  // almadığından Stack kullanılıyor. Bu test üç şartı birden ölçüyor:
+  // görünür, LOGONUN hemen altında, ve tahtanın sol kenarıyla hizalı.
+  testWidgets('"← Geri" logonun altında, tahtanın sol kenarına hizalı',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(390, 400));
+    var tiklandi = 0;
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: GameHeader(state: headerState(), onLogoTap: () => tiklandi++),
+      ),
+    ));
+    await tester.pump();
+
+    final etiket = find.text('← Geri');
+    expect(etiket, findsOneWidget);
+
+    final logo = tester.getRect(find.byType(LogoMark));
+    final e = tester.getRect(etiket);
+
+    // Sol kenar: header'ın 12px yatay dolgusu = Board'unki. Etiket LOGOYLA
+    // değil o dolguyla hizalı olmalı (logo ortalanmış bir etiket kayardı).
+    expect(e.left, closeTo(12, 0.5),
+        reason: 'etiket tahtanın sol kenarıyla hizalı olmalı');
+    expect(logo.left, closeTo(12, 0.5));
+
+    // "Hemen altında": logo altı ile etiket üstü arası kBackGap.
+    expect(e.top - logo.bottom, closeTo(kBackGap, 0.6));
+
+    // Dokunuş logoyla AYNI eylemi yapmalı (kullanıcı: "logo alanı da dahil").
+    await tester.tap(etiket);
+    expect(tiklandi, 1);
+    await tester.tap(find.byType(LogoMark));
+    expect(tiklandi, 2);
+
+    // Girişli hesapta avatar (32px) logodan uzun olabildiğinden logo Row
+    // içinde ortalanıp birkaç px aşağı kayıyor ve boşluk daralıyor (kodda
+    // yazılı, ölçülen sapma). Değişmez olan şu: etiket HER ZAMAN logonun
+    // ALTINDA ve çakışma YOK.
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: GameHeader(
+            state: headerState(), onLogoTap: () {}, auth: AuthService.fake()),
+      ),
+    ));
+    await tester.pump();
+    final logo2 = tester.getRect(find.byType(LogoMark));
+    final e2 = tester.getRect(find.text('← Geri'));
+    expect(e2.top - logo2.bottom, greaterThan(0),
+        reason: 'etiket logonun altında kalmalı, çakışmamalı');
+    expect(e2.top - logo2.bottom, lessThanOrEqualTo(kBackGap + 0.6));
+    expect(e2.left, closeTo(12, 0.5));
+  });
+
+  // Etiket eklenirken skor kutularının logoyla hizası BOZULMAMALIYDI
+  // ("header'ı bozmadan" — kullanıcının şartı). Row'a sabit yükseklik
+  // verilmediği için bu, avatarın (32px) logodan uzun olduğu dar
+  // genişliklerde de geçerli; negatif eş: Row `Positioned(height:
+  // logoHeight)` ile kilitlenirse burada taşma istisnası düşer.
+  testWidgets('etiket skor kutularının logo hizasını bozmuyor',
+      (tester) async {
+    for (final w in [360.0, 390.0, 834.0]) {
+      await setPhoneViewSize(tester, Size(w, 400));
+      await tester.pumpWidget(MaterialApp(
+        theme: kelimekiTheme(),
+        home: Scaffold(
+          body: GameHeader(
+              state: headerState(),
+              onLogoTap: () {},
+              auth: AuthService.fake()),
+        ),
+      ));
+      await tester.pump();
+      expect(tester.takeException(), isNull, reason: '$w px taşma vermemeli');
+
+      final logo = tester.getRect(find.byType(LogoMark));
+      final kutu = tester.getRect(find.text('YZ 2').first);
+      expect(kutu.center.dy, closeTo(logo.center.dy, 2.0),
+          reason: '$w px: skor kutusu logoyla aynı hizada kalmalı');
+    }
+  });
+
   testWidgets(
       '4 kutu + GİRİŞ 375-465 aralığında kaydırmasız sığar (web garantisi)',
       (tester) async {

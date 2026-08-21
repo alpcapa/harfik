@@ -480,3 +480,46 @@ test('Sayfada tek bir h1 var, tahta demoları role="img" taşıyor', async ({ pa
   await expect(page.locator('h1')).toHaveCount(1);
   await expect(page.locator('[role="img"][aria-label*="oyun tahtası"]')).toHaveCount(2);
 });
+
+// Kullanıcı isteği (21 Ağustos 2026): *"Bazı kullanıcılar oyundan setup'a
+// dönüşü bulamıyor."* Logo BAŞTAN BERİ Setup'a dönüyordu — eksik olan
+// davranış değil GÖRÜNÜRLÜKTÜ. Bu test ikisini birden koruyor: etiket
+// GÖRÜNÜR ve etikete dokunmak GERÇEKTEN Setup'a döndürür.
+//
+// Negatif eş: `GameHeader`taki `<span>` kaldırılırsa ilk expect, etiket
+// logo butonunun DIŞINA taşınırsa ikinci expect düşer.
+test('Oyun ekranında logonun altında "← Geri" var ve Setup\'a döndürür', async ({ page }) => {
+  page.on('dialog', (dialog) => dialog.accept());
+  await donenKullanici(page);
+  await page.goto('/');
+  await page.getByText('OYUNU BAŞLAT').click();
+
+  const devamButton = page
+    .getByLabel('Giriş uyarısı')
+    .getByRole('button', { name: 'Oyna', exact: true });
+  if (await devamButton.isVisible().catch(() => false)) {
+    await devamButton.click();
+  }
+  const quickstartHeading = page.getByRole('heading', { name: /hızlı başlangıç/i });
+  if (await quickstartHeading.isVisible().catch(() => false)) {
+    await page.locator('button[aria-label="Kapat"]').last().click();
+  }
+
+  // Oyun ekranındayız: tahta çizildi.
+  await expect(page.getByRole('button', { name: 'Oyna', exact: true })).toBeVisible();
+
+  const geri = page.locator('header').getByText('← Geri');
+  await expect(geri).toBeVisible();
+
+  // Etiket logoyla AYNI butonun içinde olmalı — dokunma alanı ikisini
+  // birden kapsıyor (kullanıcı: "Logo alanı da dahil basıldığında").
+  await expect(
+    page.locator('header button[aria-label="Oyundan çık"]').getByText('← Geri'),
+  ).toBeVisible();
+
+  await geri.click();
+  // ⚠ DOM metni "Oyun Tipi" — ekranda büyük harf görünmesi CSS
+  // `uppercase`inden geliyor ve `getByText` onu görmez (bu kod tabanında
+  // kayıtlı tuzak, "Oyna"/"Nasıl Oynanır?" vakasının kardeşi).
+  await expect(page.getByText('Oyun Tipi')).toBeVisible();
+});

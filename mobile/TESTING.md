@@ -1792,6 +1792,18 @@ kayıtların panelde görünmesi ikincil.
       açılışta ağ bir an kesilse bile "Arkadaşınla" sekmesi açılmalı (düşen
       yükleme bu kararı bir daha TÜKETMEMELİ).
 
+## 16. Oyundan Setup'a dönüş — "← Geri" (21 Ağustos 2026)
+
+- [ ] **Görünür:** Oyun ekranında logonun hemen altında ince, koyu bir
+      "← Geri" yazıyor ve tahtanın sol kenarıyla hizalı duruyor.
+- [ ] **Dokunuş:** Hem etikete hem logoya dokunmak Setup'a döndürüyor.
+- [ ] **Header bozulmadı:** Skor kutuları logoyla aynı hizada; tahta
+      eskisine göre gözle görülür şekilde aşağı kaymadı.
+- [ ] **4 kişilik + girişli hesap:** Avatar/GİRİŞ ile etiket çakışmıyor,
+      skor kutuları kırpılmıyor (dar telefonda da).
+- [ ] **Canlı oyunda da var:** Aynı etiket Canlı oyun ekranında da
+      görünüyor ve oradan Canlı listesine döndürüyor.
+
 ## Web derlemesi (ücretsiz tarayıcı test ortamı)
 
 **Adres:** `https://alpcapa.github.io/kelimeki/` — `main`e giren her mobil
