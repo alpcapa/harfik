@@ -64,10 +64,31 @@ const BOX_PADDING_Y = 'clamp(2.7px, calc(-0.63px + 0.89vw), 3.5px)';
 // (bkz. LogoMark.tsx/generate-logo-paths.mjs) SVG width/height attribute'u
 // yerine CSS height + aspect-ratio kullanıyor.
 const LOGO_HEIGHT = 'clamp(28px, calc(-5.33px + 8.89vw), 36px)';
+// "← Geri" etiketi — Board footer'ındaki kontrollerle (Hamleler ·
+// Mesajlaşma · Nasıl Oynanır?) aynı punto/aralık dili.
+const BACK_FONT_SIZE = '12px';
+// Logo ile etiket arası.
+const BACK_GAP = 16;
+// Etiket AKIŞTAN ÇIKARILIP (absolute) logonun altına asılıyor; yerini
+// header'ın alt dolgusu açıyor. Gerekçe ÖLÇÜLDÜ: etiket akışta kalırsa
+// logo sütunu uzuyor ve `items-center` skor kutularını 14px AŞAĞI
+// kaydırıyor — kutular logoyla aynı hizada durmuyordu. Bu yolla satır
+// hizası hiç değişmiyor.
+//   alt dolgu = BACK_GAP (16) + etiket (12) + tahtaya kalması gereken
+//   boşluk (16) − Board kabının kendi `pt-1.5`i (6) = 38
+const BACK_HEADER_PB = '38px';
 
 interface GameHeaderProps {
   state: GameState;
   onLogoClick?: () => void;
+  /**
+   * Logonun ALTINA görünür bir "← Geri" etiketi koyar (21 Ağustos 2026,
+   * kullanıcı isteği: *"Bazı kullanıcılar oyundan setup'a dönüşü
+   * bulamıyor"*). Logo zaten Setup'a dönüyordu — eksik olan davranış
+   * değil GÖRÜNÜRLÜKTÜ; etiket logoyla AYNI butonun içinde, yani dokunma
+   * alanı ikisini birden kapsıyor.
+   */
+  showBack?: boolean;
   /** true iken çıkış devre dışı — ör. teslim olup YZ'leri izlerken oyundan
    *  çıkılamaz, oyunun bitmesi beklenmek zorunda. */
   exitDisabled?: boolean;
@@ -83,16 +104,33 @@ interface GameHeaderProps {
   onPlayerClick?: (index: number) => void;
 }
 
-export function GameHeader({ state, onLogoClick, exitDisabled, onPlayerClick }: GameHeaderProps) {
+export function GameHeader({
+  state,
+  onLogoClick,
+  exitDisabled,
+  onPlayerClick,
+  showBack,
+}: GameHeaderProps) {
   const { players, current } = state;
   return (
-    <header className="w-full max-w-[680px] flex items-center justify-between gap-2 px-3 py-2.5">
+    <header
+      className="w-full max-w-[680px] flex items-center justify-between gap-2 px-3 py-2.5"
+      style={showBack ? { paddingBottom: BACK_HEADER_PB } : undefined}
+    >
       <button
         onClick={onLogoClick}
         disabled={exitDisabled}
-        className="shrink-0 flex flex-col items-center leading-none active:opacity-70 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed disabled:active:opacity-40"
+        className="relative shrink-0 flex flex-col items-center leading-none active:opacity-70 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed disabled:active:opacity-40"
         aria-label="Oyundan çık">
         <LogoMark height={LOGO_HEIGHT} />
+        {showBack && (
+          <span
+            className="absolute top-full left-1/2 -translate-x-1/2 whitespace-nowrap font-mono font-bold tracking-[0.5px] text-accent"
+            style={{ fontSize: BACK_FONT_SIZE, marginTop: BACK_GAP }}
+          >
+            ← Geri
+          </span>
+        )}
       </button>
 
       {/* Akıcı boyutlandırma 375px'te (bkz. yukarı) neredeyse tam sığdırsa
