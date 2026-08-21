@@ -107,6 +107,12 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       kullanıcının "kaybeden -2 aldı, kazanan puan almadı" diye bildirdiği
       karışıklık tam olarak buydu ve kart o gün DOĞRUYDU, yalnızca lig
       katkısını göstermiyordu.
+- [ ] **Üç sütunun sayısı da kolonun SAĞINA yapışık (21 Ağustos 2026).**
+      Özellikle k-lig'in `-` gösterdiği ve skorun 2 haneli olduğu bir satıra
+      bak (ör. 4 kişilikte 3./4. sıra): skor ORTALI durmamalı, sağ komşusuna
+      belirgin biçimde daha yakın olmalı. Sütunlar daha önce de sağa yaslıydı
+      — şikâyet hizalamadan değil, kutuların içerikten geniş olmasından
+      geliyordu (skorun solunda 19.5, sağında 20.0 px boşluk kalıyordu).
 - [ ] **Uzun ad kartı TAŞIRMAZ.** 4 kişilik bir YZ oyunu bitir: "Yapay Zeka 1"
       gibi uzun adlar satırı ikiye sarmadan `…` ile kırpılmalı ve skor kartın
       sağ kenarından ASLA taşmamalı (dar bir telefonda/dar pencerede bak —

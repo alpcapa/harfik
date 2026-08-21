@@ -94,13 +94,14 @@ class GameOverModal extends StatelessWidget {
                 const Row(
                   children: [
                     Expanded(child: SizedBox()),
-                    _ColHeader('KALAN', width: 32),
                     SizedBox(width: 4),
-                    _ColHeader('TOPLAM', width: 40),
+                    _ColHeader('KALAN', width: 29),
+                    SizedBox(width: 8),
+                    _ColHeader('TOPLAM', width: 37),
                     SizedBox(width: 4),
                     // Marka küçük harf — web'de satır `uppercase` olduğundan
                     // `normal-case` şart; burada zaten büyütme yok.
-                    _ColHeader('k-lig', width: 24),
+                    _ColHeader('k-lig', width: 20),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -190,7 +191,9 @@ class _ColHeader extends StatelessWidget {
         textAlign: TextAlign.right,
         style: const TextStyle(
           fontSize: 9,
-          letterSpacing: 0.5,
+          // web `tracking-wide` = 0.025em → 9px'te 0.225 (önceden 0.5'ti,
+          // sessiz bir sapmaydı; başlıklar bu yüzden webden genişti).
+          letterSpacing: 0.225,
           color: kMuted,
         ),
       ),
@@ -250,8 +253,9 @@ class _PlayerRow extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(width: 4),
         SizedBox(
-          width: 32,
+          width: 29,
           child: Text(
             remaining > 0 ? '-$remaining' : '',
             textAlign: TextAlign.right,
@@ -262,9 +266,9 @@ class _PlayerRow extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 8),
         SizedBox(
-          width: 40,
+          width: 37,
           child: Text(
             '${p.score}',
             textAlign: TextAlign.right,
@@ -278,7 +282,7 @@ class _PlayerRow extends StatelessWidget {
         ),
         const SizedBox(width: 4),
         SizedBox(
-          width: 24,
+          width: 20,
           child: Text(
             formatLeaguePoints(points),
             textAlign: TextAlign.right,

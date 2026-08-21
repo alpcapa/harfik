@@ -483,8 +483,11 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       k-lig sütununda olmalı (KALAN'da DEĞİL). 4 kişilik bir oyunda
       "Yapay Zeka 1" gibi uzun adlar satırı sarmadan `…` ile kırpılmalı,
       kart hiçbir genişlikte taşmamalı; alttaki hamle sayısı etiketin
-      yanında/ortalı olmalı. **Web ile yan yana bak** — sayılar iki tarafta
-      ELLE senkron.
+      yanında/ortalı olmalı. Ayrıca **üç sütunun sayısı da kolonun SAĞINA
+      yapışık** olmalı: k-lig'in `-` gösterdiği ve skorun 2 haneli olduğu bir
+      satırda skor ORTALI durmamalı (21 Ağustos düzeltmesi). **Web ile yan
+      yana bak** — sayılar iki tarafta ELLE senkron; başlıkların harf aralığı
+      da (0.225) aynı olmalı, port eskiden 0.5 kullanıp daha genişti.
 - [ ] **Oyun sonu butonu BÜYÜR (Parça 50).** Oyun bitince raf satırındaki
       mavi buton "YENİ OYUN AÇ" olmalı: **tek satır** ve OYNA'dan belirgin
       **daha büyük punto** (web `text-[15px]` ↔ OYNA `text-[12px]`); raf

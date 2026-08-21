@@ -44,28 +44,43 @@ export function GameOver({ show, players, turnCount, onOpenHistory, onOpenFeedba
             Başlık 10→9px ve skor 22→20px: bu iki küçülme adın alanına ~8px
             kazandırıyor ve "Abdurrahman"ı 360px'te sığdıran şey tam olarak
             bu (20 Ağustos 2026, kullanıcı isteğiyle simüle edilip seçildi).
-            Kolon genişlikleri TAHMİN DEĞİL, mürekkep ölçüsü: "Kalan" başlığı
-            28.9px → w-8; skor "271" 20px mono'da 36.7px → w-10 (w-9 iken sayı
-            kutusunu birebir dolduruyor ve soldaki kalan-taş eksisine
-            yapışıyordu, "-2208" gibi okunuyordu); "k-lig" başlığı 20.0px →
-            w-6. Toplam sağ blok 104px — daha ferah ama ada ayrılan alan
-            değişmedi. */}
+            Kolon genişlikleri TAHMİN DEĞİL, mürekkep ölçüsü — her kutu KENDİ
+            EN GENİŞ içeriğine eşit: "KALAN" başlığı 28.86px → w-[29px]; skor
+            "271" 20px mono'da 36.72px → w-[37px] (36 iken sayı kutuyu birebir
+            doldurup soldaki kalan-taş eksisine yapışıyor, "-2208" gibi
+            okunuyordu); "k-lig" başlığı 19.98px → w-5.
+
+            BOŞLUKLAR ASİMETRİK ve bu bilinçli (21 Ağustos 2026, kullanıcı:
+            "3 kolonun da sayıları kolonun sağına yapışık olmalı. Sanki toplam
+            kolonu ortalı gibi duruyor"). Kolonlar ZATEN sağa yaslıydı —
+            ölçüldü, 16 satırın 16'sında metnin sağ kenarı kutunun sağ
+            kenarıyla birebir aynı. Yanılsama kutuların içeriğinden geniş
+            olmasındandı: k-lig'in "-" gösterdiği ve skorun 2 haneli olduğu
+            satırlarda skorun SOLUNDA 19.5px, SAĞINDA 20.0px boşluk kalıyordu,
+            yani skor komşularının mürekkebi arasında tam ortalanıyordu. Ölçü
+            şunu söylüyor: sol boşluğu Toplam'ın genişliği, sağ boşluğu k-lig'in
+            genişliği belirler (blok sağa çapalı olduğundan Kalan'ın genişliği
+            İKİSİNİ DE etkilemez). Bu yüzden kutular içeriğe indirildi ve
+            Toplam'ın SOL boşluğu (ml-2 = 8px) sağdakinden (ml-1 = 4px) büyük
+            tutuldu: aynı satırda artık 20.5px sola / 16.0px sağa, yani skor
+            görünür biçimde sağa yaslanıyor. Sağ blok 104 → 100px; yan fayda:
+            390px'te "Konstantinopolis" artık kırpılmıyor. */}
         <div className="shadow-raised bg-bg border border-border rounded-[10px] px-5 py-4 text-center flex flex-col gap-2.5 w-full">
-          <div className="flex items-center gap-1 text-[9px] uppercase tracking-wide text-muted">
+          <div className="flex items-center text-[9px] uppercase tracking-wide text-muted">
             <span className="flex-1" />
-            <span className="w-8 text-right shrink-0">Kalan</span>
-            <span className="w-10 text-right shrink-0">Toplam</span>
+            <span className="w-[29px] ml-1 text-right shrink-0">Kalan</span>
+            <span className="w-[37px] ml-2 text-right shrink-0">Toplam</span>
             {/* Satır `uppercase` olduğundan `normal-case` ŞART — marka küçük
                 harf ("SL" sütununda öğrenilen aynı ders). Oyun kartlarındaki
                 (GameHistoryModal/SharedGamePage) k-lig sütununun eşi. */}
-            <span className="w-6 text-right normal-case shrink-0">k-lig</span>
+            <span className="w-5 ml-1 text-right normal-case shrink-0">k-lig</span>
           </div>
           {ranked.map(({ player: p, index: i, rank }) => {
             const col = PLAYER_COLORS[p.colorIndex];
             const remaining = p.rack.reduce((s, t) => s + t.pts, 0);
             const points = leaguePoints(rank, players.length, p.surrendered);
             return (
-              <div key={i} className="flex items-center gap-1 text-[15px]">
+              <div key={i} className="flex items-center text-[15px]">
                 <span className="flex items-center gap-1.5 min-w-0 flex-1">
                   <PlayerBadge index={i} colorIndex={p.colorIndex} size={14} />
                   <span className="text-text truncate">
@@ -77,11 +92,11 @@ export function GameOver({ show, players, turnCount, onOpenHistory, onOpenFeedba
                     </span>
                   )}
                 </span>
-                <span className="w-8 text-right font-mono text-[13px] text-muted shrink-0">
+                <span className="w-[29px] ml-1 text-right font-mono text-[13px] text-muted shrink-0">
                   {remaining > 0 ? `-${remaining}` : ''}
                 </span>
                 <span
-                  className="w-10 text-right font-mono text-[20px] font-bold shrink-0"
+                  className="w-[37px] ml-2 text-right font-mono text-[20px] font-bold shrink-0"
                   style={{ color: col.base }}
                 >
                   {p.score}
@@ -92,7 +107,7 @@ export function GameOver({ show, players, turnCount, onOpenHistory, onOpenFeedba
                     "Kalan" sütunundaki eksi ise raf taşı düşümü — iki farklı
                     şey, bu yüzden ikisi ayrı sütun ve ayrı başlık. */}
                 <span
-                  className={`w-6 text-right font-mono text-[13px] font-bold shrink-0 ${
+                  className={`w-5 ml-1 text-right font-mono text-[13px] font-bold shrink-0 ${
                     points > 0 ? 'text-green' : points < 0 ? 'text-red' : 'text-muted'
                   }`}
                 >

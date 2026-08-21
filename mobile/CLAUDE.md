@@ -5928,11 +5928,11 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        kırpılmıyordu — uzun bir ad ("Yapay Zeka 1"; ad alanının uzunluk
        sınırı YOK) satırı ikiye sarıp 320px'te skoru kartın DIŞINA
        taşırıyordu. Yeni sütun bunu büyütürdü, birlikte düzeltildi.
-     - **Genişlikler MÜREKKEPLE ölçüldü, tahminle değil:** "Kalan" başlığı
-       28.9 → 32; skor "271" 20px mono'da **36.7** → 40 (36'da sayı kutusunu
-       birebir doldurup soldaki eksiye yapışıyor, "-2208" gibi okunuyordu);
-       "k-lig" 20.0 → 24. Ada yer açmak için başlık 10→**9**, skor 22→**20**,
-       sütun araları 6→**4**.
+     - **Genişlikler MÜREKKEPLE ölçüldü, tahminle değil — her kutu KENDİ en
+       geniş içeriğine eşit:** "KALAN" başlığı 28.86 → **29**; skor "271"
+       20px mono'da **36.72** → **37** (36'da sayı kutusunu birebir doldurup
+       soldaki eksiye yapışıyor, "-2208" gibi okunuyordu); "k-lig" başlığı
+       19.98 → **20**. Ada yer açmak için başlık 10→**9**, skor 22→**20**.
      - **Kullanıcı SİMÜLASYON İSTEDİ ("yer daralacak, uzun isimde ne olacağını
        göster önce") ve bu işin şeklini değiştirdi:** web'in ÜRETİM
        `<GameOver>`i Node'da `renderToStaticMarkup` ile beş senaryo × üç
@@ -5946,6 +5946,27 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ("altlı üstlü kötü duruyor") — başlık tek satır "Kalan"/`KALAN`.
        Ayrıca alttaki hamle sayısı satırın iki ucundan alınıp etiketin
        YANINA çekildi (8px, ortalı).
+     - **21 Ağustos — "Toplam ortalı duruyor" (kullanıcı) ve ölçüm ONU DA
+       çürüttü ama şikâyet HAKLIYDI:** sütunlar zaten sağa yaslıydı (16
+       satırın 16'sında metnin sağ kenarı = kutunun sağ kenarı; glyph yan
+       boşluğu 20px mono'da 0.24, 13px'te −0.04, yani ihmal edilebilir).
+       Yanılsamanın kaynağı KUTU BOŞLUĞUYDU: k-lig'in `-` gösterdiği ve
+       skorun 2 haneli olduğu satırlarda skorun **solunda 19.5, sağında
+       20.0 px** boşluk kalıyor, yani skor komşularının mürekkebi arasında
+       TAM ORTALANIYORDU. **Blok sağa çapalı olduğundan sol boşluğu
+       Toplam'ın, sağ boşluğunu k-lig'in genişliği belirler; Kalan'ın
+       genişliği İKİSİNİ DE etkilemez** — bu yüzden yalnız "kutuları
+       daraltmak" simetriyi BOZMUYOR, boşlukların da asimetrik olması
+       gerekiyordu. Kutular içeriğe indirildi (32/40/24 → **29/37/20**) ve
+       sütun araları 4/4 yerine **4 / 8 / 4** yapıldı (Toplam'ın SOLU daha
+       geniş): aynı satır artık **20.5 sola / 16.0 sağa**. Sağ blok
+       104 → **100px**; yan fayda 390px'te "Konstantinopolis" kırpılmıyor.
+     - **Portun başlık `letterSpacing`'i SESSİZ bir sapmaydı, aynı turda
+       düzeltildi:** Dart `0.5` kullanıyordu, web `tracking-wide` = 0.025em
+       yani 9px'te **0.225**. Port başlıkları bu yüzden webden genişti
+       (KALAN 30.24 vs 28.86) ve yeni dar kutulara SIĞMAZDI — yani bu, kutu
+       daraltmanın yan ürünü olarak ortaya çıkan gerçek bir parite hatası.
+       `_ColHeader` web'in değerine çekildi.
      - **Portun `_PlayerRow`u artık `playerCount` alıyor** (k-lig puanı için)
        ve ad `Expanded`+`Flexible`+`ellipsis` ile kırpılıyor; `_ColHeader`
        9 punto. Genişlik/punto sayıları iki tarafta ELLE senkron.
@@ -5958,10 +5979,14 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        (Parça 103-119'un aynı sınırı). Web yarısı tam doğrulandı:
        `npm run lint` + `npm run build` temiz, Playwright **18/18**, ve
        gerçek üretim bileşeniyle üç genişlikte ölçüm + ekran görüntüsü.
+       21 Ağustos turunda da aynı sınır geçerli; web tarafı yeniden ölçüldü
+       (320/360/390/834 — yatay taşma **0**, sütun içi taşma **yok**, satır
+       yüksekliği sabit) ve önce/sonra ekran görüntüsü alındı.
      - **Cihazda doğrulanacak:** bir oyunu bitirip kartta k-lig sütununun
        çıktığı, teslim olan satırda **-2**'nin k-lig sütununda (Kalan'da
-       DEĞİL) durduğu ve uzun adların kırpıldığı — `mobile/TESTING.md`
-       bölüm 1.
+       DEĞİL) durduğu, uzun adların kırpıldığı ve **üç sütunun sayısının da
+       kolonun sağına yapışık göründüğü** (özellikle k-lig `-` gösterirken
+       skorun ortalı DURMADIĞI) — `mobile/TESTING.md` bölüm 1.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
