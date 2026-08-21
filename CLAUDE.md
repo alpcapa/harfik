@@ -1413,7 +1413,69 @@ edilen kelimeyi mobil reddediyor" olarak görünür.
 
 - **Erişim:** `profiles.is_admin = true` olan hesaplarda `UserMenu`'de bir "Admin Paneli" girişi açılır (yoksa hiç görünmez). Tüm admin verisi `is_admin()` (security definer) ile korunan RPC'ler üzerinden gelir; `anon`/`authenticated` rollerinden doğrudan `revoke`, yalnızca `authenticated`'e `grant execute` verilir, RPC içinde de ayrıca `is_admin()` kontrolü yapılır (yetkisizse exception fırlatır).
 - **Sekmeler (`AdminDashboard.tsx`):**
-  - **Üyeler** — `admin_list_members` RPC'si tüm kayıtlı kullanıcıları (ad, nickname, e-posta, `signup_channel` — Direkt/Form, katılma/son giriş, rol) listeler, arama+sıralama var; bir satıra tıklayınca `PlayerScoreCard` (`ScoreCard`'ın salt-okunur genel görünümü, `fetchPlayerStats`/`fetchMyGames`'in opsiyonel `userId` parametresiyle) açılır — bu bileşen 25 Temmuz 2026'ya kadar yalnızca admin panelinden erişilebilen `AdminPlayerDetail` idi; artık `Leaderboard`'daki (Sanal Lig) herhangi bir satıra tıklanınca da aynı bileşen (aynı dosya, `PlayerScoreCard.tsx`) açılıyor, bu yüzden admin'e özgü olmayan bir isim aldı. İsim altında ayrıca bir e-posta satırı gösteriliyordu, bu da aynı gün kaldırıldı — e-posta artık hiçbir skor kartında görünmüyor, yalnızca Üyeler tablosunun kendi sütununda kalıyor.
+  - **Üyeler** — `admin_list_members` RPC'si tüm kayıtlı kullanıcıları listeler, arama+sıralama var; **21 Ağustos 2026'dan beri kayıt formunun TÜM alanları + izinler tabloda** (bkz. hemen aşağıdaki madde); bir satıra tıklayınca `PlayerScoreCard` (`ScoreCard`'ın salt-okunur genel görünümü, `fetchPlayerStats`/`fetchMyGames`'in opsiyonel `userId` parametresiyle) açılır — bu bileşen 25 Temmuz 2026'ya kadar yalnızca admin panelinden erişilebilen `AdminPlayerDetail` idi; artık `Leaderboard`'daki (Sanal Lig) herhangi bir satıra tıklanınca da aynı bileşen (aynı dosya, `PlayerScoreCard.tsx`) açılıyor, bu yüzden admin'e özgü olmayan bir isim aldı. İsim altında ayrıca bir e-posta satırı gösteriliyordu, bu da aynı gün kaldırıldı — e-posta artık hiçbir skor kartında görünmüyor, yalnızca Üyeler tablosunun kendi sütununda kalıyor.
+
+    **Kayıt alanlarının tamamı tabloda (21 Ağustos 2026, kullanıcı isteği:
+    *"kayıt sırasında doldurulan tüm verileri koyalım. İzinler de dahil.
+    Boş bırakılanları (-) yap. İleride yapılan değişiklikler de
+    yansımalı."*):** Tablo 8 → **18 kolon**: İsim · Nickname · E-posta ·
+    Cinsiyet · Doğum · Fotoğraf · **Koşullar** · **Pazarlama** · **Pazarlama
+    Tarihi** · **E-posta Bildirimi** · Kanal · **Kaynak** · **Davet Eden** ·
+    Katılma · Son Giriş · Rol · Durum · aksiyonlar.
+    - **Değerler CANLI, dondurulmuş değil:** RPC her çağrıda `profiles`i
+      okuyor, yani üye Hesap Ayarları'ndan cinsiyetini/pazarlama onayını
+      değiştirirse panel bir sonraki açılışta yeni değeri gösterir. (Panel
+      AÇIKKEN kendiliğinden tazelenmez — üye listesi mount'ta bir kez
+      çekiliyor, bu davranış değişmedi.)
+    - **Boş alan `—`, ama CSV'de GERÇEKTEN BOŞ.** Tabloda tire okunabilirlik
+      içindir; elektronik tabloda sahte bir değer olur (filtre/sıralama onu
+      veri sanar).
+    - **BULUNAN HATA — `agreed_to_terms` YAPISAL OLARAK hep `false`du.**
+      Kolonu panele koymadan önce ölçüldü: **26 üyenin 26'sında `false`**.
+      Sebep `handle_new_user`ın `agreedToTerms`i HİÇ OKUMAMASIYDI — iki
+      istemci de (web `signUp`, portun `signUp`u) o alanı
+      `sharedxp_pending_profile` metadata'sında baştan beri gönderiyor,
+      trigger gender/birthDate/marketingConsent/utmSource'u okurken bunu
+      atlamış; `profiles`e yazan tek yol signUp-sonrası istemci update'iydi
+      ve o yalnızca e-posta doğrulaması KAPALIYKEN koşuyor. Bu eksiklik
+      `marketing_consent` eklenirken zaten yazılıydı ("ÖNCEDEN VAR OLAN bir
+      eksiklik"); kolon görünür olacağı için düzeltildi.
+      **Geriye dönük doldurma VARSAYIMLA DEĞİL, gerçek kayıttan:**
+      `auth.users.raw_user_meta_data`da onay duruyordu (26 hesabın 25'inde
+      `true`, hiçbirinde `false`) — sadece kopyalanmamıştı. Metadata'sı hiç
+      olmayan tek hesap (sistemin ilk üyesi) bilerek `false` bırakıldı;
+      orada bilinen bir şey yok. **Doğrulama:** trigger geri alınan bir
+      transaction'da negatif eşle sınandı — onay gönderilen sahte kayıt
+      `true`, onay alanı HİÇ gönderilmeyen `false`.
+    - **İzin hücrelerinde kırmızı YOK, yeşil/nötr var.** "Pazarlama: Hayır"
+      bir hata değil kullanıcının meşru tercihi; bu panelde kırmızı
+      "Donduruldu" gibi gerçek bir soruna ayrılmış. `E-posta Bildirimi` ters
+      yönde çalışıyor (opt-OUT, varsayılanı Açık) ve etiketleri Açık/Kapalı
+      — Evet/Hayır ile karıştırılmamalı.
+    - **`Kanal` ile `Kaynak` BAĞIMSIZ:** ilki kaydın hangi formdan geldiği
+      (`signup_channel`, Direkt/Form), ikincisi kayıt anındaki `?ref=`
+      etiketi (`signup_utm_source`, Kaynak Hunisi'yle AYNI alan). Ayrım `?`
+      popup'ında da yazılı.
+    - **`Fotoğraf` URL değil `Var`/`—`** — URL okunmaz ve satırı metrelerce
+      uzatır; sorulan soru "fotoğraf koymuş mu".
+    - **Yeni kolonlara sıralama BİLEREK eklenmedi** (mevcut 7 anahtar aynı
+      kaldı): bu alanlar tarama/dışa aktarma için, sıralama ölçütü olarak
+      anlamlı değiller ve yedi yeni ok başlığı satırı gürültüye boğardı.
+    - **CSV tabloyla AYNI kolonlar, AYNI sırada** (tek fark: Ad/Soyad ayrı
+      sütun). "CSV ekranda görüneni indirir" sözü ancak böyle doğru kalır —
+      yeni bir kolon eklenirse ikisi birlikte değişmeli.
+    - **ÖLÇÜLDÜ** (derlenmiş CSS + Chromium, gerçek `AdminDashboard`
+      sunucuda render edilip, 320/390/834/1194): tablo **1816.6 px**, kap
+      246–598 px, yani yatay kaydırma 1219–1571 px — **sayfa taşması her
+      genişlikte 0** (kaydırma tablonun kendi `overflow-x-auto` kabında
+      kalıyor) ve satır yüksekliği 33.5 px'te sabit. Uzun bir kaydırma bu
+      isteğin doğal bedeli; ilk kolonu `sticky` yapmak yönelimi kolaylaştırır
+      ama satırın koşullu arka planıyla (vurgu/hover) çakışıyor, o yüzden
+      YAPILMADI.
+    - **Hukuki metin DEĞİŞMEDİ ve bu bilinçli:** yeni bir veri TOPLANMIYOR,
+      yalnızca zaten toplanan alanlar admin'e gösteriliyor; `PrivacyModal`
+      bu alanları "Toplanan Veriler"de zaten sayıyor ve panel `is_admin()`
+      ile kilitli.
     **Regresyon notu (25 Temmuz 2026, aynı gün fark edildi):** bu "herkes herkesin kartına girebilir" özelliği eklendiğinde `games` tablosunun SELECT RLS politikası hâlâ 22 Temmuz'daki `lock_down_profiles_games_select` migration'ından kalma `owner-or-admin` idi (`fetchPlayerStats`/`fetchMyGames`/`fetchGameBoardSnapshot`'taki yorumlar zaten kaldırılmış "herkese açık select" politikasını varsayıyordu) — yani admin olmayan biri başkasının kartını açtığında istatistikler/oyun listesi boş geliyor, tahta önizlemesi hiç açılmıyordu. `game_likes_and_public_sharing` migration'ı bunu `games_select_authenticated` (`auth.uid() is not null`) politikasıyla düzeltti; aynı migration beğeni/paylaşma özelliklerini de ekledi (bkz. yukarıdaki "Skor Kartı" notu).
     **"Mesaj Gönder"** (26 Temmuz 2026'nın ikinci değişikliği, üçüncü değişiklikte kalıcı hâle getirildi) — her satırın sonunda, e-postası olan üyeler için bir "Mesaj Gönder" linki var; tıklanınca `MemberMessageModal.tsx` açılır (Konu + Mesaj serbest metin), `admin-send-message` Edge Function'ı ile gönderilir. Başlangıçta (ikinci değişiklik) bir feedback kaydına hiç bağlı değildi, DB'ye bir şey yazmıyordu; üçüncü değişiklikte artık `feedback` tablosuna `origin: 'admin'` olarak KAYDEDİLİYOR da (bkz. aşağıdaki "Geri bildirim yanıtları" bölümü) — böylece "kime ne yazıldığı" Geri Bildirim sekmesinde kalıcı olarak görünür, kartta "Gönderilen" rozetiyle ayrışır.
     **Hesabı Devre Dışı Bırakma/Aktif Etme (2 Ağustos 2026, `admin_set_user_banned` migration'ı):** Oyun İçi Mesajlaşma Faz 2'nin (bkz. aşağıdaki bölüm) doğal bir uzantısı — kullanıcı, bir şikayet geri çekilmiş olsa bile admin'in raporlanan kişi hakkında somut bir aksiyon alabilmesi gerektiğini belirtti (spam yapan birini devre dışı bırakmak gibi). Yeni bir "Durum" sütunu (Aktif/Devre Dışı) + her satırda "Mesaj Gönder"in yanına bir "Devre Dışı Bırak"/"Aktif Et" linki eklendi; her ikisi de "Emin misiniz?" onay diyaloğundan geçiyor (chat mute/report'taki aynı desen). `admin_set_user_banned(p_user_id, p_banned)` RPC'si `auth.users.banned_until`'ı günceller (`true` ise `now() + 100 yıl`, `false` ise `null`) — Supabase Auth (GoTrue) bunu native olarak okuyup bir sonraki girişte/token yenilemede reddediyor; **anlık oturum kesme kapsam dışı** — hâlâ geçerli olan kısa ömürlü access token'lar süresi dolana kadar çalışmaya devam edebilir (GoTrue'nun standart ban davranışı). RPC kendi kendini banlamayı da engelliyor (`p_user_id = auth.uid()` kontrolü). Production'da gerçek RPC çağrısı bir transaction içinde (`set local request.jwt.claims` ile admin simüle edilip) çalıştırılıp SONRA `rollback` ile geri alınarak doğrulandı — hem başarılı ban/unban hem kendi kendini banlama reddi hem admin-olmayan reddi gerçek veriyle test edildi, production'da hiçbir kalıcı iz bırakmadı. **KVKK gereği hesap SİLME** (kullanıcının "unutulma hakkı") ayrı ve daha büyük bir iş (auth.users + tüm ilişkili veriler + kaskad temizlik) — kullanıcı isteğiyle bilinçli olarak sonraki bir faza bırakıldı, bu değişikliğin kapsamında DEĞİL.

@@ -643,7 +643,14 @@ export interface LeagueReward {
 
 // ── Admin paneli ────────────────────────────────────────────────────────────
 
-/** admin_list_members RPC çıktısındaki tek satır (auth.users + profiles). */
+/**
+ * admin_list_members RPC çıktısındaki tek satır (auth.users + profiles).
+ *
+ * Kayıt formunun TÜM alanlarını + izinleri taşır (21 Ağustos 2026, kullanıcı
+ * isteği). Değerler her çağrıda `profiles`ten CANLI okunuyor — dondurulmuş
+ * bir anlık görüntü DEĞİL, yani üye Hesap Ayarları'ndan bir alanı sonradan
+ * değiştirirse panel bir sonraki açılışta yeni değeri gösterir.
+ */
 export interface AdminMember {
   id: string;
   email: string | null;
@@ -651,8 +658,30 @@ export interface AdminMember {
   first_name: string | null;
   last_name: string | null;
   display_name: string | null;
+  gender: Gender | null;
+  /** ISO `yyyy-mm-dd`; girilmediyse null. */
+  birth_date: string | null;
+  avatar_url: string | null;
+  /**
+   * Kullanım Koşulları onayı. **21 Ağustos 2026'ya kadar bu alan YAPISAL
+   * OLARAK hep `false`du** — `handle_new_user` metadata'daki `agreedToTerms`i
+   * hiç okumuyordu ve onu yazan tek yol (istemcideki signUp-sonrası update)
+   * yalnızca e-posta doğrulaması KAPALIYKEN koşuyordu. Trigger düzeltildi ve
+   * mevcut satırlar `auth.users` metadata'sındaki GERÇEK kayıttan dolduruldu;
+   * metadata'sı hiç olmayan (sistemin ilk) hesap bilerek `false` kaldı.
+   */
+  agreed_to_terms: boolean;
+  marketing_consent: boolean;
+  /** Onay/geri çekme anı — sunucudaki trigger yazar, istemci ASLA göndermez. */
+  marketing_consent_at: string | null;
+  /** İşlemsel bildirim tercihi (opt-OUT: varsayılanı açık). */
+  email_notifications_enabled: boolean;
   is_admin: boolean;
   signup_channel: 'direct' | 'form';
+  /** Kayıt anındaki ilk-temas kaynağı; null = bu istemci hiç damgalamadı. */
+  signup_utm_source: string | null;
+  /** Daveti gönderen üyenin adı (`profiles.invited_by` çözülmüş hâli). */
+  invited_by_name: string | null;
   created_at: string;
   last_sign_in_at: string | null;
   banned_until: string | null;

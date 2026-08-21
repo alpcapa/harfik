@@ -911,6 +911,38 @@ açıklama değil veri.
       değil).
 - [ ] **Hiçbir grafiğin altında artık hikaye paragrafı YOK.**
 
+## 9.13. Admin — Üyeler tablosundaki kayıt alanları (21 Ağustos 2026)
+
+Tablo artık kayıt formunun tüm alanlarını ve izinleri taşıyor (18 kolon).
+
+- [ ] **Tablo yana kaydırılıyor, SAYFA kaymıyor.** Kaydırma tablonun kendi
+      kabında kalmalı; panelin kendisi ya da arka plan yatay kaymamalı.
+- [ ] **Girilmemiş her alan `—`.** Cinsiyet/Doğum/Kaynak/Davet Eden'i boş
+      bir hesapta kontrol et — boş hücre değil tire görünmeli.
+- [ ] **`Koşullar` neredeyse herkeste "Evet".** Kayıt formunda zorunlu
+      olduğundan "Hayır" yalnızca onayın kayda hiç geçmediği çok eski
+      hesap(lar)da görünür. **Bu, düzeltilmiş bir hatanın regresyon
+      kontrolü:** eskiden HERKESTE "Hayır" çıkardı.
+- [ ] **Yeni bir kayıt "Evet" ile geliyor.** Test hesabıyla kayıt ol →
+      satırında Koşullar "Evet" olmalı. (E-posta doğrulaması açıkken de —
+      düzeltmenin asıl noktası bu.)
+- [ ] **`Pazarlama` ve tarihi tutarlı.** Onay verilmişse tarih dolu,
+      verilmemişse `—`. Hesap Ayarları'ndan onayı aç/kapat → paneli kapatıp
+      yeniden aç → yeni değer ve yeni tarih görünmeli (**"ileride yapılan
+      değişiklikler yansımalı" maddesinin kontrolü**).
+- [ ] **`E-posta Bildirimi` Açık/Kapalı** (Evet/Hayır DEĞİL) ve varsayılanı
+      Açık. Hesap Ayarları'ndan kapat → tabloda "Kapalı".
+- [ ] **`Kanal` ile `Kaynak` karışmıyor.** Kanal Direkt/Form; Kaynak
+      `?ref=` etiketi (ör. `instagram`, `arkadas`, `direkt`) ya da `—`.
+- [ ] **`Davet Eden`** yalnızca davet linkiyle gelen üyelerde dolu.
+- [ ] **İzin hücrelerinde kırmızı YOK** — yeşil (verilmiş) ya da nötr gri.
+      Kırmızı bu tabloda yalnızca "Donduruldu" durumuna ait.
+- [ ] **CSV tabloyla aynı.** İndir, aç: kolonlar ekrandakiyle aynı sırada,
+      Ad ve Soyad AYRI sütun, boş alanlar gerçekten BOŞ (tire değil).
+- [ ] **`?` popup'ı** Koşullar/Pazarlama/E-posta Bildirimi ayrımını ve
+      Kanal ↔ Kaynak farkını anlatıyor.
+- [ ] **Admin olmayan hiçbir şey göremiyor** (RPC `Yetkisiz erişim.` verir).
+
 ## 9.12. Admin — "Hatalar" sekmesi (21 Ağustos 2026, ROADMAP #3)
 
 İstemci hata telemetrisi. Kayıtlar anonim (`client_errors`, hesap kimliği

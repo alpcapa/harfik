@@ -51,6 +51,7 @@ import { AdminChatTranscriptModal } from './AdminChatTranscriptModal';
 import { CountBadge } from './CountBadge';
 import { GrowthChart, type ChartSeriesDef } from './GrowthChart';
 import { trLower } from '../utils/turkish';
+import { GENDER_OPTIONS, isoToTrDate } from '../utils/profileFields';
 import { useModalA11y } from '../hooks/useModalA11y';
 import { downloadCsv } from '../utils/csvExport';
 
@@ -426,8 +427,21 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
     title: 'Üyeler',
     body: (
       <>
-        Tüm kayıtlı kullanıcılar. <b>Kanal</b>, kaydın hangi formdan geldiğini söyler
-        (Direkt/Form) — Kaynak Hunisi'ndeki kaynak damgasıyla KARIŞTIRILMAMALI, ikisi bağımsız.
+        Tüm kayıtlı kullanıcılar ve kayıt sırasında doldurdukları her alan — izinler dahil.
+        Değerler CANLI: üye Hesap Ayarları'ndan bir alanı sonradan değiştirirse panel yeni
+        değeri gösterir. Girilmemiş alanlar <b>—</b> ile yazılır. Tablo yana kaydırılır.
+        <br />
+        <br />
+        <b>Koşullar</b> = Kullanım Koşulları/Gizlilik onayı; kayıt formunda ZORUNLUDUR, yani
+        "Hayır" pratikte yalnızca onayın kayda hiç geçmediği çok eski hesaplarda görünür.
+        <b> Pazarlama</b> isteğe bağlıdır ve sonradan geri çekilebilir — "Hayır" bir eksik
+        değil, kullanıcının tercihidir. <b>E-posta Bildirimi</b> ise tersi yönde çalışır
+        (varsayılanı Açık, kullanıcı kapatabilir).
+        <br />
+        <br />
+        <b>Kanal</b> kaydın hangi formdan geldiğini söyler (Direkt/Form); <b>Kaynak</b> ise
+        kayıt anındaki `?ref=` etiketidir (Kaynak Hunisi'yle aynı alan). İkisi BAĞIMSIZ,
+        karıştırılmamalı.
         <br />
         <br />
         CSV ekranda görüneni indirir: arama ve sıralama uygulanmış hâli.
@@ -1046,6 +1060,45 @@ function memberChannelLabel(m: AdminMember) {
   return m.signup_channel === 'form' ? 'Form' : 'Direkt';
 }
 
+/** Boş/eksik her alan için TEK gösterim — tabloda ve CSV'de aynı. */
+const BOS = '—';
+
+/**
+ * Cinsiyet etiketi. Kaynak `GENDER_OPTIONS` (kayıt formu ve Hesap Ayarları
+ * ile AYNI liste) — ikinci bir eşleme yazmak, seçenekler değişince sessizce
+ * ayrışırdı. `'unspecified'` formda seçilebilir DEĞİL ama şema kabul
+ * ediyor, o yüzden ayrıca karşılanıyor: listede bulunamadığı için `BOS`a
+ * düşseydi "hiç girmemiş" ile karışırdı.
+ */
+function memberGenderLabel(m: AdminMember) {
+  if (!m.gender) return BOS;
+  if (m.gender === 'unspecified') return 'Belirtilmemiş';
+  return GENDER_OPTIONS.find((o) => o.value === m.gender)?.label ?? BOS;
+}
+
+/** Sadece TARİH (saat yok) — doğum tarihi için `fmtDate` fazla bilgi. */
+function memberBirthDateLabel(m: AdminMember) {
+  return isoToTrDate(m.birth_date).replace(/\//g, '.') || BOS;
+}
+
+/**
+ * İzin/tercih hücresi. Onay verilmiş olan yeşil, verilmemiş olan nötr —
+ * kırmızı BİLEREK kullanılmıyor: "pazarlama iznini vermemiş" bir hata ya da
+ * uyarı değil, kullanıcının meşru tercihi (kırmızı bu panelde "Donduruldu"
+ * gibi gerçek bir sorun demek).
+ */
+function ConsentCell({ on, onLabel = 'Evet', offLabel = 'Hayır' }: {
+  on: boolean;
+  onLabel?: string;
+  offLabel?: string;
+}) {
+  return on ? (
+    <span className="text-green font-bold">{onLabel}</span>
+  ) : (
+    <span className="text-muted">{offLabel}</span>
+  );
+}
+
 /** `banned_until` gelecekte bir tarihse hesap şu an devre dışıdır. */
 function isBanned(bannedUntil: string | null | undefined): boolean {
   return !!bannedUntil && new Date(bannedUntil).getTime() > Date.now();
@@ -1333,19 +1386,44 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       active ? 'bg-accent text-white' : 'bg-panel text-muted border border-border'
     }`;
 
+  /**
+   * Üyeler CSV'si — ekrandaki tabloyla AYNI kolonlar, AYNI sırada. İkisi
+   * ayrışırsa "CSV ekranda görüneni indirir" sözü (bkz. `?` popup'ı) yalan
+   * olur; yeni bir kolon eklenirse buraya da eklenmeli.
+   *
+   * CSV'de boş hücre `BOS` (—) DEĞİL gerçekten boş: bir tablo hücresinde
+   * tire okunabilirlik içindir, elektronik tabloda ise sahte bir değer olur
+   * (filtre/sıralama onu veri sanır).
+   */
   function exportMembersCsv() {
     if (!filteredMembers || filteredMembers.length === 0) return;
     downloadCsv(
       csvFilename('kelimeki-uyeler'),
-      ['İsim', 'Nickname', 'E-posta', 'Kanal', 'Katılma', 'Son Giriş', 'Rol'],
+      [
+        'Ad', 'Soyad', 'Nickname', 'E-posta', 'Cinsiyet', 'Doğum Tarihi',
+        'Fotoğraf', 'Koşullar Onayı', 'Pazarlama Onayı', 'Pazarlama Onay Tarihi',
+        'E-posta Bildirimi', 'Kanal', 'Kaynak', 'Davet Eden', 'Katılma',
+        'Son Giriş', 'Rol', 'Durum',
+      ],
       filteredMembers.map((m) => [
-        memberName(m),
-        memberNickname(m),
+        m.first_name ?? '',
+        m.last_name ?? '',
+        m.display_name ?? '',
         m.email ?? '',
+        m.gender ? memberGenderLabel(m) : '',
+        m.birth_date ? memberBirthDateLabel(m) : '',
+        m.avatar_url ? 'Var' : '',
+        m.agreed_to_terms ? 'Evet' : 'Hayır',
+        m.marketing_consent ? 'Evet' : 'Hayır',
+        m.marketing_consent_at ? fmtDate(m.marketing_consent_at) : '',
+        m.email_notifications_enabled ? 'Açık' : 'Kapalı',
         memberChannelLabel(m),
+        m.signup_utm_source ?? '',
+        m.invited_by_name ?? '',
         fmtDate(m.created_at),
-        fmtDate(m.last_sign_in_at),
+        m.last_sign_in_at ? fmtDate(m.last_sign_in_at) : '',
         m.is_admin ? 'Admin' : 'Üye',
+        isBanned(m.banned_until) ? 'Donduruldu' : 'Aktif',
       ]),
     );
   }
@@ -1781,7 +1859,22 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         <SortHeader label="İsim" sortKeyFor="name" />
                         <SortHeader label="Nickname" sortKeyFor="nickname" />
                         <SortHeader label="E-posta" sortKeyFor="email" />
+                        {/* Kayıt formunun geri kalanı + izinler (21 Ağustos
+                            2026, kullanıcı isteği). Sıralama BİLEREK
+                            eklenmedi: bu kolonlar tarama/dışa aktarma için,
+                            sıralama ölçütü olarak anlamlı değiller ve yedi
+                            yeni sıralama anahtarı başlığı gürültüye
+                            boğardı. */}
+                        <th className="py-2 pr-3 text-left font-normal">Cinsiyet</th>
+                        <th className="py-2 pr-3 text-left font-normal">Doğum</th>
+                        <th className="py-2 pr-3 text-left font-normal">Fotoğraf</th>
+                        <th className="py-2 pr-3 text-left font-normal">Koşullar</th>
+                        <th className="py-2 pr-3 text-left font-normal">Pazarlama</th>
+                        <th className="py-2 pr-3 text-left font-normal">Pazarlama Tarihi</th>
+                        <th className="py-2 pr-3 text-left font-normal">E-posta Bildirimi</th>
                         <SortHeader label="Kanal" sortKeyFor="signup_channel" />
+                        <th className="py-2 pr-3 text-left font-normal">Kaynak</th>
+                        <th className="py-2 pr-3 text-left font-normal">Davet Eden</th>
                         <SortHeader label="Katılma" sortKeyFor="created_at" />
                         <SortHeader label="Son Giriş" sortKeyFor="last_sign_in_at" />
                         <SortHeader label="Rol" sortKeyFor="is_admin" />
@@ -1803,8 +1896,37 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                         >
                           <td className="py-2 pr-3 text-text whitespace-nowrap">{memberName(m)}</td>
                           <td className="py-2 pr-3 text-text whitespace-nowrap">{memberNickname(m)}</td>
-                          <td className="py-2 pr-3 text-text whitespace-nowrap">{m.email ?? '—'}</td>
+                          <td className="py-2 pr-3 text-text whitespace-nowrap">{m.email ?? BOS}</td>
+                          <td className="py-2 pr-3 text-muted whitespace-nowrap">{memberGenderLabel(m)}</td>
+                          <td className="py-2 pr-3 text-muted whitespace-nowrap">{memberBirthDateLabel(m)}</td>
+                          <td className="py-2 pr-3 whitespace-nowrap">
+                            {/* URL gösterilmiyor: okunmaz ve satırı metrelerce
+                                uzatır — sorulan soru "fotoğraf koymuş mu". */}
+                            <ConsentCell on={!!m.avatar_url} onLabel="Var" offLabel={BOS} />
+                          </td>
+                          <td className="py-2 pr-3 whitespace-nowrap">
+                            <ConsentCell on={m.agreed_to_terms} />
+                          </td>
+                          <td className="py-2 pr-3 whitespace-nowrap">
+                            <ConsentCell on={m.marketing_consent} />
+                          </td>
+                          <td className="py-2 pr-3 text-muted whitespace-nowrap">
+                            {fmtDate(m.marketing_consent_at)}
+                          </td>
+                          <td className="py-2 pr-3 whitespace-nowrap">
+                            <ConsentCell
+                              on={m.email_notifications_enabled}
+                              onLabel="Açık"
+                              offLabel="Kapalı"
+                            />
+                          </td>
                           <td className="py-2 pr-3 text-muted whitespace-nowrap">{memberChannelLabel(m)}</td>
+                          <td className="py-2 pr-3 text-muted whitespace-nowrap">
+                            {m.signup_utm_source ?? BOS}
+                          </td>
+                          <td className="py-2 pr-3 text-muted whitespace-nowrap">
+                            {m.invited_by_name ?? BOS}
+                          </td>
                           <td className="py-2 pr-3 text-muted whitespace-nowrap">{fmtDate(m.created_at)}</td>
                           <td className="py-2 pr-3 text-muted whitespace-nowrap">{fmtDate(m.last_sign_in_at)}</td>
                           <td className="py-2 pr-3 whitespace-nowrap">
