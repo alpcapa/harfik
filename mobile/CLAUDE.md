@@ -5580,7 +5580,9 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        şekillerden (daire/dikdörtgen/çizgi/yay) kurulu; `Icons.*` iki
        platformda FARKLI vektör demek olurdu (`RelationIcons` ilkesinin
        tersten uygulanması). Aynı şekiller `CustomPainter` ile çiziliyor.
-       **İki dosya ELLE SENKRON, zorlayan test YOK.**
+       **İki dosya ELLE SENKRON — 21 Ağu 2026'dan beri `icon_parity_test.dart`
+       zorluyor** (Parça 128); o test yazılırken portun noktaları webden
+       küçük çıktı (0.9 ↔ 1.4) ve düzeltildi.
      - **`OzellikIkonTuru` enum'ı + `OzellikIkon.turden` fabrikası** eklendi:
        altı kart bir `const` veri listesinde taşınıyor ve fabrikalar `const`
        olamıyor. Yeni bir ikon eklenirse İKİSİ de (enum + `turden`)
@@ -6190,8 +6192,9 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        bağlı olduğunun kanıtı.**
      - **`decideInitialMainView` + `InitialMainView` ELLE SENKRON** web'in
        `pendingLiveGames.ts`'iyle; `PendingLiveGameCounts` üçüncü alan aldı
-       (`activeCount`). Biri değişirse öteki de değişmeli, bunu zorlayan bir
-       test YOK.
+       (`activeCount`). Biri değişirse öteki de değişmeli — **21 Ağu 2026'dan
+       beri DAVRANIŞ olarak testli** (Parça 128: 112 vakalık tüketici golden
+       + CI'da tazelik kontrolü).
      - **Test:** `live_games_test.dart` — 7 kural kontrolü (kullanıcının
        bildirdiği vaka dahil) + `pendingCounts` ağ hatasında null.
      - **Flutter SDK bu ortamda YOK** — Dart yarısının kanıtı CI.
@@ -6227,16 +6230,101 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **`calc()`siz clamp ↔ `fluidSize`:** `clamp(MIN, Bvw, MAX)` portta
        `fluidSize(w, MIN, 0, B, MAX)` demek; test A parametresinin
        gerçekten `0` olduğunu ayrıca kontrol ediyor.
-     - **KAPSAM DIŞI (dürüst sınır):** `TESLIM_FONT_SIZE` — portta akıcı bir
-       karşılığı YOK (`FittedBox` ile çözülüyor), karşılaştırılacak sayı da
-       yok. Renk/metin/ikon paritesi kendi testlerinde. `RankSeal` geometrisi,
-       `ozellik_ikonlari.dart` ve `decideInitialMainView` HÂLÂ korumasız —
-       onlar sayı çifti değil, yapı/algoritma kopyası.
+     - **KAPSAM DIŞI (o günün dürüst sınırı):** `TESLIM_FONT_SIZE`,
+       `RankSeal` geometrisi, `ozellik_ikonlari.dart` ve
+       `decideInitialMainView`. **AYNI GÜN Parça 128 dördünü de kapattı** —
+       her biri farklı bir mekanizmayla; aşağı bkz.
      - **Flutter SDK bu ortamda YOK** — testin kendisi üç yoldan doğrulandı:
        (a) her regex'in gerçek kaynak dosyalara karşı Python'da yeniden
        koşturulması (grup 2 hatasını bu yakaladı), (b) Dart dosyasının
        ayraç dengesi, (c) her çapanın `grep`le kaynağında teyidi. Dart
        yarısının kanıtı yine CI.
+
+   - ✅ **Parça 128 — kalan dört korumasız çift de kilitlendi (21 Ağustos
+     2026):** Parça 127 on çifti kapatmış, dördünü "sayı çifti değil, yapı/
+     algoritma kopyası" diye dışarıda bırakmıştı. Kullanıcı *"kalan dört
+     korumasız çifti de kilitleyelim"* deyince dördü de kapatıldı — ama
+     **tek bir mekanizmayla değil**, her biri neyin kopyalandığına göre.
+
+     | Çift | Mekanizma |
+     |---|---|
+     | `RankSeal` geometrisi | 15 sabit + darken katsayısı + kompakt eşiği + punto merdiveni + sedillalı harf listesi → `layout_parity_test.dart` |
+     | Özellik ikonları | iki çizimi de KANONİK listeye indirgeyip karşılaştırma → `icon_parity_test.dart` |
+     | `TESLIM_FONT_SIZE` | sayı yok → ALTINDAKİ DEĞİŞMEZ kaynakta doğrulanıyor |
+     | `decideInitialMainView` | 112 vakalık TÜKETİCİ golden + CI'da tazelik kontrolü |
+
+     - **ÖLÇÜLEN GERÇEK SAPMA — port noktaları webden küçüktü.** Web
+       `<circle r="0.6" fill stroke-width="1.6">` ile çiziyor, yani BOYANAN
+       yarıçap `0.6 + 1.6/2 = 1.4`; port dolu daireyi `0.9` ile çiziyordu.
+       13px'lik ikonda 1.52 px'e karşı 0.98 px — üç noktada birden (robot'un
+       iki gözü + wifi-off'un noktası). **Tahminle değil ölçülerek doğrulandı:**
+       web SVG'si Chromium'da 40× büyütülüp boyanan piksel aralığı tarandı →
+       1.400. Port düzeltildi; test daha yazılırken işini gördü.
+     - **İkon karşılaştırması SAYI SAYMIYOR, DİLİ ÇEVİRİYOR.** Web göreli SVG
+       komutları (`v`, `l`, `c`, `s`, `a`) kullanıyor, port mutlak
+       `lineTo/cubicTo/arcToPoint`. İkisi de `stroke|fill` + `L/C/A/rect/circle`
+       + mutlak koordinat listesine indirgeniyor; böylece "tek path içinde iki
+       alt yol" ile "iki ayrı `drawLine`" eşleşiyor. Sıra KORUNUYOR (çizim
+       sırası tahtadaki dolu karenin ızgara çizgilerinin üstünde kalmasını
+       belirliyor).
+     - **`TESLIM_FONT_SIZE` için sayı karşılaştırmak YANLIŞ eşdeğerlik
+       iddiası olurdu** — web akıcı bir clamp, port `FittedBox`. Ortak olan
+       şey DEĞİŞMEZ: teslim kutusu diğerleriyle aynı boyda kalmalı. Web bunu
+       `lineHeight: SCORE_FONT_SIZE`, port `SizedBox(height: scoreFontSize)`
+       ile sağlıyor; test ikisini de KAYNAKTA doğruluyor. Biri sabit bir
+       sayıya çevrilirse kutular ayrışır ve test düşer.
+     - **`decideInitialMainView`de karşılaştırılacak sayı YOK, DAVRANIŞ var** —
+       aynı sonucu veren iki farklı yazım geçerlidir, aynı yazımı veren iki
+       farklı sonuç olamaz. Bu yüzden golden vector deseni: web'in ÜRETİM
+       fonksiyonu tüm girdi uzayında koşturuluyor. **Tüketici, örneklem
+       DEĞİL** — (1+27)×(1+3) = 112 vaka; örneklemede bir dal sessizce
+       sınanmadan kalabilirdi. Üretici üç sonucun da (`live`/`local`/`null`)
+       temsil edildiğini ayrıca kontrol ediyor.
+     - **⚠ GOLDEN BAYATLAMA DELİĞİ AÇIKÇA KAPATILDI:** golden üretilmiş bir
+       dosya, yani TS kuralı değişip golden yeniden üretilmezse Dart testi
+       ESKİ tabloya karşı GEÇER. `web-ci.yml` artık üreticiyi koşup
+       `git diff --exit-code` ile tazeliği zorluyor; golden değişince de
+       `mobile/**` dosyası değiştiğinden `mobile-build.yml` tetikleniyor ve
+       Dart testi koşuyor. Zincir böyle kapanıyor. **Negatif eş ölçüldü:**
+       kuralda tek bir `> 0` → `> 1` değişikliği tazelik adımını GERÇEKTEN
+       düşürüyor. (İlk denemede adım "sessiz" kaldı — golden o an git'te
+       TAKİPSİZDİ ve `git diff` takipsiz dosyayı görmez; `git add` sonrası
+       doğru sonuç alındı.)
+     - **Ortak yardımcılar `test/support/web_source.dart`e çıkarıldı**
+       (`readRepoFile`/`pick`/`pickAll`) — üç parite testi paylaşıyor. Daha
+       eski üç parite testi (`help_text`/`legal_text`/`rank_tiers`) kendi
+       okuyucularını taşımaya devam ediyor; onlara dokunulmadı.
+     - **⚠ CI İKİ GERÇEK HATA BULDU — ve ikisi de AYNI kök sebepten:
+       prototipleme MANTIĞI doğrular, DİLİ değil.** Ayrıştırıcılar önce
+       Python'da yazılıp Dart'a çevrildi; iki kez Python'ın semantiği
+       kopyalandı:
+       1. **`Match.end()` ↔ `Match.end`** — Python'da metot, Dart'ta GETTER.
+          `dart analyze` iki hatayla düştü (artı iki gereksiz `!` uyarısı —
+          `flutter analyze` uyarıyı da hata sayıyor).
+       2. **`\w` ASCII ↔ Unicode** — Python'ın `\w`si Unicode farkında ve
+          `ÇŞ`yi eşliyor; Dart'ınki (V8 gibi) yalnızca ASCII eşliyor. Yani
+          `kSealDescenderChars = '(\w+)'` prototipte ÇALIŞTI, Dart'ta HİÇ
+          eşleşmedi ve RankSeal testi düştü. Türkçe harf içerebilecek bir
+          yeri yakalarken `\w` KULLANMA — `[^']+` gibi açık bir sınıf yaz.
+       **KALICI DERS: Dart regex'ini PYTHON'DA DEĞİL NODE'DA (V8) prototiple.**
+       Dart'ın `RegExp`i irregexp tabanlı, yani V8 ile aynı aile; Python'ın
+       `re`si başka bir ailedir. Bu tur ikinci düzeltmede node'a geçildi ve
+       15 sabit + darken + eşik + merdiven + sedilla + TESLİM kontrollerinin
+       hepsi orada doğrulandı; negatif eş de node'da ölçüldü (`\w`ye geri
+       dönünce iki kontrol GERÇEKTEN düşüyor). Ayrıca getter/metot
+       karışıklığı (`isEmpty/length/keys/values/entries/first/last`) ve
+       kalan tüm `\w` kullanımları mekanik olarak tarandı — geri kalanların
+       hepsi ASCII tanımlayıcı yakalıyor, güvenli.
+     - **Flutter SDK bu ortamda YOK** — dört doğrulama yolu: (a) her
+       ayrıştırıcı önce Python'da gerçek dosyalara karşı koşturuldu (ikon
+       karşılaştırmasında İKİ parser hatamı bu yakaladı: `final ad = Path()…`
+       değişkenine alınmış yolu görmüyordum ve `drawRRect(…, fill)`ın
+       sondaki virgülü yüzünden dolgu/kenarlık ayrımını kaçırıyordum);
+       (b) Dart dosyalarının ayraç dengesi, string/yorum/interpolasyon
+       farkında bir tarayıcıyla — **tarayıcı önce CI'da ZATEN YEŞİL olan
+       dosyaları "dengesiz" gösterdi, yani araç kontrol grubuyla
+       doğrulanmadan kullanılmadı**; (c) `npm run lint`; (d) golden
+       üreticisinin gerçekten koşması. Dart yarısının kanıtı yine CI.
 
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 

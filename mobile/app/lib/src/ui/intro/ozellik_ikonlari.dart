@@ -124,6 +124,17 @@ class OzellikIkon extends StatelessWidget {
   }
 }
 
+/// Web'de nokta `<circle r="0.6" fill stroke-width="1.6">` ile çiziliyor, yani
+/// BOYANAN yarıçap `0.6 + 1.6/2 = 1.4`. Burada tek bir dolu daire çizildiğinden
+/// o değeri doğrudan yazmak gerekiyor.
+///
+/// ⚠ 21 Ağustos 2026'ya kadar burada `0.9` yazıyordu ve noktalar webden
+/// belirgin küçüktü (13px ikonda 0.98 px çap ↔ web 1.52 px). Sapma
+/// ÖLÇÜLEREK bulundu: web SVG'si Chromium'da 40× büyütülüp boyanan piksel
+/// aralığı tarandı → yarıçap 1.400. `icon_parity_test.dart` artık bunu
+/// zorluyor.
+const double _kNoktaR = 1.4;
+
 /* ── Çizimler — web SVG'lerinin birebir karşılığı ────────────────────────── */
 
 void _robot(Canvas canvas, Paint stroke, Paint fill) {
@@ -133,8 +144,8 @@ void _robot(Canvas canvas, Paint stroke, Paint fill) {
         const Rect.fromLTWH(3.5, 6, 17, 13), const Radius.circular(3.5)),
     stroke,
   );
-  canvas.drawCircle(const Offset(9, 12.5), 0.9, fill);
-  canvas.drawCircle(const Offset(15, 12.5), 0.9, fill);
+  canvas.drawCircle(const Offset(9, 12.5), _kNoktaR, fill);
+  canvas.drawCircle(const Offset(15, 12.5), _kNoktaR, fill);
 }
 
 void _ikiKisi(Canvas canvas, Paint stroke, Paint fill) {
@@ -193,7 +204,7 @@ void _cevrimdisi(Canvas canvas, Paint stroke, Paint fill) {
           radius: const Radius.circular(6.5), clockwise: true),
     stroke,
   );
-  canvas.drawCircle(const Offset(12, 19.5), 0.9, fill);
+  canvas.drawCircle(const Offset(12, 19.5), _kNoktaR, fill);
   canvas.drawLine(const Offset(3.5, 3.5), const Offset(20.5, 20.5), stroke);
 }
 
