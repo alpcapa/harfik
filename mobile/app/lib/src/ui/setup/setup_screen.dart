@@ -117,6 +117,11 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   /// kabul ettiği bir ödün.
   int _liveActionCount = 0;
 
+  /// Giriş varsayılanı kararının HAM girdisi (rozetten ayrı): karar bir de
+  /// `_cloudSaves`in bilinmesini bekliyor, ama rozet ilk sayı gelir gelmez
+  /// güncellenmeli. `_lastUserId` değişince sıfırlanır.
+  PendingLiveGameCounts? _liveCounts;
+
   /// "Yapay Zeka ile (N)" rozeti — web `Setup.tsx`'teki `localSaveCount` ile
   /// BİREBİR aynı formül: girişli kullanıcıda devam eden bulut kaydı sayısı,
   /// misafirde tek slot olduğundan 0 ya da 1. Bu, "Devam Edenler" alt
@@ -304,15 +309,32 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     }
     final counts = await repo.pendingCounts();
     if (!mounted || widget.services.auth.user?.id != user.id) return;
-    final applyDefault = !_appliedLoginDefault &&
-        (counts.inviteCount > 0 || counts.myTurnCount > 0);
-    _appliedLoginDefault = true;
+    // `null` = sayılar bilinmiyor (ağ): son bilinen rozet KORUNUR ve tek
+    // seferlik giriş kararı TÜKETİLMEZ — bir sonraki başarılı tazeleme
+    // (foreground/Realtime) hâlâ uygulayabilsin (21 Ağustos 2026).
+    if (counts == null) return;
     setState(() {
+      _liveCounts = counts;
       _liveActionCount = counts.inviteCount + counts.myTurnCount;
-      if (applyDefault) {
-        _liveView = true;
-        _localSubTab = _LocalSubTab.active;
-      }
+    });
+    _applyInitialTab();
+  }
+
+  /// Tek seferlik giriş varsayılanı. İKİ yerden çağrılıyor — sayılar
+  /// geldiğinde ve `_cloudSaves` geldiğinde — çünkü hangisinin önce
+  /// döneceği belli değil ve karar İKİSİNİ birden gerektiriyor. Sonradan
+  /// gelen taraf kararı tetiklemezse, ilk turda ertelenen karar bir daha
+  /// hiç uygulanmazdı (yalnızca foreground/Realtime tazelemesini
+  /// bekleyerek).
+  void _applyInitialTab() {
+    if (_appliedLoginDefault || !mounted) return;
+    final hedef = decideInitialMainView(_liveCounts, _cloudSaves);
+    if (hedef == null) return; // veri eksik — karar TÜKETİLMEZ
+    _appliedLoginDefault = true;
+    if (hedef != InitialMainView.live) return;
+    setState(() {
+      _liveView = true;
+      _localSubTab = _LocalSubTab.active;
     });
   }
 
@@ -471,6 +493,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
       if (mounted) {
         setState(() {
           _cloudSaves = null;
+          _liveCounts = null;
           _creatingLocal = false;
           _liveActionCount = 0;
         });
@@ -580,6 +603,9 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
       _cloudSaves = list?.saves;
       _diagPendingMirrors = pending;
     });
+    // YZ listesi artık biliniyor — sayılar önce geldiyse ertelenen karar
+    // burada uygulanır.
+    _applyInitialTab();
   }
 
   /// Normal biten oyunun `games` kaydı + anonim bitiş telemetrisi

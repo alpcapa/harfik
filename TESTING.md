@@ -1381,3 +1381,19 @@ adresi DOĞRULANDIĞINDA** gönderilir — bu ayrım testin tamamını belirliyo
       skor kutuları kırpılmıyor (dar telefonda da).
 - [ ] **Canlı oyunda da var:** Aynı etiket Canlı oyun ekranında da
       görünüyor ve oradan Canlı listesine döndürüyor.
+
+## 17. Giriş varsayılanı — hangi sekme açılıyor (21 Ağustos 2026)
+
+- [ ] **YZ boş + Canlı oyun var:** Devam eden YZ oyunu OLMAYAN, ama devam
+      eden Canlı oyunu OLAN bir hesapla gir → "Arkadaşınla" açık gelmeli,
+      sıra kendisinde olmasa bile.
+- [ ] **YZ oyunu varsa kaçırılmaz:** Devam eden bir YZ oyunu VARKEN ve
+      Canlı'da bekleyen iş YOKKEN gir → "Yapay Zeka ile" açık gelmeli.
+- [ ] **Bekleyen iş her şeyin önünde:** Sırası kendisinde bir Canlı oyun ya
+      da bekleyen davet varsa, YZ oyunu olsa bile "Arkadaşınla" açılmalı.
+- [ ] **Elle seçim ezilmiyor:** Açılıştan sonra elle "Yapay Zeka ile"ye geç,
+      birkaç dakika bekle (Realtime/öne dönüş tazelemeleri) → sekme
+      kendiliğinden Canlı'ya ATLAMAMALI.
+- [ ] **Ağ kesintisi kararı yakmıyor:** Uçak modunda aç, sonra bağlantıyı
+      geri ver → doğru sekme yine de açılmalı (karar düşen istekte
+      tüketilmez).

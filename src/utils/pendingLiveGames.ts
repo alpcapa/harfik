@@ -10,6 +10,14 @@ export interface PendingLiveGameCounts {
   inviteCount: number;
   /** `status==='active'` olan oyunlardan sırası çağıranda olanların sayısı. */
   myTurnCount: number;
+  /**
+   * `status==='active'` olan TÜM Canlı oyunlar — sırası kimde olursa olsun.
+   *
+   * Rozette KULLANILMAZ (rozet "bekleyen iş" sayar, bkz. `CountBadge`); tek
+   * tüketicisi `Setup.tsx`'in giriş varsayılanı: YZ tarafında hiç oyun yokken
+   * kullanıcıyı boş bir sekmeyle karşılamamak için.
+   */
+  activeCount: number;
 }
 
 /**
@@ -36,7 +44,7 @@ export async function fetchPendingLiveGameCounts(): Promise<PendingLiveGameCount
   ).length;
   const activeIds = rows.filter((g) => g.status === 'active').map((g) => g.id);
   if (activeIds.length === 0) {
-    return { inviteCount, myTurnCount: 0 };
+    return { inviteCount, myTurnCount: 0, activeCount: 0 };
   }
   const turns = await fetchOnlineGameTurns(activeIds);
   // Sıra bilinmiyorsa sayı da bilinmiyor. `inviteCount`'u tek başına dönmek
@@ -48,5 +56,32 @@ export async function fetchPendingLiveGameCounts(): Promise<PendingLiveGameCount
     const idx = g.slots.findIndex((s) => s.type === 'human' && s.relation === 'self');
     return turns[g.id] === idx;
   }).length;
-  return { inviteCount, myTurnCount };
+  return { inviteCount, myTurnCount, activeCount: activeIds.length };
+}
+
+/**
+ * Girişte HANGİ sekmeyle karşılanacağı — `Setup.tsx`'in tek seferlik giriş
+ * varsayılanı. Saf tutuluyor çünkü bu kararın kırılma biçimi bu kod
+ * tabanında iki kez yaşandı (tek seferlik kararın BAYAT/EKSİK veriyle
+ * tüketilmesi) ve React effect'i içinde sınanamıyordu.
+ *
+ * @param counts     Canlı sayıları; `null` = henüz bilinmiyor.
+ * @param cloudSaves Girişli kullanıcının devam eden YZ oyunları; `null` =
+ *                   henüz çekilmedi.
+ * @returns `'live'` / `'local'` (karar verildi) ya da **`null` = HENÜZ
+ *   KARAR VERME**. Üçüncü durum şart: eksik veriyle `'local'` dönmek,
+ *   kararı yakıp kullanıcıyı kalıcı olarak yanlış sekmede bırakırdı.
+ */
+export function decideInitialMainView(
+  counts: PendingLiveGameCounts | null,
+  cloudSaves: { length: number } | null,
+): 'live' | 'local' | null {
+  if (counts === null || cloudSaves === null) return null;
+  // (1) Canlı'da bekleyen iş varsa her hâlükârda oraya.
+  if (counts.inviteCount > 0 || counts.myTurnCount > 0) return 'live';
+  // (2) YZ tarafı BOŞ ve Canlı'da devam eden oyun VARSA yine oraya —
+  //     sırası kendisinde olmasa bile. Boş bir sekmeyle karşılamaktansa
+  //     oyunların olduğu sekme açılır (21 Ağustos 2026, kullanıcı isteği).
+  if (cloudSaves.length === 0 && counts.activeCount > 0) return 'live';
+  return 'local';
 }
