@@ -48,6 +48,7 @@ npm run generate-icons       # favicon / app icon (public/) — og-image DEĞİL
 npm run generate-og-image    # public/og-image.png (sosyal paylaşım kartı)
 npm run generate-golden-vectors  # Flutter portu parite fixture'ları (motor değişince ZORUNLU)
 npm run generate-meanings-db     # meanings.json → portun SQLite asset'i
+npm run generate-initial-main-view-golden # giriş sekmesi kuralı: web→port davranış golden'ı
 npm run generate-demo-board-dart # karşılama tahtası → portun tanıtım ekranı için demo_board_data.dart
 ```
 

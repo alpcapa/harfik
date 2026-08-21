@@ -1,0 +1,996 @@
+{
+  "cases": [
+    {
+      "counts": null,
+      "saves": null,
+      "expected": null
+    },
+    {
+      "counts": null,
+      "saves": 0,
+      "expected": null
+    },
+    {
+      "counts": null,
+      "saves": 1,
+      "expected": null
+    },
+    {
+      "counts": null,
+      "saves": 2,
+      "expected": null
+    },
+    {
+      "counts": [
+        0,
+        0,
+        0
+      ],
+      "saves": null,
+      "expected": null
+    },
+    {
+      "counts": [
+        0,
+        0,
+        0
+      ],
+      "saves": 0,
+      "expected": "local"
+    },
+    {
+      "counts": [
+        0,
+        0,
+        0
+      ],
+      "saves": 1,
+      "expected": "local"
+    },
+    {
+      "counts": [
+        0,
+        0,
+        0
+      ],
+      "saves": 2,
+      "expected": "local"
+    },
+    {
+      "counts": [
+        0,
+        0,
+        1
+      ],
+      "saves": null,
+      "expected": null
+    },
+    {
+      "counts": [
+        0,
+        0,
+        1
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        0,
+        1
+      ],
+      "saves": 1,
+      "expected": "local"
+    },
+    {
+      "counts": [
+        0,
+        0,
+        1
+      ],
+      "saves": 2,
+      "expected": "local"
+    },
+    {
+      "counts": [
+        0,
+        0,
+        2
+      ],
+      "saves": null,
+      "expected": null
+    },
+    {
+      "counts": [
+        0,
+        0,
+        2
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        0,
+        2
+      ],
+      "saves": 1,
+      "expected": "local"
+    },
+    {
+      "counts": [
+        0,
+        0,
+        2
+      ],
+      "saves": 2,
+      "expected": "local"
+    },
+    {
+      "counts": [
+        0,
+        1,
+        0
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        1,
+        0
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        1,
+        0
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        1,
+        0
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        1,
+        1
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        1,
+        1
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        1,
+        1
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        1,
+        1
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        1,
+        2
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        1,
+        2
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        1,
+        2
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        1,
+        2
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        2,
+        0
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        2,
+        0
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        2,
+        0
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        2,
+        0
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        2,
+        1
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        2,
+        1
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        2,
+        1
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        2,
+        1
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        2,
+        2
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        2,
+        2
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        2,
+        2
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        0,
+        2,
+        2
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        0,
+        0
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        0,
+        0
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        0,
+        0
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        0,
+        0
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        0,
+        1
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        0,
+        1
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        0,
+        1
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        0,
+        1
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        0,
+        2
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        0,
+        2
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        0,
+        2
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        0,
+        2
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        1,
+        0
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        1,
+        0
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        1,
+        0
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        1,
+        0
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        1,
+        1
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        1,
+        1
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        1,
+        1
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        1,
+        1
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        1,
+        2
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        1,
+        2
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        1,
+        2
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        1,
+        2
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        2,
+        0
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        2,
+        0
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        2,
+        0
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        2,
+        0
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        2,
+        1
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        2,
+        1
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        2,
+        1
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        2,
+        1
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        2,
+        2
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        2,
+        2
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        2,
+        2
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        1,
+        2,
+        2
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        0,
+        0
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        0,
+        0
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        0,
+        0
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        0,
+        0
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        0,
+        1
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        0,
+        1
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        0,
+        1
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        0,
+        1
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        0,
+        2
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        0,
+        2
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        0,
+        2
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        0,
+        2
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        1,
+        0
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        1,
+        0
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        1,
+        0
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        1,
+        0
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        1,
+        1
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        1,
+        1
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        1,
+        1
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        1,
+        1
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        1,
+        2
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        1,
+        2
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        1,
+        2
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        1,
+        2
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        2,
+        0
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        2,
+        0
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        2,
+        0
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        2,
+        0
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        2,
+        1
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        2,
+        1
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        2,
+        1
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        2,
+        1
+      ],
+      "saves": 2,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        2,
+        2
+      ],
+      "saves": null,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        2,
+        2
+      ],
+      "saves": 0,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        2,
+        2
+      ],
+      "saves": 1,
+      "expected": "live"
+    },
+    {
+      "counts": [
+        2,
+        2,
+        2
+      ],
+      "saves": 2,
+      "expected": "live"
+    }
+  ]
+}

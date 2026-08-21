@@ -89,6 +89,22 @@ jobs:
       # sunucusunda Supabase yapılandırılmadığından tarayıcıda ulaşılamıyor.
       - run: npm run verify-live-games-load
 
+      # Girişte hangi sekmenin açılacağı kuralı web'de TS, portta Dart —
+      # iki elle senkron kopya. Dart tarafı bir golden tabloya karşı
+      # sınanıyor (`mobile/app/test/initial_main_view_parity_test.dart`).
+      # Golden ÜRETİLMİŞ bir dosya, yani TS kuralı değişip golden yeniden
+      # üretilmezse Dart testi ESKİ tabloya karşı geçerdi. Bu adım o deliği
+      # kapatıyor: üreticiyi koşup dosyanın tazeliğini zorluyor.
+      - run: npm run generate-initial-main-view-golden
+      - name: Golden tazeliği (initial_main_view)
+        run: |
+          if ! git diff --quiet -- mobile/app/test/goldens/initial_main_view.json; then
+            echo "::error::decideInitialMainView kuralı değişmiş ama golden yeniden üretilmemiş."
+            echo "Düzeltme: npm run generate-initial-main-view-golden && git add mobile/app/test/goldens"
+            git diff -- mobile/app/test/goldens/initial_main_view.json
+            exit 1
+          fi
+
       - run: npm run build
 
       # Bu ortamdaki geliştirme oturumunun aksine (bkz. playwright.config.ts),
