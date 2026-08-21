@@ -6177,6 +6177,13 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        belli değil ve karar İKİSİNİ birden gerektiriyor — yalnızca birinden
        tetiklenseydi, ilk turda ertelenen karar bir daha hiç uygulanmaz,
        yalnızca foreground/Realtime tazelemesini beklerdi.
+     - **⚠ İLK SÜRÜM CI'DA DÜŞTÜ (iki MEVCUT `setup_screen_test` testi):**
+       kararı hem sayılara hem YZ listesine bağlamıştım, oysa kural (1)
+       (bekleyen iş) YZ listesine hiç ihtiyaç duymuyor — YZ listesi
+       yüklenmeyen bir hesapta kullanıcı bekleyen işine rağmen YZ
+       sekmesinde kalıyordu. Yalnızca YENİ kural eksik veriye duyarlı.
+       **Mevcut testlerin bunu yakalaması, testlerin gerçekten davranışa
+       bağlı olduğunun kanıtı.**
      - **`decideInitialMainView` + `InitialMainView` ELLE SENKRON** web'in
        `pendingLiveGames.ts`'iyle; `PendingLiveGameCounts` üçüncü alan aldı
        (`activeCount`). Biri değişirse öteki de değişmeli, bunu zorlayan bir

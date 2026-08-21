@@ -359,6 +359,10 @@ void main() {
       // karar yanıp kullanıcı kalıcı olarak yanlış sekmede kalırdı.
       expect(decideInitialMainView(null, const []), isNull);
       expect(decideInitialMainView(say(0, 0, 6), null), isNull);
+      // ⚠ Ama kural (1) YZ listesini BEKLEMEZ — beklemek gerçek bir
+      // regresyon üretti (setup_screen_test'teki iki test yakaladı).
+      expect(decideInitialMainView(say(0, 1, 3), null), InitialMainView.live);
+      expect(decideInitialMainView(say(2, 0, 0), null), InitialMainView.live);
     });
   });
 

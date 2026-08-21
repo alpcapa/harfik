@@ -76,12 +76,19 @@ export function decideInitialMainView(
   counts: PendingLiveGameCounts | null,
   cloudSaves: { length: number } | null,
 ): 'live' | 'local' | null {
-  if (counts === null || cloudSaves === null) return null;
-  // (1) Canlı'da bekleyen iş varsa her hâlükârda oraya.
+  if (counts === null) return null;
+  // (1) Canlı'da bekleyen iş varsa her hâlükârda oraya. ⚠ Bu kural
+  //     `cloudSaves`e HİÇ BAKMAZ ve bakmamalı: 21 Ağustos 2026'da ikisini
+  //     birden beklemek gerçek bir REGRESYON üretti — YZ listesi hiç
+  //     yüklenmeyen bir hesapta (ör. o çekim düşerse) kural (1) de sonsuza
+  //     dek ertelenip kullanıcı bekleyen işine rağmen YZ sekmesinde
+  //     kalıyordu. CI iki mevcut testle yakaladı.
   if (counts.inviteCount > 0 || counts.myTurnCount > 0) return 'live';
   // (2) YZ tarafı BOŞ ve Canlı'da devam eden oyun VARSA yine oraya —
   //     sırası kendisinde olmasa bile. Boş bir sekmeyle karşılamaktansa
   //     oyunların olduğu sekme açılır (21 Ağustos 2026, kullanıcı isteği).
+  //     YALNIZCA bu kural YZ listesini bilmeyi gerektiriyor.
+  if (cloudSaves === null) return null;
   if (cloudSaves.length === 0 && counts.activeCount > 0) return 'live';
   return 'local';
 }

@@ -714,11 +714,15 @@ InitialMainView? decideInitialMainView(
   PendingLiveGameCounts? counts,
   List<Object?>? cloudSaves,
 ) {
-  if (counts == null || cloudSaves == null) return null;
-  // (1) Canlı'da bekleyen iş varsa her hâlükârda oraya.
+  if (counts == null) return null;
+  // (1) Canlı'da bekleyen iş varsa her hâlükârda oraya. ⚠ Bu kural
+  //     `cloudSaves`e HİÇ BAKMAZ ve bakmamalı — ikisini birden beklemek
+  //     gerçek bir regresyon üretiyor (bkz. web dosyasındaki not).
   if (counts.inviteCount > 0 || counts.myTurnCount > 0) {
     return InitialMainView.live;
   }
+  // YALNIZCA (2) YZ listesini bilmeyi gerektiriyor.
+  if (cloudSaves == null) return null;
   // (2) YZ tarafı BOŞ ve Canlı'da devam eden oyun VARSA yine oraya —
   //     sırası kendisinde olmasa bile (21 Ağustos 2026, kullanıcı isteği:
   //     hesabında 0 YZ oyunu ve 6 aktif Canlı oyun varken uygulama her

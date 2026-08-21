@@ -174,6 +174,18 @@ async function main() {
     'karar: Canlı sayıları bilinmiyorsa null (karar ertelenir)',
     decideInitialMainView(null, []) === null,
   );
+  // ⚠ Kural (1) YZ listesini BEKLEMEZ. Beklemek gerçek bir regresyon
+  // üretti (21 Ağustos 2026, CI iki mevcut port testiyle yakaladı): YZ
+  // listesi hiç yüklenmeyen bir hesapta kullanıcı bekleyen işine rağmen
+  // YZ sekmesinde kalıyordu.
+  check(
+    'karar: bekleyen iş varsa YZ listesi BİLİNMESE de live',
+    decideInitialMainView(say(0, 1, 3), null) === 'live',
+  );
+  check(
+    'karar: bekleyen davet varsa YZ listesi BİLİNMESE de live',
+    decideInitialMainView(say(2, 0, 0), null) === 'live',
+  );
   check(
     'karar: YZ listesi henüz çekilmediyse null (karar ertelenir)',
     decideInitialMainView(say(0, 0, 6), null) === null,
