@@ -6134,19 +6134,22 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        birleşim YOK: kutusunun DIŞINA taşan bir çocuk dokunuş ALMAZ
        (`RenderBox.hitTest` önce `size.contains`e bakıyor), oysa etiketin de
        tıklanabilir olması kullanıcının açık şartıydı.
-     - **Çözüm `Stack`:** Stack etiketi de kapsayacak kadar yüksek (görünmez
-       bir taban `SizedBox` ile), Row ise Stack'in KONUMLANMAMIŞ çocuğu
-       olarak kendi doğal yüksekliğini ve iç hizasını AYNEN koruyor.
-       **⚠ Row'a `Positioned(height: logoHeight)` VERİLMEDİ ve bu bilinçli:**
-       `AccountButton`ın avatarı 32px, logo 465px'in altında daha kısa
-       (390px'te 29.33) — kilitlenseydi taşardı. Testte bu negatif eşle
-       korunuyor.
-     - **ÖLÇÜLEN İKİ SAPMA (webde YOK, ikisi de kabul edildi):** (1) header
-       alt dolgusu 10 → 0'a indirildikten sonra kalan ~4px büyüme; (2)
-       girişli hesapta avatar logodan uzun olduğunda logo Row içinde
-       ortalanıp aşağı kayıyor ve boşluk 3 → ~1.7'ye düşüyor (webde etiket
-       butonun `top-full`ü olduğundan bu olmuyor). Çakışma hiçbir genişlikte
-       yok — test bunu ölçüyor.
+     - **Çözüm — etiket LOGONUN KENDİ kutusuna çapalı** (logo `Stack` +
+       `Clip.none`), header'ın dış kutusuna DEĞİL. Böylece Row ne kadar uzun
+       olursa olsun etiket her zaman logonun tam altında; header ve tahta
+       bir piksel oynamıyor (webdeki 0px sapmanın aynısı).
+     - **⚠ İLK DENEME CI'DA DÜŞTÜ ve gerçek bir hata buldu:** etiket
+       header'ın dış Stack'ine konup konumu STACK'İN ÜSTÜNDEN
+       hesaplanmıştı. Ama Row logodan belirgin biçimde uzun (CI'da 360px'te
+       **48px** — GİRİŞ/avatar ve skor kutusu satır yükseklikleri logodan
+       büyük) ve logo o Row içinde ORTALANDIĞINDAN aşağı kayıyor; sabit
+       konumdaki etiket logonun ÜSTÜNE BİNİYORDU. Bu ortamda Flutter SDK
+       olmadığından ancak CI gösterebildi.
+     - **⚠ BİLİNÇLİ SAPMA — etiket portta TIKLANABİLİR DEĞİL:** kutusunun
+       dışına taşan çocuk dokunuş almıyor ve bunu aşmanın tek yolu Row'un
+       yüksekliğini/hizasını bozmaktan geçiyordu. Kaçış yolu webdeki gibi
+       zaten LOGO; etiket onu GÖSTEREN bir ipucu. Webde tek bir `<button>`
+       ikisini birden kapsıyor.
      - **Sabitler ELLE SENKRON:** `kBackFontSize` (11) ve `kBackGap` (3) ↔
        web `BACK_FONT_SIZE`/`BACK_GAP`; renk `kText` ↔ `text-text`. Biri
        değişirse öteki de değişmeli, bunu zorlayan bir test YOK.

@@ -1796,7 +1796,9 @@ kayıtların panelde görünmesi ikincil.
 
 - [ ] **Görünür:** Oyun ekranında logonun hemen altında ince, koyu bir
       "← Geri" yazıyor ve tahtanın sol kenarıyla hizalı duruyor.
-- [ ] **Dokunuş:** Hem etikete hem logoya dokunmak Setup'a döndürüyor.
+- [ ] **Dokunuş:** Logoya dokunmak Setup'a döndürüyor. (Uygulamada etiketin
+      KENDİSİ dokunuş almaz — webden bilinçli sapma, kod yorumunda gerekçesi
+      yazılı; etiket logoyu gösteren bir ipucu.)
 - [ ] **Header bozulmadı:** Skor kutuları logoyla aynı hizada; tahta
       eskisine göre gözle görülür şekilde aşağı kaymadı.
 - [ ] **4 kişilik + girişli hesap:** Avatar/GİRİŞ ile etiket çakışmıyor,
