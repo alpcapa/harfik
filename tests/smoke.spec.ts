@@ -391,7 +391,7 @@ test('Tanıtım tahtası şeridi iki görsel ve iki nokta taşır', async ({ pag
   await expect(page.locator('#karsilama-tahta-noktalar > span').first()).toHaveClass(/bg-border/);
 });
 
-test('FAQPage JSON-LD, ekrandaki altı soruyla birebir eşleşir', async ({ page }) => {
+test('FAQPage JSON-LD, ekrandaki yedi soruyla birebir eşleşir', async ({ page }) => {
   await page.goto('/');
 
   // Metinler `SSS` dizisinden (src/landing/Landing.tsx) TEK KAYNAKTAN
@@ -411,7 +411,7 @@ test('FAQPage JSON-LD, ekrandaki altı soruyla birebir eşleşir', async ({ page
   const ekranSorular = await page.locator('#karsilama summary').allTextContents();
 
   expect(jsonSorular).toEqual(ekranSorular);
-  expect(jsonSorular.length).toBe(6);
+  expect(jsonSorular.length).toBe(7);
 });
 
 test('Sayfada tek bir h1 var, tahta demoları role="img" taşıyor', async ({ page }) => {

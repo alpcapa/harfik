@@ -549,7 +549,7 @@ KULLANMAZ, orada logo tek kez çiziliyor.
 
 **Sayfa bütçesi — güncel ölçüm (18 Ağustos 2026, metin turu + sayfa sonu
 GİRİŞ düğmesinin kaldırılmasından SONRAKİ nihai değer): `dist/index.html`
-ham **254.0 KB** / **gzip 22.26 KB**.** (Bu gzip rakamı 19 Ağustos 2026'da
+ham **254.8 KB** / **gzip 22.29 KB**.** (21 Ağustos 2026'da yedinci SSS maddesi +781/+30 bayt ekledi. Bu gzip rakamı 19 Ağustos 2026'da
 yeniden ölçüldü: en üst rütbenin adı Tanrı→Kozmik olunca ham 8 bayt DÜŞTÜ ama
 gzip 126 bayt ARTTI — iki kelimenin sıkıştırma sözlüğündeki farkı; içerik
 olarak değişen tek şey iki metin.) Aynı gün üç ara ölçüm daha yapıldı,
@@ -700,6 +700,23 @@ bir ekran hiç yok (`mobile/` bu bölümde de hiç değişmedi), yani madde
 uygulamalarda zaten görünemez. Porta bir gün benzer bir tanıtım ekranı
 eklenirse bu madde oraya TAŞINMAMALI.
 
+**SSS yedinci maddeyi aldı — "Kelimeki'nin mobil uygulaması yok mu?"
+(21 Ağustos 2026, kullanıcı isteği):** Mağaza inceleme süreci başlayınca
+ziyaretçinin soracağı ilk soru bu oldu. Metin kullanıcının taslağından
+düzeltilerek girdi: *"Apple ve Android mağaza işlem sürecindeler"* yerine
+mağazaların gerçek adları (**App Store / Google Play**) ve *"inceleme
+sürecinde"* — "işlem süreci" ne olduğunu söylemiyor. Son cümle
+(*"O zamana kadar tarayıcıdan eksiksiz oynayabilirsin"*) BİLİNÇLİ: madde
+tek başına "şu an oynayamazsın" gibi okunabilirdi. Hemen ÜSTÜNDEKİ
+"Uygulama indirmem gerekiyor mu?" maddesiyle çelişmiyor, onu tamamlıyor —
+sıra bu yüzden bilerek yan yana. **Aynı PR'da `tests/smoke.spec.ts`'in
+FAQ testi altı → yedi soruya çekildi** (o test JSON-LD ile ekranı
+karşılaştırdığından sayıyı güncellemeden geçmezdi). **Ölçüldü**
+(derlenmiş `dist`): FAQ JSON-LD `JSON.parse` ile 7 madde, isimler ekrandaki
+yedi `<summary>` ile birebir; `dist/index.html` ham 253.990 → **254.771** /
+gzip 22.260 → **22.290** bayt (+781 / +30). Port etkilenmedi — karşılama
+katmanı web'e özgü (yukarı bkz.).
+
 ## Karşılama Katmanı — Sertleştirme (18 Ağustos 2026)
 
 İçerik/efekt turları bitince (yukarıdaki Bölüm 2/3) bağımsız bir denetim
@@ -798,8 +815,8 @@ burada CI runner'ından hızlı). Yani kapatılan şey gözlenen bir çökme de�
 
 | | değer |
 |---|---|
-| `dist/index.html` ham | **254.0 KB** (bunun ezici çoğunluğu `#karsilama` bloğu) |
-| gzip | **22.26 KB** (19 Ağustos 2026 ölçümü — bkz. yukarıdaki Tanrı→Kozmik notu) |
+| `dist/index.html` ham | **254.8 KB** (bunun ezici çoğunluğu `#karsilama` bloğu) |
+| gzip | **22.29 KB** (21 Ağustos 2026 ölçümü — yedinci SSS maddesi dahil) |
 | Bölüm 2'nin ilk hedefi | `< 15 KB` gzip (yer tutucu içeriğe göre yazılmıştı) |
 | İki tam tahtanın (Bölüm 3'te eklenen) gzip payı | ~6.9 KB |
 
@@ -1642,7 +1659,7 @@ Kullanıcı onaylı tasarım (3 konseptten "Mühür" seçildi; eşikler/ödül t
     --output-file=mobile/app/assets/fonts/MPLUSRounded1c-ExtraBold-subset.ttf
   ```
   **GİZLİ BAĞ — yeni bir kademe HARFİ eklenirse subset yeniden üretilmeli** (`league_rewards_points_check` tavanı gibi, derleyicinin göremeyeceği bir değişmez): bugünkü aralık tüm Türkçe harfleri + ASCII'yi kapsıyor, ama kapsam dışı bir glyph seçilirse rozet web'de yedek fonta düşer, **Flutter'da TOFU (boş kare) çizer** (port otomatik font fallback YAPMAZ — bkz. `_StatusLine`'ın ✓ dersi). `src/fonts/mplus-rounded-seal.css` `main.tsx`ten (boot.tsx'ten DEĞİL) import ediliyor: karşılama katmanında da dokuz rozet çiziliyor. **`public/fonts`a KONMADI/precache EDİLMEDİ** — Nunito emsali (bundle'lanmış, içerik-hash'li, precache'siz); `font-display: swap` ile en kötü ihtimalle bir kare yedek fontla çizilir.
-  **Ölçülen bütçe:** `dist/index.html` ham **253.990** / gzip **22.260** bayt (19 Ağustos 2026, Tanrı→Kozmik sonrası; öncesi 253.998 / 22.134) (font swap öncesi 254.144 / 22.250 — yani sayfa büyümedi; 18 Ağustos 2026'daki metin turu ve sayfa sonu GİRİŞ düğmesinin kaldırılmasıyla ham −98 / gzip −114 bayt daha indi), artı ayrı bir 6.268 baytlık font asset'i.
+  **Ölçülen bütçe:** `dist/index.html` ham **254.771** / gzip **22.290** bayt (21 Ağustos 2026, yedinci SSS maddesi sonrası; 19 Ağustos'ta 253.990 / 22.260 idi; öncesi 253.998 / 22.134) (font swap öncesi 254.144 / 22.250 — yani sayfa büyümedi; 18 Ağustos 2026'daki metin turu ve sayfa sonu GİRİŞ düğmesinin kaldırılmasıyla ham −98 / gzip −114 bayt daha indi), artı ayrı bir 6.268 baytlık font asset'i.
   **Harf MÜREKKEP kutusundan ortalanır, `dominant-baseline="central"` KULLANILMAZ** (12 Ağustos 2026'da eski mühürde öğrenilen ders aynen geçerli: `central` mürekkebi değil FONT metriklerini ortalıyor ve Ç/Ş sedilla yüzünden gözle görülür şekilde alta kaçıyordu). Taban çizgisi `CY + (INK_ASC_EM − varsa DESCENDER_EM)/2 × fontSize`; iki sabit de em cinsinden ÖLÇÜLDÜ (Chromium, gerçek M PLUS Rounded 1c ExtraBold, `canvas.measureText`in `actualBoundingBox*` alanları) — kademe harflerinin mürekkep tepesi .740–.750 → **INK_ASC_EM = .745**, sedillanın (Ç/Ş) taban altına inmesi .220 → **DESCENDER_EM = .22**. Harf başına tablo gerekmedi ve bu fontta aralık çok dar: basılabilen HER glyph için azami merkezleme sapması **0.0075 em** (76px'lik banner mühründe 0.23 px; eski Space Grotesk'te 0.03 em idi). Piksel taramasıyla doğrulandı: tek harflerde en kötü dikey sapma **0.225** viewBox birimi, halkaya en dar pay **+1.277** (Ç)., `RankInfoModal.tsx` (mühre dokununca açılan bilgi popup'ı — RewardBanner'ın kart düzeni/`reward-*` animasyonlarıyla her açılışta yeniden damgalanır ama `seen_at`'e dokunmaz [salt bilgi, tekrar tekrar açılabilir]: kademe adı + güncel puan + "+N eşik ödülü dahil" + sıradaki rütbe hedefi + hedefe İLERLEME ÇUBUĞU (mevcut eşik→sonraki eşik oranı, dolgu rengi SIRADAKİ kademenin rengi, altında eşik/puan/eşik etiketleri ve eşiklerin altında o eşiğin ödül rozeti — hedef etiketi YALNIZCA SAYI ("100"). **12 Ağustos 2026'da kullanıcı isteğiyle sondaki "puan" kelimesi kaldırıldı:** "Sıradaki rütbe: Oyuncu · 100 puan" satırı ZATEN hemen üstte duruyor, alt alta tekrar oluyordu. `RewardBanner`'ın düşüş çubuğu da aynı kurala çekildi — ikisi aynı görsel, birlikte değişmeli. **Rozet renk kuralı (aynı gün ÜÇ sürüm geçirdi — hedefte yeşil "(+N)" → alınmışsa nötr "(0)" → nihai):** YEŞİL + aynı boyda ✓ yalnızca ALINMIŞ ödülde (sol eşik her zaman; hedef eşik yalnızca düşüp yeniden yaklaşan kişide — kişi geri düşse bile yeşil ✓ kalır, ödül geri alınmadığından), henüz alınmamış hedef ödülü GRİ "(+N)". "Alınmış mı" bilgisi ekstra sorgusuz, `rewardAlreadyClaimed`'in (leagueRank.ts) `bonus_points` toplamından prefix çıkarımıyla (ödüller her zaman soldan sağa atlamasız verildiğinden toplam, ödenen eşik kümesini tekil belirler); dolgu `visible` bir rAF sonrası true olduğundan 0'dan gerçek orana width-transition'la akar — en üst kademede çubuk yok, "En yüksek rütbedesin!"). **Kapatma ✕, kocaman "KAPAT" butonu DEĞİL (12 Ağustos 2026, kullanıcı isteği):** sağ üstte, `Modal.tsx`'in kapatma butonuyla birebir aynı stil — projedeki her modalın deseni bu, salt bilgi veren bir popup'ın altına tam genişlikte bir aksiyon butonu koymak yanlıştı. **Aynı gün ikinci karar — kural banner'lara da genişledi (kullanıcı: "bence bu banner'larda kapat, devam vb olmamalı, sadece X"):** `RewardBanner`'ın "DEVAM"ı da kaldırıldı, yerine AYNI ✕ geldi. İlk sürüm "DEVAM" KALIR demişti (gerekçe: o gerçek bir aksiyon, ödülleri görüldü işaretler) — gerekçe teknik olarak doğruydu ama kullanıcı görsel tutarlılığı tercih etti; **işaretleme kaybolmadı, ✕ AYNI `onClose`'a bağlandı** (`mark_league_rewards_seen`'e giden TEK yol, bkz. `LeagueRewardsHost`). Banner'a yeni bir kapatma yolu eklenirse (ör. zemine dokunma) o da `onClose`'tan geçmeli, aksi halde banner her açılışta yeniden çıkar. Escape zaten `useModalA11y` üzerinden aynı callback'e bağlı. **Kart gölgesi `shadow-raised` DEĞİL, `Modal.tsx`'in düz düşen gölgesi (`0 20px 45px rgba(15,23,42,.5)`, aynı gün kullanıcı bildirdi: "üst ve sol tarafındaki beyaz gölge iyi durmuyor"):** `shadow-raised`in sol-üst beyaz parıltısı (`-2 -2 5 rgba(255,255,255,.85)`) nömorfik YÜZEYLER için tasarlandı, karartılmış zeminde (bg-black/40) yüzen bir kartta hale gibi okunuyordu — `RewardBanner`'ın kartı da aynı gün aynı gölgeye çekildi, ikisi aynı kart; `Modal` portal'ı z-[150] olduğundan bu popup z-[200] ile ayrıca portal'lanır — ScoreStatsSection'daki eski "+N dahildir" dipnotu buraya taşınıp oradan kaldırıldı), `RewardBanner.tsx` (damga+konfeti animasyonu — `index.css`'teki `reward-*` keyframe'leri; ActionSheet dersleri uygulandı: ekran ORTASI + karartma + rAF sonrası `visible`; `prefers-reduced-motion` guard'lı), `LeagueRewardsHost.tsx` (görülmemiş satırları çekip TEK birleşik banner gösterir — geçmişe dönük backfill'de bile satır başına ayrı popup yok; "Devam" hepsini işaretler).
 
 ### Rütbe mührü artık İSİMLERİN yanında da (18 Ağustos 2026)
