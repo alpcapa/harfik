@@ -28,6 +28,7 @@ import 'package:kelimeki_core/kelimeki_core.dart'
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'online_api.dart';
+import '../util/offline_notice.dart';
 import '../util/platform.dart';
 import '../util/uuid.dart';
 
@@ -260,7 +261,13 @@ abstract class OnlineGamesGateway {
 
   /// online_games + game_invites + online_game_states değişikliklerini
   /// dinler; dönüş aboneliği kapatır. Debounce ÇAĞIRANIN işi (web kuralı).
-  void Function() subscribe(void Function() onChange);
+  ///
+  /// [onResubscribe] kanal KOPUP yeniden bağlandığında çağrılır — ilk
+  /// bağlanma sayılmaz. Kopuk bir kanal olay YAYINLAMAZ ve kopukken olanları
+  /// sonradan oynatMAZ (web'in 28 Temmuz dersi: kaçırılan olay KALICI
+  /// kayıptır), yani ağ geri geldiğinde listeyi tazeleyecek sinyal budur.
+  void Function() subscribe(void Function() onChange,
+      {void Function()? onResubscribe});
 
   // ── Oynanış (tek oyun) ──────────────────────────────────────────────────
   Future<Map<String, Object?>?> gameState(String gameId);
@@ -357,7 +364,8 @@ class SupabaseOnlineGamesGateway implements OnlineGamesGateway {
   }
 
   @override
-  void Function() subscribe(void Function() onChange) {
+  void Function() subscribe(void Function() onChange,
+      {void Function()? onResubscribe}) {
     // Kanal adı benzersiz: Setup + (ileride) oyun ekranı aynı anda abone
     // olabilir — web'in crypto.randomUUID kanal adı kararıyla aynı gerekçe.
     final channel = client.channel('online-games-${uuidV4()}');
@@ -373,7 +381,17 @@ class SupabaseOnlineGamesGateway implements OnlineGamesGateway {
         callback: (_) => onChange(),
       );
     }
-    channel.subscribe();
+    // İLK `subscribed` normal açılıştır, atlanır; sonrakiler kopup yeniden
+    // bağlanmadır ve aradaki olaylar kayıptır — o yüzden tazeleme sinyali.
+    var ilkBaglanti = true;
+    channel.subscribe((status, _) {
+      if (status != RealtimeSubscribeStatus.subscribed) return;
+      if (ilkBaglanti) {
+        ilkBaglanti = false;
+        return;
+      }
+      onResubscribe?.call();
+    });
     return () => client.removeChannel(channel);
   }
 
@@ -460,18 +478,31 @@ class SupabaseOnlineGamesGateway implements OnlineGamesGateway {
 class OnlineGamesRepo {
   final OnlineGamesGateway gateway;
   final int Function() _nowMs;
+  final Future<void> Function(Duration) _delay;
 
-  OnlineGamesRepo(this.gateway, {int Function()? nowMs})
-      : _nowMs = nowMs ?? (() => DateTime.now().millisecondsSinceEpoch);
+  OnlineGamesRepo(this.gateway,
+      {int Function()? nowMs, Future<void> Function(Duration)? delay})
+      : _nowMs = nowMs ?? (() => DateTime.now().millisecondsSinceEpoch),
+        _delay = delay ?? ((d) => Future<void>.delayed(d));
 
   /// Web `ABANDON_TIMEOUT_MS` — bekleyen davetin 7 günlük iptal penceresi.
   static const Duration inviteExpiry = Duration(days: 7);
+
+  /// Web `RETRY_DELAYS_MS` ile AYNI gecikmeler — düşen bir istek yüzünden
+  /// kullanıcıya "hiç oyunun yok" DENMEMELİ (21 Ağustos 2026 vakası: ağ
+  /// değişiminde yarıda kalan istek boş liste gibi okunuyordu). Kapsam
+  /// BİLEREK dar: yalnızca AĞ hatası tekrarlanır — sunucunun kendi reddi
+  /// (yetki/kural) tekrar denenirse yalnızca gecikme üretir.
+  static const List<Duration> retryDelays = [
+    Duration(milliseconds: 400),
+    Duration(milliseconds: 1200),
+  ];
 
   /// Web `loadGames`: liste + sıra/son-tarih + hafif süpürme (+ gerekirse
   /// ikinci tur). Ağ hatasında null (UI eskiyi korur).
   Future<OnlineGamesSnapshot?> load() async {
     try {
-      var snapshot = await _fetchOnce();
+      var snapshot = await _fetchWithRetry();
 
       final now = _nowMs();
       final expiredInvites = [
@@ -500,12 +531,24 @@ class OnlineGamesRepo {
           gateway.checkInviteExpiry(id).catchError(
               (Object e) => debugPrint('[Kelimeki] invite expiry: $e')),
       ]);
-      snapshot = await _fetchOnce();
+      snapshot = await _fetchWithRetry();
       return snapshot;
     } catch (e) {
       debugPrint('[Kelimeki] Canlı oyun listesi alınamadı: $e');
       return null;
     }
+  }
+
+  Future<OnlineGamesSnapshot> _fetchWithRetry() async {
+    for (final gecikme in retryDelays) {
+      try {
+        return await _fetchOnce();
+      } catch (e) {
+        if (!isNetworkError(e)) rethrow;
+        await _delay(gecikme);
+      }
+    }
+    return _fetchOnce();
   }
 
   Future<OnlineGamesSnapshot> _fetchOnce() async {

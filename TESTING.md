@@ -1341,3 +1341,31 @@ adresi DOĞRULANDIĞINDA** gönderilir — bu ayrım testin tamamını belirliyo
 - [ ] **Bildirimleri kapatan almamalı** (uç durum): Hesap Ayarları'ndan
       "e-posta bildirimleri"ni kapatmış bir hesap yeni bir adresi
       doğrularsa mail gitmemeli.
+
+## 15. Canlı liste — düşen istek (21 Ağustos 2026)
+
+> Gerçek vaka: sırası KENDİSİNDE olan bir oyuncu "Devam eden bir Canlı
+> oyunun yok." gördü. Ölçüt: **kullanıcı hiçbir zaman gerçek olmayan bir
+> şey görmemeli ve iyileşmek için hiçbir şey yapmak zorunda kalmamalı.**
+
+- [ ] **Ağ değişimi listeyi BOZMAMALI:** Canlı sekmesi açıkken WiFi'yi
+      kapat (hücresel devrede kalsın). Liste ekranda KALMALI; "Devam eden
+      bir Canlı oyunun yok." **ASLA** çıkmamalı.
+- [ ] **Kısa kesinti uyarı ÜRETMEZ:** aynı geçiş sırasında "İnternet
+      bağlantısı yok" çıkıp kaybolmamalı (1.5 sn'lik doğrulama penceresi).
+- [ ] **Gerçek çevrimdışı HÂLÂ çıkar:** uçak modunu aç, birkaç saniye
+      bekle → "İnternet bağlantısı yok". Kapat → uyarı kendiliğinden
+      kalkmalı ve liste TAZELENMELİ (elle bir şey yapmadan).
+- [ ] **"Yüklenemedi" ≠ "internet yok":** sunucu erişilemezken (ör. uçak
+      modu değil, bağlantı var ama istek düşüyor) elde hiç liste yoksa
+      *"Oyunların şu an yüklenemedi."* + **Tekrar Dene** çıkmalı — "internet
+      yok" da "hiç oyunun yok" da ÇIKMAMALI.
+- [ ] **Bayat liste notu:** liste bir kez yüklendikten sonra tazeleme
+      düşerse liste EKRANDA KALIR ve üstünde küçük **GÜNCELLENEMEDİ** notu
+      belirir; bağlantı dönünce not kendiliğinden kalkar.
+- [ ] **Kendi kendine iyileşme:** kesinti sırasında ekranı AÇIK bırak,
+      hiçbir şeye dokunma; bağlantı dönünce liste **kendiliğinden** gelmeli
+      (en geç ~30 sn). Sekme değiştirmek/uygulamayı kapatıp açmak GEREKMEZ.
+- [ ] **Girişte doğru sekme:** sırası kendisinde olan bir oyunu varken,
+      açılışta ağ bir an kesilse bile "Arkadaşınla" sekmesi açılmalı (düşen
+      yükleme bu kararı bir daha TÜKETMEMELİ).

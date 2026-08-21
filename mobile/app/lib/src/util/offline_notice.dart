@@ -48,6 +48,24 @@ const kOfflineAiSuggestion =
     'İnternet bağlantısı yok ama sorun değil, yapay zeka ile çevrimdışı da oynayabilirsin.';
 const kOfflineAiCta = 'Hemen oyun aç.';
 
+// ── "Çevrimdışı" DEĞİL, "yükleyemedik" ─────────────────────────────────────
+//
+// Bu üç metin bilerek İNTERNET TEŞHİSİ YAPMIYOR (21 Ağustos 2026, kullanıcı:
+// *"Oraya 'İnternet bağlantısı yok' çıkartmak da doğru değil çünkü başka
+// yerlere girince bunun doğru olmadığını görecekler"*). Çevrimiçiyken tek bir
+// isteğin düşmesi ile gerçekten çevrimdışı olmak AYRI durumlar; ikisini aynı
+// cümleye indirmek bu hatanın kökeniydi. [kOfflineNoConnection] yalnızca
+// bağlantı sinyali GERÇEKTEN çevrimdışı derken kalır.
+
+/// Elde hiç liste yokken yükleme düştü — tek çıkış yolu yeniden denemek.
+const kLoadFailedNotice = 'Oyunların şu an yüklenemedi.';
+
+/// Liste ekranda duruyor ama tazelenemedi — veri bayat, ama YANLIŞ değil.
+const kStaleDataNotice = 'Güncellenemedi';
+
+/// İki durumun da eylem düğmesi (oyun ekranındaki panelle aynı sözcük).
+const kRetryLabel = 'Tekrar Dene';
+
 /// Hata "sunucuya hiç ulaşamadık" mı, yoksa sunucunun kendi reddi mi?
 ///
 /// Ayrım şart: `submit_move`'un iş kuralı hataları ("Sıra sende değil.",

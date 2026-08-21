@@ -25,6 +25,7 @@ npm run generate-meanings-db     # Flutter portu için meanings.json → SQLite 
 npm run generate-demo-board-dart # Karşılama tahtası → portun intro ekranı için demo_board_data.dart
 npm run verify-cloud-save-mirror # Bulut kaydı offline karar mantığı (saf fonksiyon kontrolleri)
 npm run verify-fetch-my-games    # Oyun geçmişi: ağ hatası ↔ boş liste ayrımı (sahte Supabase ucu)
+npm run verify-live-games-load    # Canlı oyun listesi: düşen istek sessizce tekrarlanır (boş liste sanılmaz)
 npm run verify-demo-board        # Karşılama katmanındaki tanıtım tahtası sözlüğe karşı doğrulanır
 npm run verify-remaining-tiles   # "Kalan Taşlar" dökümü ↔ oyun sonu raf düşümü değişmezi
 npm run verify-error-reporting   # istemci hata telemetrisi: ne kaydedilir/kaydedilmez, tekrar bastırma, hız sınırı
@@ -2051,6 +2052,90 @@ Kullanıcı isteği: hem Canlı oyunlarda sırası gelen oyuncuya (48 saatlik `t
   **Bulunan hata (4 Ağustos 2026) — "ayrı bir istisna kodu gerekmedi" varsayımı BAŞTAN BERİ YANLIŞTI:** Bu madde, `game_invites`'a dokunmamanın güvenli olduğunu şu gerekçeyle savunuyordu: "`list_my_online_games`'in tüm mevcut filtrelerinde (`active`/`pending` kontrolleri) `abandoned` hiçbirine düşmez, oyun listeden doğal olarak kaybolur". Bu cümle yazıldığı gün de doğru değildi — `LiveGamesTab.tsx`'teki DÖRT kovadan üçü (`active`, `waiting`, `acceptedWaiting`) gerçekten `g.status`'e bakıyor ama `invites` kovası SADECE `my_role`/`my_invite_status`'e bakıyordu. Sonuç: süresi dolup iptal edilen bir davet KURANIN listesinden doğru şekilde kalkıyor, ama DAVETLİNİN "Davet Bekliyor" listesinde sonsuza dek duruyordu — üstelik "BUGÜN İPTAL EDİLİR" etiketiyle, yani istemci verinin süresinin dolduğunu bilip kartı yine de çiziyordu. Aynı eksik iki yerde daha vardı: `fetchPendingLiveGameCounts` (`src/utils/pendingLiveGames.ts`) — hayalet davet Setup'taki "Arkadaşınla (N)" rozetini, PWA ikon rozetini (`useAppIconBadge`) ve girişte otomatik Canlı sekmesine geçiren `inviteCount > 0` koşulunu şişiriyordu — ve `LiveGamesTab`'ın varsayılan alt sekme seçimi (`hasInvites`), kullanıcıyı bomboş bir "Oyun Davetleri" sekmesine düşürebiliyordu. Üçüne de `g.status === 'pending'` eklendi. **Veri bozulması yoktu:** `respond_to_game_invite`'ın kabul dalı zaten `where id = v_game_id and status = 'pending'` içerdiğinden `abandoned` bir oyun diriltilemiyordu (`init_online_game_state` hiç çağrılmıyordu) — ama "Kabul Et"e basılırsa `game_invites` satırı yine de `accepted`'a çekildiğinden kart sessizce kaybolup hiçbir oyun başlamıyordu, yani kullanıcı için kafa karıştırıcı bir çıkmazdı. **Ders:** "şu filtre zaten bunu eler, ayrı kod gerekmez" gibi bir gerekçeyi yazmadan önce filtrelerin HEPSİNİ tek tek okuyun — burada dördün üçü gerçekten eliyordu, gözden kaçan tek istisna yeterliydi. Özelliğin eklendiği 29 Temmuz'dan bu yana hiç fark edilmemesinin sebebi de bu: 7 günlük süre gerçek kullanımda daha yeni dolmaya başlıyordu, TESTING.md bölüm 4 elle koşulup süre yapay olarak geçmişe çekilene kadar kimse bu yola girmemişti.
 - **UI:** `checkInviteExpiry(gameId)` (`src/lib/api.ts`) RPC'yi çağırır. `LiveGamesTab.tsx`'teki `loadGames` artık aktif-oyun sıra-zaman-aşımı süpürmesiyle AYNI turda, `pending` oyunlardan `created_at + ABANDON_TIMEOUT_MS <= now()` olanları da (client-side ön kontrol, gereksiz RPC'den kaçınmak için) tespit edip `check_invite_expiry`'yi tetikliyor, sonra listeyi bir kez daha tazeliyor — iki süpürme (turn-timeout + invite-expiry) tek bir `Promise.all`'da birleşti, ayrı ayrı ikinci bir round-trip gerekmedi. `PendingGameCard`'daki her davet/bekleme kartının başlığının altına artık `remainingInviteDays` ile hesaplanan bir kalan-süre satırı eklendi (Setup'taki `remainingDays` ile aynı ilke/süre — ≤1 günde kırmızı/kalın). **4 Ağustos 2026 — metin tutarlılığı:** süre dolduğunda "Bugün iptal edilir" yazıyordu; hem yanlıştı (iptal gelecekte değil, süre ZATEN dolmuş) hem de projenin diğer sayaçlarıyla ("Süresi doldu - teslim oldu", `remainingTimeLabel`) tutarsızdı — "Süresi doldu" oldu. Kalan süre metni de "N gün M saat kaldı" yerine `remainingTimeLabel`/`SavedGameRow` kalıbına ("... sonra iptal edilecek" — süre + o sürenin sonunda NE olacağı) hizalandı. Süresi dolmuş bir davetin bu etiketle görünmesi artık yalnızca geçici bir durum: `invites` kovasındaki status filtresi (yukarı bkz.) onu süpürme çalışır çalışmaz listeden düşürüyor — hem "Davet Bekliyor" (yanıt bekleyen) hem "Kabul Ettin — Diğerleri Bekleniyor"/"Rakip Bekleniyor" kartlarında görünür, çünkü `PendingGameCard` üçünde de aynı bileşen.
 - **Doğrulama (production'da, disposable test verisiyle):** Migration uygulanıp `list_migrations`'daki gerçek versiyonla dosya adı eşleştirildikten sonra, gerçek test hesaplarıyla (T1 kurucu, T2 davetli) sahte bir `online_games` satırı `created_at = now() - 8 gün` ile eklenip `check_invite_expiry`'nin davetli tarafından çağrılması `status`'u `pending`'den `abandoned`'a çevirdiği doğrulandı; `created_at = now() - 2 gün` olan (henüz süresi dolmamış) bir satırda RPC'nin no-op kaldığı (status hâlâ `pending`) ayrıca doğrulandı; taraf olmayan üçüncü bir hesabın (Ironman) çağrısının `'Bu oyunun tarafı değilsin.'` hatasıyla reddedildiği doğrulandı. Test verisi sonra tamamen silindi.
+
+## Düşen istek "hiç oyunun yok" DEMEZ (21 Ağustos 2026)
+
+**Vaka:** Kullanıcının yanındaki **BeckyH**, sırası KENDİSİNDEYKEN uygulamayı
+açtı ve "Arkadaşınla" sekmesinde *"Devam eden bir Canlı oyunun yok."* gördü.
+Oyun ~9 dakika sonra kendiliğinden belirdi; arada YZ'ye karşı bir oyun açıp
+oynadı.
+
+**Teşhis ÖLÇÜLDÜ, tahmin edilmedi.** Sunucu tarafı TEMİZ: o oturumdaki 16
+`list_my_online_games` çağrısının 16'sı **200** döndü ve **aktif oyunu
+İÇERİYORDU** — kanıt, her birinin hemen ardından gelen
+`online_game_states?...in.(<oyun id>)` isteği (`fetchOnlineGameTurns` boş
+listede HİÇ istek atmaz, yani o istek listenin dolu geldiğinin kanıtı).
+`client_errors` **0 satır** (JS çökmesi yok), `game_starts` satırları o günün
+derlemesini koşturduğunu gösteriyor. Telefonunun IP'si oturum boyunca
+**31.143.14.211 ↔ 178.250.94.110** arasında gidip geliyordu.
+
+**Kök sebep (çıkarım, açıkça çıkarım):** ağ değişimi (WiFi↔hücresel) uçuştaki
+bir isteği yarıda kesti; `listMyOnlineGames` hatayı YUTUP `[]` döndü ve UI
+bunu "gerçekten hiç oyun yok" diye okudu. **Tekrar deneme YOKTU** ve listeyi
+yeniden tetikleyen tek şey öne dönüş/Realtime olduğundan yanlış ekran KALDI.
+**İkinci bulgu:** düşen yükleme `appliedDefaultTabRef`i de sessizce TÜKETTİ,
+yani "girişte Canlı sekmesini aç" kararı o oturum için bir daha çalışamadı —
+büyük olasılıkla YZ oyunu açmasının sebebi bu.
+
+**Kullanıcının koyduğu sınır (sözleriyle):** *"Oraya İnternet bağlantısı yok
+çıkartmak da doğru değil çünkü başka yerlere girince bunun doğru olmadığını
+görecekler."* — yani düzeltme etiketi değiştirmek DEĞİL, sorunu gerçekten
+çözmek zorundaydı. Onaylanan ölçüt: **kullanıcı hiçbir zaman gerçek olmayan
+bir şey görmemeli ve iyileşmek için hiçbir şey yapmak zorunda kalmamalı.**
+
+### Dört katman (hepsi İKİ platformda)
+
+| Katman | Ne yapar |
+|---|---|
+| **Ağ-özel tekrar** (`retryOnNetworkFailure` / `_fetchWithRetry`) | Düşen istek **400 ms** ve **1200 ms** sonra sessizce tekrarlanır. Anlık kesintiyi kullanıcı hiç görmeden kapatır. |
+| **`[]` ≠ `null` ayrımı** | `listMyOnlineGames`/`fetchOnlineGameTurns`/`fetchOnlineGameDeadlines` artık hatada **`null`** döner. `[]` yalnızca "sunucu gerçekten boş dedi" demektir. |
+| **Otomatik merdiven** (3/8/20/30 sn, son basamak tekrarlanır) | Kesinti sürerse UI kendi kendine denemeye devam eder — kullanıcının hiçbir şey yapması gerekmez. Yalnızca sekme GÖRÜNÜRKEN kurulur. |
+| **Yeniden bağlanma kancası** (`onResubscribe`) | Realtime kanalı koparsa o sırada yayınlanan olaylar KALICI kayıptır (28 Temmuz dersi); yeniden bağlanmanın kendisi bir tazeleme sinyali olarak kullanılıyor. |
+
+### Ne YAZILIR — üç ayrı cümle, üçü de doğru
+
+- `OFFLINE_NO_CONNECTION` — YALNIZCA `navigator.onLine === false` iken.
+- `LOAD_FAILED_NOTICE` (*"Oyunların şu an yüklenemedi."*) + **Tekrar Dene** —
+  bağlantı VAR ama elde gösterilecek hiç liste yok.
+- `STALE_DATA_NOTICE` (*"Güncellenemedi"*) — liste ekranda ama tazelenemedi;
+  veri **bayat, yanlış değil**. İnce bir şerit, dokunma hedefi DEĞİL.
+
+**"Hiç oyunun yok" artık YALNIZCA sunucu gerçekten boş dediğinde çıkar.**
+
+### Yakalanan yan hatalar
+
+- **Tek başarısız yükleme `appliedDefaultTabRef`i tüketiyordu** (`Setup.tsx`)
+  ve `useAppIconBadge` rozeti sıfırlıyordu — ikisi de artık `counts === null`
+  iken erken dönüyor, son bilinen değeri koruyor.
+- **`useOnlineStatus` asimetrik debounce aldı:** çevrimdışıya geçiş **1500
+  ms** doğrulanmadan uygulanmaz, çevrimiçi ANINDA uygulanır. Sebep ölçüldü:
+  `navigator.onLine` spesifikasyona göre `false` iken gerçekten bağlantısız,
+  ama **ağ değişimi anında** kısa bir `false` penceresi doğuyor ve o pencerede
+  uçuştaki istekler iptal ediliyor — sunucuda HİÇBİR iz bırakmadan. İlk ölçüm
+  BİLEREK debounce edilmez (soğuk açılışta uyarı hemen çıkmalı).
+- **`isNetworkError`e `PostgrestError` NESNESİ verilmez, `error.message`
+  verilir** — nesne `"[object Object]"`e serileşir ve hiçbir kalıba uymaz,
+  yani tekrar deneme sessizce hiç çalışmazdı.
+
+### Doğrulama
+
+`npm run verify-live-games-load` — 15 kontrol, ÜRETİM fonksiyonlarını sahte
+bir Supabase ucuyla koşturuyor: ağ hatası → `null` + **3** çağrı; boş liste →
+`[]` + **1** çağrı; **ilk istek düşüp ikincisi başarılı** (kullanıcının
+vakası) → liste geliyor; sunucunun KENDİ reddi → tekrar YOK; yapılandırılmamış
+istemci → `[]` (hata değil). **Negatif eş ölçüldü:** tekrar katmanı
+kaldırılınca **4** kontrol, `null` yerine `[]` dönülünce **3** kontrol
+GERÇEKTEN düşüyor. `tests/smoke.spec.ts`e ayrıca "kısa kesinti çevrimdışı
+uyarısı ÜRETMEZ" testi eklendi (paket 20 → **21**); debounce kaldırılınca
+düşüyor. CI'a eklendi (`web-ci.yml`).
+
+**Duman testiyle sınanamayan kısım ve sebebi:** bu kod yolu oturum açmış bir
+kullanıcı istiyor, dev sunucusunda Supabase yapılandırılmadığından tarayıcıda
+ulaşılamıyor — `verify-*` betiği deseninin (esbuild + node) var olma sebebi bu.
+
+**Mobil portun karşılığı:** `mobile/CLAUDE.md`, Parça 118 — aynı gecikmeler,
+aynı üç metin (`offline_notice.dart` ↔ `offlineNotice.ts`, parite testi
+karşılaştırıyor), aynı merdiven.
 
 ## Oyun İçi Mesajlaşma — Faz 1 (yalnızca Canlı oyunlar)
 

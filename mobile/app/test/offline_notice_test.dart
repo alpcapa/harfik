@@ -42,6 +42,9 @@ void main() {
       'OFFLINE_AI_SUGGESTION': kOfflineAiSuggestion,
       'OFFLINE_AI_CTA': kOfflineAiCta,
       'OFFLINE_MEANING_NOTICE': kOfflineMeaningNotice,
+      'LOAD_FAILED_NOTICE': kLoadFailedNotice,
+      'STALE_DATA_NOTICE': kStaleDataNotice,
+      'RETRY_LABEL': kRetryLabel,
     };
     for (final e in pairs.entries) {
       final web = _readConst(source, e.key);

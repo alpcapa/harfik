@@ -6085,6 +6085,44 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        Tarihler `legal_text_test.dart` ile kilitli.
      - **Flutter SDK bu ortamda YOK** — Dart yarısının kanıtı CI.
 
+   - ✅ **Parça 124 — düşen istek "hiç oyunun yok" DEMEZ (21 Ağustos 2026,
+     web + port AYNI PR):** Kullanıcının yanındaki gerçek bir oyuncu, sırası
+     KENDİSİNDEYKEN Canlı sekmesinde *"Devam eden bir Canlı oyunun yok."*
+     gördü; oyun ~9 dakika sonra kendiliğinden geldi. Kök sebep ve dört
+     katmanın tamamı kök `CLAUDE.md` → "Düşen istek 'hiç oyunun yok' DEMEZ"
+     bölümünde (sunucu logları oradan ölçüldü: 16/16 çağrı 200 ve oyunu
+     İÇERİYORDU; kırılan şey ağ değişiminde yarıda kalan istekti).
+     - **`OnlineGamesRepo._fetchWithRetry`** — web `retryOnNetworkFailure`
+       ile AYNI gecikmeler (**400 / 1200 ms**) ve AYNI dar kapsam: yalnızca
+       `isNetworkError` eşleşirse tekrarlanır; sunucunun KENDİ reddi
+       (yetki/kural) tekrarlanmaz. Gecikme testlere enjekte edilebiliyor
+       (`delay:`) — aksi halde testler gerçek zamanlayıcı beklerdi
+       (bekleyen-timer flake sınıfı).
+     - **`OnlineGamesGateway.subscribe`'a `onResubscribe` kancası:** kanal
+       KOPUP yeniden bağlanınca çağrılır, İLK `subscribed` atlanır. Kopuk
+       kanal olay yayınlamaz ve kopukken olanları sonradan OYNATMAZ (28
+       Temmuz dersi), yani yeniden bağlanmanın kendisi tek kurtarma sinyali.
+       **`subscribeGame`'e DOKUNULMADI** — o tek oyunun kendi kanalı, aynı
+       dosyada ve karıştırması kolay.
+     - **`LiveGamesTab` artık ÜÇ ayrı cümle kuruyor:** çevrimdışı →
+       `kOfflineNoConnection` (değişmedi); bağlantı var + elde liste YOK →
+       `kLoadFailedNotice` + **TEKRAR DENE**; liste VAR ama tazelenemedi →
+       liste EKRANDA KALIR + ince `kStaleDataNotice` şeridi. **14 Ağustos'ta
+       burada `kOfflineNoConnection` gösteriliyordu ve bu 21 Ağustos'ta
+       KALDIRILDI** — bağlantısı çalışan kullanıcıya "internet yok" demek
+       yanlış bilgiydi (kullanıcının kendi itirazı). Üç metin de
+       `offline_notice.dart`ta ve `offline_notice_test.dart` onları web
+       dosyasını OKUYARAK karşılaştırıyor.
+     - **Otomatik merdiven** (3/8/20/30 sn, son basamak tekrarlanır) web ile
+       aynı; `dispose()` timer'ı iptal ediyor.
+     - **Testler:** `live_games_test.dart`e 5 repo + 2 widget testi
+       (ilk istek düşüp ikincisi başarılı → liste GELİYOR; üç deneme de
+       düşerse null; sunucu reddi tekrarlanmaz; yeniden bağlanma sinyali;
+       bağlantı varken "internet yok" DEMEZ; liste varken bayat notu).
+       Sahte gateway'e `netFailFirst` + `lastOnChange`/`lastOnResubscribe`
+       eklendi.
+     - **Flutter SDK bu ortamda YOK** — Dart yarısının kanıtı CI.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
