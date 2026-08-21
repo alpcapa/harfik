@@ -37,6 +37,8 @@ import '../../bootstrap.dart';
 import '../../config/env.dart';
 import '../../data/cloud_save_repo.dart';
 import '../../data/games_api.dart';
+import '../../data/online_games_api.dart'
+    show InitialMainView, PendingLiveGameCounts, decideInitialMainView;
 import '../../data/friend_invite_inbox.dart' show inviteTokensFromEvents;
 import '../../storage/pending_event_store.dart' show friendInviteTokenKind;
 import '../friends/friends_modal.dart' show showFriendInfoDialog;
