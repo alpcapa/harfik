@@ -358,6 +358,30 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   useEffect(() => {
     if (mySlotIndex < 0) return;
     let cancelled = false;
+    // İlk yükleme düşerse ekran kendi kendini onarır — kullanıcı "Tekrar
+    // Dene"ye basmak ZORUNDA kalmasın (LiveGamesTab'daki aynı merdiven ve
+    // aynı gerekçe, 21 Ağustos 2026). Buradaki 10 dakikalık periyodik tarama
+    // bu iş için fazla seyrek: ağ birkaç saniyede geri geldiğinde kullanıcı
+    // hâlâ hata panelinde oturuyor olurdu.
+    const AUTO_RETRY_STEPS_MS = [3000, 8000, 20000, 30000];
+    let autoRetryStep = 0;
+    let autoRetryTimer: number | null = null;
+    const clearAutoRetry = () => {
+      if (autoRetryTimer != null) {
+        window.clearTimeout(autoRetryTimer);
+        autoRetryTimer = null;
+      }
+    };
+    const scheduleAutoRetry = () => {
+      if (autoRetryTimer != null || cancelled) return;
+      if (document.visibilityState !== 'visible') return;
+      const step = Math.min(autoRetryStep, AUTO_RETRY_STEPS_MS.length - 1);
+      autoRetryStep = step + 1;
+      autoRetryTimer = window.setTimeout(() => {
+        autoRetryTimer = null;
+        void refresh();
+      }, AUTO_RETRY_STEPS_MS[step]);
+    };
     const refresh = async () => {
       // Üç çağrının HEPSİ bu try'ın içinde olmak ZORUNDA: `getMyOnlineRack`
       // hatada `throw` ediyor (`fetchOnlineGameState`/`fetchOnlineGameMoves`
@@ -388,6 +412,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
         // DOKUNMUYORUZ (bayat veri, hiç veriden iyidir); yüklenmemişse
         // kullanıcıyı sonsuz "Yükleniyor…"da bırakmak yerine anlatıyoruz.
         if (!loadedRef.current) setLoadFailed(true);
+        scheduleAutoRetry();
         return;
       }
       dispatch({ type: 'SYNC_ONLINE_STATE', publicState, myRack, mySlotIndex });
@@ -395,6 +420,8 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       loadedRef.current = true;
       setLoaded(true);
       setLoadFailed(false);
+      clearAutoRetry();
+      autoRetryStep = 0;
 
       if (!publicState.is_game_over && !aiTriggeringRef.current) {
         const currentSlot = game.slots[publicState.current];
@@ -442,7 +469,13 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       lastForegroundRefresh = now;
       void refresh();
     };
-    refreshRef.current = () => void refresh();
+    refreshRef.current = () => {
+      // Elle deneme merdiveni sıfırlar: başarısız olursa otomatik zincir en
+      // baştan (3s) sürsün, 30s'lik son basamaktan değil.
+      clearAutoRetry();
+      autoRetryStep = 0;
+      void refresh();
+    };
     document.addEventListener('visibilitychange', onForeground);
     window.addEventListener('focus', onForeground);
     window.addEventListener('online', onForeground);
@@ -458,6 +491,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       window.removeEventListener('focus', onForeground);
       window.removeEventListener('online', onForeground);
       window.clearInterval(intervalId);
+      clearAutoRetry();
     };
   }, [game.id, mySlotIndex]);
 

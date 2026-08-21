@@ -60,6 +60,24 @@ export const OFFLINE_AI_SUGGESTION =
   'İnternet bağlantısı yok ama sorun değil, yapay zeka ile çevrimdışı da oynayabilirsin.';
 export const OFFLINE_AI_CTA = 'Hemen oyun aç.';
 
+// ── "Çevrimdışı" DEĞİL, "yükleyemedik" ─────────────────────────────────────
+//
+// Bu üç metin bilerek İNTERNET TEŞHİSİ YAPMIYOR (21 Ağustos 2026, kullanıcı:
+// *"Oraya 'İnternet bağlantısı yok' çıkartmak da doğru değil çünkü başka
+// yerlere girince bunun doğru olmadığını görecekler"*). Çevrimiçiyken tek bir
+// isteğin düşmesi ile gerçekten çevrimdışı olmak AYRI durumlar; ikisini aynı
+// cümleye indirmek bu hatanın kökeniydi. `OFFLINE_NO_CONNECTION` yalnızca
+// `navigator.onLine === false` iken kalır.
+
+/** Elde hiç liste yokken yükleme düştü — tek çıkış yolu yeniden denemek. */
+export const LOAD_FAILED_NOTICE = 'Oyunların şu an yüklenemedi.';
+
+/** Liste ekranda duruyor ama tazelenemedi — veri bayat, ama YANLIŞ değil. */
+export const STALE_DATA_NOTICE = 'Güncellenemedi';
+
+/** İki durumun da eylem düğmesi (oyun ekranındaki panelle aynı sözcük). */
+export const RETRY_LABEL = 'Tekrar Dene';
+
 /**
  * Hata "sunucuya hiç ulaşamadık" mı, yoksa sunucunun kendi reddi mi?
  *

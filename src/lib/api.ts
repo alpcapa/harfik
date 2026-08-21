@@ -72,7 +72,64 @@ import { getLocalMeaning } from '../data/meanings';
 import { CLIENT_PLATFORM } from '../utils/platform';
 import { trCompare, trLower } from '../utils/turkish';
 import { getStoredUtmSource } from '../utils/visitTracking';
+import { isNetworkError } from '../utils/offlineNotice';
+import { reportClientError } from '../utils/errorReporting';
 import type { GameState, HistoryEntry, Tile } from '../game/types';
+
+// ── Geçici ağ hatasında sessiz yeniden deneme ──────────────────────────────
+//
+// NEDEN (21 Ağustos 2026, gerçek vaka): Bir kullanıcı sırası KENDİSİNDEYKEN
+// uygulamayı açtı ve "Devam eden bir Canlı oyunun yok." gördü; oyun ancak
+// ~9 dakika sonra kendiliğinden belirdi. Sunucu logları tertemizdi —
+// `list_my_online_games` o oturumda 16 kez çağrılmış, 16'sı da 200 dönmüş VE
+// oyunu içermişti (kanıt: her birinin hemen ardından gelen
+// `online_game_states?...in.(<id>)` isteği; `fetchOnlineGameTurns` boş id
+// listesinde hiç istek atmaz, yani o istek listenin dolu olduğunu kanıtlar).
+// Demek ki düşen istek sunucuya HİÇ ULAŞMAMIŞTI: telefon oturum ortasında
+// iki IP arasında geçmişti (WiFi ↔ hücresel) ve geçiş uçuştaki `fetch`'i
+// iptal etmişti. Böyle bir istek sunucu tarafında hiç iz bırakmaz — logların
+// temiz görünmesi bu yüzden hatayı ÇÜRÜTMÜYOR.
+//
+// Asıl kusur ağ değişimi DEĞİL, isteğin bir daha denenmemesiydi: bu okuma
+// yollarının hiçbirinde retry yoktu (projedeki tek retry `wordSetLoader`) ve
+// `loadGames`'i yeniden tetikleyen tek şey öne dönüş ya da bir Realtime
+// olayıydı — ekrana bakıp bekleyen birinde ikisi de olmuyor. Nadir bir olay
+// böylece KALICI bir yanlış ekrana dönüşüyordu.
+//
+// KURAL: yalnızca ağ katmanı hataları (cevabın hiç gelmediği durum)
+// tekrarlanır. Sunucunun KENDİ reddi (401/403/RLS/iş kuralı) ASLA — o bir
+// karar, hata değil (aynı ilke: `friendlyAuthMessage`, `isNetworkError`).
+// Yalnızca OKUMA yollarında kullanılır; `submit_move` gibi yazmalar buradan
+// GEÇMEZ (yazma idempotensi ayrı bir iş, bkz. `p_move_id`).
+const RETRY_DELAYS_MS = [400, 1200];
+
+/**
+ * Supabase `{data,error}` sonucundaki hata ağ katmanından mı geliyor?
+ *
+ * `isNetworkError` bir `Error` ya da METİN bekliyor: PostgrestError düz bir
+ * nesne olduğundan doğrudan geçilseydi `String(err)` "[object Object]" olur
+ * ve kalıp HİÇBİR ZAMAN eşleşmezdi (sessizce "retry yok"a düşerdik).
+ * postgrest-js ağ hatasını `message: "TypeError: Load failed"` gibi
+ * sarmaladığından mesajın KENDİSİNİ veriyoruz.
+ */
+function isNetworkFailure(error: { message?: string } | null | undefined): boolean {
+  if (!error) return false;
+  return isNetworkError(error.message ?? '');
+}
+
+/** Ağ katmanında düşen bir okumayı `RETRY_DELAYS_MS` kadar yeniden dener. */
+async function retryOnNetworkFailure<T extends { error: { message?: string } | null }>(
+  islem: () => PromiseLike<T>,
+): Promise<T> {
+  let sonuc = await islem();
+  for (const gecikme of RETRY_DELAYS_MS) {
+    if (!isNetworkFailure(sonuc.error)) return sonuc;
+    await new Promise((r) => setTimeout(r, gecikme));
+    sonuc = await islem();
+  }
+  return sonuc;
+}
+
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /**
@@ -1080,12 +1137,18 @@ async function notifyGameInvite(gameId: string): Promise<void> {
  * Oturum açan kullanıcının taraf olduğu (kurduğu ya da davet edildiği) tüm
  * Canlı oyunları döner (`list_my_online_games` RPC'si) — en yeni önce.
  */
-export async function listMyOnlineGames(): Promise<OnlineGame[]> {
+export async function listMyOnlineGames(): Promise<OnlineGame[] | null> {
+  // Yapılandırılmamış istemci bir HATA DEĞİL, uygulamanın bilinçli offline
+  // hâli — `fetchMyGames`'in `failed:false` kararıyla aynı (14 Ağustos 2026).
   if (!supabase) return [];
-  const { data, error } = await supabase.rpc('list_my_online_games');
+  const client = supabase;
+  const { data, error } = await retryOnNetworkFailure(() => client.rpc('list_my_online_games'));
   if (error) {
     console.error('[Kelimeki] listMyOnlineGames hatası:', error.message);
-    return [];
+    reportClientError(error.message, 'manual', 'list_my_online_games');
+    // `null` = "bilmiyoruz", `[]` = "sunucu boş dedi". Bu ayrım olmadan
+    // çağıran ikisini karıştırıp "Devam eden bir Canlı oyunun yok." basıyordu.
+    return null;
   }
   return (data as OnlineGame[]) ?? [];
 }
@@ -1128,15 +1191,19 @@ export async function fetchOnlineGameState(gameId: string): Promise<OnlineGameSt
  * sayısını hesaplamak için kullanılır. `online_game_states`e doğrudan okuma
  * (RPC değil) — RLS zaten yalnızca katılımcının erişebileceği satırları döner.
  */
-export async function fetchOnlineGameTurns(gameIds: string[]): Promise<Record<string, number>> {
+export async function fetchOnlineGameTurns(gameIds: string[]): Promise<Record<string, number> | null> {
   if (!supabase || gameIds.length === 0) return {};
-  const { data, error } = await supabase
-    .from('online_game_states')
-    .select('online_game_id, current')
-    .in('online_game_id', gameIds);
+  const client = supabase;
+  const { data, error } = await retryOnNetworkFailure(() =>
+    client.from('online_game_states').select('online_game_id, current').in('online_game_id', gameIds),
+  );
   if (error) {
     console.error('[Kelimeki] fetchOnlineGameTurns hatası:', error.message);
-    return {};
+    reportClientError(error.message, 'manual', 'fetch_online_game_turns');
+    // Boş harita dönmek "sıra kimde bilinmiyor"u "sıra rakipte"ye çeviriyordu
+    // (`turns[g.id] === mySlotIndex(g)` false kalır) — listeden daha kötü bir
+    // hata: kullanıcıya YANLIŞ bir gerçeklik anlatıp beklemesine yol açar.
+    return null;
   }
   const map: Record<string, number> = {};
   for (const row of (data ?? []) as { online_game_id: string; current: number }[]) {
@@ -1152,15 +1219,21 @@ export async function fetchOnlineGameTurns(gameIds: string[]): Promise<Record<st
  * kadar otomatik teslim olmaz (bkz. `checkOnlineGameTurnTimeout`), bu
  * fonksiyon yalnızca OKUR, hiçbir şeyi tetiklemez.
  */
-export async function fetchOnlineGameDeadlines(gameIds: string[]): Promise<Record<string, string | null>> {
+export async function fetchOnlineGameDeadlines(
+  gameIds: string[],
+): Promise<Record<string, string | null> | null> {
   if (!supabase || gameIds.length === 0) return {};
-  const { data, error } = await supabase
-    .from('online_game_states')
-    .select('online_game_id, turn_deadline')
-    .in('online_game_id', gameIds);
+  const client = supabase;
+  const { data, error } = await retryOnNetworkFailure(() =>
+    client
+      .from('online_game_states')
+      .select('online_game_id, turn_deadline')
+      .in('online_game_id', gameIds),
+  );
   if (error) {
     console.error('[Kelimeki] fetchOnlineGameDeadlines hatası:', error.message);
-    return {};
+    reportClientError(error.message, 'manual', 'fetch_online_game_deadlines');
+    return null;
   }
   const map: Record<string, string | null> = {};
   for (const row of (data ?? []) as { online_game_id: string; turn_deadline: string | null }[]) {
@@ -1560,15 +1633,33 @@ export async function withdrawChatReports(targetUserId: string): Promise<void> {
  * kanal adı her seferinde benzersiz üretiliyor — sabit bir isim iki
  * abonelik aynı topic'i paylaşırdı.
  */
-export function subscribeMyOnlineGames(onChange: () => void): () => void {
+export function subscribeMyOnlineGames(
+  onChange: () => void,
+  onResubscribe?: () => void,
+): () => void {
   if (!supabase) return () => {};
   const client = supabase;
+  // İLK `SUBSCRIBED` atlanır, 2.'den itibaren `onResubscribe` çağrılır.
+  //
+  // NEDEN (21 Ağustos 2026): Ağ değişiminin en doğrudan sinyali soketin
+  // kopup yeniden bağlanmasıdır — IP değişince websocket düşer, kütüphane
+  // yeniden bağlanır. O aralıkta yayınlanan olaylar KALICI OLARAK kaybolur
+  // (Realtime canlı bir akış, kuyruk değil), yani yeniden bağlanma anı tam
+  // olarak "gerçeği yeniden oku" anıdır — projenin `useOnlineStatus`/sohbet/
+  // bulut senkronunda üç kez öğrendiği aynı ders. İlk aboneliği atlamak
+  // şart: o, mount'taki `loadGames`in hemen ardından gelir ve aynı isteği
+  // ikinci kez attırırdı.
+  let subscribedOnce = false;
   const channel = client
     .channel(`my_online_games_${crypto.randomUUID()}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'online_games' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'game_invites' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'online_game_states' }, onChange)
-    .subscribe();
+    .subscribe((status) => {
+      if (status !== 'SUBSCRIBED') return;
+      if (subscribedOnce) onResubscribe?.();
+      subscribedOnce = true;
+    });
   return () => {
     void client.removeChannel(channel);
   };

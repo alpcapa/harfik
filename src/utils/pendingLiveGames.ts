@@ -12,8 +12,20 @@ export interface PendingLiveGameCounts {
   myTurnCount: number;
 }
 
-export async function fetchPendingLiveGameCounts(): Promise<PendingLiveGameCounts> {
+/**
+ * Sayılar bilinmiyorsa (istek ağ katmanında düştü) `null` döner — `0` DEĞİL.
+ *
+ * Ayrım kritik (21 Ağustos 2026): `0` dönmek yalnızca rozeti kaybettirmiyor,
+ * `Setup.tsx`'teki `applyLoginDefaultOnce`'ı da TÜKETİYORDU — yani başarısız
+ * tek bir istek, "girişte sırası sendeyse Canlı sekmesini aç" kararını o
+ * oturum için kalıcı olarak yakıyordu. Bu, CLAUDE.md'de kayıtlı 5 Ağustos
+ * 2026 hatasının aynısı (orada karar BAYAT veriyle veriliyordu, burada
+ * BAŞARISIZ veriyle): tek seferlik kararlar yalnızca BAŞARILI veriyle
+ * tüketilmeli.
+ */
+export async function fetchPendingLiveGameCounts(): Promise<PendingLiveGameCounts | null> {
   const rows = await listMyOnlineGames();
+  if (rows === null) return null;
   // `g.status === 'pending'` şartı LiveGamesTab'daki `invites` kovasıyla
   // BİREBİR aynı olmak zorunda — aksi halde süresi dolup iptal edilmiş
   // (`abandoned`) bir davet rozetleri şişirir: Setup'taki "Arkadaşınla (N)",
@@ -27,6 +39,10 @@ export async function fetchPendingLiveGameCounts(): Promise<PendingLiveGameCount
     return { inviteCount, myTurnCount: 0 };
   }
   const turns = await fetchOnlineGameTurns(activeIds);
+  // Sıra bilinmiyorsa sayı da bilinmiyor. `inviteCount`'u tek başına dönmek
+  // mümkündü ama eksik bir toplam rozeti sessizce KÜÇÜLTÜRDÜ; "bilmiyoruz"
+  // deyip son bilineni korumak dürüst olan.
+  if (turns === null) return null;
   const myTurnCount = rows.filter((g) => {
     if (g.status !== 'active') return false;
     const idx = g.slots.findIndex((s) => s.type === 'human' && s.relation === 'self');

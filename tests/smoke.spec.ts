@@ -138,6 +138,66 @@ test('Öne dönüşte bağlantı durumu yeniden okunur (kaçırılan offline ola
   await expect(offlineLabel).toBeVisible();
 });
 
+// Ağ DEĞİŞİMİ (WiFi ↔ hücresel) yanlış alarm üretmemeli — 21 Ağustos 2026.
+//
+// O geçişte hiçbir arayüzün ayakta olmadığı birkaç yüz milisaniyelik bir
+// pencere var ve `navigator.onLine` orada gerçekten `false` oluyor: yalan
+// değil, ama ANLIK. Debounce olmadan ekran "Çevrimdışı"ya atlayıp geri
+// dönüyordu; kullanıcı internetinin çalıştığını bildiğinden bu yanlış alarm
+// olarak okunur (kullanıcının kendi itirazı: "başka yerlere girince bunun
+// doğru olmadığını görecekler"). Asimetri bilinçli: `false` doğrulanır,
+// `true` ANINDA uygulanır.
+test('Kısa bağlantı kesintisi (ağ değişimi) çevrimdışı uyarısı ÜRETMEZ', async ({ page }) => {
+  page.on('dialog', (dialog) => dialog.accept());
+
+  await page.addInitScript(() => {
+    (window as unknown as { __online: boolean }).__online = true;
+    Object.defineProperty(Navigator.prototype, 'onLine', {
+      get: () => (window as unknown as { __online: boolean }).__online,
+      configurable: true,
+    });
+  });
+
+  await donenKullanici(page);
+  await page.goto('/');
+  await page.getByText('OYUNU BAŞLAT').click();
+  const devamButton = page
+    .getByLabel('Giriş uyarısı')
+    .getByRole('button', { name: 'Oyna', exact: true });
+  if (await devamButton.isVisible().catch(() => false)) await devamButton.click();
+  const quickstartHeading = page.getByRole('heading', { name: /hızlı başlangıç/i });
+  if (await quickstartHeading.isVisible().catch(() => false)) {
+    await page.locator('button[aria-label="Kapat"]').last().click();
+  }
+  await expect(page.getByRole('button', { name: 'Oyna', exact: true })).toBeVisible();
+
+  const offlineLabel = page.getByText('Çevrimdışı', { exact: true });
+  await expect(offlineLabel).toHaveCount(0);
+
+  // Ağ geçişi: bağlantı kısa süre gider (olay da ateşlenir) ve hemen döner.
+  await page.evaluate(() => {
+    (window as unknown as { __online: boolean }).__online = false;
+    window.dispatchEvent(new Event('offline'));
+  });
+  await page.waitForTimeout(800); // doğrulama penceresinin (1500ms) İÇİ
+  await expect(offlineLabel).toHaveCount(0);
+
+  await page.evaluate(() => {
+    (window as unknown as { __online: boolean }).__online = true;
+    window.dispatchEvent(new Event('online'));
+  });
+  // Pencere dolduğunda `navigator.onLine` yine true; uyarı HİÇ çıkmamalı.
+  await page.waitForTimeout(1200);
+  await expect(offlineLabel).toHaveCount(0);
+
+  // Ama GERÇEK bir kesinti hâlâ bildirilmeli — debounce, susturma değil.
+  await page.evaluate(() => {
+    (window as unknown as { __online: boolean }).__online = false;
+    window.dispatchEvent(new Event('offline'));
+  });
+  await expect(offlineLabel).toBeVisible();
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Karşılama katmanı (18 Ağustos 2026) — Bölüm 2'nin ASIL işi bu regresyon
 // paketi: katmanın kendisi bir yer tutucu, ama önüne geçtiği yollar (dolaşımda

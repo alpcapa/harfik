@@ -70,9 +70,12 @@ export function useAppIconBadge(
     };
 
     const refreshLive = () => {
-      fetchPendingLiveGameCounts().then(({ inviteCount, myTurnCount }) => {
-        if (cancelled) return;
-        liveCountRef.current = inviteCount + myTurnCount;
+      fetchPendingLiveGameCounts().then((counts) => {
+        // `null` = bilinmiyor: son bilinen sayı korunur. Sıfırlamak, uygulama
+        // ikonundaki rozeti tek bir düşen istekle sildirirdi — kullanıcı için
+        // "bekleyen işim kalmamış" demek olurdu (21 Ağustos 2026).
+        if (cancelled || counts === null) return;
+        liveCountRef.current = counts.inviteCount + counts.myTurnCount;
         applyBadge();
       });
     };
