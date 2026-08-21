@@ -18,7 +18,10 @@
 //
 // Koşum: npm run verify-live-games-load
 import { fetchOnlineGameTurns, listMyOnlineGames } from '../src/lib/api';
-import { fetchPendingLiveGameCounts } from '../src/utils/pendingLiveGames';
+import {
+  decideInitialMainView,
+  fetchPendingLiveGameCounts,
+} from '../src/utils/pendingLiveGames';
 import { __netCalls, __setFake, type FakeSpec } from './support/fake-supabase';
 
 let failures = 0;
@@ -132,6 +135,61 @@ async function main() {
     'sağlıklı sunucu → sıra bende sayılır (myTurnCount=1)',
     sayilar !== null && sayilar.myTurnCount === 1 && sayilar.inviteCount === 0,
     `gelen ${JSON.stringify(sayilar)}`,
+  );
+
+  // ── 10) Giriş varsayılanı: HANGİ sekmeyle karşılanıyoruz?
+  //      Kullanıcı 21 Ağustos 2026'da bildirdi: hesabında 0 YZ oyunu ve 6
+  //      aktif Canlı oyun varken (hiçbirinde sıra kendisinde değil) uygulama
+  //      her açılışta BOŞ "Yapay Zeka ile" sekmesiyle karşılıyordu.
+  const say = (
+    inviteCount: number,
+    myTurnCount: number,
+    activeCount: number,
+  ) => ({ inviteCount, myTurnCount, activeCount });
+
+  check(
+    'karar: sıra bendeyse → live',
+    decideInitialMainView(say(0, 1, 3), []) === 'live',
+  );
+  check(
+    'karar: bekleyen davet → live (YZ oyunu OLSA bile)',
+    decideInitialMainView(say(1, 0, 0), [{}, {}]) === 'live',
+  );
+  check(
+    'karar: YZ boş + Canlı oyun var → live (sıra bende OLMASA bile)',
+    decideInitialMainView(say(0, 0, 6), []) === 'live',
+    'kullanıcının bildirdiği vaka',
+  );
+  check(
+    'karar: YZ oyunu VAR + Canlı sakin → local (sekme kaçırılmaz)',
+    decideInitialMainView(say(0, 0, 6), [{}]) === 'local',
+  );
+  check(
+    'karar: her ikisi de boş → local',
+    decideInitialMainView(say(0, 0, 0), []) === 'local',
+  );
+  // Üçüncü durum: eksik veriyle KARAR VERİLMEZ. `local` dönmek tek seferlik
+  // kararı yakıp kullanıcıyı kalıcı olarak yanlış sekmede bırakırdı.
+  check(
+    'karar: Canlı sayıları bilinmiyorsa null (karar ertelenir)',
+    decideInitialMainView(null, []) === null,
+  );
+  // ⚠ Kural (1) YZ listesini BEKLEMEZ. Beklemek gerçek bir regresyon
+  // üretti (21 Ağustos 2026, CI iki mevcut port testiyle yakaladı): YZ
+  // listesi hiç yüklenmeyen bir hesapta kullanıcı bekleyen işine rağmen
+  // YZ sekmesinde kalıyordu.
+  check(
+    'karar: bekleyen iş varsa YZ listesi BİLİNMESE de live',
+    decideInitialMainView(say(0, 1, 3), null) === 'live',
+  );
+  check(
+    'karar: bekleyen davet varsa YZ listesi BİLİNMESE de live',
+    decideInitialMainView(say(2, 0, 0), null) === 'live',
+  );
+  check(
+    'karar: YZ listesi henüz çekilmediyse null (karar ertelenir)',
+    decideInitialMainView(say(0, 0, 6), null) === null,
+    'bayat/eksik veriyle tüketilen tek-seferlik karar hatası',
   );
 
   console.log(failures === 0 ? '\nTümü geçti.' : `\n${failures} kontrol düştü.`);

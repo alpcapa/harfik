@@ -6162,6 +6162,36 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        kutusunun logoyla dikey hizası BOZULMUYOR + taşma istisnası yok.
      - **Flutter SDK bu ortamda YOK** — Dart yarısının kanıtı CI.
 
+   - ✅ **Parça 126 — giriş varsayılanı: YZ boşken "Arkadaşınla" açılır
+     (21 Ağustos 2026, web + port AYNI PR):** Kullanıcı *"hâlâ YZ tabı
+     geliyor oyun olmamasına rağmen"* dedi. Kural ve canlıdan ölçülen veri
+     kök `CLAUDE.md` → "Giriş varsayılanına İKİNCİ kural".
+     - **Portta İKİNCİ bir hata daha vardı:** `pendingCounts()` ağ hatasında
+       `0/0` dönüyordu ve çağıran `_appliedLoginDefault`ı KOŞULSUZ
+       tüketiyordu — yani düşen tek bir istek "girişte doğru sekmeyi aç"
+       kararını o oturum için yakıyordu. Bu, webde aynı gün düzeltilen
+       hatanın portta kalmış ikizi. Artık `null` dönüyor ve karar
+       tüketilmiyor.
+     - **Karar İKİ yerden tetikleniyor** (`_applyInitialTab`): sayılar
+       geldiğinde ve `_cloudSaves` geldiğinde. Hangisinin önce döneceği
+       belli değil ve karar İKİSİNİ birden gerektiriyor — yalnızca birinden
+       tetiklenseydi, ilk turda ertelenen karar bir daha hiç uygulanmaz,
+       yalnızca foreground/Realtime tazelemesini beklerdi.
+     - **⚠ İLK SÜRÜM CI'DA DÜŞTÜ (iki MEVCUT `setup_screen_test` testi):**
+       kararı hem sayılara hem YZ listesine bağlamıştım, oysa kural (1)
+       (bekleyen iş) YZ listesine hiç ihtiyaç duymuyor — YZ listesi
+       yüklenmeyen bir hesapta kullanıcı bekleyen işine rağmen YZ
+       sekmesinde kalıyordu. Yalnızca YENİ kural eksik veriye duyarlı.
+       **Mevcut testlerin bunu yakalaması, testlerin gerçekten davranışa
+       bağlı olduğunun kanıtı.**
+     - **`decideInitialMainView` + `InitialMainView` ELLE SENKRON** web'in
+       `pendingLiveGames.ts`'iyle; `PendingLiveGameCounts` üçüncü alan aldı
+       (`activeCount`). Biri değişirse öteki de değişmeli, bunu zorlayan bir
+       test YOK.
+     - **Test:** `live_games_test.dart` — 7 kural kontrolü (kullanıcının
+       bildirdiği vaka dahil) + `pendingCounts` ağ hatasında null.
+     - **Flutter SDK bu ortamda YOK** — Dart yarısının kanıtı CI.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**

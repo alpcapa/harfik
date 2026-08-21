@@ -319,18 +319,50 @@ void main() {
           {'online_game_id': 'theirs', 'current': 0}, // rakibin sırası
         ];
       final repo = OnlineGamesRepo(gw, nowMs: () => nowMs);
-      final counts = await repo.pendingCounts();
+      final counts = (await repo.pendingCounts())!;
       expect(counts.inviteCount, 1);
       expect(counts.myTurnCount, 1);
     });
 
-    test('pendingCounts: ağ hatasında 0/0 (rozet geçici olarak kaybolur)',
+    // 21 Ağustos 2026: 0/0 DEĞİL null. 0/0 dönmek yalnızca rozeti silmiyor,
+    // çağıranın TEK SEFERLİK giriş kararını da tüketiyordu.
+    test('pendingCounts: ağ hatasında null (giriş kararı tüketilmez)',
         () async {
       final gw = FakeOnlineGamesGateway()..failWith = Exception('ağ');
       final repo = OnlineGamesRepo(gw, nowMs: () => nowMs);
-      final counts = await repo.pendingCounts();
-      expect(counts.inviteCount, 0);
-      expect(counts.myTurnCount, 0);
+      expect(await repo.pendingCounts(), isNull);
+    });
+
+    // Giriş varsayılanı — web `decideInitialMainView` ile ELLE SENKRON.
+    // Kullanıcının bildirdiği vaka (21 Ağustos 2026): hesapta 0 YZ oyunu ve
+    // 6 aktif Canlı oyun, hiçbirinde sıra kendisinde değil → uygulama her
+    // açılışta BOŞ "Yapay Zeka ile" sekmesiyle karşılıyordu.
+    test('decideInitialMainView: kurallar + "henüz karar verme" hâli', () {
+      PendingLiveGameCounts say(int davet, int sira, int aktif) =>
+          PendingLiveGameCounts(davet, sira, aktif);
+
+      expect(decideInitialMainView(say(0, 1, 3), const []),
+          InitialMainView.live);
+      expect(decideInitialMainView(say(1, 0, 0), const [1, 2]),
+          InitialMainView.live,
+          reason: 'bekleyen davet, YZ oyunu olsa bile');
+      expect(decideInitialMainView(say(0, 0, 6), const []),
+          InitialMainView.live,
+          reason: 'YZ boş + Canlı oyun var → sıra bende olmasa bile');
+      expect(decideInitialMainView(say(0, 0, 6), const [1]),
+          InitialMainView.local,
+          reason: 'YZ oyunu VAR → sekme kaçırılmaz');
+      expect(decideInitialMainView(say(0, 0, 0), const []),
+          InitialMainView.local);
+
+      // Eksik veri: karar ERTELENİR (local DEĞİL) — aksi halde tek seferlik
+      // karar yanıp kullanıcı kalıcı olarak yanlış sekmede kalırdı.
+      expect(decideInitialMainView(null, const []), isNull);
+      expect(decideInitialMainView(say(0, 0, 6), null), isNull);
+      // ⚠ Ama kural (1) YZ listesini BEKLEMEZ — beklemek gerçek bir
+      // regresyon üretti (setup_screen_test'teki iki test yakaladı).
+      expect(decideInitialMainView(say(0, 1, 3), null), InitialMainView.live);
+      expect(decideInitialMainView(say(2, 0, 0), null), InitialMainView.live);
     });
   });
 

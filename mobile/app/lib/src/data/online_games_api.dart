@@ -673,14 +673,20 @@ class OnlineGamesRepo {
   /// filtrelerini (`inviteBucket`/`myTurnCount`) yeniden kullanır — özellikle
   /// `inviteBucket`'ın `status == pending` şartı, süresi dolup iptal edilmiş
   /// bir davetin bu rozette de "hayalet" olarak sayılmasını (web 4 Ağustos
-  /// 2026 dersi) önlüyor. Ağ hatasında 0/0 — rozet geçici olarak kaybolur,
-  /// zararsız (LiveGamesTab kendi listesini ayrıca çeker).
-  Future<PendingLiveGameCounts> pendingCounts() async {
+  /// 2026 dersi) önlüyor.
+  ///
+  /// ⚠ Ağ hatasında **`null`** döner, `0/0` DEĞİL (21 Ağustos 2026, webin
+  /// `fetchPendingLiveGameCounts`'uyla aynı gerekçe): `0/0` yalnızca rozeti
+  /// silmiyor, çağıranın TEK SEFERLİK giriş kararını da tüketiyordu — tek
+  /// bir düşen istek "girişte doğru sekmeyi aç" kararını o oturum için
+  /// kalıcı olarak yakıyordu.
+  Future<PendingLiveGameCounts?> pendingCounts() async {
     final snap = await load();
-    if (snap == null) return const PendingLiveGameCounts(0, 0);
+    if (snap == null) return null;
     return PendingLiveGameCounts(
       inviteBucket(snap.games).length,
       myTurnCount(snap.games, snap.turns),
+      snap.games.where((g) => g.status == OnlineGameStatus.active).length,
     );
   }
 }
@@ -688,8 +694,46 @@ class OnlineGamesRepo {
 class PendingLiveGameCounts {
   final int inviteCount;
   final int myTurnCount;
-  const PendingLiveGameCounts(this.inviteCount, this.myTurnCount);
+
+  /// `status == active` olan TÜM Canlı oyunlar — sırası kimde olursa olsun.
+  /// Rozette KULLANILMAZ (rozet "bekleyen iş" sayar); tek tüketicisi
+  /// giriş varsayılanı, bkz. [decideInitialMainView].
+  final int activeCount;
+  const PendingLiveGameCounts(
+      this.inviteCount, this.myTurnCount, this.activeCount);
 }
+
+/// Girişte HANGİ sekmeyle karşılanacağı — web
+/// `pendingLiveGames.ts`'teki `decideInitialMainView`in birebir portu.
+/// **İki taraf ELLE SENKRON; biri değişirse öteki de değişmeli.**
+///
+/// Dönen `null` = **HENÜZ KARAR VERME** (veri eksik). Üçüncü durum şart:
+/// eksik veriyle `local` dönmek tek seferlik kararı yakıp kullanıcıyı
+/// kalıcı olarak yanlış sekmede bırakırdı.
+InitialMainView? decideInitialMainView(
+  PendingLiveGameCounts? counts,
+  List<Object?>? cloudSaves,
+) {
+  if (counts == null) return null;
+  // (1) Canlı'da bekleyen iş varsa her hâlükârda oraya. ⚠ Bu kural
+  //     `cloudSaves`e HİÇ BAKMAZ ve bakmamalı — ikisini birden beklemek
+  //     gerçek bir regresyon üretiyor (bkz. web dosyasındaki not).
+  if (counts.inviteCount > 0 || counts.myTurnCount > 0) {
+    return InitialMainView.live;
+  }
+  // YALNIZCA (2) YZ listesini bilmeyi gerektiriyor.
+  if (cloudSaves == null) return null;
+  // (2) YZ tarafı BOŞ ve Canlı'da devam eden oyun VARSA yine oraya —
+  //     sırası kendisinde olmasa bile (21 Ağustos 2026, kullanıcı isteği:
+  //     hesabında 0 YZ oyunu ve 6 aktif Canlı oyun varken uygulama her
+  //     açılışta BOŞ "Yapay Zeka ile" sekmesiyle karşılıyordu).
+  if (cloudSaves.isEmpty && counts.activeCount > 0) {
+    return InitialMainView.live;
+  }
+  return InitialMainView.local;
+}
+
+enum InitialMainView { local, live }
 
 /// "Tekrar Oyna": biten bir oyunun kadrosunu AYNEN yeni bir Canlı oyuna
 /// taşıyacak koltuk dizisini kurar. Sıra `create_online_game`'in üç

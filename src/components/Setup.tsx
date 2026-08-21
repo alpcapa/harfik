@@ -7,7 +7,11 @@ import { useModalA11y } from '../hooks/useModalA11y';
 import { subscribeMyOnlineGames } from '../lib/api';
 import { hasSeenQuickStart, markQuickStartSeen } from '../utils/onboarding';
 import { ABANDON_TIMEOUT_MS, type SavedGame } from '../utils/gameStorage';
-import { fetchPendingLiveGameCounts } from '../utils/pendingLiveGames';
+import {
+  decideInitialMainView,
+  fetchPendingLiveGameCounts,
+  type PendingLiveGameCounts,
+} from '../utils/pendingLiveGames';
 import { preloadWordSet, isWordSetReady } from '../data/wordSetLoader';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
@@ -281,6 +285,11 @@ export function Setup({
   // dikkatini beklediğini görsün diye.
   const [liveActionCount, setLiveActionCount] = useState(0);
 
+  // Giriş varsayılanı kararının HAM girdisi. Rozetten (`liveActionCount`)
+  // ayrı tutuluyor çünkü karar bir de YZ tarafının BİLİNMESİNİ bekliyor
+  // (aşağı bkz.) — rozet ise ilk sayı gelir gelmez güncellenmeli.
+  const [liveCounts, setLiveCounts] = useState<PendingLiveGameCounts | null>(null);
+
   // "Yapay Zeka ile" sekmesindeki rozet — misafirde tekil localStorage kaydı
   // (0 ya da 1), girişli kullanıcıda `cloudSaves`'in gerçek uzunluğu (birden
   // fazla olabilir, bkz. CLAUDE.md).
@@ -360,6 +369,10 @@ export function Setup({
     if (lastUserIdRef.current === id) return;
     lastUserIdRef.current = id;
     appliedLoginDefaultRef.current = false;
+    // Sayılar da sıfırlanmalı: aksi halde karar effect'i YENİ hesabın
+    // `cloudSaves`i ile ESKİ hesabın Canlı sayılarını eşleştirip yanlış
+    // sekmeyi açardı (aynı bayat-veri sınıfı).
+    setLiveCounts(null);
   }, [user]);
   useEffect(() => {
     if (!user) {
@@ -367,14 +380,6 @@ export function Setup({
       return;
     }
     let cancelled = false;
-    // Yalnızca bu ref'in (kullanıcı için) İLK başarılı sonucunda bir kez
-    // uygulanır — refresh() sonraki her tetiklenmede (Realtime/foreground)
-    // tekrar çağrılsa da ref zaten dolu olduğundan bir daha zorlanmaz.
-    const applyLoginDefaultOnce = (inviteCount: number, myTurnCount: number) => {
-      if (appliedLoginDefaultRef.current) return;
-      appliedLoginDefaultRef.current = true;
-      if (inviteCount > 0 || myTurnCount > 0) onMainViewChange('live');
-    };
     const refresh = () => {
       fetchPendingLiveGameCounts().then((counts) => {
         // `null` = sayılar bilinmiyor (ağ). Son bilinen rozet KORUNUR ve
@@ -382,7 +387,7 @@ export function Setup({
         // tazeleme (retry merdiveni/öne dönüş/Realtime) hâlâ uygulayabilsin.
         if (cancelled || counts === null) return;
         setLiveActionCount(counts.inviteCount + counts.myTurnCount);
-        applyLoginDefaultOnce(counts.inviteCount, counts.myTurnCount);
+        setLiveCounts(counts);
       });
     };
     // 300ms debounce — `LiveGamesTab`'daki aynı desen/gerekçe. Tek bir olay
@@ -438,6 +443,37 @@ export function Setup({
     markQuickStartSeen();
     setShowHelp(false);
   };
+
+  // Giriş varsayılanı — HANGİ sekmeyle karşılaşılacağı.
+  //
+  // İki koşul, ikisi de kullanıcı isteği:
+  //   1) Canlı'da BEKLEYEN İŞ varsa (sırası kendisinde bir oyun ya da
+  //      yanıtlanmamış bir davet) → "Arkadaşınla". 3 Ağustos 2026.
+  //   2) YZ tarafında HİÇ devam eden oyun yokken Canlı'da devam eden bir
+  //      oyun varsa → yine "Arkadaşınla", sırası kendisinde OLMASA BİLE.
+  //      21 Ağustos 2026, kullanıcı bildirdi: hesabında 0 YZ oyunu ve 6
+  //      aktif Canlı oyun varken (hiçbirinde sıra kendisinde değil)
+  //      uygulama her açılışta BOŞ "Yapay Zeka ile" sekmesiyle
+  //      karşılıyordu — kural (1) doğru çalışıyordu, eksik olan kuralın
+  //      KENDİSİYDİ. Boş bir sekmeyle karşılamaktansa oyunların olduğu
+  //      sekmeyi açmak doğru; hangi alt sekmenin açılacağına LiveGamesTab
+  //      kendi karar veriyor (davet varsa "Oyun Davetleri", yoksa
+  //      "Devam Edenler").
+  //
+  // ⚠ Karar YZ tarafı BİLİNMEDEN verilemez: `cloudSaves` çekilene kadar
+  // `null` ve o sırada "YZ'de oyun yok" diye okumak kullanıcıyı devam eden
+  // YZ oyunu VARKEN de Canlı'ya atardı. Bu, bu kod tabanında iki kez
+  // yaşanmış bir hatanın (tek seferlik kararın BAYAT/EKSİK veriyle
+  // tüketilmesi — bkz. `CountBadge` → `hasFreshGames`) üçüncü yüzü.
+  // Misafirde bu effect zaten hiç çalışmıyor (`!user` dalı).
+  useEffect(() => {
+    if (!user || appliedLoginDefaultRef.current) return;
+    // `null` = henüz karar verme (veri eksik) — ref TÜKETİLMEZ.
+    const hedef = decideInitialMainView(liveCounts, cloudSaves);
+    if (hedef === null) return;
+    appliedLoginDefaultRef.current = true;
+    if (hedef === 'live') onMainViewChange('live');
+  }, [user, liveCounts, cloudSaves, onMainViewChange]);
 
   // `shareKelimekiLink` (`src/utils/shareLink.ts`) — Setup.tsx VE karşılama
   // katmanının main.tsx'i (React DEĞİL, düz JS) AYNI fonksiyonu paylaşıyor;
