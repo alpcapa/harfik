@@ -6294,14 +6294,27 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        (`readRepoFile`/`pick`/`pickAll`) — üç parite testi paylaşıyor. Daha
        eski üç parite testi (`help_text`/`legal_text`/`rank_tiers`) kendi
        okuyucularını taşımaya devam ediyor; onlara dokunulmadı.
-     - **⚠ CI GERÇEK BİR HATA BULDU — prototipleme MANTIĞI doğrular, DİLİ
-       değil.** İkon ayrıştırıcısı önce Python'da yazılıp Dart'a çevrildi;
-       Python'da `Match.end()` bir METOT, Dart'ta `Match.end` bir GETTER.
-       Prototipin API şekli olduğu gibi kopyalanınca `dart analyze` iki
-       hatayla düştü (artı iki gereksiz `!` uyarısı — `flutter analyze`
-       uyarıyı da hata sayıyor). Ders: çeviriden sonra getter/metot ayrımı
-       ayrıca taranmalı; bu tur için `.isEmpty()/.length()/.keys()` gibi
-       yaygın karışıklıklar mekanik olarak da tarandı.
+     - **⚠ CI İKİ GERÇEK HATA BULDU — ve ikisi de AYNI kök sebepten:
+       prototipleme MANTIĞI doğrular, DİLİ değil.** Ayrıştırıcılar önce
+       Python'da yazılıp Dart'a çevrildi; iki kez Python'ın semantiği
+       kopyalandı:
+       1. **`Match.end()` ↔ `Match.end`** — Python'da metot, Dart'ta GETTER.
+          `dart analyze` iki hatayla düştü (artı iki gereksiz `!` uyarısı —
+          `flutter analyze` uyarıyı da hata sayıyor).
+       2. **`\w` ASCII ↔ Unicode** — Python'ın `\w`si Unicode farkında ve
+          `ÇŞ`yi eşliyor; Dart'ınki (V8 gibi) yalnızca ASCII eşliyor. Yani
+          `kSealDescenderChars = '(\w+)'` prototipte ÇALIŞTI, Dart'ta HİÇ
+          eşleşmedi ve RankSeal testi düştü. Türkçe harf içerebilecek bir
+          yeri yakalarken `\w` KULLANMA — `[^']+` gibi açık bir sınıf yaz.
+       **KALICI DERS: Dart regex'ini PYTHON'DA DEĞİL NODE'DA (V8) prototiple.**
+       Dart'ın `RegExp`i irregexp tabanlı, yani V8 ile aynı aile; Python'ın
+       `re`si başka bir ailedir. Bu tur ikinci düzeltmede node'a geçildi ve
+       15 sabit + darken + eşik + merdiven + sedilla + TESLİM kontrollerinin
+       hepsi orada doğrulandı; negatif eş de node'da ölçüldü (`\w`ye geri
+       dönünce iki kontrol GERÇEKTEN düşüyor). Ayrıca getter/metot
+       karışıklığı (`isEmpty/length/keys/values/entries/first/last`) ve
+       kalan tüm `\w` kullanımları mekanik olarak tarandı — geri kalanların
+       hepsi ASCII tanımlayıcı yakalıyor, güvenli.
      - **Flutter SDK bu ortamda YOK** — dört doğrulama yolu: (a) her
        ayrıştırıcı önce Python'da gerçek dosyalara karşı koşturuldu (ikon
        karşılaştırmasında İKİ parser hatamı bu yakaladı: `final ad = Path()…`

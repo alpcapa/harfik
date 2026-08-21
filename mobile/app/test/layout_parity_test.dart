@@ -24,6 +24,13 @@
 //    aynı yükseklikte).
 //  - Renk/metin/ikon paritesi: renkler `color_tokens_test`, metinler
 //    `help_text_parity`/`legal_text`/`offline_notice` testlerinde.
+//
+// ⚠ REGEX TUZAĞI (CI 21 Ağustos 2026'da yakaladı): Dart'ın regex semantiği
+// V8'e yakın, Python'a DEĞİL. `\w` Dart'ta yalnızca ASCII eşler; Python'da
+// Unicode farkındadır. Bu yüzden `'ÇŞ'`yi `(\w+)` ile çekmek Python
+// prototipinde ÇALIŞTI, Dart'ta HİÇ eşleşmedi ve test düştü. Kural: Türkçe
+// harf içerebilecek bir yeri yakalarken `\w` KULLANMA, `[^']+` gibi açık bir
+// sınıf kullan — ve prototipi Python'da değil node'da (V8) koştur.
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/web_source.dart';
@@ -299,9 +306,12 @@ void main() {
 
     // Taban çizgisi düzeltmesi yalnızca sedillalı harflerde uygulanır.
     expect(
-        pick(port, RegExp(r"kSealDescenderChars = '(\w+)';"),
+        // ⚠ `\w` KULLANMA: Dart'ta (V8 gibi) yalnızca ASCII eşler, yani
+        // `ÇŞ` HİÇ eşleşmez. Python'ın `\w`si Unicode farkında olduğundan
+        // prototip bunu göremedi ve CI yakaladı (bkz. dosya başlığı).
+        pick(port, RegExp(r"kSealDescenderChars = '([^']+)';"),
             'rank_seal.dart kSealDescenderChars'),
-        pick(web, RegExp(r'const DESCENDER_CHARS = /\[(\w+)\]/;'),
+        pick(web, RegExp(r'const DESCENDER_CHARS = /\[([^\]]+)\]/;'),
             'RankSeal.tsx DESCENDER_CHARS'),
         reason: 'sedillalı harf listesi ayrışmış');
   });
