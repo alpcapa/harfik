@@ -93,11 +93,31 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       sayısı 1 azalmalı.
       **Asıl değişmez oyun sonunda ölçülür:** torba boşken, son hamleni
       onaylamadan hemen önce dökümdeki toplam PUANI hesapla (adet × puan),
-      sonra OYNA'ya bas — bitiş kartında rakibin yanında yazan negatif sayı
-      o puanla **birebir aynı** olmalı. Kullanıcı bu hatayı tam böyle
+      sonra OYNA'ya bas — bitiş kartının **"Kalan" sütununda** rakibin yanında
+      yazan negatif sayı o puanla **birebir aynı** olmalı (en sağdaki
+      **k-lig** sütunundaki sayıyla KARIŞTIRMA — o oyunun lig katkısı). Kullanıcı bu hatayı tam böyle
       yakaladı (10 saydı, kartta -7 gördü).
       **İKİ ekranda da koş:** yerel/YZ oyunu VE Canlı oyun (Canlı'da ayrıca
       sıra sende DEĞİLKEN yapılan "egzersiz" yerleştirmeleriyle).
+- [ ] **Oyun sonu kartında k-lig sütunu (20 Ağustos 2026).** Bir oyunu
+      sonuna kadar bitir. Kartta soldan sağa **Kalan · Toplam · k-lig**
+      başlıkları olmalı; kazananın k-lig hücresi **+2**, 2 kişilikte ikincinin
+      **-** (puan yok, ceza da yok). **Teslim olan varsa** (4 kişilik, süre
+      aşımı) onun satırında **-2** k-lig sütununda durmalı — "Kalan"da DEĞİL;
+      kullanıcının "kaybeden -2 aldı, kazanan puan almadı" diye bildirdiği
+      karışıklık tam olarak buydu ve kart o gün DOĞRUYDU, yalnızca lig
+      katkısını göstermiyordu.
+- [ ] **Üç sütunun sayısı da kolonun SAĞINA yapışık (21 Ağustos 2026).**
+      Özellikle k-lig'in `-` gösterdiği ve skorun 2 haneli olduğu bir satıra
+      bak (ör. 4 kişilikte 3./4. sıra): skor ORTALI durmamalı, sağ komşusuna
+      belirgin biçimde daha yakın olmalı. Sütunlar daha önce de sağa yaslıydı
+      — şikâyet hizalamadan değil, kutuların içerikten geniş olmasından
+      geliyordu (skorun solunda 19.5, sağında 20.0 px boşluk kalıyordu).
+- [ ] **Uzun ad kartı TAŞIRMAZ.** 4 kişilik bir YZ oyunu bitir: "Yapay Zeka 1"
+      gibi uzun adlar satırı ikiye sarmadan `…` ile kırpılmalı ve skor kartın
+      sağ kenarından ASLA taşmamalı (dar bir telefonda/dar pencerede bak —
+      hata tam olarak 320px'te görünüyordu). Alt satırdaki hamle sayısı
+      etiketin YANINDA ve ortalı olmalı, satırın iki ucunda değil.
 - [ ] **Bingo bonusu mesajda yazıyor (17 Ağustos 2026).** Rafın 7 taşını
       birden koyup OYNA'ya bas → mesaj satırında `(Bingo bonusu +25)`
       görünmeli. **DÖRT yerde ayrı ayrı koş, biri ötekini kanıtlamaz:**
@@ -703,10 +723,29 @@ tarayıcıda görülebilecek olanlar. **Admin hesabı gerekiyor.**
 
 ## 9.9. Admin — Kaynak Hunisi (16 Ağustos 2026)
 
-"Ziyaretçi Kaynağı" tablosunun yerini aldı: kaynak → **Kişi** → **Üye** →
-**Oyun**. İlk sütun eskisiyle aynı sayı. Sunucu tarafı canlıda rollback'li
-senaryolarla doğrulandı (yetki matrisi, damgalama, write-once trigger,
-toplamların korunması); aşağıdakiler gerçek istemcide görülmesi gerekenler.
+"Ziyaretçi Kaynağı" tablosunun yerini aldı: kaynak → **Kişi** → **Başlayan**
+→ **Üye** → **Oyun**. İlk sütun eskisiyle aynı sayı. Sunucu tarafı canlıda
+rollback'li senaryolarla doğrulandı (yetki matrisi, damgalama, write-once
+trigger, toplamların korunması); aşağıdakiler gerçek istemcide görülmesi
+gerekenler.
+
+- [ ] **"Başlayan" sütunu gerçekten sayıyor (21 Ağustos 2026, ROADMAP #9).**
+      Misafirken (çıkış yapıp) yapay zekaya karşı bir oyun BAŞLAT, hemen
+      logoya basıp çık — bitirmene gerek YOK. Admin panelinde Kaynak
+      Hunisi'nde o cihazın kaynağının (`?ref=` ile gelmediysen `direkt`)
+      "Başlayan" değeri 1 ARTMALI, "Oyun" değeri DEĞİŞMEMELİ. Bu ayrım işin
+      bütün sebebi: "Oyun" yalnızca BİTMİŞ ve yalnızca GİRİŞLİ kullanıcının
+      oyununu sayıyor.
+- [ ] **Aynı cihazda ikinci oyun: "Başlayan" 2, ama yüzde modunda cihaz
+      sayısı 1 kalmalı.** `%` düğmesine bas — "Başlayan" yüzdesi başlatan
+      benzersiz CİHAZ / kişi oranıdır, oyun adedi değil.
+- [ ] **"Tekrar Oyna" da bir başlangıçtır.** Bir oyunu bitirip kartın
+      altındaki "Tekrar Oyna"ya bas → "Başlayan" yine artmalı. (Web'de her
+      iki yol da tek bir `startLocalGame` yardımcısından geçiyor; portta iki
+      ekran da `GamesRepo.logStart` çağırıyor.)
+- [ ] **Devam eden oyuna DÖNMEK bir başlangıç DEĞİL.** Yarım bırakılmış bir
+      oyunu "Devam Eden Oyun" satırından sürdür → "Başlayan" ARTMAMALI.
+      Artıyorsa aynı oyun her oturum dönüşünde tekrar sayılıyor demektir.
 
 - [ ] **Tablo yükleniyor ve zaman filtresine bağlı.** Admin Paneli → Büyüme →
       Kullanıcı: "Kaynak Hunisi (Son N …)" başlığı üstteki granülerlik/periyot
@@ -718,11 +757,16 @@ toplamların korunması); aşağıdakiler gerçek istemcide görülmesi gerekenl
       kendisi hariç). Bilinmiyor ancak
       damgalamayan bir istemciden (bugün: mobil uygulama) kayıt gelirse
       yeniden belirir.
-- [ ] **`arkadas` satırının %100'ü bir ölçüm DEĞİL, tesadüf.** Ziyaretçi ucu
-      yalnızca Setup'taki paylaş butonunun `?ref=arkadas` linkiyle gelenleri
-      sayıyor, üye ucu ise ağırlıkla `/davet/:token` davet linkinden
-      gelenleri — o path `?ref=` taşımadığından iki uç aynı popülasyonu
-      ölçmüyor. "Kanal kusursuz dönüyor" diye OKUMA.
+- [ ] **Davet linki `?ref=arkadas` taşıyor VE yakalanıyor (21 Ağustos 2026,
+      ROADMAP #7).** Arkadaşlar → "Arkadaşını Davet Et" ile link üret;
+      URL'in sonunda `?ref=arkadas` OLMALI. Sonra o linki **temiz bir
+      tarayıcıda** (gizli sekme) aç ve devtools'ta
+      `localStorage.getItem('kelimeki:utm-source')` → **`"arkadas"`**
+      dönmeli. `null` dönüyorsa etiket konuyor ama yakalanmıyor demektir —
+      hata tam olarak buydu ve `boot.tsx`te düzeltildi.
+      **Not:** bu, `arkadas` satırının eski "%100 dönüşüm"ünü de anlamlı
+      hale getiriyor; o rakam bu düzeltmeden ÖNCE bir ölçüm değil tesadüftü
+      (iki uç aynı popülasyonu ölçmüyordu).
 - [ ] **`direkt` satırında tam 1 üye olmalı (hesap sahibi).** Projeyi kuran
       hesap kimse tarafından davet edilmedi; geri kalan 22 üye `arkadas`.
 - [ ] **Yeni bir kayıt kaynağını damgalıyor.** Gizli sekmede
@@ -866,6 +910,87 @@ açıklama değil veri.
       kart ekrana sığmalı, sığmıyorsa kartın KENDİSİ kaydırılabilmeli (panel
       değil).
 - [ ] **Hiçbir grafiğin altında artık hikaye paragrafı YOK.**
+
+## 9.13. Admin — Üyeler tablosundaki kayıt alanları (21 Ağustos 2026)
+
+Tablo artık kayıt formunun tüm alanlarını ve izinleri taşıyor (18 kolon).
+
+- [ ] **Tablo yana kaydırılıyor, SAYFA kaymıyor.** Kaydırma tablonun kendi
+      kabında kalmalı; panelin kendisi ya da arka plan yatay kaymamalı.
+- [ ] **İsim kolonu SABİT.** Sağa doğru kaydır: İsim hem başlıkta hem her
+      satırda solda kalmalı, altından geçen içerik onun İÇİNDEN görünmemeli
+      (zemin opak) ve sağ kenarında ince bir ayraç çizgisi olmalı.
+- [ ] **Sabit hücre satırın tonunu ALIYOR.** Bir şikayet kartından "Kişiye
+      Git →" ile gel: vurgulanan satırın İSİM hücresi de mavi tonlanmalı,
+      beyaz kalmamalı. (Farede: satırın üstüne gelince hover tonu da isim
+      hücresini kapsamalı.)
+- [ ] **Uzun ad taşırmıyor.** 18 karakterden uzun bir ada sahip hesapta isim
+      kırpılıp `...` ile bitmeli; sabit kolon geri kalan kolonları ekrandan
+      İTMEMELİ (telefonda bile en az birkaç kolon görünür kalmalı).
+- [ ] **Girilmemiş her alan `—`.** Cinsiyet/Doğum/Kaynak/Davet Eden'i boş
+      bir hesapta kontrol et — boş hücre değil tire görünmeli.
+- [ ] **`Koşullar` neredeyse herkeste "Evet".** Kayıt formunda zorunlu
+      olduğundan "Hayır" yalnızca onayın kayda hiç geçmediği çok eski
+      hesap(lar)da görünür. **Bu, düzeltilmiş bir hatanın regresyon
+      kontrolü:** eskiden HERKESTE "Hayır" çıkardı.
+- [ ] **Yeni bir kayıt "Evet" ile geliyor.** Test hesabıyla kayıt ol →
+      satırında Koşullar "Evet" olmalı. (E-posta doğrulaması açıkken de —
+      düzeltmenin asıl noktası bu.)
+- [ ] **`Pazarlama` ve tarihi tutarlı.** Onay verilmişse tarih dolu,
+      verilmemişse `—`. Hesap Ayarları'ndan onayı aç/kapat → paneli kapatıp
+      yeniden aç → yeni değer ve yeni tarih görünmeli (**"ileride yapılan
+      değişiklikler yansımalı" maddesinin kontrolü**).
+- [ ] **`E-posta Bildirimi` Açık/Kapalı** (Evet/Hayır DEĞİL) ve varsayılanı
+      Açık. Hesap Ayarları'ndan kapat → tabloda "Kapalı".
+- [ ] **`Kanal` ile `Kaynak` karışmıyor.** Kanal Direkt/Form; Kaynak
+      `?ref=` etiketi (ör. `instagram`, `arkadas`, `direkt`) ya da `—`.
+- [ ] **`Davet Eden`** yalnızca davet linkiyle gelen üyelerde dolu.
+- [ ] **İzin hücrelerinde kırmızı YOK** — yeşil (verilmiş) ya da nötr gri.
+      Kırmızı bu tabloda yalnızca "Donduruldu" durumuna ait.
+- [ ] **CSV tabloyla aynı.** İndir, aç: kolonlar ekrandakiyle aynı sırada,
+      Ad ve Soyad AYRI sütun, boş alanlar gerçekten BOŞ (tire değil).
+- [ ] **`?` popup'ı** Koşullar/Pazarlama/E-posta Bildirimi ayrımını ve
+      Kanal ↔ Kaynak farkını anlatıyor.
+- [ ] **Admin olmayan hiçbir şey göremiyor** (RPC `Yetkisiz erişim.` verir).
+
+## 9.12. Admin — "Hatalar" sekmesi (21 Ağustos 2026, ROADMAP #3)
+
+İstemci hata telemetrisi. Kayıtlar anonim (`client_errors`, hesap kimliği
+YOK) ve okuma yalnızca admin'e açık.
+
+- [ ] **Dördüncü sekme görünüyor ve kırpılmıyor.** Telefonda (dar ekran)
+      sekmeler 2×2 ızgara, geniş ekranda tek sıra olmalı; hiçbir genişlikte
+      etiket kesilmemeli ve yatay kaydırma oluşmamalı. **Bu, düzeltilmiş bir
+      hatanın regresyon kontrolü:** dört sekme tek sıraya sığmıyordu ve panel
+      onu sessizce kırpıyordu.
+- [ ] **Sekmede rozet YOK.** "Geri Bildirim"de kırmızı sayı rozeti çıkabilir,
+      "Hatalar"da ASLA — rozet bu projede "bekleyen iş" demek, hata kaydı bir
+      gözlem.
+- [ ] **Pencere seçici çalışıyor** (24 saat / 7 / 30 / 90 gün) ve seçim
+      değişince liste yeniden yükleniyor.
+- [ ] **Hiç kayıt yoksa "Bu pencerede hata kaydı yok."** — boş bir liste
+      değil, açık bir metin.
+- [ ] **Kartta "Kez" ve "Cihaz" AYRI AYRI okunuyor.** İkisi karıştırılırsa
+      metrik anlamsızlaşır: 40 kez / 1 cihaz bir kişinin döngüsü, 3 kez /
+      3 cihaz yaygın bir hata.
+- [ ] **Karta dokununca yol, ilk görülme ve örnek yığın açılıyor**, tekrar
+      dokununca kapanıyor.
+- [ ] **Yol maskelenmiş.** Bir kayıtta `/davet/<token>` ya da `/game/<uuid>`
+      HAM görünüyorsa bu bir GİZLİLİK hatasıdır — `/davet/:token` ve
+      `/game/:id` olmalı.
+- [ ] **CSV iniyor** ve örnek yığını da içeriyor.
+- [ ] **`?` popup'ı açılıyor** ve "Kez ≠ Cihaz" ayrımını anlatıyor.
+- [ ] **Admin OLMAYAN bir hesap bu sekmeyi hiç görmemeli** (Admin Paneli
+      girişi zaten çıkmaz) — ayrıca doğrudan sorgulayan biri de satırları
+      okuyamamalı (tabloda SELECT politikası YOK).
+- [ ] **Gerçek bir kayıt oluşuyor mu:** çevrimdışıyken bir Canlı oyunda hamle
+      dene — bu BEKLENEN bir durum, telemetriye satır DÜŞMEMELİ. Kaydın
+      gerçekten oluştuğunu görmek için tarayıcı konsolundan
+      `window.dispatchEvent(new PromiseRejectionEvent('unhandledrejection',
+      { promise: Promise.reject(new Error('elle test')), reason: new
+      Error('elle test') }))` çalıştır → panelde "elle test" belirmeli.
+- [ ] **Tekrar bastırma:** aynı hatayı arka arkaya iki kez tetikle — panelde
+      TEK satır olmalı (aynı oturumda ikinci kayıt gönderilmez).
 
 ## 10. k-lig ödül & rütbe sistemi
 
@@ -1189,3 +1314,30 @@ doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
       kopyalama açılmalı; kopyalamada buton metni 2 saniyeliğine "Link
       kopyalandı!" olmalı ve ikon KAYBOLMAMALI (yalnızca metin span'i
       değişiyor).
+
+## 12. Hoş geldiniz e-postası (21 Ağustos 2026)
+
+Yeni üyeye tek seferlik karşılama maili. **Kayıt anında DEĞİL, e-posta
+adresi DOĞRULANDIĞINDA** gönderilir — bu ayrım testin tamamını belirliyor.
+
+- [ ] **Onay linkine tıklamadan mail GELMEMELİ.** Tek kullanımlık bir
+      adresle kayıt ol, onay mailini AÇMA: hoş geldiniz maili gelmemeli.
+      (Gelirse tetikleyici yanlış yere bağlanmış demektir.)
+- [ ] **Onay linkine tıklayınca GELMELİ.** Aynı hesapta onayı tamamla →
+      "Kelimeki — Hoş Geldiniz" konulu mail gelmeli.
+- [ ] **Metin ve marka.** Logo + beyaz kart (diğer maillerle aynı), hitap
+      baştan sona SİZ, "hoş geldiniz" AYRI yazılmış, "Görüş Bildir" adı
+      geçiyor, tek düğme: **Hemen Oyna**.
+- [ ] **Düğme çalışıyor** → kelimeki.com açılmalı.
+- [ ] **İKİNCİ bir mail GELMEMELİ.** Aynı hesapla çıkış yapıp tekrar giriş
+      yap, birkaç saat sonra tekrar kontrol et — karşılama maili hayatta
+      bir kez gider.
+- [ ] **Mevcut üyelere GİTMEMELİ.** Özellik canlıya çıktıktan sonra eski
+      üyelerin hiçbiri karşılama maili almamalı (geriye dönük doldurma bunu
+      garantiliyor; biri alırsa doldurma atlanmış demektir).
+- [ ] **Admin panelinde iz.** Üyeler tablosunda yeni üyenin satırı normal
+      görünmeli; hata olursa Supabase Edge Function loglarında
+      `[notify-welcome]` satırlarına bak.
+- [ ] **Bildirimleri kapatan almamalı** (uç durum): Hesap Ayarları'ndan
+      "e-posta bildirimleri"ni kapatmış bir hesap yeni bir adresi
+      doğrularsa mail gitmemeli.

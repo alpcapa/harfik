@@ -27,6 +27,7 @@ npm run verify-cloud-save-mirror # Bulut kaydı offline karar mantığı (saf fo
 npm run verify-fetch-my-games    # Oyun geçmişi: ağ hatası ↔ boş liste ayrımı (sahte Supabase ucu)
 npm run verify-demo-board        # Karşılama katmanındaki tanıtım tahtası sözlüğe karşı doğrulanır
 npm run verify-remaining-tiles   # "Kalan Taşlar" dökümü ↔ oyun sonu raf düşümü değişmezi
+npm run verify-error-reporting   # istemci hata telemetrisi: ne kaydedilir/kaydedilmez, tekrar bastırma, hız sınırı
 npm run augment-dictionary       # Sözlüğe elle madde ekleme (GTS'siz — bkz. "Sözlüğe Kelime/Anlam Ekleme")
 npm run build:dict               # Sözlüğün TAM üretimi — 100 MB'lık GTS kaynağını ister
 npm run generate-logo-paths      # LogoMark.tsx + portun logo_mark_data.dart'ını birlikte üretir
@@ -548,7 +549,7 @@ KULLANMAZ, orada logo tek kez çiziliyor.
 
 **Sayfa bütçesi — güncel ölçüm (18 Ağustos 2026, metin turu + sayfa sonu
 GİRİŞ düğmesinin kaldırılmasından SONRAKİ nihai değer): `dist/index.html`
-ham **254.0 KB** / **gzip 22.26 KB**.** (Bu gzip rakamı 19 Ağustos 2026'da
+ham **254.8 KB** / **gzip 22.29 KB**.** (21 Ağustos 2026'da yedinci SSS maddesi +781/+30 bayt ekledi. Bu gzip rakamı 19 Ağustos 2026'da
 yeniden ölçüldü: en üst rütbenin adı Tanrı→Kozmik olunca ham 8 bayt DÜŞTÜ ama
 gzip 126 bayt ARTTI — iki kelimenin sıkıştırma sözlüğündeki farkı; içerik
 olarak değişen tek şey iki metin.) Aynı gün üç ara ölçüm daha yapıldı,
@@ -699,6 +700,23 @@ bir ekran hiç yok (`mobile/` bu bölümde de hiç değişmedi), yani madde
 uygulamalarda zaten görünemez. Porta bir gün benzer bir tanıtım ekranı
 eklenirse bu madde oraya TAŞINMAMALI.
 
+**SSS yedinci maddeyi aldı — "Kelimeki'nin mobil uygulaması yok mu?"
+(21 Ağustos 2026, kullanıcı isteği):** Mağaza inceleme süreci başlayınca
+ziyaretçinin soracağı ilk soru bu oldu. Metin kullanıcının taslağından
+düzeltilerek girdi: *"Apple ve Android mağaza işlem sürecindeler"* yerine
+mağazaların gerçek adları (**App Store / Google Play**) ve *"inceleme
+sürecinde"* — "işlem süreci" ne olduğunu söylemiyor. Son cümle
+(*"O zamana kadar tarayıcıdan eksiksiz oynayabilirsin"*) BİLİNÇLİ: madde
+tek başına "şu an oynayamazsın" gibi okunabilirdi. Hemen ÜSTÜNDEKİ
+"Uygulama indirmem gerekiyor mu?" maddesiyle çelişmiyor, onu tamamlıyor —
+sıra bu yüzden bilerek yan yana. **Aynı PR'da `tests/smoke.spec.ts`'in
+FAQ testi altı → yedi soruya çekildi** (o test JSON-LD ile ekranı
+karşılaştırdığından sayıyı güncellemeden geçmezdi). **Ölçüldü**
+(derlenmiş `dist`): FAQ JSON-LD `JSON.parse` ile 7 madde, isimler ekrandaki
+yedi `<summary>` ile birebir; `dist/index.html` ham 253.990 → **254.771** /
+gzip 22.260 → **22.290** bayt (+781 / +30). Port etkilenmedi — karşılama
+katmanı web'e özgü (yukarı bkz.).
+
 ## Karşılama Katmanı — Sertleştirme (18 Ağustos 2026)
 
 İçerik/efekt turları bitince (yukarıdaki Bölüm 2/3) bağımsız bir denetim
@@ -719,7 +737,8 @@ edilebilirdi.
 tetikleyici deseni (push+PR → `main`, `paths` filtresi; bu sefer `src/**`,
 `scripts/**`, `tests/**`, `public/**`, `index.html`, `vite.config.ts`,
 `tailwind.config.js`, `playwright.config.ts`, `package*.json`). Adımlar:
-`npm ci` → `lint` → `verify-remaining-tiles` → `build` → Playwright'ı kur
+`npm ci` → `lint` → `verify-remaining-tiles` → `verify-error-reporting` →
+`build` → Playwright'ı kur
 (`--with-deps chromium`) → `test`.
 
 **`playwright.config.ts`'teki `executablePath` bu geliştirme ortamına ÖZGÜ
@@ -796,8 +815,8 @@ burada CI runner'ından hızlı). Yani kapatılan şey gözlenen bir çökme de�
 
 | | değer |
 |---|---|
-| `dist/index.html` ham | **254.0 KB** (bunun ezici çoğunluğu `#karsilama` bloğu) |
-| gzip | **22.26 KB** (19 Ağustos 2026 ölçümü — bkz. yukarıdaki Tanrı→Kozmik notu) |
+| `dist/index.html` ham | **254.8 KB** (bunun ezici çoğunluğu `#karsilama` bloğu) |
+| gzip | **22.29 KB** (21 Ağustos 2026 ölçümü — yedinci SSS maddesi dahil) |
 | Bölüm 2'nin ilk hedefi | `< 15 KB` gzip (yer tutucu içeriğe göre yazılmıştı) |
 | İki tam tahtanın (Bölüm 3'te eklenen) gzip payı | ~6.9 KB |
 
@@ -1040,7 +1059,7 @@ src/
     constants.ts    # Tahta sabitleri, köşe hesapları, bonus konumları
     gameReducer.ts  # useReducer tabanlı oyun state makinesi
     types.ts        # GameState, Player, Tile tipleri
-  utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, cloudSaveMirror, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields, platform, offlineNotice, shareLink, pendingLiveGames...)
+  utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, cloudSaveMirror, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields, platform, offlineNotice, shareLink, pendingLiveGames, errorReporting...)
   data/         # Kelime listesi (~63k), harf dağılımı, kelime anlamları, wordSetLoader (lazy chunk)
   lib/          # Supabase istemcisi ve API sarmalayıcısı
   fonts/        # @font-face tanımları (main.tsx import eder) + files/*.woff2 — bunlardan
@@ -1119,6 +1138,16 @@ mobile/         # Flutter portu — kelimeki_core (saf Dart motor) + üretilmiş
   **Doğrulama:** `npm run verify-remaining-tiles` (`scripts/verify-remaining-tiles.ts` — esbuild+node, `verify-cloud-save-mirror`in aynı deseni) ÜRETİM reducer'ını gerçek `RESUME_SAVED`/`PLACE_TILE`/`PLAY` action'larıyla koşturuyor: fiziksel olarak tutarlı bir oyun sonu (93 tahta + 4 raf + 3 YZ = 100 taş) kurup her yerleştirmeden sonra dökümün DEĞİŞMEDİĞİNİ, jokerin sızmadığını ve **bitişte düşülen puanın dökümdeki puanla birebir aynı olduğunu** ölçüyor — 13 kontrol. **Negatif eş:** `placedTiles` döngüsü kaldırılınca 7 kontrol GERÇEKTEN düşüyor ve kullanıcının bildirdiği semptomu birebir üretiyor (`bitişte düşülen 7 puan, dökümdeki 11 puanla eşleşmiyor`). CI'a eklendi (`web-ci.yml`, lint'in hemen yanında).
   **Parite artık testli:** bu fonksiyonun bugüne kadar HİÇ golden vector'ı yoktu — `remaining_tiles.json` (60 durum, bekleyen taşlı ve jokerli) eklendi, `mobile/kelimeki_core/test/run_all.dart` onu tüketiyor; mobil app tarafında da bir widget regresyon testi var (taş koy → TORBA → 93 kalmalı, 94 değil). Mevcut golden fixture'ların HİÇBİRİ değişmedi (reducer davranışı aynı) — ölçüldü.
   **Ders:** bu state makinesinde bir taşın bulunabileceği kova sayısı ÜÇ değil (torba / raf / tahta) **DÖRT** — arada `state.placed` var. Envanter sayan her yeni kod (döküm, istatistik, doğrulama) dört kovayı da saymalı; yalnızca üçünü sayan bir formül farkı sessizce yanlış tarafa yazar.
+- **`GameOver` — oyun sonu kartı: "Kalan"ın yanına k-lig sütunu (20 Ağustos 2026, kullanıcı isteği; İKİ platformda birden):** Kullanıcı bitmiş bir oyunun kartında kaybedenin yanındaki **-2**'yi k-lig cezası sanıp "kazanan neden puan almamış?" diye sordu. **Hata YOKTU ve bu ölçüldü:** o -2, `p.rack`ta kalan taşların düşümü (başlığı zaten "KALAN"dı) ve veritabanında kazanan `rank 1`/`win`/**+2** almıştı (121 → 123). Ama karışıklık meşru: kart, oyunun k-lig'e KATKISINI hiçbir yerde göstermiyordu, dolayısıyla tek görünen eksi sayı ceza gibi okunuyordu.
+  - **Sütun ELLE hesaplanmıyor:** `leaguePoints(rank, players.length, surrendered)` + `formatLeaguePoints` — oyun kartlarının (`GameHistoryModal`/`SharedGamePage`) kullandığı AYNI fonksiyonlar, yani kart ile Skor Kartı/k-lig listesi sessizce ayrışamaz. Başlık `normal-case` ŞART (satır `uppercase`; markanın küçük harf olması "SL" sütununda öğrenilmişti).
+  - **Aynı turda ONARILAN, ondan ÖNCE de var olan bir düzen hatası:** ad `truncate` DEĞİLDİ — uzun bir ad (en sık "Yapay Zeka 1"; ad alanının uzunluk sınırı YOK, yalnız takma ad 10 karakter) satırı ikiye sarıyor, 320px'te skoru kartın dışına taşırıyordu. Yeni sütun bu hatayı büyütürdü, o yüzden birlikte düzeltildi.
+  - **Genişlikler TAHMİN DEĞİL, MÜREKKEP ölçüsü — her kutu KENDİ en geniş içeriğine eşit:** "KALAN" başlığı 28.86 → `w-[29px]`; skor "271" 20px mono'da **36.72** → `w-[37px]` (36 iken sayı kutusunu birebir doldurup soldaki eksiye yapışıyor, "-2208" gibi okunuyordu); "k-lig" başlığı 19.98 → `w-5`. Ada yer açmak için başlık 10→**9px**, skor 22→**20px**; "Abdurrahman"ı 360px'te sığdıran tam olarak bu ~8px.
+  - **Sütunlar ZATEN sağa yaslıydı; "ortalı" görünen şey KUTU BOŞLUĞUYDU (21 Ağustos 2026, kullanıcı: *"3 kolonun da sayıları kolonun sağına yapışık olmalı. Sanki toplam kolonu ortalı gibi duruyor"*).** Ölçüldü: 16 satırın 16'sında metnin sağ kenarı kutunun sağ kenarıyla **birebir aynı** (`text-right` çalışıyordu), glyph yan boşluğu da ihmal edilebilir (20px mono'da 0.24, 13px'te −0.04). Gerçek sebep kutuların içerikten geniş olmasıydı: k-lig'in `-` gösterdiği ve skorun 2 haneli olduğu satırlarda skorun **solunda 19.5, sağında 20.0 px** boşluk kalıyordu — yani skor komşularının mürekkebi arasında TAM ORTALANIYORDU. **Blok sağa çapalı olduğundan sol boşluğu Toplam'ın, sağ boşluğunu k-lig'in genişliği belirler; Kalan'ın genişliği İKİSİNİ DE etkilemez** — bu yüzden yalnız "kutuları daraltmak" simetriyi bozmuyor, boşlukların da asimetrik olması gerekiyordu. Çözüm: kutular içeriğe indirildi (32/40/24 → **29/37/20**) ve tekdüze `gap-1` yerine sütun başına margin verildi — Kalan `ml-1`, Toplam **`ml-2`**, k-lig `ml-1`. Aynı satır artık **20.5 sola / 16.0 sağa**, yani skor görünür biçimde sağa yaslanıyor. Sağ blok 104 → **100px**; yan fayda: 390px'te "Konstantinopolis" artık kırpılmıyor (360'ta bir ad daha sığıyor, 320 değişmedi). **Ölçüldü:** dört genişlikte (320/360/390/834) yatay taşma **0**, sütun içi taşma **yok**, satır yüksekliği sabit.
+  - **Portun başlık `letterSpacing`'i SESSİZ bir sapmaydı, aynı turda düzeltildi:** Dart `0.5` kullanıyordu, web `tracking-wide` = 0.025em yani 9px'te **0.225** — bu yüzden portun başlıkları webden genişti ve yeni (dar) kutulara sığmazdı. `game_over_modal.dart` web'in değerine çekildi; genişlik/punto sayıları iki tarafta ELLE senkron.
+  - **ÖLÇÜLEN sonuç** (derlenmiş CSS + Chromium, gerçek `<GameOver>` sunucuda render edilip): 390px'te 16 karakterlik bir ad bile kırpılmıyor; 360px'te yalnız 13+ karakterliler; 320px'te uzun adlar kırpılıyor ama **taşma her genişlikte 0** ve satır yüksekliği 23px sabit. Alt satırdaki sayı artık etiketin YANINDA (8px, ortalı) — önceden satırın iki ucundaydı.
+  - **320px + teslim uç durumu BİLİNÇLİ olduğu gibi bırakıldı** (kullanıcı kararı): orada ad + "(Teslim)" rozeti + üç sütun aynı satırda, ad erken kırpılıyor; taşma yok, bilgi kaybı yok.
+  - **"KALAN TAŞ" iki satıra bölünmesi DENENDİ ve GERİ ALINDI** (kullanıcı: "altlı üstlü kötü duruyor") — başlık tek satır "Kalan" kaldı.
+  - Flutter portu (`mobile/app/lib/src/ui/game/game_over_modal.dart`) AYNI PR'da birebir güncellendi; genişlik/punto sayıları iki tarafta ELLE senkron — biri değişirse öteki de değişmeli.
 - **`CountBadge`** (`src/components/CountBadge.tsx`, 1 Ağustos 2026) — kırmızı yuvarlak sayaç rozeti (Setup'taki "Oyun Tipi"/alt sekmeler, `UserMenu`'deki "Arkadaşlar" ve "Admin Paneli" satırları, `FriendsModal` ve `AdminDashboard`'un sekme başlıkları). Önceden üç yerde birebir aynı `<span>`/class kopyalanmıştı; aynı görsel öğenin TÜM kullanım yerlerini tek kaynağa bağlamak için ortak bileşene çıkarıldı.
   **Ne anlama geldiği ve toplama kuralı (4 Ağustos 2026'da iki eksik bulununca netleştirildi):** Rozet HER ZAMAN "bekleyen iş" sayısıdır — kullanıcının/admin'in yapması gereken ama henüz yapılmamış şeylerin adedi (okunmamış geri bildirim, bekleyen arkadaşlık isteği, sırası kendisinde olan oyun…). Bir durum/ilerleme sayacı DEĞİL: `Değiştir (N)` (o an seçili taş sayısı, `App.tsx`/`OnlineGameScreen.tsx`) ve `Arkadaşlarını Seç (N/3)` (`LiveGameCreateForm.tsx`) bilerek metin içinde parantezle duruyor, bunlar rozete çevrilMEmeli — "bekleyen iş" değiller. **Toplama kuralı:** bir sekme başka sekmeleri KAPSIYORSA, kapsayanın rozeti kapsananların TOPLAMI olmak zorunda; zincir hiçbir yerde kopmamalı. Somut zincir: `Gelen Kutusu` + `Şikayetler` (alt sekmeler) → `Geri Bildirim` (üst tab) → `UserMenu`'deki "Admin Paneli" satırı (`fetchAdminPendingCount`, zaten baştan iki tablonun toplamıydı). `Üyeler`/`Büyüme` sekmelerinde hiç rozet YOK ve bu doğru — orada bir kuyruk/bekleyen iş kavramı yok (durum sütunu ve istatistik grafikleri).
   **Bulunan iki hata (kullanıcı bildirdi):** (1) üstteki `Geri Bildirim` tab'ının rozeti yalnızca `unhandledFeedbackCount`'u gösteriyor, şikayetleri hiç toplamıyordu — `UserMenu`'deki sayı ikisinin toplamı olduğundan ikisi görünür şekilde ayrışıyordu (kullanıcı "menüde 2 yazıyor, tab'da hiç sayı yok" diye fark etti); (2) `Şikayetler` alt sekmesinin kendi rozeti vardı ama `Gelen Kutusu`'nunki hiç yoktu. İkisinin de kök sebebi aynı: `Şikayetler` alt sekmesi 2 Ağustos 2026'da eklenirken kendi rozetiyle geldi ama onu KAPSAYAN üst tab'ın toplamı güncellenmedi, kardeşi olan `Gelen Kutusu`'na da simetrik rozet eklenmedi. **Yeni bir sayaç/sekme eklerken zinciri yukarı doğru takip et** — kendi rozetini eklemek yetmez, onu kapsayan her seviyenin toplamı da güncellenmeli. Bu ayrışma bölüm bölüm test edilirken görünmediğinden `TESTING.md`'ye ayrı bir bölüm olarak da eklendi (bölüm 7, "Bildirim rozetleri").
@@ -1401,7 +1430,95 @@ edilen kelimeyi mobil reddediyor" olarak görünür.
 
 - **Erişim:** `profiles.is_admin = true` olan hesaplarda `UserMenu`'de bir "Admin Paneli" girişi açılır (yoksa hiç görünmez). Tüm admin verisi `is_admin()` (security definer) ile korunan RPC'ler üzerinden gelir; `anon`/`authenticated` rollerinden doğrudan `revoke`, yalnızca `authenticated`'e `grant execute` verilir, RPC içinde de ayrıca `is_admin()` kontrolü yapılır (yetkisizse exception fırlatır).
 - **Sekmeler (`AdminDashboard.tsx`):**
-  - **Üyeler** — `admin_list_members` RPC'si tüm kayıtlı kullanıcıları (ad, nickname, e-posta, `signup_channel` — Direkt/Form, katılma/son giriş, rol) listeler, arama+sıralama var; bir satıra tıklayınca `PlayerScoreCard` (`ScoreCard`'ın salt-okunur genel görünümü, `fetchPlayerStats`/`fetchMyGames`'in opsiyonel `userId` parametresiyle) açılır — bu bileşen 25 Temmuz 2026'ya kadar yalnızca admin panelinden erişilebilen `AdminPlayerDetail` idi; artık `Leaderboard`'daki (Sanal Lig) herhangi bir satıra tıklanınca da aynı bileşen (aynı dosya, `PlayerScoreCard.tsx`) açılıyor, bu yüzden admin'e özgü olmayan bir isim aldı. İsim altında ayrıca bir e-posta satırı gösteriliyordu, bu da aynı gün kaldırıldı — e-posta artık hiçbir skor kartında görünmüyor, yalnızca Üyeler tablosunun kendi sütununda kalıyor.
+  - **Üyeler** — `admin_list_members` RPC'si tüm kayıtlı kullanıcıları listeler, arama+sıralama var; **21 Ağustos 2026'dan beri kayıt formunun TÜM alanları + izinler tabloda** (bkz. hemen aşağıdaki madde); bir satıra tıklayınca `PlayerScoreCard` (`ScoreCard`'ın salt-okunur genel görünümü, `fetchPlayerStats`/`fetchMyGames`'in opsiyonel `userId` parametresiyle) açılır — bu bileşen 25 Temmuz 2026'ya kadar yalnızca admin panelinden erişilebilen `AdminPlayerDetail` idi; artık `Leaderboard`'daki (Sanal Lig) herhangi bir satıra tıklanınca da aynı bileşen (aynı dosya, `PlayerScoreCard.tsx`) açılıyor, bu yüzden admin'e özgü olmayan bir isim aldı. İsim altında ayrıca bir e-posta satırı gösteriliyordu, bu da aynı gün kaldırıldı — e-posta artık hiçbir skor kartında görünmüyor, yalnızca Üyeler tablosunun kendi sütununda kalıyor.
+
+    **Kayıt alanlarının tamamı tabloda (21 Ağustos 2026, kullanıcı isteği:
+    *"kayıt sırasında doldurulan tüm verileri koyalım. İzinler de dahil.
+    Boş bırakılanları (-) yap. İleride yapılan değişiklikler de
+    yansımalı."*):** Tablo 8 → **18 kolon**: İsim · Nickname · E-posta ·
+    Cinsiyet · Doğum · Fotoğraf · **Koşullar** · **Pazarlama** · **Pazarlama
+    Tarihi** · **E-posta Bildirimi** · Kanal · **Kaynak** · **Davet Eden** ·
+    Katılma · Son Giriş · Rol · Durum · aksiyonlar.
+    - **Değerler CANLI, dondurulmuş değil:** RPC her çağrıda `profiles`i
+      okuyor, yani üye Hesap Ayarları'ndan cinsiyetini/pazarlama onayını
+      değiştirirse panel bir sonraki açılışta yeni değeri gösterir. (Panel
+      AÇIKKEN kendiliğinden tazelenmez — üye listesi mount'ta bir kez
+      çekiliyor, bu davranış değişmedi.)
+    - **Boş alan `—`, ama CSV'de GERÇEKTEN BOŞ.** Tabloda tire okunabilirlik
+      içindir; elektronik tabloda sahte bir değer olur (filtre/sıralama onu
+      veri sanar).
+    - **BULUNAN HATA — `agreed_to_terms` YAPISAL OLARAK hep `false`du.**
+      Kolonu panele koymadan önce ölçüldü: **26 üyenin 26'sında `false`**.
+      Sebep `handle_new_user`ın `agreedToTerms`i HİÇ OKUMAMASIYDI — iki
+      istemci de (web `signUp`, portun `signUp`u) o alanı
+      `sharedxp_pending_profile` metadata'sında baştan beri gönderiyor,
+      trigger gender/birthDate/marketingConsent/utmSource'u okurken bunu
+      atlamış; `profiles`e yazan tek yol signUp-sonrası istemci update'iydi
+      ve o yalnızca e-posta doğrulaması KAPALIYKEN koşuyor. Bu eksiklik
+      `marketing_consent` eklenirken zaten yazılıydı ("ÖNCEDEN VAR OLAN bir
+      eksiklik"); kolon görünür olacağı için düzeltildi.
+      **Geriye dönük doldurma VARSAYIMLA DEĞİL, gerçek kayıttan:**
+      `auth.users.raw_user_meta_data`da onay duruyordu (26 hesabın 25'inde
+      `true`, hiçbirinde `false`) — sadece kopyalanmamıştı. Metadata'sı hiç
+      olmayan tek hesap (sistemin ilk üyesi) bilerek `false` bırakıldı;
+      orada bilinen bir şey yok. **Doğrulama:** trigger geri alınan bir
+      transaction'da negatif eşle sınandı — onay gönderilen sahte kayıt
+      `true`, onay alanı HİÇ gönderilmeyen `false`.
+    - **İzin hücrelerinde kırmızı YOK, yeşil/nötr var.** "Pazarlama: Hayır"
+      bir hata değil kullanıcının meşru tercihi; bu panelde kırmızı
+      "Donduruldu" gibi gerçek bir soruna ayrılmış. `E-posta Bildirimi` ters
+      yönde çalışıyor (opt-OUT, varsayılanı Açık) ve etiketleri Açık/Kapalı
+      — Evet/Hayır ile karıştırılmamalı.
+    - **`Kanal` ile `Kaynak` BAĞIMSIZ:** ilki kaydın hangi formdan geldiği
+      (`signup_channel`, Direkt/Form), ikincisi kayıt anındaki `?ref=`
+      etiketi (`signup_utm_source`, Kaynak Hunisi'yle AYNI alan). Ayrım `?`
+      popup'ında da yazılı.
+    - **`Fotoğraf` URL değil `Var`/`—`** — URL okunmaz ve satırı metrelerce
+      uzatır; sorulan soru "fotoğraf koymuş mu".
+    - **Yeni kolonlara sıralama BİLEREK eklenmedi** (mevcut 7 anahtar aynı
+      kaldı): bu alanlar tarama/dışa aktarma için, sıralama ölçütü olarak
+      anlamlı değiller ve yedi yeni ok başlığı satırı gürültüye boğardı.
+    - **CSV tabloyla AYNI kolonlar, AYNI sırada** (tek fark: Ad/Soyad ayrı
+      sütun). "CSV ekranda görüneni indirir" sözü ancak böyle doğru kalır —
+      yeni bir kolon eklenirse ikisi birlikte değişmeli.
+    - **ÖLÇÜLDÜ** (derlenmiş CSS + Chromium, gerçek `AdminDashboard`
+      sunucuda render edilip, 320/390/834/1194): tablo **1816.6 px**, kap
+      246–598 px, yani yatay kaydırma 1219–1571 px — **sayfa taşması her
+      genişlikte 0** (kaydırma tablonun kendi `overflow-x-auto` kabında
+      kalıyor) ve satır yüksekliği 33.5 px'te sabit.
+    - **İSİM KOLONU SABİT (aynı gün, kullanıcı isteği: *"sola doğru
+      kaydırınca isim kolonunu sabitleyebilir miyiz? Tabloda kişiyi takip
+      etmek zor oluyor."*).** İlk sürümde bu bilerek YAPILMAMIŞTI (satırın
+      koşullu arka planıyla çakışma gerekçesiyle) — kullanıcı isteyince
+      çakışma çözülerek eklendi. `STICKY_NAME_CELL`, hem `<th>`e hem `<td>`ye
+      veriliyor; üç ayrıntı zorunlu:
+      - **Opak zemin (`bg-panel`).** Sabit hücre altındakilerin ÜSTÜNDE
+        durur; saydam kalırsa kayan metin içinden geçer.
+      - **Satır tonu AYRI BİR KATMAN.** Vurgu (`bg-accent/20`, "Kişiye Git →"
+        akışı) ve hover (`bg-bg/60`) saydam olduğundan opak zeminin üstüne
+        `absolute inset-0` bir `<span>` ile biniyor (`tr`de `group`,
+        span'de `group-hover:`). Aksi halde tam o hücrede vurgu/hover
+        KAYBOLURDU — sabit kolonu eklememe gerekçesi buydu, çözümü bu.
+      - **Genişlik kapaklı (`max-w-[150px] truncate`).** İsim alanının
+        uzunluk sınırı YOK ve bu kolon tablonun en genişi; kapaksız bir sabit
+        kolon 320px'te (kap 246px) görünür alanın TAMAMINI yerdi. ÖLÇÜLDÜ:
+        üretimdeki en uzun ad **18 karakter** (~131px), ortalama 12 — yani
+        150px bugünkü hiçbir adı kırpmıyor; uç durumda `truncate` +
+        `title`. Kalan görünür alan 96 / 166 / 448 px (320/390/834).
+      - **Ayraç `border-r` DEĞİL `box-shadow`.** `border-r` DENENDİ ve
+        ÇİZİLMEDİ: tablo `border-collapse: collapse` olduğundan kenarlık
+        hücreye değil TABLOYA ait olur ve kaydıkça sabit hücrenin altında
+        kalır. `shadow-[1px_0_0_0_#DCE2EA]` hücreyle birlikte taşınıyor;
+        renk `border` token'ının değeri — Tailwind gölge yardımcısı token
+        adı kabul etmiyor, biri değişirse öteki de değişmeli.
+      - **Doğrulandı:** kap 900px kaydırıldıktan SONRA hücrenin sol kenarı
+        hâlâ 0'da (üç genişlikte de), `position: sticky` hem th hem td'de,
+        zemin `rgb(245,247,250)`, vurgulu satırın sabit hücresinde ton
+        katmanı `rgba(37,99,235,0.2)` olarak ölçüldü.
+    - **Hukuki metin DEĞİŞMEDİ ve bu bilinçli:** yeni bir veri TOPLANMIYOR,
+      yalnızca zaten toplanan alanlar admin'e gösteriliyor; `PrivacyModal`
+      bu alanları "Toplanan Veriler"de zaten sayıyor ve panel `is_admin()`
+      ile kilitli.
     **Regresyon notu (25 Temmuz 2026, aynı gün fark edildi):** bu "herkes herkesin kartına girebilir" özelliği eklendiğinde `games` tablosunun SELECT RLS politikası hâlâ 22 Temmuz'daki `lock_down_profiles_games_select` migration'ından kalma `owner-or-admin` idi (`fetchPlayerStats`/`fetchMyGames`/`fetchGameBoardSnapshot`'taki yorumlar zaten kaldırılmış "herkese açık select" politikasını varsayıyordu) — yani admin olmayan biri başkasının kartını açtığında istatistikler/oyun listesi boş geliyor, tahta önizlemesi hiç açılmıyordu. `game_likes_and_public_sharing` migration'ı bunu `games_select_authenticated` (`auth.uid() is not null`) politikasıyla düzeltti; aynı migration beğeni/paylaşma özelliklerini de ekledi (bkz. yukarıdaki "Skor Kartı" notu).
     **"Mesaj Gönder"** (26 Temmuz 2026'nın ikinci değişikliği, üçüncü değişiklikte kalıcı hâle getirildi) — her satırın sonunda, e-postası olan üyeler için bir "Mesaj Gönder" linki var; tıklanınca `MemberMessageModal.tsx` açılır (Konu + Mesaj serbest metin), `admin-send-message` Edge Function'ı ile gönderilir. Başlangıçta (ikinci değişiklik) bir feedback kaydına hiç bağlı değildi, DB'ye bir şey yazmıyordu; üçüncü değişiklikte artık `feedback` tablosuna `origin: 'admin'` olarak KAYDEDİLİYOR da (bkz. aşağıdaki "Geri bildirim yanıtları" bölümü) — böylece "kime ne yazıldığı" Geri Bildirim sekmesinde kalıcı olarak görünür, kartta "Gönderilen" rozetiyle ayrışır.
     **Hesabı Devre Dışı Bırakma/Aktif Etme (2 Ağustos 2026, `admin_set_user_banned` migration'ı):** Oyun İçi Mesajlaşma Faz 2'nin (bkz. aşağıdaki bölüm) doğal bir uzantısı — kullanıcı, bir şikayet geri çekilmiş olsa bile admin'in raporlanan kişi hakkında somut bir aksiyon alabilmesi gerektiğini belirtti (spam yapan birini devre dışı bırakmak gibi). Yeni bir "Durum" sütunu (Aktif/Devre Dışı) + her satırda "Mesaj Gönder"in yanına bir "Devre Dışı Bırak"/"Aktif Et" linki eklendi; her ikisi de "Emin misiniz?" onay diyaloğundan geçiyor (chat mute/report'taki aynı desen). `admin_set_user_banned(p_user_id, p_banned)` RPC'si `auth.users.banned_until`'ı günceller (`true` ise `now() + 100 yıl`, `false` ise `null`) — Supabase Auth (GoTrue) bunu native olarak okuyup bir sonraki girişte/token yenilemede reddediyor; **anlık oturum kesme kapsam dışı** — hâlâ geçerli olan kısa ömürlü access token'lar süresi dolana kadar çalışmaya devam edebilir (GoTrue'nun standart ban davranışı). RPC kendi kendini banlamayı da engelliyor (`p_user_id = auth.uid()` kontrolü). Production'da gerçek RPC çağrısı bir transaction içinde (`set local request.jwt.claims` ile admin simüle edilip) çalıştırılıp SONRA `rollback` ile geri alınarak doğrulandı — hem başarılı ban/unban hem kendi kendini banlama reddi hem admin-olmayan reddi gerçek veriyle test edildi, production'da hiçbir kalıcı iz bırakmadı. **KVKK gereği hesap SİLME** (kullanıcının "unutulma hakkı") ayrı ve daha büyük bir iş (auth.users + tüm ilişkili veriler + kaskad temizlik) — kullanıcı isteğiyle bilinçli olarak sonraki bir faza bırakıldı, bu değişikliğin kapsamında DEĞİL.
@@ -1465,18 +1582,26 @@ edilen kelimeyi mobil reddediyor" olarak görünür.
     - **`?` veri boşken de çizilir** (grafiklerde ve üç tabloda da) — "bu grafik neyi sayıyor?" sorusu tam da hiç veri yokken sorulur; CSV ise indirilecek satır olmadığından gizleniyor. Bunun için `GuestBreakdownTable`/`RetentionCohortTable`/`SourceFunnelTable`'ın erken dönüşleri de rozeti taşıyacak şekilde yeniden düzenlendi.
     - **Görsel dil icat EDİLMEDİ:** rozet `ScoreCard`/`PlayerScoreCard`'daki k-lig "?" rozetinden alındı (yuvarlak, `border-muted`); boyut oradaki 14px yerine 13px, çünkü kardeşi olan "CSV İndir" 9px'lik bir satır. **Daire İÇ `span`'de** — dolgu doğrudan butona verilseydi `rounded-full` 15×23'lük bir ELİPS üretirdi (ilk sürümde tam bu yapıldı, ölçümde yakalandı). `p-1 -m-1` dokunma alanını 13→21px yaparken layout ayak izini değiştirmiyor (`SourceFunnelTable`'ın "% / Sayı" düğmesindeki aynı desen).
     - **Ölçüldü** (derlenmiş CSS + Chromium, 390/834px): rozet tam daire (13×13), dokunma hedefi 21×21, kontrol satırının yüksekliği DEĞİŞMEDİ (15px), yatay taşma yok. Popup en uzun metinle (Kaynak Hunisi) iPhone'da 668px — `max-h-[80vh]` (675px) sınırına DAYANMIYOR, yani kaydırma bir güvenlik ağı; daha kısa ekranlarda devreye giriyor.
-  - **Kaynak Hunisi — kaynak → kişi → üye → oyun (16 Ağustos 2026, `source_funnel` migration'ı)** — kullanıcı isteği: *"Admin ziyaretçi kaynağı tablosunu funnel şeklinde yapabilir miyiz? … kaynak > kişi > üye > oyun … yukarıdaki zaman filtrelerine göre çalışabilir."* Zaman filtresi kısmı ZATEN öyleydi (tablo baştan beri Kullanıcı grafiğinin granülerlik+periyodunu `GRANULARITY_TO_DAYS` ile gün sayısına çevirip kullanıyor); asıl iş son iki adımdı.
+  - **Kaynak Hunisi — kaynak → kişi → başlayan → üye → oyun (16 Ağustos 2026, `source_funnel` migration'ı)** — kullanıcı isteği: *"Admin ziyaretçi kaynağı tablosunu funnel şeklinde yapabilir miyiz? … kaynak > kişi > üye > oyun … yukarıdaki zaman filtrelerine göre çalışabilir."* Zaman filtresi kısmı ZATEN öyleydi (tablo baştan beri Kullanıcı grafiğinin granülerlik+periyodunu `GRANULARITY_TO_DAYS` ile gün sayısına çevirip kullanıyor); asıl iş son iki adımdı.
     - **Funnel'ın son iki adımı HESAPLANAMIYORDU ve bu şemanın bilinçli bir kararıydı:** `guest_visits` tamamen anonim ve bir ziyaretçiyi sonradan açtığı hesaba bağlayacak hiçbir alan YOK — olsaydı `PrivacyModal`'daki "hiçbir kişisel veri içermez" taahhüdünü bozardı (bkz. "Kayıtlar" bölümündeki aynı gerekçeyle reddedilen "ilk siteye geliş" olayı). Ölçüldü: 266 benzersiz ziyaretçi, 23 üye, aralarında SIFIR bağ.
     - **Çözüm ziyaret satırlarını hesaba BAĞLAMAK DEĞİL:** kayıt anında profilin KENDİSİNE ilk-temas kaynağı damgalanıyor (`profiles.signup_utm_source`) — gender/birth_date/marketing_consent ile birebir aynı yol (`sharedxp_pending_profile` → `handle_new_user`), yani e-posta doğrulaması AÇIKKEN de çalışıyor. Funnel iki AYRI dimension'ı yan yana koyuyor, `guest_visits` ile `profiles` arasında JOIN YOK. Bu yüzden **dönüşüm oranı sütunu bilerek YOK** — "Kişi" ile "Üye" farklı ölçümler, oranları yanıltıcı olurdu.
     - **`null` ≠ `'direkt'` (bilinçli):** web artık `?ref=` hiç yoksa bile AÇIKÇA `'direkt'` damgalıyor, dolayısıyla null yalnızca "bu istemci damgalamadı" demek — bu özellikten önceki üyeler ve **bugün Flutter portundan gelen kayıtlar**. Böylece uygulama kayıtları "Direkt" satırını sessizce şişirmiyor, "Bilinmiyor"da toplanıyor. Portun kendi damgasını göndermesi (mağaza/deep-link attribution) bilinçli olarak sonraya bırakıldı.
     - **Geriye dönük ŞEMADAN doldurulamaz** (`games.platform` ile birebir aynı gerekçe) — kolon tam bu yüzden pazarlama linkleri yayınlanmadan ÖNCE eklendi. **Ama aynı gün 23 üyenin hepsi `arkadas` olarak dolduruldu** (`backfill_signup_source_arkadas`), çünkü o bilgi şemada olmasa da BİLİNİYORDU: kullanıcı kazanımını bizzat hesap sahibi yapmış, o tarihe kadar hiç reklam/tanıtım yayınlanmamış ve organik aramadan üye gelmemiş (kendi ifadesi: *"Bütün üyeler benim sayemde geldi… özetle hepsi arkadaş"*). Kapsam `created_at < now()` ile bugüne KİLİTLİ — ileride mobil uygulamadan gelecek damgasız kayıtlar "arkadaş" DEĞİL ve bu migration'ın körlemesine tekrarı onları süpürmesin diye. Geri alınabilir (23 satırın da önceki değeri null'dı). **"Bilinmiyor" satırı böylece bugün tamamen boşaldı**; bir daha ancak damgalamayan bir istemciden (bugün: port) kayıt gelirse dolar.
     - **Bir gün önceki `invited_by` itirazı bu kararla çelişmiyor:** o turda 5 davet kaydından 2'sinde (Minka, Esiner) davet kabulünün üyelikten **96-98 saat** sonra olduğu ölçülmüştü — yani onlar zaten üyeyken bir arkadaşının linkine tıklamıştı ve `invited_by` sonradan dolmuştu. O itiraz "hangi MEKANİZMA getirdi" sorusuna aitti; backfill ise KANALI yazıyor ve ikisi de arkadaş kanalı. Ölçüm hâlâ geçerli, kararı değiştiren şey kullanıcının getirdiği yeni bilgi.
     - **Hesap sahibi `arkadas` DEĞİL `direkt` (aynı gün, `founder_signup_source_direkt`):** backfill 23 üyenin hepsini `arkadas` yapınca kullanıcı *"22 arkadaş 23 üye olmaz, 1 üyeyi direkte al"* dedi. Doğru olmayan tek satır zaten hesap sahibininki: projeyi o kurdu, kimse davet etmedi — ölçüldü, `Ironman` sistemin İLK üyesi (28 Haziran 2026, projenin başladığı gün) ve `invited_by` NULL, yani "1 üye" keyfi değil davetle gelmediği KESİN olan tek hesap. Migration satırı id ile değil `is_admin` + `invited_by is null` + en eski üye koşuluyla seçiyor. Sonuç: `direkt` 246 kişi / 1 üye, `arkadas` 22 kişi / 22 üye.
-    - **`arkadas` satırının %100'ü bir ÖLÇÜM DEĞİL, tesadüf** (backfill öncesi %104.5'ti): ziyaretçi ucu yalnızca Setup'taki paylaş butonunun ürettiği `?ref=arkadas` linkiyle gelenleri sayıyor, üye ucu ise ağırlıkla `/davet/:token` davet linkinden gelenleri — o path `?ref=` TAŞIMIYOR, dolayısıyla iki uç aynı popülasyonu ölçmüyor ve "arkadaş kanalı kusursuz dönüyor" demek DEĞİL. Asimetriyi gerçekten kapatan çözüm ayrı: `buildInviteUrl` (`FriendsModal.tsx`) davet linkine `?ref=arkadas` eklerse iki uç aynı kanalı ölçmeye başlar; şimdilik bilinçli olarak dokunulmadı.
+    - **`arkadas` satırının %100'ü bir ÖLÇÜM DEĞİL, tesadüf** (backfill öncesi %104.5'ti): ziyaretçi ucu yalnızca Setup'taki paylaş butonunun ürettiği `?ref=arkadas` linkiyle gelenleri sayıyor, üye ucu ise ağırlıkla `/davet/:token` davet linkinden gelenleri — o path `?ref=` TAŞIMIYOR, dolayısıyla iki uç aynı popülasyonu ölçmüyor ve "arkadaş kanalı kusursuz dönüyor" demek DEĞİL. **Bu asimetri 21 Ağustos 2026'da KAPATILDI** — aşağıdaki maddeye bak; buradaki rakamlar o tarihe kadarki durumu anlatan tarihsel kayıt.
     - **`% / Sayı` düğmesi (aynı gün, kullanıcı isteği: "basınca değerden yüzdeye dönsün, basınca % sayı olsun, dönüşümlü çalışsın"):** tablonun sağ üstünde, "CSV İndir"in yanında; üç sütunu birden çevirir. Düğme İKİ etiketi birden gösterip aktif olanı vurguluyor: tek kelimelik bir düğme ("%") "şu an yüzde mi gösteriyorum, yoksa basınca yüzdeye mi geçerim" belirsizliğini taşırdı. **CSV düğmeden BAĞIMSIZ, her zaman ham sayı** (retention tablosundaki aynı karar: yuvarlama kaybı yok, yüzde yeniden hesaplanabilir). Ölçüldü (derlenmiş CSS + Chromium, 390px): iki modda da yatay taşma YOK; `py-1 -my-1` ile iki düğmenin dokunma yüksekliği 13.5 → 21.5px olurken satırın layout yüksekliği 13.5px'te SABİT kalıyor (negatif margin dolguyu birebir geri alıyor).
+    - **"Başlayan" sütunu — huninin KÖR adımı kapandı (21 Ağustos 2026, ROADMAP #9, `game_starts_source_funnel` migration'ı):** İlk Instagram kampanyası ölçüldüğünde huninin son adımı hiçbir şey söylemiyordu — `instagram` etiketiyle **80 kişi / 0 üye / 0 oyun**. Panel DOĞRU çalışıyordu (veri Supabase'ten teyit edildi); sorun ölçülen ŞEYDE: (a) yalnızca **bitmiş** oyun kaydediliyordu — `game_starts` tablosu 20 Temmuz 2026'da "hiçbir yerde ihtiyaç görülmedi" diye kaldırılmıştı, o gün doğruydu, ücretli trafik gelince yanlış oldu; (b) yerel oyunun medyan süresi **18,1 dakika**, yani soğuk bir ziyaretçinin ilk temasta BİTİRMESİNİ beklemek gerçekçi değil; (c) "Oyun" sütunu misafir oyunlarını TANIM GEREĞİ göremiyor (`games` satırı yalnızca girişli kullanıcı için açılıyor). Üçü birleşince "açılış sayfası mı çalışmıyor, oyun mu fazla uzun bir taahhüt?" sorusu AYRILAMIYORDU — ve ikisi tamamen farklı aksiyon gerektiriyor. Yeni `game_starts` tablosu başlatılan her YEREL oyunu misafir dahil sayıyor; sütun sayı modunda **oyun adedini**, yüzde modunda **başlatan benzersiz cihaz / kişi** oranını gösteriyor.
+    - **`starters / visitors` bu tablodaki TEK gerçek cihaz-bazlı dönüşüm oranı:** iki uç da AYNI anonim koddan (`anon_id`) sayılıyor. `signups`/`players` ise `profiles.signup_utm_source` üzerinden geliyor, yani ayrı bir dimension — o yüzden aralarında join YOK ve olamaz.
+    - **`game_starts`te BİLEREK `user_id` YOK.** `PrivacyModal` bölüm 6, anonim cihaz kodu için "hesabınızla ASLA eşleştirilmez" diyor; `anon_id` ile `user_id`'yi aynı satıra koymak tam olarak o eşleştirmeyi yapardı. Bedeli: bu olay için Kayıtlı/Misafir kırılımı yapılamıyor — ama huninin sorduğu soruya gerekmiyor ve bitmiş taraf için `game_finishes` zaten sağlıyor. **RLS:** yazma `anon` + `authenticated`, **okuma hiç kimseye açık DEĞİL** (select politikası yok; yalnızca security definer admin RPC'si okuyor). Canlıda ölçüldü: anon kendi yazdığı satırı bile göremiyor (0 satır), girişli kullanıcı da göremiyor, admin olmayan RPC çağrısı `Yetkisiz erişim.` alıyor.
+    - **`utm_source` sözleşmesi `profiles.signup_utm_source` ile AYNI:** web `?ref=` hiç yoksa bile AÇIKÇA `'direkt'` gönderir, dolayısıyla NULL yalnızca "bu istemci damgalamıyor" demektir (bugün: Flutter portu) ve `'bilinmiyor'` olarak sayılır. Bu ayrım olmadan port satırları `direkt`i sessizce şişirirdi — canlıda negatif eşle doğrulandı (damgasız satır `bilinmiyor`a düştü).
+    - **KAPSAM yerel (YZ) oyunlar** — `game_finishes`in birebir aynası. Canlı oyunun başlama anı zaten sunucuda kayıtlı (`online_game_states.started_at`), ayrıca Canlı oyun hesap + arkadaş gerektirdiğinden soğuk reklam trafiğinin girebileceği bir yol değil. **İKİ istemci de yazıyor:** web `App.tsx`'in `startLocalGame` yardımcısı (`START` dispatch eden İKİ yer de oradan geçiyor — Setup'ın "Oyunu Başlat"ı ve oyun sonu "Tekrar Oyna"), portta `GamesRepo.logStart` (aynı iki ekran). **`RESUME_SAVED` bilerek dahil DEĞİL** — devam eden bir oyuna dönmek yeni bir başlangıç değil, aksi halde aynı oyun her oturum dönüşünde tekrar sayılırdı. **Ölçüldü:** 5 sütunlu tablo 348px, 390px'te bile yatay kaydırma YOK.
     - **Yüzdelerin TABANI sütuna göre değişir (aynı gün, kullanıcının ikinci turu, `source_funnel_players` migration'ı):** *"kişi %'ye dönünce toplamın yüzdesini göstersin. Ama üye yüzdesi kişinin % kaçı üye olmuş, oyun yüzdesi de kişinin % kaçı oyun oynamışı göstersin."* İlk sürümde üçü de sütun payıydı ve satır yönünde oran BİLEREK yoktu; kullanıcı bunu tersine çevirdi ve karar doğru — damgalama yerleştikten sonra `üye/kişi` o kaynak için GERÇEK bir dönüşüm oranı (ziyaretçi de üye de aynı `?ref=` etiketini taşıyor). Yeni tabanlar: **Kişi** = sütun payı, **Üye** = `üye/kişi`, **Oyun** = `oynayan kişi/kişi`.
     - **"Oyun" sütununun yüzdesi oyun ADEDİNDEN hesaplanAMAZ** — bir kişi 50 oyun oynayabilir, `oyun/kişi` %100'ü kolayca aşar ve "kaç kişi oynadı" demek olmaz. Bu yüzden RPC'ye dördüncü bir ölçü eklendi: `players` = o damgayı taşıyan, pencerede en az bir oyun bitirmiş BENZERSİZ kullanıcı. Sütun sayı modunda oyun adedini, yüzde modunda `players/kişi` oranını gösterir — taban farkı ekranın kendisinde yazılı (17 Ağustos 2026'dan beri tablonun altındaki paragrafta değil, `?` popup'ında). `players` tabloda ayrı bir sütun DEĞİL (tablo 4 sütunda kalsın diye) ama CSV'de var, yani yüzde her zaman ham veriden yeniden hesaplanabilir. Dönüş tipi değiştiğinden drop+create gerekti, grant'ler elle geri kuruldu.
     - **`kişi = 0` iken oran HİÇ hesaplanmaz, "—" gösterilir** — sıfıra bölmek yerine bilinmediğini söylemek doğrusu. Bugün bu istisna değil KURAL: damgalama öncesi tüm üyelerin toplandığı "bilinmiyor" satırının ziyaretçisi 0. Oran %100'ü de aşabilir (iki ölçü ayrı dimension, ör. bir kaynağın ziyaretleri pencereye düşmemişken üyeleri düşmüş olabilir) ve bu bir hata değil; `?` popup'ı bunu da söylüyor.
+    - **Davet linki artık `?ref=arkadas` taşıyor — ama ASIL hata etiket değil YAKALAMAYDI (21 Ağustos 2026, ROADMAP #7):** Planlanan iş "tek satır"dı (`buildInviteUrl`e etiketi ekle). ÖLÇÜLDÜ ve tek başına **SESSİZ BİR NO-OP** olacağı çıktı: `/davet/:token?ref=arkadas` ve gerçek uuid'li `/game/:id?ref=tiktok` etiketi `localStorage`a **HİÇ yazmıyordu** (`null`), yalnızca `/` çalışıyordu. Sebep: `captureUtmSource()` `App.tsx`'in bir effect'indeydi, oysa bu İKİ route `App`'i hiç mount etmiyor — `boot.tsx` onların yerine `SharedGamePage`/`FriendInvitePage` render ediyor. Yani **dolaşımdaki her davet ve her paylaşılan oyun linki kaynağını sessizce kaybediyordu**; davetle gelip üye olan herkes `direkt` satırına düşüp gerçek doğrudan trafiği şişiriyordu. Çağrı `boot.tsx`e, ROUTE AYRIMINDAN ÖNCEYE taşındı (üç dalın da tek ortak giriş noktası — dördüncü bir route eklenirse kendiliğinden kapsanır) ve `App.tsx`'teki artık ölü effect kaldırıldı. Karşılama katmanı ayrı kalıyor: uygulama hiç mount edilmediğinden `main.tsx` kendi dalında AYNI çağrıyı yapıyor, ikisi birlikte tüm yüzeyleri örtüyor.
+    - **`buildInviteUrl` İKİ istemcide de değişti** (`FriendsModal.tsx` + portun `friends_api.dart`'ı) — port da web linki üretip paylaşıyor, yalnız web'i değiştirmek porttan paylaşılan davetleri etiketsiz bırakırdı. `parseInviteToken` (port) etkilenmiyor: `uri.pathSegments` sorgu dizesini içermez. Etiket **first-touch** olduğundan `instagram` ile gelmiş bir cihazın kaydını EZMEZ (ölçüldü).
+    - **Regresyon `tests/smoke.spec.ts`te kilitli** (18 → **20 test**): iki route da etiketi yakalıyor + ikinci kaynak ilk teması ezmiyor. **Negatif eş:** `boot.tsx`teki `captureUtmSource()` satırı yorumlanınca iki test de GERÇEKTEN düşüyor. **Test tuzağı:** `boot.tsx` DİNAMİK import edildiğinden `page.goto` dönerken henüz çalışmamış olabiliyor — `localStorage` okunmadan önce sayfanın mount olması beklenmeli, yoksa test ürüne değil zamanlamaya bağlanır (ilk yazımda tam bu yüzden düştü).
     - **Pencere her adıma KENDİ olay tarihinden uygulanır (kohort DEĞİL):** 2 ay önce üye olup bugün oynayan biri "Oyun"a girer, "Üye"ye girmez. Tanımın tamamı ekranın KENDİSİNDE yazıyor (retention/aktif oyuncu panellerindeki aynı karar; 17 Ağustos 2026'dan beri `?` popup'ında) — dokümanda kalsaydı ilk yanlış yorum kaçınılmazdı.
     - **`signup_utm_source` write-once:** `trg_keep_signup_utm_source` (BEFORE UPDATE) alanı her UPDATE'te eski değerine geri çeviriyor. `profiles`in UPDATE grant'i tablo düzeyinde `authenticated`'e açık olduğundan bu olmadan kullanıcı kendi kaynağını değiştirebilir, ya da ileride tüm profili yayan bir `updateProfile` yaması onu sessizce silebilirdi (`marketing_consent_at`i koruyan trigger ile aynı gerekçe). **Yan etki:** yanlış bir değeri düzeltmek için trigger'ı geçici olarak `disable` etmek gerekir.
     - **Doğrulama (canlı, hepsi rollback):** admin RPC gerçek admin JWT'siyle koştu (246 direkt / 22 arkadas ziyaretçi, 23 üye + 337 oyun "bilinmiyor"da); admin olmayan `Yetkisiz erişim.` aldı; sahte bir `auth.users` insert'i `handle_new_user`'ın alanı trim'leyip 32 karaktere kırparak yazdığını, `utmSource` gönderilmezse null kaldığını gösterdi; write-once trigger UPDATE'i engelledi ama AYNI update'in ilgisiz alanını (display_name) yazmaya devam etti; iki profile 'instagram' damgalanınca funnel satırı 2 üye/6 oyun ile ayrıştı ve toplamlar korundu (23=21+2, 337=331+6). Tablo ayrıca derlenmiş CSS + Chromium ile 390px'te render edilip ölçüldü (yatay taşma yok; `lang="tr"` sayesinde başlık "KİŞİ" olarak büyüyor). **16 Ağustos 2026 — gerçek cihazda admin hesabıyla uçtan uca teyit edildi** (tablo, `% / Sayı` düğmesi, tabanlar, CSV); pencere tuzağı da orada doğrulandı: hesap sahibi 28 Haziran'da üye olduğundan "Son 30 Gün"de `direkt` üyesi 0 görünüyor, "Son 3 Ay"da 1 — kullanıcı bunu bir hata sanıp sordu, davranış tasarlandığı gibiydi.
@@ -1534,7 +1659,7 @@ Kullanıcı onaylı tasarım (3 konseptten "Mühür" seçildi; eşikler/ödül t
     --output-file=mobile/app/assets/fonts/MPLUSRounded1c-ExtraBold-subset.ttf
   ```
   **GİZLİ BAĞ — yeni bir kademe HARFİ eklenirse subset yeniden üretilmeli** (`league_rewards_points_check` tavanı gibi, derleyicinin göremeyeceği bir değişmez): bugünkü aralık tüm Türkçe harfleri + ASCII'yi kapsıyor, ama kapsam dışı bir glyph seçilirse rozet web'de yedek fonta düşer, **Flutter'da TOFU (boş kare) çizer** (port otomatik font fallback YAPMAZ — bkz. `_StatusLine`'ın ✓ dersi). `src/fonts/mplus-rounded-seal.css` `main.tsx`ten (boot.tsx'ten DEĞİL) import ediliyor: karşılama katmanında da dokuz rozet çiziliyor. **`public/fonts`a KONMADI/precache EDİLMEDİ** — Nunito emsali (bundle'lanmış, içerik-hash'li, precache'siz); `font-display: swap` ile en kötü ihtimalle bir kare yedek fontla çizilir.
-  **Ölçülen bütçe:** `dist/index.html` ham **253.990** / gzip **22.260** bayt (19 Ağustos 2026, Tanrı→Kozmik sonrası; öncesi 253.998 / 22.134) (font swap öncesi 254.144 / 22.250 — yani sayfa büyümedi; 18 Ağustos 2026'daki metin turu ve sayfa sonu GİRİŞ düğmesinin kaldırılmasıyla ham −98 / gzip −114 bayt daha indi), artı ayrı bir 6.268 baytlık font asset'i.
+  **Ölçülen bütçe:** `dist/index.html` ham **254.771** / gzip **22.290** bayt (21 Ağustos 2026, yedinci SSS maddesi sonrası; 19 Ağustos'ta 253.990 / 22.260 idi; öncesi 253.998 / 22.134) (font swap öncesi 254.144 / 22.250 — yani sayfa büyümedi; 18 Ağustos 2026'daki metin turu ve sayfa sonu GİRİŞ düğmesinin kaldırılmasıyla ham −98 / gzip −114 bayt daha indi), artı ayrı bir 6.268 baytlık font asset'i.
   **Harf MÜREKKEP kutusundan ortalanır, `dominant-baseline="central"` KULLANILMAZ** (12 Ağustos 2026'da eski mühürde öğrenilen ders aynen geçerli: `central` mürekkebi değil FONT metriklerini ortalıyor ve Ç/Ş sedilla yüzünden gözle görülür şekilde alta kaçıyordu). Taban çizgisi `CY + (INK_ASC_EM − varsa DESCENDER_EM)/2 × fontSize`; iki sabit de em cinsinden ÖLÇÜLDÜ (Chromium, gerçek M PLUS Rounded 1c ExtraBold, `canvas.measureText`in `actualBoundingBox*` alanları) — kademe harflerinin mürekkep tepesi .740–.750 → **INK_ASC_EM = .745**, sedillanın (Ç/Ş) taban altına inmesi .220 → **DESCENDER_EM = .22**. Harf başına tablo gerekmedi ve bu fontta aralık çok dar: basılabilen HER glyph için azami merkezleme sapması **0.0075 em** (76px'lik banner mühründe 0.23 px; eski Space Grotesk'te 0.03 em idi). Piksel taramasıyla doğrulandı: tek harflerde en kötü dikey sapma **0.225** viewBox birimi, halkaya en dar pay **+1.277** (Ç)., `RankInfoModal.tsx` (mühre dokununca açılan bilgi popup'ı — RewardBanner'ın kart düzeni/`reward-*` animasyonlarıyla her açılışta yeniden damgalanır ama `seen_at`'e dokunmaz [salt bilgi, tekrar tekrar açılabilir]: kademe adı + güncel puan + "+N eşik ödülü dahil" + sıradaki rütbe hedefi + hedefe İLERLEME ÇUBUĞU (mevcut eşik→sonraki eşik oranı, dolgu rengi SIRADAKİ kademenin rengi, altında eşik/puan/eşik etiketleri ve eşiklerin altında o eşiğin ödül rozeti — hedef etiketi YALNIZCA SAYI ("100"). **12 Ağustos 2026'da kullanıcı isteğiyle sondaki "puan" kelimesi kaldırıldı:** "Sıradaki rütbe: Oyuncu · 100 puan" satırı ZATEN hemen üstte duruyor, alt alta tekrar oluyordu. `RewardBanner`'ın düşüş çubuğu da aynı kurala çekildi — ikisi aynı görsel, birlikte değişmeli. **Rozet renk kuralı (aynı gün ÜÇ sürüm geçirdi — hedefte yeşil "(+N)" → alınmışsa nötr "(0)" → nihai):** YEŞİL + aynı boyda ✓ yalnızca ALINMIŞ ödülde (sol eşik her zaman; hedef eşik yalnızca düşüp yeniden yaklaşan kişide — kişi geri düşse bile yeşil ✓ kalır, ödül geri alınmadığından), henüz alınmamış hedef ödülü GRİ "(+N)". "Alınmış mı" bilgisi ekstra sorgusuz, `rewardAlreadyClaimed`'in (leagueRank.ts) `bonus_points` toplamından prefix çıkarımıyla (ödüller her zaman soldan sağa atlamasız verildiğinden toplam, ödenen eşik kümesini tekil belirler); dolgu `visible` bir rAF sonrası true olduğundan 0'dan gerçek orana width-transition'la akar — en üst kademede çubuk yok, "En yüksek rütbedesin!"). **Kapatma ✕, kocaman "KAPAT" butonu DEĞİL (12 Ağustos 2026, kullanıcı isteği):** sağ üstte, `Modal.tsx`'in kapatma butonuyla birebir aynı stil — projedeki her modalın deseni bu, salt bilgi veren bir popup'ın altına tam genişlikte bir aksiyon butonu koymak yanlıştı. **Aynı gün ikinci karar — kural banner'lara da genişledi (kullanıcı: "bence bu banner'larda kapat, devam vb olmamalı, sadece X"):** `RewardBanner`'ın "DEVAM"ı da kaldırıldı, yerine AYNI ✕ geldi. İlk sürüm "DEVAM" KALIR demişti (gerekçe: o gerçek bir aksiyon, ödülleri görüldü işaretler) — gerekçe teknik olarak doğruydu ama kullanıcı görsel tutarlılığı tercih etti; **işaretleme kaybolmadı, ✕ AYNI `onClose`'a bağlandı** (`mark_league_rewards_seen`'e giden TEK yol, bkz. `LeagueRewardsHost`). Banner'a yeni bir kapatma yolu eklenirse (ör. zemine dokunma) o da `onClose`'tan geçmeli, aksi halde banner her açılışta yeniden çıkar. Escape zaten `useModalA11y` üzerinden aynı callback'e bağlı. **Kart gölgesi `shadow-raised` DEĞİL, `Modal.tsx`'in düz düşen gölgesi (`0 20px 45px rgba(15,23,42,.5)`, aynı gün kullanıcı bildirdi: "üst ve sol tarafındaki beyaz gölge iyi durmuyor"):** `shadow-raised`in sol-üst beyaz parıltısı (`-2 -2 5 rgba(255,255,255,.85)`) nömorfik YÜZEYLER için tasarlandı, karartılmış zeminde (bg-black/40) yüzen bir kartta hale gibi okunuyordu — `RewardBanner`'ın kartı da aynı gün aynı gölgeye çekildi, ikisi aynı kart; `Modal` portal'ı z-[150] olduğundan bu popup z-[200] ile ayrıca portal'lanır — ScoreStatsSection'daki eski "+N dahildir" dipnotu buraya taşınıp oradan kaldırıldı), `RewardBanner.tsx` (damga+konfeti animasyonu — `index.css`'teki `reward-*` keyframe'leri; ActionSheet dersleri uygulandı: ekran ORTASI + karartma + rAF sonrası `visible`; `prefers-reduced-motion` guard'lı), `LeagueRewardsHost.tsx` (görülmemiş satırları çekip TEK birleşik banner gösterir — geçmişe dönük backfill'de bile satır başına ayrı popup yok; "Devam" hepsini işaretler).
 
 ### Rütbe mührü artık İSİMLERİN yanında da (18 Ağustos 2026)
@@ -1627,6 +1752,90 @@ Kullanıcılar "karşılıklı/canlı oyun" istiyor — bunun ön koşulu olarak
 
 **Kapsam dışı (henüz yok, bkz. aşağıdaki Faz 2):** Faz 1 yazıldığında oyun daveti/kurma burada listeleniyordu — 27 Temmuz 2026'da Faz 2 ile eklendi. Hâlâ kapsam dışı olanlar: gerçek zamanlı senkron oynanış (Faz 3), zaman aşımı/oto-teslim (Faz 4). Faz 2 eklenmeden önce arkadaş eklemenin tek somut faydası `FriendsModal`'ın "Arkadaşlarım" sekmesinde bir kişiye tıklayınca `PlayerScoreCard`'ı açmasıydı — `Leaderboard`/`GameHistoryModal`'daki `likerToPlayerSummary` ile aynı desende bir adaptör kullanır. Artık ikinci (ve asıl) somut fayda: arkadaşını Canlı bir oyuna davet edebilmek.
   **11 Ağustos 2026 — kişiye dokunmak artık ÜÇ sekmede de kartı açıyor (kullanıcı isteği: "Arkadaşlarımda kişilere tıklayınca skor kartına gidiyorum ama Ara & Ekle'de bu yok"):** "İstekler" ve "Ara & Ekle" (hem arama sonucu hem "Tüm Üyeler") satırları düz `<Avatar>`+`<span>` çiziyordu. Üçü de artık ortak bir `personButton(id, name, avatarUrl)` kullanıyor; "Arkadaşlarım"ın satır-içi kopyası silindi (ikinci bir tıklama yolu açılmadı). Adaptör de genelleşti: `friendToPlayerSummary(f: FriendRow)` yerine `toPlayerSummary(id, name, avatarUrl)` — üç listenin veri tipi farklı (`FriendRow`/`IncomingRequest`/`FriendSearchResult`), ortak olan yalnızca bu üç alan. **"İstekler" sekmesi kullanıcı yalnızca "Ara & Ekle" dediği hâlde bilerek dahil edildi** (bir isteği yanıtlamadan önce gönderenin kartına bakmak, üç listenin içinde bu davranışın en faydalı olduğu yer) — kapsamı kendi genişletmek de daraltmak kadar riskli olduğundan gerekçe burada yazılı, istenmezse tek satırlık geri alma. **Kart kapanınca ilişki tazeleniyor** (`fetchFriendRelation` + `patchRelation` + iki listenin yeniden çekimi): `PlayerScoreCard`'ın kendi arkadaşlık simgesinden (bkz. `RelationIcons`) ekleme/çıkarma yapılabildiğinden, bu olmadan kartta "çıkar"a basıp kapatan kullanıcı satırda hâlâ eski ikonu görürdü. Dokunma alanı (`flex-1`) ile aksiyon ikonunun 44px hedefi ayrışık — ikisi birbirini yutmuyor. Flutter portu aynı gün aynı değişikliği aldı (`mobile/CLAUDE.md`, Parça 53).
+
+### Hoş geldiniz e-postası (21 Ağustos 2026, kullanıcı isteği)
+
+Yeni üyeye tek seferlik bir karşılama maili: kısa bir hoş geldiniz + **Hemen
+Oyna** düğmesi + "Görüş Bildir"e davet. `notify-welcome` Edge Function'ı.
+
+**NE ZAMAN — kayıt anında DEĞİL, e-posta ADRESİ DOĞRULANDIĞINDA.** Bu, işin
+tek gerçek tasarım kararı ve üç ölçüme dayanıyor:
+1. Bu projede e-posta doğrulaması **AÇIK** — 26 hesabın 24'ü `created_at`ten
+   SONRA onaylanmış. (`agreed_to_terms`in yıllarca `false` kalmasının sebebi
+   de aynı gerçekti: `signUp()` session döndürmüyor.)
+2. Kayıt anında adresin sahipliği henüz kanıtlanmamıştır; oraya yazmak bounce
+   üretir ve **domainin gönderim itibarını yakar** — bu proje DKIM/DMARC'ı
+   düzeltmek için ayrıca uğraşmıştı (bkz. "Brevo SMTP").
+3. Üretimde **2 hesap hiç onaylamamış**. Onlar fiilen üye değil ve "Hemen
+   Oyna" düğmesi onlar için çalışmaz.
+
+**Zincir:** `auth.users` üzerindeki `on_auth_user_welcome` trigger'ı
+(`after insert or update of email_confirmed_at`) → `_notify_welcome_email()`
+→ `net.http_post` → Edge Function. `verify_jwt` **KAPALI** (çağıran Postgres,
+JWT yok) — `notify-turn-timeout-surrender` ile aynı desen.
+
+**İdempotens:** `profiles.welcome_email_sent_at`. Trigger önce ATOMİK olarak
+iddia ediyor (`where welcome_email_sent_at is null`), yalnızca satırı
+gerçekten kaptıysa çağırıyor. **Doğrulandı** (geri alınan transaction, üç
+aşama): onaysız kayıtta damga boş / kuyruk 0; onay anında damga dolu / kuyruk
+1 ve gövde doğru `user_id`; İKİNCİ bir onay güncellemesinde kuyruk hâlâ 1
+(mükerrer yok).
+
+**Trigger ADI önemli:** INSERT olayında `on_auth_user_created` bu trigger'dan
+ÖNCE koşmalı ki `profiles` satırı var olsun — Postgres aynı olaydaki
+trigger'ları ADA GÖRE sıralıyor ve "created" < "welcome". Yeni bir
+`auth.users` trigger'ı eklenirse bu sıra kontrol edilmeli.
+
+**ÖLÇÜLEN KIRILGANLIK — `net.http_post`un varsayılan zaman aşımı 5 sn ve
+soğuk başlangıç bunu aşıyor.** Doğrulama turunda birebir yaşandı: ilk çağrı
+`Timeout of 5000 ms reached … HTTP Request/Response time: 4843 ms` ile düştü,
+hemen ardından yapılan ikinci (sıcak) çağrı 200 döndü. Bu bildirimde bedeli
+diğerlerinden ağır: mail kullanıcı başına HAYATTA BİR KEZ gidiyor ve damga
+çağrıdan ÖNCE konduğundan kaybedilen istek bir daha DENENMİYOR. Süre açıkça
+**20 sn**'ye çekildi (ikinci migration). **Projedeki diğer `net.http_post`
+çağrıları hâlâ varsayılan 5 sn'de** — orada kayıp daha ucuz (cron tekrar
+deniyor ya da olay tekrarlanabiliyor), ama yeni bir "bir kez gönderilir"
+bildirimi eklenirse bu tuzağı hatırla.
+
+**Açık uçtaki koruma (verify_jwt kapalı):** `user_id` GİZLİ DEĞİL — k-lig ve
+`game_likers` gibi RPC'ler girişli herkese kullanıcı id'si döndürüyor. Bu
+yüzden fonksiyon üç şeyi kendisi doğruluyor: hesap var ve **adresi
+doğrulanmış**; `welcome_email_sent_at` **son 15 dakika içinde** damgalanmış
+(tekrar çağrılarak mail bombardımanı yapılamasın); alıcı işlemsel bildirimleri
+kapatmamış (`email_notifications_enabled`). **Gerçek HTTP çağrısıyla
+doğrulandı:** var olmayan bir id → `{"sent":false,"reason":"not_confirmed"}`,
+gerçek bir üyenin (geriye dönük doldurulmuş, yani bayat) damgası →
+`{"sent":false,"reason":"stale_claim"}` — yani mevcut üyelere kaza eseri mail
+GİTMİYOR.
+
+**Geriye dönük doldurma:** mevcut TÜM onaylı üyelerin damgası
+`email_confirmed_at`e çekildi, yani bu özellik canlıya çıktığında kimseye
+toplu mail gitmedi. Kolon yorumunda yazılı: o satırlarda damga "gönderildi"
+değil **"atlandı"** demek. Hiç onaylamamış 2 hesap BİLEREK null bırakıldı —
+yarın onaylarlarsa maili hak ediyorlar.
+
+**Metin (kullanıcının taslağı düzeltilerek):** kullanıcının taslağı hitapta
+karışıktı (*"Sayın … / Sizi aramızda"* = siz, *"hoşgeldin / oyununu /
+atarsan"* = sen). Projenin diğer beş e-postası tamamen **siz** kullanıyor, o
+yüzden metin siz'e sabitlendi. Ayrıca: **"hoş geldiniz" AYRI yazılır** (TDK) —
+bir kelime oyununun mailinde bitişik yazmak özellikle kötü olurdu; *"yorum
+atmak"* gündelik olduğundan ürünün kendi yüzey adı olan **"Görüş Bildir"**
+kullanıldı (kullanıcı böylece nereye gideceğini de biliyor); *"şimdi hemen"*
+ikilemesi tekile indi. Düğme etiketi kullanıcının istediği gibi **"Hemen
+Oyna"** kaldı — gövde siz'ken düğmenin sen kipinde olması tutarsız görünebilir
+ama düğme bir cümle değil ETİKET ve karşılama sayfasının kendi CTA'sı da
+"HEMEN OYNA".
+
+**Bağlantı düz `https://kelimeki.com`** — `?ref=` etiketi BİLEREK
+eklenmedi: `captureUtmSource` first-touch çalışıyor ve mail linkine bir etiket
+koymak, kullanıcının BAŞKA bir cihazda ilk temasını "hosgeldin" diye
+damgalayıp Kaynak Hunisi'nin ziyaretçi tarafını kirletirdi.
+
+**Doğrulama sınırı:** gerçek bir gönderim (Brevo'ya giden mail) TEST
+EDİLMEDİ — bunun tek yolu gerçek bir kişiye mail atmak. Guard'ların hepsi
+gerçek HTTP çağrısıyla, trigger zinciri geri alınan transaction'la
+doğrulandı; uçtan uca teyit ilk gerçek kayıtta (ya da bir test hesabıyla)
+yapılmalı — `TESTING.md` bölüm 12.
 
 ### İşlemsel e-posta bildirimleri (arkadaşlık isteği + Canlı oyun daveti)
 
@@ -2079,6 +2288,147 @@ Aylardır CLAUDE.md'nin çeşitli yerlerinde ayrı ayrı "kesin sebebi netleşti
 1. **Import yolu — kök sebep artık netleşti:** Araç, verdiğin `entrypoint_path`i olduğu gibi kullanmıyor, tüm dosyaları örtük bir `source/` klasörünün altına yerleştiriyor. Doğru/kararlı tarif: `entrypoint_path: "source/index.ts"` VER, entrypoint dosyasının adını da `"source/index.ts"` YAP (böylece gerçekte `source/source/index.ts`e iner) ve kardeş bağımlılık dosyalarını (`_shared/email.ts` gibi) **hiçbir `source/` öneki OLMADAN** adlandır (böylece `source/_shared/email.ts`e iner) — bu durumda `source/source/index.ts`'ten `source/_shared/email.ts`'e giden doğru göreli yol her zaman `'../_shared/email.ts'`dir. `'./_shared/email.ts'` kullanan 6 fonksiyonun (`notify-account-banned`, `notify-account-unbanned`, `notify-deadline-warnings`, `notify-friend-request-reminders`, `notify-local-game-abandoned`, `notify-turn-timeout-surrender`) bugüne kadar hiç patlamadan çalışmasının sebebi, o fonksiyonların ilk deploy'unda bu tarifin (muhtemelen) tutarlı uygulanmamış olması, yani dosyaların gerçekte BEKLENENDEN farklı bir iç içe klasör yapısına yerleşmiş olmasıydı — CLAUDE.md'de "CI/CLI deploy'a geçilirse 6 fonksiyon anında bozulur" diye zaten öngörülmüştü, bu doğru bir öngörüydü. **Düzeltme:** 6 fonksiyonun hepsi `'../_shared/email.ts'`e çevrilip yukarıdaki tarifle yeniden deploy edildi — artık 11 Edge Function'ın tamamı aynı, tek doğru importu kullanıyor.
 2. **`verify_jwt` — aracın kendi varsayılanı `true`, parametre REQUIRED değilse bile geçilmezse önceki deploy'un değerini KORUMUYOR:** Bu araçla (CLI/`supabase functions deploy` değil) yapılan bir redeploy'da `verify_jwt` parametresi verilmezse, önceden `false` olan bir fonksiyon SESSİZCE `true`'ya döner — kod hiç değişmese bile. Bu, `notify-deadline-warnings`i (cron tarafından JWT'siz çağrılıyor, `verify_jwt:false` olması ŞART) bu incelemenin bir yan etkisi olarak neredeyse kırıyordu: fonksiyonun kodunu (CRON_SECRET kontrolü, satır başına try/catch) güncelleyip `verify_jwt` belirtmeden deploy edince araç onu `true`'ya çevirdi, `list_edge_functions`'la fark edilip aynı anda ikinci bir deploy'la (bu kez `verify_jwt: false` açıkça verilerek) geri alındı — production'a hiç sızmadı ama neredeyse pg_cron'un 15 dakikada bir 401 almaya başlamasına yol açıyordu. **Kural: `deploy_edge_function`'ı çağırmadan ÖNCE her zaman `list_edge_functions`/`get_edge_function` ile fonksiyonun MEVCUT `verify_jwt` değerini kontrol et ve deploy çağrısına AYNI değeri açıkça geçir — asla parametreyi atlayıp aracın varsayılanına (`true`) güvenme.** Projedeki `verify_jwt:false` olması gereken üç fonksiyon: `notify-deadline-warnings`, `notify-friend-request-reminders` (ikisi de pg_cron'dan JWT'siz çağrılıyor), `notify-turn-timeout-surrender` (Postgres'in kendisinden `net.http_post` ile JWT'siz çağrılıyor) — geri kalan sekizi `true`.
 
+## İstemci Hata Telemetrisi (21 Ağustos 2026, ROADMAP #3)
+
+**NEDEN VAR:** o güne kadar istemcide doğan HER hata kullanıcının cihazında
+ölüyordu — web'de 81 `console.error`, portta 74 `debugPrint`, artı
+`ErrorBoundary.componentDidCatch` (yalnızca konsola yazıyordu). Kimse
+görmüyor, aranamıyor, "kaç kişide oldu?" sorusu sorulamıyordu. Bedeli bu
+projede ÖLÇÜLMÜŞTÜ: avatar yükleme 20 Temmuz'dan 13 Ağustos'a kadar 403
+veriyordu ve kimse fotoğrafını değiştirmediği için ÜÇ HAFTA görünmedi;
+Parça 45'teki "depo açılamadı → offline hamleler sessizce kayboldu" teşhisi
+TAHMİNLE yapılmak zorunda kaldı. **Supabase'in sunucu loglarıyla
+KARIŞTIRMA** — Postgres/Edge Function hataları zaten orada; eksik olan, hiç
+sunucuya ulaşmayan istemci hataları.
+
+**Mağaza çıkışından ÖNCE yapıldı ve bu bilinçli:** geriye dönük
+doldurulamaz (`games.platform` ile aynı sınıf). Mağazaya çıkıldığında
+konuşulamayacak kullanıcılar, elde olmayan cihazlarda hata alacak.
+
+### Tablo — `client_errors` (`20260821084652_client_errors` migration'ı)
+
+`guest_visits`/`game_starts` deseninin aynısı: **anonim**, `user_id` YOK
+(`PrivacyModal` §6'nın "bu kod hesabınızla ASLA eşleştirilmez" taahhüdü),
+insert `anon` + `authenticated` rollerine açık, **SELECT politikası HİÇ YOK**
+— okuma yalnızca `admin_client_errors(p_days)` RPC'sinden (SECURITY DEFINER,
+`is_admin()` kapılı).
+
+Sunucu tarafında İKİ savunma daha var ve ikisi de istemciye güvenmiyor:
+- `_client_errors_mask` (BEFORE INSERT) — `route`taki 12+ karakterlik
+  hex/uuid dizilerini `:id`ye çevirir, `message`ı 500, `stack`i 4000
+  karaktere kırpar. **İstemci de aynısını yapıyor** (`normalizeRoute`),
+  ama tek savunma hattı OLMAMALI: `/davet/<token>` bir YETENEK, hata
+  tablosuna düşmesi onu sızdırır.
+- `admin_client_errors` satırları **GRUPLAYARAK** döner —
+  `(kind, left(message,160))` imzası başına tek satır: `occurrences`,
+  `devices` (benzersiz `anon_id`), `platforms`, `builds`, `routes`,
+  `first_seen`/`last_seen`, `sample_stack`.
+
+### NE KAYDEDİLMEZ — bu, işin en önemli kararı
+
+Bir kayıt **"birinin bakması gereken bir şey"** demek olmalı; gürültü
+sinyali boğarsa panel bir daha açılmaz. Bu yüzden BEKLENEN durumlar
+bilerek dışarıda: çevrimdışılık ve `isNetworkError`'a düşen her şey,
+sunucunun KENDİ reddi ("Sıra sende değil." — o bir kural, hata değil).
+
+**⚠ Ağ filtresi YALNIZCA otomatik yakalamalara uygulanır (`kind !== 'manual'`)
+ve bu, tasarım turunda YAKALANAN bir hatanın düzeltmesi.** İlk sürüm filtreyi
+koşulsuz uyguluyordu; o hâliyle ROADMAP'in ADIYLA andığı vakayı — portun
+`cloud_save_repo` "KAYIP" noktasını — tam da sessizce düşürüyordu: oradaki
+hata çoğu zaman bir AĞ hatasıdır, ama raporlanmaya değer kılan şey
+**aynanın DA yazılamamış olmasıdır**, yani sinyal hatanın kendisinde değil
+ÇAĞIRANIN bildiği bağlamda. Manuel bildirimler bu yüzden filtreyi atlar.
+
+### Üç değişmez (biri bozulursa telemetri ürünü bozar)
+
+1. **Fire-and-forget** — asla `await` edilmez, ASLA fırlatmaz.
+2. **Tekrar bastırma + hız sınırı** — imza `${kind}|mesajın ilk 120
+   karakteri`, oturum başına en fazla **10** kayıt. Bir çökme döngüsü aksi
+   halde binlerce satır yazar (`ErrorBoundary`'nin kendi yorumunda o döngü
+   zaten tanımlı: bozuk kayıt → her reload'da aynı hata).
+3. **Derleme kimliği** her kayda eklenir (`window.__KELIMEKI_BUILD__` /
+   `buildSha`) — "Deploy Doğrulaması" bölümünün tamamı zaten bu soruyu
+   çözmek için var; telemetri onu bedavaya alır. Panelde bu, "düzeltme
+   işe yaradı mı?"nın tek cevabı: hata yalnızca ESKİ derlemede kalıyorsa
+   düzelmiştir.
+
+### İki istemci, aynı kurallar
+
+| | web | port |
+|---|---|---|
+| Modül | `src/utils/errorReporting.ts` | `mobile/app/lib/src/data/error_reporter.dart` |
+| Otomatik yakalama | `window.onerror` + `unhandledrejection` (`boot.tsx`) | `FlutterError.onError` + `runZonedGuarded` (`main.dart`) |
+| Render/çökme | `ErrorBoundary.componentDidCatch` → `kind:'boundary'` | `FlutterError.onError` → aynı `kind` |
+| Yol (`route`) | `normalizeRoute(location.pathname)` | sabit `'app'` — portta pathname yok, ekran adı taşımak yerine yığına bakılır |
+| Sınama | `npm run verify-error-reporting` (20 kontrol, CI'da) | `test/error_reporter_test.dart` (8 test) |
+
+**Portta İKİ yakalayıcı da şart ve farklı şeyleri görüyor:**
+`FlutterError.onError` widget ağacındaki (build/layout/paint) hataları,
+`runZonedGuarded` zone dışına kaçan async hataları. Yalnızca birini kurmak
+ötekinin gördüğü sınıfı sessizce kaçırır. `FlutterError.onError`'ın ÖNCEKİ
+değeri de çağrılmaya devam ediyor — aksi halde yerel geliştirmede kırmızı
+ekran/log kaybolurdu.
+
+**Karar mantığı ağdan bağımsız sınanabilsin diye iki tarafta da bir
+"sink" var** (`ClientErrorSink` / `__setClientErrorSinkForTests`). Web'de
+duman testi bu modülü SINAYAMAZ — üretimde yalnızca Supabase
+yapılandırılmışken çalışıyor, dev sunucusunda yapılandırılmamış; bu yüzden
+`verify-*` betiği deseni (esbuild + node) kullanıldı. **Negatif eş
+ölçüldü:** tekrar bastırma, ağ filtresinin `manual` istisnası, hız sınırı
+ve yol maskeleme tek tek kaldırıldığında sırasıyla 1/1/1/2 kontrol GERÇEKTEN
+düştü.
+
+### Admin paneli — "Hatalar" sekmesi
+
+Dördüncü sekme (`AdminDashboard.tsx`). **Rozet YOK ve bu bilinçli:**
+`CountBadge` bu projede "bekleyen İŞ" demek (bkz. o bölüm); bir hata kaydı
+admin'in yapması gereken bir kuyruk maddesi değil, bir gözlem.
+
+Kartlar gruplanmış satırları çiziyor; **"Kez" ile "Cihaz" yan yana ve eşit
+vurguda** — ayrılmadan bir hatanın yaygın mı yoksa tek kişinin döngüsü mü
+olduğu okunamıyor (40 kez / 1 cihaz ≠ 3 kez / 3 cihaz). Karta dokunmak yol,
+ilk görülme ve örnek yığını açıyor. CSV `sample_stack` dahil dışa aktarıyor.
+Pencere seçici (24 saat / 7 / 30 / 90 gün) Büyüme'nin periyot
+kontrollerinden BİLEREK bağımsız: orada soru "zaman içinde nasıl gidiyor",
+burada "şu an bakılması gereken ne var".
+
+**ÖLÇÜLEN DÜZEN HATASI — dördüncü sekme tek sıraya SIĞMIYORDU.** Sekme
+şeridi `flex gap-1.5` + `flex-1` idi; `flex-1` bir öğeyi `min-width:auto`
+yüzünden en uzun kelimesinin ("BİLDİRİM") altına indiremiyor, dolayısıyla
+dört sekmenin min-content toplamı 320px'te kabı **77px**, 390px'te **7px**
+AŞIYOR ve panelin `overflow-hidden`'ı bunu SESSİZCE kırpıyordu (negatif eş:
+dördüncü buton kaldırılınca üç genişlikte de taşma 0). Şerit
+`grid grid-cols-2 min-[580px]:grid-cols-4` oldu — dar ekranda 2×2, tek
+sıraya ancak dört etiketin de TEK SATIRDA sığdığı genişlikten sonra geçiyor
+(eşik "GERİ BİLDİRİM"in max-content'i ≈120px'ten türetildi). **Ölçüldü**
+(derlenmiş CSS + Chromium, gerçek `AdminDashboard` sunucuda render edilip):
+320/390/579/580/640/834/1194'te yatay taşma **0** ve etiketlerin hepsi tek
+satır (38.5px) — bu, değişiklikten ÖNCEKİ hâlden de iyi (orada 320/390'da
+sekmeler iki satıra sarıyordu).
+
+**Ders:** bir sekme/buton eklemek "tek satır" değil bir DÜZEN
+değişikliğidir. `flex-1` "her koşulda sığar" demek DEĞİL.
+
+### Gizlilik metni
+
+`PrivacyModal` §6 (+ portun `legal_modals.dart`'ı, AYNI PR'da — tarihler
+`legal_text_test.dart` ile kilitli) artık anonim kodun ÜÇÜNCÜ bir durumda
+da gönderildiğini söylüyor. Metin bir şeyi açıkça kabul ediyor: **teknik
+hata açıklamaları çok nadiren kullanıcının yazdığı bir metin parçasını
+içerebilir** — bunu yazmamak, "hiçbir kişisel veri yok" iddiasını sessizce
+yanlış kılardı.
+
+### Bilinen sınırlar
+
+- **Açılışın ilk milisaniyeleri:** rapor gönderimi Supabase bağlanana kadar
+  sessizce düşer (portta `ErrorReporter.configure`'dan önce, web'de
+  `supabase` null iken). Kuyruklamak için ayrı bir depo açmak, telemetrinin
+  KENDİSİNİ bir açılış riski hâline getirirdi. Yakalayıcılar yine de en
+  başta kuruluyor.
+- **Yığın sembolleri çözülmüyor** — minify edilmiş web yığını ve release
+  Dart yığını okunması zor. Source map yüklemek ayrı bir iş; bugün
+  `message` + `route` + `build` üçlüsü teşhis için yeterli kabul edildi.
+
 ## Sonraya Bırakılan Ürün Fikirleri (karar verildi, henüz yapılmadı)
 
 > **Sıralı yürütme planı ayrı bir dosyada: `ROADMAP.md`.** Burası *ne* ve
@@ -2157,79 +2507,6 @@ bölümün kendi tarihli notuna taşınır.
   mağazanın güncel politikası bir kez daha teyit edilmeli (bu satır 19 Ağustos
   2026'daki bilgiye dayanıyor, mağaza kuralları değişebiliyor). Bir sonraki
   oturum bunu "hukuki eksik" diye yeniden açmasın.
-
-- **"Oyun başladı" olayı — reklam harcamasından ÖNCE (20 Ağustos 2026,
-  ölçülerek karar verildi; sıralı planı `ROADMAP.md` #9):** Bugün yalnızca
-  BİTMİŞ oyun kaydediliyor; `game_starts` tablosu 20 Temmuz 2026'da
-  kaldırılmıştı ("hiçbir yerde ihtiyaç görülmedi" — o gün doğruydu, ücretli
-  trafik gelince yanlış oldu). İlk Instagram kampanyası bu boşluğu görünür
-  kıldı: `instagram` etiketiyle **80 kişi / 0 üye / 0 oyun** (Supabase'ten
-  doğrulandı, panel doğru çalışıyor). Ama yerel oyunun medyan süresi **18,1
-  dakika** ve huninin "Oyun" sütunu misafir oyunlarını tanım gereği hiç
-  görmüyor — yani "0 oyun" büyük olasılıkla "kimse BİTİRMEDİ" demek. Sonuç:
-  "açılış sayfası mı çalışmıyor, oyun mu fazla uzun bir taahhüt?" sorusu
-  bugünkü veriyle AYRILAMIYOR. Anonim, misafir dahil, `?ref=` etiketli bir
-  başlangıç olayı bunu ayırır. **Geriye dönük doldurulamaz**
-  (`games.platform` ile aynı sınıf) — bir sonraki harcamadan önce eklenmeli;
-  web + port AYNI PR'da, aksi halde mobil trafik sessizce eksik sayılır.
-
-- **Hata telemetrisi — istemci tarafı çökme/başarısızlık kaydı (16 Ağustos
-  2026, kullanıcı onayı; MAĞAZA ÇIKIŞINA yakın yapılacak):**
-  **Bu, Supabase'in sunucu loglarıyla KARIŞTIRILMAMALI.** Postgres/Edge
-  Function/API hataları zaten Supabase'in kendi loglarında duruyor (MCP
-  `query_logs` + Dashboard) — eksik olan, kullanıcının CİHAZINDA olup hiçbir
-  sunucuya ulaşmayan hatalar. Bugün onların TAMAMI şuraya gidiyor:
-  `console.error` (web'de **81** çağrı yeri), `ErrorBoundary.componentDidCatch`
-  (kök çökme yakalayıcısı — yalnızca console'a yazıyor) ve portta
-  `debugPrint` (**74** çağrı yeri). Üçü de kullanıcının cihazında ölüyor:
-  **kimse görmüyor, aranamıyor, "kaç kişide oldu" sorusu sorulamıyor.**
-  - **Neden ŞİMDİ değil, mağaza çıkışına yakın:** bugün kullanıcı tabanı 23
-    üye ve büyük kısmı hesap sahibinin arkadaşı; her hata elle, cihazda,
-    kullanıcıyla konuşarak bulunuyor. Mağazaya çıkıldığında konuşamayacağın
-    kullanıcılar, elinde olmayan cihazlarda hata alacak — telemetri tam o an
-    tek görme yolu olur. **Geriye dönük doldurulamaz** (`games.platform` ile
-    aynı sınıf), yani ÇIKIŞTAN ÖNCE kurulmalı; ama bugün kurulursa gürültü
-    kalibrasyonu gerçek trafik olmadan yapılamaz.
-  - **Bu projede bedeli ÖLÇÜLMÜŞ bir eksik, teorik değil:** Parça 45'te
-    (mobil) "depo açılamadı → offline hamleler sessizce kayboldu" teşhisi
-    tahminle yapılmak zorunda kaldı ve Setup'a sırf görebilmek için bir
-    teşhis satırı EKLENDİ; avatar yükleme 20 Temmuz'dan 13 Ağustos'a kadar
-    403 veriyordu ve kimse fotoğrafını değiştirmediği için üç hafta
-    görünmedi; `fetchMyGames` çevrimdışıyken "hiç oyunun yok" diyordu.
-    Üçünde de sunucuda hiçbir iz YOKTU — hata istemcide doğup istemcide
-    öldü.
-  - **Ne KAYDEDİLİR:** yakalanmamış istisnalar, yakalanmamış promise
-    reddi (`unhandledrejection`), `ErrorBoundary`nin yakaladıkları, ve
-    BİLİNÇLİ olarak "bu olmamalıydı" denen noktalar (ör.
-    `cloud_save_repo`'nun "KAYIP" logu, ayna yazma hatası).
-  - **Ne kaydedilMEZ — asıl tasarım kararı bu:** BEKLENEN/ele alınmış
-    durumlar. Çevrimdışılık, `isNetworkError`'a düşen her şey, sunucunun
-    KENDİ reddi (`'Sıra sende değil.'`) telemetriye girmemeli; girerse
-    gürültü sinyali boğar ve panel bir daha açılmaz. Bir kayıt "birinin
-    bakması gereken bir şey" demek olmalı.
-  - **Yüzeyle birlikte gelen üç zorunluluk:** (1) fire-and-forget, asla
-    `await` edilmez, asla fırlatmaz — bir telemetri hatası uygulamayı
-    etkileyemez (`setOnlineGamePlatform`/`logGameFinish` deseni); (2)
-    tekrar bastırma + hız sınırı ŞART — bir çökme döngüsü aksi halde
-    binlerce satır yazar (`ErrorBoundary`'nin kendi yorumunda bu döngü
-    zaten tanımlı); (3) derleme kimliği (`window.__KELIMEKI_BUILD__` /
-    `buildSha`) her kayda EKLENMELİ — "Deploy Doğrulaması" bölümünün
-    tamamı zaten bu soruyu (kullanıcı hangi derlemeyi görüyor?) çözmek
-    için var, telemetri onu bedavaya alır.
-  - **Nerede saklanır — iki seçenek, ilki bu projenin desenine uyuyor:**
-    (a) kendi `client_errors` tablomuz — `guest_visits`/`game_finishes`
-    ile aynı kalıp (anonim, yalnızca insert eden RLS, admin panelinde
-    okunur); (b) Sentry gibi bir hizmet — daha zengin (stack sembolü,
-    gruplama) ama yeni bir bağımlılık ve ÜÇÜNCÜ TARAFA veri aktarımı,
-    yani gizlilik metninde çok daha ağır bir değişiklik.
-  - **Gizlilik metni ZORUNLU olarak değişir** (yeni kişisel veri kuralı):
-    `PrivacyModal` + portun `legal_modals.dart`'ı AYNI PR'da —
-    `legal_text_test.dart` "Son güncelleme" tarihlerini karşılaştırdığından
-    port bayat kalırsa mobil test paketi düşer.
-  - **Yapılırken:** web + port AYNI PR'da (tek taraflı yapmak bu projenin
-    en sık hatasını üretir) ve panelde ham satır listesi DEĞİL en azından
-    "aynı hata kaç kişide, hangi derlemede" kırılımı gösterilmeli — ham
-    liste ilk yüz satırdan sonra okunmaz hâle gelir.
 
 - **Taranabilir `/nasil-oynanir` sayfası (17 Ağustos 2026, kullanıcı
   kararı: "ileride yapılacak işlere ekle, o zaman değerlendiririz"):**

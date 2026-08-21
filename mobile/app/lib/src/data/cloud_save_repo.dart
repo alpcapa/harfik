@@ -34,6 +34,7 @@ import '../game/local_game_repo.dart';
 import '../storage/cloud_save_mirror_store.dart';
 import '../storage/local_save_store.dart' show abandonTimeout;
 import '../util/uuid.dart';
+import 'error_reporter.dart';
 import 'write_queue.dart';
 
 /// `local_game_saves` tablosundaki tek satır (web `LocalGameSave` tipi).
@@ -423,6 +424,11 @@ class CloudSaveRepo {
           // yutmak, kullanıcının hamlesini kaybettiğini fark etmemesi
           // demek (10 Ağustos 2026'da tam bu yaşandı).
           debugPrint('[Kelimeki] KAYIP: ne sunucuya ne aynaya yazılabildi: $e');
+          // ROADMAP #3'ün ADIYLA andığı nokta: bu, ele alınmış bir
+          // çevrimdışılık DEĞİL — ayna da yazılamadığı için gerçek bir veri
+          // kaybı. Ağ filtresi bu çağrıyı bilerek elemiyor (`manual`), bkz.
+          // `ErrorReporter.report`.
+          errorReporter.report(e, context: 'cloud_save_repo.upsert');
         }
         return false;
       }

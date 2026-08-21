@@ -477,6 +477,17 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       düğmesiyle render olduğunu bildirdi — modal ortak `KModal` kabuğuna
       taşınmadan kendi ham `Dialog`'unu kuruyordu, bkz. mobile/CLAUDE.md
       Parça 26).
+- [ ] **Oyun sonu kartında k-lig sütunu + kırpılan ad (Parça 120).**
+      Başlıklar soldan sağa **KALAN · TOPLAM · k-lig**; kazananın k-lig
+      hücresi **+2**, 2 kişilikte ikinci **-**. Teslim olan satırda **-2**
+      k-lig sütununda olmalı (KALAN'da DEĞİL). 4 kişilik bir oyunda
+      "Yapay Zeka 1" gibi uzun adlar satırı sarmadan `…` ile kırpılmalı,
+      kart hiçbir genişlikte taşmamalı; alttaki hamle sayısı etiketin
+      yanında/ortalı olmalı. Ayrıca **üç sütunun sayısı da kolonun SAĞINA
+      yapışık** olmalı: k-lig'in `-` gösterdiği ve skorun 2 haneli olduğu bir
+      satırda skor ORTALI durmamalı (21 Ağustos düzeltmesi). **Web ile yan
+      yana bak** — sayılar iki tarafta ELLE senkron; başlıkların harf aralığı
+      da (0.225) aynı olmalı, port eskiden 0.5 kullanıp daha genişti.
 - [ ] **Oyun sonu butonu BÜYÜR (Parça 50).** Oyun bitince raf satırındaki
       mavi buton "YENİ OYUN AÇ" olmalı: **tek satır** ve OYNA'dan belirgin
       **daha büyük punto** (web `text-[15px]` ↔ OYNA `text-[12px]`); raf
@@ -651,6 +662,13 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 
 ## 4. Biten oyun kayıtları ve istatistikler
 
+- [ ] **"Oyun başladı" sayacı (Parça 121, 21 Ağustos 2026).** Mobilde bir
+      YZ oyunu BAŞLAT, bitirmeden çık. Web'de admin panelinde Büyüme →
+      Kullanıcı → Kaynak Hunisi'nde **`bilinmiyor`** satırının "Başlayan"
+      değeri 1 artmalı — `direkt` DEĞİL. Port `?ref=`/anon kod damgası
+      taşımadığından bu doğru davranış; `direkt`e düşüyorsa web'in gerçek
+      doğrudan trafiği şişiyor demektir. "Oyun" sütunu (bitmiş oyun)
+      DEĞİŞMEMELİ. Oyun sonu "Tekrar Oyna" da aynı şekilde 1 artırmalı.
 - [ ] **Oyun bitir → webde gör.** Mobilde bir oyunu sonuna kadar oyna.
       Web'deki Skor Kartı'nda oyun sayısı artmalı, k-lig puanı doğru
       değişmeli (2 kişilikte 1.=+2, 2.=0).
@@ -991,6 +1009,14 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       gönderdin…" hatası çıkmalı, mesaj gönderilmemeli.
 
 ## 10. Arkadaşlar
+
+- [ ] **Davet linki `?ref=arkadas` taşıyor (Parça 122).** Arkadaşlar →
+      "Arkadaşını Davet Et" ile link üret ve paylaş penceresinde/panoda
+      URL'e bak: `https://kelimeki.com/davet/<token>**?ref=arkadas**`
+      OLMALI. Etiket yoksa davetle gelip üye olan herkes admin panelindeki
+      Kaynak Hunisi'nde `direkt` satırına düşer. Linki temiz bir tarayıcıda
+      açtığında davet sayfası normal açılmalı (sorgu parametresi token
+      çözümünü BOZMAZ).
 
 - [ ] **Modal + rozet.** Girişliyken hesap menüsünde "Arkadaşlar" satırı
       görünmeli; başka bir hesaptan sana istek gönderilince (web'den
@@ -1703,6 +1729,38 @@ listesi kök `TESTING.md` bölüm 10.
       platformda BİREBİR aynı olmalı ("Genel = 2 kişilik + 4 kişilik +
       eşik ödülü" — mod bazlı sekmelerin toplamı ödül kadar EKSİK olur,
       bu doğru; fark popup'taki "+N eşik ödülü dahil" satırıdır).
+
+---
+
+## 14. Hata telemetrisi (Parça 123)
+
+Uygulamada doğan hatalar anonim olarak `client_errors` tablosuna yazılıyor
+(hesap kimliği YOK). Portta okuma yüzeyi HİÇ YOK — kontrol web'deki Admin
+Paneli → **Hatalar** sekmesinden yapılır (kök `TESTING.md` bölüm 9.12).
+
+Bu bölümün tamamı **telemetrinin ÜRÜNÜ BOZMADIĞINI** doğrulamak içindir;
+kayıtların panelde görünmesi ikincil.
+
+- [ ] **Uçak modunda uygulama normal çalışıyor.** Çevrimdışıyken yerel/YZ
+      oyunu oyna, Setup'a çık, gir — hiçbir yavaşlama/donma/ek uyarı
+      olmamalı. Telemetri ağ hatasında sessizce vazgeçmek zorunda.
+- [ ] **Çevrimdışı hamleler panelde İZ BIRAKMIYOR.** Uçak modunda bir Canlı
+      oyunda hamle dene (ekranda "sunucuya ulaşılamıyor" uyarısı çıkar) →
+      web panelinde bu yüzden YENİ bir hata satırı ÇIKMAMALI. Bu BEKLENEN
+      bir durum; çıkıyorsa filtre bozulmuştur ve panel kısa sürede
+      okunamaz hâle gelir.
+- [ ] **Sunucunun kendi reddi de iz bırakmıyor.** Sırası sende değilken bir
+      hamle göndermeye çalış ("Sıra sende değil.") → yeni satır olmamalı.
+- [ ] **Panelde görünen kayıtların platformu doğru.** Gerçek bir hata
+      düştüyse `ios`/`android` (Flutter web'de `app-web`) olmalı, `web`
+      DEĞİL — `web` React uygulamasına ait.
+- [ ] **Derleme kimliği dolu.** CI'dan kurulan bir derlemede kayıttaki
+      `build`, Setup teşhis satırındaki sha ile AYNI olmalı. Boşsa
+      "hangi sürümde?" sorusu cevapsız kalır — telemetrinin yarısı gider.
+- [ ] **Yol her kayıtta `app`.** Portta ekran adı/token taşınmıyor.
+- [ ] **Kırmızı ekran hâlâ çalışıyor** (debug derlemede): `FlutterError`
+      yakalayıcısı raporu gönderirken ÖNCEKİ davranışı da çağırmalı, yani
+      konsol logu/kırmızı ekran kaybolmamalı.
 
 ---
 

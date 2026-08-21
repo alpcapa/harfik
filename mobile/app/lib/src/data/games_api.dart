@@ -213,6 +213,21 @@ abstract class GamesGateway {
   Future<({String id, bool alreadyExisted})> insertGame(
       Map<String, Object?> row, String userId);
 
+  /// Anonim BAŞLANGIÇ telemetrisi (`game_starts`) — web `logGameStart`
+  /// paritesi (ROADMAP #9, 21 Ağustos 2026). Admin panelindeki Kaynak
+  /// Hunisi'nin "Başlayan" adımını besler.
+  ///
+  /// ⚠ `userId` YOK ve tabloda böyle bir kolon da YOK: `anon_id` ile hesap
+  /// kimliğini aynı satırda birleştirmek gizlilik metnindeki "anonim kod
+  /// hesabınızla asla eşleştirilmez" taahhüdünü bozardı.
+  ///
+  /// ⚠ Portun `anon_id`/`?ref=` damgası HENÜZ YOK (web'in
+  /// `visitTracking.ts`inin karşılığı porta hiç girmedi), o yüzden ikisi de
+  /// null gidiyor ve satır sunucuda 'bilinmiyor' kaynağına düşüyor — bu
+  /// BİLİNÇLİ: 'direkt'e yazmak web'in gerçek doğrudan trafiğini şişirirdi.
+  /// Port mağazaya çıkarken damgalama eklenirse burası da güncellenmeli.
+  Future<void> logGameStart({required int playerCount});
+
   /// Anonim bitiş telemetrisi (`game_finishes`). Web'de olduğu gibi
   /// best-effort: hata yutulur, kuyruğa ALINMAZ.
   Future<void> logGameFinish({
@@ -314,6 +329,15 @@ class SupabaseGamesGateway implements GamesGateway {
       }
       rethrow;
     }
+  }
+
+  @override
+  Future<void> logGameStart({required int playerCount}) async {
+    await client.from('game_starts').insert({
+      'anon_id': null,
+      'player_count': playerCount,
+      'utm_source': null,
+    });
   }
 
   @override
@@ -773,6 +797,16 @@ class GamesRepo {
     } catch (e) {
       debugPrint('[Kelimeki] hamle geçmişi alınamadı: $e');
       return (ok: false, moves: null);
+    }
+  }
+
+  /// Oyun BAŞLANGICI sayaç satırı (`game_starts`) — `logFinish`in kardeşi,
+  /// aynı best-effort duruş: hata yalnızca loglanır, oyunu ASLA etkilemez.
+  Future<void> logStart({required int playerCount}) async {
+    try {
+      await gateway.logGameStart(playerCount: playerCount);
+    } catch (e) {
+      debugPrint('[Kelimeki] logGameStart hatası: $e');
     }
   }
 

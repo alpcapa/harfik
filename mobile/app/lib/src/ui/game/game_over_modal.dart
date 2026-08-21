@@ -1,6 +1,14 @@
 // Oyun sonu ekranı — src/components/GameOver.tsx portu.
 // Kazanan başlığı (beraberlikte altın "BERABERE"), rankPlayers sırasıyla
-// oyuncu listesi (Kalan/Toplam sütunları, Teslim rozeti), toplam hamle.
+// oyuncu listesi (Kalan/Toplam/k-lig sütunları, Teslim rozeti), toplam hamle.
+//
+// 20 Ağustos 2026 — ÜÇ sütun: en sağa k-lig katkısı eklendi (oyun
+// kartlarındaki gibi, AYNI `leaguePoints`/`formatLeaguePoints`'tan). Ad artık
+// kırpılıyor (`ellipsis` zaten vardı ama `Flexible` yerine `Expanded` ile
+// alan garanti ediliyor). Genişlikler webde ölçülen mürekkebe göre: Kalan 32,
+// Toplam 40 (skor "271" 20px mono'da 36.7px — 36'lık kutuda soldaki eksiye
+// yapışıyordu), k-lig 24; aralar 4. Skor 22→20, başlık 10→9 (ad alanına ~8px).
+// Web ile BİREBİR aynı sayılar — biri değişirse öteki de değişmeli.
 // Web'deki iki link de portlandı: "Oyun Geçmişi" + "Görüş Bildir"
 // ([onFeedback] verilmezse — bazı testler — ikincisi hiç çizilmez).
 import 'package:flutter/material.dart';
@@ -84,28 +92,36 @@ class GameOverModal extends StatelessWidget {
             child: Column(
               children: [
                 const Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    _ColHeader('KALAN', width: 34),
-                    SizedBox(width: 16),
-                    _ColHeader('TOPLAM', width: 48),
+                    Expanded(child: SizedBox()),
+                    SizedBox(width: 4),
+                    _ColHeader('KALAN', width: 29),
+                    SizedBox(width: 8),
+                    _ColHeader('TOPLAM', width: 37),
+                    SizedBox(width: 4),
+                    // Marka küçük harf — web'de satır `uppercase` olduğundan
+                    // `normal-case` şart; burada zaten büyütme yok.
+                    _ColHeader('k-lig', width: 20),
                   ],
                 ),
                 const SizedBox(height: 10),
                 for (final r in ranked) ...[
-                  _PlayerRow(entry: r),
+                  _PlayerRow(entry: r, playerCount: state.players.length),
                   const SizedBox(height: 10),
                 ],
                 const Divider(height: 1, color: kBorder),
                 const SizedBox(height: 8),
+                // Sayı etiketin YANINDA (önceden satırın iki ucundaydı) —
+                // kullanıcı isteği, 20 Ağustos 2026; web ile aynı.
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text(
                       'Toplam hamle',
                       style:
                           TextStyle(fontSize: 12, color: kMuted),
                     ),
+                    const SizedBox(width: 8),
                     Text(
                       '${state.turnCount}',
                       style: const TextStyle(
@@ -174,8 +190,10 @@ class _ColHeader extends StatelessWidget {
         label,
         textAlign: TextAlign.right,
         style: const TextStyle(
-          fontSize: 10,
-          letterSpacing: 0.5,
+          fontSize: 9,
+          // web `tracking-wide` = 0.025em → 9px'te 0.225 (önceden 0.5'ti,
+          // sessiz bir sapmaydı; başlıklar bu yüzden webden genişti).
+          letterSpacing: 0.225,
           color: kMuted,
         ),
       ),
@@ -185,7 +203,8 @@ class _ColHeader extends StatelessWidget {
 
 class _PlayerRow extends StatelessWidget {
   final RankedPlayer entry;
-  const _PlayerRow({required this.entry});
+  final int playerCount;
+  const _PlayerRow({required this.entry, required this.playerCount});
 
   @override
   Widget build(BuildContext context) {
@@ -195,17 +214,25 @@ class _PlayerRow extends StatelessWidget {
     for (final t in p.rack) {
       remaining += t.pts;
     }
+    // k-lig katkısı — oyun kartlarıyla AYNI fonksiyondan, yani kart ile Skor
+    // Kartı/k-lig listesi sessizce ayrışamaz. Buradaki "-2" TESLİM cezasıdır;
+    // soldaki "Kalan" sütunundaki eksi ise raf taşı düşümü — iki farklı şey,
+    // bu yüzden iki ayrı sütun ve iki ayrı başlık.
+    final points =
+        leaguePoints(entry.rank, playerCount, surrendered: p.surrendered);
     return Row(
       children: [
-        PlayerBadge(index: entry.index, colorIndex: p.colorIndex, size: 14),
-        const SizedBox(width: 8),
         Expanded(
           child: Row(
             children: [
+              PlayerBadge(
+                  index: entry.index, colorIndex: p.colorIndex, size: 14),
+              const SizedBox(width: 6),
               Flexible(
                 child: Text(
                   '${entry.rank}. ${p.name}',
                   overflow: TextOverflow.ellipsis,
+                  softWrap: false,
                   style:
                       const TextStyle(fontSize: 15, color: kText),
                 ),
@@ -226,8 +253,9 @@ class _PlayerRow extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(width: 4),
         SizedBox(
-          width: 34,
+          width: 29,
           child: Text(
             remaining > 0 ? '-$remaining' : '',
             textAlign: TextAlign.right,
@@ -238,17 +266,31 @@ class _PlayerRow extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 8),
         SizedBox(
-          width: 48,
+          width: 37,
           child: Text(
             '${p.score}',
             textAlign: TextAlign.right,
             style: TextStyle(
               fontFamily: 'SpaceMono',
               fontWeight: FontWeight.bold,
-              fontSize: 22,
+              fontSize: 20,
               color: col.base,
+            ),
+          ),
+        ),
+        const SizedBox(width: 4),
+        SizedBox(
+          width: 20,
+          child: Text(
+            formatLeaguePoints(points),
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontFamily: 'SpaceMono',
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: points > 0 ? kGreen : (points < 0 ? kRed : kMuted),
             ),
           ),
         ),

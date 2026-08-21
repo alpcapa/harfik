@@ -28,7 +28,7 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
       <div className="flex flex-col gap-5">
         <P>
           Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, hangi verileri topladığımızı,
-          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 19 Ağustos 2026</P>
+          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 21 Ağustos 2026</P>
 
         <Section title="1. Veri Sorumlusu">
           <P>
@@ -52,8 +52,8 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             <li>Profil fotoğrafı (isteğe bağlı)</li>
             <li>Pazarlama iletişimi onayı ve onay tarihi (isteğe bağlı)</li>
             <li>
-              Arkadaşlık isteği, oyun daveti ve süre uyarısı gibi işlemsel e-posta
-              bildirimlerini alma tercihi
+              Hoş geldiniz mesajı, arkadaşlık isteği, oyun daveti ve süre uyarısı gibi işlemsel
+              e-posta bildirimlerini alma tercihi
             </li>
             <li>Oyun istatistikleri (oynanan oyunlar, kazanma/kaybetme, puan geçmişi)</li>
             <li>
@@ -97,9 +97,10 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             <li>Oyun deneyiminin kişiselleştirilmesi</li>
             <li>Hesap güvenliği ve destek hizmetleri</li>
             <li>
-              Bir arkadaşlık isteği ya da Canlı oyun daveti aldığınızda size e-posta ile bildirim
-              gönderilmesi — bu, hizmetin işleyişine dair işlemsel bir bildirimdir, pazarlama onayı
-              gerektirmez ve pazarlama onayınızdan bağımsız olarak gönderilir
+              Üyeliğiniz başladığında bir hoş geldiniz e-postası; bir arkadaşlık isteği ya da Canlı
+              oyun daveti aldığınızda size e-posta ile bildirim gönderilmesi — bunlar hizmetin
+              işleyişine dair işlemsel bildirimlerdir, pazarlama onayı gerektirmez ve pazarlama
+              onayınızdan bağımsız olarak gönderilir
             </li>
             <li>Yalnızca ayrıca onay verdiyseniz: pazarlama/tanıtım amaçlı iletişim</li>
           </ul>
@@ -164,11 +165,21 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             depoda bekletilir; aynı cihazda daha sonra giriş yapar ya da kayıt olursanız bu
             bekleyen sonuçlar otomatik olarak hesabınıza aktarılıp sunucuya gönderilir. Reklam
             veya pazarlama amaçlı herhangi bir çerez ya da izleme teknolojisi kullanılmamaktadır.
-            Girişsiz (misafir) ziyaretlerde, kaç benzersiz ziyaretçimiz olduğunu anlayabilmek
+            Kaç benzersiz ziyaretçimiz olduğunu ve kaç kişinin oyuna başladığını anlayabilmek
             için cihazınızda rastgele, kimliğinizle hiçbir şekilde ilişkilendirilmeyen anonim bir
-            kod üretilir; bu kodla birlikte yalnızca kaba cihaz tipi (mobil/masaüstü) ve varsa bir
-            paylaşım linkindeki kaynak etiketi sunucuya iletilir — bu veri hiçbir üçüncü tarafla
-            paylaşılmaz ve hesabınızla asla eşleştirilmez. Yazı tipleri de dahil tüm statik
+            kod üretilir. Bu kod iki durumda sunucuya iletilir: girişsiz (misafir) ziyaretlerde
+            kaba cihaz tipiyle (mobil/masaüstü) birlikte, ve yapay zekaya karşı bir oyun
+            başlattığınızda oyuncu sayısıyla birlikte — ikisinde de varsa bir paylaşım
+            linkindeki kaynak etiketi eklenir. Üçüncü bir durum, uygulamada beklenmedik bir
+            hata oluşmasıdır: hatayı bulup düzeltebilmemiz için hatanın teknik açıklaması,
+            oluştuğu yerin teknik izi, kullandığınız sürüm ve platform (web/uygulama) aynı
+            anonim kodla birlikte kaydedilir. Bu kayıtlar hesabınıza bağlanmaz ve yalnızca
+            arıza gidermek için tutulur; bulunduğunuz sayfanın adresi kaydedilirken davet
+            bağlantısı gibi kişiye özel kısımlar temizlenir. Teknik hata açıklamaları çok
+            nadiren yazdığınız bir metin parçasını içerebilir. Oyun başlangıcı kaydı giriş
+            yapmış olsanız da tutulur, ancak bu kayıtların hiçbirinde hesap kimliğiniz YER
+            ALMAZ: bu veriler hiçbir üçüncü tarafla paylaşılmaz ve hesabınızla asla
+            eşleştirilmez. Yazı tipleri de dahil tüm statik
             içerikler kendi sunucularımızdan sağlanır; üçüncü taraf (ör. Google Fonts) çağrısı
             yapılmaz.
           </P>

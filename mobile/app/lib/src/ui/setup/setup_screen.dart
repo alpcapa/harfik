@@ -743,6 +743,22 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     return choice == _GuestChoice.proceed;
   }
 
+  /// `game_starts` sayaç satırı. `StartAction` dispatch eden İKİ ekran var
+  /// (burası ve oyun sonu "Tekrar Oyna" → `game_screen.dart`); ikisi de
+  /// `GamesRepo.logStart`e gider — biri atlanırsa huninin "Başlayan" adımı
+  /// sessizce eksik sayar.
+  /// `logStart`in kendi try/catch'i gateway hatasını yutuyor; buradaki
+  /// ikinci sarmalayıcı `services.games` FUTURE'ININ reddedilme ihtimali
+  /// için — `unawaited` hatayı yutmaz, yakalanmamış bir async hata doğardı.
+  Future<void> _logGameStart(int playerCount) async {
+    try {
+      final games = _games ?? await widget.services.games;
+      await games?.logStart(playerCount: playerCount);
+    } catch (_) {
+      // Telemetri hiçbir koşulda oyun başlatmayı etkilemez.
+    }
+  }
+
   Future<void> _startNewGame(SetWordSource words) async {
     final controller = GameController(words: words);
     // Web doStart paritesi: 1. oyuncu her zaman gerçek kişi — oturum
@@ -754,6 +770,10 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
       for (var i = 1; i < _count; i++)
         PlayerSetup(name: 'Yapay Zeka ${i + 1}', isAI: true),
     ]));
+    // Anonim başlangıç sayacı (web `logGameStart` paritesi, ROADMAP #9).
+    // Fire-and-forget ve AWAIT EDİLMEZ: telemetri oyunun açılmasını
+    // geciktiremez, hatası da `logStart`ın içinde yutuluyor.
+    unawaited(_logGameStart(_count));
     await _openGame(controller, words);
   }
 

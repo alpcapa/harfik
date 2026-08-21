@@ -3,6 +3,7 @@
 // getDerivedStateFromError/componentDidCatch ile yakalanabilir, hook karşılığı yok.
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { clearGameState } from '../utils/gameStorage';
+import { reportClientError } from '../utils/errorReporting';
 
 interface Props {
   children: ReactNode;
@@ -21,6 +22,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('Kelimeki çöktü:', error, info.componentStack);
+    // React render hataları global `error` olayına DÜŞMEZ — React onları
+    // burada tüketiyor. Bu yüzden ayrıca bildirilmek zorunda (ROADMAP #3).
+    // Bu, telemetrinin en değerli tek kaydı: kullanıcı ekranında "Bir şeyler
+    // ters gitti" gördüyse mutlaka birinin bakması gerekiyor.
+    reportClientError(error, 'boundary');
   }
 
   private reload = () => window.location.reload();

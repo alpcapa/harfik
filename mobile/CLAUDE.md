@@ -5904,6 +5904,187 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        gerçekten sıfırladığı da bu oturumda kanıtlanamadı. Tek kanıt CI
        (Parça 103-118'in aynı sınırı) ve ardından cihazda gözle teyit.
 
+   - ✅ **Parça 120 — oyun sonu kartına k-lig sütunu + ad artık kırpılıyor
+     (20 Ağustos 2026, `game_over_modal.dart` + web `GameOver.tsx`, AYNI
+     PR):** Kullanıcı webde bitmiş bir oyunun kartında kaybedenin yanındaki
+     **-2**'yi k-lig cezası sanıp "kazanan neden puan almamış? Etki
+     analizine ne oldu?" diye sordu.
+     - **Önce ÖLÇÜLDÜ, koda dokunulmadı — ve HATA YOKTU:** o -2 rafta kalan
+       taşların düşümü (`GameOver.tsx:43`, başlığı zaten "KALAN"), sunucuda
+       kazanan `rank 1`/`win`/**+2** almış (k-lig 121 → 123), kaybeden
+       `rank 2`/`lose`/**0** (2 kişilikte ikincilik puan getirmez —
+       `player_stats`'ın yazılı kuralı), `surrendered` ikisinde de `false`.
+       Kullanıcı kanıtı görünce kabul etti. **Ders: "bir şeyi bozmuşsun"
+       suçlaması da bir HİPOTEZDİR** — savunmaya geçmeden ve "düzeltmeye"
+       kalkmadan önce ölç; burada "düzeltme" çalışan bir puanlamayı
+       bozacaktı.
+     - **Ama karışıklık MEŞRU'ydu ve ürün olarak kapatıldı:** kart oyunun
+       k-lig'e KATKISINI hiçbir yerde göstermiyordu, dolayısıyla tek görünen
+       eksi sayı ceza gibi okunuyordu. En sağa `leaguePoints`/
+       `formatLeaguePoints`'tan (oyun kartlarıyla AYNI fonksiyonlar) beslenen
+       bir k-lig sütunu eklendi — elle hesap YOK, yani kart ile Skor Kartı
+       sessizce ayrışamaz.
+     - **Aynı turda ONARILAN, ÖNCEDEN de var olan düzen hatası:** ad
+       kırpılmıyordu — uzun bir ad ("Yapay Zeka 1"; ad alanının uzunluk
+       sınırı YOK) satırı ikiye sarıp 320px'te skoru kartın DIŞINA
+       taşırıyordu. Yeni sütun bunu büyütürdü, birlikte düzeltildi.
+     - **Genişlikler MÜREKKEPLE ölçüldü, tahminle değil — her kutu KENDİ en
+       geniş içeriğine eşit:** "KALAN" başlığı 28.86 → **29**; skor "271"
+       20px mono'da **36.72** → **37** (36'da sayı kutusunu birebir doldurup
+       soldaki eksiye yapışıyor, "-2208" gibi okunuyordu); "k-lig" başlığı
+       19.98 → **20**. Ada yer açmak için başlık 10→**9**, skor 22→**20**.
+     - **Kullanıcı SİMÜLASYON İSTEDİ ("yer daralacak, uzun isimde ne olacağını
+       göster önce") ve bu işin şeklini değiştirdi:** web'in ÜRETİM
+       `<GameOver>`i Node'da `renderToStaticMarkup` ile beş senaryo × üç
+       genişlikte render edilip derlenmiş CSS'le Chromium'da ölçüldü/ekran
+       görüntüsü alındı — kod yazılmadan ÖNCE. Ölçülen: 390px'te 16
+       karakterlik ad bile kırpılmıyor, 360px'te yalnız 13+, 320px'te uzun
+       adlar kırpılıyor; **taşma her genişlikte 0**, satır 23px sabit.
+     - **İki karar simülasyona bakılarak verildi:** (a) 320px + teslim uç
+       durumu OLDUĞU GİBİ bırakıldı (ad erken kırpılıyor, taşma/bilgi kaybı
+       yok); (b) "KALAN TAŞ"ı iki satıra bölmek DENENDİ ve geri alındı
+       ("altlı üstlü kötü duruyor") — başlık tek satır "Kalan"/`KALAN`.
+       Ayrıca alttaki hamle sayısı satırın iki ucundan alınıp etiketin
+       YANINA çekildi (8px, ortalı).
+     - **21 Ağustos — "Toplam ortalı duruyor" (kullanıcı) ve ölçüm ONU DA
+       çürüttü ama şikâyet HAKLIYDI:** sütunlar zaten sağa yaslıydı (16
+       satırın 16'sında metnin sağ kenarı = kutunun sağ kenarı; glyph yan
+       boşluğu 20px mono'da 0.24, 13px'te −0.04, yani ihmal edilebilir).
+       Yanılsamanın kaynağı KUTU BOŞLUĞUYDU: k-lig'in `-` gösterdiği ve
+       skorun 2 haneli olduğu satırlarda skorun **solunda 19.5, sağında
+       20.0 px** boşluk kalıyor, yani skor komşularının mürekkebi arasında
+       TAM ORTALANIYORDU. **Blok sağa çapalı olduğundan sol boşluğu
+       Toplam'ın, sağ boşluğunu k-lig'in genişliği belirler; Kalan'ın
+       genişliği İKİSİNİ DE etkilemez** — bu yüzden yalnız "kutuları
+       daraltmak" simetriyi BOZMUYOR, boşlukların da asimetrik olması
+       gerekiyordu. Kutular içeriğe indirildi (32/40/24 → **29/37/20**) ve
+       sütun araları 4/4 yerine **4 / 8 / 4** yapıldı (Toplam'ın SOLU daha
+       geniş): aynı satır artık **20.5 sola / 16.0 sağa**. Sağ blok
+       104 → **100px**; yan fayda 390px'te "Konstantinopolis" kırpılmıyor.
+     - **Portun başlık `letterSpacing`'i SESSİZ bir sapmaydı, aynı turda
+       düzeltildi:** Dart `0.5` kullanıyordu, web `tracking-wide` = 0.025em
+       yani 9px'te **0.225**. Port başlıkları bu yüzden webden genişti
+       (KALAN 30.24 vs 28.86) ve yeni dar kutulara SIĞMAZDI — yani bu, kutu
+       daraltmanın yan ürünü olarak ortaya çıkan gerçek bir parite hatası.
+       `_ColHeader` web'in değerine çekildi.
+     - **Portun `_PlayerRow`u artık `playerCount` alıyor** (k-lig puanı için)
+       ve ad `Expanded`+`Flexible`+`ellipsis` ile kırpılıyor; `_ColHeader`
+       9 punto. Genişlik/punto sayıları iki tarafta ELLE senkron.
+     - **Mevcut Dart testleri DEĞİŞMEDİ ve bu kontrol EDİLDİ** (`_PlayerRow`
+       dosya-private, `GameOverModal`'ın imzası aynı, `'Toplam hamle'`/
+       `'(TESLİM)'` metinleri duruyor) — grep ile doğrulandı, varsayılmadı.
+     - **Doğrulama sınırı — DÜRÜST KAYIT:** bu oturumda da Flutter/Dart SDK
+       YOK (`which flutter dart` → boş), yani `flutter analyze`/`flutter test`
+       KOŞULAMADI ve **negatif eş kurulamadı** — Dart yarısının tek kanıtı CI
+       (Parça 103-119'un aynı sınırı). Web yarısı tam doğrulandı:
+       `npm run lint` + `npm run build` temiz, Playwright **18/18**, ve
+       gerçek üretim bileşeniyle üç genişlikte ölçüm + ekran görüntüsü.
+       21 Ağustos turunda da aynı sınır geçerli; web tarafı yeniden ölçüldü
+       (320/360/390/834 — yatay taşma **0**, sütun içi taşma **yok**, satır
+       yüksekliği sabit) ve önce/sonra ekran görüntüsü alındı.
+     - **Cihazda doğrulanacak:** bir oyunu bitirip kartta k-lig sütununun
+       çıktığı, teslim olan satırda **-2**'nin k-lig sütununda (Kalan'da
+       DEĞİL) durduğu, uzun adların kırpıldığı ve **üç sütunun sayısının da
+       kolonun sağına yapışık göründüğü** (özellikle k-lig `-` gösterirken
+       skorun ortalı DURMADIĞI) — `mobile/TESTING.md` bölüm 1.
+
+   - ✅ **Parça 121 — "Oyun başladı" telemetrisi (`game_starts`), web + port
+     AYNI PR (21 Ağustos 2026, ROADMAP #9):** İlk Instagram kampanyasında
+     huninin son adımı KÖR çıktı (`instagram`: 80 kişi / 0 üye / 0 oyun).
+     Panel doğruydu; ölçülen ŞEY eksikti — yalnızca BİTMİŞ oyun kaydediliyor,
+     yerel oyunun medyanı 18,1 dk, ve "Oyun" sütunu misafir oyunlarını tanım
+     gereği hiç görmüyor. Yani "açılış sayfası mı çalışmıyor, oyun mu fazla
+     uzun bir taahhüt?" sorusu ayrılamıyordu.
+     - **Portun payı:** `GamesGateway.logGameStart` + `GamesRepo.logStart`
+       (web `logGameStart` paritesi) ve `StartAction` dispatch eden İKİ ekran
+       da onu çağırıyor — `setup_screen.dart` (`_logGameStart`) ve
+       `game_screen.dart` ("Tekrar Oyna"). Biri atlanırsa huni sessizce eksik
+       sayar; web'de aynı risk tek bir `startLocalGame` yardımcısıyla
+       kapatıldı.
+     - **Port `anon_id`/`?ref=` GÖNDERMİYOR ve bu bilinçli:** web'in
+       `visitTracking.ts`inin karşılığı porta hiç girmedi. İkisi de null
+       gidiyor, satır sunucuda `'bilinmiyor'` kaynağına düşüyor — `'direkt'`e
+       yazmak web'in gerçek doğrudan trafiğini şişirirdi. Port mağazaya
+       çıkarken damgalama eklenirse `SupabaseGamesGateway.logGameStart` de
+       güncellenmeli.
+     - **Şemada `user_id` YOK** — `legal_modals.dart` bölüm 6'daki "anonim kod
+       hesabınızla ASLA eşleştirilmez" taahhüdü bunu yasaklıyor. Metin bu
+       PR'da genişletildi (kod artık oyun başlangıcında da, girişliyken de
+       gidiyor — ama hesap kimliği olmadan) ve tarih İKİ tarafta birden 21
+       Ağustos'a çekildi; `legal_text_test.dart` zaten bunu zorluyordu.
+     - **Yeni Dart testi:** `game_record_test.dart` → `logStart` sayaç satırını
+       yazıyor VE gateway fırlatsa bile `logStart` fırlatmıyor (telemetri
+       hiçbir koşulda oyun başlatmayı düşüremez).
+     - **Doğrulama sınırı:** Flutter/Dart SDK bu ortamda yine YOK, Dart yarısı
+       yalnızca CI'da koşuyor. Sunucu tarafı canlıda rollback'li senaryolarla
+       ölçüldü (anon yazabiliyor/okuyamıyor, girişli okuyamıyor, admin
+       olmayan RPC `Yetkisiz erişim.`, damgasız satır `bilinmiyor`a düşüyor).
+     - **Cihazda doğrulanacak:** `mobile/TESTING.md` bölüm 4.
+
+   - ✅ **Parça 122 — davet linki `?ref=arkadas` taşıyor (21 Ağustos 2026,
+     ROADMAP #7, web + port AYNI PR):** `friends_api.dart`ın `buildInviteUrl`i
+     web'in aynı fonksiyonuyla birlikte güncellendi. Port da WEB linki üretip
+     paylaşıyor (`$webOrigin/davet/$token`), yani yalnız web'i değiştirmek
+     porttan paylaşılan davetleri etiketsiz bırakır ve admin panelindeki
+     Kaynak Hunisi'nde `direkt` satırını şişirirdi.
+     - **`parseInviteToken` ETKİLENMİYOR:** `uri.pathSegments` sorgu dizesini
+       içermez, gelen link uygulamaya düşerse token yine doğru çözülür
+       (kod okunarak doğrulandı).
+     - **Etiketi YAKALAYAN taraf web** — portta `visitTracking.ts`in bir
+       karşılığı yok. Web tarafında asıl hata buradaydı: `captureUtmSource`
+       `App.tsx`'teydi ve `/davet/:token` route'u `App`'i hiç mount etmiyor,
+       yani etiket konsa bile kaydedilmiyordu; çağrı `boot.tsx`e taşındı.
+     - **CI'da 2 test düştü ve HATA BENDEYDİ:** `friends_test.dart` eski URL'i
+       İKİ yerde kilitliyordu (`buildInviteUrl` beklentisi + paylaşım
+       metninin panoya kopyalanan hâli). Ürünü değiştirip onu kilitleyen
+       testleri güncellememek klasik bir regresyon — üstelik etki analizinde
+       `parseInviteToken`ın etkilenmediğini OKUYARAK doğrulamıştım ama portun
+       TESTLERİNİ hiç grep'lememiştim. **Ders: bir dizeyi/URL'i değiştirirken
+       `grep -rn "<eski dize>" mobile/app/test` da koş** — kök `CLAUDE.md`'nin
+       "aynı fixture'a bakan testler" maddesi tam bunu diyor.
+     - Düzeltirken ilk test GÜÇLENDİRİLDİ: artık yalnızca dizeyi değil,
+       etiketli linkin `parseInviteToken` ile hâlâ doğru token'a çözüldüğünü
+       de sınıyor (yani sorgu parametresinin ayrıştırmayı bozmadığı artık
+       yorumda değil TESTTE yazılı).
+     - **Flutter SDK bu ortamda YOK** — hem değişikliğin hem düzeltmenin
+       kanıtı CI.
+
+   - ✅ **Parça 123 — istemci hata telemetrisi (21 Ağustos 2026, ROADMAP #3,
+     web + port AYNI PR):** portta her çökme `debugPrint`e gidiyordu, yani
+     kullanıcının cihazında ölüyordu. Yeni `lib/src/data/error_reporter.dart`
+     hataları anonim olarak `client_errors` tablosuna yazıyor; kurallar web'in
+     `src/utils/errorReporting.ts`iyle BİREBİR aynı (ayrıntı: kök
+     `CLAUDE.md` → "İstemci Hata Telemetrisi").
+     - **İKİ yakalayıcı ve ikisi de ŞART, farklı sınıfları görüyorlar:**
+       `FlutterError.onError` widget ağacındaki (build/layout/paint)
+       hatalarını, `runZonedGuarded` zone dışına kaçan async hataları.
+       Yalnızca birini kurmak ötekinin gördüğünü sessizce kaçırır. İkisi de
+       `main.dart`'ta, `bootstrap()`ten ÖNCE kuruluyor ki açılış sırasında
+       doğan bir hata da yakalansın — gönderim ise Supabase bağlanana kadar
+       sessizce düşüyor (`ErrorReporter.configure`, `bootstrap`ten çağrılır).
+     - **`FlutterError.onError`'ın ÖNCEKİ değeri çağrılmaya DEVAM EDİYOR** —
+       aksi halde yerel geliştirmede kırmızı ekran/konsol logu kaybolurdu.
+     - **`route` portta sabit `'app'`:** web'in `location.pathname`i yok;
+       ekran adı taşımak yerine yığına bakılıyor. Web'de o alan
+       maskeleniyor (`/davet/:token`), portta maskelenecek bir şey yok.
+     - **NE KAYDEDİLMEZ kuralı ve tek istisnası:** çevrimdışılık +
+       `isNetworkError`a düşen her şey elenir, AMA yalnızca `kind != manual`
+       iken. Bu istisnanın TEK sebebi `cloud_save_repo.upsert`'ün "KAYIP"
+       noktası (Parça 38/45'in mirası): oradaki hata çoğu zaman AĞ
+       hatasıdır, raporlanmaya değer kılan şey AYNANIN DA yazılamamış
+       olmasıdır. Koşulsuz bir filtre, telemetrinin var olma sebebi olan
+       kaydı tam da sessizce düşürürdü — tasarım turunda yakalandı.
+     - **Sink deseni:** `ClientErrorSink` soyut, gerçek uç Supabase; testler
+       bellek içi sahte geçiyor. `test/error_reporter_test.dart` 8 test —
+       dedup, oturum başına 10 kayıt tavanı, ağ filtresi + `manual`
+       istisnası, 500/4000 kırpma, hedef fırlatınca akışın sürmesi.
+     - **Admin paneli PORTA GİRMEDİ** (bilinçli, "Üst Düzey Kararlar" #3) —
+       "Hatalar" sekmesi yalnızca webde.
+     - **Gizlilik metni AYNI PR'da:** `legal_modals.dart` §6, anonim kodun
+       üçüncü bir durumda (hata kaydı) da gönderildiğini söylüyor.
+       Tarihler `legal_text_test.dart` ile kilitli.
+     - **Flutter SDK bu ortamda YOK** — Dart yarısının kanıtı CI.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**
@@ -6154,6 +6335,15 @@ hiç koşulmadı. Bir sonraki tur bunlarla başlamalı:
   satırı görünmeli. Skor Kartı'ndaki metrik etiketi de **"Ortalama Hamle
   Puanı (OHP)"** olmalı (dar ekranda kutuyu taşırmadan sarmalı). Flutter
   SDK'sız bir oturumda yazıldı — Dart yarısının CI dışında kanıtı yok.
+
+- **20 Ağustos (Parça 120) — oyun sonu kartı:** bir oyunu sonuna kadar
+  bitir; kartta en sağda **k-lig** sütunu olmalı (kazanan `+2`, 2 kişilikte
+  ikinci `-`), teslim olan satırda **-2** k-lig sütununda durmalı (soldaki
+  "Kalan" sütununda DEĞİL — kullanıcının karıştırdığı tam olarak buydu),
+  ve uzun bir ad ("Yapay Zeka 1", 4 kişilikte) satırı sarmadan `…` ile
+  kırpılmalı, hiçbir genişlikte kart taşmamalı. Alt satırdaki hamle sayısı
+  etiketin yanında/ortalı olmalı. Flutter SDK'sız bir oturumda yazıldı —
+  Dart yarısının CI dışında kanıtı yok.
 
 Liste bir gün BOŞALIRSA öyle kalmasını bekleme: yeni bir düzeltme
 yazıldığında buraya yine madde eklenmeli (kural değişmedi: yazıldığı gün

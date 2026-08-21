@@ -115,6 +115,11 @@ export const SSS: { soru: string; cevap: string }[] = [
       "Hayır, tarayıcıda çalışıyor. İstersen telefonundaki 'Ana Ekrana Ekle' seçeneğiyle uygulama gibi de kurabilirsin.",
   },
   {
+    soru: 'Kelimeki\'nin mobil uygulaması yok mu?',
+    cevap:
+      'Mobil uygulamalarımız hazır; şu anda App Store ve Google Play inceleme sürecinde, çok yakında mağazalarda olacaklar. O zamana kadar tarayıcıdan eksiksiz oynayabilirsin.',
+  },
+  {
     soru: 'Arkadaşımla aynı anda çevrimiçi olmamız gerekiyor mu?',
     cevap:
       'Hayır. Canlı oyunlar sırayla oynanır ve her hamle için 48 saat süre vardır. Tabii ki aynı anda bağlı iki oyuncu canlı da oynayabilir; bu gerçekten son derece keyiflidir.',

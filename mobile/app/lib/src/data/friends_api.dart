@@ -73,7 +73,18 @@ FriendRelation? relationFromDb(String? v) => switch (v) {
 /// `webOrigin`. Link BİLEREK https (kelimeki:// değil): alıcı üye
 /// olmayabilir, link her cihazda/webde açılıp kayıt akışını sunabilmeli
 /// (uygulama kuruluysa Android App Links ileride onu uygulamaya düşürür).
-String buildInviteUrl(String token) => '$webOrigin/davet/$token';
+///
+/// `?ref=arkadas` ZORUNLU (21 Ağustos 2026, ROADMAP #7) — web'in aynı
+/// fonksiyonuyla BİREBİR: etiket olmadan davetle gelip üye olan herkes admin
+/// panelindeki Kaynak Hunisi'nde `direkt` satırına düşüyor ve gerçek doğrudan
+/// trafiği şişiriyordu. Portta damgayı YAKALAYAN bir kod yok (web'in
+/// `visitTracking.ts`i porta hiç girmedi) ama bu link WEB'de açılıyor, yani
+/// yakalamayı web tarafı yapıyor.
+///
+/// `parseInviteToken` bundan ETKİLENMEZ: `uri.pathSegments` sorgu dizesini
+/// içermez (ölçüldü/okundu) — gelen link uygulamaya düşerse token yine
+/// doğru çözülür.
+String buildInviteUrl(String token) => '$webOrigin/davet/$token?ref=arkadas';
 
 /// Web `INVITE_SHARE_TEXT`.
 const String inviteShareText = "Kelimeki'de birlikte kelime oyunu oynayalım!";

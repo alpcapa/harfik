@@ -15,6 +15,7 @@ import {
   fetchAdminActivationStats,
   fetchAdminSourceFunnel,
   fetchAdminGuestDeviceBreakdown,
+  fetchAdminClientErrors,
   fetchAdminFeedback,
   markFeedbackHandled,
   deleteFeedback,
@@ -42,6 +43,7 @@ import type {
   AdminActivityGranularity,
   AdminFeedbackRow,
   AdminChatReportRow,
+  AdminClientErrorRow,
 } from '../lib/database.types';
 import { PlayerScoreCard } from './PlayerScoreCard';
 import { MemberMessageModal } from './MemberMessageModal';
@@ -49,6 +51,7 @@ import { AdminChatTranscriptModal } from './AdminChatTranscriptModal';
 import { CountBadge } from './CountBadge';
 import { GrowthChart, type ChartSeriesDef } from './GrowthChart';
 import { trLower } from '../utils/turkish';
+import { GENDER_OPTIONS, isoToTrDate } from '../utils/profileFields';
 import { useModalA11y } from '../hooks/useModalA11y';
 import { downloadCsv } from '../utils/csvExport';
 
@@ -56,7 +59,7 @@ interface AdminDashboardProps {
   onClose: () => void;
 }
 
-type Tab = 'members' | 'growth' | 'feedback';
+type Tab = 'members' | 'growth' | 'feedback' | 'errors';
 type GameSubTab = 'total' | 2 | 4;
 type GrowthSubTab = 'user' | 'game';
 type FeedbackSubTab = 'inbox' | 'flags';
@@ -292,10 +295,24 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
     title: 'Kaynak Hunisi',
     body: (
       <>
-        <b>Kişi</b> = o kaynaktan gelen benzersiz misafir ziyaretçi; <b>Üye</b> = o kaynak
-        damgasıyla açılan hesap; <b>Oyun</b> = o hesapların bitirdiği oyun. Pencere her adıma
-        KENDİ olay tarihinden uygulanır (kohort değil): 2 ay önce üye olup bugün oynayan biri
-        "Oyun"a girer, "Üye"ye girmez.
+        <b>Kişi</b> = o kaynaktan gelen benzersiz misafir ziyaretçi; <b>Başlayan</b> = o
+        kaynaktan BAŞLATILAN yerel (YZ) oyun; <b>Üye</b> = o kaynak damgasıyla açılan hesap;
+        <b>Oyun</b> = o hesapların BİTİRDİĞİ oyun. Pencere her adıma KENDİ olay tarihinden
+        uygulanır (kohort değil): 2 ay önce üye olup bugün oynayan biri "Oyun"a girer, "Üye"ye
+        girmez.
+        <br />
+        <br />
+        <b>Başlayan ile Oyun'u karıştırma.</b> "Başlayan" oyuna OTURAN kişiyi sayar (misafir
+        dahil), "Oyun" ise yalnızca BİTİRİLMİŞ ve yalnızca GİRİŞLİ kullanıcının oyununu. Yerel
+        oyunun medyan süresi 18,1 dakika olduğundan reklamdan gelen soğuk bir ziyaretçi çoğu
+        zaman oynar ama bitirmez — "Başlayan" yüksek + "Oyun" 0 ise açılış sayfası çalışıyor,
+        oyun uzun geliyor demektir; ikisi de 0 ise sorun açılış sayfasında.
+        <br />
+        <br />
+        Yüzde modunda <b>Başlayan</b> = başlatan benzersiz CİHAZ / kişi. <b>Kişi</b> ile aynı
+        anonim koddan sayıldığı için bu, tablodaki tek gerçek cihaz-bazlı dönüşüm oranı;
+        "Üye"/"Oyun" oranları ise ayrı bir kaynaktan (kayıt damgası) gelir. Mobil uygulama
+        henüz damgalamadığından oradan gelen başlangıçlar "bilinmiyor" satırına düşer.
         <br />
         <br />
         <b>Direkt</b> = web'e <code>?ref=</code> olmadan geliş. <b>Bilinmiyor</b> = kaynak damgası
@@ -410,11 +427,45 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
     title: 'Üyeler',
     body: (
       <>
-        Tüm kayıtlı kullanıcılar. <b>Kanal</b>, kaydın hangi formdan geldiğini söyler
-        (Direkt/Form) — Kaynak Hunisi'ndeki kaynak damgasıyla KARIŞTIRILMAMALI, ikisi bağımsız.
+        Tüm kayıtlı kullanıcılar ve kayıt sırasında doldurdukları her alan — izinler dahil.
+        Değerler CANLI: üye Hesap Ayarları'ndan bir alanı sonradan değiştirirse panel yeni
+        değeri gösterir. Girilmemiş alanlar <b>—</b> ile yazılır. Tablo yana kaydırılır.
+        <br />
+        <br />
+        <b>Koşullar</b> = Kullanım Koşulları/Gizlilik onayı; kayıt formunda ZORUNLUDUR, yani
+        "Hayır" pratikte yalnızca onayın kayda hiç geçmediği çok eski hesaplarda görünür.
+        <b> Pazarlama</b> isteğe bağlıdır ve sonradan geri çekilebilir — "Hayır" bir eksik
+        değil, kullanıcının tercihidir. <b>E-posta Bildirimi</b> ise tersi yönde çalışır
+        (varsayılanı Açık, kullanıcı kapatabilir).
+        <br />
+        <br />
+        <b>Kanal</b> kaydın hangi formdan geldiğini söyler (Direkt/Form); <b>Kaynak</b> ise
+        kayıt anındaki `?ref=` etiketidir (Kaynak Hunisi'yle aynı alan). İkisi BAĞIMSIZ,
+        karıştırılmamalı.
         <br />
         <br />
         CSV ekranda görüneni indirir: arama ve sıralama uygulanmış hâli.
+      </>
+    ),
+  },
+  hatalar: {
+    title: 'Hatalar',
+    body: (
+      <>
+        İstemcide (tarayıcı/uygulama) oluşup <b>hiçbir sunucu logunda iz bırakmayan</b> hatalar.
+        Satırlar tek tek değil <b>gruplanmış</b> gelir: aynı tür + aynı mesaj imzası (ilk 160
+        karakter) tek satırdır.
+        <br />
+        <br />
+        <b>Kez</b> toplam kayıt sayısı, <b>Cihaz</b> ise kaç FARKLI cihazda olduğu —
+        karıştırılmamalı: 40 kez / 1 cihaz bir kişinin döngüsü, 3 kez / 3 cihaz gerçek bir
+        yaygın hatadır. <b>Derleme</b> sütunu hatanın hangi sürümde görüldüğünü söyler; düzeltme
+        sonrası yalnızca ESKİ derlemede kalması "düzeldi" demektir.
+        <br />
+        <br />
+        Beklenen durumlar (çevrimdışılık, sunucunun kendi reddi) <b>bilerek kaydedilmez</b> —
+        buradaki her satır "birinin bakması gereken bir şey" olmalı. Yol (route) kimliklerden
+        arındırılır (<code>/game/:id</code>), oturum başına en fazla 10 kayıt gönderilir.
       </>
     ),
   },
@@ -452,6 +503,27 @@ function formatHours(hours: number | null): string {
   if (hours < 1) return `${Math.round(hours * 60)} dk`;
   if (hours < 48) return `${hours.toFixed(1).replace('.', ',')} sa`;
   return `${(hours / 24).toFixed(1).replace('.', ',')} gün`;
+}
+
+/**
+ * Hata türünün okunabilir adı. Ham değerler (`uncaught`/`promise`/`boundary`/
+ * `manual`) `src/utils/errorReporting.ts`'teki `ClientErrorKind` ile birebir —
+ * biri değişirse burası da değişmeli. Tanınmayan bir tür OLDUĞU GİBİ gösterilir
+ * (portun ileride ekleyeceği bir tür sessizce "—" olmasın diye).
+ */
+function errorKindLabel(kind: string): string {
+  switch (kind) {
+    case 'uncaught':
+      return 'Yakalanmamış';
+    case 'promise':
+      return 'Promise';
+    case 'boundary':
+      return 'Çökme';
+    case 'manual':
+      return 'Bildirilen';
+    default:
+      return kind;
+  }
 }
 
 /** "CSV İndir"/"Tablo Görünümü" gibi küçük alt çizgili aksiyon linkleri için ortak stil. */
@@ -585,7 +657,7 @@ function GuestBreakdownTable<T extends { visitors: number }>({
 }
 
 /**
- * Kaynak hunisi (Büyüme > Kullanıcı): kaynak → kişi → üye → oyun.
+ * Kaynak hunisi (Büyüme > Kullanıcı): kaynak → kişi → başlayan → üye → oyun.
  *
  * "Ziyaretçi Kaynağı" tablosunun yerini aldı (16 Ağustos 2026, kullanıcı
  * isteği). İlk sütun eskisiyle AYNI sayı; üzerine iki adım eklendi.
@@ -606,9 +678,18 @@ function GuestBreakdownTable<T extends { visitors: number }>({
  * turu: *"kişi %'ye dönünce toplamın yüzdesini göstersin. Ama üye yüzdesi
  * kişinin % kaçı üye olmuş, oyun yüzdesi de kişinin % kaçı oyun oynamışı
  * göstersin."*):
- *   - **Kişi** = sütun payı (o kaynak tüm ziyaretçilerin yüzde kaçı),
- *   - **Üye**  = `üye / kişi` — o kaynaktan gelenlerin yüzde kaçı üye oldu,
- *   - **Oyun** = `oynayan kişi / kişi` — yüzde kaçı oyun oynadı.
+ *   - **Kişi**     = sütun payı (o kaynak tüm ziyaretçilerin yüzde kaçı),
+ *   - **Başlayan** = `başlatan cihaz / kişi` — yüzde kaçı oyuna oturdu,
+ *   - **Üye**      = `üye / kişi` — o kaynaktan gelenlerin yüzde kaçı üye oldu,
+ *   - **Oyun**     = `oynayan kişi / kişi` — yüzde kaçı oyun BİTİRDİ.
+ *
+ * "Başlayan" 21 Ağustos 2026'da eklendi (ROADMAP #9) ve huninin KÖR olan
+ * adımını kapatıyor: ilk Instagram kampanyasında 80 kişi / 0 üye / 0 oyun
+ * ölçüldü, ama "Oyun" hem yalnızca BİTMİŞ oyunu hem yalnızca GİRİŞLİ
+ * kullanıcıyı sayıyor — yani o 0, "kimse oynamadı" mı "kimse bitirmedi" mi
+ * ayırt edilemiyordu. `game_starts` misafiri de sayıyor ve etiketini
+ * ziyaretle AYNI anonim koddan alıyor, dolayısıyla `başlatan / kişi` bu
+ * tablodaki tek gerçek cihaz-bazlı dönüşüm oranı.
  *
  * "Oyun" sütunu sayı modunda oyun ADEDİNİ, yüzde modunda OYNAYAN KİŞİ oranını
  * gösterir — taban bilinçli olarak farklı, çünkü "kişilerin yüzde kaçı
@@ -650,20 +731,38 @@ function SourceFunnelTable({
   const total = rows.reduce(
     (acc, row) => ({
       visitors: acc.visitors + row.visitors,
+      starts: acc.starts + row.starts,
+      starters: acc.starters + row.starters,
       signups: acc.signups + row.signups,
       games: acc.games + row.games,
       players: acc.players + row.players,
     }),
-    { visitors: 0, signups: 0, games: 0, players: 0 },
+    { visitors: 0, starts: 0, starters: 0, signups: 0, games: 0, players: 0 },
   );
 
   function handleExportCsv() {
     downloadCsv(
       csvFilename('kelimeki-kaynak-funnel'),
-      ['Kaynak', 'Kişi', 'Üye', 'Oyun', 'Oynayan Kişi'],
+      ['Kaynak', 'Kişi', 'Başlayan Oyun', 'Başlatan Kişi', 'Üye', 'Oyun', 'Oynayan Kişi'],
       [
-        ...rows!.map((row) => [row.source, row.visitors, row.signups, row.games, row.players]),
-        ['TOPLAM', total.visitors, total.signups, total.games, total.players],
+        ...rows!.map((row) => [
+          row.source,
+          row.visitors,
+          row.starts,
+          row.starters,
+          row.signups,
+          row.games,
+          row.players,
+        ]),
+        [
+          'TOPLAM',
+          total.visitors,
+          total.starts,
+          total.starters,
+          total.signups,
+          total.games,
+          total.players,
+        ],
       ],
     );
   }
@@ -717,6 +816,9 @@ function SourceFunnelTable({
             <tr className="text-left text-muted border-b border-border">
               <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px]">Kaynak</th>
               <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Kişi</th>
+              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">
+                Başlayan
+              </th>
               <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Üye</th>
               <th className="py-1.5 font-bold uppercase tracking-[1px] text-center">Oyun</th>
             </tr>
@@ -727,6 +829,9 @@ function SourceFunnelTable({
                 <td className="py-1.5 pr-8 text-text whitespace-nowrap">{row.source}</td>
                 <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">
                   {visitorCell(row.visitors)}
+                </td>
+                <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">
+                  {conversionCell(row.starts, row.visitors, row.starters)}
                 </td>
                 <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">
                   {conversionCell(row.signups, row.visitors, row.signups)}
@@ -740,6 +845,9 @@ function SourceFunnelTable({
               <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap">TOPLAM</td>
               <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">
                 {visitorCell(total.visitors)}
+              </td>
+              <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">
+                {conversionCell(total.starts, total.visitors, total.starters)}
               </td>
               <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">
                 {conversionCell(total.signups, total.visitors, total.signups)}
@@ -952,6 +1060,75 @@ function memberChannelLabel(m: AdminMember) {
   return m.signup_channel === 'form' ? 'Form' : 'Direkt';
 }
 
+/** Boş/eksik her alan için TEK gösterim — tabloda ve CSV'de aynı. */
+const BOS = '—';
+
+/**
+ * Üyeler tablosunda İSİM kolonu yana kaydırırken SABİT kalır (21 Ağustos
+ * 2026, kullanıcı isteği: *"sola doğru kaydırınca isim kolonunu
+ * sabitleyebilir miyiz? Tabloda kişiyi takip etmek zor oluyor."*). Tablo 18
+ * kolonla ~1800px olduğundan sağa kaydırırken hangi satırın kime ait olduğu
+ * kayboluyordu.
+ *
+ * İki zorunluluk:
+ * - **Opak zemin ŞART.** `sticky` hücre altındaki hücrelerin ÜSTÜNDE durur;
+ *   arka planı saydam kalırsa kayan metin içinden geçer. Zemin `bg-panel`,
+ *   yani modal gövdesinin kendi rengi.
+ * - **GENİŞLİK KAPAKLANMALI.** İsim alanının uzunluk sınırı YOK ve bu kolon
+ *   tablonun en genişi; kapaklanmazsa 320px'lik bir ekranda (tablo kabı
+ *   246px) sabitlenen kolon görünür alanın TAMAMINI yer ve geri kalan 17
+ *   kolon hiç görünmez. Ölçüldü: üretimdeki en uzun ad 18 karakter (~131px),
+ *   yani 150px bugünkü hiçbir adı kırpmıyor — yalnızca uç durumlar `truncate`
+ *   ile kısalır ve tam hâli `title`da kalır.
+ * - **Sağ kenardaki ayraç `border-r` DEĞİL `box-shadow`.** Sabit hücre kayan
+ *   içeriğin üstünde durduğundan ikisi arasında hiçbir sınır yoktu ve
+ *   kırpılmış bir ad altından geçen kolonun metnine yapışık görünüyordu
+ *   (ölçüm turunda ekran görüntüsünde yakalandı). `border-r` DENENDİ ve
+ *   ÇİZİLMEDİ: tablo `border-collapse: collapse` olduğundan kenarlık hücreye
+ *   değil TABLOYA ait olur, yani kaydıkça yerinde kalıp sabit hücrenin
+ *   altında kaybolur. Gölge hücrenin kendisiyle birlikte taşınıyor. Renk
+ *   `border` token'ının değeri (#DCE2EA) — Tailwind gölge yardımcısı token
+ *   adı kabul etmiyor, biri değişirse öteki de değişmeli.
+ */
+const STICKY_NAME_CELL =
+  'sticky left-0 z-[1] bg-panel max-w-[150px] truncate shadow-[1px_0_0_0_#DCE2EA]';
+
+/**
+ * Cinsiyet etiketi. Kaynak `GENDER_OPTIONS` (kayıt formu ve Hesap Ayarları
+ * ile AYNI liste) — ikinci bir eşleme yazmak, seçenekler değişince sessizce
+ * ayrışırdı. `'unspecified'` formda seçilebilir DEĞİL ama şema kabul
+ * ediyor, o yüzden ayrıca karşılanıyor: listede bulunamadığı için `BOS`a
+ * düşseydi "hiç girmemiş" ile karışırdı.
+ */
+function memberGenderLabel(m: AdminMember) {
+  if (!m.gender) return BOS;
+  if (m.gender === 'unspecified') return 'Belirtilmemiş';
+  return GENDER_OPTIONS.find((o) => o.value === m.gender)?.label ?? BOS;
+}
+
+/** Sadece TARİH (saat yok) — doğum tarihi için `fmtDate` fazla bilgi. */
+function memberBirthDateLabel(m: AdminMember) {
+  return isoToTrDate(m.birth_date).replace(/\//g, '.') || BOS;
+}
+
+/**
+ * İzin/tercih hücresi. Onay verilmiş olan yeşil, verilmemiş olan nötr —
+ * kırmızı BİLEREK kullanılmıyor: "pazarlama iznini vermemiş" bir hata ya da
+ * uyarı değil, kullanıcının meşru tercihi (kırmızı bu panelde "Donduruldu"
+ * gibi gerçek bir sorun demek).
+ */
+function ConsentCell({ on, onLabel = 'Evet', offLabel = 'Hayır' }: {
+  on: boolean;
+  onLabel?: string;
+  offLabel?: string;
+}) {
+  return on ? (
+    <span className="text-green font-bold">{onLabel}</span>
+  ) : (
+    <span className="text-muted">{offLabel}</span>
+  );
+}
+
 /** `banned_until` gelecekte bir tarihse hesap şu an devre dışıdır. */
 function isBanned(bannedUntil: string | null | undefined): boolean {
   return !!bannedUntil && new Date(bannedUntil).getTime() > Date.now();
@@ -1015,6 +1192,14 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [replyError, setReplyError] = useState<string | null>(null);
   const [feedbackSubTab, setFeedbackSubTab] = useState<FeedbackSubTab>('inbox');
   const [chatReports, setChatReports] = useState<AdminChatReportRow[] | null>(null);
+  const [clientErrors, setClientErrors] = useState<AdminClientErrorRow[] | null>(null);
+  /**
+   * "Hatalar" penceresi — kaç günlük. Büyüme'nin periyot kontrollerinden
+   * BİLEREK bağımsız: orada soru "zaman içinde nasıl gidiyor", burada "şu an
+   * bakılması gereken ne var" ve gruplama zaten zamanı düzleştiriyor.
+   */
+  const [errorDays, setErrorDays] = useState(7);
+  const [expandedErrorKey, setExpandedErrorKey] = useState<string | null>(null);
   const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
   const [transcriptGameId, setTranscriptGameId] = useState<string | null>(null);
   const [banTarget, setBanTarget] = useState<{ id: string; name: string; banned: boolean } | null>(null);
@@ -1036,6 +1221,16 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     const timer = setTimeout(() => setHighlightedMemberId(null), 2500);
     return () => clearTimeout(timer);
   }, [tab, highlightedMemberId]);
+
+  // Hata dökümü kendi penceresine (`errorDays`) bağlı, o yüzden ayrı bir
+  // effect. Panel açılır açılmaz çekiliyor — sekmeye girilmesini beklemiyoruz:
+  // "Hatalar" sekmesinin kendisi bir rozet taşımadığından (bekleyen İŞ değil,
+  // gözlem), admin oraya ancak bir sebep varsa girer ve o zaman veri hazır olur.
+  useEffect(() => {
+    fetchAdminClientErrors(errorDays)
+      .then(setClientErrors)
+      .catch((e) => setError(String(e)));
+  }, [errorDays]);
 
   useEffect(() => {
     fetchAdminMembers()
@@ -1221,19 +1416,44 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       active ? 'bg-accent text-white' : 'bg-panel text-muted border border-border'
     }`;
 
+  /**
+   * Üyeler CSV'si — ekrandaki tabloyla AYNI kolonlar, AYNI sırada. İkisi
+   * ayrışırsa "CSV ekranda görüneni indirir" sözü (bkz. `?` popup'ı) yalan
+   * olur; yeni bir kolon eklenirse buraya da eklenmeli.
+   *
+   * CSV'de boş hücre `BOS` (—) DEĞİL gerçekten boş: bir tablo hücresinde
+   * tire okunabilirlik içindir, elektronik tabloda ise sahte bir değer olur
+   * (filtre/sıralama onu veri sanır).
+   */
   function exportMembersCsv() {
     if (!filteredMembers || filteredMembers.length === 0) return;
     downloadCsv(
       csvFilename('kelimeki-uyeler'),
-      ['İsim', 'Nickname', 'E-posta', 'Kanal', 'Katılma', 'Son Giriş', 'Rol'],
+      [
+        'Ad', 'Soyad', 'Nickname', 'E-posta', 'Cinsiyet', 'Doğum Tarihi',
+        'Fotoğraf', 'Koşullar Onayı', 'Pazarlama Onayı', 'Pazarlama Onay Tarihi',
+        'E-posta Bildirimi', 'Kanal', 'Kaynak', 'Davet Eden', 'Katılma',
+        'Son Giriş', 'Rol', 'Durum',
+      ],
       filteredMembers.map((m) => [
-        memberName(m),
-        memberNickname(m),
+        m.first_name ?? '',
+        m.last_name ?? '',
+        m.display_name ?? '',
         m.email ?? '',
+        m.gender ? memberGenderLabel(m) : '',
+        m.birth_date ? memberBirthDateLabel(m) : '',
+        m.avatar_url ? 'Var' : '',
+        m.agreed_to_terms ? 'Evet' : 'Hayır',
+        m.marketing_consent ? 'Evet' : 'Hayır',
+        m.marketing_consent_at ? fmtDate(m.marketing_consent_at) : '',
+        m.email_notifications_enabled ? 'Açık' : 'Kapalı',
         memberChannelLabel(m),
+        m.signup_utm_source ?? '',
+        m.invited_by_name ?? '',
         fmtDate(m.created_at),
-        fmtDate(m.last_sign_in_at),
+        m.last_sign_in_at ? fmtDate(m.last_sign_in_at) : '',
         m.is_admin ? 'Admin' : 'Üye',
+        isBanned(m.banned_until) ? 'Donduruldu' : 'Aktif',
       ]),
     );
   }
@@ -1304,6 +1524,31 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
           f.reply ?? '',
         ];
       }),
+    );
+  }
+
+  /**
+   * Hata dökümü CSV'si — ekranda görünen gruplanmış satırların AYNISI, artı
+   * `sample_stack` (tabloda yalnızca kart açılınca görünüyor, ama bir hatayı
+   * dışarı taşırken en çok gereken alan o).
+   */
+  function exportClientErrorsCsv() {
+    if (!clientErrors || clientErrors.length === 0) return;
+    downloadCsv(
+      csvFilename('kelimeki-hatalar'),
+      ['Tür', 'Mesaj', 'Kez', 'Cihaz', 'Platform', 'Derleme', 'Yol', 'İlk', 'Son', 'Yığın'],
+      clientErrors.map((e) => [
+        errorKindLabel(e.kind),
+        e.message,
+        e.occurrences,
+        e.devices,
+        e.platforms,
+        e.builds,
+        e.routes,
+        fmtDate(e.first_seen),
+        fmtDate(e.last_seen),
+        e.sample_stack ?? '',
+      ]),
     );
   }
 
@@ -1409,7 +1654,17 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
               ✕
             </button>
           </div>
-          <div className="flex gap-1.5">
+          {/* ÖLÇÜLDÜ (derlenmiş CSS + Chromium): dördüncü sekme ("Hatalar")
+              eklenince tek sıra 320px'te kabı 77px, 390px'te 7px AŞIYOR ve
+              `overflow-hidden` bunu SESSİZCE kırpıyordu — `flex-1` sekmeyi
+              `min-width:auto` yüzünden en uzun kelimesinin (BİLDİRİM) altına
+              indiremiyor. Negatif eş: dördüncü buton kaldırılınca üç genişlikte
+              de taşma 0. Bu yüzden dar ekranda 2×2 ızgara, tek sıraya ancak
+              dört etiketin de TEK SATIRDA sığdığı genişlikten (≥580px; eşik
+              "GERİ BİLDİRİM"in max-content'i olan ~120px'ten türetildi, dördü
+              + boşluklar ≈ 498px) itibaren geçiliyor — daha erken geçmek
+              etiketleri iki satıra bölüp başlığı yükseltiyordu. */}
+          <div className="grid grid-cols-2 min-[580px]:grid-cols-4 gap-1.5">
             <button className={tabBtn(tab === 'members')} onClick={() => selectTab('members')}>
               Üyeler
             </button>
@@ -1424,6 +1679,13 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                   className="absolute -top-1 -right-1"
                 />
               )}
+            </button>
+            {/* Rozet YOK ve bu bilinçli: `CountBadge` bu projede "bekleyen İŞ"
+                demek (bkz. CLAUDE.md → CountBadge). Bir hata kaydı admin'in
+                yapması gereken bir kuyruk maddesi değil, bir gözlem — sayaç
+                koymak rozet dilini sulandırırdı. */}
+            <button className={tabBtn(tab === 'errors')} onClick={() => selectTab('errors')}>
+              Hatalar
             </button>
           </div>
 
@@ -1569,6 +1831,31 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
               )}
             </div>
           )}
+
+          {/* Hatalar: pencere seçici + CSV + `?`, aynı gerekçeyle (uzun listede
+              kaybolmasın) kaydırma kabının DIŞINDA. */}
+          {tab === 'errors' && (
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <AdminSelect
+                value={String(errorDays)}
+                onChange={(v) => setErrorDays(Number(v))}
+                options={[
+                  { value: '1', label: 'Son 24 Saat' },
+                  { value: '7', label: 'Son 7 Gün' },
+                  { value: '30', label: 'Son 30 Gün' },
+                  { value: '90', label: 'Son 90 Gün' },
+                ]}
+              />
+              <div className="flex items-center gap-2 shrink-0">
+                {clientErrors && clientErrors.length > 0 && (
+                  <button type="button" onClick={exportClientErrorsCsv} className={csvLinkCls}>
+                    CSV İndir
+                  </button>
+                )}
+                <InfoHint id="hatalar" onOpen={setHint} />
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="overflow-y-auto min-h-0 px-5 pt-4 pb-5 flex flex-col gap-4">
@@ -1599,10 +1886,25 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                   <table className="w-full text-[11px] font-mono border-collapse">
                     <thead>
                       <tr className="text-left text-muted border-b border-border">
-                        <SortHeader label="İsim" sortKeyFor="name" />
+                        <SortHeader label="İsim" sortKeyFor="name" className={STICKY_NAME_CELL} />
                         <SortHeader label="Nickname" sortKeyFor="nickname" />
                         <SortHeader label="E-posta" sortKeyFor="email" />
+                        {/* Kayıt formunun geri kalanı + izinler (21 Ağustos
+                            2026, kullanıcı isteği). Sıralama BİLEREK
+                            eklenmedi: bu kolonlar tarama/dışa aktarma için,
+                            sıralama ölçütü olarak anlamlı değiller ve yedi
+                            yeni sıralama anahtarı başlığı gürültüye
+                            boğardı. */}
+                        <th className="py-2 pr-3 text-left font-normal">Cinsiyet</th>
+                        <th className="py-2 pr-3 text-left font-normal">Doğum</th>
+                        <th className="py-2 pr-3 text-left font-normal">Fotoğraf</th>
+                        <th className="py-2 pr-3 text-left font-normal">Koşullar</th>
+                        <th className="py-2 pr-3 text-left font-normal">Pazarlama</th>
+                        <th className="py-2 pr-3 text-left font-normal">Pazarlama Tarihi</th>
+                        <th className="py-2 pr-3 text-left font-normal">E-posta Bildirimi</th>
                         <SortHeader label="Kanal" sortKeyFor="signup_channel" />
+                        <th className="py-2 pr-3 text-left font-normal">Kaynak</th>
+                        <th className="py-2 pr-3 text-left font-normal">Davet Eden</th>
                         <SortHeader label="Katılma" sortKeyFor="created_at" />
                         <SortHeader label="Son Giriş" sortKeyFor="last_sign_in_at" />
                         <SortHeader label="Rol" sortKeyFor="is_admin" />
@@ -1618,14 +1920,59 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                           key={m.id}
                           id={`admin-member-row-${m.id}`}
                           onClick={() => setSelectedMember(m)}
-                          className={`border-b border-border/50 cursor-pointer hover:bg-bg/60 active:opacity-70 transition-colors ${
+                          className={`group border-b border-border/50 cursor-pointer hover:bg-bg/60 active:opacity-70 transition-colors ${
                             highlightedMemberId === m.id ? 'bg-accent/20' : ''
                           }`}
                         >
-                          <td className="py-2 pr-3 text-text whitespace-nowrap">{memberName(m)}</td>
+                          {/* Sabit isim hücresi. Satırın vurgu/hover tonu
+                              hücrenin OPAK zemininin üstüne ayrı bir katmanla
+                              biniyor — aksi halde sabit hücre `bg-panel`de
+                              kalır ve "Kişiye Git →" vurgusu ya da hover tam
+                              o hücrede kaybolurdu (satır tonları saydam). */}
+                          <td
+                            title={memberName(m)}
+                            className={`relative py-2 pr-3 text-text whitespace-nowrap ${STICKY_NAME_CELL}`}
+                          >
+                            <span
+                              aria-hidden="true"
+                              className={`absolute inset-0 pointer-events-none transition-colors group-hover:bg-bg/60 ${
+                                highlightedMemberId === m.id ? 'bg-accent/20' : ''
+                              }`}
+                            />
+                            <span className="relative">{memberName(m)}</span>
+                          </td>
                           <td className="py-2 pr-3 text-text whitespace-nowrap">{memberNickname(m)}</td>
-                          <td className="py-2 pr-3 text-text whitespace-nowrap">{m.email ?? '—'}</td>
+                          <td className="py-2 pr-3 text-text whitespace-nowrap">{m.email ?? BOS}</td>
+                          <td className="py-2 pr-3 text-muted whitespace-nowrap">{memberGenderLabel(m)}</td>
+                          <td className="py-2 pr-3 text-muted whitespace-nowrap">{memberBirthDateLabel(m)}</td>
+                          <td className="py-2 pr-3 whitespace-nowrap">
+                            {/* URL gösterilmiyor: okunmaz ve satırı metrelerce
+                                uzatır — sorulan soru "fotoğraf koymuş mu". */}
+                            <ConsentCell on={!!m.avatar_url} onLabel="Var" offLabel={BOS} />
+                          </td>
+                          <td className="py-2 pr-3 whitespace-nowrap">
+                            <ConsentCell on={m.agreed_to_terms} />
+                          </td>
+                          <td className="py-2 pr-3 whitespace-nowrap">
+                            <ConsentCell on={m.marketing_consent} />
+                          </td>
+                          <td className="py-2 pr-3 text-muted whitespace-nowrap">
+                            {fmtDate(m.marketing_consent_at)}
+                          </td>
+                          <td className="py-2 pr-3 whitespace-nowrap">
+                            <ConsentCell
+                              on={m.email_notifications_enabled}
+                              onLabel="Açık"
+                              offLabel="Kapalı"
+                            />
+                          </td>
                           <td className="py-2 pr-3 text-muted whitespace-nowrap">{memberChannelLabel(m)}</td>
+                          <td className="py-2 pr-3 text-muted whitespace-nowrap">
+                            {m.signup_utm_source ?? BOS}
+                          </td>
+                          <td className="py-2 pr-3 text-muted whitespace-nowrap">
+                            {m.invited_by_name ?? BOS}
+                          </td>
                           <td className="py-2 pr-3 text-muted whitespace-nowrap">{fmtDate(m.created_at)}</td>
                           <td className="py-2 pr-3 text-muted whitespace-nowrap">{fmtDate(m.last_sign_in_at)}</td>
                           <td className="py-2 pr-3 whitespace-nowrap">
@@ -2006,6 +2353,75 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                     )}
                   </div>
                 </>
+              )}
+            </>
+          )}
+
+          {tab === 'errors' && (
+            <>
+              {clientErrors === null ? (
+                <div className="text-xs font-mono text-muted text-center py-6">Yükleniyor…</div>
+              ) : clientErrors.length === 0 ? (
+                <div className="text-xs font-mono text-muted text-center py-6">
+                  Bu pencerede hata kaydı yok.
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {clientErrors.map((e) => {
+                    // Anahtar id DEĞİL, çünkü satırlar gruplanmış geliyor —
+                    // grubun kimliği tam olarak `(kind, mesaj imzası)` çifti.
+                    const key = `${e.kind}|${e.message}`;
+                    const isExpanded = expandedErrorKey === key;
+                    return (
+                      <div
+                        key={key}
+                        onClick={() => setExpandedErrorKey((prev) => (prev === key ? null : key))}
+                        className="bg-bg border border-border rounded-lg p-3 flex flex-col gap-1.5 cursor-pointer"
+                      >
+                        <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-muted">
+                          <span className="shrink-0 px-1.5 py-0.5 rounded bg-red/20 text-red text-[9px] uppercase tracking-[0.5px]">
+                            {errorKindLabel(e.kind)}
+                          </span>
+                          <span className="flex-1 min-w-0 truncate text-right">{e.platforms}</span>
+                          <span className="shrink-0">{fmtDate(e.last_seen)}</span>
+                        </div>
+
+                        <p className={`text-xs text-text font-mono ${isExpanded ? 'break-words' : 'truncate'}`}>
+                          {e.message}
+                        </p>
+
+                        {/* "Kez" ile "Cihaz" YAN YANA ve eşit vurguda: ikisi
+                            ayrılmadan bir hatanın yaygın mı yoksa tek kişinin
+                            döngüsü mü olduğu okunamıyor (bkz. `?` popup'ı). */}
+                        <div className="flex items-center gap-3 text-[10px] font-mono text-muted">
+                          <span>
+                            <b className="text-text">{e.occurrences}</b> kez
+                          </span>
+                          <span>
+                            <b className="text-text">{e.devices}</b> cihaz
+                          </span>
+                          <span className="truncate min-w-0">{e.builds}</span>
+                        </div>
+
+                        {isExpanded && (
+                          <div className="flex flex-col gap-1.5 pt-1 border-t border-border">
+                            <div className="text-[10px] font-mono text-muted">
+                              Yol: <span className="text-text">{e.routes}</span>
+                            </div>
+                            <div className="text-[10px] font-mono text-muted">
+                              İlk görülme: <span className="text-text">{fmtDate(e.first_seen)}</span>
+                            </div>
+                            {e.sample_stack && (
+                              <pre className="text-[9px] font-mono text-muted bg-panel border border-border rounded-md p-2 overflow-x-auto whitespace-pre">
+                                {e.sample_stack}
+                              </pre>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </>
           )}

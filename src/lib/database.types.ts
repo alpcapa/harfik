@@ -408,6 +408,32 @@ export interface SharedGameData {
  */
 export type ClientPlatform = 'web' | 'ios' | 'android' | 'app-web';
 
+/**
+ * İstemci hata telemetrisinin GRUPLANMIŞ dökümü (`admin_client_errors`,
+ * ROADMAP #3). Ham satır DÖNMEZ — panelin cevaplaması gereken soru "kaç
+ * satır" değil "aynı hata kaç CİHAZDA, hangi DERLEMEDE".
+ *
+ * `message` imzadır (ilk 160 karakter): aynı hatanın farklı satır/sütun
+ * numaralarıyla gelen kopyaları tek satırda toplar.
+ *
+ * `routes` normalleştirilmiş yollardır (`/davet/:token`) — ham token asla
+ * saklanmaz; istemci normalleştiriyor, sunucuda ayrıca bir maskeleme
+ * trigger'ı var.
+ */
+export interface AdminClientErrorRow {
+  kind: string;
+  message: string;
+  occurrences: number;
+  /** Benzersiz cihaz (`anon_id`) — `occurrences` ile KARIŞTIRILMAMALI. */
+  devices: number;
+  platforms: string;
+  builds: string;
+  routes: string;
+  first_seen: string;
+  last_seen: string;
+  sample_stack: string | null;
+}
+
 /** games tablosuna eklenecek yeni kayıt. */
 export type NewGame = Pick<
   Game,
@@ -617,7 +643,14 @@ export interface LeagueReward {
 
 // ── Admin paneli ────────────────────────────────────────────────────────────
 
-/** admin_list_members RPC çıktısındaki tek satır (auth.users + profiles). */
+/**
+ * admin_list_members RPC çıktısındaki tek satır (auth.users + profiles).
+ *
+ * Kayıt formunun TÜM alanlarını + izinleri taşır (21 Ağustos 2026, kullanıcı
+ * isteği). Değerler her çağrıda `profiles`ten CANLI okunuyor — dondurulmuş
+ * bir anlık görüntü DEĞİL, yani üye Hesap Ayarları'ndan bir alanı sonradan
+ * değiştirirse panel bir sonraki açılışta yeni değeri gösterir.
+ */
 export interface AdminMember {
   id: string;
   email: string | null;
@@ -625,8 +658,30 @@ export interface AdminMember {
   first_name: string | null;
   last_name: string | null;
   display_name: string | null;
+  gender: Gender | null;
+  /** ISO `yyyy-mm-dd`; girilmediyse null. */
+  birth_date: string | null;
+  avatar_url: string | null;
+  /**
+   * Kullanım Koşulları onayı. **21 Ağustos 2026'ya kadar bu alan YAPISAL
+   * OLARAK hep `false`du** — `handle_new_user` metadata'daki `agreedToTerms`i
+   * hiç okumuyordu ve onu yazan tek yol (istemcideki signUp-sonrası update)
+   * yalnızca e-posta doğrulaması KAPALIYKEN koşuyordu. Trigger düzeltildi ve
+   * mevcut satırlar `auth.users` metadata'sındaki GERÇEK kayıttan dolduruldu;
+   * metadata'sı hiç olmayan (sistemin ilk) hesap bilerek `false` kaldı.
+   */
+  agreed_to_terms: boolean;
+  marketing_consent: boolean;
+  /** Onay/geri çekme anı — sunucudaki trigger yazar, istemci ASLA göndermez. */
+  marketing_consent_at: string | null;
+  /** İşlemsel bildirim tercihi (opt-OUT: varsayılanı açık). */
+  email_notifications_enabled: boolean;
   is_admin: boolean;
   signup_channel: 'direct' | 'form';
+  /** Kayıt anındaki ilk-temas kaynağı; null = bu istemci hiç damgalamadı. */
+  signup_utm_source: string | null;
+  /** Daveti gönderen üyenin adı (`profiles.invited_by` çözülmüş hâli). */
+  invited_by_name: string | null;
   created_at: string;
   last_sign_in_at: string | null;
   banned_until: string | null;
@@ -668,6 +723,22 @@ export interface AdminUserActivityPoint {
 export interface AdminSourceFunnelRow {
   source: string;
   visitors: number;
+  /**
+   * Pencerede o kaynaktan BAŞLATILAN yerel (YZ) oyun ADEDİ — `game_starts`
+   * (ROADMAP #9). `games`ten (BİTMİŞ oyun) bilinçli olarak ayrı: yerel oyunun
+   * medyan süresi 18,1 dakika olduğundan reklamdan gelen soğuk bir ziyaretçi
+   * çoğu zaman oynar ama BİTİRMEZ; ayrıca `games` misafir oyunlarını tanım
+   * gereği hiç görmez (o satır yalnızca girişli kullanıcı için açılır).
+   */
+  starts: number;
+  /**
+   * O oyunları başlatan BENZERSİZ CİHAZ sayısı (`game_starts.anon_id`).
+   * `visitors` ile AYNI kimlikten sayıldığından `starters / visitors` bu
+   * tablodaki TEK gerçek cihaz-bazlı dönüşüm oranıdır — `signups`/`players`
+   * ise `profiles.signup_utm_source` üzerinden gelir, yani ayrı bir dimension.
+   * Tabloda yalnızca yüzde modunda (ve CSV'de) görünür.
+   */
+  starters: number;
   signups: number;
   games: number;
   /**

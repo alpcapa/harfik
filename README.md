@@ -38,6 +38,7 @@ npm run verify-cloud-save-mirror # bulut kaydının çevrimdışı karar mantı�
 npm run verify-fetch-my-games    # oyun geçmişi: ağ hatası ↔ boş liste ayrımı
 npm run verify-demo-board        # karşılama katmanındaki tanıtım tahtası sözlüğe karşı doğrulanır
 npm run verify-remaining-tiles   # "Kalan Taşlar" dökümü ↔ oyun sonu raf düşümü
+npm run verify-error-reporting   # istemci hata telemetrisi: ne kaydedilir/kaydedilmez, tekrar bastırma, hız sınırı
 
 # Üretilmiş dosyalar — kaynağı değişince ELLE yeniden üretilir:
 npm run generate-logo-paths  # LogoMark.tsx + portun logo_mark_data.dart'ı (tek komut, iki taraf)
@@ -160,6 +161,7 @@ src/
 │   ├── offlineNotice.ts # sunucuya ulaşılamadığında gösterilen metinler + ağ hatası tespiti (Flutter portuyla testli olarak senkron)
 │   ├── shareBoardImage.ts # bir DOM düğümünü (tahta önizlemesi) paylaşılabilir PNG'ye çevirir (html-to-image)
 │   ├── shareLink.ts    # ?ref=arkadas etiketli davet linki + native paylaşım/panoya kopyalama (Setup ve karşılama katmanı ORTAK — iki ayrı uygulama sessizce ayrışmasın diye)
+│   ├── errorReporting.ts # istemci hata telemetrisi (client_errors) — beklenen durumlar BİLEREK kaydedilmez, oturum başına 10 kayıt tavanı
 │   ├── friendInvite.ts # bekleyen arkadaşlık davet token'ı için tek seferlik localStorage kuyruğu
 │   ├── csvExport.ts    # admin paneli tabloları/grafikleri için CSV indirme yardımcısı
 │   ├── leaguePoints.ts # k-lig puanı hesaplama (GameHistoryModal ve SharedGamePage ortak)
