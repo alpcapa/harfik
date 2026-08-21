@@ -1732,6 +1732,38 @@ listesi kök `TESTING.md` bölüm 10.
 
 ---
 
+## 14. Hata telemetrisi (Parça 123)
+
+Uygulamada doğan hatalar anonim olarak `client_errors` tablosuna yazılıyor
+(hesap kimliği YOK). Portta okuma yüzeyi HİÇ YOK — kontrol web'deki Admin
+Paneli → **Hatalar** sekmesinden yapılır (kök `TESTING.md` bölüm 9.12).
+
+Bu bölümün tamamı **telemetrinin ÜRÜNÜ BOZMADIĞINI** doğrulamak içindir;
+kayıtların panelde görünmesi ikincil.
+
+- [ ] **Uçak modunda uygulama normal çalışıyor.** Çevrimdışıyken yerel/YZ
+      oyunu oyna, Setup'a çık, gir — hiçbir yavaşlama/donma/ek uyarı
+      olmamalı. Telemetri ağ hatasında sessizce vazgeçmek zorunda.
+- [ ] **Çevrimdışı hamleler panelde İZ BIRAKMIYOR.** Uçak modunda bir Canlı
+      oyunda hamle dene (ekranda "sunucuya ulaşılamıyor" uyarısı çıkar) →
+      web panelinde bu yüzden YENİ bir hata satırı ÇIKMAMALI. Bu BEKLENEN
+      bir durum; çıkıyorsa filtre bozulmuştur ve panel kısa sürede
+      okunamaz hâle gelir.
+- [ ] **Sunucunun kendi reddi de iz bırakmıyor.** Sırası sende değilken bir
+      hamle göndermeye çalış ("Sıra sende değil.") → yeni satır olmamalı.
+- [ ] **Panelde görünen kayıtların platformu doğru.** Gerçek bir hata
+      düştüyse `ios`/`android` (Flutter web'de `app-web`) olmalı, `web`
+      DEĞİL — `web` React uygulamasına ait.
+- [ ] **Derleme kimliği dolu.** CI'dan kurulan bir derlemede kayıttaki
+      `build`, Setup teşhis satırındaki sha ile AYNI olmalı. Boşsa
+      "hangi sürümde?" sorusu cevapsız kalır — telemetrinin yarısı gider.
+- [ ] **Yol her kayıtta `app`.** Portta ekran adı/token taşınmıyor.
+- [ ] **Kırmızı ekran hâlâ çalışıyor** (debug derlemede): `FlutterError`
+      yakalayıcısı raporu gönderirken ÖNCEKİ davranışı da çağırmalı, yani
+      konsol logu/kırmızı ekran kaybolmamalı.
+
+---
+
 ## Web derlemesi (ücretsiz tarayıcı test ortamı)
 
 **Adres:** `https://alpcapa.github.io/kelimeki/` — `main`e giren her mobil

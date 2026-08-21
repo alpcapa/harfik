@@ -77,6 +77,12 @@ jobs:
       # Playwright'a gerek yok, saniyeler sürüyor — lint'in hemen yanında.
       - run: npm run verify-remaining-tiles
 
+      # İstemci hata telemetrisinin karar mantığı (ROADMAP #3): tekrar
+      # bastırma, hız sınırı, "beklenen durumu kaydetme" filtresi. Duman
+      # testiyle sınanamıyor — modül yalnızca Supabase yapılandırılmışken
+      # çalışıyor, dev sunucusunda yapılandırılmamış.
+      - run: npm run verify-error-reporting
+
       - run: npm run build
 
       # Bu ortamdaki geliştirme oturumunun aksine (bkz. playwright.config.ts),

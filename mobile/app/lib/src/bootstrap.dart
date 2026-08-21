@@ -11,6 +11,7 @@ import 'data/auth_service.dart';
 import 'data/chat_api.dart';
 import 'data/cloud_save_repo.dart';
 import 'data/dictionary_loader.dart';
+import 'data/error_reporter.dart';
 import 'data/feedback_api.dart';
 import 'data/friend_invite_inbox.dart';
 import 'data/friends_api.dart';
@@ -119,6 +120,14 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
   final supabase = await initSupabase();
   final auth = AuthService(supabase);
   final versionGate = await checkVersionGate(supabase);
+  // Hata telemetrisi — Supabase hazır olur olmaz bağlanır (ROADMAP #3).
+  // Kimlik `FlagsStore.anonId()`ten geliyor ve BEKLENMİYOR: açılışı bir
+  // telemetri alanı için geciktirmek, telemetrinin kendisini bir açılış
+  // riski hâline getirirdi.
+  errorReporter.configure(
+    sink: supabase != null ? SupabaseClientErrorSink(supabase) : null,
+    anonId: storage.then((s) => s.flags.anonId()),
+  );
   return AppServices(
     onlineStatus: OnlineStatus(),
     dictionary: dictionary,

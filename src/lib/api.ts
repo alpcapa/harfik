@@ -34,6 +34,7 @@ import type {
   AdminGameActivityPoint,
   AdminGameScope,
   AdminGameSourceType,
+  AdminClientErrorRow,
   AdminSourceFunnelRow,
   AdminGuestDeviceRow,
   AdminGuestStandaloneRow,
@@ -1934,6 +1935,21 @@ export async function fetchAdminActivationStats(): Promise<AdminActivationStats 
   }
   const row = (data as AdminActivationStats[] | null)?.[0];
   return row ?? null;
+}
+
+/**
+ * İstemci hata telemetrisinin gruplanmış dökümü (yalnızca admin — Hatalar
+ * sekmesi, ROADMAP #3). Ayrıntılı sözleşme: `AdminClientErrorRow`.
+ */
+export async function fetchAdminClientErrors(days = 7): Promise<AdminClientErrorRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('admin_client_errors', { p_days: days });
+  if (error) {
+    // Admin panelindeki .catch(setError) zinciri buna güveniyor — hatayı
+    // yutup boş dizi dönmek gerçek bir RPC/izin hatasını gizlerdi.
+    throw new Error(error.message);
+  }
+  return (data as AdminClientErrorRow[]) ?? [];
 }
 
 /**

@@ -408,6 +408,32 @@ export interface SharedGameData {
  */
 export type ClientPlatform = 'web' | 'ios' | 'android' | 'app-web';
 
+/**
+ * İstemci hata telemetrisinin GRUPLANMIŞ dökümü (`admin_client_errors`,
+ * ROADMAP #3). Ham satır DÖNMEZ — panelin cevaplaması gereken soru "kaç
+ * satır" değil "aynı hata kaç CİHAZDA, hangi DERLEMEDE".
+ *
+ * `message` imzadır (ilk 160 karakter): aynı hatanın farklı satır/sütun
+ * numaralarıyla gelen kopyaları tek satırda toplar.
+ *
+ * `routes` normalleştirilmiş yollardır (`/davet/:token`) — ham token asla
+ * saklanmaz; istemci normalleştiriyor, sunucuda ayrıca bir maskeleme
+ * trigger'ı var.
+ */
+export interface AdminClientErrorRow {
+  kind: string;
+  message: string;
+  occurrences: number;
+  /** Benzersiz cihaz (`anon_id`) — `occurrences` ile KARIŞTIRILMAMALI. */
+  devices: number;
+  platforms: string;
+  builds: string;
+  routes: string;
+  first_seen: string;
+  last_seen: string;
+  sample_stack: string | null;
+}
+
 /** games tablosuna eklenecek yeni kayıt. */
 export type NewGame = Pick<
   Game,

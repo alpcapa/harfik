@@ -169,9 +169,16 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             kod üretilir. Bu kod iki durumda sunucuya iletilir: girişsiz (misafir) ziyaretlerde
             kaba cihaz tipiyle (mobil/masaüstü) birlikte, ve yapay zekaya karşı bir oyun
             başlattığınızda oyuncu sayısıyla birlikte — ikisinde de varsa bir paylaşım
-            linkindeki kaynak etiketi eklenir. Oyun başlangıcı kaydı giriş yapmış olsanız da
-            tutulur, ancak kayıtta hesap kimliğiniz YER ALMAZ: bu veri hiçbir üçüncü tarafla
-            paylaşılmaz ve hesabınızla asla eşleştirilmez. Yazı tipleri de dahil tüm statik
+            linkindeki kaynak etiketi eklenir. Üçüncü bir durum, uygulamada beklenmedik bir
+            hata oluşmasıdır: hatayı bulup düzeltebilmemiz için hatanın teknik açıklaması,
+            oluştuğu yerin teknik izi, kullandığınız sürüm ve platform (web/uygulama) aynı
+            anonim kodla birlikte kaydedilir. Bu kayıtlar hesabınıza bağlanmaz ve yalnızca
+            arıza gidermek için tutulur; bulunduğunuz sayfanın adresi kaydedilirken davet
+            bağlantısı gibi kişiye özel kısımlar temizlenir. Teknik hata açıklamaları çok
+            nadiren yazdığınız bir metin parçasını içerebilir. Oyun başlangıcı kaydı giriş
+            yapmış olsanız da tutulur, ancak bu kayıtların hiçbirinde hesap kimliğiniz YER
+            ALMAZ: bu veriler hiçbir üçüncü tarafla paylaşılmaz ve hesabınızla asla
+            eşleştirilmez. Yazı tipleri de dahil tüm statik
             içerikler kendi sunucularımızdan sağlanır; üçüncü taraf (ör. Google Fonts) çağrısı
             yapılmaz.
           </P>

@@ -17,6 +17,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { SharedGamePage } from './components/SharedGamePage';
 import { FriendInvitePage } from './components/FriendInvitePage';
 import { captureUtmSource } from './utils/visitTracking';
+import { installGlobalErrorReporting } from './utils/errorReporting';
 
 import { setupPwaUpdates } from './lib/pwa';
 import { preloadWordSet } from './data/wordSetLoader';
@@ -36,6 +37,12 @@ export function mount(): void {
   // hatasının konsola "Uncaught (in promise)" olarak düşmesini (App/Setup zaten
   // kendi çağrılarında yeniden deneyecek) önlemek için sessizce yutuluyor.
   preloadWordSet().catch(() => {});
+
+  // Yakalanmamış istisna + reddedilen promise'leri anonim olarak bildir
+  // (ROADMAP #3). EN BAŞTA kuruluyor ki açılış sırasında doğan bir hata da
+  // yakalansın. Çevrimdışılık/ağ hataları BİLEREK bildirilmiyor — bkz.
+  // `errorReporting.ts`, "NE KAYDEDİLMEZ".
+  installGlobalErrorReporting();
 
   // `?ref=` etiketini ilk temas (first-touch) olarak sakla — ROUTE'DAN ÖNCE,
   // çünkü uygulamanın ÜÇ dalı var ve etiketi yalnızca biri yakalıyordu.

@@ -6049,6 +6049,42 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Flutter SDK bu ortamda YOK** — hem değişikliğin hem düzeltmenin
        kanıtı CI.
 
+   - ✅ **Parça 123 — istemci hata telemetrisi (21 Ağustos 2026, ROADMAP #3,
+     web + port AYNI PR):** portta her çökme `debugPrint`e gidiyordu, yani
+     kullanıcının cihazında ölüyordu. Yeni `lib/src/data/error_reporter.dart`
+     hataları anonim olarak `client_errors` tablosuna yazıyor; kurallar web'in
+     `src/utils/errorReporting.ts`iyle BİREBİR aynı (ayrıntı: kök
+     `CLAUDE.md` → "İstemci Hata Telemetrisi").
+     - **İKİ yakalayıcı ve ikisi de ŞART, farklı sınıfları görüyorlar:**
+       `FlutterError.onError` widget ağacındaki (build/layout/paint)
+       hatalarını, `runZonedGuarded` zone dışına kaçan async hataları.
+       Yalnızca birini kurmak ötekinin gördüğünü sessizce kaçırır. İkisi de
+       `main.dart`'ta, `bootstrap()`ten ÖNCE kuruluyor ki açılış sırasında
+       doğan bir hata da yakalansın — gönderim ise Supabase bağlanana kadar
+       sessizce düşüyor (`ErrorReporter.configure`, `bootstrap`ten çağrılır).
+     - **`FlutterError.onError`'ın ÖNCEKİ değeri çağrılmaya DEVAM EDİYOR** —
+       aksi halde yerel geliştirmede kırmızı ekran/konsol logu kaybolurdu.
+     - **`route` portta sabit `'app'`:** web'in `location.pathname`i yok;
+       ekran adı taşımak yerine yığına bakılıyor. Web'de o alan
+       maskeleniyor (`/davet/:token`), portta maskelenecek bir şey yok.
+     - **NE KAYDEDİLMEZ kuralı ve tek istisnası:** çevrimdışılık +
+       `isNetworkError`a düşen her şey elenir, AMA yalnızca `kind != manual`
+       iken. Bu istisnanın TEK sebebi `cloud_save_repo.upsert`'ün "KAYIP"
+       noktası (Parça 38/45'in mirası): oradaki hata çoğu zaman AĞ
+       hatasıdır, raporlanmaya değer kılan şey AYNANIN DA yazılamamış
+       olmasıdır. Koşulsuz bir filtre, telemetrinin var olma sebebi olan
+       kaydı tam da sessizce düşürürdü — tasarım turunda yakalandı.
+     - **Sink deseni:** `ClientErrorSink` soyut, gerçek uç Supabase; testler
+       bellek içi sahte geçiyor. `test/error_reporter_test.dart` 8 test —
+       dedup, oturum başına 10 kayıt tavanı, ağ filtresi + `manual`
+       istisnası, 500/4000 kırpma, hedef fırlatınca akışın sürmesi.
+     - **Admin paneli PORTA GİRMEDİ** (bilinçli, "Üst Düzey Kararlar" #3) —
+       "Hatalar" sekmesi yalnızca webde.
+     - **Gizlilik metni AYNI PR'da:** `legal_modals.dart` §6, anonim kodun
+       üçüncü bir durumda (hata kaydı) da gönderildiğini söylüyor.
+       Tarihler `legal_text_test.dart` ile kilitli.
+     - **Flutter SDK bu ortamda YOK** — Dart yarısının kanıtı CI.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**

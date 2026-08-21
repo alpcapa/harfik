@@ -911,6 +911,45 @@ açıklama değil veri.
       değil).
 - [ ] **Hiçbir grafiğin altında artık hikaye paragrafı YOK.**
 
+## 9.12. Admin — "Hatalar" sekmesi (21 Ağustos 2026, ROADMAP #3)
+
+İstemci hata telemetrisi. Kayıtlar anonim (`client_errors`, hesap kimliği
+YOK) ve okuma yalnızca admin'e açık.
+
+- [ ] **Dördüncü sekme görünüyor ve kırpılmıyor.** Telefonda (dar ekran)
+      sekmeler 2×2 ızgara, geniş ekranda tek sıra olmalı; hiçbir genişlikte
+      etiket kesilmemeli ve yatay kaydırma oluşmamalı. **Bu, düzeltilmiş bir
+      hatanın regresyon kontrolü:** dört sekme tek sıraya sığmıyordu ve panel
+      onu sessizce kırpıyordu.
+- [ ] **Sekmede rozet YOK.** "Geri Bildirim"de kırmızı sayı rozeti çıkabilir,
+      "Hatalar"da ASLA — rozet bu projede "bekleyen iş" demek, hata kaydı bir
+      gözlem.
+- [ ] **Pencere seçici çalışıyor** (24 saat / 7 / 30 / 90 gün) ve seçim
+      değişince liste yeniden yükleniyor.
+- [ ] **Hiç kayıt yoksa "Bu pencerede hata kaydı yok."** — boş bir liste
+      değil, açık bir metin.
+- [ ] **Kartta "Kez" ve "Cihaz" AYRI AYRI okunuyor.** İkisi karıştırılırsa
+      metrik anlamsızlaşır: 40 kez / 1 cihaz bir kişinin döngüsü, 3 kez /
+      3 cihaz yaygın bir hata.
+- [ ] **Karta dokununca yol, ilk görülme ve örnek yığın açılıyor**, tekrar
+      dokununca kapanıyor.
+- [ ] **Yol maskelenmiş.** Bir kayıtta `/davet/<token>` ya da `/game/<uuid>`
+      HAM görünüyorsa bu bir GİZLİLİK hatasıdır — `/davet/:token` ve
+      `/game/:id` olmalı.
+- [ ] **CSV iniyor** ve örnek yığını da içeriyor.
+- [ ] **`?` popup'ı açılıyor** ve "Kez ≠ Cihaz" ayrımını anlatıyor.
+- [ ] **Admin OLMAYAN bir hesap bu sekmeyi hiç görmemeli** (Admin Paneli
+      girişi zaten çıkmaz) — ayrıca doğrudan sorgulayan biri de satırları
+      okuyamamalı (tabloda SELECT politikası YOK).
+- [ ] **Gerçek bir kayıt oluşuyor mu:** çevrimdışıyken bir Canlı oyunda hamle
+      dene — bu BEKLENEN bir durum, telemetriye satır DÜŞMEMELİ. Kaydın
+      gerçekten oluştuğunu görmek için tarayıcı konsolundan
+      `window.dispatchEvent(new PromiseRejectionEvent('unhandledrejection',
+      { promise: Promise.reject(new Error('elle test')), reason: new
+      Error('elle test') }))` çalıştır → panelde "elle test" belirmeli.
+- [ ] **Tekrar bastırma:** aynı hatayı arka arkaya iki kez tetikle — panelde
+      TEK satır olmalı (aynı oturumda ikinci kayıt gönderilmez).
+
 ## 10. k-lig ödül & rütbe sistemi
 
 Ödül/rütbe kayıtları sunucuda, `games` tablosuna satır ekleyen bir trigger'la

@@ -11,8 +11,15 @@ notuna taşınır (projenin genel "değişiklik = tarihli not" disiplini).
 **Durum (21 Ağustos 2026):** `main` yeşil. FAZ A1 cihaz turu Bölüm 6
 (Paylaşma, iPad popover) hariç kapalı. Web + port paritesi güncel.
 
-**21 Ağustos'ta kapanan İKİ madde** (kayıtları kök `CLAUDE.md` → Kaynak
-Hunisi bölümünde; kalan maddelerin numaraları DEĞİŞMEDİ):
+**21 Ağustos'ta kapanan ÜÇ madde** (kalan maddelerin numaraları DEĞİŞMEDİ):
+- eski **#3** (istemci hata telemetrisi) — `client_errors` tablosu + web/port
+  raporlayıcıları + admin panelinde "Hatalar" sekmesi. Kaydı kök
+  `CLAUDE.md` → "İstemci Hata Telemetrisi" bölümünde.
+  **Ders (bu turda çıktı):** dördüncü admin sekmesi tek sıraya SIĞMIYORDU —
+  320px'te kabı 77px aşıp `overflow-hidden` tarafından sessizce kırpılıyordu.
+  Bir sekme/buton eklemek "tek satır" değil bir DÜZEN değişikliğidir; ölç.
+
+Aşağıdaki ikisinin kaydı kök `CLAUDE.md` → Kaynak Hunisi bölümünde:
 - eski **#9** ("Oyun başladı" olayı) — `game_starts` tablosu + huniye
   "Başlayan" sütunu, web + port. Bir sonraki reklam harcaması artık
   ölçülebilir.
@@ -124,39 +131,6 @@ uygula.
 **Zorunlu ekler:** `PrivacyModal` + portun `legal_modals.dart`'ı (tarihler
 `legal_text_test.dart` ile karşılaştırılıyor, biri bayat kalırsa mobil CI
 düşer).
-
----
-
-## 3. İstemci hata telemetrisi — **MAĞAZA ÖNCESİ**
-
-**Model: Opus 5, efor `high`.** Sınırları net, ama "ne kaydedilMEZ" kararı
-tasarım işi.
-
-**Neden çıkıştan önce:** geriye dönük doldurulamaz (`games.platform` ile
-aynı sınıf). Bugün istemcideki her çökme kullanıcının cihazında ölüyor —
-web'de 81 `console.error`, portta 74 `debugPrint`, artı `ErrorBoundary` ve
-`componentDidCatch`. Bu projede bedeli ölçülmüş: avatar yükleme 20
-Temmuz'dan 13 Ağustos'a kadar 403 veriyordu ve kimse fotoğrafını
-değiştirmediği için üç hafta görünmedi.
-
-**Kapsam:** yakalanmamış istisna, `unhandledrejection`, `ErrorBoundary`, ve
-BİLİNÇLİ "bu olmamalıydı" noktaları (ör. `cloud_save_repo`'nun "KAYIP"
-logu).
-
-**Kaydedilmeyecek:** çevrimdışılık, `isNetworkError`'a düşen her şey,
-sunucunun KENDİ reddi (`'Sıra sende değil.'`). Girerse gürültü sinyali
-boğar.
-
-**Üç zorunluluk:** (1) fire-and-forget, asla `await` edilmez, asla fırlatmaz;
-(2) tekrar bastırma + hız sınırı (çökme döngüsü binlerce satır yazar);
-(3) derleme kimliği (`window.__KELIMEKI_BUILD__` / `buildSha`) her kayda
-eklenir.
-
-**Nerede saklanır:** kendi `client_errors` tablomuz (`guest_visits` deseni:
-anonim, yalnız insert eden RLS, admin panelinde okunur) — Sentry gibi bir
-üçüncü tarafa geçmek gizlilik metninde çok daha ağır bir değişiklik olur.
-
-**Zorunlu ek:** `PrivacyModal` + `legal_modals.dart` (yeni kişisel veri).
 
 ---
 

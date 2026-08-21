@@ -27,6 +27,7 @@ npm run verify-cloud-save-mirror # Bulut kaydı offline karar mantığı (saf fo
 npm run verify-fetch-my-games    # Oyun geçmişi: ağ hatası ↔ boş liste ayrımı (sahte Supabase ucu)
 npm run verify-demo-board        # Karşılama katmanındaki tanıtım tahtası sözlüğe karşı doğrulanır
 npm run verify-remaining-tiles   # "Kalan Taşlar" dökümü ↔ oyun sonu raf düşümü değişmezi
+npm run verify-error-reporting   # istemci hata telemetrisi: ne kaydedilir/kaydedilmez, tekrar bastırma, hız sınırı
 npm run augment-dictionary       # Sözlüğe elle madde ekleme (GTS'siz — bkz. "Sözlüğe Kelime/Anlam Ekleme")
 npm run build:dict               # Sözlüğün TAM üretimi — 100 MB'lık GTS kaynağını ister
 npm run generate-logo-paths      # LogoMark.tsx + portun logo_mark_data.dart'ını birlikte üretir
@@ -719,7 +720,8 @@ edilebilirdi.
 tetikleyici deseni (push+PR → `main`, `paths` filtresi; bu sefer `src/**`,
 `scripts/**`, `tests/**`, `public/**`, `index.html`, `vite.config.ts`,
 `tailwind.config.js`, `playwright.config.ts`, `package*.json`). Adımlar:
-`npm ci` → `lint` → `verify-remaining-tiles` → `build` → Playwright'ı kur
+`npm ci` → `lint` → `verify-remaining-tiles` → `verify-error-reporting` →
+`build` → Playwright'ı kur
 (`--with-deps chromium`) → `test`.
 
 **`playwright.config.ts`'teki `executablePath` bu geliştirme ortamına ÖZGÜ
@@ -1040,7 +1042,7 @@ src/
     constants.ts    # Tahta sabitleri, köşe hesapları, bonus konumları
     gameReducer.ts  # useReducer tabanlı oyun state makinesi
     types.ts        # GameState, Player, Tile tipleri
-  utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, cloudSaveMirror, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields, platform, offlineNotice, shareLink, pendingLiveGames...)
+  utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, cloudSaveMirror, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields, platform, offlineNotice, shareLink, pendingLiveGames, errorReporting...)
   data/         # Kelime listesi (~63k), harf dağılımı, kelime anlamları, wordSetLoader (lazy chunk)
   lib/          # Supabase istemcisi ve API sarmalayıcısı
   fonts/        # @font-face tanımları (main.tsx import eder) + files/*.woff2 — bunlardan
@@ -2097,6 +2099,147 @@ Aylardır CLAUDE.md'nin çeşitli yerlerinde ayrı ayrı "kesin sebebi netleşti
 1. **Import yolu — kök sebep artık netleşti:** Araç, verdiğin `entrypoint_path`i olduğu gibi kullanmıyor, tüm dosyaları örtük bir `source/` klasörünün altına yerleştiriyor. Doğru/kararlı tarif: `entrypoint_path: "source/index.ts"` VER, entrypoint dosyasının adını da `"source/index.ts"` YAP (böylece gerçekte `source/source/index.ts`e iner) ve kardeş bağımlılık dosyalarını (`_shared/email.ts` gibi) **hiçbir `source/` öneki OLMADAN** adlandır (böylece `source/_shared/email.ts`e iner) — bu durumda `source/source/index.ts`'ten `source/_shared/email.ts`'e giden doğru göreli yol her zaman `'../_shared/email.ts'`dir. `'./_shared/email.ts'` kullanan 6 fonksiyonun (`notify-account-banned`, `notify-account-unbanned`, `notify-deadline-warnings`, `notify-friend-request-reminders`, `notify-local-game-abandoned`, `notify-turn-timeout-surrender`) bugüne kadar hiç patlamadan çalışmasının sebebi, o fonksiyonların ilk deploy'unda bu tarifin (muhtemelen) tutarlı uygulanmamış olması, yani dosyaların gerçekte BEKLENENDEN farklı bir iç içe klasör yapısına yerleşmiş olmasıydı — CLAUDE.md'de "CI/CLI deploy'a geçilirse 6 fonksiyon anında bozulur" diye zaten öngörülmüştü, bu doğru bir öngörüydü. **Düzeltme:** 6 fonksiyonun hepsi `'../_shared/email.ts'`e çevrilip yukarıdaki tarifle yeniden deploy edildi — artık 11 Edge Function'ın tamamı aynı, tek doğru importu kullanıyor.
 2. **`verify_jwt` — aracın kendi varsayılanı `true`, parametre REQUIRED değilse bile geçilmezse önceki deploy'un değerini KORUMUYOR:** Bu araçla (CLI/`supabase functions deploy` değil) yapılan bir redeploy'da `verify_jwt` parametresi verilmezse, önceden `false` olan bir fonksiyon SESSİZCE `true`'ya döner — kod hiç değişmese bile. Bu, `notify-deadline-warnings`i (cron tarafından JWT'siz çağrılıyor, `verify_jwt:false` olması ŞART) bu incelemenin bir yan etkisi olarak neredeyse kırıyordu: fonksiyonun kodunu (CRON_SECRET kontrolü, satır başına try/catch) güncelleyip `verify_jwt` belirtmeden deploy edince araç onu `true`'ya çevirdi, `list_edge_functions`'la fark edilip aynı anda ikinci bir deploy'la (bu kez `verify_jwt: false` açıkça verilerek) geri alındı — production'a hiç sızmadı ama neredeyse pg_cron'un 15 dakikada bir 401 almaya başlamasına yol açıyordu. **Kural: `deploy_edge_function`'ı çağırmadan ÖNCE her zaman `list_edge_functions`/`get_edge_function` ile fonksiyonun MEVCUT `verify_jwt` değerini kontrol et ve deploy çağrısına AYNI değeri açıkça geçir — asla parametreyi atlayıp aracın varsayılanına (`true`) güvenme.** Projedeki `verify_jwt:false` olması gereken üç fonksiyon: `notify-deadline-warnings`, `notify-friend-request-reminders` (ikisi de pg_cron'dan JWT'siz çağrılıyor), `notify-turn-timeout-surrender` (Postgres'in kendisinden `net.http_post` ile JWT'siz çağrılıyor) — geri kalan sekizi `true`.
 
+## İstemci Hata Telemetrisi (21 Ağustos 2026, ROADMAP #3)
+
+**NEDEN VAR:** o güne kadar istemcide doğan HER hata kullanıcının cihazında
+ölüyordu — web'de 81 `console.error`, portta 74 `debugPrint`, artı
+`ErrorBoundary.componentDidCatch` (yalnızca konsola yazıyordu). Kimse
+görmüyor, aranamıyor, "kaç kişide oldu?" sorusu sorulamıyordu. Bedeli bu
+projede ÖLÇÜLMÜŞTÜ: avatar yükleme 20 Temmuz'dan 13 Ağustos'a kadar 403
+veriyordu ve kimse fotoğrafını değiştirmediği için ÜÇ HAFTA görünmedi;
+Parça 45'teki "depo açılamadı → offline hamleler sessizce kayboldu" teşhisi
+TAHMİNLE yapılmak zorunda kaldı. **Supabase'in sunucu loglarıyla
+KARIŞTIRMA** — Postgres/Edge Function hataları zaten orada; eksik olan, hiç
+sunucuya ulaşmayan istemci hataları.
+
+**Mağaza çıkışından ÖNCE yapıldı ve bu bilinçli:** geriye dönük
+doldurulamaz (`games.platform` ile aynı sınıf). Mağazaya çıkıldığında
+konuşulamayacak kullanıcılar, elde olmayan cihazlarda hata alacak.
+
+### Tablo — `client_errors` (`20260821084652_client_errors` migration'ı)
+
+`guest_visits`/`game_starts` deseninin aynısı: **anonim**, `user_id` YOK
+(`PrivacyModal` §6'nın "bu kod hesabınızla ASLA eşleştirilmez" taahhüdü),
+insert `anon` + `authenticated` rollerine açık, **SELECT politikası HİÇ YOK**
+— okuma yalnızca `admin_client_errors(p_days)` RPC'sinden (SECURITY DEFINER,
+`is_admin()` kapılı).
+
+Sunucu tarafında İKİ savunma daha var ve ikisi de istemciye güvenmiyor:
+- `_client_errors_mask` (BEFORE INSERT) — `route`taki 12+ karakterlik
+  hex/uuid dizilerini `:id`ye çevirir, `message`ı 500, `stack`i 4000
+  karaktere kırpar. **İstemci de aynısını yapıyor** (`normalizeRoute`),
+  ama tek savunma hattı OLMAMALI: `/davet/<token>` bir YETENEK, hata
+  tablosuna düşmesi onu sızdırır.
+- `admin_client_errors` satırları **GRUPLAYARAK** döner —
+  `(kind, left(message,160))` imzası başına tek satır: `occurrences`,
+  `devices` (benzersiz `anon_id`), `platforms`, `builds`, `routes`,
+  `first_seen`/`last_seen`, `sample_stack`.
+
+### NE KAYDEDİLMEZ — bu, işin en önemli kararı
+
+Bir kayıt **"birinin bakması gereken bir şey"** demek olmalı; gürültü
+sinyali boğarsa panel bir daha açılmaz. Bu yüzden BEKLENEN durumlar
+bilerek dışarıda: çevrimdışılık ve `isNetworkError`'a düşen her şey,
+sunucunun KENDİ reddi ("Sıra sende değil." — o bir kural, hata değil).
+
+**⚠ Ağ filtresi YALNIZCA otomatik yakalamalara uygulanır (`kind !== 'manual'`)
+ve bu, tasarım turunda YAKALANAN bir hatanın düzeltmesi.** İlk sürüm filtreyi
+koşulsuz uyguluyordu; o hâliyle ROADMAP'in ADIYLA andığı vakayı — portun
+`cloud_save_repo` "KAYIP" noktasını — tam da sessizce düşürüyordu: oradaki
+hata çoğu zaman bir AĞ hatasıdır, ama raporlanmaya değer kılan şey
+**aynanın DA yazılamamış olmasıdır**, yani sinyal hatanın kendisinde değil
+ÇAĞIRANIN bildiği bağlamda. Manuel bildirimler bu yüzden filtreyi atlar.
+
+### Üç değişmez (biri bozulursa telemetri ürünü bozar)
+
+1. **Fire-and-forget** — asla `await` edilmez, ASLA fırlatmaz.
+2. **Tekrar bastırma + hız sınırı** — imza `${kind}|mesajın ilk 120
+   karakteri`, oturum başına en fazla **10** kayıt. Bir çökme döngüsü aksi
+   halde binlerce satır yazar (`ErrorBoundary`'nin kendi yorumunda o döngü
+   zaten tanımlı: bozuk kayıt → her reload'da aynı hata).
+3. **Derleme kimliği** her kayda eklenir (`window.__KELIMEKI_BUILD__` /
+   `buildSha`) — "Deploy Doğrulaması" bölümünün tamamı zaten bu soruyu
+   çözmek için var; telemetri onu bedavaya alır. Panelde bu, "düzeltme
+   işe yaradı mı?"nın tek cevabı: hata yalnızca ESKİ derlemede kalıyorsa
+   düzelmiştir.
+
+### İki istemci, aynı kurallar
+
+| | web | port |
+|---|---|---|
+| Modül | `src/utils/errorReporting.ts` | `mobile/app/lib/src/data/error_reporter.dart` |
+| Otomatik yakalama | `window.onerror` + `unhandledrejection` (`boot.tsx`) | `FlutterError.onError` + `runZonedGuarded` (`main.dart`) |
+| Render/çökme | `ErrorBoundary.componentDidCatch` → `kind:'boundary'` | `FlutterError.onError` → aynı `kind` |
+| Yol (`route`) | `normalizeRoute(location.pathname)` | sabit `'app'` — portta pathname yok, ekran adı taşımak yerine yığına bakılır |
+| Sınama | `npm run verify-error-reporting` (20 kontrol, CI'da) | `test/error_reporter_test.dart` (8 test) |
+
+**Portta İKİ yakalayıcı da şart ve farklı şeyleri görüyor:**
+`FlutterError.onError` widget ağacındaki (build/layout/paint) hataları,
+`runZonedGuarded` zone dışına kaçan async hataları. Yalnızca birini kurmak
+ötekinin gördüğü sınıfı sessizce kaçırır. `FlutterError.onError`'ın ÖNCEKİ
+değeri de çağrılmaya devam ediyor — aksi halde yerel geliştirmede kırmızı
+ekran/log kaybolurdu.
+
+**Karar mantığı ağdan bağımsız sınanabilsin diye iki tarafta da bir
+"sink" var** (`ClientErrorSink` / `__setClientErrorSinkForTests`). Web'de
+duman testi bu modülü SINAYAMAZ — üretimde yalnızca Supabase
+yapılandırılmışken çalışıyor, dev sunucusunda yapılandırılmamış; bu yüzden
+`verify-*` betiği deseni (esbuild + node) kullanıldı. **Negatif eş
+ölçüldü:** tekrar bastırma, ağ filtresinin `manual` istisnası, hız sınırı
+ve yol maskeleme tek tek kaldırıldığında sırasıyla 1/1/1/2 kontrol GERÇEKTEN
+düştü.
+
+### Admin paneli — "Hatalar" sekmesi
+
+Dördüncü sekme (`AdminDashboard.tsx`). **Rozet YOK ve bu bilinçli:**
+`CountBadge` bu projede "bekleyen İŞ" demek (bkz. o bölüm); bir hata kaydı
+admin'in yapması gereken bir kuyruk maddesi değil, bir gözlem.
+
+Kartlar gruplanmış satırları çiziyor; **"Kez" ile "Cihaz" yan yana ve eşit
+vurguda** — ayrılmadan bir hatanın yaygın mı yoksa tek kişinin döngüsü mü
+olduğu okunamıyor (40 kez / 1 cihaz ≠ 3 kez / 3 cihaz). Karta dokunmak yol,
+ilk görülme ve örnek yığını açıyor. CSV `sample_stack` dahil dışa aktarıyor.
+Pencere seçici (24 saat / 7 / 30 / 90 gün) Büyüme'nin periyot
+kontrollerinden BİLEREK bağımsız: orada soru "zaman içinde nasıl gidiyor",
+burada "şu an bakılması gereken ne var".
+
+**ÖLÇÜLEN DÜZEN HATASI — dördüncü sekme tek sıraya SIĞMIYORDU.** Sekme
+şeridi `flex gap-1.5` + `flex-1` idi; `flex-1` bir öğeyi `min-width:auto`
+yüzünden en uzun kelimesinin ("BİLDİRİM") altına indiremiyor, dolayısıyla
+dört sekmenin min-content toplamı 320px'te kabı **77px**, 390px'te **7px**
+AŞIYOR ve panelin `overflow-hidden`'ı bunu SESSİZCE kırpıyordu (negatif eş:
+dördüncü buton kaldırılınca üç genişlikte de taşma 0). Şerit
+`grid grid-cols-2 min-[580px]:grid-cols-4` oldu — dar ekranda 2×2, tek
+sıraya ancak dört etiketin de TEK SATIRDA sığdığı genişlikten sonra geçiyor
+(eşik "GERİ BİLDİRİM"in max-content'i ≈120px'ten türetildi). **Ölçüldü**
+(derlenmiş CSS + Chromium, gerçek `AdminDashboard` sunucuda render edilip):
+320/390/579/580/640/834/1194'te yatay taşma **0** ve etiketlerin hepsi tek
+satır (38.5px) — bu, değişiklikten ÖNCEKİ hâlden de iyi (orada 320/390'da
+sekmeler iki satıra sarıyordu).
+
+**Ders:** bir sekme/buton eklemek "tek satır" değil bir DÜZEN
+değişikliğidir. `flex-1` "her koşulda sığar" demek DEĞİL.
+
+### Gizlilik metni
+
+`PrivacyModal` §6 (+ portun `legal_modals.dart`'ı, AYNI PR'da — tarihler
+`legal_text_test.dart` ile kilitli) artık anonim kodun ÜÇÜNCÜ bir durumda
+da gönderildiğini söylüyor. Metin bir şeyi açıkça kabul ediyor: **teknik
+hata açıklamaları çok nadiren kullanıcının yazdığı bir metin parçasını
+içerebilir** — bunu yazmamak, "hiçbir kişisel veri yok" iddiasını sessizce
+yanlış kılardı.
+
+### Bilinen sınırlar
+
+- **Açılışın ilk milisaniyeleri:** rapor gönderimi Supabase bağlanana kadar
+  sessizce düşer (portta `ErrorReporter.configure`'dan önce, web'de
+  `supabase` null iken). Kuyruklamak için ayrı bir depo açmak, telemetrinin
+  KENDİSİNİ bir açılış riski hâline getirirdi. Yakalayıcılar yine de en
+  başta kuruluyor.
+- **Yığın sembolleri çözülmüyor** — minify edilmiş web yığını ve release
+  Dart yığını okunması zor. Source map yüklemek ayrı bir iş; bugün
+  `message` + `route` + `build` üçlüsü teşhis için yeterli kabul edildi.
+
 ## Sonraya Bırakılan Ürün Fikirleri (karar verildi, henüz yapılmadı)
 
 > **Sıralı yürütme planı ayrı bir dosyada: `ROADMAP.md`.** Burası *ne* ve
@@ -2175,64 +2318,6 @@ bölümün kendi tarihli notuna taşınır.
   mağazanın güncel politikası bir kez daha teyit edilmeli (bu satır 19 Ağustos
   2026'daki bilgiye dayanıyor, mağaza kuralları değişebiliyor). Bir sonraki
   oturum bunu "hukuki eksik" diye yeniden açmasın.
-
-- **Hata telemetrisi — istemci tarafı çökme/başarısızlık kaydı (16 Ağustos
-  2026, kullanıcı onayı; MAĞAZA ÇIKIŞINA yakın yapılacak):**
-  **Bu, Supabase'in sunucu loglarıyla KARIŞTIRILMAMALI.** Postgres/Edge
-  Function/API hataları zaten Supabase'in kendi loglarında duruyor (MCP
-  `query_logs` + Dashboard) — eksik olan, kullanıcının CİHAZINDA olup hiçbir
-  sunucuya ulaşmayan hatalar. Bugün onların TAMAMI şuraya gidiyor:
-  `console.error` (web'de **81** çağrı yeri), `ErrorBoundary.componentDidCatch`
-  (kök çökme yakalayıcısı — yalnızca console'a yazıyor) ve portta
-  `debugPrint` (**74** çağrı yeri). Üçü de kullanıcının cihazında ölüyor:
-  **kimse görmüyor, aranamıyor, "kaç kişide oldu" sorusu sorulamıyor.**
-  - **Neden ŞİMDİ değil, mağaza çıkışına yakın:** bugün kullanıcı tabanı 23
-    üye ve büyük kısmı hesap sahibinin arkadaşı; her hata elle, cihazda,
-    kullanıcıyla konuşarak bulunuyor. Mağazaya çıkıldığında konuşamayacağın
-    kullanıcılar, elinde olmayan cihazlarda hata alacak — telemetri tam o an
-    tek görme yolu olur. **Geriye dönük doldurulamaz** (`games.platform` ile
-    aynı sınıf), yani ÇIKIŞTAN ÖNCE kurulmalı; ama bugün kurulursa gürültü
-    kalibrasyonu gerçek trafik olmadan yapılamaz.
-  - **Bu projede bedeli ÖLÇÜLMÜŞ bir eksik, teorik değil:** Parça 45'te
-    (mobil) "depo açılamadı → offline hamleler sessizce kayboldu" teşhisi
-    tahminle yapılmak zorunda kaldı ve Setup'a sırf görebilmek için bir
-    teşhis satırı EKLENDİ; avatar yükleme 20 Temmuz'dan 13 Ağustos'a kadar
-    403 veriyordu ve kimse fotoğrafını değiştirmediği için üç hafta
-    görünmedi; `fetchMyGames` çevrimdışıyken "hiç oyunun yok" diyordu.
-    Üçünde de sunucuda hiçbir iz YOKTU — hata istemcide doğup istemcide
-    öldü.
-  - **Ne KAYDEDİLİR:** yakalanmamış istisnalar, yakalanmamış promise
-    reddi (`unhandledrejection`), `ErrorBoundary`nin yakaladıkları, ve
-    BİLİNÇLİ olarak "bu olmamalıydı" denen noktalar (ör.
-    `cloud_save_repo`'nun "KAYIP" logu, ayna yazma hatası).
-  - **Ne kaydedilMEZ — asıl tasarım kararı bu:** BEKLENEN/ele alınmış
-    durumlar. Çevrimdışılık, `isNetworkError`'a düşen her şey, sunucunun
-    KENDİ reddi (`'Sıra sende değil.'`) telemetriye girmemeli; girerse
-    gürültü sinyali boğar ve panel bir daha açılmaz. Bir kayıt "birinin
-    bakması gereken bir şey" demek olmalı.
-  - **Yüzeyle birlikte gelen üç zorunluluk:** (1) fire-and-forget, asla
-    `await` edilmez, asla fırlatmaz — bir telemetri hatası uygulamayı
-    etkileyemez (`setOnlineGamePlatform`/`logGameFinish` deseni); (2)
-    tekrar bastırma + hız sınırı ŞART — bir çökme döngüsü aksi halde
-    binlerce satır yazar (`ErrorBoundary`'nin kendi yorumunda bu döngü
-    zaten tanımlı); (3) derleme kimliği (`window.__KELIMEKI_BUILD__` /
-    `buildSha`) her kayda EKLENMELİ — "Deploy Doğrulaması" bölümünün
-    tamamı zaten bu soruyu (kullanıcı hangi derlemeyi görüyor?) çözmek
-    için var, telemetri onu bedavaya alır.
-  - **Nerede saklanır — iki seçenek, ilki bu projenin desenine uyuyor:**
-    (a) kendi `client_errors` tablomuz — `guest_visits`/`game_finishes`
-    ile aynı kalıp (anonim, yalnızca insert eden RLS, admin panelinde
-    okunur); (b) Sentry gibi bir hizmet — daha zengin (stack sembolü,
-    gruplama) ama yeni bir bağımlılık ve ÜÇÜNCÜ TARAFA veri aktarımı,
-    yani gizlilik metninde çok daha ağır bir değişiklik.
-  - **Gizlilik metni ZORUNLU olarak değişir** (yeni kişisel veri kuralı):
-    `PrivacyModal` + portun `legal_modals.dart`'ı AYNI PR'da —
-    `legal_text_test.dart` "Son güncelleme" tarihlerini karşılaştırdığından
-    port bayat kalırsa mobil test paketi düşer.
-  - **Yapılırken:** web + port AYNI PR'da (tek taraflı yapmak bu projenin
-    en sık hatasını üretir) ve panelde ham satır listesi DEĞİL en azından
-    "aynı hata kaç kişide, hangi derlemede" kırılımı gösterilmeli — ham
-    liste ilk yüz satırdan sonra okunmaz hâle gelir.
 
 - **Taranabilir `/nasil-oynanir` sayfası (17 Ağustos 2026, kullanıcı
   kararı: "ileride yapılacak işlere ekle, o zaman değerlendiririz"):**
