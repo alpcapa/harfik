@@ -1010,6 +1010,14 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 
 ## 10. Arkadaşlar
 
+- [ ] **Davet linki `?ref=arkadas` taşıyor (Parça 122).** Arkadaşlar →
+      "Arkadaşını Davet Et" ile link üret ve paylaş penceresinde/panoda
+      URL'e bak: `https://kelimeki.com/davet/<token>**?ref=arkadas**`
+      OLMALI. Etiket yoksa davetle gelip üye olan herkes admin panelindeki
+      Kaynak Hunisi'nde `direkt` satırına düşer. Linki temiz bir tarayıcıda
+      açtığında davet sayfası normal açılmalı (sorgu parametresi token
+      çözümünü BOZMAZ).
+
 - [ ] **Modal + rozet.** Girişliyken hesap menüsünde "Arkadaşlar" satırı
       görünmeli; başka bir hesaptan sana istek gönderilince (web'den
       gönderilebilir) satırda kırmızı sayı rozeti + **avatarda aynı sayıyı

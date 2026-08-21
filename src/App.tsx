@@ -66,7 +66,6 @@ import {
   getOrCreateAnonId,
   visitAlreadyLoggedToday,
   markVisitLoggedToday,
-  captureUtmSource,
   getStoredUtmSource,
   getDeviceType,
   isStandaloneDisplay,
@@ -474,14 +473,6 @@ export default function App() {
       if (retryTimer) clearTimeout(retryTimer);
     };
   }, [wordsReady]);
-
-  // Sosyal medya/tanıtım linklerindeki ?ref= parametresini (varsa) cihaza
-  // ilk temas olarak kaydeder — oturum durumundan bağımsız, sayfa her
-  // yüklendiğinde çalışmalı ki paylaşılan linkle gelen biri daha auth
-  // durumu netleşmeden kaynağını kaybetmesin.
-  useEffect(() => {
-    captureUtmSource();
-  }, []);
 
   // Misafir (girişsiz) ziyaretleri admin panelinin Büyüme > Kullanıcı
   // grafiğindeki "Ziyaret" serisi için günde bir kez anonim olarak

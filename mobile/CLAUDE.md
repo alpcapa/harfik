@@ -6021,6 +6021,23 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        olmayan RPC `Yetkisiz erişim.`, damgasız satır `bilinmiyor`a düşüyor).
      - **Cihazda doğrulanacak:** `mobile/TESTING.md` bölüm 4.
 
+   - ✅ **Parça 122 — davet linki `?ref=arkadas` taşıyor (21 Ağustos 2026,
+     ROADMAP #7, web + port AYNI PR):** `friends_api.dart`ın `buildInviteUrl`i
+     web'in aynı fonksiyonuyla birlikte güncellendi. Port da WEB linki üretip
+     paylaşıyor (`$webOrigin/davet/$token`), yani yalnız web'i değiştirmek
+     porttan paylaşılan davetleri etiketsiz bırakır ve admin panelindeki
+     Kaynak Hunisi'nde `direkt` satırını şişirirdi.
+     - **`parseInviteToken` ETKİLENMİYOR:** `uri.pathSegments` sorgu dizesini
+       içermez, gelen link uygulamaya düşerse token yine doğru çözülür
+       (kod okunarak doğrulandı).
+     - **Etiketi YAKALAYAN taraf web** — portta `visitTracking.ts`in bir
+       karşılığı yok. Web tarafında asıl hata buradaydı: `captureUtmSource`
+       `App.tsx`'teydi ve `/davet/:token` route'u `App`'i hiç mount etmiyor,
+       yani etiket konsa bile kaydedilmiyordu; çağrı `boot.tsx`e taşındı.
+     - **Dart tarafında test yok** (tek satırlık bir dize değişikliği; davranış
+       testi web'de, `tests/smoke.spec.ts`te). Flutter SDK yine bu ortamda
+       YOK — kanıt CI.
+
 ## FAZ A1 — Cihaz Testi Tur Durumu (son güncelleme: 17 Ağustos 2026)
 
 **Bu bölüm iki `TESTING.md`'nin BİLİNÇLİ olarak tutmadığı tek şeyi tutar:**

@@ -11,11 +11,17 @@ notuna taşınır (projenin genel "değişiklik = tarihli not" disiplini).
 **Durum (21 Ağustos 2026):** `main` yeşil. FAZ A1 cihaz turu Bölüm 6
 (Paylaşma, iPad popover) hariç kapalı. Web + port paritesi güncel.
 
-**21 Ağustos'ta kapanan madde:** eski #9 ("Oyun başladı" olayı) yapıldı —
-`game_starts` tablosu + Kaynak Hunisi'ne "Başlayan" sütunu, web + port.
-Kaydı kök `CLAUDE.md` → Kaynak Hunisi bölümünde. Bir sonraki reklam
-harcaması artık ölçülebilir; kalan maddelerin numaraları DEĞİŞMEDİ
-(1-8 aynı).
+**21 Ağustos'ta kapanan İKİ madde** (kayıtları kök `CLAUDE.md` → Kaynak
+Hunisi bölümünde; kalan maddelerin numaraları DEĞİŞMEDİ):
+- eski **#9** ("Oyun başladı" olayı) — `game_starts` tablosu + huniye
+  "Başlayan" sütunu, web + port. Bir sonraki reklam harcaması artık
+  ölçülebilir.
+- eski **#7** (davet linkine `?ref=arkadas`) — "tek satır" sanılıyordu,
+  ÖLÇÜNCE tek başına no-op olacağı çıktı: `/davet/:token` ve `/game/:id`
+  `?ref=` etiketini HİÇ yakalamıyordu (`captureUtmSource` `App.tsx`'teydi,
+  o iki route `App`'i mount etmiyor). Yakalama `boot.tsx`e taşındı.
+  **Ders:** bu dosyadaki efor tahminleri (`low`/`medium`) bir SÖZ değil —
+  işin gerçekten tek satır olduğunu ölçmeden varsayma.
 
 ---
 
@@ -220,15 +226,6 @@ servis ettiği DOĞRULANMALI.
 
 ---
 
-## 7. Davet linkine `?ref=arkadas` — **KÜÇÜK**
-
-**Model: Sonnet 5, efor `low`.** Tek satır, yalnız web, CI ~2 dk.
-
-`buildInviteUrl` (`FriendsModal.tsx`) davet linkine `?ref=arkadas` eklerse
-admin panelindeki Kaynak Hunisi'nin iki ucu aynı kanalı ölçmeye başlar.
-Bugün ziyaretçi ucu yalnız Setup'ın paylaş butonunu, üye ucu ağırlıkla
-`/davet/:token`'ı sayıyor — o path `?ref=` taşımıyor, dolayısıyla
-`arkadas` satırının "%100 dönüşümü" bir ÖLÇÜM DEĞİL, tesadüf.
 
 ---
 

@@ -16,6 +16,7 @@ import { AuthProvider } from './hooks/useAuth';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SharedGamePage } from './components/SharedGamePage';
 import { FriendInvitePage } from './components/FriendInvitePage';
+import { captureUtmSource } from './utils/visitTracking';
 
 import { setupPwaUpdates } from './lib/pwa';
 import { preloadWordSet } from './data/wordSetLoader';
@@ -35,6 +36,24 @@ export function mount(): void {
   // hatasının konsola "Uncaught (in promise)" olarak düşmesini (App/Setup zaten
   // kendi çağrılarında yeniden deneyecek) önlemek için sessizce yutuluyor.
   preloadWordSet().catch(() => {});
+
+  // `?ref=` etiketini ilk temas (first-touch) olarak sakla — ROUTE'DAN ÖNCE,
+  // çünkü uygulamanın ÜÇ dalı var ve etiketi yalnızca biri yakalıyordu.
+  //
+  // 21 Ağustos 2026'da ÖLÇÜLDÜ (dev sunucusu + Chromium, localStorage
+  // okunarak): `/davet/:token?ref=arkadas` ve gerçek bir uuid'li
+  // `/game/:id?ref=tiktok` etiketi **hiç kaydetmiyordu** (`null`), yalnızca
+  // `/` çalışıyordu. Sebep: çağrı `App.tsx`'in bir effect'indeydi, ama bu iki
+  // route `App`'i hiç mount etmiyor (`SharedGamePage`/`FriendInvitePage`
+  // render ediliyor) — yani dolaşımdaki her davet/paylaşım linki kaynağını
+  // sessizce kaybediyordu. Buraya taşındı: burası üç dalın da tek ortak
+  // giriş noktası, dolayısıyla ileride dördüncü bir route eklendiğinde de
+  // kendiliğinden kapsanır.
+  //
+  // Karşılama katmanı ayrı: uygulama hiç mount edilmediğinden `main.tsx`
+  // kendi dalında AYNI çağrıyı yapıyor. İkisi birlikte tüm yüzeyleri örtüyor
+  // ve çağrı zaten idempotent (first-touch, üzerine yazmaz).
+  captureUtmSource();
 
   // Projede genel bir router yok — herkese açık route'lar (/game/:id paylaşılan
   // oyun sayfası, /davet/:token arkadaşlık davet linki) için ayrı bir kütüphane

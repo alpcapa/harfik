@@ -757,11 +757,16 @@ gerekenler.
       kendisi hariç). Bilinmiyor ancak
       damgalamayan bir istemciden (bugün: mobil uygulama) kayıt gelirse
       yeniden belirir.
-- [ ] **`arkadas` satırının %100'ü bir ölçüm DEĞİL, tesadüf.** Ziyaretçi ucu
-      yalnızca Setup'taki paylaş butonunun `?ref=arkadas` linkiyle gelenleri
-      sayıyor, üye ucu ise ağırlıkla `/davet/:token` davet linkinden
-      gelenleri — o path `?ref=` taşımadığından iki uç aynı popülasyonu
-      ölçmüyor. "Kanal kusursuz dönüyor" diye OKUMA.
+- [ ] **Davet linki `?ref=arkadas` taşıyor VE yakalanıyor (21 Ağustos 2026,
+      ROADMAP #7).** Arkadaşlar → "Arkadaşını Davet Et" ile link üret;
+      URL'in sonunda `?ref=arkadas` OLMALI. Sonra o linki **temiz bir
+      tarayıcıda** (gizli sekme) aç ve devtools'ta
+      `localStorage.getItem('kelimeki:utm-source')` → **`"arkadas"`**
+      dönmeli. `null` dönüyorsa etiket konuyor ama yakalanmıyor demektir —
+      hata tam olarak buydu ve `boot.tsx`te düzeltildi.
+      **Not:** bu, `arkadas` satırının eski "%100 dönüşüm"ünü de anlamlı
+      hale getiriyor; o rakam bu düzeltmeden ÖNCE bir ölçüm değil tesadüftü
+      (iki uç aynı popülasyonu ölçmüyordu).
 - [ ] **`direkt` satırında tam 1 üye olmalı (hesap sahibi).** Projeyi kuran
       hesap kimse tarafından davet edilmedi; geri kalan 22 üye `arkadas`.
 - [ ] **Yeni bir kayıt kaynağını damgalıyor.** Gizli sekmede

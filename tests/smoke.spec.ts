@@ -249,6 +249,34 @@ test('/davet/:token arkadaşlık davet sayfası açılır, katman görünmez', a
   await expect(page.getByText('OYUNU BAŞLAT')).toHaveCount(0);
 });
 
+/**
+ * ROADMAP #7 (21 Ağustos 2026). Davet linki artık `?ref=arkadas` taşıyor —
+ * ama asıl hata etiketin KONMAMASI değil, YAKALANMAMASIYDI: `captureUtmSource`
+ * `App.tsx`'in bir effect'indeydi ve bu route `App`'i hiç mount etmiyor
+ * (`FriendInvitePage` render ediliyor). Ölçüldü: düzeltmeden önce
+ * `/davet/:token?ref=arkadas` ve `/game/:id?ref=tiktok` etiketi `null`
+ * bırakıyordu, yani dolaşımdaki her davet/paylaşım linki kaynağını sessizce
+ * kaybediyordu. Çağrı `boot.tsx`e, route AYRIMINDAN ÖNCEYE taşındı.
+ */
+test('/davet/:token ve /game/:id `?ref=` etiketini YAKALAR (first-touch)', async ({ page }) => {
+  await page.goto('/davet/abcdef1234567890?ref=arkadas');
+  await expect(page.getByLabel('Kelimeki anasayfa')).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('kelimeki:utm-source'))).toBe('arkadas');
+
+  // Aynı bağlamda ikinci bir kaynakla gelmek ilk teması EZMEZ.
+  await page.goto('/game/3f2504e0-4f89-11d3-9a0c-0305e82c3301?ref=tiktok');
+  expect(await page.evaluate(() => localStorage.getItem('kelimeki:utm-source'))).toBe('arkadas');
+});
+
+test('/game/:id `?ref=` etiketini yakalar (temiz cihaz)', async ({ page }) => {
+  await page.goto('/game/3f2504e0-4f89-11d3-9a0c-0305e82c3301?ref=tiktok');
+  // `boot.tsx` DİNAMİK import ediliyor (bkz. main.tsx) — `goto` dönerken
+  // henüz çalışmamış olabilir, o yüzden sayfanın gerçekten mount olmasını
+  // bekle. Beklemeden okumak testi ürüne değil zamanlamaya bağlar.
+  await expect(page.getByText(/Bu oyun bulunamadı|Yükleniyor/)).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('kelimeki:utm-source'))).toBe('tiktok');
+});
+
 test('Yarım kalmış yerel oyun (kelimeki:game-state) varsa katman görünmez', async ({ page }) => {
   await page.addInitScript(() => {
     try {
