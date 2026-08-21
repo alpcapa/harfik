@@ -272,8 +272,8 @@ class PrivacyModal extends StatelessWidget {
             'Doğum tarihi (isteğe bağlı)',
             'Profil fotoğrafı (isteğe bağlı)',
             'Pazarlama iletişimi onayı ve onay tarihi (isteğe bağlı)',
-            'Arkadaşlık isteği, oyun daveti ve süre uyarısı gibi işlemsel '
-                'e-posta bildirimlerini alma tercihi',
+            'Hoş geldiniz mesajı, arkadaşlık isteği, oyun daveti ve süre '
+                'uyarısı gibi işlemsel e-posta bildirimlerini alma tercihi',
             'Oyun istatistikleri (oynanan oyunlar, kazanma/kaybetme, puan '
                 'geçmişi)',
             'Arkadaşlık bağlantıları (kiminle arkadaş olduğunuz, '
@@ -307,10 +307,12 @@ class PrivacyModal extends StatelessWidget {
             'Lider tablosu ve skor kartı gösterimi',
             'Oyun deneyiminin kişiselleştirilmesi',
             'Hesap güvenliği ve destek hizmetleri',
-            'Bir arkadaşlık isteği ya da Canlı oyun daveti aldığınızda size '
-                'e-posta ile bildirim gönderilmesi — bu, hizmetin işleyişine '
-                'dair işlemsel bir bildirimdir, pazarlama onayı gerektirmez '
-                've pazarlama onayınızdan bağımsız olarak gönderilir',
+            'Üyeliğiniz başladığında bir hoş geldiniz e-postası; bir '
+                'arkadaşlık isteği ya da Canlı oyun daveti aldığınızda size '
+                'e-posta ile bildirim gönderilmesi — bunlar hizmetin '
+                'işleyişine dair işlemsel bildirimlerdir, pazarlama onayı '
+                'gerektirmez ve pazarlama onayınızdan bağımsız olarak '
+                'gönderilir',
             'Yalnızca ayrıca onay verdiyseniz: pazarlama/tanıtım amaçlı '
                 'iletişim',
           ]),

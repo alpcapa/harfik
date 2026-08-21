@@ -1314,3 +1314,30 @@ doğrulanamayan ya da gözle bakılması gereken maddeler var (bkz. `CLAUDE.md`
       kopyalama açılmalı; kopyalamada buton metni 2 saniyeliğine "Link
       kopyalandı!" olmalı ve ikon KAYBOLMAMALI (yalnızca metin span'i
       değişiyor).
+
+## 12. Hoş geldiniz e-postası (21 Ağustos 2026)
+
+Yeni üyeye tek seferlik karşılama maili. **Kayıt anında DEĞİL, e-posta
+adresi DOĞRULANDIĞINDA** gönderilir — bu ayrım testin tamamını belirliyor.
+
+- [ ] **Onay linkine tıklamadan mail GELMEMELİ.** Tek kullanımlık bir
+      adresle kayıt ol, onay mailini AÇMA: hoş geldiniz maili gelmemeli.
+      (Gelirse tetikleyici yanlış yere bağlanmış demektir.)
+- [ ] **Onay linkine tıklayınca GELMELİ.** Aynı hesapta onayı tamamla →
+      "Kelimeki — Hoş Geldiniz" konulu mail gelmeli.
+- [ ] **Metin ve marka.** Logo + beyaz kart (diğer maillerle aynı), hitap
+      baştan sona SİZ, "hoş geldiniz" AYRI yazılmış, "Görüş Bildir" adı
+      geçiyor, tek düğme: **Hemen Oyna**.
+- [ ] **Düğme çalışıyor** → kelimeki.com açılmalı.
+- [ ] **İKİNCİ bir mail GELMEMELİ.** Aynı hesapla çıkış yapıp tekrar giriş
+      yap, birkaç saat sonra tekrar kontrol et — karşılama maili hayatta
+      bir kez gider.
+- [ ] **Mevcut üyelere GİTMEMELİ.** Özellik canlıya çıktıktan sonra eski
+      üyelerin hiçbiri karşılama maili almamalı (geriye dönük doldurma bunu
+      garantiliyor; biri alırsa doldurma atlanmış demektir).
+- [ ] **Admin panelinde iz.** Üyeler tablosunda yeni üyenin satırı normal
+      görünmeli; hata olursa Supabase Edge Function loglarında
+      `[notify-welcome]` satırlarına bak.
+- [ ] **Bildirimleri kapatan almamalı** (uç durum): Hesap Ayarları'ndan
+      "e-posta bildirimleri"ni kapatmış bir hesap yeni bir adresi
+      doğrularsa mail gitmemeli.

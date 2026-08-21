@@ -52,8 +52,8 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             <li>Profil fotoğrafı (isteğe bağlı)</li>
             <li>Pazarlama iletişimi onayı ve onay tarihi (isteğe bağlı)</li>
             <li>
-              Arkadaşlık isteği, oyun daveti ve süre uyarısı gibi işlemsel e-posta
-              bildirimlerini alma tercihi
+              Hoş geldiniz mesajı, arkadaşlık isteği, oyun daveti ve süre uyarısı gibi işlemsel
+              e-posta bildirimlerini alma tercihi
             </li>
             <li>Oyun istatistikleri (oynanan oyunlar, kazanma/kaybetme, puan geçmişi)</li>
             <li>
@@ -97,9 +97,10 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             <li>Oyun deneyiminin kişiselleştirilmesi</li>
             <li>Hesap güvenliği ve destek hizmetleri</li>
             <li>
-              Bir arkadaşlık isteği ya da Canlı oyun daveti aldığınızda size e-posta ile bildirim
-              gönderilmesi — bu, hizmetin işleyişine dair işlemsel bir bildirimdir, pazarlama onayı
-              gerektirmez ve pazarlama onayınızdan bağımsız olarak gönderilir
+              Üyeliğiniz başladığında bir hoş geldiniz e-postası; bir arkadaşlık isteği ya da Canlı
+              oyun daveti aldığınızda size e-posta ile bildirim gönderilmesi — bunlar hizmetin
+              işleyişine dair işlemsel bildirimlerdir, pazarlama onayı gerektirmez ve pazarlama
+              onayınızdan bağımsız olarak gönderilir
             </li>
             <li>Yalnızca ayrıca onay verdiyseniz: pazarlama/tanıtım amaçlı iletişim</li>
           </ul>

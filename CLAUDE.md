@@ -1736,6 +1736,90 @@ Kullanıcılar "karşılıklı/canlı oyun" istiyor — bunun ön koşulu olarak
 **Kapsam dışı (henüz yok, bkz. aşağıdaki Faz 2):** Faz 1 yazıldığında oyun daveti/kurma burada listeleniyordu — 27 Temmuz 2026'da Faz 2 ile eklendi. Hâlâ kapsam dışı olanlar: gerçek zamanlı senkron oynanış (Faz 3), zaman aşımı/oto-teslim (Faz 4). Faz 2 eklenmeden önce arkadaş eklemenin tek somut faydası `FriendsModal`'ın "Arkadaşlarım" sekmesinde bir kişiye tıklayınca `PlayerScoreCard`'ı açmasıydı — `Leaderboard`/`GameHistoryModal`'daki `likerToPlayerSummary` ile aynı desende bir adaptör kullanır. Artık ikinci (ve asıl) somut fayda: arkadaşını Canlı bir oyuna davet edebilmek.
   **11 Ağustos 2026 — kişiye dokunmak artık ÜÇ sekmede de kartı açıyor (kullanıcı isteği: "Arkadaşlarımda kişilere tıklayınca skor kartına gidiyorum ama Ara & Ekle'de bu yok"):** "İstekler" ve "Ara & Ekle" (hem arama sonucu hem "Tüm Üyeler") satırları düz `<Avatar>`+`<span>` çiziyordu. Üçü de artık ortak bir `personButton(id, name, avatarUrl)` kullanıyor; "Arkadaşlarım"ın satır-içi kopyası silindi (ikinci bir tıklama yolu açılmadı). Adaptör de genelleşti: `friendToPlayerSummary(f: FriendRow)` yerine `toPlayerSummary(id, name, avatarUrl)` — üç listenin veri tipi farklı (`FriendRow`/`IncomingRequest`/`FriendSearchResult`), ortak olan yalnızca bu üç alan. **"İstekler" sekmesi kullanıcı yalnızca "Ara & Ekle" dediği hâlde bilerek dahil edildi** (bir isteği yanıtlamadan önce gönderenin kartına bakmak, üç listenin içinde bu davranışın en faydalı olduğu yer) — kapsamı kendi genişletmek de daraltmak kadar riskli olduğundan gerekçe burada yazılı, istenmezse tek satırlık geri alma. **Kart kapanınca ilişki tazeleniyor** (`fetchFriendRelation` + `patchRelation` + iki listenin yeniden çekimi): `PlayerScoreCard`'ın kendi arkadaşlık simgesinden (bkz. `RelationIcons`) ekleme/çıkarma yapılabildiğinden, bu olmadan kartta "çıkar"a basıp kapatan kullanıcı satırda hâlâ eski ikonu görürdü. Dokunma alanı (`flex-1`) ile aksiyon ikonunun 44px hedefi ayrışık — ikisi birbirini yutmuyor. Flutter portu aynı gün aynı değişikliği aldı (`mobile/CLAUDE.md`, Parça 53).
 
+### Hoş geldiniz e-postası (21 Ağustos 2026, kullanıcı isteği)
+
+Yeni üyeye tek seferlik bir karşılama maili: kısa bir hoş geldiniz + **Hemen
+Oyna** düğmesi + "Görüş Bildir"e davet. `notify-welcome` Edge Function'ı.
+
+**NE ZAMAN — kayıt anında DEĞİL, e-posta ADRESİ DOĞRULANDIĞINDA.** Bu, işin
+tek gerçek tasarım kararı ve üç ölçüme dayanıyor:
+1. Bu projede e-posta doğrulaması **AÇIK** — 26 hesabın 24'ü `created_at`ten
+   SONRA onaylanmış. (`agreed_to_terms`in yıllarca `false` kalmasının sebebi
+   de aynı gerçekti: `signUp()` session döndürmüyor.)
+2. Kayıt anında adresin sahipliği henüz kanıtlanmamıştır; oraya yazmak bounce
+   üretir ve **domainin gönderim itibarını yakar** — bu proje DKIM/DMARC'ı
+   düzeltmek için ayrıca uğraşmıştı (bkz. "Brevo SMTP").
+3. Üretimde **2 hesap hiç onaylamamış**. Onlar fiilen üye değil ve "Hemen
+   Oyna" düğmesi onlar için çalışmaz.
+
+**Zincir:** `auth.users` üzerindeki `on_auth_user_welcome` trigger'ı
+(`after insert or update of email_confirmed_at`) → `_notify_welcome_email()`
+→ `net.http_post` → Edge Function. `verify_jwt` **KAPALI** (çağıran Postgres,
+JWT yok) — `notify-turn-timeout-surrender` ile aynı desen.
+
+**İdempotens:** `profiles.welcome_email_sent_at`. Trigger önce ATOMİK olarak
+iddia ediyor (`where welcome_email_sent_at is null`), yalnızca satırı
+gerçekten kaptıysa çağırıyor. **Doğrulandı** (geri alınan transaction, üç
+aşama): onaysız kayıtta damga boş / kuyruk 0; onay anında damga dolu / kuyruk
+1 ve gövde doğru `user_id`; İKİNCİ bir onay güncellemesinde kuyruk hâlâ 1
+(mükerrer yok).
+
+**Trigger ADI önemli:** INSERT olayında `on_auth_user_created` bu trigger'dan
+ÖNCE koşmalı ki `profiles` satırı var olsun — Postgres aynı olaydaki
+trigger'ları ADA GÖRE sıralıyor ve "created" < "welcome". Yeni bir
+`auth.users` trigger'ı eklenirse bu sıra kontrol edilmeli.
+
+**ÖLÇÜLEN KIRILGANLIK — `net.http_post`un varsayılan zaman aşımı 5 sn ve
+soğuk başlangıç bunu aşıyor.** Doğrulama turunda birebir yaşandı: ilk çağrı
+`Timeout of 5000 ms reached … HTTP Request/Response time: 4843 ms` ile düştü,
+hemen ardından yapılan ikinci (sıcak) çağrı 200 döndü. Bu bildirimde bedeli
+diğerlerinden ağır: mail kullanıcı başına HAYATTA BİR KEZ gidiyor ve damga
+çağrıdan ÖNCE konduğundan kaybedilen istek bir daha DENENMİYOR. Süre açıkça
+**20 sn**'ye çekildi (ikinci migration). **Projedeki diğer `net.http_post`
+çağrıları hâlâ varsayılan 5 sn'de** — orada kayıp daha ucuz (cron tekrar
+deniyor ya da olay tekrarlanabiliyor), ama yeni bir "bir kez gönderilir"
+bildirimi eklenirse bu tuzağı hatırla.
+
+**Açık uçtaki koruma (verify_jwt kapalı):** `user_id` GİZLİ DEĞİL — k-lig ve
+`game_likers` gibi RPC'ler girişli herkese kullanıcı id'si döndürüyor. Bu
+yüzden fonksiyon üç şeyi kendisi doğruluyor: hesap var ve **adresi
+doğrulanmış**; `welcome_email_sent_at` **son 15 dakika içinde** damgalanmış
+(tekrar çağrılarak mail bombardımanı yapılamasın); alıcı işlemsel bildirimleri
+kapatmamış (`email_notifications_enabled`). **Gerçek HTTP çağrısıyla
+doğrulandı:** var olmayan bir id → `{"sent":false,"reason":"not_confirmed"}`,
+gerçek bir üyenin (geriye dönük doldurulmuş, yani bayat) damgası →
+`{"sent":false,"reason":"stale_claim"}` — yani mevcut üyelere kaza eseri mail
+GİTMİYOR.
+
+**Geriye dönük doldurma:** mevcut TÜM onaylı üyelerin damgası
+`email_confirmed_at`e çekildi, yani bu özellik canlıya çıktığında kimseye
+toplu mail gitmedi. Kolon yorumunda yazılı: o satırlarda damga "gönderildi"
+değil **"atlandı"** demek. Hiç onaylamamış 2 hesap BİLEREK null bırakıldı —
+yarın onaylarlarsa maili hak ediyorlar.
+
+**Metin (kullanıcının taslağı düzeltilerek):** kullanıcının taslağı hitapta
+karışıktı (*"Sayın … / Sizi aramızda"* = siz, *"hoşgeldin / oyununu /
+atarsan"* = sen). Projenin diğer beş e-postası tamamen **siz** kullanıyor, o
+yüzden metin siz'e sabitlendi. Ayrıca: **"hoş geldiniz" AYRI yazılır** (TDK) —
+bir kelime oyununun mailinde bitişik yazmak özellikle kötü olurdu; *"yorum
+atmak"* gündelik olduğundan ürünün kendi yüzey adı olan **"Görüş Bildir"**
+kullanıldı (kullanıcı böylece nereye gideceğini de biliyor); *"şimdi hemen"*
+ikilemesi tekile indi. Düğme etiketi kullanıcının istediği gibi **"Hemen
+Oyna"** kaldı — gövde siz'ken düğmenin sen kipinde olması tutarsız görünebilir
+ama düğme bir cümle değil ETİKET ve karşılama sayfasının kendi CTA'sı da
+"HEMEN OYNA".
+
+**Bağlantı düz `https://kelimeki.com`** — `?ref=` etiketi BİLEREK
+eklenmedi: `captureUtmSource` first-touch çalışıyor ve mail linkine bir etiket
+koymak, kullanıcının BAŞKA bir cihazda ilk temasını "hosgeldin" diye
+damgalayıp Kaynak Hunisi'nin ziyaretçi tarafını kirletirdi.
+
+**Doğrulama sınırı:** gerçek bir gönderim (Brevo'ya giden mail) TEST
+EDİLMEDİ — bunun tek yolu gerçek bir kişiye mail atmak. Guard'ların hepsi
+gerçek HTTP çağrısıyla, trigger zinciri geri alınan transaction'la
+doğrulandı; uçtan uca teyit ilk gerçek kayıtta (ya da bir test hesabıyla)
+yapılmalı — `TESTING.md` bölüm 12.
+
 ### İşlemsel e-posta bildirimleri (arkadaşlık isteği + Canlı oyun daveti)
 
 29 Temmuz 2026'da eklendi (`notify-friend-request`/`notify-game-invite` Edge Function'ları). Kullanıcının gözlemi: hem arkadaşlık isteği hem Canlı oyun daveti yalnızca uygulama-içi bir rozetle görünüyordu (`UserMenu`'deki "Arkadaşlar" rozeti / Setup'taki "Arkadaşınla (N)"); alıcı uygulamayı hiç açmazsa bundan tamamen habersiz kalıyordu — Canlı oyun davetinde bu daha da vahimdi çünkü `online_game_invite_expiry` (7 gün) daveti sessizce iptal ediyordu, kişi kaçırdığının farkına bile varamıyordu. Bunlar **işlemsel (transactional) bildirimlerdir, `marketing_consent`'e (kayıt formundaki opsiyonel pazarlama onayı) bağlı DEĞİLDİR** — Kelimeki'nin kendi tanıtım/promosyon içeriği değil, alıcının hesabına gelen somut, kişiye özel bir olayı (birinin ona istek/davet göndermesini) bildiriyorlar; tıpkı şifre sıfırlama ya da geri bildirim yanıtı maili gibi.
