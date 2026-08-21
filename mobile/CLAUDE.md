@@ -3999,12 +3999,18 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Ayrıştırıcı kendi sessiz başarısızlığına karşı korunuyor** (Parça
        93'ün aynı refleksi): satır sayısına ≥9 alt sınırı var, yani TS
        dosyası yeniden düzenlenip regex 0 eşleşme bulursa test "geçemez".
-     - **SQL yarısı BİLİNÇLİ kapsam dışı ve bu teste yazıldı:**
-       `_award_league_rewards`ın güncel tanımı tek bir migration dosyasında
-       DURMUYOR (sonraki migration'lar fonksiyonu yeniden yazıyor), yani
-       "şu an canlıda ne var" sorusu ancak veritabanına sorularak
-       yanıtlanır — bir birim testi bunu yapamaz. Eşik/ödül değiştiren her
-       migration canlıda ayrıca doğrulanmaya devam edecek.
+     - **SQL yarısı o gün BİLİNÇLİ kapsam dışıydı — ve gerekçesi 22 Ağustos
+       2026'da ÖLÇÜLÜP ÇÜRÜTÜLDÜ.** Buraya "`_award_league_rewards`ın güncel
+       tanımı tek bir migration dosyasında DURMUYOR, yani bir birim testi
+       bunu yapamaz" diye yazılmıştı. Sayıldı: fonksiyonu tanımlayan BEŞ
+       migration var, ama SONUNCUSU (`20260812125039`) tam gövdeyi taşıyor —
+       yani geçerli tanım TEK dosyada ve ayrıştırılabilir. `verify-league-tiers`
+       o dosyayı ADA GÖRE bulup üç `(values ...)` listesini `leagueRank.ts`
+       ile karşılaştırıyor; web CI'da koşuyor ve `paths` listesine
+       `supabase/migrations/**` eklendi (yoksa yalnızca migration değişen bir
+       PR'da sessiz kalırdı — kilidin tam gerektiği yer). **Ders: "bir test
+       bunu yapamaz" cümlesini yazmadan önce SAY** — burada dayanak beş
+       dosyaydı, ama belirleyici olan yalnızca sonuncusuydu.
      - **Bayat iddialar aynı commit'te düzeltildi:** üç dosya (`leagueRank.ts`,
        `league_rank.dart`, kök `CLAUDE.md`) hâlâ "hiçbir derleyici/test bunu
        yakalamaz" diyordu — artık yarısı yanlış. Üçü de "TS ↔ Dart testli,
