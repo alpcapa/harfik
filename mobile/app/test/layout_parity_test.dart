@@ -341,4 +341,47 @@ void main() {
         'scoreFontSize',
         reason: 'port teslim satırı artık skor puntosuna bağlı değil');
   });
+
+  test('sürükleme eşiği: fare/parmak ayrımı iki tarafta da AYNI', () {
+    // 22 Ağustos 2026 — tek eşik (6px) dokunmatikte sessiz kayıp üretiyordu:
+    // parmak 6px oynayan bir dokunuş "sürükleme" sayılıp aynı hücrede
+    // bittiğinden hiçbir şey olmuyordu. Değerler ELLE SENKRON (web kanonik)
+    // ve DÖRT dosyada birden yaşıyor — biri unutulursa iki ekran ya da iki
+    // platform sessizce ayrışır, bu test tam onu yakalıyor.
+    const webFiles = ['src/App.tsx', 'src/components/OnlineGameScreen.tsx'];
+    const dartFiles = [
+      'mobile/app/lib/src/ui/game/game_screen.dart',
+      'mobile/app/lib/src/ui/live/online_game_screen.dart',
+    ];
+
+    for (final f in webFiles) {
+      final src = readRepoFile(f);
+      expect(pick(src, RegExp(r'const DRAG_THRESHOLD_MOUSE = ([\d.]+);'),
+              '$f DRAG_THRESHOLD_MOUSE'),
+          '6');
+      expect(pick(src, RegExp(r'const DRAG_THRESHOLD_TOUCH = ([\d.]+);'),
+              '$f DRAG_THRESHOLD_TOUCH'),
+          '10');
+      // Eşik SABİTİ doğru olsa bile kullanılmıyorsa değeri yok: hangi eşiğin
+      // seçileceği pointer TÜRÜNE bağlı olmak zorunda.
+      expect(
+          pick(src, RegExp(r'if \(dist < (dragThresholdFor\(e\.pointerType\))\) return;'),
+              '$f eşik karşılaştırması pointerType\'a bağlı değil'),
+          'dragThresholdFor(e.pointerType)');
+    }
+
+    for (final f in dartFiles) {
+      final src = readRepoFile(f);
+      expect(pick(src, RegExp(r'_dragThresholdMouse = ([\d.]+);'),
+              '$f _dragThresholdMouse'),
+          '6');
+      expect(pick(src, RegExp(r'_dragThresholdTouch = ([\d.]+);'),
+              '$f _dragThresholdTouch'),
+          '10');
+      expect(
+          pick(src, RegExp(r'distance < (_dragThresholdFor\(e\.kind\))\) return;'),
+              '$f eşik karşılaştırması pointer türüne bağlı değil'),
+          '_dragThresholdFor(e.kind)');
+    }
+  });
 }

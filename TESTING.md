@@ -1423,3 +1423,16 @@ hem Canlı** oyun ekranında koş — ikisi bu deseni paylaşıyor.
       dokun → doğrudan rafa geri alınmalı (pencere açılmamalı).
 - [ ] **Sürükleyerek koyma:** Raftaki jokeri sürükleyip bir hücreye bırak →
       harf seçme penceresi açılmalı ve açık kalmalı.
+- [ ] **Titreşimli dokunuş kaybolmuyor (22 Ağustos 2026):** Parmağını hafifçe
+      kaydırarak (tam sabit tutmadan) raftaki bir taşa dokun → seçilmeli;
+      tahtaya koyduğun bir taşa aynı şekilde dokun → rafa geri alınmalı.
+      Eşik parmakta 10px (farede 6) — eskiden 6px'lik titreşim jesti sessizce
+      yutuyordu.
+- [ ] **Gerçek sürükleme bozulmadı:** Raftaki taşı tahtaya sürükleyip bırak,
+      tahtadaki taşı başka bir hücreye taşı, tahtadaki taşı rafa sürükle.
+- [ ] **k-lig balonu (OHP) kapanışı:** k-lig listesini aç, "OHP" başlığına
+      dokunup balonu aç, sonra bir OYUNCU SATIRINA dokun → balon kapanmalı ve
+      o oyuncunun kartı AÇILMAMALI. İkinci dokunuş kartı açmalı.
+- [ ] **Hesap menüsü kapanışı (oyun ekranında):** Oyun sırasında sağ üstteki
+      avatara dokunup menüyü aç, sonra TAHTAYA dokun → menü kapanmalı ve
+      tahtaya taş KONMAMALI/hücre seçilmemeli. İkinci dokunuş normal çalışmalı.

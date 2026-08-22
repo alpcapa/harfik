@@ -50,6 +50,7 @@ import {
 import { getFormedWords, getFullWordAt, key } from '../utils/board';
 import { trLower } from '../utils/turkish';
 import { hasSeenChatIntro, markChatIntroSeen, getChatLastReadAt, markChatRead } from '../utils/onboarding';
+import { swallowNextClick } from '../utils/ghostClick';
 import {
   checkOnlineGameTurnTimeout,
   createOnlineGame,
@@ -86,8 +87,12 @@ const MESSAGE_COLORS: Record<string, string> = {
   '': 'text-muted',
 };
 
-// App.tsx'teki DRAG_THRESHOLD/DRAG_LIFT ile aynı değerler.
-const DRAG_THRESHOLD = 6;
+// App.tsx'teki eşik/kaldırma değerleriyle BİREBİR aynı — gerekçe orada
+// (fare 6, parmak/kalem 10; tek eşik dokunmatikte sessiz kayıp üretiyordu).
+const DRAG_THRESHOLD_MOUSE = 6;
+const DRAG_THRESHOLD_TOUCH = 10;
+const dragThresholdFor = (pointerType: string) =>
+  pointerType === 'mouse' ? DRAG_THRESHOLD_MOUSE : DRAG_THRESHOLD_TOUCH;
 const DRAG_LIFT = 30;
 
 /**
@@ -286,39 +291,6 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     overKey: string | null;
     overValid: boolean;
   } | null>(null);
-  // Bir pointer jestinin hemen ardından gelen "hayalet" click olayını yutmak
-  // için — `App.tsx`'teki bileşle BİREBİR aynı (iki ekran bu deseni paylaşıyor,
-  // biri değişirse öteki de değişmeli). Gerekçe: dokunmatik tarayıcılar
-  // pointer olaylarından SONRA uyumluluk (compat) mousedown/mouseup/click
-  // üretir ve bunlar hit-test'i O ANDAKİ DOM üzerinde yapar; `pointerup`
-  // sırasında açılan bir pencere bu click'i kendi üstünde karşılar.
-  const suppressClickRef = useRef(false);
-
-  useEffect(() => {
-    const swallow = (e: MouseEvent) => {
-      // Klavye kaynaklı click (`detail: 0`) bir pointer jestinin parçası
-      // değil — yutulmamalı (bkz. App.tsx'teki aynı not).
-      if (e.detail === 0) return;
-      if (suppressClickRef.current) {
-        suppressClickRef.current = false;
-        e.stopPropagation();
-        e.preventDefault();
-      }
-    };
-    // Beklenen hayalet click hiç gelmezse bayrak bir sonraki jestin
-    // `pointerdown`ında temizlenir — compat olayları pointerdown ÜRETMEZ
-    // (ölçüldü), yani temizleme olay sırasına bağlı; gerekçenin tamamı
-    // App.tsx'teki aynı notta.
-    const clearOnNewGesture = () => {
-      suppressClickRef.current = false;
-    };
-    document.addEventListener('click', swallow, true);
-    document.addEventListener('pointerdown', clearOnNewGesture, true);
-    return () => {
-      document.removeEventListener('click', swallow, true);
-      document.removeEventListener('pointerdown', clearOnNewGesture, true);
-    };
-  }, []);
 
   useEffect(() => {
     const preventScrollWhileDragging = (e: TouchEvent) => {
@@ -716,7 +688,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     if (!d) return;
     if (!d.moved) {
       const dist = Math.hypot(e.clientX - d.startX, e.clientY - d.startY);
-      if (dist < DRAG_THRESHOLD) return;
+      if (dist < dragThresholdFor(e.pointerType)) return;
       d.moved = true;
     }
     const liftedY = liftedPoint(e.clientY);
@@ -749,8 +721,8 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
         // Pencere BU pointerup içinde açıldığından ardından gelen compat
         // click'i yut — aksi halde modalın harf ızgarasına düşüp jokeri
         // sessizce başka bir harfe çeviriyor ya da zemine düşüp pencereyi
-        // anında kapatıyor (bkz. App.tsx'teki aynı dal, 22 Ağustos 2026).
-        suppressClickRef.current = true;
+        // anında kapatıyor (gerekçe: `src/utils/ghostClick.ts`).
+        swallowNextClick();
         setPendingWild({ r: d.source.r, c: d.source.c, editing: true });
       } else {
         dispatch({ type: 'RECALL_CELL', r: d.source.r, c: d.source.c });
@@ -759,8 +731,8 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     }
 
     // Sürükleme bitişinin hayalet click'i (bırakılan hücrenin onClick'i
-    // tetiklenmesin) — bayrak bir sonraki jestin pointerdown'ında temizlenir.
-    suppressClickRef.current = true;
+    // tetiklenmesin).
+    swallowNextClick();
 
     const { cellEl, rackEl } = dropTargetsAt(e.clientX, liftedPoint(e.clientY));
     if (cellEl?.dataset.cell) {

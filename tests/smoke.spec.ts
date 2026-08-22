@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 
 // Kelimeki — kritik yol duman testleri. Amaç kapsamlı bir test paketi değil,
 // "uygulama açılıyor, bir oyun başlatılabiliyor, YZ hamle yapabiliyor"
@@ -538,7 +538,7 @@ test('Oyun ekranında logonun altında "← Geri" var ve Setup\'a döndürür', 
 //
 // Bu test dokunmatik bir bağlam ister — `hasTouch` olmadan `tap()` çalışmaz
 // ve compat olay zinciri hiç doğmaz, yani hata masaüstü profilinde GÖRÜNMEZ.
-test.describe('joker düzenleme (dokunmatik)', () => {
+test.describe('dokunmatik jestler', () => {
   test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
 
   // Rafında JOKER olan, yarım kalmış bir yerel oyun — üretim reducer'ıyla
@@ -552,10 +552,53 @@ test.describe('joker düzenleme (dokunmatik)', () => {
         { name: 'Yapay Zeka', isAI: true },
       ],
     });
-    const rack = [...s.players[0].rack];
-    rack[0] = { letter: '?', pts: 0, wild: true };
+    // Raf SABİTLENİYOR: `startGame` torbadan rastgele çekiyor, yani testin
+    // aradığı harf (M) bazı koşularda hiç gelmiyordu — ölçüldü, gerçek bir
+    // flake. Puanlar üretim dağılımından (`TILE_DATA`) okunuyor.
+    const { TILE_DATA } = await import('../src/data/tiles');
+    const rack = ['?', 'M', 'A', 'R', 'T', 'I', 'K'].map((letter) =>
+      letter === '?'
+        ? { letter: '?', pts: 0, wild: true }
+        : { letter, pts: TILE_DATA[letter].pts },
+    );
     s = { ...s, current: 0, players: s.players.map((p, i) => (i === 0 ? { ...p, rack } : p)) };
     return JSON.stringify({ version: 1, state: s, savedAt: Date.now() });
+  }
+
+  /** Parmak titremesi olan bir dokunuş: bas → `jitter` px kay → aynı yerde bırak.
+   *  Playwright'ın `tap()`i hiç hareket üretmediğinden eşik davranışı ancak
+   *  ham CDP dokunuş olaylarıyla ölçülebiliyor. */
+  async function sloppyTap(page: Page, target: Locator, jitter: number): Promise<void> {
+    const box = (await target.boundingBox())!;
+    const x = box.x + box.width / 2;
+    const y = box.y + box.height / 2;
+    const cdp = await page.context().newCDPSession(page);
+    const send = (type: string, px: number, py: number) =>
+      cdp.send('Input.dispatchTouchEvent', {
+        type,
+        touchPoints: type === 'touchEnd' ? [] : [{ x: px, y: py }],
+      });
+    await send('touchStart', x, y);
+    if (jitter > 0) {
+      await send('touchMove', x + jitter, y);
+      await send('touchMove', x, y);
+    }
+    await send('touchEnd', x, y);
+    await cdp.detach();
+  }
+
+  /** Jokerli kayıttan devam edip oyun ekranını açar. */
+  async function oyunEkrani(page: Page): Promise<void> {
+    await donenKullanici(page);
+    await page.addInitScript((payload) => {
+      localStorage.setItem('kelimeki:game-state', payload as string);
+    }, await jokerliKayit());
+    await page.goto('/');
+    await page.getByRole('button', { name: /Senin Hamlen Bekleniyor/i }).click();
+    const quickstartHeading = page.getByRole('heading', { name: /hızlı başlangıç/i });
+    if (await quickstartHeading.isVisible().catch(() => false)) {
+      await page.locator('button[aria-label="Kapat"]').last().click();
+    }
   }
 
   test('Konmuş jokere dokunmak pencereyi açar, harfi KENDİLİĞİNDEN değiştirmez', async ({
@@ -568,17 +611,7 @@ test.describe('joker düzenleme (dokunmatik)', () => {
     // testi SESSİZCE geçirmek yerine düşürür.
     const CELL = '10,5';
 
-    await donenKullanici(page);
-    await page.addInitScript((payload) => {
-      localStorage.setItem('kelimeki:game-state', payload as string);
-    }, await jokerliKayit());
-    await page.goto('/');
-
-    await page.getByRole('button', { name: /Senin Hamlen Bekleniyor/i }).click();
-    const quickstartHeading = page.getByRole('heading', { name: /hızlı başlangıç/i });
-    if (await quickstartHeading.isVisible().catch(() => false)) {
-      await page.locator('button[aria-label="Kapat"]').last().click();
-    }
+    await oyunEkrani(page);
 
     const cell = page.locator(`[data-cell="${CELL}"]`);
     const harf = async () => (await cell.innerText()).trim().split('\n')[0];
@@ -617,5 +650,65 @@ test.describe('joker düzenleme (dokunmatik)', () => {
     await page.getByRole('dialog').getByText('B', { exact: true }).first().tap();
     await expect(page.getByRole('dialog')).toBeHidden();
     expect(await harf()).toBe('B');
+  });
+
+  // 22 Ağustos 2026 — aynı denetimin ikinci bulgusu. Sürükleme eşiği tek bir
+  // sayıydı (6px) ve parmak için FAZLA DARDI: hafif titreyen bir dokunuş
+  // "sürükleme" sayılıp aynı hücrede bittiğinden HİÇBİR ŞEY yapmıyordu — raf
+  // taşı seçilmiyor, konmuş taş geri alınmıyor, joker penceresi açılmıyordu.
+  // Kullanıcıya "dokunuşum işlemedi" olarak görünen sessiz bir kayıp.
+  // Platform normları 6'nın üstünde (Android touch slop 8px), eşik artık
+  // parmakta 10.
+  //
+  // Bu test SAYIYI değil DAVRANIŞI kilitliyor (sabitleri
+  // `mobile/app/test/layout_parity_test.dart` karşılaştırıyor): 8px titreşimli
+  // bir dokunuş üç jestte de işlemeli, ve gerçek bir sürükleme hâlâ çalışmalı.
+  // Negatif eş: eşik 6'ya döndürülünce üç kontrol de düşüyor.
+  test('Titreşimli dokunuş (8px) jest olarak KAYBOLMAZ', async ({ page }) => {
+    await oyunEkrani(page);
+    const JITTER = 8;
+    const rackTile = page.locator('[data-rack]').getByText('M', { exact: true }).first();
+    const cell = page.locator('[data-cell="0,0"]');
+    // ⚠ `toBeEmpty()` KULLANILAMAZ: (0,0) oyuncunun ev karesi ve boşken bile
+    // içinde `HomeMark` SVG'si var — doluluk METİNDEN okunmalı.
+    const harfi = async (loc: Locator) => (await loc.innerText()).trim().split('\n')[0];
+
+    // 1) Raf taşı seçimi — seçili taş 7px yukarı kalkar.
+    await sloppyTap(page, rackTile, JITTER);
+    await expect(page.locator('[data-rack] .\\!-translate-y-\\[7px\\]')).toHaveCount(1);
+
+    // 2) Yerleştirme — bu adım `onClick` yolundan gider, eşikten etkilenmez;
+    //    tam da bu yüzden asimetri kullanıcıya "koyabiliyorum ama geri
+    //    alamıyorum" olarak görünüyordu.
+    await cell.tap();
+    expect(await harfi(cell)).toBe('M');
+
+    // 3) Konmuş taşa titreşimli dokunuş → rafa geri alınmalı.
+    await sloppyTap(page, cell, JITTER);
+    expect(await harfi(cell)).toBe('');
+
+    // 4) Gerçek bir sürükleme, eşik büyüdü diye kaybolmamalı.
+    const src = (await rackTile.boundingBox())!;
+    const dst = (await page.locator('[data-cell="6,6"]').boundingBox())!;
+    const cdp = await page.context().newCDPSession(page);
+    const send = (type: string, x: number, y: number) =>
+      cdp.send('Input.dispatchTouchEvent', {
+        type,
+        touchPoints: type === 'touchEnd' ? [] : [{ x, y }],
+      });
+    const sx = src.x + src.width / 2;
+    const sy = src.y + src.height / 2;
+    const tx = dst.x + dst.width / 2;
+    // Sürüklenen taş parmağın DRAG_LIFT (30px) ÜZERİNDE çizilir ve bırakma
+    // hedefi de o kaldırılmış noktadan hesaplanır — bu kod tabanında kayıtlı
+    // bir otomasyon tuzağı.
+    const ty = dst.y + dst.height / 2 + 30;
+    await send('touchStart', sx, sy);
+    for (let i = 1; i <= 8; i++) {
+      await send('touchMove', sx + ((tx - sx) * i) / 8, sy + ((ty - sy) * i) / 8);
+    }
+    await send('touchEnd', tx, ty);
+    await cdp.detach();
+    expect(await harfi(page.locator('[data-cell="6,6"]'))).toBe('M');
   });
 });

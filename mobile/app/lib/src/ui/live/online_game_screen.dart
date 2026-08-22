@@ -34,6 +34,7 @@
 // kelimeyi web oynayabilir, mobil oynayamaz.
 import 'dart:async';
 
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
@@ -283,7 +284,14 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   // ── Sürükle-bırak (game_screen.dart ile bilinçli aynı; bkz. dosya başı —
   // performans düzeltmesi de dahil, 8 Ağustos 2026, mobile/CLAUDE.md Parça 23)
   static const double _dragLift = 30;
-  static const double _dragThreshold = 6;
+  // Sürükleme eşiği — web'deki DRAG_THRESHOLD_MOUSE/DRAG_THRESHOLD_TOUCH ile
+  // BİREBİR aynı (gerekçe: `src/App.tsx`). Fare ile parmak aynı değeri
+  // kullanamaz; 6px'lik tek eşik altında hafif titreyen bir dokunuş
+  // "sürükleme" sayılıp sessizce hiçbir şey yapmıyordu.
+  static const double _dragThresholdMouse = 6; // web DRAG_THRESHOLD_MOUSE
+  static const double _dragThresholdTouch = 10; // web DRAG_THRESHOLD_TOUCH
+  static double _dragThresholdFor(PointerDeviceKind kind) =>
+      kind == PointerDeviceKind.mouse ? _dragThresholdMouse : _dragThresholdTouch;
   final GlobalKey _gridKey = GlobalKey();
   final GlobalKey _rackKey = GlobalKey();
   final GlobalKey _stackKey = GlobalKey();
@@ -1101,7 +1109,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     final d = _dragRef;
     if (d == null) return;
     if (!d.moved) {
-      if ((e.position - d.start).distance < _dragThreshold) return;
+      if ((e.position - d.start).distance < _dragThresholdFor(e.kind)) return;
       d.moved = true;
       // Eşik İLK kez aşıldı — kaynak artık "sürükleniyor" sayılır ve
       // gizlenir (game_screen.dart ile aynı düzeltme — bkz. orada).
