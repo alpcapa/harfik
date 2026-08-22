@@ -922,20 +922,46 @@ export default function App() {
     overKey: string | null;
     overValid: boolean;
   } | null>(null);
-  // Gerçek bir sürükleme bitişinin hemen ardından gelen "hayalet" click
-  // olayını yutmak için (bırakılan hücrenin altındaki onClick'i tetiklemesin).
+  // Bir pointer jestinin hemen ardından gelen "hayalet" click olayını yutmak
+  // için. İKİ ayrı durumda gerekiyor: (1) gerçek bir sürükleme bitişi —
+  // bırakılan hücrenin altındaki onClick tetiklenmesin; (2) `pointerup`
+  // sırasında bir pencere AÇILDIĞINDA — dokunmatik tarayıcılar pointer
+  // olaylarından SONRA uyumluluk (compat) mousedown/mouseup/click üretir ve
+  // bu üçü hit-test'i O ANDAKİ DOM üzerinde yapar, yani yeni render edilmiş
+  // pencerenin ÜSTÜNE düşerler (bkz. endDrag'deki joker dalı).
   const suppressClickRef = useRef(false);
 
   useEffect(() => {
     const swallow = (e: MouseEvent) => {
+      // Klavyeyle tetiklenen click'ler (Enter/Space) `detail: 0` taşır ve bir
+      // pointer jestinin parçası DEĞİLDİR — yutulacak olan hayalet her zaman
+      // pointer kaynaklı, bu yüzden klavye erişilebilirliği bozulmasın diye
+      // baştan ayrılıyor.
+      if (e.detail === 0) return;
       if (suppressClickRef.current) {
         suppressClickRef.current = false;
         e.stopPropagation();
         e.preventDefault();
       }
     };
+    // Beklenen hayalet click hiç gelmezse (dokunmatikte belirgin bir
+    // hareketten sonra tarayıcı genelde click üretmiyor) bayrak bir sonraki
+    // jestin BAŞINDA temizlenir — yoksa ilgisiz bir dokunuşu sessizce
+    // yutardı. Zamanlayıcı yerine `pointerdown`: compat olayları AYNI jestin
+    // parçası ve kendileri pointerdown ÜRETMEZ (ölçüldü), yani bu temizleme
+    // olay SIRASINA bağlı, zamanlayıcı sırasına değil. Bu Chromium'da bir
+    // `setTimeout(0)` da işe yarıyor (ölçüldü — compat click aynı görevde
+    // geliyor), ama o sıra hiçbir yerde garanti edilmiyor; hatanın kendisi
+    // zaten tarayıcılar arası olay zamanlaması farkından doğuyor.
+    const clearOnNewGesture = () => {
+      suppressClickRef.current = false;
+    };
     document.addEventListener('click', swallow, true);
-    return () => document.removeEventListener('click', swallow, true);
+    document.addEventListener('pointerdown', clearOnNewGesture, true);
+    return () => {
+      document.removeEventListener('click', swallow, true);
+      document.removeEventListener('pointerdown', clearOnNewGesture, true);
+    };
   }, []);
 
   // Bir taş sürüklemesi sürerken (raftan ya da tahtadan) dokunmatik
@@ -1332,6 +1358,15 @@ export default function App() {
         // Tahtaya konmuş bir joker: geri almak yerine harfi değiştirme
         // penceresi açılır — geri alma hâlâ sürükleyerek ya da modaldeki
         // "Geri Al" butonuyla mümkün.
+        //
+        // Pencere BU pointerup içinde açıldığından, dokunmatikte hemen
+        // ardından gelen uyumluluk (compat) click'i artık hücrenin değil
+        // YENİ AÇILAN modalın üstüne düşüyor — ölçüldü (22 Ağustos 2026):
+        // parmağın konumuna göre ya harf ızgarasındaki bir taşa basıp jokeri
+        // sessizce başka bir harfe çeviriyor (kullanıcının bildirdiği "A, C
+        // oldu") ya da zemine düşüp modalı anında kapatıyor ("pencere hiç
+        // açılmadı"). O tek click yutulmalı.
+        suppressClickRef.current = true;
         setPendingWild({ r: d.source.r, c: d.source.c, editing: true });
       } else {
         dispatch({ type: 'RECALL_CELL', r: d.source.r, c: d.source.c });
@@ -1341,13 +1376,11 @@ export default function App() {
 
     // Gerçek bir sürükleme oldu — bırakılan hücrenin altındaki "hayalet"
     // click olayını yut (yoksa yanlışlıkla o hücrenin onClick'ini tetikler).
-    // Dokunmatikte belirgin hareketten sonra tarayıcı genelde hiç click
-    // üretmez, bu yüzden bayrak bir sonraki tick'te kendini temizler —
-    // aksi halde sonraki (ilgisiz) bir dokunuşu sessizce yutabilirdi.
+    // Bu bayrak bir sonraki jestin `pointerdown`ında kendini temizliyor
+    // (bkz. yukarıdaki effect); aynı korumaya bir sürükleme sonunda AÇILAN
+    // pencere de ihtiyaç duyuyor — raftan sürüklenen bir joker de aşağıda
+    // `setPendingWild` ile pencere açıyor.
     suppressClickRef.current = true;
-    setTimeout(() => {
-      suppressClickRef.current = false;
-    }, 0);
 
     const { cellEl, rackEl } = dropTargetsAt(e.clientX, liftedPoint(e.clientY));
     if (cellEl?.dataset.cell) {

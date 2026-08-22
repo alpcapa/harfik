@@ -523,3 +523,99 @@ test('Oyun ekranında logonun altında "← Geri" var ve Setup\'a döndürür', 
   // kayıtlı tuzak, "Oyna"/"Nasıl Oynanır?" vakasının kardeşi).
   await expect(page.getByText('Oyun Tipi')).toBeVisible();
 });
+
+// 22 Ağustos 2026 — bir kullanıcı (Android) tahtaya koyduğu jokere harfini
+// değiştirmek için tekrar dokunduğunda pencerenin açılmadığını, üstelik
+// harfin kendiliğinden değiştiğini ("A, C oldu") bildirdi.
+//
+// Kök sebep ÖLÇÜLDÜ: dokunmatik tarayıcılar pointer olaylarından SONRA
+// uyumluluk (compat) mousedown/mouseup/click üretiyor ve bu üçü hit-test'i
+// O ANDAKİ DOM üzerinde yapıyor. Pencere `pointerup` içinde açıldığından
+// (`endDrag`in joker dalı) compat click artık hücrenin değil YENİ RENDER
+// EDİLMİŞ modalın üstüne düşüyor: parmağın konumuna göre ya harf
+// ızgarasındaki bir taşa basıp jokeri sessizce başka harfe çeviriyor ya da
+// zemine düşüp pencereyi anında kapatıyor.
+//
+// Bu test dokunmatik bir bağlam ister — `hasTouch` olmadan `tap()` çalışmaz
+// ve compat olay zinciri hiç doğmaz, yani hata masaüstü profilinde GÖRÜNMEZ.
+test.describe('joker düzenleme (dokunmatik)', () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+
+  // Rafında JOKER olan, yarım kalmış bir yerel oyun — üretim reducer'ıyla
+  // kuruluyor (elle yazılmış bir fikstür sessizce şemadan kopardı).
+  async function jokerliKayit(): Promise<string> {
+    const { gameReducer, createInitialState } = await import('../src/game/gameReducer');
+    let s = gameReducer(createInitialState(), {
+      type: 'START',
+      players: [
+        { name: 'Misafir', isAI: false },
+        { name: 'Yapay Zeka', isAI: true },
+      ],
+    });
+    const rack = [...s.players[0].rack];
+    rack[0] = { letter: '?', pts: 0, wild: true };
+    s = { ...s, current: 0, players: s.players.map((p, i) => (i === 0 ? { ...p, rack } : p)) };
+    return JSON.stringify({ version: 1, state: s, savedAt: Date.now() });
+  }
+
+  test('Konmuş jokere dokunmak pencereyi açar, harfi KENDİLİĞİNDEN değiştirmez', async ({
+    page,
+  }) => {
+    // Hücre keyfi seçilmedi: 390×844'te tahtanın bu hücresinin merkezi,
+    // açılan pencerenin harf ızgarasındaki bir taşın ÜSTÜNE düşüyor —
+    // hatanın en zararlı biçimi (harfin sessizce değişmesi) ancak öyle
+    // görünür. Düzen değişip örtüşme kaybolursa aşağıdaki kurulum kontrolü
+    // testi SESSİZCE geçirmek yerine düşürür.
+    const CELL = '10,5';
+
+    await donenKullanici(page);
+    await page.addInitScript((payload) => {
+      localStorage.setItem('kelimeki:game-state', payload as string);
+    }, await jokerliKayit());
+    await page.goto('/');
+
+    await page.getByRole('button', { name: /Senin Hamlen Bekleniyor/i }).click();
+    const quickstartHeading = page.getByRole('heading', { name: /hızlı başlangıç/i });
+    if (await quickstartHeading.isVisible().catch(() => false)) {
+      await page.locator('button[aria-label="Kapat"]').last().click();
+    }
+
+    const cell = page.locator(`[data-cell="${CELL}"]`);
+    const harf = async () => (await cell.innerText()).trim().split('\n')[0];
+
+    // Jokeri (rafta ★) seçip hücreye koy — harf seçme penceresi açılır.
+    await page.locator('[data-rack]').getByText('★').first().tap();
+    await cell.tap();
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    // KURULUM KONTROLÜ: hücrenin merkezi gerçekten harf ızgarasının üstünde mi?
+    const ortusuyor = await page.evaluate((c) => {
+      const el = document.querySelector(`[data-cell="${c}"]`)!.getBoundingClientRect();
+      const x = el.x + el.width / 2;
+      const y = el.y + el.height / 2;
+      const grid = document.querySelector('[role="dialog"] .grid')!;
+      return [...grid.children].some((d) => {
+        const b = d.getBoundingClientRect();
+        return x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height;
+      });
+    }, CELL);
+    expect(
+      ortusuyor,
+      `Hücre ${CELL} artık harf ızgarasıyla örtüşmüyor — başka bir hücre seç, yoksa test hatayı göremez`,
+    ).toBe(true);
+
+    await page.getByRole('dialog').getByText('A', { exact: true }).first().click();
+    await expect(page.getByRole('dialog')).toBeHidden();
+    expect(await harf()).toBe('A');
+
+    // >>> Bildirilen jest: konmuş jokere TEK DOKUNUŞ.
+    await cell.tap();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    expect(await harf()).toBe('A');
+
+    // Yutulan hayalet click, GERÇEK bir seçimi engellememeli.
+    await page.getByRole('dialog').getByText('B', { exact: true }).first().tap();
+    await expect(page.getByRole('dialog')).toBeHidden();
+    expect(await harf()).toBe('B');
+  });
+});

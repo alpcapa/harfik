@@ -286,18 +286,38 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     overKey: string | null;
     overValid: boolean;
   } | null>(null);
+  // Bir pointer jestinin hemen ardından gelen "hayalet" click olayını yutmak
+  // için — `App.tsx`'teki bileşle BİREBİR aynı (iki ekran bu deseni paylaşıyor,
+  // biri değişirse öteki de değişmeli). Gerekçe: dokunmatik tarayıcılar
+  // pointer olaylarından SONRA uyumluluk (compat) mousedown/mouseup/click
+  // üretir ve bunlar hit-test'i O ANDAKİ DOM üzerinde yapar; `pointerup`
+  // sırasında açılan bir pencere bu click'i kendi üstünde karşılar.
   const suppressClickRef = useRef(false);
 
   useEffect(() => {
     const swallow = (e: MouseEvent) => {
+      // Klavye kaynaklı click (`detail: 0`) bir pointer jestinin parçası
+      // değil — yutulmamalı (bkz. App.tsx'teki aynı not).
+      if (e.detail === 0) return;
       if (suppressClickRef.current) {
         suppressClickRef.current = false;
         e.stopPropagation();
         e.preventDefault();
       }
     };
+    // Beklenen hayalet click hiç gelmezse bayrak bir sonraki jestin
+    // `pointerdown`ında temizlenir — compat olayları pointerdown ÜRETMEZ
+    // (ölçüldü), yani temizleme olay sırasına bağlı; gerekçenin tamamı
+    // App.tsx'teki aynı notta.
+    const clearOnNewGesture = () => {
+      suppressClickRef.current = false;
+    };
     document.addEventListener('click', swallow, true);
-    return () => document.removeEventListener('click', swallow, true);
+    document.addEventListener('pointerdown', clearOnNewGesture, true);
+    return () => {
+      document.removeEventListener('click', swallow, true);
+      document.removeEventListener('pointerdown', clearOnNewGesture, true);
+    };
   }, []);
 
   useEffect(() => {
@@ -726,6 +746,11 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       if (d.source.kind === 'rack') {
         dispatch({ type: 'SELECT_TILE', index: d.source.index });
       } else if (d.source.tile.wild) {
+        // Pencere BU pointerup içinde açıldığından ardından gelen compat
+        // click'i yut — aksi halde modalın harf ızgarasına düşüp jokeri
+        // sessizce başka bir harfe çeviriyor ya da zemine düşüp pencereyi
+        // anında kapatıyor (bkz. App.tsx'teki aynı dal, 22 Ağustos 2026).
+        suppressClickRef.current = true;
         setPendingWild({ r: d.source.r, c: d.source.c, editing: true });
       } else {
         dispatch({ type: 'RECALL_CELL', r: d.source.r, c: d.source.c });
@@ -733,10 +758,9 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       return;
     }
 
+    // Sürükleme bitişinin hayalet click'i (bırakılan hücrenin onClick'i
+    // tetiklenmesin) — bayrak bir sonraki jestin pointerdown'ında temizlenir.
     suppressClickRef.current = true;
-    setTimeout(() => {
-      suppressClickRef.current = false;
-    }, 0);
 
     const { cellEl, rackEl } = dropTargetsAt(e.clientX, liftedPoint(e.clientY));
     if (cellEl?.dataset.cell) {

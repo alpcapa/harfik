@@ -1397,3 +1397,29 @@ adresi DOĞRULANDIĞINDA** gönderilir — bu ayrım testin tamamını belirliyo
 - [ ] **Ağ kesintisi kararı yakmıyor:** Uçak modunda aç, sonra bağlantıyı
       geri ver → doğru sekme yine de açılmalı (karar düşen istekte
       tüketilmez).
+
+## 16. Joker düzenleme — GERÇEK dokunmatik cihazda (22 Ağustos 2026)
+
+Bir kullanıcı (Android) tahtaya koyduğu jokere tekrar dokunduğunda pencerenin
+açılmadığını ve harfin kendiliğinden değiştiğini bildirdi (A → C). Kök sebep
+dokunmatik tarayıcıların `pointerup`tan SONRA ürettiği uyumluluk (compat)
+click'iydi; ayrıntı ve ölçümler `CLAUDE.md` → "Joker (`?`)". Otomatik
+regresyon `tests/smoke.spec.ts`te var (emüle dokunmatik) — burası **gerçek
+cihaz** teyidi, çünkü compat olay sırası tarayıcı/cihaz farkı taşıyor.
+
+Her satırı **hem Android Chrome hem iOS Safari** ile, hem de **hem yerel (YZ)
+hem Canlı** oyun ekranında koş — ikisi bu deseni paylaşıyor.
+
+- [ ] **Tahtanın ÜST satırlarındaki joker:** Jokeri koy, harfini seç, sonra
+      taşa bir kez dokun → "Jokeri Hangi Harfe Çevir?" penceresi AÇIK
+      KALMALI (açılıp anında kapanmamalı).
+- [ ] **Tahtanın ALT satırlarındaki joker (asıl vaka):** Aynısını tahtanın
+      alt üçte birindeki bir hücrede yap → harf KENDİLİĞİNDEN değişmemeli.
+- [ ] **Gerçek seçim çalışıyor:** Açılan pencereden yeni bir harf seç →
+      taş o harfe dönmeli, pencere kapanmalı (hayalet click yutulurken
+      gerçek dokunuş yutulmamalı).
+- [ ] **"Geri Al" çalışıyor:** Aynı pencereden "Geri Al" → taş rafa dönmeli.
+- [ ] **Sıradan taş değişmedi:** Joker OLMAYAN, bu turda konmuş bir taşa
+      dokun → doğrudan rafa geri alınmalı (pencere açılmamalı).
+- [ ] **Sürükleyerek koyma:** Raftaki jokeri sürükleyip bir hücreye bırak →
+      harf seçme penceresi açılmalı ve açık kalmalı.
