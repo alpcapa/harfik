@@ -232,6 +232,16 @@ async function notifyLocalGameAbandoned(gameId: string, playerCount: number): Pr
  * yalnızca anonim bir sayaç tablosuna (`game_finishes`) yazılıyor — RLS zaten
  * gerçek `auth.uid()`'i kendi tarafında doğruladığından, çağıranın önbellekte
  * tuttuğu bir id'ye güvenmek burada bir güvenlik zafiyeti yaratmıyor.
+ *
+ * `utm_source` (22 Ağustos 2026) BURADAN, çağırandan DEĞİL okunuyor —
+ * `logGameStart`'ın aksine. Sebep: bu fonksiyonun ÜÇ çağrı yeri var
+ * (`App.tsx`'te normal bitiş, misafir kuyruğu ve bulut kaydı süpürmesi) ve
+ * üçü de aynı değeri geçerdi; birini atlamak NULL yazardı, NULL ise bu
+ * sözleşmede "bu istemci damgalamıyor" (bugün: Flutter portu) demek, yani
+ * huninin "bilinmiyor" satırını sessizce şişirirdi. Değer cihazda
+ * ilk-temasta donduğundan (`captureUtmSource`) çağrı anında okumak doğru.
+ * `?ref=` hiç yoksa açıkça `'direkt'` yazılır — `logGameStart`/`signUp` ile
+ * AYNI sözleşme; üçü ayrışırsa Kaynak Hunisi'nin adımları kıyaslanamaz olur.
  */
 export async function logGameFinish(
   playerCount: number,
@@ -257,6 +267,7 @@ export async function logGameFinish(
       duration_seconds: durationSeconds,
       multi_session: multiSession,
       ended_by_surrender: endedBySurrender,
+      utm_source: getStoredUtmSource() ?? 'direkt',
     });
   if (error) {
     console.error('[Kelimeki] logGameFinish hatası:', error.message);
@@ -280,6 +291,14 @@ export async function logGameFinish(
  * "hesabınızla ASLA eşleştirilmez" diyor, `anon_id` ile `user_id`'yi aynı
  * satıra koymak tam olarak o eşleştirmeyi yapardı.
  *
+ * `isGuest` (22 Ağustos 2026) o kararı BOZMUYOR: bir bayrak hangi hesap
+ * olduğunu söylemez, dolayısıyla anon kodu bir hesapla eşleştirmeye izin
+ * vermez. Huninin "Başlayan" adımı bununla misafire iniyor — "Gelen" zaten
+ * yalnızca oturum kapalıyken yazıldığından tablo ilk kez tek bir kitleyi
+ * ölçüyor. Sunucu `is_guest is true` filtreliyor, yani NULL (damgalamayan
+ * istemci ya da eski satır) misafir SAYILMAZ; bu yüzden alan opsiyonel
+ * DEĞİL — çağıran her zaman gerçek durumu geçmek zorunda.
+ *
  * `utmSource` HİÇ NULL GÖNDERİLMEZ: `?ref=` yoksa bile açıkça `'direkt'`
  * yazılır (`signUp`'taki aynı sözleşme). Sunucuda null yalnızca
  * "damgalamayan istemci" (bugün Flutter portu) anlamına gelir ve
@@ -293,11 +312,15 @@ export async function logGameStart(
   playerCount: number,
   anonId: string | null,
   utmSource: string | null,
+  isGuest: boolean,
 ): Promise<void> {
   if (!supabase) return;
-  const { error } = await supabase
-    .from('game_starts')
-    .insert({ anon_id: anonId, player_count: playerCount, utm_source: utmSource ?? 'direkt' });
+  const { error } = await supabase.from('game_starts').insert({
+    anon_id: anonId,
+    player_count: playerCount,
+    utm_source: utmSource ?? 'direkt',
+    is_guest: isGuest,
+  });
   if (error) {
     console.error('[Kelimeki] logGameStart hatası:', error.message);
   }

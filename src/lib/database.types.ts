@@ -705,14 +705,22 @@ export interface AdminUserActivityPoint {
 
 /**
  * admin_source_funnel RPC çıktısındaki tek satır (Büyüme > Kullanıcı) —
- * kaynak başına kişi (benzersiz misafir ziyaretçi) → üye (kayıt) → oyun
- * (biten oyun) hunisi.
+ * kaynak başına gelen → üye → başlayan → biten hunisi.
  *
- * İki AYRI dimension yan yana duruyor, aralarında JOIN YOK: `visitors`
- * anonim `guest_visits.utm_source`'tan, `signups`/`games` ise kayıt anında
- * profile damgalanan `profiles.signup_utm_source`'tan geliyor (bkz.
- * `20260816…_source_funnel` migration'ı). Bu yüzden bir kaynağın yalnızca
- * ziyaretçisi ya da yalnızca üyesi olabilir.
+ * TABLO BAŞTAN SONA MİSAFİR HUNİSİ (22 Ağustos 2026): "bir kanaldan gelip
+ * HENÜZ ÜYE OLMADAN ürünü deneyen insanlar". `visitors` zaten öyleydi
+ * (ziyaret kaydı yalnızca oturum kapalıyken yazılır); `starts`/`starters`
+ * (`game_starts.is_guest is true`) ve `finishes` (`game_finishes.user_id is
+ * null`) o gün aynı kitleye indi. Üye tarafı yalnızca `member_games`/
+ * `players`ta ve o AYRI bir dimension (kayıt damgası).
+ *
+ * İki AYRI dimension yan yana duruyor, aralarında JOIN YOK: `visitors`/
+ * `starts`/`starters`/`finishes` anonim cihaz tablolarının (`guest_visits`,
+ * `game_starts`, `game_finishes`) kendi `utm_source`'undan, `signups`/
+ * `member_games`/`players` ise kayıt anında profile damgalanan
+ * `profiles.signup_utm_source`'tan geliyor (bkz. `20260816…_source_funnel`
+ * ve `20260822…_source_funnel_finishes` migration'ları). Bu yüzden bir
+ * kaynağın yalnızca ziyaretçisi ya da yalnızca üyesi olabilir.
  *
  * `'bilinmiyor'` = profil damgalanmamış (bu özellikten önceki üyeler ve
  * bugün Flutter portundan gelen kayıtlar); `'direkt'` = `?ref=` olmadan
@@ -724,15 +732,20 @@ export interface AdminSourceFunnelRow {
   source: string;
   visitors: number;
   /**
-   * Pencerede o kaynaktan BAŞLATILAN yerel (YZ) oyun ADEDİ — `game_starts`
-   * (ROADMAP #9). `games`ten (BİTMİŞ oyun) bilinçli olarak ayrı: yerel oyunun
+   * Pencerede o kaynaktan ÜYE OLMADAN başlatılan yerel (YZ) oyun ADEDİ —
+   * `game_starts`, `is_guest is true` (ROADMAP #9 + 22 Ağustos 2026 misafir
+   * indirmesi). NULL bayrak (22 Ağustos öncesi satır ya da damgalamayan
+   * istemci) misafir SAYILMAZ ve geriye dönük doldurulamaz.
+   * `games`ten (BİTMİŞ oyun) bilinçli olarak ayrı: yerel oyunun
    * medyan süresi 18,1 dakika olduğundan reklamdan gelen soğuk bir ziyaretçi
    * çoğu zaman oynar ama BİTİRMEZ; ayrıca `games` misafir oyunlarını tanım
    * gereği hiç görmez (o satır yalnızca girişli kullanıcı için açılır).
    */
   starts: number;
   /**
-   * O oyunları başlatan BENZERSİZ CİHAZ sayısı (`game_starts.anon_id`).
+   * O oyunları başlatan BENZERSİZ MİSAFİR CİHAZ sayısı
+   * (`game_starts.anon_id`, aynı `is_guest` filtresiyle — aksi halde oranın
+   * payı ile paydası farklı kitlelerden gelirdi).
    * `visitors` ile AYNI kimlikten sayıldığından `starters / visitors` bu
    * tablodaki TEK gerçek cihaz-bazlı dönüşüm oranıdır — `signups`/`players`
    * ise `profiles.signup_utm_source` üzerinden gelir, yani ayrı bir dimension.
@@ -740,13 +753,39 @@ export interface AdminSourceFunnelRow {
    */
   starters: number;
   signups: number;
-  games: number;
+  /**
+   * Pencerede o kaynaktan ÜYE OLMADAN bitirilen yerel (YZ) oyun ADEDİ —
+   * `game_finishes`, `user_id is null` (22 Ağustos 2026). Tabloda "Biten"
+   * sütunu; `starts` ("Başlayan") ile
+   * çifttir ve ikisi AYNI popülasyonu ölçer (misafir dahil, cihaz bazlı,
+   * `utm_source` damgalı), yani "başlayanların yüzde kaçı bitirdi" sorusu
+   * ancak bu ikisiyle sorulabilir.
+   *
+   * ⚠ `member_games` ile KARIŞTIRMA: o, `profiles.signup_utm_source`
+   * üzerinden gelen bambaşka bir dimension (yalnızca ÜYELERİN oyunları) ve
+   * bu kolon eklenene kadar tablodaki "Oyun" sütunu oydu — bu yüzden
+   * reklamdan gelen soğuk trafikte hep 0 görünüyordu (bkz. 22 Ağustos 2026,
+   * Instagram: 47 başlayan / 3 üye / 0 üye-oyunu).
+   *
+   * Kolon 22 Ağustos 2026'da eklendi, GERİYE DÖNÜK DOLDURULAMAZ — ondan
+   * önceki tüm bitişler `'bilinmiyor'` satırında toplanır.
+   */
+  finishes: number;
+  /**
+   * ÜYELERİN (profil damgası olanların) pencerede bitirdiği oyun ADEDİ —
+   * eski "Oyun" sütunu. Tabloda GÖSTERİLMEZ, yalnızca CSV'de. `finishes` ile
+   * çakışmıyor: bu, üyenin KAYIT damgasından gelir (hesabı takip eder), o
+   * ise cihaz etiketinden ve yalnızca misafiri sayar. Üye tarafının kaynak
+   * kırılımı bilinçli olarak yalnızca burada — cihaz etiketiyle ikinci bir
+   * üye ölçüsü üretmek aynı sorunun iki farklı yanıtını doğururdu.
+   */
+  member_games: number;
   /**
    * O kaynağın damgasını taşıyan, pencerede EN AZ BİR oyun bitirmiş BENZERSİZ
-   * kullanıcı sayısı — `games` (oyun ADEDİ) ile karıştırılmamalı. "Kişilerin
-   * yüzde kaçı oyun oynamış" sorusu ancak bununla yanıtlanabilir; oyun adedi
-   * bir kişinin 50 oyun oynamasıyla %100'ü kolayca aşardı. Tabloda yalnızca
-   * yüzde modunda (ve CSV'de) görünür.
+   * kullanıcı sayısı — `member_games` (oyun ADEDİ) ile karıştırılmamalı.
+   * "Üyelerin yüzde kaçı oyun oynamış" sorusu ancak bununla yanıtlanabilir;
+   * oyun adedi bir kişinin 50 oyun oynamasıyla %100'ü kolayca aşardı. Tabloda
+   * yalnızca CSV'de görünür.
    */
   players: number;
 }

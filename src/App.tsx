@@ -715,7 +715,9 @@ export default function App() {
   const startLocalGame = (players: PlayerSetup[]) => {
     dispatch({ type: 'START', players });
     // Fire-and-forget: telemetri hatası oyunu etkilemez.
-    void logGameStart(players.length, getOrCreateAnonId(), getStoredUtmSource());
+    // `!user` = misafir başlangıcı — huninin "Başlayan" adımı yalnızca bunları
+    // sayıyor (bkz. `logGameStart` ve `game_starts.is_guest`).
+    void logGameStart(players.length, getOrCreateAnonId(), getStoredUtmSource(), !user);
   };
 
   // Setup'taki "Devam Eden Oyun" satırına tıklanınca: kaydı reducer'a
