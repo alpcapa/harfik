@@ -232,6 +232,16 @@ async function notifyLocalGameAbandoned(gameId: string, playerCount: number): Pr
  * yalnızca anonim bir sayaç tablosuna (`game_finishes`) yazılıyor — RLS zaten
  * gerçek `auth.uid()`'i kendi tarafında doğruladığından, çağıranın önbellekte
  * tuttuğu bir id'ye güvenmek burada bir güvenlik zafiyeti yaratmıyor.
+ *
+ * `utm_source` (22 Ağustos 2026) BURADAN, çağırandan DEĞİL okunuyor —
+ * `logGameStart`'ın aksine. Sebep: bu fonksiyonun ÜÇ çağrı yeri var
+ * (`App.tsx`'te normal bitiş, misafir kuyruğu ve bulut kaydı süpürmesi) ve
+ * üçü de aynı değeri geçerdi; birini atlamak NULL yazardı, NULL ise bu
+ * sözleşmede "bu istemci damgalamıyor" (bugün: Flutter portu) demek, yani
+ * huninin "bilinmiyor" satırını sessizce şişirirdi. Değer cihazda
+ * ilk-temasta donduğundan (`captureUtmSource`) çağrı anında okumak doğru.
+ * `?ref=` hiç yoksa açıkça `'direkt'` yazılır — `logGameStart`/`signUp` ile
+ * AYNI sözleşme; üçü ayrışırsa Kaynak Hunisi'nin adımları kıyaslanamaz olur.
  */
 export async function logGameFinish(
   playerCount: number,
@@ -257,6 +267,7 @@ export async function logGameFinish(
       duration_seconds: durationSeconds,
       multi_session: multiSession,
       ended_by_surrender: endedBySurrender,
+      utm_source: getStoredUtmSource() ?? 'direkt',
     });
   if (error) {
     console.error('[Kelimeki] logGameFinish hatası:', error.message);

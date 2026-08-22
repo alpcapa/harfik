@@ -28,7 +28,7 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
       <div className="flex flex-col gap-5">
         <P>
           Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, hangi verileri topladığımızı,
-          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 21 Ağustos 2026</P>
+          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 22 Ağustos 2026</P>
 
         <Section title="1. Veri Sorumlusu">
           <P>
@@ -77,10 +77,12 @@ export function PrivacyModal({ onClose }: PrivacyModalProps) {
             </li>
             <li>
               Siteye ilk gelişinizde kullandığınız tanıtım bağlantısının kaynak etiketi (ör.
-              bir sosyal medya paylaşımı) — yalnızca hangi kanalın ne kadar üye getirdiğini
-              ölçmek için, hesabınıza kayıt anında tek seferlik yazılır ve sonradan değişmez.
-              Bağlantı yoksa "direkt" olarak kaydedilir. Bu etiket, aşağıda anlatılan anonim
-              ziyaretçi sayacındaki kayıtlarla EŞLEŞTİRİLMEZ
+              bir sosyal medya paylaşımı) — yalnızca hangi kanalın ne kadar üye getirdiğini ve o
+              kanaldan gelenlerin ne kadar oyun oynadığını ölçmek için. Hesabınıza kayıt anında
+              tek seferlik yazılır ve sonradan değişmez; ayrıca yapay zekaya karşı oynanan bir
+              oyunun başlangıç ve bitiş sayacına da eklenir. Bağlantı yoksa "direkt" olarak
+              kaydedilir. Bu etiket, aşağıda anlatılan anonim ziyaretçi sayacındaki kayıtlarla
+              EŞLEŞTİRİLMEZ
             </li>
           </ul>
         </Section>

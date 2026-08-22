@@ -230,6 +230,10 @@ abstract class GamesGateway {
 
   /// Anonim bitiş telemetrisi (`game_finishes`). Web'de olduğu gibi
   /// best-effort: hata yutulur, kuyruğa ALINMAZ.
+  ///
+  /// ⚠ `utm_source` null gidiyor — `logGameStart`ın aynı gerekçesi (portun
+  /// `?ref=` damgası henüz yok), yani satır sunucuda 'bilinmiyor' kaynağına
+  /// düşüyor. 'direkt' yazmak webin gerçek doğrudan trafiğini şişirirdi.
   Future<void> logGameFinish({
     required String? userId,
     required int playerCount,
@@ -354,6 +358,7 @@ class SupabaseGamesGateway implements GamesGateway {
       'duration_seconds': durationSeconds,
       'multi_session': multiSession,
       'ended_by_surrender': endedBySurrender,
+      'utm_source': null,
     });
   }
 

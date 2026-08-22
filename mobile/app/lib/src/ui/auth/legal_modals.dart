@@ -251,7 +251,7 @@ class PrivacyModal extends StatelessWidget {
       child: _StackedSections([
         const _P('Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, '
             'hangi verileri topladığımızı, nasıl kullandığımızı ve '
-            'haklarınızı açıklar. Son güncelleme: 21 Ağustos 2026.'),
+            'haklarınızı açıklar. Son güncelleme: 22 Ağustos 2026.'),
         const _Section('1. Veri Sorumlusu', [
           _P('Kelimeki, herhangi bir şirket ya da tüzel kişilik '
               'bulunmaksızın, bağımsız bir geliştirici tarafından bireysel '
@@ -291,10 +291,13 @@ class PrivacyModal extends StatelessWidget {
                 'sürümü gibi hiçbir ek bilgi toplanmaz',
             'Siteye ilk gelişinizde kullandığınız tanıtım bağlantısının kaynak '
                 'etiketi (ör. bir sosyal medya paylaşımı) — yalnızca hangi '
-                'kanalın ne kadar üye getirdiğini ölçmek için, hesabınıza kayıt '
-                'anında tek seferlik yazılır ve sonradan değişmez. Bağlantı '
-                'yoksa "direkt" olarak kaydedilir. Bu etiket, aşağıda anlatılan '
-                'anonim ziyaretçi sayacındaki kayıtlarla EŞLEŞTİRİLMEZ',
+                'kanalın ne kadar üye getirdiğini ve o kanaldan gelenlerin ne '
+                'kadar oyun oynadığını ölçmek için. Hesabınıza kayıt anında tek '
+                'seferlik yazılır ve sonradan değişmez; ayrıca yapay zekaya '
+                'karşı oynanan bir oyunun başlangıç ve bitiş sayacına da '
+                'eklenir. Bağlantı yoksa "direkt" olarak kaydedilir. Bu etiket, '
+                'aşağıda anlatılan anonim ziyaretçi sayacındaki kayıtlarla '
+                'EŞLEŞTİRİLMEZ',
           ]),
         ]),
         const _Section('3. Verilerin Kullanım Amacı ve Hukuki Sebebi', [

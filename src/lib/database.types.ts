@@ -705,14 +705,16 @@ export interface AdminUserActivityPoint {
 
 /**
  * admin_source_funnel RPC çıktısındaki tek satır (Büyüme > Kullanıcı) —
- * kaynak başına kişi (benzersiz misafir ziyaretçi) → üye (kayıt) → oyun
- * (biten oyun) hunisi.
+ * kaynak başına gelen (benzersiz misafir ziyaretçi) → başlayan → üye →
+ * biten hunisi.
  *
- * İki AYRI dimension yan yana duruyor, aralarında JOIN YOK: `visitors`
- * anonim `guest_visits.utm_source`'tan, `signups`/`games` ise kayıt anında
- * profile damgalanan `profiles.signup_utm_source`'tan geliyor (bkz.
- * `20260816…_source_funnel` migration'ı). Bu yüzden bir kaynağın yalnızca
- * ziyaretçisi ya da yalnızca üyesi olabilir.
+ * İki AYRI dimension yan yana duruyor, aralarında JOIN YOK: `visitors`/
+ * `starts`/`starters`/`finishes` anonim cihaz tablolarının (`guest_visits`,
+ * `game_starts`, `game_finishes`) kendi `utm_source`'undan, `signups`/
+ * `member_games`/`players` ise kayıt anında profile damgalanan
+ * `profiles.signup_utm_source`'tan geliyor (bkz. `20260816…_source_funnel`
+ * ve `20260822…_source_funnel_finishes` migration'ları). Bu yüzden bir
+ * kaynağın yalnızca ziyaretçisi ya da yalnızca üyesi olabilir.
  *
  * `'bilinmiyor'` = profil damgalanmamış (bu özellikten önceki üyeler ve
  * bugün Flutter portundan gelen kayıtlar); `'direkt'` = `?ref=` olmadan
@@ -740,13 +742,35 @@ export interface AdminSourceFunnelRow {
    */
   starters: number;
   signups: number;
-  games: number;
+  /**
+   * Pencerede o kaynaktan BİTİRİLEN yerel (YZ) oyun ADEDİ — `game_finishes`
+   * (22 Ağustos 2026). Tabloda "Biten" sütunu; `starts` ("Başlayan") ile
+   * çifttir ve ikisi AYNI popülasyonu ölçer (misafir dahil, cihaz bazlı,
+   * `utm_source` damgalı), yani "başlayanların yüzde kaçı bitirdi" sorusu
+   * ancak bu ikisiyle sorulabilir.
+   *
+   * ⚠ `member_games` ile KARIŞTIRMA: o, `profiles.signup_utm_source`
+   * üzerinden gelen bambaşka bir dimension (yalnızca ÜYELERİN oyunları) ve
+   * bu kolon eklenene kadar tablodaki "Oyun" sütunu oydu — bu yüzden
+   * reklamdan gelen soğuk trafikte hep 0 görünüyordu (bkz. 22 Ağustos 2026,
+   * Instagram: 47 başlayan / 3 üye / 0 üye-oyunu).
+   *
+   * Kolon 22 Ağustos 2026'da eklendi, GERİYE DÖNÜK DOLDURULAMAZ — ondan
+   * önceki tüm bitişler `'bilinmiyor'` satırında toplanır.
+   */
+  finishes: number;
+  /**
+   * ÜYELERİN (profil damgası olanların) pencerede bitirdiği oyun ADEDİ —
+   * eski "Oyun" sütunu. Tabloda artık GÖSTERİLMEZ, yalnızca CSV'de; yerini
+   * `finishes` aldı (yukarı bkz.).
+   */
+  member_games: number;
   /**
    * O kaynağın damgasını taşıyan, pencerede EN AZ BİR oyun bitirmiş BENZERSİZ
-   * kullanıcı sayısı — `games` (oyun ADEDİ) ile karıştırılmamalı. "Kişilerin
-   * yüzde kaçı oyun oynamış" sorusu ancak bununla yanıtlanabilir; oyun adedi
-   * bir kişinin 50 oyun oynamasıyla %100'ü kolayca aşardı. Tabloda yalnızca
-   * yüzde modunda (ve CSV'de) görünür.
+   * kullanıcı sayısı — `member_games` (oyun ADEDİ) ile karıştırılmamalı.
+   * "Üyelerin yüzde kaçı oyun oynamış" sorusu ancak bununla yanıtlanabilir;
+   * oyun adedi bir kişinin 50 oyun oynamasıyla %100'ü kolayca aşardı. Tabloda
+   * yalnızca CSV'de görünür.
    */
   players: number;
 }

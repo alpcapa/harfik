@@ -295,39 +295,46 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
     title: 'Kaynak Hunisi',
     body: (
       <>
-        <b>Kişi</b> = o kaynaktan gelen benzersiz misafir ziyaretçi; <b>Başlayan</b> = o
-        kaynaktan BAŞLATILAN yerel (YZ) oyun; <b>Üye</b> = o kaynak damgasıyla açılan hesap;
-        <b>Oyun</b> = o hesapların BİTİRDİĞİ oyun. Pencere her adıma KENDİ olay tarihinden
-        uygulanır (kohort değil): 2 ay önce üye olup bugün oynayan biri "Oyun"a girer, "Üye"ye
-        girmez.
+        <b>Gelen</b> = o kaynaktan gelen benzersiz misafir ziyaretçi; <b>Başlayan</b> = o
+        kaynaktan BAŞLATILAN yerel (YZ) oyun; <b>Üye</b> = o kaynak damgasıyla açılan hesap;{' '}
+        <b>Biten</b> = o kaynaktan BİTİRİLEN yerel (YZ) oyun. Pencere her adıma KENDİ olay
+        tarihinden uygulanır (kohort değil): 2 ay önce üye olup bugün oynayan biri "Biten"e
+        girer, "Üye"ye girmez.
         <br />
         <br />
-        <b>Başlayan ile Oyun'u karıştırma.</b> "Başlayan" oyuna OTURAN kişiyi sayar (misafir
-        dahil), "Oyun" ise yalnızca BİTİRİLMİŞ ve yalnızca GİRİŞLİ kullanıcının oyununu. Yerel
-        oyunun medyan süresi 18,1 dakika olduğundan reklamdan gelen soğuk bir ziyaretçi çoğu
-        zaman oynar ama bitirmez — "Başlayan" yüksek + "Oyun" 0 ise açılış sayfası çalışıyor,
-        oyun uzun geliyor demektir; ikisi de 0 ise sorun açılış sayfasında.
+        <b>Başlayan ile Biten AYNI popülasyonu ölçer</b> — ikisi de misafir dahil, cihaz bazlı,
+        kaynak damgalı. Bu yüzden "başlayanların kaçı bitirdi" sorusu ancak bu ikisiyle
+        sorulabilir. Yerel oyunun medyan süresi 18,1 dakika olduğundan reklamdan gelen soğuk bir
+        ziyaretçi çoğu zaman oynar ama bitirmez — "Başlayan" yüksek + "Biten" 0 ise açılış
+        sayfası çalışıyor, oyun uzun geliyor demektir; ikisi de 0 ise sorun açılış sayfasında.
         <br />
         <br />
-        Yüzde modunda <b>Başlayan</b> = başlatan benzersiz CİHAZ / kişi. <b>Kişi</b> ile aynı
-        anonim koddan sayıldığı için bu, tablodaki tek gerçek cihaz-bazlı dönüşüm oranı;
-        "Üye"/"Oyun" oranları ise ayrı bir kaynaktan (kayıt damgası) gelir. Mobil uygulama
-        henüz damgalamadığından oradan gelen başlangıçlar "bilinmiyor" satırına düşer.
+        <b>Biten, 22 Ağustos 2026'da eklendi ve geriye dönük doldurulamaz</b> — o tarihten
+        önceki tüm bitişler "bilinmiyor" satırında toplanır. Öncesinde bu sütun ("Oyun")
+        yalnızca ÜYELERİN bitirdiği oyunu sayıyordu, yani reklamdan gelen misafir trafiğinde
+        tanım gereği hep 0 görünüyordu. O eski ölçü kayıp değil, CSV'de "Üye Oyunu" ve "Oynayan
+        Üye" sütunları olarak duruyor.
+        <br />
+        <br />
+        Yüzde modunda <b>Başlayan</b> = başlatan benzersiz CİHAZ / gelen. <b>Gelen</b> ile aynı
+        anonim koddan sayıldığı için bu, tablodaki tek cihaz-bazlı dönüşüm oranı. <b>Biten</b>{' '}
+        yüzdesinin tabanı ise "Gelen" DEĞİL <b>o satırın "Başlayan"ı</b> — yani tamamlanma
+        oranı. <b>Üye</b> oranı ayrı bir kaynaktan (kayıt damgası) gelir. Mobil uygulama henüz
+        damgalamadığından oradan gelen başlangıç ve bitişler "bilinmiyor" satırına düşer.
         <br />
         <br />
         <b>Direkt</b> = web'e <code>?ref=</code> olmadan geliş. <b>Bilinmiyor</b> = kaynak damgası
-        olmayan hesaplar — damgalama 16 Ağustos 2026'da eklendi, geriye dönük doldurulamıyor ve
-        mobil uygulamadan gelen kayıtlar henüz damgalanmıyor.
+        olmayan satırlar — damgalama 16 Ağustos 2026'da eklendi, geriye dönük doldurulamıyor ve
+        mobil uygulamadan gelenler henüz damgalanmıyor.
         <br />
         <br />
-        "Kişi" ile "Üye" İKİ AYRI ölçüm (ziyaretler anonim, hesaba bağlanmaz) — bu yüzden oran
+        "Gelen" ile "Üye" İKİ AYRI ölçüm (ziyaretler anonim, hesaba bağlanmaz) — bu yüzden oran
         %100'ü aşabilir ve bu bir hata değildir.
         <br />
         <br />
-        <b>% / Sayı</b> düğmesi üç sütunu birden çevirir: <b>Kişi</b> yüzdesi o sütunun payı,{' '}
-        <b>Üye</b> ve <b>Oyun</b> yüzdeleri ise o satırın "Kişi"sine göre dönüşüm — sırasıyla
-        kaçının üye olduğu ve kaçının oyun oynadığı (oyun ADEDİ değil, oynayan KİŞİ). Kişi 0 ise
-        oran hesaplanmaz, "—" gösterilir. CSV her zaman ham sayı indirir.
+        <b>% / Sayı</b> düğmesi dört sütunu birden çevirir: <b>Gelen</b> yüzdesi o sütunun payı,
+        kalan üçü satır yönünde dönüşüm. Taban 0 ise oran hesaplanmaz, "—" gösterilir. CSV her
+        zaman ham sayı indirir.
       </>
     ),
   },
@@ -678,10 +685,14 @@ function GuestBreakdownTable<T extends { visitors: number }>({
  * turu: *"kişi %'ye dönünce toplamın yüzdesini göstersin. Ama üye yüzdesi
  * kişinin % kaçı üye olmuş, oyun yüzdesi de kişinin % kaçı oyun oynamışı
  * göstersin."*):
- *   - **Kişi**     = sütun payı (o kaynak tüm ziyaretçilerin yüzde kaçı),
- *   - **Başlayan** = `başlatan cihaz / kişi` — yüzde kaçı oyuna oturdu,
- *   - **Üye**      = `üye / kişi` — o kaynaktan gelenlerin yüzde kaçı üye oldu,
- *   - **Oyun**     = `oynayan kişi / kişi` — yüzde kaçı oyun BİTİRDİ.
+ *   - **Gelen**    = sütun payı (o kaynak tüm ziyaretçilerin yüzde kaçı),
+ *   - **Başlayan** = `başlatan cihaz / gelen` — yüzde kaçı oyuna oturdu,
+ *   - **Üye**      = `üye / gelen` — o kaynaktan gelenlerin yüzde kaçı üye oldu,
+ *   - **Biten**    = `biten / BAŞLAYAN` — başlayanların yüzde kaçı bitirdi.
+ *
+ * Son satırın tabanı bilinçli olarak "gelen" DEĞİL: "Biten" ile "Başlayan"
+ * AYNI dimension'dan (anonim cihaz tabloları, misafir dahil) geliyor, yani
+ * aralarındaki oran gerçek bir tamamlanma oranı.
  *
  * "Başlayan" 21 Ağustos 2026'da eklendi (ROADMAP #9) ve huninin KÖR olan
  * adımını kapatıyor: ilk Instagram kampanyasında 80 kişi / 0 üye / 0 oyun
@@ -691,23 +702,28 @@ function GuestBreakdownTable<T extends { visitors: number }>({
  * ziyaretle AYNI anonim koddan alıyor, dolayısıyla `başlatan / kişi` bu
  * tablodaki tek gerçek cihaz-bazlı dönüşüm oranı.
  *
- * "Oyun" sütunu sayı modunda oyun ADEDİNİ, yüzde modunda OYNAYAN KİŞİ oranını
- * gösterir — taban bilinçli olarak farklı, çünkü "kişilerin yüzde kaçı
- * oynadı" sorusu oyun adediyle yanıtlanamaz (bir kişi 50 oyun oynayabilir,
- * `oyun / kişi` %100'ü kolayca aşar ve başka bir şey ölçer). Bu yüzden RPC
- * ayrı bir `players` (benzersiz oynayan) ölçüsü döndürüyor.
+ * "Biten" sütunu 22 Ağustos 2026'da ESKİ "Oyun" sütununun YERİNE geldi ve bu
+ * bir yeniden adlandırma DEĞİL, ölçünün kendisinin değişmesi. Eski sütun
+ * `games` üzerinden yalnızca ÜYELERİN bitirdiği oyunu sayıyordu — yani
+ * reklamdan gelen misafir trafiğinde TANIM GEREĞİ hep 0 görünüyordu (ölçüldü,
+ * Instagram: 47 başlayan / 3 üye / 0 üye-oyunu) ve huninin son adımı gerçekte
+ * hâlâ kördü: "Başlayan" ile karşılaştırılabilir bir bitiş ölçüsü yoktu.
+ * `game_finishes` misafiri de sayıyor ve 22 Ağustos'tan beri kendi
+ * `utm_source`'unu taşıyor. Eski ölçü SİLİNMEDİ — RPC hâlâ `member_games`
+ * (üyelerin oyun adedi) ve `players` (benzersiz oynayan üye) döndürüyor,
+ * ikisi de CSV'de duruyor, yalnızca tabloda gösterilmiyor.
  *
- * SINIR: `üye/kişi` ve `oynayan/kişi` yalnızca İKİ UCU DA damgalanmış bir
- * kaynakta gerçek bir dönüşüm oranıdır — `?ref=instagram` ile gelen ziyaretçi
- * de oradan üye olan hesap da aynı etiketi taşıdığı için anlamlı. `kişi = 0`
- * olan satırlarda (ör. damgalama öncesi üyelerin toplandığı "bilinmiyor")
- * oran HİÇ hesaplanmaz, "—" gösterilir; sıfıra bölmek yerine "bilinmiyor"
- * demek doğrusu. Oran %100'ü aşabilir (iki ölçü ayrı dimension) ve bu bir
- * hata değil — ekrandaki açıklama satırı bunu da söylüyor.
+ * SINIR: `üye/gelen` yalnızca İKİ UCU DA damgalanmış bir kaynakta gerçek bir
+ * dönüşüm oranıdır — `?ref=instagram` ile gelen ziyaretçi de oradan üye olan
+ * hesap da aynı etiketi taşıdığı için anlamlı. Taban 0 olan satırlarda (ör.
+ * damgalama öncesi üyelerin toplandığı "bilinmiyor") oran HİÇ hesaplanmaz,
+ * "—" gösterilir; sıfıra bölmek yerine "bilinmiyor" demek doğrusu. Oran
+ * %100'ü aşabilir (iki ölçü ayrı dimension) ve bu bir hata değil — ekrandaki
+ * `?` açıklaması bunu da söylüyor.
  *
  * CSV her zaman HAM SAYI verir (düğmeden bağımsız) — retention tablosundaki
  * aynı karar: yuvarlama kaybı olmaz, yüzde zaten yeniden hesaplanabilir.
- * `players` tabloda yalnızca yüzdenin içinde görünür, CSV'de ayrı bir sütun.
+ * `starters`/`member_games`/`players` tabloda hiç ayrı sütun değil, CSV'de var.
  */
 function SourceFunnelTable({
   rows,
@@ -734,16 +750,26 @@ function SourceFunnelTable({
       starts: acc.starts + row.starts,
       starters: acc.starters + row.starters,
       signups: acc.signups + row.signups,
-      games: acc.games + row.games,
+      finishes: acc.finishes + row.finishes,
+      member_games: acc.member_games + row.member_games,
       players: acc.players + row.players,
     }),
-    { visitors: 0, starts: 0, starters: 0, signups: 0, games: 0, players: 0 },
+    { visitors: 0, starts: 0, starters: 0, signups: 0, finishes: 0, member_games: 0, players: 0 },
   );
 
   function handleExportCsv() {
     downloadCsv(
       csvFilename('kelimeki-kaynak-funnel'),
-      ['Kaynak', 'Kişi', 'Başlayan Oyun', 'Başlatan Kişi', 'Üye', 'Oyun', 'Oynayan Kişi'],
+      [
+        'Kaynak',
+        'Gelen',
+        'Başlayan Oyun',
+        'Başlatan Cihaz',
+        'Üye',
+        'Biten Oyun',
+        'Üye Oyunu',
+        'Oynayan Üye',
+      ],
       [
         ...rows!.map((row) => [
           row.source,
@@ -751,7 +777,8 @@ function SourceFunnelTable({
           row.starts,
           row.starters,
           row.signups,
-          row.games,
+          row.finishes,
+          row.member_games,
           row.players,
         ]),
         [
@@ -760,7 +787,8 @@ function SourceFunnelTable({
           total.starts,
           total.starters,
           total.signups,
-          total.games,
+          total.finishes,
+          total.member_games,
           total.players,
         ],
       ],
@@ -770,21 +798,32 @@ function SourceFunnelTable({
   const pct = (value: number, base: number) =>
     `${((value / base) * 100).toFixed(1)}%`;
 
-  /** "Kişi" sütunu — yüzdesi SÜTUN payı. */
+  /** "Gelen" sütunu — yüzdesi SÜTUN payı. */
   function visitorCell(value: number): string {
     if (!asPercent) return String(value);
     return total.visitors > 0 ? pct(value, total.visitors) : '0.0%';
   }
 
   /**
-   * "Üye"/"Oyun" sütunları — yüzdeleri SATIR YÖNÜNDE dönüşüm oranı, tabanı o
-   * satırın "Kişi"si. Taban 0 ise oran yok ("—"): sıfıra bölmek yerine
-   * bilinmediğini söylemek doğrusu (bugün "bilinmiyor" satırı tam bu durumda).
+   * "Başlayan"/"Üye"/"Biten" sütunları — yüzdeleri SATIR YÖNÜNDE dönüşüm
+   * oranı. Taban 0 ise oran yok ("—"): sıfıra bölmek yerine bilinmediğini
+   * söylemek doğrusu (bugün "bilinmiyor" satırı tam bu durumda).
+   *
+   * ⚠ TABAN SÜTUNA GÖRE DEĞİŞİR ve bu bilinçli: "Başlayan"/"Üye"nin tabanı o
+   * satırın "Gelen"i, "Biten"in tabanı ise o satırın "Başlayan"ı — çünkü
+   * "Biten"in sorduğu soru "gelenlerin kaçı bitirdi" değil "başlayanların kaçı
+   * bitirdi" (tamamlanma oranı). İkisi de AYNI dimension'dan (anonim cihaz
+   * tabloları) geldiğinden bu oran gerçek; `member_games`/`players` ise
+   * profil damgasından gelir, o yüzden artık tabloda hiç gösterilmiyor.
+   *
+   * [percentOf] ayrı bir parametre çünkü bazı sütunlarda gösterilen SAYI ile
+   * oranın PAYI farklı: "Başlayan" oyun ADEDİNİ gösterir ama oranı benzersiz
+   * CİHAZ üzerinden hesaplanır (bir kişi 50 oyun açarsa oran %100'ü aşardı).
    */
-  function conversionCell(value: number, rowVisitors: number, percentOf: number): string {
+  function conversionCell(value: number, base: number, percentOf: number): string {
     if (!asPercent) return String(value);
-    if (rowVisitors <= 0) return '—';
-    return pct(percentOf, rowVisitors);
+    if (base <= 0) return '—';
+    return pct(percentOf, base);
   }
 
   return (
@@ -815,12 +854,12 @@ function SourceFunnelTable({
           <thead>
             <tr className="text-left text-muted border-b border-border">
               <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px]">Kaynak</th>
-              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Kişi</th>
+              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Gelen</th>
               <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">
                 Başlayan
               </th>
               <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Üye</th>
-              <th className="py-1.5 font-bold uppercase tracking-[1px] text-center">Oyun</th>
+              <th className="py-1.5 font-bold uppercase tracking-[1px] text-center">Biten</th>
             </tr>
           </thead>
           <tbody>
@@ -837,7 +876,7 @@ function SourceFunnelTable({
                   {conversionCell(row.signups, row.visitors, row.signups)}
                 </td>
                 <td className="py-1.5 text-muted whitespace-nowrap text-center">
-                  {conversionCell(row.games, row.visitors, row.players)}
+                  {conversionCell(row.finishes, row.starts, row.finishes)}
                 </td>
               </tr>
             ))}
@@ -853,7 +892,7 @@ function SourceFunnelTable({
                 {conversionCell(total.signups, total.visitors, total.signups)}
               </td>
               <td className="py-1.5 text-text font-bold whitespace-nowrap text-center">
-                {conversionCell(total.games, total.visitors, total.players)}
+                {conversionCell(total.finishes, total.starts, total.finishes)}
               </td>
             </tr>
           </tbody>
