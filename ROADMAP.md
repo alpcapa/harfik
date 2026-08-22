@@ -92,10 +92,18 @@ Dördü de **ölçülmüş** eksikler, tahmin değil:
 
 | | Eksik | Kanıt | Yapılacak |
 |---|---|---|---|
-| 0.A1 | Release derlemesi **DEBUG anahtarıyla** imzalanıyor | `mobile/app/android/app/build.gradle.kts:31` → `signingConfig = signingConfigs.getByName("debug")` + `// TODO` | Upload keystore + `key.properties` + `signingConfigs.release` |
-| 0.A2 | CI yalnızca `.apk` üretiyor | `.github/workflows/mobile-build.yml:157` → `flutter build apk --release` | Play **AAB** ister: `flutter build appbundle --release`, aynı `--dart-define`'larla |
+| 0.A1 | ✅ **BİTTİ** (22 Ağu 2026) — release DEBUG anahtarıyla imzalanıyordu | `build.gradle.kts:31` → `signingConfigs.getByName("debug")` + `// TODO` | Upload keystore üretildi (RSA 4096, 2054'e kadar); `key.properties` varsa release, yoksa **bilerek** debug'a düşüyor |
+| 0.A2 | ✅ **BİTTİ** (22 Ağu 2026) — CI yalnızca `.apk` üretiyordu | `mobile-build.yml:157` → `flutter build apk --release` | `android` işine `.aab` adımı eklendi; secret yoksa sessizce atlar, varsa paketin imzasını **geri okuyup** doğrular |
 | 0.A3 | Sürüm hâlâ `0.1.0+1` | `mobile/app/pubspec.yaml` + `mobile/app/lib/src/config/env.dart` (`appVersion`) | İkisi **BİRLİKTE** artar (sürüm disiplini); `versionCode` her yüklemede artmak ZORUNDA |
 | 0.A4 | Mağaza vitrini yok | `marketing/` altında yalnız reklam görselleri var | Aşağıdaki varlık listesi |
+
+**0.A1 + 0.A2 BİTTİ — kalan iş KULLANICIDA (22 Ağustos 2026):**
+GitHub → Settings → Secrets → Actions'a İKİ secret elle girilmeli:
+`ANDROID_KEYSTORE_BASE64` ve `ANDROID_KEYSTORE_PASSWORD` (dosyalar +
+şifre kullanıcıya doğrudan teslim edildi). **Secret'lar girilene kadar CI
+`.aab` ÜRETMEZ** — adım kendini atlar, iş kırmızıya dönmez. Ayrıntı,
+ölçümler ve negatif eşler: `mobile/CLAUDE.md` → "Play Store İmzalama ve
+`.aab`". Sıradaki: **0.A3** (sürüm) → **0.A4** (vitrin) → yükleme.
 
 **Tuzaklar — 0.A1:**
 - **Keystore repoya GİRMEZ.** `*.jks`/`key.properties` gitignore'a; CI'a

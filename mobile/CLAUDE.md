@@ -1066,6 +1066,83 @@ tıklayıp Start'a basma) doğrulaması kullanıcının kendi cihazından
 bekleniyor — bu ortamdan `appetize.io` erişilemediğinden ben açıp
 göremiyorum.
 
+## Play Store İmzalama ve `.aab` (22 Ağustos 2026)
+
+Google Play hesabı açıldıktan sonra ölçülen ilk iki somut engel kapatıldı
+(`ROADMAP.md` → FAZ B, 0.A1 + 0.A2). Öncesinde **uygulama bugün YÜKLENEMEZDİ**
+ve bu tahmin değil ölçümdü: `android/app/build.gradle.kts`'in release'i
+Flutter şablonundan kalma `TODO` yorumuyla **debug anahtarına** düşüyordu ve
+CI yalnızca `.apk` üretiyordu — Play `.apk` KABUL ETMİYOR.
+
+### İmzalama — `key.properties` VARSA release, YOKSA debug
+
+`build.gradle.kts` `rootProject.file("key.properties")`ı okuyor; dosya yoksa
+release **bilerek** debug anahtarına düşüyor. Bu bir gevşeklik değil: aksi
+halde anahtarı olmayan herkeste (yerelde `flutter run --release`, CI'ın
+Appetize test `.apk`'sı) derleme kırılırdı. **Bedeli:** debug anahtarıyla
+imzalanmış bir `.aab` SESSİZCE üretilebilir ve ancak Play yüklemesinde
+reddedilir — o sessizliği kapatan şey aşağıdaki imza kontrolü.
+
+`key.properties` ve `*.jks` **REPOYA GİRMEZ**; `android/.gitignore` (Flutter
+şablonundan) üçünü de (`key.properties`, `**/*.jks`, `**/*.keystore`) zaten
+tutuyor. Şablon: `android/key.properties.example`. **`storeFile` MUTLAK yol
+olmalı** — göreli verilirse `rootProject`e (yani `android/`) değil `app/`
+modülüne göre çözülür.
+
+### CI adımı — secret yoksa sessizce atlar, varsa İMZAYI GERİ OKUR
+
+`mobile-build.yml`'in `android` işine `.apk` artefaktından hemen sonra
+eklendi. Üç karar kayda değer:
+
+- **`secrets` bağlamı adım düzeyinde `if:`te KULLANILAMAZ** (GitHub'ın bağlam
+  tablosunda `steps.<id>.if` için `secrets` yok). Kontrol bu yüzden `run:`
+  script'inin İÇİNDE, `env:` ile enjekte edilip; sonuç `$GITHUB_OUTPUT`'a
+  `built=true/false` olarak yazılıp artefakt adımına taşınıyor. Bu, deponun
+  KENDİ kalıbı — Appetize adımı da token'ı script içinde kontrol edip
+  `exit 0` yapıyor.
+- **`--build-number=${{ github.run_number }}`**: Play aynı `versionCode`'u
+  İKİ KEZ kabul etmiyor, `pubspec.yaml`'daki `+N` ise her derlemede aynı
+  kalırdı.
+- **İmza doğrulaması SABİT parmak izi YAZMIYOR:** paketin sertifikası
+  (`keytool -printcert -jarfile`) az önce çözülen keystore'unkiyle
+  (`keytool -list -v`) karşılaştırılıyor. Anahtar değişirse kontrol
+  kendiliğinden takip eder; debug anahtarıyla imzalanmış bir paket geçemez.
+
+**ÖLÇÜLDÜ (bu ortamda, gerçek `keytool`/`jarsigner` ile):** aynı anahtarla
+imzalanan bir JAR'da iki `keytool` çıktısının SHA-256'sı BİREBİR aynı çıkıyor
+(pozitif eş). **Negatif eş iki ayrı yönden kanıtlandı:** başka bir anahtarla
+(debug'ı taklit eden `CN=Android Debug`) imzalanan pakette parmak izleri
+ayrışıyor ve kontrol düşüyor; hiç imzalanmamış pakette `-printcert` boş
+dönüyor ve `-z "$ACTUAL"` dalı düşürüyor. Whitespace `tr -d '[:space:]'` ile
+siliniyor — `-list -v` ile `-printcert`in girinti karakteri farklı olabilir.
+Base64 gidiş-dönüşü de ölçüldü (`base64 -w0` → `tr -d` → `base64 -d`, dosya
+birebir aynı).
+
+**Doğrulama sınırı — dürüstçe:** bu ortamda Flutter SDK YOK, yani
+`flutter build appbundle` hiç koşturulamadı; YAML'ın geçerliliği (`yaml.safe_load`)
+ve üretilen KABUK SATIRININ geçerliliği (`bash -n`) ayrı ayrı ölçüldü, ama
+Gradle'ın `key.properties`i gerçekten okuduğunun tek kanıtı CI olacak.
+İlk gerçek koşuda bakılacak satır: adımın bastığı `beklenen:` / `paket   :`
+çifti.
+
+### Anahtar — üretildi, repoda DEĞİL
+
+RSA 4096, alias `upload`, geçerlilik **07.01.2054** (Play'in "2033'ten sonra"
+şartı sağlanıyor), SHA-256
+`B6:CD:FB:A9:81:A6:6B:E3:6B:60:A0:67:15:F4:9E:FF:E6:26:B1:5A:E0:CE:D5:55:00:5B:B0:95:0E:89:A1:52`.
+Dosya + base64 + şifre kullanıcıya doğrudan teslim edildi; GitHub secret'larını
+(`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`) **kullanıcı elle
+girmek zorunda** — bu ortamdan GitHub ayarlarına yazma yolu yok.
+
+**İKİ TUZAK, ikisi de geri dönüşü olmayan sınıftan:**
+1. **Play App Signing'e KAYDOL** (ilk yüklemede, varsayılan açık). Kaydolmazsan
+   bu `.jks`'i kaybettiğin an uygulama SONSUZA DEK güncellenemez.
+2. **`assetlinks.json`'a bu SHA-256 YAZILMAZ.** Play App Signing açıkken
+   kullanıcıya giden paketi GOOGLE kendi anahtarıyla imzalıyor; deep link
+   doğrulaması Play Console → App integrity'deki "app signing key"
+   parmak izini ister. Yanlışını yazmak hata VERMEZ — linkler sessizce
+   tarayıcıda açılır (bkz. `ROADMAP.md` 1. madde).
+
 ## Karşılama Katmanı (web) — bilinçli ayrışma (18 Ağustos 2026, 19'unda güncellendi)
 
 Web'e 18 Ağustos 2026'da girişsiz ilk ziyaretçiye gösterilen bir karşılama/

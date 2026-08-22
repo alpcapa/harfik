@@ -161,6 +161,14 @@ ilgilendiren iki kanca:
   (`mobile/app/lib/src/ui/game/logo_mark_data.dart`,
   `mobile/app/lib/src/ui/score/klig_mark_data.dart`) üretir — logo/marka
   değişirse tek komut yeter, elle senkron YOK.
+- **Play Store imzalama `mobile/` DIŞINDA da dosya değiştirdi (22 Ağustos
+  2026):** `.github/workflows/mobile-build.yml`'in `android` işi artık `.apk`
+  yanında imzalı bir `.aab` da üretiyor (Play `.apk` kabul etmiyor). Adım
+  `ANDROID_KEYSTORE_BASE64` secret'ı yokken sessizce atlanıyor, yani bu
+  değişiklik mevcut Appetize/web akışlarını HİÇ etkilemiyor. Karar/ölçüm/
+  tuzaklar (özellikle: keystore repoya girmez, Play App Signing'e kaydolma
+  zorunluluğu ve `assetlinks.json`'a HANGİ parmak izinin gireceği):
+  `mobile/CLAUDE.md` → "Play Store İmzalama ve `.aab`".
 - **`src/utils/random.ts`'teki `setRandomSource()`** yalnızca bu fixture
   üreticisi için var — üretim kodu hiç çağırmaz, davranış değişmedi
   (varsayılan `Math.random`).

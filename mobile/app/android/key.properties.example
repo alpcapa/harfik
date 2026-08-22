@@ -1,0 +1,12 @@
+# Şablon — GERÇEK dosya (`key.properties`) repoya GİRMEZ, .gitignore'da.
+#
+# Yerelde imzalı bir release üretmek için bu dosyayı `key.properties` adıyla
+# kopyalayıp doldur; CI bunu ANDROID_KEYSTORE_BASE64 +
+# ANDROID_KEYSTORE_PASSWORD secret'larından kendisi üretiyor.
+#
+# storeFile MUTLAK yol olmalı (ya da bu dosyanın DEĞİL, `app/` modülünün
+# konumuna göre göreli) — gradle onu app modülünden çözüyor.
+storeFile=/mutlak/yol/kelimeki-upload.jks
+storePassword=***
+keyAlias=upload
+keyPassword=***
