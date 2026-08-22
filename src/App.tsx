@@ -40,6 +40,7 @@ import {
 } from './utils/cloudSaveMirror';
 import { buildGameRecord } from './utils/gameRecord';
 import { markQuickStartSeen } from './utils/onboarding';
+import { swallowNextClick } from './utils/ghostClick';
 import { getFormedWords, getFullWordAt, key } from './utils/board';
 import type { GameState, Tile as TileModel } from './game/types';
 import { Tile } from './components/Tile';
@@ -78,8 +79,19 @@ import { useAppIconBadge } from './hooks/useAppIconBadge';
 
 const AI_THINK_MS = 1100;
 // Sürüklemenin "tıklama" değil gerçek bir sürükleme sayılması için gereken
-// minimum işaretçi hareketi (piksel).
-const DRAG_THRESHOLD = 6;
+// minimum işaretçi hareketi (piksel). FARE ile PARMAK aynı değeri
+// KULLANAMAZ: 22 Ağustos 2026'da ölçüldü — 6px'lik tek eşik altında, parmak
+// 6px oynayan bir dokunuş "sürükleme" sayılıp aynı hücrede bittiğinden
+// HİÇBİR ŞEY yapmıyordu (raf taşı seçilmiyor, konmuş taş geri alınmıyor,
+// joker penceresi açılmıyor) — kullanıcıya "dokunuşum işlemedi" olarak
+// görünen sessiz bir kayıp. Platform normları 6'nın üstünde: Android/Chrome
+// touch slop 8px, iOS ~10pt, Flutter kTouchSlop 18. Fare tarafı bilerek
+// DEĞİŞMEDİ (imleç titremez, 6px orada doğru his).
+const DRAG_THRESHOLD_MOUSE = 6;
+const DRAG_THRESHOLD_TOUCH = 10;
+/** Jestin kaynağına göre eşik — fare 6, parmak/kalem 10. */
+const dragThresholdFor = (pointerType: string) =>
+  pointerType === 'mouse' ? DRAG_THRESHOLD_MOUSE : DRAG_THRESHOLD_TOUCH;
 // Sürüklenen taşın görseli, parmağın altında kalıp görüşü engellememesi için
 // işaretçinin bu kadar üzerinde çizilir.
 const DRAG_LIFT = 30;
@@ -922,21 +934,6 @@ export default function App() {
     overKey: string | null;
     overValid: boolean;
   } | null>(null);
-  // Gerçek bir sürükleme bitişinin hemen ardından gelen "hayalet" click
-  // olayını yutmak için (bırakılan hücrenin altındaki onClick'i tetiklemesin).
-  const suppressClickRef = useRef(false);
-
-  useEffect(() => {
-    const swallow = (e: MouseEvent) => {
-      if (suppressClickRef.current) {
-        suppressClickRef.current = false;
-        e.stopPropagation();
-        e.preventDefault();
-      }
-    };
-    document.addEventListener('click', swallow, true);
-    return () => document.removeEventListener('click', swallow, true);
-  }, []);
 
   // Bir taş sürüklemesi sürerken (raftan ya da tahtadan) dokunmatik
   // tarayıcının sayfayı kaydırmasını engelle. `touch-action: none` çoğu
@@ -1298,7 +1295,7 @@ export default function App() {
     if (!d) return;
     if (!d.moved) {
       const dist = Math.hypot(e.clientX - d.startX, e.clientY - d.startY);
-      if (dist < DRAG_THRESHOLD) return;
+      if (dist < dragThresholdFor(e.pointerType)) return;
       d.moved = true;
     }
     const liftedY = liftedPoint(e.clientY);
@@ -1332,6 +1329,15 @@ export default function App() {
         // Tahtaya konmuş bir joker: geri almak yerine harfi değiştirme
         // penceresi açılır — geri alma hâlâ sürükleyerek ya da modaldeki
         // "Geri Al" butonuyla mümkün.
+        //
+        // Pencere BU pointerup içinde açıldığından, dokunmatikte hemen
+        // ardından gelen uyumluluk (compat) click'i artık hücrenin değil
+        // YENİ AÇILAN modalın üstüne düşüyor — ölçüldü (22 Ağustos 2026):
+        // parmağın konumuna göre ya harf ızgarasındaki bir taşa basıp jokeri
+        // sessizce başka bir harfe çeviriyor (kullanıcının bildirdiği "A, C
+        // oldu") ya da zemine düşüp modalı anında kapatıyor ("pencere hiç
+        // açılmadı"). O tek click yutulmalı.
+        swallowNextClick();
         setPendingWild({ r: d.source.r, c: d.source.c, editing: true });
       } else {
         dispatch({ type: 'RECALL_CELL', r: d.source.r, c: d.source.c });
@@ -1341,13 +1347,9 @@ export default function App() {
 
     // Gerçek bir sürükleme oldu — bırakılan hücrenin altındaki "hayalet"
     // click olayını yut (yoksa yanlışlıkla o hücrenin onClick'ini tetikler).
-    // Dokunmatikte belirgin hareketten sonra tarayıcı genelde hiç click
-    // üretmez, bu yüzden bayrak bir sonraki tick'te kendini temizler —
-    // aksi halde sonraki (ilgisiz) bir dokunuşu sessizce yutabilirdi.
-    suppressClickRef.current = true;
-    setTimeout(() => {
-      suppressClickRef.current = false;
-    }, 0);
+    // Aynı koruma sürükleme sonunda AÇILAN pencere için de gerekiyor:
+    // raftan sürüklenen bir joker aşağıda `setPendingWild` ile pencere açıyor.
+    swallowNextClick();
 
     const { cellEl, rackEl } = dropTargetsAt(e.clientX, liftedPoint(e.clientY));
     if (cellEl?.dataset.cell) {

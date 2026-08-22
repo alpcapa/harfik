@@ -2178,3 +2178,21 @@ gerçek bir Android cihaza kurmak istersen APK'yı oradan da indirebilirsin.
 
 Üyelik yalnızca gerçek cihaza kurulum (TestFlight) ve App Store yayını
 için gerekli.
+
+## 14. Sürükleme eşiği — titreşimli dokunuş (22 Ağustos 2026, Parça 129)
+
+Eşik pointer türüne bağlandı (fare 6, parmak 10 logical px); öncesinde tek
+sayı 6'ydı ve hafif titreyen bir dokunuş sessizce hiçbir şey yapmıyordu.
+Web tarafında ölçüldü, portta ölçüm KOŞULAMADI (Flutter SDK yok) — gerçek
+cihazda teyit gerekiyor. Hem yerel (YZ) hem Canlı oyun ekranında koş.
+
+- [ ] **Titreşimli dokunuş işliyor:** Parmağını tam sabit tutmadan raftaki
+      bir taşa dokun → seçilmeli.
+- [ ] **Konmuş taş geri alınıyor:** Tahtaya koyduğun bir taşa aynı şekilde
+      (hafif kayarak) dokun → rafa dönmeli.
+- [ ] **Joker seçici açılıyor:** Konmuş bir jokere hafif kayarak dokun →
+      harf seçici açılmalı.
+- [ ] **Gerçek sürükleme bozulmadı:** Raftan tahtaya sürükle, tahtada taşı
+      başka hücreye taşı, tahtadan rafa sürükleyerek geri al.
+- [ ] **Kaydırma çakışmıyor:** Tahtayı/sayfayı parmakla kaydırmaya çalış →
+      taş sürüklenmeye başlamamalı.

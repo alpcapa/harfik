@@ -6246,6 +6246,44 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ayraç dengesi, (c) her çapanın `grep`le kaynağında teyidi. Dart
        yarısının kanıtı yine CI.
 
+   - ✅ **Parça 129 — sürükleme eşiği: fare ile parmak aynı sayıyı
+     kullanamaz (22 Ağustos 2026):** Web'de bir kullanıcının joker raporu
+     üzerine yapılan jest denetimi ikinci bir hata buldu ve o hata PORTTA DA
+     vardı — `_dragThreshold = 6` satırının yorumu zaten "web
+     DRAG_THRESHOLD" diyordu, yani bilinçli bir kopyaydı.
+     - **Sorun:** parmak 6 logical px oynayan bir dokunuş "sürükleme"
+       sayılıyor, sürükleme de aynı hücrede bittiğinden **hiçbir şey**
+       yapmıyordu — raf taşı seçilmiyor, konmuş taş geri alınmıyor, joker
+       seçici açılmıyordu. Yanlış bir şey değil, *hiçbir şey*: kullanıcıya
+       "dokunuşum işlemedi" olarak görünen sessiz bir kayıp.
+     - **Ölçüm web tarafında yapıldı** (Chromium, `hasTouch`+`isMobile`,
+       390×844, CDP ham dokunuş olayları): 0–4 px titreşimde üç jest de
+       çalışıyor, **6 px ve üstünde üçü de ölüyor**. Flutter SDK bu ortamda
+       olmadığından portta aynı ölçüm KOŞULAMADI — ama kod yolu birebir
+       aynı (`_moveTileDrag`in `d.moved` geçişi) ve `kTouchSlop`un Flutter'da
+       **18** olması, 6'nın platform normunun ne kadar altında kaldığının
+       bağımsız kanıtı (Android touch slop 8, iOS ~10).
+     - **Düzeltme:** eşik `PointerDeviceKind`e bağlandı —
+       `_dragThresholdMouse = 6`, `_dragThresholdTouch = 10`; `_moveTileDrag`
+       artık `_dragThresholdFor(e.kind)` kullanıyor. İKİ oyun ekranı da
+       (`game_screen.dart`, `online_game_screen.dart`) — biri atlanırsa yerel
+       ve Canlı oyun kendi aralarında ayrışırdı.
+     - **`PointerDeviceKind` için açık import ŞART** (`package:flutter/gestures.dart`
+       show PointerDeviceKind): `material.dart` üzerinden gelmesine
+       güvenilmedi, `intro_screen.dart`taki mevcut kullanım da aynı açık
+       importu taşıyor.
+     - **TESTLİ:** `layout_parity_test.dart`e yeni bir test — DÖRT dosyanın
+       (iki web + iki Dart) hem SAYILARINI hem de eşiğin pointer türüne bağlı
+       SEÇİLDİĞİNİ doğruluyor. İkincisi olmadan test yarım kalırdı: sabit
+       doğru olup kullanılmıyorsa değeri yok.
+     - **Regex'ler V8'de doğrulandı** (dosyanın kendi uyarısı: prototipi
+       Python'da değil node'da koştur) — 12/12 eşleşti ve beklenen değeri
+       döndürdü. Dart yarısının kanıtı yine CI.
+     - **Bu turun ÖTEKİ hatası (hayalet click) portu ETKİLEMEDİ ve `mobile/`
+       altında o yüzden hiçbir değişiklik gerekmedi** — Flutter'da dokunuş
+       kendi hit-test'inden geçiyor, uyumluluk (compat) mouse olayı diye bir
+       şey yok. Ayrıntı: kök `CLAUDE.md` → "Jest Sınıfı Denetimi".
+
    - ✅ **Parça 128 — kalan dört korumasız çift de kilitlendi (21 Ağustos
      2026):** Parça 127 on çifti kapatmış, dördünü "sayı çifti değil, yapı/
      algoritma kopyası" diye dışarıda bırakmıştı. Kullanıcı *"kalan dört
