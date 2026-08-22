@@ -295,46 +295,53 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
     title: 'Kaynak Hunisi',
     body: (
       <>
-        <b>Gelen</b> = o kaynaktan gelen benzersiz misafir ziyaretçi; <b>Üye</b> = o kaynak
-        damgasıyla açılan hesap; <b>Başlayan</b> = o kaynaktan BAŞLATILAN yerel (YZ) oyun;{' '}
-        <b>Biten</b> = o kaynaktan BİTİRİLEN yerel (YZ) oyun. Pencere her adıma KENDİ olay
-        tarihinden uygulanır (kohort değil): 2 ay önce üye olup bugün oynayan biri "Biten"e
-        girer, "Üye"ye girmez.
+        <b>Bu tablo baştan sona MİSAFİR hunisidir:</b> bir kanaldan gelip{' '}
+        <b>henüz üye olmadan</b> ürünü deneyen insanları ölçer. <b>Gelen</b> = o kaynaktan gelen
+        benzersiz misafir ziyaretçi; <b>Üye</b> = o kaynak damgasıyla açılan hesap;{' '}
+        <b>Başlayan</b> = üye olmadan BAŞLATILAN yerel (YZ) oyun; <b>Biten</b> = üye olmadan
+        BİTİRİLEN yerel (YZ) oyun. Pencere her adıma KENDİ olay tarihinden uygulanır (kohort
+        değil).
         <br />
         <br />
-        <b>Başlayan ile Biten AYNI popülasyonu ölçer</b> — ikisi de misafir dahil, cihaz bazlı,
-        kaynak damgalı. Bu yüzden "başlayanların kaçı bitirdi" sorusu ancak bu ikisiyle
-        sorulabilir. Yerel oyunun medyan süresi 18,1 dakika olduğundan reklamdan gelen soğuk bir
-        ziyaretçi çoğu zaman oynar ama bitirmez — "Başlayan" yüksek + "Biten" 0 ise açılış
+        <b>Neden yalnızca misafir?</b> Aylardır oynayan bir üyenin oyunları "bu kanal işe
+        yaradı mı" sorusunun cevabını boğuyordu — ölçüldü, "arkadas" satırında 292 üye oyunu
+        vardı. "Gelen" zaten baştan beri yalnızca misafir sayıyordu (ziyaret kaydı yalnızca
+        oturum kapalıyken yazılır), yani tablo üç farklı kitleyi yan yana koyuyordu. Artık
+        tek kitle.
+        <br />
+        <br />
+        <b>Başlayan ile Biten bir ÇİFT</b> — ikisi de aynı kitleyi, aynı kapsamı (yerel/YZ) ve
+        aynı etiket sözleşmesini ölçer, o yüzden "başlayanların kaçı bitirdi" sorusu ancak bu
+        ikisiyle sorulabilir. Yerel oyunun medyan süresi 18,1 dakika olduğundan soğuk bir
+        ziyaretçi çoğu zaman oynar ama bitirmez: "Başlayan" yüksek + "Biten" 0 ise açılış
         sayfası çalışıyor, oyun uzun geliyor demektir; ikisi de 0 ise sorun açılış sayfasında.
         <br />
         <br />
-        <b>Biten, 22 Ağustos 2026'da eklendi ve geriye dönük doldurulamaz</b> — o tarihten
-        önceki tüm bitişler "bilinmiyor" satırında toplanır. Öncesinde bu sütun ("Oyun")
-        yalnızca ÜYELERİN bitirdiği oyunu sayıyordu, yani reklamdan gelen misafir trafiğinde
-        tanım gereği hep 0 görünüyordu. O eski ölçü kayıp değil, CSV'de "Üye Oyunu" ve "Oynayan
-        Üye" sütunları olarak duruyor.
+        <b>ÜYE tarafı bu tabloda YOK</b> — üyelerin oyunları kaynak kırılımlı olarak CSV'de
+        duruyor ("Üye Oyunu", "Oynayan Üye"), ve bunlar cihaz etiketinden değil üyenin KAYIT
+        damgasından gelir: hesabı takip ettiği için "bu kanal değerli üye getirdi mi"
+        sorusunun daha güvenilir cevabıdır (bir üye başka cihazdan oynarsa cihaz etiketi
+        kaybolur, kayıt damgası kaybolmaz). Üyelerin ne kadar oynadığını zaman içinde görmek
+        için Büyüme &gt; Oyun sekmesindeki Misafir/Kayıtlı kırılımı var.
+        <br />
+        <br />
+        <b>Başlayan ve Biten 22 Ağustos 2026'da misafire indirildi, geriye dönük
+        doldurulamaz</b> — o tarihten önceki başlangıçlarda "misafir miydi" bilgisi hiç
+        tutulmuyordu, bu yüzden HİÇ sayılmıyorlar ve "Başlayan" bir süre düşük görünecek.
+        Eski bitişler ise damgasız olduklarından "bilinmiyor" satırında toplanır.
         <br />
         <br />
         Yüzde modunda <b>Üye</b> = üye / gelen. <b>Başlayan</b> = başlatan benzersiz CİHAZ /
         gelen; <b>Gelen</b> ile aynı anonim koddan sayıldığı için bu, tablodaki tek cihaz-bazlı
         dönüşüm oranı — <b>Üye</b> oranı ise ayrı bir kaynaktan (kayıt damgası) gelir.{' '}
         <b>Biten</b> yüzdesinin tabanı "Gelen" DEĞİL <b>o satırın "Başlayan"ı</b> — yani
-        tamamlanma oranı. Mobil uygulama henüz
-        damgalamadığından oradan gelen başlangıç ve bitişler "bilinmiyor" satırına düşer.
+        tamamlanma oranı. Taban 0 ise oran hesaplanmaz, "—" gösterilir.
         <br />
         <br />
-        <b>Direkt</b> = web'e <code>?ref=</code> olmadan geliş. <b>Bilinmiyor</b> = kaynak damgası
-        olmayan satırlar — damgalama 16 Ağustos 2026'da eklendi, geriye dönük doldurulamıyor ve
-        mobil uygulamadan gelenler henüz damgalanmıyor.
-        <br />
-        <br />
-        "Gelen" ile "Üye" İKİ AYRI ölçüm (ziyaretler anonim, hesaba bağlanmaz) — bu yüzden oran
-        %100'ü aşabilir ve bu bir hata değildir.
-        <br />
-        <br />
-        <b>% / Sayı</b> düğmesi dört sütunu birden çevirir: <b>Gelen</b> yüzdesi o sütunun payı,
-        kalan üçü satır yönünde dönüşüm. Taban 0 ise oran hesaplanmaz, "—" gösterilir. CSV her
+        <b>Direkt</b> = web'e <code>?ref=</code> olmadan geliş. <b>Bilinmiyor</b> = kaynak
+        damgası olmayan satırlar — damgalama 16 Ağustos 2026'da eklendi ve mobil uygulamadan
+        gelenler henüz damgalanmıyor. "Gelen" ile "Üye" İKİ AYRI ölçüm (ziyaretler anonim,
+        hesaba bağlanmaz), bu yüzden oran %100'ü aşabilir ve bu bir hata değildir. CSV her
         zaman ham sayı indirir.
       </>
     ),
@@ -703,6 +710,20 @@ function GuestBreakdownTable<T extends { visitors: number }>({
  * ziyaretle AYNI anonim koddan alıyor, dolayısıyla `başlatan / kişi` bu
  * tablodaki tek gerçek cihaz-bazlı dönüşüm oranı.
  *
+ * TABLO BAŞTAN SONA MİSAFİR HUNİSİ (22 Ağustos 2026, kullanıcı isteği:
+ * *"gelenler üye olmadan kaç oyun başlatmış (başlayan), gelenler üye olmadan
+ * kaç oyun bitirmiş (biten)"*). "Gelen" BAŞTAN BERİ misafir-only idi
+ * (`App.tsx`: ziyaret kaydı yalnızca oturum kapalıyken yazılıyor), "Başlayan"
+ * ile "Biten" karışıktı — yani tablo üç farklı kitleyi yan yana koyuyor ve
+ * bunu hiçbir yerde söylemiyordu. Artık üçü de aynı kitle.
+ *
+ * "Biten"i ayırıp "Başlayan"ı bırakmak YANLIŞ olurdu: ikisi bir çift ve
+ * `biten/başlayan` tamamlanma oranını besliyor; yalnız birini indirmek oranı
+ * "misafir bitişi ÷ TÜM başlangıçlar" yapıp sessizce düşük gösterirdi. Bunun
+ * için `game_starts`e bir `is_guest` bayrağı eklendi — `user_id` DEĞİL, çünkü
+ * o tablo bilerek hesap kimliği taşımıyor (gizlilik taahhüdü); bir bayrak
+ * hangi hesap olduğunu söylemediğinden taahhüt aynen ayakta.
+ *
  * "Biten" sütunu 22 Ağustos 2026'da ESKİ "Oyun" sütununun YERİNE geldi ve bu
  * bir yeniden adlandırma DEĞİL, ölçünün kendisinin değişmesi. Eski sütun
  * `games` üzerinden yalnızca ÜYELERİN bitirdiği oyunu sayıyordu — yani
@@ -712,7 +733,13 @@ function GuestBreakdownTable<T extends { visitors: number }>({
  * `game_finishes` misafiri de sayıyor ve 22 Ağustos'tan beri kendi
  * `utm_source`'unu taşıyor. Eski ölçü SİLİNMEDİ — RPC hâlâ `member_games`
  * (üyelerin oyun adedi) ve `players` (benzersiz oynayan üye) döndürüyor,
- * ikisi de CSV'de duruyor, yalnızca tabloda gösterilmiyor.
+ * ikisi de CSV'de duruyor, yalnızca tabloda gösterilmiyor. İkisi BİLEREK
+ * korunuyor ve bu, üye tarafını ekrana taşımamanın da gerekçesi: onlar
+ * üyenin KAYIT damgasından gelir, yani hesabı takip eder — bir üye başka bir
+ * cihazdan oynarsa cihaz etiketi 'bilinmiyor'a düşer, kayıt damgası düşmez.
+ * "Bu kanal değerli üye getirdi mi" sorusunun daha güvenilir cevabı budur;
+ * cihaz etiketiyle ikinci bir üye ölçüsü üretmek aynı sorunun iki farklı
+ * yanıtını doğururdu (bu kod tabanının en sık tekrarlayan hata sınıfı).
  *
  * SINIR: `üye/gelen` yalnızca İKİ UCU DA damgalanmış bir kaynakta gerçek bir
  * dönüşüm oranıdır — `?ref=instagram` ile gelen ziyaretçi de oradan üye olan

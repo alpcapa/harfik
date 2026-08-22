@@ -226,6 +226,13 @@ abstract class GamesGateway {
   /// null gidiyor ve satır sunucuda 'bilinmiyor' kaynağına düşüyor — bu
   /// BİLİNÇLİ: 'direkt'e yazmak web'in gerçek doğrudan trafiğini şişirirdi.
   /// Port mağazaya çıkarken damgalama eklenirse burası da güncellenmeli.
+  ///
+  /// `is_guest` (22 Ağustos 2026) huninin "Başlayan" adımını misafire
+  /// indiriyor. Bayrak PARAMETRE DEĞİL, gerçek uçta oturumdan okunuyor —
+  /// webin aksine: orada `startLocalGame` TEK bir huni noktası ve `user`
+  /// zaten elinde, portta ise iki ayrı ekran çağırıyor (Setup + oyun sonu
+  /// "Tekrar Oyna") ve üçüncü bir çağrı yeri eklendiğinde birini atlamak
+  /// sessizce eksik sayıma yol açardı.
   Future<void> logGameStart({required int playerCount});
 
   /// Anonim bitiş telemetrisi (`game_finishes`). Web'de olduğu gibi
@@ -341,6 +348,10 @@ class SupabaseGamesGateway implements GamesGateway {
       'anon_id': null,
       'player_count': playerCount,
       'utm_source': null,
+      // Oturum KAPALIYSA misafir başlangıcı. Sunucu `is_guest is true`
+      // filtreliyor, yani yanlışlıkla null göndermek satırı sessizce
+      // saydırmaz — bu yüzden değer her zaman açıkça yazılıyor.
+      'is_guest': client.auth.currentUser == null,
     });
   }
 
