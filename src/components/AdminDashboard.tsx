@@ -295,8 +295,8 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
     title: 'Kaynak Hunisi',
     body: (
       <>
-        <b>Gelen</b> = o kaynaktan gelen benzersiz misafir ziyaretçi; <b>Başlayan</b> = o
-        kaynaktan BAŞLATILAN yerel (YZ) oyun; <b>Üye</b> = o kaynak damgasıyla açılan hesap;{' '}
+        <b>Gelen</b> = o kaynaktan gelen benzersiz misafir ziyaretçi; <b>Üye</b> = o kaynak
+        damgasıyla açılan hesap; <b>Başlayan</b> = o kaynaktan BAŞLATILAN yerel (YZ) oyun;{' '}
         <b>Biten</b> = o kaynaktan BİTİRİLEN yerel (YZ) oyun. Pencere her adıma KENDİ olay
         tarihinden uygulanır (kohort değil): 2 ay önce üye olup bugün oynayan biri "Biten"e
         girer, "Üye"ye girmez.
@@ -316,10 +316,11 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
         Üye" sütunları olarak duruyor.
         <br />
         <br />
-        Yüzde modunda <b>Başlayan</b> = başlatan benzersiz CİHAZ / gelen. <b>Gelen</b> ile aynı
-        anonim koddan sayıldığı için bu, tablodaki tek cihaz-bazlı dönüşüm oranı. <b>Biten</b>{' '}
-        yüzdesinin tabanı ise "Gelen" DEĞİL <b>o satırın "Başlayan"ı</b> — yani tamamlanma
-        oranı. <b>Üye</b> oranı ayrı bir kaynaktan (kayıt damgası) gelir. Mobil uygulama henüz
+        Yüzde modunda <b>Üye</b> = üye / gelen. <b>Başlayan</b> = başlatan benzersiz CİHAZ /
+        gelen; <b>Gelen</b> ile aynı anonim koddan sayıldığı için bu, tablodaki tek cihaz-bazlı
+        dönüşüm oranı — <b>Üye</b> oranı ise ayrı bir kaynaktan (kayıt damgası) gelir.{' '}
+        <b>Biten</b> yüzdesinin tabanı "Gelen" DEĞİL <b>o satırın "Başlayan"ı</b> — yani
+        tamamlanma oranı. Mobil uygulama henüz
         damgalamadığından oradan gelen başlangıç ve bitişler "bilinmiyor" satırına düşer.
         <br />
         <br />
@@ -686,8 +687,8 @@ function GuestBreakdownTable<T extends { visitors: number }>({
  * kişinin % kaçı üye olmuş, oyun yüzdesi de kişinin % kaçı oyun oynamışı
  * göstersin."*):
  *   - **Gelen**    = sütun payı (o kaynak tüm ziyaretçilerin yüzde kaçı),
- *   - **Başlayan** = `başlatan cihaz / gelen` — yüzde kaçı oyuna oturdu,
  *   - **Üye**      = `üye / gelen` — o kaynaktan gelenlerin yüzde kaçı üye oldu,
+ *   - **Başlayan** = `başlatan cihaz / gelen` — yüzde kaçı oyuna oturdu,
  *   - **Biten**    = `biten / BAŞLAYAN` — başlayanların yüzde kaçı bitirdi.
  *
  * Son satırın tabanı bilinçli olarak "gelen" DEĞİL: "Biten" ile "Başlayan"
@@ -763,9 +764,9 @@ function SourceFunnelTable({
       [
         'Kaynak',
         'Gelen',
+        'Üye',
         'Başlayan Oyun',
         'Başlatan Cihaz',
-        'Üye',
         'Biten Oyun',
         'Üye Oyunu',
         'Oynayan Üye',
@@ -774,9 +775,9 @@ function SourceFunnelTable({
         ...rows!.map((row) => [
           row.source,
           row.visitors,
+          row.signups,
           row.starts,
           row.starters,
-          row.signups,
           row.finishes,
           row.member_games,
           row.players,
@@ -784,9 +785,9 @@ function SourceFunnelTable({
         [
           'TOPLAM',
           total.visitors,
+          total.signups,
           total.starts,
           total.starters,
-          total.signups,
           total.finishes,
           total.member_games,
           total.players,
@@ -805,11 +806,11 @@ function SourceFunnelTable({
   }
 
   /**
-   * "Başlayan"/"Üye"/"Biten" sütunları — yüzdeleri SATIR YÖNÜNDE dönüşüm
+   * "Üye"/"Başlayan"/"Biten" sütunları — yüzdeleri SATIR YÖNÜNDE dönüşüm
    * oranı. Taban 0 ise oran yok ("—"): sıfıra bölmek yerine bilinmediğini
    * söylemek doğrusu (bugün "bilinmiyor" satırı tam bu durumda).
    *
-   * ⚠ TABAN SÜTUNA GÖRE DEĞİŞİR ve bu bilinçli: "Başlayan"/"Üye"nin tabanı o
+   * ⚠ TABAN SÜTUNA GÖRE DEĞİŞİR ve bu bilinçli: "Üye"/"Başlayan"ın tabanı o
    * satırın "Gelen"i, "Biten"in tabanı ise o satırın "Başlayan"ı — çünkü
    * "Biten"in sorduğu soru "gelenlerin kaçı bitirdi" değil "başlayanların kaçı
    * bitirdi" (tamamlanma oranı). İkisi de AYNI dimension'dan (anonim cihaz
@@ -855,10 +856,10 @@ function SourceFunnelTable({
             <tr className="text-left text-muted border-b border-border">
               <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px]">Kaynak</th>
               <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Gelen</th>
+              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Üye</th>
               <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">
                 Başlayan
               </th>
-              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Üye</th>
               <th className="py-1.5 font-bold uppercase tracking-[1px] text-center">Biten</th>
             </tr>
           </thead>
@@ -870,10 +871,10 @@ function SourceFunnelTable({
                   {visitorCell(row.visitors)}
                 </td>
                 <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">
-                  {conversionCell(row.starts, row.visitors, row.starters)}
+                  {conversionCell(row.signups, row.visitors, row.signups)}
                 </td>
                 <td className="py-1.5 pr-8 text-muted whitespace-nowrap text-center">
-                  {conversionCell(row.signups, row.visitors, row.signups)}
+                  {conversionCell(row.starts, row.visitors, row.starters)}
                 </td>
                 <td className="py-1.5 text-muted whitespace-nowrap text-center">
                   {conversionCell(row.finishes, row.starts, row.finishes)}
@@ -886,10 +887,10 @@ function SourceFunnelTable({
                 {visitorCell(total.visitors)}
               </td>
               <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">
-                {conversionCell(total.starts, total.visitors, total.starters)}
+                {conversionCell(total.signups, total.visitors, total.signups)}
               </td>
               <td className="py-1.5 pr-8 text-text font-bold whitespace-nowrap text-center">
-                {conversionCell(total.signups, total.visitors, total.signups)}
+                {conversionCell(total.starts, total.visitors, total.starters)}
               </td>
               <td className="py-1.5 text-text font-bold whitespace-nowrap text-center">
                 {conversionCell(total.finishes, total.starts, total.finishes)}
