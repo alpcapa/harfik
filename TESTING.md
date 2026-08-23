@@ -1461,3 +1461,71 @@ Deploy sonrası, Play formuna adres girmeden ÖNCE:
       tarayıcıdan adrese git.
 - [ ] Sayfalar JS kapalıyken de okunabiliyor (tamamen statik olmalı).
 - [ ] `/hesap-silme/` içindeki "Görüş Bildir formu" bağlantısı formu açıyor.
+
+---
+
+## 18. Onaylanmamış hesap süpürmesi — hatırlat, sonra sil (23 Ağustos 2026)
+
+Saatlik cron (`sweep-unconfirmed-accounts`, `25 * * * *`) e-postasını hiç
+doğrulamamış hesapları ~20. saatte TAZE bir onay linkiyle hatırlatıyor, 48.
+saatte siliyor. **Otomatik silme geri alınamaz** — bu bölüm bu yüzden var;
+maddeler otomatik testle kapatılamıyor, çünkü gerçek bir gelen kutusu ve
+gerçek bir Supabase Auth hesabı gerekiyor.
+
+**Test hesabı kullan, kendi hesabınla koşma.** Tek kullanımlık bir adres
+(`…@sharedxpteam.testinator.email`) yeterli.
+
+### 18.1 Hatırlatma maili — tek tık, direkt içeri
+
+- [ ] Test adresiyle kayıt ol, gelen onay mailine **DOKUNMA**.
+- [ ] Damgayı geriye çek (SQL): kaydı ~21 saatlik göster
+      (`update auth.users set created_at = now() - interval '21 hours' where email = '…'`).
+- [ ] Cron'u bekleme, fonksiyonu elle tetikle (Edge Function → Invoke, gövde `{}`).
+- [ ] Gelen kutusunda **Kelimeki markalı** "Hesabını tamamla" maili var
+      (Supabase'in stok İngilizce şablonu DEĞİL).
+- [ ] Metin 24 saat içinde tamamlanmazsa hesabın silineceğini SÖYLÜYOR.
+- [ ] **"Hesabımı Tamamla"ya tek dokunuş → doğrudan uygulamanın içindesin.**
+      Ara bir sayfa, "linki yeniden gönder" adımı, ikinci bir mail YOK.
+- [ ] SQL'de `email_confirmed_at` ile `last_sign_in_at` **aynı ana** yazılmış
+      (tek tıkla hem onay hem oturum).
+
+### 18.2 Mükerrer hatırlatma gitmiyor
+
+- [ ] Fonksiyonu ikinci kez tetikle → aynı kişiye ikinci mail **GİTMEZ**
+      (`confirm_reminder_sent_at` dolu, atomik iddia).
+
+### 18.3 Silme — üç koşul birden
+
+Bir hesap ancak şunların HEPSİ doğruyken siliniyor: onaysız · hatırlatma
+gönderilmiş · hatırlatmadan bu yana 24 saat geçmiş. **Uyarılmadan kimse
+silinmez.**
+
+- [ ] Hatırlatma damgası taze bir hesapta prova (`{"dryRun":true}`) çıktısında
+      `silinecek` listesi **BOŞ**.
+- [ ] Damgayı 25 saat geriye çek → prova artık o hesabı `silinecek` diyor.
+- [ ] Gerçek koşudan sonra `auth.users`ta satır yok, admin Üyeler sayısı 1 azaldı.
+- [ ] **Takma ad serbest kaldı:** aynı takma adla yeniden kayıt olunabiliyor.
+- [ ] **E-posta serbest kaldı:** aynı adresle yeniden kayıt olunabiliyor.
+
+### 18.4 Verisi olan hesap SİLİNMEZ
+
+- [ ] Prova çıktısındaki `verisiOlduguIcinAtlanan` listesini oku. Kendi
+      oluşturduğu kaydı (oyun, bulut kaydı, gönderdiği arkadaşlık isteği) olan
+      hesap silinmez, yalnızca raporlanır.
+- [ ] **Bir hesabın GELEN referansı silmeyi engellemez** — biri ona arkadaşlık
+      isteği göndermişse o satır cascade ile gider (`cascadeOlacakGelenKayit`
+      alanında raporlanıyor). Bunu "veri var" sanıp korkma.
+
+### 18.5 ⚠ OTP süresi — geri çekilirse özellik SESSİZCE ölür
+
+- [ ] Supabase Dashboard → Authentication → Sign In / Providers → Email →
+      **Email OTP expiration = 86400** (24 saat). 3600'e dönmüşse hatırlatma
+      maili ölü link taşır ve kimse fark etmez.
+- [ ] Güvenlik denetiminde (`get_advisors`) `auth_otp_long_expiry` **WARN**
+      görünüyor — bu BİLİNÇLİ, temizlemek için ayarı düşürme.
+
+### 18.6 Hukuki metin ile davranış uyuşuyor
+
+- [ ] Gizlilik Politikası (web modal + `/gizlilik/` sayfası + mobil port) 5.
+      bölümde ~20 saat hatırlatma / 48 saat silme cümlesini taşıyor ve üç
+      yüzeyde de aynı.

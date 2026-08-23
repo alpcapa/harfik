@@ -372,96 +372,26 @@ turunda kapanır.
 
 ---
 
-## 10. Onaylanmamış hesap: hatırlat, sonra sil — **TASARIM KESİNLEŞTİ, YAZILACAK**
+## 9. Admin Üyeler tablosuna "onaylanmamış" filtresi — **İSTEĞE BAĞLI**
 
-**Model: Opus 5, efor `high`.** Otomatik hesap silme geri alınamaz — Sonnet'e verme.
+**Model: Sonnet 5, efor `medium`.** Salt-okunur bir liste filtresi.
 
-**Neden — 23 Ağustos 2026'da gerçek bir kullanıcıda gözlendi.** "Sel Sezer" kayıt
-olurken e-postasını yanlış yazdı (`sel_eb@` yerine `sel_en@`), **47 saniye sonra**
-doğru adresle tekrar kayıt oldu — ama takma adı `Sweetpain` az önce KENDİ ölü
-hesabı tarafından kapılmıştı, `Sweetpain.` yazmak zorunda kaldı. (Aynı gün elle
-çözüldü: boş hesap silindi, ad düzeltildi, üye 38 → 37.)
+Kullanıcı 23 Ağustos 2026'da onayladı ("Filtre kalsın") ama o günkü "hemen
+canlıya alalım" kapsamının DIŞINDA bırakıldı — asıl sorun (onaylanmamış
+hesabın takma adı süresiz kilitlemesi) artık saatlik süpürmeyle çözülü
+(bkz. kök `CLAUDE.md` → "Onaylanmamış hesap süpürmesi"), yani bu filtre bir
+arıza değil bir görünürlük kolaylığı.
 
-**Aynı e-posta ile iki hesap MÜMKÜN DEĞİL** (`users_email_partial_key`); mesele
-takma ad rezervasyonu.
+**Ne:** Üyeler tablosunda "yalnızca onaylanmamışları göster" seçeneği. Bugün
+`admin_list_members` bu alanı HİÇ döndürmüyor — `auth.users.email_confirmed_at`
+istemciye kapalı, yani RPC'ye bir kolon eklemek gerekiyor (dönüş tipi
+değişince `create or replace` YETMEZ, drop+create + grant'leri elle geri kur;
+kayıtlı tuzak: `fix_withdraw_report_wrong_overload`).
 
-**Ölçüldü (23 Ağustos):** 37 üyenin **3'ü** hiç onaylanmamış, ikisi **26/28
-gündür** öyle — bir daha asla onaylanmayacaklar ama adları (`H56`, `Cacan`)
-süresiz rezerve. Onaylanmamış hesabı süpüren HİÇBİR mekanizma yok (iki cron
-job'un ikisi de bildirim gönderiyor).
-
-### Kesinleşen akış
-
-| Zaman | Ne olur |
-|---|---|
-| 0. saat | Kayıt, onay maili gider (link **24 saat** geçerli) |
-| ~20. saat | **Tek seferlik hatırlatma** — TAZE link + *"24 saat içinde tamamlamazsan hesabın silinecek"* |
-| 48. saat | Hâlâ onaysızsa **hesap silinir**; e-posta ve takma ad serbest kalır |
-
-**İlke: hatırlatma aralığı = linkin ömrü.** Böylece kutuda HER AN geçerli bir link
-bulunur (0-24 ilk mail, 24-48 hatırlatma). İlk taslak 3 gün/7 gündü ve 24-72.
-saatler arasında **ölü bölge** bırakıyordu — kullanıcı yakaladı.
-
-**⚠ CRON SAATLİK OLMAK ZORUNDA.** Günlük bir iş ölü bölgeyi geri getirir: 12:00'de
-kayıt olanı ertesi gün 11:00'de kontrol edersen henüz 23 saatlik olur, atlanır ve
-hatırlatma 47. saatte gider — oysa ilk link 24. saatte ölmüştür. Hatırlatma ayrıca
-erişkinlik eşiğinden (24s) BİRAZ ÖNCE (~20s) atılır ki iki linkin geçerlilik
-aralığı üst üste binsin.
-
-### ⚠⚠ OTP SÜRESİ 86400 — GERİ ALMA
-
-`Email OTP expiration` 23 Ağustos 2026'da **3600 → 86400** (24 saat) yapıldı
-(Dashboard → Authentication → Sign In / Providers → Email). **Bu şemaNİN
-TEMELİ** — 1 saatte kalırsa hatırlatma maili neredeyse hep ölü link taşır.
-
-Supabase bunu güvenlik denetiminde **`auth_otp_long_expiry` (WARN)** olarak
-işaretliyor ve bu uyarı BİLİNÇLİ OLARAK kabul edildi. Ölçüldü: değişiklikten
-önce denetimde bu uyarı YOKTU, sonra ÇIKTI. **Bir sonraki oturum `get_advisors`
-çıktısını temizlemek için 3600'e geri çekmesin** — hatırlatma sessizce işlevsiz
-kalır.
-
-Bedeli dürüstçe: ayar paylaşımlı, **şifre sıfırlama linki de** 24 saat yaşıyor.
-7 gün BU YÜZDEN reddedildi — "Require current password when updating" KAPALI
-olduğundan (ölçüldü) link = tam hesap devralma yolu.
-
-### Ölçülen teknik zemin (23 Ağustos, gerçek üretimde, geçici bir Edge Function ile)
-
-Onaylanmamış bir hesap için yönetici `generateLink({type:'signup'})` çağrısı:
-- taze `action_link` + `hashed_token` DÖNDÜRÜYOR (`verification_type: signup`);
-- o jetonla doğrulama **oturum açıyor** (`oturumAcildi: true`) ve
-  `email_confirmed_at`ı dolduruyor → **tek mail, tek tık, direkt içeri**;
-- **kendi başına mail ATMIYOR** (çağrı **42 ms**, auth loglarında gönderim kaydı yok).
-  Kesin kanıt gelen kutusu; test adresine giden "Hoş Geldiniz" maili BİZİM
-  tetikleyicimizden geldi, onunla karıştırma.
-
-**Yan bulgu:** o akış `notify-welcome` zincirini de tetikledi ve
-`{"ok":true,"sent":true}` döndü — `TESTING.md` bölüm 12'de "gerçek gönderim test
-edilmedi" diye duran madde böylece üretimde kanıtlandı.
-
-**Yakalanan tuzak:** `admin.createUser` metadata'sız çağrılırsa
-`profiles_first_name_not_blank` kısıtına takılıp `Database error creating new
-user` verir — sunucudan hesap yaratan her kod ad/soyad göndermek zorunda.
-
-### Yapılacaklar
-
-1. `profiles`e damga kolonu (`confirm_reminder_sent_at`) — mükerrer hatırlatmayı
-   engeller. Emsal: `welcome_email_sent_at` + `reminder_sent_at` deseni.
-2. Tek Edge Function + **saatlik** cron: ~20 saatlikleri hatırlat, 48 saatlikleri sil.
-   `verify_jwt: false` (cron çağırıyor) — **`deploy_edge_function`e bu değeri
-   AÇIKÇA geç** (geçilmezse sessizce `true`ya döner, kayıtlı tuzak).
-3. **Önce PROVA:** hiçbir şey silmeyen/göndermeyen, yalnızca "şunları yapacaktım"
-   diye raporlayan sürüm. Liste birlikte görülüp açılır.
-4. Silme guard'ı: onaysız + hiç giriş yapmamış + verisiz. (Teoride verisi olamaz —
-   her yazma yolu oturum ister — ama otomatik silme geri alınamaz.)
-5. `PrivacyModal`e saklama cümlesi + **portun `legal_modals.dart`ı AYNI PR'da**
-   (`legal_text_test.dart` tarihleri karşılaştırıyor, bayat kalırsa mobil CI düşer).
-6. Admin Üyeler tablosuna "onaylanmamış" filtresi (kullanıcı onayladı).
-
-### Yazarken ölçülecek
-
-Onaysız hesap dururken aynı e-postayla **yeniden kayıt** denenirse ne oluyor?
-Supabase'in onay mailini yeniden göndermesi beklenir — öyleyse tamamen kendi
-kendine işleyen ÜÇÜNCÜ bir kurtarma yolu var demektir. Varsayma, ölç.
+**Kapsam kararı:** yeni kolon Üyeler tablosunda gösterilecekse CSV'ye de
+eklenmeli — "CSV ekranda görüneni indirir" sözü ancak öyle doğru kalır.
+Sıralama anahtarı EKLEME (mevcut yedi anahtar korunuyor, gerekçesi
+`CLAUDE.md` → "Kayıt alanlarının tamamı tabloda").
 
 ---
 
