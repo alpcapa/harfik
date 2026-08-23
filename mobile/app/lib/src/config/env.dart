@@ -31,7 +31,7 @@ const String resetRedirectUri = 'kelimeki://reset';
 /// `app_config.mobile_min_supported_version` eşiğiyle karşılaştırılır;
 /// package_info_plus eklentisine bilinçli olarak bağımlılık alınmadı
 /// (tek sabit için platform eklentisi gereksiz).
-const String appVersion = '0.1.0';
+const String appVersion = '1.0.0';
 
 /// Bu derlemenin GİT COMMIT'i (kısa sha) — CI `--dart-define=BUILD_SHA=...`
 /// ile veriyor, yerelde boş kalır ve arayüzde `yerel` yazar.

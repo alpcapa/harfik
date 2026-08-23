@@ -164,6 +164,75 @@ jobs:
           name: kelimeki-apk
           path: mobile/app/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
+      # ---- Play Store paketi (.aab) — ROADMAP FAZ B → 0.A2 -------------------
+      # Play `.apk` KABUL ETMİYOR; yüklenebilir tek biçim App Bundle. Yukarıdaki
+      # `.apk` adımı DURUYOR — Appetize test ortamı yalnızca ham `.apk` alıyor.
+      #
+      # Adım YALNIZCA `ANDROID_KEYSTORE_BASE64` secret'ı varken iş yapar.
+      # `secrets` bağlamı adım düzeyinde `if:`te KULLANILAMAZ (GitHub'ın bağlam
+      # tablosunda yok) — bu yüzden kontrol, Appetize adımındaki gibi script'in
+      # İÇİNDE; sonuç bir output ile artefakt adımına taşınıyor.
+      #
+      # `--build-number` = koşu numarası: Play aynı versionCode'u İKİ KEZ kabul
+      # etmiyor, `pubspec.yaml`'daki `+N` ise her derlemede aynı kalırdı.
+      #
+      # `--dart-define`ler TIRNAK İÇİNDE — BUILD_TIME boşluk taşıyor ve
+      # tırnaksız hâli 15 Ağustos 2026'da Android işini düşürmüştü.
+      - name: Play paketi (.aab) derle
+        id: aab
+        working-directory: mobile/app
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ANDROID_KEYSTORE_BASE64:-}" ]; then
+            echo "ANDROID_KEYSTORE_BASE64 secret'ı yok — .aab derlenmiyor."
+            echo "built=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          KS_FILE="$RUNNER_TEMP/kelimeki-upload.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > "$KS_FILE"
+          # `key.properties` rootProject (= mobile/app/android) kökünde aranıyor;
+          # `storeFile` MUTLAK yol olmalı — göreli verilirse `app/` modülüne göre
+          # çözülür (bkz. android/key.properties.example).
+          printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=upload\nkeyPassword=%s\n' \
+            "$KS_FILE" "$ANDROID_KEYSTORE_PASSWORD" "$ANDROID_KEYSTORE_PASSWORD" \
+            > android/key.properties
+          flutter pub get
+          flutter build appbundle --release \
+            "--build-number=${{ github.run_number }}" \
+            "--dart-define=BUILD_SHA=${{ steps.stamp.outputs.sha }}" \
+            "--dart-define=BUILD_TIME=${{ steps.stamp.outputs.time }}" \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          # Paketin imzasını GERİ OKU. `key.properties` yoksa Gradle release'i
+          # DEBUG anahtarına düşürüyor (bilinçli — bkz. app/build.gradle.kts) ve
+          # öyle bir .aab sessizce üretilip ancak Play'de reddedilirdi. Bu adım o
+          # sessizliği kapatıyor: paketin parmak izi, az önce çözülen upload
+          # anahtarınınkiyle AYNI olmak zorunda — SABİT bir değer YAZILMIYOR,
+          # anahtar değişirse kontrol kendiliğinden onu takip eder.
+          AAB=build/app/outputs/bundle/release/app-release.aab
+          EXPECTED=$(keytool -list -v -keystore "$KS_FILE" -alias upload \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" 2>/dev/null \
+            | grep -m1 'SHA256:' | tr -d '[:space:]' || true)
+          ACTUAL=$(keytool -printcert -jarfile "$AAB" 2>/dev/null \
+            | grep -m1 'SHA256:' | tr -d '[:space:]' || true)
+          echo "beklenen: $EXPECTED"
+          echo "paket   : $ACTUAL"
+          if [ -z "$EXPECTED" ] || [ -z "$ACTUAL" ] || [ "$EXPECTED" != "$ACTUAL" ]; then
+            echo "HATA: .aab upload anahtarıyla imzalanmamış (debug anahtarı?)."
+            keytool -printcert -jarfile "$AAB" || true
+            exit 1
+          fi
+          rm -f android/key.properties
+          echo "built=true" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v7
+        if: ${{ steps.aab.outputs.built == 'true' }}
+        with:
+          name: kelimeki-aab
+          path: mobile/app/build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
       # Artefaktların indirme bağlantısı OTURUM İSTİYOR ve iOS/iPadOS'ta
       # `.apk` dosya seçicide pasif kalıyor (Safari uzantıyı tanımıyor);
       # Appetize'ın Android tarafı da yalnızca ham `.apk` kabul ediyor —

@@ -37,6 +37,7 @@ npm run generate-logo-paths      # LogoMark.tsx + portun logo_mark_data.dart'ın
 npm run generate-klig-paths      # KLigMark.tsx + portun klig_mark_data.dart'ını birlikte üretir
 npm run generate-icons           # favicon / app icon (public/) — og-image DEĞİL
 npm run generate-og-image        # public/og-image.png (sosyal paylaşım kartı)
+npm run generate-play-assets     # Play mağaza ikonu (512) + öne çıkan görsel (1024×500)
 ```
 
 **`npm run test` neyi kapsıyor, neyi kapsamıyor:** `tests/smoke.spec.ts` kapsamlı bir test paketi DEĞİL — "uygulama açılıyor, 2 kişilik bir oyun başlatılabiliyor, YZ hamle yapıyor, bilinmeyen bir path SPA fallback'iyle açılıyor" düzeyinde bir kritik-yol kontrolü. Buraya kadar hatasız gelmek reducer/YZ/skor/bölge hesaplama zincirinin ucuna kadar çalıştığı ve `ErrorBoundary`'nin devreye girmediği anlamına geliyor.
@@ -161,6 +162,14 @@ ilgilendiren iki kanca:
   (`mobile/app/lib/src/ui/game/logo_mark_data.dart`,
   `mobile/app/lib/src/ui/score/klig_mark_data.dart`) üretir — logo/marka
   değişirse tek komut yeter, elle senkron YOK.
+- **Play Store imzalama `mobile/` DIŞINDA da dosya değiştirdi (22 Ağustos
+  2026):** `.github/workflows/mobile-build.yml`'in `android` işi artık `.apk`
+  yanında imzalı bir `.aab` da üretiyor (Play `.apk` kabul etmiyor). Adım
+  `ANDROID_KEYSTORE_BASE64` secret'ı yokken sessizce atlanıyor, yani bu
+  değişiklik mevcut Appetize/web akışlarını HİÇ etkilemiyor. Karar/ölçüm/
+  tuzaklar (özellikle: keystore repoya girmez, Play App Signing'e kaydolma
+  zorunluluğu ve `assetlinks.json`'a HANGİ parmak izinin gireceği):
+  `mobile/CLAUDE.md` → "Play Store İmzalama ve `.aab`".
 - **`src/utils/random.ts`'teki `setRandomSource()`** yalnızca bu fixture
   üreticisi için var — üretim kodu hiç çağırmaz, davranış değişmedi
   (varsayılan `Math.random`).
@@ -1051,6 +1060,8 @@ src/
   main.tsx      # ince kabuk: fontlar + derleme kimliği + kapı kararı (katman mı uygulama mı)
   boot.tsx      # uygulamanın gerçek açılışı — main.tsx DİNAMİK import eder (bkz. "Karşılama Katmanı")
   landing/      # karşılama katmanı — derleme zamanında statik HTML (bkz. "Karşılama Katmanı")
+  legal/        # hukuki metinlerin TEK KAYNAĞI + /gizlilik/ · /kullanim-kosullari/ ·
+                # /hesap-silme/ statik sayfa üreticisi (bkz. "Hukuki Statik Sayfalar")
     Landing.tsx     # sayfanın tamamı; SUNUCUDA render edilir (hook/olay/tarayıcı globali YOK)
     LandingLogo.tsx # logoyu üç kez çizmek için SVG sprite (path verisi LogoMark'tan)
     OzellikIkonlari.tsx # "Neler var" altı özellik ikonu (Material DEĞİL — ilkel şekiller; portun ozellik_ikonlari.dart'ıyla ELLE senkron, `icon_parity_test.dart` ile testli)
@@ -2441,6 +2452,36 @@ npm run generate-reel                  # kelimeki-reel.mp4 (bkz. aşağıdaki re
   Tag YOK (bilinçli), dolayısıyla platform üyeliğe göre optimize edemez —
   hedef "Trafik", optimizasyon "açılış sayfası görüntüleme".
 
+### Google Play vitrini (`scripts/play-store/`, 23 Ağustos 2026)
+
+`marketing/play-store/` → `store-icon-512.png` (512×512) +
+`feature-graphic.png` (1024×500) + `metin.md` (Play'e elle girilecek
+başlık/kısa/tam açıklama ve cihazdan alınacak ekran görüntülerinin çekim
+listesi). `npm run generate-play-assets`.
+
+- **Mağaza ikonu ELLE ÇİZİLMEZ, cihazdaki başlatıcı ikonun KAYNAĞINDAN
+  küçültülür** (`mobile/app/assets/icon/icon-source.png`, yani
+  `flutter_launcher_icons.image_path`) — ayrı bir kaynaktan üretilse
+  mağazadaki ikon ile telefondaki ikon sessizce ayrışırdı.
+- **İkisi de ALFASIZ** (`flatten`): Play ikona kendi maskesini uyguluyor,
+  öne çıkan görsel ise 24-bit PNG/JPEG istiyor.
+- **Öne çıkan görsel 2× çekilip 1×'e indiriliyor** — Play boyutu TAM
+  1024×500 istediğinden doğrudan 1× çekmek tek seçenek gibi görünüyor, ama
+  süperörnekleme gözle görülür şekilde daha keskin.
+- **Ölçüm YAZMADAN ÖNCE:** güvenli kutu kenara 40/30 px'den yakınsa ya da
+  sayfa taşıyorsa betik hiçbir dosya yazmadan `exit 1` — başarısız bir koşu
+  diske "bitmiş gibi duran" bozuk bir görsel bırakmamalı. **Negatif eş
+  ölçüldü:** kutu 600 → 980 px yapılınca betik gerçekten düşüyor ve
+  `feature-graphic.png` HİÇ oluşmuyor.
+- **⚠ Tanıtım videosu eklenirse tasarım gözden geçirilmeli:** Play o
+  durumda öne çıkan görselin ORTASINA bir oynat düğmesi bindiriyor, yani
+  tam da logonun üstüne.
+- **Ekran görüntüleri burada ÜRETİLMEZ ve üretilemez** — Play'e giden
+  telefon görüntülerinin uygulamanın gerçek görüntüsü olması gerekiyor,
+  gerçek cihazdan alınmalı. Çekim listesi + gizlilik uyarıları (gerçek
+  arkadaş adı/e-posta görünmemeli — görseller herkese açık yayınlanıyor)
+  `metin.md`'de.
+
 ### Facebook sayfa kapağı (`scripts/kapak/`, 20 Ağustos 2026)
 
 `marketing/sponsored-2026-08/kelimeki-fb-kapak.png` (1640×624).
@@ -2493,6 +2534,74 @@ cevabını veriyor.
   bindiriliyor (`renderBantHtml`).
 - **ffmpeg bu ortamda apt ile kuruldu** — Playwright'ın kendi ffmpeg'i
   (`/opt/pw-browsers/ffmpeg-1011`) yalnızca VP8/webm derlenmiş, H.264 yok.
+
+## Hukuki Statik Sayfalar — `/gizlilik/`, `/kullanim-kosullari/`, `/hesap-silme/` (23 Ağustos 2026)
+
+**NEDEN VAR:** Play'in **Data safety formu kapalı test kanalındaki uygulamalar
+için de zorunlu** ve o formu tamamlamak **doğrudan açılan bir gizlilik
+politikası URL'i** istiyor (ölçüldü, Play dokümanı). Bugüne kadar politika
+YALNIZCA SPA içindeki bir penceredeydi (`?gizlilik=1`) — yani inceleyenin JS
+render'ına güvenmesi gerekiyordu. Aynı gerekçe hesap silme için de geçerli:
+hesap açtıran uygulamalarda Play hem uygulama içi bir yol hem de bir **web
+silme talep adresi** istiyor; `/hesap-silme/` ikincisini karşılıyor.
+
+### Metin KOPYALANMAZ — `src/legal/LegalContent.tsx`
+
+`PrivacyModal`/`TermsModal` artık ince sarmalayıcı; gövde tek kaynakta ve
+statik sayfalar da AYNI bileşeni tüketiyor. Kopyalansaydı portun
+`legal_modals.dart`'ıyla birlikte **üç kopya** olurdu ve `legal_text_test.dart`
+yalnızca "Son güncelleme" TARİHLERİNİ karşılaştırıyor, metnin kendisini
+DEĞİL — ayrışma sessiz kalırdı. İki tüketici arasındaki tek fark iletişim
+bağlantısı (`contact` prop'u): pencerede `FeedbackModal`'ı açan bir `<button>`,
+sayfada `/?contact=1`'e giden bir `<a>`.
+
+**Çıkarma işlemi ÖLÇÜLEREK yapıldı:** eski gövde JSX'i, `git show HEAD:`ten
+okunup yeni dosyada **bayt bayt** aranarak doğrulandı — metin değişmedi, yani
+portun senkronu ve `legal_text_test.dart` etkilenmedi.
+
+**`SILME_SURESI_GUN` sabiti:** silme süresi ÜÇ yerde geçiyor (politikanın 5. ve
+8. bölümü + `/hesap-silme/`). Sabit yazılırken **8. bölümdekinin hâlâ elle
+yazılmış olduğu smoke testi tarafından yakalandı** — o da sabite bağlandı.
+
+### Eklenti, derleme sonrası betik DEĞİL
+
+`scripts/legal-plugin.js`, `landing-plugin.js` ile aynı gerekçe: duman testleri
+`npm run dev` üzerinde koşuyor, yalnızca `dist`e yazan bir çözümde sayfalar dev
+sunucusunda HİÇ var olmaz ve tamamen bozukken bile testler yeşil kalır. Dev'de
+middleware ile servis ediliyor, derlemede `generateBundle` + `emitFile` ile
+`dist/<yol>/index.html` olarak bırakılıyor. Derleme+import **tek sıraya
+dizilmiş** (landing eklentisindeki yarış dersi).
+
+**Dev'de stil `/src/index.css?direct`ten geliyor** — `?direct` olmadan Vite JS
+sarmalayıcı döndürür ve sayfa stilsiz kalır.
+
+### ⚠ ÖLÇÜLEN İKİ TUZAK
+
+1. **Service worker sayfaları SPA kabuğuna çeviriyordu.** `navigateFallback`
+   (`createHandlerBoundToURL("index.html")`) yüzünden. Gerçek tarayıcıda
+   ölçüldü: eğik çizgili `/gizlilik/` precache rotasına takılıp DOĞRU geliyordu
+   ama **eğik çizgisiz `/gizlilik` uygulama kabuğunu döndürüyordu.** Çözüm
+   `workbox.navigateFallbackDenylist` (üç yol için). `navigateFallback`'in
+   kendisine ve `registerType:'prompt'`e DOKUNULMADI.
+2. **Eğik çizgisiz adres sunucuya bağlı.** `vercel.json`'a üç `redirects`
+   girdisi eklendi (`/gizlilik` → `/gizlilik/`); mevcut `rewrites` bloğuna
+   dokunulmadı. **Bu ortamdan Vercel davranışı test EDİLEMİYOR** — bu yüzden
+   yayınlanan HER adres (Play formu, sitemap, canonical, footer) eğik çizgili
+   hâli kullanıyor; ölçülmüş ve çalıştığı bilinen hâl o. Eğik çizgisiz hâl bir
+   kolaylık, bağımlılık değil.
+
+### Regresyon
+
+`tests/smoke.spec.ts` 22 → **27 test**: üç sayfa da statik açılıyor
+(`#root` YOK — SPA'ya düşmediğinin kanıtı), sayfa ile pencerenin bölüm
+başlıkları BİREBİR aynı, `/hesap-silme/` talep bağlantısını ve süreyi
+gösteriyor. **Negatif eş ikisi de ölçüldü:** eklenti kaldırılınca sayfalar ne
+derlemede üretiliyor ne dev'de servis ediliyor (dev `/gizlilik/` → SPA kabuğu);
+sayfaya pencerede olmayan bir bölüm eklenince parite testi GERÇEKTEN düşüyor.
+
+**Yeni bir hukuki sayfa eklenirken:** `LEGAL_PAGES`e ekle → `sitemap.xml`,
+`navigateFallbackDenylist` ve `vercel.json` redirect'i de güncelle. Üçü elle
+senkron; biri atlanırsa sayfa ya indekslenmez ya da SW tarafından yutulur.
 
 ## SEO
 
