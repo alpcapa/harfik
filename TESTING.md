@@ -992,6 +992,28 @@ YOK) ve okuma yalnızca admin'e açık.
 - [ ] **Tekrar bastırma:** aynı hatayı arka arkaya iki kez tetikle — panelde
       TEK satır olmalı (aynı oturumda ikinci kayıt gönderilmez).
 
+## 9.14. Admin — kart başlıklarında gönderen adı (23 Ağustos 2026)
+
+Geri Bildirim (Gelen Kutusu) ve Şikayetler kartlarının başlığı. Bu bölüm bir
+kullanıcı raporunun regresyon kontrolü: ad tek satırdaki TEK esnek öğe
+olduğundan telefonda hep O kırpılıyordu (`Ser…`, `kelimekitest4@sh…`).
+Admin paneli oturum + admin rolü istediğinden otomatik test EDİLEMİYOR.
+
+- [ ] **TELEFONDA** Gelen Kutusu'nu aç: her kartta gönderenin adı (ya da
+      misafirse e-posta adresi) **TAMAMEN** görünmeli — hiçbir yerde `…` ile
+      biten bir ad olmamalı. Rozetler (`Yanıtlandı`/`Oyun Sonu`/`Gönderilen`/
+      `↳ Cevaben`) ve tarih adın ALTINDAKİ satırda, tarih sağ uçta.
+- [ ] **En uzun vaka:** misafir bir geri bildirim (uzun e-posta adresi) ve
+      girişli bir üyenin kaydı (ad + ` · ` + e-posta) — ikisi de sarmalı,
+      kırpılmamalı, karttan taşmamalı.
+- [ ] **Şikayetler alt sekmesinde aynısı:** `{raporlayan} → {raporlanan}`
+      satırı tam görünmeli.
+- [ ] **Kart açılıp kapanıyor** (başlık iki satıra çıkınca dokunma davranışı
+      bozulmamalı) ve `Okundu işaretle` / `Yanıtla` / silme aynen çalışmalı.
+- [ ] **Üyeler tablosundaki isim kolonu DEĞİŞMEDİ** — orada 150px kapak ve
+      `title` bilinçli (sabit kolon dar ekranda tüm alanı yemesin diye).
+
+
 ## 10. k-lig ödül & rütbe sistemi
 
 Ödül/rütbe kayıtları sunucuda, `games` tablosuna satır ekleyen bir trigger'la

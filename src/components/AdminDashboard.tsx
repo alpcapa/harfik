@@ -1161,6 +1161,38 @@ const STICKY_NAME_CELL =
   'sticky left-0 z-[1] bg-panel max-w-[150px] truncate shadow-[1px_0_0_0_#DCE2EA]';
 
 /**
+ * Geri Bildirim ve Şikayetler kartlarının başlığı — İKİ SATIR, tek satır DEĞİL
+ * (23 Ağustos 2026, kullanıcı bildirdi: *"Görüş bildirim'de gelen mesajlarda
+ * gönderenin ismi görünmüyor. Onu tam açık görmek lazım her durumda."*).
+ *
+ * Öncesinde ad/e-posta ile rozetler ve tarih AYNI satırdaydı: ad
+ * `truncate min-w-0 flex-1`, rozetler ve tarih `shrink-0`. Yani satır
+ * daraldıkça KIRPILAN tek şey addı — telefonda "Ser…" / "Ebr…" /
+ * "kelimekitest4@sh…" kalıyordu. Bir gelen kutusunda kırpılacak EN SON şey
+ * kimden geldiğidir: mesaj metni zaten kapalı kartta bilerek kırpılıyor
+ * (açınca tamamı görünüyor), ama gönderenin kim olduğu hiçbir yerde
+ * açılmıyordu.
+ *
+ * Ad artık KENDİ satırında ve `break-words` ile sarıyor (uzun bir e-posta
+ * adresi boşluksuz olduğundan `break-words` şart, `truncate` yok); rozetler
+ * ve tarih alttaki satırda, tarih `ml-auto` ile sağ uçta. Kart bir satır
+ * (~14px) uzuyor — bilinçli takas.
+ *
+ * **Tek satırlık esnek bir çözüm DENENDİ ve ELENDİ:** `flex-wrap` + adın
+ * `min-w-0` olması, flexbox'ın rozetleri alt satıra İTMESİ yerine adı bir
+ * karaktere kadar DARALTIP dikey sarmasına yol açıyor (sarma kararı öğe
+ * bazında ve esnek öğe önce yerleşiyor); ada `min-w-[…]` vermek ise rozet
+ * grubunun kendisi kaba sığmadığında taşıyor. İki satır deterministik.
+ *
+ * Üyeler tablosundaki `STICKY_NAME_CELL` BİLEREK dokunulmadı — orası kapaklı
+ * bir sabit kolon ve gerekçesi yukarıda ölçümle yazılı (bugünkü en uzun ad
+ * 18 karakter/~131px, yani kırpılmıyor; uç durumda tam hâli `title`da).
+ */
+const CARD_HEADER = 'flex flex-col gap-1 text-[10px] font-mono text-muted';
+const CARD_HEADER_NAME = 'break-words';
+const CARD_HEADER_META = 'flex flex-wrap items-center gap-1.5';
+
+/**
  * Cinsiyet etiketi. Kaynak `GENDER_OPTIONS` (kayıt formu ve Hesap Ayarları
  * ile AYNI liste) — ikinci bir eşleme yazmak, seçenekler değişince sessizce
  * ayrışırdı. `'unspecified'` formda seçilebilir DEĞİL ama şema kabul
@@ -2525,32 +2557,35 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                           f.handled ? 'opacity-60' : ''
                         }`}
                       >
-                        <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-muted">
-                          <span className="truncate min-w-0 flex-1">
+                        {/* Kimden geldiği KIRPILMAZ — bkz. CARD_HEADER. */}
+                        <div className={CARD_HEADER}>
+                          <span className={CARD_HEADER_NAME}>
                             {headerLabel}
                             {relatedMember && f.email ? ` · ${f.email}` : ''}
                           </span>
-                          {f.origin === 'admin' && (
-                            <span className="shrink-0 px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[9px] uppercase tracking-[0.5px]">
-                              Gönderilen
-                            </span>
-                          )}
-                          {f.related_to && (
-                            <span className="shrink-0 px-1.5 py-0.5 rounded bg-panel border border-border text-[9px] uppercase tracking-[0.5px]">
-                              ↳ Cevaben
-                            </span>
-                          )}
-                          {f.reply && (
-                            <span className="shrink-0 px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[9px] uppercase tracking-[0.5px]">
-                              Yanıtlandı
-                            </span>
-                          )}
-                          {f.origin !== 'admin' && (
-                            <span className="shrink-0 px-1.5 py-0.5 rounded bg-panel border border-border text-[9px] uppercase tracking-[0.5px]">
-                              {f.source === 'game_end' ? 'Oyun Sonu' : 'Genel'}
-                            </span>
-                          )}
-                          <span className="shrink-0">{fmtDate(f.created_at)}</span>
+                          <div className={CARD_HEADER_META}>
+                            {f.origin === 'admin' && (
+                              <span className="shrink-0 px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[9px] uppercase tracking-[0.5px]">
+                                Gönderilen
+                              </span>
+                            )}
+                            {f.related_to && (
+                              <span className="shrink-0 px-1.5 py-0.5 rounded bg-panel border border-border text-[9px] uppercase tracking-[0.5px]">
+                                ↳ Cevaben
+                              </span>
+                            )}
+                            {f.reply && (
+                              <span className="shrink-0 px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[9px] uppercase tracking-[0.5px]">
+                                Yanıtlandı
+                              </span>
+                            )}
+                            {f.origin !== 'admin' && (
+                              <span className="shrink-0 px-1.5 py-0.5 rounded bg-panel border border-border text-[9px] uppercase tracking-[0.5px]">
+                                {f.source === 'game_end' ? 'Oyun Sonu' : 'Genel'}
+                              </span>
+                            )}
+                            <span className="ml-auto shrink-0">{fmtDate(f.created_at)}</span>
+                          </div>
                         </div>
 
                         {!isExpanded ? (
@@ -2679,24 +2714,27 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                             r.handled ? 'opacity-60' : ''
                           }`}
                         >
-                          <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-muted">
-                            <span className="truncate min-w-0 flex-1">
+                          {/* Kim kimi şikayet etti KIRPILMAZ — bkz. CARD_HEADER. */}
+                          <div className={CARD_HEADER}>
+                            <span className={CARD_HEADER_NAME}>
                               {r.reporter_name} → {r.reported_name}
                             </span>
-                            {r.withdrawn_at ? (
-                              <span className="shrink-0 px-1.5 py-0.5 rounded bg-panel border border-border text-[9px] uppercase tracking-[0.5px]">
-                                Geri Çekildi
-                              </span>
-                            ) : r.handled ? (
-                              <span className="shrink-0 px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[9px] uppercase tracking-[0.5px]">
-                                İncelendi
-                              </span>
-                            ) : (
-                              <span className="shrink-0 px-1.5 py-0.5 rounded bg-red/20 text-red text-[9px] uppercase tracking-[0.5px]">
-                                Yeni
-                              </span>
-                            )}
-                            <span className="shrink-0">{fmtDate(r.created_at)}</span>
+                            <div className={CARD_HEADER_META}>
+                              {r.withdrawn_at ? (
+                                <span className="shrink-0 px-1.5 py-0.5 rounded bg-panel border border-border text-[9px] uppercase tracking-[0.5px]">
+                                  Geri Çekildi
+                                </span>
+                              ) : r.handled ? (
+                                <span className="shrink-0 px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[9px] uppercase tracking-[0.5px]">
+                                  İncelendi
+                                </span>
+                              ) : (
+                                <span className="shrink-0 px-1.5 py-0.5 rounded bg-red/20 text-red text-[9px] uppercase tracking-[0.5px]">
+                                  Yeni
+                                </span>
+                              )}
+                              <span className="ml-auto shrink-0">{fmtDate(r.created_at)}</span>
+                            </div>
                           </div>
 
                           {!isExpanded ? (
