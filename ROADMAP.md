@@ -96,6 +96,7 @@ Dördü de **ölçülmüş** eksikler, tahmin değil:
 | 0.A2 | ✅ **BİTTİ** (22 Ağu 2026) — CI yalnızca `.apk` üretiyordu | `mobile-build.yml:157` → `flutter build apk --release` | `android` işine `.aab` adımı eklendi; secret yoksa sessizce atlar, varsa paketin imzasını **geri okuyup** doğrular |
 | 0.A3 | ✅ **BİTTİ** (22 Ağu 2026) — sürüm `0.1.0+1`di | `pubspec.yaml` + `env.dart` (`appVersion`) | İkisi de **`1.0.0`**; senkron artık `test/app_version_parity_test.dart` ile ZORLANIYOR. `versionCode`'u CI `--build-number=run_number` ile veriyor |
 | 0.A4 | 🟨 **YARISI BİTTİ** (23 Ağu 2026) | `marketing/play-store/` | İkon (512) + öne çıkan görsel (1024×500) + başlık/kısa/tam açıklama üretildi (`npm run generate-play-assets`). **Kalan: telefon ekran görüntüleri** — gerçek cihazdan alınacak, çekim listesi `marketing/play-store/metin.md`'de |
+| 0.A5 | Herkese açık gizlilik politikası URL'i yok | Politika YALNIZCA SPA modalı (`?gizlilik=1`) | Derleme zamanı statik sayfa. **23 Ağu 2026'da 0.B'den BURAYA taşındı — ölçüldü, bloker** (aşağı bkz.) |
 
 **0.A1 + 0.A2 + 0.A3 BİTTİ (22 Ağustos 2026).** GitHub secret'ları
 (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`) kullanıcı
@@ -140,6 +141,14 @@ Sıradaki: **0.A4** (vitrin) → ilk `.aab` yüklemesi → 12 tester.
 - **Paket adı `com.kelimeki.kelimeki` ilk yüklemeden sonra KALICI**
   (`mobile/CLAUDE.md`). Değişecekse bu adımdan ÖNCE.
 
+**0.A5 NEDEN 0.B'DEN BURAYA TAŞINDI (23 Ağustos 2026, ölçüldü):** Play'in
+kendi dokümanı, **Data safety formunun kapalı/açık test kanallarındaki
+uygulamalar için de zorunlu** olduğunu ve **formu tamamlamak için gizlilik
+politikası URL'inin gerektiğini** söylüyor. Yani politika sayfası "14 gün
+işlerken paralelde" yapılacak bir iş DEĞİL — onsuz ilk kapalı test
+yayınlanamaz, dolayısıyla sayaç hiç başlamaz. Bu dosya 22 Ağustos'ta onu
+0.B'ye koymuştu; o sıralama YANLIŞTI.
+
 **Çıkış kriteri:** imzalı AAB kapalı test kanalına yüklendi, 12 tester
 kaydoldu, **sayaç işlemeye başladı.**
 
@@ -148,19 +157,12 @@ kaydoldu, **sayaç işlemeye başladı.**
 Sırası önemli olan tek bağ: **#4, #2'den SONRA** (hesap silme kaskadı
 çıkmadan test hesaplarını silmek aynı analizi iki kez yaptırır).
 
-1. **0.B3 — herkese açık Gizlilik Politikası URL'i.** *Model: Sonnet 5,
-   efor `medium`.* Play, doğrudan açılan bir URL istiyor; bugün politika
-   YALNIZCA SPA içindeki bir modal (`?gizlilik=1`) — inceleyen kişinin JS
-   render'ına güvenmesi gerekir. Çözüm madde 6'nın deseni: derleme zamanı
-   statik `dist/gizlilik/index.html` (+ `kullanim-kosullari`).
-   **İçerik TEK KAYNAKTA kalmalı** — `PrivacyModal`/`TermsModal` ile aynı
-   metni tüketmeli; ikinci bir kopya, portun `legal_modals.dart`'ıyla
-   birlikte ÜÇ kopya demek olur ve `legal_text_test.dart` yalnızca tarihi
-   karşılaştırıyor, metni değil. En ucuz iş, en erken yapılmalı.
-2. **Madde 2 — uygulama içinden hesap silme.** Play'in hesap açtıran
+1. **Madde 2 — uygulama içinden hesap silme.** Play'in hesap açtıran
    uygulamalardan istediği İKİ şey var: uygulama içi yol **ve** Data
-   safety formuna girilecek bir **web silme talep URL'i**. İkincisi
-   0.B3'ün sayfasına bir bölüm olarak eklenebilir.
+   safety formuna girilecek bir **web silme talep URL'i** (ölçüldü, ikisi
+   de politika metninde açık). **Web yarısı 0.A5'in sayfasına bir bölüm
+   olarak bedavaya geliyor; asıl iş uygulama içi yol ve silme kaskadı.**
+   Bu, production erişimi için ZORUNLU — 14 günün içinde bitmeli.
 3. **Madde 1 — deep link + `assetlinks.json`.** Play blokeri değil ama
    kayıt onayı maili uygulamayı değil web'i açıyor; inceleme "kırık akış"
    diye dönebilir. iOS yarısı Apple hesabı istediğinden bekler.
@@ -190,15 +192,20 @@ Sırası önemli olan tek bağ: **#4, #2'den SONRA** (hesap silme kaskadı
 - **Target audience:** **13+ öner** — 13 yaş altı hedeflenirse "Families"
   politikası devreye girer, çok daha ağır bir rejim.
 
-### 0.D — Vitrin varlıkları (bugün hiçbiri yok)
+### 0.D — Vitrin varlıkları
 
-- İkon **512×512** — `public/icon-512.png` var ✓
-- **Feature graphic 1024×500** — zorunlu, YOK
-- **En az 2** telefon ekran görüntüsü (pratikte 4-8); tablet desteği iddia
-  edilecekse tablet görselleri de
-- Başlık ≤30 · kısa açıklama ≤80 · tam açıklama ≤4000 — ham malzeme
-  `marketing/sponsored-2026-08/metin.md`
-- Kategori **Oyunlar → Kelime**, iletişim e-postası, web sitesi
+**23 Ağustos 2026'da üretildi** (`npm run generate-play-assets`,
+`marketing/play-store/`) — bu bölüm artık yalnızca kalanı listeliyor:
+
+- İkon **512×512** ✓ — cihazdaki başlatıcı ikonun KAYNAĞINDAN küçültüldü
+- **Feature graphic 1024×500** ✓ — üretim bileşenlerinden render edildi
+- Başlık (29/30) · kısa açıklama (79/80) · tam açıklama (1906/4000) ✓ —
+  `marketing/play-store/metin.md`
+- ⬜ **En az 2 telefon ekran görüntüsü** (pratikte 4-6) — **gerçek
+  cihazdan**; çekim listesi + gizlilik uyarıları aynı `metin.md`'de.
+  Tablet desteği iddia edilecekse tablet görselleri de.
+- ⬜ Kategori **Oyunlar → Kelime**, iletişim e-postası, web sitesi
+  (Console'a elle girilir)
 
 **Görseller elle çizilmez:** reklam kareleri (`scripts/sponsored-post/`) ve
 reel (`scripts/reel/`) zaten ÜRETİM bileşenlerini sunucuda render eden bir
