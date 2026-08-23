@@ -395,6 +395,90 @@ Sıralama anahtarı EKLEME (mevcut yedi anahtar korunuyor, gerekçesi
 
 ---
 
+## 10. Hata raporlama hız sınırı süreç ömrüne değil ZAMANA bağlansın — **İSTEĞE BAĞLI**
+
+**Model: Sonnet 5, efor `low`.** Spesifikasyon burada net; iki istemcide
+aynı sayı.
+
+**Nereden çıktı:** 23 Ağustos 2026'daki "app tarafı geldiğinde ne eksik?"
+denetimi. Aynı turda bulunan üç boşluğun üçü de kapatıldı (bkz. kök
+`CLAUDE.md` → "Mağaza öncesi üç ekleme"); bu dördüncüsü **bilinçli olarak
+ertelendi** — Play yüklemesinin önünde duran bir şey değil.
+
+**Sorun:** `MAX_PER_SESSION = 10` (web `errorReporting.ts`, port
+`error_reporter.dart`) + hiç temizlenmeyen imza kümesi. Web'de bir sayfa
+yenilemesi ikisini de sıfırlıyor, **app süreci ise günlerce yaşıyor** —
+10 FARKLI hatadan sonra o cihaz kalıcı olarak kör kalıyor ve tekrar eden
+bir hata süreç başına yalnızca BİR kez sayılıyor.
+
+**Neden bloker DEĞİL (ölçüldü/akıl yürütüldü, 23 Ağustos):** sınır
+*tespiti* değil *hacmi* kısıyor — hatayı yine görürsün, "kaç kez" sayısı
+eksik kalır. Panelin asıl ölçütü olan **"kaç cihaz"** bozulmuyor (o zaten
+cihaz başına tekil sayıyor). 12 tester'lık kapalı testte pratik etkisi yok.
+
+**Ne:** sayaç ve imza kümesi zaman pencereli olsun (ör. son 1 saatte en
+fazla 10; pencere kayınca imzalar da düşsün). Çökme döngüsü koruması
+KORUNMALI — bu maddenin var oluş sebebi o korumayı gevşetmek değil,
+penceresini doğru yere koymak.
+
+**Tuzaklar:**
+- İKİ istemci birden — biri değişip öteki kalırsa web ile app farklı
+  davranır. Sayı çifti olacağı için `layout_parity_test.dart`in desenine
+  uygun bir parite testi düşünülebilir.
+- `verify-error-reporting`in "oturum başına en fazla 10 kayıt" kontrolü ve
+  Dart'taki eşleniği bu değişiklikle YENİDEN YAZILMALI; ikisi de bugün
+  süreç-ömrü varsayımına dayanıyor.
+
+---
+
+## 11. Hata panelinde platform filtresi — **İSTEĞE BAĞLI, app çıkınca**
+
+**Model: Sonnet 5, efor `low`.**
+
+`admin_client_errors(p_days)` yalnızca gün alıyor; platformlar gruplanmış
+satırda tek bir birleşik dizede (`platforms`). Bugün tek platform (web)
+olduğu için gereksiz — **üç platform (web/ios/android) birden veri
+göndermeye başlayınca** "yalnızca iOS'ta olan hata" görünümü gerekecek.
+
+**Ne:** RPC'ye opsiyonel bir `p_platform` (ya da panelde istemci tarafı
+filtre — satır sayısı düşükken o da yeterli). Dönüş tipi değişmezse
+`create or replace` yeterli; değişirse drop+create + grant'ler elle
+(kayıtlı tuzak: `fix_withdraw_report_wrong_overload`).
+
+**Karar tetikleyicisi:** panelde ilk kez ios/android satırları görünüp
+web ile karışmaya başladığı gün.
+
+---
+
+## 12. Sürüm dağılımının KAPSAMI — ölç, gerekirse genişlet — **İZLEME**
+
+Kod işi değil, bir **karar noktası.** 23 Ağustos 2026'da eklenen
+`admin_app_version_breakdown` (Büyüme > Kullanıcı → "Sürüm Dağılımı")
+kaynağını `game_starts`tan alıyor, yani **yalnızca YEREL (YZ) oyun
+açılışlarını** sayıyor. Sonucu: yalnız Canlı oynayan bir kullanıcı tabloda
+HİÇ görünmez.
+
+Bu sınır bilinçli ve bugün doğru: `game_starts` girişten bağımsız
+(misafir dahil) yazılan en geniş kapsamlı istemci olayı ve tablonun tek
+işi "`mobile_min_supported_version` eşiğini yükseltmek güvenli mi"
+sorusuna cevap vermek.
+
+**Ne zaman yeniden düşünülmeli:** kapalı test sırasında tablodaki toplam,
+gerçek tester sayısının belirgin altında kalırsa — yani testerların kayda
+değer bir kısmı YZ oyunu hiç açmıyorsa. O gün seçenekler:
+- `online_game_clients`e `app_version` eklemek (Canlı tarafı kapsar), ya da
+- açılış başına günde bir satır yazan bir "heartbeat" olayı — **bu YENİ bir
+  kişisel veri sayılır**, yani `PrivacyModal` + portun `legal_modals.dart`'ı
+  birlikte güncellenmeli (tarihler `legal_text_test.dart` ile karşılaştırılıyor).
+
+**⚠ Eşiği yükseltmeden önce bu tabloya bak** — eski sürümden hâlâ oyun
+açılıyorsa yükseltmek o kullanıcıları uygulamadan kilitler
+(`version_gate.dart`). Bugün `app_config.mobile_min_supported_version`
+`{ios: 0.0.0, android: 0.0.0}`, yani kapı fiilen kapalı ve kimse
+kilitlenmiyor (23 Ağustos 2026'da canlıdan okundu).
+
+---
+
 ## Her iş için değişmeyen kurallar
 
 1. **Önce etki analizi** (kök `CLAUDE.md` → "Çalışma İlkesi"): bu kodun
