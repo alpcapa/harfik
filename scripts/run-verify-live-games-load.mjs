@@ -41,7 +41,7 @@ await build({
 // `reportClientError` (api.ts artık onu çağırıyor) modül gövdesinde değil
 // çağrıldığında `window.location`a bakıyor — node'da bir kabuk şart.
 globalThis.window = {
-  location: { pathname: '/' },
+  location: { pathname: '/', origin: 'https://kelimeki.com' },
   __KELIMEKI_BUILD__: 'verify',
   addEventListener: () => {},
 };

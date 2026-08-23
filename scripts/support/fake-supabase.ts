@@ -8,7 +8,8 @@
 // böyle bir `error` nesnesine çeviriyor (kaynaktan doğrulandı), yani
 // çevrimdışı davranışı bu sahteyle temsil edilebiliyor.
 
-type Err = { message: string };
+/** PostgREST hatası: `code` de taşınabiliyor (ör. 42501 = yetki yok). */
+type Err = { message: string; code?: string };
 
 export interface FakeSpec {
   /**

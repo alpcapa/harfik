@@ -2655,6 +2655,66 @@ hata çoğu zaman bir AĞ hatasıdır, ama raporlanmaya değer kılan şey
 **aynanın DA yazılamamış olmasıdır**, yani sinyal hatanın kendisinde değil
 ÇAĞIRANIN bildiği bağlamda. Manuel bildirimler bu yüzden filtreyi atlar.
 
+### İlk gerçek veri filtreyi İKİ kez genişletti (23 Ağustos 2026)
+
+Panel canlıya çıktıktan iki gün sonra ilk kayıtlara bakıldı: **yedi kaydın
+yedisi de gürültüydü.** Yani kural doğru yazılmıştı ama kapsamı eksikti —
+filtre olmadan panel ilk haftasında kullanılamaz hâle gelirdi. İki yeni
+eleme kuralı:
+
+**1) BİZE AİT OLMAYAN koddan doğan hatalar (`isThirdPartyError`).** Yedi
+kaydın **beşi** tek bir kaynaktı: Instagram/Facebook'un Android'deki
+uygulama-içi tarayıcısı sayfaya bir ölçüm script'i enjekte ediyor
+(`iabjs://navigation_performance_logger_android`) ve sekme kapanırken
+`postMessage`ta patlıyor — *"Error invoking postMessage: Java exception was
+raised during method invocation"*, `window._handleBrowserPreparingToClose`
+karesiyle. **Yığında bizim kodumuz HİÇ geçmiyor**; düzeltemeyiz ve
+Instagram reklamı sürdükçe katlanarak artar. Altıncı kayıt aynı sınıfın
+öteki yüzü: **`Script error.`** — çapraz kaynaklı bir script'ten gelen
+hatada tarayıcı mesajı/yığını/satırı SİLER, geriye teşhis değeri sıfır olan
+o dize kalır. Üç sinyal: `Script error.` + yığınsız; `ErrorEvent.filename`
+bizim origin'imizden değil; ya da yığındaki HİÇBİR kare bizim origin'imizden
+değil. **Şüphede kal ve raporla:** göreli/satır içi/URL'siz kare "bizim"
+sayılır — bu filtrenin yanlış pozitifi GERÇEK bir hatayı sessizce düşürmek
+demek. Üçüncü kural ancak sayfada dış script OLMADIĞI için güvenli (yalnız
+kendi paketimiz); bir gün analytics/SDK eklenirse yeniden düşünülmeli.
+`filename` YALNIZCA `ErrorEvent`te var, `Error`da yok — o yüzden karar hem
+`reportClientError` içinde (yığından) hem global `error` dinleyicisinde
+(dosya adından) veriliyor.
+
+**2) Oturumu düşmüş istemcide "permission denied" (`reportLiveListError`,
+`api.ts`).** Yedinci kayıt: `[list_my_online_games] permission denied for
+function list_my_online_games`. **Grant DOĞRU** (canlıdan okundu:
+`EXECUTE:authenticated`), yani rol `anon` kalmış — geçerli bir JWT
+gönderilmemiş. Başka açıklaması yok: oturum düşmüş, süresi geçmiş ya da
+yenileme henüz tamamlanmamış. Üç çağrı yeri de (`list_my_online_games`,
+`fetch_online_game_turns`, `fetch_online_game_deadlines`) zaten `user`
+varken tetikleniyor, yani bu bir yarış — bug değil.
+**⚠ AMA mesaja bakıp körlemesine filtrelemek YANLIŞ olurdu:** aynı mesaj
+gerçek bir dağıtım hatasının da yüzü — bir fonksiyon `drop`+`create`
+edildikten sonra `grant` unutulursa oturumu olan HERKES aynı mesajı alır ve
+bu projede bir kez yaşandı (bkz. `fix_withdraw_report_wrong_overload`).
+İkisini ayıran TEK şey **oturumun varlığı**: oturum VARKEN gelen bir
+"permission denied" raporlanır, oturumsuz gelen elenir. Kontrol
+`getSession()` ile — yerel depodan okur, AĞA GİTMEZ (`fetchMyGames`'in
+14 Ağustos düzeltmesinin aynı ayrımı).
+
+**Doğrulama:** `npm run verify-error-reporting` 20 → **30 kontrol**
+(gerçek IAB yığını, `Script error.`, kendi yığınımızın pozitif kontrolü),
+`npm run verify-live-games-load` **28 kontrole** çıktı — dördü yeni
+(oturumsuz elenir / oturumlu raporlanır / yetkiyle ilgisiz hata her
+hâlükârda raporlanır / dönüş davranışı değişmedi).
+**Negatif eş, ikisi de ayrı ayrı:** üçüncü taraf filtresi kaldırılınca ve
+auth-durumu guard'ı kaldırılınca ilgili kontroller GERÇEKTEN düşüyor.
+**Flutter portu ETKİLENMEDİ ve bu bilinçli:** orada sayfaya script enjekte
+eden bir uygulama-içi tarayıcı YOK (`Script error.` diye bir kavram da yok)
+ve port bu üç RPC'nin hatasını hiç raporlamıyor (`ErrorReporter`ın tek
+manuel çağrı yeri `cloud_save_repo`).
+
+**Kayıtlar SİLİNMEDİ** — panelin penceresi (7/30/90 gün) onları zaten
+kendiliğinden dışarıda bırakacak, ve bu yedi satır filtrenin neden
+gerektiğinin kanıtı.
+
 ### Üç değişmez (biri bozulursa telemetri ürünü bozar)
 
 1. **Fire-and-forget** — asla `await` edilmez, ASLA fırlatmaz.

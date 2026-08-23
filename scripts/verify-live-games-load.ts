@@ -23,6 +23,10 @@ import {
   fetchPendingLiveGameCounts,
 } from '../src/utils/pendingLiveGames';
 import { __netCalls, __setFake, type FakeSpec } from './support/fake-supabase';
+import {
+  __resetErrorReportingForTests,
+  __setClientErrorSinkForTests,
+} from '../src/utils/errorReporting';
 
 let failures = 0;
 function check(name: string, cond: boolean, detail = ''): void {
@@ -191,6 +195,64 @@ async function main() {
     decideInitialMainView(say(0, 0, 6), null) === null,
     'bayat/eksik veriyle tüketilen tek-seferlik karar hatası',
   );
+
+  // ── Oturum düşmüşken gelen "permission denied" TELEMETRİYE DÜŞMEZ
+  //
+  // 23 Ağustos 2026, panelin ilk gerçek verisi: `[list_my_online_games]
+  // permission denied for function list_my_online_games`. Grant DOĞRU
+  // (`authenticated`'e verili), yani rol `anon` kalmış — oturum düşmüş.
+  // Bu beklenen bir durum, bug değil. AMA aynı mesaj gerçek bir grant
+  // hatasının da yüzü; ayıran tek şey OTURUMUN VARLIĞI.
+  const raporlar: Record<string, unknown>[] = [];
+  const raporlariIzle = () => {
+    raporlar.length = 0;
+    __resetErrorReportingForTests();
+    __setClientErrorSinkForTests(async (r) => {
+      raporlar.push(r);
+    });
+  };
+  /** Rapor fire-and-forget + `getSession()` async — mikrogörevleri bekle. */
+  const bekle = () => new Promise((r) => setTimeout(r, 0));
+  const yetkiHatasi = {
+    list_my_online_games: {
+      code: '42501',
+      message: 'permission denied for function list_my_online_games',
+    },
+  };
+
+  {
+    raporlariIzle();
+    __setFake({ rpcError: yetkiHatasi, session: null });
+    check('oturumsuz yetki hatası → null (davranış değişmedi)', (await listMyOnlineGames()) === null);
+    await bekle();
+    check('oturumsuz "permission denied" RAPORLANMAZ', raporlar.length === 0, `rapor=${raporlar.length}`);
+  }
+  {
+    raporlariIzle();
+    __setFake({ rpcError: yetkiHatasi, session: { user: { id: 'u1' } } });
+    await listMyOnlineGames();
+    await bekle();
+    check(
+      'oturum VARKEN "permission denied" RAPORLANIR (grant hatası gizlenmez)',
+      raporlar.length === 1,
+      `rapor=${raporlar.length}`,
+    );
+  }
+  {
+    raporlariIzle();
+    __setFake({
+      rpcError: { list_my_online_games: { code: 'P0001', message: 'beklenmedik sunucu hatası' } },
+      session: null,
+    });
+    await listMyOnlineGames();
+    await bekle();
+    check(
+      'yetkiyle İLGİSİZ hata oturumsuz da RAPORLANIR',
+      raporlar.length === 1,
+      `rapor=${raporlar.length}`,
+    );
+  }
+  __setClientErrorSinkForTests(null);
 
   console.log(failures === 0 ? '\nTümü geçti.' : `\n${failures} kontrol düştü.`);
   process.exit(failures === 0 ? 0 : 1);

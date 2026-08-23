@@ -991,6 +991,20 @@ YOK) ve okuma yalnızca admin'e açık.
       Error('elle test') }))` çalıştır → panelde "elle test" belirmeli.
 - [ ] **Tekrar bastırma:** aynı hatayı arka arkaya iki kez tetikle — panelde
       TEK satır olmalı (aynı oturumda ikinci kayıt gönderilmez).
+- [ ] **GÜRÜLTÜ ELENİYOR (23 Ağustos 2026, ilk gerçek veriden):** Siteyi
+      **Instagram/Facebook uygulamasının içindeki tarayıcıdan** (Android)
+      aç, biraz gez ve sekmeyi kapat → panelde
+      `Error invoking postMessage: Java exception…` YA DA `Script error.`
+      BELİRMEMELİ. Bunlar uygulama-içi tarayıcının kendi enjekte ettiği
+      script'ten geliyor, bizim kodumuzla ilgisi yok. Belirirse filtre
+      kırılmıştır (`isThirdPartyError`).
+- [ ] **Oturum düşmesi hata sayılmıyor:** girişliyken başka bir sekmeden
+      çıkış yap (ya da tarayıcı depolamasından `sb-*-auth-token` anahtarını
+      sil) ve eski sekmede "Arkadaşınla" sekmesine dön →
+      `permission denied for function list_my_online_games` panele
+      DÜŞMEMELİ. **Ama bu, aynı mesajı sonsuza dek gizlemek DEĞİL:** oturumu
+      geçerli bir kullanıcı aynı mesajı alıyorsa o GERÇEK bir grant
+      hatasıdır ve panelde görünmeli.
 
 ## 9.14. Admin — kart başlıklarında gönderen adı (23 Ağustos 2026)
 

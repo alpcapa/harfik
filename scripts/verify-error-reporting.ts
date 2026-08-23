@@ -21,6 +21,7 @@ import { __setFake } from './support/fake-supabase';
 import {
   reportClientError,
   normalizeRoute,
+  isThirdPartyError,
   __setClientErrorSinkForTests,
   __resetErrorReportingForTests,
 } from '../src/utils/errorReporting';
@@ -165,6 +166,61 @@ async function main() {
     await bekle();
     check('Error olmayan değer de kaydedilir', sent[0]?.message === 'düz bir dize');
     check('yığın yoksa null gider', sent[0]?.stack === null);
+  }
+
+  // 10) BİZE AİT OLMAYAN kod — panelin ilk gerçek verisinden gelen kurallar.
+  //
+  // Gerçek yığın: Instagram/Facebook'un Android'deki uygulama-içi tarayıcısı
+  // sayfaya bir ölçüm script'i enjekte ediyor ve sekme kapanırken patlıyor.
+  // Bizim kodumuz yığında HİÇ geçmiyor.
+  const IAB_STACK = [
+    'Error: Error invoking postMessage: Java exception was raised during method invocation',
+    '    at sendDataToNative (iabjs://navigation_performance_logger_android:1:10198)',
+    '    at sendBeforeUnloadMessage (iabjs://navigation_performance_logger_android:1:13750)',
+    '    at window._handleBrowserPreparingToClose (iabjs://navigation_performance_logger_android:1:15718)',
+    '    at <anonymous>:1:22',
+  ].join('\n');
+  const BIZIM_STACK = [
+    'TypeError: x is not a function',
+    '    at Board (https://kelimeki.com/assets/index-abc123.js:12:345)',
+    '    at renderWithHooks (https://kelimeki.com/assets/index-abc123.js:9:87)',
+  ].join('\n');
+
+  check('IAB yığını üçüncü taraf sayılır', isThirdPartyError('Error invoking postMessage', IAB_STACK));
+  check('IAB dosya adı üçüncü taraf sayılır', isThirdPartyError('boş', null, 'iabjs://navigation_performance_logger_android'));
+  check('"Script error." üçüncü taraf sayılır', isThirdPartyError('Script error.', null));
+  check('BİZİM yığın üçüncü taraf SAYILMAZ', !isThirdPartyError('TypeError: x is not a function', BIZIM_STACK));
+  check('kendi paketimizin dosya adı SAYILMAZ', !isThirdPartyError('x', null, 'https://kelimeki.com/assets/index-abc.js'));
+  // Yığınsız/URL'siz bir hata KARAR VERİLEMEZ → raporlanır (şüphede kal).
+  check('yığınsız sıradan hata SAYILMAZ', !isThirdPartyError('bir şey patladı', null));
+  check('göreli/satır içi kare SAYILMAZ', !isThirdPartyError('x', 'Error\n    at <anonymous>:1:22'));
+
+  {
+    const sent = kur();
+    const e = new Error('Error invoking postMessage: Java exception was raised during method invocation');
+    e.stack = IAB_STACK;
+    reportClientError(e, 'uncaught');
+    await bekle();
+    check('OTOMATİK yakalamada üçüncü taraf hatası ELENİR', sent.length === 0, `sent=${sent.length}`);
+  }
+  {
+    // Aynı hata MANUEL bildirilirse elenmez — orada kaynak zaten bizim çağrı
+    // yerimiz (ağ filtresiyle birebir aynı gerekçe).
+    const sent = kur();
+    const e = new Error('Error invoking postMessage');
+    e.stack = IAB_STACK;
+    reportClientError(e, 'manual', 'test_ctx');
+    await bekle();
+    check('MANUEL bildirimde üçüncü taraf filtresi UYGULANMAZ', sent.length === 1, `sent=${sent.length}`);
+  }
+  {
+    // Pozitif kontrol: gerçek bir uygulama hatası HÂLÂ gidiyor.
+    const sent = kur();
+    const e = new Error('TypeError: x is not a function');
+    e.stack = BIZIM_STACK;
+    reportClientError(e, 'uncaught');
+    await bekle();
+    check('BİZİM koddan gelen hata raporlanır', sent.length === 1, `sent=${sent.length}`);
   }
 
   console.log(failures === 0 ? '\nTÜMÜ GEÇTİ' : `\n${failures} KONTROL DÜŞTÜ`);
