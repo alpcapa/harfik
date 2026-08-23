@@ -28,8 +28,32 @@ String? _lastUpdated(String source) {
   return m?.group(1);
 }
 
+/// Hukuki metinlerin web tarafındaki TEK KAYNAĞI.
+///
+/// 23 Ağustos 2026'da `PrivacyModal.tsx`/`TermsModal.tsx`ten buraya taşındı:
+/// aynı metni artık statik sayfalar da (`/gizlilik/`, `/kullanim-kosullari/`)
+/// tüketiyor, çünkü Play'in Data safety formu doğrudan açılan bir URL istiyor.
+/// **Bu test o taşımada kırıldı ve merge öncesi yakalandı** — eski yolu okumaya
+/// devam etseydi "Son güncelleme bulunamadı" diye düşerdi. Metin bir daha
+/// taşınırsa burası da güncellenmeli; başka hiçbir şey bunu yakalamaz.
+const _webKaynak = '../../src/legal/LegalContent.tsx';
+
+/// `LegalContent.tsx` İKİ metni birden taşıyor: önce `PrivacyBody`, sonra
+/// `TermsBody`. Portta ise sıra TERS (Koşullar önce, Gizlilik sonra) — bu
+/// yüzden "ilk eşleşmeyi al" YANLIŞ olur. Metni fonksiyona göre böl.
+String _bolum(String web, {required bool gizlilik}) {
+  final i = web.indexOf('export function TermsBody');
+  if (i < 0) {
+    throw StateError(
+        'LegalContent.tsx içinde TermsBody bulunamadı — dosya yeniden '
+        'düzenlendiyse bu testin sınırı da güncellenmeli.');
+  }
+  return gizlilik ? web.substring(0, i) : web.substring(i);
+}
+
 void main() {
   final port = File('lib/src/ui/auth/legal_modals.dart').readAsStringSync();
+  final web = File(_webKaynak).readAsStringSync();
 
   // Portta iki tarih var (Koşullar önce, Gizlilik sonra) — sırayla.
   final portDates = RegExp(r'Son güncelleme:\s*([0-9]{1,2}\s+\p{L}+\s+[0-9]{4})',
@@ -39,21 +63,19 @@ void main() {
       .toList();
 
   test('Kullanım Koşulları: portun "Son güncelleme" tarihi web ile aynı', () {
-    final web =
-        File('../../src/components/TermsModal.tsx').readAsStringSync();
-    expect(_lastUpdated(web), isNotNull,
-        reason: 'web TermsModal.tsx içinde "Son güncelleme" bulunamadı — '
+    final webTarih = _lastUpdated(_bolum(web, gizlilik: false));
+    expect(webTarih, isNotNull,
+        reason: 'web LegalContent.tsx içinde "Son güncelleme" bulunamadı — '
             'metin yeniden düzenlendiyse bu testin regex\'i güncellenmeli');
-    expect(portDates.first, _lastUpdated(web),
+    expect(portDates.first, webTarih,
         reason: 'Web Kullanım Koşulları güncellenmiş ama port almamış. '
             'legal_modals.dart web metnini BİREBİR taşımak zorunda.');
   });
 
   test('Gizlilik Politikası: portun "Son güncelleme" tarihi web ile aynı', () {
-    final web =
-        File('../../src/components/PrivacyModal.tsx').readAsStringSync();
-    expect(_lastUpdated(web), isNotNull);
-    expect(portDates.last, _lastUpdated(web),
+    final webTarih = _lastUpdated(_bolum(web, gizlilik: true));
+    expect(webTarih, isNotNull);
+    expect(portDates.last, webTarih,
         reason: 'Web Gizlilik Politikası güncellenmiş ama port almamış — '
             '10 Ağustos 2026\'da tam bu şekilde kaçtı (sohbet arşivi '
             'görünürlüğü katılımcıya kilitlendi, port eski cümleyi taşımaya '

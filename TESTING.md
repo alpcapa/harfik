@@ -1398,7 +1398,46 @@ adresi DOĞRULANDIĞINDA** gönderilir — bu ayrım testin tamamını belirliyo
       geri ver → doğru sekme yine de açılmalı (karar düşen istekte
       tüketilmez).
 
-## 16. Hukuki statik sayfalar — YALNIZCA CANLIDA ölçülebilir (23 Ağustos 2026)
+## 16. Joker düzenleme — GERÇEK dokunmatik cihazda (22 Ağustos 2026)
+
+Bir kullanıcı (Android) tahtaya koyduğu jokere tekrar dokunduğunda pencerenin
+açılmadığını ve harfin kendiliğinden değiştiğini bildirdi (A → C). Kök sebep
+dokunmatik tarayıcıların `pointerup`tan SONRA ürettiği uyumluluk (compat)
+click'iydi; ayrıntı ve ölçümler `CLAUDE.md` → "Joker (`?`)". Otomatik
+regresyon `tests/smoke.spec.ts`te var (emüle dokunmatik) — burası **gerçek
+cihaz** teyidi, çünkü compat olay sırası tarayıcı/cihaz farkı taşıyor.
+
+Her satırı **hem Android Chrome hem iOS Safari** ile, hem de **hem yerel (YZ)
+hem Canlı** oyun ekranında koş — ikisi bu deseni paylaşıyor.
+
+- [ ] **Tahtanın ÜST satırlarındaki joker:** Jokeri koy, harfini seç, sonra
+      taşa bir kez dokun → "Jokeri Hangi Harfe Çevir?" penceresi AÇIK
+      KALMALI (açılıp anında kapanmamalı).
+- [ ] **Tahtanın ALT satırlarındaki joker (asıl vaka):** Aynısını tahtanın
+      alt üçte birindeki bir hücrede yap → harf KENDİLİĞİNDEN değişmemeli.
+- [ ] **Gerçek seçim çalışıyor:** Açılan pencereden yeni bir harf seç →
+      taş o harfe dönmeli, pencere kapanmalı (hayalet click yutulurken
+      gerçek dokunuş yutulmamalı).
+- [ ] **"Geri Al" çalışıyor:** Aynı pencereden "Geri Al" → taş rafa dönmeli.
+- [ ] **Sıradan taş değişmedi:** Joker OLMAYAN, bu turda konmuş bir taşa
+      dokun → doğrudan rafa geri alınmalı (pencere açılmamalı).
+- [ ] **Sürükleyerek koyma:** Raftaki jokeri sürükleyip bir hücreye bırak →
+      harf seçme penceresi açılmalı ve açık kalmalı.
+- [ ] **Titreşimli dokunuş kaybolmuyor (22 Ağustos 2026):** Parmağını hafifçe
+      kaydırarak (tam sabit tutmadan) raftaki bir taşa dokun → seçilmeli;
+      tahtaya koyduğun bir taşa aynı şekilde dokun → rafa geri alınmalı.
+      Eşik parmakta 10px (farede 6) — eskiden 6px'lik titreşim jesti sessizce
+      yutuyordu.
+- [ ] **Gerçek sürükleme bozulmadı:** Raftaki taşı tahtaya sürükleyip bırak,
+      tahtadaki taşı başka bir hücreye taşı, tahtadaki taşı rafa sürükle.
+- [ ] **k-lig balonu (OHP) kapanışı:** k-lig listesini aç, "OHP" başlığına
+      dokunup balonu aç, sonra bir OYUNCU SATIRINA dokun → balon kapanmalı ve
+      o oyuncunun kartı AÇILMAMALI. İkinci dokunuş kartı açmalı.
+- [ ] **Hesap menüsü kapanışı (oyun ekranında):** Oyun sırasında sağ üstteki
+      avatara dokunup menüyü aç, sonra TAHTAYA dokun → menü kapanmalı ve
+      tahtaya taş KONMAMALI/hücre seçilmemeli. İkinci dokunuş normal çalışmalı.
+
+## 17. Hukuki statik sayfalar — YALNIZCA CANLIDA ölçülebilir (23 Ağustos 2026)
 
 `/gizlilik/`, `/kullanim-kosullari/` ve `/hesap-silme/` derleme zamanında
 üretilen statik sayfalar (kök `CLAUDE.md` → "Hukuki Statik Sayfalar").

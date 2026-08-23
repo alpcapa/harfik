@@ -8,6 +8,7 @@
 // Tahtadaki onaylanmış bir taşa dokunmak, o hücreden geçen kelimelerin
 // anlamını gösterir (meanings deposu verilmişse).
 import 'dart:async' show unawaited;
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
@@ -150,7 +151,14 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   // ── Sürükle-bırak (web App.tsx beginDrag/moveDrag/endDrag portu) ──────
   static const double _dragLift = 30; // web DRAG_LIFT
-  static const double _dragThreshold = 6; // web DRAG_THRESHOLD
+  // Sürükleme eşiği — web'deki DRAG_THRESHOLD_MOUSE/DRAG_THRESHOLD_TOUCH ile
+  // BİREBİR aynı (gerekçe: `src/App.tsx`). Fare ile parmak aynı değeri
+  // kullanamaz; 6px'lik tek eşik altında hafif titreyen bir dokunuş
+  // "sürükleme" sayılıp sessizce hiçbir şey yapmıyordu.
+  static const double _dragThresholdMouse = 6; // web DRAG_THRESHOLD_MOUSE
+  static const double _dragThresholdTouch = 10; // web DRAG_THRESHOLD_TOUCH
+  static double _dragThresholdFor(PointerDeviceKind kind) =>
+      kind == PointerDeviceKind.mouse ? _dragThresholdMouse : _dragThresholdTouch;
   final GlobalKey _gridKey = GlobalKey();
   final GlobalKey _rackKey = GlobalKey();
   final GlobalKey _stackKey = GlobalKey();
@@ -423,7 +431,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     final d = _dragRef;
     if (d == null) return;
     if (!d.moved) {
-      if ((e.position - d.start).distance < _dragThreshold) return;
+      if ((e.position - d.start).distance < _dragThresholdFor(e.kind)) return;
       d.moved = true;
       // Eşik İLK kez aşıldı — kaynak artık "sürükleniyor" sayılır ve
       // gizlenir (web'in aynı anki davranışı). Sürükleme başına yalnızca BİR

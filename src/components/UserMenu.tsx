@@ -13,6 +13,7 @@ import {
 import type { MyLeaderboardRank } from '../lib/database.types';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
+import { swallowNextClick } from '../utils/ghostClick';
 import { CountBadge } from './CountBadge';
 import { ScoreCard } from './ScoreCard';
 import { AccountSettingsModal } from './AccountSettingsModal';
@@ -113,8 +114,14 @@ export function UserMenu() {
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node))
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
         setOpen(false);
+        // Menüyü kapatan dokunuş YALNIZCA kapatmalı — aynı jestin click'i
+        // altındaki öğeye de düşüyor ve oyun ekranında bu, menüyü kapatmak
+        // için tahtaya dokunan kullanıcıya istemediği bir taş yerleştirmesi
+        // olarak dönüyordu (bkz. `src/utils/ghostClick.ts`).
+        swallowNextClick();
+      }
     };
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
     document.addEventListener('mousedown', onDown);

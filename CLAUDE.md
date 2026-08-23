@@ -1073,7 +1073,7 @@ src/
     constants.ts    # Tahta sabitleri, köşe hesapları, bonus konumları
     gameReducer.ts  # useReducer tabanlı oyun state makinesi
     types.ts        # GameState, Player, Tile tipleri
-  utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, cloudSaveMirror, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields, platform, offlineNotice, shareLink, pendingLiveGames, errorReporting...)
+  utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, cloudSaveMirror, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields, platform, offlineNotice, shareLink, pendingLiveGames, errorReporting, ghostClick...)
   data/         # Kelime listesi (~63k), harf dağılımı, kelime anlamları, wordSetLoader (lazy chunk)
   lib/          # Supabase istemcisi ve API sarmalayıcısı
   fonts/        # @font-face tanımları (main.tsx import eder) + files/*.woff2 — bunlardan
@@ -1109,6 +1109,52 @@ mobile/         # Flutter portu — kelimeki_core (saf Dart motor) + üretilmiş
   **Terminoloji (19 Ağustos 2026, kullanıcı sordu: "bazı yerlerde bölge vergisi, bazı yerlerde sınır ihlal vergisi diyoruz; hangisi daha yaygın?"):** İkisi AYNI şeyin iki farklı yüzü ve ayrım bilinçli — **`sınır ihlali` EYLEMİN adı** (onay diyaloğu başlığı `Sınır İhlali!` — `App.tsx`/`OnlineGameScreen.tsx`/portun `invasion_confirm.dart`'ı; `MoveHistoryModal` rozeti `Sınır İhlali`), **`bölge vergisi` o eylemin BEDELİNİN adı** (`HelpModal`'ın "Bölge Vergisi" bölümü + hızlı başlangıç maddesi, `submit_move`'un hata mesajları, bu doküman). Sayım yapıldığında tek gerçek tutarsızlık `Landing.tsx`'in "Nasıl oynanır" 4. adımıydı: `"Sınır ihlal vergisine dikkat!"` ikisini birleştirip projede başka HİÇBİR yerde geçmeyen üçüncü bir terim uyduruyordu (üstelik "ihlal vergisi" dilbilgisi olarak da tökezliyor). Başlık **"Bölge vergisine dikkat!"** oldu — karşılama katmanı kuralları ilk kez anlatan yüzey, orada verginin kanonik adı geçmeli. Aynı turda kod YORUMLARINDAKİ iki ölü varyant da (`köşe vergisi` → `types.ts`/`gameReducer.ts`, `sınır vergisi` → `validator.ts` + `_game/validator.ts` + portun `validator.dart`'ı) `bölge vergisi`ne çekildi; davranış değişmedi, golden vector'lar yeniden üretildi ve **sıfır fark** çıktı. Yeni bir yüzey eklerken bu ikiliği koru, üçüncü bir terim üretme.
 - **Oyun bitişi:** Raf boş + torba boş → oyun biter. Her oyuncunun kendi elinde kalan raf taşlarının puanı kendi skorundan düşülür — rafını bitiren oyuncuya diğerlerinin kalan taş puanları eklenmez (`endGame`, `src/game/gameReducer.ts`). Alternatif: tüm oyuncular arka arkaya MAX_PASS_ROUNDS tur puansız geçerse (pas VEYA taş değiştirme — ikisi de skoru etkilemediğinden ve taş değiştirme torbadaki taş sayısını azaltmadığından aynı sayaca dahildir, yoksa oyuncular sürekli taş değiştirerek oyunu hiç bitirmeyebilirdi) biter. İstisna: oyunu bitiren hamledeki taşların TAMAMI jokerse (başka hiçbir harf yoksa) ekstra bir bitiş bonusu kazanılır — 1 joker +25, 2 joker +50 (`jokerFinishBonus`, `src/game/constants.ts`).
 - **Joker (`?`):** 2 adet, 0 puan, oynanırken herhangi bir Türkçe harfe dönüşür. Tahtaya bu turda konmuş (henüz "Oyna" ile onaylanmamış) bir jokere tekrar dokunmak artık onu geri almaz — `WildcardModal` tekrar açılır (başlık "Jokeri Hangi Harfe Çevir?") ve seçilen yeni harf `SET_WILD_LETTER` action'ıyla (`src/game/gameReducer.ts`) hücredeki `wildLetter`'ı günceller; taş geri alınmaz. Geri alma bu modda hâlâ iki yoldan mümkün: modaldeki "Geri Al" butonu (`RECALL_CELL` dispatch eder) ya da taşı doğrudan rafa sürükleyerek (mevcut sürükle-bırak `RECALL_CELL` yolu, dokunmadan ayrışır — sürükleme hâlâ eski davranışı korur, yalnızca hareketsiz dokunuş/tık yeni davranışa geçti). Sıradan (joker olmayan) yerleştirilmiş bir taşa dokunmak hâlâ doğrudan geri alır, davranış değişmedi. `App.tsx` (yerel/YZ oyun) ve `OnlineGameScreen.tsx` (Canlı oyun) aynı deseni birebir paylaşıyor (`pendingWild.editing` bayrağı) — biri değişirse diğeri de güncellenmeli.
+  **BULUNAN HATA (22 Ağustos 2026, bir kullanıcı bildirdi — DOKUNMATİKTE bu
+  düzenleme yolu baştan beri kırıktı):** *"Tahtaya joker koyup değiştirmek
+  için üzerine tekrar tıkladığında tablo açılmadı ve önce konan A harfi
+  C'ye döndü."* Kök sebep jokerde ya da reducer'da DEĞİL, olay sırasında:
+  dokunmatik tarayıcılar bir jestin pointer olaylarından SONRA uyumluluk
+  (compat) `mousedown`/`mouseup`/`click` üretir ve bu üçü hit-test'i
+  **O ANDAKİ DOM** üzerinde yapar. Pencere `endDrag`in içinde, yani
+  `pointerup` sırasında açıldığından (React ayrık olayı senkron flush eder),
+  compat click artık hücrenin değil **YENİ RENDER EDİLMİŞ modalın** üstüne
+  düşüyordu. Sonuç parmağın tahtadaki konumuna göre değişiyor — ikisi de
+  kullanıcının tarifinde var: harf ızgarasındaki bir taşa denk gelirse joker
+  sessizce başka bir harfe dönüyor, modalın zeminine denk gelirse pencere
+  açıldığı anda kapanıyor ("tablo açılmadı").
+  **ÖLÇÜLDÜ, tahmin edilmedi** (Chromium, `hasTouch`+`isMobile`, 390×844,
+  jokerli bir kayıttan devam edilerek): olay zinciri `pointerdown → pointerup
+  (hücre) → mousedown/mouseup/click (MODAL)`; tahtanın alt üç satırındaki
+  hücreler harf ızgarasıyla örtüşüyor ve kullanıcının bildirdiği semptom
+  birebir üretildi — (10,5)'te **A → C**, (11,5)'te A → Ğ, (12,7)'de A → H;
+  üst satırlarda ise pencere zemine düşen click'le anında kapanıyordu.
+  **Düzeltme yeni bir mekanizma DEĞİL, projenin kendi mekanizmasının doğru
+  yere uygulanması:** iki ekranda da zaten bir sürükleme sonrası hayalet
+  click'i yutan bir bayrak + belge düzeyinde capture dinleyicisi vardı;
+  joker dalı da artık onu kuruyor. Mekanizma aynı gün **`src/utils/ghostClick.ts`**'e
+  (`swallowNextClick()`) çıkarıldı — iki ekranın kopyaları tek kaynağa indi ve
+  aynı sınıfın öteki iki örneği (aşağı bkz.) de oradan besleniyor. Bayrağın
+  temizlenmesi `setTimeout(0)` yerine bir sonraki jestin `pointerdown`ına bağlandı —
+  compat olayları AYNI jestin parçası ve kendileri pointerdown ÜRETMEZ
+  (ölçüldü), yani temizleme olay sırasına bağlı; zamanlayıcı bu Chromium'da
+  da işe yarıyor (ölçüldü) ama sıra hiçbir yerde garanti değil ve hatanın
+  kendisi zaten tarayıcılar arası olay zamanlaması farkından doğuyor.
+  Yutucu ayrıca `detail === 0` olan click'leri (klavyeyle tetiklenen
+  Enter/Space) baştan dışarıda bırakıyor — onlar bir pointer jestinin
+  parçası değil.
+  **Yan fayda:** raftan SÜRÜKLENEREK konan bir joker de pencereyi aynı
+  `pointerup` içinde açıyor; o dal da artık aynı korumayı taşıyor.
+  **Flutter portu ETKİLENMEDİ ve `mobile/` altında hiçbir değişiklik
+  gerekmedi** — orada dokunuş Flutter'ın kendi hit-test'inden geçiyor,
+  compat click diye bir şey yok (`game_screen.dart` → `_tapPlacedTile`).
+  **Regresyon:** `tests/smoke.spec.ts` 22 → **23 test** — dokunmatik bir
+  bağlamda (`test.use({ hasTouch, isMobile })`; masaüstü profilinde hata
+  GÖRÜNMEZ, `tap()` bile çalışmaz) joker konup üzerine dokunuluyor: pencere
+  açık kalmalı, harf değişmemeli, ve ardından GERÇEK bir harf seçimi hâlâ
+  çalışmalı. Test, hücrenin harf ızgarasıyla gerçekten örtüştüğünü ayrıca
+  ölçüyor — düzen değişip örtüşme kaybolursa testi sessizce geçirmek yerine
+  düşürüyor. **Negatif eş:** joker dalındaki tek satır kaldırılınca test
+  GERÇEKTEN düşüyor.
 - **Torba:** Oyuncu sayısından bağımsız olarak sabit 100 taş (Türkçe dağılım, `src/data/tiles.ts`). Not: bir ara tüm modlarda 186'ya çıkarılmıştı, ama simülasyon torbanın gerçek bitirişini (rafını torba boşken tamamen bitirme + rakip puanlarını kapma) neredeyse imkânsız kıldığını gösterdi (4 oyunculuda 0/10), bu yüzden 100'e geri dönüldü. Bölge artık statik 5×5 değil dinamik/genişleyen olduğundan (bkz. yukarı), 4 oyunculu oyunlarda köşe sınırıyla etkileşim için torbayı büyütmeye (eski `BAG_SCALE_BY_PLAYER_COUNT` denemesi) gerek kalmadı; kaldırıldı.
 - **Teslim olma (kademeli):** Bir oyuncu teslim olduğunda (`Player.surrendered`, `SURRENDER` action, `src/game/gameReducer.ts`) oyun tümüyle bitmez — o oyuncu sırayı devretmeden çekilir, kalan oyuncular (YZ ve/veya diğer hotseat oyuncuları) oynamaya devam eder; sıra rotasyonu ve pas-turu sayacı yalnızca teslim olmamış oyuncuları sayar (`nextActiveIndex`/`activePlayerCount`). Teslim olan oyuncunun puanı dondurulmaz, **sıfırlanır** (`score: 0`) ve rafında kalan kullanılmamış taşlar torbaya geri karıştırılır (`shuffle`) — böylece o taşlar kalan oyuncular için tamamen kaybolmaz. Oyun yalnızca teslim sonrası aktif oyuncu sayısı 1'e düşünce biter: 2 kişilik oyunda tek teslim bunu anında tetikler; 4 kişilikte sırasıyla 3 → 2 → (üçüncü teslimde) 1 aktif oyuncuya iner ve o son kalan oyuncu kazanır — sıralama, teslim olanları puanlarından bağımsız olarak her zaman en sona koyan `rankPlayers` (`src/utils/ranking.ts`) ile hesaplanır ve hem `GameOver` hem `buildGameRecord`'un (`App.tsx`) skor kaydı bunu kullanır. **29 Temmuz 2026'da logo davranışı değişti — artık manuel/anlık bir teslim yolu yok:** Öncesinde logoya tıklamak bir "Çık" onay modalı açıyor, sırası gelen hâlâ oyundaki insan oyuncuyu (hotseat'te herkes kendi sırasında teslim olabilsin diye) ya da yoksa hesap sahibini (1. oyuncu) hedefleyip `SURRENDER` dispatch ediyordu — Canlı oyundaki 48 saatlik zaman aşımı modeli (bkz. "Canlı Oyun — Faz 3.6") YZ tarafına da uygulanınca (kullanıcı isteği) bu modal tamamen kaldırıldı: logo artık HER DURUMDA (onay sorulmadan, kimin sırası olduğuna bakılmadan) doğrudan Setup'a döner (`handleLogoClick`, `App.tsx`, bkz. aşağıdaki "Devam eden oyunun kalıcılığı"). Setup'taki Yapay Zeka sekmesinde çalışan mevcut kurulumda zaten yalnızca 1. oyuncu (hesap sahibi) insan olabildiğinden (diğerleri her zaman YZ), bu modalın hotseat dalı ("başka bir insan oyuncuyu teslim et, diğerleri devam etsin") pratikte hiç tetiklenmiyordu — kaybı yok. `SURRENDER` action'ının kendisi (`gameReducer.ts`) ve yukarıda anlatılan kademeli teslim mekaniği (puan sıfırlama, raf→torba, `rankPlayers` sıralaması) hâlâ duruyor, ama artık local oyunda hesap sahibi için bunu tetikleyen TEK yol aşağıdaki 7 günlük terk edilme kuralı (`takePendingAbandonedGame`, gecikmeli -2 ceza) — anlık bir "Çık" kararı artık mümkün değil. `games.players` jsonb'sindeki her satırda hâlâ `surrendered` alanı var; `GameHistoryModal` yalnızca teslim olan oyuncunun kendi satırında (genel/üst köşede değil) "Teslim Oldu" rozeti gösterir.
 - **Teslim sonrası izleme (4 kişilik) — 29 Temmuz 2026'dan beri UI'dan tetiklenemiyor:** Bu bölüm, hesap sahibinin logo üzerinden anlık teslim olabildiği eski tasarımı anlatıyordu (`spectating = rackPlayer.surrendered && !state.isGameOver`, `App.tsx` — dolduğunda rafı/Oyna/Pas Geç/Değiştir/Karıştır/Geri Al butonları yerine "Teslim oldun — oyunu izliyorsun" bandı gösterilip `GameHeader`'ın `exitDisabled` prop'uyla çıkış da kilitleniyordu). Yukarıdaki değişiklikle (logo artık her zaman onaysız Setup'a dönüyor) hesap sahibi için `SURRENDER`'ı UI'dan tetikleyen tek yol kalktığından, bu `spectating` dalı artık pratikte hiç ulaşılamıyor — kod (JSX/`exitDisabled` dahil) bilinçli olarak silinmedi (reducer'ın `SURRENDER` yeteneği hâlâ geçerli bir kavram, ileride başka bir tetikleyici eklenebilir) ama şu an local akışta kimse bu bandı göremez. 2 kişilik oyunda zaten hiç yaşanmıyordu (tek teslim `activePlayerCount<=1`'i tetikleyip oyunu anında bitirdiğinden, `endGame`).
@@ -1365,6 +1411,118 @@ Kullanıcı, oyun sonrası çıkan "Görüş Bildir" formuna (`FeedbackModal`) d
 
 Bir sonraki form/modal eklendiğinde aynı deseni (küçük punto istense bile input/textarea/select elemanının kendisi hep ≥16px kalmalı) otomatik olarak miras alıyor — ayrı bir işlem gerekmiyor, kural elemente göre (class'tan bağımsız) uygulanıyor. **Ders:** Tailwind v3'te `@layer`/cascade-layer tabanlı bir öncelik varsayımı kurmadan önce derlenmiş CSS çıktısında gerçekten `@layer` üretilip üretilmediğini doğrula — sürüme göre değişebilir, varsayımla ilerlemek (ilk sürümde olduğu gibi) sessizce işe yaramayan bir düzeltmeye yol açabilir.
 
+## Jest Sınıfı Denetimi — dokunmatiğe özgü iki hata (22 Ağustos 2026)
+
+Bir kullanıcının joker raporundan sonra kullanıcı sordu: *"Buna benzer başka
+sorunlar olabilir mi?"* — jest yüzeylerinin tamamı iki platformda tarandı.
+İki hata sınıfı çıktı; ikisi de MASAÜSTÜNDE GÖRÜNMÜYOR, yani duman testleri
+(hepsi masaüstü profilinde koşuyor) bunları yapısal olarak göremiyordu.
+
+### Sınıf 1 — jestin İÇİNDE değişen ekran, o jestin click'ini yiyor
+
+Mekanizma ve joker vakası: "Joker (`?`)" bölümü. Mekanizma
+**`src/utils/ghostClick.ts`** (`swallowNextClick()`) — modül düzeyinde tek
+bayrak + tek capture dinleyicisi (aynı anda yalnızca BİR jest yaşar).
+Denetimde aynı sınıfın **iki örneği daha** bulundu ve düzeltildi:
+
+| Yer | Ne oluyordu |
+|---|---|
+| `Leaderboard` — OHP balonu | Balonu kapatmak için dışarı dokunmak, aynı jestin click'iyle ALTTAKİ k-lig satırını da açıyordu (o oyuncunun kartı) |
+| `UserMenu` — hesap menüsü | Menüyü kapatmak için tahtaya dokunmak menüyü kapatıp AYNI dokunuşla taş yerleştiriyordu |
+
+İkisi de platform normuna aykırıydı: bir popover'ı kapatan dokunuş
+arkadakini çalıştırmaz. **Bu ikisi masaüstünde de yaşanıyordu** (fare
+click'i de aynı jestin parçası), yani düzeltme dokunmatiğe özgü değil.
+
+**Kalan sınır (bilinçli, kayda geçsin):** `swallowNextClick()` yalnızca
+CLICK'i yutar. Hesap menüsü açıkken tahtadaki BU TURDA KONMUŞ bir taşa
+dokunulursa o taş yine geri alınır — çünkü o eylem click'e değil `pointerup`a
+bağlı (bkz. `Board`un `hasPending` dalı). Tam kapatmanın yolu menüye tam
+ekran görünmez bir zemin (backdrop) koymak; yapılmadı, çünkü `UserMenu` bu
+ortamda HİÇ render edilemiyor (Supabase yapılandırılmadan `null` dönüyor) ve
+test edilemeyen bir yapısal değişiklik, tek satırlık kazanca göre orantısız
+risk. Dar bir uç durum ve sonucu geri alınabilir (taş rafa döner).
+
+**Temiz çıkanlar (ölçüldü/okundu, bir sonraki denetim tekrar aramasın):**
+`GrowthChart`in tooltip'i `pointer-events-none` ve kabında `onClick` yok;
+karşılama katmanının `main.tsx`teki dört düğme bağlaması `click` tabanlı
+(click jestin SON olayı, ardından hayalet gelmez); geri kalan ~15 modalın
+hepsi `onClick` ile açılıyor. Flutter portunda bu sınıf **yapısal olarak
+yok** — orada dokunuş Flutter'ın kendi hit-test'inden geçiyor, compat mouse
+olayı diye bir şey yok.
+
+### Sınıf 2 — fareye göre ayarlanmış bir sabitin parmağa uygulanması
+
+`DRAG_THRESHOLD` tek bir sayıydı (**6 px**) ve parmak için fazla dardı:
+hafif titreyen bir dokunuş "sürükleme" sayılıp aynı hücrede bittiğinden
+**hiçbir şey yapmıyordu**. Yanlış bir şey değil, *hiçbir şey* — kullanıcıya
+"dokunuşum işlemedi" olarak görünen sessiz bir kayıp (bu kod tabanında daha
+önce "ikona 4-5 kere dokunmam gerekti" diye bildirilen sınıfın kardeşi).
+
+**ÖLÇÜLDÜ** (Chromium, `hasTouch`+`isMobile`, 390×844, CDP ham dokunuş
+olaylarıyla; `tap()` hiç hareket üretmediğinden eşik ancak böyle ölçülüyor):
+
+| Titreşim | Raf taşı seçimi | Konmuş taşı geri alma | Joker penceresi |
+|---|---|---|---|
+| 0–4 px | ✅ | ✅ | ✅ |
+| 6 px ve üstü | ❌ | ❌ | ❌ |
+
+Platform normları 6'nın ÜSTÜNDE: Android/Chrome touch slop **8 px**, iOS
+~10 pt, Flutter `kTouchSlop` **18**. Yani Android'in kendisinin hâlâ
+"dokunuş" saydığı bir jesti bu kod sürükleme sayıyordu.
+
+**Bunu sinsi yapan asimetri:** taşı KOYMAK `onClick` yolundan gidiyor
+(eşikten etkilenmez), geri almak/jokeri düzenlemek sürükleme yolundan —
+yani kullanıcı "koyabiliyorum ama geri alamıyorum" yaşıyordu. Swap modunda
+seçim de `onClick` olduğundan, normal modda seçilmeyen taş swap modunda
+seçilebiliyordu.
+
+**Düzeltme:** eşik pointer TÜRÜNE bağlandı — `DRAG_THRESHOLD_MOUSE = 6`
+(fare, DEĞİŞMEDİ: imleç titremez), `DRAG_THRESHOLD_TOUCH = 10`. Ölçülen yeni
+davranış: 9 px'e kadar dokunuş, 12 px'te sürükleme; gerçek sürükleme
+(raftan tahtaya) etkilenmedi.
+
+**DÖRT dosyada birden yaşıyor** — `App.tsx`, `OnlineGameScreen.tsx` ve
+portun iki oyun ekranı (`game_screen.dart`, `online_game_screen.dart`;
+orada `PointerDeviceKind.mouse` ayrımıyla). Biri unutulursa iki ekran ya da
+iki platform sessizce ayrışır: **`mobile/app/test/layout_parity_test.dart`
+dördünü birden kilitliyor** — hem sayıları hem eşiğin pointer türüne bağlı
+seçildiğini (sabit doğru olup kullanılmazsa değeri yok).
+
+### Regresyon — duman testleri artık dokunmatik bir bağlam da taşıyor
+
+`tests/smoke.spec.ts` 22 → **24 test**, `dokunmatik jestler` describe'ı
+altında (`test.use({ hasTouch, isMobile })`). Fikstür rastgele DEĞİL: raf
+`['?','M','A','R','T','I','K']` olarak sabitleniyor — ilk sürüm torbadan
+rastgele çekiyordu ve aranan harf bazı koşularda hiç gelmiyordu (gerçek bir
+flake, ölçüldü). **Negatif eş, ikisi de ayrı ayrı:** joker dalındaki
+`swallowNextClick()` kaldırılınca ve eşik 6'ya döndürülünce ilgili testler
+GERÇEKTEN düşüyor.
+
+### Denetimde bulunan ama DÜZELTİLMEYEN — gerekçeleriyle
+
+- **Alt şeridin dokunma hedefleri 18 px yüksekliğinde** ("Hamleler",
+  "Mesajlaşma", "Nasıl Oynanır?") — WCAG 2.2'nin 24×24 asgarisinin altında.
+  ÖLÇÜLDÜ (390 px): 78.8×18 ve 125.8×18; şeridin üstünde 14 px, altında
+  62 px boşluk var, yani web'de `py-1.5 -my-1.5` ile düzen HİÇ değişmeden
+  30 px'e çıkarılabilir. **Yapılmadı çünkü portta bedeli farklı:** Flutter'da
+  negatif margin yok, `Padding` şeridi gerçekten 12 px büyütür ve tahta
+  kartının yüksekliği ölçülmüş/dokümante bir değer — iki platformu ayrıştırmadan
+  düzeltmek ayrı bir düzen turu istiyor. Hedefler GENİŞ olduğundan (1418 ve
+  2264 px²) pratik ıskalama riski, bildirilen 12×12'lik ikon vakasından
+  (144 px²) çok düşük.
+- **`title="…"` balonları dokunmatikte hiç görünmüyor** — denetimde 39
+  eşleşmenin çoğu `ConfirmDialog`/`Section` PROP'u çıktı; gerçek HTML
+  `title` yalnızca 4 yerde (FriendsModal'ın "arkadaşlıktan çıkar" ikonu,
+  ChatSettingsModal'ın 🚫/🚩 rozetleri, admin "Sil"). Dördünde de `aria-label`
+  var ve dokunuş zaten ne olacağını YAZAN bir onay diyaloğu açıyor, yani
+  anlam dokunmatikte de erişilebilir. Değişiklik gerekmedi.
+
+**Doğrulama sınırı:** `Leaderboard`/`UserMenu` düzeltmeleri otomatik test
+EDİLEMEDİ — ikisi de oturum açmış bir kullanıcı + yapılandırılmış Supabase
+istiyor, dev sunucusunda ulaşılamıyor (`TESTING.md` bölüm 16'ya elle
+maddeler eklendi). Oyun ekranlarının ikisi de duman testleriyle kapalı.
+
 ## Dokunmatikte "Yapışkan Hover" (11 Ağustos 2026)
 
 Kullanıcı, Setup'ın en altındaki **"Kullanım Koşulları"** linkinin altında,
@@ -1614,7 +1772,7 @@ edilen kelimeyi mobil reddediyor" olarak görünür.
     - **`?` veri boşken de çizilir** (grafiklerde ve üç tabloda da) — "bu grafik neyi sayıyor?" sorusu tam da hiç veri yokken sorulur; CSV ise indirilecek satır olmadığından gizleniyor. Bunun için `GuestBreakdownTable`/`RetentionCohortTable`/`SourceFunnelTable`'ın erken dönüşleri de rozeti taşıyacak şekilde yeniden düzenlendi.
     - **Görsel dil icat EDİLMEDİ:** rozet `ScoreCard`/`PlayerScoreCard`'daki k-lig "?" rozetinden alındı (yuvarlak, `border-muted`); boyut oradaki 14px yerine 13px, çünkü kardeşi olan "CSV İndir" 9px'lik bir satır. **Daire İÇ `span`'de** — dolgu doğrudan butona verilseydi `rounded-full` 15×23'lük bir ELİPS üretirdi (ilk sürümde tam bu yapıldı, ölçümde yakalandı). `p-1 -m-1` dokunma alanını 13→21px yaparken layout ayak izini değiştirmiyor (`SourceFunnelTable`'ın "% / Sayı" düğmesindeki aynı desen).
     - **Ölçüldü** (derlenmiş CSS + Chromium, 390/834px): rozet tam daire (13×13), dokunma hedefi 21×21, kontrol satırının yüksekliği DEĞİŞMEDİ (15px), yatay taşma yok. Popup en uzun metinle (Kaynak Hunisi) iPhone'da 668px — `max-h-[80vh]` (675px) sınırına DAYANMIYOR, yani kaydırma bir güvenlik ağı; daha kısa ekranlarda devreye giriyor.
-  - **Kaynak Hunisi — kaynak → kişi → başlayan → üye → oyun (16 Ağustos 2026, `source_funnel` migration'ı)** — kullanıcı isteği: *"Admin ziyaretçi kaynağı tablosunu funnel şeklinde yapabilir miyiz? … kaynak > kişi > üye > oyun … yukarıdaki zaman filtrelerine göre çalışabilir."* Zaman filtresi kısmı ZATEN öyleydi (tablo baştan beri Kullanıcı grafiğinin granülerlik+periyodunu `GRANULARITY_TO_DAYS` ile gün sayısına çevirip kullanıyor); asıl iş son iki adımdı.
+  - **Kaynak Hunisi — MİSAFİR hunisi: kaynak → gelen → üye → başlayan → biten (16 Ağustos 2026, `source_funnel` migration'ı; sütun adları/ölçüleri 22 Ağustos 2026'da değişti, bkz. aşağıdaki "Biten" maddesi)** — kullanıcı isteği: *"Admin ziyaretçi kaynağı tablosunu funnel şeklinde yapabilir miyiz? … kaynak > kişi > üye > oyun … yukarıdaki zaman filtrelerine göre çalışabilir."* Zaman filtresi kısmı ZATEN öyleydi (tablo baştan beri Kullanıcı grafiğinin granülerlik+periyodunu `GRANULARITY_TO_DAYS` ile gün sayısına çevirip kullanıyor); asıl iş son iki adımdı.
     - **Funnel'ın son iki adımı HESAPLANAMIYORDU ve bu şemanın bilinçli bir kararıydı:** `guest_visits` tamamen anonim ve bir ziyaretçiyi sonradan açtığı hesaba bağlayacak hiçbir alan YOK — olsaydı `PrivacyModal`'daki "hiçbir kişisel veri içermez" taahhüdünü bozardı (bkz. "Kayıtlar" bölümündeki aynı gerekçeyle reddedilen "ilk siteye geliş" olayı). Ölçüldü: 266 benzersiz ziyaretçi, 23 üye, aralarında SIFIR bağ.
     - **Çözüm ziyaret satırlarını hesaba BAĞLAMAK DEĞİL:** kayıt anında profilin KENDİSİNE ilk-temas kaynağı damgalanıyor (`profiles.signup_utm_source`) — gender/birth_date/marketing_consent ile birebir aynı yol (`sharedxp_pending_profile` → `handle_new_user`), yani e-posta doğrulaması AÇIKKEN de çalışıyor. Funnel iki AYRI dimension'ı yan yana koyuyor, `guest_visits` ile `profiles` arasında JOIN YOK. Bu yüzden **dönüşüm oranı sütunu bilerek YOK** — "Kişi" ile "Üye" farklı ölçümler, oranları yanıltıcı olurdu.
     - **`null` ≠ `'direkt'` (bilinçli):** web artık `?ref=` hiç yoksa bile AÇIKÇA `'direkt'` damgalıyor, dolayısıyla null yalnızca "bu istemci damgalamadı" demek — bu özellikten önceki üyeler ve **bugün Flutter portundan gelen kayıtlar**. Böylece uygulama kayıtları "Direkt" satırını sessizce şişirmiyor, "Bilinmiyor"da toplanıyor. Portun kendi damgasını göndermesi (mağaza/deep-link attribution) bilinçli olarak sonraya bırakıldı.
@@ -1630,6 +1788,23 @@ edilen kelimeyi mobil reddediyor" olarak görünür.
     - **KAPSAM yerel (YZ) oyunlar** — `game_finishes`in birebir aynası. Canlı oyunun başlama anı zaten sunucuda kayıtlı (`online_game_states.started_at`), ayrıca Canlı oyun hesap + arkadaş gerektirdiğinden soğuk reklam trafiğinin girebileceği bir yol değil. **İKİ istemci de yazıyor:** web `App.tsx`'in `startLocalGame` yardımcısı (`START` dispatch eden İKİ yer de oradan geçiyor — Setup'ın "Oyunu Başlat"ı ve oyun sonu "Tekrar Oyna"), portta `GamesRepo.logStart` (aynı iki ekran). **`RESUME_SAVED` bilerek dahil DEĞİL** — devam eden bir oyuna dönmek yeni bir başlangıç değil, aksi halde aynı oyun her oturum dönüşünde tekrar sayılırdı. **Ölçüldü:** 5 sütunlu tablo 348px, 390px'te bile yatay kaydırma YOK.
     - **Yüzdelerin TABANI sütuna göre değişir (aynı gün, kullanıcının ikinci turu, `source_funnel_players` migration'ı):** *"kişi %'ye dönünce toplamın yüzdesini göstersin. Ama üye yüzdesi kişinin % kaçı üye olmuş, oyun yüzdesi de kişinin % kaçı oyun oynamışı göstersin."* İlk sürümde üçü de sütun payıydı ve satır yönünde oran BİLEREK yoktu; kullanıcı bunu tersine çevirdi ve karar doğru — damgalama yerleştikten sonra `üye/kişi` o kaynak için GERÇEK bir dönüşüm oranı (ziyaretçi de üye de aynı `?ref=` etiketini taşıyor). Yeni tabanlar: **Kişi** = sütun payı, **Üye** = `üye/kişi`, **Oyun** = `oynayan kişi/kişi`.
     - **"Oyun" sütununun yüzdesi oyun ADEDİNDEN hesaplanAMAZ** — bir kişi 50 oyun oynayabilir, `oyun/kişi` %100'ü kolayca aşar ve "kaç kişi oynadı" demek olmaz. Bu yüzden RPC'ye dördüncü bir ölçü eklendi: `players` = o damgayı taşıyan, pencerede en az bir oyun bitirmiş BENZERSİZ kullanıcı. Sütun sayı modunda oyun adedini, yüzde modunda `players/kişi` oranını gösterir — taban farkı ekranın kendisinde yazılı (17 Ağustos 2026'dan beri tablonun altındaki paragrafta değil, `?` popup'ında). `players` tabloda ayrı bir sütun DEĞİL (tablo 4 sütunda kalsın diye) ama CSV'de var, yani yüzde her zaman ham veriden yeniden hesaplanabilir. Dönüş tipi değiştiğinden drop+create gerekti, grant'ler elle geri kuruldu.
+    - **Huni BAŞTAN SONA misafire indi (22 Ağustos 2026, kullanıcı isteği: *"gelenler üye olmadan kaç oyun başlatmış (başlayan), gelenler üye olmadan kaç oyun bitirmiş (biten)"*; `game_starts_is_guest` + `source_funnel_guest_only` migration'ları):** Tablo o güne kadar **ÜÇ farklı kitleyi yan yana koyuyor ve bunu hiçbir yerde söylemiyordu** — "Gelen" BAŞTAN BERİ misafir-only (`App.tsx`: `if (... || user) return;`, ziyaret kaydı yalnızca oturum KAPALIYKEN yazılıyor), "Başlayan" ile "Biten" ise karışıktı. Bedeli ölçüldü: `arkadas` satırındaki 292 üye oyunu, aylardır oynayan üyelerin — "bu kanal işe yaradı mı" sorusuyla ilgisi yok ama cevabı boğuyordu. Artık üçü de aynı kitle: *bu kanaldan gelip HENÜZ ÜYE OLMADAN ürünü deneyenler*.
+      - **"Biten"i ayırıp "Başlayan"ı bırakmak YANLIŞ olurdu.** İkisi bir ÇİFT ve `biten/başlayan` tamamlanma oranını besliyor; yalnız birini indirmek oranı "misafir bitişi ÷ TÜM başlangıçlar" yapıp sessizce düşük gösterirdi. "Biten" bunu zaten yapabiliyordu (`game_finishes.user_id` nullable — 299 satırın 42'si misafir), "Başlayan" YAPAMIYORDU.
+      - **Çözüm `user_id` DEĞİL, BAYRAK (`game_starts.is_guest`).** O tablo bilerek hesap kimliği taşımıyor (kendi yorumu: *"anon_id ile hesap kimliğini aynı satırda birleştirmek PrivacyModal bölüm 6'daki taahhüdü bozardı"*). Bir boolean hangi hesap olduğunu söylemez ve anon kodu bir hesapla eşleştirmeye izin vermez — **taahhüt aynen ayakta, hukuki metinlerde değişiklik GEREKMEDİ.**
+      - **`is_guest is true`, `is not false` DEĞİL:** NULL "bilinmiyor"dur (22 Ağustos öncesi 81 satır + damgalamayan istemci) ve bilinmeyeni misafir saymak ölçümü şişirirdi. **GERİYE DÖNÜK DOLDURULAMAZ** — "Başlayan" bir süre düşük görünecek; uydurma bir varsayılan yazmak ölçümü sessizce yanlışlardı. `starters` da aynı filtreyi taşıyor, aksi halde oranın payı ile paydası farklı kitlelerden gelirdi.
+      - **Bayrak İKİ istemcide FARKLI yerden okunuyor ve bu bilinçli:** web `startLocalGame`de (`!user`) — orası TEK bir huni noktası ve `user` zaten elde; port ise `SupabaseGamesGateway.logGameStart` içinde (`client.auth.currentUser == null`), çünkü orada İKİ ekran çağırıyor (Setup + oyun sonu "Tekrar Oyna") ve üçüncü bir çağrı yeri eklenince birini atlamak sessizce eksik sayıma yol açardı.
+      - **ÜYE tarafı bilerek ekrana ALINMADI.** Kullanıcı "Oyun tabına bir kaynak kombosu koysak?" diye sordu; cevap hayır, üç sebeple: (1) **`games` tablosunda `utm_source` YOK**, yani Canlı dalı kaynak kırılımı yapamaz ve kombo üçüncü bir kilit gerektirirdi (panelde zaten Misafir↔YZ kilidi var); (2) panelde 5 kontrol var ve altıncısının kombinasyonlarının çoğu tanım gereği boş; (3) **zaten var** — huninin CSV'sindeki `Üye Oyunu`/`Oynayan Üye` kaynak kırılımlı. Üstelik onlar üyenin KAYIT damgasından gelir (hesabı takip eder), cihaz etiketinden değil: bir üye başka cihazdan oynarsa cihaz etiketi 'bilinmiyor'a düşer, kayıt damgası düşmez. Cihaz etiketiyle ikinci bir üye ölçüsü üretmek aynı sorunun iki farklı yanıtını doğururdu.
+      - **Doğrulandı (canlı, hepsi rollback):** aynı kaynağa üç başlangıç yazıldı (misafir / üye / bayraksız) ve **yalnızca 1'i** sayıldı; misafir bitişi kendi kaynağına düştü. Üye bitişleri de dışarıda: 299 bitişin yalnızca 49'u (damgasız misafir bitişleri) görünüyor.
+      - **Kayda geçen düzeltme:** `20260822043116` migration'ının başlığı *"Biten sütununun tabanı starts DEĞİL visitors olmaya devam ediyor"* diyordu — istemci o gün tabanı `starts` olarak uyguladı (tamamlanma oranı) ve doğrusu odur. Uygulanmış migration dosyaları geriye dönük düzeltilmediğinden kayıt `source_funnel_guest_only`ın başlığında.
+    - **"Biten" sütunu — huninin son adımı ARTIK misafiri de sayıyor (22 Ağustos 2026, kullanıcı isteği: *"game_finishes'e utm_source ekle. Tabloda üye başlığı gelen olsun… Başlayan ve biten olsun (oyun ismi değişecek)"*; `game_finishes_utm_source` + `source_funnel_finishes` migration'ları):** 21 Ağustos'ta "Başlayan" eklenip huninin kör adımı açıldığında SON adım hâlâ eski ölçüyle duruyordu — "Oyun" sütunu `games` üzerinden yalnızca ÜYELERİN bitirdiği oyunu sayıyordu, yani reklamdan gelen misafir trafiğinde TANIM GEREĞİ 0 gösteriyordu. **Ölçüldü:** `instagram` → 47 başlayan / 39 başlatan cihaz / **3 üye** / **0 üye-oyunu**; aynı pencerede `game_finishes`te 296 bitiş vardı ama hiçbiri kaynak taşımıyordu, çünkü o tabloda `utm_source` kolonu YOKTU. Yani "başlayanların kaçı bitirdi" sorusu — huninin asıl sorusu — sorulamıyordu. `game_finishes.utm_source` eklendi; sütun artık `finishes` (misafir dahil, cihaz bazlı, damgalı).
+      - **Sütun adları VE sırası:** `Kişi` → **`Gelen`**, `Oyun` → **`Biten`**; yeni sıra **Kaynak · Gelen · Üye · Başlayan · Biten** (kullanıcı kararı, aynı gün ikinci tur). "Başlayan"la "Biten" AYNI popülasyonu ölçen bir ÇİFT olduğundan yan yana duruyorlar; "Üye" ise ayrı bir dimension (kayıt damgası) ve tabanı doğrudan "Gelen" olduğundan onun hemen ardında. CSV de AYNI sırayı izliyor.
+      - **"Biten"in yüzde TABANI "Gelen" DEĞİL "Başlayan"** — sorduğu soru "gelenlerin kaçı bitirdi" değil TAMAMLANMA oranı. Bu, tablodaki üçüncü farklı taban (Gelen = sütun payı; Başlayan/Üye = satırın "Gelen"i) ve bilinçli: iki uç da anonim cihaz tablolarından geldiğinden oran gerçek.
+      - **Eski ölçü SİLİNMEDİ, gizlendi:** RPC hâlâ `member_games` (üyelerin oyun adedi) ve `players` (benzersiz oynayan üye) döndürüyor, ikisi de CSV'de duruyor — tabloda gösterilmiyorlar. Dönüş tipi değiştiğinden drop+create gerekti, grant'ler elle yeniden kuruldu (`create or replace` sessizce İKİNCİ bir overload yaratırdı — `fix_withdraw_report_wrong_overload` dersi).
+      - **`utm_source` istemcide `logGameFinish`in İÇİNDEN okunuyor, çağırandan DEĞİL** — `logGameStart`ın aksine. Sebep: üç çağrı yeri var (`App.tsx`'te normal bitiş, misafir kuyruğu, bulut kaydı süpürmesi) ve üçü de aynı değeri geçerdi; birini atlamak NULL yazardı, NULL ise bu sözleşmede "bu istemci damgalamıyor" (bugün: Flutter portu) demek — yani huninin "bilinmiyor" satırını sessizce şişirirdi. `?ref=` yoksa açıkça `'direkt'` (`logGameStart`/`signUp` ile AYNI sözleşme).
+      - **GERİYE DÖNÜK DOLDURULAMAZ** (`games.platform`/`game_starts` ile aynı sınıf): kolondan önceki 296 bitişin hepsi `'bilinmiyor'` satırında toplanıyor. `anon_id` BİLEREK eklenmedi — `game_finishes` zaten `user_id` taşıyor, ikisini aynı satıra koymak `PrivacyModal` §6'nın "anonim kod hesabınızla ASLA eşleştirilmez" taahhüdünü bozardı; bu yüzden "başlayan CİHAZ / bitiren CİHAZ" oranı da hesaplanamıyor, oran oyun ADEDİ üzerinden.
+      - **Doğrulandı (canlı, hepsi rollback):** `anon` ve `authenticated` rolleri `utm_source` YAZABİLİYOR (kolon grant'i), `anon` tabloyu HÂLÂ OKUYAMIYOR (select politikası yok); damgalı bir bitiş kendi kaynağına, damgasız (portun yazacağı) bir bitiş `'bilinmiyor'`a düşüyor (296 → 297) — negatif eş ölçüldü. Admin RPC gerçek admin JWT'siyle koştu, admin olmayan `Yetkisiz erişim.` aldı.
+      - **Ölçüldü** (derlenmiş CSS + Chromium, DPR 2): tablo 345.09 → **360.34** px, başlıklar üç genişlikte de TEK satır (29 px), sayfa taşması 320/390/834'te **0** — 15 px'lik büyüme tablonun KENDİ `overflow-x-auto` kabında kalıyor (390 px'te kap 358, yani 2.3 px kaydırma; 320'de zaten kaydırmalıydı).
+      - **Flutter portu `utm_source: null` gönderiyor** (`games_api.dart`, `logGameStart`ın aynı gerekçesi: portun `?ref=` damgası henüz yok) — `'direkt'` yazmak webin gerçek doğrudan trafiğini şişirirdi.
     - **`kişi = 0` iken oran HİÇ hesaplanmaz, "—" gösterilir** — sıfıra bölmek yerine bilinmediğini söylemek doğrusu. Bugün bu istisna değil KURAL: damgalama öncesi tüm üyelerin toplandığı "bilinmiyor" satırının ziyaretçisi 0. Oran %100'ü de aşabilir (iki ölçü ayrı dimension, ör. bir kaynağın ziyaretleri pencereye düşmemişken üyeleri düşmüş olabilir) ve bu bir hata değil; `?` popup'ı bunu da söylüyor.
     - **Davet linki artık `?ref=arkadas` taşıyor — ama ASIL hata etiket değil YAKALAMAYDI (21 Ağustos 2026, ROADMAP #7):** Planlanan iş "tek satır"dı (`buildInviteUrl`e etiketi ekle). ÖLÇÜLDÜ ve tek başına **SESSİZ BİR NO-OP** olacağı çıktı: `/davet/:token?ref=arkadas` ve gerçek uuid'li `/game/:id?ref=tiktok` etiketi `localStorage`a **HİÇ yazmıyordu** (`null`), yalnızca `/` çalışıyordu. Sebep: `captureUtmSource()` `App.tsx`'in bir effect'indeydi, oysa bu İKİ route `App`'i hiç mount etmiyor — `boot.tsx` onların yerine `SharedGamePage`/`FriendInvitePage` render ediyor. Yani **dolaşımdaki her davet ve her paylaşılan oyun linki kaynağını sessizce kaybediyordu**; davetle gelip üye olan herkes `direkt` satırına düşüp gerçek doğrudan trafiği şişiriyordu. Çağrı `boot.tsx`e, ROUTE AYRIMINDAN ÖNCEYE taşındı (üç dalın da tek ortak giriş noktası — dördüncü bir route eklenirse kendiliğinden kapsanır) ve `App.tsx`'teki artık ölü effect kaldırıldı. Karşılama katmanı ayrı kalıyor: uygulama hiç mount edilmediğinden `main.tsx` kendi dalında AYNI çağrıyı yapıyor, ikisi birlikte tüm yüzeyleri örtüyor.
     - **`buildInviteUrl` İKİ istemcide de değişti** (`FriendsModal.tsx` + portun `friends_api.dart`'ı) — port da web linki üretip paylaşıyor, yalnız web'i değiştirmek porttan paylaşılan davetleri etiketsiz bırakırdı. `parseInviteToken` (port) etkilenmiyor: `uri.pathSegments` sorgu dizesini içermez. Etiket **first-touch** olduğundan `instagram` ile gelmiş bir cihazın kaydını EZMEZ (ölçüldü).

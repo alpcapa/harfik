@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
 import { fetchLeaderboard, fetchMyLeaderboardRank } from '../lib/api';
+import { swallowNextClick } from '../utils/ghostClick';
 import type { LeaderboardRow, MyLeaderboardRank } from '../lib/database.types';
 import { useAuth } from '../hooks/useAuth';
 import { PlayerScoreCard, type PlayerSummary } from './PlayerScoreCard';
@@ -82,6 +83,10 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
     const onDown = (e: PointerEvent) => {
       if (ohpRef.current?.contains(e.target as Node)) return;
       setOhpHintPinned(false);
+      // Kapatan dokunuş YALNIZCA kapatmalı: aynı jestin click'i, altındaki
+      // k-lig satırına düşüp o oyuncunun kartını da açardı (platform normu
+      // da bu — bir popover'ı kapatan dokunuş arkadakini çalıştırmaz).
+      swallowNextClick();
     };
     document.addEventListener('pointerdown', onDown);
     return () => document.removeEventListener('pointerdown', onDown);

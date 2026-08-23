@@ -3750,8 +3750,8 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        web'in bugünkü hâline çekildi, "Son güncelleme" 2 → 10 Ağustos.
        - **`test/legal_text_test.dart` bunu KALICI olarak zorluyor** —
          `color_tokens_test.dart`ın tailwind'i okuyan deseninin hukuki
-         metin karşılığı: web'in `TermsModal.tsx`/`PrivacyModal.tsx`
-         dosyalarını OKUYUP kendi "Son güncelleme" tarihlerini portunkiyle
+         metin karşılığı: web'in kaynak dosyasını OKUYUP kendi
+         "Son güncelleme" tarihlerini portunkiyle
          karşılaştırıyor (tam metin karşılaştırması satır kaydırma/kaçış
          farklarıyla kırılgan olurdu; tarih, projenin yerleşik disiplini
          gereği her metin değişikliğinde güncelleniyor, yani "port bayat
@@ -3824,6 +3824,16 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        kopyaydı — kullanıcıya kendi verisinin görünürlüğü hakkında yanlış
        bilgi veriyordu. Yeni bir "elle senkron" kopya açarken sor: bunu
        hangi test zorluyor?
+       - **23 Ağustos 2026 — okunan dosya DEĞİŞTİ:** web metni
+         `TermsModal.tsx`/`PrivacyModal.tsx`ten `src/legal/LegalContent.tsx`e
+         taşındı (aynı metni artık `/gizlilik/` ve `/kullanim-kosullari/`
+         statik sayfaları da tüketiyor; Play'in Data safety formu doğrudan
+         açılan bir URL istiyor). Test eski yolu okumaya devam etseydi
+         "Son güncelleme bulunamadı" diye DÜŞERDİ — merge öncesi yakalandı.
+         **Yeni tuzak:** tek dosyada artık İKİ tarih var ve sıraları portun
+         TERSİ (web: Gizlilik → Koşullar, port: Koşullar → Gizlilik), o
+         yüzden test "ilk eşleşmeyi al" demiyor, metni `TermsBody`
+         sınırından bölüyor.
 
    - ✅ **Parça 91 — şikayeti geri çekmenin TEK yolu, raporladığın kişiyle
      YENİ bir oyun açmaktı (14 Ağustos 2026, yeni
@@ -6353,6 +6363,44 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        koşturulması (grup 2 hatasını bu yakaladı), (b) Dart dosyasının
        ayraç dengesi, (c) her çapanın `grep`le kaynağında teyidi. Dart
        yarısının kanıtı yine CI.
+
+   - ✅ **Parça 129 — sürükleme eşiği: fare ile parmak aynı sayıyı
+     kullanamaz (22 Ağustos 2026):** Web'de bir kullanıcının joker raporu
+     üzerine yapılan jest denetimi ikinci bir hata buldu ve o hata PORTTA DA
+     vardı — `_dragThreshold = 6` satırının yorumu zaten "web
+     DRAG_THRESHOLD" diyordu, yani bilinçli bir kopyaydı.
+     - **Sorun:** parmak 6 logical px oynayan bir dokunuş "sürükleme"
+       sayılıyor, sürükleme de aynı hücrede bittiğinden **hiçbir şey**
+       yapmıyordu — raf taşı seçilmiyor, konmuş taş geri alınmıyor, joker
+       seçici açılmıyordu. Yanlış bir şey değil, *hiçbir şey*: kullanıcıya
+       "dokunuşum işlemedi" olarak görünen sessiz bir kayıp.
+     - **Ölçüm web tarafında yapıldı** (Chromium, `hasTouch`+`isMobile`,
+       390×844, CDP ham dokunuş olayları): 0–4 px titreşimde üç jest de
+       çalışıyor, **6 px ve üstünde üçü de ölüyor**. Flutter SDK bu ortamda
+       olmadığından portta aynı ölçüm KOŞULAMADI — ama kod yolu birebir
+       aynı (`_moveTileDrag`in `d.moved` geçişi) ve `kTouchSlop`un Flutter'da
+       **18** olması, 6'nın platform normunun ne kadar altında kaldığının
+       bağımsız kanıtı (Android touch slop 8, iOS ~10).
+     - **Düzeltme:** eşik `PointerDeviceKind`e bağlandı —
+       `_dragThresholdMouse = 6`, `_dragThresholdTouch = 10`; `_moveTileDrag`
+       artık `_dragThresholdFor(e.kind)` kullanıyor. İKİ oyun ekranı da
+       (`game_screen.dart`, `online_game_screen.dart`) — biri atlanırsa yerel
+       ve Canlı oyun kendi aralarında ayrışırdı.
+     - **`PointerDeviceKind` için açık import ŞART** (`package:flutter/gestures.dart`
+       show PointerDeviceKind): `material.dart` üzerinden gelmesine
+       güvenilmedi, `intro_screen.dart`taki mevcut kullanım da aynı açık
+       importu taşıyor.
+     - **TESTLİ:** `layout_parity_test.dart`e yeni bir test — DÖRT dosyanın
+       (iki web + iki Dart) hem SAYILARINI hem de eşiğin pointer türüne bağlı
+       SEÇİLDİĞİNİ doğruluyor. İkincisi olmadan test yarım kalırdı: sabit
+       doğru olup kullanılmıyorsa değeri yok.
+     - **Regex'ler V8'de doğrulandı** (dosyanın kendi uyarısı: prototipi
+       Python'da değil node'da koştur) — 12/12 eşleşti ve beklenen değeri
+       döndürdü. Dart yarısının kanıtı yine CI.
+     - **Bu turun ÖTEKİ hatası (hayalet click) portu ETKİLEMEDİ ve `mobile/`
+       altında o yüzden hiçbir değişiklik gerekmedi** — Flutter'da dokunuş
+       kendi hit-test'inden geçiyor, uyumluluk (compat) mouse olayı diye bir
+       şey yok. Ayrıntı: kök `CLAUDE.md` → "Jest Sınıfı Denetimi".
 
    - ✅ **Parça 128 — kalan dört korumasız çift de kilitlendi (21 Ağustos
      2026):** Parça 127 on çifti kapatmış, dördünü "sayı çifti değil, yapı/

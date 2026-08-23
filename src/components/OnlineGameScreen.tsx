@@ -50,6 +50,7 @@ import {
 import { getFormedWords, getFullWordAt, key } from '../utils/board';
 import { trLower } from '../utils/turkish';
 import { hasSeenChatIntro, markChatIntroSeen, getChatLastReadAt, markChatRead } from '../utils/onboarding';
+import { swallowNextClick } from '../utils/ghostClick';
 import {
   checkOnlineGameTurnTimeout,
   createOnlineGame,
@@ -86,8 +87,12 @@ const MESSAGE_COLORS: Record<string, string> = {
   '': 'text-muted',
 };
 
-// App.tsx'teki DRAG_THRESHOLD/DRAG_LIFT ile aynı değerler.
-const DRAG_THRESHOLD = 6;
+// App.tsx'teki eşik/kaldırma değerleriyle BİREBİR aynı — gerekçe orada
+// (fare 6, parmak/kalem 10; tek eşik dokunmatikte sessiz kayıp üretiyordu).
+const DRAG_THRESHOLD_MOUSE = 6;
+const DRAG_THRESHOLD_TOUCH = 10;
+const dragThresholdFor = (pointerType: string) =>
+  pointerType === 'mouse' ? DRAG_THRESHOLD_MOUSE : DRAG_THRESHOLD_TOUCH;
 const DRAG_LIFT = 30;
 
 /**
@@ -286,19 +291,6 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     overKey: string | null;
     overValid: boolean;
   } | null>(null);
-  const suppressClickRef = useRef(false);
-
-  useEffect(() => {
-    const swallow = (e: MouseEvent) => {
-      if (suppressClickRef.current) {
-        suppressClickRef.current = false;
-        e.stopPropagation();
-        e.preventDefault();
-      }
-    };
-    document.addEventListener('click', swallow, true);
-    return () => document.removeEventListener('click', swallow, true);
-  }, []);
 
   useEffect(() => {
     const preventScrollWhileDragging = (e: TouchEvent) => {
@@ -696,7 +688,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     if (!d) return;
     if (!d.moved) {
       const dist = Math.hypot(e.clientX - d.startX, e.clientY - d.startY);
-      if (dist < DRAG_THRESHOLD) return;
+      if (dist < dragThresholdFor(e.pointerType)) return;
       d.moved = true;
     }
     const liftedY = liftedPoint(e.clientY);
@@ -726,6 +718,11 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       if (d.source.kind === 'rack') {
         dispatch({ type: 'SELECT_TILE', index: d.source.index });
       } else if (d.source.tile.wild) {
+        // Pencere BU pointerup içinde açıldığından ardından gelen compat
+        // click'i yut — aksi halde modalın harf ızgarasına düşüp jokeri
+        // sessizce başka bir harfe çeviriyor ya da zemine düşüp pencereyi
+        // anında kapatıyor (gerekçe: `src/utils/ghostClick.ts`).
+        swallowNextClick();
         setPendingWild({ r: d.source.r, c: d.source.c, editing: true });
       } else {
         dispatch({ type: 'RECALL_CELL', r: d.source.r, c: d.source.c });
@@ -733,10 +730,9 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       return;
     }
 
-    suppressClickRef.current = true;
-    setTimeout(() => {
-      suppressClickRef.current = false;
-    }, 0);
+    // Sürükleme bitişinin hayalet click'i (bırakılan hücrenin onClick'i
+    // tetiklenmesin).
+    swallowNextClick();
 
     const { cellEl, rackEl } = dropTargetsAt(e.clientX, liftedPoint(e.clientY));
     if (cellEl?.dataset.cell) {
