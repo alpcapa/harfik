@@ -1129,12 +1129,32 @@ siliniyor — `-list -v` ile `-printcert`in girinti karakteri farklı olabilir.
 Base64 gidiş-dönüşü de ölçüldü (`base64 -w0` → `tr -d` → `base64 -d`, dosya
 birebir aynı).
 
-**Doğrulama sınırı — dürüstçe:** bu ortamda Flutter SDK YOK, yani
-`flutter build appbundle` hiç koşturulamadı; YAML'ın geçerliliği (`yaml.safe_load`)
-ve üretilen KABUK SATIRININ geçerliliği (`bash -n`) ayrı ayrı ölçüldü, ama
-Gradle'ın `key.properties`i gerçekten okuduğunun tek kanıtı CI olacak.
-İlk gerçek koşuda bakılacak satır: adımın bastığı `beklenen:` / `paket   :`
-çifti.
+**CI'da UÇTAN UCA DOĞRULANDI (23 Ağustos 2026, koşu 32644482976, dal
+`claude/google-play-launch-checklist-4bp7yk`, sha `a22cea6`).** Bu ortamda
+Flutter SDK olmadığından `flutter build appbundle` yerelde hiç
+koşturulamamıştı — YAML'ın geçerliliği (`yaml.safe_load`) ve üretilen KABUK
+SATIRININ geçerliliği (`bash -n`) ayrı ayrı ölçülmüştü, ama Gradle'ın
+`key.properties`i gerçekten okuduğunun kanıtı CI'a bırakılmıştı. Log:
+
+```
+✓ Built build/app/outputs/bundle/release/app-release.aab (60.9MB)
+beklenen: SHA256:B6:CD:FB:A9:...:0E:89:A1:52
+paket   : SHA256:B6:CD:FB:A9:...:0E:89:A1:52
+```
+
+Bu üç satır zincirin TAMAMINI kapatıyor: secret'lar okundu (yoksa adım
+"secret yok" deyip çıkardı), Gradle `key.properties`i gördü ve `.aab`
+DEBUG değil upload anahtarıyla imzalandı — üstelik basılan parmak izi
+üretilen anahtarın kendisi, yani yüklenen keystore da doğru. Artefakt
+`kelimeki-aab` (60.597.531 bayt) gerçekten üretildi; `.apk` artefaktı da
+yerinde kaldı (Appetize akışı bozulmadı).
+
+**İlk `.aab` yüklemesinde OKUNACAK iki şey (hâlâ ölçülmedi):** derlemenin
+`targetSdk`'sı (bugün `flutter.targetSdkVersion`'dan geliyor, yani stable
+kanalın varsayılanı — Play'in yeni uygulamalar için dayattığı asgari
+seviyenin altındaysa açıkça pinlenmeli) ve `image_picker`'ın birleşmiş
+manifeste eklediği izinler (beklenmeyen bir medya izni Data safety
+beyanını değiştirir). İkisini de Play Console yükleme ekranı gösteriyor.
 
 ### Anahtar — üretildi, repoda DEĞİL
 
@@ -6772,6 +6792,15 @@ Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı
 kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
 silinip kendi tarihli parça notuna taşınır.
 
+- **KGP uyarısı — ileride derlemeyi KIRACAK (23 Ağustos 2026'da `.aab`
+  log'unda ölçüldü, bugün yalnızca uyarı):** `image_picker_android`,
+  `share_plus` ve `shared_preferences_android` Kotlin Gradle Plugin'i
+  kendileri uyguluyor; Flutter'ın uyarısı birebir *"Future versions of
+  Flutter will fail to build if your app uses plugins that apply KGP"*.
+  Bugün acil DEĞİL (derleme geçiyor) ve bu eklentiler bizim değil —
+  çözümü kendi sürümlerini Built-in Kotlin'e geçmiş sürümlere yükseltmek.
+  Flutter yükseltmesi yapılırken ÖNCE bu üçünün changelog'una bak;
+  aksi halde yükseltme günü derleme sebebi anlaşılmayan bir şekilde kırılır.
 - ~~Bağlantı durumu göstergesi (`useOnlineStatus` portu)~~ — **YAPILDI**
   (14 Ağustos 2026): karar mantığı Parça 96'da (`util/online_status.dart` +
   `connectivity_plus`), Board alt şeridindeki görsel "Çevrimdışı" rozeti

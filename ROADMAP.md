@@ -102,15 +102,17 @@ Dördü de **ölçülmüş** eksikler, tahmin değil:
 tarafından girildi. Ayrıntı, ölçümler ve negatif eşler: `mobile/CLAUDE.md`
 → "Play Store İmzalama ve `.aab`".
 
-**AÇIK KALAN TEK DOĞRULAMA — ilk gerçek CI koşusu.** Bu ortamda Flutter
-SDK yok, yani `flutter build appbundle` HİÇ koşturulamadı; Gradle'ın
-`key.properties`i gerçekten okuduğunun kanıtı yalnızca CI olabilir.
-Workflow `main`'e push/PR ile tetikleniyor, `workflow_dispatch` yetkisi
-Claude'da YOK — koşuyu kullanıcı başlatmalı (Actions → "Mobil derleme" →
-Run workflow → dal seçilir) ya da dal main'e girmeli.
-**Bakılacak satır:** adımın bastığı `beklenen:` / `paket   :` çifti —
-ikisi eşitse `.aab` upload anahtarıyla imzalanmış demektir; artefakt adı
-`kelimeki-aab`.
+**CI'DA DOĞRULANDI (23 Ağustos 2026, koşu 32644482976, sha `a22cea6`):**
+`.aab` gerçekten üretildi (60.9 MB, artefakt `kelimeki-aab`) ve log'daki
+`beklenen:` / `paket   :` parmak izleri hem birbirine hem üretilen upload
+anahtarına eşit — yani secret'lar okundu, Gradle `key.properties`i gördü,
+paket debug değil upload anahtarıyla imzalandı. `.apk` artefaktı da
+yerinde (Appetize akışı bozulmadı).
+
+**İlk yüklemede OKUNACAK, hâlâ ölçülmedi:** `targetSdk` (stable kanalın
+varsayılanı; Play'in asgarisinin altındaysa pinle) ve `image_picker`'ın
+birleşmiş manifeste eklediği izinler (Data safety beyanını etkiler).
+İkisini de Play Console yükleme ekranı gösteriyor.
 
 Sıradaki: **0.A4** (vitrin) → ilk `.aab` yüklemesi → 12 tester.
 
