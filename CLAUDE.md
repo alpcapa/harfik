@@ -2155,9 +2155,19 @@ denenirse ne oluyor? Supabase'in onay mailini yeniden göndermesi beklenir —
 Varsayma, ölç.
 
 **Bilinçli olarak YAPILMAYAN:** admin Üyeler tablosuna "onaylanmamış" filtresi
-(kullanıcı onayladı ama "hemen canlıya alalım" kapsamının dışında kaldı) ve
-bounce (geri dönen mail) görünürlüğü — bugün bir mailin bounce ettiğini
-uygulama HİÇ bilmiyor, tek kaynak Brevo panelindeki gönderim logu.
+— kullanıcı onayladı ama "hemen canlıya alalım" kapsamının dışında kaldı,
+kendi maddesi olarak `ROADMAP.md`'de duruyor.
+
+**Bounce (geri dönen mail) görünürlüğü de YAPILMADI ve bu artık bir varsayım
+değil ÖLÇÜM:** uygulama bir mailin bounce ettiğini HİÇ bilmiyor, tek kaynak
+Brevo panelindeki gönderim logu — ve o panelde **1-23 Ağustos 2026 arasında
+TOPLAM 1 bounce** var (büyük olasılıkla bu bölümü doğuran yanlış-adres
+vakasının kendisi). Yani webhook + tablo + admin görünürlüğü kurmanın bedeli,
+kapatacağı soruna göre orantısız; üstelik yanlış adresin asıl sonucu (ölü
+hesabın takma adı kilitlemesi) yukarıdaki süpürmeyle zaten çözüldü. **Bir
+sonraki oturum bunu "eksik" diye açmasın** — koşul şu: Brevo panelinde bounce
+oranı görünür biçimde artarsa (ör. haftada birkaç), o zaman ölç ve yeniden
+değerlendir.
 
 ### İşlemsel e-posta bildirimleri (arkadaşlık isteği + Canlı oyun daveti)
 
