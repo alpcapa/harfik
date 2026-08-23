@@ -287,6 +287,7 @@ class _LiveGamesTabState extends State<LiveGamesTab>
     final words = await services.dictionary;
     if (!mounted) return;
     await Navigator.of(context).push(MaterialPageRoute<void>(
+      settings: const RouteSettings(name: 'online-game'),
       builder: (_) => OnlineGameScreen(
         game: game,
         myUserId: user.id,

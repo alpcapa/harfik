@@ -35,7 +35,7 @@ await build({
 });
 
 globalThis.window = {
-  location: { pathname: '/game/9c1f5d2e-0000-4000-8000-000000000000' },
+  location: { pathname: '/game/9c1f5d2e-0000-4000-8000-000000000000', origin: 'https://kelimeki.com' },
   __KELIMEKI_BUILD__: 'a1b2c3d',
   addEventListener: () => {},
 };

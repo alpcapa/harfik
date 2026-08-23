@@ -34,6 +34,7 @@ import type {
   AdminGameActivityPoint,
   AdminGameScope,
   AdminGameSourceType,
+  AdminAppVersionRow,
   AdminClientErrorRow,
   AdminSourceFunnelRow,
   AdminGuestDeviceRow,
@@ -320,6 +321,12 @@ export async function logGameStart(
     player_count: playerCount,
     utm_source: utmSource ?? 'direkt',
     is_guest: isGuest,
+    // 23 Ağustos 2026: sürüm dağılımı (`admin_app_version_breakdown`).
+    // `platform` bu tabloda YOKTU — `app_version` tek başına ios ile
+    // android'i ayıramaz. `app_version` web'de BİLEREK null: web'in sürümü
+    // derleme sha'sıyla zaten tekil, uydurma bir değer dağılımı kirletirdi.
+    platform: CLIENT_PLATFORM,
+    app_version: null,
   });
   if (error) {
     console.error('[Kelimeki] logGameStart hatası:', error.message);
@@ -1157,6 +1164,62 @@ async function notifyGameInvite(gameId: string): Promise<void> {
 }
 
 /**
+ * Bu hata OTURUMUN DÜŞMÜŞ olmasından mı kaynaklanıyor? `authenticated`'e
+ * kilitli bir RPC/tablo, geçerli bir JWT olmadan çağrılırsa PostgREST
+ * `permission denied for function …` (42501) döner — yani rol `anon`
+ * kalmıştır. Süresi geçmiş bir token, arka planda henüz tamamlanmamış bir
+ * yenileme ya da başka bir sekmede yapılan çıkış bunu üretebilir.
+ */
+function isAuthStateError(err: { code?: string; message: string }): boolean {
+  if (err.code === '42501' || err.code === 'PGRST301') return true;
+  return /permission denied|jwt (expired|is invalid)|invalid claim/i.test(err.message);
+}
+
+/**
+ * Oturum GERÇEKTEN var mı? `getSession()` yerel depodan okur, AĞA GİTMEZ
+ * (auth-js kaynağından doğrulandı; `fetchMyGames`'in 14 Ağustos 2026
+ * düzeltmesi de tam bu ayrım üzerineydi).
+ */
+async function hasValidSession(): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data.session) return false;
+    const exp = (data.session as { expires_at?: number }).expires_at;
+    return !exp || exp * 1000 > Date.now();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Canlı liste ailesinin (üç çağrı yeri) ortak hata bildirimi.
+ *
+ * NEDEN GEREKLİ (23 Ağustos 2026, panelin ilk gerçek verisi): oturumu düşmüş
+ * bir istemcide bu çağrılar `permission denied for function
+ * list_my_online_games` üretiyor ve telemetriye "hata" olarak düşüyordu. Bu
+ * bir BUG DEĞİL, beklenen bir auth durumu — kullanıcı zaten bir sonraki
+ * `onAuthStateChange` olayında çıkış yapmış sayılacak.
+ *
+ * ⚠ AMA aynı mesaj GERÇEK bir dağıtım hatasının da yüzü olabilir: bir
+ * fonksiyon `drop`+`create` edildikten sonra `grant` unutulursa oturumu olan
+ * herkes aynı mesajı alır (bu projede bir kez yaşandı — bkz. CLAUDE.md,
+ * `fix_withdraw_report_wrong_overload`). İkisini ayıran TEK şey oturumun
+ * varlığıdır, mesaj değil: oturum VARKEN gelen bir "permission denied"
+ * raporlanır, oturumsuz gelen elenir. Mesaja bakıp körlemesine filtrelemek
+ * o hata sınıfını sessizce gizlerdi.
+ */
+function reportLiveListError(err: { code?: string; message: string }, context: string): void {
+  if (!isAuthStateError(err)) {
+    reportClientError(err.message, 'manual', context);
+    return;
+  }
+  void hasValidSession().then((ok) => {
+    if (ok) reportClientError(err.message, 'manual', context);
+  });
+}
+
+/**
  * Oturum açan kullanıcının taraf olduğu (kurduğu ya da davet edildiği) tüm
  * Canlı oyunları döner (`list_my_online_games` RPC'si) — en yeni önce.
  */
@@ -1168,7 +1231,7 @@ export async function listMyOnlineGames(): Promise<OnlineGame[] | null> {
   const { data, error } = await retryOnNetworkFailure(() => client.rpc('list_my_online_games'));
   if (error) {
     console.error('[Kelimeki] listMyOnlineGames hatası:', error.message);
-    reportClientError(error.message, 'manual', 'list_my_online_games');
+    reportLiveListError(error, 'list_my_online_games');
     // `null` = "bilmiyoruz", `[]` = "sunucu boş dedi". Bu ayrım olmadan
     // çağıran ikisini karıştırıp "Devam eden bir Canlı oyunun yok." basıyordu.
     return null;
@@ -1222,7 +1285,7 @@ export async function fetchOnlineGameTurns(gameIds: string[]): Promise<Record<st
   );
   if (error) {
     console.error('[Kelimeki] fetchOnlineGameTurns hatası:', error.message);
-    reportClientError(error.message, 'manual', 'fetch_online_game_turns');
+    reportLiveListError(error, 'fetch_online_game_turns');
     // Boş harita dönmek "sıra kimde bilinmiyor"u "sıra rakipte"ye çeviriyordu
     // (`turns[g.id] === mySlotIndex(g)` false kalır) — listeden daha kötü bir
     // hata: kullanıcıya YANLIŞ bir gerçeklik anlatıp beklemesine yol açar.
@@ -1255,7 +1318,7 @@ export async function fetchOnlineGameDeadlines(
   );
   if (error) {
     console.error('[Kelimeki] fetchOnlineGameDeadlines hatası:', error.message);
-    reportClientError(error.message, 'manual', 'fetch_online_game_deadlines');
+    reportLiveListError(error, 'fetch_online_game_deadlines');
     return null;
   }
   const map: Record<string, string | null> = {};
@@ -2097,6 +2160,20 @@ export async function fetchAdminGuestDeviceBreakdown(days = 30): Promise<AdminGu
     throw new Error(error.message);
   }
   return (data as AdminGuestDeviceRow[]) ?? [];
+}
+
+/**
+ * Son `days` günde YEREL oyun açan istemcilerin sürüm dökümü (yalnızca
+ * admin — Büyüme > Kullanıcı). `app_config.mobile_min_supported_version`
+ * eşiğini yükseltmenin güvenli olup olmadığını gösteren tek veri.
+ */
+export async function fetchAdminAppVersionBreakdown(days = 30): Promise<AdminAppVersionRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('admin_app_version_breakdown', { p_days: days });
+  if (error) {
+    throw new Error(error.message);
+  }
+  return (data as AdminAppVersionRow[]) ?? [];
 }
 
 /**

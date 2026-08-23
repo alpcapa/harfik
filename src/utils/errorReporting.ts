@@ -25,6 +25,14 @@
 //   * Sunucunun KENDİ reddi ("Sıra sende değil." gibi). O bir kural, hata
 //     değil. Bunlar zaten `catch`lenip kullanıcıya gösteriliyor, buraya
 //     yalnızca yakalanMAMIŞ olanlar düşer — ki o zaman gerçekten bir bug'dır.
+//   * BİZE AİT OLMAYAN koddan doğan hatalar (bkz. `isThirdPartyError`).
+//     23 Ağustos 2026'da panelin İLK gerçek verisi bunu zorunlu kıldı: yedi
+//     kaydın yedisi de gürültüydü ve beşi tek bir kaynaktan geliyordu —
+//     Instagram/Facebook'un Android'deki uygulama-içi tarayıcısının sayfaya
+//     enjekte ettiği ölçüm script'i (`iabjs://navigation_performance_logger_
+//     android`), sekme kapanırken `postMessage`ta patlıyor. Bizim kodumuzla
+//     hiçbir ilgisi yok, düzeltemeyiz ve reklam trafiği arttıkça KATLANARAK
+//     artacak. Filtre olmadan panel ilk haftasında kullanılamaz hâle gelirdi.
 import { getOrCreateAnonId } from './visitTracking';
 import { CLIENT_PLATFORM } from './platform';
 import { isNetworkError } from './offlineNotice';
@@ -69,6 +77,54 @@ export function normalizeRoute(pathname: string): string {
   return pathname.length > 60 ? pathname.slice(0, 60) : pathname;
 }
 
+/**
+ * Bir URL bizim kaynağımızdan mı? Bilinmiyorsa (göreli yol, satır içi kod,
+ * `origin` okunamıyor) BİZİM sayılır — bu filtrenin yanlış POZİTİFİ gerçek
+ * bir hatayı sessizce düşürmek demek, yanlış negatifi ise yalnızca bir
+ * gürültü satırı. Şüphede kal ve raporla.
+ */
+function bizeAitUrl(url: string): boolean {
+  const origin =
+    typeof window !== 'undefined' && window.location ? (window.location.origin ?? '') : '';
+  if (!origin) return true;
+  // Kendi Worker/Blob URL'lerimiz `blob:https://origin/…` biçiminde.
+  const u = url.startsWith('blob:') ? url.slice(5) : url;
+  if (!u.includes('://')) return true; // göreli/satır içi
+  return u === origin || u.startsWith(`${origin}/`);
+}
+
+/**
+ * Hata BİZİM kodumuzdan mı doğdu? Üç sinyal — herhangi biri "hayır" derse
+ * kayıt DÜŞER:
+ *
+ * 1. **`Script error.`** — çapraz kaynaklı bir script'ten gelen hatada
+ *    tarayıcı mesajı, yığını ve satır bilgisini SİLER; geriye teşhis değeri
+ *    SIFIR olan bu dize kalır. Kaydetmek "bir yerde bir şey oldu" demekten
+ *    ibaret.
+ * 2. **Dosya adı (`ErrorEvent.filename`) bize ait değil.** Uygulama-içi
+ *    tarayıcıların enjekte ettiği script'ler kendi şemalarını kullanıyor
+ *    (`iabjs://…`), yani ayrım kesin.
+ * 3. **Yığındaki HİÇBİR kare bizim kaynağımızdan değil.** `filename` boş
+ *    geldiğinde tek elimizde kalan bu. Yığında hiç URL yoksa karar
+ *    verilemez → raporlanır (bkz. `bizeAitUrl`'in "şüphede kal" kuralı).
+ *
+ * ⚠ Üçüncü kural ancak sayfada ÜÇÜNCÜ TARAF script'i olmadığı için güvenli:
+ * Kelimeki hiçbir dış script yüklemiyor (yalnızca kendi paketimiz). Bir gün
+ * bir analytics/SDK eklenirse o script'in GERÇEK hataları da bu filtreye
+ * takılır — o zaman kural yeniden düşünülmeli.
+ */
+export function isThirdPartyError(
+  message: string,
+  stack: string | null,
+  filename?: string | null,
+): boolean {
+  if (!stack && /^script error\.?$/i.test(message.trim())) return true;
+  if (filename && !bizeAitUrl(filename)) return true;
+  const urls = stack ? (stack.match(/\b[a-z][a-z0-9+.-]*:\/\/[^\s)]+/gi) ?? []) : [];
+  if (urls.length > 0 && !urls.some(bizeAitUrl)) return true;
+  return false;
+}
+
 function mesajdan(err: unknown): { message: string; stack: string | null } {
   if (err instanceof Error) {
     return {
@@ -106,6 +162,10 @@ export function reportClientError(
     if (toplamGonderilen >= MAX_PER_SESSION) return;
 
     const { message, stack } = mesajdan(err);
+    // Bize ait olmayan koddan doğan hata — aynı gerekçeyle YALNIZCA otomatik
+    // yakalamalarda elenir: `manual` bildirimde kaynak zaten bizim çağrı
+    // yerimizdir, yığın da genelde yoktur.
+    if (kind !== 'manual' && isThirdPartyError(message, stack)) return;
     const tamMesaj = context ? `[${context}] ${message}`.slice(0, MAX_MESSAGE) : message;
     // İmza mesajın BAŞINDAN türetiliyor: aynı hatanın farklı satır/sütun
     // numaralarıyla gelen kopyaları tek kayda inmeli.
@@ -123,6 +183,12 @@ export function reportClientError(
       message: tamMesaj,
       stack,
       route: normalizeRoute(window.location.pathname),
+      // Web'de ÜRÜN SÜRÜMÜ YOK ve bu bilinçli: aynı anda tek bir canlı
+      // derleme var, `build` (sha) onu zaten tekil belirliyor. Mobilde ise
+      // mağazada aynı anda birden çok sürüm yaşayacağından port bu alanı
+      // `appVersion` ile dolduruyor — null burada "sürümü olmayan istemci",
+      // yani web demek (bkz. `telemetry_app_version` migration'ı).
+      app_version: null,
     };
     const gonder = hedef ?? ((r: Record<string, unknown>) => supabase!.from('client_errors').insert(r));
     void Promise.resolve(gonder(kayit)).then(
@@ -148,6 +214,10 @@ export function reportClientError(
  */
 export function installGlobalErrorReporting(): void {
   window.addEventListener('error', (e) => {
+    // `filename` YALNIZCA burada var (ErrorEvent'in alanı, Error'ın değil) —
+    // `reportClientError` onu göremez, o yüzden karar burada da veriliyor.
+    const stack = e.error instanceof Error ? (e.error.stack ?? null) : null;
+    if (isThirdPartyError(String(e.message ?? ''), stack, e.filename)) return;
     reportClientError(e.error ?? e.message, 'uncaught');
   });
   window.addEventListener('unhandledrejection', (e) => {

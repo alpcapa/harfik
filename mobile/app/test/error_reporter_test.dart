@@ -3,7 +3,9 @@
 // Ağ/Supabase yok: `ClientErrorSink` sahtesi tüm politika katmanını gerçek
 // akışla sınıyor (portun her yerindeki gateway deseni). Buradaki her testin
 // bir negatif eşi var — kural kaldırılırsa test GERÇEKTEN düşmeli.
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kelimeki/src/config/env.dart';
 import 'package:kelimeki/src/data/error_reporter.dart';
 
 class _FakeSink implements ClientErrorSink {
@@ -47,10 +49,49 @@ void main() {
     expect(r['kind'], ClientErrorKind.manual);
     expect(r['message'], contains('[test_ctx]'));
     expect(r['anon_id'], 'anon-1');
-    // Yol portta ekran adı değil sabit bir işaret — token/uuid sızmasın diye.
-    expect(r['route'], 'app');
+    // Hiç rota push edilmemişken kök ekrandayız.
+    expect(r['route'], kRootRouteName);
     expect(r.containsKey('build'), isTrue);
     expect(r.containsKey('platform'), isTrue);
+    // ÜRÜN SÜRÜMÜ — mağazada aynı anda birden çok sürüm yaşayacağından
+    // panelde "hangi sürümde düzeldi?"nin tek cevabı. Web bu alanı null
+    // gönderir; port GÖNDERMEK ZORUNDA.
+    expect(r['app_version'], appVersion);
+    expect(r['app_version'], isNotNull);
+  });
+
+  test('rota gözlemcisi `route` alanını günceller', () async {
+    final observer = ErrorReporterRouteObserver();
+    final oyun = PageRouteBuilder<void>(
+      settings: const RouteSettings(name: 'game'),
+      pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+    );
+    final kok = PageRouteBuilder<void>(
+      settings: const RouteSettings(name: '/'),
+      pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+    );
+
+    observer.didPush(kok, null);
+    expect(errorReporter.route, kRootRouteName,
+        reason: "MaterialApp'in `home:`i '/' adını taşır — kök ekran demek");
+
+    observer.didPush(oyun, kok);
+    errorReporter.report(Exception('oyunda patladı'));
+    await Future<void>.delayed(Duration.zero);
+    expect(sink.sent.single['route'], 'game');
+
+    observer.didPop(oyun, kok);
+    expect(errorReporter.route, kRootRouteName);
+  });
+
+  test('adsız rota kök sayılır — yeni ekranın adı unutulursa kayıt yanlış olmaz',
+      () {
+    final observer = ErrorReporterRouteObserver();
+    observer.didPush(
+      PageRouteBuilder<void>(pageBuilder: (_, __, ___) => const SizedBox.shrink()),
+      null,
+    );
+    expect(errorReporter.route, kRootRouteName);
   });
 
   test('aynı imza İKİNCİ kez gönderilmez', () async {

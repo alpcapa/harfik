@@ -991,6 +991,65 @@ YOK) ve okuma yalnızca admin'e açık.
       Error('elle test') }))` çalıştır → panelde "elle test" belirmeli.
 - [ ] **Tekrar bastırma:** aynı hatayı arka arkaya iki kez tetikle — panelde
       TEK satır olmalı (aynı oturumda ikinci kayıt gönderilmez).
+- [ ] **GÜRÜLTÜ ELENİYOR (23 Ağustos 2026, ilk gerçek veriden):** Siteyi
+      **Instagram/Facebook uygulamasının içindeki tarayıcıdan** (Android)
+      aç, biraz gez ve sekmeyi kapat → panelde
+      `Error invoking postMessage: Java exception…` YA DA `Script error.`
+      BELİRMEMELİ. Bunlar uygulama-içi tarayıcının kendi enjekte ettiği
+      script'ten geliyor, bizim kodumuzla ilgisi yok. Belirirse filtre
+      kırılmıştır (`isThirdPartyError`).
+- [ ] **Oturum düşmesi hata sayılmıyor:** girişliyken başka bir sekmeden
+      çıkış yap (ya da tarayıcı depolamasından `sb-*-auth-token` anahtarını
+      sil) ve eski sekmede "Arkadaşınla" sekmesine dön →
+      `permission denied for function list_my_online_games` panele
+      DÜŞMEMELİ. **Ama bu, aynı mesajı sonsuza dek gizlemek DEĞİL:** oturumu
+      geçerli bir kullanıcı aynı mesajı alıyorsa o GERÇEK bir grant
+      hatasıdır ve panelde görünmeli.
+
+## 9.15. Admin — Sürüm Dağılımı + hata kartında sürüm (23 Ağustos 2026)
+
+Mağaza öncesi hazırlık. **Bugün app yayında olmadığı için tablo yalnızca
+web/bilinmiyor satırları gösterir — asıl sınama uygulamalar çıkınca.**
+
+- [ ] Büyüme > Kullanıcı'da **"Sürüm Dağılımı"** tablosu Cihaz'ın hemen
+      altında görünüyor; sayı sütununun başlığı **"Başlangıç"** (Ziyaretçi
+      DEĞİL — bu tablo oyun açılışı sayıyor).
+- [ ] Sürümsüz satırlar **—** ile çiziliyor (web'in sürümü yok; "bilinmiyor"
+      yazmak eksik veri izlenimi verirdi).
+- [ ] `?` popup'ı "kullanıcı değil oyun açılışı sayar" ve "kapsam yalnızca YZ
+      oyunları" sınırlarını söylüyor.
+- [ ] CSV iniyor ve başlık satırı "Başlangıç" diyor.
+- [ ] Hatalar sekmesinde bir web kaydında **"Sürüm:" satırı HİÇ ÇIKMIYOR**
+      (web sürüm göndermez — boş bir satır her web hatasında gürültü olurdu).
+- [ ] **APP ÇIKINCA:** telefondan bir YZ oyunu aç → tabloda `ios · 1.0.0`
+      (ya da android) satırı belirmeli; uygulamada bir hata oluştur →
+      hata kartında "Sürüm: 1.0.0" görünmeli ve "Yol" alanı `game` /
+      `online-game` / `intro` gibi gerçek bir ekran adı olmalı, `app` değil.
+- [ ] **APP ÇIKINCA:** `mobile_min_supported_version`'ı yükseltmeden ÖNCE bu
+      tabloya bak — eski sürümden hâlâ oyun açılıyorsa eşiği yükseltmek o
+      kullanıcıları uygulamadan kilitler.
+
+## 9.14. Admin — kart başlıklarında gönderen adı (23 Ağustos 2026)
+
+Geri Bildirim (Gelen Kutusu) ve Şikayetler kartlarının başlığı. Bu bölüm bir
+kullanıcı raporunun regresyon kontrolü: ad tek satırdaki TEK esnek öğe
+olduğundan telefonda hep O kırpılıyordu (`Ser…`, `kelimekitest4@sh…`).
+Admin paneli oturum + admin rolü istediğinden otomatik test EDİLEMİYOR.
+
+- [ ] **TELEFONDA** Gelen Kutusu'nu aç: her kartta gönderenin adı (ya da
+      misafirse e-posta adresi) **TAMAMEN** görünmeli — hiçbir yerde `…` ile
+      biten bir ad olmamalı. Rozetler (`Yanıtlandı`/`Oyun Sonu`/`Gönderilen`/
+      `↳ Cevaben`) ve tarih adın ALTINDAKİ satırda, tarih sağ uçta.
+- [ ] **En uzun vaka:** misafir bir geri bildirim (uzun e-posta adresi) ve
+      girişli bir üyenin kaydı (ad + ` · ` + e-posta) — ikisi de sarmalı,
+      kırpılmamalı, karttan taşmamalı.
+- [ ] **Şikayetler alt sekmesinde aynısı:** `{raporlayan} → {raporlanan}`
+      satırı tam görünmeli.
+- [ ] **Kart açılıp kapanıyor** (başlık iki satıra çıkınca dokunma davranışı
+      bozulmamalı) ve `Okundu işaretle` / `Yanıtla` / silme aynen çalışmalı.
+- [ ] **Üyeler tablosundaki isim kolonu DEĞİŞMEDİ** — orada 150px kapak ve
+      `title` bilinçli (sabit kolon dar ekranda tüm alanı yemesin diye).
+
 
 ## 10. k-lig ödül & rütbe sistemi
 

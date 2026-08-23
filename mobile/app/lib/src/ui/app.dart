@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../bootstrap.dart';
 import '../config/version_gate.dart';
+import '../data/error_reporter.dart';
 import '../storage/app_storage.dart';
 import 'auth/reset_password_modal.dart';
 import 'intro/intro_screen.dart';
@@ -19,6 +20,10 @@ class KelimekiApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Kelimeki',
+      // Hata telemetrisinin "hangi ekranda?" alanı — rota adları push
+      // yerlerinde veriliyor, adsız rota kök sayılır (bkz.
+      // `ErrorReporterRouteObserver`).
+      navigatorObservers: [ErrorReporterRouteObserver()],
       // Tema TEK yerde (`ui/theme.dart`) — testler de aynı fonksiyonu
       // kullanıyor, yoksa üründe değişen bir tema testlerde eski hâliyle
       // render edilip sapma görünmez kalıyor.

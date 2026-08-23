@@ -378,6 +378,8 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   void _openIntro() {
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
+        // Telemetrideki `route` alanı — bkz. `ErrorReporterRouteObserver`.
+        settings: const RouteSettings(name: 'intro'),
         builder: (ctx) => IntroScreen(onDone: () => Navigator.of(ctx).pop()),
       ),
     );
@@ -676,6 +678,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
       guestSession = _repo?.attach(controller);
     }
     await Navigator.of(context).push(MaterialPageRoute(
+      settings: const RouteSettings(name: 'game'),
       builder: (_) => GameScreen(
         controller: controller,
         words: words,

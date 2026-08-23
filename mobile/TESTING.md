@@ -1822,6 +1822,26 @@ kayıtların panelde görünmesi ikincil.
       geri ver → doğru sekme yine de açılmalı (karar düşen istekte
       tüketilmez).
 
+## 18. Telemetri — sürüm ve ekran adı (23 Ağustos 2026, Parça 130)
+
+Cihazda koşulur; karşılığı admin panelinin "Hatalar" sekmesi ve
+Büyüme > Kullanıcı > "Sürüm Dağılımı" tablosu.
+
+- [ ] **Sürüm satırı doğru:** Setup'ın altındaki `Sürüm 1.0.0` metni
+      `pubspec.yaml`taki sürümle aynı olmalı. (Ayrışırsa CI zaten düşer —
+      `app_version_parity_test.dart` — ama cihazda bir kez gözle bak.)
+- [ ] **Bir YZ oyunu aç** → panelde Sürüm Dağılımı tablosunda `ios · 1.0.0`
+      (ya da `android · …`) satırı belirmeli. Satır `bilinmiyor` çıkıyorsa
+      `logGameStart` platform/sürüm göndermiyor demektir.
+- [ ] **Ekran adı:** oyun ekranındayken bir hata oluştur (ör. uçak modunda
+      Canlı bir oyuna gir) → hata kaydının "Yol" alanı `game` /
+      `online-game` / `intro` olmalı, `app` DEĞİL. `app` görünüyorsa ya
+      gözlemci takılı değil ya push'ta `RouteSettings(name: …)` unutulmuş.
+- [ ] **Zorunlu güncelleme kapısı hâlâ çalışıyor:** `app_config`taki eşiği
+      geçici olarak uygulamanın sürümünün ÜSTÜNE çek → güncelleme ekranı
+      çıkmalı; geri al → normal açılmalı. (Sürüm sabiti bu kapının girdisi;
+      parite testi tam bunu koruyor.)
+
 ## Web derlemesi (ücretsiz tarayıcı test ortamı)
 
 **Adres:** `https://alpcapa.github.io/kelimeki/` — `main`e giren her mobil

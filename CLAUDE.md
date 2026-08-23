@@ -1725,6 +1725,41 @@ edilen kelimeyi mobil reddediyor" olarak görünür.
   - **Oyunlar** — `admin_game_counts` RPC'si Toplam/2/4 Kişilik için yalnızca biten oyun sayısını verir (`games` tablosu — yalnızca girişli kullanıcıların skor kayıtları). Daha önce `game_starts`'a göre bir "Başlatılan" sayısı da gösteriliyordu; kaç oyunun bittiği önemli olup kaçının başladığı önemli görülmediğinden bu kaldırıldı (20 Temmuz 2026, `admin_game_counts_drop_started` migration'ı — RPC artık yalnızca `player_count, finished` döner). Aynı gün `game_starts` tablosu (RLS politikaları/index'leriyle birlikte) ve `logGameStart` çağrısı da tamamen kaldırıldı (`remove_game_starts_add_session_split_counts` migration'ı) — "başlatılan" verisine hiçbir yerde ihtiyaç görülmedi.
   - **Büyüme** — Kullanıcı/Oyun alt sekmeleri, aşağıya bakın.
   - **Geri Bildirim** — `feedback` tablosu (`FeedbackModal`'dan girişli/misafir gönderilir, oyun bitince `GameOver`'dan açılır); admin okundu/okunmadı işaretleyebilir. 26 Temmuz 2026'da eklenen **yanıt** özelliği: `email` alanı dolu olan (girişliyse hesap e-postası, misafirse formda girilen e-posta) bir geri bildirime admin panelinden yazılan yanıt, `feedback-reply` Edge Function'ı üzerinden Brevo Transactional API ile gönderenin adresine e-posta olarak gönderilir ve `feedback.reply`/`replied_at`/`replied_by` kolonlarına (`feedback_reply_columns` migration'ı) kaydedilir — kart üzerinde daha önce yanıtlanmışsa yanıt metni gösterilir, yoksa bir "Yanıtla" toggle'ı açılır; `email` boşsa (anonim, e-postasız gönderim) buton yerine "E-posta yok, yanıtlanamaz" notu çıkar, çünkü gidecek bir adres yok. Kartlar varsayılan olarak kapalı (özet) gelir, tıklanınca tam mesaj + yanıt + aksiyon butonları tek bir "diyalog" olarak açılır (`expandedFeedbackId`, `AdminDashboard.tsx`).
+
+    **Kart başlığı İKİ SATIR — gönderenin adı ARTIK KIRPILMIYOR (23 Ağustos
+    2026, kullanıcı bildirdi: *"Görüş bildirim'de gelen mesajlarda gönderenin
+    ismi görünmüyor. Onu tam açık görmek lazım her durumda. Diğer benzer
+    yerlerde de tabiki."*):** Başlık tek satırdı ve satırdaki TEK esnek öğe
+    addı (`truncate min-w-0 flex-1`), rozetler ve tarih `shrink-0` — yani
+    daralan her ekranda kırpılan hep ad oluyordu (telefonda `Ser…` / `Ebr…` /
+    `kelimekitest4@sh…`). Bir gelen kutusunda kırpılacak EN SON şey kimden
+    geldiğidir: mesaj metni kapalı kartta bilerek kırpılıyor ve karta
+    dokununca açılıyor, ama gönderenin kim olduğu hiçbir yerde açılmıyordu.
+    Ad artık kendi satırında ve `break-words` ile sarıyor (uzun bir e-posta
+    boşluksuz olduğundan `truncate` değil `break-words` şart); rozetler +
+    tarih alttaki satırda, tarih `ml-auto` ile sağ uçta. **Aynı düzeltme
+    Şikayetler kartına da uygulandı** (`{raporlayan} → {raporlanan}`) — iki
+    başlık ortak `CARD_HEADER`/`CARD_HEADER_NAME`/`CARD_HEADER_META`
+    sabitlerini paylaşıyor, böylece bir daha sessizce ayrışamıyorlar.
+    **Tek satırlık esnek bir çözüm DENENDİ ve ELENDİ:** `flex-wrap` + adın
+    `min-w-0` olması, flexbox'ın rozetleri alt satıra İTMESİ yerine adı bir
+    karaktere kadar DARALTIP dikey sarmasına yol açıyor; ada `min-w-[…]`
+    vermek ise rozet grubu kaba sığmadığında taşıyor.
+    **ÖLÇÜLDÜ** (derlenmiş CSS + Chromium, DPR 2, gerçek modal kromu —
+    `p-4` + `max-w-[640px]` + `px-5`, 320/360/390/834/1194): yeni başlıkta
+    ad **hiçbir genişlikte kırpılmıyor** (`scrollWidth > clientWidth` beş
+    genişlikte de false) ve yatay taşma **0**; bedeli tek satırlık adda
+    kartın 67.5 → **86.5** px büyümesi. **Negatif eş:** eski başlık aynı
+    harnesste 320/360/390'da adı GERÇEKTEN kırpıyor (`Serkan Yıldırım` 390'da
+    bile) ve 320'de tarihi kartın sağ kenarından **38 px** dışarı itiyordu.
+    **Üyeler tablosundaki `STICKY_NAME_CELL` BİLEREK dokunulmadı** — orası
+    kapaklı bir sabit kolon ve gerekçesi ölçümle yazılı (en uzun üretim adı
+    18 karakter/~131px, yani 150px kapak bugün kimseyi kırpmıyor; uç durumda
+    tam hâli `title`da). **Doğrulama sınırı:** admin paneli oturum + admin
+    rolü istediğinden Playwright duman testiyle sınanamıyor; ölçüm, sınıf
+    dizeleri `AdminDashboard.tsx`'ten OKUNARAK kurulan bir harnessle yapıldı
+    (kopyalanmadı — sapma imkânsız). Mobil portta karşılığı YOK: admin paneli
+    porta hiç girmedi.
     **26 Temmuz 2026'nın üçüncü değişikliği — `origin`/`subject`/`related_to` (`feedback_origin_subject_related_to` migration'ı):** İki eksik giderildi. (1) `admin-send-message`'ın gönderdiği mesajlar artık `feedback`'e `origin: 'admin'`, `subject` ile kaydediliyor (`handled: true`) — önceden hiçbir iz bırakmıyordu, admin "kime ne yazdım" sorusuna cevap veremiyordu. Kartta bu satırlar "Gönderilen" rozetiyle ve `→ {alıcı}` başlığıyla (normal `origin: 'user'` satırlarındaki "kimden geldi" anlamının tersi) ayrışır; bu satırlarda "Yanıtla" gösterilmez (zaten gönderilmiş, cevap verilecek bir şey yok). (2) Hem `feedback-reply` hem `admin-send-message`'ın gönderdiği maildeki noreply notu artık linke gömülü bir referans taşıyor (`?contact=1&re=<id>`, `buildNoreplyNoticeHtml`, `_shared/email.ts`) — kişi bu linkten forma yeni bir mesaj yazarsa (`FeedbackModal`'ın yeni `relatedTo` prop'u → `submitFeedback`), yeni satır `related_to = <id>` ile kaydedilir; admin panelinde bu satırlar "↳ Cevaben" rozetiyle görünür, genişletilince üstte hangi mesaja cevaben geldiği (o mesajın konusu + yanıtı/metni) kısa bir alıntı olarak gösterilir (`feedback?.find(x => x.id === f.related_to)` — sayfalama olmadığından tüm liste zaten client'ta yüklü). **Bunun sınırı hâlâ aynı:** yalnızca kişi GERÇEKTEN o linke tıklayıp siteden yazarsa çalışır — mail programında doğrudan "Yanıtla"ya basarsa yine `noreply@kelimeki.com`'a gider ve hiçbir yere düşmez, gerçek bir e-posta thread'i değildir. `feedback_insert_any` RLS politikası da bu değişiklikte gevşetildi (`user_id is null or auth.uid() = user_id or is_admin()`) — admin artık "Mesaj Gönder" ile BAŞKA bir kullanıcı adına satır ekleyebiliyor.
     Detay için aşağıdaki "Geri bildirim yanıtları" bölümüne bakın.
   - **CSV export** (25 Temmuz 2026) — Üyeler tablosu, Geri Bildirim listesi, Büyüme > Kullanıcı'daki Ziyaretçi Kaynağı/Cihaz dökümleri (Ana Ekrana Ekleme ve Platform tabloları 15 Ağustos 2026'da kaldırıldı) ve tüm `GrowthChart` grafikleri (Yeni Üye/Ziyaret, Oyun Sayısı, Oyun Süresi (Medyan), Beğeni/Paylaşma) için "CSV İndir" linki var — ekranda görünen (arama/sıralama/kaynak filtresi uygulanmış) veriyi indirir. Yeni kütüphane eklenmedi; `src/utils/csvExport.ts`'teki `downloadCsv` UTF-8 BOM'lu bir CSV Blob'u üretip `<a download>` ile indiriyor (BOM olmadan Excel Türkçe karakterleri bozuk açardı). PDF/print kapsam dışı bırakıldı — kullanıcı gerekirse tarayıcının kendi "Yazdır → PDF olarak kaydet"ini kullanabilir, ama modal `fixed`/`overflow-y-auto` olduğundan düzgün basılması için ayrı bir `@media print` CSS'i gerekir, henüz eklenmedi.
@@ -2853,6 +2888,123 @@ koşulsuz uyguluyordu; o hâliyle ROADMAP'in ADIYLA andığı vakayı — portun
 hata çoğu zaman bir AĞ hatasıdır, ama raporlanmaya değer kılan şey
 **aynanın DA yazılamamış olmasıdır**, yani sinyal hatanın kendisinde değil
 ÇAĞIRANIN bildiği bağlamda. Manuel bildirimler bu yüzden filtreyi atlar.
+
+### İlk gerçek veri filtreyi İKİ kez genişletti (23 Ağustos 2026)
+
+Panel canlıya çıktıktan iki gün sonra ilk kayıtlara bakıldı: **yedi kaydın
+yedisi de gürültüydü.** Yani kural doğru yazılmıştı ama kapsamı eksikti —
+filtre olmadan panel ilk haftasında kullanılamaz hâle gelirdi. İki yeni
+eleme kuralı:
+
+**1) BİZE AİT OLMAYAN koddan doğan hatalar (`isThirdPartyError`).** Yedi
+kaydın **beşi** tek bir kaynaktı: Instagram/Facebook'un Android'deki
+uygulama-içi tarayıcısı sayfaya bir ölçüm script'i enjekte ediyor
+(`iabjs://navigation_performance_logger_android`) ve sekme kapanırken
+`postMessage`ta patlıyor — *"Error invoking postMessage: Java exception was
+raised during method invocation"*, `window._handleBrowserPreparingToClose`
+karesiyle. **Yığında bizim kodumuz HİÇ geçmiyor**; düzeltemeyiz ve
+Instagram reklamı sürdükçe katlanarak artar. Altıncı kayıt aynı sınıfın
+öteki yüzü: **`Script error.`** — çapraz kaynaklı bir script'ten gelen
+hatada tarayıcı mesajı/yığını/satırı SİLER, geriye teşhis değeri sıfır olan
+o dize kalır. Üç sinyal: `Script error.` + yığınsız; `ErrorEvent.filename`
+bizim origin'imizden değil; ya da yığındaki HİÇBİR kare bizim origin'imizden
+değil. **Şüphede kal ve raporla:** göreli/satır içi/URL'siz kare "bizim"
+sayılır — bu filtrenin yanlış pozitifi GERÇEK bir hatayı sessizce düşürmek
+demek. Üçüncü kural ancak sayfada dış script OLMADIĞI için güvenli (yalnız
+kendi paketimiz); bir gün analytics/SDK eklenirse yeniden düşünülmeli.
+`filename` YALNIZCA `ErrorEvent`te var, `Error`da yok — o yüzden karar hem
+`reportClientError` içinde (yığından) hem global `error` dinleyicisinde
+(dosya adından) veriliyor.
+
+**2) Oturumu düşmüş istemcide "permission denied" (`reportLiveListError`,
+`api.ts`).** Yedinci kayıt: `[list_my_online_games] permission denied for
+function list_my_online_games`. **Grant DOĞRU** (canlıdan okundu:
+`EXECUTE:authenticated`), yani rol `anon` kalmış — geçerli bir JWT
+gönderilmemiş. Başka açıklaması yok: oturum düşmüş, süresi geçmiş ya da
+yenileme henüz tamamlanmamış. Üç çağrı yeri de (`list_my_online_games`,
+`fetch_online_game_turns`, `fetch_online_game_deadlines`) zaten `user`
+varken tetikleniyor, yani bu bir yarış — bug değil.
+**⚠ AMA mesaja bakıp körlemesine filtrelemek YANLIŞ olurdu:** aynı mesaj
+gerçek bir dağıtım hatasının da yüzü — bir fonksiyon `drop`+`create`
+edildikten sonra `grant` unutulursa oturumu olan HERKES aynı mesajı alır ve
+bu projede bir kez yaşandı (bkz. `fix_withdraw_report_wrong_overload`).
+İkisini ayıran TEK şey **oturumun varlığı**: oturum VARKEN gelen bir
+"permission denied" raporlanır, oturumsuz gelen elenir. Kontrol
+`getSession()` ile — yerel depodan okur, AĞA GİTMEZ (`fetchMyGames`'in
+14 Ağustos düzeltmesinin aynı ayrımı).
+
+**Doğrulama:** `npm run verify-error-reporting` 20 → **30 kontrol**
+(gerçek IAB yığını, `Script error.`, kendi yığınımızın pozitif kontrolü),
+`npm run verify-live-games-load` **28 kontrole** çıktı — dördü yeni
+(oturumsuz elenir / oturumlu raporlanır / yetkiyle ilgisiz hata her
+hâlükârda raporlanır / dönüş davranışı değişmedi).
+**Negatif eş, ikisi de ayrı ayrı:** üçüncü taraf filtresi kaldırılınca ve
+auth-durumu guard'ı kaldırılınca ilgili kontroller GERÇEKTEN düşüyor.
+**Flutter portu ETKİLENMEDİ ve bu bilinçli:** orada sayfaya script enjekte
+eden bir uygulama-içi tarayıcı YOK (`Script error.` diye bir kavram da yok)
+ve port bu üç RPC'nin hatasını hiç raporlamıyor (`ErrorReporter`ın tek
+manuel çağrı yeri `cloud_save_repo`).
+
+**Kayıtlar SİLİNMEDİ** — panelin penceresi (7/30/90 gün) onları zaten
+kendiliğinden dışarıda bırakacak, ve bu yedi satır filtrenin neden
+gerektiğinin kanıtı.
+
+### Mağaza öncesi üç ekleme — sürüm, rota (23 Ağustos 2026)
+
+Kullanıcı *"özellikle ileride app tarafı geldiğinde eksik ne var?"* diye
+sorunca yapılan denetimden çıktı. Üçü de **geriye dönük doldurulamaz**
+(`games.platform` ile aynı sınıf), o yüzden mağazadan ÖNCE:
+
+- **`client_errors.app_version` + `game_starts.app_version`/`platform`**
+  (`telemetry_app_version` migration'ı). Web'de AYNI ANDA tek canlı derleme
+  var; app'te aynı anda beş sürüm olur. **Web bu alanı NULL bırakır ve bu
+  bir eksiklik DEĞİL, anlamın kendisi:** web'in sürümü `build` (sha) ile
+  zaten tekil; uydurma bir değer dağılımı kirletirdi. `game_starts`ta
+  `platform` da YOKTU (ölçüldü) — `app_version` tek başına ios ile android'i
+  ayıramaz.
+- **`admin_client_errors` artık `versions` döndürüyor** (dönüş tipi
+  değiştiğinden drop+create, grant'ler elle). Sürümü olmayan istemciler
+  `filter` ile ELENİYOR, `'?'` ile doldurulMUYOR — yalnız web'den gelen bir
+  grupta alan `null` kalır ve panel "Sürüm:" satırını hiç çizmez.
+- **`admin_app_version_breakdown(p_days)` → Büyüme > Kullanıcı'da "Sürüm
+  Dağılımı" tablosu.** Var olma sebebi tek bir soru:
+  `app_config.mobile_min_supported_version` eşiğini yükseltmek güvenli mi?
+  Eşiği erken yükseltmek eski sürümdeki kullanıcıları uygulamadan kilitler
+  (`version_gate.dart`), geç yükseltmek düzeltilmiş bir hatayı sahada
+  yaşatır. **⚠ OYUN AÇILIŞI sayar, KULLANICI değil** — port `anon_id`
+  göndermiyor, dolayısıyla app satırlarında cihaz sayılamıyor; kapsam da
+  yalnızca YEREL (YZ) oyunlar (`game_starts`ın kendi kapsamı), yani yalnız
+  Canlı oynayan biri tabloda hiç görünmez. Tablo `GuestBreakdownTable`'ı
+  yeniden kullanıyor; bileşene `valueLabel` prop'u eklendi — sayı sütununun
+  başlığını "Ziyaretçi" bırakmak sayının ne olduğu konusunda yalan söylerdi.
+- **Portun `route` alanı SABİT `'app'`ti, artık gerçek ekran adı**
+  (`ErrorReporterRouteObserver`). Web'de o kolon '/'/'/game/:id' diye
+  ayrışıyor; app trafiği baskın hâle gelince kolon tamamen ölürdü. Adlar
+  push yerlerinde veriliyor (`intro`/`game`/`online-game`), **adsız rota KÖK
+  sayılıyor** — yeni bir ekranın adı unutulursa kayıt yanlış olmaz, yalnızca
+  ayrıntısını kaybeder.
+- **Portta `appVersion` ↔ `pubspec.yaml` paritesi TESTLİ**
+  (`app_version_parity_test.dart`). Bu denetim onu bağımsız olarak bulup
+  testini yazdı, ama `main`'e alınırken Play yayını turunun (22 Ağustos)
+  AYNI testi aynı gerekçeyle çoktan eklediği görüldü — kopya düşürüldü,
+  kanonik olan `main`'inki. Kilitlenme senaryosu: `mobile/CLAUDE.md`,
+  Parça 130.
+
+**ÖLÇÜLDÜ** (derlenmiş CSS + Chromium, DPR 2, gerçek modal kromu,
+320/360/390/834/1194; sınıf dizeleri `AdminDashboard.tsx`'ten OKUNARAK):
+sayfa taşması her genişlikte **0**; tablo **276–279 px**, 360 px'ten itibaren
+kabına sığıyor, 320'de kendi `overflow-x-auto` kabında **30 px** kayıyor;
+başlıklar üç genişlikte de tek satır (29 px); hata kartı sürüm satırıyla
+86.5 → **107.5** px. Sürüm satırı YALNIZCA `versions` doluyken çiziliyor
+(negatif eş aynı harnesste ölçüldü).
+
+**Canlıda doğrulandı** (gerçek admin JWT'siyle, sahte app satırlarıyla, hepsi
+rollback): `[ios 0.1.0 starts=2 devices=2]`, `[android 0.2.0 starts=1
+devices=0]`, hata satırında `versions=0.1.0 platforms=ios`; admin olmayan
+çağrı `Yetkisiz erişim.` aldı. Mevcut web satırları `bilinmiyor/bilinmiyor`
+görünüyor — `game_starts.platform` de bugün eklendi, yani geçmiş
+doldurulamaz; panel `bilinmiyor` sürümü **—** olarak çiziyor (web'in sürümü
+yok, bu eksik veri değil).
 
 ### Üç değişmez (biri bozulursa telemetri ürünü bozar)
 
