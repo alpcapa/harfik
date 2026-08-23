@@ -6,6 +6,11 @@
 //            tamamlamazsan hesabın silinecek"
 //   48. saat hâlâ onaysızsa hesap SİLİNİR; e-posta ve takma ad serbest kalır
 //
+// KURAL: KİMSE UYARILMADAN SİLİNMEZ. Silme yalnızca yaşa değil, hatırlatmanın
+// GÖNDERİLMİŞ ve üzerinden 24 saat geçmiş olmasına da bağlı. Normal akışta bu
+// bağlayıcı değil (20+24=44 < 48); asıl işi hatırlatma penceresinden ÖNCE
+// kaydolmuş eski hesaplarda görür — onlar da önce uyarılır, sonra silinir.
+//
 // İLKE: hatırlatma aralığı = linkin ömrü. Böylece kullanıcının kutusunda HER
 // AN geçerli bir link bulunur (0-24 ilk mail, 24-48 hatırlatma). İlk taslak
 // 3 gün/7 gündü ve 24-72. saatler arasında ÖLÜ BÖLGE bırakıyordu.
@@ -36,6 +41,13 @@ const CRON_SECRET = Deno.env.get('CRON_SECRET');
 
 const HATIRLATMA_ESIGI_MS = 20 * 60 * 60 * 1000;
 const SILME_ESIGI_MS = 48 * 60 * 60 * 1000;
+// KİMSE UYARILMADAN SİLİNMEZ. Silme, yaşın yanı sıra hatırlatmanın üzerinden
+// bu kadar geçmiş olmasını da şart koşar. Normal akışta bağlayıcı değildir
+// (20. saatte hatırlatılan 44. saatte bu şartı geçer, silme zaten 48'de) —
+// asıl işi ESKİ BİRİKMİŞ hesaplarda görür: hatırlatma penceresi eklenmeden
+// önce kaydolmuş biri (ör. 28 günlük bir hesap) hiç uyarılmadan silinirdi.
+// Artık önce hatırlatma alır, 24 saat şansı olur, sonra silinir.
+const SILME_HATIRLATMADAN_SONRA_MS = 24 * 60 * 60 * 1000;
 
 interface Damga {
   id: string;
@@ -97,21 +109,33 @@ Deno.serve(async (req: Request) => {
   // gerçekte kullanılıyor olabilir.
   const adaylar = tumu.filter((u) => !u.email_confirmed_at && !u.last_sign_in_at && !!u.email);
 
-  const silinecek = adaylar.filter((u) => simdi - Date.parse(u.created_at) >= SILME_ESIGI_MS);
-  const hatirlatilacakHam = adaylar.filter((u) => {
-    const yas = simdi - Date.parse(u.created_at);
-    return yas >= HATIRLATMA_ESIGI_MS && yas < SILME_ESIGI_MS;
-  });
-
-  // Damgası dolu olanları ele — hatırlatma ömür boyu TEK.
-  const ilgiliIdler = [...hatirlatilacakHam, ...silinecek].map((u) => u.id);
-  const { data: damgalar } = ilgiliIdler.length
+  const { data: damgalar } = adaylar.length
     ? await supabase.from('profiles')
         .select('id, display_name, first_name, confirm_reminder_sent_at')
-        .in('id', ilgiliIdler)
+        .in('id', adaylar.map((u) => u.id))
     : { data: [] as Damga[] };
   const damgaOf = new Map<string, Damga>(((damgalar ?? []) as Damga[]).map((p) => [p.id, p]));
-  const hatirlatilacak = hatirlatilacakHam.filter((u) => !damgaOf.get(u.id)?.confirm_reminder_sent_at);
+  const damgaZamani = (id: string) => {
+    const t = damgaOf.get(id)?.confirm_reminder_sent_at;
+    return t ? Date.parse(t) : null;
+  };
+
+  // HATIRLATMA: 20 saati geçmiş ve daha önce hiç hatırlatılmamış herkes.
+  // ⚠ ÜST SINIR YOK — bilinçli. Üst sınır koyulsaydı 48 saati aşmış eski
+  // hesaplar hiç uyarılmadan silinirdi.
+  const hatirlatilacak = adaylar.filter((u) =>
+    simdi - Date.parse(u.created_at) >= HATIRLATMA_ESIGI_MS && damgaZamani(u.id) === null
+  );
+
+  // SİLME: yaş 48 saati geçmiş VE hatırlatma gönderilmiş VE üzerinden 24 saat
+  // geçmiş. Üç şart birden — hatırlatma gönderilememiş bir hesap silinmez,
+  // bir sonraki saatte tekrar denenir.
+  const silinecek = adaylar.filter((u) => {
+    const damga = damgaZamani(u.id);
+    return simdi - Date.parse(u.created_at) >= SILME_ESIGI_MS
+      && damga !== null
+      && simdi - damga >= SILME_HATIRLATMADAN_SONRA_MS;
+  });
 
   // SİLME GUARD'I — YALNIZCA KİŞİNİN KENDİ ÜRETTİĞİ veri silmeyi engeller.
   //
@@ -153,6 +177,7 @@ Deno.serve(async (req: Request) => {
     })),
     silinecek: silinecek.filter((u) => !veriliIdler.has(u.id)).map((u) => ({
       email: u.email, yasSaat: yasSaat(u), ad: damgaOf.get(u.id)?.display_name ?? null,
+      hatirlatmaSaatOnce: Math.round((simdi - (damgaZamani(u.id) ?? simdi)) / 3600000),
       // Silinince cascade olacak, BAŞKALARININ ona işaret eden kayıtları.
       cascadeOlacakGelenKayit: gelenReferans.get(u.id) ?? 0,
     })),
