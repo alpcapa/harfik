@@ -2044,6 +2044,131 @@ gerçek HTTP çağrısıyla, trigger zinciri geri alınan transaction'la
 doğrulandı; uçtan uca teyit ilk gerçek kayıtta (ya da bir test hesabıyla)
 yapılmalı — `TESTING.md` bölüm 12.
 
+### Onaylanmamış hesap süpürmesi — hatırlat, sonra sil (23 Ağustos 2026)
+
+**Neden — gerçek bir kullanıcıda gözlendi.** "Sel Sezer" kayıt olurken
+e-postasını yanlış yazdı (`sel_eb@` yerine `sel_en@`), **47 saniye sonra**
+doğru adresle tekrar kayıt oldu — ama takma adı `Sweetpain` az önce KENDİ ölü
+hesabı tarafından kapılmıştı, `Sweetpain.` yazmak zorunda kaldı. **Aynı
+e-posta ile iki hesap MÜMKÜN DEĞİL** (`users_email_partial_key`); mesele
+takma ad rezervasyonuydu — `profiles_display_name_tr_lower_key` hiç
+onaylanmamış bir hesabın adını da süresiz tutuyor. (O gün elle çözüldü: boş
+hesap silindi, ad düzeltildi, üye 38 → 37.)
+
+**Ölçüldü:** 37 üyenin **3'ü** hiç onaylanmamış, ikisi **26/28 gündür** öyle —
+linkleri 680/632 saat önce ölmüş, bir daha asla onaylanamazlar ama adları
+(`H56`, `Cacan`) rezerve. Onaylanmamış hesabı süpüren HİÇBİR mekanizma yoktu
+(iki mevcut cron job'un ikisi de yalnızca bildirim gönderiyor).
+
+| Zaman | Ne olur |
+|---|---|
+| 0. saat | Kayıt, onay maili gider (link **24 saat** geçerli) |
+| ~20. saat | **Tek seferlik hatırlatma** — TAZE link + "24 saat içinde tamamlamazsan hesabın silinecek" |
+| 48. saat | Hâlâ onaysızsa **hesap silinir**; e-posta ve takma ad serbest kalır |
+
+**İlke: hatırlatma aralığı = linkin ömrü.** Böylece kutuda HER AN geçerli bir
+link bulunur (0-24 ilk mail, 24-48 hatırlatma). İlk taslak 3 gün/7 gündü ve
+24-72. saatler arasında **ölü bölge** bırakıyordu — kullanıcı yakaladı.
+
+**⚠ CRON SAATLİK OLMAK ZORUNDA** (`25 * * * *`; dakika :25, öteki iki cron'la
+çakışmasın diye). Günlüğe çekilirse ölü bölge geri gelir: 12:00'de kayıt olanı
+ertesi gün 11:00'de kontrol edersen henüz 23 saatliktir, atlanır ve hatırlatma
+47. saatte gider — oysa ilk link 24. saatte ölmüştür. Hatırlatma tam bu yüzden
+eşiğin (24s) BİRAZ ÖNCESİNDE (~20s) atılıyor: iki linkin geçerlilik aralığı
+üst üste binsin.
+
+**⚠ `net.http_post` timeout'u 60 sn (varsayılan 5 sn DEĞİL).** Bu proje aynı
+tuzağa bir kez düştü (`welcome_email_http_timeout`): soğuk başlangıç 5 sn'yi
+aşıp isteği düşürmüştü. Bu fonksiyon ayrıca N kullanıcı için SIRAYLA link
+üretip mail gönderiyor.
+
+**Kimse uyarılmadan silinmez — silme ÜÇ koşulun hepsini ister:** onaysız ·
+hatırlatma gönderilmiş (`profiles.confirm_reminder_sent_at` dolu) · o
+damgadan bu yana 24 saat geçmiş. Yan fayda: bir Brevo kesintisi artık silmeyi
+BLOKLAR (hatırlatma gidemezse damga da konmaz), sessizce kullanıcı kaybettirmez.
+Kural kullanıcının isteğinden doğdu — 26/28 günlük iki eski hesaba da önce
+hatırlatma gönderildi ("belki geri kazanırız"), sistem sonra silsin diye.
+
+**Ölçülen teknik zemin** (üretimde, geçici bir Edge Function ile — sonra
+etkisiz hâle getirildi): yönetici `generateLink({type:'signup'})` çağrısı
+onaylanmamış bir hesap için taze `action_link` + `hashed_token` DÖNDÜRÜYOR
+(`verification_type: signup`); o jetonla doğrulama **oturum açıyor** ve
+`email_confirmed_at`ı dolduruyor → **tek mail, tek tık, direkt içeri**; ve
+**kendi başına mail ATMIYOR** (çağrı **42 ms**, auth loglarında gönderim kaydı
+yok). Zorunlu `password` parametresi MEVCUT parolayı EZMİYOR — varsayılmadı,
+üretimde ölçüldü (eski parola `EVET`, üretilen geçici parola `HAYIR`).
+Kullanıcının tıklaması da canlıda doğrulandı: hatırlatma 19:35:42 →
+`email_confirmed_at` **ve** `last_sign_in_at` 19:38:08 (aynı an).
+
+**Neden Supabase'in kendi "onay mailini yeniden gönder" akışı DEĞİL:** stok
+şablon "hesabın silinecek" diyemez, ve markalı bir ara sayfadan yeniden
+göndermek kullanıcıyı iki mail + iki tıklamaya sokardı. Kullanıcı bu git-geli
+açıkça reddetti; tek mail/tek tık yukarıdaki ölçümle mümkün olduğu için
+seçildi.
+
+**⚠⚠ `Email OTP expiration` 3600 → 86400 (24 saat) yapıldı** (Dashboard →
+Authentication → Sign In / Providers → Email; Dashboard ayarı olduğundan
+repoda/migration'da HİÇ izi yok, kaydı yalnızca burada). **Bu şemanın
+temeli** — 1 saate dönerse hatırlatma maili neredeyse hep ölü link taşır ve
+kimse fark etmez. Supabase bunu `auth_otp_long_expiry` (**WARN**) olarak
+işaretliyor ve bu uyarı BİLİNÇLİ kabul edildi (ölçüldü: değişiklikten önce
+denetimde YOKTU, sonra ÇIKTI). **Bir sonraki oturum `get_advisors` çıktısını
+temizlemek için 3600'e geri çekmesin.** Bedeli dürüstçe: ayar paylaşımlı,
+**şifre sıfırlama linki de** 24 saat yaşıyor; 7 gün BU YÜZDEN reddedildi —
+"Require current password when updating" KAPALI olduğundan (ölçüldü) o link
+tam hesap devralma yolu.
+
+**Silme guard'ı — ilk sürüm FAZLA GENİŞTİ ve prova modu yakaladı.** Varsayım
+"onaysız + hiç giriş yapmamış hesabın verisi olamaz" idi; prova çıktısı
+`verisiOlduguIcinAtlanan: ["canangecmen@gmail.com"]` dedi. Sebep: onaylanmamış
+hesaplar arkadaş aramasında GÖRÜNÜYOR, biri ona istek göndermişti. Guard artık
+yalnızca hesabın KENDİ oluşturduğu kaydı sayıyor (`games`, `local_game_saves`,
+gönderdiği `friend_requests`); gelen referanslar cascade ile gideceğinden
+yalnızca `cascadeOlacakGelenKayit` diye raporlanıyor. **Ders: "bu durumda veri
+olamaz" bir gerekçe değil bir varsayım — otomatik silmede prova modu şart.**
+
+**Yakalanan tuzak:** `admin.createUser` metadata'sız çağrılırsa
+`profiles_first_name_not_blank` kısıtına takılıp `Database error creating new
+user` verir — sunucudan hesap yaratan her kod gerçek bir kaydı taklit edip
+ad/soyad göndermek zorunda.
+
+**Yan bulgu:** bu akış `notify-welcome` zincirini de tetikledi ve
+`{"ok":true,"sent":true}` döndü — `TESTING.md` bölüm 12'de "gerçek gönderim
+test edilmedi" diye duran madde böylece üretimde kanıtlandı.
+
+**Parçalar:** `profiles.confirm_reminder_sent_at`
+(`20260823190529_confirm_reminder_sent_at`), Edge Function
+`sweep-unconfirmed-accounts` (`verify_jwt: false` — cron çağırıyor, JWT yok;
+`deploy_edge_function`e bu değer AÇIKÇA geçilmeli, bkz. o bölümdeki kayıtlı
+tuzak), cron `20260823193949_sweep_unconfirmed_accounts_cron`. Eşikler
+fonksiyonun başındaki üç sabitte (20s / 48s / hatırlatmadan sonra 24s) —
+biri değişirse hukuki metin de değişmeli. Elle kontrol listesi:
+`TESTING.md` bölüm 18.
+
+**Hukuki metin AYNI PR'da:** `src/legal/LegalContent.tsx` 5. bölüme saklama
+cümlesi + portun `legal_modals.dart`'ı (`legal_text_test.dart` "Son
+güncelleme" tarihlerini karşılaştırıyor, port bayat kalsa mobil CI düşer).
+
+**HENÜZ ÖLÇÜLMEDİ:** onaysız hesap dururken aynı e-postayla **yeniden kayıt**
+denenirse ne oluyor? Supabase'in onay mailini yeniden göndermesi beklenir —
+öyleyse tamamen kendi kendine işleyen ÜÇÜNCÜ bir kurtarma yolu var demektir.
+Varsayma, ölç.
+
+**Bilinçli olarak YAPILMAYAN:** admin Üyeler tablosuna "onaylanmamış" filtresi
+— kullanıcı onayladı ama "hemen canlıya alalım" kapsamının dışında kaldı,
+kendi maddesi olarak `ROADMAP.md`'de duruyor.
+
+**Bounce (geri dönen mail) görünürlüğü de YAPILMADI ve bu artık bir varsayım
+değil ÖLÇÜM:** uygulama bir mailin bounce ettiğini HİÇ bilmiyor, tek kaynak
+Brevo panelindeki gönderim logu — ve o panelde **1-23 Ağustos 2026 arasında
+TOPLAM 1 bounce** var (büyük olasılıkla bu bölümü doğuran yanlış-adres
+vakasının kendisi). Yani webhook + tablo + admin görünürlüğü kurmanın bedeli,
+kapatacağı soruna göre orantısız; üstelik yanlış adresin asıl sonucu (ölü
+hesabın takma adı kilitlemesi) yukarıdaki süpürmeyle zaten çözüldü. **Bir
+sonraki oturum bunu "eksik" diye açmasın** — koşul şu: Brevo panelinde bounce
+oranı görünür biçimde artarsa (ör. haftada birkaç), o zaman ölç ve yeniden
+değerlendir.
+
 ### İşlemsel e-posta bildirimleri (arkadaşlık isteği + Canlı oyun daveti)
 
 29 Temmuz 2026'da eklendi (`notify-friend-request`/`notify-game-invite` Edge Function'ları). Kullanıcının gözlemi: hem arkadaşlık isteği hem Canlı oyun daveti yalnızca uygulama-içi bir rozetle görünüyordu (`UserMenu`'deki "Arkadaşlar" rozeti / Setup'taki "Arkadaşınla (N)"); alıcı uygulamayı hiç açmazsa bundan tamamen habersiz kalıyordu — Canlı oyun davetinde bu daha da vahimdi çünkü `online_game_invite_expiry` (7 gün) daveti sessizce iptal ediyordu, kişi kaçırdığının farkına bile varamıyordu. Bunlar **işlemsel (transactional) bildirimlerdir, `marketing_consent`'e (kayıt formundaki opsiyonel pazarlama onayı) bağlı DEĞİLDİR** — Kelimeki'nin kendi tanıtım/promosyon içeriği değil, alıcının hesabına gelen somut, kişiye özel bir olayı (birinin ona istek/davet göndermesini) bildiriyorlar; tıpkı şifre sıfırlama ya da geri bildirim yanıtı maili gibi.

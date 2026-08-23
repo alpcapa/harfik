@@ -372,6 +372,29 @@ turunda kapanır.
 
 ---
 
+## 9. Admin Üyeler tablosuna "onaylanmamış" filtresi — **İSTEĞE BAĞLI**
+
+**Model: Sonnet 5, efor `medium`.** Salt-okunur bir liste filtresi.
+
+Kullanıcı 23 Ağustos 2026'da onayladı ("Filtre kalsın") ama o günkü "hemen
+canlıya alalım" kapsamının DIŞINDA bırakıldı — asıl sorun (onaylanmamış
+hesabın takma adı süresiz kilitlemesi) artık saatlik süpürmeyle çözülü
+(bkz. kök `CLAUDE.md` → "Onaylanmamış hesap süpürmesi"), yani bu filtre bir
+arıza değil bir görünürlük kolaylığı.
+
+**Ne:** Üyeler tablosunda "yalnızca onaylanmamışları göster" seçeneği. Bugün
+`admin_list_members` bu alanı HİÇ döndürmüyor — `auth.users.email_confirmed_at`
+istemciye kapalı, yani RPC'ye bir kolon eklemek gerekiyor (dönüş tipi
+değişince `create or replace` YETMEZ, drop+create + grant'leri elle geri kur;
+kayıtlı tuzak: `fix_withdraw_report_wrong_overload`).
+
+**Kapsam kararı:** yeni kolon Üyeler tablosunda gösterilecekse CSV'ye de
+eklenmeli — "CSV ekranda görüneni indirir" sözü ancak öyle doğru kalır.
+Sıralama anahtarı EKLEME (mevcut yedi anahtar korunuyor, gerekçesi
+`CLAUDE.md` → "Kayıt alanlarının tamamı tabloda").
+
+---
+
 ## Her iş için değişmeyen kurallar
 
 1. **Önce etki analizi** (kök `CLAUDE.md` → "Çalışma İlkesi"): bu kodun

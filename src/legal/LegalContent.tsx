@@ -44,7 +44,7 @@ export function PrivacyBody({ contact }: { contact: ReactNode }) {
       <div className="flex flex-col gap-5">
         <P>
           Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, hangi verileri topladığımızı,
-          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 22 Ağustos 2026</P>
+          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 23 Ağustos 2026</P>
 
         <Section title="1. Veri Sorumlusu">
           <P>
@@ -170,6 +170,13 @@ export function PrivacyBody({ contact }: { contact: ReactNode }) {
             silinmesini istiyorsanız 8. bölümdeki "Görüş Bildir" kanalından talep
             edebilirsiniz. Talebiniz üzerine tüm kişisel verileriniz en geç {SILME_SURESI_GUN} gün
             içinde kalıcı olarak silinir.
+          </P>
+          <P>
+            Kayıt sırasında e-posta adresinizi doğrulamazsanız hesabınız tamamlanmamış
+            sayılır: yaklaşık 20 saat sonra size bir hatırlatma e-postası gönderilir ve
+            48 saat içinde hâlâ doğrulanmamışsa hesap ile birlikte o ana kadar
+            oluşturulmuş kayıtlar silinir. Dilediğiniz zaman aynı e-posta adresi ve aynı
+            takma adla yeniden kayıt olabilirsiniz.
           </P>
         </Section>
 
