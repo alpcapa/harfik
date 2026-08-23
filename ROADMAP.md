@@ -372,6 +372,73 @@ turunda kapanır.
 
 ---
 
+## 10. Takma ad, doğrulanmamış hesapta kilitli kalıyor — **İSTEĞE BAĞLI**
+
+**Model: Opus 5, efor `medium`.** Küçük ama bir şema kararı gerektiriyor;
+iki seçenekten biri migration + iki istemci demek.
+
+**Neden — 23 Ağustos 2026'da gerçek bir kullanıcıda gözlendi.** "Sel Sezer"
+kayıt olurken e-postasını yanlış yazdı (`sel_eb@` yerine `sel_en@`), onay
+maili yanlış adrese gitti, **47 saniye sonra** doğru adresle tekrar kayıt
+oldu — ama takma adı `Sweetpain` az önce KENDİ ölü hesabı tarafından
+kapılmıştı, `Sweetpain.` yazmak zorunda kaldı. (Aynı gün elle çözüldü: boş
+hesap `13dcaf11…` silindi — 31 FK'nın tamamı tarandı, kendi `profiles`
+satırı dışında sıfır bağı vardı — ve kalan hesabın adı `Sweetpain` yapıldı.
+Toplam üye 38 → 37.) **Mekanizma yerinde duruyor.**
+
+**Aynı e-posta ile iki hesap MÜMKÜN DEĞİL** — `auth.users` üzerinde
+`users_email_partial_key` unique index'i var; bu madde onunla ilgili değil,
+takma ad rezervasyonuyla ilgili.
+
+**Ölçüldü (23 Ağustos):** 37 üyenin **3'ü** hiç onaylanmamış ve ikisi
+**26/28 gündür** öyle — yani bir daha asla onaylanmayacaklar, ama takma
+adları (`H56`, `Cacan`) süresiz rezerve. Bugün oran %8; Instagram
+trafiğiyle artar.
+
+**Kısıt:** `profiles_display_name_tr_lower_key` →
+`unique (tr_lower(display_name))`; `display_name` ayrıca `NOT NULL`.
+
+### Seçenek A — benzersizliği yalnızca onaylanmış hesaplara uygula
+
+**⚠ Kısmi index TEK BAŞINA YAPILAMAZ:** index predicate'i yalnızca satırın
+KENDİ kolonlarını görebilir, `auth.users.email_confirmed_at`'e bakamaz.
+Yani `profiles`'a onay durumunu aynalayan bir kolon + onu güncelleyen bir
+`auth.users` trigger'ı gerekiyor.
+
+**Emsal hazır, yeniden icat etme:** `welcome_email_sent_at` +
+`on_auth_user_welcome` (`after insert or update of email_confirmed_at`) tam
+bu deseni kuruyor. **Trigger ADI önemli:** Postgres aynı olaydaki
+trigger'ları ada göre sıralıyor ve profil satırını yaratan
+`on_auth_user_created` HER ZAMAN önce koşmalı (kök `CLAUDE.md` → "Hoş
+geldiniz e-postası").
+
+**Yan etki KARARA bağlanmalı:** onaylanmamış iki hesap aynı adı alabilir,
+biri onaylanınca diğeri çakışır. Onay anında ad doluysa ne olacak — adı
+serbest bırak, sonek ekle, yoksa onayı reddet?
+
+### Seçenek B — onaylanmamış hesapları N gün sonra süpür
+
+Daha basit, yan etkisi yok ve hesap silme kaskadının ilk gerçek kullanımı
+olur. **Sırası: madde 2'den SONRA** — o iş kaskadı zaten çıkarmış olur,
+öncesinde yapmak aynı analizi iki kez yaptırır (madde 4 ile aynı bağ).
+
+**Süre icat etme:** 7 gün bu projede zaten üç yerde kanonik (terk edilen
+yerel oyun, davet zaman aşımı, misafir kuyruğu).
+
+### Her iki seçenekte de
+
+- **`check_nickname_available` RPC'si kısıtla BİRLİKTE değişmeli.** O
+  yalnızca canlı UX geri bildirimi, asıl doğruluk kaynağı index —
+  ayrışırlarsa form "✓ Kullanılabilir" der, insert unique violation ile
+  düşer (ya da tersi: alınabilir bir ad "kullanımda" görünür).
+- İki istemci birden: web'de `AuthModal` + `AccountSettingsModal` (ortak
+  `useNicknameAvailability`), portta eşleniği.
+- **Bu vakayı bulan tek şey elle kontroldü, hiçbir uyarı üretmedi.**
+  İstenirse admin Üyeler tablosuna "onaylanmamış" filtresi bunu görünür
+  kılar — bugün `Durum` sütunu yalnızca dondurulmayı gösteriyor.
+
+---
+
 ## Her iş için değişmeyen kurallar
 
 1. **Önce etki analizi** (kök `CLAUDE.md` → "Çalışma İlkesi"): bu kodun
