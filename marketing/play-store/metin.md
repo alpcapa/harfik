@@ -103,20 +103,106 @@ olabilir. Bu yüzden:
 - Sohbet ekranında gerçek yazışma olmasın; test mesajı yaz.
 - Bildirim çubuğunu temizle (bildirim yok, pil/şebeke dolu).
 
-### Çekim listesi (ilk üçü en önemlisi — listede önce onlar görünüyor)
-1. **Oyun ekranı, oyunun ortası.** Tahta dolu, bölge dış hatları ve renkler
-   net görünsün, raf dolu olsun. Asıl mekaniği anlatan tek kare bu.
-2. **Geçerli bir hamle kurulmuşken.** Taşlar konmuş, doğrulama yeşil, puan
-   rozeti görünür — "nasıl oynanıyor" sorusunu cevaplıyor.
-3. **Kurulum ekranı, "Arkadaşınla" sekmesi.** İki oyun modunun varlığını
-   gösteriyor.
-4. **Skor kartı** — rütbe mührü, k-lig puanı ve istatistik kutuları.
-5. **k-lig sıralaması.**
-6. **Kelime anlamı penceresi** (tahtadaki bir kelimeye dokununca) ya da
-   **Nasıl oynanır** ekranı.
+### Çekim listesi — tek tek
 
-4 kare yeterli; 6 daha iyi. Aynı oyundan iki benzer kare koymak yerine farklı
-ekranlar seç.
+Play en fazla 8 kabul ediyor; **4 yeterli, 6 ideal.** İlk 2-3 kare arama
+sonuçlarında ve listenin başında görünen karelerdir — en iyi olanları başa koy.
+Aşağıdaki sıra, listede görünecek sıradır.
+
+---
+
+**1 — Oyun ekranı, oyunun ortası** *(en önemli kare)*
+
+Nasıl: Setup → "Yapay Zeka ile" → 2 Kişilik → OYUNU BAŞLAT → **en az 8-10
+hamle oyna** (ya da devam eden bir oyunu aç). Zaten yarıda kalmış bir oyunun
+varsa onu kullan, daha hızlı.
+
+Karede görünmeli: tahtanın en az yarısı dolu · en az iki oyuncunun renkli
+bölge dış hatları · raf dolu · üstteki skor kutuları.
+
+Neden: oyunun asıl mekaniği (bölge büyütme) yalnızca bu karede anlaşılıyor.
+
+---
+
+**2 — Geçerli bir hamle kurulmuşken**
+
+Nasıl: aynı oyunda raftan tahtaya birkaç taş koy, **OYNA'ya basma.**
+
+Karede görünmeli: konmuş taşların **yeşil** doğrulama dış hattı · yanındaki
+puan rozeti · alttaki OYNA düğmesi etkin.
+
+Neden: "bu oyun nasıl oynanıyor" sorusunu tek karede cevaplıyor.
+
+---
+
+**3 — Kurulum ekranı, "Arkadaşınla" sekmesi**
+
+Nasıl: oyun ekranında logonun altındaki **"← Geri"** → "OYUN TİPİ" altında
+**"Arkadaşınla"** sekmesine dokun.
+
+Karede görünmeli: iki sekme (Yapay Zeka ile / Arkadaşınla) · "Devam Edenler"
+listesinde en az bir oyun.
+
+⚠ **Test hesabıyla çek** (T1/T2). Gerçek arkadaşlarının adı/avatarı bu karede
+görünmemeli — görseller herkese açık yayınlanıyor.
+
+Neden: iki oyun modunun varlığını gösteren tek kare.
+
+---
+
+**4 — Skor kartı**
+
+Nasıl: sağ üstteki avatar → **"Skor Kartı"**.
+
+Karede görünmeli: başlıktaki **rütbe mührü** · k-lig puanı · istatistik
+kutuları (Toplam Oyun, Birincilik, En Yüksek Oyun Puanı…).
+
+Neden: uzun vadeli ilerleme/rütbe sistemini gösteriyor.
+
+---
+
+**5 — Kelime anlamı**
+
+Nasıl: oyun ekranında tahtadaki bir kelimeye dokun.
+
+Karede görünmeli: kelime + TDK anlamı penceresi, arkada tahta.
+
+Neden: rakiplerinden ayrıştığın yer — sözlük uygulamanın içinde.
+
+---
+
+**6 — Nasıl Oynanır (kurallar)**
+
+Nasıl: oyun ekranının alt şeridinde **"Nasıl Oynanır?"** → "Hızlı Başlangıç".
+
+Karede görünmeli: kural maddeleri (bölge, X2/X3, bingo).
+
+Neden: oyunun öğrenilebilir olduğunu gösteriyor.
+
+---
+
+**İSTEĞE BAĞLI 7 — k-lig sıralaması** (avatar → "k-lig Sıralama")
+
+⚠ **Bu karede GERÇEK kullanıcıların takma adları görünür.** Uygulama içinde
+zaten girişli herkese açıklar, ama mağaza vitrini çok daha geniş bir yayın.
+Çekeceksen bunu bilerek çek; istemiyorsan 4. kare (kendi skor kartın) zaten
+aynı mesajı veriyor.
+
+---
+
+### Çekmemen gerekenler
+
+- **Hesap Ayarları** — e-posta adresi görünür.
+- **Arkadaşlar listesi / arkadaş arama** — gerçek isimler.
+- **Gerçek yazışma içeren Mesajlaşma ekranı** — çekeceksen test mesajı yaz.
+- **Admin paneli** — mağaza vitrininde işi yok.
+
+### Nasıl çekilir
+
+- Android'de **Güç + Ses Kısma** tuşlarına birlikte bas.
+- **Kırpma, düzenleme, çerçeve ekleme YOK** — telefonun ürettiği dosyayı
+  olduğu gibi gönder (genelde 1080×2400, Play'in istediği aralıkta).
+- Her karede önce **bildirim çubuğunu temizle** (bildirim yok, pil/şebeke dolu).
 
 ### Çekim sonrası
 Dosyaları bana gönder — boyut/oran/alfa kontrolünü ölçerim, Play'in
