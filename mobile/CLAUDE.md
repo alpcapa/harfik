@@ -670,7 +670,18 @@ kapısı + idempotent hamle gönderimi uçtan uca bağlı ve test edilmiş durum
   oyuncu zaten etkilenmez. `appVersion` sabiti (env.dart) pubspec `version`
   ile BİRLİKTE artırılmalı — **sürüm disiplini:** release commit'i ikisini
   birden değiştirir (package_info_plus eklentisi tek sabit için bilinçli
-  olarak alınmadı).
+  olarak alınmadı). **22 Ağustos 2026'dan beri TESTLİ** —
+  `test/app_version_parity_test.dart` `pubspec.yaml`'ı okuyup `appVersion`
+  ile karşılaştırıyor; o güne kadar bu kural yalnızca YAZILIYDI, hiçbir şey
+  zorlamıyordu ve biri artırılıp öteki unutulsa `dart analyze` de testler de
+  yeşil kalırdı. Ayrışmanın bedeli iki yönlü: mağazadaki `versionName` ile
+  kullanıcının GÖRDÜĞÜ sürüm ayrışır, ve eşik yükseltildiğinde kapı YANLIŞ
+  sürümü karşılaştırıp yeterli bir binary'yi "güncelleme zorunlu" ekranında
+  kilitleyebilir. `+N` (build number) karşılaştırma DIŞINDA — CI onu
+  `--build-number` ile eziyor, pubspec'teki değer bağlayıcı değil.
+  **Sürüm 22 Ağustos 2026'da `0.1.0` → `1.0.0`** (ilk Play yüklemesi,
+  ROADMAP FAZ B → 0.A3); canlıdaki eşik o an ölçüldü, iki platformda da
+  `0.0.0`, yani kapı etkilenmedi.
 - **`OnlineApi.submitMove`:** her çağrı `p_move_id` UUID'si üretir
   (20260805225619 migration'ının istemci yarısı); taşıma hatalarında AYNI
   id ile 3 denemeye kadar üstel bekleme, `PostgrestException`'da (sunucunun
