@@ -37,6 +37,7 @@ npm run generate-logo-paths      # LogoMark.tsx + portun logo_mark_data.dart'ın
 npm run generate-klig-paths      # KLigMark.tsx + portun klig_mark_data.dart'ını birlikte üretir
 npm run generate-icons           # favicon / app icon (public/) — og-image DEĞİL
 npm run generate-og-image        # public/og-image.png (sosyal paylaşım kartı)
+npm run generate-play-assets     # Play mağaza ikonu (512) + öne çıkan görsel (1024×500)
 ```
 
 **`npm run test` neyi kapsıyor, neyi kapsamıyor:** `tests/smoke.spec.ts` kapsamlı bir test paketi DEĞİL — "uygulama açılıyor, 2 kişilik bir oyun başlatılabiliyor, YZ hamle yapıyor, bilinmeyen bir path SPA fallback'iyle açılıyor" düzeyinde bir kritik-yol kontrolü. Buraya kadar hatasız gelmek reducer/YZ/skor/bölge hesaplama zincirinin ucuna kadar çalıştığı ve `ErrorBoundary`'nin devreye girmediği anlamına geliyor.
@@ -2273,6 +2274,36 @@ npm run generate-reel                  # kelimeki-reel.mp4 (bkz. aşağıdaki re
   düşer ve kampanya ayırt edilemez. Sitede Meta pixel'i / LinkedIn Insight
   Tag YOK (bilinçli), dolayısıyla platform üyeliğe göre optimize edemez —
   hedef "Trafik", optimizasyon "açılış sayfası görüntüleme".
+
+### Google Play vitrini (`scripts/play-store/`, 23 Ağustos 2026)
+
+`marketing/play-store/` → `store-icon-512.png` (512×512) +
+`feature-graphic.png` (1024×500) + `metin.md` (Play'e elle girilecek
+başlık/kısa/tam açıklama ve cihazdan alınacak ekran görüntülerinin çekim
+listesi). `npm run generate-play-assets`.
+
+- **Mağaza ikonu ELLE ÇİZİLMEZ, cihazdaki başlatıcı ikonun KAYNAĞINDAN
+  küçültülür** (`mobile/app/assets/icon/icon-source.png`, yani
+  `flutter_launcher_icons.image_path`) — ayrı bir kaynaktan üretilse
+  mağazadaki ikon ile telefondaki ikon sessizce ayrışırdı.
+- **İkisi de ALFASIZ** (`flatten`): Play ikona kendi maskesini uyguluyor,
+  öne çıkan görsel ise 24-bit PNG/JPEG istiyor.
+- **Öne çıkan görsel 2× çekilip 1×'e indiriliyor** — Play boyutu TAM
+  1024×500 istediğinden doğrudan 1× çekmek tek seçenek gibi görünüyor, ama
+  süperörnekleme gözle görülür şekilde daha keskin.
+- **Ölçüm YAZMADAN ÖNCE:** güvenli kutu kenara 40/30 px'den yakınsa ya da
+  sayfa taşıyorsa betik hiçbir dosya yazmadan `exit 1` — başarısız bir koşu
+  diske "bitmiş gibi duran" bozuk bir görsel bırakmamalı. **Negatif eş
+  ölçüldü:** kutu 600 → 980 px yapılınca betik gerçekten düşüyor ve
+  `feature-graphic.png` HİÇ oluşmuyor.
+- **⚠ Tanıtım videosu eklenirse tasarım gözden geçirilmeli:** Play o
+  durumda öne çıkan görselin ORTASINA bir oynat düğmesi bindiriyor, yani
+  tam da logonun üstüne.
+- **Ekran görüntüleri burada ÜRETİLMEZ ve üretilemez** — Play'e giden
+  telefon görüntülerinin uygulamanın gerçek görüntüsü olması gerekiyor,
+  gerçek cihazdan alınmalı. Çekim listesi + gizlilik uyarıları (gerçek
+  arkadaş adı/e-posta görünmemeli — görseller herkese açık yayınlanıyor)
+  `metin.md`'de.
 
 ### Facebook sayfa kapağı (`scripts/kapak/`, 20 Ağustos 2026)
 
