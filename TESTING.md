@@ -1397,3 +1397,28 @@ adresi DOĞRULANDIĞINDA** gönderilir — bu ayrım testin tamamını belirliyo
 - [ ] **Ağ kesintisi kararı yakmıyor:** Uçak modunda aç, sonra bağlantıyı
       geri ver → doğru sekme yine de açılmalı (karar düşen istekte
       tüketilmez).
+
+## 16. Hukuki statik sayfalar — YALNIZCA CANLIDA ölçülebilir (23 Ağustos 2026)
+
+`/gizlilik/`, `/kullanim-kosullari/` ve `/hesap-silme/` derleme zamanında
+üretilen statik sayfalar (kök `CLAUDE.md` → "Hukuki Statik Sayfalar").
+Otomatik duman testleri sayfaların doğru üretildiğini, SPA kabuğuna
+düşmediğini ve metnin pencerelerle aynı kaynaktan geldiğini zaten kanıtlıyor
+— **bu listedeki maddeler otomatikleştirilemeyenler:** ikisi de Vercel'in
+kendi yönlendirme sırasına bağlı ve bu ortamdan test EDİLEMİYOR.
+
+Deploy sonrası, Play formuna adres girmeden ÖNCE:
+
+- [ ] `https://kelimeki.com/gizlilik/` → politika açılıyor (uygulama değil).
+- [ ] `https://kelimeki.com/kullanim-kosullari/` ve `.../hesap-silme/` aynı.
+- [ ] **Eğik çizgisiz** `https://kelimeki.com/gizlilik` → `/gizlilik/`'e
+      yönleniyor (`vercel.json` `redirects`). Yönlenmiyor ve uygulama
+      açılıyorsa **Play formuna eğik çizgili adresi yaz** — ölçülmüş ve
+      çalıştığı bilinen hâl o; yönlendirme bir kolaylık, bağımlılık değil.
+- [ ] **Kurulu PWA'da (ana ekrana eklenmiş) dene.** Service worker'ın
+      `navigateFallback`i bu yolları uygulama kabuğuna çeviriyordu;
+      `navigateFallbackDenylist` eklendi ama gerçek kurulu bir PWA'da teyit
+      cihazda yapılmalı. Uygulamayı bir kez aç (yeni SW etkinleşsin), sonra
+      tarayıcıdan adrese git.
+- [ ] Sayfalar JS kapalıyken de okunabiliyor (tamamen statik olmalı).
+- [ ] `/hesap-silme/` içindeki "Görüş Bildir formu" bağlantısı formu açıyor.

@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { kelimekiLanding } from './scripts/landing-plugin.js';
+import { kelimekiLegalPages } from './scripts/legal-plugin.js';
 
 /**
  * Bu derlemenin kimliği — Vercel `VERCEL_GIT_COMMIT_SHA`'yı her derlemede
@@ -45,9 +46,21 @@ export default defineConfig({
     // worker ayarlarına dokunmaz. Neden derleme sonrası bir script değil de
     // eklenti olduğu: scripts/landing-plugin.js başlığı.
     kelimekiLanding(),
+    // Hukuki sayfalar statik HTML olarak üretilir (Play'in Data safety
+    // formu doğrudan açılan bir URL istiyor) — bkz. scripts/legal-plugin.js.
+    kelimekiLegalPages(),
     VitePWA({
       registerType: 'prompt',
       injectRegister: false,
+      // Hukuki sayfalar SPA DEĞİL, statik HTML (bkz. scripts/legal-plugin.js).
+      // Service worker'ın `navigateFallback`i ("index.html") olmadan bu
+      // yolları da uygulama kabuğuna çeviriyordu — ÖLÇÜLDÜ: eğik çizgili
+      // `/gizlilik/` precache rotasına takılıp doğru geliyordu ama eğik
+      // çizgisiz `/gizlilik` SPA kabuğunu döndürüyordu. Play'in Data safety
+      // formuna verilecek adres tam da bu; yanlış sayfa dönmesi kabul edilemez.
+      workbox: {
+        navigateFallbackDenylist: [/^\/gizlilik/, /^\/kullanim-kosullari/, /^\/hesap-silme/],
+      },
       includeAssets: [
         'favicon.svg',
         'favicon.ico',

@@ -172,6 +172,7 @@ src/
 │   ├── leagueRank.ts   # k-lig rütbe kademeleri (Çaylak→Kozmik, 9 kademe: eşik/renk/ödül — sunucudaki _award_league_rewards VE portun league_rank.dart'ı ile ELLE senkron, üç kopya)
 │   ├── pendingLiveGames.ts # Canlı taraftaki "bekleyen iş" sayısı (bekleyen davet + sırası sende olan oyun) — Setup rozeti ve PWA ikon rozeti ortak
 │   └── profileFields.ts # cinsiyet seçenekleri, GG/AA/YYYY ↔ ISO tarih dönüşümü (AuthModal ve AccountSettingsModal ortak)
+├── legal/            # hukuki metinlerin tek kaynağı + statik sayfa üreticisi
 ├── landing/
 │   ├── Landing.tsx     # karşılama katmanının tamamı (derleme/dev zamanında statik HTML'e render edilip index.html'e gömülür) — SUNUCUDA render edilir, hook/olay/tarayıcı globali YOK
 │   ├── LandingLogo.tsx # logoyu üç kez çizmek için SVG sprite'ı (path verisi LogoMark'tan; üç ham kopya gzip'te 10 KB yiyordu)
