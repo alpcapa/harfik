@@ -1827,10 +1827,10 @@ kayıtların panelde görünmesi ikincil.
 Cihazda koşulur; karşılığı admin panelinin "Hatalar" sekmesi ve
 Büyüme > Kullanıcı > "Sürüm Dağılımı" tablosu.
 
-- [ ] **Sürüm satırı doğru:** Setup'ın altındaki `Sürüm 0.1.0` metni
+- [ ] **Sürüm satırı doğru:** Setup'ın altındaki `Sürüm 1.0.0` metni
       `pubspec.yaml`taki sürümle aynı olmalı. (Ayrışırsa CI zaten düşer —
       `app_version_parity_test.dart` — ama cihazda bir kez gözle bak.)
-- [ ] **Bir YZ oyunu aç** → panelde Sürüm Dağılımı tablosunda `ios · 0.1.0`
+- [ ] **Bir YZ oyunu aç** → panelde Sürüm Dağılımı tablosunda `ios · 1.0.0`
       (ya da `android · …`) satırı belirmeli. Satır `bilinmiyor` çıkıyorsa
       `logGameStart` platform/sürüm göndermiyor demektir.
 - [ ] **Ekran adı:** oyun ekranındayken bir hata oluştur (ör. uçak modunda

@@ -1021,9 +1021,9 @@ web/bilinmiyor satırları gösterir — asıl sınama uygulamalar çıkınca.**
 - [ ] CSV iniyor ve başlık satırı "Başlangıç" diyor.
 - [ ] Hatalar sekmesinde bir web kaydında **"Sürüm:" satırı HİÇ ÇIKMIYOR**
       (web sürüm göndermez — boş bir satır her web hatasında gürültü olurdu).
-- [ ] **APP ÇIKINCA:** telefondan bir YZ oyunu aç → tabloda `ios · 0.1.0`
+- [ ] **APP ÇIKINCA:** telefondan bir YZ oyunu aç → tabloda `ios · 1.0.0`
       (ya da android) satırı belirmeli; uygulamada bir hata oluştur →
-      hata kartında "Sürüm: 0.1.0" görünmeli ve "Yol" alanı `game` /
+      hata kartında "Sürüm: 1.0.0" görünmeli ve "Yol" alanı `game` /
       `online-game` / `intro` gibi gerçek bir ekran adı olmalı, `app` değil.
 - [ ] **APP ÇIKINCA:** `mobile_min_supported_version`'ı yükseltmeden ÖNCE bu
       tabloya bak — eski sürümden hâlâ oyun açılıyorsa eşiği yükseltmek o
@@ -1495,3 +1495,96 @@ hem Canlı** oyun ekranında koş — ikisi bu deseni paylaşıyor.
 - [ ] **Hesap menüsü kapanışı (oyun ekranında):** Oyun sırasında sağ üstteki
       avatara dokunup menüyü aç, sonra TAHTAYA dokun → menü kapanmalı ve
       tahtaya taş KONMAMALI/hücre seçilmemeli. İkinci dokunuş normal çalışmalı.
+
+## 17. Hukuki statik sayfalar — YALNIZCA CANLIDA ölçülebilir (23 Ağustos 2026)
+
+`/gizlilik/`, `/kullanim-kosullari/` ve `/hesap-silme/` derleme zamanında
+üretilen statik sayfalar (kök `CLAUDE.md` → "Hukuki Statik Sayfalar").
+Otomatik duman testleri sayfaların doğru üretildiğini, SPA kabuğuna
+düşmediğini ve metnin pencerelerle aynı kaynaktan geldiğini zaten kanıtlıyor
+— **bu listedeki maddeler otomatikleştirilemeyenler:** ikisi de Vercel'in
+kendi yönlendirme sırasına bağlı ve bu ortamdan test EDİLEMİYOR.
+
+Deploy sonrası, Play formuna adres girmeden ÖNCE:
+
+- [ ] `https://kelimeki.com/gizlilik/` → politika açılıyor (uygulama değil).
+- [ ] `https://kelimeki.com/kullanim-kosullari/` ve `.../hesap-silme/` aynı.
+- [ ] **Eğik çizgisiz** `https://kelimeki.com/gizlilik` → `/gizlilik/`'e
+      yönleniyor (`vercel.json` `redirects`). Yönlenmiyor ve uygulama
+      açılıyorsa **Play formuna eğik çizgili adresi yaz** — ölçülmüş ve
+      çalıştığı bilinen hâl o; yönlendirme bir kolaylık, bağımlılık değil.
+- [ ] **Kurulu PWA'da (ana ekrana eklenmiş) dene.** Service worker'ın
+      `navigateFallback`i bu yolları uygulama kabuğuna çeviriyordu;
+      `navigateFallbackDenylist` eklendi ama gerçek kurulu bir PWA'da teyit
+      cihazda yapılmalı. Uygulamayı bir kez aç (yeni SW etkinleşsin), sonra
+      tarayıcıdan adrese git.
+- [ ] Sayfalar JS kapalıyken de okunabiliyor (tamamen statik olmalı).
+- [ ] `/hesap-silme/` içindeki "Görüş Bildir formu" bağlantısı formu açıyor.
+
+---
+
+## 18. Onaylanmamış hesap süpürmesi — hatırlat, sonra sil (23 Ağustos 2026)
+
+Saatlik cron (`sweep-unconfirmed-accounts`, `25 * * * *`) e-postasını hiç
+doğrulamamış hesapları ~20. saatte TAZE bir onay linkiyle hatırlatıyor, 48.
+saatte siliyor. **Otomatik silme geri alınamaz** — bu bölüm bu yüzden var;
+maddeler otomatik testle kapatılamıyor, çünkü gerçek bir gelen kutusu ve
+gerçek bir Supabase Auth hesabı gerekiyor.
+
+**Test hesabı kullan, kendi hesabınla koşma.** Tek kullanımlık bir adres
+(`…@sharedxpteam.testinator.email`) yeterli.
+
+### 18.1 Hatırlatma maili — tek tık, direkt içeri
+
+- [ ] Test adresiyle kayıt ol, gelen onay mailine **DOKUNMA**.
+- [ ] Damgayı geriye çek (SQL): kaydı ~21 saatlik göster
+      (`update auth.users set created_at = now() - interval '21 hours' where email = '…'`).
+- [ ] Cron'u bekleme, fonksiyonu elle tetikle (Edge Function → Invoke, gövde `{}`).
+- [ ] Gelen kutusunda **Kelimeki markalı** "Hesabını tamamla" maili var
+      (Supabase'in stok İngilizce şablonu DEĞİL).
+- [ ] Metin 24 saat içinde tamamlanmazsa hesabın silineceğini SÖYLÜYOR.
+- [ ] **"Hesabımı Tamamla"ya tek dokunuş → doğrudan uygulamanın içindesin.**
+      Ara bir sayfa, "linki yeniden gönder" adımı, ikinci bir mail YOK.
+- [ ] SQL'de `email_confirmed_at` ile `last_sign_in_at` **aynı ana** yazılmış
+      (tek tıkla hem onay hem oturum).
+
+### 18.2 Mükerrer hatırlatma gitmiyor
+
+- [ ] Fonksiyonu ikinci kez tetikle → aynı kişiye ikinci mail **GİTMEZ**
+      (`confirm_reminder_sent_at` dolu, atomik iddia).
+
+### 18.3 Silme — üç koşul birden
+
+Bir hesap ancak şunların HEPSİ doğruyken siliniyor: onaysız · hatırlatma
+gönderilmiş · hatırlatmadan bu yana 24 saat geçmiş. **Uyarılmadan kimse
+silinmez.**
+
+- [ ] Hatırlatma damgası taze bir hesapta prova (`{"dryRun":true}`) çıktısında
+      `silinecek` listesi **BOŞ**.
+- [ ] Damgayı 25 saat geriye çek → prova artık o hesabı `silinecek` diyor.
+- [ ] Gerçek koşudan sonra `auth.users`ta satır yok, admin Üyeler sayısı 1 azaldı.
+- [ ] **Takma ad serbest kaldı:** aynı takma adla yeniden kayıt olunabiliyor.
+- [ ] **E-posta serbest kaldı:** aynı adresle yeniden kayıt olunabiliyor.
+
+### 18.4 Verisi olan hesap SİLİNMEZ
+
+- [ ] Prova çıktısındaki `verisiOlduguIcinAtlanan` listesini oku. Kendi
+      oluşturduğu kaydı (oyun, bulut kaydı, gönderdiği arkadaşlık isteği) olan
+      hesap silinmez, yalnızca raporlanır.
+- [ ] **Bir hesabın GELEN referansı silmeyi engellemez** — biri ona arkadaşlık
+      isteği göndermişse o satır cascade ile gider (`cascadeOlacakGelenKayit`
+      alanında raporlanıyor). Bunu "veri var" sanıp korkma.
+
+### 18.5 ⚠ OTP süresi — geri çekilirse özellik SESSİZCE ölür
+
+- [ ] Supabase Dashboard → Authentication → Sign In / Providers → Email →
+      **Email OTP expiration = 86400** (24 saat). 3600'e dönmüşse hatırlatma
+      maili ölü link taşır ve kimse fark etmez.
+- [ ] Güvenlik denetiminde (`get_advisors`) `auth_otp_long_expiry` **WARN**
+      görünüyor — bu BİLİNÇLİ, temizlemek için ayarı düşürme.
+
+### 18.6 Hukuki metin ile davranış uyuşuyor
+
+- [ ] Gizlilik Politikası (web modal + `/gizlilik/` sayfası + mobil port) 5.
+      bölümde ~20 saat hatırlatma / 48 saat silme cümlesini taşıyor ve üç
+      yüzeyde de aynı.

@@ -37,6 +37,7 @@ npm run generate-logo-paths      # LogoMark.tsx + portun logo_mark_data.dart'ın
 npm run generate-klig-paths      # KLigMark.tsx + portun klig_mark_data.dart'ını birlikte üretir
 npm run generate-icons           # favicon / app icon (public/) — og-image DEĞİL
 npm run generate-og-image        # public/og-image.png (sosyal paylaşım kartı)
+npm run generate-play-assets     # Play mağaza ikonu (512) + öne çıkan görsel (1024×500)
 ```
 
 **`npm run test` neyi kapsıyor, neyi kapsamıyor:** `tests/smoke.spec.ts` kapsamlı bir test paketi DEĞİL — "uygulama açılıyor, 2 kişilik bir oyun başlatılabiliyor, YZ hamle yapıyor, bilinmeyen bir path SPA fallback'iyle açılıyor" düzeyinde bir kritik-yol kontrolü. Buraya kadar hatasız gelmek reducer/YZ/skor/bölge hesaplama zincirinin ucuna kadar çalıştığı ve `ErrorBoundary`'nin devreye girmediği anlamına geliyor.
@@ -161,6 +162,14 @@ ilgilendiren iki kanca:
   (`mobile/app/lib/src/ui/game/logo_mark_data.dart`,
   `mobile/app/lib/src/ui/score/klig_mark_data.dart`) üretir — logo/marka
   değişirse tek komut yeter, elle senkron YOK.
+- **Play Store imzalama `mobile/` DIŞINDA da dosya değiştirdi (22 Ağustos
+  2026):** `.github/workflows/mobile-build.yml`'in `android` işi artık `.apk`
+  yanında imzalı bir `.aab` da üretiyor (Play `.apk` kabul etmiyor). Adım
+  `ANDROID_KEYSTORE_BASE64` secret'ı yokken sessizce atlanıyor, yani bu
+  değişiklik mevcut Appetize/web akışlarını HİÇ etkilemiyor. Karar/ölçüm/
+  tuzaklar (özellikle: keystore repoya girmez, Play App Signing'e kaydolma
+  zorunluluğu ve `assetlinks.json`'a HANGİ parmak izinin gireceği):
+  `mobile/CLAUDE.md` → "Play Store İmzalama ve `.aab`".
 - **`src/utils/random.ts`'teki `setRandomSource()`** yalnızca bu fixture
   üreticisi için var — üretim kodu hiç çağırmaz, davranış değişmedi
   (varsayılan `Math.random`).
@@ -1051,6 +1060,8 @@ src/
   main.tsx      # ince kabuk: fontlar + derleme kimliği + kapı kararı (katman mı uygulama mı)
   boot.tsx      # uygulamanın gerçek açılışı — main.tsx DİNAMİK import eder (bkz. "Karşılama Katmanı")
   landing/      # karşılama katmanı — derleme zamanında statik HTML (bkz. "Karşılama Katmanı")
+  legal/        # hukuki metinlerin TEK KAYNAĞI + /gizlilik/ · /kullanim-kosullari/ ·
+                # /hesap-silme/ statik sayfa üreticisi (bkz. "Hukuki Statik Sayfalar")
     Landing.tsx     # sayfanın tamamı; SUNUCUDA render edilir (hook/olay/tarayıcı globali YOK)
     LandingLogo.tsx # logoyu üç kez çizmek için SVG sprite (path verisi LogoMark'tan)
     OzellikIkonlari.tsx # "Neler var" altı özellik ikonu (Material DEĞİL — ilkel şekiller; portun ozellik_ikonlari.dart'ıyla ELLE senkron, `icon_parity_test.dart` ile testli)
@@ -2068,6 +2079,131 @@ gerçek HTTP çağrısıyla, trigger zinciri geri alınan transaction'la
 doğrulandı; uçtan uca teyit ilk gerçek kayıtta (ya da bir test hesabıyla)
 yapılmalı — `TESTING.md` bölüm 12.
 
+### Onaylanmamış hesap süpürmesi — hatırlat, sonra sil (23 Ağustos 2026)
+
+**Neden — gerçek bir kullanıcıda gözlendi.** "Sel Sezer" kayıt olurken
+e-postasını yanlış yazdı (`sel_eb@` yerine `sel_en@`), **47 saniye sonra**
+doğru adresle tekrar kayıt oldu — ama takma adı `Sweetpain` az önce KENDİ ölü
+hesabı tarafından kapılmıştı, `Sweetpain.` yazmak zorunda kaldı. **Aynı
+e-posta ile iki hesap MÜMKÜN DEĞİL** (`users_email_partial_key`); mesele
+takma ad rezervasyonuydu — `profiles_display_name_tr_lower_key` hiç
+onaylanmamış bir hesabın adını da süresiz tutuyor. (O gün elle çözüldü: boş
+hesap silindi, ad düzeltildi, üye 38 → 37.)
+
+**Ölçüldü:** 37 üyenin **3'ü** hiç onaylanmamış, ikisi **26/28 gündür** öyle —
+linkleri 680/632 saat önce ölmüş, bir daha asla onaylanamazlar ama adları
+(`H56`, `Cacan`) rezerve. Onaylanmamış hesabı süpüren HİÇBİR mekanizma yoktu
+(iki mevcut cron job'un ikisi de yalnızca bildirim gönderiyor).
+
+| Zaman | Ne olur |
+|---|---|
+| 0. saat | Kayıt, onay maili gider (link **24 saat** geçerli) |
+| ~20. saat | **Tek seferlik hatırlatma** — TAZE link + "24 saat içinde tamamlamazsan hesabın silinecek" |
+| 48. saat | Hâlâ onaysızsa **hesap silinir**; e-posta ve takma ad serbest kalır |
+
+**İlke: hatırlatma aralığı = linkin ömrü.** Böylece kutuda HER AN geçerli bir
+link bulunur (0-24 ilk mail, 24-48 hatırlatma). İlk taslak 3 gün/7 gündü ve
+24-72. saatler arasında **ölü bölge** bırakıyordu — kullanıcı yakaladı.
+
+**⚠ CRON SAATLİK OLMAK ZORUNDA** (`25 * * * *`; dakika :25, öteki iki cron'la
+çakışmasın diye). Günlüğe çekilirse ölü bölge geri gelir: 12:00'de kayıt olanı
+ertesi gün 11:00'de kontrol edersen henüz 23 saatliktir, atlanır ve hatırlatma
+47. saatte gider — oysa ilk link 24. saatte ölmüştür. Hatırlatma tam bu yüzden
+eşiğin (24s) BİRAZ ÖNCESİNDE (~20s) atılıyor: iki linkin geçerlilik aralığı
+üst üste binsin.
+
+**⚠ `net.http_post` timeout'u 60 sn (varsayılan 5 sn DEĞİL).** Bu proje aynı
+tuzağa bir kez düştü (`welcome_email_http_timeout`): soğuk başlangıç 5 sn'yi
+aşıp isteği düşürmüştü. Bu fonksiyon ayrıca N kullanıcı için SIRAYLA link
+üretip mail gönderiyor.
+
+**Kimse uyarılmadan silinmez — silme ÜÇ koşulun hepsini ister:** onaysız ·
+hatırlatma gönderilmiş (`profiles.confirm_reminder_sent_at` dolu) · o
+damgadan bu yana 24 saat geçmiş. Yan fayda: bir Brevo kesintisi artık silmeyi
+BLOKLAR (hatırlatma gidemezse damga da konmaz), sessizce kullanıcı kaybettirmez.
+Kural kullanıcının isteğinden doğdu — 26/28 günlük iki eski hesaba da önce
+hatırlatma gönderildi ("belki geri kazanırız"), sistem sonra silsin diye.
+
+**Ölçülen teknik zemin** (üretimde, geçici bir Edge Function ile — sonra
+etkisiz hâle getirildi): yönetici `generateLink({type:'signup'})` çağrısı
+onaylanmamış bir hesap için taze `action_link` + `hashed_token` DÖNDÜRÜYOR
+(`verification_type: signup`); o jetonla doğrulama **oturum açıyor** ve
+`email_confirmed_at`ı dolduruyor → **tek mail, tek tık, direkt içeri**; ve
+**kendi başına mail ATMIYOR** (çağrı **42 ms**, auth loglarında gönderim kaydı
+yok). Zorunlu `password` parametresi MEVCUT parolayı EZMİYOR — varsayılmadı,
+üretimde ölçüldü (eski parola `EVET`, üretilen geçici parola `HAYIR`).
+Kullanıcının tıklaması da canlıda doğrulandı: hatırlatma 19:35:42 →
+`email_confirmed_at` **ve** `last_sign_in_at` 19:38:08 (aynı an).
+
+**Neden Supabase'in kendi "onay mailini yeniden gönder" akışı DEĞİL:** stok
+şablon "hesabın silinecek" diyemez, ve markalı bir ara sayfadan yeniden
+göndermek kullanıcıyı iki mail + iki tıklamaya sokardı. Kullanıcı bu git-geli
+açıkça reddetti; tek mail/tek tık yukarıdaki ölçümle mümkün olduğu için
+seçildi.
+
+**⚠⚠ `Email OTP expiration` 3600 → 86400 (24 saat) yapıldı** (Dashboard →
+Authentication → Sign In / Providers → Email; Dashboard ayarı olduğundan
+repoda/migration'da HİÇ izi yok, kaydı yalnızca burada). **Bu şemanın
+temeli** — 1 saate dönerse hatırlatma maili neredeyse hep ölü link taşır ve
+kimse fark etmez. Supabase bunu `auth_otp_long_expiry` (**WARN**) olarak
+işaretliyor ve bu uyarı BİLİNÇLİ kabul edildi (ölçüldü: değişiklikten önce
+denetimde YOKTU, sonra ÇIKTI). **Bir sonraki oturum `get_advisors` çıktısını
+temizlemek için 3600'e geri çekmesin.** Bedeli dürüstçe: ayar paylaşımlı,
+**şifre sıfırlama linki de** 24 saat yaşıyor; 7 gün BU YÜZDEN reddedildi —
+"Require current password when updating" KAPALI olduğundan (ölçüldü) o link
+tam hesap devralma yolu.
+
+**Silme guard'ı — ilk sürüm FAZLA GENİŞTİ ve prova modu yakaladı.** Varsayım
+"onaysız + hiç giriş yapmamış hesabın verisi olamaz" idi; prova çıktısı
+`verisiOlduguIcinAtlanan: ["canangecmen@gmail.com"]` dedi. Sebep: onaylanmamış
+hesaplar arkadaş aramasında GÖRÜNÜYOR, biri ona istek göndermişti. Guard artık
+yalnızca hesabın KENDİ oluşturduğu kaydı sayıyor (`games`, `local_game_saves`,
+gönderdiği `friend_requests`); gelen referanslar cascade ile gideceğinden
+yalnızca `cascadeOlacakGelenKayit` diye raporlanıyor. **Ders: "bu durumda veri
+olamaz" bir gerekçe değil bir varsayım — otomatik silmede prova modu şart.**
+
+**Yakalanan tuzak:** `admin.createUser` metadata'sız çağrılırsa
+`profiles_first_name_not_blank` kısıtına takılıp `Database error creating new
+user` verir — sunucudan hesap yaratan her kod gerçek bir kaydı taklit edip
+ad/soyad göndermek zorunda.
+
+**Yan bulgu:** bu akış `notify-welcome` zincirini de tetikledi ve
+`{"ok":true,"sent":true}` döndü — `TESTING.md` bölüm 12'de "gerçek gönderim
+test edilmedi" diye duran madde böylece üretimde kanıtlandı.
+
+**Parçalar:** `profiles.confirm_reminder_sent_at`
+(`20260823190529_confirm_reminder_sent_at`), Edge Function
+`sweep-unconfirmed-accounts` (`verify_jwt: false` — cron çağırıyor, JWT yok;
+`deploy_edge_function`e bu değer AÇIKÇA geçilmeli, bkz. o bölümdeki kayıtlı
+tuzak), cron `20260823193949_sweep_unconfirmed_accounts_cron`. Eşikler
+fonksiyonun başındaki üç sabitte (20s / 48s / hatırlatmadan sonra 24s) —
+biri değişirse hukuki metin de değişmeli. Elle kontrol listesi:
+`TESTING.md` bölüm 18.
+
+**Hukuki metin AYNI PR'da:** `src/legal/LegalContent.tsx` 5. bölüme saklama
+cümlesi + portun `legal_modals.dart`'ı (`legal_text_test.dart` "Son
+güncelleme" tarihlerini karşılaştırıyor, port bayat kalsa mobil CI düşer).
+
+**HENÜZ ÖLÇÜLMEDİ:** onaysız hesap dururken aynı e-postayla **yeniden kayıt**
+denenirse ne oluyor? Supabase'in onay mailini yeniden göndermesi beklenir —
+öyleyse tamamen kendi kendine işleyen ÜÇÜNCÜ bir kurtarma yolu var demektir.
+Varsayma, ölç.
+
+**Bilinçli olarak YAPILMAYAN:** admin Üyeler tablosuna "onaylanmamış" filtresi
+— kullanıcı onayladı ama "hemen canlıya alalım" kapsamının dışında kaldı,
+kendi maddesi olarak `ROADMAP.md`'de duruyor.
+
+**Bounce (geri dönen mail) görünürlüğü de YAPILMADI ve bu artık bir varsayım
+değil ÖLÇÜM:** uygulama bir mailin bounce ettiğini HİÇ bilmiyor, tek kaynak
+Brevo panelindeki gönderim logu — ve o panelde **1-23 Ağustos 2026 arasında
+TOPLAM 1 bounce** var (büyük olasılıkla bu bölümü doğuran yanlış-adres
+vakasının kendisi). Yani webhook + tablo + admin görünürlüğü kurmanın bedeli,
+kapatacağı soruna göre orantısız; üstelik yanlış adresin asıl sonucu (ölü
+hesabın takma adı kilitlemesi) yukarıdaki süpürmeyle zaten çözüldü. **Bir
+sonraki oturum bunu "eksik" diye açmasın** — koşul şu: Brevo panelinde bounce
+oranı görünür biçimde artarsa (ör. haftada birkaç), o zaman ölç ve yeniden
+değerlendir.
+
 ### İşlemsel e-posta bildirimleri (arkadaşlık isteği + Canlı oyun daveti)
 
 29 Temmuz 2026'da eklendi (`notify-friend-request`/`notify-game-invite` Edge Function'ları). Kullanıcının gözlemi: hem arkadaşlık isteği hem Canlı oyun daveti yalnızca uygulama-içi bir rozetle görünüyordu (`UserMenu`'deki "Arkadaşlar" rozeti / Setup'taki "Arkadaşınla (N)"); alıcı uygulamayı hiç açmazsa bundan tamamen habersiz kalıyordu — Canlı oyun davetinde bu daha da vahimdi çünkü `online_game_invite_expiry` (7 gün) daveti sessizce iptal ediyordu, kişi kaçırdığının farkına bile varamıyordu. Bunlar **işlemsel (transactional) bildirimlerdir, `marketing_consent`'e (kayıt formundaki opsiyonel pazarlama onayı) bağlı DEĞİLDİR** — Kelimeki'nin kendi tanıtım/promosyon içeriği değil, alıcının hesabına gelen somut, kişiye özel bir olayı (birinin ona istek/davet göndermesini) bildiriyorlar; tıpkı şifre sıfırlama ya da geri bildirim yanıtı maili gibi.
@@ -2476,6 +2612,36 @@ npm run generate-reel                  # kelimeki-reel.mp4 (bkz. aşağıdaki re
   Tag YOK (bilinçli), dolayısıyla platform üyeliğe göre optimize edemez —
   hedef "Trafik", optimizasyon "açılış sayfası görüntüleme".
 
+### Google Play vitrini (`scripts/play-store/`, 23 Ağustos 2026)
+
+`marketing/play-store/` → `store-icon-512.png` (512×512) +
+`feature-graphic.png` (1024×500) + `metin.md` (Play'e elle girilecek
+başlık/kısa/tam açıklama ve cihazdan alınacak ekran görüntülerinin çekim
+listesi). `npm run generate-play-assets`.
+
+- **Mağaza ikonu ELLE ÇİZİLMEZ, cihazdaki başlatıcı ikonun KAYNAĞINDAN
+  küçültülür** (`mobile/app/assets/icon/icon-source.png`, yani
+  `flutter_launcher_icons.image_path`) — ayrı bir kaynaktan üretilse
+  mağazadaki ikon ile telefondaki ikon sessizce ayrışırdı.
+- **İkisi de ALFASIZ** (`flatten`): Play ikona kendi maskesini uyguluyor,
+  öne çıkan görsel ise 24-bit PNG/JPEG istiyor.
+- **Öne çıkan görsel 2× çekilip 1×'e indiriliyor** — Play boyutu TAM
+  1024×500 istediğinden doğrudan 1× çekmek tek seçenek gibi görünüyor, ama
+  süperörnekleme gözle görülür şekilde daha keskin.
+- **Ölçüm YAZMADAN ÖNCE:** güvenli kutu kenara 40/30 px'den yakınsa ya da
+  sayfa taşıyorsa betik hiçbir dosya yazmadan `exit 1` — başarısız bir koşu
+  diske "bitmiş gibi duran" bozuk bir görsel bırakmamalı. **Negatif eş
+  ölçüldü:** kutu 600 → 980 px yapılınca betik gerçekten düşüyor ve
+  `feature-graphic.png` HİÇ oluşmuyor.
+- **⚠ Tanıtım videosu eklenirse tasarım gözden geçirilmeli:** Play o
+  durumda öne çıkan görselin ORTASINA bir oynat düğmesi bindiriyor, yani
+  tam da logonun üstüne.
+- **Ekran görüntüleri burada ÜRETİLMEZ ve üretilemez** — Play'e giden
+  telefon görüntülerinin uygulamanın gerçek görüntüsü olması gerekiyor,
+  gerçek cihazdan alınmalı. Çekim listesi + gizlilik uyarıları (gerçek
+  arkadaş adı/e-posta görünmemeli — görseller herkese açık yayınlanıyor)
+  `metin.md`'de.
+
 ### Facebook sayfa kapağı (`scripts/kapak/`, 20 Ağustos 2026)
 
 `marketing/sponsored-2026-08/kelimeki-fb-kapak.png` (1640×624).
@@ -2528,6 +2694,74 @@ cevabını veriyor.
   bindiriliyor (`renderBantHtml`).
 - **ffmpeg bu ortamda apt ile kuruldu** — Playwright'ın kendi ffmpeg'i
   (`/opt/pw-browsers/ffmpeg-1011`) yalnızca VP8/webm derlenmiş, H.264 yok.
+
+## Hukuki Statik Sayfalar — `/gizlilik/`, `/kullanim-kosullari/`, `/hesap-silme/` (23 Ağustos 2026)
+
+**NEDEN VAR:** Play'in **Data safety formu kapalı test kanalındaki uygulamalar
+için de zorunlu** ve o formu tamamlamak **doğrudan açılan bir gizlilik
+politikası URL'i** istiyor (ölçüldü, Play dokümanı). Bugüne kadar politika
+YALNIZCA SPA içindeki bir penceredeydi (`?gizlilik=1`) — yani inceleyenin JS
+render'ına güvenmesi gerekiyordu. Aynı gerekçe hesap silme için de geçerli:
+hesap açtıran uygulamalarda Play hem uygulama içi bir yol hem de bir **web
+silme talep adresi** istiyor; `/hesap-silme/` ikincisini karşılıyor.
+
+### Metin KOPYALANMAZ — `src/legal/LegalContent.tsx`
+
+`PrivacyModal`/`TermsModal` artık ince sarmalayıcı; gövde tek kaynakta ve
+statik sayfalar da AYNI bileşeni tüketiyor. Kopyalansaydı portun
+`legal_modals.dart`'ıyla birlikte **üç kopya** olurdu ve `legal_text_test.dart`
+yalnızca "Son güncelleme" TARİHLERİNİ karşılaştırıyor, metnin kendisini
+DEĞİL — ayrışma sessiz kalırdı. İki tüketici arasındaki tek fark iletişim
+bağlantısı (`contact` prop'u): pencerede `FeedbackModal`'ı açan bir `<button>`,
+sayfada `/?contact=1`'e giden bir `<a>`.
+
+**Çıkarma işlemi ÖLÇÜLEREK yapıldı:** eski gövde JSX'i, `git show HEAD:`ten
+okunup yeni dosyada **bayt bayt** aranarak doğrulandı — metin değişmedi, yani
+portun senkronu ve `legal_text_test.dart` etkilenmedi.
+
+**`SILME_SURESI_GUN` sabiti:** silme süresi ÜÇ yerde geçiyor (politikanın 5. ve
+8. bölümü + `/hesap-silme/`). Sabit yazılırken **8. bölümdekinin hâlâ elle
+yazılmış olduğu smoke testi tarafından yakalandı** — o da sabite bağlandı.
+
+### Eklenti, derleme sonrası betik DEĞİL
+
+`scripts/legal-plugin.js`, `landing-plugin.js` ile aynı gerekçe: duman testleri
+`npm run dev` üzerinde koşuyor, yalnızca `dist`e yazan bir çözümde sayfalar dev
+sunucusunda HİÇ var olmaz ve tamamen bozukken bile testler yeşil kalır. Dev'de
+middleware ile servis ediliyor, derlemede `generateBundle` + `emitFile` ile
+`dist/<yol>/index.html` olarak bırakılıyor. Derleme+import **tek sıraya
+dizilmiş** (landing eklentisindeki yarış dersi).
+
+**Dev'de stil `/src/index.css?direct`ten geliyor** — `?direct` olmadan Vite JS
+sarmalayıcı döndürür ve sayfa stilsiz kalır.
+
+### ⚠ ÖLÇÜLEN İKİ TUZAK
+
+1. **Service worker sayfaları SPA kabuğuna çeviriyordu.** `navigateFallback`
+   (`createHandlerBoundToURL("index.html")`) yüzünden. Gerçek tarayıcıda
+   ölçüldü: eğik çizgili `/gizlilik/` precache rotasına takılıp DOĞRU geliyordu
+   ama **eğik çizgisiz `/gizlilik` uygulama kabuğunu döndürüyordu.** Çözüm
+   `workbox.navigateFallbackDenylist` (üç yol için). `navigateFallback`'in
+   kendisine ve `registerType:'prompt'`e DOKUNULMADI.
+2. **Eğik çizgisiz adres sunucuya bağlı.** `vercel.json`'a üç `redirects`
+   girdisi eklendi (`/gizlilik` → `/gizlilik/`); mevcut `rewrites` bloğuna
+   dokunulmadı. **Bu ortamdan Vercel davranışı test EDİLEMİYOR** — bu yüzden
+   yayınlanan HER adres (Play formu, sitemap, canonical, footer) eğik çizgili
+   hâli kullanıyor; ölçülmüş ve çalıştığı bilinen hâl o. Eğik çizgisiz hâl bir
+   kolaylık, bağımlılık değil.
+
+### Regresyon
+
+`tests/smoke.spec.ts` 22 → **27 test**: üç sayfa da statik açılıyor
+(`#root` YOK — SPA'ya düşmediğinin kanıtı), sayfa ile pencerenin bölüm
+başlıkları BİREBİR aynı, `/hesap-silme/` talep bağlantısını ve süreyi
+gösteriyor. **Negatif eş ikisi de ölçüldü:** eklenti kaldırılınca sayfalar ne
+derlemede üretiliyor ne dev'de servis ediliyor (dev `/gizlilik/` → SPA kabuğu);
+sayfaya pencerede olmayan bir bölüm eklenince parite testi GERÇEKTEN düşüyor.
+
+**Yeni bir hukuki sayfa eklenirken:** `LEGAL_PAGES`e ekle → `sitemap.xml`,
+`navigateFallbackDenylist` ve `vercel.json` redirect'i de güncelle. Üçü elle
+senkron; biri atlanırsa sayfa ya indekslenmez ya da SW tarafından yutulur.
 
 ## SEO
 
@@ -2749,9 +2983,12 @@ sorunca yapılan denetimden çıktı. Üçü de **geriye dönük doldurulamaz**
   push yerlerinde veriliyor (`intro`/`game`/`online-game`), **adsız rota KÖK
   sayılıyor** — yeni bir ekranın adı unutulursa kayıt yanlış olmaz, yalnızca
   ayrıntısını kaybeder.
-- **Portta `appVersion` ↔ `pubspec.yaml` paritesi artık TESTLİ**
-  (`app_version_parity_test.dart`) — ayrıntı ve kilitlenme senaryosu:
-  `mobile/CLAUDE.md`, Parça 130.
+- **Portta `appVersion` ↔ `pubspec.yaml` paritesi TESTLİ**
+  (`app_version_parity_test.dart`). Bu denetim onu bağımsız olarak bulup
+  testini yazdı, ama `main`'e alınırken Play yayını turunun (22 Ağustos)
+  AYNI testi aynı gerekçeyle çoktan eklediği görüldü — kopya düşürüldü,
+  kanonik olan `main`'inki. Kilitlenme senaryosu: `mobile/CLAUDE.md`,
+  Parça 130.
 
 **ÖLÇÜLDÜ** (derlenmiş CSS + Chromium, DPR 2, gerçek modal kromu,
 320/360/390/834/1194; sınıf dizeleri `AdminDashboard.tsx`'ten OKUNARAK):

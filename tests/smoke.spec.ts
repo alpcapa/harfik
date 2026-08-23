@@ -712,3 +712,62 @@ test.describe('dokunmatik jestler', () => {
     expect(await harfi(page.locator('[data-cell="6,6"]'))).toBe('M');
   });
 });
+// ── Hukuki statik sayfalar (23 Ağustos 2026) ────────────────────────────────
+// Play'in Data safety formu doğrudan açılan bir gizlilik politikası URL'i
+// istiyor ve o form kapalı test kanalı için de zorunlu. Sayfalar SPA DEĞİL,
+// derleme zamanında üretilen statik HTML (scripts/legal-plugin.js) — bu
+// testler tam olarak o ayrımı koruyor: `#root` YOKSA sayfa gerçekten
+// statiktir, VARSA uygulama kabuğuna düşmüşüz demektir.
+const HUKUKI_SAYFALAR = [
+  { yol: '/gizlilik/', baslik: 'Gizlilik Politikası' },
+  { yol: '/kullanim-kosullari/', baslik: 'Kullanım Koşulları' },
+  { yol: '/hesap-silme/', baslik: 'Hesap ve Veri Silme' },
+];
+
+for (const { yol, baslik } of HUKUKI_SAYFALAR) {
+  test(`${yol} statik sayfa olarak açılır (SPA kabuğu değil)`, async ({ page }) => {
+    await page.goto(yol);
+    await expect(page.getByRole('heading', { level: 1, name: baslik })).toBeVisible();
+    // Uygulama HİÇ yüklenmemeli — bu sayfalar JS'siz okunabilmeli.
+    await expect(page.locator('#root')).toHaveCount(0);
+    await expect(page.locator('#karsilama')).toHaveCount(0);
+    // Ana sayfaya ve diğer iki hukuki sayfaya dönüş yolu var.
+    for (const oteki of HUKUKI_SAYFALAR.filter((s) => s.yol !== yol)) {
+      await expect(page.locator(`footer a[href="${oteki.yol}"]`)).toBeVisible();
+    }
+    await expect(page.locator('footer a[href="/"]')).toBeVisible();
+  });
+}
+
+test('hukuki metin TEK KAYNAKTAN geliyor — sayfa ile pencere aynı bölümleri taşıyor', async ({
+  page,
+}) => {
+  // `src/legal/LegalContent.tsx` hem `PrivacyModal`'ı hem `/gizlilik/`
+  // sayfasını besliyor. Metin ikiye kopyalanırsa bu test düşer.
+  await page.goto('/gizlilik/');
+  const sayfaBolumleri = await page.locator('main h3').allInnerTexts();
+  expect(sayfaBolumleri.length).toBeGreaterThan(5);
+
+  await donenKullanici(page);
+  await page.goto('/?gizlilik=1');
+  const pencere = page.getByRole('dialog');
+  await expect(pencere.getByRole('heading', { name: 'Gizlilik Politikası' })).toBeVisible();
+  const pencereBolumleri = await pencere.locator('h3').allInnerTexts();
+  expect(pencereBolumleri).toEqual(sayfaBolumleri);
+});
+
+test('/hesap-silme/ Play için gereken silme talebi yolunu anlatıyor', async ({ page }) => {
+  await page.goto('/hesap-silme/');
+  // Talebin iletileceği kanal çalışır durumda olmalı — Play "geçersiz silme
+  // bağlantısı" gerekçesiyle reddedebiliyor.
+  await expect(page.locator('main a[href="/?contact=1"]')).toBeVisible();
+  // Süre TEK KAYNAKTAN (`SILME_SURESI_GUN`) geliyor; gizlilik politikasıyla
+  // aynı sayıyı göstermek zorunda. Politikada İKİ yerde geçiyor (5. ve 8.
+  // bölüm) — bu test yazılırken 8. bölümdekinin hâlâ elle yazılmış olduğu
+  // ortaya çıktı ve o da sabite bağlandı.
+  await expect(page.getByText(/en geç 30 gün/).first()).toBeVisible();
+  await page.goto('/gizlilik/');
+  const politikadaki = page.getByText(/en geç 30 gün/);
+  await expect(politikadaki.first()).toBeVisible();
+  expect(await politikadaki.count()).toBe(2);
+});

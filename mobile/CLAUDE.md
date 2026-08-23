@@ -670,7 +670,18 @@ kapısı + idempotent hamle gönderimi uçtan uca bağlı ve test edilmiş durum
   oyuncu zaten etkilenmez. `appVersion` sabiti (env.dart) pubspec `version`
   ile BİRLİKTE artırılmalı — **sürüm disiplini:** release commit'i ikisini
   birden değiştirir (package_info_plus eklentisi tek sabit için bilinçli
-  olarak alınmadı).
+  olarak alınmadı). **22 Ağustos 2026'dan beri TESTLİ** —
+  `test/app_version_parity_test.dart` `pubspec.yaml`'ı okuyup `appVersion`
+  ile karşılaştırıyor; o güne kadar bu kural yalnızca YAZILIYDI, hiçbir şey
+  zorlamıyordu ve biri artırılıp öteki unutulsa `dart analyze` de testler de
+  yeşil kalırdı. Ayrışmanın bedeli iki yönlü: mağazadaki `versionName` ile
+  kullanıcının GÖRDÜĞÜ sürüm ayrışır, ve eşik yükseltildiğinde kapı YANLIŞ
+  sürümü karşılaştırıp yeterli bir binary'yi "güncelleme zorunlu" ekranında
+  kilitleyebilir. `+N` (build number) karşılaştırma DIŞINDA — CI onu
+  `--build-number` ile eziyor, pubspec'teki değer bağlayıcı değil.
+  **Sürüm 22 Ağustos 2026'da `0.1.0` → `1.0.0`** (ilk Play yüklemesi,
+  ROADMAP FAZ B → 0.A3); canlıdaki eşik o an ölçüldü, iki platformda da
+  `0.0.0`, yani kapı etkilenmedi.
 - **`OnlineApi.submitMove`:** her çağrı `p_move_id` UUID'si üretir
   (20260805225619 migration'ının istemci yarısı); taşıma hatalarında AYNI
   id ile 3 denemeye kadar üstel bekleme, `PostgrestException`'da (sunucunun
@@ -1065,6 +1076,103 @@ commit'e (bu bölümdeki sabit değerler) aynen taşındı. Uçtan uca (linke
 tıklayıp Start'a basma) doğrulaması kullanıcının kendi cihazından
 bekleniyor — bu ortamdan `appetize.io` erişilemediğinden ben açıp
 göremiyorum.
+
+## Play Store İmzalama ve `.aab` (22 Ağustos 2026)
+
+Google Play hesabı açıldıktan sonra ölçülen ilk iki somut engel kapatıldı
+(`ROADMAP.md` → FAZ B, 0.A1 + 0.A2). Öncesinde **uygulama bugün YÜKLENEMEZDİ**
+ve bu tahmin değil ölçümdü: `android/app/build.gradle.kts`'in release'i
+Flutter şablonundan kalma `TODO` yorumuyla **debug anahtarına** düşüyordu ve
+CI yalnızca `.apk` üretiyordu — Play `.apk` KABUL ETMİYOR.
+
+### İmzalama — `key.properties` VARSA release, YOKSA debug
+
+`build.gradle.kts` `rootProject.file("key.properties")`ı okuyor; dosya yoksa
+release **bilerek** debug anahtarına düşüyor. Bu bir gevşeklik değil: aksi
+halde anahtarı olmayan herkeste (yerelde `flutter run --release`, CI'ın
+Appetize test `.apk`'sı) derleme kırılırdı. **Bedeli:** debug anahtarıyla
+imzalanmış bir `.aab` SESSİZCE üretilebilir ve ancak Play yüklemesinde
+reddedilir — o sessizliği kapatan şey aşağıdaki imza kontrolü.
+
+`key.properties` ve `*.jks` **REPOYA GİRMEZ**; `android/.gitignore` (Flutter
+şablonundan) üçünü de (`key.properties`, `**/*.jks`, `**/*.keystore`) zaten
+tutuyor. Şablon: `android/key.properties.example`. **`storeFile` MUTLAK yol
+olmalı** — göreli verilirse `rootProject`e (yani `android/`) değil `app/`
+modülüne göre çözülür.
+
+### CI adımı — secret yoksa sessizce atlar, varsa İMZAYI GERİ OKUR
+
+`mobile-build.yml`'in `android` işine `.apk` artefaktından hemen sonra
+eklendi. Üç karar kayda değer:
+
+- **`secrets` bağlamı adım düzeyinde `if:`te KULLANILAMAZ** (GitHub'ın bağlam
+  tablosunda `steps.<id>.if` için `secrets` yok). Kontrol bu yüzden `run:`
+  script'inin İÇİNDE, `env:` ile enjekte edilip; sonuç `$GITHUB_OUTPUT`'a
+  `built=true/false` olarak yazılıp artefakt adımına taşınıyor. Bu, deponun
+  KENDİ kalıbı — Appetize adımı da token'ı script içinde kontrol edip
+  `exit 0` yapıyor.
+- **`--build-number=${{ github.run_number }}`**: Play aynı `versionCode`'u
+  İKİ KEZ kabul etmiyor, `pubspec.yaml`'daki `+N` ise her derlemede aynı
+  kalırdı.
+- **İmza doğrulaması SABİT parmak izi YAZMIYOR:** paketin sertifikası
+  (`keytool -printcert -jarfile`) az önce çözülen keystore'unkiyle
+  (`keytool -list -v`) karşılaştırılıyor. Anahtar değişirse kontrol
+  kendiliğinden takip eder; debug anahtarıyla imzalanmış bir paket geçemez.
+
+**ÖLÇÜLDÜ (bu ortamda, gerçek `keytool`/`jarsigner` ile):** aynı anahtarla
+imzalanan bir JAR'da iki `keytool` çıktısının SHA-256'sı BİREBİR aynı çıkıyor
+(pozitif eş). **Negatif eş iki ayrı yönden kanıtlandı:** başka bir anahtarla
+(debug'ı taklit eden `CN=Android Debug`) imzalanan pakette parmak izleri
+ayrışıyor ve kontrol düşüyor; hiç imzalanmamış pakette `-printcert` boş
+dönüyor ve `-z "$ACTUAL"` dalı düşürüyor. Whitespace `tr -d '[:space:]'` ile
+siliniyor — `-list -v` ile `-printcert`in girinti karakteri farklı olabilir.
+Base64 gidiş-dönüşü de ölçüldü (`base64 -w0` → `tr -d` → `base64 -d`, dosya
+birebir aynı).
+
+**CI'da UÇTAN UCA DOĞRULANDI (23 Ağustos 2026, koşu 32644482976, dal
+`claude/google-play-launch-checklist-4bp7yk`, sha `a22cea6`).** Bu ortamda
+Flutter SDK olmadığından `flutter build appbundle` yerelde hiç
+koşturulamamıştı — YAML'ın geçerliliği (`yaml.safe_load`) ve üretilen KABUK
+SATIRININ geçerliliği (`bash -n`) ayrı ayrı ölçülmüştü, ama Gradle'ın
+`key.properties`i gerçekten okuduğunun kanıtı CI'a bırakılmıştı. Log:
+
+```
+✓ Built build/app/outputs/bundle/release/app-release.aab (60.9MB)
+beklenen: SHA256:B6:CD:FB:A9:...:0E:89:A1:52
+paket   : SHA256:B6:CD:FB:A9:...:0E:89:A1:52
+```
+
+Bu üç satır zincirin TAMAMINI kapatıyor: secret'lar okundu (yoksa adım
+"secret yok" deyip çıkardı), Gradle `key.properties`i gördü ve `.aab`
+DEBUG değil upload anahtarıyla imzalandı — üstelik basılan parmak izi
+üretilen anahtarın kendisi, yani yüklenen keystore da doğru. Artefakt
+`kelimeki-aab` (60.597.531 bayt) gerçekten üretildi; `.apk` artefaktı da
+yerinde kaldı (Appetize akışı bozulmadı).
+
+**İlk `.aab` yüklemesinde OKUNACAK iki şey (hâlâ ölçülmedi):** derlemenin
+`targetSdk`'sı (bugün `flutter.targetSdkVersion`'dan geliyor, yani stable
+kanalın varsayılanı — Play'in yeni uygulamalar için dayattığı asgari
+seviyenin altındaysa açıkça pinlenmeli) ve `image_picker`'ın birleşmiş
+manifeste eklediği izinler (beklenmeyen bir medya izni Data safety
+beyanını değiştirir). İkisini de Play Console yükleme ekranı gösteriyor.
+
+### Anahtar — üretildi, repoda DEĞİL
+
+RSA 4096, alias `upload`, geçerlilik **07.01.2054** (Play'in "2033'ten sonra"
+şartı sağlanıyor), SHA-256
+`B6:CD:FB:A9:81:A6:6B:E3:6B:60:A0:67:15:F4:9E:FF:E6:26:B1:5A:E0:CE:D5:55:00:5B:B0:95:0E:89:A1:52`.
+Dosya + base64 + şifre kullanıcıya doğrudan teslim edildi; GitHub secret'larını
+(`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`) **kullanıcı elle
+girmek zorunda** — bu ortamdan GitHub ayarlarına yazma yolu yok.
+
+**İKİ TUZAK, ikisi de geri dönüşü olmayan sınıftan:**
+1. **Play App Signing'e KAYDOL** (ilk yüklemede, varsayılan açık). Kaydolmazsan
+   bu `.jks`'i kaybettiğin an uygulama SONSUZA DEK güncellenemez.
+2. **`assetlinks.json`'a bu SHA-256 YAZILMAZ.** Play App Signing açıkken
+   kullanıcıya giden paketi GOOGLE kendi anahtarıyla imzalıyor; deep link
+   doğrulaması Play Console → App integrity'deki "app signing key"
+   parmak izini ister. Yanlışını yazmak hata VERMEZ — linkler sessizce
+   tarayıcıda açılır (bkz. `ROADMAP.md` 1. madde).
 
 ## Karşılama Katmanı (web) — bilinçli ayrışma (18 Ağustos 2026, 19'unda güncellendi)
 
@@ -3642,8 +3750,8 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        web'in bugünkü hâline çekildi, "Son güncelleme" 2 → 10 Ağustos.
        - **`test/legal_text_test.dart` bunu KALICI olarak zorluyor** —
          `color_tokens_test.dart`ın tailwind'i okuyan deseninin hukuki
-         metin karşılığı: web'in `TermsModal.tsx`/`PrivacyModal.tsx`
-         dosyalarını OKUYUP kendi "Son güncelleme" tarihlerini portunkiyle
+         metin karşılığı: web'in kaynak dosyasını OKUYUP kendi
+         "Son güncelleme" tarihlerini portunkiyle
          karşılaştırıyor (tam metin karşılaştırması satır kaydırma/kaçış
          farklarıyla kırılgan olurdu; tarih, projenin yerleşik disiplini
          gereği her metin değişikliğinde güncelleniyor, yani "port bayat
@@ -3716,6 +3824,16 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        kopyaydı — kullanıcıya kendi verisinin görünürlüğü hakkında yanlış
        bilgi veriyordu. Yeni bir "elle senkron" kopya açarken sor: bunu
        hangi test zorluyor?
+       - **23 Ağustos 2026 — okunan dosya DEĞİŞTİ:** web metni
+         `TermsModal.tsx`/`PrivacyModal.tsx`ten `src/legal/LegalContent.tsx`e
+         taşındı (aynı metni artık `/gizlilik/` ve `/kullanim-kosullari/`
+         statik sayfaları da tüketiyor; Play'in Data safety formu doğrudan
+         açılan bir URL istiyor). Test eski yolu okumaya devam etseydi
+         "Son güncelleme bulunamadı" diye DÜŞERDİ — merge öncesi yakalandı.
+         **Yeni tuzak:** tek dosyada artık İKİ tarih var ve sıraları portun
+         TERSİ (web: Gizlilik → Koşullar, port: Koşullar → Gizlilik), o
+         yüzden test "ilk eşleşmeyi al" demiyor, metni `TermsBody`
+         sınırından bölüyor.
 
    - ✅ **Parça 91 — şikayeti geri çekmenin TEK yolu, raporladığın kişiyle
      YENİ bir oyun açmaktı (14 Ağustos 2026, yeni
@@ -6250,17 +6368,22 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      paritesi (23 Ağustos 2026):** Kullanıcı *"özellikle ileride app tarafı
      geldiğinde eksik ne var?"* diye sorunca yapılan denetim üç boşluk buldu;
      üçü de app çıkmadan kapatılması gerekenlerdi.
-     - **🔴 `appVersion` ↔ `pubspec.yaml` elle senkron ve TEST YOKTU.**
-       `env.dart:appVersion` yalnızca bir teşhis metni değil, ZORUNLU
-       GÜNCELLEME KAPISININ girdisi (`version_gate.dart` onu
+     - **🔴 `appVersion` ↔ `pubspec.yaml` elle senkron ve TEST YOKTU — ama bu
+       boşluk PARALEL bir turda ZATEN kapatılmıştı.** Denetim onu bağımsız
+       olarak buldu ve testini yazdı; `main`'e alınırken görüldü ki Play
+       yayını turu (22 Ağustos) AYNI testi aynı gerekçeyle çoktan eklemiş
+       (`app_version_parity_test.dart` — aynı regex, `+N` build numarasını
+       aynı sebeple dışarıda bırakan aynı karar). Bu daldaki kopya
+       DÜŞÜRÜLDÜ; kanonik olan `main`'inki, o zaten CI'dan geçmiş ve sürüm
+       1.0.0'a çıkarken ilk gerçek sınavını da vermiş.
+       **Kayda değer olan, iki turun aynı riski bağımsız olarak birinci
+       öncelik saymasıdır:** `env.dart:appVersion` bir teşhis metni değil,
+       ZORUNLU GÜNCELLEME KAPISININ girdisi (`version_gate.dart` onu
        `app_config.mobile_min_supported_version` ile karşılaştırıyor).
-       Ayrışmanın en kötü hâli sinsi: pubspec 0.2.0'a çıkar, `env.dart` 0.1.0
-       kalır, mağazaya 0.2.0 yüklenir; eşik 0.2.0 yapıldığında GÜNCELLEMİŞ
-       kullanıcılar kendini 0.1.0 bildirdiğinden hepsi uygulamadan
-       KİLİTLENİR — üstelik güncelleyerek çıkamazlar. Yeni
-       `app_version_parity_test.dart` pubspec'i okuyup sabitle
-       karşılaştırıyor (`rank_tiers_parity_test`in aynı deseni); build
-       numarası (`+1`) bilerek dışarıda — `compareSemver` onu ayrıştıramaz.
+       Ayrışmanın en kötü hâli sinsi: pubspec 1.1.0'a çıkar, `env.dart`
+       1.0.0 kalır, mağazaya 1.1.0 yüklenir; eşik 1.1.0 yapıldığında
+       GÜNCELLEMİŞ kullanıcılar kendini 1.0.0 bildirdiğinden hepsi
+       uygulamadan KİLİTLENİR — üstelik güncelleyerek çıkamazlar.
      - **🟠 Sürüm dağılımını ölçen hiçbir alan yoktu.** Zorunlu güncelleme
        kolu vardı ama onu ne zaman çekeceğini gösteren VERİ yoktu. Artık
        `logGameStart` `platform` + `app_version` gönderiyor (`game_starts`ta
@@ -6764,6 +6887,15 @@ Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı
 kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
 silinip kendi tarihli parça notuna taşınır.
 
+- **KGP uyarısı — ileride derlemeyi KIRACAK (23 Ağustos 2026'da `.aab`
+  log'unda ölçüldü, bugün yalnızca uyarı):** `image_picker_android`,
+  `share_plus` ve `shared_preferences_android` Kotlin Gradle Plugin'i
+  kendileri uyguluyor; Flutter'ın uyarısı birebir *"Future versions of
+  Flutter will fail to build if your app uses plugins that apply KGP"*.
+  Bugün acil DEĞİL (derleme geçiyor) ve bu eklentiler bizim değil —
+  çözümü kendi sürümlerini Built-in Kotlin'e geçmiş sürümlere yükseltmek.
+  Flutter yükseltmesi yapılırken ÖNCE bu üçünün changelog'una bak;
+  aksi halde yükseltme günü derleme sebebi anlaşılmayan bir şekilde kırılır.
 - ~~Bağlantı durumu göstergesi (`useOnlineStatus` portu)~~ — **YAPILDI**
   (14 Ağustos 2026): karar mantığı Parça 96'da (`util/online_status.dart` +
   `connectivity_plus`), Board alt şeridindeki görsel "Çevrimdışı" rozeti

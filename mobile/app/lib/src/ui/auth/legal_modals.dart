@@ -1,5 +1,9 @@
-// Kullanım Koşulları + Gizlilik Politikası — src/components/TermsModal.tsx
-// ve PrivacyModal.tsx portları.
+// Kullanım Koşulları + Gizlilik Politikası — web'deki metnin portu.
+//
+// KAYNAK: `src/legal/LegalContent.tsx` (23 Ağustos 2026'da
+// `TermsModal.tsx`/`PrivacyModal.tsx`ten oraya taşındı — aynı metni artık
+// `/gizlilik/` ve `/kullanim-kosullari/` statik sayfaları da tüketiyor).
+// `test/legal_text_test.dart` tazeliği o dosyaya karşı ölçüyor.
 //
 // METİNLER WEB'DEN BİREBİR KOPYALANMIŞTIR — hukuki metin özetlenmez,
 // yeniden yazılmaz (HelpModal'daki aynı kural). Web metni değişirse buraya
@@ -251,7 +255,7 @@ class PrivacyModal extends StatelessWidget {
       child: _StackedSections([
         const _P('Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, '
             'hangi verileri topladığımızı, nasıl kullandığımızı ve '
-            'haklarınızı açıklar. Son güncelleme: 22 Ağustos 2026.'),
+            'haklarınızı açıklar. Son güncelleme: 23 Ağustos 2026.'),
         const _Section('1. Veri Sorumlusu', [
           _P('Kelimeki, herhangi bir şirket ya da tüzel kişilik '
               'bulunmaksızın, bağımsız bir geliştirici tarafından bireysel '
@@ -369,6 +373,12 @@ class PrivacyModal extends StatelessWidget {
               '8. bölümdeki "Görüş Bildir" kanalından talep edebilirsiniz. '
               'Talebiniz üzerine tüm kişisel verileriniz en geç 30 gün '
               'içinde kalıcı olarak silinir.'),
+          _P('Kayıt sırasında e-posta adresinizi doğrulamazsanız hesabınız '
+              'tamamlanmamış sayılır: yaklaşık 20 saat sonra size bir '
+              'hatırlatma e-postası gönderilir ve 48 saat içinde hâlâ '
+              'doğrulanmamışsa hesap ile birlikte o ana kadar oluşturulmuş '
+              'kayıtlar silinir. Dilediğiniz zaman aynı e-posta adresi ve '
+              'aynı takma adla yeniden kayıt olabilirsiniz.'),
         ]),
         const _Section('6. Çerezler ve Yerel Depolama', [
           _P('Kelimeki, HTTP çerezi (cookie) kullanmaz. Bunun yerine '

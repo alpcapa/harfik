@@ -1,52 +1,51 @@
-// Ürün sürümü TEK KAYNAK: `pubspec.yaml`. `env.dart`teki `appVersion` sabiti
-// onun elle tutulan kopyası — ve bu testten önce onu koruyan HİÇBİR ŞEY
-// yoktu.
+// Sürüm — `pubspec.yaml` KANONİK kaynaktır.
 //
-// NEDEN ÖNEMLİ (23 Ağustos 2026, mağaza öncesi denetim): `appVersion` yalnızca
-// bir teşhis metni değil, ZORUNLU GÜNCELLEME KAPISININ girdisi —
-// `version_gate.dart` onu `app_config.mobile_min_supported_version` ile
-// karşılaştırıyor. İki kopya ayrışırsa hata sinsi ve ağır:
+// NEDEN VAR (22 Ağustos 2026, Play yüklemesi hazırlığı): sürüm İKİ yerde
+// elle senkron tutuluyor ve ikisi de bunu başlığında yazıyor
+// (`env.dart` → "pubspec.yaml'daki `version` ile BİRLİKTE artırılır"), ama
+// bugüne kadar hiçbir şey bunu ZORLAMIYORDU — biri artırılıp öteki
+// unutulsa `dart analyze` de testler de yeşil kalırdı.
 //
-//   pubspec 0.2.0'a çıkar, env 0.1.0'da kalır, mağazaya 0.2.0 yüklenir.
-//   Sen "herkes güncelledi" deyip eşiği 0.2.0 yaparsın. GÜNCELLEMİŞ
-//   kullanıcılar kendini hâlâ 0.1.0 bildirdiğinden hepsi uygulamadan
-//   KİLİTLENİR — üstelik güncelleyerek çıkamazlar.
+// AYRIŞMANIN BEDELİ SESSİZ VE GEÇ ÇIKAR: `pubspec.yaml`'ın `version`'ı
+// Play'e giden `versionName`'i belirler, `env.dart`'ın `appVersion`'ı ise
+// (a) Setup ekranındaki "Sürüm x.y.z" satırını ve (b) minimum sürüm
+// kapısını (`version_gate.dart`, `app_config.mobile_min_supported_version`
+// ile karşılaştırılıyor) besler. İkisi ayrışırsa mağazadaki sürüm ile
+// kullanıcının GÖRDÜĞÜ sürüm farklı olur ve — asıl tehlikeli olan —
+// eşik yükseltildiğinde kapı YANLIŞ sürümü karşılaştırır: gerçekte
+// yeterli bir binary "güncelleme zorunlu" ekranında kilitlenebilir ya da
+// tersine, eski bir binary kapıdan geçebilir.
 //
-// Ters yön de bozuk: env ileride kalırsa eşik hiç tutmaz ve kapı sessizce
-// devre dışı kalır.
+// `+N` (build number) KASITLI OLARAK karşılaştırma dışında: CI onu
+// `--build-number=${{ github.run_number }}` ile eziyor (Play aynı
+// versionCode'u iki kez kabul etmiyor), yani pubspec'teki değer zaten
+// bağlayıcı değil. Karşılaştırılan şey `+`'dan ÖNCEKİ semver.
 //
-// Derleyici bunu göremez (iki taraf da düz metin), CI'da bunu yakalayan tek
-// şey bu test. Projedeki `rank_tiers_parity_test`/`client_platform_parity_test`
-// ile aynı desen: KANONİK kaynağı dosyadan oku, kopyayla karşılaştır.
+// Desen `rank_tiers_parity_test.dart`/`color_tokens_test.dart` ile aynı:
+// kaynak dosyayı oku, ayrıştır, karşılaştır.
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/config/env.dart';
 
 void main() {
-  test('env.dart appVersion, pubspec.yaml sürümüyle birebir aynı', () {
-    // `flutter test` her zaman `mobile/app`ten koşuyor; yol yine de dosyanın
-    // varlığıyla doğrulanıyor ki sessizce boş bir eşleşmeye düşmeyelim.
+  test('env.dart appVersion, pubspec.yaml sürümüyle aynı', () {
+    // Testler `mobile/app`'ten koşuyor.
     final pubspec = File('pubspec.yaml');
     expect(pubspec.existsSync(), isTrue,
-        reason: 'pubspec.yaml bulunamadı — test mobile/app dizininden koşmalı');
+        reason: 'pubspec.yaml bulunamadı — test `mobile/app` içinden koşmalı.');
 
-    // `version: 0.1.0+1` → sürüm kısmı '+' işaretinden ÖNCESİ. Build numarası
-    // (`+1`) mağaza için ayrı bir sayaç ve `appVersion`da yeri YOK — semver
-    // karşılaştırması (`compareSemver`) onu ayrıştıramaz.
-    final match = RegExp(r'^version:\s*([0-9]+\.[0-9]+\.[0-9]+)(\+\d+)?\s*$',
+    final match = RegExp(r'^version:\s*([0-9]+\.[0-9]+\.[0-9]+)(\+[0-9]+)?\s*$',
             multiLine: true)
         .firstMatch(pubspec.readAsStringSync());
     expect(match, isNotNull,
-        reason: 'pubspec.yaml içinde `version: X.Y.Z(+N)` satırı bulunamadı');
+        reason: 'pubspec.yaml içinde `version: x.y.z(+N)` satırı okunamadı.');
 
     expect(
       appVersion,
       match!.group(1),
-      reason: 'env.dart:appVersion ile pubspec.yaml:version AYRIŞTI. '
-          'Sürüm yükseltirken İKİSİNİ birden değiştir — aksi halde zorunlu '
-          'güncelleme kapısı yanlış sürümle karşılaştırır ve güncel '
-          'kullanıcıları uygulamadan kilitleyebilir.',
+      reason: 'Sürüm İKİ yerde birden artırılmalı: pubspec.yaml `version` ve '
+          'lib/src/config/env.dart `appVersion`.',
     );
   });
 }
