@@ -2715,6 +2715,60 @@ manuel çağrı yeri `cloud_save_repo`).
 kendiliğinden dışarıda bırakacak, ve bu yedi satır filtrenin neden
 gerektiğinin kanıtı.
 
+### Mağaza öncesi üç ekleme — sürüm, rota (23 Ağustos 2026)
+
+Kullanıcı *"özellikle ileride app tarafı geldiğinde eksik ne var?"* diye
+sorunca yapılan denetimden çıktı. Üçü de **geriye dönük doldurulamaz**
+(`games.platform` ile aynı sınıf), o yüzden mağazadan ÖNCE:
+
+- **`client_errors.app_version` + `game_starts.app_version`/`platform`**
+  (`telemetry_app_version` migration'ı). Web'de AYNI ANDA tek canlı derleme
+  var; app'te aynı anda beş sürüm olur. **Web bu alanı NULL bırakır ve bu
+  bir eksiklik DEĞİL, anlamın kendisi:** web'in sürümü `build` (sha) ile
+  zaten tekil; uydurma bir değer dağılımı kirletirdi. `game_starts`ta
+  `platform` da YOKTU (ölçüldü) — `app_version` tek başına ios ile android'i
+  ayıramaz.
+- **`admin_client_errors` artık `versions` döndürüyor** (dönüş tipi
+  değiştiğinden drop+create, grant'ler elle). Sürümü olmayan istemciler
+  `filter` ile ELENİYOR, `'?'` ile doldurulMUYOR — yalnız web'den gelen bir
+  grupta alan `null` kalır ve panel "Sürüm:" satırını hiç çizmez.
+- **`admin_app_version_breakdown(p_days)` → Büyüme > Kullanıcı'da "Sürüm
+  Dağılımı" tablosu.** Var olma sebebi tek bir soru:
+  `app_config.mobile_min_supported_version` eşiğini yükseltmek güvenli mi?
+  Eşiği erken yükseltmek eski sürümdeki kullanıcıları uygulamadan kilitler
+  (`version_gate.dart`), geç yükseltmek düzeltilmiş bir hatayı sahada
+  yaşatır. **⚠ OYUN AÇILIŞI sayar, KULLANICI değil** — port `anon_id`
+  göndermiyor, dolayısıyla app satırlarında cihaz sayılamıyor; kapsam da
+  yalnızca YEREL (YZ) oyunlar (`game_starts`ın kendi kapsamı), yani yalnız
+  Canlı oynayan biri tabloda hiç görünmez. Tablo `GuestBreakdownTable`'ı
+  yeniden kullanıyor; bileşene `valueLabel` prop'u eklendi — sayı sütununun
+  başlığını "Ziyaretçi" bırakmak sayının ne olduğu konusunda yalan söylerdi.
+- **Portun `route` alanı SABİT `'app'`ti, artık gerçek ekran adı**
+  (`ErrorReporterRouteObserver`). Web'de o kolon '/'/'/game/:id' diye
+  ayrışıyor; app trafiği baskın hâle gelince kolon tamamen ölürdü. Adlar
+  push yerlerinde veriliyor (`intro`/`game`/`online-game`), **adsız rota KÖK
+  sayılıyor** — yeni bir ekranın adı unutulursa kayıt yanlış olmaz, yalnızca
+  ayrıntısını kaybeder.
+- **Portta `appVersion` ↔ `pubspec.yaml` paritesi artık TESTLİ**
+  (`app_version_parity_test.dart`) — ayrıntı ve kilitlenme senaryosu:
+  `mobile/CLAUDE.md`, Parça 130.
+
+**ÖLÇÜLDÜ** (derlenmiş CSS + Chromium, DPR 2, gerçek modal kromu,
+320/360/390/834/1194; sınıf dizeleri `AdminDashboard.tsx`'ten OKUNARAK):
+sayfa taşması her genişlikte **0**; tablo **276–279 px**, 360 px'ten itibaren
+kabına sığıyor, 320'de kendi `overflow-x-auto` kabında **30 px** kayıyor;
+başlıklar üç genişlikte de tek satır (29 px); hata kartı sürüm satırıyla
+86.5 → **107.5** px. Sürüm satırı YALNIZCA `versions` doluyken çiziliyor
+(negatif eş aynı harnesste ölçüldü).
+
+**Canlıda doğrulandı** (gerçek admin JWT'siyle, sahte app satırlarıyla, hepsi
+rollback): `[ios 0.1.0 starts=2 devices=2]`, `[android 0.2.0 starts=1
+devices=0]`, hata satırında `versions=0.1.0 platforms=ios`; admin olmayan
+çağrı `Yetkisiz erişim.` aldı. Mevcut web satırları `bilinmiyor/bilinmiyor`
+görünüyor — `game_starts.platform` de bugün eklendi, yani geçmiş
+doldurulamaz; panel `bilinmiyor` sürümü **—** olarak çiziyor (web'in sürümü
+yok, bu eksik veri değil).
+
 ### Üç değişmez (biri bozulursa telemetri ürünü bozar)
 
 1. **Fire-and-forget** — asla `await` edilmez, ASLA fırlatmaz.

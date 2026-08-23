@@ -18,7 +18,9 @@ import 'package:flutter/foundation.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config/env.dart';
 import '../storage/pending_queue_store.dart';
+import '../util/platform.dart';
 import '../util/uuid.dart';
 import 'game_record.dart';
 
@@ -352,6 +354,12 @@ class SupabaseGamesGateway implements GamesGateway {
       // filtreliyor, yani yanlışlıkla null göndermek satırı sessizce
       // saydırmaz — bu yüzden değer her zaman açıkça yazılıyor.
       'is_guest': client.auth.currentUser == null,
+      // Sürüm dağılımı (`admin_app_version_breakdown`, 23 Ağustos 2026):
+      // zorunlu güncelleme eşiğini yükseltmenin güvenli olup olmadığını
+      // gösteren TEK veri. `platform` olmadan ios ile android aynı satıra
+      // düşerdi; web NULL sürüm gönderiyor, yani sürümlü satır = app.
+      'platform': currentPlatform,
+      'app_version': appVersion,
     });
   }
 

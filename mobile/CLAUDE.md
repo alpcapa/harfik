@@ -6246,6 +6246,48 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ayraç dengesi, (c) her çapanın `grep`le kaynağında teyidi. Dart
        yarısının kanıtı yine CI.
 
+   - ✅ **Parça 130 — mağaza öncesi telemetri: sürüm, rota ve `appVersion`
+     paritesi (23 Ağustos 2026):** Kullanıcı *"özellikle ileride app tarafı
+     geldiğinde eksik ne var?"* diye sorunca yapılan denetim üç boşluk buldu;
+     üçü de app çıkmadan kapatılması gerekenlerdi.
+     - **🔴 `appVersion` ↔ `pubspec.yaml` elle senkron ve TEST YOKTU.**
+       `env.dart:appVersion` yalnızca bir teşhis metni değil, ZORUNLU
+       GÜNCELLEME KAPISININ girdisi (`version_gate.dart` onu
+       `app_config.mobile_min_supported_version` ile karşılaştırıyor).
+       Ayrışmanın en kötü hâli sinsi: pubspec 0.2.0'a çıkar, `env.dart` 0.1.0
+       kalır, mağazaya 0.2.0 yüklenir; eşik 0.2.0 yapıldığında GÜNCELLEMİŞ
+       kullanıcılar kendini 0.1.0 bildirdiğinden hepsi uygulamadan
+       KİLİTLENİR — üstelik güncelleyerek çıkamazlar. Yeni
+       `app_version_parity_test.dart` pubspec'i okuyup sabitle
+       karşılaştırıyor (`rank_tiers_parity_test`in aynı deseni); build
+       numarası (`+1`) bilerek dışarıda — `compareSemver` onu ayrıştıramaz.
+     - **🟠 Sürüm dağılımını ölçen hiçbir alan yoktu.** Zorunlu güncelleme
+       kolu vardı ama onu ne zaman çekeceğini gösteren VERİ yoktu. Artık
+       `logGameStart` `platform` + `app_version` gönderiyor (`game_starts`ta
+       `platform` da YOKTU — `app_version` tek başına ios ile android'i
+       ayıramaz) ve `client_errors` her kayda `app_version` ekliyor. Panelde
+       karşılığı: Büyüme > Kullanıcı → "Sürüm Dağılımı" tablosu ve hata
+       kartındaki "Sürüm:" satırı. **Sayılan şey OYUN AÇILIŞI, kullanıcı
+       DEĞİL** — port `anon_id` göndermediğinden app satırlarında cihaz
+       sayılamıyor (web'in `visitTracking` damgasının portu hâlâ yok).
+     - **🟡 `route` alanı portta SABİT `'app'`ti.** Web'de o kolon
+       '/'/'/game/:id' diye ayrışıp "hangi ekranda?" sorusunu cevaplıyor; app
+       trafiği baskın hâle gelince kolon tamamen ölürdü. Yeni
+       `ErrorReporterRouteObserver` (`MaterialApp.navigatorObservers`)
+       rotayı izliyor; adlar push yerlerinde `RouteSettings(name: …)` ile
+       veriliyor (`intro`, `game`, `online-game`), adsız rota KÖK sayılıyor —
+       yani yeni bir ekranın adı unutulursa kayıt yanlış olmaz, yalnızca
+       ayrıntısını kaybeder. `MaterialApp.home`un '/' adı da köke eşleniyor.
+     - **`error_reporter_test.dart` iki yeni test aldı** (rota gözlemcisi
+       push/pop'ta alanı günceller; adsız rota kök sayılır) ve mevcut alan
+       testi `app_version`ı da kontrol ediyor.
+     - **Doğrulama sınırı:** Flutter SDK bu ortamda YOK — Dart tarafının
+       kanıtı CI. Sunucu tarafı (migration + iki RPC) canlıda gerçek admin
+       JWT'siyle koşuldu ve sahte app satırlarıyla doğrulandı (hepsi
+       rollback): `[ios 0.1.0 starts=2 devices=2]`, `[android 0.2.0 starts=1
+       devices=0]`, hata kartında `versions=0.1.0 platforms=ios`; admin
+       olmayan çağrı `Yetkisiz erişim.` aldı.
+
    - ✅ **Parça 129 — sürükleme eşiği: fare ile parmak aynı sayıyı
      kullanamaz (22 Ağustos 2026):** Web'de bir kullanıcının joker raporu
      üzerine yapılan jest denetimi ikinci bir hata buldu ve o hata PORTTA DA

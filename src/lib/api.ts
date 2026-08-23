@@ -34,6 +34,7 @@ import type {
   AdminGameActivityPoint,
   AdminGameScope,
   AdminGameSourceType,
+  AdminAppVersionRow,
   AdminClientErrorRow,
   AdminSourceFunnelRow,
   AdminGuestDeviceRow,
@@ -320,6 +321,12 @@ export async function logGameStart(
     player_count: playerCount,
     utm_source: utmSource ?? 'direkt',
     is_guest: isGuest,
+    // 23 Ağustos 2026: sürüm dağılımı (`admin_app_version_breakdown`).
+    // `platform` bu tabloda YOKTU — `app_version` tek başına ios ile
+    // android'i ayıramaz. `app_version` web'de BİLEREK null: web'in sürümü
+    // derleme sha'sıyla zaten tekil, uydurma bir değer dağılımı kirletirdi.
+    platform: CLIENT_PLATFORM,
+    app_version: null,
   });
   if (error) {
     console.error('[Kelimeki] logGameStart hatası:', error.message);
@@ -2153,6 +2160,20 @@ export async function fetchAdminGuestDeviceBreakdown(days = 30): Promise<AdminGu
     throw new Error(error.message);
   }
   return (data as AdminGuestDeviceRow[]) ?? [];
+}
+
+/**
+ * Son `days` günde YEREL oyun açan istemcilerin sürüm dökümü (yalnızca
+ * admin — Büyüme > Kullanıcı). `app_config.mobile_min_supported_version`
+ * eşiğini yükseltmenin güvenli olup olmadığını gösteren tek veri.
+ */
+export async function fetchAdminAppVersionBreakdown(days = 30): Promise<AdminAppVersionRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('admin_app_version_breakdown', { p_days: days });
+  if (error) {
+    throw new Error(error.message);
+  }
+  return (data as AdminAppVersionRow[]) ?? [];
 }
 
 /**

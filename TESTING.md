@@ -1006,6 +1006,29 @@ YOK) ve okuma yalnızca admin'e açık.
       geçerli bir kullanıcı aynı mesajı alıyorsa o GERÇEK bir grant
       hatasıdır ve panelde görünmeli.
 
+## 9.15. Admin — Sürüm Dağılımı + hata kartında sürüm (23 Ağustos 2026)
+
+Mağaza öncesi hazırlık. **Bugün app yayında olmadığı için tablo yalnızca
+web/bilinmiyor satırları gösterir — asıl sınama uygulamalar çıkınca.**
+
+- [ ] Büyüme > Kullanıcı'da **"Sürüm Dağılımı"** tablosu Cihaz'ın hemen
+      altında görünüyor; sayı sütununun başlığı **"Başlangıç"** (Ziyaretçi
+      DEĞİL — bu tablo oyun açılışı sayıyor).
+- [ ] Sürümsüz satırlar **—** ile çiziliyor (web'in sürümü yok; "bilinmiyor"
+      yazmak eksik veri izlenimi verirdi).
+- [ ] `?` popup'ı "kullanıcı değil oyun açılışı sayar" ve "kapsam yalnızca YZ
+      oyunları" sınırlarını söylüyor.
+- [ ] CSV iniyor ve başlık satırı "Başlangıç" diyor.
+- [ ] Hatalar sekmesinde bir web kaydında **"Sürüm:" satırı HİÇ ÇIKMIYOR**
+      (web sürüm göndermez — boş bir satır her web hatasında gürültü olurdu).
+- [ ] **APP ÇIKINCA:** telefondan bir YZ oyunu aç → tabloda `ios · 0.1.0`
+      (ya da android) satırı belirmeli; uygulamada bir hata oluştur →
+      hata kartında "Sürüm: 0.1.0" görünmeli ve "Yol" alanı `game` /
+      `online-game` / `intro` gibi gerçek bir ekran adı olmalı, `app` değil.
+- [ ] **APP ÇIKINCA:** `mobile_min_supported_version`'ı yükseltmeden ÖNCE bu
+      tabloya bak — eski sürümden hâlâ oyun açılıyorsa eşiği yükseltmek o
+      kullanıcıları uygulamadan kilitler.
+
 ## 9.14. Admin — kart başlıklarında gönderen adı (23 Ağustos 2026)
 
 Geri Bildirim (Gelen Kutusu) ve Şikayetler kartlarının başlığı. Bu bölüm bir

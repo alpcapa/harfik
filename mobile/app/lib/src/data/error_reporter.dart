@@ -17,6 +17,7 @@
 // NE KAYDEDİLMEZ: çevrimdışılık ve `isNetworkError`'a düşen her şey,
 // sunucunun KENDİ reddi. Bunlar BEKLENEN durumlar; gürültü sinyali boğarsa
 // panel bir daha açılmaz. (Ayrıntı için web dosyasının başlığı.)
+import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/env.dart';
@@ -60,7 +61,60 @@ class SupabaseClientErrorSink implements ClientErrorSink {
 /// Tek örnek — `main()`/`bootstrap()` ve tüm çağrı yerleri bunu kullanır.
 final ErrorReporter errorReporter = ErrorReporter();
 
+/// Kök rotanın adı. Web'de `location.pathname` karşılığı yok; kök ekran
+/// (Setup / tanıtım / güncelleme kapısı) hepsi burada toplanıyor.
+const String kRootRouteName = 'app';
+
+/// Hangi ekranda olduğumuzu telemetriye taşıyan gözlemci — `MaterialApp`'in
+/// `navigatorObservers`ına takılır.
+///
+/// NEDEN VAR (23 Ağustos 2026): kayıtların `route` alanı portta SABİT `'app'`
+/// yazıyordu. Web'de o alan '/'/'/game/:id'/'/davet/:token' diye ayrışıyor ve
+/// panelde "hangi ekranda?" sorusunu cevaplıyor; mağaza sonrası app trafiği
+/// baskın hâle gelince kolon tamamen ölürdü. Yığın izi ekranı çoğu zaman
+/// söylüyor ama HER ZAMAN değil (release'de sembolleri çözülmüş bir yığın
+/// yok) — ve gruplanmış panelde yığın yalnızca ÖRNEK olarak duruyor.
+///
+/// Rota adları push yerlerinde `RouteSettings(name: …)` ile veriliyor; ad
+/// verilmemiş bir rota kök sayılır. Yani yeni bir ekran eklenip adı
+/// unutulursa kayıt YANLIŞ olmaz, yalnızca ayrıntısını kaybeder.
+class ErrorReporterRouteObserver extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    errorReporter.route = _routeAdi(route);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    errorReporter.route = _routeAdi(previousRoute);
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    errorReporter.route = _routeAdi(newRoute);
+  }
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    // Yığının ORTASINDAN bir rota kaldırılırsa bu, üstteki rotayı değiştirmez
+    // ve buradaki güncelleme kısa süreliğine yanlış olur. Uygulamada
+    // `removeRoute` HİÇ kullanılmıyor (yalnız push/pop var, ölçüldü); yine de
+    // override ediliyor ki ileride kullanılırsa alan bayat kalmasın.
+    errorReporter.route = _routeAdi(previousRoute);
+  }
+}
+
+String _routeAdi(Route<dynamic>? route) {
+  final ad = route?.settings.name;
+  // MaterialApp'in `home:`i '/' adını taşır — kök ekran, yani 'app'.
+  if (ad == null || ad.isEmpty || ad == '/') return kRootRouteName;
+  return ad;
+}
+
 class ErrorReporter {
+  /// Şu an görünen ekran — `ErrorReporterRouteObserver` günceller.
+  String route = kRootRouteName;
+
   ClientErrorSink? _sink;
   Future<String>? _anonId;
   final Set<String> _gonderilen = <String>{};
@@ -145,9 +199,14 @@ class ErrorReporter {
         'kind': kind,
         'message': message,
         'stack': stack,
-        // Portta web'in `location.pathname`'i yok; ekran adı taşımak yerine
-        // sabit bir işaret bırakılıyor — hangi ekranda olduğu zaten yığında.
-        'route': 'app',
+        // 23 Ağustos 2026'ya kadar SABİT 'app'ti; artık gözlemciden geliyor
+        // (bkz. `ErrorReporterRouteObserver`).
+        'route': route,
+        // ÜRÜN SÜRÜMÜ — web'de bu alan null, çünkü orada aynı anda tek bir
+        // canlı derleme var ve `build` (sha) onu tekil belirliyor. Mağazada
+        // ise aynı anda birden çok sürüm yaşayacağından bu, "hangi sürümde
+        // düzeldi?" sorusunun tek cevabı (`telemetry_app_version`).
+        'app_version': appVersion,
       });
     } catch (_) {
       // Yutuluyor: telemetri hatası hiçbir yere yazılmıyor, çünkü hata
@@ -159,6 +218,7 @@ class ErrorReporter {
 
   /// Yalnızca testler için — sayaçları ve hedefi sıfırlar.
   void resetForTests() {
+    route = kRootRouteName;
     _sink = null;
     _anonId = null;
     _gonderilen.clear();

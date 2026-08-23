@@ -183,6 +183,12 @@ export function reportClientError(
       message: tamMesaj,
       stack,
       route: normalizeRoute(window.location.pathname),
+      // Web'de ÜRÜN SÜRÜMÜ YOK ve bu bilinçli: aynı anda tek bir canlı
+      // derleme var, `build` (sha) onu zaten tekil belirliyor. Mobilde ise
+      // mağazada aynı anda birden çok sürüm yaşayacağından port bu alanı
+      // `appVersion` ile dolduruyor — null burada "sürümü olmayan istemci",
+      // yani web demek (bkz. `telemetry_app_version` migration'ı).
+      app_version: null,
     };
     const gonder = hedef ?? ((r: Record<string, unknown>) => supabase!.from('client_errors').insert(r));
     void Promise.resolve(gonder(kayit)).then(

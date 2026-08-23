@@ -428,6 +428,15 @@ export interface AdminClientErrorRow {
   devices: number;
   platforms: string;
   builds: string;
+  /**
+   * Bu gruptaki İSTEMCİ SÜRÜMLERİ (mobil `pubspec` sürümü), virgülle.
+   *
+   * `null` olabilir ve bu bir eksiklik DEĞİL: web sürüm göndermez (orada
+   * derleme `build` sha'sıyla zaten tekil), yani yalnız web'den gelen bir
+   * grupta alan boş kalır. Mağazada aynı anda birden çok sürüm yaşayacağı
+   * için app tarafında bu, "hangi sürümde düzeldi?" sorusunun tek cevabı.
+   */
+  versions: string | null;
   routes: string;
   first_seen: string;
   last_seen: string;
@@ -788,6 +797,31 @@ export interface AdminSourceFunnelRow {
    * yalnızca CSV'de görünür.
    */
   players: number;
+}
+
+/**
+ * admin_app_version_breakdown RPC çıktısındaki tek satır (Büyüme >
+ * Kullanıcı) — son N günde hangi istemci sürümünden kaç YEREL oyun açıldığı.
+ *
+ * NEDEN VAR: `app_config.mobile_min_supported_version` kolu (zorunlu
+ * güncelleme kapısı) bugüne kadar VERİSİZ kullanılıyordu — eşiği erken
+ * yükseltmek güncel olmayan kullanıcıları uygulamadan kilitler, geç
+ * yükseltmek düzeltilmiş bir hatayı sahada yaşatır.
+ *
+ * ⚠ `starts` OYUN AÇILIŞI sayar, KULLANICI değil. `devices` app tarafında
+ * 0 kalır: port `anon_id` göndermiyor (web'in `visitTracking` damgasının
+ * portu henüz yok). Bu yüzden panel `starts`ı gösteriyor.
+ *
+ * ⚠ Kapsam yalnızca YEREL (YZ) oyunlar — `game_starts`ın kendi kapsamı.
+ */
+export interface AdminAppVersionRow {
+  /** `web` / `ios` / `android` / `app-web` / `bilinmiyor`. */
+  platform: string;
+  /** Mobil sürüm; web ve eski satırlarda `bilinmiyor`. */
+  app_version: string;
+  starts: number;
+  devices: number;
+  last_seen: string;
 }
 
 /**

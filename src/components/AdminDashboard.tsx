@@ -15,6 +15,7 @@ import {
   fetchAdminActivationStats,
   fetchAdminSourceFunnel,
   fetchAdminGuestDeviceBreakdown,
+  fetchAdminAppVersionBreakdown,
   fetchAdminClientErrors,
   fetchAdminFeedback,
   markFeedbackHandled,
@@ -39,6 +40,7 @@ import type {
   AdminRetentionCell,
   AdminActivationStats,
   AdminSourceFunnelRow,
+  AdminAppVersionRow,
   AdminGuestDeviceRow,
   AdminActivityGranularity,
   AdminFeedbackRow,
@@ -346,6 +348,22 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
       </>
     ),
   },
+  'surum-dagilimi': {
+    title: 'Sürüm Dağılımı',
+    body: (
+      <>
+        Son N günde <b>hangi istemci sürümünden kaç YEREL (YZ) oyun açıldığı</b>. Zorunlu
+        güncelleme eşiğini (<code>mobile_min_supported_version</code>) yükseltmenin güvenli
+        olup olmadığını gösteren tek veri: eşiği erken yükseltmek eski sürümdeki kullanıcıları
+        uygulamadan kilitler, geç yükseltmek düzeltilmiş bir hatayı sahada yaşatır.
+        <br />
+        <b>Kullanıcı DEĞİL oyun açılışı sayar.</b> Port anonim cihaz kodu göndermediğinden app
+        satırlarında cihaz sayılamıyor. Web'in sürümü yok ve bu doğru — orada aynı anda tek bir
+        canlı derleme var, sürüm yerine <b>—</b> yazılır. Kapsam yalnızca YZ oyunları: yalnız
+        Canlı oynayan biri burada hiç görünmez.
+      </>
+    ),
+  },
   cihaz: {
     title: 'Cihaz',
     body: (
@@ -593,6 +611,7 @@ function GuestBreakdownTable<T extends { visitors: number }>({
   getLabel,
   csvBaseName,
   infoHint,
+  valueLabel = 'Ziyaretçi',
 }: {
   columnLabel: string;
   emptyLabel: string;
@@ -601,6 +620,13 @@ function GuestBreakdownTable<T extends { visitors: number }>({
   getLabel: (row: T) => string;
   csvBaseName: string;
   infoHint?: ReactNode;
+  /**
+   * Sayı sütununun başlığı. Varsayılanı "Ziyaretçi" — üç ziyaretçi dökümü
+   * onu kullanıyor. Sürüm dağılımı ziyaretçi DEĞİL oyun açılışı saydığından
+   * kendi etiketini geçiyor; başlığı sabit bırakmak sayının ne olduğu
+   * konusunda yalan söylerdi (CSV başlığı da bunu izliyor).
+   */
+  valueLabel?: string;
 }) {
   // Boş/yüklenirken de `?` çizilir — "bu tablo neyi sayıyor?" sorusu tam da
   // hiç veri yokken sorulur (CSV ise indirilecek satır olmadan gizleniyor).
@@ -620,7 +646,7 @@ function GuestBreakdownTable<T extends { visitors: number }>({
   function handleExportCsv() {
     downloadCsv(
       csvFilename(csvBaseName),
-      [columnLabel, 'Ziyaretçi', '%'],
+      [columnLabel, valueLabel, '%'],
       [
         ...visibleRows.map((row) => [
           getLabel(row),
@@ -645,7 +671,7 @@ function GuestBreakdownTable<T extends { visitors: number }>({
           <thead>
             <tr className="text-left text-muted border-b border-border">
               <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px]">{columnLabel}</th>
-              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">Ziyaretçi</th>
+              <th className="py-1.5 pr-8 font-bold uppercase tracking-[1px] text-center">{valueLabel}</th>
               <th className="py-1.5 font-bold uppercase tracking-[1px] text-center">%</th>
             </tr>
           </thead>
@@ -1263,6 +1289,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [userPeriod, setUserPeriod] = useState<number>(30);
   const [sourceFunnel, setSourceFunnel] = useState<AdminSourceFunnelRow[] | null>(null);
   const [guestDevices, setGuestDevices] = useState<AdminGuestDeviceRow[] | null>(null);
+  const [appVersions, setAppVersions] = useState<AdminAppVersionRow[] | null>(null);
   const [friendActivity, setFriendActivity] = useState<AdminFriendActivityPoint[] | null>(null);
   const [activePlayers, setActivePlayers] = useState<AdminActivePlayersPoint[] | null>(null);
   const [retention, setRetention] = useState<AdminRetentionCell[] | null>(null);
@@ -1413,6 +1440,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       fetchAdminUserActivitySeries(userPeriod, userGranularity).then(setUserActivity),
       fetchAdminSourceFunnel(days).then(setSourceFunnel),
       fetchAdminGuestDeviceBreakdown(days).then(setGuestDevices),
+      fetchAdminAppVersionBreakdown(days).then(setAppVersions),
       fetchAdminFriendActivitySeries(userPeriod, userGranularity).then(setFriendActivity),
       fetchAdminActivePlayersSeries(userPeriod, userGranularity).then(setActivePlayers),
     ]).catch((e) => setError(String(e)));
@@ -2270,6 +2298,26 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       infoHint={<InfoHint id="cihaz" onOpen={setHint} />}
                     />
                   </div>
+                  <div className="flex flex-col gap-2">
+                    <span className={sectionTitleCls}>
+                      Sürüm Dağılımı (Son {userPeriod} {PERIOD_UNIT_LABEL[userGranularity]})
+                    </span>
+                    <GuestBreakdownTable
+                      columnLabel="İstemci"
+                      valueLabel="Başlangıç"
+                      emptyLabel="Bu aralıkta oyun açılışı yok."
+                      rows={appVersions?.map((r) => ({ ...r, visitors: r.starts })) ?? null}
+                      getKey={(row) => `${row.platform}|${row.app_version}`}
+                      // Sürümü olmayan istemci (web, ve kolondan ÖNCEKİ tüm
+                      // satırlar) "bilinmiyor" döner — ekranda "—" yazılıyor:
+                      // web'in sürümü YOK, bu bir eksik veri değil.
+                      getLabel={(row) =>
+                        `${row.platform} · ${row.app_version === 'bilinmiyor' ? '—' : row.app_version}`
+                      }
+                      csvBaseName="kelimeki-surum"
+                      infoHint={<InfoHint id="surum-dagilimi" onOpen={setHint} />}
+                    />
+                  </div>
                   {/* "Platform" ve "Ana Ekrana Ekleme" tabloları 15 Ağustos 2026'da
                       kullanıcı kararıyla KALDIRILDI — ikisi de bugün anlamlı bir şey
                       söylemiyordu. Platform: kolon 14 Ağustos'ta eklendiği için 337
@@ -2501,6 +2549,18 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                           </span>
                           <span className="truncate min-w-0">{e.builds}</span>
                         </div>
+
+                        {/* Sürüm YALNIZCA varsa çizilir: web sürüm göndermez
+                            (orada `build` sha'sı zaten tekil) ve boş bir
+                            "Sürüm: —" satırı her web hatasında gürültü olurdu.
+                            App'te ise mağazada aynı anda birden çok sürüm
+                            yaşayacağından bu, "hangi sürümde düzeldi?"nin
+                            tek cevabı. */}
+                        {e.versions && (
+                          <div className="text-[10px] font-mono text-muted">
+                            Sürüm: <span className="text-text">{e.versions}</span>
+                          </div>
+                        )}
 
                         {isExpanded && (
                           <div className="flex flex-col gap-1.5 pt-1 border-t border-border">
