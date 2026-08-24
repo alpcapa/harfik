@@ -13,6 +13,7 @@
 const ANON_ID_KEY = 'kelimeki:anon-id';
 const LAST_VISIT_KEY = 'kelimeki:anon-visit-date';
 const UTM_SOURCE_KEY = 'kelimeki:utm-source';
+const DEVICE_VISIT_KEY = 'kelimeki:device-visit-date';
 
 /** Bu cihaz için kalıcı, rastgele bir kimlik döner — yoksa üretip saklar. */
 export function getOrCreateAnonId(): string | null {
@@ -42,6 +43,37 @@ export function markVisitLoggedToday(): void {
   try {
     const today = new Date().toISOString().slice(0, 10);
     localStorage.setItem(LAST_VISIT_KEY, today);
+  } catch {
+    // yoksay
+  }
+}
+
+/**
+ * Bugün (yerel tarih) için cihaz/OS pingi (`device_visits`, bkz.
+ * `logDeviceVisit`, `src/lib/api.ts`) zaten bildirildi mi.
+ *
+ * `visitAlreadyLoggedToday`'in damgasıyla BİLEREK AYRI: o yalnızca misafir
+ * (girişsiz) ziyaretleri sayıp Kaynak Hunisi'ni besliyor, bu ise girişli/
+ * girişsiz TÜM ziyaretleri sayıp yalnızca "Cihaz" dökümünü besliyor. Aynı
+ * damgayı paylaşsalar biri ötekini bastırabilirdi — ör. bir kullanıcı
+ * GİRİŞLİYKEN cihaz pingi atınca misafir damgası da dolar ve o gün
+ * sonradan gerçekleşen girişsiz bir ziyaret hiç sayılmazdı (huniyi
+ * sessizce eksik bırakırdı).
+ */
+export function deviceVisitAlreadyLoggedToday(): boolean {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    return localStorage.getItem(DEVICE_VISIT_KEY) === today;
+  } catch {
+    return true; // localStorage okunamıyorsa tekrar denemeye gerek yok
+  }
+}
+
+/** Bugünün (yerel tarih) cihaz/OS pinginin bildirildiğini işaretler. */
+export function markDeviceVisitLoggedToday(): void {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    localStorage.setItem(DEVICE_VISIT_KEY, today);
   } catch {
     // yoksay
   }
@@ -103,8 +135,9 @@ export function getDeviceType(): 'ios' | 'android' | 'desktop' {
 /**
  * İyi niyetle (best-effort) `navigator.userAgent`'tan işletim sistemi
  * sürümünü okur — kesin değil, yalnızca elde edilebiliyorsa. Şimdilik
- * hiçbir ekranda gösterilmiyor, yalnızca `guest_visits.os_version`'a
- * kaydediliyor (bkz. o sütunun migration yorumu).
+ * hiçbir ekranda gösterilmiyor, yalnızca `guest_visits.os_version`'a VE
+ * (24 Ağustos 2026'dan beri) `device_visits.os_version`'a kaydediliyor
+ * (bkz. ilgili sütunların migration yorumları).
  */
 export function getOsVersion(): string | null {
   try {
@@ -130,7 +163,8 @@ export function getOsVersion(): string | null {
  * "reduce" edilmemişse model kodu (ör. "SM-G991B") yakalanabilir, aksi
  * halde null — bu beklenen bir durum, ayrıştırma hatası değil. Masaüstünde
  * her zaman null. Şimdilik hiçbir ekranda gösterilmiyor, yalnızca
- * `guest_visits.device_model`'e kaydediliyor.
+ * `guest_visits.device_model`'e VE (24 Ağustos 2026'dan beri)
+ * `device_visits.device_model`'e kaydediliyor.
  */
 export function getDeviceModel(): string | null {
   try {

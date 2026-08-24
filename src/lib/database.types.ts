@@ -838,6 +838,20 @@ export interface AdminGuestDeviceRow {
 }
 
 /**
+ * admin_device_breakdown RPC çıktısındaki tek satır (Büyüme > Kullanıcı,
+ * "Cihaz" tablosu) — son N gün içinde bir cihaz tipinden (`getDeviceType`,
+ * bkz. `src/utils/visitTracking.ts`) kaç benzersiz ziyaretçi geldiğini
+ * gösterir. `AdminGuestDeviceRow`'un (misafir-only) TERSİNE `device_visits`
+ * tablosundan gelir ve girişli VE girişsiz TÜM ziyaretleri kapsar — 24
+ * Ağustos 2026, kullanıcı isteği: "Cihaz datası gelen tüm insanların
+ * (girişli veya girişsiz) hangi cihazlardan geldiğini görmek için."
+ */
+export interface AdminDeviceBreakdownRow {
+  device_type: string;
+  visitors: number;
+}
+
+/**
  * admin_platform_breakdown RPC çıktısındaki tek satır (Büyüme > Kullanıcı) —
  * son N günde biten oyunların hangi İSTEMCİDEN oynandığı.
  *

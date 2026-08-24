@@ -14,7 +14,7 @@ import {
   fetchAdminRetentionCohorts,
   fetchAdminActivationStats,
   fetchAdminSourceFunnel,
-  fetchAdminGuestDeviceBreakdown,
+  fetchAdminDeviceBreakdown,
   fetchAdminAppVersionBreakdown,
   fetchAdminClientErrors,
   fetchAdminFeedback,
@@ -41,7 +41,7 @@ import type {
   AdminActivationStats,
   AdminSourceFunnelRow,
   AdminAppVersionRow,
-  AdminGuestDeviceRow,
+  AdminDeviceBreakdownRow,
   AdminActivityGranularity,
   AdminFeedbackRow,
   AdminChatReportRow,
@@ -368,12 +368,15 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
     title: 'Cihaz',
     body: (
       <>
-        Misafir ziyaretçilerin işletim sistemi — iOS mü Android mi masaüstü mü.{' '}
-        <b>"App mi web mi" DEĞİL</b> — bu satır yalnızca oturum KAPALIYKEN yazılıyor, yani girişli
-        kullanıcıları ve mobil uygulamayı hiç kapsamıyor; iOS/Android satırları o cihazlardaki
-        TARAYICIYI da içeriyor, yalnız kurulu uygulamayı değil.{' '}
-        <b>"Mobil (eski)"</b>, 24 Ağustos 2026'dan ÖNCEki (yalnızca dokunmatik/fare ayrımı yapan)
-        kayıtlar — geriye dönük iOS/Android'e ayrıştırılamaz.
+        Gelen TÜM ziyaretçilerin (girişli VEYA girişsiz) işletim sistemi — iOS mü Android mi
+        masaüstü mü. <b>Kaynak Hunisi'nden BAĞIMSIZ</b> — huni bilinçli olarak yalnızca misafir
+        trafiğini izole ediyor (bkz. huni'nin kendi açıklaması), bu tablo ise o ayrımı hiç
+        yapmadan herkesi sayıyor; girişli bir ziyaret hiçbir hesap kimliğiyle eşleştirilmeden,
+        tamamen anonim (`device_visits`, `user_id` taşımaz) kaydediliyor.{' '}
+        <b>"App mi web mi" DEĞİL</b> — iOS/Android satırları o cihazlardaki TARAYICIYI da
+        içeriyor, yalnız kurulu uygulamayı değil ("Sürüm Dağılımı" tablosu o soruyu yanıtlıyor).
+        24 Ağustos 2026'dan ÖNCEki misafir-only ölçüm (eski "Cihaz" tablosu) veritabanında
+        duruyor ama artık çizilmiyor.
       </>
     ),
   },
@@ -1291,7 +1294,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [userGranularity, setUserGranularity] = useState<AdminActivityGranularity>('day');
   const [userPeriod, setUserPeriod] = useState<number>(30);
   const [sourceFunnel, setSourceFunnel] = useState<AdminSourceFunnelRow[] | null>(null);
-  const [guestDevices, setGuestDevices] = useState<AdminGuestDeviceRow[] | null>(null);
+  const [deviceBreakdown, setDeviceBreakdown] = useState<AdminDeviceBreakdownRow[] | null>(null);
   const [appVersions, setAppVersions] = useState<AdminAppVersionRow[] | null>(null);
   const [friendActivity, setFriendActivity] = useState<AdminFriendActivityPoint[] | null>(null);
   const [activePlayers, setActivePlayers] = useState<AdminActivePlayersPoint[] | null>(null);
@@ -1442,7 +1445,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     Promise.all([
       fetchAdminUserActivitySeries(userPeriod, userGranularity).then(setUserActivity),
       fetchAdminSourceFunnel(days).then(setSourceFunnel),
-      fetchAdminGuestDeviceBreakdown(days).then(setGuestDevices),
+      fetchAdminDeviceBreakdown(days).then(setDeviceBreakdown),
       fetchAdminAppVersionBreakdown(days).then(setAppVersions),
       fetchAdminFriendActivitySeries(userPeriod, userGranularity).then(setFriendActivity),
       fetchAdminActivePlayersSeries(userPeriod, userGranularity).then(setActivePlayers),
@@ -2291,8 +2294,8 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                     </span>
                     <GuestBreakdownTable
                       columnLabel="Cihaz"
-                      emptyLabel="Bu aralıkta misafir ziyareti yok."
-                      rows={guestDevices}
+                      emptyLabel="Bu aralıkta ziyaret yok."
+                      rows={deviceBreakdown}
                       getKey={(row) => row.device_type}
                       getLabel={(row) =>
                         row.device_type === 'ios'
@@ -2301,9 +2304,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                             ? 'Android'
                             : row.device_type === 'desktop'
                               ? 'Masaüstü'
-                              : row.device_type === 'mobile'
-                                ? 'Mobil (eski)'
-                                : 'Bilinmiyor'
+                              : 'Bilinmiyor'
                       }
                       csvBaseName="kelimeki-cihaz"
                       infoHint={<InfoHint id="cihaz" onOpen={setHint} />}

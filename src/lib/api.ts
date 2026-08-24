@@ -37,6 +37,7 @@ import type {
   AdminAppVersionRow,
   AdminClientErrorRow,
   AdminSourceFunnelRow,
+  AdminDeviceBreakdownRow,
   AdminGuestDeviceRow,
   AdminGuestStandaloneRow,
   AdminMember,
@@ -369,6 +370,37 @@ export async function logGuestVisit(
   });
   if (error) {
     console.error('[Kelimeki] logGuestVisit hatası:', error.message);
+  }
+}
+
+/**
+ * Girişli VEYA girişsiz HER ziyareti tamamen anonim olarak `device_visits`e
+ * kaydeder — admin panelinin Büyüme > Kullanıcı "Cihaz" dökümü için.
+ * `logGuestVisit`ten BİLEREK AYRI: o yalnızca oturum KAPALIYKEN çağrılıp
+ * Kaynak Hunisi'ni besliyor (huni bilinçli olarak misafir-only, bkz.
+ * `source_funnel_guest_only` migration'ı); bu ise huniyi hiç beslemeden,
+ * yalnızca "gelen tüm insanlar hangi cihaz/OS'ten geliyor" sorusu için
+ * girişli kullanıcıları da kapsar (24 Ağustos 2026, kullanıcı isteği).
+ * `anonId` `guest_visits`teki ile AYNI cihaz kimliği (localStorage) —
+ * `user_id` BİLEREK gönderilmez/taşınmaz, kayıt hiçbir hesapla
+ * eşleştirilemez (`device_visits_insert_any` RLS politikası hem `anon` hem
+ * `authenticated` rolünden insert'e izin verir).
+ */
+export async function logDeviceVisit(
+  anonId: string,
+  deviceType: 'ios' | 'android' | 'desktop',
+  osVersion: string | null,
+  deviceModel: string | null,
+): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from('device_visits').insert({
+    anon_id: anonId,
+    device_type: deviceType,
+    os_version: osVersion,
+    device_model: deviceModel,
+  });
+  if (error) {
+    console.error('[Kelimeki] logDeviceVisit hatası:', error.message);
   }
 }
 
@@ -2157,7 +2189,13 @@ export async function fetchAdminSourceFunnel(days = 30): Promise<AdminSourceFunn
 
 /**
  * Son `days` gün içinde cihaz tipi (mobil/masaüstü) başına benzersiz
- * misafir ziyaretçi sayısını döner (yalnızca admin — Büyüme > Kullanıcı).
+ * MİSAFİR (girişsiz) ziyaretçi sayısını döner (yalnızca admin).
+ *
+ * 24 Ağustos 2026'dan beri admin panelindeki "Cihaz" tablosu bunu ÇAĞIRMIYOR
+ * — o artık `fetchAdminDeviceBreakdown`'a (girişli+girişsiz tümü) geçti.
+ * Bu fonksiyon/RPC BİLEREK SİLİNMEDİ (`fetchAdminPlatformBreakdown`'ın
+ * "kod duruyor, çağrılmıyor" hâliyle aynı desen) — `guest_visits.device_type`
+ * hâlâ yazılıyor ve ileride yalnızca misafir tarafını görmek gerekirse hazır.
  */
 export async function fetchAdminGuestDeviceBreakdown(days = 30): Promise<AdminGuestDeviceRow[]> {
   if (!supabase) return [];
@@ -2169,6 +2207,22 @@ export async function fetchAdminGuestDeviceBreakdown(days = 30): Promise<AdminGu
     throw new Error(error.message);
   }
   return (data as AdminGuestDeviceRow[]) ?? [];
+}
+
+/**
+ * Son `days` gün içinde cihaz tipi (iOS/Android/masaüstü) başına benzersiz
+ * ziyaretçi sayısını döner — GİRİŞLİ VE GİRİŞSİZ tüm ziyaretleri kapsar
+ * (yalnızca admin — Büyüme > Kullanıcı "Cihaz" tablosu). `device_visits`
+ * tablosundan okur; `fetchAdminGuestDeviceBreakdown`'ın (misafir-only)
+ * yerini 24 Ağustos 2026'da bu aldı.
+ */
+export async function fetchAdminDeviceBreakdown(days = 30): Promise<AdminDeviceBreakdownRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('admin_device_breakdown', { p_days: days });
+  if (error) {
+    throw new Error(error.message);
+  }
+  return (data as AdminDeviceBreakdownRow[]) ?? [];
 }
 
 /**
