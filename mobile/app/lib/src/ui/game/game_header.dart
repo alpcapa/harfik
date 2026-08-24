@@ -207,6 +207,9 @@ class GameHeader extends StatelessWidget {
             child: TapTarget(
               onTap: onLogoTap,
               minHeight: 24,
+              // Sol kenar tahtanınkiyle (12 px) hizalı KALMALI — kutu 48 px
+              // geniş ama metin dar, ortalansa 4 px sağa kayardı.
+              alignment: Alignment.centerLeft,
               child: const Padding(
                 // Alttaki pay, header ile tahta arasında ZATEN var olan
                 // boşluğun tıklanabilir hâle gelmiş kısmı.

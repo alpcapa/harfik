@@ -41,6 +41,12 @@ class TapTarget extends StatelessWidget {
   final double? minWidth;
   final double? minHeight;
 
+  /// Çocuğun büyütülmüş kutu içindeki yeri. Varsayılan ORTA; ama bir kenara
+  /// HİZALI duran metinlerde ortalamak hizayı bozar — "← Geri" tahtanın sol
+  /// kenarıyla (12 px) hizalı olmak zorunda ve metni 48 px'lik kutuda
+  /// ortalamak onu 4 px sağa kaydırıyordu (CI yakaladı, 24 Ağustos 2026).
+  final Alignment alignment;
+
   const TapTarget({
     super.key,
     required this.child,
@@ -48,19 +54,24 @@ class TapTarget extends StatelessWidget {
     this.min = kMinTapTarget,
     this.minWidth,
     this.minHeight,
+    this.alignment = Alignment.center,
   });
 
   @override
   Widget build(BuildContext context) {
-    // `Center(widthFactor: 1, heightFactor: 1)`: kutu çocuğun doğal
+    // `Align(widthFactor: 1, heightFactor: 1)`: kutu çocuğun doğal
     // boyutunda BAŞLAR, sonra ConstrainedBox'ın asgarisine göre büyür
     // (RenderPositionedBox boyutunu `constraints.constrain(...)`tan
-    // geçirir). Faktörsüz `Center` gelen sınırların TAMAMINI kaplardı —
+    // geçirir). Faktörsüz olsaydı gelen sınırların TAMAMINI kaplardı —
     // bir `Row` içinde bu genişliği sonsuza götürür.
     final box = ConstrainedBox(
       constraints: BoxConstraints(
           minWidth: minWidth ?? min, minHeight: minHeight ?? min),
-      child: Center(widthFactor: 1, heightFactor: 1, child: child),
+      child: Align(
+          alignment: alignment,
+          widthFactor: 1,
+          heightFactor: 1,
+          child: child),
     );
     if (onTap == null) return box;
     return GestureDetector(
