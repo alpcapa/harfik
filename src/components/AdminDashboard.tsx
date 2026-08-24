@@ -368,9 +368,12 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
     title: 'Cihaz',
     body: (
       <>
-        Misafir ziyaretçilerin tarayıcısı mobil mi masaüstü mü. <b>"App mi web mi" DEĞİL</b> — bu
-        satır yalnızca oturum KAPALIYKEN yazılıyor, yani girişli kullanıcıları ve mobil
-        uygulamayı hiç kapsamıyor.
+        Misafir ziyaretçilerin işletim sistemi — iOS mü Android mi masaüstü mü.{' '}
+        <b>"App mi web mi" DEĞİL</b> — bu satır yalnızca oturum KAPALIYKEN yazılıyor, yani girişli
+        kullanıcıları ve mobil uygulamayı hiç kapsamıyor; iOS/Android satırları o cihazlardaki
+        TARAYICIYI da içeriyor, yalnız kurulu uygulamayı değil.{' '}
+        <b>"Mobil (eski)"</b>, 24 Ağustos 2026'dan ÖNCEki (yalnızca dokunmatik/fare ayrımı yapan)
+        kayıtlar — geriye dönük iOS/Android'e ayrıştırılamaz.
       </>
     ),
   },
@@ -2292,7 +2295,15 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       rows={guestDevices}
                       getKey={(row) => row.device_type}
                       getLabel={(row) =>
-                        row.device_type === 'mobile' ? 'Mobil' : row.device_type === 'desktop' ? 'Masaüstü' : 'Bilinmiyor'
+                        row.device_type === 'ios'
+                          ? 'iOS'
+                          : row.device_type === 'android'
+                            ? 'Android'
+                            : row.device_type === 'desktop'
+                              ? 'Masaüstü'
+                              : row.device_type === 'mobile'
+                                ? 'Mobil (eski)'
+                                : 'Bilinmiyor'
                       }
                       csvBaseName="kelimeki-cihaz"
                       infoHint={<InfoHint id="cihaz" onOpen={setHint} />}

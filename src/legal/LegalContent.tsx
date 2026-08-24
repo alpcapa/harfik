@@ -44,7 +44,7 @@ export function PrivacyBody({ contact }: { contact: ReactNode }) {
       <div className="flex flex-col gap-5">
         <P>
           Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, hangi verileri topladığımızı,
-          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 23 Ağustos 2026</P>
+          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 24 Ağustos 2026</P>
 
         <Section title="1. Veri Sorumlusu">
           <P>
@@ -193,8 +193,10 @@ export function PrivacyBody({ contact }: { contact: ReactNode }) {
             Kaç benzersiz ziyaretçimiz olduğunu ve kaç kişinin oyuna başladığını anlayabilmek
             için cihazınızda rastgele, kimliğinizle hiçbir şekilde ilişkilendirilmeyen anonim bir
             kod üretilir. Bu kod iki durumda sunucuya iletilir: girişsiz (misafir) ziyaretlerde
-            kaba cihaz tipiyle (mobil/masaüstü) birlikte, ve yapay zekaya karşı bir oyun
-            başlattığınızda oyuncu sayısıyla birlikte — ikisinde de varsa bir paylaşım
+            işletim sistemi tipiyle (iOS/Android/masaüstü) ve, tarayıcınızdan elde
+            edilebiliyorsa, işletim sistemi sürümü/cihaz modeliyle birlikte (bu ikisi bazı
+            tarayıcı ve cihazlarda hiç elde edilemez, o durumda boş kalır), ve yapay zekaya karşı
+            bir oyun başlattığınızda oyuncu sayısıyla birlikte — ikisinde de varsa bir paylaşım
             linkindeki kaynak etiketi eklenir. Üçüncü bir durum, uygulamada beklenmedik bir
             hata oluşmasıdır: hatayı bulup düzeltebilmemiz için hatanın teknik açıklaması,
             oluştuğu yerin teknik izi, kullandığınız sürüm ve platform (web/uygulama) aynı

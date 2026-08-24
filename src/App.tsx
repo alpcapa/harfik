@@ -69,6 +69,8 @@ import {
   markVisitLoggedToday,
   getStoredUtmSource,
   getDeviceType,
+  getDeviceModel,
+  getOsVersion,
   isStandaloneDisplay,
 } from './utils/visitTracking';
 import type { LocalGameSave, OnlineGame, WordMeaning } from './lib/database.types';
@@ -497,7 +499,14 @@ export default function App() {
     const anonId = getOrCreateAnonId();
     if (!anonId) return;
     markVisitLoggedToday();
-    void logGuestVisit(anonId, getStoredUtmSource(), getDeviceType(), isStandaloneDisplay());
+    void logGuestVisit(
+      anonId,
+      getStoredUtmSource(),
+      getDeviceType(),
+      isStandaloneDisplay(),
+      getOsVersion(),
+      getDeviceModel(),
+    );
   }, [authLoading, user]);
 
   // Devam eden oyunu (phase==='play', bitmemiş) her değişiklikte kaydeder.

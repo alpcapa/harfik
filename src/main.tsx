@@ -47,8 +47,10 @@ import { SEEN_INTRO_KEY } from './utils/onboarding';
 import { shareKelimekiLink } from './utils/shareLink';
 import {
   captureUtmSource,
+  getDeviceModel,
   getDeviceType,
   getOrCreateAnonId,
+  getOsVersion,
   getStoredUtmSource,
   isStandaloneDisplay,
   markVisitLoggedToday,
@@ -207,6 +209,10 @@ function paylasiKur(): void {
  * ⚠ `guest_visits`in artık İKİ yazarı var: burası ve `logGuestVisit`
  * (`src/lib/api.ts`). Tabloya kolon eklenirse İKİSİ de güncellenmeli.
  *
+ * `device_type` 24 Ağustos 2026'dan beri işletim sistemi (ios/android/
+ * desktop) — `os_version`/`device_model` iyi niyetle (best-effort) okunan,
+ * şimdilik hiçbir ekranda gösterilmeyen ek alanlar (bkz. `visitTracking.ts`).
+ *
  * Günde-bir-kez koruması `visitTracking.ts`'in ortak damgasını kullandığından,
  * kişi sonra "Oyna"ya basıp uygulamaya geçse bile `App.tsx` bunu görüp atlar —
  * mükerrer sayım olmaz.
@@ -232,6 +238,8 @@ function misafirZiyaretiBildir(): void {
       utm_source: getStoredUtmSource(),
       device_type: getDeviceType(),
       is_standalone: isStandaloneDisplay(),
+      os_version: getOsVersion(),
+      device_model: getDeviceModel(),
     }),
   }).catch(() => {
     // Telemetri hiçbir koşulda karşılama katmanını etkilemez.

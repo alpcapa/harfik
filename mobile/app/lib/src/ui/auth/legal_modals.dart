@@ -255,7 +255,7 @@ class PrivacyModal extends StatelessWidget {
       child: _StackedSections([
         const _P('Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, '
             'hangi verileri topladığımızı, nasıl kullandığımızı ve '
-            'haklarınızı açıklar. Son güncelleme: 23 Ağustos 2026.'),
+            'haklarınızı açıklar. Son güncelleme: 24 Ağustos 2026.'),
         const _Section('1. Veri Sorumlusu', [
           _P('Kelimeki, herhangi bir şirket ya da tüzel kişilik '
               'bulunmaksızın, bağımsız bir geliştirici tarafından bireysel '
@@ -396,8 +396,11 @@ class PrivacyModal extends StatelessWidget {
               'kaç kişinin oyuna başladığını anlayabilmek için cihazınızda '
               'rastgele, kimliğinizle hiçbir şekilde ilişkilendirilmeyen '
               'anonim bir kod üretilir. Bu kod iki durumda sunucuya iletilir: '
-              'girişsiz (misafir) ziyaretlerde kaba cihaz tipiyle '
-              '(mobil/masaüstü) birlikte, ve yapay zekaya karşı bir oyun '
+              'girişsiz (misafir) ziyaretlerde işletim sistemi tipiyle '
+              '(iOS/Android/masaüstü) ve, tarayıcınızdan elde edilebiliyorsa, '
+              'işletim sistemi sürümü/cihaz modeliyle birlikte (bu ikisi bazı '
+              'tarayıcı ve cihazlarda hiç elde edilemez, o durumda boş '
+              'kalır), ve yapay zekaya karşı bir oyun '
               'başlattığınızda oyuncu sayısıyla birlikte — ikisinde de varsa '
               'bir paylaşım linkindeki kaynak etiketi eklenir. Üçüncü bir '
               'durum, uygulamada beklenmedik bir hata oluşmasıdır: hatayı '

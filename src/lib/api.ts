@@ -346,18 +346,27 @@ export async function logGameStart(
  * `null` gönderilir ve admin RPC'sinde "direkt" olarak sayılır. `deviceType`
  * ve `isStandalone`, `src/utils/visitTracking.ts`'teki `getDeviceType`/
  * `isStandaloneDisplay`'den gelir — admin panelindeki ayrı "Cihaz" ve "Ana
- * Ekrana Ekleme" dökümleri için.
+ * Ekrana Ekleme" dökümleri için. `osVersion`/`deviceModel` (aynı dosyadaki
+ * `getOsVersion`/`getDeviceModel`) iyi niyetle (best-effort) okunan,
+ * şimdilik hiçbir ekranda gösterilmeyen ek alanlar — `null` gelmesi normal.
  */
 export async function logGuestVisit(
   anonId: string,
   utmSource: string | null,
-  deviceType: 'mobile' | 'desktop',
+  deviceType: 'ios' | 'android' | 'desktop',
   isStandalone: boolean,
+  osVersion: string | null,
+  deviceModel: string | null,
 ): Promise<void> {
   if (!supabase) return;
-  const { error } = await supabase
-    .from('guest_visits')
-    .insert({ anon_id: anonId, utm_source: utmSource, device_type: deviceType, is_standalone: isStandalone });
+  const { error } = await supabase.from('guest_visits').insert({
+    anon_id: anonId,
+    utm_source: utmSource,
+    device_type: deviceType,
+    is_standalone: isStandalone,
+    os_version: osVersion,
+    device_model: deviceModel,
+  });
   if (error) {
     console.error('[Kelimeki] logGuestVisit hatası:', error.message);
   }
