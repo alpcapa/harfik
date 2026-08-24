@@ -139,10 +139,10 @@ void main() {
         'if (Object.keys(state.placed).length > 0) return;');
     _guardCheck('mobile/app/lib/src/ui/game/game_screen.dart',
         'if (state.board[r][c] != null) {', 'showMeaningModal(',
-        'if (state.placed.isNotEmpty) return;');
+        'if (state.placed.isNotEmpty) {');
     _guardCheck('mobile/app/lib/src/ui/live/online_game_screen.dart',
         'if (state.board[r][c] != null) {', 'showMeaningModal(',
-        'if (state.placed.isNotEmpty) return;');
+        'if (state.placed.isNotEmpty) {');
   });
 
   testWidgets('modal: anlam listesi + iki kelime + bulunamadı hâli',

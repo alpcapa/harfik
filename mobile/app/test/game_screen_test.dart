@@ -986,6 +986,85 @@ void main() {
   // üçlüsü, hepsi route geçişinin ortasında. Kullanıcının seçtiği çözüm
   // tutarlılık: *"Neden bekleyen oyunlar gibi kısa bir yükleniyor
   // çıkartmıyoruz? Her yerde aynı deneyim en azından."*
+  // ⚠ IŞKALAMA KURTARMA (24 Ağustos 2026, kullanıcı Android'de bildirdi:
+  // taslak taşını geri almaya çalışırken komşu -oynanmış- taşa isabet
+  // ediyor). Tahta hücresi ~24 px ve büyütülemez; ama taslak sürerken
+  // oynanmış taşlar zaten ölü, o yüzden alanları taslak taşına devredildi.
+  group('taslak sürerken oynanmış taşa dokunma', () {
+    /// (5,5)'te ONAYLANMIŞ bir taş olan tahta — komşularına taslak konacak.
+    GameState oynanmisTasliDurum() {
+      final board = createEmptyBoard();
+      board[5][5] = const Tile(letter: 'A', pts: 1, owner: 1);
+      return craftedState().copyWith(board: board);
+    }
+
+    Future<GameController> pump(WidgetTester tester, GameState st) async {
+      final controller =
+          GameController(words: words, autoPlayAi: false, nowIso: () => '');
+      controller.dispatch(ResumeSavedAction(st));
+      await tester.pumpWidget(MaterialApp(
+        theme: kelimekiTheme(),
+        home: GameScreen(
+            controller: controller, words: words, auth: AuthService.fake()),
+      ));
+      await tester.pump();
+      return controller;
+    }
+
+    testWidgets('TEK komşu taslak varsa o geri alınır', (tester) async {
+      await setPhoneViewSize(tester, const Size(420, 900));
+      final c = await pump(tester, oynanmisTasliDurum());
+      c.dispatch(const SelectTileAction(0));
+      c.dispatch(const PlaceTileAction(r: 4, c: 5)); // oynanmışın ÜSTÜ
+      await tester.pump();
+      expect(c.state.placed.length, 1, reason: 'taslak kurulmalıydı');
+
+      // Kullanıcının ıskaladığı yer: taslağın ALTINDAKİ oynanmış taş.
+      await tester.tap(boardCell(5, 5));
+      await tester.pumpAndSettle();
+
+      expect(c.state.placed, isEmpty,
+          reason: 'komşudaki taslak taşı geri alınmalıydı — ıskalama '
+              'kurtarma tam olarak bunun için var');
+    });
+
+    testWidgets('İKİ komşu taslak varsa TAHMİN ETMEZ', (tester) async {
+      await setPhoneViewSize(tester, const Size(420, 900));
+      final c = await pump(tester, oynanmisTasliDurum());
+      c.dispatch(const SelectTileAction(0));
+      c.dispatch(const PlaceTileAction(r: 4, c: 5)); // üst
+      c.dispatch(const SelectTileAction(1));
+      c.dispatch(const PlaceTileAction(r: 6, c: 5)); // alt
+      await tester.pump();
+      expect(c.state.placed.length, 2);
+
+      // Hücrenin TAM ORTASINA dokunuş: iki aday da eşit uzaklıkta.
+      await tester.tap(boardCell(5, 5));
+      await tester.pumpAndSettle();
+
+      expect(c.state.placed.length, 2,
+          reason: 'belirsizlikte hiçbir taş geri alınmamalı — yanlış taşı '
+              'geri almak, hiç tepki vermemekten DAHA kötü');
+    });
+
+    testWidgets('BOŞ hücreye dokunmak hâlâ taş koyar (kurtarma bulaşmaz)',
+        (tester) async {
+      await setPhoneViewSize(tester, const Size(420, 900));
+      final c = await pump(tester, oynanmisTasliDurum());
+      c.dispatch(const SelectTileAction(0));
+      c.dispatch(const PlaceTileAction(r: 4, c: 5));
+      await tester.pump();
+
+      c.dispatch(const SelectTileAction(0));
+      await tester.tap(boardCell(4, 6)); // taslağın YANINDAKİ boş hücre
+      await tester.pumpAndSettle();
+
+      expect(c.state.placed.length, 2,
+          reason: 'boş hücreler dokunulmadan kalmalı — kelimeyi dizerken bir '
+              'sonraki harfi koymak zorlaşmamalı');
+    });
+  });
+
   testWidgets('geçiş animasyonu sürerken ekran "Yükleniyor…" gösterir',
       (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));

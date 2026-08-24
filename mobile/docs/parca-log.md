@@ -5464,12 +5464,36 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        DEĞİL** — sabit bir kaydırma büyük hedeflerde işi bozar; doğru
        cevap hedefi büyütmek (48 dp turu) ve büyütülemeyende ıskalamayı
        zararsız yapmak.
+     - **AYNI TURUN İKİNCİ PARÇASI — IŞKALAMA KURTARMA (kullanıcı sordu:
+       *"yanyana 3 harf koydum ve ortadakini geri almak istiyorum, o zaman
+       yanlışlıkla yandaki taş geri gelmez değil mi?"*):** sessiz ıskalama
+       acıyı aldı ama isabeti düzeltmedi. Taslak sürerken oynanmış taşlar
+       ZATEN ölü olduğundan alanlarını taslak taşına devretmek bedava:
+       oynanmış bir taşa dokunulduğunda komşusundaki taslak geri alınır.
+       - **Kullanıcının sorduğu vaka risksiz:** yan yana üç taslak taşının
+         ortasına dokunmak zaten TASLAK hücresine düşer, kural hiç
+         çalışmaz. Kural YALNIZCA oynanmış hücrelerden tetiklenir.
+       - **BOŞ hücreler dokunulmaz** — yoksa kelimeyi dizerken bir sonraki
+         harfi yan hücreye koymak zorlaşırdı. (Testle kilitli.)
+       - **Gerçek belirsizlik vakası VAR ve tahmin edilmiyor:** mevcut bir
+         taşın hem üstüne hem altına harf konduğunda (tam da "iki kelimenin
+         birleştiği yer") o taşın İKİ komşusu birden taslak olur. O zaman
+         dokunuş NOKTASINA en yakın olan seçilir; mesafeler eşitse ya da
+         ızgara ölçülemiyorsa hiçbir şey yapılmaz — yanlış taşı geri almak,
+         hiç tepki vermemekten daha kötü. Bunun için `onCellTap` artık
+         dokunuşun global noktasını da taşıyor (`onTap` → `onTapUp`).
+       - **Web'e uygulanmadı (bilinçli, tarihli):** webin birincil girdisi
+         fare ve isabet sorunu yok; oradaki "sessiz ıskalama" kuralı duruyor.
+         Kurtarmanın web sürümü `docs/decisions/product-backlog.md`'de.
      - **Test:** `meaning_test.dart` korumayı DÖRT dosyada birden ve SIRAYA
        bakarak kilitliyor (tahta-taşı dalının İÇİNDE, anlam çağrısından
        ÖNCE). Widget testi mümkün değil: `MeaningStore` gerçek sqflite
        async'i kullanıyor ve `testWidgets`ın sahte zamanında çözülmüyor,
        store'suz bir ekranda ise `store == null` dalı zaten erken dönüp
-       korumayı değil EKSİKLİĞİ ölçerdi.
+       korumayı değil EKSİKLİĞİ ölçerdi. Kurtarmanın kendisi ise GERÇEK
+       widget testleriyle kilitli (`game_screen_test.dart`, üç vaka: tek
+       komşu → geri alınır, iki komşu → dokunulmaz, boş hücre → hâlâ taş
+       konur).
 
    - ✅ **Parça 133 — bölge kuralı: kendi bloğundaki DESTEKSİZ rakip taşı
      artık zinciri kesmiyor (24 Ağustos 2026, kullanıcı gerçek bir oyunda
