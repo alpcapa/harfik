@@ -1,4 +1,28 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- ⚠ BU SATIRI SİLME. Uygulamanın sunucuyla konuşan HER özelliği buna
+         bağlı: giriş/kayıt, Canlı oyun, k-lig, sohbet, telemetri.
+
+         Flutter'ın şablonu INTERNET'i YALNIZCA `debug/` ve `profile/`
+         manifestlerine koyuyor (hot reload için); `main/` release derlemesine
+         girer ve orada yoktu. Kullandığımız eklentilerin HİÇBİRİ de eklemiyor
+         (`connectivity_plus` yalnız ACCESS_NETWORK_STATE veriyor) — yani
+         release APK internetsiz çıkıyordu.
+
+         BULUNDU 24 Ağustos 2026, ilk gerçek cihaz kurulumunda: giriş denemesi
+         `Failed host lookup: '<ref>.supabase.co' (No address associated with
+         hostname, errno = 7)` veriyordu. Hata DNS'e benziyor ama sebebi ağ
+         değil izin: izin yokken Android'in çözümleyicisi de kapalı.
+
+         Neden bugüne kadar görünmedi: cihaz testleri GitHub Pages'teki Flutter
+         WEB derlemesinde yapılıyordu (orada Android izin modeli yok) ve debug
+         APK yukarıdaki debug manifestinden izni otomatik alıyor. share_plus/
+         iPad vakasıyla (Parça 122) aynı sınıf: web derlemesi native-only
+         kusurları yapısal olarak gizliyor.
+
+         Regresyonu CI'daki "İnternet izni birleşmiş manifeste girdi mi"
+         adımı zorluyor — kaynağı değil DERLENMİŞ çıktıyı okuyor, çünkü izin
+         buraya yazılmadan da bir eklentiden gelebilir ya da tam tersi. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="Kelimeki"
         android:name="${applicationName}"

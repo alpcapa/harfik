@@ -1869,6 +1869,16 @@ Cihaza geçince koşulacak liste aşağıda ayrı bir bölüm: **"FAZ B — ciha
 özel tur"** (orada ayrıca iOS/Android arasında FARKLI olabilecek maddeler
 ve platform başına tek seferlik ön koşullar var).
 
+- **Android izinleri — sunucuya dokunan HER madde (24 Ağustos 2026'da
+  ölçüldü).** Web derlemesinde Android izin modeli hiç yok, debug APK ise
+  `INTERNET`i debug manifestinden otomatik alıyor; yani "web'de giriş
+  yapabiliyorum" release APK hakkında HİÇBİR ŞEY kanıtlamıyor. Gerçekten
+  yaşandı: izin `main/` manifestinde yoktu ve release APK'da giriş
+  `Failed host lookup: … (No address associated with hostname, errno = 7)`
+  veriyordu (Parça 131). Mesaj DNS hatasına benziyor — o yüzden bu hatayı
+  görürsen önce izni, sonra ağı şüphelen. Artık CI birleşmiş manifesti
+  okuyup zorluyor, ama kural aynı: **auth/Canlı oyun/k-lig/sohbet
+  maddelerinin hepsi ilk kez gerçek cihazda koşulmalı.**
 - **Bölüm 6 (Paylaşma).** `share_plus` web'de tarayıcının Web Share
   API'sine düşer; iOS/Android'in native paylaş sayfası DEĞİL. Görsel
   yakalama + dosya eki davranışı farklı.
