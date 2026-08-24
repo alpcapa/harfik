@@ -295,9 +295,20 @@ class BoardWidget extends StatelessWidget {
   /// Alt bilgi şeridi — solda "Hamleler" (+ Canlı oyunda "· Mesajlaşma"),
   /// sağda "Çevrimdışı" uyarısı (yalnızca bağlantı yokken) ve
   /// "Nasıl Oynanır?".
+  /// Şeridin DİKEY dolgusu KABIN değil her ÖĞENİN üzerinde — dokunma
+  /// hedefleri 18 px'te kalmasın diye (22 Ağustos 2026 jest denetiminde
+  /// ölçülmüş, kullanıcı "kaç defa basmam gerekti" diye bildirmişti).
+  /// Kabın kendi `fromLTRB(10, 4, 10, 10)` dolgusundan BURAYA taşındı:
+  /// şeridin dış ölçüsü (4 + 18 + 10 = 32) DEĞİŞMEZ, çünkü satırın boyunu
+  /// artık en uzun çocuk belirliyor. **BEŞ öğenin de taşıması ŞART** —
+  /// yalnızca dokunulabilirler büyürse ayraç ve "Çevrimdışı" 32 px'lik
+  /// satırda ortalanıp ~3 px kayar (dolgu 4/10 ile asimetrik).
+  static const EdgeInsets _footerItemPadding =
+      EdgeInsets.only(top: 4, bottom: 10);
+
   Widget _footer() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 4, 10, 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -308,73 +319,82 @@ class BoardWidget extends StatelessWidget {
                 GestureDetector(
                   onTap: onOpenHistory,
                   behavior: HitTestBehavior.opaque,
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      DocumentIcon(),
-                      SizedBox(width: 4),
-                      Text(
-                        'Hamleler',
-                        style: TextStyle(
-                          fontFamily: 'SpaceMono',
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                          color: kAccent,
+                  child: const Padding(
+                    padding: _footerItemPadding,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        DocumentIcon(),
+                        SizedBox(width: 4),
+                        Text(
+                          'Hamleler',
+                          style: TextStyle(
+                            fontFamily: 'SpaceMono',
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                            color: kAccent,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               if (onOpenMessaging != null) ...[
                 const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 6),
+                  padding: EdgeInsets.fromLTRB(6, 4, 6, 10),
                   child: Text('·',
                       style: TextStyle(fontSize: 12, color: kMuted)),
                 ),
                 GestureDetector(
                   onTap: onOpenMessaging,
                   behavior: HitTestBehavior.opaque,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _ChatBubbleIcon(),
-                          SizedBox(width: 4),
-                          Text(
-                            'Mesajlaşma',
-                            style: TextStyle(
-                              fontFamily: 'SpaceMono',
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                              color: kAccent,
+                  // Padding Stack'in DIŞINDA: rozet `Positioned(top: -4,
+                  // right: -4)` ile Row'un kutusuna çapalı, içeri alınsa
+                  // dolgu kadar kayardı.
+                  child: Padding(
+                    padding: _footerItemPadding,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _ChatBubbleIcon(),
+                            SizedBox(width: 4),
+                            Text(
+                              'Mesajlaşma',
+                              style: TextStyle(
+                                fontFamily: 'SpaceMono',
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                                color: kAccent,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      // Konum web'de ölçülerek seçildi (`-top-1 -right-1`):
-                      // rozet satır içi olsaydı şeride ~20px eklerdi ve dar
-                      // telefonlarda "Nasıl Oynanır?" ile çakışırdı. Beyaz
-                      // halka web'in `ring-2 ring-panel`i — rozet altındaki
-                      // mavi etiketten ayrışsın diye.
-                      if (unreadMessageCount > 0)
-                        Positioned(
-                          top: -4,
-                          right: -4,
-                          child: Container(
-                            key: const ValueKey('chat-unread-badge'),
-                            padding: const EdgeInsets.all(2),
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: CountBadge(count: unreadMessageCount),
-                          ),
+                          ],
                         ),
-                    ],
+                        // Konum web'de ölçülerek seçildi (`-top-1 -right-1`):
+                        // rozet satır içi olsaydı şeride ~20px eklerdi ve dar
+                        // telefonlarda "Nasıl Oynanır?" ile çakışırdı. Beyaz
+                        // halka web'in `ring-2 ring-panel`i — rozet altındaki
+                        // mavi etiketten ayrışsın diye.
+                        if (unreadMessageCount > 0)
+                          Positioned(
+                            top: -4,
+                            right: -4,
+                            child: Container(
+                              key: const ValueKey('chat-unread-badge'),
+                              padding: const EdgeInsets.all(2),
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                              child: CountBadge(count: unreadMessageCount),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -390,7 +410,7 @@ class BoardWidget extends StatelessWidget {
                   builder: (context, _) => onlineStatus!.online
                       ? const SizedBox.shrink()
                       : const Padding(
-                          padding: EdgeInsets.only(right: 8),
+                          padding: EdgeInsets.fromLTRB(0, 4, 8, 10),
                           // Punto/aralık, şeritteki KARDEŞ kontrollerle
                           // (Hamleler · Mesajlaşma · Nasıl Oynanır?) birebir
                           // aynı — yalnızca rengi farklı. Web'de bu bir kez
@@ -415,22 +435,25 @@ class BoardWidget extends StatelessWidget {
                 GestureDetector(
                   onTap: onOpenHelp,
                   behavior: HitTestBehavior.opaque,
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _HelpIcon(),
-                      SizedBox(width: 4),
-                      Text(
-                        'Nasıl Oynanır?',
-                        style: TextStyle(
-                          fontFamily: 'SpaceMono',
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                          color: kAccent,
+                  child: const Padding(
+                    padding: _footerItemPadding,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _HelpIcon(),
+                        SizedBox(width: 4),
+                        Text(
+                          'Nasıl Oynanır?',
+                          style: TextStyle(
+                            fontFamily: 'SpaceMono',
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                            color: kAccent,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
             ],

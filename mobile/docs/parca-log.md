@@ -5154,6 +5154,68 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ayraç dengesi, (c) her çapanın `grep`le kaynağında teyidi. Dart
        yarısının kanıtı yine CI.
 
+   - ✅ **Parça 132 — alt şeridin dokunma hedefleri 18 → 32 px (24 Ağustos
+     2026, kullanıcı cihazda bildirdi):** Play yükleme akışı kullanıcı
+     tarafından bilerek durduruldu: *"Buna başlamadan app'de dikkatimi çeken
+     1-2 konu var… board altındaki hamleler, mesajlar ve nasıl oynanır
+     linkleri tıklayınca hemen açılmıyorlar. Kaç defa basmam gerekti."*
+     - **Teşhis yeni DEĞİL — 22 Ağustos jest denetiminde ZATEN ölçülmüş ve
+       bilinçli olarak ertelenmişti** (`docs/decisions/touch-ux-bugs.md` →
+       "Denetimde bulunan ama DÜZELTİLMEYEN"). Orada hedefler 18 px ölçülmüş
+       (WCAG 2.2 asgarisi 24), ama "hedefler GENİŞ olduğundan pratik ıskalama
+       riski çok düşük" denmişti. **Gerçek kullanım o yargıyı çürüttü.**
+     - **Ertelemenin TEKNİK gerekçesi de yanlıştı, ve çözüm oradan çıktı.**
+       Not "Flutter'da negatif margin yok, `Padding` şeridi gerçekten 12 px
+       büyütür" diyordu — bu, dolgunun EKLENECEĞİNİ varsayıyor. Oysa dolgu
+       zaten vardı, sadece YANLIŞ YERDEYDİ (kapta). Kaptan alınıp her ÖĞEYE
+       taşınınca şeridin dış ölçüsü (4 + 18 + 10 = **32**) hiç değişmiyor —
+       satırın boyunu artık en uzun çocuk belirliyor — ama hedefler 18 → 32
+       çıkıyor. Negatif margin GEREKMİYOR, yani iki platform AYNI çözümü
+       kullanıyor ve "ayrı bir düzen turu" da gerekmedi.
+     - **Web KANONİK ve web de kırıktı** (metodoloji gereği önce oraya
+       bakıldı): `Board.tsx`'in üç düğmesinde de dolgu yoktu, kap
+       `px-[10px] pb-[10px] pt-1` taşıyordu — portun `fromLTRB(10, 4, 10, 10)`
+       ile BİREBİR aynısı. Yani bu bir port sapması değil, ortak bir kusur;
+       ikisi de AYNI PR'da düzeltildi.
+     - **BEŞ öğe de dolgu taşımak ZORUNDA** (Hamleler · ayraç `·` ·
+       Mesajlaşma · Çevrimdışı · Nasıl Oynanır?). Yalnızca dokunulabilirler
+       büyürse ayraç ve "Çevrimdışı" 32 px'lik satırda ortalanır ve dolgu
+       asimetrik olduğundan (4/10) ~3 px kayarlar. Portta ortak değer
+       `_footerItemPadding = EdgeInsets.only(top: 4, bottom: 10)`; ayraç ve
+       "Çevrimdışı" kendi yatay değerlerini koruyor
+       (`fromLTRB(6, 4, 6, 10)` / `fromLTRB(0, 4, 8, 10)`).
+     - **Rozet METİN kutusuna çapalı KALDI:** portta `Padding` bilerek
+       `Stack`in DIŞINDA (rozet `Positioned(top: -4, right: -4)` ile Row'un
+       kutusuna çapalı; içeri alınsa dolgu kadar kayardı). Web'de karşılığı
+       `relative`in iç bir `<span>`e taşınması. Ölçüldü: rozetin şeride göre
+       konumu ÖNCE de SONRA da aynı (`top = 0`) — hiç oynamadı.
+     - **ÖLÇÜLDÜ** (web tarafı; derlenmiş `dist/assets/*.css` + Chromium,
+       DPR 2, `document.fonts.ready`, `http://` üzerinden, sınıf dizeleri
+       `Board.tsx`'ten OKUNARAK), 390 px / çevrimiçi:
+       Hamleler **1418 → 2521** px², Mesajlaşma **1700 → 3022** px²,
+       Nasıl Oynanır? **2265 → 4027** px²; şerit yüksekliği **32 → 32**
+       (değişmedi), yatay taşma 0 (320/360/390/834/1194'te). ÖNCE
+       ölçümündeki 1418/2265, 22 Ağustos denetiminin kayda geçirdiği
+       sayılarla BİREBİR aynı — harness'in sadık olduğunun kanıtı.
+     - **Regresyon kilidi `layout_parity_test.dart`'ta** (bu tür bir geri
+       alma hiçbir widget testini düşürmez): kabın yalnızca yatay dolgu
+       taşıdığı, `_footerItemPadding`in 4/10 olduğu, İKİ tarafta da tam
+       **5** öğenin dikey dolgu taşıdığı ve rozetin çapası ölçülüyor.
+       **Negatif eş dördü de ayrı ayrı:** web düzeltmesi geri alınınca kap
+       eşleşmesi + rozet çapası kayboluyor ve `pt-1 pb-[10px]` sayısı
+       5 → 0; portta dolgu kaba geri konunca kap eşleşmesi kayboluyor ve
+       4/10 sayısı 5 → 3.
+     - **44 px'lik iOS asgarisi yine UYGULANMADI** (Parça 68'in aynı
+       gerekçesi): satır ~13 px yüksekliğinde ve 44 px hem kardeş
+       kontrolleri hem kartın kendi dokunuşunu yutardı. Çıta WCAG'ın
+       24'ünün üstünde, şeridin kendi boyunda (32).
+     - **Doğrulama sınırı:** Flutter SDK bu ortamda YOK — `flutter analyze`
+       / `flutter test` KOŞULAMADI, Dart yarısının kanıtı CI.
+       `board_widget.dart` parantez/ayraç dengesi elle tarandı (0/0/0) ve
+       parite testinin regex'leri gerçek kaynaklara karşı Node'da
+       (JS ≈ Dart regex semantiği) tek tek sınandı. Web tarafı temiz:
+       `npm run lint`, `npm run build`, `verify-*` ve Playwright **29/29**.
+
    - ✅ **Parça 131 — release APK'da İNTERNET İZNİ YOKTU (24 Ağustos 2026,
      ilk gerçek cihaz kurulumu):** Kullanıcı Play için ekran görüntüsü
      çekmek üzere `mobile-latest` APK'sını Android telefonuna kurdu, tanıtımı
