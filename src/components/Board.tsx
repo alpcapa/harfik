@@ -541,40 +541,56 @@ export function Board({
       {/* Alt bilgi şeridi (Hamleler / Mesajlaşma / Nasıl Oynanır?) — kartın
           kendi zemini ve gölgesiyle bütünleşik bir alt bölüm; ayrı, asılı
           kalan bir beyaz şerit değil. */}
+      {/* Şeridin DİKEY dolgusu KABIN değil her ÖĞENİN üzerinde — dokunma
+          hedefleri 18px'te kalmasın diye (22 Ağustos 2026 jest denetiminde
+          ölçülmüş, kullanıcı "kaç defa basmam gerekti" diye bildirmişti).
+          Kabın kendi `pb-[10px] pt-1` dolgusundan BURAYA taşındı: şeridin
+          dış ölçüsü (4 + 18 + 10 = 32) DEĞİŞMEZ, çünkü satırın boyunu artık
+          en uzun çocuk belirliyor. **BEŞ öğenin de taşıması ŞART** —
+          yalnızca dokunulabilirler büyürse ayraç ve "Çevrimdışı" 32px'lik
+          satırda ortalanıp ~3px kayar (dolgu 4/10 ile asimetrik).
+          Flutter portu (`board_widget.dart` → `_footerItemPadding`) AYNI
+          değerleri taşıyor; biri değişirse öteki de değişmeli. */}
       {!hideFooter && (
-        <div className="relative z-10 flex items-center justify-between gap-2 shrink-0 px-[10px] pb-[10px] pt-1 w-full">
+        <div className="relative z-10 flex items-center justify-between gap-2 shrink-0 px-[10px] w-full">
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={onOpenHistory}
-              className="flex items-center gap-1 text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
+              className="flex items-center gap-1 pt-1 pb-[10px] text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
             >
               <DocumentIcon />
               Hamleler
             </button>
             {onOpenMessaging && (
               <>
-                <span className="text-muted text-[12px] shrink-0">·</span>
+                <span className="text-muted text-[12px] pt-1 pb-[10px] shrink-0">·</span>
                 <button
                   onClick={onOpenMessaging}
-                  className="relative flex items-center gap-1 text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
+                  className="flex items-center pt-1 pb-[10px] text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
                 >
-                  <ChatBubbleIcon />
-                  Mesajlaşma
-                  {/* Konum ÖLÇÜLEREK seçildi, tercihle değil: rozet mutlak
-                      konumlu olmak ZORUNDA (satır içi olsaydı 20px eklerdi
-                      ve 360px'lik bir telefonda "Nasıl Oynanır?" ile çakışan
-                      şerit zaten yalnızca 7.8px boşluk taşıyor). Aynı
-                      sebeple sağa taşma 4px'ten (`-right-1`) fazla olamaz.
-                      `ring-2 ring-panel`: rozet, altındaki mavi etiketten
-                      ayrışsın diye — halkasız hâli ölçüm turunda okunaksız
-                      çıktı. Etiketin son iki harfini kapatması bilinen ve
-                      kabul edilen bedel. */}
-                  {unreadMessageCount > 0 && (
-                    <CountBadge
-                      count={unreadMessageCount}
-                      className="absolute -top-1 -right-1 ring-2 ring-panel"
-                    />
-                  )}
+                  {/* `relative` dolgunun İÇİNDE: rozet Flutter'daki gibi
+                      metin kutusuna çapalı kalsın diye (orada da Padding
+                      Stack'in DIŞINDA). Dolgulu <button>'a çapalansaydı
+                      rozet 4px aşağı kayardı. */}
+                  <span className="relative flex items-center gap-1">
+                    <ChatBubbleIcon />
+                    Mesajlaşma
+                    {/* Konum ÖLÇÜLEREK seçildi, tercihle değil: rozet mutlak
+                        konumlu olmak ZORUNDA (satır içi olsaydı 20px eklerdi
+                        ve 360px'lik bir telefonda "Nasıl Oynanır?" ile çakışan
+                        şerit zaten yalnızca 7.8px boşluk taşıyor). Aynı
+                        sebeple sağa taşma 4px'ten (`-right-1`) fazla olamaz.
+                        `ring-2 ring-panel`: rozet, altındaki mavi etiketten
+                        ayrışsın diye — halkasız hâli ölçüm turunda okunaksız
+                        çıktı. Etiketin son iki harfini kapatması bilinen ve
+                        kabul edilen bedel. */}
+                    {unreadMessageCount > 0 && (
+                      <CountBadge
+                        count={unreadMessageCount}
+                        className="absolute -top-1 -right-1 ring-2 ring-panel"
+                      />
+                    )}
+                  </span>
                 </button>
               </>
             )}
@@ -586,14 +602,14 @@ export function Board({
                 diye bildirdi (14 Ağustos 2026): tam da çevrimdışıyken
                 okunması gereken tek gösterge, şeridin en küçük yazısıydı. */}
             {!online && (
-              <div className="text-[12px] font-mono font-bold tracking-[0.5px] text-red flex items-center shrink-0">
+              <div className="text-[12px] font-mono font-bold tracking-[0.5px] text-red flex items-center pt-1 pb-[10px] shrink-0">
                 Çevrimdışı
               </div>
             )}
             {onOpenHelp && (
               <button
                 onClick={onOpenHelp}
-                className="flex items-center gap-1 text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
+                className="flex items-center gap-1 pt-1 pb-[10px] text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
               >
                 <HelpIcon />
                 Nasıl Oynanır?

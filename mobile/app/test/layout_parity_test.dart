@@ -384,4 +384,65 @@ void main() {
           '_dragThresholdFor(e.kind)');
     }
   });
+
+  test('alt şerit: dikey dolgu KABINDA değil BEŞ öğenin de üzerinde', () {
+    // 24 Ağustos 2026 — kullanıcı cihazda bildirdi: *"board altındaki
+    // hamleler, mesajlar ve nasıl oynanır linkleri tıklayınca hemen
+    // açılmıyorlar. Kaç defa basmam gerekti."* Kök sebep 22 Ağustos jest
+    // denetiminde ZATEN ölçülüp bilinçli olarak ertelenmişti: dolgu KABIN
+    // üzerindeydi, dokunma hedefleri 18px kalıyordu (WCAG 2.2 asgarisi 24).
+    // Dolgu her ÖĞEYE taşındı — şeridin DIŞ ölçüsü (4 + 18 + 10 = 32)
+    // değişmiyor, hedefler 18 → 32 çıkıyor. Ölçüldü (390px, çevrimiçi):
+    // Hamleler 1418 → 2521 px², Nasıl Oynanır? 2265 → 4027 px².
+    //
+    // Bu test tam olarak GERİ ALINMAYI yakalıyor: dolgu kaba geri konursa
+    // hedefler sessizce 18'e döner ve hiçbir widget testi fark etmez.
+    const web = 'src/components/Board.tsx';
+    const dart = 'mobile/app/lib/src/ui/game/board_widget.dart';
+    final w = readRepoFile(web);
+    final d = readRepoFile(dart);
+
+    // 1) Kap YALNIZCA yatay dolgu taşır.
+    expect(
+        pick(
+            w,
+            RegExp(r'z-10 flex items-center justify-between gap-2 shrink-0 '
+                r'(px-\[10px\]) w-full'),
+            '$web alt şerit kabı — dikey dolgu hâlâ KAPTA mı?'),
+        'px-[10px]');
+    expect(
+        pick(d, RegExp(r'padding: const (EdgeInsets\.symmetric\(horizontal: 10\))'),
+            '$dart alt şerit kabı yalnızca yatay dolgu taşımıyor'),
+        'EdgeInsets.symmetric(horizontal: 10)');
+
+    // 2) Ortak öğe dolgusu iki tarafta AYNI: üst 4 (pt-1), alt 10.
+    expect(
+        pick(d, RegExp(r'_footerItemPadding =\s*(EdgeInsets\.only\(top: 4, bottom: 10\))'),
+            '$dart _footerItemPadding tanımı'),
+        'EdgeInsets.only(top: 4, bottom: 10)');
+
+    // 3) BEŞ öğenin de taşıması ŞART — yalnızca dokunulabilirler büyürse
+    //    ayraç ve "Çevrimdışı" 32px'lik satırda ortalanıp ~3px kayar.
+    expect(RegExp(r'pt-1 pb-\[10px\]').allMatches(w).length, 5,
+        reason: '$web: alt şeritteki BEŞ öğenin de `pt-1 pb-[10px]` '
+            'taşıması gerekiyor (Hamleler · ayraç · Mesajlaşma · '
+            'Çevrimdışı · Nasıl Oynanır?)');
+    final dartDikey = RegExp(r'padding: _footerItemPadding').allMatches(d).length +
+        RegExp(r'EdgeInsets\.fromLTRB\(\d+, 4, \d+, 10\)').allMatches(d).length;
+    expect(dartDikey, 5,
+        reason: '$dart: alt şeritteki BEŞ öğenin de 4/10 dikey dolgu '
+            'taşıması gerekiyor');
+
+    // 4) Rozet METİN kutusuna çapalı kalmalı: web'de `relative` iç span'de,
+    //    portta Padding Stack'in DIŞINDA. Dolgulu kutuya çapalanırsa
+    //    `-top-1` 4px aşağı kayar.
+    expect(
+        pick(w, RegExp(r'<span className="(relative flex items-center gap-1)">'),
+            '$web: rozetin çapası iç `relative` span değil'),
+        'relative flex items-center gap-1');
+    expect(
+        pick(d, RegExp(r'child: Padding\(\s*padding: _footerItemPadding,\s*child: (Stack)\('),
+            '$dart: Padding Stack\'in DIŞINDA değil'),
+        'Stack');
+  });
 }
