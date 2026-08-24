@@ -220,9 +220,22 @@ void main() {
         int.parse(
             pick(web, RegExp(r"BACK_FONT_SIZE = '(\d+)px'"), 'BACK_FONT_SIZE')),
         reason: 'etiket puntosu ayrışmış');
-    expect(int.parse(pick(port, RegExp(r'kBackGap = (\d+)'), 'kBackGap')),
-        int.parse(pick(web, RegExp(r'BACK_GAP = (\d+)'), 'BACK_GAP')),
-        reason: 'logo↔etiket boşluğu ayrışmış');
+    // ⚠ `BACK_GAP` BİLİNÇLİ OLARAK KARŞILAŞTIRILMIYOR (24 Ağustos 2026):
+    // webde etiket `<button>`ın İÇİNDE mutlak konumlu bir `<span>` ve
+    // tıklama ataya kabardığından hem 3 px yukarıda durabiliyor hem
+    // tıklanabiliyor. Flutter'da kutusunun dışına taşan çocuk hiç dokunuş
+    // ALMAZ, bu yüzden port etiketi header satırının ALTINA ayrı bir
+    // dokunulabilir satır olarak koyuyor — logoyla arası satırın boyundan
+    // türüyor, sabit bir `kBackGap` artık yok. Ayrışan şey değerler değil
+    // YAPI; karşılaştırılacak ortak bir sayı kalmadı.
+    expect(port.contains('kBackGap'), isFalse,
+        reason: 'kBackGap geri gelmişse yapı da geri dönmüş demektir — '
+            'o zaman bu testi web ile yeniden karşılaştıracak şekilde aç');
+    expect(int.parse(pick(port, RegExp(r'kBackBottomPad = (\d+)'),
+            'kBackBottomPad')),
+        greaterThanOrEqualTo(8),
+        reason: 'etiketin altındaki dokunma payı kaybolmuş — kullanıcının '
+            '"biraz altına gelirse çalışmıyor" şikayeti tam buydu');
   });
 
   test('RankSeal geometrisi + punto merdiveni', () {

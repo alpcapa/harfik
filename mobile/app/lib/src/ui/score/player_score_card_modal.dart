@@ -28,6 +28,7 @@ import 'game_history_modal.dart';
 import 'klig_mark.dart';
 import 'leaderboard_modal.dart';
 import 'score_stats_section.dart';
+import '../tap_target.dart';
 import '../tokens.dart';
 
 const _text = kText;
@@ -246,7 +247,7 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
   Widget _kligButton() {
     final totalScore = _statsByTab[StatsTab.all]?.totalScore ?? 0;
     final auth = widget.auth;
-    return GestureDetector(
+    return TapTarget(
       onTap: auth == null
           ? null
           : () => showLeaderboard(context,
@@ -254,7 +255,8 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
               stats: widget.stats,
               games: widget.games,
               friends: widget.friends),
-      behavior: HitTestBehavior.opaque,
+      minWidth: 0,
+      alignment: Alignment.centerRight,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [

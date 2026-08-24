@@ -159,7 +159,32 @@ class ScoreStatsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!loaded) {
-      return const KLoadingNote(vertical: 16);
+      // ⚠ YÜKLENİRKEN DE TAM IZGARA ÇİZİLİR (24 Ağustos 2026, kullanıcı
+      // cihazda bildirdi): *"önce 1-2 saniye bir popup görüyorum, sonra
+      // sıralama üstüne geliyor... Halbuki tek pencere açılmalı ve datanın
+      // olduğu kısımda yükleniyor yazmalı"*. Önceden burası tek satırlık
+      // bir metindi; `KModal` yüksekliğini içeriğe göre aldığından pencere
+      // önce küçük açılıp veri gelince büyüyordu — iki ayrı pencere gibi.
+      // Aynı ızgara "—" değerleriyle çizilerek yükseklik BAŞTAN doğru
+      // ayrılıyor, sayılar yerinde doluyor.
+      final bos = _buildCells(null);
+      List<_Cell> tire(List<_Cell> cells) => [
+            for (final c in cells)
+              _Cell(c.label, '—', color: _muted, span2: c.span2)
+          ];
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const KLoadingNote(vertical: 4),
+          const _SectionLabel('OYUNCU İSTATİSTİKLERİ'),
+          const SizedBox(height: 6),
+          _CellsGrid(cells: tire(bos.player)),
+          const SizedBox(height: 16),
+          const _SectionLabel('OYUN İSTATİSTİKLERİ'),
+          const SizedBox(height: 6),
+          _CellsGrid(cells: tire(bos.game)),
+        ],
+      );
     }
     final cells = _buildCells(stats);
     return Column(

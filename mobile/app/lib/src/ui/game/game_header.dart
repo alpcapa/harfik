@@ -23,7 +23,11 @@ import 'player_colors.dart';
 /// gri ve siyah varyantları yan yana görüp siyahı seçti (21 Ağustos 2026).
 /// Web'le ELLE senkron — biri değişirse öteki de değişmeli.
 const double kBackFontSize = 11;
-const double kBackGap = 3;
+/// Etiketin ALTINDAKİ dokunma payı — header ile tahta arasında zaten var
+/// olan boşluğun tıklanabilir hâle gelmiş kısmı (bkz. build()'deki not).
+/// Web'de karşılığı YOK: orada etiket `<button>`ın içinde bir `<span>` ve
+/// tıklama ataya kabardığından ayrı bir paya ihtiyaç duymuyor.
+const double kBackBottomPad = 13;
 
 class GameHeader extends StatelessWidget {
   final GameState state;
@@ -84,63 +88,53 @@ class GameHeader extends StatelessWidget {
     final girisPaddingX = fluidSize(w, 6, -2.33, 2.22, 8);
     final girisPaddingY = fluidSize(w, 8.7, -5.05, 3.67, 12);
 
-    // "← Geri" etiketi logonun ALTINDA, ve İKİSİ TEK dokunma hedefi.
+    // "← Geri" KENDİ SATIRI — header satırının ALTINDA, tahtanın hemen
+    // üstünde. Web'den bilinçli bir SAPMA ve gerekçesi yapısal:
     //
-    // ⚠ 24 AĞUSTOS 2026 — BURADA GERÇEK BİR HATA VARDI, kullanıcı cihazda
-    // bildirdi: *"logo altındaki geri de basınca çalışmıyor, yine biraz
-    // üstüne logoya tıklarsan çalışıyor"*. Etiket bir `Stack(clipBehavior:
+    // ⚠ 24 AĞUSTOS 2026, İKİ TUR. Önce etiket bir `Stack(clipBehavior:
     // Clip.none)` içinde `Positioned` ile logonun kutusunun DIŞINA
     // taşırılmıştı; Flutter'da böyle bir çocuk hiç dokunuş ALMAZ
-    // (`RenderBox.hitTest` önce `size.contains`e bakar). Ölçüldü: dokunma
-    // kutusu 90.8 × 29.3 — yani sadece logo. Kodun kendi yorumu bunu
-    // "bilinçli sapma, kaçış yolu zaten logo" diye savunuyordu ve bu
-    // savunma YANLIŞTI: webde etiket `<button>`ın İÇİNDE bir `<span>`
-    // (`absolute top-full`) ve DOM'da tıklama ataya kabardığı için orada
-    // etiket pekâlâ çalışıyor. Yani port webi taklit etmiyordu, ondan
-    // AYRILMIŞTI.
+    // (`RenderBox.hitTest` önce `size.contains`e bakar) — ölçülen kutu
+    // 90.8 × 29.3, yani sadece logo. Kullanıcı bildirdi: *"logo altındaki
+    // geri de basınca çalışmıyor"*. Webde AYNI yapı çalışıyor çünkü etiket
+    // `<button>`ın İÇİNDE bir `<span>` ve DOM'da tıklama ataya KABARIYOR.
     //
-    // Düzeltme: etiket akışa alındı (Column) ve ikisi birden bir
-    // `TapTarget`e girdi — kutu artık 48'in çok üstünde.
+    // İkinci tur: etiketi logoyla aynı `TapTarget`e alan Column çözümü
+    // çalıştı ama pahalıydı — blok Row'da dikey ORTALANDIĞINDAN, logonun
+    // skor kutularıyla hizasını korumak için etiketin altta kapladığı kadar
+    // ÜSTTE de boşluk gerekiyordu; yani etiketin altına eklenen her 1 px
+    // header'a 2 px ekliyordu (ölçüldü: header 52 → 77 px). Kullanıcı
+    // cihazda bunu gördü: *"Geri tuşu tam üstüne basarsan ok ama biraz
+    // altına gelirse çalışmıyor. Geri ile board arasındaki boşluğu biraz
+    // kısarsak hem daha iyi çalışır hem de header'ı bu kadar büyütmüş
+    // olmayız"* — ve seçimi bu düzen oldu.
     //
-    // ⚠ ÜSTTEKİ BOŞLUK SÜS DEĞİL: etiketin altta kapladığı kadar
-    // (`kBackGap + kBackFontSize`) üstte de boşluk bırakılıyor, çünkü
-    // blok Row'da DİKEY ORTALANIYOR — simetri olmasa logo yukarı kayar ve
-    // skor kutularıyla hizası bozulurdu ("header'ı bozmadan", kullanıcının
-    // 21 Ağustos'taki şartı; `game_header_test.dart` bunu 1 px toleransla
-    // kilitliyor).
+    // Şimdi: logo satırı yalnızca logo + skor kutuları + hesap (48 px'lik
+    // hedefler, hiza korunuyor), etiket ise ayrı bir satır olarak tahtanın
+    // üstündeki boşluğu KULLANIYOR — o boşluk zaten vardı, artık
+    // tıklanabilir. Bedeli logo ↔ etiket arasının 3 px'ten ~9 px'e açılması
+    // (etiket artık logonun kutusuna değil SATIRIN altına çapalı; satırın
+    // boyunu 48'lik hedefler belirliyor).
     //
-    // Bedeli header'ın ~25 px uzaması. Tahta bir `SingleChildScrollView`
-    // içinde olduğundan bu yalnızca kaydırma boyunu değiştirir.
+    // Etiketin dokunma kutusu 48 GENİŞ ama yalnızca ~24 YÜKSEK (bilinçli
+    // istisna, `TapTarget.minHeight`): 48'lik bir yükseklik header ile
+    // tahta arasına 20 px'lik boş bir bant açardı ve aynı eylem için hemen
+    // üstündeki logo zaten tam boy bir hedef.
     //
-    // Etiketin sol kenarı hâlâ tahtanınkiyle hizalı: header'ın 12 px yatay
-    // dolgusu Board'unkiyle aynı ve Column `start` hizalı.
+    // Sol kenar hâlâ tahtanınkiyle hizalı: 12 px, Board'unkiyle aynı.
     // ⚠ Board'un yatay dolgusu değişirse hiza sessizce bozulur.
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+          child: Row(
         children: [
           TapTarget(
             onTap: onLogoTap,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Etiketin dengi (bkz. yukarıdaki simetri notu).
-                const SizedBox(height: kBackGap + kBackFontSize),
-                LogoMark(height: logoHeight),
-                const SizedBox(height: kBackGap),
-                const Text(
-                  '← Geri',
-                  style: TextStyle(
-                    fontFamily: 'SpaceMono',
-                    fontSize: kBackFontSize,
-                    height: 1,
-                    color: kText,
-                  ),
-                ),
-              ],
-            ),
+            child: LogoMark(height: logoHeight),
           ),
           const SizedBox(width: 8),
           // Web justify-between'in ikinci çocuğu tek bir SAĞ GRUP: kutular +
@@ -205,6 +199,35 @@ class GameHeader extends StatelessWidget {
           ),
         ],
       ),
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: TapTarget(
+              onTap: onLogoTap,
+              minHeight: 24,
+              // Sol kenar tahtanınkiyle (12 px) hizalı KALMALI — kutu 48 px
+              // geniş ama metin dar, ortalansa 4 px sağa kayardı.
+              alignment: Alignment.centerLeft,
+              child: const Padding(
+                // Alttaki pay, header ile tahta arasında ZATEN var olan
+                // boşluğun tıklanabilir hâle gelmiş kısmı.
+                padding: EdgeInsets.only(bottom: kBackBottomPad),
+                child: Text(
+                  '← Geri',
+                  style: TextStyle(
+                    fontFamily: 'SpaceMono',
+                    fontSize: kBackFontSize,
+                    height: 1,
+                    color: kText,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -301,8 +324,13 @@ class _PlayerBox extends StatelessWidget {
     final dimmed = player.surrendered
         ? Opacity(opacity: 0.45, child: box) // web'le aynı soluklaştırma
         : box;
+    // Kutu ~26 px yüksekliğinde ama header satırı zaten 48 (logo/avatar
+    // hedefleri belirliyor) — dokunma kutusunu 48'e çıkarmak BEDAVA, düzen
+    // değişmiyor. `minWidth: 0`: genişlik akıcı sistemden geliyor
+    // (`playerBoxWidth`/`yzBoxWidth`), 48 dayatmak web paritesini bozardı.
     return onTap == null
         ? dimmed
-        : GestureDetector(onTap: onTap, child: dimmed);
+        : TapTarget(
+            onTap: onTap, minWidth: 0, minHeight: kMinTapTarget, child: dimmed);
   }
 }

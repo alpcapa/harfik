@@ -1639,6 +1639,19 @@ doğrulamak.
 - [ ] **"Yükleniyor…" okunur:** k-lig ve Skor Kartı açılırken ortada
       belirgin mavi/kalın bir "Yükleniyor…" görünüyor (soluk gri değil).
 
+## 19c. Modaller tek boyda açılıyor mu (24 Ağustos 2026)
+
+Mobil portta bildirilen "önce küçük pencere, sonra büyük pencere"
+davranışının webdeki eşi de düzeltildi: yükleme sırasında yer baştan
+ayrılıyor.
+
+- [ ] **k-lig** açılınca pencere tek boyda açılmalı; içerik alanının
+      ortasında "Yükleniyor…" görünmeli ve veri gelince pencere BÜYÜMEMELİ.
+- [ ] **Skor Kartı** açılınca istatistik kutuları `—` ile baştan çizili
+      olmalı; sayılar yerinde dolmalı.
+- [ ] Oyun geçmişi / arkadaşlar gibi öteki pencerelerde de "Yükleniyor…"
+      belirgin (mavi/kalın) görünmeli.
+
 ## 20. Bölge kuralı — bloktaki desteksiz rakip taşı (24 Ağustos 2026)
 
 Kural değişti: kendi 4×4 köşe bloğunun içindeki bir hücre, üzerinde rakip taşı

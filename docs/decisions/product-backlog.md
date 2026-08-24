@@ -165,3 +165,30 @@ bölümün kendi tarihli notuna taşınır.
     reindex ile çözülmez, organik arama/backlink ile zamanla düzelir"
     notu hâlâ geçerli — bu sayfa o süreci hızlandıran bir içerik işi.
 
+
+
+## Tahta çiziminin önbelleğe alınması (24 Ağustos 2026, mağaza sonrası)
+
+Kullanıcı Android'de bildirdi: *"YZ ile oyun açtığında board'un ekrana
+gelmesi takılarak oluyor"* — girişli açılışta da, ama Canlı bekleyen oyunda
+olmuyor (orada ekran geçiş sırasında "Yükleniyor…" gösterip tahtayı SONRA
+çiziyor).
+
+**Ölçülen sebep (koddan):** tahtanın tek seferlik ilk çizimi pahalı — 169
+hücrenin her biri `MaskFilter.blur`lu **iki** iç gölge + bir kırpma katmanı
+(`NeoBox` → `_InsetShadowPainter`), kartın kendisi de blur **20/14/60**'lık
+üç gölge boyuyor. Toplam ~340 bulanıklaştırma, hepsi route geçiş
+animasyonunun ortasında.
+
+**Bugün yapılan (yeterli ama kök çözüm DEĞİL):** geçiş animasyonu sürerken
+`GameScreen` yalnızca "Yükleniyor…" gösteriyor (Canlı oyun ekranıyla aynı
+görünüm — kullanıcı isteği: *"her yerde aynı deneyim"*), tahta animasyon
+bitince çiziliyor. Maliyet ortadan kalkmıyor, hareketli karelerin dışına
+taşınıyor.
+
+**Kök çözüm:** hücre çizimi ÖNBELLEĞE alınmalı. Boş hücrenin görünümü
+yalnızca ~7 çeşit (tarafsız, dört oyuncu bölgesi, altın bölge, merkez) ve
+hepsi aynı boyutta — her çeşidi bir kez `ui.Image`'a çizip 169 kez
+`drawImageRect` ile basmak, 340 blur'u 7'ye indirir. Riski görsel (parite
+testlerinde piksel golden'ı YOK, yani regresyonu yalnızca göz yakalar), o
+yüzden mağaza turundan sonraya bırakıldı.

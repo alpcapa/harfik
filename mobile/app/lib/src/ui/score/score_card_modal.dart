@@ -17,6 +17,7 @@ import 'game_history_modal.dart';
 import 'klig_mark.dart';
 import 'leaderboard_modal.dart';
 import 'score_stats_section.dart';
+import '../tap_target.dart';
 import '../tokens.dart';
 
 const _muted = kMuted;
@@ -170,13 +171,14 @@ class _ScoreCardModalState extends State<ScoreCardModal> {
                 ),
               ),
               // k-lig sırası — dokununca sıralama açılır (web'deki aynı buton).
-              GestureDetector(
+              TapTarget(
                 onTap: () => showLeaderboard(context,
                     auth: widget.auth,
                     stats: widget.stats,
                     games: widget.games,
                     friends: widget.friends),
-                behavior: HitTestBehavior.opaque,
+                minWidth: 0,
+                alignment: Alignment.centerRight,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -239,7 +241,7 @@ class _ScoreCardModalState extends State<ScoreCardModal> {
           if (widget.games != null && auth.user != null) ...[
             const SizedBox(height: 8),
             Center(
-              child: GestureDetector(
+              child: TapTarget(
                 onTap: () async {
                   final games = await widget.games!;
                   if (!context.mounted) return;
@@ -254,7 +256,6 @@ class _ScoreCardModalState extends State<ScoreCardModal> {
                     stats: widget.stats,
                   );
                 },
-                behavior: HitTestBehavior.opaque,
                 child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 4),
                   child: Text(

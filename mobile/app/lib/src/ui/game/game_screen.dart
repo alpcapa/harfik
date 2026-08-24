@@ -37,6 +37,7 @@ import 'tile_widget.dart';
 import 'wild_letter_sheet.dart';
 import '../rank/league_rewards_host.dart';
 import '../../data/league_rewards_api.dart';
+import '../loading_note.dart';
 import '../tokens.dart';
 import 'invasion_confirm.dart';
 import '../../util/online_status.dart';
@@ -191,10 +192,53 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   /// Parça 23).
   final ValueNotifier<_Ghost?> _dragNotifier = ValueNotifier(null);
 
+  /// Route geçiş animasyonu bitene kadar ekran YALNIZCA "Yükleniyor…"
+  /// gösterir — **Canlı oyun ekranıyla birebir aynı deneyim**.
+  ///
+  /// Kullanıcı Android'de bildirdi: *"YZ ile oyun açtığında board'un ekrana
+  /// gelmesi takılarak oluyor"* (girişli açılışta da; Canlı bekleyen oyunda
+  /// OLMUYOR). Sebep tahtanın TEK SEFERLİK ilk çizimi: 169 hücrenin ikişer
+  /// `MaskFilter.blur`lu iç gölgesi + kartın blur 20/14/60'lık üçlüsü —
+  /// ~340 bulanıklaştırma, hepsi geçişin ortasındaki karede. Canlı oyunda
+  /// yaşanmamasının sebebi de buydu: `OnlineGameScreen` geçiş sırasında
+  /// "Yükleniyor…" gösterip tahtayı SONRA çiziyor.
+  ///
+  /// İlk çözüm gölgeleri ERTELEMEKTİ (`BoardWidget.cheapPaint`); kullanıcı
+  /// bunun yerine tutarlılığı seçti: *"Neden bekleyen oyunlar gibi kısa bir
+  /// yükleniyor çıkartmıyoruz? Her yerde aynı deneyim en azından."* Bu hem
+  /// daha basit (tek mekanizma) hem daha garantili — geçiş boyunca ekranda
+  /// tek bir metin var, tahta HİÇ çizilmiyor.
+  ///
+  /// Maliyet ortadan kalkmıyor, hareketli karelerin dışına taşınıyor. Kök
+  /// çözüm hücre çiziminin önbelleğe alınması (mağaza sonrasına bırakıldı,
+  /// `docs/decisions/product-backlog.md`).
+  bool _ready = false;
+  Animation<double>? _routeAnim;
+
+  void _onRouteAnim(AnimationStatus s) {
+    if (s != AnimationStatus.completed) return;
+    _routeAnim?.removeStatusListener(_onRouteAnim);
+    _routeAnim = null;
+    if (mounted) setState(() => _ready = true);
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // `ModalRoute` yalnızca ilk kare SONRASI okunabilir (initState'te
+    // context henüz ağaca bağlı değil).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final anim = ModalRoute.of(context)?.animation;
+      // Route yoksa ya da animasyon zaten bittiyse (testlerde ve ilk
+      // route'ta böyle) bekleyecek bir şey yok.
+      if (anim == null || anim.status == AnimationStatus.completed) {
+        setState(() => _ready = true);
+        return;
+      }
+      _routeAnim = anim..addStatusListener(_onRouteAnim);
+    });
   }
 
   /// Web'in `clearStuckDrag`i (App.tsx — `visibilitychange`/`blur`
@@ -215,6 +259,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    // Geçiş yarıda kesilirse (kullanıcı hemen geri döndü) dinleyici asılı
+    // kalmasın — route animasyonu bu State'ten uzun yaşıyor.
+    _routeAnim?.removeStatusListener(_onRouteAnim);
     _dragNotifier.dispose();
     super.dispose();
   }
@@ -620,6 +667,14 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
+        // Geçiş animasyonu sürerken TAHTA HİÇ ÇİZİLMEZ (bkz. `_ready`) —
+        // Canlı oyun ekranının yükleme durumuyla aynı görünüm.
+        if (!_ready) {
+          return const Scaffold(
+            backgroundColor: Colors.white, // web sayfa zemini (colors.bg)
+            body: SafeArea(child: Center(child: KLoadingNote())),
+          );
+        }
         // Oyun bittiği an GameOver modalı bir kez gösterilir; KAPAT ile
         // kapatınca tahta görünür kalır (web gameOverDismissed davranışı).
         if (state.isGameOver && !_gameOverShown) {

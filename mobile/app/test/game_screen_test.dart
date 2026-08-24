@@ -2,6 +2,7 @@
 // geçerlilik çerçevesi, joker akışı, geri alma ve OYNA. Kontrollü raf için
 // state ResumeSavedAction ile kurulur (golden üreticisindeki aynı desen);
 // sözlük gerçek asset dosyasından yüklenir.
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -976,6 +977,47 @@ void main() {
 
     await g.up();
     await tester.pump();
+  });
+
+  // 24 Ağustos 2026 — kullanıcı Android'de bildirdi: *"YZ ile oyun açtığında
+  // board'un ekrana gelmesi takılarak oluyor"* (girişli açılışta da; Canlı
+  // bekleyen oyunda olmuyor). Sebep tahtanın TEK SEFERLİK ilk çizimi: 169
+  // hücrenin ikişer `MaskFilter.blur`lu iç gölgesi + kartın blur 20/14/60'lık
+  // üçlüsü, hepsi route geçişinin ortasında. Kullanıcının seçtiği çözüm
+  // tutarlılık: *"Neden bekleyen oyunlar gibi kısa bir yükleniyor
+  // çıkartmıyoruz? Her yerde aynı deneyim en azından."*
+  testWidgets('geçiş animasyonu sürerken ekran "Yükleniyor…" gösterir',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final controller =
+        GameController(words: words, autoPlayAi: false, nowIso: () => '');
+    controller.dispatch(ResumeSavedAction(craftedState()));
+    final nav = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      navigatorKey: nav,
+      home: const Scaffold(body: SizedBox.shrink()),
+    ));
+
+    unawaited(nav.currentState!.push(MaterialPageRoute<void>(
+      builder: (_) => GameScreen(
+          controller: controller, words: words, auth: AuthService.fake()),
+    )));
+    await tester.pump(); // route eklendi
+    await tester.pump(const Duration(milliseconds: 50)); // animasyon ORTASI
+
+    expect(find.text('Yükleniyor…'), findsOneWidget,
+        reason: 'geçiş sürerken Canlı oyun ekranıyla aynı yükleme durumu '
+            'gösterilmeli');
+    expect(find.byType(BoardWidget), findsNothing,
+        reason: 'tahta geçiş sırasında HİÇ çizilmemeli — kullanıcının '
+            '"takılarak geliyor" dediği kareler tam burada düşüyordu');
+
+    await tester.pumpAndSettle();
+    expect(find.byType(BoardWidget), findsOneWidget,
+        reason: 'animasyon bitince tahta çizilmeli — yükleme durumu takılı '
+            'kalırsa oyun hiç açılmaz');
+    expect(find.text('Yükleniyor…'), findsNothing);
   });
 
   testWidgets('GameOver modalı ekran görüntüsü (beraberlik varyantı yok)',

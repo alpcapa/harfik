@@ -135,8 +135,14 @@ void main() {
       expect(logo.left, closeTo(12, 0.5));
 
       // "Hemen altında" — ve HER ZAMAN logonun ALTINDA (çakışma yok).
-      expect(e.top - logo.bottom, closeTo(kBackGap, 0.6),
-          reason: '$w px: etiket logonun kutusuna çapalı olmalı');
+      // Sabit bir sayı DEĞİL: etiket artık logonun kutusuna değil header
+      // SATIRININ altına çapalı (24 Ağustos 2026, ikinci tur — bkz.
+      // game_header.dart'taki not), satırın boyunu da 48 px'lik dokunma
+      // hedefleri belirliyor. Aralık hem çakışmayı hem kopmayı yakalar.
+      expect(e.top - logo.bottom, greaterThan(0),
+          reason: '$w px: etiket logonun ÜSTÜNE binmemeli');
+      expect(e.top - logo.bottom, lessThan(24),
+          reason: '$w px: etiket logodan kopmamalı');
 
       // Kaçış yolu HEM logo HEM etiket — webde de tek bir `<button>` ikisini
       // birden kapsıyor (etiket `<span className="absolute top-full">`).
@@ -146,6 +152,15 @@ void main() {
       expect(tiklandi, 2,
           reason: '$w px: "← Geri" etiketine dokunmak da Setup\'a dönmeli — '
               'kullanıcının 24 Ağustos 2026\'da bildirdiği hata tam buydu');
+
+      // ...ve yazının BİRAZ ALTINA dokunmak da çalışmalı: kullanıcı ilk
+      // düzeltmeden sonra *"tam üstüne basarsan ok ama biraz altına
+      // gelirse çalışmıyor"* dedi. Kutunun alt payı (`kBackBottomPad`)
+      // tam olarak bunun için var.
+      await tester.tapAt(Offset(e.center.dx, e.bottom + kBackBottomPad / 2));
+      expect(tiklandi, 3,
+          reason: '$w px: etiketin hemen altı da dokunma hedefinin parçası '
+              'olmalı');
     }
   });
 

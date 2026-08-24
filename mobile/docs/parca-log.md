@@ -5234,6 +5234,208 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        yeniden koşturuldu. Web tarafı temiz: `tsc`, `npm run build`,
        Playwright **29/29**. Cihazda teyit kullanıcıdan bekleniyor.
 
+   - ✅ **Parça 135 — "← Geri" ayrı satıra taşındı; yükleme durumu artık
+     pencereyi büyütmüyor (24 Ağustos 2026, cihaz testinin İKİNCİ turu):**
+     Parça 134'ten sonra kullanıcı `71eb73a` derlemesini iPad'de denedi.
+     - **"Geri tuşu tam üstüne basarsan ok ama biraz altına gelirse
+       çalışmıyor. Geri ile board arasındaki boşluğu biraz kısarsak hem
+       daha iyi çalışır hem de header'ı bu kadar büyütmüş olmayız."**
+       Ölçüm: Parça 134'ün çözümü etiketi logoyla aynı `TapTarget`e almıştı
+       ve blok Row'da dikey ORTALANDIĞINDAN, logonun skor kutularıyla
+       hizasını korumak için etiketin altına eklenen her 1 px header'a
+       **2 px** ekliyordu. Yani "altına pay ekle" ile "header küçülsün"
+       matematiksel olarak çelişiyordu — üç seçenek kullanıcıya sayılarıyla
+       sunuldu, seçimi "Geri'yi tahtanın üstüne al" oldu.
+     - **Yeni düzen:** header satırı yalnızca logo + skor kutuları + hesap
+       (hepsi 48 px'lik hedefler, hiza korunuyor); "← Geri" ise ayrı bir
+       satır olarak tahtanın üstündeki **zaten var olan** boşluğu
+       kullanıyor — o boşluk artık tıklanabilir. Logo+skor bandı 77 → 58
+       px; etiketin altında 13 px pay var; logo ↔ etiket arası 3 → ~9 px
+       (etiket artık logonun kutusuna değil SATIRIN altına çapalı, satırın
+       boyunu 48'lik hedefler belirliyor).
+     - **Yeni gerekçeli istisna:** etiketin kutusu 48 GENİŞ ama 24 YÜKSEK
+       (`TapTarget.minHeight` — bu tur eklendi). 48'lik bir yükseklik
+       header ile tahta arasına 20 px'lik boş bir bant açardı ve hemen
+       üstündeki logo aynı eylem için zaten tam boy bir hedef.
+     - **Web DEĞİŞMEDİ ve bu bilinçli:** orada etiket `<button>`ın içinde
+       mutlak konumlu bir `<span>` ve DOM'da tıklama ataya kabardığından
+       hem 3 px yukarıda durabiliyor hem tıklanabiliyor. Ayrışan şey değer
+       değil YAPI; `layout_parity_test` artık `kBackGap`i karşılaştırmak
+       yerine bu ayrımı kayda geçiriyor (ve `kBackGap`in geri gelmesini
+       yakalıyor).
+     - **"Tek pencere açılmalı, datanın olduğu kısımda yükleniyor
+       yazmalı":** *"Leaderboard ve skor kartı arkada küçük pencerede
+       yükleniyor (1-2 saniye) çıkıyor sonra büyük pencereler geliyor."*
+       Sebep Parça 134'ün eksiği DEĞİL, `KModal`in yüksekliğini içeriğinden
+       alması (`MainAxisSize.min` + dikey ortalı): yüklenirken içerik tek
+       satır → küçük pencere; veri gelince iki yöne birden büyüyor. Artık
+       yer BAŞTAN ayrılıyor — lider tablosunda listenin KENDİ tavanı kadar
+       (ekranın %50'si), skor kartında aynı ızgara `—` değerleriyle
+       çizilerek. **Aynı kusur webde de vardı**, iki taraf birlikte
+       düzeltildi.
+     - **Paylaş penceresinin konumu — hata DEĞİL:** Safari'nin kendi
+       paylaşım sayfası; webde konumunu uygulama seçemiyor. Native tarafta
+       `sharePositionOrigin` zaten veriliyor (`share_board.dart`,
+       `friends_modal.dart`) — değişiklik gerekmedi, kayda geçsin diye
+       yazılı.
+     - **Testler:** `game_header_test.dart` artık etiketin ALTINA
+       dokunulduğunda da Setup'a dönüldüğünü iddia ediyor (`tapAt`,
+       `kBackBottomPad / 2`); logo↔etiket arası sabit sayı yerine aralık
+       olarak kilitli, çünkü satırın boyu artık 48'lik hedeflerden türüyor.
+     - **Doğrulama sınırı:** Flutter SDK bu ortamda yok; Dart yarısının
+       kanıtı CI. Web: `tsc`, `npm run build`, Playwright 29/29.
+
+   - ✅ **Parça 136 — "Paylaş" atlanmıştı; kutusuz hedef taraması artık
+     TESTTE (24 Ağustos 2026, cihaz testinin ÜÇÜNCÜ turu, Android):**
+     kullanıcı *"footerdaki paylaşın hâlâ tıklanmadığını farkettim, yine
+     yukarısına dokunmak gerekiyor"* dedi.
+     - **Kök sebep düzeltmede değil TARAMADAYDI:** Parça 134'te kutusuz
+       dokunulabilirleri ararken "GestureDetector'ın DOĞRUDAN çocuğu `Text`
+       mi" diye baktım; Setup footer'ındaki "Paylaş"ın çocuğu ikon + metin
+       taşıyan bir `Row` olduğundan desene hiç takılmadı. Yani düzeltme
+       doğruydu, KAPSAMI eksikti.
+     - **İki katmanlı ders, ikisi de uygulandı:** (1) tarama çocuğun
+       TÜRÜNE değil, kutuya bir ÖLÇÜ veren bir şey (`padding`, `width`,
+       `height`, `SizedBox`, `Container`, `constraints`, `TapTarget`…)
+       olup olmadığına bakmalı; (2) **elle koşulan bir tarama bir daha
+       koşulmaz** — `tap_target_test.dart` artık `lib/src/ui` altını
+       kendisi tarıyor ve kutusuna hiç ölçü vermeyen her
+       `GestureDetector`/`InkWell`i düşürüyor. 11 gerekçeli istisna adıyla
+       ve sebebiyle listeli (`_olcusuzIstisnalar`); yeni bir tanesi
+       eklenirse CI kırmızı olur.
+     - **Aynı taramanın ortaya çıkardığı öteki hedefler:** skor kartının
+       "k-lig #N · puan" satırı ve "TÜM GEÇMİŞ OYUNLAR" linki (~14-19 px),
+       oyuncu kartındaki k-lig satırı; ve header'daki oyuncu skor kutuları
+       — satır zaten 48 px olduğundan onları 48'e çıkarmak BEDAVA oldu
+       (`minWidth: 0`, genişlik akıcı sistemden gelmeye devam ediyor).
+     - **`TapTarget.alignment` (CI yakaladı):** kutuyu büyütmek çocuğu
+       ORTALADIĞINDAN, bir kenara hizalı duran metinler kayıyordu —
+       "← Geri" 48 px'lik kutuda 4 px sağa kaçıp tahtanın sol kenarıyla
+       hizasını kaybetti ve `game_header_test` bunu düşürdü. Varsayılan
+       orta kaldı; hizalı hedefler `alignment` veriyor.
+     - **AÇIK KALAN:** misafirken YZ oyunu açılışında tahtanın "takılarak"
+       gelmesi. Bu ortamda profil alınamıyor; koddan iki aday çıkarıldı ve
+       ikisi de "Canlı bekleyen oyunda olmuyor" gözlemine uyuyor:
+       (A) misafir uyarı penceresinin kapanma animasyonu bitmeden geçişin
+       başlaması (`showDialog`'un sonucu animasyon bitmeden döner) — Canlı
+       yolunda böyle bir pencere yok; (B) 169 hücrenin bulanık gölgeleriyle
+       ilk rasterizasyonu — `OnlineGameScreen` önce "Yükleniyor…" gösterip
+       tahtayı geçişten SONRA çiziyor. Ayırt edici deneme kullanıcıya
+       verildi: GİRİŞLİYKEN YZ oyunu açmak (uyarı penceresi çıkmaz).
+
+   - ✅ **Parça 137 — tahta açılışta "takılarak" geliyordu: geçiş boyunca
+     artık Canlı oyundakiyle AYNI "Yükleniyor…" gösteriliyor (24 Ağustos
+     2026, Android):** kullanıcı *"YZ ile girişsiz oyun açtığında board'un
+     ekrana gelmesi takılarak oluyor. Arkadaşınla bekleyen oyun
+     çağırdığında olmuyor"* dedi.
+     - **Ayırt edici deneme teşhisi kesinleştirdi:** iki aday vardı — (A)
+       misafir uyarı penceresinin kapanma animasyonuyla geçişin üst üste
+       binmesi, (B) tahtanın ilk çizim maliyeti. Kullanıcı *"girişli açılış
+       da takılıyor"* dedi; girişli yolda o pencere HİÇ çıkmadığından (A)
+       elendi.
+     - **Maliyet koddan ölçüldü:** her boş hücre `NeoBox` içinde
+       `MaskFilter.blur`lu İKİ iç gölge (`_InsetShadowPainter`) + bir
+       `ClipRRect` taşıyor → 169 hücre ≈ 340 bulanıklaştırma; kart da blur
+       20/14/60'lık üç gölge çiziyor. Hepsi route geçişinin ortasındaki TEK
+       karede. Canlı oyunda yaşanmamasının sebebi de bu: `OnlineGameScreen`
+       geçiş sırasında "Yükleniyor…" gösterip tahtayı SONRA çiziyor.
+     - **İlk çözüm gölgeleri ERTELEMEKTİ** (`BoardWidget.cheapPaint`) ve
+       çalışıyordu; ama kullanıcı yerine TUTARLILIĞI seçti: *"Neden bekleyen
+       oyunlar gibi kısa bir yükleniyor çıkartmıyoruz? Her yerde aynı
+       deneyim en azından."* Doğru karar — hem tek mekanizma kalıyor hem
+       daha garantili: geçiş boyunca ekranda tek bir metin var, tahta HİÇ
+       çizilmiyor (cheapPaint'te hücreler yine kuruluyor/çiziliyordu,
+       yalnızca blur'ları atlanıyordu). `cheapPaint` tamamen geri alındı.
+     - **Uygulama:** `GameScreen` route animasyonunu dinliyor
+       (`ModalRoute.of(context)!.animation`, ilk kare sonrası okunur) ve
+       bitene kadar `Scaffold(body: Center(KLoadingNote()))` döndürüyor;
+       route yoksa/animasyon bittiyse (testler, ilk route) hiç beklenmiyor.
+       `OnlineGameScreen`in kendi yükleme metni de aynı `KLoadingNote`a
+       çekildi — iki ekran artık birebir aynı görünüyor.
+     - **Kalıcı çözüm DEĞİL, kayda geçti:** maliyet ortadan kalkmıyor,
+       hareketli karelerin dışına taşınıyor. Kök çözüm hücre çiziminin
+       önbelleğe alınması (~7 çeşit görünüm × tek `ui.Image`) —
+       `docs/decisions/product-backlog.md`, mağaza turundan sonrası.
+     - **Regresyon kilidi:** `game_screen_test.dart` route ile push edip
+       animasyonun ORTASINDA "Yükleniyor…" görünür + `BoardWidget` YOK,
+       `pumpAndSettle` sonrası tersini iddia ediyor — ikinci iddia yükleme
+       durumunun takılı kalmasını da yakalıyor.
+
+   - ✅ **Parça 136 — "Paylaş" atlanmıştı; kutusuz hedef taraması artık
+     TESTTE (24 Ağustos 2026, cihaz testinin ÜÇÜNCÜ turu, Android):**
+     kullanıcı *"footerdaki paylaşın hâlâ tıklanmadığını farkettim, yine
+     yukarısına dokunmak gerekiyor"* dedi.
+     - **Kök sebep düzeltmede değil TARAMADAYDI:** Parça 134'te kutusuz
+       dokunulabilirleri ararken "GestureDetector'ın DOĞRUDAN çocuğu `Text`
+       mi" diye baktım; Setup footer'ındaki "Paylaş"ın çocuğu ikon + metin
+       taşıyan bir `Row` olduğundan desene hiç takılmadı. Yani düzeltme
+       doğruydu, KAPSAMI eksikti.
+     - **İki katmanlı ders, ikisi de uygulandı:** (1) tarama çocuğun
+       TÜRÜNE değil, kutuya bir ÖLÇÜ veren bir şey (`padding`, `width`,
+       `height`, `SizedBox`, `Container`, `constraints`, `TapTarget`…)
+       olup olmadığına bakmalı; (2) **elle koşulan bir tarama bir daha
+       koşulmaz** — `tap_target_test.dart` artık `lib/src/ui` altını
+       kendisi tarıyor ve kutusuna hiç ölçü vermeyen her
+       `GestureDetector`/`InkWell`i düşürüyor. 11 gerekçeli istisna adıyla
+       ve sebebiyle listeli (`_olcusuzIstisnalar`); yeni bir tanesi
+       eklenirse CI kırmızı olur.
+     - **Aynı taramanın ortaya çıkardığı öteki hedefler:** skor kartının
+       "k-lig #N · puan" satırı ve "TÜM GEÇMİŞ OYUNLAR" linki (~14-19 px),
+       oyuncu kartındaki k-lig satırı; ve header'daki oyuncu skor kutuları
+       — satır zaten 48 px olduğundan onları 48'e çıkarmak BEDAVA oldu
+       (`minWidth: 0`, genişlik akıcı sistemden gelmeye devam ediyor).
+     - **`TapTarget.alignment` (CI yakaladı):** kutuyu büyütmek çocuğu
+       ORTALADIĞINDAN, bir kenara hizalı duran metinler kayıyordu —
+       "← Geri" 48 px'lik kutuda 4 px sağa kaçıp tahtanın sol kenarıyla
+       hizasını kaybetti ve `game_header_test` bunu düşürdü. Varsayılan
+       orta kaldı; hizalı hedefler `alignment` veriyor.
+     - **AÇIK KALAN:** misafirken YZ oyunu açılışında tahtanın "takılarak"
+       gelmesi. Bu ortamda profil alınamıyor; koddan iki aday çıkarıldı ve
+       ikisi de "Canlı bekleyen oyunda olmuyor" gözlemine uyuyor:
+       (A) misafir uyarı penceresinin kapanma animasyonu bitmeden geçişin
+       başlaması (`showDialog`'un sonucu animasyon bitmeden döner) — Canlı
+       yolunda böyle bir pencere yok; (B) 169 hücrenin bulanık gölgeleriyle
+       ilk rasterizasyonu — `OnlineGameScreen` önce "Yükleniyor…" gösterip
+       tahtayı geçişten SONRA çiziyor. Ayırt edici deneme kullanıcıya
+       verildi: GİRİŞLİYKEN YZ oyunu açmak (uyarı penceresi çıkmaz).
+
+   - ✅ **Parça 137 — tahta açılışta "takılarak" geliyordu: gölgeler geçiş
+     bitene kadar erteleniyor (24 Ağustos 2026, Android):** kullanıcı
+     *"YZ ile girişsiz oyun açtığında board'un ekrana gelmesi takılarak
+     oluyor. Arkadaşınla bekleyen oyun çağırdığında olmuyor"* dedi.
+     - **Ayırt edici deneme kullanıcıya verildi ve cevabı teşhisi
+       kesinleştirdi:** iki aday vardı — (A) misafir uyarı penceresinin
+       kapanma animasyonuyla geçişin üst üste binmesi, (B) tahtanın ilk
+       çizim maliyeti. Kullanıcı *"girişli açılış da takılıyor"* dedi;
+       girişli yolda o pencere HİÇ çıkmadığından (A) elendi.
+     - **Maliyet koddan ölçüldü:** her boş hücre `NeoBox` içinde
+       `MaskFilter.blur`lu İKİ iç gölge (`_InsetShadowPainter`) + bir
+       `ClipRRect` taşıyor → 169 hücre ≈ 340 bulanıklaştırma; kartın kendisi
+       de blur 20/14/60'lık üç gölge çiziyor. Hepsi route geçişinin
+       ortasındaki TEK karede. Canlı oyunda yaşanmamasının sebebi de bu:
+       `OnlineGameScreen` geçiş sırasında "Yükleniyor…" gösterip tahtayı
+       SONRA çiziyor.
+     - **Çözüm — `BoardWidget.cheapPaint`:** geçiş sürerken bulanık gölgeler
+       ATLANIR; renk, çerçeve, taşlar, filigranlar aynı kalır. Tahta
+       GİZLENMİYOR, yalnızca gölgesiz. `GameScreen` route animasyonunu
+       dinleyip (`ModalRoute.of(context)!.animation`, ilk kare sonrası
+       okunur) bitince tam çizime geçiyor; route yoksa/animasyon bittiyse
+       (testler, ilk route) hiç beklenmiyor.
+     - **Kalıcı çözüm DEĞİL, kayda geçti:** maliyet ortadan kalkmıyor,
+       hareketli karelerin dışına taşınıyor. Kök çözüm hücre çiziminin
+       önbelleğe alınması (~7 çeşit görünüm × tek `ui.Image`) —
+       `docs/decisions/product-backlog.md`'ye yazıldı, mağaza turundan
+       sonraya bırakıldı (görsel regresyon riski var ve projede piksel
+       golden'ı yok).
+     - **`OnlineGameScreen`e uygulanmadı ve bu bilinçli:** orada tahta zaten
+       veri geldikten (yani geçiş bittikten) sonra çiziliyor, bayrak ölü kod
+       olurdu. Web de değişmedi — CSS gölgelerini tarayıcı farklı işliyor ve
+       orada böyle bir şikayet yok.
+     - **Regresyon kilidi:** `game_screen_test.dart` route ile push edip
+       animasyonun ORTASINDA `cheapPaint == true`, `pumpAndSettle` sonrası
+       `false` olduğunu iddia ediyor — ikinci iddia gölgelerin kalıcı olarak
+       kaybolmasını da yakalıyor.
+
    - ✅ **Parça 133 — bölge kuralı: kendi bloğundaki DESTEKSİZ rakip taşı
      artık zinciri kesmiyor (24 Ağustos 2026, kullanıcı gerçek bir oyunda
      yakaladı):** *"Rakip benim bölgemin içinde UMAR yazdı. Ben de üstüne PÜR

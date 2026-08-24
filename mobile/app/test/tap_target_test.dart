@@ -32,6 +32,11 @@
 //   * `chat/chat_thread.dart` → mesaj başlığındaki 9 puntoluk sessize
 //     alma/raporlama rozeti: HER baloncukta olduğundan sohbeti şişirirdi;
 //     aynı panele pencere başlığındaki dişliden de ulaşılıyor.
+//   * `game/game_header.dart` → "← Geri" etiketi 48 GENİŞ ama 24 YÜKSEK:
+//     header ile tahta arasında duruyor, 48 oraya 20 px'lik boş bir bant
+//     açardı; hemen üstündeki logo aynı eylem için tam boy hedef.
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
@@ -39,6 +44,7 @@ import 'package:kelimeki/src/ui/auth/k_avatar.dart';
 import 'package:kelimeki/src/ui/game/board_widget.dart';
 import 'package:kelimeki/src/ui/game/game_header.dart';
 import 'package:kelimeki/src/ui/game/help_modal.dart';
+import 'package:kelimeki/src/ui/game/logo_mark.dart';
 import 'package:kelimeki/src/ui/tap_target.dart';
 import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
@@ -46,6 +52,32 @@ import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
 import 'support/test_fonts.dart';
 import 'support/test_view.dart';
+import 'support/web_source.dart';
+
+/// Kutusuna hiçbir ÖLÇÜ vermeyen dokunulabilirler — her biri GEREKÇELİ.
+/// Yeni bir tanesi çıkarsa test düşer; ya `TapTarget`e alınır ya buraya
+/// gerekçesiyle yazılır.
+///
+/// ⚠ NEDEN VAR (24 Ağustos 2026, ÜÇÜNCÜ tur): ilk taramam
+/// "GestureDetector'ın DOĞRUDAN çocuğu `Text` mi" diye bakıyordu ve
+/// Setup'ın footer'ındaki "Paylaş" linki (çocuğu ikon+metin taşıyan bir
+/// `Row`) gözden kaçtı — kullanıcı Android'de tekrar bildirdi. Ders: tarama
+/// çocuğun TÜRÜNE değil, kutuya bir ölçü veren bir şey olup olmadığına
+/// bakmalı; ve elle koşulan bir tarama bir daha koşulmaz — teste girmeli.
+const Map<String, String> _olcusuzIstisnalar = {
+  'auth/auth_modal.dart': 'onay kutusu satırı — boyu çok satırlı etiketten',
+  'auth/legal_modals.dart': 'akan paragrafın İÇİNDEKİ link (WidgetSpan)',
+  'chat/chat_thread.dart': 'her baloncuktaki 9 puntoluk moderasyon rozeti',
+  'friends/friends_modal.dart': 'liste satırı — boyu avatardan',
+  'game/board_widget.dart': 'tahta hücresi — ızgara ölçüsü kuralın kendisi',
+  'game/neo_button.dart': 'kendi dolgulu kutusunu çizen buton',
+  'game/rack_widget.dart': 'raf taşı — boyu taşın kendisi',
+  'rank/rank_header_seal.dart': 'başlıktaki 34 px mühür; bilgi kısayolu',
+  'score/game_history_modal.dart': 'liste satırı, tahta önizlemesi ve '
+      'hamle ikonu (Parça 65: 44 px bilinçli reddedildi)',
+  'score/leaderboard_modal.dart': 'ipucunu kapatan tam alan bariyeri',
+  'tap_target.dart': 'çözümün kendisi',
+};
 
 User _user() => User(
       id: 'u-test',
@@ -119,16 +151,18 @@ Size _tapBox(WidgetTester t, Finder inner, String label) {
 
 final List<String> _rapor = [];
 
-void _olc(WidgetTester t, Finder inner, String label) {
+/// [minHeight] yalnızca GEREKÇELİ istisnalarda düşürülür (bkz. başlık).
+void _olc(WidgetTester t, Finder inner, String label,
+    {double minHeight = kMinTapTarget}) {
   final s = _tapBox(t, inner, label);
-  final kucuk = s.height < kMinTapTarget || s.width < kMinTapTarget;
+  final kucuk = s.height < minHeight || s.width < kMinTapTarget;
   _rapor.add('  ${label.padRight(28)} ${s.width.toStringAsFixed(1)} × '
       '${s.height.toStringAsFixed(1)}  (alan ${(s.width * s.height).round()} px²)'
-      '${kucuk ? '   ← ${kMinTapTarget.toInt()}dp ALTINDA' : ''}');
-  expect(s.height, greaterThanOrEqualTo(kMinTapTarget),
-      reason: '$label: dokunma kutusunun YÜKSEKLİĞİ Material asgarisinin '
-          'altında — kullanıcı "biraz üstüne basınca çalışıyor" diye '
-          'bildiren hata sınıfı tam olarak budur');
+      '${kucuk ? '   ← ASGARİNİN ALTINDA' : ''}');
+  expect(s.height, greaterThanOrEqualTo(minHeight),
+      reason: '$label: dokunma kutusunun YÜKSEKLİĞİ asgarinin altında — '
+          'kullanıcı "biraz üstüne basınca çalışıyor" diye bildiren hata '
+          'sınıfı tam olarak budur');
   expect(s.width, greaterThanOrEqualTo(kMinTapTarget),
       reason: '$label: dokunma kutusunun GENİŞLİĞİ Material asgarisinin '
           'altında');
@@ -142,6 +176,37 @@ void main() {
   tearDownAll(() {
     // ignore: avoid_print
     print('\n=== DOKUNMA HEDEFİ ÖLÇÜMLERİ (390×844) ===\n${_rapor.join('\n')}\n');
+  });
+
+  // Widget testi DEĞİL: ekranı olmayan yüzeyleri de kapsayan kaynak
+  // taraması. Bir dokunulabiliri kutusuz bırakmak, onu ölçmeyi hiç akla
+  // getirmediğimiz anlamına gelir — asıl kaçış yolu bu.
+  test('kutusuna ölçü vermeyen yeni bir dokunulabilir eklenmemiş', () {
+    final kok = Directory('${repoRoot.path}/mobile/app/lib/src/ui');
+    final olcuVeren = RegExp(r'padding:|SizedBox\(\s*(height|width)|\bwidth:'
+        r'|\bheight:|minHeight|TapTarget|NeoBox|NeoButton|Container\('
+        r'|IconButton|constraints:');
+    final bulunan = <String>[];
+    for (final f in kok
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'))) {
+      final src = f.readAsStringSync();
+      final rel = f.path.split('lib/src/ui/').last;
+      for (final m in RegExp(r'\b(GestureDetector|InkWell)\(').allMatches(src)) {
+        final seg = src.substring(
+            m.start, m.start + 700 > src.length ? src.length : m.start + 700);
+        if (!seg.substring(0, seg.length < 200 ? seg.length : 200)
+            .contains('onTap')) continue;
+        if (olcuVeren.hasMatch(seg)) continue;
+        if (_olcusuzIstisnalar.containsKey(rel)) continue;
+        bulunan.add('$rel:${'\n'.allMatches(src.substring(0, m.start)).length + 1}');
+      }
+    }
+    expect(bulunan, isEmpty,
+        reason: 'Kutusuna hiçbir ölçü vermeyen dokunulabilir(ler): '
+            '${bulunan.join(', ')}. Ya `TapTarget`e al ya da '
+            '`_olcusuzIstisnalar`a GEREKÇESİYLE ekle.');
   });
 
   testWidgets('alt şerit linkleri', (tester) async {
@@ -176,7 +241,12 @@ void main() {
     ));
     await tester.pump();
 
-    _olc(tester, find.text('← Geri'), 'başlık: ← Geri');
+    _olc(tester, find.byType(LogoMark), 'başlık: logo');
+    // ⚠ GEREKÇELİ İSTİSNA — 48 değil 24 (WCAG 2.2 asgarisi): etiket header
+    // satırının ALTINDA, tahtayla arasındaki boşlukta duruyor; 48'lik bir
+    // yükseklik oraya 20 px'lik boş bir bant açardı. Aynı eylem için hemen
+    // üstündeki logo zaten tam boy bir hedef (yukarıda ölçülüyor).
+    _olc(tester, find.text('← Geri'), 'başlık: ← Geri', minHeight: 24);
     _olc(tester, find.text('GİRİŞ'), 'başlık: GİRİŞ');
   });
 
