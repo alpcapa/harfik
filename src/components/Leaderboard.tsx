@@ -158,7 +158,14 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
         Puanlar eşitse OHP yüksek olan üstte.
       </p>
       {rows === null ? (
-        <LoadingNote />
+        /* Yükseklik BAŞTAN ayrılır: pencere yüksekliğini içeriğinden
+           aldığından tek satırlık bir yükleme metni onu önce küçük açıp veri
+           gelince büyütüyordu (kullanıcı mobil portta bildirdi, 24 Ağustos
+           2026 — aynı kusur webde de vardı). 50vh, aşağıdaki listenin kendi
+           tavanıyla aynı. */
+        <div className="h-[50vh] flex items-center justify-center">
+          <LoadingNote py="py-0" />
+        </div>
       ) : (
         <div className="flex flex-col gap-2">
           <div className="flex items-center text-[9px] uppercase tracking-[1px] text-muted font-mono px-2 pb-1 gap-1">

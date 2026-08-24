@@ -301,7 +301,18 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
           ),
           const SizedBox(height: 12),
           if (rows == null)
-            const KLoadingNote()
+            // ⚠ YER BAŞTAN AYRILIR (24 Ağustos 2026, kullanıcı cihazda
+            // bildirdi): *"önce 1-2 saniye bir popup görüyorum, sonra
+            // sıralama üstüne geliyor... Halbuki tek pencere açılmalı ve
+            // datanın olduğu kısımda yükleniyor yazmalı"*. `KModal`
+            // yüksekliğini içeriğe göre aldığından tek satırlık bir yükleme
+            // metni pencereyi önce küçük açıp veri gelince büyütüyordu.
+            // Ayrılan yükseklik aşağıdaki listenin KENDİ tavanıyla (ekranın
+            // %50'si) aynı — pencere tek boyda açılıp yerinde doluyor.
+            SizedBox(
+              height: MediaQuery.sizeOf(context).height * 0.5,
+              child: const Center(child: KLoadingNote(vertical: 0)),
+            )
           else if (rows.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),

@@ -32,6 +32,9 @@
 //   * `chat/chat_thread.dart` → mesaj başlığındaki 9 puntoluk sessize
 //     alma/raporlama rozeti: HER baloncukta olduğundan sohbeti şişirirdi;
 //     aynı panele pencere başlığındaki dişliden de ulaşılıyor.
+//   * `game/game_header.dart` → "← Geri" etiketi 48 GENİŞ ama 24 YÜKSEK:
+//     header ile tahta arasında duruyor, 48 oraya 20 px'lik boş bir bant
+//     açardı; hemen üstündeki logo aynı eylem için tam boy hedef.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
@@ -39,6 +42,7 @@ import 'package:kelimeki/src/ui/auth/k_avatar.dart';
 import 'package:kelimeki/src/ui/game/board_widget.dart';
 import 'package:kelimeki/src/ui/game/game_header.dart';
 import 'package:kelimeki/src/ui/game/help_modal.dart';
+import 'package:kelimeki/src/ui/game/logo_mark.dart';
 import 'package:kelimeki/src/ui/tap_target.dart';
 import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
@@ -119,16 +123,18 @@ Size _tapBox(WidgetTester t, Finder inner, String label) {
 
 final List<String> _rapor = [];
 
-void _olc(WidgetTester t, Finder inner, String label) {
+/// [minHeight] yalnızca GEREKÇELİ istisnalarda düşürülür (bkz. başlık).
+void _olc(WidgetTester t, Finder inner, String label,
+    {double minHeight = kMinTapTarget}) {
   final s = _tapBox(t, inner, label);
-  final kucuk = s.height < kMinTapTarget || s.width < kMinTapTarget;
+  final kucuk = s.height < minHeight || s.width < kMinTapTarget;
   _rapor.add('  ${label.padRight(28)} ${s.width.toStringAsFixed(1)} × '
       '${s.height.toStringAsFixed(1)}  (alan ${(s.width * s.height).round()} px²)'
-      '${kucuk ? '   ← ${kMinTapTarget.toInt()}dp ALTINDA' : ''}');
-  expect(s.height, greaterThanOrEqualTo(kMinTapTarget),
-      reason: '$label: dokunma kutusunun YÜKSEKLİĞİ Material asgarisinin '
-          'altında — kullanıcı "biraz üstüne basınca çalışıyor" diye '
-          'bildiren hata sınıfı tam olarak budur');
+      '${kucuk ? '   ← ASGARİNİN ALTINDA' : ''}');
+  expect(s.height, greaterThanOrEqualTo(minHeight),
+      reason: '$label: dokunma kutusunun YÜKSEKLİĞİ asgarinin altında — '
+          'kullanıcı "biraz üstüne basınca çalışıyor" diye bildiren hata '
+          'sınıfı tam olarak budur');
   expect(s.width, greaterThanOrEqualTo(kMinTapTarget),
       reason: '$label: dokunma kutusunun GENİŞLİĞİ Material asgarisinin '
           'altında');
@@ -176,7 +182,12 @@ void main() {
     ));
     await tester.pump();
 
-    _olc(tester, find.text('← Geri'), 'başlık: ← Geri');
+    _olc(tester, find.byType(LogoMark), 'başlık: logo');
+    // ⚠ GEREKÇELİ İSTİSNA — 48 değil 24 (WCAG 2.2 asgarisi): etiket header
+    // satırının ALTINDA, tahtayla arasındaki boşlukta duruyor; 48'lik bir
+    // yükseklik oraya 20 px'lik boş bir bant açardı. Aynı eylem için hemen
+    // üstündeki logo zaten tam boy bir hedef (yukarıda ölçülüyor).
+    _olc(tester, find.text('← Geri'), 'başlık: ← Geri', minHeight: 24);
     _olc(tester, find.text('GİRİŞ'), 'başlık: GİRİŞ');
   });
 

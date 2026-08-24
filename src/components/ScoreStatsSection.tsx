@@ -147,7 +147,27 @@ export function ScoreStatsSection({
   emptyText: string;
 }) {
   if (stats === undefined) {
-    return <LoadingNote py="py-4" />;
+    // Yüklenirken de TAM ızgara çizilir, değerler "—". Pencere yüksekliğini
+    // içeriğinden aldığından tek satırlık bir yükleme metni onu önce küçük
+    // açıp veri gelince büyütüyordu — kullanıcı bunu mobil portta bildirdi
+    // (24 Ağustos 2026): "önce 1-2 saniye bir popup görüyorum, sonra
+    // sıralama üstüne geliyor... tek pencere açılmalı ve datanın olduğu
+    // kısımda yükleniyor yazmalı". Aynı kusur webde de vardı.
+    const { playerCells, gameCells } = buildScoreCells(null);
+    const dash = (cells: Cell[]): Cell[] => cells.map((c) => ({ ...c, value: '—', cls: 'text-muted' }));
+    return (
+      <>
+        <LoadingNote py="py-1" />
+        <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono mb-1.5">
+          Oyuncu İstatistikleri
+        </div>
+        <CellsGrid cells={dash(playerCells)} />
+        <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono mt-4 mb-1.5">
+          Oyun İstatistikleri
+        </div>
+        <CellsGrid cells={dash(gameCells)} />
+      </>
+    );
   }
   const { playerCells, gameCells } = buildScoreCells(stats);
   return (

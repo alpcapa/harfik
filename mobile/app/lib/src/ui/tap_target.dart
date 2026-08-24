@@ -34,11 +34,20 @@ class TapTarget extends StatelessWidget {
   final VoidCallback? onTap;
   final double min;
 
+  /// Yalnızca bir eksende istisna gerektiğinde ([min]'in yerini alır).
+  /// Bugünkü tek örnek "← Geri": 48'lik bir YÜKSEKLİK header ile tahta
+  /// arasına 20 px'lik boş bir bant açardı, oysa hemen üstündeki logo aynı
+  /// eylem için zaten tam boy bir hedef (bkz. `game_header.dart`).
+  final double? minWidth;
+  final double? minHeight;
+
   const TapTarget({
     super.key,
     required this.child,
     this.onTap,
     this.min = kMinTapTarget,
+    this.minWidth,
+    this.minHeight,
   });
 
   @override
@@ -49,7 +58,8 @@ class TapTarget extends StatelessWidget {
     // geçirir). Faktörsüz `Center` gelen sınırların TAMAMINI kaplardı —
     // bir `Row` içinde bu genişliği sonsuza götürür.
     final box = ConstrainedBox(
-      constraints: BoxConstraints(minWidth: min, minHeight: min),
+      constraints: BoxConstraints(
+          minWidth: minWidth ?? min, minHeight: minHeight ?? min),
       child: Center(widthFactor: 1, heightFactor: 1, child: child),
     );
     if (onTap == null) return box;
