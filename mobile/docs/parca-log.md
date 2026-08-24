@@ -5285,6 +5285,44 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
      - **Doğrulama sınırı:** Flutter SDK bu ortamda yok; Dart yarısının
        kanıtı CI. Web: `tsc`, `npm run build`, Playwright 29/29.
 
+   - ✅ **Parça 136 — "Paylaş" atlanmıştı; kutusuz hedef taraması artık
+     TESTTE (24 Ağustos 2026, cihaz testinin ÜÇÜNCÜ turu, Android):**
+     kullanıcı *"footerdaki paylaşın hâlâ tıklanmadığını farkettim, yine
+     yukarısına dokunmak gerekiyor"* dedi.
+     - **Kök sebep düzeltmede değil TARAMADAYDI:** Parça 134'te kutusuz
+       dokunulabilirleri ararken "GestureDetector'ın DOĞRUDAN çocuğu `Text`
+       mi" diye baktım; Setup footer'ındaki "Paylaş"ın çocuğu ikon + metin
+       taşıyan bir `Row` olduğundan desene hiç takılmadı. Yani düzeltme
+       doğruydu, KAPSAMI eksikti.
+     - **İki katmanlı ders, ikisi de uygulandı:** (1) tarama çocuğun
+       TÜRÜNE değil, kutuya bir ÖLÇÜ veren bir şey (`padding`, `width`,
+       `height`, `SizedBox`, `Container`, `constraints`, `TapTarget`…)
+       olup olmadığına bakmalı; (2) **elle koşulan bir tarama bir daha
+       koşulmaz** — `tap_target_test.dart` artık `lib/src/ui` altını
+       kendisi tarıyor ve kutusuna hiç ölçü vermeyen her
+       `GestureDetector`/`InkWell`i düşürüyor. 11 gerekçeli istisna adıyla
+       ve sebebiyle listeli (`_olcusuzIstisnalar`); yeni bir tanesi
+       eklenirse CI kırmızı olur.
+     - **Aynı taramanın ortaya çıkardığı öteki hedefler:** skor kartının
+       "k-lig #N · puan" satırı ve "TÜM GEÇMİŞ OYUNLAR" linki (~14-19 px),
+       oyuncu kartındaki k-lig satırı; ve header'daki oyuncu skor kutuları
+       — satır zaten 48 px olduğundan onları 48'e çıkarmak BEDAVA oldu
+       (`minWidth: 0`, genişlik akıcı sistemden gelmeye devam ediyor).
+     - **`TapTarget.alignment` (CI yakaladı):** kutuyu büyütmek çocuğu
+       ORTALADIĞINDAN, bir kenara hizalı duran metinler kayıyordu —
+       "← Geri" 48 px'lik kutuda 4 px sağa kaçıp tahtanın sol kenarıyla
+       hizasını kaybetti ve `game_header_test` bunu düşürdü. Varsayılan
+       orta kaldı; hizalı hedefler `alignment` veriyor.
+     - **AÇIK KALAN:** misafirken YZ oyunu açılışında tahtanın "takılarak"
+       gelmesi. Bu ortamda profil alınamıyor; koddan iki aday çıkarıldı ve
+       ikisi de "Canlı bekleyen oyunda olmuyor" gözlemine uyuyor:
+       (A) misafir uyarı penceresinin kapanma animasyonu bitmeden geçişin
+       başlaması (`showDialog`'un sonucu animasyon bitmeden döner) — Canlı
+       yolunda böyle bir pencere yok; (B) 169 hücrenin bulanık gölgeleriyle
+       ilk rasterizasyonu — `OnlineGameScreen` önce "Yükleniyor…" gösterip
+       tahtayı geçişten SONRA çiziyor. Ayırt edici deneme kullanıcıya
+       verildi: GİRİŞLİYKEN YZ oyunu açmak (uyarı penceresi çıkmaz).
+
    - ✅ **Parça 133 — bölge kuralı: kendi bloğundaki DESTEKSİZ rakip taşı
      artık zinciri kesmiyor (24 Ağustos 2026, kullanıcı gerçek bir oyunda
      yakaladı):** *"Rakip benim bölgemin içinde UMAR yazdı. Ben de üstüne PÜR

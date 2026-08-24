@@ -357,3 +357,24 @@ büyüyor. Bu bir yükleme durumu eksikliği DEĞİL, **yer ayırma** eksikliği
 Düzeltme: yükseklik baştan ayrılıyor — lider tablosunda listenin kendi
 tavanı kadar (50vh, iki platformda da), skor kartında aynı ızgara `—`
 değerleriyle çizilerek. İki platformda birden.
+
+### Ek: taramayı ŞEKLE göre yap, TÜRE göre değil (24 Ağustos 2026, üçüncü tur)
+
+48 px turundan sonra kullanıcı Android'de bir hedefin daha kaçtığını
+bildirdi: Setup footer'ındaki **"Paylaş"**. Düzeltme doğruydu, **taramanın
+kapsamı** eksikti — kutusuz dokunulabilirleri ararken "`GestureDetector`ın
+DOĞRUDAN çocuğu `Text` mi" diye bakılmıştı; "Paylaş"ın çocuğu ikon + metin
+taşıyan bir `Row` olduğundan desene hiç takılmadı.
+
+> **Kural:** bir dokunma hedefi taraması çocuğun TÜRÜNE değil, kutuya bir
+> ÖLÇÜ veren bir şey (`padding`, `width`/`height`, `SizedBox`, `Container`,
+> `constraints`, `TapTarget`…) olup olmadığına bakmalı.
+>
+> **Ve:** elle koşulan bir tarama bir daha koşulmaz. `tap_target_test.dart`
+> artık `lib/src/ui` altını kendisi tarıyor; ölçüsüz her tappable testi
+> düşürüyor, gerekçeli istisnalar adıyla listeli.
+
+Aynı turda `TapTarget`e `alignment` eklendi: kutuyu büyütmek çocuğu
+ortaladığından, bir kenara HİZALI duran metinler kayıyordu ("← Geri" 48
+px'lik kutuda 4 px sağa kaçıp tahtanın sol kenarıyla hizasını kaybetti —
+CI yakaladı).
