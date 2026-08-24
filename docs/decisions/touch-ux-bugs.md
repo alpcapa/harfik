@@ -317,3 +317,43 @@ pencere başlığındaki dişliden de ulaşılıyor).
 
 **Doğrulama sınırı:** bu ortamda Flutter/Dart SDK YOK — Dart yarısının
 kanıtı CI. Web tarafı temiz: `tsc`, `npm run build`, Playwright 29/29.
+
+### Ek: hedefi büyütmenin GİZLİ maliyeti — dikey ortalama (24 Ağustos 2026)
+
+İlk çözüm "← Geri"yi logoyla aynı `TapTarget`e alan bir Column'du ve
+çalıştı; ama kullanıcı cihazda iki şey birden bildirdi: *"tam üstüne
+basarsan ok ama biraz altına gelirse çalışmıyor"* ve *"header'ı bu kadar
+büyütmüş olmayız"*.
+
+Ölçüldüğünde ikisinin aynı sebepten geldiği çıktı: blok `Row`'da **dikey
+ortalandığı** için, logonun skor kutularıyla hizasını korumak etiketin
+altına eklenen her 1 px'e karşılık üstte de 1 px istiyordu. Yani
+`header = 2 × (aşağı eklenen pay) + sabit`.
+
+> **Kural:** dikey ortalanmış bir satırda bir hedefi AŞAĞI doğru büyütmek
+> iki kat pahalıdır. Ödemek istemiyorsan hedefi o satırdan ÇIKAR — altında
+> zaten boşluk varsa (burada header ile tahta arası) onu tıklanabilir
+> yapmak bedavadır.
+
+Sonuç: "← Geri" header satırının altına, tahtanın üstündeki mevcut boşluğa
+taşındı. Logo+skor bandı 77 → 58 px, etiketin altında 13 px pay. Bedeli
+logo↔etiket arasının 3 → ~9 px açılması (etiket artık logonun kutusuna
+değil satırın altına çapalı).
+
+**Web bu değişikliği ALMADI** — orada etiket `<button>`ın içinde bir
+`<span>` ve tıklama ataya kabardığından hem 3 px yukarıda durabiliyor hem
+çalışıyor. Ayrışan şey değer değil yapı; parite testi bunu kayda geçiriyor.
+
+### Ek: "iki pencere açılıyor" — modal yüksekliği içerikten geliyordu
+
+Kullanıcı: *"Leaderboard ve skor kartı arkada küçük pencerede yükleniyor
+çıkıyor sonra büyük pencereler geliyor. Halbuki tek pencere açılmalı ve
+datanın olduğu kısımda yükleniyor yazmalı."*
+
+`KModal`/web `Modal` yüksekliğini içeriğinden alıyor ve dikeyde ortalı:
+yüklenirken içerik tek satır → küçük pencere; veri gelince iki yöne birden
+büyüyor. Bu bir yükleme durumu eksikliği DEĞİL, **yer ayırma** eksikliği.
+
+Düzeltme: yükseklik baştan ayrılıyor — lider tablosunda listenin kendi
+tavanı kadar (50vh, iki platformda da), skor kartında aynı ızgara `—`
+değerleriyle çizilerek. İki platformda birden.

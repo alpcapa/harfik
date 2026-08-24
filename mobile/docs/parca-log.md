@@ -5234,6 +5234,57 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        yeniden koşturuldu. Web tarafı temiz: `tsc`, `npm run build`,
        Playwright **29/29**. Cihazda teyit kullanıcıdan bekleniyor.
 
+   - ✅ **Parça 135 — "← Geri" ayrı satıra taşındı; yükleme durumu artık
+     pencereyi büyütmüyor (24 Ağustos 2026, cihaz testinin İKİNCİ turu):**
+     Parça 134'ten sonra kullanıcı `71eb73a` derlemesini iPad'de denedi.
+     - **"Geri tuşu tam üstüne basarsan ok ama biraz altına gelirse
+       çalışmıyor. Geri ile board arasındaki boşluğu biraz kısarsak hem
+       daha iyi çalışır hem de header'ı bu kadar büyütmüş olmayız."**
+       Ölçüm: Parça 134'ün çözümü etiketi logoyla aynı `TapTarget`e almıştı
+       ve blok Row'da dikey ORTALANDIĞINDAN, logonun skor kutularıyla
+       hizasını korumak için etiketin altına eklenen her 1 px header'a
+       **2 px** ekliyordu. Yani "altına pay ekle" ile "header küçülsün"
+       matematiksel olarak çelişiyordu — üç seçenek kullanıcıya sayılarıyla
+       sunuldu, seçimi "Geri'yi tahtanın üstüne al" oldu.
+     - **Yeni düzen:** header satırı yalnızca logo + skor kutuları + hesap
+       (hepsi 48 px'lik hedefler, hiza korunuyor); "← Geri" ise ayrı bir
+       satır olarak tahtanın üstündeki **zaten var olan** boşluğu
+       kullanıyor — o boşluk artık tıklanabilir. Logo+skor bandı 77 → 58
+       px; etiketin altında 13 px pay var; logo ↔ etiket arası 3 → ~9 px
+       (etiket artık logonun kutusuna değil SATIRIN altına çapalı, satırın
+       boyunu 48'lik hedefler belirliyor).
+     - **Yeni gerekçeli istisna:** etiketin kutusu 48 GENİŞ ama 24 YÜKSEK
+       (`TapTarget.minHeight` — bu tur eklendi). 48'lik bir yükseklik
+       header ile tahta arasına 20 px'lik boş bir bant açardı ve hemen
+       üstündeki logo aynı eylem için zaten tam boy bir hedef.
+     - **Web DEĞİŞMEDİ ve bu bilinçli:** orada etiket `<button>`ın içinde
+       mutlak konumlu bir `<span>` ve DOM'da tıklama ataya kabardığından
+       hem 3 px yukarıda durabiliyor hem tıklanabiliyor. Ayrışan şey değer
+       değil YAPI; `layout_parity_test` artık `kBackGap`i karşılaştırmak
+       yerine bu ayrımı kayda geçiriyor (ve `kBackGap`in geri gelmesini
+       yakalıyor).
+     - **"Tek pencere açılmalı, datanın olduğu kısımda yükleniyor
+       yazmalı":** *"Leaderboard ve skor kartı arkada küçük pencerede
+       yükleniyor (1-2 saniye) çıkıyor sonra büyük pencereler geliyor."*
+       Sebep Parça 134'ün eksiği DEĞİL, `KModal`in yüksekliğini içeriğinden
+       alması (`MainAxisSize.min` + dikey ortalı): yüklenirken içerik tek
+       satır → küçük pencere; veri gelince iki yöne birden büyüyor. Artık
+       yer BAŞTAN ayrılıyor — lider tablosunda listenin KENDİ tavanı kadar
+       (ekranın %50'si), skor kartında aynı ızgara `—` değerleriyle
+       çizilerek. **Aynı kusur webde de vardı**, iki taraf birlikte
+       düzeltildi.
+     - **Paylaş penceresinin konumu — hata DEĞİL:** Safari'nin kendi
+       paylaşım sayfası; webde konumunu uygulama seçemiyor. Native tarafta
+       `sharePositionOrigin` zaten veriliyor (`share_board.dart`,
+       `friends_modal.dart`) — değişiklik gerekmedi, kayda geçsin diye
+       yazılı.
+     - **Testler:** `game_header_test.dart` artık etiketin ALTINA
+       dokunulduğunda da Setup'a dönüldüğünü iddia ediyor (`tapAt`,
+       `kBackBottomPad / 2`); logo↔etiket arası sabit sayı yerine aralık
+       olarak kilitli, çünkü satırın boyu artık 48'lik hedeflerden türüyor.
+     - **Doğrulama sınırı:** Flutter SDK bu ortamda yok; Dart yarısının
+       kanıtı CI. Web: `tsc`, `npm run build`, Playwright 29/29.
+
    - ✅ **Parça 133 — bölge kuralı: kendi bloğundaki DESTEKSİZ rakip taşı
      artık zinciri kesmiyor (24 Ağustos 2026, kullanıcı gerçek bir oyunda
      yakaladı):** *"Rakip benim bölgemin içinde UMAR yazdı. Ben de üstüne PÜR

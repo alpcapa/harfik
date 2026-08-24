@@ -2295,3 +2295,29 @@ veritabanı Mumbai'de (bkz. `docs/decisions/product-backlog.md`).
 - [ ] **Oyun Geçmişi / Sohbet Geçmişi / Canlı oyun listesi** de aynı yazıyı
       gösteriyor (tek bileşen — biri farklı görünüyorsa kaçmış demektir).
 - [ ] Veri gelince yazı kayboluyor, hiçbir yerde **takılı kalmıyor**.
+
+
+## 18. "← Geri" yeni yeri + tek pencere yükleme (24 Ağustos 2026, Parça 135)
+
+Bölüm 16'nın devamı. Kullanıcı ilk turda *"tam üstüne basarsan ok ama biraz
+altına gelirse çalışmıyor"* dedi; etiket artık header satırının ALTINDA,
+tahtanın üstündeki boşlukta ve o boşluk tıklanabilir.
+
+- [ ] **"← Geri" yazısının BİRAZ ALTINA** dokun (yazının kendisine değil,
+      hemen altındaki birkaç piksele) → Setup'a dönmeli.
+- [ ] **Yazının kendisi** de hâlâ çalışıyor; **logo** da çalışıyor.
+- [ ] **Header küçüldü:** logo + skor kutuları bandı gözle öncekinden
+      belirgin şekilde daha alçak; logo ile skor kutuları hâlâ aynı hizada.
+- [ ] **"← Geri" logodan kopmadı:** logonun hemen altında duruyor (arası
+      öncekinden bir miktar açık, bu beklenen), sol kenarı tahtanın sol
+      kenarıyla hizalı.
+- [ ] **Tahta yukarı kaymadı/taşmadı:** hiçbir yerde sarı-siyah taşma
+      çubuğu yok, raf ve butonlar erişilebilir.
+
+### Tek pencere yükleme
+
+- [ ] **k-lig** açılınca pencere **tek boyda** açılmalı: içerik alanı boş
+      değil, ortasında "Yükleniyor…" — ve veri gelince pencere BÜYÜMEMELİ,
+      liste yerinde dolmalı.
+- [ ] **Skor Kartı** açılınca istatistik kutuları `—` ile baştan çizili
+      olmalı; sayılar yerinde dolmalı, pencere büyümemeli.
