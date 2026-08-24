@@ -159,6 +159,39 @@ jobs:
             "--dart-define=BUILD_TIME=${{ steps.stamp.outputs.time }}" \
             --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
             --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+      # İnternet izni BİRLEŞMİŞ manifeste girdi mi? (24 Ağustos 2026)
+      #
+      # Kaynak manifesti grep'lemek YETMEZ: izin oraya yazılmadan da bir
+      # eklentinin manifestinden gelebilir, ya da tam tersi bir merger kuralı
+      # onu düşürebilir. Soru "yazdık mı" değil "PAKETE girdi mi" — bu yüzden
+      # kontrol derleme çıktısını okuyor (aşağıdaki .aab imzasını GERİ OKUyan
+      # adımla aynı felsefe).
+      #
+      # NEDEN VAR: izin `main/` manifestinde yoktu, yalnızca `debug/` ve
+      # `profile/`de vardı — yani release APK internetsiz çıkıyor ve sunucuya
+      # dokunan HER özellik (giriş, Canlı oyun, k-lig, sohbet) sessizce
+      # ölüyordu. Hata mesajı DNS hatasına benzediğinden (`Failed host lookup`)
+      # teşhisi de yanlış yöne çekiyordu. İlk gerçek cihaz kurulumunda çıktı.
+      - name: İnternet izni pakete girdi mi
+        working-directory: mobile/app
+        run: |
+          set -euo pipefail
+          MERGED=$(find build/app/intermediates -path '*merged_manifest*' \
+                     -path '*release*' -name AndroidManifest.xml)
+          if [ -z "$MERGED" ]; then
+            echo "::error::Birleşmiş release manifesti bulunamadı — kontrol sessizce geçemez."
+            exit 1
+          fi
+          FAIL=0
+          for m in $MERGED; do
+            if grep -q 'android.permission.INTERNET' "$m"; then
+              echo "ok: $m"
+            else
+              echo "::error::INTERNET izni YOK: $m"
+              FAIL=1
+            fi
+          done
+          exit $FAIL
       - uses: actions/upload-artifact@v7
         with:
           name: kelimeki-apk

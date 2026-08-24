@@ -6364,6 +6364,57 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ayraç dengesi, (c) her çapanın `grep`le kaynağında teyidi. Dart
        yarısının kanıtı yine CI.
 
+   - ✅ **Parça 131 — release APK'da İNTERNET İZNİ YOKTU (24 Ağustos 2026,
+     ilk gerçek cihaz kurulumu):** Kullanıcı Play için ekran görüntüsü
+     çekmek üzere `mobile-latest` APK'sını Android telefonuna kurdu, tanıtımı
+     geçip Setup'a geldi ve GİRİŞ'e basınca şunu aldı:
+     `ClientException with SocketException: Failed host lookup:
+     '<ref>.supabase.co' (OS Error: No address associated with hostname,
+     errno = 7)`.
+     - **Mesaj DNS hatasına benziyor ama sebep ağ DEĞİL izin.** URL doğruydu
+       — hatadaki proje ref'i web'in `index.html`'indeki `preconnect`
+       satırıyla BİREBİR aynı (ilk kontrol bu oldu, ref/typo ihtimali böyle
+       elendi). Android, `INTERNET` izni olmayan bir uygulamada ad
+       çözümleyiciyi de kapatıyor ve tam olarak bu "No address associated
+       with hostname" hatasını üretiyor.
+     - **Kök sebep:** Flutter şablonu `INTERNET`i YALNIZCA
+       `android/app/src/debug/` ve `profile/` manifestlerine koyuyor (hot
+       reload için). Release derlemesi `main/`i birleştiriyor ve orada YOKTU
+       — repoda `uses-permission` geçen başka hiçbir satır da yoktu
+       (`grep`le doğrulandı) ve kullandığımız eklentilerin HİÇBİRİ eklemiyor:
+       `connectivity_plus` yalnız `ACCESS_NETWORK_STATE` veriyor,
+       `supabase_flutter` saf Dart. Yani release APK internetsiz çıkıyordu ve
+       sunucuya dokunan HER özellik (giriş/kayıt, Canlı oyun, k-lig, sohbet,
+       telemetri) ölüydü.
+     - **Ekrandaki ikinci ipucu de aynı sebebi doğruluyor:** "İnternet
+       bağlantısı yok" uyarısı ÇIKMADI, ham hata göründü — çünkü
+       `connectivity_plus` (`ACCESS_NETWORK_STATE` izni var) WiFi'ı görüp
+       "bağlı" diyor. Yani `offlineNotice` yanlış davranmadı; ona yanlış
+       bilgi verildi.
+     - **Neden bugüne kadar görünmedi — Parça 122'nin (share_plus/iPad)
+       AYNI SINIFI:** cihaz testleri GitHub Pages'teki Flutter WEB
+       derlemesinde yapılıyor, orada Android izin modeli hiç yok; debug APK
+       ise izni yukarıdaki debug manifestinden otomatik alıyor. Web derlemesi
+       native-only kusurları YAPISAL olarak gizliyor — bu, aynı dersin ikinci
+       kez ve bu sefer mağaza blokeri boyutunda tekrarı.
+     - **Regresyon CI'da ve KAYNAĞI DEĞİL DERLENMİŞ ÇIKTIYI okuyor**
+       (`mobile-build.yml` → "İnternet izni pakete girdi mi", APK derleme ile
+       artefakt yükleme adımlarının ARASINDA — izinsiz bir paket kimse
+       indiremeden düşer). Kaynak manifesti grep'lemek yetmezdi: izin oraya
+       yazılmadan bir eklentiden de gelebilir, ya da bir merger kuralı onu
+       düşürebilir; sorulan soru "yazdık mı" değil "PAKETE girdi mi". Aynı
+       felsefe `.aab` imzasını geri okuyan adımda zaten vardı.
+     - **Negatif eş ölçüldü** (üç durum, kontrol mantığı yerelde koşturuldu):
+       izin varken geçiyor; `uses-permission` satırı silinince GERÇEKTEN
+       düşüyor; birleşmiş manifest hiç bulunamazsa da düşüyor (kontrolün
+       sessizce "geçmiş" sayılması engellendi).
+     - **Doğrulama sınırı:** Flutter SDK/Android SDK bu ortamda YOK — düzeltme
+       burada derlenip cihaza kurulamadı. Kanıt zinciri: manifest XML'i
+       ayrıştırılarak izin doğrulandı, CI adımının mantığı üç senaryoda
+       koşturuldu, kalan kanıt CI'ın kendi koşusu ve kullanıcının cihazı.
+     - **iOS ETKİLENMEDİ** — orada giden ağ trafiği için izin kavramı yok
+       (ATS yalnızca HTTPS zorluyor, zaten HTTPS kullanıyoruz).
+
    - ✅ **Parça 130 — mağaza öncesi telemetri: sürüm, rota ve `appVersion`
      paritesi (23 Ağustos 2026):** Kullanıcı *"özellikle ileride app tarafı
      geldiğinde eksik ne var?"* diye sorunca yapılan denetim üç boşluk buldu;
