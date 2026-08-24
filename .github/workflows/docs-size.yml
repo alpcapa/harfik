@@ -1,0 +1,32 @@
+# Doküman boyutu bütçesi — .md dosyaları büyüyüp bağlamı yemesin diye.
+#
+# NEDEN AYRI (ve neden çok hızlı) BİR İŞ AKIŞI: bu repoda "yalnızca doküman"
+# değişiklikleri bilerek CI koşturmuyor (ROADMAP: *"Yalnızca doküman (*.md)
+# → hiç CI koşmaz. Ücretsiz."*). O ucuzluğu bozmamak için burada npm install
+# YOK, derleme YOK — runner'ın hazır node'uyla tek bir betik koşuyor
+# (saniyeler). Betiğin hiçbir bağımlılığı yok, yalnızca `node:fs`.
+name: Doküman boyutu
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.md'
+      - 'scripts/check-doc-size.mjs'
+      - '.github/workflows/docs-size.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '**/*.md'
+      - 'scripts/check-doc-size.mjs'
+      - '.github/workflows/docs-size.yml'
+  workflow_dispatch:
+
+jobs:
+  budget:
+    name: Bütçe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Bütçeyi ölç
+        run: node scripts/check-doc-size.mjs

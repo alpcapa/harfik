@@ -343,22 +343,32 @@ devamı dahil — **`mobile/docs/*.md`** altına taşındı (24 Ağustos 2026,
 context split; bkz. kök `CLAUDE.md`'deki aynı işlemin gerekçesi — "Karar
 Kayıtları" bölümü).
 
-**Bir "Parça N" atfı ararken (kod yorumlarında/CLAUDE.md içinde geçen
-"bkz. mobile/CLAUDE.md, Parça N" gibi) `mobile/docs/parca-log.md`'ye bak**
-— TEK dosya, Parça 1'den bugüne kadarki TÜM UI/davranış paritesi
-kararlarının kronolojik kaydı (iki eski başlık altında dağınık duran
-günlük tek dosyada birleştirildi, aynı numaralandırma sürüyor).
+**Bir "Parça N" atfı ararken** (kod yorumlarında/CLAUDE.md içinde geçen
+"bkz. mobile/CLAUDE.md, Parça N" gibi) günlük ÜÇ CİLDE ayrıldı — numaraya
+göre doğru cilde git:
+
+| Parça | Cilt |
+|---|---|
+| 1-48 | `mobile/docs/parca-log-1-48.md` (dondurulmuş) |
+| 49-109 | `mobile/docs/parca-log-49-109.md` (dondurulmuş) |
+| **110+** | `mobile/docs/parca-log.md` — **AKTİF, yeni girişler buraya** |
+
+⚠ **Bir cildi baştan sona OKUMA — `grep` ile ara.** Ciltler tam bu yüzden
+var: tek dosya 714 KB'a çıkmıştı ve bir atıf için onu okumak bağlamın üçte
+birini yakıyordu (24 Ağustos 2026; gerekçe aktif cildin başlığında).
+Bütçeyi `npm run check-doc-size` ölçüyor, sınıra gelince yeni cilt açılır.
 
 | Konu | Dosya |
 |---|---|
 | Backend hazırlığı (submit_move idempotency, 5 Ağustos 2026) + Depolama katmanı + Flutter iskeleti + uygulama ikonu/splash + MembershipPerksBox | `mobile/docs/setup-log.md` |
 | Web derlemesi (test ortamı), Appetize, Play Store imzalama/.aab, karşılama katmanının web'e özgü ayrışması | `mobile/docs/build-and-distribution-log.md` |
-| **Web ↔ Uygulama Arasındaki Kabul Edilmiş Farklar — Parça 1...N günlüğü** (en büyük dosya, "Sıradaki Fazlar"ın devamı dahil) | `mobile/docs/parca-log.md` |
+| **Web ↔ Uygulama Arasındaki Kabul Edilmiş Farklar — Parça günlüğü** (ÜÇ cilt, yukarıdaki tabloya bak) | `mobile/docs/parca-log.md` + `-49-109` + `-1-48` |
 | FAZ A1 — cihaz testi tur durumu | `mobile/docs/cihaz-testi-log.md` |
 
 **Yeni bir "Parça N" notu eklerken:** parça numarasını bir öncekinin devamı
-olarak ver, `mobile/docs/parca-log.md`'nin SONUNA ekle (kronolojik sıra
-bozulmasın). Eğer not HER PARÇAYI ilgilendiren bir süreç kuralıysa (ör.
+olarak ver ve **AKTİF cilde** (`mobile/docs/parca-log.md`) yaz — dondurulmuş
+ciltlere ASLA (`check-doc-size` bunu yakalar). Aktif ciltte girişler en yeni
+EN ÜSTTE duruyor, yenisini oraya ekle. Eğer not HER PARÇAYI ilgilendiren bir süreç kuralıysa (ör.
 "her yeni ekranda bu kontrolü de yap" gibi) o zaman bu dosyadaki ZORUNLU
 bölümlerden birine (Etki Analizi / Parça Bitirme Kontrol Listesi) eklenmeli,
 tek bir parçanın notuna değil.
