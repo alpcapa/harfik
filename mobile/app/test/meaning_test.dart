@@ -133,10 +133,10 @@ void main() {
 
   test('taslak hamle sürerken anlam AÇILMAZ — dört yüzeyde de', () {
     _guardCheck('src/App.tsx', 'if (state.board[r][c]) {', 'openMeaning(',
-        'if (Object.keys(state.placed).length > 0) return;');
+        'if (Object.keys(state.placed).length > 0) {');
     _guardCheck('src/components/OnlineGameScreen.tsx',
         'if (state.board[r][c]) {', 'openMeaning(',
-        'if (Object.keys(state.placed).length > 0) return;');
+        'if (Object.keys(state.placed).length > 0) {');
     _guardCheck('mobile/app/lib/src/ui/game/game_screen.dart',
         'if (state.board[r][c] != null) {', 'showMeaningModal(',
         'if (state.placed.isNotEmpty) {');

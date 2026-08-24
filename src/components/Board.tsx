@@ -1,5 +1,6 @@
 // Kelimeki — 13x13 oyun tahtası (çok oyunculu, renkli bölgeler)
 import { useMemo } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import {
   BONUS_LABELS,
   BONUS_ZONE,
@@ -26,7 +27,10 @@ const OUTLINE_STROKE = 2.5;
 
 interface BoardProps {
   state: GameState;
-  onCellClick: (r: number, c: number) => void;
+  // Tıklama olayı da veriliyor: taslak sürerken ıskalanan dokunuş, en
+  // yakın taslak hücresine yönlendirilirken noktayı kullanıyor
+  // (`src/utils/draftRescue.ts`).
+  onCellClick: (r: number, c: number, e: ReactMouseEvent) => void;
   /** Oyna'ya basmadan önceki anlık geçerlilik/puan çerçevesi; taş yoksa null. */
   moveStatus: MoveStatus | null;
   /** "Hamleler" linkine tıklanınca çağrılır. */
@@ -334,7 +338,7 @@ export function Board({
             ...(hasPending ? { touchAction: 'none' } : null),
           }}
           data-cell={`${r},${c}`}
-          onClick={hasPending ? undefined : () => onCellClick(r, c)}
+          onClick={hasPending ? undefined : (e) => onCellClick(r, c, e)}
           onPointerDown={hasPending ? (e) => onTilePointerDown?.(r, c, e) : undefined}
           onPointerMove={hasPending ? onTilePointerMove : undefined}
           onPointerUp={hasPending ? onTilePointerUp : undefined}

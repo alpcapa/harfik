@@ -5482,9 +5482,17 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
          ızgara ölçülemiyorsa hiçbir şey yapılmaz — yanlış taşı geri almak,
          hiç tepki vermemekten daha kötü. Bunun için `onCellTap` artık
          dokunuşun global noktasını da taşıyor (`onTap` → `onTapUp`).
-       - **Web'e uygulanmadı (bilinçli, tarihli):** webin birincil girdisi
-         fare ve isabet sorunu yok; oradaki "sessiz ıskalama" kuralı duruyor.
-         Kurtarmanın web sürümü `docs/decisions/product-backlog.md`'de.
+       - **WEB'E DE UYGULANDI (aynı tur, kullanıcı isteği: *"Bir çok insan
+         mobil browser kullanıyor, mouse değil"* — haklı, ilk kararım
+         yanlıştı):** `src/utils/draftRescue.ts` → `nearbyDraftCell`, aynı
+         aday sırası/en-yakın-merkez/eşitlik kuralı. Tıklama noktası
+         `Board.tsx`'in `onCellClick`ine eklendi; komşu hücrelerin ölçüsü
+         DOM'daki `data-cell` özniteliğinden okunuyor. `npm run
+         verify-draft-rescue` 11 kontrolle doğruluyor (negatif eş kuruldu:
+         eşitlik kuralı bozulunca GERÇEKTEN düşüyor). Aynı turda webde
+         "konmuş taşa dokunma" davranışı da tek kaynağa alındı
+         (`tapPlacedTile`) — joker penceresi/compat click yutma yalnızca
+         pointer akışında.
      - **Test:** `meaning_test.dart` korumayı DÖRT dosyada birden ve SIRAYA
        bakarak kilitliyor (tahta-taşı dalının İÇİNDE, anlam çağrısından
        ÖNCE). Widget testi mümkün değil: `MeaningStore` gerçek sqflite

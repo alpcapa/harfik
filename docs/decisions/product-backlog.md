@@ -192,19 +192,3 @@ hepsi aynı boyutta — her çeşidi bir kez `ui.Image`'a çizip 169 kez
 `drawImageRect` ile basmak, 340 blur'u 7'ye indirir. Riski görsel (parite
 testlerinde piksel golden'ı YOK, yani regresyonu yalnızca göz yakalar), o
 yüzden mağaza turundan sonraya bırakıldı.
-
-
-## Iskalama kurtarmanın WEB sürümü (24 Ağustos 2026)
-
-Portta uygulandı: taslak hamle sürerken oynanmış bir taşa dokunmak,
-komşusundaki taslak taşını geri alıyor (belirsizlikte dokunuş noktasına en
-yakın olan; eşitse hiçbir şey). Gerekçe ve tuzaklar:
-`docs/decisions/touch-ux-bugs.md` → "küçültülemeyen hedefte ıskalamayı
-ZARARSIZ yap".
-
-Web'de **yalnızca sessiz ıskalama** var (anlam penceresi taslak sürerken
-açılmıyor), kurtarma yok — webin birincil girdisi fare ve orada isabet
-sorunu bildirilmedi. Mobil tarayıcıda aynı 24 px'lik hücre sorunu geçerli,
-o yüzden bir gün taşınmalı: `handleCellClick`in tıklama noktasını (MouseEvent
-/ PointerEvent) alması ve `getBoundingClientRect` ile en yakın taslak
-hücresini seçmesi yeterli. Mağaza turu bittikten sonra.

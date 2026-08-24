@@ -427,3 +427,21 @@ Dört yüzeyde birden uygulandı (web `App.tsx` + `OnlineGameScreen.tsx`, port
 sürerken `cursor-pointer` kalkıyor (çalışmayan bir kontrol tıklanır
 görünmemeli). `meaning_test.dart` korumanın DÖRT dosyada da, tahta-taşı
 dalının içinde ve anlam çağrısından ÖNCE durduğunu kilitliyor.
+
+
+### Ek: kurtarma web'e de taşındı (24 Ağustos 2026)
+
+İlk kararım "web'de gerek yok, orada birincil girdi fare" idi. Kullanıcı
+düzeltti: *"Bir çok insan mobil browser kullanıyor, mouse değil."* Haklı —
+mobil tarayıcıda aynı 24 px'lik hücre ve aynı parmak var.
+
+`src/utils/draftRescue.ts` → `nearbyDraftCell`, Flutter'daki
+`_nearbyDraftCell` ile aynı kurallar: ortogonal komşular, tek aday varsa o,
+birden çok adayda dokunuş noktasına en yakın olan, eşitlikte/ölçüm
+yokluğunda **null**. Tıklama noktası `Board.tsx`'in `onCellClick`ine
+eklendi; komşu hücre ölçüleri DOM'daki `data-cell` özniteliğinden okunuyor.
+
+`npm run verify-draft-rescue` 11 kontrolle doğruluyor (web tarafında birim
+test çatısı yok — `verify-cloud-save-mirror`la aynı esbuild+node deseni) ve
+**negatif eş kuruldu:** eşitlik kuralı kaldırılınca "tam orta dokunuş →
+null" kontrolü gerçekten düşüyor.
