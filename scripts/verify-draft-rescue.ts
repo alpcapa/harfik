@@ -100,6 +100,34 @@ check(
   ) === '[6,5]',
 );
 
+// 5b — ÇOK KÜÇÜK kayma (ölçüm gürültüsü) hâlâ belirsiz sayılır. Bu kontrol
+// gerçek bir CI hatasından doğdu: çıplak `<` ile tam orta dokunuşta kayan
+// nokta farkı (~1e-13) bir adayı "kazandırıyordu".
+check(
+  'iki komşu + 1 px kayma → null (gürültü)',
+  nearbyDraftCell(
+    SIZE,
+    5,
+    5,
+    draft([4, 5], [6, 5]),
+    { x: center(5, 5).x, y: center(5, 5).y + 1 },
+    rectOf,
+  ) === null,
+);
+
+// 5c — kayan nokta gürültüsü (1e-9 px) kesinlikle belirsiz.
+check(
+  'iki komşu + 1e-9 px kayma → null',
+  nearbyDraftCell(
+    SIZE,
+    5,
+    5,
+    draft([4, 5], [6, 5]),
+    { x: center(5, 5).x, y: center(5, 5).y + 1e-9 },
+    rectOf,
+  ) === null,
+);
+
 // 6 — dokunuş noktası YOKSA (ölçüm alınamadı) belirsizlikte tahmin edilmez.
 check(
   'iki komşu + nokta yok → null',

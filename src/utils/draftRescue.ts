@@ -60,5 +60,11 @@ export function nearbyDraftCell(
 
   const sorted = [...cands].sort((a, b) => dist2(a) - dist2(b));
   if (!Number.isFinite(dist2(sorted[0]))) return null;
-  return dist2(sorted[0]) < dist2(sorted[1]) ? sorted[0] : null;
+  // ⚠ PAY ŞART, çıplak `<` DEĞİL — portta CI yakaladı (24 Ağustos 2026):
+  // hücrenin TAM ORTASINA dokunulduğunda iki mesafe matematiksel olarak
+  // eşit ama kayan noktada ~1e-13 farkla biri "daha yakın" çıkıyor ve
+  // "belirsizlikte tahmin etme" kuralı sessizce deliniyordu. 0.8 (kare
+  // mesafede) ≈ 1.5 px'lik gerçek bir kayma demek: ölçüm gürültüsü altta
+  // kalır, kasıtlı bir kayma rahatça geçer.
+  return dist2(sorted[0]) < dist2(sorted[1]) * 0.8 ? sorted[0] : null;
 }

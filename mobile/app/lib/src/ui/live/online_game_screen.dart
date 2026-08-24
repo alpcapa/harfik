@@ -1066,7 +1066,12 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     }
 
     adaylar.sort((a, b) => uzaklik(a).compareTo(uzaklik(b)));
-    return uzaklik(adaylar[0]) < uzaklik(adaylar[1]) ? adaylar[0] : null;
+    // ⚠ PAY ŞART, çıplak `<` DEĞİL — CI yakaladı (24 Ağustos 2026): hücrenin
+    // TAM ORTASINA dokunulduğunda iki mesafe matematiksel olarak eşit ama
+    // kayan noktada ~1e-13 farkla biri "daha yakın" çıkıyor ve tahmin
+    // etmeme kuralı sessizce deliniyordu. 0.8 (kare mesafede) ≈ 1.5 px'lik
+    // gerçek bir kayma demek: gürültü altta kalır, kasıtlı bir kayma geçer.
+    return uzaklik(adaylar[0]) < uzaklik(adaylar[1]) * 0.8 ? adaylar[0] : null;
   }
 
   Future<void> _handleCellTap(int r, int c, Offset global) async {
