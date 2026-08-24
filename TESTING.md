@@ -1589,6 +1589,35 @@ silinmez.**
       bölümde ~20 saat hatırlatma / 48 saat silme cümlesini taşıyor ve üç
       yüzeyde de aynı.
 
+## 19. Alt şerit dokunma hedefleri (24 Ağustos 2026)
+
+Bir kullanıcı cihazda bildirdi: *"board altındaki hamleler, mesajlar ve nasıl
+oynanır linkleri tıklayınca hemen açılmıyorlar. Kaç defa basmam gerekti."*
+Hedefler 18 → 32 px'e çıkarıldı (dolgu KAPTAN her ÖĞEYE taşındı; şeridin dış
+ölçüsü değişmedi). Ayrıntı/ölçümler: `docs/decisions/touch-ux-bugs.md` →
+"Alt şerit dokunma hedefleri". `layout_parity_test.dart` düzeni kilitliyor
+ama **gerçek parmakla ıskalamayı hiçbir test ölçemez** — burası o teyit.
+
+**GERÇEK dokunmatik cihazda**, hem yerel (YZ) hem Canlı oyun ekranında koş.
+
+- [ ] **Hamleler:** Tahtanın altındaki "Hamleler"e BİR kez dokun → hamle
+      penceresi ilk dokunuşta açılmalı.
+- [ ] **Mesajlaşma (yalnızca Canlı):** "Mesajlaşma"ya bir kez dokun →
+      sohbet ilk dokunuşta açılmalı.
+- [ ] **Nasıl Oynanır?:** Şeridin sağındaki linke bir kez dokun → kurallar
+      ilk dokunuşta açılmalı.
+- [ ] **Etiketin ÜSTÜNE/ALTINA dokunma da çalışıyor:** Yazının tam üstüne
+      değil, hemen üstündeki/altındaki birkaç piksele dokun → yine açılmalı
+      (hedef artık yazının kendisinden yüksek).
+- [ ] **Şerit büyümedi:** Tahta kartının alt kenarı ile raf arasındaki
+      boşluk gözle ESKİSİYLE aynı görünmeli — bu düzeltme şeridi
+      büyütmemeliydi.
+- [ ] **Okunmamış mesaj rozeti yerinde:** Okunmamış mesajı olan bir Canlı
+      oyunda kırmızı sayı rozeti "Mesajlaşma" etiketinin sağ ÜST köşesinde
+      durmalı, aşağı kaymamalı.
+- [ ] **Çevrimdışı göstergesi:** Uçak modunu aç → "Çevrimdışı" şeridin
+      sağında görünmeli ve "Nasıl Oynanır?" ile ÇAKIŞMAMALI (dar telefonda
+      alt satıra sarabilir, bu beklenen).
 ## 20. Bölge kuralı — bloktaki desteksiz rakip taşı (24 Ağustos 2026)
 
 Kural değişti: kendi 4×4 köşe bloğunun içindeki bir hücre, üzerinde rakip taşı

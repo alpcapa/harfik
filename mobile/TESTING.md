@@ -2226,3 +2226,24 @@ cihazda teyit gerekiyor. Hem yerel (YZ) hem Canlı oyun ekranında koş.
       başka hücreye taşı, tahtadan rafa sürükleyerek geri al.
 - [ ] **Kaydırma çakışmıyor:** Tahtayı/sayfayı parmakla kaydırmaya çalış →
       taş sürüklenmeye başlamamalı.
+
+## 15. Alt şerit dokunma hedefleri (24 Ağustos 2026, Parça 132)
+
+Kullanıcı cihazda bildirdi: *"board altındaki hamleler, mesajlar ve nasıl
+oynanır linkleri tıklayınca hemen açılmıyorlar. Kaç defa basmam gerekti."*
+Dolgu KAPTAN her ÖĞEYE taşındı; hedefler 18 → 32 px, şeridin dış ölçüsü
+(32) DEĞİŞMEDİ. Web tarafında ölçüldü, portta ölçüm KOŞULAMADI (Flutter SDK
+yok) — gerçek cihazda teyit gerekiyor. Hem yerel (YZ) hem Canlı oyun
+ekranında koş.
+
+- [ ] **Hamleler ilk dokunuşta açılıyor** (üst üste basmak gerekmemeli).
+- [ ] **Mesajlaşma ilk dokunuşta açılıyor** (yalnızca Canlı oyunda).
+- [ ] **Nasıl Oynanır? ilk dokunuşta açılıyor.**
+- [ ] **Yazının hemen üstü/altı da çalışıyor:** Etiketin tam üstüne değil,
+      birkaç piksel yukarısına/aşağısına dokun → yine açılmalı.
+- [ ] **Şerit büyümedi:** Tahta kartının alt kenarı ile raf arasındaki
+      boşluk gözle ESKİSİYLE aynı olmalı.
+- [ ] **Okunmamış rozeti kaymadı:** Okunmamış mesajı olan Canlı bir oyunda
+      kırmızı sayı "Mesajlaşma"nın sağ ÜST köşesinde durmalı.
+- [ ] **Çevrimdışı göstergesi:** Uçak modunda "Çevrimdışı" görünmeli ve
+      "Nasıl Oynanır?" ile çakışmamalı.
