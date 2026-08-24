@@ -14,6 +14,45 @@ maddeleri, burası İKİ platformu birden ilgilendiren ve bilinçli olarak
 ertelenmiş ürün fikirleri. Bir madde yapılınca buradan silinip ilgili
 bölümün kendi tarihli notuna taşınır.
 
+- **Hayalet taş tahtayla birlikte küçülmeli (24 Ağustos 2026, ölçüldü —
+  ertelendi):** Sürüklenen taşın hayaleti SABİT 46 px (`App.tsx`'te
+  `width/height: 46` + `scale(1.1)` = 50,6 px; portta `_buildGhost`'ta aynı
+  sayı). Masaüstünde tahta hücresi de 46,2 px olduğundan tam oturuyor —
+  sayı oradan geliyor. **Telefonda hücre 23,9 px'e iniyor ama hayalet 46'da
+  kalıyor**, yani hedefin İKİ KATI (390 px'te ölçüldü: 50,6 / 23,9 = 2,13×).
+  İki sonucu var: (1) bırakma hedefinin kesikli yeşil/kırmızı çerçevesi
+  hayaletin ALTINDA kalıp hiç görünmüyor — kullanıcı bunu bizzat bildirdi
+  (*"genellikle o pek gözükmüyor"*); (2) sürüklenen taş komşu hücreleri de
+  örttüğünden nereye düşeceği gözle kestirilemiyor.
+  - **Denenip ELENEN iki ucuz çözüm (ikisi de ekranda üretilip bakıldı,
+    ikisi de mevcut hâlden KÖTÜ):** çerçeveyi hayaletin üstüne almak →
+    kesikli kutu harfin üstüne binip taşı okunmaz yapıyor; hayaleti yarı
+    saydam yapmak (`opacity: .72`) → harf soluyor, çerçeve yine zar zor
+    seçiliyor. Kayıt bu yüzden burada: **"çerçeveyi görünür yap" yanlış
+    çerçeveleme**, sorun çerçevede değil hayaletin ÖLÇÜSÜNDE.
+  - **Doğru düzeltme:** hayaletin ölçüsünü tahta hücresine bağlamak (sabit
+    46 yerine ölçülen hücre boyu). Masaüstünde davranış pratikte
+    değişmez (46 ≈ 46,2), telefonda hayalet hedefiyle aynı boya iner ve
+    çerçeve kendiliğinden görünür olur. İKİ platformda birden yapılmalı.
+  - **Neden ertelendi:** gerçek bir tasarım değişikliği ve "parmağın
+    altındaki taş ne kadar küçük olabilir" sorusu cihazda bakılmadan
+    yanıtlanamaz; Play Store yükleme akışını bölmemek için sonraya bırakıldı.
+
+- **Web'de sürükleme hedefi hâlâ `<Board>`'un PROP'u (24 Ağustos 2026,
+  portun 8 Ağustos düzeltmesi geri taşınmadı):** `App.tsx` her pointer
+  hareketinde `setGhost({... overKey, overValid})` çağırıyor ve bu ikisi
+  `<Board>`'a prop olarak geçiyor (`App.tsx:1546-1547`), yani **169 hücre +
+  territory hesabı her harekette yeniden render ediliyor**. Port bunu
+  8 Ağustos'ta bırakmıştı (Parça 23): orada gösterge artık `BoardWidget`'ın
+  DEĞİL, ekran katmanının kendi küçük overlay'inin işi
+  (`game_screen.dart` → `_hoverHighlight`), `BoardWidget` sürükleme
+  sırasında hiç yeniden inşa edilmiyor. Aynı deseni web'e taşımak gerekiyor.
+  - **Maliyeti ÖLÇÜLEMEDİ, iddia edilmiyor:** bu oturumdaki harness'te
+    sürükleme başlatılamadığı için kare süresi karşılaştırması yapılamadı
+    (engel sonradan bulundu — ilk oyunda `HelpModal` kendiliğinden açılıp
+    dokunuşu yutuyor; `smoke.spec.ts`'teki gibi ✕ ile kapatmak gerekiyor).
+    Yani bu madde "kanıtlanmış yavaşlık" değil, **kanıtlanmış yapısal borç**.
+
 - **k-lig puan grafiği (14 Ağustos 2026, kullanıcı fikri — "sonra yaparız"):**
   Skor Kartı'nda "Oyuncu İstatistikleri" başlığının EN SAĞINA bir link;
   basınca kişinin k-lig puanının zaman içindeki seyrini gösteren bir grafik

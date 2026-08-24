@@ -80,6 +80,41 @@ iki platform sessizce ayrışır: **`mobile/app/test/layout_parity_test.dart`
 dördünü birden kilitliyor** — hem sayıları hem eşiğin pointer türüne bağlı
 seçildiğini (sabit doğru olup kullanılmazsa değeri yok).
 
+### Eşiği 10'dan indirme denemesi — 8 ELENDİ (24 Ağustos 2026)
+
+Kullanıcı cihazda *"oyun sırasında taş sürükleme de daha yavaş gibi"* dedi.
+Sürükleme yolunda başka hiçbir şey değişmemişti (Parça 23'ün `_dragNotifier`
+optimizasyonu yerinde, `setState` yalnızca sürüklemenin başında/sonunda), yani
+tek aday yukarıdaki 6 → 10 değişikliğiydi: taşın kalkması için parmağın 4 px
+daha oynaması gerekiyor.
+
+"Android'in kendi touch slop'u 8" diye eşiği **8**'e indirmek önerildi ve
+**yanlış çıktı** — kod yazılmadan, mevcut kilit okunarak yakalandı:
+
+- Karşılaştırma `dist < eşik` (`App.tsx:1330`, `game_screen.dart:434`), yani
+  eşik **dahil değil**.
+- `smoke.spec.ts`'teki `JITTER = 8` testi tam 8 px'lik titreşimli bir
+  dokunuşun hâlâ **dokunuş** sayılmasını kilitliyor.
+- Eşik 10 → `8 < 10` → dokunuş ✅ · Eşik 8 → `8 < 8` yanlış → **sürükleme** ❌
+
+Yani bu semantikte "8" yazmak Android'den **daha katı** olur ve yukarıdaki
+sessiz kaybı geri getirir. 8 px toleransı korunacaksa eşik en fazla 9'a
+inebilir — bugünkü 10'a göre kazanç **1 px**, yani anlamsız.
+
+**Sonuç: "sayıyı düşürmek" diye bir seçenek yok.** Tolerans (8 px titreşim
+dokunuş kalmalı) ile tepki hızı doğrudan çakışıyor. İkisini birden veren tek
+tasarım, bugün tek bir `d.moved` bayrağının yaptığı **iki işi ayırmak**:
+hayaletin belirmesi (erken, ~6) ile dokunuş/sürükleme KARARI (geç, 10) ayrı
+eşiklere bağlanır. Bedeli: 6–10 bandında taş görünür şekilde kalkıp geri
+oturur (eylem kaybolmaz, ama yeni bir görsel kıpırtı) — bandı hayaletsiz
+bırakmak mümkün DEĞİL, çünkü orada parmak hâlâ aynı hücrenin üstünde ve
+"bırakma" saymak taşı hiçbir yere koymaz.
+
+**Karar: eşik 10'da BIRAKILDI** (kullanıcı kararı). Ayrım yapılmadı; gerçek
+neden muhtemelen eşik değil, hayalet taşın hedef hücrenin iki katı olması —
+o madde `docs/decisions/product-backlog.md`'de. Bir sonraki oturum "8 yapalım"
+diye başlamasın diye bu bölüm burada.
+
 ### Regresyon — duman testleri artık dokunmatik bir bağlam da taşıyor
 
 `tests/smoke.spec.ts` 22 → **24 test**, `dokunmatik jestler` describe'ı
