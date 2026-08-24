@@ -37,6 +37,7 @@ import 'tile_widget.dart';
 import 'wild_letter_sheet.dart';
 import '../rank/league_rewards_host.dart';
 import '../../data/league_rewards_api.dart';
+import '../loading_note.dart';
 import '../tokens.dart';
 import 'invasion_confirm.dart';
 import '../../util/online_status.dart';
@@ -191,26 +192,34 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   /// Parça 23).
   final ValueNotifier<_Ghost?> _dragNotifier = ValueNotifier(null);
 
-  /// Route geçiş animasyonu bitene kadar tahta GÖLGESİZ çizilir
-  /// (`BoardWidget.cheapPaint`) — kullanıcı Android'de bildirdi:
-  /// *"YZ ile oyun açtığında board'un ekrana gelmesi takılarak oluyor"*,
-  /// girişli açılışta da. Sebep tahtanın TEK SEFERLİK ilk çizimi: 169
-  /// hücrenin ikişer bulanık iç gölgesi + kartın blur 20/14/60'lık üçlüsü,
-  /// hepsi geçişin ortasında. Canlı oyunda yaşanmamasının sebebi de buydu —
-  /// orada ekran geçiş sırasında "Yükleniyor…" gösteriyor.
+  /// Route geçiş animasyonu bitene kadar ekran YALNIZCA "Yükleniyor…"
+  /// gösterir — **Canlı oyun ekranıyla birebir aynı deneyim**.
   ///
-  /// Tahta GİZLENMİYOR, yalnızca gölgeleri erteleniyor: geçiş boyunca renk/
-  /// çerçeve/taş/filigran aynı, animasyon bitince tam çizime geçiliyor.
-  /// Kalıcı çözüm hücre çiziminin önbelleğe alınması (mağaza sonrasına
-  /// bırakıldı, `docs/decisions/product-backlog.md`).
-  bool _cheapPaint = true;
+  /// Kullanıcı Android'de bildirdi: *"YZ ile oyun açtığında board'un ekrana
+  /// gelmesi takılarak oluyor"* (girişli açılışta da; Canlı bekleyen oyunda
+  /// OLMUYOR). Sebep tahtanın TEK SEFERLİK ilk çizimi: 169 hücrenin ikişer
+  /// `MaskFilter.blur`lu iç gölgesi + kartın blur 20/14/60'lık üçlüsü —
+  /// ~340 bulanıklaştırma, hepsi geçişin ortasındaki karede. Canlı oyunda
+  /// yaşanmamasının sebebi de buydu: `OnlineGameScreen` geçiş sırasında
+  /// "Yükleniyor…" gösterip tahtayı SONRA çiziyor.
+  ///
+  /// İlk çözüm gölgeleri ERTELEMEKTİ (`BoardWidget.cheapPaint`); kullanıcı
+  /// bunun yerine tutarlılığı seçti: *"Neden bekleyen oyunlar gibi kısa bir
+  /// yükleniyor çıkartmıyoruz? Her yerde aynı deneyim en azından."* Bu hem
+  /// daha basit (tek mekanizma) hem daha garantili — geçiş boyunca ekranda
+  /// tek bir metin var, tahta HİÇ çizilmiyor.
+  ///
+  /// Maliyet ortadan kalkmıyor, hareketli karelerin dışına taşınıyor. Kök
+  /// çözüm hücre çiziminin önbelleğe alınması (mağaza sonrasına bırakıldı,
+  /// `docs/decisions/product-backlog.md`).
+  bool _ready = false;
   Animation<double>? _routeAnim;
 
   void _onRouteAnim(AnimationStatus s) {
     if (s != AnimationStatus.completed) return;
     _routeAnim?.removeStatusListener(_onRouteAnim);
     _routeAnim = null;
-    if (mounted) setState(() => _cheapPaint = false);
+    if (mounted) setState(() => _ready = true);
   }
 
   @override
@@ -225,7 +234,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       // Route yoksa ya da animasyon zaten bittiyse (testlerde ve ilk
       // route'ta böyle) bekleyecek bir şey yok.
       if (anim == null || anim.status == AnimationStatus.completed) {
-        setState(() => _cheapPaint = false);
+        setState(() => _ready = true);
         return;
       }
       _routeAnim = anim..addStatusListener(_onRouteAnim);
@@ -658,6 +667,14 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
+        // Geçiş animasyonu sürerken TAHTA HİÇ ÇİZİLMEZ (bkz. `_ready`) —
+        // Canlı oyun ekranının yükleme durumuyla aynı görünüm.
+        if (!_ready) {
+          return const Scaffold(
+            backgroundColor: Colors.white, // web sayfa zemini (colors.bg)
+            body: SafeArea(child: Center(child: KLoadingNote())),
+          );
+        }
         // Oyun bittiği an GameOver modalı bir kez gösterilir; KAPAT ile
         // kapatınca tahta görünür kalır (web gameOverDismissed davranışı).
         if (state.isGameOver && !_gameOverShown) {
@@ -792,7 +809,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                         const EdgeInsets.fromLTRB(12, 6, 12, 12),
                                     child: BoardWidget(
                                       state: state,
-                                      cheapPaint: _cheapPaint,
                                       moveOverlay: moveStatus == null
                                           ? null
                                           : MoveOverlay(

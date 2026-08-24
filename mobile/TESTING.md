@@ -2325,12 +2325,16 @@ tahtanın üstündeki boşlukta ve o boşluk tıklanabilir.
 ## 19. Tahta açılışı pürüzsüz mü (24 Ağustos 2026, Parça 137)
 
 Kullanıcı: *"YZ ile oyun açtığında board'un ekrana gelmesi takılarak
-oluyor"* (girişli açılışta da). Gölgeler artık geçiş bitene kadar
-erteleniyor.
+oluyor"* (girişli açılışta da). Artık geçiş boyunca Canlı oyundakiyle AYNI
+"Yükleniyor…" gösteriliyor, tahta geçişten sonra çiziliyor.
 
-- [ ] **Yapay Zeka oyunu aç** (hem misafirken hem girişliyken) → tahta
-      ekrana **pürüzsüz** gelmeli, kareler düşmemeli.
-- [ ] **Geçiş bitince tahta TAM çiziliyor:** hücrelerin içe gömülü
-      gölgeleri ve kartın dış gölgesi yerinde — düz/yassı görünmemeli.
-      (Gölgesiz kalıyorsa erteleme takılı kalmış demektir.)
-- [ ] **Canlı oyun** açılışı da eskisi gibi sorunsuz.
+- [ ] **Yapay Zeka oyunu aç** (hem misafirken hem girişliyken) → kısa bir
+      "Yükleniyor…" görünmeli, geçiş **pürüzsüz** olmalı, kareler
+      düşmemeli.
+- [ ] **Tahta geliyor:** yükleme metni takılı KALMAMALI; tahta tam
+      gölgeleriyle (hücrelerin içe gömülü gölgesi, kartın dış gölgesi)
+      çizilmeli.
+- [ ] **Canlı oyun** açılışı da aynı görünmeli — iki yerde de aynı yazı,
+      aynı stil.
+- [ ] **Oyun içinden GameOver → TEKRAR OYNA** akışı hâlâ çalışıyor (aynı
+      ekranda ikinci oyun; yükleme kapısı yalnızca geçişte devrede).

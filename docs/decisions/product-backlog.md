@@ -180,10 +180,10 @@ hücrenin her biri `MaskFilter.blur`lu **iki** iç gölge + bir kırpma katmanı
 üç gölge boyuyor. Toplam ~340 bulanıklaştırma, hepsi route geçiş
 animasyonunun ortasında.
 
-**Bugün yapılan (yeterli ama kök çözüm DEĞİL):** `BoardWidget.cheapPaint` —
-geçiş sürerken gölgeler atlanıyor, animasyon bitince tam çizime geçiliyor
-(`game_screen.dart` route animasyonunu dinliyor). Tahta gizlenmiyor,
-yalnızca gölgesiz; maliyet ortadan kalkmıyor, hareketli karelerin dışına
+**Bugün yapılan (yeterli ama kök çözüm DEĞİL):** geçiş animasyonu sürerken
+`GameScreen` yalnızca "Yükleniyor…" gösteriyor (Canlı oyun ekranıyla aynı
+görünüm — kullanıcı isteği: *"her yerde aynı deneyim"*), tahta animasyon
+bitince çiziliyor. Maliyet ortadan kalkmıyor, hareketli karelerin dışına
 taşınıyor.
 
 **Kök çözüm:** hücre çizimi ÖNBELLEĞE alınmalı. Boş hücrenin görünümü

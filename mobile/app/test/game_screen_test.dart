@@ -983,9 +983,11 @@ void main() {
   // board'un ekrana gelmesi takılarak oluyor"* (girişli açılışta da; Canlı
   // bekleyen oyunda olmuyor). Sebep tahtanın TEK SEFERLİK ilk çizimi: 169
   // hücrenin ikişer `MaskFilter.blur`lu iç gölgesi + kartın blur 20/14/60'lık
-  // üçlüsü, hepsi route geçişinin ortasında. Çözüm gölgeleri geçiş bitene
-  // kadar ERTELEMEK — tahta gizlenmiyor, yalnızca gölgesiz çiziliyor.
-  testWidgets('geçiş animasyonu sürerken tahta GÖLGESİZ çizilir', (tester) async {
+  // üçlüsü, hepsi route geçişinin ortasında. Kullanıcının seçtiği çözüm
+  // tutarlılık: *"Neden bekleyen oyunlar gibi kısa bir yükleniyor
+  // çıkartmıyoruz? Her yerde aynı deneyim en azından."*
+  testWidgets('geçiş animasyonu sürerken ekran "Yükleniyor…" gösterir',
+      (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));
     final controller =
         GameController(words: words, autoPlayAi: false, nowIso: () => '');
@@ -1004,16 +1006,18 @@ void main() {
     await tester.pump(); // route eklendi
     await tester.pump(const Duration(milliseconds: 50)); // animasyon ORTASI
 
-    expect(tester.widget<BoardWidget>(find.byType(BoardWidget)).cheapPaint,
-        isTrue,
-        reason: 'geçiş sürerken bulanık gölgeler atlanmalı — kullanıcının '
+    expect(find.text('Yükleniyor…'), findsOneWidget,
+        reason: 'geçiş sürerken Canlı oyun ekranıyla aynı yükleme durumu '
+            'gösterilmeli');
+    expect(find.byType(BoardWidget), findsNothing,
+        reason: 'tahta geçiş sırasında HİÇ çizilmemeli — kullanıcının '
             '"takılarak geliyor" dediği kareler tam burada düşüyordu');
 
     await tester.pumpAndSettle();
-    expect(tester.widget<BoardWidget>(find.byType(BoardWidget)).cheapPaint,
-        isFalse,
-        reason: 'animasyon bitince TAM çizime dönmeli — gölgeler kalıcı '
-            'olarak kaybolursa tasarım sessizce bozulur');
+    expect(find.byType(BoardWidget), findsOneWidget,
+        reason: 'animasyon bitince tahta çizilmeli — yükleme durumu takılı '
+            'kalırsa oyun hiç açılmaz');
+    expect(find.text('Yükleniyor…'), findsNothing);
   });
 
   testWidgets('GameOver modalı ekran görüntüsü (beraberlik varyantı yok)',

@@ -70,6 +70,7 @@ import '../game/wild_letter_sheet.dart';
 import '../score/player_score_card_modal.dart';
 import '../../data/league_rewards_api.dart';
 import '../rank/league_rewards_host.dart';
+import '../loading_note.dart';
 import '../tokens.dart';
 import '../game/invasion_confirm.dart';
 import '../../util/offline_notice.dart';
@@ -1322,11 +1323,10 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                         },
                         onBack: () => Navigator.of(context).pop(),
                       )
-                    : const Text('Yükleniyor…',
-                        style: TextStyle(
-                            fontFamily: 'SpaceMono',
-                            fontSize: 13,
-                            color: _muted)),
+                    // Yerel oyun ekranı (`game_screen.dart`) geçiş
+                    // sırasında AYNI göstergeyi kullanıyor — kullanıcı
+                    // isteği: "her yerde aynı deneyim".
+                    : const KLoadingNote(),
               ),
             ),
           );
