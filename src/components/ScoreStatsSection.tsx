@@ -5,6 +5,7 @@
 // (TABS/pct/Cell hesabı + sekme çubuğu + iki hücre ızgarası JSX'i) ayrı ayrı
 // taşıyordu — kod incelemesiyle (Orta bulgu) tek kaynağa çıkarıldı.
 import type { PlayerStats } from '../lib/database.types';
+import { LoadingNote } from './LoadingNote';
 
 export type TabKey = 'all' | 2 | 4;
 
@@ -146,7 +147,7 @@ export function ScoreStatsSection({
   emptyText: string;
 }) {
   if (stats === undefined) {
-    return <p className="text-muted text-xs font-mono text-center py-4">Yükleniyor…</p>;
+    return <LoadingNote py="py-4" />;
   }
   const { playerCells, gameCells } = buildScoreCells(stats);
   return (

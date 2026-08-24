@@ -34,6 +34,7 @@ import '../score/score_card_modal.dart';
 import 'account_settings_modal.dart';
 import 'k_avatar.dart';
 import 'auth_modal.dart';
+import '../tap_target.dart';
 import '../tokens.dart';
 
 const Color _text = kText;
@@ -161,7 +162,8 @@ class _AccountButtonState extends State<AccountButton> {
       builder: (context, _) {
         if (!auth.configured) return const SizedBox.shrink();
         if (auth.identityLoading) {
-          return Container(
+          return TapTarget(
+              child: Container(
             width: avatarSize,
             height: avatarSize,
             alignment: Alignment.center,
@@ -173,7 +175,7 @@ class _AccountButtonState extends State<AccountButton> {
             child: const Text('…',
                 style: TextStyle(
                     fontFamily: 'SpaceMono', fontSize: 10, color: _muted)),
-          );
+          ));
         }
         if (auth.user == null) return _girisButton(context);
         return _avatarMenu(context);
@@ -182,7 +184,7 @@ class _AccountButtonState extends State<AccountButton> {
   }
 
   Widget _girisButton(BuildContext context) {
-    return GestureDetector(
+    return TapTarget(
       onTap: () => showLoginModal(context, auth, feedback: feedback),
       child: Container(
         padding: EdgeInsets.symmetric(
@@ -295,7 +297,11 @@ class _AccountButtonState extends State<AccountButton> {
       // + `focus:outline-none` ve HİÇ zemin vurgusu taşımıyor (tek geri
       // bildirim `active:scale-95`). Yarıçap = kutunun yarısı → kare kutu
       // için tam daire.
-      borderRadius: BorderRadius.circular(avatarSize / 2),
+      // Yarıçap KUTUNUN yarısı — avatarın değil (aşağıdaki `TapTarget` 48
+      // px'lik bir kutu kuruyor; yarıçap 16'da kalsaydı basılı vurgusu
+      // yeniden köşeli görünürdü, ki bu tam olarak aşağıdaki uzun notun
+      // anlattığı hata).
+      borderRadius: BorderRadius.circular(kMinTapTarget / 2),
       offset: Offset(0, avatarSize + 8),
       color: _panel,
       shape: RoundedRectangleBorder(
@@ -527,14 +533,22 @@ class _AccountButtonState extends State<AccountButton> {
           ),
         ),
       ],
-      child: KAvatar(
-        url: auth.profile?.avatarUrl,
-        name: auth.menuName,
-        size: avatarSize,
-        // Web Avatar `badgeCount`: menü içindeki rozetlerin toplamı. Portta
-        // admin paneli olmadığından (bilinçli, bkz. mobile/CLAUDE.md) tek
-        // kaynak arkadaşlık isteği — web ayrıca admin bekleyen işini ekler.
-        badgeCount: _incomingRequests,
+      // Avatar 32 px çiziliyor ama dokunma kutusu 48 (`TapTarget`) —
+      // kullanıcı cihazda *"Avatar'da tıklamada sorun var, yine üstüne
+      // tıklaman lazım biraz"* diye bildirdi (24 Ağustos 2026). Boşluk
+      // header'ın kendi 10 px'lik dikey dolgusuna taşıyor, yani görsel
+      // olarak hiçbir şey kaymıyor.
+      child: TapTarget(
+        child: KAvatar(
+          url: auth.profile?.avatarUrl,
+          name: auth.menuName,
+          size: avatarSize,
+          // Web Avatar `badgeCount`: menü içindeki rozetlerin toplamı.
+          // Portta admin paneli olmadığından (bilinçli, bkz.
+          // mobile/CLAUDE.md) tek kaynak arkadaşlık isteği — web ayrıca
+          // admin bekleyen işini ekler.
+          badgeCount: _incomingRequests,
+        ),
       ),
     );
   }

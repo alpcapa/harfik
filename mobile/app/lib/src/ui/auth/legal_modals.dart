@@ -126,6 +126,12 @@ class _FeedbackLinkLine extends StatelessWidget {
     return Text.rich(
       TextSpan(children: [
         TextSpan(text: prefix, style: _pStyle),
+        // ⚠ BİLİNÇLİ İSTİSNA — 48px dokunma hedefi UYGULANMADI (24 Ağustos
+        // 2026): bu link akan bir PARAGRAFIN içinde (`WidgetSpan`), yani
+        // kutusunu büyütmek satır yüksekliğini büyütür ve paragrafı
+        // aralıklı/bozuk gösterir. Metin içi bir bağlantıda asgariyi
+        // dayatmak, düzeltmekten çok bozar. Aynı forma Setup'ın altındaki
+        // "Görüş Bildir" yolundan da (48px'lik hedefle) ulaşılıyor.
         WidgetSpan(
           alignment: PlaceholderAlignment.baseline,
           baseline: TextBaseline.alphabetic,

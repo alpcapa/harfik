@@ -130,7 +130,7 @@ function QuickStart({ onDetailedClick }: { onDetailedClick: () => void }) {
       </QuickItem>
       <button
         onClick={onDetailedClick}
-        className="self-start mt-1 font-mono text-[10px] uppercase tracking-[1px] text-accent active:opacity-70 transition-opacity"
+        className="self-start mt-1 flex items-center min-h-[48px] font-mono text-[10px] uppercase tracking-[1px] text-accent active:opacity-70 transition-opacity"
       >
         Detaylı Kurallar →
       </button>
@@ -421,9 +421,14 @@ export function HelpModal({ onClose, initialStep = 'quick' }: HelpModalProps) {
       title={step === 'quick' ? 'Hızlı Başlangıç' : 'Detaylı Kurallar'}
       onClose={onClose}
       headerLink={
+        // `min-h-[48px]`: 10 puntoluk çıplak bir metnin dokunma kutusu 14px
+        // kalıyordu ve kullanıcı cihazda (portta) *"detaylı kurallar linki
+        // üstüne basınca çalışmıyor"* diye bildirdi (24 Ağustos 2026) — aynı
+        // kusur webde de vardı. Modal başlığı bunu telafi ederek metnin
+        // YERİNİ koruyor.
         <button
           onClick={() => setStep(step === 'quick' ? 'detailed' : 'quick')}
-          className="self-start font-mono text-[10px] uppercase tracking-[1px] text-accent active:opacity-70 transition-opacity"
+          className="self-start flex items-center min-h-[48px] font-mono text-[10px] uppercase tracking-[1px] text-accent active:opacity-70 transition-opacity"
         >
           {step === 'quick' ? 'Detaylı Kurallar →' : 'Hızlı Başlangıç →'}
         </button>

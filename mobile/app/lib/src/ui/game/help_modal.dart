@@ -10,6 +10,7 @@ import 'package:kelimeki_core/kelimeki_core.dart' show bingoBonus, trUpper;
 
 import 'modal_shell.dart';
 import '../rank/league_rank.dart';
+import '../tap_target.dart';
 import '../tokens.dart';
 
 const Color _text = kText;
@@ -80,9 +81,14 @@ class _LinkButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    // 10 puntoluk çıplak bir metin → ölçülen dokunma kutusu 128.2 × 14.0
+    // idi ve kullanıcı cihazda *"detaylı kurallar linki üstüne basınca
+    // çalışmıyor, biraz üstüne basınca çalışıyor"* diye bildirdi
+    // (24 Ağustos 2026). `TapTarget` görünümü değiştirmeden kutuyu 48'e
+    // çıkarır; KModal başlığı bunu telafi ederek metnin YERİNİ korur
+    // (bkz. modal_shell.dart'taki `headerLink` dolgusu).
+    return TapTarget(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: Text(
         label,
         style: const TextStyle(

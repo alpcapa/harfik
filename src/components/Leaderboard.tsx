@@ -1,5 +1,6 @@
 // Kelimeki — liderlik tablosu
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { LoadingNote } from './LoadingNote';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
 import { fetchLeaderboard, fetchMyLeaderboardRank } from '../lib/api';
@@ -157,7 +158,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
         Puanlar eşitse OHP yüksek olan üstte.
       </p>
       {rows === null ? (
-        <p className="text-muted text-xs font-mono text-center py-6">Yükleniyor…</p>
+        <LoadingNote />
       ) : (
         <div className="flex flex-col gap-2">
           <div className="flex items-center text-[9px] uppercase tracking-[1px] text-muted font-mono px-2 pb-1 gap-1">

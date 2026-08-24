@@ -541,37 +541,39 @@ export function Board({
       {/* Alt bilgi şeridi (Hamleler / Mesajlaşma / Nasıl Oynanır?) — kartın
           kendi zemini ve gölgesiyle bütünleşik bir alt bölüm; ayrı, asılı
           kalan bir beyaz şerit değil. */}
-      {/* Şeridin DİKEY dolgusu KABIN değil her ÖĞENİN üzerinde — dokunma
-          hedefleri 18px'te kalmasın diye (22 Ağustos 2026 jest denetiminde
-          ölçülmüş, kullanıcı "kaç defa basmam gerekti" diye bildirmişti).
-          Kabın kendi `pb-[10px] pt-1` dolgusundan BURAYA taşındı: şeridin
-          dış ölçüsü (4 + 18 + 10 = 32) DEĞİŞMEZ, çünkü satırın boyunu artık
-          en uzun çocuk belirliyor. **BEŞ öğenin de taşıması ŞART** —
-          yalnızca dokunulabilirler büyürse ayraç ve "Çevrimdışı" 32px'lik
-          satırda ortalanıp ~3px kayar (dolgu 4/10 ile asimetrik).
-          Flutter portu (`board_widget.dart` → `_footerItemPadding`) AYNI
-          değerleri taşıyor; biri değişirse öteki de değişmeli. */}
+      {/* Şeridin DİKEY ölçüsü KABIN değil her ÖĞENİN üzerinde ve asgari
+          48px (Material `kMinInteractiveDimension`). 22 Ağustos 2026'da
+          dolgu (`pt-1 pb-[10px]`) öğelere taşınmıştı ama YETMEDİ: gerçek
+          kutu 31px kaldı ve kullanıcı 24 Ağustos'ta aynı şikayeti
+          tekrarladı — *"biraz üstüne basınca çalışıyor"*. Ders sayının
+          kendisinde: bir dolgu "biraz büyüttük" diye değil, ÖLÇÜLEN kutu
+          asgariyi geçtiği için yeterlidir (portta
+          `mobile/app/test/tap_target_test.dart` bunu iddia ediyor).
+          **BEŞ öğenin de taşıması ŞART** — yalnızca dokunulabilirler
+          büyürse ayraç ve "Çevrimdışı" 48px'lik satırda ortalanmaz.
+          Flutter portu (`board_widget.dart` → `TapTarget`) aynı asgariyi
+          taşıyor; biri değişirse öteki de değişmeli. */}
       {!hideFooter && (
         <div className="relative z-10 flex items-center justify-between gap-2 shrink-0 px-[10px] w-full">
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={onOpenHistory}
-              className="flex items-center gap-1 pt-1 pb-[10px] text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
+              className="flex items-center gap-1 min-h-[48px] text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
             >
               <DocumentIcon />
               Hamleler
             </button>
             {onOpenMessaging && (
               <>
-                <span className="text-muted text-[12px] pt-1 pb-[10px] shrink-0">·</span>
+                <span className="text-muted text-[12px] flex items-center min-h-[48px] shrink-0">·</span>
                 <button
                   onClick={onOpenMessaging}
-                  className="flex items-center pt-1 pb-[10px] text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
+                  className="flex items-center min-h-[48px] text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
                 >
-                  {/* `relative` dolgunun İÇİNDE: rozet Flutter'daki gibi
-                      metin kutusuna çapalı kalsın diye (orada da Padding
-                      Stack'in DIŞINDA). Dolgulu <button>'a çapalansaydı
-                      rozet 4px aşağı kayardı. */}
+                  {/* `relative` iç span'de: rozet Flutter'daki gibi METİN
+                      kutusuna çapalı kalsın diye (orada da Stack, TapTarget'ın
+                      İÇİNDE). 48px'lik <button>'a çapalansaydı rozet
+                      satırın üst kenarına, metinden kopuk kalırdı. */}
                   <span className="relative flex items-center gap-1">
                     <ChatBubbleIcon />
                     Mesajlaşma
@@ -602,14 +604,14 @@ export function Board({
                 diye bildirdi (14 Ağustos 2026): tam da çevrimdışıyken
                 okunması gereken tek gösterge, şeridin en küçük yazısıydı. */}
             {!online && (
-              <div className="text-[12px] font-mono font-bold tracking-[0.5px] text-red flex items-center pt-1 pb-[10px] shrink-0">
+              <div className="text-[12px] font-mono font-bold tracking-[0.5px] text-red flex items-center min-h-[48px] shrink-0">
                 Çevrimdışı
               </div>
             )}
             {onOpenHelp && (
               <button
                 onClick={onOpenHelp}
-                className="flex items-center gap-1 pt-1 pb-[10px] text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
+                className="flex items-center gap-1 min-h-[48px] text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
               >
                 <HelpIcon />
                 Nasıl Oynanır?

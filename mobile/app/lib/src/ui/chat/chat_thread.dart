@@ -145,6 +145,11 @@ class _Bubble extends StatelessWidget {
             ),
           ),
         ),
+        // ⚠ BİLİNÇLİ İSTİSNA — 48px dokunma hedefi UYGULANMADI (24 Ağustos
+        // 2026): bu rozet HER mesaj baloncuğunun başlık satırında duruyor;
+        // 48'e çıkarmak sohbetteki her satırı ~34px şişirirdi. Aynı panele
+        // pencere başlığındaki dişli ikonundan (48px'lik hedef) da
+        // ulaşılıyor, yani rozet bir kısayol — tek yol değil.
         if (badgeText != null) ...[
           const SizedBox(width: 4),
           GestureDetector(

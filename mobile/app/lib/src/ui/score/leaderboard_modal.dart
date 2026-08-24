@@ -15,6 +15,7 @@ import '../rank/rank_seal.dart';
 import 'klig_mark.dart';
 import 'player_score_card_modal.dart';
 import '../tokens.dart';
+import '../loading_note.dart';
 
 const _muted = kMuted;
 const _text = kText;
@@ -300,14 +301,7 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
           ),
           const SizedBox(height: 12),
           if (rows == null)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: Text('Yükleniyor…',
-                    style: TextStyle(
-                        fontFamily: 'SpaceMono', fontSize: 12, color: _muted)),
-              ),
-            )
+            const KLoadingNote()
           else if (rows.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),

@@ -15,6 +15,7 @@ import '../../data/games_api.dart';
 import '../game/modal_shell.dart';
 import 'chat_thread.dart';
 import '../tokens.dart';
+import '../loading_note.dart';
 
 const _muted = kMuted;
 
@@ -94,14 +95,7 @@ class _GameChatHistoryModalState extends State<GameChatHistoryModal> {
     return KModal(
       title: 'Sohbet Geçmişi',
       child: messages == null
-          ? const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: Text('Yükleniyor…',
-                    style: TextStyle(
-                        fontFamily: 'SpaceMono', fontSize: 12, color: _muted)),
-              ),
-            )
+          ? const KLoadingNote()
           : !_allowed
               // Rozet (message_count) de 10 Ağustos 2026'dan beri katılımcı
               // kapılı (`game_like_stats` 0 döner), yani bu dal pratikte

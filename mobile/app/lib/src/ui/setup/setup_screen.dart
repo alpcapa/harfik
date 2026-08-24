@@ -64,6 +64,7 @@ import '../auth/account_button.dart';
 import '../auth/k_avatar.dart';
 import 'membership_perks_box.dart';
 import 'recent_games_section.dart';
+import '../tap_target.dart';
 import '../tokens.dart';
 import '../game/neo_box.dart';
 import '../auth/auth_modal.dart';
@@ -1111,6 +1112,10 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                         // yerine ikinci satıra sarsın.
                         Wrap(
                           alignment: WrapAlignment.center,
+                          // Linkler artık 48px'lik dokunma hedefi
+                          // (`TapTarget`); aradaki `·` `start` hizasında
+                          // kalsaydı satırın ÜST kenarına yapışırdı.
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           spacing: 8,
                           runSpacing: 4,
                           children: [
@@ -1641,9 +1646,8 @@ class _LegalLink extends StatelessWidget {
   const _LegalLink(this.text, {required this.onTap});
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) => TapTarget(
         onTap: onTap,
-        behavior: HitTestBehavior.opaque,
         child: Text(text,
             style: const TextStyle(
                 fontFamily: 'SpaceMono', fontSize: 10, color: _muted)),
@@ -1657,9 +1661,8 @@ class _InlineLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return TapTarget(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: Text(
         text,
         style: const TextStyle(

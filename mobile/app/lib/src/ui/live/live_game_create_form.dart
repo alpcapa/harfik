@@ -28,6 +28,7 @@ import '../rank/league_rank.dart';
 import '../rank/rank_scores.dart';
 import '../rank/rank_seal.dart';
 import '../tokens.dart';
+import '../loading_note.dart';
 import '../form_input.dart';
 
 const Color _text = kText;
@@ -346,13 +347,7 @@ class _LiveGameCreateFormState extends State<LiveGameCreateForm> {
             : 'ARKADAŞLARINI SEÇ (${_selected.length}/3)'),
         const SizedBox(height: 8),
         if (friends == null)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Text('Yükleniyor…',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    fontFamily: 'SpaceMono', fontSize: 11, color: _muted)),
-          )
+          const KLoadingNote(vertical: 16)
         else if (friends.isEmpty) ...[
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 8),

@@ -3,6 +3,7 @@
 // kanallardan paylaşarak henüz üye olmayanları da davet etme (asıl büyüme
 // mekanizması — bkz. CLAUDE.md "Arkadaşlık Sistemi").
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { LoadingNote } from './LoadingNote';
 import { createPortal } from 'react-dom';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
@@ -603,7 +604,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
         {tab === 'friends' && (
           <div className={listCls}>
             {friends === null ? (
-              <p className="text-muted text-xs font-mono py-4 text-center">Yükleniyor…</p>
+              <LoadingNote py="py-4" />
             ) : friends.length === 0 ? (
               <p className="text-muted text-xs font-mono py-4 text-center">
                 Henüz arkadaşın yok — "Ara & Ekle" sekmesinden ya da yukarıdaki davet linkiyle ekleyebilirsin.
@@ -660,7 +661,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
         {tab === 'requests' && (
           <div className={listCls}>
             {requests === null ? (
-              <p className="text-muted text-xs font-mono py-4 text-center">Yükleniyor…</p>
+              <LoadingNote py="py-4" />
             ) : requests.length === 0 ? (
               <p className="text-muted text-xs font-mono py-4 text-center">Bekleyen istek yok.</p>
             ) : (
@@ -719,7 +720,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
                   Tüm Üyeler
                 </p>
                 {visibleAllUsers === null ? (
-                  <p className="text-muted text-xs font-mono py-4 text-center">Yükleniyor…</p>
+                  <LoadingNote py="py-4" />
                 ) : (
                   <div
                     ref={allUsersScrollRef}

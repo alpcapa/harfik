@@ -638,7 +638,7 @@ export function Setup({
             <div className="mt-3 flex items-center gap-2">
               <button
                 onClick={() => setShowHelp(true)}
-                className="font-mono text-[11px] font-bold text-accent hover:underline active:opacity-70 transition-opacity"
+                className="flex items-center min-h-[48px] font-mono text-[11px] font-bold text-accent hover:underline active:opacity-70 transition-opacity"
               >
                 Nasıl oynanır?
               </button>
@@ -914,11 +914,11 @@ export function Setup({
             320'de iki satıra sarıp yatay taşmayı 0'da tutuyor, 356+ genişlikte
             hiçbir şey değişmiyor. */}
         <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[10px] font-mono text-muted">
-          <button onClick={() => setShowTerms(true)} className="hover:underline active:opacity-70 transition-opacity">
+          <button onClick={() => setShowTerms(true)} className="flex items-center min-h-[48px] hover:underline active:opacity-70 transition-opacity">
             Kullanım Koşulları
           </button>
           <span>·</span>
-          <button onClick={() => setShowPrivacy(true)} className="hover:underline active:opacity-70 transition-opacity">
+          <button onClick={() => setShowPrivacy(true)} className="flex items-center min-h-[48px] hover:underline active:opacity-70 transition-opacity">
             Gizlilik Politikası
           </button>
           {/* "Paylaş" (18 Ağustos 2026, aynı gün üçüncü/dördüncü tur —
@@ -935,7 +935,7 @@ export function Setup({
           <span>·</span>
           <button
             onClick={handleShare}
-            className="flex items-center gap-1 hover:underline active:opacity-70 transition-opacity"
+            className="flex items-center min-h-[48px] gap-1 hover:underline active:opacity-70 transition-opacity"
           >
             <ShareIcon size={12} />
             {shareCopied ? 'Link kopyalandı!' : 'Paylaş'}

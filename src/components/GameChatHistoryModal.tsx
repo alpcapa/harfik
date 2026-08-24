@@ -3,6 +3,7 @@
 // (Tüm Oyunlarım) listesindeki sohbet rozetinden açılır — ileride uygunsuz
 // paylaşım kontrolü için bu kayıt kalıcı olarak erişilebilir kalıyor.
 import { useEffect, useState } from 'react';
+import { LoadingNote } from './LoadingNote';
 import { Modal } from './Modal';
 import { ChatThread, type ChatThreadMessage } from './ChatThread';
 import { fetchGameMessages, fetchFinishedGameChatFlags } from '../lib/api';
@@ -93,7 +94,7 @@ export function GameChatHistoryModal({ gameId, onlineGameId, onClose }: GameChat
   return (
     <Modal title="Sohbet Geçmişi" onClose={onClose}>
       {messages === null ? (
-        <p className="text-muted text-xs font-mono text-center py-4">Yükleniyor…</p>
+        <LoadingNote py="py-4" />
       ) : !allowed ? (
         // Rozet (message_count) da 10 Ağustos 2026'dan beri katılımcı kapılı
         // (`game_like_stats` 0 döner), yani bu dal pratikte yalnızca yarışta
