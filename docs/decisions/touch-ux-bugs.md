@@ -256,3 +256,64 @@ dokunmatikte dokunuş sonrası `none`, masaüstünde hover'da `underline`.
 bayrak proje geneline uygulanıyor. `active:` durumları bundan etkilenmez
 (anlık, dokunuş bırakılınca kalkıyor).
 
+
+## Dokunma Hedefi Asgarisi: 48 dp (24 Ağustos 2026 — ikinci tur)
+
+Bir gün önceki düzeltme (yukarıdaki "18 → 32" notu) yetmedi. Kullanıcı
+cihazda **beş** kontrolü de aynı cümleyle bildirdi: *"biraz üstüne basınca
+çalışıyor"* — alt şeridin üç linki, "Detaylı Kurallar", "← Geri", avatar.
+
+**Neden yetmediği, dersin tamamı sayıda:** ilk tur dolguyu kaptan öğelere
+taşıdı ama **ekrandaki kutu hiç ÖLÇÜLMEDİ** — parite testi yalnızca
+KAYNAKTA dolgunun durduğunu doğruluyordu. Portta yazılan yeni bir ölçüm
+testi (`mobile/app/test/tap_target_test.dart`, 390×844) gerçek kutuları
+verdi:
+
+| Hedef | Ölçülen | Material asgarisi |
+|---|---|---|
+| alt şerit: Hamleler | 78.8 × **31.0** | 48 |
+| alt şerit: Mesajlaşma | 94.4 × **31.0** | 48 |
+| alt şerit: Nasıl Oynanır? | 125.8 × **31.0** | 48 |
+| başlık: ← Geri | 90.8 × **29.3** | 48 |
+| yardım: Detaylı Kurallar | 128.2 × **14.0** | 48 |
+
+Yani düzeltme doğru yöndeydi, **miktarı** yanlıştı. Bir dolgu "biraz
+büyüttük" diye değil, **ölçülen kutu asgariyi geçtiği için** yeterlidir.
+Yukarıdaki notta 44/24 gibi daha alçak çıtaların "yeterli" sayılması da bu
+turda geri alındı — çıta artık Material'ın 48'i.
+
+**Elenen hipotez — küresel bir koordinat kayması DEĞİL:** dokunuş noktaları
+topluca kaysaydı 24 px'lik tahta hücrelerine taş sürüklemek de bozulurdu;
+kullanıcı sorunsuz oynayabiliyor. Sorun tek tek hedeflerin küçüklüğü.
+
+**"← Geri" ise küçük değil, TAMAMEN ÖLÜYDÜ — ve bu hata sınıfı porta
+özgü:** etiket bir `Stack(clipBehavior: Clip.none)` içinde `Positioned` ile
+logonun kutusunun DIŞINA taşırılmıştı. Flutter'da kutusunun dışına taşan
+bir çocuk hiç dokunuş almaz (`RenderBox.hitTest` önce `size.contains`e
+bakar). Webde AYNI yapı çalışıyor, çünkü DOM'da tıklama en içteki elemandan
+**ataya kabarır**: `<button>`ın içindeki `absolute top-full` bir `<span>`
+pekâlâ butonu tetikler. Kodun kendi yorumu bunu "bilinçli sapma, kaçış yolu
+webdeki gibi zaten logo" diye savunuyordu; savunma yanlıştı — port webi
+taklit etmiyor, ondan ayrılıyordu.
+
+> **Kural:** Web'den bir kontrol port edilirken "aynı görünüyor" yetmez —
+> **kutunun kendisi** taşınmalı. DOM'da görsel taşma bedava, Flutter'da
+> hedefi öldürüyor.
+
+**Çözüm tek kaynakta:** `mobile/app/lib/src/ui/tap_target.dart` →
+`kMinTapTarget` (48) + `TapTarget` (çocuğu ortalar, görünümü değiştirmez,
+yalnızca kutuyu büyütür). Web tarafı aynı kusuru taşıdığından (paylaşılan
+hata) `Board.tsx`, `HelpModal.tsx`, `Setup.tsx` `min-h-[48px]` aldı;
+`UserMenu.tsx`'in avatarı `min-w/h-[48px] -m-2` ile büyüdü — negatif marj
+dış kutuyu 32'ye geri çektiğinden **webde düzen bir piksel oynamıyor**.
+Flutter'da negatif marj olmadığından portta bedel header'ın ~25 px uzaması
+(logo, skor kutularıyla hizasını korusun diye blok dikey simetrik).
+
+**İki bilinçli istisna** (gerekçesi kendi dosyasında yazılı, ölçüm testinin
+başlığında da listeli): akan paragrafın içindeki `WidgetSpan` linki
+(büyütmek satır yüksekliğini bozar) ve her mesaj baloncuğundaki 9 puntoluk
+sessize alma/raporlama rozeti (sohbetin her satırını şişirirdi; aynı panele
+pencere başlığındaki dişliden de ulaşılıyor).
+
+**Doğrulama sınırı:** bu ortamda Flutter/Dart SDK YOK — Dart yarısının
+kanıtı CI. Web tarafı temiz: `tsc`, `npm run build`, Playwright 29/29.

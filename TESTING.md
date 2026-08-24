@@ -1618,6 +1618,27 @@ ama **gerçek parmakla ıskalamayı hiçbir test ölçemez** — burası o teyit
 - [ ] **Çevrimdışı göstergesi:** Uçak modunu aç → "Çevrimdışı" şeridin
       sağında görünmeli ve "Nasıl Oynanır?" ile ÇAKIŞMAMALI (dar telefonda
       alt satıra sarabilir, bu beklenen).
+## 19b. Dokunma hedefleri 48 px — İKİNCİ tur (24 Ağustos 2026)
+
+Bölüm 19'daki düzeltme yetmedi (ölçüm: 31 px, asgari 48). Web tarafında da
+aynı kusur vardı; `Board.tsx`, `HelpModal.tsx`, `Setup.tsx` ve
+`UserMenu.tsx` `min-h-[48px]` aldı. Avatarda negatif marj kullanıldığından
+**webde düzen bir piksel bile oynamamalı** — bu bölümün asıl amacı onu
+doğrulamak.
+
+- [ ] **Header aynı yükseklikte:** Oyun ekranında logo, skor kutuları ve
+      avatar eskisiyle AYNI hizada; header büyümemiş görünüyor.
+- [ ] **Avatar** tıklanınca menü açılıyor; avatarın etrafındaki 8 px'lik
+      görünmez alan da tıklanabiliyor (hemen kenarına tıkla).
+- [ ] **Alt şerit** üç linki de tek tıkta açılıyor; şerit biraz daha uzun
+      görünecek (beklenen).
+- [ ] **"Nasıl Oynanır?" penceresi:** "Detaylı Kurallar →" linki tıkla
+      geçiyor; link ile başlık arası makul, üst üste binmiyor.
+- [ ] **Setup'ın alt linkleri** (Kullanım Koşulları · Gizlilik Politikası ·
+      Paylaş) tıklanıyor ve aradaki `·` ayraçlar dikeyde ORTALI.
+- [ ] **"Yükleniyor…" okunur:** k-lig ve Skor Kartı açılırken ortada
+      belirgin mavi/kalın bir "Yükleniyor…" görünüyor (soluk gri değil).
+
 ## 20. Bölge kuralı — bloktaki desteksiz rakip taşı (24 Ağustos 2026)
 
 Kural değişti: kendi 4×4 köşe bloğunun içindeki bir hücre, üzerinde rakip taşı

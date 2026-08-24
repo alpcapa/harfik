@@ -440,7 +440,12 @@ mobile/
                              # `kelimekiTheme()` kullanır; M3'ün varsayılan
                              # harf aralığını sıfırlar, bkz. Parça 78),
                              # form_input.dart (TÜM giriş alanlarının tek
-                             # dekorasyonu/metin stili, bkz. Parça 79), ve:
+                             # dekorasyonu/metin stili, bkz. Parça 79),
+                             # tap_target.dart (48 dp dokunma hedefi
+                             # asgarisi — kMinTapTarget + TapTarget, bkz.
+                             # Parça 134), loading_note.dart (ortak
+                             # "Yükleniyor…" göstergesi; web
+                             # LoadingNote.tsx ile birebir), ve:
       ui/auth/               # giriş-kayıt-şifremi-unuttum modalı, hesap
                              # butonu, avatar, Terms/Privacy,
                              # reset_password_modal (recovery kapısı)

@@ -5154,6 +5154,86 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ayraç dengesi, (c) her çapanın `grep`le kaynağında teyidi. Dart
        yarısının kanıtı yine CI.
 
+   - ✅ **Parça 134 — dokunma hedefleri 48 dp; "← Geri" ise TAMAMEN ölüydü
+     (24 Ağustos 2026, kullanıcı beş kontrolü de aynı cümleyle bildirdi):**
+     *"biraz üstüne basınca çalışıyor"* — alt şerit linkleri, "Detaylı
+     Kurallar", "← Geri", avatar. Bir gün önce (Parça 132) alt şerit için
+     zaten bir düzeltme çıkılmıştı ve kullanıcı aynı şikayeti tekrarladı.
+     - **Neden yetmedi — dersin tamamı sayıda:** Parça 132 dolguyu kaptan
+       öğelere taşıdı ("hedefler 18 → 32") ama **ekrandaki kutu hiç
+       ÖLÇÜLMEDİ**; `layout_parity_test.dart` yalnızca KAYNAKTA dolgunun
+       durduğunu doğruluyor. Yeni `test/tap_target_test.dart` gerçek
+       kutuyu ölçtü (390×844): alt şerit **31.0**, "← Geri" **29.3**,
+       "Detaylı Kurallar" **14.0** — Material asgarisi 48. Yani düzeltme
+       doğru yöndeydi, MİKTARI yanlıştı. Bir dolgu "biraz büyüttük" diye
+       değil, ölçülen kutu asgariyi geçtiği için yeterlidir.
+     - **KÜRESEL KAYMA DEĞİL (elenen hipotez):** dokunuş koordinatları
+       topluca kaysaydı 24 px'lik tahta hücrelerine taş sürüklemek de
+       bozulurdu; kullanıcı sorunsuz oynuyor. Sorun tek tek hedeflerin
+       küçüklüğü.
+     - **"← Geri" YAPISAL bir hataydı, küçüklük değil:** etiket bir
+       `Stack(clipBehavior: Clip.none)` içinde `Positioned` ile logonun
+       kutusunun DIŞINA taşırılmıştı ve Flutter'da böyle bir çocuk hiç
+       dokunuş ALMAZ (`RenderBox.hitTest` önce `size.contains`). Ölçülen
+       kutu 90.8 × 29.3 = sadece logo. **Kodun kendi yorumu bunu "bilinçli
+       sapma, kaçış yolu webdeki gibi zaten LOGO" diye savunuyordu ve bu
+       savunma yanlıştı:** webde etiket `<button>`ın İÇİNDE bir `<span>`
+       (`absolute top-full`) ve DOM'da tıklama ataya KABARDIĞI için orada
+       pekâlâ çalışıyor. Yani port webi taklit etmiyordu, ondan ayrılmıştı
+       — "önce web'e bak" kuralının tam olarak yakalaması gereken sınıf.
+     - **Çözüm tek kaynakta:** `ui/tap_target.dart` → `kMinTapTarget` (48)
+       + `TapTarget` (çocuğu ORTALAR, görünümü değiştirmez, kutuyu
+       büyütür). Uygulandığı yerler: alt şeridin üç linki, "← Geri"
+       (artık akışta, logo ile TEK hedef), HelpModal'ın iki linki, avatar,
+       GİRİŞ, kimlik yer tutucusu, Setup'ın "Nasıl oynanır? · Tanıtım" ve
+       hukuki link satırları, "TÜM OYUNLARIM".
+     - **"← Geri"nin bedeli ölçülü:** blok Row'da dikey ORTALANDIĞINDAN,
+       etiketin altta kapladığı kadar (`kBackGap + kBackFontSize`) ÜSTTE de
+       boşluk bırakılıyor — simetri olmasa logo yukarı kayar ve skor
+       kutularıyla hizası bozulurdu (kullanıcının 21 Ağustos'taki
+       "header'ı bozmadan" şartı; `game_header_test.dart` 1 px toleransla
+       kilitliyor). Header ~25 px uzuyor; tahta bir `SingleChildScrollView`
+       içinde olduğundan yalnızca kaydırma boyu değişiyor.
+     - **İKİ BİLİNÇLİ İSTİSNA, gerekçesi kendi dosyasında:** akan
+       paragrafın içindeki `WidgetSpan` linki (`legal_modals.dart`) —
+       büyütmek satır yüksekliğini bozar; ve her mesaj baloncuğundaki 9
+       puntoluk sessize alma/raporlama rozeti (`chat_thread.dart`) —
+       sohbetin her satırını şişirirdi, aynı panele başlıktaki dişliden de
+       ulaşılıyor.
+     - **WEB DE AYNI KUSURU TAŞIYORDU (paylaşılan hata, port kusuru
+       değil):** `Board.tsx` alt şeridi, `HelpModal.tsx`'in iki linki,
+       `Setup.tsx`'in link/hukuki satırları `min-h-[48px]` aldı;
+       `UserMenu.tsx`'in avatarı `min-w/h-[48px] -m-2` ile büyüdü — negatif
+       marj dış kutuyu 32'ye geri çektiğinden **webde düzen bir piksel bile
+       oynamıyor** (Flutter'da negatif marj olmadığından portta bedeli
+       header'ın uzaması).
+     - **Lider tablosu/skor kartı "boş açılıyor" — durum vardı, OKUNMUYORDU:**
+       kullanıcı *"önce 1-2 saniye bir popup görüyorum, sonra sıralama
+       üstüne geliyor"* dedi. `leaderboard_modal` ve `ScoreStatsSection`
+       zaten "Yükleniyor…" gösteriyordu ama 12 punto, gri, küçük harf.
+       İki platformda tek bileşene alındı (`KLoadingNote` /
+       `LoadingNote`): 13 punto, kalın, accent, harf aralıklı. Metin
+       BİLEREK aynı kaldı (kullanıcı alışkanlığı + birkaç test bu dizeyi
+       arıyor). **ANİMASYON YOK ve bu bilinçli:** sonsuz tekrarlı bir
+       spinner `pumpAndSettle` ile dinginleşmez, yani bu durumu ekranda
+       gören 20'den fazla widget test dosyası zaman aşımına düşerdi.
+       Gecikmenin kendisi UI'ın işi DEĞİL — lider tablosu sorgusu sunucuda
+       ölçüldü: **4.3 ms yürütme / 15 ms planlama**; kalanı mesafe
+       (veritabanı `ap-south-1`/Mumbai, bkz. `docs/decisions/product-backlog.md`).
+     - **Testler:** `tap_target_test.dart` artık ölçmekle kalmıyor, 48
+       asgarisini İDDİA ediyor (avatar + GİRİŞ eklendi; ölçüm CI log'una
+       basılmaya devam ediyor). `game_header_test.dart`e "etikete dokunmak
+       da Setup'a döner" regresyon kilidi eklendi. `layout_parity_test`in
+       alt şerit testi 4/10 dolgusu yerine iki tarafta da 48 asgarisini
+       kontrol ediyor; `setup_screen_test`in paragraf→link boşluğu 16 → 33
+       (metin artık 48'lik kutunun ORTASINDA).
+     - **Doğrulama sınırı:** bu ortamda Flutter/Dart SDK YOK —
+       `dart analyze`/`flutter test` KOŞULAMADI, Dart yarısının kanıtı CI.
+       Değiştirilen her Dart dosyasının ayraç dengesi elle tarandı ve
+       parite testlerinin regex'leri gerçek kaynaklara karşı Python'da
+       yeniden koşturuldu. Web tarafı temiz: `tsc`, `npm run build`,
+       Playwright **29/29**. Cihazda teyit kullanıcıdan bekleniyor.
+
    - ✅ **Parça 133 — bölge kuralı: kendi bloğundaki DESTEKSİZ rakip taşı
      artık zinciri kesmiyor (24 Ağustos 2026, kullanıcı gerçek bir oyunda
      yakaladı):** *"Rakip benim bölgemin içinde UMAR yazdı. Ben de üstüne PÜR
