@@ -259,9 +259,13 @@ export function Board({
       if (boardTile) {
         // Tahtadaki her taş tıklanabilir — hangi hamlede oynandığına
         // bakılmaksızın o hücreden geçen kelime(ler)in anlamı gösterilir.
+        // AMA taslak hamle sürerken DEĞİL (bkz. App.tsx handleCellClick):
+        // o sırada dokunuş sessizce yutulduğundan imleç de "tıklanır"
+        // demesin — yoksa çalışmayan bir kontrol gibi görünür.
         // `relative z-[5]`: köşe/bonus filigranları (z-index:auto) taşın
         // ÜZERİNDE boyanmasın diye — taş her zaman kendi solid renginde görünmeli.
-        classes.push('relative z-[5] bg-transparent cursor-pointer');
+        classes.push('relative z-[5] bg-transparent');
+        if (Object.keys(placed).length === 0) classes.push('cursor-pointer');
         const tileColor = colorOf(boardTile.owner);
         const isLastMove = lastMoveSet.has(k);
         content = (

@@ -1414,7 +1414,21 @@ export default function App() {
   const handleCellClick = (r: number, c: number) => {
     // Tahtada duran bir taşa (hangi hamlede oynandığına bakılmaksızın)
     // tıklanırsa, o hücreden geçen kelime(ler)in anlamı gösterilir.
+    // ⚠ TASLAK HAMLE VARKEN ANLAM AÇILMAZ (24 Ağustos 2026, kullanıcı
+    // cihazda bildirdi): *"2 kelimenin birleştiği yere bir taş koyup deneme
+    // yaparken (oynaya basmadan) koyduğum taşın üstüne basıp geri almaya
+    // çalıştığımda oradaki daha önce bulunan kelimelerin anlamları açıldı...
+    // Bu zaten yanlış, kelime anlamı deneme yapılırken hiç açılmamalı."*
+    //
+    // Tahta hücresi ~24 px — parmağın temas MERKEZİ nişan alınan noktanın
+    // altına düştüğünden, taslak taşını geri almak için dokunan kullanıcı
+    // sık sık KOMŞU (oynanmış) taşa isabet ediyor. Hücreyi büyütmek mümkün
+    // değil (ızgara ölçüsü kuralın kendisi), ama ıskalamayı ZARARSIZ yapmak
+    // mümkün: taslak sürerken anlam penceresi hiç açılmaz, dokunuş sessizce
+    // yutulur ve kullanıcı yeniden dener. Taslak boşken (rakibin sırası,
+    // ya da kendi sıranda henüz taş koymadan) davranış DEĞİŞMEDİ.
     if (state.board[r][c]) {
+      if (Object.keys(state.placed).length > 0) return;
       const words = [
         getFullWordAt(state.board, {}, r, c, 0, 1),
         getFullWordAt(state.board, {}, r, c, 1, 0),

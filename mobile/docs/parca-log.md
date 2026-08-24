@@ -5436,6 +5436,41 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        `false` olduğunu iddia ediyor — ikinci iddia gölgelerin kalıcı olarak
        kaybolmasını da yakalıyor.
 
+   - ✅ **Parça 138 — taslak sürerken kelime anlamı AÇILMIYOR; ve
+     sürüklemenin 30 px kaldırılmış olduğu bulundu (24 Ağustos 2026,
+     Android):** kullanıcı *"koyduğum taşın üstüne basıp geri almaya
+     çalıştığımda oradaki daha önce bulunan kelimelerin anlamları açıldı...
+     Bu zaten yanlış, kelime anlamı deneme yapılırken hiç açılmamalı. Bu
+     kritik bir problem, deneyimi tamamen bozuyor"* dedi.
+     - **İki şey üst üste binmişti:** (a) ~24 px'lik hücrede taslak taşını
+       geri almak için dokunan parmak sık sık KOMŞU (oynanmış) taşa isabet
+       ediyor; (b) isabet edince pahalı bir sonuç doğuyordu — anlam
+       penceresi. (a) büyütülerek çözülemez (ızgara ölçüsü kuralın kendisi),
+       ama (b) çözülebilir ve acıyı veren o.
+     - **Kural:** taslak hamle sürerken (`state.placed` boş değilken)
+       oynanmış bir taşa dokunmak HİÇBİR ŞEY yapmaz. Taslak boşken davranış
+       değişmedi. Dört yüzeyde birden (web `App.tsx` +
+       `OnlineGameScreen.tsx`, port `game_screen.dart` +
+       `online_game_screen.dart`); webde ayrıca `cursor-pointer` kalkıyor.
+     - **ÖNCEKİ BİR TEŞHİSİM DÜZELDİ — kayda değer:** 48 px turunda
+       "küresel bir koordinat kayması yok, çünkü sürükleme çalışıyor"
+       demiştim. Yanlıştı: sürükleme yolu parmağın **30 px ÜZERİNİ** hedef
+       alıyor (`DRAG_LIFT = 30` / `_dragLift`+`_liftedY`) — hayalet taş da
+       bırakma hedefi de o kaldırılmış noktayı kullanıyor. Dokunuş yolunda
+       telafi YOK. Yani sürüklemenin isabetli hissedilmesi dokunuşun da
+       isabetli olduğunu kanıtlamıyor; kullanıcının dört kontrolde
+       tekrarladığı *"biraz üstüne basınca çalışıyor"* cümlesi tam bu
+       asimetriyle tutarlı. **Yine de çözüm dokunuşa offset eklemek
+       DEĞİL** — sabit bir kaydırma büyük hedeflerde işi bozar; doğru
+       cevap hedefi büyütmek (48 dp turu) ve büyütülemeyende ıskalamayı
+       zararsız yapmak.
+     - **Test:** `meaning_test.dart` korumayı DÖRT dosyada birden ve SIRAYA
+       bakarak kilitliyor (tahta-taşı dalının İÇİNDE, anlam çağrısından
+       ÖNCE). Widget testi mümkün değil: `MeaningStore` gerçek sqflite
+       async'i kullanıyor ve `testWidgets`ın sahte zamanında çözülmüyor,
+       store'suz bir ekranda ise `store == null` dalı zaten erken dönüp
+       korumayı değil EKSİKLİĞİ ölçerdi.
+
    - ✅ **Parça 133 — bölge kuralı: kendi bloğundaki DESTEKSİZ rakip taşı
      artık zinciri kesmiyor (24 Ağustos 2026, kullanıcı gerçek bir oyunda
      yakaladı):** *"Rakip benim bölgemin içinde UMAR yazdı. Ben de üstüne PÜR

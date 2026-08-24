@@ -305,6 +305,20 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     if (state.board[r][c] != null) {
       // Tahtada duran (onaylanmış) bir taş: o hücreden geçen yatay ve dikey
       // kelimelerin anlamı gösterilir (web handleCellClick'in ilk dalı).
+      // ⚠ TASLAK HAMLE VARKEN ANLAM AÇILMAZ (24 Ağustos 2026, kullanıcı
+      // cihazda bildirdi): *"2 kelimenin birleştiği yere bir taş koyup
+      // deneme yaparken (oynaya basmadan) koyduğum taşın üstüne basıp geri
+      // almaya çalıştığımda oradaki daha önce bulunan kelimelerin anlamları
+      // açıldı... Bu zaten yanlış, kelime anlamı deneme yapılırken hiç
+      // açılmamalı."*
+      //
+      // Tahta hücresi ~24 px — parmağın temas MERKEZİ nişan alınan noktanın
+      // altına düştüğünden, taslak taşını geri almak için dokunan kullanıcı
+      // sık sık KOMŞU (oynanmış) taşa isabet ediyor. Hücreyi büyütmek
+      // mümkün değil (ızgara ölçüsü kuralın kendisi), ama ıskalamayı
+      // ZARARSIZ yapmak mümkün: taslak sürerken dokunuş sessizce yutulur,
+      // kullanıcı yeniden dener. Taslak boşken davranış DEĞİŞMEDİ.
+      if (state.placed.isNotEmpty) return;
       final store = widget.meanings;
       if (store == null) return;
       await showMeaningModal(context, store.lookup, isUnavailable: () => store.unavailable, [

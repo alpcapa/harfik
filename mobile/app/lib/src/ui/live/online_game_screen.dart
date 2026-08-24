@@ -1022,6 +1022,10 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   Future<void> _handleCellTap(int r, int c) async {
     final k = cellKey(r, c);
     if (state.board[r][c] != null) {
+      // Taslak hamle sürerken anlam penceresi AÇILMAZ — gerekçe ve
+      // kullanıcının bildirimi `game_screen.dart`'ın aynı dalında
+      // (iki ekran bu deseni paylaşıyor).
+      if (state.placed.isNotEmpty) return;
       final store = widget.meanings;
       if (store == null) return;
       await showMeaningModal(context, store.lookup, isUnavailable: () => store.unavailable, [

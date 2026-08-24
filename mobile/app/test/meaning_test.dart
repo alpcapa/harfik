@@ -21,6 +21,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'support/test_fonts.dart';
 import 'support/test_view.dart';
+import 'support/web_source.dart';
 
 /// Asset'leri paketten değil doğrudan diskten okuyan test bundle'ı —
 /// flutter_test'in rootBundle'ı `assets/` yolunu bilmez.
@@ -49,6 +50,33 @@ MeaningStore newStore() => MeaningStore(
       factory: databaseFactoryFfi,
       dbDir: () async => tmp.path,
     );
+
+/// Taslak sürerken anlamın açılmadığını DÖRT yüzeyde birden kilitler.
+///
+/// Widget testiyle yapılamıyor: `MeaningStore` gerçek sqflite async'i
+/// kullanıyor ve `testWidgets`ın sahte zaman bölgesinde çözülmüyor (bu
+/// dosyanın başındaki `_pre` notu) — store'suz bir GameScreen'de ise
+/// `store == null` dalı zaten erken dönüyor, yani test korumayı DEĞİL
+/// eksikliği ölçerdi. Bu yüzden kaynak seviyesinde ve SIRAYA bakarak:
+/// koruma, tahta-taşı dalının İÇİNDE ve anlam çağrısından ÖNCE olmalı.
+void _guardCheck(String dosya, String dalBasi, String anlamCagrisi,
+    String koruma) {
+  final src = readRepoFile(dosya);
+  final dal = src.indexOf(dalBasi);
+  expect(dal, greaterThanOrEqualTo(0),
+      reason: '$dosya: tahta-taşı dalı bulunamadı — ayrıştırıcı bayatlamış');
+  final anlam = src.indexOf(anlamCagrisi, dal);
+  expect(anlam, greaterThan(dal),
+      reason: '$dosya: anlam çağrısı bulunamadı');
+  final g = src.indexOf(koruma, dal);
+  expect(g, greaterThan(dal),
+      reason: '$dosya: taslak koruması YOK — kullanıcı 24 Ağustos 2026\'da '
+          'cihazda bildirdi: taslak taşını geri almaya çalışırken komşu '
+          'kelimenin anlamı açılıyordu');
+  expect(g, lessThan(anlam),
+      reason: '$dosya: koruma anlam çağrısından SONRA — bu sırada hiçbir şeyi '
+          'engellemez');
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -101,6 +129,20 @@ void main() {
     expect((await store.lookup('aba'))?.meanings, isNotEmpty);
     expect(stampFile.readAsStringSync(), stamp);
     await store.close();
+  });
+
+  test('taslak hamle sürerken anlam AÇILMAZ — dört yüzeyde de', () {
+    _guardCheck('src/App.tsx', 'if (state.board[r][c]) {', 'openMeaning(',
+        'if (Object.keys(state.placed).length > 0) return;');
+    _guardCheck('src/components/OnlineGameScreen.tsx',
+        'if (state.board[r][c]) {', 'openMeaning(',
+        'if (Object.keys(state.placed).length > 0) return;');
+    _guardCheck('mobile/app/lib/src/ui/game/game_screen.dart',
+        'if (state.board[r][c] != null) {', 'showMeaningModal(',
+        'if (state.placed.isNotEmpty) return;');
+    _guardCheck('mobile/app/lib/src/ui/live/online_game_screen.dart',
+        'if (state.board[r][c] != null) {', 'showMeaningModal(',
+        'if (state.placed.isNotEmpty) return;');
   });
 
   testWidgets('modal: anlam listesi + iki kelime + bulunamadı hâli',
