@@ -324,8 +324,13 @@ class _PlayerBox extends StatelessWidget {
     final dimmed = player.surrendered
         ? Opacity(opacity: 0.45, child: box) // web'le aynı soluklaştırma
         : box;
+    // Kutu ~26 px yüksekliğinde ama header satırı zaten 48 (logo/avatar
+    // hedefleri belirliyor) — dokunma kutusunu 48'e çıkarmak BEDAVA, düzen
+    // değişmiyor. `minWidth: 0`: genişlik akıcı sistemden geliyor
+    // (`playerBoxWidth`/`yzBoxWidth`), 48 dayatmak web paritesini bozardı.
     return onTap == null
         ? dimmed
-        : GestureDetector(onTap: onTap, child: dimmed);
+        : TapTarget(
+            onTap: onTap, minWidth: 0, minHeight: kMinTapTarget, child: dimmed);
   }
 }

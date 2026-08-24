@@ -1149,7 +1149,15 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                                     fontFamily: 'SpaceMono',
                                     fontSize: 10,
                                     color: _muted)),
-                            GestureDetector(
+                            // ⚠ Bu satır 24 Ağustos 2026'da bir kez ATLANDI:
+                            // taramam "GestureDetector'ın DOĞRUDAN çocuğu
+                            // Text mi" diye baktığından, çocuğu bir `Row`
+                            // (ikon + metin) olan bu link gözden kaçtı ve
+                            // kullanıcı Android'de tekrar bildirdi ("hâlâ
+                            // yukarısına dokunmak gerekiyor"). Ders: hedef
+                            // taraması çocuğun TÜRÜNE değil, kutuya bir
+                            // ölçü veren bir şey olup olmadığına bakmalı.
+                            TapTarget(
                               onTap: _handleShare,
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
