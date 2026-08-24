@@ -110,10 +110,25 @@ anahtarına eşit — yani secret'lar okundu, Gradle `key.properties`i gördü,
 paket debug değil upload anahtarıyla imzalandı. `.apk` artefaktı da
 yerinde (Appetize akışı bozulmadı).
 
-**İlk yüklemede OKUNACAK, hâlâ ölçülmedi:** `targetSdk` (stable kanalın
-varsayılanı; Play'in asgarisinin altındaysa pinle) ve `image_picker`'ın
-birleşmiş manifeste eklediği izinler (Data safety beyanını etkiler).
-İkisini de Play Console yükleme ekranı gösteriyor.
+**ÖLÇÜLDÜ (24 Ağustos 2026) — ikisi de temiz, aksiyon GEREKMİYOR.** Kaynağa
+değil YAYINLANMIŞ pakete bakıldı: `mobile-latest`teki `kelimeki.apk`
+(sha `18689eb`) indirilip derlenmiş `AndroidManifest.xml`i çözüldü.
+
+| | Ölçülen | Sonuç |
+|---|---|---|
+| `minSdkVersion` | **24** (Android 7.0) | — |
+| `targetSdkVersion` | **36** | Android'in en yeni API seviyesi; Play'in asgarisinin ALTINDA olması mümkün değil → **pinlemeye gerek yok** |
+| İzinler | **3 adet** (aşağı) | Data safety beyanı etkilenmiyor |
+
+İzinlerin tamamı: `INTERNET` (Parça 131 düzeltmesi — pakette olduğu böylece
+ikinci bir yoldan da doğrulandı), `ACCESS_NETWORK_STATE` (connectivity_plus)
+ve `com.kelimeki.kelimeki.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`
+(AndroidX'in kendi ürettiği iç izin — kullanıcıya görünmez, beyan edilmez).
+
+**`image_picker` HİÇBİR izin eklememiş** — bu dosyanın beklediği risk
+gerçekleşmedi. Modern Android'de Photo Picker/SAF üzerinden çalıştığı için
+depolama/medya izni istemiyor. Yani Data safety formunda medya erişimi
+beyan edilmeyecek.
 
 **0.A bölümünün TAMAMI bitti.** Sıradaki: ilk `.aab` yüklemesi → kapalı test kanalı → 12 tester → 14 günlük sayaç başlar.
 
@@ -131,13 +146,12 @@ birleşmiş manifeste eklediği izinler (Data safety beyanını etkiler).
   kırar (madde 1 ile aynı iş).
 
 **Tuzaklar — 0.A2/0.A3:**
-- `targetSdk` bugün `flutter.targetSdkVersion`'dan geliyor
-  (`build.gradle.kts:23`), yani stable kanalın varsayılanı — **ölçülmedi.**
-  İlk AAB üretilince gerçek değeri oku; Play'in yeni uygulamalar için
-  dayattığı asgari seviyenin altındaysa açıkça pinle.
-- `image_picker`'ın birleşmiş (merged) manifeste eklediği izinleri ilk
-  AAB'de **oku** — beklenmeyen bir medya izni Data safety beyanını da
-  değiştirir.
+- `targetSdk` hâlâ `flutter.targetSdkVersion`'dan geliyor
+  (`build.gradle.kts:47`), yani pinli DEĞİL — ama ölçüldüğünde **36** çıktı
+  (yukarı), o yüzden bugün pinlemeye gerek yok. Flutter kanalı geri giderse
+  bu sessizce düşebilir; sürüm yükseltmelerinde yeniden ölç.
+- `image_picker`'ın izin eklemediği **ölçüldü** (yukarı) — paket yalnızca 3
+  izin taşıyor ve hiçbiri medya/depolama değil.
 - **Paket adı `com.kelimeki.kelimeki` ilk yüklemeden sonra KALICI**
   (`mobile/CLAUDE.md`). Değişecekse bu adımdan ÖNCE.
 
