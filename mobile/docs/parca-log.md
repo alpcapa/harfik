@@ -5154,6 +5154,65 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        ayraç dengesi, (c) her çapanın `grep`le kaynağında teyidi. Dart
        yarısının kanıtı yine CI.
 
+   - ✅ **Parça 133 — bölge kuralı: kendi bloğundaki DESTEKSİZ rakip taşı
+     artık zinciri kesmiyor (24 Ağustos 2026, kullanıcı gerçek bir oyunda
+     yakaladı):** *"Rakip benim bölgemin içinde UMAR yazdı. Ben de üstüne PÜR
+     yazdım. Bölgenin büyümesini beklerken büyümedi."*
+     - **Önce HATA DEĞİL diye doğrulandı, sonra kuralın kendisi tartışıldı.**
+       Ekran görüntüsündeki renklerden tahmin etmek yerine oyunun gerçek
+       satırı Supabase'ten okundu: "UMAR"ın U'su (9,9) ZATEN kullanıcınındı,
+       rakip yalnızca M-A-R'ı (9,10..12) eklemişti; kullanıcı da PÜR'ü
+       **rakibin R'sine** asmıştı. Üretimdeki `computeAllTerritories` o
+       tahtada koşturuldu: (9,12) rakip taşı taşıdığından zinciri kesiyor,
+       P(7,12) ve Ü(8,12) bağlanamıyordu — yani kod dokümandaki kuralı doğru
+       uyguluyordu.
+     - **Ama kullanıcının itirazı haklıydı ve tutarsızlık gerçekti:** (9,12)
+       hücresi **zaten onun bölgesi** sayılıyordu (taban iddia; rakibin
+       zinciri oraya ulaşmıyor) ve rakip oraya bitişik oynasa ona **vergi**
+       ödeyecekti. Yani hücre kira toplanan ama üzerinden yürünemeyen bir
+       alandı.
+     - **Yeni kural:** kendi 4×4 bloğunun içindeki bir hücre, üzerinde rakip
+       taşı olsa bile, o taş **rakibin kendi zincirine bağlı değilse** senin
+       zincirini kesmez — **iletken**dir. Rakip bölgesini oraya gerçekten
+       taşımışsa hiçbir şey değişmez (hücre onun, zincir kesilir, vergi
+       ödenir). Bu, zaten var olan "blok içi BOŞ hücreler geçittir"
+       istisnasının doğal devamı.
+     - **TASARIM TUZAĞI, ölçülerek yakalandı:** iletken hücreyi zincire ÜYE
+       yapmak çakışma üretiyor — taşın sahibi o hücreye kendi taşlarıyla
+       ulaşabildiği bir tahtada hücre HEM onun HEM blok sahibinin zincirine
+       giriyor ve "iki oyuncunun bölgesi asla çakışmaz" değişmezi kırılıyor.
+       Bu yüzden `chain` (üyelik) ile `visited` (gezinme) AYRI iki küme:
+       iletken hücre gezilir, üye olmaz. Değişmez hem web'de hem Dart
+       testinde ayrıca assert ediliyor.
+     - **İki geçiş, sırası önemli:** önce her oyuncunun SAF zinciri (yalnızca
+       kendi taşları), sonra "bu rakip taşı destekli mi" sorusu O saf zincire
+       sorulur. Kapıyı ikinci geçişin kendi sonucuna sormak dairesel olurdu
+       (A'nın zinciri B'ninkine, B'ninki A'nınkine bağlı).
+     - **Kapsam kendiliğinden dar:** blok DIŞINDAKİ bölge zaten yalnızca
+       kendi taşlarından oluştuğundan kural **sadece kendi bloğunun içinde**
+       çalışabilir; tarafsız alandaki izole rakip taşı hâlâ keser.
+     - **Golden vector'lar yeniden üretildi → SIFIR fark.** Yani mevcut
+       senaryoların hiçbiri bu dala girmiyordu ve iki motor burada sessizce
+       ayrışabilirdi. Bu yüzden yeni bir fixture eklendi:
+       `test/goldens/territory.json` (5 vaka) + `run_all.dart` →
+       `testTerritory()`. Vakalar elle kurgulandı; biri kuralın NEGATİF dalı
+       (`destekli_rakip_tasi_keser` — rakip bölgesini gerçekten taşımış).
+       **Fixture'ın kurala duyarlı olduğu kanıtlandı:** kural geçici geri
+       alınıp yeniden üretildiğinde ilgili vaka 18 → 16 hücreye düşüyor.
+     - **Etkilenen yüzeyler tek kaynaktan besleniyor** (ayrı ayrı
+       güncellenmedi, gerek yok): tahta çizimi (`board_widget.dart` /
+       `Board.tsx`), bölge vergisi (`computeInvasionSplit`) ve YZ
+       (`find_move.dart` / `ai.ts`) hepsi `computeAllTerritories` çağırıyor.
+       `HelpModal` metni bu mekaniği hiç anlatmadığından dokunulmadı
+       (dolayısıyla `help_text_parity_test` de etkilenmedi).
+     - **Devam eden oyunlar anında etkilenir** — bölge her hamlede tahtadan
+       yeniden hesaplanıyor, saklanmıyor.
+     - **Doğrulama sınırı:** Flutter/Dart SDK bu ortamda yok; Dart yarısının
+       kanıtı CI. Yerinde yapılanlar: `tsc`, `npm run build`, Playwright
+       29/29, golden üretimi, iki Dart dosyasının ayraç dengesi, ve kuralın
+       kullanıcının GERÇEK tahtasında ölçülmesi (bölge 34 → 36, tam olarak
+       P ve Ü; Bobola 19 → 19; çakışan hücre 0).
+
    - ✅ **Parça 131 — release APK'da İNTERNET İZNİ YOKTU (24 Ağustos 2026,
      ilk gerçek cihaz kurulumu):** Kullanıcı Play için ekran görüntüsü
      çekmek üzere `mobile-latest` APK'sını Android telefonuna kurdu, tanıtımı

@@ -44,6 +44,71 @@ void testTurkish() {
   }
 }
 
+/// Bölge (fetih zinciri) paritesi. 24 Ağustos 2026'da eklendi: o gün gelen
+/// "kendi bloğundaki DESTEKSİZ rakip taşı zinciri kesmez, İLETKENdir" kuralı
+/// mevcut fixture'ların hiçbirinde geçmiyordu — golden'lar yeniden üretilince
+/// SIFIR fark çıkmıştı, yani iki motor bu kuralda sessizce ayrışabilirdi.
+/// Vakalar elle kurgulandı; `destekli_rakip_tasi_keser` kuralın NEGATİF
+/// dalını tutuyor (rakip bölgesini gerçekten oraya taşımışsa hücre onundur).
+void testTerritory() {
+  final g = loadGolden('territory');
+  for (final raw in g['cases'] as List) {
+    final c = (raw as Map).cast<String, Object?>();
+    final name = c['name'] as String;
+
+    final board = List.generate(
+        boardSize, (_) => List<Tile?>.filled(boardSize, null),
+        growable: false);
+    for (final rc in c['cells'] as List) {
+      final cell = (rc as Map).cast<String, Object?>();
+      board[cell['r'] as int][cell['c'] as int] =
+          Tile(letter: 'A', pts: 1, owner: cell['owner'] as int);
+    }
+
+    final players = <Player>[];
+    final specs = c['players'] as List;
+    for (var i = 0; i < specs.length; i++) {
+      final sp = (specs[i] as Map).cast<String, Object?>();
+      players.add(Player(
+        name: 'P$i',
+        corners: (sp['corners'] as List).cast<int>(),
+        colorIndex: i,
+        isAI: false,
+        surrendered: sp['surrendered'] as bool,
+        rack: const [],
+        score: 0,
+        bestMoveScore: 0,
+        bestWordScore: 0,
+        longestWord: '',
+        moveCount: 0,
+        moveScoreSum: 0,
+      ));
+    }
+
+    final got = computeAllTerritories(board, players);
+    final expected = (c['territories'] as List)
+        .map((t) => (t as List).cast<String>().toList()..sort())
+        .toList();
+    check(got.length == expected.length,
+        () => 'territory[$name]: oyuncu sayısı ${got.length} != ${expected.length}');
+    for (var i = 0; i < got.length; i++) {
+      final mine = got[i].toList()..sort();
+      check(mine.length == expected[i].length && mine.join(' ') == expected[i].join(' '),
+          () => 'territory[$name] P$i:\n  got      ${mine.join(" ")}\n  expected ${expected[i].join(" ")}');
+    }
+    // DEĞİŞMEZ: bir hücre en fazla TEK oyuncunun bölgesinde olabilir.
+    final sayac = <String, int>{};
+    for (final t in got) {
+      for (final k in t) {
+        sayac[k] = (sayac[k] ?? 0) + 1;
+      }
+    }
+    final cakisan = sayac.entries.where((e) => e.value > 1).map((e) => e.key).toList();
+    check(cakisan.isEmpty,
+        () => 'territory[$name]: iki bölgede birden görünen hücre: ${cakisan.join(" ")}');
+  }
+}
+
 void testInvasionFormula() {
   final g = loadGolden('invasion_formula');
   final maxBase = g['maxBase'] as int;
@@ -228,6 +293,7 @@ void main() {
 
   testTurkish();
   testInvasionFormula();
+  testTerritory();
   testRanking();
   testScoring();
   testRemainingTiles();

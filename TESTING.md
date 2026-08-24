@@ -1588,3 +1588,26 @@ silinmez.**
 - [ ] Gizlilik Politikası (web modal + `/gizlilik/` sayfası + mobil port) 5.
       bölümde ~20 saat hatırlatma / 48 saat silme cümlesini taşıyor ve üç
       yüzeyde de aynı.
+
+## 20. Bölge kuralı — bloktaki desteksiz rakip taşı (24 Ağustos 2026)
+
+Kural değişti: kendi 4×4 köşe bloğunun içindeki bir hücre, üzerinde rakip taşı
+olsa bile, o taş **rakibin kendi zincirine bağlı değilse** senin zincirini
+kesmez (iletken). Gerekçe ve ölçümler: `CLAUDE.md` → "İstisna — kendi 4×4 köşe
+bloğu". `territory.json` golden vector'ı iki motoru da kilitliyor, ama **canlı
+bir oyunda gözle teyit** ayrı bir şey — bölge dış hattı ve vergi onayı bu
+hesaba bağlı.
+
+- [ ] **İletken durum:** Rakip senin bloğunun içine, kendi bölgesine BAĞLI
+      OLMAYAN bir taş koysun. O taşa asarak blok dışına bir kelime kur →
+      bölgenin dış hattı yeni taşlarını içine alacak şekilde büyümeli.
+- [ ] **Negatif dal:** Rakip kendi bölgesini kesintisiz kendi taşlarıyla senin
+      bloğuna kadar getirmişse, onun taşına asarak kurduğun kelime bölgene
+      dahil OLMAMALI (ve o hücreler onun bölgesinde görünmeli).
+- [ ] **Vergi tutarlı:** Yukarıdaki iletken durumda büyüyen bölgenin sınırına
+      rakip oynadığında "Sınır İhlali!" onayı çıkmalı ve vergi sana gelmeli.
+- [ ] **Çakışma yok:** Hiçbir hücre aynı anda iki oyuncunun renkli dış hattı
+      içinde görünmemeli.
+- [ ] **Devam eden oyunlar:** Deploy sonrası açık bir oyunda bölge sınırları
+      yeniden hesaplanır — tahtanın dış hattı bir anda değişebilir, bu
+      beklenen.
