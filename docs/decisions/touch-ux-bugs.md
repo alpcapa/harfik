@@ -378,3 +378,70 @@ Aynı turda `TapTarget`e `alignment` eklendi: kutuyu büyütmek çocuğu
 ortaladığından, bir kenara HİZALI duran metinler kayıyordu ("← Geri" 48
 px'lik kutuda 4 px sağa kaçıp tahtanın sol kenarıyla hizasını kaybetti —
 CI yakaladı).
+
+### Ek: sürükleme 30 px KALDIRILMIŞ, dokunuş değil — teşhisimi düzelten bulgu (24 Ağustos 2026)
+
+48 px turunda "küresel bir koordinat kayması yok, çünkü sürükleme sorunsuz
+çalışıyor" demiştim. **Bu çıkarım hatalıydı** ve kod bunu açıkça gösteriyor:
+sürükleme yolu parmağın **30 px ÜZERİNİ** hedef alıyor (`DRAG_LIFT = 30`,
+`App.tsx`; portta `_dragLift`/`_liftedY`, `game_screen.dart`) — hem hayalet
+taş hem BIRAKMA hedefi o kaldırılmış noktayı kullanıyor. Dokunuş yolunda
+böyle bir telafi yok.
+
+Yani sürüklemenin isabetli hissedilmesi, dokunuşun da isabetli olduğunu
+kanıtlamıyor: iki yol farklı noktaya nişan alıyor. Kullanıcının dört ayrı
+kontrolde tekrarladığı *"biraz üstüne basınca çalışıyor"* cümlesi bu
+asimetriyle birebir tutarlı — parmağın bildirilen temas MERKEZİ, nişan
+alınan noktanın altında kalıyor.
+
+> **Ders:** "şu yol çalışıyor, demek ki koordinatlar doğru" demeden önce o
+> yolun bir telafi taşıyıp taşımadığına bak.
+
+**Buna rağmen çözüm dokunuşa offset EKLEMEK değil.** Bir kaydırma sabiti
+büyük hedeflerde işi bozar ve her yüzeyi yeniden ayarlamayı gerektirir;
+sektörün çözümü hedefi büyütmek (48 dp turu). Tahta hücresi (~24 px)
+büyütülemeyen tek istisna — ızgara ölçüsü kuralın kendisi.
+
+### Ek: küçültülemeyen hedefte ıskalamayı ZARARSIZ yap (24 Ağustos 2026)
+
+Kullanıcı: *"2 kelimenin birleştiği yere bir taş koyup deneme yaparken
+(oynaya basmadan) koyduğum taşın üstüne basıp geri almaya çalıştığımda
+oradaki daha önce bulunan kelimelerin anlamları açıldı... Bu zaten yanlış,
+kelime anlamı deneme yapılırken hiç açılmamalı. Bu kritik bir problem,
+deneyimi tamamen bozuyor."*
+
+İki ayrı şey üst üste binmişti: (a) ~24 px'lik hücrede taslak taşını geri
+almaya çalışan dokunuş sık sık KOMŞU (oynanmış) taşa isabet ediyor;
+(b) komşuya isabet edince pahalı bir sonuç doğuyordu — anlam penceresi.
+
+(a) büyütülerek çözülemez. (b) çözülebilir ve asıl acıyı veren o:
+
+> **Kural:** büyütülemeyen bir hedefin yanındaki ıskalamalar SESSİZ olmalı.
+> Taslak hamle sürerken (`placed` boş değilken) oynanmış bir taşa dokunmak
+> artık hiçbir şey yapmıyor — kullanıcı yeniden deniyor, bedel sıfır.
+> Taslak boşken (rakibin sırası ya da kendi sıranda henüz taş koymadan)
+> anlam penceresi eskisi gibi açılıyor.
+
+Dört yüzeyde birden uygulandı (web `App.tsx` + `OnlineGameScreen.tsx`, port
+`game_screen.dart` + `online_game_screen.dart`); webde ayrıca taslak
+sürerken `cursor-pointer` kalkıyor (çalışmayan bir kontrol tıklanır
+görünmemeli). `meaning_test.dart` korumanın DÖRT dosyada da, tahta-taşı
+dalının içinde ve anlam çağrısından ÖNCE durduğunu kilitliyor.
+
+
+### Ek: kurtarma web'e de taşındı (24 Ağustos 2026)
+
+İlk kararım "web'de gerek yok, orada birincil girdi fare" idi. Kullanıcı
+düzeltti: *"Bir çok insan mobil browser kullanıyor, mouse değil."* Haklı —
+mobil tarayıcıda aynı 24 px'lik hücre ve aynı parmak var.
+
+`src/utils/draftRescue.ts` → `nearbyDraftCell`, Flutter'daki
+`_nearbyDraftCell` ile aynı kurallar: ortogonal komşular, tek aday varsa o,
+birden çok adayda dokunuş noktasına en yakın olan, eşitlikte/ölçüm
+yokluğunda **null**. Tıklama noktası `Board.tsx`'in `onCellClick`ine
+eklendi; komşu hücre ölçüleri DOM'daki `data-cell` özniteliğinden okunuyor.
+
+`npm run verify-draft-rescue` 11 kontrolle doğruluyor (web tarafında birim
+test çatısı yok — `verify-cloud-save-mirror`la aynı esbuild+node deseni) ve
+**negatif eş kuruldu:** eşitlik kuralı kaldırılınca "tam orta dokunuş →
+null" kontrolü gerçekten düşüyor.

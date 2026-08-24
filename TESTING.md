@@ -1652,6 +1652,25 @@ ayrılıyor.
 - [ ] Oyun geçmişi / arkadaşlar gibi öteki pencerelerde de "Yükleniyor…"
       belirgin (mavi/kalın) görünmeli.
 
+## 19d. Taslak sürerken kelime anlamı açılmamalı (24 Ağustos 2026)
+
+Mobil portta bildirilen davranışın webdeki eşi de değişti.
+
+- [ ] Tahtaya bir taş koy (OYNA'ya BASMA) → oynanmış bir taşa tıkla →
+      anlam penceresi AÇILMAMALI, imleç de "tıklanır" göstermemeli.
+- [ ] Taslağı geri al → oynanmış taşa tıkla → anlam penceresi AÇILMALI.
+- [ ] Aynı ikisini Canlı oyun ekranında da dene.
+
+### Iskalama kurtarma (mobil tarayıcıda dene — asıl hedef orası)
+
+- [ ] Taslak taşını geri almak için **kasten biraz aşağısına** (altındaki
+      oynanmış taşa) dokun → taslak taşı GERİ ALINMALI.
+- [ ] **Yan yana üç taslak harf**, ortadakine dokun → yalnızca ortadaki.
+- [ ] **Mevcut bir taşın hem üstüne hem altına** harf koy, ortadaki
+      oynanmış taşa tam ortasından dokun → hiçbir şey olmamalı; biraz
+      yukarı/aşağı kayarsan yakın olan geri alınmalı.
+- [ ] Boş hücrelere taş koymak eskisi gibi kolay olmalı.
+
 ## 20. Bölge kuralı — bloktaki desteksiz rakip taşı (24 Ağustos 2026)
 
 Kural değişti: kendi 4×4 köşe bloğunun içindeki bir hücre, üzerinde rakip taşı

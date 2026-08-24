@@ -61,7 +61,10 @@ class MoveOverlay {
 
 class BoardWidget extends StatelessWidget {
   final GameState state;
-  final void Function(int r, int c)? onCellTap;
+  /// Dokunuşun GLOBAL noktası da veriliyor — ekran katmanı taslak
+  /// sürerken ıskalanan dokunuşu en yakın taslak taşına yönlendirirken
+  /// kullanıyor (bkz. `game_screen.dart` → `_nearbyDraftCell`).
+  final void Function(int r, int c, Offset globalPosition)? onCellTap;
   final MoveOverlay? moveOverlay;
   final bool compact;
 
@@ -628,7 +631,8 @@ class BoardWidget extends StatelessWidget {
     return GestureDetector(
       key: ValueKey('cell-$r-$c'),
       behavior: HitTestBehavior.opaque,
-      onTap: onCellTap == null ? null : () => onCellTap!(r, c),
+      onTapUp:
+          onCellTap == null ? null : (d) => onCellTap!(r, c, d.globalPosition),
       child: body,
     );
   }

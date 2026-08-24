@@ -15,6 +15,7 @@
 // eder (bkz. CLAUDE.md "Canlı Oyun — Faz 3.6", checkOnlineGameTurnTimeout
 // aşağıdaki refresh() döngüsünden çağrılır).
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { Board } from './Board';
 import { Rack } from './Rack';
 import { GameHeader } from './GameHeader';
@@ -38,7 +39,7 @@ import { Avatar } from './Avatar';
 import { Tile as TileComponent } from './Tile';
 import { createInitialState, gameReducer, isFirstMove, type Action } from '../game/gameReducer';
 import { isWordSetReady } from '../data/wordSetLoader';
-import { BINGO_BONUS, PLAYER_COLORS, jokerFinishBonus } from '../game/constants';
+import { BINGO_BONUS, PLAYER_COLORS, SIZE, jokerFinishBonus } from '../game/constants';
 import {
   calcScore,
   calcWordRawScores,
@@ -48,6 +49,7 @@ import {
   validatePlacementStructural,
 } from '../utils/validator';
 import { getFormedWords, getFullWordAt, key } from '../utils/board';
+import { nearbyDraftCell } from '../utils/draftRescue';
 import { trLower } from '../utils/turkish';
 import { hasSeenChatIntro, markChatIntroSeen, getChatLastReadAt, markChatRead } from '../utils/onboarding';
 import { swallowNextClick } from '../utils/ghostClick';
@@ -717,15 +719,12 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     if (!d.moved) {
       if (d.source.kind === 'rack') {
         dispatch({ type: 'SELECT_TILE', index: d.source.index });
-      } else if (d.source.tile.wild) {
-        // Pencere BU pointerup içinde açıldığından ardından gelen compat
-        // click'i yut — aksi halde modalın harf ızgarasına düşüp jokeri
-        // sessizce başka bir harfe çeviriyor ya da zemine düşüp pencereyi
-        // anında kapatıyor (gerekçe: `src/utils/ghostClick.ts`).
-        swallowNextClick();
-        setPendingWild({ r: d.source.r, c: d.source.c, editing: true });
       } else {
-        dispatch({ type: 'RECALL_CELL', r: d.source.r, c: d.source.c });
+        // Joker ise pencere BU pointerup içinde açıldığından ardından gelen
+        // compat click'i yut — aksi halde modalın harf ızgarasına düşüp
+        // jokeri sessizce başka bir harfe çeviriyor ya da zemine düşüp
+        // pencereyi anında kapatıyor (gerekçe: `src/utils/ghostClick.ts`).
+        tapPlacedTile(d.source.r, d.source.c, true);
       }
       return;
     }
@@ -771,8 +770,53 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     }
   };
 
-  const handleCellClick = (r: number, c: number) => {
+  /// Tahtaya BU turda konmuş bir taşa dokunma davranışı — tek kaynak.
+  /// `swallow`: dokunuş pointer akışından geliyorsa (endDrag) ardından
+  /// gelen uyumluluk click'i yutulmalı; tıklama akışından (ıskalama
+  /// kurtarma) çağrılırken yutulacak bir şey yok.
+  const tapPlacedTile = (r: number, c: number, swallow: boolean) => {
+    const tile = state.placed[key(r, c)];
+    if (!tile) return;
+    if (tile.wild) {
+      if (swallow) swallowNextClick();
+      setPendingWild({ r, c, editing: true });
+    } else {
+      dispatch({ type: 'RECALL_CELL', r, c });
+    }
+  };
+
+  const handleCellClick = (r: number, c: number, e: ReactMouseEvent) => {
+    // ⚠ TASLAK HAMLE VARKEN ANLAM AÇILMAZ (24 Ağustos 2026, kullanıcı
+    // cihazda bildirdi): *"2 kelimenin birleştiği yere bir taş koyup deneme
+    // yaparken (oynaya basmadan) koyduğum taşın üstüne basıp geri almaya
+    // çalıştığımda oradaki daha önce bulunan kelimelerin anlamları açıldı...
+    // Bu zaten yanlış, kelime anlamı deneme yapılırken hiç açılmamalı."*
+    //
+    // Tahta hücresi ~24 px — parmağın temas MERKEZİ nişan alınan noktanın
+    // altına düştüğünden, taslak taşını geri almak için dokunan kullanıcı
+    // sık sık KOMŞU (oynanmış) taşa isabet ediyor. Hücreyi büyütmek mümkün
+    // değil (ızgara ölçüsü kuralın kendisi), ama ıskalamayı ZARARSIZ yapmak
+    // mümkün: taslak sürerken anlam penceresi hiç açılmaz, dokunuş sessizce
+    // yutulur ve kullanıcı yeniden dener. Taslak boşken (rakibin sırası,
+    // ya da kendi sıranda henüz taş koymadan) davranış DEĞİŞMEDİ.
     if (state.board[r][c]) {
+      if (Object.keys(state.placed).length > 0) {
+        // Iskalama kurtarma — gerekçe `src/utils/draftRescue.ts`'te,
+        // yerel oyun ekranıyla (App.tsx) aynı desen.
+        const target = nearbyDraftCell(
+          SIZE,
+          r,
+          c,
+          (rr, cc) => !!state.placed[key(rr, cc)],
+          { x: e.clientX, y: e.clientY },
+          (rr, cc) =>
+            document
+              .querySelector(`[data-cell="${rr},${cc}"]`)
+              ?.getBoundingClientRect() ?? null,
+        );
+        if (target) tapPlacedTile(target[0], target[1], false);
+        return;
+      }
       const words = [
         getFullWordAt(state.board, {}, r, c, 0, 1),
         getFullWordAt(state.board, {}, r, c, 1, 0),

@@ -2338,3 +2338,30 @@ oluyor"* (girişli açılışta da). Artık geçiş boyunca Canlı oyundakiyle A
       aynı stil.
 - [ ] **Oyun içinden GameOver → TEKRAR OYNA** akışı hâlâ çalışıyor (aynı
       ekranda ikinci oyun; yükleme kapısı yalnızca geçişte devrede).
+
+## 20. Taslak sürerken kelime anlamı (24 Ağustos 2026, Parça 138)
+
+Kullanıcı: *"koyduğum taşın üstüne basıp geri almaya çalıştığımda oradaki
+daha önce bulunan kelimelerin anlamları açıldı."* Artık taslak hamle
+varken oynanmış taşa dokunmak hiçbir şey yapmıyor.
+
+- [ ] **İki kelimenin birleştiği yere** bir taş koy (OYNA'ya BASMA) →
+      taşın üstüne dokunup geri almayı dene. Iskalasan bile **anlam
+      penceresi AÇILMAMALI**; tekrar deneyince taş rafa dönmeli.
+- [ ] **Taslak boşken** (henüz taş koymadan ya da rakibin sırasındayken)
+      oynanmış bir taşa dokun → anlam penceresi eskisi gibi AÇILMALI.
+- [ ] Aynı ikisini **Canlı oyunda** da dene (iki ekran deseni paylaşıyor).
+- [ ] Taşı **rafa sürükleyerek** geri alma yolu hâlâ çalışıyor.
+
+### Iskalama kurtarma (aynı tur)
+
+- [ ] Taslak taşını geri almak için **kasten biraz aşağısına** (altındaki
+      oynanmış taşa) dokun → taslak taşı GERİ ALINMALI.
+- [ ] **Yan yana üç taslak harf** koy, ortadakine dokun → yalnızca ORTADAKİ
+      geri alınmalı, yandakiler yerinde kalmalı.
+- [ ] **Mevcut bir taşın hem üstüne hem altına** harf koy, sonra ortadaki
+      (oynanmış) taşa tam ortasından dokun → hiçbir taş geri alınmamalı
+      (belirsizlikte tahmin yok); biraz üstüne/altına kayarsan yakın olan
+      geri alınmalı.
+- [ ] Kelimeyi dizerken **boş hücrelere taş koymak** eskisi gibi kolay
+      olmalı — kurtarma boş hücrelere bulaşmamalı.

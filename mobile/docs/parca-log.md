@@ -5436,6 +5436,73 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        `false` olduğunu iddia ediyor — ikinci iddia gölgelerin kalıcı olarak
        kaybolmasını da yakalıyor.
 
+   - ✅ **Parça 138 — taslak sürerken kelime anlamı AÇILMIYOR; ve
+     sürüklemenin 30 px kaldırılmış olduğu bulundu (24 Ağustos 2026,
+     Android):** kullanıcı *"koyduğum taşın üstüne basıp geri almaya
+     çalıştığımda oradaki daha önce bulunan kelimelerin anlamları açıldı...
+     Bu zaten yanlış, kelime anlamı deneme yapılırken hiç açılmamalı. Bu
+     kritik bir problem, deneyimi tamamen bozuyor"* dedi.
+     - **İki şey üst üste binmişti:** (a) ~24 px'lik hücrede taslak taşını
+       geri almak için dokunan parmak sık sık KOMŞU (oynanmış) taşa isabet
+       ediyor; (b) isabet edince pahalı bir sonuç doğuyordu — anlam
+       penceresi. (a) büyütülerek çözülemez (ızgara ölçüsü kuralın kendisi),
+       ama (b) çözülebilir ve acıyı veren o.
+     - **Kural:** taslak hamle sürerken (`state.placed` boş değilken)
+       oynanmış bir taşa dokunmak HİÇBİR ŞEY yapmaz. Taslak boşken davranış
+       değişmedi. Dört yüzeyde birden (web `App.tsx` +
+       `OnlineGameScreen.tsx`, port `game_screen.dart` +
+       `online_game_screen.dart`); webde ayrıca `cursor-pointer` kalkıyor.
+     - **ÖNCEKİ BİR TEŞHİSİM DÜZELDİ — kayda değer:** 48 px turunda
+       "küresel bir koordinat kayması yok, çünkü sürükleme çalışıyor"
+       demiştim. Yanlıştı: sürükleme yolu parmağın **30 px ÜZERİNİ** hedef
+       alıyor (`DRAG_LIFT = 30` / `_dragLift`+`_liftedY`) — hayalet taş da
+       bırakma hedefi de o kaldırılmış noktayı kullanıyor. Dokunuş yolunda
+       telafi YOK. Yani sürüklemenin isabetli hissedilmesi dokunuşun da
+       isabetli olduğunu kanıtlamıyor; kullanıcının dört kontrolde
+       tekrarladığı *"biraz üstüne basınca çalışıyor"* cümlesi tam bu
+       asimetriyle tutarlı. **Yine de çözüm dokunuşa offset eklemek
+       DEĞİL** — sabit bir kaydırma büyük hedeflerde işi bozar; doğru
+       cevap hedefi büyütmek (48 dp turu) ve büyütülemeyende ıskalamayı
+       zararsız yapmak.
+     - **AYNI TURUN İKİNCİ PARÇASI — IŞKALAMA KURTARMA (kullanıcı sordu:
+       *"yanyana 3 harf koydum ve ortadakini geri almak istiyorum, o zaman
+       yanlışlıkla yandaki taş geri gelmez değil mi?"*):** sessiz ıskalama
+       acıyı aldı ama isabeti düzeltmedi. Taslak sürerken oynanmış taşlar
+       ZATEN ölü olduğundan alanlarını taslak taşına devretmek bedava:
+       oynanmış bir taşa dokunulduğunda komşusundaki taslak geri alınır.
+       - **Kullanıcının sorduğu vaka risksiz:** yan yana üç taslak taşının
+         ortasına dokunmak zaten TASLAK hücresine düşer, kural hiç
+         çalışmaz. Kural YALNIZCA oynanmış hücrelerden tetiklenir.
+       - **BOŞ hücreler dokunulmaz** — yoksa kelimeyi dizerken bir sonraki
+         harfi yan hücreye koymak zorlaşırdı. (Testle kilitli.)
+       - **Gerçek belirsizlik vakası VAR ve tahmin edilmiyor:** mevcut bir
+         taşın hem üstüne hem altına harf konduğunda (tam da "iki kelimenin
+         birleştiği yer") o taşın İKİ komşusu birden taslak olur. O zaman
+         dokunuş NOKTASINA en yakın olan seçilir; mesafeler eşitse ya da
+         ızgara ölçülemiyorsa hiçbir şey yapılmaz — yanlış taşı geri almak,
+         hiç tepki vermemekten daha kötü. Bunun için `onCellTap` artık
+         dokunuşun global noktasını da taşıyor (`onTap` → `onTapUp`).
+       - **WEB'E DE UYGULANDI (aynı tur, kullanıcı isteği: *"Bir çok insan
+         mobil browser kullanıyor, mouse değil"* — haklı, ilk kararım
+         yanlıştı):** `src/utils/draftRescue.ts` → `nearbyDraftCell`, aynı
+         aday sırası/en-yakın-merkez/eşitlik kuralı. Tıklama noktası
+         `Board.tsx`'in `onCellClick`ine eklendi; komşu hücrelerin ölçüsü
+         DOM'daki `data-cell` özniteliğinden okunuyor. `npm run
+         verify-draft-rescue` 11 kontrolle doğruluyor (negatif eş kuruldu:
+         eşitlik kuralı bozulunca GERÇEKTEN düşüyor). Aynı turda webde
+         "konmuş taşa dokunma" davranışı da tek kaynağa alındı
+         (`tapPlacedTile`) — joker penceresi/compat click yutma yalnızca
+         pointer akışında.
+     - **Test:** `meaning_test.dart` korumayı DÖRT dosyada birden ve SIRAYA
+       bakarak kilitliyor (tahta-taşı dalının İÇİNDE, anlam çağrısından
+       ÖNCE). Widget testi mümkün değil: `MeaningStore` gerçek sqflite
+       async'i kullanıyor ve `testWidgets`ın sahte zamanında çözülmüyor,
+       store'suz bir ekranda ise `store == null` dalı zaten erken dönüp
+       korumayı değil EKSİKLİĞİ ölçerdi. Kurtarmanın kendisi ise GERÇEK
+       widget testleriyle kilitli (`game_screen_test.dart`, üç vaka: tek
+       komşu → geri alınır, iki komşu → dokunulmaz, boş hücre → hâlâ taş
+       konur).
+
    - ✅ **Parça 133 — bölge kuralı: kendi bloğundaki DESTEKSİZ rakip taşı
      artık zinciri kesmiyor (24 Ağustos 2026, kullanıcı gerçek bir oyunda
      yakaladı):** *"Rakip benim bölgemin içinde UMAR yazdı. Ben de üstüne PÜR

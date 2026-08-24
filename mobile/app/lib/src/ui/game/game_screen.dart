@@ -300,11 +300,89 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _handleCellTap(int r, int c) async {
+
+  /// **Iskalanan dokunuşu kurtarır** — taslak sürerken oynanmış bir taşa
+  /// dokunulduğunda, komşusundaki taslak taşını hedef sayar.
+  ///
+  /// NEDEN (24 Ağustos 2026, kullanıcı Android'de bildirdi): tahta hücresi
+  /// ~24 px ve parmağın bildirdiği temas MERKEZİ nişan alınan noktanın
+  /// altında kalıyor, yani taslak taşını geri almak için dokunan kullanıcı
+  /// sık sık komşu (oynanmış) taşa isabet ediyor. Hücreyi büyütmek mümkün
+  /// değil — ama taslak sürerken oynanmış taşlar ZATEN ölü (anlam penceresi
+  /// o sırada açılmıyor), yani onların alanını taslak taşına devretmek
+  /// bedava.
+  ///
+  /// ⚠ YALNIZCA OYNANMIŞ hücrelerden çağrılır; BOŞ hücrelere hiç
+  /// dokunulmaz — yoksa kelimeyi dizerken bir sonraki harfi yan hücreye
+  /// koymak zorlaşırdı.
+  ///
+  /// Belirsizlikte TAHMİN ETMEZ: bir oynanmış taşın İKİ yanında birden
+  /// taslak olabilir (tam da "iki kelimenin birleştiği yer" durumu —
+  /// mevcut bir taşın altına ve üstüne harf koymak). O zaman dokunuş
+  /// noktasına en yakın olan seçilir; mesafeler eşitse ya da ızgara
+  /// ölçülemiyorsa hiçbir şey yapılmaz.
+  (int, int)? _nearbyDraftCell(int r, int c, Offset global) {
+    final adaylar = <(int, int)>[];
+    void ekle(int rr, int cc) {
+      if (rr < 0 || rr >= boardSize || cc < 0 || cc >= boardSize) return;
+      if (state.placed[cellKey(rr, cc)] != null) adaylar.add((rr, cc));
+    }
+    ekle(r - 1, c);
+    ekle(r + 1, c);
+    ekle(r, c - 1);
+    ekle(r, c + 1);
+    if (adaylar.isEmpty) return null;
+    if (adaylar.length == 1) return adaylar.first;
+
+    final grid = _boxOf(_gridKey);
+    if (grid == null) return null;
+    final local = grid.globalToLocal(global);
+    const gap = 3.0;
+    final strideX = (grid.size.width + gap) / boardSize;
+    final strideY = (grid.size.height + gap) / boardSize;
+    double uzaklik((int, int) a) {
+      final cx = a.$2 * strideX + (strideX - gap) / 2;
+      final cy = a.$1 * strideY + (strideY - gap) / 2;
+      return (local - Offset(cx, cy)).distanceSquared;
+    }
+
+    adaylar.sort((a, b) => uzaklik(a).compareTo(uzaklik(b)));
+    // ⚠ PAY ŞART, çıplak `<` DEĞİL — CI yakaladı (24 Ağustos 2026): hücrenin
+    // TAM ORTASINA dokunulduğunda iki mesafe matematiksel olarak eşit ama
+    // kayan noktada ~1e-13 farkla biri "daha yakın" çıkıyor ve tahmin
+    // etmeme kuralı sessizce deliniyordu. 0.8 (kare mesafede) ≈ 1.5 px'lik
+    // gerçek bir kayma demek: gürültü altta kalır, kasıtlı bir kayma geçer.
+    return uzaklik(adaylar[0]) < uzaklik(adaylar[1]) * 0.8 ? adaylar[0] : null;
+  }
+
+  Future<void> _handleCellTap(int r, int c, Offset global) async {
     final k = cellKey(r, c);
     if (state.board[r][c] != null) {
       // Tahtada duran (onaylanmış) bir taş: o hücreden geçen yatay ve dikey
       // kelimelerin anlamı gösterilir (web handleCellClick'in ilk dalı).
+      // ⚠ TASLAK HAMLE VARKEN ANLAM AÇILMAZ (24 Ağustos 2026, kullanıcı
+      // cihazda bildirdi): *"2 kelimenin birleştiği yere bir taş koyup
+      // deneme yaparken (oynaya basmadan) koyduğum taşın üstüne basıp geri
+      // almaya çalıştığımda oradaki daha önce bulunan kelimelerin anlamları
+      // açıldı... Bu zaten yanlış, kelime anlamı deneme yapılırken hiç
+      // açılmamalı."*
+      //
+      // Tahta hücresi ~24 px — parmağın temas MERKEZİ nişan alınan noktanın
+      // altına düştüğünden, taslak taşını geri almak için dokunan kullanıcı
+      // sık sık KOMŞU (oynanmış) taşa isabet ediyor. Hücreyi büyütmek
+      // mümkün değil (ızgara ölçüsü kuralın kendisi), ama ıskalamayı
+      // ZARARSIZ yapmak mümkün: taslak sürerken dokunuş sessizce yutulur,
+      // kullanıcı yeniden dener. Taslak boşken davranış DEĞİŞMEDİ.
+      if (state.placed.isNotEmpty) {
+        // Iskalama kurtarma (bkz. `_nearbyDraftCell`): komşuda taslak varsa
+        // dokunuş ona sayılır, yoksa SESSİZCE yutulur.
+        final hedef = _nearbyDraftCell(r, c, global);
+        if (hedef != null) {
+          await _tapPlacedTile(hedef.$1, hedef.$2,
+              state.placed[cellKey(hedef.$1, hedef.$2)]!);
+        }
+        return;
+      }
       final store = widget.meanings;
       if (store == null) return;
       await showMeaningModal(context, store.lookup, isUnavailable: () => store.unavailable, [

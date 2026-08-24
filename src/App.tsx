@@ -1,5 +1,6 @@
 // Kelimeki — ana uygulama: kurulum, çok oyunculu sıra akışı ve düzen
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { GameHeader } from './components/GameHeader';
 import { Board } from './components/Board';
 import { Rack } from './components/Rack';
@@ -42,10 +43,11 @@ import { buildGameRecord } from './utils/gameRecord';
 import { markQuickStartSeen } from './utils/onboarding';
 import { swallowNextClick } from './utils/ghostClick';
 import { getFormedWords, getFullWordAt, key } from './utils/board';
+import { nearbyDraftCell } from './utils/draftRescue';
 import type { GameState, Tile as TileModel } from './game/types';
 import { Tile } from './components/Tile';
 import { trLower } from './utils/turkish';
-import { PLAYER_COLORS } from './game/constants';
+import { PLAYER_COLORS, SIZE } from './game/constants';
 import {
   fetchMeaning,
   isValidWordRemote,
@@ -1357,10 +1359,10 @@ export default function App() {
       // Hareket yok: sıradan bir dokunuş/tık — eski davranış korunur.
       if (d.source.kind === 'rack') {
         dispatch({ type: 'SELECT_TILE', index: d.source.index });
-      } else if (d.source.tile.wild) {
-        // Tahtaya konmuş bir joker: geri almak yerine harfi değiştirme
-        // penceresi açılır — geri alma hâlâ sürükleyerek ya da modaldeki
-        // "Geri Al" butonuyla mümkün.
+      } else {
+        // Tahtaya konmuş bir taş: joker ise harfi değiştirme penceresi
+        // açılır (geri alma hâlâ sürükleyerek ya da modaldeki "Geri Al"
+        // butonuyla mümkün), değilse doğrudan geri alınır.
         //
         // Pencere BU pointerup içinde açıldığından, dokunmatikte hemen
         // ardından gelen uyumluluk (compat) click'i artık hücrenin değil
@@ -1369,10 +1371,7 @@ export default function App() {
         // sessizce başka bir harfe çeviriyor (kullanıcının bildirdiği "A, C
         // oldu") ya da zemine düşüp modalı anında kapatıyor ("pencere hiç
         // açılmadı"). O tek click yutulmalı.
-        swallowNextClick();
-        setPendingWild({ r: d.source.r, c: d.source.c, editing: true });
-      } else {
-        dispatch({ type: 'RECALL_CELL', r: d.source.r, c: d.source.c });
+        tapPlacedTile(d.source.r, d.source.c, true);
       }
       return;
     }
@@ -1411,10 +1410,59 @@ export default function App() {
     setGhost(null);
   };
 
-  const handleCellClick = (r: number, c: number) => {
+  /// Tahtaya BU turda konmuş bir taşa dokunma davranışı — tek kaynak.
+  /// `swallow`: dokunuşun pointer akışından geldiği durumda (endDrag)
+  /// ardından gelen uyumluluk click'i yutulmalı; tıklama akışından
+  /// (handleCellClick'in ıskalama kurtarması) çağrılırken yutulacak bir
+  /// şey YOK — orada zaten click'in içindeyiz.
+  const tapPlacedTile = (r: number, c: number, swallow: boolean) => {
+    const tile = state.placed[key(r, c)];
+    if (!tile) return;
+    if (tile.wild) {
+      if (swallow) swallowNextClick();
+      setPendingWild({ r, c, editing: true });
+    } else {
+      dispatch({ type: 'RECALL_CELL', r, c });
+    }
+  };
+
+  const handleCellClick = (r: number, c: number, e: ReactMouseEvent) => {
     // Tahtada duran bir taşa (hangi hamlede oynandığına bakılmaksızın)
     // tıklanırsa, o hücreden geçen kelime(ler)in anlamı gösterilir.
+    // ⚠ TASLAK HAMLE VARKEN ANLAM AÇILMAZ (24 Ağustos 2026, kullanıcı
+    // cihazda bildirdi): *"2 kelimenin birleştiği yere bir taş koyup deneme
+    // yaparken (oynaya basmadan) koyduğum taşın üstüne basıp geri almaya
+    // çalıştığımda oradaki daha önce bulunan kelimelerin anlamları açıldı...
+    // Bu zaten yanlış, kelime anlamı deneme yapılırken hiç açılmamalı."*
+    //
+    // Tahta hücresi ~24 px — parmağın temas MERKEZİ nişan alınan noktanın
+    // altına düştüğünden, taslak taşını geri almak için dokunan kullanıcı
+    // sık sık KOMŞU (oynanmış) taşa isabet ediyor. Hücreyi büyütmek mümkün
+    // değil (ızgara ölçüsü kuralın kendisi), ama ıskalamayı ZARARSIZ yapmak
+    // mümkün: taslak sürerken anlam penceresi hiç açılmaz. Dahası, o
+    // dokunuş komşusundaki taslak taşına yönlendirilir (ıskalama kurtarma,
+    // `src/utils/draftRescue.ts`) — kullanıcının asıl niyeti oydu. Taslak
+    // boşken (rakibin sırası ya da kendi sıranda henüz taş koymadan)
+    // davranış DEĞİŞMEDİ.
     if (state.board[r][c]) {
+      if (Object.keys(state.placed).length > 0) {
+        // Iskalama kurtarma: taslak sürerken oynanmış taş ZATEN ölü, o
+        // yüzden alanı komşusundaki taslak taşına devredilir. Belirsizlikte
+        // tahmin YOK (bkz. `src/utils/draftRescue.ts`).
+        const target = nearbyDraftCell(
+          SIZE,
+          r,
+          c,
+          (rr, cc) => !!state.placed[key(rr, cc)],
+          { x: e.clientX, y: e.clientY },
+          (rr, cc) =>
+            document
+              .querySelector(`[data-cell="${rr},${cc}"]`)
+              ?.getBoundingClientRect() ?? null,
+        );
+        if (target) tapPlacedTile(target[0], target[1], false);
+        return;
+      }
       const words = [
         getFullWordAt(state.board, {}, r, c, 0, 1),
         getFullWordAt(state.board, {}, r, c, 1, 0),

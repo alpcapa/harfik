@@ -24,6 +24,7 @@ npm run generate-golden-vectors  # Flutter portu parite fixture'ları (bkz. "Flu
 npm run generate-meanings-db     # Flutter portu için meanings.json → SQLite asset'i
 npm run generate-demo-board-dart # Karşılama tahtası → portun intro ekranı için demo_board_data.dart
 npm run verify-cloud-save-mirror # Bulut kaydı offline karar mantığı (saf fonksiyon kontrolleri)
+npm run verify-draft-rescue      # Iskalanan dokunuşun en yakın taslak taşına yönlendirilmesi
 npm run verify-fetch-my-games    # Oyun geçmişi: ağ hatası ↔ boş liste ayrımı (sahte Supabase ucu)
 npm run verify-league-tiers      # k-lig kademe/ödül tablosu: migration SQL'i ↔ leagueRank.ts
 npm run generate-initial-main-view-golden # Giriş sekmesi kuralı: web→port davranış golden'ı (CI tazeliği zorluyor)
