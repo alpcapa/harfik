@@ -12,6 +12,7 @@ import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../game/player_avatar_row.dart';
 import '../score/game_history_modal.dart';
+import '../tap_target.dart';
 import '../tokens.dart';
 import '../game/neo_box.dart';
 
@@ -210,9 +211,8 @@ class _RecentGamesSectionState extends State<RecentGamesSection> {
                       letterSpacing: 1.5,
                       color: _muted)),
             ),
-            GestureDetector(
+            TapTarget(
               onTap: () => _openHistory(),
-              behavior: HitTestBehavior.opaque,
               child: const Text('TÜM OYUNLARIM',
                   style: TextStyle(
                       fontFamily: 'SpaceMono',

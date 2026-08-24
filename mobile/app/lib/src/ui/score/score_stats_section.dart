@@ -7,6 +7,7 @@ import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
 
 import '../../data/stats_api.dart';
 import '../tokens.dart';
+import '../loading_note.dart';
 import '../game/neo_box.dart';
 
 const _panel = kPanel;
@@ -158,14 +159,7 @@ class ScoreStatsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!loaded) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 16),
-        child: Center(
-          child: Text('Yükleniyor…',
-              style: TextStyle(
-                  fontFamily: 'SpaceMono', fontSize: 12, color: _muted)),
-        ),
-      );
+      return const KLoadingNote(vertical: 16);
     }
     final cells = _buildCells(stats);
     return Column(

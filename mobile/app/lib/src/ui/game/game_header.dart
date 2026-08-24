@@ -12,6 +12,7 @@ import '../../data/friends_api.dart';
 import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../auth/account_button.dart';
+import '../tap_target.dart';
 import '../tokens.dart';
 import 'fluid.dart';
 import 'logo_mark.dart';
@@ -83,52 +84,59 @@ class GameHeader extends StatelessWidget {
     final girisPaddingX = fluidSize(w, 6, -2.33, 2.22, 8);
     final girisPaddingY = fluidSize(w, 8.7, -5.05, 3.67, 12);
 
-    // Web `GameHeader.tsx`: etiket akışın DIŞINDA (absolute), header'ın
-    // yüksekliğine hiç dokunmuyor. Port bunu logonun KENDİ kutusuna
-    // çapalanmış bir Stack ile yapıyor (`Clip.none` — etiket kutunun altına
-    // taşar). Böylece etiket, Row ne kadar uzun olursa olsun HER ZAMAN
-    // logonun tam altında kalır ve header/tahta bir piksel oynamaz.
+    // "← Geri" etiketi logonun ALTINDA, ve İKİSİ TEK dokunma hedefi.
     //
-    // ⚠ ÖNCEKİ DENEME BAŞARISIZDI ve dersi kayda değer: etiket header'ın
-    // dış Stack'ine konup konumu STACK'İN ÜSTÜNDEN hesaplanmıştı. Ama Row,
-    // logodan belirgin biçimde uzun (CI'da 360px'te 48 px — GİRİŞ/avatar ve
-    // skor kutusu satır yükseklikleri logodan büyük) ve logo o Row içinde
-    // ORTALANDIĞINDAN aşağı kayıyor; etiket sabit konumda kalınca logonun
-    // ÜSTÜNE BİNİYORDU. Konum artık logonun kendi kutusuna göre.
+    // ⚠ 24 AĞUSTOS 2026 — BURADA GERÇEK BİR HATA VARDI, kullanıcı cihazda
+    // bildirdi: *"logo altındaki geri de basınca çalışmıyor, yine biraz
+    // üstüne logoya tıklarsan çalışıyor"*. Etiket bir `Stack(clipBehavior:
+    // Clip.none)` içinde `Positioned` ile logonun kutusunun DIŞINA
+    // taşırılmıştı; Flutter'da böyle bir çocuk hiç dokunuş ALMAZ
+    // (`RenderBox.hitTest` önce `size.contains`e bakar). Ölçüldü: dokunma
+    // kutusu 90.8 × 29.3 — yani sadece logo. Kodun kendi yorumu bunu
+    // "bilinçli sapma, kaçış yolu zaten logo" diye savunuyordu ve bu
+    // savunma YANLIŞTI: webde etiket `<button>`ın İÇİNDE bir `<span>`
+    // (`absolute top-full`) ve DOM'da tıklama ataya kabardığı için orada
+    // etiket pekâlâ çalışıyor. Yani port webi taklit etmiyordu, ondan
+    // AYRILMIŞTI.
     //
-    // ⚠ BİLİNÇLİ SAPMA — etiket portta TIKLANABİLİR DEĞİL: Flutter'da
-    // kutusunun dışına taşan bir çocuk dokunuş almaz (`RenderBox.hitTest`
-    // önce `size.contains`e bakıyor) ve bunu aşmanın tek yolu Row'un
-    // yüksekliğini ya da hizasını bozmaktan geçiyordu. Kaçış yolu webdeki
-    // gibi zaten LOGO; etiket onu GÖSTEREN bir ipucu. Webde tek bir
-    // `<button>` ikisini birden kapsıyor.
+    // Düzeltme: etiket akışa alındı (Column) ve ikisi birden bir
+    // `TapTarget`e girdi — kutu artık 48'in çok üstünde.
+    //
+    // ⚠ ÜSTTEKİ BOŞLUK SÜS DEĞİL: etiketin altta kapladığı kadar
+    // (`kBackGap + kBackFontSize`) üstte de boşluk bırakılıyor, çünkü
+    // blok Row'da DİKEY ORTALANIYOR — simetri olmasa logo yukarı kayar ve
+    // skor kutularıyla hizası bozulurdu ("header'ı bozmadan", kullanıcının
+    // 21 Ağustos'taki şartı; `game_header_test.dart` bunu 1 px toleransla
+    // kilitliyor).
+    //
+    // Bedeli header'ın ~25 px uzaması. Tahta bir `SingleChildScrollView`
+    // içinde olduğundan bu yalnızca kaydırma boyunu değiştirir.
+    //
+    // Etiketin sol kenarı hâlâ tahtanınkiyle hizalı: header'ın 12 px yatay
+    // dolgusu Board'unkiyle aynı ve Column `start` hizalı.
+    // ⚠ Board'un yatay dolgusu değişirse hiza sessizce bozulur.
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
         children: [
-          // Etiket LOGONUN kutusuna çapalı — Row'un yüksekliğine de,
-          // hizasına da dokunmuyor.
-          GestureDetector(
+          TapTarget(
             onTap: onLogoTap,
-            child: Stack(
-              clipBehavior: Clip.none,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Etiketin dengi (bkz. yukarıdaki simetri notu).
+                const SizedBox(height: kBackGap + kBackFontSize),
                 LogoMark(height: logoHeight),
-                Positioned(
-                  // `left: 0`: header'ın 12px yatay dolgusu Board'unkiyle
-                  // aynı, yani etiket tahtanın sol kenarıyla hizalı.
-                  // ⚠ Board'un yatay dolgusu değişirse hiza sessizce bozulur.
-                  left: 0,
-                  top: logoHeight + kBackGap,
-                  child: Text(
-                    '← Geri',
-                    style: TextStyle(
-                      fontFamily: 'SpaceMono',
-                      fontSize: kBackFontSize,
-                      height: 1,
-                      color: kText,
-                    ),
+                const SizedBox(height: kBackGap),
+                const Text(
+                  '← Geri',
+                  style: TextStyle(
+                    fontFamily: 'SpaceMono',
+                    fontSize: kBackFontSize,
+                    height: 1,
+                    color: kText,
                   ),
                 ),
               ],

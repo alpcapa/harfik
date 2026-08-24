@@ -95,7 +95,7 @@ Dördü de **ölçülmüş** eksikler, tahmin değil:
 | 0.A1 | ✅ **BİTTİ** (22 Ağu 2026) — release DEBUG anahtarıyla imzalanıyordu | `build.gradle.kts:31` → `signingConfigs.getByName("debug")` + `// TODO` | Upload keystore üretildi (RSA 4096, 2054'e kadar); `key.properties` varsa release, yoksa **bilerek** debug'a düşüyor |
 | 0.A2 | ✅ **BİTTİ** (22 Ağu 2026) — CI yalnızca `.apk` üretiyordu | `mobile-build.yml:157` → `flutter build apk --release` | `android` işine `.aab` adımı eklendi; secret yoksa sessizce atlar, varsa paketin imzasını **geri okuyup** doğrular |
 | 0.A3 | ✅ **BİTTİ** (22 Ağu 2026) — sürüm `0.1.0+1`di | `pubspec.yaml` + `env.dart` (`appVersion`) | İkisi de **`1.0.0`**; senkron artık `test/app_version_parity_test.dart` ile ZORLANIYOR. `versionCode`'u CI `--build-number=run_number` ile veriyor |
-| 0.A4 | 🟨 **YARISI BİTTİ** (23 Ağu 2026) | `marketing/play-store/` | İkon (512) + öne çıkan görsel (1024×500) + başlık/kısa/tam açıklama üretildi (`npm run generate-play-assets`). **Kalan: telefon ekran görüntüleri** — gerçek cihazdan alınacak, çekim listesi `marketing/play-store/metin.md`'de |
+| 0.A4 | ✅ **BİTTİ** (23 Ağu 2026) | `marketing/play-store/` | İkon (512) + öne çıkan görsel (1024×500) + başlık/kısa/tam açıklama üretildi (`npm run generate-play-assets`). Telefon ekran görüntüleri **gerçek cihazdan alındı** (7 kare, 1080×2400) ve Play'in 2:1 oran tavanına sokmak için **1080×2072'ye kırpıldı**; dosyalar kullanıcıda. Kırpmanın neden zorunlu olduğu `marketing/play-store/metin.md` → "Teknik gereksinim" |
 | 0.A5 | ✅ **BİTTİ** (23 Ağu 2026) — politika YALNIZCA SPA modalıydı | `?gizlilik=1` | `/gizlilik/` · `/kullanim-kosullari/` · `/hesap-silme/` derleme zamanı statik sayfa; metin tek kaynakta. Sonuncusu Data safety formunun istediği **web silme adresi** |
 
 **0.A1 + 0.A2 + 0.A3 BİTTİ (22 Ağustos 2026).** GitHub secret'ları
@@ -110,12 +110,27 @@ anahtarına eşit — yani secret'lar okundu, Gradle `key.properties`i gördü,
 paket debug değil upload anahtarıyla imzalandı. `.apk` artefaktı da
 yerinde (Appetize akışı bozulmadı).
 
-**İlk yüklemede OKUNACAK, hâlâ ölçülmedi:** `targetSdk` (stable kanalın
-varsayılanı; Play'in asgarisinin altındaysa pinle) ve `image_picker`'ın
-birleşmiş manifeste eklediği izinler (Data safety beyanını etkiler).
-İkisini de Play Console yükleme ekranı gösteriyor.
+**ÖLÇÜLDÜ (24 Ağustos 2026) — ikisi de temiz, aksiyon GEREKMİYOR.** Kaynağa
+değil YAYINLANMIŞ pakete bakıldı: `mobile-latest`teki `kelimeki.apk`
+(sha `18689eb`) indirilip derlenmiş `AndroidManifest.xml`i çözüldü.
 
-Sıradaki: **0.A4** (vitrin) → ilk `.aab` yüklemesi → 12 tester.
+| | Ölçülen | Sonuç |
+|---|---|---|
+| `minSdkVersion` | **24** (Android 7.0) | — |
+| `targetSdkVersion` | **36** | Android'in en yeni API seviyesi; Play'in asgarisinin ALTINDA olması mümkün değil → **pinlemeye gerek yok** |
+| İzinler | **3 adet** (aşağı) | Data safety beyanı etkilenmiyor |
+
+İzinlerin tamamı: `INTERNET` (Parça 131 düzeltmesi — pakette olduğu böylece
+ikinci bir yoldan da doğrulandı), `ACCESS_NETWORK_STATE` (connectivity_plus)
+ve `com.kelimeki.kelimeki.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`
+(AndroidX'in kendi ürettiği iç izin — kullanıcıya görünmez, beyan edilmez).
+
+**`image_picker` HİÇBİR izin eklememiş** — bu dosyanın beklediği risk
+gerçekleşmedi. Modern Android'de Photo Picker/SAF üzerinden çalıştığı için
+depolama/medya izni istemiyor. Yani Data safety formunda medya erişimi
+beyan edilmeyecek.
+
+**0.A bölümünün TAMAMI bitti.** Sıradaki: ilk `.aab` yüklemesi → kapalı test kanalı → 12 tester → 14 günlük sayaç başlar.
 
 **Tuzaklar — 0.A1:**
 - **Keystore repoya GİRMEZ.** `*.jks`/`key.properties` gitignore'a; CI'a
@@ -131,13 +146,12 @@ Sıradaki: **0.A4** (vitrin) → ilk `.aab` yüklemesi → 12 tester.
   kırar (madde 1 ile aynı iş).
 
 **Tuzaklar — 0.A2/0.A3:**
-- `targetSdk` bugün `flutter.targetSdkVersion`'dan geliyor
-  (`build.gradle.kts:23`), yani stable kanalın varsayılanı — **ölçülmedi.**
-  İlk AAB üretilince gerçek değeri oku; Play'in yeni uygulamalar için
-  dayattığı asgari seviyenin altındaysa açıkça pinle.
-- `image_picker`'ın birleşmiş (merged) manifeste eklediği izinleri ilk
-  AAB'de **oku** — beklenmeyen bir medya izni Data safety beyanını da
-  değiştirir.
+- `targetSdk` hâlâ `flutter.targetSdkVersion`'dan geliyor
+  (`build.gradle.kts:47`), yani pinli DEĞİL — ama ölçüldüğünde **36** çıktı
+  (yukarı), o yüzden bugün pinlemeye gerek yok. Flutter kanalı geri giderse
+  bu sessizce düşebilir; sürüm yükseltmelerinde yeniden ölç.
+- `image_picker`'ın izin eklemediği **ölçüldü** (yukarı) — paket yalnızca 3
+  izin taşıyor ve hiçbiri medya/depolama değil.
 - **Paket adı `com.kelimeki.kelimeki` ilk yüklemeden sonra KALICI**
   (`mobile/CLAUDE.md`). Değişecekse bu adımdan ÖNCE.
 

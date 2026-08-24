@@ -17,6 +17,7 @@ import 'neo_box.dart';
 import 'outline.dart';
 import 'player_colors.dart';
 import 'tile_widget.dart';
+import '../tap_target.dart';
 import '../tokens.dart';
 import '../../util/online_status.dart';
 
@@ -295,16 +296,19 @@ class BoardWidget extends StatelessWidget {
   /// Alt bilgi şeridi — solda "Hamleler" (+ Canlı oyunda "· Mesajlaşma"),
   /// sağda "Çevrimdışı" uyarısı (yalnızca bağlantı yokken) ve
   /// "Nasıl Oynanır?".
-  /// Şeridin DİKEY dolgusu KABIN değil her ÖĞENİN üzerinde — dokunma
-  /// hedefleri 18 px'te kalmasın diye (22 Ağustos 2026 jest denetiminde
-  /// ölçülmüş, kullanıcı "kaç defa basmam gerekti" diye bildirmişti).
-  /// Kabın kendi `fromLTRB(10, 4, 10, 10)` dolgusundan BURAYA taşındı:
-  /// şeridin dış ölçüsü (4 + 18 + 10 = 32) DEĞİŞMEZ, çünkü satırın boyunu
-  /// artık en uzun çocuk belirliyor. **BEŞ öğenin de taşıması ŞART** —
-  /// yalnızca dokunulabilirler büyürse ayraç ve "Çevrimdışı" 32 px'lik
-  /// satırda ortalanıp ~3 px kayar (dolgu 4/10 ile asimetrik).
-  static const EdgeInsets _footerItemPadding =
-      EdgeInsets.only(top: 4, bottom: 10);
+  /// Dokunulabilir öğeler `TapTarget` içinde — yani kutuları en az
+  /// 48×48 (`kMinTapTarget`). 22 Ağustos 2026'da buraya bir dolgu
+  /// (`top: 4, bottom: 10`) konmuştu ama YETMEDİ: CI'da ölçülen gerçek
+  /// kutu 31.0 px kaldı ve kullanıcı aynı şikayeti (*"biraz üstüne
+  /// basınca çalışıyor"*) 24 Ağustos'ta tekrarladı. Ders, sayının
+  /// kendisinde: dolgu "biraz büyüttük" diye değil, ÖLÇÜLEN kutu
+  /// asgariyi geçtiği için yeterlidir (`test/tap_target_test.dart`).
+  ///
+  /// Şerit bu yüzden 32 → 48 px'e yükseldi; tahta bir `SingleChildScrollView`
+  /// içinde olduğundan bu yalnızca kaydırma boyunu değiştirir.
+  /// Tıklanamaz öğelerin (ayraç, "Çevrimdışı") dolgusu artık yalnızca
+  /// YATAY — 48 px'lik satırda kendiliğinden ortalanıyorlar; eskisi gibi
+  /// asimetrik dikey dolgu taşısalardı ~3 px kayarlardı.
 
   Widget _footer() {
     return Padding(
@@ -316,12 +320,9 @@ class BoardWidget extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (onOpenHistory != null)
-                GestureDetector(
+                TapTarget(
                   onTap: onOpenHistory,
-                  behavior: HitTestBehavior.opaque,
-                  child: const Padding(
-                    padding: _footerItemPadding,
-                    child: Row(
+                  child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         DocumentIcon(),
@@ -336,25 +337,21 @@ class BoardWidget extends StatelessWidget {
                             color: kAccent,
                           ),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
               if (onOpenMessaging != null) ...[
                 const Padding(
-                  padding: EdgeInsets.fromLTRB(6, 4, 6, 10),
+                  padding: EdgeInsets.symmetric(horizontal: 6),
                   child: Text('·',
                       style: TextStyle(fontSize: 12, color: kMuted)),
                 ),
-                GestureDetector(
+                TapTarget(
                   onTap: onOpenMessaging,
-                  behavior: HitTestBehavior.opaque,
-                  // Padding Stack'in DIŞINDA: rozet `Positioned(top: -4,
-                  // right: -4)` ile Row'un kutusuna çapalı, içeri alınsa
-                  // dolgu kadar kayardı.
-                  child: Padding(
-                    padding: _footerItemPadding,
-                    child: Stack(
+                  // Rozet `Positioned(top: -4, right: -4)` ile Row'un
+                  // kutusuna çapalı — TapTarget çocuğu ORTALADIĞI için
+                  // (dolgu eklemediği için) rozetin çapası bozulmuyor.
+                  child: Stack(
                       clipBehavior: Clip.none,
                       children: [
                         const Row(
@@ -393,8 +390,7 @@ class BoardWidget extends StatelessWidget {
                               child: CountBadge(count: unreadMessageCount),
                             ),
                           ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
               ],
@@ -410,7 +406,7 @@ class BoardWidget extends StatelessWidget {
                   builder: (context, _) => onlineStatus!.online
                       ? const SizedBox.shrink()
                       : const Padding(
-                          padding: EdgeInsets.fromLTRB(0, 4, 8, 10),
+                          padding: EdgeInsets.only(right: 8),
                           // Punto/aralık, şeritteki KARDEŞ kontrollerle
                           // (Hamleler · Mesajlaşma · Nasıl Oynanır?) birebir
                           // aynı — yalnızca rengi farklı. Web'de bu bir kez
@@ -432,28 +428,24 @@ class BoardWidget extends StatelessWidget {
                         ),
                 ),
               if (onOpenHelp != null)
-                GestureDetector(
+                TapTarget(
                   onTap: onOpenHelp,
-                  behavior: HitTestBehavior.opaque,
-                  child: const Padding(
-                    padding: _footerItemPadding,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _HelpIcon(),
-                        SizedBox(width: 4),
-                        Text(
-                          'Nasıl Oynanır?',
-                          style: TextStyle(
-                            fontFamily: 'SpaceMono',
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                            color: kAccent,
-                          ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _HelpIcon(),
+                      SizedBox(width: 4),
+                      Text(
+                        'Nasıl Oynanır?',
+                        style: TextStyle(
+                          fontFamily: 'SpaceMono',
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                          color: kAccent,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
             ],

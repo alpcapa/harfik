@@ -38,6 +38,7 @@ import '../rank/rank_scores.dart';
 import '../rank/rank_seal.dart';
 import '../score/player_score_card_modal.dart';
 import '../tokens.dart';
+import '../loading_note.dart';
 import '../form_input.dart';
 import '../../util/share_board.dart' show shareOriginFrom;
 import 'friend_moderation_sheet.dart';
@@ -440,13 +441,7 @@ class _FriendsModalState extends State<FriendsModal> {
     );
   }
 
-  Widget _loading() => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 16),
-        child: Text('Yükleniyor…',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                fontFamily: 'SpaceMono', fontSize: 11, color: _muted)),
-      );
+  Widget _loading() => const KLoadingNote(vertical: 16);
 
   Widget _emptyText(String s) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 16),

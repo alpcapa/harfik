@@ -2247,3 +2247,51 @@ ekranında koş.
       kırmızı sayı "Mesajlaşma"nın sağ ÜST köşesinde durmalı.
 - [ ] **Çevrimdışı göstergesi:** Uçak modunda "Çevrimdışı" görünmeli ve
       "Nasıl Oynanır?" ile çakışmamalı.
+
+## 16. Dokunma hedefleri 48 dp — İKİNCİ tur (24 Ağustos 2026, Parça 134)
+
+Bölüm 15'teki düzeltme **yetmedi**: kullanıcı aynı şikayeti beş kontrol için
+tekrarladı — *"biraz üstüne basınca çalışıyor"*. Ölçüm (CI, 390×844) alt
+şeridi **31.0**, "← Geri"yi **29.3**, "Detaylı Kurallar"ı **14.0** px
+gösterdi; asgari 48 oldu. **"← Geri" ayrıca TAMAMEN ölüydü** (kutusunun
+dışına taşırılmış bir `Positioned` hiç dokunuş almıyor).
+
+`tap_target_test.dart` artık her hedefin kutusunu ölçüp iddia ediyor, ama
+**gerçek parmakla ıskalamayı hiçbir test ölçemez** — burası o teyit. Önce
+Setup'taki `Derleme <sha>` satırının bu düzeltmeyi içeren derlemeyle
+eşleştiğini doğrula.
+
+- [ ] **"← Geri" ETİKETİNE dokunmak Setup'a döndürüyor** (logoya değil,
+      YAZININ kendisine dokun) — bu, bildirilen hatanın birebir teyidi.
+- [ ] **Logo hâlâ Setup'a döndürüyor** ve **skor kutularıyla hizası
+      bozulmamış** görünüyor (logo ile puan kutuları aynı yükseklikte).
+- [ ] **Avatar** ilk dokunuşta menüyü açıyor; yuvarlak basılı vurgusunun
+      köşeleri GÖRÜNMÜYOR (kare gri leke olmamalı).
+- [ ] **Misafirken GİRİŞ** butonu ilk dokunuşta açılıyor.
+- [ ] **"Nasıl Oynanır?" → "Detaylı Kurallar →"** linki ilk dokunuşta
+      geçiş yapıyor; **başlık düzeni bozulmamış** (link üstte, başlık
+      altında, ✕ sağda).
+- [ ] **Alt şeridin üç linki** ilk dokunuşta açılıyor; okunmamış mesaj
+      rozeti hâlâ "Mesajlaşma"nın sağ ÜST köşesinde.
+- [ ] **Setup'ın alt linkleri:** "Nasıl oynanır? · Tanıtım" ve "Kullanım
+      Koşulları · Gizlilik Politikası · Paylaş" ilk dokunuşta açılıyor;
+      aradaki `·` ayraçları satırda ORTALI duruyor (üste yapışmamalı).
+- [ ] **"Son Oynadıklarım" → "TÜM OYUNLARIM"** ilk dokunuşta açılıyor.
+- [ ] **Header/şerit büyüdü ama düzen bozulmadı:** başlık öncekinden bir
+      miktar yüksek olacak (beklenen); tahta, raf ve butonlar hâlâ
+      kaydırmayla erişilebilir ve hiçbir yerde sarı/siyah taşma çubuğu
+      YOK.
+
+## 17. "Yükleniyor…" okunur mu (24 Ağustos 2026, Parça 134)
+
+Kullanıcı: *"Leaderboard tıklamasında önce 1-2 saniye bir popup görüyorum,
+sonra sıralama üstüne geliyor. Aynı durum skor kartta."* Yükleme durumu
+zaten vardı, okunmuyordu. **Gecikmenin kendisi düzelmedi ve düzelemez** —
+veritabanı Mumbai'de (bkz. `docs/decisions/product-backlog.md`).
+
+- [ ] **k-lig (lider tablosu)** açılınca pencere BOŞ görünmüyor: ortada
+      belirgin, mavi, kalın **"Yükleniyor…"** yazısı var.
+- [ ] **Skor Kartı** açılınca istatistik alanında aynı yazı var.
+- [ ] **Oyun Geçmişi / Sohbet Geçmişi / Canlı oyun listesi** de aynı yazıyı
+      gösteriyor (tek bileşen — biri farklı görünüyorsa kaçmış demektir).
+- [ ] Veri gelince yazı kayboluyor, hiçbir yerde **takılı kalmıyor**.

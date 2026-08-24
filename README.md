@@ -133,6 +133,7 @@ src/
 │   ├── PlayerBadge.tsx          # renkli oyuncu sıra/koltuk rozeti
 │   ├── LandscapeHint.tsx        # yatay modda gösterilen kapatılabilir dikey-mod önerisi banner'ı
 │   ├── ErrorBoundary.tsx        # kök seviye React crash yakalayıcı
+│   ├── LoadingNote.tsx          # ortak "Yükleniyor…" göstergesi (Flutter portundaki KLoadingNote ile birebir)
 │   └── AddToHomeScreen.tsx      # PWA ana ekrana ekle
 ├── game/
 │   ├── types.ts       # GameState, Player, Tile tipleri

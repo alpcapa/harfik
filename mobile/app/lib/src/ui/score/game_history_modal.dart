@@ -29,6 +29,7 @@ import '../game/player_badge.dart';
 import 'player_score_card_modal.dart';
 import 'score_box_row.dart';
 import '../tokens.dart';
+import '../loading_note.dart';
 import '../game/neo_box.dart';
 
 const _panel = kPanel;
@@ -457,14 +458,7 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
 
   Widget _buildList(List<GameHistoryEntry>? entries) {
     return entries == null
-          ? const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: Text('Yükleniyor…',
-                    style: TextStyle(
-                        fontFamily: 'SpaceMono', fontSize: 12, color: _muted)),
-              ),
-            )
+          ? const KLoadingNote()
           : entries.isEmpty
               ? Padding(
                   padding: const EdgeInsets.symmetric(vertical: 24),
@@ -996,16 +990,7 @@ class _EntryCard extends StatelessWidget {
           if (expanded) ...[
             const SizedBox(height: 6),
             if (snapshotLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Center(
-                  child: Text('Yükleniyor…',
-                      style: TextStyle(
-                          fontFamily: 'SpaceMono',
-                          fontSize: 10,
-                          color: _muted)),
-                ),
-              )
+              const KLoadingNote(vertical: 12)
             else if (snapshotFetched && snapshot != null)
               GestureDetector(
                 onTap: onTapBoard,

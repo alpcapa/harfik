@@ -551,11 +551,17 @@ void main() {
     // Web ölçümü: logo alt → paragraf üst 20px, paragraf alt → link üst
     // 16px (blok `gap-1` + paragrafın `mt-4`/linklerin `mt-3`ü ÜST ÜSTE
     // biniyor — port ikisinde de yalnızca margin'i taşımıştı).
+    //
+    // ⚠ 24 AĞUSTOS 2026 — İKİNCİ sayı 16 → 33: link satırı artık 48px'lik
+    // bir dokunma hedefi (`TapTarget`; web `min-h-[48px]`) ve METİN o
+    // kutunun ortasında duruyor, yani boşluğun üstüne kutunun üst yarısı
+    // (17px) ekleniyor. Aradaki 16px'lik AYIRICI değişmedi — değişen,
+    // metnin kendi kutusu içindeki yeri. İki platform BİRLİKTE büyüdü.
     final logo = tester.getRect(find.byType(LogoMark).first);
     final para = tester.getRect(find.textContaining('Kelimeler kurarak'));
     final link = tester.getRect(find.text('Nasıl oynanır?'));
     expect(para.top - logo.bottom, closeTo(20, 1.5));
-    expect(link.top - para.bottom, closeTo(16, 1.5));
+    expect(link.top - para.bottom, closeTo(33, 1.5));
 
     // Web `text-xs` = 12px/16px satır → 4 satırlık paragraf 64px.
     final paraText = tester.widget<Text>(find.textContaining('Kelimeler kurarak'));

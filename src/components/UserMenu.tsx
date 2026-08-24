@@ -196,7 +196,15 @@ export function UserMenu() {
           // (`inline-flex`, taban çizgisi metnin kendi taban çizgisi) 32px
           // kalıyor — `<img>`in taban çizgisi ise ALT KENARI olduğundan
           // strut'ın tüm iniş payı (7px) altına ekleniyor.
-          className="rounded-full flex active:scale-95 transition-transform ring-offset-2 focus:outline-none disabled:cursor-not-allowed"
+          // `min-w/h-[48px] -m-2`: avatar 32px çizilmeye devam ediyor ama
+          // DOKUNMA kutusu Material asgarisi olan 48'e çıkıyor; negatif
+          // marj dış kutuyu 32'ye geri çektiğinden düzen (header yüksekliği,
+          // `gap-2` aralığı) bir piksel bile oynamıyor. Kullanıcı aynı
+          // kusuru mobil uygulamada bildirdi (*"Avatar'da tıklamada sorun
+          // var, yine üstüne tıklaman lazım biraz"*, 24 Ağustos 2026);
+          // portta negatif marj olmadığından orada bedeli header'ın
+          // uzaması (bkz. `account_button.dart` → `TapTarget`).
+          className="rounded-full flex items-center justify-center min-w-[48px] min-h-[48px] -m-2 active:scale-95 transition-transform ring-offset-2 focus:outline-none disabled:cursor-not-allowed"
         >
           {identityLoading ? (
             <span className="w-8 h-8 rounded-full bg-panel border border-border flex items-center justify-center text-muted text-[10px] font-mono">

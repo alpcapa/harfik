@@ -40,6 +40,7 @@ import 'friend_suggest_modal.dart';
 import 'live_game_create_form.dart';
 import 'online_game_screen.dart';
 import '../tokens.dart';
+import '../loading_note.dart';
 import '../game/neo_box.dart';
 import '../../util/offline_notice.dart';
 
@@ -438,13 +439,7 @@ class _LiveGamesTabState extends State<LiveGamesTab>
             ],
           )
         else if (snap == null)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Text('Yükleniyor…',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    fontFamily: 'SpaceMono', fontSize: 11, color: _muted)),
-          )
+          const KLoadingNote()
         else
           switch (_subTab) {
             LiveSubTab.active => active.isEmpty

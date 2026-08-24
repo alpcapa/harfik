@@ -75,7 +75,13 @@ class KModal extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 20, 12, 16),
+              // Üst dolgu `headerLink` varken 20 → 3: link artık 48 px'lik
+              // bir dokunma hedefi (`TapTarget`) ve metni o kutunun
+              // ORTASINDA duruyor, yani 3 + 24 = 27 → metnin üst kenarı
+              // yine 20'de. Telafi olmasa başlık 34 px aşağı kayardı;
+              // böyle yalnızca 9 px uzuyor (48 - 14 - 8 - 17).
+              padding: EdgeInsets.fromLTRB(
+                  20, headerLink != null ? 3 : 20, 12, 16),
               decoration: const BoxDecoration(
                 border: Border(bottom: BorderSide(color: _divider)),
               ),
@@ -83,10 +89,9 @@ class KModal extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (headerLink != null) ...[
-                    headerLink!,
-                    const SizedBox(height: 8), // web gap-2
-                  ],
+                  // Aradaki web `gap-2` boşluğu YOK: TapTarget'ın alt
+                  // yarısı (17 px) zaten o boşluğun yerini tutuyor.
+                  if (headerLink != null) headerLink!,
                   Row(
                     children: [
                       // headerCenter varsa başlık yalnızca kendi genişliğini

@@ -3,6 +3,7 @@
 // olmayan biri de linke tıklayıp burada kayıt olabilir. Bkz. main.tsx'teki
 // path kontrolü ve CLAUDE.md "Arkadaşlık Sistemi" notu.
 import { useEffect, useState } from 'react';
+import { LoadingNote } from './LoadingNote';
 import { useAuth } from '../hooks/useAuth';
 import { acceptFriendInvite, fetchFriendInviteInfo } from '../lib/api';
 import { storePendingInviteToken, takePendingInviteToken } from '../utils/friendInvite';
@@ -64,7 +65,7 @@ export function FriendInvitePage({ token }: FriendInvitePageProps) {
       </a>
 
       <div className="w-full max-w-[360px] flex flex-col items-center gap-4 text-center">
-        {status === 'loading' && <p className="text-muted text-xs font-mono">Yükleniyor…</p>}
+        {status === 'loading' && <LoadingNote py="py-0" />}
 
         {status === 'invalid' && (
           <p className="text-muted text-xs font-mono max-w-[320px]">

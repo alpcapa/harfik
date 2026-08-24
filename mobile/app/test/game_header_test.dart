@@ -90,9 +90,15 @@ void main() {
   });
 
   // Kullanıcı isteği (21 Ağustos 2026): oyundan Setup'a dönüş bulunamıyordu.
-  // Logo zaten dönüyordu — eksik olan GÖRÜNÜRLÜKTÜ. Etiket logonun KENDİ
-  // kutusuna çapalı (Stack + Clip.none), böylece Row ne kadar uzun olursa
-  // olsun her zaman logonun tam altında kalıyor ve header/tahta oynamıyor.
+  // Logo zaten dönüyordu — eksik olan GÖRÜNÜRLÜKTÜ.
+  //
+  // ⚠ 24 AĞUSTOS 2026 — ETİKET AKIŞA ALINDI: ilk sürüm onu `Stack` +
+  // `Clip.none` ile logonun kutusunun DIŞINA taşırıyordu ve bu yüzden
+  // etiket hiç dokunuş ALMIYORDU (`RenderBox.hitTest` önce `size.contains`).
+  // Kullanıcı cihazda bildirdi: *"logo altındaki geri de basınca
+  // çalışmıyor"*. Artık logo + etiket TEK bir `TapTarget` içinde bir
+  // Column; aşağıdaki "etikete dokunmak da çalışır" iddiası bunun
+  // regresyon kilidi.
   //
   // ⚠ Bu testin ilk sürümü CI'da düştü ve iki gerçek hata buldu: (1) etiket
   // header'ın dış Stack'ine konunca, Row logodan uzun olduğunda (360px'te
@@ -132,10 +138,14 @@ void main() {
       expect(e.top - logo.bottom, closeTo(kBackGap, 0.6),
           reason: '$w px: etiket logonun kutusuna çapalı olmalı');
 
-      // Kaçış yolu logo (portta etiket dokunuş almıyor — kutunun dışına
-      // taştığından; kod yorumunda gerekçesi yazılı).
+      // Kaçış yolu HEM logo HEM etiket — webde de tek bir `<button>` ikisini
+      // birden kapsıyor (etiket `<span className="absolute top-full">`).
       await tester.tap(find.byType(LogoMark));
       expect(tiklandi, 1, reason: '$w px: logoya dokunmak Setup\'a dönmeli');
+      await tester.tap(etiket);
+      expect(tiklandi, 2,
+          reason: '$w px: "← Geri" etiketine dokunmak da Setup\'a dönmeli — '
+              'kullanıcının 24 Ağustos 2026\'da bildirdiği hata tam buydu');
     }
   });
 

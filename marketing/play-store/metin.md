@@ -8,7 +8,7 @@ ile üretilir (ekran görüntüleri HARİÇ — aşağı bkz.).
 |---|---|---|
 | Mağaza ikonu 512×512 | `store-icon-512.png` | ✅ üretildi |
 | Öne çıkan görsel 1024×500 | `feature-graphic.png` | ✅ üretildi |
-| Telefon ekran görüntüleri (2–8) | — | ⬜ **cihazdan alınacak** |
+| Telefon ekran görüntüleri (7) | kullanıcıda | ✅ cihazdan alındı, 1080×2072'ye kırpıldı (23 Ağu 2026) |
 
 ---
 
@@ -90,9 +90,18 @@ yüklenecek `.aab` ile AYNI koddan derleniyor.
 
 ### Teknik gereksinim
 - 2–8 adet, PNG veya JPEG, alfa YOK.
-- Her kenar 320–3840 px, en/boy oranı 16:9 ile 9:16 arasında.
-- Telefonun kendi ekran görüntüsü (genelde 1080×2400) bu aralıkta — **kırpma
-  yapma**, olduğu gibi yükle.
+- Her kenar 320–3840 px.
+- **En/boy oranı 2:1'i AŞAMAZ.** Bu satır 24 Ağustos 2026'ya kadar *"16:9 ile
+  9:16 arasında; telefonun 1080×2400'ü bu aralıkta — kırpma yapma"* diyordu.
+  **İkisi de yanlıştı ve birbiriyle çelişiyordu:** 1080×2400 = **1:2.22**,
+  yani 16:9'un (1:1.78) de 2:1'in de dışında. Modern telefonların ham
+  ekran görüntüsü Play'e OLDUĞU GİBİ yüklenemez.
+- **Bu yüzden kırpmak ZORUNLU** — ve zaten öyle yapıldı: 23 Ağustos'ta
+  cihazdan alınan 7 kare `1080×2400` idi, üst durum çubuğu ve alt gezinme
+  çubuğu kırpılarak **`1080×2072` (1:1.92)** hâline getirildi. Yeni kare
+  çekilirse aynı işlem gerekir; oranı önce ölç, sonra yükle.
+- Ölçmek için:
+  `python3 -c "import struct;f=open('X.png','rb');f.read(16);w,h=struct.unpack('>II',f.read(8));print(w,h,round(h/w,2))"`
 
 ### ⚠ Çekmeden ÖNCE — gizlilik
 Bu görseller HERKESE AÇIK yayınlanıyor ve sonradan silinse de indirilmiş

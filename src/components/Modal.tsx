@@ -38,7 +38,13 @@ export function Modal({ title, onClose, children, headerLink, headerAction, head
         className="w-full max-w-[360px] bg-panel border border-[#B8C2D1] rounded-xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] max-h-[85vh] flex flex-col overflow-hidden outline-none"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="shrink-0 flex flex-col gap-2 px-5 pt-5 pb-4 border-b border-border">
+        {/* headerLink varken üst dolgu 20 → 3 ve aradaki gap YOK: link
+            artık 48px'lik bir dokunma hedefi (`min-h-[48px]`) ve metni o
+            kutunun ORTASINDA duruyor, yani 3 + 24 = 27 → metnin üst
+            kenarı yine 20'de. Telafi olmasa başlık 34px aşağı kayardı;
+            böyle yalnızca 9px uzuyor. Flutter portu (`modal_shell.dart`)
+            aynı telafiyi taşıyor. */}
+        <div className={`shrink-0 flex flex-col px-5 pb-4 border-b border-border ${headerLink ? 'pt-[3px]' : 'gap-2 pt-5'}`}>
           {headerLink}
           <div className="flex items-center justify-between">
             <h2 id={titleId} className="font-mono text-sm font-bold tracking-[1.5px] uppercase text-accent shrink-0">

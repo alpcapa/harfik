@@ -1,5 +1,6 @@
 // Kelimeki — oturum açan kullanıcının geçmiş tüm oyunlarının listesi (lazy load)
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { LoadingNote } from './LoadingNote';
 import { Modal } from './Modal';
 import {
   fetchMyGames,
@@ -582,7 +583,7 @@ export function GameHistoryModal({
       </div>
 
       {loading ? (
-        <p className="text-muted text-xs font-mono text-center py-4">Yükleniyor…</p>
+        <LoadingNote py="py-4" />
       ) : games.length === 0 ? (
         <p className="text-muted text-[10px] font-mono text-center py-4">
           {loadFailed
@@ -770,7 +771,7 @@ export function GameHistoryModal({
                 {expanded && (
                   <div>
                     {snapshotLoadingId === entry.id ? (
-                      <p className="text-muted text-[10px] font-mono text-center py-3">Yükleniyor…</p>
+                      <LoadingNote py="py-3" />
                     ) : snapshots[entry.id] ? (
                       <>
                         <div ref={boardCaptureRef} className="flex flex-col gap-1.5">
@@ -846,7 +847,7 @@ export function GameHistoryModal({
       {likersGameId && (
         <Modal title="Beğenenler" onClose={() => setLikersGameId(null)}>
           {likersLoading ? (
-            <p className="text-muted text-xs font-mono text-center py-4">Yükleniyor…</p>
+            <LoadingNote py="py-4" />
           ) : (
             <ul className="flex flex-col gap-1">
               {(likersByGame[likersGameId] ?? []).map((liker) => {
@@ -885,7 +886,7 @@ export function GameHistoryModal({
         if (movesLoading || !(selectedMovesGameId in movesByGame)) {
           return (
             <Modal title="Hamleler" onClose={close}>
-              <p className="text-muted text-xs font-mono text-center py-4">Yükleniyor…</p>
+              <LoadingNote py="py-4" />
             </Modal>
           );
         }
