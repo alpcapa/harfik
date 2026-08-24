@@ -53,6 +53,7 @@ import {
   logGameFinish,
   logGameStart,
   logGuestVisit,
+  logDeviceVisit,
   acceptFriendInvite,
   listLocalGameSaves,
   upsertLocalGameSave,
@@ -67,8 +68,12 @@ import {
   getOrCreateAnonId,
   visitAlreadyLoggedToday,
   markVisitLoggedToday,
+  deviceVisitAlreadyLoggedToday,
+  markDeviceVisitLoggedToday,
   getStoredUtmSource,
   getDeviceType,
+  getDeviceModel,
+  getOsVersion,
   isStandaloneDisplay,
 } from './utils/visitTracking';
 import type { LocalGameSave, OnlineGame, WordMeaning } from './lib/database.types';
@@ -497,8 +502,35 @@ export default function App() {
     const anonId = getOrCreateAnonId();
     if (!anonId) return;
     markVisitLoggedToday();
-    void logGuestVisit(anonId, getStoredUtmSource(), getDeviceType(), isStandaloneDisplay());
+    void logGuestVisit(
+      anonId,
+      getStoredUtmSource(),
+      getDeviceType(),
+      isStandaloneDisplay(),
+      getOsVersion(),
+      getDeviceModel(),
+    );
   }, [authLoading, user]);
+
+  // Cihaz/OS pingi — yukarıdaki misafir-ziyaret effect'inden BİLEREK AYRI:
+  // o yalnızca oturum KAPALIYKEN ateşlenip Kaynak Hunisi'ni besliyor (huni
+  // bilinçli olarak misafir-only kalmalı, bkz. CLAUDE.md "Huni BAŞTAN SONA
+  // misafire indi"), bu ise hiçbir huniyi beslemeden GİRİŞLİ dahil TÜM
+  // ziyaretleri admin panelinin "Cihaz" dökümü için sayar (24 Ağustos 2026,
+  // kullanıcı isteği: "Cihaz datası gelen tüm insanların — girişli veya
+  // girişsiz — hangi cihazlardan geldiğini görmek için; girişliler kişisel
+  // bilgi olarak ilişkilendirilmeden, anonim sayılmalı"). `device_visits`e
+  // yazılan satır `user_id` TAŞIMAZ — yalnızca cihazdaki anonim `anon_id`.
+  // Kendi ayrı günlük damgasını (`deviceVisitAlreadyLoggedToday`) kullanır;
+  // yukarıdaki effect'in damgasıyla paylaşılsaydı biri ötekini bastırabilirdi.
+  useEffect(() => {
+    if (!isSupabaseConfigured || authLoading) return;
+    if (deviceVisitAlreadyLoggedToday()) return;
+    const anonId = getOrCreateAnonId();
+    if (!anonId) return;
+    markDeviceVisitLoggedToday();
+    void logDeviceVisit(anonId, getDeviceType(), getOsVersion(), getDeviceModel());
+  }, [authLoading]);
 
   // Devam eden oyunu (phase==='play', bitmemiş) her değişiklikte kaydeder.
   // Girişli kullanıcı için hedef `local_game_saves` (sunucu — cihazlar arası,

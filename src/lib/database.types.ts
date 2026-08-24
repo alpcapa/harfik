@@ -828,9 +828,25 @@ export interface AdminAppVersionRow {
  * admin_guest_device_breakdown RPC çıktısındaki tek satır (Büyüme >
  * Kullanıcı) — son N gün içinde bir cihaz tipinden (`getDeviceType`, bkz.
  * `src/utils/visitTracking.ts`) kaç benzersiz misafir ziyaretçi geldiğini
- * gösterir.
+ * gösterir. 24 Ağustos 2026'dan beri değer kümesi "ios"/"android"/"desktop"
+ * (öncesi "mobile"/"desktop" — geriye dönük ayrıştırılamaz, admin panelinde
+ * ayrı bir "Mobil (eski)" satırı olarak kalır).
  */
 export interface AdminGuestDeviceRow {
+  device_type: string;
+  visitors: number;
+}
+
+/**
+ * admin_device_breakdown RPC çıktısındaki tek satır (Büyüme > Kullanıcı,
+ * "Cihaz" tablosu) — son N gün içinde bir cihaz tipinden (`getDeviceType`,
+ * bkz. `src/utils/visitTracking.ts`) kaç benzersiz ziyaretçi geldiğini
+ * gösterir. `AdminGuestDeviceRow`'un (misafir-only) TERSİNE `device_visits`
+ * tablosundan gelir ve girişli VE girişsiz TÜM ziyaretleri kapsar — 24
+ * Ağustos 2026, kullanıcı isteği: "Cihaz datası gelen tüm insanların
+ * (girişli veya girişsiz) hangi cihazlardan geldiğini görmek için."
+ */
+export interface AdminDeviceBreakdownRow {
   device_type: string;
   visitors: number;
 }

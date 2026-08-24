@@ -47,10 +47,14 @@ import { SEEN_INTRO_KEY } from './utils/onboarding';
 import { shareKelimekiLink } from './utils/shareLink';
 import {
   captureUtmSource,
+  deviceVisitAlreadyLoggedToday,
+  getDeviceModel,
   getDeviceType,
   getOrCreateAnonId,
+  getOsVersion,
   getStoredUtmSource,
   isStandaloneDisplay,
+  markDeviceVisitLoggedToday,
   markVisitLoggedToday,
   visitAlreadyLoggedToday,
 } from './utils/visitTracking';
@@ -207,6 +211,10 @@ function paylasiKur(): void {
  * ⚠ `guest_visits`in artık İKİ yazarı var: burası ve `logGuestVisit`
  * (`src/lib/api.ts`). Tabloya kolon eklenirse İKİSİ de güncellenmeli.
  *
+ * `device_type` 24 Ağustos 2026'dan beri işletim sistemi (ios/android/
+ * desktop) — `os_version`/`device_model` iyi niyetle (best-effort) okunan,
+ * şimdilik hiçbir ekranda gösterilmeyen ek alanlar (bkz. `visitTracking.ts`).
+ *
  * Günde-bir-kez koruması `visitTracking.ts`'in ortak damgasını kullandığından,
  * kişi sonra "Oyna"ya basıp uygulamaya geçse bile `App.tsx` bunu görüp atlar —
  * mükerrer sayım olmaz.
@@ -232,6 +240,51 @@ function misafirZiyaretiBildir(): void {
       utm_source: getStoredUtmSource(),
       device_type: getDeviceType(),
       is_standalone: isStandaloneDisplay(),
+      os_version: getOsVersion(),
+      device_model: getDeviceModel(),
+    }),
+  }).catch(() => {
+    // Telemetri hiçbir koşulda karşılama katmanını etkilemez.
+  });
+}
+
+/**
+ * Cihaz/OS pingi — `misafirZiyaretiBildir`'den BİLEREK AYRI ve BAĞIMSIZ bir
+ * çağrı: o yalnızca misafir ziyaretlerini sayıp Kaynak Hunisi'ni besliyor
+ * (huni bilinçli olarak misafir-only), bu ise huniyi hiç beslemeden
+ * `device_visits`e (24 Ağustos 2026, kullanıcı isteği: "Cihaz datası gelen
+ * TÜM insanların — girişli veya girişsiz — hangi cihazdan geldiğini görmek
+ * için, anonim olsunlar") yazar. Karşılama katmanı bu dala yalnızca henüz
+ * "uygulama moduna" hiç geçmemiş (dolayısıyla App.tsx henüz hiç mount
+ * olmamış) bir ziyaretçide giriyor — App.tsx'in kendi effect'i (girişli
+ * dahil, `authLoading` bitince) aynı pingi kendi tarafında AYRICA atar; iki
+ * yazıcı ORTAK günlük damgayı (`deviceVisitAlreadyLoggedToday`) paylaştığı
+ * için mükerrer sayım olmaz.
+ *
+ * `guest_visits`teki İKİ-yazarlı desenin birebir tekrarı — düz `fetch`
+ * (Supabase SDK'sı DEĞİL) aynı bundle-boyutu gerekçesiyle.
+ */
+function cihazZiyaretiBildir(): void {
+  const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+  if (!url || !anonKey) return;
+  if (deviceVisitAlreadyLoggedToday()) return;
+  const anonId = getOrCreateAnonId();
+  if (!anonId) return;
+  markDeviceVisitLoggedToday();
+  void fetch(`${url}/rest/v1/device_visits`, {
+    method: 'POST',
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${anonKey}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
+    },
+    body: JSON.stringify({
+      anon_id: anonId,
+      device_type: getDeviceType(),
+      os_version: getOsVersion(),
+      device_model: getDeviceModel(),
     }),
   }).catch(() => {
     // Telemetri hiçbir koşulda karşılama katmanını etkilemez.
@@ -253,6 +306,7 @@ if (document.documentElement.classList.contains('uygulama-modu')) {
   // yapıyor, ama karşılama katmanında uygulama hiç mount edilmiyor.
   captureUtmSource();
   misafirZiyaretiBildir();
+  cihazZiyaretiBildir();
   // Sayfada birden fazla "Oyna"/"Giriş" düğmesi var (başlık + kahraman +
   // sayfa sonu). Hepsi öznitelikle bağlanıyor — id ile bağlamak yalnızca
   // başlıktakileri yakalardı ve yeni bir düğme eklendiğinde SESSİZCE ölü
