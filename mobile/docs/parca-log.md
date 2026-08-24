@@ -5323,6 +5323,43 @@ liste bir iş kuyruğu gibi okunuyordu; kullanıcı kararıyla anlamı değişti
        tahtayı geçişten SONRA çiziyor. Ayırt edici deneme kullanıcıya
        verildi: GİRİŞLİYKEN YZ oyunu açmak (uyarı penceresi çıkmaz).
 
+   - ✅ **Parça 137 — tahta açılışta "takılarak" geliyordu: gölgeler geçiş
+     bitene kadar erteleniyor (24 Ağustos 2026, Android):** kullanıcı
+     *"YZ ile girişsiz oyun açtığında board'un ekrana gelmesi takılarak
+     oluyor. Arkadaşınla bekleyen oyun çağırdığında olmuyor"* dedi.
+     - **Ayırt edici deneme kullanıcıya verildi ve cevabı teşhisi
+       kesinleştirdi:** iki aday vardı — (A) misafir uyarı penceresinin
+       kapanma animasyonuyla geçişin üst üste binmesi, (B) tahtanın ilk
+       çizim maliyeti. Kullanıcı *"girişli açılış da takılıyor"* dedi;
+       girişli yolda o pencere HİÇ çıkmadığından (A) elendi.
+     - **Maliyet koddan ölçüldü:** her boş hücre `NeoBox` içinde
+       `MaskFilter.blur`lu İKİ iç gölge (`_InsetShadowPainter`) + bir
+       `ClipRRect` taşıyor → 169 hücre ≈ 340 bulanıklaştırma; kartın kendisi
+       de blur 20/14/60'lık üç gölge çiziyor. Hepsi route geçişinin
+       ortasındaki TEK karede. Canlı oyunda yaşanmamasının sebebi de bu:
+       `OnlineGameScreen` geçiş sırasında "Yükleniyor…" gösterip tahtayı
+       SONRA çiziyor.
+     - **Çözüm — `BoardWidget.cheapPaint`:** geçiş sürerken bulanık gölgeler
+       ATLANIR; renk, çerçeve, taşlar, filigranlar aynı kalır. Tahta
+       GİZLENMİYOR, yalnızca gölgesiz. `GameScreen` route animasyonunu
+       dinleyip (`ModalRoute.of(context)!.animation`, ilk kare sonrası
+       okunur) bitince tam çizime geçiyor; route yoksa/animasyon bittiyse
+       (testler, ilk route) hiç beklenmiyor.
+     - **Kalıcı çözüm DEĞİL, kayda geçti:** maliyet ortadan kalkmıyor,
+       hareketli karelerin dışına taşınıyor. Kök çözüm hücre çiziminin
+       önbelleğe alınması (~7 çeşit görünüm × tek `ui.Image`) —
+       `docs/decisions/product-backlog.md`'ye yazıldı, mağaza turundan
+       sonraya bırakıldı (görsel regresyon riski var ve projede piksel
+       golden'ı yok).
+     - **`OnlineGameScreen`e uygulanmadı ve bu bilinçli:** orada tahta zaten
+       veri geldikten (yani geçiş bittikten) sonra çiziliyor, bayrak ölü kod
+       olurdu. Web de değişmedi — CSS gölgelerini tarayıcı farklı işliyor ve
+       orada böyle bir şikayet yok.
+     - **Regresyon kilidi:** `game_screen_test.dart` route ile push edip
+       animasyonun ORTASINDA `cheapPaint == true`, `pumpAndSettle` sonrası
+       `false` olduğunu iddia ediyor — ikinci iddia gölgelerin kalıcı olarak
+       kaybolmasını da yakalıyor.
+
    - ✅ **Parça 133 — bölge kuralı: kendi bloğundaki DESTEKSİZ rakip taşı
      artık zinciri kesmiyor (24 Ağustos 2026, kullanıcı gerçek bir oyunda
      yakaladı):** *"Rakip benim bölgemin içinde UMAR yazdı. Ben de üstüne PÜR

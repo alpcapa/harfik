@@ -2,6 +2,7 @@
 // geçerlilik çerçevesi, joker akışı, geri alma ve OYNA. Kontrollü raf için
 // state ResumeSavedAction ile kurulur (golden üreticisindeki aynı desen);
 // sözlük gerçek asset dosyasından yüklenir.
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -976,6 +977,43 @@ void main() {
 
     await g.up();
     await tester.pump();
+  });
+
+  // 24 Ağustos 2026 — kullanıcı Android'de bildirdi: *"YZ ile oyun açtığında
+  // board'un ekrana gelmesi takılarak oluyor"* (girişli açılışta da; Canlı
+  // bekleyen oyunda olmuyor). Sebep tahtanın TEK SEFERLİK ilk çizimi: 169
+  // hücrenin ikişer `MaskFilter.blur`lu iç gölgesi + kartın blur 20/14/60'lık
+  // üçlüsü, hepsi route geçişinin ortasında. Çözüm gölgeleri geçiş bitene
+  // kadar ERTELEMEK — tahta gizlenmiyor, yalnızca gölgesiz çiziliyor.
+  testWidgets('geçiş animasyonu sürerken tahta GÖLGESİZ çizilir', (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final controller =
+        GameController(words: words, autoPlayAi: false, nowIso: () => '');
+    controller.dispatch(ResumeSavedAction(craftedState()));
+    final nav = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      navigatorKey: nav,
+      home: const Scaffold(body: SizedBox.shrink()),
+    ));
+
+    unawaited(nav.currentState!.push(MaterialPageRoute<void>(
+      builder: (_) => GameScreen(
+          controller: controller, words: words, auth: AuthService.fake()),
+    )));
+    await tester.pump(); // route eklendi
+    await tester.pump(const Duration(milliseconds: 50)); // animasyon ORTASI
+
+    expect(tester.widget<BoardWidget>(find.byType(BoardWidget)).cheapPaint,
+        isTrue,
+        reason: 'geçiş sürerken bulanık gölgeler atlanmalı — kullanıcının '
+            '"takılarak geliyor" dediği kareler tam burada düşüyordu');
+
+    await tester.pumpAndSettle();
+    expect(tester.widget<BoardWidget>(find.byType(BoardWidget)).cheapPaint,
+        isFalse,
+        reason: 'animasyon bitince TAM çizime dönmeli — gölgeler kalıcı '
+            'olarak kaybolursa tasarım sessizce bozulur');
   });
 
   testWidgets('GameOver modalı ekran görüntüsü (beraberlik varyantı yok)',

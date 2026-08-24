@@ -116,6 +116,23 @@ class BoardWidget extends StatelessWidget {
   /// hideFooter).
   final bool hideFooter;
 
+  /// UCUZ ÇİZİM — bulanık gölgeler (kartın üçlüsü + her hücrenin iki iç
+  /// gölgesi) ATLANIR; renkler, çerçeveler, taşlar, filigranlar aynı kalır.
+  ///
+  /// NEDEN VAR (24 Ağustos 2026, kullanıcı Android'de bildirdi: *"YZ ile
+  /// oyun açtığında board'un ekrana gelmesi takılarak oluyor"* — girişli
+  /// açılışta da): tahta ilk kez çizilirken 169 hücrenin her biri
+  /// `MaskFilter.blur`lu İKİ iç gölge + bir kırpma katmanı, kart da blur
+  /// 20/14/60'lık üç gölge boyuyor. Bu tek seferlik maliyet route geçiş
+  /// animasyonunun ortasına düşünce kareler düşüyor. Canlı oyunda
+  /// yaşanmamasının sebebi de buydu: `OnlineGameScreen` geçiş sırasında
+  /// "Yükleniyor…" gösterip tahtayı SONRA çiziyor.
+  ///
+  /// Ekran katmanı bunu yalnızca geçiş sürerken açıyor (`game_screen.dart`)
+  /// — tahta boş/gizli DEĞİL, sadece gölgesiz. Animasyon bitince tam
+  /// çizime geçiliyor.
+  final bool cheapPaint;
+
   /// Bağlantı durumu — çevrimdışıyken şeridin sağında kırmızı bir
   /// "Çevrimdışı" uyarısı çıkar. Web'de `Board.tsx` bunu `useOnlineStatus()`
   /// ile KENDİ İÇİNDE okuyor; Flutter'da hook olmadığından enjekte ediliyor
@@ -139,6 +156,7 @@ class BoardWidget extends StatelessWidget {
     this.unreadMessageCount = 0,
     this.onOpenHelp,
     this.hideFooter = false,
+    this.cheapPaint = false,
     this.onlineStatus,
   });
 
@@ -214,7 +232,7 @@ class BoardWidget extends StatelessWidget {
     // Web: kart (zemin + gölge) ızgarayı VE alt bilgi şeridini birlikte
     // sarar — şerit ayrı/asılı bir beyaz bant değil, kartın alt bölümü.
     return Container(
-      decoration: const ShapeDecorationWithCssShadows(
+      decoration: ShapeDecorationWithCssShadows(
         color: _boardBg,
         radius: 18,
         // Web Board.tsx'in gölge üçlüsü — CSS değerleriyle: koyu sağ-alt,
@@ -223,11 +241,16 @@ class BoardWidget extends StatelessWidget {
         // ters; bu decoration gölgeleri CSS matematiğiyle (sigma=blur/2,
         // ilk yazılan en üstte) kendisi çizer — kullanıcı web/app
         // karşılaştırması, 6 Ağustos 2026.
-        shadows: [
-          CssShadow(color: Color(0xB3A3B1C6), offset: Offset(8, 8), blur: 20),
-          CssShadow(color: Color(0xE6FFFFFF), offset: Offset(-4, -4), blur: 14),
-          CssShadow(color: Color(0x80A3B1C6), offset: Offset(0, 20), blur: 60),
-        ],
+        shadows: cheapPaint
+            ? const []
+            : const [
+                CssShadow(
+                    color: Color(0xB3A3B1C6), offset: Offset(8, 8), blur: 20),
+                CssShadow(
+                    color: Color(0xE6FFFFFF), offset: Offset(-4, -4), blur: 14),
+                CssShadow(
+                    color: Color(0x80A3B1C6), offset: Offset(0, 20), blur: 60),
+              ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -508,7 +531,9 @@ class BoardWidget extends StatelessWidget {
       cellBox = (child) => NeoBox(
             borderRadius: radius,
             gradient: isCenter ? _centerZone : _goldZone,
-            insetShadows: isCenter
+            insetShadows: cheapPaint
+                ? const []
+                : isCenter
                 ? const [
                     InsetShadow(
                         color: Color(0x59B4500A),
@@ -529,7 +554,9 @@ class BoardWidget extends StatelessWidget {
                         offset: Offset(-1, -1),
                         blur: 3),
                   ],
-            outerShadows: isCenter
+            outerShadows: cheapPaint
+                ? const []
+                : isCenter
                 ? const [
                     BoxShadow(
                         color: Color(0x40B4500A),
@@ -568,14 +595,18 @@ class BoardWidget extends StatelessWidget {
       cellBox = (child) => NeoBox(
             borderRadius: BorderRadius.circular(5),
             color: zone.tint,
-            insetShadows: [
-              InsetShadow(
-                  color: zone.base.withValues(alpha: 0.133),
-                  offset: const Offset(2, 2),
-                  blur: 5),
-              const InsetShadow(
-                  color: Color(0x99FFFFFF), offset: Offset(-1, -1), blur: 3),
-            ],
+            insetShadows: cheapPaint
+                ? const []
+                : [
+                    InsetShadow(
+                        color: zone.base.withValues(alpha: 0.133),
+                        offset: const Offset(2, 2),
+                        blur: 5),
+                    const InsetShadow(
+                        color: Color(0x99FFFFFF),
+                        offset: Offset(-1, -1),
+                        blur: 3),
+                  ],
             child: child,
           );
     } else {
@@ -583,12 +614,18 @@ class BoardWidget extends StatelessWidget {
       cellBox = (child) => NeoBox(
             borderRadius: BorderRadius.circular(5),
             color: _boardBg,
-            insetShadows: const [
-              InsetShadow(
-                  color: Color(0x99A3B1C6), offset: Offset(3, 3), blur: 6),
-              InsetShadow(
-                  color: Color(0xCCFFFFFF), offset: Offset(-2, -2), blur: 5),
-            ],
+            insetShadows: cheapPaint
+                ? const []
+                : const [
+                    InsetShadow(
+                        color: Color(0x99A3B1C6),
+                        offset: Offset(3, 3),
+                        blur: 6),
+                    InsetShadow(
+                        color: Color(0xCCFFFFFF),
+                        offset: Offset(-2, -2),
+                        blur: 5),
+                  ],
             child: child,
           );
     }

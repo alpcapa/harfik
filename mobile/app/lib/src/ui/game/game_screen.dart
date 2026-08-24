@@ -191,10 +191,45 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   /// Parça 23).
   final ValueNotifier<_Ghost?> _dragNotifier = ValueNotifier(null);
 
+  /// Route geçiş animasyonu bitene kadar tahta GÖLGESİZ çizilir
+  /// (`BoardWidget.cheapPaint`) — kullanıcı Android'de bildirdi:
+  /// *"YZ ile oyun açtığında board'un ekrana gelmesi takılarak oluyor"*,
+  /// girişli açılışta da. Sebep tahtanın TEK SEFERLİK ilk çizimi: 169
+  /// hücrenin ikişer bulanık iç gölgesi + kartın blur 20/14/60'lık üçlüsü,
+  /// hepsi geçişin ortasında. Canlı oyunda yaşanmamasının sebebi de buydu —
+  /// orada ekran geçiş sırasında "Yükleniyor…" gösteriyor.
+  ///
+  /// Tahta GİZLENMİYOR, yalnızca gölgeleri erteleniyor: geçiş boyunca renk/
+  /// çerçeve/taş/filigran aynı, animasyon bitince tam çizime geçiliyor.
+  /// Kalıcı çözüm hücre çiziminin önbelleğe alınması (mağaza sonrasına
+  /// bırakıldı, `docs/decisions/product-backlog.md`).
+  bool _cheapPaint = true;
+  Animation<double>? _routeAnim;
+
+  void _onRouteAnim(AnimationStatus s) {
+    if (s != AnimationStatus.completed) return;
+    _routeAnim?.removeStatusListener(_onRouteAnim);
+    _routeAnim = null;
+    if (mounted) setState(() => _cheapPaint = false);
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // `ModalRoute` yalnızca ilk kare SONRASI okunabilir (initState'te
+    // context henüz ağaca bağlı değil).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final anim = ModalRoute.of(context)?.animation;
+      // Route yoksa ya da animasyon zaten bittiyse (testlerde ve ilk
+      // route'ta böyle) bekleyecek bir şey yok.
+      if (anim == null || anim.status == AnimationStatus.completed) {
+        setState(() => _cheapPaint = false);
+        return;
+      }
+      _routeAnim = anim..addStatusListener(_onRouteAnim);
+    });
   }
 
   /// Web'in `clearStuckDrag`i (App.tsx — `visibilitychange`/`blur`
@@ -215,6 +250,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    // Geçiş yarıda kesilirse (kullanıcı hemen geri döndü) dinleyici asılı
+    // kalmasın — route animasyonu bu State'ten uzun yaşıyor.
+    _routeAnim?.removeStatusListener(_onRouteAnim);
     _dragNotifier.dispose();
     super.dispose();
   }
@@ -754,6 +792,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                         const EdgeInsets.fromLTRB(12, 6, 12, 12),
                                     child: BoardWidget(
                                       state: state,
+                                      cheapPaint: _cheapPaint,
                                       moveOverlay: moveStatus == null
                                           ? null
                                           : MoveOverlay(

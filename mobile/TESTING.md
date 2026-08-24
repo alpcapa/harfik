@@ -2321,3 +2321,16 @@ tahtanın üstündeki boşlukta ve o boşluk tıklanabilir.
       liste yerinde dolmalı.
 - [ ] **Skor Kartı** açılınca istatistik kutuları `—` ile baştan çizili
       olmalı; sayılar yerinde dolmalı, pencere büyümemeli.
+
+## 19. Tahta açılışı pürüzsüz mü (24 Ağustos 2026, Parça 137)
+
+Kullanıcı: *"YZ ile oyun açtığında board'un ekrana gelmesi takılarak
+oluyor"* (girişli açılışta da). Gölgeler artık geçiş bitene kadar
+erteleniyor.
+
+- [ ] **Yapay Zeka oyunu aç** (hem misafirken hem girişliyken) → tahta
+      ekrana **pürüzsüz** gelmeli, kareler düşmemeli.
+- [ ] **Geçiş bitince tahta TAM çiziliyor:** hücrelerin içe gömülü
+      gölgeleri ve kartın dış gölgesi yerinde — düz/yassı görünmemeli.
+      (Gölgesiz kalıyorsa erteleme takılı kalmış demektir.)
+- [ ] **Canlı oyun** açılışı da eskisi gibi sorunsuz.
