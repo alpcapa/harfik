@@ -1,7 +1,9 @@
 # Google Play — mağaza vitrini (22–23 Ağustos 2026)
 
-Bu dosya Play Console'a ELLE girilecek metinleri ve cihazdan alınacak ekran
-görüntülerinin çekim listesini taşıyor. Görseller `node scripts/play-store/build.mjs`
+Bu dosya Play Console'a ELLE girilecek METİNLERİ ve cihazdan alınacak ekran
+görüntülerinin çekim listesini taşıyor. Metin dışındaki her form (Data
+safety, App content, kapalı test kanalı, tester'lar) ayrı bir dosyada:
+**`console-formlari.md`**. Görseller `node scripts/play-store/build.mjs`
 ile üretilir (ekran görüntüleri HARİÇ — aşağı bkz.).
 
 | Varlık | Dosya | Durum |
@@ -209,8 +211,12 @@ aynı mesajı veriyor.
 ### Nasıl çekilir
 
 - Android'de **Güç + Ses Kısma** tuşlarına birlikte bas.
-- **Kırpma, düzenleme, çerçeve ekleme YOK** — telefonun ürettiği dosyayı
-  olduğu gibi gönder (genelde 1080×2400, Play'in istediği aralıkta).
+- **Düzenleme/çerçeve ekleme YOK** — ama **kırpma ZORUNLU**: telefonun ham
+  karesi (1080×2400 = 1:2.22) Play'in 2:1 tavanını aşıyor, olduğu gibi
+  yüklenemez. Durum ve gezinme çubuklarını kırparak 1080×2072'ye indir
+  (yukarıdaki "Teknik gereksinim"). Bu satır 24 Ağustos 2026'ya kadar
+  *"kırpma YOK, Play'in istediği aralıkta"* diyordu — aynı dosyanın
+  düzeltilmiş teknik gereksinimiyle çelişiyordu.
 - Her karede önce **bildirim çubuğunu temizle** (bildirim yok, pil/şebeke dolu).
 
 ### Çekim sonrası
