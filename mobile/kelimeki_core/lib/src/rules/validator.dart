@@ -174,17 +174,41 @@ ValidationResult validatePlacement(
 /// Bir oyuncunun köşesinden kendi taşları üzerinden ortogonal bağlı "fetih"
 /// zinciri. Seed: köşe sınırları içindeki, başka oyuncuya ait taş TAŞIMAYAN
 /// tüm hücreler (boş köşe hücreleri "geçit" sayılır — bkz. TS yorumları).
-Set<String> _computeConqueredChain(Board board, List<int> ownCorners, int owner) {
+Set<String> _computeConqueredChain(
+  Board board,
+  List<int> ownCorners,
+  int owner, [
+  List<Set<String>>? supported,
+]) {
+  // `chain` = zincire ÜYE hücreler, `visited` = gezilen hücreler; AYRI olmak
+  // ZORUNDA (aşağıdaki "iletken" hücreler gezilir ama üye olmaz — üye
+  // olsalardı iki oyuncunun bölgesi aynı hücrede çakışabilirdi). Gerekçenin
+  // tamamı TS tarafında: src/utils/validator.ts.
   final chain = <String>{};
+  final visited = <String>{};
   final stack = <Cell>[];
   for (final corner in ownCorners) {
     final b = cornerBounds(corner);
     for (var r = b.r0; r <= b.r1; r++) {
       for (var c = b.c0; c <= b.c1; c++) {
         final cell = board[r][c];
-        if (cell != null && cell.owner != owner) continue;
         final k = cellKey(r, c);
-        if (!chain.contains(k)) {
+        if (cell != null && cell.owner != owner) {
+          // Kendi bloğundaki rakip taşı: yalnızca RAKİBİN KENDİ zincirine
+          // bağlıysa zinciri keser. Bağlı değilse (izole akıncı) hücre
+          // İLETKEN — üzerinden geçilir. `supported` yoksa (ön geçiş) ya da
+          // taş sahipsizse eski davranış: keser.
+          final o = cell.owner;
+          final foeChain = (o == null || supported == null) ? null : supported[o];
+          if (foeChain == null || foeChain.contains(k)) continue;
+          if (!visited.contains(k)) {
+            visited.add(k);
+            stack.add((r, c));
+          }
+          continue;
+        }
+        if (!visited.contains(k)) {
+          visited.add(k);
           chain.add(k);
           stack.add((r, c));
         }
@@ -204,8 +228,9 @@ Set<String> _computeConqueredChain(Board board, List<int> ownCorners, int owner)
         continue;
       }
       final k = cellKey(n.$1, n.$2);
-      if (chain.contains(k)) continue;
+      if (visited.contains(k)) continue;
       if (board[n.$1][n.$2]?.owner == owner) {
+        visited.add(k);
         chain.add(k);
         stack.add(n);
       }
@@ -217,11 +242,19 @@ Set<String> _computeConqueredChain(Board board, List<int> ownCorners, int owner)
 /// Tüm oyuncuların bölgeleri. Teslim olmuş oyuncunun bölgesi boş küme —
 /// hücreleri doğal/sahipsiz alana döner (TS yorumlarındaki tüm kurallar).
 List<Set<String>> computeAllTerritories(Board board, List<Player> players) {
-  final chains = [
+  // İKİ GEÇİŞ — sırası önemli, gerekçesi TS tarafında (dairesel bağımlılığı
+  // kırmak için kapı SAF zincire sorulur).
+  final supported = [
     for (var i = 0; i < players.length; i++)
       players[i].surrendered
           ? <String>{}
           : _computeConqueredChain(board, players[i].corners, i),
+  ];
+  final chains = [
+    for (var i = 0; i < players.length; i++)
+      players[i].surrendered
+          ? <String>{}
+          : _computeConqueredChain(board, players[i].corners, i, supported),
   ];
   return [
     for (var i = 0; i < players.length; i++)

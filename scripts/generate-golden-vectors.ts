@@ -24,7 +24,7 @@ import {
 import type { GameState, HistoryEntry, Player, Tile } from '../src/game/types';
 import { setRandomSource } from '../src/utils/random';
 import { findAIMove } from '../src/utils/ai';
-import { calcScore, calcWordRawScores } from '../src/utils/validator';
+import { calcScore, calcWordRawScores, computeAllTerritories } from '../src/utils/validator';
 import { rankPlayers } from '../src/utils/ranking';
 import { leaguePoints, computeRanks } from '../src/utils/leaguePoints';
 import { trLower, trUpper, trCompare } from '../src/utils/turkish';
@@ -577,6 +577,103 @@ function scoringVectors(): void {
   console.log(`scoring: ${cases.length} durum`);
 }
 
+/**
+ * Bölge (fetih zinciri) vektörleri. 24 Ağustos 2026'da eklendi: o gün
+ * eklenen "kendi bloğundaki DESTEKSİZ rakip taşı zinciri kesmez" kuralı
+ * mevcut fixture'ların HİÇBİRİNDE geçmiyordu (golden'lar yeniden üretildi
+ * ve sıfır fark çıktı) — yani iki motor bu kuralda sessizce ayrışabilirdi.
+ * Vakalar bilerek elle kurgulandı, rastgele değil: kuralın her dalı bir
+ * vaka.
+ */
+function territoryVectors(): void {
+  const cases: Record<string, unknown>[] = [];
+
+  const add = (
+    name: string,
+    cells: { r: number; c: number; owner: number }[],
+    playerSpecs: { corners: number[]; surrendered?: boolean }[],
+  ) => {
+    const board: Board = Array.from({ length: 13 }, () => Array(13).fill(null));
+    for (const cell of cells) {
+      board[cell.r][cell.c] = { letter: 'A', pts: 1, owner: cell.owner as Tile['owner'] };
+    }
+    const players = playerSpecs.map((ps, i) => ({
+      name: `P${i}`,
+      score: 0,
+      rack: [],
+      isAI: false,
+      corners: ps.corners,
+      colorIndex: i,
+      surrendered: ps.surrendered ?? false,
+    })) as unknown as Player[];
+    const terr = computeAllTerritories(board, players);
+    cases.push({
+      name,
+      cells,
+      players: playerSpecs.map((ps) => ({
+        corners: ps.corners,
+        surrendered: ps.surrendered ?? false,
+      })),
+      territories: terr.map((t) => [...t].sort()),
+    });
+  };
+
+  // 1) BİLDİRİLEN VAKA: rakip, senin 4×4 bloğunun içine DESTEKSİZ taş koydu
+  //    (kendi zincirine bağlı değil). Sen onun taşına asarak blok DIŞINA
+  //    kelime kurdun. Yeni kural: o hücre iletken, bölgen büyür.
+  add('desteksiz_rakip_tasi_iletken', [
+    { r: 9, c: 9, owner: 1 },
+    { r: 9, c: 10, owner: 0 },
+    { r: 9, c: 11, owner: 0 },
+    { r: 9, c: 12, owner: 0 },
+    { r: 8, c: 12, owner: 1 },
+    { r: 7, c: 12, owner: 1 },
+  ], [{ corners: [0] }, { corners: [3] }]);
+
+  // 2) AYNI GEOMETRİ, ama rakip bölgesini GERÇEKTEN oraya taşımış: kendi
+  //    köşesinden (9,12)'ye kadar kesintisiz kendi taşları var. O zaman
+  //    hücre ONUNDUR, zinciri keser ve senin blok dışı taşların bağlanmaz.
+  {
+    const cells = [
+      { r: 9, c: 9, owner: 1 },
+      { r: 8, c: 12, owner: 1 },
+      { r: 7, c: 12, owner: 1 },
+    ];
+    for (let r = 4; r <= 9; r++) cells.push({ r, c: 3, owner: 0 });
+    for (let c = 4; c <= 12; c++) cells.push({ r: 9, c, owner: 0 });
+    add('destekli_rakip_tasi_keser', cells, [{ corners: [0] }, { corners: [3] }]);
+  }
+
+  // 3) Taban: blok kenarına bitişik kendi taşın, köşe ucundan taş taş
+  //    ilerlemeden zincire katılır (blok içi BOŞ hücreler geçit).
+  add('blok_ici_bos_hucre_gecit', [
+    { r: 8, c: 9, owner: 1 },
+    { r: 8, c: 8, owner: 1 },
+  ], [{ corners: [0] }, { corners: [3] }]);
+
+  // 4) Teslim olan oyuncunun bölgesi boş küme; taşları da kimseyi tutmaz.
+  add('teslim_olan_bolgesiz', [
+    { r: 9, c: 9, owner: 1 },
+    { r: 9, c: 10, owner: 0 },
+    { r: 8, c: 12, owner: 1 },
+  ], [{ corners: [0] }, { corners: [3], surrendered: true }]);
+
+  // 5) 4 oyunculu: dört köşe birden, araya serpiştirilmiş desteksiz taşlar.
+  add('dort_oyuncu_karisik', [
+    { r: 0, c: 0, owner: 0 },
+    { r: 0, c: 12, owner: 1 },
+    { r: 12, c: 0, owner: 2 },
+    { r: 12, c: 12, owner: 3 },
+    { r: 3, c: 3, owner: 1 },
+    { r: 4, c: 3, owner: 1 },
+    { r: 9, c: 9, owner: 0 },
+    { r: 8, c: 9, owner: 0 },
+  ], [{ corners: [0] }, { corners: [1] }, { corners: [2] }, { corners: [3] }]);
+
+  writeFileSync(join(GOLDENS, 'territory.json'), JSON.stringify({ cases }));
+  console.log(`territory: ${cases.length} durum`);
+}
+
 function invasionFormulaVectors(): void {
   const shares: Record<string, number[]> = {};
   for (const n of [1, 2, 3]) {
@@ -724,6 +821,7 @@ async function main(): Promise<void> {
   writeDictionaryAsset();
   turkishVectors();
   invasionFormulaVectors();
+  territoryVectors();
   rankingVectors();
   scoringVectors();
   remainingTilesVectors();
