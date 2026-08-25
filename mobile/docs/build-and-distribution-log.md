@@ -188,7 +188,23 @@ DEBUG değil upload anahtarıyla imzalandı — üstelik basılan parmak izi
 `kelimeki-aab` (60.597.531 bayt) gerçekten üretildi; `.apk` artefaktı da
 yerinde kaldı (Appetize akışı bozulmadı).
 
-**İlk `.aab` yüklemesinde OKUNACAK iki şey (hâlâ ölçülmedi):** derlemenin
+**`.aab` artık `mobile-latest` release'inde de (24 Ağustos 2026).** İlk
+yükleme hazırlığında ölçüldü: paket YALNIZCA `actions/upload-artifact` ile
+bırakılıyordu, yani indirmek için GitHub oturumu gerekiyor ve dosya ZIP
+olarak geliyordu — Appetize bölümünde anlatılan iPad dosya-seçici dansının
+birebir aynısı, bu kez Play Console'a yükleyecek kişi için. Release adımı
+artık `kelimeki.aab`'yi de `--clobber` ile yüklüyor (düz, oturumsuz URL);
+artefakt DURUYOR. Yayınlanan `.aab` bir sır taşımıyor: aynı koddan derlenen
+`.apk` zaten herkese açık ve upload anahtarı pakete girmiyor — yalnızca imza
+girer. Adım PR'da bilerek atlandığından (bkz. "YAYINLAMA") kanıt merge
+sonrası ilk `main` koşusunda okunur.
+
+**İlk `.aab` yüklemesinde OKUNACAK iki şey — 24 Ağustos 2026'da PAKETTEN
+ölçüldü, ikisi de temiz:** `targetSdk` **36**, izinler **3 adet**
+(`INTERNET`, `ACCESS_NETWORK_STATE`, AndroidX'in iç izni); `image_picker`
+hiçbir izin eklemiyor. Console'un yükleme ekranı da aynı değerleri
+göstermeli — göstermiyorsa Data safety beyanı yeniden gözden geçirilmeli.
+Aşağıdaki paragraf, ölçümden önceki hâli: derlemenin
 `targetSdk`'sı (bugün `flutter.targetSdkVersion`'dan geliyor, yani stable
 kanalın varsayılanı — Play'in yeni uygulamalar için dayattığı asgari
 seviyenin altındaysa açıkça pinlenmeli) ve `image_picker`'ın birleşmiş

@@ -287,6 +287,18 @@ jobs:
               --title "Mobil test derlemesi (otomatik)" \
               --notes "Her mobil derlemede ÜZERİNE YAZILIR — sürüm değil, test derlemesidir. Appetize.io'ya URL ile yüklemek için: aşağıdaki dosyanın bağlantısını kopyala."
           gh release upload mobile-latest kelimeki.apk --clobber
+          # `.aab` de AYNI release'e (24 Ağustos 2026). ROADMAP FAZ B 0.A2 onu
+          # yalnızca `actions/upload-artifact` ile bırakıyordu; artefakt
+          # bağlantısı OTURUM İSTİYOR ve dosyayı ZIP'leyerek veriyor — yani
+          # Play Console'a yükleyecek kişi (iPad'den çalışıyor) önce giriş
+          # yapıp zip indirip açmak zorundaydı. Bu, `.apk`yı bu release'e
+          # taşıyan gerekçenin ta kendisi. Artefakt DURUYOR (CI içi kanıt).
+          # Yayınlanan `.aab` bir sır taşımıyor: aynı koddan derlenen `.apk`
+          # zaten herkese açık ve upload anahtarı pakete girmiyor.
+          if [ "${{ steps.aab.outputs.built }}" = "true" ]; then
+            cp build/app/outputs/bundle/release/app-release.aab kelimeki.aab
+            gh release upload mobile-latest kelimeki.aab --clobber
+          fi
       # Appetize'a otomatik yükleme (7 Ağustos 2026) — iPad Safari'nin dosya
       # seçicisi/sürükle-bırak'ı .apk için günlerce "400"/"silik dosya" ile
       # tıkanıyordu (iOS .apk'nın UTI'sini tanımıyor, çözümü yok). Appetize'ın

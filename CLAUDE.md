@@ -169,10 +169,15 @@ ilgilendiren iki kanca:
   2026):** `.github/workflows/mobile-build.yml`'in `android` işi artık `.apk`
   yanında imzalı bir `.aab` da üretiyor (Play `.apk` kabul etmiyor). Adım
   `ANDROID_KEYSTORE_BASE64` secret'ı yokken sessizce atlanıyor, yani bu
-  değişiklik mevcut Appetize/web akışlarını HİÇ etkilemiyor. Karar/ölçüm/
-  tuzaklar (özellikle: keystore repoya girmez, Play App Signing'e kaydolma
-  zorunluluğu ve `assetlinks.json`'a HANGİ parmak izinin gireceği):
-  `mobile/CLAUDE.md` → "Play Store İmzalama ve `.aab`".
+  değişiklik mevcut Appetize/web akışlarını HİÇ etkilemiyor. **24 Ağustos
+  2026'da aynı adım `.aab`'yi `mobile-latest` prerelease'ine de yüklemeye
+  başladı** — öncesinde paket yalnızca artefakttı, yani indirmek için GitHub
+  oturumu + zip açma gerekiyordu (iPad'den yükleyen için `.apk`nın çözülmüş
+  probleminin aynısı). Karar/ölçüm/tuzaklar (özellikle: keystore repoya
+  girmez, Play App Signing'e kaydolma zorunluluğu ve `assetlinks.json`'a
+  HANGİ parmak izinin gireceği): `mobile/CLAUDE.md` → "Play Store İmzalama
+  ve `.aab`". Play Console'a girilecek formların cevap kağıdı (Data safety
+  eşlemesi dahil): `marketing/play-store/console-formlari.md`.
 - **`src/utils/random.ts`'teki `setRandomSource()`** yalnızca bu fixture
   üreticisi için var — üretim kodu hiç çağırmaz, davranış değişmedi
   (varsayılan `Math.random`).

@@ -130,7 +130,25 @@ gerçekleşmedi. Modern Android'de Photo Picker/SAF üzerinden çalıştığı i
 depolama/medya izni istemiyor. Yani Data safety formunda medya erişimi
 beyan edilmeyecek.
 
-**0.A bölümünün TAMAMI bitti.** Sıradaki: ilk `.aab` yüklemesi → kapalı test kanalı → 12 tester → 14 günlük sayaç başlar.
+**0.A bölümünün TAMAMI bitti.** Sıradaki: ilk `.aab` yüklemesi → kapalı test
+kanalı → 12 tester → 14 günlük sayaç başlar.
+
+**Console'a girilecek her formun cevabı yazıldı (24 Ağustos 2026):**
+`marketing/play-store/console-formlari.md` — adım sırası, Data safety veri
+türü eşlemesi (her satırın kodda karşılığıyla), IARC anketi, App access test
+hesabı, kapalı test kanalı ve tester metni. Vitrin METİNLERİ hâlâ
+`metin.md`'de.
+
+**ÖLÇÜLDÜ (24 Ağustos 2026) — `.aab` indirilebilir DEĞİLDİ, düzeltildi:**
+0.A2 paketi yalnızca `actions/upload-artifact` ile bırakıyordu; artefakt
+bağlantısı oturum istiyor ve dosyayı ZIP'liyor — yani iPad'den yükleyecek
+kişi için `.apk`nın 7 Ağustos'ta çözülen probleminin aynısı hâlâ açıktı
+(`build-and-distribution-log.md` → Appetize). `mobile-build.yml`'in release
+adımı artık `kelimeki.aab`'yi de `mobile-latest`e koyuyor:
+`https://github.com/alpcapa/kelimeki/releases/download/mobile-latest/kelimeki.aab`.
+Artefakt DURUYOR. **PR'da doğrulanamaz** — release adımı PR'da bilerek
+atlanıyor (workflow başlığındaki "YAYINLAMA" notu), yani kanıt merge sonrası
+ilk `main` koşusunda okunacak.
 
 **Tuzaklar — 0.A1:**
 - **Keystore repoya GİRMEZ.** `*.jks`/`key.properties` gitignore'a; CI'a
@@ -181,11 +199,13 @@ Sırası önemli olan tek bağ: **#4, #2'den SONRA** (hesap silme kaskadı
    kayıt onayı maili uygulamayı değil web'i açıyor; inceleme "kırık akış"
    diye dönebilir. iOS yarısı Apple hesabı istediğinden bekler.
 4. **0.C — App content formları** (aşağı).
-5. **Madde 4 — test hesaplarının silinmesi.** ⚠ **App access formuna
-   verilecek inceleme hesabını silme** — hangi hesabın incelemeciye
-   verildiğini silmeden önce kontrol et.
+5. **Madde 4 — test hesaplarının silinmesi.** ⚠ **`T2` SİLİNMEYECEK** —
+   App access formunda incelemeciye verilen hesap o (yukarı, 0.C).
 
 ### 0.C — Play Console'da doldurulacak formlar (kod işi değil, zorunlu)
+
+**Cevapların TAMAMI `marketing/play-store/console-formlari.md`'de** (24
+Ağustos 2026). Aşağısı yalnızca hangi formun neden riskli olduğunun özeti.
 
 - **Data safety — en dikkatli iş.** Beyan ile gerçek ayrışırsa askıya alma
   sebebi. Toplananlar: e-posta, ad/soyad, takma isim, cinsiyet, doğum
@@ -193,7 +213,10 @@ Sırası önemli olan tek bağ: **#4, #2'den SONRA** (hesap silme kaskadı
   (`anon_id`), hata telemetrisi (`client_errors`), ziyaret/oyun başlangıç
   olayları. **Kaynak metin hazır:** `PrivacyModal`'ın "Toplanan Veriler"
   bölümü satır satır forma eşlenmeli. Üçüncü taraflar: Supabase, Brevo,
-  Vercel (19 Ağustos'ta politikaya eklendi).
+  Vercel (19 Ağustos'ta politikaya eklendi). **"Paylaşılıyor" her satırda
+  HAYIR** — hizmet sağlayıcı ve kullanıcının başlattığı görünürlük
+  istisnalarıyla; 24 Ağustos 2026'da kullanıcı onayladı, gerekçe
+  `console-formlari.md` §3.8'de.
 - **Content rating (IARC):** kullanıcılar arası **sohbet var**, beyan
   edilmek zorunda (yaş derecesini yükseltir).
 - **UGC / moderasyon:** sohbet olduğu için gerekiyor. Karşılayacak
@@ -201,6 +224,11 @@ Sırası önemli olan tek bağ: **#4, #2'den SONRA** (hesap silme kaskadı
   paneli; yalnızca beyan edilecek.
 - **App access:** Canlı oyun/arkadaş özellikleri giriş istiyor →
   incelemeciye **çalışan bir test hesabı** verilmeli (bkz. 0.B/5).
+  **Hesap seçildi: `T2` (`kelimekitest2`), 24 Ağustos 2026.** `T1`
+  kullanılmıyor — e-postası geliştiricinin kişisel adresi. T2'nin durumu
+  üretim veritabanından ölçüldü: doğrulanmış, dondurulmamış, 3 arkadaş,
+  1 aktif Canlı oyun, 11 bitmiş oyun — yani incelemecinin göreceği dört
+  ekran da boş değil.
 - **Ads:** yok · **Advertising ID:** kullanılmıyor · **Government /
   Financial / Health:** hayır.
 - **Target audience:** **13+ öner** — 13 yaş altı hedeflenirse "Families"
@@ -215,9 +243,10 @@ Sırası önemli olan tek bağ: **#4, #2'den SONRA** (hesap silme kaskadı
 - **Feature graphic 1024×500** ✓ — üretim bileşenlerinden render edildi
 - Başlık (29/30) · kısa açıklama (79/80) · tam açıklama (1906/4000) ✓ —
   `marketing/play-store/metin.md`
-- ⬜ **En az 2 telefon ekran görüntüsü** (pratikte 4-6) — **gerçek
-  cihazdan**; çekim listesi + gizlilik uyarıları aynı `metin.md`'de.
-  Tablet desteği iddia edilecekse tablet görselleri de.
+- ✅ **Telefon ekran görüntüleri** — 7 kare, gerçek cihazdan, 1080×2072'ye
+  kırpıldı (23 Ağu 2026, dosyalar kullanıcıda). Çekim listesi + gizlilik
+  uyarıları + oran kuralı `metin.md`'de. Tablet desteği iddia edilecekse
+  tablet görselleri ayrıca gerekir.
 - ⬜ Kategori **Oyunlar → Kelime**, iletişim e-postası, web sitesi
   (Console'a elle girilir)
 
