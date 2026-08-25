@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Modal } from './Modal';
 import { Avatar } from './Avatar';
+import { DeleteAccountModal } from './DeleteAccountModal';
 import { updateProfile, updateEmail, uploadAvatar, friendlyAuthMessage } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
 import { useNicknameAvailability } from '../hooks/useNicknameAvailability';
@@ -27,6 +28,7 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
 
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
@@ -187,6 +189,7 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
     'text-[9px] uppercase tracking-[1.5px] text-muted font-mono mb-1 block';
 
   return (
+    <>
     <Modal title="Hesap Ayarları" onClose={onClose}>
       {/* Profil fotoğrafı */}
       <div className="flex items-center gap-3 mb-4">
@@ -359,6 +362,28 @@ export function AccountSettingsModal({ onClose }: AccountSettingsModalProps) {
           {busy ? '...' : 'Kaydet'}
         </button>
       </form>
+
+      {/* Hesap silme — ROADMAP madde 2 (MAĞAZA BLOKERİ). Apple 5.1.1(v) ve
+          Google'ın veri silme şartı, hesap açtıran uygulamalarda uygulama
+          İÇİNDEN başlatılabilen bir yol istiyor; `/hesap-silme/` sayfası
+          yalnızca Data safety formuna verilen TALEP adresidir.
+          Kaydet butonundan sonra, ayrı bir çizginin altında ve `form`un
+          DIŞINDA: yanlışlıkla submit'e karışmasın ve "ayarlarımı
+          kaydediyorum" akışının parçası gibi görünmesin.
+          Flutter portu (`account_settings_modal.dart`) aynı yerleşimi
+          taşıyor — biri değişirse öteki de. */}
+      <div className="mt-6 pt-4 border-t border-border flex flex-col gap-1">
+        <button
+          type="button"
+          onClick={() => setShowDelete(true)}
+          className="self-start text-[11px] font-mono font-bold uppercase tracking-[1px] text-red underline underline-offset-2 active:opacity-70"
+        >
+          Hesabımı Sil
+        </button>
+        <p className="text-[9px] text-muted font-mono">Kalıcıdır, geri alınamaz.</p>
+      </div>
     </Modal>
+    {showDelete && <DeleteAccountModal onClose={() => setShowDelete(false)} />}
+    </>
   );
 }

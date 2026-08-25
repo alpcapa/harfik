@@ -1736,3 +1736,49 @@ kayıt gerektirdiğinden elle koşulur.
 - [ ] **Hukuki şerit.** "Kullanım Koşulları" / "Gizlilik Politikası" pencereleri
       açılıp Esc ile kapanmalı (sayfa uygulama paketinde, statik `/gizlilik/`
       sayfasına GİTMEZ).
+
+## 22. Uygulama içinden hesap silme (25 Ağustos 2026, ROADMAP madde 2)
+
+**GERİ DÖNÜŞSÜZ.** Bu bölümü YALNIZCA feda edilebilir bir test hesabıyla
+koş — `Ironman` ve App access formunda incelemeciye verilen `T2` HARİÇ
+(ROADMAP #4). Karar/kaskad: `docs/decisions/account-deletion.md`.
+
+Duman testi yalnızca `/hesap-silme/` sayfasının metnini kilitliyor; aşağısı
+gerçek bir oturum ve gerçek veri gerektirdiğinden elle koşulur.
+
+- [ ] **Giriş görünür.** Hesap menüsü → Hesap Ayarları → en altta, KAYDET'in
+      altındaki ayracın arkasında kırmızı **"Hesabımı Sil"** ve altında
+      "Kalıcıdır, geri alınamaz." olmalı.
+- [ ] **Kuru çalıştırma GERÇEK sayı gösteriyor.** Pencere açılınca
+      "Silinecekler" listesi belirmeli ve sayılar hesabın gerçek verisiyle
+      uyuşmalı (ör. oyun geçmişindeki kayıt sayısı ile "Bitmiş oyun kaydın").
+      Sıfır olan satırlar HİÇ görünmemeli.
+- [ ] **"Kalacaklar" bölümü.** Birlikte oynadığın biri varsa, o kişinin
+      kaç bitmiş oyun kaydının KORUNACAĞI ve adının "Silinmiş oyuncu"
+      olacağı yazmalı. Hiç ortak oyunu olmayan bir hesapta bu bölüm
+      çıkmamalı.
+- [ ] **Onay olmadan silinmiyor.** `SİL` yazmadan buton devre dışı olmalı;
+      `sil` (küçük harf) de kabul edilmeli (`trUpper`), `SIL` (noktasız I)
+      de — ama `SL`/boş kabul EDİLMEMELİ.
+- [ ] **Silme sonrası.** Onaydan sonra sayfa `/`'e dönmeli, oturum kapanmış
+      olmalı ve aynı e-posta/takma adla **yeniden kayıt** olunabilmeli
+      (takma ad serbest kalmış olmalı).
+- [ ] **Rakibin kaydı KORUNDU ve ANONİMLEŞTİ.** Silinen kişiyle oynamış
+      BAŞKA bir hesapla gir: Oyun Geçmişi'ndeki o oyun hâlâ listede olmalı,
+      puanlar DEĞİŞMEMELİ, ama oyuncu adı **"Silinmiş oyuncu"** olmalı.
+      Sohbet arşivi (balon ikonu) açıldığında o kişinin mesajları da aynı
+      adla görünmeli.
+- [ ] **k-lig bozulmadı.** Aynı hesabın Skor Kartı'ndaki toplam puanı silme
+      ÖNCESİYLE aynı olmalı (`games` oyuncu başına satır tutuyor; kimsenin
+      puanı silinen kişiden gelmiyor).
+- [ ] **Devam eden Canlı oyun.** Silinen kişiyle YARIM kalmış bir oyun varsa
+      rakibin "Canlı" listesinden düşmüş olmalı (oynanamaz bir oyun ortada
+      asılı kalmamalı).
+- [ ] **Yönetici silinemiyor.** Admin bir hesapla pencereyi aç: kuru
+      çalıştırma **"Yönetici hesabı uygulama içinden silinemez."** demeli ve
+      silme butonu HİÇ etkinleşmemeli.
+- [ ] **`/hesap-silme/` sayfası tutarlı.** Sayfanın 1. bölümü uygulama içi
+      yolu anlatmalı (eski "kendi kendine hesap silme özelliği şu anda
+      bulunmuyor" cümlesi KALMAMALI) ve 2. bölümdeki "Görüş Bildir"
+      bağlantısı hâlâ çalışmalı — Play bu URL'i Data safety formundan
+      açıyor.

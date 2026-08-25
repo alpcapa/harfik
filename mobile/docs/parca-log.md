@@ -17,6 +17,72 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 139 — uygulama içinden hesap silme (25 Ağustos 2026,
+     ROADMAP madde 2, MAĞAZA BLOKERİ; web + port + migration + Edge
+     Function AYNI PR'da):** Apple 5.1.1(v) ve Google'ın veri silme şartı,
+     hesap açtıran uygulamalarda uygulama İÇİNDEN başlatılabilen bir silme
+     yolu istiyor. `kelimeki.com/hesap-silme/` yalnızca Data safety
+     formuna verilen TALEP adresiydi; işi yapan taraf yoktu.
+     **Kaskadın tamamı, verilmiş karar (anonimleştirme) ve canlıda ölçülen
+     tuzaklar: `docs/decisions/account-deletion.md`** — burada yalnızca
+     portu ilgilendiren kısım.
+     - **Yeni dosya `ui/auth/delete_account_modal.dart`** — web
+       `src/components/DeleteAccountModal.tsx` portu. AÇILIŞTA KURU
+       ÇALIŞTIRMA (`previewAccountDeletion`): silinecekler gerçek sayılarla
+       listelenir, sıfır satırlar gizlenir, "Kalacaklar" bölümü
+       başkalarının korunacak kayıt sayısını söyler. **Kuru çalıştırma
+       düşerse silme butonu ETKİNLEŞMEZ** — sunucuya ulaşılamıyorsa (ya da
+       hesap silinemez bir hesapsa) butonu açmak yanlış bir söz verir.
+     - **`AuthService.previewAccountDeletion`/`deleteMyAccount` +
+       `AccountDeletionReport`** (`data/auth_service.dart`). `FunctionException`
+       yakalanıp `details['error']` OKUNUYOR: sunucunun Türkçe mesajını
+       (ör. *"Yönetici hesabı uygulama içinden silinemez."*) yutup genel bir
+       metin göstermek teşhisi imkânsız kılardı — Parça 124'ün ("düşen istek
+       'hiç oyunun yok' DEMEZ") aynı sınıfı.
+     - **`NeoButtonVariant.red` eklendi** (`ui/game/neo_button.dart`).
+       Gölge değerleri accent/gold/orange ile BİREBİR aynı; web'de de tek
+       `.btn-raised` sınıfı + `bg-*` deseni var, yani port yeni bir görsel
+       dil uydurmuyor. Renk `kRed` — `tokens.dart` dışında renk yazılmıyor
+       (`color_tokens_test.dart` bunu zaten tarıyor).
+     - **`account_settings_modal.dart`e giriş:** KAYDET'in ALTINDA, bir
+       ayracın arkasında, formun akışının DIŞINDA — web'in yerleşimiyle
+       birebir ("ayarlarımı kaydediyorum" akışının parçası gibi
+       görünmesin). `TapTarget(alignment: Alignment.centerLeft)` — 11 px'lik
+       bir metin çıplak bir `GestureDetector` ile Parça 132/134'ün dokunma
+       hedefi kuralını çiğnerdi; `centerLeft` çünkü ortalamak hizayı bozar
+       ("← Geri" vakası).
+     - **Türkçe kuralı yine devrede:** onay kelimesi `SİL` ve karşılaştırma
+       `trUpper` ile. Native `toUpperCase()` "sil"i "SIL" (noktasız I)
+       yapar ve eşleşme SESSİZCE tutmazdı — kullanıcı doğru kelimeyi yazıp
+       butonun açılmadığını görürdü.
+     - **`legal_modals.dart` AYNI PR'da güncellendi** (Gizlilik 5. bölüm +
+       "Son güncelleme: 25 Ağustos 2026"). Atlansa `legal_text_test.dart`
+       düşerdi — mobil CI'ın web metnine bağlı tek kapısı.
+     - **Regresyon:** `account_settings_test.dart`e bir test —
+       "HESABIMI SİL" dokunulunca pencere açılıyor, `AuthService.fake` bir
+       Supabase client taşımadığından kuru çalıştırma düşüyor, SEBEP
+       görünür oluyor ve `KALICI OLARAK SİL` butonunun `onPressed`i `null`
+       kalıyor. Yani testin sınadığı şey görünüm değil, yukarıdaki
+       "kuru çalıştırma düşerse buton açılmaz" SÖZLEŞMESİ.
+     - **Doğrulama sınırı:** gerçek (kuru olmayan) silme bu oturumda HİÇ
+       çalıştırılmadı — geri dönüşü yok. Cihaz kontrolleri
+       `mobile/TESTING.md` bölüm 21'de; ilk gerçek kullanım ROADMAP madde 4
+       (test hesaplarının silinmesi) olacak.
+     - **`mobile/` DIŞINDA da dosya değişti** (kök `CLAUDE.md`'nin kuralı):
+       `src/lib/api.ts`, `src/components/DeleteAccountModal.tsx`,
+       `src/components/AccountSettingsModal.tsx`, `src/legal/*`,
+       `supabase/migrations/*`, `supabase/functions/delete-my-account/`,
+       `tests/smoke.spec.ts`, `ROADMAP.md`, `README.md`, `TESTING.md`,
+       `docs/decisions/account-deletion.md` — hepsi AYNI PR'da.
+     - **Yan iş (doküman bütçesi):** `mobile/TESTING.md` uyarı bandındaydı
+       (160 KB) ve kural *"bir sonraki dokunuşta böl"* diyor. Test
+       ORTAMLARI (web derlemesi, FAZ B cihaz turu, TestFlight, Appetize)
+       `mobile/docs/test-ortamlari.md`ye taşındı — kesme noktası içeriğin
+       TÜRÜ: burası her sürüm önce baştan koşulan kontrol listesi, orası
+       "nereden/nasıl koşulur". Dosya 160 → 141 KB. Hâlâ uyarı bandında;
+       bir sonraki dokunuşta sıradaki aday Arkadaşlar + Canlı oyun
+       bölümleri (~32 KB).
+
    - ✅ **Parça 110 — Setup girişli/misafir ayrımı + footer'a "Paylaş"
      (17 Ağustos 2026, `setup_screen.dart`, `setup_screen_test.dart`;
      web `Setup.tsx` AYNI PR'da):** İsteğin kaynağı bölüm 1 spesifikasyonu —

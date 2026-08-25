@@ -2489,6 +2489,52 @@ export async function sendMemberMessage(
   });
 }
 
+// ── Hesap silme (uygulama içi yol) ──────────────────────────────────────────
+//
+// Play/Apple, hesap açtıran uygulamalarda uygulama İÇİNDEN başlatılabilen bir
+// silme yolu istiyor (`/hesap-silme/` sayfası yalnızca Data safety formuna
+// verilen TALEP adresidir, işi yapan taraf burası).
+//
+// İki uç DEĞİL, tek Edge Function: `delete-my-account`. Kimlik çağıranın kendi
+// JWT'siyle doğrulanıyor, silinen her zaman O kullanıcı — istemci bir kullanıcı
+// kimliği GÖNDERMİYOR. Asıl kaskadın (`delete_account_cascade` RPC'si) execute
+// yetkisi `authenticated` rolünden geri alınmış durumda, yani bu yol dışından
+// çağrılamıyor.
+
+/** `delete-my-account`in döndürdüğü rapor. Alan adları sunucudakiyle birebir. */
+export interface AccountDeletionReport {
+  ok: boolean;
+  dryRun: boolean;
+  hesap: { id: string; email: string | null; ad: string | null };
+  silinecek: Record<string, number>;
+  anonimlestirilecek: Record<string, number>;
+  kimliksizlestirilecek: Record<string, number>;
+  eslenemeyen_games_satiri: number;
+  hesapSilindi?: boolean;
+}
+
+/**
+ * KURU ÇALIŞTIRMA — hiçbir şey silmez, yalnızca ne silineceğini/neyin
+ * anonimleştirileceğini sayar. Onay penceresi bunu açılışta çağırıp
+ * kullanıcıya gösteriyor: geri dönüşü olmayan bir işlemde "ne kaybedeceğim"
+ * sorusunun cevabı tahmin değil ÖLÇÜM olmalı.
+ */
+export async function previewAccountDeletion(): Promise<AccountDeletionReport> {
+  return invokeEdgeFunction<AccountDeletionReport>('delete-my-account', { dryRun: true });
+}
+
+/**
+ * GERÇEK SİLME — geri alınamaz. `confirm` dizesi sunucunun beklediği son
+ * bariyer (kazara bir gövdesiz istek hiçbir şey silmesin diye; sunucu tarafı
+ * `dryRun`ı varsayılan olarak true kabul ediyor).
+ */
+export async function deleteMyAccount(): Promise<AccountDeletionReport> {
+  return invokeEdgeFunction<AccountDeletionReport>('delete-my-account', {
+    dryRun: false,
+    confirm: 'HESABIMI SIL',
+  });
+}
+
 // ── Geri bildirim ───────────────────────────────────────────────────────────
 
 /**

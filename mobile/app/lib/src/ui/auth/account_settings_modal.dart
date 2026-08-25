@@ -33,10 +33,12 @@ import '../../data/profile_fields.dart';
 import '../../util/avatar_image.dart';
 import '../../util/avatar_picker.dart';
 import '../game/modal_shell.dart';
+import 'delete_account_modal.dart';
 import '../game/neo_button.dart';
 import 'k_avatar.dart';
 import '../tokens.dart';
 import '../form_input.dart';
+import '../tap_target.dart';
 const Color _muted = kMuted;
 const Color _accent = kAccent;
 const Color _red = kRed;
@@ -610,10 +612,63 @@ class _AccountSettingsModalState extends State<AccountSettingsModal> {
                   ? null
                   : _save,
             ),
+
+            // Hesap silme — ROADMAP madde 2 (MAĞAZA BLOKERİ). Apple 5.1.1(v)
+            // ve Google'ın veri silme şartı, hesap açtıran uygulamalarda
+            // uygulama İÇİNDEN başlatılabilen bir yol istiyor.
+            // Yerleşim web'le birebir (`AccountSettingsModal.tsx`): KAYDET'in
+            // ALTINDA, bir ayracın arkasında ve formun akışının DIŞINDA —
+            // "ayarlarımı kaydediyorum" akışının parçası gibi görünmesin.
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.only(top: 16),
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: kBorder)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Dokunma hedefi 48px — projenin `TapTarget` kuralı
+                  // (metin 11px olduğundan çıplak bir GestureDetector
+                  // erişilebilirlik denetiminden geçmezdi).
+                  TapTarget(
+                    // Sola HİZALI bir link — ortalamak hizayı bozardı
+                    // (bkz. TapTarget'ın `alignment` notu, "← Geri" vakası).
+                    alignment: Alignment.centerLeft,
+                    onTap: _busy ? null : _hesabiSil,
+                    child: const Text(
+                      'HESABIMI SİL',
+                      style: TextStyle(
+                        fontFamily: 'SpaceMono',
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                        color: _red,
+                        decoration: TextDecoration.underline,
+                        decorationColor: _red,
+                      ),
+                    ),
+                  ),
+                  const Text('Kalıcıdır, geri alınamaz.',
+                      style: TextStyle(
+                          fontFamily: 'SpaceMono', fontSize: 9, color: _muted)),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _hesabiSil() async {
+    final silindi = await showDeleteAccountModal(context, widget.auth);
+    if (!silindi || !mounted) return;
+    // Hesap gitti — Hesap Ayarları penceresi de kapanmalı, yoksa artık var
+    // olmayan bir profilin formu ekranda kalır. `AuthService.deleteMyAccount`
+    // oturumu zaten kapattığından altta Setup'ın girişsiz hâli belirir.
+    Navigator.of(context).pop();
   }
 }
 

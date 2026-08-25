@@ -299,6 +299,60 @@ class AuthService extends ChangeNotifier {
     await _client?.auth.signOut();
   }
 
+  // ── Hesap silme (uygulama içi yol) ────────────────────────────────────────
+  //
+  // Web `previewAccountDeletion`/`deleteMyAccount` (src/lib/api.ts) portu.
+  // Play/Apple hesap açtıran uygulamalarda uygulama İÇİNDEN başlatılabilen
+  // bir silme yolu istiyor; `/hesap-silme/` sayfası yalnızca Data safety
+  // formuna verilen TALEP adresi.
+  //
+  // Kimlik `delete-my-account` Edge Function'ında ÇAĞIRANIN KENDİ JWT'siyle
+  // doğrulanıyor — istemci bir kullanıcı kimliği GÖNDERMİYOR. Asıl kaskadın
+  // (`delete_account_cascade`) execute yetkisi `authenticated` rolünden geri
+  // alınmış durumda, yani bu yol dışından çağrılamıyor.
+
+  /// KURU ÇALIŞTIRMA — hiçbir şey silmez, yalnızca sayar. Onay penceresi
+  /// bunu açılışta çağırıp kullanıcıya gösteriyor.
+  Future<AccountDeletionReport> previewAccountDeletion() async {
+    return _invokeDelete(dryRun: true);
+  }
+
+  /// GERÇEK SİLME — geri alınamaz. Başarılıysa oturumu da kapatır: hesap
+  /// artık yok, elde kalan token hiçbir isteğe yaramaz.
+  Future<AccountDeletionReport> deleteMyAccount() async {
+    final rapor = await _invokeDelete(dryRun: false);
+    await signOut();
+    return rapor;
+  }
+
+  Future<AccountDeletionReport> _invokeDelete({required bool dryRun}) async {
+    final c = _client;
+    if (c == null) throw const AuthException('Supabase yapılandırılmadı.');
+    try {
+      final res = await c.functions.invoke(
+        'delete-my-account',
+        // `confirm` sunucunun beklediği son bariyer (gövdesiz bir istek
+        // hiçbir şey silmesin diye sunucu `dryRun`ı varsayılan true kabul
+        // ediyor). Web'deki dize ile BİREBİR aynı olmak zorunda.
+        body: dryRun
+            ? {'dryRun': true}
+            : {'dryRun': false, 'confirm': 'HESABIMI SIL'},
+      );
+      final data = res.data;
+      if (data is! Map) throw const AuthException('Beklenmeyen sunucu yanıtı.');
+      final hata = data['error'];
+      if (hata is String) throw AuthException(hata);
+      return AccountDeletionReport.fromMap(data.cast<String, dynamic>());
+    } on FunctionException catch (e) {
+      // supabase_flutter hata gövdesini `details`e koyuyor; sunucunun
+      // Türkçe mesajını (ör. "Yönetici hesabı uygulama içinden silinemez.")
+      // yutup genel bir metin göstermek teşhisi imkânsız kılardı.
+      final d = e.details;
+      final msg = d is Map ? d['error'] : null;
+      throw AuthException(msg is String ? msg : 'Hesap silme isteği başarısız.');
+    }
+  }
+
   /// Web `refreshProfile` (`useAuth`) birebir: yalnızca profili yeniden
   /// çeker (`fetchMyProfile`), `loading`/`profileLoading` bayraklarına HİÇ
   /// dokunmaz — `_fetchProfile`'ı (auth akışının kendi profil çekimi)
@@ -545,4 +599,39 @@ String? friendlyAuthMessage(Object? err) {
     if (entry.key.hasMatch(msg)) return entry.value;
   }
   return null;
+}
+
+/// `delete-my-account`in döndürdüğü rapor (web `AccountDeletionReport`
+/// arayüzünün eşleniği). Alan adları sunucudakiyle birebir; bilinmeyen
+/// anahtarlar sessizce yok sayılıyor — sunucuya yeni bir sayaç eklendiğinde
+/// portun eski sürümü çökmesin diye.
+class AccountDeletionReport {
+  /// Ham `silinecek` sözlüğü (tablo adı → satır sayısı).
+  final Map<String, int> silinecek;
+
+  /// Korunacak ama adı anonimleştirilecek BAŞKA oyuncu kayıtlarının sayısı.
+  final int digerOyuncuKaydi;
+
+  const AccountDeletionReport({
+    required this.silinecek,
+    required this.digerOyuncuKaydi,
+  });
+
+  factory AccountDeletionReport.fromMap(Map<String, dynamic> m) {
+    Map<String, int> sayilar(Object? v) {
+      if (v is! Map) return const {};
+      final out = <String, int>{};
+      v.forEach((k, val) {
+        final n = val is num ? val.toInt() : int.tryParse('$val');
+        if (n != null) out['$k'] = n;
+      });
+      return out;
+    }
+
+    return AccountDeletionReport(
+      silinecek: sayilar(m['silinecek']),
+      digerOyuncuKaydi:
+          sayilar(m['anonimlestirilecek'])['games_baskalarinin'] ?? 0,
+    );
+  }
 }
