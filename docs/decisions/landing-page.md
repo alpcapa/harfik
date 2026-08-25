@@ -122,6 +122,24 @@ diye iki adımda yükleniyor. Setup görünene kadar geçen süre (5 koşu, medy
 **333 → 331 ms**. Zaten 2 MB indiren bir yolda ikinci istek gürültüde kalıyor.
 *(Localhost ölçümü — mobil gecikmeyi temsil etmiyor.)*
 
+**⚠ TAKASIN GÖRÜLMEYEN BEDELİ — CI'ı düşürdü (aynı gün, PR #332'de).**
+Yukarıdaki "gürültüde kalıyor" ölçümü ÜRETİM derlemesi içindi ve doğru; ama
+duman testleri **dev sunucusunda** koşuyor ve orada her dinamik import
+istek anında derleniyor. İkinci halka eklenince karşılama → uygulama geçişi
+yerelde **2,9-5,8 sn**'ye çıktı, yani Playwright'ın varsayılan **5 sn**'lik
+iddia bütçesinin tam üstüne oturdu; CI runner'ında *"Sayfa sonundaki OYNA"*
+testi bu yüzden düştü (koşu 32882151540) — bu PR'ın kendi değişikliğiyle
+(`assetlinks.json`) hiç ilgisi yoktu, yalnızca 31. test eklenince yük
+dağılımı değişip marjinal test kenardan taştı.
+**Çözüm bütçeyi mimariye göre ayarlamak oldu**, iddiaları gevşetmek değil:
+`playwright.config.ts` → `expect.timeout` + `actionTimeout` = 15 sn
+(gerekçesi dosyanın içinde yazılı). **Negatif eş ölçüldü:** aynı baskı
+(`--workers=4 --repeat-each=4`) eski 5 sn bütçesiyle **4 test düşüyor**,
+yeni bütçeyle 16/16 geçiyor. **Ders:** bir modülü lazy yapmak yalnızca bayt
+tablosunu değil, o modülü BEKLEYEN her testin zamanlama varsayımını da
+değiştirir — üretim ölçümünün "gürültüde" demesi dev sunucusu için hiçbir
+şey kanıtlamıyor.
+
 **Regresyon koruması:** `tests/smoke.spec.ts` → *"/davet/:token sözlüğü ve
 oyun paketini İNDİRMEZ"*. İstek listesini dinleyip sözlük verisinin
 (`words.ts` / `words-*.js`) ve `App` parçasının istenmediğini doğruluyor.
