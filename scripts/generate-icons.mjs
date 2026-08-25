@@ -204,35 +204,46 @@ await sharp(faviconCentred)
   .toFile(join(__dirname, '../public/favicon-32.png'));
 console.log('✓ favicon-32.png (32×32)');
 
-// ── favicon.svg with embedded Caveat font ─────────────────────────────────
-// SVG favicon shown in browser tabs. Embedding the font guarantees it renders
-// correctly even before the page loads Google Fonts.
+// ── favicon.svg from the traced "k" glyph (NO embedded font) ──────────────
+// Tarayıcı sekmesindeki SVG favicon.
+//
+// 25 Ağustos 2026'ya kadar burada Caveat fontu base64 olarak GÖMÜLÜYDU ve
+// dosya **67 KB** ediyordu — bunun 66 KB'ı tek bir "k" harfi çizdirmek için
+// taşınan fonttu. Üstelik dosya hem `index.html`den isteniyor hem service
+// worker precache'ine giriyor, yani her ziyaretçi ödüyordu (ölçüldü).
+//
+// Oysa aynı harf `LogoMark.tsx`te ZATEN statik path olarak duruyor:
+// `generate-logo-paths.mjs` Caveat Bold'u glif dış hatlarına çeviriyor ve
+// logo bu yüzden font indirmiyor (kök CLAUDE.md → "Font Yükleme Stratejisi").
+// Favicon o temizliğin dışında kalmıştı; artık aynı kaynağı kullanıyor.
+//
+// Sonuç: **67 KB → 2.2 KB**. Eski/yeni 16, 32 ve 48 px'te yan yana render
+// edilip karşılaştırıldı — ayırt edilebilir fark yok.
+const logoSrc = readFileSync(join(__dirname, '../src/components/LogoMark.tsx'), 'utf8');
+// `LOGO_TEXT_PATH` tüm "kelimeki" kelimesi; her glif kendi `M`iyle başlıyor,
+// ilki "k". Alt path'e bölüp ilkini alıyoruz.
+const kGlyph = logoSrc.match(/LOGO_TEXT_PATH = '([^']+)'/)[1].split(/(?=M)/)[0];
+const logoColor = logoSrc.match(/LOGO_COLOR = '([^']+)'/)[1];
+
+// Glifin kendi koordinat sistemindeki sınırları — tarayıcıda `getBBox()` ile
+// ÖLÇÜLDÜ, göz kararı değil. Path verisi değişirse (logo yeniden üretilirse)
+// bu dört sayı da yeniden ölçülmeli.
+const K_BOX = { x: 238.82, y: 111.84, w: 106.4, h: 192.27 };
+const K_HEIGHT = 62; // 100'lük kutuda hedef yükseklik — altta imzaya yer kalsın
+const kScale = K_HEIGHT / K_BOX.h;
+const kTx = (100 - K_BOX.w * kScale) / 2 - K_BOX.x * kScale;
+const kTy = 14 - K_BOX.y * kScale;
+
 const faviconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-  <defs>
-    <style>
-      @font-face {
-        font-family: 'Caveat';
-        font-style: normal;
-        font-weight: 700;
-        src: url('${fontDataUri}') format('woff2');
-      }
-    </style>
-  </defs>
   <rect width="100" height="100" fill="#ffffff"/>
-  <text
-    x="50" y="76"
-    font-family="Caveat, cursive"
-    font-size="90"
-    font-weight="700"
-    fill="#2563EB"
-    text-anchor="middle">k</text>
+  <path transform="translate(${kTx.toFixed(2)} ${kTy.toFixed(2)}) scale(${kScale.toFixed(5)})" d="${kGlyph}" fill="${logoColor}"/>
   <path
     d="M18 87 Q34 83 50 87 Q66 91 82 87"
-    stroke="#2563EB"
+    stroke="${logoColor}"
     stroke-width="3.5"
     stroke-linecap="round"
     fill="none"/>
 </svg>`;
 
 writeFileSync(join(__dirname, '../public/favicon.svg'), faviconSvg);
-console.log('✓ favicon.svg (with embedded Caveat font)');
+console.log('✓ favicon.svg (traced glyph, no embedded font)');

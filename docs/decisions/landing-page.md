@@ -98,7 +98,7 @@ Yukarıdaki ayrım karşılama katmanını gören ziyaretçiyi kurtarmıştı, a
 | Route | Önce | Sonra |
 |---|---|---|
 | `/` (katman) | 508 KB | 508 KB |
-| **`/davet/:token`** | **2026 KB** | **885 KB** |
+| **`/davet/:token`** | **2026 KB** | **820 KB** |
 | Uygulama | 2050 KB | 2050 KB |
 
 İki bağımsız kayıp vardı:
@@ -128,11 +128,27 @@ oyun paketini İNDİRMEZ"*. İstek listesini dinleyip sözlük verisinin
 **Negatif eş ölçüldü:** `preloadWordSet()` `mount()`ın başına geri taşınıp
 `App` statik import'a döndürülünce test GERÇEKTEN düşüyor.
 
-**Kalan iki kayıp (bu iş kapsamında DEĞİL, ölçüldü):** `/davet` hâlâ 249 KB'lık
-karşılama HTML'ini (SPA rewrite `index.html`e yönlendiriyor, o da katmanın
-prerender'ı) ve 67 KB'lık `favicon.svg`'yi indiriyor — favicon'un 66 KB'ı tek
-bir "k" harfi için gömülü base64 Caveat fontu, oysa logo `LogoMark`ta zaten
-statik path. İkisi de düzeltilirse `/davet` ~570 KB olur.
+**Favicon da aynı turda düzeltildi: 67 KB → 2.2 KB.** Dosyanın 66 KB'ı tek
+bir "k" harfi çizdirmek için gömülü base64 Caveat fontuydu — oysa aynı harf
+`LogoMark.tsx`te ZATEN statik path olarak duruyor (`generate-logo-paths.mjs`
+Caveat Bold'u glif dış hatlarına çeviriyor). Kök `CLAUDE.md`'nin "Font
+Yükleme Stratejisi" bölümü logo için bu temizliği anlatıyor; favicon dışarıda
+kalmıştı. `generate-icons.mjs` artık `LOGO_TEXT_PATH`in ilk glifini kesip
+kullanıyor; glifin sınırları tarayıcıda `getBBox()` ile ÖLÇÜLDÜ ve eski/yeni
+16, 32, 48 px'te yan yana render edilip karşılaştırıldı — ayırt edilebilir
+fark yok. Bu **her route'u** etkiliyor (katman dahil) ve service worker
+precache'inden de düşüyor.
+
+**ÖLÇÜLDÜ — `icon.svg` (215 KB) ve `logo.svg` (68.7 KB) aynı hastalığı
+taşıyor ama DOKUNULMADI:** ikisi de `index.html`den referans edilmiyor,
+`includeAssets`te yok, manifest ikonları PNG ve derlenmiş `sw.js`in
+precache listesinde yalnızca `favicon.svg` geçiyor. Yani kullanıcıya
+maliyetleri sıfır — `public/` içinde ölü ağırlık. Biri onları bir yerden
+referans ederse önce bu düzeltmenin aynısı uygulanmalı.
+
+**Kalan tek kayıp (bu iş kapsamında DEĞİL, ölçüldü):** `/davet` hâlâ 249 KB'lık
+karşılama HTML'ini indiriyor — SPA rewrite `index.html`e yönlendiriyor, o da
+katmanın prerender'ı. Düzeltilirse `/davet` ~570 KB olur.
 
 ### `guest_visits`in artık İKİ yazarı var
 
