@@ -246,11 +246,9 @@ kayıp: dönüşüm tamamen "arkadaşım göndermiş" güvenine kalıyordu.
 
 Eklenenler (`FriendInvitePage.tsx`):
 - **Davet kartı** — davet edenin baş harf avatarı (`Avatar`), "ARKADAŞLIK DAVETİ"
-  üst başlığı, mevcut cümle (artık `h1`), Giriş Yap/Kayıt Ol düğmeleri ve
-  "kabul edince ne olur" üç maddesi (anında arkadaşlık / karşılıklı oyun daveti /
-  48 saatlik hamle süresi, yani "aynı anda çevrimiçi olmak şart değil").
+  üst başlığı, mevcut cümle (artık `h1`) ve tek bir **"Daveti Kabul Et"** düğmesi.
 - **"Kelimeki nedir?" bölümü** — kısa tanıtım metni, GERÇEK tanıtım tahtası,
-  X2/X3 açıklama rozetleri, dört özellik kutusu ve bir alt CTA.
+  X2/X3 açıklama rozetleri, dört özellik kutusu ve alt CTA (aynı etiket).
 - **Hukuki alt şerit** (`Setup.tsx`'in footer'ıyla aynı iki katmanlı yapı) —
   paylaş linki BİLEREK yok: bu sayfadaki kişi henüz üye değil, davet edilen taraf.
 - **`error` dalı artık çıkmaz değil**: "tekrar dene" yazıyordu ama tekrar
@@ -269,8 +267,21 @@ gibi rakamlar bilerek yok**: `KELIME_SAYISI` sabiti `Landing.tsx`in İÇİNDE ve
 dosyayı import etmek tüm karşılama katmanını uygulama paketine sokardı; elle
 yazmak ise üçüncü bir kopya demekti.
 
-**Ölçümler** (Chromium, 390×844, davet RPC'si sahte bir adla mock'lanarak):
-sayfa 844 → 1541 px; 320/390/1280 px genişliklerin hiçbirinde yatay taşma yok;
+**İkinci tur — TEK DÜĞME (aynı gün, kullanıcı isteği):** *"En üstteki
+arkadaşlık davet kutusundaki buton altındaki yazıları tamamen kaldır. Tek buton
+'Daveti kabul et' olsun. Alttaki buton da aynı."* İlk sürümde kartta yan yana
+"Giriş Yap"/"Kayıt Ol" ve altlarında iki blok açıklama vardı (bir ipucu cümlesi
++ "kabul edince ne olur" üç maddesi); üçü de kaldırıldı, iki düğme tek bir
+**"Daveti Kabul Et"**e indi ve sayfanın altındaki CTA da aynı etiketi aldı.
+Gerekçe: ziyaretçiye sorulan soru hesabının olup olmadığı DEĞİL, daveti kabul
+edip etmediği — hesap ayrımı zaten `AuthModal`'ın kendi işi ve orada iki yönlü
+geçiş linki var ("Zaten hesabın var mı? Giriş yap"), yani üye olan biri de tek
+düğmeden ilerliyor (tarayıcıda doğrulandı). Aynı işi yapan iki düğmenin iki
+farklı ad taşıması da bir okuma yükü. Kart 409 → 240 px'e, sayfa 1541 → 1371
+px'e indi.
+
+**Ölçümler** (Chromium, 390×844, davet RPC'si sahte bir adla mock'lanarak, ilk
+tur): sayfa 844 → 1541 px; 320/390/1280 px genişliklerin hiçbirinde yatay taşma yok;
 uzun bir ad (`Ayşegül Karahanoğlu`) düzeni bozmuyor. Paket maliyeti
 `dist/assets/boot-*.js` 800.94 → 808.77 KB ham, 228.50 → 230.98 KB gzip.
 

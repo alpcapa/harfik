@@ -1697,19 +1697,23 @@ hesaba bağlı.
 ## 21. Davet sayfası (`/davet/:token`) — zenginleştirilmiş ekran (25 Ağustos 2026)
 
 Sayfa artık davet cümlesinin yanında oyunu da ANLATIYOR (davet edenin baş harf
-avatarı, "kabul edince ne olur" üç maddesi, gerçek tanıtım tahtası + X2/X3
+avatarı, tek bir "Daveti Kabul Et" düğmesi, gerçek tanıtım tahtası + X2/X3
 rozetleri, dört özellik kutusu, hukuki alt şerit). Gerekçe:
 `docs/decisions/friends.md`. Duman testi yalnızca "bölüm render oluyor mu"yu
 kilitliyor (`tests/smoke.spec.ts`); aşağıdakiler GERÇEK bir token + gerçek bir
 kayıt gerektirdiğinden elle koşulur.
 
 - [ ] **Girişsiz, geçerli link.** Arkadaşlar → "Arkadaşını Davet Et" ile link
-      üret, **gizli sekmede** aç: davet edenin adı hem başlıkta hem birinci
-      maddede görünmeli, avatar o adın baş harflerini taşımalı.
-- [ ] **Kayıt akışı bozulmadı.** "Kayıt Ol" (üstteki VEYA sayfanın altındaki
-      "Kayıt Ol ve Arkadaş Ol") → AuthModal açılmalı; kayıt + e-posta onayı
-      sonrası uygulamaya dönüldüğünde arkadaşlık KURULMUŞ olmalı (token
-      kuyruğu, `App.tsx`).
+      üret, **gizli sekmede** aç: davet edenin adı başlıkta görünmeli, avatar o
+      adın baş harflerini taşımalı. Kartta düğmenin ALTINDA hiçbir açıklama
+      metni OLMAMALI (25 Ağustos 2026'da bilerek kaldırıldı).
+- [ ] **Kayıt akışı bozulmadı.** "Daveti Kabul Et" (üstteki VEYA sayfanın
+      altındaki aynı etiketli düğme) → AuthModal **kayıt** modunda açılmalı;
+      kayıt + e-posta onayı sonrası uygulamaya dönüldüğünde arkadaşlık KURULMUŞ
+      olmalı (token kuyruğu, `App.tsx`).
+- [ ] **Zaten üye olan da tek düğmeden geçebiliyor.** Aynı düğme →
+      AuthModal'daki "Zaten hesabın var mı? Giriş yap" ile giriş → davet
+      otomatik işlenmeli ("artık arkadaşsınız").
 - [ ] **Girişli kullanıcı tanıtımı GÖRMEZ.** Aynı linki girişli bir hesapla aç:
       yalnızca davet kartı + "İşleniyor…" → "artık arkadaşsınız" görünmeli,
       "Kelimeki nedir?" bölümü HİÇ çıkmamalı.

@@ -13,8 +13,17 @@
 //     bir migration + herkese açık bir uçtan foto sızdırma kararı demekti,
 //     bu tur kapsam dışı bırakıldı (baş harf yedeği zaten `Avatar`'ın kendi
 //     davranışı, ayrıca bir şey gerektirmiyor).
-//   • "Kabul edince ne olur" üç maddesi — davetin karşılığını yazan kısım.
 //   • Oyunun ne olduğunu ANLATAN bölüm: gerçek tanıtım tahtası + dört özellik.
+//
+// ⚠ TEK DÜĞME, TEK ETİKET (kullanıcı isteği, aynı gün ikinci tur: "Tek buton
+// 'Daveti kabul et' olsun. Alttaki buton da aynı."). Öncesinde kartta yan yana
+// "Giriş Yap"/"Kayıt Ol" ve altlarında iki blok açıklama vardı (bir ipucu
+// cümlesi + "kabul edince ne olur" üç maddesi); hepsi kaldırıldı. Ziyaretçiye
+// sorulan soru artık hesabının olup olmadığı DEĞİL, daveti kabul edip
+// etmediği — hesap ayrımı zaten `AuthModal`'ın kendi işi ve orada iki yönlü
+// geçiş linki var ("Zaten hesabın var mı? Giriş yap"), yani üye olan biri de
+// tek düğmeden ilerleyebiliyor. Sayfanın altındaki CTA da AYNI etiketi
+// taşıyor: iki düğme aynı şeyi yapıyorsa iki farklı ad taşımamalı.
 //
 // ⚠ TANITIM İÇERİĞİ KARŞILAMA KATMANIYLA TEK KAYNAK: tahta `landing/demoBoard.ts`
 // (her kelimesi `npm run verify-demo-board` ile sözlüğe karşı doğrulanıyor),
@@ -55,30 +64,8 @@ type Status = 'loading' | 'invalid' | 'ready' | 'accepting' | 'accepted' | 'erro
 
 const primaryBtn =
   'px-5 py-3 rounded-md bg-accent text-white font-mono font-bold text-sm tracking-[0.5px] shadow-raised active:scale-95 transition-transform';
-const secondaryBtn =
-  'px-5 py-3 rounded-md bg-panel border border-border text-text font-mono font-bold text-sm tracking-[0.5px] shadow-raised active:scale-95 transition-transform';
 const cardCls =
   'w-full bg-bg border border-border rounded-xl shadow-raised px-4 py-5 flex flex-col items-center gap-3 text-center';
-
-/** "Kabul edince ne olur" maddelerinin tiki — ilkel şekil, `OzellikIkonlari`'ndaki kural. */
-function TikIkon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className="shrink-0 mt-[2px] text-accent"
-    >
-      <path d="M4 12.5 9.5 18 20 6.5" />
-    </svg>
-  );
-}
 
 /**
  * Tahtanın altındaki X2/X3 açıklaması — zeminler `Board.tsx`'ten BİREBİR
@@ -91,15 +78,6 @@ function Rozet({ stil, metin }: { stil: React.CSSProperties; metin: string }) {
     <li className="flex shrink-0 items-center gap-1.5 text-[11px] leading-tight text-muted">
       <span aria-hidden="true" className="shrink-0 w-3.5 h-3.5 rounded-[3px]" style={stil} />
       <span>{metin}</span>
-    </li>
-  );
-}
-
-function Madde({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex items-start gap-2 text-[12px] leading-relaxed text-muted text-left">
-      <TikIkon />
-      <span className="min-w-0">{children}</span>
     </li>
   );
 }
@@ -173,7 +151,6 @@ export function FriendInvitePage({ token }: FriendInvitePageProps) {
   // zaten üye, ona oyunu anlatmak gürültü olur (ve o kişi için sayfa bir
   // saniyelik bir ara duraktan ibaret — davet otomatik işleniyor).
   const showPitch = !user;
-  const ad = inviterName ?? 'Arkadaşın';
 
   return (
     <div className="min-h-screen bg-panel flex flex-col items-center px-4 py-8 gap-6">
@@ -214,29 +191,9 @@ export function FriendInvitePage({ token }: FriendInvitePageProps) {
               {user ? (
                 <p className="text-xs text-muted font-mono m-0">İşleniyor…</p>
               ) : (
-                <>
-                  <div className="flex gap-2">
-                    <button onClick={() => setAuthMode('login')} className={secondaryBtn}>
-                      Giriş Yap
-                    </button>
-                    <button onClick={() => setAuthMode('signup')} className={primaryBtn}>
-                      Kayıt Ol
-                    </button>
-                  </div>
-                  <p className="text-[11px] text-muted m-0">
-                    Zaten üyeysen "Giriş Yap" yeter — davet giriş yapar yapmaz işlenir.
-                  </p>
-                  <ul className="w-full list-none p-0 m-0 pt-3 mt-1 border-t border-border flex flex-col gap-2">
-                    <Madde>
-                      <span className="font-bold text-text">{ad}</span> ile anında arkadaş
-                      olursunuz.
-                    </Madde>
-                    <Madde>Birbirinize canlı oyun daveti gönderebilirsiniz.</Madde>
-                    <Madde>
-                      Aynı anda çevrimiçi olmanız gerekmez — her hamle için 48 saatin var.
-                    </Madde>
-                  </ul>
-                </>
+                <button onClick={() => setAuthMode('signup')} className={`${primaryBtn} w-full`}>
+                  Daveti Kabul Et
+                </button>
               )}
             </>
           )}
@@ -340,7 +297,7 @@ export function FriendInvitePage({ token }: FriendInvitePageProps) {
 
             {status === 'ready' && (
               <button onClick={() => setAuthMode('signup')} className={`${primaryBtn} w-full`}>
-                Kayıt Ol ve Arkadaş Ol
+                Daveti Kabul Et
               </button>
             )}
           </section>
