@@ -161,7 +161,11 @@ Artefakt DURUYOR. **DOĞRULANDI (25 Ağustos 2026, koşu 349, sha `5eddf3d`):**
 dosya release'te, 60.929.323 bayt. Kanıt PR'da alınamazdı — release adımı
 PR'da bilerek atlanıyor (workflow başlığındaki "YAYINLAMA" notu) — bu yüzden
 merge sonrası ilk `main` koşusunda okundu.
-**Yüklenmeye hazır paketin `versionCode`'u: 349.**
+**Yüklenmeye hazır paketin `versionCode`'u: 370** (koşu 370, sha `69d5478`,
+`.aab` 25 Ağustos 21:15'te `mobile-latest`e yüklendi — 60.971.917 bayt).
+⚠ **Play'e YÜKLÜ olan hâlâ 349 ve o paket uygulama içi hesap silmeyi
+İÇERMİYOR** (madde 2, 349'dan sonra merge edildi). Testçilerin silme yolunu
+görebilmesi için 370 kapalı test kanalına yüklenmeli.
 
 **Tuzaklar — 0.A1:**
 - **Keystore repoya GİRMEZ.** `*.jks`/`key.properties` gitignore'a; CI'a
