@@ -1693,3 +1693,34 @@ hesaba bağlı.
 - [ ] **Devam eden oyunlar:** Deploy sonrası açık bir oyunda bölge sınırları
       yeniden hesaplanır — tahtanın dış hattı bir anda değişebilir, bu
       beklenen.
+
+## 21. Davet sayfası (`/davet/:token`) — zenginleştirilmiş ekran (25 Ağustos 2026)
+
+Sayfa artık davet cümlesinin yanında oyunu da ANLATIYOR (davet edenin baş harf
+avatarı, "kabul edince ne olur" üç maddesi, gerçek tanıtım tahtası + X2/X3
+rozetleri, dört özellik kutusu, hukuki alt şerit). Gerekçe:
+`docs/decisions/friends.md`. Duman testi yalnızca "bölüm render oluyor mu"yu
+kilitliyor (`tests/smoke.spec.ts`); aşağıdakiler GERÇEK bir token + gerçek bir
+kayıt gerektirdiğinden elle koşulur.
+
+- [ ] **Girişsiz, geçerli link.** Arkadaşlar → "Arkadaşını Davet Et" ile link
+      üret, **gizli sekmede** aç: davet edenin adı hem başlıkta hem birinci
+      maddede görünmeli, avatar o adın baş harflerini taşımalı.
+- [ ] **Kayıt akışı bozulmadı.** "Kayıt Ol" (üstteki VEYA sayfanın altındaki
+      "Kayıt Ol ve Arkadaş Ol") → AuthModal açılmalı; kayıt + e-posta onayı
+      sonrası uygulamaya dönüldüğünde arkadaşlık KURULMUŞ olmalı (token
+      kuyruğu, `App.tsx`).
+- [ ] **Girişli kullanıcı tanıtımı GÖRMEZ.** Aynı linki girişli bir hesapla aç:
+      yalnızca davet kartı + "İşleniyor…" → "artık arkadaşsınız" görünmeli,
+      "Kelimeki nedir?" bölümü HİÇ çıkmamalı.
+- [ ] **Geçersiz/kullanılmış token çıkmaz değil.** Uydurma bir token ile aç:
+      açıklama + "Kelimeki'ye Git" düğmesi ve altında tanıtım bölümü olmalı.
+- [ ] **Tahta gerçek tahtaymış gibi görünüyor.** Bölge dış hatları, ev
+      işaretleri, sarı X2 alanı ve turuncu X3 hücresi seçilebilmeli; altındaki
+      iki rozetin rengi tahtadaki karelerle AYNI olmalı (zeminler
+      `Board.tsx`'ten geliyor — ayrışmışsa biri elle yazılmış demektir).
+- [ ] **Dar ekran.** 320 px genişlikte yatay kaydırma OLMAMALI, düğmeler tek
+      satırda kalmalı.
+- [ ] **Hukuki şerit.** "Kullanım Koşulları" / "Gizlilik Politikası" pencereleri
+      açılıp Esc ile kapanmalı (sayfa uygulama paketinde, statik `/gizlilik/`
+      sayfasına GİTMEZ).
