@@ -1153,7 +1153,15 @@ export async function acceptFriendInvite(token: string): Promise<string | null> 
   const { data, error } = await supabase.rpc('accept_friend_invite', { p_token: token });
   if (error) {
     console.error('[Kelimeki] acceptFriendInvite hatası:', error.message);
-    throw new Error(error.message);
+    // `code` KORUNUYOR: `accept_friend_invite` üç durumu `raise exception`
+    // ile bilerek reddediyor (kendi linki, geçersiz token, oturum yok) ve
+    // plpgsql'in `raise exception`ı SQLSTATE **P0001** üretiyor (canlıda
+    // ölçüldü). Çağıran bu koda bakarak "kalıcı ret" ile "geçici arıza"yı
+    // ayırabiliyor — mesaj metnine bakmak yerine, çünkü metin değişebilir
+    // (aynı gerekçe `mapAuthError`'da da yazılı).
+    const hata = new Error(error.message) as Error & { code?: string };
+    hata.code = error.code;
+    throw hata;
   }
   const row = Array.isArray(data) ? data[0] : null;
   return row?.inviter_name ?? null;

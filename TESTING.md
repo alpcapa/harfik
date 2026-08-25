@@ -1719,6 +1719,14 @@ kayıt gerektirdiğinden elle koşulur.
       "Kelimeki nedir?" bölümü HİÇ çıkmamalı.
 - [ ] **Geçersiz/kullanılmış token çıkmaz değil.** Uydurma bir token ile aç:
       açıklama + "Kelimeki'ye Git" düğmesi ve altında tanıtım bölümü olmalı.
+- [ ] **KENDİ davet linkine tıkla** (25 Ağustos 2026'da kullanıcı bunu bildirdi;
+      o gün arayüz *"bir hata oluştu, lütfen tekrar dene"* + **Tekrar Dene**
+      gösteriyordu — tekrar denemek hiçbir zaman çalışmayacaktı). Girişliyken
+      kendi linkini aç: sunucunun kendi cümlesi görünmeli — **"Kendi linkinle
+      arkadaş olamazsın."** — ve düğme **"Kelimeki'ye Git"** olmalı,
+      "Tekrar Dene" ÇIKMAMALI. Kural: sunucu `raise exception` ile reddettiyse
+      (SQLSTATE `P0001`) mesajı OLDUĞU GİBİ göster, tekrar denemeyi önerme;
+      "Tekrar Dene" yalnızca kodsuz (ağ/beklenmeyen) hatalarda çıkar.
 - [ ] **Tahta gerçek tahtaymış gibi görünüyor.** Bölge dış hatları, ev
       işaretleri, sarı X2 alanı ve turuncu X3 hücresi seçilebilmeli; altındaki
       iki rozetin rengi tahtadaki karelerle AYNI olmalı (zeminler

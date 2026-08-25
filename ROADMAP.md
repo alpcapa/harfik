@@ -322,6 +322,15 @@ acil.
   altında.
 - Flutter: gelen linki karşılayan yönlendirme + `friendInvite` kuyruğuyla
   (web'deki `kelimeki:pending-invite` deseninin portu) birleştirme.
+  **AYNI TURDA DÜZELTİLECEK — portta davet kabulü SESSİZCE düşüyor:**
+  `setup_screen.dart` → `_processInvites`'in `catch`i yalnızca `debugPrint`
+  yapıyor, yani kişi kendi linkine (ya da geçersiz bir linke) dokunduğunda
+  HİÇBİR ŞEY görmüyor. Web tarafı 25 Ağustos 2026'da düzeltildi: sunucu
+  `raise exception` ile reddettiyse (SQLSTATE `P0001` — canlıda ölçüldü)
+  mesaj OLDUĞU GİBİ gösteriliyor. Portta da aynısı yapılmalı
+  (`PostgrestException.code`). ⚠ Ayrıca dikkat: `events.takeAll` YIKICI,
+  yani geçici bir ağ hatasında token zaten kayboluyor — o ayrı sorun bu
+  düzeltmeyle çözülmüyor, kararı ayrıca ver.
 
 **Tuzaklar:**
 - Universal Links yalnızca App Store'dan kurulan uygulamalarda çalışıyor —
