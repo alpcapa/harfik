@@ -57,7 +57,14 @@
        butonun açılmadığını görürdü.
      - **`legal_modals.dart` AYNI PR'da güncellendi** (Gizlilik 5. bölüm +
        "Son güncelleme: 25 Ağustos 2026"). Atlansa `legal_text_test.dart`
-       düşerdi — mobil CI'ın web metnine bağlı tek kapısı.
+       düşerdi — ama mobil CI'ın web metnine bağlı tek kapısı O DEĞİLMİŞ:
+       **`signup_test.dart` de politikanın 5. bölümünden bir CÜMLE arıyordu**
+       (`'30 gün içinde kalıcı olarak silinir'`) ve ilk koşuda 508/509 ile
+       düştü. Bulan CI oldu, tarama değil — bu ortamda Flutter SDK yok.
+       **Ders:** hukuki metnin bağımlıları `legal_text_test.dart` ile sınırlı
+       değil; metni değiştirirken `grep -rn "<değişen cümle>" mobile/app/test/`
+       de koşulmalı. İddia yeni gerçeklere bağlandı (uygulama içi yol VAR +
+       talep yolu hâlâ 30 gün), silinmedi.
      - **Regresyon:** `account_settings_test.dart`e bir test —
        "HESABIMI SİL" dokunulunca pencere açılıyor, `AuthService.fake` bir
        Supabase client taşımadığından kuru çalıştırma düşüyor, SEBEP

@@ -190,7 +190,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('GİZLİLİK POLİTİKASI'), findsOneWidget);
     expect(find.textContaining('KVKK m.11 uyarınca'), findsOneWidget);
-    expect(find.textContaining('30 gün içinde kalıcı olarak silinir'),
+    // 25 Ağustos 2026'ya kadar burada "30 gün içinde kalıcı olarak silinir"
+    // aranıyordu. Uygulama içi hesap silme (ROADMAP madde 2) gelince
+    // Gizlilik Politikası'nın 5. bölümü değişti ve bu satır HAKLI OLARAK
+    // düştü — metin web'den birebir taşınıyor (bkz. legal_text_test.dart).
+    // İddia, o bölümün İKİ yeni gerçeğine bağlandı: uygulama içi yol VAR ve
+    // talep yolu hâlâ 30 gün.
+    expect(find.textContaining('Hesap Ayarları › Hesabımı Sil'),
+        findsOneWidget);
+    expect(find.textContaining('en geç 30 gün içinde sonuçlandırılır'),
         findsOneWidget);
     await tester.tap(find.byTooltip('Kapat').last);
     await tester.pumpAndSettle();
