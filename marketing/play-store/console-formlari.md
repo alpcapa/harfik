@@ -368,13 +368,36 @@ destek yanıtı) bu kurulumdan etkilenmez. DKIM ayrı selector'larda durur,
 5. `destek@` kutusunu aç, kendine bir test maili at, geldiğini gör.
 6. Play Console → Store settings → iletişim e-postasına yaz.
 
+### DNS: **GoDaddy** (25 Ağustos 2026)
+
+Domain GoDaddy'de kayıtlı ve DNS de orada yönetiliyor — Temmuz'daki Brevo
+SPF/DKIM/DMARC kayıtları oraya girilmişti. Panel:
+**Ürünlerim → `kelimeki.com` → DNS → DNS Kayıtlarını Yönet**
+(*My Products → Domains → Manage DNS*).
+
+**Bu bir seçeneği ELEDİ:** Cloudflare Email Routing (ücretsiz, alma
+tarafında en temiz çözüm) nameserver'ların Cloudflare'e taşınmasını
+gerektiriyor — canlı bir sitenin NS'ini taşımanın riski, kazandırdığından
+büyük. Geriye gerçek kutu için **Zoho Mail** (ücretsiz katman), yalnızca
+yönlendirme için **ImprovMX** kalıyor. GoDaddy'nin kendi paketine dahil bir
+e-posta yönlendirmesi varsa üçüncü tarafa hiç gerek kalmaz — panelde
+kontrol edilecek.
+
+**Canlı kayıtlar okunurken GoDaddy panelindeki üç satır:** `@` adlı ve
+`v=spf1` ile başlayan `TXT` (birleştirilecek olan), varsa `MX` kayıtları
+(iki sağlayıcı bir arada olmaz, mevcut varsa değişecek) ve `_dmarc` `TXT`
+(dokunulmayacak, kurulum sonrası yerinde olduğu doğrulanacak). DKIM
+kayıtları (`..._domainkey`) sorun değil — her sağlayıcı kendi selector'ında
+durur.
+
 ### Açık kalan
 
-- **DNS paneli hangisi?** (Temmuz'da Brevo kayıtlarını girdiğin yer.)
-  Adımlar aynı, yalnızca ekran adları değişiyor.
-- Servis seçimi: gerçek kutu için ücretsiz katmanı olan sağlayıcılar var
-  (ücretsiz katman şartları değişebiliyor, kayıt sırasında teyit et);
-  Google Workspace ücretli ama Play hesabıyla aynı ekosistem.
+- Canlı SPF kaydının tam metni (yukarıdaki panelden okunacak) — birleştirme
+  onsuz yapılamaz.
+- Servis seçimi: ücretsiz katman şartları değişebiliyor, kayıt sırasında
+  teyit et. Zoho'da veri merkezi seçimi `include:` ifadesini de değiştirir
+  (`zoho.com` / `zoho.eu`) — kurulum sihirbazının verdiği değeri kullan,
+  ezberden yazma.
 
 ### ⚠ Bu iş 14 günlük sayacı BEKLETMEMELİ
 
