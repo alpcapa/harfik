@@ -312,10 +312,27 @@ geri gelir.
 |---|---|
 | `minSdkVersion` | 24 (Android 7.0) |
 | `targetSdkVersion` | 36 |
-| İzinler | `INTERNET` · `ACCESS_NETWORK_STATE` · `com.kelimeki.kelimeki.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` (AndroidX'in iç izni, kullanıcıya görünmez) |
+| İzinler | **4 adet** — `INTERNET` · `ACCESS_NETWORK_STATE` · `com.android.vending.CHECK_LICENSE` · `com.kelimeki.kelimeki.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` |
 
 `image_picker` **hiçbir izin eklemiyor** → Data safety'de medya/depolama
 beyanı yok, "Photo and video permissions" bildirimi de gerekmiyor.
+
+⚠ **DÜZELTME (25 Ağustos 2026, Play Console'un paket ayrıntısından okundu):**
+bu bölüm önce **3 izin** diyordu; Play **4** gösteriyor. Fark
+`com.android.vending.CHECK_LICENSE` — yayınlanmış `.apk`'da (sha `18689eb`)
+yoktu, Play'in işlediği `.aab`'de (349 / `5eddf3d`) var. **Beyanı
+DEĞİŞTİRMİYOR:** çalışma zamanı izni değil (kullanıcıya sorulmaz), kendi
+başına veri toplamaz, medya/depolama/konum/kamera sınıfından değil —
+uygulamanın Play'e "bu kopya meşru mu" diye sormasını sağlayan lisans
+doğrulama kanalı. Kaynağı kesin belirlenmedi; iki makul aday, yükleme
+ekranındaki **"Automatic protection"** eklentisi (lisans kontrolü kullanıyor,
+`.apk`'da olmayıp `.aab`'de olmasını en iyi bu açıklıyor) ve Flutter'ın
+Android gömme katmanındaki Play Core. Ayırt etmenin pratik faydası yok.
+
+**Ders:** paket gerçeklerini yayınlanmış `.apk`'dan ölçmek `.aab`'nin
+tamamını kanıtlamıyor — Play, bundle'ı işlerken manifeste ekleme yapabiliyor.
+Bir sonraki sürümde de izin listesini **Console'un paket ayrıntısından**
+oku.
 
 ---
 

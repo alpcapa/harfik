@@ -122,12 +122,19 @@ değil YAYINLANMIŞ pakete bakıldı: `mobile-latest`teki `kelimeki.apk`
 |---|---|---|
 | `minSdkVersion` | **24** (Android 7.0) | — |
 | `targetSdkVersion` | **36** | Android'in en yeni API seviyesi; Play'in asgarisinin ALTINDA olması mümkün değil → **pinlemeye gerek yok** |
-| İzinler | **3 adet** (aşağı) | Data safety beyanı etkilenmiyor |
+| İzinler | **3 adet** (aşağı) — Play'in `.aab`'de gösterdiği **4** (bkz. not) | Data safety beyanı etkilenmiyor |
 
 İzinlerin tamamı: `INTERNET` (Parça 131 düzeltmesi — pakette olduğu böylece
 ikinci bir yoldan da doğrulandı), `ACCESS_NETWORK_STATE` (connectivity_plus)
 ve `com.kelimeki.kelimeki.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`
 (AndroidX'in kendi ürettiği iç izin — kullanıcıya görünmez, beyan edilmez).
+
+**DÜZELTME (25 Ağustos 2026):** yukarıdaki "3 izin" YAYINLANMIŞ `.apk`'dan
+ölçülmüştü; Play Console'un paket ayrıntısı `.aab` için **4** gösteriyor.
+Fark `com.android.vending.CHECK_LICENSE` — beyanı değiştirmiyor (çalışma
+zamanı izni değil, veri toplamıyor). Ders: `.apk` ölçümü `.aab`'yi
+kanıtlamıyor, Play bundle'ı işlerken manifeste ekleme yapabiliyor. Ayrıntı:
+`marketing/play-store/console-formlari.md` § 6.
 
 **`image_picker` HİÇBİR izin eklememiş** — bu dosyanın beklediği risk
 gerçekleşmedi. Modern Android'de Photo Picker/SAF üzerinden çalıştığı için
