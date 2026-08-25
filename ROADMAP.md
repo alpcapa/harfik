@@ -8,8 +8,12 @@ ve *neden* ertelendiğini anlatır; burası *hangi sırayla*, *hangi modelle* ve
 Bir madde bitince buradan SİLİNİR ve kaydı ilgili bölümün kendi tarihli
 notuna taşınır (projenin genel "değişiklik = tarihli not" disiplini).
 
-**Durum (22 Ağustos 2026):** `main` yeşil. FAZ A1 cihaz turu Bölüm 6
+**Durum (25 Ağustos 2026):** `main` yeşil. FAZ A1 cihaz turu Bölüm 6
 (Paylaşma, iPad popover) hariç kapalı. Web + port paritesi güncel.
+**24-25 Ağustos Android cihaz turu TEMİZ geldi** (dokunma hedefleri, "← Geri",
+Paylaş, tahta açılışı, k-lig/Skor Kartı yükleme — yani #324 ve #325'in
+cihazdaki karşılığı doğrulandı). **Madde 8 bundan ETKİLENMEDİ:** oradaki iş
+iPad'in popover ankrajı, bu tur Android'de koşuldu.
 **Google Play Console hesabı açıldı** (22 Ağustos) — bu, listenin sırasını
 değiştirdi: artık omurga aşağıdaki **madde 0 (FAZ B)**, çünkü kişisel
 hesaplarda production'a çıkmanın önünde **daha başlamamış 14 günlük bir
@@ -118,12 +122,19 @@ değil YAYINLANMIŞ pakete bakıldı: `mobile-latest`teki `kelimeki.apk`
 |---|---|---|
 | `minSdkVersion` | **24** (Android 7.0) | — |
 | `targetSdkVersion` | **36** | Android'in en yeni API seviyesi; Play'in asgarisinin ALTINDA olması mümkün değil → **pinlemeye gerek yok** |
-| İzinler | **3 adet** (aşağı) | Data safety beyanı etkilenmiyor |
+| İzinler | **3 adet** (aşağı) — Play'in `.aab`'de gösterdiği **4** (bkz. not) | Data safety beyanı etkilenmiyor |
 
 İzinlerin tamamı: `INTERNET` (Parça 131 düzeltmesi — pakette olduğu böylece
 ikinci bir yoldan da doğrulandı), `ACCESS_NETWORK_STATE` (connectivity_plus)
 ve `com.kelimeki.kelimeki.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`
 (AndroidX'in kendi ürettiği iç izin — kullanıcıya görünmez, beyan edilmez).
+
+**DÜZELTME (25 Ağustos 2026):** yukarıdaki "3 izin" YAYINLANMIŞ `.apk`'dan
+ölçülmüştü; Play Console'un paket ayrıntısı `.aab` için **4** gösteriyor.
+Fark `com.android.vending.CHECK_LICENSE` — beyanı değiştirmiyor (çalışma
+zamanı izni değil, veri toplamıyor). Ders: `.apk` ölçümü `.aab`'yi
+kanıtlamıyor, Play bundle'ı işlerken manifeste ekleme yapabiliyor. Ayrıntı:
+`marketing/play-store/console-formlari.md` § 6.
 
 **`image_picker` HİÇBİR izin eklememiş** — bu dosyanın beklediği risk
 gerçekleşmedi. Modern Android'de Photo Picker/SAF üzerinden çalıştığı için
@@ -146,9 +157,11 @@ kişi için `.apk`nın 7 Ağustos'ta çözülen probleminin aynısı hâlâ aç�
 (`build-and-distribution-log.md` → Appetize). `mobile-build.yml`'in release
 adımı artık `kelimeki.aab`'yi de `mobile-latest`e koyuyor:
 `https://github.com/alpcapa/kelimeki/releases/download/mobile-latest/kelimeki.aab`.
-Artefakt DURUYOR. **PR'da doğrulanamaz** — release adımı PR'da bilerek
-atlanıyor (workflow başlığındaki "YAYINLAMA" notu), yani kanıt merge sonrası
-ilk `main` koşusunda okunacak.
+Artefakt DURUYOR. **DOĞRULANDI (25 Ağustos 2026, koşu 349, sha `5eddf3d`):**
+dosya release'te, 60.929.323 bayt. Kanıt PR'da alınamazdı — release adımı
+PR'da bilerek atlanıyor (workflow başlığındaki "YAYINLAMA" notu) — bu yüzden
+merge sonrası ilk `main` koşusunda okundu.
+**Yüklenmeye hazır paketin `versionCode`'u: 349.**
 
 **Tuzaklar — 0.A1:**
 - **Keystore repoya GİRMEZ.** `*.jks`/`key.properties` gitignore'a; CI'a
@@ -184,6 +197,13 @@ yayınlanamaz, dolayısıyla sayaç hiç başlamaz. Bu dosya 22 Ağustos'ta onu
 **Çıkış kriteri:** imzalı AAB kapalı test kanalına yüklendi, 12 tester
 kaydoldu, **sayaç işlemeye başladı.**
 
+**DURUM (25 Ağustos 2026):** Console'daki her form dolduruldu ve **kapalı
+test sürümü Google incelemesine gönderildi** ("Your changes are in review").
+Adım adım ne girildiği ve neden: `marketing/play-store/console-formlari.md`
+§ 6.5. **Kriter HENÜZ karşılanmadı** — inceleme onaylanınca opt-in linki
+çalışır, sayaç ancak 12 kişi opt-in olduğunda başlar. Tester listesinde
+şu an 9 adres var.
+
 ### 0.B — 14 gün işlerken paralelde
 
 Sırası önemli olan tek bağ: **#4, #2'den SONRA** (hesap silme kaskadı
@@ -217,8 +237,11 @@ Ağustos 2026). Aşağısı yalnızca hangi formun neden riskli olduğunun özet
   HAYIR** — hizmet sağlayıcı ve kullanıcının başlattığı görünürlük
   istisnalarıyla; 24 Ağustos 2026'da kullanıcı onayladı, gerekçe
   `console-formlari.md` §3.8'de.
-- **Content rating (IARC):** kullanıcılar arası **sohbet var**, beyan
-  edilmek zorunda (yaş derecesini yükseltir).
+- **Content rating (IARC):** ✅ **BİTTİ (25 Ağustos 2026).** Sohbet beyan
+  edildi. Bu satır "yaş derecesini yükseltir" diyordu — **ölçüm bunu
+  doğrulamadı:** sonuç en düşük bant (PEGI 3, USK 0, ESRB Everyone,
+  IARC 3+). Sebebi, sohbete yalnızca kabul edilen arkadaşın girebilmesi ve
+  sessize alma/şikayetin var olması.
 - **UGC / moderasyon:** sohbet olduğu için gerekiyor. Karşılayacak
   mekanizma ZATEN var — sessize alma, şikayet, hesap dondurma, admin
   paneli; yalnızca beyan edilecek.
