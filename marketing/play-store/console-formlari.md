@@ -394,7 +394,17 @@ oku.
 | Store settings (kategori + iletişim) | ✅ Games→Word · `destek@kelimeki.com` |
 | Countries/regions | ✅ tümü |
 | Tester listesi | ✅ `Kelimeki Testers` |
-| **Preview and confirm → Send for review** | ⬜ **kaldı** |
+| Feedback URL | ✅ `destek@kelimeki.com` |
+| **Preview and confirm → Send for review** | ✅ **GÖNDERİLDİ — 25 Ağustos 2026, "Your changes are in review"** |
+
+**Son engel `Advertising ID` beyanıydı** — sekiz kısa beyandan biri atlanmıştı
+ve "send for review"u bloklamıştı (*"All developers targeting Android 13 or
+later are required to let us know if their app uses advertising ID"*).
+Cevap `No`; paketin izin listesinde `AD_ID` olmadığı Console'un kendi paket
+ayrıntısından zaten okunmuştu.
+
+**Şimdi bekleniyor:** Google incelemesi. Onaylanınca opt-in linki çalışır
+hâle gelir — sayaç ancak ondan sonra, 12 kişi opt-in olduğunda başlar.
 
 **App access'teki "tam erişim" kutusu ÖLÇÜLEREK işaretlendi:** ücretli/
 premium içerik yok, ve **Android uygulamasında yönetici paneli YOK** —

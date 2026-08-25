@@ -197,6 +197,13 @@ yayınlanamaz, dolayısıyla sayaç hiç başlamaz. Bu dosya 22 Ağustos'ta onu
 **Çıkış kriteri:** imzalı AAB kapalı test kanalına yüklendi, 12 tester
 kaydoldu, **sayaç işlemeye başladı.**
 
+**DURUM (25 Ağustos 2026):** Console'daki her form dolduruldu ve **kapalı
+test sürümü Google incelemesine gönderildi** ("Your changes are in review").
+Adım adım ne girildiği ve neden: `marketing/play-store/console-formlari.md`
+§ 6.5. **Kriter HENÜZ karşılanmadı** — inceleme onaylanınca opt-in linki
+çalışır, sayaç ancak 12 kişi opt-in olduğunda başlar. Tester listesinde
+şu an 9 adres var.
+
 ### 0.B — 14 gün işlerken paralelde
 
 Sırası önemli olan tek bağ: **#4, #2'den SONRA** (hesap silme kaskadı
