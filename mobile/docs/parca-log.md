@@ -81,6 +81,16 @@
        `supabase/migrations/*`, `supabase/functions/delete-my-account/`,
        `tests/smoke.spec.ts`, `ROADMAP.md`, `README.md`, `TESTING.md`,
        `docs/decisions/account-deletion.md` — hepsi AYNI PR'da.
+     - **EK (aynı gün, ikinci tur — kullanıcı istedi):** Kullanım Koşulları
+       §2'ye de bir cümle eklendi (*"Hesabınızı dilediğiniz zaman Hesap
+       Ayarları'ndan kendiniz silebilirsiniz…"*) ve Koşullar'ın tarihi
+       19 → 25 Ağustos oldu; port da AYNI PR'da. İlk turda bilerek
+       atlanmıştı — taramada Koşullar'da yanlış hâle gelen bir cümle
+       çıkmamıştı (§4'ün "askıya alınabilir veya silinebilir"i BİZİM
+       hakkımız, kullanıcının kendi silmesi değil). **Ölçülen bedel:**
+       Koşullar'ın tarihini oynatmak `legal_text_test.dart` üzerinden portu
+       zorunlu kılıyor, yani yeni bir CI turu ve YENİ BİR `.aab`. Hukuki
+       metne dokunmak her zaman bir paket turudur — planlarken hesaba kat.
      - **Yan iş (doküman bütçesi):** `mobile/TESTING.md` uyarı bandındaydı
        (160 KB) ve kural *"bir sonraki dokunuşta böl"* diyor. Test
        ORTAMLARI (web derlemesi, FAZ B cihaz turu, TestFlight, Appetize)

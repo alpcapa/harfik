@@ -254,7 +254,7 @@ export function TermsBody({ contact }: { contact: ReactNode }) {
       <div className="flex flex-col gap-5">
         <P>
           Kelimeki'ye kaydolarak aşağıdaki koşulları okuduğunuzu ve kabul ettiğinizi beyan edersiniz.
-          Son güncelleme: 19 Ağustos 2026.
+          Son güncelleme: 25 Ağustos 2026.
         </P>
 
         <Section title="1. Hizmet Sağlayıcı ve Kapsam">
@@ -273,7 +273,9 @@ export function TermsBody({ contact }: { contact: ReactNode }) {
           <P>
             Kayıt sırasında verdiğiniz bilgilerin doğru ve güncel olması zorunludur. Hesap
             güvenliğinizden yalnızca siz sorumlusunuz; şifrenizi kimseyle paylaşmayınız. Hesabınızı
-            başkasına devredemezsiniz.
+            başkasına devredemezsiniz. Hesabınızı dilediğiniz zaman Hesap Ayarları'ndan kendiniz
+            silebilirsiniz; silme kalıcıdır ve geri alınamaz, kapsamı Gizlilik Politikası'nın 5.
+            bölümünde açıklanmıştır.
           </P>
         </Section>
 
