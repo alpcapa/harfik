@@ -199,9 +199,8 @@ Sırası önemli olan tek bağ: **#4, #2'den SONRA** (hesap silme kaskadı
    kayıt onayı maili uygulamayı değil web'i açıyor; inceleme "kırık akış"
    diye dönebilir. iOS yarısı Apple hesabı istediğinden bekler.
 4. **0.C — App content formları** (aşağı).
-5. **Madde 4 — test hesaplarının silinmesi.** ⚠ **App access formuna
-   verilecek inceleme hesabını silme** — hangi hesabın incelemeciye
-   verildiğini silmeden önce kontrol et.
+5. **Madde 4 — test hesaplarının silinmesi.** ⚠ **`T2` SİLİNMEYECEK** —
+   App access formunda incelemeciye verilen hesap o (yukarı, 0.C).
 
 ### 0.C — Play Console'da doldurulacak formlar (kod işi değil, zorunlu)
 
@@ -225,6 +224,11 @@ Ağustos 2026). Aşağısı yalnızca hangi formun neden riskli olduğunun özet
   paneli; yalnızca beyan edilecek.
 - **App access:** Canlı oyun/arkadaş özellikleri giriş istiyor →
   incelemeciye **çalışan bir test hesabı** verilmeli (bkz. 0.B/5).
+  **Hesap seçildi: `T2` (`kelimekitest2`), 24 Ağustos 2026.** `T1`
+  kullanılmıyor — e-postası geliştiricinin kişisel adresi. T2'nin durumu
+  üretim veritabanından ölçüldü: doğrulanmış, dondurulmamış, 3 arkadaş,
+  1 aktif Canlı oyun, 11 bitmiş oyun — yani incelemecinin göreceği dört
+  ekran da boş değil.
 - **Ads:** yok · **Advertising ID:** kullanılmıyor · **Government /
   Financial / Health:** hayır.
 - **Target audience:** **13+ öner** — 13 yaş altı hedeflenirse "Families"
