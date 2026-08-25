@@ -229,6 +229,12 @@ girmek zorunda** — bu ortamdan GitHub ayarlarına yazma yolu yok.
    doğrulaması Play Console → App integrity'deki "app signing key"
    parmak izini ister. Yanlışını yazmak hata VERMEZ — linkler sessizce
    tarayıcıda açılır (bkz. `ROADMAP.md` 1. madde).
+   **ÇÖZÜLDÜ (25 Ağustos 2026):** ilk `.aab` yüklendikten sonra Play'in
+   ürettiği parmak izi Console'dan okundu (`B4:88:80:09…`) ve
+   `public/.well-known/assetlinks.json` yazıldı — yukarıdaki upload
+   anahtarı (`B6:CD:FB:A9…`) dosyaya GİRMEDİ, bir duman testi bunu
+   sürekli kontrol ediyor. Console'daki yol, iki anahtarlı ekran ve
+   ölçümler: `marketing/play-store/console-formlari.md` → §6.6.
 
 ## Karşılama Katmanı (web) — bilinçli ayrışma (18 Ağustos 2026, 19'unda güncellendi)
 
