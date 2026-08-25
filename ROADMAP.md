@@ -175,6 +175,10 @@ merge sonrası ilk `main` koşusunda okundu.
   Play App Signing kullanılıyorsa oraya **Play'in ürettiği** SHA-256 girer,
   senin upload anahtarınınki DEĞİL. Yanlışını koymak App Links'i sessizce
   kırar (madde 1 ile aynı iş).
+  **YAPILDI (25 Ağustos 2026):** dosya `public/.well-known/assetlinks.json`
+  olarak yazıldı, içinde Play'in ürettiği (Classical) parmak izi var —
+  upload anahtarı (`B6:CD:FB:A9…`) DEĞİL. Ayrıntı ve ölçümler:
+  `marketing/play-store/console-formlari.md` → §6.6.
 
 **Tuzaklar — 0.A2/0.A3:**
 - `targetSdk` hâlâ `flutter.targetSdkVersion`'dan geliyor
@@ -216,9 +220,14 @@ Sırası önemli olan tek bağ: **#4, #2'den SONRA** (hesap silme kaskadı
    de politika metninde açık). **Web yarısı 0.A5'in sayfasına bir bölüm
    olarak bedavaya geliyor; asıl iş uygulama içi yol ve silme kaskadı.**
    Bu, production erişimi için ZORUNLU — 14 günün içinde bitmeli.
-3. **Madde 1 — deep link + `assetlinks.json`.** Play blokeri değil ama
+3. **Madde 1 — deep link.** Play blokeri değil ama
    kayıt onayı maili uygulamayı değil web'i açıyor; inceleme "kırık akış"
    diye dönebilir. iOS yarısı Apple hesabı istediğinden bekler.
+   **`assetlinks.json` bu maddeden AYRILDI ve bitti** (25 Ağustos 2026,
+   §6.6) — parmak izi Console'dan ancak `.aab` yüklendikten sonra
+   okunabildiğinden dosya o anda yazıldı; maddenin geri kalanı (intent
+   filter, Supabase redirect allow-list, e-posta şablonları, Flutter
+   yönlendirme) duruyor.
 4. **0.C — App content formları** (aşağı).
 5. **Madde 4 — test hesaplarının silinmesi.** ⚠ **`T2` SİLİNMEYECEK** —
    App access formunda incelemeciye verilen hesap o (yukarı, 0.C).
@@ -303,7 +312,11 @@ acil.
   e-posta şablonu (`supabase/email-templates/*.html` — bunlar Dashboard'a
   ELLE yapıştırılıyor, repo otomatik okunmuyor; bkz. kök `CLAUDE.md`).
 - iOS: `Info.plist` URL scheme + Associated Domains.
-- Android: intent filter + `assetlinks.json` (Pages'ta barındırılacak).
+- Android: intent filter. **`assetlinks.json` ARTIK BEKLEMİYOR** — 25
+  Ağustos 2026'da `public/.well-known/assetlinks.json` olarak yazıldı ve
+  Vercel'den (`kelimeki.com`) servis ediliyor; "Pages'ta barındırılacak"
+  planı geçersiz, çünkü uygulamanın açacağı adresler zaten `kelimeki.com`
+  altında.
 - Flutter: gelen linki karşılayan yönlendirme + `friendInvite` kuyruğuyla
   (web'deki `kelimeki:pending-invite` deseninin portu) birleştirme.
 

@@ -1,4 +1,5 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 
 // Kelimeki — kritik yol duman testleri. Amaç kapsamlı bir test paketi değil,
 // "uygulama açılıyor, bir oyun başlatılabiliyor, YZ hamle yapabiliyor"
@@ -798,4 +799,38 @@ test('/hesap-silme/ Play için gereken silme talebi yolunu anlatıyor', async ({
   const politikadaki = page.getByText(/en geç 30 gün/);
   await expect(politikadaki.first()).toBeVisible();
   expect(await politikadaki.count()).toBe(2);
+});
+
+test('/.well-known/assetlinks.json Play imza parmak iziyle statik servis ediliyor', async ({
+  page,
+}) => {
+  // Android App Links doğrulaması bu dosyayı JSON olarak okur. İki bilinen
+  // tuzak var: (1) `vercel.json`'daki yakalayıcı rewrite statik yolu yutup
+  // SPA kabuğunu döndürebilir (aynı sınıf hata `/gizlilik/`'te yaşandı,
+  // bkz. docs/decisions/legal-pages.md); (2) parmak izi YÜKLEME anahtarının
+  // değil, Play'in ÜRETTİĞİ imza anahtarının olmalı.
+  const yanit = await page.request.get('/.well-known/assetlinks.json');
+  expect(yanit.status()).toBe(200);
+  expect(yanit.headers()['content-type']).toContain('json');
+
+  const kayitlar = await yanit.json();
+  expect(Array.isArray(kayitlar)).toBe(true);
+  const hedef = kayitlar[0].target;
+
+  // Paket adı `mobile/app/android/app/build.gradle.kts`'teki applicationId ile
+  // BİREBİR aynı olmalı — sapması hâlinde doğrulama sessizce başarısız olur.
+  const gradle = readFileSync(
+    new URL('../mobile/app/android/app/build.gradle.kts', import.meta.url),
+    'utf8',
+  );
+  const applicationId = gradle.match(/applicationId\s*=\s*"([^"]+)"/)?.[1];
+  expect(hedef.package_name).toBe(applicationId);
+
+  // Yükleme anahtarı (`B6:CD:FB:A9…`) buraya ASLA girmemeli.
+  expect(hedef.sha256_cert_fingerprints).toContain(
+    'B4:88:80:09:93:79:D4:3B:BD:BC:D1:AF:F7:2E:05:9D:0B:35:9B:D1:78:4F:8C:0B:C4:D2:0A:FB:AF:AE:55:3E',
+  );
+  for (const parmakIzi of hedef.sha256_cert_fingerprints) {
+    expect(parmakIzi.startsWith('B6:CD:FB:A9')).toBe(false);
+  }
 });

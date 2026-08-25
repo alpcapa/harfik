@@ -403,6 +403,63 @@ later are required to let us know if their app uses advertising ID"*).
 Cevap `No`; paketin izin listesinde `AD_ID` olmadığı Console'un kendi paket
 ayrıntısından zaten okunmuştu.
 
+---
+
+## 6.6 — Play App Signing SHA-256 → `assetlinks.json` (25 Ağustos 2026)
+
+**Console'da nerede:** Test and release → **App integrity** → *Play app
+signing* sekmesi. (Menüde "App integrity" bir süredir *Release* başlığının
+altına taşındı; eski "Setup → App integrity" yolu artık yok — kullanıcı bu
+yüzden ilk aramada bulamadı.)
+
+Sayfa **İKİ** SHA-256 gösteriyor: **Classical key** ve **Post-quantum key**.
+Android App Links doğrulaması bugün **Classical** olanı okur — dosyaya giren
+o. Alan (`sha256_cert_fingerprints`) bir DİZİ olduğundan, ileride doğrulama
+düşerse post-quantum parmak izi ikinci eleman olarak eklenebilir; bugün
+gereksiz.
+
+| Anahtar | SHA-256 başı | Nerede kullanılır |
+|---|---|---|
+| **Play app signing** (Google üretti) | `B4:88:80:09…` | ✅ `assetlinks.json` |
+| **Upload key** (bizim keystore) | `B6:CD:FB:A9…` | ❌ Yalnızca karşılaştırma; dosyaya ASLA girmez |
+
+**Dosya:** `public/.well-known/assetlinks.json`. `package_name`
+`com.kelimeki.kelimeki` — `mobile/app/android/app/build.gradle.kts`'teki
+`applicationId`'nin AYNISI olmak zorunda.
+
+### ⚠ Ölçülen tuzak: yakalayıcı rewrite statik yolu yutabilirdi
+
+`vercel.json`'da `{"source": "/(.*)", "destination": "/index.html"}` var —
+`/gizlilik/`'te tam bu sınıf hata yaşanmıştı (bkz.
+`docs/decisions/legal-pages.md`). Bu yüzden dosya yazıldıktan sonra
+servis edilme yolu **ölçüldü, varsayılmadı**:
+
+1. `npm run build` → `dist/.well-known/assetlinks.json` gerçekten üretiliyor
+   (Vite nokta ile başlayan `public/` klasörünü de kopyalıyor — bu
+   doğrulanmadan bilinmiyordu).
+2. `vite preview` → `Content-Type: application/json`, 200, gövde doğru
+   (SPA kabuğu DEĞİL). Vercel de `rewrites`'ı dosya sistemi kontrolünden
+   SONRA uyguluyor; `/gizlilik/` üretimde zaten bu şekilde çalışıyor.
+3. Service worker'a dokunmak GEREKMEDİ: `navigateFallback` yalnızca
+   *navigation* isteklerini yakalıyor, bu bir JSON `fetch`'i — üstelik
+   doğrulamayı yapan Android platformunun kendisi, tarayıcı değil.
+   Precache listesinde de yok (`dist/sw.js`'te arandı, sıfır sonuç).
+
+### Regresyon
+
+`tests/smoke.spec.ts` 30 → **31 test**: dosya 200 + `application/json`
+dönüyor, `package_name` `build.gradle.kts`'ten OKUNARAK karşılaştırılıyor
+(elle senkron bırakılmadı), Play parmak izi mevcut ve **upload anahtarıyla
+başlayan hiçbir parmak izi yok**. **Negatif eş ikisi de ölçüldü:** parmak
+izi upload anahtarıyla değiştirilince test düşüyor; dosya silinince gelen
+yanıt `text/html` (yani yakalayıcı rewrite gerçekten SPA kabuğunu
+döndürüyor) ve test yine düşüyor.
+
+**Anahtar değişirse** (Play'de key rotation ya da yeni bir uygulama):
+Console'daki bu sayfadan yeni parmak izini oku, dosyadaki değeri değiştir,
+testteki sabiti de aynı PR'da güncelle — test bilerek sabiti içeriyor ki
+sessiz bir sapma mümkün olmasın.
+
 **YAYINLANDI — 25 Ağustos 2026.** Submission 1 (*Closed testing - Alpha,
 Store Listing, App Content, Advanced distribution, Store settings*) durumu
 **Published**. Kapalı test kanalı canlıda ve opt-in linki oluştu
@@ -432,6 +489,7 @@ Sayaç "yükledim" ile değil, **12 kişi opt-in olduğunda** işlemeye başlıy
 | Adresler Google hesabı olmalı | Gmail ya da Google'a bağlı bir adres; şirket/okul adresi olabilir ama Play hesabı olmalı |
 | Cihazdaki eski CI `.apk` | **Tester'lar için sorun değil** — kimseye `.apk` gönderilmedi (§5). Yalnızca geliştirme cihazında var |
 | Production başvurusu geri bildirim soruyor | Tester'lardan **yazılı geri bildirim topla** — başvuruda "nasıl test ettirdin" sorusu var |
+| **Play'den kuran testerda `kelimeki.com` linkleri UYGULAMAYI açar** | 25 Ağustos 2026'dan beri beklenen davranış (`assetlinks.json` yayında, §6.6). Tarayıcıda açmak isteyen Ayarlar → Uygulamalar → Kelimeki → *Varsayılan olarak aç*'tan kapatabilir. CI `.apk`'sında GEÇERSİZ — o derleme farklı anahtarla imzalı |
 
 **Tester'a gönderilecek metin (taslak):**
 
