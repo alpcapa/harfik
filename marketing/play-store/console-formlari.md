@@ -506,7 +506,7 @@ durur.
 | A | Dış adresten `destek@`'a mail | ✅ geldi |
 | B | Dış adresten `noreply@`'a mail (grup) | ✅ aynı kutuya düştü |
 | C | `destek@`'tan dışarı mail + gönderen adı | ✅ gidiyor; ad düzeltildikten sonra `Kelimeki Destek` |
-| D | **Brevo regresyon** — kayıt onayı/şifre sıfırlama maili hâlâ PASS alıyor mu | ⬜ **HENÜZ ÖLÇÜLMEDİ** |
+| D | **Brevo regresyon** — kayıt onayı/şifre sıfırlama maili hâlâ PASS alıyor mu | ✅ **SPF PASS · DKIM PASS (`kelimeki.com`) · DMARC PASS** |
 
 **D neden önemli:** domaine bugün **ilk kez** bir SPF kaydı yazıldı.
 Öncesinde kayıt yokken Brevo'nun mailleri SPF kontrolünden nötr geçiyordu;
@@ -515,12 +515,20 @@ yüzden eklendi ama **ölçülmeden "doğru yaptık" denemez** — bu proje 20
 Temmuz 2026'da tam olarak bu zincir bozulduğu için bir teslimat sorunu
 yaşadı.
 
-**D nasıl okunur:** `kelimeki.com`'da bir Gmail adresiyle şifre sıfırlama
-iste → Gmail → "Orijinali göster". Beklenen: **DKIM PASS (`kelimeki.com`)**
-ve **DMARC PASS**. SPF satırında domain olarak `kelimeki.com` DEĞİL
-Brevo'nun kendi domaini yazacak — **bu normal**, Brevo zarf adresini kendi
-domaininde tutuyor (`mail`/`r.mail` CNAME'lerinin sebebi bu). Sorun sayılan
-tek şey DKIM ya da DMARC'ın FAIL olması.
+**D nasıl okundu (25 Ağustos 2026):** `kelimeki.com`'dan bir Gmail adresine
+şifre sıfırlama istendi → Gmail → "Orijinali göster". Sonuç:
+
+```
+From:  Kelimeki <noreply@kelimeki.com>
+SPF:   PASS with IP 77.32.148.26
+DKIM:  'PASS' with domain kelimeki.com
+DMARC: 'PASS'
+```
+
+Üçü de geçti — yani yeni SPF kaydı Brevo'nun zincirini KIRMADI ve
+`include:spf.brevo.com`'u eklemek doğru karardı. (Gmail'in özetinden SPF'in
+hangi domain üzerinde koştuğu okunamıyor; sonucu değiştirmediği için
+önemsiz.) Sorun sayılacak tek şey DKIM ya da DMARC'ın FAIL olmasıydı.
 
 ### ⚠ Bu iş 14 günlük sayacı BEKLETMEMELİ
 
