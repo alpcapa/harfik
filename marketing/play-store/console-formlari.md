@@ -45,12 +45,29 @@ Play Console → **All apps** → **Create app**.
 | App name | `Kelimeki: Türkçe Kelime Oyunu` |
 | Default language | **Türkçe (tr-TR)** |
 | App or game | **Game** (Oyun) |
-| Free or paid | **Free** — bir daha ücretliye çevrilemez, ama biz zaten ücretsiziz |
+| Free or paid | **Free** — bir daha ücretliye çevrilemez (aşağı bkz.) |
 | Declarations | Developer Program Policies ✓ · US export laws ✓ |
 
 **Uyarı:** `App name` burada girilen değer mağaza vitrinindekiyle aynı olmak
 zorunda değil ama karışıklık çıkarmasın — ikisine de aynı 29 karakterli adı
 gir.
+
+**"Free" seçimi para kazanmayı KİLİTLEMİYOR** (25 Ağustos 2026'da soruldu,
+cevabı buraya yazılıyor çünkü tekrar sorulacak). Play'deki `Free/Paid`
+ayrımı yalnızca **indirmenin kendisi ücretli mi** demek. Uygulama içi satın
+alma ve abonelik bundan bağımsız: reklam göstermek, reklamsız abonelik
+satmak, tek seferlik satın alma — üçü de "Free" uygulamada mümkün.
+Kilitlenen tek şey önden indirme ücreti almak, ki bir Türkçe kelime oyunu
+için edinimi öldüren model zaten o.
+
+⚠ **Ama reklam eklenirse BEYAN ZİNCİRİ değişir** — ve beyan ile gerçeğin
+ayrışması askıya alma sebebi. Aynı anda güncellenecekler: App content →
+**Ads** ve **Advertising ID**; **Data safety** (reklam SDK'ları cihaz
+kimliği topluyor ve çoğu üçüncü tarafa aktarıyor → birkaç satır
+"Paylaşılıyor: EVET"e döner); `LegalContent.tsx` + portun
+`legal_modals.dart`'ı; ve `metin.md`'nin harfiyen *"Reklam yok, uygulama
+içi satın alma yok"* diyen tam açıklaması. Abonelik ayrıca Play Billing +
+merchant kurulumu ister.
 
 ---
 
