@@ -126,7 +126,18 @@ yok — deploy bekleniyor demektir.
   ve dışarıdan "sebepsiz iptal" gibi göründü. Bir iptali açıklarken
   koşunun `run_attempt` alanına da bak: 1'den büyükse birileri yeniden
   başlatmış demektir.
-- Siteyi ben açıp bakamam. **Ekran görüntüsü tek enstrümandır** — derleme
+- **DÜZELTME (25 Ağustos 2026, ölçüldü): WEB yüzeyini açıp okuyabiliyorum.**
+  Yukarıdaki "`curl`/`bash` siteye çıkamıyor" doğru, ama `WebFetch` ARACI
+  `https://kelimeki.com`'a ulaşıyor — o gün `/.well-known/assetlinks.json`
+  (henüz yayında değildi → SPA kabuğu) ve `/gizlilik/` (statik sayfa, doğru
+  başlıkla) ayrı ayrı okundu, yani araç hangi sayfanın servis edildiğini
+  ayırt edebiliyor. **Sınırı:** içerik küçük bir modelle markdown'a
+  çevriliyor — "doğru şey mi yayında" sorusunu cevaplar, `Content-Type`/
+  başlık/bayt ölçümü YAPMAZ. Bir web düzeltmesinin canlıda olduğunu
+  söylemeden önce artık kullanıcıdan ekran görüntüsü beklemek yerine
+  doğrudan bakılabilir. **Flutter/Pages tarafı için bu KANITLANMADI.**
+- Siteyi ben açıp bakamam (yalnızca yukarıdaki istisna dışında).
+  **Ekran görüntüsü tek enstrümandır** — derleme
   kimliğinin ürüne gömülmesinin asıl gerekçesi budur.
 
 ### Merge sonrası dal hijyeni (bugünün ikinci hatası)

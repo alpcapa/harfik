@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.kelimeki.kelimeki",
+      "sha256_cert_fingerprints": [
+        "B4:88:80:09:93:79:D4:3B:BD:BC:D1:AF:F7:2E:05:9D:0B:35:9B:D1:78:4F:8C:0B:C4:D2:0A:FB:AF:AE:55:3E"
+      ]
+    }
+  }
+]

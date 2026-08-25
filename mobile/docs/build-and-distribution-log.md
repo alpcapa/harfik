@@ -197,7 +197,8 @@ artık `kelimeki.aab`'yi de `--clobber` ile yüklüyor (düz, oturumsuz URL);
 artefakt DURUYOR. Yayınlanan `.aab` bir sır taşımıyor: aynı koddan derlenen
 `.apk` zaten herkese açık ve upload anahtarı pakete girmiyor — yalnızca imza
 girer. Adım PR'da bilerek atlandığından (bkz. "YAYINLAMA") kanıt merge
-sonrası ilk `main` koşusunda okunur.
+sonrası ilk `main` koşusunda okundu: **25 Ağustos 2026, koşu 349, sha
+`5eddf3d` — `kelimeki.aab` release'te, 60.929.323 bayt, `versionCode` 349.**
 
 **İlk `.aab` yüklemesinde OKUNACAK iki şey — 24 Ağustos 2026'da PAKETTEN
 ölçüldü, ikisi de temiz:** `targetSdk` **36**, izinler **3 adet**
@@ -228,6 +229,12 @@ girmek zorunda** — bu ortamdan GitHub ayarlarına yazma yolu yok.
    doğrulaması Play Console → App integrity'deki "app signing key"
    parmak izini ister. Yanlışını yazmak hata VERMEZ — linkler sessizce
    tarayıcıda açılır (bkz. `ROADMAP.md` 1. madde).
+   **ÇÖZÜLDÜ (25 Ağustos 2026):** ilk `.aab` yüklendikten sonra Play'in
+   ürettiği parmak izi Console'dan okundu (`B4:88:80:09…`) ve
+   `public/.well-known/assetlinks.json` yazıldı — yukarıdaki upload
+   anahtarı (`B6:CD:FB:A9…`) dosyaya GİRMEDİ, bir duman testi bunu
+   sürekli kontrol ediyor. Console'daki yol, iki anahtarlı ekran ve
+   ölçümler: `marketing/play-store/console-formlari.md` → §6.6.
 
 ## Karşılama Katmanı (web) — bilinçli ayrışma (18 Ağustos 2026, 19'unda güncellendi)
 

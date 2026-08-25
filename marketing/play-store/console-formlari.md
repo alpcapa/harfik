@@ -45,12 +45,29 @@ Play Console → **All apps** → **Create app**.
 | App name | `Kelimeki: Türkçe Kelime Oyunu` |
 | Default language | **Türkçe (tr-TR)** |
 | App or game | **Game** (Oyun) |
-| Free or paid | **Free** — bir daha ücretliye çevrilemez, ama biz zaten ücretsiziz |
+| Free or paid | **Free** — bir daha ücretliye çevrilemez (aşağı bkz.) |
 | Declarations | Developer Program Policies ✓ · US export laws ✓ |
 
 **Uyarı:** `App name` burada girilen değer mağaza vitrinindekiyle aynı olmak
 zorunda değil ama karışıklık çıkarmasın — ikisine de aynı 29 karakterli adı
 gir.
+
+**"Free" seçimi para kazanmayı KİLİTLEMİYOR** (25 Ağustos 2026'da soruldu,
+cevabı buraya yazılıyor çünkü tekrar sorulacak). Play'deki `Free/Paid`
+ayrımı yalnızca **indirmenin kendisi ücretli mi** demek. Uygulama içi satın
+alma ve abonelik bundan bağımsız: reklam göstermek, reklamsız abonelik
+satmak, tek seferlik satın alma — üçü de "Free" uygulamada mümkün.
+Kilitlenen tek şey önden indirme ücreti almak, ki bir Türkçe kelime oyunu
+için edinimi öldüren model zaten o.
+
+⚠ **Ama reklam eklenirse BEYAN ZİNCİRİ değişir** — ve beyan ile gerçeğin
+ayrışması askıya alma sebebi. Aynı anda güncellenecekler: App content →
+**Ads** ve **Advertising ID**; **Data safety** (reklam SDK'ları cihaz
+kimliği topluyor ve çoğu üçüncü tarafa aktarıyor → birkaç satır
+"Paylaşılıyor: EVET"e döner); `LegalContent.tsx` + portun
+`legal_modals.dart`'ı; ve `metin.md`'nin harfiyen *"Reklam yok, uygulama
+içi satın alma yok"* diyen tam açıklaması. Abonelik ayrıca Play Billing +
+merchant kurulumu ister.
 
 ---
 
@@ -62,6 +79,8 @@ Her `main` derlemesi imzalı paketi **iki yere** bırakıyor:
   `https://github.com/alpcapa/kelimeki/releases/download/mobile-latest/kelimeki.aab`
   — oturum istemez, zip değildir. (24 Ağustos 2026'da eklendi; öncesinde
   `.aab` YALNIZCA artefakt olarak vardı, yani giriş + zip açma gerekiyordu.)
+  **DOĞRULANDI (25 Ağustos 2026):** dosya release'te, 60.929.323 bayt,
+  koşu **349** (sha `5eddf3d`) — yani zincir uçtan uca çalışıyor.
 - Actions → koşu → `kelimeki-aab` artefaktı (zip, oturum ister) — CI içi kanıt.
 
 **versionCode = GitHub koşu numarası.** Play aynı `versionCode`'u iki kez
@@ -69,6 +88,10 @@ kabul etmiyor; her yeni `main` derlemesi yeni bir numara alıyor, yani
 yükleme reddedilirse "aynı sürüm" değil başka bir sebep aranmalı.
 `versionName` = `1.0.0` (`pubspec.yaml` + `env.dart`, parite testiyle
 zorlanıyor).
+
+**Şu an release'te duran paket: `versionCode` 349.** Bu sayı `main`e giren
+her mobil derlemede artıyor — yükleme günü tazeyse Actions → son `main`
+koşusunun numarasına bak, release notuna onu yaz.
 
 ⚠ **iPadOS'ta dosya seçici tuzağı:** Appetize'ın yükleyicisi `.apk`yı iOS
 UTI'yi tanımadığı için soluk gösteriyordu (`build-and-distribution-log.md`).
@@ -152,9 +175,24 @@ E-posta: *(iletişim e-postası, §4)* · Kategori: **Game**.
 | Dijital ürün satın alma | Hayır |
 | Kısıtlanmamış internet erişimi (tarayıcı) | Hayır |
 
-Beklenen sonuç: en düşük yaş bandı + **"Users Interact"** etiketi. Sohbetin
-beyan edilmemesi askıya alma sebebi — `chat-moderation.md`'deki sessize alma
-/ şikayet / dondurma mekanizması bu beyanın karşılığı.
+**Ek sorular (25 Ağustos 2026'da Console'da çıktı, cevaplarıyla):**
+
+| Soru | Cevap | Gerekçe |
+|---|---|---|
+| Kullanıcı engelleme / içerik gizleme var mı | **Yes** | Canlı oyunda sessize alma — o kişinin mesajları sana görünmüyor |
+| Şikayet etme var mı | **Yes** | Şikayet nedeniyle birlikte yönetici ekibine gidiyor |
+| **Chat moderation var mı** | **NO** | ⚠ Bilinçli. Kullanım Koşulları harfiyen *"mesajlar önceden denetlenmez (moderasyona tabi değildir)"* diyor: ön filtre yok, küfür süzgeci yok, moderatör kadrosu yok — yalnızca TEPKİSEL inceleme. "Evet" demek kendi yayınlanmış koşullarımızla çelişirdi |
+| Etkileşimler davet edilen arkadaşlarla sınırlanabiliyor mu | **Yes** | Ölçüldü: `LiveGameCreateForm` rakibi arkadaş listesinden seçtiriyor; rastgele eşleşme/halka açık oyun YOK, ne web'de ne portta |
+| Konum diğer kullanıcılarla paylaşılıyor mu | **No** | Konum hiç toplanmıyor |
+| Nazi sembolleri | **No** | — |
+
+**SONUÇ (25 Ağustos 2026): en düşük yaş bandı — PEGI 3, USK 0, ESRB
+Everyone, IARC 3+.** `ROADMAP.md` "sohbet yaş derecesini yükseltir" diye
+öngörmüştü; **ölçüm bunu doğrulamadı.** Sohbet dürüstçe beyan edildi ve
+derece yine de düşük kaldı — çünkü sohbete ancak kabul edilen arkadaş
+girebiliyor ve kullanıcı sessize alıp şikayet edebiliyor. İlk üç sorunun
+cevabı burada işe yaradı. Sohbetin beyan edilmemesi ise askıya alma sebebi
+olurdu — `chat-moderation.md`'deki mekanizma bu beyanın karşılığı.
 
 ### 3.6 Target audience and content
 - Yaş grupları: **13-15, 16-17, 18+** (yani 13+).
@@ -208,7 +246,25 @@ reklam ağı, veri satışı — geçilirse "Paylaşılıyor" EVET olur.
 | Device or other IDs → **Device or other IDs** | `anon_id` — cihazda üretilen rastgele kod, hesapla EŞLEŞTİRİLMEZ | Zorunlu | Analytics | `visitTracking` |
 
 **Hiçbir satırda "processed ephemerally" YOK** — hepsi kalıcı olarak
-saklanıyor.
+saklanıyor. ⚠ Bu bir KUTUCUK değil, radyo çifti: "No, this collected data
+is not processed ephemerally" açıkça SEÇİLMELİ, boş bırakılamaz.
+
+**Formun sorduğu iki ek soru (25 Ağustos 2026):**
+
+- **"Hangi hesap oluşturma yöntemlerini destekliyorsun?"** → yalnızca
+  **`Username and password`**. Koddan doğrulandı (`auth_service.dart`):
+  `signUp(email, password)` / `signInWithPassword`; OAuth yok, sosyal giriş
+  yok, 2FA yok. Play'in kendi açıklaması e-postayı "username" sayıyor.
+- **"Hesabı silmeden verinin bir kısmının silinmesini talep etme yolu
+  sunuyor musun?" (Optional)** → **`No`**. `/hesap-silme/` yalnızca TAM
+  hesap silmeyi anlatıyor; kısmi silme için ayrı bir mekanizma yok.
+  Politikanın KVKK m.11 bölümü hakkı veriyor ve talep gelse yapardık, ama
+  Play burada bir HAK değil sunulan bir YOL soruyor — "Yes" deyip
+  incelemecinin karşısına genel bir geri bildirim formu çıkarmak beyanı
+  abartmak olurdu. Alan zaten opsiyonel, bedeli sıfır.
+  **İleride ucuza "Yes"e çevrilebilir:** `/hesap-silme/`'ye "yalnızca
+  belirli verilerimin silinmesini istiyorum" bölümü eklemek yeterli — ve
+  ROADMAP madde 2 (uygulama içi hesap silme) zaten o sayfaya dokunacak.
 
 **Beyan EDİLMEYENLER (ve neden):**
 - Konum — hiç toplanmıyor.
@@ -232,6 +288,15 @@ uygulama adı (29/30) · kısa açıklama (79/80) · tam açıklama (1906/4000) 
 ikon `store-icon-512.png` · öne çıkan görsel `feature-graphic.png` ·
 **telefon ekran görüntüleri** (7 kare, 1080×2072, sende).
 
+**AI asset declaration → `Don't label assets`** (25 Ağustos 2026'da soruldu).
+Alan, mağaza görsellerinin ÜRETKEN yapay zeka ile oluşturulup
+oluşturulmadığını soruyor. Bizde hiçbiri öyle değil: ikon ve öne çıkan
+görsel `npm run generate-play-assets` ile üretiliyor — betik uygulamanın
+KENDİ üretim React bileşenlerini sunucuda render edip PNG'ye çeviriyor,
+yani deterministik kod çıktısı; logo statik SVG path; ekran görüntüleri
+gerçek cihazdan. **Yeni bir mağaza görseli üretken bir modelle
+yapılırsa bu cevap değişmeli.**
+
 **Store settings:**
 
 | Alan | Değer |
@@ -254,8 +319,8 @@ kanalı aç → **Create new release**.
    yüklemede çıkıyor). ⛔ **KAYDOL.** Kaydolmazsan upload keystore'unun
    kaybı = uygulamanın bir daha asla güncellenememesi.
 2. `kelimeki.aab`'yi yükle (§2).
-3. Release name: `1.0.0 (<koşu numarası>)` · Release notes: kısa bir
-   "ilk kapalı test" notu.
+3. Release name: `1.0.0 (<koşu numarası>)` — bugün **`1.0.0 (349)`** ·
+   Release notes: kısa bir "ilk kapalı test" notu.
 4. **Ülkeler: TÜMÜ.** Türkçe bir oyun için Türkiye yeter gibi görünüyor ama
    Play hesabının ülkesi Türkiye olmayan bir tester **kuramaz** ve sayıya
    girmez; kısıtlamanın kazancı yok, riski var.
@@ -289,12 +354,125 @@ geri gelir.
 |---|---|
 | `minSdkVersion` | 24 (Android 7.0) |
 | `targetSdkVersion` | 36 |
-| İzinler | `INTERNET` · `ACCESS_NETWORK_STATE` · `com.kelimeki.kelimeki.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` (AndroidX'in iç izni, kullanıcıya görünmez) |
+| İzinler | **4 adet** — `INTERNET` · `ACCESS_NETWORK_STATE` · `com.android.vending.CHECK_LICENSE` · `com.kelimeki.kelimeki.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` |
 
 `image_picker` **hiçbir izin eklemiyor** → Data safety'de medya/depolama
 beyanı yok, "Photo and video permissions" bildirimi de gerekmiyor.
 
+⚠ **DÜZELTME (25 Ağustos 2026, Play Console'un paket ayrıntısından okundu):**
+bu bölüm önce **3 izin** diyordu; Play **4** gösteriyor. Fark
+`com.android.vending.CHECK_LICENSE` — yayınlanmış `.apk`'da (sha `18689eb`)
+yoktu, Play'in işlediği `.aab`'de (349 / `5eddf3d`) var. **Beyanı
+DEĞİŞTİRMİYOR:** çalışma zamanı izni değil (kullanıcıya sorulmaz), kendi
+başına veri toplamaz, medya/depolama/konum/kamera sınıfından değil —
+uygulamanın Play'e "bu kopya meşru mu" diye sormasını sağlayan lisans
+doğrulama kanalı. Kaynağı kesin belirlenmedi; iki makul aday, yükleme
+ekranındaki **"Automatic protection"** eklentisi (lisans kontrolü kullanıyor,
+`.apk`'da olmayıp `.aab`'de olmasını en iyi bu açıklıyor) ve Flutter'ın
+Android gömme katmanındaki Play Core. Ayırt etmenin pratik faydası yok.
+
+**Ders:** paket gerçeklerini yayınlanmış `.apk`'dan ölçmek `.aab`'nin
+tamamını kanıtlamıyor — Play, bundle'ı işlerken manifeste ekleme yapabiliyor.
+Bir sonraki sürümde de izin listesini **Console'un paket ayrıntısından**
+oku.
+
 ---
+
+## 6.5 — Console'da BİTENLER (25 Ağustos 2026)
+
+| Adım | Durum |
+|---|---|
+| Android developer verification | ✅ (kayıt sırasında tamamlanmış) |
+| Uygulama oluşturuldu | ✅ Game · Free · tr-TR |
+| `.aab` yüklendi | ✅ 349 (1.0.0) · Play App Signing'e KAYDOLUNDU |
+| Store listing (metin + ikon + feature graphic + 7 ekran görüntüsü) | ✅ |
+| App content: privacy policy, ads, advertising ID, news, COVID, government, financial, health | ✅ hepsi |
+| App access | ✅ T2, "tam erişim" kutusu işaretli |
+| Content ratings (IARC) | ✅ en düşük bant |
+| Target audience | ✅ 13-15 / 16-17 / 18+ |
+| Data safety | ✅ 11 veri türü |
+| Store settings (kategori + iletişim) | ✅ Games→Word · `destek@kelimeki.com` |
+| Countries/regions | ✅ tümü |
+| Tester listesi | ✅ `Kelimeki Testers` |
+| Feedback URL | ✅ `destek@kelimeki.com` |
+| **Preview and confirm → Send for review** | ✅ **GÖNDERİLDİ — 25 Ağustos 2026, "Your changes are in review"** |
+
+**Son engel `Advertising ID` beyanıydı** — sekiz kısa beyandan biri atlanmıştı
+ve "send for review"u bloklamıştı (*"All developers targeting Android 13 or
+later are required to let us know if their app uses advertising ID"*).
+Cevap `No`; paketin izin listesinde `AD_ID` olmadığı Console'un kendi paket
+ayrıntısından zaten okunmuştu.
+
+---
+
+## 6.6 — Play App Signing SHA-256 → `assetlinks.json` (25 Ağustos 2026)
+
+**Console'da nerede:** Test and release → **App integrity** → *Play app
+signing* sekmesi. (Menüde "App integrity" bir süredir *Release* başlığının
+altına taşındı; eski "Setup → App integrity" yolu artık yok — kullanıcı bu
+yüzden ilk aramada bulamadı.)
+
+Sayfa **İKİ** SHA-256 gösteriyor: **Classical key** ve **Post-quantum key**.
+Android App Links doğrulaması bugün **Classical** olanı okur — dosyaya giren
+o. Alan (`sha256_cert_fingerprints`) bir DİZİ olduğundan, ileride doğrulama
+düşerse post-quantum parmak izi ikinci eleman olarak eklenebilir; bugün
+gereksiz.
+
+| Anahtar | SHA-256 başı | Nerede kullanılır |
+|---|---|---|
+| **Play app signing** (Google üretti) | `B4:88:80:09…` | ✅ `assetlinks.json` |
+| **Upload key** (bizim keystore) | `B6:CD:FB:A9…` | ❌ Yalnızca karşılaştırma; dosyaya ASLA girmez |
+
+**Dosya:** `public/.well-known/assetlinks.json`. `package_name`
+`com.kelimeki.kelimeki` — `mobile/app/android/app/build.gradle.kts`'teki
+`applicationId`'nin AYNISI olmak zorunda.
+
+### ⚠ Ölçülen tuzak: yakalayıcı rewrite statik yolu yutabilirdi
+
+`vercel.json`'da `{"source": "/(.*)", "destination": "/index.html"}` var —
+`/gizlilik/`'te tam bu sınıf hata yaşanmıştı (bkz.
+`docs/decisions/legal-pages.md`). Bu yüzden dosya yazıldıktan sonra
+servis edilme yolu **ölçüldü, varsayılmadı**:
+
+1. `npm run build` → `dist/.well-known/assetlinks.json` gerçekten üretiliyor
+   (Vite nokta ile başlayan `public/` klasörünü de kopyalıyor — bu
+   doğrulanmadan bilinmiyordu).
+2. `vite preview` → `Content-Type: application/json`, 200, gövde doğru
+   (SPA kabuğu DEĞİL). Vercel de `rewrites`'ı dosya sistemi kontrolünden
+   SONRA uyguluyor; `/gizlilik/` üretimde zaten bu şekilde çalışıyor.
+3. Service worker'a dokunmak GEREKMEDİ: `navigateFallback` yalnızca
+   *navigation* isteklerini yakalıyor, bu bir JSON `fetch`'i — üstelik
+   doğrulamayı yapan Android platformunun kendisi, tarayıcı değil.
+   Precache listesinde de yok (`dist/sw.js`'te arandı, sıfır sonuç).
+
+### Regresyon
+
+`tests/smoke.spec.ts` 30 → **31 test**: dosya 200 + `application/json`
+dönüyor, `package_name` `build.gradle.kts`'ten OKUNARAK karşılaştırılıyor
+(elle senkron bırakılmadı), Play parmak izi mevcut ve **upload anahtarıyla
+başlayan hiçbir parmak izi yok**. **Negatif eş ikisi de ölçüldü:** parmak
+izi upload anahtarıyla değiştirilince test düşüyor; dosya silinince gelen
+yanıt `text/html` (yani yakalayıcı rewrite gerçekten SPA kabuğunu
+döndürüyor) ve test yine düşüyor.
+
+**Anahtar değişirse** (Play'de key rotation ya da yeni bir uygulama):
+Console'daki bu sayfadan yeni parmak izini oku, dosyadaki değeri değiştir,
+testteki sabiti de aynı PR'da güncelle — test bilerek sabiti içeriyor ki
+sessiz bir sapma mümkün olmasın.
+
+**YAYINLANDI — 25 Ağustos 2026.** Submission 1 (*Closed testing - Alpha,
+Store Listing, App Content, Advanced distribution, Store settings*) durumu
+**Published**. Kapalı test kanalı canlıda ve opt-in linki oluştu
+(Closed testing → Alpha → Testers → "How testers join your test").
+
+**Sayaç HENÜZ başlamadı:** 12 kişi opt-in olana kadar işlemiyor. Tester
+listesinde 9 adres var.
+
+**App access'teki "tam erişim" kutusu ÖLÇÜLEREK işaretlendi:** ücretli/
+premium içerik yok, ve **Android uygulamasında yönetici paneli YOK** —
+`isAdmin` portta yalnızca `auth_service.dart`'ta ayrıştırılıyor,
+`lib/src/ui/` altında hiçbir ekranı kilitlemiyor. Panel web'de yaşıyor,
+Play'e giden pakette değil.
 
 ## 7. 12 tester + 14 gün
 
@@ -304,10 +482,14 @@ Sayaç "yükledim" ile değil, **12 kişi opt-in olduğunda** işlemeye başlıy
 | Tuzak | Ne yapmalı |
 |---|---|
 | Listeye eklemek YETMEZ | Her tester **opt-in bağlantısına tıklayıp kabul etmeli** |
+| **Google tester'lara MAİL ATMIYOR** | Listeye eklemek yalnızca yetkilendiriyor; daveti geliştirici kendi kanalından gönderir |
+| **Linke tıklayan otomatik katılmaz** | Liste bir izin listesi. Listede olmayan biri linkte "bu test sana açık değil" görür. Sıra: adresi al → listeye ekle → linki gönder |
+| Adres, kişinin TELEFONUNDAKİ Play hesabı olmalı | En sık aksaklık: iş adresi verilir, telefonda başka Gmail açıktır. Sorulacak soru "hangi adresi istersin" değil, "telefonunda hangi hesap açık" |
 | Biri çıkarsa sayaç kırılır | **15-20 kişi topla**, 12 tabandır |
 | Adresler Google hesabı olmalı | Gmail ya da Google'a bağlı bir adres; şirket/okul adresi olabilir ama Play hesabı olmalı |
 | Cihazdaki eski CI `.apk` | **Tester'lar için sorun değil** — kimseye `.apk` gönderilmedi (§5). Yalnızca geliştirme cihazında var |
 | Production başvurusu geri bildirim soruyor | Tester'lardan **yazılı geri bildirim topla** — başvuruda "nasıl test ettirdin" sorusu var |
+| **Play'den kuran testerda `kelimeki.com` linkleri UYGULAMAYI açar** | 25 Ağustos 2026'dan beri beklenen davranış (`assetlinks.json` yayında, §6.6). Tarayıcıda açmak isteyen Ayarlar → Uygulamalar → Kelimeki → *Varsayılan olarak aç*'tan kapatabilir. CI `.apk`'sında GEÇERSİZ — o derleme farklı anahtarla imzalı |
 
 **Tester'a gönderilecek metin (taslak):**
 
@@ -334,41 +516,195 @@ proje bugüne kadar tam bundan kaçınmak için `noreply@kelimeki.com` kullandı
 (bkz. kök `CLAUDE.md` → Brevo sender kurulumu). Bu yüzden hedef **gerçek
 posta kutusu**: hem alan hem `destek@`'dan cevap yazabilen.
 
-### ⛔ Kurulumdan önce — SPF tuzağı
+### DNS'in ÖLÇÜLEN hâli (25 Ağustos 2026, GoDaddy panelinden okundu)
 
-**Bir domainde SPF kaydı YALNIZCA BİR TANE olabilir.** `kelimeki.com`'da 20
-Temmuz 2026'da Brevo için girilmiş bir tane var. Kuracağın mail servisi
-"şu SPF kaydını ekle" diyecek — **ikinci bir TXT eklersen SPF `PermError`
-verir** ve o gün çözülen teslimat sorunu (kayıt onayı mailleri spam'e
-düşüyordu) aynen geri gelir. Doğrusu, yeni `include:`i **mevcut kaydın
-içine** yazmak:
+**14 kaydın tamamı sayıldı. İki beklenen kayıt YOK: `SPF` ve `MX`.**
+
+| Ne | Durum | Kayıt |
+|---|---|---|
+| DKIM (Brevo) | ✅ | `brevo1._domainkey` / `brevo2._domainkey` → `b1/b2.kelimeki-com.dkim.brevo.com` (CNAME) |
+| DMARC | ✅ | `_dmarc` TXT → `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com` |
+| Brevo domain doğrulaması | ✅ | `@` TXT → `brevo-code:8d3dc…` |
+| Brevo izleme/return-path | ✅ | `mail`, `r.mail`, `img.mail` CNAME → `*.brevosend.com` |
+| Search Console | ✅ | `@` TXT → `google-site-verification=…` |
+| Vercel | ✅ | `A @ 216.198.79.1`, `www` CNAME → `*.vercel-dns-017.com` |
+| **SPF** | ❌ **YOK** | — |
+| **MX** | ❌ **YOK** | — |
+
+⚠ **Kök `CLAUDE.md` bu konuda YANILTICIYDI** ve düzeltildi: 20 Temmuz 2026
+notu *"verilen SPF/DKIM/DMARC DNS kayıtları domain'in DNS'ine girildi"*
+diyor; DNS'in kendisi SPF'in hiç girilmediğini söylüyor. Bu cümleye
+dayanarak bu dosya üç tur boyunca var olmayan bir kaydı "birleştirmek"
+üzerine uyarı yazdı — **kaydı okumadan kayda güvenmenin bedeli.**
+
+**Brevo neden yine de çalışıyor:** DMARC, SPF **veya** DKIM'den biri
+hizalanırsa geçer. DKIM kurulu ve `kelimeki.com` adına imzalıyor → geçiyor.
+Brevo'nun zarf adresi (Return-Path) kendi domaininde olduğundan kök SPF'e
+zaten bakılmıyor — `mail`/`r.mail` CNAME'lerinin `brevosend.com`'a gitmesinin
+sebebi bu.
+
+### Kuruluma etkisi
+
+1. **MX boş** → Zoho'ya çevirirken yerinden edilecek bir şey yok. Aynı
+   zamanda `destek@kelimeki.com`'un bugün gerçekten hiçbir şey almadığının
+   (mailin bounce ettiğinin) kanıtı.
+2. **SPF birleştirilmeyecek, İLK KEZ oluşturulacak.** Brevo'yu da içine
+   koy — bugün gerekmiyor ama return-path yapılandırması değişirse ya da
+   biri Brevo SMTP'sinden `@kelimeki.com` zarfıyla gönderirse bedava
+   sigorta:
+   ```
+   v=spf1 include:spf.brevo.com include:<zoho'nun verdiği> ~all
+   ```
+   `~all`, `-all` DEĞİL — bilinmeyen bir gönderici sert reddedilmesin.
+   **Kural yine de geçerli: TEK bir SPF kaydı.** İkinci bir TXT açılırsa
+   `PermError` olur ve o noktadan sonra hiçbir SPF kontrolü geçmez.
+3. **DKIM çakışmaz** — Zoho kendi selector'ını ekler, `brevo1/2` yerinde
+   kalır.
+4. **DMARC'a dokunulmaz.** `p=none` (izleme modu) olduğu için geçiş
+   sırasında bir şey kırılsa bile mailler reddedilmez — rahat bir zemin.
+5. ⚠ **`mail` adlı bir CNAME ZATEN VAR** (Brevo'nun). Zoho kurulumu `mail`
+   adlı bir kayıt isterse çakışır; o durumda Zoho'nun alternatif adı
+   kullanılacak.
+
+### KURULDU — as-built (25 Ağustos 2026)
+
+**Sağlayıcı: Zoho Mail, AVRUPA veri merkezi** (`mailadmin.zoho.eu`). Veri
+merkezi seçimi MX ve SPF değerlerini belirliyor — `.com` sürümünün değerleri
+BU KURULUMDA GEÇERSİZ.
+
+**Hesap:** tek kullanıcı = `destek@kelimeki.com` (Super Administrator).
+Koltuk sayısı 1 olduğundan başka bir adres kullanıcı olarak açılmadı.
+
+**GoDaddy'ye eklenen kayıtlar:**
+
+| Tip | Ad | Değer | Öncelik |
+|---|---|---|---|
+| TXT | `@` | `zoho-verification=zb36282039.zmverify.zoho.eu` | — |
+| MX | `@` | `mx.zoho.eu` | 10 |
+| MX | `@` | `mx2.zoho.eu` | 20 |
+| MX | `@` | `mx3.zoho.eu` | 50 |
+| TXT | `@` | `v=spf1 include:zohomail.eu include:spf.brevo.com ~all` | — |
+| TXT | `zmail._domainkey` | Zoho'nun ürettiği DKIM anahtarı | — |
+
+⚠ **SPF satırı Zoho'nun önerdiğinden FARKLI.** Zoho `v=spf1
+include:zohomail.eu ~all` diyordu; Brevo'nun include'u elle eklendi. Sebebi
+§ başındaki ölçüm: domainde SPF hiç yoktu, yani bu kayıt ilk kez
+oluşturuluyordu ve **tek** olabileceğinden Brevo baştan içine alınmalıydı.
+Bu satırı bir daha düzenleyen olursa `include:spf.brevo.com`'u silmesin.
+
+**`noreply@kelimeki.com` — alias DEĞİL, GRUP.** Zoho'nun alias ekranı
+bulunamadı; aynı sonucu veren Group özelliği kullanıldı: `noreply@` adında
+bir grup, tek üyesi `destek@`. ⚠ **"Who can send emails to the group?" =
+`Everyone`** — varsayılan `Organization Members` bizim yakalamak istediğimiz
+maillerin TAMAMINI (dış adreslerden gelen kullanıcı cevapları) reddederdi.
+Streams kapalı, moderatör yok. Gruplar kullanıcı koltuğu harcamıyor.
+
+**Gönderen adı — ÖLÇÜLDÜ, ilk deneme işe yaramadı.**
+`accounts.zoho.eu` → Profile → **Display Name** alanı `Kelimeki Destek`
+yapıldı ama giden mailin `From` başlığına YANSIMADI (Gmail'de ham başlıkla
+doğrulandı: hâlâ tam ad görünüyordu). Çözüm: yönetim konsolundaki kullanıcı
+**First/Last Name** alanları değiştirildi. Zoho'nun hesap kurtarması
+e-posta/telefon/MFA üzerinden çalıştığından isim alanını markaya çevirmenin
+maliyeti yok.
+
+**Ölçüm tuzağı (bir tur kaybettirdi):** ilk test maili iPad'in Mail
+uygulamasına atıldı ve gönderen adı yanlış göründü — ama Apple Mail,
+adresi Kişiler'de bulursa `From` başlığındaki adı DEĞİL kişi kartındaki adı
+gösteriyor. **Gönderen adı/kimlik doğrulaması yalnızca ham başlıktan
+okunur:** Gmail → "Orijinali göster".
+
+### "Brevo zaten var, neden onunla almıyoruz?" (25 Ağustos 2026)
+
+Soruldu, cevabı kayda geçiyor çünkü tekrar sorulacak. **Brevo'nun alma
+özelliği VAR** — *Inbound Parsing* — ama verdiği şey posta kutusu değil bir
+**webhook**: MX'i Brevo'ya çevirirsin, gelen mail ayrıştırılıp verdiğin
+URL'e JSON olarak POST edilir. Açıp okuyacağın kutu, "Yanıtla" düğmesi,
+spam filtresi yok.
+
+Brevo bugün bizde **yalnızca gönderiyor** (Auth SMTP + `feedback-reply` /
+`admin-send-message` Transactional API). Göndermek MX istemez, almak ister —
+eksik parça bu. Karar zaten 26 Temmuz 2026'da alınmıştı (kök `CLAUDE.md`,
+"hafif çözüm"): gerçek kutu = Inbound Parsing + subdomain/MX + çok mesajlı
+şema, ve bilerek ertelendi.
+
+**Uzun vadede doğru cevap yine bu** — altyapının yarısı duruyor
+(`feedback.origin`, `feedback.related_to`, admin paneli, `feedback-reply`),
+ve tam olarak `CLAUDE.md`'nin "hâlâ çözülmeyen kısım" dediği şeyi kapatır:
+kullanıcı mailde **Yanıtla**'ya basınca cevap bugün `noreply@`'a gidip
+kayboluyor. **Ama bugünün işi değil, dört sebeple:**
+
+1. **Sessizce kaybeden boru.** Webhook patlarsa mail buharlaşır; kutuda
+   dursa dururdu. Ham gövdeyi önce saklayıp sonra ayrıştırmak gerekir.
+2. **Spam.** `destek@` Play vitrininde herkese açık olacak. Kutu sağlayıcısı
+   filtreler; Brevo her şeyi verir ve admin paneline düşer.
+3. **Güvenlik.** Webhook `verify_jwt:false` olmak zorunda (Brevo JWT
+   taşımaz) → paylaşılan bir sır/gizli yol olmadan herkes panele sahte
+   "görüş" POST edebilir. Tasarlanması gereken gerçek bir iş.
+4. **MX tekil.** `kelimeki.com`'un MX'i tek yere bakar; Brevo alırsa o
+   domainde bir daha normal kutu açılamaz.
+
+**Sıra bu yüzden ters kurulmayacak:** önce gerçek kutu (MX → Zoho), sonra
+istenirse kutudan bir subdomain'deki Brevo inbound adresine kopya
+yönlendirilir — hiçbir şey kaybedilmez. Tersi tek yönlü.
+
+**Kutu açılınca bedava kazanç:** `_shared/email.ts`'teki `KELIMEKI_SENDER`
+`noreply@` yerine `destek@` olur (sabit değişikliği + Brevo'da sender
+doğrulaması). O anda kullanıcının "Yanıtla"sı gerçek bir kutuya gider ve
+`buildNoreplyNoticeHtml`'in "cevap için tıklayın" numarasının varlık sebebi
+büyük ölçüde kalkar.
+
+### DNS: **GoDaddy** (25 Ağustos 2026)
+
+Domain GoDaddy'de kayıtlı ve DNS de orada yönetiliyor — Temmuz'daki Brevo
+SPF/DKIM/DMARC kayıtları oraya girilmişti. Panel:
+**Ürünlerim → `kelimeki.com` → DNS → DNS Kayıtlarını Yönet**
+(*My Products → Domains → Manage DNS*).
+
+**Bu bir seçeneği ELEDİ:** Cloudflare Email Routing (ücretsiz, alma
+tarafında en temiz çözüm) nameserver'ların Cloudflare'e taşınmasını
+gerektiriyor — canlı bir sitenin NS'ini taşımanın riski, kazandırdığından
+büyük. Geriye gerçek kutu için **Zoho Mail** (ücretsiz katman), yalnızca
+yönlendirme için **ImprovMX** kalıyor. GoDaddy'nin kendi paketine dahil bir
+e-posta yönlendirmesi varsa üçüncü tarafa hiç gerek kalmaz — panelde
+kontrol edilecek.
+
+**Canlı kayıtlar okunurken GoDaddy panelindeki üç satır:** `@` adlı ve
+`v=spf1` ile başlayan `TXT` (birleştirilecek olan), varsa `MX` kayıtları
+(iki sağlayıcı bir arada olmaz, mevcut varsa değişecek) ve `_dmarc` `TXT`
+(dokunulmayacak, kurulum sonrası yerinde olduğu doğrulanacak). DKIM
+kayıtları (`..._domainkey`) sorun değil — her sağlayıcı kendi selector'ında
+durur.
+
+### Testler
+
+| | Ne | Sonuç |
+|---|---|---|
+| A | Dış adresten `destek@`'a mail | ✅ geldi |
+| B | Dış adresten `noreply@`'a mail (grup) | ✅ aynı kutuya düştü |
+| C | `destek@`'tan dışarı mail + gönderen adı | ✅ gidiyor; ad düzeltildikten sonra `Kelimeki Destek` |
+| D | **Brevo regresyon** — kayıt onayı/şifre sıfırlama maili hâlâ PASS alıyor mu | ✅ **SPF PASS · DKIM PASS (`kelimeki.com`) · DMARC PASS** |
+
+**D neden önemli:** domaine bugün **ilk kez** bir SPF kaydı yazıldı.
+Öncesinde kayıt yokken Brevo'nun mailleri SPF kontrolünden nötr geçiyordu;
+artık bir kayıt var ve alıcılar ona bakacak. `include:spf.brevo.com` tam bu
+yüzden eklendi ama **ölçülmeden "doğru yaptık" denemez** — bu proje 20
+Temmuz 2026'da tam olarak bu zincir bozulduğu için bir teslimat sorunu
+yaşadı.
+
+**D nasıl okundu (25 Ağustos 2026):** `kelimeki.com`'dan bir Gmail adresine
+şifre sıfırlama istendi → Gmail → "Orijinali göster". Sonuç:
 
 ```
-v=spf1 include:spf.brevo.com include:<yeni-servis> ~all    ← TEK kayıt
+From:  Kelimeki <noreply@kelimeki.com>
+SPF:   PASS with IP 77.32.148.26
+DKIM:  'PASS' with domain kelimeki.com
+DMARC: 'PASS'
 ```
 
-**MX kayıtları yalnızca ALMAYI etkiler** — Brevo gönderirken MX'e bakmaz,
-yani `noreply@` akışı (kayıt onayı, şifre sıfırlama, davet/süre bildirimleri,
-destek yanıtı) bu kurulumdan etkilenmez. DKIM ayrı selector'larda durur,
-çakışmaz. DMARC kaydına dokunulmaz.
-
-### Adımlar (panel adları değişir, kayıtlar aynı)
-
-1. Mail servisinde domaini ekle, verdiği **doğrulama TXT**'ini gir.
-2. **MX kayıtlarını** ekle (varsa eskileri kaldır — MX'te birden fazla
-   sağlayıcı olmaz).
-3. **DKIM** TXT kaydını gir (kendi selector'ında, Brevo'nunkiyle çakışmaz).
-4. **SPF'i BİRLEŞTİR** — yukarıdaki uyarı.
-5. `destek@` kutusunu aç, kendine bir test maili at, geldiğini gör.
-6. Play Console → Store settings → iletişim e-postasına yaz.
-
-### Açık kalan
-
-- **DNS paneli hangisi?** (Temmuz'da Brevo kayıtlarını girdiğin yer.)
-  Adımlar aynı, yalnızca ekran adları değişiyor.
-- Servis seçimi: gerçek kutu için ücretsiz katmanı olan sağlayıcılar var
-  (ücretsiz katman şartları değişebiliyor, kayıt sırasında teyit et);
-  Google Workspace ücretli ama Play hesabıyla aynı ekosistem.
+Üçü de geçti — yani yeni SPF kaydı Brevo'nun zincirini KIRMADI ve
+`include:spf.brevo.com`'u eklemek doğru karardı. (Gmail'in özetinden SPF'in
+hangi domain üzerinde koştuğu okunamıyor; sonucu değiştirmediği için
+önemsiz.) Sorun sayılacak tek şey DKIM ya da DMARC'ın FAIL olmasıydı.
 
 ### ⚠ Bu iş 14 günlük sayacı BEKLETMEMELİ
 

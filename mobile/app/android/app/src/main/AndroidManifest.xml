@@ -49,11 +49,13 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
             <!-- App Links: e-posta/paylaşım linkleri (kelimeki.com) kurulu
-                 uygulamayı açsın. autoVerify'ın çalışması için sitenin
-                 /.well-known/assetlinks.json yayınlaması gerekiyor — o dosya
-                 imza parmak izi gerektirdiğinden İMZALAMA anahtarı
-                 oluşturulduğunda eklenecek (web fazı işi, mobile/CLAUDE.md).
-                 O zamana kadar bu filtre zararsızdır. -->
+                 uygulamayı açsın. autoVerify sitenin
+                 /.well-known/assetlinks.json yayınlamasını gerektiriyor;
+                 o dosya 25 Ağustos 2026'da YAYINLANDI (Play'in ürettiği imza
+                 parmak iziyle — marketing/play-store/console-formlari.md §6.6).
+                 Doğrulama YALNIZCA Play'den kurulan derlemede geçer: CI'nın
+                 debug-imzalı .apk'sı farklı bir anahtarla imzalandığından
+                 orada linkler tarayıcıda açılmaya devam eder. -->
             <intent-filter
                 android:autoVerify="true">
                 <action
