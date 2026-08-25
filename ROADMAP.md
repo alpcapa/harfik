@@ -359,10 +359,32 @@ yerler en az: `auth.users`, `profiles`, `games`, `game_likes`,
 `feedback`, `league_rewards`, `admin_ban_log`, `avatars` storage kovası.
 Bir kısmı cascade, bir kısmı değil.
 
-**Kritik karar:** silinen kişi BAŞKALARININ bitmiş oyun kayıtlarında
-(`games.players` snapshot'ı) isimle duruyor. O satırlar başka kullanıcıların
-kendi verisi — silinemez, en fazla anonimleştirilebilir. Bu kararı
-kullanıcıya sor.
+**Kritik karar — VERİLDİ (25 Ağustos 2026, kullanıcı: "Anonimleştirme
+mantıklı"):** silinen kişi BAŞKALARININ bitmiş oyun kayıtlarında isimle
+duruyor. O satırlar başka kullanıcıların kendi verisi — silinemez.
+
+| Satır | Ne yapılacak |
+|---|---|
+| Silinen kişinin **kendi** `games` satırları | **SİL** — istatistikleri de böyle gider, amaç bu |
+| **Başkalarının** satırları | **Satırı KORU, jsonb'deki adı anonimleştir** — hem `players` hem `messages` içinde |
+
+**Bu karar ölçümle desteklendi — "rakiplerin puanı uçar mı?" sorusunun
+cevabı HAYIR:** `games` oyun başına değil **oyuncu başına bir satır**
+tutuyor (canlıdan doğrulandı: 4 kişilik bir çevrimiçi oyun → 4 satır, 4
+farklı `user_id`) ve `player_stats_overall` bir VIEW olarak `FROM games g …
+GROUP BY user_id` yapıyor. Yani herkesin puanı YALNIZCA kendi satırlarından
+hesaplanıyor; silinen kişinin satırlarını silmek kimsenin skorunu
+düşürmüyor. Oyun geçmişi ekranı da bakan kişinin KENDİ satırındaki
+snapshot'ı okuduğundan liste de bozulmuyor.
+
+⚠ **Anonimleştirmede ölçülen tuzak — adı EŞLEŞTİREREK bulma.** Snapshot'ın
+alanları `name`, `score`, `colorIndex`, `is_ai`, `surrendered` — **`user_id`
+YOK** (`messages` de aynı: `name` + `message`). Ada göre eşleştirmek ad
+çakışmasında ve sonradan yapılan ad değişikliklerinde YANLIŞ kişiyi
+anonimleştirir. Doğru yol: `online_game_id` üzerinden çevrimiçi oyun
+tablolarına gidip hangi koltuğun silinen kişiye ait olduğunu bulmak. Yerel
+(YZ) oyunlar bu sorunu hiç doğurmuyor — `online_game_id` boş ve o satırlar
+zaten kişinin kendi satırları, silinip gidiyorlar.
 
 **Yöntem:** service-role bir Edge Function (`delete-my-account`) +
 çağıranın kendi JWT'si ile kimlik doğrulama. Önce **kuru çalıştırma**:
