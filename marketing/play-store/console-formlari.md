@@ -412,16 +412,34 @@ signing* sekmesi. (Menüde "App integrity" bir süredir *Release* başlığını
 altına taşındı; eski "Setup → App integrity" yolu artık yok — kullanıcı bu
 yüzden ilk aramada bulamadı.)
 
-Sayfa **İKİ** SHA-256 gösteriyor: **Classical key** ve **Post-quantum key**.
-Android App Links doğrulaması bugün **Classical** olanı okur — dosyaya giren
-o. Alan (`sha256_cert_fingerprints`) bir DİZİ olduğundan, ileride doğrulama
-düşerse post-quantum parmak izi ikinci eleman olarak eklenebilir; bugün
-gereksiz.
+### ⚠ DEĞERİ ANAHTAR TABLOSUNDAN OKUMA — sayfanın kendi ürettiği JSON'u kopyala
 
-| Anahtar | SHA-256 başı | Nerede kullanılır |
+Bu ilk turda YANLIŞ yapıldı ve canlıya yanlış parmak iziyle çıktı (aynı gün
+düzeltildi). Ders şu: App signing sayfası birkaç parmak izi gösteriyor
+(*Upload key certificate* altında MD5/SHA-1/SHA-256; imza anahtarı için
+**Classical** ve **Post-quantum** ayrı ayrı) — ve **App Links'in istediği
+değer bu tablolardan okunmaz.** Aynı sayfanın altında Google'ın kendi
+ürettiği bir **"Digital Asset Links JSON"** paneli var; metni birebir
+`assetlinks.json` olsun diye üretiliyor ("copy and paste this snippet into
+your Digital Asset Links JSON file"). **Kanonik kaynak odur; kopyala
+düğmesine bas ve dosyaya OLDUĞU GİBİ koy.**
+
+İlk turda parmak izi imza anahtarı tablosundan okundu (`B4:88:80:09…`) ve
+dosyaya o girdi; Google'ın paneli ise `2B:7D:26:11…` diyordu. İkisi neden
+farklı, Console'dan anlaşılmadı — ama tartışmaya gerek yok: doğrulamayı
+yapan taraf bu snippet'i üretiyor. **Hatanın sinsiliği kayda değer:** yanlış
+parmak izi hata VERMEZ, dosya 200 döner, testler geçer — linkler yalnızca
+sessizce tarayıcıda açılmaya devam eder. Kullanıcı Console'daki paneli
+görüp "bunlara ihtiyacım var mı?" diye sormasa fark edilmeyecekti.
+
+| Ekrandaki değer | SHA-256 başı | Nerede kullanılır |
 |---|---|---|
-| **Play app signing** (Google üretti) | `B4:88:80:09…` | ✅ `assetlinks.json` |
+| **Digital Asset Links JSON paneli** | `2B:7D:26:11…` | ✅ `assetlinks.json` — TEK doğru kaynak |
+| App signing key tablosu (Classical) | `B4:88:80:09…` | ❌ Buradan okuma (ilk turdaki hata) |
 | **Upload key** (bizim keystore) | `B6:CD:FB:A9…` | ❌ Yalnızca karşılaştırma; dosyaya ASLA girmez |
+
+`sha256_cert_fingerprints` bir DİZİ; ileride Google snippet'e ikinci bir
+parmak izi eklerse o da aynı yerden kopyalanır.
 
 **Dosya:** `public/.well-known/assetlinks.json`. `package_name`
 `com.kelimeki.kelimeki` — `mobile/app/android/app/build.gradle.kts`'teki
@@ -456,9 +474,9 @@ yanıt `text/html` (yani yakalayıcı rewrite gerçekten SPA kabuğunu
 döndürüyor) ve test yine düşüyor.
 
 **Anahtar değişirse** (Play'de key rotation ya da yeni bir uygulama):
-Console'daki bu sayfadan yeni parmak izini oku, dosyadaki değeri değiştir,
-testteki sabiti de aynı PR'da güncelle — test bilerek sabiti içeriyor ki
-sessiz bir sapma mümkün olmasın.
+Console'daki **Digital Asset Links JSON panelini** yeniden kopyala (anahtar
+tablosunu DEĞİL), dosyayı değiştir, testteki sabiti de aynı PR'da güncelle —
+test bilerek sabiti içeriyor ki sessiz bir sapma mümkün olmasın.
 
 **YAYINLANDI — 25 Ağustos 2026.** Submission 1 (*Closed testing - Alpha,
 Store Listing, App Content, Advanced distribution, Store settings*) durumu

@@ -817,7 +817,10 @@ test('/.well-known/assetlinks.json Play imza parmak iziyle statik servis ediliyo
   // tuzak var: (1) `vercel.json`'daki yakalayıcı rewrite statik yolu yutup
   // SPA kabuğunu döndürebilir (aynı sınıf hata `/gizlilik/`'te yaşandı,
   // bkz. docs/decisions/legal-pages.md); (2) parmak izi YÜKLEME anahtarının
-  // değil, Play'in ÜRETTİĞİ imza anahtarının olmalı.
+  // değil, Play'in ÜRETTİĞİ imza anahtarının olmalı — ve o değer App
+  // signing sayfasındaki anahtar tablosundan DEĞİL, aynı sayfanın
+  // "Digital Asset Links JSON" panelinden okunur (bir kez yanlış tablodan
+  // okundu, bkz. marketing/play-store/console-formlari.md §6.6).
   const yanit = await page.request.get('/.well-known/assetlinks.json');
   expect(yanit.status()).toBe(200);
   expect(yanit.headers()['content-type']).toContain('json');
@@ -837,7 +840,7 @@ test('/.well-known/assetlinks.json Play imza parmak iziyle statik servis ediliyo
 
   // Yükleme anahtarı (`B6:CD:FB:A9…`) buraya ASLA girmemeli.
   expect(hedef.sha256_cert_fingerprints).toContain(
-    'B4:88:80:09:93:79:D4:3B:BD:BC:D1:AF:F7:2E:05:9D:0B:35:9B:D1:78:4F:8C:0B:C4:D2:0A:FB:AF:AE:55:3E',
+    '2B:7D:26:11:BB:F3:E2:BC:9F:F2:41:B3:D7:11:AF:AD:35:F4:2D:5E:F5:2E:D5:35:CB:F9:8D:9A:52:66:CE:CB',
   );
   for (const parmakIzi of hedef.sha256_cert_fingerprints) {
     expect(parmakIzi.startsWith('B6:CD:FB:A9')).toBe(false);
