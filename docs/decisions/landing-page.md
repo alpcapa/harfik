@@ -87,6 +87,53 @@ boot TEK ağ transferiyle (preload + dinamik import aynı isteğe düşüyor,
 `performance.getEntriesByType('resource')` ile doğrulandı) ~19 ms'de
 başlıyor ve service worker normal şekilde kayıtlı (**1**).
 
+### İkinci bölme: `boot` içindeki gövde de ayrıldı (25 Ağustos 2026)
+
+Yukarıdaki ayrım karşılama katmanını gören ziyaretçiyi kurtarmıştı, ama
+**`/davet/:token` ve `/game/:id`** ziyaretçilerini kurtarmıyordu: o iki route
+`boot.tsx`'i mount ediyor ve `boot` paketi OYUNUN TAMAMINI taşıyordu.
+
+**ÖLÇÜLDÜ (üretim derlemesi + gerçek Chromium, aktarılan ham bayt):**
+
+| Route | Önce | Sonra |
+|---|---|---|
+| `/` (katman) | 508 KB | 508 KB |
+| **`/davet/:token`** | **2026 KB** | **885 KB** |
+| Uygulama | 2050 KB | 2050 KB |
+
+İki bağımsız kayıp vardı:
+
+1. **Sözlük — 789 KB.** `preloadWordSet()` `mount()`'ın en başında, route
+   kararından ÖNCE çağrılıyordu. İki sayfa da kelime doğrulaması yapmıyor
+   (`wordSet`e tek referansları yok). Çağrı route kararının ardına alındı.
+2. **Oyunun tamamı — 787 KB'lık `boot`.** `App` statik import'tu.
+   `lazy(() => import('./App'))`'a çevrildi; `App` 337 KB'lık kendi parçasına
+   çıktı ve `boot` 396 KB'a indi.
+
+**BÖLMENİN YÖNÜ ÖNEMLİ — ilk deneme yanlış yerden bölüp 0.75 KB kazandırdı.**
+Başta yalnızca `SharedGamePage`/`FriendInvitePage` lazy yapıldı; kazanç gzip
+**0.75 KB** çıktı, çünkü ayrılan şey iki ince sarmalayıcıydı ve ağır
+bağımlılıkları (`App` ile ORTAK olanlar) boot'ta kalıyordu. Kazancı veren,
+yaprakları değil GÖVDEYİ ayırmak. Bir sonraki paket optimizasyonunda aynı
+tuzağa düşmemek için: **önce hangi modülün ağır olduğunu ölç, sonra böl.**
+
+**Takas ölçüldü, anlamlı değil:** uygulama route'u artık `boot.js` → `App.js`
+diye iki adımda yükleniyor. Setup görünene kadar geçen süre (5 koşu, medyan)
+**333 → 331 ms**. Zaten 2 MB indiren bir yolda ikinci istek gürültüde kalıyor.
+*(Localhost ölçümü — mobil gecikmeyi temsil etmiyor.)*
+
+**Regresyon koruması:** `tests/smoke.spec.ts` → *"/davet/:token sözlüğü ve
+oyun paketini İNDİRMEZ"*. İstek listesini dinleyip sözlük verisinin
+(`words.ts` / `words-*.js`) ve `App` parçasının istenmediğini doğruluyor.
+**Negatif eş ölçüldü:** `preloadWordSet()` `mount()`ın başına geri taşınıp
+`App` statik import'a döndürülünce test GERÇEKTEN düşüyor.
+
+**Kalan iki kayıp (bu iş kapsamında DEĞİL, ölçüldü):** `/davet` hâlâ 249 KB'lık
+karşılama HTML'ini (SPA rewrite `index.html`e yönlendiriyor, o da katmanın
+prerender'ı) ve 67 KB'lık `favicon.svg`'yi indiriyor — favicon'un 66 KB'ı tek
+bir "k" harfi için gömülü base64 Caveat fontu, oysa logo `LogoMark`ta zaten
+statik path. İkisi de düzeltilirse `/davet` ~570 KB olur.
+
 ### `guest_visits`in artık İKİ yazarı var
 
 Katman modunda `App.tsx` hiç mount edilmediğinden oradaki `logGuestVisit`

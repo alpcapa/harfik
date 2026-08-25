@@ -310,6 +310,34 @@ test('/davet/:token arkadaşlık davet sayfası açılır, katman görünmez', a
 });
 
 /**
+ * 25 Ağustos 2026'da ÖLÇÜLDÜ: `/davet/:token` 2026 KB indiriyordu ve bunun
+ * 789 KB'ı ~63 bin kelimelik sözlük, 787 KB'ı da oyunun tamamıydı — davet
+ * sayfası ikisini de kullanmıyor. `preloadWordSet()` route kararının ardına
+ * alındı, `App` dinamik import'a çevrildi; sonuç 885 KB.
+ *
+ * Bu test o düzeltmenin NEGATİF EŞİ: biri `preloadWordSet()`i tekrar
+ * `mount()`ın başına taşırsa ya da `App`i statik import'a döndürürse burada
+ * düşer. İkisi de sessiz regresyonlar — kullanıcı yalnızca "ağır açılıyor"
+ * der ve sebebi görünmez.
+ */
+test('/davet/:token sözlüğü ve oyun paketini İNDİRMEZ', async ({ page }) => {
+  const istekler: string[] = [];
+  page.on('request', (r) => istekler.push(r.url()));
+
+  await page.goto('/davet/abcdef1234567890');
+  await expect(page.getByText(/Bu davet linki geçersiz|Yükleniyor/)).toBeVisible();
+  await page.waitForTimeout(1500);
+
+  // Aranan şey SÖZLÜK VERİSİ (`src/data/words.ts`, 880 KB) — birkaç satırlık
+  // `wordSetLoader.ts` DEĞİL; o `boot.tsx`te statik import olduğundan her
+  // zaman gelir ve zaten maliyeti yok. Dev sunucusunda kaynak yoluyla
+  // (`/src/data/words.ts`), üretim derlemesinde hash'li chunk adıyla
+  // (`words-*.js`) istenir — ikisi de yakalanmalı.
+  expect(istekler.filter((u) => /\/(src\/data\/)?words(\.ts|-[A-Za-z0-9_]+\.js)/.test(u))).toEqual([]);
+  expect(istekler.filter((u) => /\/(src\/)?App(\.tsx|-[A-Za-z0-9_]+\.js)/.test(u))).toEqual([]);
+});
+
+/**
  * ROADMAP #7 (21 Ağustos 2026). Davet linki artık `?ref=arkadas` taşıyor —
  * ama asıl hata etiketin KONMAMASI değil, YAKALANMAMASIYDI: `captureUtmSource`
  * `App.tsx`'in bir effect'indeydi ve bu route `App`'i hiç mount etmiyor

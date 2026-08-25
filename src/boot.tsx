@@ -9,13 +9,32 @@
 // Yazı tipi/`index.css` import'ları ve `window.__KELIMEKI_BUILD__` ataması
 // BİLEREK `main.tsx`'te kaldı: katmanın kendisi de o CSS'i kullanıyor ve
 // derleme kimliği her iki modda da yayınlanmalı.
-import { StrictMode } from 'react';
+import { StrictMode, Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App';
+// `App`, `SharedGamePage` ve `FriendInvitePage` DİNAMİK import ediliyor —
+// 25 Ağustos 2026'da ÖLÇÜLDÜ (üretim derlemesi + gerçek Chromium, aktarılan
+// ham bayt): `/davet/:token` **2026 KB** indiriyordu ve bunun 787 KB'ı
+// `boot` paketiydi, yani OYUNUN TAMAMI — tahta, motor, tüm pencereler, k-lig,
+// sohbet. Davet linkine tıklayan kişi tanım gereği Kelimeki'yi hiç bilmeyen
+// biri ve büyük ihtimalle mobil veride; ona ödettiğimiz şeyin neredeyse
+// tamamını o sayfa kullanmıyordu.
+//
+// Bölmenin YÖNÜ önemli: önce yalnızca iki route sayfası lazy yapıldı ve
+// kazanç **0.75 KB gzip** çıktı — çünkü ayrılan şey iki ince sarmalayıcıydı,
+// ağır bağımlılıkları (`App` ile ortak olanlar) boot'ta kalıyordu. Kazancı
+// veren, GÖVDEYİ (`App`) ayırmak: `/davet` **2026 → 885 KB**.
+//
+// Uygulama route'u artık `boot.js` → `App.js` diye iki adımda yükleniyor.
+// Bu takas da ölçüldü (5 koşu, medyan, Setup görünene kadar): **333 → 331 ms**,
+// yani anlamlı bir fark yok — zaten 2 MB indiren bir yolda ikinci bir istek
+// gürültüde kalıyor.
+const App = lazy(() => import('./App'));
 import { AuthProvider } from './hooks/useAuth';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { SharedGamePage } from './components/SharedGamePage';
-import { FriendInvitePage } from './components/FriendInvitePage';
+const SharedGamePage = lazy(() =>
+  import('./components/SharedGamePage').then((m) => ({ default: m.SharedGamePage })));
+const FriendInvitePage = lazy(() =>
+  import('./components/FriendInvitePage').then((m) => ({ default: m.FriendInvitePage })));
 import { captureUtmSource } from './utils/visitTracking';
 import { installGlobalErrorReporting } from './utils/errorReporting';
 
@@ -29,14 +48,6 @@ import { preloadWordSet } from './data/wordSetLoader';
  */
 export function mount(): void {
   setupPwaUpdates();
-
-  // Kelime listesini (~63k kelime) ayrı bir chunk olarak arka planda
-  // hemen indirmeye başlar — ilk render'ı bloklamaz (bkz. wordSetLoader.ts).
-  // Bu ilk tetikleme fire-and-forget; gerçek retry mantığı App.tsx/Setup.tsx'in
-  // kendi preloadWordSet() effect'lerinde — burada yalnızca bir kerelik ağ
-  // hatasının konsola "Uncaught (in promise)" olarak düşmesini (App/Setup zaten
-  // kendi çağrılarında yeniden deneyecek) önlemek için sessizce yutuluyor.
-  preloadWordSet().catch(() => {});
 
   // Yakalanmamış istisna + reddedilen promise'leri anonim olarak bildir
   // (ROADMAP #3). EN BAŞTA kuruluyor ki açılış sırasında doğan bir hata da
@@ -69,20 +80,39 @@ export function mount(): void {
   const sharedGameMatch = window.location.pathname.match(/^\/game\/([0-9a-fA-F-]{36})\/?$/);
   const friendInviteMatch = window.location.pathname.match(/^\/davet\/([0-9a-fA-F]{10,64})\/?$/);
 
+  // Kelime listesini (~63k kelime, 789 KB ham) ayrı bir chunk olarak arka
+  // planda indirmeye başlar — ilk render'ı bloklamaz (bkz. wordSetLoader.ts).
+  // Bu ilk tetikleme fire-and-forget; gerçek retry mantığı App.tsx/Setup.tsx'in
+  // kendi preloadWordSet() effect'lerinde — burada yalnızca bir kerelik ağ
+  // hatasının konsola "Uncaught (in promise)" olarak düşmesini (App/Setup zaten
+  // kendi çağrılarında yeniden deneyecek) önlemek için sessizce yutuluyor.
+  //
+  // ⚠ ROUTE KARARININ ARDINDA: 25 Ağustos 2026'ya kadar bu çağrı `mount()`'ın
+  // en başındaydı, yani `/davet/:token` ve `/game/:id` ziyaretçileri de 789 KB'lık
+  // sözlüğü indiriyordu. İki sayfa da kelime doğrulaması yapmıyor (ikisinde de
+  // `wordSet`e tek bir referans yok — grep'le doğrulandı), yani bu tamamen
+  // boşa giden bir indirmeydi.
+  if (!sharedGameMatch && !friendInviteMatch) preloadWordSet().catch(() => {});
+
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <ErrorBoundary>
-        {sharedGameMatch ? (
-          <SharedGamePage gameId={sharedGameMatch[1]} />
-        ) : friendInviteMatch ? (
-          <AuthProvider>
-            <FriendInvitePage token={friendInviteMatch[1]} />
-          </AuthProvider>
-        ) : (
-          <AuthProvider>
-            <App />
-          </AuthProvider>
-        )}
+        {/* `fallback={null}`: üç dal da kendi yükleme durumunu kendi içinde
+            yönetiyor (App'in Setup'ı, iki sayfanın kendi iskeletleri) — burada
+            ikinci bir ara ekran göstermek yanıp sönme yaratırdı. */}
+        <Suspense fallback={null}>
+          {sharedGameMatch ? (
+            <SharedGamePage gameId={sharedGameMatch[1]} />
+          ) : friendInviteMatch ? (
+            <AuthProvider>
+              <FriendInvitePage token={friendInviteMatch[1]} />
+            </AuthProvider>
+          ) : (
+            <AuthProvider>
+              <App />
+            </AuthProvider>
+          )}
+        </Suspense>
       </ErrorBoundary>
     </StrictMode>,
   );
