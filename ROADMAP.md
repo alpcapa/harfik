@@ -8,8 +8,12 @@ ve *neden* ertelendiğini anlatır; burası *hangi sırayla*, *hangi modelle* ve
 Bir madde bitince buradan SİLİNİR ve kaydı ilgili bölümün kendi tarihli
 notuna taşınır (projenin genel "değişiklik = tarihli not" disiplini).
 
-**Durum (22 Ağustos 2026):** `main` yeşil. FAZ A1 cihaz turu Bölüm 6
+**Durum (25 Ağustos 2026):** `main` yeşil. FAZ A1 cihaz turu Bölüm 6
 (Paylaşma, iPad popover) hariç kapalı. Web + port paritesi güncel.
+**24-25 Ağustos Android cihaz turu TEMİZ geldi** (dokunma hedefleri, "← Geri",
+Paylaş, tahta açılışı, k-lig/Skor Kartı yükleme — yani #324 ve #325'in
+cihazdaki karşılığı doğrulandı). **Madde 8 bundan ETKİLENMEDİ:** oradaki iş
+iPad'in popover ankrajı, bu tur Android'de koşuldu.
 **Google Play Console hesabı açıldı** (22 Ağustos) — bu, listenin sırasını
 değiştirdi: artık omurga aşağıdaki **madde 0 (FAZ B)**, çünkü kişisel
 hesaplarda production'a çıkmanın önünde **daha başlamamış 14 günlük bir
@@ -146,9 +150,11 @@ kişi için `.apk`nın 7 Ağustos'ta çözülen probleminin aynısı hâlâ aç�
 (`build-and-distribution-log.md` → Appetize). `mobile-build.yml`'in release
 adımı artık `kelimeki.aab`'yi de `mobile-latest`e koyuyor:
 `https://github.com/alpcapa/kelimeki/releases/download/mobile-latest/kelimeki.aab`.
-Artefakt DURUYOR. **PR'da doğrulanamaz** — release adımı PR'da bilerek
-atlanıyor (workflow başlığındaki "YAYINLAMA" notu), yani kanıt merge sonrası
-ilk `main` koşusunda okunacak.
+Artefakt DURUYOR. **DOĞRULANDI (25 Ağustos 2026, koşu 349, sha `5eddf3d`):**
+dosya release'te, 60.929.323 bayt. Kanıt PR'da alınamazdı — release adımı
+PR'da bilerek atlanıyor (workflow başlığındaki "YAYINLAMA" notu) — bu yüzden
+merge sonrası ilk `main` koşusunda okundu.
+**Yüklenmeye hazır paketin `versionCode`'u: 349.**
 
 **Tuzaklar — 0.A1:**
 - **Keystore repoya GİRMEZ.** `*.jks`/`key.properties` gitignore'a; CI'a

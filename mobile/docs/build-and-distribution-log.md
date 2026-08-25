@@ -197,7 +197,8 @@ artık `kelimeki.aab`'yi de `--clobber` ile yüklüyor (düz, oturumsuz URL);
 artefakt DURUYOR. Yayınlanan `.aab` bir sır taşımıyor: aynı koddan derlenen
 `.apk` zaten herkese açık ve upload anahtarı pakete girmiyor — yalnızca imza
 girer. Adım PR'da bilerek atlandığından (bkz. "YAYINLAMA") kanıt merge
-sonrası ilk `main` koşusunda okunur.
+sonrası ilk `main` koşusunda okundu: **25 Ağustos 2026, koşu 349, sha
+`5eddf3d` — `kelimeki.aab` release'te, 60.929.323 bayt, `versionCode` 349.**
 
 **İlk `.aab` yüklemesinde OKUNACAK iki şey — 24 Ağustos 2026'da PAKETTEN
 ölçüldü, ikisi de temiz:** `targetSdk` **36**, izinler **3 adet**

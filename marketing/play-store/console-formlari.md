@@ -62,6 +62,8 @@ Her `main` derlemesi imzalı paketi **iki yere** bırakıyor:
   `https://github.com/alpcapa/kelimeki/releases/download/mobile-latest/kelimeki.aab`
   — oturum istemez, zip değildir. (24 Ağustos 2026'da eklendi; öncesinde
   `.aab` YALNIZCA artefakt olarak vardı, yani giriş + zip açma gerekiyordu.)
+  **DOĞRULANDI (25 Ağustos 2026):** dosya release'te, 60.929.323 bayt,
+  koşu **349** (sha `5eddf3d`) — yani zincir uçtan uca çalışıyor.
 - Actions → koşu → `kelimeki-aab` artefaktı (zip, oturum ister) — CI içi kanıt.
 
 **versionCode = GitHub koşu numarası.** Play aynı `versionCode`'u iki kez
@@ -69,6 +71,10 @@ kabul etmiyor; her yeni `main` derlemesi yeni bir numara alıyor, yani
 yükleme reddedilirse "aynı sürüm" değil başka bir sebep aranmalı.
 `versionName` = `1.0.0` (`pubspec.yaml` + `env.dart`, parite testiyle
 zorlanıyor).
+
+**Şu an release'te duran paket: `versionCode` 349.** Bu sayı `main`e giren
+her mobil derlemede artıyor — yükleme günü tazeyse Actions → son `main`
+koşusunun numarasına bak, release notuna onu yaz.
 
 ⚠ **iPadOS'ta dosya seçici tuzağı:** Appetize'ın yükleyicisi `.apk`yı iOS
 UTI'yi tanımadığı için soluk gösteriyordu (`build-and-distribution-log.md`).
@@ -254,8 +260,8 @@ kanalı aç → **Create new release**.
    yüklemede çıkıyor). ⛔ **KAYDOL.** Kaydolmazsan upload keystore'unun
    kaybı = uygulamanın bir daha asla güncellenememesi.
 2. `kelimeki.aab`'yi yükle (§2).
-3. Release name: `1.0.0 (<koşu numarası>)` · Release notes: kısa bir
-   "ilk kapalı test" notu.
+3. Release name: `1.0.0 (<koşu numarası>)` — bugün **`1.0.0 (349)`** ·
+   Release notes: kısa bir "ilk kapalı test" notu.
 4. **Ülkeler: TÜMÜ.** Türkçe bir oyun için Türkiye yeter gibi görünüyor ama
    Play hesabının ülkesi Türkiye olmayan bir tester **kuramaz** ve sayıya
    girmez; kısıtlamanın kazancı yok, riski var.
