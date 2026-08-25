@@ -133,7 +133,10 @@ Mobilde GÖRÜNÜR karşılığı Setup teşhis satırındaki `Derleme a1b2c3d �
 (`mobile/app/lib/src/config/env.dart`, CI `--dart-define` ile veriyor).
 **Bir düzeltmenin kullanıcıda görüneceğini söylemeden önce o sha'yı iste
 ya da ekran görüntüsünden oku** — eşleşmiyorsa tartışılacak bir hata yok,
-deploy bekleniyor demektir. Ayrıntı (bu oturumun gözlem sınırı, merge
+deploy bekleniyor demektir. 25 Ağustos 2026'da ölçülen bir kolaylık:
+**`kelimeki.com` bu oturumdan `WebFetch` ile doğrudan okunabiliyor**
+(`curl`/`bash` hâlâ çıkamıyor) — "doğru sayfa mı yayında" sorusunu cevaplar,
+başlık/bayt ölçmez; Flutter/Pages yüzeyi için kanıtlanmadı. Ayrıntı (bu oturumun gözlem sınırı, merge
 sonrası dal hijyeni, PR'da CI koşmazsa ne yapılacağı):
 `mobile/CLAUDE.md` → "Deploy Doğrulaması".
 
