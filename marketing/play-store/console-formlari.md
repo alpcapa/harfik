@@ -390,15 +390,52 @@ sebebi bu.
    adlı bir kayıt isterse çakışır; o durumda Zoho'nun alternatif adı
    kullanılacak.
 
-### Adımlar (panel adları değişir, kayıtlar aynı)
+### KURULDU — as-built (25 Ağustos 2026)
 
-1. Mail servisinde domaini ekle, verdiği **doğrulama TXT**'ini gir.
-2. **MX kayıtlarını** ekle (varsa eskileri kaldır — MX'te birden fazla
-   sağlayıcı olmaz).
-3. **DKIM** TXT kaydını gir (kendi selector'ında, Brevo'nunkiyle çakışmaz).
-4. **SPF'i BİRLEŞTİR** — yukarıdaki uyarı.
-5. `destek@` kutusunu aç, kendine bir test maili at, geldiğini gör.
-6. Play Console → Store settings → iletişim e-postasına yaz.
+**Sağlayıcı: Zoho Mail, AVRUPA veri merkezi** (`mailadmin.zoho.eu`). Veri
+merkezi seçimi MX ve SPF değerlerini belirliyor — `.com` sürümünün değerleri
+BU KURULUMDA GEÇERSİZ.
+
+**Hesap:** tek kullanıcı = `destek@kelimeki.com` (Super Administrator).
+Koltuk sayısı 1 olduğundan başka bir adres kullanıcı olarak açılmadı.
+
+**GoDaddy'ye eklenen kayıtlar:**
+
+| Tip | Ad | Değer | Öncelik |
+|---|---|---|---|
+| TXT | `@` | `zoho-verification=zb36282039.zmverify.zoho.eu` | — |
+| MX | `@` | `mx.zoho.eu` | 10 |
+| MX | `@` | `mx2.zoho.eu` | 20 |
+| MX | `@` | `mx3.zoho.eu` | 50 |
+| TXT | `@` | `v=spf1 include:zohomail.eu include:spf.brevo.com ~all` | — |
+| TXT | `zmail._domainkey` | Zoho'nun ürettiği DKIM anahtarı | — |
+
+⚠ **SPF satırı Zoho'nun önerdiğinden FARKLI.** Zoho `v=spf1
+include:zohomail.eu ~all` diyordu; Brevo'nun include'u elle eklendi. Sebebi
+§ başındaki ölçüm: domainde SPF hiç yoktu, yani bu kayıt ilk kez
+oluşturuluyordu ve **tek** olabileceğinden Brevo baştan içine alınmalıydı.
+Bu satırı bir daha düzenleyen olursa `include:spf.brevo.com`'u silmesin.
+
+**`noreply@kelimeki.com` — alias DEĞİL, GRUP.** Zoho'nun alias ekranı
+bulunamadı; aynı sonucu veren Group özelliği kullanıldı: `noreply@` adında
+bir grup, tek üyesi `destek@`. ⚠ **"Who can send emails to the group?" =
+`Everyone`** — varsayılan `Organization Members` bizim yakalamak istediğimiz
+maillerin TAMAMINI (dış adreslerden gelen kullanıcı cevapları) reddederdi.
+Streams kapalı, moderatör yok. Gruplar kullanıcı koltuğu harcamıyor.
+
+**Gönderen adı — ÖLÇÜLDÜ, ilk deneme işe yaramadı.**
+`accounts.zoho.eu` → Profile → **Display Name** alanı `Kelimeki Destek`
+yapıldı ama giden mailin `From` başlığına YANSIMADI (Gmail'de ham başlıkla
+doğrulandı: hâlâ tam ad görünüyordu). Çözüm: yönetim konsolundaki kullanıcı
+**First/Last Name** alanları değiştirildi. Zoho'nun hesap kurtarması
+e-posta/telefon/MFA üzerinden çalıştığından isim alanını markaya çevirmenin
+maliyeti yok.
+
+**Ölçüm tuzağı (bir tur kaybettirdi):** ilk test maili iPad'in Mail
+uygulamasına atıldı ve gönderen adı yanlış göründü — ama Apple Mail,
+adresi Kişiler'de bulursa `From` başlığındaki adı DEĞİL kişi kartındaki adı
+gösteriyor. **Gönderen adı/kimlik doğrulaması yalnızca ham başlıktan
+okunur:** Gmail → "Orijinali göster".
 
 ### "Brevo zaten var, neden onunla almıyoruz?" (25 Ağustos 2026)
 
@@ -462,14 +499,28 @@ kontrol edilecek.
 kayıtları (`..._domainkey`) sorun değil — her sağlayıcı kendi selector'ında
 durur.
 
-### Açık kalan
+### Testler
 
-- Canlı SPF kaydının tam metni (yukarıdaki panelden okunacak) — birleştirme
-  onsuz yapılamaz.
-- Servis seçimi: ücretsiz katman şartları değişebiliyor, kayıt sırasında
-  teyit et. Zoho'da veri merkezi seçimi `include:` ifadesini de değiştirir
-  (`zoho.com` / `zoho.eu`) — kurulum sihirbazının verdiği değeri kullan,
-  ezberden yazma.
+| | Ne | Sonuç |
+|---|---|---|
+| A | Dış adresten `destek@`'a mail | ✅ geldi |
+| B | Dış adresten `noreply@`'a mail (grup) | ✅ aynı kutuya düştü |
+| C | `destek@`'tan dışarı mail + gönderen adı | ✅ gidiyor; ad düzeltildikten sonra `Kelimeki Destek` |
+| D | **Brevo regresyon** — kayıt onayı/şifre sıfırlama maili hâlâ PASS alıyor mu | ⬜ **HENÜZ ÖLÇÜLMEDİ** |
+
+**D neden önemli:** domaine bugün **ilk kez** bir SPF kaydı yazıldı.
+Öncesinde kayıt yokken Brevo'nun mailleri SPF kontrolünden nötr geçiyordu;
+artık bir kayıt var ve alıcılar ona bakacak. `include:spf.brevo.com` tam bu
+yüzden eklendi ama **ölçülmeden "doğru yaptık" denemez** — bu proje 20
+Temmuz 2026'da tam olarak bu zincir bozulduğu için bir teslimat sorunu
+yaşadı.
+
+**D nasıl okunur:** `kelimeki.com`'da bir Gmail adresiyle şifre sıfırlama
+iste → Gmail → "Orijinali göster". Beklenen: **DKIM PASS (`kelimeki.com`)**
+ve **DMARC PASS**. SPF satırında domain olarak `kelimeki.com` DEĞİL
+Brevo'nun kendi domaini yazacak — **bu normal**, Brevo zarf adresini kendi
+domaininde tutuyor (`mail`/`r.mail` CNAME'lerinin sebebi bu). Sorun sayılan
+tek şey DKIM ya da DMARC'ın FAIL olması.
 
 ### ⚠ Bu iş 14 günlük sayacı BEKLETMEMELİ
 
