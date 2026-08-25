@@ -469,7 +469,10 @@ mobile/
                              # LoadingNote.tsx ile birebir), ve:
       ui/auth/               # giriş-kayıt-şifremi-unuttum modalı, hesap
                              # butonu, avatar, Terms/Privacy,
-                             # reset_password_modal (recovery kapısı)
+                             # reset_password_modal (recovery kapısı),
+                             # delete_account_modal.dart (uygulama içinden
+                             # hesap silme — ROADMAP madde 2, mağaza
+                             # blokeri; bkz. docs/decisions/account-deletion.md)
       ui/intro/              # intro_screen.dart — İLK AÇILIŞ tanıtımı
                              # (Parça 116/117/118): 4 sayfalık PageView,
                              # Setup'ın ÖNÜNDE; ATLAMA YOK, tek çıkış son

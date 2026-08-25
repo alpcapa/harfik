@@ -217,12 +217,17 @@ listede 9 adres var. Kalan tek iş kod değil — tester toplamak.
 Sırası önemli olan tek bağ: **#4, #2'den SONRA** (hesap silme kaskadı
 çıkmadan test hesaplarını silmek aynı analizi iki kez yaptırır).
 
-1. **Madde 2 — uygulama içinden hesap silme.** Play'in hesap açtıran
-   uygulamalardan istediği İKİ şey var: uygulama içi yol **ve** Data
-   safety formuna girilecek bir **web silme talep URL'i** (ölçüldü, ikisi
-   de politika metninde açık). **Web yarısı 0.A5'in sayfasına bir bölüm
-   olarak bedavaya geliyor; asıl iş uygulama içi yol ve silme kaskadı.**
-   Bu, production erişimi için ZORUNLU — 14 günün içinde bitmeli.
+1. ✅ **BİTTİ (25 Ağustos 2026) — Madde 2, uygulama içinden hesap silme.**
+   Play'in hesap açtıran uygulamalardan istediği İKİ şeyin ikisi de yerinde:
+   web silme talep URL'i (`/hesap-silme/`, 0.A5) **ve** uygulama içi yol
+   (Hesap Ayarları › Hesabımı Sil, web + port). Kaskad service-role bir Edge
+   Function'da (`delete-my-account`) + `delete_account_cascade` RPC'sinde;
+   `dryRun` bayrağıyla hiçbir şey silmeden sayan bir kuru çalıştırma modu
+   var ve onay penceresi bunu gösteriyor. Karar/ölçüm/tuzaklar:
+   `docs/decisions/account-deletion.md`.
+   ⚠ **Console'da yapılacak tek iş kaldı:** App content › **Data deletion**
+   formunda artık "uygulama içi silme yolu VAR" seçilmeli (form bugüne kadar
+   yalnızca web URL'ini taşıyordu).
 3. **Madde 1 — deep link.** Play blokeri değil ama
    kayıt onayı maili uygulamayı değil web'i açıyor; inceleme "kırık akış"
    diye dönebilir. iOS yarısı Apple hesabı istediğinden bekler.
@@ -345,67 +350,6 @@ yarıda kalır — **başlamadan önce teyit et.**
 
 ---
 
-## 2. Uygulama içinden hesap silme — **MAĞAZA BLOKERİ**
-
-*FAZ B'nin parçası — sıradaki yeri: madde 0 → 0.B/2. Play ayrıca Data
-safety formuna girilecek bir **web silme talep URL'i** de istiyor; o,
-0.B3'ün statik sayfasına bir bölüm olarak eklenir.*
-
-**Model: Fable 5, efor `xhigh`.** Bu listedeki tek GERİ DÖNÜŞSÜZ iş.
-
-**Neden:** Apple 5.1.1(v) ve Google'ın veri silme şartı, hesap açtıran
-uygulamalarda uygulama İÇİNDEN başlatılabilen bir silme yolu istiyor. Bugün
-hiç yok. **Hukuken zorunlu değil** (KVKK m.7/m.11 ve GDPR m.17 hakkı verir,
-buton şart koşmaz) — Gizlilik Politikası 19 Ağustos'ta bunu "Görüş
-Bildir'den talep edin, 30 gün" olarak doğru anlatacak şekilde düzeltildi.
-Yani bu madde **mağaza kapısı** için var; web'de gerekmez (kullanıcı kararı,
-19 Ağustos).
-
-**İşin ağırlığı UI'da değil kaskad zincirinde.** Silinecek/anonimleştirilecek
-yerler en az: `auth.users`, `profiles`, `games`, `game_likes`,
-`friend_requests`, `friend_invite_links`, `local_game_saves`,
-`online_game_*` (state/secrets/moves/messages/mutes/reports/clients),
-`feedback`, `league_rewards`, `admin_ban_log`, `avatars` storage kovası.
-Bir kısmı cascade, bir kısmı değil.
-
-**Kritik karar — VERİLDİ (25 Ağustos 2026, kullanıcı: "Anonimleştirme
-mantıklı"):** silinen kişi BAŞKALARININ bitmiş oyun kayıtlarında isimle
-duruyor. O satırlar başka kullanıcıların kendi verisi — silinemez.
-
-| Satır | Ne yapılacak |
-|---|---|
-| Silinen kişinin **kendi** `games` satırları | **SİL** — istatistikleri de böyle gider, amaç bu |
-| **Başkalarının** satırları | **Satırı KORU, jsonb'deki adı anonimleştir** — hem `players` hem `messages` içinde |
-
-**Bu karar ölçümle desteklendi — "rakiplerin puanı uçar mı?" sorusunun
-cevabı HAYIR:** `games` oyun başına değil **oyuncu başına bir satır**
-tutuyor (canlıdan doğrulandı: 4 kişilik bir çevrimiçi oyun → 4 satır, 4
-farklı `user_id`) ve `player_stats_overall` bir VIEW olarak `FROM games g …
-GROUP BY user_id` yapıyor. Yani herkesin puanı YALNIZCA kendi satırlarından
-hesaplanıyor; silinen kişinin satırlarını silmek kimsenin skorunu
-düşürmüyor. Oyun geçmişi ekranı da bakan kişinin KENDİ satırındaki
-snapshot'ı okuduğundan liste de bozulmuyor.
-
-⚠ **Anonimleştirmede ölçülen tuzak — adı EŞLEŞTİREREK bulma.** Snapshot'ın
-alanları `name`, `score`, `colorIndex`, `is_ai`, `surrendered` — **`user_id`
-YOK** (`messages` de aynı: `name` + `message`). Ada göre eşleştirmek ad
-çakışmasında ve sonradan yapılan ad değişikliklerinde YANLIŞ kişiyi
-anonimleştirir. Doğru yol: `online_game_id` üzerinden çevrimiçi oyun
-tablolarına gidip hangi koltuğun silinen kişiye ait olduğunu bulmak. Yerel
-(YZ) oyunlar bu sorunu hiç doğurmuyor — `online_game_id` boş ve o satırlar
-zaten kişinin kendi satırları, silinip gidiyorlar.
-
-**Yöntem:** service-role bir Edge Function (`delete-my-account`) +
-çağıranın kendi JWT'si ile kimlik doğrulama. Önce **kuru çalıştırma**:
-silinecek satır sayılarını döndüren bir rapor, kullanıcıya göster, sonra
-uygula.
-
-**Zorunlu ekler:** `PrivacyModal` + portun `legal_modals.dart`'ı (tarihler
-`legal_text_test.dart` ile karşılaştırılıyor, biri bayat kalırsa mobil CI
-düşer).
-
----
-
 ## 4. Test hesaplarının silinmesi — **TEMİZLİK, GERİ DÖNÜŞSÜZ**
 
 *FAZ B'nin parçası — sıradaki yeri: madde 0 → 0.B/5. ⚠ App access formuna
@@ -420,9 +364,16 @@ incelemeciye verilen hesabı silme.*
 **`Ironman` (alprcapa@gmail.com) HİÇBİR KOŞULDA SİLİNMEZ** — hesap
 sahibinin gerçek ana/admin hesabı (kullanıcı kararı, 14 Ağustos).
 
-**Sıra önemli:** madde 2 (hesap silme) BİTTİKTEN SONRA yap — o iş zaten
-kaskad zincirini çıkarmış olur ve bu silme onun ilk gerçek kullanımı olur.
-Öncesinde yapılırsa aynı analiz iki kez yapılır.
+**Ön koşul KARŞILANDI (25 Ağustos 2026):** madde 2 bitti, kaskad zinciri
+çıkarıldı ve canlıda kuru çalıştırmayla doğrulandı. Bu silme onun ilk
+GERÇEK kullanımı olacak — ayrı bir analiz gerekmiyor.
+
+**Nasıl yapılır:** her hesap için önce `select public.delete_account_cascade
+('<uuid>', true)` (kuru — hiçbir şey yazmaz) çalıştırılıp rapor kullanıcıya
+gösterilir, onay alındıktan sonra `false` ile tekrarlanır ve ardından
+`auth.admin.deleteUser` çağrılır. (Edge Function yalnızca ÇAĞIRANIN kendi
+hesabını siler; başkasının hesabını silmek bilerek mümkün değil, bu yüzden
+buradaki temizlik MCP üzerinden yapılacak.)
 
 Silmeden önce kaskad zincirini çıkarıp kullanıcıya göster: geri dönüşü yok.
 

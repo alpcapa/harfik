@@ -270,6 +270,7 @@ olabilir — atıf bulunamazsa önce buradaki tabloya bak.
 | Oyun içi mesajlaşma (Faz 1: mesajlaşma, Faz 2: sessize alma/raporlama) | `docs/decisions/chat-moderation.md` |
 | Reklam/pazarlama görselleri (sponsored post, Play Store vitrini, FB kapağı, reel) | `docs/decisions/marketing-assets.md` |
 | Hukuki statik sayfalar (`/gizlilik/`, `/kullanim-kosullari/`, `/hesap-silme/`) | `docs/decisions/legal-pages.md` |
+| Uygulama içinden hesap silme (kaskad, anonimleştirme, `delete-my-account`) | `docs/decisions/account-deletion.md` |
 | SEO (GSC/Bing, reindex adımları) | `docs/decisions/seo.md` |
 | İstemci hata telemetrisi (`client_errors`, admin "Hatalar" sekmesi) | `docs/decisions/telemetry.md` |
 | Yerel oyunun kalıcılığı, terk-edilme cezası, offline kuyruk | `docs/decisions/local-game-persistence.md` |

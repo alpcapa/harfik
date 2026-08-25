@@ -15,6 +15,7 @@ import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/ui/auth/account_button.dart';
 import 'package:kelimeki/src/ui/auth/account_settings_modal.dart';
+import 'package:kelimeki/src/ui/game/neo_button.dart';
 import 'package:kelimeki/src/util/avatar_image.dart';
 import 'package:kelimeki/src/util/avatar_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show User;
@@ -352,5 +353,42 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.textContaining('Fotoğraf seçilemedi'), findsOneWidget);
+  });
+
+  // ── Hesap silme (ROADMAP madde 2, MAĞAZA BLOKERİ) ────────────────────────
+  //
+  // Gerçek silme bu ortamdan test EDİLEMEZ (`AuthService.fake` bir Supabase
+  // client taşımıyor, Edge Function çağrısı "Supabase yapılandırılmadı." ile
+  // düşüyor) — tam da bu, penceredeki ASIL sözleşmeyi sınamak için
+  // kullanılıyor: kuru çalıştırma başarısızsa silme butonu ETKİNLEŞMEZ.
+  // Cihazdaki uçtan uca kontrol `mobile/TESTING.md`de.
+  testWidgets('Hesap Ayarları uygulama içi silme yolunu açar', (tester) async {
+    final auth = AuthService.fake(
+      user: fakeUser('me'),
+      profile: const KProfile(id: 'me', displayName: 'ironman'),
+    );
+    await pumpSettings(tester, auth);
+
+    // Girişi bul ve dokun — Play, hesap açtıran uygulamalarda uygulama
+    // İÇİNDEN başlatılabilen bir silme yolu şart koşuyor.
+    final giris = find.text('HESABIMI SİL');
+    expect(giris, findsOneWidget);
+    await tester.ensureVisible(giris);
+    await tester.tap(giris);
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('HESABI SİL'), findsOneWidget);
+    // Kuru çalıştırma düştü → sebep GÖRÜNÜR olmalı, sessizce yutulmamalı.
+    expect(find.textContaining('Supabase yapılandırılmadı'), findsOneWidget);
+    // ...ve onay alanı hiç açılmadığından silme butonu devre dışı kalmalı.
+    expect(find.byKey(const ValueKey('field-delete-confirm')), findsNothing);
+    final buton = tester.widget<NeoButton>(
+      find.ancestor(
+        of: find.text('KALICI OLARAK SİL'),
+        matching: find.byType(NeoButton),
+      ),
+    );
+    expect(buton.onPressed, isNull);
   });
 }

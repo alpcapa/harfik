@@ -261,7 +261,7 @@ class PrivacyModal extends StatelessWidget {
       child: _StackedSections([
         const _P('Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, '
             'hangi verileri topladığımızı, nasıl kullandığımızı ve '
-            'haklarınızı açıklar. Son güncelleme: 24 Ağustos 2026.'),
+            'haklarınızı açıklar. Son güncelleme: 25 Ağustos 2026.'),
         const _Section('1. Veri Sorumlusu', [
           _P('Kelimeki, herhangi bir şirket ya da tüzel kişilik '
               'bulunmaksızın, bağımsız bir geliştirici tarafından bireysel '
@@ -373,12 +373,21 @@ class PrivacyModal extends StatelessWidget {
               'bildirilmez.'),
         ]),
         const _Section('5. Veri Saklama Süresi', [
-          _P('Verileriniz hesabınız aktif olduğu sürece saklanır. Uygulama '
-              'içinde kendi kendine hesap silme özelliği bulunmuyor; '
-              'hesabınızın ve kişisel verilerinizin silinmesini istiyorsanız '
-              '8. bölümdeki "Görüş Bildir" kanalından talep edebilirsiniz. '
-              'Talebiniz üzerine tüm kişisel verileriniz en geç 30 gün '
-              'içinde kalıcı olarak silinir.'),
+          _P('Verileriniz hesabınız aktif olduğu sürece saklanır. Hesabınızı '
+              'dilediğiniz zaman Hesap Ayarları › Hesabımı Sil adımıyla '
+              'kendiniz silebilirsiniz; bu işlem onayladığınız anda '
+              'uygulanır, geri alınamaz ve hesabınıza bağlı tüm kişisel '
+              'verilerinizi (profiliniz, oyun kayıtlarınız ve '
+              'istatistikleriniz, k-lig puanınız, arkadaşlık bağlarınız, '
+              'gönderdiğiniz oyun içi mesajlar, davetleriniz, '
+              'geri bildirimleriniz ve profil fotoğrafınız) kapsar. Tek '
+              'istisna, birlikte oynadığınız diğer oyuncuların bitmiş oyun '
+              'kayıtlarıdır: onlar başka kullanıcıların kendi verisi olduğu '
+              'için silinmez, ancak o kayıtlarda görünen adınız "Silinmiş '
+              'oyuncu" olarak değiştirilir ve kaydın silinen hesabınızla '
+              'bağlantısı kalmaz. Dilerseniz silme talebinizi 8. bölümdeki '
+              '"Görüş Bildir" kanalından da iletebilirsiniz; bu yolla '
+              'iletilen talepler en geç 30 gün içinde sonuçlandırılır.'),
           _P('Kayıt sırasında e-posta adresinizi doğrulamazsanız hesabınız '
               'tamamlanmamış sayılır: yaklaşık 20 saat sonra size bir '
               'hatırlatma e-postası gönderilir ve 48 saat içinde hâlâ '
