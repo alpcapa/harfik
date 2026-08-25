@@ -368,6 +368,46 @@ destek yanıtı) bu kurulumdan etkilenmez. DKIM ayrı selector'larda durur,
 5. `destek@` kutusunu aç, kendine bir test maili at, geldiğini gör.
 6. Play Console → Store settings → iletişim e-postasına yaz.
 
+### "Brevo zaten var, neden onunla almıyoruz?" (25 Ağustos 2026)
+
+Soruldu, cevabı kayda geçiyor çünkü tekrar sorulacak. **Brevo'nun alma
+özelliği VAR** — *Inbound Parsing* — ama verdiği şey posta kutusu değil bir
+**webhook**: MX'i Brevo'ya çevirirsin, gelen mail ayrıştırılıp verdiğin
+URL'e JSON olarak POST edilir. Açıp okuyacağın kutu, "Yanıtla" düğmesi,
+spam filtresi yok.
+
+Brevo bugün bizde **yalnızca gönderiyor** (Auth SMTP + `feedback-reply` /
+`admin-send-message` Transactional API). Göndermek MX istemez, almak ister —
+eksik parça bu. Karar zaten 26 Temmuz 2026'da alınmıştı (kök `CLAUDE.md`,
+"hafif çözüm"): gerçek kutu = Inbound Parsing + subdomain/MX + çok mesajlı
+şema, ve bilerek ertelendi.
+
+**Uzun vadede doğru cevap yine bu** — altyapının yarısı duruyor
+(`feedback.origin`, `feedback.related_to`, admin paneli, `feedback-reply`),
+ve tam olarak `CLAUDE.md`'nin "hâlâ çözülmeyen kısım" dediği şeyi kapatır:
+kullanıcı mailde **Yanıtla**'ya basınca cevap bugün `noreply@`'a gidip
+kayboluyor. **Ama bugünün işi değil, dört sebeple:**
+
+1. **Sessizce kaybeden boru.** Webhook patlarsa mail buharlaşır; kutuda
+   dursa dururdu. Ham gövdeyi önce saklayıp sonra ayrıştırmak gerekir.
+2. **Spam.** `destek@` Play vitrininde herkese açık olacak. Kutu sağlayıcısı
+   filtreler; Brevo her şeyi verir ve admin paneline düşer.
+3. **Güvenlik.** Webhook `verify_jwt:false` olmak zorunda (Brevo JWT
+   taşımaz) → paylaşılan bir sır/gizli yol olmadan herkes panele sahte
+   "görüş" POST edebilir. Tasarlanması gereken gerçek bir iş.
+4. **MX tekil.** `kelimeki.com`'un MX'i tek yere bakar; Brevo alırsa o
+   domainde bir daha normal kutu açılamaz.
+
+**Sıra bu yüzden ters kurulmayacak:** önce gerçek kutu (MX → Zoho), sonra
+istenirse kutudan bir subdomain'deki Brevo inbound adresine kopya
+yönlendirilir — hiçbir şey kaybedilmez. Tersi tek yönlü.
+
+**Kutu açılınca bedava kazanç:** `_shared/email.ts`'teki `KELIMEKI_SENDER`
+`noreply@` yerine `destek@` olur (sabit değişikliği + Brevo'da sender
+doğrulaması). O anda kullanıcının "Yanıtla"sı gerçek bir kutuya gider ve
+`buildNoreplyNoticeHtml`'in "cevap için tıklayın" numarasının varlık sebebi
+büyük ölçüde kalkar.
+
 ### DNS: **GoDaddy** (25 Ağustos 2026)
 
 Domain GoDaddy'de kayıtlı ve DNS de orada yönetiliyor — Temmuz'daki Brevo
