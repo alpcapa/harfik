@@ -7,7 +7,15 @@
 // tıklayın" linkine bu kaydın id'si (?re=<id>) gömülüyor — Brevo gönderimi
 // başarısız olursa önceden oluşturulan kayıt geri alınır (silinir).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { CORS_HEADERS, escapeHtml, buildNoreplyNoticeHtml, sendBrevoEmail, buildBrandedEmailHtml } from '../_shared/email.ts';
+import {
+  CORS_HEADERS,
+  escapeHtml,
+  buildSupportReplyNoticeHtml,
+  sendBrevoEmail,
+  buildBrandedEmailHtml,
+  brevoErrorMessage,
+  KELIMEKI_SUPPORT_SENDER,
+} from '../_shared/email.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -26,7 +34,7 @@ function buildMessageHtml(message: string, feedbackId: string, subject: string, 
     <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#1B2430;">${greeting}</p>
     <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#1B2430;white-space:pre-wrap;">${escapeHtml(message)}</p>
     <p style="font-size:13px;color:#8A93A2;margin-top:20px;">Saygılarımızla,<br/><span style="display: inline-block; margin-top: 4px;">Kelimeki Müşteri Hizmetleri</span></p>
-    ${buildNoreplyNoticeHtml(feedbackId)}
+    ${buildSupportReplyNoticeHtml(feedbackId)}
   `;
   return buildBrandedEmailHtml(subject, body);
 }
@@ -99,17 +107,21 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Mesaj kaydedilemedi, gönderilmedi.' }, 500);
   }
 
+  // Bkz. feedback-reply'daki aynı not: insan yazdı → destek@'ten gider,
+  // kullanıcının "Yanıtla"sı Zoho kutusuna düşer.
   const brevoRes = await sendBrevoEmail(BREVO_API_KEY, {
     to: { email: toEmail, name: toName },
     subject,
     htmlContent: buildMessageHtml(message, inserted.id, subject, toName),
+    sender: KELIMEKI_SUPPORT_SENDER,
+    replyTo: KELIMEKI_SUPPORT_SENDER,
   });
 
   if (!brevoRes.ok) {
     const detail = await brevoRes.text();
     console.error('[admin-send-message] Brevo hatası:', brevoRes.status, detail);
     await supabase.from('feedback').delete().eq('id', inserted.id);
-    return jsonResponse({ error: 'E-posta gönderilemedi.' }, 502);
+    return jsonResponse({ error: brevoErrorMessage(brevoRes.status, detail) }, 502);
   }
 
   return jsonResponse({ ok: true });

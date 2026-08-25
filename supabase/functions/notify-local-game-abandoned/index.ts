@@ -14,7 +14,7 @@
 // hem e-postasını (`auth.getUser()`) hem adını (`profiles`, `auth.uid() =
 // id` RLS'i kendi satırını okumaya zaten izin veriyor) okuyoruz.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml } from '../_shared/email.ts';
+import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml, buildNoReplyNoticeHtml } from '../_shared/email.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -38,7 +38,7 @@ function buildHtml(name: string, playerCount: number): string {
     </p>
     <p style="font-size:13px;color:#8A93A2;margin-top:20px;">Saygılarımızla,<br/><span style="display: inline-block; margin-top: 4px;">Kelimeki Müşteri Hizmetleri</span></p>
   `;
-  return buildBrandedEmailHtml('Oyununuz Süre Aşımından Sona Erdi', body);
+  return buildBrandedEmailHtml('Oyununuz Süre Aşımından Sona Erdi', body, buildNoReplyNoticeHtml());
 }
 
 Deno.serve(async (req: Request) => {

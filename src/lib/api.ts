@@ -2318,6 +2318,48 @@ export async function fetchAdminFeedback(): Promise<AdminFeedbackRow[]> {
   return (data as AdminFeedbackRow[]) ?? [];
 }
 
+// ── destek@ kutusu ("Zoho" rozeti) ──────────────────────────────────────────
+//
+// Bunlar bir posta kutusu API'si DEĞİL. `destek@kelimeki.com`'a gelen cevaplar
+// Zoho'da okunur; `support_inbox` yalnızca "yeni cevap var" haberini taşır
+// (gövde saklanmaz — bkz. migration ve `inbound-email` Edge Function'ı).
+// Rozet bu sayaca, tıklama da Zoho'ya gider.
+
+/**
+ * Admin'in henüz "Zoho" rozetine tıklamadığı (yani `seen_at` boş) gelen cevap
+ * sayısı. Hata YUTULMUYOR — `fetchAdminFeedback`'teki aynı gerekçe: sessizce
+ * 0 dönmek, gerçek bir izin/RPC hatasını "kutu boş" gibi gösterirdi.
+ */
+export async function fetchSupportInboxUnseenCount(): Promise<number> {
+  if (!supabase) return 0;
+  const { count, error } = await supabase
+    .from('support_inbox')
+    .select('id', { count: 'exact', head: true })
+    .is('seen_at', null);
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+/**
+ * Bekleyen tüm satırları "görüldü" işaretler — admin rozete tıklayıp Zoho'ya
+ * gittiği an çağrılır.
+ *
+ * ⚠ "Görüldü" burada "Zoho'da OKUNDU" demek DEĞİL, "admin'e haber verildi"
+ * demek: kutunun gerçek okunmuşluk durumunu Zoho biliyor, biz bilemeyiz.
+ * Rozetin işi bir kez dürtmek; ikinci kez dürtmesi gürültü olurdu.
+ */
+export async function markSupportInboxSeen(): Promise<void> {
+  if (!supabase) return;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from('support_inbox')
+    .update({ seen_at: new Date().toISOString(), seen_by: user?.id ?? null })
+    .is('seen_at', null);
+  if (error) throw new Error(error.message);
+}
+
 /**
  * Admin'i bekleyen işlerin toplam sayısını döner — `UserMenu`'deki "Admin
  * Paneli" satırının yanındaki kırmızı rozet için. İki kaynağın toplamı:

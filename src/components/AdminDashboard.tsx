@@ -18,6 +18,8 @@ import {
   fetchAdminAppVersionBreakdown,
   fetchAdminClientErrors,
   fetchAdminFeedback,
+  fetchSupportInboxUnseenCount,
+  markSupportInboxSeen,
   markFeedbackHandled,
   deleteFeedback,
   sendFeedbackReply,
@@ -62,6 +64,15 @@ interface AdminDashboardProps {
 }
 
 type Tab = 'members' | 'growth' | 'feedback' | 'errors';
+
+/**
+ * `destek@kelimeki.com` gelen kutusu — "Zoho" rozeti buraya götürür.
+ *
+ * ⚠ `.eu` bilerek: kutu Zoho'nun AVRUPA veri merkezinde açıldı (25 Ağustos
+ * 2026, bkz. marketing/play-store/console-formlari.md → "destek@kelimeki.com
+ * — kurulum"). `.com`'a giden bir link boş bir hesapla karşılar.
+ */
+const ZOHO_INBOX_URL = 'https://mail.zoho.eu/zm/#mail/folder/inbox';
 type GameSubTab = 'total' | 2 | 4;
 type GrowthSubTab = 'user' | 'game';
 type FeedbackSubTab = 'inbox' | 'flags';
@@ -1314,6 +1325,9 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [sortKey, setSortKey] = useState<MemberSortKey>('created_at');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [feedback, setFeedback] = useState<AdminFeedbackRow[] | null>(null);
+  // destek@ kutusuna gelen ve henüz haber verilmemiş cevap sayısı — "Zoho"
+  // rozetinin kaynağı. `null` = henüz yüklenmedi (rozet çizilmez).
+  const [supportUnseen, setSupportUnseen] = useState<number | null>(null);
   const [feedbackOriginFilter, setFeedbackOriginFilter] = useState<'all' | 'user' | 'admin'>('all');
   const [feedbackToDelete, setFeedbackToDelete] = useState<AdminFeedbackRow | null>(null);
   const [messageTarget, setMessageTarget] = useState<AdminMember | null>(null);
@@ -1370,6 +1384,9 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       .catch((e) => setError(String(e)));
     fetchAdminFeedback()
       .then(setFeedback)
+      .catch((e) => setError(String(e)));
+    fetchSupportInboxUnseenCount()
+      .then(setSupportUnseen)
       .catch((e) => setError(String(e)));
     fetchAdminChatReports()
       .then(setChatReports)
@@ -1544,6 +1561,20 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   // LiveGamesTab/FriendsModal sekmelerindeki kırmızı yuvarlak rozetin
   // aynısıyla gösteriliyor (kullanıcı isteği: "bu bir standart, her yerde
   // öyle olmalı", 3 Ağustos 2026).
+  /**
+   * Rozete tıklanınca sayaç sıfırlanır. Link'in kendisi `href`/`target` ile
+   * çalışmaya devam ediyor (preventDefault YOK) — orta tık/yeni sekmede aç
+   * gibi tarayıcı davranışları korunsun diye.
+   *
+   * İşaretleme başarısız olursa link yine de açılır; sayaç bir sonraki
+   * yüklemede geri gelir. Bilerek: admin'i Zoho'ya götürmek, sayacı
+   * güncellemekten önemli.
+   */
+  const handleZohoClick = () => {
+    setSupportUnseen(0);
+    markSupportInboxSeen().catch((e) => setError(String(e)));
+  };
+
   const tabBtn = (active: boolean) =>
     `relative flex-1 py-2.5 px-3 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1px] transition-colors ${
       active ? 'bg-accent text-white' : 'bg-panel text-muted border border-border'
@@ -1937,6 +1968,28 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                     <CountBadge count={unhandledChatReportCount} className="absolute -top-1 -right-1" />
                   )}
                 </button>
+                {/* "Zoho" bir SEKME DEĞİL, dışarı çıkan bir link — bu yüzden
+                    `tabBtn` kullanmıyor (aktif hâli yok) ve `flex-1` almıyor:
+                    yanındaki iki gerçek sekme daralsın ama bu küçük kalsın
+                    (kullanıcı isteği, 25 Ağustos 2026).
+
+                    Rozet burada da "bekleyen İŞ" demek (bkz. CLAUDE.md →
+                    CountBadge): destek@ kutusuna admin'in haberi olmadığı bir
+                    cevap düşmüş. Tıklama iki şey yapar — sayacı sıfırlar ve
+                    Zoho'yu açar; mailin kendisi panelde OKUNMAZ, orada okunur. */}
+                <a
+                  href={ZOHO_INBOX_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="destek@kelimeki.com gelen kutusunu Zoho'da aç"
+                  onClick={handleZohoClick}
+                  className="relative shrink-0 flex items-center py-2.5 px-3 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1px] bg-panel text-muted border border-border hover:text-text transition-colors"
+                >
+                  Zoho
+                  {!!supportUnseen && (
+                    <CountBadge count={supportUnseen} className="absolute -top-1 -right-1" />
+                  )}
+                </a>
               </div>
 
               {feedbackSubTab === 'inbox' && (

@@ -273,6 +273,7 @@ olabilir — atıf bulunamazsa önce buradaki tabloya bak.
 | SEO (GSC/Bing, reindex adımları) | `docs/decisions/seo.md` |
 | İstemci hata telemetrisi (`client_errors`, admin "Hatalar" sekmesi) | `docs/decisions/telemetry.md` |
 | Yerel oyunun kalıcılığı, terk-edilme cezası, offline kuyruk | `docs/decisions/local-game-persistence.md` |
+| E-posta gönderenleri (`noreply@` ↔ `destek@`), Zoho rozeti, inbound webhook kurulumu | `docs/decisions/support-email.md` |
 | Sonraya bırakılan ürün fikirleri (karar verildi, henüz yapılmadı) | `docs/decisions/product-backlog.md` |
 
 **Yeni bir dated not eklerken:** eğer not, kod tabanında HER YERDE geçerli
@@ -452,6 +453,30 @@ Yukarıdaki "Auth e-postaları — Brevo SMTP" bölümü yalnızca Supabase Auth
 - `feedback_insert_any` RLS politikası gevşetildi: `user_id is null or auth.uid() = user_id or is_admin()` — önceki hâli yalnızca kendi adına (ya da anonim) insert'e izin veriyordu, admin artık "Mesaj Gönder" ile BAŞKA bir kullanıcı adına da satır ekleyebiliyor.
 - **Hâlâ çözülmeyen kısım:** Bu, `related_to` yalnızca kişi GERÇEKTEN linke tıklayıp SİTEDEKİ formdan yazarsa çalışır. Kişi mail programında doğrudan "Yanıtla"ya basarsa o cevap yine `noreply@kelimeki.com`'a gider, hiçbir yere düşmez, hiçbir şeye bağlanmaz — gerçek bir e-posta thread'i hâlâ yok, bunun için hâlâ gerçek bir `destek@` gelen kutusu + Brevo Inbound Parsing gerekir (bkz. yukarıdaki "hafif çözüm" notu).
 
+### İki gönderen: `noreply@` (transactional) ↔ `destek@` (insan)
+
+25 Ağustos 2026 kararı. Ayrıntı/kurulum adımları:
+**`docs/decisions/support-email.md`**.
+
+| Mail | Gönderen | Kullanıcı "Yanıtla" derse |
+|---|---|---|
+| Auth şablonları + 10 `notify-*`/`sweep-*` bildirimi | `noreply@kelimeki.com` | **Geri döner** (Zoho'da böyle bir kutu yok) |
+| `feedback-reply`, `admin-send-message` | `destek@kelimeki.com` | **Zoho kutusuna düşer** |
+
+`supabase/functions/_shared/email.ts`: `KELIMEKI_SENDER` ↔
+`KELIMEKI_SUPPORT_SENDER`. **`sendBrevoEmail`'in `sender`ı verilmezse noreply@
+kullanılır** — bir fonksiyon hiçbir şey yapmazsa transactional sayılır; insanın
+yazdığı mail `sender`ı açıkça geçmek zorunda. ⚠ **Yeni bir mail gönderen Edge
+Function yazarken bu ikisinden birini SEÇ**; varsayılan bilerek yok, üçüncü bir
+adres uydurma.
+
+Kullanıcının `destek@`'e yazdığı cevap **admin panelinde OKUNMAZ** (mailin
+asıl yeri Zoho). Panel yalnızca haber verir: Geri Bildirim sekmesinin alt
+sekme satırındaki küçük **Zoho** düğmesi + kırmızı `CountBadge`, tıklanınca
+sayaç sıfırlanıp Zoho gelen kutusu açılır. Sayacın kaynağı `support_inbox`;
+onu `inbound-email` (Brevo Inbound webhook'u, `verify_jwt:false` +
+`INBOUND_EMAIL_SECRET`) besler. **Gövde saklanmaz** — kimden/konu/tarih.
+
 ### Migration'lar — CI yok, elle uygulama
 
 Kullanıcı iPad üzerinden çalışıyor; bunu tetikleyip sonucunu takip edecek bir CLI/CI erişimi yok. Bu yüzden **her yeni migration'ı Claude'un kendisi, Supabase MCP (`apply_migration`/`execute_sql`) ile doğrudan production'a uygulaması gerekiyor** — migration dosyasını repoya eklemek tek başına yeterli değil. Akış:
@@ -479,7 +504,7 @@ Kullanıcı iPad üzerinden çalışıyor; bunu tetikleyip sonucunu takip edecek
 Aylardır CLAUDE.md'nin çeşitli yerlerinde ayrı ayrı "kesin sebebi netleştirilmedi" notuyla kayıtlı duran `_shared/email.ts` import yolu tutarsızlığı (bazı fonksiyonlar `'../_shared/email.ts'`, bazıları `'./_shared/email.ts'`) bu incelemede kök sebebiyle birlikte çözüldü — ayrıca bu sırada **ikinci, daha tehlikeli bir tuzak** da bulundu. İkisi de `deploy_edge_function` MCP aracının kendi davranışıyla ilgili, kodun kendisiyle değil.
 
 1. **Import yolu — kök sebep artık netleşti:** Araç, verdiğin `entrypoint_path`i olduğu gibi kullanmıyor, tüm dosyaları örtük bir `source/` klasörünün altına yerleştiriyor. Doğru/kararlı tarif: `entrypoint_path: "source/index.ts"` VER, entrypoint dosyasının adını da `"source/index.ts"` YAP (böylece gerçekte `source/source/index.ts`e iner) ve kardeş bağımlılık dosyalarını (`_shared/email.ts` gibi) **hiçbir `source/` öneki OLMADAN** adlandır (böylece `source/_shared/email.ts`e iner) — bu durumda `source/source/index.ts`'ten `source/_shared/email.ts`'e giden doğru göreli yol her zaman `'../_shared/email.ts'`dir. `'./_shared/email.ts'` kullanan 6 fonksiyonun (`notify-account-banned`, `notify-account-unbanned`, `notify-deadline-warnings`, `notify-friend-request-reminders`, `notify-local-game-abandoned`, `notify-turn-timeout-surrender`) bugüne kadar hiç patlamadan çalışmasının sebebi, o fonksiyonların ilk deploy'unda bu tarifin (muhtemelen) tutarlı uygulanmamış olması, yani dosyaların gerçekte BEKLENENDEN farklı bir iç içe klasör yapısına yerleşmiş olmasıydı — CLAUDE.md'de "CI/CLI deploy'a geçilirse 6 fonksiyon anında bozulur" diye zaten öngörülmüştü, bu doğru bir öngörüydü. **Düzeltme:** 6 fonksiyonun hepsi `'../_shared/email.ts'`e çevrilip yukarıdaki tarifle yeniden deploy edildi — artık 11 Edge Function'ın tamamı aynı, tek doğru importu kullanıyor.
-2. **`verify_jwt` — aracın kendi varsayılanı `true`, parametre REQUIRED değilse bile geçilmezse önceki deploy'un değerini KORUMUYOR:** Bu araçla (CLI/`supabase functions deploy` değil) yapılan bir redeploy'da `verify_jwt` parametresi verilmezse, önceden `false` olan bir fonksiyon SESSİZCE `true`'ya döner — kod hiç değişmese bile. Bu, `notify-deadline-warnings`i (cron tarafından JWT'siz çağrılıyor, `verify_jwt:false` olması ŞART) bu incelemenin bir yan etkisi olarak neredeyse kırıyordu: fonksiyonun kodunu (CRON_SECRET kontrolü, satır başına try/catch) güncelleyip `verify_jwt` belirtmeden deploy edince araç onu `true`'ya çevirdi, `list_edge_functions`'la fark edilip aynı anda ikinci bir deploy'la (bu kez `verify_jwt: false` açıkça verilerek) geri alındı — production'a hiç sızmadı ama neredeyse pg_cron'un 15 dakikada bir 401 almaya başlamasına yol açıyordu. **Kural: `deploy_edge_function`'ı çağırmadan ÖNCE her zaman `list_edge_functions`/`get_edge_function` ile fonksiyonun MEVCUT `verify_jwt` değerini kontrol et ve deploy çağrısına AYNI değeri açıkça geçir — asla parametreyi atlayıp aracın varsayılanına (`true`) güvenme.** Projedeki `verify_jwt:false` olması gereken üç fonksiyon: `notify-deadline-warnings`, `notify-friend-request-reminders` (ikisi de pg_cron'dan JWT'siz çağrılıyor), `notify-turn-timeout-surrender` (Postgres'in kendisinden `net.http_post` ile JWT'siz çağrılıyor) — geri kalan sekizi `true`.
+2. **`verify_jwt` — aracın kendi varsayılanı `true`, parametre REQUIRED değilse bile geçilmezse önceki deploy'un değerini KORUMUYOR:** Bu araçla (CLI/`supabase functions deploy` değil) yapılan bir redeploy'da `verify_jwt` parametresi verilmezse, önceden `false` olan bir fonksiyon SESSİZCE `true`'ya döner — kod hiç değişmese bile. Bu, `notify-deadline-warnings`i (cron tarafından JWT'siz çağrılıyor, `verify_jwt:false` olması ŞART) bu incelemenin bir yan etkisi olarak neredeyse kırıyordu: fonksiyonun kodunu (CRON_SECRET kontrolü, satır başına try/catch) güncelleyip `verify_jwt` belirtmeden deploy edince araç onu `true`'ya çevirdi, `list_edge_functions`'la fark edilip aynı anda ikinci bir deploy'la (bu kez `verify_jwt: false` açıkça verilerek) geri alındı — production'a hiç sızmadı ama neredeyse pg_cron'un 15 dakikada bir 401 almaya başlamasına yol açıyordu. **Kural: `deploy_edge_function`'ı çağırmadan ÖNCE her zaman `list_edge_functions`/`get_edge_function` ile fonksiyonun MEVCUT `verify_jwt` değerini kontrol et ve deploy çağrısına AYNI değeri açıkça geçir — asla parametreyi atlayıp aracın varsayılanına (`true`) güvenme.** Projedeki `verify_jwt:false` olması gereken fonksiyonlar (**25 Ağustos 2026'da canlıdan sayıldı: ALTI tane** — bu liste uzun süre üç diyordu, sonradan eklenen üçü hiç işlenmemişti): `notify-deadline-warnings`, `notify-friend-request-reminders` (ikisi de pg_cron'dan JWT'siz çağrılıyor), `notify-turn-timeout-surrender` ve `notify-welcome` (Postgres'in kendisinden `net.http_post` ile JWT'siz çağrılıyor), `sweep-unconfirmed-accounts` (cron), `inbound-email` (Brevo webhook'u, kendi paylaşılan sırrıyla korunuyor) — geri kalanı `true`.
 
 ## Web'de Yapılacak İşler (mobil porttan gelen fikirler, henüz yapılmadı)
 
