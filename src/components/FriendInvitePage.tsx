@@ -107,6 +107,8 @@ export function FriendInvitePage({ token }: FriendInvitePageProps) {
   const { user, loading: authLoading } = useAuth();
   const [inviterName, setInviterName] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>('loading');
+  // P0001 ile gelen, kullanıcıya gösterilebilir kalıcı ret mesajı.
+  const [kaliciRet, setKaliciRet] = useState<string | null>(null);
   const [authMode, setAuthMode] = useState<'login' | 'signup' | null>(null);
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
@@ -144,7 +146,17 @@ export function FriendInvitePage({ token }: FriendInvitePageProps) {
         takePendingInviteToken(); // App.tsx bunu bir daha işlemeye çalışmasın
         setStatus('accepted');
       })
-      .catch(() => setStatus('error'));
+      .catch((err: unknown) => {
+        // Sunucunun KALICI reddi (SQLSTATE P0001) ile geçici arızayı ayır:
+        // `accept_friend_invite` "Kendi linkinle arkadaş olamazsın." /
+        // "Geçersiz davet linki." gibi mesajları KULLANICIYA GÖSTERİLMEK
+        // ÜZERE üretiyor ve tekrar denemek sonucu değiştirmez. Kod yoksa
+        // (ağ hatası, beklenmeyen durum) eski davranışa düşülüyor: genel
+        // mesaj + "Tekrar Dene".
+        const kod = (err as { code?: string } | null)?.code;
+        setKaliciRet(kod === 'P0001' && err instanceof Error ? err.message : null);
+        setStatus('error');
+      });
   }, [authLoading, user, status, token]);
 
   // Tanıtım bölümü yalnızca GİRİŞSİZ ziyaretçiye gösteriliyor: girişli biri
@@ -213,7 +225,20 @@ export function FriendInvitePage({ token }: FriendInvitePageProps) {
             </>
           )}
 
-          {status === 'error' && (
+          {status === 'error' && kaliciRet && (
+            <>
+              {/* Sunucu neden reddettiğini zaten Türkçe söylüyor; onu yutup
+                  "tekrar dene" demek YANLIŞ yönlendirmeydi — bu dala düşen
+                  hiçbir durum tekrar denemekle çözülmüyor (25 Ağustos 2026,
+                  kullanıcı kendi davet linkine tıklayınca bildirdi). */}
+              <p className="text-red text-xs font-mono leading-relaxed m-0">{kaliciRet}</p>
+              <a href="/" className={`${primaryBtn} inline-block`}>
+                Kelimeki'ye Git
+              </a>
+            </>
+          )}
+
+          {status === 'error' && !kaliciRet && (
             <>
               <p className="text-red text-xs font-mono leading-relaxed m-0">
                 Davet kabul edilirken bir hata oluştu, lütfen tekrar dene.
