@@ -340,23 +340,55 @@ proje bugüne kadar tam bundan kaçınmak için `noreply@kelimeki.com` kullandı
 (bkz. kök `CLAUDE.md` → Brevo sender kurulumu). Bu yüzden hedef **gerçek
 posta kutusu**: hem alan hem `destek@`'dan cevap yazabilen.
 
-### ⛔ Kurulumdan önce — SPF tuzağı
+### DNS'in ÖLÇÜLEN hâli (25 Ağustos 2026, GoDaddy panelinden okundu)
 
-**Bir domainde SPF kaydı YALNIZCA BİR TANE olabilir.** `kelimeki.com`'da 20
-Temmuz 2026'da Brevo için girilmiş bir tane var. Kuracağın mail servisi
-"şu SPF kaydını ekle" diyecek — **ikinci bir TXT eklersen SPF `PermError`
-verir** ve o gün çözülen teslimat sorunu (kayıt onayı mailleri spam'e
-düşüyordu) aynen geri gelir. Doğrusu, yeni `include:`i **mevcut kaydın
-içine** yazmak:
+**14 kaydın tamamı sayıldı. İki beklenen kayıt YOK: `SPF` ve `MX`.**
 
-```
-v=spf1 include:spf.brevo.com include:<yeni-servis> ~all    ← TEK kayıt
-```
+| Ne | Durum | Kayıt |
+|---|---|---|
+| DKIM (Brevo) | ✅ | `brevo1._domainkey` / `brevo2._domainkey` → `b1/b2.kelimeki-com.dkim.brevo.com` (CNAME) |
+| DMARC | ✅ | `_dmarc` TXT → `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com` |
+| Brevo domain doğrulaması | ✅ | `@` TXT → `brevo-code:8d3dc…` |
+| Brevo izleme/return-path | ✅ | `mail`, `r.mail`, `img.mail` CNAME → `*.brevosend.com` |
+| Search Console | ✅ | `@` TXT → `google-site-verification=…` |
+| Vercel | ✅ | `A @ 216.198.79.1`, `www` CNAME → `*.vercel-dns-017.com` |
+| **SPF** | ❌ **YOK** | — |
+| **MX** | ❌ **YOK** | — |
 
-**MX kayıtları yalnızca ALMAYI etkiler** — Brevo gönderirken MX'e bakmaz,
-yani `noreply@` akışı (kayıt onayı, şifre sıfırlama, davet/süre bildirimleri,
-destek yanıtı) bu kurulumdan etkilenmez. DKIM ayrı selector'larda durur,
-çakışmaz. DMARC kaydına dokunulmaz.
+⚠ **Kök `CLAUDE.md` bu konuda YANILTICIYDI** ve düzeltildi: 20 Temmuz 2026
+notu *"verilen SPF/DKIM/DMARC DNS kayıtları domain'in DNS'ine girildi"*
+diyor; DNS'in kendisi SPF'in hiç girilmediğini söylüyor. Bu cümleye
+dayanarak bu dosya üç tur boyunca var olmayan bir kaydı "birleştirmek"
+üzerine uyarı yazdı — **kaydı okumadan kayda güvenmenin bedeli.**
+
+**Brevo neden yine de çalışıyor:** DMARC, SPF **veya** DKIM'den biri
+hizalanırsa geçer. DKIM kurulu ve `kelimeki.com` adına imzalıyor → geçiyor.
+Brevo'nun zarf adresi (Return-Path) kendi domaininde olduğundan kök SPF'e
+zaten bakılmıyor — `mail`/`r.mail` CNAME'lerinin `brevosend.com`'a gitmesinin
+sebebi bu.
+
+### Kuruluma etkisi
+
+1. **MX boş** → Zoho'ya çevirirken yerinden edilecek bir şey yok. Aynı
+   zamanda `destek@kelimeki.com`'un bugün gerçekten hiçbir şey almadığının
+   (mailin bounce ettiğinin) kanıtı.
+2. **SPF birleştirilmeyecek, İLK KEZ oluşturulacak.** Brevo'yu da içine
+   koy — bugün gerekmiyor ama return-path yapılandırması değişirse ya da
+   biri Brevo SMTP'sinden `@kelimeki.com` zarfıyla gönderirse bedava
+   sigorta:
+   ```
+   v=spf1 include:spf.brevo.com include:<zoho'nun verdiği> ~all
+   ```
+   `~all`, `-all` DEĞİL — bilinmeyen bir gönderici sert reddedilmesin.
+   **Kural yine de geçerli: TEK bir SPF kaydı.** İkinci bir TXT açılırsa
+   `PermError` olur ve o noktadan sonra hiçbir SPF kontrolü geçmez.
+3. **DKIM çakışmaz** — Zoho kendi selector'ını ekler, `brevo1/2` yerinde
+   kalır.
+4. **DMARC'a dokunulmaz.** `p=none` (izleme modu) olduğu için geçiş
+   sırasında bir şey kırılsa bile mailler reddedilmez — rahat bir zemin.
+5. ⚠ **`mail` adlı bir CNAME ZATEN VAR** (Brevo'nun). Zoho kurulumu `mail`
+   adlı bir kayıt isterse çakışır; o durumda Zoho'nun alternatif adı
+   kullanılacak.
 
 ### Adımlar (panel adları değişir, kayıtlar aynı)
 
