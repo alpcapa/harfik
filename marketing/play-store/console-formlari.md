@@ -255,6 +255,15 @@ uygulama adı (29/30) · kısa açıklama (79/80) · tam açıklama (1906/4000) 
 ikon `store-icon-512.png` · öne çıkan görsel `feature-graphic.png` ·
 **telefon ekran görüntüleri** (7 kare, 1080×2072, sende).
 
+**AI asset declaration → `Don't label assets`** (25 Ağustos 2026'da soruldu).
+Alan, mağaza görsellerinin ÜRETKEN yapay zeka ile oluşturulup
+oluşturulmadığını soruyor. Bizde hiçbiri öyle değil: ikon ve öne çıkan
+görsel `npm run generate-play-assets` ile üretiliyor — betik uygulamanın
+KENDİ üretim React bileşenlerini sunucuda render edip PNG'ye çeviriyor,
+yani deterministik kod çıktısı; logo statik SVG path; ekran görüntüleri
+gerçek cihazdan. **Yeni bir mağaza görseli üretken bir modelle
+yapılırsa bu cevap değişmeli.**
+
 **Store settings:**
 
 | Alan | Değer |
