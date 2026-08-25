@@ -137,6 +137,28 @@ da ortada asılı kalmıyor. Statüye (`pending`/`active`/`abandoned`) değil
 
 ---
 
+## Kullanım Koşulları da güncellendi (ikinci turda)
+
+İlk turda Koşullar'a DOKUNULMAMIŞTI ve gerekçesi ölçülmüştü: metnin tamamı
+"sil" için tarandığında tek eşleşme §4'ün *"hesabınız … askıya alınabilir
+veya silinebilir"* cümlesiydi — o BİZİM hesabı kapatma hakkımız, kullanıcının
+kendi hesabını silmesi değil; yani yanlış hâle gelen bir cümle yoktu ve
+mağaza şartı da Koşullar'ı istemiyor.
+
+Kullanıcı yine de istedi (25 Ağustos 2026) ve §2 Hesap Sorumluluğu'na tek bir
+cümle eklendi: *"Hesabınızı dilediğiniz zaman Hesap Ayarları'ndan kendiniz
+silebilirsiniz; silme kalıcıdır ve geri alınamaz, kapsamı Gizlilik
+Politikası'nın 5. bölümünde açıklanmıştır."* Gerekçe: yalnızca Koşullar'ı
+okuyan biri bu yolu hiç öğrenmiyordu.
+
+⚠ **Bedeli önceden söylenmişti ve gerçekleşti:** Koşullar'ın "Son güncelleme"
+tarihini oynatmak portun `legal_modals.dart`'ını ZORUNLU kılıyor
+(`legal_text_test.dart` İKİ tarihi de karşılaştırıyor), yani yeni bir mobil CI
+turu ve **yeni bir `.aab`**. Metin değişikliği ucuz değil; hukuki metne
+dokunmak her zaman bir paket turudur.
+
+---
+
 ## Atomiklik sınırı (bilinçli)
 
 İki adım var: (1) RPC public şemayı **tek işlemde** temizler, (2)
@@ -203,7 +225,7 @@ Bugün canlıda **sıfır**: çok insanlı bir oyunun `games` satırı her zaman
 | Edge Function | `supabase/functions/delete-my-account/index.ts` (`verify_jwt: true`) |
 | Web API | `src/lib/api.ts` → `previewAccountDeletion` / `deleteMyAccount` |
 | Web UI | `src/components/DeleteAccountModal.tsx` + `AccountSettingsModal.tsx` |
-| Web hukuki metin | `src/legal/LegalContent.tsx` (Gizlilik §5), `src/legal/render.tsx` (`/hesap-silme/`) |
+| Web hukuki metin | `src/legal/LegalContent.tsx` (Gizlilik §5 **ve** Koşullar §2), `src/legal/render.tsx` (`/hesap-silme/`) |
 | Port veri | `mobile/app/lib/src/data/auth_service.dart` (+ `AccountDeletionReport`) |
 | Port UI | `mobile/app/lib/src/ui/auth/delete_account_modal.dart` + `account_settings_modal.dart` + `neo_button.dart` (`red` varyantı) |
 | Port hukuki metin | `mobile/app/lib/src/ui/auth/legal_modals.dart` (tarih `legal_text_test.dart` ile zorlanıyor) |

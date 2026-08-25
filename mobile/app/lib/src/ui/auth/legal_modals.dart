@@ -184,7 +184,7 @@ class TermsModal extends StatelessWidget {
       child: _StackedSections([
         const _P(
             "Kelimeki'ye kaydolarak aşağıdaki koşulları okuduğunuzu ve kabul "
-            'ettiğinizi beyan edersiniz. Son güncelleme: 19 Ağustos 2026.'),
+            'ettiğinizi beyan edersiniz. Son güncelleme: 25 Ağustos 2026.'),
         const _Section('1. Hizmet Sağlayıcı ve Kapsam', [
           _P('Kelimeki, herhangi bir şirket ya da tüzel kişilik '
               'bulunmaksızın, bağımsız bir geliştirici tarafından bireysel '
@@ -201,7 +201,10 @@ class TermsModal extends StatelessWidget {
           _P('Kayıt sırasında verdiğiniz bilgilerin doğru ve güncel olması '
               'zorunludur. Hesap güvenliğinizden yalnızca siz sorumlusunuz; '
               'şifrenizi kimseyle paylaşmayınız. Hesabınızı başkasına '
-              'devredemezsiniz.'),
+              'devredemezsiniz. Hesabınızı dilediğiniz zaman Hesap '
+              'Ayarları\'ndan kendiniz silebilirsiniz; silme kalıcıdır ve '
+              'geri alınamaz, kapsamı Gizlilik Politikası\'nın 5. bölümünde '
+              'açıklanmıştır.'),
         ]),
         const _Section('3. Kabul Edilemez Kullanım', [
           _P('Aşağıdaki eylemler kesinlikle yasaktır:'),
