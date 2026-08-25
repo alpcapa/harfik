@@ -230,8 +230,11 @@ Ağustos 2026). Aşağısı yalnızca hangi formun neden riskli olduğunun özet
   HAYIR** — hizmet sağlayıcı ve kullanıcının başlattığı görünürlük
   istisnalarıyla; 24 Ağustos 2026'da kullanıcı onayladı, gerekçe
   `console-formlari.md` §3.8'de.
-- **Content rating (IARC):** kullanıcılar arası **sohbet var**, beyan
-  edilmek zorunda (yaş derecesini yükseltir).
+- **Content rating (IARC):** ✅ **BİTTİ (25 Ağustos 2026).** Sohbet beyan
+  edildi. Bu satır "yaş derecesini yükseltir" diyordu — **ölçüm bunu
+  doğrulamadı:** sonuç en düşük bant (PEGI 3, USK 0, ESRB Everyone,
+  IARC 3+). Sebebi, sohbete yalnızca kabul edilen arkadaşın girebilmesi ve
+  sessize alma/şikayetin var olması.
 - **UGC / moderasyon:** sohbet olduğu için gerekiyor. Karşılayacak
   mekanizma ZATEN var — sessize alma, şikayet, hesap dondurma, admin
   paneli; yalnızca beyan edilecek.

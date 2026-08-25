@@ -175,9 +175,24 @@ E-posta: *(iletişim e-postası, §4)* · Kategori: **Game**.
 | Dijital ürün satın alma | Hayır |
 | Kısıtlanmamış internet erişimi (tarayıcı) | Hayır |
 
-Beklenen sonuç: en düşük yaş bandı + **"Users Interact"** etiketi. Sohbetin
-beyan edilmemesi askıya alma sebebi — `chat-moderation.md`'deki sessize alma
-/ şikayet / dondurma mekanizması bu beyanın karşılığı.
+**Ek sorular (25 Ağustos 2026'da Console'da çıktı, cevaplarıyla):**
+
+| Soru | Cevap | Gerekçe |
+|---|---|---|
+| Kullanıcı engelleme / içerik gizleme var mı | **Yes** | Canlı oyunda sessize alma — o kişinin mesajları sana görünmüyor |
+| Şikayet etme var mı | **Yes** | Şikayet nedeniyle birlikte yönetici ekibine gidiyor |
+| **Chat moderation var mı** | **NO** | ⚠ Bilinçli. Kullanım Koşulları harfiyen *"mesajlar önceden denetlenmez (moderasyona tabi değildir)"* diyor: ön filtre yok, küfür süzgeci yok, moderatör kadrosu yok — yalnızca TEPKİSEL inceleme. "Evet" demek kendi yayınlanmış koşullarımızla çelişirdi |
+| Etkileşimler davet edilen arkadaşlarla sınırlanabiliyor mu | **Yes** | Ölçüldü: `LiveGameCreateForm` rakibi arkadaş listesinden seçtiriyor; rastgele eşleşme/halka açık oyun YOK, ne web'de ne portta |
+| Konum diğer kullanıcılarla paylaşılıyor mu | **No** | Konum hiç toplanmıyor |
+| Nazi sembolleri | **No** | — |
+
+**SONUÇ (25 Ağustos 2026): en düşük yaş bandı — PEGI 3, USK 0, ESRB
+Everyone, IARC 3+.** `ROADMAP.md` "sohbet yaş derecesini yükseltir" diye
+öngörmüştü; **ölçüm bunu doğrulamadı.** Sohbet dürüstçe beyan edildi ve
+derece yine de düşük kaldı — çünkü sohbete ancak kabul edilen arkadaş
+girebiliyor ve kullanıcı sessize alıp şikayet edebiliyor. İlk üç sorunun
+cevabı burada işe yaradı. Sohbetin beyan edilmemesi ise askıya alma sebebi
+olurdu — `chat-moderation.md`'deki mekanizma bu beyanın karşılığı.
 
 ### 3.6 Target audience and content
 - Yaş grupları: **13-15, 16-17, 18+** (yani 13+).
@@ -231,7 +246,25 @@ reklam ağı, veri satışı — geçilirse "Paylaşılıyor" EVET olur.
 | Device or other IDs → **Device or other IDs** | `anon_id` — cihazda üretilen rastgele kod, hesapla EŞLEŞTİRİLMEZ | Zorunlu | Analytics | `visitTracking` |
 
 **Hiçbir satırda "processed ephemerally" YOK** — hepsi kalıcı olarak
-saklanıyor.
+saklanıyor. ⚠ Bu bir KUTUCUK değil, radyo çifti: "No, this collected data
+is not processed ephemerally" açıkça SEÇİLMELİ, boş bırakılamaz.
+
+**Formun sorduğu iki ek soru (25 Ağustos 2026):**
+
+- **"Hangi hesap oluşturma yöntemlerini destekliyorsun?"** → yalnızca
+  **`Username and password`**. Koddan doğrulandı (`auth_service.dart`):
+  `signUp(email, password)` / `signInWithPassword`; OAuth yok, sosyal giriş
+  yok, 2FA yok. Play'in kendi açıklaması e-postayı "username" sayıyor.
+- **"Hesabı silmeden verinin bir kısmının silinmesini talep etme yolu
+  sunuyor musun?" (Optional)** → **`No`**. `/hesap-silme/` yalnızca TAM
+  hesap silmeyi anlatıyor; kısmi silme için ayrı bir mekanizma yok.
+  Politikanın KVKK m.11 bölümü hakkı veriyor ve talep gelse yapardık, ama
+  Play burada bir HAK değil sunulan bir YOL soruyor — "Yes" deyip
+  incelemecinin karşısına genel bir geri bildirim formu çıkarmak beyanı
+  abartmak olurdu. Alan zaten opsiyonel, bedeli sıfır.
+  **İleride ucuza "Yes"e çevrilebilir:** `/hesap-silme/`'ye "yalnızca
+  belirli verilerimin silinmesini istiyorum" bölümü eklemek yeterli — ve
+  ROADMAP madde 2 (uygulama içi hesap silme) zaten o sayfaya dokunacak.
 
 **Beyan EDİLMEYENLER (ve neden):**
 - Konum — hiç toplanmıyor.
@@ -345,6 +378,30 @@ oku.
 
 ---
 
+## 6.5 — Console'da BİTENLER (25 Ağustos 2026)
+
+| Adım | Durum |
+|---|---|
+| Android developer verification | ✅ (kayıt sırasında tamamlanmış) |
+| Uygulama oluşturuldu | ✅ Game · Free · tr-TR |
+| `.aab` yüklendi | ✅ 349 (1.0.0) · Play App Signing'e KAYDOLUNDU |
+| Store listing (metin + ikon + feature graphic + 7 ekran görüntüsü) | ✅ |
+| App content: privacy policy, ads, advertising ID, news, COVID, government, financial, health | ✅ hepsi |
+| App access | ✅ T2, "tam erişim" kutusu işaretli |
+| Content ratings (IARC) | ✅ en düşük bant |
+| Target audience | ✅ 13-15 / 16-17 / 18+ |
+| Data safety | ✅ 11 veri türü |
+| Store settings (kategori + iletişim) | ✅ Games→Word · `destek@kelimeki.com` |
+| Countries/regions | ✅ tümü |
+| Tester listesi | ✅ `Kelimeki Testers` |
+| **Preview and confirm → Send for review** | ⬜ **kaldı** |
+
+**App access'teki "tam erişim" kutusu ÖLÇÜLEREK işaretlendi:** ücretli/
+premium içerik yok, ve **Android uygulamasında yönetici paneli YOK** —
+`isAdmin` portta yalnızca `auth_service.dart`'ta ayrıştırılıyor,
+`lib/src/ui/` altında hiçbir ekranı kilitlemiyor. Panel web'de yaşıyor,
+Play'e giden pakette değil.
+
 ## 7. 12 tester + 14 gün
 
 **Şart:** kapalı testte **en az 12 tester**, **kesintisiz 14 gün** kayıtlı.
@@ -353,6 +410,9 @@ Sayaç "yükledim" ile değil, **12 kişi opt-in olduğunda** işlemeye başlıy
 | Tuzak | Ne yapmalı |
 |---|---|
 | Listeye eklemek YETMEZ | Her tester **opt-in bağlantısına tıklayıp kabul etmeli** |
+| **Google tester'lara MAİL ATMIYOR** | Listeye eklemek yalnızca yetkilendiriyor; daveti geliştirici kendi kanalından gönderir |
+| **Linke tıklayan otomatik katılmaz** | Liste bir izin listesi. Listede olmayan biri linkte "bu test sana açık değil" görür. Sıra: adresi al → listeye ekle → linki gönder |
+| Adres, kişinin TELEFONUNDAKİ Play hesabı olmalı | En sık aksaklık: iş adresi verilir, telefonda başka Gmail açıktır. Sorulacak soru "hangi adresi istersin" değil, "telefonunda hangi hesap açık" |
 | Biri çıkarsa sayaç kırılır | **15-20 kişi topla**, 12 tabandır |
 | Adresler Google hesabı olmalı | Gmail ya da Google'a bağlı bir adres; şirket/okul adresi olabilir ama Play hesabı olmalı |
 | Cihazdaki eski CI `.apk` | **Tester'lar için sorun değil** — kimseye `.apk` gönderilmedi (§5). Yalnızca geliştirme cihazında var |
