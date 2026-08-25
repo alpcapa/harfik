@@ -95,15 +95,36 @@ sunucu yönlendirmesine bağlı ve bu ortamdan doğrulanamadı).
 Canlı oyun, arkadaşlık, k-lig ve oyun geçmişi giriş istiyor; yapay zekaya
 karşı oyun istemiyor. İncelemeciye çalışan bir hesap verilmeli:
 
+**Hesap: `T2` (`kelimekitest2`)** — kullanıcı kararı, 24 Ağustos 2026.
+**`T1` BİLEREK KULLANILMIYOR:** o hesabın e-postası geliştiricinin kişisel
+Hotmail adresi; Play'e verilen kimlik bilgisi kişisel bir adresi ifşa
+etmemeli.
+
 | Alan | Değer |
 |---|---|
 | Instructions name | `Canlı oyun / arkadaşlık / k-lig` |
-| Username | *(test hesabının e-postası — sen gireceksin)* |
-| Password | *(test hesabının şifresi)* |
+| Username | `kelimekitest2@sharedxpteam.testinator.email` |
+| Password | *(Console'a sen gireceksin — repoya YAZILMAZ)* |
 | Any other instructions | `Uygulama girişsiz de oynanır: "Yapay Zeka ile" sekmesinden oyun başlatılabilir. Canlı oyun, arkadaş listesi, k-lig sıralaması ve skor kartı için sağ üstteki avatar simgesinden bu hesapla giriş yapın.` |
 
-⚠ **Bu hesap SİLİNMEYECEK.** ROADMAP 0.B/5 (test hesaplarının temizliği)
-bu satırı kontrol etmeden çalıştırılamaz.
+**Hesabın durumu ÖLÇÜLDÜ (24 Ağustos 2026, üretim veritabanı):** e-posta
+doğrulanmış ✓ · dondurulmamış ✓ · **3 arkadaş** · **1 aktif Canlı oyun** ·
+**11 bitmiş oyun**. Yani incelemeci giriş yaptığında arkadaş listesi, Canlı
+oyun ekranı, k-lig sıralaması ve skor kartı BOŞ değil — dördü de gerçek
+veriyle açılıyor. Yeni bir hesap açıp vermekten iyi olmasının sebebi bu.
+
+⚠ **İki not:**
+- **Bu hesap SİLİNMEYECEK.** ROADMAP 0.B/5 (test hesaplarının temizliği) bu
+  satırı kontrol etmeden çalıştırılamaz.
+- Adres bir Mailinator alan adında. Gelen kutusu herkese açıksa, adresi
+  bilen biri **şifre sıfırlayıp** hesabı ele geçirebilir — ve bu, incelemenin
+  bağlı olduğu hesap. Bedeli düşük (bir test hesabı), ama Console'a girmeden
+  önce o kutunun gerçekten özel (takım hesabıyla korunan) olduğunu teyit et;
+  değilse T2'nin e-postasını özel bir adrese taşı.
+- Hesaptaki aktif Canlı oyunun 48 saatlik sayacı işlemeye devam ediyor;
+  dolarsa T2 teslim sayılır ve -2 alır. Test hesabı olduğu için zararsız,
+  ama incelemeci "oyun bitmiş" görebilir — inceleme yaklaşırken bir hamle
+  yapıp sayacı tazelemek işe yarar.
 
 ### 3.3 Ads
 **"No, my app does not contain ads."** — reklam yok, uygulama içi satın alma
@@ -161,9 +182,16 @@ Health apps.
 gerekçeyle, ikisi de Play'in kendi istisna listesinde: (a) Supabase/Brevo/
 Vercel bizim adımıza işleyen **hizmet sağlayıcı**; (b) takma isim, profil
 fotoğrafı ve sohbet **kullanıcının kendi başlattığı** ve uygulamanın açıkça
-anlattığı bir görünürlük (k-lig, oyun daveti). ⚠ Bu iki yorum senin onayını
-istiyor — Play'in "sharing" tanımı bu istisnaları tanıyor ama beyanı yapan
-sensin.
+anlattığı bir görünürlük (k-lig, oyun daveti).
+
+**Bu iki yorum 24 Ağustos 2026'da kullanıcı tarafından ONAYLANDI** — beyan
+böyle yapılacak. Kayıt burada duruyor ki ileride "neden paylaşım hayır
+denmiş" sorusunun cevabı aranmasın. Gerekçenin dayanağı `PrivacyModal`'ın
+4. bölümü: üç sağlayıcı adıyla sayılıyor ve hangi verinin hangi kullanıcıya
+görünür olduğu tek tek yazılı — yani beyan ile politika metni birbirini
+doğruluyor. **Bu denge bozulursa beyan da değişmeli:** veriyi kendi amacı
+için kullanan (hizmet sağlayıcı olmayan) bir üçüncü tarafa — analitik SDK'sı,
+reklam ağı, veri satışı — geçilirse "Paylaşılıyor" EVET olur.
 
 | Play veri türü | Ne | Zorunlu mu | Amaç | Kaynak |
 |---|---|---|---|---|
@@ -211,7 +239,7 @@ ikon `store-icon-512.png` · öne çıkan görsel `feature-graphic.png` ·
 | App category | **Games → Word** |
 | Tags | Word · Puzzle · Board · Casual (en fazla 5) |
 | Website | `https://kelimeki.com` |
-| E-posta | ⚠ **HERKESE AÇIK** — mağaza sayfasında görünür. Kişisel adresini yazma; `noreply@` de olmaz (gelen kutusu yok). Karar senin: yeni bir `destek@kelimeki.com` mı, mevcut bir adres mi? |
+| E-posta | **`destek@kelimeki.com`** — karar 24 Ağustos 2026, kullanıcı. Adres HENÜZ YOK, kurulumu §8'de. ⚠ Bu alan mağaza sayfasında **herkese açık**: kişisel adres yazılmaz, `noreply@` de olmaz (gelen kutusu yok) |
 | Telefon | İsteğe bağlı — boş bırak (o da herkese açık) |
 | External marketing | İzin ver |
 
@@ -238,10 +266,16 @@ bunları "hâlâ ölçülmedi" diye bırakmıştı; 24 Ağustos'ta pakete bakıl
 izinler **3 adet** (§6). Farklı bir şey görürsen Data safety beyanı
 yeniden gözden geçirilmeli.
 
-**⚠ Cihazdaki CI `.apk`'sı önce SİLİNMELİ.** O paket debug anahtarıyla
-imzalı; Play'den gelen paket upload/Play anahtarıyla imzalı ve imzalar
-uyuşmadığı için üstüne kurulmuyor (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`).
-Bu, tester'lara gönderilecek metne de girmeli.
+**⚠ SENİN cihazındaki CI `.apk`'sı önce SİLİNMELİ.** O paket debug
+anahtarıyla imzalı; Play'den gelen paket upload/Play anahtarıyla imzalı ve
+imzalar uyuşmadığı için üstüne kurulmuyor
+(`INSTALL_FAILED_UPDATE_INCOMPATIBLE`). Ekran görüntüleri o `.apk` ile
+alındığı için geliştirme cihazında kesinlikle var.
+
+**Tester'lar için GEREKMİYOR (24 Ağustos 2026, kullanıcı):** bugüne kadar
+hiç kimseye test `.apk`'sı gönderilmedi, yani tester'ların cihazı temiz.
+İleride birine `mobile-latest`ten `.apk` verilirse bu uyarı o kişi için
+geri gelir.
 
 ---
 
@@ -272,18 +306,73 @@ Sayaç "yükledim" ile değil, **12 kişi opt-in olduğunda** işlemeye başlıy
 | Listeye eklemek YETMEZ | Her tester **opt-in bağlantısına tıklayıp kabul etmeli** |
 | Biri çıkarsa sayaç kırılır | **15-20 kişi topla**, 12 tabandır |
 | Adresler Google hesabı olmalı | Gmail ya da Google'a bağlı bir adres; şirket/okul adresi olabilir ama Play hesabı olmalı |
-| Cihazdaki eski CI `.apk` | Kurulumdan önce sildir (§5) |
+| Cihazdaki eski CI `.apk` | **Tester'lar için sorun değil** — kimseye `.apk` gönderilmedi (§5). Yalnızca geliştirme cihazında var |
 | Production başvurusu geri bildirim soruyor | Tester'lardan **yazılı geri bildirim topla** — başvuruda "nasıl test ettirdin" sorusu var |
 
 **Tester'a gönderilecek metin (taslak):**
 
-> Kelimeki'nin kapalı testine davetlisin. Üç adım:
-> 1. Telefonunda daha önce Kelimeki'nin test `.apk`'sı kuruluysa **önce onu
->    kaldır** (imzası farklı, üstüne kurulmuyor).
-> 2. Şu bağlantıyı Android telefonundan aç ve "Become a tester" de:
+> Kelimeki'nin kapalı testine davetlisin. İki adım:
+> 1. Şu bağlantıyı Android telefonundan aç ve "Become a tester" de:
 >    *(Play Console'un verdiği opt-in linki)*
-> 3. Aynı sayfadaki Play Store bağlantısından uygulamayı kur.
+> 2. Aynı sayfadaki Play Store bağlantısından uygulamayı kur.
 >
 > Testin sayması için **14 gün boyunca listede kalman** yeterli — uygulamayı
 > silsen bile testerlıktan çıkma. Takıldığın ya da tuhaf gelen bir şey olursa
 > yaz, iyi olur.
+
+---
+
+## 8. `destek@kelimeki.com` — kurulum
+
+**Karar (24 Ağustos 2026, kullanıcı):** mağaza iletişim adresi kendi
+domainimizde, gerçek bir destek adresi olacak. Bugün böyle bir adres YOK —
+`noreply@kelimeki.com` yalnızca GÖNDERİYOR, gelen kutusu yok.
+
+**Play'in istediği tek şey ALMAK.** Ama yalnızca yönlendirme kurulursa bir
+kullanıcıya cevap yazdığında `From` alanında **kişisel adresin** görünür —
+proje bugüne kadar tam bundan kaçınmak için `noreply@kelimeki.com` kullandı
+(bkz. kök `CLAUDE.md` → Brevo sender kurulumu). Bu yüzden hedef **gerçek
+posta kutusu**: hem alan hem `destek@`'dan cevap yazabilen.
+
+### ⛔ Kurulumdan önce — SPF tuzağı
+
+**Bir domainde SPF kaydı YALNIZCA BİR TANE olabilir.** `kelimeki.com`'da 20
+Temmuz 2026'da Brevo için girilmiş bir tane var. Kuracağın mail servisi
+"şu SPF kaydını ekle" diyecek — **ikinci bir TXT eklersen SPF `PermError`
+verir** ve o gün çözülen teslimat sorunu (kayıt onayı mailleri spam'e
+düşüyordu) aynen geri gelir. Doğrusu, yeni `include:`i **mevcut kaydın
+içine** yazmak:
+
+```
+v=spf1 include:spf.brevo.com include:<yeni-servis> ~all    ← TEK kayıt
+```
+
+**MX kayıtları yalnızca ALMAYI etkiler** — Brevo gönderirken MX'e bakmaz,
+yani `noreply@` akışı (kayıt onayı, şifre sıfırlama, davet/süre bildirimleri,
+destek yanıtı) bu kurulumdan etkilenmez. DKIM ayrı selector'larda durur,
+çakışmaz. DMARC kaydına dokunulmaz.
+
+### Adımlar (panel adları değişir, kayıtlar aynı)
+
+1. Mail servisinde domaini ekle, verdiği **doğrulama TXT**'ini gir.
+2. **MX kayıtlarını** ekle (varsa eskileri kaldır — MX'te birden fazla
+   sağlayıcı olmaz).
+3. **DKIM** TXT kaydını gir (kendi selector'ında, Brevo'nunkiyle çakışmaz).
+4. **SPF'i BİRLEŞTİR** — yukarıdaki uyarı.
+5. `destek@` kutusunu aç, kendine bir test maili at, geldiğini gör.
+6. Play Console → Store settings → iletişim e-postasına yaz.
+
+### Açık kalan
+
+- **DNS paneli hangisi?** (Temmuz'da Brevo kayıtlarını girdiğin yer.)
+  Adımlar aynı, yalnızca ekran adları değişiyor.
+- Servis seçimi: gerçek kutu için ücretsiz katmanı olan sağlayıcılar var
+  (ücretsiz katman şartları değişebiliyor, kayıt sırasında teyit et);
+  Google Workspace ücretli ama Play hesabıyla aynı ekosistem.
+
+### ⚠ Bu iş 14 günlük sayacı BEKLETMEMELİ
+
+Mağaza iletişim e-postası **sonradan değiştirilebilir**. DNS/mail kurulumu
+bir güne yayılırsa, kapalı testi başlatmak için oraya geçici olarak
+alabildiğin bir adres yaz ve `destek@` hazır olunca değiştir. Kritik yolda
+duran tek şey **12 tester**, bu değil.

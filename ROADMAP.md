@@ -214,7 +214,10 @@ Ağustos 2026). Aşağısı yalnızca hangi formun neden riskli olduğunun özet
   (`anon_id`), hata telemetrisi (`client_errors`), ziyaret/oyun başlangıç
   olayları. **Kaynak metin hazır:** `PrivacyModal`'ın "Toplanan Veriler"
   bölümü satır satır forma eşlenmeli. Üçüncü taraflar: Supabase, Brevo,
-  Vercel (19 Ağustos'ta politikaya eklendi).
+  Vercel (19 Ağustos'ta politikaya eklendi). **"Paylaşılıyor" her satırda
+  HAYIR** — hizmet sağlayıcı ve kullanıcının başlattığı görünürlük
+  istisnalarıyla; 24 Ağustos 2026'da kullanıcı onayladı, gerekçe
+  `console-formlari.md` §3.8'de.
 - **Content rating (IARC):** kullanıcılar arası **sohbet var**, beyan
   edilmek zorunda (yaş derecesini yükseltir).
 - **UGC / moderasyon:** sohbet olduğu için gerekiyor. Karşılayacak
