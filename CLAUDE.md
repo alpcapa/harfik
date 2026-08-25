@@ -224,8 +224,11 @@ değiştiğinde. `npm install` ve derleme YOK (saniyeler) — bu repoda
 ⚠ **Uyarı bandındaki dosyayı bir sonraki dokunuşunda böl.** Uyarı, sınıra
 çarpmadan önce hareket etme fırsatıdır; biriktirilirse kontrolün anlamı
 kalmaz. Bugün uyarı bandında olanlar: `docs/decisions/components.md`,
-`mobile/TESTING.md`, `docs/decisions/live-game-and-friends.md`,
-`mobile/docs/parca-log.md`.
+`mobile/TESTING.md`, `mobile/docs/parca-log.md`.
+(`docs/decisions/live-game-and-friends.md` 25 Ağustos 2026'da tam bu kural
+gereği bölündü — 156 KB'lık dosya `friends.md` / `live-game.md` /
+`online-game-screen.md` olarak üçe ayrıldı, üçü de 64 KB'ın altında. Kural
+işledi: dosya "bir gün" değil, ilk dokunuşta bölündü.)
 
 **Bu dosya (`CLAUDE.md`) da kuralı yazarken 111 KB'a çıkıp uyarı bandına
 girmişti** — kuralı yazmak, kuralın konusu olan dosyayı büyüttü. Öngörülen
@@ -261,7 +264,9 @@ olabilir — atıf bulunamazsa önce buradaki tabloya bak.
 | Sözlüğe kelime/anlam ekleme prosedürü + kelime listesi code-splitting | `docs/decisions/dictionary.md` |
 | Admin paneli (tüm sekmeler, rozet zinciri, büyüme grafikleri, kaynak hunisi, retention) | `docs/decisions/admin-panel.md` |
 | k-lig ödül & rütbe sistemi | `docs/decisions/league-system.md` |
-| Canlı Oyun (Faz 1-3.6) + Arkadaşlık Sistemi | `docs/decisions/live-game-and-friends.md` |
+| Arkadaşlık sistemi (istek/kabul, davet linki ve `/davet/:token` sayfası, işlemsel e-postalar) | `docs/decisions/friends.md` |
+| Canlı Oyun — Faz 2-3.6 (veri modeli, RPC'ler, zaman aşımı, cron) | `docs/decisions/live-game.md` |
+| Canlı oyun EKRANI (`OnlineGameScreen.tsx`) — sürükleme, joker, raf, senkron | `docs/decisions/online-game-screen.md` |
 | Oyun içi mesajlaşma (Faz 1: mesajlaşma, Faz 2: sessize alma/raporlama) | `docs/decisions/chat-moderation.md` |
 | Reklam/pazarlama görselleri (sponsored post, Play Store vitrini, FB kapağı, reel) | `docs/decisions/marketing-assets.md` |
 | Hukuki statik sayfalar (`/gizlilik/`, `/kullanim-kosullari/`, `/hesap-silme/`) | `docs/decisions/legal-pages.md` |

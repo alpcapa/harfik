@@ -1,7 +1,7 @@
 // Kelimeki — Arkadaşlar modalı: mevcut kullanıcıyı arayıp ekleme (e-postasız,
 // uygulama içi istek/kabul) + kalıcı davet linkini WhatsApp/SMS/DM gibi
 // kanallardan paylaşarak henüz üye olmayanları da davet etme (asıl büyüme
-// mekanizması — bkz. CLAUDE.md "Arkadaşlık Sistemi").
+// mekanizması — bkz. `docs/decisions/friends.md`).
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { LoadingNote } from './LoadingNote';
 import { createPortal } from 'react-dom';

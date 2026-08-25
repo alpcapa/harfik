@@ -308,6 +308,15 @@ test('/davet/:token arkadaşlık davet sayfası açılır, katman görünmez', a
   await expect(page.getByLabel('Kelimeki anasayfa')).toBeVisible();
   await expect(page.getByText(/Bu davet linki geçersiz|Yükleniyor/)).toBeVisible();
   await expect(page.getByText('OYUNU BAŞLAT')).toHaveCount(0);
+
+  // 25 Ağustos 2026 — sayfa artık davet cümlesinin yanında oyunu ANLATIYOR
+  // (tanıtım tahtası + özellikler). Bu blok token'ın geçerliliğinden BAĞIMSIZ,
+  // yalnızca "girişsiz ziyaretçi" koşuluna bağlı: geçersiz linkle gelen kişi
+  // de eskiden tek satırlık bir çıkmaza düşüyordu. Tahta karşılama katmanıyla
+  // AYNI kaynaktan (`landing/demoBoard.ts`) geliyor — import zinciri kopar ya
+  // da bölüm sessizce düşerse burada yakalanır.
+  await expect(page.getByRole('heading', { name: 'Kelimeki nedir?' })).toBeVisible();
+  await expect(page.getByRole('img', { name: /Kelimeki tahtası örneği/ })).toBeVisible();
 });
 
 /**

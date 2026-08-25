@@ -77,11 +77,18 @@ interface BoardProps {
 // Merkezdeki x2 bonus bölgesi altın rengi — nömorfik, diğer köşe tonlarıyla
 // karışmasın diye sıcak/altın. Tam ortadaki tek X3 hücresi turuncu bir zeminle
 // öne çıkar.
-const GOLD_ZONE_STYLE: React.CSSProperties = {
+//
+// 25 Ağustos 2026 — İKİSİ DE `export`: `FriendInvitePage`'in tanıtım tahtasının
+// altındaki X2/X3 açıklama rozetleri bu zeminleri BİREBİR kullanıyor (tahta
+// orada `compact`, yani hücrelerin üstünde "X2"/"X3" etiketi çizilmiyor —
+// rengi açıklayan tek şey o rozetler). Renk kodunu oraya elle yazmak bu kod
+// tabanının en sık tekrarlayan hata sınıfının (iki kopyanın sessizce
+// ayrışması) bir örneği daha olurdu.
+export const GOLD_ZONE_STYLE: React.CSSProperties = {
   background: 'linear-gradient(135deg, #FDE68A, #FBBF24)',
   boxShadow: 'inset 2px 2px 5px rgba(180,130,10,0.3), inset -1px -1px 3px rgba(255,255,255,0.7), 0 2px 4px rgba(180,130,10,0.2)',
 };
-const CENTER_ZONE_STYLE: React.CSSProperties = {
+export const CENTER_ZONE_STYLE: React.CSSProperties = {
   background: 'linear-gradient(135deg, #FDBA74, #F97316)',
   boxShadow: 'inset 2px 2px 5px rgba(180,80,10,0.35), inset -1px -1px 3px rgba(255,255,255,0.7), 0 2px 4px rgba(180,80,10,0.25)',
 };
