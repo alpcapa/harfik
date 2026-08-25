@@ -279,7 +279,9 @@ ekle.
 ```
 src/
   main.tsx      # ince kabuk: fontlar + derleme kimliği + kapı kararı (katman mı uygulama mı)
-  boot.tsx      # uygulamanın gerçek açılışı — main.tsx DİNAMİK import eder (bkz. "Karşılama Katmanı")
+  boot.tsx      # uygulamanın gerçek açılışı — main.tsx DİNAMİK import eder (bkz. "Karşılama Katmanı").
+                # `App` ve iki route sayfası buradan da LAZY yükleniyor: /davet ve /game
+                # oyunun tamamını ve sözlüğü indirmesin diye (2026 → 885 KB, ölçüldü)
   landing/      # karşılama katmanı — derleme zamanında statik HTML (bkz. "Karşılama Katmanı")
   legal/        # hukuki metinlerin TEK KAYNAĞI + /gizlilik/ · /kullanim-kosullari/ ·
                 # /hesap-silme/ statik sayfa üreticisi (bkz. "Hukuki Statik Sayfalar")

@@ -403,8 +403,13 @@ later are required to let us know if their app uses advertising ID"*).
 Cevap `No`; paketin izin listesinde `AD_ID` olmadığı Console'un kendi paket
 ayrıntısından zaten okunmuştu.
 
-**Şimdi bekleniyor:** Google incelemesi. Onaylanınca opt-in linki çalışır
-hâle gelir — sayaç ancak ondan sonra, 12 kişi opt-in olduğunda başlar.
+**YAYINLANDI — 25 Ağustos 2026.** Submission 1 (*Closed testing - Alpha,
+Store Listing, App Content, Advanced distribution, Store settings*) durumu
+**Published**. Kapalı test kanalı canlıda ve opt-in linki oluştu
+(Closed testing → Alpha → Testers → "How testers join your test").
+
+**Sayaç HENÜZ başlamadı:** 12 kişi opt-in olana kadar işlemiyor. Tester
+listesinde 9 adres var.
 
 **App access'teki "tam erişim" kutusu ÖLÇÜLEREK işaretlendi:** ücretli/
 premium içerik yok, ve **Android uygulamasında yönetici paneli YOK** —
