@@ -230,8 +230,10 @@ girmek zorunda** — bu ortamdan GitHub ayarlarına yazma yolu yok.
    parmak izini ister. Yanlışını yazmak hata VERMEZ — linkler sessizce
    tarayıcıda açılır (bkz. `ROADMAP.md` 1. madde).
    **ÇÖZÜLDÜ (25 Ağustos 2026):** ilk `.aab` yüklendikten sonra Play'in
-   ürettiği parmak izi Console'dan okundu (`B4:88:80:09…`) ve
-   `public/.well-known/assetlinks.json` yazıldı — yukarıdaki upload
+   ürettiği parmak izi (`2B:7D:26:11…`) `public/.well-known/assetlinks.json`e
+   yazıldı. **Değer App signing sayfasının anahtar TABLOSUNDAN değil, aynı
+   sayfanın "Digital Asset Links JSON" panelinden okunur** — ilk tur tablodan
+   okuyup yanlış parmak iziyle canlıya çıktı — yukarıdaki upload
    anahtarı (`B6:CD:FB:A9…`) dosyaya GİRMEDİ, bir duman testi bunu
    sürekli kontrol ediyor. Console'daki yol, iki anahtarlı ekran ve
    ölçümler: `marketing/play-store/console-formlari.md` → §6.6.

@@ -176,8 +176,11 @@ merge sonrası ilk `main` koşusunda okundu.
   senin upload anahtarınınki DEĞİL. Yanlışını koymak App Links'i sessizce
   kırar (madde 1 ile aynı iş).
   **YAPILDI (25 Ağustos 2026):** dosya `public/.well-known/assetlinks.json`
-  olarak yazıldı, içinde Play'in ürettiği (Classical) parmak izi var —
-  upload anahtarı (`B6:CD:FB:A9…`) DEĞİL. Ayrıntı ve ölçümler:
+  olarak yazıldı, içinde Play'in ürettiği parmak izi var (`2B:7D:26:11…`) —
+  upload anahtarı (`B6:CD:FB:A9…`) DEĞİL. ⚠ Değer, App signing sayfasının
+  anahtar TABLOSUNDAN değil, aynı sayfanın **"Digital Asset Links JSON"**
+  panelinden okunur; ilk tur tablodan okunup yanlış parmak iziyle canlıya
+  çıktı ve aynı gün düzeltildi. Ayrıntı ve ölçümler:
   `marketing/play-store/console-formlari.md` → §6.6.
 
 **Tuzaklar — 0.A2/0.A3:**
