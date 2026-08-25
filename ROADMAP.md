@@ -161,11 +161,19 @@ Artefakt DURUYOR. **DOĞRULANDI (25 Ağustos 2026, koşu 349, sha `5eddf3d`):**
 dosya release'te, 60.929.323 bayt. Kanıt PR'da alınamazdı — release adımı
 PR'da bilerek atlanıyor (workflow başlığındaki "YAYINLAMA" notu) — bu yüzden
 merge sonrası ilk `main` koşusunda okundu.
-**Yüklenmeye hazır paketin `versionCode`'u: 370** (koşu 370, sha `69d5478`,
-`.aab` 25 Ağustos 21:15'te `mobile-latest`e yüklendi — 60.971.917 bayt).
+**Yüklenmeye hazır paketin `versionCode`'u: 372** (koşu 372, sha `53e401c`,
+`.aab` 25 Ağustos 22:10'da `mobile-latest`e yüklendi — 60.972.655 bayt).
 ⚠ **Play'e YÜKLÜ olan hâlâ 349 ve o paket uygulama içi hesap silmeyi
 İÇERMİYOR** (madde 2, 349'dan sonra merge edildi). Testçilerin silme yolunu
-görebilmesi için 370 kapalı test kanalına yüklenmeli.
+görebilmesi için 372 kapalı test kanalına yüklenmeli.
+
+**370 neden atlandı:** aynı akşam Kullanım Koşulları §2'ye hesabı kendin
+silme cümlesi eklendi (#338) ve hukuki metnin tarihi portu da zorunlu kıldı
+(`legal_text_test.dart`) — yani 370 daha yüklenmeden bayatladı.
+**Kalıcı ders: hukuki metne dokunmak her zaman bir paket turudur**, "tek
+cümle" diye ucuz sayma. **İkinci ders — koşu numarası ardışık DEĞİL:** sayaç
+PR koşularında da ilerliyor, 371'i #338'in kendi koşusu yedi. Bir sonraki
+paketin numarasını önceden yazma, merge sonrası `main` koşusundan OKU.
 
 **Tuzaklar — 0.A1:**
 - **Keystore repoya GİRMEZ.** `*.jks`/`key.properties` gitignore'a; CI'a
