@@ -161,11 +161,17 @@ Artefakt DURUYOR. **DOĞRULANDI (25 Ağustos 2026, koşu 349, sha `5eddf3d`):**
 dosya release'te, 60.929.323 bayt. Kanıt PR'da alınamazdı — release adımı
 PR'da bilerek atlanıyor (workflow başlığındaki "YAYINLAMA" notu) — bu yüzden
 merge sonrası ilk `main` koşusunda okundu.
-**Yüklenmeye hazır paketin `versionCode`'u: 372** (koşu 372, sha `53e401c`,
-`.aab` 25 Ağustos 22:10'da `mobile-latest`e yüklendi — 60.972.655 bayt).
-⚠ **Play'e YÜKLÜ olan hâlâ 349 ve o paket uygulama içi hesap silmeyi
-İÇERMİYOR** (madde 2, 349'dan sonra merge edildi). Testçilerin silme yolunu
-görebilmesi için 372 kapalı test kanalına yüklenmeli.
+**Play'e YÜKLENEN: 372** (26 Ağustos 2026 sabahı, kapalı test — Release name
+`372 (1.0.0)`). Uygulama içi hesap silmeyi İÇEREN ilk paket bu.
+Console'un paket ayrıntısından ölçüldü: `targetSdk` **36**, `minSdk` **24+**,
+**4 izin**, ABI 3, ekran düzeni 4, gerekli özellik 2 — yani 349'un satırıyla
+her sütunda aynı.
+
+**Yüklenmeye hazır EN YENİ paket: 374** (koşu 374, sha `42a1f67`, `.aab`
+26 Ağustos 05:42'de `mobile-latest`e yüklendi — 60.972.640 bayt). 372'den
+tek farkı silme onayındaki uyarı cümlesinin kırmızı/kalın olması (#341) —
+**kozmetik**, bu yüzden 372 için ayrı bir yükleme turu harcanmadı. Bir
+sonraki mobil sürüm bu tabandan gider.
 
 **370 neden atlandı:** aynı akşam Kullanım Koşulları §2'ye hesabı kendin
 silme cümlesi eklendi (#338) ve hukuki metnin tarihi portu da zorunlu kıldı
@@ -369,16 +375,28 @@ incelemeciye verilen hesabı silme.*
 
 **Model: Opus 5, efor `high`.** Küçük ama geri alınamaz; Sonnet'e verme.
 
-23 üyenin 5'i test hesabı ve tüm büyüme metriklerini kirletiyor:
-`T1` (alp.capa@hotmail.com — **kullanıcının KENDİ kişisel e-postası**),
-`T2`, `T3`, `T4`, `T5` (tek kullanımlık testinator adresleri).
+Test hesapları büyüme metriklerini kirletiyor: `T1`
+(alp.capa@hotmail.com — **kullanıcının KENDİ kişisel e-postası**), `T2`,
+`T3`, `T4`, `T5` (tek kullanımlık testinator adresleri).
 
-**`Ironman` (alprcapa@gmail.com) HİÇBİR KOŞULDA SİLİNMEZ** — hesap
-sahibinin gerçek ana/admin hesabı (kullanıcı kararı, 14 Ağustos).
+**DURUM (26 Ağustos 2026 — YARISI BİTTİ, uygulama içi yoldan silindi):**
 
-**Ön koşul KARŞILANDI (25 Ağustos 2026):** madde 2 bitti, kaskad zinciri
-çıkarıldı ve canlıda kuru çalıştırmayla doğrulandı. Bu silme onun ilk
-GERÇEK kullanımı olacak — ayrı bir analiz gerekmiyor.
+| Hesap | Durum |
+|---|---|
+| **T4** | ✅ silindi (26 Ağu, duman testi — 1 YZ oyunu, anonimleştirme yok) |
+| **T1** | ✅ silindi (26 Ağu, ASIL test — 19 oyun, 11 kayıt anonimleşti) |
+| **T3** | ⬜ duruyor (1 oyun · 1 yarım Canlı oyun · 3 arkadaşlık · 1 davet · 1 YZ kaydı) |
+| **T5** | ⬜ duruyor (8 oyun · 1 arkadaşlık) |
+| **T2** | 🔒 **SİLİNMEZ** — App access formunda incelemeciye verilen hesap |
+| **Ironman** | 🔒 **HİÇBİR KOŞULDA SİLİNMEZ** — hesap sahibinin gerçek ana/admin hesabı (14 Ağustos) |
+
+T3 ve T5 artık bir test değil sadece temizlik: ikisinin de kuru
+çalıştırması `games_baskalarinin: 0` diyor, yani anonimleştirme dalını hiç
+çalıştırmıyorlar.
+
+**Ön koşul KARŞILANDI ve KANITLANDI:** madde 2'nin kaskadı iki gerçek
+silmeyle uçtan uca doğrulandı (ayrıntı: `docs/decisions/account-deletion.md`
+→ "Gerçek kullanım").
 
 **Nasıl yapılır:** her hesap için önce `select public.delete_account_cascade
 ('<uuid>', true)` (kuru — hiçbir şey yazmaz) çalıştırılıp rapor kullanıcıya
