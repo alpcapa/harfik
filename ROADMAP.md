@@ -224,11 +224,18 @@ kaydoldu, **sayaç işlemeye başladı.**
 
 **DURUM (25 Ağustos 2026):** Console'daki her form dolduruldu, kapalı test
 sürümü incelemeye gönderildi ve **YAYINLANDI** — Submission 1 durumu
-`Published`, opt-in linki oluştu. Adım adım ne girildiği ve neden:
+`Published`. Adım adım ne girildiği ve neden:
 `marketing/play-store/console-formlari.md` § 6.5.
+26 Ağustos'ta uygulama içi hesap silmeyi içeren **372** yüklendi.
 
-**Kriter HENÜZ karşılanmadı:** sayaç 12 kişi opt-in olduğunda başlıyor,
-listede 9 adres var. Kalan tek iş kod değil — tester toplamak.
+**Kriter HENÜZ karşılanmadı ve engel sanılandan sert (26 Ağustos 2026,
+Console'da görüldü):** Dashboard **`0 testers currently opted-in`**
+diyor. Bu satır önce *"opt-in linki oluştu, listede 9 adres var"* diyordu —
+**opt-in linki 12 tester listeye girmeden HİÇ verilmiyor.** Yani kimseye
+link gönderilemedi, kimse opt-in olamadı, sayaç başlamadı.
+
+**Kalan tek iş kod değil: 12 adres toplamak.** Link ancak liste dolunca
+beliriyor; azar azar dağıtma seçeneği yok. Sonra 14 gün kesintisiz.
 
 ### 0.B — 14 gün işlerken paralelde
 
