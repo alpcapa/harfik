@@ -998,6 +998,16 @@ void main() {
         matching: find.byType(RepaintBoundary),
       ).first,
     );
+    // ÖNCE ARACIN CANLI OLDUĞUNU KANITLA. Bu sayaçlar yalnızca debug'da,
+    // framework sınırı boyarken artıyor; hiç artmıyorlarsa aşağıdaki iddia
+    // BOŞUNA geçer ve hiçbir şey kanıtlamaz. Tahta sürükleme başlamadan
+    // önce en az bir kez boyandığından toplam >= 1 olmak ZORUNDA.
+    expect(
+        sinir.debugSymmetricPaintCount + sinir.debugAsymmetricPaintCount,
+        greaterThanOrEqualTo(1),
+        reason: 'boyama sayaçları hiç artmamış — bu testin ölçtüğü şey '
+            'çalışmıyor demektir (aşağıdaki iddia boşuna geçerdi).');
+
     expect(sinir.debugSymmetricPaintCount, lessThanOrEqualTo(1),
         reason: 'tahta sürükleme boyunca ebeveyniyle BİRLİKTE '
             '${sinir.debugSymmetricPaintCount} kez boyandı — RepaintBoundary '
