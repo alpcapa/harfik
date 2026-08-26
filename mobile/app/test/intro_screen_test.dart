@@ -1,9 +1,11 @@
 // İlk açılış tanıtımı (`IntroScreen`) + kapısı (`app.dart`'taki _HomeGate).
 //
 // Ölçülen sözleşme üç parça:
-//  1) ekranın kendisi — beş sayfa, PARMAKLA ilerlenir (ara sayfalarda
-//     düğme YOK), son sayfada HEMEN OYNA çıkar, logo dört sayfada da
-//     görünür (ve HİÇBİR yerde atlama yok: tanıtımın TEK çıkışı o düğme);
+//  1) ekranın kendisi — beş sayfa, hem PARMAKLA hem ara sayfalardaki
+//     "DEVAM ›" düğmesiyle ilerlenir (düğme 26 Ağustos 2026'da GERİ
+//     KONDU: gerçek kullanıcılar kaydırmayı anlamayıp tanıtımda takıldı),
+//     son sayfada HEMEN OYNA çıkar, logo her sayfada tek kopya görünür
+//     (ve HİÇBİR yerde atlama yok: tanıtımın TEK çıkışı o düğme);
 //  2) kapı — bayrak YOKKEN tanıtım, VARKEN doğrudan Setup;
 //  3) bayrak GERÇEKTEN yazılıyor (yoksa tanıtım her açılışta çıkardı).
 //
@@ -117,9 +119,8 @@ void main() {
   setUpAll(loadAppFonts);
 
   group('IntroScreen', () {
-    testWidgets('beş sayfa: parmakla ilerler, ara sayfalarda düğme YOK, son '
-        'sayfada HEMEN OYNA çıkar ve onDone çağrılır; atlama YOK',
-        (tester) async {
+    testWidgets('beş sayfa: ara sayfalarda DEVAM, son sayfada HEMEN OYNA; '
+        'parmakla da düğmeyle de ilerler; atlama YOK', (tester) async {
       await setPhoneViewSize(tester, const Size(420, 900));
       var done = 0;
       await tester.pumpWidget(MaterialApp(
@@ -133,12 +134,13 @@ void main() {
       // ederse eşleşme ikiye çıkardı.
       expect(find.text('Kelime bul, bölgeni büyüt, tahtayı ele geçir.'),
           findsOneWidget);
-      // Ara sayfalarda HİÇBİR düğme yok — ne DEVAM ne HEMEN OYNA (19
-      // Ağustos 2026 kullanıcı kararı: "altta sadece ince bir nokta
-      // alanı"). Nokta göstergesi dört sayfada da duruyor.
-      expect(find.text('DEVAM'), findsNothing);
+      // ARA SAYFALARDA "DEVAM ›" VAR (26 Ağustos 2026). 19 Ağustos'ta
+      // kullanıcı isteğiyle kaldırılmıştı ("altta sadece ince bir nokta
+      // alanı bıraksak herkes parmakla ilerleyeceğini bilir"); kapalı
+      // testin ilk gerçek kullanıcıları o varsayımı ÇÜRÜTTÜ — tanıtımda
+      // takılıp Setup'a hiç ulaşamadılar. Atlama da olmadığı için çıkmazdı.
+      expect(find.text('DEVAM ›'), findsOneWidget);
       expect(find.text('HEMEN OYNA'), findsNothing);
-      expect(find.byType(NeoButton), findsNothing);
       // Logo ekranın (PageView'ın DEĞİL) parçası: dört sayfada da tek
       // kopya görünür — sayfa başına kopyalansaydı bu sayı 1'de kalmazdı.
       expect(find.byType(LogoMark), findsOneWidget);
@@ -147,18 +149,28 @@ void main() {
       // yokluğunu görmek başka bir sayfada durduğunu ekarte etmez.
       expect(find.text('Atla'), findsNothing);
 
-      for (var i = 0; i < kIntroPageCount - 1; i++) {
+      // 1 → 2: DÜĞMEYLE ilerle. Düğmenin var olma sebebi bu — kaydırmayı
+      // anlamayan kullanıcı buradan geçebilmeli.
+      // Negatif eş: `_ileri`/`onPressed` kaldırılırsa bu expect düşer.
+      await tester.tap(find.text('DEVAM ›'));
+      await tester.pumpAndSettle();
+      expect(find.text('Kelime bul, bölgeni büyüt, tahtayı ele geçir.'),
+          findsNothing,
+          reason: 'düğme gerçekten bir sonraki slayta geçirmeli');
+
+      // Kalan sayfalar PARMAKLA — kaydırma düğmeyle birlikte çalışmaya
+      // devam etmeli, düğme onun YERİNE geçmiyor.
+      for (var i = 1; i < kIntroPageCount - 1; i++) {
         await kaydir(tester);
         expect(find.text('Atla'), findsNothing);
         expect(find.byType(LogoMark), findsOneWidget);
-        // Son sayfaya varana kadar düğme çıkmamalı.
-        expect(find.byType(NeoButton),
-            i == kIntroPageCount - 2 ? findsOneWidget : findsNothing);
+        final sonSayfa = i == kIntroPageCount - 2;
+        expect(find.text('DEVAM ›'), sonSayfa ? findsNothing : findsOneWidget);
       }
 
-      // Son sayfa: tanıtımın TEK çıkışı.
+      // Son sayfa: tanıtımın TEK çıkışı; DEVAM burada yerini bırakıyor.
       expect(find.text('HEMEN OYNA'), findsOneWidget);
-      expect(find.text('DEVAM'), findsNothing);
+      expect(find.text('DEVAM ›'), findsNothing);
       expect(done, 0);
 
       await tester.tap(find.text('HEMEN OYNA'));

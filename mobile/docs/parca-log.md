@@ -20,6 +20,37 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 143 — tanıtımda "DEVAM ›" GERİ KONDU: sahadaki ilk
+     kullanıcılar kaydırmayı anlamadı (26 Ağustos 2026, kullanıcı
+     bildirdi: *"insanlar tanıtımı kaydırmayı anlayamıyorlar"*):**
+     Bu, projedeki en pahalı hata sınıfının örneği — **makul bir varsayım,
+     sahada çürüdü.** 19 Ağustos'ta düğme kullanıcı isteğiyle kaldırılmıştı
+     (*"Alttaki kocaman Devam butonu çok gereksiz. Altta sadece ince bir
+     nokta alanı bıraksak HERKES PARMAKLA İLERLEYECEĞİNİ BİLİR"*) ve o gün
+     için gerekçe sağlamdı: düğme alttan ~60px yiyordu.
+     - **Bedeli ölçüldü ve büyüktü:** tanıtımda ATLAMA da olmadığı için bu
+       bir ÇIKMAZDI. Kapalı testin davetlileri uygulamanın kendisine hiç
+       ulaşamadı — 3 günde yalnızca 2 kayıt vardı ve "mail gelmiyor" diye
+       bildirilen sorunun gerçek sebebi buydu: kimse kayıt ekranına
+       varamıyordu. Yani bu bir "kozmetik" mesele değil, huninin en
+       başındaki tıkaçtı.
+     - **Geri konan düğme ESKİSİ DEĞİL:** tam genişlikte değil, metin
+       genişliğinde ve kısa; `accent` (son sayfadaki HEMEN OYNA ile aynı
+       renk — ikisi hiç aynı anda ekranda olmuyor, aynı renk "buraya bas"
+       sinyalini güçlendiriyor). Görsel küçük ama dokunma hedefi
+       `TapTarget` ile 48 dp'de (Parça 134'ün kuralı: görseli küçültmek
+       hedefi küçültmez).
+     - **Kaydırma KALDIRILMADI** — düğme onun yanına eklendi, yerine
+       geçmedi. Masaüstü fare sürükleme desteği de olduğu gibi duruyor.
+     - **Dürüst takas:** 19 Ağustos'un asıl şikayeti (dikey alan) kısmen
+       geri veriliyor. Birkaç piksel slayt yüksekliği ile uygulamaya hiç
+       ulaşamamak arasında seçim yapıldı.
+     - **Regresyon:** mevcut test bu davranışın TERSİNİ kilitliyordu
+       (*"ara sayfalarda düğme YOK"*) — güncellendi ve bir dal eklendi:
+       düğmeye basınca gerçekten sonraki slayta geçiliyor, kalan sayfalar
+       PARMAKLA geziliyor (ikisinin de çalıştığı aynı testte kanıtlanıyor),
+       son sayfada DEVAM yerini HEMEN OYNA'ya bırakıyor.
+
    - ✅ **Parça 142 — davet linki artık SESSİZ düşmüyor (26 Ağustos 2026,
      ROADMAP madde 1'in alt maddesi; web DEĞİŞMEDİ):** Kural işledi — önce
      web'e bakıldı. `FriendInvitePage` 25 Ağustos'ta çözmüştü: sunucunun

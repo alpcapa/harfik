@@ -51,6 +51,7 @@ import '../game/board_widget.dart';
 import '../game/logo_mark.dart';
 import '../game/neo_box.dart';
 import '../game/neo_button.dart';
+import '../tap_target.dart';
 import '../game/player_colors.dart';
 import '../rank/league_rank.dart';
 import '../rank/rank_seal.dart';
@@ -104,6 +105,16 @@ class _IntroScreenState extends State<IntroScreen> {
 
   bool get _isLast => _page >= kIntroPageCount - 1;
 
+  /// "DEVAM ›" — bir sonraki slayta geçer. Kaydırmanın YERİNİ ALMIYOR,
+  /// yanına ekleniyor: parmakla kaydırma aynen çalışmaya devam ediyor.
+  void _ileri() {
+    if (_isLast) return;
+    _controller.nextPage(
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOut,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -149,14 +160,24 @@ class _IntroScreenState extends State<IntroScreen> {
                 ],
               ),
             ),
-            // ARA SAYFALARDA DÜĞME YOK (19 Ağustos 2026, kullanıcı
-            // isteği: "Alttaki kocaman Devam butonu çok gereksiz. Altta
-            // sadece ince bir nokta alanı bıraksak herkes parmakla
-            // ilerleyeceğini bilir; sadece en son slaytta Hemen Oyna
-            // olabilir"). Nokta göstergesi artık hem konum hem tek
-            // gezinme ipucu — ilerleme parmakla (`PageView` kaydırması).
-            // Bu, alttan ~60px'i geri kazanıyor: slaytlar o kadar
-            // uzuyor, 1. slayttaki tahta o kadar çok görünüyor.
+            // ARA SAYFALARDA KÜÇÜK BİR "DEVAM ›" VAR (26 Ağustos 2026).
+            //
+            // 19 Ağustos'ta kullanıcı isteğiyle KALDIRILMIŞTI: *"Alttaki
+            // kocaman Devam butonu çok gereksiz. Altta sadece ince bir
+            // nokta alanı bıraksak herkes parmakla ilerleyeceğini bilir;
+            // sadece en son slaytta Hemen Oyna olabilir"*. Varsayım
+            // makuldü ama **SAHADA ÇÜRÜDÜ**: kapalı testin ilk gerçek
+            // kullanıcıları tanıtımda takıldı ve Setup'a hiç ulaşamadı
+            // (kullanıcı bildirdi: *"insanlar tanıtımı kaydırmayı
+            // anlayamıyorlar"*). Tanıtımın ATLAMASI da olmadığı için bu
+            // bir çıkmazdı — uygulamanın kendisine hiç varılamıyordu.
+            //
+            // Geri konan düğme ESKİSİ DEĞİL: tam genişlikte ve kocaman
+            // değil, metin genişliğinde ve kısa. 19 Ağustos'un asıl
+            // şikayeti (alttan yer çalması) kısmen karşılanmaya devam
+            // ediyor — ama dürüst olmak gerekirse bir miktar dikey alan
+            // GERİ VERİLİYOR. Takas bilinçli: birkaç piksel slayt yüksekliği
+            // ile uygulamaya hiç ulaşamamak arasında seçim yapılıyor.
             Padding(
               // 8 → 6: nokta şeridini içerikten ayırmaya yetiyor.
               padding: const EdgeInsets.only(top: 6),
@@ -182,11 +203,30 @@ class _IntroScreenState extends State<IntroScreen> {
                 ),
               )
             else
-              // 16 → 8. Yalnızca ARA sayfaları etkiler; son sayfada bu dalın
-              // yerini HEMEN OYNA düğmesi (kendi `top: 12, bottom: 16`
-              // dolgusuyla) alıyor, oraya DOKUNULMADI — orası zaten en kısa
-              // slayt ve düğmenin dokunma alanı daralmamalı.
-              const SizedBox(height: 8),
+              // Ara sayfaların "DEVAM ›"ı. Yükseklik eski `SizedBox(8)`in
+              // yerini alıyor; düğme GÖRSEL olarak küçük ama dokunma
+              // hedefi `TapTarget` ile 48 dp'de tutuluyor (Parça 134'ün
+              // kuralı — görseli küçültmek hedefi küçültmez).
+              Padding(
+                padding: const EdgeInsets.only(top: 2, bottom: 4),
+                child: TapTarget(
+                  onTap: _ileri,
+                  minHeight: kMinTapTarget,
+                  child: NeoButton(
+                    label: 'DEVAM ›',
+                    onPressed: _ileri,
+                    // ACCENT bilerek — son sayfadaki "HEMEN OYNA" ile aynı
+                    // renk. İkisi hiçbir zaman aynı anda ekranda olmuyor;
+                    // aynı rengi paylaşmaları "buraya bas" sinyalini
+                    // güçlendiriyor, ki bu düğmenin var olma sebebi tam da
+                    // fark edilmemekti.
+                    variant: NeoButtonVariant.accent,
+                    fontSize: 12,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 22, vertical: 8),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

@@ -118,10 +118,16 @@ yazıldıktan sonra tanıtım bir daha ÇIKMAZ.
       yukarıda asılı kalıp aralarında boşluk açılmamalı). 1. sayfa Parça
       119'a kadar bunun DIŞINDAYDI (orası ekranı dolduruyordu); rakam
       kutuları 2. slayda taşınınca o istisna kalktı.
-- [ ] **Alt şeritte ara sayfalarda YALNIZCA nokta göstergesi var** (BEŞ
-      nokta), hiçbir düğme yok; **HEMEN OYNA yalnızca 5. sayfada** çıkıyor
-      (19 Ağustos 2026 kullanıcı kararı: "alttaki kocaman Devam butonu çok
-      gereksiz"). İlerleme parmakla kaydırarak.
+- [ ] **Alt şeritte BEŞ nokta + ara sayfalarda küçük bir "DEVAM ›"**;
+      **HEMEN OYNA yalnızca 5. sayfada** çıkıyor ve orada DEVAM görünmüyor.
+      **Düğmeye basınca bir sonraki slayta geçmeli** ve parmakla kaydırma
+      da AYNEN çalışmaya devam etmeli (düğme kaydırmanın yerine geçmiyor).
+      ⚠ Bu düğme 19 Ağustos 2026'da kullanıcı isteğiyle KALDIRILMIŞTI
+      ("alttaki kocaman Devam butonu çok gereksiz… herkes parmakla
+      ilerleyeceğini bilir"); 26 Ağustos'ta kapalı testin ilk gerçek
+      kullanıcıları o varsayımı çürütünce GERİ KONDU — tanıtımda takılıp
+      Setup'a hiç ulaşamıyorlardı. Bu yüzden geri konan düğme eskisi gibi
+      tam genişlikte DEĞİL, metin genişliğinde.
 - [ ] **Masaüstü tarayıcıda da (GitHub Pages test ortamı) FARE ile
       sürüklenebiliyor** — beş sayfa da gezilip son sayfaya
       ulaşılabilmeli. Flutter'ın varsayılan davranışı fareyi kaydırma
