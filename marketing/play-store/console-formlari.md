@@ -515,11 +515,21 @@ test bilerek sabiti içeriyor ki sessiz bir sapma mümkün olmasın.
 
 **YAYINLANDI — 25 Ağustos 2026.** Submission 1 (*Closed testing - Alpha,
 Store Listing, App Content, Advanced distribution, Store settings*) durumu
-**Published**. Kapalı test kanalı canlıda ve opt-in linki oluştu
-(Closed testing → Alpha → Testers → "How testers join your test").
+**Published**. Kapalı test kanalı canlıda.
 
-**Sayaç HENÜZ başlamadı:** 12 kişi opt-in olana kadar işlemiyor. Tester
-listesinde 9 adres var.
+⚠ **DÜZELTME (26 Ağustos 2026, kullanıcı Console'da gördü):** bu satır
+*"opt-in linki oluştu"* diyordu — **YANLIŞ. Play, listede 12 tester
+olmadan opt-in linkini VERMİYOR.** Yani sıra bu dosyanın §7'de yazdığı gibi
+"listeye ekle → linki gönder" değil; **önce 12 adresi listeye tamamla**,
+link ancak o zaman beliriyor, sonra gönderiliyor, sonra kişiler opt-in
+oluyor.
+
+**Pratik sonucu:** "1-2 kişiyle başlayıp linki dağıtmaya başlayalım" diye
+bir yol YOK. 12 adres toplanana kadar hiçbir tester'a link gidemez ve
+Dashboard **`0 testers currently opted-in`** göstermeye devam eder.
+Kayıt/liste sayısı ile Play'in saydığı **opt-in** sayısı ayrı şeyler;
+Dashboard'daki "Apply for access to production" kontrol listesi opt-in'i
+sayıyor.
 
 **App access'teki "tam erişim" kutusu ÖLÇÜLEREK işaretlendi:** ücretli/
 premium içerik yok, ve **Android uygulamasında yönetici paneli YOK** —
@@ -536,7 +546,8 @@ Sayaç "yükledim" ile değil, **12 kişi opt-in olduğunda** işlemeye başlıy
 |---|---|
 | Listeye eklemek YETMEZ | Her tester **opt-in bağlantısına tıklayıp kabul etmeli** |
 | **Google tester'lara MAİL ATMIYOR** | Listeye eklemek yalnızca yetkilendiriyor; daveti geliştirici kendi kanalından gönderir |
-| **Linke tıklayan otomatik katılmaz** | Liste bir izin listesi. Listede olmayan biri linkte "bu test sana açık değil" görür. Sıra: adresi al → listeye ekle → linki gönder |
+| **Linke tıklayan otomatik katılmaz** | Liste bir izin listesi. Listede olmayan biri linkte "bu test sana açık değil" görür. |
+| **Link 12 kişi listeye girmeden GÖRÜNMÜYOR** | 26 Ağustos 2026'da Console'da görüldü. Doğru sıra: **12 adresi topla → listeye ekle → link belirir → gönder → kişiler opt-in olur → sayaç başlar.** Azar azar dağıtmak mümkün değil |
 | Adres, kişinin TELEFONUNDAKİ Play hesabı olmalı | En sık aksaklık: iş adresi verilir, telefonda başka Gmail açıktır. Sorulacak soru "hangi adresi istersin" değil, "telefonunda hangi hesap açık" |
 | Biri çıkarsa sayaç kırılır | **15-20 kişi topla**, 12 tabandır |
 | Adresler Google hesabı olmalı | Gmail ya da Google'a bağlı bir adres; şirket/okul adresi olabilir ama Play hesabı olmalı |
