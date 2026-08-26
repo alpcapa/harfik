@@ -15,7 +15,7 @@
 // (`.is(..., null)` filtreli UPDATE) "iddia edip" işaretlediğinden en fazla
 // bir kez e-posta gider.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml } from '../_shared/email.ts';
+import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml, buildNoReplyNoticeHtml } from '../_shared/email.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -56,7 +56,7 @@ function buildHtml(creatorName: string, playerCount: number): string {
       <a href="https://kelimeki.com" style="display:inline-block;background-color:#2563EB;color:#FFFFFF;font-size:15px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:8px;">Şimdi Oyna</a>
     </p>
   `;
-  return buildBrandedEmailHtml('Oyun Süresi Doluyor!', body);
+  return buildBrandedEmailHtml('Oyun Süresi Doluyor!', body, buildNoReplyNoticeHtml());
 }
 
 async function sendDeadlineEmail(email: string, creatorName: string, playerCount: number): Promise<boolean> {

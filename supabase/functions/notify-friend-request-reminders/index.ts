@@ -12,7 +12,7 @@
 // yeniden null) sayacı doğal olarak sıfırlar — ayrı bir reset mantığına
 // gerek yok.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml } from '../_shared/email.ts';
+import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml, buildNoReplyNoticeHtml } from '../_shared/email.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -40,7 +40,7 @@ function buildHtml(inviterName: string, recipientName?: string): string {
     </p>
     <p style="margin:24px 0 0 0;padding-top:12px;border-top:1px solid #DCE2EA;font-size:13px;line-height:1.6;color:#8A93A2;">Uygulamayı açtığında hesap menündeki arkadaşlık rozetinden isteği kabul edebilir ya da reddedebilirsin. Bu istek için gönderilecek son hatırlatma bu — bir daha tekrarlanmayacak.</p>
   `;
-  return buildBrandedEmailHtml('Bekleyen bir arkadaşlık isteğin var', body);
+  return buildBrandedEmailHtml('Bekleyen bir arkadaşlık isteğin var', body, buildNoReplyNoticeHtml());
 }
 
 Deno.serve(async (req: Request) => {

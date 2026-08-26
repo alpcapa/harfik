@@ -30,7 +30,7 @@
 // pg_cron + pg_net tetikler, verify_jwt KAPALI (cron çağırıyor, kullanıcı
 // JWT'si yok), yalnızca kendi service-role client'ıyla çalışır.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml } from '../_shared/email.ts';
+import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml, buildNoReplyNoticeHtml } from '../_shared/email.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -73,7 +73,7 @@ function buildHtml(actionLink: string, recipientName?: string): string {
     </p>
     <p style="margin:24px 0 0 0;padding-top:12px;border-top:1px solid #DCE2EA;font-size:13px;line-height:1.6;color:#8A93A2;">Bu bağlantı 24 saat geçerlidir. Hesabını 24 saat içinde tamamlamazsan kaydın silinir — dilediğin zaman aynı e-posta ve takma adla yeniden kayıt olabilirsin. Bu, gönderilecek son hatırlatmadır.</p>
   `;
-  return buildBrandedEmailHtml('Hesabını tamamla', body);
+  return buildBrandedEmailHtml('Hesabını tamamla', body, buildNoReplyNoticeHtml());
 }
 
 Deno.serve(async (req: Request) => {

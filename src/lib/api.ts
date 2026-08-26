@@ -2318,12 +2318,54 @@ export async function fetchAdminFeedback(): Promise<AdminFeedbackRow[]> {
   return (data as AdminFeedbackRow[]) ?? [];
 }
 
+// ── destek@ kutusu ("Zoho" rozeti) ──────────────────────────────────────────
+//
+// Bunlar bir posta kutusu API'si DEĞİL. `destek@kelimeki.com`'a gelen cevaplar
+// Zoho'da okunur; `support_inbox` yalnızca "yeni cevap var" haberini taşır
+// (gövde saklanmaz — bkz. migration ve `inbound-email` Edge Function'ı).
+// Rozet bu sayaca, tıklama da Zoho'ya gider.
+
+/**
+ * Admin'in henüz "Zoho" rozetine tıklamadığı (yani `seen_at` boş) gelen cevap
+ * sayısı. Hata YUTULMUYOR — `fetchAdminFeedback`'teki aynı gerekçe: sessizce
+ * 0 dönmek, gerçek bir izin/RPC hatasını "kutu boş" gibi gösterirdi.
+ */
+export async function fetchSupportInboxUnseenCount(): Promise<number> {
+  if (!supabase) return 0;
+  const { count, error } = await supabase
+    .from('support_inbox')
+    .select('id', { count: 'exact', head: true })
+    .is('seen_at', null);
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+/**
+ * Bekleyen tüm satırları "görüldü" işaretler — admin rozete tıklayıp Zoho'ya
+ * gittiği an çağrılır.
+ *
+ * ⚠ "Görüldü" burada "Zoho'da OKUNDU" demek DEĞİL, "admin'e haber verildi"
+ * demek: kutunun gerçek okunmuşluk durumunu Zoho biliyor, biz bilemeyiz.
+ * Rozetin işi bir kez dürtmek; ikinci kez dürtmesi gürültü olurdu.
+ */
+export async function markSupportInboxSeen(): Promise<void> {
+  if (!supabase) return;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from('support_inbox')
+    .update({ seen_at: new Date().toISOString(), seen_by: user?.id ?? null })
+    .is('seen_at', null);
+  if (error) throw new Error(error.message);
+}
+
 /**
  * Admin'i bekleyen işlerin toplam sayısını döner — `UserMenu`'deki "Admin
- * Paneli" satırının yanındaki kırmızı rozet için. İki kaynağın toplamı:
+ * Paneli" satırının yanındaki kırmızı rozet için. ÜÇ kaynağın toplamı:
  * okunmamış geri bildirim (`feedback`, "Gelen Kutusu") + okunmamış şikayet
- * (`online_game_chat_reports`, "Şikayetler"), yani paneldeki iki alt sekmenin
- * kendi sayaçlarının toplamı. İki filtre de `AdminDashboard`'daki
+ * (`online_game_chat_reports`, "Şikayetler") + haber verilmemiş destek cevabı
+ * (`support_inbox`, "Zoho"), yani paneldeki üç sayacın toplamı. İki filtre de `AdminDashboard`'daki
  * `unhandledFeedbackCount`/`chatReports.filter(r => !r.handled)` ile BİREBİR
  * aynı (`handled=false`) — rozetteki sayı ile panelin içindeki sayılar hiçbir
  * zaman ayrışmamalı. Admin'in KENDİ gönderdiği mesajlar (`origin='admin'`)
@@ -2347,12 +2389,20 @@ export async function fetchAdminFeedback(): Promise<AdminFeedbackRow[]> {
  */
 export async function fetchAdminPendingCount(): Promise<number> {
   if (!supabase) return 0;
-  const [feedbackRes, reportsRes] = await Promise.all([
+  const [feedbackRes, reportsRes, inboxRes] = await Promise.all([
     supabase.from('feedback').select('id', { count: 'exact', head: true }).eq('handled', false),
     supabase
       .from('online_game_chat_reports')
       .select('id', { count: 'exact', head: true })
       .eq('handled', false),
+    // ÜÇÜNCÜ KAYNAK (26 Ağustos 2026): destek@'e gelen ve admin'e henüz haber
+    // verilmemiş cevaplar. Bu satır ilk yazıldığında ATLANMIŞTI ve sonuç, bu
+    // projede adı konmuş bir hata sınıfıydı (bkz. `docs/decisions/
+    // components.md` → CountBadge, "rozet zinciri yukarı takip edilmedi"):
+    // panelin İÇİNDEKİ "Zoho" rozeti sayıyor ama DIŞARIDAKİ "Admin Paneli"
+    // rozeti saymıyordu — yani admin, paneli açmayı akıl edene kadar gelen
+    // cevaptan haberdar olmuyordu, ki bildirimin tek amacı buydu.
+    supabase.from('support_inbox').select('id', { count: 'exact', head: true }).is('seen_at', null),
   ]);
   if (feedbackRes.error) {
     console.error('[Kelimeki] fetchAdminPendingCount (feedback) hatası:', feedbackRes.error.message);
@@ -2360,7 +2410,10 @@ export async function fetchAdminPendingCount(): Promise<number> {
   if (reportsRes.error) {
     console.error('[Kelimeki] fetchAdminPendingCount (şikayet) hatası:', reportsRes.error.message);
   }
-  return (feedbackRes.count ?? 0) + (reportsRes.count ?? 0);
+  if (inboxRes.error) {
+    console.error('[Kelimeki] fetchAdminPendingCount (destek kutusu) hatası:', inboxRes.error.message);
+  }
+  return (feedbackRes.count ?? 0) + (reportsRes.count ?? 0) + (inboxRes.count ?? 0);
 }
 
 /**

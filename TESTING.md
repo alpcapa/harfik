@@ -1782,3 +1782,79 @@ gerçek bir oturum ve gerçek veri gerektirdiğinden elle koşulur.
       bulunmuyor" cümlesi KALMAMALI) ve 2. bölümdeki "Görüş Bildir"
       bağlantısı hâlâ çalışmalı — Play bu URL'i Data safety formundan
       açıyor.
+
+---
+
+## 23. `destek@` gönderen ayrımı + "Zoho" rozeti (25 Ağustos 2026)
+
+Kod canlıda ama zincirin yarısı Brevo/Zoho/GoDaddy panellerinde. Kurulum
+adımları ve sırası: `docs/decisions/support-email.md` → "Kurulum". Bu liste
+o adımlar bittikten SONRA koşulur.
+
+**Otomatik test YOK ve olamaz:** gerçek bir Brevo hesabı, gerçek bir MX
+kaydı ve gerçek bir gelen kutusu gerekiyor.
+
+### 23.1 Transactional mail gerçekten cevaplanamıyor mu
+
+1. Kendine bir bildirim mailini tetikle (en kolayı: yeni bir hesap açıp
+   doğrula → "Hoş Geldiniz" maili).
+2. Gelen mailin **altında** şu not olmalı: *"Bu otomatik bir bildirimdir; bu
+   adrese gönderilen yanıtlar okunmaz. Bize ulaşmak için destek@kelimeki.com"*
+   — `destek@` tıklanabilir bir `mailto:` linki olmalı.
+3. Gönderen `Kelimeki <noreply@kelimeki.com>` olmalı (ham başlıktan oku —
+   Gmail → "Orijinali göster"; Apple Mail kişi kartındaki adı gösterip
+   yanıltır, bkz. `console-formlari.md`'deki ölçüm tuzağı).
+4. **Bu maile "Yanıtla" de ve gönder.** Beklenen: mail GERİ DÖNER (bounce).
+   ⚠ Geri dönmüyor ve `destek@` kutusuna düşüyorsa, Zoho'daki `noreply@`
+   GRUBU hâlâ silinmemiş demektir (kurulum adım 2).
+
+### 23.2 Görüş bildirim yanıtı destek@'ten gidiyor mu
+
+1. Uygulamadan (misafir ya da üye) bir görüş bildir, e-posta alanını doldur.
+2. Admin panel → Geri Bildirim → Gelen Kutusu → mesajı aç → **Yanıtla** → gönder.
+3. ⚠ **502 + "destek@kelimeki.com Brevo'da doğrulanmış gönderen değil"**
+   hatası alırsan bu bir kod hatası DEĞİL: kurulum adım 1 yapılmamış.
+   Brevo → Settings → Senders'a adresi ekle, doğrula, tekrar dene.
+4. Gelen mailde gönderen `Kelimeki Destek <destek@kelimeki.com>` olmalı ve
+   notta *"Bu e-postayı doğrudan yanıtlayabilirsin"* yazmalı.
+5. **Maile doğrudan "Yanıtla" de.** Cevap `destek@` Zoho kutusuna düşmeli.
+
+### 23.3 Rozet — cevap gelince admin haber alıyor mu
+
+1. 20.2'nin 5. adımından sonra Zoho kutusunu kontrol et: mail **kutuda
+   kalmalı** (yönlendirme bir KOPYA olmalı, taşıma değil).
+2. Admin paneli → Geri Bildirim sekmesi. Alt sekme satırında **Zoho** düğmesi
+   ve üstünde kırmızı **1** rozeti görünmeli.
+   ⚠ Rozet gelmiyorsa sırayla bak: Zoho filtresi çalıştı mı → Brevo Inbound
+   "logs" ekranı maili gördü mü → Supabase Edge Function logları
+   (`inbound-email`) ne diyor. 401 = webhook URL'indeki `?key=` yanlış,
+   503 = `INBOUND_EMAIL_SECRET` secret'ı eklenmemiş.
+3. **Zoho düğmesine tıkla.** Beklenen: yeni sekmede Zoho gelen kutusu açılır
+   (`mail.zoho.eu`) VE rozet anında kaybolur.
+4. Paneli yenile — rozet geri gelmemeli (`seen_at` damgalandı).
+5. İkinci bir cevap gönder → rozet tekrar **1** olmalı.
+
+- [ ] **Dıştaki "Admin Paneli" rozeti de arttı mı.** Paneli AÇMADAN, hesap
+      menüsünü aç: "Admin Paneli" satırının yanındaki kırmızı sayı bu cevabı
+      da içermeli (`fetchAdminPendingCount` üç kaynağı toplar). İlk sürümde
+      yalnızca panelin İÇİNDEKİ rozet sayıyordu — dışarıdaki saymayınca
+      bildirim işe yaramıyor.
+
+### 23.4 Admin'in üyeye yazdığı mesaj
+
+1. Admin panel → Üyeler → bir üyenin satırında **Mesaj Gönder** → konu+mesaj.
+2. Mail `destek@`'ten gitmeli; Geri Bildirim sekmesinde "Gönderilen" rozetiyle
+   görünmeli.
+3. Üye "Yanıtla" derse: cevap Zoho'ya + rozet artmalı (20.3 ile aynı).
+4. Üye maildeki **"siteden de yazabilirsin"** linkine tıklayıp formu
+   doldurursa: cevap ZOHO'ya DEĞİL, doğrudan admin paneline düşmeli ve
+   "↳ Cevaben" rozetiyle orijinal mesaja bağlanmalı. (İki yolun farklı yere
+   gitmesi bilinçli — bkz. karar kaydı.)
+
+### 23.5 Gürültü elenmesi
+
+- `destek@`'e bir "tatil/otomatik yanıt" maili düşerse rozet ARTMAMALI
+  (`Auto-Submitted`/`X-Autoreply`/`Precedence: bulk` eleniyor).
+- `destek@` ya da `noreply@` adresinden gelen kopyalar da elenmelidir
+  (döngü koruması).
+

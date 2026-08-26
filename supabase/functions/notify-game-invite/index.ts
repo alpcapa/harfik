@@ -16,7 +16,7 @@
 // isimleri ayrı bir service-role client'la okunur (play-ai-turn'deki aynı
 // ayrım — bu bilgiler hiçbir zaman client rolüne açılmaz).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { CORS_HEADERS, escapeHtml, sanitizeForSubject, sendBrevoEmail, buildBrandedEmailHtml } from '../_shared/email.ts';
+import { CORS_HEADERS, escapeHtml, sanitizeForSubject, sendBrevoEmail, buildBrandedEmailHtml, buildNoReplyNoticeHtml } from '../_shared/email.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -40,7 +40,7 @@ function buildHtml(inviterName: string, playerCount: number, recipientName?: str
     </p>
     <p style="margin:24px 0 0 0;padding-top:12px;border-top:1px solid #DCE2EA;font-size:13px;line-height:1.6;color:#8A93A2;">Uygulamayı açıp "Arkadaşınla" sekmesinden kabul edebilir ya da reddedebilirsin. Davet 7 gün içinde yanıtlanmazsa kendiliğinden iptal olur.</p>
   `;
-  return buildBrandedEmailHtml('Canlı oyun daveti', body);
+  return buildBrandedEmailHtml('Canlı oyun daveti', body, buildNoReplyNoticeHtml());
 }
 
 Deno.serve(async (req: Request) => {
