@@ -3,7 +3,19 @@
 // yönüne kaydırılmış RRect'in DIŞI blur'lanarak çizilir (web Board.tsx'teki
 // hücre stillerinin birebir taşınabilmesi için — kullanıcı 6 Ağustos 2026'da
 // iç gölgelerin eksikliğini web/app karşılaştırmasıyla bildirdi).
+import 'package:flutter/foundation.dart' show kDebugMode, visibleForTesting;
 import 'package:flutter/material.dart';
+
+/// ÖLÇÜM ARACI (26 Ağustos 2026) — kaç kez GERÇEK bir `MaskFilter.blur`
+/// çizimi yapıldığını sayar. Yalnızca `kDebugMode`de artar, üretimde ölü.
+///
+/// NEDEN VAR: sürükleme "ağır çekim" bildirimi iki kez teşhis edildi ve
+/// ikisinde de dolaylı göstergelere bakıldı (önce `build` sayısı, sonra
+/// `RepaintBoundary`in simetrik boyama sayacı). İkisi de "iyi" derken cihaz
+/// hâlâ yavaştı. Bu sayaç dolaylı DEĞİL: tahtanın pahalı işi tam olarak bu
+/// çağrılar, yani sürükleme sırasında artıp artmadığı doğrudan cevaptır.
+@visibleForTesting
+int debugBlurPaintCountForTests = 0;
 
 class InsetShadow {
   final Color color;
@@ -119,6 +131,7 @@ class _CssShadowBoxPainter extends BoxPainter {
       ..addRRect(rrect));
     // CSS: listedeki ilk gölge en üstte → ters sırayla çiz.
     for (final s in d.shadows.reversed) {
+      if (kDebugMode) debugBlurPaintCountForTests++;
       final paint = Paint()
         ..color = s.color
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, s.blur / 2);
@@ -194,6 +207,7 @@ class _InsetShadowPainter extends CustomPainter {
       // CSS: sigma ≈ blur/2. Kaydırılmış rrect'in dışı, kırpılmış alan
       // içinde gölge bandı olarak kalır.
       final sigma = s.blur / 2;
+      if (kDebugMode) debugBlurPaintCountForTests++;
       final paint = Paint()
         ..color = s.color
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, sigma);

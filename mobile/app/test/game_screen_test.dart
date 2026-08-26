@@ -25,6 +25,8 @@ import 'package:kelimeki/src/ui/game/remaining_tiles_modal.dart';
 import 'package:kelimeki/src/ui/game/tile_widget.dart';
 import 'package:kelimeki/src/ui/game/wild_letter_sheet.dart';
 import 'package:kelimeki/src/ui/game/dialog_shell.dart' show KDialogCard;
+import 'package:kelimeki/src/ui/game/neo_box.dart'
+    show debugBlurPaintCountForTests;
 import 'package:kelimeki/src/ui/game/neo_button.dart'
     show NeoButton, NeoButtonVariant;
 import 'package:kelimeki_core/kelimeki_core.dart';
@@ -975,6 +977,23 @@ void main() {
             'kez yeniden inşa edildi (per-move rebuild REGRESYONU — düzeltme '
             'geri alınmış/bozulmuş olabilir).');
 
+    // ── DOĞRUDAN ÖLÇÜM: sürükleme sırasında kaç blur çiziliyor? ────────
+    //
+    // 26 Ağustos 2026, İKİNCİ tur. İlk düzeltme (RepaintBoundary) cihazda
+    // İŞE YARAMADI — kullanıcı: *"parmak gidiyor, taş arkadan sonra
+    // geliyor"*. İki teşhis de DOLAYLI göstergeye bakmıştı (önce `build`
+    // sayısı, sonra simetrik boyama sayacı) ve ikisi de "iyi" derken cihaz
+    // yavaştı.
+    //
+    // Bu iddia dolaylı DEĞİL: tahtanın pahalı işi tam olarak
+    // `MaskFilter.blur` çizimleri (169 hücre × 2 + kartın 3'ü). Sürükleme
+    // sırasında bu sayının artıp artmadığı, tahtanın yeniden boyanıp
+    // boyanmadığının DOĞRUDAN cevabı.
+    //
+    // Ölçülen sayı loga yazılıyor: 0 ise tahta gerçekten boyanmıyor ve
+    // yavaşlığın sebebi BAŞKA yerde (bu ortamda görünmeyen rasterleştirme
+    // maliyeti ya da bambaşka bir şey). Yüksekse fikir doğru, uygulama eksik.
+    final blurBefore = debugBlurPaintCountForTests;
     // ── PAINT (26 Ağustos 2026) ────────────────────────────────────────
     //
     // Yukarıdaki iddia BUILD sayıyor ve BU YETMİYORDU: kapalı testin ilk
@@ -992,6 +1011,14 @@ void main() {
     //
     // Negatif eş: `RepaintBoundary` kaldırılırsa sürükleme boyunca her kare
     // simetrik boyama sayılır ve bu expect düşer.
+    // ignore: avoid_print
+    print('[ÖLÇÜM] $steps sürükleme adımında blur çizimi: '
+        '${debugBlurPaintCountForTests - blurBefore}');
+    expect(debugBlurPaintCountForTests - blurBefore, lessThanOrEqualTo(10),
+        reason: 'sürükleme sırasında tahta yeniden boyanıyor — '
+            '${debugBlurPaintCountForTests - blurBefore} blur çizildi '
+            '(tahta tek boyamada ~340 blur eder).');
+
     final sinir = tester.renderObject<RenderRepaintBoundary>(
       find.ancestor(
         of: find.byType(BoardWidget),
