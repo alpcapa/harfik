@@ -155,7 +155,7 @@ yok, reklam SDK'sı yok.
 
 ### 3.4 Advertising ID
 **"No"** — uygulama reklam kimliği kullanmıyor. Ölçüldü: yayınlanan pakette
-`com.google.android.gms.permission.AD_ID` **yok**, toplam 3 izin var (§6).
+`com.google.android.gms.permission.AD_ID` **yok**, toplam 4 izin var (§6).
 
 ### 3.5 Content ratings (IARC anketi)
 
@@ -328,7 +328,7 @@ kanalı aç → **Create new release**.
 **Yükleme ekranından OKUNACAK iki şey** (`build-and-distribution-log.md`
 bunları "hâlâ ölçülmedi" diye bırakmıştı; 24 Ağustos'ta pakete bakılarak
 ölçüldüler, Console'daki değer de aynı çıkmalı): `targetSdk` **36**,
-izinler **3 adet** (§6). Farklı bir şey görürsen Data safety beyanı
+izinler **4 adet** (§6). Farklı bir şey görürsen Data safety beyanı
 yeniden gözden geçirilmeli.
 
 **⚠ SENİN cihazındaki CI `.apk`'sı önce SİLİNMELİ.** O paket debug
@@ -375,6 +375,21 @@ Android gömme katmanındaki Play Core. Ayırt etmenin pratik faydası yok.
 tamamını kanıtlamıyor — Play, bundle'ı işlerken manifeste ekleme yapabiliyor.
 Bir sonraki sürümde de izin listesini **Console'un paket ayrıntısından**
 oku.
+
+✅ **YENİDEN ÖLÇÜLDÜ — 372 (26 Ağustos 2026, Console'un paket ayrıntısı).**
+Yukarıdaki kural uygulandı ve liste DEĞİŞMEDİ: `ACCESS_NETWORK_STATE`,
+`INTERNET`, `com.android.vending.CHECK_LICENSE`,
+`com.kelimeki.kelimeki.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` — 4 adet.
+Aynı ekranda `targetSdk` **36**, `minSdk` **24+**, ABI **3**, ekran düzeni
+**4**, gerekli özellik **2**; yani 372'nin satırı 349'unkiyle **her sütunda
+birebir aynı**. Uygulama içinden hesap silme (madde 2) paketin platform
+yüzeyine hiç dokunmadı → **Data safety beyanında izin kaynaklı bir
+değişiklik YOK.**
+
+⚠ Aynı turda §3.4 ve §5'te kalmış iki bayat "3 izin" atfı da 4'e çekildi —
+§6 25 Ağustos'ta düzeltilmiş ama o iki yer güncellenmemişti. Bir sayıyı
+düzeltirken **aynı sayının öteki geçtiği yerleri de tara**; bu dosyada
+sayı üç yerde yaşıyor.
 
 ---
 
