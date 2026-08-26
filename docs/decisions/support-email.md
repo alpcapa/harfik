@@ -83,7 +83,7 @@ ATLANMIŞTI).** `fetchAdminPendingCount`, yani `UserMenu`'deki "Admin Paneli"
 satırının rozeti, artık üç kaynağı topluyor: okunmamış geri bildirim +
 okunmamış şikayet + **haber verilmemiş destek cevabı**. Atlandığında ortaya
 çıkan durum bu projede adı konmuş bir hata sınıfıdır (bkz.
-`docs/decisions/components.md` → `CountBadge`, "rozet zinciri yukarı takip
+`docs/decisions/components-account.md` → `CountBadge`, "rozet zinciri yukarı takip
 edilmedi"): paneldeki "Zoho" rozeti sayarken dışarıdaki rozet saymıyordu,
 yani admin **paneli açmayı akıl edene kadar** gelen cevaptan habersiz
 kalıyordu — oysa bu rozetin var olma sebebi tam olarak buydu.

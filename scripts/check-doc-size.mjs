@@ -39,6 +39,9 @@ const AUTO = new Set(['CLAUDE.md', 'mobile/CLAUDE.md']);
 const FROZEN = {
   'mobile/docs/parca-log-1-48.md': 300 * KB,
   'mobile/docs/parca-log-49-109.md': 290 * KB,
+  // 26 Ağustos 2026: aktif cilt 151 KB'a çıkınca Parça 110-138 donduruldu.
+  // Tavan bugünkü boyutun biraz üstünde — tek kural BÜYÜMEMESİ.
+  'mobile/docs/parca-log-110-138.md': 150 * KB,
 };
 
 function walk(dir, out = []) {
