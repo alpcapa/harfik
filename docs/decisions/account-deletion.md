@@ -182,6 +182,15 @@ tarafında butonu gizlemek yetmezdi.
 
 ---
 
+## Uyarı cümlesi kırmızı + kalın (26 Ağustos 2026)
+
+Kullanıcı T1'i silmeden hemen önce modala bakarken istedi: en üstteki
+*"Hesabın ve hesabına bağlı kişisel verilerin kalıcı olarak silinir. Bu
+işlemin geri dönüşü yoktur!"* cümlesi siyah/normal ağırlıktayken altındaki
+sayı dökümü kadar dikkat çekmiyordu — oysa **geri dönüşsüzlüğü söyleyen tek
+cümle o**. Artık `text-red font-bold` (portta `kRed` + `FontWeight.bold`) ve
+sonunda ünlem var. İki istemcide birebir.
+
 ## Onay kelimesi `SİL`, karşılaştırma `trUpper`
 
 İki istemci de kullanıcıdan `SİL` yazmasını istiyor. Karşılaştırma **`trUpper`
