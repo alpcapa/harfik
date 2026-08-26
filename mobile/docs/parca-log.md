@@ -17,6 +17,40 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 141 — açık menü DONUYORDU: k-lig satırı puan geç gelince
+     hiç belirmiyordu (26 Ağustos 2026, kullanıcı cihaz testinde bildirdi:
+     *"avatar menüdeki isim altındaki k-lig çıkmadı önce, sayfayı refresh
+     edince geldi"*):** Kural işledi — önce web'e bakıldı, fark YAPISALDI.
+     - **Web'de menü bileşenin İÇİNDE satır içi render ediliyor**
+       (`{open && (…)}`, `UserMenu.tsx:229`), yani `setMyRank` geldiğinde
+       React AÇIK menüyü yeniden çiziyor. **Portta `PopupMenuButton`'ın
+       `itemBuilder`ı menü AÇILDIĞI AN bir kez koşuyor** ve sonuç AYRI bir
+       route'a gömülüyor; `AccountButton.setState` o route'u yeniden
+       çizmiyor. Puan menü açıldıktan sonra gelirse satır o menüde bir daha
+       ASLA belirmiyordu.
+     - **Düzeltme:** `_myRank` artık `ValueNotifier` ve menü başlığının iki
+       parçası (isim yanındaki `RankSeal` + altındaki `#sıra · puan` satırı)
+       `ValueListenableBuilder` ile sarılı — açık menü web'deki gibi canlı.
+     - **İkinci dal — tek atış, tek şans:** `_refreshMyRank` yalnızca
+       `initState`te ve hesap DEĞİŞİMİNDE koşuyordu; açılıştaki tek istek
+       düşerse (`StatsRepo.myRank` her istisnayı null'a çeviriyor) satır
+       sayfa yenilenene kadar yok oluyordu. Artık `onOpened` puan hâlâ
+       yokken yeniden deniyor — normal durumda menü açmak ağa çıkmıyor.
+     - **Üçüncü dal — teşhis edilemezlik:** `myRank`ın `catch`i yalnızca
+       `debugPrint`ti, yani Parça 140'ın aynı sınıfı. Artık
+       `errorReporter.report`a düşüyor (ağ hatası elenerek).
+     - **Ölçüm — bir hipotez ELENDİ:** "istek JWT hazır olmadan gidiyor,
+       sunucu boş dönüyor" teorisi canlıda test edildi ve YANLIŞ çıktı;
+       `my_leaderboard_rank` SECURITY DEFINER değil, `anon` rolüne de
+       EXECUTE verilmiş ve `anon` olarak koşturulduğunda Ironman için
+       `rank 2 · 135 puan` döndürüyor. Yani sebep kimlik değil, istemci
+       tarafı.
+     - **Regresyon (2 test, `account_button_test.dart`):** puan menü
+       AÇIKKEN gelince satır canlı beliriyor (menü kapanmadan, sayfa
+       yenilenmeden); açılıştaki istek düşerse menü yeniden açılınca
+       YENİDEN deneniyor. İkisinin de negatif eşi yazıldı.
+     - **Web DEĞİŞMEDİ** — orada davranış zaten doğruydu.
+
    - ✅ **Parça 140 — kurucusu silinmiş oyun Canlı listesini DÜŞÜRDÜ
      (26 Ağustos 2026, Parça 139'un yan etkisi; web + port aynı PR):**
      Kullanıcı gerçek cihazda (derleme `53e401c` = 372) bildirdi: *"Devam
