@@ -443,14 +443,16 @@ sayı üç yerde yaşıyor.
 | 1 | 25 Ağu 19:23 | Closed testing - Alpha, Store Listing, App Content, Advanced distribution, Store settings | ✅ **Published** |
 | 2 | 26 Ağu 08:57 | Closed testing - Alpha (paket **372**) | ✅ **Published** |
 | 3 | 26 Ağu ~11:40 | Closed testing - Alpha (paket **378**) | ✅ **yayında** — cihaza güncelleme olarak indi ve çalıştı (aşağı bkz.) |
-| 4 | 26 Ağu ~22:20 | Closed testing - Alpha (paket **401**) | ⏳ gönderildi — sonuç bu oturumda doğrulanmadı |
+| 4 | 26 Ağu ~22:20 | Closed testing - Alpha (paket **401**) | ✅ **yayında** (kullanıcı Console'dan doğruladı, aynı gece) |
 
 İlk üçü yayında; 26 Ağustos sabahı görülen *"Changes in review"* durumları
 aynı gün kapandı — **üçüncüsü ~1 saat içinde** (11:36'da gönderildi, 12:30
 civarında cihaza güncelleme olarak indi).
 
-**4. gönderim (paket 401)** akşam yapıldı ve durumu bu oturumda
-DOĞRULANMADI — tablo "published" demiyor, çünkü ölçülmedi. İçeriği:
+**4. gönderim (paket 401)** akşam yapıldı ve **aynı gece yayına girdi**
+(kullanıcı Console'dan doğruladı). Dördünün de aynı gün içinde kapanması,
+bu kanaldaki inceleme süresinin saatler mertebesinde olduğunu gösteriyor —
+"birkaç gün sürer" varsayımıyla plan yapma. İçeriği:
 oyun ekranı akıcılık düzeltmesi (nömorfik dekor raster önbelleği,
 Parça 144), "Buradan başla" balonu (Parça 145), tanıtımdaki DEVAM
 düğmesi (Parça 143) ve görünür davet hataları. Kaynak `main` @ `5d8c549`;
