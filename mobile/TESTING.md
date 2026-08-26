@@ -2045,6 +2045,13 @@ görülebilir.
       arşivinde de aynı ad görünmeli.
 - [ ] **Devam eden Canlı oyun düştü.** Silinen kişiyle YARIM kalmış bir
       oyun varsa rakibin "Canlı" listesinde artık olmamalı.
+- [ ] **Rakibin Canlı LİSTESİ hâlâ yükleniyor** (26 Ağustos 2026'da bu
+      GERÇEKTEN kırıldı — bkz. `docs/decisions/account-deletion.md` → "SET
+      NULL'ın bedeli"). Silinen kişinin AÇTIĞI bitmiş bir oyun varsa
+      (`online_games.created_by` artık NULL) rakibin Canlı sekmesindeki üç
+      alt sekme de normal açılmalı: "Oyunların şu an yüklenemedi." ÇIKMAMALI.
+      "Son oynananlar"daki o kartın başlığı **"Bir arkadaşın açtı"** olur —
+      bu doğru davranış, kurucunun profili artık yok.
 - [ ] **Yönetici silinemiyor.** Admin bir hesapla pencereyi aç: kuru
       çalıştırma **"Yönetici hesabı uygulama içinden silinemez."** demeli,
       silme butonu HİÇ etkinleşmemeli.

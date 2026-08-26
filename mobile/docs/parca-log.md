@@ -17,6 +17,50 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 140 — kurucusu silinmiş oyun Canlı listesini DÜŞÜRDÜ
+     (26 Ağustos 2026, Parça 139'un yan etkisi; web + port aynı PR):**
+     Kullanıcı gerçek cihazda (derleme `53e401c` = 372) bildirdi: *"Devam
+     edenler, oyun davetleri (2 tane vardı) ve son oynadıklarım gelmiyor"*
+     — üç alt sekme birden "Oyunların şu an yüklenemedi.", TEKRAR DENE
+     boşuna. **Kök sebep hesap silme kaskadında:** `online_games.created_by`
+     `on delete cascade`'ten `set null`'a çevrilmişti (bitmiş oyunlar
+     ötekinin arşivi için korunsun diye), T1 silinince 5 satırda kolon
+     NULL'a düştü — ama `OnlineGame.fromJson` hâlâ `m['created_by'] as
+     String` yapıyordu. Tek satır fırlatınca ayrıştırma tek geçişte
+     olduğundan 43 oyunun tamamı gitti.
+     - **`createdBy` → `String?`**; `creatorSlot` ve `participantLabel`
+       null güvenli hâle getirildi. Null==null tuzağı gerçek: `userId` de
+       nullable, çıplak eşitlik kurucusu silinmiş bir oyunda rastgele bir
+       koltuğu "Davet gönderen" ilan ederdi.
+     - **`load()` artık TELEMETRİYE yazıyor.** İkinci ders bu: hata
+       yalnızca `debugPrint`e gidiyordu, bu yüzden `client_errors`'ta tek
+       satır yok ve teşhis elle SQL koşularak yapıldı — telemetri (Parça
+       ROADMAP #3) tam bunun için kurulmuştu. Ağ hatası BİLEREK eleniyor
+       (`isNetworkError`): `report` varsayılan `manual` türünde o filtreyi
+       kendisi uygulamıyor, çevrimdışı kullanıcı ise bu satıra her açılışta
+       düşer.
+     - **Web tarafı:** `database.types.ts`'te `created_by: string | null`.
+       Kod değişmedi — `LiveGamesTab`'in üç tüketicisi de
+       `?.name ?? 'Bir arkadaşın'` kalıbında ve `HumanSlot.user_id` NOT
+       NULL olduğundan karşılaştırma null'da hiçbir koltuğu seçmiyor.
+       **Yanlış olan yalnızca tipti — ve port o yanlış tipi kopyalamıştı.**
+     - **Sunucu denetlendi, değişiklik gerekmedi:** `created_by`'ye bakan
+       her fonksiyon/RLS politikası yalnızca eşitlik karşılaştırıyor,
+       NULL'da eşleşmiyor; hayatta kalan oyuncu oyuna `game_invites`
+       dalından erişmeye devam ediyor.
+     - **Regresyon (3 test):** `created_by: null` satırının listeyi
+       düşürmediği + `creatorSlot` null + "Davet gönderen" etiketinin
+       yanlışlıkla verilmediği; sekmede kartın GERÇEKTEN çizildiği ("Bir
+       arkadaşın" yedeğiyle); ayrıştırma hatasının telemetriye düştüğü ama
+       ağ hatasının DÜŞMEDİĞİ. Sahte gateway'e `slotDeletedHuman` eklendi
+       (uuid kalır, `name` NULL olur — üretimdeki satırın birebir şekli).
+     - **Ders (kök `CLAUDE.md`'nin etki analizi tablosuna eklendi):** bir FK
+       eylemini değiştirmek bir SÖZLEŞME değişikliğidir; `cascade` → `set
+       null`, "silinen satır" sorusunu "NULL kolon" sorusuna çevirir ve o
+       NULL'ı okuyan her istemcinin tipi aynı PR'da genişlemelidir.
+     - Ayrıntı/ölçümler: `docs/decisions/account-deletion.md` → "SET NULL'ın
+       bedeli".
+
    - ✅ **Parça 139 — uygulama içinden hesap silme (25 Ağustos 2026,
      ROADMAP madde 2, MAĞAZA BLOKERİ; web + port + migration + Edge
      Function AYNI PR'da):** Apple 5.1.1(v) ve Google'ın veri silme şartı,

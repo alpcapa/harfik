@@ -381,12 +381,29 @@ Map<String, Object?> slotHuman(String userId,
       'invite_status': inviteStatus,
     };
 
+/// Hesabı silinmiş bir oyuncunun koltuğu: uuid `online_games.slots` içinde
+/// KALIR (koltuk eşlemesi ötekinin arşivi için gerekli) ama `profiles`
+/// satırı gittiğinden `list_my_online_games` adı NULL döndürür.
+Map<String, Object?> slotDeletedHuman(String userId) => {
+      'type': 'human',
+      'user_id': userId,
+      'name': null,
+      'avatar_url': null,
+      'relation': null,
+      'invite_status': null,
+    };
+
 const Map<String, Object?> slotAi = {'type': 'ai'};
 
+/// `created_by` BİLEREK nullable: kurucusu hesabını silmiş bir oyunda sunucu
+/// NULL döndürüyor (`on delete set null`, bkz. account-deletion kararı).
+/// Koltuklardaki uuid ise silinmiyor — bu yüzden varsayılan koltuk kurgusu
+/// `createdBy` null olsa bile kurucunun eski uuid'sini taşımaya devam eder,
+/// tıpkı üretimdeki satır gibi.
 Map<String, Object?> gameRow({
   required String id,
   required String myId,
-  String createdBy = 'esiner',
+  String? createdBy = 'esiner',
   int playerCount = 2,
   String status = 'active',
   String myRole = 'invitee',
@@ -402,7 +419,10 @@ Map<String, Object?> gameRow({
       'status': status,
       'slots': slots ??
           [
-            slotHuman(createdBy, name: 'Esiner', relation: 'accepted'),
+            if (createdBy == null)
+              slotDeletedHuman('silinmis-kurucu-uuid')
+            else
+              slotHuman(createdBy, name: 'Esiner', relation: 'accepted'),
             slotHuman(myId,
                 name: 'Ironman', relation: 'self', inviteStatus: myInviteStatus),
           ],
