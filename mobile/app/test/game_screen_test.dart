@@ -975,6 +975,34 @@ void main() {
             'kez yeniden inşa edildi (per-move rebuild REGRESYONU — düzeltme '
             'geri alınmış/bozulmuş olabilir).');
 
+    // ── PAINT (26 Ağustos 2026) ────────────────────────────────────────
+    //
+    // Yukarıdaki iddia BUILD sayıyor ve BU YETMİYORDU: kapalı testin ilk
+    // gerçek kullanıcıları *"taşları sürerken ağır çekim, akıcı değil"*
+    // dedi — sayaç 0 rebuild derken cihaz her karede tahtayı yeniden
+    // BOYUYORDU. Hayalet taş, tahtayla aynı katmanda duran bir kardeşti;
+    // hareket ettiği her karede `Stack`in tamamı yeniden boyanıyordu ve bu
+    // tahtada boyamanın bedeli ~340 `MaskFilter.blur` (169 hücre × 2 + kart).
+    //
+    // Düzeltme: tahtayı saran `RepaintBoundary`. Bu iddia onun GERÇEKTEN
+    // işe yaradığını ölçüyor — Flutter'ın kendi teşhis sayaçlarıyla:
+    // `debugSymmetricPaintCount` sınır ile ebeveyni BİRLİKTE boyandığında
+    // artar (yani sınır işe yaramıyor), `debugAsymmetricPaintCount` yalnız
+    // biri boyandığında (sınır işini yapıyor).
+    //
+    // Negatif eş: `RepaintBoundary` kaldırılırsa sürükleme boyunca her kare
+    // simetrik boyama sayılır ve bu expect düşer.
+    final sinir = tester.renderObject<RenderRepaintBoundary>(
+      find.ancestor(
+        of: find.byType(BoardWidget),
+        matching: find.byType(RepaintBoundary),
+      ).first,
+    );
+    expect(sinir.debugSymmetricPaintCount, lessThanOrEqualTo(1),
+        reason: 'tahta sürükleme boyunca ebeveyniyle BİRLİKTE '
+            '${sinir.debugSymmetricPaintCount} kez boyandı — RepaintBoundary '
+            'işe yaramıyor demektir (her kare ~340 blur).');
+
     await g.up();
     await tester.pump();
   });
