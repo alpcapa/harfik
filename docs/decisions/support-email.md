@@ -137,9 +137,12 @@ bağlı**. Ücretsiz planda Outbound webhook var, Inbound yok.
 bildirim rozeti; asıl iş — kullanıcının cevabının `destek@` kutusuna
 düşmesi — zaten çalışıyor ve o Zoho'ya bağlı, Brevo'ya değil.
 
-**Yerine ne yapıldı:** Zoho'nun kendi bildirimi (mobil uygulama bildirimi /
-kutunun kişisel adrese kopyalanması). Aynı soruyu ("cevap geldi mi?")
-sıfır maliyetle cevaplıyor.
+**Yerine ne yapıldı: HİÇBİR ŞEY — ve bu da bilinçli.** Zoho'nun mobil
+bildirimi ya da kutunun kişisel adrese kopyalanması konuşuldu, ikisi de
+kurulmadı. Kullanıcının kararı (26 Ağustos 2026): *"Zoho app'e bile şu
+aşamada gerek yok. Ara ara inbox'a girer bakarım."* Kapalı testte ~11
+kullanıcı var; destek trafiği elle bakmayı kaldıracak kadar az. Hacim
+arttığında en ucuz adım Zoho bildirimidir — plan yükseltmek değil.
 
 **Kod SİLİNMEDİ, uykuda:**
 
