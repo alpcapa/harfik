@@ -1562,6 +1562,15 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                           const EdgeInsets.fromLTRB(12, 6, 12, 12),
                                       child: BoardWidget(
                                         state: state,
+                                        // "Buradan başla" balonu, taş
+                                        // KALDIRILDIĞI anda kaybolsun diye
+                                        // sürükleme sinyalini alıyor. Bool
+                                        // bir prop olsaydı sürüklemenin
+                                        // başında/sonunda tüm ekranı
+                                        // setState'lemek gerekirdi; böyle
+                                        // yalnızca balon katmanı dinliyor
+                                        // (Parça 23'ün kuralı korunuyor).
+                                        dragListenable: _dragNotifier,
                                         moveOverlay: moveStatus == null
                                             ? null
                                             : MoveOverlay(

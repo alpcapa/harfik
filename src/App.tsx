@@ -1591,6 +1591,7 @@ export default function App() {
         // sayılır — Setup'ın "Nasıl oynanır?" linkiyle aynı kural.
         onOpenHelp={() => setShowPostStartTutorial(true)}
         dragHiddenKey={dragHiddenKey}
+        tileLifted={ghost !== null}
         dragOverKey={ghost?.overKey ?? null}
         dragOverValid={ghost?.overValid ?? false}
         onTilePointerDown={(r, c, e) =>

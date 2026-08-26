@@ -87,10 +87,23 @@ class BoardWidget extends StatelessWidget {
   final void Function(PointerUpEvent e)? onTilePointerUp;
   final VoidCallback? onTilePointerCancel;
 
+  /// Sürükleme sürüyor mu — değeri `null` DEĞİLSE bir taş havadadır.
+  ///
+  /// Neden `bool` bir prop DEĞİL: Parça 23 sürükleme boyunca bu widget'ın
+  /// (169 hücre + bölge hesabı) yeniden inşa edilmesini bilerek durduruyor.
+  /// Bir bool prop, sürüklemenin başında/sonunda ekranın `setState`'ini
+  /// gerektirirdi. Dinlenebilir olarak geçirilince yalnızca "Buradan başla"
+  /// katmanı dinliyor, tahta hiç yeniden inşa edilmiyor.
+  ///
+  /// Tipi `Object?`: ekran katmanının `_Ghost`u private, ve Dart'ın jenerikleri
+  /// kovaryant olduğundan `ValueNotifier<_Ghost?>` buraya doğrudan geçiyor.
+  final ValueListenable<Object?>? dragListenable;
+
   /// Izgara alanının (Stack) geometrisine dışarıdan erişim — ekran katmanı
   /// global noktayı hücreye çevirirken kullanır (web elementFromPoint'in
   /// geometri tabanlı eşleniği).
   final GlobalKey? gridKey;
+
 
   /// Alt bilgi şeridindeki "Hamleler" linki — verilmezse link çizilmez
   /// (web'de zorunlu prop; burada ileride salt-okunur önizleme için
@@ -136,6 +149,7 @@ class BoardWidget extends StatelessWidget {
     this.onTilePointerMove,
     this.onTilePointerUp,
     this.onTilePointerCancel,
+    this.dragListenable,
     this.gridKey,
     this.onOpenHistory,
     this.onOpenMessaging,
@@ -184,6 +198,23 @@ class BoardWidget extends StatelessWidget {
     };
     final currentColor =
         players.isEmpty ? playerColors.first : _colorOfIndex(state.current);
+
+    // "Buradan başla" balonu — web `Board.tsx`'in `startHint`i, BİREBİR aynı
+    // koşullarla (kullanıcı isteği, 26 Ağustos 2026).
+    //
+    // NEDEN VAR: kapalı testte insanların kuralı değil İLK HAMLEYİ nereye
+    // yapacaklarını bulamadıkları görüldü. `HomeMark` zaten duruyor ama ne
+    // olduğunu söyleyen bir şey yok — tanıtımda okunan cümle, tahtaya
+    // bakarken hatırlanmıyor.
+    //
+    // Koşulun üç parçası da bilinçli: (1) tahtada tek taş yok, (2) bu turda
+    // konmuş TASLAK taş da yok — oyuncu oynamaya başladıysa ipucu görevini
+    // bitirmiştir ve balon taslağın üstünü kapatmamalı, (3) sıra bir
+    // İNSANDA. Kalıcı "görüldü" bayrağı YOK: koşul kendi kendini
+    // sınırlıyor (ilk taş konunca kayboluyor), her yeni oyunda yeniden
+    // görünmesi zararsız, ve bir bayrak cihaz değiştiren oyuncuyu ipuçsuz
+    // bırakırdı.
+    final startHint = _startHintFor(players);
 
     final outlines = <(Path, Color)>[
       for (var i = 0; i < players.length; i++)
@@ -286,6 +317,23 @@ class BoardWidget extends StatelessWidget {
                   ),
                   if (moveOverlay != null && moveOverlay!.cells.isNotEmpty)
                     Positioned.fill(child: IgnorePointer(child: _moveBadge())),
+                  if (startHint != null)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: dragListenable == null
+                            ? _startHint(startHint, screenWidth)
+                            : ValueListenableBuilder<Object?>(
+                                valueListenable: dragListenable!,
+                                // Sürükleme başlayınca balon kaybolur.
+                                // Yalnızca BU katman dinliyor — tahtanın
+                                // kendisi sürükleme boyunca hiç yeniden
+                                // inşa edilmiyor (Parça 23).
+                                builder: (context, drag, _) => drag != null
+                                    ? const SizedBox.shrink()
+                                    : _startHint(startHint, screenWidth),
+                              ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -293,6 +341,92 @@ class BoardWidget extends StatelessWidget {
           if (!hideFooter) _footer(),
         ],
       ),
+    );
+  }
+
+  /// "Buradan başla" balonunun hedefi: (satır, sütun, renk, sağa mı uzasın).
+  /// `null` = balon gösterilmez. Ayrı bir metot olmasının sebebi yalnızca
+  /// düzen değil: `final` bir yerele atanınca Dart'ın tip yükseltmesi
+  /// widget ağacının içinde de garanti oluyor.
+  (int, int, PlayerColor, bool)? _startHintFor(List<Player> players) {
+    if (compact) return null;
+    // Taş rafta SEÇİLİ (dokunup kaldırıldı) — sürükleme dalı ayrı, aşağıdaki
+    // `dragListenable`da. Kullanıcı isteği (26 Ağustos 2026): "taşı
+    // kaldırdığı anda yok olsun"; ilk sürüm yalnızca taş KONUNCA gizliyordu.
+    if (state.selectedTile != null) return null;
+    if (state.placed.isNotEmpty) return null;
+    if (state.board.any((row) => row.any((c) => c != null))) return null;
+    if (players.isEmpty) return null;
+    final p = players[state.current];
+    if (p.isAI || p.surrendered || p.corners.isEmpty) return null;
+    final cc = cornerCell(p.corners.first);
+    return (cc.$1, cc.$2, _colorOfIndex(state.current), cc.$2 < boardSize / 2);
+  }
+
+  /// Balonun kendisi. Konum HÜCRE GEOMETRİSİYLE hesaplanıyor, yüzdeyle
+  /// DEĞİL: ızgarada 12 adet 3px boşluk var, yani hücre `en/13` değil
+  /// `(en - 36)/13`. Web'de yüzde yaklaşımı ölçüldüğünde balonu dikeyde
+  /// ~9px kaydırıyordu (Chromium, 656px ızgara) — burada da aynı formül
+  /// (`stride = (en + gap)/13`, `game_screen.dart`'ın dokunuş→hücre
+  /// çevrimiyle AYNI).
+  Widget _startHint((int, int, PlayerColor, bool) hint, double screenWidth) {
+    final (hr, hc, col, toRight) = hint;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 3.0;
+        final strideX = (constraints.maxWidth + gap) / boardSize;
+        final strideY = (constraints.maxHeight + gap) / boardSize;
+        final cellH = strideY - gap;
+        final bubble = Row(
+          mainAxisSize: MainAxisSize.min,
+          textDirection: toRight ? TextDirection.ltr : TextDirection.rtl,
+          children: [
+            CustomPaint(
+              size: const Size(6, 10),
+              painter: _HintTailPainter(col.base, toRight),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: col.base,
+                borderRadius: BorderRadius.circular(7),
+                boxShadow: const [
+                  BoxShadow(
+                      color: Color(0x470F172A),
+                      offset: Offset(0, 2),
+                      blurRadius: 6),
+                ],
+              ),
+              child: Text(
+                'Buradan başla',
+                maxLines: 1,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'SpaceGrotesk',
+                  fontWeight: FontWeight.bold,
+                  height: 1,
+                  fontSize: fluidSize(screenWidth, 9, 0, 2.4, 13),
+                ),
+              ),
+            ),
+          ],
+        );
+        return Stack(
+          children: [
+            Positioned(
+              top: hr * strideY + cellH / 2,
+              left: toRight ? (hc + 1) * strideX : null,
+              right: toRight ? null : constraints.maxWidth - hc * strideX,
+              // Balonun KENDİ yüksekliğinin yarısı kadar yukarı — yüksekliği
+              // önceden bilmeye gerek kalmıyor (punto akışkan).
+              child: FractionalTranslation(
+                translation: const Offset(0, -0.5),
+                child: bubble,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1055,4 +1189,32 @@ class _HelpIconPainter extends CustomPainter {
   @override
   bool shouldRepaint(_HelpIconPainter oldDelegate) =>
       oldDelegate.color != color;
+}
+
+/// "Buradan başla" balonunun ev karesine bakan kuyruğu.
+class _HintTailPainter extends CustomPainter {
+  final Color color;
+  final bool toRight;
+  const _HintTailPainter(this.color, this.toRight);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path();
+    if (toRight) {
+      // Uç SOLDA (ev karesine bakar), taban sağda (balona yapışır).
+      path.moveTo(0, size.height / 2);
+      path.lineTo(size.width, 0);
+      path.lineTo(size.width, size.height);
+    } else {
+      path.moveTo(size.width, size.height / 2);
+      path.lineTo(0, 0);
+      path.lineTo(0, size.height);
+    }
+    path.close();
+    canvas.drawPath(path, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_HintTailPainter old) =>
+      old.color != color || old.toRight != toRight;
 }
