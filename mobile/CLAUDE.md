@@ -199,6 +199,41 @@ SATIRININ doğru olduğunu kanıtlamaz** — değeri boşluk/özel karakter
 taşıyabilen her `--dart-define`/argüman tırnaklanmalı ve mümkünse o
 komut yerelde bir kez gerçekten koşturulmalı.
 
+## Flutter SDK bu ortama İNDİRİLEBİLİR — Dart'ı körlemesine yazma (26 Ağustos 2026)
+
+Uzun süre "bu ortamda Flutter SDK yok, kanıt CI" diye çalışıldı. **Bunun
+bedeli o gün ödendi:** `board_widget.dart`'ta bir blok taşınırken fazladan
+bir `}` kaldı, `build()` orada kapandı, gerisi sınıf üyesi olarak ayrıştı ve
+CI'da **84 hata** çıktı. Hepsi tek kök sebebin devamıydı.
+
+**Neden hiçbir yerel kontrol yakalamadı:** fazladan bir `}` dosyayı
+**sözdizimsel olarak GEÇERLİ** bırakıyor — `dart format` sorunsuz
+ayrıştırıyor, parantez dengesi de tutuyor (metot erken kapanıyor, dosya
+değil). Kırılma ANLAMSAL; onu yalnızca `dart analyze` görür.
+
+**Yapılabiliyor (ölçüldü):** SDK indirilebiliyor VE `pub get` çözülüyor.
+
+```bash
+SC=<scratchpad>              # oturuma özel; her yeni oturumda TEKRAR gerekir
+cd $SC && curl -sS -L -o f.tar.xz \
+  https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.47.1-stable.tar.xz
+tar xf f.tar.xz && export PATH=$SC/flutter/bin:$PATH
+flutter --disable-analytics
+cd mobile/app && flutter pub get && dart analyze lib/ test/ && flutter test
+```
+
+⚠ **Sürüm CI'ınkiyle AYNI olmalı, "bir Flutter" yetmez.** Önce 3.27.1
+denendi ve `pub get` ÇÖZÜLMEDİ: `flutter_native_splash >=2.4.5` `path
+^1.9.1` istiyor, o Flutter'ın `flutter_test`i ise `path 1.9.0`a sabitliyor.
+CI'ın sürümü koşu log'unda yazılı (`flutter-linux-stable-<sürüm>-x64` önbellek
+anahtarı) — oradan oku, tahmin etme.
+
+Maliyet: ~700 MB indirme, birkaç dakika. **Bir Dart değişikliğini
+göndermeden önce bu üç komutu koş** — bugün 524 test + `dart analyze` (exit
+0) burada koşturuldu ve CI'la birebir aynı sonucu verdi (`[ÖLÇÜM]` satırları
+dahil). "Kanıt CI" artık yalnızca native derleme (apk/ipa) için geçerli bir
+sınır.
+
 ## Sorun Bildirildiğinde İLK ADIM: "web'de bu nasıl yapılmış?"
 
 Kullanıcı kararı (9 Ağustos 2026, sözleri birebir): *"Bizim webde çalışan
