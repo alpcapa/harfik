@@ -173,15 +173,70 @@ class _IntroScreenState extends State<IntroScreen> {
             // bir çıkmazdı — uygulamanın kendisine hiç varılamıyordu.
             //
             // Geri konan düğme ESKİSİ DEĞİL: tam genişlikte ve kocaman
-            // değil, metin genişliğinde ve kısa. 19 Ağustos'un asıl
-            // şikayeti (alttan yer çalması) kısmen karşılanmaya devam
-            // ediyor — ama dürüst olmak gerekirse bir miktar dikey alan
-            // GERİ VERİLİYOR. Takas bilinçli: birkaç piksel slayt yüksekliği
-            // ile uygulamaya hiç ulaşamamak arasında seçim yapılıyor.
+            // değil, nokta şeridinin sağına oturan küçük bir düğme. Yani
+            // 19 Ağustos'un asıl şikayeti (alttan ~60px yer çalması)
+            // karşılanmaya devam ediyor — bu sefer düğme neredeyse hiç
+            // dikey alan almıyor (aşağı bkz.).
+            // Noktalar ve "DEVAM ›" AYNI ŞERİTTE — alt alta DEĞİL.
+            //
+            // İlk denemede düğme kendi satırındaydı ve `intro_screen_test`
+            // bunu YAKALADI: 430×710 ve 414×720'de 1. slayt 36 ve 35 px
+            // taşıyordu. O test tam bu iş için var ve taşan piksel sayısını
+            // yazdırıyor, yani bütçe TAHMİN değil ÖLÇÜM: eklenebilecek
+            // dikey alan ~10 px. Kendi satırındaki 48 dp'lik bir dokunma
+            // hedefi oraya sığmıyor.
+            //
+            // Çözüm: düğme zaten var olan nokta şeridine sağa yerleşiyor.
+            // Şerit yüksekliği noktalardan değil düğmeden geliyor; net artış
+            // birkaç piksel.
             Padding(
-              // 8 → 6: nokta şeridini içerikten ayırmaya yetiyor.
-              padding: const EdgeInsets.only(top: 6),
-              child: _Noktalar(aktif: _page),
+              padding: const EdgeInsets.only(top: 4),
+              child: SizedBox(
+                width: double.infinity,
+                // İKİ ÇOCUK DA `Positioned` DEĞİL: `Stack` yüksekliğini
+                // yalnızca konumlandırılmamış çocuklardan alır. `Positioned`
+                // kullanılsaydı şerit noktaların 7 px'ine göre boyutlanır ve
+                // düğme taşardı.
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Align(child: _Noktalar(aktif: _page)),
+                    if (!_isLast)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          // DOKUNMA HEDEFİ: yalnızca GENİŞLİKTE 48 dp.
+                          // `TapTarget`in belgelenmiş eksen istisnası (bkz.
+                          // o dosyadaki "← Geri" gerekçesi): dikeyde 48
+                          // dayatmak slaydı taşırıyor, yani kuralı harfiyen
+                          // uygulamak asıl işlevi — tanıtımı görebilmeyi —
+                          // bozardı. Yatayda geniş, dikeyde düğmenin kendi
+                          // boyu; çevresinde çakışacak başka hedef yok.
+                          child: TapTarget(
+                            onTap: _ileri,
+                            minWidth: kMinTapTarget,
+                            minHeight: 0,
+                            child: NeoButton(
+                              label: 'DEVAM ›',
+                              onPressed: _ileri,
+                              // ACCENT bilerek — son sayfadaki "HEMEN OYNA"
+                              // ile aynı renk. İkisi hiçbir zaman aynı anda
+                              // ekranda olmuyor; aynı rengi paylaşmaları
+                              // "buraya bas" sinyalini güçlendiriyor, ki bu
+                              // düğmenin var olma sebebi tam da fark
+                              // edilmemekti.
+                              variant: NeoButtonVariant.accent,
+                              fontSize: 11,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 4),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
             // Son sayfada tanıtımın TEK çıkışı. Kabı metin sütunuyla aynı
             // genişlikte — geniş bir ekranda (tablet) kenardan kenara
@@ -203,30 +258,9 @@ class _IntroScreenState extends State<IntroScreen> {
                 ),
               )
             else
-              // Ara sayfaların "DEVAM ›"ı. Yükseklik eski `SizedBox(8)`in
-              // yerini alıyor; düğme GÖRSEL olarak küçük ama dokunma
-              // hedefi `TapTarget` ile 48 dp'de tutuluyor (Parça 134'ün
-              // kuralı — görseli küçültmek hedefi küçültmez).
-              Padding(
-                padding: const EdgeInsets.only(top: 2, bottom: 4),
-                child: TapTarget(
-                  onTap: _ileri,
-                  minHeight: kMinTapTarget,
-                  child: NeoButton(
-                    label: 'DEVAM ›',
-                    onPressed: _ileri,
-                    // ACCENT bilerek — son sayfadaki "HEMEN OYNA" ile aynı
-                    // renk. İkisi hiçbir zaman aynı anda ekranda olmuyor;
-                    // aynı rengi paylaşmaları "buraya bas" sinyalini
-                    // güçlendiriyor, ki bu düğmenin var olma sebebi tam da
-                    // fark edilmemekti.
-                    variant: NeoButtonVariant.accent,
-                    fontSize: 12,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 22, vertical: 8),
-                  ),
-                ),
-              ),
+              // Ara sayfalarda ek dikey alan YOK — "DEVAM ›" artık
+              // nokta şeridinin içinde (yukarı bkz.).
+              const SizedBox.shrink(),
           ],
         ),
       ),
