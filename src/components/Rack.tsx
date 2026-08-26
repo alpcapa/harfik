@@ -91,6 +91,10 @@ export function Rack({
           return (
             <div
               key={`${tile.letter}-${i}`}
+              // `data-cell`/`data-rack` ile aynı amaç: testlerin taşı sınıf
+              // adına ya da çocuk sırasına göre aramak zorunda kalmaması
+              // (raf'ın ilk çocuğu taş DEĞİL, etiket satırı).
+              data-rack-tile={i}
               className="h-[46px]"
               style={{
                 opacity: dragHiddenIndex === i ? 0 : 1,

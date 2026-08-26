@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/ui/game/board_widget.dart';
+import 'package:kelimeki/src/ui/game/neo_box.dart' show NeoBox;
 import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/ui/game/tile_widget.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
@@ -283,5 +284,79 @@ void main() {
     // Boş köşe hücresi ve bonus bölgesi hücresi: filigran görünür.
     expect(path.contains(centerOf(0, 3)), isTrue);
     expect(path.contains(centerOf(6, 6)), isTrue);
+  });
+
+  group('"Buradan başla" balonu (Parça 145)', () {
+    // Web `Board.tsx`'in `startHint`inin eşleniği. Konum mutlak katmanda
+    // hesaplandığından ızgara geometrisi değişirse SESSİZCE kayar; iddia bu
+    // yüzden kendi formülüme değil GERÇEK ev karesinin kutusuna karşı
+    // (web'deki kardeş testle aynı desen, `tests/smoke.spec.ts`).
+    Future<void> pump(WidgetTester tester, GameState state) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: kelimekiTheme(),
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 390,
+              height: 390,
+              child: BoardWidget(state: state, hideFooter: true),
+            ),
+          ),
+        ),
+      ));
+      await tester.pump();
+    }
+
+    testWidgets('boş tahtada ev karesinin YANINDA çıkar', (tester) async {
+      await setPhoneViewSize(tester, const Size(390, 844));
+      await pump(tester, emptyBoardState());
+
+      final balon = find.text('Buradan başla');
+      expect(balon, findsOneWidget);
+
+      // KURULUM KONTROLÜ: ızgaranın ilk `NeoBox`ı gerçekten (0,0) hücresi mi?
+      // Değilse aşağıdaki iddia yanlış bir kutuyla karşılaştırır ve sessizce
+      // geçebilirdi.
+      final evKare = tester.getRect(find.byType(NeoBox).first);
+      final izgara = tester.getRect(find.byType(GridView));
+      expect((evKare.left - izgara.left).abs(), lessThan(1),
+          reason: 'ilk NeoBox (0,0) hücresi değil — iddia yanlış kutuya bakıyor');
+      expect((evKare.top - izgara.top).abs(), lessThan(1));
+
+      final b = tester.getRect(balon);
+      // Balon ev karesinin SAĞINDA, tam bir ızgara boşluğu (3px) kadar
+      // sonra — ve dikeyde o kareyle AYNI merkezde. Tolerans sıkı: yüzde
+      // tabanlı bir hesap buradan geçemez (web'de ölçüldü).
+      expect(b.left - evKare.right, greaterThan(1));
+      expect(b.center.dy - evKare.center.dy, closeTo(0, 0.75));
+      expect(b.right, lessThanOrEqualTo(izgara.right + 1),
+          reason: 'balon tahtadan taşıyor');
+    });
+
+    testWidgets('tahtada taş varsa ÇIKMAZ', (tester) async {
+      await setPhoneViewSize(tester, const Size(390, 844));
+      final s = emptyBoardState();
+      final board = [for (final row in s.board) [...row]];
+      board[6][6] = const Tile(letter: 'A', pts: 1);
+      await pump(tester, s.copyWith(board: board));
+      expect(find.text('Buradan başla'), findsNothing);
+    });
+
+    testWidgets('bu turda konmuş TASLAK taş varsa ÇIKMAZ', (tester) async {
+      // Balon taslağın üstünü kapatmasın: oyuncu oynamaya başladıysa ipucu
+      // görevini bitirmiştir.
+      await setPhoneViewSize(tester, const Size(390, 844));
+      final s = emptyBoardState();
+      await pump(
+          tester,
+          s.copyWith(placed: const {'0,0': Tile(letter: 'A', pts: 1)}));
+      expect(find.text('Buradan başla'), findsNothing);
+    });
+
+    testWidgets("sıra YZ'deyken ÇIKMAZ", (tester) async {
+      await setPhoneViewSize(tester, const Size(390, 844));
+      await pump(tester, emptyBoardState().copyWith(current: 1));
+      expect(find.text('Buradan başla'), findsNothing);
+    });
   });
 }

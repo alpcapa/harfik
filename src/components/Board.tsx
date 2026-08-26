@@ -182,8 +182,53 @@ export function Board({
     for (const corner of p.corners) cornerNumber[corner] = i + 1;
   });
 
+  // Izgaranın boşluğu (`gap-[3px]`) ve ondan türeyen GERÇEK hücre genişliği.
+  // Yüzde tabanlı katmanlar (köşe filigranı, X2) bu farkı görmezden gelebiliyor
+  // çünkü onlar 4×4/5×5 blokları kabaca kaplıyor; tek bir hücreye HİZALANAN
+  // bir şey (aşağıdaki "Buradan başla" balonu) için ise kayma görünür oluyor.
+  const GRID_GAP = 3;
+  const CELL_W = `((100% - ${(SIZE - 1) * GRID_GAP}px) / ${SIZE})`;
+
   // Köşe bölgesinin tahtaya oranı (kenar uzunluğu).
   const cornerFrac = `${(CORNER / SIZE) * 100}%`;
+
+  // "Buradan başla" balonu — tahta TAMAMEN boşken, sırası gelen İNSAN
+  // oyuncunun ev karesinin yanında (kullanıcı isteği, 26 Ağustos 2026).
+  //
+  // NEDEN VAR: kapalı testte insanların kuralı değil, İLK HAMLEYİ nereye
+  // yapacaklarını bulamadıkları görüldü. Ev işareti (`HomeMark`) zaten
+  // duruyor ama ne olduğunu söyleyen bir şey yok — tanıtımda okunan bir
+  // cümle, tahtaya bakarken hatırlanmıyor.
+  //
+  // GÖRÜNME KOŞULU üç parça ve üçü de bilinçli:
+  //   1. tahtada TEK taş yok (ilk hamle henüz oynanmadı),
+  //   2. bu turda konmuş taslak taş da yok — oyuncu oynamaya başladıysa
+  //      ipucu görevini bitirmiştir, balon taslağın üstünü kapatmasın,
+  //      (`board` boş ama `placed` doluysa balon hâlâ gösterilseydi taşın
+  //      üzerine binerdi — 4 kişilik oyunda ev kareleri kenarda ve
+  //      balon yanlarına doğru uzuyor)
+  //   3. sıra bir İNSANDA — YZ düşünürken "buradan başla" demek anlamsız.
+  // Kalıcı bir "görüldü" bayrağı YOK: koşul kendi kendini sınırlıyor
+  // (ilk taş konunca kayboluyor) ve her yeni oyunda yeniden görünmesi
+  // zararsız; localStorage'a bir bayrak daha eklemek, cihaz değiştiren ya
+  // da uzun aradan sonra dönen oyuncuyu ipuçsuz bırakırdı.
+  const startHint = useMemo(() => {
+    if (compact) return null;
+    if (Object.keys(placed).length > 0) return null;
+    if (board.some((row) => row.some((c) => c !== null))) return null;
+    const p = players[current];
+    if (!p || p.isAI || p.surrendered) return null;
+    const corner = p.corners[0];
+    if (corner === undefined) return null;
+    const [hr, hc] = cornerCell(corner);
+    const col = PLAYER_COLORS[p.colorIndex];
+    // Balon ev karesinin YANINDA, aynı satırda, tahtanın içine doğru uzar —
+    // böylece hangi köşede olursa olsun tahtadan taşmaz. Kuyruk ev karesine
+    // bakar. (Aynı sütunda yukarı/aşağı uzatmak 13 satırın en uçlarında
+    // dışarı taşardı.)
+    const toRight = hc < SIZE / 2;
+    return { hr, hc, col, toRight };
+  }, [compact, placed, board, players, current]);
 
   // Merkezdeki x2 bonus bölgesinin tahtaya oranı ve konumu — köşe numarası
   // filigranıyla aynı mantıkla, tek büyük bir "X2" o bölgenin arkasına yazılır.
@@ -489,6 +534,57 @@ export function Board({
           {/* Anlık geçerlilik çerçevesinin puan rozeti. */}
           {moveBadge}
         </div>
+
+        {/* "Buradan başla" balonu. `inset-[10px]`: köşe filigranındaki aynı
+            gerekçe — absolute konumlanan bir grid öğesinin containing block'u
+            padding box olduğundan, grid'in kendi p-[10px] dolgusuyla birebir
+            eşleşmezse yüzde koordinatları hücre alanından kayar. */}
+        {startHint && (
+          <div className="pointer-events-none absolute inset-[10px] z-20">
+            <div
+              data-start-hint=""
+              className="absolute flex items-center"
+              style={{
+                // Hücre geometrisi YÜZDEYLE ifade EDİLEMEZ: ızgarada 12 adet
+                // 3px'lik boşluk var, yani bir hücre `100%/13` değil
+                // `(100% - 36px)/13`. Yüzde yaklaşımı ölçüldüğünde balonu
+                // dikeyde ~9px aşağı kaydırıyordu (Chromium, 656px ızgara).
+                top: `calc(${CELL_W} * ${startHint.hr + 0.5} + ${startHint.hr * GRID_GAP}px)`,
+                left: startHint.toRight
+                  ? `calc(${CELL_W} * ${startHint.hc + 1} + ${(startHint.hc + 1) * GRID_GAP}px)`
+                  : undefined,
+                right: startHint.toRight
+                  ? undefined
+                  : `calc(100% - (${CELL_W} * ${startHint.hc} + ${startHint.hc * GRID_GAP}px))`,
+                transform: 'translateY(-50%)',
+                flexDirection: startHint.toRight ? 'row' : 'row-reverse',
+              }}
+            >
+              {/* Kuyruk: ev karesine bakan küçük üçgen. */}
+              <span
+                style={{
+                  width: 0,
+                  height: 0,
+                  borderTop: '5px solid transparent',
+                  borderBottom: '5px solid transparent',
+                  [startHint.toRight ? 'borderRight' : 'borderLeft']: `6px solid ${startHint.col.base}`,
+                }}
+              />
+              <span
+                className="font-bold leading-none whitespace-nowrap rounded-[7px]"
+                style={{
+                  background: startHint.col.base,
+                  color: '#FFFFFF',
+                  fontSize: 'clamp(9px, 2.4vw, 13px)',
+                  padding: '5px 8px',
+                  boxShadow: '0 2px 6px rgba(15,23,42,0.28)',
+                }}
+              >
+                Buradan başla
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Her oyuncunun 4×4 köşesine soluk numara filigranı. `inset` burada
             ebeveyn grid'in kendi `p-[10px]` dolgusuyla BİREBİR eşleşmeli —

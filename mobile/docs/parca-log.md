@@ -20,6 +20,55 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 145 — "Buradan başla" balonu: ilk hamlenin nereye yapılacağı
+     (26 Ağustos 2026, kullanıcı isteği: *"ilk boş tabloda evin yanına doğru
+     bir balon koyabilir miyiz? Buradan başla yazsın"*):** Kapalı testte
+     insanların kuralı değil **ilk hamleyi nereye yapacaklarını**
+     bulamadıkları görüldü. `HomeMark` zaten duruyor ama ne olduğunu söyleyen
+     bir şey yok — tanıtımda okunan cümle, tahtaya bakarken hatırlanmıyor.
+     Parça 143'ün (tanıtımda DEVAM düğmesi) aynı huninin bir sonraki
+     tıkacı.
+
+     **Web ÖNCE yazıldı, port ona göre taşındı** — `mobile/CLAUDE.md`'nin
+     "Sorun bildirildiğinde İLK ADIM: web'de bu nasıl yapılmış?" kuralı yeni
+     özellik için de geçerli: kaynak web'de olmayınca kaynağı önce web'de
+     ÜRETMEK gerekiyor, yoksa port kanonik hâle gelir ve iki taraf ayrışır.
+
+     **Ölçülen tuzak — hücre konumu YÜZDEYLE ifade edilemez:** ızgarada 12
+     adet 3px boşluk var, yani bir hücre `100%/13` DEĞİL `(100% - 36px)/13`.
+     İlk sürüm yüzde kullanıyordu ve balonu dikeyde **~9px** kaydırıyordu
+     (Chromium, 656px ızgara, tarayıcıda ölçüldü). Konum artık tam
+     geometriden: web'de `calc`, portta `stride = (en + gap)/13` — ki bu
+     `game_screen.dart`'ın dokunuş→hücre çevrimiyle **aynı formül**.
+     Köşe numarası/X2 filigranları bu farkı görmezden gelebiliyor çünkü
+     4×4/5×5 blokları kabaca kaplıyorlar; tek bir HÜCREYE hizalanan her yeni
+     katman bu formülü kullanmalı.
+
+     **Görünme koşulunun üç parçası da bilinçli:** (1) tahtada tek taş yok,
+     (2) bu turda konmuş TASLAK taş da yok — oyuncu oynamaya başladıysa ipucu
+     görevini bitirmiştir ve balon taslağın üstünü kapatmamalı, (3) sıra bir
+     İNSANDA. Kalıcı "görüldü" bayrağı YOK: koşul kendi kendini sınırlıyor
+     ve bir bayrak cihaz değiştiren oyuncuyu ipuçsuz bırakırdı.
+
+     **Regresyon — ve testin kendisi bir ders:** iki tarafta da iddia kendi
+     formülüne değil **gerçek ev karesinin kutusuna** karşı (web'de
+     `[data-cell="0,0"]`, portta ızgaranın ilk `NeoBox`ı + o kutunun
+     gerçekten (0,0) olduğunu doğrulayan bir kurulum kontrolü). İlk yazılan
+     dikey tolerans **1.5px**'ti ve **yanlış (yüzde tabanlı) sürümü de
+     geçiriyordu** — negatif eş kurulurken yakalandı, 0.75px'e çekildi.
+     *Gevşek bir iddia hiç iddia olmamasından daha kötü: yeşil yanar ama
+     hiçbir şey kanıtlamaz.* Portta ayrıca üç negatif dal (tahtada taş var /
+     taslak taş var / sıra YZ'de).
+
+     **Yan değişiklik:** `Rack.tsx`'in taş sarmalayıcısına `data-rack-tile`
+     eklendi — rafın ilk çocuğu taş DEĞİL etiket satırı olduğundan test
+     sessizce yanlış öğeye tıklıyordu (`data-cell`/`data-rack` ile aynı
+     amaç).
+
+     **Doğrulama sınırı:** web tarafı Chromium'da GERÇEKTEN ölçüldü (konum +
+     negatif eş); portun testleri bu ortamda koşturulamıyor (Flutter SDK
+     yok), kanıt CI. Cihaz kontrolü: `mobile/TESTING.md` 23.
+
    - ✅ **Parça 144 — "Board alanında her şey ağır": bir boyamanın MALİYETİ
      (26 Ağustos 2026, kapalı testte 3-4 kişiden ekran donması bildirimi;
      kullanıcı yanında oynayarak doğruladı):** Kullanıcının sözleri:

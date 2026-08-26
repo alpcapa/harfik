@@ -854,3 +854,54 @@ test('/.well-known/assetlinks.json Play imza parmak iziyle statik servis ediliyo
     expect(parmakIzi.startsWith('B6:CD:FB:A9')).toBe(false);
   }
 });
+
+test('"Buradan başla" balonu boş tahtada ev karesinin yanında; ilk taş konunca kaybolur', async ({
+  page,
+}) => {
+  // NEDEN VAR: kapalı testte insanların İLK HAMLEYİ nereye yapacaklarını
+  // bulamadıkları görüldü (kullanıcı isteği, 26 Ağustos 2026). Balon mutlak
+  // konumlu bir katman — ızgara geometrisi değişirse SESSİZCE kayar ya da
+  // tahtadan taşar, hiçbir derleyici bunu görmez.
+  //
+  // İddia kendi matematiğime DEĞİL, gerçek hücrenin kutusuna karşı: balonun
+  // sol kenarı ev karesinin sağ kenarından tam bir ızgara boşluğu (3px)
+  // sonra başlamalı ve dikeyde o kareyle aynı merkezde olmalı. Yüzde
+  // yaklaşımı kullanılsaydı bu iddia düşerdi (ölçüldü: ~9px kayma).
+  page.on('dialog', (dialog) => dialog.accept());
+  await donenKullanici(page);
+  await page.goto('/');
+  await page.getByText('OYUNU BAŞLAT').click();
+  const devam = page.getByLabel('Giriş uyarısı').getByRole('button', { name: 'Oyna' });
+  if (await devam.isVisible().catch(() => false)) await devam.click();
+  const quickstart = page.getByRole('heading', { name: /hızlı başlangıç/i });
+  if (await quickstart.isVisible().catch(() => false)) {
+    await page.locator('button[aria-label="Kapat"]').last().click();
+  }
+
+  const balon = page.locator('[data-start-hint]');
+  await expect(balon).toBeVisible();
+  await expect(balon).toContainText('Buradan başla');
+
+  // 2 kişilik oyunda insan oyuncu sol-üst köşede (cornersFor) → ev karesi 0,0.
+  const ev = page.locator('[data-cell="0,0"]');
+  const e = (await ev.boundingBox())!;
+  const b = (await balon.boundingBox())!;
+  expect(b.x - (e.x + e.width)).toBeGreaterThan(1);
+  expect(b.x - (e.x + e.width)).toBeLessThan(6); // ızgara boşluğu = 3px
+  // TOLERANS SIKI (0.75px) ve bu bilinçli: yüzde yaklaşımıyla `calc`
+  // arasındaki fark bu tahta boyutunda ve 0. SATIRDA yalnızca ~1.4px —
+  // 1.5px'lik bir tolerans yanlış sürümü de geçiriyordu (ölçüldü, negatif
+  // eş kurulurken yakalandı). Gevşek bir iddia, hiç iddia olmamasından
+  // daha kötü: yeşil yanar ama hiçbir şey kanıtlamaz.
+  expect(Math.abs(b.y + b.height / 2 - (e.y + e.height / 2))).toBeLessThan(0.75);
+
+  // Tahtadan taşmamalı.
+  const izgara = page.locator('div.grid').first();
+  const g = (await izgara.boundingBox())!;
+  expect(b.x + b.width).toBeLessThanOrEqual(g.x + g.width + 1);
+
+  // İlk taş konunca balon görevini bitirir — taslak taşın üstünü kapatmasın.
+  await page.locator('[data-rack-tile="0"]').click();
+  await ev.click();
+  await expect(balon).toHaveCount(0);
+});
