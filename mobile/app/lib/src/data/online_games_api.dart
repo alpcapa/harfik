@@ -27,6 +27,7 @@ import 'package:kelimeki_core/kelimeki_core.dart'
     show HistoryEntry, LostShare, OnlineGameStatePublic, Tile, WordScore;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'error_reporter.dart';
 import 'online_api.dart';
 import '../util/offline_notice.dart';
 import '../util/platform.dart';
@@ -83,7 +84,20 @@ class OnlineSlot {
 /// Web `OnlineGame` (`list_my_online_games` satırı).
 class OnlineGame {
   final String id;
-  final String createdBy;
+
+  /// Kurucunun `user_id`'si — **NULL OLABİLİR** (26 Ağustos 2026).
+  ///
+  /// `online_games.created_by` 25 Ağustos'ta `on delete cascade`'ten
+  /// `on delete set null`'a çevrildi (hesap silme kaskadı, bkz.
+  /// `docs/decisions/account-deletion.md`): kurucusu hesabını silmiş bir
+  /// oyun SİLİNMEZ — öteki oyuncuların kaydı korunsun diye kolon NULL'a
+  /// düşer. Bu alan o gün `String` olarak kaldığı için `fromJson` gerçek
+  /// bir cihazda fırlattı ve [OnlineGamesRepo.load] hatayı yutup null
+  /// döndürdüğünden ÜÇ alt sekme birden "Oyunların şu an yüklenemedi."
+  /// gösterdi — hiçbir oyun bozuk olmadığı hâlde. Tüketiciler zaten
+  /// null'a hazırdı (`creatorSlot?.name ?? 'Bir arkadaşın'`); yanlış olan
+  /// yalnızca tipti.
+  final String? createdBy;
   final int playerCount;
   final OnlineGameStatus status;
   final List<OnlineSlot> slots;
@@ -106,7 +120,7 @@ class OnlineGame {
 
   factory OnlineGame.fromJson(Map<String, Object?> m) => OnlineGame(
         id: m['id'] as String,
-        createdBy: m['created_by'] as String,
+        createdBy: m['created_by'] as String?,
         playerCount: (m['player_count'] as num).toInt(),
         status: onlineStatusFromDb(m['status'] as String?),
         slots: [
@@ -122,7 +136,12 @@ class OnlineGame {
   /// Web `mySlotIndex` — çağıranın kendi koltuğu (`relation=='self'`).
   int get mySlotIndex => slots.indexWhere((s) => !s.isAi && s.relation == 'self');
 
+  /// Kurucunun koltuğu — kurucu hesabını sildiyse (`createdBy == null`)
+  /// null döner. `userId == createdBy` karşılaştırması NULL GÜVENLİ
+  /// olmalı: iki taraf da null olabildiğinden çıplak eşitlik, kurucusu
+  /// silinmiş bir oyunda rastgele bir koltuğu "kurucu" ilan ederdi.
   OnlineSlot? get creatorSlot {
+    if (createdBy == null) return null;
     for (final s in slots) {
       if (!s.isAi && s.userId == createdBy) return s;
     }
@@ -533,8 +552,22 @@ class OnlineGamesRepo {
       ]);
       snapshot = await _fetchWithRetry();
       return snapshot;
-    } catch (e) {
+    } catch (e, st) {
+      // TELEMETRİ ŞART (26 Ağustos 2026 dersi): burası yalnızca
+      // `debugPrint`liyordu, bu yüzden `created_by` null çökmesi cihazda
+      // TAMAMEN sessiz kaldı — `client_errors`ta tek satır yok, kullanıcı
+      // yalnızca "yüklenemedi" gördü.
+      //
+      // AĞ HATASI ELENİYOR (`ErrorReporter`in "NE KAYDEDİLMEZ" kuralı):
+      // `report` varsayılan `manual` türünde bu filtreyi UYGULAMAZ, çünkü
+      // bazı çağrı yerlerinde sinyal tam da ağ hatasıdır. Burada değil —
+      // liste zaten `_fetchWithRetry` ile iki kez denendi ve çevrimdışı
+      // kullanıcı bu satıra her açılışta düşer. Kalan tek şey GERÇEK
+      // kusurlar: ayrıştırma hataları, sunucu sözleşmesinin bozulması.
       debugPrint('[Kelimeki] Canlı oyun listesi alınamadı: $e');
+      if (!isNetworkError(e)) {
+        errorReporter.report(e, stack: st, context: 'online_games_repo.load');
+      }
       return null;
     }
   }
@@ -851,7 +884,11 @@ String onlineStatusLabel(OnlineGame g, {bool? isMyTurn}) =>
 
 /// Web `participantLabel` — davet kartındaki katılımcı durumu.
 String participantLabel(OnlineSlot slot, OnlineGame game) {
-  if (slot.userId == game.createdBy) return 'Davet gönderen';
+  // Null güvenli: kurucusu silinmiş oyunda (createdBy == null) userId'si
+  // olmayan bir koltuk yanlışlıkla 'Davet gönderen' etiketi almasın.
+  if (game.createdBy != null && slot.userId == game.createdBy) {
+    return 'Davet gönderen';
+  }
   if (slot.inviteStatus == 'accepted') return 'Kabul etti';
   if (slot.inviteStatus == 'declined') return 'Reddetti';
   return 'Bekliyor';

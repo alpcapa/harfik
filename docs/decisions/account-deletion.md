@@ -286,3 +286,65 @@ da bağlı olduğu böylece görüldü.
 **Doğrulama sınırı (kalan):** cihazda (gerçek Android/iOS paketi) hiç
 denenmedi — iki silme de Flutter **web** derlemesinden yapıldı. Cihaz
 kontrolleri `mobile/TESTING.md` bölüm 21'de duruyor.
+
+---
+
+## SET NULL'ın bedeli: kurucusu silinmiş oyun İSTEMCİYİ düşürdü (26 Ağustos 2026)
+
+Kaskadın "başkasının verisine dokunma" kararı doğruydu ve çalıştı — ama
+**sözleşme değişikliği olarak istemcilere taşınmadı.** `created_by`
+CASCADE'ten SET NULL'a çevrildiğinde o kolon artık NULL dönebilir hâle
+geldi; iki istemcinin tipi de `string`/`String` kaldı.
+
+**Belirti (kullanıcı bildirdi, gerçek cihaz, derleme `53e401c` = 372):**
+*"Devam edenler, oyun davetleri (2 tane vardı) ve son oynadıklarım
+gelmiyor"* — Canlı sekmesinin ÜÇÜ birden "Oyunların şu an yüklenemedi."
+gösteriyor, TEKRAR DENE hiçbir şey yapmıyor. Skor Kartı normal açılıyor.
+
+**Kök sebep — ölçüldü, tahmin edilmedi:**
+
+- Ironman kimliğiyle koşulan `list_my_online_games()` **43 satır** dönüyor
+  (RPC sağlam, `auth.uid()` doğru çözülüyor), bunların **2'sinde
+  `created_by IS NULL`** — T1'in silinmesiyle boşalan kolon. Bugün
+  veritabanının tamamında böyle **5 satır** var ve hepsi `finished`
+  (yarım oyunlar zaten siliniyor — tasarım gereği).
+- Port `OnlineGame.fromJson` içinde `m['created_by'] as String` yapıyordu
+  → **fırlatıyor**. Tek bir bozuk satır TÜM listeyi düşürüyor, çünkü
+  ayrıştırma tek geçişte.
+- `OnlineGamesRepo.load()` hatayı yutup `null` dönüyor (sözleşme: "UI
+  eskiyi korur") → elde hiç liste yoksa `kLoadFailedNotice`. Tekrar
+  denemek çare değil: hata **deterministik**, ağ hatası değil.
+
+**Neden hiçbir uyarı gelmedi:** `load()`'un `catch` bloğu yalnızca
+`debugPrint` yapıyordu. Yani `client_errors`'ta tek satır yok; 36 saatlik
+tabloda tek kayıt tamamen ilgisiz bir tarayıcı oturumundan geliyordu.
+Teşhis elle SQL koşularak yapıldı — telemetri tam da bunun için kurulmuştu.
+
+**Düzeltme (web + port, aynı PR):**
+
+| Dosya | Değişiklik |
+|---|---|
+| `mobile/app/lib/src/data/online_games_api.dart` | `createdBy` → `String?`, cast `as String?`; `creatorSlot` ve `participantLabel` NULL GÜVENLİ (null==null tuzağı: `createdBy` de `userId` de null olabildiğinden çıplak eşitlik rastgele bir koltuğu "kurucu" ilan ederdi) |
+| aynı dosya, `load()` | ayrıştırma hatası artık `errorReporter.report`'a düşüyor; **ağ hatası elenerek** (`isNetworkError`) — `report` varsayılan `manual` türünde o filtreyi kendisi uygulamaz |
+| `src/lib/database.types.ts` | `created_by: string \| null` — tip artık dürüst |
+
+Web **kodu** değişmedi ve buna gerek de yoktu: `LiveGamesTab`'in üç
+tüketicisi de `?.name ?? 'Bir arkadaşın'` kalıbında; `HumanSlot.user_id`
+NOT NULL olduğundan `user_id === created_by` karşılaştırması null'da
+hiçbir koltuğu seçmiyor, yani "kurucu yok" doğru sonucu çıkıyor. Yanlış
+olan yalnızca tipti — ve tip yanlış olduğu için port da yanlış cast'i
+kopyalamıştı.
+
+**Sunucu tarafı denetlendi, değişiklik GEREKMEDİ:** `created_by`'ye bakan
+her yer (`is_online_game_creator`, `is_online_game_participant`,
+`check_invite_expiry`, `online_games`/`game_invites` RLS politikaları)
+yalnızca EŞİTLİK karşılaştırması yapıyor; NULL'da eşleşmiyor, yani hak
+gevşemesi yok. Hayatta kalan oyuncu oyuna `game_invites` dalından
+erişmeye devam ediyor (`is_online_game_participant`'in ikinci kolu).
+
+**Ders — bu dosyanın en pahalı satırı:** *bir FK eylemini değiştirmek bir
+SÖZLEŞME değişikliğidir.* `on delete cascade` → `set null`, "silinen satır"
+sorusunu "NULL kolon" sorusuna çevirir ve o NULL'ı okuyan HER istemci
+tipini genişletmek zorundadır. Kök `CLAUDE.md`'nin etki analizi tablosunda
+bu satır yoktu; artık var ("Migration: bir kolon nullable oluyorsa
+`database.types.ts` + portun `fromJson`'ı AYNI PR'da").

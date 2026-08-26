@@ -82,7 +82,9 @@ export interface FriendSearchResult {
  * çağıranın kendi koltuğu için `'self'`.
  * `invite_status`, o koltuktaki kişinin kendi `game_invites` durumu —
  * kurucunun koltuğunda hiç davet satırı olmadığından her zaman `null`dur
- * (o koltuk `user_id === game.created_by` ile ayırt edilir).
+ * (o koltuk `user_id === game.created_by` ile ayırt edilir — kurucu
+ * hesabını sildiyse `created_by` null olduğundan bu eşitlik hiçbir koltuğu
+ * seçmez, yani "kurucu yok" doğru sonucu çıkar).
  */
 export type OnlineGameSlot =
   | {
@@ -100,7 +102,17 @@ export type OnlineGameStatus = 'pending' | 'active' | 'finished' | 'abandoned';
 /** `list_my_online_games` RPC çıktısındaki tek satır. */
 export interface OnlineGame {
   id: string;
-  created_by: string;
+  /**
+   * Kurucunun `user_id`'si — **null olabilir** (26 Ağustos 2026): kurucu
+   * hesabını sildiğinde oyun SİLİNMEZ (öteki oyuncuların kaydı korunur),
+   * `online_games.created_by` `on delete set null` ile boşalır (bkz.
+   * `docs/decisions/account-deletion.md`). Bu tip 25 Ağustos'ta `string`
+   * kaldığı için portun aynı alanı da nullable olmayan bir cast'le
+   * ayrıştırıyordu ve gerçek bir cihazda Canlı oyun listesini komple
+   * düşürdü. Buradaki tüketiciler (`LiveGamesTab`) `?.name ?? '…'`
+   * kalıbıyla zaten dayanıklıydı.
+   */
+  created_by: string | null;
   player_count: 2 | 4;
   status: OnlineGameStatus;
   slots: OnlineGameSlot[];
