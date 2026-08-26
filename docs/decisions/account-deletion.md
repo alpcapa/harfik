@@ -240,7 +240,49 @@ Bugün canlıda **sıfır**: çok insanlı bir oyunun `games` satırı her zaman
 | Port hukuki metin | `mobile/app/lib/src/ui/auth/legal_modals.dart` (tarih `legal_text_test.dart` ile zorlanıyor) |
 | Testler | `tests/smoke.spec.ts`, `mobile/app/test/account_settings_test.dart` |
 
-**Doğrulama sınırı:** gerçek (kuru olmayan) silme bu oturumda HİÇ
-çalıştırılmadı — geri dönüşü yok. İlk gerçek kullanımı ROADMAP madde 4
-(test hesaplarının silinmesi) olacak; cihaz kontrolleri `mobile/TESTING.md`
-ve `TESTING.md`de.
+---
+
+## Gerçek kullanım — iki hesap silindi ve ölçüldü (26 Ağustos 2026)
+
+Kaskad artık teorik değil: **T4** ve **T1**, `alpcapa.github.io/kelimeki`
+(Flutter web, sha `53e401c`) üzerinden **uygulama içi yoldan** silindi.
+
+**T4 — duman testi.** 1 yerel YZ oyunu, başka hiçbir şey. Silme sonrası 22
+referans kontrolünün hepsi sıfır; takma ad serbest.
+⚠ Bir eksik kaydedildi: T4 silinirken `games` satırının İÇERİĞİ (tarih,
+tahta, skor) hiçbir yere kopyalanmamıştı ve kullanıcı sonradan "hangi
+oyundu" diye sorduğunda **cevap verilemedi** — kuru çalıştırma SAYI
+döndürüyor, İÇERİK değil. **Ders: test amaçlı bir silmeden önce envanteri
+ayrıca çıkar.** T1'de bu yapıldı (19 oyunun tarih/rakip dökümü).
+
+**T1 — asıl test.** Kaskadın her dalı çalıştı ve beklenen ile ölçülen her
+sayı tuttu:
+
+| Ne | Beklenen | Ölçülen |
+|---|---|---|
+| T1'e işaret eden 22 referans (auth, profil, games, mesaj, mute, rapor, davet, arkadaşlık, ban log, `slots`, avatar…) | 0 | **0** |
+| Anonimleşen `games.players` girişi | 11 | **11** |
+| Anonimleşen `games.messages` girişi | 19 | **19** |
+| Anonimleşen `online_game_states` koltuğu | 10 | **10** |
+| Veritabanının TAMAMINDA kalan `T1`/`AlpTEST` adı | 0 | **0** |
+| Ironman (oyun/galibiyet/k-lig/rütbe/bonus) | 120/57/133/100/15 | **birebir aynı** |
+| T2 (oyun/galibiyet/k-lig) | 12/3/−2 | **birebir aynı** |
+| Silinen yarım online oyun | 7 | **7** (6 `abandoned` + 1 `active`) |
+| Korunan bitmiş online oyun | 10 | **10**, hepsinin `games` kaydı yerinde |
+| Avatar dosyası (83.815 bayt) | silinir | **silindi** |
+
+**Koltuk indeksi kararı sahada kanıtlandı.** Anonimleşen 11 satırdan
+birinde (29 Temmuz, Ironman'in kaydı, koltuk 1) ad `T1` DEĞİL hesabın
+sonradan değiştirilmiş eski adı **`AlpTEST`** idi. Ada göre eşleştiren bir
+uygulama o satırı sessizce atlar ve eski ad başkasının kaydında sonsuza dek
+kalırdı; koltuk eşlemesi yakaladı.
+
+**Modal ↔ sunucu tutarlılığı da doğrulandı:** T1'in penceresindeki dokuz
+satırın dokuzu da sunucunun kuru çalıştırmasıyla birebir aynıydı. Modal
+ayrıca **"Profil fotoğrafın 1"** gösterdi — o sayı SQL raporunda yok, Edge
+Function'ın depolama kovasını listelemesinden geliyor; yani storage dalının
+da bağlı olduğu böylece görüldü.
+
+**Doğrulama sınırı (kalan):** cihazda (gerçek Android/iOS paketi) hiç
+denenmedi — iki silme de Flutter **web** derlemesinden yapıldı. Cihaz
+kontrolleri `mobile/TESTING.md` bölüm 21'de duruyor.
