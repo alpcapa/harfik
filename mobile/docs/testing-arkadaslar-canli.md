@@ -72,6 +72,19 @@
       görünmüyordu, bu yüzden İKİ maddeyi de ayrı ayrı koş. **Mükerrer
       kontrolü:** "artık arkadaşsınız" diyaloğu YALNIZCA BİR KEZ
       çıkmalı, üst üste iki kez DEĞİL.
+- [ ] **Davet REDDEDİLİNCE artık konuşuyor (26 Ağustos 2026, Parça 142).**
+      Girişliyken **KENDİ** davet linkine dokun: sunucu bunu kalıcı olarak
+      reddediyor (`P0001`) ve ekranda **"Kendi linkinle arkadaş olamazsın."**
+      (sunucunun kendi cümlesi) çıkmalı. Öncesinde ekranda HİÇBİR ŞEY
+      olmuyordu. Aynı şekilde bozuk/uydurma bir token da bir mesaj almalı.
+- [ ] **Misafirken geçersiz link.** Çıkış yap, bozuk bir
+      `kelimeki://davet/<uydurma>` linkine dokun: **"Bu davet linki
+      açılamadı — süresi dolmuş ya da geçersiz olabilir."** çıkmalı.
+      Uçak modunda aynı linke dokununca ise **bağlantı** mesajı çıkmalı
+      (teşhis uydurulmuyor: uygulama linkin geçersizliğini çevrimdışıyken
+      BİLEMEZ). Bağlantıyı açıp aynı linke tekrar dokun — bu kez gerçek
+      sonuç görünmeli (çevrimdışı dalı "gösterildi" damgasını geri alıyor).
+
 - [ ] **PlayerScoreCard simgesi.** k-lig/arkadaş listesinden birinin
       kartını aç: arkadaşsan ismin yanında **yeşil "kişi-onay"** (adam +
       tik) görünmeli — listelerdeki kırmızı "adam-" DEĞİL; bu bilinçli bir

@@ -27,6 +27,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
     show SupabaseClient, PostgrestException;
 
 import '../config/env.dart' show webOrigin;
+import '../util/offline_notice.dart' show isNetworkError;
 
 /// Web `FriendRelation` — iki kullanıcı arasındaki mevcut ilişki.
 enum FriendRelation { accepted, pendingOutgoing, pendingIncoming }
@@ -372,6 +373,39 @@ class FriendsRepo {
   /// "geçersiz token" sınıfı sunucu retleri değil ağ hataları da.
   Future<String?> acceptInvite(String token) => gateway.acceptInvite(token);
 }
+
+/// Davet kabulü düştüğünde kullanıcıya NE denir — web `FriendInvitePage`'in
+/// aynı kararının portu (25 Ağustos 2026, `acceptFriendInvite`).
+///
+/// Üç durum BİLEREK ayrı, çünkü kullanıcının yapabileceği şey farklı:
+///
+/// 1. **Sunucunun KALICI reddi (SQLSTATE `P0001`).** `accept_friend_invite`
+///    üç durumu bilerek `raise exception` ile reddediyor (kendi linkin,
+///    geçersiz token, oturum yok) ve o metinleri KULLANICIYA GÖSTERİLMEK
+///    üzere yazıyor. Olduğu gibi göster — tekrar denemek sonucu değiştirmez.
+///    Koda bakılıyor, METNE değil: metin değişebilir (aynı gerekçe web'de de
+///    yazılı).
+/// 2. **Ağ hatası.** Link geçerli olabilir; söylenecek şey "bağlantı".
+/// 3. **Geri kalan her şey.** Jenerik mesaj — bilinmeyen bir hatayı
+///    "geçersiz link" diye maskelemek yanlış teşhis olurdu.
+///
+/// ⚠ 26 Ağustos 2026'ya kadar bu dalların HİÇBİRİ kullanıcıya ulaşmıyordu:
+/// `setup_screen.dart`'ın `catch`i yalnızca `debugPrint` yapıyordu, yani
+/// kişi kendi linkine dokunduğunda EKRANDA HİÇBİR ŞEY olmuyordu
+/// (ROADMAP madde 1 → "portta davet kabulü SESSİZCE düşüyor").
+String inviteAcceptErrorText(Object e) {
+  if (e is PostgrestException && e.code == 'P0001') return e.message;
+  if (isNetworkError(e)) {
+    return 'Davet kabul edilemedi — bağlantını kontrol edip tekrar dene.';
+  }
+  return 'Davet kabul edilemedi. Biraz sonra tekrar dene.';
+}
+
+/// Kalıcı ret mi (tekrar denemek anlamsız) yoksa geçici bir arıza mı?
+/// Telemetri kararı buna bakıyor: beklenen retleri `client_errors`'a
+/// yazmak sinyali boğar.
+bool inviteAcceptKaliciRet(Object e) =>
+    e is PostgrestException && e.code == 'P0001';
 
 /// PostgrestException'ı kullanıcıya gösterilebilir kısa metne indirger —
 /// arkadaşlık uçları için web'in console.error+jenerik davranışının

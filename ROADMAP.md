@@ -356,15 +356,20 @@ acil.
   altında.
 - Flutter: gelen linki karşılayan yönlendirme + `friendInvite` kuyruğuyla
   (web'deki `kelimeki:pending-invite` deseninin portu) birleştirme.
-  **AYNI TURDA DÜZELTİLECEK — portta davet kabulü SESSİZCE düşüyor:**
-  `setup_screen.dart` → `_processInvites`'in `catch`i yalnızca `debugPrint`
-  yapıyor, yani kişi kendi linkine (ya da geçersiz bir linke) dokunduğunda
-  HİÇBİR ŞEY görmüyor. Web tarafı 25 Ağustos 2026'da düzeltildi: sunucu
-  `raise exception` ile reddettiyse (SQLSTATE `P0001` — canlıda ölçüldü)
-  mesaj OLDUĞU GİBİ gösteriliyor. Portta da aynısı yapılmalı
-  (`PostgrestException.code`). ⚠ Ayrıca dikkat: `events.takeAll` YIKICI,
-  yani geçici bir ağ hatasında token zaten kayboluyor — o ayrı sorun bu
-  düzeltmeyle çözülmüyor, kararı ayrıca ver.
+  ~~**AYNI TURDA DÜZELTİLECEK — portta davet kabulü SESSİZCE düşüyor.**~~
+  **✅ BİTTİ (26 Ağustos 2026, bu maddeden AYRI olarak yapıldı** — tamamen
+  istemci tarafı, cihaz doğrulaması gerektirmiyordu). `_processInvites`'in
+  `catch`i yalnızca `debugPrint` yapıyordu; artık web `FriendInvitePage`'in
+  kuralını okuyor: sunucunun KALICI reddi (SQLSTATE `P0001`) olduğu gibi
+  gösteriliyor, ağ hatası ayrı konuşuyor, geri kalan jenerik. Karar mantığı
+  `inviteAcceptErrorText`/`inviteAcceptKaliciRet` (`friends_api.dart`) —
+  iki taraf aynı kuralı okusun diye saf fonksiyona çıkarıldı. Misafir dalı
+  da sessizdi (geçersiz linkte hiçbir şey görünmüyordu), o da konuşuyor.
+  Beklenmeyen hatalar telemetriye düşüyor; beklenen retler ve ağ hataları
+  BİLEREK düşmüyor. Ayrıntı: `mobile/docs/parca-log.md` → Parça 142.
+  ⚠ **Kalan, kararı VERİLMEMİŞ sorun:** `events.takeAll` YIKICI, yani geçici
+  bir ağ hatasında token zaten kayboluyor. Bu düzeltme onu çözmüyor —
+  kullanıcı artık en azından kaybolduğunu GÖRÜYOR.
 
 **Tuzaklar:**
 - Universal Links yalnızca App Store'dan kurulan uygulamalarda çalışıyor —

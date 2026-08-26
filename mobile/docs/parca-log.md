@@ -20,6 +20,39 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 142 — davet linki artık SESSİZ düşmüyor (26 Ağustos 2026,
+     ROADMAP madde 1'in alt maddesi; web DEĞİŞMEDİ):** Kural işledi — önce
+     web'e bakıldı. `FriendInvitePage` 25 Ağustos'ta çözmüştü: sunucunun
+     KALICI reddi (SQLSTATE `P0001`) olduğu gibi gösteriliyor, geçici arıza
+     jenerik mesaj alıyor. Portun `_processInvites`'i ise her hatayı
+     `debugPrint`e yazıyordu — kişi **kendi** davet linkine dokunduğunda
+     ekranda hiçbir şey olmuyordu.
+     - **Karar mantığı saf fonksiyona çıkarıldı:** `inviteAcceptErrorText` /
+       `inviteAcceptKaliciRet` (`data/friends_api.dart`). Üç dal BİLEREK
+       ayrı, çünkü kullanıcının yapabileceği şey farklı: P0001 → sunucu
+       metni olduğu gibi (tekrar denemek sonucu değiştirmez); ağ hatası →
+       "bağlantını kontrol et"; geri kalan → jenerik. Ham sunucu hatası
+       ("deadlock detected") kullanıcıya GÖSTERİLMEZ, ama teşhis de
+       uydurulmaz.
+     - **Koda bakılıyor, METNE değil** — web'de de yazılı gerekçe: sunucu
+       mesajı değişebilir, SQLSTATE değişmez.
+     - **Misafir dalı da sessizdi:** girişsiz biri geçersiz/süresi dolmuş
+       bir linke dokunduğunda hiçbir şey görmüyordu. Artık konuşuyor. Ama
+       `FriendsRepo.inviteInfo` her hatayı null'a çevirdiğinden SEBEP
+       bilinmiyor — teşhis uydurmak yerine bilinen tek sinyale
+       (`onlineStatus`) bakılıyor; `offline_notice.dart`'ın "çevrimdışı
+       DEĞİL, yükleyemedik" ayrımıyla aynı disiplin. Çevrimdışı dalında
+       `_previewedInviteToken` damgası GERİ ALINIYOR, yoksa bağlantı dönse
+       bile aynı linke bir daha bakılmaz ve kullanıcı çıkışsız kalırdı.
+     - **Telemetri:** beklenmeyen hatalar `errorReporter`a düşüyor; beklenen
+       retler (P0001) ve ağ hataları BİLEREK düşmüyor — bugünün ÜÇÜNCÜ
+       "yutulan hata" düzeltmesi (bkz. Parça 140, 141).
+     - **Regresyon:** 2 test (`friends_test.dart`) — P0001 metni birebir
+       geçer + kalıcı ret işaretlenir; ağ hatası ile bilinmeyen sunucu
+       hatası AYRI konuşur ve ham mesaj sızmaz. Negatif eşleri yazılı.
+     - **Kalan sorun (kararı VERİLMEDİ):** `events.takeAll` yıkıcı, geçici
+       ağ hatasında token kayboluyor. Kullanıcı artık en azından GÖRÜYOR.
+
    - ✅ **Parça 141 — açık menü DONUYORDU: k-lig satırı puan geç gelince
      hiç belirmiyordu (26 Ağustos 2026, kullanıcı cihaz testinde bildirdi:
      *"avatar menüdeki isim altındaki k-lig çıkmadı önce, sayfayı refresh
