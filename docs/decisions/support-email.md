@@ -131,11 +131,15 @@ Kod canlıda, ama zincirin şu halkaları Brevo/Zoho/GoDaddy panellerinden
 yapılmalı. **Hiçbiri yapılmadan da uygulama bozulmaz**; yalnızca rozet hep 0
 kalır ve destek maili göndermeye çalışan admin net bir hata mesajı görür.
 
-1. **Brevo → Settings → Senders**: `destek@kelimeki.com`'u gönderen olarak
-   ekle ve doğrula. ⚠ **Bu yapılmadan** `feedback-reply`/`admin-send-message`
-   502 döner — ama genel bir hata değil, tam olarak şunu yazar: *"destek@…
-   Brevo'da doğrulanmış gönderen değil. Brevo → Settings → Senders'a bu adresi
-   ekleyip doğrula."* (`brevoErrorMessage`, `_shared/email.ts`.)
+1. ~~**Brevo → Settings → Senders**: `destek@kelimeki.com`'u gönderen olarak
+   ekle ve doğrula.~~ **GEREKMEDİ — 26 Ağustos 2026'da ölçüldü** (aşağıdaki
+   "İlk gerçek kullanım"). Brevo'nun `kelimeki.com` DOMAIN doğrulaması
+   (25 Ağustos'ta DKIM kayıtlarıyla yapılmıştı) `destek@` için de yetiyor;
+   adresi ayrıca Senders'a eklemeye gerek kalmadı. `brevoErrorMessage`'in
+   yazdığı özel hata (*"destek@… Brevo'da doğrulanmış gönderen değil"*) yine
+   dursun — başka bir domainde ya da doğrulama bozulursa tek yol gösteren o.
+   **Ders: bu adımı yapmadan ÖNCE bir yanıt göndermeyi dene** — panelde altı
+   adım atmadan hangisinin gerçekten gerektiğini bir dakikada öğrenirsin.
 2. **Zoho → `noreply@` GRUBUNU SİL.** Madde 1'in fiilen uygulanması bu.
    Silinene kadar noreply'a yazılan cevaplar hâlâ `destek@`'e düşmeye devam
    eder, yani "gerçekten noreply" olmaz.
@@ -151,6 +155,28 @@ kalır ve destek maili göndermeye çalışan admin net bir hata mesajı görür
    yeri orası.
 
 Sıra önemli: 4→5→6 zinciri tamamlanmadan rozet beslenmez.
+
+## İlk gerçek kullanım — GİDEN yarısı uçtan uca doğrulandı (26 Ağustos 2026)
+
+Kullanıcı canlıda koştu, sonuçlar veritabanından teyit edildi:
+
+| Adım | Sonuç |
+|---|---|
+| Ironman "Görüş Bildir" ile yazdı | `feedback` satırı (`origin: user`) panele düştü ✓ |
+| Admin "Yanıtla" dedi | Mail **gitti**, `replied_at` damgalandı ✓ |
+| Kullanıcı o maile "Yanıtla" dedi | Cevap **Zoho gelen kutusuna** düştü ✓ |
+| Admin, Üyeler tablosundan Ironman'e mesaj yazdı | Mail gitti + `feedback` satırı (`origin: admin`, `handled: true`) ✓ |
+
+Yani `destek@` gönderen ayrımının İKİ fonksiyonu da (`feedback-reply`,
+`admin-send-message`) çalışıyor ve ikisi de kendi denetim satırını yazıyor.
+`origin: admin` satırının DURUYOR olması ayrıca mailin gerçekten gittiğinin
+kanıtı: Brevo çağrısı düşseydi fonksiyon o satırı geri silecekti.
+
+**Rozet o turda ARTMADI ve bu doğru davranış** — `support_inbox` 0 satırdı,
+çünkü GELEN zinciri (4→5→3→6) henüz kurulmamıştı. Zoho'ya düşen cevabın
+Supabase'e ulaşacağı bir yol yoktu. Rozetin gerçek bir mailde sınanması
+(ve `fetchAdminPendingCount`'un üçüncü kaynağının ilk kez doğrulanması) o
+zincir kurulduğunda yapılacak.
 
 ## Ölçülemeyenler (dürüstlük notu)
 
