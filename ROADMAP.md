@@ -228,14 +228,18 @@ sürümü incelemeye gönderildi ve **YAYINLANDI** — Submission 1 durumu
 `marketing/play-store/console-formlari.md` § 6.5.
 26 Ağustos'ta uygulama içi hesap silmeyi içeren **372** yüklendi.
 
-**Kriter HENÜZ karşılanmadı ve engel sanılandan sert (26 Ağustos 2026,
-Console'da görüldü):** Dashboard **`0 testers currently opted-in`**
-diyor. Bu satır önce *"opt-in linki oluştu, listede 9 adres var"* diyordu —
-**opt-in linki 12 tester listeye girmeden HİÇ verilmiyor.** Yani kimseye
-link gönderilemedi, kimse opt-in olamadı, sayaç başlamadı.
+**Kriter HENÜZ karşılanmadı:** Dashboard **`0 testers currently opted-in`**
+diyor — listede olmak opt-in sayılmıyor, kişinin linke tıklayıp testi kabul
+etmesi gerekiyor ve bugüne kadar kimseye link gönderilmemişti.
 
-**Kalan tek iş kod değil: 12 adres toplamak.** Link ancak liste dolunca
-beliriyor; azar azar dağıtma seçeneği yok. Sonra 14 gün kesintisiz.
+**26 Ağustos 09:03'te opt-in linkleri Console'da BELİRDİ** (Join on Android
++ Join on the web), liste 11 kişiyken. Bir gün önce yoklardı; kapısının ne
+olduğu ölçülmedi (bkz. `console-formlari.md` §6.5 — o tabloda yalnızca
+GÖRÜLEN kaydedildi, sebep uydurulmadı).
+
+**Kalan tek iş kod değil: linki dağıtmak ve 12 opt-in'e ulaşmak.** 11 adres
+var, yani en az bir kişi daha lazım; §7 **15-20 kişi** topla diyor çünkü
+biri çıkarsa 14 günlük sayaç kırılıyor.
 
 ### 0.B — 14 gün işlerken paralelde
 

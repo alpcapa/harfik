@@ -517,19 +517,23 @@ test bilerek sabiti içeriyor ki sessiz bir sapma mümkün olmasın.
 Store Listing, App Content, Advanced distribution, Store settings*) durumu
 **Published**. Kapalı test kanalı canlıda.
 
-⚠ **DÜZELTME (26 Ağustos 2026, kullanıcı Console'da gördü):** bu satır
-*"opt-in linki oluştu"* diyordu — **YANLIŞ. Play, listede 12 tester
-olmadan opt-in linkini VERMİYOR.** Yani sıra bu dosyanın §7'de yazdığı gibi
-"listeye ekle → linki gönder" değil; **önce 12 adresi listeye tamamla**,
-link ancak o zaman beliriyor, sonra gönderiliyor, sonra kişiler opt-in
-oluyor.
+**Opt-in linki — ölçülen zaman çizelgesi (tahmin YOK):**
 
-**Pratik sonucu:** "1-2 kişiyle başlayıp linki dağıtmaya başlayalım" diye
-bir yol YOK. 12 adres toplanana kadar hiçbir tester'a link gidemez ve
-Dashboard **`0 testers currently opted-in`** göstermeye devam eder.
-Kayıt/liste sayısı ile Play'in saydığı **opt-in** sayısı ayrı şeyler;
-Dashboard'daki "Apply for access to production" kontrol listesi opt-in'i
-sayıyor.
+| Ne zaman | Kanalın durumu | Liste | "How testers join your test" |
+|---|---|---|---|
+| 25 Ağu | 349 `Published` | 9-11 adres | **link YOK** |
+| 26 Ağu 09:03 | 372 *in review* | **11 adres** | **iki link de VAR** (Join on Android · Join on the web) |
+
+**Sebebi BİLİNMİYOR ve uydurulmayacak.** Aynı gün önce "12 kişi olmadan
+link verilmiyor" diye bir kural yazıldı — ertesi ekran görüntüsü onu
+**çürüttü**: liste 11'ken linkler geldi. Tetikleyici muhtemelen kanalda bir
+sürümün gönderilmiş/işlenmiş olması, ama bu **ölçülmedi**; öyleyse öyle
+yazılmayacak.
+
+⚠ **Bu dosyanın kalıcı kuralı: Play Console davranışını ÇIKARIMLA yazma.**
+Bu turda üç kez ezberden/çıkarımla Console kuralı yazıldı ve üçü de yanlış
+çıktı (App content'in menü yeri iki kez, opt-in linkinin kapısı bir kez).
+Yalnızca **görülen** şey, **tarihiyle ve o anki durumla** kaydedilir.
 
 **App access'teki "tam erişim" kutusu ÖLÇÜLEREK işaretlendi:** ücretli/
 premium içerik yok, ve **Android uygulamasında yönetici paneli YOK** —
@@ -547,7 +551,8 @@ Sayaç "yükledim" ile değil, **12 kişi opt-in olduğunda** işlemeye başlıy
 | Listeye eklemek YETMEZ | Her tester **opt-in bağlantısına tıklayıp kabul etmeli** |
 | **Google tester'lara MAİL ATMIYOR** | Listeye eklemek yalnızca yetkilendiriyor; daveti geliştirici kendi kanalından gönderir |
 | **Linke tıklayan otomatik katılmaz** | Liste bir izin listesi. Listede olmayan biri linkte "bu test sana açık değil" görür. |
-| **Link 12 kişi listeye girmeden GÖRÜNMÜYOR** | 26 Ağustos 2026'da Console'da görüldü. Doğru sıra: **12 adresi topla → listeye ekle → link belirir → gönder → kişiler opt-in olur → sayaç başlar.** Azar azar dağıtmak mümkün değil |
+| Link her zaman orada DEĞİL | 25 Ağustos'ta yoktu, 26 Ağustos'ta (liste 11 kişiyken, 372 incelemedeyken) vardı — §6.5'teki tablo. Kapısının ne olduğu ölçülmedi; görmüyorsan kanalda işlenmiş bir sürüm olduğundan emin ol |
+| **İki ayrı link var** | *Join on Android* (Play uygulaması üzerinden) ve *Join on the web*. Kişiye telefonundaki Play hesabıyla açacağı için Android linkini vermek daha az aksaklık çıkarır |
 | Adres, kişinin TELEFONUNDAKİ Play hesabı olmalı | En sık aksaklık: iş adresi verilir, telefonda başka Gmail açıktır. Sorulacak soru "hangi adresi istersin" değil, "telefonunda hangi hesap açık" |
 | Biri çıkarsa sayaç kırılır | **15-20 kişi topla**, 12 tabandır |
 | Adresler Google hesabı olmalı | Gmail ya da Google'a bağlı bir adres; şirket/okul adresi olabilir ama Play hesabı olmalı |
