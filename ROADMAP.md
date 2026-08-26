@@ -241,10 +241,20 @@ GÖRÜLEN kaydedildi, sebep uydurulmadı).
 Console'dan okunan sayı. §7'nin "15-20 kişi topla, biri çıkarsa sayaç
 kırılır" tavsiyesinin çok üstünde, yani yedek payı bol.
 
-⚠ **Listede olmak ≠ opt-in.** Sayaç için kişilerin linke tıklayıp testi
-KABUL etmesi ve (Dashboard'daki `testers currently opted-in` sayısının
-artması) gerekiyor. Bu sayının bugün kaç olduğu ÖLÇÜLMEDİ — Console'dan
-bakılmalı, tahmin edilmeyecek.
+⚠ **Listede olmak ≠ opt-in — ve aradaki fark ÖLÇÜLDÜ (26 Ağustos 2026):**
+liste **54 kişi**, gerçekten opt-in olan **10 kişi**. Yani davetlilerin
+%80'i linke tıklamamış. Sayaç için kişilerin linke tıklayıp testi KABUL
+etmesi gerekiyor; `testers currently opted-in` bunu sayıyor.
+
+**Eşik 12 ise 2 kişi eksik.** Buradan çıkan iki pratik sonuç:
+- Yapılacak iş yeni adres toplamak DEĞİL (54 zaten fazlasıyla yeter),
+  mevcut davetlilere *"linke tıklayıp 'Testçi ol' demen gerekiyor"* diye
+  hatırlatmak.
+- **Geliştiricinin kendi cihazından uygulamayı kaldırması artık RİSKLİ:**
+  10 sayısı eşiğin altındayken tek bir düşüş oransal olarak büyük. Native
+  `.apk` ile performans testi yapılacaksa opt-in OLMAYAN bir cihaz
+  kullanılmalı. (Kaldırmanın opt-in'i gerçekten düşürüp düşürmediği
+  ÖLÇÜLMEDİ — Play davranışı çıkarımla yazılmıyor.)
 
 ⚠ **Ve bugün ölçülen asıl darboğaz opt-in değil:** davetliler uygulamayı
 kurup açsalar bile **tanıtım ekranında takılıyorlardı** (kaydırmayı
