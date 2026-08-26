@@ -24,7 +24,6 @@ import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:kelimeki/src/ui/app.dart';
 import 'package:kelimeki/src/ui/game/board_widget.dart';
 import 'package:kelimeki/src/ui/game/logo_mark.dart';
-import 'package:kelimeki/src/ui/game/neo_button.dart';
 import 'package:kelimeki/src/ui/intro/intro_screen.dart';
 import 'package:kelimeki/src/ui/rank/league_rank.dart';
 import 'package:kelimeki/src/ui/rank/rank_seal.dart';
