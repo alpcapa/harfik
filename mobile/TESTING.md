@@ -1616,3 +1616,49 @@ görülebilir.
       "Hesap Ayarları › Hesabımı Sil" adımını anlatmalı ve "Son güncelleme"
       web ile aynı tarihi taşımalı (`legal_text_test.dart` bunu zaten
       zorluyor; buradaki kontrol metnin GÖRÜNDÜĞÜNÜ doğruluyor).
+
+## 22. Oyun ekranı akıcılığı — nömorfik dekor önbelleği (26 Ağustos 2026, Parça 144)
+
+Kapalı testin ilk kullanıcılarından 3-4 kişi "ekran donuyor" bildirdi.
+Kullanıcı yanında oynayarak doğruladı: *"taşları sürerken ağır çekim…
+Her yerde gecikme var. rafta taşlar da ağır, geri tuşu da ağır cevap
+veriyor, skor kutusuna basınca skor kart da yavaş açılıyor. Board alanında
+her şey ağır."*
+
+Tahtanın 169 hücresi kare başına ~340 gerçek `MaskFilter.blur` çiziyordu.
+Artık her gölge deseni bir kez rasterleştirilip önbellekten basılıyor.
+**Bu bölüm hem HIZI hem GÖRÜNTÜNÜN AYNI KALDIĞINI kontrol ediyor** — ikisi
+ayrı ayrı sorulmalı, çünkü hızlanma görsel bir bozulmayla gelirse düzeltme
+değil takas olur.
+
+Ölçüm cihazı: **gerçek Android telefon** (Appetize/web derlemesi bu soruyu
+CEVAPLAMAZ — rasterleştirme motoru farklı). Önce Setup'ın teşhis satırından
+`Derleme <sha>` oku ve doğru pakette olduğunu doğrula.
+
+### Hız
+
+- [ ] **Taş sürükleme.** Raftan bir taşı al ve tahtada gezdir: hayalet taş
+      **parmağa yapışık** hareket etmeli. "Parmak gidiyor, taş arkadan
+      geliyor" belirtisi KALMAMALI.
+- [ ] **Raf içinde sürükleme.** Taşları raf içinde yer değiştir — aynı
+      akıcılık.
+- [ ] **"← Geri".** Dokunuşa **anında** cevap vermeli, gecikmeli değil.
+- [ ] **Skor kutusu → skor kartı.** Üstteki skor kutusuna dokun: pencere
+      takılmadan açılmalı, açılış animasyonu kare düşürmemeli.
+- [ ] **Canlı oyun ekranı** (iki ekran deseni paylaşıyor): aynı dört
+      kontrol orada da geçmeli.
+
+### Görüntü (değişmemiş olmalı)
+
+- [ ] **Boş kareler.** Hücrelerin içe gömülü gölgesi duruyor mu — sol-üst
+      beyaz, sağ-alt gri. Düz/gölgesiz görünüyorsa önbellek yanlış
+      rasterleştiriyor.
+- [ ] **Altın bölge ve merkez X3 karesi.** Kendi gölgeleri + dış gölgeleri
+      duruyor; kenarları keskin, bulanık DEĞİL.
+- [ ] **Oyuncu bölgeleri.** Bölge tonlaması ve dış hat çizgisi doğru; bir
+      hamle sonrası bölge büyüyünce yeni hücreler doğru tonda çiziliyor.
+- [ ] **Raf taşları ve butonlar.** Altın taşın parlaması ve butonların
+      kabarık gölgesi web'deki gibi; kenarlarda basamak/karelenme YOK.
+- [ ] **Ekranı döndür / iki farklı cihaz.** Farklı piksel yoğunluğunda
+      gölgeler hâlâ net (önbellek anahtarı dpr'yi taşıyor; taşımasaydı bir
+      cihazda bulanık çıkardı).
