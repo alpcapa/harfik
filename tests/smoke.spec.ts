@@ -855,7 +855,7 @@ test('/.well-known/assetlinks.json Play imza parmak iziyle statik servis ediliyo
   }
 });
 
-test('"Buradan başla" balonu boş tahtada ev karesinin yanında; ilk taş konunca kaybolur', async ({
+test('"Buradan başla" balonu boş tahtada ev karesinin yanında; taş KALDIRILINCA kaybolur', async ({
   page,
 }) => {
   // NEDEN VAR: kapalı testte insanların İLK HAMLEYİ nereye yapacaklarını
@@ -900,8 +900,13 @@ test('"Buradan başla" balonu boş tahtada ev karesinin yanında; ilk taş konun
   const g = (await izgara.boundingBox())!;
   expect(b.x + b.width).toBeLessThanOrEqual(g.x + g.width + 1);
 
-  // İlk taş konunca balon görevini bitirir — taslak taşın üstünü kapatmasın.
+  // Balon taş KONUNCA değil, taş KALDIRILDIĞI anda gitmeli (kullanıcı
+  // isteği, 26 Ağustos 2026). Raftan bir taş seçmek "kaldırmak"tır —
+  // bırakma hedefinin yanında duran bir ipucu dikkat dağıtır.
   await page.locator('[data-rack-tile="0"]').click();
+  await expect(balon).toHaveCount(0);
+
+  // Konduktan sonra da geri gelmemeli (tahta artık boş değil).
   await ev.click();
   await expect(balon).toHaveCount(0);
 });

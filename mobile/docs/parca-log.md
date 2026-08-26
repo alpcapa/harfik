@@ -44,11 +44,30 @@
      4×4/5×5 blokları kabaca kaplıyorlar; tek bir HÜCREYE hizalanan her yeni
      katman bu formülü kullanmalı.
 
-     **Görünme koşulunun üç parçası da bilinçli:** (1) tahtada tek taş yok,
-     (2) bu turda konmuş TASLAK taş da yok — oyuncu oynamaya başladıysa ipucu
-     görevini bitirmiştir ve balon taslağın üstünü kapatmamalı, (3) sıra bir
-     İNSANDA. Kalıcı "görüldü" bayrağı YOK: koşul kendi kendini sınırlıyor
-     ve bir bayrak cihaz değiştiren oyuncuyu ipuçsuz bırakırdı.
+     **Görünme koşulu — ilk sürüm YETERSİZDİ, kullanıcı aynı turda düzeltti**
+     (*"taşı koyarken değil taşı kaldırdığı anda balon gitmeli"*). İlk hâli
+     yalnızca taş KONUNCA gizliyordu; oysa balon, oyuncu taşı havaya
+     kaldırdığı andan itibaren bırakma hedefinin yanında dikkat dağıtıyor.
+     Dört parça: (1) tahtada tek taş yok, (2) bu turda konmuş TASLAK taş da
+     yok, (3) **taş kaldırılmadı** — rafta seçili DEĞİL ve sürüklenmiyor,
+     (4) sıra bir İNSANDA. Kalıcı "görüldü" bayrağı YOK: koşul kendi kendini
+     sınırlıyor ve bir bayrak cihaz değiştiren oyuncuyu ipuçsuz bırakırdı.
+
+     **"Kaldırma" İKİ sinyal istiyor ve bu bir tuzak:** sürükleme
+     `selectedTile`ı SET ETMİYOR — reducer'a `SelectTileAction` yalnızca
+     HAREKETSİZ dokunuşta gidiyor (`endDrag`in `!moved` dalı, iki tarafta da).
+     Yani tek başına `selectedTile`a bakmak dokunup seçmeyi kapsar,
+     sürüklemeyi kapsamaz.
+
+     **Portta sinyal bool bir prop DEĞİL, `ValueListenable`:** Parça 23
+     sürükleme boyunca `BoardWidget`ın (169 hücre + bölge hesabı) yeniden
+     inşasını bilerek durduruyor; bool bir prop, sürüklemenin başında ve
+     sonunda ekranın `setState`'ini gerektirirdi. Dinlenebilir geçilince
+     yalnızca balon katmanı dinliyor, tahta hiç yeniden inşa edilmiyor.
+     Tipi `Object?` çünkü ekranın `_Ghost`u private — Dart jenerikleri
+     kovaryant olduğundan `ValueNotifier<_Ghost?>` doğrudan geçiyor.
+     Web'de aynı iş düz bir `tileLifted` prop'u, çünkü `Board` zaten
+     hayaletten türeyen propları (`dragOverKey`) her harekette alıyor.
 
      **Regresyon — ve testin kendisi bir ders:** iki tarafta da iddia kendi
      formülüne değil **gerçek ev karesinin kutusuna** karşı (web'de

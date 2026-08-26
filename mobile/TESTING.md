@@ -1671,9 +1671,13 @@ sırası gelen İNSAN oyuncunun ev karesinin yanında çıkar.
 - [ ] **Yeni YZ oyunu aç** → tahta bomboşken ev karesinin (sol-üst) hemen
       sağında **"Buradan başla"** balonu, kuyruğu kareye bakar hâlde
       görünmeli. Balon tahtadan TAŞMAMALI.
-- [ ] **Rafından bir taşı ev karesine koy** (henüz OYNA'ya basma) → balon
-      **kaybolmalı**; taslak taşın üstünü kapatmamalı.
-- [ ] **Taşı geri al** → balon tekrar görünebilir (tahta yine boş).
+- [ ] **Raftan bir taşı KALDIR** (parmağını basılı tutup sürüklemeye başla,
+      henüz bırakma) → balon **o anda** kaybolmalı. Koyunca değil,
+      **kaldırınca**.
+- [ ] **Sürüklemeyi iptal et** (taşı rafa geri bırak) → balon geri gelmeli.
+- [ ] **Rafta bir taşa DOKUN** (seç, sürükleme yok) → balon yine kaybolmalı.
+- [ ] **Taşı tahtaya koy, sonra geri al** → tahta yine boş olduğundan balon
+      geri gelir.
 - [ ] **YZ'nin sırasında** balon görünmemeli.
 - [ ] **İlk hamle oynandıktan sonra** balon bir daha çıkmamalı — oyunun
       geri kalanında hiç.

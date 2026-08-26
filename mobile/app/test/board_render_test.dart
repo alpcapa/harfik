@@ -11,6 +11,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -291,7 +292,8 @@ void main() {
     // hesaplandığından ızgara geometrisi değişirse SESSİZCE kayar; iddia bu
     // yüzden kendi formülüme değil GERÇEK ev karesinin kutusuna karşı
     // (web'deki kardeş testle aynı desen, `tests/smoke.spec.ts`).
-    Future<void> pump(WidgetTester tester, GameState state) async {
+    Future<void> pump(WidgetTester tester, GameState state,
+        {ValueListenable<Object?>? drag}) async {
       await tester.pumpWidget(MaterialApp(
         theme: kelimekiTheme(),
         home: Scaffold(
@@ -299,7 +301,8 @@ void main() {
             child: SizedBox(
               width: 390,
               height: 390,
-              child: BoardWidget(state: state, hideFooter: true),
+              child: BoardWidget(
+                  state: state, hideFooter: true, dragListenable: drag),
             ),
           ),
         ),
@@ -351,6 +354,35 @@ void main() {
           tester,
           s.copyWith(placed: const {'0,0': Tile(letter: 'A', pts: 1)}));
       expect(find.text('Buradan başla'), findsNothing);
+    });
+
+    testWidgets('rafta taş SEÇİLİYSE ÇIKMAZ', (tester) async {
+      // "Taşı kaldırdığı anda yok olsun" — dokunup seçmek de kaldırmaktır.
+      await setPhoneViewSize(tester, const Size(390, 844));
+      await pump(tester, emptyBoardState().copyWith(selectedTile: 0));
+      expect(find.text('Buradan başla'), findsNothing);
+    });
+
+    testWidgets('SÜRÜKLEME başlayınca kaybolur, bitince geri gelir',
+        (tester) async {
+      // Sürükleme `selectedTile`ı SET ETMİYOR (yalnızca hareketsiz dokunuş
+      // seçiyor), o yüzden ayrı bir sinyal gerekiyor. Bu iddia aynı zamanda
+      // Parça 23'ün kuralını da koruyor: sinyal bir prop değil dinlenebilir,
+      // yani tahta sürükleme boyunca yeniden İNŞA edilmiyor.
+      await setPhoneViewSize(tester, const Size(390, 844));
+      final drag = ValueNotifier<Object?>(null);
+      addTearDown(drag.dispose);
+      await pump(tester, emptyBoardState(), drag: drag);
+      expect(find.text('Buradan başla'), findsOneWidget);
+
+      drag.value = 'sürükleniyor';
+      await tester.pump();
+      expect(find.text('Buradan başla'), findsNothing);
+
+      drag.value = null;
+      await tester.pump();
+      expect(find.text('Buradan başla'), findsOneWidget,
+          reason: 'sürükleme iptal edilince ipucu geri gelmeli');
     });
 
     testWidgets("sıra YZ'deyken ÇIKMAZ", (tester) async {

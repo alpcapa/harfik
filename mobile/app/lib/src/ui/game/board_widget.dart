@@ -87,6 +87,18 @@ class BoardWidget extends StatelessWidget {
   final void Function(PointerUpEvent e)? onTilePointerUp;
   final VoidCallback? onTilePointerCancel;
 
+  /// Sürükleme sürüyor mu — değeri `null` DEĞİLSE bir taş havadadır.
+  ///
+  /// Neden `bool` bir prop DEĞİL: Parça 23 sürükleme boyunca bu widget'ın
+  /// (169 hücre + bölge hesabı) yeniden inşa edilmesini bilerek durduruyor.
+  /// Bir bool prop, sürüklemenin başında/sonunda ekranın `setState`'ini
+  /// gerektirirdi. Dinlenebilir olarak geçirilince yalnızca "Buradan başla"
+  /// katmanı dinliyor, tahta hiç yeniden inşa edilmiyor.
+  ///
+  /// Tipi `Object?`: ekran katmanının `_Ghost`u private, ve Dart'ın jenerikleri
+  /// kovaryant olduğundan `ValueNotifier<_Ghost?>` buraya doğrudan geçiyor.
+  final ValueListenable<Object?>? dragListenable;
+
   /// Izgara alanının (Stack) geometrisine dışarıdan erişim — ekran katmanı
   /// global noktayı hücreye çevirirken kullanır (web elementFromPoint'in
   /// geometri tabanlı eşleniği).
@@ -137,6 +149,7 @@ class BoardWidget extends StatelessWidget {
     this.onTilePointerMove,
     this.onTilePointerUp,
     this.onTilePointerCancel,
+    this.dragListenable,
     this.gridKey,
     this.onOpenHistory,
     this.onOpenMessaging,
@@ -308,7 +321,18 @@ class BoardWidget extends StatelessWidget {
                   if (startHint != null)
                     Positioned.fill(
                       child: IgnorePointer(
-                        child: _startHint(startHint, screenWidth),
+                        child: dragListenable == null
+                            ? _startHint(startHint, screenWidth)
+                            : ValueListenableBuilder<Object?>(
+                                valueListenable: dragListenable!,
+                                // Sürükleme başlayınca balon kaybolur.
+                                // Yalnızca BU katman dinliyor — tahtanın
+                                // kendisi sürükleme boyunca hiç yeniden
+                                // inşa edilmiyor (Parça 23).
+                                builder: (context, drag, _) => drag != null
+                                    ? const SizedBox.shrink()
+                                    : _startHint(startHint, screenWidth),
+                              ),
                       ),
                     ),
                 ],
@@ -327,6 +351,10 @@ class BoardWidget extends StatelessWidget {
   /// widget ağacının içinde de garanti oluyor.
   (int, int, PlayerColor, bool)? _startHintFor(List<Player> players) {
     if (compact) return null;
+    // Taş rafta SEÇİLİ (dokunup kaldırıldı) — sürükleme dalı ayrı, aşağıdaki
+    // `dragListenable`da. Kullanıcı isteği (26 Ağustos 2026): "taşı
+    // kaldırdığı anda yok olsun"; ilk sürüm yalnızca taş KONUNCA gizliyordu.
+    if (state.selectedTile != null) return null;
     if (state.placed.isNotEmpty) return null;
     if (state.board.any((row) => row.any((c) => c != null))) return null;
     if (players.isEmpty) return null;

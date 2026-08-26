@@ -63,6 +63,10 @@ interface BoardProps {
   dragOverKey?: string | null;
   /** `dragOverKey` hücresine bırakmak geçerli mi? */
   dragOverValid?: boolean;
+  /** Raftan/tahtadan bir taş HAVADA mı (sürükleme sürüyor) — "Buradan başla"
+      balonu bu anda kaybolur: oyuncu taşı KALDIRDIYSA ipucu görevini
+      bitirmiştir ve balon bırakma hedefinin yanında dikkat dağıtır. */
+  tileLifted?: boolean;
   /** Bu tur yerleştirilmiş bir taşın sürüklenmesini başlatır. */
   onTilePointerDown?: (r: number, c: number, e: React.PointerEvent<HTMLDivElement>) => void;
   onTilePointerMove?: (e: React.PointerEvent<HTMLDivElement>) => void;
@@ -150,6 +154,7 @@ export function Board({
   dragHiddenKey = null,
   dragOverKey = null,
   dragOverValid = false,
+  tileLifted = false,
   onTilePointerDown,
   onTilePointerMove,
   onTilePointerUp,
@@ -214,6 +219,14 @@ export function Board({
   // da uzun aradan sonra dönen oyuncuyu ipuçsuz bırakırdı.
   const startHint = useMemo(() => {
     if (compact) return null;
+    // Taş HAVADA (sürükleniyor) ya da rafta SEÇİLİ: oyuncu taşı KALDIRDIĞI
+    // anda ipucu görevini bitirmiştir — balon bırakma hedefinin yanında
+    // dikkat dağıtır (kullanıcı isteği, 26 Ağustos 2026: "taşı kaldırdığı
+    // anda yok olsun"; ilk sürüm yalnızca taş KONUNCA gizliyordu).
+    // İKİ sinyal de gerekiyor: `tileLifted` sürüklemeyi, `selectedTile`
+    // dokunup seçmeyi kapsıyor — sürükleme `selectedTile`ı SET ETMİYOR
+    // (App.tsx `endDrag` yalnızca `!moved` dalında seçiyor).
+    if (tileLifted || state.selectedTile !== null) return null;
     if (Object.keys(placed).length > 0) return null;
     if (board.some((row) => row.some((c) => c !== null))) return null;
     const p = players[current];
@@ -228,7 +241,7 @@ export function Board({
     // dışarı taşardı.)
     const toRight = hc < SIZE / 2;
     return { hr, hc, col, toRight };
-  }, [compact, placed, board, players, current]);
+  }, [compact, placed, board, players, current, tileLifted, state.selectedTile]);
 
   // Merkezdeki x2 bonus bölgesinin tahtaya oranı ve konumu — köşe numarası
   // filigranıyla aynı mantıkla, tek büyük bir "X2" o bölgenin arkasına yazılır.
