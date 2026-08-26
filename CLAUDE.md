@@ -87,6 +87,7 @@ koptu" (bkz. "Belgeleri Güncel Tutma").
 | Canlı oyun / mesajlaşma / e-posta özelliği | `TESTING.md` (elle koşulan liste) |
 | `mobile/app/` — sunucuya/platforma dokunan bir şey | `mobile/TESTING.md` (cihazda koşulan liste) |
 | Migration | Canlıya uygula + doğrula + `list_migrations` ile dosya adını eşleştir |
+| Migration bir kolonu **nullable** yapıyor (ya da FK'yi `cascade`→`set null` çeviriyor) | `database.types.ts` **ve** portun `fromJson`'ı — bu bir SÖZLEŞME değişikliği (bkz. `docs/decisions/account-deletion.md` → "SET NULL'ın bedeli") |
 | Yeni kullanıcı verisi ya da görünürlük değişikliği | `TermsModal`/`PrivacyModal` |
 | `App.tsx`'teki joker/mesaj/raf desenleri | `OnlineGameScreen.tsx` (ikisi deseni paylaşıyor) |
 | `mobile/` DIŞINDA bir dosya (port işi sırasında) | kök `CLAUDE.md`/`README.md` — port dokümanı TEK BAŞINA yetmez |
@@ -270,6 +271,7 @@ olabilir — atıf bulunamazsa önce buradaki tabloya bak.
 | Oyun içi mesajlaşma (Faz 1: mesajlaşma, Faz 2: sessize alma/raporlama) | `docs/decisions/chat-moderation.md` |
 | Reklam/pazarlama görselleri (sponsored post, Play Store vitrini, FB kapağı, reel) | `docs/decisions/marketing-assets.md` |
 | Hukuki statik sayfalar (`/gizlilik/`, `/kullanim-kosullari/`, `/hesap-silme/`) | `docs/decisions/legal-pages.md` |
+| Uygulama içinden hesap silme (kaskad, anonimleştirme, `delete-my-account`) | `docs/decisions/account-deletion.md` |
 | SEO (GSC/Bing, reindex adımları) | `docs/decisions/seo.md` |
 | İstemci hata telemetrisi (`client_errors`, admin "Hatalar" sekmesi) | `docs/decisions/telemetry.md` |
 | Yerel oyunun kalıcılığı, terk-edilme cezası, offline kuyruk | `docs/decisions/local-game-persistence.md` |

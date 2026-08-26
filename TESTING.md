@@ -1737,7 +1737,55 @@ kayıt gerektirdiğinden elle koşulur.
       açılıp Esc ile kapanmalı (sayfa uygulama paketinde, statik `/gizlilik/`
       sayfasına GİTMEZ).
 
-## 20. `destek@` gönderen ayrımı + "Zoho" rozeti (25 Ağustos 2026)
+## 22. Uygulama içinden hesap silme (25 Ağustos 2026, ROADMAP madde 2)
+
+**GERİ DÖNÜŞSÜZ.** Bu bölümü YALNIZCA feda edilebilir bir test hesabıyla
+koş — `Ironman` ve App access formunda incelemeciye verilen `T2` HARİÇ
+(ROADMAP #4). Karar/kaskad: `docs/decisions/account-deletion.md`.
+
+Duman testi yalnızca `/hesap-silme/` sayfasının metnini kilitliyor; aşağısı
+gerçek bir oturum ve gerçek veri gerektirdiğinden elle koşulur.
+
+- [ ] **Giriş görünür.** Hesap menüsü → Hesap Ayarları → en altta, KAYDET'in
+      altındaki ayracın arkasında kırmızı **"Hesabımı Sil"** ve altında
+      "Kalıcıdır, geri alınamaz." olmalı.
+- [ ] **Kuru çalıştırma GERÇEK sayı gösteriyor.** Pencere açılınca
+      "Silinecekler" listesi belirmeli ve sayılar hesabın gerçek verisiyle
+      uyuşmalı (ör. oyun geçmişindeki kayıt sayısı ile "Bitmiş oyun kaydın").
+      Sıfır olan satırlar HİÇ görünmemeli.
+- [ ] **"Kalacaklar" bölümü.** Birlikte oynadığın biri varsa, o kişinin
+      kaç bitmiş oyun kaydının KORUNACAĞI ve adının "Silinmiş oyuncu"
+      olacağı yazmalı. Hiç ortak oyunu olmayan bir hesapta bu bölüm
+      çıkmamalı.
+- [ ] **Onay olmadan silinmiyor.** `SİL` yazmadan buton devre dışı olmalı;
+      `sil` (küçük harf) de kabul edilmeli (`trUpper`), `SIL` (noktasız I)
+      de — ama `SL`/boş kabul EDİLMEMELİ.
+- [ ] **Silme sonrası.** Onaydan sonra sayfa `/`'e dönmeli, oturum kapanmış
+      olmalı ve aynı e-posta/takma adla **yeniden kayıt** olunabilmeli
+      (takma ad serbest kalmış olmalı).
+- [ ] **Rakibin kaydı KORUNDU ve ANONİMLEŞTİ.** Silinen kişiyle oynamış
+      BAŞKA bir hesapla gir: Oyun Geçmişi'ndeki o oyun hâlâ listede olmalı,
+      puanlar DEĞİŞMEMELİ, ama oyuncu adı **"Silinmiş oyuncu"** olmalı.
+      Sohbet arşivi (balon ikonu) açıldığında o kişinin mesajları da aynı
+      adla görünmeli.
+- [ ] **k-lig bozulmadı.** Aynı hesabın Skor Kartı'ndaki toplam puanı silme
+      ÖNCESİYLE aynı olmalı (`games` oyuncu başına satır tutuyor; kimsenin
+      puanı silinen kişiden gelmiyor).
+- [ ] **Devam eden Canlı oyun.** Silinen kişiyle YARIM kalmış bir oyun varsa
+      rakibin "Canlı" listesinden düşmüş olmalı (oynanamaz bir oyun ortada
+      asılı kalmamalı).
+- [ ] **Yönetici silinemiyor.** Admin bir hesapla pencereyi aç: kuru
+      çalıştırma **"Yönetici hesabı uygulama içinden silinemez."** demeli ve
+      silme butonu HİÇ etkinleşmemeli.
+- [ ] **`/hesap-silme/` sayfası tutarlı.** Sayfanın 1. bölümü uygulama içi
+      yolu anlatmalı (eski "kendi kendine hesap silme özelliği şu anda
+      bulunmuyor" cümlesi KALMAMALI) ve 2. bölümdeki "Görüş Bildir"
+      bağlantısı hâlâ çalışmalı — Play bu URL'i Data safety formundan
+      açıyor.
+
+---
+
+## 23. `destek@` gönderen ayrımı + "Zoho" rozeti (25 Ağustos 2026)
 
 Kod canlıda ama zincirin yarısı Brevo/Zoho/GoDaddy panellerinde. Kurulum
 adımları ve sırası: `docs/decisions/support-email.md` → "Kurulum". Bu liste
@@ -1746,7 +1794,7 @@ o adımlar bittikten SONRA koşulur.
 **Otomatik test YOK ve olamaz:** gerçek bir Brevo hesabı, gerçek bir MX
 kaydı ve gerçek bir gelen kutusu gerekiyor.
 
-### 20.1 Transactional mail gerçekten cevaplanamıyor mu
+### 23.1 Transactional mail gerçekten cevaplanamıyor mu
 
 1. Kendine bir bildirim mailini tetikle (en kolayı: yeni bir hesap açıp
    doğrula → "Hoş Geldiniz" maili).
@@ -1760,7 +1808,7 @@ kaydı ve gerçek bir gelen kutusu gerekiyor.
    ⚠ Geri dönmüyor ve `destek@` kutusuna düşüyorsa, Zoho'daki `noreply@`
    GRUBU hâlâ silinmemiş demektir (kurulum adım 2).
 
-### 20.2 Görüş bildirim yanıtı destek@'ten gidiyor mu
+### 23.2 Görüş bildirim yanıtı destek@'ten gidiyor mu
 
 1. Uygulamadan (misafir ya da üye) bir görüş bildir, e-posta alanını doldur.
 2. Admin panel → Geri Bildirim → Gelen Kutusu → mesajı aç → **Yanıtla** → gönder.
@@ -1771,7 +1819,7 @@ kaydı ve gerçek bir gelen kutusu gerekiyor.
    notta *"Bu e-postayı doğrudan yanıtlayabilirsin"* yazmalı.
 5. **Maile doğrudan "Yanıtla" de.** Cevap `destek@` Zoho kutusuna düşmeli.
 
-### 20.3 Rozet — cevap gelince admin haber alıyor mu
+### 23.3 Rozet — cevap gelince admin haber alıyor mu
 
 1. 20.2'nin 5. adımından sonra Zoho kutusunu kontrol et: mail **kutuda
    kalmalı** (yönlendirme bir KOPYA olmalı, taşıma değil).
@@ -1786,7 +1834,13 @@ kaydı ve gerçek bir gelen kutusu gerekiyor.
 4. Paneli yenile — rozet geri gelmemeli (`seen_at` damgalandı).
 5. İkinci bir cevap gönder → rozet tekrar **1** olmalı.
 
-### 20.4 Admin'in üyeye yazdığı mesaj
+- [ ] **Dıştaki "Admin Paneli" rozeti de arttı mı.** Paneli AÇMADAN, hesap
+      menüsünü aç: "Admin Paneli" satırının yanındaki kırmızı sayı bu cevabı
+      da içermeli (`fetchAdminPendingCount` üç kaynağı toplar). İlk sürümde
+      yalnızca panelin İÇİNDEKİ rozet sayıyordu — dışarıdaki saymayınca
+      bildirim işe yaramıyor.
+
+### 23.4 Admin'in üyeye yazdığı mesaj
 
 1. Admin panel → Üyeler → bir üyenin satırında **Mesaj Gönder** → konu+mesaj.
 2. Mail `destek@`'ten gitmeli; Geri Bildirim sekmesinde "Gönderilen" rozetiyle
@@ -1797,9 +1851,10 @@ kaydı ve gerçek bir gelen kutusu gerekiyor.
    "↳ Cevaben" rozetiyle orijinal mesaja bağlanmalı. (İki yolun farklı yere
    gitmesi bilinçli — bkz. karar kaydı.)
 
-### 20.5 Gürültü elenmesi
+### 23.5 Gürültü elenmesi
 
 - `destek@`'e bir "tatil/otomatik yanıt" maili düşerse rozet ARTMAMALI
   (`Auto-Submitted`/`X-Autoreply`/`Precedence: bulk` eleniyor).
 - `destek@` ya da `noreply@` adresinden gelen kopyalar da elenmelidir
   (döngü koruması).
+

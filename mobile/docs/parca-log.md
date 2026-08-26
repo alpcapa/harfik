@@ -17,6 +17,167 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 141 — açık menü DONUYORDU: k-lig satırı puan geç gelince
+     hiç belirmiyordu (26 Ağustos 2026, kullanıcı cihaz testinde bildirdi:
+     *"avatar menüdeki isim altındaki k-lig çıkmadı önce, sayfayı refresh
+     edince geldi"*):** Kural işledi — önce web'e bakıldı, fark YAPISALDI.
+     - **Web'de menü bileşenin İÇİNDE satır içi render ediliyor**
+       (`{open && (…)}`, `UserMenu.tsx:229`), yani `setMyRank` geldiğinde
+       React AÇIK menüyü yeniden çiziyor. **Portta `PopupMenuButton`'ın
+       `itemBuilder`ı menü AÇILDIĞI AN bir kez koşuyor** ve sonuç AYRI bir
+       route'a gömülüyor; `AccountButton.setState` o route'u yeniden
+       çizmiyor. Puan menü açıldıktan sonra gelirse satır o menüde bir daha
+       ASLA belirmiyordu.
+     - **Düzeltme:** `_myRank` artık `ValueNotifier` ve menü başlığının iki
+       parçası (isim yanındaki `RankSeal` + altındaki `#sıra · puan` satırı)
+       `ValueListenableBuilder` ile sarılı — açık menü web'deki gibi canlı.
+     - **İkinci dal — tek atış, tek şans:** `_refreshMyRank` yalnızca
+       `initState`te ve hesap DEĞİŞİMİNDE koşuyordu; açılıştaki tek istek
+       düşerse (`StatsRepo.myRank` her istisnayı null'a çeviriyor) satır
+       sayfa yenilenene kadar yok oluyordu. Artık `onOpened` puan hâlâ
+       yokken yeniden deniyor — normal durumda menü açmak ağa çıkmıyor.
+     - **Üçüncü dal — teşhis edilemezlik:** `myRank`ın `catch`i yalnızca
+       `debugPrint`ti, yani Parça 140'ın aynı sınıfı. Artık
+       `errorReporter.report`a düşüyor (ağ hatası elenerek).
+     - **Ölçüm — bir hipotez ELENDİ:** "istek JWT hazır olmadan gidiyor,
+       sunucu boş dönüyor" teorisi canlıda test edildi ve YANLIŞ çıktı;
+       `my_leaderboard_rank` SECURITY DEFINER değil, `anon` rolüne de
+       EXECUTE verilmiş ve `anon` olarak koşturulduğunda Ironman için
+       `rank 2 · 135 puan` döndürüyor. Yani sebep kimlik değil, istemci
+       tarafı.
+     - **Regresyon (2 test, `account_button_test.dart`):** puan menü
+       AÇIKKEN gelince satır canlı beliriyor (menü kapanmadan, sayfa
+       yenilenmeden); açılıştaki istek düşerse menü yeniden açılınca
+       YENİDEN deneniyor. İkisinin de negatif eşi yazıldı.
+     - **Web DEĞİŞMEDİ** — orada davranış zaten doğruydu.
+
+   - ✅ **Parça 140 — kurucusu silinmiş oyun Canlı listesini DÜŞÜRDÜ
+     (26 Ağustos 2026, Parça 139'un yan etkisi; web + port aynı PR):**
+     Kullanıcı gerçek cihazda (derleme `53e401c` = 372) bildirdi: *"Devam
+     edenler, oyun davetleri (2 tane vardı) ve son oynadıklarım gelmiyor"*
+     — üç alt sekme birden "Oyunların şu an yüklenemedi.", TEKRAR DENE
+     boşuna. **Kök sebep hesap silme kaskadında:** `online_games.created_by`
+     `on delete cascade`'ten `set null`'a çevrilmişti (bitmiş oyunlar
+     ötekinin arşivi için korunsun diye), T1 silinince 5 satırda kolon
+     NULL'a düştü — ama `OnlineGame.fromJson` hâlâ `m['created_by'] as
+     String` yapıyordu. Tek satır fırlatınca ayrıştırma tek geçişte
+     olduğundan 43 oyunun tamamı gitti.
+     - **`createdBy` → `String?`**; `creatorSlot` ve `participantLabel`
+       null güvenli hâle getirildi. Null==null tuzağı gerçek: `userId` de
+       nullable, çıplak eşitlik kurucusu silinmiş bir oyunda rastgele bir
+       koltuğu "Davet gönderen" ilan ederdi.
+     - **`load()` artık TELEMETRİYE yazıyor.** İkinci ders bu: hata
+       yalnızca `debugPrint`e gidiyordu, bu yüzden `client_errors`'ta tek
+       satır yok ve teşhis elle SQL koşularak yapıldı — telemetri (Parça
+       ROADMAP #3) tam bunun için kurulmuştu. Ağ hatası BİLEREK eleniyor
+       (`isNetworkError`): `report` varsayılan `manual` türünde o filtreyi
+       kendisi uygulamıyor, çevrimdışı kullanıcı ise bu satıra her açılışta
+       düşer.
+     - **Web tarafı:** `database.types.ts`'te `created_by: string | null`.
+       Kod değişmedi — `LiveGamesTab`'in üç tüketicisi de
+       `?.name ?? 'Bir arkadaşın'` kalıbında ve `HumanSlot.user_id` NOT
+       NULL olduğundan karşılaştırma null'da hiçbir koltuğu seçmiyor.
+       **Yanlış olan yalnızca tipti — ve port o yanlış tipi kopyalamıştı.**
+     - **Sunucu denetlendi, değişiklik gerekmedi:** `created_by`'ye bakan
+       her fonksiyon/RLS politikası yalnızca eşitlik karşılaştırıyor,
+       NULL'da eşleşmiyor; hayatta kalan oyuncu oyuna `game_invites`
+       dalından erişmeye devam ediyor.
+     - **Regresyon (3 test):** `created_by: null` satırının listeyi
+       düşürmediği + `creatorSlot` null + "Davet gönderen" etiketinin
+       yanlışlıkla verilmediği; sekmede kartın GERÇEKTEN çizildiği ("Bir
+       arkadaşın" yedeğiyle); ayrıştırma hatasının telemetriye düştüğü ama
+       ağ hatasının DÜŞMEDİĞİ. Sahte gateway'e `slotDeletedHuman` eklendi
+       (uuid kalır, `name` NULL olur — üretimdeki satırın birebir şekli).
+     - **Ders (kök `CLAUDE.md`'nin etki analizi tablosuna eklendi):** bir FK
+       eylemini değiştirmek bir SÖZLEŞME değişikliğidir; `cascade` → `set
+       null`, "silinen satır" sorusunu "NULL kolon" sorusuna çevirir ve o
+       NULL'ı okuyan her istemcinin tipi aynı PR'da genişlemelidir.
+     - Ayrıntı/ölçümler: `docs/decisions/account-deletion.md` → "SET NULL'ın
+       bedeli".
+
+   - ✅ **Parça 139 — uygulama içinden hesap silme (25 Ağustos 2026,
+     ROADMAP madde 2, MAĞAZA BLOKERİ; web + port + migration + Edge
+     Function AYNI PR'da):** Apple 5.1.1(v) ve Google'ın veri silme şartı,
+     hesap açtıran uygulamalarda uygulama İÇİNDEN başlatılabilen bir silme
+     yolu istiyor. `kelimeki.com/hesap-silme/` yalnızca Data safety
+     formuna verilen TALEP adresiydi; işi yapan taraf yoktu.
+     **Kaskadın tamamı, verilmiş karar (anonimleştirme) ve canlıda ölçülen
+     tuzaklar: `docs/decisions/account-deletion.md`** — burada yalnızca
+     portu ilgilendiren kısım.
+     - **Yeni dosya `ui/auth/delete_account_modal.dart`** — web
+       `src/components/DeleteAccountModal.tsx` portu. AÇILIŞTA KURU
+       ÇALIŞTIRMA (`previewAccountDeletion`): silinecekler gerçek sayılarla
+       listelenir, sıfır satırlar gizlenir, "Kalacaklar" bölümü
+       başkalarının korunacak kayıt sayısını söyler. **Kuru çalıştırma
+       düşerse silme butonu ETKİNLEŞMEZ** — sunucuya ulaşılamıyorsa (ya da
+       hesap silinemez bir hesapsa) butonu açmak yanlış bir söz verir.
+     - **`AuthService.previewAccountDeletion`/`deleteMyAccount` +
+       `AccountDeletionReport`** (`data/auth_service.dart`). `FunctionException`
+       yakalanıp `details['error']` OKUNUYOR: sunucunun Türkçe mesajını
+       (ör. *"Yönetici hesabı uygulama içinden silinemez."*) yutup genel bir
+       metin göstermek teşhisi imkânsız kılardı — Parça 124'ün ("düşen istek
+       'hiç oyunun yok' DEMEZ") aynı sınıfı.
+     - **`NeoButtonVariant.red` eklendi** (`ui/game/neo_button.dart`).
+       Gölge değerleri accent/gold/orange ile BİREBİR aynı; web'de de tek
+       `.btn-raised` sınıfı + `bg-*` deseni var, yani port yeni bir görsel
+       dil uydurmuyor. Renk `kRed` — `tokens.dart` dışında renk yazılmıyor
+       (`color_tokens_test.dart` bunu zaten tarıyor).
+     - **`account_settings_modal.dart`e giriş:** KAYDET'in ALTINDA, bir
+       ayracın arkasında, formun akışının DIŞINDA — web'in yerleşimiyle
+       birebir ("ayarlarımı kaydediyorum" akışının parçası gibi
+       görünmesin). `TapTarget(alignment: Alignment.centerLeft)` — 11 px'lik
+       bir metin çıplak bir `GestureDetector` ile Parça 132/134'ün dokunma
+       hedefi kuralını çiğnerdi; `centerLeft` çünkü ortalamak hizayı bozar
+       ("← Geri" vakası).
+     - **Türkçe kuralı yine devrede:** onay kelimesi `SİL` ve karşılaştırma
+       `trUpper` ile. Native `toUpperCase()` "sil"i "SIL" (noktasız I)
+       yapar ve eşleşme SESSİZCE tutmazdı — kullanıcı doğru kelimeyi yazıp
+       butonun açılmadığını görürdü.
+     - **`legal_modals.dart` AYNI PR'da güncellendi** (Gizlilik 5. bölüm +
+       "Son güncelleme: 25 Ağustos 2026"). Atlansa `legal_text_test.dart`
+       düşerdi — ama mobil CI'ın web metnine bağlı tek kapısı O DEĞİLMİŞ:
+       **`signup_test.dart` de politikanın 5. bölümünden bir CÜMLE arıyordu**
+       (`'30 gün içinde kalıcı olarak silinir'`) ve ilk koşuda 508/509 ile
+       düştü. Bulan CI oldu, tarama değil — bu ortamda Flutter SDK yok.
+       **Ders:** hukuki metnin bağımlıları `legal_text_test.dart` ile sınırlı
+       değil; metni değiştirirken `grep -rn "<değişen cümle>" mobile/app/test/`
+       de koşulmalı. İddia yeni gerçeklere bağlandı (uygulama içi yol VAR +
+       talep yolu hâlâ 30 gün), silinmedi.
+     - **Regresyon:** `account_settings_test.dart`e bir test —
+       "HESABIMI SİL" dokunulunca pencere açılıyor, `AuthService.fake` bir
+       Supabase client taşımadığından kuru çalıştırma düşüyor, SEBEP
+       görünür oluyor ve `KALICI OLARAK SİL` butonunun `onPressed`i `null`
+       kalıyor. Yani testin sınadığı şey görünüm değil, yukarıdaki
+       "kuru çalıştırma düşerse buton açılmaz" SÖZLEŞMESİ.
+     - **Doğrulama sınırı:** gerçek (kuru olmayan) silme bu oturumda HİÇ
+       çalıştırılmadı — geri dönüşü yok. Cihaz kontrolleri
+       `mobile/TESTING.md` bölüm 21'de; ilk gerçek kullanım ROADMAP madde 4
+       (test hesaplarının silinmesi) olacak.
+     - **`mobile/` DIŞINDA da dosya değişti** (kök `CLAUDE.md`'nin kuralı):
+       `src/lib/api.ts`, `src/components/DeleteAccountModal.tsx`,
+       `src/components/AccountSettingsModal.tsx`, `src/legal/*`,
+       `supabase/migrations/*`, `supabase/functions/delete-my-account/`,
+       `tests/smoke.spec.ts`, `ROADMAP.md`, `README.md`, `TESTING.md`,
+       `docs/decisions/account-deletion.md` — hepsi AYNI PR'da.
+     - **EK (aynı gün, ikinci tur — kullanıcı istedi):** Kullanım Koşulları
+       §2'ye de bir cümle eklendi (*"Hesabınızı dilediğiniz zaman Hesap
+       Ayarları'ndan kendiniz silebilirsiniz…"*) ve Koşullar'ın tarihi
+       19 → 25 Ağustos oldu; port da AYNI PR'da. İlk turda bilerek
+       atlanmıştı — taramada Koşullar'da yanlış hâle gelen bir cümle
+       çıkmamıştı (§4'ün "askıya alınabilir veya silinebilir"i BİZİM
+       hakkımız, kullanıcının kendi silmesi değil). **Ölçülen bedel:**
+       Koşullar'ın tarihini oynatmak `legal_text_test.dart` üzerinden portu
+       zorunlu kılıyor, yani yeni bir CI turu ve YENİ BİR `.aab`. Hukuki
+       metne dokunmak her zaman bir paket turudur — planlarken hesaba kat.
+     - **Yan iş (doküman bütçesi):** `mobile/TESTING.md` uyarı bandındaydı
+       (160 KB) ve kural *"bir sonraki dokunuşta böl"* diyor. Test
+       ORTAMLARI (web derlemesi, FAZ B cihaz turu, TestFlight, Appetize)
+       `mobile/docs/test-ortamlari.md`ye taşındı — kesme noktası içeriğin
+       TÜRÜ: burası her sürüm önce baştan koşulan kontrol listesi, orası
+       "nereden/nasıl koşulur". Dosya 160 → 141 KB. Hâlâ uyarı bandında;
+       bir sonraki dokunuşta sıradaki aday Arkadaşlar + Canlı oyun
+       bölümleri (~32 KB).
+
    - ✅ **Parça 110 — Setup girişli/misafir ayrımı + footer'a "Paylaş"
      (17 Ağustos 2026, `setup_screen.dart`, `setup_screen_test.dart`;
      web `Setup.tsx` AYNI PR'da):** İsteğin kaynağı bölüm 1 spesifikasyonu —

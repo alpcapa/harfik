@@ -18,6 +18,7 @@ import 'package:kelimeki/src/bootstrap.dart';
 import 'package:kelimeki/src/config/version_gate.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/friends_api.dart';
+import 'package:kelimeki/src/data/error_reporter.dart';
 import 'package:kelimeki/src/data/meaning_store.dart';
 import 'package:kelimeki/src/data/online_games_api.dart';
 import 'package:kelimeki/src/ui/live/live_game_create_form.dart';
@@ -29,6 +30,18 @@ import 'support/test_fonts.dart';
 import 'support/test_view.dart';
 import 'package:kelimeki/src/util/online_status.dart';
 import 'package:kelimeki/src/util/offline_notice.dart';
+
+class _FakeErrorSink implements ClientErrorSink {
+  final List<Map<String, Object?>> sent = [];
+  @override
+  Future<void> send(Map<String, Object?> record) async => sent.add(record);
+}
+
+/// `isNetworkError`'a düşen gerçek bir kalıp (bkz. util/offline_notice.dart).
+class _FakeNetworkError implements Exception {
+  @override
+  String toString() => 'ClientException: Failed host lookup: kelimeki.com';
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -364,6 +377,72 @@ void main() {
       expect(decideInitialMainView(say(0, 1, 3), null), InitialMainView.live);
       expect(decideInitialMainView(say(2, 0, 0), null), InitialMainView.live);
     });
+
+    // Aynı vakanın ikinci dersi: hata SESSİZ kaldı. `load()` yalnızca
+    // `debugPrint`liyordu, bu yüzden teşhis `client_errors`ta değil elle
+    // SQL koşarak yapıldı. Ağ hatası hâlâ elenmeli (çevrimdışı kullanıcı
+    // her açılışta buraya düşer) — iki dal da burada.
+    // Negatif eş: `errorReporter.report` satırı silinirse ilk expect,
+    // `isNetworkError` koşulu silinirse ikincisi düşer.
+    test('load: ayrıştırma hatası TELEMETRİYE düşer, ağ hatası DÜŞMEZ',
+        () async {
+      final sink = _FakeErrorSink();
+      errorReporter.resetForTests();
+      errorReporter.configure(sink: sink, anonId: Future.value('anon-1'));
+      addTearDown(errorReporter.resetForTests);
+
+      final gw = FakeOnlineGamesGateway()
+        // Sözleşme bozulması: `player_count` hiç yok → fromJson fırlatır.
+        ..rows = [
+          {...gameRow(id: 'g1', myId: 'me')}..remove('player_count'),
+        ];
+      expect(await OnlineGamesRepo(gw, nowMs: () => nowMs).load(), isNull);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(sink.sent, hasLength(1));
+      expect(sink.sent.single['message'],
+          contains('online_games_repo.load'));
+
+      sink.sent.clear();
+      final agGw = FakeOnlineGamesGateway()
+        ..failWith = _FakeNetworkError();
+      expect(
+          await OnlineGamesRepo(agGw,
+                  nowMs: () => nowMs, delay: (_) async {})
+              .load(),
+          isNull);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(sink.sent, isEmpty, reason: 'çevrimdışılık gürültü olur');
+    });
+
+    // 26 Ağustos 2026 — GERÇEK CİHAZDA yaşandı, kayda değer: hesap silme
+    // kaskadı `online_games.created_by`i `on delete set null` yaptı, yani
+    // kurucusu hesabını silmiş bir oyun NULL `created_by` ile dönüyor.
+    // `OnlineGame.fromJson` o alanı `as String` ile okuduğu için satır
+    // FIRLATIYOR, `load()` de hatayı yutup null döndürdüğünden ÜÇ alt sekme
+    // birden "Oyunların şu an yüklenemedi." gösteriyordu — 43 oyunun 41'i
+    // sapasağlamken. Tekrar denemek de çare değildi: hata deterministik.
+    // Negatif eş: `createdBy` tipi `String`e geri çevrilirse bu test düşer.
+    test('load: kurucusu silinmiş oyun (created_by NULL) listeyi DÜŞÜRMEZ',
+        () async {
+      final gw = FakeOnlineGamesGateway()
+        ..rows = [
+          gameRow(id: 'g1', myId: 'me', status: 'active'),
+          gameRow(id: 'g2', myId: 'me', status: 'finished', createdBy: null),
+        ];
+      final snap = await OnlineGamesRepo(gw, nowMs: () => nowMs).load();
+      expect(snap, isNotNull, reason: 'tek satır yüzünden liste düşmemeli');
+      expect(snap!.games, hasLength(2));
+
+      final silinmis = snap.games.firstWhere((g) => g.id == 'g2');
+      expect(silinmis.createdBy, isNull);
+      // Kurucu koltuğu bulunamaz — ama koltuğun kendisi (uuid'siyle) duruyor.
+      expect(silinmis.creatorSlot, isNull);
+      expect(silinmis.slots, hasLength(2));
+      // Null == null tuzağı: adı/uuid'si olmayan bir koltuk "Davet gönderen"
+      // etiketi ALMAMALI.
+      expect(participantLabel(silinmis.slots.first, silinmis), 'Bekliyor');
+    });
+
   });
 
   // ── Widget testleri ───────────────────────────────────────────────────────
@@ -434,6 +513,30 @@ void main() {
       expect(find.text(kLoadFailedNotice), findsOneWidget);
       expect(find.text(trUpper(kRetryLabel)), findsOneWidget);
       // Bekleyen otomatik denemeyi bırakma (bekleyen-timer flake sınıfı).
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    // Yukarıdaki repo testinin KULLANICIYA GÖRÜNEN yüzü: liste gerçekten
+    // çiziliyor mu, yoksa "yüklenemedi" mi? (26 Ağustos 2026 vakasında
+    // kullanıcının gördüğü tek şey buydu.) Ad yerine `?? 'Bir arkadaşın'`
+    // düşmesi de burada kanıtlanıyor.
+    testWidgets('kurucusu silinmiş oyun listede ÇİZİLİR ("yüklenemedi" değil)',
+        (tester) async {
+      final gw = FakeOnlineGamesGateway()
+        ..rows = [
+          gameRow(
+              id: 'g1',
+              myId: 'me',
+              status: 'pending',
+              createdBy: null,
+              myInviteStatus: 'pending',
+              myInviteId: 'i1'),
+        ];
+      final s = liveServices(userId: 'me', gateway: gw, online: true);
+      await pumpTab(tester, s);
+      await tester.pump();
+      expect(find.text(kLoadFailedNotice), findsNothing);
+      expect(find.textContaining('Bir arkadaşın'), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 

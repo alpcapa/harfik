@@ -4,6 +4,8 @@
 // → Nasıl Oynanır? → Hesap Ayarları → Çıkış Yap) ve Çıkış Yap'ın kendi
 // üstündeki çizgi. Gerçek Supabase ağı YOK — StatsGateway/FriendsGateway
 // sahte.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
@@ -44,6 +46,24 @@ class _FakeStatsGateway implements StatsGateway {
   @override
   Future<List<Map<String, Object?>>> rankScores(List<String> userIds) async =>
       [for (final id in userIds) {'user_id': id, 'total_score': 47}];
+}
+
+/// `myLeaderboardRank` ELDE TUTULAN bir ucu — menü, puan gelmeden önce
+/// açılabilsin diye. `fail = true` ise istek fırlatır (`StatsRepo.myRank`
+/// null'a çevirir), yani "açılıştaki tek istek düştü" hâli kurulabilir.
+class _GecikmeliStatsGateway extends _FakeStatsGateway {
+  final _kapi = Completer<Map<String, Object?>?>();
+  bool fail = false;
+  int cagri = 0;
+
+  void ver() => _kapi.complete({'rank': 3, 'total_score': 47});
+
+  @override
+  Future<Map<String, Object?>?> myLeaderboardRank(String userId) {
+    cagri++;
+    if (fail) return Future.error(StateError('sunucu'));
+    return _kapi.future;
+  }
 }
 
 class _FakeFriendsGateway implements FriendsGateway {
@@ -99,6 +119,58 @@ void main() {
     await tester.tap(find.byType(PopupMenuButton<String>));
     await tester.pumpAndSettle();
   }
+
+  // 26 Ağustos 2026 — kullanıcı bildirdi: "avatar menüdeki isim altındaki
+  // k-lig çıkmadı önce, sayfayı refresh edince geldi."
+  //
+  // Web'de menü bileşenin İÇİNDE satır içi render ediliyor
+  // (`{open && (…)}`, UserMenu.tsx:229), yani puan gelince AÇIK menü
+  // kendiliğinden yenileniyor. Portta `PopupMenuButton.itemBuilder` menü
+  // AÇILDIĞI AN bir kez koşup sonucu AYRI bir route'a gömüyor —
+  // `setState` o route'u yeniden çizmiyordu.
+  //
+  // Negatif eş: `ValueListenableBuilder` kaldırılıp `setState`e dönülürse
+  // son iki expect düşer.
+  testWidgets('puan menü AÇIKKEN gelirse k-lig satırı canlı belirir',
+      (tester) async {
+    final gw = _GecikmeliStatsGateway();
+    await pumpMenu(tester, stats: StatsRepo(gw));
+
+    // Menü açık ama puan henüz yolda — satır YOK (web'de de öyle).
+    expect(find.textContaining('#3'), findsNothing);
+    expect(find.byType(RankSeal), findsNothing);
+
+    // Sunucu cevabı geldi. Menü KAPANMADI, sayfa YENİLENMEDİ.
+    gw.ver();
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('#3'), findsOneWidget);
+    expect(find.textContaining('47'), findsOneWidget);
+    expect(find.byType(RankSeal), findsOneWidget);
+  });
+
+  // İkinci dal: açılıştaki TEK istek düşerse k-lig satırı sayfa yenilenene
+  // kadar yok oluyordu (tekrar deneyen hiçbir şey yoktu). Artık menü her
+  // açılışta yeniden deniyor.
+  // Negatif eş: `onOpened` kaldırılırsa `cagri` 1'de kalır ve satır çıkmaz.
+  testWidgets('açılıştaki istek düşerse menü açılınca YENİDEN denenir',
+      (tester) async {
+    final gw = _GecikmeliStatsGateway()..fail = true;
+    await pumpMenu(tester, stats: StatsRepo(gw));
+    expect(find.textContaining('#3'), findsNothing);
+
+    // Menüyü kapat, sunucu düzelsin, tekrar aç.
+    await tester.tapAt(const Offset(10, 500));
+    await tester.pumpAndSettle();
+    gw.fail = false;
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.pumpAndSettle();
+    gw.ver();
+    await tester.pumpAndSettle();
+
+    expect(gw.cagri, greaterThan(1), reason: 'yeniden denenmeli');
+    expect(find.textContaining('#3'), findsOneWidget);
+  });
 
   testWidgets(
       'regresyon (Parça 28): k-lig ayrı bir "Sıralama" maddesi DEĞİL — '

@@ -88,7 +88,8 @@ src/
 │   ├── HelpModal.tsx            # nasıl oynanır sayfası
 │   ├── AuthModal.tsx            # giriş / kayıt / şifre sıfırlama
 │   ├── ResetPasswordModal.tsx   # şifre sıfırlama e-postasındaki bağlantıdan sonra yeni şifre belirleme
-│   ├── AccountSettingsModal.tsx # profil düzenleme (avatar, kullanıcı adı)
+│   ├── AccountSettingsModal.tsx # profil düzenleme (avatar, kullanıcı adı) + "Hesabımı Sil" girişi
+│   ├── DeleteAccountModal.tsx   # hesabı uygulama içinden silme onayı (açılışta kuru çalıştırma raporu)
 │   ├── ScoreCard.tsx            # oyuncu istatistikleri
 │   ├── ScoreStatsSection.tsx    # "Oyuncu / Oyun İstatistikleri" kutu ızgarası (ScoreCard ve PlayerScoreCard ortak)
 │   ├── RecentGamesSection.tsx   # Setup'taki "Yapay Zeka ile"/"Arkadaşınla" sekmelerinde son 5 biten oyun listesi
@@ -271,8 +272,9 @@ VITE_SUPABASE_ANON_KEY=sb_publishable_...   # Project Settings → API
 - `notify-turn-timeout-surrender/` — bir Canlı oyunda sırası gelen oyuncu 48 saat içinde hamle yapmayıp otomatik teslim olduğunda (ve bu, oyunun gerçekten bittiği ana denk geldiğinde) ilgili oyunculara -2 k-lig cezasını bildirir. `check_turn_timeout` RPC'sinden `net.http_post` ile SQL içinden tetiklenir, `verify_jwt: false`.
 - `notify-local-game-abandoned/` — Yapay Zeka'ya karşı 7 gün boyunca hiç hamle yapılmayıp terk edilmiş sayılan bir yerel oyunun -2 k-lig cezasını hesap sahibine bildirir; `saveGame` gerçek bir `surrendered:true` kaydı eklediğinde tetiklenir.
 - `notify-account-banned/` / `notify-account-unbanned/` — admin bir hesabı dondurduğunda/dondurmayı kaldırdığında ilgili kullanıcıya bildirim gönderir.
-- `notify-welcome/` — üye e-posta adresini DOĞRULADIĞI anda (kayıt anında değil) "hoş geldiniz" e-postası gönderir; `auth.users` üzerindeki bir trigger'dan `net.http_post` ile çağrılır, `verify_jwt: false`.
-- `sweep-unconfirmed-accounts/` — onaylanmamış hesaplara önce hatırlatma gönderir, sonra siler; `pg_cron` job'u, `verify_jwt: false`.
+- `notify-welcome/` — e-posta adresini doğrulayan yeni üyeye hoş geldiniz e-postası gönderir; `verify_jwt: false` (Postgres tarafından tetikleniyor).
+- `sweep-unconfirmed-accounts/` — 20. saatte tek seferlik hatırlatma gönderir, 48. saatte hâlâ doğrulanmamış hesabı siler (üçüncü `pg_cron` job'u, saatlik, `verify_jwt: false`). Kural: kimse uyarılmadan silinmez.
+- `delete-my-account/` — kullanıcının KENDİ hesabını uygulama içinden silmesi (Apple 5.1.1(v) + Play'in veri silme şartı). Kimliği çağıranın kendi JWT'siyle doğrular, sonra service-role ile `delete_account_cascade` RPC'sini çağırır, `avatars` kovasındaki dosyaları siler ve `auth.admin.deleteUser` ile hesabı kapatır. `dryRun` bayrağıyla hiçbir şey silmeden sayan bir KURU ÇALIŞTIRMA modu var — onay penceresi bunu gösteriyor. Kaskadın tamamı ve kararları: `docs/decisions/account-deletion.md`.
 - `inbound-email/` — `destek@kelimeki.com` kutusuna gelen cevapların HABERİNİ `support_inbox` tablosuna yazar (admin panelindeki "Zoho" rozetinin sayacı). Brevo Inbound Parsing webhook'u tarafından çağrılır, `verify_jwt: false` — tek koruma `?key=` parametresindeki `INBOUND_EMAIL_SECRET`; sır tanımsızsa fonksiyon 503 ile kapalı kalır. **Mail gövdesi saklanmaz**, mailin asıl yeri Zoho kutusudur.
 
 Altı işlemsel bildirim türü (`notify-friend-request`, `notify-friend-request-reminders`, `notify-game-invite`, `notify-deadline-warnings`, `notify-turn-timeout-surrender`, `notify-local-game-abandoned`) alıcının `profiles.email_notifications_enabled` tercihine (varsayılan açık, Hesap Ayarları'ndan kapatılabilir) bağlıdır — kapalıysa gönderim sessizce atlanır. Hesap güvenliği/admin yazışması niteliğindeki diğer fonksiyonlar (`notify-account-banned`/`notify-account-unbanned`, `feedback-reply`, `admin-send-message`) bu tercihe bakmadan her zaman gönderilir.

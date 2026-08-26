@@ -33,28 +33,35 @@ function HesapSilmeBody() {
         neyin kaldığını açıklar.
       </P>
 
-      <Section title="1. Talebi Nasıl İletirsiniz">
+      <Section title="1. Uygulama İçinden Silme (en hızlı yol)">
         <P>
-          Silme talebinizi {iletisim} üzerinden gönderin. Mesajınızda hesabınızın e-posta
+          Hesabınıza giriş yaptıktan sonra sağ üstteki hesap menüsünden{' '}
+          <strong>Hesap Ayarları</strong> &rsaquo; <strong>Hesabımı Sil</strong> adımını
+          izleyin. Açılan pencere, silinecek kayıtlarınızı tek tek sayarak gösterir; onayı
+          yazdığınızda hesabınız ve verileriniz <strong>anında</strong> silinir. Bu yol hem
+          web sitesinde (kelimeki.com) hem mobil uygulamada aynıdır.
+        </P>
+      </Section>
+
+      <Section title="2. Giriş Yapamıyorsanız: Talep Yolu">
+        <P>
+          Şifrenizi hatırlamıyorsanız ya da hesabınıza herhangi bir nedenle erişemiyorsanız
+          silme talebinizi {iletisim} üzerinden gönderin. Mesajınızda hesabınızın e-posta
           adresini ve hesabınızın silinmesini istediğinizi belirtmeniz yeterli. Talep, hesabın
           gerçekten size ait olduğunun doğrulanmasının ardından işleme alınır.
         </P>
+      </Section>
+
+      <Section title="3. Ne Zaman Silinir">
         <P>
-          Uygulama içinde kendi kendine hesap silme özelliği şu anda bulunmuyor; bu özellik
-          üzerinde çalışıyoruz. O zamana kadar buradaki talep kanalı tek yoldur ve aynı sonucu
-          verir.
+          Uygulama içinden başlattığınız silme onayladığınız anda uygulanır. Talep yoluyla
+          ilettiğiniz silme ise en geç {SILME_SURESI_GUN} gün içinde, ücretsiz olarak
+          sonuçlandırılır. Hesabın geçici olarak devre dışı bırakılması ya da dondurulması
+          silme sayılmaz — silme kalıcıdır ve geri alınamaz.
         </P>
       </Section>
 
-      <Section title="2. Ne Zaman Silinir">
-        <P>
-          Talebiniz en geç {SILME_SURESI_GUN} gün içinde, ücretsiz olarak sonuçlandırılır.
-          Hesabın geçici olarak devre dışı bırakılması ya da dondurulması silme sayılmaz —
-          silme kalıcıdır ve geri alınamaz.
-        </P>
-      </Section>
-
-      <Section title="3. Neler Silinir">
+      <Section title="4. Neler Silinir">
         <ul className="text-xs font-sans text-text leading-relaxed list-disc list-inside flex flex-col gap-1">
           <li>Hesabınız ve giriş bilgileriniz</li>
           <li>Ad, soyad, takma isim, e-posta, cinsiyet, doğum tarihi, profil fotoğrafı</li>
@@ -65,12 +72,12 @@ function HesapSilmeBody() {
         </ul>
       </Section>
 
-      <Section title="4. Neler Kalır">
+      <Section title="5. Neler Kalır">
         <P>
-          Diğer oyuncuların bitmiş oyun kayıtları kendi verileridir ve silinmez. Bu kayıtlarda,
-          o oyun oynandığı sırada görünen adınız ve o oyundaki puanınız yer almaya devam eder;
-          bunun dışında hesabınıza ait hiçbir bilgi (e-posta, profil, istatistik) orada
-          bulunmaz ve silinen hesabınızla eşleştirilemez.
+          Diğer oyuncuların bitmiş oyun kayıtları kendi verileridir ve silinmez. Bu kayıtlarda
+          o oyundaki puanınız yer almaya devam eder, ancak adınız "Silinmiş oyuncu" olarak
+          değiştirilir; bunun dışında hesabınıza ait hiçbir bilgi (e-posta, profil,
+          istatistik) orada bulunmaz ve kayıt silinen hesabınızla eşleştirilemez.
         </P>
         <P>
           Kimliğinizle hiçbir şekilde ilişkilendirilmeyen anonim sayaçlar (ziyaret, oyun

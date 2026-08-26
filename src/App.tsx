@@ -671,7 +671,7 @@ export default function App() {
 
   // Admin'in gönderdiği e-postalardaki ("noreply — cevap için tıklayın")
   // linkten (?contact=1) açılan genel "Görüş Bildir" formu — oyun fazından
-  // bağımsız (bkz. supabase/functions/_shared/email.ts, buildNoreplyNoticeHtml).
+  // bağımsız (bkz. supabase/functions/_shared/email.ts, buildSupportReplyNoticeHtml).
   // Link'e gömülü ?re=<id> varsa (hangi mesaja cevaben geldiği), yeni geri
   // bildirim o mesaja bağlanabilsin diye contactRelatedTo'da tutulur.
   const [showContactFeedback, setShowContactFeedback] = useState(false);

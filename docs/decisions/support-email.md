@@ -78,6 +78,18 @@ bilerek**, kutu Avrupa veri merkezinde açıldı.
 Rozet burada da projenin genel `CountBadge` dilini koruyor ("bekleyen İŞ"):
 `destek@`'e admin'in haberi olmadığı bir cevap düşmüş demek.
 
+**ZİNCİRİN ÜST HALKASI DA SAYAR (26 Ağustos 2026'da eklendi — ilk sürümde
+ATLANMIŞTI).** `fetchAdminPendingCount`, yani `UserMenu`'deki "Admin Paneli"
+satırının rozeti, artık üç kaynağı topluyor: okunmamış geri bildirim +
+okunmamış şikayet + **haber verilmemiş destek cevabı**. Atlandığında ortaya
+çıkan durum bu projede adı konmuş bir hata sınıfıdır (bkz.
+`docs/decisions/components.md` → `CountBadge`, "rozet zinciri yukarı takip
+edilmedi"): paneldeki "Zoho" rozeti sayarken dışarıdaki rozet saymıyordu,
+yani admin **paneli açmayı akıl edene kadar** gelen cevaptan habersiz
+kalıyordu — oysa bu rozetin var olma sebebi tam olarak buydu.
+
+Kural: bir sayaç eklerken onu KAPSAYAN her seviye aynı PR'da güncellenir.
+
 ### Sayaç nereden geliyor
 
 **Panel, Zoho'nun okunmamış sayısını kendiliğinden bilemez.** Bu yüzden:

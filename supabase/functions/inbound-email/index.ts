@@ -46,6 +46,25 @@ function secretMatches(given: string | null, expected: string): boolean {
   return diff === 0;
 }
 
+/**
+ * `SentAtDate` ayrıştırılamazsa ŞİMDİ'ye düşer.
+ *
+ * ⚠ `new Date('saçma').toISOString()` **RangeError fırlatır** — ham hâliyle
+ * bırakılırsa tek bir bozuk tarih tüm isteği 500'e çevirir ve Brevo aynı
+ * bozuk gövdeyi sonsuza kadar yeniden dener. Bu, dosyanın kendi kuralının
+ * tersi olurdu: ayrıştırılamayan JSON'a bilerek 200 dönüyoruz, tam da
+ * düzelmesi mümkün olmayan bir döngü doğmasın diye. Tarih zaten yalnızca
+ * sıralama içindir; haberi kaybetmektense saati kaydırmak yeğdir.
+ */
+function parseReceivedAt(raw?: string): string {
+  if (raw) {
+    const t = new Date(raw);
+    if (!Number.isNaN(t.getTime())) return t.toISOString();
+    console.error('[inbound-email] SentAtDate ayrıştırılamadı, şimdi kullanılıyor:', raw);
+  }
+  return new Date().toISOString();
+}
+
 type BrevoAddress = { Name?: string; Address?: string };
 type BrevoItem = {
   MessageId?: string;
@@ -116,7 +135,7 @@ Deno.serve(async (req: Request) => {
       // Message-ID yoksa satır yine yazılsın (null unique kısıtını ihlal
       // etmez) — haber vermek, tekilliği garantilemekten önemli.
       message_id: item.MessageId?.trim() || null,
-      received_at: item.SentAtDate ? new Date(item.SentAtDate).toISOString() : new Date().toISOString(),
+      received_at: parseReceivedAt(item.SentAtDate),
     });
   }
 

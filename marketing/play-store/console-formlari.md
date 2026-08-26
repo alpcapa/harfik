@@ -103,7 +103,18 @@ ister. **Bu ölçülmedi** — ilk yüklemede göreceğiz.
 
 ## 3. App content (Uygulama içeriği) formları
 
-Sol menü → **Policy** → **App content**. Sırayla:
+Sol menü → **Test and release** → **App content**. Sırayla:
+
+⚠ **YOL DÜZELTİLDİ (26 Ağustos 2026 — menüde ölçüldü):** burada uzun süre
+*"Sol menü → Policy → App content"* yazıyordu; **`Policy` diye bir grup
+YOK.** Sol menünün tamamı sekiz gruptan ibaret (Dashboard · Statistics ·
+Publishing overview · Protected with Play · Test and release · Monitor and
+improve · Grow users · Monetize with Play) ve App content, **Test and
+release**'in içinde — Testing kanallarının ALTINDA, `App integrity` ve
+`Setup` ile aynı yerde. §6.6 bunu zaten doğru yazmıştı ("Test and release →
+App integrity"), bu satır onunla çelişiyordu. **Tuzak:** "Test and
+release"i açtığında "Testing" alt grubu da açık geliyor ve altındakileri
+ekrandan itiyor — Testing'i kapatınca App content görünüyor.
 
 ### 3.1 Privacy policy
 ```
@@ -155,7 +166,7 @@ yok, reklam SDK'sı yok.
 
 ### 3.4 Advertising ID
 **"No"** — uygulama reklam kimliği kullanmıyor. Ölçüldü: yayınlanan pakette
-`com.google.android.gms.permission.AD_ID` **yok**, toplam 3 izin var (§6).
+`com.google.android.gms.permission.AD_ID` **yok**, toplam 4 izin var (§6).
 
 ### 3.5 Content ratings (IARC anketi)
 
@@ -274,10 +285,19 @@ is not processed ephemerally" açıkça SEÇİLMELİ, boş bırakılamaz.
   çalışıyor, **hiçbir izin eklemiyor** (§6'da ölçüldü).
 - Reklam kimliği — kullanılmıyor.
 
-⚠ **Play politikası hatırlatması:** hesap açtıran uygulamalarda Play, web
-silme adresinin YANINDA **uygulama içi** bir hesap silme yolu da istiyor.
-Bugün yok (`LegalContent.tsx` bunu açıkça yazıyor) — ROADMAP 0.B/2. Kapalı
-test bununla yayınlanabilir, **production başvurusu edilemez.**
+✅ **ENGEL KALKTI (26 Ağustos 2026).** Bu paragraf *"uygulama içi silme
+bugün yok … production başvurusu edilemez"* diyordu. Uygulama içi hesap
+silme (ROADMAP madde 2) **372**'de yayında: Hesap Ayarları › Hesabımı Sil.
+İki gerçek hesapla (T4, T1) uçtan uca doğrulandı —
+`docs/decisions/account-deletion.md` → "Gerçek kullanım".
+
+**Beyanda değişen bir şey YOK:** formun silme sorusunun cevabı hâlâ
+**Evet → `https://kelimeki.com/hesap-silme/`**, ve o sayfanın 1. bölümü
+artık uygulama içi yolu anlatıyor — yani beyan ettiğimiz adres, beyan
+ettiğimiz şeyi doğru anlatıyor. Play'in uygulama içi şartı bir form alanı
+değil, **uygulamanın kendisinde** aranan bir politika şartı.
+"Hesabı silmeden verinin bir kısmının silinmesini talep etme yolu" sorusu
+da **`No`** kalıyor — kısmi silme eklenmedi.
 
 ---
 
@@ -328,7 +348,7 @@ kanalı aç → **Create new release**.
 **Yükleme ekranından OKUNACAK iki şey** (`build-and-distribution-log.md`
 bunları "hâlâ ölçülmedi" diye bırakmıştı; 24 Ağustos'ta pakete bakılarak
 ölçüldüler, Console'daki değer de aynı çıkmalı): `targetSdk` **36**,
-izinler **3 adet** (§6). Farklı bir şey görürsen Data safety beyanı
+izinler **4 adet** (§6). Farklı bir şey görürsen Data safety beyanı
 yeniden gözden geçirilmeli.
 
 **⚠ SENİN cihazındaki CI `.apk`'sı önce SİLİNMELİ.** O paket debug
@@ -375,6 +395,21 @@ Android gömme katmanındaki Play Core. Ayırt etmenin pratik faydası yok.
 tamamını kanıtlamıyor — Play, bundle'ı işlerken manifeste ekleme yapabiliyor.
 Bir sonraki sürümde de izin listesini **Console'un paket ayrıntısından**
 oku.
+
+✅ **YENİDEN ÖLÇÜLDÜ — 372 (26 Ağustos 2026, Console'un paket ayrıntısı).**
+Yukarıdaki kural uygulandı ve liste DEĞİŞMEDİ: `ACCESS_NETWORK_STATE`,
+`INTERNET`, `com.android.vending.CHECK_LICENSE`,
+`com.kelimeki.kelimeki.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` — 4 adet.
+Aynı ekranda `targetSdk` **36**, `minSdk` **24+**, ABI **3**, ekran düzeni
+**4**, gerekli özellik **2**; yani 372'nin satırı 349'unkiyle **her sütunda
+birebir aynı**. Uygulama içinden hesap silme (madde 2) paketin platform
+yüzeyine hiç dokunmadı → **Data safety beyanında izin kaynaklı bir
+değişiklik YOK.**
+
+⚠ Aynı turda §3.4 ve §5'te kalmış iki bayat "3 izin" atfı da 4'e çekildi —
+§6 25 Ağustos'ta düzeltilmiş ama o iki yer güncellenmemişti. Bir sayıyı
+düzeltirken **aynı sayının öteki geçtiği yerleri de tara**; bu dosyada
+sayı üç yerde yaşıyor.
 
 ---
 
@@ -480,11 +515,25 @@ test bilerek sabiti içeriyor ki sessiz bir sapma mümkün olmasın.
 
 **YAYINLANDI — 25 Ağustos 2026.** Submission 1 (*Closed testing - Alpha,
 Store Listing, App Content, Advanced distribution, Store settings*) durumu
-**Published**. Kapalı test kanalı canlıda ve opt-in linki oluştu
-(Closed testing → Alpha → Testers → "How testers join your test").
+**Published**. Kapalı test kanalı canlıda.
 
-**Sayaç HENÜZ başlamadı:** 12 kişi opt-in olana kadar işlemiyor. Tester
-listesinde 9 adres var.
+**Opt-in linki — ölçülen zaman çizelgesi (tahmin YOK):**
+
+| Ne zaman | Kanalın durumu | Liste | "How testers join your test" |
+|---|---|---|---|
+| 25 Ağu | 349 `Published` | 9-11 adres | **link YOK** |
+| 26 Ağu 09:03 | 372 *in review* | **11 adres** | **iki link de VAR** (Join on Android · Join on the web) |
+
+**Sebebi BİLİNMİYOR ve uydurulmayacak.** Aynı gün önce "12 kişi olmadan
+link verilmiyor" diye bir kural yazıldı — ertesi ekran görüntüsü onu
+**çürüttü**: liste 11'ken linkler geldi. Tetikleyici muhtemelen kanalda bir
+sürümün gönderilmiş/işlenmiş olması, ama bu **ölçülmedi**; öyleyse öyle
+yazılmayacak.
+
+⚠ **Bu dosyanın kalıcı kuralı: Play Console davranışını ÇIKARIMLA yazma.**
+Bu turda üç kez ezberden/çıkarımla Console kuralı yazıldı ve üçü de yanlış
+çıktı (App content'in menü yeri iki kez, opt-in linkinin kapısı bir kez).
+Yalnızca **görülen** şey, **tarihiyle ve o anki durumla** kaydedilir.
 
 **App access'teki "tam erişim" kutusu ÖLÇÜLEREK işaretlendi:** ücretli/
 premium içerik yok, ve **Android uygulamasında yönetici paneli YOK** —
@@ -501,7 +550,11 @@ Sayaç "yükledim" ile değil, **12 kişi opt-in olduğunda** işlemeye başlıy
 |---|---|
 | Listeye eklemek YETMEZ | Her tester **opt-in bağlantısına tıklayıp kabul etmeli** |
 | **Google tester'lara MAİL ATMIYOR** | Listeye eklemek yalnızca yetkilendiriyor; daveti geliştirici kendi kanalından gönderir |
-| **Linke tıklayan otomatik katılmaz** | Liste bir izin listesi. Listede olmayan biri linkte "bu test sana açık değil" görür. Sıra: adresi al → listeye ekle → linki gönder |
+| **Linke tıklayan otomatik katılmaz** | Liste bir izin listesi. Listede olmayan biri linkte "bu test sana açık değil" görür. |
+| Link her zaman orada DEĞİL | 25 Ağustos'ta yoktu, 26 Ağustos'ta (liste 11 kişiyken, 372 incelemedeyken) vardı — §6.5'teki tablo. Kapısının ne olduğu ölçülmedi; görmüyorsan kanalda işlenmiş bir sürüm olduğundan emin ol |
+| **İki ayrı link var** | *Join on Android* (Play uygulaması üzerinden) ve *Join on the web*. Kişiye telefonundaki Play hesabıyla açacağı için Android linkini vermek daha az aksaklık çıkarır |
+| ⚠ **Linki DOĞRU KANALDAN kopyala** | *Internal testing* ve *Closed testing → Alpha* sayfalarının İKİSİNDE de aynı başlıklı "How testers join your test" bölümü var. Internal'dan kopyalanan link Play'de **"App not available — your account hasn't yet been invited to participate in this app's _internal testing_ program"** veriyor. **İpucu mesajın içinde: "internal" yazıyorsa yanlış sayfadasın.** 26 Ağustos 2026'da ölçüldü, doğru sayfadan kopyalanınca çalıştı |
+| ⚠ **Mağaza adresini ELLE yazma** | `play.google.com/store/apps/details?id=com.kelimeki.kelimeki` herkese açık vitrin adresi; production sürümü olmadığı sürece (Dashboard: *Production: Inactive*) **404** veriyor — "istenen URL bu sunucuda bulunamadı". Bu bir yetki/tester sorunu DEĞİL, sayfanın hiç var olmaması. Her zaman **Copy link** kullan |
 | Adres, kişinin TELEFONUNDAKİ Play hesabı olmalı | En sık aksaklık: iş adresi verilir, telefonda başka Gmail açıktır. Sorulacak soru "hangi adresi istersin" değil, "telefonunda hangi hesap açık" |
 | Biri çıkarsa sayaç kırılır | **15-20 kişi topla**, 12 tabandır |
 | Adresler Google hesabı olmalı | Gmail ya da Google'a bağlı bir adres; şirket/okul adresi olabilir ama Play hesabı olmalı |

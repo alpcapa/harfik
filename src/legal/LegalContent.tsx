@@ -44,7 +44,7 @@ export function PrivacyBody({ contact }: { contact: ReactNode }) {
       <div className="flex flex-col gap-5">
         <P>
           Kelimeki olarak gizliliğinize önem veriyoruz. Bu politika, hangi verileri topladığımızı,
-          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 24 Ağustos 2026</P>
+          nasıl kullandığımızı ve haklarınızı açıklar. Son güncelleme: 25 Ağustos 2026</P>
 
         <Section title="1. Veri Sorumlusu">
           <P>
@@ -165,11 +165,18 @@ export function PrivacyBody({ contact }: { contact: ReactNode }) {
 
         <Section title="5. Veri Saklama Süresi">
           <P>
-            Verileriniz hesabınız aktif olduğu sürece saklanır. Uygulama içinde kendi kendine
-            hesap silme özelliği bulunmuyor; hesabınızın ve kişisel verilerinizin
-            silinmesini istiyorsanız 8. bölümdeki "Görüş Bildir" kanalından talep
-            edebilirsiniz. Talebiniz üzerine tüm kişisel verileriniz en geç {SILME_SURESI_GUN} gün
-            içinde kalıcı olarak silinir.
+            Verileriniz hesabınız aktif olduğu sürece saklanır. Hesabınızı dilediğiniz zaman
+            <strong> Hesap Ayarları &rsaquo; Hesabımı Sil</strong> adımıyla kendiniz
+            silebilirsiniz; bu işlem onayladığınız anda uygulanır, geri alınamaz ve
+            hesabınıza bağlı tüm kişisel verilerinizi (profiliniz, oyun kayıtlarınız ve
+            istatistikleriniz, k-lig puanınız, arkadaşlık bağlarınız, gönderdiğiniz oyun içi
+            mesajlar, davetleriniz, geri bildirimleriniz ve profil fotoğrafınız) kapsar.
+            Tek istisna, birlikte oynadığınız diğer oyuncuların bitmiş oyun kayıtlarıdır:
+            onlar başka kullanıcıların kendi verisi olduğu için silinmez, ancak o kayıtlarda
+            görünen adınız "Silinmiş oyuncu" olarak değiştirilir ve kaydın silinen
+            hesabınızla bağlantısı kalmaz. Dilerseniz silme talebinizi 8. bölümdeki
+            "Görüş Bildir" kanalından da iletebilirsiniz; bu yolla iletilen
+            talepler en geç {SILME_SURESI_GUN} gün içinde sonuçlandırılır.
           </P>
           <P>
             Kayıt sırasında e-posta adresinizi doğrulamazsanız hesabınız tamamlanmamış
@@ -247,7 +254,7 @@ export function TermsBody({ contact }: { contact: ReactNode }) {
       <div className="flex flex-col gap-5">
         <P>
           Kelimeki'ye kaydolarak aşağıdaki koşulları okuduğunuzu ve kabul ettiğinizi beyan edersiniz.
-          Son güncelleme: 19 Ağustos 2026.
+          Son güncelleme: 25 Ağustos 2026.
         </P>
 
         <Section title="1. Hizmet Sağlayıcı ve Kapsam">
@@ -266,7 +273,9 @@ export function TermsBody({ contact }: { contact: ReactNode }) {
           <P>
             Kayıt sırasında verdiğiniz bilgilerin doğru ve güncel olması zorunludur. Hesap
             güvenliğinizden yalnızca siz sorumlusunuz; şifrenizi kimseyle paylaşmayınız. Hesabınızı
-            başkasına devredemezsiniz.
+            başkasına devredemezsiniz. Hesabınızı dilediğiniz zaman Hesap Ayarları'ndan kendiniz
+            silebilirsiniz; silme kalıcıdır ve geri alınamaz, kapsamı Gizlilik Politikası'nın 5.
+            bölümünde açıklanmıştır.
           </P>
         </Section>
 

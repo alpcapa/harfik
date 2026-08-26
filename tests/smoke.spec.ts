@@ -799,6 +799,14 @@ test('/hesap-silme/ Play için gereken silme talebi yolunu anlatıyor', async ({
   // Talebin iletileceği kanal çalışır durumda olmalı — Play "geçersiz silme
   // bağlantısı" gerekçesiyle reddedebiliyor.
   await expect(page.locator('main a[href="/?contact=1"]')).toBeVisible();
+  // Play, hesap açtıran uygulamalarda WEB talep adresinin YANINDA uygulama
+  // İÇİNDEN başlatılabilen bir yol da istiyor (ROADMAP madde 2). Sayfa 25
+  // Ağustos 2026'ya kadar "uygulama içinde kendi kendine hesap silme özelliği
+  // şu anda bulunmuyor" diyordu; o cümle artık YANLIŞ ve geri gelirse
+  // inceleme reddi anlamına gelir.
+  await expect(page.getByRole('heading', { name: /Uygulama İçinden Silme/ })).toBeVisible();
+  await expect(page.getByText(/Hesabımı Sil/)).toBeVisible();
+  expect(await page.locator('main').innerText()).not.toContain('kendi kendine hesap silme');
   // Süre TEK KAYNAKTAN (`SILME_SURESI_GUN`) geliyor; gizlilik politikasıyla
   // aynı sayıyı göstermek zorunda. Politikada İKİ yerde geçiyor (5. ve 8.
   // bölüm) — bu test yazılırken 8. bölümdekinin hâlâ elle yazılmış olduğu
