@@ -95,9 +95,13 @@ export function DeleteAccountModal({ onClose }: DeleteAccountModalProps) {
   return (
     <Modal title="Hesabı Sil" onClose={onClose}>
       <div className="flex flex-col gap-4">
-        <p className="text-xs font-sans text-text leading-relaxed">
-          Hesabın ve hesabına bağlı kişisel verilerin <strong>kalıcı olarak</strong> silinir.
-          Bu işlemin geri dönüşü yoktur.
+        {/* Uyarı KIRMIZI + KALIN (26 Ağustos 2026, kullanıcı isteği — T1 silinmeden
+            hemen önce modala bakarken): metin siyah/normal ağırlıktayken
+            aşağıdaki döküm kadar dikkat çekmiyordu, oysa geri dönüşsüzlüğü
+            söyleyen tek cümle bu. Port (`delete_account_modal.dart`) aynı. */}
+        <p className="text-xs font-sans text-red font-bold leading-relaxed">
+          Hesabın ve hesabına bağlı kişisel verilerin kalıcı olarak silinir.
+          Bu işlemin geri dönüşü yoktur!
         </p>
 
         {yukleniyor && <p className="text-[10px] font-mono text-muted">Hesabın okunuyor…</p>}

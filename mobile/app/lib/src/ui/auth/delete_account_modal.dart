@@ -137,11 +137,19 @@ class _DeleteAccountModalState extends State<DeleteAccountModal> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Uyarı KIRMIZI + KALIN (26 Ağustos 2026, kullanıcı isteği) — web
+          // `DeleteAccountModal.tsx` ile birebir. Siyah/normal ağırlıkta
+          // aşağıdaki döküm kadar dikkat çekmiyordu, oysa geri dönüşsüzlüğü
+          // söyleyen tek cümle bu.
           const Text(
             'Hesabın ve hesabına bağlı kişisel verilerin kalıcı olarak silinir. '
-            'Bu işlemin geri dönüşü yoktur.',
+            'Bu işlemin geri dönüşü yoktur!',
             style: TextStyle(
-                fontFamily: 'SpaceGrotesk', fontSize: 12, height: 1.6, color: kText),
+                fontFamily: 'SpaceGrotesk',
+                fontSize: 12,
+                height: 1.6,
+                fontWeight: FontWeight.bold,
+                color: kRed),
           ),
           if (_yukleniyor) ...[
             const SizedBox(height: 12),
