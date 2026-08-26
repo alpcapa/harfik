@@ -285,6 +285,11 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     // boşken `flushPending` ağa hiç dokunmadan erken dönüyor, bu yüzden her
     // öne dönüşte çağırmak bedelsiz — ayrı bir debounce'a gerek yok.
     unawaited(widget.services.feedback?.flushPending());
+    // Davet kuyruğu da aynı gerekçeyle: ağ hatasında token geri konuyor
+    // (bkz. `_processInvites`), ama onu yeniden deneyecek bir şey yoksa
+    // kuyruk uygulama yeniden başlatılana kadar bekler. Kuyruk boşken
+    // `takeAll` hiçbir şey döndürmeden çıkıyor, yani bu çağrı bedelsiz.
+    unawaited(_processInvites());
   }
 
   void _scheduleLiveBadgeRefresh() {
@@ -465,6 +470,22 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
           // `manual` türünde ağ filtresini kendisi UYGULAMAZ).
           if (!inviteAcceptKaliciRet(err) && !isNetworkError(err)) {
             errorReporter.report(err, context: 'setup._processInvites');
+          }
+          // AĞ HATASINDA TOKEN KUYRUĞA GERİ KONUYOR (26 Ağustos 2026,
+          // kullanıcı kararı). `takeAll` YIKICI — okurken siliyor (tek
+          // transaction: SELECT + DELETE) — yani istek tam o anda düşerse
+          // davet hem kurulmuyor hem token kayboluyordu; kullanıcının tek
+          // çaresi linke yeniden dokunmaktı, link elinde yoksa davet
+          // tamamen kayıptı.
+          //
+          // YALNIZCA ağ hatası geri konuyor: sunucunun KALICI reddini
+          // (P0001 — "Kendi linkinle arkadaş olamazsın.") geri koymak,
+          // her açılışta aynı diyaloğu gösteren ölümsüz bir kayıt üretirdi.
+          // Bilinmeyen hatalar da geri KONMUYOR — sebebini bilmediğimiz
+          // bir şeyi sonsuza dek tekrarlatmak yanlış taraf; onlar zaten
+          // telemetriye düşüyor (yukarıda).
+          if (isNetworkError(err)) {
+            await s.events.add(friendInviteTokenKind, {'token': token});
           }
           if (mounted) {
             await showFriendInfoDialog(context, inviteAcceptErrorText(err));

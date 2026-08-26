@@ -367,9 +367,10 @@ acil.
   da sessizdi (geçersiz linkte hiçbir şey görünmüyordu), o da konuşuyor.
   Beklenmeyen hatalar telemetriye düşüyor; beklenen retler ve ağ hataları
   BİLEREK düşmüyor. Ayrıntı: `mobile/docs/parca-log.md` → Parça 142.
-  ⚠ **Kalan, kararı VERİLMEMİŞ sorun:** `events.takeAll` YIKICI, yani geçici
-  bir ağ hatasında token zaten kayboluyor. Bu düzeltme onu çözmüyor —
-  kullanıcı artık en azından kaybolduğunu GÖRÜYOR.
+  **`events.takeAll`ın yıkıcılığı da AYNI TURDA kapatıldı** (kullanıcı
+  kararı): ağ hatasında token kuyruğa geri konuyor ve öne dönüşte yeniden
+  deneniyor. Kalıcı ret (P0001) ve bilinmeyen hatalar BİLEREK geri
+  konmuyor — ölümsüz kayıt üretirdi.
 
 **Tuzaklar:**
 - Universal Links yalnızca App Store'dan kurulan uygulamalarda çalışıyor —

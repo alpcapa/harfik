@@ -50,8 +50,24 @@
      - **Regresyon:** 2 test (`friends_test.dart`) — P0001 metni birebir
        geçer + kalıcı ret işaretlenir; ağ hatası ile bilinmeyen sunucu
        hatası AYRI konuşur ve ham mesaj sızmaz. Negatif eşleri yazılı.
-     - **Kalan sorun (kararı VERİLMEDİ):** `events.takeAll` yıkıcı, geçici
-       ağ hatasında token kayboluyor. Kullanıcı artık en azından GÖRÜYOR.
+     - **`takeAll`ın yıkıcılığı da AYNI TURDA kapatıldı (kullanıcı kararı:
+       "B").** Kuyruktan okuma silerek okuyor (tek transaction'da SELECT +
+       DELETE), yani istek tam o anda düşerse davet hem kurulmuyor hem token
+       kayboluyordu; kullanıcının tek çaresi linke yeniden dokunmaktı, link
+       elinde yoksa davet tamamen kayıptı. Artık **yalnızca ağ hatasında**
+       token kuyruğa geri konuyor.
+       - **Neden yalnızca ağ hatası:** kalıcı reddi (P0001) geri koymak,
+         her açılışta aynı "Kendi linkinle arkadaş olamazsın." diyaloğunu
+         gösteren ÖLÜMSÜZ bir kayıt üretirdi. Bilinmeyen hatalar da geri
+         konmuyor — sebebini bilmediğimiz bir şeyi sonsuza dek tekrarlatmak
+         yanlış taraf; onlar telemetriye düşüyor.
+       - **Yeniden deneyen bir şey de eklendi:** `didChangeAppLifecycleState`
+         öne dönüşte `_processInvites`i çağırıyor (aynı yerdeki
+         `flushPending`/`_scheduleCloudSync` deseni). Bu olmadan geri konan
+         token uygulama yeniden başlatılana kadar beklerdi. Kuyruk boşken
+         `takeAll` hiçbir şey döndürmeden çıkıyor, yani çağrı bedelsiz.
+       - **Regresyon:** üçüncü test — ağ hatasında token DURUYOR, kalıcı
+         rette GİTMİŞ oluyor. İkisinin de negatif eşi yazılı.
 
    - ✅ **Parça 141 — açık menü DONUYORDU: k-lig satırı puan geç gelince
      hiç belirmiyordu (26 Ağustos 2026, kullanıcı cihaz testinde bildirdi:

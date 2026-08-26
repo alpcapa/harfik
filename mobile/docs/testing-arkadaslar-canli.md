@@ -77,6 +77,13 @@
       reddediyor (`P0001`) ve ekranda **"Kendi linkinle arkadaş olamazsın."**
       (sunucunun kendi cümlesi) çıkmalı. Öncesinde ekranda HİÇBİR ŞEY
       olmuyordu. Aynı şekilde bozuk/uydurma bir token da bir mesaj almalı.
+- [ ] **Ağ hatasında davet KAYBOLMUYOR (26 Ağustos 2026, Parça 142).**
+      Uçak modunu aç, sonra geçerli bir davet linkine dokun (girişliyken):
+      bağlantı mesajı çıkmalı. Uçak modunu KAPAT ve uygulamayı öne getir
+      (kapatıp açman gerekmez) — davet kendiliğinden işlenmeli, "artık
+      arkadaşsınız" çıkmalı. Öncesinde token o anda siliniyordu ve davet
+      tamamen kayıptı.
+
 - [ ] **Misafirken geçersiz link.** Çıkış yap, bozuk bir
       `kelimeki://davet/<uydurma>` linkine dokun: **"Bu davet linki
       açılamadı — süresi dolmuş ya da geçersiz olabilir."** çıkmalı.
