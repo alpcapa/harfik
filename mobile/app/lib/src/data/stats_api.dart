@@ -8,6 +8,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../util/offline_notice.dart';
+import 'error_reporter.dart';
+
 /// Skor kartı sekmesi: Genel (iki modun toplamı) / 2 / 4 kişilik.
 /// Web `TabKey` ('all' | 2 | 4).
 enum StatsTab {
@@ -308,8 +311,16 @@ class StatsRepo {
         totalScore: (row['total_score'] as num).toInt(),
         avgMoveScore: parseNullableDouble(row['avg_move_score']),
       );
-    } catch (e) {
+    } catch (e, st) {
+      // 26 Ağustos 2026: bu satır YALNIZCA `debugPrint`ti ve k-lig mührü
+      // menüde çıkmadığında elde hiçbir kanıt yoktu — aynı gün
+      // `OnlineGamesRepo.load()`ta ölçülen sınıfın aynısı. Ağ hatası
+      // BİLEREK elenir (`report` varsayılan `manual` türünde o filtreyi
+      // kendisi uygulamaz); geriye yalnızca gerçek kusurlar kalır.
       debugPrint('[Kelimeki] myLeaderboardRank hatası: $e');
+      if (!isNetworkError(e)) {
+        errorReporter.report(e, stack: st, context: 'stats_repo.my_rank');
+      }
       return null;
     }
   }

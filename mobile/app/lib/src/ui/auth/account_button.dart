@@ -105,7 +105,18 @@ class _AccountButtonState extends State<AccountButton> {
   /// satırı için — web `UserMenu`'nün `myRank` state'iyle aynı: `useEffect`
   /// yalnızca `user` değişince tetiklenir (`fetchMyLeaderboardRank`),
   /// burada da `_onAuthEvent`'in aynı hesap-değişimi kilidiyle tazeleniyor.
-  MyLeaderboardRank? _myRank;
+  ///
+  /// **`setState` DEĞİL `ValueNotifier` — ve bu bir tercih değil, düzeltme
+  /// (26 Ağustos 2026, kullanıcı bildirdi: "avatar menüdeki isim altındaki
+  /// k-lig çıkmadı önce, sayfayı refresh edince geldi").** Web'de menü
+  /// bileşenin İÇİNDE satır içi render ediliyor (`{open && (…)}`,
+  /// `UserMenu.tsx:229`), yani `setMyRank` gelince AÇIK menü kendiliğinden
+  /// yeniden çiziliyor. Portta ise `PopupMenuButton`'ın `itemBuilder`ı
+  /// menü AÇILDIĞI AN bir kez koşuyor ve sonuç AYRI bir route'a
+  /// gömülüyor — `AccountButton.setState` o route'u yeniden çizmiyor.
+  /// Sonuç: puan menü açıldıktan sonra gelirse açık menüde k-lig satırı
+  /// HİÇ belirmiyordu. Notifier, açık menüyü web'deki gibi canlı tutuyor.
+  final ValueNotifier<MyLeaderboardRank?> _myRank = ValueNotifier(null);
 
   @override
   void initState() {
@@ -119,6 +130,7 @@ class _AccountButtonState extends State<AccountButton> {
   @override
   void dispose() {
     auth.removeListener(_onAuthEvent);
+    _myRank.dispose();
     super.dispose();
   }
 
@@ -128,12 +140,8 @@ class _AccountButtonState extends State<AccountButton> {
     final id = auth.user?.id;
     if (id == _lastUserId) return;
     _lastUserId = id;
-    if (mounted) {
-      setState(() {
-        _incomingRequests = 0;
-        _myRank = null;
-      });
-    }
+    _myRank.value = null;
+    if (mounted) setState(() => _incomingRequests = 0);
     _refreshRequestCount();
     _refreshMyRank();
   }
@@ -146,12 +154,17 @@ class _AccountButtonState extends State<AccountButton> {
     });
   }
 
+  /// Tek atışlık — ama artık TEK ŞANS değil: sonuç null kalırsa menü her
+  /// açılışta yeniden deniyor (`onOpened`). Öncesinde başarısız tek bir
+  /// istek k-lig satırını sayfa yenilenene kadar yok ediyordu ve hata
+  /// `StatsRepo.myRank` içinde yutulduğundan hiçbir yere de düşmüyordu.
   void _refreshMyRank() {
     final stats = widget.stats;
     final userId = auth.user?.id;
     if (stats == null || userId == null) return;
     stats.myRank(userId).then((r) {
-      if (mounted) setState(() => _myRank = r);
+      if (!mounted || r == null) return;
+      _myRank.value = r;
     });
   }
 
@@ -278,6 +291,13 @@ class _AccountButtonState extends State<AccountButton> {
 
   Widget _avatarMenu(BuildContext context) {
     return PopupMenuButton<String>(
+      // Puan hâlâ elde değilse menü her açılışta yeniden istiyor —
+      // açılıştaki tek istek düşmüşse kullanıcı sayfayı yenilemek zorunda
+      // kalmasın (26 Ağustos 2026). İstek yalnızca EKSİKKEN gidiyor, yani
+      // normal durumda menü açmak ağa çıkmıyor.
+      onOpened: () {
+        if (_myRank.value == null) _refreshMyRank();
+      },
       // Uzun basınca çıkan ipucu kullanıcı isteğiyle kaldırıldı (9 Ağustos
       // 2026) — web'deki `title` attribute'u da aynı anda kaldırıldı.
       // Parametreyi tamamen SİLMEK yanlış olurdu: PopupMenuButton null
@@ -398,71 +418,88 @@ class _AccountButtonState extends State<AccountButton> {
                       // ile aynı yer). Puan ZATEN elde (`_myRank`) —
                       // ekstra bir sorgu YOK. 18px, satırın 14px'lik
                       // puntosuna göre ölçüldü (web'de de aynı).
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              auth.menuName,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: _text),
-                            ),
-                          ),
-                          if (_myRank != null) ...[
-                            const SizedBox(width: 4),
-                            RankSeal(
-                                tier: tierFor(_myRank!.totalScore), size: 18),
-                          ],
-                        ],
-                      ),
-                      if (stats != null && _myRank != null) ...[
-                        const SizedBox(height: 2),
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => Navigator.of(context).pop('league'),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const KLigMark(height: 13),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text.rich(
-                                  TextSpan(children: [
-                                    TextSpan(text: '#${_myRank!.rank}'),
-                                    // Web `mx-0.5` = 2px; boşluk KARAKTERİ
-                                    // Space Mono'da ~0.6em eder ve iki yanda
-                                    // ~6px fazla açar (17 Ağustos 2026 görsel
-                                    // turu — aynı sapma iki skor kartında da
-                                    // vardı, ÜÇÜ BİRLİKTE düzeltildi).
-                                    const WidgetSpan(
-                                        child: SizedBox(width: 2)),
-                                    const TextSpan(text: '·'),
-                                    const WidgetSpan(
-                                        child: SizedBox(width: 2)),
-                                    TextSpan(text: '${_myRank!.totalScore}'),
-                                    const TextSpan(
-                                      text: ' puan',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.normal,
-                                          color: _muted),
-                                    ),
-                                  ]),
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontFamily: 'SpaceMono',
-                                    fontSize: 12,
+                      ValueListenableBuilder<MyLeaderboardRank?>(
+                        valueListenable: _myRank,
+                        builder: (context, rank, _) => Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                auth.menuName,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    fontSize: 14,
                                     fontWeight: FontWeight.bold,
-                                    color: kAccent,
-                                  ),
+                                    color: _text),
+                              ),
+                            ),
+                            if (rank != null) ...[
+                              const SizedBox(width: 4),
+                              RankSeal(
+                                  tier: tierFor(rank.totalScore), size: 18),
+                            ],
+                          ],
+                        ),
+                      ),
+                      if (stats != null)
+                        ValueListenableBuilder<MyLeaderboardRank?>(
+                          valueListenable: _myRank,
+                          builder: (context, rank, _) {
+                            // Puan HENÜZ yoksa satır hiç çizilmez (web'de de
+                            // öyle) — ama artık geldiğinde AÇIK menü de
+                            // kendini yeniliyor.
+                            if (rank == null) return const SizedBox.shrink();
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () =>
+                                    Navigator.of(context).pop('league'),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const KLigMark(height: 13),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text.rich(
+                                        TextSpan(children: [
+                                          TextSpan(text: '#${rank.rank}'),
+                                          // Web `mx-0.5` = 2px; boşluk
+                                          // KARAKTERİ Space Mono'da ~0.6em
+                                          // eder ve iki yanda ~6px fazla
+                                          // açar (17 Ağustos 2026 görsel
+                                          // turu — aynı sapma iki skor
+                                          // kartında da vardı, ÜÇÜ BİRLİKTE
+                                          // düzeltildi).
+                                          const WidgetSpan(
+                                              child: SizedBox(width: 2)),
+                                          const TextSpan(text: '·'),
+                                          const WidgetSpan(
+                                              child: SizedBox(width: 2)),
+                                          TextSpan(
+                                              text: '${rank.totalScore}'),
+                                          const TextSpan(
+                                            text: ' puan',
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.normal,
+                                                color: _muted),
+                                          ),
+                                        ]),
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontFamily: 'SpaceMono',
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: kAccent,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
+                            );
+                          },
                         ),
-                      ],
                     ],
                   ),
                 ),
