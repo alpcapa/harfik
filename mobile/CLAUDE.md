@@ -92,6 +92,20 @@ sunucu davranışı değişmiş olabilir.
 iste ya da ekran görüntüsünden oku.** Eşleşmiyorsa tartışılacak bir hata
 yok — deploy bekleniyor demektir.
 
+⚠ **TERSİ GEÇERLİ DEĞİL — "sürüm doğru" ≠ "özellik içinde" (26 Ağustos
+2026'da yaşandı):** Kullanıcı balonu Vercel preview'da gördü, github.io'da
+göremedi ve *"sürüm doğru"* dedi. Doğruydu da: teşhis satırı `main`'in son
+sha'sını gösteriyordu. Ama balon o an yalnızca bir PR dalındaydı ve
+github.io **yalnızca `main`'e push'ta** yayınlanıyor — yani sha "güncel"
+olduğu hâlde özellik içinde değildi.
+
+Derleme kimliği *"bayat bir derlemeye mi bakıyorum?"* sorusunu cevaplar;
+*"şu özellik bunun içinde mi?"* sorusunu CEVAPLAMAZ. Henüz merge edilmemiş
+bir değişiklik için sha eşleşmesi hiçbir şey kanıtlamaz. Doğru soru şu:
+**bu yüzey hangi daldan yayınlanıyor ve değişiklik o dalda mı?** (Tablo
+yukarıda.) Merge etmeden cihazda görmek gerekiyorsa tek yol dalda bir
+`workflow_dispatch` koşusu.
+
 ### Bu ortamın sınırı (kritik — buradaki tek gözlem yolu MCP)
 
 `curl`/`bash` bu oturumdan **ne `api.github.com`'a ne siteye** çıkabiliyor
