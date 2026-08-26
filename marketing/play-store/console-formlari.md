@@ -443,10 +443,25 @@ sayı üç yerde yaşıyor.
 | 1 | 25 Ağu 19:23 | Closed testing - Alpha, Store Listing, App Content, Advanced distribution, Store settings | ✅ **Published** |
 | 2 | 26 Ağu 08:57 | Closed testing - Alpha (paket **372**) | ✅ **Published** |
 | 3 | 26 Ağu ~11:40 | Closed testing - Alpha (paket **378**) | ✅ **yayında** — cihaza güncelleme olarak indi ve çalıştı (aşağı bkz.) |
+| 4 | 26 Ağu ~22:20 | Closed testing - Alpha (paket **401**) | ⏳ gönderildi — sonuç bu oturumda doğrulanmadı |
 
-Üçü de yayında; 26 Ağustos sabahı görülen *"Changes in review"* durumları
+İlk üçü yayında; 26 Ağustos sabahı görülen *"Changes in review"* durumları
 aynı gün kapandı — **üçüncüsü ~1 saat içinde** (11:36'da gönderildi, 12:30
 civarında cihaza güncelleme olarak indi).
+
+**4. gönderim (paket 401)** akşam yapıldı ve durumu bu oturumda
+DOĞRULANMADI — tablo "published" demiyor, çünkü ölçülmedi. İçeriği:
+oyun ekranı akıcılık düzeltmesi (nömorfik dekor raster önbelleği,
+Parça 144), "Buradan başla" balonu (Parça 145), tanıtımdaki DEVAM
+düğmesi (Parça 143) ve görünür davet hataları. Kaynak `main` @ `5d8c549`;
+versionCode **401** = CI koşu numarası (`--build-number=${{ github.run_number }}`).
+
+**Yükleme ekranında ölçülen bir tuzak:** "Create closed testing release"
+sayfası ÖNCEKİ paketi (378) hazır tabloda gösteriyor. Yeni `.aab`
+yüklenmeden Next denirse aynı paket yeniden yayınlanır; yüklendikten sonra
+da eski paket release'de KALIRSA release iki version code taşır. Doğru hâl:
+tabloda yalnızca **401 (1.0.0)** görünmeli (bu gönderimde öyle doğrulandı,
+ekran görüntüsüyle).
 
 **3. gönderim GERÇEK BİR ANDROID CİHAZDA doğrulandı** (kullanıcı, 26
 Ağustos): Play güncellemeyi verdi, uygulama açıldı, Canlı sekmesinin üç alt
