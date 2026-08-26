@@ -215,7 +215,6 @@ class BoardWidget extends StatelessWidget {
     // görünmesi zararsız, ve bir bayrak cihaz değiştiren oyuncuyu ipuçsuz
     // bırakırdı.
     final startHint = _startHintFor(players);
-    }
 
     final outlines = <(Path, Color)>[
       for (var i = 0; i < players.length; i++)
