@@ -41,6 +41,9 @@ import '../../data/online_games_api.dart'
     show InitialMainView, PendingLiveGameCounts, decideInitialMainView;
 import '../../data/friend_invite_inbox.dart' show inviteTokensFromEvents;
 import '../../storage/pending_event_store.dart' show friendInviteTokenKind;
+import '../../data/error_reporter.dart';
+import '../../data/friends_api.dart'
+    show inviteAcceptErrorText, inviteAcceptKaliciRet;
 import '../friends/friends_modal.dart' show showFriendInfoDialog;
 import '../../game/game_controller.dart';
 import '../../game/local_game_repo.dart';
@@ -282,6 +285,11 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     // boşken `flushPending` ağa hiç dokunmadan erken dönüyor, bu yüzden her
     // öne dönüşte çağırmak bedelsiz — ayrı bir debounce'a gerek yok.
     unawaited(widget.services.feedback?.flushPending());
+    // Davet kuyruğu da aynı gerekçeyle: ağ hatasında token geri konuyor
+    // (bkz. `_processInvites`), ama onu yeniden deneyecek bir şey yoksa
+    // kuyruk uygulama yeniden başlatılana kadar bekler. Kuyruk boşken
+    // `takeAll` hiçbir şey döndürmeden çıkıyor, yani bu çağrı bedelsiz.
+    unawaited(_processInvites());
   }
 
   void _scheduleLiveBadgeRefresh() {
@@ -408,10 +416,30 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
       if (token == null || token == _previewedInviteToken) return;
       _previewedInviteToken = token;
       final name = await friends.inviteInfo(token);
-      if (name != null && mounted) {
+      if (!mounted) return;
+      if (name != null) {
         await showFriendInfoDialog(context,
             "$name seni Kelimeki'de arkadaş eklemek istiyor. Giriş yaptığında otomatik olarak ekleneceksiniz.");
+        return;
       }
+      // `inviteInfo` null döndü — SEBEBİ BİLİNMİYOR (`FriendsRepo.inviteInfo`
+      // her hatayı null'a çeviriyor: geçersiz token de, düşen istek de).
+      // Bu yüzden teşhis UYDURULMUYOR; bilinen tek sinyal olan bağlantı
+      // durumuna bakılıyor — `offline_notice.dart`'ın "çevrimdışı DEĞİL,
+      // yükleyemedik" ayrımıyla aynı disiplin. Öncesinde bu dal HİÇBİR ŞEY
+      // göstermiyordu: misafir linke dokunuyor, ekranda hiçbir şey olmuyordu.
+      if (!widget.services.onlineStatus.online) {
+        // Çevrimdışıyken "bu token'ı zaten gösterdim" damgasını GERİ AL:
+        // aksi halde bağlantı dönse bile aynı linke bir daha bakılmaz ve
+        // kullanıcı çıkışsız bir uyarıda kalırdı (damga bu satırın üstünde,
+        // istekten ÖNCE konuyor — mükerrer diyalogları önlemek için).
+        _previewedInviteToken = null;
+        await showFriendInfoDialog(
+            context, 'Davet linkini açmak için internet bağlantısı gerekiyor.');
+        return;
+      }
+      await showFriendInfoDialog(context,
+          'Bu davet linki açılamadı — süresi dolmuş ya da geçersiz olabilir.');
       return;
     }
     _processingInvites = true;
@@ -429,7 +457,39 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                 context, '${name ?? 'Bir oyuncu'} ile artık arkadaşsınız.');
           }
         } catch (err) {
+          // 26 Ağustos 2026 — ROADMAP madde 1'in "portta davet kabulü
+          // SESSİZCE düşüyor" maddesi. Burası yalnızca `debugPrint`liyordu:
+          // kişi kendi davet linkine (ya da süresi geçmiş bir linke)
+          // dokununca ekranda HİÇBİR ŞEY olmuyordu. Web `FriendInvitePage`
+          // bunu 25 Ağustos'ta çözdü; karar mantığı `inviteAcceptErrorText`e
+          // çıkarıldı, iki taraf artık aynı kuralı okuyor.
           debugPrint('[Kelimeki] davet kabul edilemedi (token düştü): $err');
+          // Beklenen retler (P0001 — "Kendi linkinle arkadaş olamazsın.") ve
+          // ağ hataları telemetriye GİTMEZ: gürültü sinyali boğar
+          // (`ErrorReporter`in "NE KAYDEDİLMEZ" kuralı; `report` varsayılan
+          // `manual` türünde ağ filtresini kendisi UYGULAMAZ).
+          if (!inviteAcceptKaliciRet(err) && !isNetworkError(err)) {
+            errorReporter.report(err, context: 'setup._processInvites');
+          }
+          // AĞ HATASINDA TOKEN KUYRUĞA GERİ KONUYOR (26 Ağustos 2026,
+          // kullanıcı kararı). `takeAll` YIKICI — okurken siliyor (tek
+          // transaction: SELECT + DELETE) — yani istek tam o anda düşerse
+          // davet hem kurulmuyor hem token kayboluyordu; kullanıcının tek
+          // çaresi linke yeniden dokunmaktı, link elinde yoksa davet
+          // tamamen kayıptı.
+          //
+          // YALNIZCA ağ hatası geri konuyor: sunucunun KALICI reddini
+          // (P0001 — "Kendi linkinle arkadaş olamazsın.") geri koymak,
+          // her açılışta aynı diyaloğu gösteren ölümsüz bir kayıt üretirdi.
+          // Bilinmeyen hatalar da geri KONMUYOR — sebebini bilmediğimiz
+          // bir şeyi sonsuza dek tekrarlatmak yanlış taraf; onlar zaten
+          // telemetriye düşüyor (yukarıda).
+          if (isNetworkError(err)) {
+            await s.events.add(friendInviteTokenKind, {'token': token});
+          }
+          if (mounted) {
+            await showFriendInfoDialog(context, inviteAcceptErrorText(err));
+          }
         }
       }
     } finally {

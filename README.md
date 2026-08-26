@@ -57,11 +57,11 @@ npm run generate-demo-board-dart # karşılama tahtası → portun tanıtım ekr
 `npm run test` kritik yolu kontrol eder (uygulama açılıyor, oyun başlıyor, YZ
 oynuyor, SPA fallback çalışıyor) — kapsamlı bir paket değil. Canlı oyun,
 mesajlaşma, e-posta bildirimleri gibi iki gerçek oturum ve gerçek gelen kutusu
-gerektiren akışların elle koşulan kontrol listesi: [`TESTING.md`](TESTING.md).
+gerektiren akışların elle koşulan kontrol listesi: [`TESTING.md`](TESTING.md) (admin paneli kontrolleri: [`docs/testing-admin.md`](docs/testing-admin.md)).
 
 Flutter portunun kendi testleri `mobile/app`'te `flutter test` ile koşar
 (veri katmanı sahte uçlarla sınanır); gerçek Supabase/platform davranışının
-cihazda koşulan listesi: [`mobile/TESTING.md`](mobile/TESTING.md). Derlemeyi
+cihazda koşulan listesi: [`mobile/TESTING.md`](mobile/TESTING.md) (arkadaşlık + Canlı oyun turları: [`mobile/docs/testing-arkadaslar-canli.md`](mobile/docs/testing-arkadaslar-canli.md)). Derlemeyi
 (imzasız iOS + Android APK + web) doğrulayan GitHub Actions iş akışı
 `mobile/**` dokunan her PR'da ve `main`e her push'ta otomatik koşar:
 `.github/workflows/mobile-build.yml`.

@@ -18,13 +18,15 @@ import 'package:kelimeki/src/data/stats_api.dart';
 import 'package:kelimeki/src/ui/rank/rank_seal.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:kelimeki/src/storage/pending_event_store.dart';
+import 'package:kelimeki/src/util/offline_notice.dart' show isNetworkError;
 import 'package:kelimeki/src/ui/auth/account_button.dart';
 import 'package:kelimeki/src/ui/auth/k_avatar.dart';
 import 'package:kelimeki/src/ui/friends/friends_modal.dart';
 import 'package:kelimeki/src/ui/score/player_score_card_modal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' show User;
+import 'package:supabase_flutter/supabase_flutter.dart'
+    show User, PostgrestException;
 
 import 'support/fake_online_gateway.dart';
 import 'support/test_fonts.dart';
@@ -837,6 +839,91 @@ void main() {
   });
 
   group('Setup davet kuyruğu işleme', () {
+    // 26 Ağustos 2026 — ROADMAP madde 1'in "portta davet kabulü SESSİZCE
+    // düşüyor" maddesi. `setup_screen.dart` yalnızca `debugPrint`liyordu;
+    // artık kullanıcıya bir şey söyleniyor ve NE söyleneceği burada
+    // sınanıyor (web `FriendInvitePage`'in P0001 kuralının portu).
+    //
+    // Negatif eş: `inviteAcceptErrorText`ten P0001 dalı kaldırılırsa ilk
+    // expect düşer (sunucunun kendi mesajı jenerik metne dönüşür).
+    // 26 Ağustos 2026, kullanıcı kararı: `takeAll` YIKICI olduğundan ağ
+    // hatasında token kayboluyordu (davet ne kuruluyor ne de kuyrukta
+    // kalıyordu). Artık YALNIZCA ağ hatasında geri konuyor. Burada
+    // `_processInvites`'in veri katmanı sözleşmesi sınanıyor — widget
+    // akışı değil (dosyadaki mevcut desen).
+    //
+    // Negatif eş: geri koyma satırı silinirse ilk expect düşer; koşul
+    // `isNetworkError`dan geniş bir şeye çevrilirse ikinci expect düşer
+    // (P0001 geri konarsa her açılışta aynı diyalog çıkardı).
+    test('ağ hatasında token kuyruğa GERİ konur, kalıcı ret KONMAZ',
+        () async {
+      final storage = await openTestStorage();
+      final gw = FakeFriendsGateway();
+      final repo = FriendsRepo(gw);
+
+      Future<void> isle(Object hata) async {
+        await storage.events.add(friendInviteTokenKind, {'token': 't1'});
+        final events = inviteTokensFromEvents(
+            await storage.events.takeAll(friendInviteTokenKind));
+        for (final token in events) {
+          try {
+            gw.failWith = hata;
+            await repo.acceptInvite(token);
+          } catch (err) {
+            if (isNetworkError(err)) {
+              await storage.events.add(friendInviteTokenKind, {'token': token});
+            }
+          } finally {
+            gw.failWith = null;
+          }
+        }
+      }
+
+      // 1) Ağ hatası → token DURUYOR, bağlantı dönünce yeniden denenebilir.
+      await isle(Exception('SocketException: Failed host lookup'));
+      expect(
+          inviteTokensFromEvents(
+              await storage.events.takeAll(friendInviteTokenKind)),
+          ['t1'],
+          reason: 'ağ hatasında davet kaybolmamalı');
+
+      // 2) Kalıcı ret → token GİTMELİ; aksi halde her açılışta aynı
+      //    "Kendi linkinle arkadaş olamazsın." diyaloğu çıkardı.
+      await isle(PostgrestException(
+          message: 'Kendi linkinle arkadaş olamazsın.', code: 'P0001'));
+      expect(
+          await storage.events.takeAll(friendInviteTokenKind), isEmpty,
+          reason: 'kalıcı ret ölümsüz kayıt üretmemeli');
+    });
+
+    test('inviteAcceptErrorText: P0001 sunucu mesajını OLDUĞU GİBİ gösterir',
+        () {
+      final ret = PostgrestException(
+          message: 'Kendi linkinle arkadaş olamazsın.', code: 'P0001');
+      expect(inviteAcceptErrorText(ret), 'Kendi linkinle arkadaş olamazsın.');
+      expect(inviteAcceptKaliciRet(ret), isTrue,
+          reason: 'kalıcı ret → tekrar denemek anlamsız, telemetriye de gitmez');
+    });
+
+    test('inviteAcceptErrorText: ağ hatası ile bilinmeyen hata AYRI konuşur',
+        () {
+      // `isNetworkError`a düşen gerçek bir kalıp (util/offline_notice.dart).
+      final ag = Exception('ClientException: Failed host lookup: kelimeki.com');
+      expect(inviteAcceptErrorText(ag), contains('bağlantını kontrol'));
+      expect(inviteAcceptKaliciRet(ag), isFalse);
+
+      // Sunucunun BAŞKA bir hatası (P0001 değil): teşhis uydurulmuyor.
+      final bilinmeyen =
+          PostgrestException(message: 'deadlock detected', code: '40P01');
+      final metin = inviteAcceptErrorText(bilinmeyen);
+      expect(metin, 'Davet kabul edilemedi. Biraz sonra tekrar dene.');
+      expect(metin, isNot(contains('deadlock')),
+          reason: 'ham sunucu hatası kullanıcıya gösterilmez');
+      expect(inviteAcceptKaliciRet(bilinmeyen), isFalse,
+          reason: 'geçici olabilir → telemetriye düşmeli');
+    });
+
+
     test('girişliyken takeAll → acceptInvite; hata token düşürür', () async {
       // Setup'ın _processInvites'inin veri katmanı sözleşmesi burada repo +
       // store seviyesinde sınanır (widget akışı: kuyruk → kabul → boşalır).

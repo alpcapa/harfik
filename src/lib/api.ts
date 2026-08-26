@@ -2398,7 +2398,8 @@ export async function fetchAdminPendingCount(): Promise<number> {
     // ÜÇÜNCÜ KAYNAK (26 Ağustos 2026): destek@'e gelen ve admin'e henüz haber
     // verilmemiş cevaplar. Bu satır ilk yazıldığında ATLANMIŞTI ve sonuç, bu
     // projede adı konmuş bir hata sınıfıydı (bkz. `docs/decisions/
-    // components.md` → CountBadge, "rozet zinciri yukarı takip edilmedi"):
+    // components-account.md` → CountBadge, "rozet zinciri yukarı takip
+    // edilmedi"):
     // panelin İÇİNDEKİ "Zoho" rozeti sayıyor ama DIŞARIDAKİ "Admin Paneli"
     // rozeti saymıyordu — yani admin, paneli açmayı akıl edene kadar gelen
     // cevaptan haberdar olmuyordu, ki bildirimin tek amacı buydu.
