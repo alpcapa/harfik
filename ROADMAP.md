@@ -237,9 +237,21 @@ etmesi gerekiyor ve bugüne kadar kimseye link gönderilmemişti.
 olduğu ölçülmedi (bkz. `console-formlari.md` §6.5 — o tabloda yalnızca
 GÖRÜLEN kaydedildi, sebep uydurulmadı).
 
-**Kalan tek iş kod değil: linki dağıtmak ve 12 opt-in'e ulaşmak.** 11 adres
-var, yani en az bir kişi daha lazım; §7 **15-20 kişi** topla diyor çünkü
-biri çıkarsa 14 günlük sayaç kırılıyor.
+**26 Ağustos (öğleden sonra) — liste 11 → 54 KİŞİ.** Kullanıcı bildirdi;
+Console'dan okunan sayı. §7'nin "15-20 kişi topla, biri çıkarsa sayaç
+kırılır" tavsiyesinin çok üstünde, yani yedek payı bol.
+
+⚠ **Listede olmak ≠ opt-in.** Sayaç için kişilerin linke tıklayıp testi
+KABUL etmesi ve (Dashboard'daki `testers currently opted-in` sayısının
+artması) gerekiyor. Bu sayının bugün kaç olduğu ÖLÇÜLMEDİ — Console'dan
+bakılmalı, tahmin edilmeyecek.
+
+⚠ **Ve bugün ölçülen asıl darboğaz opt-in değil:** davetliler uygulamayı
+kurup açsalar bile **tanıtım ekranında takılıyorlardı** (kaydırmayı
+anlamıyorlar, atlama da yok → çıkmaz). 3 günde yalnızca 2 kayıt olmasının
+sebebi buydu. Düzeltildi (Parça 143, "DEVAM ›" düğmesi) ama **uygulamaya
+ancak yeni bir paket yüklenince ulaşır** — 54 kişi bekliyorsa bu yükleme
+sıradaki en öncelikli iş.
 
 ### 0.B — 14 gün işlerken paralelde
 
