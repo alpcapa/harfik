@@ -125,32 +125,107 @@ Hata kodları bilerek asimetrik: ayrıştırılamayan gövdeye **200** (4xx/5xx
 dönersek Brevo aynı bozuk isteği sonsuza dek yeniden dener), DB yazma hatasına
 **500** (yeniden denemesini İSTİYORUZ).
 
+## ⛔ GELEN ZİNCİRİ DURDURULDU — Brevo Inbound webhook ÜCRETLİ (26 Ağustos 2026)
+
+**Bu bölümün 3-6. maddeleri UYGULANMADI ve şimdilik uygulanmayacak.** Sebep
+ölçüldü, tahmin değil: Brevo panelinde
+`Transactional → Plugins & Integrations → Webhooks → **Inbound webhook**`
+(navigasyon 26 Ağustos'ta ekran görüntüsüyle doğrulandı) **ücretli plana
+bağlı**. Ücretsiz planda Outbound webhook var, Inbound yok.
+
+**Karar: rozet için plan yükseltilmedi.** Bu zincirin TEK getirisi bir
+bildirim rozeti; asıl iş — kullanıcının cevabının `destek@` kutusuna
+düşmesi — zaten çalışıyor ve o Zoho'ya bağlı, Brevo'ya değil.
+
+**Yerine ne yapıldı: HİÇBİR ŞEY — ve bu da bilinçli.** Zoho'nun mobil
+bildirimi ya da kutunun kişisel adrese kopyalanması konuşuldu, ikisi de
+kurulmadı. Kullanıcının kararı (26 Ağustos 2026): *"Zoho app'e bile şu
+aşamada gerek yok. Ara ara inbox'a girer bakarım."* Kapalı testte ~11
+kullanıcı var; destek trafiği elle bakmayı kaldıracak kadar az. Hacim
+arttığında en ucuz adım Zoho bildirimidir — plan yükseltmek değil.
+
+**Kod SİLİNMEDİ, uykuda:**
+
+| Parça | Bugünkü hâli |
+|---|---|
+| `inbound-email` Edge Function | Canlı ama **kapalı** — `INBOUND_EMAIL_SECRET` tanımsız olduğu için 503 döner. Tasarlanmış "yapılandırılmamış" durumu tam olarak bu |
+| `support_inbox` tablosu | Boş kalır |
+| Panel içindeki "Zoho" düğmesi | **Çalışıyor** — Zoho gelen kutusunu açan bir kısayol; yalnızca üstündeki rozet hiç belirmez |
+| `fetchAdminPendingCount`'un üçüncü kaynağı | Her zaman 0 ekler; zararsız |
+
+**Bir gün açılacaksa** gereken tek şey plan + aşağıdaki 3-6; kod tarafında
+yapılacak bir iş YOK. Başka bir sağlayıcıya (Cloudflare Email Routing,
+Mailgun Routes, Zoho'nun kendi webhook'u) geçilecekse değişmesi gereken tek
+yer `inbound-email`'in gövde ayrıştırması — sözleşme (`support_inbox`
+satırı) aynı kalabilir.
+
+⚠ **Bir sonraki oturuma:** rozet 0 diye burayı hata sanma. Aşağıdaki liste
+TARİHÎ kayıttır, yapılacak iş listesi değil.
+
 ## Kurulum — panel adımları (koddan YAPILAMAZ)
 
 Kod canlıda, ama zincirin şu halkaları Brevo/Zoho/GoDaddy panellerinden
 yapılmalı. **Hiçbiri yapılmadan da uygulama bozulmaz**; yalnızca rozet hep 0
 kalır ve destek maili göndermeye çalışan admin net bir hata mesajı görür.
 
-1. **Brevo → Settings → Senders**: `destek@kelimeki.com`'u gönderen olarak
-   ekle ve doğrula. ⚠ **Bu yapılmadan** `feedback-reply`/`admin-send-message`
-   502 döner — ama genel bir hata değil, tam olarak şunu yazar: *"destek@…
-   Brevo'da doğrulanmış gönderen değil. Brevo → Settings → Senders'a bu adresi
-   ekleyip doğrula."* (`brevoErrorMessage`, `_shared/email.ts`.)
+1. ~~**Brevo → Settings → Senders**: `destek@kelimeki.com`'u gönderen olarak
+   ekle ve doğrula.~~ **GEREKMEDİ — 26 Ağustos 2026'da ölçüldü** (aşağıdaki
+   "İlk gerçek kullanım"). Brevo'nun `kelimeki.com` DOMAIN doğrulaması
+   (25 Ağustos'ta DKIM kayıtlarıyla yapılmıştı) `destek@` için de yetiyor;
+   adresi ayrıca Senders'a eklemeye gerek kalmadı. `brevoErrorMessage`'in
+   yazdığı özel hata (*"destek@… Brevo'da doğrulanmış gönderen değil"*) yine
+   dursun — başka bir domainde ya da doğrulama bozulursa tek yol gösteren o.
+   **Ders: bu adımı yapmadan ÖNCE bir yanıt göndermeyi dene** — panelde altı
+   adım atmadan hangisinin gerçekten gerektiğini bir dakikada öğrenirsin.
 2. **Zoho → `noreply@` GRUBUNU SİL.** Madde 1'in fiilen uygulanması bu.
    Silinene kadar noreply'a yazılan cevaplar hâlâ `destek@`'e düşmeye devam
    eder, yani "gerçekten noreply" olmaz.
-3. **Supabase → Edge Functions → Secrets**: `INBOUND_EMAIL_SECRET` ekle
+3. ⛔ **Supabase → Edge Functions → Secrets**: `INBOUND_EMAIL_SECRET` ekle
    (32+ karakter rastgele). Bu eklenene kadar `inbound-email` 503 döner.
-4. **GoDaddy DNS**: `mail.kelimeki.com` için Brevo'nun verdiği MX kaydı.
+   **YAPILMADI** — 4-6 ücretli plana takıldığı için sır eklemenin de anlamı
+   yok; fonksiyon bilerek kapalı bırakıldı.
+4. ⛔ **GoDaddy DNS**: `mail.kelimeki.com` için Brevo'nun verdiği MX kaydı.
+   **YAPILMADI** (bkz. yukarıdaki plan engeli).
    ⚠ Kök `kelimeki.com`'un MX'ine DOKUNMA — o Zoho'ya bakıyor, gelen postanın
    tamamı oradan geçiyor. Subdomain kullanılmasının tek sebebi bu.
-5. **Brevo → Inbound Parsing**: webhook URL'i
+5. ⛔ **Brevo → Inbound webhook** (`Transactional → Plugins & Integrations
+   → Webhooks → Inbound webhook`): **ÜCRETLİ PLAN GEREKTİRİYOR — engel
+   burası.** Webhook URL'i
    `https://xvqlizifakkkoqahaxsg.supabase.co/functions/v1/inbound-email?key=<3. adımdaki sır>`
-6. **Zoho → Filters**: `destek@`'e gelen mailin bir KOPYASINI 5. adımdaki
+6. ⛔ **Zoho → Filters** (YAPILMADI): `destek@`'e gelen mailin bir KOPYASINI 5. adımdaki
    inbound adresine yönlendir. ⚠ **Kopya** — kutuda da kalmalı, mailin asıl
    yeri orası.
 
-Sıra önemli: 4→5→6 zinciri tamamlanmadan rozet beslenmez.
+Sıra önemli: 4→5→6 zinciri tamamlanmadan rozet beslenmez. (Ve bugün
+tamamlanamıyor — bkz. yukarıdaki plan engeli.)
+
+**Zoho'nun doğrulama kodu tuzağı (bu zincir bir gün kurulursa):** Zoho
+yönlendirme adresi için doğrulama kodu ister ve o kod inbound webhook'a
+gider, yani okunamayan bir yere — bizim fonksiyon gövdeyi saklamıyor. Kodu
+sağlayıcının kendi "alınan mailler" log ekranından okumak gerekir. Bu
+öngörü 26 Ağustos'ta yazıldı, sahada DENENMEDİ.
+
+## İlk gerçek kullanım — GİDEN yarısı uçtan uca doğrulandı (26 Ağustos 2026)
+
+Kullanıcı canlıda koştu, sonuçlar veritabanından teyit edildi:
+
+| Adım | Sonuç |
+|---|---|
+| Ironman "Görüş Bildir" ile yazdı | `feedback` satırı (`origin: user`) panele düştü ✓ |
+| Admin "Yanıtla" dedi | Mail **gitti**, `replied_at` damgalandı ✓ |
+| Kullanıcı o maile "Yanıtla" dedi | Cevap **Zoho gelen kutusuna** düştü ✓ |
+| Admin, Üyeler tablosundan Ironman'e mesaj yazdı | Mail gitti + `feedback` satırı (`origin: admin`, `handled: true`) ✓ |
+
+Yani `destek@` gönderen ayrımının İKİ fonksiyonu da (`feedback-reply`,
+`admin-send-message`) çalışıyor ve ikisi de kendi denetim satırını yazıyor.
+`origin: admin` satırının DURUYOR olması ayrıca mailin gerçekten gittiğinin
+kanıtı: Brevo çağrısı düşseydi fonksiyon o satırı geri silecekti.
+
+**Rozet o turda ARTMADI ve bu doğru davranış** — `support_inbox` 0 satırdı,
+çünkü GELEN zinciri (4→5→3→6) henüz kurulmamıştı. Zoho'ya düşen cevabın
+Supabase'e ulaşacağı bir yol yoktu. Rozetin gerçek bir mailde sınanması
+(ve `fetchAdminPendingCount`'un üçüncü kaynağının ilk kez doğrulanması) o
+zincir kurulduğunda yapılacak.
 
 ## Ölçülemeyenler (dürüstlük notu)
 

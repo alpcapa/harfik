@@ -1821,7 +1821,17 @@ kaydı ve gerçek bir gelen kutusu gerekiyor.
 
 ### 23.3 Rozet — cevap gelince admin haber alıyor mu
 
-1. 20.2'nin 5. adımından sonra Zoho kutusunu kontrol et: mail **kutuda
+⛔ **BU BÖLÜM ŞU AN KOŞULAMAZ (26 Ağustos 2026).** Rozeti besleyen gelen
+zinciri kurulmadı: Brevo'nun **Inbound webhook**'u ücretli plana bağlı ve
+plan yükseltilmedi (gerekçe: `docs/decisions/support-email.md` → "GELEN
+ZİNCİRİ DURDURULDU"). `support_inbox` boş kalır, rozet hiç belirmez —
+**bu bir hata değil, beklenen hâl.** Panel içindeki "Zoho" düğmesi yine de
+çalışır (kutuyu açan kısayol). Zincir bir gün kurulursa aşağıdaki adımlar
+olduğu gibi geçerli.
+
+
+
+1. 23.2'nin 5. adımından sonra Zoho kutusunu kontrol et: mail **kutuda
    kalmalı** (yönlendirme bir KOPYA olmalı, taşıma değil).
 2. Admin paneli → Geri Bildirim sekmesi. Alt sekme satırında **Zoho** düğmesi
    ve üstünde kırmızı **1** rozeti görünmeli.
@@ -1845,7 +1855,7 @@ kaydı ve gerçek bir gelen kutusu gerekiyor.
 1. Admin panel → Üyeler → bir üyenin satırında **Mesaj Gönder** → konu+mesaj.
 2. Mail `destek@`'ten gitmeli; Geri Bildirim sekmesinde "Gönderilen" rozetiyle
    görünmeli.
-3. Üye "Yanıtla" derse: cevap Zoho'ya + rozet artmalı (20.3 ile aynı).
+3. Üye "Yanıtla" derse: cevap Zoho'ya + rozet artmalı (23.3 ile aynı).
 4. Üye maildeki **"siteden de yazabilirsin"** linkine tıklayıp formu
    doldurursa: cevap ZOHO'ya DEĞİL, doğrudan admin paneline düşmeli ve
    "↳ Cevaben" rozetiyle orijinal mesaja bağlanmalı. (İki yolun farklı yere

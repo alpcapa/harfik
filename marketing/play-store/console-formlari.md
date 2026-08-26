@@ -81,6 +81,9 @@ Her `main` derlemesi imzalı paketi **iki yere** bırakıyor:
   `.aab` YALNIZCA artefakt olarak vardı, yani giriş + zip açma gerekiyordu.)
   **DOĞRULANDI (25 Ağustos 2026):** dosya release'te, 60.929.323 bayt,
   koşu **349** (sha `5eddf3d`) — yani zincir uçtan uca çalışıyor.
+  **26 Ağustos 2026:** aynı adreste artık koşu **378** (sha `4e9aac6`),
+  60.975.117 bayt. Adres SABİT — her `main` derlemesi ÜZERİNE yazıyor,
+  yani "en son paket" için başka bir yere bakmaya gerek yok.
 - Actions → koşu → `kelimeki-aab` artefaktı (zip, oturum ister) — CI içi kanıt.
 
 **versionCode = GitHub koşu numarası.** Play aynı `versionCode`'u iki kez
@@ -89,7 +92,8 @@ yükleme reddedilirse "aynı sürüm" değil başka bir sebep aranmalı.
 `versionName` = `1.0.0` (`pubspec.yaml` + `env.dart`, parite testiyle
 zorlanıyor).
 
-**Şu an release'te duran paket: `versionCode` 349.** Bu sayı `main`e giren
+**Şu an release'te duran paket: `versionCode` 378** (26 Ağustos 2026,
+sha `4e9aac6`; Play'e yüklenmiş olanlar: 349, 372). Bu sayı `main`e giren
 her mobil derlemede artıyor — yükleme günü tazeyse Actions → son `main`
 koşusunun numarasına bak, release notuna onu yaz.
 
@@ -431,6 +435,18 @@ sayı üç yerde yaşıyor.
 | Tester listesi | ✅ `Kelimeki Testers` |
 | Feedback URL | ✅ `destek@kelimeki.com` |
 | **Preview and confirm → Send for review** | ✅ **GÖNDERİLDİ — 25 Ağustos 2026, "Your changes are in review"** |
+
+**Submission activity — ÖLÇÜLDÜ (26 Ağustos 2026, 11:15, Console ekranı):**
+
+| ID | Gönderim | Kapsam | Durum |
+|---|---|---|---|
+| 1 | 25 Ağu 19:23 | Closed testing - Alpha, Store Listing, App Content, Advanced distribution, Store settings | ✅ **Published** |
+| 2 | 26 Ağu 08:57 | Closed testing - Alpha (paket **372**) | ✅ **Published** |
+
+İkisi de yayında; yani 26 Ağustos sabahı görülen *"Changes in review"*
+durumu aynı gün kapandı. **Sayfa: Publishing overview → Submission
+activity** — "hangi gönderim ne durumda" sorusunun kanonik yeri, Dashboard
+DEĞİL.
 
 **Son engel `Advertising ID` beyanıydı** — sekiz kısa beyandan biri atlanmıştı
 ve "send for review"u bloklamıştı (*"All developers targeting Android 13 or
