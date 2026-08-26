@@ -20,6 +20,76 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 144 — "Board alanında her şey ağır": bir boyamanın MALİYETİ
+     (26 Ağustos 2026, kapalı testte 3-4 kişiden ekran donması bildirimi;
+     kullanıcı yanında oynayarak doğruladı):** Kullanıcının sözleri:
+     *"taşları sürerken ağır çekim hareket ediyor, akıcı değil, takılmalar
+     oluyor. Web'de çok hızlı ve kesintisiz oynanıyor"* ve teşhisi kesen
+     ikinci cümle: *"Her yerde gecikme var. rafta taşlar da ağır hareket
+     ediyor. Geri tuşu da ağır cevap veriyor, skor kutusuna basınca skor
+     kart da yavaş açılıyor. Board alanında her şey ağır."*
+
+     **Bu, aynı sorunun ÜÇÜNCÜ teşhisi ve ilk İKİSİ YANLIŞTI — ders bu
+     dosyaya bu yüzden yazılıyor:**
+
+     | Tur | Bakılan gösterge | Verdiği cevap | Gerçek |
+     |---|---|---|---|
+     | 1 | `BoardWidget` **build** sayısı | "sürüklemede yeniden inşa YOK" | doğru ama İLGİSİZ |
+     | 2 | `RepaintBoundary` **simetrik boyama** sayacı | "sınır işe yarıyor" | doğru ama İLGİSİZ |
+     | 3 | **`MaskFilter.blur` çağrı sayısı** | ~340 / boyama | asıl sebep |
+
+     İlk ikisi *"tahta ne kadar SIK boyanıyor?"* sorusunu ölçüyordu.
+     Kullanıcının ikinci cümlesi soruyu değiştirdi: geri tuşu ve modal
+     açılışı da ağırsa, sorun sıklık değil **bir boyamanın kendi
+     maliyeti**. Rota animasyonunun her karesi zaten tam bir boyamadır —
+     `RepaintBoundary` oraya hiç yardım edemez.
+
+     **Kök sebep:** `neo_box.dart`'ın iç gölgeleri, kaydırılmış bir RRect'in
+     dışını ifade eden **evenOdd bir PATH** üzerine `MaskFilter.blur`
+     uyguluyor. Bunun analitik bir hızlı yolu YOK: Impeller/Skia her biri
+     için offscreen doku ayırıp gerçek bir gauss geçişi koşuyor. Tahtanın
+     169 boş hücresi × 2 iç gölge = **kare başına ~340 gerçek blur** (üstüne
+     169 antialias `ClipRRect`). Web'de aynı görüntü bedava, çünkü CSS
+     `inset box-shadow`u tarayıcı bir kez rasterleştirip yeniden kullanıyor.
+
+     Karşılaştırma için: tahta KARTININ kendi gölgeleri (blur 60 dahil) bu
+     listede DEĞİL — onlar `drawRRect` üzerinde, yani Impeller'ın analitik
+     hızlı yolunda. Pahalı olan büyük blur değil, **keyfi path üzerine
+     blur**.
+
+     **Düzeltme — raster önbelleği (`neo_box.dart`):** aynı gölge deseni +
+     aynı boyut + aynı piksel yoğunluğu → aynı görüntü. Bir kez
+     `Picture.toImageSync` ile rasterleştirilip tutuluyor, sonraki her
+     boyamada tek `drawImageRect`. Tahtanın ~7 ayırt edici hücre deseni var,
+     yani 338 blur → **~14 blur (bir kez) + 169 blit**. `ClipRRect`ler de
+     gitti (kırpma zaten görüntünün içinde).
+
+     **Görsel BİREBİR aynı kalmak zorunda değil — YAPISAL olarak öyle:**
+     rasterleştirmede ESKİ çizim kodunun ta kendisi koşuyor (dış gölge +
+     dolgu için aynı `BoxDecoration`, iç gölge için aynı
+     `_InsetShadowPainter`). "Eski yol / yeni yol" diye iki çizim kodu YOK,
+     dolayısıyla sessizce ayrışamazlar.
+
+     **Güvenlik ağı:** `toImageSync` bu platformda desteklenmiyorsa ya da
+     yüzey tek girdi için fazla büyükse (`_kMaxEntryPx`) önbellek `null`
+     döner ve doğrudan çizime düşülür — önbellek hiçbir koşulda görüntüyü
+     bozamaz, yalnızca hızlandırır. Büyük yüzeyler (modal kartları, tahta
+     kartı) bilinçli olarak önbellek DIŞI: onlar zaten ekranda bir-iki tane
+     ve gölgeleri hızlı yolda.
+
+     **Regresyon:** `test/game_screen_test.dart`'a yeni bir iddia —
+     ekranın BİR boyamasında kaç blur çizildiğini sayıyor (`< 80`), sonra
+     tahtayı `markNeedsPaint` ile yeniden boyatıp sayının artmadığını
+     (`< 20`) ölçüyor. **Araç canlılığı önce kanıtlanıyor:** önbellekten
+     yapılan blit sayısı > 100 değilse test DÜŞER — yoksa `toImageSync`
+     desteklenmeyen bir ortamda iddia boşuna geçer ve hiçbir şey
+     kanıtlamazdı (bu dosyada aynı tuzağa iki kez düşüldü).
+
+     **Doğrulama sınırı:** bu ortamda Flutter SDK YOK; `dart analyze` ve
+     testler yalnızca CI'da koştu. Asıl kanıt CİHAZDA — ölçülen sayı
+     `[ÖLÇÜM]` satırlarıyla CI log'una yazılıyor, ama "akıcı mı" sorusunun
+     cevabı yalnızca gerçek telefonda alınır.
+
    - ✅ **Parça 143 — tanıtımda "DEVAM ›" GERİ KONDU: sahadaki ilk
      kullanıcılar kaydırmayı anlamadı (26 Ağustos 2026, kullanıcı
      bildirdi: *"insanlar tanıtımı kaydırmayı anlayamıyorlar"*):**

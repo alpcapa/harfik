@@ -25,6 +25,11 @@ import 'package:kelimeki/src/ui/game/remaining_tiles_modal.dart';
 import 'package:kelimeki/src/ui/game/tile_widget.dart';
 import 'package:kelimeki/src/ui/game/wild_letter_sheet.dart';
 import 'package:kelimeki/src/ui/game/dialog_shell.dart' show KDialogCard;
+import 'package:kelimeki/src/ui/game/neo_box.dart'
+    show
+        debugBlurPaintCountForTests,
+        debugCachedBlitCountForTests,
+        debugResetNeoBoxCacheForTests;
 import 'package:kelimeki/src/ui/game/neo_button.dart'
     show NeoButton, NeoButtonVariant;
 import 'package:kelimeki_core/kelimeki_core.dart';
@@ -975,6 +980,23 @@ void main() {
             'kez yeniden inşa edildi (per-move rebuild REGRESYONU — düzeltme '
             'geri alınmış/bozulmuş olabilir).');
 
+    // ── DOĞRUDAN ÖLÇÜM: sürükleme sırasında kaç blur çiziliyor? ────────
+    //
+    // 26 Ağustos 2026, İKİNCİ tur. İlk düzeltme (RepaintBoundary) cihazda
+    // İŞE YARAMADI — kullanıcı: *"parmak gidiyor, taş arkadan sonra
+    // geliyor"*. İki teşhis de DOLAYLI göstergeye bakmıştı (önce `build`
+    // sayısı, sonra simetrik boyama sayacı) ve ikisi de "iyi" derken cihaz
+    // yavaştı.
+    //
+    // Bu iddia dolaylı DEĞİL: tahtanın pahalı işi tam olarak
+    // `MaskFilter.blur` çizimleri (169 hücre × 2 + kartın 3'ü). Sürükleme
+    // sırasında bu sayının artıp artmadığı, tahtanın yeniden boyanıp
+    // boyanmadığının DOĞRUDAN cevabı.
+    //
+    // Ölçülen sayı loga yazılıyor: 0 ise tahta gerçekten boyanmıyor ve
+    // yavaşlığın sebebi BAŞKA yerde (bu ortamda görünmeyen rasterleştirme
+    // maliyeti ya da bambaşka bir şey). Yüksekse fikir doğru, uygulama eksik.
+    final blurBefore = debugBlurPaintCountForTests;
     // ── PAINT (26 Ağustos 2026) ────────────────────────────────────────
     //
     // Yukarıdaki iddia BUILD sayıyor ve BU YETMİYORDU: kapalı testin ilk
@@ -992,6 +1014,14 @@ void main() {
     //
     // Negatif eş: `RepaintBoundary` kaldırılırsa sürükleme boyunca her kare
     // simetrik boyama sayılır ve bu expect düşer.
+    // ignore: avoid_print
+    print('[ÖLÇÜM] $steps sürükleme adımında blur çizimi: '
+        '${debugBlurPaintCountForTests - blurBefore}');
+    expect(debugBlurPaintCountForTests - blurBefore, lessThanOrEqualTo(10),
+        reason: 'sürükleme sırasında tahta yeniden boyanıyor — '
+            '${debugBlurPaintCountForTests - blurBefore} blur çizildi '
+            '(tahta tek boyamada ~340 blur eder).');
+
     final sinir = tester.renderObject<RenderRepaintBoundary>(
       find.ancestor(
         of: find.byType(BoardWidget),
@@ -1380,5 +1410,69 @@ void main() {
     // HelpModal açıldı mı — varsayılan adımı "Hızlı Başlangıç"
     // (başlık KModal'dan geçtiği için trUpper).
     expect(find.text('HIZLI BAŞLANGIÇ'), findsOneWidget);
+  });
+
+  testWidgets(
+      'tahtanın BİR boyaması ~340 blur DEĞİL — nömorfik dekor raster '
+      'önbelleğinden basılıyor (bkz. neo_box.dart "PERFORMANS SÖZLEŞMESİ")',
+      (tester) async {
+    // 26 Ağustos 2026, ÜÇÜNCÜ tur. İlk iki teşhis DOLAYLI göstergeye baktı
+    // (önce `build` sayısı, sonra `RepaintBoundary`in simetrik boyama
+    // sayacı); ikisi de "iyi" derken cihaz ağır çekimdi ve kullanıcı
+    // *"Board alanında her şey ağır"* dedi — yalnız sürükleme değil, geri
+    // tuşu ve modal açılışı da. Yani sorun tahtanın NE KADAR SIK
+    // boyandığı değil, BİR boyamanın ne kadar pahalı olduğuydu.
+    //
+    // Bu test tam onu ölçüyor: tahta bir kez boyandığında kaç GERÇEK
+    // `MaskFilter.blur` çiziliyor. Önbellekten ÖNCE bu sayı ~340'tı
+    // (169 hücre × 2 iç gölge + kartların dış gölgeleri); önbellekten
+    // sonra yalnızca AYIRT EDİCİ desen sayısı kadar olmalı (boş kare,
+    // altın bölge, merkez, oyuncu tonları, raf taşı, butonlar…).
+    debugResetNeoBoxCacheForTests();
+    final blurBefore = debugBlurPaintCountForTests;
+    final blitBefore = debugCachedBlitCountForTests;
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await pumpGame(tester, GlobalKey());
+    await tester.pump();
+    final blurIlkBoyama = debugBlurPaintCountForTests - blurBefore;
+    final blitIlkBoyama = debugCachedBlitCountForTests - blitBefore;
+    // ignore: avoid_print
+    print('[ÖLÇÜM] ilk boyama — blur: $blurIlkBoyama, '
+        'önbellekten blit: $blitIlkBoyama');
+
+    // ARACIN CANLI OLDUĞUNU ÖNCE KANITLA. `toImageSync` bu ortamda
+    // desteklenmiyorsa `neo_box` bilinçli olarak DOĞRUDAN çizime düşer
+    // (görüntü asla bozulmaz) — o durumda aşağıdaki iddia bir şey
+    // kanıtlamaz, o yüzden testi sessizce geçirmek yerine burada dururuz.
+    expect(blitIlkBoyama, greaterThan(100),
+        reason: 'tahtanın 169 hücresi önbellekten basılmadı ($blitIlkBoyama '
+            'blit) — raster önbelleği bu ortamda devrede değil, dolayısıyla '
+            'aşağıdaki ölçüm hiçbir şey kanıtlamaz.');
+
+    expect(blurIlkBoyama, lessThan(80),
+        reason: 'ekranın tek boyaması $blurIlkBoyama blur çizdi — önbellek '
+            'delinmiş demektir (anahtar her hücrede farklı olabilir). '
+            'Düzeltmeden ÖNCEKİ değer ~340 idi; şimdiki sayı yalnızca '
+            'AYIRT EDİCİ desenlerin bir kerelik rasterleştirmesi + '
+            'önbelleğe alınmayan BÜYÜK yüzeyler olmalı.');
+
+    // İKİNCİ boyama SIFIR blur etmeli: desenler artık önbellekte.
+    final blurIkinciOncesi = debugBlurPaintCountForTests;
+    tester.renderObject(find.byType(BoardWidget)).markNeedsPaint();
+    await tester.pump();
+    // ignore: avoid_print
+    print('[ÖLÇÜM] ikinci boyama — blur: '
+        '${debugBlurPaintCountForTests - blurIkinciOncesi}');
+    // SIFIR değil, KÜÇÜK bekleniyor: tahta KARTININ kendisi (≈690×730 dp,
+    // blur 60) tek bir girdi için piksel sınırını aştığından bilinçli olarak
+    // önbelleğe ALINMIYOR — ama onun gölgeleri basit bir RRect üzerinde,
+    // yani Impeller'ın analitik hızlı yolunda; pahalı olan, keyfi bir PATH
+    // üzerine uygulanan iç gölgelerdi (hücreler). Bu iddia onların geri
+    // gelmediğini bekliyor.
+    expect(debugBlurPaintCountForTests - blurIkinciOncesi, lessThan(20),
+        reason: 'tahta yeniden boyandığında '
+            '${debugBlurPaintCountForTests - blurIkinciOncesi} blur çizildi — '
+            'önbellek ıskalanıyor (boyut/anahtar her karede değişiyor '
+            'olabilir).');
   });
 }

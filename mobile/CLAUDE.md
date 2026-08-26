@@ -259,7 +259,16 @@ grep -rln "\.from('" app/lib/                               # Supabase yalnız v
 grep -rn "await newRepo(" app/test/*_test.dart              # testWidgets İÇİNDE çıkarsa newRepoForWidget'a çevir (runAsync)
 grep -rn "Path.combine\|PathOperation" app/lib/             # CanvasKit'te PathOps GÜVENİLMEZ (bkz. Parça 18) — evenOdd kullan
 grep -rn "Color(0xFF" app/lib/src/ui/ | grep -v tokens.dart # renk paleti TEK kaynaktan: ui/tokens.dart (bkz. Parça 54)
+grep -rn "MaskFilter" app/lib/ --include=*.dart -l | grep -v neo_box  # gölge çizimi TEK yerden (bkz. Parça 144)
 ```
+
+Sonuncusu bir PERFORMANS değişmezi, görsel değil: keyfi bir `Path` üzerine
+uygulanan `MaskFilter.blur`un analitik hızlı yolu YOK — her çağrı offscreen
+doku + gerçek gauss geçişi demek. Tahtanın 169 hücresi bu yüzden kare başına
+~340 blur ediyordu ve cihazda oyun ekranının TAMAMI ağır çekimdi. `neo_box.dart`
+artık her deseni bir kez rasterleştirip önbellekten basıyor; gölgeyi başka bir
+dosyada elle çizmek o önbelleği baypas eder. Yeni bir gölgeli yüzey gerekiyorsa
+`NeoBox` / `ShapeDecorationWithCssShadows` üzerinden geç.
 
 Sonuncusunun otomatik hâli `test/color_tokens_test.dart` — elle grep'lemene
 gerek yok, tam takım koşarken zaten kontrol ediliyor (hem `tokens.dart` ↔
