@@ -156,6 +156,32 @@ tekrarlanan JSX'i hiçbir şey yakalamaz. `npm run lint` + mükerrer
 bildirim/kullanım taraması (`grep -c` ile her yeni bileşen "1 bildirim +
 1 kullanım" mı) şart.
 
+### Bu oturumun token'ı HİÇBİR iş akışını tetiklemez (26 Ağustos 2026, ÜÇ kez ölçüldü)
+
+Yukarıdaki "PR'da CI koşmazsa" notu bunu yalnızca PR açmak için tarif
+ediyordu. Gerçek kural DAHA GENİŞ ve o gün üç ayrı turda üç kez bedeli
+ödendi: **MCP/entegrasyon token'ıyla yapılan hiçbir GitHub eylemi Actions'ı
+tetiklemiyor** (GitHub'ın döngü önleme kuralı — `GITHUB_TOKEN`/App ile
+yapılan push'lar `push`/`pull_request` iş akışlarını başlatmaz).
+
+| Yaptığım | Beklenen tetik | Gerçek |
+|---|---|---|
+| `create_pull_request` | `pull_request` | koşmadı |
+| dala `git push` (PR açıkken) | `pull_request: synchronize` | koşmadı |
+| `merge_pull_request` → `main` | `push: [main]` | **koşmadı** |
+
+**Üçüncü satır en pahalısı**, çünkü sessiz ve yanıltıcı: merge başarılı
+görünür, `main` doğru koddadır, ama `mobile-latest` release'i GÜNCELLENMEZ.
+Kullanıcı o linkten indirip **eski paketi** kurar ve "düzelmemiş" der —
+tam olarak "'düzelttim' ≠ 'canlıda'" tuzağının bir başka yüzü, ama bu kez
+sebep bayat bir dal değil, HİÇ KOŞMAMIŞ bir CI.
+
+**Kural:** merge ettikten sonra *"tetiklendi"* varsayma — `actions_list` ile
+merge sha'sının koşusunu ARA. Yoksa kullanıcıdan Actions → "Mobil derleme"
+→ Run workflow → **branch `main`** istemek gerekir; `workflow_dispatch`
+olayı `pull_request` OLMADIĞINDAN yükleme adımları çalışır ve `.apk`/`.aab`
+gerçekten yenilenir. Ben dispatch edemiyorum (403, aşağıdaki nota bak).
+
 ### PR'da CI koşmazsa
 
 MCP ile açılan PR'larda GitHub `pull_request` iş akışını tetiklemeyebiliyor
