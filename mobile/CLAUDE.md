@@ -156,6 +156,24 @@ tekrarlanan JSX'i hiçbir şey yakalamaz. `npm run lint` + mükerrer
 bildirim/kullanım taraması (`grep -c` ile her yeni bileşen "1 bildirim +
 1 kullanım" mı) şart.
 
+### "Koşu yok" demeden ÖNCE — filtre neyi eliyor? (26 Ağustos 2026)
+
+O gün bir merge'den hemen sonra `actions_list`'e **`status: completed`**
+filtresiyle bakılıp *"merge sha'sı için tek bir koşu yok"* denildi ve
+buradan **yanlış bir kural uyduruldu** ("MCP token'ı Actions'ı hiç
+tetiklemiyor"). Gerçek: koşu VARDI, o an `in_progress`'ti; filtre onu doğru
+şekilde eliyordu. Kullanıcı ekran görüntüsüyle gösterdi.
+
+**Kural:** bir koşunun yokluğunu iddia etmeden önce `queued` ve
+`in_progress`'i de sor — ya da hiç filtre verme. Ve tetiklenme gecikmeli
+olabilir: aynı gün bir `pull_request` koşusu push'tan ~20 dakika sonra
+başladı, yani "iki dakika sonra baktım, yoktu" hiçbir şey kanıtlamaz.
+
+**Asıl ders bu dosyanın kendisiyle ilgili:** bir gözlemden kural
+ÇIKARIRKEN, gözlemin kendisinin bir filtreden geçip geçmediğine bak.
+Buraya yazılan yanlış bir kural, hiç yazılmamış olmasından daha zararlı —
+sonraki oturum onu ölçüm sanır.
+
 ### PR'da CI koşmazsa
 
 MCP ile açılan PR'larda GitHub `pull_request` iş akışını tetiklemeyebiliyor
