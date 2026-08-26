@@ -442,9 +442,20 @@ sayı üç yerde yaşıyor.
 |---|---|---|---|
 | 1 | 25 Ağu 19:23 | Closed testing - Alpha, Store Listing, App Content, Advanced distribution, Store settings | ✅ **Published** |
 | 2 | 26 Ağu 08:57 | Closed testing - Alpha (paket **372**) | ✅ **Published** |
+| 3 | 26 Ağu ~11:40 | Closed testing - Alpha (paket **378**) | ✅ **yayında** — cihaza güncelleme olarak indi ve çalıştı (aşağı bkz.) |
 
-İkisi de yayında; yani 26 Ağustos sabahı görülen *"Changes in review"*
-durumu aynı gün kapandı. **Sayfa: Publishing overview → Submission
+Üçü de yayında; 26 Ağustos sabahı görülen *"Changes in review"* durumları
+aynı gün kapandı — **üçüncüsü ~1 saat içinde** (11:36'da gönderildi, 12:30
+civarında cihaza güncelleme olarak indi).
+
+**3. gönderim GERÇEK BİR ANDROID CİHAZDA doğrulandı** (kullanıcı, 26
+Ağustos): Play güncellemeyi verdi, uygulama açıldı, Canlı sekmesinin üç alt
+sekmesi de (devam edenler, davetler, son oynananlar) yüklendi ve hesap
+menüsündeki k-lig satırı ilk açılışta göründü. **Bu davranışın kendisi
+sürümün kanıtı:** 372'de Canlı listesi DETERMİNİSTİK olarak düşüyordu
+(`created_by` NULL çökmesi, bkz. `docs/decisions/account-deletion.md` →
+"SET NULL'ın bedeli"), yani listenin yüklenmesi 378'in kurulu olduğunu
+sha'ya bakmadan da gösteriyor. **Sayfa: Publishing overview → Submission
 activity** — "hangi gönderim ne durumda" sorusunun kanonik yeri, Dashboard
 DEĞİL.
 

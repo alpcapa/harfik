@@ -80,6 +80,8 @@
        route'a gömülüyor; `AccountButton.setState` o route'u yeniden
        çizmiyor. Puan menü açıldıktan sonra gelirse satır o menüde bir daha
        ASLA belirmiyordu.
+     - **CİHAZDA DOĞRULANDI (26 Ağustos, paket 378, gerçek Android):**
+       hesap menüsündeki k-lig satırı ilk açılışta göründü.
      - **Düzeltme:** `_myRank` artık `ValueNotifier` ve menü başlığının iki
        parçası (isim yanındaki `RankSeal` + altındaki `#sıra · puan` satırı)
        `ValueListenableBuilder` ile sarılı — açık menü web'deki gibi canlı.
@@ -114,6 +116,11 @@
      NULL'a düştü — ama `OnlineGame.fromJson` hâlâ `m['created_by'] as
      String` yapıyordu. Tek satır fırlatınca ayrıştırma tek geçişte
      olduğundan 43 oyunun tamamı gitti.
+     - **CİHAZDA DOĞRULANDI (26 Ağustos, paket 378, gerçek Android):**
+       Play güncellemesinden sonra Canlı sekmesinin üç alt sekmesi de
+       yüklendi. Bu davranış aynı zamanda sürümün kanıtı — 372'de liste
+       DETERMİNİSTİK düşüyordu, yani yüklenmesi 378'in kurulu olduğunu
+       sha'ya bakmadan gösteriyor.
      - **`createdBy` → `String?`**; `creatorSlot` ve `participantLabel`
        null güvenli hâle getirildi. Null==null tuzağı gerçek: `userId` de
        nullable, çıplak eşitlik kurucusu silinmiş bir oyunda rastgele bir
