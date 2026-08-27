@@ -19,9 +19,9 @@ değiştirdi: artık omurga aşağıdaki **madde 0 (FAZ B)**, çünkü kişisel
 hesaplarda production'a çıkmanın önünde **daha başlamamış 14 günlük bir
 tester sayacı** var. Maddeler 1, 2 ve 4 o fazın içinde yaşıyor.
 
-**Durum eki (27 Ağustos 2026):** `main` hâlâ yeşil ama **dal bilerek merge
-EDİLMİYOR** — istemci düzeltmeleri tek bir kapalı-test sürümünde çıkacak;
-ayrıntı aşağıdaki "Yalnızca sohbette kalmış üç karar" bölümünde.
+**Durum eki (27 Ağustos 2026):** Sürüm A merge edildi (`f9c3846`, paket
+`1.0.0 (403)`) ve cihaz testinde. Dal Sürüm B için yeniden birikmeye
+başladı; ayrıntı aşağıdaki "Yalnızca sohbette kalmış üç karar" bölümünde.
 
 **21 Ağustos'ta kapanan ÜÇ madde** (kalan maddelerin numaraları DEĞİŞMEDİ):
 - eski **#3** (istemci hata telemetrisi) — `client_errors` tablosu + web/port
@@ -44,36 +44,44 @@ Aşağıdaki ikisinin kaydı kök `CLAUDE.md` → Kaynak Hunisi bölümünde:
 
 ---
 
-## Yalnızca sohbette kalmış üç karar (27 Ağustos 2026)
+## Sürüm sıralaması, force update ve davetliler (27 Ağustos 2026)
 
-Bu üçü bir "madde" değil — biri bir KUYRUK, biri ERTELENMİŞ bir karar, biri
-bir HATIRLATMA. Hiçbiri koda yazılamadığı için buraya yazıldı; oturum
-kapanınca kaybolmasınlar.
+Bu üçü bir "madde" değil — biri bir SIRALAMA kuralı, biri ERTELENMİŞ bir
+karar, biri bir HATIRLATMA. Hiçbiri koda yazılamadığı için buraya yazıldı;
+oturum kapanınca kaybolmasınlar.
 
-### 1. Bekleyen tek güncelleme — dal birikiyor, merge YOK
+### 1. Sürüm A ÇIKTI · Sürüm B kuyruğu açıldı (27 Ağustos 2026)
 
-Kullanıcı isteği (27 Ağustos 2026): *"Başka şeyler de çıkar mutlaka. Hepsini
-tek güncellemede çıkarız. beklet"*. Yani `claude/account-deletion-in-app-soz4lr`
-dalındaki istemci düzeltmeleri **bilerek** merge edilmiyor; bir sonraki
-kapalı-test sürümü (Play `.aab`) hepsini birden taşıyacak.
+Kuyruk bir kez boşaldı. Sıra şuydu ve bir daha aynen izlenmeli:
 
-Şu an kuyruktakiler:
+**Sürüm A — merge edildi (`f9c3846`, PR #355), paket `1.0.0 (403)`.**
+Kapalı testten gelen dört düzeltme: dokunma hedefleri (✕'ler 28/40 → 48,
+raf taşı 46×46 → 49×65), "Ara & Ekle"de yutulan kaydırma, "Arkadaşınla"
+rozetinin kendini toparlaması, `slots.length` telemetri koruması. Sunucu
+tarafı (`20260827121628`, `20260827153857`) zaten canlıydı, merge'i
+beklemedi.
 
-| Düzeltme | Nerede | Kullanıcıya etkisi |
+⚠ **Test edilen artefakt ile mağazaya giden artefakt AYNI olmalı.** İlk
+planım "dalda APK üret, test et, sonra merge et, mağazaya main'in `.aab`'sini
+yükle" idi; kusuru şu ki o ikisi FARKLI derlemeler olurdu (ayrı sha, ayrı
+paket numarası) — bu projenin en pahalı dersi ("düzelttim ≠ canlıda")
+tam olarak budur. Doğru sıra: **PR CI yeşil → merge → `main` koşusunun
+`.apk`'sıyla cihazda test → AYNI koşunun `.aab`'si mağazaya.** Dalda ayrı
+bir test derlemesi üretmek ayrıca `mobile-latest`'i merge edilmemiş kodla
+ezerdi (PR kapısının var olma sebebi).
+
+**Sürüm B kuyruğu — şimdi bekleyenler:**
+
+| Düzeltme | Nerede | Neden bekliyor |
 |---|---|---|
-| "Arkadaşınla" rozetinin bayat kalması | `mobile/app/lib/src/ui/setup/setup_screen.dart` (`onResubscribe` + `onlineStatus` kancaları) | Ağ kesilip döndüğünde kırmızı sayı artık kendini toparlıyor |
-| `slots.length != playerCount` telemetri koruması (2 yer) | port + web | Aynı sınıf bozuk veri bir daha sessizce oturmaz |
-| Koltuk hatası migration'ının repo kaydı | `supabase/migrations/20260827121628_*.sql` | **Canlıda ZATEN uygulandı** — uygulama güncellemesi beklemiyor |
-| "Ara & Ekle"de kaydırmanın yutulması | `mobile/app/lib/src/ui/friends/friends_modal.dart` + `modal_shell.dart` (`bodyController`) | Üye listesi artık sonuna kadar kaydırılıyor (klavye açıkken son ~2,5 satır erişilemezdi) |
-| Mükerrer üye satırı migration'ının repo kaydı | `supabase/migrations/20260827153857_*.sql` | **Canlıda ZATEN uygulandı** — web de portun eski sürümü de düzelmiş listeyi alıyor |
-| ✕/dişli butonlarının dokunma kutusu (28–40 → 48) | `tap_target.dart` (`KIconButton`) + 5 çağıran | "Biraz üstüne basınca çalışıyor" sınıfı; görsel kıpırdamadı |
-| Raf taşını yakalama alanı (46×46 → 49×65) | `rack_widget.dart` | Ölü dolgu hedefe devredildi; taşların yeri aynı |
-| Doküman notları | `mobile/docs/parca-log.md`, `docs/decisions/*` | — |
+| Joker harf ızgarasının dokunma kutusu (48×44 → 48×50) | `wild_letter_sheet.dart` + `WildcardModal.tsx` | Kullanıcı kararı (27 Ağustos): *"Bunu B ile göndeririz sonra"* — A çoktan derlenmişti, yeniden tur atmaya değmedi |
 
-⚠ **Ayrım:** sunucu tarafı (migration, RPC) merge'i BEKLEMEZ, anında
-canlıdır (bkz. kök `CLAUDE.md` → "Deploy Doğrulaması" tablosunun üçüncü
-satırı). Kuyrukta bekleyen yalnızca İSTEMCİ tarafı. Bu yüzden koltuk hatası
-27 Ağustos'ta kullanıcıyla teyit edilerek kapandı, dal hâlâ açıkken.
+**Sürüm B'nin ASIL yükü** (madde 1 + madde 13): deep link kanalı — mağaza
+blokeri — ve push bildirimleri + Firebase Analytics. Madde 13'ün 5. adımı
+("bildirime dokununca doğru oyunu aç") zaten madde 1'e bağlı, yani ikisi
+tek pakette gitmek zorunda. Bu, A'nın neden ayrı çıktığının da gerekçesi:
+hazır ve test edilmiş düzeltmeler, kuyruktaki en riskli değişikliğin
+arkasında beklememeli.
 
 Ayrıca **`notify-deadline-warnings`'te düzeltilmiş bir yazım hatası deploy
 EDİLMEDİ** ("taktirde" → "takdirde"): repoda düzeltildi, canlıya
@@ -110,12 +118,16 @@ tamamen açılmaz hâle getirir ve düzeltmesi ancak YENİ bir sürüm yayınlam
 mümkündür. Bu yüzden erteleme doğru karar; yapılacaksa önce yukarıdaki iki
 ön koşul, sonra kademeli (`flexible`) akış.
 
-### 3. 44 davetliye hatırlatma — henüz kimse kurmadı
+### 3. Davetlilere hatırlatma — ARTIK GÖNDERİLEBİLİR (Sürüm A çıktıktan sonra)
 
-Kapalı testte davet edilenlerin büyük bölümü uygulamayı hâlâ **yüklememiş**.
-Bu bir hata değil bir pazarlama işi, ama sıralamayı etkiliyor: 27 Ağustos'un
-iki düzeltmesi (koltuk hatası + rozet) tam da **ilk deneyimi** hedefliyordu —
-yani hatırlatma, kuyruktaki sürüm çıktıktan SONRA gönderilmeli, önce değil.
+Kapalı test listesi 54 kişiye çıktı ama büyük bölümü uygulamayı hâlâ
+**yüklememiş**. Bu bir hata değil bir pazarlama işi, ama sıralaması vardı:
+Sürüm A'nın dört düzeltmesi (taş yakalama, ✕ ıskalama, arkadaş listesinin
+sonuna inememe, bayat rozet) tam da **ilk deneyimi** vuruyordu — hatırlatma
+o yüzden A'dan SONRAYA bırakılmıştı.
+
+**A artık çıktı** (paket `1.0.0 (403)`), yani engel kalktı. Kalan tek şart:
+cihaz testi onaylansın ve paket kapalı test kanalında yayına geçsin.
 
 Katılan/indiren sayısı Play Console'da: **Test → Closed testing → (track) →
 Testers sekmesi**, ve indirme adedi için **Statistics**. (Kullanıcı bunu iki
