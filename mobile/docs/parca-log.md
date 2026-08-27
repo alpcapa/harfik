@@ -20,6 +20,44 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 150 — tanıtımdaki "DEVAM ›" tam genişlikte ve ekranın
+     dibindeydi (27 Ağustos 2026, kullanıcı bildirdi: *"ekranın altına
+     yapışıyor ve ortalı değil. Bu kadar uzun olmasına da gerek yok, normal
+     buton gibi olsun"*):** Üç kusurun üçü de ÖLÇÜLDÜ (390×844): buton
+     x **0 → 378** (ekranın %97'si), alt kenarı **844** (tam dip), etiketi
+     sağdaki 12 px dolgu yüzünden merkezin 6 px solunda. **Portrede de
+     bozuktu** — kullanıcı yatayda fark etmiş ama sorun yöne bağlı değildi.
+     - **Kök sebep düzende DEĞİL `NeoButton`da:** kökü `alignment` taşıyan
+       bir `Container` ve `alignment` verilmiş bir Container kısıtların
+       TAMAMINI kaplar. Buton `SizedBox(width: double.infinity)` içinde
+       kullanılmak üzere tasarlanmış; tanıtımda öyle bir kap yok ama
+       `TapTarget`in `Align`ı gevşetilmiş kısıtları (maxWidth = ekran) aynen
+       geçiriyor. Çare `IntrinsicWidth`.
+       **Ders:** "buton neden tam genişlikte" sorusunun cevabı çoğu zaman
+       butonun KENDİSİNDE — kabına bakmadan önce kökünün `alignment` alıp
+       almadığına bak.
+     - **Noktalar sola alındı, buton ortaya — bu bir zevk kararı DEĞİL,
+       ÖLÇÜM sonucu.** Önce "noktalar üstte, buton altında ortalanmış"
+       denendi; `intro_screen_test`in taşma testi tam bu iş için var ve
+       rakamı verdi: **1. slayt 430×710'da 25 px, 414×720'de 24 px taşıyor.**
+       İkinci bir satırın dikey maliyeti bütçeyi aşıyor (Parça 143'te
+       ölçülen pay ~10 px'ti; bu turda gerçek payın 6 px olduğu ölçüldü).
+       Tek şeritte kalınca artış yalnızca alt boşluk kadar.
+     - **Dolgu takası:** üst 4 → 0, alt 0 → 8 (net +4). Üstteki 4 px görünmez
+       (slayt ile noktalar arası), alttaki 8 px kullanıcının bildirdiği
+       kusurun ta kendisi. Gerçek cihazda `SafeArea` bunun ÜSTÜNE sistem
+       çubuğu payını ekliyor.
+     - **Sonuç (ölçüldü):** 390×844'te buton 83 px geniş, merkezi tam 195
+       (= ekran merkezi), alt kenarı 836 → 8 px pay. 844×390 ve 740×360'ta
+       da aynı: merkez tam ortada, alt pay 8.
+     - **Web ETKİLENMEDİ:** karşılama katmanı bir slayt gösterisi değil,
+       statik bir sayfa ("OYUNU BAŞLAT"); web'de "DEVAM ›" diye bir düğme
+       yok. Bu parça yalnızca portu ilgilendiriyor.
+     - **Regresyon + negatif eş:** yeni test üç iddiayı AYRI AYRI kilitliyor
+       (normal boy · yatayda ortalı · alt kenara yapışmıyor), iki boyda
+       (portre + yatay). `IntrinsicWidth` kaldırılınca test düşüyor
+       (`Actual: <390.0>` vs beklenen `< 156.0`).
+
    - ✅ **Parça 149 — oyun kartındaki üç ikon: üçüncü alet "YÖNLENDİR"
      (27 Ağustos 2026, kullanıcı sordu: *"oyun kartlarında yer alan mesaj
      balonu ve hamleler ikonu tıklaması nasıl? Orada da sorun var mı?"*):**

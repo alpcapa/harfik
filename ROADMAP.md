@@ -76,6 +76,7 @@ ezerdi (PR kapısının var olma sebebi).
 |---|---|---|
 | Joker harf ızgarasının dokunma kutusu (48×44 → 48×50) | `wild_letter_sheet.dart` + `WildcardModal.tsx` | Kullanıcı kararı (27 Ağustos): *"Bunu B ile göndeririz sonra"* — A çoktan derlenmişti, yeniden tur atmaya değmedi |
 | Oyun kartı ikonlarına ıskalama yönlendirmesi (13 → 41 px etkin hedef) | `icon_tap_rescue.dart` + `game_history_modal.dart` + `.tap-expand-y` (web) | Uygulamadaki en küçük üç hedef (~240 px²); 12 Ağustos'tan beri bilinen şikayet. Kullanıcı kararı: *"B'ye ekle"* |
+| Tanıtımdaki "DEVAM ›" tam genişlikte ve ekranın dibindeydi | `intro_screen.dart` | Buton artık normal boyda, yatayda ortalı, alt kenardan 8 px payda. Kullanıcı kararı: *"Düzelt ve B'ye ekle"* |
 
 **Sürüm B'nin ASIL yükü** (madde 1 + madde 13): deep link kanalı — mağaza
 blokeri — ve push bildirimleri + Firebase Analytics. Madde 13'ün 5. adımı
