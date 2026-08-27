@@ -596,7 +596,9 @@ kilitlenmiyor (23 Ağustos 2026'da canlıdan okundu).
 
 ---
 
-## 13. Push bildirimleri (hamle sırası · oyun daveti · arkadaş daveti) — **YENİ, 26 Ağustos 2026**
+## 13. Push bildirimleri + Firebase Analytics — **YENİ, 26 Ağustos 2026**
+
+Dört olay: **teslim uyarısı** · oyun daveti · arkadaş daveti · hamle sırası.
 
 Kullanıcı isteği: *"App'de notification özelliği açanlara hamle sırası, oyun
 daveti, arkadaş daveti geldiğinde uyarıları çıkmalı."*
@@ -609,9 +611,31 @@ izni yok, token tutan bir tablo yok. Yani bu sıfırdan bir altyapı işi.
 
 | Olay | Sunucu tarafı | Push için ek iş |
 |---|---|---|
-| Oyun daveti | `notify-game-invite` | kanal eklemek |
-| Arkadaş daveti | `notify-friend-request` | kanal eklemek |
-| **Hamle sırası** | **YOK** — yalnızca `notify-deadline-warnings` (cron, 48 saatlik son tarih yaklaşınca) | **anlık olay sıfırdan** |
+| **Teslim uyarısı** ("24 saat içinde hamle yapmazsan…") | `notify-deadline-warnings` — tetikleyici, metin ve `deadline_warning_sent_at` tekrar koruması **HAZIR** | **en ucuz**: aynı noktada ikinci kanal |
+| Oyun daveti | `notify-game-invite` | ucuz — kanal eklemek |
+| Arkadaş daveti | `notify-friend-request` | ucuz — kanal eklemek |
+| **Hamle sırası** ("sıra sende") | **YOK** | **en pahalı** — anlık olay sıfırdan |
+
+**SIRALAMA (26 Ağustos 2026'da DÜZELTİLDİ):** teslim uyarısı → davetler →
+sıra sende. İlk taslakta "önce sıra sende" yazıyordu; yanlıştı. Ölçünce
+çıktı ki teslim uyarısı hem **en ucuz** (üç parçası da hazır) hem **en
+değerli**: ötekiler bir fırsatı kaçırtır, bu bir KAYBI önler — oyun teslim
+sayılıyor ve k-lig puanından 2 düşüyor. E-postayı görmeyen için push tam
+da bunun içindir.
+
+Mevcut e-posta metni kullanıcının istediği cümlenin ta kendisi ve İKİ
+durumu birden kapsıyor: Canlı oyunlarda 48 saatlik `turn_deadline`, YZ
+oyunlarında 7 günlük terk penceresi — ikisinde de son 24 saate girince.
+
+⚠ **Bekleyen deploy:** `notify-deadline-warnings`'teki *"taktirde"* yazım
+hatası 26 Ağustos'ta REPODA düzeltildi (*"takdirde"*) ama **canlıya
+yayılmadı** — tek harflik bir düzeltme için canlı bir bildirim
+fonksiyonunu yeniden yüklemenin riski değmezdi ve bu fonksiyon zaten push
+kanalı eklenirken yeniden yayınlanacak. **Bu iş yapılırken deploy'u
+unutma; o ana kadar repo ile canlı bilerek AYRIŞIK.** Deploy'da
+`verify_jwt: false` AÇIKÇA geçilmeli (ölçüldü — bu fonksiyon o altı
+fonksiyondan biri; parametre geçilmezse araç `true` varsayar ve kapıyı
+sessizce kapatır).
 
 Yani "sıra sende" bildiriminin bir sunucu olayı hiç yok; hamle
 gönderiminde tetiklenen yeni bir kanca gerekiyor.
@@ -685,10 +709,44 @@ açılır.
    `marketing/play-store/console-formlari.md`'deki eşleme güncellenmeli.
    Bu form yanlışsa mağaza reddi gelir.
 
-### Önce ölçülecek soru
+### Firebase Analytics — aynı pakette (26 Ağustos 2026, kullanıcı kararı)
 
-Oyun daveti ve arkadaş daveti için e-posta ZATEN gidiyor. Push'un asıl
-katkısı **"sıra sende" anlıklığı** — yani en çok değeri olan parça, aynı
-zamanda sunucu tarafı hiç olmayan parça. İş bölünecekse sıra şu:
-**önce "sıra sende" (Android)**, sonra öteki iki olayın kanalı.
+Kullanıcı: *"Bence hepsini bir kerede halletmek iyi olur."* FCM için
+Firebase zaten kurulacağından Analytics'i o anda açmak neredeyse bedava.
+
+**Neden gerekli — ÖLÇÜLDÜ:** bugünkü şema sonuçları görüyor, davranışı
+görmüyor. `guest_visits`/`device_visits` → `profiles` → `game_starts` →
+`game_finishes` zinciri "ne oldu"yu veriyor; ekran görüntülenmesi, sekme
+geçişi, akış içi terk noktası, oturum uzunluğu YOK. **Bedeli bu proje
+zaten ödedi:** insanlar tanıtım ekranında takılıyordu (3 günde 2 kayıt) ve
+sebebi veriden GÖRÜLMEDİ — kullanıcı insanlarla konuşunca öğrenildi.
+`game_starts` bunu gösteremezdi, çünkü o insanlar oyuna hiç ulaşamamıştı.
+
+İlk olay kümesi (değeri en yüksek altı): `intro_slide_viewed`,
+`signup_started`, `signup_completed`, `live_game_form_opened`,
+`live_game_created`, `invite_link_shared`.
+
+⚠ **Admin panelinden metrik KALDIRMA — kanıta bağlı.** Kullanıcı
+*"admin'de olup FB tarafında daha iyisi olan dataları admin'den
+kaldırabiliriz bile"* dedi. Doğru, ama **kaldırmalar paralel koşu
+sonrasına**: GA4 şunların yerini ALAMAZ — (a) kaynak hunisi web'de
+başlıyor (`utm_source` karşılama katmanında; uygulamadaki GA4 o yarıyı
+görmez), (b) retention/aktivasyon hesap+oyun kayıtlarından hesaplanıyor,
+GA4'ünki cihaz kapsamlı ve web+app'i aynı kişide birleştirmez, (c) join
+edilebilirlik ("k-lig'de yükselenler daha çok davet mi gönderiyor?" senin
+şemanda tek sorgu), (d) GA4 örnekleme yapar ve olayı 2-14 ay tutar,
+`games` sonsuza kadar sende. Kaldırılmaya net aday: cihaz/OS kırılımı
+(`device_visits`). Gerisi ancak GA4'ün daha iyi verdiği ÖLÇÜLDÜKTEN sonra.
+Gerekçe bu projeye özgü: ölçümü, yerine geçecek şeye güvenmeden kaldırmak
+"sessiz kayıp" sınıfından bir hatadır ve fark edilmesi en zor olanıdır.
+
+### Sıra
+
+1. **Teslim uyarısı push'u** (en ucuz + en değerli, yukarıdaki tabloya bak)
+2. Oyun daveti · arkadaş daveti kanalları
+3. **"Sıra sende"** — sunucu olayı sıfırdan
+4. Analytics olayları
+
+Not: oyun daveti ve arkadaş daveti için e-posta ZATEN gidiyor, yani o
+ikisinin push katkısı en düşük olan.
 
