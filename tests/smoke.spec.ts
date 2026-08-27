@@ -675,6 +675,29 @@ test.describe('dokunmatik jestler', () => {
       `Hücre ${CELL} artık harf ızgarasıyla örtüşmüyor — başka bir hücre seç, yoksa test hatayı göremez`,
     ).toBe(true);
 
+    // 27 Ağustos 2026 — dokunma hedefi turunun devamı. Harf hücresi 48×44'tü
+    // (yükseklik Material asgarisinin altında) ve satırlar arasında 6 px ölü
+    // bant vardı; buradaki ıskalama YANLIŞ HARF seçtirir. Hücre artık 48×50
+    // ve satırlar dikeyde aralıksız — taşın çizildiği yer değişmedi (satır
+    // adımı hâlâ 50). Portla birebir aynı sayılar (`wild_letter_sheet.dart`).
+    const hucreler = page.locator('[role="dialog"] .grid > div');
+    const h0 = (await hucreler.nth(0).boundingBox())!;
+    const h1 = (await hucreler.nth(1).boundingBox())!;
+    const h6 = (await hucreler.nth(6).boundingBox())!;
+    expect(h0.height).toBeCloseTo(50, 1);
+    // Genişlik zaten yeterliydi ve GÖRÜNÜM GENİŞLİĞİNE bağlı (portta 390'da
+    // tam 48, burada ~47.7) — sabit bir sayıya bağlamak kırılgan olurdu.
+    // Zayıf eksen dikeydi; iddia orada.
+    expect(h0.width).toBeGreaterThan(44);
+    // Satırlar arası ölü bant SIFIR; satır adımı hâlâ 50.
+    expect(h6.y - (h0.y + h0.height)).toBeCloseTo(0, 1);
+    expect(h6.y - h0.y).toBeCloseTo(50, 1);
+    // Yatay 6 px BİLEREK duruyor (genişlik zaten 48).
+    expect(h1.x - (h0.x + h0.width)).toBeCloseTo(6, 1);
+    // Taşın kendisi hâlâ 44 yüksek — büyüyen yalnızca hedef.
+    const tas0 = (await hucreler.nth(0).locator('> div').boundingBox())!;
+    expect(tas0.height).toBeCloseTo(44, 1);
+
     await page.getByRole('dialog').getByText('A', { exact: true }).first().click();
     await expect(page.getByRole('dialog')).toBeHidden();
     expect(await harf()).toBe('A');

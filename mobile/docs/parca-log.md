@@ -20,6 +20,44 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 148 — "benzer tüm yerlere uygulandı mı?": tarama + joker
+     ızgarası (27 Ağustos 2026, kullanıcı sordu):** Parça 147'nin ✕'leri bir
+     kaynak taramasıyla kilitlenmişti ama o tarama yalnızca **ham
+     `IconButton`** arıyor — aynı hata sınıfı `IconButton` KULLANMAYAN bir
+     yerde de olabilir. `lib/src/ui` altındaki tüm dokunulabilirler,
+     çevrelerinde 48'in altında AÇIK bir ölçü olup olmadığına göre tarandı;
+     adaylar ekranda tek tek ölçüldü.
+     - **Tek gerçek bulgu: joker harf ızgarası — 48 × 44**, üstelik dört
+       yanında 6 px ölü boşluk. Buradaki ıskalamanın bedeli farklı ve
+       gerçek: **yanlış HARF seçilir** (22 Ağustos'ta bildirilen "A harfi
+       C'ye döndü" hatasının aynı sonucu, başka sebeple).
+     - **Düzeltme rafla aynı desen ama yalnızca ZAYIF EKSENDE:**
+       `mainAxisSpacing: 0` + `mainAxisExtent: 50` + hücrede `bottom: 6` →
+       48 × 50, satırlar dikeyde aralıksız, **satır adımı hâlâ 50** (her
+       satırdaki taş ızgara içinde tam eski yerinde). Yatay 6 px BİLEREK
+       duruyor: genişlik zaten 48 ve boşluğu hücreye almak taşları 1 px
+       daraltırdı (6 hücre × 6 ≠ 5 boşluk × 6) — rafta bu telafi mümkündü,
+       burada değil.
+     - **Yükseklik:** düzenleme dalında SIFIR değişiklik (ızgara +6, üstteki
+       boşluk 12 → 6; "GERİ AL" ölçülen rect'iyle birebir aynı). Düzenleme
+       olmayan dalda kart 6 px uzuyor, ortalandığı için içerik 3 px yukarı
+       kayıyor; ızgaranın içinde hiçbir şey oynamıyor.
+     - **`mobile/` DIŞINDA:** `src/components/WildcardModal.tsx` birebir aynı
+       sayılarla (`gap-y-0`, hücre `h-[50px] pb-1.5`, `mt-3` → `mt-1.5`;
+       tıklama taştan HÜCREYE taşındı), `tests/smoke.spec.ts`,
+       `docs/decisions/touch-ux-bugs.md`, `TESTING.md`.
+     - **48'in altında BİLEREK kalanlar** gerekçeleriyle tabloya yazıldı
+       (`docs/decisions/touch-ux-bugs.md`): friends 44×44 ikonları (dört dal
+       da önce onay soruyor), hamle ikonu 44 (Parça 65), sohbet rozeti,
+       şifre göster/gizle, paragraf içi link, "← Geri", tahta hücresi.
+     - **Negatif eş İKİ platformda da kanıtlandı:** portta hücre 44'e
+       döndürülünce test düşüyor (`Actual: <44.0>`), web'de `h-11`/`gap-1.5`
+       geri gelince smoke düşüyor (`Received: 44` vs `50`).
+     - **Ders:** "hepsine uygulandı mı?" sorusunun cevabı bir liste değil bir
+       TARAMA olmalı, ve tarama ŞEKLE göre yapılmalı (kutuya ölçü veren bir
+       şey var mı), TÜRE göre değil. 24 Ağustos'ta aynı ders bir kez
+       alınmıştı; `IconButton`'ın "güvende" sayılması onun ikinci biçimi.
+
    - ✅ **Parça 147 — dokunma hedefi İKİNCİ tur: ✕ butonları ve raf taşı
      (27 Ağustos 2026, kullanıcı bildirdi: *"bazı tıklamalar yine biraz
      üstte gibi. Mesela skor kartı x'de dikkatimi çekti. Tüm bu tip

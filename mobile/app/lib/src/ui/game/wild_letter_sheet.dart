@@ -57,26 +57,49 @@ Future<WildLetterChoice?> showWildLetterSheet(
             itemCount: letters.length,
             // `GridView.count` sabit yükseklik veremiyor (yalnızca en-boy
             // oranı) — web'in `h-11`i için mainAxisExtent şart.
+            // DİKEY boşluk hücrenin İÇİNE alındı (27 Ağustos 2026). Ölçüldü
+            // (390×844): hücrenin dokunma kutusu 48 × **44**, yani genişlik
+            // tam sınırda ama yükseklik Material asgarisinin altında; üstüne
+            // satırlar arasında 6 px ölü bant vardı. Buradaki ıskalamanın
+            // bedeli gerçek — yanlış HARF seçilir (22 Ağustos'ta bildirilen
+            // "joker sessizce C'ye döndü" hatasının aynı sonucu).
+            //
+            // `mainAxisSpacing: 0` + `mainAxisExtent: 50` + hücre içinde
+            // `bottom: 6`: satırlar dikeyde ARALIKSIZ, hedef 48 × 50, ve
+            // taşın çizildiği yer HER SATIRDA birebir aynı kalır (satır
+            // adımı iki durumda da 50). Tek fark ızgaranın toplam
+            // yüksekliğinin 6 px artması — son satır artık kendi alt
+            // dolgusunu taşıyor.
+            //
+            // YATAY boşluk (`crossAxisSpacing: 6`) BİLEREK duruyor: genişlik
+            // zaten 48 ve onu da hücreye almak taşları 1 px daraltırdı
+            // (6 hücre × 6 = 36 ≠ 5 boşluk × 6 = 30). Zayıf eksen dikeydi.
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 6,
-              mainAxisSpacing: 6,
+              mainAxisSpacing: 0,
               crossAxisSpacing: 6,
-              mainAxisExtent: 44,
+              mainAxisExtent: 50,
             ),
             itemBuilder: (context, i) {
               final letter = letters[i];
               return GestureDetector(
                 onTap: () => Navigator.of(context)
                     .pop(WildLetterChoice.letter(letter)),
-                child: TileWidget(
-                  tile: Tile(letter: letter, pts: tileData[letter]!.pts),
-                  variant: TileVariant.rack,
+                // Dolgu dinleyicinin İÇİNDE — kutu yuvanın tamamı olsun.
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: TileWidget(
+                    tile: Tile(letter: letter, pts: tileData[letter]!.pts),
+                    variant: TileVariant.rack,
+                  ),
                 ),
               );
             },
           ),
           if (editing) ...[
-            const SizedBox(height: 12),
+            // 12 → 6: ızgara yukarıdaki değişiklikle 6 px uzadı, bu boşluk
+            // aynı kadar kısıldı — "GERİ AL" butonu yerinde kalıyor.
+            const SizedBox(height: 6),
             SizedBox(
               height: 40,
               child: NeoButton(

@@ -49,6 +49,7 @@ import 'package:kelimeki/src/ui/game/modal_shell.dart';
 import 'package:kelimeki/src/ui/game/player_colors.dart';
 import 'package:kelimeki/src/ui/game/rack_widget.dart';
 import 'package:kelimeki/src/ui/game/tile_widget.dart';
+import 'package:kelimeki/src/ui/game/wild_letter_sheet.dart';
 import 'package:kelimeki/src/ui/game/logo_mark.dart';
 import 'package:kelimeki/src/ui/tap_target.dart';
 import 'package:kelimeki/src/ui/theme.dart';
@@ -411,6 +412,70 @@ void main() {
       expect((simdiki.left - onceki.right).abs(), lessThan(0.05),
           reason: 'taş ${i - 1} ile $i arasında ölü boşluk var');
     }
+  });
+
+  testWidgets('joker harf ızgarası: hücre 48×50, taş KIPIRDAMADI',
+      (tester) async {
+    // Aynı turun devamı: ✕'ler düzeltildikten sonra "benzer tüm yerlere
+    // uygulandı mı" diye tarandı ve joker ızgarası çıktı — ölçüldü,
+    // hücrenin dokunma kutusu **48 × 44** idi (genişlik tam sınırda,
+    // yükseklik altında) ve satırlar arasında 6 px ölü bant vardı.
+    // Buradaki ıskalamanın bedeli gerçek: YANLIŞ HARF seçilir.
+    await setPhoneViewSize(tester, const Size(390, 844));
+    late BuildContext ctx;
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Builder(builder: (c) {
+        ctx = c;
+        return const Scaffold(body: SizedBox());
+      }),
+    ));
+    showWildLetterSheet(ctx);
+    await tester.pumpAndSettle();
+
+    final tiles = find.byType(TileWidget);
+    expect(tiles, findsNWidgets(29));
+    _olc(tester, tiles.at(0), 'joker: harf hücresi');
+
+    // Taşın ÖLÇÜSÜ değişmedi (48 × 44) ve satır adımı hâlâ 50 — yani her
+    // satırdaki taş ızgara içinde tam eski yerinde. Değişen tek şey
+    // hücrenin dokunma kutusu (44 → 50) ve satırlar arası ölü bandın
+    // sıfırlanması.
+    final t0 = tester.getRect(tiles.at(0));
+    expect(t0.width, closeTo(48.0, 0.05));
+    expect(t0.height, closeTo(44.0, 0.05));
+    expect(tester.getRect(tiles.at(6)).top - t0.top, closeTo(50.0, 0.05));
+
+    Rect kutu(int i) => tester.getRect(
+        find.ancestor(of: tiles.at(i), matching: find.byType(GestureDetector))
+            .first);
+    // Dikeyde ARALIKSIZ (eskiden 6 px ölü bant vardı).
+    expect(kutu(6).top - kutu(0).bottom, closeTo(0.0, 0.05));
+    // Yatayda 6 px BİLEREK duruyor: genişlik zaten 48 ve boşluğu hücreye
+    // almak taşları 1 px daraltırdı (6 hücre × 6 ≠ 5 boşluk × 6).
+    expect(kutu(1).left - kutu(0).right, closeTo(6.0, 0.05));
+  });
+
+  testWidgets('joker DÜZENLEME dalı: GERİ AL kılı kıpırdamadı',
+      (tester) async {
+    // Izgara 6 px uzadı, üstündeki boşluk 6 px kısıldı — düzenleme dalında
+    // toplam yükseklik ve buton konumu birebir korunuyor. (Düzenleme
+    // OLMAYAN dalda kart 6 px uzuyor; ortalandığı için içerik 3 px yukarı
+    // kayıyor — ölçüldü, ızgaranın İÇİNDE hiçbir şey oynamıyor.)
+    await setPhoneViewSize(tester, const Size(390, 844));
+    late BuildContext ctx;
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Builder(builder: (c) {
+        ctx = c;
+        return const Scaffold(body: SizedBox());
+      }),
+    ));
+    showWildLetterSheet(ctx, editing: true);
+    await tester.pumpAndSettle();
+
+    expect(tester.getRect(find.byKey(const Key('wild-recall'))),
+        const Rect.fromLTRB(36.0, 566.5, 354.0, 606.5));
   });
 
   /// Ham `IconButton` bırakmayı engelleyen kaynak taraması — asıl kaçış

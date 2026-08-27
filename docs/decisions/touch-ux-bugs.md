@@ -340,6 +340,61 @@ Ayrıca yeni bir kaynak taraması eklendi: **`lib/src/ui` altında ham
 `IconButton` kalmadı** — hepsi `KIconButton`'dan geçiyor, tek istisna
 yukarıda gerekçesiyle yazılı.
 
+### Ek: "benzer tüm yerlere uygulandı mı?" — tarama ve joker ızgarası (27 Ağustos 2026)
+
+Kullanıcı ✕ düzeltmesinden sonra sordu: *"Skor kartındaki dokunma
+düzeltmesi benzer tüm yerlere uygulandı mı?"* Doğru soru — ✕'ler bir
+kaynak taramasıyla kilitlenmişti ama o tarama yalnızca **ham `IconButton`**
+arıyor. Aynı hata sınıfı `IconButton` KULLANMAYAN bir yerde de olabilir.
+
+Bu yüzden `lib/src/ui` altındaki tüm dokunulabilirler, çevrelerinde 48'in
+altında AÇIK bir ölçü (`width`/`height`/`minWidth`/`minHeight`) olup
+olmadığına göre tarandı; çıkan adaylar ekranda tek tek ÖLÇÜLDÜ. Tek gerçek
+bulgu **joker harf ızgarası** oldu.
+
+**Joker ızgarası — ölçülen: 48 × 44, dört yanında 6 px ölü boşluk.**
+Genişlik tam sınırda, yükseklik altında. Buradaki ıskalamanın bedeli
+diğerlerinden farklı ve gerçek: **yanlış HARF seçilir** — 22 Ağustos'ta
+bildirilen *"önce konan A harfi C'ye döndü"* hatasının aynı sonucu, bu kez
+başka bir sebeple.
+
+Düzeltme rafla aynı desen (ölü alanı hedefe devret), ama yalnızca **zayıf
+eksende**: `mainAxisSpacing: 0` + `mainAxisExtent: 50` + hücre içinde
+`bottom: 6`. Sonuç 48 × 50, satırlar dikeyde aralıksız, **satır adımı hâlâ
+50** — yani her satırdaki taş ızgara içinde tam eski yerinde.
+
+Yatay 6 px BİLEREK duruyor: genişlik zaten 48 ve boşluğu hücreye almak
+taşları 1 px daraltırdı (6 hücre × 6 = 36 ≠ 5 boşluk × 6 = 30). Rafta bu
+telafi mümkündü (kutunun kendi dolgusu 12 → 10,5), burada değil.
+
+**Toplam yükseklik:** düzenleme dalında SIFIR değişiklik (ızgara +6, üstteki
+boşluk 12 → 6; "GERİ AL" ölçülen değeriyle birebir aynı yerde). Düzenleme
+olmayan dalda kart 6 px uzuyor ve ortalandığı için içerik 3 px yukarı
+kayıyor — ızgaranın İÇİNDE hiçbir şey oynamıyor. Web'de birebir aynı
+sayılar (`gap-y-0`, hücre `h-[50px] pb-1.5`, `mt-3` → `mt-1.5`); tıklama
+taştan HÜCREYE taşındı.
+
+### 48'in ALTINDA KALANLAR — gerekçeleriyle (aynı tarama)
+
+Bunlar bilinçli olarak değiştirilmedi. Yeni bir tanesi eklenirse
+`tap_target_test.dart` düşer.
+
+| Yer | Ölçü | Neden bırakıldı |
+|---|---|---|
+| `friends_modal` ilişki + moderasyon ikonları | 44 × 44 | iOS HIG asgarisi; **dört dalın dördü de önce onay diyaloğu açıyor**, yani ıskalamanın bedeli sıfır. 48 yapmak liste satırının yüksekliğini her yerde değiştirirdi |
+| `game_history_modal` hamle ikonu | 44 | Parça 65'te 44 zaten bilinçli seçilmişti |
+| `chat_thread` moderasyon rozeti | 9 punto | HER baloncukta olduğundan sohbeti şişirirdi; aynı panele başlıktaki dişliden de gidiliyor — **o dişli artık 48** |
+| `auth_modal` şifre göster/gizle | 38 px alanın `suffix`i | Alan yüksekliği web paritesi gereği 38 (`theme_test.dart` ölçüyor); yanlış dokunuşun bedeli sıfır |
+| `legal_modals` paragraf içi link | satır yüksekliği | Büyütmek akan metnin satır aralığını bozar |
+| `game_header` "← Geri" | 48 × 24 | Header ile tahta arasındaki bantta; hemen üstündeki logo aynı eylem için tam boy hedef |
+| Tahta hücresi | ~24 | **Büyütülemez** — ızgara ölçüsü oyunun kuralı. Bunun yerine ıskalama zararsızlaştırıldı (`draftRescue` + taslak sürerken anlam penceresinin açılmaması) |
+
+> **Ders:** "hepsine uygulandı mı?" sorusunun cevabı bir liste değil bir
+> TARAMA olmalı — ve tarama şekle göre yapılmalı (kutuya ölçü veren bir şey
+> var mı), türe göre değil. Bu ders 24 Ağustos'ta bir kez alınmıştı
+> (`GestureDetector`'ın çocuğu `Text` mi diye bakan tarama "Paylaş"ı
+> kaçırmıştı); `IconButton`'ın güvende sayılması aynı hatanın ikinci biçimi.
+
 ## Dokunmatikte "Yapışkan Hover" (11 Ağustos 2026)
 
 Kullanıcı, Setup'ın en altındaki **"Kullanım Koşulları"** linkinin altında,

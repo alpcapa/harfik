@@ -1474,6 +1474,12 @@ düzeltmeyi içeren derlemeyle eşleştiğini doğrula.
       büyümemiş, isim satırı kaymamış, taşlar arası boşluk hâlâ görünüyor.
 - [ ] **Seçili taşın yukarı kalkması bozulmamış** (bir taşa dokun: 7 px
       yukarı kalkmalı, üstteki isim satırına girmemeli).
+- [ ] **Joker harf ızgarası (27 Ağustos 2026, ikinci tarama).** Bir joker
+      oyna → harf penceresi açılır. Harflerin biraz ALTINA/üstüne dokunmayı
+      dene: **istediğin harf gelmeli**, komşu satırdaki harf değil (satırlar
+      arası ölü bant kalktı). Harflerin boyutu ve aralarındaki boşluk
+      DEĞİŞMEMİŞ görünmeli. Konmuş bir jokeri düzenlerken de aç: **"GERİ AL"
+      butonu tam eski yerinde** olmalı.
 
 ## 16. Dokunma hedefleri 48 dp — İKİNCİ tur (24 Ağustos 2026, Parça 134)
 

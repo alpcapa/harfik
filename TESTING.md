@@ -501,6 +501,10 @@ Her birinde gerçekten bekleyen bir iş varken ekranı **kapatıp yeniden aç**.
       Taşın biraz ALTINDAN (rafın alt dolgusundan) ya da iki taşın
       ARASINDAN tutmayı dene — sürükleme başlamalı. Taşların boyutu,
       aralarındaki 3 px boşluk ve rafın dış kutusu DEĞİŞMEMELİ.
+- [ ] **Joker harf ızgarası (aynı gün, portla birebir).** Bir joker oyna →
+      harflerin biraz altına/üstüne tıkla: istediğin harf gelmeli, komşu
+      satırdaki değil. Harflerin boyutu ve aralığı değişmemeli; konmuş bir
+      jokeri düzenlerken "Geri Al" butonu tam eski yerinde olmalı.
 - [ ] **Kişiye tıklamak skor kartını açar — ÜÇ sekmede de (11 Ağustos
       2026).** "Arkadaşlarım", "İstekler" ve "Ara & Ekle" (arama + Tüm
       Üyeler) satırlarında **avatara/isme** tıkla → o kişinin skor kartı
