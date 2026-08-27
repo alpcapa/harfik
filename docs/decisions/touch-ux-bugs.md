@@ -431,6 +431,51 @@ ayrıca kutunun hâlâ küçük olduğunu ölçüyor — bir gün büyütülürs
 sessizce anlamsızlaşmasın diye. **Negatif eş:** `onTapUp` kaldırılıp `onTap`
 geri konunca iki test de düşüyor.
 
+### Ek: kurtarma BOŞ hücreleri de kapsadı — kısıtın gerekçesi dardı (27 Ağustos 2026)
+
+Kullanıcı Sürüm A'yı cihazda test ederken bildirdi: *"A testinde her şey
+geçti ama tahtaya konan taşı kaldırmak için ilk tıklama yakalamıyor.
+İkincide ya da üçüncüde yakalanıyor."*
+
+**ÖLÇÜLDÜ (420×900), tahmin edilmedi:** tahta hücresi **26,2 px**. Taslak
+taşı (0,0)'a konup hemen ALTINDAKİ boş hücreye (1,0) dokunulduğunda:
+
+```
+ÖNCE   → placed: [0,0]   mesaj: "Önce bir harf seç."
+SONRA  → placed: []      mesaj: "Oyna tuşuyla kelimeyi onayla."
+```
+
+Yani taş geri alınmıyordu **ve** ekrana geri almaya çalışan kullanıcıyla
+hiç ilgisi olmayan bir uyarı yazıyordu.
+
+**Kör nokta 24 Ağustos'un kendi kısıtındaydı.** `draftRescue` o gün şöyle
+sınırlanmıştı:
+
+> *"⚠ YALNIZCA OYNANMIŞ hücrelerden çağrılır; BOŞ hücrelere hiç dokunulmaz
+> — yoksa kelimeyi dizerken bir sonraki harfi yan hücreye koymak
+> zorlaşırdı."*
+
+Gerekçe **doğru ama yalnızca bir raf taşı SEÇİLİYKEN geçerli.** Seçim
+yokken boş bir hücreye dokunmak zaten hiçbir iş yapmıyor — motor
+(`_placeTile`) yalnızca o mesajı üretip aynı durumu döndürüyor. Yani o
+durumda kurtarmanın bedeli **sıfır**.
+
+Koşul bu yüzden dar tutuldu: `selectedTile == null && placed.isNotEmpty`.
+Seçili taş varken davranış **hiç değişmedi** — ve bunu bir negatif eş
+testi koruyor (ikinci taş seçilip komşu hücreye konuyor, kurtarma
+karışmıyor).
+
+> **Ders:** bir kısıtın gerekçesini yazarken HANGİ DURUMDA geçerli
+> olduğunu da yaz. "Boş hücrelere dokunma" cümlesi tek başına doğru
+> görünüyordu; eksik olan "…çünkü orada bir harf konabilir" koşuluydu ve
+> o koşul sağlanmadığında kısıt bedava bir kayba dönüşüyordu.
+
+Dört yüzeyde birden uygulandı (port `game_screen.dart` +
+`online_game_screen.dart`, web `App.tsx` + `OnlineGameScreen.tsx`).
+Regresyon: her iki platformda da bir pozitif (ıskalama geri alır) ve bir
+negatif (seçiliyken harf koyar) test. Negatif eşleri kanıtlandı — koşul
+`false` yapılınca ikisi de düşüyor.
+
 ### 48'in ALTINDA KALANLAR — gerekçeleriyle (aynı tarama)
 
 Bunlar bilinçli olarak değiştirilmedi. Yeni bir tanesi eklenirse

@@ -20,6 +20,32 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 151 — taslak taşı geri almak: ilk dokunuş yakalamıyordu
+     (27 Ağustos 2026, kullanıcı Sürüm A'yı cihazda test ederken bildirdi:
+     *"tahtaya konan taşı kaldırmak için ilk tıklama yakalamıyor. İkincide
+     ya da üçüncüde yakalanıyor."*):** ÖLÇÜLDÜ (420×900): hücre **26,2 px**;
+     taslak (0,0)'a konup hemen ALTINDAKİ boş hücreye dokunulduğunda taş
+     geri alınmıyor ve ekrana **"Önce bir harf seç."** yazıyordu — geri
+     almaya çalışana alakasız bir uyarı.
+     - **Kör nokta 24 Ağustos'un KENDİ kısıtındaydı:** `draftRescue` o gün
+       *"boş hücrelere hiç dokunulmaz — yoksa kelimeyi dizerken yan hücreye
+       harf koymak zorlaşırdı"* diye sınırlanmıştı. Gerekçe doğru ama
+       **yalnızca bir raf taşı SEÇİLİYKEN** geçerli; seçim yokken boş hücreye
+       dokunmak zaten hiçbir iş yapmıyor (`_placeTile` sadece o mesajı üretip
+       aynı durumu döner). Yani kurtarmanın bedeli o durumda sıfır.
+     - **Koşul dar tutuldu:** `selectedTile == null && placed.isNotEmpty`.
+       Seçili taş varken davranış HİÇ değişmedi ve bunu bir negatif eş testi
+       koruyor (ikinci taş seçilip komşu hücreye konuyor).
+     - **Ders:** bir kısıtın gerekçesini yazarken HANGİ DURUMDA geçerli
+       olduğunu da yaz. "Boş hücrelere dokunma" tek başına doğru
+       görünüyordu; eksik olan "…çünkü orada bir harf konabilir" koşuluydu.
+     - **Dört yüzey:** port `game_screen.dart` + `online_game_screen.dart`,
+       **`mobile/` DIŞINDA** web `App.tsx` + `OnlineGameScreen.tsx`,
+       `tests/smoke.spec.ts`, `docs/decisions/touch-ux-bugs.md`.
+     - **Regresyon:** iki platformda da bir pozitif (ıskalama geri alır) ve
+       bir negatif (seçiliyken harf koyar) test. Negatif eşleri kanıtlandı —
+       koşul `false` yapılınca ikisi de düşüyor.
+
    - ✅ **Parça 150 — tanıtımdaki "DEVAM ›" tam genişlikte ve ekranın
      dibindeydi (27 Ağustos 2026, kullanıcı bildirdi: *"ekranın altına
      yapışıyor ve ortalı değil. Bu kadar uzun olmasına da gerek yok, normal

@@ -147,6 +147,72 @@ void main() {
     expect(words.contains('kelime'), isTrue); // test kelimesi sözlükte olmalı
   });
 
+  // 27 Ağustos 2026 — kullanıcı bildirdi: *"tahtaya konan taşı kaldırmak
+  // için ilk tıklama yakalamıyor. İkincide ya da üçüncüde yakalanıyor."*
+  //
+  // ÖLÇÜLDÜ (420×900): tahta hücresi 26,2 px ve parmağın temas MERKEZİ nişan
+  // alınan noktanın ALTINDA kalıyor — taslak taşını geri almak için dokunan
+  // kullanıcı sık sık BİR ALT hücreye düşüyor. O hücre boşsa eskiden hiçbir
+  // şey olmuyor, dahası ekrana "Önce bir harf seç." yazıyordu (yani geri
+  // almaya çalışana alakasız bir uyarı).
+  //
+  // 24 Ağustos'un kurtarması yalnızca OYNANMIŞ hücrelerden çağrılıyordu;
+  // boş hücre kısıtının gerekçesi "kelimeyi dizerken yan hücreye harf koymak
+  // zorlaşmasın"dı — ki bu YALNIZCA seçili taş varken geçerli. Aşağıdaki
+  // ikinci test o gerekçeyi koruyor.
+  testWidgets('taslak taşın ALTINDAKİ boş hücreye dokunmak taşı GERİ ALIR',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final controller = await pumpGame(tester, GlobalKey());
+
+    await tester.tap(rackTile(0));
+    await tester.pump();
+    await tester.tap(boardCell(0, 0));
+    await tester.pump();
+    expect(controller.state.placed.keys, ['0,0']);
+    // Taş konunca seçim düşer — ıskalamanın kurtarılabildiği durum TAM
+    // OLARAK bu (seçim varken davranış değişmiyor, aşağı bkz.).
+    expect(controller.state.selectedTile, isNull);
+
+    // Hata sınıfı hâlâ burada mı: hücre gerçekten küçük mü?
+    final hucre = tester.getRect(boardCell(0, 0));
+    expect(hucre.height, lessThan(30),
+        reason: 'hücre büyüdüyse bu kurtarmanın gerekçesini gözden geçir');
+
+    // ISKALAMA: bir alt hücrenin (BOŞ) merkezine dokun.
+    await tester.tapAt(tester.getRect(boardCell(1, 0)).center);
+    await tester.pumpAndSettle();
+
+    expect(controller.state.placed, isEmpty,
+        reason: 'taslak taş geri alınmadı — ıskalama sessizce yutuldu');
+  });
+
+  testWidgets('SEÇİLİ taş varken aynı dokunuş HARFİ KOYAR (kurtarma yok)',
+      (tester) async {
+    // Negatif eş: kurtarma yalnızca seçim YOKKEN devreye girmeli. Aksi halde
+    // kelimeyi dizerken bir sonraki harfi komşu hücreye koymak imkânsızlaşır
+    // — 24 Ağustos'ta boş hücrelerin bilerek dışarıda bırakılma sebebi buydu.
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final controller = await pumpGame(tester, GlobalKey());
+
+    await tester.tap(rackTile(0));
+    await tester.pump();
+    await tester.tap(boardCell(0, 0));
+    await tester.pump();
+    expect(controller.state.placed.keys, ['0,0']);
+
+    // Şimdi İKİNCİ bir taş seç ve komşu hücreye koy.
+    await tester.tap(rackTile(0));
+    await tester.pump();
+    expect(controller.state.selectedTile, isNotNull);
+    await tester.tapAt(tester.getRect(boardCell(1, 0)).center);
+    await tester.pumpAndSettle();
+
+    expect(controller.state.placed.keys.toSet(), {'0,0', '1,0'},
+        reason: 'seçili taş varken komşu hücreye koyma bozulmuş — kurtarma '
+            'bu duruma HİÇ karışmamalı');
+  });
+
   testWidgets('dokunarak KELİME dizilir: yeşil çerçeve + doğru puan + OYNA',
       (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));

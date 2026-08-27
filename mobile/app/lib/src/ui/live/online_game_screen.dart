@@ -1122,6 +1122,21 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
       return;
     }
     if (!_canEdit || state.swapMode) return;
+
+    // BOŞ hücreye ıskalayan dokunuş da kurtarılır — YALNIZCA seçim yokken
+    // (`game_screen.dart`'taki aynı gerekçe ve aynı dar koşul; 27 Ağustos
+    // 2026, kullanıcı: *"tahtaya konan taşı kaldırmak için ilk tıklama
+    // yakalamıyor"*). Seçili taş varken davranış DEĞİŞMEZ, yoksa kelimeyi
+    // dizerken komşu hücreye harf koymak zorlaşırdı.
+    if (state.selectedTile == null && state.placed.isNotEmpty) {
+      final hedef = _nearbyDraftCell(r, c, global);
+      if (hedef != null) {
+        await _tapPlacedTile(
+            hedef.$1, hedef.$2, state.placed[cellKey(hedef.$1, hedef.$2)]!);
+        return;
+      }
+    }
+
     final me = _me!;
     final selIdx = state.selectedTile;
     final sel = (selIdx != null && selIdx >= 0 && selIdx < me.rack.length)
