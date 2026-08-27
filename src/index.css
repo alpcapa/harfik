@@ -105,6 +105,37 @@ select {
   }
 }
 
+/* Dokunma hedefini 48×48'e çıkaran yardımcı — GÖRSELİ HİÇ DEĞİŞTİRMEZ.
+   27 Ağustos 2026, kullanıcı önce uygulamada bildirdi: *"bazı tıklamalar
+   yine biraz üstte gibi. Mesela skor kartı x'de dikkatimi çekti"*. Portta
+   ölçüldü ve web'de de aynısı çıktı: modal ✕'leri `w-7 h-7`, yani 28×28 —
+   Material/HIG asgarisinin (48/44) yarısı kadar. Parmağın bildirdiği temas
+   MERKEZİ nişan alınan noktanın altında kaldığından (bkz.
+   docs/decisions/touch-ux-bugs.md) küçük hedefte "biraz üstüne basmak"
+   gerekiyor.
+
+   Portta çözüm kutuyu büyütüp çağıranın dolgusunu aynı kadar kısmaktı;
+   DOM'da buna gerek yok — bir sözde-eleman düzeni HİÇ etkilemez, yalnızca
+   tıklama alanını taşır. Bu yüzden web'de tek bir sınıf yetiyor ve hiçbir
+   konum/hizalama yeniden hesaplanmıyor.
+
+   ⚠ Kapsayıcısı `overflow-hidden` olan bir düğmede kenardan en az 10 px
+   içeride olduğundan emin ol — dışarı taşan kısım kırpılırsa dokunuş almaz.
+   (Bugünkü tek `overflow-hidden` kapsayıcı `Modal.tsx`in kartı; oradaki ✕
+   20 px dolgunun içinde.) */
+.tap-expand {
+  position: relative;
+}
+.tap-expand::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  transform: translate(-50%, -50%);
+}
+
 /* k-lig kutlama banner'ı (RewardBanner) — "Mühür" konsepti animasyonu.
    `.reward-play` üst sınıfı bir rAF sonrası eklenir (ActionSheet dersi:
    mount anında son durumda render edilirse tarayıcı geçişi atlar). Kart

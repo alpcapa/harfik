@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import 'chat_thread.dart';
 import '../game/modal_shell.dart';
+import '../tap_target.dart';
 import '../tokens.dart';
 import '../form_input.dart';
 
@@ -171,11 +172,14 @@ class _ChatModalState extends State<ChatModal> {
 
     return KModal(
       title: 'Mesajlaşma',
-      headerAction: IconButton(
-        visualDensity: VisualDensity.compact,
+      // ✕ ile AYNI 48'lik kutu (`KIconButton`) — iki hedef yan yana
+      // duruyor, biri 48 diğeri 40 olsaydı ıskalayan dokunuş sessizce
+      // yanlış butona düşerdi.
+      headerAction: KIconButton(
+        icon: Icons.settings,
         tooltip: 'Sohbet Ayarları',
+        color: _muted,
         onPressed: widget.onOpenSettings,
-        icon: const Icon(Icons.settings, size: 18, color: _muted),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

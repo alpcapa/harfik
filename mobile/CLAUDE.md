@@ -679,6 +679,34 @@ değil kod:
 minyatürü (kuyruksuz okuma bayat görür, kuyruklu görmez), hata kuyruğu
 kilitlemez, tokenRefreshed no-op'u, çıkış/ikinci-hesap sıfırlaması.
 
+## Ham `IconButton` KULLANMA — `KIconButton` (48×48)
+
+Material'ın `IconButton`'ı bir dokunma asgarisi GARANTİ ETMEZ:
+`visualDensity: VisualDensity.compact` kutuyu 48 → **40**, üstüne
+`padding: EdgeInsets.zero` daha da aşağı indirir (ölçüldü: `KDialogCard`'ın
+✕'i **28×28**'di). 24 Ağustos'un 48 dp turu bunları kaçırmıştı, çünkü
+kaynak taraması `IconButton`ı "kutusuna ölçü veren" işaretlerden biri
+sayıp geçiyordu.
+
+**Kural:** başlıktaki/köşedeki her ikon düğmesi `KIconButton`
+(`ui/tap_target.dart`) — 48×48, sıfır dolgu. `tap_target_test.dart`'taki
+kaynak taraması `lib/src/ui` altında ham `IconButton` bırakılmasını
+engelliyor; bilinçli bir istisna gerekirse gerekçesi O TESTE yazılır.
+
+⚠ **Büyüttüğün kadar dolgudan kıs.** Hedefi büyütmenin gizli maliyeti
+düzeni kaydırmaktır. `KModal` başlık dolgusu bu yüzden `20/12/16` →
+`16/8/12`, köşe butonlarında `Positioned` 8 → 4 oldu; sonuç ✕'in
+ekrandaki yerinin BİREBİR aynı kalması (`tap_target_test.dart` bunu golden
+rect ile kilitliyor). Yeni bir yere ✕ koyarken aynı takası yap.
+
+**Web'de karşılığı BAŞKA:** DOM'da sözde-eleman düzeni etkilemediğinden
+telafi gerekmez — tek bir `.tap-expand` sınıfı (`src/index.css`) 48×48'lik
+bir `::after` koyar. Yani bu kuralın iki yakası aynı SONUCU farklı yolla
+üretir; port tarafında sözde-eleman diye bir şey yok.
+
+Ayrıntı ve ölçümler: `docs/decisions/touch-ux-bugs.md` → "İkinci tur",
+`mobile/docs/parca-log.md` → Parça 147.
+
 ## `KModal`'ın gövdesi ZATEN kaydırılabilir — içine ikincisini koyma
 
 27 Ağustos 2026, bir kullanıcı bildirdi: *"Arkadaşlar - Ara&Ekle'de scroll

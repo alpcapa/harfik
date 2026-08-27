@@ -43,7 +43,12 @@ import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/ui/auth/k_avatar.dart';
 import 'package:kelimeki/src/ui/game/board_widget.dart';
 import 'package:kelimeki/src/ui/game/game_header.dart';
+import 'package:kelimeki/src/ui/game/dialog_shell.dart';
 import 'package:kelimeki/src/ui/game/help_modal.dart';
+import 'package:kelimeki/src/ui/game/modal_shell.dart';
+import 'package:kelimeki/src/ui/game/player_colors.dart';
+import 'package:kelimeki/src/ui/game/rack_widget.dart';
+import 'package:kelimeki/src/ui/game/tile_widget.dart';
 import 'package:kelimeki/src/ui/game/logo_mark.dart';
 import 'package:kelimeki/src/ui/tap_target.dart';
 import 'package:kelimeki/src/ui/theme.dart';
@@ -277,5 +282,161 @@ void main() {
     await tester.pumpAndSettle();
 
     _olc(tester, find.text('Detaylı Kurallar →'), 'yardım: Detaylı Kurallar');
+  });
+
+  // ── 27 Ağustos 2026 — İKİNCİ TUR: ✕/dişli butonları ve raf taşı ────────
+  //
+  // Kullanıcı: *"bazı tıklamalar yine biraz üstte gibi. Mesela skor kartı
+  // x'de dikkatimi çekti"* + *"harfi yakalamak bazen zor oluyor hala"*.
+  //
+  // 24 Ağustos'un turu bunları HİÇ ölçmemişti ve sebebi yukarıdaki kaynak
+  // taramasının kendi kuralıydı: `IconButton` "kutusuna ölçü veren"
+  // işaretlerden biri sayılıyor, yani `IconButton` gören tarama o
+  // dokunulabiliri güvende varsayıp geçiyordu. Oysa `visualDensity:
+  // compact` kutuyu 48 → 40'a, `padding: EdgeInsets.zero` daha da aşağı
+  // indiriyor. Ölçülen (390×844): KModal ✕ **40×40**, KDialogCard ✕
+  // **28×28**, raf taşı **46.3×46** (çevresi ölü alan).
+  //
+  // ⚠ Bu blok yalnızca "büyüdü mü" demiyor, **görselin KIPIRDAMADIĞINI** da
+  // ölçüyor — düzeltmenin tamamı bu takasa dayanıyor (kutu büyür, çağıranın
+  // dolgusu aynı kadar kısılır). Sayılar düzeltmeden ÖNCEKİ ölçümlerdir.
+
+  testWidgets('KModal ✕: kutu 48, ikon KIPIRDAMADI', (tester) async {
+    await setPhoneViewSize(tester, const Size(390, 844));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: const Scaffold(
+        body: KModal(title: 'Skor Kartı', child: Text('gövde')),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    _olc(tester, find.byIcon(Icons.close), 'KModal ✕');
+    // Düzeltmeden ÖNCE de ölçülen değer — başlık dolgusu 20/12/16 →
+    // 16/8/12 ile aynı 8 px'i geri verdiğinden ikon yerinde kaldı.
+    expect(tester.getRect(find.byIcon(Icons.close)),
+        const Rect.fromLTRB(333.0, 386.5, 351.0, 404.5));
+  });
+
+  testWidgets('KDialogCard ✕: kutu 48, ikon KIPIRDAMADI', (tester) async {
+    await setPhoneViewSize(tester, const Size(390, 844));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: KDialogCard(
+          title: const Text('Onay'),
+          onClose: () {},
+          content: const Text('gövde'),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    _olc(tester, find.byIcon(Icons.close), 'KDialogCard ✕');
+    // `Positioned` 12 → 2 telafisi: ikon merkezi iki durumda da kenardan
+    // 26 px içeride.
+    expect(tester.getRect(find.byIcon(Icons.close)),
+        const Rect.fromLTRB(338.0, 387.0, 356.0, 405.0));
+  });
+
+  testWidgets('raf taşı: hedef büyüdü, taş KIPIRDAMADI', (tester) async {
+    await setPhoneViewSize(tester, const Size(390, 844));
+    final tiles = <Tile>[
+      for (final l in ['A', 'B', 'C', 'D', 'E', 'F', 'G']) Tile(letter: l, pts: 1),
+    ];
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: RackWidget(
+              tiles: tiles,
+              selectedTile: null,
+              onSelect: (_) {},
+              title: 'Ben',
+              color: playerColors[0],
+              onTilePointerDown: (_, __) {},
+              onTilePointerMove: (_) {},
+              onTilePointerUp: (_) {},
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // 1) Rafın DIŞ kutusu değişmedi — dolgu takası toplamı korudu.
+    expect(tester.getRect(find.byType(RackWidget)),
+        const Rect.fromLTRB(12.0, 374.0, 378.0, 470.0));
+    // 2) Başlık da yerinde (yatay dolgunun 1,5 px'i yuvalara taşındı,
+    //    başlık satırı onu kendi Padding'iyle geri alıyor).
+    expect(tester.getRect(find.text('Ben')).left, 24.0);
+
+    // 3) Taşların ÇİZİLDİĞİ yer birebir eski değerler.
+    const gorselBeklenen = <Rect>[
+      Rect.fromLTRB(24.0, 412.0, 70.3, 458.0),
+      Rect.fromLTRB(73.3, 412.0, 119.6, 458.0),
+      Rect.fromLTRB(122.6, 412.0, 168.9, 458.0),
+      Rect.fromLTRB(171.9, 412.0, 218.1, 458.0),
+      Rect.fromLTRB(221.1, 412.0, 267.4, 458.0),
+      Rect.fromLTRB(270.4, 412.0, 316.7, 458.0),
+      Rect.fromLTRB(319.7, 412.0, 366.0, 458.0),
+    ];
+    for (var i = 0; i < 7; i++) {
+      final hedef = tester.getRect(find.byKey(ValueKey('rack-$i')));
+      final gorsel = tester.getRect(find.descendant(
+          of: find.byKey(ValueKey('rack-$i')), matching: find.byType(TileWidget)));
+      _rapor.add('  ${'raf taşı $i'.padRight(28)} '
+          '${hedef.width.toStringAsFixed(1)} × ${hedef.height.toStringAsFixed(1)}'
+          '  (görsel ${gorsel.width.toStringAsFixed(1)} × '
+          '${gorsel.height.toStringAsFixed(1)})');
+      // Hedef: eski 46.3 × 46 → 49.3 × 65.
+      expect(hedef.width, greaterThanOrEqualTo(kMinTapTarget));
+      expect(hedef.height, greaterThanOrEqualTo(kMinTapTarget));
+      // Görsel: 0,05 px'lik ızgara yuvarlaması dışında birebir aynı.
+      final b = gorselBeklenen[i];
+      expect((gorsel.left - b.left).abs(), lessThan(0.05), reason: 'taş $i sol');
+      expect((gorsel.top - b.top).abs(), lessThan(0.05), reason: 'taş $i üst');
+      expect((gorsel.right - b.right).abs(), lessThan(0.05), reason: 'taş $i sağ');
+      expect((gorsel.bottom - b.bottom).abs(), lessThan(0.05),
+          reason: 'taş $i alt');
+    }
+
+    // 4) Komşu hedefler ARALIKSIZ — aralarındaki 3 px'lik ölü boşluk
+    //    kalmadı, ıskalayan dokunuş artık hep bir taşa düşüyor.
+    for (var i = 1; i < 7; i++) {
+      final onceki = tester.getRect(find.byKey(ValueKey('rack-${i - 1}')));
+      final simdiki = tester.getRect(find.byKey(ValueKey('rack-$i')));
+      expect((simdiki.left - onceki.right).abs(), lessThan(0.05),
+          reason: 'taş ${i - 1} ile $i arasında ölü boşluk var');
+    }
+  });
+
+  /// Ham `IconButton` bırakmayı engelleyen kaynak taraması — asıl kaçış
+  /// yolu buydu (yukarıdaki tarama `IconButton`ı "ölçülü" sayıyor).
+  test('ham IconButton kalmadı — hepsi KIconButton üzerinden', () {
+    const istisnalar = {
+      // Şifre alanının `suffix`i: alan yüksekliği web paritesi gereği 38
+      // (`theme_test.dart` bunu ölçüyor); 48'lik bir kutu alanı bozardı.
+      // Aynı eylem klavyeden de erişilebilir ve yanlış dokunuşun bedeli
+      // sıfır (şifre görünür/gizli).
+      'auth/auth_modal.dart': 'şifre göster/gizle — 38 px alanın suffix\'i',
+    };
+    final kok = Directory('${repoRoot.path}/mobile/app/lib/src/ui');
+    final bulunan = <String>[];
+    for (final f in kok
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.dart'))) {
+      final rel = f.path.split('lib/src/ui/').last;
+      if (rel == 'tap_target.dart' || istisnalar.containsKey(rel)) continue;
+      if (RegExp(r'\bIconButton\(').hasMatch(f.readAsStringSync())) {
+        bulunan.add(rel);
+      }
+    }
+    expect(bulunan, isEmpty,
+        reason: 'Ham IconButton: ${bulunan.join(', ')}. `KIconButton` '
+            'kullan (48×48) ya da yukarıdaki `istisnalar`a gerekçesini yaz.');
   });
 }

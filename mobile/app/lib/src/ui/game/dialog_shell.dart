@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../tap_target.dart';
 import '../tokens.dart';
 import 'neo_box.dart';
 import 'neo_button.dart';
@@ -182,21 +183,21 @@ class KDialogCard extends StatelessWidget {
       children: [
         Padding(
             padding: const EdgeInsets.all(kDialogPadding), child: body),
+        // Dokunma kutusu 28×28'di (web'in `w-7 h-7`'si birebir taşınmıştı) —
+        // projedeki EN KÜÇÜK dokunma hedefi, Material asgarisinin yarısından
+        // az. 48'e çıkarıldı ve `Positioned` 12 → 2 ile telafi edildi:
+        // ikonun merkezi iki durumda da kenardan 26 px içeride, yani
+        // GÖRSEL DEĞİŞMEDİ (27 Ağustos 2026, bkz. `KIconButton`).
         Positioned(
-          top: 12,
-          right: 12,
-          child: SizedBox(
-            width: 28, // web `w-7 h-7`
-            height: 28,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
-              tooltip: 'Kapat',
-              onPressed: onClose,
-              // KModal'ın ✕'iyle AYNI glyph/boy/renk — web'de ikisi de
-              // `text-lg text-muted` (`modal_shell.dart`).
-              icon: const Icon(Icons.close, size: 18, color: kMuted),
-            ),
+          top: 2,
+          right: 2,
+          child: KIconButton(
+            icon: Icons.close,
+            tooltip: 'Kapat',
+            // KModal'ın ✕'iyle AYNI glyph/boy/renk — web'de ikisi de
+            // `text-lg text-muted` (`modal_shell.dart`).
+            color: kMuted,
+            onPressed: onClose,
           ),
         ),
       ],

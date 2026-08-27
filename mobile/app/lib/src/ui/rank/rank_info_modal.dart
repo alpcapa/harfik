@@ -15,6 +15,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../game/neo_box.dart';
+import '../tap_target.dart';
 import '../tokens.dart';
 import 'league_rank.dart';
 import 'rank_progress_bar.dart';
@@ -131,15 +132,17 @@ class _RankInfoModalState extends State<RankInfoModal>
                         // "görüldü" işaretliyor, buradaki ise salt bilgi
                         // olduğundan hiçbir şeye dokunmuyor. ESKİ KARAR:
                         // o gerçek bir aksiyon (ödülleri görüldü işaretler).
+                        // 8 → 4: dokunma kutusu 40 → 48 olduğundan
+                        // (`KIconButton`) konum aynı 4 px kısıldı; ikonun
+                        // merkezi iki durumda da kenardan 28 px içeride.
                         Positioned(
-                          top: 8,
-                          right: 8,
-                          child: IconButton(
-                            visualDensity: VisualDensity.compact,
+                          top: 4,
+                          right: 4,
+                          child: KIconButton(
+                            icon: Icons.close,
                             tooltip: 'Kapat',
+                            color: kMuted,
                             onPressed: () => Navigator.of(context).pop(),
-                            icon: const Icon(Icons.close,
-                                size: 18, color: kMuted),
                           ),
                         ),
                       ],

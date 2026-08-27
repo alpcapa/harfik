@@ -66,6 +66,8 @@ kapalı-test sürümü (Play `.aab`) hepsini birden taşıyacak.
 | Koltuk hatası migration'ının repo kaydı | `supabase/migrations/20260827121628_*.sql` | **Canlıda ZATEN uygulandı** — uygulama güncellemesi beklemiyor |
 | "Ara & Ekle"de kaydırmanın yutulması | `mobile/app/lib/src/ui/friends/friends_modal.dart` + `modal_shell.dart` (`bodyController`) | Üye listesi artık sonuna kadar kaydırılıyor (klavye açıkken son ~2,5 satır erişilemezdi) |
 | Mükerrer üye satırı migration'ının repo kaydı | `supabase/migrations/20260827153857_*.sql` | **Canlıda ZATEN uygulandı** — web de portun eski sürümü de düzelmiş listeyi alıyor |
+| ✕/dişli butonlarının dokunma kutusu (28–40 → 48) | `tap_target.dart` (`KIconButton`) + 5 çağıran | "Biraz üstüne basınca çalışıyor" sınıfı; görsel kıpırdamadı |
+| Raf taşını yakalama alanı (46×46 → 49×65) | `rack_widget.dart` | Ölü dolgu hedefe devredildi; taşların yeri aynı |
 | Doküman notları | `mobile/docs/parca-log.md`, `docs/decisions/*` | — |
 
 ⚠ **Ayrım:** sunucu tarafı (migration, RPC) merge'i BEKLEMEZ, anında

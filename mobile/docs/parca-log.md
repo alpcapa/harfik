@@ -20,6 +20,55 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 147 — dokunma hedefi İKİNCİ tur: ✕ butonları ve raf taşı
+     (27 Ağustos 2026, kullanıcı bildirdi: *"bazı tıklamalar yine biraz
+     üstte gibi. Mesela skor kartı x'de dikkatimi çekti. Tüm bu tip
+     tıklamaları kontrol etmek lazım"* + *"harfi yakalamak bazen zor
+     oluyor hala"*):** "Yine" doğru — 24 Ağustos'un 48 dp turuyla AYNI hata
+     sınıfı. Asıl soru o turun bunları neden kaçırdığıydı.
+     - **Kaçış yolu taramanın KENDİ kuralıydı:** `tap_target_test.dart`'ın
+       kaynak taraması "kutuya ölçü veren" işaretler arasında `IconButton`ı
+       da sayıyor, yani `IconButton` gören tarama o dokunulabiliri güvende
+       varsayıp geçiyordu. Oysa `visualDensity: compact` kutuyu 48 → **40**,
+       üstüne `padding: EdgeInsets.zero` daha da aşağı indiriyor.
+       **Ders:** bir taramanın "güvende" listesine bir tür eklerken "bu tür
+       gerçekten bir asgari GARANTİ ediyor mu?" diye sor.
+     - **Ölçüldü (390×844):** `KDialogCard` ✕ **28×28** (projedeki en küçük
+       hedef), `KModal`/`RankInfoModal`/`RewardBanner` ✕ ve `ChatModal`
+       dişlisi **40×40**, raf taşı **46.3×46**. Web'de dokuz ✕ de
+       `w-7 h-7` = **28×28**.
+     - **Çözüm: kutuyu büyüt, dolgusunu AYNI kadar kıs** (hamle rozetindeki
+       13 Ağustos takasının aynısı). Portta yeni bir `KIconButton`
+       (`tap_target.dart`, 48×48); çağıranlar telafi ediyor — `KModal`
+       başlık dolgusu 20/12/16 → 16/8/12, köşe butonlarında `Positioned`
+       8 → 4, `KDialogCard`'da 12 → 2. **Ölçüldü: ✕ ikonunun rect'i önce
+       ve sonra birebir aynı** (`333.0, 386.5, 351.0, 404.5`).
+     - **Raf taşı bir PARİTE EKSİĞİ DEĞİLDİ — web'de de aynıydı.**
+       Kullanıcının hatırladığı web düzenlemesi `draftRescue`; o zaten
+       PORTTA doğmuştu ve `DRAG_LIFT` ile birlikte iki tarafta da var.
+       Gerçek sorun: taşın hedefi tam taş kadardı ve çevresi ölü alandı
+       (altta rafın 12 px dolgusu, üstte 7 px kalkma payı, arada 3 px
+       boşluk) — parmağın temas merkezi nişan noktasının ALTINDA kaldığından
+       ıskalamalar tam o alt banda düşüyordu. Tahta hücresinin aksine burada
+       ölü alan DEVREDİLEBİLİR: hedef **46.3×46 → 49.3×65** (alan 2,1×),
+       taşın çizildiği yer ve rafın dış kutusu **birebir aynı**, komşu
+       hedefler arasındaki 3 px ölü boşluk **sıfır**.
+     - **`mobile/` DIŞINDA da dosya değişti** (kök `CLAUDE.md`'nin kuralı):
+       `src/index.css` (`.tap-expand` — DOM'da sözde-eleman düzeni hiç
+       etkilemediğinden web'de telafi gerekmiyor), dokuz bileşen,
+       `src/components/Rack.tsx` (portla birebir aynı sayılar),
+       `tests/smoke.spec.ts`, `docs/decisions/touch-ux-bugs.md`.
+     - **Regresyon iddiası "büyüdü mü" DEĞİL, "görsel KIPIRDADI mı":** asıl
+       risk hedefi büyütürken düzeni sessizce kaydırmak. Testler düzeltmeden
+       ÖNCEKİ ölçümleri golden tutuyor. **Negatif eşleri kanıtlandı** —
+       dolgu telafisi kaldırılınca ✕ 4 px sola kayıp test düşüyor
+       (`Actual: 329.0`), yuva alt dolgusu kaldırılınca taş 12 px aşağı
+       inip test düşüyor, web'de hücre yüksekliği geri alınınca smoke
+       düşüyor (`Received: 46` vs `65`). Ayrıca yeni bir kaynak taraması:
+       **`lib/src/ui` altında ham `IconButton` kalmadı** (tek istisna
+       `auth_modal`'ın 38 px'lik alanına gömülü şifre göster/gizle düğmesi,
+       gerekçesi testte yazılı).
+
    - ✅ **Parça 146 — "Ara & Ekle"de kaydırma yutuluyordu: modalın içine
      ikinci bir kaydırılabilir (27 Ağustos 2026, kullanıcı bildirdi:
      *"Arkadaşlar - Ara&Ekle'de scroll down bir yerde takılıyor, sonuna

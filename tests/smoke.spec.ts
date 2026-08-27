@@ -910,3 +910,80 @@ test('"Buradan başla" balonu boş tahtada ev karesinin yanında; taş KALDIRILI
   await ev.click();
   await expect(balon).toHaveCount(0);
 });
+
+test('dokunma hedefleri: modal ✕ görsel kutusunun dışından da kapanır, raf taşı hedefi taşın kendisinden büyük', async ({
+  page,
+}) => {
+  // NEDEN VAR (27 Ağustos 2026, kullanıcı uygulamada bildirdi ve web'de de
+  // aynısı ölçüldü): *"bazı tıklamalar yine biraz üstte gibi. Mesela skor
+  // kartı x'de dikkatimi çekti"* + *"harfi yakalamak bazen zor oluyor"*.
+  //
+  // Modal ✕'leri `w-7 h-7` = 28×28'di (Material asgarisinin yarısından az),
+  // raf taşının hedefi ise taşın kendisi kadardı (34.6×46) ve çevresi ölü
+  // alandı. İkisi de büyütüldü, GÖRSEL HİÇ DEĞİŞMEDEN: ✕'te düzeni
+  // etkilemeyen bir `::after` (`.tap-expand`, index.css), rafta ölü dolgunun
+  // hedefe devredilmesi (`Rack.tsx`).
+  //
+  // ⚠ İDDİA GÖRÜNTÜYE DEĞİL DAVRANIŞA: ✕'in GÖRSEL kutusunun 8 px ALTINA
+  // tıklanıyor — düzeltmeden önce bu tıklama boşa giderdi.
+  page.on('dialog', (dialog) => dialog.accept());
+  await donenKullanici(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByText('OYUNU BAŞLAT').click();
+  const devam = page.getByLabel('Giriş uyarısı').getByRole('button', { name: 'Oyna', exact: true });
+  if (await devam.isVisible().catch(() => false)) await devam.click();
+  const quickstart = page.getByRole('heading', { name: /hızlı başlangıç/i });
+  if (await quickstart.isVisible().catch(() => false)) {
+    await page.locator('button[aria-label="Kapat"]').last().click();
+  }
+  await expect(page.getByRole('main').getByRole('button', { name: 'Pas Geç' })).toBeEnabled();
+
+  // ── Raf taşı ────────────────────────────────────────────────────────────
+  const kutular: { hedef: DOMRect; gorsel: DOMRect }[] = [];
+  for (let i = 0; i < 7; i++) {
+    const hedef = (await page.locator(`[data-rack-tile="${i}"]`).boundingBox())!;
+    const gorsel = (await page
+      .locator(`[data-rack-tile="${i}"] > div`)
+      .first()
+      .boundingBox())!;
+    kutular.push({ hedef: hedef as DOMRect, gorsel: gorsel as DOMRect });
+    // Taşın kendisi 46 yüksek; hedef 65 (7 kalkma payı + 46 + 12 alt dolgu).
+    expect(gorsel.height).toBeCloseTo(46, 1);
+    expect(hedef.height).toBeCloseTo(65, 1);
+    // Hedef her yönde taşı KAPSIYOR ve altında 12 px fazladan yer var —
+    // parmağın temas merkezi nişan noktasının ALTINDA kaldığından
+    // ıskalamalar tam oraya düşüyor (bkz. docs/decisions/touch-ux-bugs.md).
+    expect(hedef.y).toBeLessThanOrEqual(gorsel.y);
+    expect(hedef.y + hedef.height - (gorsel.y + gorsel.height)).toBeCloseTo(12, 1);
+  }
+  // Komşu hedefler ARALIKSIZ: aradaki 3 px'lik ölü boşluk kalmadı.
+  for (let i = 1; i < 7; i++) {
+    const bosluk = kutular[i].hedef.x - (kutular[i - 1].hedef.x + kutular[i - 1].hedef.width);
+    expect(Math.abs(bosluk)).toBeLessThan(0.05);
+    // Taşların ÇİZİLDİĞİ aralık ise hâlâ 3 px — görsel değişmedi.
+    const gorselBosluk =
+      kutular[i].gorsel.x - (kutular[i - 1].gorsel.x + kutular[i - 1].gorsel.width);
+    expect(gorselBosluk).toBeCloseTo(3, 1);
+  }
+
+  // ── Modal ✕ ─────────────────────────────────────────────────────────────
+  await page.getByRole('button', { name: 'Nasıl Oynanır?' }).click();
+  const baslik = page.getByRole('heading', { name: /hızlı başlangıç/i });
+  await expect(baslik).toBeVisible();
+
+  const kapat = page.locator('button[aria-label="Kapat"]').last();
+  const k = (await kapat.boundingBox())!;
+  // Görsel kutu KÜÇÜK KALDI — büyüyen yalnızca hedef.
+  expect(k.width).toBeCloseTo(28, 1);
+  expect(k.height).toBeCloseTo(28, 1);
+  const genisletici = await kapat.evaluate((el) => {
+    const s = getComputedStyle(el, '::after');
+    return { w: s.width, h: s.height };
+  });
+  expect(genisletici).toEqual({ w: '48px', h: '48px' });
+
+  // Ve asıl iddia: görsel kutunun 8 px ALTINA tıklamak modalı kapatır.
+  await page.mouse.click(k.x + k.width / 2, k.y + k.height + 8);
+  await expect(baslik).toHaveCount(0);
+});

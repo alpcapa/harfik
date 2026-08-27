@@ -231,6 +231,115 @@ uyduğu Node'da (JS ≈ Dart regex semantiği) tek tek sınandı. Web tarafı
 temiz: `npm run lint`, `npm run build`, `verify-*` betikleri ve Playwright
 **29/29**.
 
+## İkinci tur: ✕ butonları ve raf taşı (27 Ağustos 2026)
+
+Kullanıcı: *"Bir de app'de bazı tıklamalar yine biraz üstte gibi. Mesela
+skor kartı x'de dikkatimi çekti. Tüm bu tip tıklamaları kontrol etmek
+lazım."* + *"harfi yakalamak bazen zor oluyor hala. Web'de düzenleme
+yapmıştık, alanı genişletmiştik. Bu app'e de uygulandı mı?"*
+
+**"Yine"** kelimesi doğru: bu, 24 Ağustos'un 48 dp turunun AYNI hata
+sınıfı. Asıl soru neden o tur bunları kaçırdığıydı.
+
+### Neden kaçtılar: taramanın kendi kuralı onları güvende sayıyordu
+
+`tap_target_test.dart`'ın kaynak taraması bir `GestureDetector`/`InkWell`
+gördüğünde çevresinde "kutuya ölçü veren" bir işaret arıyor ve o listede
+**`IconButton` de var**. Yani `IconButton` gören tarama o dokunulabiliri
+ölçülmüş varsayıp geçiyordu. Oysa Material'ın `IconButton`'ı:
+
+- `visualDensity: VisualDensity.compact` ile 48 → **40×40**,
+- üstüne `padding: EdgeInsets.zero` ile daha da aşağı iner.
+
+> **Ders:** bir taramanın "güvende" listesi, güvende OLMAYAN bir şeyi
+> içerebilir. Listeye bir tür eklerken "bu tür gerçekten bir asgari
+> garanti ediyor mu?" diye sor — `IconButton` etmiyordu.
+
+### Ölçüm (390×844, düzeltmeden önce)
+
+| Hedef | Kutu | Not |
+|---|---|---|
+| `KDialogCard` ✕ | **28 × 28** | web'in `w-7 h-7`'si birebir taşınmıştı |
+| `KModal` ✕ (skor kartı dahil) | **40 × 40** | `visualDensity: compact` |
+| `RankInfoModal` / `RewardBanner` ✕ | 40 × 40 | aynı |
+| `ChatModal` dişlisi | 40 × 40 | ✕'in tam yanında |
+| Raf taşı | **46.3 × 46** | çevresi ölü alan (aşağı bkz.) |
+| Web modal ✕'leri (9 yer) | **28 × 28** | `w-7 h-7` |
+
+### Çözüm: kutuyu büyüt, dolgusunu aynı kadar kıs
+
+Görselin kıpırdamaması ŞART — bu, projenin hamle rozetinde uyguladığı
+takasın (13 Ağustos 2026) aynısı.
+
+- **Port:** yeni bir `KIconButton` (`tap_target.dart`) — 48×48, sıfır
+  dolgu. Çağıranlar telafi ediyor: `KModal` başlık dolgusu `20/12/16` →
+  `16/8/12`; köşe butonlarında `Positioned` 8 → 4, `KDialogCard`'da 12 → 2.
+  Ölçüldü: ✕ ikonunun rect'i düzeltmeden önce ve sonra **birebir aynı**
+  (`333.0, 386.5, 351.0, 404.5`).
+- **Web:** DOM'da telafiye gerek yok — bir sözde-eleman düzeni hiç
+  etkilemez. Tek bir yardımcı sınıf (`.tap-expand`, `src/index.css`) 48×48'lik
+  bir `::after` koyuyor; dokuz ✕'e eklendi, hiçbir konum yeniden
+  hesaplanmadı.
+
+⚠ `.tap-expand`'i `overflow-hidden` bir kapsayıcıda kullanırken düğmenin
+kenardan en az 10 px içeride olduğundan emin ol — taşan kısım kırpılırsa
+dokunuş almaz. (Bugünkü tek örnek `Modal.tsx`in kartı; oradaki ✕ 20 px
+dolgunun içinde.)
+
+**Bilinçli istisna:** `auth_modal.dart`'ın şifre göster/gizle düğmesi
+(`InputDecoration.suffix`). Alan yüksekliği web paritesi gereği 38
+(`theme_test.dart` ölçüyor); 48'lik bir kutu alanı bozardı. Aynı eylem
+klavyeden de erişilebilir ve yanlış dokunuşun bedeli sıfır.
+
+### Raf taşı: ölü alanı hedefe DEVRET
+
+"Harfi yakalamak zor" şikayeti bir parite eksiği değildi — **web'de de
+aynıydı**. (Kullanıcının hatırladığı web düzenlemesi `draftRescue`;
+o zaten portta doğmuştu ve `DRAG_LIFT` ile birlikte iki tarafta da var.)
+
+Taşın hedefi tam taş kadardı ve **çevresi ölü alandı**: altında raf
+kutusunun 12 px dolgusu, üstünde seçili taşın 7 px kalkma payı, aralarında
+3 px boşluk. Parmağın temas merkezi nişan noktasının ALTINDA kaldığından
+ıskalamalar tam da alttaki o ölü banda düşüyordu.
+
+Tahta hücresinin aksine burada ölü alan **devredilebilir**:
+
+| | Önce | Sonra |
+|---|---|---|
+| Hedef | 46.3 × 46 | **49.3 × 65** (alan 2,1×) |
+| Taşın çizildiği yer | x 24.0–70.3, y 412–458 | **birebir aynı** |
+| Rafın dış kutusu | 12–378 × 374–470 | **birebir aynı** |
+| Komşu hedefler arası | 3 px ölü | **0** |
+
+Sayısal takas: raf dolgusu `all(12)` → `fromLTRB(10.5, 12, 10.5, 0)`, satır
+53 → 65, her yuvaya `(1.5, 0, 1.5, 12)`. Yatay toplam korunduğu için
+taşların genişliği bile aynı kalıyor. Web'de birebir aynı sayılar
+(`px-[10.5px]` + hücre `px-[1.5px]`, `min-h-[65px]`, hücre
+`h-[65px] pt-[7px] pb-3`, `gap: 0`).
+
+> **Kural:** büyütülemeyen bir hedefin (tahta hücresi) yanındaki ıskalamayı
+> ZARARSIZ yap; büyütülebilen bir hedefin (raf taşı) yanındaki ölü alanı
+> ona DEVRET. İkisi de aynı gözlemin sonucu.
+
+### Regresyon — iddia "büyüdü mü" değil, "görsel KIPIRDADI mı"
+
+Asıl risk hedefi büyütürken düzeni sessizce kaydırmak. Bu yüzden testler
+düzeltmeden ÖNCEKİ ölçümleri golden olarak tutuyor:
+`tap_target_test.dart` (✕ ikon rect'i, raf taşlarının yedi rect'i, rafın
+dış kutusu, başlığın x'i, komşu hedefler arası boşluk) ve
+`tests/smoke.spec.ts` (✕'in GÖRSEL kutusunun 8 px ALTINA tıklamak modalı
+kapatmalı; raf hedefi 65, taş 46, aradaki görsel boşluk hâlâ 3 px).
+
+**Negatif eşleri kanıtlandı:** dolgu telafisi kaldırılınca ✕ ikonu 4 px
+sola kayıyor ve test düşüyor (`Actual: 329.0` vs `333.0`); raf yuvasının
+alt dolgusu kaldırılınca taş 12 px aşağı iniyor ve test düşüyor
+(`taş 0 üst: 12.0`); web'de `tap-expand`/hücre yüksekliği geri alınınca
+smoke testi düşüyor (`Received: 46` vs `65`).
+
+Ayrıca yeni bir kaynak taraması eklendi: **`lib/src/ui` altında ham
+`IconButton` kalmadı** — hepsi `KIconButton`'dan geçiyor, tek istisna
+yukarıda gerekçesiyle yazılı.
+
 ## Dokunmatikte "Yapışkan Hover" (11 Ağustos 2026)
 
 Kullanıcı, Setup'ın en altındaki **"Kullanım Koşulları"** linkinin altında,

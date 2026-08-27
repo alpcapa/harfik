@@ -17,6 +17,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../game/neo_box.dart';
+import '../tap_target.dart';
 import '../tokens.dart';
 import 'league_rank.dart';
 import 'rank_progress_bar.dart';
@@ -299,14 +300,15 @@ class _RewardBannerState extends State<RewardBanner>
           // callback'e bağlı kaldı; başka bir kapatma yolu eklenirse (ör.
           // zemine dokunma) o da `onClose`'tan geçmeli, aksi halde banner
           // her açılışta yeniden çıkar.
+          // 8 → 4: dokunma kutusu 40 → 48 (`KIconButton`), ikon yerinde.
           Positioned(
-            top: 8,
-            right: 8,
-            child: IconButton(
-              visualDensity: VisualDensity.compact,
+            top: 4,
+            right: 4,
+            child: KIconButton(
+              icon: Icons.close,
               tooltip: 'Kapat',
+              color: kMuted,
               onPressed: widget.onClose,
-              icon: const Icon(Icons.close, size: 18, color: kMuted),
             ),
           ),
           if (rankDown == null && !_reduced)

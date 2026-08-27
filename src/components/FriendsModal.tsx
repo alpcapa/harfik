@@ -132,7 +132,7 @@ function InfoDialog({
         <button
           onClick={onClose}
           aria-label="Kapat"
-          className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
+          className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none tap-expand w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
         >
           ✕
         </button>

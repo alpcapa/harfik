@@ -60,12 +60,31 @@ class RackWidget extends StatelessWidget {
           CssShadow(color: Color(0xE6FFFFFF), offset: Offset(-3, -3), blur: 10),
         ],
       ),
-      padding: const EdgeInsets.all(12),
+      // Dolgu ARTIK SİMETRİK DEĞİL ve sebebi dokunma alanı (27 Ağustos
+      // 2026, kullanıcı bildirdi: *"harfi yakalamak bazen zor oluyor"*).
+      // Ölçüldü (390×844): taşın dokunma kutusu 46.3 × 46 idi ve çevresi
+      // ÖLÜ alandı — altında kutunun 12 px'lik dolgusu, üstünde seçili
+      // taşın 7 px'lik kalkma payı, arasında 3 px'lik boşluklar. Parmağın
+      // bildirdiği temas merkezi nişan alınan noktanın ALTINDA kaldığından
+      // (projenin "biraz üstüne basınca çalışıyor" hata sınıfı,
+      // `docs/decisions/touch-ux-bugs.md`) ıskalamalar tam da alttaki o ölü
+      // banda düşüyordu.
+      //
+      // Çözüm: ölü alanı taşlara DEVRET. Alt dolgu (12) satırın kendisine,
+      // yatay dolgunun 1,5 px'i her yuvaya taşındı; 12 → 10,5 + yuva başına
+      // 1,5 toplamı KORUYOR, yani taşların genişliği ve konumu birebir aynı
+      // kalıyor (ölçüldü: taş 0 hâlâ x 24.0–70.3, y 412–458). Değişen tek
+      // şey dokunma kutusu: 46.3 × 46 → 49.3 × 65, alan 2,1 katı.
+      padding: const EdgeInsets.fromLTRB(10.5, 12, 10.5, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
+          // Yatay dolgunun 1,5 px'i yuvalara taşındığından (bkz. yukarı)
+          // başlık satırı onu kendisi geri alır — adın x'i değişmesin.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 1.5),
+            child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Flexible(
@@ -108,23 +127,17 @@ class RackWidget extends StatelessWidget {
                 ),
             ],
           ),
+          ),
           const SizedBox(height: 6),
           SizedBox(
-            height: 53, // 46px taş + seçili taşın 7px yukarı kalkma payı
+            // 7 (seçili taşın kalkma payı) + 46 (taş) + 12 (kutunun eski alt
+            // dolgusu). Yükseklik toplamı değişmedi, yalnızca alt 12 px artık
+            // satırın İÇİNDE ve dokunulabilir.
+            height: 65,
             child: Row(
               children: [
-                for (var i = 0; i < tiles.length; i++) ...[
-                  if (i > 0) const SizedBox(width: 3),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.bottomCenter,
-                      child: SizedBox(
-                        height: 46,
-                        child: _tileTouchArea(i),
-                      ),
-                    ),
-                  ),
-                ],
+                for (var i = 0; i < tiles.length; i++)
+                  Expanded(child: _tileTouchArea(i)),
               ],
             ),
           ),
@@ -133,13 +146,27 @@ class RackWidget extends StatelessWidget {
     );
   }
 
+  /// Dokunma kutusu YUVANIN TAMAMI (boşlukların yarısı + alttaki eski
+  /// dolgu); taş kendi doğal boyutunda, yuvanın altına hizalı çizilir.
+  /// `Listener`/`GestureDetector` bu yüzden dolgunun DIŞINDA duruyor —
+  /// içeride olsaydı kutu yine yalnızca taş kadar olurdu.
   Widget _tileTouchArea(int i) {
-    final tile = Opacity(
-      opacity: dragHiddenIndex == i ? 0 : 1,
-      child: TileWidget(
-        tile: tiles[i],
-        variant: TileVariant.rack,
-        selected: swapMode ? swapSelection.contains(i) : selectedTile == i,
+    final tile = Padding(
+      padding: const EdgeInsets.fromLTRB(1.5, 0, 1.5, 12),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: SizedBox(
+          height: 46,
+          child: Opacity(
+            opacity: dragHiddenIndex == i ? 0 : 1,
+            child: TileWidget(
+              tile: tiles[i],
+              variant: TileVariant.rack,
+              selected:
+                  swapMode ? swapSelection.contains(i) : selectedTile == i,
+            ),
+          ),
+        ),
       ),
     );
     final isDraggable = onTilePointerDown != null && !swapMode;

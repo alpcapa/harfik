@@ -72,7 +72,7 @@ export function RankInfoModal({ tier, totalScore, bonusPoints, onClose }: RankIn
           type="button"
           onClick={onClose}
           aria-label="Kapat"
-          className="absolute top-2 right-2 text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform focus:outline-none"
+          className="absolute top-2 right-2 text-muted hover:text-text text-lg leading-none tap-expand w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform focus:outline-none"
         >
           ✕
         </button>
