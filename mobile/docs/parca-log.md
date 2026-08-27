@@ -20,6 +20,107 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 147 — dokunma hedefi İKİNCİ tur: ✕ butonları ve raf taşı
+     (27 Ağustos 2026, kullanıcı bildirdi: *"bazı tıklamalar yine biraz
+     üstte gibi. Mesela skor kartı x'de dikkatimi çekti. Tüm bu tip
+     tıklamaları kontrol etmek lazım"* + *"harfi yakalamak bazen zor
+     oluyor hala"*):** "Yine" doğru — 24 Ağustos'un 48 dp turuyla AYNI hata
+     sınıfı. Asıl soru o turun bunları neden kaçırdığıydı.
+     - **Kaçış yolu taramanın KENDİ kuralıydı:** `tap_target_test.dart`'ın
+       kaynak taraması "kutuya ölçü veren" işaretler arasında `IconButton`ı
+       da sayıyor, yani `IconButton` gören tarama o dokunulabiliri güvende
+       varsayıp geçiyordu. Oysa `visualDensity: compact` kutuyu 48 → **40**,
+       üstüne `padding: EdgeInsets.zero` daha da aşağı indiriyor.
+       **Ders:** bir taramanın "güvende" listesine bir tür eklerken "bu tür
+       gerçekten bir asgari GARANTİ ediyor mu?" diye sor.
+     - **Ölçüldü (390×844):** `KDialogCard` ✕ **28×28** (projedeki en küçük
+       hedef), `KModal`/`RankInfoModal`/`RewardBanner` ✕ ve `ChatModal`
+       dişlisi **40×40**, raf taşı **46.3×46**. Web'de dokuz ✕ de
+       `w-7 h-7` = **28×28**.
+     - **Çözüm: kutuyu büyüt, dolgusunu AYNI kadar kıs** (hamle rozetindeki
+       13 Ağustos takasının aynısı). Portta yeni bir `KIconButton`
+       (`tap_target.dart`, 48×48); çağıranlar telafi ediyor — `KModal`
+       başlık dolgusu 20/12/16 → 16/8/12, köşe butonlarında `Positioned`
+       8 → 4, `KDialogCard`'da 12 → 2. **Ölçüldü: ✕ ikonunun rect'i önce
+       ve sonra birebir aynı** (`333.0, 386.5, 351.0, 404.5`).
+     - **Raf taşı bir PARİTE EKSİĞİ DEĞİLDİ — web'de de aynıydı.**
+       Kullanıcının hatırladığı web düzenlemesi `draftRescue`; o zaten
+       PORTTA doğmuştu ve `DRAG_LIFT` ile birlikte iki tarafta da var.
+       Gerçek sorun: taşın hedefi tam taş kadardı ve çevresi ölü alandı
+       (altta rafın 12 px dolgusu, üstte 7 px kalkma payı, arada 3 px
+       boşluk) — parmağın temas merkezi nişan noktasının ALTINDA kaldığından
+       ıskalamalar tam o alt banda düşüyordu. Tahta hücresinin aksine burada
+       ölü alan DEVREDİLEBİLİR: hedef **46.3×46 → 49.3×65** (alan 2,1×),
+       taşın çizildiği yer ve rafın dış kutusu **birebir aynı**, komşu
+       hedefler arasındaki 3 px ölü boşluk **sıfır**.
+     - **`mobile/` DIŞINDA da dosya değişti** (kök `CLAUDE.md`'nin kuralı):
+       `src/index.css` (`.tap-expand` — DOM'da sözde-eleman düzeni hiç
+       etkilemediğinden web'de telafi gerekmiyor), dokuz bileşen,
+       `src/components/Rack.tsx` (portla birebir aynı sayılar),
+       `tests/smoke.spec.ts`, `docs/decisions/touch-ux-bugs.md`.
+     - **Regresyon iddiası "büyüdü mü" DEĞİL, "görsel KIPIRDADI mı":** asıl
+       risk hedefi büyütürken düzeni sessizce kaydırmak. Testler düzeltmeden
+       ÖNCEKİ ölçümleri golden tutuyor. **Negatif eşleri kanıtlandı** —
+       dolgu telafisi kaldırılınca ✕ 4 px sola kayıp test düşüyor
+       (`Actual: 329.0`), yuva alt dolgusu kaldırılınca taş 12 px aşağı
+       inip test düşüyor, web'de hücre yüksekliği geri alınınca smoke
+       düşüyor (`Received: 46` vs `65`). Ayrıca yeni bir kaynak taraması:
+       **`lib/src/ui` altında ham `IconButton` kalmadı** (tek istisna
+       `auth_modal`'ın 38 px'lik alanına gömülü şifre göster/gizle düğmesi,
+       gerekçesi testte yazılı).
+
+   - ✅ **Parça 146 — "Ara & Ekle"de kaydırma yutuluyordu: modalın içine
+     ikinci bir kaydırılabilir (27 Ağustos 2026, kullanıcı bildirdi:
+     *"Arkadaşlar - Ara&Ekle'de scroll down bir yerde takılıyor, sonuna
+     kadar gitmiyor"*):** Üye listesi `ConstrainedBox(maxHeight: 320) >
+     ListView(shrinkWrap: true)` içindeydi — yani `KModal`'ın gövde
+     `SingleChildScrollView`'ının İÇİNE ikinci bir kaydırılabilir. Aynı
+     modaldeki öteki iki sekme ("Arkadaşlarım", "İstekler") düz `Column`;
+     tutarsızlık yalnızca burada.
+     - **ÖLÇÜLDÜ, tahmin edilmedi** (widget testi, 420×560 — klavye
+       `autofocus` ile açık olduğundan cihazda kalan yükseklik bu civarda):
+       modal gövdesi y **119→518** arasını gösterirken iç liste y
+       **326→646**'ya uzanıyordu. Yani alt **128 px** — son ~2,5 satır ve
+       "Yükleniyor…" nöbetçisi — ekranın altındaydı. Liste satırının
+       üzerinden 60 kez sürüklendikten sonra dış kaydırma offset'i hâlâ
+       **0.0**'dı; son üye (46.) y 600–620'de, hiç görünmeden kalıyordu.
+     - **Kök sebep bir kural farkı: Flutter iç içe kaydırmayı
+       ZİNCİRLEMEZ.** Tarayıcı iç kutu ucuna gelince dıştakine devreder —
+       web'in `max-h-[50vh] overflow-y-auto`'su bu yüzden `FriendsModal.tsx`'te
+       sorun çıkarmıyor, **web tarafı etkilenmedi ve dokunulmadı**.
+       Flutter'da iç `ListView` jesti tümüyle sahiplenir.
+     - **Düzeltme iç kaydırılabiliri EKLEMEK değil KALDIRMAK:** liste artık
+       düz bir `Column`, modalda tek kaydırılabilir var. Sayfalama
+       dinleyicisi listenin denetleyicisinden modalın gövdesine taşındı —
+       `KModal`'a isteğe bağlı `bodyController` eklendi (varsayılan `null`,
+       öteki ~15 modal etkilenmedi). Dinleyici üç sekmede de ateşlendiğinden
+       `_loadMoreAllUsers` iki koruma kazandı (sekme `search` değilse ve
+       aramada 2+ karakter varsa sayfa istemez).
+     - ⚠ **Kalıcı kural:** `KModal`'ın gövdesi ZATEN kaydırılabilir; içine
+       ikinci bir `ListView`/`SingleChildScrollView` koyma. Uzun liste
+       gerekiyorsa `Column` + `bodyController`. Sabit bir `maxHeight` bunu
+       kurtarmaz, **hatayı görünmez kılar**: 900 px'lik test penceresinde
+       gövde taşmadığı için hata HİÇ görünmüyordu — yalnızca klavye açıkken
+       çıkıyordu. Yeni testin 560 px'i bu yüzden seçildi.
+     - **Regresyon + negatif eş:** `friends_test.dart`'a parmağı gerçek bir
+       liste satırında başlatan bir sürükleme testi eklendi; düz `Column`
+       eski hâline geri alınınca test DÜŞÜYOR (`Actual: <620.0>` vs beklenen
+       `<= 518.0`).
+     - **Aynı ekranda İKİNCİ, bağımsız bir hata çıktı (sunucuda):**
+       `list_users_for_friend`/`search_users_for_friend` `friend_requests`'e
+       karşılıklı `OR` koşuluyla `left join` yaptığından, iki yön de satır
+       olarak varsa aynı üye listede İKİ KEZ çıkıyordu — bir gün önceki
+       `list_my_online_games`/`list_friends` hatasının (Parça: `live-game.md`,
+       migration `20260827121628`) AYNI sınıfı. Canlıda ölçüldü: 47 profilin
+       46'sını gören iki üyede join 47 satır dönüyordu.
+       `20260827153857_dedupe_friend_candidate_lists` ile `distinct on (p.id)`
+       + `order by name, id` eşitlik-bozucusu eklendi; canlıya uygulandı ve
+       doğrulandı (47 → 46). Dönüş şekli değişmediğinden **uygulama
+       güncellemesi beklemiyor**. Ayrıntı: `docs/decisions/friends.md`.
+     - **`mobile/` DIŞINDA da dosya değişti:** `supabase/migrations/`,
+       `docs/decisions/friends.md`, `ROADMAP.md` — kök `CLAUDE.md`'nin
+       kuralı gereği aynı PR'da.
+
    - ✅ **Parça 145 — "Buradan başla" balonu: ilk hamlenin nereye yapılacağı
      (26 Ağustos 2026, kullanıcı isteği: *"ilk boş tabloda evin yanına doğru
      bir balon koyabilir miyiz? Buradan başla yazsın"*):** Kapalı testte

@@ -262,8 +262,9 @@ void main() {
       Future<void> Function(String)? sharer,
       bool withStats = false,
       FakeChatGateway? chat,
+      Size size = const Size(420, 900),
     }) async {
-      await setPhoneViewSize(tester, const Size(420, 900));
+      await setPhoneViewSize(tester, size);
       final gw = gateway ?? FakeFriendsGateway();
       await tester.pumpWidget(MaterialApp(
         theme: kelimekiTheme(),
@@ -697,6 +698,65 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('🚫'), findsNothing);
       expect(find.text('🚩'), findsNothing);
+    });
+
+    // 27 Ağustos 2026 — kullanıcı bildirdi: "Ara & Ekle'de scroll down bir
+    // yerde takılıyor, sonuna kadar gitmiyor."
+    //
+    // ÖLÇÜLEN kök sebep (düzeltmeden önce): liste kendi `ListView`'ında,
+    // `maxHeight: 320` ile modalın gövde `SingleChildScrollView`'ının İÇİNE
+    // konmuştu. Klavye açıkken gövde 119→518 arasını gösterirken liste
+    // 326→646'ya uzanıyordu, yani alt 128 px ekranın altında kalıyordu — ve
+    // Flutter iç içe kaydırmayı ZİNCİRLEMEDİĞİNDEN parmağını listeye koyan
+    // kullanıcı dış gövdeyi hiç kaydıramıyordu (60 sürüklemeden sonra dış
+    // offset 0.0). Son satırlar ve "Yükleniyor…" nöbetçisi erişilemezdi.
+    //
+    // Bu testin NEGATİF EŞİ kanıtlandı: `friends_modal.dart`'taki düz
+    // `Column` eski `ConstrainedBox(maxHeight: 320) > ListView` hâline geri
+    // alınınca test DÜŞÜYOR (Uye46 dikey olarak 600–620'de, gövdenin 518
+    // olan alt kenarının dışında).
+    testWidgets('Ara & Ekle: parmak listenin ÜZERİNDEYKEN son üyeye kadar '
+        'kaydırılabilir (modalda tek kaydırılabilir)', (tester) async {
+      final gw = FakeFriendsGateway()
+        ..userRows = [
+          for (var i = 1; i <= 46; i++)
+            {
+              'id': 'u$i',
+              'name': 'Uye${i.toString().padLeft(2, '0')}',
+              'avatar_url': null,
+              'relation': null,
+            },
+        ];
+      // Klavye `autofocus` ile zaten açık; 560 px o durumda kalan yüksekliği
+      // temsil ediyor. 900'de hata GÖRÜNMEZ (gövde taşmaz).
+      await pumpModal(tester,
+          gateway: gw,
+          initialTab: FriendsTab.search,
+          size: const Size(420, 560));
+      await tester.pumpAndSettle();
+
+      // Değişmez: modalın gövdesinde İÇ İÇE kaydırılabilir liste YOK — üç
+      // sekmenin üçü de düz Column. (Eski hâlde burada bir ListView vardı.)
+      expect(find.byType(ListView), findsNothing);
+      expect(find.byType(SingleChildScrollView), findsOneWidget);
+
+      final govde = tester.getRect(find.byType(SingleChildScrollView));
+
+      // Parmak GERÇEK bir liste satırının üzerinde başlıyor — kullanıcının
+      // yaptığı hareket bu; hatanın görüldüğü tek yer de burası.
+      final tutamak = tester.getRect(find.text('Uye03')).center;
+      for (var i = 0; i < 60; i++) {
+        await tester.dragFrom(tutamak, const Offset(0, -300));
+        await tester.pumpAndSettle();
+      }
+
+      // Sayfalama da bu kaydırmadan besleniyor: üç sayfanın hepsi geldi.
+      expect(gw.userRows.length, 46);
+      final son = find.text('Uye46');
+      expect(son, findsOneWidget);
+      final sonRect = tester.getRect(son);
+      expect(sonRect.top, greaterThanOrEqualTo(govde.top));
+      expect(sonRect.bottom, lessThanOrEqualTo(govde.bottom));
     });
   });
 

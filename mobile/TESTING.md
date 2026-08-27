@@ -1445,6 +1445,36 @@ ekranında koş.
 - [ ] **Çevrimdışı göstergesi:** Uçak modunda "Çevrimdışı" görünmeli ve
       "Nasıl Oynanır?" ile çakışmamalı.
 
+## 16b. Dokunma hedefleri — ÜÇÜNCÜ tur: ✕ ve raf taşı (27 Ağustos 2026, Parça 147)
+
+Kullanıcı: *"bazı tıklamalar yine biraz üstte gibi. Mesela skor kartı x'de
+dikkatimi çekti"* + *"harfi yakalamak bazen zor oluyor hala"*. Bölüm 16'nın
+turu bu ikisini HİÇ ölçmemişti (kaynak taraması `IconButton`ı "ölçülü"
+sayıyordu). Ölçülen: `KDialogCard` ✕ **28×28**, öteki ✕'ler ve dişli
+**40×40**, raf taşı **46.3×46** (çevresi ölü alan). Hepsi 48'e / 49.3×65'e
+çıkarıldı, **görsel kıpırdamadan**.
+
+Testler kutuyu ölçüyor ama **gerçek parmakla ıskalamayı hiçbir test
+ölçemez** — burası o teyit. Önce Setup'taki `Derleme <sha>` satırının bu
+düzeltmeyi içeren derlemeyle eşleştiğini doğrula.
+
+- [ ] **Skor kartının ✕'i ilk dokunuşta kapatıyor** — bildirilen hatanın
+      birebir teyidi. ✕'in tam ortasına değil, biraz ALTINA/yanına
+      dokunmayı da dene: artık çalışmalı.
+- [ ] **✕ görsel olarak YERİNDE** — büyümüş/kaymış görünmemeli (büyüyen
+      yalnızca dokunma kutusu). Aynısını onay diyaloglarının (`KDialogCard`)
+      ✕'inde, k-lig bilgi penceresinde ve kutlama banner'ında da kontrol et.
+- [ ] **Sohbet penceresinin dişlisi ile ✕'i karışmıyor** — ikisi de 48
+      olduğundan yan yana duruyorlar; dişliye basınca ayarlar, ✕'e basınca
+      kapanma gelmeli (ıskalayan dokunuş yanlış butona düşmemeli).
+- [ ] **Raf taşını yakalamak kolaylaştı** — taşın biraz ALTINDAN (rafın alt
+      dolgusundan) tutmayı dene; sürükleme başlamalı. İki taşın ARASINA
+      denk gelen dokunuş da artık bir taşa düşmeli, boşa gitmemeli.
+- [ ] **Taşlar görsel olarak YERİNDE ve aynı boyutta** — raf kutusu
+      büyümemiş, isim satırı kaymamış, taşlar arası boşluk hâlâ görünüyor.
+- [ ] **Seçili taşın yukarı kalkması bozulmamış** (bir taşa dokun: 7 px
+      yukarı kalkmalı, üstteki isim satırına girmemeli).
+
 ## 16. Dokunma hedefleri 48 dp — İKİNCİ tur (24 Ağustos 2026, Parça 134)
 
 Bölüm 15'teki düzeltme **yetmedi**: kullanıcı aynı şikayeti beş kontrol için

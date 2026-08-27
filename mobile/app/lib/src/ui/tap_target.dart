@@ -82,3 +82,51 @@ class TapTarget extends StatelessWidget {
     );
   }
 }
+
+/// Başlıktaki/köşedeki ikon butonu (✕, dişli) — **48×48 dokunma kutusu**,
+/// ikon ortada.
+///
+/// NEDEN VAR (27 Ağustos 2026, kullanıcı bildirdi: *"bazı tıklamalar yine
+/// biraz üstte gibi. Mesela skor kartı x'de dikkatimi çekti"*): 24 Ağustos'un
+/// 48 dp turu bu butonları HİÇ ölçmemişti. Sebebi kaynak taramasının kendi
+/// kuralıydı — `IconButton` "kutusuna ölçü veren" işaretlerden biri sayılıyor,
+/// yani `IconButton` gören tarama o dokunulabiliri güvende varsayıp geçiyordu.
+/// Oysa Material'ın `IconButton`'ı `visualDensity: compact` ile **40×40**'a,
+/// `padding: EdgeInsets.zero` ile daha da aşağı iner. Ölçüldü (390×844):
+///
+///   KModal ✕        40.0 × 40.0
+///   KDialogCard ✕   28.0 × 28.0   ← web'in `w-7 h-7`'si birebir taşınmıştı
+///
+/// ⚠ **Görsel DEĞİŞMEZ.** Büyüyen yalnızca dokunma kutusu; çağıran, kutunun
+/// büyüdüğü kadar kendi dolgusunu/konumunu kısar (KModal başlığında
+/// `20/16` → `16/12`, köşe butonlarında `Positioned` 8 → 4). Bu, projenin
+/// hamle rozetinde uyguladığı aynı takas (13 Ağustos 2026): dokunma alanı
+/// büyürken ikonun ekrandaki yeri birebir aynı kalır.
+class KIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
+  final double iconSize;
+  final Color color;
+
+  const KIconButton({
+    super.key,
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    required this.color,
+    this.iconSize = 18,
+  });
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+        padding: EdgeInsets.zero,
+        // `visualDensity` VERİLMEZ — `compact` tam olarak kutuyu 48'den
+        // 40'a indiren şeydi.
+        constraints: const BoxConstraints(
+            minWidth: kMinTapTarget, minHeight: kMinTapTarget),
+        tooltip: tooltip,
+        onPressed: onPressed,
+        icon: Icon(icon, size: iconSize, color: color),
+      );
+}

@@ -65,15 +65,29 @@ AppServices services({Future<AppStorage>? storage, AuthService? auth}) =>
 
 /// "Arkadaşınla (N)" rozeti/girişte otomatik sekme testleri için — girişli,
 /// depolamasız (bu davranış `local_game_saves`e hiç dokunmuyor).
-AppServices liveBadgeServices(AuthService auth, OnlineGamesRepo onlineGames) =>
+AppServices liveBadgeServices(AuthService auth, OnlineGamesRepo onlineGames,
+        {OnlineStatus? onlineStatus}) =>
     AppServices(
-      onlineStatus: OnlineStatus.fake(),
+      onlineStatus: onlineStatus ?? OnlineStatus.fake(),
       dictionary: Future.value(words),
       meanings: MeaningStore(bundle: rootBundle),
       auth: auth,
       supabase: null,
       versionGate: VersionGateStatus.ok,
       onlineGames: onlineGames,
+    );
+
+
+/// "ARKADAŞINLA" sekmesinin KENDİ rozeti. `find.byType(CountBadge)` tek
+/// başına yetmiyor: sekme açıldığında `LiveGamesTab`in alt sekmeleri de
+/// rozet taşıyabiliyor, yani genel arama yanlış rozeti bulabilir.
+/// ⚠ `.first` KULLANMA: rozet yokken zincirin ucu boşalıyor ve `findsNothing`
+/// eşleştiricisi mismatch'i tarif ederken patlıyor ("No results have been
+/// found yet") — hata mesajı testin GERÇEK sonucunu gizliyor.
+Finder arkadaslaRozeti() => find.descendant(
+      of: find.ancestor(
+          of: find.text('ARKADAŞINLA'), matching: find.byType(Stack)),
+      matching: find.byType(CountBadge),
     );
 
 Future<void> pumpSetup(WidgetTester tester, AppServices s) async {
@@ -755,5 +769,76 @@ void main() {
         reason: 'sha yoksa saat tek başına bir kimlik DEĞİL');
     expect(formatBuildLabel('a1b2c3d', ''), 'a1b2c3d');
     expect(formatBuildLabel('a1b2c3d', '15.08 11:42'), 'a1b2c3d · 15.08 11:42');
+  });
+
+  testWidgets(
+      'ARKADAŞINLA rozeti KENDİNİ TOPARLAR: kanal yeniden bağlanınca ve '
+      'bağlantı geri gelince tazelenir (27 Ağustos 2026 saha hatası)',
+      (tester) async {
+    // Kullanıcı bildirdi: zayıf bağlantıda bekleyen 8 oyunu oynadı, rozet
+    // 8'de TAKILI kaldı; listedeki her satır "Rakibin hamlesi bekleniyor"
+    // diyordu — yani rozet ile liste birbiriyle ÇELİŞİYORDU.
+    //
+    // Sebep: Realtime kanalı kopunca kendi hamlelerinin yayınladığı olaylar
+    // kayboluyor, `pendingCounts()` de ağ hatasında `null` döndüğünden
+    // (bilinçli) SON BİLİNEN rozet korunuyor. `LiveGamesTab` bu iki
+    // kancayı (onResubscribe + bağlantı dönüşü) baştan beri taşıyordu,
+    // rozet taşımıyordu.
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final net = OnlineStatus.fake();
+    final gw = FakeOnlineGamesGateway()
+      ..rows = [
+        gameRow(
+            id: 'inv',
+            myId: 'me',
+            status: 'pending',
+            myRole: 'invitee',
+            myInviteStatus: 'pending',
+            myInviteId: 'i1'),
+      ];
+    await pumpSetup(
+        tester,
+        liveBadgeServices(
+            AuthService.fake(user: fakeUser('me')), OnlineGamesRepo(gw),
+            onlineStatus: net));
+    expect(tester.widget<CountBadge>(find.byType(CountBadge)).count, 1);
+
+    // Sunucuda iş bitti ama HİÇBİR olay gelmedi (kanal kopuktu).
+    gw.rows = [];
+
+    // ARACIN CANLI OLDUĞUNU ÖNCE KANITLA: kanca olmadan rozet BAYAT kalır.
+    // Bu satır düşerse aşağıdaki iddialar boşuna geçerdi.
+    await tester.pump(const Duration(seconds: 1));
+    expect(tester.widget<CountBadge>(arkadaslaRozeti()).count, 1,
+        reason: 'olay gelmeden rozet zaten tazelenmiş — test bir şey '
+            'kanıtlamıyor demektir');
+
+    // (1) Kanal KOPUP yeniden bağlandı.
+    // `fireAllOnResubscribe`: sekme açıkken hem rozet hem liste abone —
+    // `lastOnResubscribe` yalnızca SONUNCUYU (listeyi) tutuyor.
+    gw.fireAllOnResubscribe();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(arkadaslaRozeti(), findsNothing,
+        reason: 'yeniden bağlanma bir tazeleme sinyalidir');
+
+    // (2) Bağlantı gidip geri geldi — rozeti yeniden bayatlatıp ölçüyoruz.
+    gw.rows = [
+      gameRow(
+          id: 'inv2',
+          myId: 'me',
+          status: 'pending',
+          myRole: 'invitee',
+          myInviteStatus: 'pending',
+          myInviteId: 'i2'),
+    ];
+    net.debugSetOnline(false);
+    await tester.pump();
+    net.debugSetOnline(true);
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    expect(tester.widget<CountBadge>(arkadaslaRozeti()).count, 1,
+        reason: 'bağlantı dönünce rozet tazelenmeli (web Setup.tsx '
+            "window.addEventListener('online', …) karşılığı)");
   });
 }

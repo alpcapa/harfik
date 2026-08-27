@@ -1813,7 +1813,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
             <button
               onClick={onClose}
               aria-label="Kapat"
-              className="text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
+              className="text-muted hover:text-text text-lg leading-none tap-expand w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
             >
               ✕
             </button>

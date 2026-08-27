@@ -19,6 +19,10 @@ değiştirdi: artık omurga aşağıdaki **madde 0 (FAZ B)**, çünkü kişisel
 hesaplarda production'a çıkmanın önünde **daha başlamamış 14 günlük bir
 tester sayacı** var. Maddeler 1, 2 ve 4 o fazın içinde yaşıyor.
 
+**Durum eki (27 Ağustos 2026):** `main` hâlâ yeşil ama **dal bilerek merge
+EDİLMİYOR** — istemci düzeltmeleri tek bir kapalı-test sürümünde çıkacak;
+ayrıntı aşağıdaki "Yalnızca sohbette kalmış üç karar" bölümünde.
+
 **21 Ağustos'ta kapanan ÜÇ madde** (kalan maddelerin numaraları DEĞİŞMEDİ):
 - eski **#3** (istemci hata telemetrisi) — `client_errors` tablosu + web/port
   raporlayıcıları + admin panelinde "Hatalar" sekmesi. Kaydı kök
@@ -38,6 +42,84 @@ Aşağıdaki ikisinin kaydı kök `CLAUDE.md` → Kaynak Hunisi bölümünde:
   **Ders:** bu dosyadaki efor tahminleri (`low`/`medium`) bir SÖZ değil —
   işin gerçekten tek satır olduğunu ölçmeden varsayma.
 
+---
+
+## Yalnızca sohbette kalmış üç karar (27 Ağustos 2026)
+
+Bu üçü bir "madde" değil — biri bir KUYRUK, biri ERTELENMİŞ bir karar, biri
+bir HATIRLATMA. Hiçbiri koda yazılamadığı için buraya yazıldı; oturum
+kapanınca kaybolmasınlar.
+
+### 1. Bekleyen tek güncelleme — dal birikiyor, merge YOK
+
+Kullanıcı isteği (27 Ağustos 2026): *"Başka şeyler de çıkar mutlaka. Hepsini
+tek güncellemede çıkarız. beklet"*. Yani `claude/account-deletion-in-app-soz4lr`
+dalındaki istemci düzeltmeleri **bilerek** merge edilmiyor; bir sonraki
+kapalı-test sürümü (Play `.aab`) hepsini birden taşıyacak.
+
+Şu an kuyruktakiler:
+
+| Düzeltme | Nerede | Kullanıcıya etkisi |
+|---|---|---|
+| "Arkadaşınla" rozetinin bayat kalması | `mobile/app/lib/src/ui/setup/setup_screen.dart` (`onResubscribe` + `onlineStatus` kancaları) | Ağ kesilip döndüğünde kırmızı sayı artık kendini toparlıyor |
+| `slots.length != playerCount` telemetri koruması (2 yer) | port + web | Aynı sınıf bozuk veri bir daha sessizce oturmaz |
+| Koltuk hatası migration'ının repo kaydı | `supabase/migrations/20260827121628_*.sql` | **Canlıda ZATEN uygulandı** — uygulama güncellemesi beklemiyor |
+| "Ara & Ekle"de kaydırmanın yutulması | `mobile/app/lib/src/ui/friends/friends_modal.dart` + `modal_shell.dart` (`bodyController`) | Üye listesi artık sonuna kadar kaydırılıyor (klavye açıkken son ~2,5 satır erişilemezdi) |
+| Mükerrer üye satırı migration'ının repo kaydı | `supabase/migrations/20260827153857_*.sql` | **Canlıda ZATEN uygulandı** — web de portun eski sürümü de düzelmiş listeyi alıyor |
+| ✕/dişli butonlarının dokunma kutusu (28–40 → 48) | `tap_target.dart` (`KIconButton`) + 5 çağıran | "Biraz üstüne basınca çalışıyor" sınıfı; görsel kıpırdamadı |
+| Raf taşını yakalama alanı (46×46 → 49×65) | `rack_widget.dart` | Ölü dolgu hedefe devredildi; taşların yeri aynı |
+| Doküman notları | `mobile/docs/parca-log.md`, `docs/decisions/*` | — |
+
+⚠ **Ayrım:** sunucu tarafı (migration, RPC) merge'i BEKLEMEZ, anında
+canlıdır (bkz. kök `CLAUDE.md` → "Deploy Doğrulaması" tablosunun üçüncü
+satırı). Kuyrukta bekleyen yalnızca İSTEMCİ tarafı. Bu yüzden koltuk hatası
+27 Ağustos'ta kullanıcıyla teyit edilerek kapandı, dal hâlâ açıkken.
+
+Ayrıca **`notify-deadline-warnings`'te düzeltilmiş bir yazım hatası deploy
+EDİLMEDİ** ("taktirde" → "takdirde"): repoda düzeltildi, canlıya
+gönderilmedi — push işi zaten bu fonksiyona dokunacak, tek deploy'da
+gitsin. O deploy yapılırken **`verify_jwt: false` AÇIKÇA geçilmeli**
+(araç parametre verilmezse `true` varsayıp mevcut değeri sessizce ezer).
+
+### 2. Zorunlu güncelleme (force update) — ERTELENDİ
+
+Kullanıcı isteği (26 Ağustos 2026): *"Ben normal yayına alıyorum. Riske
+girmeyelim. Sorun çoğu insan güncellemez diye yorum geldi. Google tarafında
+böyle opsiyon olsaydı onu açıp mecburi update yaptırırdım. Ama yoksa
+etrafından dönmeye gerek yok."*
+
+Ölçülen gerçek: **Play Console'da "zorunlu güncelleme" diye bir ayar YOK.**
+Google'ın sunduğu tek yol In-App Updates API (`immediate` akış) ve
+önceliği (`inAppUpdatePriority`) yalnızca **Publishing API** üzerinden
+verilebiliyor — Console arayüzünde alanı bile yok. Yani "etrafından dönmek"
+gerçekten ek bir altyapı işi.
+
+İleride yapılacaksa **iki ön koşul ÖLÇÜLDÜ ve ikisi de bugün eksik:**
+
+1. **Her derleme `1.0.0`.** `mobile/app/pubspec.yaml` sürümü sabit; CI
+   yalnızca `versionCode`'u artırıyor. Bir istemci "daha yeni sürüm var mı"
+   sorusunu kendi başına soramaz — önce sürüm adı derlemeye bağlanmalı.
+2. **`UpdateRequiredScreen`'in mağaza butonu YOK.** Ekran var ama kullanıcıyı
+   Play'e götüren bir eylem taşımıyor; zorunlu güncelleme onu kilitlenme
+   ekranına çevirir.
+
+⚠ **Risk (kullanıcı sordu: "Bu oyunun hiç açılmamasına sebep olabilir mi?"):**
+EVET — yanlış kurulmuş bir zorunlu güncelleme, güncellemeyi alamayan
+(cihazı eski, Play'i olmayan, ağı kısıtlı) kullanıcı için uygulamayı
+tamamen açılmaz hâle getirir ve düzeltmesi ancak YENİ bir sürüm yayınlamakla
+mümkündür. Bu yüzden erteleme doğru karar; yapılacaksa önce yukarıdaki iki
+ön koşul, sonra kademeli (`flexible`) akış.
+
+### 3. 44 davetliye hatırlatma — henüz kimse kurmadı
+
+Kapalı testte davet edilenlerin büyük bölümü uygulamayı hâlâ **yüklememiş**.
+Bu bir hata değil bir pazarlama işi, ama sıralamayı etkiliyor: 27 Ağustos'un
+iki düzeltmesi (koltuk hatası + rozet) tam da **ilk deneyimi** hedefliyordu —
+yani hatırlatma, kuyruktaki sürüm çıktıktan SONRA gönderilmeli, önce değil.
+
+Katılan/indiren sayısı Play Console'da: **Test → Closed testing → (track) →
+Testers sekmesi**, ve indirme adedi için **Statistics**. (Kullanıcı bunu iki
+kez sordu — yeri burada yazılı.)
 ---
 
 ## Modeller — hangi iş için hangisi
@@ -288,8 +370,12 @@ Sırası önemli olan tek bağ: **#4, #2'den SONRA** (hesap silme kaskadı
    filter, Supabase redirect allow-list, e-posta şablonları, Flutter
    yönlendirme) duruyor.
 4. **0.C — App content formları** (aşağı).
-5. **Madde 4 — test hesaplarının silinmesi.** ⚠ **`T2` SİLİNMEYECEK** —
-   App access formunda incelemeciye verilen hesap o (yukarı, 0.C).
+5. ~~Test hesaplarının silinmesi~~ — **madde KALDIRILDI** (26 Ağustos 2026,
+   kullanıcı kararı: *"gerekirse daha sonra hesabımı silden ben yaparım,
+   önemli bir konu değil"*). Kalan test hesapları duruyor; büyüme
+   metriklerini bir miktar kirletmeleri kabul edildi. ⚠ **`T2` ve
+   `Ironman` hiçbir koşulda silinmez** — gerekçeleri
+   `docs/decisions/account-deletion.md` → "ASLA SİLİNMEYECEK İKİ HESAP".
 
 ### 0.C — Play Console'da doldurulacak formlar (kod işi değil, zorunlu)
 
@@ -404,47 +490,6 @@ acil.
 
 **Ön koşul:** Apple Developer üyeliği + imzalama anahtarı. Bunlar yoksa iş
 yarıda kalır — **başlamadan önce teyit et.**
-
----
-
-## 4. Test hesaplarının silinmesi — **TEMİZLİK, GERİ DÖNÜŞSÜZ**
-
-*FAZ B'nin parçası — sıradaki yeri: madde 0 → 0.B/5. ⚠ App access formuna
-incelemeciye verilen hesabı silme.*
-
-**Model: Opus 5, efor `high`.** Küçük ama geri alınamaz; Sonnet'e verme.
-
-Test hesapları büyüme metriklerini kirletiyor: `T1`
-(alp.capa@hotmail.com — **kullanıcının KENDİ kişisel e-postası**), `T2`,
-`T3`, `T4`, `T5` (tek kullanımlık testinator adresleri).
-
-**DURUM (26 Ağustos 2026 — YARISI BİTTİ, uygulama içi yoldan silindi):**
-
-| Hesap | Durum |
-|---|---|
-| **T4** | ✅ silindi (26 Ağu, duman testi — 1 YZ oyunu, anonimleştirme yok) |
-| **T1** | ✅ silindi (26 Ağu, ASIL test — 19 oyun, 11 kayıt anonimleşti) |
-| **T3** | ⬜ duruyor (1 oyun · 1 yarım Canlı oyun · 3 arkadaşlık · 1 davet · 1 YZ kaydı) |
-| **T5** | ⬜ duruyor (8 oyun · 1 arkadaşlık) |
-| **T2** | 🔒 **SİLİNMEZ** — App access formunda incelemeciye verilen hesap |
-| **Ironman** | 🔒 **HİÇBİR KOŞULDA SİLİNMEZ** — hesap sahibinin gerçek ana/admin hesabı (14 Ağustos) |
-
-T3 ve T5 artık bir test değil sadece temizlik: ikisinin de kuru
-çalıştırması `games_baskalarinin: 0` diyor, yani anonimleştirme dalını hiç
-çalıştırmıyorlar.
-
-**Ön koşul KARŞILANDI ve KANITLANDI:** madde 2'nin kaskadı iki gerçek
-silmeyle uçtan uca doğrulandı (ayrıntı: `docs/decisions/account-deletion.md`
-→ "Gerçek kullanım").
-
-**Nasıl yapılır:** her hesap için önce `select public.delete_account_cascade
-('<uuid>', true)` (kuru — hiçbir şey yazmaz) çalıştırılıp rapor kullanıcıya
-gösterilir, onay alındıktan sonra `false` ile tekrarlanır ve ardından
-`auth.admin.deleteUser` çağrılır. (Edge Function yalnızca ÇAĞIRANIN kendi
-hesabını siler; başkasının hesabını silmek bilerek mümkün değil, bu yüzden
-buradaki temizlik MCP üzerinden yapılacak.)
-
-Silmeden önce kaskad zincirini çıkarıp kullanıcıya göster: geri dönüşü yok.
 
 ---
 
@@ -630,3 +675,160 @@ kilitlenmiyor (23 Ağustos 2026'da canlıdan okundu).
    düşürdü).
 6. **Düzen testinin boyu** ürünün göründüğü EN DAR/EN KISA yüzeyi temsil
    etmeli — etmiyorsa yeşil olması hiçbir şey garanti etmez.
+
+---
+
+## 13. Push bildirimleri + Firebase Analytics — **YENİ, 26 Ağustos 2026**
+
+Dört olay: **teslim uyarısı** · oyun daveti · arkadaş daveti · hamle sırası.
+
+Kullanıcı isteği: *"App'de notification özelliği açanlara hamle sırası, oyun
+daveti, arkadaş daveti geldiğinde uyarıları çıkmalı."*
+
+**Ölçülen başlangıç noktası — hiç push altyapısı YOK:** `pubspec.yaml`'da
+Firebase/messaging paketi yok, `AndroidManifest`'te `POST_NOTIFICATIONS`
+izni yok, token tutan bir tablo yok. Yani bu sıfırdan bir altyapı işi.
+
+**Ama olayların İKİSİ zaten sunucuda var** (e-posta kanalı olarak):
+
+| Olay | Sunucu tarafı | Push için ek iş |
+|---|---|---|
+| **Teslim uyarısı** ("24 saat içinde hamle yapmazsan…") | `notify-deadline-warnings` — tetikleyici, metin ve `deadline_warning_sent_at` tekrar koruması **HAZIR** | **en ucuz**: aynı noktada ikinci kanal |
+| Oyun daveti | `notify-game-invite` | ucuz — kanal eklemek |
+| Arkadaş daveti | `notify-friend-request` | ucuz — kanal eklemek |
+| **Hamle sırası** ("sıra sende") | **YOK** | **en pahalı** — anlık olay sıfırdan |
+
+**SIRALAMA (26 Ağustos 2026'da DÜZELTİLDİ):** teslim uyarısı → davetler →
+sıra sende. İlk taslakta "önce sıra sende" yazıyordu; yanlıştı. Ölçünce
+çıktı ki teslim uyarısı hem **en ucuz** (üç parçası da hazır) hem **en
+değerli**: ötekiler bir fırsatı kaçırtır, bu bir KAYBI önler — oyun teslim
+sayılıyor ve k-lig puanından 2 düşüyor. E-postayı görmeyen için push tam
+da bunun içindir.
+
+Mevcut e-posta metni kullanıcının istediği cümlenin ta kendisi ve İKİ
+durumu birden kapsıyor: Canlı oyunlarda 48 saatlik `turn_deadline`, YZ
+oyunlarında 7 günlük terk penceresi — ikisinde de son 24 saate girince.
+
+⚠ **Bekleyen deploy:** `notify-deadline-warnings`'teki *"taktirde"* yazım
+hatası 26 Ağustos'ta REPODA düzeltildi (*"takdirde"*) ama **canlıya
+yayılmadı** — tek harflik bir düzeltme için canlı bir bildirim
+fonksiyonunu yeniden yüklemenin riski değmezdi ve bu fonksiyon zaten push
+kanalı eklenirken yeniden yayınlanacak. **Bu iş yapılırken deploy'u
+unutma; o ana kadar repo ile canlı bilerek AYRIŞIK.** Deploy'da
+`verify_jwt: false` AÇIKÇA geçilmeli (ölçüldü — bu fonksiyon o altı
+fonksiyondan biri; parametre geçilmezse araç `true` varsayar ve kapıyı
+sessizce kapatır).
+
+Yani "sıra sende" bildiriminin bir sunucu olayı hiç yok; hamle
+gönderiminde tetiklenen yeni bir kanca gerekiyor.
+
+### iOS: bugün çıkamaz, ama tasarım onu BEKLİYOR olacak
+
+APNs anahtarı **Apple Developer üyeliği** istiyor; üyelik süreci Apple'dan
+dönüş beklediği için ilerlemiyor (TestFlight'ı bloklayan aynı şey — madde 8
+ön koşulu). Kullanıcı kararı (26 Ağustos 2026): *"orada da bu fonksiyon
+ileride olacakmış gibi plan yapmak lazım."*
+
+**Bunun somut karşılığı — iOS sonradan EKLENMELİ, YENİDEN YAZILMAMALI:**
+
+- **Tek gönderici: FCM.** FCM iOS'a da teslim ediyor (arka planda APNs'i
+  kendisi kullanıyor). Sunucu tarafı FCM üzerinden yazılırsa iOS günü
+  gelince yapılacak iş "ikinci bir gönderici yazmak" DEĞİL, yalnızca
+  **APNs anahtarını Firebase'e yüklemek + uygulamaya Push capability
+  eklemek**. APNs'e doğrudan konuşan bir yol seçilirse bu kazanç kaybolur.
+- **İstemci: `firebase_messaging`** iki platformu birden karşılıyor; ayrı
+  bir iOS yolu yazma.
+- **`push_tokens.platform` baştan var** (`android`/`ios`) — sonradan kolon
+  eklemek, var olan satırların platformunu tahmin etmek demek olurdu.
+  `util/platform.dart` zaten bu değer kümesini üretiyor, onu kullan.
+- **İzin akışı ortak yazılsın:** iOS da açık izin istiyor (üstelik
+  "provisional" seçeneği var). İzni isteyen kod platforma DALLANMAMALI,
+  eklentinin ortak API'sini kullanmalı.
+- **Bildirime dokununca gitme** (deep link, madde 1) zaten platform
+  bağımsız — orada iOS'a özgü tek iş Associated Domains.
+
+Yani madde iOS'u BEKLEMEZ: Android'le çıkar, iOS bir anahtar yüklemesiyle
+açılır.
+
+### Yapılacaklar
+
+1. **Altyapı:** FCM (Android), cihaz token tablosu (`push_tokens`:
+   `user_id`, `token`, `platform`, `updated_at`; aynı kullanıcı birden
+   çok cihaz), token yenilenmesi ve **çıkışta/hesap silmede temizlenmesi**
+   (`delete_account_cascade`'e satır!).
+2. **İzin:** Android 13+ `POST_NOTIFICATIONS` runtime izni. İzin İSTEME
+   ANI önemli — açılışta sormak reddi artırır; ilk Canlı oyun ya da ilk
+   davet anında sor.
+3. **Tercih — KARAR VERİLDİ (26 Ağustos 2026): e-posta KALIR, iki BAĞIMSIZ
+   anahtar, otomatik bastırma YOK.** Kullanıcı önce *"app kullananlara
+   email gitmesine gerek yok"* dedi, ama kontrolün zorluğu sorulunca
+   *"zor ise kalabilir, isteyen ayarlardan kapatabilir"* diye bıraktı.
+   Ölçülen durum: kontrol teknik olarak KOLAY (push tablosu zaten
+   gerekiyor, e-posta fonksiyonlarına tek bir `exists` kontrolü yeterdi) —
+   ama **yanlış olurdu**:
+   - Token bayatlarsa (uygulama silinmiş, bildirim sistem ayarından
+     kapatılmış, token yenilenmemiş) push GİTMEZ; e-postayı da bastırmışsak
+     kullanıcı **hiçbir şey** almaz. Bu, iki bildirim almaktan çok daha kötü
+     ve **SESSİZ** bir arıza: kimse şikayet etmez, yalnızca oyunlar ölür.
+   - Uygulama telefonda olsa bile bazı kullanıcılar bildirimi mailde görmeyi
+     tercih ediyor (masaüstünde çalışırken).
+
+   Bu yüzden: `profiles.email_notifications_enabled` (VAR) + yeni
+   `push_notifications_enabled`, ikisi de AÇIK gelir, Hesap Ayarları'nda
+   ayrı ayrı görünür. İleride "çok mail geliyor" diye GERÇEK bir şikayet
+   gelirse tek güvenli bastırma biçimi şudur: e-postayı yalnızca push'un
+   GERÇEKTEN teslim edildiği olayda bastırmak (FCM `UNREGISTERED` dönerse
+   token'ı silip e-postaya düşmek). Bu ek iştir ve şikayet gelmeden
+   yapılmaz.
+4. **"Sıra sende" olayı:** hamle gönderiminde tetiklenen kanca.
+   ⚠ İki tuzak: (a) hamleyi YAPANA gönderme; (b) hızlı gidip gelen bir
+   oyunda her hamlede bildirim spam olur — e-posta tarafındaki
+   `deadline_warning_sent_at` deseninin karşılığı bir bastırma gerekir.
+5. **Tıklayınca doğru yere git:** bildirime dokunmak ilgili oyunu/daveti
+   AÇMALI. Deep link altyapısı madde 1'le kesişiyor — ikisi birlikte
+   planlanmalı.
+6. **Play Data safety formu:** FCM token bir cihaz tanımlayıcısıdır;
+   `marketing/play-store/console-formlari.md`'deki eşleme güncellenmeli.
+   Bu form yanlışsa mağaza reddi gelir.
+
+### Firebase Analytics — aynı pakette (26 Ağustos 2026, kullanıcı kararı)
+
+Kullanıcı: *"Bence hepsini bir kerede halletmek iyi olur."* FCM için
+Firebase zaten kurulacağından Analytics'i o anda açmak neredeyse bedava.
+
+**Neden gerekli — ÖLÇÜLDÜ:** bugünkü şema sonuçları görüyor, davranışı
+görmüyor. `guest_visits`/`device_visits` → `profiles` → `game_starts` →
+`game_finishes` zinciri "ne oldu"yu veriyor; ekran görüntülenmesi, sekme
+geçişi, akış içi terk noktası, oturum uzunluğu YOK. **Bedeli bu proje
+zaten ödedi:** insanlar tanıtım ekranında takılıyordu (3 günde 2 kayıt) ve
+sebebi veriden GÖRÜLMEDİ — kullanıcı insanlarla konuşunca öğrenildi.
+`game_starts` bunu gösteremezdi, çünkü o insanlar oyuna hiç ulaşamamıştı.
+
+İlk olay kümesi (değeri en yüksek altı): `intro_slide_viewed`,
+`signup_started`, `signup_completed`, `live_game_form_opened`,
+`live_game_created`, `invite_link_shared`.
+
+⚠ **Admin panelinden metrik KALDIRMA — kanıta bağlı.** Kullanıcı
+*"admin'de olup FB tarafında daha iyisi olan dataları admin'den
+kaldırabiliriz bile"* dedi. Doğru, ama **kaldırmalar paralel koşu
+sonrasına**: GA4 şunların yerini ALAMAZ — (a) kaynak hunisi web'de
+başlıyor (`utm_source` karşılama katmanında; uygulamadaki GA4 o yarıyı
+görmez), (b) retention/aktivasyon hesap+oyun kayıtlarından hesaplanıyor,
+GA4'ünki cihaz kapsamlı ve web+app'i aynı kişide birleştirmez, (c) join
+edilebilirlik ("k-lig'de yükselenler daha çok davet mi gönderiyor?" senin
+şemanda tek sorgu), (d) GA4 örnekleme yapar ve olayı 2-14 ay tutar,
+`games` sonsuza kadar sende. Kaldırılmaya net aday: cihaz/OS kırılımı
+(`device_visits`). Gerisi ancak GA4'ün daha iyi verdiği ÖLÇÜLDÜKTEN sonra.
+Gerekçe bu projeye özgü: ölçümü, yerine geçecek şeye güvenmeden kaldırmak
+"sessiz kayıp" sınıfından bir hatadır ve fark edilmesi en zor olanıdır.
+
+### Sıra
+
+1. **Teslim uyarısı push'u** (en ucuz + en değerli, yukarıdaki tabloya bak)
+2. Oyun daveti · arkadaş daveti kanalları
+3. **"Sıra sende"** — sunucu olayı sıfırdan
+4. Analytics olayları
+
+Not: oyun daveti ve arkadaş daveti için e-posta ZATEN gidiyor, yani o
+ikisinin push katkısı en düşük olan.
+

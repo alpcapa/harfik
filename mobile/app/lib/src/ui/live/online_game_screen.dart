@@ -75,6 +75,7 @@ import '../tokens.dart';
 import '../game/invasion_confirm.dart';
 import '../../util/offline_notice.dart';
 import '../../util/online_status.dart';
+import '../../data/error_reporter.dart';
 
 const Color _muted = kMuted;
 const Color _red = kRed;
@@ -216,6 +217,9 @@ class _Ghost {
 
 class _OnlineGameScreenState extends State<OnlineGameScreen>
     with WidgetsBindingObserver {
+  /// Koltuk indeksi POZİSYONELDİR: `slots` dizisindeki sıra = oyuncunun
+  /// koltuğu. Bu yüzden dizinin uzunluğu `playerCount` ile birebir olmak
+  /// ZORUNDA — aşağıdaki nöbetçi bunu kontrol ediyor.
   late final int _mySlot = widget.game.slots
       .indexWhere((s) => !s.isAi && s.userId == widget.myUserId);
   late final GameController _controller = GameController(
@@ -332,6 +336,22 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   @override
   void initState() {
     super.initState();
+    // NÖBETÇİ (27 Ağustos 2026) — 27 Ağustos'ta `list_my_online_games` bir
+    // slotu ÇOĞALTIYORDU (`friend_requests` karşılıklı çift → `jsonb_agg`
+    // aynı slotu iki kez yazıyordu) ve sonraki TÜM koltuk indeksleri
+    // kayıyordu: oyuncu KENDİ köşesine taş koyamıyor, BAŞKASININ köşesine
+    // koyunca "geçerli" görüyor ama OYNA pasif kalıyordu (sunucu ham
+    // `og.slots`'u okuduğundan doğru koltuğu biliyor — pasif kalması DOĞRU
+    // yarısıydı). Hata SESSİZDİ: hiçbir yerde iz bırakmadı, teşhis elle SQL
+    // koşularak yapıldı. RPC düzeltildi; bu kontrol tekrarını GÖRÜNÜR kılar.
+    if (widget.game.slots.length != widget.game.playerCount) {
+      errorReporter.report(
+        StateError('online_game slots uzunluğu playerCount ile uyuşmuyor: '
+            '${widget.game.slots.length} != ${widget.game.playerCount} '
+            '(oyun ${widget.game.id})'),
+        context: 'online_game.slot_count_mismatch',
+      );
+    }
     if (_mySlot < 0) return;
     WidgetsBinding.instance.addObserver(this);
     unawaited(_refresh());

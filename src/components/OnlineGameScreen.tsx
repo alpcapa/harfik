@@ -75,6 +75,7 @@ import { ChatSettingsModal } from './ChatSettingsModal';
 import { HelpModal } from './HelpModal';
 import type { GameState, HistoryEntry, Tile as TileModel } from '../game/types';
 import type { OnlineGame, OnlineGameMessageRow, OnlineGameSlot, OnlineMoveRow, WordMeaning } from '../lib/database.types';
+import { reportClientError } from '../utils/errorReporting';
 
 interface OnlineGameScreenProps {
   game: OnlineGame;
@@ -149,6 +150,27 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   // Sarmalayıcı reducer'dan (aşağıda) önce lazım — sade bir hesap
   // olduğundan (`game.slots` en fazla 4 öğe) useMemo'ya gerek yok.
   const mySlotIndex = game.slots.findIndex((s) => s.type === 'human' && s.user_id === myUserId);
+
+  // NÖBETÇİ (27 Ağustos 2026) — koltuk indeksi POZİSYONELDİR, yani `slots`
+  // dizisinin uzunluğu `player_count` ile birebir olmak ZORUNDA. O gün
+  // `list_my_online_games` bir slotu ÇOĞALTIYORDU (`friend_requests` karşılıklı
+  // çift → `jsonb_agg` aynı slotu iki kez yazıyordu) ve sonraki tüm indeksler
+  // kayıyordu: oyuncu KENDİ köşesine taş koyamıyor, BAŞKASININ köşesine
+  // koyunca "geçerli" görüyor ama sunucu haklı olarak reddediyordu.
+  // Hata SESSİZDİ — hiçbir yerde iz bırakmadı, teşhis elle SQL koşularak
+  // yapıldı. RPC düzeltildi; bu kontrol tekrarını GÖRÜNÜR kılıyor.
+  const slotCountMismatch = game.slots.length !== game.player_count;
+  useEffect(() => {
+    if (!slotCountMismatch) return;
+    reportClientError(
+      new Error(
+        `online_game slots uzunluğu player_count ile uyuşmuyor: ` +
+          `${game.slots.length} ≠ ${game.player_count} (oyun ${game.id})`,
+      ),
+      'manual',
+      'online_game.slot_count_mismatch',
+    );
+  }, [slotCountMismatch, game.slots.length, game.player_count, game.id]);
   const mySlotIndexRef = useRef(mySlotIndex);
   mySlotIndexRef.current = mySlotIndex;
 
@@ -1564,7 +1586,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
             <button
               onClick={() => closeMessagePopup()}
               aria-label="Kapat"
-              className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
+              className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none tap-expand w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
             >
               ✕
             </button>

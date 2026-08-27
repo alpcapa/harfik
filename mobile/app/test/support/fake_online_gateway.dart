@@ -139,7 +139,13 @@ class FakeOnlineGamesGateway implements OnlineGamesGateway {
     subscribeCount++;
     lastOnChange = onChange;
     lastOnResubscribe = onResubscribe;
-    return () => unsubscribeCount++;
+    onChanges.add(onChange);
+    if (onResubscribe != null) onResubscribes.add(onResubscribe);
+    return () {
+      unsubscribeCount++;
+      onChanges.remove(onChange);
+      if (onResubscribe != null) onResubscribes.remove(onResubscribe);
+    };
   }
 
   /// Testler "sunucudan Realtime olayı geldi"yi buradan sürer.
@@ -147,6 +153,27 @@ class FakeOnlineGamesGateway implements OnlineGamesGateway {
 
   /// Testler kanalın KOPUP yeniden bağlanmasını buradan taklit eder.
   void Function()? lastOnResubscribe;
+
+  /// ⚠ AYNI ANDA BİRDEN FAZLA ABONE OLABİLİR — `lastOn*` yalnızca SONUNCUSUNU
+  /// tutar ve bu 27 Ağustos 2026'da bir testi sessizce yanlış yere baktırdı:
+  /// `SetupScreen` (rozet) ve `LiveGamesTab` (liste) ikisi de abone oluyor,
+  /// sekme açıkken `lastOnResubscribe` LİSTENİNKİNİ gösteriyordu; test
+  /// listeyi tetikleyip rozetten sonuç bekliyordu. Birden fazla abonenin
+  /// olabildiği yerde `fireAllOn*` kullan.
+  final onChanges = <void Function()>[];
+  final onResubscribes = <void Function()>[];
+
+  void fireAllOnChange() {
+    for (final f in [...onChanges]) {
+      f();
+    }
+  }
+
+  void fireAllOnResubscribe() {
+    for (final f in [...onResubscribes]) {
+      f();
+    }
+  }
 
   @override
   Future<Map<String, Object?>?> gameState(String gameId) async {

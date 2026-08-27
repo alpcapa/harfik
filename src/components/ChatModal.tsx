@@ -125,7 +125,7 @@ export function ChatModal({
         <button
           onClick={onOpenSettings}
           aria-label="Sohbet Ayarları"
-          className="text-muted hover:text-text w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
+          className="text-muted hover:text-text tap-expand w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
         >
           <GearIcon />
         </button>

@@ -6,6 +6,7 @@
 // taşındı (web'le aynı tek-kaynak disiplini).
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
+import '../tap_target.dart';
 import '../tokens.dart';
 
 const Color _panel = kPanel;
@@ -46,6 +47,14 @@ class KModal extends StatelessWidget {
   /// halde ✕ alttaki gerçek ekran route'unu pop ederdi.
   final VoidCallback? onClose;
 
+  /// Gövdenin kaydırma denetleyicisi. Modalın İÇİNE ikinci bir kaydırılabilir
+  /// koymak yerine (Flutter iç içe kaydırmayı ZİNCİRLEMEZ — iç liste ucuna
+  /// gelince sürükleme ölür, dış gövde hiç kaymaz; 27 Ağustos 2026'da
+  /// FriendsModal'ın "Ara & Ekle" listesinde ölçüldü: listenin alt 128 px'i
+  /// ekran dışında kalıp asla erişilemiyordu) sayfalama yapan modal kendi
+  /// denetleyicisini BURAYA verir ve listeyi düz bir Column olarak çizer.
+  final ScrollController? bodyController;
+
   const KModal({
     super.key,
     required this.title,
@@ -55,6 +64,7 @@ class KModal extends StatelessWidget {
     this.headerAction,
     this.headerCenter,
     this.onClose,
+    this.bodyController,
   });
 
   @override
@@ -80,8 +90,19 @@ class KModal extends StatelessWidget {
               // ORTASINDA duruyor, yani 3 + 24 = 27 → metnin üst kenarı
               // yine 20'de. Telafi olmasa başlık 34 px aşağı kayardı;
               // böyle yalnızca 9 px uzuyor (48 - 14 - 8 - 17).
+              // ✕'in dokunma kutusu 40 → 48 olunca (bkz. `KIconButton`)
+              // başlık satırı 8 px uzadı; dolgu AYNI 8 px kısıldı ki
+              // başlığın ve ✕'in ekrandaki yeri değişmesin. Ölçüldü
+              // (390×844, `tap_target_test.dart`): ✕ ikonunun merkezi
+              // düzeltmeden önce de sonra da (342, 395.5), başlık kutusu
+              // 76 px. Sağdaki 12 → 8 de aynı takas: kutu sola doğru 8
+              // büyüdüğünden ikon telafisiz 4 px sola kayardı.
+              //
+              // `headerLink` dalı TEK İSTİSNA: orada üst dolgu zaten 3'tü
+              // ve 4 kısılamıyor (negatif olurdu), 3 → 0 ile 1 px'lik bir
+              // uzama kalıyor. Tek kullanıcısı HelpModal.
               padding: EdgeInsets.fromLTRB(
-                  20, headerLink != null ? 3 : 20, 12, 16),
+                  20, headerLink != null ? 0 : 16, 8, 12),
               decoration: const BoxDecoration(
                 border: Border(bottom: BorderSide(color: _divider)),
               ),
@@ -101,12 +122,12 @@ class KModal extends StatelessWidget {
                       if (headerCenter != null)
                         Expanded(child: Center(child: headerCenter!)),
                       if (headerAction != null) headerAction!,
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
+                      KIconButton(
+                        icon: Icons.close,
                         tooltip: 'Kapat',
+                        color: _muted,
                         onPressed:
                             onClose ?? () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.close, size: 18, color: _muted),
                       ),
                     ],
                   ),
@@ -115,6 +136,7 @@ class KModal extends StatelessWidget {
             ),
             Flexible(
               child: SingleChildScrollView(
+                controller: bodyController,
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                 child: child,
               ),

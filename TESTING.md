@@ -483,9 +483,24 @@ Her birinde gerçekten bekleyen bir iş varken ekranı **kapatıp yeniden aç**.
       HİÇ göstermez** — orada kırmızı adam- görünmemeli; bir gelen isteği
       oradan kabul edince satır listeden düşmeli. Bir sayfanın tamamı
       arkadaş çıksa bile "Tüm Üyeler" boş kalmamalı (sonraki sayfa gelir).
+      **Aynı üye İKİ KEZ çıkmamalı (27 Ağustos 2026, `20260827153857`):**
+      karşılıklı istek göndermiş bir çift varsa o üye tek satır olmalı —
+      `list_users_for_friend`/`search_users_for_friend` `friend_requests`'e
+      karşılıklı `OR` ile `left join` yaptığından iki yön de satırsa aynı
+      profil çoğalıyordu (bkz. `docs/decisions/friends.md`).
       Skor kartında (k-lig → bir satır) arkadaş durumu **yeşil kişi-onay**
       — listedeki kırmızı adam- DEĞİL (bilinçli), dokununca yine çıkarma
       onayı açmalı.
+- [ ] **Modal ✕'leri mobil tarayıcıda ıskalamıyor (27 Ağustos 2026).**
+      Telefonda (ya da DevTools cihaz kipinde) bir modal aç ve ✕'in tam
+      ortasına değil biraz ALTINA/yanına dokun — kapanmalı. Görsel olarak ✕
+      aynı boyutta ve aynı yerde durmalı; büyüyen yalnızca tıklama alanı
+      (`.tap-expand`, `src/index.css`). Aynısını Setup, Skor Kartı,
+      Arkadaşlar, Sohbet, k-lig bilgi ve kutlama banner'ında da dene.
+- [ ] **Raf taşını yakalamak kolaylaştı (aynı gün, portla birebir).**
+      Taşın biraz ALTINDAN (rafın alt dolgusundan) ya da iki taşın
+      ARASINDAN tutmayı dene — sürükleme başlamalı. Taşların boyutu,
+      aralarındaki 3 px boşluk ve rafın dış kutusu DEĞİŞMEMELİ.
 - [ ] **Kişiye tıklamak skor kartını açar — ÜÇ sekmede de (11 Ağustos
       2026).** "Arkadaşlarım", "İstekler" ve "Ara & Ekle" (arama + Tüm
       Üyeler) satırlarında **avatara/isme** tıkla → o kişinin skor kartı
