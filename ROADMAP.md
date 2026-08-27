@@ -70,21 +70,25 @@ tam olarak budur. Doğru sıra: **PR CI yeşil → merge → `main` koşusunun
 bir test derlemesi üretmek ayrıca `mobile-latest`'i merge edilmemiş kodla
 ezerdi (PR kapısının var olma sebebi).
 
-**Sürüm B kuyruğu — şimdi bekleyenler:**
+**Sürüm A2 — dokunma isabeti paketi (27 Ağustos 2026, kullanıcı kararı:
+*"Bence deep link ve push'u B'de bırakalım. Diğer hepsini A'ya koy"*):**
 
-| Düzeltme | Nerede | Neden bekliyor |
+A'nın cihaz testi sırasında beş düzeltme daha birikti ve hepsi AYNI
+sınıftan — dokunma isabeti, hepsi kapalı testte gerçek kullanıcıların
+takıldığı yerler. Kuyrukta bekletmek yerine ikinci bir A sürümüyle
+çıkıyorlar:
+
+| Düzeltme | Nerede | Kullanıcıya etkisi |
 |---|---|---|
-| Joker harf ızgarasının dokunma kutusu (48×44 → 48×50) | `wild_letter_sheet.dart` + `WildcardModal.tsx` | Kullanıcı kararı (27 Ağustos): *"Bunu B ile göndeririz sonra"* — A çoktan derlenmişti, yeniden tur atmaya değmedi |
-| Oyun kartı ikonlarına ıskalama yönlendirmesi (13 → 41 px etkin hedef) | `icon_tap_rescue.dart` + `game_history_modal.dart` + `.tap-expand-y` (web) | Uygulamadaki en küçük üç hedef (~240 px²); 12 Ağustos'tan beri bilinen şikayet. Kullanıcı kararı: *"B'ye ekle"* |
-| Tanıtımdaki "DEVAM ›" tam genişlikte ve ekranın dibindeydi | `intro_screen.dart` | Buton artık normal boyda, yatayda ortalı, alt kenardan 8 px payda. Kullanıcı kararı: *"Düzelt ve B'ye ekle"* |
-| Taslak taşı geri almak: ilk dokunuş yakalamıyordu | `game_screen.dart` + `online_game_screen.dart` + web `App.tsx`/`OnlineGameScreen.tsx` | Iskalama kurtarması artık boş hücreleri de kapsıyor (yalnızca seçim yokken). Sürüm A cihaz testinde bulundu |
+| Taslak taşı geri alma: ilk dokunuş yakalamıyordu | `game_screen.dart` + `online_game_screen.dart` + web ikizi | Iskalama artık boş komşu hücreden de kurtarılıyor (yalnızca seçim yokken) |
+| Joker harf ızgarası (48×44 → 48×50) | `wild_letter_sheet.dart` + `WildcardModal.tsx` | Yanlış harf seçtiren ıskalamalar |
+| Oyun kartı ikonları (13 → 41 px etkin hedef) | `icon_tap_rescue.dart` + `.tap-expand-y` | Kalp/mesaj/hamle: uygulamanın en küçük üç hedefi |
+| Tanıtım "DEVAM ›" | `intro_screen.dart` | Tam genişlik + ekranın dibi + ortalı değildi |
+| Tanıtım son slaydındaki nokta şeridi | `intro_screen.dart` | Gereksiz ve yanıltıcıydı ("daha var" diyor ama yok) |
 
-**Sürüm B'nin ASIL yükü** (madde 1 + madde 13): deep link kanalı — mağaza
-blokeri — ve push bildirimleri + Firebase Analytics. Madde 13'ün 5. adımı
-("bildirime dokununca doğru oyunu aç") zaten madde 1'e bağlı, yani ikisi
-tek pakette gitmek zorunda. Bu, A'nın neden ayrı çıktığının da gerekçesi:
-hazır ve test edilmiş düzeltmeler, kuyruktaki en riskli değişikliğin
-arkasında beklememeli.
+**Sürüm B'de KALANLAR:** madde 1 (deep link — mağaza blokeri) ve madde 13
+(push + Analytics). İkisi tek pakette gitmek zorunda, çünkü 13'ün 5. adımı
+("bildirime dokununca doğru oyunu aç") zaten 1'e bağlı.
 
 Ayrıca **`notify-deadline-warnings`'te düzeltilmiş bir yazım hatası deploy
 EDİLMEDİ** ("taktirde" → "takdirde"): repoda düzeltildi, canlıya
