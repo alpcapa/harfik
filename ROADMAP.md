@@ -85,6 +85,30 @@ takıldığı yerler. Kuyrukta bekletmek yerine ikinci bir A sürümüyle
 | Oyun kartı ikonları (13 → 41 px etkin hedef) | `icon_tap_rescue.dart` + `.tap-expand-y` | Kalp/mesaj/hamle: uygulamanın en küçük üç hedefi |
 | Tanıtım "DEVAM ›" | `intro_screen.dart` | Tam genişlik + ekranın dibi + ortalı değildi |
 | Tanıtım son slaydındaki nokta şeridi | `intro_screen.dart` | Gereksiz ve yanıltıcıydı ("daha var" diyor ama yok) |
+| **Titreşimli dokunuş kayboluyordu** | `game_screen.dart` + `online_game_screen.dart` + web ikizi | Aşağı bkz. — asıl şikayeti çözen düzeltme buydu |
+
+**A2 İKİ derlemede çıktı ve ikincisi asıl önemlisi.** İlk paket
+(`1.0.0 (405)`, `24c5b0c`) cihazda denenince kullanıcı aynı şikayeti
+TEKRARLADI: *"Hâlâ tahtaya koyulan taşı her zaman alamıyorum."* Üstteki beş
+düzeltme yetmemişti çünkü hepsi hedefin ALANIYLA ilgiliydi; sorun ise
+JESTTEYDİ.
+
+**Ölçüldü (420×900, taslak taşa dokunup bırakma):** 6 px kayan parmak taşı
+geri alıyor, **12 ve 20 px kayanlar HİÇBİR ŞEY yapmıyordu** — raf tarafında
+taş seçilemiyordu bile. Sebep iki ayrı kararın tek eşikle verilmesiydi:
+10 px (Android touch slop) hayaleti GÖSTERMEK için doğru ama BIRAKMA kararı
+için fazla dar. Ayrı bir bırakma eşiği eklendi (24, hücrenin ~26 px'inin
+hemen altında) → paket **`1.0.0 (407)`** (`0651e5e`), kullanıcı onayladı:
+*"Daha iyi şimdi. Yayına alıyorum."*
+
+> **Ders:** bir eşik İKİ farklı soruyu cevaplıyorsa muhtemelen iki eşik
+> olmalı. "Sürükleme başladı mı?" ile "kullanıcı bırakmak mı istedi?" aynı
+> soru değil; ilkinin cevabı erken, ikincisinin geç verilmeli.
+>
+> **İkinci ders:** "dokunma isabeti" şikayetlerinde önce hedefin ALANINA
+> bakmak refleks oldu (48 dp turu, kurtarma, `.tap-expand`) — ama alan
+> yeterliyken JEST yolu kaybediyor olabilir. A2'nin ilk beş düzeltmesi
+> gerçekti ve yine de kullanıcının asıl şikayetini çözmedi.
 
 **Sürüm B'de KALANLAR:** madde 1 (deep link — mağaza blokeri) ve madde 13
 (push + Analytics). İkisi tek pakette gitmek zorunda, çünkü 13'ün 5. adımı
@@ -133,8 +157,9 @@ Sürüm A'nın dört düzeltmesi (taş yakalama, ✕ ıskalama, arkadaş listesi
 sonuna inememe, bayat rozet) tam da **ilk deneyimi** vuruyordu — hatırlatma
 o yüzden A'dan SONRAYA bırakılmıştı.
 
-**A artık çıktı** (paket `1.0.0 (403)`), yani engel kalktı. Kalan tek şart:
-cihaz testi onaylansın ve paket kapalı test kanalında yayına geçsin.
+**Engel kalktı:** A (`403`) ve A2 (`405` → `407`) çıktı, cihaz testi
+onaylandı ve kullanıcı `407`'yi yayına alıyor. Paket kapalı test kanalında
+göründüğü an hatırlatma gönderilebilir — geciktirmenin bir sebebi kalmadı.
 
 Katılan/indiren sayısı Play Console'da: **Test → Closed testing → (track) →
 Testers sekmesi**, ve indirme adedi için **Statistics**. (Kullanıcı bunu iki
