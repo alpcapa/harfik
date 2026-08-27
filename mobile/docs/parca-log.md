@@ -20,6 +20,45 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 149 — oyun kartındaki üç ikon: üçüncü alet "YÖNLENDİR"
+     (27 Ağustos 2026, kullanıcı sordu: *"oyun kartlarında yer alan mesaj
+     balonu ve hamleler ikonu tıklaması nasıl? Orada da sorun var mı?"*):**
+     Vardı — ve bunlar uygulamadaki EN KÜÇÜK hedeflerdi. Ölçüldü (390×844):
+     kalp **15×13**, mesaj balonu **18.5×13**, hamle ikonu **19×13**, yani
+     ~240 px²; 48×48 standardının (2304 px²) **onda biri**.
+     - **Şikayet yeni değildi:** 12 Ağustos 2026'da kullanıcı *"en az 4-5
+       kere dokunmam gerekti, tam basamazsan oyun detayları açılıp
+       kapanıyor"* demişti. O günkü düzeltme hedefi BÜYÜTMEDİ, yalnızca
+       hamle ikonunu mesaj balonuyla EŞİTLEDİ (121 → 247 px²).
+     - **Neden büyütülemiyor (ölçüldü):** satır 14 px, kart 74 px. 44'lük
+       bir kutu kartı ~104'e çıkarır, yani listenin tamamı %40 uzardı.
+     - **Yani tahta hücresiyle aynı sınıf.** Artık üç alet var ve seçim
+       hedefin büyütülüp büyütülemediğine bağlı: BÜYÜT (✕, joker, raf) ·
+       YÖNLENDİR (`draftRescue`, artık oyun kartı ikonları) · ZARARSIZLAŞTIR
+       (taslak sürerken anlam penceresinin açılmaması).
+     - **Uygulama (`icon_tap_rescue.dart`):** kartın kendi yakalayıcısı zaten
+       satırın tamamını kapsıyor ve ıskalama oraya düşüyor. `onTap` →
+       `onTapUp`; nokta bir ikonun dikeyde ±14 px genişletilmiş kutusuna
+       düşüyorsa o ikonun eylemi çalışıyor, düşmüyorsa davranış **birebir
+       eskisi gibi**. Hedef 13 → 41 px, alan ~240 → ~760 px² (3,2 katı),
+       **düzen hiç değişmiyor**. Kutuları ölçmek için kalıcı `GlobalKey`'ler
+       gerekti; `_entryKeys` ile aynı önbellek deseni (her çizimde yenisini
+       üretmek GlobalKey sözleşmesini bozardı).
+     - ⚠ **Yalnızca DİKEY, bilinçli:** yatayda ikonlar 18.5–19 px ve
+       aralarında 2 px var; yatayda da genişletmek bölgeleri bindirir ve
+       "hangisi" sorusunu doğururdu. x aralıkları ayrık kaldığından aday HER
+       ZAMAN en fazla bir tanedir — `draftRescue`'daki eşitlik kuralına hiç
+       gerek kalmıyor.
+     - **`mobile/` DIŞINDA:** web'de mekanizma FARKLI ama sonuç aynı —
+       düğmeler zaten `stopPropagation` taşıdığından yönlendirmeye gerek yok,
+       `.tap-expand-y` (yalnızca dikey, 41 px = portun payıyla birebir)
+       `src/index.css`'e eklenip üç düğmeye uygulandı.
+     - **Regresyon + negatif eş:** ikonun 12 px ALTINA dokunmak sohbeti/hamle
+       dökümünü açmalı; ikonlardan uzak bir ıskalama kartı ESKİSİ GİBİ
+       açmalı (kurtarmanın kartın dokunuşunu yutmadığının kanıtı). Test
+       ayrıca kutunun hâlâ küçük olduğunu ölçüyor — büyütülürse sessizce
+       anlamsızlaşmasın diye. `onTapUp` geri alınınca iki test de düşüyor.
+
    - ✅ **Parça 148 — "benzer tüm yerlere uygulandı mı?": tarama + joker
      ızgarası (27 Ağustos 2026, kullanıcı sordu):** Parça 147'nin ✕'leri bir
      kaynak taramasıyla kilitlenmişti ama o tarama yalnızca **ham

@@ -31,6 +31,7 @@ import 'score_box_row.dart';
 import '../tokens.dart';
 import '../loading_note.dart';
 import '../game/neo_box.dart';
+import 'icon_tap_rescue.dart';
 
 const _panel = kPanel;
 const _border = kBorder;
@@ -157,6 +158,10 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
 
   /// Hedef karta kaydırmak için: id → o kartın anahtarı.
   final _entryKeys = <String, GlobalKey>{};
+  /// Kart içindeki küçük ikonların kutularını ölçmek için (bkz.
+  /// `icon_tap_rescue.dart`) — kart anahtarlarıyla aynı ömür.
+  final _iconKeys =
+      <String, ({GlobalKey like, GlobalKey chat, GlobalKey moves})>{};
 
   @override
   void initState() {
@@ -503,6 +508,18 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
                       return _EntryCard(
                         // Kaydırma hedefi olabilmesi için sabit anahtar.
                         key: _entryKeys.putIfAbsent(e.id, GlobalKey.new),
+                        // Küçük ikonların kutularını ÇALIŞMA ZAMANINDA
+                        // ölçebilmek için kalıcı anahtarlar (bkz.
+                        // `icon_tap_rescue.dart`). `_entryKeys` ile aynı
+                        // önbellek deseni — her yeniden çizimde yenisini
+                        // üretmek GlobalKey sözleşmesini bozardı.
+                        iconKeys: _iconKeys.putIfAbsent(
+                            e.id,
+                            () => (
+                                  like: GlobalKey(),
+                                  chat: GlobalKey(),
+                                  moves: GlobalKey(),
+                                )),
                         captureKey: _expandedId == e.id ? _captureKey : null,
                         entry: e,
                         currentName: widget.currentName,
@@ -728,9 +745,15 @@ class _EntryCard extends StatelessWidget {
   /// (skor şeridi + tahta). Kapalı kartlarda null.
   final GlobalKey? captureKey;
 
+  /// Küçük ikonların (kalp, mesaj balonu, hamle dökümü) kutularını ölçmek
+  /// için kalıcı anahtarlar — ıskalanan dokunuşu onlara yönlendirmek
+  /// gerekiyor (bkz. `icon_tap_rescue.dart`).
+  final ({GlobalKey like, GlobalKey chat, GlobalKey moves}) iconKeys;
+
   const _EntryCard({
     super.key,
     required this.captureKey,
+    required this.iconKeys,
     required this.entry,
     required this.currentName,
     required this.isMyRow,
@@ -777,7 +800,18 @@ class _EntryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           GestureDetector(
-            onTap: onTap,
+            // `onTap` DEĞİL `onTapUp`: ıskalanan dokunuşu doğru ikona
+            // yönlendirebilmek için NOKTA gerekiyor (bkz.
+            // `icon_tap_rescue.dart`). Nokta hiçbir ikonun bölgesine
+            // düşmezse davranış eskisiyle aynı — kart açılıp kapanır.
+            onTapUp: (d) {
+              final hedef = rescuedIconTarget<VoidCallback>(d.globalPosition, [
+                (rect: globalRectOf(iconKeys.like), target: onToggleLike),
+                (rect: globalRectOf(iconKeys.chat), target: onShowChat),
+                (rect: globalRectOf(iconKeys.moves), target: onShowMoves),
+              ]);
+              (hedef ?? onTap)();
+            },
             behavior: HitTestBehavior.opaque,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -797,7 +831,9 @@ class _EntryCard extends StatelessWidget {
                       GestureDetector(
                         onTap: onToggleLike,
                         behavior: HitTestBehavior.opaque,
-                        child: Padding(
+                        child: KeyedSubtree(
+                          key: iconKeys.like,
+                          child: Padding(
                           padding: const EdgeInsets.only(right: 2),
                           child: Icon(
                             entry.likedByMe
@@ -812,6 +848,7 @@ class _EntryCard extends StatelessWidget {
                             // (9 Ağustos 2026, cihaz testinde bulundu).
                             color: entry.likedByMe ? _red : _muted,
                           ),
+                        ),
                         ),
                       ),
                       if (entry.likeCount > 0)
@@ -856,7 +893,9 @@ class _EntryCard extends StatelessWidget {
                           key: ValueKey('chat-count-${entry.id}'),
                           onTap: onShowChat,
                           behavior: HitTestBehavior.opaque,
-                          child: Row(
+                          child: KeyedSubtree(
+                            key: iconKeys.chat,
+                            child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const Icon(Icons.chat_bubble_outline,
@@ -868,6 +907,7 @@ class _EntryCard extends StatelessWidget {
                                       fontSize: 9,
                                       color: _muted)),
                             ],
+                          ),
                           ),
                         ),
                       ],
@@ -910,7 +950,9 @@ class _EntryCard extends StatelessWidget {
                             // ikisi de 13); daha fazlası satırı ve dolayısıyla
                             // HER kartı büyütürdü. Eşitlik `game_likes_test`te
                             // ölçüyle korunuyor — ikisi tek bir çift.
-                            child: Padding(
+                            child: KeyedSubtree(
+                              key: iconKeys.moves,
+                              child: Padding(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 4, vertical: 1),
                               child: movesLoading
@@ -923,6 +965,7 @@ class _EntryCard extends StatelessWidget {
                                           strokeWidth: 1.5, color: _muted),
                                     )
                                   : const DocumentIcon(size: 11, color: _muted),
+                            ),
                             ),
                           ),
                         ),

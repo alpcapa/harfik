@@ -636,7 +636,7 @@ export function GameHistoryModal({
                             handleToggleLike(entry.id);
                           }}
                           aria-label={entry.liked_by_me ? 'Favoriden çıkar' : 'Favoriye ekle'}
-                          className={`shrink-0 ${entry.liked_by_me ? 'text-red' : 'text-muted'}`}
+                          className={`tap-expand-y shrink-0 ${entry.liked_by_me ? 'text-red' : 'text-muted'}`}
                         >
                           <HeartIcon filled={entry.liked_by_me} size={13} />
                         </button>
@@ -671,7 +671,7 @@ export function GameHistoryModal({
                             setSelectedChatGameId(entry.id);
                           }}
                           aria-label="Sohbet geçmişini göster"
-                          className="flex items-center gap-0.5 text-muted shrink-0"
+                          className="tap-expand-y flex items-center gap-0.5 text-muted shrink-0"
                         >
                           <ChatBubbleIcon />
                           {entry.message_count}
@@ -706,7 +706,7 @@ export function GameHistoryModal({
                              basamazsan kart açılıp kapanıyor" olarak
                              bildirildi. İkisi tek bir çift: biri
                              büyütülürse öteki de kontrol edilmeli. */
-                          className="flex items-center text-muted shrink-0 px-1 py-px -mx-1"
+                          className="tap-expand-y flex items-center text-muted shrink-0 px-1 py-px -mx-1"
                         >
                           <MovesIcon />
                         </button>
