@@ -653,13 +653,33 @@ izni yok, token tutan bir tablo yok. Yani bu sıfırdan bir altyapı işi.
 Yani "sıra sende" bildiriminin bir sunucu olayı hiç yok; hamle
 gönderiminde tetiklenen yeni bir kanca gerekiyor.
 
-### Bloker: iOS şu an İMKÂNSIZ
+### iOS: bugün çıkamaz, ama tasarım onu BEKLİYOR olacak
 
-APNs anahtarı **Apple Developer üyeliği** istiyor ve o üyelik yok
-(TestFlight'ı bloklayan aynı şey — bkz. madde 8 ön koşulu,
-`mobile/docs/build-and-distribution-log.md`). Bu iş **Android-only**
-çıkabilir; iOS üyelik geldiğinde ayrıca eklenir. Kapsamı baştan böyle
-yaz, sonra "iOS'ta neden yok?" diye şaşırma.
+APNs anahtarı **Apple Developer üyeliği** istiyor; üyelik süreci Apple'dan
+dönüş beklediği için ilerlemiyor (TestFlight'ı bloklayan aynı şey — madde 8
+ön koşulu). Kullanıcı kararı (26 Ağustos 2026): *"orada da bu fonksiyon
+ileride olacakmış gibi plan yapmak lazım."*
+
+**Bunun somut karşılığı — iOS sonradan EKLENMELİ, YENİDEN YAZILMAMALI:**
+
+- **Tek gönderici: FCM.** FCM iOS'a da teslim ediyor (arka planda APNs'i
+  kendisi kullanıyor). Sunucu tarafı FCM üzerinden yazılırsa iOS günü
+  gelince yapılacak iş "ikinci bir gönderici yazmak" DEĞİL, yalnızca
+  **APNs anahtarını Firebase'e yüklemek + uygulamaya Push capability
+  eklemek**. APNs'e doğrudan konuşan bir yol seçilirse bu kazanç kaybolur.
+- **İstemci: `firebase_messaging`** iki platformu birden karşılıyor; ayrı
+  bir iOS yolu yazma.
+- **`push_tokens.platform` baştan var** (`android`/`ios`) — sonradan kolon
+  eklemek, var olan satırların platformunu tahmin etmek demek olurdu.
+  `util/platform.dart` zaten bu değer kümesini üretiyor, onu kullan.
+- **İzin akışı ortak yazılsın:** iOS da açık izin istiyor (üstelik
+  "provisional" seçeneği var). İzni isteyen kod platforma DALLANMAMALI,
+  eklentinin ortak API'sini kullanmalı.
+- **Bildirime dokununca gitme** (deep link, madde 1) zaten platform
+  bağımsız — orada iOS'a özgü tek iş Associated Domains.
+
+Yani madde iOS'u BEKLEMEZ: Android'le çıkar, iOS bir anahtar yüklemesiyle
+açılır.
 
 ### Yapılacaklar
 
@@ -670,10 +690,27 @@ yaz, sonra "iOS'ta neden yok?" diye şaşırma.
 2. **İzin:** Android 13+ `POST_NOTIFICATIONS` runtime izni. İzin İSTEME
    ANI önemli — açılışta sormak reddi artırır; ilk Canlı oyun ya da ilk
    davet anında sor.
-3. **Tercih:** `profiles.email_notifications_enabled` VAR ama o e-posta
-   içindir. Push ayrı bir tercih ister (`push_notifications_enabled`), ve
-   Hesap Ayarları'nda ikisi ayrı ayrı görünmeli — kullanıcı "mail
-   istemiyorum ama push istiyorum" diyebilmeli.
+3. **Tercih — KARAR VERİLDİ (26 Ağustos 2026): e-posta KALIR, iki BAĞIMSIZ
+   anahtar, otomatik bastırma YOK.** Kullanıcı önce *"app kullananlara
+   email gitmesine gerek yok"* dedi, ama kontrolün zorluğu sorulunca
+   *"zor ise kalabilir, isteyen ayarlardan kapatabilir"* diye bıraktı.
+   Ölçülen durum: kontrol teknik olarak KOLAY (push tablosu zaten
+   gerekiyor, e-posta fonksiyonlarına tek bir `exists` kontrolü yeterdi) —
+   ama **yanlış olurdu**:
+   - Token bayatlarsa (uygulama silinmiş, bildirim sistem ayarından
+     kapatılmış, token yenilenmemiş) push GİTMEZ; e-postayı da bastırmışsak
+     kullanıcı **hiçbir şey** almaz. Bu, iki bildirim almaktan çok daha kötü
+     ve **SESSİZ** bir arıza: kimse şikayet etmez, yalnızca oyunlar ölür.
+   - Uygulama telefonda olsa bile bazı kullanıcılar bildirimi mailde görmeyi
+     tercih ediyor (masaüstünde çalışırken).
+
+   Bu yüzden: `profiles.email_notifications_enabled` (VAR) + yeni
+   `push_notifications_enabled`, ikisi de AÇIK gelir, Hesap Ayarları'nda
+   ayrı ayrı görünür. İleride "çok mail geliyor" diye GERÇEK bir şikayet
+   gelirse tek güvenli bastırma biçimi şudur: e-postayı yalnızca push'un
+   GERÇEKTEN teslim edildiği olayda bastırmak (FCM `UNREGISTERED` dönerse
+   token'ı silip e-postaya düşmek). Bu ek iştir ve şikayet gelmeden
+   yapılmaz.
 4. **"Sıra sende" olayı:** hamle gönderiminde tetiklenen kanca.
    ⚠ İki tuzak: (a) hamleyi YAPANA gönderme; (b) hızlı gidip gelen bir
    oyunda her hamlede bildirim spam olur — e-posta tarafındaki
