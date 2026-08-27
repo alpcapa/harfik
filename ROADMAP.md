@@ -19,6 +19,10 @@ değiştirdi: artık omurga aşağıdaki **madde 0 (FAZ B)**, çünkü kişisel
 hesaplarda production'a çıkmanın önünde **daha başlamamış 14 günlük bir
 tester sayacı** var. Maddeler 1, 2 ve 4 o fazın içinde yaşıyor.
 
+**Durum eki (27 Ağustos 2026):** `main` hâlâ yeşil ama **dal bilerek merge
+EDİLMİYOR** — istemci düzeltmeleri tek bir kapalı-test sürümünde çıkacak;
+ayrıntı aşağıdaki "Yalnızca sohbette kalmış üç karar" bölümünde.
+
 **21 Ağustos'ta kapanan ÜÇ madde** (kalan maddelerin numaraları DEĞİŞMEDİ):
 - eski **#3** (istemci hata telemetrisi) — `client_errors` tablosu + web/port
   raporlayıcıları + admin panelinde "Hatalar" sekmesi. Kaydı kök
@@ -38,6 +42,80 @@ Aşağıdaki ikisinin kaydı kök `CLAUDE.md` → Kaynak Hunisi bölümünde:
   **Ders:** bu dosyadaki efor tahminleri (`low`/`medium`) bir SÖZ değil —
   işin gerçekten tek satır olduğunu ölçmeden varsayma.
 
+---
+
+## Yalnızca sohbette kalmış üç karar (27 Ağustos 2026)
+
+Bu üçü bir "madde" değil — biri bir KUYRUK, biri ERTELENMİŞ bir karar, biri
+bir HATIRLATMA. Hiçbiri koda yazılamadığı için buraya yazıldı; oturum
+kapanınca kaybolmasınlar.
+
+### 1. Bekleyen tek güncelleme — dal birikiyor, merge YOK
+
+Kullanıcı isteği (27 Ağustos 2026): *"Başka şeyler de çıkar mutlaka. Hepsini
+tek güncellemede çıkarız. beklet"*. Yani `claude/account-deletion-in-app-soz4lr`
+dalındaki istemci düzeltmeleri **bilerek** merge edilmiyor; bir sonraki
+kapalı-test sürümü (Play `.aab`) hepsini birden taşıyacak.
+
+Şu an kuyruktakiler:
+
+| Düzeltme | Nerede | Kullanıcıya etkisi |
+|---|---|---|
+| "Arkadaşınla" rozetinin bayat kalması | `mobile/app/lib/src/ui/setup/setup_screen.dart` (`onResubscribe` + `onlineStatus` kancaları) | Ağ kesilip döndüğünde kırmızı sayı artık kendini toparlıyor |
+| `slots.length != playerCount` telemetri koruması (2 yer) | port + web | Aynı sınıf bozuk veri bir daha sessizce oturmaz |
+| Koltuk hatası migration'ının repo kaydı | `supabase/migrations/20260827121628_*.sql` | **Canlıda ZATEN uygulandı** — uygulama güncellemesi beklemiyor |
+| Doküman notları | `mobile/docs/parca-log.md`, `docs/decisions/*` | — |
+
+⚠ **Ayrım:** sunucu tarafı (migration, RPC) merge'i BEKLEMEZ, anında
+canlıdır (bkz. kök `CLAUDE.md` → "Deploy Doğrulaması" tablosunun üçüncü
+satırı). Kuyrukta bekleyen yalnızca İSTEMCİ tarafı. Bu yüzden koltuk hatası
+27 Ağustos'ta kullanıcıyla teyit edilerek kapandı, dal hâlâ açıkken.
+
+Ayrıca **`notify-deadline-warnings`'te düzeltilmiş bir yazım hatası deploy
+EDİLMEDİ** ("taktirde" → "takdirde"): repoda düzeltildi, canlıya
+gönderilmedi — push işi zaten bu fonksiyona dokunacak, tek deploy'da
+gitsin. O deploy yapılırken **`verify_jwt: false` AÇIKÇA geçilmeli**
+(araç parametre verilmezse `true` varsayıp mevcut değeri sessizce ezer).
+
+### 2. Zorunlu güncelleme (force update) — ERTELENDİ
+
+Kullanıcı isteği (26 Ağustos 2026): *"Ben normal yayına alıyorum. Riske
+girmeyelim. Sorun çoğu insan güncellemez diye yorum geldi. Google tarafında
+böyle opsiyon olsaydı onu açıp mecburi update yaptırırdım. Ama yoksa
+etrafından dönmeye gerek yok."*
+
+Ölçülen gerçek: **Play Console'da "zorunlu güncelleme" diye bir ayar YOK.**
+Google'ın sunduğu tek yol In-App Updates API (`immediate` akış) ve
+önceliği (`inAppUpdatePriority`) yalnızca **Publishing API** üzerinden
+verilebiliyor — Console arayüzünde alanı bile yok. Yani "etrafından dönmek"
+gerçekten ek bir altyapı işi.
+
+İleride yapılacaksa **iki ön koşul ÖLÇÜLDÜ ve ikisi de bugün eksik:**
+
+1. **Her derleme `1.0.0`.** `mobile/app/pubspec.yaml` sürümü sabit; CI
+   yalnızca `versionCode`'u artırıyor. Bir istemci "daha yeni sürüm var mı"
+   sorusunu kendi başına soramaz — önce sürüm adı derlemeye bağlanmalı.
+2. **`UpdateRequiredScreen`'in mağaza butonu YOK.** Ekran var ama kullanıcıyı
+   Play'e götüren bir eylem taşımıyor; zorunlu güncelleme onu kilitlenme
+   ekranına çevirir.
+
+⚠ **Risk (kullanıcı sordu: "Bu oyunun hiç açılmamasına sebep olabilir mi?"):**
+EVET — yanlış kurulmuş bir zorunlu güncelleme, güncellemeyi alamayan
+(cihazı eski, Play'i olmayan, ağı kısıtlı) kullanıcı için uygulamayı
+tamamen açılmaz hâle getirir ve düzeltmesi ancak YENİ bir sürüm yayınlamakla
+mümkündür. Bu yüzden erteleme doğru karar; yapılacaksa önce yukarıdaki iki
+ön koşul, sonra kademeli (`flexible`) akış.
+
+### 3. 44 davetliye hatırlatma — henüz kimse kurmadı
+
+Kapalı testte davet edilenlerin büyük bölümü uygulamayı hâlâ **yüklememiş**.
+Bu bir hata değil bir pazarlama işi, ama sıralamayı etkiliyor: 27 Ağustos'un
+iki düzeltmesi (koltuk hatası + rozet) tam da **ilk deneyimi** hedefliyordu —
+yani hatırlatma, kuyruktaki sürüm çıktıktan SONRA gönderilmeli, önce değil.
+
+Katılan/indiren sayısı Play Console'da: **Test → Closed testing → (track) →
+Testers sekmesi**, ve indirme adedi için **Statistics**. (Kullanıcı bunu iki
+kez sordu — yeri burada yazılı.)
 ---
 
 ## Modeller — hangi iş için hangisi
