@@ -158,6 +158,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   // "sürükleme" sayılıp sessizce hiçbir şey yapmıyordu.
   static const double _dragThresholdMouse = 6; // web DRAG_THRESHOLD_MOUSE
   static const double _dragThresholdTouch = 10; // web DRAG_THRESHOLD_TOUCH
+
+  /// BIRAKMA anındaki karar eşiği — hayalet eşiğinden (yukarıdaki 10 px)
+  /// AYRI. Jest bu mesafeden az gittiyse bırakma değil dokunuş sayılır.
+  /// 24, tahta hücresinin (26 px) hemen altında: bir hücreden az giden bir
+  /// jest zaten bir hedef ifade edemiyor. Gerekçe ve ölçümler
+  /// `_endTileDrag`in içinde.
+  static const double _tapSlopOnRelease = 24;
   static double _dragThresholdFor(PointerDeviceKind kind) =>
       kind == PointerDeviceKind.mouse ? _dragThresholdMouse : _dragThresholdTouch;
   final GlobalKey _gridKey = GlobalKey();
@@ -614,6 +621,19 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     );
   }
 
+  /// Sürükleme değil DOKUNUŞ olarak işle — hem "hiç kıpırdamadı" dalı hem
+  /// titreşimli dokunuş dalı buradan geçer, davranışları AYRIŞMASIN diye.
+  Future<void> _dokunusOlarakIsle(_DragSource s) async {
+    if (s is _RackSource) {
+      if (!_canAct) return;
+      controller.dispatch(state.swapMode
+          ? ToggleSwapTileAction(s.index)
+          : SelectTileAction(s.index));
+    } else if (s is _PlacedSource) {
+      await _tapPlacedTile(s.r, s.c, s.tile);
+    }
+  }
+
   Future<void> _endTileDrag(PointerUpEvent e) async {
     final d = _dragRef;
     setState(() {
@@ -625,22 +645,47 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
     if (!d.moved) {
       // Hareket yok: sıradan dokunuş — eski davranış (web endDrag !moved).
-      final s = d.source;
-      if (s is _RackSource) {
-        if (!_canAct) return;
-        controller.dispatch(state.swapMode
-            ? ToggleSwapTileAction(s.index)
-            : SelectTileAction(s.index));
-      } else if (s is _PlacedSource) {
-        await _tapPlacedTile(s.r, s.c, s.tile);
-      }
+      await _dokunusOlarakIsle(d.source);
       return;
     }
+
+    // TİTREŞİMLİ DOKUNUŞ — 27 Ağustos 2026, kullanıcı İKİNCİ kez bildirdi:
+    // *"Hâlâ tahtaya koyulan taşı her zaman alamıyorum. 1-2 denemeden sonra
+    // alabiliyorum."* Bir gün önceki kurtarma YALNIZCA yukarıdaki
+    // "hiç kıpırdamadı" dalında çalışıyordu; parmak 10 px'i aşınca jest
+    // SÜRÜKLEME sayılıp bambaşka bir yola giriyordu.
+    //
+    // ÖLÇÜLDÜ (420×900, taslak taşa dokunup bırakma):
+    //   6 px kayma  → taş geri alındı
+    //   12 px kayma → HİÇBİR ŞEY olmadı
+    //   20 px kayma → HİÇBİR ŞEY olmadı
+    // Raf tarafı da aynı: 12/20 px kayan dokunuşta `selectedTile` null
+    // kalıyor, yani taş seçilemiyor bile.
+    //
+    // Sebep iki eşiğin TEK eşik sanılması: 10 px (Android touch slop)
+    // hayaleti GÖSTERMEK için doğru bir sınır, ama BIRAKMA kararı için
+    // fazla dar — parmak o kadarını istemeden aşıyor. Artık iki ayrı karar
+    // var: hayalet 10 px'te belirir, bırakma ise jest gerçekten bir yere
+    // GİTTİYSE "bırakma" sayılır.
+    //
+    // ⚠ Taslak taş için eşik kaçınılmaz olarak bir belirsizliği çözüyor:
+    // bırakma noktası 30 px KALDIRILMIŞ olduğundan (`_liftedY`), "taşı bir
+    // üst hücreye taşı" jesti de parmağın neredeyse HİÇ kıpırdamaması
+    // demek — yani "geri al" ile aynı jest. Belirsizlik, açık ara daha sık
+    // olan niyet lehine çözülüyor: kısa jest = GERİ AL. Taşı taşımak hâlâ
+    // mümkün (daha uzun bir jestle, ya da geri alıp yeniden koyarak).
+    final s = d.source;
+    final gittigiMesafe = (e.position - d.start).distance;
+    final rafinUstunde = s is _RackSource && _rackContains(e.position);
+    if (rafinUstunde || gittigiMesafe < _tapSlopOnRelease) {
+      await _dokunusOlarakIsle(s);
+      return;
+    }
+
     if (!d.enabled) return;
 
     final lifted = Offset(e.position.dx, _liftedY(e.position.dy));
     final cell = _cellAtGlobal(lifted);
-    final s = d.source;
     if (cell != null) {
       final (r, c) = cell;
       if (!_isCellFreeFor(s, r, c)) return;

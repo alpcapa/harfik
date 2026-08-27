@@ -295,6 +295,10 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   // "sürükleme" sayılıp sessizce hiçbir şey yapmıyordu.
   static const double _dragThresholdMouse = 6; // web DRAG_THRESHOLD_MOUSE
   static const double _dragThresholdTouch = 10; // web DRAG_THRESHOLD_TOUCH
+
+  /// Bırakma anındaki karar eşiği — `game_screen.dart` ile aynı sayı ve
+  /// aynı gerekçe (orada yazılı).
+  static const double _tapSlopOnRelease = 24;
   static double _dragThresholdFor(PointerDeviceKind kind) =>
       kind == PointerDeviceKind.mouse ? _dragThresholdMouse : _dragThresholdTouch;
   final GlobalKey _gridKey = GlobalKey();
@@ -1246,26 +1250,26 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     if (d == null) return;
 
     if (!d.moved) {
-      final s = d.source;
-      if (s is _RackSource) {
-        if (state.swapMode) {
-          // Taş değiştirme gerçekten sıra gerektirir (sunucuya gider).
-          if (!_canAct) return;
-          _controller.dispatch(ToggleSwapTileAction(s.index));
-        } else {
-          if (!_canEdit) return;
-          _controller.dispatch(SelectTileAction(s.index));
-        }
-      } else if (s is _PlacedSource) {
-        await _tapPlacedTile(s.r, s.c, s.tile);
-      }
+      await _dokunusOlarakIsle(d.source);
       return;
     }
+
+    // TİTREŞİMLİ DOKUNUŞ — `game_screen.dart`'taki AYNI düzeltme, gerekçe ve
+    // ölçümler orada. Özet: 10 px hayaleti göstermek için doğru eşik ama
+    // bırakma kararı için fazla dar; parmak o kadarını istemeden aşıyor ve
+    // dokunuş sessizce kayboluyordu.
+    final s = d.source;
+    final rafinUstunde = s is _RackSource && _rackContains(e.position);
+    if (rafinUstunde ||
+        (e.position - d.start).distance < _tapSlopOnRelease) {
+      await _dokunusOlarakIsle(s);
+      return;
+    }
+
     if (!d.enabled) return;
 
     final lifted = Offset(e.position.dx, _liftedY(e.position.dy));
     final cell = _cellAtGlobal(lifted);
-    final s = d.source;
     if (cell != null) {
       final (r, c) = cell;
       if (!_isCellFreeFor(s, r, c)) return;
@@ -1284,6 +1288,23 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
       }
     } else if (s is _PlacedSource && _rackContains(lifted)) {
       _controller.dispatch(RecallCellAction(r: s.r, c: s.c));
+    }
+  }
+
+  /// Sürükleme değil DOKUNUŞ olarak işle — iki dal da buradan geçer
+  /// (`game_screen.dart`'taki aynı ortaklaştırma).
+  Future<void> _dokunusOlarakIsle(_DragSource s) async {
+    if (s is _RackSource) {
+      if (state.swapMode) {
+        // Taş değiştirme gerçekten sıra gerektirir (sunucuya gider).
+        if (!_canAct) return;
+        _controller.dispatch(ToggleSwapTileAction(s.index));
+      } else {
+        if (!_canEdit) return;
+        _controller.dispatch(SelectTileAction(s.index));
+      }
+    } else if (s is _PlacedSource) {
+      await _tapPlacedTile(s.r, s.c, s.tile);
     }
   }
 

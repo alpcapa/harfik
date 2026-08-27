@@ -99,6 +99,23 @@ const DRAG_THRESHOLD_TOUCH = 10;
 /** Jestin kaynağına göre eşik — fare 6, parmak/kalem 10. */
 const dragThresholdFor = (pointerType: string) =>
   pointerType === 'mouse' ? DRAG_THRESHOLD_MOUSE : DRAG_THRESHOLD_TOUCH;
+
+/// BIRAKMA anındaki karar eşiği — yukarıdaki hayalet eşiğinden AYRI.
+///
+/// NEDEN VAR (27 Ağustos 2026, kullanıcı uygulamada İKİNCİ kez bildirdi:
+/// *"Hâlâ tahtaya koyulan taşı her zaman alamıyorum. 1-2 denemeden sonra
+/// alabiliyorum."*): 10 px (Android touch slop) hayaleti GÖSTERMEK için
+/// doğru bir sınır ama BIRAKMA kararı için fazla dar — parmak o kadarını
+/// istemeden aşıyor ve dokunuş sürükleme sayılıp sessizce kayboluyordu.
+///
+/// Portta ölçüldü (taslak taşa dokunup bırakma): 6 px kayma → geri alındı;
+/// **12 px ve 20 px kayma → HİÇBİR ŞEY olmadı**. Raf tarafı da aynı:
+/// titreşimli dokunuşta taş seçilemiyordu bile.
+///
+/// 24, tahta hücresinin (~26 px) hemen altında: bir hücreden az giden bir
+/// jest zaten bir hedef ifade edemiyor.
+const TAP_SLOP_ON_RELEASE = 24;
+
 // Sürüklenen taşın görseli, parmağın altında kalıp görüşü engellememesi için
 // işaretçinin bu kadar üzerinde çizilir.
 const DRAG_LIFT = 30;
@@ -1355,6 +1372,16 @@ export default function App() {
       // yakalama zaten bırakılmış olabilir — yok sayılır.
     }
 
+    // Sürükleme değil DOKUNUŞ olarak işle — hem "hiç kıpırdamadı" dalı hem
+    // titreşimli dokunuş dalı buradan geçer, davranışları AYRIŞMASIN diye.
+    const dokunusOlarakIsle = () => {
+      if (d.source.kind === 'rack') {
+        dispatch({ type: 'SELECT_TILE', index: d.source.index });
+      } else {
+        tapPlacedTile(d.source.r, d.source.c, true);
+      }
+    };
+
     if (!d.moved) {
       // Hareket yok: sıradan bir dokunuş/tık — eski davranış korunur.
       if (d.source.kind === 'rack') {
@@ -1373,6 +1400,20 @@ export default function App() {
         // açılmadı"). O tek click yutulmalı.
         tapPlacedTile(d.source.r, d.source.c, true);
       }
+      return;
+    }
+
+    // TİTREŞİMLİ DOKUNUŞ: eşik aşıldı ama jest hiçbir yere GİTMEDİ (ya da
+    // raf taşı hâlâ rafın üstünde bırakıldı) — bu bir bırakma değil,
+    // dokunuş. Gerekçe ve ölçümler `TAP_SLOP_ON_RELEASE`ın yanında.
+    const rafinUstunde =
+      d.source.kind === 'rack' && !!dropTargetsAt(e.clientX, e.clientY).rackEl;
+    if (
+      rafinUstunde ||
+      Math.hypot(e.clientX - d.startX, e.clientY - d.startY) <
+        TAP_SLOP_ON_RELEASE
+    ) {
+      dokunusOlarakIsle();
       return;
     }
 

@@ -213,6 +213,65 @@ void main() {
             'bu duruma HİÇ karışmamalı');
   });
 
+  // 27 Ağustos 2026, kullanıcı İKİNCİ kez bildirdi: *"Hâlâ tahtaya koyulan
+  // taşı her zaman alamıyorum. 1-2 denemeden sonra alabiliyorum."*
+  //
+  // Bir gün önceki kurtarma YALNIZCA "hiç kıpırdamadı" dalını kapsıyordu.
+  // ÖLÇÜLDÜ (420×900): 6 px kayan dokunuş taşı geri alıyor, ama **12 ve
+  // 20 px kayanlar HİÇBİR ŞEY yapmıyordu** — parmak 10 px'lik eşiği aşınca
+  // jest "sürükleme" sayılıp 30 px KALDIRILMIŞ bir noktaya bırakılıyordu.
+  // Raf tarafı da aynı: titreşimli dokunuşta taş seçilemiyordu bile.
+  //
+  // Artık iki AYRI karar var: hayalet 10 px'te belirir, bırakma ise jest
+  // gerçekten bir yere gittiyse "bırakma" sayılır.
+  for (final kayma in const [6.0, 12.0, 20.0]) {
+    testWidgets('titreşimli dokunuş (${kayma.toInt()} px) taslak taşı GERİ ALIR',
+        (tester) async {
+      await setPhoneViewSize(tester, const Size(420, 900));
+      final controller = await pumpGame(tester, GlobalKey());
+
+      await tester.tap(rackTile(0));
+      await tester.pump();
+      await tester.tap(boardCell(0, 0));
+      await tester.pump();
+      expect(controller.state.placed.keys, ['0,0']);
+
+      final h = tester.getRect(boardCell(0, 0));
+      final g = await tester.startGesture(h.center);
+      await tester.pump(const Duration(milliseconds: 20));
+      await g.moveBy(Offset(0, kayma));
+      await tester.pump(const Duration(milliseconds: 20));
+      await g.up();
+      await tester.pumpAndSettle();
+
+      expect(controller.state.placed, isEmpty,
+          reason: '$kayma px kayan dokunuş sessizce kayboldu — bırakma '
+              'eşiği (`_tapSlopOnRelease`) düşmüş olabilir');
+    });
+
+    testWidgets('titreşimli dokunuş (${kayma.toInt()} px) RAF taşını SEÇER',
+        (tester) async {
+      await setPhoneViewSize(tester, const Size(420, 900));
+      final controller = await pumpGame(tester, GlobalKey());
+      expect(controller.state.selectedTile, isNull);
+
+      final rt = tester.getRect(rackTile(0));
+      final g = await tester.startGesture(rt.center);
+      await tester.pump(const Duration(milliseconds: 20));
+      await g.moveBy(Offset(0, -kayma));
+      await tester.pump(const Duration(milliseconds: 20));
+      await g.up();
+      await tester.pumpAndSettle();
+
+      expect(controller.state.selectedTile, 0,
+          reason: '$kayma px kayan dokunuşta raf taşı seçilmedi');
+      // Ve tahtaya İSTEMEDEN konmamış olmalı: kaldırılmış nokta rafın
+      // 30 px üstünü, yani tahtanın alt satırını hedefliyordu.
+      expect(controller.state.placed, isEmpty,
+          reason: 'raf taşı istemeden tahtaya kondu');
+    });
+  }
+
   testWidgets('dokunarak KELİME dizilir: yeşil çerçeve + doğru puan + OYNA',
       (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));
