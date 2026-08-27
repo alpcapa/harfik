@@ -57,6 +57,16 @@
        (normal boy · yatayda ortalı · alt kenara yapışmıyor), iki boyda
        (portre + yatay). `IntrinsicWidth` kaldırılınca test düşüyor
        (`Actual: <390.0>` vs beklenen `< 156.0`).
+     - **EK (aynı gün, kullanıcı: *"Son slayt hemen oyna butonu üstündeki
+       noktalara da gerek yok"*):** son slaytta nokta şeridi artık HİÇ
+       çizilmiyor. Haklı bir istek — noktalar "daha var" göstergesi, oysa
+       son slaytta daha yok ve hemen altında "HEMEN OYNA" duruyor; gösterge
+       hem yanıltıcı hem gereksiz. Yan fayda: son slayt eskiden hem şeridi
+       hem düğmeyi taşıyordu, artık şerit kadar dikey alan geri kazanıyor
+       (`_RutbeSayfasi` en uzun slayt). Şeridi ölçebilmek için `_Noktalar`a
+       `Key('intro-noktalar')` verildi — widget sınıfı özel olduğundan
+       testin başka tutamağı yoktu. Negatif eş: koşul `if (true)` yapılınca
+       test düşüyor.
 
    - ✅ **Parça 149 — oyun kartındaki üç ikon: üçüncü alet "YÖNLENDİR"
      (27 Ağustos 2026, kullanıcı sordu: *"oyun kartlarında yer alan mesaj

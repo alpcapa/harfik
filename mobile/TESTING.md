@@ -1479,7 +1479,8 @@ düzeltmeyi içeren derlemeyle eşleştiğini doğrula.
       boyda** olmalı (ekranı kaplamamalı), **yatayda ortalı** durmalı ve
       ekranın alt kenarına **yapışmamalı**. **Telefonu YATAY çevirip de
       bak** — kullanıcı kusuru orada fark etmişti. Sayfa noktaları solda,
-      düğme ortada; son slaytta düğme yerine "HEMEN OYNA" çıkmalı.
+      düğme ortada; **son slaytta noktalar da düğme de KAYBOLMALI**, yalnızca
+      "HEMEN OYNA" kalmalı.
 - [ ] **Oyun kartındaki kalp / mesaj / hamle ikonları (27 Ağustos 2026).**
       "Tüm Oyunlarım"da bir kartta bu ikonların biraz ALTINA/üstüne dokun —
       ikonun kendi eylemi çalışmalı (beğeni / sohbet / hamle dökümü), kart

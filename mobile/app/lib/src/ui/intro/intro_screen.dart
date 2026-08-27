@@ -215,23 +215,35 @@ class _IntroScreenState extends State<IntroScreen> {
             // 720'de 1 px taşırıyordu — demek ki eldeki pay 6 px'miş.
             // Üstteki 4 px görünmez (slayt ile noktalar arası), alttaki 8 px
             // ise kullanıcının bildirdiği kusurun ta kendisi; takas net.
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: SizedBox(
-                width: double.infinity,
-                // İKİ ÇOCUK DA `Positioned` DEĞİL: `Stack` yüksekliğini
-                // yalnızca konumlandırılmamış çocuklardan alır.
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 12),
-                        child: _Noktalar(aktif: _page),
+            //
+            // SON SLAYTTA ŞERİT HİÇ ÇİZİLMİYOR (27 Ağustos 2026, kullanıcı:
+            // *"Son slayt hemen oyna butonu üstündeki noktalara da gerek
+            // yok"*). Haklı: noktalar "daha var" göstergesi, oysa son
+            // slaytta daha yok — ve tam altında "HEMEN OYNA" duruyor, yani
+            // gösterge hem yanıltıcı hem gereksiz. Yan fayda: son slayt
+            // eskiden hem şeridi hem düğmeyi taşıyordu, artık şerit kadar
+            // dikey alan geri kazanıyor (`_RutbeSayfasi` en uzun slayt).
+            if (!_isLast)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: SizedBox(
+                  width: double.infinity,
+                  // İKİ ÇOCUK DA `Positioned` DEĞİL: `Stack` yüksekliğini
+                  // yalnızca konumlandırılmamış çocuklardan alır.
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 12),
+                          // Anahtar testler için: son slaytta bu şeridin
+                        // HİÇ çizilmediğini ölçmenin tek yolu (widget
+                        // sınıfı özel).
+                        child: _Noktalar(
+                            key: const Key('intro-noktalar'), aktif: _page),
+                        ),
                       ),
-                    ),
-                    if (!_isLast)
                       // DOKUNMA HEDEFİ: yalnızca GENİŞLİKTE 48 dp.
                       // `TapTarget`in belgelenmiş eksen istisnası (bkz. o
                       // dosyadaki "← Geri" gerekçesi): dikeyde 48 dayatmak
@@ -256,10 +268,10 @@ class _IntroScreenState extends State<IntroScreen> {
                           ),
                         ),
                       ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
             // Son sayfada tanıtımın TEK çıkışı. Kabı metin sütunuyla aynı
             // genişlikte — geniş bir ekranda (tablet) kenardan kenara
             // uzamasın.
@@ -279,10 +291,6 @@ class _IntroScreenState extends State<IntroScreen> {
                   ),
                 ),
               )
-            else
-              // Ara sayfalarda ek dikey alan YOK — "DEVAM ›" artık
-              // nokta şeridinin içinde (yukarı bkz.).
-              const SizedBox.shrink(),
           ],
         ),
       ),
@@ -565,7 +573,8 @@ class _TahtaBolumu extends StatelessWidget {
                 // slayt yüksekliğine biniyor (yukarıdaki aynı gerekçe).
                 textHeightBehavior:
                     const TextHeightBehavior(applyHeightToLastDescent: false),
-                style: const TextStyle(fontSize: 12, height: 1.6, color: kMuted),
+                style:
+                    const TextStyle(fontSize: 12, height: 1.6, color: kMuted),
               ),
             ],
           ),
@@ -1244,7 +1253,7 @@ class _BolumBasligi extends StatelessWidget {
 
 class _Noktalar extends StatelessWidget {
   final int aktif;
-  const _Noktalar({required this.aktif});
+  const _Noktalar({super.key, required this.aktif});
 
   @override
   Widget build(BuildContext context) {

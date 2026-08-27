@@ -319,6 +319,34 @@ void main() {
       });
     }
 
+    // 27 Ağustos 2026, kullanıcı: *"Son slayt hemen oyna butonu üstündeki
+    // noktalara da gerek yok."* Haklı — noktalar "daha var" göstergesi,
+    // oysa son slaytta daha yok ve hemen altında "HEMEN OYNA" duruyor;
+    // gösterge hem yanıltıcı hem gereksiz.
+    testWidgets('nokta şeridi ara sayfalarda VAR, son sayfada YOK',
+        (tester) async {
+      await setPhoneViewSize(tester, const Size(390, 844));
+      await tester.pumpWidget(MaterialApp(
+        theme: kelimekiTheme(),
+        home: IntroScreen(onDone: () {}),
+      ));
+      await tester.pump();
+
+      final noktalar = find.byKey(const Key('intro-noktalar'));
+      expect(noktalar, findsOneWidget);
+      expect(find.widgetWithText(NeoButton, 'DEVAM ›'), findsOneWidget);
+
+      // Son sayfaya kadar ilerle.
+      for (var i = 0; i < kIntroPageCount - 1; i++) {
+        await kaydir(tester);
+      }
+
+      expect(find.text('HEMEN OYNA'), findsOneWidget);
+      expect(noktalar, findsNothing,
+          reason: 'son slaytta nokta şeridi hâlâ çiziliyor');
+      expect(find.widgetWithText(NeoButton, 'DEVAM ›'), findsNothing);
+    });
+
     const boylar = [Size(420, 900), Size(430, 710), Size(414, 720)];
     for (final boy in boylar) {
       testWidgets(
