@@ -630,3 +630,65 @@ kilitlenmiyor (23 Ağustos 2026'da canlıdan okundu).
    düşürdü).
 6. **Düzen testinin boyu** ürünün göründüğü EN DAR/EN KISA yüzeyi temsil
    etmeli — etmiyorsa yeşil olması hiçbir şey garanti etmez.
+
+---
+
+## 13. Push bildirimleri (hamle sırası · oyun daveti · arkadaş daveti) — **YENİ, 26 Ağustos 2026**
+
+Kullanıcı isteği: *"App'de notification özelliği açanlara hamle sırası, oyun
+daveti, arkadaş daveti geldiğinde uyarıları çıkmalı."*
+
+**Ölçülen başlangıç noktası — hiç push altyapısı YOK:** `pubspec.yaml`'da
+Firebase/messaging paketi yok, `AndroidManifest`'te `POST_NOTIFICATIONS`
+izni yok, token tutan bir tablo yok. Yani bu sıfırdan bir altyapı işi.
+
+**Ama olayların İKİSİ zaten sunucuda var** (e-posta kanalı olarak):
+
+| Olay | Sunucu tarafı | Push için ek iş |
+|---|---|---|
+| Oyun daveti | `notify-game-invite` | kanal eklemek |
+| Arkadaş daveti | `notify-friend-request` | kanal eklemek |
+| **Hamle sırası** | **YOK** — yalnızca `notify-deadline-warnings` (cron, 48 saatlik son tarih yaklaşınca) | **anlık olay sıfırdan** |
+
+Yani "sıra sende" bildiriminin bir sunucu olayı hiç yok; hamle
+gönderiminde tetiklenen yeni bir kanca gerekiyor.
+
+### Bloker: iOS şu an İMKÂNSIZ
+
+APNs anahtarı **Apple Developer üyeliği** istiyor ve o üyelik yok
+(TestFlight'ı bloklayan aynı şey — bkz. madde 8 ön koşulu,
+`mobile/docs/build-and-distribution-log.md`). Bu iş **Android-only**
+çıkabilir; iOS üyelik geldiğinde ayrıca eklenir. Kapsamı baştan böyle
+yaz, sonra "iOS'ta neden yok?" diye şaşırma.
+
+### Yapılacaklar
+
+1. **Altyapı:** FCM (Android), cihaz token tablosu (`push_tokens`:
+   `user_id`, `token`, `platform`, `updated_at`; aynı kullanıcı birden
+   çok cihaz), token yenilenmesi ve **çıkışta/hesap silmede temizlenmesi**
+   (`delete_account_cascade`'e satır!).
+2. **İzin:** Android 13+ `POST_NOTIFICATIONS` runtime izni. İzin İSTEME
+   ANI önemli — açılışta sormak reddi artırır; ilk Canlı oyun ya da ilk
+   davet anında sor.
+3. **Tercih:** `profiles.email_notifications_enabled` VAR ama o e-posta
+   içindir. Push ayrı bir tercih ister (`push_notifications_enabled`), ve
+   Hesap Ayarları'nda ikisi ayrı ayrı görünmeli — kullanıcı "mail
+   istemiyorum ama push istiyorum" diyebilmeli.
+4. **"Sıra sende" olayı:** hamle gönderiminde tetiklenen kanca.
+   ⚠ İki tuzak: (a) hamleyi YAPANA gönderme; (b) hızlı gidip gelen bir
+   oyunda her hamlede bildirim spam olur — e-posta tarafındaki
+   `deadline_warning_sent_at` deseninin karşılığı bir bastırma gerekir.
+5. **Tıklayınca doğru yere git:** bildirime dokunmak ilgili oyunu/daveti
+   AÇMALI. Deep link altyapısı madde 1'le kesişiyor — ikisi birlikte
+   planlanmalı.
+6. **Play Data safety formu:** FCM token bir cihaz tanımlayıcısıdır;
+   `marketing/play-store/console-formlari.md`'deki eşleme güncellenmeli.
+   Bu form yanlışsa mağaza reddi gelir.
+
+### Önce ölçülecek soru
+
+Oyun daveti ve arkadaş daveti için e-posta ZATEN gidiyor. Push'un asıl
+katkısı **"sıra sende" anlıklığı** — yani en çok değeri olan parça, aynı
+zamanda sunucu tarafı hiç olmayan parça. İş bölünecekse sıra şu:
+**önce "sıra sende" (Android)**, sonra öteki iki olayın kanalı.
+
