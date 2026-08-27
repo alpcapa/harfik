@@ -255,8 +255,18 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     // dinleyicileri deseni (LiveGamesTab'daki aynı desen); Realtime olayları
     // 300ms debounce ile tek tazelemeye iner.
     WidgetsBinding.instance.addObserver(this);
-    _unsubscribeLiveBadge = widget.services.onlineGames?.gateway
-        .subscribe(_scheduleLiveBadgeRefresh);
+    // İkinci geçiş, kanalın KOPUP yeniden bağlanması: kopukken yayınlanan
+    // olaylar KAYIPTIR, o yüzden yeniden bağlanmanın kendisi bir tazeleme
+    // sinyalidir. `LiveGamesTab` bu kancayı baştan beri taşıyordu, rozet
+    // taşımıyordu — 27 Ağustos 2026'da bunun bedeli ölçüldü (aşağı bkz.).
+    _unsubscribeLiveBadge = widget.services.onlineGames?.gateway.subscribe(
+        _scheduleLiveBadgeRefresh,
+        onResubscribe: _scheduleLiveBadgeRefresh);
+    // Bağlantı geri geldiğinde de tazele — web `Setup.tsx` bunun için
+    // `window.addEventListener('online', …)` kuruyor (visibilitychange/focus
+    // ile birlikte); portta yalnızca öne dönüş taşınmıştı, `online` karşılığı
+    // EKSİKTİ. Yani bu bir parite kırılmasıydı.
+    widget.services.onlineStatus.addListener(_onLiveBadgeConnectivity);
     unawaited(_refreshLiveBadge());
   }
 
@@ -290,6 +300,24 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     // kuyruk uygulama yeniden başlatılana kadar bekler. Kuyruk boşken
     // `takeAll` hiçbir şey döndürmeden çıkıyor, yani bu çağrı bedelsiz.
     unawaited(_processInvites());
+  }
+
+  /// KAÇIRILAN OLAY KALICI KAYBA DÖNÜŞÜYORDU (27 Ağustos 2026, kullanıcı
+  /// bildirdi): zayıf bağlantıda Realtime kanalı kopunca kendi hamlelerinin
+  /// yayınladığı olaylar kayboluyor; `pendingCounts()` de ağ hatasında `null`
+  /// döndüğünden (bilinçli — bkz. `_refreshLiveBadge`) SON BİLİNEN rozet
+  /// korunuyordu. Sonuç: "Arkadaşınla" rozeti 8'de takılı kalırken listedeki
+  /// her satır "Rakibin hamlesi bekleniyor" diyordu — rozet ile liste
+  /// birbiriyle ÇELİŞİYORDU, çünkü liste bu iki kancayı taşıyor, rozet
+  /// taşımıyordu.
+  ///
+  /// Bu, bu projede kaçırılan olayın kalıcı kayba dönüştüğü DÖRDÜNCÜ yer
+  /// (sohbet Realtime'ı, bulut senkronu, `useOnlineStatus` aynı çareyi
+  /// almıştı). Olay tabanlı yeni bir durum eklerken ilk soru şu olmalı:
+  /// "olay kaçarsa ne olur ve onu kim geri getirir?"
+  void _onLiveBadgeConnectivity() {
+    if (!mounted) return;
+    if (widget.services.onlineStatus.online) _scheduleLiveBadgeRefresh();
   }
 
   void _scheduleLiveBadgeRefresh() {
@@ -522,6 +550,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
     widget.services.inviteInbox?.removeListener(_onInviteEvent);
     _liveBadgeDebounce?.cancel();
     _cloudSyncDebounce?.cancel();
+    widget.services.onlineStatus.removeListener(_onLiveBadgeConnectivity);
     _unsubscribeLiveBadge?.call();
     _rankScores.removeListener(_onRankScores);
     _rankScores.dispose();

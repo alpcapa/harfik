@@ -57,6 +57,20 @@ class OnlineStatus extends ChangeNotifier with WidgetsBindingObserver {
 
   bool get online => _online;
 
+  /// YALNIZCA TESTLER — bağlantının gidip GERİ GELMESİNİ taklit eder.
+  ///
+  /// Bu kancanın gerekçesi somut: bu projede "kaçırılan olay kalıcı kayba
+  /// dönüşüyor" sınıfı DÖRT kez yaşandı (sohbet Realtime'ı, bulut senkronu,
+  /// `useOnlineStatus`, ve 27 Ağustos 2026'da "Arkadaşınla" rozeti). Çaresi
+  /// her seferinde aynı: bağlantı dönünce tazele. Ama `fake()` yalnızca
+  /// SABİT bir durum kurabildiğinden o çare test EDİLEMİYORDU.
+  @visibleForTesting
+  void debugSetOnline(bool value) {
+    if (_online == value) return;
+    _online = value;
+    notifyListeners();
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) unawaited(refresh());

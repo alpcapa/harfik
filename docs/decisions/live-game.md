@@ -9,6 +9,53 @@
 > (`OnlineGameScreen.tsx` — canlı oyun ekranının UI kararları).
 
 
+## "Arkadaşınla" rozeti bayat kaldı: kaçırılan olay, geri getirilemedi (27 Ağustos 2026)
+
+Kullanıcı bildirdi: zayıf bağlantıda (havuz başı) bekleyen 8 oyunu oynadı,
+**rozet 8'de takılı kaldı** — oysa listedeki her satır "Rakibin hamlesi
+bekleniyor" diyordu. Rozet ile liste birbiriyle ÇELİŞİYORDU. Bir süre sonra
+kendiliğinden düzeldi; kullanıcının tahmini ("bağlantıdan olabilir mi?")
+doğruydu, ama kusur bizdeydi.
+
+**Ölçülen asimetri** — liste kendini toparlıyor, rozet toparlamıyordu:
+
+| Tazeleme kancası | Liste (`live_games_tab`) | Rozet (`setup_screen`) |
+|---|---|---|
+| Açılış | ✅ | ✅ |
+| Realtime olayı | ✅ | ✅ |
+| Öne dönüş | ✅ | ✅ |
+| **Kanal kopup yeniden bağlanınca** (`onResubscribe`) | ✅ | ❌ |
+| **Bağlantı geri gelince** (`onlineStatus`) | ✅ | ❌ |
+
+Kanal koptuğunda kendi hamlelerinin yayınladığı olaylar kayboluyor;
+`pendingCounts()` de ağ hatasında `null` döndüğünden (bilinçli — son bilinen
+rozet korunur) sayı bayat kalıyordu. **Web'de `Setup.tsx` bunun için
+`window.addEventListener('online', …)` kuruyor** — yani portta bu bir
+PARİTE KIRILMASIYDI, yeni bir tasarım sorusu değil.
+
+Rozet artık her iki kancayı da taşıyor.
+
+**Bu, kaçırılan olayın kalıcı kayba dönüştüğü DÖRDÜNCÜ yer** (sohbet
+Realtime'ı, bulut senkronu, `useOnlineStatus` aynı çareyi almıştı). Olay
+tabanlı yeni bir durum eklerken ilk soru: *"olay kaçarsa ne olur ve onu
+kim geri getirir?"*
+
+**Test yazarken iki tuzak ölçüldü** (ikisi de testi SESSİZCE yanlış yere
+baktırıyordu):
+
+1. `FakeOnlineGamesGateway` yalnızca SON aboneyi tutuyordu. Sekme açıkken
+   hem rozet hem liste abone; `lastOnResubscribe` listeninkini gösteriyordu,
+   yani test listeyi tetikleyip rozetten sonuç bekliyordu. Harness artık
+   tüm aboneleri tutuyor (`fireAllOnResubscribe`).
+2. `find.ancestor(...).first` — rozet YOKKEN zincirin ucu boşalıyor ve
+   `findsNothing` eşleştiricisi mismatch'i tarif ederken patlıyor ("No
+   results have been found yet"), yani hata mesajı testin gerçek sonucunu
+   gizliyor. `.first` kaldırıldı.
+
+Testin kendisi "araç canlı mı" kontrolüyle başlıyor: olay gelmeden rozetin
+BAYAT kaldığı önce ölçülüyor — o satır düşerse sonraki iddialar boşuna
+geçerdi.
+
 ## Koltuk indeksi çöktü: RPC slotu ÇOĞALTIYORDU (27 Ağustos 2026)
 
 Bir kullanıcı bildirdi: 4 kişilik Canlı oyunda **kendi yeşil köşesine taş
