@@ -8,6 +8,59 @@
 > `live-game.md` (Canlı oyun Faz 2-3.6, sunucu tarafı), `online-game-screen.md`
 > (`OnlineGameScreen.tsx` — canlı oyun ekranının UI kararları).
 
+
+## Koltuk indeksi çöktü: RPC slotu ÇOĞALTIYORDU (27 Ağustos 2026)
+
+Bir kullanıcı bildirdi: 4 kişilik Canlı oyunda **kendi yeşil köşesine taş
+koyamıyor** ("İlk kelimen kendi köşe karesine değmeli"), **mor (YZ) köşesine**
+koyunca "Kelime geçerli" diyor ama **OYNA pasif** kalıyor.
+
+**Kök sebep — ölçüldü, tahmin edilmedi.** `list_my_online_games` slot dizisini
+üç `LEFT JOIN` ile kurup `jsonb_agg` yapıyordu. `friend_requests` bir slot
+için İKİ satır eşlediğinde o slot diziye **iki kez** giriyor ve sonraki tüm
+indeksler kayıyor. Canlı veride ölçülen:
+
+| | Değer |
+|---|---|
+| `og.slots` (ham) | `[Ironman, Cem, Fb1907, ai]` — 4 |
+| RPC'nin döndürdüğü | `[Ironman, Cem, **Cem**, Fb1907, ai]` — **5** |
+| `slots.indexWhere(ben)` | **3** (olması gereken 2) |
+
+İstemci koltuk indeksini POZİSYONEL okuyor (`indexWhere`), yani 3. koltuğun
+rafını, rengini ve köşesini kullandı. **Sunucu (`submit_move`) ham
+`og.slots`'u okuduğundan doğru koltuğu biliyordu** — OYNA'nın pasif kalması
+bu yüzden davranışın DOĞRU yarısıydı; yanlış olan istemcinin gösterdiği her
+şeydi.
+
+**İki satır neden var — bu bir hata DEĞİL:** `handle_friend_request_insert`
+tetikleyicisi, iki kişi birbirine istek gönderdiğinde ikisini de `accepted`
+yapıyor (karşılıklı istek = otomatik arkadaşlık). Yani karşılıklı çift
+MEŞRU bir durum ve tekrar edecek. O gün 27 kabul satırından yalnızca 1'i
+karşılıklıydı — bu yüzden bugüne kadar görünmemişti; nadirdi, imkânsız
+değil.
+
+**Düzeltme** (`20260827121628_fix_slot_duplication_in_list_my_online_games`):
+join YOK, her alan skaler alt sorgudan geliyor — slot başına tam bir satır
+üretilmesi artık YAPISAL garanti. Yan kazanç: `relation` deterministik oldu
+(eskiden karşılıklı çiftte hangi satırın join'e düştüğü belirsizdi ve
+`pending_outgoing`/`pending_incoming` arasında salınabiliyordu).
+
+**Aynı kökten ikinci belirti:** `list_friends`'te `distinct` yoktu —
+karşılıklı çift arkadaşı listede İKİ KEZ gösteriyordu (ölçüldü: 4 satır,
+3 farklı kişi). `distinct on` eklendi; doğrulandı: 3/3.
+
+**Nöbetçi:** hata SESSİZDİ — hiçbir yerde iz bırakmadı, teşhis elle SQL
+koşularak yapıldı. İki istemci de artık `slots.length != playerCount`
+olduğunda telemetriye yazıyor (`online_game.slot_count_mismatch`). Bu
+düzeltmeyi tekrarlamaz, ama tekrarını GÖRÜNÜR kılar.
+
+**Ders (bu dosyanın dışında da geçerli):** bir jsonb dizisini
+`jsonb_agg` + `LEFT JOIN` ile yeniden kurmak, join'in tekilliği garanti
+edilmedikçe diziyi sessizce ÇOĞALTIR. Sıra/indeks anlam taşıyan bir dizide
+bu, veriyi bozmakla eşdeğerdir. Böyle bir yerde join yerine skaler alt
+sorgu kullan.
+
+
 ## Canlı Oyun — Faz 2 (Davet + Kabul Akışı)
 
 27 Temmuz 2026'da eklendi. Faz 1'in (artık `friends.md`) üzerine kurulu — arkadaşlık ilişkisi olmadan kimseyi davet edemezsin. Bu fazda hâlâ gerçek zamanlı senkron oynanış YOK: yalnızca "kimin katılacağı" belirleniyor, oyun kabul edilenlerin hepsi tamamlanınca `active` durumuna geçiyor ama tahta/raf/skor state'i henüz hiçbir yerde yok (Faz 3'ün işi).
