@@ -167,7 +167,52 @@ bölümün kendi tarihli notuna taşınır.
 
 
 
-## Tahta çiziminin önbelleğe alınması (24 Ağustos 2026, mağaza sonrası)
+## ✅ KAPANDI — Tahta çiziminin önbelleğe alınması (26 Ağustos 2026)
+
+Bu madde **yapıldı** ve tam da burada tarif edilen çözümle: her ayırt edici
+hücre deseni bir kez rasterleştirilip `drawImageRect` ile basılıyor.
+Ölçülen sonuç: ekranın bir boyaması **~340 blur → 26**, ikinci boyaması
+**3** (yalnızca önbelleğe alınmayan tahta kartı, o da analitik hızlı yolda),
+30 adımlık sürüklemede **0**.
+
+Madde "mağaza turundan sonraya" bırakılmıştı; kapalı testin ilk
+kullanıcıları *"ekran donuyor / taşları sürerken ağır çekim"* deyince
+öne alındı — yani erteleme kararı sahada çürüdü. Kaydı:
+`mobile/docs/parca-log.md` → **Parça 144**.
+
+Buradaki "riski görsel, piksel golden'ı yok" endişesi de çözüldü: görsel
+regresyon riski bir testle DEĞİL, yapıyla kapatıldı — rasterleştirmede eski
+çizim kodunun ta kendisi koşuyor, yani "eski yol / yeni yol" diye iki çizim
+kodu yok.
+
+---
+
+## Tahtada çift dokunuşla yakınlaştırma (26 Ağustos 2026, testçi isteği)
+
+Kapalı testteki bir kullanıcı bildirdi (kullanıcının aktardığı sözlerle):
+*"ekran küçük olduğu için kareleri tutturmakta zorlandığını söyledi.
+Kelimelik'te board'a çift tıklama zoom yapıyor, tekrar çift tık geri zoom
+yapıyor. Bu özelliğin iyi olacağını söyledi."*
+
+**Ertelendi, sebebi net:** o gün asıl sorun sürüklemenin akıcılığıydı
+(Parça 144) ve kullanıcı ikisini ayırdı — *"bu iş için ayrıca bakmamız
+lazım. Şimdi asıl sorun taşların akıcı hareketini çözmek."* Akıcılık
+düzeldiğine göre "tutturamama" şikâyetinin ne kadarının hızdan, ne
+kadarının gerçekten hücre boyutundan geldiği ARTIK BİLİNMİYOR — önce
+yeni paketle tekrar sorulmalı, sonra yapılmalı.
+
+**Yapılırsa dikkat edilecekler (bu projede ölçülmüş tuzaklar):**
+- Yakınlaştırma sürükle-bırakın koordinat çevrimini bozar: `game_screen`
+  global noktayı hücreye `stride = (en + gap)/13` ile çeviriyor; ölçek
+  devreye girerse o formül ve `_nearbyDraftCell` birlikte güncellenmeli.
+- Çift dokunuş, mevcut jest ayrımıyla (dokunuş ↔ sürükleme eşiği, fare 6 /
+  parmak 10) çakışmamalı.
+- İki oyun ekranı bu deseni paylaşıyor (`game_screen` ↔
+  `online_game_screen`) — biri değişirse öteki de.
+- Web'de karşılığı YOK; önce web'de mi yapılacak, yoksa bilinçli bir port
+  farkı mı olacak — karar verilmeli (kural: kaynak web'dir).
+
+## (arşiv) Tahta çiziminin önbelleğe alınması — özgün kayıt (24 Ağustos 2026)
 
 Kullanıcı Android'de bildirdi: *"YZ ile oyun açtığında board'un ekrana
 gelmesi takılarak oluyor"* — girişli açılışta da, ama Canlı bekleyen oyunda
