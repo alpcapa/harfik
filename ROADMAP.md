@@ -288,8 +288,12 @@ Sırası önemli olan tek bağ: **#4, #2'den SONRA** (hesap silme kaskadı
    filter, Supabase redirect allow-list, e-posta şablonları, Flutter
    yönlendirme) duruyor.
 4. **0.C — App content formları** (aşağı).
-5. **Madde 4 — test hesaplarının silinmesi.** ⚠ **`T2` SİLİNMEYECEK** —
-   App access formunda incelemeciye verilen hesap o (yukarı, 0.C).
+5. ~~Test hesaplarının silinmesi~~ — **madde KALDIRILDI** (26 Ağustos 2026,
+   kullanıcı kararı: *"gerekirse daha sonra hesabımı silden ben yaparım,
+   önemli bir konu değil"*). Kalan test hesapları duruyor; büyüme
+   metriklerini bir miktar kirletmeleri kabul edildi. ⚠ **`T2` ve
+   `Ironman` hiçbir koşulda silinmez** — gerekçeleri
+   `docs/decisions/account-deletion.md` → "ASLA SİLİNMEYECEK İKİ HESAP".
 
 ### 0.C — Play Console'da doldurulacak formlar (kod işi değil, zorunlu)
 
@@ -404,47 +408,6 @@ acil.
 
 **Ön koşul:** Apple Developer üyeliği + imzalama anahtarı. Bunlar yoksa iş
 yarıda kalır — **başlamadan önce teyit et.**
-
----
-
-## 4. Test hesaplarının silinmesi — **TEMİZLİK, GERİ DÖNÜŞSÜZ**
-
-*FAZ B'nin parçası — sıradaki yeri: madde 0 → 0.B/5. ⚠ App access formuna
-incelemeciye verilen hesabı silme.*
-
-**Model: Opus 5, efor `high`.** Küçük ama geri alınamaz; Sonnet'e verme.
-
-Test hesapları büyüme metriklerini kirletiyor: `T1`
-(alp.capa@hotmail.com — **kullanıcının KENDİ kişisel e-postası**), `T2`,
-`T3`, `T4`, `T5` (tek kullanımlık testinator adresleri).
-
-**DURUM (26 Ağustos 2026 — YARISI BİTTİ, uygulama içi yoldan silindi):**
-
-| Hesap | Durum |
-|---|---|
-| **T4** | ✅ silindi (26 Ağu, duman testi — 1 YZ oyunu, anonimleştirme yok) |
-| **T1** | ✅ silindi (26 Ağu, ASIL test — 19 oyun, 11 kayıt anonimleşti) |
-| **T3** | ⬜ duruyor (1 oyun · 1 yarım Canlı oyun · 3 arkadaşlık · 1 davet · 1 YZ kaydı) |
-| **T5** | ⬜ duruyor (8 oyun · 1 arkadaşlık) |
-| **T2** | 🔒 **SİLİNMEZ** — App access formunda incelemeciye verilen hesap |
-| **Ironman** | 🔒 **HİÇBİR KOŞULDA SİLİNMEZ** — hesap sahibinin gerçek ana/admin hesabı (14 Ağustos) |
-
-T3 ve T5 artık bir test değil sadece temizlik: ikisinin de kuru
-çalıştırması `games_baskalarinin: 0` diyor, yani anonimleştirme dalını hiç
-çalıştırmıyorlar.
-
-**Ön koşul KARŞILANDI ve KANITLANDI:** madde 2'nin kaskadı iki gerçek
-silmeyle uçtan uca doğrulandı (ayrıntı: `docs/decisions/account-deletion.md`
-→ "Gerçek kullanım").
-
-**Nasıl yapılır:** her hesap için önce `select public.delete_account_cascade
-('<uuid>', true)` (kuru — hiçbir şey yazmaz) çalıştırılıp rapor kullanıcıya
-gösterilir, onay alındıktan sonra `false` ile tekrarlanır ve ardından
-`auth.admin.deleteUser` çağrılır. (Edge Function yalnızca ÇAĞIRANIN kendi
-hesabını siler; başkasının hesabını silmek bilerek mümkün değil, bu yüzden
-buradaki temizlik MCP üzerinden yapılacak.)
-
-Silmeden önce kaskad zincirini çıkarıp kullanıcıya göster: geri dönüşü yok.
 
 ---
 

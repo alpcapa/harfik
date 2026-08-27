@@ -15,6 +15,25 @@ değil (KVKK m.7/m.11 ve GDPR m.17 hak verir, buton şart koşmaz) — bu madde
 
 ---
 
+
+## ⛔ ASLA SİLİNMEYECEK İKİ HESAP
+
+Bu iki satır ROADMAP madde 4'te (test hesabı temizliği) duruyordu; madde
+26 Ağustos 2026'da kullanıcı kararıyla kaldırıldı (*"gerekirse daha sonra
+hesabımı silden ben yaparım, önemli bir konu değil"*). Kaydın kendisi
+KALDI, çünkü bir temizlik/toplu işlem sırasında yanlışlıkla silinmelerinin
+bedeli geri alınamaz:
+
+| Hesap | Neden dokunulmaz |
+|---|---|
+| **T2** | Play Console **App access** formunda incelemeciye verilen hesap. Silinirse mağaza incelemesi uygulamaya giremez. |
+| **Ironman** | Hesap sahibinin gerçek ana/admin hesabı (14 Ağustos 2026). |
+
+Kalan test hesapları (T3, T5) bilerek duruyor; gerekirse sahibi uygulama
+içindeki "Hesabımı Sil" ile kendisi siler. Büyüme metriklerini bir miktar
+kirletmeleri kabul edildi.
+
+
 ## Mimari
 
 ```
