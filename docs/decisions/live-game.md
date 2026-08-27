@@ -54,6 +54,12 @@ koşularak yapıldı. İki istemci de artık `slots.length != playerCount`
 olduğunda telemetriye yazıyor (`online_game.slot_count_mismatch`). Bu
 düzeltmeyi tekrarlamaz, ama tekrarını GÖRÜNÜR kılar.
 
+**Cihazda doğrulandı** (27 Ağustos 2026): kullanıcı oyunu yeniden açtı,
+kendi yeşil köşesine oynayabildi. Sunucu düzeltmesi olduğundan yeni bir
+sürüm gerekmedi — ama koltuk indeksi oyun ekranı açılırken BİR KEZ
+hesaplandığından, düzeltme anında elinde bozuk liste bulunan istemcinin
+listeyi yeniden yüklemesi (uygulamayı kapatıp açması) gerekti.
+
 **Ders (bu dosyanın dışında da geçerli):** bir jsonb dizisini
 `jsonb_agg` + `LEFT JOIN` ile yeniden kurmak, join'in tekilliği garanti
 edilmedikçe diziyi sessizce ÇOĞALTIR. Sıra/indeks anlam taşıyan bir dizide
