@@ -658,6 +658,45 @@ kilitlenmiyor (23 Ağustos 2026'da canlıdan okundu).
 
 ---
 
+## 14. Uzun modal listeleri tembel inşa edilsin — **İZLEME, eşiğe bağlı**
+
+27 Ağustos 2026, kullanıcı sordu: *"Arkadaşlar ara&ekle lazy yükleniyor
+değil mi?"* İki ayrı "lazy" var ve cevap ikisinde farklı:
+
+- **Veri yüklemesi: EVET, lazy.** 20'şerlik sayfalar
+  (`kAllUsersPageSize` → `list_users_for_friend(offset, limit)`), gövdenin
+  sonuna 80 px kala sonraki sayfa isteniyor; liste kaydırılamayacak kadar
+  kısaysa `_autoLoadIfNotScrollable` elle tetikliyor. Bu değişmedi.
+- **Widget inşası: HAYIR, artık değil.** Aynı gün kaydırma hatası
+  düzeltilirken (Parça 146) iç içe `ListView` kaldırıldı ve yerine düz bir
+  `Column` kondu — yani yüklenmiş TÜM satırlar inşa ediliyor. Tembelliğin
+  kaybı o kararın bilinçli ama İKİNCİL bir bedeliydi; amaç iç içe
+  kaydırılabiliri kaldırmaktı (Flutter zincirlemiyor, listenin alt 128 px'i
+  erişilemiyordu).
+
+**Bugün bedeli YOK ve sayı bu:** canlıda 47 profil var, yani en fazla ~46
+satır. Ayrıca aynı modaldeki öteki iki sekme ("Arkadaşlarım", "İstekler")
+BAŞTAN BERİ düz `Column`, ve web de tüm satırları DOM'a basıyor
+(sanallaştırma yok) — yani parite de bozulmadı.
+
+**Karar tetikleyicisi:** üye sayısı ~300'ü geçtiğinde, ya da liste gözle
+görülür yavaşladığında. Muhtemelen ondan ÖNCE bir tasarım sorunu gelir
+("kullanıcı 15 sayfa kaydırıyor") — o zaman doğru cevap sanallaştırma değil
+arama/filtre olabilir; ikisini birlikte değerlendir.
+
+⚠ **Çözüm iç içe `ListView`'a DÖNMEK DEĞİL** — düzeltilen hata aynen geri
+gelir (bkz. `mobile/CLAUDE.md` → "`KModal`'ın gövdesi ZATEN
+kaydırılabilir"). Doğru yol `KModal`'ın gövdesini `SingleChildScrollView`
+yerine `CustomScrollView` + `SliverList` yapmak: kaydırılabilir yine TEK
+kalır (zincirleme sorunu doğmaz) ama satırlar tembel inşa edilir.
+`KModal`'a `bodyController`'ın yanına bir `slivers` yolu eklenir.
+
+**Etki alanı geniş:** `KModal`'ı 15 modal kullanıyor, yani bu değişiklik
+hepsine dokunur — küçük bir iş değil, kendi test turunu ister. Aynı
+gerekçeyle 27 Ağustos'ta Sürüm A'ya alınmadı.
+
+---
+
 ## Her iş için değişmeyen kurallar
 
 1. **Önce etki analizi** (kök `CLAUDE.md` → "Çalışma İlkesi"): bu kodun

@@ -733,6 +733,13 @@ yalnızca kullanılabilir yükseklik daralınca — yani **klavye açıkken** �
 Modal + `autofocus` bir metin kutusu içeren her testi **560 px** gibi
 gerçekçi bir yükseklikte koş.
 
+⚠ **Düz `Column`'un bedeli: satırlar TEMBEL inşa edilmez.** Bugünkü
+listelerde (en fazla ~46 satır) ölçülebilir bir maliyeti yok, ama çok uzun
+bir liste gerektiğinde çözüm **iç içe `ListView`'a dönmek DEĞİL** — o zaman
+`KModal`'ın gövdesi `CustomScrollView` + `SliverList`'e çevrilir:
+kaydırılabilir yine TEK kalır, satırlar yine tembel inşa edilir. Eşik ve
+gerekçe: `ROADMAP.md` → madde 14.
+
 Örnek/ilk kurban: `friends_modal.dart` ("Ara & Ekle"). Ayrıntı ve ölçümler:
 `docs/decisions/friends.md`, `mobile/docs/parca-log.md` → Parça 146.
 
