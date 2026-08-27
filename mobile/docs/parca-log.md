@@ -20,6 +20,41 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 152 — İKİ eşik tek sanılıyordu: titreşimli dokunuş
+     (27 Ağustos 2026, kullanıcı Parça 151'den SONRA aynı şikayeti
+     tekrarladı: *"Hâlâ tahtaya koyulan taşı her zaman alamıyorum. 1-2
+     denemeden sonra alabiliyorum. Yine alt kısım çok iyi kavramıyor
+     sanki."*):** Parça 151'in kurtarması YALNIZCA "parmak hiç kıpırdamadı"
+     dalında çalışıyordu. ÖLÇÜLDÜ (420×900): 6 px kayan dokunuş taşı geri
+     alıyor ama **12 ve 20 px kayanlar HİÇBİR ŞEY yapmıyordu**. Raf tarafı
+     da aynı: titreşimli dokunuşta `selectedTile` null kalıyor, yani taş
+     seçilemiyordu bile — daha önce "rafta harfi yakalamak zor" diye
+     bildirilen şikayetin ikinci yarısı. **Hedefin ALANINI büyütmek onu
+     çözmemişti çünkü sorun alanda değil JESTTE.**
+     - **Kök sebep:** iki ayrı karar tek eşikle veriliyordu. "Hayaleti
+       göster" için 10 px (Android touch slop) doğru; "bırakma mı dokunuş
+       mu" için fazla dar — parmak o kadarını istemeden aşıyor. Artık ayrı
+       bir bırakma eşiği var (`_tapSlopOnRelease` = 24, hücrenin ~26 px'inin
+       hemen altında).
+     - ⚠ **Eşik bir BELİRSİZLİĞİ de çözüyor, bilinçli:** bırakma noktası
+       30 px kaldırılmış olduğundan "taşı bir üst hücreye taşı" jesti
+       parmağın neredeyse hiç kıpırdamaması demek — "geri al" ile AYNI jest.
+       Açık ara daha sık olan niyet seçildi: kısa jest = geri al. Taşıma
+       hâlâ mümkün ve mevcut sürükle-bırak testi bunu koruyor.
+     - **Raf için ek kısa yol:** jest hâlâ RAFIN ÜSTÜNDE bittiyse mesafeye
+       bakmadan dokunuş sayılır (rafa taş bırakılmıyor). Bu, "raf taşına
+       dokundum tahtaya kondu" riskini de kapatıyor — kaldırılmış nokta
+       rafın 30 px üstünü, yani tahtanın alt satırını hedefliyordu.
+     - **Ders:** bir eşik İKİ farklı soruyu cevaplıyorsa muhtemelen iki eşik
+       olmalı. "Sürükleme başladı mı?" ile "kullanıcı bırakmak mı istedi?"
+       aynı soru değil; ilkinin cevabı erken, ikincisinin geç verilmeli.
+     - **`mobile/` DIŞINDA:** web `App.tsx` + `OnlineGameScreen.tsx` (aynı
+       sayı, aynı gerekçe), `tests/smoke.spec.ts`,
+       `docs/decisions/touch-ux-bugs.md`.
+     - **Regresyon + negatif eş:** portta 6/12/20 px, web'de 8/14/22 px için
+       ayrı testler; portta ayrıca "raf taşı seçildi VE istemeden tahtaya
+       konmadı". Eşik 0'a çekilince iki platformda da düşüyorlar.
+
    - ✅ **Parça 151 — taslak taşı geri almak: ilk dokunuş yakalamıyordu
      (27 Ağustos 2026, kullanıcı Sürüm A'yı cihazda test ederken bildirdi:
      *"tahtaya konan taşı kaldırmak için ilk tıklama yakalamıyor. İkincide

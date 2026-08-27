@@ -1474,6 +1474,13 @@ düzeltmeyi içeren derlemeyle eşleştiğini doğrula.
       büyümemiş, isim satırı kaymamış, taşlar arası boşluk hâlâ görünüyor.
 - [ ] **Seçili taşın yukarı kalkması bozulmamış** (bir taşa dokun: 7 px
       yukarı kalkmalı, üstteki isim satırına girmemeli).
+- [ ] **Titreşimli dokunuş — parmağı KAYDIRARAK dokun (27 Ağustos 2026,
+      ikinci tur).** Taslak taşa dokunurken parmağını bilerek ~1-2 mm
+      kaydır ve bırak: taş geri alınmalı. Aynısını RAF taşında da yap: taş
+      seçilmeli (7 px yukarı kalkmalı) ve **istemeden tahtaya konmamalı**.
+      Eskiden 10 px'i aşan her kayma jesti "sürükleme" sayıp sessizce
+      yutuyordu. **Negatif kontrol:** gerçek bir sürükleme (raftan tahtaya,
+      tahtada bir hücreden diğerine) hâlâ çalışmalı.
 - [ ] **Taslak taşı geri alma — İLK dokunuşta (27 Ağustos 2026, Sürüm A
       cihaz testinde bulundu).** Tahtaya bir taş koy, sonra taşı geri almak
       için üzerine dokun — **ilk dokunuşta** geri gelmeli. Bilerek biraz

@@ -476,6 +476,63 @@ Regresyon: her iki platformda da bir pozitif (ıskalama geri alır) ve bir
 negatif (seçiliyken harf koyar) test. Negatif eşleri kanıtlandı — koşul
 `false` yapılınca ikisi de düşüyor.
 
+### Ek: İKİ eşik, tek sanılıyordu — titreşimli dokunuş (27 Ağustos 2026)
+
+Kullanıcı, boş-hücre kurtarması çıktıktan SONRA aynı şikayeti tekrarladı:
+*"Hâlâ tahtaya koyulan taşı her zaman alamıyorum. 1-2 denemeden sonra
+alabiliyorum. Yine alt kısım çok iyi kavramıyor sanki."*
+
+**Bir gün önceki düzeltme eksikti ve nedeni ölçüldü:** kurtarma YALNIZCA
+"parmak hiç kıpırdamadı" dalında çalışıyordu. Parmak 10 px'i aşınca jest
+**sürükleme** sayılıp bambaşka bir yola giriyor.
+
+Ölçüm (420×900, taslak taşa dokunup bırakma):
+
+| Parmak kayması | Önce | Sonra |
+|---|---|---|
+| 6 px | taş geri alındı | geri alındı |
+| **12 px** | **hiçbir şey** | geri alındı |
+| **20 px** | **hiçbir şey** | geri alındı |
+
+Raf tarafı da aynı yoldan geçiyordu: 12/20 px kayan dokunuşta
+`selectedTile` `null` kalıyor, yani **taş seçilemiyordu bile**. Bu, daha
+önce "rafta harfi yakalamak zor" diye bildirilen şikayetin ikinci yarısı —
+hedefin ALANINI büyütmek onu çözmemişti, çünkü sorun alanda değil JESTTE.
+
+**Kök sebep: iki ayrı karar tek eşikle veriliyordu.**
+
+| Karar | Doğru eşik | Neden |
+|---|---|---|
+| Hayaleti GÖSTER | 10 px (Android touch slop) | Sürüklemenin başladığını erken bildir |
+| BIRAKMA mı dokunuş mu | **24 px** | Parmak 10 px'i istemeden aşıyor |
+
+24, tahta hücresinin (~26 px) hemen altında: bir hücreden az giden jest
+zaten bir hedef ifade edemiyor.
+
+⚠ **Eşik bir BELİRSİZLİĞİ de çözüyor ve bu bilinçli.** Bırakma noktası
+30 px KALDIRILMIŞ olduğundan (`DRAG_LIFT`), "taşı bir üst hücreye taşı"
+jesti parmağın neredeyse hiç kıpırdamaması demek — yani "geri al" ile AYNI
+jest. Belirsizlik, açık ara daha sık olan niyet lehine çözüldü: **kısa jest
+= geri al.** Taşı taşımak hâlâ mümkün (daha uzun bir jestle ya da geri alıp
+yeniden koyarak); `game_screen_test`in "sürükle-bırak: raftan tahtaya +
+tahtada taşıma + rafa geri alma" testi bunu koruyor.
+
+Raf taşı için ek bir kısa yol var: jest hâlâ RAFIN ÜSTÜNDE bittiyse bu bir
+bırakma olamaz (rafa taş bırakılmıyor) — mesafeye bakmadan dokunuş sayılır.
+Bu aynı zamanda "raf taşına dokundum, tahtaya kondu" riskini de kapatıyor:
+kaldırılmış nokta rafın 30 px üstünü, yani tahtanın alt satırını
+hedefliyordu.
+
+> **Ders:** bir eşik iki farklı soruyu cevaplıyorsa, muhtemelen iki eşik
+> olmalı. "Sürükleme başladı mı?" ile "kullanıcı bırakmak mı istedi?" aynı
+> soru değil; ilkinin cevabı erken, ikincisinin cevabı geç verilmeli.
+
+Dört yüzeyde birden (port `game_screen.dart` + `online_game_screen.dart`,
+web `App.tsx` + `OnlineGameScreen.tsx`). Regresyon: her iki platformda
+6/12/20 (port) ve 8/14/22 px (web) için ayrı testler; portta ayrıca "raf
+taşı seçildi VE istemeden tahtaya konmadı" iddiası. Negatif eşleri
+kanıtlandı — eşik 0'a çekilince iki platformda da düşüyorlar.
+
 ### Ek: testin kendi kırılganlığı — rastgele raf + joker (27 Ağustos 2026)
 
 Yukarıdaki kurtarma testleri PR'da yeşil geçip **`main`'de düştü**. Uygulama

@@ -501,6 +501,9 @@ Her birinde gerçekten bekleyen bir iş varken ekranı **kapatıp yeniden aç**.
       Taşın biraz ALTINDAN (rafın alt dolgusundan) ya da iki taşın
       ARASINDAN tutmayı dene — sürükleme başlamalı. Taşların boyutu,
       aralarındaki 3 px boşluk ve rafın dış kutusu DEĞİŞMEMELİ.
+- [ ] **Titreşimli dokunuş (aynı gün, portla birebir).** Dokunurken
+      parmağı biraz kaydır: taslak taş geri alınmalı, raf taşı seçilmeli ve
+      istemeden tahtaya konmamalı. Gerçek sürükleme hâlâ çalışmalı.
 - [ ] **Taslak taşı geri alma — ilk tıklamada (aynı gün, portla birebir).**
       Tahtaya taş koy, geri almak için üzerine tıkla; biraz altına/yanına
       denk gelse ve o hücre boş olsa bile taş geri gelmeli. Negatif kontrol:

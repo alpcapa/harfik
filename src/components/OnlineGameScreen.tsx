@@ -96,6 +96,11 @@ const DRAG_THRESHOLD_MOUSE = 6;
 const DRAG_THRESHOLD_TOUCH = 10;
 const dragThresholdFor = (pointerType: string) =>
   pointerType === 'mouse' ? DRAG_THRESHOLD_MOUSE : DRAG_THRESHOLD_TOUCH;
+
+/// BIRAKMA anındaki karar eşiği — `src/App.tsx` ile aynı sayı ve aynı
+/// gerekçe (ölçümler orada yazılı): 10 px hayaleti göstermek için doğru ama
+/// bırakma kararı için fazla dar, parmak o kadarını istemeden aşıyor.
+const TAP_SLOP_ON_RELEASE = 24;
 const DRAG_LIFT = 30;
 
 /**
@@ -738,6 +743,15 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       // yakalama zaten bırakılmış olabilir — yok sayılır.
     }
 
+    // Sürükleme değil DOKUNUŞ olarak işle — iki dal da buradan geçer.
+    const dokunusOlarakIsle = () => {
+      if (d.source.kind === 'rack') {
+        dispatch({ type: 'SELECT_TILE', index: d.source.index });
+      } else {
+        tapPlacedTile(d.source.r, d.source.c, true);
+      }
+    };
+
     if (!d.moved) {
       if (d.source.kind === 'rack') {
         dispatch({ type: 'SELECT_TILE', index: d.source.index });
@@ -748,6 +762,20 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
         // pencereyi anında kapatıyor (gerekçe: `src/utils/ghostClick.ts`).
         tapPlacedTile(d.source.r, d.source.c, true);
       }
+      return;
+    }
+
+    // TİTREŞİMLİ DOKUNUŞ: eşik aşıldı ama jest hiçbir yere GİTMEDİ (ya da
+    // raf taşı hâlâ rafın üstünde bırakıldı) — bırakma değil, dokunuş.
+    // Gerekçe/ölçümler `src/App.tsx`teki `TAP_SLOP_ON_RELEASE` yanında.
+    const rafinUstunde =
+      d.source.kind === 'rack' && !!dropTargetsAt(e.clientX, e.clientY).rackEl;
+    if (
+      rafinUstunde ||
+      Math.hypot(e.clientX - d.startX, e.clientY - d.startY) <
+        TAP_SLOP_ON_RELEASE
+    ) {
+      dokunusOlarakIsle();
       return;
     }
 

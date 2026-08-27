@@ -820,6 +820,46 @@ test.describe('dokunmatik jestler', () => {
     ).toBe(true);
   });
 
+  // 27 Ağustos 2026 — kullanıcı uygulamada İKİNCİ kez bildirdi: *"Hâlâ
+  // tahtaya koyulan taşı her zaman alamıyorum. 1-2 denemeden sonra
+  // alabiliyorum."* Yukarıdaki 8 px'lik test geçiyordu çünkü 8, hayalet
+  // eşiğinin (10) ALTINDA. Portta ölçüldü: **12 ve 20 px kayan dokunuşlar
+  // hiçbir şey yapmıyordu** — eşik aşılınca jest "sürükleme" sayılıp 30 px
+  // KALDIRILMIŞ bir noktaya bırakılıyordu, üstelik raf taşı bile
+  // seçilemiyordu.
+  //
+  // Artık iki AYRI karar var: hayalet 10 px'te belirir, bırakma ise jest
+  // gerçekten bir yere gittiyse (`TAP_SLOP_ON_RELEASE` = 24) bırakma sayılır.
+  for (const JITTER of [14, 22]) {
+    test(`Titreşimli dokunuş (${JITTER}px, eşiğin ÜSTÜNDE) kaybolmaz`, async ({
+      page,
+    }) => {
+      await oyunEkrani(page);
+      const cell = page.locator('[data-cell="0,0"]');
+      const harfi = async (loc: Locator) =>
+        (await loc.innerText()).trim().split('\n')[0];
+
+      // 1) Raf taşı seçimi — titreşimli dokunuşta da seçilmeli.
+      const rackTile = page.locator('[data-rack]').getByText('M', { exact: true }).first();
+      await sloppyTap(page, rackTile, JITTER);
+      await expect(page.locator('[data-rack] .\\!-translate-y-\\[7px\\]')).toHaveCount(1);
+      // Ve İSTEMEDEN tahtaya konmamalı: kaldırılmış nokta rafın 30 px
+      // üstünü, yani tahtanın alt satırını hedefliyordu.
+      expect(await harfi(cell)).toBe('');
+
+      await cell.tap();
+      expect(await harfi(cell)).toBe('M');
+
+      // 2) Konmuş taşa titreşimli dokunuş → geri alınmalı. Düzeltmeden önce
+      //    burada HİÇBİR ŞEY olmuyordu.
+      await sloppyTap(page, cell, JITTER);
+      expect(
+        await harfi(cell),
+        `${JITTER}px kayan dokunuş sessizce kayboldu`,
+      ).toBe('');
+    });
+  }
+
   test('Titreşimli dokunuş (8px) jest olarak KAYBOLMAZ', async ({ page }) => {
     await oyunEkrani(page);
     const JITTER = 8;
