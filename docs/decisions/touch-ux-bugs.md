@@ -340,6 +340,163 @@ Ayrıca yeni bir kaynak taraması eklendi: **`lib/src/ui` altında ham
 `IconButton` kalmadı** — hepsi `KIconButton`'dan geçiyor, tek istisna
 yukarıda gerekçesiyle yazılı.
 
+### Ek: "benzer tüm yerlere uygulandı mı?" — tarama ve joker ızgarası (27 Ağustos 2026)
+
+Kullanıcı ✕ düzeltmesinden sonra sordu: *"Skor kartındaki dokunma
+düzeltmesi benzer tüm yerlere uygulandı mı?"* Doğru soru — ✕'ler bir
+kaynak taramasıyla kilitlenmişti ama o tarama yalnızca **ham `IconButton`**
+arıyor. Aynı hata sınıfı `IconButton` KULLANMAYAN bir yerde de olabilir.
+
+Bu yüzden `lib/src/ui` altındaki tüm dokunulabilirler, çevrelerinde 48'in
+altında AÇIK bir ölçü (`width`/`height`/`minWidth`/`minHeight`) olup
+olmadığına göre tarandı; çıkan adaylar ekranda tek tek ÖLÇÜLDÜ. Tek gerçek
+bulgu **joker harf ızgarası** oldu.
+
+**Joker ızgarası — ölçülen: 48 × 44, dört yanında 6 px ölü boşluk.**
+Genişlik tam sınırda, yükseklik altında. Buradaki ıskalamanın bedeli
+diğerlerinden farklı ve gerçek: **yanlış HARF seçilir** — 22 Ağustos'ta
+bildirilen *"önce konan A harfi C'ye döndü"* hatasının aynı sonucu, bu kez
+başka bir sebeple.
+
+Düzeltme rafla aynı desen (ölü alanı hedefe devret), ama yalnızca **zayıf
+eksende**: `mainAxisSpacing: 0` + `mainAxisExtent: 50` + hücre içinde
+`bottom: 6`. Sonuç 48 × 50, satırlar dikeyde aralıksız, **satır adımı hâlâ
+50** — yani her satırdaki taş ızgara içinde tam eski yerinde.
+
+Yatay 6 px BİLEREK duruyor: genişlik zaten 48 ve boşluğu hücreye almak
+taşları 1 px daraltırdı (6 hücre × 6 = 36 ≠ 5 boşluk × 6 = 30). Rafta bu
+telafi mümkündü (kutunun kendi dolgusu 12 → 10,5), burada değil.
+
+**Toplam yükseklik:** düzenleme dalında SIFIR değişiklik (ızgara +6, üstteki
+boşluk 12 → 6; "GERİ AL" ölçülen değeriyle birebir aynı yerde). Düzenleme
+olmayan dalda kart 6 px uzuyor ve ortalandığı için içerik 3 px yukarı
+kayıyor — ızgaranın İÇİNDE hiçbir şey oynamıyor. Web'de birebir aynı
+sayılar (`gap-y-0`, hücre `h-[50px] pb-1.5`, `mt-3` → `mt-1.5`); tıklama
+taştan HÜCREYE taşındı.
+
+### Ek: oyun kartındaki üç ikon — üçüncü alet, "YÖNLENDİR" (27 Ağustos 2026)
+
+Kullanıcı sordu: *"oyun kartlarında yer alan mesaj balonu ve hamleler ikonu
+tıklaması nasıl? Orada da sorun var mı?"* **Vardı — ve bunlar uygulamadaki
+EN KÜÇÜK hedeflerdi.** Ölçüldü (390×844, "Tüm Oyunlarım" kartı):
+
+| Hedef | Kutu | Alan |
+|---|---|---|
+| Kalp (beğeni) | 15 × 13 | 195 px² |
+| Mesaj balonu + sayı | 18.5 × 13 | 240 px² |
+| Hamle dökümü ikonu | 19 × 13 | 247 px² |
+| *karşılaştırma:* düzeltilmiş ✕ | 48 × 48 | 2304 px² |
+
+Yani standardın **onda biri**. Şikayet yeni de değil: 12 Ağustos 2026'da
+kullanıcı *"en az 4-5 kere dokunmam gerekti, tam basamazsan oyun detayları
+açılıp kapanıyor"* demişti. O günkü düzeltme hedefi BÜYÜTMEDİ — yalnızca
+hamle ikonunu mesaj balonuyla EŞİTLEDİ (121 → 247 px²).
+
+**Neden büyütülmedi ve hâlâ büyütülemiyor:** satırın kendi yüksekliği 14 px
+ve kart 74 px (ölçüldü). 44'lük bir kutu satırı ve dolayısıyla HER kartı
+~104 px'e çıkarırdı — listenin tamamı %40 uzardı.
+
+**Yani bu, tahta hücresiyle aynı sınıf.** Projede artık üç alet var ve
+hangisinin kullanılacağı hedefin büyütülüp büyütülemediğine bağlı:
+
+| Durum | Alet | Örnek |
+|---|---|---|
+| Hedef büyütülebilir | **BÜYÜT** (kutuyu büyüt, dolguyu aynı kadar kıs) | ✕'ler, joker ızgarası, raf taşı |
+| Büyütülemez, ıskalamanın bedeli var | **YÖNLENDİR** | tahta taslak taşı (`draftRescue`), **oyun kartı ikonları (yeni)** |
+| Büyütülemez, ıskalamanın bedeli yok edilebilir | **ZARARSIZLAŞTIR** | taslak sürerken anlam penceresinin açılmaması |
+
+**Uygulama (`icon_tap_rescue.dart`):** kartın kendi dokunuş yakalayıcısı
+zaten satırın tamamını kapsıyor ve ıskalayan dokunuş bugün oraya düşüyor.
+Artık `onTap` yerine `onTapUp` kullanılıyor; nokta bir ikonun dikeyde
+±14 px genişletilmiş kutusuna düşüyorsa o ikonun eylemi çalışıyor, düşmüyorsa
+davranış **birebir eskisi gibi** (kart açılıp kapanır). Hedef 13 → 41 px
+yükseklik, alan ~240 → ~760 px² (3,2 katı). **Düzen hiç değişmiyor.**
+
+⚠ **YALNIZCA DİKEY — bilinçli.** Zayıf eksen dikey (13 px); yatayda ikonlar
+18.5–19 px ve aralarında 2 px var. Yatayda da genişletmek bölgeleri üst üste
+bindirir ve "hangisi" sorusunu doğururdu — `draftRescue`'nun oradaki cevabı
+"belirsizse hiçbir şey yapma"ydı; burada o soruyu HİÇ DOĞURMAMAK daha iyi:
+x aralıkları ayrık kaldığından aday her zaman en fazla bir tanedir. Yatay
+ıskalamalar gerçekten sorun çıkarırsa ayrı bir iş olarak, ÖLÇÜYLE ele alınır.
+
+**Web'de mekanizma FARKLI, sonuç aynı:** DOM'da düğmeler zaten
+`stopPropagation` taşıyor ve bir sözde-eleman düzeni hiç etkilemiyor, yani
+yönlendirmeye gerek yok — `.tap-expand-y` (yalnızca dikey, 41 px) üç düğmeye
+de eklendi. Yükseklik portun `kIconRescueSlopY` payıyla birebir aynı.
+
+**Regresyon:** `game_likes_test.dart` — ikonun 12 px ALTINA dokunmak sohbeti
+/ hamle dökümünü açmalı; ikonlardan uzak bir ıskalama ise kartı ESKİSİ GİBİ
+açmalı (kurtarmanın kartın kendi dokunuşunu yutmadığının kanıtı). Test
+ayrıca kutunun hâlâ küçük olduğunu ölçüyor — bir gün büyütülürse test
+sessizce anlamsızlaşmasın diye. **Negatif eş:** `onTapUp` kaldırılıp `onTap`
+geri konunca iki test de düşüyor.
+
+### Ek: kurtarma BOŞ hücreleri de kapsadı — kısıtın gerekçesi dardı (27 Ağustos 2026)
+
+Kullanıcı Sürüm A'yı cihazda test ederken bildirdi: *"A testinde her şey
+geçti ama tahtaya konan taşı kaldırmak için ilk tıklama yakalamıyor.
+İkincide ya da üçüncüde yakalanıyor."*
+
+**ÖLÇÜLDÜ (420×900), tahmin edilmedi:** tahta hücresi **26,2 px**. Taslak
+taşı (0,0)'a konup hemen ALTINDAKİ boş hücreye (1,0) dokunulduğunda:
+
+```
+ÖNCE   → placed: [0,0]   mesaj: "Önce bir harf seç."
+SONRA  → placed: []      mesaj: "Oyna tuşuyla kelimeyi onayla."
+```
+
+Yani taş geri alınmıyordu **ve** ekrana geri almaya çalışan kullanıcıyla
+hiç ilgisi olmayan bir uyarı yazıyordu.
+
+**Kör nokta 24 Ağustos'un kendi kısıtındaydı.** `draftRescue` o gün şöyle
+sınırlanmıştı:
+
+> *"⚠ YALNIZCA OYNANMIŞ hücrelerden çağrılır; BOŞ hücrelere hiç dokunulmaz
+> — yoksa kelimeyi dizerken bir sonraki harfi yan hücreye koymak
+> zorlaşırdı."*
+
+Gerekçe **doğru ama yalnızca bir raf taşı SEÇİLİYKEN geçerli.** Seçim
+yokken boş bir hücreye dokunmak zaten hiçbir iş yapmıyor — motor
+(`_placeTile`) yalnızca o mesajı üretip aynı durumu döndürüyor. Yani o
+durumda kurtarmanın bedeli **sıfır**.
+
+Koşul bu yüzden dar tutuldu: `selectedTile == null && placed.isNotEmpty`.
+Seçili taş varken davranış **hiç değişmedi** — ve bunu bir negatif eş
+testi koruyor (ikinci taş seçilip komşu hücreye konuyor, kurtarma
+karışmıyor).
+
+> **Ders:** bir kısıtın gerekçesini yazarken HANGİ DURUMDA geçerli
+> olduğunu da yaz. "Boş hücrelere dokunma" cümlesi tek başına doğru
+> görünüyordu; eksik olan "…çünkü orada bir harf konabilir" koşuluydu ve
+> o koşul sağlanmadığında kısıt bedava bir kayba dönüşüyordu.
+
+Dört yüzeyde birden uygulandı (port `game_screen.dart` +
+`online_game_screen.dart`, web `App.tsx` + `OnlineGameScreen.tsx`).
+Regresyon: her iki platformda da bir pozitif (ıskalama geri alır) ve bir
+negatif (seçiliyken harf koyar) test. Negatif eşleri kanıtlandı — koşul
+`false` yapılınca ikisi de düşüyor.
+
+### 48'in ALTINDA KALANLAR — gerekçeleriyle (aynı tarama)
+
+Bunlar bilinçli olarak değiştirilmedi. Yeni bir tanesi eklenirse
+`tap_target_test.dart` düşer.
+
+| Yer | Ölçü | Neden bırakıldı |
+|---|---|---|
+| `friends_modal` ilişki + moderasyon ikonları | 44 × 44 | iOS HIG asgarisi; **dört dalın dördü de önce onay diyaloğu açıyor**, yani ıskalamanın bedeli sıfır. 48 yapmak liste satırının yüksekliğini her yerde değiştirirdi |
+| `game_history_modal` kalp / mesaj / hamle ikonları | 15–19 × 13 | Satır 14 px, kart 74 px — büyütmek listenin tamamını %40 uzatırdı. **Bunun yerine YÖNLENDİRME** (yukarı bkz.): etkin hedef 41 px |
+| `chat_thread` moderasyon rozeti | 9 punto | HER baloncukta olduğundan sohbeti şişirirdi; aynı panele başlıktaki dişliden de gidiliyor — **o dişli artık 48** |
+| `auth_modal` şifre göster/gizle | 38 px alanın `suffix`i | Alan yüksekliği web paritesi gereği 38 (`theme_test.dart` ölçüyor); yanlış dokunuşun bedeli sıfır |
+| `legal_modals` paragraf içi link | satır yüksekliği | Büyütmek akan metnin satır aralığını bozar |
+| `game_header` "← Geri" | 48 × 24 | Header ile tahta arasındaki bantta; hemen üstündeki logo aynı eylem için tam boy hedef |
+| Tahta hücresi | ~24 | **Büyütülemez** — ızgara ölçüsü oyunun kuralı. Bunun yerine ıskalama zararsızlaştırıldı (`draftRescue` + taslak sürerken anlam penceresinin açılmaması) |
+
+> **Ders:** "hepsine uygulandı mı?" sorusunun cevabı bir liste değil bir
+> TARAMA olmalı — ve tarama şekle göre yapılmalı (kutuya ölçü veren bir şey
+> var mı), türe göre değil. Bu ders 24 Ağustos'ta bir kez alınmıştı
+> (`GestureDetector`'ın çocuğu `Text` mi diye bakan tarama "Paylaş"ı
+> kaçırmıştı); `IconButton`'ın güvende sayılması aynı hatanın ikinci biçimi.
+
 ## Dokunmatikte "Yapışkan Hover" (11 Ağustos 2026)
 
 Kullanıcı, Setup'ın en altındaki **"Kullanım Koşulları"** linkinin altında,

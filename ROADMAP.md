@@ -19,9 +19,9 @@ değiştirdi: artık omurga aşağıdaki **madde 0 (FAZ B)**, çünkü kişisel
 hesaplarda production'a çıkmanın önünde **daha başlamamış 14 günlük bir
 tester sayacı** var. Maddeler 1, 2 ve 4 o fazın içinde yaşıyor.
 
-**Durum eki (27 Ağustos 2026):** `main` hâlâ yeşil ama **dal bilerek merge
-EDİLMİYOR** — istemci düzeltmeleri tek bir kapalı-test sürümünde çıkacak;
-ayrıntı aşağıdaki "Yalnızca sohbette kalmış üç karar" bölümünde.
+**Durum eki (27 Ağustos 2026):** Sürüm A merge edildi (`f9c3846`, paket
+`1.0.0 (403)`) ve cihaz testinde. Dal Sürüm B için yeniden birikmeye
+başladı; ayrıntı aşağıdaki "Yalnızca sohbette kalmış üç karar" bölümünde.
 
 **21 Ağustos'ta kapanan ÜÇ madde** (kalan maddelerin numaraları DEĞİŞMEDİ):
 - eski **#3** (istemci hata telemetrisi) — `client_errors` tablosu + web/port
@@ -44,36 +44,51 @@ Aşağıdaki ikisinin kaydı kök `CLAUDE.md` → Kaynak Hunisi bölümünde:
 
 ---
 
-## Yalnızca sohbette kalmış üç karar (27 Ağustos 2026)
+## Sürüm sıralaması, force update ve davetliler (27 Ağustos 2026)
 
-Bu üçü bir "madde" değil — biri bir KUYRUK, biri ERTELENMİŞ bir karar, biri
-bir HATIRLATMA. Hiçbiri koda yazılamadığı için buraya yazıldı; oturum
-kapanınca kaybolmasınlar.
+Bu üçü bir "madde" değil — biri bir SIRALAMA kuralı, biri ERTELENMİŞ bir
+karar, biri bir HATIRLATMA. Hiçbiri koda yazılamadığı için buraya yazıldı;
+oturum kapanınca kaybolmasınlar.
 
-### 1. Bekleyen tek güncelleme — dal birikiyor, merge YOK
+### 1. Sürüm A ÇIKTI · Sürüm B kuyruğu açıldı (27 Ağustos 2026)
 
-Kullanıcı isteği (27 Ağustos 2026): *"Başka şeyler de çıkar mutlaka. Hepsini
-tek güncellemede çıkarız. beklet"*. Yani `claude/account-deletion-in-app-soz4lr`
-dalındaki istemci düzeltmeleri **bilerek** merge edilmiyor; bir sonraki
-kapalı-test sürümü (Play `.aab`) hepsini birden taşıyacak.
+Kuyruk bir kez boşaldı. Sıra şuydu ve bir daha aynen izlenmeli:
 
-Şu an kuyruktakiler:
+**Sürüm A — merge edildi (`f9c3846`, PR #355), paket `1.0.0 (403)`.**
+Kapalı testten gelen dört düzeltme: dokunma hedefleri (✕'ler 28/40 → 48,
+raf taşı 46×46 → 49×65), "Ara & Ekle"de yutulan kaydırma, "Arkadaşınla"
+rozetinin kendini toparlaması, `slots.length` telemetri koruması. Sunucu
+tarafı (`20260827121628`, `20260827153857`) zaten canlıydı, merge'i
+beklemedi.
+
+⚠ **Test edilen artefakt ile mağazaya giden artefakt AYNI olmalı.** İlk
+planım "dalda APK üret, test et, sonra merge et, mağazaya main'in `.aab`'sini
+yükle" idi; kusuru şu ki o ikisi FARKLI derlemeler olurdu (ayrı sha, ayrı
+paket numarası) — bu projenin en pahalı dersi ("düzelttim ≠ canlıda")
+tam olarak budur. Doğru sıra: **PR CI yeşil → merge → `main` koşusunun
+`.apk`'sıyla cihazda test → AYNI koşunun `.aab`'si mağazaya.** Dalda ayrı
+bir test derlemesi üretmek ayrıca `mobile-latest`'i merge edilmemiş kodla
+ezerdi (PR kapısının var olma sebebi).
+
+**Sürüm A2 — dokunma isabeti paketi (27 Ağustos 2026, kullanıcı kararı:
+*"Bence deep link ve push'u B'de bırakalım. Diğer hepsini A'ya koy"*):**
+
+A'nın cihaz testi sırasında beş düzeltme daha birikti ve hepsi AYNI
+sınıftan — dokunma isabeti, hepsi kapalı testte gerçek kullanıcıların
+takıldığı yerler. Kuyrukta bekletmek yerine ikinci bir A sürümüyle
+çıkıyorlar:
 
 | Düzeltme | Nerede | Kullanıcıya etkisi |
 |---|---|---|
-| "Arkadaşınla" rozetinin bayat kalması | `mobile/app/lib/src/ui/setup/setup_screen.dart` (`onResubscribe` + `onlineStatus` kancaları) | Ağ kesilip döndüğünde kırmızı sayı artık kendini toparlıyor |
-| `slots.length != playerCount` telemetri koruması (2 yer) | port + web | Aynı sınıf bozuk veri bir daha sessizce oturmaz |
-| Koltuk hatası migration'ının repo kaydı | `supabase/migrations/20260827121628_*.sql` | **Canlıda ZATEN uygulandı** — uygulama güncellemesi beklemiyor |
-| "Ara & Ekle"de kaydırmanın yutulması | `mobile/app/lib/src/ui/friends/friends_modal.dart` + `modal_shell.dart` (`bodyController`) | Üye listesi artık sonuna kadar kaydırılıyor (klavye açıkken son ~2,5 satır erişilemezdi) |
-| Mükerrer üye satırı migration'ının repo kaydı | `supabase/migrations/20260827153857_*.sql` | **Canlıda ZATEN uygulandı** — web de portun eski sürümü de düzelmiş listeyi alıyor |
-| ✕/dişli butonlarının dokunma kutusu (28–40 → 48) | `tap_target.dart` (`KIconButton`) + 5 çağıran | "Biraz üstüne basınca çalışıyor" sınıfı; görsel kıpırdamadı |
-| Raf taşını yakalama alanı (46×46 → 49×65) | `rack_widget.dart` | Ölü dolgu hedefe devredildi; taşların yeri aynı |
-| Doküman notları | `mobile/docs/parca-log.md`, `docs/decisions/*` | — |
+| Taslak taşı geri alma: ilk dokunuş yakalamıyordu | `game_screen.dart` + `online_game_screen.dart` + web ikizi | Iskalama artık boş komşu hücreden de kurtarılıyor (yalnızca seçim yokken) |
+| Joker harf ızgarası (48×44 → 48×50) | `wild_letter_sheet.dart` + `WildcardModal.tsx` | Yanlış harf seçtiren ıskalamalar |
+| Oyun kartı ikonları (13 → 41 px etkin hedef) | `icon_tap_rescue.dart` + `.tap-expand-y` | Kalp/mesaj/hamle: uygulamanın en küçük üç hedefi |
+| Tanıtım "DEVAM ›" | `intro_screen.dart` | Tam genişlik + ekranın dibi + ortalı değildi |
+| Tanıtım son slaydındaki nokta şeridi | `intro_screen.dart` | Gereksiz ve yanıltıcıydı ("daha var" diyor ama yok) |
 
-⚠ **Ayrım:** sunucu tarafı (migration, RPC) merge'i BEKLEMEZ, anında
-canlıdır (bkz. kök `CLAUDE.md` → "Deploy Doğrulaması" tablosunun üçüncü
-satırı). Kuyrukta bekleyen yalnızca İSTEMCİ tarafı. Bu yüzden koltuk hatası
-27 Ağustos'ta kullanıcıyla teyit edilerek kapandı, dal hâlâ açıkken.
+**Sürüm B'de KALANLAR:** madde 1 (deep link — mağaza blokeri) ve madde 13
+(push + Analytics). İkisi tek pakette gitmek zorunda, çünkü 13'ün 5. adımı
+("bildirime dokununca doğru oyunu aç") zaten 1'e bağlı.
 
 Ayrıca **`notify-deadline-warnings`'te düzeltilmiş bir yazım hatası deploy
 EDİLMEDİ** ("taktirde" → "takdirde"): repoda düzeltildi, canlıya
@@ -110,12 +125,16 @@ tamamen açılmaz hâle getirir ve düzeltmesi ancak YENİ bir sürüm yayınlam
 mümkündür. Bu yüzden erteleme doğru karar; yapılacaksa önce yukarıdaki iki
 ön koşul, sonra kademeli (`flexible`) akış.
 
-### 3. 44 davetliye hatırlatma — henüz kimse kurmadı
+### 3. Davetlilere hatırlatma — ARTIK GÖNDERİLEBİLİR (Sürüm A çıktıktan sonra)
 
-Kapalı testte davet edilenlerin büyük bölümü uygulamayı hâlâ **yüklememiş**.
-Bu bir hata değil bir pazarlama işi, ama sıralamayı etkiliyor: 27 Ağustos'un
-iki düzeltmesi (koltuk hatası + rozet) tam da **ilk deneyimi** hedefliyordu —
-yani hatırlatma, kuyruktaki sürüm çıktıktan SONRA gönderilmeli, önce değil.
+Kapalı test listesi 54 kişiye çıktı ama büyük bölümü uygulamayı hâlâ
+**yüklememiş**. Bu bir hata değil bir pazarlama işi, ama sıralaması vardı:
+Sürüm A'nın dört düzeltmesi (taş yakalama, ✕ ıskalama, arkadaş listesinin
+sonuna inememe, bayat rozet) tam da **ilk deneyimi** vuruyordu — hatırlatma
+o yüzden A'dan SONRAYA bırakılmıştı.
+
+**A artık çıktı** (paket `1.0.0 (403)`), yani engel kalktı. Kalan tek şart:
+cihaz testi onaylansın ve paket kapalı test kanalında yayına geçsin.
 
 Katılan/indiren sayısı Play Console'da: **Test → Closed testing → (track) →
 Testers sekmesi**, ve indirme adedi için **Statistics**. (Kullanıcı bunu iki
@@ -655,6 +674,45 @@ açılıyorsa yükseltmek o kullanıcıları uygulamadan kilitler
 (`version_gate.dart`). Bugün `app_config.mobile_min_supported_version`
 `{ios: 0.0.0, android: 0.0.0}`, yani kapı fiilen kapalı ve kimse
 kilitlenmiyor (23 Ağustos 2026'da canlıdan okundu).
+
+---
+
+## 14. Uzun modal listeleri tembel inşa edilsin — **İZLEME, eşiğe bağlı**
+
+27 Ağustos 2026, kullanıcı sordu: *"Arkadaşlar ara&ekle lazy yükleniyor
+değil mi?"* İki ayrı "lazy" var ve cevap ikisinde farklı:
+
+- **Veri yüklemesi: EVET, lazy.** 20'şerlik sayfalar
+  (`kAllUsersPageSize` → `list_users_for_friend(offset, limit)`), gövdenin
+  sonuna 80 px kala sonraki sayfa isteniyor; liste kaydırılamayacak kadar
+  kısaysa `_autoLoadIfNotScrollable` elle tetikliyor. Bu değişmedi.
+- **Widget inşası: HAYIR, artık değil.** Aynı gün kaydırma hatası
+  düzeltilirken (Parça 146) iç içe `ListView` kaldırıldı ve yerine düz bir
+  `Column` kondu — yani yüklenmiş TÜM satırlar inşa ediliyor. Tembelliğin
+  kaybı o kararın bilinçli ama İKİNCİL bir bedeliydi; amaç iç içe
+  kaydırılabiliri kaldırmaktı (Flutter zincirlemiyor, listenin alt 128 px'i
+  erişilemiyordu).
+
+**Bugün bedeli YOK ve sayı bu:** canlıda 47 profil var, yani en fazla ~46
+satır. Ayrıca aynı modaldeki öteki iki sekme ("Arkadaşlarım", "İstekler")
+BAŞTAN BERİ düz `Column`, ve web de tüm satırları DOM'a basıyor
+(sanallaştırma yok) — yani parite de bozulmadı.
+
+**Karar tetikleyicisi:** üye sayısı ~300'ü geçtiğinde, ya da liste gözle
+görülür yavaşladığında. Muhtemelen ondan ÖNCE bir tasarım sorunu gelir
+("kullanıcı 15 sayfa kaydırıyor") — o zaman doğru cevap sanallaştırma değil
+arama/filtre olabilir; ikisini birlikte değerlendir.
+
+⚠ **Çözüm iç içe `ListView`'a DÖNMEK DEĞİL** — düzeltilen hata aynen geri
+gelir (bkz. `mobile/CLAUDE.md` → "`KModal`'ın gövdesi ZATEN
+kaydırılabilir"). Doğru yol `KModal`'ın gövdesini `SingleChildScrollView`
+yerine `CustomScrollView` + `SliverList` yapmak: kaydırılabilir yine TEK
+kalır (zincirleme sorunu doğmaz) ama satırlar tembel inşa edilir.
+`KModal`'a `bodyController`'ın yanına bir `slivers` yolu eklenir.
+
+**Etki alanı geniş:** `KModal`'ı 15 modal kullanıyor, yani bu değişiklik
+hepsine dokunur — küçük bir iş değil, kendi test turunu ister. Aynı
+gerekçeyle 27 Ağustos'ta Sürüm A'ya alınmadı.
 
 ---
 

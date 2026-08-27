@@ -20,6 +20,157 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 151 — taslak taşı geri almak: ilk dokunuş yakalamıyordu
+     (27 Ağustos 2026, kullanıcı Sürüm A'yı cihazda test ederken bildirdi:
+     *"tahtaya konan taşı kaldırmak için ilk tıklama yakalamıyor. İkincide
+     ya da üçüncüde yakalanıyor."*):** ÖLÇÜLDÜ (420×900): hücre **26,2 px**;
+     taslak (0,0)'a konup hemen ALTINDAKİ boş hücreye dokunulduğunda taş
+     geri alınmıyor ve ekrana **"Önce bir harf seç."** yazıyordu — geri
+     almaya çalışana alakasız bir uyarı.
+     - **Kör nokta 24 Ağustos'un KENDİ kısıtındaydı:** `draftRescue` o gün
+       *"boş hücrelere hiç dokunulmaz — yoksa kelimeyi dizerken yan hücreye
+       harf koymak zorlaşırdı"* diye sınırlanmıştı. Gerekçe doğru ama
+       **yalnızca bir raf taşı SEÇİLİYKEN** geçerli; seçim yokken boş hücreye
+       dokunmak zaten hiçbir iş yapmıyor (`_placeTile` sadece o mesajı üretip
+       aynı durumu döner). Yani kurtarmanın bedeli o durumda sıfır.
+     - **Koşul dar tutuldu:** `selectedTile == null && placed.isNotEmpty`.
+       Seçili taş varken davranış HİÇ değişmedi ve bunu bir negatif eş testi
+       koruyor (ikinci taş seçilip komşu hücreye konuyor).
+     - **Ders:** bir kısıtın gerekçesini yazarken HANGİ DURUMDA geçerli
+       olduğunu da yaz. "Boş hücrelere dokunma" tek başına doğru
+       görünüyordu; eksik olan "…çünkü orada bir harf konabilir" koşuluydu.
+     - **Dört yüzey:** port `game_screen.dart` + `online_game_screen.dart`,
+       **`mobile/` DIŞINDA** web `App.tsx` + `OnlineGameScreen.tsx`,
+       `tests/smoke.spec.ts`, `docs/decisions/touch-ux-bugs.md`.
+     - **Regresyon:** iki platformda da bir pozitif (ıskalama geri alır) ve
+       bir negatif (seçiliyken harf koyar) test. Negatif eşleri kanıtlandı —
+       koşul `false` yapılınca ikisi de düşüyor.
+
+   - ✅ **Parça 150 — tanıtımdaki "DEVAM ›" tam genişlikte ve ekranın
+     dibindeydi (27 Ağustos 2026, kullanıcı bildirdi: *"ekranın altına
+     yapışıyor ve ortalı değil. Bu kadar uzun olmasına da gerek yok, normal
+     buton gibi olsun"*):** Üç kusurun üçü de ÖLÇÜLDÜ (390×844): buton
+     x **0 → 378** (ekranın %97'si), alt kenarı **844** (tam dip), etiketi
+     sağdaki 12 px dolgu yüzünden merkezin 6 px solunda. **Portrede de
+     bozuktu** — kullanıcı yatayda fark etmiş ama sorun yöne bağlı değildi.
+     - **Kök sebep düzende DEĞİL `NeoButton`da:** kökü `alignment` taşıyan
+       bir `Container` ve `alignment` verilmiş bir Container kısıtların
+       TAMAMINI kaplar. Buton `SizedBox(width: double.infinity)` içinde
+       kullanılmak üzere tasarlanmış; tanıtımda öyle bir kap yok ama
+       `TapTarget`in `Align`ı gevşetilmiş kısıtları (maxWidth = ekran) aynen
+       geçiriyor. Çare `IntrinsicWidth`.
+       **Ders:** "buton neden tam genişlikte" sorusunun cevabı çoğu zaman
+       butonun KENDİSİNDE — kabına bakmadan önce kökünün `alignment` alıp
+       almadığına bak.
+     - **Noktalar sola alındı, buton ortaya — bu bir zevk kararı DEĞİL,
+       ÖLÇÜM sonucu.** Önce "noktalar üstte, buton altında ortalanmış"
+       denendi; `intro_screen_test`in taşma testi tam bu iş için var ve
+       rakamı verdi: **1. slayt 430×710'da 25 px, 414×720'de 24 px taşıyor.**
+       İkinci bir satırın dikey maliyeti bütçeyi aşıyor (Parça 143'te
+       ölçülen pay ~10 px'ti; bu turda gerçek payın 6 px olduğu ölçüldü).
+       Tek şeritte kalınca artış yalnızca alt boşluk kadar.
+     - **Dolgu takası:** üst 4 → 0, alt 0 → 8 (net +4). Üstteki 4 px görünmez
+       (slayt ile noktalar arası), alttaki 8 px kullanıcının bildirdiği
+       kusurun ta kendisi. Gerçek cihazda `SafeArea` bunun ÜSTÜNE sistem
+       çubuğu payını ekliyor.
+     - **Sonuç (ölçüldü):** 390×844'te buton 83 px geniş, merkezi tam 195
+       (= ekran merkezi), alt kenarı 836 → 8 px pay. 844×390 ve 740×360'ta
+       da aynı: merkez tam ortada, alt pay 8.
+     - **Web ETKİLENMEDİ:** karşılama katmanı bir slayt gösterisi değil,
+       statik bir sayfa ("OYUNU BAŞLAT"); web'de "DEVAM ›" diye bir düğme
+       yok. Bu parça yalnızca portu ilgilendiriyor.
+     - **Regresyon + negatif eş:** yeni test üç iddiayı AYRI AYRI kilitliyor
+       (normal boy · yatayda ortalı · alt kenara yapışmıyor), iki boyda
+       (portre + yatay). `IntrinsicWidth` kaldırılınca test düşüyor
+       (`Actual: <390.0>` vs beklenen `< 156.0`).
+     - **EK (aynı gün, kullanıcı: *"Son slayt hemen oyna butonu üstündeki
+       noktalara da gerek yok"*):** son slaytta nokta şeridi artık HİÇ
+       çizilmiyor. Haklı bir istek — noktalar "daha var" göstergesi, oysa
+       son slaytta daha yok ve hemen altında "HEMEN OYNA" duruyor; gösterge
+       hem yanıltıcı hem gereksiz. Yan fayda: son slayt eskiden hem şeridi
+       hem düğmeyi taşıyordu, artık şerit kadar dikey alan geri kazanıyor
+       (`_RutbeSayfasi` en uzun slayt). Şeridi ölçebilmek için `_Noktalar`a
+       `Key('intro-noktalar')` verildi — widget sınıfı özel olduğundan
+       testin başka tutamağı yoktu. Negatif eş: koşul `if (true)` yapılınca
+       test düşüyor.
+
+   - ✅ **Parça 149 — oyun kartındaki üç ikon: üçüncü alet "YÖNLENDİR"
+     (27 Ağustos 2026, kullanıcı sordu: *"oyun kartlarında yer alan mesaj
+     balonu ve hamleler ikonu tıklaması nasıl? Orada da sorun var mı?"*):**
+     Vardı — ve bunlar uygulamadaki EN KÜÇÜK hedeflerdi. Ölçüldü (390×844):
+     kalp **15×13**, mesaj balonu **18.5×13**, hamle ikonu **19×13**, yani
+     ~240 px²; 48×48 standardının (2304 px²) **onda biri**.
+     - **Şikayet yeni değildi:** 12 Ağustos 2026'da kullanıcı *"en az 4-5
+       kere dokunmam gerekti, tam basamazsan oyun detayları açılıp
+       kapanıyor"* demişti. O günkü düzeltme hedefi BÜYÜTMEDİ, yalnızca
+       hamle ikonunu mesaj balonuyla EŞİTLEDİ (121 → 247 px²).
+     - **Neden büyütülemiyor (ölçüldü):** satır 14 px, kart 74 px. 44'lük
+       bir kutu kartı ~104'e çıkarır, yani listenin tamamı %40 uzardı.
+     - **Yani tahta hücresiyle aynı sınıf.** Artık üç alet var ve seçim
+       hedefin büyütülüp büyütülemediğine bağlı: BÜYÜT (✕, joker, raf) ·
+       YÖNLENDİR (`draftRescue`, artık oyun kartı ikonları) · ZARARSIZLAŞTIR
+       (taslak sürerken anlam penceresinin açılmaması).
+     - **Uygulama (`icon_tap_rescue.dart`):** kartın kendi yakalayıcısı zaten
+       satırın tamamını kapsıyor ve ıskalama oraya düşüyor. `onTap` →
+       `onTapUp`; nokta bir ikonun dikeyde ±14 px genişletilmiş kutusuna
+       düşüyorsa o ikonun eylemi çalışıyor, düşmüyorsa davranış **birebir
+       eskisi gibi**. Hedef 13 → 41 px, alan ~240 → ~760 px² (3,2 katı),
+       **düzen hiç değişmiyor**. Kutuları ölçmek için kalıcı `GlobalKey`'ler
+       gerekti; `_entryKeys` ile aynı önbellek deseni (her çizimde yenisini
+       üretmek GlobalKey sözleşmesini bozardı).
+     - ⚠ **Yalnızca DİKEY, bilinçli:** yatayda ikonlar 18.5–19 px ve
+       aralarında 2 px var; yatayda da genişletmek bölgeleri bindirir ve
+       "hangisi" sorusunu doğururdu. x aralıkları ayrık kaldığından aday HER
+       ZAMAN en fazla bir tanedir — `draftRescue`'daki eşitlik kuralına hiç
+       gerek kalmıyor.
+     - **`mobile/` DIŞINDA:** web'de mekanizma FARKLI ama sonuç aynı —
+       düğmeler zaten `stopPropagation` taşıdığından yönlendirmeye gerek yok,
+       `.tap-expand-y` (yalnızca dikey, 41 px = portun payıyla birebir)
+       `src/index.css`'e eklenip üç düğmeye uygulandı.
+     - **Regresyon + negatif eş:** ikonun 12 px ALTINA dokunmak sohbeti/hamle
+       dökümünü açmalı; ikonlardan uzak bir ıskalama kartı ESKİSİ GİBİ
+       açmalı (kurtarmanın kartın dokunuşunu yutmadığının kanıtı). Test
+       ayrıca kutunun hâlâ küçük olduğunu ölçüyor — büyütülürse sessizce
+       anlamsızlaşmasın diye. `onTapUp` geri alınınca iki test de düşüyor.
+
+   - ✅ **Parça 148 — "benzer tüm yerlere uygulandı mı?": tarama + joker
+     ızgarası (27 Ağustos 2026, kullanıcı sordu):** Parça 147'nin ✕'leri bir
+     kaynak taramasıyla kilitlenmişti ama o tarama yalnızca **ham
+     `IconButton`** arıyor — aynı hata sınıfı `IconButton` KULLANMAYAN bir
+     yerde de olabilir. `lib/src/ui` altındaki tüm dokunulabilirler,
+     çevrelerinde 48'in altında AÇIK bir ölçü olup olmadığına göre tarandı;
+     adaylar ekranda tek tek ölçüldü.
+     - **Tek gerçek bulgu: joker harf ızgarası — 48 × 44**, üstelik dört
+       yanında 6 px ölü boşluk. Buradaki ıskalamanın bedeli farklı ve
+       gerçek: **yanlış HARF seçilir** (22 Ağustos'ta bildirilen "A harfi
+       C'ye döndü" hatasının aynı sonucu, başka sebeple).
+     - **Düzeltme rafla aynı desen ama yalnızca ZAYIF EKSENDE:**
+       `mainAxisSpacing: 0` + `mainAxisExtent: 50` + hücrede `bottom: 6` →
+       48 × 50, satırlar dikeyde aralıksız, **satır adımı hâlâ 50** (her
+       satırdaki taş ızgara içinde tam eski yerinde). Yatay 6 px BİLEREK
+       duruyor: genişlik zaten 48 ve boşluğu hücreye almak taşları 1 px
+       daraltırdı (6 hücre × 6 ≠ 5 boşluk × 6) — rafta bu telafi mümkündü,
+       burada değil.
+     - **Yükseklik:** düzenleme dalında SIFIR değişiklik (ızgara +6, üstteki
+       boşluk 12 → 6; "GERİ AL" ölçülen rect'iyle birebir aynı). Düzenleme
+       olmayan dalda kart 6 px uzuyor, ortalandığı için içerik 3 px yukarı
+       kayıyor; ızgaranın içinde hiçbir şey oynamıyor.
+     - **`mobile/` DIŞINDA:** `src/components/WildcardModal.tsx` birebir aynı
+       sayılarla (`gap-y-0`, hücre `h-[50px] pb-1.5`, `mt-3` → `mt-1.5`;
+       tıklama taştan HÜCREYE taşındı), `tests/smoke.spec.ts`,
+       `docs/decisions/touch-ux-bugs.md`, `TESTING.md`.
+     - **48'in altında BİLEREK kalanlar** gerekçeleriyle tabloya yazıldı
+       (`docs/decisions/touch-ux-bugs.md`): friends 44×44 ikonları (dört dal
+       da önce onay soruyor), hamle ikonu 44 (Parça 65), sohbet rozeti,
+       şifre göster/gizle, paragraf içi link, "← Geri", tahta hücresi.
+     - **Negatif eş İKİ platformda da kanıtlandı:** portta hücre 44'e
+       döndürülünce test düşüyor (`Actual: <44.0>`), web'de `h-11`/`gap-1.5`
+       geri gelince smoke düşüyor (`Received: 44` vs `50`).
+     - **Ders:** "hepsine uygulandı mı?" sorusunun cevabı bir liste değil bir
+       TARAMA olmalı, ve tarama ŞEKLE göre yapılmalı (kutuya ölçü veren bir
+       şey var mı), TÜRE göre değil. 24 Ağustos'ta aynı ders bir kez
+       alınmıştı; `IconButton`'ın "güvende" sayılması onun ikinci biçimi.
+
    - ✅ **Parça 147 — dokunma hedefi İKİNCİ tur: ✕ butonları ve raf taşı
      (27 Ağustos 2026, kullanıcı bildirdi: *"bazı tıklamalar yine biraz
      üstte gibi. Mesela skor kartı x'de dikkatimi çekti. Tüm bu tip

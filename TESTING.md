@@ -501,6 +501,18 @@ Her birinde gerçekten bekleyen bir iş varken ekranı **kapatıp yeniden aç**.
       Taşın biraz ALTINDAN (rafın alt dolgusundan) ya da iki taşın
       ARASINDAN tutmayı dene — sürükleme başlamalı. Taşların boyutu,
       aralarındaki 3 px boşluk ve rafın dış kutusu DEĞİŞMEMELİ.
+- [ ] **Taslak taşı geri alma — ilk tıklamada (aynı gün, portla birebir).**
+      Tahtaya taş koy, geri almak için üzerine tıkla; biraz altına/yanına
+      denk gelse ve o hücre boş olsa bile taş geri gelmeli. Negatif kontrol:
+      raftan taş SEÇİLİYKEN komşu boş hücreye tıklayınca harf konmalı.
+- [ ] **Oyun kartındaki kalp / mesaj / hamle ikonları (aynı gün).**
+      "Tüm Oyunlarım"da bu ikonların biraz altına/üstüne tıkla — ikonun
+      eylemi çalışmalı, kart açılıp kapanmamalı. İkonlardan uzak bir yere
+      tıklayınca kart eskisi gibi açılmalı. Görsel hiç değişmemeli.
+- [ ] **Joker harf ızgarası (aynı gün, portla birebir).** Bir joker oyna →
+      harflerin biraz altına/üstüne tıkla: istediğin harf gelmeli, komşu
+      satırdaki değil. Harflerin boyutu ve aralığı değişmemeli; konmuş bir
+      jokeri düzenlerken "Geri Al" butonu tam eski yerinde olmalı.
 - [ ] **Kişiye tıklamak skor kartını açar — ÜÇ sekmede de (11 Ağustos
       2026).** "Arkadaşlarım", "İstekler" ve "Ara & Ekle" (arama + Tüm
       Üyeler) satırlarında **avatara/isme** tıkla → o kişinin skor kartı

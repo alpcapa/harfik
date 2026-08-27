@@ -24,6 +24,7 @@ import 'package:kelimeki/src/storage/app_storage.dart';
 import 'package:kelimeki/src/ui/app.dart';
 import 'package:kelimeki/src/ui/game/board_widget.dart';
 import 'package:kelimeki/src/ui/game/logo_mark.dart';
+import 'package:kelimeki/src/ui/game/neo_button.dart';
 import 'package:kelimeki/src/ui/intro/intro_screen.dart';
 import 'package:kelimeki/src/ui/rank/league_rank.dart';
 import 'package:kelimeki/src/ui/rank/rank_seal.dart';
@@ -275,6 +276,77 @@ void main() {
     // kahraman başlığı iki satıra sarıyor AMA tahta zaten geniş (390-24);
     // 430'da başlık tek satıra sığdığından slayt daha kısa. Yani "daha dar
     // ekran = daha zor" sezgisi burada YANLIŞ, ölçümle bulundu.
+    // 27 Ağustos 2026 — kullanıcı bildirdi: *"Tanıtımdaki devam butonu
+    // ekranın altına yapışıyor ve ortalı değil. Bu kadar uzun olmasına da
+    // gerek yok, normal buton gibi olsun."* Üçü de ÖLÇÜLDÜ (390×844):
+    // buton x **0 → 378** (tam genişlik), alt kenarı **844** (ekranın tam
+    // dibi), etiketi sağdaki 12 px dolgu yüzünden merkezin 6 px solunda.
+    //
+    // Kök sebep düzende değil `NeoButton`da: kökü `alignment` taşıyan bir
+    // `Container` ve o, verilen kısıtların TAMAMINI kaplar. Çare
+    // `IntrinsicWidth`.
+    //
+    // Bu test ÜÇ İDDİANIN ÜÇÜNÜ de ayrı ayrı kilitliyor — biri düzelip
+    // öteki bozulursa görünsün diye.
+    for (final boy in const [Size(390, 844), Size(844, 390)]) {
+      testWidgets(
+          '"DEVAM ›" normal boyda, YATAYDA ORTALI ve alt kenara yapışmıyor '
+          '— ${boy.width.toInt()}×${boy.height.toInt()}', (tester) async {
+        await setPhoneViewSize(tester, boy);
+        await tester.pumpWidget(MaterialApp(
+          theme: kelimekiTheme(),
+          home: IntroScreen(onDone: () {}),
+        ));
+        await tester.pump();
+
+        final kutu =
+            tester.getRect(find.widgetWithText(NeoButton, 'DEVAM ›'));
+
+        // 1) NORMAL BOY — ekranı kaplamıyor. Eskiden genişlik ekranın
+        //    %97'siydi (390'da 378).
+        expect(kutu.width, lessThan(boy.width * 0.4),
+            reason: 'buton yine ekranı kaplıyor — `IntrinsicWidth` düşmüş '
+                'olabilir (`NeoButton` kısıtların tamamını kaplar)');
+
+        // 2) YATAYDA ORTALI.
+        expect(kutu.center.dx, closeTo(boy.width / 2, 0.5),
+            reason: 'buton yatayda ortalı değil');
+
+        // 3) ALT KENARA YAPIŞMIYOR — nefes payı var. (Gerçek cihazda
+        //    `SafeArea` bunun ÜSTÜNE sistem çubuğu payını ekler.)
+        expect(boy.height - kutu.bottom, greaterThanOrEqualTo(8.0),
+            reason: 'buton ekranın dibine yapışmış');
+      });
+    }
+
+    // 27 Ağustos 2026, kullanıcı: *"Son slayt hemen oyna butonu üstündeki
+    // noktalara da gerek yok."* Haklı — noktalar "daha var" göstergesi,
+    // oysa son slaytta daha yok ve hemen altında "HEMEN OYNA" duruyor;
+    // gösterge hem yanıltıcı hem gereksiz.
+    testWidgets('nokta şeridi ara sayfalarda VAR, son sayfada YOK',
+        (tester) async {
+      await setPhoneViewSize(tester, const Size(390, 844));
+      await tester.pumpWidget(MaterialApp(
+        theme: kelimekiTheme(),
+        home: IntroScreen(onDone: () {}),
+      ));
+      await tester.pump();
+
+      final noktalar = find.byKey(const Key('intro-noktalar'));
+      expect(noktalar, findsOneWidget);
+      expect(find.widgetWithText(NeoButton, 'DEVAM ›'), findsOneWidget);
+
+      // Son sayfaya kadar ilerle.
+      for (var i = 0; i < kIntroPageCount - 1; i++) {
+        await kaydir(tester);
+      }
+
+      expect(find.text('HEMEN OYNA'), findsOneWidget);
+      expect(noktalar, findsNothing,
+          reason: 'son slaytta nokta şeridi hâlâ çiziliyor');
+      expect(find.widgetWithText(NeoButton, 'DEVAM ›'), findsNothing);
+    });
+
     const boylar = [Size(420, 900), Size(430, 710), Size(414, 720)];
     for (final boy in boylar) {
       testWidgets(

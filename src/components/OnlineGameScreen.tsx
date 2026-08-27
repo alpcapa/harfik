@@ -847,6 +847,38 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       return;
     }
     if (!canEdit || state.swapMode) return;
+
+    // BOŞ hücreye ıskalayan dokunuş da kurtarılır — YALNIZCA hiçbir raf taşı
+    // SEÇİLİ DEĞİLKEN (27 Ağustos 2026, kullanıcı uygulamada bildirdi:
+    // *"tahtaya konan taşı kaldırmak için ilk tıklama yakalamıyor. İkincide
+    // ya da üçüncüde yakalanıyor."*). Portta ölçüldü: hücre 26 px ve parmağın
+    // temas MERKEZİ nişan noktasının altında kaldığından ıskalama BİR ALT
+    // hücreye düşüyor; o hücre boşsa eskiden hiçbir şey olmuyordu (dahası
+    // "Önce bir harf seç." yazıyordu — geri almaya çalışana alakasız bir
+    // uyarı).
+    //
+    // 24 Ağustos'ta boş hücrelerin bilerek dışarıda bırakılma gerekçesi
+    // ("kelimeyi dizerken yan hücreye harf koymak zorlaşmasın") YALNIZCA
+    // seçili taş varken geçerli; seçim yokken boş hücreye tıklamak zaten
+    // hiçbir iş yapmıyor, yani kurtarmanın bedeli sıfır. Koşul bu yüzden dar.
+    if (state.selectedTile === null && Object.keys(state.placed).length > 0) {
+      const target = nearbyDraftCell(
+        SIZE,
+        r,
+        c,
+        (rr, cc) => !!state.placed[key(rr, cc)],
+        { x: e.clientX, y: e.clientY },
+        (rr, cc) =>
+          document
+            .querySelector(`[data-cell="${rr},${cc}"]`)
+            ?.getBoundingClientRect() ?? null,
+      );
+      if (target) {
+        tapPlacedTile(target[0], target[1], false);
+        return;
+      }
+    }
+
     const sel = state.selectedTile !== null ? me.rack[state.selectedTile] : null;
     if (sel && sel.letter === '?') {
       setPendingWild({ r, c });

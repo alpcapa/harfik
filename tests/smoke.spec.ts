@@ -675,6 +675,29 @@ test.describe('dokunmatik jestler', () => {
       `Hücre ${CELL} artık harf ızgarasıyla örtüşmüyor — başka bir hücre seç, yoksa test hatayı göremez`,
     ).toBe(true);
 
+    // 27 Ağustos 2026 — dokunma hedefi turunun devamı. Harf hücresi 48×44'tü
+    // (yükseklik Material asgarisinin altında) ve satırlar arasında 6 px ölü
+    // bant vardı; buradaki ıskalama YANLIŞ HARF seçtirir. Hücre artık 48×50
+    // ve satırlar dikeyde aralıksız — taşın çizildiği yer değişmedi (satır
+    // adımı hâlâ 50). Portla birebir aynı sayılar (`wild_letter_sheet.dart`).
+    const hucreler = page.locator('[role="dialog"] .grid > div');
+    const h0 = (await hucreler.nth(0).boundingBox())!;
+    const h1 = (await hucreler.nth(1).boundingBox())!;
+    const h6 = (await hucreler.nth(6).boundingBox())!;
+    expect(h0.height).toBeCloseTo(50, 1);
+    // Genişlik zaten yeterliydi ve GÖRÜNÜM GENİŞLİĞİNE bağlı (portta 390'da
+    // tam 48, burada ~47.7) — sabit bir sayıya bağlamak kırılgan olurdu.
+    // Zayıf eksen dikeydi; iddia orada.
+    expect(h0.width).toBeGreaterThan(44);
+    // Satırlar arası ölü bant SIFIR; satır adımı hâlâ 50.
+    expect(h6.y - (h0.y + h0.height)).toBeCloseTo(0, 1);
+    expect(h6.y - h0.y).toBeCloseTo(50, 1);
+    // Yatay 6 px BİLEREK duruyor (genişlik zaten 48).
+    expect(h1.x - (h0.x + h0.width)).toBeCloseTo(6, 1);
+    // Taşın kendisi hâlâ 44 yüksek — büyüyen yalnızca hedef.
+    const tas0 = (await hucreler.nth(0).locator('> div').boundingBox())!;
+    expect(tas0.height).toBeCloseTo(44, 1);
+
     await page.getByRole('dialog').getByText('A', { exact: true }).first().click();
     await expect(page.getByRole('dialog')).toBeHidden();
     expect(await harf()).toBe('A');
@@ -702,6 +725,73 @@ test.describe('dokunmatik jestler', () => {
   // `mobile/app/test/layout_parity_test.dart` karşılaştırıyor): 8px titreşimli
   // bir dokunuş üç jestte de işlemeli, ve gerçek bir sürükleme hâlâ çalışmalı.
   // Negatif eş: eşik 6'ya döndürülünce üç kontrol de düşüyor.
+  // 27 Ağustos 2026 — kullanıcı uygulamada bildirdi: *"tahtaya konan taşı
+  // kaldırmak için ilk tıklama yakalamıyor. İkincide ya da üçüncüde
+  // yakalanıyor."* Portta ölçüldü: hücre 26 px ve parmağın temas MERKEZİ
+  // nişan noktasının altında kaldığından ıskalama BİR ALT hücreye düşüyor;
+  // o hücre BOŞSA eskiden hiçbir şey olmuyordu (dahası "Önce bir harf seç."
+  // yazıyordu). Kurtarma artık boş hücreleri de kapsıyor — ama YALNIZCA
+  // hiçbir raf taşı seçili değilken; ikinci iddia tam olarak onu koruyor.
+  test('taslak taşın ALTINDAKİ boş hücreye dokunmak taşı GERİ ALIR',
+      async ({ page }) => {
+    page.on('dialog', (dialog) => dialog.accept());
+    await donenKullanici(page);
+    await page.goto('/');
+    await page.getByText('OYUNU BAŞLAT').click();
+    const devam = page.getByLabel('Giriş uyarısı').getByRole('button', { name: 'Oyna', exact: true });
+    if (await devam.isVisible().catch(() => false)) await devam.click();
+    const qs = page.getByRole('heading', { name: /hızlı başlangıç/i });
+    if (await qs.isVisible().catch(() => false)) {
+      await page.locator('button[aria-label="Kapat"]').last().click();
+    }
+    await expect(page.getByRole('main').getByRole('button', { name: 'Pas Geç' })).toBeEnabled();
+
+    const dolu = async (sel: string) =>
+      (await page.locator(sel).innerText()).trim().length > 0;
+
+    // Raftan bir taş seç, ev karesine (0,0) koy.
+    await page.locator('[data-rack-tile="0"]').click();
+    await page.locator('[data-cell="0,0"]').click();
+    expect(await dolu('[data-cell="0,0"]')).toBe(true);
+
+    // ISKALAMA: bir alt hücre (1,0) — BOŞ. Seçim de yok (taş konunca düşer).
+    await page.locator('[data-cell="1,0"]').click();
+    expect(
+      await dolu('[data-cell="0,0"]'),
+      'taslak taş geri alınmadı — ıskalama sessizce yutuldu',
+    ).toBe(false);
+  });
+
+  test('SEÇİLİ taş varken aynı tıklama HARFİ KOYAR (kurtarma karışmaz)',
+      async ({ page }) => {
+    page.on('dialog', (dialog) => dialog.accept());
+    await donenKullanici(page);
+    await page.goto('/');
+    await page.getByText('OYUNU BAŞLAT').click();
+    const devam = page.getByLabel('Giriş uyarısı').getByRole('button', { name: 'Oyna', exact: true });
+    if (await devam.isVisible().catch(() => false)) await devam.click();
+    const qs = page.getByRole('heading', { name: /hızlı başlangıç/i });
+    if (await qs.isVisible().catch(() => false)) {
+      await page.locator('button[aria-label="Kapat"]').last().click();
+    }
+    await expect(page.getByRole('main').getByRole('button', { name: 'Pas Geç' })).toBeEnabled();
+
+    const dolu = async (sel: string) =>
+      (await page.locator(sel).innerText()).trim().length > 0;
+
+    await page.locator('[data-rack-tile="0"]').click();
+    await page.locator('[data-cell="0,0"]').click();
+    // İKİNCİ taşı seç ve komşu hücreye koy — kurtarma buna HİÇ karışmamalı.
+    await page.locator('[data-rack-tile="0"]').click();
+    await page.locator('[data-cell="1,0"]').click();
+
+    expect(await dolu('[data-cell="0,0"]')).toBe(true);
+    expect(
+      await dolu('[data-cell="1,0"]'),
+      'seçili taş varken komşu hücreye koyma bozulmuş',
+    ).toBe(true);
+  });
+
   test('Titreşimli dokunuş (8px) jest olarak KAYBOLMAZ', async ({ page }) => {
     await oyunEkrani(page);
     const JITTER = 8;

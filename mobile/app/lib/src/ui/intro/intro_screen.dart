@@ -189,55 +189,89 @@ class _IntroScreenState extends State<IntroScreen> {
             // Çözüm: düğme zaten var olan nokta şeridine sağa yerleşiyor.
             // Şerit yüksekliği noktalardan değil düğmeden geliyor; net artış
             // birkaç piksel.
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: SizedBox(
-                width: double.infinity,
-                // İKİ ÇOCUK DA `Positioned` DEĞİL: `Stack` yüksekliğini
-                // yalnızca konumlandırılmamış çocuklardan alır. `Positioned`
-                // kullanılsaydı şerit noktaların 7 px'ine göre boyutlanır ve
-                // düğme taşardı.
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Align(child: _Noktalar(aktif: _page)),
-                    if (!_isLast)
+            // "DEVAM ›" 27 Ağustos 2026'da yeniden düzenlendi (kullanıcı
+            // bildirdi: *"ekranın altına yapışıyor ve ortalı değil. Bu kadar
+            // uzun olmasına da gerek yok, normal buton gibi olsun"*). Üç
+            // kusurun üçü de ÖLÇÜLDÜ (390×844): buton x 0→378, yani TAM
+            // GENİŞLİK; alt kenarı 844, yani ekranın tam dibi; etiketi de
+            // sağdaki 12 px dolgu yüzünden ekran merkezinin 6 px solunda.
+            //
+            // Kök sebep düzende değil `NeoButton`da: kökü `alignment` taşıyan
+            // bir `Container` ve o, verilen kısıtların TAMAMINI kaplar —
+            // buton bir `SizedBox(width: double.infinity)` içinde
+            // kullanılmak üzere tasarlanmış. Burada öyle bir kap yok ama
+            // `TapTarget`in `Align`ı gevşetilmiş kısıtları (maxWidth = ekran)
+            // aynen geçiriyor. Çare `IntrinsicWidth`.
+            //
+            // ⚠ NOKTALAR SOLA ALINDI, buton ORTAYA — ve bu bir zevk kararı
+            // değil ÖLÇÜM sonucu. Önce "noktalar üstte, buton altında
+            // ortalanmış" denendi; `intro_screen_test`in taşma testi tam bu
+            // iş için var ve rakamı verdi: **1. slayt 430×710'da 25 px,
+            // 414×720'de 24 px taşıyor**. Yani ikinci bir satırın dikey
+            // maliyeti bütçeyi aşıyor (Parça 143'te ölçülen pay ~10 px).
+            // Tek şeritte kalınca artış yalnızca alt boşluk kadar.
+            // Üst boşluk 4 → 0, alt 0 → 8. Toplam artış +4 ve bu da
+            // ÖLÇÜLDÜ: `top: 4, bottom: 8` (yani +8) 430×710'da 2 px, 414×
+            // 720'de 1 px taşırıyordu — demek ki eldeki pay 6 px'miş.
+            // Üstteki 4 px görünmez (slayt ile noktalar arası), alttaki 8 px
+            // ise kullanıcının bildirdiği kusurun ta kendisi; takas net.
+            //
+            // SON SLAYTTA ŞERİT HİÇ ÇİZİLMİYOR (27 Ağustos 2026, kullanıcı:
+            // *"Son slayt hemen oyna butonu üstündeki noktalara da gerek
+            // yok"*). Haklı: noktalar "daha var" göstergesi, oysa son
+            // slaytta daha yok — ve tam altında "HEMEN OYNA" duruyor, yani
+            // gösterge hem yanıltıcı hem gereksiz. Yan fayda: son slayt
+            // eskiden hem şeridi hem düğmeyi taşıyordu, artık şerit kadar
+            // dikey alan geri kazanıyor (`_RutbeSayfasi` en uzun slayt).
+            if (!_isLast)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: SizedBox(
+                  width: double.infinity,
+                  // İKİ ÇOCUK DA `Positioned` DEĞİL: `Stack` yüksekliğini
+                  // yalnızca konumlandırılmamış çocuklardan alır.
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
                       Align(
-                        alignment: Alignment.centerRight,
+                        alignment: Alignment.centerLeft,
                         child: Padding(
-                          padding: const EdgeInsets.only(right: 12),
-                          // DOKUNMA HEDEFİ: yalnızca GENİŞLİKTE 48 dp.
-                          // `TapTarget`in belgelenmiş eksen istisnası (bkz.
-                          // o dosyadaki "← Geri" gerekçesi): dikeyde 48
-                          // dayatmak slaydı taşırıyor, yani kuralı harfiyen
-                          // uygulamak asıl işlevi — tanıtımı görebilmeyi —
-                          // bozardı. Yatayda geniş, dikeyde düğmenin kendi
-                          // boyu; çevresinde çakışacak başka hedef yok.
-                          child: TapTarget(
-                            onTap: _ileri,
-                            minWidth: kMinTapTarget,
-                            minHeight: 0,
-                            child: NeoButton(
-                              label: 'DEVAM ›',
-                              onPressed: _ileri,
-                              // ACCENT bilerek — son sayfadaki "HEMEN OYNA"
-                              // ile aynı renk. İkisi hiçbir zaman aynı anda
-                              // ekranda olmuyor; aynı rengi paylaşmaları
-                              // "buraya bas" sinyalini güçlendiriyor, ki bu
-                              // düğmenin var olma sebebi tam da fark
-                              // edilmemekti.
-                              variant: NeoButtonVariant.accent,
-                              fontSize: 11,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 4),
-                            ),
+                          padding: const EdgeInsets.only(left: 12),
+                          // Anahtar testler için: son slaytta bu şeridin
+                        // HİÇ çizilmediğini ölçmenin tek yolu (widget
+                        // sınıfı özel).
+                        child: _Noktalar(
+                            key: const Key('intro-noktalar'), aktif: _page),
+                        ),
+                      ),
+                      // DOKUNMA HEDEFİ: yalnızca GENİŞLİKTE 48 dp.
+                      // `TapTarget`in belgelenmiş eksen istisnası (bkz. o
+                      // dosyadaki "← Geri" gerekçesi): dikeyde 48 dayatmak
+                      // slaydı taşırıyor, yani kuralı harfiyen uygulamak
+                      // asıl işlevi — tanıtımı görebilmeyi — bozardı.
+                      TapTarget(
+                        onTap: _ileri,
+                        minWidth: kMinTapTarget,
+                        minHeight: 0,
+                        child: IntrinsicWidth(
+                          child: NeoButton(
+                            label: 'DEVAM \u203a',
+                            onPressed: _ileri,
+                            // ACCENT bilerek — son sayfadaki "HEMEN OYNA"
+                            // ile aynı renk. İkisi hiçbir zaman aynı anda
+                            // ekranda olmuyor; aynı rengi paylaşmaları
+                            // "buraya bas" sinyalini güçlendiriyor.
+                            variant: NeoButtonVariant.accent,
+                            fontSize: 11,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 4),
                           ),
                         ),
                       ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
             // Son sayfada tanıtımın TEK çıkışı. Kabı metin sütunuyla aynı
             // genişlikte — geniş bir ekranda (tablet) kenardan kenara
             // uzamasın.
@@ -257,10 +291,6 @@ class _IntroScreenState extends State<IntroScreen> {
                   ),
                 ),
               )
-            else
-              // Ara sayfalarda ek dikey alan YOK — "DEVAM ›" artık
-              // nokta şeridinin içinde (yukarı bkz.).
-              const SizedBox.shrink(),
           ],
         ),
       ),
@@ -543,7 +573,8 @@ class _TahtaBolumu extends StatelessWidget {
                 // slayt yüksekliğine biniyor (yukarıdaki aynı gerekçe).
                 textHeightBehavior:
                     const TextHeightBehavior(applyHeightToLastDescent: false),
-                style: const TextStyle(fontSize: 12, height: 1.6, color: kMuted),
+                style:
+                    const TextStyle(fontSize: 12, height: 1.6, color: kMuted),
               ),
             ],
           ),
@@ -1222,7 +1253,7 @@ class _BolumBasligi extends StatelessWidget {
 
 class _Noktalar extends StatelessWidget {
   final int aktif;
-  const _Noktalar({required this.aktif});
+  const _Noktalar({super.key, required this.aktif});
 
   @override
   Widget build(BuildContext context) {

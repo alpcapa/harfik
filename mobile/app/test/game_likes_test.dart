@@ -443,6 +443,93 @@ void main() {
     expect(find.text('Bu oyunda hiç mesaj gönderilmemiş.'), findsNothing);
   });
 
+  // 27 Ağustos 2026 — kullanıcı sordu: "oyun kartlarında yer alan mesaj
+  // balonu ve hamleler ikonu tıklaması nasıl? Orada da sorun var mı?"
+  // Evet, vardı: ÖLÇÜLDÜ (390×844) kalp 15×13, mesaj balonu 18.5×13, hamle
+  // ikonu 19×13 — ~240 px², 48×48 standardının onda biri. Aynı şikayet
+  // 12 Ağustos'ta da gelmişti ("tam basamazsan oyun detayları açılıp
+  // kapanıyor"); o günkü düzeltme ikonları EŞİTLEMİŞ ama BÜYÜTMEMİŞTİ,
+  // çünkü satır 14 px ve 44'lük bir kutu HER kartı ~%40 uzatırdı.
+  //
+  // Çözüm tahta hücresindekiyle aynı sınıf: hedef büyütülemiyorsa ıskalamayı
+  // YÖNLENDİR (`icon_tap_rescue.dart`). Bu test davranışı kilitliyor:
+  // ikonun 12 px ALTINA dokunmak ikonun eylemini çalıştırmalı ve kartı
+  // AÇMAMALI.
+  testWidgets('ikonun altına ıskalayan dokunuş karta değil İKONA gider',
+      (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [gameRow(id: 'g-1', playerCount: 2, onlineGameId: 'og-1')]
+      ..movesByGame = {'g-1': []}
+      ..chatCounts['g-1'] = 5;
+    final repo = await newRepoForWidget(tester, gw);
+    await pumpHistory(tester, repo);
+
+    final sohbet = tester.getRect(find.byKey(const ValueKey('chat-count-g-1')));
+    // Kutu gerçekten küçük mü — hata sınıfı hâlâ burada mı? (Kutu bir gün
+    // büyütülürse bu test sessizce anlamsızlaşmasın diye ölçülüyor.)
+    expect(sohbet.height, lessThan(20),
+        reason: 'ikon artık büyükse bu kurtarma testi anlamını yitirmiş '
+            'olabilir — ölçüyü ve gerekçeyi gözden geçir');
+
+    // ISKALAMA: kutunun 12 px ALTI. Bugün burası kartın kendi alanı.
+    await tester.tapAt(Offset(sohbet.center.dx, sohbet.bottom + 12));
+    await tester.pumpAndSettle();
+
+    // Sohbet penceresi açıldı (KModal başlığı trUpper ile büyütür).
+    expect(find.text('SOHBET GEÇMİŞİ'), findsOneWidget);
+  });
+
+  testWidgets('ıskalama kartı AÇMAZ (yalnızca ikonun eylemi çalışır)',
+      (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [gameRow(id: 'g-1', playerCount: 2, onlineGameId: 'og-1')]
+      ..movesByGame = {
+        'g-1': [
+          {
+            'turn': 0,
+            'player': 0,
+            'words': ['KELIME'],
+            'points': 24,
+            'wordScores': [
+              {'word': 'KELIME', 'score': 12, 'x2': true, 'x3': false}
+            ],
+          },
+        ]
+      }
+      ..chatCounts['g-1'] = 5;
+    final repo = await newRepoForWidget(tester, gw);
+    await pumpHistory(tester, repo);
+
+    final hamle = tester.getRect(find.byKey(const ValueKey('moves-g-1')));
+    await tester.tapAt(Offset(hamle.center.dx, hamle.bottom + 12));
+    await tester.pumpAndSettle();
+
+    // Hamle dökümü açıldı — kartın tahta önizlemesi DEĞİL.
+    expect(gw.movesCalls, ['g-1']);
+    expect(find.text('OYUN GEÇMİŞİ'), findsOneWidget);
+  });
+
+  testWidgets('ikonlardan UZAK bir ıskalama kartı eskisi gibi açar',
+      (tester) async {
+    // Kurtarma yalnızca ikonların DİKEY bandında çalışır; kartın geri kalanı
+    // hiç değişmedi. Bu, kurtarmanın kartın kendi dokunuşunu yutmadığının
+    // kanıtı — negatif eş.
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [gameRow(id: 'g-1', playerCount: 2, onlineGameId: 'og-1')]
+      ..movesByGame = {'g-1': []}
+      ..chatCounts['g-1'] = 5;
+    final repo = await newRepoForWidget(tester, gw);
+    await pumpHistory(tester, repo);
+
+    final sohbet = tester.getRect(find.byKey(const ValueKey('chat-count-g-1')));
+    // Yatayda ikonların çok solunda, aynı yükseklikte bir nokta.
+    await tester.tapAt(Offset(sohbet.left - 60, sohbet.center.dy + 20));
+    await tester.pumpAndSettle();
+
+    expect(find.text('SOHBET GEÇMİŞİ'), findsNothing);
+    expect(gw.movesCalls, isEmpty);
+  });
+
   testWidgets(
       'yetkisiz oyunda sohbet ROZETİ de çıkmaz, yetkilide çıkar '
       '(sayaç artık game_like_stats kapısından geliyor)', (tester) async {

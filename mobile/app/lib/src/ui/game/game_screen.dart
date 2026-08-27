@@ -400,6 +400,35 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     }
     if (!_canAct || state.swapMode) return;
 
+    // BOŞ hücreye ıskalayan dokunuş — 27 Ağustos 2026, kullanıcı bildirdi:
+    // *"tahtaya konan taşı kaldırmak için ilk tıklama yakalamıyor, ikincide
+    // ya da üçüncüde yakalanıyor."*
+    //
+    // ÖLÇÜLDÜ (420×900): tahta hücresi 26,2 px ve parmağın temas MERKEZİ
+    // nişan alınan noktanın ALTINDA kalıyor, yani taslak taşını geri almak
+    // için dokunan kullanıcı sık sık BİR ALT hücreye düşüyor. O hücre boşsa
+    // eskiden hiçbir şey olmuyordu — dahası ekrana *"Önce bir harf seç."*
+    // yazıyordu, yani geri almaya çalışan kullanıcı alakasız bir uyarı
+    // görüyordu.
+    //
+    // 24 Ağustos'ta eklenen kurtarma yalnızca OYNANMIŞ hücrelerden
+    // çağrılıyordu ve o kısıtın gerekçesi şuydu: *"boş hücrelere hiç
+    // dokunulmaz — yoksa kelimeyi dizerken bir sonraki harfi yan hücreye
+    // koymak zorlaşırdı."* Gerekçe DOĞRU ama YALNIZCA bir raf taşı
+    // SEÇİLİYKEN geçerli; seçim yokken boş hücreye dokunmak zaten hiçbir iş
+    // yapmıyor (`_placeTile` yalnızca o mesajı üretip aynı durumu döner).
+    // Yani seçim yokken kurtarmanın bedeli SIFIR.
+    //
+    // Bu yüzden koşul dar tutuldu: seçili taş varsa davranış DEĞİŞMEDİ.
+    if (state.selectedTile == null && state.placed.isNotEmpty) {
+      final hedef = _nearbyDraftCell(r, c, global);
+      if (hedef != null) {
+        await _tapPlacedTile(
+            hedef.$1, hedef.$2, state.placed[cellKey(hedef.$1, hedef.$2)]!);
+        return;
+      }
+    }
+
     final selIdx = state.selectedTile;
     final sel = (selIdx != null &&
             selIdx >= 0 &&

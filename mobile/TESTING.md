@@ -1474,6 +1474,32 @@ düzeltmeyi içeren derlemeyle eşleştiğini doğrula.
       büyümemiş, isim satırı kaymamış, taşlar arası boşluk hâlâ görünüyor.
 - [ ] **Seçili taşın yukarı kalkması bozulmamış** (bir taşa dokun: 7 px
       yukarı kalkmalı, üstteki isim satırına girmemeli).
+- [ ] **Taslak taşı geri alma — İLK dokunuşta (27 Ağustos 2026, Sürüm A
+      cihaz testinde bulundu).** Tahtaya bir taş koy, sonra taşı geri almak
+      için üzerine dokun — **ilk dokunuşta** geri gelmeli. Bilerek biraz
+      ALTINA/üstüne de dokun: komşu hücre BOŞ olsa bile taş geri alınmalı,
+      "Önce bir harf seç." yazmamalı. **Negatif kontrol:** raftan bir taş
+      SEÇİLİYKEN komşu boş hücreye dokun — orada harf KONMALI (kurtarma
+      karışmamalı). Canlı oyunda da aynısını dene.
+- [ ] **Tanıtımdaki "DEVAM ›" (27 Ağustos 2026).** Uygulamayı ilk kez açan
+      bir cihazda (ya da bayrağı silerek) tanıtımı aç: düğme **normal
+      boyda** olmalı (ekranı kaplamamalı), **yatayda ortalı** durmalı ve
+      ekranın alt kenarına **yapışmamalı**. **Telefonu YATAY çevirip de
+      bak** — kullanıcı kusuru orada fark etmişti. Sayfa noktaları solda,
+      düğme ortada; **son slaytta noktalar da düğme de KAYBOLMALI**, yalnızca
+      "HEMEN OYNA" kalmalı.
+- [ ] **Oyun kartındaki kalp / mesaj / hamle ikonları (27 Ağustos 2026).**
+      "Tüm Oyunlarım"da bir kartta bu ikonların biraz ALTINA/üstüne dokun —
+      ikonun kendi eylemi çalışmalı (beğeni / sohbet / hamle dökümü), kart
+      açılıp kapanmamalı. **Aynı satırda ikonlardan UZAK bir yere** dokun:
+      kart eskisi gibi açılıp kapanmalı (yönlendirme kartın kendi
+      dokunuşunu yutmamalı). İkonların boyutu ve yeri DEĞİŞMEMİŞ olmalı.
+- [ ] **Joker harf ızgarası (27 Ağustos 2026, ikinci tarama).** Bir joker
+      oyna → harf penceresi açılır. Harflerin biraz ALTINA/üstüne dokunmayı
+      dene: **istediğin harf gelmeli**, komşu satırdaki harf değil (satırlar
+      arası ölü bant kalktı). Harflerin boyutu ve aralarındaki boşluk
+      DEĞİŞMEMİŞ görünmeli. Konmuş bir jokeri düzenlerken de aç: **"GERİ AL"
+      butonu tam eski yerinde** olmalı.
 
 ## 16. Dokunma hedefleri 48 dp — İKİNCİ tur (24 Ağustos 2026, Parça 134)
 
