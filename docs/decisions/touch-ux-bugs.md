@@ -476,6 +476,35 @@ Regresyon: her iki platformda da bir pozitif (ıskalama geri alır) ve bir
 negatif (seçiliyken harf koyar) test. Negatif eşleri kanıtlandı — koşul
 `false` yapılınca ikisi de düşüyor.
 
+### Ek: testin kendi kırılganlığı — rastgele raf + joker (27 Ağustos 2026)
+
+Yukarıdaki kurtarma testleri PR'da yeşil geçip **`main`'de düştü**. Uygulama
+hatası değildi; testin kendi kırılganlığıydı ve CI logu kök sebebi birebir
+yazdırdı:
+
+```
+<div class="overflow-y-auto px-5 pt-4 pb-5"> from
+<div class="fixed inset-0 z-[150] ..."> subtree intercepts pointer events
+  > 785 | await page.locator('[data-rack-tile="0"]').click();
+```
+
+Raf **rastgele** dağıtılıyor ve torbada 2 joker var. `[data-rack-tile="0"]`
+bir jokerse tahtaya konulduğunda *"Joker Hangi Harf Olsun?"* penceresi
+açılıyor; o pencere tam ekran bir `Modal` (`z-[150]`) olduğundan sonraki
+HER tıklamayı yutuyor. Olasılık düşük (~%2) — yani test "çoğu zaman"
+geçiyor, bu da onu daha kötü yapıyor: yeşil bir CI hiçbir şey kanıtlamıyor.
+
+**Düzeltme rastgeleliği yok saymak değil, ondan BAĞIMSIZ olmak:** seçim
+artık sabit bir indeks değil, "joker OLMAYAN ilk taş" (rafta `★` taşımayan).
+İndeks her seçimden önce yeniden hesaplanıyor — taş konunca raftan düşüyor
+ve kalan taşların indeksleri kayıyor. Ayrıca ikinci tıklamadan önce
+`getByRole('dialog')` sayısının 0 olduğu iddia ediliyor: seçimin gerçekten
+jokersiz olduğunun doğrudan kanıtı ve düşen senaryonun ta kendisi.
+
+> **Ders:** rastgele bir durumdan (dağıtılan raf) sabit bir indeksle
+> örnek almak, testi bir kumara çevirir. Ya durumu sabitle ya da örneği
+> ARADIĞIN ÖZELLİĞE göre seç — "0. taş" değil "jokersiz taş".
+
 ### 48'in ALTINDA KALANLAR — gerekçeleriyle (aynı tarama)
 
 Bunlar bilinçli olarak değiştirilmedi. Yeni bir tanesi eklenirse

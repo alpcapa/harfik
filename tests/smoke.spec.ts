@@ -725,6 +725,28 @@ test.describe('dokunmatik jestler', () => {
   // `mobile/app/test/layout_parity_test.dart` karşılaştırıyor): 8px titreşimli
   // bir dokunuş üç jestte de işlemeli, ve gerçek bir sürükleme hâlâ çalışmalı.
   // Negatif eş: eşik 6'ya döndürülünce üç kontrol de düşüyor.
+  /// JOKER OLMAYAN ilk raf taşının indeksi.
+  ///
+  /// ⚠ NEDEN VAR (27 Ağustos 2026, CI'da düştü): raf RASTGELE dağıtılıyor ve
+  /// torbada 2 joker var. `[data-rack-tile="0"]` bir jokerse tahtaya
+  /// konulduğunda "Joker Hangi Harf Olsun?" penceresi açılıyor ve o pencere
+  /// (`Modal`, `z-[150]`, tam ekran) sonraki HER tıklamayı yutuyor —
+  /// Playwright'ın hatası birebir buydu: *"subtree intercepts pointer
+  /// events"*. Testler PR'da geçti, `main`'de düştü; yani bu bir uygulama
+  /// hatası değil, testin kendi kırılganlığıydı.
+  ///
+  /// İndeks HER SEÇİMDEN ÖNCE yeniden hesaplanmalı: taş konunca raftan
+  /// DÜŞÜYOR ve kalan taşların indeksleri kayıyor.
+  const jokersizRafTasi = async (page: Page): Promise<string> => {
+    const adet = await page.locator('[data-rack-tile]').count();
+    for (let i = 0; i < adet; i++) {
+      const sec = `[data-rack-tile="${i}"]`;
+      const metin = (await page.locator(sec).innerText()).trim();
+      if (!metin.includes('★')) return sec;
+    }
+    throw new Error('rafta jokerden başka taş yok — testi gözden geçir');
+  };
+
   // 27 Ağustos 2026 — kullanıcı uygulamada bildirdi: *"tahtaya konan taşı
   // kaldırmak için ilk tıklama yakalamıyor. İkincide ya da üçüncüde
   // yakalanıyor."* Portta ölçüldü: hücre 26 px ve parmağın temas MERKEZİ
@@ -749,8 +771,8 @@ test.describe('dokunmatik jestler', () => {
     const dolu = async (sel: string) =>
       (await page.locator(sel).innerText()).trim().length > 0;
 
-    // Raftan bir taş seç, ev karesine (0,0) koy.
-    await page.locator('[data-rack-tile="0"]').click();
+    // Raftan JOKER OLMAYAN bir taş seç, ev karesine (0,0) koy.
+    await page.locator(await jokersizRafTasi(page)).click();
     await page.locator('[data-cell="0,0"]').click();
     expect(await dolu('[data-cell="0,0"]')).toBe(true);
 
@@ -779,10 +801,16 @@ test.describe('dokunmatik jestler', () => {
     const dolu = async (sel: string) =>
       (await page.locator(sel).innerText()).trim().length > 0;
 
-    await page.locator('[data-rack-tile="0"]').click();
+    await page.locator(await jokersizRafTasi(page)).click();
     await page.locator('[data-cell="0,0"]').click();
+    // Hiçbir pencere AÇIK OLMAMALI — CI'da düşen tam olarak buydu: joker
+    // konunca açılan harf penceresi (tam ekran `Modal`) sonraki tıklamayı
+    // yutuyordu. İddia, seçimin gerçekten jokersiz olduğunun kanıtı.
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
     // İKİNCİ taşı seç ve komşu hücreye koy — kurtarma buna HİÇ karışmamalı.
-    await page.locator('[data-rack-tile="0"]').click();
+    // İndeks YENİDEN hesaplanıyor: ilk taş raftan düştü, indeksler kaydı.
+    await page.locator(await jokersizRafTasi(page)).click();
     await page.locator('[data-cell="1,0"]').click();
 
     expect(await dolu('[data-cell="0,0"]')).toBe(true);
