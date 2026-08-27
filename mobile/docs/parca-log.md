@@ -20,6 +20,58 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 146 — "Ara & Ekle"de kaydırma yutuluyordu: modalın içine
+     ikinci bir kaydırılabilir (27 Ağustos 2026, kullanıcı bildirdi:
+     *"Arkadaşlar - Ara&Ekle'de scroll down bir yerde takılıyor, sonuna
+     kadar gitmiyor"*):** Üye listesi `ConstrainedBox(maxHeight: 320) >
+     ListView(shrinkWrap: true)` içindeydi — yani `KModal`'ın gövde
+     `SingleChildScrollView`'ının İÇİNE ikinci bir kaydırılabilir. Aynı
+     modaldeki öteki iki sekme ("Arkadaşlarım", "İstekler") düz `Column`;
+     tutarsızlık yalnızca burada.
+     - **ÖLÇÜLDÜ, tahmin edilmedi** (widget testi, 420×560 — klavye
+       `autofocus` ile açık olduğundan cihazda kalan yükseklik bu civarda):
+       modal gövdesi y **119→518** arasını gösterirken iç liste y
+       **326→646**'ya uzanıyordu. Yani alt **128 px** — son ~2,5 satır ve
+       "Yükleniyor…" nöbetçisi — ekranın altındaydı. Liste satırının
+       üzerinden 60 kez sürüklendikten sonra dış kaydırma offset'i hâlâ
+       **0.0**'dı; son üye (46.) y 600–620'de, hiç görünmeden kalıyordu.
+     - **Kök sebep bir kural farkı: Flutter iç içe kaydırmayı
+       ZİNCİRLEMEZ.** Tarayıcı iç kutu ucuna gelince dıştakine devreder —
+       web'in `max-h-[50vh] overflow-y-auto`'su bu yüzden `FriendsModal.tsx`'te
+       sorun çıkarmıyor, **web tarafı etkilenmedi ve dokunulmadı**.
+       Flutter'da iç `ListView` jesti tümüyle sahiplenir.
+     - **Düzeltme iç kaydırılabiliri EKLEMEK değil KALDIRMAK:** liste artık
+       düz bir `Column`, modalda tek kaydırılabilir var. Sayfalama
+       dinleyicisi listenin denetleyicisinden modalın gövdesine taşındı —
+       `KModal`'a isteğe bağlı `bodyController` eklendi (varsayılan `null`,
+       öteki ~15 modal etkilenmedi). Dinleyici üç sekmede de ateşlendiğinden
+       `_loadMoreAllUsers` iki koruma kazandı (sekme `search` değilse ve
+       aramada 2+ karakter varsa sayfa istemez).
+     - ⚠ **Kalıcı kural:** `KModal`'ın gövdesi ZATEN kaydırılabilir; içine
+       ikinci bir `ListView`/`SingleChildScrollView` koyma. Uzun liste
+       gerekiyorsa `Column` + `bodyController`. Sabit bir `maxHeight` bunu
+       kurtarmaz, **hatayı görünmez kılar**: 900 px'lik test penceresinde
+       gövde taşmadığı için hata HİÇ görünmüyordu — yalnızca klavye açıkken
+       çıkıyordu. Yeni testin 560 px'i bu yüzden seçildi.
+     - **Regresyon + negatif eş:** `friends_test.dart`'a parmağı gerçek bir
+       liste satırında başlatan bir sürükleme testi eklendi; düz `Column`
+       eski hâline geri alınınca test DÜŞÜYOR (`Actual: <620.0>` vs beklenen
+       `<= 518.0`).
+     - **Aynı ekranda İKİNCİ, bağımsız bir hata çıktı (sunucuda):**
+       `list_users_for_friend`/`search_users_for_friend` `friend_requests`'e
+       karşılıklı `OR` koşuluyla `left join` yaptığından, iki yön de satır
+       olarak varsa aynı üye listede İKİ KEZ çıkıyordu — bir gün önceki
+       `list_my_online_games`/`list_friends` hatasının (Parça: `live-game.md`,
+       migration `20260827121628`) AYNI sınıfı. Canlıda ölçüldü: 47 profilin
+       46'sını gören iki üyede join 47 satır dönüyordu.
+       `20260827153857_dedupe_friend_candidate_lists` ile `distinct on (p.id)`
+       + `order by name, id` eşitlik-bozucusu eklendi; canlıya uygulandı ve
+       doğrulandı (47 → 46). Dönüş şekli değişmediğinden **uygulama
+       güncellemesi beklemiyor**. Ayrıntı: `docs/decisions/friends.md`.
+     - **`mobile/` DIŞINDA da dosya değişti:** `supabase/migrations/`,
+       `docs/decisions/friends.md`, `ROADMAP.md` — kök `CLAUDE.md`'nin
+       kuralı gereği aynı PR'da.
+
    - ✅ **Parça 145 — "Buradan başla" balonu: ilk hamlenin nereye yapılacağı
      (26 Ağustos 2026, kullanıcı isteği: *"ilk boş tabloda evin yanına doğru
      bir balon koyabilir miyiz? Buradan başla yazsın"*):** Kapalı testte

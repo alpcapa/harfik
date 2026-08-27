@@ -64,6 +64,8 @@ kapalı-test sürümü (Play `.aab`) hepsini birden taşıyacak.
 | "Arkadaşınla" rozetinin bayat kalması | `mobile/app/lib/src/ui/setup/setup_screen.dart` (`onResubscribe` + `onlineStatus` kancaları) | Ağ kesilip döndüğünde kırmızı sayı artık kendini toparlıyor |
 | `slots.length != playerCount` telemetri koruması (2 yer) | port + web | Aynı sınıf bozuk veri bir daha sessizce oturmaz |
 | Koltuk hatası migration'ının repo kaydı | `supabase/migrations/20260827121628_*.sql` | **Canlıda ZATEN uygulandı** — uygulama güncellemesi beklemiyor |
+| "Ara & Ekle"de kaydırmanın yutulması | `mobile/app/lib/src/ui/friends/friends_modal.dart` + `modal_shell.dart` (`bodyController`) | Üye listesi artık sonuna kadar kaydırılıyor (klavye açıkken son ~2,5 satır erişilemezdi) |
+| Mükerrer üye satırı migration'ının repo kaydı | `supabase/migrations/20260827153857_*.sql` | **Canlıda ZATEN uygulandı** — web de portun eski sürümü de düzelmiş listeyi alıyor |
 | Doküman notları | `mobile/docs/parca-log.md`, `docs/decisions/*` | — |
 
 ⚠ **Ayrım:** sunucu tarafı (migration, RPC) merge'i BEKLEMEZ, anında

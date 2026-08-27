@@ -679,6 +679,35 @@ değil kod:
 minyatürü (kuyruksuz okuma bayat görür, kuyruklu görmez), hata kuyruğu
 kilitlemez, tokenRefreshed no-op'u, çıkış/ikinci-hesap sıfırlaması.
 
+## `KModal`'ın gövdesi ZATEN kaydırılabilir — içine ikincisini koyma
+
+27 Ağustos 2026, bir kullanıcı bildirdi: *"Arkadaşlar - Ara&Ekle'de scroll
+down bir yerde takılıyor, sonuna kadar gitmiyor."* Kök sebep bir kural
+farkıydı: **Flutter iç içe kaydırmayı ZİNCİRLEMEZ.** Tarayıcı, iç kutu
+ucuna gelince kaydırmayı dıştakine devreder — bu yüzden web'de aynı desen
+(`max-h-[50vh] overflow-y-auto`) sorunsuz çalışıyor. Flutter'da iç
+`ListView` jesti tümüyle sahiplenir: parmağını listenin üzerine koyan
+kullanıcı dış gövdeyi **hiç** kaydıramaz (ölçüldü: 60 sürüklemeden sonra dış
+offset `0.0`), ve iç listenin gövde dışına taşan kısmı kalıcı olarak
+erişilemez kalır (ölçüldü: alt 128 px, son ~2,5 satır).
+
+**Kural:** `KModal`'ın gövdesi bir `SingleChildScrollView`. İçine ikinci bir
+`ListView`/`SingleChildScrollView` koyma. Uzun ya da sayfalı bir liste
+gerekiyorsa düz bir `Column` çiz ve kaydırma dinleyicisini modalın kendi
+gövdesine bağla: `KModal(bodyController: _bodyScroll)`. Sayfalama
+dinleyicisi böylece üç sekmede de ateşlenir — istediğin listeyi
+çizmediğinde erken `return` etmeyi unutma.
+
+⚠ **Bu hata sınıfı GENİŞ pencerede GÖRÜNMEZ.** Sabit bir `maxHeight` (o
+zamanki 320) gövdeyi taşırmadığı sürece her şey çalışıyor görünür; hata
+yalnızca kullanılabilir yükseklik daralınca — yani **klavye açıkken** —
+çıkar. 900 px'lik varsayılan test penceresi bu yüzden yalan söylüyordu.
+Modal + `autofocus` bir metin kutusu içeren her testi **560 px** gibi
+gerçekçi bir yükseklikte koş.
+
+Örnek/ilk kurban: `friends_modal.dart` ("Ara & Ekle"). Ayrıntı ve ölçümler:
+`docs/decisions/friends.md`, `mobile/docs/parca-log.md` → Parça 146.
+
 ## kelimeki_core — Tasarım Sözleşmeleri
 
 Bunlar "tercih" değil, golden vector paritesinin dayandığı DEĞİŞMEZLER:

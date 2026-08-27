@@ -137,7 +137,21 @@ class _FriendsModalState extends State<FriendsModal> {
   List<FriendCandidate>? _allUsers;
   bool _allUsersHasMore = true;
   bool _allUsersLoadingMore = false;
-  final _allUsersScroll = ScrollController();
+
+  /// Modalın GÖVDE kaydırması (KModal'a `bodyController` olarak verilir) —
+  /// "Ara & Ekle" sayfalaması buna bakar. Eskiden listenin KENDİ
+  /// `ListView`'ıydı; 27 Ağustos 2026'da bir kullanıcı "scroll bir yerde
+  /// takılıyor, sonuna kadar gitmiyor" diye bildirdi ve ölçüldü: modal
+  /// gövdesi 119→518 arasını gösterirken 320 px'e sabitlenmiş iç liste
+  /// 326→646'ya uzanıyordu, yani alt 128 px (son ~2,5 satır + "Yükleniyor…"
+  /// nöbetçisi) ekranın altında kalıyordu. Flutter iç içe kaydırmayı
+  /// ZİNCİRLEMEDİĞİNDEN (tarayıcının aksine — web'in `max-h-[50vh]
+  /// overflow-y-auto`'su bu yüzden orada sorun çıkarmıyor) parmağını listeye
+  /// koyan kullanıcı dış gövdeyi HİÇ kaydıramıyordu: 60 sürüklemeden sonra
+  /// dış offset ölçülen değeriyle 0.0'dı. Çözüm iç kaydırılabiliri tamamen
+  /// KALDIRMAK — liste artık "Arkadaşlarım"/"İstekler" gibi düz bir Column
+  /// ve modalda tek bir kaydırılabilir var.
+  final _bodyScroll = ScrollController();
 
   String? _busyId;
   bool _inviteBusy = false;
@@ -157,8 +171,8 @@ class _FriendsModalState extends State<FriendsModal> {
     _reloadFriends();
     _reloadRequests();
     unawaited(_reloadModeration());
-    _allUsersScroll.addListener(() {
-      if (_allUsersScroll.position.extentAfter < 80) _loadMoreAllUsers();
+    _bodyScroll.addListener(() {
+      if (_bodyScroll.position.extentAfter < 80) _loadMoreAllUsers();
     });
   }
 
@@ -166,7 +180,7 @@ class _FriendsModalState extends State<FriendsModal> {
   void dispose() {
     _searchTimer?.cancel();
     _query.dispose();
-    _allUsersScroll.dispose();
+    _bodyScroll.dispose();
     _rankScores.removeListener(_onRankScores);
     _rankScores.dispose();
     super.dispose();
@@ -238,6 +252,12 @@ class _FriendsModalState extends State<FriendsModal> {
   }
 
   void _loadMoreAllUsers() {
+    // Dinleyici artık MODALIN gövdesinde (bkz. `_bodyScroll`), yani üç
+    // sekmede de ateşleniyor — sayfayı yalnızca liste GERÇEKTEN ekrandayken
+    // iste: başka bir sekmedeyken ya da arama sonuçları gösterilirken
+    // "tüm üyeler" listesi hiç çizilmiyor, boşuna sayfa çekmenin anlamı yok.
+    if (_tab != FriendsTab.search) return;
+    if (_query.text.trim().length >= 2) return;
     final cur = _allUsers;
     if (cur == null || !_allUsersHasMore || _allUsersLoadingMore) return;
     _allUsersLoadingMore = true;
@@ -284,14 +304,14 @@ class _FriendsModalState extends State<FriendsModal> {
       _allUsers?.where(_notFriend).toList();
 
   /// Elemeden sonra liste kaydırılamayacak kadar kısaysa (ör. bir sayfanın
-  /// tamamı arkadaş çıktı) `_allUsersScroll` dinleyicisi HİÇ ateşlenmez ve
+  /// tamamı arkadaş çıktı) `_bodyScroll` dinleyicisi HİÇ ateşlenmez ve
   /// sonraki sayfa asla istenmez — Parça 31'deki k-lig hatasının aynısı.
   /// Her yüklemeden sonra bir kare bekleyip elle kontrol ediyoruz.
   void _autoLoadIfNotScrollable() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_allUsersHasMore) return;
-      if (!_allUsersScroll.hasClients) return;
-      if (_allUsersScroll.position.maxScrollExtent <= 0) _loadMoreAllUsers();
+      if (!_bodyScroll.hasClients) return;
+      if (_bodyScroll.position.maxScrollExtent <= 0) _loadMoreAllUsers();
     });
   }
 
@@ -352,6 +372,7 @@ class _FriendsModalState extends State<FriendsModal> {
   Widget build(BuildContext context) {
     return KModal(
       title: 'Arkadaşlar',
+      bodyController: _bodyScroll,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -612,21 +633,18 @@ class _FriendsModalState extends State<FriendsModal> {
           if (_visibleAllUsers == null)
             _loading()
           else
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 320),
-              child: ListView(
-                controller: _allUsersScroll,
-                shrinkWrap: true,
-                children: [
-                  for (final u in _visibleAllUsers!) _candidateRow(u),
-                  // Boş mesajı yalnızca liste GERÇEKTEN tükendiyse — bir
-                  // sayfanın tamamı arkadaş çıkarsa daha yüklenecek üye var.
-                  if (_visibleAllUsers!.isEmpty && !_allUsersHasMore)
-                    _emptyText('Eklenecek başka üye yok.'),
-                  if (_allUsersHasMore)
-                    _emptyText(_allUsersLoadingMore ? 'Yükleniyor…' : ''),
-                ],
-              ),
+            // Kendi kaydırması YOK (bkz. `_bodyScroll`) — modalın gövdesiyle
+            // birlikte kayar, tıpkı diğer iki sekmenin listeleri gibi.
+            Column(
+              children: [
+                for (final u in _visibleAllUsers!) _candidateRow(u),
+                // Boş mesajı yalnızca liste GERÇEKTEN tükendiyse — bir
+                // sayfanın tamamı arkadaş çıkarsa daha yüklenecek üye var.
+                if (_visibleAllUsers!.isEmpty && !_allUsersHasMore)
+                  _emptyText('Eklenecek başka üye yok.'),
+                if (_allUsersHasMore)
+                  _emptyText(_allUsersLoadingMore ? 'Yükleniyor…' : ''),
+              ],
             ),
         ],
       ],

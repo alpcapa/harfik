@@ -46,6 +46,14 @@ class KModal extends StatelessWidget {
   /// halde ✕ alttaki gerçek ekran route'unu pop ederdi.
   final VoidCallback? onClose;
 
+  /// Gövdenin kaydırma denetleyicisi. Modalın İÇİNE ikinci bir kaydırılabilir
+  /// koymak yerine (Flutter iç içe kaydırmayı ZİNCİRLEMEZ — iç liste ucuna
+  /// gelince sürükleme ölür, dış gövde hiç kaymaz; 27 Ağustos 2026'da
+  /// FriendsModal'ın "Ara & Ekle" listesinde ölçüldü: listenin alt 128 px'i
+  /// ekran dışında kalıp asla erişilemiyordu) sayfalama yapan modal kendi
+  /// denetleyicisini BURAYA verir ve listeyi düz bir Column olarak çizer.
+  final ScrollController? bodyController;
+
   const KModal({
     super.key,
     required this.title,
@@ -55,6 +63,7 @@ class KModal extends StatelessWidget {
     this.headerAction,
     this.headerCenter,
     this.onClose,
+    this.bodyController,
   });
 
   @override
@@ -115,6 +124,7 @@ class KModal extends StatelessWidget {
             ),
             Flexible(
               child: SingleChildScrollView(
+                controller: bodyController,
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                 child: child,
               ),

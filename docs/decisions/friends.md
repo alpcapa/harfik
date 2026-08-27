@@ -8,6 +8,91 @@
 > `live-game.md` (Canlı oyun Faz 2-3.6, sunucu tarafı), `online-game-screen.md`
 > (`OnlineGameScreen.tsx` — canlı oyun ekranının UI kararları).
 
+## "Ara & Ekle" iki hatası: yutulan kaydırma + mükerrer üye (27 Ağustos 2026)
+
+Kullanıcı bildirdi: *"Arkadaşlar - Ara&Ekle'de scroll down bir yerde
+takılıyor, sonuna kadar gitmiyor."* Aramada İKİ ayrı hata çıktı — biri
+istemcide (port), biri sunucuda. Aynı ekranda olmaları tesadüf; kökleri
+ayrı.
+
+### 1. Portta: modalın içine ikinci bir kaydırılabilir konmuştu
+
+`friends_modal.dart`'ın "Ara & Ekle" sekmesi üye listesini
+`ConstrainedBox(maxHeight: 320) > ListView(shrinkWrap: true)` içinde
+çiziyordu — yani `KModal`'ın gövde `SingleChildScrollView`'ının **İÇİNE**
+ikinci bir kaydırılabilir. Aynı modaldeki öteki iki sekme ("Arkadaşlarım",
+"İstekler") düz `Column`; tutarsızlık yalnızca burada.
+
+**Ölçüldü** (widget testi, 420×560 — klavye `autofocus` ile açık olduğundan
+gerçek cihazda kalan yükseklik bu civarda):
+
+| | Düzeltmeden önce | Sonra |
+|---|---|---|
+| Modal gövdesinin gösterdiği aralık | y 119 → 518 | y 119 → 518 |
+| İç listenin kapladığı aralık | y 326 → **646** | — (iç liste YOK) |
+| 60 sürüklemeden sonra dış kaydırma offset'i | **0.0** | 2864.0 |
+| Son üyenin (46.) konumu | y 600–620 (**ekran dışı**) | y 452–472 |
+
+Yani listenin alt **128 px'i** — son ~2,5 satır ve "Yükleniyor…" nöbetçisi —
+ekranın altında kalıyordu ve oraya ulaşmanın yolu yoktu.
+
+**Kök sebep bir kural farkı: Flutter iç içe kaydırmayı ZİNCİRLEMEZ.**
+Tarayıcı, iç kutu ucuna gelince kaydırmayı dıştakine devreder (web'in
+`max-h-[50vh] overflow-y-auto`'su bu yüzden `FriendsModal.tsx`'te sorun
+çıkarmıyor — web tarafı ETKİLENMEDİ, dokunulmadı). Flutter'da iç `ListView`
+jesti tümüyle sahiplenir: parmağını listenin üzerine koyan kullanıcı dış
+gövdeyi **hiç** kaydıramaz. Ölçülen `0.0` tam olarak bu.
+
+**Düzeltme — iç kaydırılabiliri EKLEMEK değil KALDIRMAK:** liste artık öteki
+iki sekme gibi düz bir `Column`, modalda tek bir kaydırılabilir var.
+Sayfalama dinleyicisi listenin kendi denetleyicisinden modalın gövdesine
+taşındı: `KModal`'a `bodyController` adında isteğe bağlı bir parametre
+eklendi (varsayılanı `null`, öteki ~15 modal etkilenmedi), `FriendsModal`
+kendi `_bodyScroll`'unu oraya veriyor. Dinleyici artık üç sekmede de
+ateşlendiğinden `_loadMoreAllUsers` iki koruma kazandı: sekme `search`
+değilse ve arama kutusunda 2+ karakter varsa sayfa istemez — o iki durumda
+"tüm üyeler" listesi zaten çizilmiyor.
+
+⚠ **Genel kural (bu modalın ötesinde):** `KModal`'ın gövdesi zaten
+kaydırılabilir. İçine ikinci bir `ListView`/`SingleChildScrollView` koyma —
+uzun liste gerekiyorsa `Column` + `bodyController` deseni. Sabit bir
+`maxHeight` bunu kurtarmaz, tam tersine hatayı görünmez kılar: 900 px'lik
+bir test penceresinde gövde taşmadığı için hata **hiç görünmüyordu**,
+yalnızca klavye açıkken ortaya çıkıyordu.
+
+**Regresyon:** `friends_test.dart`'a bir test eklendi — parmak GERÇEK bir
+liste satırının üzerinde başlayıp 60 kez sürükleniyor, sonra son üyenin
+gövdenin içinde olması ve modalda hiç `ListView` bulunmaması isteniyor.
+**Negatif eşi kanıtlandı:** düz `Column` eski `ConstrainedBox > ListView`
+hâline geri alınınca test düşüyor (`Actual: <620.0>` vs beklenen `<= 518.0`).
+
+### 2. Sunucuda: `LEFT JOIN` + karşılıklı `OR` = sessiz çoğaltma
+
+`list_users_for_friend` ve `search_users_for_friend`, ilişkiyi bulmak için
+`friend_requests`'e karşılıklı bir koşulla `left join` yapıyordu. **İki yön
+de satır olarak varsa** (A→B ve B→A ayrı ayrı istek göndermiş — tamamen
+meşru) join o profil için İKİ satır üretiyor ve aynı üye listede iki kez
+çıkıyor. `limit/offset` join satırlarını saydığından 20'lik bir sayfa 19
+farklı üye taşıyor.
+
+Bu, bir gün önce düzeltilen `list_my_online_games`/`list_friends` hatasının
+(`20260827121628`, bkz. `live-game.md`) **AYNI sınıfı**. Canlıda ölçüldü:
+47 profilin 46'sını gören iki üyede join 47 satır döndürüyordu.
+
+**Düzeltme** (`20260827153857_dedupe_friend_candidate_lists`, canlıya
+uygulandı ve doğrulandı — 47 → 46):
+- `distinct on (p.id)` ile profil başına tek satır; hangi satırın kalacağı
+  deterministik: önce `'accepted'` (arkadaşlık bir "bekliyor"u ezer), sonra
+  `fr.created_at`, sonra `fr.user_id`.
+- Sıralamaya `id` eşitlik-bozucusu: `order by name` TEK BAŞINA toplam bir
+  sıra değil. Bugün aynı ada sahip iki üye yok ama `first_name` benzersiz
+  değil, ve Postgres eşitlikte sıra garanti etmez — offset sayfalaması iki
+  çağrı arasında satır atlayıp tekrarlayabilirdi.
+
+Dönüş şekli `(id, name, avatar_url, relation)` ve yetkiler değişmedi, yani
+**uygulama güncellemesi beklemiyor** — web de portun eski sürümü de düzelmiş
+listeyi anında alıyor.
+
 ## Arkadaşlık Sistemi (Canlı Oyun — Faz 1)
 
 Kullanıcılar "karşılıklı/canlı oyun" istiyor — bunun ön koşulu olarak eklenen 1. faz: arkadaşlık. Henüz senkron oynanış/davetli oyun kurma yok, yalnızca kim kiminle arkadaş olacağının altyapısı (bkz. proje sohbetindeki analiz: tüm mimariyi değiştirmeye gerek yok, oyun motoru saf fonksiyonlar olduğundan aynen kalıyor — değişen şey state'in nerede yaşadığı, bu faz sadece sosyal grafiği kuruyor). İki bağımsız yol var:

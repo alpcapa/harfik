@@ -32,6 +32,18 @@
 - [ ] **Varsayılan sekme.** Bekleyen istek varken modal "İstekler"
       sekmesiyle açılmalı; Kabul Et → kişi "Arkadaşlarım"a düşmeli,
       web tarafında da arkadaş görünmeli.
+- [ ] **Ara & Ekle — liste SONUNA KADAR kaydırılabiliyor (27 Ağustos 2026,
+      kullanıcı bildirdi).** Klavye açıkken (kutu `autofocus`, yani modal
+      açılır açılmaz açık) parmağını doğrudan BİR ÜYE SATIRININ üzerine koy
+      ve yukarı sürükle: modal kaymalı ve listenin sonuna (son üye +
+      gerekiyorsa "Yükleniyor…") ulaşılabilmeli. Eskiden liste kendi
+      kaydırılabiliri içindeydi ve Flutter iç içe kaydırmayı
+      zincirlemediğinden alt ~2,5 satır erişilemiyordu. **Dar ekranda
+      dene** — geniş ekranda hata görünmez.
+- [ ] **Ara & Ekle — aynı üye İKİ KEZ çıkmamalı (27 Ağustos 2026,
+      `20260827153857`).** Karşılıklı istek göndermiş bir çift varsa o üye
+      listede tek satır olmalı. Sunucu düzeltmesi, uygulama sürümünden
+      bağımsız — eski derlemede de düzelmiş olmalı.
 - [ ] **Ara & Ekle.** Boş kutuda "Tüm Üyeler" listesi kaydırdıkça
       20'şer büyümeli; 2+ karakterle arama çalışmalı; **kişi-ekle ikonuna**
       dokun → onay ("… arkadaş olarak eklemek istiyor musun?") → "Arkadaşlık
