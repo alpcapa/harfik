@@ -13,6 +13,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/bootstrap.dart';
 import 'package:kelimeki/src/config/env.dart';
+import 'package:kelimeki/src/ui/route_observer.dart';
 import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/meaning_store.dart';
@@ -97,6 +98,12 @@ Finder arkadaslaRozeti() => find.descendant(
 Future<void> pumpSetup(WidgetTester tester, AppServices s) async {
   await tester.pumpWidget(MaterialApp(
     theme: kelimekiTheme(),
+    // ÜRETİMLE AYNI olmak ZORUNDA (app.dart `navigatorObservers`): Setup'ın
+    // "bir ekrandan dönüldü" tazelemesi `RouteAware.didPopNext`ten geliyor ve
+    // o yalnızca rotayı gözleyen observer ile ABONE observer aynı nesneyse
+    // çalışır. Harness bunu vermezse `didPopNext` HİÇ koşmaz ve dönüş
+    // testi — bir hata olmadığı hâlde — düşer.
+    navigatorObservers: [kRouteObserver],
     home: SetupScreen(services: s),
   ));
   await tester.pumpAndSettle();

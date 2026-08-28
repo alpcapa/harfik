@@ -61,14 +61,7 @@ final Map<String, OnlineGamesSnapshot> _liveGamesCache = {};
 class LiveGamesTab extends StatefulWidget {
   final AppServices services;
 
-  /// Canlı tahtadan Setup'a DÖNÜŞ anı — "Arkadaşınla (N)" rozetini tazelemek
-  /// için (`SetupScreen._scheduleLiveBadgeRefresh`). Liste bu garantiyi
-  /// baştan beri taşıyordu (`_openGame` → `_reload`), rozet taşımıyordu;
-  /// bu, kapsayan rozetin kapsanan listeyle ÇELİŞMESİNE yol açıyordu.
-  final VoidCallback? onGameClosed;
-
-  const LiveGamesTab(
-      {super.key, required this.services, this.onGameClosed});
+  const LiveGamesTab({super.key, required this.services});
 
   @override
   State<LiveGamesTab> createState() => _LiveGamesTabState();
@@ -315,29 +308,16 @@ class _LiveGamesTabState extends State<LiveGamesTab>
       ),
     ));
     if (mounted) unawaited(_reload());
-    // Rozet de dönüşte tazelenmeli — LİSTEYLE AYNI ANDA (28 Ağustos 2026,
-    // kullanıcı bildirdi: *"Hiç bekleyen oyunum kalmamış olmasına rağmen
-    // tab'da 1 uzun süre durdu. Sonra ekran kapandı, açınca gitti."*).
+    // ⚠ ROZET burada TAZELENMİYOR ve bu bilinçli. 28 Ağustos 2026'da rozet
+    // bir `onGameClosed` callback'iyle tam bu noktaya bağlanmıştı; Sürüm B
+    // Canlı tahtayı açan İKİNCİ bir kapı (bildirime dokun → doğru oyunu aç)
+    // eklediğinden o çare aynı gün öngörüldüğü gibi yetersiz kaldı: yeni
+    // kapının callback'i çağırmayı unutması, düzeltilen hatanın aynısını
+    // geri getirirdi ve derleyici bunu YAKALAMAZDI.
     //
-    // Kök sebep bir web↔port YAPI farkı: web'de oyuna girince Setup unmount
-    // olur ve dönüşte remount olup rozet effect'ini baştan koşturur, yani
-    // web bu garantiyi bedavaya alır. Flutter'da Setup `MaterialApp.home`
-    // ve oyun üstüne `push` edilir — Setup HİÇ unmount olmaz, dolayısıyla
-    // rozetin tek dayanağı Realtime olayı + öne dönüş kalıyordu. Olay
-    // kaçınca (zayıf bağlantı, kanal kopması) rozeti geri getiren hiçbir şey
-    // yoktu; kullanıcı ekranı kapatıp açınca `AppLifecycleState.resumed`
-    // devreye girip düzeltiyordu — bildirilen davranış birebir buydu.
-    //
-    // Bu, kaçırılan olayın kalıcı kayba dönüştüğü BEŞİNCİ yer (sohbet
-    // Realtime'ı, bulut senkronu, `useOnlineStatus`, `_onLiveBadgeConnectivity`
-    // aynı çareyi almıştı): olay tabanlı her durumun bir de olaydan bağımsız
-    // "kesin an"ı olmalı.
-    //
-    // ⚠ Canlı tahtayı açan İKİNCİ bir yol eklenirse (Sürüm B: bildirime
-    // dokununca doğru oyunu aç) o yol da bunu çağırmalı — yoksa aynı hata
-    // yeni kapıdan geri gelir. İki kapı olduğunda doğru çare bu callback
-    // değil, Setup'a takılacak bir `RouteObserver` (`didPopNext`).
-    if (mounted) widget.onGameClosed?.call();
+    // Rozeti artık Setup'ın `didPopNext`i tazeliyor (`ui/route_observer.dart`)
+    // — hangi kapıdan girilirse girilsin dönüş oradan geçer. Aşağıdaki
+    // `_reload()` ise KALIYOR: o bu sekmenin KENDİ listesi, rozet değil.
   }
 
   @override
