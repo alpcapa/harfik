@@ -784,6 +784,68 @@ test.describe('dokunmatik jestler', () => {
     ).toBe(false);
   });
 
+  // 28 Ağustos 2026 — bir kullanıcı bildirdi: *"tahtaya konan taşı geri almak
+  // için tıkladığında 2 harf birden geri geliyor."* Kök sebep jokerde ya da
+  // reducer'da DEĞİL, YUTMANIN KAPSAMINDA: `tapPlacedTile` compat click'i
+  // yalnızca JOKER dalında yutuyordu. Sıradan taş dalında o click boşalmış
+  // hücreye düşüp HİÇBİR ŞEY yapmadığı için zararsız sanılıyordu — ta ki
+  // yukarıdaki boş-hücre kurtarması (27 Ağustos) onu İŞ YAPAR hâle getirene
+  // kadar: kurtarma komşudaki taslak taşı bulup ONU da geri alıyor.
+  //
+  // ÖLÇÜLDÜ (390×844, hasTouch): raf 5 → 7; doğrusu 5 → 6. Olay zinciri
+  // `tapPlacedTile 0,1` → `handleCellClick 0,1` → kurtarma `0,0` →
+  // `tapPlacedTile 0,0`.
+  //
+  // ⚠ MASAÜSTÜ PROFİLİNDE GÖRÜNMEZ ve bu testin dokunmatik blokta olmasının
+  // sebebi bu: fareyle click'in hedefi az önce SÖKÜLEN taş düğümü oluyor,
+  // React onu hiçbir fiber'a eşleyemiyor ve olay sessizce düşüyor. Compat
+  // click ise hit-test'i O ANDAKİ DOM üzerinde yapıyor, yani hâlâ bağlı olan
+  // HÜCREYE düşüyor. Aynı sınıfın üçüncü örneği (bkz. `ghostClick.ts`).
+  test('taslak taşa dokunmak YALNIZCA o taşı geri alır (komşusunu değil)',
+      async ({ page }) => {
+    page.on('dialog', (dialog) => dialog.accept());
+    await donenKullanici(page);
+    await page.goto('/');
+    await page.getByText('OYUNU BAŞLAT').click();
+    const devam = page.getByLabel('Giriş uyarısı').getByRole('button', { name: 'Oyna', exact: true });
+    if (await devam.isVisible().catch(() => false)) await devam.click();
+    const qs = page.getByRole('heading', { name: /hızlı başlangıç/i });
+    if (await qs.isVisible().catch(() => false)) {
+      await page.locator('button[aria-label="Kapat"]').last().click();
+    }
+    await expect(page.getByRole('main').getByRole('button', { name: 'Pas Geç' })).toBeEnabled();
+
+    const rafSayisi = () => page.locator('[data-rack-tile]').count();
+    const dolu = async (sel: string) =>
+      (await page.locator(sel).innerText()).trim().length > 0;
+
+    // KOMŞU iki taslak taş: ev karesi (0,0) ve yanı (0,1). Komşuluk şart —
+    // kurtarma yalnızca ortogonal komşulara bakıyor, hatanın doğduğu yer de
+    // tam orası.
+    await page.locator(await jokersizRafTasi(page)).tap();
+    await page.locator('[data-cell="0,0"]').tap();
+    await page.locator(await jokersizRafTasi(page)).tap();
+    await page.locator('[data-cell="0,1"]').tap();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    expect(await dolu('[data-cell="0,0"]')).toBe(true);
+    expect(await dolu('[data-cell="0,1"]')).toBe(true);
+
+    const oncesi = await rafSayisi();
+
+    // >>> Bildirilen jest: taslak taşa TEK DOKUNUŞ.
+    await page.locator('[data-cell="0,1"]').tap();
+
+    expect(
+      await rafSayisi(),
+      'rafa BİRDEN FAZLA taş döndü — hayalet click komşu taslağı da geri aldı',
+    ).toBe(oncesi + 1);
+    expect(
+      await dolu('[data-cell="0,0"]'),
+      'komşu taslak taş da geri alınmış',
+    ).toBe(true);
+    expect(await dolu('[data-cell="0,1"]')).toBe(false);
+  });
+
   test('SEÇİLİ taş varken aynı tıklama HARFİ KOYAR (kurtarma karışmaz)',
       async ({ page }) => {
     page.on('dialog', (dialog) => dialog.accept());
