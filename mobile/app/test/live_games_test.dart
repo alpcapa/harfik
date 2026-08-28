@@ -25,6 +25,12 @@ import 'package:kelimeki/src/ui/live/live_game_create_form.dart';
 import 'package:kelimeki/src/ui/live/live_games_tab.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show SetWordSource, trUpper;
 
+import 'package:kelimeki/src/data/push_repo.dart';
+import 'package:kelimeki/src/storage/app_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+
+import 'push_repo_test.dart' show FakeMessaging, FakeStore;
 import 'support/fake_online_gateway.dart';
 import 'support/test_fonts.dart';
 import 'support/test_view.dart';
@@ -452,6 +458,9 @@ void main() {
     required FakeOnlineGamesGateway gateway,
     FakeFriendsGateway? friendsGateway,
     bool online = true,
+    PushMessaging? pushMessaging,
+    PushRepo? push,
+    Future<AppStorage>? storage,
   }) =>
       AppServices(
         onlineStatus: OnlineStatus.fake(online: online),
@@ -462,6 +471,9 @@ void main() {
         versionGate: VersionGateStatus.ok,
         onlineGames: OnlineGamesRepo(gateway),
         friends: FriendsRepo(friendsGateway ?? FakeFriendsGateway()),
+        pushMessaging: pushMessaging,
+        push: push,
+        storage: storage,
       );
 
   Future<void> pumpTab(WidgetTester tester, AppServices s,
@@ -833,5 +845,76 @@ void main() {
       await tester.pump();
       expect(h.cancelled, [true]);
     });
+  });
+
+  // ── Bildirim izni tetikleyicisi ────────────────────────────────────────
+  //
+  // Ürün kararı (28 Ağustos 2026): koşul KONUM değil DURUM. "Canlı sekmesi
+  // açıldı" tek başına yetmiyor; en az bir aktif oyun ya da bekleyen davet de
+  // olmalı. Bu iki test o kararın kendisini kilitliyor — kod yerini
+  // değiştirebilir, koşul değişemez.
+  /// ⚠ `tester.runAsync` ŞART ve bu projenin yazılı tuzağı
+  /// (mobile/CLAUDE.md → "await newRepo(... testWidgets İÇİNDE çıkarsa"):
+  /// `testWidgets` sahte bir saatle koşuyor, gerçek SQLite I/O'su o saatte
+  /// HİÇ ilerlemiyor. Depoyu doğrudan `storage:` alanına vermek Future'ı
+  /// sonsuza kadar bekletiyor ve izin akışı `await storage` satırında asılı
+  /// kalıyordu — kart hiç çıkmıyordu, üstelik hiçbir hata da yoktu.
+  Future<AppStorage> testDeposu(WidgetTester tester) async {
+    late AppStorage depo;
+    await tester.runAsync(() async {
+      SharedPreferences.setMockInitialValues({});
+      depo = await AppStorage.open(
+        factory: databaseFactoryFfi,
+        path: inMemoryDatabasePath,
+        prefs: await SharedPreferences.getInstance(),
+      );
+    });
+    return depo;
+  }
+
+  testWidgets('aktif oyun VARKEN bildirim izni kartı çıkar', (tester) async {
+    sqfliteFfiInit();
+    final gw = FakeOnlineGamesGateway()
+      ..rows = [gameRow(id: 'g1', myId: 'me', status: 'active')]
+      ..turnRows = [
+        {'online_game_id': 'g1', 'current': 1},
+      ];
+    final m = FakeMessaging();
+    final depo = Future.value(await testDeposu(tester));
+    await pumpTab(
+      tester,
+      liveServices(
+        userId: 'me',
+        gateway: gw,
+        pushMessaging: m,
+        push: PushRepo(
+            messaging: m, store: FakeStore(), platformKaynagi: () => 'android'),
+        storage: depo,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Bildirimleri açalım mı?'), findsOneWidget);
+  });
+
+  testWidgets('aktif oyun YOKKEN kart ÇIKMAZ', (tester) async {
+    // Oyunu olmayan birine, olmayan oyunlar için bildirim sorulmaz — ve bu
+    // sadece nezaket değil: Android 13+'ta boşa harcanan bir sistem denemesi
+    // kalıcı olarak geri alınamaz.
+    sqfliteFfiInit();
+    final gw = FakeOnlineGamesGateway()..rows = [];
+    final m = FakeMessaging();
+    await pumpTab(
+      tester,
+      liveServices(
+        userId: 'me',
+        gateway: gw,
+        pushMessaging: m,
+        push: PushRepo(
+            messaging: m, store: FakeStore(), platformKaynagi: () => 'android'),
+        storage: Future.value(await testDeposu(tester)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Bildirimleri açalım mı?'), findsNothing);
   });
 }
