@@ -806,6 +806,49 @@ zoom'lar — kutular da birlikte büyür, sınıf 2 hiç doğmaz. Yani buraya
 web'den kopyalanacak bir yapı yok, yalnızca ilkesi var (web'in `CARD_HEADER`
 düzeltmesi, 23 Ağustos 2026: kırpılacak EN SON şey kimden geldiğidir).
 
+### Sınıf 2 risk kütüğü — taranmış, ÖLÇÜLMEMİŞ (28 Ağustos 2026)
+
+Kullanıcı sordu: *"Bir de başka sessiz sıkışma olan yerler var mı?"* İki
+yöntemle arandı; ikisinin de sınırı yazılı, çünkü "temiz çıktı" ile "sorun
+yok" aynı şey değil.
+
+**1. Dinamik tarama (takımın tamamı, iki ölçekte).** Her karede tüm
+`RenderParagraph`ların genişliği dökülüp 1,0 ile 1,3 karşılaştırıldı.
+901 ortak metinden 35'i daraldı, ama bunların çoğu ZARARSIZ: sarabilen bir
+metin daralınca yalnızca uzar, bilgi kaybolmaz. Zarar ölçütü daralma değil
+**kırpılma** (`didExceedMaxLines || maxLines != null || !softWrap`). O
+süzgeçten geçen: **tek bir yer** — `game_history_modal.dart:1150`, oyun
+geçmişi satırındaki oyuncu adı, **101,9 → 88,8 px (-13,1)**; sebebi yanındaki
+`TESLİM OLDU` rozetinin metin olması. Bilgi sıfırlanmıyor, ~2 karakter
+kırpılıyor.
+
+⚠ **Bu taramanın KÖRLÜĞÜ ölçüldü ve önemli:** kullanıcının bildirdiği asıl
+hata (arkadaşlık isteği satırı) düzeltme KAPATILIP tekrar koşturulduğunda
+bile listede ÇIKMADI — çünkü mevcut testler o satırı 420 px genişlikte ve
+kısa bir adla ("Esiner") çiziyor, yani sıkışma o veriyle hiç doğmuyor.
+Tarama yalnızca testlerin GERÇEKTEN çizdiği ekranı ve veriyi görür. Dar
+ekran + uzun ad gibi uç veriyi ancak ona özel bir test yakalar
+(`text_scale_test.dart` tam bunu yapıyor: 360 px + "Esiner Yıldırım").
+
+**2. Yapısal tarama.** `lib/src/ui` altındaki 24 `TextOverflow.ellipsis`
+sitesi, "kırpılabilir metin + onu ezebilecek METİN kardeş" desenine göre
+tarandı. Beş aday çıktı — **hiçbiri ölçülmedi**, yalnızca desen eşleşmesi:
+
+| Yer | Ezen kardeş |
+|---|---|
+| `setup_screen.dart:1977` | `SENİN HAMLEN BEKLENİYOR` (11 px, tracking 1 — en uzun etiket) |
+| `live_games_tab.dart:683` | sağdaki durum etiketi (`onlineStatusLabel`) |
+| `game_over_modal.dart:234` | `(TESLİM)` |
+| `game_history_modal.dart:1150` | `TESLİM OLDU` — **ölçülen tek vaka** |
+| `recent_games_section.dart:285` | skor metni |
+
+Beşi de aynı ailenin üyesi: satırdaki tek esnek öğe bir isim/başlık, kardeşi
+ise ölçekle büyüyen bir metin. **1,3 tavanında beklenen zarar "birkaç
+karakter kırpılması" düzeyinde** — arkadaşlık satırındaki gibi sıfıra inen
+bir vaka değil; bu yüzden bugün düzeltilmedi. Tavan yükseltilirse ya da
+biri cihazda şikayet konusu olursa çözüm aynı: `buyukOlcek(context)` ile
+satırı ikiye böl.
+
 ## `KModal`'ın gövdesi ZATEN kaydırılabilir — içine ikincisini koyma
 
 27 Ağustos 2026, bir kullanıcı bildirdi: *"Arkadaşlar - Ara&Ekle'de scroll
