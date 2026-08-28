@@ -359,7 +359,12 @@ export function Board({
         classes.push('cursor-pointer');
         style = bonus ? { ...CENTER_ZONE_STYLE } : { ...GOLD_ZONE_STYLE };
         if (bonus && !compact) {
-          classes.push(CENTER_TEXT, 'text-[clamp(7px,1.9vw,12px)]');
+          // 28 Ağustos 2026, kullanıcı isteği ("en ortadaki X3 yazısını biraz
+          // büyütelim"): 7/1.9vw/12 → 9/2.6vw/16. Port ikizi
+          // `board_widget.dart` (`fluidSize(screenWidth, 9, 0, 2.6, 16)`) —
+          // İKİSİ BİRLİKTE DEĞİŞİR, punto ikisinde de hücreye değil EKRAN
+          // genişliğine bağlı.
+          classes.push(CENTER_TEXT, 'text-[clamp(9px,2.6vw,16px)]');
           content = BONUS_LABELS[bonus];
         }
       } else if (zone) {

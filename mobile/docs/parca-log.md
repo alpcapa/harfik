@@ -20,6 +20,31 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 157 — merkez X3 etiketi büyütüldü (28 Ağustos 2026, kullanıcı
+     isteği: *"en ortadaki X3 yazısını da biraz büyütelim"*):**
+     `clamp(7px,1.9vw,12px)` → `clamp(9px,2.6vw,16px)`, web ve portta birden
+     (`Board.tsx` ↔ `board_widget.dart`). 420 px'lik bir telefonda
+     **7,98 px → 10,9 px** (~%37); 834 px'te tavan 12 → 16.
+     - **Bu ölçünün geçmişi var ve düzeltme BOZULMADI:** 17 Ağustos'ta port
+       aynı yazıyı `FittedBox` ile hücreyi doldurarak ~37 px basıyordu ve
+       kullanıcı "boyut/tasarım farklı" diye bildirmişti; o gün web'in 12 px
+       tavanına çekildi. Bugünkü artış yalnızca TAVANI yükseltiyor — punto
+       hâlâ hücreye değil EKRAN genişliğine bağlı, yani iki platform aynı
+       hesabı yapmaya devam ediyor.
+     - **İKİ ayrı test katmanı yakaladı ve ikisi de güncellendi/kanıtlandı:**
+       `layout_parity_test.dart` KAYNAKLARI karşılaştırıyor (Board.tsx'in
+       clamp'i ↔ board_widget'ın fluidSize'ı) — negatif eş kuruldu: yalnızca
+       web eski değere döndürülünce test GERÇEKTEN düştü, yani tek taraflı
+       bir değişiklik sessizce geçemiyor. `board_render_test.dart` ise RENDER
+       EDİLEN puntoyu ölçüyor ve beklenen değerleri taşıyordu (12 → 16,
+       7,41 → 10,14). İkisi ayrı katman; parite testi "aynı sayı yazılmış
+       mı" der, render testi "gerçekten o punto mu çiziliyor" der.
+     - **Doğrulama:** `dart analyze` temiz (yalnız önceden var olan 1 info),
+       `flutter test` **557/557**, `npm run lint` temiz. Önce/sonra yakın
+       plan ekran görüntüsü kullanıcıya gösterildi.
+     - **Açık soru (kullanıcıya soruldu):** 16 px tavan yeterli mi, daha
+       büyük mü olsun? Tek sayı değişikliği.
+
    - ✅ **Parça 156 — iki görsel kural: jokerin puanı KIRMIZI, skor kutusundaki
      SAYI siyah (28 Ağustos 2026, kullanıcı isteği — Sürüm B):** İkisi de
      küçük ama ikisi de web+port paritesi taşıyor.
