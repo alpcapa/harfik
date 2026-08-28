@@ -1,4 +1,6 @@
 // Kök widget — sürüm kapısına göre ya güncelleme ekranı ya uygulama.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../bootstrap.dart';
@@ -11,6 +13,7 @@ import 'route_observer.dart';
 import 'setup/setup_screen.dart';
 import 'theme.dart';
 import 'tokens.dart';
+import 'push/push_permission_flow.dart';
 import 'update_required_screen.dart';
 
 class KelimekiApp extends StatelessWidget {
@@ -89,14 +92,66 @@ class _HomeGate extends StatefulWidget {
   State<_HomeGate> createState() => _HomeGateState();
 }
 
-class _HomeGateState extends State<_HomeGate> {
+class _HomeGateState extends State<_HomeGate> with WidgetsBindingObserver {
   /// null = karar henüz verilmedi (depo açılıyor).
   bool? _showIntro;
   AppStorage? _storage;
 
+  /// Push token'ını izinle hizalayan son oturumun kimliği — oturum
+  /// değişimini (giriş/çıkış/hesap değiştirme) burada yakalıyoruz.
+  String? _sonPushUserId;
+
+  /// Token durumunu sistem izniyle hizalar.
+  ///
+  /// **NEDEN BURADA (28 Ağustos 2026, cihaz testinde bulundu):** bu çağrı
+  /// eskiden YALNIZCA Canlı sekmesinin `_reload()`'undaydı. Bildirimi sistem
+  /// ayarlarından kapatıp o sekmeye girmeyen kullanıcının token'ı tabloda
+  /// kalıyordu (cihazda ölçüldü) — sunucu gönderiyor, işletim sistemi
+  /// sessizce yutuyordu. Ayar uygulamanın DIŞINDA değiştiği için tek
+  /// güvenilir an öne dönüş; kapı bu yüzden `WidgetsBindingObserver`.
+  ///
+  /// Fırlatmaz ve beklenmez: hizalama bir ekran geçişini geciktirmemeli.
+  void _pushHizala() {
+    final repo = widget.services.push;
+    final messaging = widget.services.pushMessaging;
+    if (repo == null || messaging == null) return; // web / Firebase yok
+    final userId = widget.services.auth.user?.id;
+    if (userId == null) {
+      // ÇIKIŞ: satır kalırsa sunucu, o hesabın oturumu kapalı bir cihaza
+      // göndermeye devam eder. `temizle` başka hiçbir yerden çağrılmıyordu.
+      if (_sonPushUserId != null) {
+        _sonPushUserId = null;
+        unawaited(repo.temizle());
+      }
+      return;
+    }
+    _sonPushUserId = userId;
+    unawaited(pushTokenlariHizala(
+      messaging: messaging,
+      repo: repo,
+      userId: userId,
+    ));
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _pushHizala();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    widget.services.auth.removeListener(_pushHizala);
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Oturum değişimi (giriş/çıkış/hesap değiştirme) + ilk açılış.
+    widget.services.auth.addListener(_pushHizala);
+    _pushHizala();
     final storage = widget.services.storage;
     if (storage == null) {
       _showIntro = false;
