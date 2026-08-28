@@ -121,6 +121,47 @@ gönderilmedi — push işi zaten bu fonksiyona dokunacak, tek deploy'da
 gitsin. O deploy yapılırken **`verify_jwt: false` AÇIKÇA geçilmeli**
 (araç parametre verilmezse `true` varsayıp mevcut değeri sessizce ezer).
 
+### 1.5 Sürüm B'ye binecek sözlük eklemeleri (28 Ağustos 2026)
+
+Kullanıcı üç kelime verdi (*"acil değil, yeni sürüm işlerine dahil et"*).
+Sözlük app paketinin içinde olduğundan bunlar **bir sonraki mobil sürüme
+binmeli** — sunucu+web'i erken güncellemek serbest ama app'te ancak yeni
+sürümle geçerli olur (bkz. `docs/decisions/dictionary.md` → "Yayılma
+gecikmesi").
+
+**Varlık kontrolü YAPILDI (28 Ağustos 2026) — repo ve canlı AYRIŞMIYOR,
+üçü de her iki tarafta da YOK:**
+
+| Kelime | `words.ts` / `meanings.json` | `public.words` / `is_valid_word` | Komşusu (ölçüldü) |
+|---|---|---|---|
+| `lapis` | yok | yok | **`lapislazuli` VAR** (bitişik tek madde), `lacivert` var |
+| `mö` | yok | yok | İki harfli tek "m" maddeleri: `ma`, `me`, `mi` |
+| `banu` (+`banü`) | ikisi de yok | ikisi de yok | `bani` var — **farklı kelime**, i/ı dersiyle aynı sınıf |
+
+**Hedef liste: üçü de `scripts/extra-words.mjs`.** (`proper-nouns` ülke/
+şehir/dil içindir; `extra-meanings` var olan maddeye ek anlam içindir —
+hiçbiri bu üçüne uymuyor.)
+
+Anlamlar (kullanıcının verdiği):
+- **lapis** — (lapis lazuli) değerli taş; dilimizde daha çok tam hâliyle ya
+  da *laciverttaşı / lacivert taşı* olarak bilinir. Latince `lapis` "taş",
+  `lazuli` lacivert rengi.
+- **mö** — inek sesi (ünlem).
+- **banu** — Farsça kökenli; "kadın, hanım, hanımefendi, soylu kadın".
+  *Varsayılan: `banu` ve `banü` ikisi de eklenir* (kullanıcı ikisini de
+  yazdı); tek biçim isteniyorsa uygulama anında söylensin.
+
+⚠ **`mö` iki harfli.** Bu projede iki harfli maddeler yerleştirmede
+orantısız iş görür (çapa kurma, dar boşluk doldurma) — golden vector'lar
+yeniden üretildiğinde fark çıkarsa sebebi büyük olasılıkla budur; bu bir
+hata değil, beklenen etki.
+
+**Uygulanınca koşulacak zincir** (`docs/decisions/dictionary.md`'deki tablo,
+hiçbir halka atlanamaz): `npm run augment-dictionary` → migration'ı canlıya
+uygula + `list_migrations` ile dosya adını eşleştir → `npm run
+generate-golden-vectors` + `dart run test/run_all.dart` → `npm run
+generate-meanings-db` → `README.md`'deki kelime sayısı.
+
 ### 2. Zorunlu güncelleme (force update) — ERTELENDİ
 
 Kullanıcı isteği (26 Ağustos 2026): *"Ben normal yayına alıyorum. Riske
