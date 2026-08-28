@@ -163,6 +163,19 @@ kullanıcı Play Console'dan doğruladı: yayın durumu "Update live").** A
 (`403`) ve A2 (`405` → `407`) çıktı, cihaz testi onaylandı, paket kanalda.
 **Hatırlatma artık gönderilebilir — bekleyen tek adım bu.**
 
+⚠ **Play Console'da sürümün ADI ile version code AYNI şey değil** (28
+Ağustos 2026, kullanıcı haklı olarak sordu: *"Son release 1.0.0 (405)
+gözüküyor"*). "Latest releases and bundles" satırı `1.0.0 (405)` yazıyordu
+ama yanındaki version code sütunu `407`di. Sürüm adı taslak açılırken bir
+kez doldurulan **serbest metin bir etikettir ve paket değişince kendini
+güncellemez**; kimliği belirleyen tek şey `.aab`'nin içinden gelen version
+code. Aynı ekranın "Latest app bundles" tablosu kanıt: **407 → Active**,
+401/378/372/349 → Inactive ve **405 listede hiç yok** (o paket Play'e hiç
+yüklenmedi, yalnızca cihazda `.apk` olarak denendi). Zincir: koşu **#407**
+→ sha **`0651e5e`** → `mobile-latest` `.aab` (27 Ağu 21:07) → Play paketi
+(21:42). **Şüphe halinde ada değil, cihazdaki teşhis satırına bak:
+`Derleme 0651e5e`.**
+
 Katılan/indiren sayısı Play Console'da: **Test → Closed testing → (track) →
 Testers sekmesi**, ve indirme adedi için **Statistics**. (Kullanıcı bunu iki
 kez sordu — yeri burada yazılı.)
