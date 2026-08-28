@@ -92,9 +92,13 @@
         zemin `rgb(245,247,250)`, vurgulu satırın sabit hücresinde ton
         katmanı `rgba(37,99,235,0.2)` olarak ölçüldü.
       - **AÇIK BORÇ — ÜST BAŞLIK SATIRI da sabitlenecek (28 Ağustos 2026,
-        kullanıcı isteği: *"Admin tablosu üst başlık satırını da
-        sabitleyelim. Kaydırınca neye baktığın anlaşılmıyor."* — "Not al"
-        dedi, yani kayıt; uygulama sırası ayrıca verilecek).** İsim kolonu
+        kullanıcı isteği, iki kez ve ikincisinde kapsamı daraltarak:
+        *"Admin üyelik tablosu üst başlık satırını da sabitleyelim.
+        Kaydırınca neye baktığın anlaşılmıyor."* — "Not al" dedi, yani
+        kayıt; uygulama sırası ayrıca verilecek).** **Kapsam YALNIZCA
+        Üyeler tablosu** (`AdminDashboard.tsx`, `STICKY_NAME_CELL`'in
+        kullanıldığı tablo) — paneldeki öteki tablolar (Büyüme kartlarının
+        dökümleri vb.) bu istekte YOK, kendiliğinden genişletme. İsim kolonu
         YATAY kaydırmayı çözdü, bu DİKEY karşılığı: uzun üye listesinde
         aşağı inince hangi sütunun ne olduğu kayboluyor (18 kolon, hepsi
         `font-mono` ve çoğu kısa değer — başlıksız ayırt edilemiyorlar).
