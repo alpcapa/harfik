@@ -20,6 +20,45 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 156 — iki görsel kural: jokerin puanı KIRMIZI, skor kutusundaki
+     SAYI siyah (28 Ağustos 2026, kullanıcı isteği — Sürüm B):** İkisi de
+     küçük ama ikisi de web+port paritesi taşıyor.
+     - **Joker:** tahtaya/taslağa konmuş jokerin `0` puanı artık token
+       kırmızısı (`kRed` / tailwind `red`, `#DC2626`). Öncesinde diğer
+       taşların puanıyla AYNI renkteydi (`accent`), yani jokerin nereye
+       harcandığı tahtada hiç görünmüyordu. **RAF taşı BİLİNÇLİ dışarıda:**
+       orada joker zaten ★ ile ayırt ediliyor ve altın zeminde kırmızı
+       okunmuyor; istek de birebir "tahtaya konulan joker" diyordu.
+       Kullanıcı, oyuncu kırmızısı ile token kırmızısı arasında SEÇİM yaptı
+       (token) — sağ-alt köşenin oyuncu rengiyle karıştırılmamalı.
+     - **Skor kutusu:** üstteki kutulardaki SAYI siyah (`kText` / tailwind
+       `text`). Etiket (`IRONMAN` / `YZ 2`), çerçeve ve zemin oyuncu
+       renginde KALDI — istek birebir "sadece sayı" diyordu. `TESLİM` bir
+       sayı değil, o da renkte kaldı.
+     - **Dosyalar (dördü birden, parite):** `tile_widget.dart`
+       (`_boardPtsColor`) ↔ `Tile.tsx`; `game_header.dart` ↔
+       `GameHeader.tsx`. Port tarafında tek dosya iki oyun ekranını da
+       (yerel + Canlı) kapsıyor, web'de de öyle — ayrıca bir şey gerekmedi.
+     - **Testler + NEGATİF EŞLER (ikisi de ölçüldü).** Renk sapmasını
+       hiçbir derleyici/analiz yakalamaz, bu yüzden iki test yazıldı ve her
+       biri KIYAS iddiası taşıyor: joker testi sıradan taşın `accent`
+       kaldığını da doğruluyor (yoksa "tüm puanları kırmızı yaptım" gibi bir
+       aşırı-düzeltme testten geçerdi), skor testi etiketin siyaha
+       ÇEVRİLMEDİĞİNİ doğruluyor. İki değişiklik tek tek geri alındı, ikisi
+       de GERÇEKTEN düştü, sonra geri kondu.
+     - **Test kendisi bir kez YANLIŞ yazıldı ve kayda değer:** etiket
+       `find.text('Ironman')` ile aranmıştı, oysa `game_header.dart` onu
+       `trUpper(player.name)` ile basıyor → `IRONMAN`. Test düştü ve hata
+       kodda DEĞİL testteydi. Bu projenin Türkçe harf kuralının test
+       tarafına yansıması: bir etiketi ararken de `trUpper`dan geçtiğini
+       varsay.
+     - **Doğrulama:** `dart analyze` temiz (yalnız önceden var olan 1 info),
+       `flutter test` **557/557**, `npm run lint` (tsc) temiz. Ekran
+       görüntüsüyle önce/sonra kullanıcıya gösterildi ve onaylandı.
+     - **Doğrulama sınırı:** cihazda koşulmadı; ikisi de saf renk değişikliği
+       olduğundan CanvasKit/Skia ayrışma riski yok (özel `Canvas` çizimi
+       değil, düz `TextStyle.color`).
+
    - ✅ **Parça 153 — rozet oyundan DÖNÜŞTE tazelenmiyordu: web'in
      BEDAVA aldığı garanti portta yok (28 Ağustos 2026, kullanıcı bildirdi:
      *"Hiç bekleyen oyunum kalmamış olmasına rağmen tab'da 1 uzun süre

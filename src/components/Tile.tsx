@@ -70,14 +70,25 @@ export function Tile({ tile, variant, color, selected = false, onClick, compact 
       >
         {display}
       </span>
-      {/* Puan — harfin sağ üstünde üst simge gibi. Compact (önizleme) varyantında hiç gösterilmez. */}
+      {/* Puan — harfin sağ üstünde üst simge gibi. Compact (önizleme) varyantında hiç gösterilmez.
+
+          Tahtadaki/taslaktaki JOKER'in puanı (0) KIRMIZI (28 Ağustos 2026,
+          kullanıcı isteği): jokerin 0'ı diğer taşların puanıyla aynı renkte
+          olduğundan tahtada hiç ayırt edilemiyordu, oysa joker oyunun en
+          değerli kaynağı ve nerede harcandığı görünmeli. `text-red` token
+          kırmızısı (#DC2626) — sağ-alt köşenin OYUNCU kırmızısıyla
+          karıştırılmamalı, seçim bilinçli. RAF taşı bilinçli olarak dışarıda:
+          orada joker zaten ★ ile ayırt ediliyor ve altın zeminde kırmızı
+          okunmuyor. Port ikizi: mobile/.../tile_widget.dart `_boardPtsColor`. */}
       {!compact && (
         <span
           className={[
             'absolute font-mono font-bold leading-none',
             isRack
               ? 'top-[3px] right-[4px] text-[10px] text-[#8B5E00]'
-              : 'top-[1px] right-[1.5px] text-[clamp(6px,1.6vw,10px)] text-accent',
+              : `top-[1px] right-[1.5px] text-[clamp(6px,1.6vw,10px)] ${
+                  tile.wild ? 'text-red' : 'text-accent'
+                }`,
           ].join(' ')}
         >
           {tile.pts}
