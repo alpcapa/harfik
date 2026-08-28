@@ -47,11 +47,29 @@ kalanı zorunlu** — her halkanın atlanması ayrı bir arıza üretir:
 eklemek, ileride GTS ile yapılacak bir tam üretimde o maddelerin SESSİZCE
 düşmesi demektir. `extra-words.mjs` eklenirken ikisi birden bağlandı.
 
-**Yayılma gecikmesi (bilinçli):** migration uygulanır uygulanmaz kelime
-web'de oynanabilir olur; mobil sözlük uygulama paketinin İÇİNDE olduğundan
-orada ancak yeni bir sürüm çıkınca geçerli olur. Bugün mobil yalnızca test
-ortamı olduğundan sorun değil — mağazaya çıkıldığında bu, "web'de kabul
-edilen kelimeyi mobil reddediyor" olarak görünür.
+**Yayılma gecikmesi (bilinçli) — ÜÇ yüzey, üç ayrı hız.** "Kelime ekledim"
+tek başına hiçbir istemcide görünmez; kelime üç yerde birden yaşıyor:
+
+| Yüzey | Kelime nerede | Ne gerekiyor |
+|---|---|---|
+| Sunucu | `public.words` tablosu | Migration canlıya uygulanır → **anında**, merge beklemez |
+| Web | `src/data/words.ts` → ayrı JS chunk'ı, **derlemeye gömülü** | **main'e merge → Vercel deploy** |
+| App | `mobile/app/assets/dictionary/words_tr.txt`, **paketin içinde** | **Yeni derleme + yeni Play sürümü + kullanıcının güncellemesi** |
+
+Web'in `validator.ts`'i kendi gömülü listesine baktığından, migration
+uygulanmış olsa bile kelime deploy edilene kadar arayüzde geçersiz görünür.
+
+⚠ **28 Ağustos 2026 — bu bölüm eskiden şöyle bitiyordu: *"Bugün mobil
+yalnızca test ortamı olduğundan sorun değil — mağazaya çıkıldığında bu,
+'web'de kabul edilen kelimeyi mobil reddediyor' olarak görünür."* O gün
+GELDİ:** app Play'de kapalı testte (`1.0.0 (407)`), yani bugün eklenen bir
+kelime bir sonraki mobil sürüme kadar app'te geçersiz kalır. Pratik kural:
+**kelime eklemelerini biriktir ve bir sonraki mobil sürüme bindir.** Sunucu
++ web'i hemen güncellemek serbest ve zararsız (web daha hoşgörülü olur,
+oyun bozulmaz) — ama fark bilinçli kabul edilmiş olur.
+
+Not: kapalı testte yeni bir sürüm çıkarmak **14 günlük tester sayacını
+etkilemez** (sayaç opt-in durumuna bakar, sürümlere değil).
 
 ## Kelime Listesi Code-Splitting'i
 
