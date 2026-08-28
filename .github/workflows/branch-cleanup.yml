@@ -6,10 +6,15 @@
 # bir uç yok. Yani temizlik ancak GitHub'ın KENDİ tarafında, workflow'un
 # GITHUB_TOKEN'ıyla yapılabiliyor — bu dosya onun için.
 #
-# Kalıcı çözüm bu değil: Settings → General → Pull Requests →
-# "Automatically delete head branches" açılırsa merge edilen her PR'ın dalı
-# kendiliğinden silinir ve bu dosyaya bir daha ihtiyaç kalmaz (yalnızca
-# PR'sız/artık dallar için elde kalır).
+# ⚠ 28 Ağustos 2026 — O KALICI ÇÖZÜM ARTIK AÇIK (kullanıcı bildirdi):
+# Settings → General → Pull Requests → "Automatically delete head branches".
+# Merge edilen her PR'ın dalını GitHub kendisi siliyor, yani bu dosyanın
+# KAPSAMI daraldı: geriye yalnızca PR'sız/artık dallar kaldı. Silinmedi,
+# çünkü o dallar için başka bir yol yok (oturumun git kimliği ref SİLEMİYOR —
+# aşağıdaki gerekçe hâlâ geçerli).
+#
+# Pratik sonucu: merge'den sonra o dala BİR DAHA PUSH ETME — push silinmiş
+# dalı diriltir. Sonraki iş origin/main'den YENİ bir dalda başlar.
 #
 # GÜVENLİK: varsayılan DRY RUN. Gerçekten silmek için dry_run'ı false yap.
 # Şunlara hiçbir koşulda dokunmaz: varsayılan dal (main), keep listesindeki

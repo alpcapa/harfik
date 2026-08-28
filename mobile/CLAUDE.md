@@ -162,8 +162,17 @@ eklemeye devam etmek, aynı işi İKİ kez var eder ve bir sonraki merge'de
 `AdminDashboard.tsx` "auto-merging" dedi ama 126 satırlık bir bloğu
 **iki kez** yazdı; `tsc` yakaladı (`TS2393`/`TS2451`).
 
-**Her merge'den SONRA dalı sıfırla:**
-`git fetch origin main && git checkout -B <dal> origin/main`
+**28 Ağustos 2026'dan beri bu kural MEKANİK olarak zorlanıyor:** kullanıcı
+GitHub'da "Automatically delete head branches" ayarını açtı, yani merge
+edilen dal sunucuda kendiliğinden siliniyor. Artık disipline değil ayara
+bağlı — ama tuzağı da beraberinde geliyor: **silinmiş bir dala push etmek
+onu DİRİLTİR** ve aynı işi ikinci kez var eder. Merge'den sonra o dala bir
+daha dokunma.
+
+**Her merge'den SONRA yeni bir dal aç:**
+`git fetch origin main && git checkout -B <YENİ-dal> origin/main`
+(Yerel kopya duruyorsa `git branch -D <eski-dal>` ile onu da sil — yoksa
+yanlışlıkla üstüne commit atmak hâlâ mümkün.)
 
 **Ve bir squash-merge çakışmasını çözerken derleyiciye güvenme:**
 tekrarlanan JSX'i hiçbir şey yakalamaz. `npm run lint` + mükerrer
