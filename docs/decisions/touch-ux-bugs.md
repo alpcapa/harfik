@@ -547,11 +547,19 @@ dokunuluyor; raf tam BİR artmalı ve komşu taş tahtada kalmalı. Negatif eş
 kuruldu: yutma yeniden joker dalına hapsedilince test gerçekten düşüyor
 (*"rafa BİRDEN FAZLA taş döndü"*).
 
-**Flutter portu ETKİLENMEDİ, `mobile/` altında değişiklik gerekmedi:** orada
-compat click diye bir şey yok — yerleştirilmiş hücreler `Listener`a,
-diğerleri `GestureDetector`a gidiyor ve tek jest iki yolu birden
-tetiklemiyor (`game_screen.dart`, `_onCellTap`'teki "normalde erişilmez"
-notu). Web'in `Tile.tsx`/`ghostClick.ts` sınıfı yapısal olarak DOM'a özgü.
+**Flutter portu ETKİLENMEDİ — ama bu İDDİA DEĞİL, ÖLÇÜM (kullanıcı sordu:
+*"Mobilde aynı sorun yok mu?"*).** Port yapısal olarak bağışık: compat click
+diye bir şey yok ve yerleştirilmiş hücreler `Listener`a, diğerleri
+`GestureDetector`a gidiyor (`board_widget.dart`) — tek jest iki yolu birden
+tetiklemiyor. Aynı senaryo portta koşuldu (420×900, iki komşu taslak, birine
+dokunuş): **raf 5 → 6**, komşu taş tahtada kaldı.
+
+Kodu okuyup "bağışık" demek yetmezdi: aynı gün web tarafında tam olarak bu
+hata MASAÜSTÜ profilinde ölçülüp "yok" sonucu vermişti. Ölçüm kalıcılaştı —
+`mobile/app/test/game_screen_test.dart` → *"taslak taşa dokunmak YALNIZCA o
+taşı geri alır"* (592. test), web'deki eşiyle aynı adı taşıyor. Portun kendi
+ıskalama kurtarması da var, yani ileride bir dokunuş yolu eklenirse bu
+koruma kaymayı yakalar.
 
 ### Ek: İKİ eşik, tek sanılıyordu — titreşimli dokunuş (27 Ağustos 2026)
 

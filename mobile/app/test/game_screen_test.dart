@@ -213,6 +213,51 @@ void main() {
             'bu duruma HİÇ karışmamalı');
   });
 
+  // 28 Ağustos 2026 — WEB'DE bulunan bir hatanın port tarafındaki KORUMASI.
+  // Kullanıcı web'de bildirdi: *"tahtaya konan taşı geri almak için
+  // tıkladığında 2 harf birden geri geliyor."* Orada kök sebep DOM'a özgüydü:
+  // dokunmatik tarayıcı, pointer olaylarından sonra bir uyumluluk (compat)
+  // `click` üretiyor ve o click hit-test'i O ANDAKİ DOM üzerinde yaptığından
+  // BOŞALMIŞ hücreye düşüyor; oradaki ıskalama kurtarması (yukarıdaki iki
+  // test) komşudaki taslak taşı bulup ONU da geri alıyordu. Raf 5 → 7.
+  //
+  // Port bu sınıfa YAPISAL olarak bağışık: compat click diye bir şey yok ve
+  // yerleştirilmiş hücreler `Listener`a, diğerleri `GestureDetector`a gidiyor
+  // (`board_widget.dart`) — tek jest iki yolu birden tetiklemiyor. Bu test
+  // "bağışıktır" iddiasını ÖLÇÜMLE değiştiriyor (ölçüldü: 5 → 6, komşu taş
+  // tahtada kaldı) ve ileride bir dokunuş yolu eklenirse sessizce
+  // kaymasını engelliyor. Web'deki eşi: `tests/smoke.spec.ts` → "taslak taşa
+  // dokunmak YALNIZCA o taşı geri alır".
+  testWidgets('taslak taşa dokunmak YALNIZCA o taşı geri alır (komşusunu değil)',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final controller = await pumpGame(tester, GlobalKey());
+
+    // KOMŞU iki taslak taş — kurtarma yalnızca ortogonal komşulara bakıyor,
+    // web'deki hatanın doğduğu yer de tam orası.
+    await tester.tap(rackTile(0));
+    await tester.pump();
+    await tester.tap(boardCell(0, 0));
+    await tester.pump();
+    await tester.tap(rackTile(0));
+    await tester.pump();
+    await tester.tap(boardCell(0, 1));
+    await tester.pump();
+    expect(controller.state.placed.keys.toSet(), {'0,0', '0,1'});
+
+    final oncesi = controller.state.players[0].rack.length;
+
+    // >>> Bildirilen jest: taslak taşa TEK DOKUNUŞ.
+    await tester.tap(boardCell(0, 1));
+    await tester.pumpAndSettle();
+
+    expect(controller.state.players[0].rack.length, oncesi + 1,
+        reason: 'rafa BİRDEN FAZLA taş döndü — web\'deki hayalet click '
+            'sınıfının bir karşılığı porta sızmış');
+    expect(controller.state.placed.keys.toSet(), {'0,0'},
+        reason: 'komşu taslak taş da geri alınmış');
+  });
+
   // 27 Ağustos 2026, kullanıcı İKİNCİ kez bildirdi: *"Hâlâ tahtaya koyulan
   // taşı her zaman alamıyorum. 1-2 denemeden sonra alabiliyorum."*
   //
