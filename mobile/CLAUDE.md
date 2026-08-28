@@ -918,8 +918,13 @@ silinip kendi tarihli parça notuna taşınır.
   Flutter will fail to build if your app uses plugins that apply KGP"*.
   Bugün acil DEĞİL (derleme geçiyor) ve bu eklentiler bizim değil —
   çözümü kendi sürümlerini Built-in Kotlin'e geçmiş sürümlere yükseltmek.
-  Flutter yükseltmesi yapılırken ÖNCE bu üçünün changelog'una bak;
+  Flutter yükseltmesi yapılırken ÖNCE bunların changelog'una bak;
   aksi halde yükseltme günü derleme sebebi anlaşılmayan bir şekilde kırılır.
+  - ⚠ **28 Ağustos 2026'da liste ÜÇTEN BEŞE çıktı** (PR #360, Parça 158 —
+    CI log'unda okundu): push/Analytics ile gelen **`firebase_core`** ve
+    **`firebase_analytics`** de KGP uyguluyor. Derleme yine geçti (`.aab`
+    üretildi ve imzası doğrulandı), ama borç büyüdü — Flutter yükseltmesi
+    artık üç değil BEŞ eklentinin changelog'una bakmayı gerektiriyor.
 - ~~Bağlantı durumu göstergesi (`useOnlineStatus` portu)~~ — **YAPILDI**
   (14 Ağustos 2026): karar mantığı Parça 96'da (`util/online_status.dart` +
   `connectivity_plus`), Board alt şeridindeki görsel "Çevrimdışı" rozeti
