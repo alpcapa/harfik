@@ -930,6 +930,39 @@ Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı
 kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
 silinip kendi tarihli parça notuna taşınır.
 
+- **SİSTEM FONTU BÜYÜTÜLDÜĞÜNDE düzen patlıyor (28 Ağustos 2026, kullanıcı
+  bildirdi — ekran görüntüsüyle):** *"Görmediği için telefon fontlarını
+  büyütenlerde ciddi sorunlar çıkıyor. Mesela, arkadaşlık davetinde davetin
+  kimden geldiği görünmüyor. Bunun dışında başka yerler de patlıyor."*
+  Görüntüde (derleme `0651e5e`) İKİ ayrı kırılma var ve **ikisi ayrı
+  sınıftan** — çözüm de tek değil:
+  - **(a) Ölçek taşması.** Sekme satırında "ARKADAŞLARIM" iki satıra sarıp
+    seçili "İSTEKLER" düğmesinin ALTINDAN geçiyor: etiket büyüyor, kap
+    büyümüyor. Bunun **global bir kısıtı VAR** — `MaterialApp`'in
+    `builder`'ında tek satır:
+    `MediaQuery.withClampedTextScaling(maxScaleFactor: 1.3, child: child!)`.
+    Tüm ekranlara birden uygulanır. **Bedeli bilinçli olmalı:** fontu
+    göremediği için büyüten kullanıcıya istediği boyutu VERMEMEK demek;
+    1.0'a kilitlemek erişilebilirlik incelemesinde eleştirilir, 1.3 uzlaşma.
+  - **(b) Esnek öğenin SIFIRA sıkışması — kısıt bunu ÇÖZMEZ.** Davet
+    satırında gönderenin adı hiç görünmüyor: satırdaki tek esnek öğe ad,
+    "KABUL ET"/"REDDET" sabit genişlikte, yani butonlar büyüdükçe ad sıfıra
+    iniyor. Bu bir taşma değil, düzen kararı; ölçek kısıtı yalnızca
+    geciktirir. Çözümü web'de 23 Ağustos 2026'da ZATEN bulundu
+    (`CARD_HEADER`, Görüş Bildir/Şikayet kartları): **ad kendi satırına,
+    rozet+butonlar alt satıra** — ölçekten bağımsız, deterministik. Aynı
+    kural buraya taşınmalı (kaynak web, her zamanki gibi).
+  - **(c) Neden hiçbir test görmedi:** tüm widget testleri ölçek 1.0'da
+    koşuyor. Bu sınıfı kalıcı olarak kapatmanın tek yolu kritik ekranları
+    `textScaler: TextScaler.linear(1.3)` (ve 2.0) ile de koşturmak — tek
+    seferlik kurulum, bundan sonraki HER ekranı kapsar. Yalnızca (a)'yı
+    yapıp testi eklememek, aynı hatanın yeni ekranlarda sessizce doğması
+    demek.
+  - ⚠ **Kapsam taraması yapılmadı:** kullanıcı *"başka yerler de patlıyor"*
+    dedi, hangileri olduğu HENÜZ BİLİNMİYOR. İşe başlarken önce cihazda (ya
+    da 1.3/2.0 ölçekli bir test turuyla) envanter çıkarılmalı; iki örnekten
+    genelleme yapıp "iki yeri düzelttik" denmemeli.
+
 - **KGP uyarısı — ileride derlemeyi KIRACAK (23 Ağustos 2026'da `.aab`
   log'unda ölçüldü, bugün yalnızca uyarı):** `image_picker_android`,
   `share_plus` ve `shared_preferences_android` Kotlin Gradle Plugin'i
