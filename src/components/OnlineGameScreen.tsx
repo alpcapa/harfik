@@ -827,8 +827,26 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   const tapPlacedTile = (r: number, c: number, swallow: boolean) => {
     const tile = state.placed[key(r, c)];
     if (!tile) return;
+    // ⚠ YUTMA HER İKİ DAL İÇİN DE ŞART — 28 Ağustos 2026'da bir kullanıcı
+    // bildirdi: *"tahtaya konan taşı geri almak için tıkladığında 2 harf
+    // birden geri geliyor"*. Yutma eskiden yalnızca joker dalındaydı;
+    // sıradan taş dalında compat click BOŞALMIŞ hücreye düşüyor ve orada
+    // HİÇBİR ŞEY yapmadığı için zararsız sanılıyordu. Parça 151 (27 Ağustos)
+    // boş hücre kurtarmasını ekleyince o click İŞ YAPAR hâle geldi: kurtarma
+    // komşudaki taslak taşı bulup ONU da geri alıyor.
+    //
+    // ÖLÇÜLDÜ (Chromium, hasTouch+isMobile, 390×844; masaüstü faresinde
+    // GÖRÜNMEZ — orada click'in hedefi az önce sökülen taş düğümü olduğundan
+    // React onu hiçbir fiber'a eşleyemiyor ve olay sessizce düşüyor):
+    //   tapPlacedTile 0,1 → handleCellClick 0,1 → kurtarma 0,0 → tapPlacedTile 0,0
+    // raf 5 → 7. Doğru davranış 5 → 6.
+    //
+    // Yutmanın koşulu jestin KAYNAĞI, dalın türü değil: pointer akışından
+    // gelen her dokunuş DOM'u değiştiriyor (taş sökülüyor ya da pencere
+    // açılıyor), yani ardından gelen compat click her hâlükârda BAŞKA bir
+    // öğenin üstüne düşüyor.
+    if (swallow) swallowNextClick();
     if (tile.wild) {
-      if (swallow) swallowNextClick();
       setPendingWild({ r, c, editing: true });
     } else {
       dispatch({ type: 'RECALL_CELL', r, c });

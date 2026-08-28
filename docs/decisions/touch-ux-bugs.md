@@ -476,6 +476,91 @@ Regresyon: her iki platformda da bir pozitif (ıskalama geri alır) ve bir
 negatif (seçiliyken harf koyar) test. Negatif eşleri kanıtlandı — koşul
 `false` yapılınca ikisi de düşüyor.
 
+### Ek: Sınıf 1'in ÜÇÜNCÜ örneği — yutmanın kapsamı dardı (28 Ağustos 2026)
+
+Bir kullanıcı bildirdi: *"tahtaya konan taşı geri almak için tıkladığında
+2 harf birden geri geliyor."*
+
+**Kök sebep jokerde ya da reducer'da değil, yutmanın KAPSAMINDA.**
+`tapPlacedTile` (`App.tsx` ↔ `OnlineGameScreen.tsx`) compat click'i yalnızca
+JOKER dalında yutuyordu:
+
+```ts
+if (tile.wild) {
+  if (swallow) swallowNextClick();   // ← yalnızca burada
+  setPendingWild({ r, c, editing: true });
+} else {
+  dispatch({ type: 'RECALL_CELL', r, c });   // ← yutma YOK
+}
+```
+
+22 Ağustos'ta bu doğru görünüyordu: sıradan bir taş geri alınınca compat
+click BOŞALMIŞ hücreye düşüyor ve orada hiçbir şey yapmıyordu. Yani yutma
+"gereksiz" sayılmıştı.
+
+**O varsayımı 27 Ağustos'taki boş-hücre kurtarması sessizce geçersiz kıldı**
+(yukarıdaki "kurtarma BOŞ hücreleri de kapsadı" eki). Kurtarma tam da o
+boş hücreye anlam yükledi: *"seçim yokken boş hücreye dokunmak zaten hiçbir
+iş yapmıyor, yani kurtarmanın bedeli sıfır."* Bedel sıfır değildi — hayalet
+click de "hiçbir iş yapmayan" bir dokunuştu ve artık komşudaki taslak taşı
+geri alıyor.
+
+**ÖLÇÜLDÜ** (Chromium, `hasTouch`+`isMobile`, 390×844; iki komşu taslak taş,
+(0,0) ve (0,1)); zincir enstrümante edilerek okundu:
+
+```
+tapPlacedTile 0,1 swallow=true      ← pointerup: (0,1) geri alındı  ✔
+handleCellClick 0,1 sel=null        ← compat click, hücre artık BOŞ
+BOS-HUCRE KURTARMA -> 0,0           ← kurtarma komşu taslağı buluyor
+tapPlacedTile 0,0 swallow=false     ← (0,0) da geri alındı          ✘
+```
+
+Raf **5 → 7**; doğrusu 5 → 6.
+
+⚠ **Masaüstü faresinde GÖRÜNMÜYOR ve sebebi öğretici:** orada `click`in
+hedefi az önce SÖKÜLEN taş düğümü oluyor; React kopmuş bir düğümü hiçbir
+fiber'a eşleyemediğinden olay sessizce düşüyor. Compat click ise hit-test'i
+O ANDAKİ DOM üzerinde yapıyor, yani hâlâ bağlı olan HÜCREYE düşüyor. Aynı
+hata masaüstünde ölçülseydi "yok" sonucu çıkardı — nitekim ilk denemede
+çıktı.
+
+**Düzeltme, yutmanın koşulunu dalın türünden jestin KAYNAĞINA çevirmek:**
+
+```ts
+if (swallow) swallowNextClick();     // pointer akışından geldiyse HER DAL
+if (tile.wild) setPendingWild(...); else dispatch(RECALL_CELL);
+```
+
+Gerekçe: pointer akışından gelen dokunuş DOM'u her hâlükârda değiştiriyor —
+ya taş sökülüyor ya pencere açılıyor. İkisi de compat click'i başka bir
+öğenin üstüne düşürüyor.
+
+**Ders — bu bölümün kendi kuralına eklenecek satır:** Sınıf 1'de "bu click
+zaten hiçbir şey yapmıyor" gerekçesiyle yutmayı ATLAMA. O gerekçe bir
+DAVRANIŞ varsayımı ve başka bir PR onu haberin olmadan geçersiz kılabilir;
+nitekim tam olarak bu oldu. Yutmanın koşulu her zaman "jest DOM'u değiştirdi
+mi", "sonrasında bir şey olur mu" değil.
+
+**Regresyon:** `tests/smoke.spec.ts` 37 → **38 test**, dokunmatik blokta
+(masaüstü profilinde hata görünmez). İki komşu taslak taş konup birine
+dokunuluyor; raf tam BİR artmalı ve komşu taş tahtada kalmalı. Negatif eş
+kuruldu: yutma yeniden joker dalına hapsedilince test gerçekten düşüyor
+(*"rafa BİRDEN FAZLA taş döndü"*).
+
+**Flutter portu ETKİLENMEDİ — ama bu İDDİA DEĞİL, ÖLÇÜM (kullanıcı sordu:
+*"Mobilde aynı sorun yok mu?"*).** Port yapısal olarak bağışık: compat click
+diye bir şey yok ve yerleştirilmiş hücreler `Listener`a, diğerleri
+`GestureDetector`a gidiyor (`board_widget.dart`) — tek jest iki yolu birden
+tetiklemiyor. Aynı senaryo portta koşuldu (420×900, iki komşu taslak, birine
+dokunuş): **raf 5 → 6**, komşu taş tahtada kaldı.
+
+Kodu okuyup "bağışık" demek yetmezdi: aynı gün web tarafında tam olarak bu
+hata MASAÜSTÜ profilinde ölçülüp "yok" sonucu vermişti. Ölçüm kalıcılaştı —
+`mobile/app/test/game_screen_test.dart` → *"taslak taşa dokunmak YALNIZCA o
+taşı geri alır"* (592. test), web'deki eşiyle aynı adı taşıyor. Portun kendi
+ıskalama kurtarması da var, yani ileride bir dokunuş yolu eklenirse bu
+koruma kaymayı yakalar.
+
 ### Ek: İKİ eşik, tek sanılıyordu — titreşimli dokunuş (27 Ağustos 2026)
 
 Kullanıcı, boş-hücre kurtarması çıktıktan SONRA aynı şikayeti tekrarladı:

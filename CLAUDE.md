@@ -396,10 +396,24 @@ mobile/         # Flutter portu — kelimeki_core (saf Dart motor) + üretilmiş
   parçası değil.
   **Yan fayda:** raftan SÜRÜKLENEREK konan bir joker de pencereyi aynı
   `pointerup` içinde açıyor; o dal da artık aynı korumayı taşıyor.
+  **28 Ağustos 2026 — AYNI SINIFIN ÜÇÜNCÜ ÖRNEĞİ, yutmanın KAPSAMI dardı
+  (bir kullanıcı bildirdi: *"tahtaya konan taşı geri almak için tıkladığında
+  2 harf birden geri geliyor"*):** yutma yalnızca JOKER dalındaydı; sıradan
+  taş geri alınınca compat click BOŞALMIŞ hücreye düşüyor ve "hiçbir şey
+  yapmıyor" sayıldığı için yutulmuyordu. 27 Ağustos'ta eklenen boş-hücre
+  kurtarması (`draftRescue.ts`) o varsayımı sessizce geçersiz kıldı: click
+  artık komşudaki taslak taşı bulup ONU da geri alıyor. Ölçüldü (dokunmatik
+  bağlam, iki komşu taslak): raf **5 → 7**, doğrusu 5 → 6. Yutmanın koşulu
+  artık dalın türü DEĞİL jestin kaynağı — pointer akışından gelen dokunuş
+  DOM'u her hâlükârda değiştiriyor. **Kural: Sınıf 1'de "bu click zaten
+  hiçbir şey yapmıyor" gerekçesiyle yutmayı ATLAMA** — o bir davranış
+  varsayımı ve başka bir PR onu haberin olmadan geçersiz kılabilir.
+  Ayrıntı/ölçümler: `docs/decisions/touch-ux-bugs.md`.
+
   **Flutter portu ETKİLENMEDİ ve `mobile/` altında hiçbir değişiklik
   gerekmedi** — orada dokunuş Flutter'ın kendi hit-test'inden geçiyor,
   compat click diye bir şey yok (`game_screen.dart` → `_tapPlacedTile`).
-  **Regresyon:** `tests/smoke.spec.ts` 22 → **23 test** — dokunmatik bir
+  **Regresyon:** `tests/smoke.spec.ts` 22 → **23 test** (28 Ağustos'ta 38) — dokunmatik bir
   bağlamda (`test.use({ hasTouch, isMobile })`; masaüstü profilinde hata
   GÖRÜNMEZ, `tap()` bile çalışmaz) joker konup üzerine dokunuluyor: pencere
   açık kalmalı, harf değişmemeli, ve ardından GERÇEK bir harf seçimi hâlâ
