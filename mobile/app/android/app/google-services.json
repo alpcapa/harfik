@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "791040026998",
+    "project_id": "kelimeki",
+    "storage_bucket": "kelimeki.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:791040026998:android:d4c03376997c1d51a7f257",
+        "android_client_info": {
+          "package_name": "com.kelimeki.kelimeki"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAlqhy-mH8lLKbRgyodmkL0XIEISR3YgPY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

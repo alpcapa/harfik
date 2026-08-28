@@ -26,6 +26,28 @@ const String webOrigin = 'https://kelimeki.com';
 /// yoksa GoTrue linki Site URL'e (web'e) düşürür (mobile/TESTING.md).
 const String resetRedirectUri = 'kelimeki://reset';
 
+/// Kayıt onayı e-postasındaki bağlantının uygulamaya dönüş adresi.
+///
+/// **NEDEN VAR (28 Ağustos 2026, ROADMAP madde 1 — mağaza blokeri):**
+/// `signUp` hiçbir `emailRedirectTo` geçmediğinden GoTrue onay linkini
+/// Supabase'deki TEK Site URL'e (kelimeki.com) atıyordu; uygulamadan kayıt
+/// olan kişi tarayıcıya düşüyor, oradan uygulamaya dönüp ELLE giriş yapmak
+/// zorunda kalıyordu. 17 Ağustos 2026'da cihazda bizzat gözlendi ve o
+/// sekmede BAŞKA bir hesabın oturumu açıktı (bkz. mobile/CLAUDE.md, "Kayıt
+/// onayı maili kaydın GELDİĞİ kanala dönmeli").
+///
+/// **Asıl kazanç yalnızca "doğru uygulama açılıyor" değil:** link uygulamaya
+/// dönerse PKCE `code_verifier` ZATEN o cihazın uygulama deposunda
+/// olduğundan supabase_flutter takası yapıp kullanıcıyı DOĞRUDAN girişli
+/// bırakır — "e-postanı doğrula, sonra dönüp giriş yap" adımı kalkar.
+///
+/// `resetRedirectUri` ile aynı el işi: Supabase Dashboard → Authentication →
+/// URL Configuration → Redirect URLs listesinde BİREBİR bu değer olmalı,
+/// yoksa GoTrue sessizce Site URL'e düşürür ve hiçbir şey değişmez.
+/// E-posta ŞABLONU değişmez — üç şablon da `{{ .ConfirmationURL }}`
+/// kullanıyor ve GoTrue o URL'i `redirect_to` ile kendisi kuruyor (ölçüldü).
+const String authRedirectUri = 'kelimeki://auth';
+
 /// Uygulama sürümü — pubspec.yaml'daki `version` ile BİRLİKTE artırılır
 /// (release disiplini, bkz. mobile/CLAUDE.md "Sürüm disiplini").
 /// `app_config.mobile_min_supported_version` eşiğiyle karşılaştırılır;
