@@ -148,8 +148,12 @@ Anlamlar (kullanıcının verdiği):
   `lazuli` lacivert rengi.
 - **mö** — inek sesi (ünlem).
 - **banu** — Farsça kökenli; "kadın, hanım, hanımefendi, soylu kadın".
-  *Varsayılan: `banu` ve `banü` ikisi de eklenir* (kullanıcı ikisini de
-  yazdı); tek biçim isteniyorsa uygulama anında söylensin.
+  **`banu` ve `banü` İKİSİ DE eklenecek — karar verildi (28 Ağustos 2026).**
+  İkisinin de yokluğu ayrıca doğrulandı: `words.ts`, `meanings.json`, üç
+  `scripts/*.mjs` listesi, canlı `public.words` ve NFC normalizasyonu —
+  hepsinde yok. `ban…` komşuluğunun tamamı: `ban · bana · banak · banal ·
+  banaz · bandaj · bando · bangui · bani · banjo · banjul · bank · banka ·
+  banker · banket · bankiz · banko · banma · banmak · bant · banyo`.
 
 ⚠ **`mö` iki harfli.** Bu projede iki harfli maddeler yerleştirmede
 orantısız iş görür (çapa kurma, dar boşluk doldurma) — golden vector'lar
