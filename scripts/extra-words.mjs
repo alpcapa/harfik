@@ -21,9 +21,38 @@
 // Bir madde eklendikten sonra `node scripts/augment-dictionary.mjs`
 // çalıştırılmalı; gerisi (words.ts, meanings.json, migration) üretilir.
 export const EXTRA_WORDS = {
+  // ⚠ `banu` ile `banü` BİRBİRİNİN YAZIM VARYANTI DEĞİL — iki AYRI madde,
+  // her biri kendi anlam listesiyle (28 Ağustos 2026, kullanıcı ayrıştırdı).
+  // Bu yüzden ikisi de burada; biri ötekine `extra-meanings` üzerinden
+  // eklenmedi. Komşuları ölçüldü: `bani` GTS'te VAR ve FARKLI bir kelime —
+  // "ıs"/"is" vakasıyla (bkz. aşağıdaki not) aynı sınıf, benzer yazılışı
+  // "aynıdır" saymak bu projede bir kez hataya yol açtı.
+  banu: {
+    pos: 'a.',
+    meanings: [
+      'Hanımefendi, soylu kadın.',
+      'Gelin.',
+      'Bağ, bahçe.',
+    ],
+  },
+  banü: {
+    pos: 'a.',
+    meanings: [
+      'Kadın, hanım.',
+      'Hanımefendi, soylu kadın.',
+    ],
+  },
   evsel: {
     pos: 'sf.',
     meanings: ['Evle ilgili.'],
+  },
+  // `lapislazuli` (bitişik, tek madde) GTS'te ZATEN VAR ve anlamlarına
+  // DOKUNULMADI; bu madde onun ilk sözcüğü olan Latince `lapis` ("taş").
+  lapis: {
+    pos: 'a.',
+    meanings: [
+      'Lapis lazuli olarak bilinen koyu mavi değerli taş; dilimizde daha çok tam hâliyle ya da laciverttaşı, lacivert taşı olarak anılır.',
+    ],
   },
   lila: {
     pos: 'sf.',
@@ -36,6 +65,13 @@ export const EXTRA_WORDS = {
       "Arapçada cansız nesnelere işaret eden veya \"o şey ki\" anlamına gelen bağlayıcı kök (örnek: mâ-ba'd — sondaki).",
       'Eski dilde su.',
     ],
+  },
+  // ⚠ Kullanıcının verdiği sınıf `ünl.` — ama bu projedeki kardeş maddeler
+  // (`miyav`, `hav`) hayvan seslerini `a.` olarak tutuyor (ölçüldü). Ayrım
+  // bilinçli, oynanışa etkisi yok (yalnızca anlam penceresinde görünür).
+  mö: {
+    pos: 'ünl.',
+    meanings: ['İneğin çıkardığı sesi anlatan söz, inek sesi.'],
   },
   nil: {
     pos: null,
