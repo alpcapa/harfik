@@ -176,9 +176,25 @@ yüklenmedi, yalnızca cihazda `.apk` olarak denendi). Zincir: koşu **#407**
 (21:42). **Şüphe halinde ada değil, cihazdaki teşhis satırına bak:
 `Derleme 0651e5e`.**
 
+**14 GÜNLÜK SAYAÇ BAŞLADI — 28 Ağustos 2026, 1. gün.** Yeri:
+**Dashboard → (aşağı kaydır) Production → `Apply for access to production`
+kartı** (Test menüsünde DEĞİL; track sayfasında da yok — ölçüldü). Kartın
+yazdığı: *"12 testers have currently been opted in for 1 day"*, ilk iki
+şart ✅. **14. gün ~10 Eylül 2026.**
+
+⚠ **Sayı tam 12 — pay yok.** İzin listesi 56 kişi ama opt-in olan 12; biri
+çıkarsa sayaç SIFIRLANIR ve 13 gün kaybedilir. Hatırlatmanın hedefi artık
+"12'ye ulaşmak" değil **12'nin üstünde tampon** (15-20). Ayrıntı ve tuzaklar:
+`marketing/play-store/console-formlari.md` §7.
+
+14 gün beklerken yapılacak iki iş: karttaki **`Preview questions`**'dan
+başvuru sorularını okuyup cevapları hazırlamak, ve tester'lardan **yazılı
+geri bildirim** toplamak (başvuru "testi nasıl yürüttün" diye soruyor).
+
 Katılan/indiren sayısı Play Console'da: **Test → Closed testing → (track) →
-Testers sekmesi**, ve indirme adedi için **Statistics**. (Kullanıcı bunu iki
-kez sordu — yeri burada yazılı.)
+Testers sekmesi** (⚠ oradaki sayı opt-in DEĞİL, izin listesi), ve indirme
+adedi için **Statistics**. (Kullanıcı bunu iki kez sordu — yeri burada
+yazılı.)
 ---
 
 ## Modeller — hangi iş için hangisi

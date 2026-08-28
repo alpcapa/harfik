@@ -623,11 +623,34 @@ görünmüyor. §7'nin ilk tuzağı ("listeye eklemek yetmez") tam olarak bu
 yüzden var — ve listenin 56'ya çıkmış olması sayacın başladığı anlamına
 GELMİYOR.
 
-**Sıradaki bakılacak yer:** sol menü → **Production** (kişisel hesabın
-üretim erişimi başvurusu ve gereksinim listesi orada), ikinci ihtimal
-**Dashboard**'daki görev kartı. **Hangisi olduğu HENÜZ ÖLÇÜLMEDİ** — bu
-dosyanın kuralı gereği görülmeden yazılmayacak; görüldüğünde bu bölüme
-tarihiyle eklenecek.
+### ✅ SAYACIN YERİ BULUNDU: Dashboard → Production kartı (28 Ağustos 2026)
+
+**Sol menü → `Dashboard` → sayfayı aşağı kaydır → `Production` başlığı →
+`Apply for access to production` kartı.** Test menüsünde DEĞİL — aranan yer
+burası, bir daha kaybolmasın.
+
+Kart üç maddelik bir kontrol listesi ve ilerlemeyi kendisi yazıyor
+(28 Ağustos 2026, 08:56'da okundu):
+
+| Adım | Durum |
+|---|---|
+| Publish a closed testing release | ✅ üstü çizili |
+| Have at least 12 testers opted-in to your closed test | ✅ üstü çizili |
+| Run your closed test with at least 12 testers, for at least 14 days | ⏳ *"**12 testers have currently been opted in for 1 day**"* |
+
+`Apply for production` butonu şart tamamlanana kadar **gri/pasif**. Kartta
+ayrıca **`Preview questions`** bağlantısı var — başvuru soruları 14 gün
+dolmadan okunabiliyor, cevaplar bu pencerede hazırlanmalı.
+
+**Ölçülen kritik gerçek: sayı TAM 12, yani pay YOK.** İzin listesinde
+**56 adres** var ama opt-in olan 12 kişi. Biri testerlıktan çıkarsa ya da
+telefonundaki Google hesabını değiştirirse sayı 11'e düşer ve **sayaç
+sıfırlanır**. §7'nin "15-20 kişi topla, 12 tabandır" tuzağı teorik değil,
+bugünkü durumun ta kendisi — hatırlatmaların asıl şimdi sürmesi gerekiyor.
+
+**Sayaç 27/28 Ağustos'ta başladı, 14. gün ~10 Eylül 2026.** (Console'un günü
+tam olarak nasıl saydığı — opt-in anı mı, gün sonu mu — ölçülmedi; ±1 gün
+kabul et ve tarihi kartın kendi metninden takip et.)
 
 **Not — "Latest release: 1.0.0 (405)"** burada da görünüyor ama yanında
 "1 version code" yazıyor ve o kod **407**. Sürüm adı serbest metin bir
