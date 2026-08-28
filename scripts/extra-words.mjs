@@ -66,12 +66,15 @@ export const EXTRA_WORDS = {
       'Eski dilde su.',
     ],
   },
-  // ⚠ Kullanıcının verdiği sınıf `ünl.` — ama bu projedeki kardeş maddeler
-  // (`miyav`, `hav`) hayvan seslerini `a.` olarak tutuyor (ölçüldü). Ayrım
-  // bilinçli, oynanışa etkisi yok (yalnızca anlam penceresinde görünür).
+  // Sınıf `a.` — kardeş maddelerle AYNI: bu sözlükte hayvan sesleri ad
+  // sayılıyor (`miyav` → "Kedinin çıkardığı ses, kedi sesi", `hav` →
+  // "Köpeğin çıkardığı ses"; ikisi de `a.`, ölçüldü). Kullanıcı önce
+  // "(ünlem)" demişti, ölçüm gösterilince kardeşlere uydurulmasını istedi.
+  // Tanım da aynı kalıpta: "sesi anlatan söz" ünlem dilidir (`hey`, `of`),
+  // ad olan bir madde sesin KENDİSİNİ tanımlar.
   mö: {
-    pos: 'ünl.',
-    meanings: ['İneğin çıkardığı sesi anlatan söz, inek sesi.'],
+    pos: 'a.',
+    meanings: ['İneğin çıkardığı ses, inek sesi.'],
   },
   nil: {
     pos: null,
