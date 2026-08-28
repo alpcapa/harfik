@@ -606,6 +606,34 @@ Sayaç "yükledim" ile değil, **12 kişi opt-in olduğunda** işlemeye başlıy
 | Production başvurusu geri bildirim soruyor | Tester'lardan **yazılı geri bildirim topla** — başvuruda "nasıl test ettirdin" sorusu var |
 | **Play'den kuran testerda `kelimeki.com` linkleri UYGULAMAYI açar** | 25 Ağustos 2026'dan beri beklenen davranış (`assetlinks.json` yayında, §6.6). Tarayıcıda açmak isteyen Ayarlar → Uygulamalar → Kelimeki → *Varsayılan olarak aç*'tan kapatabilir. CI `.apk`'sında GEÇERSİZ — o derleme farklı anahtarla imzalı |
 
+### İlerleme sayacı track sayfasında DEĞİL (28 Ağustos 2026, ölçüldü)
+
+Kullanıcı sordu: *"12 kişi oldu mu, test süresi başladı mı? Console'da geçen
+gün bulmuştum ama şimdi bir türlü bulamıyorum."* İki sayfa açıldı ve
+**ikisinde de sayaç yok** — bu bir "bulamadım" değil, ölçülmüş bir yokluk:
+
+| Sayfa | Ne gösteriyor | 12/14 ilerlemesi |
+|---|---|---|
+| `Closed testing - Alpha` (track) | `Active · Latest release: 1.0.0 (405) · 177 countries/regions`; sekmeler **Releases / Countries·regions / Testers** | **YOK** |
+| Aynı track → **Testers** sekmesi | `Email lists` → liste `Kelimeki Testers`, **Users: 56**; `Feedback URL or email address` = `destek@kelimeki.com` | **YOK** |
+
+⚠ **Testers sekmesindeki sayı OPT-IN sayısı değil, İZİN LİSTESİ sayısıdır.**
+56 adres davetli; kaçının gerçekten "Become a tester" dediği bu ekranda
+görünmüyor. §7'nin ilk tuzağı ("listeye eklemek yetmez") tam olarak bu
+yüzden var — ve listenin 56'ya çıkmış olması sayacın başladığı anlamına
+GELMİYOR.
+
+**Sıradaki bakılacak yer:** sol menü → **Production** (kişisel hesabın
+üretim erişimi başvurusu ve gereksinim listesi orada), ikinci ihtimal
+**Dashboard**'daki görev kartı. **Hangisi olduğu HENÜZ ÖLÇÜLMEDİ** — bu
+dosyanın kuralı gereği görülmeden yazılmayacak; görüldüğünde bu bölüme
+tarihiyle eklenecek.
+
+**Not — "Latest release: 1.0.0 (405)"** burada da görünüyor ama yanında
+"1 version code" yazıyor ve o kod **407**. Sürüm adı serbest metin bir
+etikettir, paket değişince güncellenmez (ayrıntı: `ROADMAP.md` → "Sürüm
+sıralaması" §3).
+
 **Tester'a gönderilecek metin (taslak):**
 
 > Kelimeki'nin kapalı testine davetlisin. İki adım:
