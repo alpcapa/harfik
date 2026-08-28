@@ -20,6 +20,50 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 160 — istatistik etiketleri `FittedBox` yüzünden 8 px yerine
+     ~5,5 px çiziliyordu (28 Ağustos 2026, kullanıcı cihazda bildirdi):**
+     *"app'de oyun istatistikleri başlıkları tek satır ve çok küçük font.
+     Web'le aynı olmalı."*
+     - **Önce web okundu** (kuralın kendisi: "Sorun Bildirildiğinde İLK ADIM").
+       `ScoreStatsSection.tsx`'te etiket düz bir `div`:
+       `text-[8px] uppercase tracking-[1px]` — punto SABİT, metin hücre
+       içinde SARIYOR. Hiçbir küçültme/ölçekleme yok.
+     - **Port farkı YAPISALDI, değer değil:** `_CellBox`'ta etiket
+       `FittedBox(fit: BoxFit.scaleDown)` içindeydi. `FittedBox` çocuğuna
+       SINIRSIZ genişlik verir → `Text` sarmayı hiç denemez, tek satıra
+       dizilir, sonra kutuya sığsın diye KÜÇÜLTÜLÜR. Etiket ne kadar uzunsa
+       o kadar küçülür, yani kutular arasında punto bile tutmuyordu.
+     - **ÖLÇÜLDÜ** (`flutter test`, KModal'ın gerçek genişliğiyle: 360 −
+       gövde dolgusu 40 = 320 içerik, birim (320−16)/3 = 101,3, hücre iç
+       genişliği 93,3): "EN YÜKSEK PUANLI KELİME" doğal hâlde **135,6 px** →
+       ölçek 0,69 → 8 px punto ekranda **~5,5 px**. Kullanıcının gördüğü tam
+       olarak buydu.
+     - **Düzeltme tek satır:** etiketin `FittedBox`ı kaldırıldı; punto 8'de
+       sabit, metin sarıyor. Kutu bir-iki satır uzuyor — `IntrinsicHeight`
+       zaten aynı satırdaki kutuları en uzuna hizaladığından ızgara kendini
+       topluyor (ekran görüntüsüyle doğrulandı).
+     - **DEĞERİN `FittedBox`ı KALDI ve bu bilinçli:** oradaki iş farklı —
+       "LÖSEMİT" gibi uzun bir kelime tek satırda kalmalı, sarmamalı; web'de
+       de `text-xl` tek satır ve uzun kelimede taşar. Yani aynı sarmalayıcı
+       bir yerde hata, öbür yerde çözüm.
+     - **Negatif eş yerelde kuruldu:** test ÖNCE yazıldı ve mevcut kodda
+       gerçekten düştü (135,6 > 93,3), sonra düzeltmeyle geçti —
+       `score_stats_label_test.dart`, iki kontrol: (1) etiketin kendi kutusu
+       hücrenin iç genişliğini aşmıyor (FittedBox geri gelirse patlar),
+       (2) punto 8 / tracking 1 / ortalı, yani web değerleri.
+     - **Doğrulama:** `dart analyze` temiz, **601 test** yeşil (599 + 2),
+       skor kartı ekran görüntüsü yeniden üretilip gözle bakıldı.
+     - **Aynı sınıfın taraması yapıldı:** `lib/src/ui` altında 8 `FittedBox`
+       daha var (neo_button, tile_widget, game_header, intro ×3, bu dosyada
+       değer + sekme etiketi). Hepsi TEK SATIRLIK kısa metin ölçekliyor,
+       yani bu hatanın koşulu (uzun + sarması beklenen metin) yalnızca
+       burada vardı. **Kural: `FittedBox`, SARMASI GEREKEN bir metnin
+       üstüne konmaz** — sarma ile ölçekleme birbirini dışlar.
+     - ⚠ **Bu, "sistem fontu büyütülünce patlıyor" maddesiyle KARIŞTIRILMASIN**
+       (`mobile/CLAUDE.md` → "Sonraya Bırakılan İşler"). O ayrı ve hâlâ açık;
+       hatta `FittedBox` orada semptomu GİZLİYORDU (büyüyen metni sessizce
+       küçültüp taşmayı saklıyordu). Bu düzeltme o maddeyi kapatmaz.
+
    - ✅ **Parça 159 — push token'ı Canlı sekmesine bağlıydı; DEĞİŞMEZ
      kâğıt üzerinde kalmış (28 Ağustos 2026, İLK gerçek cihaz testinde
      bulundu):** Parça 158'in dokümana yazdığı değişmez şuydu — *"tabloda
