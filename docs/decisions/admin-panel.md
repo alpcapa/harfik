@@ -91,6 +91,29 @@
         hâlâ 0'da (üç genişlikte de), `position: sticky` hem th hem td'de,
         zemin `rgb(245,247,250)`, vurgulu satırın sabit hücresinde ton
         katmanı `rgba(37,99,235,0.2)` olarak ölçüldü.
+      - **AÇIK BORÇ — ÜST BAŞLIK SATIRI da sabitlenecek (28 Ağustos 2026,
+        kullanıcı isteği: *"Admin tablosu üst başlık satırını da
+        sabitleyelim. Kaydırınca neye baktığın anlaşılmıyor."* — "Not al"
+        dedi, yani kayıt; uygulama sırası ayrıca verilecek).** İsim kolonu
+        YATAY kaydırmayı çözdü, bu DİKEY karşılığı: uzun üye listesinde
+        aşağı inince hangi sütunun ne olduğu kayboluyor (18 kolon, hepsi
+        `font-mono` ve çoğu kısa değer — başlıksız ayırt edilemiyorlar).
+        **Uygularken bilinmesi gereken tuzak — kaydıran kap `<thead>`in
+        ATASI DEĞİL:** dikey kaydırma modal gövdesinde
+        (`AdminDashboard.tsx`'in `overflow-y-auto min-h-0` gövdesi), tablo
+        ise araya giren `overflow-x-auto` kabının içinde. `overflow-x: auto`
+        verilen bir elemanın `overflow-y`'si `visible` KALAMAZ (CSS kuralı,
+        `auto`ya çevrilir) — yani o kap kendi başına bir kaydırma kabıdır ve
+        `sticky top-0` bir `<th>` modal gövdesine DEĞİL O kaba yapışır.
+        Sonuç: başlık, tablo kabı gövdenin üstünden yukarı çıkarken onunla
+        birlikte gider, yani hiç sabitlenmemiş gibi davranır. Çözüm ya
+        kaydırmayı tek kaba indirmek (tablo kabına bir `max-h` + kendi dikey
+        kaydırması) ya da başlığı gövdenin yapışkan bir elemanı yapmak;
+        hangisi seçilirse seçilsin `STICKY_NAME_CELL` ile KESİŞEN hücre
+        (İsim `<th>`) iki eksende birden yapışacağından `z-index`i
+        ötekilerden büyük olmalı ve zemini yine opak (bkz. yukarıdaki opak
+        zemin kuralı). Ölçmeden yazma: bu tablo 1816.6 px ve dört genişlikte
+        ölçülmüş bir düzen.
     - **Hukuki metin DEĞİŞMEDİ ve bu bilinçli:** yeni bir veri TOPLANMIYOR,
       yalnızca zaten toplanan alanlar admin'e gösteriliyor; `PrivacyModal`
       bu alanları "Toplanan Veriler"de zaten sayıyor ve panel `is_admin()`
