@@ -34,7 +34,27 @@ class MainActivity : FlutterActivity() {
         val channel = NotificationChannel(
             "kelimeki_oyun",
             "Oyun bildirimleri",
-            NotificationManager.IMPORTANCE_DEFAULT,
+            // ⚠ HIGH, DEFAULT DEĞİL — 28 Ağustos 2026'da gerçek cihazda ÖLÇÜLDÜ.
+            // DEFAULT (3) ile bildirim geliyordu ama SESSİZ bir biçimde:
+            // kullanıcı "mesaj sesi geldi, ikonda 1 yazdı, ama popup görmedim"
+            // dedi — ses ✅, gölgelik ✅, rozet ✅, peek (açılır banner) ❌.
+            // Android 8+'ta açılır banner YALNIZCA IMPORTANCE_HIGH (4) ile
+            // çıkıyor.
+            //
+            // Sunucunun yolladığı `priority: 'high'` (_shared/push.ts) bunu
+            // SAĞLAMAZ: o FCM'in TESLİMAT önceliği (cihazı uyandırma), sunum
+            // değil. Sunumu kanal önemi belirliyor — ikisi ayrı kavram ve
+            // birbirinin yerine geçmiyor.
+            //
+            // ⚠ ÖNEM SONRADAN YÜKSELTİLEMEZ: Android kanal önemini yaratıldığı
+            // anda kilitliyor (ayar kullanıcıya ait). Kanalı DEFAULT'la almış
+            // bir cihazda bu değişiklik ancak uygulama silinip yeniden
+            // kurulunca etkili olur. Bugün bunun bedeli yok — kanal bu
+            // sürümle (412) DOĞDU, yani yalnızca geliştirme cihazında var;
+            // Play'deki 407 push'tan önceki sürüm. Kanal ileride yeniden
+            // adlandırılırsa (id değişirse) `_shared/push.ts` de değişmeli;
+            // `notification_channel_parity_test.dart` bunu zorluyor.
+            NotificationManager.IMPORTANCE_HIGH,
         ).apply {
             description = "Sıra sana geldiğinde, süren dolmak üzereyken ve " +
                 "davet aldığında haber verir."

@@ -542,8 +542,12 @@ mobile/
       data/push_repo.dart    # push token yaşam döngüsü (kayıt/yenileme/
                              # temizlik) — İKİ dikiş: PushMessaging (FCM) ve
                              # PushTokenStore (push_tokens tablosu). DEĞİŞMEZ:
-                             # tabloda satır varsa o cihaz bildirim GÖSTEREBİLİR
-                             # (her açılışta `senkronize` ile kendini onarır)
+                             # tabloda satır varsa o cihaz bildirim GÖSTEREBİLİR.
+                             # ⚠ Onarımı TETİKLEYEN yer app.dart'taki _HomeGate:
+                             # açılış + `resumed` + oturum değişimi. Burada
+                             # 28 Ağustos 2026'ya kadar "her açılışta kendini
+                             # onarır" yazıyordu ve YANLIŞTI — çağrı yalnızca
+                             # Canlı sekmesinin _reload()'undaydı (Parça 159)
       data/push_gateways.dart # yukarıdaki iki dikişin GERÇEK uçları
                              # (firebase_messaging ↔ Supabase upsert) +
                              # izinDurumu(AuthorizationStatus) eşlemesi
@@ -622,11 +626,17 @@ mobile/
                              # membership_perks_box (misafir "Neden Üye
                              # Olmalıyım?" kutusu, 7 Ağustos 2026)
       ui/feedback/           # feedback_modal ("Görüş Bildir" formu)
-      ui/push/               # push_permission_flow — bildirim izninin
-                             # KENDİ onay penceresi. Sistem diyaloğu ancak
-                             # kullanıcı "Aç" derse tetiklenir; tetikleyici
-                             # "Canlı sekmesi açıldı VE aktif oyun/davet var"
-                             # (gerekçe: AndroidManifest'teki not + Parça 158)
+      ui/push/               # push_permission_flow — İKİ ayrı iş, karıştırma:
+                             # (a) pushTokenlariHizala — token'ı sistem izniyle
+                             #     hizalar, SORMAZ. Çağıranı _HomeGate (açılış +
+                             #     `resumed` + oturum değişimi) ve Canlı sekmesi.
+                             # (b) pushIzniAkisi — KENDİ onay penceremiz; sistem
+                             #     diyaloğu ancak kullanıcı "Aç" derse açılır.
+                             #     Tetikleyici "Canlı sekmesi açıldı VE aktif
+                             #     oyun/davet var" (AndroidManifest'teki not +
+                             #     Parça 158). Hizalama buna BAĞLI DEĞİL — (a) ve
+                             #     (b) 28 Ağustos'a kadar aynı yola bağlıydı ve
+                             #     hata tam oradan çıktı (Parça 159)
       ui/route_observer.dart # kRouteObserver — RouteAware `didPopNext`.
                              # Web'in "route değişince remount" davranışının
                              # port karşılığı; SetupScreen oyundan DÖNÜŞTE

@@ -26,6 +26,40 @@ import '../game/dialog_shell.dart';
 ///
 /// Hiçbir yolu fırlatmaz: bu akış Canlı sekmesinin açılışında çalışıyor,
 /// bir izin/eklenti hatası sekmeyi düşüremez.
+/// Token durumunu sistem izniyle HİZALAR — hiçbir şey sormadan.
+///
+/// **NEDEN AYRI BİR FONKSİYON (28 Ağustos 2026, cihaz testinde bulundu):**
+/// hizalama eskiden yalnızca `pushIzniAkisi`'nin içindeydi, o da yalnızca
+/// Canlı sekmesinin `_reload()`'undan çağrılıyordu. Sonuç: bildirimi SİSTEM
+/// AYARLARINDAN kapatan ve Canlı sekmesine girmeyen kullanıcının token'ı
+/// tabloda kalıyordu — sunucu göndermeye devam ediyor, işletim sistemi
+/// sessizce yutuyordu. Cihazda ÖLÇÜLDÜ: bildirim kapatılıp uygulama tamamen
+/// kapatılıp açıldı, satır durdu (`updated_at` bile değişmedi); Canlı
+/// sekmesi açılınca AYNI SANİYE silindi. Yani mekanizma doğruydu,
+/// tetikleyicisi yanlış yerdeydi.
+///
+/// Kritik nokta: **sistem ayarı uygulamanın DIŞINDA değişiyor.** Bunu
+/// yakalamanın tek güvenilir anı uygulamanın öne dönüşü (`resumed`) —
+/// bir sekmenin açılmasına bağlamak yapısal olarak yetersiz. Çağrı yerleri
+/// artık `_HomeGate` (açılış + `resumed` + oturum değişimi) ve Canlı sekmesi.
+///
+/// Uygulanan izni döndürür; hata olursa `null` (fırlatmaz — bu akış hiçbir
+/// ekranı düşüremez).
+Future<PushPermission?> pushTokenlariHizala({
+  required PushMessaging messaging,
+  required PushRepo repo,
+  required String userId,
+}) async {
+  try {
+    final izin = await messaging.permission();
+    await repo.senkronize(userId: userId, izin: izin);
+    return izin;
+  } catch (e) {
+    debugPrint('[Kelimeki] push token hizalama hatası: $e');
+    return null;
+  }
+}
+
 Future<void> pushIzniAkisi(
   BuildContext context, {
   required PushMessaging messaging,
@@ -36,12 +70,15 @@ Future<void> pushIzniAkisi(
   DateTime? simdi,
 }) async {
   try {
-    final izin = await messaging.permission();
-
-    // Karar ne olursa olsun token durumu İZİNLE hizalanmalı — kullanıcı
-    // ayarlardan açmış olabilir (o zaman yazılır) ya da kapatmış olabilir
-    // (o zaman silinir). Bu, sormaktan BAĞIMSIZ.
-    await repo.senkronize(userId: userId, izin: izin);
+    // Karar ne olursa olsun token durumu İZİNLE hizalanır — kullanıcı
+    // ayarlardan açmış olabilir (yazılır) ya da kapatmış olabilir (silinir).
+    // Bu, sormaktan BAĞIMSIZ ve tek kaynaktan (yukarıdaki fonksiyon) geçer.
+    final izin = await pushTokenlariHizala(
+      messaging: messaging,
+      repo: repo,
+      userId: userId,
+    );
+    if (izin == null) return; // hata zaten loglandı
 
     final sorulmali = pushIzniSorulmali(
       aktifOyunVar: aktifOyunVar,

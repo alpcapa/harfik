@@ -20,6 +20,65 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 159 — push token'ı Canlı sekmesine bağlıydı; DEĞİŞMEZ
+     kâğıt üzerinde kalmış (28 Ağustos 2026, İLK gerçek cihaz testinde
+     bulundu):** Parça 158'in dokümana yazdığı değişmez şuydu — *"tabloda
+     satır varsa o cihaz bildirim GÖSTEREBİLİR; her açılışta `senkronize`
+     ile kendini onarır."* İkinci yarısı **yanlıştı.** `senkronize` tek bir
+     yerden çağrılıyordu:
+     `push_repo.senkronize ← pushIzniAkisi ← live_games_tab.dart:274`.
+     - **Cihazda ölçüldü:** bildirim sistem ayarlarından kapatıldı, uygulama
+       tamamen kapatılıp açıldı → satır DURDU, `updated_at` bile değişmedi
+       (17:52:52'de donmuş). Canlı sekmesi açılınca AYNI SANİYE silindi.
+       Yani `PushRepo`'nun kendisi doğruydu; **tetikleyici yanlış yerdeydi.**
+     - **Sonucu sessiz ve kalıcı:** bildirimi kapatan ama Canlı sekmesine
+       girmeyen kullanıcının token'ı sonsuza kadar tabloda kalır — sunucu
+       göndermeye devam eder, işletim sistemi yutar. Kimse şikayet etmez.
+     - **Aynı denetimde İKİNCİ boşluk:** `temizle()` **hiçbir yerden**
+       çağrılmıyordu (`grep` sıfır sonuç). Yani ÇIKIŞ da satırı bırakıyordu:
+       sunucu, o hesabın oturumu KAPALI bir cihaza göndermeye devam ederdi.
+       Kontrol listesindeki 2.4 maddesi henüz sıraya gelmemişti, düşecekti.
+     - **Kök kusur tek cümle:** *sistem ayarı uygulamanın DIŞINDA değişiyor.*
+       Bunu yakalamanın tek güvenilir anı uygulamanın öne dönüşü; bir
+       sekmenin açılmasına bağlamak yapısal olarak yetersiz. `app.dart`'ta
+       o güne kadar hiç `WidgetsBindingObserver` yoktu.
+     - **Düzeltme:** hizalama `pushIzniAkisi`'nden ayrılıp
+       `pushTokenlariHizala` oldu (izni döndürüyor, böylece akış onu tekrar
+       okumuyor — çift kaynak yok). `_HomeGate` artık `WidgetsBindingObserver`:
+       **açılış + `resumed` + oturum değişimi**. Çıkışta (`user == null`)
+       `temizle()`. Canlı sekmesindeki çağrı kalıyor ama artık tek yol değil.
+     - **`push_lifecycle_test.dart` (4 test):** açılışta hizalama koşuyor
+       (Canlı sekmesi GEREKMEZ), öne dönüşte sistem ayarındaki kapatma
+       yakalanıyor, çıkışta token siliniyor, ve push YOKKEN (web/Firebase
+       yok) kapı sorunsuz açılıyor. Negatif eş: `_pushHizala` etkisizleştirilince
+       ilk üçü GERÇEKTEN düşüyor, dördüncüsü doğru şekilde geçmeye devam ediyor.
+     - **DÖRDÜNCÜ belirti, aynı kök sebep (aynı tur, cihazda):** hesap
+       değiştirilince token devrolmuyordu. T2 ile girilip satır T2'ye
+       yazıldı; Ironman'a geçildi, uygulama Ironman gösteriyordu ama satır
+       **T2'de kaldı** (`updated_at` bile değişmedi). Bunun bedeli boşa
+       gönderim DEĞİL, **yanlış kişiye gönderim**: T2'ye gidecek bildirim
+       Ironman'ın girişli olduğu telefona düşer.
+       - Kodu okurken ortaya çıkan asıl sebep daha da geniş: hizalama
+         `live_games_tab._reload()`'un İÇİNDE ve o da liste yüklemesi
+         düşerse (`snap == null`) erken dönüyor. Yani devir üç ayrı yoldan
+         atlanabiliyordu — sekme açılmadı, sekme yeniden kurulmadı, ya da
+         liste yüklemesi düştü.
+       - ⚠ Bu bulguyu ararken **yanlış bir tahmin yaptım ve düzelttim:**
+         "`_reload` hesap değişiminde koşmuyor" dedim; kod tersini söylüyor
+         (`_onAuthEvent` → `_reload`). Tahmini kaynağı okumadan söylemek bu
+         turda bir tur yaktı.
+       - Testi eklendi (`HESAP DEĞİŞİMİNDE token yeni kullanıcıya devrolur`);
+         negatif eş: `_HomeGate`'in auth dinleyicisi kaldırılınca hem bu test
+         hem "ÇIKIŞTA token silinir" düşüyor.
+
+     - **Ders — bu günlüğün kendisine dair:** "değişmez" diye yazılan bir
+       cümle, onu ZORLAYAN bir test yoksa yalnızca bir NİYET. Parça 158
+       değişmezi doğru tarif etmişti; eksik olan, tetikleyicinin o tarifi
+       gerçekten karşılayıp karşılamadığının hiç sorulmamasıydı. Cihaz
+       testinin ilk yarım saatinde çıktı — `flutter test`in sahte uçları bunu
+       yapısal olarak göremezdi, çünkü hata KODDA değil KODUN BAĞLANDIĞI
+       YERDEYDİ.
+
    - ✅ **Parça 158 — push bildirimleri + kayıt onayının uygulamaya dönüşü
      (28 Ağustos 2026, ROADMAP madde 1 + 13 — "Sürüm B"nin mağaza blokeri):**
      Tek paket, çünkü madde 13'ün 5. adımı ("bildirime dokun → doğru oyun
