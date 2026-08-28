@@ -99,7 +99,8 @@ taş seçilemiyordu bile. Sebep iki ayrı kararın tek eşikle verilmesiydi:
 10 px (Android touch slop) hayaleti GÖSTERMEK için doğru ama BIRAKMA kararı
 için fazla dar. Ayrı bir bırakma eşiği eklendi (24, hücrenin ~26 px'inin
 hemen altında) → paket **`1.0.0 (407)`** (`0651e5e`), kullanıcı onayladı:
-*"Daha iyi şimdi. Yayına alıyorum."*
+*"Daha iyi şimdi. Yayına alıyorum."* — ve 28 Ağustos 2026'da kapalı test
+kanalında **yayına alındı** (bkz. aşağıda madde 3).
 
 > **Ders:** bir eşik İKİ farklı soruyu cevaplıyorsa muhtemelen iki eşik
 > olmalı. "Sürükleme başladı mı?" ile "kullanıcı bırakmak mı istedi?" aynı
@@ -157,9 +158,10 @@ Sürüm A'nın dört düzeltmesi (taş yakalama, ✕ ıskalama, arkadaş listesi
 sonuna inememe, bayat rozet) tam da **ilk deneyimi** vuruyordu — hatırlatma
 o yüzden A'dan SONRAYA bırakılmıştı.
 
-**Engel kalktı:** A (`403`) ve A2 (`405` → `407`) çıktı, cihaz testi
-onaylandı ve kullanıcı `407`'yi yayına alıyor. Paket kapalı test kanalında
-göründüğü an hatırlatma gönderilebilir — geciktirmenin bir sebebi kalmadı.
+**ENGEL KALKTI — `1.0.0 (407)` KAPALI TESTTE YAYINDA (28 Ağustos 2026,
+kullanıcı Play Console'dan doğruladı: yayın durumu "Update live").** A
+(`403`) ve A2 (`405` → `407`) çıktı, cihaz testi onaylandı, paket kanalda.
+**Hatırlatma artık gönderilebilir — bekleyen tek adım bu.**
 
 Katılan/indiren sayısı Play Console'da: **Test → Closed testing → (track) →
 Testers sekmesi**, ve indirme adedi için **Statistics**. (Kullanıcı bunu iki
