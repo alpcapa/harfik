@@ -20,6 +20,75 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 161 — sistem yazı boyutu büyütülünce düzen patlıyordu; tavan
+     + iki yapısal düzeltme (28 Ağustos 2026, kullanıcı cihazda bildirdi):**
+     *"Görmediği için telefon fontlarını büyütenlerde ciddi sorunlar
+     çıkıyor. Mesela, arkadaşlık davetinde davetin kimden geldiği
+     görünmüyor. Bunun dışında başka yerler de patlıyor."*
+     - **ÖNCE ENVANTER, sonra kod** — kullanıcı *"başka yerler"* demişti ve
+       hangileri olduğu bilinmiyordu. Yöntem: geçici bir
+       `test/flutter_test_config.dart` ile TÜM takıma ölçek enjekte edildi
+       (`platformDispatcher.textScaleFactorTestValue`), taşma satırları
+       ayrıştırıldı. Ölçüm ancak böyle mümkün oldu; iki örnekten genelleme
+       yapılsaydı yanlış yere bakılırdı.
+
+       | ölçek | taşma | ayrı nokta |
+       |---|---|---|
+       | 1,0 | 0 | — |
+       | 1,3 | 10 | 1 |
+       | 1,6 | 27 | 4 |
+       | 2,0 | **73** | 9 (en büyüğü 392 px) |
+
+     - **İKİ AYRI HATA SINIFI olduğu buradan çıktı** ve bu, işin en önemli
+       bulgusu: kullanıcının BİLDİRDİĞİ hata (ismin görünmemesi) yukarıdaki
+       ölçümlerin HİÇBİRİNDE yok — çünkü taşma üretmiyor. Satırdaki tek
+       esnek öğe eziliyor, Flutter hiçbir şey basmıyor, kullanıcı yalnızca
+       bilginin kaybolduğunu görüyor.
+     - **Karar (kullanıcıya soruldu, iki seçenek de ölçümle sunuldu):**
+       tavan **1,3** + kalan noktaları düzelt. *"Hiç kısma, 9 yeri de
+       düzelt"* ve 1,6 seçenekleri de sunuldu. Bedeli açıkça yazılı: fontu
+       %200'e alan kullanıcı uygulamada %130 görür. 1,0'a kilitlemek
+       (ölçeği tamamen yok saymak) erişilebilirlik açısından savunulamazdı.
+     - **Üç değişiklik:**
+       1. `ui/text_scale.dart` (YENİ) — `kMaxTextScale` (1,3),
+          `kWideLayoutScale` (1,15) ve `buyukOlcek(context)`. Tavan TEK
+          yerden: `MaterialApp.builder` → `withClampedTextScaling`.
+       2. `board_widget.dart` alt şeridi `Row` → **`Wrap`**. Tavandan sonra
+          KALAN TEK taşma noktasıydı (8,3-14 px). İki grup da `shrink-0`
+          (web'de de öyle), yani `Row` sığmadığı anda taşıyor. `Wrap` tek
+          satıra sığdığı sürece `Row`la birebir aynı davranıyor —
+          `tap_target_test`in golden dikdörtgenleri hiç kıpırdamadı.
+       3. `friends_modal.dart` "İstekler" satırı büyük ölçekte **ikiye
+          bölünüyor** (üstte avatar+isim, altta KABUL ET/REDDET).
+          **Yalnızca bu liste:** "Arkadaşlarım"/"Ara & Ekle" satırlarının
+          aksiyonu 44 px sabit İKON butonu, metin değil — ölçekle
+          büyümediklerinden ismi de ezmiyorlar.
+     - **SONUÇ ÖLÇÜLDÜ:** ölçek 1,3'te taşma **10 → 0**. İstek satırındaki
+       isim genişliği (360 px ekran): 1,0'da 77,6 px (değişmedi) · 1,3'te
+       **53,2 → 121,4** · 2,0'da **0,0 → 187,0**.
+     - **Negatif eş kuruldu:** `kWideLayoutScale` geçici olarak 99'a
+       çekilince (bölme fiilen kapalı) test GERÇEKTEN düştü — isim 1,3'te
+       yine 53,2 px'e indi.
+     - **Testin ölçütü MUTLAK genişlik DEĞİL, 1,0'daki kendi genişliği** ve
+       bunun sebebi ölçümle bulundu: 360 px'lik dar bir ekranda "Esiner
+       Yıldırım" ölçek 1,0'da BİLE tam sığmıyor (77,6 px'te üç noktaya
+       iniyor). Mutlak bir eşik ya bugünü hatalı sayardı ya da hiçbir şeyi
+       yakalamazdı. Kural: yazı büyüdüğünde isme ayrılan yer KÜÇÜLMESİN.
+     - ⚠ **Takımın tamamını 1,3'te koşturmak CI kapısı OLAMAZ** (denendi ve
+       ölçüldü): 31 test düşüyor, çoğu gerçek hata değil — bu projede
+       birçok test web paritesini piksel piksel ölçüyor ve ölçek değişince
+       o ölçümler tanım gereği kayıyor. Kalıcı kapı bu yüzden dar:
+       `test/text_scale_test.dart` geometriyi değil "taşma var mı / bilgi
+       kayboluyor mu" sorusunu ölçüyor. Envanteri yeniden çıkarmak
+       gerekirse yukarıdaki geçici config yöntemi kullanılır.
+     - **2,0'da hâlâ 59 taşma var ve bu bilinçli bırakıldı** — tavan
+       yüzünden bugün ERİŞİLEMEZ. Tavan ileride yükseltilirse sıra şu:
+       `game_history_modal:827` (29) · `account_button:517` (6) ·
+       `game_over_modal:140` · `dialog_shell:169` · `live_games_tab:669/758`
+       · `move_history_modal:283` · `score_stats_section:190` ·
+       `board_widget:549`.
+     - **Doğrulama:** `dart analyze` temiz, **604 test** yeşil (601 + 3).
+
    - ✅ **Parça 160 — istatistik etiketleri `FittedBox` yüzünden 8 px yerine
      ~5,5 px çiziliyordu (28 Ağustos 2026, kullanıcı cihazda bildirdi):**
      *"app'de oyun istatistikleri başlıkları tek satır ve çok küçük font.

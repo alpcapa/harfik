@@ -42,6 +42,7 @@ import '../loading_note.dart';
 import '../form_input.dart';
 import '../../util/share_board.dart' show shareOriginFrom;
 import 'friend_moderation_sheet.dart';
+import '../text_scale.dart';
 
 const Color _text = kText;
 const Color _muted = kMuted;
@@ -574,21 +575,56 @@ class _FriendsModalState extends State<FriendsModal> {
     final requests = _requests;
     if (requests == null) return _loading();
     if (requests.isEmpty) return _emptyText('Bekleyen istek yok.');
+    // ⚠ BÜYÜK YAZI ÖLÇEĞİNDE SATIR İKİYE BÖLÜNÜR (28 Ağustos 2026, kullanıcı
+    // cihazda bildirdi: *"arkadaşlık davetinde davetin kimden geldiği
+    // görünmüyor"* — ekran görüntüsünde avatar ve rütbe mührü duruyor, isim
+    // hiç yok). Sebep taşma DEĞİL: satırdaki tek esnek öğe isim
+    // (`_personButton` → `Expanded`), "Kabul Et"/"Reddet" ise METİN butonu,
+    // yani ölçekle BÜYÜYOR ve ismi eziyor. ÖLÇÜLDÜ (360 px ekran): isim
+    // ölçek 1,0'da 77,6 px · 1,3'te 53,2 px · 2,0'da **0,0 px**.
+    //
+    // Bir gelen kutusunda kırpılacak EN SON şey kimden geldiğidir — web'in
+    // `CARD_HEADER` düzeltmesinin (23 Ağustos 2026) taşıdığı ilke bu. Eşik
+    // aşılınca isim kendi satırını alıyor, butonlar altta sağa yaslanıyor.
+    //
+    // YALNIZCA BU LİSTE bölünüyor: "Arkadaşlarım" ve "Ara & Ekle"
+    // satırlarının aksiyonu 44 px'lik SABİT ikon butonları, metin değil —
+    // onlar ölçekle büyümediğinden ismi de ezmiyorlar. Gereksiz yere
+    // bölmek o iki listeyi çirkinleştirirdi.
+    final genis = buyukOlcek(context);
     return Column(children: [
       for (final r in requests)
         _row(
-          child: Row(children: [
-            _personButton(r.requesterId, r.name, r.avatarUrl),
-            const SizedBox(width: 6),
-            _smallButton('Kabul Et',
-                busy: _busyId == r.requesterId,
-                onTap: () => _handleRespond(r.requesterId, accept: true)),
-            const SizedBox(width: 6),
-            _smallButton('Reddet',
-                neutral: true,
-                busy: _busyId == r.requesterId,
-                onTap: () => _confirmThenReject(r)),
-          ]),
+          child: () {
+            final kisi = Row(children: [
+              _personButton(r.requesterId, r.name, r.avatarUrl),
+            ]);
+            final butonlar = [
+              _smallButton('Kabul Et',
+                  busy: _busyId == r.requesterId,
+                  onTap: () => _handleRespond(r.requesterId, accept: true)),
+              const SizedBox(width: 6),
+              _smallButton('Reddet',
+                  neutral: true,
+                  busy: _busyId == r.requesterId,
+                  onTap: () => _confirmThenReject(r)),
+            ];
+            if (!genis) {
+              return Row(children: [
+                _personButton(r.requesterId, r.name, r.avatarUrl),
+                const SizedBox(width: 6),
+                ...butonlar,
+              ]);
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                kisi,
+                const SizedBox(height: 8),
+                Row(mainAxisAlignment: MainAxisAlignment.end, children: butonlar),
+              ],
+            );
+          }(),
         ),
     ]);
   }

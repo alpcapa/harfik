@@ -567,7 +567,10 @@ mobile/
                              # dekorasyonu/metin stili, bkz. Parça 79),
                              # tap_target.dart (48 dp dokunma hedefi
                              # asgarisi — kMinTapTarget + TapTarget, bkz.
-                             # Parça 134), loading_note.dart (ortak
+                             # Parça 134), text_scale.dart (sistem yazı
+                             # boyutu: kMaxTextScale tavanı + buyukOlcek
+                             # eşiği — bkz. "Sistem Yazı Boyutu"),
+                             # loading_note.dart (ortak
                              # "Yükleniyor…" göstergesi; web
                              # LoadingNote.tsx ile birebir), ve:
       ui/auth/               # giriş-kayıt-şifremi-unuttum modalı, hesap
@@ -751,6 +754,58 @@ bir `::after` koyar. Yani bu kuralın iki yakası aynı SONUCU farklı yolla
 Ayrıntı ve ölçümler: `docs/decisions/touch-ux-bugs.md` → "İkinci tur",
 `mobile/docs/parca-log.md` → Parça 147.
 
+## Sistem Yazı Boyutu — tavan VAR, ama tavan çözüm DEĞİL
+
+28 Ağustos 2026, kullanıcı cihazda bildirdi: *"Görmediği için telefon
+fontlarını büyütenlerde ciddi sorunlar çıkıyor. Mesela, arkadaşlık davetinde
+davetin kimden geldiği görünmüyor. Bunun dışında başka yerler de patlıyor."*
+
+Android/iOS yazı boyutunu %200'e kadar büyütebiliyor ve bu **yalnızca metni**
+büyütüyor — kutu, ikon, dolgu sabit kalıyor. **İKİ AYRI hata sınıfı** doğuyor
+ve tek bir çözüm ikisini birden kapatmıyor:
+
+| | 1. TAŞMA | 2. SIFIRA SIKIŞMA |
+|---|---|---|
+| Belirti | sarı-siyah şerit | bilgi sessizce kayboluyor |
+| Hata basılır mı | evet | **hayır** |
+| Çözümü | `kMaxTextScale` tavanı | satırı İKİYE BÖLMEK |
+
+**ÖLÇÜLDÜ** (takımın tamamı, `platformDispatcher.textScaleFactorTestValue`
+enjekte edilerek): taşma sayısı ölçek 1,0'da **0** · 1,3'te **10** · 1,6'da
+**27** · 2,0'da **73** (9 ayrı nokta, en büyüğü 392 px). Yani hasar 1,3'ten
+sonra patlıyor — tavan oraya kondu (kullanıcı kararı; 1,0'a kilitlemek
+erişilebilirlik açısından savunulamazdı).
+
+**Kurallar:**
+
+1. **Tavan TEK yerde:** `MaterialApp.builder` →
+   `MediaQuery.withClampedTextScaling(maxScaleFactor: kMaxTextScale)`
+   (`ui/text_scale.dart`). Ekran başına ölçek kısıtı YAZMA.
+2. ⚠ **"Nasılsa tavan var" DEME.** Tavan yalnızca sınıf 1'i sınırlar.
+   Sınıf 2 taşma üretmediği için hiçbir ölçüme girmez ve tavandan da
+   etkilenmez: arkadaşlık isteği satırında isim, 360 px ekranda ölçek
+   1,0'da 77,6 px · 1,3'te 53,2 px · 2,0'da **0,0 px** idi.
+3. **Satırda tek esnek öğe + yanında METİN butonu = sınıf 2 riski.** İkon
+   butonları (sabit 44-48 px) ölçekle büyümediğinden bu riski taşımaz —
+   bu yüzden "Arkadaşlarım"/"Ara & Ekle" satırları bilerek bölünmedi,
+   yalnızca "İstekler" bölündü. Eşik: `buyukOlcek(context)`.
+4. **İki grubu `spaceBetween` ile yan yana koyan bir şerit `Row` DEĞİL
+   `Wrap` olmalı** — iki grup da `shrink-0` olduğunda `Row` sığmadığı anda
+   taşar. Tahtanın alt şeridi böyle düzeldi; tek satıra sığdığı sürece
+   davranış `Row` ile birebir aynı.
+5. ⚠ **Takımı 1,3'te koşturmak CI KAPISI OLARAK KULLANILAMAZ** (denendi):
+   31 test düşüyor ve çoğu gerçek hata değil — bu projede birçok test web
+   paritesini piksel piksel ölçüyor, ölçek değişince o ölçümler tanım
+   gereği kayıyor. Kalıcı kapı dar bir test: `test/text_scale_test.dart`
+   (tavanın bağlı olduğu + alt şeridin taşmadığı + ismin daralmadığı).
+   Envanteri yeniden çıkarmak gerekirse yöntem Parça 161'de yazılı.
+
+**Web'de karşılığı YOK ve bu bir port eksiği değil:** tarayıcı `text-sm` gibi
+px değerlerini sistem yazı boyutuyla ölçeklemez, kullanıcı tüm SAYFAYI
+zoom'lar — kutular da birlikte büyür, sınıf 2 hiç doğmaz. Yani buraya
+web'den kopyalanacak bir yapı yok, yalnızca ilkesi var (web'in `CARD_HEADER`
+düzeltmesi, 23 Ağustos 2026: kırpılacak EN SON şey kimden geldiğidir).
+
 ## `KModal`'ın gövdesi ZATEN kaydırılabilir — içine ikincisini koyma
 
 27 Ağustos 2026, bir kullanıcı bildirdi: *"Arkadaşlar - Ara&Ekle'de scroll
@@ -930,38 +985,13 @@ Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı
 kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
 silinip kendi tarihli parça notuna taşınır.
 
-- **SİSTEM FONTU BÜYÜTÜLDÜĞÜNDE düzen patlıyor (28 Ağustos 2026, kullanıcı
-  bildirdi — ekran görüntüsüyle):** *"Görmediği için telefon fontlarını
-  büyütenlerde ciddi sorunlar çıkıyor. Mesela, arkadaşlık davetinde davetin
-  kimden geldiği görünmüyor. Bunun dışında başka yerler de patlıyor."*
-  Görüntüde (derleme `0651e5e`) İKİ ayrı kırılma var ve **ikisi ayrı
-  sınıftan** — çözüm de tek değil:
-  - **(a) Ölçek taşması.** Sekme satırında "ARKADAŞLARIM" iki satıra sarıp
-    seçili "İSTEKLER" düğmesinin ALTINDAN geçiyor: etiket büyüyor, kap
-    büyümüyor. Bunun **global bir kısıtı VAR** — `MaterialApp`'in
-    `builder`'ında tek satır:
-    `MediaQuery.withClampedTextScaling(maxScaleFactor: 1.3, child: child!)`.
-    Tüm ekranlara birden uygulanır. **Bedeli bilinçli olmalı:** fontu
-    göremediği için büyüten kullanıcıya istediği boyutu VERMEMEK demek;
-    1.0'a kilitlemek erişilebilirlik incelemesinde eleştirilir, 1.3 uzlaşma.
-  - **(b) Esnek öğenin SIFIRA sıkışması — kısıt bunu ÇÖZMEZ.** Davet
-    satırında gönderenin adı hiç görünmüyor: satırdaki tek esnek öğe ad,
-    "KABUL ET"/"REDDET" sabit genişlikte, yani butonlar büyüdükçe ad sıfıra
-    iniyor. Bu bir taşma değil, düzen kararı; ölçek kısıtı yalnızca
-    geciktirir. Çözümü web'de 23 Ağustos 2026'da ZATEN bulundu
-    (`CARD_HEADER`, Görüş Bildir/Şikayet kartları): **ad kendi satırına,
-    rozet+butonlar alt satıra** — ölçekten bağımsız, deterministik. Aynı
-    kural buraya taşınmalı (kaynak web, her zamanki gibi).
-  - **(c) Neden hiçbir test görmedi:** tüm widget testleri ölçek 1.0'da
-    koşuyor. Bu sınıfı kalıcı olarak kapatmanın tek yolu kritik ekranları
-    `textScaler: TextScaler.linear(1.3)` (ve 2.0) ile de koşturmak — tek
-    seferlik kurulum, bundan sonraki HER ekranı kapsar. Yalnızca (a)'yı
-    yapıp testi eklememek, aynı hatanın yeni ekranlarda sessizce doğması
-    demek.
-  - ⚠ **Kapsam taraması yapılmadı:** kullanıcı *"başka yerler de patlıyor"*
-    dedi, hangileri olduğu HENÜZ BİLİNMİYOR. İşe başlarken önce cihazda (ya
-    da 1.3/2.0 ölçekli bir test turuyla) envanter çıkarılmalı; iki örnekten
-    genelleme yapıp "iki yeri düzelttik" denmemeli.
+- ~~Sistem fontu büyütülünce düzen patlıyor~~ — **YAPILDI** (28 Ağustos
+  2026, Parça 161): yazı ölçeği `kMaxTextScale`=1,3 ile sınırlandı
+  (`ui/text_scale.dart` + `MaterialApp.builder`), tahtanın alt şeridi
+  `Row`→`Wrap` oldu, arkadaşlık isteği satırı büyük ölçekte ikiye bölünüyor.
+  Ölçüldü: ölçek 1,3'te taşma **10 → 0**; istek satırındaki isim 1,3'te
+  53,2 → 121,4 px, 2,0'da 0,0 → 187,0 px. Kural ve tuzaklar aşağıda
+  ("Sistem Yazı Boyutu"), envanter Parça 161'de.
 
 - **KGP uyarısı — ileride derlemeyi KIRACAK (23 Ağustos 2026'da `.aab`
   log'unda ölçüldü, bugün yalnızca uyarı):** `image_picker_android`,
