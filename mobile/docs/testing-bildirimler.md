@@ -21,6 +21,19 @@
 bir anahtarla imzalı. Doğrulanması gereken şey o durumda "çirkin bir hata
 ekranı ÇIKMAMASI" (bkz. 3.2).
 
+## 0. Kurulum — atlanırsa geri kalan her şey şüpheli
+
+Yanlış derlemeyi test etmek bu projede iki kez gerçek zaman yaktı; derleme
+kimliğinin ürüne gömülme sebebi bu (kök `CLAUDE.md` → "Deploy Doğrulaması").
+
+- [ ] **0.1 Play'den kurulu sürümü kaldır.** İmza farklı olduğu için `.apk`
+      üstüne kurulmaz. Kaldırma yerel kayıtları ve push token'ını da siler —
+      bu zaten §1'in istediği el değmemiş durum.
+- [ ] **0.2 `kelimeki.apk`'yı `mobile-latest` prerelease'inden indir ve kur.**
+- [ ] **0.3 Setup'ın teşhis satırındaki sha'yı, test ettiğini sandığın
+      derlemeyle KARŞILAŞTIR** (`Derleme a1b2c3d · GG.AA SS:DD`).
+      Tutmuyorsa teste devam etme — bayat derlemedesin.
+
 ## 1. Bildirim izni akışı
 
 Tetikleyici bilerek açılış/giriş DEĞİL: **Canlı sekmesi açıldı VE en az bir
@@ -79,6 +92,9 @@ uyarıyor; push e-postanın YANINDA gidiyor, yerine değil.
         gelen bildirimi **sessizce yutuyor**. Bildirim hiç gelmiyorsa ilk
         bakılacak yer `MainActivity.kt`'deki `kelimeki_oyun` kanalı ile
         `_shared/push.ts`'in yazdığı değerin AYNI olup olmadığı.
+- [ ] **3.1b Aynı uyarının E-POSTASINDA "takdirde" yazmalı** — "taktirde"
+      değil. Düzeltme repoda duruyordu ama hiç canlıya çıkmamıştı; push
+      dağıtımıyla birlikte gitti.
 - [ ] **3.2 Bildirime dokun** → uygulama açılmalı ve **doğru Canlı oyun**
       gelmeli (yanlış oyun ya da yalnızca Setup değil).
 - [ ] **3.3 Uygulama TAMAMEN kapalıyken** (soğuk başlangıç) aynı test.
@@ -111,11 +127,28 @@ BİLİNÇLİ — gerekçe `config/env.dart` başlığında.
       Play derlemesinde uygulamayı, `.apk`da tarayıcıyı açar; ikisi de
       geçerli.
 
-## 5. Regresyon — push HİÇBİR ŞEYİ düşürmemeli
+## 5. Bu sürümün görsel ve sözlük değişiklikleri
 
-- [ ] **5.1 Firebase'siz yüzey:** GitHub Pages'teki Flutter **web**
+Push'la ilgisiz ama AYNI pakette gitti (Parça 156-158). Üçü de web ve portta
+birden değişti ve testli — burada aranan şey cihazda gerçekten öyle
+göründüğü.
+
+- [ ] **5.1 Tahtaya konmuş jokerin `0` puanı KIRMIZI.** Raftaki joker
+      DEĞİŞMEDİ — orada ★ zaten ayırt ediyor.
+- [ ] **5.2 Tahta üstündeki skor kutularında sayılar SİYAH.** Oyuncu adı ve
+      kutu rengi aynı; teslim olmuş oyuncunun sayısı hâlâ kendi renginde.
+- [ ] **5.3 Merkezdeki X3 etiketi büyüdü** ve hücreden taşmıyor.
+- [ ] **5.4 Dört yeni kelime oynanabiliyor** — `lapis`, `mö`, `banu`,
+      `banü` — ve dördünün de anlamı geliyor. (`banu` ile `banü` yazım
+      varyantı değil, ayrı maddeler.)
+- [ ] **5.5 Oyundan Setup'a dönünce Canlı rozeti taze** (Parça 153): Canlı
+      bir oyunda hamle yapıp geri dön, rozetteki sayı güncellenmiş olmalı.
+
+## 6. Regresyon — push HİÇBİR ŞEYİ düşürmemeli
+
+- [ ] **6.1 Firebase'siz yüzey:** GitHub Pages'teki Flutter **web**
       derlemesi hâlâ açılmalı (`initFirebase()` orada `false` dönüyor).
-- [ ] **5.2 İzin hiç verilmemiş cihazda** oyun/Canlı oyun/sohbet akışlarının
+- [ ] **6.2 İzin hiç verilmemiş cihazda** oyun/Canlı oyun/sohbet akışlarının
       tamamı normal çalışmalı — push isteğe bağlı bir katman.
-- [ ] **5.3 Uçak modunda** açılış: push kurulumu takılmamalı, Setup normal
+- [ ] **6.3 Uçak modunda** açılış: push kurulumu takılmamalı, Setup normal
       sürede gelmeli.
