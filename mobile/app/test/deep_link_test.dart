@@ -7,6 +7,7 @@
 // kurulum + gerçek e-posta) olduğundan biçim sözleşmesi burada kilitleniyor.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/friends_api.dart' show buildInviteUrl;
+import 'package:kelimeki/src/config/env.dart' show authRedirectUri;
 import 'package:kelimeki/src/util/deep_link.dart';
 
 void main() {
@@ -68,6 +69,29 @@ void main() {
           as KAuthReturnLink).kind, 'auth');
       expect((parseDeepLink(Uri.parse('kelimeki://reset?code=xyz'))
           as KAuthReturnLink).kind, 'reset');
+    });
+
+    test('kayıt onayı https App Link biçiminde de tanınır', () {
+      // 28 Ağustos 2026: `authRedirectUri` custom şemadan https'e geçti
+      // (uygulama kurulu değilken ERR_UNKNOWN_URL_SCHEME çıkmazı). Aynı
+      // URI'nin İKİ biçimi de aynı sınıfa düşmeli.
+      expect(
+          (parseDeepLink(Uri.parse('$authRedirectUri?code=xyz'))
+              as KAuthReturnLink).kind,
+          'auth');
+      expect(
+          (parseDeepLink(Uri.parse('https://kelimeki.com/auth?error=access_denied'))
+              as KAuthReturnLink).kind,
+          'auth');
+    });
+
+    test('authRedirectUri App Link filtresinin KAPSAMINDA', () {
+      // Manifest yalnızca `https://kelimeki.com`ı talep ediyor; değer başka
+      // bir origin'e kayarsa işletim sistemi URI'yi uygulamaya HİÇ
+      // düşürmez ve akış sessizce tarayıcıda kalır.
+      final u = Uri.parse(authRedirectUri);
+      expect(u.scheme, 'https');
+      expect(u.host, 'kelimeki.com');
     });
   });
 

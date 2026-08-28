@@ -20,6 +20,98 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 158 — push bildirimleri + kayıt onayının uygulamaya dönüşü
+     (28 Ağustos 2026, ROADMAP madde 1 + 13 — "Sürüm B"nin mağaza blokeri):**
+     Tek paket, çünkü madde 13'ün 5. adımı ("bildirime dokun → doğru oyun
+     açılsın") madde 1'in derin bağlantı kanalına dayanıyor.
+     - **Kanal (madde 1):** `AuthService.signUp` artık `emailRedirectTo`
+       geçiyor. Değer önce `kelimeki://auth` yazıldı, **aynı gün
+       `https://kelimeki.com/auth`'a çevrildi** (kullanıcı: *"Güvenli
+       alternatif olsun"*): custom şema, uygulamanın kurulu OLMADIĞI bir
+       tarayıcıda `ERR_UNKNOWN_URL_SCHEME` veriyor — insanlar postalarını
+       sıklıkla masaüstünden okuduğu için bu nadir değil, ve onay linki
+       BOZUK görünüyor. Oysa e-posta doğrulaması GoTrue'nun `/verify` ucunda
+       zaten tamamlanmış oluyor; kaybedilen tek şey oturum. https biçiminde
+       en kötü durum bugünkü davranıştır (siteye düşer, elle giriş), en iyi
+       durumda App Links URI'yi uygulamaya düşürür ve PKCE takası
+       kullanıcıyı DOĞRUDAN girişli bırakır. Manifest `https://kelimeki.com`ın
+       tamamını talep ettiğinden ek intent-filter GEREKMEDİ, Redirect URLs'te
+       `https://kelimeki.com/**` da zaten vardı — yani Dashboard el işi SIFIR.
+       - **supabase_flutter'ın şemaya BAKMADIĞI ölçüldü** (paket kaynağı,
+         `_defaultIsAuthCallbackDeeplink`): yalnızca `code`/`access_token`/
+         `error*` parametrelerine bakıyor. Yani https bir dönüş custom şema
+         kadar sorunsuz işleniyor; bu, kararın dayandığı tek teknik varsayımdı
+         ve tahmin edilmedi.
+     - **`util/deep_link.dart` — gelen URI'lerin TEK ayrıştırma noktası.**
+       Öncesinde üç ayrı yer kendi tanımasını yapıyordu (supabase_flutter,
+       `FriendInviteInbox`, ve şimdi dördüncüsü olarak push). Saf fonksiyon,
+       Flutter bağımlılığı yok. `kelimeki://oyun/<id>`in https karşılığı
+       BİLEREK yok — o linki üreten tek şey bir push bildirimi, o da yalnızca
+       uygulamanın kurulu olduğu cihazda var.
+     - **Sunucu (FCM HTTP v1, `supabase/functions/_shared/push.ts`):** servis
+       hesabı → RS256 JWT → OAuth2 token → gönderim. Hiçbir genel fonksiyon
+       FIRLATMIYOR — bildirim, e-postanın yanında ikincil bir kanal; onu
+       düşürmesi kabul edilemez. `notify-deadline-warnings` e-postadan SONRA
+       push atıyor ve `UNREGISTERED`/`INVALID_ARGUMENT` dönen token'ı siliyor.
+       - **Kimlik zinciri CİHAZSIZ kanıtlandı:** `push-selftest` bilerek
+         GEÇERSİZ bir token'a gönderiyor; dönen `unregistered: true`
+         "Google kimliğimizi kabul etti, yalnızca token'ı tanımadı" demek —
+         yani sır/JWT/OAuth zincirinin tamamı sağlam. Sonuç ölçüldü:
+         `{"yapilandirildi":true,"kimlikZinciriSaglam":true}`. Teşhis
+         fonksiyonu; silinebilir.
+       - Yeniden dağıtımda `verify_jwt: false` AÇIKÇA geçildi (araç parametre
+         verilmezse `true` varsayıyor ve öncekini KORUMUYOR) — liste kök
+         `CLAUDE.md`'de altıdan yediye çıktı. Aynı dağıtım, repoda duran ama
+         hiç canlıya çıkmamış "taktirde"→"takdirde" düzeltmesini de taşıdı.
+     - **İzin isteme ANI bir ürün kararı:** açılışta ya da girişte
+       SORULMUYOR. Tetikleyici *"Canlı sekmesi açıldı VE en az bir aktif
+       oyun/bekleyen davet var"*. Gerekçe Android 13+'ın kuralı: İKİNCİ
+       reddin ardından sistem diyaloğu bir daha HİÇ gösterilmiyor, yani
+       bağlamsız sorulan bir soru KALICI kayıp. Bu yüzden önce kendi
+       penceremiz çıkıyor; sistem diyaloğu ancak kullanıcı "Aç" derse
+       tetikleniyor — "Şimdi Değil" bir sistem denemesi HARCAMIYOR. Kendi
+       penceremiz de en çok 3 kez, 7 gün arayla (`util/push_rules.dart`, saf
+       karar). Karar AndroidManifest'e de yorum olarak yazıldı, çünkü izni
+       oradan gören biri "neden hiç sorulmuyor?" diye arayacak.
+     - **DEĞİŞMEZ: `push_tokens`ta satır varsa o cihaz bildirim
+       GÖSTEREBİLİR.** Her açılışta `PushRepo.senkronize` sistem iznini okuyup
+       satırı ekliyor/siliyor — yani ayarlardan bildirimi kapatan kullanıcı
+       için ayrı bir dinleyici GEREKMİYOR, sistem kendini bir sonraki açılışta
+       onarıyor. Tablonun birincil anahtarı TOKEN (kullanıcı değil): cihaz
+       hesap değiştirince satır TAŞINIR, çoğalmaz.
+     - **BULUNAN HATALAR (üçü de kod yazılırken, kullanıcıdan önce):**
+       1. **`temizle()` yeniden başlatmalardan sonra ÇALIŞMIYORDU** — bellekteki
+          `_sonToken`e güveniyordu, o da taze bir süreçte `null`. Bildirimi
+          kapatıp uygulamayı kapatan kullanıcının token'ı sonsuza kadar kalırdı.
+          Artık CANLI token FCM'den okunuyor, bellek yalnızca yedek. **Bir test
+          buldu.**
+       2. **Token yenilemesi ESKİ satırı sızdırıyordu** — anahtar token olduğu
+          için yenileme yeni satır açıp eskisini bırakıyordu; artık yenilemede
+          eski token siliniyor.
+       3. **Yanlış bir varsayımla gereksiz bir sayaç yazılmıştı:** eklentinin
+          "kalıcı red"i bildirmediği sanılıp `FlagsStore`'a ikinci bir doğruluk
+          kaynağı kondu. `dart analyze`ın non-exhaustive-switch uyarısı
+          `AuthorizationStatus.deniedPermanently`in VAR olduğunu kanıtladı;
+          sayaç kaldırıldı ve `flags_store.dart`'a "geri ekleme" notu bırakıldı.
+          **Bunu bir test değil DERLEYİCİ yakaladı** — enjekte edilebilir bir
+          dikişin arkasındaki kütüphane yüzeyini okumadan sarmalayıcı yazmanın
+          bedeli.
+     - **`push_init.dart` neden var:** `Firebase.initializeApp()` web'de ve
+       Android/iOS dışında yapılandırma bulamayıp FIRLATIYOR — GitHub Pages'teki
+       Flutter web test ortamı açılışta ölürdü. `initFirebase()` `false` dönüyor
+       ve push tamamen devre dışı kuruluyor; uygulamanın geri kalanı etkilenmiyor.
+     - **Doğrulama:** `dart analyze` temiz (tek ön-var olan info hariç),
+       **591/591** Flutter testi geçiyor (`deep_link` · `push_rules` ·
+       `push_repo` · `push_permission_flow` · `push_permission_mapping`), Deno
+       tarafında `_shared/push_test.ts` 4 test (RS256 imzala-doğrula turu
+       dahil). Negatif eşler kuruldu: yeni https `/auth` dalı silinince
+       `deep_link_test` GERÇEKTEN düşüyor.
+     - **DOĞRULAMA SINIRI — cihazda hiçbir şey görülmedi.** Android derlemesi
+       Firebase'le (google-services eklentisi + üç paket + Kotlin kanal kodu)
+       bir kez bile DERLENMEDİ; bildirimin gerçekten düşmesi, kanal kimliğinin
+       tutması ve App Links doğrulaması yalnızca gerçek cihazda görülebilir.
+       Kontrol listesi: `mobile/docs/testing-bildirimler.md`.
+
    - ✅ **Parça 157 — merkez X3 etiketi büyütüldü (28 Ağustos 2026, kullanıcı
      isteği: *"en ortadaki X3 yazısını da biraz büyütelim"*):**
      `clamp(7px,1.9vw,12px)` → `clamp(9px,2.6vw,16px)`, web ve portta birden

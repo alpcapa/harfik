@@ -34,13 +34,22 @@ class KFriendInviteLink extends KDeepLink {
   const KFriendInviteLink(this.token);
 }
 
-/// `kelimeki://auth` (kayıt onayı) · `kelimeki://reset` (şifre sıfırlama).
+/// `https://kelimeki.com/auth` (kayıt onayı) · `kelimeki://auth` ·
+/// `kelimeki://reset` (şifre sıfırlama).
 ///
 /// Bu uygulamanın İŞLEMEDİĞİ tek tür: oturumu supabase_flutter kendi
 /// `AppLinks` aboneliğinden kurar (`detectSessionInUri`). Burada var olma
 /// sebebi ayırt edilebilmesi.
+///
+/// **Kayıt onayı 28 Ağustos 2026'da https'e geçti** (`env.dart` →
+/// `authRedirectUri`): custom şema, uygulamanın kurulu OLMADIĞI bir
+/// tarayıcıda `ERR_UNKNOWN_URL_SCHEME` çıkmazı üretiyordu. Custom şema
+/// dalı SİLİNMEDİ — hâlâ Redirect URLs listesinde ve eski derlemelerden
+/// gelen linkler bu biçimde. Şifre sıfırlama (`resetRedirectUri`) bilerek
+/// custom şemada kaldı: o linke basan kişi tanım gereği uygulamadan
+/// "şifremi unuttum" demiş, yani uygulama O CİHAZDA kurulu.
 class KAuthReturnLink extends KDeepLink {
-  /// `auth` | `reset` — host olduğu gibi taşınıyor.
+  /// `auth` | `reset` — custom şemada host, https'te ilk yol parçası.
   final String kind;
   const KAuthReturnLink(this.kind);
 }
@@ -75,14 +84,20 @@ KDeepLink? parseDeepLink(Uri uri) {
       _ => null,
     };
   }
-  // Web linki App Links ile uygulamaya düştüyse — YALNIZCA davet.
-  // Manifest `https://kelimeki.com`'un TAMAMINI talep ediyor (yol kısıtı
-  // yok), yani buraya `/gizlilik/` gibi sayfalar da düşebilir; onları
-  // tanımıyoruz ve tanımamalıyız.
+  // Web linki App Links ile uygulamaya düştüyse — YALNIZCA davet ve kayıt
+  // onayı. Manifest `https://kelimeki.com`'un TAMAMINI talep ediyor (yol
+  // kısıtı yok), yani buraya `/gizlilik/` gibi sayfalar da düşebilir;
+  // onları tanımıyoruz ve tanımamalıyız.
   if ((uri.scheme == 'https' || uri.scheme == 'http') && uri.host == _kWebHost) {
     final seg = uri.pathSegments;
     if (seg.length == 2 && seg.first == 'davet' && seg[1].isNotEmpty) {
       return KFriendInviteLink(seg[1]);
+    }
+    // `env.dart` → `authRedirectUri`. Sınıflandırma yine İŞLEM DEĞİL:
+    // oturumu supabase_flutter kuruyor. Burada tanınmasının sebebi, aynı
+    // URI'nin "bilinmeyen" sayılıp ileride yanlış bir dala düşmemesi.
+    if (seg.length == 1 && seg.first == 'auth') {
+      return const KAuthReturnLink('auth');
     }
   }
   return null;

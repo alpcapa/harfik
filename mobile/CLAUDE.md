@@ -453,6 +453,7 @@ Bütçeyi `npm run check-doc-size` ölçüyor, sınıra gelince yeni cilt açıl
 | **Web ↔ Uygulama Arasındaki Kabul Edilmiş Farklar — Parça günlüğü** (DÖRT cilt, yukarıdaki tabloya bak) | `mobile/docs/parca-log.md` + `-110-138` + `-49-109` + `-1-48` |
 | FAZ A1 — cihaz testi tur durumu | `mobile/docs/cihaz-testi-log.md` |
 | Cihaz testi — Arkadaşlar + Canlı oyun bölümleri (iki gerçek oturum ister) | `mobile/docs/testing-arkadaslar-canli.md` |
+| Cihaz testi — push bildirimleri + derin bağlantılar (çoğu Play imzalı derleme ister) | `mobile/docs/testing-bildirimler.md` |
 
 **Yeni bir "Parça N" notu eklerken:** parça numarasını bir öncekinin devamı
 olarak ver ve **AKTİF cilde** (`mobile/docs/parca-log.md`) yaz — dondurulmuş
@@ -529,6 +530,17 @@ mobile/
       data/friend_invite_inbox.dart # gelen davet linkleri → pending_events
       data/chat_api.dart     # Canlı oyun sohbeti + sessize alma/raporlama
                              # (ChatRepo/ChatGateway) — yalnız Canlı oyunlar
+      data/push_repo.dart    # push token yaşam döngüsü (kayıt/yenileme/
+                             # temizlik) — İKİ dikiş: PushMessaging (FCM) ve
+                             # PushTokenStore (push_tokens tablosu). DEĞİŞMEZ:
+                             # tabloda satır varsa o cihaz bildirim GÖSTEREBİLİR
+                             # (her açılışta `senkronize` ile kendini onarır)
+      data/push_gateways.dart # yukarıdaki iki dikişin GERÇEK uçları
+                             # (firebase_messaging ↔ Supabase upsert) +
+                             # izinDurumu(AuthorizationStatus) eşlemesi
+      data/push_init.dart    # Firebase.initializeApp sarmalayıcısı — web ve
+                             # Android/iOS DIŞI platformlarda `false` döner
+                             # (GitHub Pages web derlemesi açılışta ölmesin)
       game/game_controller.dart # ChangeNotifier motor kabuğu + otomatik YZ turu
       storage/               # SQLite + prefs katmanı (bkz. "Depolama Katmanı"):
                              # app_database (şema), app_storage (giriş kapısı),
@@ -601,6 +613,15 @@ mobile/
                              # membership_perks_box (misafir "Neden Üye
                              # Olmalıyım?" kutusu, 7 Ağustos 2026)
       ui/feedback/           # feedback_modal ("Görüş Bildir" formu)
+      ui/push/               # push_permission_flow — bildirim izninin
+                             # KENDİ onay penceresi. Sistem diyaloğu ancak
+                             # kullanıcı "Aç" derse tetiklenir; tetikleyici
+                             # "Canlı sekmesi açıldı VE aktif oyun/davet var"
+                             # (gerekçe: AndroidManifest'teki not + Parça 158)
+      ui/route_observer.dart # kRouteObserver — RouteAware `didPopNext`.
+                             # Web'in "route değişince remount" davranışının
+                             # port karşılığı; SetupScreen oyundan DÖNÜŞTE
+                             # rozetini bununla tazeliyor (Parça 153)
       ui/friends/            # friends_modal (3 sekme + davet paylaşımı +
                              # paylaşılan onay/sonuç diyalogları) +
                              # friend_moderation_sheet (satırdaki 🚫/🚩
@@ -611,6 +632,10 @@ mobile/
                              # online_game_screen (TAHTA — game_screen.dart
                              # ile sürükleme/joker/mesaj desenini PAYLAŞIR,
                              # biri değişirse öteki de güncellenmeli)
+      util/deep_link.dart    # gelen URI'lerin TEK ayrıştırma noktası
+                             # (davet · auth dönüşü · Canlı oyun push linki)
+      util/push_rules.dart   # "izin sorulsun mu?" saf kararı (en çok 3 kez,
+                             # 7 gün arayla) + platform adı doğrulaması
       util/semver.dart, util/uuid.dart, util/share_board.dart,
       util/platform.dart      # bu istemcinin platformu (ios/android/app-web) —
                              # telemetri; web `src/utils/platform.ts` karşılığı,
@@ -899,42 +924,31 @@ silinip kendi tarihli parça notuna taşınır.
   (14 Ağustos 2026): karar mantığı Parça 96'da (`util/online_status.dart` +
   `connectivity_plus`), Board alt şeridindeki görsel "Çevrimdışı" rozeti
   Parça 97'de.
-- **Kayıt onayı maili kaydın GELDİĞİ kanala dönmeli (10 Ağustos 2026,
-  kullanıcı kararı — sözleri: "Kişilerin kayıt başvurusu hangi kanaldan
-  geliyorsa o kanala yönlendirilmeleri doğrusu"):** Bugün `signUp()`
-  hiçbir `emailRedirectTo` geçmiyor, dolayısıyla GoTrue onay linkini
-  Supabase'deki tek Site URL'e (kelimeki.com) atıyor — uygulamadan kayıt
-  olan kişi de tarayıcıya düşüyor, oradan uygulamaya dönüp ELLE giriş
-  yapmak zorunda kalıyor. TESTING.md 9.4 koşulurken gözlendi (kullanıcı
-  uygulamadan T3 olarak kayıt oldu, link tarayıcıda kelimeki.com'u açtı
-  ve orada duran ESKİ T5 oturumunu gösterdi — bkz. aşağıdaki "bu bir hata
-  DEĞİL" notu).
-  - **Yapılacak:** `AuthService.signUp` mobilde `emailRedirectTo:
-    kelimeki://auth` (ya da benzeri bir yol) geçsin; web istemcisi
-    DEĞİŞMESİN (o zaten doğru kanalda). Dashboard → Authentication → URL
-    Configuration → **Redirect URLs**'e bu URI eklenmeli — `kelimeki://reset`
-    için yapılan aynı el işi (bkz. Parça 6); eklenmezse GoTrue sessizce
-    Site URL'e düşürür ve hiçbir şey değişmez.
-  - **Asıl kazanç yalnızca "doğru uygulama açılıyor" değil:** link
-    uygulamaya dönerse PKCE `code_verifier` ZATEN o cihazın uygulama
-    deposunda olduğundan supabase_flutter takası yapıp kullanıcıyı
-    DOĞRUDAN girişli bırakır — "e-postanı doğrula, sonra dönüp giriş yap"
-    adımı tamamen kalkar. Bugün bu takas yapılamıyor çünkü verifier
-    uygulamada, link ise başka bir origin'de (tarayıcı) açılıyor.
+- ~~Kayıt onayı maili kaydın GELDİĞİ kanala dönmeli~~ — **YAPILDI**
+  (28 Ağustos 2026, Parça 158): `AuthService.signUp` artık
+  `emailRedirectTo: authRedirectUri` geçiyor (`config/env.dart`), web
+  istemcisi DEĞİŞMEDİ. Değer bilerek **`https://kelimeki.com/auth`** — custom
+  şema (`kelimeki://auth`) ile başlandı ve aynı gün https'e çevrildi:
+  uygulamanın kurulu OLMADIĞI bir tarayıcıda (insanlar postalarını sıklıkla
+  masaüstünden okur) custom şema `ERR_UNKNOWN_URL_SCHEME` çıkmazı veriyordu,
+  yani onay linki BOZUK görünüyordu. Gerekçenin tamamı `env.dart`'ın
+  başlığında.
+  - **Dashboard el işi:** Redirect URLs listesinde `https://kelimeki.com/**`
+    ZATEN var (davet linkleri için), yani ek bir kayıt gerekmedi —
+    `kelimeki://reset`in aksine.
+  - **Doğrulama sınırı DEĞİŞMEDİ, yalnızca yer değiştirdi:** App Links
+    doğrulaması YALNIZCA Play imzalı derlemede geçer, CI'nın debug-imzalı
+    `.apk`'sında geçmez. Yani `.apk`da görülecek olan güvenli yedek yoldur
+    (link tarayıcıda açılır, kullanıcı elle giriş yapar = bugünkü davranış);
+    "uygulama açılıyor + doğrudan girişli kalıyor" yarısı ancak kapalı test
+    kanalından kurulan derlemede doğrulanabilir (`mobile/TESTING.md` 9.16).
   - **`signup_channel` ile KARIŞTIRMA:** o alan 'direct'/'form' ayrımını
-    (hangi FORMDAN gelindiği) tutuyor; buradaki "kanal" platform —
-    uygulama mı tarayıcı mı. İkisi bağımsız.
-  - **Doğrulaması FAZ B'ye bağlı:** custom şema (`kelimeki://`) yalnızca
-    GERÇEKTEN kurulu bir native uygulama varken işletim sistemi tarafından
-    yakalanabilir; GitHub Pages web derlemesinde test EDİLEMEZ (Parça
-    28'in aynı sınırı). Aynı turda `kelimeki://reset` de ilk kez gerçek
-    cihazda doğrulanacağından ikisi birlikte ele alınmalı.
-  - **Bugünkü davranış bir HATA değil, kayda geçsin:** T3'ün onay linki
-    sunucuda gerçekten işledi (`email_confirmed_at` linke basılan an) ve
-    tarayıcıdaki T5 oturumuna DOKUNMADI (`last_sign_in_at` bir saat
-    öncesinde kaldı) — yani link kimseyi giriş yaptırmadı, yalnızca o
-    origin'de zaten duran oturum göründü. PKCE'nin verifier'ı öteki
-    origin'de olduğundan takas yapılamıyor; bu aynı zamanda güvenlik
-    açısından doğru taraf (aksi halde bir kullanıcının onay linki başka
-    bir hesabın açık oturumunu sessizce ezerdi).
+    (hangi FORMDAN gelindiği) tutuyor; buradaki "kanal" platform.
+  - **Eski davranış bir HATA değildi, kayda geçsin:** T3'ün onay linki
+    sunucuda gerçekten işliyordu (`email_confirmed_at` linke basılan an) ve
+    tarayıcıdaki başka bir oturuma DOKUNMUYORDU — link kimseyi giriş
+    yaptırmıyor, yalnızca o origin'de zaten duran oturum görünüyordu.
+    PKCE'nin verifier'ı öteki origin'de olduğundan takas yapılamıyor; bu aynı
+    zamanda güvenlik açısından doğru taraf (aksi halde bir kullanıcının onay
+    linki başka bir hesabın açık oturumunu sessizce ezerdi).
 

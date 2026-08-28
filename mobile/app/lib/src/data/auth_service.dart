@@ -234,8 +234,9 @@ class AuthService extends ChangeNotifier {
     try {
       final res = await c.auth.signUp(
         // Onay linki UYGULAMAYA dönsün — web istemcisi DEĞİŞMEZ (o zaten
-        // doğru kanalda). Gerekçe ve Dashboard el işi: env.dart →
-        // authRedirectUri.
+        // doğru kanalda). Değer bir https App Link (custom şema DEĞİL);
+        // uygulama kurulu değilse siteye düşer, yani en kötü durum bugünkü
+        // davranış. Gerekçe ve Dashboard el işi: env.dart → authRedirectUri.
         emailRedirectTo: authRedirectUri,
         email: email,
         password: password,
