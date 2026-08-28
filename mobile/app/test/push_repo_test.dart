@@ -25,8 +25,12 @@ class FakeMessaging implements PushMessaging {
     return tokenDegeri;
   }
 
+  /// ⚠ Gerçek FCM'de yenilemeden SONRA `getToken()` YENİ token'ı döndürür.
+  /// Sahte uç bunu taklit etmezse `temizle`nin canlı token'ı okuyan yolu
+  /// gerçekte olmayan bir durumu test eder (eski token'ı silmeye çalışmak).
   @override
-  Stream<String> onTokenRefresh() => refreshCtl.stream;
+  Stream<String> onTokenRefresh() =>
+      refreshCtl.stream.map((t) => tokenDegeri = t);
 
   @override
   Future<PushPermission> permission() async => izin;
@@ -111,8 +115,11 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     await r.temizle();
-    expect(s.silinenler, ['tok-2'],
-        reason: 'silinen, en son YAZILAN token olmalı');
+    // İKİ silme bekleniyor ve ikisi de doğru: yenileme eski satırı (tok-1),
+    // çıkış canlı token'ı (tok-2) siliyor. Önemli olan SONUNCUSU.
+    expect(s.silinenler, ['tok-1', 'tok-2']);
+    expect(s.silinenler.last, 'tok-2',
+        reason: 'çıkışta silinen, cihazın GÜNCEL token\'ı olmalı');
 
     // Çıkıştan sonra gelen bir yenileme artık YAZILMAMALI — yoksa çıkmış
     // kullanıcının satırı geri gelir ve bildirimleri bu cihaza düşer.
@@ -122,10 +129,32 @@ void main() {
     expect(s.yazilanlar.length, oncekiSayi);
   });
 
-  test('hiç kaydedilmemişken temizle sessizce geçer', () async {
+  test('hiç kaydedilmemişken bile CANLI token silinir', () async {
+    // Bu davranış bilerek böyle: `_sonToken` yalnızca bu oturumda bir kayıt
+    // yapıldıysa dolu. Uygulama yeniden başladıktan sonra çıkış yapan bir
+    // kullanıcının satırı, canlı token okunmasaydı tabloda KALIRDI.
+    // Olmayan bir satırı silmek zararsız (no-op).
     final s = FakeStore();
     await repo(FakeMessaging(), s).temizle();
+    expect(s.silinenler, ['tok-1']);
+  });
+
+  test('FCM token veremezse temizle sessizce geçer', () async {
+    final s = FakeStore();
+    await repo(FakeMessaging(tokenDegeri: null), s).temizle();
     expect(s.silinenler, isEmpty);
+  });
+
+  test('token yenilenince ESKİ satır silinir (cihaz iki kez görünmesin)',
+      () async {
+    final m = FakeMessaging();
+    final s = FakeStore();
+    await repo(m, s).kaydet('kisi-1');
+    m.refreshCtl.add('tok-2');
+    await Future<void>.delayed(Duration.zero);
+    expect(s.yazilanlar.last['token'], 'tok-2');
+    expect(s.silinenler, ['tok-1'],
+        reason: 'eski satır kalırsa aynı cihaza iki kez gönderilmeye çalışılır');
   });
 
   test('FCM ya da tablo patlarsa FIRLATMAZ', () async {
@@ -136,5 +165,56 @@ void main() {
     final s2 = FakeStore()..upsertFirlatsin = true;
     await repo(FakeMessaging(), s2).kaydet('kisi-1');
     // Buraya gelmek testin kendisi — fırlatsaydı test düşerdi.
+  });
+
+  group('senkronize: token varlığı İZNİ takip eder', () {
+    // DEĞİŞMEZ: `push_tokens`teki satır "bu cihaz bildirimi GERÇEKTEN
+    // gösterebilir" demek. İzin yokken gönderilen bildirimi Android sessizce
+    // atar ama FCM 200 döner — yani satır kalsaydı sayaçlar yalan söyler ve
+    // her turda boşuna kota yakılırdı.
+    test('granted → yazar', () async {
+      final s = FakeStore();
+      await repo(FakeMessaging(), s)
+          .senkronize(userId: 'kisi-1', izin: PushPermission.granted);
+      expect(s.yazilanlar, hasLength(1));
+    });
+
+    test('denied ve permanentlyDenied → var olan satırı SİLER', () async {
+      for (final izin in [
+        PushPermission.denied,
+        PushPermission.permanentlyDenied,
+      ]) {
+        final m = FakeMessaging();
+        final st = FakeStore();
+        final r = repo(m, st);
+        await r.senkronize(userId: 'kisi-1', izin: PushPermission.granted);
+        expect(st.yazilanlar, hasLength(1));
+        // Kullanıcı sistem ayarlarından kapattı: bir sonraki açılışta silinir.
+        await r.senkronize(userId: 'kisi-1', izin: izin);
+        expect(st.silinenler, ['tok-1'], reason: '$izin için silinmeli');
+      }
+    });
+
+    test('notDetermined → HİÇBİR ŞEY yapmaz', () async {
+      final m = FakeMessaging();
+      final st = FakeStore();
+      await repo(m, st)
+          .senkronize(userId: 'kisi-1', izin: PushPermission.notDetermined);
+      expect(st.yazilanlar, isEmpty);
+      expect(st.silinenler, isEmpty);
+      expect(m.tokenCagrisi, 0, reason: 'sorulmamışken token bile istenmez');
+    });
+
+    test('izin geri gelirse token YENİDEN yazılır (kendi kendini onarır)',
+        () async {
+      final m = FakeMessaging();
+      final st = FakeStore();
+      final r = repo(m, st);
+      await r.senkronize(userId: 'kisi-1', izin: PushPermission.granted);
+      await r.senkronize(userId: 'kisi-1', izin: PushPermission.denied);
+      await r.senkronize(userId: 'kisi-1', izin: PushPermission.granted);
+      expect(st.yazilanlar, hasLength(2),
+          reason: 'ayarlardan tekrar açılınca dinleyici gerekmeden düzelmeli');
+    });
   });
 }
