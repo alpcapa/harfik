@@ -52,6 +52,25 @@
        yakalanıyor, çıkışta token siliniyor, ve push YOKKEN (web/Firebase
        yok) kapı sorunsuz açılıyor. Negatif eş: `_pushHizala` etkisizleştirilince
        ilk üçü GERÇEKTEN düşüyor, dördüncüsü doğru şekilde geçmeye devam ediyor.
+     - **DÖRDÜNCÜ belirti, aynı kök sebep (aynı tur, cihazda):** hesap
+       değiştirilince token devrolmuyordu. T2 ile girilip satır T2'ye
+       yazıldı; Ironman'a geçildi, uygulama Ironman gösteriyordu ama satır
+       **T2'de kaldı** (`updated_at` bile değişmedi). Bunun bedeli boşa
+       gönderim DEĞİL, **yanlış kişiye gönderim**: T2'ye gidecek bildirim
+       Ironman'ın girişli olduğu telefona düşer.
+       - Kodu okurken ortaya çıkan asıl sebep daha da geniş: hizalama
+         `live_games_tab._reload()`'un İÇİNDE ve o da liste yüklemesi
+         düşerse (`snap == null`) erken dönüyor. Yani devir üç ayrı yoldan
+         atlanabiliyordu — sekme açılmadı, sekme yeniden kurulmadı, ya da
+         liste yüklemesi düştü.
+       - ⚠ Bu bulguyu ararken **yanlış bir tahmin yaptım ve düzelttim:**
+         "`_reload` hesap değişiminde koşmuyor" dedim; kod tersini söylüyor
+         (`_onAuthEvent` → `_reload`). Tahmini kaynağı okumadan söylemek bu
+         turda bir tur yaktı.
+       - Testi eklendi (`HESAP DEĞİŞİMİNDE token yeni kullanıcıya devrolur`);
+         negatif eş: `_HomeGate`'in auth dinleyicisi kaldırılınca hem bu test
+         hem "ÇIKIŞTA token silinir" düşüyor.
+
      - **Ders — bu günlüğün kendisine dair:** "değişmez" diye yazılan bir
        cümle, onu ZORLAYAN bir test yoksa yalnızca bir NİYET. Parça 158
        değişmezi doğru tarif etmişti; eksik olan, tetikleyicinin o tarifi

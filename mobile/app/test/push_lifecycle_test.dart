@@ -163,6 +163,31 @@ void main() {
             'göndermeye devam eder (temizle hiçbir yerden çağrılmıyordu)');
   });
 
+  testWidgets('HESAP DEĞİŞİMİNDE token yeni kullanıcıya devrolur',
+      (tester) async {
+    // 28 Ağustos 2026, cihazda ÖLÇÜLDÜ: T2 ile giriş yapılıp satır T2'ye
+    // yazıldıktan sonra Ironman'a geçildi — satır T2'DE KALDI (`updated_at`
+    // bile değişmedi), uygulama ise Ironman gösteriyordu.
+    //
+    // Bunun bedeli boşa gönderim DEĞİL, YANLIŞ KİŞİYE gönderim: T2'ye
+    // gidecek bildirim, Ironman'ın girişli olduğu telefona düşer.
+    //
+    // Eski kodda hizalama Canlı sekmesinin `_reload()`'una bağlıydı ve o da
+    // liste yüklemesi düşerse erken dönüyordu; yani devir üç ayrı yoldan
+    // atlanabiliyordu. Artık oturum değişimi TEK BAŞINA yeterli.
+    final s = kur();
+    await ac(tester, s);
+    await tester.pumpAndSettle();
+    store.yazilanlar.clear();
+
+    auth.setUser(_user('u2'));
+    await tester.pumpAndSettle();
+
+    expect(store.yazilanlar, ['tok-1/u2'],
+        reason: 'hesap değişiminde token devrolmadı — eski hesabın '
+            'bildirimleri yeni kullanıcının telefonuna düşer');
+  });
+
   testWidgets('push YOKKEN (web/Firebase yok) kapı sorunsuz açılır',
       (tester) async {
     final s = AppServices(
