@@ -4,6 +4,8 @@ plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    // Firebase — `google-services.json`u işler. Sürümü settings.gradle.kts'te.
+    id("com.google.gms.google-services")
 }
 
 // Upload imzalama anahtarı (22 Ağustos 2026, ROADMAP FAZ B → 0.A1).
