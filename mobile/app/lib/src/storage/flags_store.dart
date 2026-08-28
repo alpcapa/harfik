@@ -69,4 +69,28 @@ class FlagsStore {
   Future<void> setFeedbackSubmissionTimes(List<int> times) =>
       prefs.setStringList(
           _feedbackTimes, [for (final t in times) t.toString()]);
+
+  static const _pushSorulmaSayisi = 'push_sorulma_sayisi';
+  static const _pushSonSorulma = 'push_son_sorulma';
+
+  /// KENDİ izin sayfamızın kaç kez gösterildiği (sistem diyaloğu DEĞİL).
+  int get pushSorulmaSayisi => prefs.getInt(_pushSorulmaSayisi) ?? 0;
+
+  /// Son gösterim anı — iki sorma arasındaki yedi günlük aralık için.
+  DateTime? get pushSonSorulma {
+    final ms = prefs.getInt(_pushSonSorulma);
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
+  Future<void> pushSorulduIsaretle(DateTime an) async {
+    await prefs.setInt(_pushSorulmaSayisi, pushSorulmaSayisi + 1);
+    await prefs.setInt(_pushSonSorulma, an.millisecondsSinceEpoch);
+  }
+
+  // NOT: burada bir "sistem reddi sayacı" VARDI ve 28 Ağustos 2026'da
+  // KALDIRILDI. Gerekçesi "firebase_messaging kalıcı reddi bildirmiyor"du;
+  // ölçünce YANLIŞ çıktı — eklentinin `AuthorizationStatus` enum'unda
+  // `deniedPermanently` var ve dokümanı tam da bunu diyor. Yetkili kaynak
+  // varken yerel bir sayaç tutmak ikinci bir doğruluk kaynağı yaratırdı;
+  // ikisi ayrışınca hangisinin doğru olduğu bilinemezdi.
 }
