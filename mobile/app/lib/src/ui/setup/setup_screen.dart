@@ -1158,7 +1158,11 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                         ),
                         const SizedBox(height: 20),
                         if (_liveView)
-                          LiveGamesTab(services: widget.services)
+                          LiveGamesTab(
+                              services: widget.services,
+                              // Canlı tahtadan dönüşte rozet de tazelensin —
+                              // gerekçe `live_games_tab.dart:_openGame`.
+                              onGameClosed: _scheduleLiveBadgeRefresh)
                         else
                           FutureBuilder<SetWordSource>(
                             future: widget.services.dictionary,

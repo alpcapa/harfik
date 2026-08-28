@@ -20,6 +20,50 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 153 — rozet oyundan DÖNÜŞTE tazelenmiyordu: web'in
+     BEDAVA aldığı garanti portta yok (28 Ağustos 2026, kullanıcı bildirdi:
+     *"Hiç bekleyen oyunum kalmamış olmasına rağmen tab'da 1 uzun süre
+     durdu. Sonra ekran kapandı, açınca gitti."*):** "Arkadaşınla (N)"
+     rozeti bayat kalıyor, ekran kapanıp açılınca (yani
+     `AppLifecycleState.resumed`) düzeliyordu — kullanıcının tarifi bu
+     yolun kendisiydi.
+     - **Kök sebep bir YAPI farkı, bir unutulmuş kanca değil.** Web'de
+       Canlı tahta açılınca `App.tsx` erken `return` ile Setup'ı
+       AĞAÇTAN ÇIKARIYOR; dönüşte Setup remount olup rozet effect'ini
+       baştan koşturuyor — yani web bu garantiyi bedavaya alıyor.
+       Flutter'da Setup `MaterialApp.home` ve oyun ÜSTÜNE push ediliyor,
+       **Setup hiç unmount olmuyor**. Aynı tuzak `setup_screen.dart:292`'de
+       başka bir özellik için zaten yazılıydı (*"ekran hiç unmount OLMUYOR
+       — 'Setup'a her geliş' notu bu yüzden yanıltıcıydı"*); rozet o
+       dersten payını almamıştı.
+     - **Liste bu garantiyi BAŞTAN BERİ taşıyordu:** `_openGame` dönüşte
+       `_reload()` çağırıyor ve yorumu aynen şöyle: *"Realtime da tetikler
+       ama dönüş anı garanti."* Rozet aynı satırın hemen yanında eksikti —
+       Parça 148'in (27 Ağustos) düzelttiği çelişkinin AYNISI, farklı
+       kancadan: kapsayan rozet, kapsanan listeyle çelişiyor.
+     - **Düzeltme:** `LiveGamesTab.onGameClosed` callback'i;
+       `SetupScreen` ona `_scheduleLiveBadgeRefresh`i veriyor. Yeni bir
+       mekanizma değil, listenin zaten sahip olduğu anın rozete de
+       verilmesi.
+     - ⚠ **Sürüm B uyarısı koda yazıldı:** Canlı tahtayı açan İKİNCİ bir
+       kapı eklenince (bildirime dokununca doğru oyunu aç) o kapı da bunu
+       çağırmalı; iki kapı olduğunda doğru çare callback değil Setup'a
+       takılacak bir `RouteObserver` (`didPopNext`).
+     - **Bu, kaçırılan olayın kalıcı kayba dönüştüğü BEŞİNCİ yer** (sohbet
+       Realtime'ı, bulut senkronu, `useOnlineStatus`, Parça 148). Olay
+       tabanlı her durumun bir de olaydan bağımsız "kesin an"ı olmalı.
+     - **Test:** `setup_screen_test.dart` +1 (547 test). Gerçek push/pop
+       üzerinden: rozet 1 → oyuna gir → sunucuda iş biter ama HİÇBİR olay
+       gelmez → pop → rozet gitmeli. **Negatif ikiz kanıtlandı** (tek satır
+       kaldırılınca test düşüyor). İki tuzak ölçüldü: `find.byType` varsayılan
+       olarak sahne dışını ATLAR (`skipOffstage: false` şart — hatanın
+       kaynağı zaten Setup'ın sahne dışında MOUNT kalması), ve
+       `tester.pageBack()` bir AppBar geri butonu arıyor (Canlı tahtanın
+       kendi çıkış düzeni var, rota doğrudan pop ediliyor).
+     - **Web ETKİLENMEDİ ve `src/` altında değişiklik gerekmedi** —
+       `App.tsx:1190` ölçüldü: erken `return <OnlineGameScreen …/>`, yani
+       Setup gerçekten unmount oluyor.
+
    - ✅ **Parça 152 — İKİ eşik tek sanılıyordu: titreşimli dokunuş
      (27 Ağustos 2026, kullanıcı Parça 151'den SONRA aynı şikayeti
      tekrarladı: *"Hâlâ tahtaya koyulan taşı her zaman alamıyorum. 1-2

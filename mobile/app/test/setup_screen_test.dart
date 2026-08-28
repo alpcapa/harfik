@@ -17,6 +17,7 @@ import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/meaning_store.dart';
 import 'package:kelimeki/src/config/version_gate.dart';
+import 'package:kelimeki/src/data/friends_api.dart';
 import 'package:kelimeki/src/data/online_games_api.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
 import 'package:kelimeki/src/game/local_game_repo.dart';
@@ -66,7 +67,7 @@ AppServices services({Future<AppStorage>? storage, AuthService? auth}) =>
 /// "Arkadaşınla (N)" rozeti/girişte otomatik sekme testleri için — girişli,
 /// depolamasız (bu davranış `local_game_saves`e hiç dokunmuyor).
 AppServices liveBadgeServices(AuthService auth, OnlineGamesRepo onlineGames,
-        {OnlineStatus? onlineStatus}) =>
+        {OnlineStatus? onlineStatus, FriendsRepo? friends}) =>
     AppServices(
       onlineStatus: onlineStatus ?? OnlineStatus.fake(),
       dictionary: Future.value(words),
@@ -75,6 +76,9 @@ AppServices liveBadgeServices(AuthService auth, OnlineGamesRepo onlineGames,
       supabase: null,
       versionGate: VersionGateStatus.ok,
       onlineGames: onlineGames,
+      // `LiveGamesTab` listeyi ancak `friends` varken çiziyor; rozet
+      // testlerinin çoğu listeye bakmadığından bu alan isteğe bağlı.
+      friends: friends,
     );
 
 
@@ -840,5 +844,53 @@ void main() {
     expect(tester.widget<CountBadge>(arkadaslaRozeti()).count, 1,
         reason: 'bağlantı dönünce rozet tazelenmeli (web Setup.tsx '
             "window.addEventListener('online', …) karşılığı)");
+  });
+
+  testWidgets(
+      'ARKADAŞINLA rozeti oyundan DÖNÜŞTE tazelenir — listeyle AYNI ANDA '
+      '(28 Ağustos 2026 saha hatası)', (tester) async {
+    // Kullanıcı bildirdi: *"Hiç bekleyen oyunum kalmamış olmasına rağmen
+    // tab'da 1 uzun süre durdu. Sonra ekran kapandı, açınca gitti."*
+    //
+    // Kök sebep bir web↔port YAPI farkı: web'de oyuna girince Setup unmount
+    // olup dönüşte remount oluyor, yani rozet effect'i baştan koşuyor.
+    // Flutter'da Setup `MaterialApp.home` ve oyun ÜSTÜNE push ediliyor —
+    // Setup hiç unmount olmuyor, rozetin tek dayanağı Realtime olayı ve
+    // öne dönüş kalıyordu. `LiveGamesTab` dönüş anını LİSTE için baştan beri
+    // garanti ediyordu (`_openGame` → `_reload`); rozet etmiyordu.
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final gw = FakeOnlineGamesGateway()
+      ..rows = [gameRow(id: 'g1', myId: 'me', status: 'active')]
+      // `current: 1` = 'me' ikinci koltukta, yani SIRA BENDE → rozet 1.
+      ..turnRows = [
+        {'online_game_id': 'g1', 'current': 1},
+      ];
+    await pumpSetup(
+        tester,
+        liveBadgeServices(
+            AuthService.fake(user: fakeUser('me')), OnlineGamesRepo(gw),
+            friends: FriendsRepo(FakeFriendsGateway())));
+    expect(tester.widget<CountBadge>(arkadaslaRozeti()).count, 1);
+
+    await tester.tap(find.text('Esiner açtı'));
+    await tester.pumpAndSettle();
+    // `skipOffstage: false` ZORUNLU: push edilen rota üsttekini sahne dışına
+    // alır ama SÖKMEZ — hatanın kaynağı zaten tam olarak bu (Setup mount'ta
+    // kaldığı için remount tazelemesi hiç olmuyor).
+    expect(find.byType(SetupScreen, skipOffstage: false), findsOneWidget,
+        reason: 'Setup push altında MOUNT kalıyor — hatanın kaynağı bu');
+
+    // Hamle oynandı: sunucuda bekleyen iş kalmadı ama HİÇBİR Realtime olayı
+    // gelmedi (kanal kopuktu / olay kaçtı) ve uygulama öne de dönmedi.
+    gw.rows = [];
+    gw.turnRows = [];
+
+    // `pageBack()` bir AppBar geri butonu arıyor; Canlı tahtanın kendi
+    // çıkış düzeni var, o yüzden rota doğrudan pop ediliyor — testin konusu
+    // dönüşün KENDİSİ, kullanıcının onu nasıl tetiklediği değil.
+    tester.state<NavigatorState>(find.byType(Navigator)).pop();
+    await tester.pumpAndSettle();
+    expect(arkadaslaRozeti(), findsNothing,
+        reason: 'oyundan dönüş, listeninki gibi, rozet için de KESİN bir an');
   });
 }
