@@ -210,7 +210,7 @@ void main() {
     expect(styleOf('X2').fontSize, closeTo(165, 0.01));
     expect(styleOf('X2').fontFamily, 'SpaceMono');
     expect(styleOf('X2').height, 1);
-    expect(styleOf('X3').fontSize, closeTo(12, 0.01));
+    expect(styleOf('X3').fontSize, closeTo(16, 0.01)); // clamp tavanı
     expect(styleOf('X3').fontFamily, 'SpaceMono');
   });
 
@@ -222,10 +222,14 @@ void main() {
 
     TextStyle styleOf(String s) => tester.widget<Text>(find.text(s)).style!;
 
-    // 390px'te ölçülen web değerleri: 124.8 / 93.6 / 7.41.
+    // 390px'te ölçülen web değerleri: 124.8 / 93.6 / 10.14.
+    // X3: 28 Ağustos 2026'da clamp 7/1.9vw/12 → 9/2.6vw/16 oldu (kullanıcı
+    // isteği), yani 2.6% × 390 = 10.14 (önceki 7.41). `layout_parity_test`
+    // KAYNAKLARI karşılaştırıyor; buradaki iddia RENDER EDİLEN puntoyu
+    // ölçüyor — ikisi ayrı katman, ikisi de gerekli.
     expect(styleOf('1').fontSize, closeTo(124.8, 0.01));
     expect(styleOf('X2').fontSize, closeTo(93.6, 0.01));
-    expect(styleOf('X3').fontSize, closeTo(7.41, 0.01));
+    expect(styleOf('X3').fontSize, closeTo(10.14, 0.01));
   });
 
   // Web'de taşlar `relative z-[5]` ile filigranın ÜSTÜNDE boyanır; portta

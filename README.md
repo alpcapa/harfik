@@ -217,8 +217,11 @@ mobile/                    # Flutter (iOS+Android) portu — ayrıntı: mobile/C
     │                      # zamanlı tahta + oyun içi mesajlaşma (sessize alma/
     │                      # raporlama dahil), ilk açılış tanıtımı (4 sayfalık
     │                      # IntroScreen — web'in karşılama katmanının porta
-    │                      # taşınan hikâye kısmı). Admin paneli BİLİNÇLİ olarak
-    │                      # yok.
+    │                      # taşınan hikâye kısmı), push bildirimleri (FCM —
+    │                      # izin akışı Canlı sekmesindeki gerçek bağlama
+    │                      # bağlı) ve kayıt onayı linkinin uygulamaya
+    │                      # dönmesi (App Links). Admin paneli BİLİNÇLİ
+    │                      # olarak yok.
     ├── assets/dictionary/ # üretilmiş asset'ler: words_tr.txt (kaynak
     │                      # src/data/words.ts — npm run generate-golden-vectors)
     │                      # ve meanings.db (npm run generate-meanings-db)
@@ -263,11 +266,13 @@ VITE_SUPABASE_ANON_KEY=sb_publishable_...   # Project Settings → API
 **Edge Functions** (`supabase/functions/`) — Supabase MCP (`deploy_edge_function`) ile deploy edilir, `supabase functions deploy` CLI akışı kullanılmaz. Şu anki fonksiyonlar:
 
 - `_shared/email.ts` — gerçek bir fonksiyon değil, Brevo'yla e-posta gönderen tüm fonksiyonların paylaştığı ortak kod (Brevo çağrısı, HTML escape, iki gönderen sabiti ve iki alt not metni). Her deploy çağrısında ilgili fonksiyonun `files` listesine ayrıca eklenir (Supabase her fonksiyonu kendi bağımsız paket olarak dağıttığından).
+- `_shared/push.ts` — yine gerçek bir fonksiyon değil: FCM HTTP v1 ile mobil uygulamaya push bildirimi gönderen ortak kod (servis hesabı → RS256 JWT → OAuth2 token → gönderim; token önbellekli). `FCM_SERVICE_ACCOUNT` secret'ı tanımlı değilse tüm yüzey sessizce kapalı kalır. Hiçbir genel fonksiyonu FIRLATMAZ — push, e-postanın yanında **ikincil** bir kanal ve onu düşürmesi kabul edilemez. Google `UNREGISTERED`/`INVALID_ARGUMENT` dönerse çağıran, ölü token'ı `push_tokens`tan siler.
+- `push-selftest/` — teşhis fonksiyonu: bilerek GEÇERSİZ bir token'a gönderim deneyip yalnızca iki boolean döner (`yapilandirildi`, `kimlikZinciriSaglam`). `unregistered: true` yanıtı "Google kimliğimizi kabul etti, yalnızca token'ı tanımadı" demek — yani sır/JWT/OAuth zincirinin tamamı, hiçbir cihaz olmadan kanıtlanmış olur. Hiçbir sır yazmaz, `verify_jwt: false`, silinebilir.
 - `feedback-reply/` — admin panelinden bir görüş bildirimine yanıt gönderildiğinde çağrılır; Brevo'nun Transactional Email API'siyle (SMTP değil, ayrı bir `BREVO_API_KEY` Edge Function secret'ı ile) yanıtı gönderenin e-postasına iletir ve `feedback.reply`/`replied_at`/`replied_by` alanlarını günceller.
 - `admin-send-message/` — admin panelinin Üyeler tablosundan bir üyeye elle yazılan serbest metinli mesajı (konu + gövde) aynı Brevo API'siyle gönderir; bir feedback kaydına bağlı olmadığından DB'ye bir şey yazmaz.
 - `play-ai-turn/` — Canlı (online) bir oyunda sırası gelen YZ koltuğunun turunu tamamen sunucuda oynar; YZ'nin gerçek rafı bu sayede hiçbir zaman tarayıcıya gönderilmez (bkz. `CLAUDE.md`, "Canlı Oyun — Faz 3"). `_game/` altındaki `ai.ts`/`validator.ts`/`board.ts`/`constants.ts`/`types.ts`/`turkish.ts`/`tiles.ts`/`wordSet.ts` kopyalarını kullanır — `src/`'deki kaynaklar değişirse elle senkronize edilmeli.
 - `notify-friend-request/` / `notify-game-invite/` — bir arkadaşlık isteği ya da Canlı oyun daveti oluşturulduğunda alıcıya işlemsel (marketing_consent'e bağlı olmayan) bir e-posta bildirimi gönderir; aynı Brevo API'sini kullanır. Best-effort/fire-and-forget çağrılır (`src/lib/api.ts`), bir e-posta hatası isteğin/davetin kendisini etkilemez. Detay için `CLAUDE.md`'deki "İşlemsel e-posta bildirimleri" bölümüne bakın.
-- `notify-deadline-warnings/` — Canlı oyunda sırası gelen oyuncuya (48 saatlik `turn_deadline`) ve YZ'ye karşı devam eden oyunlara (7 günlük terk-edilme penceresi) süre 24 saatten az kalınca hatırlatma gönderir. Projenin ilk `pg_cron` + `pg_net` job'u — kullanıcı etkileşimine bağlı diğer "hafif" desenlerin aksine (`check_turn_timeout` gibi) 15 dakikada bir kendiliğinden tetiklenir, `verify_jwt: false`.
+- `notify-deadline-warnings/` — Canlı oyunda sırası gelen oyuncuya (48 saatlik `turn_deadline`) ve YZ'ye karşı devam eden oyunlara (7 günlük terk-edilme penceresi) süre 24 saatten az kalınca hatırlatma gönderir. E-postanın YANINDA (yerine değil) mobil uygulamaya push bildirimi de atar — alıcının `profiles.push_notifications_enabled` tercihi ve `push_tokens` satırları varsa. Projenin ilk `pg_cron` + `pg_net` job'u — kullanıcı etkileşimine bağlı diğer "hafif" desenlerin aksine (`check_turn_timeout` gibi) 15 dakikada bir kendiliğinden tetiklenir, `verify_jwt: false`.
 - `notify-friend-request-reminders/` — 3 gün cevapsız kalan arkadaşlık isteklerine tek seferlik bir hatırlatma e-postası gönderir. İkinci `pg_cron` job'u, günde bir kez (08:00 UTC) tetiklenir. Detay için `CLAUDE.md`'deki "Arkadaşlık isteği hatırlatma e-postası" bölümüne bakın.
 - `notify-turn-timeout-surrender/` — bir Canlı oyunda sırası gelen oyuncu 48 saat içinde hamle yapmayıp otomatik teslim olduğunda (ve bu, oyunun gerçekten bittiği ana denk geldiğinde) ilgili oyunculara -2 k-lig cezasını bildirir. `check_turn_timeout` RPC'sinden `net.http_post` ile SQL içinden tetiklenir, `verify_jwt: false`.
 - `notify-local-game-abandoned/` — Yapay Zeka'ya karşı 7 gün boyunca hiç hamle yapılmayıp terk edilmiş sayılan bir yerel oyunun -2 k-lig cezasını hesap sahibine bildirir; `saveGame` gerçek bir `surrendered:true` kaydı eklediğinde tetiklenir.

@@ -26,6 +26,7 @@ import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
 
 import '../../bootstrap.dart';
 import '../../data/online_games_api.dart';
+import '../push/push_permission_flow.dart';
 import '../auth/auth_modal.dart';
 import '../auth/k_avatar.dart';
 import '../game/count_badge.dart';
@@ -60,6 +61,7 @@ final Map<String, OnlineGamesSnapshot> _liveGamesCache = {};
 
 class LiveGamesTab extends StatefulWidget {
   final AppServices services;
+
   const LiveGamesTab({super.key, required this.services});
 
   @override
@@ -240,6 +242,43 @@ class _LiveGamesTabState extends State<LiveGamesTab>
         }
       }
     });
+    unawaited(_pushIzniniSorMaybe(snap, user.id));
+  }
+
+  /// Bildirim izni akışının TEK tetikleyicisi.
+  ///
+  /// **Koşul konum değil DURUM (28 Ağustos 2026, ürün kararı):** "Canlı
+  /// sekmesi açıldı" tek başına yetmiyor — en az bir aktif oyun ya da
+  /// bekleyen davet de olmalı. Oyunu olmayan birine, olmayan oyunlar için
+  /// bildirim sorulmaz.
+  ///
+  /// Neden burası, oyun KURMA anı değil: en değerli bildirim (teslim uyarısı)
+  /// ZATEN VAR OLAN oyunlar için. Yalnızca kurma anında sorulsaydı, sekiz
+  /// açık oyunu olup yeni oyun kurmayan bir kullanıcının token'ı hiç
+  /// toplanmaz ve k-lig puanı kaybını önleyecek bildirim tam da onu ıskalardı.
+  ///
+  /// Sekmeye bakan kişi ekranda zaten "Sıra sende" / "Rakibin hamlesi
+  /// bekleniyor" etiketlerine bakıyor; soru tam da o etiketlerin karşılığı.
+  ///
+  /// Kaç kez sorulacağı ve sistem diyaloğunun ne zaman açılacağı BURADA
+  /// değil `util/push_rules.dart`ta — burada yalnızca "durum uygun mu".
+  Future<void> _pushIzniniSorMaybe(OnlineGamesSnapshot snap, String userId) async {
+    final push = services.push;
+    final messaging = services.pushMessaging;
+    final storage = services.storage;
+    if (push == null || messaging == null || storage == null) return;
+    final aktifOyunVar = inviteBucket(snap.games).isNotEmpty ||
+        activeBucket(snap.games, snap.turns).isNotEmpty;
+    final flags = (await storage).flags;
+    if (!mounted) return;
+    await pushIzniAkisi(
+      context,
+      messaging: messaging,
+      repo: push,
+      flags: flags,
+      userId: userId,
+      aktifOyunVar: aktifOyunVar,
+    );
   }
 
   Future<void> _handleRespond(OnlineGame game, bool accept) async {
@@ -307,6 +346,16 @@ class _LiveGamesTabState extends State<LiveGamesTab>
       ),
     ));
     if (mounted) unawaited(_reload());
+    // ⚠ ROZET burada TAZELENMİYOR ve bu bilinçli. 28 Ağustos 2026'da rozet
+    // bir `onGameClosed` callback'iyle tam bu noktaya bağlanmıştı; Sürüm B
+    // Canlı tahtayı açan İKİNCİ bir kapı (bildirime dokun → doğru oyunu aç)
+    // eklediğinden o çare aynı gün öngörüldüğü gibi yetersiz kaldı: yeni
+    // kapının callback'i çağırmayı unutması, düzeltilen hatanın aynısını
+    // geri getirirdi ve derleyici bunu YAKALAMAZDI.
+    //
+    // Rozeti artık Setup'ın `didPopNext`i tazeliyor (`ui/route_observer.dart`)
+    // — hangi kapıdan girilirse girilsin dönüş oradan geçer. Aşağıdaki
+    // `_reload()` ise KALIYOR: o bu sekmenin KENDİ listesi, rozet değil.
   }
 
   @override

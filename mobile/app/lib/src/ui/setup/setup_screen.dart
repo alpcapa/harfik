@@ -69,6 +69,7 @@ import 'membership_perks_box.dart';
 import 'recent_games_section.dart';
 import '../tap_target.dart';
 import '../tokens.dart';
+import '../route_observer.dart';
 import '../game/neo_box.dart';
 import '../auth/auth_modal.dart';
 import '../auth/legal_modals.dart';
@@ -104,7 +105,8 @@ class SetupScreen extends StatefulWidget {
 /// iki sekme.
 enum _LocalSubTab { active, recent }
 
-class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
+class _SetupScreenState extends State<SetupScreen>
+    with WidgetsBindingObserver, RouteAware {
   int _count = 2;
 
   /// Web `mainView` ('local' | 'live') — OYUN TİPİ sekmeleri. Canlı sekme
@@ -271,6 +273,25 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
   }
 
   void _onInviteEvent() => unawaited(_processInvites());
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Rota aboneliği initState'te KURULAMAZ — `ModalRoute.of` InheritedWidget
+    // okuduğundan orada henüz hazır değil. Tekrar tekrar çağrılması zararsız:
+    // `RouteObserver.subscribe` aynı (abone, rota) çiftini bir kez tutuyor.
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) kRouteObserver.subscribe(this, route);
+  }
+
+  /// Üstümüzdeki tam ekran rota kapandı — Setup yeniden görünür.
+  ///
+  /// Web'in Setup'ı unmount edip remount ederek BEDAVA aldığı tazeleme; port
+  /// Setup'ı `MaterialApp.home`da tuttuğundan onu elle vermek zorunda (gerekçe:
+  /// `ui/route_observer.dart`). Canlı tahtayı açan HANGİ kapı olursa olsun —
+  /// liste, ya da Sürüm B'nin bildirim kapısı — dönüş bu noktadan geçer.
+  @override
+  void didPopNext() => _scheduleLiveBadgeRefresh();
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -544,6 +565,7 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    kRouteObserver.unsubscribe(this);
     WidgetsBinding.instance.removeObserver(this);
     widget.services.auth.removeListener(_onAuthEvent);
     widget.services.onlineStatus.removeListener(_onConnectivity);
@@ -1158,6 +1180,10 @@ class _SetupScreenState extends State<SetupScreen> with WidgetsBindingObserver {
                         ),
                         const SizedBox(height: 20),
                         if (_liveView)
+                          // Dönüşte rozet tazelemesi ARTIK BURADAN GEÇMİYOR:
+                          // `didPopNext` (kRouteObserver) hangi kapıdan
+                          // dönülürse dönülsün yakalıyor — gerekçe
+                          // `ui/route_observer.dart`.
                           LiveGamesTab(services: widget.services)
                         else
                           FutureBuilder<SetWordSource>(

@@ -1397,6 +1397,14 @@ Büyüme > Kullanıcı > "Sürüm Dağılımı" tablosu.
       çıkmalı; geri al → normal açılmalı. (Sürüm sabiti bu kapının girdisi;
       parite testi tam bunu koruyor.)
 
+## 24. Push bildirimleri + derin bağlantılar → `mobile/docs/testing-bildirimler.md`
+
+Bildirim izni akışı, `push_tokens` yaşam döngüsü, bildirimin düşmesi/dokunma
+ve kayıt onayı linkinin uygulamaya dönüşü AYRI bir dosyada (Parça 158):
+maddelerin çoğu **Play kanalından kurulmuş imzalı bir derleme** istiyor, yani
+CI'nın debug-imzalı `.apk`'sıyla koşulamaz. Hangi maddenin hangi derlemede
+test edilebildiği o dosyanın başındaki tabloda.
+
 ## Test ortamları ve derleme dağıtımı → `mobile/docs/test-ortamlari.md`
 
 Web derlemesi (tarayıcı test ortamı), **FAZ B — cihaza özel tur (iOS +

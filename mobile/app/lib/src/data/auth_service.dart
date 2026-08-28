@@ -18,7 +18,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../config/env.dart' show resetRedirectUri;
+import '../config/env.dart' show authRedirectUri, resetRedirectUri;
 
 /// `profiles` satırının bu fazda kullanılan alt kümesi (web `Profile`
 /// tipinin eşleniği; skor/lig alanları sonraki parçaların işi).
@@ -233,6 +233,11 @@ class AuthService extends ChangeNotifier {
     if (c == null) throw const AuthException('Supabase yapılandırılmadı.');
     try {
       final res = await c.auth.signUp(
+        // Onay linki UYGULAMAYA dönsün — web istemcisi DEĞİŞMEZ (o zaten
+        // doğru kanalda). Değer bir https App Link (custom şema DEĞİL);
+        // uygulama kurulu değilse siteye düşer, yani en kötü durum bugünkü
+        // davranış. Gerekçe ve Dashboard el işi: env.dart → authRedirectUri.
+        emailRedirectTo: authRedirectUri,
         email: email,
         password: password,
         data: {

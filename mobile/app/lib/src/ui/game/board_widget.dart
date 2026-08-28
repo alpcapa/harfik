@@ -682,11 +682,18 @@ class BoardWidget extends StatelessWidget {
             child: child,
           );
       if (isCenter && !compact) {
-        // Web: `text-[clamp(7px,1.9vw,12px)]` (Board.tsx, merkez hücrenin
-        // kendi etiketi). ÖNCEDEN `FittedBox` ile hücreyi dolduruyordu —
-        // 48px'lik bir hücrede bu ~37px'e denk geliyor, web'in azami 12px'inin
-        // üç katı (kullanıcı cihazda "boyut/tasarım farklı" diye bildirdi,
-        // 17 Ağustos 2026).
+        // Web: `text-[clamp(9px,2.6vw,16px)]` (Board.tsx, merkez hücrenin
+        // kendi etiketi) — İKİSİ BİRLİKTE DEĞİŞİR.
+        //
+        // ÖNCEDEN `FittedBox` ile hücreyi dolduruyordu — 48px'lik bir hücrede
+        // bu ~37px'e denk geliyor, o zamanki azami 12px'in üç katı (kullanıcı
+        // cihazda "boyut/tasarım farklı" diye bildirdi, 17 Ağustos 2026).
+        // O düzeltme DOĞRUYDU ve duruyor: punto hâlâ hücreye değil EKRAN
+        // genişliğine bağlı, yani iki platform aynı hesabı yapıyor.
+        //
+        // 28 Ağustos 2026, kullanıcı isteği ("en ortadaki X3 yazısını biraz
+        // büyütelim"): 7/1.9vw/12 → 9/2.6vw/16. 420 px'lik bir telefonda
+        // 7,98 px → 10,9 px. Tahtanın en önemli tek hücresi okunmuyordu.
         content = Center(
           child: Text(
             'X3',
@@ -694,7 +701,7 @@ class BoardWidget extends StatelessWidget {
               color: _centerText,
               fontFamily: 'SpaceMono',
               fontWeight: FontWeight.bold,
-              fontSize: fluidSize(screenWidth, 7, 0, 1.9, 12),
+              fontSize: fluidSize(screenWidth, 9, 0, 2.6, 16),
             ),
           ),
         );

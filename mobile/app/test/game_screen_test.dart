@@ -347,6 +347,80 @@ void main() {
     expect(controller.state.players[0].rack.length, 7);
   });
 
+  // 28 Ağustos 2026, kullanıcı isteği. İKİ görsel kural, ikisi de yalnızca
+  // gözle görülür — hiçbir derleyici/analiz sapmayı yakalamaz, bu yüzden
+  // teste bağlı. Web ikizleri: `Tile.tsx` (`text-red`) ve `GameHeader.tsx`
+  // (`text-text`); biri değişirse öteki de değişmeli.
+  testWidgets(
+      'tahtadaki JOKER\'in puanı KIRMIZI, sıradan taşınki accent kalır',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    final controller = await pumpGame(tester, GlobalKey());
+
+    // K'yi (1 puan) tahtaya koy — kıyas taşı.
+    await tester.tap(rackTile(0));
+    await tester.pump();
+    await tester.tap(boardCell(0, 0));
+    await tester.pump();
+
+    // Joker'i yanına koy ve bir harf seç.
+    await tester.tap(rackTile(5)); // '?' (K düştü, indeks kaydı)
+    await tester.pump();
+    await tester.tap(boardCell(0, 1));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('B').first);
+    await tester.pumpAndSettle();
+    expect(controller.state.placed['0,1']!.wild, isTrue);
+
+    Color ptsColorOf(Finder tile, String pts) => tester
+        .widget<Text>(find.descendant(of: tile, matching: find.text(pts)))
+        .style!
+        .color!;
+
+    final jokerTile = find.byWidgetPredicate((w) =>
+        w is TileWidget && w.variant != TileVariant.rack && w.tile.wild);
+    expect(jokerTile, findsOneWidget);
+    expect(ptsColorOf(jokerTile, '0'), kRed,
+        reason: 'jokerin 0 puanı token kırmızısı olmalı (tailwind `red`)');
+
+    // Kıyas: sıradan taş DEĞİŞMEDİ. Bu iddia olmadan test, "tüm puanları
+    // kırmızı yaptım" gibi bir aşırı-düzeltmeyi de geçirirdi.
+    final duzTile = find.byWidgetPredicate((w) =>
+        w is TileWidget &&
+        w.variant != TileVariant.rack &&
+        !w.tile.wild &&
+        w.tile.letter == 'K');
+    expect(ptsColorOf(duzTile, '1'), kAccent,
+        reason: 'joker olmayan taşın puanı accent kalmalı');
+  });
+
+  testWidgets('skor kutusunda SAYI siyah, etiket oyuncu renginde kalır',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 900));
+    await pumpGame(tester, GlobalKey());
+
+    final box = find.byKey(const ValueKey('player-box-0'));
+    expect(box, findsOneWidget);
+
+    final skor = tester
+        .widget<Text>(find.descendant(of: box, matching: find.text('0')))
+        .style!
+        .color;
+    expect(skor, kText, reason: 'skor SAYISI siyah (token `text`) olmalı');
+
+    // Kıyas: kutunun geri kalanı DEĞİŞMEDİ — istek birebir "sadece sayı"
+    // diyordu. Bu iddia olmadan test, tüm kutuyu siyaha çeviren bir
+    // değişikliği de geçirirdi.
+    // ⚠ Etiket `trUpper(player.name)` — yani 'IRONMAN'. İlk yazımda
+    // 'Ironman' arandı ve test düştü; hata kodda değil testteydi.
+    final etiket = tester
+        .widget<Text>(find.descendant(of: box, matching: find.text('IRONMAN')))
+        .style!
+        .color;
+    expect(etiket, isNot(kText),
+        reason: 'etiket oyuncu renginde kalmalı, siyaha çevrilmemeli');
+  });
+
   testWidgets('joker akışı: harf seçici → yerleştir → düzenle → geri al',
       (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));

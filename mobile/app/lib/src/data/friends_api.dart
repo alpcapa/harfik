@@ -27,6 +27,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
     show SupabaseClient, PostgrestException;
 
 import '../config/env.dart' show webOrigin;
+import '../util/deep_link.dart' show KFriendInviteLink, parseDeepLink;
 import '../util/offline_notice.dart' show isNetworkError;
 
 /// Web `FriendRelation` — iki kullanıcı arasındaki mevcut ilişki.
@@ -94,20 +95,14 @@ const String inviteShareText = "Kelimeki'de birlikte kelime oyunu oynayalım!";
 /// `kelimeki://davet/<token>` (custom şema; host='davet') ve
 /// `https://kelimeki.com/davet/<token>` (web linki, App Links ile düşerse).
 /// Davet değilse null (auth callback'leri vb. buradan sessizce geçer).
+///
+/// 28 Ağustos 2026'dan beri ayrıştırmayı KENDİSİ yapmıyor: biçim bilgisi
+/// `util/deep_link.dart`'ta tek noktada duruyor (gerekçe orada). Bu sarmalayıcı
+/// duruyor çünkü `FriendInviteInbox`ın tek ihtiyacı token — ona bir sealed
+/// tip döndürüp her çağrı yerinde `switch` yazdırmanın kazancı yok.
 String? parseInviteToken(Uri uri) {
-  if (uri.scheme == 'kelimeki' && uri.host == 'davet') {
-    final seg = uri.pathSegments;
-    if (seg.length == 1 && seg.first.isNotEmpty) return seg.first;
-    return null;
-  }
-  if ((uri.scheme == 'https' || uri.scheme == 'http') &&
-      uri.host == 'kelimeki.com') {
-    final seg = uri.pathSegments;
-    if (seg.length == 2 && seg.first == 'davet' && seg[1].isNotEmpty) {
-      return seg[1];
-    }
-  }
-  return null;
+  final link = parseDeepLink(uri);
+  return link is KFriendInviteLink ? link.token : null;
 }
 
 abstract class FriendsGateway {

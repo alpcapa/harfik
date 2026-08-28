@@ -42,6 +42,26 @@ kalanı zorunlu** — her halkanın atlanması ayrı bir arıza üretir:
 | `npm run generate-meanings-db` | Mobilde taşa dokununca "anlamı bulunamadı" |
 | `README.md` kelime sayısı / `mobile/CLAUDE.md`'deki somut rakam | Doküman koddan kopar (bu proje bunu bir kez 92.503 ↔ ~64 bin farkıyla yaşadı) |
 
+⚠ **"Zaten varsa dokunma" bir SESSİZ tuzak taşıyor — var olan bir maddeyi
+SONRADAN düzeltmek İŞE YARAMAZ (28 Ağustos 2026'da yaşandı).** `extra-words`
+ve `proper-nouns` yalnızca EKLER: kelime `meanings.json`'da bir kez göründükten
+sonra, listedeki girdisini değiştirmek (sınıfını ya da anlamını) betik
+tarafından atlanır ve ekrana `Yapacak bir şey yok` yazılır. O gün `mö`nün
+sınıfı `ünl.` → `a.` çevrilirken tam bu oldu; düzenleme yapıldı, betik koştu,
+hiçbir şey değişmedi.
+
+**Kural bilinçli** (extras listesi GTS maddelerini ezmemeli) ve DEĞİŞMEDİ —
+değişen sessizlik: betik artık sapmayı görünce **uyarıyor** (`⚠ extra-words.mjs
+sözlükten AYRIŞMIŞ ve bu düzenleme UYGULANMADI: …`). Karşılaştırma sınıfta
+katı, anlamlarda ALT KÜME — çünkü aynı kelimeye `extra-meanings` üzerinden
+sonradan anlam eklenmiş olabilir ve o meşru bir farktır.
+
+**Düzeltmeyi gerçekten uygulamanın yolu** (uyarı da bunu yazıyor): maddeyi
+`src/data/meanings.json`'dan SİL, sonra `npm run augment-dictionary` koş.
+Betiğin tohumu o dosya olduğundan madde "yeni" sayılır, yeniden eklenir ve
+bir migration üretilir; migration `on conflict do update` olduğu için canlıdaki
+satırı da düzeltir. Ardından zincirin kalanı her zamanki gibi koşulur.
+
 **Yeni bir liste dosyası açılırsa İKİ betiğe birden tanıtılmalı**
 (`augment-dictionary.mjs` VE `build-dictionary.mjs`) — yalnızca birincisine
 eklemek, ileride GTS ile yapılacak bir tam üretimde o maddelerin SESSİZCE

@@ -204,7 +204,13 @@ export function GameHeader({ state, onLogoClick, exitDisabled, onPlayerClick }: 
                   className={
                     p.surrendered
                       ? 'font-mono font-bold uppercase truncate'
-                      : 'font-mono font-bold leading-none truncate'
+                      // Skor SAYISI siyah (token `text`), 28 Ağustos 2026
+                      // kullanıcı isteği: oyuncu renginde okunması zordu.
+                      // Kutunun geri kalanı — etiket, çerçeve, zemin —
+                      // oyuncu renginde KALIYOR; istek birebir "sadece sayı"
+                      // diyordu. 'Teslim' bir sayı değil, o da renkte kalır.
+                      // Port ikizi: mobile/.../game_header.dart.
+                      : 'font-mono font-bold leading-none truncate text-text'
                   }
                   style={
                     p.surrendered
@@ -215,7 +221,7 @@ export function GameHeader({ state, onLogoClick, exitDisabled, onPlayerClick }: 
                           lineHeight: SCORE_FONT_SIZE,
                           color: col.base,
                         }
-                      : { fontSize: SCORE_FONT_SIZE, color: col.base }
+                      : { fontSize: SCORE_FONT_SIZE }
                   }
                 >
                   {p.surrendered ? 'Teslim' : p.score}

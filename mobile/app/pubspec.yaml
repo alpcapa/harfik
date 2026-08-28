@@ -36,6 +36,23 @@ dependencies:
   # çıkarıyordu — kullanıcı "hemen çıkmalı" dedi. Web'de karar anında
   # veriliyor; bu paket portu da aynı hizaya getiriyor.
   connectivity_plus: ^6.1.0
+  # Push bildirimleri + Analytics (ROADMAP madde 13, Sürüm B).
+  #
+  # ⚠ Bu üçü `android/app/google-services.json` OLMADAN DERLENMEZ — dosya
+  # repoda (sır değil, APK'nın içinde zaten görünüyor; ayrıntı kök CLAUDE.md).
+  #
+  # Gönderici TEK: FCM. iOS'a da FCM teslim ediyor (arka planda APNs'i kendisi
+  # kullanıyor), yani iOS günü gelince yapılacak iş ikinci bir yol yazmak
+  # DEĞİL, yalnızca APNs anahtarını Firebase'e yüklemek + Push capability.
+  # Bu yüzden izin akışı da platforma DALLANMIYOR, eklentinin ortak API'sini
+  # kullanıyor.
+  firebase_core: ^4.14.0
+  firebase_messaging: ^16.6.0
+  # Analytics aynı pakette: FCM için Firebase zaten kuruluyor, olayları o
+  # anda açmak neredeyse bedava (26 Ağustos 2026 kullanıcı kararı). Bugünkü
+  # şema SONUÇLARI görüyor, DAVRANIŞI görmüyor — ekran görüntülenmesi, akış
+  # içi terk noktası, oturum uzunluğu yok.
+  firebase_analytics: ^12.5.0
   sqflite: ^2.4.2
   sqflite_common_ffi_web: ^1.0.2
   supabase_flutter: ^2.10.2

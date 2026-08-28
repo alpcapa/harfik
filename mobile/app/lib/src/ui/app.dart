@@ -7,6 +7,7 @@ import '../data/error_reporter.dart';
 import '../storage/app_storage.dart';
 import 'auth/reset_password_modal.dart';
 import 'intro/intro_screen.dart';
+import 'route_observer.dart';
 import 'setup/setup_screen.dart';
 import 'theme.dart';
 import 'tokens.dart';
@@ -23,7 +24,9 @@ class KelimekiApp extends StatelessWidget {
       // Hata telemetrisinin "hangi ekranda?" alanı — rota adları push
       // yerlerinde veriliyor, adsız rota kök sayılır (bkz.
       // `ErrorReporterRouteObserver`).
-      navigatorObservers: [ErrorReporterRouteObserver()],
+      // İkincisi Setup'ın "bir ekrandan dönüldü" kancası — gerekçe
+      // route_observer.dart'ta (callback yerine neden observer).
+      navigatorObservers: [ErrorReporterRouteObserver(), kRouteObserver],
       // Tema TEK yerde (`ui/theme.dart`) — testler de aynı fonksiyonu
       // kullanıyor, yoksa üründe değişen bir tema testlerde eski hâliyle
       // render edilip sapma görünmez kalıyor.

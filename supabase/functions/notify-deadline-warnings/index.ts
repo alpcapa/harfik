@@ -16,6 +16,7 @@
 // bir kez e-posta gider.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml, buildNoReplyNoticeHtml } from '../_shared/email.ts';
+import { pushConfigured, sendPush } from '../_shared/push.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -70,6 +71,64 @@ async function sendDeadlineEmail(email: string, creatorName: string, playerCount
     console.error('[notify-deadline-warnings] Brevo hatası:', res.status, await res.text());
   }
   return res.ok;
+}
+
+/**
+ * Bir kullanıcının TÜM cihazlarına teslim uyarısı push'u gönderir.
+ *
+ * ⚠ **BU FONKSİYON HİÇBİR KOŞULDA FIRLATMAZ.** Çağrıldığı yer canlı bir
+ * e-posta yolunun İÇİ: teslim uyarısı gitmezse insanlar k-lig puanı
+ * kaybediyor. Push bir EK kanal; onun bir arızası e-postayı düşüremez.
+ * Bu yüzden gövdenin tamamı tek bir try/catch içinde ve çağrıldığı yerde de
+ * `await` edilmeden ÖNCE e-posta gönderiliyor (sıra bilinçli).
+ *
+ * Bayat token'lar (FCM `UNREGISTERED`/`INVALID_ARGUMENT`) burada SİLİNİR —
+ * yoksa her turda boşuna kota yakarlar. Geçici hatalarda satıra dokunulmaz;
+ * karar `isUnregistered`'da ve testi var (`_shared/push_test.ts`).
+ */
+async function sendDeadlinePush(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  creatorName: string,
+  playerCount: number,
+): Promise<void> {
+  try {
+    if (!pushConfigured()) return;
+
+    // Tercih KAPALIYSA hiç sorgulamaya girme. `email_notifications_enabled`
+    // ile BAĞIMSIZ: biri kapalıyken öteki gönderilmeye devam eder (karar
+    // gerekçesi: push_tokens migration'ının başlığı).
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('push_notifications_enabled')
+      .eq('id', userId)
+      .maybeSingle();
+    if (prof?.push_notifications_enabled === false) return;
+
+    const { data: tokens } = await supabase
+      .from('push_tokens')
+      .select('token')
+      .eq('user_id', userId);
+    if (!tokens || tokens.length === 0) return;
+
+    const bayat: string[] = [];
+    for (const row of tokens as { token: string }[]) {
+      const res = await sendPush({
+        token: row.token,
+        title: 'Oyun Süresi Doluyor!',
+        // E-postanın gövdesiyle AYNI bilgi, bildirim satırına sığacak kadar
+        // kısaltılmış — iki kanal aynı olayı anlatıyor, farklı şey söylemesin.
+        body: `${creatorName} tarafından açılan ${playerCount} kişilik oyunda `
+          + '24 saat içinde hamle yapmazsan teslim olmuş sayılacaksın.',
+      });
+      if (res.unregistered) bayat.push(row.token);
+    }
+    if (bayat.length > 0) {
+      await supabase.from('push_tokens').delete().in('token', bayat);
+    }
+  } catch (err) {
+    console.error('[notify-deadline-warnings] push gönderilemedi:', err);
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -161,6 +220,9 @@ Deno.serve(async (req: Request) => {
       const creatorProfile = profiles?.find((p) => p.id === game.created_by);
       const creatorName = creatorProfile?.display_name || creatorProfile?.first_name || 'Bir arkadaşın';
       if (await sendDeadlineEmail(recipientEmail, creatorName, game.player_count as number)) sentOnline += 1;
+      // Push İKİNCİ kanal ve e-postadan SONRA — sıra bilinçli: bu satır ne
+      // fırlatır ne de e-postanın sonucunu etkiler (bkz. sendDeadlinePush).
+      await sendDeadlinePush(supabase, currentSlot.user_id, creatorName, game.player_count as number);
     } catch (err) {
       console.error('[notify-deadline-warnings] online satır hatası:', row.online_game_id, err);
     }
@@ -215,10 +277,21 @@ Deno.serve(async (req: Request) => {
       // Yerel (YZ) oyunda "oyunu açan" her zaman hesap sahibinin kendisidir.
       const ownerName = ownerProfile?.display_name || ownerProfile?.first_name || 'Sen';
       if (await sendDeadlineEmail(recipientEmail, ownerName, row.player_count as number)) sentLocal += 1;
+      await sendDeadlinePush(supabase, row.user_id as string, ownerName, row.player_count as number);
     } catch (err) {
       console.error('[notify-deadline-warnings] local satır hatası:', row.id, err);
     }
   }
 
-  return jsonResponse({ ok: true, sentOnline, sentLocal });
+  // `pushKanali` bir teşhis alanı: bu ortamdan Edge Function secret'ları
+  // OKUNAMIYOR, dolayısıyla `FCM_SERVICE_ACCOUNT`ın gerçekten yüklendiğini ve
+  // biçiminin doğru olduğunu (geçerli JSON + project_id/client_email/
+  // private_key) kanıtlayan tek gözlem noktası bu. Yükün geri kalanını
+  // kimse ayrıştırmıyor (cron çağırıyor), yani eklemenin bedeli yok.
+  return jsonResponse({
+    ok: true,
+    sentOnline,
+    sentLocal,
+    pushKanali: pushConfigured() ? 'acik' : 'kapali',
+  });
 });

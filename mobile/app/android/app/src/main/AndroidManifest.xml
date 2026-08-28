@@ -23,6 +23,18 @@
          adımı zorluyor — kaynağı değil DERLENMİŞ çıktıyı okuyor, çünkü izin
          buraya yazılmadan da bir eklentiden gelebilir ya da tam tersi. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Android 13+ (API 33) runtime bildirim izni (ROADMAP madde 13).
+         Daha eski sürümlerde bildirim izin İSTEMEZ, bu satır zararsızdır.
+
+         ⚠ İzin İSTEME ANI ürün kararı ve koda gömülü: açılışta ya da girişte
+         SORULMUYOR. Tetikleyici "Canlı sekmesi açıldı VE en az bir aktif
+         oyun/bekleyen davet var". Gerekçe: Android 13+'ta İKİNCİ redden sonra
+         sistem diyaloğu bir daha HİÇ gösterilmiyor (tek çare kullanıcıyı
+         sistem ayarlarına göndermek), yani bağlamsız bir soru kalıcı kayıp.
+         Bu yüzden önce KENDİ sayfamız çıkıyor; sistem diyaloğu ancak kullanıcı
+         orada "Aç" derse tetikleniyor — "Şimdi Değil" sistem denemesi
+         harcamıyor. Ayrıntı: mobile/docs/parca-log.md. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="Kelimeki"
         android:name="${applicationName}"

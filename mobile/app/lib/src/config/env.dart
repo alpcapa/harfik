@@ -26,6 +26,60 @@ const String webOrigin = 'https://kelimeki.com';
 /// yoksa GoTrue linki Site URL'e (web'e) düşürür (mobile/TESTING.md).
 const String resetRedirectUri = 'kelimeki://reset';
 
+/// Kayıt onayı e-postasındaki bağlantının uygulamaya dönüş adresi.
+///
+/// **NEDEN VAR (28 Ağustos 2026, ROADMAP madde 1 — mağaza blokeri):**
+/// `signUp` hiçbir `emailRedirectTo` geçmediğinden GoTrue onay linkini
+/// Supabase'deki TEK Site URL'e (kelimeki.com) atıyordu; uygulamadan kayıt
+/// olan kişi tarayıcıya düşüyor, oradan uygulamaya dönüp ELLE giriş yapmak
+/// zorunda kalıyordu. 17 Ağustos 2026'da cihazda bizzat gözlendi ve o
+/// sekmede BAŞKA bir hesabın oturumu açıktı (bkz. mobile/CLAUDE.md, "Kayıt
+/// onayı maili kaydın GELDİĞİ kanala dönmeli").
+///
+/// **Asıl kazanç yalnızca "doğru uygulama açılıyor" değil:** link uygulamaya
+/// dönerse PKCE `code_verifier` ZATEN o cihazın uygulama deposunda
+/// olduğundan supabase_flutter takası yapıp kullanıcıyı DOĞRUDAN girişli
+/// bırakır — "e-postanı doğrula, sonra dönüp giriş yap" adımı kalkar.
+///
+/// `resetRedirectUri` ile aynı el işi: Supabase Dashboard → Authentication →
+/// URL Configuration → Redirect URLs listesinde BİREBİR bu değer olmalı,
+/// yoksa GoTrue sessizce Site URL'e düşürür ve hiçbir şey değişmez.
+/// E-posta ŞABLONU değişmez — üç şablon da `{{ .ConfirmationURL }}`
+/// kullanıyor ve GoTrue o URL'i `redirect_to` ile kendisi kuruyor (ölçüldü).
+///
+/// **NEDEN custom şema DEĞİL https (28 Ağustos 2026, kullanıcı kararı:
+/// "Güvenli alternatif olsun"):** ilk sürümü `kelimeki://auth` idi ve tek
+/// bir senaryoda ÇIKMAZ üretiyordu — kayıt e-postası uygulamanın KURULU
+/// OLMADIĞI bir yerde açılırsa (insanlar postalarını sıklıkla masaüstünden
+/// okur; ayrıca telefonu değiştiren/uygulamayı silen kişi). Tarayıcı
+/// `kelimeki://` şemasını çözemez ve kullanıcı `ERR_UNKNOWN_URL_SCHEME`
+/// görür: onay linki BOZUK görünür. Oysa e-postayı doğrulama işlemi
+/// GoTrue'nun kendi `/verify` ucunda ZATEN tamamlanmıştır; kaybedilen tek
+/// şey oturumdur — yani kullanıcıya "bozuk" diye görünen şey aslında
+/// yalnızca son adımdır.
+///
+/// https biçiminde en kötü durum BUGÜNKÜ davranış: App Links doğrulaması
+/// geçmediyse (ya da uygulama kurulu değilse) link kelimeki.com'da açılır,
+/// kullanıcı elle giriş yapar — hiçbir hata ekranı yok. Doğrulama
+/// geçtiğindeyse (Play imzalı derleme) işletim sistemi URI'yi uygulamaya
+/// düşürür ve PKCE takası yapılıp kullanıcı DOĞRUDAN girişli kalır, yani
+/// asıl kazanç korunur.
+///
+/// Üç teknik ön koşul da zaten sağlanmış durumda:
+/// 1. AndroidManifest'teki App Links filtresi `https://kelimeki.com`ın
+///    TAMAMINI (yol kısıtı YOK) talep ediyor — `/auth` için ek satır yok.
+/// 2. `/.well-known/assetlinks.json` 25 Ağustos 2026'da yayınlandı.
+/// 3. supabase_flutter gelen URI'yi ŞEMAYA BAKMADAN sınıflandırıyor
+///    (`_defaultIsAuthCallbackDeeplink`: yalnızca `code`/`access_token`/
+///    `error*` parametrelerine bakar — paketin kaynağında ölçüldü), yani
+///    https bir dönüş de custom şema kadar sorunsuz işleniyor.
+///
+/// ⚠ **CI'nın debug-imzalı `.apk`'sında App Links doğrulaması GEÇMEZ**
+/// (farklı imza parmak izi) — orada bu link tarayıcıda açılır. Yani bu
+/// akışın "uygulama açılıyor" yarısı YALNIZCA Play'den kurulan derlemede
+/// test edilebilir; `.apk`da görülecek olan güvenli yedek yoldur.
+const String authRedirectUri = 'https://kelimeki.com/auth';
+
 /// Uygulama sürümü — pubspec.yaml'daki `version` ile BİRLİKTE artırılır
 /// (release disiplini, bkz. mobile/CLAUDE.md "Sürüm disiplini").
 /// `app_config.mobile_min_supported_version` eşiğiyle karşılaştırılır;

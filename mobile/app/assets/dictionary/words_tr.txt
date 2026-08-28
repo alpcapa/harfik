@@ -5664,6 +5664,8 @@ bantlamak
 bantlayabilme
 bantlayabilmek
 bantlayıcı
+banu
+banü
 banyo
 banyolu
 banyosuz
@@ -36813,6 +36815,7 @@ lapçınlı
 lapilli
 lapina
 lapinagiller
+lapis
 lapislazuli
 lapon
 laponca
@@ -40104,6 +40107,7 @@ mozambik
 mozambikli
 mozerella
 mozole
+mö
 möble
 möbleli
 möblesiz

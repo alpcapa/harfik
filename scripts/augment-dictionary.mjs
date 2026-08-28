@@ -83,6 +83,35 @@ for (const [word, meaning] of Object.entries(EXTRA_MEANINGS)) {
   }
 }
 
+// ⚠ "Zaten varsa dokunma" kuralının SESSİZ tuzağı (28 Ağustos 2026'da
+// yaşandı): bu listedeki VAR OLAN bir maddeyi sonradan düzeltmek — sınıfını
+// ya da anlamını — hiçbir şey YAPMAZ. Betik onu zaten var sayıp atlar,
+// "Yapacak bir şey yok" der ve düzenleme sessizce etkisiz kalır. O gün `mö`
+// ünl. → a. çevrilirken tam bu oldu; yalnızca çıktı elle okunduğu için fark
+// edildi.
+//
+// Kural DEĞİŞMİYOR — extras listesinin GTS maddelerini ezmemesi bilinçli.
+// Değişen tek şey sessizlik: sapma varsa söyle.
+const drift = [];
+for (const [word, entry] of Object.entries(EXTRA_WORDS)) {
+  const cur = currentMeanings[word];
+  if (!cur) continue;
+  const posDiff = (cur.pos ?? null) !== (entry.pos ?? null);
+  // Alt küme kontrolü, eşitlik DEĞİL: aynı kelimeye `extra-meanings` üzerinden
+  // sonradan anlam eklenmiş olabilir, o meşru bir fark.
+  const missing = entry.meanings.filter((m) => !cur.meanings.includes(m));
+  if (posDiff || missing.length > 0) drift.push(word);
+}
+if (drift.length > 0) {
+  console.warn(
+    `\n⚠ extra-words.mjs sözlükten AYRIŞMIŞ ve bu düzenleme UYGULANMADI: ${drift.join(', ')}\n` +
+      '  "Zaten varsa dokunma" kuralı gereği bu maddeler atlandı.\n' +
+      '  Düzeltmenin gerçekten uygulanması gerekiyorsa maddeyi\n' +
+      "  src/data/meanings.json'dan SİLİP bu betiği yeniden koş — o zaman yeni\n" +
+      '  madde sayılır ve migration da üretilir (bkz. docs/decisions/dictionary.md).\n',
+  );
+}
+
 if (added.length === 0 && updated.length === 0) {
   console.log('Yapacak bir şey yok — listelerin tamamı sözlüğe zaten uygulanmış.');
   process.exit(0);

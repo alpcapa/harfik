@@ -18,6 +18,9 @@ import 'data/friends_api.dart';
 import 'data/games_api.dart';
 import 'data/league_rewards_api.dart';
 import 'data/online_games_api.dart';
+import 'data/push_gateways.dart';
+import 'data/push_init.dart';
+import 'data/push_repo.dart';
 import 'data/stats_api.dart';
 import 'data/meaning_store.dart';
 import 'data/supabase_client.dart';
@@ -86,6 +89,14 @@ class AppServices {
   /// SetupScreen işler. Depolamasız test ortamında null.
   final FriendInviteInbox? inviteInbox;
 
+  /// Push cihaz token'ı — Firebase kurulamadıysa ya da Supabase yoksa null
+  /// (o zaman izin de sorulmaz, token da yazılmaz). Portun WEB derlemesinde
+  /// her zaman null: orada Firebase yapılandırılmamış (bkz. `push_init.dart`).
+  final PushRepo? push;
+
+  /// Push izni akışının okuduğu sistem durumu. `push` ile birlikte gelir.
+  final PushMessaging? pushMessaging;
+
   /// "Görüş Bildir" — GamesRepo'nun aksine Supabase YOKKEN de dolu
   /// (gateway'i null olur, mesajlar kuyrukta bekler — web feedbackSync'in
   /// "Supabase hiç yapılandırılmamışken de kuyrukla" davranışı); yalnızca
@@ -109,6 +120,8 @@ class AppServices {
     this.inviteInbox,
     this.onlineGames,
     this.chat,
+    this.push,
+    this.pushMessaging,
   });
 }
 
@@ -119,6 +132,11 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
   final storage = AppStorage.open();
   final supabase = await initSupabase();
   final auth = AuthService(supabase);
+  // Firebase açılışı BEKLETİLİYOR ama fırlatmıyor (bkz. push_init.dart):
+  // web/masaüstünde ve yapılandırma yoksa sessizce false döner. Maliyeti
+  // native'de birkaç ms; sonrasında `push` alanının dolu olup olmadığı
+  // tek bir sorunun cevabı olur ("bu cihaz token kaydedebilir mi").
+  final firebaseHazir = await initFirebase();
   final versionGate = await checkVersionGate(supabase);
   // Hata telemetrisi — Supabase hazır olur olmaz bağlanır (ROADMAP #3).
   // Kimlik `FlagsStore.anonId()`ten geliyor ve BEKLENMİYOR: açılışı bir
@@ -136,6 +154,15 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
     supabase: supabase,
     versionGate: versionGate,
     storage: storage,
+    // Push: Firebase kurulduysa VE Supabase varsa. İkisi de gerekiyor —
+    // biri token'ı üretiyor, öteki saklıyor.
+    push: firebaseHazir && supabase != null
+        ? PushRepo(
+            messaging: FirebasePushMessaging(),
+            store: SupabasePushTokenStore(supabase),
+          )
+        : null,
+    pushMessaging: firebaseHazir ? FirebasePushMessaging() : null,
     cloudSaves:
         supabase != null
             ? CloudSaveRepo(SupabaseCloudSaveGateway(supabase),

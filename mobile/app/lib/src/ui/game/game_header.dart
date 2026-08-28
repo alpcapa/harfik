@@ -311,7 +311,12 @@ class _PlayerBox extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     fontSize: scoreFontSize,
                     height: 1,
-                    color: col.base,
+                    // Skor SAYISI siyah (token `text`), 28 Ağustos 2026
+                    // kullanıcı isteği: oyuncu renginde okunması zordu.
+                    // Kutunun geri kalanı — etiket, çerçeve, zemin —
+                    // oyuncu renginde KALIYOR; istek birebir "sadece sayı"
+                    // diyordu. 'TESLİM' bir sayı değil, o da renkte kalır.
+                    color: player.surrendered ? col.base : kText,
                   ),
                 ),
               ),

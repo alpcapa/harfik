@@ -50,7 +50,7 @@ class TileWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(5),
       );
       letterColor = kText; // web text-tile-letter
-      ptsColor = kAccent; // web text-accent
+      ptsColor = _boardPtsColor(tile); // web text-accent / joker'de text-red
     } else if (isRack) {
       // Web Tile.tsx raf taşı gölge üçlüsü — CSS semantiğiyle (tahta/raf
       // kartındaki aynı ders: BoxShadow yoğun + katman sırası ters).
@@ -73,7 +73,7 @@ class TileWidget extends StatelessWidget {
     } else {
       decoration = null; // tahta varyantı — zemin/çerçeve hücrenin işi
       letterColor = kText;
-      ptsColor = kAccent;
+      ptsColor = _boardPtsColor(tile);
     }
 
     // Web -webkit-text-stroke: harfin üstüne aynı renkte ince kontur bindirir
@@ -155,4 +155,20 @@ class TileWidget extends StatelessWidget {
         ? Transform.translate(offset: const Offset(0, -7), child: body)
         : body;
   }
+
+  /// Tahtadaki/taslaktaki bir taşın puan rengi — joker (0 puan) KIRMIZI.
+  ///
+  /// 28 Ağustos 2026, kullanıcı isteği. Gerekçe: jokerin `0`ı diğer taşların
+  /// puanıyla aynı renkte olduğundan tahtada hiçbir ayırt ediciliği yoktu;
+  /// oysa joker oyunun en değerli kaynağı ve nerede harcandığı görünmeli.
+  ///
+  /// `kRed` = token kırmızısı (`tailwind.config.js` → `red`, #DC2626), yani
+  /// hata/uyarı kırmızısı. Sağ-alt köşenin OYUNCU kırmızısıyla
+  /// KARIŞTIRILMAMALI — o `player_colors.dart`ta ayrı bir değer ve buradaki
+  /// seçim bilinçli (kullanıcı ikisi arasında seçim yaptı).
+  ///
+  /// **RAF taşı BİLİNÇLİ olarak DIŞARIDA:** orada joker zaten ★ ile ayırt
+  /// ediliyor, ayrıca altın zeminde kırmızı okunmuyor. İstek de birebir
+  /// "tahtaya konulan joker" diyordu.
+  static Color _boardPtsColor(Tile tile) => tile.wild ? kRed : kAccent;
 }

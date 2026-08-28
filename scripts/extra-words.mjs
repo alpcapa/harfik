@@ -21,9 +21,38 @@
 // Bir madde eklendikten sonra `node scripts/augment-dictionary.mjs`
 // çalıştırılmalı; gerisi (words.ts, meanings.json, migration) üretilir.
 export const EXTRA_WORDS = {
+  // ⚠ `banu` ile `banü` BİRBİRİNİN YAZIM VARYANTI DEĞİL — iki AYRI madde,
+  // her biri kendi anlam listesiyle (28 Ağustos 2026, kullanıcı ayrıştırdı).
+  // Bu yüzden ikisi de burada; biri ötekine `extra-meanings` üzerinden
+  // eklenmedi. Komşuları ölçüldü: `bani` GTS'te VAR ve FARKLI bir kelime —
+  // "ıs"/"is" vakasıyla (bkz. aşağıdaki not) aynı sınıf, benzer yazılışı
+  // "aynıdır" saymak bu projede bir kez hataya yol açtı.
+  banu: {
+    pos: 'a.',
+    meanings: [
+      'Hanımefendi, soylu kadın.',
+      'Gelin.',
+      'Bağ, bahçe.',
+    ],
+  },
+  banü: {
+    pos: 'a.',
+    meanings: [
+      'Kadın, hanım.',
+      'Hanımefendi, soylu kadın.',
+    ],
+  },
   evsel: {
     pos: 'sf.',
     meanings: ['Evle ilgili.'],
+  },
+  // `lapislazuli` (bitişik, tek madde) GTS'te ZATEN VAR ve anlamlarına
+  // DOKUNULMADI; bu madde onun ilk sözcüğü olan Latince `lapis` ("taş").
+  lapis: {
+    pos: 'a.',
+    meanings: [
+      'Lapis lazuli olarak bilinen koyu mavi değerli taş; dilimizde daha çok tam hâliyle ya da laciverttaşı, lacivert taşı olarak anılır.',
+    ],
   },
   lila: {
     pos: 'sf.',
@@ -36,6 +65,16 @@ export const EXTRA_WORDS = {
       "Arapçada cansız nesnelere işaret eden veya \"o şey ki\" anlamına gelen bağlayıcı kök (örnek: mâ-ba'd — sondaki).",
       'Eski dilde su.',
     ],
+  },
+  // Sınıf `a.` — kardeş maddelerle AYNI: bu sözlükte hayvan sesleri ad
+  // sayılıyor (`miyav` → "Kedinin çıkardığı ses, kedi sesi", `hav` →
+  // "Köpeğin çıkardığı ses"; ikisi de `a.`, ölçüldü). Kullanıcı önce
+  // "(ünlem)" demişti, ölçüm gösterilince kardeşlere uydurulmasını istedi.
+  // Tanım da aynı kalıpta: "sesi anlatan söz" ünlem dilidir (`hey`, `of`),
+  // ad olan bir madde sesin KENDİSİNİ tanımlar.
+  mö: {
+    pos: 'a.',
+    meanings: ['İneğin çıkardığı ses, inek sesi.'],
   },
   nil: {
     pos: null,

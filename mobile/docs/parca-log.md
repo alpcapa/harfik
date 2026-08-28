@@ -20,6 +20,206 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 158 — push bildirimleri + kayıt onayının uygulamaya dönüşü
+     (28 Ağustos 2026, ROADMAP madde 1 + 13 — "Sürüm B"nin mağaza blokeri):**
+     Tek paket, çünkü madde 13'ün 5. adımı ("bildirime dokun → doğru oyun
+     açılsın") madde 1'in derin bağlantı kanalına dayanıyor.
+     - **Kanal (madde 1):** `AuthService.signUp` artık `emailRedirectTo`
+       geçiyor. Değer önce `kelimeki://auth` yazıldı, **aynı gün
+       `https://kelimeki.com/auth`'a çevrildi** (kullanıcı: *"Güvenli
+       alternatif olsun"*): custom şema, uygulamanın kurulu OLMADIĞI bir
+       tarayıcıda `ERR_UNKNOWN_URL_SCHEME` veriyor — insanlar postalarını
+       sıklıkla masaüstünden okuduğu için bu nadir değil, ve onay linki
+       BOZUK görünüyor. Oysa e-posta doğrulaması GoTrue'nun `/verify` ucunda
+       zaten tamamlanmış oluyor; kaybedilen tek şey oturum. https biçiminde
+       en kötü durum bugünkü davranıştır (siteye düşer, elle giriş), en iyi
+       durumda App Links URI'yi uygulamaya düşürür ve PKCE takası
+       kullanıcıyı DOĞRUDAN girişli bırakır. Manifest `https://kelimeki.com`ın
+       tamamını talep ettiğinden ek intent-filter GEREKMEDİ, Redirect URLs'te
+       `https://kelimeki.com/**` da zaten vardı — yani Dashboard el işi SIFIR.
+       - **supabase_flutter'ın şemaya BAKMADIĞI ölçüldü** (paket kaynağı,
+         `_defaultIsAuthCallbackDeeplink`): yalnızca `code`/`access_token`/
+         `error*` parametrelerine bakıyor. Yani https bir dönüş custom şema
+         kadar sorunsuz işleniyor; bu, kararın dayandığı tek teknik varsayımdı
+         ve tahmin edilmedi.
+     - **`util/deep_link.dart` — gelen URI'lerin TEK ayrıştırma noktası.**
+       Öncesinde üç ayrı yer kendi tanımasını yapıyordu (supabase_flutter,
+       `FriendInviteInbox`, ve şimdi dördüncüsü olarak push). Saf fonksiyon,
+       Flutter bağımlılığı yok. `kelimeki://oyun/<id>`in https karşılığı
+       BİLEREK yok — o linki üreten tek şey bir push bildirimi, o da yalnızca
+       uygulamanın kurulu olduğu cihazda var.
+     - **Sunucu (FCM HTTP v1, `supabase/functions/_shared/push.ts`):** servis
+       hesabı → RS256 JWT → OAuth2 token → gönderim. Hiçbir genel fonksiyon
+       FIRLATMIYOR — bildirim, e-postanın yanında ikincil bir kanal; onu
+       düşürmesi kabul edilemez. `notify-deadline-warnings` e-postadan SONRA
+       push atıyor ve `UNREGISTERED`/`INVALID_ARGUMENT` dönen token'ı siliyor.
+       - **Kimlik zinciri CİHAZSIZ kanıtlandı:** `push-selftest` bilerek
+         GEÇERSİZ bir token'a gönderiyor; dönen `unregistered: true`
+         "Google kimliğimizi kabul etti, yalnızca token'ı tanımadı" demek —
+         yani sır/JWT/OAuth zincirinin tamamı sağlam. Sonuç ölçüldü:
+         `{"yapilandirildi":true,"kimlikZinciriSaglam":true}`. Teşhis
+         fonksiyonu; silinebilir.
+       - Yeniden dağıtımda `verify_jwt: false` AÇIKÇA geçildi (araç parametre
+         verilmezse `true` varsayıyor ve öncekini KORUMUYOR) — liste kök
+         `CLAUDE.md`'de altıdan yediye çıktı. Aynı dağıtım, repoda duran ama
+         hiç canlıya çıkmamış "taktirde"→"takdirde" düzeltmesini de taşıdı.
+     - **İzin isteme ANI bir ürün kararı:** açılışta ya da girişte
+       SORULMUYOR. Tetikleyici *"Canlı sekmesi açıldı VE en az bir aktif
+       oyun/bekleyen davet var"*. Gerekçe Android 13+'ın kuralı: İKİNCİ
+       reddin ardından sistem diyaloğu bir daha HİÇ gösterilmiyor, yani
+       bağlamsız sorulan bir soru KALICI kayıp. Bu yüzden önce kendi
+       penceremiz çıkıyor; sistem diyaloğu ancak kullanıcı "Aç" derse
+       tetikleniyor — "Şimdi Değil" bir sistem denemesi HARCAMIYOR. Kendi
+       penceremiz de en çok 3 kez, 7 gün arayla (`util/push_rules.dart`, saf
+       karar). Karar AndroidManifest'e de yorum olarak yazıldı, çünkü izni
+       oradan gören biri "neden hiç sorulmuyor?" diye arayacak.
+     - **DEĞİŞMEZ: `push_tokens`ta satır varsa o cihaz bildirim
+       GÖSTEREBİLİR.** Her açılışta `PushRepo.senkronize` sistem iznini okuyup
+       satırı ekliyor/siliyor — yani ayarlardan bildirimi kapatan kullanıcı
+       için ayrı bir dinleyici GEREKMİYOR, sistem kendini bir sonraki açılışta
+       onarıyor. Tablonun birincil anahtarı TOKEN (kullanıcı değil): cihaz
+       hesap değiştirince satır TAŞINIR, çoğalmaz.
+     - **BULUNAN HATALAR (üçü de kod yazılırken, kullanıcıdan önce):**
+       1. **`temizle()` yeniden başlatmalardan sonra ÇALIŞMIYORDU** — bellekteki
+          `_sonToken`e güveniyordu, o da taze bir süreçte `null`. Bildirimi
+          kapatıp uygulamayı kapatan kullanıcının token'ı sonsuza kadar kalırdı.
+          Artık CANLI token FCM'den okunuyor, bellek yalnızca yedek. **Bir test
+          buldu.**
+       2. **Token yenilemesi ESKİ satırı sızdırıyordu** — anahtar token olduğu
+          için yenileme yeni satır açıp eskisini bırakıyordu; artık yenilemede
+          eski token siliniyor.
+       3. **Yanlış bir varsayımla gereksiz bir sayaç yazılmıştı:** eklentinin
+          "kalıcı red"i bildirmediği sanılıp `FlagsStore`'a ikinci bir doğruluk
+          kaynağı kondu. `dart analyze`ın non-exhaustive-switch uyarısı
+          `AuthorizationStatus.deniedPermanently`in VAR olduğunu kanıtladı;
+          sayaç kaldırıldı ve `flags_store.dart`'a "geri ekleme" notu bırakıldı.
+          **Bunu bir test değil DERLEYİCİ yakaladı** — enjekte edilebilir bir
+          dikişin arkasındaki kütüphane yüzeyini okumadan sarmalayıcı yazmanın
+          bedeli.
+     - **`push_init.dart` neden var:** `Firebase.initializeApp()` web'de ve
+       Android/iOS dışında yapılandırma bulamayıp FIRLATIYOR — GitHub Pages'teki
+       Flutter web test ortamı açılışta ölürdü. `initFirebase()` `false` dönüyor
+       ve push tamamen devre dışı kuruluyor; uygulamanın geri kalanı etkilenmiyor.
+     - **Doğrulama:** `dart analyze` temiz (tek ön-var olan info hariç),
+       **591/591** Flutter testi geçiyor (`deep_link` · `push_rules` ·
+       `push_repo` · `push_permission_flow` · `push_permission_mapping`), Deno
+       tarafında `_shared/push_test.ts` 4 test (RS256 imzala-doğrula turu
+       dahil). Negatif eşler kuruldu: yeni https `/auth` dalı silinince
+       `deep_link_test` GERÇEKTEN düşüyor.
+     - **DOĞRULAMA SINIRI — cihazda hiçbir şey görülmedi.** Android derlemesi
+       Firebase'le (google-services eklentisi + üç paket + Kotlin kanal kodu)
+       bir kez bile DERLENMEDİ; bildirimin gerçekten düşmesi, kanal kimliğinin
+       tutması ve App Links doğrulaması yalnızca gerçek cihazda görülebilir.
+       Kontrol listesi: `mobile/docs/testing-bildirimler.md`.
+
+   - ✅ **Parça 157 — merkez X3 etiketi büyütüldü (28 Ağustos 2026, kullanıcı
+     isteği: *"en ortadaki X3 yazısını da biraz büyütelim"*):**
+     `clamp(7px,1.9vw,12px)` → `clamp(9px,2.6vw,16px)`, web ve portta birden
+     (`Board.tsx` ↔ `board_widget.dart`). 420 px'lik bir telefonda
+     **7,98 px → 10,9 px** (~%37); 834 px'te tavan 12 → 16.
+     - **Bu ölçünün geçmişi var ve düzeltme BOZULMADI:** 17 Ağustos'ta port
+       aynı yazıyı `FittedBox` ile hücreyi doldurarak ~37 px basıyordu ve
+       kullanıcı "boyut/tasarım farklı" diye bildirmişti; o gün web'in 12 px
+       tavanına çekildi. Bugünkü artış yalnızca TAVANI yükseltiyor — punto
+       hâlâ hücreye değil EKRAN genişliğine bağlı, yani iki platform aynı
+       hesabı yapmaya devam ediyor.
+     - **İKİ ayrı test katmanı yakaladı ve ikisi de güncellendi/kanıtlandı:**
+       `layout_parity_test.dart` KAYNAKLARI karşılaştırıyor (Board.tsx'in
+       clamp'i ↔ board_widget'ın fluidSize'ı) — negatif eş kuruldu: yalnızca
+       web eski değere döndürülünce test GERÇEKTEN düştü, yani tek taraflı
+       bir değişiklik sessizce geçemiyor. `board_render_test.dart` ise RENDER
+       EDİLEN puntoyu ölçüyor ve beklenen değerleri taşıyordu (12 → 16,
+       7,41 → 10,14). İkisi ayrı katman; parite testi "aynı sayı yazılmış
+       mı" der, render testi "gerçekten o punto mu çiziliyor" der.
+     - **Doğrulama:** `dart analyze` temiz (yalnız önceden var olan 1 info),
+       `flutter test` **557/557**, `npm run lint` temiz. Önce/sonra yakın
+       plan ekran görüntüsü kullanıcıya gösterildi.
+     - **Açık soru (kullanıcıya soruldu):** 16 px tavan yeterli mi, daha
+       büyük mü olsun? Tek sayı değişikliği.
+
+   - ✅ **Parça 156 — iki görsel kural: jokerin puanı KIRMIZI, skor kutusundaki
+     SAYI siyah (28 Ağustos 2026, kullanıcı isteği — Sürüm B):** İkisi de
+     küçük ama ikisi de web+port paritesi taşıyor.
+     - **Joker:** tahtaya/taslağa konmuş jokerin `0` puanı artık token
+       kırmızısı (`kRed` / tailwind `red`, `#DC2626`). Öncesinde diğer
+       taşların puanıyla AYNI renkteydi (`accent`), yani jokerin nereye
+       harcandığı tahtada hiç görünmüyordu. **RAF taşı BİLİNÇLİ dışarıda:**
+       orada joker zaten ★ ile ayırt ediliyor ve altın zeminde kırmızı
+       okunmuyor; istek de birebir "tahtaya konulan joker" diyordu.
+       Kullanıcı, oyuncu kırmızısı ile token kırmızısı arasında SEÇİM yaptı
+       (token) — sağ-alt köşenin oyuncu rengiyle karıştırılmamalı.
+     - **Skor kutusu:** üstteki kutulardaki SAYI siyah (`kText` / tailwind
+       `text`). Etiket (`IRONMAN` / `YZ 2`), çerçeve ve zemin oyuncu
+       renginde KALDI — istek birebir "sadece sayı" diyordu. `TESLİM` bir
+       sayı değil, o da renkte kaldı.
+     - **Dosyalar (dördü birden, parite):** `tile_widget.dart`
+       (`_boardPtsColor`) ↔ `Tile.tsx`; `game_header.dart` ↔
+       `GameHeader.tsx`. Port tarafında tek dosya iki oyun ekranını da
+       (yerel + Canlı) kapsıyor, web'de de öyle — ayrıca bir şey gerekmedi.
+     - **Testler + NEGATİF EŞLER (ikisi de ölçüldü).** Renk sapmasını
+       hiçbir derleyici/analiz yakalamaz, bu yüzden iki test yazıldı ve her
+       biri KIYAS iddiası taşıyor: joker testi sıradan taşın `accent`
+       kaldığını da doğruluyor (yoksa "tüm puanları kırmızı yaptım" gibi bir
+       aşırı-düzeltme testten geçerdi), skor testi etiketin siyaha
+       ÇEVRİLMEDİĞİNİ doğruluyor. İki değişiklik tek tek geri alındı, ikisi
+       de GERÇEKTEN düştü, sonra geri kondu.
+     - **Test kendisi bir kez YANLIŞ yazıldı ve kayda değer:** etiket
+       `find.text('Ironman')` ile aranmıştı, oysa `game_header.dart` onu
+       `trUpper(player.name)` ile basıyor → `IRONMAN`. Test düştü ve hata
+       kodda DEĞİL testteydi. Bu projenin Türkçe harf kuralının test
+       tarafına yansıması: bir etiketi ararken de `trUpper`dan geçtiğini
+       varsay.
+     - **Doğrulama:** `dart analyze` temiz (yalnız önceden var olan 1 info),
+       `flutter test` **557/557**, `npm run lint` (tsc) temiz. Ekran
+       görüntüsüyle önce/sonra kullanıcıya gösterildi ve onaylandı.
+     - **Doğrulama sınırı:** cihazda koşulmadı; ikisi de saf renk değişikliği
+       olduğundan CanvasKit/Skia ayrışma riski yok (özel `Canvas` çizimi
+       değil, düz `TextStyle.color`).
+
+   - ✅ **Parça 153 — rozet oyundan DÖNÜŞTE tazelenmiyordu: web'in
+     BEDAVA aldığı garanti portta yok (28 Ağustos 2026, kullanıcı bildirdi:
+     *"Hiç bekleyen oyunum kalmamış olmasına rağmen tab'da 1 uzun süre
+     durdu. Sonra ekran kapandı, açınca gitti."*):** "Arkadaşınla (N)"
+     rozeti bayat kalıyor, ekran kapanıp açılınca (yani
+     `AppLifecycleState.resumed`) düzeliyordu — kullanıcının tarifi bu
+     yolun kendisiydi.
+     - **Kök sebep bir YAPI farkı, bir unutulmuş kanca değil.** Web'de
+       Canlı tahta açılınca `App.tsx` erken `return` ile Setup'ı
+       AĞAÇTAN ÇIKARIYOR; dönüşte Setup remount olup rozet effect'ini
+       baştan koşturuyor — yani web bu garantiyi bedavaya alıyor.
+       Flutter'da Setup `MaterialApp.home` ve oyun ÜSTÜNE push ediliyor,
+       **Setup hiç unmount olmuyor**. Aynı tuzak `setup_screen.dart:292`'de
+       başka bir özellik için zaten yazılıydı (*"ekran hiç unmount OLMUYOR
+       — 'Setup'a her geliş' notu bu yüzden yanıltıcıydı"*); rozet o
+       dersten payını almamıştı.
+     - **Liste bu garantiyi BAŞTAN BERİ taşıyordu:** `_openGame` dönüşte
+       `_reload()` çağırıyor ve yorumu aynen şöyle: *"Realtime da tetikler
+       ama dönüş anı garanti."* Rozet aynı satırın hemen yanında eksikti —
+       Parça 148'in (27 Ağustos) düzelttiği çelişkinin AYNISI, farklı
+       kancadan: kapsayan rozet, kapsanan listeyle çelişiyor.
+     - **Düzeltme:** `LiveGamesTab.onGameClosed` callback'i;
+       `SetupScreen` ona `_scheduleLiveBadgeRefresh`i veriyor. Yeni bir
+       mekanizma değil, listenin zaten sahip olduğu anın rozete de
+       verilmesi.
+     - ⚠ **Sürüm B uyarısı koda yazıldı:** Canlı tahtayı açan İKİNCİ bir
+       kapı eklenince (bildirime dokununca doğru oyunu aç) o kapı da bunu
+       çağırmalı; iki kapı olduğunda doğru çare callback değil Setup'a
+       takılacak bir `RouteObserver` (`didPopNext`).
+     - **Bu, kaçırılan olayın kalıcı kayba dönüştüğü BEŞİNCİ yer** (sohbet
+       Realtime'ı, bulut senkronu, `useOnlineStatus`, Parça 148). Olay
+       tabanlı her durumun bir de olaydan bağımsız "kesin an"ı olmalı.
+     - **Test:** `setup_screen_test.dart` +1 (547 test). Gerçek push/pop
+       üzerinden: rozet 1 → oyuna gir → sunucuda iş biter ama HİÇBİR olay
+       gelmez → pop → rozet gitmeli. **Negatif ikiz kanıtlandı** (tek satır
+       kaldırılınca test düşüyor). İki tuzak ölçüldü: `find.byType` varsayılan
+       olarak sahne dışını ATLAR (`skipOffstage: false` şart — hatanın
+       kaynağı zaten Setup'ın sahne dışında MOUNT kalması), ve
+       `tester.pageBack()` bir AppBar geri butonu arıyor (Canlı tahtanın
+       kendi çıkış düzeni var, rota doğrudan pop ediliyor).
+     - **Web ETKİLENMEDİ ve `src/` altında değişiklik gerekmedi** —
+       `App.tsx:1190` ölçüldü: erken `return <OnlineGameScreen …/>`, yani
+       Setup gerçekten unmount oluyor.
+
    - ✅ **Parça 152 — İKİ eşik tek sanılıyordu: titreşimli dokunuş
      (27 Ağustos 2026, kullanıcı Parça 151'den SONRA aynı şikayeti
      tekrarladı: *"Hâlâ tahtaya koyulan taşı her zaman alamıyorum. 1-2

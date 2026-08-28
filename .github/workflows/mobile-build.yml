@@ -172,7 +172,12 @@ jobs:
       # dokunan HER özellik (giriş, Canlı oyun, k-lig, sohbet) sessizce
       # ölüyordu. Hata mesajı DNS hatasına benzediğinden (`Failed host lookup`)
       # teşhisi de yanlış yöne çekiyordu. İlk gerçek cihaz kurulumunda çıktı.
-      - name: İnternet izni pakete girdi mi
+      #
+      # POST_NOTIFICATIONS aynı sınıftan ve 28 Ağustos 2026'da (push bildirimleri,
+      # Parça 158) bu listeye eklendi: izin birleşmiş manifeste girmezse Android
+      # 13+ bildirimi HİÇ göstermez ve hiçbir hata düşmez — sunucu "gönderdim"
+      # der, cihazda hiçbir şey olmaz. Tam olarak INTERNET'in sessiz kaybı.
+      - name: İzinler pakete girdi mi (INTERNET · POST_NOTIFICATIONS)
         working-directory: mobile/app
         run: |
           set -euo pipefail
@@ -184,12 +189,14 @@ jobs:
           fi
           FAIL=0
           for m in $MERGED; do
-            if grep -q 'android.permission.INTERNET' "$m"; then
-              echo "ok: $m"
-            else
-              echo "::error::INTERNET izni YOK: $m"
-              FAIL=1
-            fi
+            for izin in INTERNET POST_NOTIFICATIONS; do
+              if grep -q "android.permission.$izin" "$m"; then
+                echo "ok ($izin): $m"
+              else
+                echo "::error::$izin izni YOK: $m"
+                FAIL=1
+              fi
+            done
           done
           exit $FAIL
       - uses: actions/upload-artifact@v7

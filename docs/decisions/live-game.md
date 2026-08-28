@@ -9,6 +9,51 @@
 > (`OnlineGameScreen.tsx` — canlı oyun ekranının UI kararları).
 
 
+## Rozet oyundan DÖNÜŞTE tazelenmiyordu — web'in bedava aldığı garanti (28 Ağustos 2026)
+
+Bir gün sonra AYNI rozet, BAŞKA bir kancadan yine bayat kaldı. Kullanıcı
+bildirdi: *"Hiç bekleyen oyunum kalmamış olmasına rağmen tab'da 1 uzun süre
+durdu. Sonra ekran kapandı, açınca gitti."* Son cümle teşhisin kendisi —
+ekranı kapatıp açmak `AppLifecycleState.resumed` demek, yani rozeti
+düzelten şey zaten var olan bir kancaydı; eksik olan **dönüş anı**ydı.
+
+**Kök sebep bu kez unutulmuş bir kanca değil, bir YAPI farkı:**
+
+| | Web (`App.tsx`) | Port (`setup_screen.dart`) |
+|---|---|---|
+| Canlı tahta açılınca Setup | **unmount** (erken `return <OnlineGameScreen…>`, satır 1190) | **mount'ta KALIR** (`MaterialApp.home` + `Navigator.push`) |
+| Dönüşte rozet | remount → effect baştan koşar → **bedava tazelenir** | hiçbir şey koşmaz |
+
+Yani web bu garantiyi tasarımından ötürü alıyor; port onu kaybetmişti ve
+kimse fark etmemişti çünkü Realtime olayı çoğu zaman yetişiyordu. Olay
+kaçınca (zayıf bağlantı, kanal kopması) geri getiren hiçbir şey kalmıyordu.
+
+**Liste bu garantiyi baştan beri taşıyordu.** `live_games_tab._openGame`
+dönüşte `_reload()` çağırıyor, yorumu da niyeti açıkça yazıyor: *"Realtime
+da tetikler ama dönüş anı garanti."* Rozet o satırın hemen yanında eksikti —
+27 Ağustos'takiyle aynı çelişki (kapsayan rozet ↔ kapsanan liste), farklı
+kancadan. Düzeltme yeni bir mekanizma değil: `LiveGamesTab.onGameClosed` →
+`SetupScreen._scheduleLiveBadgeRefresh`.
+
+⚠ **Sürüm B için kod yorumuna yazıldı:** Canlı tahtayı açan İKİNCİ bir kapı
+(bildirime dokununca doğru oyunu aç) eklenince o kapı da bunu çağırmalı.
+İki kapı olduğunda doğru çare callback değil, Setup'a takılacak bir
+`RouteObserver` (`didPopNext`) — tek kapı varken onu kurmak erken soyutlama
+olurdu.
+
+**Bu, kaçırılan olayın kalıcı kayba dönüştüğü BEŞİNCİ yer.** Aynı soru
+yine geçerli: *"olay kaçarsa ne olur ve onu kim geri getirir?"* — ama bu
+vaka ikinci bir soru daha ekliyor: **"web bu garantiyi nereden alıyor?"**
+Web'in mimarisinden bedavaya gelen bir davranış, portta ELLE kurulmak
+zorunda; parite denetimi yalnızca kancaları değil, kancaların gerekliliğini
+DOĞURAN yapı farklarını da karşılaştırmalı.
+
+**Test tuzakları (ikisi de ölçüldü):** `find.byType` varsayılan olarak sahne
+dışını atlar — push edilmiş rotanın altındaki Setup'ı görmek için
+`skipOffstage: false` şart, ki hatanın kaynağı zaten "sahne dışında ama
+MOUNT" durumu. Ve `tester.pageBack()` bir AppBar geri butonu arıyor; Canlı
+tahtanın kendi çıkış düzeni olduğundan rota doğrudan pop ediliyor.
+
 ## "Arkadaşınla" rozeti bayat kaldı: kaçırılan olay, geri getirilemedi (27 Ağustos 2026)
 
 Kullanıcı bildirdi: zayıf bağlantıda (havuz başı) bekleyen 8 oyunu oynadı,
