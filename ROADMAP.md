@@ -147,8 +147,14 @@ Anlamlar (kullanıcının verdiği):
   da *laciverttaşı / lacivert taşı* olarak bilinir. Latince `lapis` "taş",
   `lazuli` lacivert rengi.
 - **mö** — inek sesi (ünlem).
-- **banu** — Farsça kökenli; "kadın, hanım, hanımefendi, soylu kadın".
-  **`banu` ve `banü` İKİSİ DE eklenecek — karar verildi (28 Ağustos 2026).**
+- **banu** — (Banü) Farsça kökenli; "hanımefendi, soylu kadın, gelin, ve
+  bağ/bahçe".
+- **banü** — (Banu) Farsça kökenli; "kadın, hanım, hanımefendi, soylu
+  kadın".
+  **`banu` ve `banü` İKİSİ DE eklenecek — karar verildi (28 Ağustos 2026);
+  anlamları 28 Ağustos'ta kullanıcı tarafından AYRIŞTIRILDI, yani iki ayrı
+  madde, birbirinin yazım varyantı değil** (`extra-meanings` değil,
+  `extra-words`; her biri kendi anlam listesiyle).
   İkisinin de yokluğu ayrıca doğrulandı: `words.ts`, `meanings.json`, üç
   `scripts/*.mjs` listesi, canlı `public.words` ve NFC normalizasyonu —
   hepsinde yok. `ban…` komşuluğunun tamamı: `ban · bana · banak · banal ·
