@@ -85,6 +85,31 @@ takıldığı yerler. Kuyrukta bekletmek yerine ikinci bir A sürümüyle
 | Oyun kartı ikonları (13 → 41 px etkin hedef) | `icon_tap_rescue.dart` + `.tap-expand-y` | Kalp/mesaj/hamle: uygulamanın en küçük üç hedefi |
 | Tanıtım "DEVAM ›" | `intro_screen.dart` | Tam genişlik + ekranın dibi + ortalı değildi |
 | Tanıtım son slaydındaki nokta şeridi | `intro_screen.dart` | Gereksiz ve yanıltıcıydı ("daha var" diyor ama yok) |
+| **Titreşimli dokunuş kayboluyordu** | `game_screen.dart` + `online_game_screen.dart` + web ikizi | Aşağı bkz. — asıl şikayeti çözen düzeltme buydu |
+
+**A2 İKİ derlemede çıktı ve ikincisi asıl önemlisi.** İlk paket
+(`1.0.0 (405)`, `24c5b0c`) cihazda denenince kullanıcı aynı şikayeti
+TEKRARLADI: *"Hâlâ tahtaya koyulan taşı her zaman alamıyorum."* Üstteki beş
+düzeltme yetmemişti çünkü hepsi hedefin ALANIYLA ilgiliydi; sorun ise
+JESTTEYDİ.
+
+**Ölçüldü (420×900, taslak taşa dokunup bırakma):** 6 px kayan parmak taşı
+geri alıyor, **12 ve 20 px kayanlar HİÇBİR ŞEY yapmıyordu** — raf tarafında
+taş seçilemiyordu bile. Sebep iki ayrı kararın tek eşikle verilmesiydi:
+10 px (Android touch slop) hayaleti GÖSTERMEK için doğru ama BIRAKMA kararı
+için fazla dar. Ayrı bir bırakma eşiği eklendi (24, hücrenin ~26 px'inin
+hemen altında) → paket **`1.0.0 (407)`** (`0651e5e`), kullanıcı onayladı:
+*"Daha iyi şimdi. Yayına alıyorum."* — ve 28 Ağustos 2026'da kapalı test
+kanalında **yayına alındı** (bkz. aşağıda madde 3).
+
+> **Ders:** bir eşik İKİ farklı soruyu cevaplıyorsa muhtemelen iki eşik
+> olmalı. "Sürükleme başladı mı?" ile "kullanıcı bırakmak mı istedi?" aynı
+> soru değil; ilkinin cevabı erken, ikincisinin geç verilmeli.
+>
+> **İkinci ders:** "dokunma isabeti" şikayetlerinde önce hedefin ALANINA
+> bakmak refleks oldu (48 dp turu, kurtarma, `.tap-expand`) — ama alan
+> yeterliyken JEST yolu kaybediyor olabilir. A2'nin ilk beş düzeltmesi
+> gerçekti ve yine de kullanıcının asıl şikayetini çözmedi.
 
 **Sürüm B'de KALANLAR:** madde 1 (deep link — mağaza blokeri) ve madde 13
 (push + Analytics). İkisi tek pakette gitmek zorunda, çünkü 13'ün 5. adımı
@@ -95,6 +120,51 @@ EDİLMEDİ** ("taktirde" → "takdirde"): repoda düzeltildi, canlıya
 gönderilmedi — push işi zaten bu fonksiyona dokunacak, tek deploy'da
 gitsin. O deploy yapılırken **`verify_jwt: false` AÇIKÇA geçilmeli**
 (araç parametre verilmezse `true` varsayıp mevcut değeri sessizce ezer).
+
+### 1.5 Sürüm B'ye binecek sözlük eklemeleri (28 Ağustos 2026)
+
+Kullanıcı üç kelime verdi (*"acil değil, yeni sürüm işlerine dahil et"*).
+Sözlük app paketinin içinde olduğundan bunlar **bir sonraki mobil sürüme
+binmeli** — sunucu+web'i erken güncellemek serbest ama app'te ancak yeni
+sürümle geçerli olur (bkz. `docs/decisions/dictionary.md` → "Yayılma
+gecikmesi").
+
+**Varlık kontrolü YAPILDI (28 Ağustos 2026) — repo ve canlı AYRIŞMIYOR,
+üçü de her iki tarafta da YOK:**
+
+| Kelime | `words.ts` / `meanings.json` | `public.words` / `is_valid_word` | Komşusu (ölçüldü) |
+|---|---|---|---|
+| `lapis` | yok | yok | **`lapislazuli` VAR** (bitişik tek madde), `lacivert` var |
+| `mö` | yok | yok | İki harfli tek "m" maddeleri: `ma`, `me`, `mi` |
+| `banu` (+`banü`) | ikisi de yok | ikisi de yok | `bani` var — **farklı kelime**, i/ı dersiyle aynı sınıf |
+
+**Hedef liste: üçü de `scripts/extra-words.mjs`.** (`proper-nouns` ülke/
+şehir/dil içindir; `extra-meanings` var olan maddeye ek anlam içindir —
+hiçbiri bu üçüne uymuyor.)
+
+Anlamlar (kullanıcının verdiği):
+- **lapis** — (lapis lazuli) değerli taş; dilimizde daha çok tam hâliyle ya
+  da *laciverttaşı / lacivert taşı* olarak bilinir. Latince `lapis` "taş",
+  `lazuli` lacivert rengi.
+- **mö** — inek sesi (ünlem).
+- **banu** — Farsça kökenli; "kadın, hanım, hanımefendi, soylu kadın".
+  **`banu` ve `banü` İKİSİ DE eklenecek — karar verildi (28 Ağustos 2026).**
+  İkisinin de yokluğu ayrıca doğrulandı: `words.ts`, `meanings.json`, üç
+  `scripts/*.mjs` listesi, canlı `public.words` ve NFC normalizasyonu —
+  hepsinde yok. `ban…` komşuluğunun tamamı: `ban · bana · banak · banal ·
+  banaz · bandaj · bando · bangui · bani · banjo · banjul · bank · banka ·
+  banker · banket · bankiz · banko · banma · banmak · bant · banyo`.
+
+⚠ **`mö` iki harfli.** Bu projede iki harfli maddeler yerleştirmede
+orantısız iş görür (çapa kurma, dar boşluk doldurma) — golden vector'lar
+yeniden üretildiğinde fark çıkarsa sebebi büyük olasılıkla budur; bu bir
+hata değil, beklenen etki.
+
+**Uygulanınca koşulacak zincir** (`docs/decisions/dictionary.md`'deki tablo,
+hiçbir halka atlanamaz): `npm run augment-dictionary` → migration'ı canlıya
+uygula + `list_migrations` ile dosya adını eşleştir → `npm run
+generate-golden-vectors` + `dart run test/run_all.dart` → `npm run
+generate-meanings-db` → `README.md`'deki kelime sayısı.
 
 ### 2. Zorunlu güncelleme (force update) — ERTELENDİ
 
@@ -133,12 +203,43 @@ Sürüm A'nın dört düzeltmesi (taş yakalama, ✕ ıskalama, arkadaş listesi
 sonuna inememe, bayat rozet) tam da **ilk deneyimi** vuruyordu — hatırlatma
 o yüzden A'dan SONRAYA bırakılmıştı.
 
-**A artık çıktı** (paket `1.0.0 (403)`), yani engel kalktı. Kalan tek şart:
-cihaz testi onaylansın ve paket kapalı test kanalında yayına geçsin.
+**ENGEL KALKTI — `1.0.0 (407)` KAPALI TESTTE YAYINDA (28 Ağustos 2026,
+kullanıcı Play Console'dan doğruladı: yayın durumu "Update live").** A
+(`403`) ve A2 (`405` → `407`) çıktı, cihaz testi onaylandı, paket kanalda.
+**Hatırlatma artık gönderilebilir — bekleyen tek adım bu.**
+
+⚠ **Play Console'da sürümün ADI ile version code AYNI şey değil** (28
+Ağustos 2026, kullanıcı haklı olarak sordu: *"Son release 1.0.0 (405)
+gözüküyor"*). "Latest releases and bundles" satırı `1.0.0 (405)` yazıyordu
+ama yanındaki version code sütunu `407`di. Sürüm adı taslak açılırken bir
+kez doldurulan **serbest metin bir etikettir ve paket değişince kendini
+güncellemez**; kimliği belirleyen tek şey `.aab`'nin içinden gelen version
+code. Aynı ekranın "Latest app bundles" tablosu kanıt: **407 → Active**,
+401/378/372/349 → Inactive ve **405 listede hiç yok** (o paket Play'e hiç
+yüklenmedi, yalnızca cihazda `.apk` olarak denendi). Zincir: koşu **#407**
+→ sha **`0651e5e`** → `mobile-latest` `.aab` (27 Ağu 21:07) → Play paketi
+(21:42). **Şüphe halinde ada değil, cihazdaki teşhis satırına bak:
+`Derleme 0651e5e`.**
+
+**14 GÜNLÜK SAYAÇ BAŞLADI — 28 Ağustos 2026, 1. gün.** Yeri:
+**Dashboard → (aşağı kaydır) Production → `Apply for access to production`
+kartı** (Test menüsünde DEĞİL; track sayfasında da yok — ölçüldü). Kartın
+yazdığı: *"12 testers have currently been opted in for 1 day"*, ilk iki
+şart ✅. **14. gün ~10 Eylül 2026.**
+
+⚠ **Sayı tam 12 — pay yok.** İzin listesi 56 kişi ama opt-in olan 12; biri
+çıkarsa sayaç SIFIRLANIR ve 13 gün kaybedilir. Hatırlatmanın hedefi artık
+"12'ye ulaşmak" değil **12'nin üstünde tampon** (15-20). Ayrıntı ve tuzaklar:
+`marketing/play-store/console-formlari.md` §7.
+
+14 gün beklerken yapılacak iki iş: karttaki **`Preview questions`**'dan
+başvuru sorularını okuyup cevapları hazırlamak, ve tester'lardan **yazılı
+geri bildirim** toplamak (başvuru "testi nasıl yürüttün" diye soruyor).
 
 Katılan/indiren sayısı Play Console'da: **Test → Closed testing → (track) →
-Testers sekmesi**, ve indirme adedi için **Statistics**. (Kullanıcı bunu iki
-kez sordu — yeri burada yazılı.)
+Testers sekmesi** (⚠ oradaki sayı opt-in DEĞİL, izin listesi), ve indirme
+adedi için **Statistics**. (Kullanıcı bunu iki kez sordu — yeri burada
+yazılı.)
 ---
 
 ## Modeller — hangi iş için hangisi
