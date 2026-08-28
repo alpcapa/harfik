@@ -494,10 +494,14 @@ Kullanıcı iPad'den çalışıyor; bunu tetikleyecek bir CLI/CI erişimi yok.
 2. **`verify_jwt` sessizce sıfırlanır:** parametre geçilmezse araç `true`
    varsayar ve önceki değeri KORUMAZ. **Her deploy'dan ÖNCE
    `list_edge_functions` ile mevcut değeri oku ve AYNI değeri açıkça geçir.**
-   `false` olması gereken altı fonksiyon (25 Ağustos 2026'da canlıdan
+   `false` olması gereken YEDİ fonksiyon (28 Ağustos 2026'da canlıdan
    sayıldı): `notify-deadline-warnings`, `notify-friend-request-reminders`,
    `notify-turn-timeout-surrender`, `notify-welcome`,
-   `sweep-unconfirmed-accounts`, `inbound-email`.
+   `sweep-unconfirmed-accounts`, `inbound-email`, `push-selftest`.
+   Sonuncusu bir TEŞHİS fonksiyonu (FCM kimlik zinciri kontrolü) ve
+   `verify_jwt: false` olması zararsız — yalnızca iki boolean döndürüyor,
+   hiçbir sır yazmıyor; ayrıntı `supabase/functions/push-selftest/index.ts`
+   başlığında. Silinebilir.
 
 
 
