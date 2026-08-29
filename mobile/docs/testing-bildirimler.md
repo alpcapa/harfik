@@ -60,8 +60,15 @@ reddin ardından sistem diyaloğu bir daha HİÇ gösterilmiyor.
 
 ## 2. Token yaşam döngüsü (`push_tokens`)
 
-DEĞİŞMEZ: **tabloda satır varsa o cihaz bildirim GÖSTEREBİLİR.** Her
-açılışta kendini onarır — ayrı bir dinleyici yok.
+DEĞİŞMEZ: **tabloda satır varsa o cihaz bildirim GÖSTEREBİLİR.**
+
+⚠ Bu cümlenin İKİNCİ yarısı 28 Ağustos 2026'ya kadar *"her açılışta kendini
+onarır — ayrı bir dinleyici yok"* diyordu ve **YANLIŞTI**: hizalama yalnızca
+Canlı sekmesinin `_reload()`'una bağlıydı, o da liste yüklemesi düşerse erken
+dönüyordu (Parça 159, ilk gerçek cihaz testinde bulundu). Artık üç yerden
+tetikleniyor — **açılış · öne dönüş (`resumed`) · oturum değişimi**
+(`_HomeGate`, `app.dart`). Aşağıdaki 2.2-2.5 tam olarak bu üç yolu sınıyor;
+"nasılsa kendini onarır" diye atlanırsa hatanın kendisi geri gelir.
 
 Her adımdan sonra Supabase'de:
 `select token, platform, user_id, updated_at from push_tokens;`
