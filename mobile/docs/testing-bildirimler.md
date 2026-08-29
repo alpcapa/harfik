@@ -108,6 +108,16 @@ Her adımdan sonra Supabase'de:
 - [ ] **2.5 BAŞKA bir hesapla gir (aynı cihaz)** → satır sayısı ARTMAMALI;
       var olan satırın `user_id`'si değişmeli (anahtar token, kullanıcı
       değil).
+
+⚠ **2.2/2.3'ü OYUNU OLAN bir hesapla yapmak, açılış tetikleyicisini
+KANITLAMAZ** (29 Ağustos 2026'da fark edildi, tur ortasında): bekleyen oyun
+varsa uygulama açılışta kendiliğinden **Canlı sekmesine geçiyor**, yani eski
+(kırık) koddaki tetikleyici — sekmenin `_reload()`'u — zaten koşuyor. O turda
+satırın silinmesi doğrudur ama Parça 159'un düzelttiği yolu sınamaz; dünkü
+kırık kod da o senaryoyu geçerdi.
+**İzole etmek için** hiç aktif oyunu/daveti OLMAYAN bir hesapla yap: uygulama
+Canlı'ya kendiliğinden gitmez, dolayısıyla satırın silinmesi/geri gelmesi
+YALNIZCA `_HomeGate`'in açılış çağrısıyla açıklanabilir.
 - [ ] **2.6 Hesabı sil** (Hesap Ayarları → Hesabımı Sil) → o kullanıcının
       satırı da gitmeli (`delete_account_cascade`).
 
