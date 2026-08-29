@@ -579,6 +579,39 @@ export async function fetchPlayerStats(
 }
 
 /**
+ * Skor kartındaki "Y:59/C:E" satırı için BAŞKA bir oyuncunun yaşını ve
+ * cinsiyetini okur.
+ *
+ * Neden ayrı bir RPC: `profiles`in SELECT RLS'i kilitli — bir kullanıcı
+ * yalnızca KENDİ satırını okuyabiliyor, ve başkasının kartını besleyen
+ * kaynakların (k-lig view'ı, `list_friends`, `game_likers`, çevrimiçi oyun
+ * oyuncuları, `admin_list_members`) hiçbiri bu iki alanı taşımıyor.
+ *
+ * ⚠ RPC ham `birth_date`i DEĞİL türetilmiş yaşı döndürür — kart yalnızca yaşı
+ * gösteriyor, doğum GÜNÜNÜ yayınlamak gösterilenden fazla veri açardı.
+ * Yaş tanımı `calculateAge` ile aynı ("tamamlanmış yıl").
+ */
+export async function fetchProfileAgeGender(
+  userId: string,
+): Promise<{ age: number | null; gender: Gender | null }> {
+  const empty = { age: null, gender: null };
+  if (!supabase) return empty;
+  const { data, error } = await supabase.rpc('get_profile_age_gender', {
+    p_user_id: userId,
+  });
+  if (error) {
+    console.error('[Kelimeki] fetchProfileAgeGender hatası:', error.message);
+    return empty;
+  }
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row) return empty;
+  return {
+    age: row.age == null ? null : Number(row.age),
+    gender: (row.gender as Gender | null) ?? null,
+  };
+}
+
+/**
  * Belirli bir oyuncunun (varsayılan: oturum açan kullanıcı) belirli oyuncu
  * sayısındaki oyunlarını sayfalı biçimde döner (en yeni önce),
  * `GameHistoryModal`'ın kaydırdıkça yüklemesi (lazy load) için. `hasMore`,

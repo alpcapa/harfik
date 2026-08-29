@@ -10,6 +10,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../util/offline_notice.dart';
 import 'error_reporter.dart';
+import 'profile_fields.dart';
 
 /// Skor kartı sekmesi: Genel (iki modun toplamı) / 2 / 4 kişilik.
 /// Web `TabKey` ('all' | 2 | 4).
@@ -193,6 +194,12 @@ abstract class StatsGateway {
   /// Verilen kullanıcıların k-lig toplam puanları (`leaderboard` view'ından
   /// `user_id,total_score`) — isimlerin yanındaki rütbe mührü için.
   Future<List<Map<String, Object?>>> rankScores(List<String> userIds);
+
+  /// Skor kartındaki "Y:59/C:E" satırı için BAŞKA bir oyuncunun yaş+cinsiyeti
+  /// (`get_profile_age_gender` RPC'si). `profiles`in SELECT RLS'i yalnızca
+  /// KENDİ satırını okuttuğundan doğrudan tabloya bakılamıyor; RPC ham
+  /// `birth_date`i DEĞİL türetilmiş yaşı döndürür. Satır yoksa null.
+  Future<Map<String, Object?>?> profileAgeGender(String userId);
 }
 
 class SupabaseStatsGateway implements StatsGateway {
@@ -246,6 +253,14 @@ class SupabaseStatsGateway implements StatsGateway {
         .select('user_id,total_score')
         .inFilter('user_id', userIds);
     return [for (final r in rows) (r as Map).cast<String, Object?>()];
+  }
+
+  @override
+  Future<Map<String, Object?>?> profileAgeGender(String userId) async {
+    final data = await client
+        .rpc('get_profile_age_gender', params: {'p_user_id': userId});
+    final row = data is List && data.isNotEmpty ? data.first : data;
+    return row is Map ? row.cast<String, Object?>() : null;
   }
 }
 
@@ -322,6 +337,27 @@ class StatsRepo {
         errorReporter.report(e, stack: st, context: 'stats_repo.my_rank');
       }
       return null;
+    }
+  }
+
+  /// Skor kartındaki "Y:59/C:E" satırı — BAŞKA bir oyuncu için. Hata ya da
+  /// veri girilmemişse boş dizge döner, yani satır hiç çizilmez (web'de de
+  /// öyle: `formatAgeGender` boş dönünce blok render edilmiyor).
+  Future<String> ageGenderLabel(String userId) async {
+    try {
+      final row = await gateway.profileAgeGender(userId);
+      if (row == null) return '';
+      return formatAgeGender(
+        (row['age'] as num?)?.toInt(),
+        row['gender'] as String?,
+      );
+    } catch (e, st) {
+      debugPrint('[Kelimeki] profileAgeGender hatası: $e');
+      if (!isNetworkError(e)) {
+        errorReporter.report(e,
+            stack: st, context: 'stats_repo.age_gender');
+      }
+      return '';
     }
   }
 }

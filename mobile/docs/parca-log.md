@@ -20,6 +20,42 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 166 — yaş/cinsiyet satırı BAŞKASININ kartında da (29
+     Ağustos 2026, kullanıcı isteği; web + port aynı PR):** *"Yaş ve
+     cinsiyet tüm kişi skor kartlarında ismin altında olmalı. Kendi
+     profilimde görmemin hiç bir mantığı ve faydası yok."*
+     - **Neden eksikti:** `Y:59/C:E` verisi `profiles`ten geliyor ve o
+       tablonun SELECT RLS'i yalnızca KENDİ satırını okutuyor — başkasının
+       kartını besleyen hiçbir kaynak (k-lig view'ı, `list_friends`,
+       `game_likers`, çevrimiçi oyuncular, `admin_list_members`) bu iki
+       alanı taşımıyordu. Yani eksik bir `if` değil, eksik bir VERİ YOLU.
+     - **Sunucu:** `get_profile_age_gender` (security definer,
+       `profile_age_gender_rpc` migration'ı, canlıya uygulandı). **Ham
+       `birth_date` DEĞİL türetilmiş `age` dönüyor** — kart zaten yalnızca
+       yaşı gösteriyor; `security definer` bir fonksiyonda "satırı olduğu
+       gibi döndür" refleksi bilinçli kırıldı. Yetki `anon`a da verildi
+       (kart misafire açık).
+     - **Port:** `StatsGateway.profileAgeGender` + `StatsRepo.ageGenderLabel`
+       (hata/veri yok → boş dizge, satır hiç çizilmez — web'in aynı kuralı);
+       `PlayerScoreCardModal`'da ismin `Row`'u `Column`'a alındı, yaş satırı
+       arkadaşlık simgesinin Row'unun DIŞINDA (içine konsaydı ikon hizası
+       bozulurdu). `calculateAge`/`formatAgeGender` iki tarafta da ortak
+       dosyaya çıkarıldı (`profileFields.ts` ↔ `profile_fields.dart`).
+     - **⚠ Yaşın İKİ tanımı var:** kendi kartında istemci, başkasınınkinde
+       sunucu hesaplıyor. İkisi de "tamamlanmış yıl"; ayrışırlarsa aynı
+       oyuncu iki kartta farklı yaşta görünür — üç yerdeki (TS/Dart/SQL)
+       yorumlar birbirine atıf yapıyor.
+     - **Gateway'e metot eklemek `implements` eden BEŞ test sahtesini
+       birden bozar** (`friends_test`, `score_card_test` ×2,
+       `league_rewards_test`, `account_button_test`) — hepsi aynı PR'da
+       tamamlandı. Regresyon: `score_card_test.dart`'a iki test (satır
+       başkasının kartında çizilir; veri yoksa HİÇ çizilmez).
+     - **Bu oturumda Dart SDK YOK** — `flutter analyze`/`dart test`
+       koşulamadı, port derlemesi CI'da doğrulanacak. Web tarafı
+       `npm run lint` + `npm run build` ile yeşil.
+     - Aynı PR'da: `docs/decisions/components-score.md`, `TESTING.md`,
+       `mobile/TESTING.md`.
+
    - ✅ **Parça 165 — bağlantı geri gelince avatar kendini toparlamıyordu
      (29 Ağustos 2026, cihazda bildirildi):** *"app açıkken internet gelince
      avatar güncellenmedi, sadece aç kapa yapınca düzeliyor."*

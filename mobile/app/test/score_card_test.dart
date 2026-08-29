@@ -28,10 +28,19 @@ class FakeStatsGateway implements StatsGateway {
   final List<Map<String, Object?>> rows;
   final Map<String, Object?>? rank;
 
+  /// userId → `get_profile_age_gender` satırı (`{'age': .., 'gender': ..}`).
+  /// Verilmeyen kullanıcı için null döner, yani kartta satır çizilmez.
+  final Map<String, Map<String, Object?>?> ageGender;
+
   /// Kaç kez sayfa istendi (lazy yükleme testi).
   final pageRequests = <({int limit, int offset})>[];
 
-  FakeStatsGateway({this.stats = const {}, this.rows = const [], this.rank});
+  FakeStatsGateway({
+    this.stats = const {},
+    this.rows = const [],
+    this.rank,
+    this.ageGender = const {},
+  });
 
   @override
   Future<Map<String, Object?>?> playerStats(String userId, int? playerCount) async =>
@@ -62,6 +71,10 @@ class FakeStatsGateway implements StatsGateway {
           if (userIds.contains(r['user_id']))
             {'user_id': r['user_id'], 'total_score': r['total_score']},
       ];
+
+  @override
+  Future<Map<String, Object?>?> profileAgeGender(String userId) async =>
+      ageGender[userId];
 }
 
 Map<String, Object?> statRow({
@@ -612,6 +625,51 @@ void main() {
     expect(find.textContaining('k-lig, senin gibi'), findsOneWidget);
   });
 
+  testWidgets(
+      '29 Ağustos 2026 (kullanıcı isteği): yaş/cinsiyet satırı BAŞKASININ '
+      'kartında da çizilir — veri `profiles`ten değil `get_profile_age_gender` '
+      "RPC'sinden gelir (o satırın SELECT RLS'i başkasına kapalı)",
+      (tester) async {
+    final gw = FakeStatsGateway(
+      stats: {'u-9': {null: statRow(total: 33)}},
+      ageGender: const {
+        'u-9': {'age': 59, 'gender': 'male'},
+      },
+    );
+    await pumpModal(
+      tester,
+      PlayerScoreCardModal(
+        stats: StatsRepo(gw),
+        userId: 'u-9',
+        name: 'Esiner',
+      ),
+    );
+
+    expect(find.text('Y:59/C:E'), findsOneWidget);
+  });
+
+  testWidgets(
+      'yaş/cinsiyet satırı: veri girilmemişse (RPC null alanlar döndürür) '
+      'satır HİÇ çizilmez — boş bir satır yer kaplamamalı', (tester) async {
+    final gw = FakeStatsGateway(
+      stats: {'u-9': {null: statRow(total: 33)}},
+      ageGender: const {
+        'u-9': {'age': null, 'gender': null},
+      },
+    );
+    await pumpModal(
+      tester,
+      PlayerScoreCardModal(
+        stats: StatsRepo(gw),
+        userId: 'u-9',
+        name: 'Esiner',
+      ),
+    );
+
+    expect(find.textContaining('Y:'), findsNothing);
+    expect(find.textContaining('C:'), findsNothing);
+  });
+
   testWidgets('k-lig: hiç satır yoksa davet metni', (tester) async {
     await pumpModal(
       tester,
@@ -778,5 +836,8 @@ class _ThrowingGateway implements StatsGateway {
       Future.error(Exception('ağ'));
   @override
   Future<List<Map<String, Object?>>> rankScores(List<String> userIds) =>
+      Future.error(Exception('ağ'));
+  @override
+  Future<Map<String, Object?>?> profileAgeGender(String userId) =>
       Future.error(Exception('ağ'));
 }
