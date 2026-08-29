@@ -40,10 +40,22 @@ Tetikleyici bilerek açılış/giriş DEĞİL: **Canlı sekmesi açıldı VE en 
 aktif oyun ya da bekleyen davet var.** Gerekçe: Android 13+'ta ikinci
 reddin ardından sistem diyaloğu bir daha HİÇ gösterilmiyor.
 
-- [ ] **1.1 Bağlamsız açılış.** Uygulamayı ilk kez aç, Canlı sekmesine
-      GİRME → hiçbir izin penceresi çıkmamalı (ne bizimki ne sistemin).
-- [ ] **1.2 Boş Canlı sekmesi.** Canlı sekmesini aç, hiç oyunun/davetin
-      YOKKEN → yine hiçbir pencere çıkmamalı.
+⚠ **1.1 ve 1.2 GİRİŞLİ yapılır** (29 Ağustos 2026'da netleşti; iki kez
+boşa denendi — önce oyunu ÇOK olan bir hesapla, sonra misafirken).
+Tetikleyici `_reload()`'un içinde ve `user.id` istiyor
+(`live_games_tab.dart:245`), yani **misafirken o koda hiç ulaşılmıyor**:
+girişsiz bir tur "pencere çıkmadı" der ama sınamak istediğimiz dalı
+(`aktifOyunVar == false`) hiç çalıştırmaz. Hesap seçimi de şart — hiç aktif
+oyunu/daveti OLMAYAN bir test hesabı gerekiyor (SQL ile bak:
+`online_games` içinde `slots`ta o kullanıcı geçen `active`/`pending` satır
+var mı).
+
+- [ ] **1.1 Bağlamsız açılış.** GİRİŞ YAP, Canlı sekmesine GİRME → hiçbir
+      izin penceresi çıkmamalı (ne bizimki ne sistemin).
+- [ ] **1.2 Boş Canlı sekmesi.** Aynı (oyunsuz) hesapla Canlı sekmesini aç →
+      yine hiçbir pencere çıkmamalı.
+- [x] **1.2-misafir** (29 Ağustos 2026): girişsiz Canlı sekmesi → pencere
+      YOK. Geçti, ama yukarıdaki nedenle 1.2'nin YERİNE geçmez.
 - [ ] **1.3 Gerçek tetikleyici.** Bir Canlı oyun başlat (ya da bir davet
       al), Canlı sekmesini aç → **"Bildirimleri açalım mı?"** penceremiz
       çıkmalı; "BİLDİRİMLERİ AÇ" / "ŞİMDİ DEĞİL".
