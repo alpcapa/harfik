@@ -258,7 +258,27 @@ reklam ağı, veri satışı — geçilirse "Paylaşılıyor" EVET olur.
 | App activity → **Other user-generated content** | "Görüş Bildir" mesajları, şikayet nedenleri | İsteğe bağlı | App functionality · Fraud prevention, security and compliance | `feedback`, şikayet akışı |
 | App info and performance → **Crash logs** | Hata mesajı + teknik iz | Zorunlu | Analytics | `client_errors` (`telemetry.md`) |
 | App info and performance → **Diagnostics** | Sürüm, platform (web/uygulama), işletim sistemi tipi/sürümü, cihaz modeli | Zorunlu | Analytics | `visitTracking`, `client_errors` |
-| Device or other IDs → **Device or other IDs** | `anon_id` — cihazda üretilen rastgele kod, hesapla EŞLEŞTİRİLMEZ | Zorunlu | Analytics | `visitTracking` |
+| Device or other IDs → **Device or other IDs** | `anon_id` — cihazda üretilen rastgele kod, hesapla EŞLEŞTİRİLMEZ · **FCM bildirim token'ı** (yalnız uygulama) · Firebase **App instance ID** | Zorunlu | Analytics · **App functionality** · **Developer communications** | `visitTracking`, `push_tokens`, `firebase_analytics` |
+
+⚠ **29 Ağustos 2026 — push/Analytics geldiğinde bu satır güncellendi.** FCM
+token'ı YENİ bir veri TÜRÜ açmıyor (`anon_id` ile aynı kategori), yalnızca
+AMAÇ ekliyor: bildirim göndermek. Formda yapılacak tek değişiklik bu türün
+"Purposes" kutusuna App functionality + Developer communications eklemek.
+
+⚠ **Üçüncü taraf listesi Data safety formunda YOK** — Play yalnızca
+"paylaşılıyor mu" diye sorar ve hizmet sağlayıcı paylaşım sayılmaz. Sağlayıcı
+listesi GİZLİLİK POLİTİKASINDA (`src/legal/LegalContent.tsx` §4); Google
+(Firebase) oraya aynı gün eklendi, sayı üçten dörde çıktı.
+
+⚠ **`AD_ID` izni manifestten AÇIKÇA kaldırıldı** (aynı gün): `firebase_analytics`
+onu kendi manifestinde bildiriyor ve birleşme sessizce içeri alıyordu — bu,
+buradaki "Advertising ID: kullanılmıyor" beyanını YANLIŞA düşürürdü. CI artık
+birleşmiş manifeste bakıp izin geri gelirse derlemeyi düşürüyor.
+
+❓ **AÇIK SORU — Firebase Analytics ve "Approximate location":** Analytics
+IP'den kaba konum türetiyor olabilir; bunun ayrıca beyan gerektirip
+gerektirmediği DOĞRULANMADI. Google'ın Data safety rehberinin Firebase
+bölümünden teyit et, tahminle doldurma.
 
 **Hiçbir satırda "processed ephemerally" YOK** — hepsi kalıcı olarak
 saklanıyor. ⚠ Bu bir KUTUCUK değil, radyo çifti: "No, this collected data
