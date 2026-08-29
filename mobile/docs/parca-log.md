@@ -20,6 +20,29 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 167 — hamle puanı rozeti taşları kapatıyordu (29 Ağustos
+     2026, kapalı testteki kullanıcılar bildirdi; web + port aynı PR):**
+     - **Ölçüm** (384px genişlik, hücre 25.2px; gerçek `Board` çıktısı
+       `dist/index.html`'den çıkarılıp Chromium'da ölçüldü): rozet
+       **30.7px = 1.22 HÜCRE**, yani kelimenin ilk taşının harfini örtüyordu.
+       Dolgu `3/6` → **`1.5/3`**: **24.7px = 0.98 hücre**, tek hücrenin
+       içinde kalıyor.
+     - **Rakamın puntosu bilerek AYNI kaldı** (kullanıcı kararı): üç seçenek
+       AYNI tahta üzerinde yan yana çizilip karşılaştırıldı; puntoyu
+       küçülten seçenek (web paritesi + dar dolgu → 0.89 hücre) reddedildi —
+       hamle puanı "Oyna"ya basmadan önce bakılan tek sayı.
+     - **⚠ AÇIK KALAN AYRIŞMA:** rozetin puntosu/fontu web'de
+       `clamp(8px,2vw,11px)` + mono, portta sabit `11` + tema sans'ı; yani
+       port dar telefonda %19 daha geniş çiziyordu ve şikayetin asıl kaynağı
+       buydu. **Parça 24'teki "web'de fluid olan değer portta sabit kalmış"
+       sınıfının aynısı.** Bu PR'da KAPATILMADI — kod yorumuna ve
+       `docs/decisions/components.md`'ye yazıldı, ayrı bir karar bekliyor.
+     - `board_render_test.dart` rozetin yalnızca METNİNİ kontrol ediyor
+       (dolgusunu değil), bu yüzden düşmedi.
+     - ℹ️ **Parça 166 numarası BİLEREK boş:** yaş/cinsiyet satırı işi
+       (#369) `main`'e girdi, sonra zamanlama gereği geri alındı (#370);
+       geri getirildiğinde kendi 166 kaydıyla dönecek.
+
    - ✅ **Parça 165 — bağlantı geri gelince avatar kendini toparlamıyordu
      (29 Ağustos 2026, cihazda bildirildi):** *"app açıkken internet gelince
      avatar güncellenmedi, sadece aç kapa yapınca düzeliyor."*

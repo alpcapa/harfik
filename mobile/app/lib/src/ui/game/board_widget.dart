@@ -900,8 +900,19 @@ class BoardWidget extends StatelessWidget {
               child: FractionalTranslation(
                 translation: const Offset(-0.35, -0.35),
                 child: Container(
+                  // Dolgu 3/6 → 1.5/3 (29 Ağustos 2026, test kullanıcıları
+                  // bildirdi: rozet harfleri kapatıyor). Ölçüm 384px'de:
+                  // 30.7px = 1.22 hücre → 24.7px = 0.98 hücre. Rakamın
+                  // puntosu bilerek AYNI kaldı. Web ikizi: Board.tsx
+                  // `buildBadge`.
+                  //
+                  // ⚠ Punto hâlâ web'den AYRIŞIK: web `clamp(8px,2vw,11px)`
+                  // (dar telefonda 8px, font-mono), burası sabit 11 + tema
+                  // sans'ı. Bu bilinçli olarak AÇIK bırakıldı, ayrı bir
+                  // karar bekliyor — kapatılırsa iki tarafın da aynı değere
+                  // gelmesi gerekir (bkz. docs/decisions/components.md).
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      const EdgeInsets.symmetric(horizontal: 3, vertical: 1.5),
                   decoration: BoxDecoration(
                     color: color,
                     borderRadius: BorderRadius.circular(999),

@@ -471,7 +471,15 @@ export function Board({
           transform: 'translate(-35%, -35%)',
           background: color,
           fontSize: 'clamp(8px,2vw,11px)',
-          padding: '3px 6px',
+          // Dolgu 3/6 → 1.5/3 (29 Ağustos 2026, test kullanıcıları bildirdi:
+          // rozet tahtadaki harfleri kapatıyor). ÖLÇÜLDÜ (384px genişlik,
+          // hücre 25.2px, gerçek Board çıktısı + Chromium): rozet 30.7px =
+          // 1.22 HÜCRE idi, yani kelimenin ilk taşının üstüne taşıyordu;
+          // 1.5/3 ile 24.7px = 0.98 hücre, tek hücrenin içinde kalıyor.
+          // Rakamın PUNTOSU bilerek değişmedi (kullanıcı kararı) — hamle
+          // puanı "Oyna"dan önce bakılan tek sayı, küçültmek istenmedi.
+          // Port ikizi: mobile/.../board_widget.dart `_moveBadge`.
+          padding: '1.5px 3px',
           boxShadow: '0 2px 5px rgba(0,0,0,0.25)',
         }}
       >
