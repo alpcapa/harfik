@@ -148,6 +148,14 @@ uyarıyor; push e-postanın YANINDA gidiyor, yerine değil.
         gelen bildirimi **sessizce yutuyor**. Bildirim hiç gelmiyorsa ilk
         bakılacak yer `MainActivity.kt`'deki `kelimeki_oyun` kanalı ile
         `_shared/push.ts`'in yazdığı değerin AYNI olup olmadığı.
+      - ✅ **29 Ağustos 2026: geçti** (ses + açılır banner, gerçek cihaz).
+      - ⚠ **AÇILIR BANNER İÇİN KANALIN YENİ DOĞMASI ŞART.** Kanal önemi
+        yaratıldıktan SONRA yükseltilemiyor: 28 Ağustos'ta kod
+        `IMPORTANCE_HIGH`e çekildi ama mevcut kurulumda kanal DEFAULT olarak
+        doğmuş olduğundan banner çıkmadı ve teşhis yanlış sanıldı. Uygulama
+        KALDIRILIP yeniden kurulunca banner geldi. Kanal önemiyle ilgili bir
+        şey test ederken önce uygulamayı kaldır — yoksa doğru kodu yanlış
+        sanırsın.
 - [ ] **3.1b Aynı uyarının E-POSTASINDA "takdirde" yazmalı** — "taktirde"
       değil. Düzeltme repoda duruyordu ama hiç canlıya çıkmamıştı; push
       dağıtımıyla birlikte gitti.
