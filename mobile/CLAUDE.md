@@ -811,6 +811,29 @@ yönlendirmek demek.
 ⚠ **Eşiği yükseltmek geri alınabilir** (satırı düşür), ama o an uygulamayı
 açmış olan kullanıcı ekranı görmüş olur. Emin olmadan yükseltme.
 
+### 1.0.1 sürümünde eşik BİLEREK yükseltilmedi (29 Ağustos 2026)
+
+Mekanizma aynı gün kullanılabilir hâle geldi, ama `app_config`'teki eşik
+`0.0.0`'da BIRAKILDI — yani 1.0.1 kimseyi zorunlu güncellemeye sokmuyor.
+Bu bir unutma değil, kullanıcı kararı; gerekçesi mekanizmanın kendi
+sınırında:
+
+**Zorunlu güncelleme ekranını ESKİ sürüm çizer.** Eşiği bugün yükseltseydik
+onu görecek olan 1.0.0 kullanıcılarıydı ve o derlemedeki ekranda **buton
+yok** (buton 1.0.1'in içinde). Yayınlanmış bir derlemenin kodu geriye dönük
+değiştirilemediğinden, kapıyı ilk kez açtığın sürüm her zaman *"çıkışı
+olmayan ekranı gören"* sürüm olur. Yani mağazaya elle gitmek gerekirdi ki
+bu zaten kullanıcının bugün yaptığı şey (*"İnsanlara ben her zaman yaptığım
+gibi güncelleme var derim tek tek"*) — kapı hiçbir şey kazandırmadan
+sürtünme eklerdi.
+
+**Genel kural, yalnızca bu sürüm için değil:** zorunlu güncelleme
+mekanizmasının bir sürümü *kaçırması* yapısaldır. Eşik ancak **butonu
+taşıyan** bir sürüm sahadayken anlam kazanır — pratikte "N'yi yayınla,
+N+1'i yayınlarken eşiği N'e çek". 1.0.1 burada N; ilk gerçek kullanım
+1.0.2 ile mümkün olacak.
+
+
 ## Sistem Yazı Boyutu — tavan VAR, ama tavan çözüm DEĞİL
 
 28 Ağustos 2026, kullanıcı cihazda bildirdi: *"Görmediği için telefon
