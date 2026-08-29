@@ -20,6 +20,33 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 165 — bağlantı geri gelince avatar kendini toparlamıyordu
+     (29 Ağustos 2026, cihazda bildirildi):** *"app açıkken internet gelince
+     avatar güncellenmedi, sadece aç kapa yapınca düzeliyor."*
+     - **Kök sebep:** `KAvatar`ın `_broken` bayrağı YALNIZCA url değişince
+       sıfırlanıyordu (`didUpdateWidget`). Bağlantı kesikken bir kez düşen
+       görsel, o widget yaşadığı sürece baş harflerde kalıyordu — kullanıcının
+       tarifi birebir doğruydu.
+     - ⚠ **Aynı gün bir kez "geçici ağ hatası" diye KAPATILMIŞTI ve o karar
+       doğruydu:** ilk raporda avatar aç-kapa ile geldi, yani URL/politika
+       sorunu yoktu. Yanlış olan teşhis değil, KAPSAMDI — asıl sorun görselin
+       düşmesi değil, düştükten sonra bir daha DENENMEMESİYDİ. İkinci rapor
+       farkı gösterdi.
+     - **Çözüm — parametre DEĞİL kapsam:** `ui/online_scope.dart`
+       (`InheritedNotifier<OnlineStatus>`) kökte bir kez kuruluyor; `KAvatar`
+       `didChangeDependencies`'te çevrimdışı→çevrimiçi GEÇİŞİNİ yakalayıp
+       `_broken`ı sıfırlıyor. `KAvatar`a `OnlineStatus` parametresi geçirmek
+       ELENDİ: 19 çağrı yeri (16 dosya) var ve yeni bir çağrı yerinde birinin
+       unutması hatayı sessizce geri getirirdi — bu kod tabanının en sık
+       tekrarlayan sınıfı ("zincirin bir halkası güncellenmedi"). Kapsamla
+       çağrı yerlerinin HİÇBİRİ değişmedi.
+     - **Geçiş yakalanıyor, her bildirim değil:** körlemesine sıfırlamak
+       gerçekten bozuk bir URL'de sonsuz yeniden denemeye dönerdi.
+     - **Kapsam yoksa davranış eskisiyle aynı** (`maybeOf`) — izole widget
+       testleri kırılmadı; bunun kendi testi de var.
+     - **Negatif eş kuruldu:** sıfırlama satırı kapatılınca test düşüyor.
+     - **Doğrulama:** `dart analyze` temiz, **618 test** yeşil.
+
    - ✅ **Parça 164 — bağlantısızken hesap adı e-postaya düşüyordu (29 Ağustos
      2026, cihaz testi 6.3'te kullanıcı uçak modunda bildirdi):** *"T2 yerine
      KE yazıyor."*

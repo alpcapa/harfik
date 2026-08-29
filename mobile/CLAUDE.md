@@ -75,7 +75,16 @@ MEKANİZMA: derleme kimliği artık ürünün İÇİNDE.
 | Supabase (migration/Edge Function) | MCP ile doğrudan | Anında — dal/merge ile İLGİSİZ |
 
 **Feature dalındaki bir commit sitede ASLA görünmez.** Bir PR açmak da
-yetmez (workflow PR'da bilerek yayınlamıyor). Üçüncü satır tersine bir tuzak:
+yetmez (workflow PR'da bilerek yayınlamıyor).
+
+⚠ **AMA `mobile-latest` RELEASE'İ İÇİN BU GEÇERLİ DEĞİL (29 Ağustos 2026'da
+fark edildi):** yükleme adımının koşulu `github.event_name != 'pull_request'`,
+yani bir DALA push da yayınlıyor — yalnızca PR koşuları hariç tutulmuş. O gün
+merge'den sonra iki koşu yedi saniye arayla başladı (#419 dal, #420 `main`) ve
+APK'yı hangisinin yazdığı belirlenemedi. İkisi aynı işi taşıdığından zarar
+olmadı, ama **dalda çalışırken `mobile-latest`in `main`'in derlemesi olduğunu
+VARSAYMA** — kurulan derlemenin sha'sını her zaman Setup'ın teşhis satırından
+oku. Üçüncü satır tersine bir tuzak:
 sunucu değişikliği anında canlıdır, yani istemci düzeltmesi henüz yokken
 sunucu davranışı değişmiş olabilir.
 
@@ -647,6 +656,13 @@ mobile/
                              #     Parça 158). Hizalama buna BAĞLI DEĞİL — (a) ve
                              #     (b) 28 Ağustos'a kadar aynı yola bağlıydı ve
                              #     hata tam oradan çıktı (Parça 159)
+      ui/online_scope.dart   # OnlineScope — bağlantı durumunun AĞAÇ GENELİNDE
+                             # erişilebilir hâli (InheritedNotifier, kökte bir
+                             # kez kurulur). Tüketicisi bugün KAvatar: çevrimiçine
+                             # dönünce yüklenememiş görseli yeniden dener.
+                             # ⚠ Parametre geçirmek yerine kapsam seçildi çünkü
+                             # KAvatar'ın 19 çağrı yeri var — yeni bir çağrı
+                             # yerinde unutmak hatayı sessizce geri getirirdi
       ui/route_observer.dart # kRouteObserver — RouteAware `didPopNext`.
                              # Web'in "route değişince remount" davranışının
                              # port karşılığı; SetupScreen oyundan DÖNÜŞTE

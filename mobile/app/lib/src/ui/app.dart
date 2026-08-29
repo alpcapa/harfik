@@ -17,6 +17,7 @@ import 'push/push_permission_flow.dart';
 import 'update_required_screen.dart';
 import 'text_scale.dart';
 import 'game/logo_mark.dart';
+import 'online_scope.dart';
 
 class KelimekiApp extends StatelessWidget {
   final AppServices services;
@@ -67,7 +68,12 @@ class KelimekiApp extends StatelessWidget {
       // 2,0'da 0,0 px). Yeni bir ekran yazarken "nasılsa kısıtlı" deme.
       builder: (context, child) => MediaQuery.withClampedTextScaling(
         maxScaleFactor: kMaxTextScale,
-        child: ListenableBuilder(
+        // Bağlantı durumu ağaç genelinde — bugün tek tüketicisi `KAvatar`
+        // (çevrimiçine dönünce yüklenememiş görseli yeniden dener), ama
+        // kapsam kökte durduğundan yeni tüketiciler parametre gerektirmiyor.
+        child: OnlineScope(
+          status: services.onlineStatus,
+          child: ListenableBuilder(
           listenable: services.auth,
           builder: (context, _) {
             final app = child ?? const SizedBox.shrink();
@@ -119,7 +125,8 @@ class KelimekiApp extends StatelessWidget {
                 ),
               ],
             );
-          },
+            },
+          ),
         ),
       ),
       home: services.versionGate == VersionGateStatus.updateRequired

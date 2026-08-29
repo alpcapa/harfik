@@ -176,9 +176,16 @@ uyarıyor; push e-postanın YANINDA gidiyor, yerine değil.
       anahtarımız bugün hiçbir yeni yetenek katmıyor. Kolon,
       ikinci bir push tipi geldiğinde anlam kazanacak diye duruyor.
       **Eksik sanıp eklemeye kalkma.**
-- [ ] **3.5 Uygulamayı silip yeniden kur** → eski token artık geçersiz;
+- [x] **3.5 Uygulamayı silip yeniden kur** → eski token artık geçersiz;
       sunucu `UNREGISTERED` alıp satırı silmeli (bir sonraki cron'dan sonra
       `push_tokens`ta ölü satır kalmamalı).
+      ✅ **29 Ağustos 2026: geçti, İKİ kez.** (a) 28 Ağustos'tan kalan ölü bir
+      satır gün içindeki gönderimlerden birinde kendiliğinden temizlendi;
+      (b) uygulama silindikten sonra tetiklenen uyarıda tablo **sıfır satıra**
+      indi. İkisinde de e-posta gitmeye devam etti (`sentLocal:1`) — push
+      arızası e-posta yolunu düşürmüyor.
+      **Bu adım CİHAZ GEREKTİRMİYOR:** uygulama silindikten sonra fonksiyonu
+      elle tetikleyip `push_tokens`a bakmak yeterli; temizlik sunucuda oluyor.
 
 ## 4. Kayıt onayı ve şifre sıfırlama (derin bağlantı kanalı)
 

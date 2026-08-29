@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
 import '../game/count_badge.dart';
 import '../tokens.dart';
+import '../online_scope.dart';
 
 const Color _panel = kPanel;
 const Color _border = kBorder;
@@ -56,12 +57,34 @@ class _KAvatarState extends State<KAvatar> {
   // harflerde takılı kalırdı (web'in kod incelemesiyle düzelttiği hata).
   bool _broken = false;
 
+  /// Bir önceki karede çevrimdışı mıydık? Geçişi (çevrimdışı → çevrimiçi)
+  /// yakalamak için; her bildirimde körlemesine sıfırlamak, gerçekten BOZUK
+  /// bir URL'de sonsuz yeniden denemeye dönerdi.
+  bool _wasOffline = false;
+
   @override
   void didUpdateWidget(covariant KAvatar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.url != widget.url) {
       _broken = false;
     }
+  }
+
+  /// ÇEVRİMİÇİNE DÖNÜNCE yüklenememiş görseli yeniden dener (29 Ağustos
+  /// 2026, kullanıcı cihazda bildirdi: *"app açıkken internet gelince avatar
+  /// güncellenmedi, sadece aç kapa yapınca düzeliyor"*). `_broken` yalnızca
+  /// url değişince sıfırlandığından, bağlantı kesikken bir kez düşen görsel
+  /// o widget yaşadığı sürece baş harflerde kalıyordu.
+  ///
+  /// `OnlineScope` bir `InheritedNotifier`; durum değişince bu widget zaten
+  /// yeniden bağımlılık çözüyor, yani ayrı bir dinleyici/abonelik YOK.
+  /// Kapsam yoksa (izole testler) davranış eskisiyle aynı.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final online = OnlineScope.maybeOf(context)?.online ?? true;
+    if (online && _wasOffline && _broken) _broken = false;
+    _wasOffline = !online;
   }
 
   @override
