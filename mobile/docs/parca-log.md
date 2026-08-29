@@ -20,6 +20,39 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 164 — bağlantısızken hesap adı e-postaya düşüyordu (29 Ağustos
+     2026, cihaz testi 6.3'te kullanıcı uçak modunda bildirdi):** *"T2 yerine
+     KE yazıyor."*
+     - **Kök sebep:** profilin yerel kopyası YOKTU, her açılışta sunucudan
+       çekiliyordu. Bağlantı yokken çekim düşüyor, `_profile` null kalıyor ve
+       `menuName` zinciri (`display_name` → `username` → ad soyad →
+       **e-posta**) en sona iniyor; `KAvatar` da `kelimekitest2@…`'dan "KE"
+       türetiyor. Oturum diskte yaşadığından kullanıcı GİRİŞLİ ama kim olduğu
+       yanlış görünüyor. Listedeki oyun satırlarının doğru ("T2") olmasının
+       sebebi: onlar yerel kayıttan geliyor, ağa ihtiyaçları yok.
+     - **Web'de de aynı zincir var** (`UserMenu.tsx:144`) — yine ortak eksik,
+       port farkı değil. Bu turda yalnızca port düzeltildi (web'de offline
+       kullanım pratikte tarayıcı önbelleğine dayanıyor; ayrı bir iş).
+     - **Çözüm:** `storage/profile_cache_store.dart` — profilin HAM satırı
+       diske yazılıyor, çekim düşerse oradan devam ediliyor.
+       ⚠ **Anahtar `user_id` ve bu bir tercih değil:** tek bir "son profil"
+       kaydı tutulsaydı hesap değiştiren kullanıcı offline açılışta ÖNCEKİ
+       kişinin adını görürdü — bu projede aynı sınıftan hatalar tekrar tekrar
+       çıktı (`AccountScope`'un doğuş sebebi; aynı gün push token'ında İKİ
+       kez daha). Kimliğe göre anahtarlamak yanlış kaydı okunamaz kılıyor.
+       Çıkışta da siliniyor.
+     - ⚠ **Test edilebilirlik için bir dikiş açıldı ve gerekçesi bugünün
+       dersi:** `AuthService.fake`in istemcisi olmadığından `_fetchProfile`
+       dalına HİÇ girilemiyordu — yani sahte uç, tam da düzeltilen davranışı
+       test dışında bırakıyordu. Aynı boşluk aynı gün push token'ında iki
+       gerçek hataya yol açmıştı (`FakeStore`'da RLS yok). Artık profil
+       çekimi enjekte edilebiliyor (`profileFetcher`) ve testler GERÇEK yolu
+       koşuyor: çekim patlatılıp önbellekten devam edildiği ölçülüyor.
+     - **Negatif eş kuruldu:** önbellekten okuma satırları çıkarılınca test
+       gerçekten düşüyor (`Actual: 'kelimekitest2@example.com'`).
+     - **Doğrulama:** `dart analyze` temiz, **616 test** yeşil (609 + 7).
+       Cihazda doğrulama yeni derleme bekliyor.
+
    - ✅ **Parça 163 — şifre kurtarma ekranının arkası bomboştu (29 Ağustos
      2026, cihaz testi 4.4 sırasında kullanıcı bildirdi):** *"Şifre değiştirme
      modalının arkası boş ekran. En azından kelimeki logosu görünmeli."*

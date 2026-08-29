@@ -131,7 +131,8 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
   final meanings = MeaningStore(bundle: bundle);
   final storage = AppStorage.open();
   final supabase = await initSupabase();
-  final auth = AuthService(supabase);
+  final auth = AuthService(supabase,
+      profileCache: storage.then((s) => s.profileCache));
   // Firebase açılışı BEKLETİLİYOR ama fırlatmıyor (bkz. push_init.dart):
   // web/masaüstünde ve yapılandırma yoksa sessizce false döner. Maliyeti
   // native'de birkaç ms; sonrasında `push` alanının dolu olup olmadığı
