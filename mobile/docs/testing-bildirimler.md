@@ -201,6 +201,12 @@ BİLİNÇLİ — gerekçe `config/env.dart` başlığında.
 - [ ] **4.5 Arkadaş davet linki** (`https://kelimeki.com/davet/<token>`) —
       Play derlemesinde uygulamayı, `.apk`da tarayıcıyı açar; ikisi de
       geçerli.
+      ⚠ **LİNKE UYGULAMANIN KURULU OLDUĞU CİHAZDAN dokun** (29 Ağustos
+      2026'da yarım kaldı): link iPad'den açıldı, sayfa doğru geldi ama
+      Android'deki davranış HİÇ sınanmadı — Kelimeki'nin kurulu olmadığı bir
+      cihazda tarayıcıda açılması zaten tek olasılık. Bu, turun üçüncü
+      "kurulum seçimi testi sessizce geçersiz kıldı" vakası (bkz. 1.1/1.2'de
+      misafir, 2.2'de otomatik Canlı sekmesi).
 
 ## 5. Bu sürümün görsel ve sözlük değişiklikleri
 
