@@ -523,7 +523,7 @@ void main() {
       ));
       await tester.pump();
       await tester.pump();
-      await tester.tap(find.text('ARKADAŞINI DAVET ET'));
+      await tester.tap(find.text('+ ARKADAŞINI DAVET ET'));
       await tester.pumpAndSettle();
       expect(shared.single,
           '$inviteShareText\nhttps://kelimeki.com/davet/tok-123?ref=arkadas');

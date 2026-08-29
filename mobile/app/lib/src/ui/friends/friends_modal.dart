@@ -15,8 +15,11 @@
 //
 // Bilinçli sapmalar: davet paylaşımı her zaman sistem paylaş sayfası
 // (web'in clipboard fallback'i mobilde gereksiz — paylaş sayfası her
-// platformda var); 🔗 emoji yerine Icons.link (bundled fontlarda glyph
-// yok dersi ×3).
+// platformda var); davet butonunda İKON/EMOJİ YOK — web'de 🔗 vardı ve
+// 29 Ağustos 2026'da o da kaldırıldı (yerini `+` öneki aldı, kardeş
+// "+ YENİ CANLI OYUN AÇ" butonuyla aynı dil). Bu satır bir ara "🔗 yerine
+// Icons.link" diyordu ama koda hiç ikon konmamıştı — artık iki taraf da
+// gerçekten ikonsuz.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -379,8 +382,12 @@ class _FriendsModalState extends State<FriendsModal> {
         mainAxisSize: MainAxisSize.min,
         children: [
           NeoButton(
-            label: _inviteBusy ? '…' : 'ARKADAŞINI DAVET ET',
-            variant: NeoButtonVariant.accent,
+            // TURUNCU ve `+` önekli (29 Ağustos 2026, kullanıcı isteği) —
+            // Canlı sekmesindeki "+ YENİ CANLI OYUN AÇ" ile AYNI dil: ikisi
+            // de "yeni bir şey başlat" eylemi. Mavi (accent) bu projede
+            // onaylama/birincil eylem rengi.
+            label: _inviteBusy ? '…' : '+ ARKADAŞINI DAVET ET',
+            variant: NeoButtonVariant.orange,
             fontSize: 12,
             letterSpacing: 1.5,
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
