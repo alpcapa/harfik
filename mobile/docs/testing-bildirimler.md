@@ -54,6 +54,19 @@ reddin ardından sistem diyaloğu bir daha HİÇ gösterilmiyor.
       çıkmalı. İzin ver.
 - [ ] **1.6 İzin verildikten sonra bir daha sorulmamalı.** Canlı sekmesine
       birkaç kez gir-çık → pencere çıkmamalı.
+⚠ **1.4 ile 1.5 AYNI KURULUMDA İKİSİ BİRDEN YAPILAMAZ** (29 Ağustos 2026'da
+fark edildi, sıra planlanırken): pencere tek seferlik bir karar soruyor —
+"ŞİMDİ DEĞİL" dersen 7 günlük aralık başlar ve pencere geri gelmez (kural:
+en çok 3 kez, 7 gün arayla — `push_rules.dart`), "BİLDİRİMLERİ AÇ" dersen
+izin verilir ve pencere zaten bir daha çıkmaz (1.6). Yani ikisi birbirini
+tüketiyor.
+**Pratik sıra:** bu turda **1.5**'i seç (izin ver) — 2. ve 3. bölümlerin
+TAMAMI izin verilmiş olmayı gerektiriyor. **1.4** ayrı bir kurulumda test
+edilir: uygulamayı kaldırıp kurmak bizim 7 günlük bayrağımızı sıfırlar
+(SharedPreferences gider). ⚠ Android'in KENDİ ret sayacı kaldırmayla
+sıfırlanmayabilir — 1.4'ü ayrı turda yaparken sistem diyaloğunun hiç
+çıkmaması bu yüzden olabilir, bunu bir hata sanma.
+
 - [ ] **1.7 Android 12 ve altı** (varsa bir eski cihaz): sistem diyaloğu
       diye bir şey yok; bizim penceremiz çıksa bile "Aç" sessizce başarılı
       sayılmalı, çökme/uyarı OLMAMALI.
