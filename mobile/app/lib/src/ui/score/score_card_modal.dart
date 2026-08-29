@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import '../../data/auth_service.dart';
 import '../../data/friends_api.dart';
 import '../../data/games_api.dart';
-import '../../data/profile_fields.dart';
 import '../../data/stats_api.dart';
 import '../auth/k_avatar.dart';
 import '../game/modal_shell.dart';
@@ -86,6 +85,29 @@ class _ScoreCardModalState extends State<ScoreCardModal> {
     });
   }
 
+  /// Web `calculateAge` — doğum günü bu yıl geçmediyse bir eksik.
+  static int? _age(String? birthDate) {
+    if (birthDate == null || birthDate.isEmpty) return null;
+    final born = DateTime.tryParse(birthDate);
+    if (born == null) return null;
+    final now = DateTime.now();
+    var age = now.year - born.year;
+    if (now.month < born.month ||
+        (now.month == born.month && now.day < born.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  /// Web `formatAgeGender` — "Y:59/C:E"; ikisi de yoksa boş.
+  static String _ageGender(int? age, String? gender) {
+    final letter = gender == 'male' ? 'E' : (gender == 'female' ? 'K' : null);
+    return [
+      if (age != null) 'Y:$age',
+      if (letter != null) 'C:$letter',
+    ].join('/');
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = widget.auth;
@@ -97,8 +119,7 @@ class _ScoreCardModalState extends State<ScoreCardModal> {
         : profile?.firstName?.isNotEmpty == true
             ? profile!.firstName!
             : (auth.user?.email ?? 'Oyuncu');
-    final ageGender =
-        formatAgeGender(ageFromBirthDate(profile?.birthDate), profile?.gender);
+    final ageGender = _ageGender(_age(profile?.birthDate), profile?.gender);
     final totalScore = _statsByTab[StatsTab.all]?.totalScore ?? 0;
 
     return KModal(

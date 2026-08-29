@@ -715,19 +715,6 @@ gerekiyor).
       OHP dolu olmalı (boş/hizasız DEĞİL). Balon metninin sonunda artık
       "Puanlar eşitse OHP yüksek olan üstte sıralanır." cümlesi de olmalı
       (20 Ağustos 2026).
-- [ ] **Yaş/cinsiyet satırı BAŞKASININ kartında (29 Ağustos 2026).**
-      İki hesap gerekir (ya da profilinde doğum tarihi/cinsiyet girmiş
-      mevcut bir üye). k-lig listesinde o kişinin satırına dokun: kartta
-      ismin ALTINDA `Y:59/C:E` biçiminde satır olmalı — kendi Skor
-      Kartı'ndaki satırla birebir aynı biçim (mono, gri, küçük).
-      **Değişmez:** aynı kişi için kendi kartında gördüğü yaş ile
-      başkasının onun kartında gördüğü yaş AYNI olmalı — biri istemcide
-      (`calculateAge`), öteki sunucuda (`get_profile_age_gender`)
-      hesaplanıyor. Doğum tarihi de cinsiyeti de girmemiş bir oyuncuda
-      satır HİÇ çıkmamalı. **Misafirken de (çıkış yapıp) k-lig'den bir
-      kart aç — satır yine görünmeli** (RPC `anon`a da açık). Ayrıca
-      DevTools ağ sekmesinde `get_profile_age_gender` yanıtında ham
-      `birth_date` OLMAMALI, yalnızca `age` sayısı dönmeli.
 - [ ] **Sıra numarası liste ile Skor Kartı'nda AYNI (20 Ağustos 2026).**
       Bu, bildirilen hatanın kendisi: eşit puanlı oyuncular vardı ve aynı
       kişi listede 13., kendi kartında "#10" görünüyordu. Kontrol: k-lig
