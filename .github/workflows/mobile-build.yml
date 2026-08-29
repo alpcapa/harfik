@@ -197,6 +197,19 @@ jobs:
                 FAIL=1
               fi
             done
+            # ⚠ OLMAMASI gereken izin. `firebase_analytics` kendi manifestinde
+            # AD_ID bildiriyor ve birleşme onu sessizce içeri alıyor; Play'deki
+            # "Advertising ID kullanılmıyor" beyanımız o an YANLIŞA düşüyor ve
+            # bu, canlı bir uygulamada politika uyarısı sebebi. Manifestte
+            # `tools:node="remove"` ile kaldırılıyor — bu kontrol, o satır
+            # silinirse ya da yeni bir kütüphane izni geri getirirse derlemeyi
+            # düşürür. Beyanla kodun ayrışmasını insan gözüne bırakma.
+            if grep -q "com.google.android.gms.permission.AD_ID" "$m"; then
+              echo "::error::AD_ID izni birleşmiş manifeste girmiş: $m — Play'deki 'Advertising ID kullanılmıyor' beyanı yanlışa düşer"
+              FAIL=1
+            else
+              echo "ok (AD_ID yok): $m"
+            fi
           done
           exit $FAIL
       - uses: actions/upload-artifact@v7

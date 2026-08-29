@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- ⚠ BU SATIRI SİLME. Uygulamanın sunucuyla konuşan HER özelliği buna
          bağlı: giriş/kayıt, Canlı oyun, k-lig, sohbet, telemetri.
 
@@ -35,6 +36,22 @@
          orada "Aç" derse tetikleniyor — "Şimdi Değil" sistem denemesi
          harcamıyor. Ayrıntı: mobile/docs/parca-log.md. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <!-- ⚠ REKLAM KİMLİĞİ AÇIKÇA KALDIRILIYOR (29 Ağustos 2026).
+         `firebase_analytics` kendi manifestinde
+         `com.google.android.gms.permission.AD_ID` bildiriyor ve manifest
+         birleşmesiyle bu izin BİZİM istemediğimiz hâlde uygulamaya giriyor.
+         Sonucu bir izin satırından ibaret değil: Play Console'daki
+         **Advertising ID** beyanımız "kullanılmıyor" diyor (ROADMAP 0.C) ve
+         Google bu beyanı birleşmiş manifestteki izinle KARŞILAŞTIRIYOR —
+         ayrışma, canlı bir uygulamada politika uyarısı/askıya alma sebebi.
+         Uygulamada reklam YOK, kullanım istatistiği için de reklam kimliğine
+         ihtiyaç yok; dolayısıyla doğru olan beyanı değiştirmek değil izni
+         kaldırmak. `tools:node="remove"` Google'ın bu iş için belgelediği yol.
+         ⚠ Bu satır silinirse beyan sessizce yanlışa döner — `manifest_test`
+         bunu kilitliyor. -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove"/>
     <application
         android:label="Kelimeki"
         android:name="${applicationName}"

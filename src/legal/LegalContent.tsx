@@ -100,6 +100,14 @@ export function PrivacyBody({ contact }: { contact: ReactNode }) {
               kaydedilir. Bu etiket, aşağıda anlatılan anonim ziyaretçi sayacındaki kayıtlarla
               EŞLEŞTİRİLMEZ
             </li>
+            <li>
+              <strong>Yalnızca mobil uygulamada:</strong> bildirimlere izin verirseniz,
+              cihazınızın bildirim adresi (Google tarafından cihaz başına üretilen, adınızı ya da
+              e-postanızı taşımayan bir kod) hesabınızla birlikte saklanır — yalnızca size
+              bildirim gönderebilmek için. Bildirimleri telefonunuzun ayarlarından kapatırsanız
+              ya da çıkış yaparsanız bu kayıt silinir; uygulamayı kaldırdığınızda da ilk
+              gönderim denemesinde geçersiz sayılıp silinir
+            </li>
           </ul>
         </Section>
 
@@ -130,12 +138,16 @@ export function PrivacyBody({ contact }: { contact: ReactNode }) {
             "Pazarlama iletişimi almayı kabul ediyorum" kutusunu işaretlerseniz, size pazarlama/
             tanıtım amaçlı iletişim gönderilebilir — bu kutu isteğe bağlıdır, işaretlemeseniz de
             hizmeti eksiksiz kullanabilirsiniz; bu onayı Hesap Ayarları'ndaki aynı onay kutusundan
-            istediğiniz zaman verebilir ya da geri çekebilirsiniz. Hizmetin sunulabilmesi için üç
+            istediğiniz zaman verebilir ya da geri çekebilirsiniz. Hizmetin sunulabilmesi için dört
             altyapı sağlayıcısından yararlanılır: veritabanı, kimlik doğrulama ve dosya
             saklama için <strong>Supabase</strong>; e-posta bildirimlerinin (kayıt onayı, şifre
             sıfırlama, arkadaşlık/oyun daveti, süre uyarısı, destek yanıtı) gönderilmesi için
             <strong>Brevo</strong> — bu kapsamda yalnızca adınız/takma isminiz ve e-posta
-            adresiniz iletilir; sitenin ve uygulamanın yayınlanması için <strong>Vercel</strong>.
+            adresiniz iletilir; sitenin ve uygulamanın yayınlanması için <strong>Vercel</strong>;
+            mobil uygulamada anlık bildirim gönderimi ve kullanım istatistikleri için
+            <strong>Google (Firebase)</strong> — bu kapsamda cihazınızın bildirim adresi
+            (cihaz başına üretilen, kimliğinizi taşımayan bir kod) ve uygulama kullanım
+            olayları iletilir.
             Bu sağlayıcıların sunucuları yurt dışında bulunabilir. Böyle bir
             durumda aktarım, KVKK m.9'da aranan (yeterli korumanın bulunduğu ülke veya uygun
             güvencelerin sağlanması gibi) şartlara uygun şekilde yapılır. Yasal zorunluluk halinde
