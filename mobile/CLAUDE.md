@@ -777,6 +777,40 @@ bir `::after` koyar. Yani bu kuralın iki yakası aynı SONUCU farklı yolla
 Ayrıntı ve ölçümler: `docs/decisions/touch-ux-bugs.md` → "İkinci tur",
 `mobile/docs/parca-log.md` → Parça 147.
 
+## Zorunlu Güncelleme — sıra yanlışsa testçiyi kilitlersin
+
+29 Ağustos 2026, kullanıcı fark etti: *"keşke bu versiyona force update
+koysaydık."* Mekanizma zaten vardı ama **kullanılamaz durumdaydı** ve sebebi
+iki eksikti; ikisi de o gün kapatıldı.
+
+**1. Sürüm numarası hiç artmamıştı.** Kapı (`version_gate.dart`)
+`app_config.mobile_min_supported_version` ile `env.dart`'ın `appVersion`'ını
+SEMVER olarak karşılaştırıyor — **versionCode'a bakmıyor**. Bugüne kadarki her
+derleme `1.0.0` olduğundan kapının gözünde 405 ile 424 AYNI sürüm; eşiği
+yükseltmek hiçbir şey yapmazdı. `1.0.1`'e çıkarıldı.
+
+**2. Ekranın çıkışı yoktu.** `UpdateRequiredScreen` yalnızca metindi ("lütfen
+güncelleyin") — eşiği yükselttiğimiz an kullanıcı yolu gösterilmeyen bir
+ekranda kilitlenirdi. Play butonu eklendi (`url_launcher`; `market://`
+doğrudan Play'i açar, yoksa https'e düşer). `update_required_test.dart`
+butonun varlığını ve açılamadığında ÇÖKMEDİĞİNİ kilitliyor.
+
+**KULLANIM SIRASI — bu sıra bozulursa testçiler uygulamaya giremez:**
+
+1. `appVersion` + `pubspec` sürümünü artır (ikisi birlikte —
+   `app_version_parity_test` ayrışmayı yakalar)
+2. Derle, mağazaya yükle
+3. **Yeni sürümün gerçekten İNDİRİLEBİLİR olduğunu doğrula** (Play'de
+   yayınlanması ve kanala dağıtılması zaman alır)
+4. ANCAK BUNDAN SONRA `app_config.mobile_min_supported_version`'ı yükselt
+
+⚠ Kapı **fail-open** (ağ hatasında kilitlemez), yani asıl risk ağ değil
+SIRA: 4. adımı 3'ten önce yapmak, herkesi indirilemeyen bir güncellemeye
+yönlendirmek demek.
+
+⚠ **Eşiği yükseltmek geri alınabilir** (satırı düşür), ama o an uygulamayı
+açmış olan kullanıcı ekranı görmüş olur. Emin olmadan yükseltme.
+
 ## Sistem Yazı Boyutu — tavan VAR, ama tavan çözüm DEĞİL
 
 28 Ağustos 2026, kullanıcı cihazda bildirdi: *"Görmediği için telefon

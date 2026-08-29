@@ -7,7 +7,7 @@ publish_to: none
 # Sürüm ayrıca lib/src/config/env.dart'taki appVersion sabitinde tutulur
 # (mobile_min_supported_version karşılaştırması için) — release'te ikisi
 # BİRLİKTE artırılmalı, bkz. mobile/CLAUDE.md "Sürüm disiplini".
-version: 1.0.0+1
+version: 1.0.1+1
 
 environment:
   sdk: ^3.4.0
@@ -53,6 +53,10 @@ dependencies:
   # şema SONUÇLARI görüyor, DAVRANIŞI görmüyor — ekran görüntülenmesi, akış
   # içi terk noktası, oturum uzunluğu yok.
   firebase_analytics: ^12.5.0
+  # Zorunlu güncelleme ekranındaki "Play Store'da Aç" butonu için (29 Ağustos
+  # 2026). Uygulamanın dış bağlantı AÇTIĞI TEK yer burası — paylaşım işi
+  # share_plus'ta ve o bağlantıyı açmıyor, sistem paylaşım sayfasına veriyor.
+  url_launcher: ^6.3.1
   sqflite: ^2.4.2
   sqflite_common_ffi_web: ^1.0.2
   supabase_flutter: ^2.10.2
