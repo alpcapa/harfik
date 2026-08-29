@@ -40,10 +40,22 @@ Tetikleyici bilerek açılış/giriş DEĞİL: **Canlı sekmesi açıldı VE en 
 aktif oyun ya da bekleyen davet var.** Gerekçe: Android 13+'ta ikinci
 reddin ardından sistem diyaloğu bir daha HİÇ gösterilmiyor.
 
-- [ ] **1.1 Bağlamsız açılış.** Uygulamayı ilk kez aç, Canlı sekmesine
-      GİRME → hiçbir izin penceresi çıkmamalı (ne bizimki ne sistemin).
-- [ ] **1.2 Boş Canlı sekmesi.** Canlı sekmesini aç, hiç oyunun/davetin
-      YOKKEN → yine hiçbir pencere çıkmamalı.
+⚠ **1.1 ve 1.2 GİRİŞLİ yapılır** (29 Ağustos 2026'da netleşti; iki kez
+boşa denendi — önce oyunu ÇOK olan bir hesapla, sonra misafirken).
+Tetikleyici `_reload()`'un içinde ve `user.id` istiyor
+(`live_games_tab.dart:245`), yani **misafirken o koda hiç ulaşılmıyor**:
+girişsiz bir tur "pencere çıkmadı" der ama sınamak istediğimiz dalı
+(`aktifOyunVar == false`) hiç çalıştırmaz. Hesap seçimi de şart — hiç aktif
+oyunu/daveti OLMAYAN bir test hesabı gerekiyor (SQL ile bak:
+`online_games` içinde `slots`ta o kullanıcı geçen `active`/`pending` satır
+var mı).
+
+- [ ] **1.1 Bağlamsız açılış.** GİRİŞ YAP, Canlı sekmesine GİRME → hiçbir
+      izin penceresi çıkmamalı (ne bizimki ne sistemin).
+- [ ] **1.2 Boş Canlı sekmesi.** Aynı (oyunsuz) hesapla Canlı sekmesini aç →
+      yine hiçbir pencere çıkmamalı.
+- [x] **1.2-misafir** (29 Ağustos 2026): girişsiz Canlı sekmesi → pencere
+      YOK. Geçti, ama yukarıdaki nedenle 1.2'nin YERİNE geçmez.
 - [ ] **1.3 Gerçek tetikleyici.** Bir Canlı oyun başlat (ya da bir davet
       al), Canlı sekmesini aç → **"Bildirimleri açalım mı?"** penceremiz
       çıkmalı; "BİLDİRİMLERİ AÇ" / "ŞİMDİ DEĞİL".
@@ -54,14 +66,34 @@ reddin ardından sistem diyaloğu bir daha HİÇ gösterilmiyor.
       çıkmalı. İzin ver.
 - [ ] **1.6 İzin verildikten sonra bir daha sorulmamalı.** Canlı sekmesine
       birkaç kez gir-çık → pencere çıkmamalı.
+⚠ **1.4 ile 1.5 AYNI KURULUMDA İKİSİ BİRDEN YAPILAMAZ** (29 Ağustos 2026'da
+fark edildi, sıra planlanırken): pencere tek seferlik bir karar soruyor —
+"ŞİMDİ DEĞİL" dersen 7 günlük aralık başlar ve pencere geri gelmez (kural:
+en çok 3 kez, 7 gün arayla — `push_rules.dart`), "BİLDİRİMLERİ AÇ" dersen
+izin verilir ve pencere zaten bir daha çıkmaz (1.6). Yani ikisi birbirini
+tüketiyor.
+**Pratik sıra:** bu turda **1.5**'i seç (izin ver) — 2. ve 3. bölümlerin
+TAMAMI izin verilmiş olmayı gerektiriyor. **1.4** ayrı bir kurulumda test
+edilir: uygulamayı kaldırıp kurmak bizim 7 günlük bayrağımızı sıfırlar
+(SharedPreferences gider). ⚠ Android'in KENDİ ret sayacı kaldırmayla
+sıfırlanmayabilir — 1.4'ü ayrı turda yaparken sistem diyaloğunun hiç
+çıkmaması bu yüzden olabilir, bunu bir hata sanma.
+
 - [ ] **1.7 Android 12 ve altı** (varsa bir eski cihaz): sistem diyaloğu
       diye bir şey yok; bizim penceremiz çıksa bile "Aç" sessizce başarılı
       sayılmalı, çökme/uyarı OLMAMALI.
 
 ## 2. Token yaşam döngüsü (`push_tokens`)
 
-DEĞİŞMEZ: **tabloda satır varsa o cihaz bildirim GÖSTEREBİLİR.** Her
-açılışta kendini onarır — ayrı bir dinleyici yok.
+DEĞİŞMEZ: **tabloda satır varsa o cihaz bildirim GÖSTEREBİLİR.**
+
+⚠ Bu cümlenin İKİNCİ yarısı 28 Ağustos 2026'ya kadar *"her açılışta kendini
+onarır — ayrı bir dinleyici yok"* diyordu ve **YANLIŞTI**: hizalama yalnızca
+Canlı sekmesinin `_reload()`'una bağlıydı, o da liste yüklemesi düşerse erken
+dönüyordu (Parça 159, ilk gerçek cihaz testinde bulundu). Artık üç yerden
+tetikleniyor — **açılış · öne dönüş (`resumed`) · oturum değişimi**
+(`_HomeGate`, `app.dart`). Aşağıdaki 2.2-2.5 tam olarak bu üç yolu sınıyor;
+"nasılsa kendini onarır" diye atlanırsa hatanın kendisi geri gelir.
 
 Her adımdan sonra Supabase'de:
 `select token, platform, user_id, updated_at from push_tokens;`
@@ -73,9 +105,33 @@ Her adımdan sonra Supabase'de:
       olduğundan satır sonsuza kadar kalıyordu.)
 - [ ] **2.3 Ayarlardan tekrar AÇ**, uygulamayı aç → satır geri gelmeli.
 - [ ] **2.4 Çıkış yap** → satır silinmeli.
+      ⚠ 29 Ağustos 2026'da KIRIK bulundu: temizlik oturum kapandıktan SONRA
+      koşuyordu, `auth.uid()` null olduğu için DELETE RLS'e takılıp sessizce
+      hiçbir şey silmiyordu. Düzeltildi (`registerBeforeSignOut`) ama
+      **cihazda doğrulama bekliyor** — yeni derleme gerekiyor.
 - [ ] **2.5 BAŞKA bir hesapla gir (aynı cihaz)** → satır sayısı ARTMAMALI;
       var olan satırın `user_id`'si değişmeli (anahtar token, kullanıcı
       değil).
+      ⚠ 29 Ağustos 2026'da KIRIK bulundu ve sebebi 2.4'ünkinden BAŞKA: birincil
+      anahtar `token` olduğundan ikinci kullanıcının upsert'ü UPDATE dalına
+      düşüyor, `push_tokens_update_own` politikası mevcut satıra bakıp reddediyor
+      (`42501`). Devir artık `register_push_token` RPC'siyle (SECURITY DEFINER).
+      **Cihazda doğrulama bekliyor** — yeni derleme gerekiyor.
+
+⚠ **BU İKİSİNİ BİRİM TESTİ YAKALAYAMAZ.** `FakeStore` yazılanı bir listeye
+ekliyor; RLS diye bir şey yok. Yani "testler yeşil" burada yalnızca çağrının
+yapıldığını söyler, yazmanın TUTTUĞUNU değil — 2.4/2.5 cihazda koşulmak
+ZORUNDA ve sonucu TABLODAN okunmalı, uygulamanın ekranından değil.
+
+⚠ **2.2/2.3'ü OYUNU OLAN bir hesapla yapmak, açılış tetikleyicisini
+KANITLAMAZ** (29 Ağustos 2026'da fark edildi, tur ortasında): bekleyen oyun
+varsa uygulama açılışta kendiliğinden **Canlı sekmesine geçiyor**, yani eski
+(kırık) koddaki tetikleyici — sekmenin `_reload()`'u — zaten koşuyor. O turda
+satırın silinmesi doğrudur ama Parça 159'un düzelttiği yolu sınamaz; dünkü
+kırık kod da o senaryoyu geçerdi.
+**İzole etmek için** hiç aktif oyunu/daveti OLMAYAN bir hesapla yap: uygulama
+Canlı'ya kendiliğinden gitmez, dolayısıyla satırın silinmesi/geri gelmesi
+YALNIZCA `_HomeGate`'in açılış çağrısıyla açıklanabilir.
 - [ ] **2.6 Hesabı sil** (Hesap Ayarları → Hesabımı Sil) → o kullanıcının
       satırı da gitmeli (`delete_account_cascade`).
 
@@ -92,6 +148,14 @@ uyarıyor; push e-postanın YANINDA gidiyor, yerine değil.
         gelen bildirimi **sessizce yutuyor**. Bildirim hiç gelmiyorsa ilk
         bakılacak yer `MainActivity.kt`'deki `kelimeki_oyun` kanalı ile
         `_shared/push.ts`'in yazdığı değerin AYNI olup olmadığı.
+      - ✅ **29 Ağustos 2026: geçti** (ses + açılır banner, gerçek cihaz).
+      - ⚠ **AÇILIR BANNER İÇİN KANALIN YENİ DOĞMASI ŞART.** Kanal önemi
+        yaratıldıktan SONRA yükseltilemiyor: 28 Ağustos'ta kod
+        `IMPORTANCE_HIGH`e çekildi ama mevcut kurulumda kanal DEFAULT olarak
+        doğmuş olduğundan banner çıkmadı ve teşhis yanlış sanıldı. Uygulama
+        KALDIRILIP yeniden kurulunca banner geldi. Kanal önemiyle ilgili bir
+        şey test ederken önce uygulamayı kaldır — yoksa doğru kodu yanlış
+        sanırsın.
 - [ ] **3.1b Aynı uyarının E-POSTASINDA "takdirde" yazmalı** — "taktirde"
       değil. Düzeltme repoda duruyordu ama hiç canlıya çıkmamıştı; push
       dağıtımıyla birlikte gitti.
@@ -101,6 +165,17 @@ uyarıyor; push e-postanın YANINDA gidiyor, yerine değil.
 - [ ] **3.4 Bildirimi kapatmış bir kullanıcıya push GİTMEMELİ**
       (`profiles.push_notifications_enabled = false`) — ama **e-posta yine
       gitmeli**. İkisi ayrı kanal.
+      ⚠ **Bu tercihin ARAYÜZÜ YOK ve bu bilinçli** (29 Ağustos 2026, kullanıcı
+      kararı): *"Bildirim ayarlarını app'den yönetemiyor, ayarlara
+      gönderiyorsa yapmanın bir anlamı yok. Kullanıcı ayarlara gider yapar."*
+      Sunucu tercihi uyguluyor ama ne web'de ne uygulamada bir anahtarı var —
+      bu adım yalnızca SQL ile kurulabilir. Gerekçe: Android'de bildirimi
+      kapatmanın gerçek yolu zaten sistem ayarı (uygulama onu programatik
+      değiştiremez, yalnızca o ekrana yönlendirebilir) ve sistem anahtarı
+      kapatıldığında e-posta ZATEN gelmeye devam ediyor — yani kendi
+      anahtarımız bugün hiçbir yeni yetenek katmıyor. Kolon,
+      ikinci bir push tipi geldiğinde anlam kazanacak diye duruyor.
+      **Eksik sanıp eklemeye kalkma.**
 - [ ] **3.5 Uygulamayı silip yeniden kur** → eski token artık geçersiz;
       sunucu `UNREGISTERED` alıp satırı silmeli (bir sonraki cron'dan sonra
       `push_tokens`ta ölü satır kalmamalı).
@@ -126,6 +201,12 @@ BİLİNÇLİ — gerekçe `config/env.dart` başlığında.
 - [ ] **4.5 Arkadaş davet linki** (`https://kelimeki.com/davet/<token>`) —
       Play derlemesinde uygulamayı, `.apk`da tarayıcıyı açar; ikisi de
       geçerli.
+      ⚠ **LİNKE UYGULAMANIN KURULU OLDUĞU CİHAZDAN dokun** (29 Ağustos
+      2026'da yarım kaldı): link iPad'den açıldı, sayfa doğru geldi ama
+      Android'deki davranış HİÇ sınanmadı — Kelimeki'nin kurulu olmadığı bir
+      cihazda tarayıcıda açılması zaten tek olasılık. Bu, turun üçüncü
+      "kurulum seçimi testi sessizce geçersiz kıldı" vakası (bkz. 1.1/1.2'de
+      misafir, 2.2'de otomatik Canlı sekmesi).
 
 ## 5. Bu sürümün görsel ve sözlük değişiklikleri
 

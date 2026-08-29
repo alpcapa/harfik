@@ -17,6 +17,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../storage/profile_cache_store.dart';
 
 import '../config/env.dart' show authRedirectUri, resetRedirectUri;
 
@@ -88,8 +89,27 @@ class AuthService extends ChangeNotifier {
   String? _currentUserId;
   StreamSubscription<AuthState>? _sub;
 
-  AuthService(SupabaseClient? client)
+  /// Profilin yerel kopyası — bağlantısızken hesabın e-postadan türetilmiş
+  /// bir isme düşmemesi için (29 Ağustos 2026, cihazda bulundu; ayrıntı
+  /// `storage/profile_cache_store.dart` başlığında). `Future` olarak
+  /// alınıyor çünkü depolama açılışta asenkron çözülüyor ve İLK çekimden
+  /// önce hazır olması gerekiyor — asıl kazanç tam da offline AÇILIŞTA.
+  final Future<ProfileCacheStore>? _profileCache;
+
+  /// Profil satırını getiren uç. Üretimde `null` — o zaman Supabase'e
+  /// gidilir. ⚠ Var olma sebebi TESTİN GERÇEK YOLU koşabilmesi: bu düzeltme
+  /// "çekim DÜŞERSE önbellekten devam et" davranışı ve `AuthService.fake`in
+  /// istemcisi olmadığından o dala hiç girilemiyordu — yani sahte uç, tam da
+  /// düzeltilen şeyi test dışında bırakıyordu (aynı boşluk 29 Ağustos'ta
+  /// push token'ında iki kez gerçek hataya yol açtı).
+  final Future<Map<String, Object?>?> Function(String userId)? _profileFetcher;
+
+  AuthService(SupabaseClient? client,
+      {Future<ProfileCacheStore>? profileCache,
+      Future<Map<String, Object?>?> Function(String userId)? profileFetcher})
       : _client = client,
+        _profileCache = profileCache,
+        _profileFetcher = profileFetcher,
         _loading = client != null,
         _profileLoading = client != null {
     final c = _client;
@@ -116,13 +136,29 @@ class AuthService extends ChangeNotifier {
 
   /// Testler için: ağ olmadan istenen durumda başlar (configured sayılır).
   @visibleForTesting
-  AuthService.fake({User? user, KProfile? profile, bool profileLoading = false})
+  AuthService.fake({
+    User? user,
+    KProfile? profile,
+    bool profileLoading = false,
+    Future<ProfileCacheStore>? profileCache,
+    Future<Map<String, Object?>?> Function(String userId)? profileFetcher,
+  })
       : _client = null,
+        _profileCache = profileCache,
+        _profileFetcher = profileFetcher,
         _user = user,
         _profile = profile,
         _loading = false,
         _profileLoading = profileLoading,
-        _fakeConfigured = true;
+        _fakeConfigured = true {
+    // Sahte uçla GERÇEK yolu koşabilmek için: bir fetcher verilmişse
+    // yapıcı, üretimdeki gibi profil çekimini başlatır.
+    if (profileFetcher != null && user != null) {
+      _currentUserId = user.id;
+      _profileLoading = true;
+      _fetchProfile(user.id);
+    }
+  }
 
   bool _fakeConfigured = false;
 
@@ -300,9 +336,54 @@ class AuthService extends ChangeNotifier {
     await c.auth.updateUser(UserAttributes(password: newPassword));
   }
 
+  /// Oturum KAPANMADAN ÖNCE koşacak temizlikler.
+  ///
+  /// ⚠ NEDEN VAR (29 Ağustos 2026, gerçek cihaz testi adım 2.4): push
+  /// token'ının silinmesi `onAuthStateChange` dinleyicisine bağlıydı, yani
+  /// oturum ZATEN kapandıktan SONRA koşuyordu. O anda `auth.uid()` null
+  /// olduğundan `push_tokens` DELETE'i RLS'e takılıp (`auth.uid() = user_id`)
+  /// HİÇBİR SATIRA dokunmuyor ve hata da vermiyor — satır tabloda kalıyor,
+  /// yani çıkış yapmış bir hesabın bildirimleri o telefona düşmeye devam
+  /// ediyor. Sorun kodun kendisinde değil SIRASINDA: temizlik, kimlik
+  /// kaybedilmeden önce yapılmalı.
+  final List<Future<void> Function()> _cikisOncesi = [];
+
+  /// Kaydedilen iş `signOut()` içinde, oturum kapanmadan ÖNCE beklenir.
+  void registerBeforeSignOut(Future<void> Function() f) => _cikisOncesi.add(f);
+
   Future<void> signOut() async {
-    await _client?.auth.signOut();
+    // Bir temizliğin patlaması çıkışı ENGELLEMEZ — kullanıcı "Çıkış Yap"a
+    // bastıysa çıkmalı; en kötü ihtimalle bayat satırı sunucu tarafı
+    // (FCM `UNREGISTERED`) temizler.
+    // Yerel profil kopyası da gitsin — bu cihazda o hesabın adı/avatarı
+    // artık görünmemeli.
+    final cikanId = _currentUserId;
+    if (cikanId != null) {
+      try {
+        final cache = await _profileCache;
+        await cache?.clear(cikanId);
+      } catch (e) {
+        debugPrint('[Kelimeki] profil kopyası silinemedi: $e');
+      }
+    }
+    for (final f in _cikisOncesi) {
+      try {
+        await f();
+      } catch (e) {
+        debugPrint('[Kelimeki] çıkış öncesi temizlik düştü: $e');
+      }
+    }
+    await oturumuKapat();
   }
+
+  /// Gerçek Supabase çıkışı — [signOut]'un SON adımı.
+  ///
+  /// Ayrı bir metot olmasının tek sebebi TESTTE GÖZLENEBİLMESİ: sıra testi
+  /// "temizlik önce mi koştu" sorusunu ancak bu adımı işaretleyebilirse
+  /// cevaplayabiliyor. İlk sürümde böyle değildi ve sıra testi negatif eşini
+  /// GEÇTİ — yani hiçbir şey kanıtlamıyordu (29 Ağustos 2026).
+  @protected
+  Future<void> oturumuKapat() async => _client?.auth.signOut();
 
   // ── Hesap silme (uygulama içi yol) ────────────────────────────────────────
   //
@@ -489,16 +570,37 @@ class AuthService extends ChangeNotifier {
 
   Future<void> _fetchProfile(String userId) async {
     final c = _client;
-    if (c == null) return;
+    final fetcher = _profileFetcher;
+    if (c == null && fetcher == null) return;
     try {
-      final row =
-          await c.from('profiles').select().eq('id', userId).maybeSingle();
+      final row = fetcher != null
+          ? await fetcher(userId)
+          : await c!.from('profiles').select().eq('id', userId).maybeSingle();
       if (_currentUserId != userId) return; // bu arada hesap değişti
       _profile = row == null ? null : KProfile.fromMap(row);
+      // Taze satırı diske yaz — bir sonraki BAĞLANTISIZ açılışın tek kaynağı.
+      if (row != null) {
+        final cache = await _profileCache;
+        if (cache != null) {
+          await cache.write(userId, Map<String, Object?>.from(row));
+        }
+      }
     } catch (e) {
       // Web fetchMyProfile: hata profili null bırakır, yüklemeyi KİLİTLEMEZ.
+      // Port BİLEREK bir adım daha atıyor: yerel kopya varsa ondan devam
+      // ediyor. Gerekçe cihazda ölçüldü (29 Ağustos 2026, uçak modu) —
+      // profil null kalınca `menuName` zinciri e-postaya iniyor ve hesap
+      // "KE" diye görünüyor, yani kullanıcı GİRİŞLİ ama kim olduğu yanlış.
+      //
+      // ⚠ Okuma `userId` ile anahtarlı: yanlış hesabın kopyası yapısal
+      // olarak okunamaz.
       debugPrint('[Kelimeki] profil çekilemedi: $e');
       if (_currentUserId != userId) return;
+      final cache = await _profileCache;
+      final cached = cache?.read(userId);
+      if (cached != null && _currentUserId == userId) {
+        _profile = KProfile.fromMap(cached);
+      }
     } finally {
       if (_currentUserId == userId) {
         _profileLoading = false;

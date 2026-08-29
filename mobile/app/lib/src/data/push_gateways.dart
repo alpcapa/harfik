@@ -53,16 +53,31 @@ class SupabasePushTokenStore implements PushTokenStore {
     required String userId,
     required String platform,
   }) async {
-    // ⚠ Çakışma anahtarı TOKEN. Aynı cihazda A çıkıp B girerse token AYNI
-    // kalır ve satır B'ye DEVREDİLİR — çoğalmaz. Varsayılan (birincil
-    // anahtar) davranış zaten bu, ama açıkça yazmak niyeti görünür kılıyor:
-    // `user_id` üzerinden bir upsert, aynı kişinin ikinci cihazını silerdi.
-    await client.from('push_tokens').upsert({
-      'token': token,
-      'user_id': userId,
-      'platform': platform,
-      'updated_at': DateTime.now().toUtc().toIso8601String(),
-    }, onConflict: 'token');
+    // ⚠ TABLOYA DOĞRUDAN UPSERT ETME — RLS devri SESSİZCE reddediyor
+    // (29 Ağustos 2026, gerçek cihaz testi adım 2.5'te bulundu).
+    //
+    // Burada eskiden `from('push_tokens').upsert(..., onConflict: 'token')`
+    // vardı ve yorumu "aynı cihazda A çıkıp B girerse satır B'ye DEVREDİLİR"
+    // diyordu. Kağıt üzerinde doğru, üretimde YANLIŞ: birincil anahtar
+    // `token` olduğundan ikinci kullanıcının upsert'ü UPDATE dalına düşüyor,
+    // `push_tokens_update_own` politikası ise `USING (auth.uid() = user_id)`
+    // ile MEVCUT satıra bakıyor — satır hâlâ A'nın, dolayısıyla B için
+    // görünmez. Cihazda ölçüldü:
+    //   ERROR 42501: new row violates row-level security policy
+    //                (USING expression) for table "push_tokens"
+    //
+    // Bedeli boşa gönderim değil YANLIŞ KİŞİYE gönderim: A'ya gidecek
+    // bildirim, B'nin girişli olduğu telefona düşer.
+    //
+    // Devri artık sunucu üstleniyor (`register_push_token`, SECURITY
+    // DEFINER). `user_id` GÖNDERİLMİYOR — fonksiyon onu `auth.uid()`ten
+    // alıyor, yani istemci token'ı başkasının üstüne yazamaz. [userId]
+    // parametresi imzada duruyor çünkü çağıran taraf (PushRepo) hangi hesap
+    // için hizaladığını hâlâ biliyor olmalı; sunucuya geçmiyor.
+    await client.rpc('register_push_token', params: {
+      'p_token': token,
+      'p_platform': platform,
+    });
   }
 
   @override

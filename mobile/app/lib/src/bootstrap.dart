@@ -131,7 +131,8 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
   final meanings = MeaningStore(bundle: bundle);
   final storage = AppStorage.open();
   final supabase = await initSupabase();
-  final auth = AuthService(supabase);
+  final auth = AuthService(supabase,
+      profileCache: storage.then((s) => s.profileCache));
   // Firebase açılışı BEKLETİLİYOR ama fırlatmıyor (bkz. push_init.dart):
   // web/masaüstünde ve yapılandırma yoksa sessizce false döner. Maliyeti
   // native'de birkaç ms; sonrasında `push` alanının dolu olup olmadığı
@@ -146,6 +147,19 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
     sink: supabase != null ? SupabaseClientErrorSink(supabase) : null,
     anonId: storage.then((s) => s.flags.anonId()),
   );
+  // ⚠ ÇIKIŞ TEMİZLİĞİ BURADA BAĞLANIR, dinleyicide DEĞİL (29 Ağustos 2026,
+  // cihaz testi 2.4): `onAuthStateChange` oturum kapandıktan SONRA ateşlenir
+  // ve o anda `auth.uid()` null olduğundan `push_tokens` DELETE'i RLS'e
+  // takılıp sessizce hiçbir şey silmez. Kanca, kimlik hâlâ elimizdeyken
+  // koşuyor.
+  final pushRepo = firebaseHazir && supabase != null
+      ? PushRepo(
+          messaging: FirebasePushMessaging(),
+          store: SupabasePushTokenStore(supabase),
+        )
+      : null;
+  if (pushRepo != null) auth.registerBeforeSignOut(pushRepo.temizle);
+
   return AppServices(
     onlineStatus: OnlineStatus(),
     dictionary: dictionary,
@@ -156,12 +170,7 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
     storage: storage,
     // Push: Firebase kurulduysa VE Supabase varsa. İkisi de gerekiyor —
     // biri token'ı üretiyor, öteki saklıyor.
-    push: firebaseHazir && supabase != null
-        ? PushRepo(
-            messaging: FirebasePushMessaging(),
-            store: SupabasePushTokenStore(supabase),
-          )
-        : null,
+    push: pushRepo,
     pushMessaging: firebaseHazir ? FirebasePushMessaging() : null,
     cloudSaves:
         supabase != null

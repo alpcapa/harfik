@@ -8,6 +8,7 @@ import 'package:sqflite/sqflite.dart';
 import 'app_database.dart';
 import 'chat_read_store.dart';
 import 'flags_store.dart';
+import 'profile_cache_store.dart';
 import 'cloud_save_mirror_store.dart';
 import 'local_save_store.dart';
 import 'pending_event_store.dart';
@@ -29,6 +30,10 @@ class AppStorage {
   final ChatReadStore chatRead;
   final FlagsStore flags;
 
+  /// Girişli kullanıcının profilinin yerel kopyası — bağlantısızken hesabın
+  /// e-postadan türetilmiş bir isme düşmemesi için (bkz. o dosyanın başlığı).
+  final ProfileCacheStore profileCache;
+
   AppStorage._({
     required this.db,
     required this.saves,
@@ -39,6 +44,7 @@ class AppStorage {
     required this.events,
     required this.chatRead,
     required this.flags,
+    required this.profileCache,
   });
 
   static Future<AppStorage> open({
@@ -60,6 +66,7 @@ class AppStorage {
       events: PendingEventStore(db, now),
       chatRead: ChatReadStore(db),
       flags: FlagsStore(p),
+      profileCache: ProfileCacheStore(p),
     );
   }
 

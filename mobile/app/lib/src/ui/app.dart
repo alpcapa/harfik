@@ -15,6 +15,8 @@ import 'theme.dart';
 import 'tokens.dart';
 import 'push/push_permission_flow.dart';
 import 'update_required_screen.dart';
+import 'text_scale.dart';
+import 'game/logo_mark.dart';
 
 class KelimekiApp extends StatelessWidget {
   final AppServices services;
@@ -42,28 +44,83 @@ class KelimekiApp extends StatelessWidget {
       // bariyerle örtülür. Kendi Overlay'i şart: bu katman Navigator'ın
       // (dolayısıyla onun Overlay'inin) DIŞINDA yaşar — KModal'daki ✕
       // tooltip'i gibi Overlay isteyen her şey onsuz fırlatırdı.
-      builder: (context, child) => ListenableBuilder(
-        listenable: services.auth,
-        builder: (context, _) {
-          final app = child ?? const SizedBox.shrink();
-          if (!services.auth.passwordRecovery) return app;
-          return Stack(
-            children: [
-              app,
-              const ModalBarrier(color: Colors.white, dismissible: false),
-              Overlay(
-                initialEntries: [
-                  OverlayEntry(
-                    builder: (context) => ResetPasswordModal(
-                      auth: services.auth,
-                      onDone: services.auth.clearPasswordRecovery,
+      // ⚠ SİSTEM FONT ÖLÇEĞİ 1,3 İLE SINIRLI (28 Ağustos 2026, kullanıcı
+      // cihazda bildirdi: *"Görmediği için telefon fontlarını büyütenlerde
+      // ciddi sorunlar çıkıyor."*). Android/iOS'ta yazı boyutu 200%'e kadar
+      // çıkabiliyor ve BU YALNIZCA METNİ büyütüyor — kutular, ikonlar,
+      // dolgular sabit kalıyor, yani her satır kendi kabını taşırıyor.
+      //
+      // ÖLÇÜLDÜ (tüm test takımı, `platformDispatcher.textScaleFactorTestValue`
+      // ile yeniden koşturularak): taşma sayısı ölçek 1,0'da **0**, 1,3'te
+      // **10** (tek bir gerçek nokta + tekrarları), 1,6'da **27** (4 nokta),
+      // 2,0'da **73** (9 nokta, en büyüğü 392 px). Yani hasar 1,3'ten sonra
+      // patlıyor.
+      //
+      // Bedeli BİLİNÇLİ: fontu 200%'e alan kullanıcı uygulamada 130% görür.
+      // 1,0'a kilitlemek (yani ölçeği tamamen yok saymak) erişilebilirlik
+      // açısından savunulamazdı; 1,3 kullanıcı kararı (28 Ağustos 2026).
+      //
+      // ⚠ BU BİR TAVAN, ÇÖZÜM DEĞİL. Kısıt yalnızca TAŞMAYI sınırlar;
+      // "esnek öğe sıfıra sıkışıyor" sınıfını ÇÖZMEZ — o taşma üretmediği
+      // için buradaki hiçbir ölçüme de girmez (bkz. friends_modal.dart'taki
+      // istek satırı: 360 px ekranda isim 1,0'da 77,6 px, 1,3'te 53,2 px,
+      // 2,0'da 0,0 px). Yeni bir ekran yazarken "nasılsa kısıtlı" deme.
+      builder: (context, child) => MediaQuery.withClampedTextScaling(
+        maxScaleFactor: kMaxTextScale,
+        child: ListenableBuilder(
+          listenable: services.auth,
+          builder: (context, _) {
+            final app = child ?? const SizedBox.shrink();
+            if (!services.auth.passwordRecovery) return app;
+            return Stack(
+              children: [
+                app,
+                const ModalBarrier(color: Colors.white, dismissible: false),
+                // Bariyerin üstünde LOGO — arka plan bomboş DEĞİL (29 Ağustos
+                // 2026, kullanıcı cihazda bildirdi: *"Şifre değiştirme
+                // modalının arkası boş ekran. En azından kelimeki logosu
+                // görünmeli."*). Web'de de böyleydi ve orada da düzeltildi
+                // (`App.tsx`, `passwordRecovery` dalı) — bu bir port farkı
+                // değildi, iki tarafın ORTAK eksiğiydi.
+                //
+                // Gerekçe kozmetikten fazlası: bu ekrana kullanıcı bir
+                // E-POSTA LİNKİNDEN düşüyor, yani uygulamayı henüz hiç
+                // görmemiş olabilir. Beyaz bir sayfada şifre isteyen bir
+                // kutu, kimlik avı ekranından ayırt edilemez.
+                //
+                // Logo modalın ARKASINDA, üst tarafta: `Overlay` bunun
+                // üstüne biniyor ve modal zaten dikeyde ortalı olduğundan
+                // çakışma yok. Boyut Setup'la AYNI (52).
+                const Positioned.fill(
+                  child: SafeArea(
+                    child: Align(
+                      alignment: Alignment(0, -0.62),
+                      // ⚠ Anahtar TESTİN İHTİYACI ve LOGONUN KENDİSİNDE
+                      // olmalı: (a) arkadaki Setup ekranı da bir `LogoMark`
+                      // çiziyor, yani `find.byType(LogoMark)` bu logo hiç
+                      // olmasa BİLE eşleşir; (b) anahtar `Positioned.fill`e
+                      // konursa ölçülen kutu TÜM EKRAN olur ve konum testi
+                      // her zaman ekran merkezini görür. İkisi de ölçüldü,
+                      // ikisi de testi sessizce anlamsız kılıyordu.
+                      child: LogoMark(
+                          key: ValueKey('recovery-logo'), height: 52),
                     ),
                   ),
-                ],
-              ),
-            ],
-          );
-        },
+                ),
+                Overlay(
+                  initialEntries: [
+                    OverlayEntry(
+                      builder: (context) => ResetPasswordModal(
+                        auth: services.auth,
+                        onDone: services.auth.clearPasswordRecovery,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
       ),
       home: services.versionGate == VersionGateStatus.updateRequired
           ? const UpdateRequiredScreen()

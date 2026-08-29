@@ -32,6 +32,7 @@ import 'package:kelimeki/src/ui/app.dart';
 import 'package:kelimeki/src/util/online_status.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show User;
+import 'package:kelimeki/src/ui/auth/reset_password_modal.dart';
 
 class FakeMessaging implements PushMessaging {
   PushPermission izin;
@@ -79,6 +80,23 @@ class TestAuth extends AuthService {
     _u = u;
     notifyListeners();
   }
+
+  /// `passwordRecovery` kapısını testte açmak için (gerçek akış GoTrue
+  /// olayından geliyor, testte taklit edilemiyor).
+  bool passwordRecoveryTest = false;
+  @override
+  bool get passwordRecovery => passwordRecoveryTest;
+
+  /// GERÇEK çıkış adımının anını işaretler (sıra testi).
+  ///
+  /// ⚠ `signOut`u sarmalamak İŞE YARAMIYOR ve bu ölçülerek bulundu: üst
+  /// sınıfın tamamı bitince işaretlenirse, temizlik içeride ister önce
+  /// ister sonra koşsun sıra hep aynı görünür — ilk sürüm tam bu yüzden
+  /// negatif eşini geçti. İşaretlenecek olan SON ADIM.
+  void Function()? onSignOutCalled;
+
+  @override
+  Future<void> oturumuKapat() async => onSignOutCalled?.call();
 }
 
 User _user(String id) => User(
@@ -149,6 +167,25 @@ void main() {
             'kullanıcıya sunucu göndermeye devam eder');
   });
 
+  test('ÇIKIŞ temizliği oturum KAPANMADAN ÖNCE koşar', () async {
+    // ⚠ SIRA TESTİ, varlık testi değil (29 Ağustos 2026, cihazda bulundu):
+    // temizlik `onAuthStateChange` dinleyicisine bağlıydı, yani oturum ZATEN
+    // kapandıktan sonra koşuyordu. O anda `auth.uid()` null olduğundan
+    // `push_tokens` DELETE'i RLS'e takılıp HİÇBİR SATIRA dokunmuyor ve hata
+    // da vermiyor — çıkmış hesabın bildirimleri o telefona düşmeye devam
+    // ediyor. Aşağıdaki `sira` listesi tam olarak bunu kilitliyor.
+    final sira = <String>[];
+    final auth = TestAuth(user: _user('u1'));
+    auth.registerBeforeSignOut(() async => sira.add('temizlik'));
+    auth.onSignOutCalled = () => sira.add('signOut');
+
+    await auth.signOut();
+
+    expect(sira, ['temizlik', 'signOut'],
+        reason: 'Temizlik çıkıştan SONRA koşarsa kimlik kaybedilmiş olur ve '
+            'RLS silmeyi sessizce reddeder — satır tabloda kalır.');
+  });
+
   testWidgets('ÇIKIŞTA token silinir', (tester) async {
     final s = kur();
     await ac(tester, s);
@@ -186,6 +223,32 @@ void main() {
     expect(store.yazilanlar, ['tok-1/u2'],
         reason: 'hesap değişiminde token devrolmadı — eski hesabın '
             'bildirimleri yeni kullanıcının telefonuna düşer');
+  });
+
+  testWidgets('şifre kurtarma ekranının ARKASINDA logo var (boş beyaz DEĞİL)',
+      (tester) async {
+    // 29 Ağustos 2026, kullanıcı cihazda bildirdi: *"Şifre değiştirme
+    // modalının arkası boş ekran. En azından kelimeki logosu görünmeli."*
+    // Bu ekrana kullanıcı bir E-POSTA LİNKİNDEN düşüyor; beyaz bir sayfada
+    // şifre isteyen bir kutu kimlik avından ayırt edilemez. Web'de de aynı
+    // eksikti ve aynı PR'da düzeltildi (`App.tsx`, passwordRecovery dalı).
+    final s = kur();
+    (s.auth as TestAuth).passwordRecoveryTest = true;
+    await ac(tester, s);
+    await tester.pumpAndSettle();
+
+    // ⚠ `find.byType(LogoMark)` KULLANMA: arkadaki Setup ekranı da bir logo
+    // çiziyor, yani bu logo hiç olmasa bile eşleşir — ilk sürüm tam bu
+    // yüzden negatif eşini geçti (29 Ağustos 2026, ölçüldü).
+    expect(find.byKey(const ValueKey('recovery-logo')), findsOneWidget,
+        reason: 'Kurtarma ekranının arkasında logo yok — kullanıcı, linke '
+            'bastığı yerin Kelimeki olduğunu doğrulayacak hiçbir şey '
+            'göremiyor.');
+    // Logo modalın ÜSTÜNDE durmalı, altında değil.
+    final logoY = tester.getCenter(find.byKey(const ValueKey('recovery-logo'))).dy;
+    final modalY = tester.getCenter(find.byType(ResetPasswordModal)).dy;
+    expect(logoY, lessThan(modalY),
+        reason: 'Logo modalın altına düşmüş — ekranın üst yarısında olmalı');
   });
 
   testWidgets('push YOKKEN (web/Firebase yok) kapı sorunsuz açılır',

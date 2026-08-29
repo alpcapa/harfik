@@ -20,6 +20,224 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 164 — bağlantısızken hesap adı e-postaya düşüyordu (29 Ağustos
+     2026, cihaz testi 6.3'te kullanıcı uçak modunda bildirdi):** *"T2 yerine
+     KE yazıyor."*
+     - **Kök sebep:** profilin yerel kopyası YOKTU, her açılışta sunucudan
+       çekiliyordu. Bağlantı yokken çekim düşüyor, `_profile` null kalıyor ve
+       `menuName` zinciri (`display_name` → `username` → ad soyad →
+       **e-posta**) en sona iniyor; `KAvatar` da `kelimekitest2@…`'dan "KE"
+       türetiyor. Oturum diskte yaşadığından kullanıcı GİRİŞLİ ama kim olduğu
+       yanlış görünüyor. Listedeki oyun satırlarının doğru ("T2") olmasının
+       sebebi: onlar yerel kayıttan geliyor, ağa ihtiyaçları yok.
+     - **Web'de de aynı zincir var** (`UserMenu.tsx:144`) — yine ortak eksik,
+       port farkı değil. Bu turda yalnızca port düzeltildi (web'de offline
+       kullanım pratikte tarayıcı önbelleğine dayanıyor; ayrı bir iş).
+     - **Çözüm:** `storage/profile_cache_store.dart` — profilin HAM satırı
+       diske yazılıyor, çekim düşerse oradan devam ediliyor.
+       ⚠ **Anahtar `user_id` ve bu bir tercih değil:** tek bir "son profil"
+       kaydı tutulsaydı hesap değiştiren kullanıcı offline açılışta ÖNCEKİ
+       kişinin adını görürdü — bu projede aynı sınıftan hatalar tekrar tekrar
+       çıktı (`AccountScope`'un doğuş sebebi; aynı gün push token'ında İKİ
+       kez daha). Kimliğe göre anahtarlamak yanlış kaydı okunamaz kılıyor.
+       Çıkışta da siliniyor.
+     - ⚠ **Test edilebilirlik için bir dikiş açıldı ve gerekçesi bugünün
+       dersi:** `AuthService.fake`in istemcisi olmadığından `_fetchProfile`
+       dalına HİÇ girilemiyordu — yani sahte uç, tam da düzeltilen davranışı
+       test dışında bırakıyordu. Aynı boşluk aynı gün push token'ında iki
+       gerçek hataya yol açmıştı (`FakeStore`'da RLS yok). Artık profil
+       çekimi enjekte edilebiliyor (`profileFetcher`) ve testler GERÇEK yolu
+       koşuyor: çekim patlatılıp önbellekten devam edildiği ölçülüyor.
+     - **Negatif eş kuruldu:** önbellekten okuma satırları çıkarılınca test
+       gerçekten düşüyor (`Actual: 'kelimekitest2@example.com'`).
+     - **Doğrulama:** `dart analyze` temiz, **616 test** yeşil (609 + 7).
+       Cihazda doğrulama yeni derleme bekliyor.
+
+   - ✅ **Parça 163 — şifre kurtarma ekranının arkası bomboştu (29 Ağustos
+     2026, cihaz testi 4.4 sırasında kullanıcı bildirdi):** *"Şifre değiştirme
+     modalının arkası boş ekran. En azından kelimeki logosu görünmeli."*
+     - **Önce web okundu** ve orada da AYNI olduğu görüldü (`App.tsx:1178`,
+       `passwordRecovery` dalı: yalnızca ortalanmış modal). Yani bu bir port
+       farkı DEĞİL, iki tarafın ORTAK eksiği — düzeltme aynı PR'da ikisine de.
+     - **Gerekçe kozmetikten fazlası:** bu ekrana kullanıcı bir E-POSTA
+       LİNKİNDEN düşüyor, yani uygulamayı henüz hiç görmemiş olabilir. Beyaz
+       bir sayfada şifre isteyen bir kutu, kimlik avı ekranından ayırt
+       edilemez. Logo, "doğru yerdesin"in en ucuz kanıtı. Boyut Setup'la aynı
+       (52) — farklı bir ölçü iki ekranı yabancılaştırırdı.
+     - ⚠ **NEGATİF EŞ İKİ KEZ SESSİZCE GEÇTİ; testin kendisi iki ayrı
+       sebepten anlamsızdı ve ikisi de ölçülerek bulundu:**
+       1. `find.byType(LogoMark)` — arkadaki Setup ekranı da bir logo
+          çiziyor, yani logo hiç olmasa bile eşleşiyordu.
+       2. Anahtar `Positioned.fill`e kondu — ölçülen kutu TÜM EKRAN olduğu
+          için konum kontrolü her zaman ekran merkezini görüyordu (logo 300,
+          modal 300).
+       Anahtar `LogoMark`ın kendisine taşındı; şimdi logo kaldırılınca test
+       GERÇEKTEN düşüyor. Ders, Parça 162'nin sıra testiyle aynı: **bir
+       finder'ın eşleşmesi, ARADIĞIN ŞEYİ bulduğu anlamına gelmiyor** —
+       özellikle aynı türden widget ekranda birden fazla varken.
+     - **Doğrulama:** `npm run lint` (tsc) temiz, `dart analyze` temiz,
+       **609 test** yeşil.
+
+   - ✅ **Parça 162 — push token'ı hesap değişiminde DEVROLMUYOR, çıkışta
+     SİLİNMİYOR: iki ayrı RLS/sıra hatası (29 Ağustos 2026, gerçek cihaz
+     testi adım 2.4-2.5'te bulundu):** Aynı telefonda Alp Çapa çıkıp T2
+     girdi; `push_tokens` satırı ESKİ kullanıcıda kaldı.
+     - **Kanıt tahmin DEĞİL:** uygulamanın yaptığı upsert'ün birebir aynısı
+       T2 kimliğiyle canlıda koşturuldu (işlem içinde, `rollback`):
+       `ERROR 42501: new row violates row-level security policy (USING
+       expression) for table "push_tokens"`.
+     - **HATA 1 — devir (2.5).** Birincil anahtar `token`. İkinci kullanıcının
+       upsert'ü çakışıp UPDATE dalına düşüyor; `push_tokens_update_own`
+       politikası `USING (auth.uid() = user_id)` ile MEVCUT satıra bakıyor,
+       satır hâlâ eski kullanıcının olduğundan yeni kullanıcı için görünmez.
+       **Çözüm:** `register_push_token` (SECURITY DEFINER) —
+       `user_id` istemciden ALINMIYOR, `auth.uid()`ten geliyor, yani token
+       başkasının üstüne yazılamaz. Politikalar sıkı kaldı.
+     - **HATA 2 — çıkış (2.4).** Temizlik `onAuthStateChange` dinleyicisine
+       bağlıydı, yani oturum ZATEN kapandıktan SONRA koşuyordu; o anda
+       `auth.uid()` null olduğundan DELETE de RLS'e takılıp hiçbir satıra
+       dokunmuyor ve hata vermiyordu. Sorun kodda değil SIRADA. **Çözüm:**
+       `AuthService.registerBeforeSignOut` — temizlik kimlik hâlâ elimizdeyken
+       koşuyor (`bootstrap.dart` bağlıyor).
+     - **BEDELİ boşa gönderim DEĞİL, YANLIŞ KİŞİYE gönderim:** eski hesaba
+       gidecek bildirim, yeni hesabın girişli olduğu telefona düşer. Parça
+       159'un kapattığını sandığımız risk, başka bir mekanizmayla açık kalmış.
+     - ⚠ **`push_gateways.dart`taki yorum "satır B'ye DEVREDİLİR" diyordu** —
+       kağıt üzerinde doğru, üretimde yanlış bir değişmez DAHA (Parça 159'un
+       aynısı, üçüncü kez). Birim testi göremedi çünkü `FakeStore` yazılanı
+       listeye ekliyor: test çağrının YAPILDIĞINI kanıtlıyor, yazmanın
+       TUTTUĞUNU değil.
+     - **NEGATİF EŞ İLK SÜRÜMDE GEÇTİ — testin kendisi hatalıydı.** Sıra
+       testi `signOut`u sarmalayıp bitişte işaretliyordu; temizlik içeride
+       ister önce ister sonra koşsun sıra aynı görünüyordu. Gerçek çıkış adımı
+       `oturumuKapat()` diye ayrılıp işaretlenebilir yapıldı; şimdi yanlış
+       sırada `['signOut', 'temizlik']` verip düşüyor (ölçüldü).
+     - **Kaynak taraması testi eklendi** (`push_token_rpc_test.dart`): istemci
+       RPC kullanıyor mu, tabloya doğrudan upsert geri gelmiş mi, RPC'ye
+       `user_id` geçiliyor mu, migration repoda ve SECURITY DEFINER mı. ⚠ Bu
+       test de ilk sürümde KENDİ yorumunu yakalayıp düştü — kaynak taraması
+       yorumları atmalı, yoksa gerekçeyi yazmak testi bozuyor.
+     - **Doğrulama:** migration canlıya uygulandı (`20260829083504`,
+       `list_migrations` ile dosya adı eşitlendi), RPC gerçek T2 kimliğiyle
+       koşturulup devrin TUTTUĞU ölçüldü (tek satır, sahibi T2; rollback).
+       `dart analyze` temiz, **608 test** yeşil.
+     - ⚠ **Cihazda doğrulama BEKLİYOR:** sunucu tarafı anında canlı, istemci
+       düzeltmesi yeni bir derleme gerektiriyor. 2.4/2.5 ancak o derlemeyle
+       tekrar koşulabilir.
+
+   - ✅ **Parça 161 — sistem yazı boyutu büyütülünce düzen patlıyordu; tavan
+     + iki yapısal düzeltme (28 Ağustos 2026, kullanıcı cihazda bildirdi):**
+     *"Görmediği için telefon fontlarını büyütenlerde ciddi sorunlar
+     çıkıyor. Mesela, arkadaşlık davetinde davetin kimden geldiği
+     görünmüyor. Bunun dışında başka yerler de patlıyor."*
+     - **ÖNCE ENVANTER, sonra kod** — kullanıcı *"başka yerler"* demişti ve
+       hangileri olduğu bilinmiyordu. Yöntem: geçici bir
+       `test/flutter_test_config.dart` ile TÜM takıma ölçek enjekte edildi
+       (`platformDispatcher.textScaleFactorTestValue`), taşma satırları
+       ayrıştırıldı. Ölçüm ancak böyle mümkün oldu; iki örnekten genelleme
+       yapılsaydı yanlış yere bakılırdı.
+
+       | ölçek | taşma | ayrı nokta |
+       |---|---|---|
+       | 1,0 | 0 | — |
+       | 1,3 | 10 | 1 |
+       | 1,6 | 27 | 4 |
+       | 2,0 | **73** | 9 (en büyüğü 392 px) |
+
+     - **İKİ AYRI HATA SINIFI olduğu buradan çıktı** ve bu, işin en önemli
+       bulgusu: kullanıcının BİLDİRDİĞİ hata (ismin görünmemesi) yukarıdaki
+       ölçümlerin HİÇBİRİNDE yok — çünkü taşma üretmiyor. Satırdaki tek
+       esnek öğe eziliyor, Flutter hiçbir şey basmıyor, kullanıcı yalnızca
+       bilginin kaybolduğunu görüyor.
+     - **Karar (kullanıcıya soruldu, iki seçenek de ölçümle sunuldu):**
+       tavan **1,3** + kalan noktaları düzelt. *"Hiç kısma, 9 yeri de
+       düzelt"* ve 1,6 seçenekleri de sunuldu. Bedeli açıkça yazılı: fontu
+       %200'e alan kullanıcı uygulamada %130 görür. 1,0'a kilitlemek
+       (ölçeği tamamen yok saymak) erişilebilirlik açısından savunulamazdı.
+     - **Üç değişiklik:**
+       1. `ui/text_scale.dart` (YENİ) — `kMaxTextScale` (1,3),
+          `kWideLayoutScale` (1,15) ve `buyukOlcek(context)`. Tavan TEK
+          yerden: `MaterialApp.builder` → `withClampedTextScaling`.
+       2. `board_widget.dart` alt şeridi `Row` → **`Wrap`**. Tavandan sonra
+          KALAN TEK taşma noktasıydı (8,3-14 px). İki grup da `shrink-0`
+          (web'de de öyle), yani `Row` sığmadığı anda taşıyor. `Wrap` tek
+          satıra sığdığı sürece `Row`la birebir aynı davranıyor —
+          `tap_target_test`in golden dikdörtgenleri hiç kıpırdamadı.
+       3. `friends_modal.dart` "İstekler" satırı büyük ölçekte **ikiye
+          bölünüyor** (üstte avatar+isim, altta KABUL ET/REDDET).
+          **Yalnızca bu liste:** "Arkadaşlarım"/"Ara & Ekle" satırlarının
+          aksiyonu 44 px sabit İKON butonu, metin değil — ölçekle
+          büyümediklerinden ismi de ezmiyorlar.
+     - **SONUÇ ÖLÇÜLDÜ:** ölçek 1,3'te taşma **10 → 0**. İstek satırındaki
+       isim genişliği (360 px ekran): 1,0'da 77,6 px (değişmedi) · 1,3'te
+       **53,2 → 121,4** · 2,0'da **0,0 → 187,0**.
+     - **Negatif eş kuruldu:** `kWideLayoutScale` geçici olarak 99'a
+       çekilince (bölme fiilen kapalı) test GERÇEKTEN düştü — isim 1,3'te
+       yine 53,2 px'e indi.
+     - **Testin ölçütü MUTLAK genişlik DEĞİL, 1,0'daki kendi genişliği** ve
+       bunun sebebi ölçümle bulundu: 360 px'lik dar bir ekranda "Esiner
+       Yıldırım" ölçek 1,0'da BİLE tam sığmıyor (77,6 px'te üç noktaya
+       iniyor). Mutlak bir eşik ya bugünü hatalı sayardı ya da hiçbir şeyi
+       yakalamazdı. Kural: yazı büyüdüğünde isme ayrılan yer KÜÇÜLMESİN.
+     - ⚠ **Takımın tamamını 1,3'te koşturmak CI kapısı OLAMAZ** (denendi ve
+       ölçüldü): 31 test düşüyor, çoğu gerçek hata değil — bu projede
+       birçok test web paritesini piksel piksel ölçüyor ve ölçek değişince
+       o ölçümler tanım gereği kayıyor. Kalıcı kapı bu yüzden dar:
+       `test/text_scale_test.dart` geometriyi değil "taşma var mı / bilgi
+       kayboluyor mu" sorusunu ölçüyor. Envanteri yeniden çıkarmak
+       gerekirse yukarıdaki geçici config yöntemi kullanılır.
+     - **2,0'da hâlâ 59 taşma var ve bu bilinçli bırakıldı** — tavan
+       yüzünden bugün ERİŞİLEMEZ. Tavan ileride yükseltilirse sıra şu:
+       `game_history_modal:827` (29) · `account_button:517` (6) ·
+       `game_over_modal:140` · `dialog_shell:169` · `live_games_tab:669/758`
+       · `move_history_modal:283` · `score_stats_section:190` ·
+       `board_widget:549`.
+     - **Doğrulama:** `dart analyze` temiz, **604 test** yeşil (601 + 3).
+
+   - ✅ **Parça 160 — istatistik etiketleri `FittedBox` yüzünden 8 px yerine
+     ~5,5 px çiziliyordu (28 Ağustos 2026, kullanıcı cihazda bildirdi):**
+     *"app'de oyun istatistikleri başlıkları tek satır ve çok küçük font.
+     Web'le aynı olmalı."*
+     - **Önce web okundu** (kuralın kendisi: "Sorun Bildirildiğinde İLK ADIM").
+       `ScoreStatsSection.tsx`'te etiket düz bir `div`:
+       `text-[8px] uppercase tracking-[1px]` — punto SABİT, metin hücre
+       içinde SARIYOR. Hiçbir küçültme/ölçekleme yok.
+     - **Port farkı YAPISALDI, değer değil:** `_CellBox`'ta etiket
+       `FittedBox(fit: BoxFit.scaleDown)` içindeydi. `FittedBox` çocuğuna
+       SINIRSIZ genişlik verir → `Text` sarmayı hiç denemez, tek satıra
+       dizilir, sonra kutuya sığsın diye KÜÇÜLTÜLÜR. Etiket ne kadar uzunsa
+       o kadar küçülür, yani kutular arasında punto bile tutmuyordu.
+     - **ÖLÇÜLDÜ** (`flutter test`, KModal'ın gerçek genişliğiyle: 360 −
+       gövde dolgusu 40 = 320 içerik, birim (320−16)/3 = 101,3, hücre iç
+       genişliği 93,3): "EN YÜKSEK PUANLI KELİME" doğal hâlde **135,6 px** →
+       ölçek 0,69 → 8 px punto ekranda **~5,5 px**. Kullanıcının gördüğü tam
+       olarak buydu.
+     - **Düzeltme tek satır:** etiketin `FittedBox`ı kaldırıldı; punto 8'de
+       sabit, metin sarıyor. Kutu bir-iki satır uzuyor — `IntrinsicHeight`
+       zaten aynı satırdaki kutuları en uzuna hizaladığından ızgara kendini
+       topluyor (ekran görüntüsüyle doğrulandı).
+     - **DEĞERİN `FittedBox`ı KALDI ve bu bilinçli:** oradaki iş farklı —
+       "LÖSEMİT" gibi uzun bir kelime tek satırda kalmalı, sarmamalı; web'de
+       de `text-xl` tek satır ve uzun kelimede taşar. Yani aynı sarmalayıcı
+       bir yerde hata, öbür yerde çözüm.
+     - **Negatif eş yerelde kuruldu:** test ÖNCE yazıldı ve mevcut kodda
+       gerçekten düştü (135,6 > 93,3), sonra düzeltmeyle geçti —
+       `score_stats_label_test.dart`, iki kontrol: (1) etiketin kendi kutusu
+       hücrenin iç genişliğini aşmıyor (FittedBox geri gelirse patlar),
+       (2) punto 8 / tracking 1 / ortalı, yani web değerleri.
+     - **Doğrulama:** `dart analyze` temiz, **601 test** yeşil (599 + 2),
+       skor kartı ekran görüntüsü yeniden üretilip gözle bakıldı.
+     - **Aynı sınıfın taraması yapıldı:** `lib/src/ui` altında 8 `FittedBox`
+       daha var (neo_button, tile_widget, game_header, intro ×3, bu dosyada
+       değer + sekme etiketi). Hepsi TEK SATIRLIK kısa metin ölçekliyor,
+       yani bu hatanın koşulu (uzun + sarması beklenen metin) yalnızca
+       burada vardı. **Kural: `FittedBox`, SARMASI GEREKEN bir metnin
+       üstüne konmaz** — sarma ile ölçekleme birbirini dışlar.
+     - ⚠ **Bu, "sistem fontu büyütülünce patlıyor" maddesiyle KARIŞTIRILMASIN**
+       (`mobile/CLAUDE.md` → "Sonraya Bırakılan İşler"). O ayrı ve hâlâ açık;
+       hatta `FittedBox` orada semptomu GİZLİYORDU (büyüyen metni sessizce
+       küçültüp taşmayı saklıyordu). Bu düzeltme o maddeyi kapatmaz.
+
    - ✅ **Parça 159 — push token'ı Canlı sekmesine bağlıydı; DEĞİŞMEZ
      kâğıt üzerinde kalmış (28 Ağustos 2026, İLK gerçek cihaz testinde
      bulundu):** Parça 158'in dokümana yazdığı değişmez şuydu — *"tabloda

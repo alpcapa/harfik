@@ -586,10 +586,18 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
         <button
           onClick={handleInvite}
           disabled={inviteStatus === 'busy'}
-          className="btn-raised bg-accent text-white rounded-md py-2.5 text-xs font-bold uppercase tracking-[1.5px] active:scale-[0.97] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+          /* TURUNCU ve `+` önekli (29 Ağustos 2026, kullanıcı isteği) — Canlı
+             sekmesindeki "+ Yeni Canlı Oyun Aç" ile AYNI dil. İkisi de
+             "yeni bir şey başlat" eylemi; mavi (accent) ise bu projede
+             onaylama/birincil eylem rengi. `btn-raised-orange` gölgeyi de
+             renge uyduruyor, tek başına `bg-orange` yetmez.
+             🔗 emoji KALDIRILDI ve bu bilinçli: `+` onun yerini alıyor,
+             kardeş butonda da emoji yok. Port zaten emojisizdi (bundled
+             fontta glyph yok dersi), yani bu aynı zamanda web↔port
+             ayrışmasını kapatıyor. */
+          className="btn-raised-orange bg-orange text-white rounded-md py-2.5 text-xs font-bold uppercase tracking-[1.5px] active:scale-[0.97] transition-transform disabled:opacity-50 flex items-center justify-center"
         >
-          <span aria-hidden>🔗</span>
-          {inviteStatus === 'copied' ? 'Link Kopyalandı!' : 'Arkadaşını Davet Et'}
+          {inviteStatus === 'copied' ? 'Link Kopyalandı!' : '+ Arkadaşını Davet Et'}
         </button>
         <p className="text-[10px] text-muted font-mono text-center -mt-1">
           Kelimeki'de henüz olmayan arkadaşlarını davet et

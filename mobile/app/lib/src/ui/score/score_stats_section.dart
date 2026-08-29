@@ -322,17 +322,24 @@ class _CellBox extends StatelessWidget {
                     fontFamily: 'SpaceMono', fontSize: 12, color: _muted)),
           ],
           const SizedBox(height: 2),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              trUpper(cell.label),
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontFamily: 'SpaceMono',
-                  fontSize: 8,
-                  letterSpacing: 1,
-                  color: _muted),
-            ),
+          // ⚠ ETİKET `FittedBox`A SARILMAZ (28 Ağustos 2026, kullanıcı cihazda
+          // bildirdi: *"oyun istatistikleri başlıkları tek satır ve çok küçük
+          // font. Web'le aynı olmalı."*). `FittedBox` çocuğuna SINIRSIZ
+          // genişlik verir, yani `Text` sarmayı hiç denemez: tek satıra
+          // dizilir, sonra kutuya sığsın diye KÜÇÜLTÜLÜR. ÖLÇÜLDÜ: "EN YÜKSEK
+          // PUANLI KELİME" doğal hâlde 135,6 px, hücrenin iç genişliği 93,3 px
+          // → ölçek 0,69, yani 8 px'lik punto ekranda ~5,5 px'e iniyordu.
+          // Web (`ScoreStatsSection.tsx`) etiketi düz bir `div`de tutuyor
+          // (`text-[8px]`), punto sabit ve metin sarıyor — kaynak web olduğu
+          // için port da öyle. `score_stats_label_test.dart` bunu kilitliyor.
+          Text(
+            trUpper(cell.label),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                fontFamily: 'SpaceMono',
+                fontSize: 8,
+                letterSpacing: 1,
+                color: _muted),
           ),
         ],
       ),

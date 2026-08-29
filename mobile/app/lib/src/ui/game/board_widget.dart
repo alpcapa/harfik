@@ -450,8 +450,20 @@ class BoardWidget extends StatelessWidget {
   Widget _footer() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      // `Row` DEĞİL `Wrap` (28 Ağustos 2026): iki grup da `shrink-0`
+      // olduğundan (web'de de öyle) `Row` sığmadığı anda taşar. Sistem yazı
+      // boyutu büyütülünce tam bu oluyordu — ÖLÇÜLDÜ: ölçek 1,3'te 8,3-14 px
+      // sağdan taşma, 2,0'da 150-181 px. Bu, uygulamadaki taşmaların
+      // ölçek 1,3'te KALAN TEK noktasıydı (`kMaxTextScale` tavanından sonra).
+      //
+      // `Wrap` + `spaceBetween` tek satıra sığdığı sürece `Row`la BİREBİR
+      // aynı davranır (bugünkü görünüm hiç değişmiyor, `tap_target_test`in
+      // golden dikdörtgenleri bunu kilitliyor); sığmadığında sağ grubu alt
+      // satıra indirir. Eşik/ölçek kontrolü YOK — kural genişlikten çıkıyor,
+      // yani dar bir telefonda uzun bir metin için de çalışır.
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,

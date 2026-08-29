@@ -149,7 +149,14 @@ yukarıda.) Merge etmeden cihazda görmek gerekiyorsa tek yol dalda bir
   çevriliyor — "doğru şey mi yayında" sorusunu cevaplar, `Content-Type`/
   başlık/bayt ölçümü YAPMAZ. Bir web düzeltmesinin canlıda olduğunu
   söylemeden önce artık kullanıcıdan ekran görüntüsü beklemek yerine
-  doğrudan bakılabilir. **Flutter/Pages tarafı için bu KANITLANMADI.**
+  doğrudan bakılabilir.
+- **Flutter/Pages yüzeyi için `WebFetch` İŞE YARAMIYOR (29 Ağustos 2026'da
+  ölçüldü):** `https://alpcapa.github.io/kelimeki/` çekildi ve dönen tek şey
+  `kelimeki` başlığı oldu — 404 değil, yani sayfa servis ediliyor, ama araç
+  JavaScript çalıştırmadığından canvas'a çizilen Flutter uygulamasının
+  açılıp açılmadığını GÖSTEREMEZ. Web (React) tarafında işe yaramasının
+  sebebi metnin HTML'de olması; Flutter web'de değil. Pages yüzeyinin
+  "açılıyor mu" sorusu hâlâ yalnızca ekran görüntüsüyle cevaplanabilir.
 - Siteyi ben açıp bakamam (yalnızca yukarıdaki istisna dışında).
   **Ekran görüntüsü tek enstrümandır** — derleme
   kimliğinin ürüne gömülmesinin asıl gerekçesi budur.
@@ -567,7 +574,10 @@ mobile/
                              # dekorasyonu/metin stili, bkz. Parça 79),
                              # tap_target.dart (48 dp dokunma hedefi
                              # asgarisi — kMinTapTarget + TapTarget, bkz.
-                             # Parça 134), loading_note.dart (ortak
+                             # Parça 134), text_scale.dart (sistem yazı
+                             # boyutu: kMaxTextScale tavanı + buyukOlcek
+                             # eşiği — bkz. "Sistem Yazı Boyutu"),
+                             # loading_note.dart (ortak
                              # "Yükleniyor…" göstergesi; web
                              # LoadingNote.tsx ile birebir), ve:
       ui/auth/               # giriş-kayıt-şifremi-unuttum modalı, hesap
@@ -751,6 +761,101 @@ bir `::after` koyar. Yani bu kuralın iki yakası aynı SONUCU farklı yolla
 Ayrıntı ve ölçümler: `docs/decisions/touch-ux-bugs.md` → "İkinci tur",
 `mobile/docs/parca-log.md` → Parça 147.
 
+## Sistem Yazı Boyutu — tavan VAR, ama tavan çözüm DEĞİL
+
+28 Ağustos 2026, kullanıcı cihazda bildirdi: *"Görmediği için telefon
+fontlarını büyütenlerde ciddi sorunlar çıkıyor. Mesela, arkadaşlık davetinde
+davetin kimden geldiği görünmüyor. Bunun dışında başka yerler de patlıyor."*
+
+Android/iOS yazı boyutunu %200'e kadar büyütebiliyor ve bu **yalnızca metni**
+büyütüyor — kutu, ikon, dolgu sabit kalıyor. **İKİ AYRI hata sınıfı** doğuyor
+ve tek bir çözüm ikisini birden kapatmıyor:
+
+| | 1. TAŞMA | 2. SIFIRA SIKIŞMA |
+|---|---|---|
+| Belirti | sarı-siyah şerit | bilgi sessizce kayboluyor |
+| Hata basılır mı | evet | **hayır** |
+| Çözümü | `kMaxTextScale` tavanı | satırı İKİYE BÖLMEK |
+
+**ÖLÇÜLDÜ** (takımın tamamı, `platformDispatcher.textScaleFactorTestValue`
+enjekte edilerek): taşma sayısı ölçek 1,0'da **0** · 1,3'te **10** · 1,6'da
+**27** · 2,0'da **73** (9 ayrı nokta, en büyüğü 392 px). Yani hasar 1,3'ten
+sonra patlıyor — tavan oraya kondu (kullanıcı kararı; 1,0'a kilitlemek
+erişilebilirlik açısından savunulamazdı).
+
+**Kurallar:**
+
+1. **Tavan TEK yerde:** `MaterialApp.builder` →
+   `MediaQuery.withClampedTextScaling(maxScaleFactor: kMaxTextScale)`
+   (`ui/text_scale.dart`). Ekran başına ölçek kısıtı YAZMA.
+2. ⚠ **"Nasılsa tavan var" DEME.** Tavan yalnızca sınıf 1'i sınırlar.
+   Sınıf 2 taşma üretmediği için hiçbir ölçüme girmez ve tavandan da
+   etkilenmez: arkadaşlık isteği satırında isim, 360 px ekranda ölçek
+   1,0'da 77,6 px · 1,3'te 53,2 px · 2,0'da **0,0 px** idi.
+3. **Satırda tek esnek öğe + yanında METİN butonu = sınıf 2 riski.** İkon
+   butonları (sabit 44-48 px) ölçekle büyümediğinden bu riski taşımaz —
+   bu yüzden "Arkadaşlarım"/"Ara & Ekle" satırları bilerek bölünmedi,
+   yalnızca "İstekler" bölündü. Eşik: `buyukOlcek(context)`.
+4. **İki grubu `spaceBetween` ile yan yana koyan bir şerit `Row` DEĞİL
+   `Wrap` olmalı** — iki grup da `shrink-0` olduğunda `Row` sığmadığı anda
+   taşar. Tahtanın alt şeridi böyle düzeldi; tek satıra sığdığı sürece
+   davranış `Row` ile birebir aynı.
+5. ⚠ **Takımı 1,3'te koşturmak CI KAPISI OLARAK KULLANILAMAZ** (denendi):
+   31 test düşüyor ve çoğu gerçek hata değil — bu projede birçok test web
+   paritesini piksel piksel ölçüyor, ölçek değişince o ölçümler tanım
+   gereği kayıyor. Kalıcı kapı dar bir test: `test/text_scale_test.dart`
+   (tavanın bağlı olduğu + alt şeridin taşmadığı + ismin daralmadığı).
+   Envanteri yeniden çıkarmak gerekirse yöntem Parça 161'de yazılı.
+
+**Web'de karşılığı YOK ve bu bir port eksiği değil:** tarayıcı `text-sm` gibi
+px değerlerini sistem yazı boyutuyla ölçeklemez, kullanıcı tüm SAYFAYI
+zoom'lar — kutular da birlikte büyür, sınıf 2 hiç doğmaz. Yani buraya
+web'den kopyalanacak bir yapı yok, yalnızca ilkesi var (web'in `CARD_HEADER`
+düzeltmesi, 23 Ağustos 2026: kırpılacak EN SON şey kimden geldiğidir).
+
+### Sınıf 2 risk kütüğü — taranmış, ÖLÇÜLMEMİŞ (28 Ağustos 2026)
+
+Kullanıcı sordu: *"Bir de başka sessiz sıkışma olan yerler var mı?"* İki
+yöntemle arandı; ikisinin de sınırı yazılı, çünkü "temiz çıktı" ile "sorun
+yok" aynı şey değil.
+
+**1. Dinamik tarama (takımın tamamı, iki ölçekte).** Her karede tüm
+`RenderParagraph`ların genişliği dökülüp 1,0 ile 1,3 karşılaştırıldı.
+901 ortak metinden 35'i daraldı, ama bunların çoğu ZARARSIZ: sarabilen bir
+metin daralınca yalnızca uzar, bilgi kaybolmaz. Zarar ölçütü daralma değil
+**kırpılma** (`didExceedMaxLines || maxLines != null || !softWrap`). O
+süzgeçten geçen: **tek bir yer** — `game_history_modal.dart:1150`, oyun
+geçmişi satırındaki oyuncu adı, **101,9 → 88,8 px (-13,1)**; sebebi yanındaki
+`TESLİM OLDU` rozetinin metin olması. Bilgi sıfırlanmıyor, ~2 karakter
+kırpılıyor.
+
+⚠ **Bu taramanın KÖRLÜĞÜ ölçüldü ve önemli:** kullanıcının bildirdiği asıl
+hata (arkadaşlık isteği satırı) düzeltme KAPATILIP tekrar koşturulduğunda
+bile listede ÇIKMADI — çünkü mevcut testler o satırı 420 px genişlikte ve
+kısa bir adla ("Esiner") çiziyor, yani sıkışma o veriyle hiç doğmuyor.
+Tarama yalnızca testlerin GERÇEKTEN çizdiği ekranı ve veriyi görür. Dar
+ekran + uzun ad gibi uç veriyi ancak ona özel bir test yakalar
+(`text_scale_test.dart` tam bunu yapıyor: 360 px + "Esiner Yıldırım").
+
+**2. Yapısal tarama.** `lib/src/ui` altındaki 24 `TextOverflow.ellipsis`
+sitesi, "kırpılabilir metin + onu ezebilecek METİN kardeş" desenine göre
+tarandı. Beş aday çıktı — **hiçbiri ölçülmedi**, yalnızca desen eşleşmesi:
+
+| Yer | Ezen kardeş |
+|---|---|
+| `setup_screen.dart:1977` | `SENİN HAMLEN BEKLENİYOR` (11 px, tracking 1 — en uzun etiket) |
+| `live_games_tab.dart:683` | sağdaki durum etiketi (`onlineStatusLabel`) |
+| `game_over_modal.dart:234` | `(TESLİM)` |
+| `game_history_modal.dart:1150` | `TESLİM OLDU` — **ölçülen tek vaka** |
+| `recent_games_section.dart:285` | skor metni |
+
+Beşi de aynı ailenin üyesi: satırdaki tek esnek öğe bir isim/başlık, kardeşi
+ise ölçekle büyüyen bir metin. **1,3 tavanında beklenen zarar "birkaç
+karakter kırpılması" düzeyinde** — arkadaşlık satırındaki gibi sıfıra inen
+bir vaka değil; bu yüzden bugün düzeltilmedi. Tavan yükseltilirse ya da
+biri cihazda şikayet konusu olursa çözüm aynı: `buyukOlcek(context)` ile
+satırı ikiye böl.
+
 ## `KModal`'ın gövdesi ZATEN kaydırılabilir — içine ikincisini koyma
 
 27 Ağustos 2026, bir kullanıcı bildirdi: *"Arkadaşlar - Ara&Ekle'de scroll
@@ -929,6 +1034,14 @@ bağlı değil.)
 Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
 kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
 silinip kendi tarihli parça notuna taşınır.
+
+- ~~Sistem fontu büyütülünce düzen patlıyor~~ — **YAPILDI** (28 Ağustos
+  2026, Parça 161): yazı ölçeği `kMaxTextScale`=1,3 ile sınırlandı
+  (`ui/text_scale.dart` + `MaterialApp.builder`), tahtanın alt şeridi
+  `Row`→`Wrap` oldu, arkadaşlık isteği satırı büyük ölçekte ikiye bölünüyor.
+  Ölçüldü: ölçek 1,3'te taşma **10 → 0**; istek satırındaki isim 1,3'te
+  53,2 → 121,4 px, 2,0'da 0,0 → 187,0 px. Kural ve tuzaklar aşağıda
+  ("Sistem Yazı Boyutu"), envanter Parça 161'de.
 
 - **KGP uyarısı — ileride derlemeyi KIRACAK (23 Ağustos 2026'da `.aab`
   log'unda ölçüldü, bugün yalnızca uyarı):** `image_picker_android`,

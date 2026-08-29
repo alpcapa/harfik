@@ -13,6 +13,16 @@
 // sunum değil. Önem DEFAULT'a geri çekilirse bu test düşer ve değişikliğin
 // bilinçli olması gerekir.
 //
+// ✅ **29 Ağustos 2026 — NEDEN-SONUÇ DOĞRULANDI.** 28 Ağustos'ta bu teşhis
+// ORTAYA ATILDI ama kanıtlanamadı (kullanıcı uygulama ve kategori düzeyindeki
+// açılır-pencere ayarlarını açtı, banner yine çıkmadı) ve o gün dürüstçe geri
+// çekildi — sebebi şuydu: kanalın önemi YARATILDIKTAN SONRA yükseltilemiyor,
+// yani eski kurulumda kanal DEFAULT olarak doğmuştu ve kod düzeltilse bile
+// davranış değişmiyordu. Uygulama kaldırılıp yeniden kurulunca kanal ilk kez
+// HIGH doğdu ve banner GELDİ (ses + banner, gerçek cihaz). Ders: "ayarlar
+// açık ama çalışmıyor" bir çürütme DEĞİL — önce kanalın hangi önemle
+// DOĞDUĞUNA bak.
+//
 // Kaynak TARAMASI yapıyor, davranış çalıştırmıyor — Kotlin bu test
 // çatısından koşturulamaz. Aynı desen: `icon_parity_test.dart`,
 // `layout_parity_test.dart`, `client_platform_parity_test.dart`.
