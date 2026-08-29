@@ -656,6 +656,13 @@ mobile/
                              #     Parça 158). Hizalama buna BAĞLI DEĞİL — (a) ve
                              #     (b) 28 Ağustos'a kadar aynı yola bağlıydı ve
                              #     hata tam oradan çıktı (Parça 159)
+      ui/online_scope.dart   # OnlineScope — bağlantı durumunun AĞAÇ GENELİNDE
+                             # erişilebilir hâli (InheritedNotifier, kökte bir
+                             # kez kurulur). Tüketicisi bugün KAvatar: çevrimiçine
+                             # dönünce yüklenememiş görseli yeniden dener.
+                             # ⚠ Parametre geçirmek yerine kapsam seçildi çünkü
+                             # KAvatar'ın 19 çağrı yeri var — yeni bir çağrı
+                             # yerinde unutmak hatayı sessizce geri getirirdi
       ui/route_observer.dart # kRouteObserver — RouteAware `didPopNext`.
                              # Web'in "route değişince remount" davranışının
                              # port karşılığı; SetupScreen oyundan DÖNÜŞTE
