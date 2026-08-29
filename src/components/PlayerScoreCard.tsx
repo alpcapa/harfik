@@ -18,7 +18,6 @@ import {
   fetchFriendRelation,
   fetchMyLeaderboardRank,
   fetchPlayerStats,
-  fetchProfileAgeGender,
   removeFriend,
   respondFriendRequest,
   sendFriendRequest,
@@ -30,7 +29,7 @@ import type {
   PlayerStats,
 } from '../lib/database.types';
 import { type TabKey, SCORE_TABS, ScoreTabsBar, ScoreStatsSection } from './ScoreStatsSection';
-import { formatAgeGender, shortDisplayName } from '../utils/profileFields';
+import { shortDisplayName } from '../utils/profileFields';
 
 /** Bir skor kartı çizmek için gereken asgari oyuncu kimliği. */
 export interface PlayerSummary {
@@ -120,10 +119,6 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
   const [showLeague, setShowLeague] = useState(false);
   const [showRankInfo, setShowRankInfo] = useState(false);
   const [rank, setRank] = useState<MyLeaderboardRank | null>(null);
-  // "Y:59/C:E" satırı — `profiles` RLS'i başkasının satırını okutmadığından
-  // ayrı bir RPC'den gelir (bkz. `fetchProfileAgeGender`); yüklenene kadar
-  // ya da veri girilmemişse satır hiç çizilmez.
-  const [ageGenderLabel, setAgeGenderLabel] = useState('');
   const [relation, setRelation] = useState<FriendRelation | null | undefined>(undefined);
   const [showFriendConfirm, setShowFriendConfirm] = useState(false);
   const [friendBusy, setFriendBusy] = useState(false);
@@ -141,9 +136,6 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
     }
     fetchMyLeaderboardRank(member.id).then((r) => {
       if (!cancelled) setRank(r);
-    });
-    fetchProfileAgeGender(member.id).then(({ age, gender }) => {
-      if (!cancelled) setAgeGenderLabel(formatAgeGender(age, gender));
     });
     return () => {
       cancelled = true;
@@ -266,12 +258,6 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
             </button>
           )}
           </div>
-          {/* Yaş/cinsiyet — ismin ALTINDA, `ScoreCard`'daki (kendi kartı)
-              satırla birebir aynı biçim ve sınıflar. Arkadaşlık ikonunun
-              olduğu satırın DIŞINDA duruyor ki ikon hizası bozulmasın. */}
-          {ageGenderLabel && (
-            <div className="text-xs font-mono text-muted">{ageGenderLabel}</div>
-          )}
         </div>
         <button
           type="button"

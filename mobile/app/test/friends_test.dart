@@ -1049,7 +1049,4 @@ class _NullStatsGateway implements StatsGateway {
   @override
   Future<List<Map<String, Object?>>> rankScores(List<String> userIds) async =>
       const [];
-
-  @override
-  Future<Map<String, Object?>?> profileAgeGender(String userId) async => null;
 }

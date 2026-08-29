@@ -52,33 +52,3 @@ String isoToTrDate(String? iso) {
   if (parts.length != 3) return '';
   return '${parts[2]}/${parts[1]}/${parts[0]}';
 }
-
-/// Doğum tarihinden TAMAMLANMIŞ yıl sayısı — doğum günü bu yıl henüz
-/// geçmediyse bir eksik. Web `calculateAge` birebir.
-///
-/// ⚠ Bu tanım sunucudaki `get_profile_age_gender` RPC'sinin
-/// `age(current_date, birth_date)` hesabıyla AYNI olmak zorunda: aynı satır
-/// (`Y:59/C:E`) KENDİ kartında buradan, BAŞKASININ kartında RPC'den besleniyor
-/// — ikisi ayrışırsa aynı oyuncu iki kartta farklı yaşta görünür.
-int? ageFromBirthDate(String? birthDate) {
-  if (birthDate == null || birthDate.isEmpty) return null;
-  final born = DateTime.tryParse(birthDate);
-  if (born == null) return null;
-  final now = DateTime.now();
-  var age = now.year - born.year;
-  if (now.month < born.month ||
-      (now.month == born.month && now.day < born.day)) {
-    age--;
-  }
-  return age;
-}
-
-/// Web `formatAgeGender` — "Y:59/C:E"; ikisi de yoksa boş. Skor Kartı (kendi)
-/// ve oyuncu kartı (başkası) ORTAK kullanır, satır iki kartta da aynı görünmeli.
-String formatAgeGender(int? age, String? gender) {
-  final letter = gender == 'male' ? 'E' : (gender == 'female' ? 'K' : null);
-  return [
-    if (age != null) 'Y:$age',
-    if (letter != null) 'C:$letter',
-  ].join('/');
-}

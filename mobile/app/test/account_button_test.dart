@@ -46,9 +46,6 @@ class _FakeStatsGateway implements StatsGateway {
   @override
   Future<List<Map<String, Object?>>> rankScores(List<String> userIds) async =>
       [for (final id in userIds) {'user_id': id, 'total_score': 47}];
-
-  @override
-  Future<Map<String, Object?>?> profileAgeGender(String userId) async => null;
 }
 
 /// `myLeaderboardRank` ELDE TUTULAN bir ucu — menü, puan gelmeden önce
