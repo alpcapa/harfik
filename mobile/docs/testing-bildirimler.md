@@ -165,6 +165,17 @@ uyarıyor; push e-postanın YANINDA gidiyor, yerine değil.
 - [ ] **3.4 Bildirimi kapatmış bir kullanıcıya push GİTMEMELİ**
       (`profiles.push_notifications_enabled = false`) — ama **e-posta yine
       gitmeli**. İkisi ayrı kanal.
+      ⚠ **Bu tercihin ARAYÜZÜ YOK ve bu bilinçli** (29 Ağustos 2026, kullanıcı
+      kararı): *"Bildirim ayarlarını app'den yönetemiyor, ayarlara
+      gönderiyorsa yapmanın bir anlamı yok. Kullanıcı ayarlara gider yapar."*
+      Sunucu tercihi uyguluyor ama ne web'de ne uygulamada bir anahtarı var —
+      bu adım yalnızca SQL ile kurulabilir. Gerekçe: Android'de bildirimi
+      kapatmanın gerçek yolu zaten sistem ayarı (uygulama onu programatik
+      değiştiremez, yalnızca o ekrana yönlendirebilir) ve sistem anahtarı
+      kapatıldığında e-posta ZATEN gelmeye devam ediyor — yani kendi
+      anahtarımız bugün hiçbir yeni yetenek katmıyor. Kolon,
+      ikinci bir push tipi geldiğinde anlam kazanacak diye duruyor.
+      **Eksik sanıp eklemeye kalkma.**
 - [ ] **3.5 Uygulamayı silip yeniden kur** → eski token artık geçersiz;
       sunucu `UNREGISTERED` alıp satırı silmeli (bir sonraki cron'dan sonra
       `push_tokens`ta ölü satır kalmamalı).
