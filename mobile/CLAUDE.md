@@ -149,7 +149,14 @@ yukarıda.) Merge etmeden cihazda görmek gerekiyorsa tek yol dalda bir
   çevriliyor — "doğru şey mi yayında" sorusunu cevaplar, `Content-Type`/
   başlık/bayt ölçümü YAPMAZ. Bir web düzeltmesinin canlıda olduğunu
   söylemeden önce artık kullanıcıdan ekran görüntüsü beklemek yerine
-  doğrudan bakılabilir. **Flutter/Pages tarafı için bu KANITLANMADI.**
+  doğrudan bakılabilir.
+- **Flutter/Pages yüzeyi için `WebFetch` İŞE YARAMIYOR (29 Ağustos 2026'da
+  ölçüldü):** `https://alpcapa.github.io/kelimeki/` çekildi ve dönen tek şey
+  `kelimeki` başlığı oldu — 404 değil, yani sayfa servis ediliyor, ama araç
+  JavaScript çalıştırmadığından canvas'a çizilen Flutter uygulamasının
+  açılıp açılmadığını GÖSTEREMEZ. Web (React) tarafında işe yaramasının
+  sebebi metnin HTML'de olması; Flutter web'de değil. Pages yüzeyinin
+  "açılıyor mu" sorusu hâlâ yalnızca ekran görüntüsüyle cevaplanabilir.
 - Siteyi ben açıp bakamam (yalnızca yukarıdaki istisna dışında).
   **Ekran görüntüsü tek enstrümandır** — derleme
   kimliğinin ürüne gömülmesinin asıl gerekçesi budur.
