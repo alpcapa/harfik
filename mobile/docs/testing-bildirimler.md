@@ -105,9 +105,23 @@ Her adımdan sonra Supabase'de:
       olduğundan satır sonsuza kadar kalıyordu.)
 - [ ] **2.3 Ayarlardan tekrar AÇ**, uygulamayı aç → satır geri gelmeli.
 - [ ] **2.4 Çıkış yap** → satır silinmeli.
+      ⚠ 29 Ağustos 2026'da KIRIK bulundu: temizlik oturum kapandıktan SONRA
+      koşuyordu, `auth.uid()` null olduğu için DELETE RLS'e takılıp sessizce
+      hiçbir şey silmiyordu. Düzeltildi (`registerBeforeSignOut`) ama
+      **cihazda doğrulama bekliyor** — yeni derleme gerekiyor.
 - [ ] **2.5 BAŞKA bir hesapla gir (aynı cihaz)** → satır sayısı ARTMAMALI;
       var olan satırın `user_id`'si değişmeli (anahtar token, kullanıcı
       değil).
+      ⚠ 29 Ağustos 2026'da KIRIK bulundu ve sebebi 2.4'ünkinden BAŞKA: birincil
+      anahtar `token` olduğundan ikinci kullanıcının upsert'ü UPDATE dalına
+      düşüyor, `push_tokens_update_own` politikası mevcut satıra bakıp reddediyor
+      (`42501`). Devir artık `register_push_token` RPC'siyle (SECURITY DEFINER).
+      **Cihazda doğrulama bekliyor** — yeni derleme gerekiyor.
+
+⚠ **BU İKİSİNİ BİRİM TESTİ YAKALAYAMAZ.** `FakeStore` yazılanı bir listeye
+ekliyor; RLS diye bir şey yok. Yani "testler yeşil" burada yalnızca çağrının
+yapıldığını söyler, yazmanın TUTTUĞUNU değil — 2.4/2.5 cihazda koşulmak
+ZORUNDA ve sonucu TABLODAN okunmalı, uygulamanın ekranından değil.
 
 ⚠ **2.2/2.3'ü OYUNU OLAN bir hesapla yapmak, açılış tetikleyicisini
 KANITLAMAZ** (29 Ağustos 2026'da fark edildi, tur ortasında): bekleyen oyun

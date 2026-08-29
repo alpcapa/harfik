@@ -300,9 +300,43 @@ class AuthService extends ChangeNotifier {
     await c.auth.updateUser(UserAttributes(password: newPassword));
   }
 
+  /// Oturum KAPANMADAN ÖNCE koşacak temizlikler.
+  ///
+  /// ⚠ NEDEN VAR (29 Ağustos 2026, gerçek cihaz testi adım 2.4): push
+  /// token'ının silinmesi `onAuthStateChange` dinleyicisine bağlıydı, yani
+  /// oturum ZATEN kapandıktan SONRA koşuyordu. O anda `auth.uid()` null
+  /// olduğundan `push_tokens` DELETE'i RLS'e takılıp (`auth.uid() = user_id`)
+  /// HİÇBİR SATIRA dokunmuyor ve hata da vermiyor — satır tabloda kalıyor,
+  /// yani çıkış yapmış bir hesabın bildirimleri o telefona düşmeye devam
+  /// ediyor. Sorun kodun kendisinde değil SIRASINDA: temizlik, kimlik
+  /// kaybedilmeden önce yapılmalı.
+  final List<Future<void> Function()> _cikisOncesi = [];
+
+  /// Kaydedilen iş `signOut()` içinde, oturum kapanmadan ÖNCE beklenir.
+  void registerBeforeSignOut(Future<void> Function() f) => _cikisOncesi.add(f);
+
   Future<void> signOut() async {
-    await _client?.auth.signOut();
+    // Bir temizliğin patlaması çıkışı ENGELLEMEZ — kullanıcı "Çıkış Yap"a
+    // bastıysa çıkmalı; en kötü ihtimalle bayat satırı sunucu tarafı
+    // (FCM `UNREGISTERED`) temizler.
+    for (final f in _cikisOncesi) {
+      try {
+        await f();
+      } catch (e) {
+        debugPrint('[Kelimeki] çıkış öncesi temizlik düştü: $e');
+      }
+    }
+    await oturumuKapat();
   }
+
+  /// Gerçek Supabase çıkışı — [signOut]'un SON adımı.
+  ///
+  /// Ayrı bir metot olmasının tek sebebi TESTTE GÖZLENEBİLMESİ: sıra testi
+  /// "temizlik önce mi koştu" sorusunu ancak bu adımı işaretleyebilirse
+  /// cevaplayabiliyor. İlk sürümde böyle değildi ve sıra testi negatif eşini
+  /// GEÇTİ — yani hiçbir şey kanıtlamıyordu (29 Ağustos 2026).
+  @protected
+  Future<void> oturumuKapat() async => _client?.auth.signOut();
 
   // ── Hesap silme (uygulama içi yol) ────────────────────────────────────────
   //

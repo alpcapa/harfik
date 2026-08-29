@@ -20,6 +20,53 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 162 — push token'ı hesap değişiminde DEVROLMUYOR, çıkışta
+     SİLİNMİYOR: iki ayrı RLS/sıra hatası (29 Ağustos 2026, gerçek cihaz
+     testi adım 2.4-2.5'te bulundu):** Aynı telefonda Alp Çapa çıkıp T2
+     girdi; `push_tokens` satırı ESKİ kullanıcıda kaldı.
+     - **Kanıt tahmin DEĞİL:** uygulamanın yaptığı upsert'ün birebir aynısı
+       T2 kimliğiyle canlıda koşturuldu (işlem içinde, `rollback`):
+       `ERROR 42501: new row violates row-level security policy (USING
+       expression) for table "push_tokens"`.
+     - **HATA 1 — devir (2.5).** Birincil anahtar `token`. İkinci kullanıcının
+       upsert'ü çakışıp UPDATE dalına düşüyor; `push_tokens_update_own`
+       politikası `USING (auth.uid() = user_id)` ile MEVCUT satıra bakıyor,
+       satır hâlâ eski kullanıcının olduğundan yeni kullanıcı için görünmez.
+       **Çözüm:** `register_push_token` (SECURITY DEFINER) —
+       `user_id` istemciden ALINMIYOR, `auth.uid()`ten geliyor, yani token
+       başkasının üstüne yazılamaz. Politikalar sıkı kaldı.
+     - **HATA 2 — çıkış (2.4).** Temizlik `onAuthStateChange` dinleyicisine
+       bağlıydı, yani oturum ZATEN kapandıktan SONRA koşuyordu; o anda
+       `auth.uid()` null olduğundan DELETE de RLS'e takılıp hiçbir satıra
+       dokunmuyor ve hata vermiyordu. Sorun kodda değil SIRADA. **Çözüm:**
+       `AuthService.registerBeforeSignOut` — temizlik kimlik hâlâ elimizdeyken
+       koşuyor (`bootstrap.dart` bağlıyor).
+     - **BEDELİ boşa gönderim DEĞİL, YANLIŞ KİŞİYE gönderim:** eski hesaba
+       gidecek bildirim, yeni hesabın girişli olduğu telefona düşer. Parça
+       159'un kapattığını sandığımız risk, başka bir mekanizmayla açık kalmış.
+     - ⚠ **`push_gateways.dart`taki yorum "satır B'ye DEVREDİLİR" diyordu** —
+       kağıt üzerinde doğru, üretimde yanlış bir değişmez DAHA (Parça 159'un
+       aynısı, üçüncü kez). Birim testi göremedi çünkü `FakeStore` yazılanı
+       listeye ekliyor: test çağrının YAPILDIĞINI kanıtlıyor, yazmanın
+       TUTTUĞUNU değil.
+     - **NEGATİF EŞ İLK SÜRÜMDE GEÇTİ — testin kendisi hatalıydı.** Sıra
+       testi `signOut`u sarmalayıp bitişte işaretliyordu; temizlik içeride
+       ister önce ister sonra koşsun sıra aynı görünüyordu. Gerçek çıkış adımı
+       `oturumuKapat()` diye ayrılıp işaretlenebilir yapıldı; şimdi yanlış
+       sırada `['signOut', 'temizlik']` verip düşüyor (ölçüldü).
+     - **Kaynak taraması testi eklendi** (`push_token_rpc_test.dart`): istemci
+       RPC kullanıyor mu, tabloya doğrudan upsert geri gelmiş mi, RPC'ye
+       `user_id` geçiliyor mu, migration repoda ve SECURITY DEFINER mı. ⚠ Bu
+       test de ilk sürümde KENDİ yorumunu yakalayıp düştü — kaynak taraması
+       yorumları atmalı, yoksa gerekçeyi yazmak testi bozuyor.
+     - **Doğrulama:** migration canlıya uygulandı (`20260829083504`,
+       `list_migrations` ile dosya adı eşitlendi), RPC gerçek T2 kimliğiyle
+       koşturulup devrin TUTTUĞU ölçüldü (tek satır, sahibi T2; rollback).
+       `dart analyze` temiz, **608 test** yeşil.
+     - ⚠ **Cihazda doğrulama BEKLİYOR:** sunucu tarafı anında canlı, istemci
+       düzeltmesi yeni bir derleme gerektiriyor. 2.4/2.5 ancak o derlemeyle
+       tekrar koşulabilir.
+
    - ✅ **Parça 161 — sistem yazı boyutu büyütülünce düzen patlıyordu; tavan
      + iki yapısal düzeltme (28 Ağustos 2026, kullanıcı cihazda bildirdi):**
      *"Görmediği için telefon fontlarını büyütenlerde ciddi sorunlar

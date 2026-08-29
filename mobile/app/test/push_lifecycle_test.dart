@@ -79,6 +79,17 @@ class TestAuth extends AuthService {
     _u = u;
     notifyListeners();
   }
+
+  /// GERÇEK çıkış adımının anını işaretler (sıra testi).
+  ///
+  /// ⚠ `signOut`u sarmalamak İŞE YARAMIYOR ve bu ölçülerek bulundu: üst
+  /// sınıfın tamamı bitince işaretlenirse, temizlik içeride ister önce
+  /// ister sonra koşsun sıra hep aynı görünür — ilk sürüm tam bu yüzden
+  /// negatif eşini geçti. İşaretlenecek olan SON ADIM.
+  void Function()? onSignOutCalled;
+
+  @override
+  Future<void> oturumuKapat() async => onSignOutCalled?.call();
 }
 
 User _user(String id) => User(
@@ -147,6 +158,25 @@ void main() {
     expect(store.silinenler, ['tok-1'],
         reason: 'öne dönüşte token silinmedi — sistem ayarından kapatan '
             'kullanıcıya sunucu göndermeye devam eder');
+  });
+
+  test('ÇIKIŞ temizliği oturum KAPANMADAN ÖNCE koşar', () async {
+    // ⚠ SIRA TESTİ, varlık testi değil (29 Ağustos 2026, cihazda bulundu):
+    // temizlik `onAuthStateChange` dinleyicisine bağlıydı, yani oturum ZATEN
+    // kapandıktan sonra koşuyordu. O anda `auth.uid()` null olduğundan
+    // `push_tokens` DELETE'i RLS'e takılıp HİÇBİR SATIRA dokunmuyor ve hata
+    // da vermiyor — çıkmış hesabın bildirimleri o telefona düşmeye devam
+    // ediyor. Aşağıdaki `sira` listesi tam olarak bunu kilitliyor.
+    final sira = <String>[];
+    final auth = TestAuth(user: _user('u1'));
+    auth.registerBeforeSignOut(() async => sira.add('temizlik'));
+    auth.onSignOutCalled = () => sira.add('signOut');
+
+    await auth.signOut();
+
+    expect(sira, ['temizlik', 'signOut'],
+        reason: 'Temizlik çıkıştan SONRA koşarsa kimlik kaybedilmiş olur ve '
+            'RLS silmeyi sessizce reddeder — satır tabloda kalır.');
   });
 
   testWidgets('ÇIKIŞTA token silinir', (tester) async {
