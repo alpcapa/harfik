@@ -64,32 +64,27 @@ Yani maddeleri "konu"ya göre değil **paketlenebilirliğe** göre grupladım.
 Sonuç: kalan HER ŞEY **iki sürüm turuna** sığıyor — bildirim işinin yarısı
 sunucu tarafında olduğu için sürüm beklemiyor.
 
-### Faz 1 — bekleyen paket · **1 sürüm** · hepsi hazır ya da dakikalık
+### Faz 1 — bekleyen paket · **1 sürüm** · ✅ DALDA TAMAM, yayın bekliyor
 
-1. **Hamle rozeti dolgusu** — dalda hazır. Rozet dar telefonda 1.22 hücre
-   kaplayıp harfleri örtüyordu; dolgu `3/6` → `1.5/3` (0.98 hücre). Kaydı:
-   `docs/decisions/components.md` → `Board` maddesi.
-2. **Yaş/cinsiyet satırı** — `main`'de revert edildi (#370), geri getirilecek.
-   `get_profile_age_gender` RPC'si Supabase'de HÂLÂ CANLI ve migration
-   dosyası `main`'de duruyor, yani sunucuda yapılacak iş YOK.
-3. **Flaky test:** `mobile/app/test/online_game_chat_test.dart` →
-   "tanıtımı görmüş kullanıcı bir daha görmez" testi `Pending timers` ile
-   düşüyor (`fake_async` + sqflite `ChatReadStore.markRead`). Bir kez PR'da
-   düştü, `main`'de aynı anda yeşildi → flake; sızdırılan timer
-   sağlamlaştırılmalı.
-4. **Doküman borcu:** (a) aşağıdaki **#13**'teki *"⚠ Bekleyen deploy —
-   'taktirde' düzeltmesi canlıya yayılmadı"* uyarısı BAYAT (canlıdan
-   okundu: `notify-deadline-warnings` v11'de metin doğru ve push kanalı
-   zaten içinde), silinmeli; (b) `mobile/docs/` altına kısa bir not —
-   *"Play kapalı test: **Published ≠ testçide**; sürümü uygulama içindeki
-   `Derleme <sha>` satırından doğrula"* (29 Ağustos'ta iki kez zaman
-   kaybettirdi: yayınlanmış sürüm cihaza saatler sonra indi).
+Beş maddenin beşi de `claude/kelimeki-phase-1-remaining-*` dalında bitti;
+kalan tek iş **merge + sürüm turu** (kullanıcı "şimdi gönder" diyene kadar
+PR açılmıyor). Kayıtları taşındı, burada yalnızca paketin envanteri kaldı:
 
-⚠ **Açık karar, Faz 1'e girer mi:** rozetin puntosu/fontu web'de
-`clamp(8px,2vw,11px)` + mono, portta sabit `11` + tema sans'ı — port dar
-telefonda %19 geniş çiziyor ve şikayetin asıl kaynağı buydu. Dolgu
-düzeltmesi belirtiyi çözdü, ayrışmayı değil. Aynı dosyaya dokunduğu için
-karar verilirse ayrı bir tur harcamadan Faz 1'e girmeli.
+| # | İş | Kaydı |
+|---|---|---|
+| 1 | Hamle rozeti dolgusu `3/6` → `1.5/3` (1,22 → 0,98 hücre) | Parça 167 · `docs/decisions/components.md` → `Board` |
+| 2 | Rozet puntosu: **web porta getirildi** (sabit 11px + sans) | Parça 169 · aynı `Board` maddesi |
+| 3 | Yaş/cinsiyet satırı geri geldi (#370'in revert'ü) | Parça 166 |
+| 4 | `drainRealIo` flake'i: üç kopya tek kaynağa, tek `pump()` → dilimli | Parça 168 |
+| 5 | Doküman borcu: bayat "bekleyen deploy" uyarısı silindi + Play kapalı test notu | Parça 168 · `mobile/docs/build-and-distribution-log.md` |
+
+**Sunucuda yapılacak iş YOK:** `get_profile_age_gender` canlıda ve
+migration dosyası `main`'de duruyor (29 Ağustos'ta `pg_proc`'tan doğrulandı:
+`security definer`, `TABLE(age integer, gender text)`).
+
+⚠ **Sürüm turunda:** `appVersion` + `pubspec` birlikte artırılmalı
+(`app_version_parity_test` ayrışmayı yakalar) ve zorunlu güncelleme eşiği
+sırası korunmalı — `mobile/CLAUDE.md` → "Zorunlu Güncelleme".
 
 ### Faz 2 — davet bildirimleri · **SÜRÜM GEREKTİRMEZ** · sunucu
 
@@ -1015,15 +1010,16 @@ Mevcut e-posta metni kullanıcının istediği cümlenin ta kendisi ve İKİ
 durumu birden kapsıyor: Canlı oyunlarda 48 saatlik `turn_deadline`, YZ
 oyunlarında 7 günlük terk penceresi — ikisinde de son 24 saate girince.
 
-⚠ **Bekleyen deploy:** `notify-deadline-warnings`'teki *"taktirde"* yazım
-hatası 26 Ağustos'ta REPODA düzeltildi (*"takdirde"*) ama **canlıya
-yayılmadı** — tek harflik bir düzeltme için canlı bir bildirim
-fonksiyonunu yeniden yüklemenin riski değmezdi ve bu fonksiyon zaten push
-kanalı eklenirken yeniden yayınlanacak. **Bu iş yapılırken deploy'u
-unutma; o ana kadar repo ile canlı bilerek AYRIŞIK.** Deploy'da
-`verify_jwt: false` AÇIKÇA geçilmeli (ölçüldü — bu fonksiyon o altı
-fonksiyondan biri; parametre geçilmezse araç `true` varsayar ve kapıyı
-sessizce kapatır).
+✅ **Bu satır KAPANDI (29 Ağustos 2026, canlıdan okundu):**
+`notify-deadline-warnings` **v11** yayında — *"takdirde"* yazımı doğru,
+push kanalı (`sendDeadlinePush`) İÇİNDE ve `verify_jwt: false`. Yani teslim
+uyarısı bugün hem e-posta hem push gönderiyor; bu satırda yapılacak iş yok.
+Buraya 26 Ağustos'tan kalma bir *"bekleyen deploy"* uyarısı yazılıydı ve
+**bayattı** — kaldırıldı. Faz 2'de öteki üç fonksiyona dokunulurken
+`verify_jwt` tuzağı yine geçerli: `deploy_edge_function`'a parametre
+geçilmezse araç `true` varsayar ve kapıyı sessizce kapatır, o yüzden önce
+`list_edge_functions` ile mevcut değeri oku, AYNI değeri açıkça geçir
+(kök `CLAUDE.md` → "Edge Function deploy").
 
 Yani "sıra sende" bildiriminin bir sunucu olayı hiç yok; hamle
 gönderiminde tetiklenen yeni bir kanca gerekiyor.

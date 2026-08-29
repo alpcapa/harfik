@@ -906,11 +906,15 @@ class BoardWidget extends StatelessWidget {
                   // puntosu bilerek AYNI kaldı. Web ikizi: Board.tsx
                   // `buildBadge`.
                   //
-                  // ⚠ Punto hâlâ web'den AYRIŞIK: web `clamp(8px,2vw,11px)`
-                  // (dar telefonda 8px, font-mono), burası sabit 11 + tema
-                  // sans'ı. Bu bilinçli olarak AÇIK bırakıldı, ayrı bir
-                  // karar bekliyor — kapatılırsa iki tarafın da aynı değere
-                  // gelmesi gerekir (bkz. docs/decisions/components.md).
+                  // AYRIŞMA KAPANDI (29 Ağustos 2026, kullanıcı kararı:
+                  // "web'i porta getir"): web de artık sabit 11px +
+                  // `font-sans` (Space Grotesk). Öncesinde web
+                  // `clamp(8px,2vw,11px)` + `font-mono` idi ve `2vw` her
+                  // telefonda 8px'e kırpıldığından (11px'e ancak 550px'te
+                  // ulaşıyordu) burası pratikte %19 geniş çiziyordu.
+                  // Küçültme yönü BİLEREK seçilmedi — hamle puanı "Oyna"dan
+                  // önce bakılan tek sayı. Ölçümler ve 320px'te kabul edilen
+                  // taşma: Board.tsx'in aynı bloğundaki yorum.
                   padding:
                       const EdgeInsets.symmetric(horizontal: 3, vertical: 1.5),
                   decoration: BoxDecoration(

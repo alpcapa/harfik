@@ -20,6 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'support/fake_online_gateway.dart';
+import 'support/real_io.dart';
 import 'support/test_fonts.dart';
 import 'support/test_view.dart';
 
@@ -105,24 +106,6 @@ Map<String, Object?> stateJson(GameState s) => {
       'bag_count': s.bag.length,
       'started_at': s.startedAt,
     };
-
-/// Gerçek sqflite yazmalarına GERÇEK zaman payı tanır. Sahte zamanda
-/// (`pumpAndSettle`) yazma ilerlemediğinden sqflite'ın ~10 saniyelik
-/// kilit-uyarı `Timer`'ı iptal edilmeden kalır ve widget ağacı sökülünce
-/// "A Timer is still pending" ile test düşer.
-///
-/// 13 Ağustos 2026: CI'da (#111) bu grubun İKİ testi de düştü ve yığın izi
-/// modal açılışındaki `_markChatReadTo`'yu DEĞİL, EKRAN AÇILIŞINDAKİ
-/// `_loadChat` → `_seedInitialUnread` → `ChatReadStore.markRead` yazmasını
-/// gösterdi — yani mevcut pay yalnızca testin SONUNDA tanınıyordu, oysa bu
-/// yazma `pumpScreen` sırasında başlıyor. Pay artık HER İKİ yazma noktasının
-/// ardından tanınıyor. Aynı sınıf: Parça 11 (bu dosya), Parça 13 (50→200ms),
-/// Parça 64 (`setup_cloud_test.dart`'ın `drainRealIo`'su).
-Future<void> drainRealIo(WidgetTester tester) async {
-  await tester.runAsync(
-      () => Future<void>.delayed(const Duration(milliseconds: 200)));
-  await tester.pump();
-}
 
 int _dbSeq = 0;
 

@@ -464,21 +464,38 @@ export function Board({
     const [r, c] = badge;
     return (
       <div
-        className="pointer-events-none absolute z-20 flex items-center justify-center rounded-full font-mono font-bold text-white leading-none whitespace-nowrap"
+        className="pointer-events-none absolute z-20 flex items-center justify-center rounded-full font-sans font-bold text-white leading-none whitespace-nowrap"
         style={{
           top: `${(r / SIZE) * 100}%`,
           left: `${(c / SIZE) * 100}%`,
           transform: 'translate(-35%, -35%)',
           background: color,
-          fontSize: 'clamp(8px,2vw,11px)',
-          // Dolgu 3/6 → 1.5/3 (29 Ağustos 2026, test kullanıcıları bildirdi:
-          // rozet tahtadaki harfleri kapatıyor). ÖLÇÜLDÜ (384px genişlik,
-          // hücre 25.2px, gerçek Board çıktısı + Chromium): rozet 30.7px =
-          // 1.22 HÜCRE idi, yani kelimenin ilk taşının üstüne taşıyordu;
-          // 1.5/3 ile 24.7px = 0.98 hücre, tek hücrenin içinde kalıyor.
-          // Rakamın PUNTOSU bilerek değişmedi (kullanıcı kararı) — hamle
-          // puanı "Oyna"dan önce bakılan tek sayı, küçültmek istenmedi.
-          // Port ikizi: mobile/.../board_widget.dart `_moveBadge`.
+          // Punto SABİT 11 + `font-sans` (29 Ağustos 2026, kullanıcı kararı:
+          // "web'i porta getir"). Önceden `clamp(8px,2vw,11px)` + `font-mono`
+          // idi ve port sabit 11 + tema sans'ı çizdiğinden iki taraf dar
+          // telefonda ayrışıyordu (port %19 geniş) — şikayetin asıl kaynağı
+          // buydu. Ayrışma PORTU küçülterek değil WEBİ sabitleyerek kapandı:
+          // hamle puanı "Oyna"dan önce bakılan tek sayı, küçültmek istenmedi
+          // (aynı gerekçeyle bir tur önce portun puntosuna da dokunulmamıştı).
+          // ÖLÇÜLDÜ (gerçek oyun + Chromium, taslak taş konup rozetin metni
+          // değiştirilerek; "hücre" = tahta genişliği / 13):
+          //   384px (yaygın telefon, hücre 27.7px)
+          //     "+35"  ÖNCE 20.7px (clamp 8px'e kırpılıyor) = 0.75 hücre
+          //            SONRA 26.1px = 0.94 hücre
+          //   320px (EN DAR gerçek yüzey, hücre 22.8px)
+          //     "+35"  ÖNCE 20.7px = 0.91 → SONRA 26.1px = 1.15 hücre
+          // Yani 320px'te iki haneli bir puan tek hücreyi AŞIYOR. Bilerek
+          // kabul edildi: port zaten sabit 11 çizdiğinden 320px'lik bir
+          // telefonda AYNI taşmayı yaşıyor — bu değişiklik web'i portun
+          // davranışına getiriyor, yeni bir sorun üretmiyor. Taşma bir gün
+          // şikayet konusu olursa çözüm İKİ tarafta birden uygulanmalı.
+          // clamp `2vw`si her telefonda 8px'e kırpıldığından (11px'e ancak
+          // 550px'te ulaşıyordu) ayrışma pratikte sabit %19'du.
+          // Dolgu 3/6 → 1.5/3 düzeltmesi bir tur önce geldi (portta 384px'te
+          // 30.7px = 1.22 hücre → 24.7px = 0.98 hücre).
+          // Port ikizi: mobile/.../board_widget.dart `_moveBadge` — biri
+          // değişirse öteki de AYNI PR'da.
+          fontSize: '11px',
           padding: '1.5px 3px',
           boxShadow: '0 2px 5px rgba(0,0,0,0.25)',
         }}

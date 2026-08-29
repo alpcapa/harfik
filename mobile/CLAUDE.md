@@ -108,6 +108,15 @@ sha'sını gösteriyordu. Ama balon o an yalnızca bir PR dalındaydı ve
 github.io **yalnızca `main`'e push'ta** yayınlanıyor — yani sha "güncel"
 olduğu hâlde özellik içinde değildi.
 
+⚠ **ÜÇÜNCÜ tuzak — Play kapalı testinde "Published" ≠ testçinin
+telefonunda (29 Ağustos 2026, iki kez zaman kaybettirdi):** Console sürümü
+yayınlanmış gösterirken cihazdaki paket saatlerce bir öncekiydi. Yani
+yukarıdaki iki tuzağın (bayat derleme · yanlış dal) yanına bir üçüncüsü
+geliyor ve üçünün de tek enstrümanı aynı: **önce `Derleme <sha>` satırını
+oku.** Ayrıntı, `versionCode` ↔ koşu numarası eşlemesi ve ne yapılacağı:
+`mobile/docs/build-and-distribution-log.md` → "Kapalı test: Published ≠
+testçinin telefonunda".
+
 Derleme kimliği *"bayat bir derlemeye mi bakıyorum?"* sorusunu cevaplar;
 *"şu özellik bunun içinde mi?"* sorusunu CEVAPLAMAZ. Henüz merge edilmemiş
 bir değişiklik için sha eşleşmesi hiçbir şey kanıtlamaz. Doğru soru şu:
@@ -689,6 +698,13 @@ mobile/
                              # yalnızca galeri) — enjekte edilebilir PickAvatarFn
     android/ ios/            # flutter create çıktısı + elle değişiklikler (aşağı bkz.)
     test/                    # util, controller (golden replay!), widget duman testleri
+      support/real_io.dart   # `drainRealIo` — GERÇEK sqflite/prefs I/O'suna
+                             # gerçek zaman payı tanır. Gerçek depoyla çizen
+                             # HER ekran testi bunu kullanmak ZORUNDA, yoksa
+                             # sqflite'ın kilit-uyarı Timer'ı sökülmede
+                             # "A Timer is still pending" ile düşer. Kendi
+                             # kopyanı yazma — üç kopya tam bu yüzden tek
+                             # kaynağa indi (Parça 168)
   kelimeki_core/             # saf Dart motor paketi (Flutter bağımlılığı YOK)
     pubspec.yaml             # SIFIR bağımlılık (bilinçli — offline pub get)
     lib/kelimeki_core.dart   # tek barrel export = genel API

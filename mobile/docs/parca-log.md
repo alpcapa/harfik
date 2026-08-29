@@ -20,6 +20,68 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 169 — hamle rozetinin punto ayrışması kapandı: WEB porta
+     geldi (29 Ağustos 2026, kullanıcı kararı; web + port aynı PR):**
+     - **Karar yönü önemliydi.** Parça 167'de kullanıcı puntoyu KÜÇÜLTEN
+       seçeneği zaten reddetmişti ("hamle puanı 'Oyna'ya basmadan önce
+       bakılan tek sayı"), yani ayrışmayı portu web'e çekerek kapatmak o
+       kararı geri alırdı. Bu yüzden yön tersine seçildi: `Board.tsx`
+       `clamp(8px,2vw,11px)` + `font-mono` → **sabit `11px` + `font-sans`**
+       (Space Grotesk = portun tema sans'ı). Port DEĞİŞMEDİ.
+     - **Ayrışma pratikte SABİT %19'du, akışkan değil:** clamp'in `2vw`si
+       ancak 550px'te 11px'e ulaşıyor, yani her telefonda 8px'e kırpılıyordu.
+       "Akışkan" tarafın hiç akmadığı bu tür değerler Parça 24'ün sınıfı.
+     - **ÖLÇÜLDÜ** (gerçek oyun + Chromium, taslak taş konup rozetin metni
+       değiştirilerek; hücre = tahta/13). `"+35"` ile:
+       384px'te (hücre 27,7px) `20,7px = 0,75 hücre` → **`26,1px = 0,94`**;
+       320px'te (hücre 22,8px) `20,7 = 0,91` → **`26,1 = 1,15`**.
+     - ⚠ **320px'te iki haneli puan tek hücreyi AŞIYOR ve bu bilerek kabul
+       edildi:** port zaten sabit 11 çizdiğinden 320px'lik bir telefonda AYNI
+       taşmayı bugün de yaşıyor — değişiklik web'i portun davranışına
+       getiriyor, yeni bir sorun üretmiyor. Şikayet gelirse çözüm İKİ tarafta
+       birden uygulanmalı (tek taraflı bir düzeltme ayrışmayı geri getirir).
+     - Web `npm run lint` + `npm run build` yeşil; motor dosyası değişmediği
+       için golden vector üretimi gerekmedi. Port tarafında yalnızca yorum
+       değişti (davranış aynı), bu yüzden Dart testleri etkilenmiyor.
+
+   - ✅ **Parça 168 — `drainRealIo` flake'i: bütçe değil DESEN yanlıştı
+     (29 Ağustos 2026, CI'da düştü; yeni dosya
+     `test/support/real_io.dart`):**
+     - **Belirti:** `online_game_chat_test.dart` → *"tanıtımı görmüş
+       kullanıcı bir daha görmez"* CI'da `A Timer is still pending` ile
+       düştü; AYNI anda `main` yeşildi → flake.
+     - **Kök sebep bir zamanlama yarışı DEĞİL, eksik bir `pump()`:** sqflite
+       her işlemde ~10 sn'lik kilit-uyarı `Timer`'ı kurar; widget'ın
+       başlattığı yazma SAHTE zonda olduğundan o timer da sahtedir ve ancak
+       gerçek I/O bitip devamı `pump()`la akıtılınca iptal olur. Yardımcı
+       `runAsync(200ms)` + **TEK** `pump()` idi — oysa I/O'lar ZİNCİRLİ:
+       `_seedInitialUnread` önce `lastReadAt()` OKUR, sonucuna göre
+       `markRead()` YAZAR, yani ikinci I/O ancak birinci `pump()`landıktan
+       SONRA başlıyor. Tek pump zincirin yalnızca ilk halkasını kapatıyordu.
+     - **Düzeltme:** gerçek zaman payı dilimlere bölündü (10 × 50 ms, her
+       dilimden sonra `pump()`) — her tur bir sonraki halkayı başlatabiliyor,
+       toplam bütçe de 200 → 500 ms. Sabit uykuyu BÜYÜTMEK çözüm değildi:
+       yarışı gizler, zinciri kapatmaz.
+     - **Üç kopya tek kaynağa indi.** Aynı yardımcı `online_game_chat_test`,
+       `setup_cloud_test` ve `intro_screen_test`'te ayrı ayrı yazılıydı —
+       yani düzeltmenin üç yerde tekrarlanması gerekirdi. `ghostClick.ts`'in
+       web tarafında yaptığının aynısı: ortak dosya + tek doküman.
+     - ⚠ **Denenmeyen (ve denenmemesi gereken) yol kayda geçsin:** "bitti mi"
+       diye aynı `Database`e `runAsync` içinden bir sorgu sormak daha kesin
+       DURUR ama KİLİTLENİR — sqflite işlemleri seri işler, sorgu sahte
+       zondaki bekleyen yazmayı bekler, o yazmanın devamı ise `pump()`
+       ister; `runAsync` sırasında sahte zon pompalanmadığından ikisi
+       birbirini bekler. Gerekçe yardımcının başlığında.
+     - **Bu oturumda Dart SDK YOK** — `flutter analyze`/`flutter test`
+       koşulamadı, doğrulama CI'ın "Uygulama analiz + testleri" işinde.
+     - Aynı PR'da doküman borcu da kapandı: `ROADMAP.md`'deki bayat
+       *"Bekleyen deploy"* uyarısı silindi (canlıdan ölçüldü:
+       `notify-deadline-warnings` **v11**, *"takdirde"* doğru, push kanalı
+       içinde, `verify_jwt: false`) ve Play kapalı testinin *"Published ≠
+       testçinin telefonunda"* tuzağı yazıldı
+       (`mobile/docs/build-and-distribution-log.md` + `mobile/CLAUDE.md`
+       → "Deploy Doğrulaması"na üçüncü tuzak olarak).
+
    - ✅ **Parça 167 — hamle puanı rozeti taşları kapatıyordu (29 Ağustos
      2026, kapalı testteki kullanıcılar bildirdi; web + port aynı PR):**
      - **Ölçüm** (384px genişlik, hücre 25.2px; gerçek `Board` çıktısı
@@ -31,17 +93,55 @@
        AYNI tahta üzerinde yan yana çizilip karşılaştırıldı; puntoyu
        küçülten seçenek (web paritesi + dar dolgu → 0.89 hücre) reddedildi —
        hamle puanı "Oyna"ya basmadan önce bakılan tek sayı.
-     - **⚠ AÇIK KALAN AYRIŞMA:** rozetin puntosu/fontu web'de
-       `clamp(8px,2vw,11px)` + mono, portta sabit `11` + tema sans'ı; yani
-       port dar telefonda %19 daha geniş çiziyordu ve şikayetin asıl kaynağı
-       buydu. **Parça 24'teki "web'de fluid olan değer portta sabit kalmış"
-       sınıfının aynısı.** Bu PR'da KAPATILMADI — kod yorumuna ve
-       `docs/decisions/components.md`'ye yazıldı, ayrı bir karar bekliyor.
+     - **⚠ AÇIK KALAN AYRIŞMA — bir tur sonra kapandı (Parça 169):** rozetin
+       puntosu/fontu web'de `clamp(8px,2vw,11px)` + mono, portta sabit `11` +
+       tema sans'ıydı; yani port dar telefonda %19 daha geniş çiziyordu ve
+       şikayetin asıl kaynağı buydu. **Parça 24'teki "web'de fluid olan değer
+       portta sabit kalmış" sınıfının aynısı.** Bu PR'da KAPATILMAMIŞTI.
      - `board_render_test.dart` rozetin yalnızca METNİNİ kontrol ediyor
        (dolgusunu değil), bu yüzden düşmedi.
-     - ℹ️ **Parça 166 numarası BİLEREK boş:** yaş/cinsiyet satırı işi
-       (#369) `main`'e girdi, sonra zamanlama gereği geri alındı (#370);
-       geri getirildiğinde kendi 166 kaydıyla dönecek.
+
+   - ✅ **Parça 166 — yaş/cinsiyet satırı BAŞKASININ kartında da (29
+     Ağustos 2026, kullanıcı isteği; web + port aynı PR):** *"Yaş ve
+     cinsiyet tüm kişi skor kartlarında ismin altında olmalı. Kendi
+     profilimde görmemin hiç bir mantığı ve faydası yok."*
+     - **Neden eksikti:** `Y:59/C:E` verisi `profiles`ten geliyor ve o
+       tablonun SELECT RLS'i yalnızca KENDİ satırını okutuyor — başkasının
+       kartını besleyen hiçbir kaynak (k-lig view'ı, `list_friends`,
+       `game_likers`, çevrimiçi oyuncular, `admin_list_members`) bu iki
+       alanı taşımıyordu. Yani eksik bir `if` değil, eksik bir VERİ YOLU.
+     - **Sunucu:** `get_profile_age_gender` (security definer,
+       `profile_age_gender_rpc` migration'ı, canlıya uygulandı). **Ham
+       `birth_date` DEĞİL türetilmiş `age` dönüyor** — kart zaten yalnızca
+       yaşı gösteriyor; `security definer` bir fonksiyonda "satırı olduğu
+       gibi döndür" refleksi bilinçli kırıldı. Yetki `anon`a da verildi
+       (kart misafire açık).
+     - **Port:** `StatsGateway.profileAgeGender` + `StatsRepo.ageGenderLabel`
+       (hata/veri yok → boş dizge, satır hiç çizilmez — web'in aynı kuralı);
+       `PlayerScoreCardModal`'da ismin `Row`'u `Column`'a alındı, yaş satırı
+       arkadaşlık simgesinin Row'unun DIŞINDA (içine konsaydı ikon hizası
+       bozulurdu). `calculateAge`/`formatAgeGender` iki tarafta da ortak
+       dosyaya çıkarıldı (`profileFields.ts` ↔ `profile_fields.dart`).
+     - **⚠ Yaşın İKİ tanımı var:** kendi kartında istemci, başkasınınkinde
+       sunucu hesaplıyor. İkisi de "tamamlanmış yıl"; ayrışırlarsa aynı
+       oyuncu iki kartta farklı yaşta görünür — üç yerdeki (TS/Dart/SQL)
+       yorumlar birbirine atıf yapıyor.
+     - **Gateway'e metot eklemek `implements` eden BEŞ test sahtesini
+       birden bozar** (`friends_test`, `score_card_test` ×2,
+       `league_rewards_test`, `account_button_test`) — hepsi aynı PR'da
+       tamamlandı. Regresyon: `score_card_test.dart`'a iki test (satır
+       başkasının kartında çizilir; veri yoksa HİÇ çizilmez).
+     - **Bu oturumda Dart SDK YOK** — `flutter analyze`/`dart test`
+       koşulamadı, port derlemesi CI'da doğrulanacak. Web tarafı
+       `npm run lint` + `npm run build` ile yeşil.
+     - Aynı PR'da: `docs/decisions/components-score.md`, `TESTING.md`,
+       `mobile/TESTING.md`.
+     - **Yayın sırası yüzünden bir tur geri alındı:** #369 zamanından önce
+       `main`'e girmişti, #370 ile revert edildi ve Faz 1 paketiyle birlikte
+       (bu PR, a6a1776'nın revert'ü) geri geldi. Değişiklikte kusur yoktu.
+       `get_profile_age_gender` bu süre boyunca Supabase'de CANLI kaldı —
+       migration dosyaları uygulanmış olanın aynası olmak zorunda, o yüzden
+       #370 migration'a dokunmamıştı; dönüşte sunucuda yapılacak iş YOKTU.
 
    - ✅ **Parça 165 — bağlantı geri gelince avatar kendini toparlamıyordu
      (29 Ağustos 2026, cihazda bildirildi):** *"app açıkken internet gelince
