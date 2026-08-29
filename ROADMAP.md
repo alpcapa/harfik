@@ -44,6 +44,117 @@ Aşağıdaki ikisinin kaydı kök `CLAUDE.md` → Kaynak Hunisi bölümünde:
 
 ---
 
+## Faz planı — kalan işlerin YAYIN sırası (29 Ağustos 2026)
+
+Kullanıcı isteği: *"Tüm işleri fazlandırıp plan yapalım. Uygun gördüğün
+maddeleri ona göre birleştirip sırayla yayına alalım."*
+
+Bu bölüm aşağıdaki maddelerin YERİNE geçmez — onların **hangi paketle
+çıkacağını** söyler. Madde 0 (FAZ B) omurga olmaya devam ediyor.
+
+**Fazları belirleyen tek kısıt, bir tercih değil bir ölçüm:**
+
+| Değişiklik türü | Bedeli | Ne zaman canlıda |
+|---|---|---|
+| İstemci (Flutter) | paket + Play incelemesi + cihaz turu | sürüm turu |
+| Sunucu (migration / Edge Function) | yok | **anında**, merge'den bağımsız |
+| Web (`src/`) | yok | `main`'e merge → Vercel |
+
+Yani maddeleri "konu"ya göre değil **paketlenebilirliğe** göre grupladım.
+Sonuç: kalan HER ŞEY **iki sürüm turuna** sığıyor — bildirim işinin yarısı
+sunucu tarafında olduğu için sürüm beklemiyor.
+
+### Faz 1 — bekleyen paket · **1 sürüm** · hepsi hazır ya da dakikalık
+
+1. **Hamle rozeti dolgusu** — dalda hazır. Rozet dar telefonda 1.22 hücre
+   kaplayıp harfleri örtüyordu; dolgu `3/6` → `1.5/3` (0.98 hücre). Kaydı:
+   `docs/decisions/components.md` → `Board` maddesi.
+2. **Yaş/cinsiyet satırı** — `main`'de revert edildi (#370), geri getirilecek.
+   `get_profile_age_gender` RPC'si Supabase'de HÂLÂ CANLI ve migration
+   dosyası `main`'de duruyor, yani sunucuda yapılacak iş YOK.
+3. **Flaky test:** `mobile/app/test/online_game_chat_test.dart` →
+   "tanıtımı görmüş kullanıcı bir daha görmez" testi `Pending timers` ile
+   düşüyor (`fake_async` + sqflite `ChatReadStore.markRead`). Bir kez PR'da
+   düştü, `main`'de aynı anda yeşildi → flake; sızdırılan timer
+   sağlamlaştırılmalı.
+4. **Doküman borcu:** (a) aşağıdaki **#13**'teki *"⚠ Bekleyen deploy —
+   'taktirde' düzeltmesi canlıya yayılmadı"* uyarısı BAYAT (canlıdan
+   okundu: `notify-deadline-warnings` v11'de metin doğru ve push kanalı
+   zaten içinde), silinmeli; (b) `mobile/docs/` altına kısa bir not —
+   *"Play kapalı test: **Published ≠ testçide**; sürümü uygulama içindeki
+   `Derleme <sha>` satırından doğrula"* (29 Ağustos'ta iki kez zaman
+   kaybettirdi: yayınlanmış sürüm cihaza saatler sonra indi).
+
+⚠ **Açık karar, Faz 1'e girer mi:** rozetin puntosu/fontu web'de
+`clamp(8px,2vw,11px)` + mono, portta sabit `11` + tema sans'ı — port dar
+telefonda %19 geniş çiziyor ve şikayetin asıl kaynağı buydu. Dolgu
+düzeltmesi belirtiyi çözdü, ayrışmayı değil. Aynı dosyaya dokunduğu için
+karar verilirse ayrı bir tur harcamadan Faz 1'e girmeli.
+
+### Faz 2 — davet bildirimleri · **SÜRÜM GEREKTİRMEZ** · sunucu
+
+`notify-game-invite`, `notify-friend-request`, `notify-friend-request-reminders`
+→ `_shared/push.ts` kanalını ekle. **Sahadaki paket (versionCode 426) token'ı
+zaten kaydediyor ve `kelimeki_oyun` kanalı zaten var**, yani bu üç fonksiyon
+deploy edildiği anda mevcut kullanıcılara ulaşır.
+
+`notify-deadline-warnings` BİREBİR örnek: push e-postadan SONRA, ayrı
+`try/catch` içinde (push e-posta yolunu ASLA düşüremez),
+`push_notifications_enabled` kontrolü, bayat token silme.
+
+### Faz 3 — deep link + bildirime dokunma + Analytics · **1 sürüm** · en büyük
+
+Üçü de istemci; ayrı sürümlere bölmek iki tur harcar.
+
+- **#1 `kelimeki://` deep link kanalı** (mağaza blokeri).
+- **Bildirime dokununca doğru yere gitme.** Ölçüldü: `FirebaseMessaging`
+  şu an YALNIZCA `push_gateways.dart`'ta (token kaydı) kullanılıyor;
+  `onMessageOpenedApp`/`getInitialMessage` HİÇ YOK. Sunucu `data.link`'i
+  **zaten gönderiyor** (`_shared/push.ts`), istemci okumuyor. Yani bu iş
+  #1 ile aynı yeri elden geçiriyor — birlikte yapılmalı.
+- **Firebase Analytics.** Ölçüldü: `firebase_analytics ^12.5.0`
+  `pubspec.yaml`'da DURUYOR ama `lib/` altında **tek satır kullanımı yok**.
+  #13'teki ilk altı olay. Play Data safety formu bu iş için **zaten
+  güncellenmiş** (29 Ağustos) — o alt madde kapalı.
+
+### Faz 4 — "sıra sende" · **SÜRÜM GEREKTİRMEZ** · sunucu
+
+#13'ün en pahalı kalemi: hamle gönderiminde tetiklenen yeni kanca (bugün
+böyle bir sunucu olayı HİÇ yok). İki tuzak orada yazılı: hamleyi YAPANA
+gönderme, ve hızlı gidip gelen oyunda spam olmaması için
+`deadline_warning_sent_at` desenine karşılık bir bastırma.
+
+**Neden Faz 3'ten SONRA:** bildirime dokunma yönlendirmesi olmadan "sıra
+sende" bildirimi kullanıcıyı oyuna götüremez, yani en çok hissedilen
+bildirim yarım değer verir.
+
+### Sonra / bloke
+
+**#8** (FAZ A1 Bölüm 6 — Paylaşma, iPad popover), **#11** (hata panelinde
+platform filtresi), **#12** (sürüm dağılımı kapsamı — izleme).
+**iOS/APNs** Apple Developer üyeliğine takılı; tasarım bilerek FCM üzerinden
+yazıldığı için iOS günü gelince kalan iş "APNs anahtarını Firebase'e yükle +
+Push capability ekle" — ikinci bir gönderici YAZILMAYACAK.
+
+### #13'ün ölçülen durumu (29 Ağustos 2026) — yarısı BİTTİ
+
+Aşağıdaki #13 sıfırdan bir iş gibi okunuyor; artık değil. Canlıdan ve
+koddan ölçülen hâl:
+
+| Parça | Durum |
+|---|---|
+| Altyapı (`push_tokens`, `register_push_token`, hesap silmede temizlik) | ✅ |
+| `POST_NOTIFICATIONS` izni · `kelimeki_oyun` kanalı (IMPORTANCE_HIGH) | ✅ |
+| `push_notifications_enabled` tercihi (e-postadan bağımsız) | ✅ |
+| **Teslim uyarısı push'u** | ✅ canlıda (`notify-deadline-warnings` v11) |
+| Oyun daveti · arkadaş daveti push kanalı | ⬜ **Faz 2** |
+| Bildirime dokununca yönlendirme | ⬜ **Faz 3** |
+| Firebase Analytics olayları | ⬜ **Faz 3** |
+| "Sıra sende" olayı | ⬜ **Faz 4** |
+| Play Data safety formu | ✅ (29 Ağustos) |
+
+---
+
 ## Sürüm sıralaması, force update ve davetliler (27 Ağustos 2026)
 
 Bu üçü bir "madde" değil — biri bir SIRALAMA kuralı, biri ERTELENMİŞ bir
