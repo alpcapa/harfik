@@ -707,6 +707,17 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       mavi "k-lig" yazısının yanında küçük dairesel bir "?" rozeti
       olmalı; dokununca (ya da rozetin kendisine dokununca) k-lig
       sıralaması açılmalı.
+- [ ] **Yaş/cinsiyet BAŞKASININ kartında (29 Ağustos 2026).** k-lig'de,
+      profilinde doğum tarihi ve/veya cinsiyet GİRMİŞ bir başkasının
+      satırına dokun: kartta ismin hemen ALTINDA `Y:59/C:E` biçiminde bir
+      satır olmalı (mono, gri, küçük) — kendi Skor Kartı'ndaki satırın
+      birebir aynısı. **Çapraz kontrol:** aynı kişi için web'de görünen
+      yaş ile buradaki yaş AYNI olmalı (biri istemcide, öteki sunucuda
+      hesaplanıyor). Arkadaşlık simgesi (✓ / +) yaş satırıyla AYNI
+      hizaya kayMAmalı, isim satırında kalmalı. Doğum tarihi de cinsiyeti
+      de girmemiş bir oyuncunun kartında satır HİÇ çıkmamalı (boş bir
+      satır yer kaplamamalı). Çevrimdışıyken de kart açılabilmeli, satır
+      yalnızca çizilmemeli — hata/uyarı ÇIKMAMALI.
 - [ ] **OHP kolonu (12 Ağustos 2026, Parça 63).** k-lig tablosunda PUAN'ın
       SOLUNDA bir **OHP** kolonu olmalı: iki basamaklı (`12.78`), **düz
       gri ve kalın DEĞİL** (Puan mavi/kalın kalır), hiç hamle verisi
