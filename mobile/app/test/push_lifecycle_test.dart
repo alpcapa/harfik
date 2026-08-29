@@ -32,6 +32,7 @@ import 'package:kelimeki/src/ui/app.dart';
 import 'package:kelimeki/src/util/online_status.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show User;
+import 'package:kelimeki/src/ui/auth/reset_password_modal.dart';
 
 class FakeMessaging implements PushMessaging {
   PushPermission izin;
@@ -79,6 +80,12 @@ class TestAuth extends AuthService {
     _u = u;
     notifyListeners();
   }
+
+  /// `passwordRecovery` kapısını testte açmak için (gerçek akış GoTrue
+  /// olayından geliyor, testte taklit edilemiyor).
+  bool passwordRecoveryTest = false;
+  @override
+  bool get passwordRecovery => passwordRecoveryTest;
 
   /// GERÇEK çıkış adımının anını işaretler (sıra testi).
   ///
@@ -216,6 +223,32 @@ void main() {
     expect(store.yazilanlar, ['tok-1/u2'],
         reason: 'hesap değişiminde token devrolmadı — eski hesabın '
             'bildirimleri yeni kullanıcının telefonuna düşer');
+  });
+
+  testWidgets('şifre kurtarma ekranının ARKASINDA logo var (boş beyaz DEĞİL)',
+      (tester) async {
+    // 29 Ağustos 2026, kullanıcı cihazda bildirdi: *"Şifre değiştirme
+    // modalının arkası boş ekran. En azından kelimeki logosu görünmeli."*
+    // Bu ekrana kullanıcı bir E-POSTA LİNKİNDEN düşüyor; beyaz bir sayfada
+    // şifre isteyen bir kutu kimlik avından ayırt edilemez. Web'de de aynı
+    // eksikti ve aynı PR'da düzeltildi (`App.tsx`, passwordRecovery dalı).
+    final s = kur();
+    (s.auth as TestAuth).passwordRecoveryTest = true;
+    await ac(tester, s);
+    await tester.pumpAndSettle();
+
+    // ⚠ `find.byType(LogoMark)` KULLANMA: arkadaki Setup ekranı da bir logo
+    // çiziyor, yani bu logo hiç olmasa bile eşleşir — ilk sürüm tam bu
+    // yüzden negatif eşini geçti (29 Ağustos 2026, ölçüldü).
+    expect(find.byKey(const ValueKey('recovery-logo')), findsOneWidget,
+        reason: 'Kurtarma ekranının arkasında logo yok — kullanıcı, linke '
+            'bastığı yerin Kelimeki olduğunu doğrulayacak hiçbir şey '
+            'göremiyor.');
+    // Logo modalın ÜSTÜNDE durmalı, altında değil.
+    final logoY = tester.getCenter(find.byKey(const ValueKey('recovery-logo'))).dy;
+    final modalY = tester.getCenter(find.byType(ResetPasswordModal)).dy;
+    expect(logoY, lessThan(modalY),
+        reason: 'Logo modalın altına düşmüş — ekranın üst yarısında olmalı');
   });
 
   testWidgets('push YOKKEN (web/Firebase yok) kapı sorunsuz açılır',

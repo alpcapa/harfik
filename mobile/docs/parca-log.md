@@ -20,6 +20,31 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 163 — şifre kurtarma ekranının arkası bomboştu (29 Ağustos
+     2026, cihaz testi 4.4 sırasında kullanıcı bildirdi):** *"Şifre değiştirme
+     modalının arkası boş ekran. En azından kelimeki logosu görünmeli."*
+     - **Önce web okundu** ve orada da AYNI olduğu görüldü (`App.tsx:1178`,
+       `passwordRecovery` dalı: yalnızca ortalanmış modal). Yani bu bir port
+       farkı DEĞİL, iki tarafın ORTAK eksiği — düzeltme aynı PR'da ikisine de.
+     - **Gerekçe kozmetikten fazlası:** bu ekrana kullanıcı bir E-POSTA
+       LİNKİNDEN düşüyor, yani uygulamayı henüz hiç görmemiş olabilir. Beyaz
+       bir sayfada şifre isteyen bir kutu, kimlik avı ekranından ayırt
+       edilemez. Logo, "doğru yerdesin"in en ucuz kanıtı. Boyut Setup'la aynı
+       (52) — farklı bir ölçü iki ekranı yabancılaştırırdı.
+     - ⚠ **NEGATİF EŞ İKİ KEZ SESSİZCE GEÇTİ; testin kendisi iki ayrı
+       sebepten anlamsızdı ve ikisi de ölçülerek bulundu:**
+       1. `find.byType(LogoMark)` — arkadaki Setup ekranı da bir logo
+          çiziyor, yani logo hiç olmasa bile eşleşiyordu.
+       2. Anahtar `Positioned.fill`e kondu — ölçülen kutu TÜM EKRAN olduğu
+          için konum kontrolü her zaman ekran merkezini görüyordu (logo 300,
+          modal 300).
+       Anahtar `LogoMark`ın kendisine taşındı; şimdi logo kaldırılınca test
+       GERÇEKTEN düşüyor. Ders, Parça 162'nin sıra testiyle aynı: **bir
+       finder'ın eşleşmesi, ARADIĞIN ŞEYİ bulduğu anlamına gelmiyor** —
+       özellikle aynı türden widget ekranda birden fazla varken.
+     - **Doğrulama:** `npm run lint` (tsc) temiz, `dart analyze` temiz,
+       **609 test** yeşil.
+
    - ✅ **Parça 162 — push token'ı hesap değişiminde DEVROLMUYOR, çıkışta
      SİLİNMİYOR: iki ayrı RLS/sıra hatası (29 Ağustos 2026, gerçek cihaz
      testi adım 2.4-2.5'te bulundu):** Aynı telefonda Alp Çapa çıkıp T2

@@ -16,6 +16,7 @@ import 'tokens.dart';
 import 'push/push_permission_flow.dart';
 import 'update_required_screen.dart';
 import 'text_scale.dart';
+import 'game/logo_mark.dart';
 
 class KelimekiApp extends StatelessWidget {
   final AppServices services;
@@ -75,6 +76,37 @@ class KelimekiApp extends StatelessWidget {
               children: [
                 app,
                 const ModalBarrier(color: Colors.white, dismissible: false),
+                // Bariyerin üstünde LOGO — arka plan bomboş DEĞİL (29 Ağustos
+                // 2026, kullanıcı cihazda bildirdi: *"Şifre değiştirme
+                // modalının arkası boş ekran. En azından kelimeki logosu
+                // görünmeli."*). Web'de de böyleydi ve orada da düzeltildi
+                // (`App.tsx`, `passwordRecovery` dalı) — bu bir port farkı
+                // değildi, iki tarafın ORTAK eksiğiydi.
+                //
+                // Gerekçe kozmetikten fazlası: bu ekrana kullanıcı bir
+                // E-POSTA LİNKİNDEN düşüyor, yani uygulamayı henüz hiç
+                // görmemiş olabilir. Beyaz bir sayfada şifre isteyen bir
+                // kutu, kimlik avı ekranından ayırt edilemez.
+                //
+                // Logo modalın ARKASINDA, üst tarafta: `Overlay` bunun
+                // üstüne biniyor ve modal zaten dikeyde ortalı olduğundan
+                // çakışma yok. Boyut Setup'la AYNI (52).
+                const Positioned.fill(
+                  child: SafeArea(
+                    child: Align(
+                      alignment: Alignment(0, -0.62),
+                      // ⚠ Anahtar TESTİN İHTİYACI ve LOGONUN KENDİSİNDE
+                      // olmalı: (a) arkadaki Setup ekranı da bir `LogoMark`
+                      // çiziyor, yani `find.byType(LogoMark)` bu logo hiç
+                      // olmasa BİLE eşleşir; (b) anahtar `Positioned.fill`e
+                      // konursa ölçülen kutu TÜM EKRAN olur ve konum testi
+                      // her zaman ekran merkezini görür. İkisi de ölçüldü,
+                      // ikisi de testi sessizce anlamsız kılıyordu.
+                      child: LogoMark(
+                          key: ValueKey('recovery-logo'), height: 52),
+                    ),
+                  ),
+                ),
                 Overlay(
                   initialEntries: [
                     OverlayEntry(

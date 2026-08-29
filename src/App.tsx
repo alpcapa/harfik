@@ -19,6 +19,7 @@ import { MoveHistoryModal } from './components/MoveHistoryModal';
 import { WildcardModal } from './components/WildcardModal';
 import { HelpModal } from './components/HelpModal';
 import { FeedbackModal } from './components/FeedbackModal';
+import { LogoMark } from './components/LogoMark';
 import { ResetPasswordModal } from './components/ResetPasswordModal';
 import { createInitialState, gameReducer, isFirstMove } from './game/gameReducer';
 import type { PlayerSetup } from './game/gameReducer';
@@ -1176,8 +1177,18 @@ export default function App() {
   // Sıfırlama e-postasındaki bağlantı tıklanıp bu sekmede recovery oturumu
   // açıldıysa, yeni şifre belirlenene kadar kurulum/oyun ekranlarının önüne geçer.
   if (passwordRecovery) {
+    // Modalın ARKASI logo taşır — bomboş DEĞİL (29 Ağustos 2026, kullanıcı
+    // cihazda bildirdi: *"Şifre değiştirme modalının arkası boş ekran. En
+    // azından kelimeki logosu görünmeli."*). Bu ekrana kullanıcı bir
+    // E-POSTA LİNKİNDEN düşüyor, yani uygulamayı henüz görmemiş olabilir:
+    // beyaz bir sayfa üstünde şifre isteyen bir kutu, kimlik avı ekranından
+    // ayırt edilemez. Logo, "doğru yerdesin"in en ucuz kanıtı.
+    //
+    // Boyut Setup'ın logosuyla AYNI (52) — bu ekran onun kardeşi, farklı bir
+    // ölçü iki ekranı birbirine yabancılaştırırdı.
     return (
-      <div className="min-h-[100dvh] w-full flex items-center justify-center">
+      <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center gap-6">
+        <LogoMark height={52} />
         <ResetPasswordModal onDone={clearPasswordRecovery} />
       </div>
     );
