@@ -448,7 +448,11 @@ class BoardWidget extends StatelessWidget {
   /// asimetrik dikey dolgu taşısalardı ~3 px kayarlardı.
 
   Widget _footer() {
-    return Padding(
+    return Container(
+      // `Padding` DEĞİL `Container`: dolgunun yanında GENİŞLİĞİ de zorluyor
+      // (aşağıdaki `Wrap` notu) — ikisini tek widget'ta yapabildiğinden
+      // fazladan bir sarmalayıcı katmanı gerekmiyor.
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       // `Row` DEĞİL `Wrap` (28 Ağustos 2026): iki grup da `shrink-0`
       // olduğundan (web'de de öyle) `Row` sığmadığı anda taşar. Sistem yazı
@@ -456,11 +460,25 @@ class BoardWidget extends StatelessWidget {
       // sağdan taşma, 2,0'da 150-181 px. Bu, uygulamadaki taşmaların
       // ölçek 1,3'te KALAN TEK noktasıydı (`kMaxTextScale` tavanından sonra).
       //
-      // `Wrap` + `spaceBetween` tek satıra sığdığı sürece `Row`la BİREBİR
-      // aynı davranır (bugünkü görünüm hiç değişmiyor, `tap_target_test`in
-      // golden dikdörtgenleri bunu kilitliyor); sığmadığında sağ grubu alt
-      // satıra indirir. Eşik/ölçek kontrolü YOK — kural genişlikten çıkıyor,
-      // yani dar bir telefonda uzun bir metin için de çalışır.
+      // `Wrap` + `spaceBetween`, genişliği doldurduğu sürece (aşağı bkz.)
+      // tek satırda `Row`la aynı görünür; sığmadığında sağ grubu alt satıra
+      // indirir. Eşik/ölçek kontrolü YOK — kural genişlikten çıkıyor, yani
+      // dar bir telefonda uzun bir metin için de çalışır.
+      //
+      // ⚠ Yukarıdaki `width: double.infinity` ŞART VE 30 Ağustos 2026'ya
+      // kadar YOKTU — bir kullanıcı cihazda bildirdi: *"Hamleler,
+      // Mesajlaşma satırı Android'de ortaya kümelenmiş, iPhone'da (web)
+      // kenarlara yaslı."* Sebep: `Row` (mainAxisSize.max) gelen genişliği
+      // DOLDURUR, `Wrap` ise gevşek kısıt altında içeriğine KÜÇÜLÜR
+      // (`constraints.constrain(...)` doğal genişliği döndürür). Küçülen
+      // kutuda dağıtılacak boşluk kalmadığından `spaceBetween` no-op olur;
+      // üstteki `Column`un varsayılan `crossAxisAlignment: center`'ı da
+      // kümeyi ortaya alır. Yani Row→Wrap dönüşümü tek satırda "birebir
+      // aynı" DEĞİLDİR — ancak genişlik zorlanırsa öyle olur.
+      // ÖLÇÜLDÜ (390 px, gerçek `BoardWidget`): şerit 38,4..351,6 arasına
+      // sıkışıyordu (kenar boşluğu 10 yerine 38,4); düzeltmeden sonra
+      // 10,0..380,0. Regresyon: `test/text_scale_test.dart` → "tahta alt
+      // şeridi ŞERİDİ DOLDURUR".
       child: Wrap(
         alignment: WrapAlignment.spaceBetween,
         crossAxisAlignment: WrapCrossAlignment.center,
@@ -900,8 +918,23 @@ class BoardWidget extends StatelessWidget {
               child: FractionalTranslation(
                 translation: const Offset(-0.35, -0.35),
                 child: Container(
+                  // Dolgu 3/6 → 1.5/3 (29 Ağustos 2026, test kullanıcıları
+                  // bildirdi: rozet harfleri kapatıyor). Ölçüm 384px'de:
+                  // 30.7px = 1.22 hücre → 24.7px = 0.98 hücre. Rakamın
+                  // puntosu bilerek AYNI kaldı. Web ikizi: Board.tsx
+                  // `buildBadge`.
+                  //
+                  // AYRIŞMA KAPANDI (29 Ağustos 2026, kullanıcı kararı:
+                  // "web'i porta getir"): web de artık sabit 11px +
+                  // `font-sans` (Space Grotesk). Öncesinde web
+                  // `clamp(8px,2vw,11px)` + `font-mono` idi ve `2vw` her
+                  // telefonda 8px'e kırpıldığından (11px'e ancak 550px'te
+                  // ulaşıyordu) burası pratikte %19 geniş çiziyordu.
+                  // Küçültme yönü BİLEREK seçilmedi — hamle puanı "Oyna"dan
+                  // önce bakılan tek sayı. Ölçümler ve 320px'te kabul edilen
+                  // taşma: Board.tsx'in aynı bloğundaki yorum.
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      const EdgeInsets.symmetric(horizontal: 3, vertical: 1.5),
                   decoration: BoxDecoration(
                     color: color,
                     borderRadius: BorderRadius.circular(999),

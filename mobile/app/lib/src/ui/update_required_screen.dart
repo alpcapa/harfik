@@ -3,6 +3,15 @@
 // sunucu sözleşmesi kırıldığında ya da eski sürümde ciddi bir hata
 // bulunduğunda yükseltilir, bkz. version_gate.dart).
 //
+// ⚠ **BU EKRAN ARTIK NADİR OLMALI (30 Ağustos 2026).** Günlük "yeni sürüm
+// var" işi Play In-App Update'e geçti (`data/store_update.dart`): uygulama
+// açılışta Play'e soruyor ve gerekiyorsa güncellemeyi kendi içinde
+// yaptırıyor, kimsenin `app_config`'te bir satır yükseltmesi gerekmiyor.
+// Buradaki kapı yalnızca ACİL FREN — eski istemciyi bir sunucu değişikliği
+// kırdığında. Yine de butonu Immediate akışına bağlıyoruz: kapı fırladıysa
+// güncellemek EN ÇOK burada gerekiyor, kullanıcıyı mağazaya yollamak yerine
+// akışı yerinde çalıştırmak bir dokunuş kazandırıyor.
+//
 // ⚠ **MAĞAZA BUTONU EKLENDİ (29 Ağustos 2026).** Bu dosyanın başlığı uzun
 // süre "Mağaza linkleri uygulama yayınlanınca eklenecek" diyordu ve ekran
 // yalnızca metinden ibaretti — yani eşiği yükselttiğimiz an kullanıcı
@@ -13,6 +22,8 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../data/store_update.dart';
 
 /// Play mağaza sayfası. `market://` yüklü Play uygulamasını DOĞRUDAN açar
 /// (tarayıcı sekmesi olmadan); yoksa https'e düşülür — emülatörde ve Play'in
@@ -36,7 +47,28 @@ Future<void> _magazayiAc() async {
 }
 
 class UpdateRequiredScreen extends StatelessWidget {
-  const UpdateRequiredScreen({super.key});
+  /// Play In-App Update dikişi. null ise buton eski davranışını sürdürür
+  /// (mağazayı dışarıda açar) — testler ve Android dışı yüzeyler için.
+  final StoreUpdateGateway? storeUpdate;
+
+  const UpdateRequiredScreen({super.key, this.storeUpdate});
+
+  /// Önce uygulama İÇİNDEKİ akışı dener; Play "güncelleme yok" derse ya da
+  /// akış başlatılamazsa mağazayı dışarıda açar.
+  ///
+  /// **Yedek yolu SİLME:** bu ekranı gören kitle tanım gereği ESKİ sürümde
+  /// ve Play'in In-App Update'i yan yüklenmiş pakette hiç çalışmıyor
+  /// (bkz. `store_update.dart` → sınırlar). Yedek yol olmadan o kullanıcı
+  /// yine çıkışsız kalırdı — bu ekranın 1.0.0'da yaptığı hatanın aynısı.
+  Future<void> _guncelle() async {
+    final gw = storeUpdate;
+    if (gw != null &&
+        await gw.kontrolEt() == StoreUpdateDurumu.hemenGuncellenebilir &&
+        await gw.hemenGuncelle()) {
+      return;
+    }
+    await _magazayiAc();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +94,7 @@ class UpdateRequiredScreen extends StatelessWidget {
               const SizedBox(height: 24),
               FilledButton(
                 key: const ValueKey('update-store-button'),
-                onPressed: _magazayiAc,
+                onPressed: _guncelle,
                 child: const Text('PLAY STORE\'DA AÇ'),
               ),
             ],

@@ -34,6 +34,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
 import 'support/fake_games_gateway.dart';
 import 'support/game_rows.dart' show gameRow;
+import 'support/real_io.dart';
 import 'support/test_fonts.dart';
 import 'support/test_view.dart';
 import 'package:kelimeki/src/util/online_status.dart';
@@ -186,31 +187,6 @@ void main() {
   sqfliteFfiInit();
 
   setUpAll(loadAppFonts);
-
-  /// sqflite'ın dahili ~10 saniyelik yazma-kilidi uyarı timer'ını süpürür.
-  ///
-  /// GERÇEK depoyu (`memGamesRepo`) kullanan testlerde `_syncCloud` →
-  /// `GamesRepo.flushPending` → `PendingQueueStore.readAll` gerçek bir
-  /// sqflite yazması (TTL süpürmesi) başlatıyor; sqflite o yazma için bu
-  /// timer'ı kurup tamamlanınca iptal ediyor. Sahte zamanda yazma
-  /// ilerlemediğinden test gövdesi biter bitmez çalışan `!timersPending`
-  /// kontrolü timer'ı "bekliyor" buluyor ve test "A Timer is still pending
-  /// even after the widget tree was disposed" ile DÜŞÜYOR.
-  ///
-  /// CI'da (paylaşımlı runner, yük altında) gerçekten yaşandı; yerelde iki
-  /// temiz tam koşu bunu HİÇ göstermedi — bu sınıf bir flake'i yalnızca yük
-  /// yakalıyor (Parça 13'ün aynı dersi: tek dosya çalıştırmak yanlış güven
-  /// verir).
-  ///
-  /// **`tearDown`'da depoyu kapatmak ÇÖZMEZ** — invariant kontrolü test
-  /// gövdesi biter bitmez, tearDown'dan ÖNCE çalışıyor; gerçek zamanı
-  /// gövdenin İÇİNDE tanımak gerekiyor. Desen `online_game_chat_test.dart`
-  /// ile aynı (orada 50ms tam paket yükünde yetmeyip 200ms'ye çıkarılmıştı).
-  Future<void> drainRealIo(WidgetTester tester) async {
-    await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 200)));
-    await tester.pump();
-  }
 
   Future<void> pumpSetup(WidgetTester tester, MemGateway gw,
       {Future<GamesRepo>? games,

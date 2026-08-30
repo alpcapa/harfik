@@ -20,6 +20,248 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 171 — güncelleme artık Play'in işi: In-App Update
+     (30 Ağustos 2026, kullanıcı kararı; YENİ dosya
+     `data/store_update.dart`):** *"Kimde hangi versiyon olursa olsun,
+     app'i açtığında daha yeni bir sürüm varsa uyarsın ve yapsın. Bu kadar
+     basit."*
+     - **Eski mekanizmanın çalışmadığı ÖLÇÜLDÜ, tartışılmadı.** Tek yol
+       `app_config.mobile_min_supported_version` idi: bir insanın elle
+       yükseltmesini bekleyen ikili bir kapı. 1.0.1 iki gün yayında
+       kaldıktan sonra son 14 günün `game_starts` dökümü **android 1.0.0 =
+       93, 1.0.1 = 2** idi; canlıdaki eşik ise 5 Ağustos'tan beri `0.0.0`,
+       yani HİÇ yükseltilmemişti. Mekanizma vardı ama kimseyi
+       güncellemiyordu.
+     - **Çözüm sunucuya bir alan daha eklemek DEĞİL, alanı akıştan
+       çıkarmak oldu:** Play In-App Update'te güncelleme olup olmadığını
+       Play'in kendisi biliyor. `in_app_update` 5.0.0 + Immediate akışı;
+       kontrol `_HomeGate`te (push hizalamasıyla aynı kanca: açılış +
+       `resumed`). `mobile_min_supported_version` silinmedi ama artık
+       yalnızca ACİL FREN.
+     - **API hafızadan değil KAYNAKTAN okundu** ve bir tuzak çıktı:
+       `performImmediateUpdate` yalnızca `USER_DENIED_UPDATE` ve
+       `IN_APP_UPDATE_FAILED`'i sonuca çeviriyor, **bilinmeyen
+       `PlatformException`'ları YENİDEN FIRLATIYOR** — sarmalayıcıda
+       try/catch şart, yoksa bir güncelleme kontrolü uygulamanın açılışını
+       düşürebilirdi (`push_init.dart`'ın aynı ilkesi).
+     - **`bilinmiyor` ≠ `gerekYok` ve bu ayrım özelliğin kalbi:** ağ
+       yokken/Play cevap vermezken "güncel" saymak, açılışta ağı olmayan
+       kullanıcıyı sonsuza dek eski sürümde bırakırdı — yani tam da 93
+       kişiyle yaşanan hatanın aynısı. Soru kapanmazsa öne dönüşte TEKRAR
+       soruluyor. Kullanıcı akışı reddederse soru KAPANIR (her öne dönüşte
+       tam ekran pencere açmak düşmanca olurdu); bir sonraki AÇILIŞTA
+       yeniden sorulur.
+     - **`UpdateRequiredScreen`'in butonu da bağlandı** — kapı fırladıysa
+       güncellemek en çok orada gerekiyor. Mağaza yedeği KORUNDU: o ekranı
+       görenler tanım gereği eski sürümde ve In-App Update yan yüklenmiş
+       pakette hiç çalışmıyor; yedeksiz kalsa 1.0.0'ın "çıkışsız ekran"
+       hatası aynen tekrarlanırdı.
+     - **ÜÇ SINIR, üçü de yapısal:** yalnız Android (iOS'ta karşılığı olan
+       API yok) · yalnız Play'den KURULMUŞ pakette (yan yüklenen `.apk`da
+       sessizce `bilinmiyor`) · ve kod 1.0.2'nin içinde olduğundan sahadaki
+       1.0.0 kitlesi onu ancak 1.0.2'ye geçtikten SONRA görür. Sonuncusu bir
+       seferlik: 1.0.2 indirilebilir olduğu doğrulandıktan sonra eşik bir
+       kez 1.0.2'ye çekilip o kitle süpürülecek, sonra bir daha
+       yükseltilmeyecek.
+     - **Regresyon: 11 test** (`test/store_update_test.dart`) — karar
+       tablosunun dört dalı, `UpdateRequiredScreen`in üç dalı ve
+       **KABLOLAMA**: kancanın gerçekten açılışta koştuğu, kapanmış sorunun
+       öne dönüşte tekrar SORULMADIĞI, kapanmamış sorunun tekrar
+       SORULDUĞU. Kablolama testi bilinçli: bu projede "her açılışta
+       koşuyor" sanılan bir çağrının aslında tek bir sekmede olduğu bir kez
+       yaşandı (Parça 159).
+     - **İKİ negatif eş kuruldu:** (a) açılış kancası silinince kablolama
+       testleri düşüyor; (b) `bilinmiyor` "kapandı" sayılınca tekrar-deneme
+       testi düşüyor.
+     - **Doğrulama:** `dart analyze` temiz · **633 widget testi** yeşil
+       (622 → 633) · `flutter build web --release` GEÇTİ (bu projede web
+       derlemesinin sessizce kırılması bilinen bir sınıf; `in_app_update`
+       Android eklentisi olduğu için özellikle bakıldı).
+     - **Sürüm 1.0.2'ye çıkarıldı** (`env.dart` + `pubspec` birlikte —
+       `app_version_parity_test` ayrışmayı yakalar). In-App Update'in
+       anlamlı olabilmesi için mağazadaki paketin sahadakinden YENİ olması
+       gerekiyor; `versionCode`u zaten Actions koşu numarası veriyor.
+     - **`.apk`/`.aab` derlemesi bu ortamda doğrulanamadı** (Android SDK
+       yok) — **CI cevapladı (PR #371, hepsi yeşil):** `bundleRelease`
+       geçti, imzalı `.aab` üretildi (62,9 MB) ve parmak izi beklenen
+       upload anahtarıyla eşleşti. **KGP uyarı listesi BEŞTE KALDI**
+       (`firebase_analytics, firebase_core, image_picker_android,
+       share_plus, shared_preferences_android`) — `in_app_update` KGP
+       uygulamıyor, borç büyümedi.
+
+   - ✅ **Parça 170 — alt şerit Android'de ortaya kümeleniyordu: `Wrap`
+     genişliği DOLDURMUYOR (30 Ağustos 2026, kullanıcı cihazda bildirdi):**
+     *"Hamleler, Mesajlaşma satırı Android'de ortaya kümelenmiş, iPhone'da
+     kenarlara yaslı."* İki ekran görüntüsü AYNI oyunun iki istemcisiydi —
+     Android = Flutter paketi, iPhone = web; yani doğrudan bir parite farkı.
+     - **Web doğru taraftı** (`Board.tsx`: `flex justify-between w-full`),
+       port ayrışmıştı — "önce web'de bu nasıl yapılmış?" kuralı ilk adımda
+       cevabı verdi.
+     - **Kök sebep Parça 161'in `Row` → `Wrap` dönüşümü.** `Row`
+       (varsayılan `mainAxisSize.max`) gelen genişliği DOLDURUR; `Wrap`
+       gevşek kısıt altında içeriğine KÜÇÜLÜR
+       (`constraints.constrain(...)` doğal genişliği döndürür). Küçülen
+       kutuda dağıtılacak boşluk kalmadığından `spaceBetween` sessizce
+       no-op olur ve saran `Column`un varsayılan `center` hizası kümeyi
+       ortaya alır.
+     - **ÖLÇÜLDÜ** (gerçek `BoardWidget`, bu ortama indirilen Flutter
+       3.47.1 ile): şerit 360/390/430 px'te hep **313,3 px**'te donuyordu —
+       390'da `38,4..351,6` (kenar boşluğu 10 yerine 38,4). Düzeltmeden
+       sonra `10,0..380,0`, yani tam dolu.
+     - **Düzeltme:** `_footer`ın `Padding`i `Container(width:
+       double.infinity, padding: …)` oldu. `Container` ikisini birden
+       yaptığından fazladan sarmalayıcı katman YOK — `SizedBox` ile
+       denendi, tüm `Wrap` bloğunu bir seviye içeri kaydırıp 160 satırlık
+       biçimlendirme gürültüsü üretiyordu.
+     - **Parça 161'in taşma düzeltmesi KORUNDU:** 320 px'te şerit hâlâ iki
+       satıra iniyor (ölçüldü: sol grup y=335,5, sağ grup y=383,5 — düzeltme
+       öncesiyle aynı).
+     - ⚠ **İLK YAZDIĞIM TEST YANLIŞ İDDİA TAŞIYORDU ve ölçüm düzeltti:**
+       "kümelenince iki grup birbirine yapışır" varsaymıştım; oysa gruplar
+       arası boşluk kümelenmiş hâlde de 124,7 px. Test bu yüzden GEÇİYORDU —
+       yani negatif eş kurulmasaydı hiçbir şey korumayan bir test commit
+       edilecekti. Kümelenmenin gerçek imzası boşluğun küçük olması değil
+       **genişlikten BAĞIMSIZ** olması: 360/390/430'da hep 124,7; düzeltmeden
+       sonra 151,4 / 181,4 / 221,4. Test artık İKİ genişlikte ölçüyor.
+     - **Regresyon:** `test/text_scale_test.dart` → *"tahta alt şeridi
+       ŞERİDİ DOLDURUR (kümelenmez)"*. **Negatif eş kuruldu:** düzeltme
+       geri alınınca test gerçekten düşüyor (*"sağ kenara yaslı değil
+       (23,4 px içeride)"*).
+     - **Neden hiçbir mevcut test yakalamadı:** `text_scale_test`'in taşma
+       testi yalnızca taşma/görünürlük soruyor (kümelenme ikisini de
+       ihlal etmiyor), `tap_target_test` ise kutu BOYUTU ölçüyor, KONUM
+       değil. Parça 161'de *"golden dikdörtgenler kıpırdamadı"* denip
+       sessizlik kanıt sayılmıştı — o cümle bugün düzeltildi (`mobile/
+       CLAUDE.md` → "Sistem Yazı Boyutu" kural 4 + o parçanın notu).
+     - **Doğrulama bu kez CI'a bırakılmadı** (Flutter SDK indirildi,
+       `mobile/CLAUDE.md` → "Flutter SDK bu ortama İNDİRİLEBİLİR"):
+       `dart analyze` temiz, **622 widget testi** + `kelimeki_core`
+       **6.841 kontrol** yeşil.
+     - Web DEĞİŞMEDİ (zaten doğru) — bu tek taraflı bir port düzeltmesi.
+
+   - ✅ **Parça 169 — hamle rozetinin punto ayrışması kapandı: WEB porta
+     geldi (29 Ağustos 2026, kullanıcı kararı; web + port aynı PR):**
+     - **Karar yönü önemliydi.** Parça 167'de kullanıcı puntoyu KÜÇÜLTEN
+       seçeneği zaten reddetmişti ("hamle puanı 'Oyna'ya basmadan önce
+       bakılan tek sayı"), yani ayrışmayı portu web'e çekerek kapatmak o
+       kararı geri alırdı. Bu yüzden yön tersine seçildi: `Board.tsx`
+       `clamp(8px,2vw,11px)` + `font-mono` → **sabit `11px` + `font-sans`**
+       (Space Grotesk = portun tema sans'ı). Port DEĞİŞMEDİ.
+     - **Ayrışma pratikte SABİT %19'du, akışkan değil:** clamp'in `2vw`si
+       ancak 550px'te 11px'e ulaşıyor, yani her telefonda 8px'e kırpılıyordu.
+       "Akışkan" tarafın hiç akmadığı bu tür değerler Parça 24'ün sınıfı.
+     - **ÖLÇÜLDÜ** (gerçek oyun + Chromium, taslak taş konup rozetin metni
+       değiştirilerek; hücre = tahta/13). `"+35"` ile:
+       384px'te (hücre 27,7px) `20,7px = 0,75 hücre` → **`26,1px = 0,94`**;
+       320px'te (hücre 22,8px) `20,7 = 0,91` → **`26,1 = 1,15`**.
+     - ⚠ **320px'te iki haneli puan tek hücreyi AŞIYOR ve bu bilerek kabul
+       edildi:** port zaten sabit 11 çizdiğinden 320px'lik bir telefonda AYNI
+       taşmayı bugün de yaşıyor — değişiklik web'i portun davranışına
+       getiriyor, yeni bir sorun üretmiyor. Şikayet gelirse çözüm İKİ tarafta
+       birden uygulanmalı (tek taraflı bir düzeltme ayrışmayı geri getirir).
+     - Web `npm run lint` + `npm run build` yeşil; motor dosyası değişmediği
+       için golden vector üretimi gerekmedi. Port tarafında yalnızca yorum
+       değişti (davranış aynı), bu yüzden Dart testleri etkilenmiyor.
+
+   - ✅ **Parça 168 — `drainRealIo` flake'i: bütçe değil DESEN yanlıştı
+     (29 Ağustos 2026, CI'da düştü; yeni dosya
+     `test/support/real_io.dart`):**
+     - **Belirti:** `online_game_chat_test.dart` → *"tanıtımı görmüş
+       kullanıcı bir daha görmez"* CI'da `A Timer is still pending` ile
+       düştü; AYNI anda `main` yeşildi → flake.
+     - **Kök sebep bir zamanlama yarışı DEĞİL, eksik bir `pump()`:** sqflite
+       her işlemde ~10 sn'lik kilit-uyarı `Timer`'ı kurar; widget'ın
+       başlattığı yazma SAHTE zonda olduğundan o timer da sahtedir ve ancak
+       gerçek I/O bitip devamı `pump()`la akıtılınca iptal olur. Yardımcı
+       `runAsync(200ms)` + **TEK** `pump()` idi — oysa I/O'lar ZİNCİRLİ:
+       `_seedInitialUnread` önce `lastReadAt()` OKUR, sonucuna göre
+       `markRead()` YAZAR, yani ikinci I/O ancak birinci `pump()`landıktan
+       SONRA başlıyor. Tek pump zincirin yalnızca ilk halkasını kapatıyordu.
+     - **Düzeltme:** gerçek zaman payı dilimlere bölündü (10 × 50 ms, her
+       dilimden sonra `pump()`) — her tur bir sonraki halkayı başlatabiliyor,
+       toplam bütçe de 200 → 500 ms. Sabit uykuyu BÜYÜTMEK çözüm değildi:
+       yarışı gizler, zinciri kapatmaz.
+     - **Üç kopya tek kaynağa indi.** Aynı yardımcı `online_game_chat_test`,
+       `setup_cloud_test` ve `intro_screen_test`'te ayrı ayrı yazılıydı —
+       yani düzeltmenin üç yerde tekrarlanması gerekirdi. `ghostClick.ts`'in
+       web tarafında yaptığının aynısı: ortak dosya + tek doküman.
+     - ⚠ **Denenmeyen (ve denenmemesi gereken) yol kayda geçsin:** "bitti mi"
+       diye aynı `Database`e `runAsync` içinden bir sorgu sormak daha kesin
+       DURUR ama KİLİTLENİR — sqflite işlemleri seri işler, sorgu sahte
+       zondaki bekleyen yazmayı bekler, o yazmanın devamı ise `pump()`
+       ister; `runAsync` sırasında sahte zon pompalanmadığından ikisi
+       birbirini bekler. Gerekçe yardımcının başlığında.
+     - **Bu oturumda Dart SDK YOK** — `flutter analyze`/`flutter test`
+       koşulamadı, doğrulama CI'ın "Uygulama analiz + testleri" işinde.
+     - Aynı PR'da doküman borcu da kapandı: `ROADMAP.md`'deki bayat
+       *"Bekleyen deploy"* uyarısı silindi (canlıdan ölçüldü:
+       `notify-deadline-warnings` **v11**, *"takdirde"* doğru, push kanalı
+       içinde, `verify_jwt: false`) ve Play kapalı testinin *"Published ≠
+       testçinin telefonunda"* tuzağı yazıldı
+       (`mobile/docs/build-and-distribution-log.md` + `mobile/CLAUDE.md`
+       → "Deploy Doğrulaması"na üçüncü tuzak olarak).
+
+   - ✅ **Parça 167 — hamle puanı rozeti taşları kapatıyordu (29 Ağustos
+     2026, kapalı testteki kullanıcılar bildirdi; web + port aynı PR):**
+     - **Ölçüm** (384px genişlik, hücre 25.2px; gerçek `Board` çıktısı
+       `dist/index.html`'den çıkarılıp Chromium'da ölçüldü): rozet
+       **30.7px = 1.22 HÜCRE**, yani kelimenin ilk taşının harfini örtüyordu.
+       Dolgu `3/6` → **`1.5/3`**: **24.7px = 0.98 hücre**, tek hücrenin
+       içinde kalıyor.
+     - **Rakamın puntosu bilerek AYNI kaldı** (kullanıcı kararı): üç seçenek
+       AYNI tahta üzerinde yan yana çizilip karşılaştırıldı; puntoyu
+       küçülten seçenek (web paritesi + dar dolgu → 0.89 hücre) reddedildi —
+       hamle puanı "Oyna"ya basmadan önce bakılan tek sayı.
+     - **⚠ AÇIK KALAN AYRIŞMA — bir tur sonra kapandı (Parça 169):** rozetin
+       puntosu/fontu web'de `clamp(8px,2vw,11px)` + mono, portta sabit `11` +
+       tema sans'ıydı; yani port dar telefonda %19 daha geniş çiziyordu ve
+       şikayetin asıl kaynağı buydu. **Parça 24'teki "web'de fluid olan değer
+       portta sabit kalmış" sınıfının aynısı.** Bu PR'da KAPATILMAMIŞTI.
+     - `board_render_test.dart` rozetin yalnızca METNİNİ kontrol ediyor
+       (dolgusunu değil), bu yüzden düşmedi.
+
+   - ✅ **Parça 166 — yaş/cinsiyet satırı BAŞKASININ kartında da (29
+     Ağustos 2026, kullanıcı isteği; web + port aynı PR):** *"Yaş ve
+     cinsiyet tüm kişi skor kartlarında ismin altında olmalı. Kendi
+     profilimde görmemin hiç bir mantığı ve faydası yok."*
+     - **Neden eksikti:** `Y:59/C:E` verisi `profiles`ten geliyor ve o
+       tablonun SELECT RLS'i yalnızca KENDİ satırını okutuyor — başkasının
+       kartını besleyen hiçbir kaynak (k-lig view'ı, `list_friends`,
+       `game_likers`, çevrimiçi oyuncular, `admin_list_members`) bu iki
+       alanı taşımıyordu. Yani eksik bir `if` değil, eksik bir VERİ YOLU.
+     - **Sunucu:** `get_profile_age_gender` (security definer,
+       `profile_age_gender_rpc` migration'ı, canlıya uygulandı). **Ham
+       `birth_date` DEĞİL türetilmiş `age` dönüyor** — kart zaten yalnızca
+       yaşı gösteriyor; `security definer` bir fonksiyonda "satırı olduğu
+       gibi döndür" refleksi bilinçli kırıldı. Yetki `anon`a da verildi
+       (kart misafire açık).
+     - **Port:** `StatsGateway.profileAgeGender` + `StatsRepo.ageGenderLabel`
+       (hata/veri yok → boş dizge, satır hiç çizilmez — web'in aynı kuralı);
+       `PlayerScoreCardModal`'da ismin `Row`'u `Column`'a alındı, yaş satırı
+       arkadaşlık simgesinin Row'unun DIŞINDA (içine konsaydı ikon hizası
+       bozulurdu). `calculateAge`/`formatAgeGender` iki tarafta da ortak
+       dosyaya çıkarıldı (`profileFields.ts` ↔ `profile_fields.dart`).
+     - **⚠ Yaşın İKİ tanımı var:** kendi kartında istemci, başkasınınkinde
+       sunucu hesaplıyor. İkisi de "tamamlanmış yıl"; ayrışırlarsa aynı
+       oyuncu iki kartta farklı yaşta görünür — üç yerdeki (TS/Dart/SQL)
+       yorumlar birbirine atıf yapıyor.
+     - **Gateway'e metot eklemek `implements` eden BEŞ test sahtesini
+       birden bozar** (`friends_test`, `score_card_test` ×2,
+       `league_rewards_test`, `account_button_test`) — hepsi aynı PR'da
+       tamamlandı. Regresyon: `score_card_test.dart`'a iki test (satır
+       başkasının kartında çizilir; veri yoksa HİÇ çizilmez).
+     - **Bu oturumda Dart SDK YOK** — `flutter analyze`/`dart test`
+       koşulamadı, port derlemesi CI'da doğrulanacak. Web tarafı
+       `npm run lint` + `npm run build` ile yeşil.
+     - Aynı PR'da: `docs/decisions/components-score.md`, `TESTING.md`,
+       `mobile/TESTING.md`.
+     - **Yayın sırası yüzünden bir tur geri alındı:** #369 zamanından önce
+       `main`'e girmişti, #370 ile revert edildi ve Faz 1 paketiyle birlikte
+       (bu PR, a6a1776'nın revert'ü) geri geldi. Değişiklikte kusur yoktu.
+       `get_profile_age_gender` bu süre boyunca Supabase'de CANLI kaldı —
+       migration dosyaları uygulanmış olanın aynası olmak zorunda, o yüzden
+       #370 migration'a dokunmamıştı; dönüşte sunucuda yapılacak iş YOKTU.
+
    - ✅ **Parça 165 — bağlantı geri gelince avatar kendini toparlamıyordu
      (29 Ağustos 2026, cihazda bildirildi):** *"app açıkken internet gelince
      avatar güncellenmedi, sadece aç kapa yapınca düzeliyor."*
@@ -187,9 +429,13 @@
           yerden: `MaterialApp.builder` → `withClampedTextScaling`.
        2. `board_widget.dart` alt şeridi `Row` → **`Wrap`**. Tavandan sonra
           KALAN TEK taşma noktasıydı (8,3-14 px). İki grup da `shrink-0`
-          (web'de de öyle), yani `Row` sığmadığı anda taşıyor. `Wrap` tek
-          satıra sığdığı sürece `Row`la birebir aynı davranıyor —
-          `tap_target_test`in golden dikdörtgenleri hiç kıpırdamadı.
+          (web'de de öyle), yani `Row` sığmadığı anda taşıyor.
+          ⚠ **Buradaki *"`Wrap` tek satıra sığdığı sürece `Row`la birebir
+          aynı davranıyor — `tap_target_test`in golden dikdörtgenleri hiç
+          kıpırdamadı"* cümlesi YANLIŞTI ve iki gün sonra sahada patladı
+          (bkz. Parça 170).** `Wrap` genişliği doldurmaz, küçülür; testin
+          sessiz kalması da kanıt değildi (o test kutu BOYUTU ölçüyor,
+          KONUM değil).
        3. `friends_modal.dart` "İstekler" satırı büyük ölçekte **ikiye
           bölünüyor** (üstte avatar+isim, altta KABUL ET/REDDET).
           **Yalnızca bu liste:** "Arkadaşlarım"/"Ara & Ekle" satırlarının

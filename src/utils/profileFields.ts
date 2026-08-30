@@ -64,3 +64,40 @@ export function trDateToIso(input: string): string | null {
   }
   return `${String(y).padStart(4, '0')}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
+
+/**
+ * Doğum tarihinden TAMAMLANMIŞ yıl sayısını (yaş) hesaplar — doğum günü bu
+ * yıl henüz geçmediyse bir eksik.
+ *
+ * ⚠ Bu tanım sunucudaki `get_profile_age_gender` RPC'sinin
+ * `age(current_date, birth_date)` hesabıyla AYNI olmak zorunda: aynı satır
+ * (`Y:59/C:E`) kendi kartında buradan, BAŞKASININ kartında RPC'den besleniyor
+ * — ikisi ayrışırsa aynı oyuncu iki kartta farklı yaşta görünür.
+ */
+export function calculateAge(birthDate: string): number {
+  const today = new Date();
+  const born = new Date(birthDate);
+  let age = today.getFullYear() - born.getFullYear();
+  const monthDiff = today.getMonth() - born.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < born.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+/**
+ * "Yaş: 59" yerine "Y:59/C:E" — yaş (Y) ve cinsiyet (C, Erkek/Kadın) tek
+ * satırda, yalnızca girilmiş olanlar gösterilir; ikisi de yoksa boş dizge.
+ * `ScoreCard` (kendi kartı) ve `PlayerScoreCard` (başkasının kartı) ortak
+ * kullanır — satır iki kartta da aynı görünmeli.
+ */
+export function formatAgeGender(
+  age: number | null,
+  gender: Gender | null | undefined,
+): string {
+  const genderLetter = gender === 'male' ? 'E' : gender === 'female' ? 'K' : null;
+  const parts: string[] = [];
+  if (age !== null) parts.push(`Y:${age}`);
+  if (genderLetter) parts.push(`C:${genderLetter}`);
+  return parts.join('/');
+}

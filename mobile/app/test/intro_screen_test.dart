@@ -36,13 +36,8 @@ import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'support/real_io.dart';
 import 'support/test_view.dart';
-
-Future<void> drainRealIo(WidgetTester tester) async {
-  await tester
-      .runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
-  await tester.pump();
-}
 
 /// Ekrandaki tahtayı taşıyan slaydın DİKEY kaydırma payı (0 = slayt tek
 /// ekrana sığıyor). `find.ancestor` en yakından uzağa yürüdüğünden ilk

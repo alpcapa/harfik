@@ -159,6 +159,82 @@ void main() {
     }
   });
 
+  // ——— 2b. Şerit TAŞMIYOR ama KÜMELENİYOR mu? ———
+  //
+  // 30 Ağustos 2026, bir kullanıcı cihazda bildirdi (iki ekran görüntüsü):
+  // *"Hamleler, Mesajlaşma satırı Android'de ortaya kümelenmiş, iPhone'da
+  // (web) kenarlara yaslı."* Yukarıdaki `Row` → `Wrap` düzeltmesinin yan
+  // etkisiydi: `Row` (mainAxisSize.max) gelen genişliği DOLDURUR, `Wrap`
+  // ise gevşek kısıt altında içeriğine KÜÇÜLÜR. Küçülen kutuda
+  // dağıtılacak boşluk kalmadığından `spaceBetween` no-op olur; üstteki
+  // `Column`un varsayılan `center` hizası da kümeyi ortaya alır.
+  //
+  // ⚠ Yukarıdaki 2. test bunu GÖREMEZ ve görmesi de beklenmez: kümelenme
+  // taşma ÜRETMEZ, üç metin de bulunur. `tap_target_test` de göremez —
+  // orası yalnızca kutu BOYUTLARINI (48×48) ölçüyor, KONUM ölçmüyor.
+  //
+  // ⚠ **İlk yazılan iddia YANLIŞTI ve ölçüm düzeltti:** "kümelenince iki
+  // grup birbirine yapışır" sanılmıştı, oysa gruplar arası boşluk
+  // kümelenmiş hâlde de 124,7 px. Kümelenmenin gerçek imzası boşluğun
+  // KÜÇÜK olması değil, **genişlikten BAĞIMSIZ** olması: `Wrap` doğal
+  // genişliğinde (313,3 px) donduğu için 360/390/430 px'te boşluk hep
+  // 124,7 px çıkıyordu. Düzeltmeden sonra 151,4 / 181,4 / 221,4 —
+  // yani şerit büyüdükçe boşluk da büyüyor. Test bu yüzden TEK bir
+  // genişlikte değil İKİ genişlikte ölçüyor.
+  testWidgets('tahta alt şeridi ŞERİDİ DOLDURUR (kümelenmez)',
+      (tester) async {
+    // Şeridin yatay dolgusu (`_footer`ın `EdgeInsets.symmetric(horizontal:
+    // 10)`) — sağ/sol uçtaki linkler bu kadar içeride durmalı.
+    const dolgu = 10.0;
+
+    Future<({double solBosluk, double sagBosluk, double aradakiBosluk})> olc(
+        double genislik) async {
+      await setPhoneViewSize(tester, Size(genislik, 844));
+      await tester.pumpWidget(_olcekli(
+        1.0,
+        BoardWidget(
+          state: _state(),
+          onOpenHistory: () {},
+          onOpenMessaging: () {},
+          onOpenHelp: () {},
+        ),
+      ));
+      await tester.pump();
+      final tahta = tester.getRect(find.byType(BoardWidget));
+      final sol = tester.getRect(find.text('Hamleler'));
+      final sag = tester.getRect(find.text('Nasıl Oynanır?'));
+      return (
+        solBosluk: sol.left - tahta.left,
+        sagBosluk: tahta.right - sag.right,
+        aradakiBosluk: sag.left - sol.right,
+      );
+    }
+
+    final dar = await olc(360);
+    final genis = await olc(430);
+
+    // 1) Sağ uçtaki link şeridin SAĞ kenarına yaslı (yalnızca dolgu kadar
+    //    içeride). Kümelenmiş hâlde bu 38,4 / 58,4 px çıkıyordu.
+    for (final (ad, m) in [('360', dar), ('430', genis)]) {
+      expect(m.sagBosluk, lessThan(dolgu + 1),
+          reason: '$ad px: "Nasıl Oynanır?" sağ kenara yaslı değil '
+              '(${m.sagBosluk.toStringAsFixed(1)} px içeride). `Wrap` gelen '
+              'genişliği DOLDURMUYOR demektir — `SizedBox(width: '
+              'double.infinity)` düşmüş olabilir (board_widget.dart '
+              '`_footer`).');
+    }
+
+    // 2) ASIL İMZA: şerit genişledikçe iki grup arasındaki boşluk da
+    //    büyümeli. Şerit 70 px genişledi; `spaceBetween` çalışıyorsa
+    //    boşluk da ~70 px büyür, `Wrap` doğal genişliğinde donmuşsa HİÇ
+    //    değişmez.
+    final buyume = genis.aradakiBosluk - dar.aradakiBosluk;
+    expect(buyume, greaterThan(60),
+        reason: 'Şerit 360→430 px büyüdü ama gruplar arası boşluk yalnızca '
+            '${buyume.toStringAsFixed(1)} px arttı. Boşluğun genişlikten '
+            'BAĞIMSIZ olması kümelenmenin imzasıdır.');
+  });
+
   // ——— 3. SIFIRA SIKIŞMA: arkadaşlık isteği satırı ———
   //
   // Kullanıcının BİLDİRDİĞİ hata. Taşma üretmediğinden yukarıdaki envantere

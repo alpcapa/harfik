@@ -44,6 +44,123 @@ Aşağıdaki ikisinin kaydı kök `CLAUDE.md` → Kaynak Hunisi bölümünde:
 
 ---
 
+## Faz planı — kalan işlerin YAYIN sırası (29 Ağustos 2026)
+
+Kullanıcı isteği: *"Tüm işleri fazlandırıp plan yapalım. Uygun gördüğün
+maddeleri ona göre birleştirip sırayla yayına alalım."*
+
+Bu bölüm aşağıdaki maddelerin YERİNE geçmez — onların **hangi paketle
+çıkacağını** söyler. Madde 0 (FAZ B) omurga olmaya devam ediyor.
+
+**Fazları belirleyen tek kısıt, bir tercih değil bir ölçüm:**
+
+| Değişiklik türü | Bedeli | Ne zaman canlıda |
+|---|---|---|
+| İstemci (Flutter) | paket + Play incelemesi + cihaz turu | sürüm turu |
+| Sunucu (migration / Edge Function) | yok | **anında**, merge'den bağımsız |
+| Web (`src/`) | yok | `main`'e merge → Vercel |
+
+Yani maddeleri "konu"ya göre değil **paketlenebilirliğe** göre grupladım.
+Sonuç: kalan HER ŞEY **iki sürüm turuna** sığıyor — bildirim işinin yarısı
+sunucu tarafında olduğu için sürüm beklemiyor.
+
+### Faz 1 — bekleyen paket · **1 sürüm** · ✅ DALDA TAMAM, yayın bekliyor
+
+Altı maddenin altısı da `claude/kelimeki-phase-1-remaining-*` dalında bitti;
+kalan tek iş **merge + sürüm turu** (kullanıcı "şimdi gönder" diyene kadar
+PR açılmıyor). Kayıtları taşındı, burada yalnızca paketin envanteri kaldı:
+
+| # | İş | Kullanıcıya görünür mü | Kaydı |
+|---|---|---|---|
+| 1 | Hamle rozeti dolgusu `3/6` → `1.5/3` (1,22 → 0,98 hücre) | ✅ kapalı testte BİLDİRİLDİ | Parça 167 · `docs/decisions/components.md` → `Board` |
+| 2 | Rozet puntosu: **web porta getirildi** (sabit 11px + sans) | ✅ (web'de) | Parça 169 · aynı `Board` maddesi |
+| 3 | Alt şerit Android'de ortaya kümeleniyordu (`Wrap` genişliği doldurmuyor) | ✅ kapalı testte BİLDİRİLDİ | Parça 170 |
+| 4 | Yaş/cinsiyet satırı geri geldi (#370'in revert'ü) | ✅ istenen özellik | Parça 166 |
+| 5 | `drainRealIo` flake'i: üç kopya tek kaynağa, tek `pump()` → dilimli | ✖ yalnız CI | Parça 168 |
+| 6 | Doküman borcu: bayat "bekleyen deploy" uyarısı silindi + Play kapalı test notu | ✖ | Parça 168 · `mobile/docs/build-and-distribution-log.md` |
+| 7 | **Play In-App Update** — açılışta yeni sürüm varsa uyar ve yaptır | ✅ **bundan sonraki HER sürümü etkiler** | Parça 171 · `mobile/CLAUDE.md` → "Güncelleme" |
+
+**Üçü kapalı testten gelen gerçek şikayet** (1, 3 ve 4'ün isteği) — paketin
+bekletilmesinin bedeli doğrudan bu üç kişinin beklemesi.
+
+⚠ **7. madde bu paketi özel kılıyor:** In-App Update kodu 1.0.2'nin İÇİNDE,
+yani sahadaki 1.0.0 kitlesi (ölçüldü: 93'e 2) onu ancak 1.0.2'ye geçtikten
+sonra görür. 1.0.2 yayınlanıp **indirilebilir olduğu doğrulandıktan sonra**
+eşik bir KEZ 1.0.2'ye çekilip o kitle süpürülür; ondan sonra eşik bir daha
+yükseltilmez. Ayrıntı: `mobile/CLAUDE.md` → "Güncelleme — Play SORAR".
+
+**Sunucuda yapılacak iş YOK:** `get_profile_age_gender` canlıda ve
+migration dosyası `main`'de duruyor (29 Ağustos'ta `pg_proc`'tan doğrulandı:
+`security definer`, `TABLE(age integer, gender text)`).
+
+⚠ **Sürüm turunda:** `appVersion` + `pubspec` birlikte artırılmalı
+(`app_version_parity_test` ayrışmayı yakalar) ve zorunlu güncelleme eşiği
+sırası korunmalı — `mobile/CLAUDE.md` → "Zorunlu Güncelleme".
+
+### Faz 2 — davet bildirimleri · **SÜRÜM GEREKTİRMEZ** · sunucu
+
+`notify-game-invite`, `notify-friend-request`, `notify-friend-request-reminders`
+→ `_shared/push.ts` kanalını ekle. **Sahadaki paket (versionCode 426) token'ı
+zaten kaydediyor ve `kelimeki_oyun` kanalı zaten var**, yani bu üç fonksiyon
+deploy edildiği anda mevcut kullanıcılara ulaşır.
+
+`notify-deadline-warnings` BİREBİR örnek: push e-postadan SONRA, ayrı
+`try/catch` içinde (push e-posta yolunu ASLA düşüremez),
+`push_notifications_enabled` kontrolü, bayat token silme.
+
+### Faz 3 — deep link + bildirime dokunma + Analytics · **1 sürüm** · en büyük
+
+Üçü de istemci; ayrı sürümlere bölmek iki tur harcar.
+
+- **#1 `kelimeki://` deep link kanalı** (mağaza blokeri).
+- **Bildirime dokununca doğru yere gitme.** Ölçüldü: `FirebaseMessaging`
+  şu an YALNIZCA `push_gateways.dart`'ta (token kaydı) kullanılıyor;
+  `onMessageOpenedApp`/`getInitialMessage` HİÇ YOK. Sunucu `data.link`'i
+  **zaten gönderiyor** (`_shared/push.ts`), istemci okumuyor. Yani bu iş
+  #1 ile aynı yeri elden geçiriyor — birlikte yapılmalı.
+- **Firebase Analytics.** Ölçüldü: `firebase_analytics ^12.5.0`
+  `pubspec.yaml`'da DURUYOR ama `lib/` altında **tek satır kullanımı yok**.
+  #13'teki ilk altı olay. Play Data safety formu bu iş için **zaten
+  güncellenmiş** (29 Ağustos) — o alt madde kapalı.
+
+### Faz 4 — "sıra sende" · **SÜRÜM GEREKTİRMEZ** · sunucu
+
+#13'ün en pahalı kalemi: hamle gönderiminde tetiklenen yeni kanca (bugün
+böyle bir sunucu olayı HİÇ yok). İki tuzak orada yazılı: hamleyi YAPANA
+gönderme, ve hızlı gidip gelen oyunda spam olmaması için
+`deadline_warning_sent_at` desenine karşılık bir bastırma.
+
+**Neden Faz 3'ten SONRA:** bildirime dokunma yönlendirmesi olmadan "sıra
+sende" bildirimi kullanıcıyı oyuna götüremez, yani en çok hissedilen
+bildirim yarım değer verir.
+
+### Sonra / bloke
+
+**#8** (FAZ A1 Bölüm 6 — Paylaşma, iPad popover), **#11** (hata panelinde
+platform filtresi), **#12** (sürüm dağılımı kapsamı — izleme).
+**iOS/APNs** Apple Developer üyeliğine takılı; tasarım bilerek FCM üzerinden
+yazıldığı için iOS günü gelince kalan iş "APNs anahtarını Firebase'e yükle +
+Push capability ekle" — ikinci bir gönderici YAZILMAYACAK.
+
+### #13'ün ölçülen durumu (29 Ağustos 2026) — yarısı BİTTİ
+
+Aşağıdaki #13 sıfırdan bir iş gibi okunuyor; artık değil. Canlıdan ve
+koddan ölçülen hâl:
+
+| Parça | Durum |
+|---|---|
+| Altyapı (`push_tokens`, `register_push_token`, hesap silmede temizlik) | ✅ |
+| `POST_NOTIFICATIONS` izni · `kelimeki_oyun` kanalı (IMPORTANCE_HIGH) | ✅ |
+| `push_notifications_enabled` tercihi (e-postadan bağımsız) | ✅ |
+| **Teslim uyarısı push'u** | ✅ canlıda (`notify-deadline-warnings` v11) |
+| Oyun daveti · arkadaş daveti push kanalı | ⬜ **Faz 2** |
+| Bildirime dokununca yönlendirme | ⬜ **Faz 3** |
+| Firebase Analytics olayları | ⬜ **Faz 3** |
+| "Sıra sende" olayı | ⬜ **Faz 4** |
+| Play Data safety formu | ✅ (29 Ağustos) |
+
+---
+
 ## Sürüm sıralaması, force update ve davetliler (27 Ağustos 2026)
 
 Bu üçü bir "madde" değil — biri bir SIRALAMA kuralı, biri ERTELENMİŞ bir
@@ -904,15 +1021,16 @@ Mevcut e-posta metni kullanıcının istediği cümlenin ta kendisi ve İKİ
 durumu birden kapsıyor: Canlı oyunlarda 48 saatlik `turn_deadline`, YZ
 oyunlarında 7 günlük terk penceresi — ikisinde de son 24 saate girince.
 
-⚠ **Bekleyen deploy:** `notify-deadline-warnings`'teki *"taktirde"* yazım
-hatası 26 Ağustos'ta REPODA düzeltildi (*"takdirde"*) ama **canlıya
-yayılmadı** — tek harflik bir düzeltme için canlı bir bildirim
-fonksiyonunu yeniden yüklemenin riski değmezdi ve bu fonksiyon zaten push
-kanalı eklenirken yeniden yayınlanacak. **Bu iş yapılırken deploy'u
-unutma; o ana kadar repo ile canlı bilerek AYRIŞIK.** Deploy'da
-`verify_jwt: false` AÇIKÇA geçilmeli (ölçüldü — bu fonksiyon o altı
-fonksiyondan biri; parametre geçilmezse araç `true` varsayar ve kapıyı
-sessizce kapatır).
+✅ **Bu satır KAPANDI (29 Ağustos 2026, canlıdan okundu):**
+`notify-deadline-warnings` **v11** yayında — *"takdirde"* yazımı doğru,
+push kanalı (`sendDeadlinePush`) İÇİNDE ve `verify_jwt: false`. Yani teslim
+uyarısı bugün hem e-posta hem push gönderiyor; bu satırda yapılacak iş yok.
+Buraya 26 Ağustos'tan kalma bir *"bekleyen deploy"* uyarısı yazılıydı ve
+**bayattı** — kaldırıldı. Faz 2'de öteki üç fonksiyona dokunulurken
+`verify_jwt` tuzağı yine geçerli: `deploy_edge_function`'a parametre
+geçilmezse araç `true` varsayar ve kapıyı sessizce kapatır, o yüzden önce
+`list_edge_functions` ile mevcut değeri oku, AYNI değeri açıkça geçir
+(kök `CLAUDE.md` → "Edge Function deploy").
 
 Yani "sıra sende" bildiriminin bir sunucu olayı hiç yok; hamle
 gönderiminde tetiklenen yeni bir kanca gerekiyor.

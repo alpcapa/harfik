@@ -238,6 +238,32 @@ girmek zorunda** — bu ortamdan GitHub ayarlarına yazma yolu yok.
    sürekli kontrol ediyor. Console'daki yol, iki anahtarlı ekran ve
    ölçümler: `marketing/play-store/console-formlari.md` → §6.6.
 
+### Kapalı test: **Published ≠ testçinin telefonunda** (29 Ağustos 2026)
+
+O gün İKİ kez zaman kaybettirdi: Play Console sürümü **"Published"**
+gösterirken testçinin cihazındaki uygulama hâlâ bir önceki paketti ve
+"düzeltme çalışmıyor" diye teşhis edilmeye başlandı. Kusur derlemede
+değildi — kapalı test kanalında yayınlanmış bir sürümün cihaza inmesi
+saatler alabiliyor (Play'in dağıtımı kademeli, ayrıca cihaz otomatik
+güncellemeyi kendi bildiği zaman yapıyor).
+
+**Kural — bir hatayı tartışmadan ÖNCE hangi paketin kurulu olduğunu ölç:**
+Setup ekranının teşhis satırındaki **`Derleme <sha>`** (`config/env.dart`,
+CI `--dart-define` ile veriyor) kurulu paketin commit'ini söyler. Ekran
+görüntüsündeki sha beklediğin commit değilse **tartışılacak bir hata
+yoktur, güncelleme bekleniyordur** — testçiden Play'de "Güncelle"yi elle
+tetiklemesini iste.
+
+İki yardımcı işaret: `versionCode` = GitHub Actions **koşu numarası**
+(`--build-number`), yani Play Console'daki sayı doğrudan hangi koşunun/
+commit'in yayında olduğunu söyler; ve Play Console'un "Published" rozeti
+kanala GİRDİĞİNİ söyler, cihaza indiğini değil.
+
+⚠ Bu, `mobile/CLAUDE.md` → "Deploy Doğrulaması"ndaki *"sürüm doğru ≠
+özellik içinde"* tuzağının KARDEŞİ, aynısı değil: orada sha güncel ama
+değişiklik o dalda değildi; burada değişiklik yayınlanmış ama sha eski.
+İkisinin de cevabı aynı enstrümanda — önce `Derleme <sha>`yı oku.
+
 ## Karşılama Katmanı (web) — bilinçli ayrışma (18 Ağustos 2026, 19'unda güncellendi)
 
 Web'e 18 Ağustos 2026'da girişsiz ilk ziyaretçiye gösterilen bir karşılama/

@@ -10,13 +10,32 @@
 // `mobile/docs/parca-log.md` 714 KB'a (eski CLAUDE.md'nin 7 katı) ulaştı.
 // Yani "bir gün fark ederiz" işe yaramıyor; ölçüm otomatik olmalı.
 //
-// ÜÇ SINIF, çünkü maliyetleri farklı:
+// DÖRT SINIF, çünkü maliyetleri farklı:
 //   • AUTO  — her turda bağlama YÜKLENİR (CLAUDE.md'ler). Maliyeti
 //             kaçınılmaz, bütçesi en dar.
-//   • ACTIVE— isteğe bağlı okunur ama BÜYÜMEYE devam eder. Sınıra gelince
-//             yeni bir "cilt" açılır (parça günlüğünde yapıldığı gibi).
+//   • ACTIVE— BAŞTAN SONA okunan, büyümeye devam eden dosyalar: kontrol
+//             listeleri (TESTING*), README, ROADMAP. Sınıra gelince yeni bir
+//             "cilt" açılır ya da bölünür.
+//   • REFERENCE — yalnızca GREP'lenen başvuru dokümanları
+//             (docs/decisions/*, parça günlüğünün aktif cildi). Tavanı geniş
+//             çünkü maliyet dosya boyutunda DEĞİL, onu baştan sona okumakta.
 //   • FROZEN— dondurulmuş arşiv. Okuması opt-in, o yüzden büyük olabilir;
-//             tek kural BÜYÜMEMESİ. Yeni giriş aktif cilde yazılır.
+//             tek kural BÜYÜMEMESİ.
+//
+// ⚠ REFERENCE 29 Ağustos 2026'da EKLENDİ, kullanıcı sorusuyla: *"Büyüyen md
+// dosyalarını bölme işini tüm md'lerde yapıyor muyuz? Gerek var mı?"*
+// Ölçüm: repoda 43 `.md`, 2.3 MB. `active` bütçesi ÖDENMEYEN bir maliyeti
+// vekaleten ölçüyordu — o dosyalar isteğe bağlı ve çoğunlukla `grep`'le
+// okunuyor; parça günlüğünün kendi başlığı bile "bir cildi BAŞTAN SONA
+// OKUMA, grep ile ara" diyor. Bölmenin ise gerçek bir bedeli var ve bu repo
+// onu ödedi: `docs/decisions/` 22 dosyaya çıktı ve doğru dosyayı bulmak için
+// kök CLAUDE.md'de bir indeks tablosu tutuluyor (eski atıflar bölünmeyle
+// kırıldı). Yani kural kaldırılmadı, DARALTILDI: bölme refleksi artık
+// yalnızca baştan sona okunan dosyalar için.
+//
+// Bir dosya uyarı bandına girdiğinde ilk soru "nasıl bölerim" DEĞİL,
+// "bunu baştan sona okuyan var mı?" — cevabı hayırsa çare bölmek değil,
+// bayat anlatıyı budamak ya da bir cilt dondurmak. Yeni giriş aktif cilde yazılır.
 //
 // Koşum: npm run check-doc-size   (CI: .github/workflows/docs-size.yml)
 import { readdirSync, statSync } from 'node:fs';
@@ -29,6 +48,10 @@ const KB = 1000;
 const BUTCE = {
   auto: { uyar: 80 * KB, sinir: 120 * KB },
   active: { uyar: 120 * KB, sinir: 200 * KB },
+  // Grep'lenen başvuru dokümanları: tavan geniş ama SONSUZ değil — 300 KB'ı
+  // aşan bir dosya artık dondurulup ciltlenmeli, yoksa baştan sona okumak
+  // gereken nadir durumda (ör. bir bölümü yeniden yazarken) bağlamı yakar.
+  reference: { uyar: 200 * KB, sinir: 300 * KB },
 };
 
 // Her turda bağlama yüklenen dosyalar.
@@ -43,6 +66,19 @@ const FROZEN = {
   // Tavan bugünkü boyutun biraz üstünde — tek kural BÜYÜMEMESİ.
   'mobile/docs/parca-log-110-138.md': 150 * KB,
 };
+
+// Yalnızca GREP'lenen başvuru dokümanları. Kural DOSYA ADINA değil, dosyanın
+// nasıl OKUNDUĞUNA bakıyor:
+//   • docs/decisions/*        — "neden böyle yapıldı" kayıtları; bir konuda
+//                               çalışırken tek bir madde aranır.
+//   • mobile/docs/parca-log*  — parça günlüğü; dosyanın kendi başlığı baştan
+//                               sona okumayı açıkça YASAKLIYOR.
+// TESTING* dosyaları BİLEREK dışarıda: onlar baştan sona koşulan kontrol
+// listeleri, yani gerçekten okunuyorlar → `active` kalırlar.
+function isReference(rel) {
+  if (/TESTING/i.test(rel) || /\btesting-/.test(rel)) return false;
+  return rel.startsWith('docs/decisions/') || /^mobile\/docs\/parca-log/.test(rel);
+}
 
 function walk(dir, out = []) {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -61,7 +97,13 @@ const rows = walk(ROOT)
   .map((p) => {
     const rel = relative(ROOT, p);
     const size = statSync(p).size;
-    const sinif = AUTO.has(rel) ? 'auto' : rel in FROZEN ? 'frozen' : 'active';
+    const sinif = AUTO.has(rel)
+      ? 'auto'
+      : rel in FROZEN
+        ? 'frozen'
+        : isReference(rel)
+          ? 'reference'
+          : 'active';
     const sinir = sinif === 'frozen' ? FROZEN[rel] : BUTCE[sinif].sinir;
     const uyar = sinif === 'frozen' ? Infinity : BUTCE[sinif].uyar;
     return { rel, size, sinif, sinir, uyar };
@@ -81,9 +123,12 @@ for (const r of rows.slice(0, 12)) {
 }
 
 if (uyarilar.length) {
-  console.log('\nUYARI — sınıra yaklaşıyor, bir sonraki dokunuşta böl:');
+  console.log('\nUYARI — sınıra yaklaşıyor:');
   for (const r of uyarilar) {
-    console.log(`  • ${r.rel} — ${kb(r.size)} / ${kb(r.sinir)}`);
+    const ne = r.sinif === 'reference'
+      ? 'bayat anlatıyı buda ya da cilt dondur'
+      : 'bir sonraki dokunuşta böl';
+    console.log(`  • ${r.rel} — ${kb(r.size)} / ${kb(r.sinir)} [${r.sinif}] → ${ne}`);
   }
 }
 
@@ -102,11 +147,20 @@ if (dusenler.length) {
         '    Bu bir ARŞİV — büyümemeliydi. Yeni girişi AKTİF cilde yaz\n' +
           '    (parça günlüğünde: mobile/docs/parca-log.md).',
       );
+    } else if (r.sinif === 'reference') {
+      console.log(
+        '    Bu dosya grep\'leniyor, baştan sona okunmuyor — yani bölmek çoğu\n' +
+          '    zaman baytı yer değiştirmekten ibaret. ÖNCE bayat/aşılmış\n' +
+          '    anlatıyı buda; hâlâ büyükse bir CİLT dondur (FROZEN listesi).\n' +
+          '    docs/decisions/ zaten 22 dosya — yeni dosya açmadan önce\n' +
+          '    kök CLAUDE.md\'deki indeks tablosunun büyüme bedelini hesaba kat.',
+      );
     } else {
       console.log(
-        '    Yeni bir CİLT aç: mevcut dosyayı bir bölüm/parça sınırından kes,\n' +
-          '    dondurulmuş yarıyı FROZEN listesine ekle, yeni girişler aktif\n' +
-          '    ciltte devam etsin (örnek: mobile/docs/parca-log*.md).',
+        '    Bu dosya BAŞTAN SONA okunuyor (kontrol listesi/plan), yani boyut\n' +
+          '    gerçek bir maliyet. Bir bölüm sınırından kes; kesme noktası\n' +
+          '    boyut değil İÇERİĞİN TÜRÜ olsun (tek oturum ↔ iki oturum,\n' +
+          '    normal kullanıcı ↔ admin — örnek: TESTING.md → docs/testing-admin.md).',
       );
     }
   }

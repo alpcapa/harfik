@@ -402,6 +402,17 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       Yazı stili solundaki "Hamleler" ile birebir aynı olmalı (punto/
       renk/kalınlık) ve soru-işareti ikonu boş kare DEĞİL gerçek bir
       daire+soru işareti olarak çizilmeli.
+- [ ] **Güncelleme kendiliğinden geliyor mu (Parça 171)?** → maddeler
+      `mobile/docs/testing-bildirimler.md` → bölüm 7'de: Play In-App
+      Update YALNIZCA Play'den kurulmuş pakette çalışır, yani buradaki
+      (her derlemede koşulan) listeye ait değil.
+- [ ] **Şerit KENARLARA yaslı mı (Parça 170)?** "Hamleler · Mesajlaşma"
+      şeridin SOL ucunda, "Nasıl Oynanır?" SAĞ ucunda durmalı — ikisi
+      ortada kümelenmiş görünüyorsa `Wrap` genişliği doldurmuyor demektir.
+      **Web ile yan yana koyarak bak** (aynı oyunu tarayıcıda aç): hata tam
+      da böyle bulundu, 30 Ağustos 2026'da bir kullanıcı Android paketiyle
+      iPhone'daki web'i karşılaştırıp bildirdi. Widget testi bunu artık
+      koruyor, ama gerçek cihazın genişliği testinkinden farklı olabilir.
 - [ ] **Sürükle-bırak.** Raftan tahtaya, tahtada taşıma, tahtadan rafa geri
       alma. Hayalet taş parmağın ÜSTÜNDE görünmeli (30px kaldırma).
       **Sürükleme AKICI olmalı — hafif titreme/takılma bir REGRESYONDUR**
@@ -707,6 +718,17 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       mavi "k-lig" yazısının yanında küçük dairesel bir "?" rozeti
       olmalı; dokununca (ya da rozetin kendisine dokununca) k-lig
       sıralaması açılmalı.
+- [ ] **Yaş/cinsiyet BAŞKASININ kartında (29 Ağustos 2026).** k-lig'de,
+      profilinde doğum tarihi ve/veya cinsiyet GİRMİŞ bir başkasının
+      satırına dokun: kartta ismin hemen ALTINDA `Y:59/C:E` biçiminde bir
+      satır olmalı (mono, gri, küçük) — kendi Skor Kartı'ndaki satırın
+      birebir aynısı. **Çapraz kontrol:** aynı kişi için web'de görünen
+      yaş ile buradaki yaş AYNI olmalı (biri istemcide, öteki sunucuda
+      hesaplanıyor). Arkadaşlık simgesi (✓ / +) yaş satırıyla AYNI
+      hizaya kayMAmalı, isim satırında kalmalı. Doğum tarihi de cinsiyeti
+      de girmemiş bir oyuncunun kartında satır HİÇ çıkmamalı (boş bir
+      satır yer kaplamamalı). Çevrimdışıyken de kart açılabilmeli, satır
+      yalnızca çizilmemeli — hata/uyarı ÇIKMAMALI.
 - [ ] **OHP kolonu (12 Ağustos 2026, Parça 63).** k-lig tablosunda PUAN'ın
       SOLUNDA bir **OHP** kolonu olmalı: iki basamaklı (`12.78`), **düz
       gri ve kalın DEĞİL** (Puan mavi/kalın kalır), hiç hamle verisi

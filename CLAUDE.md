@@ -206,17 +206,34 @@ dosyasını ölçüp üç sınıfa ayırır — çünkü maliyetleri farklı:
 | Sınıf | Ne | Uyarı / Sınır |
 |---|---|---|
 | **auto** | Her turda bağlama YÜKLENİR: `CLAUDE.md`, `mobile/CLAUDE.md` | 80 KB / **120 KB** |
-| **active** | İsteğe bağlı okunur ama BÜYÜMEYE devam eder | 120 KB / **200 KB** |
+| **active** | BAŞTAN SONA okunur ve büyümeye devam eder: `TESTING*`, `README`, `ROADMAP` | 120 KB / **200 KB** |
+| **reference** | Yalnızca GREP'lenir: `docs/decisions/*`, `mobile/docs/parca-log*` | 200 KB / **300 KB** |
 | **frozen** | Dondurulmuş arşiv; okuması opt-in, tek kural BÜYÜMEMESİ | kendi tavanı |
 
 **Sınır aşılınca ne yapılır** (betik zaten yazdırıyor):
 - **auto** → tarihli "neden böyle" anlatılarını `docs/decisions/*.md` ya da
   `mobile/docs/*.md`'ye taşı; burada yalnızca HER YERDE geçerli kural/
   değişmez kalsın.
-- **active** → yeni bir **cilt** aç: dosyayı bir bölüm/parça sınırından kes,
-  dondurulmuş yarıyı betikteki `FROZEN` listesine ekle, yeni girişler aktif
-  ciltte devam etsin. Örnek: `mobile/docs/parca-log*.md` (üç cilt).
+- **active** → bir bölüm sınırından kes. Kesme noktası boyut değil İÇERİĞİN
+  TÜRÜ olsun (tek oturum ↔ iki oturum, normal kullanıcı ↔ admin — örnek:
+  `TESTING.md` → `docs/testing-admin.md`).
+- **reference** → **önce BÖLME.** Bu dosyalar grep'leniyor, baştan sona
+  okunmuyor; bölmek çoğu zaman baytı yer değiştirmekten ibaret. Sırayla:
+  (1) bayat/aşılmış anlatıyı buda, (2) hâlâ büyükse bir **cilt** dondur
+  (`FROZEN` listesi, örnek `mobile/docs/parca-log*.md`).
 - **frozen** → arşive yazılmış demektir; girişi AKTİF cilde taşı.
+
+⚠ **`reference` sınıfı 29 Ağustos 2026'da eklendi** (kullanıcı sorusu:
+*"Büyüyen md dosyalarını bölme işini tüm md'lerde yapıyor muyuz? Gerek
+var mı?"*). Ölçüldü: repoda 43 `.md`, 2.3 MB. Eski `active` bütçesi
+ÖDENMEYEN bir maliyeti vekaleten ölçüyordu — o dosyalar isteğe bağlı ve
+çoğunlukla grep'le okunuyor. **Bölmenin ise gerçek bedeli var ve bu repo
+onu ödedi:** `docs/decisions/` 22 dosyaya çıktı ve doğru dosyayı bulmak
+için yukarıdaki indeks tablosu gerekli hâle geldi (koddaki eski atıflar
+bölünmeyle kırıldı). Kural kaldırılmadı, **daraltıldı**: bölme refleksi
+artık yalnızca baştan sona okunan dosyalar için. Bir dosya uyarı bandına
+girdiğinde ilk soru *"nasıl bölerim"* DEĞİL, ***"bunu baştan sona okuyan
+var mı?"***
 
 **CI'da koşuyor:** `.github/workflows/docs-size.yml`, yalnızca `**/*.md`
 değiştiğinde. `npm install` ve derleme YOK (saniyeler) — bu repoda

@@ -107,12 +107,20 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
   // (`fetchMyLeaderboardRank(member.id)`, burada `stats.myRank(userId)`).
   MyLeaderboardRank? _rank;
 
+  /// "Y:59/C:E" — `profiles` RLS'i başkasının satırını okutmadığından ayrı bir
+  /// RPC'den gelir (`StatsRepo.ageGenderLabel`). Yüklenene kadar ya da veri
+  /// girilmemişse boş kalır ve satır hiç çizilmez (web ile aynı).
+  String _ageGender = '';
+
   @override
   void initState() {
     super.initState();
     _loadRelation();
     widget.stats.myRank(widget.userId).then((r) {
       if (mounted) setState(() => _rank = r);
+    });
+    widget.stats.ageGenderLabel(widget.userId).then((label) {
+      if (mounted) setState(() => _ageGender = label);
     });
     for (final t in StatsTab.values) {
       widget.stats.playerStats(widget.userId, t).then((s) {
@@ -321,27 +329,43 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
               KAvatar(url: widget.avatarUrl, name: widget.name, size: 44),
               const SizedBox(width: 12),
               Expanded(
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Flexible(
-                      child: Text(widget.name,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: _text)),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(widget.name,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: _text)),
+                        ),
+                        // Rütbe mührü ismin YANINDA (Skor Kartı ile aynı
+                        // kural/boy) — arkadaşlık ikonundan ÖNCE, yani isme
+                        // bitişik. Başlıktaki 34px'lik mühür duruyor.
+                        if (_loaded.contains(StatsTab.all)) ...[
+                          const SizedBox(width: 4),
+                          RankSeal(
+                              tier: tierFor(
+                                  _statsByTab[StatsTab.all]?.totalScore ?? 0),
+                              size: 20),
+                        ],
+                        if (_relationIcon() case final icon?) icon,
+                      ],
                     ),
-                    // Rütbe mührü ismin YANINDA (Skor Kartı ile aynı
-                    // kural/boy) — arkadaşlık ikonundan ÖNCE, yani isme
-                    // bitişik. Başlıktaki 34px'lik mühür duruyor.
-                    if (_loaded.contains(StatsTab.all)) ...[
-                      const SizedBox(width: 4),
-                      RankSeal(
-                          tier: tierFor(
-                              _statsByTab[StatsTab.all]?.totalScore ?? 0),
-                          size: 20),
-                    ],
-                    if (_relationIcon() case final icon?) icon,
+                    // Yaş/cinsiyet — ismin ALTINDA, Skor Kartı'ndaki (kendi
+                    // kartın) satırla birebir aynı biçim. Arkadaşlık
+                    // simgesinin olduğu Row'un DIŞINDA ki ikon hizası
+                    // bozulmasın (web'in aynı ayrımı).
+                    if (_ageGender.isNotEmpty)
+                      Text(_ageGender,
+                          style: const TextStyle(
+                              fontFamily: 'SpaceMono',
+                              fontSize: 12,
+                              color: _muted)),
                   ],
                 ),
               ),
