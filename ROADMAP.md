@@ -317,15 +317,11 @@ kanalında **yayına alındı** (bkz. aşağıda madde 3).
 > yeterliyken JEST yolu kaybediyor olabilir. A2'nin ilk beş düzeltmesi
 > gerçekti ve yine de kullanıcının asıl şikayetini çözmedi.
 
-**Sürüm B'de KALANLAR:** madde 1 (deep link — mağaza blokeri) ve madde 13
-(push + Analytics). İkisi tek pakette gitmek zorunda, çünkü 13'ün 5. adımı
-("bildirime dokununca doğru oyunu aç") zaten 1'e bağlı.
-
-Ayrıca **`notify-deadline-warnings`'te düzeltilmiş bir yazım hatası deploy
-EDİLMEDİ** ("taktirde" → "takdirde"): repoda düzeltildi, canlıya
-gönderilmedi — push işi zaten bu fonksiyona dokunacak, tek deploy'da
-gitsin. O deploy yapılırken **`verify_jwt: false` AÇIKÇA geçilmeli**
-(araç parametre verilmezse `true` varsayıp mevcut değeri sessizce ezer).
+**Sürüm B'nin iki kalanı da KAPANDI (30 Ağustos 2026):** madde 13'ün dört
+bildirimi canlıda (Faz 2 + 4), "bildirime dokununca doğru oyunu aç" kodu
+main'de (Faz 3 — 1.0.3'le sahaya çıkar). Burada duran *"'taktirde' düzeltmesi
+deploy edilmedi"* notu da bayattı ve silindi: düzeltme 29 Ağustos'ta v11'de
+canlıdan doğrulanmıştı (bkz. #13'teki ✅ satırı), bugün canlıda v12 var.
 
 ### 1.5 Sürüm B'ye binecek sözlük eklemeleri (28 Ağustos 2026)
 
@@ -798,6 +794,13 @@ desen kurdu — mağaza görselleri de aynı yoldan üretilmeli, yoksa vitrin il
 
 
 ## 1. `kelimeki://` deep link kanalı — **MAĞAZA BLOKERİ**
+
+*⚠ BU MADDE FİİLEN KAPANDI (30 Ağustos 2026, Faz 3'te ölçüldü) — aşağısı
+tarihçe.* Üç akış da çalışıyor (kayıt onayı 28 Ağustos'ta https'e geçti,
+şifre sıfırlama `kelimeki://reset`, arkadaş daveti App Links + inbox) ve
+Faz 3 dördüncüyü ekledi (bildirim → oyun). Açık kalan TEK parça iOS
+Associated Domains — o, iOS'un kendi bloğunda (Apple Developer üyeliği)
+bekliyor, bu maddenin değil.
 
 *FAZ B'nin parçası — sıradaki yeri: madde 0 → 0.B/3.*
 
