@@ -335,14 +335,16 @@ Yani değişiklik **görsel olarak bir no-op**. Hijyen olarak yerinde
 `document.scrollWidth == innerWidth` → sayfa taşmıyor. `ring-offset-2` de
 hiçbir şey boyamıyor (Tailwind onu yalnızca bir CSS değişkenine derliyor).
 
-**Sorunun gerçek sebebi HÂLÂ BİLİNMİYOR.** Açık duran tek hipotez (kanıt
-DEĞİL): skor kutularının genişliği `clamp(43px, calc(-52.83px + 25.56vw),
-66px)` ile kesirli çıkıyor (390px'te 46,85px) ve pasif kutunun çerçevesi
-`outline: 0.5px`; iPhone'un 3x ölçeğinde bu 1,5 cihaz pikseli demek ve
-kesirli bir x koordinatına düşünce soluk/eksik render edilebilir. iPad 2x,
-masaüstü 1x/2x olduğundan orada görünmemesi buna uyar. Doğrulamak için
-GERÇEK ekran görüntüsü gerekiyor — açılı bir fotoğrafta "soluk render" ile
-"fiilen kesik" ayırt edilemiyor.
+**SORUN SONRADAN BULUNDU — bu bölümdeki teorilerin hiçbiri değildi.**
+Kullanıcı gerçek bir ekran görüntüsü gönderdi (fotoğraf değil) ve piksel
+taraması cevabı verdi: pasif skor kutusunun `outline: 0.5px` çerçevesi,
+iPhone'un DPR 3'ünde 1,5 cihaz pikseli oluyor ve kesirli kutu genişliği
+yüzünden iki dikey kenar farklı alt-piksel fazına düşüyor — biri canlı
+çiziliyor (iç zemine uzaklık 272), öteki kayboluyor (uzaklık 14). Düzeltme
+`GameHeader`'da pasif kalınlığın 1 px'e çıkarılması. Ölçümler, Chromium'un
+neden bu hatayı üretemediği (0.5px'i 1px'e yuvarlıyor) ve `outlineOffset`in
+neden -0.5'te bırakıldığı: `docs/decisions/components.md` → `GameHeader`
+maddesi.
 
 **ÜÇ DERS:**
 

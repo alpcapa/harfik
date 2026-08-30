@@ -278,8 +278,16 @@ class _PlayerBox extends StatelessWidget {
       // değiştirirse dar YZ kutusunda 3 haneli skor kırpılır. Flutter'da
       // BoxDecoration.border da içeriden yer kapladığından çerçeve layout'a
       // hiç dokunmayan ön katmana çizilir.
+      // 30 Ağustos 2026 — pasif kalınlık 0.5 → 1, web ikiziyle birlikte.
+      // Sebep webde ölçüldü (kullanıcının iPhone ekran görüntüsü, DPR 3):
+      // 0.5 px'lik çerçeve 1,5 CİHAZ pikseli demek ve kutu genişliği kesirli
+      // olduğundan iki kenar farklı alt-piksel fazına düşüyor — biri çiziliyor,
+      // öteki açık zeminde kayboluyor (ölçülen kontrast farkı 272 ↔ 14).
+      // Flutter da 0.5'i yuvarlamaz, yani aynı kırılganlık burada da vardı;
+      // uygulamada henüz görülmemiş olması fazın şanslı düşmesiydi.
+      // Aktif/pasif ayrımı 2 ↔ 1 olarak korunuyor. Bkz. GameHeader.tsx.
       foregroundDecoration: BoxDecoration(
-        border: Border.all(color: col.base, width: active ? 2 : 0.5),
+        border: Border.all(color: col.base, width: active ? 2 : 1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Column(
