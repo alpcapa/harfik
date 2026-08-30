@@ -46,6 +46,7 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart'
     show BoardSnapshotTile, trUpper;
 
+import '../../data/analytics.dart';
 import '../../data/game_record.dart';
 import '../game/board_widget.dart';
 import '../game/logo_mark.dart';
@@ -96,6 +97,16 @@ class IntroScreen extends StatefulWidget {
 class _IntroScreenState extends State<IntroScreen> {
   final PageController _controller = PageController();
   int _page = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // GA4 `intro_slide_viewed` (ROADMAP #13'ün gerekçesi TAM bu ekran:
+    // insanlar tanıtımda takılıyordu — 3 günde 2 kayıt — ve hangi slaytta
+    // takıldıkları hiçbir veride görünmüyordu). İlk slayt BURADA loglanır:
+    // `onPageChanged` yalnız sayfa DEĞİŞİNCE ateşlenir, 0'ı hiç görmez.
+    analytics.log('intro_slide_viewed', {'index': 0});
+  }
 
   @override
   void dispose() {
@@ -150,7 +161,10 @@ class _IntroScreenState extends State<IntroScreen> {
                 scrollBehavior: ScrollConfiguration.of(context).copyWith(
                   dragDevices: PointerDeviceKind.values.toSet(),
                 ),
-                onPageChanged: (i) => setState(() => _page = i),
+                onPageChanged: (i) {
+                  analytics.log('intro_slide_viewed', {'index': i});
+                  setState(() => _page = i);
+                },
                 children: const [
                   _HosGeldinSayfasi(),
                   _DortKisilikSayfasi(),

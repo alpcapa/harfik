@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../bootstrap.dart';
 import '../config/version_gate.dart';
 import '../data/error_reporter.dart';
+import '../data/online_games_api.dart';
 import '../data/store_update.dart';
 import '../storage/app_storage.dart';
 import 'auth/reset_password_modal.dart';
@@ -18,6 +19,7 @@ import 'push/push_permission_flow.dart';
 import 'update_required_screen.dart';
 import 'text_scale.dart';
 import 'game/logo_mark.dart';
+import 'live/open_online_game.dart';
 import 'online_scope.dart';
 
 class KelimekiApp extends StatelessWidget {
@@ -198,6 +200,64 @@ class _HomeGateState extends State<_HomeGate> with WidgetsBindingObserver {
     ));
   }
 
+  /// Oyun linki işleme kilidi — aynı dokunuş iki dinleyiciden (inbox +
+  /// auth) art arda tetiklenirse ikinci `load()` ilkinin üstüne binmesin.
+  bool _oyunAcilisiSuruyor = false;
+
+  /// Bekleyen oyun linkini (bildirime dokunma / `kelimeki://oyun/...`)
+  /// işler — Faz 3'ün yönlendirme yarısı.
+  ///
+  /// Girişsizken bekletir (take ETMEZ): push bildirimi girişli cihaza
+  /// gelir, ama elle açılmış bir linkte kullanıcı önce giriş yapacaktır;
+  /// auth dinleyicisi giriş gelince burayı yeniden çağırır. Intro
+  /// açıkken de bekletir — ilk açılış tanıtımını bir linkin delmesi,
+  /// "tek çıkış HEMEN OYNA" kararını sessizce bozardı.
+  void _oyunLinkiniIsle() {
+    final inbox = widget.services.gameLinks;
+    final repo = widget.services.onlineGames;
+    if (inbox == null || repo == null) return;
+    if (_oyunAcilisiSuruyor || _showIntro != false) return;
+    if (inbox.pendingGameId == null) return;
+    if (widget.services.auth.user == null) return;
+    final id = inbox.take()!;
+    _oyunAcilisiSuruyor = true;
+    unawaited(_oyunuAc(repo, id).catchError((Object e) {
+      // Yutuluyor: bildirime dokunmak en kötü ihtimalle uygulamayı açar,
+      // asla düşürmez (push_taps.dart'taki sözleşme). Ağ hatası burada
+      // BEKLENEN durum — telemetriye de düşmüyor (offline_notice kuralı).
+      debugPrint('[Kelimeki] oyun linki işlenemedi: $e');
+    }).whenComplete(() => _oyunAcilisiSuruyor = false));
+  }
+
+  Future<void> _oyunuAc(OnlineGamesRepo repo, String id) async {
+    // Oyun tek tek çekilmiyor: `list_my_online_games` zaten koltukları/
+    // isimleri zenginleştirilmiş veriyor ve RLS "tarafı mısın" sorusunu
+    // sunucuda cevaplıyor — ayrı bir uç açmak ikinci bir sözleşme olurdu.
+    final snap = await repo.load();
+    if (!mounted) return;
+    OnlineGame? game;
+    for (final g in snap?.games ?? const <OnlineGame>[]) {
+      if (g.id == id) {
+        game = g;
+        break;
+      }
+    }
+    // Hangi ekranda olursak olalım (başka oyun, modal) köke dön — bildirim
+    // yönlendirmesinin standart sözleşmesi: dokunuş, mevcut yığının üstüne
+    // İKİNCİ bir tahta bindirmez.
+    Navigator.of(context).popUntil((r) => r.isFirst);
+    if (game != null && game.status == OnlineGameStatus.active) {
+      await openOnlineGameScreen(context,
+          services: widget.services, game: game);
+      return;
+    }
+    // Davet henüz beklemede (tahta yok), oyun listede değil (reddedilmiş/
+    // bitmiş/yanlış hesap) ya da liste yüklenemedi → Arkadaşınla sekmesi:
+    // davetse LiveGamesTab kendi kuralıyla "Oyun Davetleri"ni açar,
+    // yüklenemediyse kullanıcı dürüst "yüklenemedi" mesajını görür.
+    widget.services.liveTabRequests.value++;
+  }
+
   /// Bu açılışta "daha yeni sürüm var mı" sorusu bir SONUCA vardı mı.
   /// `false` kalırsa (ağ yoktu, Play cevap vermedi) öne dönüşte tekrar
   /// sorulur — bir kez susup bir daha hiç sormamak, tam da bu özelliğin
@@ -236,6 +296,8 @@ class _HomeGateState extends State<_HomeGate> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     widget.services.auth.removeListener(_pushHizala);
+    widget.services.auth.removeListener(_oyunLinkiniIsle);
+    widget.services.gameLinks?.removeListener(_oyunLinkiniIsle);
     super.dispose();
   }
 
@@ -245,11 +307,18 @@ class _HomeGateState extends State<_HomeGate> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     // Oturum değişimi (giriş/çıkış/hesap değiştirme) + ilk açılış.
     widget.services.auth.addListener(_pushHizala);
+    // Girişsizken bekletilen oyun linki, giriş gelince işlensin.
+    widget.services.auth.addListener(_oyunLinkiniIsle);
+    widget.services.gameLinks?.addListener(_oyunLinkiniIsle);
     _pushHizala();
     _guncellemeKontrol();
+    // ⚠ `_oyunLinkiniIsle` BURADA çağrılmıyor: `_showIntro` hâlâ null
+    // (karar verilmedi) ve işleyici bilerek bekletirdi. Çağrı, kararın
+    // verildiği HER dalda — aşağıdaki üçü + `_finishIntro` + dinleyiciler.
     final storage = widget.services.storage;
     if (storage == null) {
       _showIntro = false;
+      _oyunLinkiniIsle();
       return;
     }
     storage.then((s) {
@@ -258,12 +327,14 @@ class _HomeGateState extends State<_HomeGate> with WidgetsBindingObserver {
         _storage = s;
         _showIntro = !s.flags.seenIntro;
       });
+      _oyunLinkiniIsle(); // intro kapalıysa bekleyen link artık işlenebilir
     }).catchError((Object e) {
       // Depo açılamazsa tanıtım GÖSTERİLMEZ: bayrak yazılamayacağından her
       // açılışta tekrar çıkardı (bkz. Parça 45 — depo yokluğu sessizce
       // kabul edilir, akış durmaz).
       if (!mounted) return;
       setState(() => _showIntro = false);
+      _oyunLinkiniIsle();
     });
   }
 
@@ -273,6 +344,7 @@ class _HomeGateState extends State<_HomeGate> with WidgetsBindingObserver {
     // kez daha çıkar — veri kaybı yok.
     _storage?.flags.markIntroSeen();
     setState(() => _showIntro = false);
+    _oyunLinkiniIsle(); // intro bitti — bekletilen link varsa şimdi
   }
 
   @override

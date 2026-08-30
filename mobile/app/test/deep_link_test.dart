@@ -5,8 +5,12 @@
 // linki, push bildirimi). Yanlış sınıflandırma sessiz: link "işe yaramıyor"
 // olarak görünür, hiçbir hata düşmez. Cihazda doğrulaması pahalı (gerçek
 // kurulum + gerçek e-posta) olduğundan biçim sözleşmesi burada kilitleniyor.
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/friends_api.dart' show buildInviteUrl;
+import 'package:kelimeki/src/data/game_link_inbox.dart';
+import 'package:kelimeki/src/data/push_taps.dart' show pushMessageLink;
 import 'package:kelimeki/src/config/env.dart' show authRedirectUri;
 import 'package:kelimeki/src/util/deep_link.dart';
 
@@ -116,6 +120,79 @@ void main() {
       expect(parseDeepLink(Uri.parse('https://kelimeki.com/game/abc')), isNull);
       expect(parseDeepLink(Uri.parse('https://kelimeki.com/gizlilik/')), isNull);
       expect(parseDeepLink(Uri.parse('https://kelimeki.com/')), isNull);
+    });
+  });
+
+  group('pushMessageLink — FCM data yükü (Faz 3)', () {
+    test('sunucunun gönderdiği biçim çözülür', () {
+      final uri = pushMessageLink({'link': 'kelimeki://oyun/g1'});
+      expect(uri, isNotNull);
+      // Uçtan uca: FCM yükü → parseDeepLink → oyun id'si. Sunucu tarafı
+      // (`_shared/push.ts` → data.link) biçimi ELLE kuruyor; bu test
+      // istemci yarısını kilitliyor.
+      expect(parseDeepLink(uri!), isA<KOnlineGameLink>());
+      expect((parseDeepLink(uri)! as KOnlineGameLink).gameId, 'g1');
+    });
+
+    test('link yok / boş / yanlış tip → sessizce null (teslim uyarısı '
+        'bildirimi link TAŞIMIYOR, bu beklenen yol)', () {
+      expect(pushMessageLink(const {}), isNull);
+      expect(pushMessageLink(const {'link': ''}), isNull);
+      expect(pushMessageLink(const {'link': 42}), isNull);
+      expect(pushMessageLink(const {'baska': 'alan'}), isNull);
+    });
+  });
+
+  group('GameLinkInbox (Faz 3)', () {
+    test('oyun URI\'sı pending olur, davet/auth URI\'larına dokunmaz',
+        () async {
+      final inbox = GameLinkInbox();
+      var bildirim = 0;
+      inbox.addListener(() => bildirim++);
+      final ctrl = StreamController<Uri>();
+      inbox.attach(ctrl.stream);
+
+      ctrl.add(Uri.parse('kelimeki://davet/tok1')); // FriendInviteInbox'un işi
+      ctrl.add(Uri.parse('kelimeki://auth?code=x')); // supabase_flutter'ın işi
+      await Future<void>.delayed(Duration.zero);
+      expect(inbox.pendingGameId, isNull);
+      expect(bildirim, 0);
+
+      ctrl.add(Uri.parse('kelimeki://oyun/g1'));
+      await Future<void>.delayed(Duration.zero);
+      expect(inbox.pendingGameId, 'g1');
+      expect(bildirim, 1);
+      await ctrl.close();
+    });
+
+    test('take oku-ve-temizle; üst üste dokunuşta SONUNCUSU kazanır',
+        () async {
+      final inbox = GameLinkInbox();
+      final ctrl = StreamController<Uri>();
+      inbox.attach(ctrl.stream);
+      ctrl.add(Uri.parse('kelimeki://oyun/g1'));
+      ctrl.add(Uri.parse('kelimeki://oyun/g2'));
+      await Future<void>.delayed(Duration.zero);
+      expect(inbox.take(), 'g2');
+      expect(inbox.take(), isNull); // ikinci kez işlenmez
+      await ctrl.close();
+    });
+
+    test('iki kaynak bağlanabilir (URI akışı + bildirim dokunuşları)',
+        () async {
+      final inbox = GameLinkInbox();
+      final a = StreamController<Uri>();
+      final b = StreamController<Uri>();
+      inbox.attach(a.stream);
+      inbox.attach(b.stream);
+      a.add(Uri.parse('kelimeki://oyun/g1'));
+      await Future<void>.delayed(Duration.zero);
+      expect(inbox.take(), 'g1');
+      b.add(Uri.parse('kelimeki://oyun/g2'));
+      await Future<void>.delayed(Duration.zero);
+      expect(inbox.take(), 'g2');
+      await a.close();
+      await b.close();
     });
   });
 }

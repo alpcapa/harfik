@@ -19,6 +19,7 @@ import 'package:flutter/gestures.dart' show TapGestureRecognizer;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show AuthException;
 
+import '../../data/analytics.dart';
 import '../../data/auth_service.dart';
 import '../../data/feedback_api.dart';
 import '../../data/profile_fields.dart';
@@ -81,6 +82,17 @@ class AuthModal extends StatefulWidget {
 class _AuthModalState extends State<AuthModal> {
   late _Mode _mode = widget.startInSignup ? _Mode.signup : _Mode.login;
 
+  @override
+  void initState() {
+    super.initState();
+    // GA4 `signup_started` — kayıt FORMUNUN görülmesi (dönüşüm hunisinin
+    // üst ucu; alt ucu `signup_completed`). İki giriş yolu var ve ikisi de
+    // sayılmalı: modal doğrudan kayıt modunda açılabiliyor (startInSignup —
+    // "Neden Üye Olmalıyım?" kutusu) ya da girişten sekmeyle geçiliyor
+    // (`_switchMode`).
+    if (widget.startInSignup) analytics.log('signup_started');
+  }
+
   late final _email = TextEditingController(text: widget.initialEmail ?? '');
   final _password = TextEditingController();
   final _firstName = TextEditingController();
@@ -139,11 +151,16 @@ class _AuthModalState extends State<AuthModal> {
     super.dispose();
   }
 
-  void _switchMode(_Mode next) => setState(() {
-        _mode = next;
-        _error = null;
-        _info = null;
-      });
+  void _switchMode(_Mode next) {
+    if (next == _Mode.signup && _mode != _Mode.signup) {
+      analytics.log('signup_started');
+    }
+    setState(() {
+      _mode = next;
+      _error = null;
+      _info = null;
+    });
+  }
 
   void _onNicknameChanged(String raw) {
     // Boşluklar anında silinir (web onChange .replace(/\s+/g,'')).
@@ -257,6 +274,10 @@ class _AuthModalState extends State<AuthModal> {
         marketingConsent: _marketingConsent,
         signupChannel: widget.signupChannel,
       );
+      // GA4 `signup_completed` — hesap OLUŞTU (iki dal da başarı: e-posta
+      // doğrulaması kapalıysa oturum açıldı, açıksa onay bekleniyor; huni
+      // için ikisi de "kayıt tamamlandı").
+      analytics.log('signup_completed');
       if (!mounted) return;
       if (sessionOpened) {
         Navigator.of(context).pop();

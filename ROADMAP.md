@@ -145,20 +145,42 @@ diyordu. Gerekçeler/ölçümler: `docs/decisions/live-game.md`,
 `docs/decisions/components-account.md`, `mobile/docs/parca-log.md` Parça
 172-173.
 
-### Faz 3 — deep link + bildirime dokunma + Analytics · **1 sürüm** · en büyük
+### Faz 3 — deep link + bildirime dokunma + Analytics · ✅ **KOD TAMAM** (30 Ağustos 2026) · 1.0.3'le çıkar
 
-Üçü de istemci; ayrı sürümlere bölmek iki tur harcar.
+İstemci tarafının tamamı yazıldı ve 652 testle yeşil; kullanıcıya ancak bir
+SONRAKİ sürümle ulaşır (Faz 1'in "kod hangi sürümdeyse o sürümden itibaren"
+kuralı). Sunucuda değişiklik YOK — `data.link` Faz 2'den beri zaten
+gidiyordu, bu faz onu okuyan yarıyı ekledi.
 
-- **#1 `kelimeki://` deep link kanalı** (mağaza blokeri).
-- **Bildirime dokununca doğru yere gitme.** Ölçüldü: `FirebaseMessaging`
-  şu an YALNIZCA `push_gateways.dart`'ta (token kaydı) kullanılıyor;
-  `onMessageOpenedApp`/`getInitialMessage` HİÇ YOK. Sunucu `data.link`'i
-  **zaten gönderiyor** (`_shared/push.ts`), istemci okumuyor. Yani bu iş
-  #1 ile aynı yeri elden geçiriyor — birlikte yapılmalı.
-- **Firebase Analytics.** Ölçüldü: `firebase_analytics ^12.5.0`
-  `pubspec.yaml`'da DURUYOR ama `lib/` altında **tek satır kullanımı yok**.
-  #13'teki ilk altı olay. Play Data safety formu bu iş için **zaten
-  güncellenmiş** (29 Ağustos) — o alt madde kapalı.
+- **Deep link kanalı:** işe başlarken ÖLÇÜLDÜ ki madde 1'in platform yarısı
+  zaten bitmişti — manifest'in iki intent filtresi, Info.plist URL şeması,
+  `parseDeepLink`teki `KOnlineGameLink` dalı yerindeydi. Eksik olan yalnızca
+  YÖNLENDİRMEYDİ; ROADMAP'in "üç platform yapılandırması aynı anda" korkusu
+  bayattı (o iş Parça 87/158'de parça parça yapılmış).
+- **Bildirime dokununca doğru yere gitme — YAZILDI:** `FirebasePushTapSource`
+  (`onMessageOpenedApp` + `getInitialMessage` → `data.link`) +
+  `GameLinkInbox` (app_links URI'ları da aynı kapıya düşer) + `_HomeGate`
+  yönlendirmesi. Üç dal: oyun AKTİFSE Canlı tahta doğrudan açılır
+  (`open_online_game.dart` — LiveGamesTab'ın 14 parametrelik kurulumuyla
+  ORTAK, iki kapı tek fonksiyon); davet beklemedeyse/oyun listede yoksa
+  Arkadaşınla sekmesi (`liveTabRequests` sayacı); girişsizken link
+  BEKLETİLİR, giriş gelince işlenir. Üçü de widget-testli, dinleyici
+  kablosunun negatif eşi doğrulandı.
+- **Firebase Analytics — YAZILDI:** global `analytics` (errorReporter
+  deseni; fire-and-forget, yapılandırılmamışken no-op) + ilk altı olay:
+  `intro_slide_viewed{index}` · `signup_started` · `signup_completed` ·
+  `live_game_form_opened` · `live_game_created{player_count,with_ai}` ·
+  `invite_link_shared{source: friends_modal|setup_footer}`. Altı yer de
+  mevcut widget testlerine bağlandı. ⚠ `invite_link_shared` paylaşım
+  SAYFASININ açılmasını sayar — "gerçekten gönderildi" bilgisi share_plus'ta
+  güvenilir değil ve öyleymiş gibi adlandırılmadı.
+- **Doğrulama sınırı:** FCM dokunuşu ve GA4 olay akışı bu ortamda uçtan uca
+  koşulamaz (Firebase cihaz ister) — cihaz kontrolleri
+  `mobile/docs/testing-bildirimler.md` §3c'de; Play imzalı 1.0.3 derlemesi
+  gerektirir. `notify-game-invite`'ın "link bugün istemci tarafından
+  okunmuyor" yorumu artık bayat ama dosyaya BİLEREK dokunulmadı: yorum
+  düzeltmesi için Edge Function deploy'u (canlıya anında etki) yapılmaz;
+  ilk gerçek değişiklikte güncellenecek.
 
 ### Faz 4 — "sıra sende" · **SÜRÜM GEREKTİRMEZ** · sunucu
 
@@ -191,8 +213,8 @@ koddan ölçülen hâl:
 | `push_notifications_enabled` tercihi (e-postadan bağımsız) | ✅ |
 | **Teslim uyarısı push'u** | ✅ canlıda (`notify-deadline-warnings` v12) |
 | Oyun daveti · arkadaş daveti push kanalı | ✅ canlıda (30 Ağustos) |
-| Bildirime dokununca yönlendirme | ⬜ **Faz 3** |
-| Firebase Analytics olayları | ⬜ **Faz 3** |
+| Bildirime dokununca yönlendirme | ✅ kod tamam (30 Ağustos) — 1.0.3'le çıkar |
+| Firebase Analytics olayları | ✅ kod tamam (30 Ağustos) — 1.0.3'le çıkar |
 | "Sıra sende" olayı | ⬜ **Faz 4** |
 | Play Data safety formu | ✅ (29 Ağustos) |
 

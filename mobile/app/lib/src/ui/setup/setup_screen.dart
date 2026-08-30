@@ -33,6 +33,7 @@ import 'dart:async' show Timer, unawaited;
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
+import '../../data/analytics.dart';
 import '../../bootstrap.dart';
 import '../../config/env.dart';
 import '../../data/cloud_save_repo.dart';
@@ -214,6 +215,10 @@ class _SetupScreenState extends State<SetupScreen>
     _lastAuthUserIdForLiveViewReset =
         _lastUserId; // React'in mount-anı effect'i
     widget.services.auth.addListener(_onAuthEvent);
+    // "Canlı sekmesini aç" istekleri (Faz 3): bildirimdeki oyun tahta
+    // olarak açılamadığında (davet beklemede / listede yok) _HomeGate bu
+    // sayacı artırıyor — kullanıcı en azından doğru sekmeye insin.
+    widget.services.liveTabRequests.addListener(_onLiveTabRequest);
     // Bağlantı durumu — çevrimdışı mesajı ANINDA çıksın (web
     // `useOnlineStatus`; portta önce ağ çağrısının düşmesi bekleniyordu).
     widget.services.onlineStatus.addListener(_onConnectivity);
@@ -418,6 +423,9 @@ class _SetupScreenState extends State<SetupScreen>
   }
 
   Future<void> _handleShare() {
+    // GA4 `invite_link_shared` {source: setup_footer} — gerekçe ve ölçüm
+    // sınırı friends_modal'daki eş çağrının yorumunda.
+    analytics.log('invite_link_shared', {'source': 'setup_footer'});
     return (widget.share ?? shareBoard)(
       png: null,
       text: 'Hemen ücretsiz dene!',
@@ -568,6 +576,7 @@ class _SetupScreenState extends State<SetupScreen>
     kRouteObserver.unsubscribe(this);
     WidgetsBinding.instance.removeObserver(this);
     widget.services.auth.removeListener(_onAuthEvent);
+    widget.services.liveTabRequests.removeListener(_onLiveTabRequest);
     widget.services.onlineStatus.removeListener(_onConnectivity);
     widget.services.inviteInbox?.removeListener(_onInviteEvent);
     _liveBadgeDebounce?.cancel();
@@ -581,6 +590,19 @@ class _SetupScreenState extends State<SetupScreen>
 
   void _onRankScores() {
     if (mounted) setState(() {});
+  }
+
+  /// Faz 3 — bildirim yönlendirmesinin sekme dalı. Sayaç her arttığında
+  /// Arkadaşınla'ya geç; alt sekme kuralı (`_liveView` değişen her yer
+  /// `_localSubTab`ı sıfırlar) burada da geçerli. "Oyun Davetleri" alt
+  /// sekmesini AYRICA seçmek gerekmiyor: bekleyen davet varken LiveGamesTab
+  /// zaten o alt sekmeyle açılıyor (kendi varsayılan-kova kuralı, testli).
+  void _onLiveTabRequest() {
+    if (!mounted) return;
+    setState(() {
+      _liveView = true;
+      _localSubTab = _LocalSubTab.active;
+    });
   }
 
   void _onAuthEvent() {

@@ -37,6 +37,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'support/real_io.dart';
+import 'package:kelimeki/src/data/analytics.dart';
+import 'support/fake_analytics.dart';
 import 'support/test_view.dart';
 
 /// Ekrandaki tahtayı taşıyan slaydın DİKEY kaydırma payı (0 = slayt tek
@@ -116,6 +118,12 @@ void main() {
   group('IntroScreen', () {
     testWidgets('beş sayfa: ara sayfalarda DEVAM, son sayfada HEMEN OYNA; '
         'parmakla da düğmeyle de ilerler; atlama YOK', (tester) async {
+      // GA4 `intro_slide_viewed` bu ekranın VAR OLMA sebebiyle aynı ölçüm
+      // (insanlar tanıtımda takılıyordu ve hangi slaytta takıldıkları
+      // görünmüyordu) — beş sayfayı gezen bu test olay dizisini de kilitler.
+      final fakeAnalytics = FakeAnalytics();
+      analytics.configure(fakeAnalytics);
+      addTearDown(analytics.reset);
       await setPhoneViewSize(tester, const Size(420, 900));
       var done = 0;
       await tester.pumpWidget(MaterialApp(
@@ -171,6 +179,13 @@ void main() {
       await tester.tap(find.text('HEMEN OYNA'));
       await tester.pumpAndSettle();
       expect(done, 1);
+
+      // Olay dizisi: ilk slayt initState'ten (onPageChanged 0'ı görmez),
+      // kalan dördü sayfa değişiminden. Sıralı ve eksiksiz.
+      expect(fakeAnalytics.names,
+          List.filled(kIntroPageCount, 'intro_slide_viewed'));
+      expect([for (final (_, p) in fakeAnalytics.events) p!['index']],
+          [for (var i = 0; i < kIntroPageCount; i++) i]);
     });
 
     // 19 Ağustos 2026, kullanıcı spesifikasyonu: dört slaytın İÇERİĞİ

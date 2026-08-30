@@ -26,6 +26,7 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show trCompare, trUpper;
 import 'package:share_plus/share_plus.dart';
 
+import '../../data/analytics.dart';
 import '../../data/auth_service.dart';
 import '../../data/chat_api.dart';
 import '../../data/friends_api.dart';
@@ -368,6 +369,13 @@ class _FriendsModalState extends State<FriendsModal> {
                 .share(ShareParams(text: text, sharePositionOrigin: anchor));
           };
       await share('$inviteShareText\n$url');
+      // GA4 `invite_link_shared` — "k-lig'de yükselenler daha çok davet mi
+      // gönderiyor?" sorusunun ham verisi. Ölçülen şey paylaşım SAYFASININ
+      // açılması: share_plus sonucu her platformda güvenilir bildirmiyor,
+      // "gerçekten gönderildi mi" burada bilinemez ve bilinirmiş gibi
+      // adlandırılmadı. İki yüzey aynı olay, `source` ile ayrışır
+      // (Setup footer'ındaki site paylaşımı = `setup_footer`).
+      analytics.log('invite_link_shared', {'source': 'friends_modal'});
     } finally {
       if (mounted) setState(() => _inviteBusy = false);
     }

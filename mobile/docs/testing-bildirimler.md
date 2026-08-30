@@ -204,14 +204,52 @@ token'ı zaten kaydediyordu — yani 1.0.1'i olan bir testçi de bunları alır.
 - [ ] **Hatırlatma (cron):** 3 gün cevapsız kalan bir istek için günlük cron
       gönderiyor — elle tetiklenemez, beklemek gerekiyor.
       **"Bekleyen arkadaşlık isteğin var"**.
-- [ ] ⚠ **Bildirime dokunmak henüz bir yere GÖTÜRMEZ** — yönlendirme Faz 3'ün
-      işi. Oyun daveti push'u `kelimeki://oyun/<id>` linkini zaten taşıyor
-      ama istemci okumuyor. Dokununca yalnızca uygulama açılır; bu hata
-      DEĞİL.
+- [ ] ⚠ **Bildirime dokunmak 1.0.2 ve ÖNCESİNDE bir yere götürmez** —
+      yönlendirme 1.0.3'ün kodu (§3c). Eski derlemede dokununca yalnızca
+      uygulama açılır; bu hata DEĞİL. Hangi derlemede olduğunu Setup'ın
+      teşhis satırından oku (deploy doğrulama kuralı).
 - [ ] **E-posta tercihi push'u kapatmamalı.** Hesap Ayarları'ndan e-posta
       bildirimlerini KAPAT, push'u açık bırak → davet geldiğinde e-posta
       gelmemeli ama **push gelmeli**. (30 Ağustos 2026'ya kadar
       `notify-deadline-warnings`'te tam tersi oluyordu; dördü de düzeltildi.)
+
+## 3c. Bildirime dokunma yönlendirmesi + Analytics (Faz 3, 30 Ağustos 2026 — 1.0.3 İSTER)
+
+Kod 30 Ağustos'ta yazıldı; sahaya 1.0.3'le çıkar. ⚠ **Play imzalı derleme
+şart olmayan tek kontrol Analytics değil** — FCM dokunuşu yan yüklenmiş
+`.apk`'da da çalışır, ama gerçek senaryo (bildirim → dokun) kapalı test
+derlemesiyle koşulmalı ki üretimdekiyle aynı imza/kanal zinciri sınansın.
+
+- [ ] **Davet bildirimi → dokun (uygulama ARKA PLANDA).** Başka hesaptan
+      Canlı oyun daveti gönderilsin, bildirime dokun: uygulama öne gelmeli
+      ve **Arkadaşınla sekmesi** açılmalı (davet beklemede olduğundan tahta
+      DEĞİL; "Oyun Davetleri" alt sekmesi kendiliğinden seçili).
+- [ ] **Aynı bildirim → dokun (uygulama KAPALI, görev yöneticisinden
+      atılmış).** Soğuk başlangıç AYRI bir API yolu (`getInitialMessage`) —
+      sıcak akış çalışıyor diye bu adım ATLANMAZ (Parça 87'nin AppLinks
+      dersi aynen geçerli).
+- [ ] **Davet kabul edildikten sonra aynı linke dokunmak** (bildirim
+      tepside durmuş olabilir): oyun artık `active` → **Canlı tahta
+      DOĞRUDAN açılmalı**, sekme değil.
+- [ ] **Başka bir ekranda/oyundayken dokun:** açık modal/tahta ne olursa
+      olsun köke dönüp bildirimdeki oyuna gitmeli — yığının üstüne İKİNCİ
+      bir tahta binmemeli.
+- [ ] **Girişsizken** (çıkış yapıp `kelimeki://oyun/<id>` linkini elle aç):
+      hiçbir şey açılmamalı; giriş yapınca oyun kendiliğinden açılmalı.
+- [ ] **Teslim uyarısı bildirimi ESKİSİ GİBİ:** link taşımıyor, dokununca
+      yalnızca uygulama açılır — bu hata değil (Faz 4'te "sıra sende"
+      linklenecek).
+- [ ] **GA4 olayları (DebugView):** `adb shell setprop
+      debug.firebase.analytics.app com.kelimeki.kelimeki` sonra Firebase
+      Console → DebugView. Sırayla tetikle ve düştüğünü gör:
+      tanıtımı gez (`intro_slide_viewed` index 0..4), kayıt formunu aç
+      (`signup_started`), Canlı oyun formunu aç/gönder
+      (`live_game_form_opened`/`live_game_created`), davet linki paylaş
+      (`invite_link_shared`, source parametresiyle). İş bitince:
+      `adb shell setprop debug.firebase.analytics.app .none.`
+- [ ] **Analytics uygulamayı YAVAŞLATMAMALI/DÜŞÜRMEMELİ:** uçak modunda
+      aynı akışları gez — hiçbir ekran takılmamalı (fire-and-forget
+      sözleşmesi; olaylar Firebase'in kendi kuyruğunda bekler).
 
 ## 4. Kayıt onayı ve şifre sıfırlama (derin bağlantı kanalı)
 

@@ -30,6 +30,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'
     show User, PostgrestException;
 
+import 'package:kelimeki/src/data/analytics.dart';
+import 'support/fake_analytics.dart';
 import 'support/fake_online_gateway.dart';
 import 'support/test_fonts.dart';
 import 'support/test_view.dart';
@@ -500,6 +502,10 @@ void main() {
 
     testWidgets('davet butonu: link + metin paylaş ucuna gider + görüntü',
         (tester) async {
+      // GA4 `invite_link_shared` {source: friends_modal} — Faz 3.
+      final fakeAnalytics = FakeAnalytics();
+      analytics.configure(fakeAnalytics);
+      addTearDown(analytics.reset);
       final shared = <String>[];
       final gw = await pumpModal(tester, sharer: (t) async => shared.add(t));
       expect(gw, isNotNull);
@@ -529,6 +535,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(shared.single,
           '$inviteShareText\nhttps://kelimeki.com/davet/tok-123?ref=arkadas');
+      expect(fakeAnalytics.names, ['invite_link_shared']);
+      expect(fakeAnalytics.events.single.$2, {'source': 'friends_modal'});
 
       await tester.runAsync(() async {
         final boundary =

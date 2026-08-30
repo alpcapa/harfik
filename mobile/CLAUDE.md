@@ -545,7 +545,24 @@ mobile/
                              # Canlı sekmesinin _reload()'undaydı (Parça 159)
       data/push_gateways.dart # yukarıdaki iki dikişin GERÇEK uçları
                              # (firebase_messaging ↔ Supabase upsert) +
-                             # izinDurumu(AuthorizationStatus) eşlemesi
+                             # izinDurumu(AuthorizationStatus) eşlemesi +
+                             # FirebasePushTapSource (bildirime dokunma —
+                             # onMessageOpenedApp + getInitialMessage)
+      data/push_taps.dart    # bildirime DOKUNMA dikişi (Faz 3):
+                             # PushTapSource arayüzü + pushMessageLink
+                             # (data.link → Uri, saf). PushMessaging'e
+                             # BİLEREK eklenmedi — o dikiş token yaşam
+                             # döngüsünün sözleşmesi, sahteleri kırardı
+      data/game_link_inbox.dart # kelimeki://oyun/<id> gelen kutusu —
+                             # FriendInviteInbox'un kardeşi ama KALICI
+                             # DEĞİL (bildirime dokunmak anlık niyet;
+                             # bayat tahta açılmaz). İki kaynak: app_links
+                             # akışı + push dokunuşları. Tüketen _HomeGate
+      data/analytics.dart    # GA4 olay kanalı — errorReporter deseni
+                             # (global tek örnek, fire-and-forget,
+                             # yapılandırılmamışken no-op). Olay adları
+                             # SÖZLEŞME, dosya başlığında liste
+      data/analytics_gateway.dart # gerçek uç (FirebaseAnalytics.logEvent)
       data/store_update.dart # Play In-App Update — "açılışta yeni sürüm
                              # varsa uyar ve yaptır". Sunucuda sürüm satırı
                              # TUTMAZ (Play'in kendisi bilir). YALNIZCA
@@ -670,7 +687,11 @@ mobile/
                              # friend_suggest_modal (kabul sonrası öneri),
                              # online_game_screen (TAHTA — game_screen.dart
                              # ile sürükleme/joker/mesaj desenini PAYLAŞIR,
-                             # biri değişirse öteki de güncellenmeli)
+                             # biri değişirse öteki de güncellenmeli),
+                             # open_online_game (tahtayı açan TEK kapı —
+                             # listeden dokunuş da bildirim yönlendirmesi
+                             # de bunu çağırır; 14 parametrelik kurulum
+                             # İKİNCİ kez yazılmasın diye Faz 3'te çıkarıldı)
       util/deep_link.dart    # gelen URI'lerin TEK ayrıştırma noktası
                              # (davet · auth dönüşü · Canlı oyun push linki)
       util/push_rules.dart   # "izin sorulsun mu?" saf kararı (en çok 3 kez,
@@ -689,6 +710,9 @@ mobile/
                              # kullanıyor (icon_parity, relation_icon_parity)
                              # — üçüncü bir elle-senkron vektör çifti
                              # eklenirse kopyalama, buradan tüket
+      support/fake_analytics.dart # sahte GA4 ucu — configure eden test
+                             # tearDown'da analytics.reset() çağırmak
+                             # ZORUNDA (global tek örnek, sızıntı)
       support/real_io.dart   # `drainRealIo` — GERÇEK sqflite/prefs I/O'suna
                              # gerçek zaman payı tanır. Gerçek depoyla çizen
                              # HER ekran testi bunu kullanmak ZORUNDA, yoksa

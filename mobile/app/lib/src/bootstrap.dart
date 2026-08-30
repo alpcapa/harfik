@@ -2,11 +2,14 @@
 //
 // Widget testleri KelimekiApp'i sahte bir AppServices ile pump edebilsin
 // diye tüm dış dünya (Supabase, asset, sürüm kapısı) burada toplanır.
+import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:flutter/services.dart' show AssetBundle;
 import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/version_gate.dart';
+import 'data/analytics.dart';
+import 'data/analytics_gateway.dart';
 import 'data/auth_service.dart';
 import 'data/chat_api.dart';
 import 'data/cloud_save_repo.dart';
@@ -15,6 +18,7 @@ import 'data/error_reporter.dart';
 import 'data/feedback_api.dart';
 import 'data/friend_invite_inbox.dart';
 import 'data/friends_api.dart';
+import 'data/game_link_inbox.dart';
 import 'data/games_api.dart';
 import 'data/league_rewards_api.dart';
 import 'data/online_games_api.dart';
@@ -98,6 +102,19 @@ class AppServices {
   /// Push izni akışının okuduğu sistem durumu. `push` ile birlikte gelir.
   final PushMessaging? pushMessaging;
 
+  /// Gelen Canlı oyun linkleri (`kelimeki://oyun/<id>`) — hem OS URI'ları
+  /// hem bildirim dokunuşları buraya düşer; tüketen `_HomeGate` (Faz 3).
+  /// Depolamasız widget testlerinde null (yönlendirme hiç kurulmaz).
+  final GameLinkInbox? gameLinks;
+
+  /// "Canlı sekmesini aç" istekleri — bildirimdeki oyun tahta olarak
+  /// AÇILAMADIĞINDA (davet henüz beklemede / oyun listede yok) kullanıcıyı
+  /// en azından doğru sekmeye götürmek için. Değer bir SAYAÇ: SetupScreen
+  /// her artışta Arkadaşınla sekmesine geçer (bool olsaydı ikinci istek
+  /// "değişmedi" diye yutulurdu).
+  final ValueNotifier<int> liveTabRequests;
+
+
   /// Play In-App Update dikişi — açılışta "daha yeni sürüm var mı" sorusu.
   /// Widget testleri null geçer (kontrol hiç koşmaz); gerçek uygulamada
   /// her zaman dolu, çünkü platform kararı burada DEĞİL uçta veriliyor:
@@ -110,7 +127,8 @@ class AppServices {
   /// depolamasız widget testlerinde null.
   final FeedbackRepo? feedback;
 
-  const AppServices({
+  // `const` DEĞİL: liveTabRequests bir ValueNotifier (kimlikli nesne).
+  AppServices({
     required this.onlineStatus,
     required this.dictionary,
     required this.meanings,
@@ -129,8 +147,10 @@ class AppServices {
     this.chat,
     this.push,
     this.pushMessaging,
+    this.gameLinks,
+    ValueNotifier<int>? liveTabRequests,
     this.storeUpdate,
-  });
+  }) : liveTabRequests = liveTabRequests ?? ValueNotifier<int>(0);
 }
 
 Future<AppServices> bootstrap(AssetBundle bundle) async {
@@ -160,6 +180,10 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
   // ve o anda `auth.uid()` null olduğundan `push_tokens` DELETE'i RLS'e
   // takılıp sessizce hiçbir şey silmez. Kanca, kimlik hâlâ elimizdeyken
   // koşuyor.
+  // Analytics — Firebase kurulduysa gerçek uç, yoksa global no-op kalır
+  // (testler ve web derlemesi hiç yapılandırmaz). errorReporter.configure
+  // ile aynı desen ve aynı satır komşuluğu: ikisi de "açılışta bir kez".
+  analytics.configure(firebaseHazir ? FirebaseAnalyticsLogger() : null);
   final pushRepo = firebaseHazir && supabase != null
       ? PushRepo(
           messaging: FirebasePushMessaging(),
@@ -206,5 +230,7 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
         : null,
     chat: supabase != null ? ChatRepo(SupabaseChatGateway(supabase)) : null,
     inviteInbox: createFriendInviteInbox(storage),
+    gameLinks: createGameLinkInbox(
+        pushTaps: firebaseHazir ? FirebasePushTapSource() : null),
   );
 }
