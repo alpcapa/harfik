@@ -182,16 +182,46 @@ gidiyordu, bu faz onu okuyan yarıyı ekledi.
   düzeltmesi için Edge Function deploy'u (canlıya anında etki) yapılmaz;
   ilk gerçek değişiklikte güncellenecek.
 
-### Faz 4 — "sıra sende" · **SÜRÜM GEREKTİRMEZ** · sunucu
+### Faz 4 — "sıra sende" · ✅ **CANLIDA** (30 Ağustos 2026) · sunucu, sürüm gerektirmedi
 
-#13'ün en pahalı kalemi: hamle gönderiminde tetiklenen yeni kanca (bugün
-böyle bir sunucu olayı HİÇ yok). İki tuzak orada yazılı: hamleyi YAPANA
-gönderme, ve hızlı gidip gelen oyunda spam olmaması için
-`deadline_warning_sent_at` desenine karşılık bir bastırma.
+İki adımda deploy edildi ve canlıdan doğrulandı: `notify-your-turn` Edge
+Function v1 (verify_jwt FALSE — sayım yedi → SEKİZ, kök CLAUDE.md listesi
+güncellendi) + trigger migration'ı
+(`20260830194913_notify_your_turn_trigger.sql` — dosya adı canlı versiyonla
+`git mv` ile eşitlendi). Doğrulama: trigger `online_game_states`te kayıtlı,
+bastırma fonksiyon gövdesinde, client rollerine grant yok. Deploy anından
+itibaren SAHADAKİ HER İSTEMCİNİN (1.0.1/1.0.2 dahil) hamlesi bildirim
+üretir; dokunuşun tahtaya götürmesi 1.0.3'ü bekler (Faz 3). Cihaz kontrol
+listesi: `mobile/docs/testing-bildirimler.md` §3d. **Gerçek kanıt sahadan
+gelecek** — bu ortamdan fonksiyon tetiklenemiyor/oyun oynanamıyor.
 
-**Neden Faz 3'ten SONRA:** bildirime dokunma yönlendirmesi olmadan "sıra
-sende" bildirimi kullanıcıyı oyuna götüremez, yani en çok hissedilen
-bildirim yarım değer verir.
+**Tetikleyici istemci DEĞİL, sunucu:** `online_game_states.current`
+ilerleyince koşan trigger (`_notify_your_turn`) — `submit_move`u (insan VE
+YZ hamleleri) ve `check_turn_timeout`un devir dalını TEK yerden yakalar;
+"SÜRÜM GEREKTİRMEZ" vaadi ancak böyle tutar (istemciden çağrılsaydı
+sahadaki 1.0.2 hamleleri bildirim üretmezdi). Desen `_notify_welcome_email`
+emsali (trigger → koşullar → `net.http_post`).
+
+**İki tuzağın çözümü:** hamleyi yapana gönderme YAPISAL olarak imkânsız
+(hedef, hamle SONRASI current koltuğu); spam bastırması hedef oyuncunun son
+10 dk içindeki kendi hamlesine bakıyor — zaten oyunun başındaysa http_post
+HİÇ yapılmıyor (`online_game_moves.created_at`, ek kolon yok).
+`deadline_warning_sent_at` benzeri atomik-iddia kolonu GEREKMEDİ: olay
+hamle başına doğal olarak tekil.
+
+**Güvenlik:** fonksiyon hedefi gövdeden ALMAZ — `online_game_id`yi alır,
+current'ı/`is_game_over`ı service-role ile kendisi okur; verify_jwt kapalı
+bir uca keyfi `target_user_id` geçirtmek herkese push tetikletmek olurdu.
+
+E-posta kanalı BİLEREK yok (#13 tablosu: bu olayın e-posta geçmişi hiç
+olmadı; teslim uyarısı e-posta tarafını karşılıyor). Metin kullanıcı onaylı
+(30 Ağustos): *"Sıra sende!"* / *"{isim} hamlesini yaptı — {n} kişilik
+oyunda sıra sende."* + `kelimeki://oyun/<id>` — 1.0.3+ istemcide dokunuş
+tahtayı doğrudan açar, eskisinde yalnızca uygulamayı açar (Faz 2'deki davet
+linkiyle aynı geriye-dönük kazanım).
+
+**Neden Faz 3'ten SONRAYDI:** bildirime dokunma yönlendirmesi olmadan "sıra
+sende" kullanıcıyı oyuna götüremezdi; Faz 3 kodu artık main'de.
 
 ### Sonra / bloke
 
@@ -215,7 +245,7 @@ koddan ölçülen hâl:
 | Oyun daveti · arkadaş daveti push kanalı | ✅ canlıda (30 Ağustos) |
 | Bildirime dokununca yönlendirme | ✅ kod tamam (30 Ağustos) — 1.0.3'le çıkar |
 | Firebase Analytics olayları | ✅ kod tamam (30 Ağustos) — 1.0.3'le çıkar |
-| "Sıra sende" olayı | ⬜ **Faz 4** |
+| "Sıra sende" olayı | ✅ canlıda (30 Ağustos) |
 | Play Data safety formu | ✅ (29 Ağustos) |
 
 ---

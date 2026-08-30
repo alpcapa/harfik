@@ -251,6 +251,24 @@ derlemesiyle koşulmalı ki üretimdekiyle aynı imza/kanal zinciri sınansın.
       aynı akışları gez — hiçbir ekran takılmamalı (fire-and-forget
       sözleşmesi; olaylar Firebase'in kendi kuyruğunda bekler).
 
+## 3d. "Sıra sende" bildirimi (Faz 4 — SUNUCU; deploy edildiyse her sürümde çalışır)
+
+Tetikleyici sunucuda (trigger + `notify-your-turn`), yani 1.0.1/1.0.2 dahil
+her istemcinin hamlesi bildirim üretir; yalnızca DOKUNUNCA tahtaya gitme
+1.0.3 ister (§3c).
+
+- [ ] **Rakip hamle yapınca** (sen uygulamada DEĞİLKEN): **"Sıra sende!"** /
+      *"{isim} hamlesini yaptı — {n} kişilik oyunda sıra sende."*
+- [ ] **YZ'li Canlı oyunda YZ oynayınca da** gelmeli (isim "Yapay Zeka") —
+      tetikleyici `submit_move`un YZ dalını da görüyor.
+- [ ] **Bastırma:** hızlı gidip gelen oyunda (ikiniz de başındayken art arda
+      hamle) bildirim GELMEMELİ — hedefin son 10 dk içinde hamlesi varsa
+      sunucu http çağrısını hiç yapmıyor. 10+ dk bekleyip rakip oynayınca
+      yine gelmeli.
+- [ ] **Hamleyi YAPANA asla gelmez** — kendi hamlenden sonra kendine
+      bildirim düşüyorsa bu ciddi bir regresyon, hemen bildir.
+- [ ] Oyun BİTİREN hamlede kimseye "sıra sende" gitmez (GameOver ayrı iş).
+
 ## 4. Kayıt onayı ve şifre sıfırlama (derin bağlantı kanalı)
 
 `authRedirectUri` = `https://kelimeki.com/auth` (App Link),
