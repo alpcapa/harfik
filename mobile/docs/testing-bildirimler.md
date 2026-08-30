@@ -260,7 +260,18 @@ her istemcinin hamlesi bildirim üretir; yalnızca DOKUNUNCA tahtaya gitme
 - [ ] **Rakip hamle yapınca** (sen uygulamada DEĞİLKEN): **"Sıra sende!"** /
       *"{isim} hamlesini yaptı — {n} kişilik oyunda sıra sende."*
 - [ ] **YZ'li Canlı oyunda YZ oynayınca da** gelmeli (isim "Yapay Zeka") —
-      tetikleyici `submit_move`un YZ dalını da görüyor.
+      tetikleyici `submit_move`un YZ dalını da görüyor. ⚠ **YALNIZCA 4
+      KİŞİLİKTE denenebilir:** `create_online_game` 2 kişilik Canlı oyunda
+      YZ'ye HİÇ izin vermiyor ve 4 kişilikte YZ'yi yalnızca son koltuğa
+      koyuyor (`20260727122207_online_game_ai_slot_rule.sql`). Yani YZ
+      oynayınca sıra HER ZAMAN 1. koltuğa geçer — az önce hamle yapan kişiye
+      değil. Bildirimi o kişi bekleyecek, sen değil.
+      ⚠ **YZ "anında" oynamıyor — bir istemcinin oyunu AÇIK tutması
+      gerekiyor** (`play-ai-turn`ü tetikleyen bir katılımcının oturumu;
+      `20260728172716_ai_turn_trigger.sql`). Ölçüldü (üretim verisi): biri
+      bakarken gecikme 20–90 sn, kimse bakmazken **9,5 saat · 26 saat ·
+      2 gün**. Bu testi koşarken YZ'nin sırası geldiğinde oyunu bir cihazda
+      açık tut, yoksa "bildirim gelmedi" sanırsın.
 - [ ] **Bastırma:** hızlı gidip gelen oyunda (ikiniz de başındayken art arda
       hamle) bildirim GELMEMELİ — hedefin son 10 dk içinde hamlesi varsa
       sunucu http çağrısını hiç yapmıyor. 10+ dk bekleyip rakip oynayınca
