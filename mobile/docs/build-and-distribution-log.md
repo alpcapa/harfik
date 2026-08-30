@@ -259,6 +259,18 @@ tetiklemesini iste.
 commit'in yayında olduğunu söyler; ve Play Console'un "Published" rozeti
 kanala GİRDİĞİNİ söyler, cihaza indiğini değil.
 
+**ÖLÇÜLDÜ (30 Ağustos 2026, Submission 8 · `1.0.2 (435)`):** gönderim
+15:29 → **Published 15:39**, yani kapalı test incelemesi **10 dakika**.
+Darboğaz inceleme DEĞİL, ondan sonraki dağıtım. "Yayınlanmadı herhâlde"
+diye beklemek yanlış teşhis; doğru soru "kanal bana servis etmeye başladı
+mı" ve onun cevabı yalnızca cihazdan alınır.
+
+💡 **Sürüm adına sha yaz:** Play Console'un "Sürüm adı" alanı yalnızca
+konsolda görünüyor ve `.aab`'den otomatik `1.0.2 (435)` diye doluyor.
+Sonuna commit'i eklemek (`1.0.2 (435) — d3d4702`) submission ekranını
+doğrudan bir teşhis aracına çeviriyor — cihazdaki `Derleme <sha>` satırıyla
+birebir eşleşiyor.
+
 ⚠ Bu, `mobile/CLAUDE.md` → "Deploy Doğrulaması"ndaki *"sürüm doğru ≠
 özellik içinde"* tuzağının KARDEŞİ, aynısı değil: orada sha güncel ama
 değişiklik o dalda değildi; burada değişiklik yayınlanmış ama sha eski.
