@@ -88,6 +88,16 @@
        (`firebase_analytics, firebase_core, image_picker_android,
        share_plus, shared_preferences_android`) — `in_app_update` KGP
        uygulamıyor, borç büyümedi.
+     - ✅ **CİHAZDA DOĞRULANDI (30 Ağustos 2026, `d3d4702` / versionCode
+       435, koşu #435'in `.apk`'sı):** açılış temiz — çökme/donma yok,
+       arka plandan öne dönüş temiz, **uçak modunda açılış da temiz.**
+       Bu, kodun HİÇBİR yerde koşmamış tek parçasını kapatıyordu: gerçek
+       Play Core `MethodChannel` çağrısı. Widget testleri sahtesini
+       kullanıyor, bu ortamda `.apk` derlenemiyor; yani "açılış yoluna
+       ağa çıkan bir çağrı koydum" riski ancak burada ölçülebilirdi.
+       Yan yüklenmiş pakette güncelleme penceresi BEKLENDİĞİ GİBİ
+       çıkmadı. Aynı turda alt şerit, hamle rozeti ve yaş/cinsiyet
+       satırı da temiz geldi.
 
    - ✅ **Parça 170 — alt şerit Android'de ortaya kümeleniyordu: `Wrap`
      genişliği DOLDURMUYOR (30 Ağustos 2026, kullanıcı cihazda bildirdi):**
