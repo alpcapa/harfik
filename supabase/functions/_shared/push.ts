@@ -1,9 +1,10 @@
 // Kelimeki — FCM (Firebase Cloud Messaging) HTTP v1 göndericisi.
 //
 // ⚠ TEK KURAL, HER ŞEYDEN ÖNCE: **push, E-POSTA YOLUNU ASLA DÜŞÜREMEZ.**
-// Bu modülü çağıran fonksiyonlar (bugün `notify-deadline-warnings`) CANLI
-// kullanıcı yollarında: teslim uyarısı gitmezse insanlar k-lig puanı
-// kaybediyor. Bu yüzden burada dışarı fırlayan HİÇBİR yol yok — her genel
+// Bu modülü çağıran fonksiyonlar (30 Ağustos 2026'dan beri DÖRT:
+// `notify-deadline-warnings`, `notify-game-invite`, `notify-friend-request`,
+// `notify-friend-request-reminders`) CANLI kullanıcı yollarında: teslim
+// uyarısı gitmezse insanlar k-lig puanı kaybediyor. Bu yüzden burada dışarı fırlayan HİÇBİR yol yok — her genel
 // fonksiyon kendi hatasını yutup `false`/boş döndürür ve `console.error`a
 // yazar. Çağıran taraf da push'u e-postadan SONRA ve ayrı bir `try/catch`
 // içinde çağırmalı.
