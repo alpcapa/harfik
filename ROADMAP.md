@@ -182,12 +182,18 @@ gidiyordu, bu faz onu okuyan yarıyı ekledi.
   düzeltmesi için Edge Function deploy'u (canlıya anında etki) yapılmaz;
   ilk gerçek değişiklikte güncellenecek.
 
-### Faz 4 — "sıra sende" · **SÜRÜM GEREKTİRMEZ** · sunucu · KOD HAZIR, DEPLOY ONAY BEKLİYOR
+### Faz 4 — "sıra sende" · ✅ **CANLIDA** (30 Ağustos 2026) · sunucu, sürüm gerektirmedi
 
-Kod 30 Ağustos 2026'da yazıldı; canlıya çıkışı iki adım ve İKİSİ DE deploy:
-`notify-your-turn` Edge Function'ı (verify_jwt FALSE — sayım yedi → SEKİZ
-olacak, kök CLAUDE.md listesi deploy'la birlikte güncellenecek) + trigger
-migration'ı (`20260830191036_notify_your_turn_trigger.sql`).
+İki adımda deploy edildi ve canlıdan doğrulandı: `notify-your-turn` Edge
+Function v1 (verify_jwt FALSE — sayım yedi → SEKİZ, kök CLAUDE.md listesi
+güncellendi) + trigger migration'ı
+(`20260830194913_notify_your_turn_trigger.sql` — dosya adı canlı versiyonla
+`git mv` ile eşitlendi). Doğrulama: trigger `online_game_states`te kayıtlı,
+bastırma fonksiyon gövdesinde, client rollerine grant yok. Deploy anından
+itibaren SAHADAKİ HER İSTEMCİNİN (1.0.1/1.0.2 dahil) hamlesi bildirim
+üretir; dokunuşun tahtaya götürmesi 1.0.3'ü bekler (Faz 3). Cihaz kontrol
+listesi: `mobile/docs/testing-bildirimler.md` §3d. **Gerçek kanıt sahadan
+gelecek** — bu ortamdan fonksiyon tetiklenemiyor/oyun oynanamıyor.
 
 **Tetikleyici istemci DEĞİL, sunucu:** `online_game_states.current`
 ilerleyince koşan trigger (`_notify_your_turn`) — `submit_move`u (insan VE
@@ -239,7 +245,7 @@ koddan ölçülen hâl:
 | Oyun daveti · arkadaş daveti push kanalı | ✅ canlıda (30 Ağustos) |
 | Bildirime dokununca yönlendirme | ✅ kod tamam (30 Ağustos) — 1.0.3'le çıkar |
 | Firebase Analytics olayları | ✅ kod tamam (30 Ağustos) — 1.0.3'le çıkar |
-| "Sıra sende" olayı | kod hazır (30 Ağustos) — deploy onay bekliyor |
+| "Sıra sende" olayı | ✅ canlıda (30 Ağustos) |
 | Play Data safety formu | ✅ (29 Ağustos) |
 
 ---

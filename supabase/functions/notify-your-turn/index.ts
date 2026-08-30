@@ -7,7 +7,7 @@
 //
 // TETİKLEYİCİ İSTEMCİ DEĞİL, SUNUCU: `online_game_states.current` ilerleyince
 // koşan `_notify_your_turn` trigger'ı pg_net ile burayı çağırıyor
-// (migration: 20260830191036_notify_your_turn_trigger.sql). İstemciden
+// (migration: 20260830194913_notify_your_turn_trigger.sql). İstemciden
 // çağrılsaydı sahadaki eski sürümler (1.0.2 ve tüm eski web sekmeleri)
 // hamle yapınca bildirim ÜRETMEZDİ — Faz 4'ün "SÜRÜM GEREKTİRMEZ" vaadi
 // ancak sunucu tetiklemesiyle tutuyor.
