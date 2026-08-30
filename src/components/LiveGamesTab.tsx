@@ -85,13 +85,39 @@ function mySlotIndex(game: OnlineGame): number {
 // kaynağın kendisi büyükse o belirsizlik hiç doğmuyor ve portun `trUpper`ı
 // da idempotent kalıyor. Öteki iki etiket (Rakip bekleniyor/Bitti/Terk
 // edildi) dokunulmadı — onlar bir SIRA bildirmiyor.
+/**
+ * "SIRA SENDE!"nin yanındaki ok (30 Ağustos 2026, kullanıcı isteği).
+ *
+ * ⚠ **Neden 21 px, yani etiketin 13'ünden BÜYÜK?** İlk sürümde ok etiketin
+ * dizesinin İÇİNDEYDİ (`'SIRA SENDE! >'`), yani puntosu birebir aynıydı —
+ * ama kullanıcı *"oku yazıyla aynı büyüklüğe getir"* dedi ve haklıydı:
+ * `>` Space Mono'da matematik hizasında oturan, harf boyuna ÇIKMAYAN bir
+ * glif. ÖLÇÜLDÜ (ekran görüntüsü piksel taraması, pixelRatio 3): 13 px'te
+ * büyük harflerin mürekkep yüksekliği 27 px, aynı puntodaki `>` yalnızca
+ * 17 px. Eşitleyen punto 13 × 27/17 ≈ 21.
+ *
+ * İKİ ayar daha, ikisi de ölçümden çıktı:
+ * - `leading-[13px]` — satır kutusu etiketin puntosunda kalsın, yoksa
+ *   21 px'lik ok satırı büyütüp kartı gereksiz yere uzatır.
+ * - `top-[2.8px]` — 21'e çıkarılan `>` taban çizgisine hizalıyken harflerin
+ *   8 piksel (pixelRatio 3 → 2,67 mantıksal px) YUKARISINDA duruyordu;
+ *   mürekkep merkezleri örtüşene kadar aşağı kaydırıldı. Ölçüm: harfler
+ *   y 516-542, ok 507-534 → düzeltmeden sonra ikisi de aynı bantta.
+ *
+ * Yalnızca sırası ÇAĞIRANDA olan satırda çiziliyor — ok "git oyna" demek,
+ * rakipteyken yapılacak bir şey yok. Port ikizi: `live_games_tab.dart` /
+ * `setup_screen.dart` (`Text.rich` + aynı 21/13 oranı).
+ */
+export function TurnArrow() {
+  return (
+    <span className="relative top-[2.8px] ml-1.5 text-[21px] leading-[13px] align-baseline">
+      &gt;
+    </span>
+  );
+}
+
 function statusLabel(game: OnlineGame, isMyTurn?: boolean): string {
-  // `>` yalnızca SIRA SENDE'de (kullanıcı isteği, 30 Ağustos 2026): kart
-  // dokunulabilir ama sırası sende olan tek EYLEM çağrısı bu; rakipteyken
-  // aynı işareti koymak "git oyna"yı yanlış yere davet ederdi. Etiketin
-  // İÇİNDE, ayrı bir öğe olarak değil — "aynı font büyüklüğünde" isteği
-  // böyle koşulsuz sağlanıyor.
-  if (game.status === 'active') return isMyTurn ? 'SIRA SENDE! >' : 'SIRA RAKİPTE';
+  if (game.status === 'active') return isMyTurn ? 'SIRA SENDE!' : 'SIRA RAKİPTE';
   if (game.status === 'pending') return 'Rakip bekleniyor';
   if (game.status === 'finished') return 'Bitti';
   return 'Terk edildi';
@@ -372,10 +398,11 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
           }`}
         >
           {statusLabel(game, isMyTurn)}
+          {game.status === 'active' && isMyTurn && <TurnArrow />}
         </span>
         {remaining && (
           <span
-            className={`text-[9px] font-mono uppercase tracking-[0.5px] ${
+            className={`text-[8px] font-mono uppercase tracking-[0.5px] ${
               remaining.urgent ? 'text-red' : 'text-muted'
             }`}
           >

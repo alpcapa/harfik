@@ -244,11 +244,13 @@
 - [ ] **Etiket puntoları (Parça 55; metin/punto 30 Ağustos 2026'da
       değişti).** "Devam Edenler"deki durum etiketi **"SIRA SENDE! >"**
       (yeşil, `>` dahil AYNI boyda) / **"SIRA RAKİPTE"** (kırmızı, `>` YOK)
-      web'le aynı boyda olmalı (13 px); hemen altındaki kalan-süre satırı
-      (9 px, "N saat M dakika kaldı (Teslim -2 puan)") ondan belirgin
+      web'le aynı boyda olmalı (13 px). Ok, HARFLERLE aynı boyda ve aynı
+      hizada görünmeli — puntosu 21 (harflerinkinden büyük!) çünkü `>`
+      Space Mono'da harf boyuna çıkmayan bir glif; küçük ya da yukarı
+      kaçmış görünüyorsa regresyon. Hemen altındaki kalan-süre satırı
+      (8 px, "N saat M dakika kaldı (Teslim -2 puan)") ondan belirgin
       KÜÇÜK — ikisi eşit görünüyorsa regresyon. Davet kartlarının sağ
-      üstündeki süre etiketi de 9 px, yani bu satırla EŞİT (30 Ağustos'a
-      kadar ondan büyüktü).
+      üstündeki süre etiketi 9 px, yani bu satırdan bir tık BÜYÜK.
 
 ### Tahta (oynanış)
 

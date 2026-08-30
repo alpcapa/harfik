@@ -1995,11 +1995,13 @@ class _SavedGameRow extends StatelessWidget {
                 // Metin ve punto `live_games_tab`ın aktif oyun kartıyla
                 // BİREBİR (30 Ağustos 2026, kullanıcı isteği): biri YZ biri
                 // Canlı oyun ama ikisi de "devam eden oyun" satırı.
-                const Text(
-                  'SIRA SENDE! >',
+                Text.rich(
+                  TextSpan(
+                      text: 'SIRA SENDE!', children: [turnArrowSpan(kGreen)]),
                   style: TextStyle(
                     fontFamily: 'SpaceMono',
                     fontSize: 13,
+                    height: 1, // ok satırı büyütmesin (bkz. kTurnArrowSpan)
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1,
                     color: kGreen,
@@ -2014,7 +2016,7 @@ class _SavedGameRow extends StatelessWidget {
                   trUpper(remaining.text),
                   style: TextStyle(
                     fontFamily: 'SpaceMono',
-                    fontSize: 9,
+                    fontSize: 8,
                     letterSpacing: 0.5,
                     color: remaining.urgent ? kRed : _muted,
                   ),

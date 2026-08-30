@@ -62,6 +62,32 @@
        - **Yan etki:** davet kartının sağ üstündeki süre de 9 px, yani
          artık bu satırla EŞİT — `testing-arkadaslar-canli.md`'nin punto
          maddesi "ondan küçük" diyordu, düzeltildi.
+     - **Üçüncü geçiş — "oku yazıyla aynı büyüklüğe getir" (aynı gün):**
+       süre 9 → **8 px**; ok ise etiketin dizesinden ÇIKARILIP kendi
+       öğesine alındı ve **21 px**'e büyütüldü.
+       - ⚠ **Ok zaten "aynı puntodaydı" — sorun ondan değildi ve bu ancak
+         PİKSEL ölçülerek anlaşıldı.** İlk tepki "zaten aynı, dizenin
+         içinde" olurdu. Ekran görüntüsü tarandı (pixelRatio 3, `PIL` ile
+         yeşil piksellerin dikey uzanımı): 13 px'te büyük harflerin
+         mürekkep yüksekliği **27 px**, aynı puntodaki `>` yalnızca
+         **17 px** — `>` matematik hizasında oturan, harf boyuna çıkmayan
+         bir glif. Eşitleyen punto 13 × 27/17 ≈ 21.
+       - **21'e çıkarınca İKİNCİ bir sapma doğdu:** taban çizgisine hizalı
+         ok harflerin 8 piksel YUKARISINDA kalıyordu (ok y 507-534,
+         harfler y 516-542). 2,67 mantıksal px aşağı kaydırıldı; son
+         ölçümde merkezler arası fark **0,17 px**.
+       - **Satır kutusu kilitli:** `height: 13/21` + saran `Text`te
+         `height: 1` — yoksa 21 px'lik ok satırı büyütüp kartı uzatırdı.
+       - ⚠ **PORT TUZAĞI:** `WidgetSpan`in çocuğu bir WIDGET'tır ve saran
+         `TextSpan`in stilini görmez (`DefaultTextStyle`den okur). İlk
+         yazılan `const WidgetSpan kTurnArrowSpan` oku SİYAH çizerdi;
+         renk parametreye çevrildi (`turnArrowSpan(Color)`). Bunu
+         derleyici de test de yakalamazdı — ekran görüntüsü yakaladı.
+       - **Ders (bu repoda tekrarlayan sınıf):** "aynı font boyutu" ile
+         "aynı görünen boyut" AYNI ŞEY DEĞİL. Bir glifin görsel boyu
+         punto değil MÜREKKEP yüksekliğidir; kullanıcı ikincisini görür.
+         Böyle bir istek geldiğinde ölçü aracı ekran görüntüsünün
+         pikselleri.
      - **Ekran görüntüsü ÖNCE gösterildi** (kullanıcı istedi): mock değil,
        gerçek widget'lardan — `live_games_test` + `setup_cloud_test`in
        `RepaintBoundary` yakalamaları. Aktif oyun kartı için geçici bir

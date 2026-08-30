@@ -689,11 +689,18 @@ class _GameRow extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                trUpper(onlineStatusLabel(game, isMyTurn: isMyTurn)),
+              Text.rich(
+                TextSpan(
+                  text: trUpper(onlineStatusLabel(game, isMyTurn: isMyTurn)),
+                  children: [
+                    if (game.status == OnlineGameStatus.active && isMyTurn)
+                      turnArrowSpan(_green),
+                  ],
+                ),
                 style: TextStyle(
                   fontFamily: 'SpaceMono',
                   fontSize: 13, // web text-[13px] (30 Ağustos 2026: 11 → 13)
+                  height: 1, // web leading-none — ok satırı büyütmesin
                   letterSpacing: 1,
                   fontWeight: FontWeight.bold,
                   color: isMyTurn ? _green : _red,
@@ -704,7 +711,7 @@ class _GameRow extends StatelessWidget {
                   trUpper(remaining.text),
                   style: TextStyle(
                     fontFamily: 'SpaceMono',
-                    fontSize: 9, // web text-[9px] (30 Ağustos: 8 → 10 → 9)
+                    fontSize: 8, // web text-[8px] (30 Ağustos: 8 → 10 → 9 → 8)
                     letterSpacing: 0.5,
                     color: remaining.urgent ? _red : _muted,
                   ),
@@ -716,6 +723,46 @@ class _GameRow extends StatelessWidget {
     );
   }
 }
+
+/// Web `TurnArrow` (LiveGamesTab.tsx) — "SIRA SENDE!"nin yanındaki ok.
+///
+/// ⚠ **Etiketten BÜYÜK olması bilinçli.** İlk sürümde ok etiketin dizesinin
+/// içindeydi (`'SIRA SENDE! >'`), puntosu birebir aynıydı — ama kullanıcı
+/// *"oku yazıyla aynı büyüklüğe getir"* dedi ve haklıydı: `>` Space
+/// Mono'da matematik hizasında oturan, harf boyuna ÇIKMAYAN bir glif.
+/// ÖLÇÜLDÜ (ekran görüntüsü piksel taraması, pixelRatio 3): 13 px'te büyük
+/// harflerin mürekkep yüksekliği 27 px, aynı puntodaki `>` yalnızca 17 px.
+/// Eşitleyen punto 13 × 27/17 ≈ 21.
+///
+/// İKİ ayar daha, ikisi de ölçümden çıktı:
+/// - `height: 13/21` — satır kutusu 21 değil 13 px'te kalsın, yoksa ok
+///   satırı büyütüp kartı gereksiz yere uzatır. Saran `Text`in stilinde de
+///   `height: 1` var; ikisi birlikte satırı 13 px'e kilitliyor.
+/// - **2,67 px aşağı kaydırma** — 21'e çıkarılan `>` taban çizgisine
+///   hizalıyken harflerin 8 piksel (pixelRatio 3) YUKARISINDA duruyordu.
+///   `TextSpan` dikey kaydırmayı desteklemediğinden `WidgetSpan` +
+///   `Transform.translate` gerekiyor; web'de karşılığı `top-[2.8px]`.
+/// ⚠ Renk PARAMETRE, mirasla GELMEZ: `WidgetSpan`in çocuğu bir widget'tır ve
+/// saran `TextSpan`in stilini görmez (`DefaultTextStyle`den okur). Sabit bir
+/// `const` span yazılsaydı ok siyah çıkardı — ölçmeden fark edilmezdi.
+WidgetSpan turnArrowSpan(Color color) => WidgetSpan(
+      alignment: PlaceholderAlignment.baseline,
+      baseline: TextBaseline.alphabetic,
+      child: Transform.translate(
+        offset: const Offset(0, 2.67),
+        child: Text(
+          '  >',
+          style: TextStyle(
+            fontFamily: 'SpaceMono',
+            fontSize: 21,
+            height: 13 / 21,
+            letterSpacing: 0,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ),
+    );
 
 /// Web `participantLabelClass` (LiveGamesTab.tsx) — `participantLabel`in
 /// RENGİ. Dallar etiketin dallarıyla BİREBİR aynı sırada: ikisi tek bir

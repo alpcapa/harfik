@@ -17,7 +17,7 @@ import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
 import { CountBadge } from './CountBadge';
 import { HelpModal } from './HelpModal';
-import { LiveGamesTab } from './LiveGamesTab';
+import { LiveGamesTab, TurnArrow } from './LiveGamesTab';
 import { LogoMark } from './LogoMark';
 import { PlayerAvatarRow, type AvatarRowPlayer } from './PlayerAvatarRow';
 import { PlayerBadge } from './PlayerBadge';
@@ -181,10 +181,11 @@ function SavedGameRow({
             ikisini yan yana görüyor. Burada koşul yok: yerel kayıt her zaman
             hesap sahibinin sırasında duruyor. */}
         <span className="text-[13px] font-mono uppercase tracking-[1px] text-green font-bold">
-          SIRA SENDE! &gt;
+          SIRA SENDE!
+          <TurnArrow />
         </span>
         <span
-          className={`text-[9px] font-mono uppercase tracking-[0.5px] ${
+          className={`text-[8px] font-mono uppercase tracking-[0.5px] ${
             remaining.urgent ? 'text-red' : 'text-muted'
           }`}
         >

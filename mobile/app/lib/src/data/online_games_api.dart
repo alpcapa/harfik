@@ -884,8 +884,9 @@ RemainingLabel remainingInviteLabel(String createdAt, int nowMs) {
 String onlineStatusLabel(OnlineGame g, {bool? isMyTurn}) =>
     switch (g.status) {
       OnlineGameStatus.active =>
-        // `>` yalnızca SIRA SENDE'de — gerekçe web ikizinde.
-        isMyTurn == true ? 'SIRA SENDE! >' : 'SIRA RAKİPTE',
+        // ⚠ Ok (`>`) bu dizede DEĞİL — ayrı ve daha BÜYÜK bir span olarak
+        // çiziliyor (`kTurnArrow*`, `live_games_tab.dart`); gerekçe orada.
+        isMyTurn == true ? 'SIRA SENDE!' : 'SIRA RAKİPTE',
       OnlineGameStatus.pending => 'Rakip bekleniyor',
       OnlineGameStatus.finished => 'Bitti',
       OnlineGameStatus.abandoned => 'Terk edildi',

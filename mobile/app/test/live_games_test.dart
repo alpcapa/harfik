@@ -703,21 +703,21 @@ void main() {
         ];
       await pumpTab(tester, liveServices(userId: 'u-tab3', gateway: gw));
 
-      expect(find.text('SIRA SENDE! >'), findsOneWidget);
+      expect(find.textContaining('SIRA SENDE!'), findsOneWidget);
       expect(find.text('SIRA RAKİPTE'), findsOneWidget);
       // Kalan süre YALNIZCA sırası bende olan satırda (web 3 Ağustos dersi).
       // Metin 30 Ağustos 2026'da yalnızca "… KALDI"ya indi (fiil düştü).
       expect(find.textContaining('KALDI'), findsOneWidget);
 
       // Punto web ile aynı (Parça 55): durum etiketi text-[13px], hemen
-      // altındaki kalan-süre text-[9px]. Bu İKİSİ web'de de farklı — biri
+      // altındaki kalan-süre text-[8px]. Bu İKİSİ web'de de farklı — biri
       // ötekine uydurulmamalı. (30 Ağustos 2026'da 11/8 → 13/10, kullanıcı
       // isteği; oran korundu.)
-      final status = tester.widget<Text>(find.text('SIRA SENDE! >'));
+      final status = tester.widget<Text>(find.textContaining('SIRA SENDE!'));
       expect(status.style!.fontSize, 13);
       final left =
           tester.widget<Text>(find.textContaining('KALDI').first);
-      expect(left.style!.fontSize, 9);
+      expect(left.style!.fontSize, 8);
 
       // Parça 56: web'de bu kartlar ve alt sekmeler `shadow-raised` /
       // `btn-raised*` taşıyor; port hepsini düz BoxDecoration ile çiziyordu
