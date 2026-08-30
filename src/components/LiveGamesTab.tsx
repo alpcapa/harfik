@@ -156,6 +156,13 @@ function participantLabel(slot: HumanSlot, game: OnlineGame): string {
 // buradaki kırmızı "hâlâ cevap bekleniyor" uyarısı, "olumsuz sonuç"
 // değil; ikisini aynı renge boyamak o ayrımı silerdi.
 //
+// "Reddetti" zaten bu listede GÖRÜNMÜYOR (ölçüldü, 30 Ağustos 2026):
+// `respond_to_game_invite`in ret dalı oyunu anında `abandoned` yapıyor
+// (kompozisyon kuralı gereği tek ret kadroyu tamamlanamaz kılıyor) ve
+// aşağıdaki dört kova yalnızca `pending`/`active` eşliyor — canlıda 86
+// davetin 2'si reddedilmiş, ikisi de görünmez oyunlarda. Dal yine de
+// duruyor: etiketin kendisi var, rengi de onunla aynı yerde kalsın.
+//
 // Port ikizi: mobile/app/lib/src/ui/live/live_games_tab.dart →
 // `_participantLabelColor` (aynı dal sırası, aynı tokenler).
 function participantLabelClass(slot: HumanSlot, game: OnlineGame): string {

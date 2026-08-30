@@ -724,6 +724,10 @@ class _GameRow extends StatelessWidget {
 /// Kullanıcı isteği (30 Ağustos 2026): "Kabul etti" yeşil, "Bekliyor"
 /// kırmızı. "Reddetti"/"Davet gönderen" bilinçli olarak nötr — kırmızı
 /// burada "hâlâ cevap bekleniyor" uyarısı, "olumsuz sonuç" değil.
+///
+/// "Reddetti" zaten bu listede GÖRÜNMÜYOR: ret oyunu anında `abandoned`
+/// yapıyor, kovalar da yalnızca `pending`/`active` eşliyor (ölçüm: web
+/// ikizinin yorumu).
 Color _participantLabelColor(OnlineSlot slot, OnlineGame game) {
   if (game.createdBy != null && slot.userId == game.createdBy) return _muted;
   if (slot.inviteStatus == 'accepted') return _green;

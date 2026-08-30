@@ -189,7 +189,16 @@ sorgu kullan.
     silerdi. Renk kararı etiketle AYNI yerde ve aynı dal sırasında duruyor
     (`participantLabelClass`, `LiveGamesTab.tsx` ↔ `_participantLabelColor`,
     portun `live_games_tab.dart`'ı) — etiket değişirse rengi de aynı elden
-    değişsin diye. Port tarafında testli (`live_games_test.dart`, widget'ın
+    değişsin diye.
+    Kullanıcı ayrıca sordu: *"biri reddedince davet düşüyor mu, göstermeye
+    devam mı ediyor?"* — **düşüyor, ÖLÇÜLDÜ:** canlı
+    `respond_to_game_invite`in ret dalı oyunu `abandoned` yapıyor
+    (`20260803132047_decline_game_invite_abandons_game`, `pg_get_functiondef`
+    ile canlıdan doğrulandı) ve yukarıdaki dört kova yalnızca
+    `pending`/`active` eşliyor; canlıda 86 davetin 2'si reddedilmiş, ikisi de
+    görünmez oyunlarda (`declined` + `status in ('pending','active')` = **0
+    satır**). Yani "Bekliyor"u turuncuya çekip kırmızıyı "Reddetti"ye
+    ayırmanın bir karşılığı olmazdı — kırmızı bekleyende kaldı. Port tarafında testli (`live_games_test.dart`, widget'ın
     çizdiği `Text`in gerçek rengini okuyor; negatif eş doğrulandı).
   - **İlk tasarım denemesi** (relation tabanlı satır-içi +/✓ göstergesi — her katılımcının yanında arkadaş ekle/zaten arkadaşsın ikonu) kullanıcı geri bildirimiyle kaldırıldı: "kim arkadaşım" ile "kim bu oyunda ne durumda" bilgilerini aynı satırda karıştırıp kafa karıştırıyordu. Arkadaş ekleme ayrı bir adıma taşındı (aşağıya bkz.).
   - **"Kabul Ettin — Diğerleri Bekleniyor"/"Rakip Bekleniyor" da davet kartıyla aynı detayı gösterir** (28 Temmuz 2026, PR #165) — ilk sürümde bu iki bölüm de `Aktif` gibi tek satırlık bir `GameRow` (başlık + "Rakip bekleniyor" rozeti) kullanıyordu; 4 kişilik bir oyunda bunun tek başına yetersiz olduğu fark edildi (kullanıcı geri bildirimi: "kiminle oynayacaksın" sorusunun cevabı, kabul ettikten SONRA da görünmeli, sadece davet anında değil). Davet kartındaki katılımcı listesi ortak `PendingGameCard` bileşenine çıkarıldı — hem davet satırlarında (Kabul/Reddet butonlarıyla) hem bu iki bölümde (butonsuz, yalnızca `${player_count} Kişilik Canlı Oyun` başlığıyla) aynı "Kiminle Oynayacaksın" listesini render eder, böylece kim kabul etti/kim hâlâ bekliyor her zaman görünür kalır.
