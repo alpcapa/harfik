@@ -74,7 +74,7 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
 - [ ] **Kalan süre yalnızca sende.** "Devam Edenler" listesinde "N saat M
       dk sonra teslim (-2 puan)" **yalnızca sırası sende olan** satırlarda
       görünmeli. "SIRA RAKİPTE" satırında görünmemeli — o süre rakibe ait.
-      Sırası sende olan satırın etiketinin yanında yeşil bir ÜÇGEN (oynat
+      Sırası sende olan satırın ("SIRA SENDE") yanında yeşil bir ÜÇGEN (oynat
       tuşu), rakipteki satırda ise kırmızı bir YUVARLAK olmalı; ikisi asla
       aynı anda görünmez.
 - [ ] **Off-turn deneme.** Sıra sende değilken de taş yerleştirebilmeli,

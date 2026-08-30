@@ -79,14 +79,14 @@ function mySlotIndex(game: OnlineGame): number {
 }
 
 // ⚠ Aktif oyunun iki etiketi KAYNAKTA BÜYÜK HARFLE yazılı (30 Ağustos 2026,
-// kullanıcı isteği: *"'Senin hamlen bekleniyor' → 'SIRA SENDE!', 'Rakibin
+// kullanıcı isteği: *"'Senin hamlen bekleniyor' → 'SIRA SENDE', 'Rakibin
 // hamlesi bekleniyor' → 'SIRA RAKİPTE'"*). CSS `uppercase` zaten uyguluyor
 // ama Türkçe i→İ dönüşümü tarayıcının `lang` duyarlılığına kalıyor;
 // kaynağın kendisi büyükse o belirsizlik hiç doğmuyor ve portun `trUpper`ı
 // da idempotent kalıyor. Öteki iki etiket (Rakip bekleniyor/Bitti/Terk
 // edildi) dokunulmadı — onlar bir SIRA bildirmiyor.
 /**
- * "SIRA SENDE!"nin yanındaki yeşil ÜÇGEN — oynat tuşu gibi (30 Ağustos
+ * "SIRA SENDE"nin yanındaki yeşil ÜÇGEN — oynat tuşu gibi (30 Ağustos
  * 2026, kullanıcı isteği: *"yeşil ok yerine yeşil üçgen (play tuşu gibi)
  * deneyelim"*).
  *
@@ -135,10 +135,11 @@ export function TurnTriangle() {
  * `align-baseline` + `inline-block`: içeriği olmayan bir inline-block'un
  * taban çizgisi ALT kenarıdır, yani yuvarlak harflerin üstünde yüzmez.
  *
- * ⚠ **Boşluk `TurnTriangle`ınkinden 2 px FAZLA (27 ↔ 25) ve bu bilinçli.**
- * Eşitlenen şey kutu değil GÖRÜNEN boşluk: iki işaret farklı harflerden
- * sonra geliyor (`SIRA SENDE!` ↔ `SIRA RAKİPTE`) ve `!` ile `E`nin sağ yan
- * boşlukları aynı değil. Fark ÖLÇÜMDEN geliyor, hesaptan değil.
+ * Boşluk `TurnTriangle`ınkiyle AYNI (25) — ama üç turdur öyle değildi ve
+ * her seferinde sebep başkaydı: `>` glifinin yan boşluğu (25/29), sonra
+ * üçgene geçiş (25/27), sonunda etiketten `!`in kalkması (iki etiket de
+ * artık `E` ile bitiyor → 25/25). Ölçümle ayarlandı, hesapla değil;
+ * gerekçenin tamamı portun `kTurnDotGap`inde.
  *
  * Port ikizi: `live_games_tab.dart` → `turnDotSpan` / `kTurnDotGap`.
  */
@@ -146,13 +147,13 @@ export function TurnDot() {
   return (
     <span
       aria-hidden
-      className="ml-[27px] inline-block h-[9px] w-[9px] rounded-full bg-red align-baseline"
+      className="ml-[25px] inline-block h-[9px] w-[9px] rounded-full bg-red align-baseline"
     />
   );
 }
 
 function statusLabel(game: OnlineGame, isMyTurn?: boolean): string {
-  if (game.status === 'active') return isMyTurn ? 'SIRA SENDE!' : 'SIRA RAKİPTE';
+  if (game.status === 'active') return isMyTurn ? 'SIRA SENDE' : 'SIRA RAKİPTE';
   if (game.status === 'pending') return 'Rakip bekleniyor';
   if (game.status === 'finished') return 'Bitti';
   return 'Terk edildi';
@@ -172,7 +173,7 @@ function remainingTimeLabel(deadline: string | null | undefined): { text: string
   const minutes = totalMinutes % 60;
   // ⚠ "… sonra teslim sayılacak" → "… kaldı" (30 Ağustos 2026, kullanıcı
   // isteği). Fiil BİLİNÇLİ olarak düştü: sayaç zaten yalnızca SIRASI
-  // ÇAĞIRANDA olan oyunlarda çiziliyor ve hemen üstünde "SIRA SENDE!"
+  // ÇAĞIRANDA olan oyunlarda çiziliyor ve hemen üstünde "SIRA SENDE"
   // yazıyor, yani "ne olacak" bilgisini satırın kendisi değil kart taşıyor.
   // Üç sayaç da (bu, davet iptali, Setup'ın yerel kaydı) aynı kalıba çekildi.
   // Parantez içindeki sonuç (30 Ağustos 2026, kullanıcı isteği) — fiil

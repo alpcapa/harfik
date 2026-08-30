@@ -1997,7 +1997,7 @@ class _SavedGameRow extends StatelessWidget {
                 // Canlı oyun ama ikisi de "devam eden oyun" satırı.
                 Text.rich(
                   TextSpan(
-                      text: 'SIRA SENDE!',
+                      text: 'SIRA SENDE',
                       children: [turnTriangleSpan(kGreen)]),
                   style: TextStyle(
                     fontFamily: 'SpaceMono',

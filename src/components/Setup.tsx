@@ -181,7 +181,7 @@ function SavedGameRow({
             ikisini yan yana görüyor. Burada koşul yok: yerel kayıt her zaman
             hesap sahibinin sırasında duruyor. */}
         <span className="text-[13px] font-mono uppercase tracking-[1px] text-green font-bold">
-          SIRA SENDE!
+          SIRA SENDE
           <TurnTriangle />
         </span>
         <span

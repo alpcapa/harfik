@@ -703,7 +703,7 @@ void main() {
         ];
       await pumpTab(tester, liveServices(userId: 'u-tab3', gateway: gw));
 
-      expect(find.textContaining('SIRA SENDE!'), findsOneWidget);
+      expect(find.textContaining('SIRA SENDE'), findsOneWidget);
       expect(find.textContaining('SIRA RAKİPTE'), findsOneWidget);
       // Ok ve nokta BİRBİRİNİN yerine geçiyor, ikisi bir arada değil:
       // yeşil ok "git oyna" (yalnız sırası bende), kırmızı nokta "bekle"
@@ -719,7 +719,7 @@ void main() {
       // altındaki kalan-süre text-[8px]. Bu İKİSİ web'de de farklı — biri
       // ötekine uydurulmamalı. (30 Ağustos 2026'da 11/8 → 13/10, kullanıcı
       // isteği; oran korundu.)
-      final status = tester.widget<Text>(find.textContaining('SIRA SENDE!'));
+      final status = tester.widget<Text>(find.textContaining('SIRA SENDE'));
       expect(status.style!.fontSize, 13);
       final left =
           tester.widget<Text>(find.textContaining('SONRA TESLİM').first);

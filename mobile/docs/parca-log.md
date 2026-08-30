@@ -91,6 +91,18 @@
          Mono'da YOK; kullanılsaydı tarayıcı ve Flutter ayrı yedek
          fontlara düşüp FARKLI daireler çizerdi — `RelationIcons.tsx`in
          "web ve port AYNI vektör" kuralının sessizce kırılması olurdu.
+     - **Yedinci ve son geçiş — etiketten `!` kaldırıldı** (kullanıcı:
+       *"bir tek sıra sende'deki ünlemi kaldır tamamdır"*):
+       `SIRA SENDE!` → `SIRA SENDE`.
+       - ⚠ **Görünmez yan etkisi vardı ve ölçüm yakaladı.** Üçgen/nokta
+         boşluk farkı (25/27) `!` ile `E`nin farklı sağ yan boşluklarını
+         telafi ediyordu; `!` kalkınca iki etiket de `E` ile bittiğinden
+         fark gereksizleşti → **25/25**. Ölçüm: üçgen 27,33 ↔ nokta 27,67
+         (fark 0,33 px).
+       - **Aynı sayı bu turda ÜÇ kez değişti** (25/29 → 25/27 → 25/25) ve
+         üçünde de sebep bir tasarım tercihi değil bir TELAFİYDİ. Bir
+         NOKTALAMA İŞARETİNİ silmek bile onu bayatlatabiliyor — bu yüzden
+         her turda yeniden ölçüldü, göz kararıyla bırakılmadı.
      - **Altıncı geçiş — yeşil ok yerine ÇİZİLMİŞ ÜÇGEN (oynat tuşu) +
        yeni saat metni + saat bir satır aşağı** (kullanıcı isteği).
        - Saat: `30 SAAT 5 DK SONRA TESLİM (-2 PUAN)`. Setup'ın yerel

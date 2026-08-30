@@ -886,7 +886,7 @@ String onlineStatusLabel(OnlineGame g, {bool? isMyTurn}) =>
       OnlineGameStatus.active =>
         // ⚠ Ok (`>`) bu dizede DEĞİL — ayrı ve daha BÜYÜK bir span olarak
         // çiziliyor (`kTurnArrow*`, `live_games_tab.dart`); gerekçe orada.
-        isMyTurn == true ? 'SIRA SENDE!' : 'SIRA RAKİPTE',
+        isMyTurn == true ? 'SIRA SENDE' : 'SIRA RAKİPTE',
       OnlineGameStatus.pending => 'Rakip bekleniyor',
       OnlineGameStatus.finished => 'Bitti',
       OnlineGameStatus.abandoned => 'Terk edildi',

@@ -732,19 +732,21 @@ class _GameRow extends StatelessWidget {
 /// Üçgenin ve noktanın yazıdan uzaklığı — web `TurnTriangle`/`TurnDot` ile
 /// ELLE senkron (`ml-[25px]` / `ml-[29px]`).
 ///
-/// ⚠ **İkisi neden AYNI sayı değil?** Eşitlenen şey KUTU değil GÖRÜNEN
-/// (mürekkep) boşluk: iki işaret farklı harflerden sonra geliyor
-/// (`SIRA SENDE!` ↔ `SIRA RAKİPTE`) ve `!` ile `E`nin sağ yan boşlukları
-/// aynı değil. Fark ÖLÇÜMDEN geliyor, hesaptan değil — ekran görüntüsü
-/// taranıp iki mürekkep boşluğu eşitlenene kadar ayarlandı.
+/// Eşitlenen şey KUTU değil GÖRÜNEN (mürekkep) boşluk; iki sayı da ekran
+/// görüntüsü taranarak ayarlandı, hesapla değil.
 ///
-/// Sayılar `>` glifi zamanında 25/29'du (o glifin solundaki ~4 px yan
-/// boşluğu telafi ediyordu); üçgene geçilince yan boşluk kalktı ve nokta
-/// 2,33 px fazla uzakta kaldı, 27'ye çekildi.
+/// ⚠ **Bu sayı ÜÇ kez değişti ve her seferinde SEBEBİ başka bir şeydi** —
+/// hiçbiri "tasarım tercihi" değil, hep bir telafiydi:
+///   1. `>` glifi zamanı → 25/29 (o glifin solundaki ~4 px yan boşluk).
+///   2. Üçgene geçince yan boşluk kalktı → 25/27.
+///   3. Etiketten `!` kalkınca iki etiket de `E` ile bitti, yani sağ yan
+///      boşlukları da eşitlendi → **25/25**.
+/// Ders: bir sayı BAŞKA bir şeyin telafisiyse, telafi edilen şey (glif,
+/// hatta bir noktalama işareti) değişince yeniden ÖLÇÜLMELİ.
 const double kTurnMarkGap = 25;
-const double kTurnDotGap = 27;
+const double kTurnDotGap = 25;
 
-/// Web `TurnTriangle` — "SIRA SENDE!"nin yanındaki yeşil üçgen (oynat tuşu).
+/// Web `TurnTriangle` — "SIRA SENDE"nin yanındaki yeşil üçgen (oynat tuşu).
 ///
 /// Öncesinde bir `>` glifiydi ve iki tur ayar istemişti (21 px'e büyütme +
 /// 2,67 px aşağı kaydırma), çünkü Space Mono'da `>` harf boyuna ÇIKMIYOR.
