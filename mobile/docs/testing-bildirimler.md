@@ -190,6 +190,29 @@ uyarıyor; push e-postanın YANINDA gidiyor, yerine değil.
       **Bu adım CİHAZ GEREKTİRMİYOR:** uygulama silindikten sonra fonksiyonu
       elle tetikleyip `push_tokens`a bakmak yeterli; temizlik sunucuda oluyor.
 
+## 3b. Davet bildirimleri (Faz 2, 30 Ağustos 2026 — SUNUCU tarafı canlı)
+
+Üç yeni push kanalı deploy edildi. **Sürüm gerekmedi**, sahadaki paket
+token'ı zaten kaydediyordu — yani 1.0.1'i olan bir testçi de bunları alır.
+
+- [ ] **Oyun daveti:** başka bir hesaptan sana Canlı oyun daveti gönderilsin.
+      Bildirim: **"Canlı oyun daveti"** / *"{isim} seni {n} kişilik bir oyuna
+      davet etti."*
+- [ ] **Arkadaşlık isteği:** başka bir hesap sana arkadaşlık isteği
+      göndersin. **"Yeni arkadaşlık isteği"** / *"{isim} seni Kelimeki'de
+      arkadaş olarak eklemek istiyor."*
+- [ ] **Hatırlatma (cron):** 3 gün cevapsız kalan bir istek için günlük cron
+      gönderiyor — elle tetiklenemez, beklemek gerekiyor.
+      **"Bekleyen arkadaşlık isteğin var"**.
+- [ ] ⚠ **Bildirime dokunmak henüz bir yere GÖTÜRMEZ** — yönlendirme Faz 3'ün
+      işi. Oyun daveti push'u `kelimeki://oyun/<id>` linkini zaten taşıyor
+      ama istemci okumuyor. Dokununca yalnızca uygulama açılır; bu hata
+      DEĞİL.
+- [ ] **E-posta tercihi push'u kapatmamalı.** Hesap Ayarları'ndan e-posta
+      bildirimlerini KAPAT, push'u açık bırak → davet geldiğinde e-posta
+      gelmemeli ama **push gelmeli**. (30 Ağustos 2026'ya kadar
+      `notify-deadline-warnings`'te tam tersi oluyordu; dördü de düzeltildi.)
+
 ## 4. Kayıt onayı ve şifre sıfırlama (derin bağlantı kanalı)
 
 `authRedirectUri` = `https://kelimeki.com/auth` (App Link),

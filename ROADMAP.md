@@ -97,16 +97,53 @@ migration dosyası `main`'de duruyor (29 Ağustos'ta `pg_proc`'tan doğrulandı:
 (`app_version_parity_test` ayrışmayı yakalar) ve zorunlu güncelleme eşiği
 sırası korunmalı — `mobile/CLAUDE.md` → "Zorunlu Güncelleme".
 
-### Faz 2 — davet bildirimleri · **SÜRÜM GEREKTİRMEZ** · sunucu
+### Faz 2 — davet bildirimleri · ✅ **CANLIDA** (30 Ağustos 2026)
 
-`notify-game-invite`, `notify-friend-request`, `notify-friend-request-reminders`
-→ `_shared/push.ts` kanalını ekle. **Sahadaki paket (versionCode 426) token'ı
-zaten kaydediyor ve `kelimeki_oyun` kanalı zaten var**, yani bu üç fonksiyon
-deploy edildiği anda mevcut kullanıcılara ulaşır.
+Üç fonksiyona push kanalı eklendi ve deploy edildi — sürüm gerekmedi, sahadaki
+paket token'ı zaten kaydediyordu:
 
-`notify-deadline-warnings` BİREBİR örnek: push e-postadan SONRA, ayrı
-`try/catch` içinde (push e-posta yolunu ASLA düşüremez),
-`push_notifications_enabled` kontrolü, bayat token silme.
+| Fonksiyon | Sürüm | `verify_jwt` | Bildirim |
+|---|---|---|---|
+| `notify-game-invite` | 9 | true | *Canlı oyun daveti* — `kelimeki://oyun/<id>` link'iyle |
+| `notify-friend-request` | 9 | true | *Yeni arkadaşlık isteği* |
+| `notify-friend-request-reminders` | 9 | false | *Bekleyen arkadaşlık isteğin var* |
+| `notify-deadline-warnings` | 12 | false | (aşağıdaki hata düzeltmesi) |
+
+**Üç kopya yerine ortak yardımcı:** `_shared/push.ts` → `sendPushToUser()`.
+Hiçbir koşulda fırlatmıyor, yalnızca `push_notifications_enabled`e bakıyor,
+bayat token'ı siliyor, kaç cihaza gittiğini döndürüyor (teşhis).
+
+⚠ **YOLDA BULUNAN CANLI HATA — düzeltildi.** `notify-deadline-warnings`
+(o güne dek push taşıyan TEK fonksiyon) `email_notifications_enabled`
+kapalıysa `continue` ediyor, push çağrısı ise ondan sonra geliyordu: yani
+e-posta bildirimini kapatan kullanıcı **push da alamıyordu.** Dosyanın kendi
+yorumu iki tercihin BAĞIMSIZ olduğunu söylüyordu, kodu tutmuyordu. Dördünde
+de e-posta tercihi artık YALNIZCA e-postayı kapatıyor.
+**Bugün kimseyi etkilemiyordu** (ölçüldü: 48 profilin hiçbirinde e-posta
+kapalı değil) — gizli bir hataydı, üç yeni fonksiyona kopyalanmadan yakalandı.
+
+**Deep link bilinçli olarak ŞİMDİ gönderiliyor:** oyun daveti push'u
+`kelimeki://oyun/<id>` taşıyor. İstemci bugün okumuyor (Faz 3), ama sunucu
+tarafı zaten bunun için tasarlanmıştı; Faz 3 gelince bu bildirimler geriye
+dönük çalışır hâle gelecek.
+
+**Doğrulama sınırı:** bu ortamda Deno YOK (`_shared/push_test.ts` koşmadı) ve
+`*.supabase.co`ya çıkılamıyor (fonksiyonlar tetiklenemedi). TypeScript
+derleyicisiyle dördü de temiz ayrıştı; deploy sonrası `list_edge_functions`
+ile dört sürüm ve dört `verify_jwt` değeri tek tek doğrulandı. **Gerçek
+kanıt sahadan gelecek:** üç yanıt da artık `pushed` sayacı döndürüyor.
+
+### Faz dışı — kart/ikon cilası + bir hata (30 Ağustos 2026) · web ANINDA, port 1.0.3'te
+
+Faz 2'yle aynı dalda gitti ama fazın parçası DEĞİL: Canlı/Setup oyun
+kartlarının metin-punto-işaret düzeni (`SIRA SENDE` + yeşil üçgen ↔
+`SIRA RAKİPTE` + kırmızı nokta, sayaç `… sonra teslim (-2 puan)`) ve ilişki
+ikonu ailesinin tamamlanması. **Yanında GERÇEK bir hata:** skor kartı
+ilişki simgesini dört durum yerine ikiye indirdiğinden, bekleyen arkadaşlık
+isteği olan kişide "arkadaş ekle" ikonu çıkıyor, dokununca "İsteği İptal Et"
+diyordu. Gerekçeler/ölçümler: `docs/decisions/live-game.md`,
+`docs/decisions/components-account.md`, `mobile/docs/parca-log.md` Parça
+172-173.
 
 ### Faz 3 — deep link + bildirime dokunma + Analytics · **1 sürüm** · en büyük
 
@@ -152,8 +189,8 @@ koddan ölçülen hâl:
 | Altyapı (`push_tokens`, `register_push_token`, hesap silmede temizlik) | ✅ |
 | `POST_NOTIFICATIONS` izni · `kelimeki_oyun` kanalı (IMPORTANCE_HIGH) | ✅ |
 | `push_notifications_enabled` tercihi (e-postadan bağımsız) | ✅ |
-| **Teslim uyarısı push'u** | ✅ canlıda (`notify-deadline-warnings` v11) |
-| Oyun daveti · arkadaş daveti push kanalı | ⬜ **Faz 2** |
+| **Teslim uyarısı push'u** | ✅ canlıda (`notify-deadline-warnings` v12) |
+| Oyun daveti · arkadaş daveti push kanalı | ✅ canlıda (30 Ağustos) |
 | Bildirime dokununca yönlendirme | ⬜ **Faz 3** |
 | Firebase Analytics olayları | ⬜ **Faz 3** |
 | "Sıra sende" olayı | ⬜ **Faz 4** |

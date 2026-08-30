@@ -1928,15 +1928,20 @@ class _SavedGameRow extends StatelessWidget {
     final ms = savedAtMs +
         abandonTimeout.inMilliseconds -
         DateTime.now().millisecondsSinceEpoch;
+    // ⚠ Fiil (`verb`) YALNIZCA süre dolduğunda görünüyor — 30 Ağustos 2026,
+    // kullanıcı isteği; gerekçe web ikizinde (Setup.tsx `remainingTime`).
     if (ms <= 0) return (text: 'Bugün $verb', urgent: true);
     final totalMinutes = (ms / (60 * 1000)).ceil();
     final totalHours = totalMinutes ~/ 60;
     final days = totalHours ~/ 24;
     final hours = totalHours % 24;
     final minutes = totalMinutes % 60;
+    // ⚠ İki dal AYRI: `willSurrender` false iken -2 diye bir ceza YOK,
+    // o kayıt yalnızca siliniyor (gerekçe web ikizinde).
+    final sonuc = willSurrender ? 'teslim (-2 puan)' : 'silinecek';
     final text = days > 0
-        ? '$days gün $hours saat sonra $verb'
-        : '$hours saat $minutes dakika sonra $verb';
+        ? '$days gün $hours saat sonra $sonuc'
+        : '$hours saat $minutes dk sonra $sonuc';
     return (text: text, urgent: days < 1);
   }
 
@@ -1987,21 +1992,29 @@ class _SavedGameRow extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Text(
-                  'SENİN HAMLEN BEKLENİYOR',
+                // Metin ve punto `live_games_tab`ın aktif oyun kartıyla
+                // BİREBİR (30 Ağustos 2026, kullanıcı isteği): biri YZ biri
+                // Canlı oyun ama ikisi de "devam eden oyun" satırı.
+                Text.rich(
+                  TextSpan(
+                      text: 'SIRA SENDE',
+                      children: [turnTriangleSpan(kGreen)]),
                   style: TextStyle(
                     fontFamily: 'SpaceMono',
-                    fontSize: 11,
+                    fontSize: 13,
+                    height: 1, // ok satırı büyütmesin (bkz. kTurnArrowSpan)
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1,
                     color: kGreen,
                   ),
                 ),
-                const SizedBox(height: 2),
+                // 8 px — web `gap-0.5` + `mt-1.5` (kullanıcı isteği).
+                const SizedBox(height: 8),
                 Text(
-                  // trUpper ŞART — native toUpperCase 'silinecek'i noktasız
-                  // I ile 'SILINECEK' yapar (test yakaladı; web'de CSS
-                  // uppercase tr locale ile doğruydu).
+                  // trUpper ŞART — native toUpperCase 'dakika'yı noktasız I
+                  // ile 'DAKIKA' yapar (test yakaladı; web'de CSS uppercase
+                  // tr locale ile doğruydu). Süre dolunca metne geri gelen
+                  // 'silinecek' de aynı tuzağı taşıyor.
                   trUpper(remaining.text),
                   style: TextStyle(
                     fontFamily: 'SpaceMono',

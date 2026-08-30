@@ -43,9 +43,10 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       bir "🤖 Yapay Zeka" satırı belirmeli ve bir daha sorulmamalı.
 - [ ] **Davetlinin görünümü.** Karşı hesapta "Oyun Davetleri" sekmesinde kart
       görünmeli, katılımcıların yanında "Davet gönderen"/"Bekliyor" etiketleri
-      ve "N gün M saat sonra iptal edilecek" satırı olmalı (süre + sonunda ne
-      olacağı — 5 Ağustos 2026'da "Bugün iptal edilir" gibi yanlış/süresiz
-      ifadelerden bu kalıba geçildi).
+      ve "N gün M saat kaldı" satırı olmalı. (Metin iki kez değişti: 5 Ağustos
+      2026'da "Bugün iptal edilir" gibi yanlış/süresiz ifadelerden "… sonra
+      iptal edilecek"e, 30 Ağustos 2026'da kullanıcı isteğiyle yalnızca
+      "… kaldı"ya — üç sayaç da artık aynı kalıpta.)
 - [ ] **Kabul.** Oyun `active` olmalı, tahta/torba kurulmalı, iki tarafta da
       "Devam Edenler"e geçmeli. Kabul sonrası arkadaş önerisi modalı çıkmalı
       (henüz arkadaş olunmayan katılımcılar varsa).
@@ -70,9 +71,12 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
 
 - [ ] **Sıra netliği.** Sırası sende değilken "Sıra: {isim}" bandı görünmeli;
       YZ koltuğunda ise nabız gibi atan "hamlesini hesaplıyor…" hâli.
-- [ ] **Kalan süre yalnızca sende.** "Devam Edenler" listesinde "N saat sonra
-      teslim sayılacak" **yalnızca sırası sende olan** satırlarda görünmeli.
-      "Rakibin hamlesi bekleniyor" satırında görünmemeli — o süre rakibe ait.
+- [ ] **Kalan süre yalnızca sende.** "Devam Edenler" listesinde "N saat M
+      dk sonra teslim (-2 puan)" **yalnızca sırası sende olan** satırlarda
+      görünmeli. "SIRA RAKİPTE" satırında görünmemeli — o süre rakibe ait.
+      Sırası sende olan satırın ("SIRA SENDE") yanında yeşil bir ÜÇGEN (oynat
+      tuşu), rakipteki satırda ise kırmızı bir YUVARLAK olmalı; ikisi asla
+      aynı anda görünmez.
 - [ ] **Off-turn deneme.** Sıra sende değilken de taş yerleştirebilmeli,
       Board'da geçerlilik dış hattı/puan rozeti çalışmalı, "Oyna" pasif
       kalmalı. Rakip oynayınca deneme taşları rafa dönüp "Oyna" aktifleşmeli.

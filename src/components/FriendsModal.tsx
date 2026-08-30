@@ -23,7 +23,7 @@ import {
   sendFriendRequest,
 } from '../lib/api';
 import type { FriendRow, FriendSearchResult, IncomingFriendRequest } from '../lib/database.types';
-import { PersonAddIcon, PersonRemoveIcon, HourglassIcon, HowToRegIcon } from './RelationIcons';
+import { PersonAddIcon, PersonRemoveIcon, PersonPendingIcon, HowToRegIcon } from './RelationIcons';
 import { FriendModerationModal, type FriendModerationTarget } from './FriendModerationModal';
 import { trCompare } from '../utils/turkish';
 import { RankSeal } from './RankSeal';
@@ -491,7 +491,7 @@ export function FriendsModal({ onClose, initialTab = 'friends' }: FriendsModalPr
       u.relation === 'accepted'
         ? { label: 'Arkadaşlıktan çıkar', color: 'text-red', icon: <PersonRemoveIcon />, act: () => setConfirmRemove({ friend_id: u.id, name: u.name }) }
         : u.relation === 'pending_outgoing'
-          ? { label: 'İstek gönderildi — iptal et', color: 'text-muted', icon: <HourglassIcon />, act: () => setConfirmCancel(u) }
+          ? { label: 'İstek gönderildi — iptal et', color: 'text-muted', icon: <PersonPendingIcon />, act: () => setConfirmCancel(u) }
           : u.relation === 'pending_incoming'
             ? { label: 'Arkadaşlık isteğini kabul et', color: 'text-accent', icon: <HowToRegIcon />, act: () => setConfirmAdd(u) }
             : { label: 'Arkadaş ekle', color: 'text-accent', icon: <PersonAddIcon />, act: () => setConfirmAdd(u) };

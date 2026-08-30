@@ -78,8 +78,82 @@ function mySlotIndex(game: OnlineGame): number {
   return game.slots.findIndex((s) => s.type === 'human' && s.relation === 'self');
 }
 
+// ⚠ Aktif oyunun iki etiketi KAYNAKTA BÜYÜK HARFLE yazılı (30 Ağustos 2026,
+// kullanıcı isteği: *"'Senin hamlen bekleniyor' → 'SIRA SENDE', 'Rakibin
+// hamlesi bekleniyor' → 'SIRA RAKİPTE'"*). CSS `uppercase` zaten uyguluyor
+// ama Türkçe i→İ dönüşümü tarayıcının `lang` duyarlılığına kalıyor;
+// kaynağın kendisi büyükse o belirsizlik hiç doğmuyor ve portun `trUpper`ı
+// da idempotent kalıyor. Öteki iki etiket (Rakip bekleniyor/Bitti/Terk
+// edildi) dokunulmadı — onlar bir SIRA bildirmiyor.
+/**
+ * "SIRA SENDE"nin yanındaki yeşil ÜÇGEN — oynat tuşu gibi (30 Ağustos
+ * 2026, kullanıcı isteği: *"yeşil ok yerine yeşil üçgen (play tuşu gibi)
+ * deneyelim"*).
+ *
+ * Öncesinde bir `>` glifiydi ve iki tur ayar istemişti: Space Mono'da `>`
+ * matematik hizasında oturup harf boyuna ÇIKMADIĞINDAN 13 px'te mürekkep
+ * yüksekliği yalnızca 17/27'ydi (pixelRatio 3) — 21 px'e büyütülüp 2,67 px
+ * aşağı kaydırılmıştı. Çizilmiş üçgen o iki ayarı birden gereksiz kılıyor:
+ * ölçüsünü doğrudan veriyoruz.
+ *
+ * ⚠ **Glif DEĞİL, çizilmiş vektör** — `TurnDot`'takiyle aynı gerekçe:
+ * `▶`/`►` Space Mono'da yok, kullanılsaydı tarayıcı ve Flutter ayrı yedek
+ * fontlara düşüp FARKLI üçgenler çizerdi. Geometri portla ELLE senkron ve
+ * senkronu ZORLAYAN bir test var: `relation_icon_parity_test.dart`.
+ *
+ * Ölçü büyük harflerin mürekkep yüksekliğinden: 13 px puntoda 9,0 mantıksal
+ * px. Üçgen 8×9, taban çizgisine oturuyor.
+ */
+export function TurnTriangle() {
+  return (
+    <svg
+      width="8"
+      height="9"
+      viewBox="0 0 8 9"
+      fill="currentColor"
+      aria-hidden
+      className="ml-[25px] inline-block align-baseline text-green"
+    >
+      <path d="M0 0L8 4.5L0 9Z" />
+    </svg>
+  );
+}
+
+
+/**
+ * "SIRA RAKİPTE"nin sonundaki kırmızı yuvarlak (30 Ağustos 2026, kullanıcı
+ * isteği) — `TurnTriangle`'ın simetriği: yeşil üçgen "git oyna", kırmızı
+ * nokta "bekle".
+ *
+ * ⚠ **Glif DEĞİL, çizilmiş bir kutu.** `●` (U+25CF) Space Mono'da YOK;
+ * kullanılsaydı tarayıcı/Flutter yedek bir fonta düşerdi ve iki platform
+ * farklı bir daire çizerdi — bu dosyanın "web ve port AYNI vektör" kuralının
+ * sessizce kırılması olurdu. Kutu ölçüsü ölçümden: büyük harflerin mürekkep
+ * yüksekliği 13 px puntoda 9,0 mantıksal px (pixelRatio 3'te 27), yuvarlak
+ * da 9 — taban çizgisine oturduğunda tam harf bandını dolduruyor.
+ *
+ * `align-baseline` + `inline-block`: içeriği olmayan bir inline-block'un
+ * taban çizgisi ALT kenarıdır, yani yuvarlak harflerin üstünde yüzmez.
+ *
+ * Boşluk `TurnTriangle`ınkiyle AYNI (25) — ama üç turdur öyle değildi ve
+ * her seferinde sebep başkaydı: `>` glifinin yan boşluğu (25/29), sonra
+ * üçgene geçiş (25/27), sonunda etiketten `!`in kalkması (iki etiket de
+ * artık `E` ile bitiyor → 25/25). Ölçümle ayarlandı, hesapla değil;
+ * gerekçenin tamamı portun `kTurnDotGap`inde.
+ *
+ * Port ikizi: `live_games_tab.dart` → `turnDotSpan` / `kTurnDotGap`.
+ */
+export function TurnDot() {
+  return (
+    <span
+      aria-hidden
+      className="ml-[25px] inline-block h-[9px] w-[9px] rounded-full bg-red align-baseline"
+    />
+  );
+}
+
 function statusLabel(game: OnlineGame, isMyTurn?: boolean): string {
-  if (game.status === 'active') return isMyTurn ? 'Senin Hamlen Bekleniyor' : 'Rakibin hamlesi bekleniyor';
+  if (game.status === 'active') return isMyTurn ? 'SIRA SENDE' : 'SIRA RAKİPTE';
   if (game.status === 'pending') return 'Rakip bekleniyor';
   if (game.status === 'finished') return 'Bitti';
   return 'Terk edildi';
@@ -97,10 +171,20 @@ function remainingTimeLabel(deadline: string | null | undefined): { text: string
   const totalMinutes = Math.ceil(ms / (60 * 1000));
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
+  // ⚠ "… sonra teslim sayılacak" → "… kaldı" (30 Ağustos 2026, kullanıcı
+  // isteği). Fiil BİLİNÇLİ olarak düştü: sayaç zaten yalnızca SIRASI
+  // ÇAĞIRANDA olan oyunlarda çiziliyor ve hemen üstünde "SIRA SENDE"
+  // yazıyor, yani "ne olacak" bilgisini satırın kendisi değil kart taşıyor.
+  // Üç sayaç da (bu, davet iptali, Setup'ın yerel kaydı) aynı kalıba çekildi.
+  // Parantez içindeki sonuç (30 Ağustos 2026, kullanıcı isteği) — fiil
+  // metinden çıkarılınca kaybolan "süre dolunca ne olacak" bilgisini geri
+  // getiriyor, ama bu kez ceza MİKTARIYLA: 48 saat dolunca sıra sendeyken
+  // otomatik teslim olunuyor ve k-lig puanından -2 düşülüyor
+  // (`check_turn_timeout`, bkz. docs/decisions/live-game.md).
   const text =
     hours > 0
-      ? `${hours} saat ${minutes} dakika sonra teslim sayılacak`
-      : `${minutes} dakika sonra teslim sayılacak`;
+      ? `${hours} saat ${minutes} dk sonra teslim (-2 puan)`
+      : `${minutes} dk sonra teslim (-2 puan)`;
   return { text, urgent: totalMinutes < 24 * 60 };
 }
 
@@ -123,13 +207,15 @@ function remainingInviteDays(createdAt: string): { text: string; urgent: boolean
   const days = Math.floor(totalHours / 24);
   const hours = totalHours % 24;
   const minutes = totalMinutes % 60;
-  // "... kaldı" yerine "... sonra iptal edilecek" — `remainingTimeLabel`
-  // ("... sonra teslim sayılacak") ve Setup'taki `SavedGameRow` ("... sonra
-  // silinecek") ile aynı kalıp: süre + o sürenin sonunda NE olacağı.
+  // Üç sayaç da aynı kalıpta: yalnızca SÜRE + "kaldı" (30 Ağustos 2026,
+  // kullanıcı isteği). Öncesinde her biri kendi fiilini taşıyordu ("sonra
+  // iptal edilecek" / "sonra teslim sayılacak" / "sonra silinecek") — süre +
+  // o sürenin sonunda NE olacağı. Fiiller düştü; kartın kendisi (davet mi,
+  // sıra mı, kayıt mı) zaten hangi sürenin işlediğini söylüyor.
   const text =
     days > 0
-      ? `${days} gün ${hours} saat sonra iptal edilecek`
-      : `${hours} saat ${minutes} dakika sonra iptal edilecek`;
+      ? `${days} gün ${hours} saat kaldı`
+      : `${hours} saat ${minutes} dakika kaldı`;
   return { text, urgent: days < 1 };
 }
 
@@ -146,6 +232,32 @@ function participantLabel(slot: HumanSlot, game: OnlineGame): string {
   return 'Bekliyor';
 }
 
+// `participantLabel`in RENGİ — dallar birebir yukarıdaki sırayla, çünkü
+// ikisi tek bir karardır: etiket değişirse rengi de aynı yerde değişsin
+// (bu projede "zincirin bir halkası" hatası tam böyle doğuyor).
+//
+// Kullanıcı isteği (30 Ağustos 2026): "Kabul etti" YEŞİL, "Bekliyor"
+// KIRMIZI — davet kartına bakan kişi tek bakışta kimin cevap verdiğini
+// görsün. "Reddetti" ve "Davet gönderen" bilinçli olarak NÖTR kalıyor:
+// buradaki kırmızı "hâlâ cevap bekleniyor" uyarısı, "olumsuz sonuç"
+// değil; ikisini aynı renge boyamak o ayrımı silerdi.
+//
+// "Reddetti" zaten bu listede GÖRÜNMÜYOR (ölçüldü, 30 Ağustos 2026):
+// `respond_to_game_invite`in ret dalı oyunu anında `abandoned` yapıyor
+// (kompozisyon kuralı gereği tek ret kadroyu tamamlanamaz kılıyor) ve
+// aşağıdaki dört kova yalnızca `pending`/`active` eşliyor — canlıda 86
+// davetin 2'si reddedilmiş, ikisi de görünmez oyunlarda. Dal yine de
+// duruyor: etiketin kendisi var, rengi de onunla aynı yerde kalsın.
+//
+// Port ikizi: mobile/app/lib/src/ui/live/live_games_tab.dart →
+// `_participantLabelColor` (aynı dal sırası, aynı tokenler).
+function participantLabelClass(slot: HumanSlot, game: OnlineGame): string {
+  if (slot.user_id === game.created_by) return 'text-muted';
+  if (slot.invite_status === 'accepted') return 'text-green';
+  if (slot.invite_status === 'declined') return 'text-muted';
+  return 'text-red';
+}
+
 function ParticipantRow({ slot, game }: { slot: HumanSlot; game: OnlineGame }) {
   // Rütbe mührü context'ten okunuyor: bu satır listeyi tutan
   // `LiveGamesTab`'tan dört kat uzakta (GameRow/PendingSection →
@@ -159,7 +271,7 @@ function ParticipantRow({ slot, game }: { slot: HumanSlot; game: OnlineGame }) {
         <span className="min-w-0 text-xs text-text truncate">{slot.name ?? 'Oyuncu'}</span>
         {tier && <RankSeal tier={tier} size={16} className="shrink-0" />}
       </span>
-      <span className="text-[9px] font-mono uppercase tracking-[0.5px] text-muted shrink-0">
+      <span className={`text-[9px] font-mono uppercase tracking-[0.5px] shrink-0 ${participantLabelClass(slot, game)}`}>
         {participantLabel(slot, game)}
       </span>
     </div>
@@ -308,8 +420,12 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
         </span>
       </span>
       <span className="flex flex-col items-end gap-0.5 shrink-0">
+        {/* 11 → 13 px (30 Ağustos 2026, kullanıcı isteği: "fontu biraz
+            büyütelim, kutu biraz büyüyebilir"). Kutu aslında BÜYÜMÜYOR:
+            yeni etiketler kısa ("SIRA RAKİPTE" 12 karakter) — eskisi
+            ("Rakibin hamlesi bekleniyor") 11 px'te bile daha genişti. */}
         <span
-          className={`text-[11px] font-mono uppercase tracking-[1px] ${
+          className={`text-[13px] font-mono uppercase tracking-[1px] ${
             game.status === 'active'
               ? isMyTurn
                 ? 'text-green font-bold'
@@ -318,10 +434,13 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
           }`}
         >
           {statusLabel(game, isMyTurn)}
+          {game.status === 'active' && (isMyTurn ? <TurnTriangle /> : <TurnDot />)}
         </span>
         {remaining && (
           <span
-            className={`text-[8px] font-mono uppercase tracking-[0.5px] ${
+            /* mt-1.5: süre satırı durum etiketine YAPIŞMASIN (kullanıcı
+               isteği) — sarmalayıcının gap-0.5'iyle birlikte 8 px. */
+            className={`mt-1.5 text-[8px] font-mono uppercase tracking-[0.5px] ${
               remaining.urgent ? 'text-red' : 'text-muted'
             }`}
           >

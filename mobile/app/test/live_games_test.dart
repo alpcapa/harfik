@@ -14,6 +14,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/ui/game/neo_box.dart';
 import 'package:kelimeki/src/ui/theme.dart';
+import 'package:kelimeki/src/ui/tokens.dart';
 import 'package:kelimeki/src/bootstrap.dart';
 import 'package:kelimeki/src/config/version_gate.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
@@ -117,17 +118,17 @@ void main() {
 
       final in30h = iso(DateTime.utc(2026, 8, 8, 18)); // 30 saat sonra
       var l = remainingTimeLabel(in30h, nowMs)!;
-      expect(l.text, '30 saat 0 dakika sonra teslim sayılacak');
+      expect(l.text, '30 saat 0 dk sonra teslim (-2 puan)');
       expect(l.urgent, isFalse);
 
       final in90m = iso(DateTime.utc(2026, 8, 7, 13, 30));
       l = remainingTimeLabel(in90m, nowMs)!;
-      expect(l.text, '1 saat 30 dakika sonra teslim sayılacak');
+      expect(l.text, '1 saat 30 dk sonra teslim (-2 puan)');
       expect(l.urgent, isTrue);
 
       final in5m = iso(DateTime.utc(2026, 8, 7, 12, 5));
       l = remainingTimeLabel(in5m, nowMs)!;
-      expect(l.text, '5 dakika sonra teslim sayılacak');
+      expect(l.text, '5 dk sonra teslim (-2 puan)');
 
       l = remainingTimeLabel(iso(DateTime.utc(2026, 8, 7, 11)), nowMs)!;
       expect(l.text, 'Süresi doldu - teslim oldu');
@@ -137,12 +138,12 @@ void main() {
     test('remainingInviteLabel: gün/saat, acil eşiği, süresi dolmuş', () {
       // 3 gün önce açıldı → 4 gün 0 saat kaldı.
       var l = remainingInviteLabel(iso(DateTime.utc(2026, 8, 4, 12)), nowMs);
-      expect(l.text, '4 gün 0 saat sonra iptal edilecek');
+      expect(l.text, '4 gün 0 saat kaldı');
       expect(l.urgent, isFalse);
 
       // 6 gün 22 saat önce → 2 saat 0 dakika kaldı, acil.
       l = remainingInviteLabel(iso(DateTime.utc(2026, 7, 31, 14)), nowMs);
-      expect(l.text, '2 saat 0 dakika sonra iptal edilecek');
+      expect(l.text, '2 saat 0 dakika kaldı');
       expect(l.urgent, isTrue);
 
       // 8 gün önce → süresi dolmuş.
@@ -614,6 +615,17 @@ void main() {
       expect(find.text('BEKLİYOR'), findsOneWidget);
       expect(find.text('Yapay Zeka'), findsOneWidget);
 
+      // Etiketin RENGİ (kullanıcı isteği, 30 Ağustos 2026): cevap veren
+      // yeşil, cevap bekleyen kırmızı, kurucu nötr. Web ikizi
+      // `participantLabelClass` (LiveGamesTab.tsx) ile aynı dal sırası.
+      // Negatif eş: `_participantLabelColor` kaldırılıp `_muted` sabitine
+      // dönülürse ilk iki satır düşer.
+      Color etiketRengi(String etiket) =>
+          tester.widget<Text>(find.text(etiket)).style!.color!;
+      expect(etiketRengi('KABUL ETTİ'), kGreen);
+      expect(etiketRengi('BEKLİYOR'), kRed);
+      expect(etiketRengi('DAVET GÖNDEREN'), kMuted);
+
       await tester.runAsync(() async {
         final boundary =
             key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
@@ -691,18 +703,26 @@ void main() {
         ];
       await pumpTab(tester, liveServices(userId: 'u-tab3', gateway: gw));
 
-      expect(find.text('SENİN HAMLEN BEKLENİYOR'), findsOneWidget);
-      expect(find.text('RAKİBİN HAMLESİ BEKLENİYOR'), findsOneWidget);
+      expect(find.textContaining('SIRA SENDE'), findsOneWidget);
+      expect(find.textContaining('SIRA RAKİPTE'), findsOneWidget);
+      // Ok ve nokta BİRBİRİNİN yerine geçiyor, ikisi bir arada değil:
+      // yeşil ok "git oyna" (yalnız sırası bende), kırmızı nokta "bekle"
+      // (yalnız rakipte). Anahtarlı finder, noktayı avatar çemberlerinden
+      // ayırt edebilmek için (30 Ağustos 2026).
+      expect(find.byKey(const Key('turn-triangle')), findsOneWidget);
+      expect(find.byKey(const Key('turn-dot')), findsOneWidget);
       // Kalan süre YALNIZCA sırası bende olan satırda (web 3 Ağustos dersi).
-      expect(find.textContaining('TESLİM SAYILACAK'), findsOneWidget);
+      // Metin 30 Ağustos 2026'da yalnızca "… KALDI"ya indi (fiil düştü).
+      expect(find.textContaining('SONRA TESLİM'), findsOneWidget);
 
-      // Punto web ile aynı (Parça 55): durum etiketi text-[11px], hemen
+      // Punto web ile aynı (Parça 55): durum etiketi text-[13px], hemen
       // altındaki kalan-süre text-[8px]. Bu İKİSİ web'de de farklı — biri
-      // ötekine uydurulmamalı.
-      final status = tester.widget<Text>(find.text('SENİN HAMLEN BEKLENİYOR'));
-      expect(status.style!.fontSize, 11);
-      final left = tester
-          .widget<Text>(find.textContaining('TESLİM SAYILACAK').first);
+      // ötekine uydurulmamalı. (30 Ağustos 2026'da 11/8 → 13/10, kullanıcı
+      // isteği; oran korundu.)
+      final status = tester.widget<Text>(find.textContaining('SIRA SENDE'));
+      expect(status.style!.fontSize, 13);
+      final left =
+          tester.widget<Text>(find.textContaining('SONRA TESLİM').first);
       expect(left.style!.fontSize, 8);
 
       // Parça 56: web'de bu kartlar ve alt sekmeler `shadow-raised` /

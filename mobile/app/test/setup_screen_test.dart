@@ -352,7 +352,7 @@ void main() {
       await tester.pump();
     }
     expect(find.text('DEVAM EDEN OYUN'), findsOneWidget);
-    expect(find.text('SENİN HAMLEN BEKLENİYOR'), findsOneWidget);
+    expect(find.textContaining('SIRA SENDE'), findsOneWidget);
     expect(find.textContaining('SONRA SİLİNECEK'), findsOneWidget);
     // Anti-kaçış: yeni oyun formu hiç yok.
     expect(find.text('OYUNU BAŞLAT'), findsNothing);
@@ -362,7 +362,7 @@ void main() {
 
     // Devam: satıra dokun → GameScreen aynı turdan açılır. Dokunuş
     // loadSave (gerçek I/O) tetiklediğinden yine runAsync köprüsü gerekir.
-    await tester.tap(find.text('SENİN HAMLEN BEKLENİYOR'));
+    await tester.tap(find.textContaining('SIRA SENDE'));
     for (var i = 0; i < 50 && !tester.any(find.byType(GameScreen)); i++) {
       await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 20)));

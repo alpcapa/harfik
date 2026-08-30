@@ -10,7 +10,7 @@ import { KLigMark } from './KLigMark';
 import { RankSeal } from './RankSeal';
 import { RankInfoModal } from './RankInfoModal';
 import { tierFor } from '../utils/leagueRank';
-import { HowToRegIcon, PersonAddIcon } from './RelationIcons';
+import { HowToRegIcon, PersonAddIcon, PersonPendingIcon } from './RelationIcons';
 import { useAuth } from '../hooks/useAuth';
 import { useModalA11y } from '../hooks/useModalA11y';
 import {
@@ -78,9 +78,43 @@ function memberDisplayName(m: PlayerSummary) {
 }
 
 // k-lig'den herhangi birinin kartını açınca arkadaş ekleyebilmek için.
-// İkon ilişkiye göre değişir: arkadaşsa yeşil how_to_reg (dokununca çıkarma
-// onayı), değilse mavi person_add (duruma göre ekleme/kabul/iptal onayı).
-// Dört dalın DÖRDÜ de önce bir onay diyaloğu açar. Bkz. RelationIcons.tsx.
+// İkon da onay diyaloğu da ilişkinin DÖRT hâlini ayrı ayrı karşılar
+// (`friendIconFor` ↔ `friendDialogCopy`); dört dalın DÖRDÜ de önce bir onay
+// diyaloğu açar, hiçbiri anında iş yapmaz. Bkz. RelationIcons.tsx.
+/**
+ * İsmin yanındaki ilişki simgesi — ikon + renk + erişilebilirlik etiketi.
+ *
+ * ⚠ **BULUNAN HATA (30 Ağustos 2026, kullanıcı bildirdi):** *"Arkadaşlık
+ * daveti beklemede olan kişinin skor kartına girince isminin yanında arkadaş
+ * ekle işareti çıkıyor. Halbuki aynı kişiye Arkadaşlar → Ara & Ekle
+ * bölümünden bakınca yanında kum saati çıkıyor."* Burası İKİ dala
+ * ayrılmıştı — `accepted` ve "diğer her şey" — yani `pending_outgoing` da
+ * `pending_incoming` da "Ekle" gibi görünüyordu. Onay diyaloğu
+ * (`friendDialogCopy`) baştan beri dördünü ayırıyordu: kart "ekle" diyor,
+ * dokununca "İsteği İptal Et" çıkıyordu.
+ *
+ * Ders (bu repoda tekrarlayan sınıf): bir DURUM birden çok yüzeyde
+ * gösteriliyorsa yüzeylerin dal SAYILARI da eşit olmalı. Aynı ekranda
+ * dört dallı bir metin ile iki dallı bir ikon yan yana durabiliyorsa
+ * eşleşmeyi zorlayan bir şey yok demektir.
+ *
+ * `accepted` dalı `FriendsModal`'dan BİLEREK ayrılıyor (yeşil `how_to_reg`,
+ * kırmızı `person_remove` değil) — 11 Ağustos 2026 kullanıcı kararı, gerekçe
+ * RelationIcons.tsx'te. Öteki üç dal listeyle BİREBİR aynı.
+ */
+function friendIconFor(relation: FriendRelation | null) {
+  switch (relation) {
+    case 'accepted':
+      return { icon: <HowToRegIcon />, color: 'text-green', label: 'Arkadaşlıktan çıkar' };
+    case 'pending_outgoing':
+      return { icon: <PersonPendingIcon />, color: 'text-muted', label: 'İstek gönderildi — iptal et' };
+    case 'pending_incoming':
+      return { icon: <HowToRegIcon />, color: 'text-accent', label: 'Arkadaşlık isteğini kabul et' };
+    default:
+      return { icon: <PersonAddIcon />, color: 'text-accent', label: 'Arkadaş ekle' };
+  }
+}
+
 function friendDialogCopy(relation: FriendRelation | null, name: string) {
   switch (relation) {
     case 'accepted':
@@ -177,6 +211,9 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
   }, [user, member.id]);
 
   const showFriendButton = !!user && user.id !== member.id && relation !== undefined;
+  // `relation === undefined` (henüz yüklenmedi) dalında buton zaten
+  // çizilmiyor; `null`a indirgemek yalnızca tipi daraltıyor.
+  const friendIcon = friendIconFor(relation ?? null);
 
   const handleFriendAction = async () => {
     setFriendBusy(true);
@@ -249,20 +286,13 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
             <button
               type="button"
               onClick={() => setShowFriendConfirm(true)}
-              aria-label={relation === 'accepted' ? 'Arkadaşlıktan çıkar' : 'Arkadaş ekle'}
+              aria-label={friendIcon.label}
               /* Yuvarlak rozet (zemin+çerçeve) KALDIRILDI — port kapsız
                  çiziyor. Renk `currentColor` üzerinden SVG'ye iniyor.
-                 Arkadaş durumu burada BİLİNÇLİ olarak yeşil `how_to_reg`
-                 (kişi+onay), listelerdeki kırmızı `person_remove` DEĞİL —
-                 kullanıcı kararı: isim hizasında duran bu simge bir aksiyon
-                 sütunu değil, kimliğin yanındaki bir durum rozeti gibi
-                 okunuyor ve "adam-" orada iyi durmuyor. Dokunuş yine de
-                 çıkarma onayını açar (bkz. RelationIcons.tsx). */
-              className={`shrink-0 leading-none active:scale-90 transition-transform ${
-                relation === 'accepted' ? 'text-green' : 'text-accent'
-              }`}
+                 Dört dalın hangisi hangi ikon/renk: `friendIconFor`. */
+              className={`shrink-0 leading-none active:scale-90 transition-transform ${friendIcon.color}`}
             >
-              {relation === 'accepted' ? <HowToRegIcon /> : <PersonAddIcon />}
+              {friendIcon.icon}
             </button>
           )}
           </div>

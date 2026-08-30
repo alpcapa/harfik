@@ -12,7 +12,7 @@
  * | İlişki | İkon | Renk |
  * |---|---|---|
  * | arkadaş değil | person_add | accent |
- * | istek gönderdim | hourglass_top | muted |
+ * | istek gönderdim | kişi + kum saati (ELLE çizildi) | muted |
  * | bana istek geldi | how_to_reg | accent |
  * | arkadaşız | person_remove | red |
  *
@@ -31,11 +31,13 @@
  * `friendDialogCopy`si). Etiketsiz bir ikona kazara dokunmak metin butonuna
  * göre çok daha kolay; yeni bir ilişki ikonu eklerken bu sözleşmeyi koru.
  *
- * **Path verisi elle çizilmedi**, Flutter SDK'sının `MaterialIcons-Regular.otf`
+ * **Dördün üçünde path verisi elle çizilmedi**, Flutter SDK'sının `MaterialIcons-Regular.otf`
  * dosyasından fontTools ile çıkarılıp 24'lük viewBox'a dönüştürüldü
  * (unitsPerEm 512 → ölçek 24/512, y ekseni ters). Flutter portu aynı
  * glyph'leri `Icons.*` ile doğrudan çiziyor (font gömülü), yani iki platform
- * BENZER değil AYNI vektörü kullanıyor.
+ * BENZER değil AYNI vektörü kullanıyor. **Tek istisna
+ * `PersonPendingIcon`** — Material'da karşılığı olmadığından elle çizildi ve
+ * porta elle kopyalandı; bkz. o fonksiyonun kendi başlığı.
  *
  * **Codepoint'leri hafızadan yazma** — 11 Ağustos'ta tam bunu deneyip yanlış
  * glyph'ler (saat yerine hamburger, person_remove yerine `<>`) çizdirdim.
@@ -61,11 +63,39 @@ export function PersonAddIcon({ size = 20 }: RelationIconProps) {
   );
 }
 
-/** Material `Icons.hourglass_top` (U+E327). */
-export function HourglassIcon({ size = 20 }: RelationIconProps) {
+/**
+ * "İstek gönderildi, bekliyor" — kişi + küçük kum saati.
+ *
+ * **Ailenin TEK elle çizilmiş ikonu** (30 Ağustos 2026, kullanıcı isteği:
+ * *"Kum saatini de diğer ikonlar gibi adamın yanında (+, - ve check gibi)
+ * küçük kum saati yapsak diğerleriyle bütünlük olacak"*). Öncesinde düz
+ * `Icons.hourglass_top` çiziliyordu: kişisiz, tek başına duran büyük bir kum
+ * saati — dört ilişki ikonunun üçü kişi+rozetken bu biri aileden kopuktu.
+ *
+ * **Neden elle:** Material'da "kişi + kum saati" diye bir glyph YOK, yani
+ * bu dosyanın öteki ikonlarının kuralı (fonttan çıkar, port `Icons.*` ile
+ * AYNI vektörü çizsin) burada uygulanamıyor. `hourglass_top`u rozet
+ * kutusuna küçültmek de çare değil: glyph'in çizgileri ~1 birim, yarıya
+ * inince 20 px'lik ikonda 0,42 px kalıyor.
+ *
+ * **Yapısı bilinçli olarak minimum sapma:** kişi gövdesi `person_add_alt_1`
+ * glyph'inin AYNISI (aşağıdaki `PersonAddIcon`'dan artı işareti çıkarılmış,
+ * tek bir koordinat bile oynatılmadı). Elle çizilen tek şey rozet, ve o da
+ * artının durduğu kutuda (x 15→23, y 6,98→15). Yani ailedeki fark tam olarak
+ * "+ yerine kum saati" kadar.
+ *
+ * ⚠ **PORT İKİZİ ELLE SENKRON:**
+ * `mobile/app/lib/src/ui/friends/relation_icons.dart`. `OzellikIkonlari`
+ * ile aynı durum, ve orada olduğu gibi burada da senkronu ZORLAYAN bir test
+ * var: `relation_icon_parity_test.dart` iki dosyayı da okuyup geometriyi
+ * birebir karşılaştırıyor. Path'i değiştirirsen o test düşer — kopyayı da
+ * güncelle.
+ */
+export function PersonPendingIcon({ size = 20 }: RelationIconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-      <path d="M6.0 2.015625V8.015625L9.984375 12.0L6.0 16.03125V21.984375H18.0V15.984375L14.015625 12.0L18.0 8.015625V2.015625H6.0ZM15.984375 16.5V20.015625H8.015625V16.5L12.0 12.515625L15.984375 16.5Z" />
+      <path d="M12.984375 8.015625C12.984375 5.8125 11.203125 3.984375 9.0 3.984375C6.796875 3.984375 5.015625 5.8125 5.015625 8.015625C5.015625 10.21875 6.796875 12.0 9.0 12.0C11.203125 12.0 12.984375 10.21875 12.984375 8.015625ZM0.984375 18.0V20.015625H17.015625V18.0C17.015625 15.328125 11.671875 14.015625 9.0 14.015625C6.328125 14.015625 0.984375 15.328125 0.984375 18.0Z" />
+      <path d="M15.5 6.5H22.5V8.5H21.6L19.0 11.0L21.6 13.5H22.5V15.5H15.5V13.5H16.4L19.0 11.0L16.4 8.5H15.5Z" />
     </svg>
   );
 }

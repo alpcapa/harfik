@@ -689,22 +689,34 @@ class _GameRow extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                trUpper(onlineStatusLabel(game, isMyTurn: isMyTurn)),
+              Text.rich(
+                TextSpan(
+                  text: trUpper(onlineStatusLabel(game, isMyTurn: isMyTurn)),
+                  children: [
+                    if (game.status == OnlineGameStatus.active)
+                      isMyTurn
+                          ? turnTriangleSpan(_green)
+                          : turnDotSpan(_red),
+                  ],
+                ),
                 style: TextStyle(
                   fontFamily: 'SpaceMono',
-                  fontSize: 11, // web text-[11px]
+                  fontSize: 13, // web text-[13px] (30 Ağustos 2026: 11 → 13)
+                  height: 1, // web leading-none — ok satırı büyütmesin
                   letterSpacing: 1,
                   fontWeight: FontWeight.bold,
                   color: isMyTurn ? _green : _red,
                 ),
               ),
+              // 8 px — web `gap-0.5` + `mt-1.5`: süre satırı durum
+              // etiketine YAPIŞMASIN (kullanıcı isteği).
+              if (remaining != null) const SizedBox(height: 8),
               if (remaining != null)
                 Text(
                   trUpper(remaining.text),
                   style: TextStyle(
                     fontFamily: 'SpaceMono',
-                    fontSize: 8,
+                    fontSize: 8, // web text-[8px] (30 Ağustos: 8 → 10 → 9 → 8)
                     letterSpacing: 0.5,
                     color: remaining.urgent ? _red : _muted,
                   ),
@@ -715,6 +727,146 @@ class _GameRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Üçgenin ve noktanın yazıdan uzaklığı — web `TurnTriangle`/`TurnDot` ile
+/// ELLE senkron (`ml-[25px]` / `ml-[29px]`).
+///
+/// Eşitlenen şey KUTU değil GÖRÜNEN (mürekkep) boşluk; iki sayı da ekran
+/// görüntüsü taranarak ayarlandı, hesapla değil.
+///
+/// ⚠ **Bu sayı ÜÇ kez değişti ve her seferinde SEBEBİ başka bir şeydi** —
+/// hiçbiri "tasarım tercihi" değil, hep bir telafiydi:
+///   1. `>` glifi zamanı → 25/29 (o glifin solundaki ~4 px yan boşluk).
+///   2. Üçgene geçince yan boşluk kalktı → 25/27.
+///   3. Etiketten `!` kalkınca iki etiket de `E` ile bitti, yani sağ yan
+///      boşlukları da eşitlendi → **25/25**.
+/// Ders: bir sayı BAŞKA bir şeyin telafisiyse, telafi edilen şey (glif,
+/// hatta bir noktalama işareti) değişince yeniden ÖLÇÜLMELİ.
+const double kTurnMarkGap = 25;
+const double kTurnDotGap = 25;
+
+/// Web `TurnTriangle` — "SIRA SENDE"nin yanındaki yeşil üçgen (oynat tuşu).
+///
+/// Öncesinde bir `>` glifiydi ve iki tur ayar istemişti (21 px'e büyütme +
+/// 2,67 px aşağı kaydırma), çünkü Space Mono'da `>` harf boyuna ÇIKMIYOR.
+/// Çizilmiş üçgen o iki ayarı birden gereksiz kılıyor — ölçüsü doğrudan
+/// veriliyor.
+///
+/// ⚠ **Glif DEĞİL, çizilmiş vektör:** `▶`/`►` Space Mono'da yok,
+/// kullanılsaydı tarayıcı ve Flutter ayrı yedek fontlara düşüp FARKLI
+/// üçgenler çizerdi. Geometri web ikiziyle ELLE senkron ama senkronu
+/// ZORLAYAN bir test var (`relation_icon_parity_test.dart`).
+///
+/// Ölçü büyük harflerin mürekkep yüksekliğinden: 13 px puntoda 9,0 px.
+WidgetSpan turnTriangleSpan(Color color) => WidgetSpan(
+      alignment: PlaceholderAlignment.baseline,
+      baseline: TextBaseline.alphabetic,
+      child: Padding(
+        padding: const EdgeInsets.only(left: kTurnMarkGap),
+        child: SizedBox(
+          key: const Key('turn-triangle'),
+          width: 8,
+          height: 9,
+          child: CustomPaint(painter: _TurnTrianglePainter(color)),
+        ),
+      ),
+    );
+
+class _TurnTrianglePainter extends CustomPainter {
+  const _TurnTrianglePainter(this.color);
+
+  final Color color;
+
+  /// Web `<path d="M0 0L8 4.5L0 9Z" />` — üç nokta, birebir.
+  Path ucgen() => Path()
+    ..moveTo(0, 0)
+    ..lineTo(8, 4.5)
+    ..lineTo(0, 9)
+    ..close();
+
+  @override
+  void paint(Canvas canvas, Size size) => canvas.drawPath(
+      ucgen(),
+      Paint()
+        ..color = color
+        ..isAntiAlias = true);
+
+  @override
+  bool shouldRepaint(_TurnTrianglePainter old) => old.color != color;
+}
+
+/// Web `TurnDot` — "SIRA RAKİPTE"nin sonundaki kırmızı yuvarlak;
+/// `turnArrowSpan`in simetriği (yeşil ok "git oyna", kırmızı nokta "bekle").
+///
+/// ⚠ **Glif DEĞİL, çizilmiş bir kutu.** `●` (U+25CF) Space Mono'da YOK;
+/// kullanılsaydı iki platform ayrı yedek fonta düşüp farklı daire çizerdi.
+/// Ölçü ölçümden: 13 px puntoda büyük harflerin mürekkep yüksekliği 9,0
+/// mantıksal px, yuvarlak da 9 — taban çizgisine oturunca harf bandını tam
+/// dolduruyor. `PlaceholderAlignment.baseline` + metin taşımayan bir kutu =
+/// taban çizgisi ALT kenar, yani nokta harflerin üstünde yüzmez.
+WidgetSpan turnDotSpan(Color color) => WidgetSpan(
+      alignment: PlaceholderAlignment.baseline,
+      baseline: TextBaseline.alphabetic,
+      child: Padding(
+        padding: const EdgeInsets.only(left: kTurnDotGap),
+        child: Container(
+          // Testlerin bunu avatar çemberlerinden ayırabilmesi için.
+          key: const Key('turn-dot'),
+          width: 9,
+          height: 9,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+      ),
+    );
+
+/// ⚠ Renk PARAMETRE, mirasla GELMEZ: `WidgetSpan`in çocuğu bir widget'tır ve
+/// saran `TextSpan`in stilini görmez (`DefaultTextStyle`den okur). Sabit bir
+/// `const` span yazılsaydı ok siyah çıkardı — ölçmeden fark edilmezdi.
+WidgetSpan turnArrowSpan(Color color) => WidgetSpan(
+      alignment: PlaceholderAlignment.baseline,
+      baseline: TextBaseline.alphabetic,
+      child: Padding(
+        // ⚠ Boşluk artık dizedeki iki boşluk karakteriyle DEĞİL, açık bir
+        // dolguyla veriliyor. Öncesinde port `'  >'` yazıyordu (21 px'te
+        // ~25 px), web ise yalnızca `ml-1.5` (6 px) — yani ikiz dosyalar
+        // SESSİZCE ayrışmıştı ve bunu ancak port ekran görüntüsü ölçülünce
+        // fark ettim. Tek sayı, iki tarafta da 25.
+        padding: const EdgeInsets.only(left: kTurnMarkGap),
+        child: Transform.translate(
+          offset: const Offset(0, 2.67),
+          child: Text(
+            '>',
+            key: const Key('turn-arrow'),
+            style: TextStyle(
+              fontFamily: 'SpaceMono',
+              fontSize: 21,
+              height: 13 / 21,
+              letterSpacing: 0,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ),
+      ),
+    );
+
+/// Web `participantLabelClass` (LiveGamesTab.tsx) — `participantLabel`in
+/// RENGİ. Dallar etiketin dallarıyla BİREBİR aynı sırada: ikisi tek bir
+/// karar, ayrı yerlerde ayrışmasınlar.
+///
+/// Kullanıcı isteği (30 Ağustos 2026): "Kabul etti" yeşil, "Bekliyor"
+/// kırmızı. "Reddetti"/"Davet gönderen" bilinçli olarak nötr — kırmızı
+/// burada "hâlâ cevap bekleniyor" uyarısı, "olumsuz sonuç" değil.
+///
+/// "Reddetti" zaten bu listede GÖRÜNMÜYOR: ret oyunu anında `abandoned`
+/// yapıyor, kovalar da yalnızca `pending`/`active` eşliyor (ölçüm: web
+/// ikizinin yorumu).
+Color _participantLabelColor(OnlineSlot slot, OnlineGame game) {
+  if (game.createdBy != null && slot.userId == game.createdBy) return _muted;
+  if (slot.inviteStatus == 'accepted') return _green;
+  if (slot.inviteStatus == 'declined') return _muted;
+  return _red;
 }
 
 /// Web PendingGameCard — davet/bekleme kartı: başlık + kalan süre +
@@ -809,11 +961,11 @@ class _PendingGameCard extends StatelessWidget {
                   ]),
                 ),
                 Text(trUpper(participantLabel(s, game)),
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontFamily: 'SpaceMono',
                         fontSize: 9,
                         letterSpacing: 0.5,
-                        color: _muted)),
+                        color: _participantLabelColor(s, game))),
               ]),
             ),
           if (hasAi)

@@ -16,7 +16,7 @@
 // bir kez e-posta gider.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml, buildNoReplyNoticeHtml } from '../_shared/email.ts';
-import { pushConfigured, sendPush } from '../_shared/push.ts';
+import { pushConfigured, sendPushToUser } from '../_shared/push.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -74,61 +74,15 @@ async function sendDeadlineEmail(email: string, creatorName: string, playerCount
 }
 
 /**
- * Bir kullanıcının TÜM cihazlarına teslim uyarısı push'u gönderir.
+ * Teslim uyarısı bildiriminin metni — iki çağrı yeri (Canlı ve YZ oyunları)
+ * aynı cümleyi kullansın diye tek yerde.
  *
- * ⚠ **BU FONKSİYON HİÇBİR KOŞULDA FIRLATMAZ.** Çağrıldığı yer canlı bir
- * e-posta yolunun İÇİ: teslim uyarısı gitmezse insanlar k-lig puanı
- * kaybediyor. Push bir EK kanal; onun bir arızası e-postayı düşüremez.
- * Bu yüzden gövdenin tamamı tek bir try/catch içinde ve çağrıldığı yerde de
- * `await` edilmeden ÖNCE e-posta gönderiliyor (sıra bilinçli).
- *
- * Bayat token'lar (FCM `UNREGISTERED`/`INVALID_ARGUMENT`) burada SİLİNİR —
- * yoksa her turda boşuna kota yakarlar. Geçici hatalarda satıra dokunulmaz;
- * karar `isUnregistered`'da ve testi var (`_shared/push_test.ts`).
+ * E-postanın gövdesiyle AYNI bilgi, bildirim satırına sığacak kadar
+ * kısaltılmış — iki kanal aynı olayı anlatıyor, farklı şey söylemesin.
  */
-async function sendDeadlinePush(
-  supabase: ReturnType<typeof createClient>,
-  userId: string,
-  creatorName: string,
-  playerCount: number,
-): Promise<void> {
-  try {
-    if (!pushConfigured()) return;
-
-    // Tercih KAPALIYSA hiç sorgulamaya girme. `email_notifications_enabled`
-    // ile BAĞIMSIZ: biri kapalıyken öteki gönderilmeye devam eder (karar
-    // gerekçesi: push_tokens migration'ının başlığı).
-    const { data: prof } = await supabase
-      .from('profiles')
-      .select('push_notifications_enabled')
-      .eq('id', userId)
-      .maybeSingle();
-    if (prof?.push_notifications_enabled === false) return;
-
-    const { data: tokens } = await supabase
-      .from('push_tokens')
-      .select('token')
-      .eq('user_id', userId);
-    if (!tokens || tokens.length === 0) return;
-
-    const bayat: string[] = [];
-    for (const row of tokens as { token: string }[]) {
-      const res = await sendPush({
-        token: row.token,
-        title: 'Oyun Süresi Doluyor!',
-        // E-postanın gövdesiyle AYNI bilgi, bildirim satırına sığacak kadar
-        // kısaltılmış — iki kanal aynı olayı anlatıyor, farklı şey söylemesin.
-        body: `${creatorName} tarafından açılan ${playerCount} kişilik oyunda `
-          + '24 saat içinde hamle yapmazsan teslim olmuş sayılacaksın.',
-      });
-      if (res.unregistered) bayat.push(row.token);
-    }
-    if (bayat.length > 0) {
-      await supabase.from('push_tokens').delete().in('token', bayat);
-    }
-  } catch (err) {
-    console.error('[notify-deadline-warnings] push gönderilemedi:', err);
-  }
+function deadlinePushBody(creatorName: string, playerCount: number): string {
+  return `${creatorName} tarafından açılan ${playerCount} kişilik oyunda `
+    + '24 saat içinde hamle yapmazsan teslim olmuş sayılacaksın.';
 }
 
 Deno.serve(async (req: Request) => {
@@ -208,21 +162,30 @@ Deno.serve(async (req: Request) => {
       ]);
 
       const recipientProfile = profiles?.find((p) => p.id === currentSlot.user_id);
-      // İşlemsel-ama-tercih-edilebilir bildirim — alıcı bunu kapattıysa atla.
-      if (recipientProfile?.email_notifications_enabled === false) continue;
-
       const recipientEmail = recipientAuth?.user?.email;
-      if (!recipientEmail) {
-        console.error('[notify-deadline-warnings] Alıcının e-postası bulunamadı:', currentSlot.user_id);
-        continue;
-      }
-
       const creatorProfile = profiles?.find((p) => p.id === game.created_by);
       const creatorName = creatorProfile?.display_name || creatorProfile?.first_name || 'Bir arkadaşın';
-      if (await sendDeadlineEmail(recipientEmail, creatorName, game.player_count as number)) sentOnline += 1;
+
+      // İşlemsel-ama-tercih-edilebilir bildirim — alıcı bunu kapattıysa
+      // YALNIZCA e-postayı atla.
+      //
+      // ⚠ **30 Ağustos 2026'da DÜZELTİLDİ.** Burada `continue` vardı ve push
+      // çağrısı aşağıdaydı; yani e-posta bildirimini kapatan kullanıcı push
+      // da alamıyordu. Bu dosyanın kendi yorumu iki tercihin BAĞIMSIZ
+      // olduğunu söylüyordu, kodu tutmuyordu — o gün push kanalı üç davet
+      // fonksiyonuna yayılırken bulundu.
+      const emailAcik = recipientProfile?.email_notifications_enabled !== false;
+      if (!recipientEmail) {
+        console.error('[notify-deadline-warnings] Alıcının e-postası bulunamadı:', currentSlot.user_id);
+      } else if (emailAcik) {
+        if (await sendDeadlineEmail(recipientEmail, creatorName, game.player_count as number)) sentOnline += 1;
+      }
       // Push İKİNCİ kanal ve e-postadan SONRA — sıra bilinçli: bu satır ne
-      // fırlatır ne de e-postanın sonucunu etkiler (bkz. sendDeadlinePush).
-      await sendDeadlinePush(supabase, currentSlot.user_id, creatorName, game.player_count as number);
+      // fırlatır ne de e-postanın sonucunu etkiler (bkz. sendPushToUser).
+      await sendPushToUser(supabase, currentSlot.user_id as string, {
+        title: 'Oyun Süresi Doluyor!',
+        body: deadlinePushBody(creatorName, game.player_count as number),
+      });
     } catch (err) {
       console.error('[notify-deadline-warnings] online satır hatası:', row.online_game_id, err);
     }
@@ -265,19 +228,22 @@ Deno.serve(async (req: Request) => {
           .maybeSingle(),
       ]);
 
-      // Yerel oyunda hesap sahibi hem alıcı hem "oyunu açan" — tercihi kapattıysa atla.
-      if (ownerProfile?.email_notifications_enabled === false) continue;
-
       const recipientEmail = recipientAuth?.user?.email;
-      if (!recipientEmail) {
-        console.error('[notify-deadline-warnings] Hesap sahibinin e-postası bulunamadı:', row.user_id);
-        continue;
-      }
-
       // Yerel (YZ) oyunda "oyunu açan" her zaman hesap sahibinin kendisidir.
       const ownerName = ownerProfile?.display_name || ownerProfile?.first_name || 'Sen';
-      if (await sendDeadlineEmail(recipientEmail, ownerName, row.player_count as number)) sentLocal += 1;
-      await sendDeadlinePush(supabase, row.user_id as string, ownerName, row.player_count as number);
+
+      // Yerel oyunda hesap sahibi hem alıcı hem "oyunu açan" — tercihi
+      // kapattıysa YALNIZCA e-postayı atla (yukarıdaki aynı düzeltme).
+      const emailAcik = ownerProfile?.email_notifications_enabled !== false;
+      if (!recipientEmail) {
+        console.error('[notify-deadline-warnings] Hesap sahibinin e-postası bulunamadı:', row.user_id);
+      } else if (emailAcik) {
+        if (await sendDeadlineEmail(recipientEmail, ownerName, row.player_count as number)) sentLocal += 1;
+      }
+      await sendPushToUser(supabase, row.user_id as string, {
+        title: 'Oyun Süresi Doluyor!',
+        body: deadlinePushBody(ownerName, row.player_count as number),
+      });
     } catch (err) {
       console.error('[notify-deadline-warnings] local satır hatası:', row.id, err);
     }

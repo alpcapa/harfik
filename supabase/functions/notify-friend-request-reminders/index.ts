@@ -13,6 +13,7 @@
 // gerek yok.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { CORS_HEADERS, escapeHtml, sendBrevoEmail, buildBrandedEmailHtml, buildNoReplyNoticeHtml } from '../_shared/email.ts';
+import { sendPushToUser } from '../_shared/push.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -76,6 +77,7 @@ Deno.serve(async (req: Request) => {
   }
 
   let sent = 0;
+  let pushed = 0;
 
   for (const row of due ?? []) {
     // Her satır kendi try/catch'inde — bkz. notify-deadline-warnings'teki
@@ -102,36 +104,40 @@ Deno.serve(async (req: Request) => {
       ]);
 
       const recipientEmail = recipientAuth?.user?.email;
-      if (!recipientEmail) {
-        console.error('[notify-friend-request-reminders] Alıcının e-postası bulunamadı:', row.friend_id);
-        continue;
-      }
-
       const inviterProfile = profiles?.find((p) => p.id === row.user_id);
       const recipientProfile = profiles?.find((p) => p.id === row.friend_id);
-
-      // Bildirimi zaten "iddia ettik" (reminder_sent_at işaretlendi) — alıcı
-      // e-posta bildirimlerini kapattıysa yalnızca gönderimi atlıyoruz, bu
-      // istek için bir daha hatırlatma denemesi zaten olmayacaktı.
-      if (recipientProfile?.email_notifications_enabled === false) continue;
       const inviterName = inviterProfile?.display_name || inviterProfile?.first_name || 'Bir kullanıcı';
       const recipientName = recipientProfile?.display_name || recipientProfile?.first_name || undefined;
 
-      const res = await sendBrevoEmail(BREVO_API_KEY, {
-        to: { email: recipientEmail, name: recipientName },
-        subject: 'Kelimeki — Bekleyen bir arkadaşlık isteğin var',
-        htmlContent: buildHtml(inviterName, recipientName),
-      });
-
-      if (!res.ok) {
-        console.error('[notify-friend-request-reminders] Brevo hatası:', res.status, await res.text());
-        continue;
+      // Bildirimi zaten "iddia ettik" (reminder_sent_at işaretlendi) — alıcı
+      // e-posta bildirimlerini kapattıysa yalnızca E-POSTAYI atlıyoruz, bu
+      // istek için bir daha hatırlatma denemesi zaten olmayacaktı.
+      //
+      // ⚠ Bu tercih YALNIZCA e-postayı kapatıyor. Eskiden burada `continue`
+      // vardı; push eklendiğinde o `continue` iki tercihi tek tercihe
+      // indirirdi (bkz. `_shared/push.ts` → `sendPushToUser`).
+      const emailAcik = recipientProfile?.email_notifications_enabled !== false;
+      if (!recipientEmail) {
+        console.error('[notify-friend-request-reminders] Alıcının e-postası bulunamadı:', row.friend_id);
+      } else if (emailAcik) {
+        const res = await sendBrevoEmail(BREVO_API_KEY, {
+          to: { email: recipientEmail, name: recipientName },
+          subject: 'Kelimeki — Bekleyen bir arkadaşlık isteğin var',
+          htmlContent: buildHtml(inviterName, recipientName),
+        });
+        if (res.ok) sent += 1;
+        else console.error('[notify-friend-request-reminders] Brevo hatası:', res.status, await res.text());
       }
-      sent += 1;
+
+      // Push İKİNCİ kanal ve e-postadan SONRA (bkz. sendPushToUser).
+      if (await sendPushToUser(supabase, row.friend_id, {
+        title: 'Bekleyen arkadaşlık isteğin var',
+        body: `${inviterName} tarafından gönderilen davete henüz cevap vermedin.`,
+      }) > 0) pushed += 1;
     } catch (err) {
       console.error('[notify-friend-request-reminders] satır hatası:', row.user_id, row.friend_id, err);
     }
   }
 
-  return jsonResponse({ ok: true, sent });
+  return jsonResponse({ ok: true, sent, pushed });
 });

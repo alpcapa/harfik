@@ -17,6 +17,7 @@
 // ayrım — bu bilgiler hiçbir zaman client rolüne açılmaz).
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { CORS_HEADERS, escapeHtml, sanitizeForSubject, sendBrevoEmail, buildBrandedEmailHtml, buildNoReplyNoticeHtml } from '../_shared/email.ts';
+import { sendPushToUser } from '../_shared/push.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -105,6 +106,7 @@ Deno.serve(async (req: Request) => {
 
   const inviterName = inviterProfile?.display_name || inviterProfile?.first_name || 'Bir kullanıcı';
   let sentCount = 0;
+  let pushedCount = 0;
 
   for (const invite of invites) {
     const [{ data: authUser }, { data: recipientProfile }] = await Promise.all([
@@ -116,33 +118,46 @@ Deno.serve(async (req: Request) => {
         .maybeSingle(),
     ]);
 
-    // İşlemsel-ama-tercih-edilebilir bildirim — bu davetli kapatmışsa yalnızca
-    // onu atlıyoruz, diğer davetlilere gönderim devam ediyor.
-    if (recipientProfile?.email_notifications_enabled === false) continue;
-
     const recipientEmail = authUser?.user?.email;
-    if (!recipientEmail) {
-      console.error('[notify-game-invite] Davetlinin e-postası bulunamadı:', invite.invitee_id);
-      continue;
-    }
     const recipientName = recipientProfile?.display_name || recipientProfile?.first_name || undefined;
 
-    const brevoRes = await sendBrevoEmail(BREVO_API_KEY, {
-      to: { email: recipientEmail, name: recipientName },
-      // İsim, gövdenin aksine escapeHtml'e değil sanitizeForSubject'e tabi —
-      // konu satırı HTML render edilmediğinden escape değil, kontrol
-      // karakteri/uzunluk sınırlaması gerekiyor (bkz. _shared/email.ts).
-      subject: `Kelimeki — ${sanitizeForSubject(inviterName)} seni Canlı bir oyuna davet etti`,
-      htmlContent: buildHtml(inviterName, game.player_count as number, recipientName),
-    });
-
-    if (!brevoRes.ok) {
-      const detail = await brevoRes.text();
-      console.error('[notify-game-invite] Brevo hatası:', brevoRes.status, detail);
-      continue;
+    // İşlemsel-ama-tercih-edilebilir bildirim — bu davetli kapatmışsa yalnızca
+    // onun E-POSTASINI atlıyoruz.
+    //
+    // ⚠ Bu tercih YALNIZCA e-postayı kapatıyor. Eskiden burada `continue`
+    // vardı; push eklendiğinde o `continue` iki tercihi tek tercihe
+    // indirirdi (bkz. `_shared/push.ts` → `sendPushToUser`, 30 Ağustos 2026'da
+    // `notify-deadline-warnings`'te bulunan gerçek hata).
+    const emailAcik = recipientProfile?.email_notifications_enabled !== false;
+    if (!recipientEmail) {
+      console.error('[notify-game-invite] Davetlinin e-postası bulunamadı:', invite.invitee_id);
+    } else if (emailAcik) {
+      const brevoRes = await sendBrevoEmail(BREVO_API_KEY, {
+        to: { email: recipientEmail, name: recipientName },
+        // İsim, gövdenin aksine escapeHtml'e değil sanitizeForSubject'e tabi —
+        // konu satırı HTML render edilmediğinden escape değil, kontrol
+        // karakteri/uzunluk sınırlaması gerekiyor (bkz. _shared/email.ts).
+        subject: `Kelimeki — ${sanitizeForSubject(inviterName)} seni Canlı bir oyuna davet etti`,
+        htmlContent: buildHtml(inviterName, game.player_count as number, recipientName),
+      });
+      if (brevoRes.ok) sentCount += 1;
+      else {
+        const detail = await brevoRes.text();
+        console.error('[notify-game-invite] Brevo hatası:', brevoRes.status, detail);
+      }
     }
-    sentCount += 1;
+
+    // Push İKİNCİ kanal ve e-postadan SONRA. `link` bugün istemci tarafından
+    // OKUNMUYOR (yönlendirme Faz 3'ün işi) ama sunucu tarafı zaten bunun için
+    // tasarlandı; şimdi göndermek bedava ve Faz 3 geldiğinde bu bildirimler
+    // geriye dönük çalışır hâle gelir. Biçim `util/deep_link.dart` →
+    // `buildOnlineGameLink` ile ELLE senkron.
+    if (await sendPushToUser(serviceClient, invite.invitee_id, {
+      title: 'Canlı oyun daveti',
+      body: `${inviterName} seni ${game.player_count} kişilik bir oyuna davet etti.`,
+      link: `kelimeki://oyun/${gameId}`,
+    }) > 0) pushedCount += 1;
   }
 
-  return jsonResponse({ ok: true, sent: sentCount });
+  return jsonResponse({ ok: true, sent: sentCount, pushed: pushedCount });
 });

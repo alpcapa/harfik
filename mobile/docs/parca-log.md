@@ -20,6 +20,203 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 173 — devam eden oyun kartlarının metinleri sadeleşti
+     (30 Ağustos 2026, kullanıcı isteği; kozmetik, davranış AYNI):**
+     `SENİN HAMLEN BEKLENİYOR` → **`SIRA SENDE!`**, `RAKİBİN HAMLESİ
+     BEKLENİYOR` → **`SIRA RAKİPTE`**; punto 11 → 13, altındaki kalan-süre
+     8 → 10.
+     - **Kutu BÜYÜMEDİ** (kullanıcı "kutu biraz büyüyebilir" demişti):
+       `SIRA RAKİPTE` 12 karakter, eskisi 11 px'te bile daha genişti.
+     - **Etiketler artık KAYNAKTA büyük harfle.** Çağıran `trUpper`dan
+       geçiriyor, yani idempotent; web tarafında CSS `uppercase`in Türkçe
+       i→İ duyarlılığına güvenilmesin diye iki taraf aynı dizeyi taşıyor.
+     - **ÜÇ sayaç da tek kalıba indi: yalnızca "N gün M saat kaldı".**
+       Öncesi: `sonra teslim sayılacak` (48 sa) · `sonra iptal edilecek`
+       (davet, 7 gün) · `sonra silinecek`/`sonra teslim sayılacak`
+       (Setup'ın yerel YZ kaydı, 7 gün). **Üçüncüsünü kullanıcı
+       listelememişti** ("başka yerde varsa söyle") — ayrıca bildirildi ve
+       aynı hizaya çekildi, çünkü ikisi de "devam eden oyun" satırı ve
+       kullanıcı ikisini yan yana görüyor. Setup'ın hardcoded etiketi de
+       `SIRA SENDE!` oldu.
+     - **Kabul edilen bilgi kaybı, açıkça bildirildi:** fiil sürenin
+       sonunda NE olacağını söylüyordu; Setup'taki `teslim sayılacak`
+       hesaba gelecek -2 cezanın tek uyarısıydı. Fiil süre DOLDUĞUNDA geri
+       geliyor (`Bugün teslim sayılacak` / `Bugün silinecek`) — "Bugün" tek
+       başına hiçbir şey anlatmazdı ve bilgi değeri tam orada en yüksek.
+     - **İkinci geçiş (aynı gün, kullanıcı ekran görüntüsüne bakıp
+       söyledi):** süre 10 → **9 px**, sonuna parantez içinde sürenin
+       SONUCU, ve `SIRA SENDE!` yanına **`>`** — etiketin İÇİNDE, yani
+       "aynı font büyüklüğünde" isteği koşulsuz sağlanıyor. `>` yalnızca
+       sırası SENDE olan satırda; rakipteyken "git oyna"yı yanlış yere
+       davet ederdi.
+       - Parantez, bir önceki turda "kabul edilen bilgi kaybı" diye
+         yazılan şeyi geri getiriyor — fiil olarak değil ceza MİKTARIYLA:
+         `(Teslim -2 puan)`.
+       - ⚠ **Setup'ın yerel kaydında parantez İKİ DALLI:** orada -2 her
+         zaman geçerli değil (`willSurrender` false ise kayıt yalnızca
+         siliniyor) → `(Silinecek)`. Ayrım zaten `verb`de vardı, parantez
+         ona bağlandı; olmayan bir cezayla korkutmamak için.
+       - **Genişlik ÖLÇÜLDÜ:** `pumpTab` geçici olarak 320 px'e çekilip
+         takım koşturuldu — hiçbir `RenderFlex overflow` yok. (En uzun
+         hâli 420 px'te ~234 px yer kaplıyor.)
+       - **Yan etki:** davet kartının sağ üstündeki süre de 9 px, yani
+         artık bu satırla EŞİT — `testing-arkadaslar-canli.md`'nin punto
+         maddesi "ondan küçük" diyordu, düzeltildi.
+     - **Üçüncü geçiş — "oku yazıyla aynı büyüklüğe getir" (aynı gün):**
+       süre 9 → **8 px**; ok ise etiketin dizesinden ÇIKARILIP kendi
+       öğesine alındı ve **21 px**'e büyütüldü.
+       - ⚠ **Ok zaten "aynı puntodaydı" — sorun ondan değildi ve bu ancak
+         PİKSEL ölçülerek anlaşıldı.** İlk tepki "zaten aynı, dizenin
+         içinde" olurdu. Ekran görüntüsü tarandı (pixelRatio 3, `PIL` ile
+         yeşil piksellerin dikey uzanımı): 13 px'te büyük harflerin
+         mürekkep yüksekliği **27 px**, aynı puntodaki `>` yalnızca
+         **17 px** — `>` matematik hizasında oturan, harf boyuna çıkmayan
+         bir glif. Eşitleyen punto 13 × 27/17 ≈ 21.
+       - **21'e çıkarınca İKİNCİ bir sapma doğdu:** taban çizgisine hizalı
+         ok harflerin 8 piksel YUKARISINDA kalıyordu (ok y 507-534,
+         harfler y 516-542). 2,67 mantıksal px aşağı kaydırıldı; son
+         ölçümde merkezler arası fark **0,17 px**.
+       - **Satır kutusu kilitli:** `height: 13/21` + saran `Text`te
+         `height: 1` — yoksa 21 px'lik ok satırı büyütüp kartı uzatırdı.
+       - ⚠ **PORT TUZAĞI:** `WidgetSpan`in çocuğu bir WIDGET'tır ve saran
+         `TextSpan`in stilini görmez (`DefaultTextStyle`den okur). İlk
+         yazılan `const WidgetSpan kTurnArrowSpan` oku SİYAH çizerdi;
+         renk parametreye çevrildi (`turnArrowSpan(Color)`). Bunu
+         derleyici de test de yakalamazdı — ekran görüntüsü yakaladı.
+     - **Dördüncü geçiş — "SIRA RAKİPTE"nin sonuna kırmızı yuvarlak
+       (`TurnDot` / `turnDotSpan`):** okun simetriği; yeşil ok "git oyna",
+       kırmızı nokta "bekle". Çap 9 px = büyük harflerin mürekkep boyu
+       (ölçüldü: harfler y 711-737, nokta y 712-738).
+       - ⚠ **`●` (U+25CF) KULLANILMADI, kutu çizildi.** O glif Space
+         Mono'da YOK; kullanılsaydı tarayıcı ve Flutter ayrı yedek
+         fontlara düşüp FARKLI daireler çizerdi — `RelationIcons.tsx`in
+         "web ve port AYNI vektör" kuralının sessizce kırılması olurdu.
+     - **Yedinci ve son geçiş — etiketten `!` kaldırıldı** (kullanıcı:
+       *"bir tek sıra sende'deki ünlemi kaldır tamamdır"*):
+       `SIRA SENDE!` → `SIRA SENDE`.
+       - ⚠ **Görünmez yan etkisi vardı ve ölçüm yakaladı.** Üçgen/nokta
+         boşluk farkı (25/27) `!` ile `E`nin farklı sağ yan boşluklarını
+         telafi ediyordu; `!` kalkınca iki etiket de `E` ile bittiğinden
+         fark gereksizleşti → **25/25**. Ölçüm: üçgen 27,33 ↔ nokta 27,67
+         (fark 0,33 px).
+       - **Aynı sayı bu turda ÜÇ kez değişti** (25/29 → 25/27 → 25/25) ve
+         üçünde de sebep bir tasarım tercihi değil bir TELAFİYDİ. Bir
+         NOKTALAMA İŞARETİNİ silmek bile onu bayatlatabiliyor — bu yüzden
+         her turda yeniden ölçüldü, göz kararıyla bırakılmadı.
+     - **Altıncı geçiş — yeşil ok yerine ÇİZİLMİŞ ÜÇGEN (oynat tuşu) +
+       yeni saat metni + saat bir satır aşağı** (kullanıcı isteği).
+       - Saat: `30 SAAT 5 DK SONRA TESLİM (-2 PUAN)`. Setup'ın yerel
+         kaydında iki dal korundu (cezasızda `… SONRA SİLİNECEK`).
+       - Durum etiketi ↔ saat arası 2 → **8 px**.
+       - **Üçgen bir GLİF DEĞİL, çizilmiş vektör** (`▶`/`►` Space Mono'da
+         yok — `TurnDot`'takiyle aynı gerekçe). **Yan faydası:** `>` harf
+         boyuna çıkmadığı için iki tur ayar gerektirmişti (21 px'e
+         büyütme + 2,67 px aşağı kaydırma); çizilmiş üçgende ölçü
+         doğrudan veriliyor, iki ayar da gereksizleşti.
+       - **Geometri TESTE BAĞLANDI:** `relation_icon_parity_test.dart`
+         artık İKİ çift taşıyor. Ayrıştırıcı kopyalanmadı —
+         `support/vector_parity.dart`ten tüketiliyor, yani geçen turda
+         yapılan çıkarma ilk müşterisini buldu. Negatif eş doğrulandı:
+         portta bir koordinat 8 → 9 yapılınca test düşüyor.
+       - ⚠ **Glif değişince boşluk telafisi de bayatladı.** 25/29 farkı
+         `>`in ~4 px yan boşluğunu telafi etmek içindi; üçgende yan boşluk
+         YOK, nokta 2,33 px fazla uzakta kalmıştı → **25/27**. Ölçüm:
+         üçgen 29,33 ↔ nokta 29,67 (fark 0,33 px). Ders: bir sayı BAŞKA
+         bir şeyin telafisiyse, telafi edilen şey değişince o sayı da
+         yeniden ölçülmeli.
+     - **Beşinci geçiş — iki işaretin GÖRÜNEN boşluğu eşitlendi**
+       (kullanıcı: *"noktayı da okla yazı arasındaki boşluk kadar yap"*;
+       istek iki türlü okunabildiğinden ölçümlerle birlikte SORULDU,
+       "boşluğu eşitle" seçildi). Ölçüm: ok 31,7 px uzaktaydı, nokta
+       yalnızca 8,7 → düzeltmeden sonra 31,0 ↔ 31,7 (fark 0,67 px).
+       - ⚠ **Dolgular bilerek eşit DEĞİL (ok 25, nokta 29):** eşitlenen şey
+         kutu değil MÜREKKEP boşluğu; `>` glifinin solunda ~4 px yan boşluk
+         var, çizilmiş yuvarlağın hiç yok.
+       - ⚠ **AYNI TURDA web↔port ayrışması bulundu:** okun boşluğu portta
+         dizedeki İKİ BOŞLUK KARAKTERİNDEN geliyordu (21 px'te ~25 px),
+         web'de ise yalnızca `ml-1.5` (6 px) — iki ikiz **dört kat** farklı
+         boşluk çiziyordu ve hiçbir test görmüyordu. Ancak port ekran
+         görüntüsü piksel piksel ölçülünce çıktı.
+       - **Ders:** bir ölçüyü DİZENİN İÇİNE gömmek (boşluk karakteri,
+         `\u00a0`, tire) onu ikiz dosyada görünmez kılar. Ölçü açık bir
+         sabit olmalı — burada `kTurnMarkGap`/`kTurnDotGap` ↔
+         `ml-[25px]`/`ml-[29px]`.
+       - **Regresyon kapısı:** ok ve nokta anahtarlı
+         (`turn-arrow`/`turn-dot`), test ikisinin BİRBİRİNİN YERİNE
+         geçtiğini doğruluyor. Anahtar ŞART: noktayı avatar
+         çemberlerinden ayırt etmenin başka yolu yok.
+       - **Ders (bu repoda tekrarlayan sınıf):** "aynı font boyutu" ile
+         "aynı görünen boyut" AYNI ŞEY DEĞİL. Bir glifin görsel boyu
+         punto değil MÜREKKEP yüksekliğidir; kullanıcı ikincisini görür.
+         Böyle bir istek geldiğinde ölçü aracı ekran görüntüsünün
+         pikselleri.
+     - **Ekran görüntüsü ÖNCE gösterildi** (kullanıcı istedi): mock değil,
+       gerçek widget'lardan — `live_games_test` + `setup_cloud_test`in
+       `RepaintBoundary` yakalamaları. Aktif oyun kartı için geçici bir
+       yakalama eklenip koşuldu ve geri alındı.
+     - **Doğrulama:** 638/638 test yeşil, `dart analyze` temiz (tek `info`
+       önceden vardı), `tsc --noEmit` temiz, web derlemesi geçti. Eski
+       dizeleri bekleyen 11 assertion güncellendi (`live_games_test`,
+       `setup_screen_test`, `setup_cloud_test`, `tests/smoke.spec.ts`) —
+       yani metin değişikliğinin kapısı ZATEN vardı ve çalıştı.
+     - **Elle koşulan listeler de güncellendi:** `TESTING.md` (iki madde),
+       `mobile/docs/testing-arkadaslar-canli.md` (punto maddesi) — orada
+       eski dizeler kontrol ölçütü olarak yazılıydı.
+
+   - ✅ **Parça 172 — ilişki ikonu ailesi tamamlandı + skor kartındaki
+     dört-dal hatası (30 Ağustos 2026, kullanıcı bildirdi; YENİ dosyalar
+     `ui/friends/relation_icons.dart`, `test/relation_icon_parity_test.dart`,
+     `test/support/vector_parity.dart`):** iki ayrı iş, ikisi de aynı
+     bildirimden çıktı.
+     - **(a) GERÇEK HATA — aynı durum iki yüzeyde farklı görünüyordu.**
+       Kullanıcının sözleri: *"Arkadaşlık daveti beklemede olan kişinin
+       skor kartına girince isminin yanında arkadaş ekle işareti çıkıyor.
+       Halbuki aynı kişiye Arkadaşlar → Ara & Ekle bölümünden bakınca
+       yanında kum saati çıkıyor. Bu hata."* Skor kartı (web'de de portta
+       da) ikonu İKİ dala ayırıyordu — `accepted` ↔ "diğer her şey" — oysa
+       AYNI dosyadaki onay diyaloğu baştan beri dördünü ayırıyordu: kart
+       "ekle" diyor, dokununca "İsteği İptal Et" çıkıyordu. Artık
+       `_relationGlyph` (port) / `friendIconFor` (web) dört dalı da
+       karşılıyor. **Ders:** bir DURUM birden çok yüzeyde gösteriliyorsa
+       yüzeylerin dal SAYILARI da eşit olmalı; dört dallı bir metinle iki
+       dallı bir ikon aynı ekranda yan yana durabiliyorsa eşleşmeyi
+       zorlayan bir şey yok demektir.
+     - **(b) İkon ailesi.** Kullanıcı isteği: *"Kum saatini de diğer
+       ikonlar gibi adamın yanında (+, - ve check gibi) küçük kum saati
+       veya saat yapsak diğerleriyle bütünlük olacak."* Dördün üçü
+       kişi+rozetken (`+`/`−`/`✓`) dördüncüsü kişisiz, tek başına duran
+       büyük bir `Icons.hourglass_top`tu.
+     - **Material'da karşılığı YOK, yani bu dosyanın kuralı burada
+       uygulanamıyor.** Öteki üç ikon gerçek glyph olduğundan port onları
+       `Icons.*` ile çiziyor ve iki platform AYNI vektörü gösteriyor;
+       "kişi + kum saati" diye bir glyph olmadığı için bu ilk ELLE çizilen
+       ilişki ikonu oldu. `hourglass_top`u rozet kutusuna küçültmek çare
+       DEĞİLDİ: glyph'in çizgileri ~1 birim, yarıya inince 20 px'lik ikonda
+       0,42 px kalıyor. Saat de denendi ve elendi (halka + iki ibre o
+       boyutta çok inceliyor; kum saatinin dolu üçgenleri okunuyor) —
+       kullanıcıya iki seçenek render edilip gösterildi, kum saatini seçti.
+     - **Sapma bilinçli olarak minimum:** kişi gövdesi
+       `person_add_alt_1`in AYNISI (artı çıkarılmış, tek koordinat
+       oynatılmadan), elle çizilen tek şey rozet ve o da artının durduğu
+       kutuda (x 15→23, y 6,98→15).
+     - **Elle senkron bir kopya, senkronu zorlayan bir şey olmadan
+       bayatlar** — `OzellikIkonlari` çiftindeki mekanizma ikinci kez
+       kuruldu. Ayrıştırıcılar KOPYALANMADI, `icon_parity_test.dart`ten
+       `test/support/vector_parity.dart`e çıkarıldı ve iki test de oradan
+       tüketiyor (eski test taşımadan sonra yeşil kaldı). Üçüncü bir
+       elle-senkron vektör çifti eklenirse aynı yerden beslenmeli.
+     - **Doğrulama:** 638/638 test yeşil, `dart analyze` temiz (tek `info`
+       önceden vardı, `tap_target_test.dart:206`), `tsc --noEmit` temiz,
+       web derlemesi geçti. **İki negatif eş de ölçüldü:** (1) portta tek
+       bir koordinat 16,4 → 16,5 yapılınca parite testi düşüyor; (2) skor
+       kartı iki dala döndürülünce `ilişki simgesi` testlerinden İKİSİ
+       birden düşüyor (ikisi de kontrol edildi — ilk sürüm yalnızca renge
+       baktığı için `pending_incoming`i kaçırıyordu, glyph de ölçülecek
+       şekilde sıkılaştırıldı).
+     - **Doğrulama sınırı:** web tarafında Canlı/arkadaşlık akışları iki
+       gerçek oturum gerektirdiğinden otomatik test edilemiyor; ikonun
+       web'de göründüğü `main`'e merge sonrası gözle doğrulanacak.
+
    - ✅ **Parça 171 — güncelleme artık Play'in işi: In-App Update
      (30 Ağustos 2026, kullanıcı kararı; YENİ dosya
      `data/store_update.dart`):** *"Kimde hangi versiyon olursa olsun,
@@ -88,6 +285,16 @@
        (`firebase_analytics, firebase_core, image_picker_android,
        share_plus, shared_preferences_android`) — `in_app_update` KGP
        uygulamıyor, borç büyümedi.
+     - ✅ **CİHAZDA DOĞRULANDI (30 Ağustos 2026, `d3d4702` / versionCode
+       435, koşu #435'in `.apk`'sı):** açılış temiz — çökme/donma yok,
+       arka plandan öne dönüş temiz, **uçak modunda açılış da temiz.**
+       Bu, kodun HİÇBİR yerde koşmamış tek parçasını kapatıyordu: gerçek
+       Play Core `MethodChannel` çağrısı. Widget testleri sahtesini
+       kullanıyor, bu ortamda `.apk` derlenemiyor; yani "açılış yoluna
+       ağa çıkan bir çağrı koydum" riski ancak burada ölçülebilirdi.
+       Yan yüklenmiş pakette güncelleme penceresi BEKLENDİĞİ GİBİ
+       çıkmadı. Aynı turda alt şerit, hamle rozeti ve yaş/cinsiyet
+       satırı da temiz geldi.
 
    - ✅ **Parça 170 — alt şerit Android'de ortaya kümeleniyordu: `Wrap`
      genişliği DOLDURMUYOR (30 Ağustos 2026, kullanıcı cihazda bildirdi):**
@@ -289,6 +496,15 @@
      - **Negatif eş kuruldu:** sıfırlama satırı kapatılınca test düşüyor.
      - **Doğrulama:** `dart analyze` temiz, **618 test** yeşil.
 
+     - ✅ **CİHAZDA DOĞRULANDI (30 Ağustos 2026, 1.0.2 / `d3d4702`):** uçak
+       modunda avatar baş harflere düştü (BEKLENEN — görsel indirilemez),
+       uçak modu kapatılınca **uygulama yeniden başlatılmadan kendiliğinden
+       geri geldi.** Düzeltme 29 Ağustos'ta yazılmıştı ama toparlanma yolu o
+       güne kadar cihazda hiç ölçülmemişti; bu tur onu kapattı.
+     - ⚠ **"Uçak modunda avatar baş harf" bir HATA DEĞİL** — aynı gün bu
+       soru tekrar soruldu. Görsel ağdan geliyor; çevrimdışında alternatifi
+       boş bir daire olurdu. Diske önbellekleme konuşuldu ve YAPILMADI:
+       bağımlılık/depolama maliyeti var, kazanç kozmetik.
    - ✅ **Parça 164 — bağlantısızken hesap adı e-postaya düşüyordu (29 Ağustos
      2026, cihaz testi 6.3'te kullanıcı uçak modunda bildirdi):** *"T2 yerine
      KE yazıyor."*

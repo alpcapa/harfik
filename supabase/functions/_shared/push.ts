@@ -1,9 +1,10 @@
 // Kelimeki — FCM (Firebase Cloud Messaging) HTTP v1 göndericisi.
 //
 // ⚠ TEK KURAL, HER ŞEYDEN ÖNCE: **push, E-POSTA YOLUNU ASLA DÜŞÜREMEZ.**
-// Bu modülü çağıran fonksiyonlar (bugün `notify-deadline-warnings`) CANLI
-// kullanıcı yollarında: teslim uyarısı gitmezse insanlar k-lig puanı
-// kaybediyor. Bu yüzden burada dışarı fırlayan HİÇBİR yol yok — her genel
+// Bu modülü çağıran fonksiyonlar (30 Ağustos 2026'dan beri DÖRT:
+// `notify-deadline-warnings`, `notify-game-invite`, `notify-friend-request`,
+// `notify-friend-request-reminders`) CANLI kullanıcı yollarında: teslim
+// uyarısı gitmezse insanlar k-lig puanı kaybediyor. Bu yüzden burada dışarı fırlayan HİÇBİR yol yok — her genel
 // fonksiyon kendi hatasını yutup `false`/boş döndürür ve `console.error`a
 // yazar. Çağıran taraf da push'u e-postadan SONRA ve ayrı bir `try/catch`
 // içinde çağırmalı.
@@ -27,6 +28,10 @@
 //   olarak. Dashboard → Edge Functions → Secrets'tan girilir, REPODA DURMAZ.
 //   Tanımlı DEĞİLSE bu modül sessizce no-op olur (`BREVO_API_KEY`in aynı
 //   deseni): push kanalı kapalı kalır, e-posta kanalı etkilenmez.
+
+/** `createClient(...)` sonucu — yalnızca tip için (çalışma anında silinir). */
+import type { createClient } from 'jsr:@supabase/supabase-js@2';
+type PushDb = ReturnType<typeof createClient>;
 
 interface ServiceAccount {
   project_id: string;
@@ -167,6 +172,70 @@ async function getAccessToken(sa: ServiceAccount): Promise<string | null> {
   } catch (err) {
     console.error('[push] jeton üretilemedi:', err);
     return null;
+  }
+}
+
+/**
+ * Bir kullanıcının TÜM cihazlarına bildirim gönderir.
+ *
+ * ⚠ **HİÇBİR KOŞULDA FIRLATMAZ.** Çağrıldığı yerler canlı e-posta yolları;
+ * push bir EK kanal ve arızası e-postayı düşüremez. Bu yüzden gövdenin
+ * tamamı tek bir try/catch içinde ve çağıranlar bunu e-postadan SONRA
+ * çağırmalı.
+ *
+ * ⚠ **`email_notifications_enabled`den BAĞIMSIZ** — bu fonksiyon yalnızca
+ * `push_notifications_enabled`e bakar. Çağıran taraf da öyle davranmalı:
+ * e-posta tercihi kapalı diye `continue`/`return` edip buraya hiç
+ * gelmemek, iki tercihi tek tercihe indirger.
+ *
+ * **30 Ağustos 2026 — tam bu hata canlıda bulundu.**
+ * `notify-deadline-warnings` (o gün push taşıyan TEK fonksiyon) e-posta
+ * tercihi kapalı olan alıcıda `continue` ediyordu ve push satırına hiç
+ * ulaşmıyordu; yani "e-postayı kapat, push açık kalsın" diyen kullanıcı
+ * hiçbir şey almıyordu. Dosyanın kendi yorumu bağımsızlığı vaat ediyordu,
+ * kodu tutmuyordu.
+ *
+ * Bayat token'lar (FCM `UNREGISTERED`/`INVALID_ARGUMENT`) burada SİLİNİR —
+ * karar `isUnregistered`'da ve testi var (`_shared/push_test.ts`).
+ *
+ * @returns kaç cihaza gönderildiği (teşhis için; hata durumunda 0)
+ */
+export async function sendPushToUser(
+  db: PushDb,
+  userId: string,
+  msg: { title: string; body: string; link?: string },
+): Promise<number> {
+  try {
+    if (!pushConfigured()) return 0;
+
+    // Tercih KAPALIYSA hiç sorgulamaya girme.
+    const { data: prof } = await db
+      .from('profiles')
+      .select('push_notifications_enabled')
+      .eq('id', userId)
+      .maybeSingle();
+    if (prof?.push_notifications_enabled === false) return 0;
+
+    const { data: tokens } = await db
+      .from('push_tokens')
+      .select('token')
+      .eq('user_id', userId);
+    if (!tokens || tokens.length === 0) return 0;
+
+    let gonderilen = 0;
+    const bayat: string[] = [];
+    for (const row of tokens as { token: string }[]) {
+      const res = await sendPush({ token: row.token, ...msg });
+      if (res.ok) gonderilen += 1;
+      if (res.unregistered) bayat.push(row.token);
+    }
+    if (bayat.length > 0) {
+      await db.from('push_tokens').delete().in('token', bayat);
+    }
+    return gonderilen;
+  } catch (err) {
+    console.error('[push] kullanıcıya gönderilemedi:', userId, err);
+    return 0;
   }
 }
 

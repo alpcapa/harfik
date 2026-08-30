@@ -128,7 +128,7 @@ src/
 │   ├── FriendSuggestModal.tsx   # bir Canlı davet kabul edildikten sonra, henüz arkadaş olunmayan katılımcılara toplu istek gönderme önerisi
 │   ├── FriendModerationModal.tsx # arkadaş satırındaki 🚫/🚩 rozetinden açılan geri alma paneli (sessizden çıkar / raporu geri çek)
 │   ├── OnlineGameScreen.tsx     # gerçek Canlı oyun ekranı — Board/Rack/GameHeader'ı Supabase state'ine (Realtime) bağlar
-│   ├── RelationIcons.tsx        # arkadaşlık ilişkisi ikonları (ekle · istek gönderildi · kabul et · çıkar) — FriendsModal ve PlayerScoreCard ortak, path Flutter portuyla aynı fonttan
+│   ├── RelationIcons.tsx        # arkadaşlık ilişkisi ikonları (ekle · bekliyor · kabul et · çıkar) — FriendsModal ve PlayerScoreCard ortak; üçünün path'i Flutter portuyla aynı fonttan, "bekliyor" (kişi + kum saati) elle çizildi ve porta parite testiyle bağlandı
 │   ├── Avatar.tsx               # profil fotoğrafı bileşeni
 │   ├── PlayerAvatarRow.tsx      # oyun kartlarında "N Kişilik Oyun" başlığı yerine geçen katılımcı avatarları (YZ → robot, misafir → "?")
 │   ├── PlayerBadge.tsx          # renkli oyuncu sıra/koltuk rozeti
