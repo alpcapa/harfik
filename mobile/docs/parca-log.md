@@ -77,6 +77,10 @@
        (622 → 633) · `flutter build web --release` GEÇTİ (bu projede web
        derlemesinin sessizce kırılması bilinen bir sınıf; `in_app_update`
        Android eklentisi olduğu için özellikle bakıldı).
+     - **Sürüm 1.0.2'ye çıkarıldı** (`env.dart` + `pubspec` birlikte —
+       `app_version_parity_test` ayrışmayı yakalar). In-App Update'in
+       anlamlı olabilmesi için mağazadaki paketin sahadakinden YENİ olması
+       gerekiyor; `versionCode`u zaten Actions koşu numarası veriyor.
      - ⚠ **Doğrulanamayan tek şey `.apk`/`.aab` derlemesi** — bu ortamda
        Android SDK yok. Yeni eklentinin KGP uyarı listesini altıya çıkarıp
        çıkarmadığı da ancak CI'ın Android log'unda görülür (o notu
