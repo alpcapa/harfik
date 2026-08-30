@@ -133,6 +133,18 @@ derleyicisiyle dördü de temiz ayrıştı; deploy sonrası `list_edge_functions
 ile dört sürüm ve dört `verify_jwt` değeri tek tek doğrulandı. **Gerçek
 kanıt sahadan gelecek:** üç yanıt da artık `pushed` sayacı döndürüyor.
 
+### Faz dışı — kart/ikon cilası + bir hata (30 Ağustos 2026) · web ANINDA, port 1.0.3'te
+
+Faz 2'yle aynı dalda gitti ama fazın parçası DEĞİL: Canlı/Setup oyun
+kartlarının metin-punto-işaret düzeni (`SIRA SENDE` + yeşil üçgen ↔
+`SIRA RAKİPTE` + kırmızı nokta, sayaç `… sonra teslim (-2 puan)`) ve ilişki
+ikonu ailesinin tamamlanması. **Yanında GERÇEK bir hata:** skor kartı
+ilişki simgesini dört durum yerine ikiye indirdiğinden, bekleyen arkadaşlık
+isteği olan kişide "arkadaş ekle" ikonu çıkıyor, dokununca "İsteği İptal Et"
+diyordu. Gerekçeler/ölçümler: `docs/decisions/live-game.md`,
+`docs/decisions/components-account.md`, `mobile/docs/parca-log.md` Parça
+172-173.
+
 ### Faz 3 — deep link + bildirime dokunma + Analytics · **1 sürüm** · en büyük
 
 Üçü de istemci; ayrı sürümlere bölmek iki tur harcar.
