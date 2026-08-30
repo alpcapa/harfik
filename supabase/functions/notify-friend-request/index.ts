@@ -20,6 +20,7 @@
 // client'la okunur — play-ai-turn'deki aynı ayrım.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { CORS_HEADERS, escapeHtml, sanitizeForSubject, sendBrevoEmail, buildBrandedEmailHtml, buildNoReplyNoticeHtml } from '../_shared/email.ts';
+import { sendPushToUser } from '../_shared/push.ts';
 
 const BREVO_API_KEY = Deno.env.get('BREVO_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -110,36 +111,50 @@ Deno.serve(async (req: Request) => {
   ]);
 
   const recipientEmail = authUser?.user?.email;
-  if (!recipientEmail) {
-    console.error('[notify-friend-request] Alıcının e-postası bulunamadı:', friendId);
-    return jsonResponse({ ok: true, sent: false, reason: 'no_email' });
-  }
-
   const inviterProfile = profiles?.find((p) => p.id === userData.user.id);
   const recipientProfile = profiles?.find((p) => p.id === friendId);
-
-  // İşlemsel-ama-tercih-edilebilir bildirim — alıcı bunu Hesap Ayarları'ndan
-  // kapatmış olabilir (bkz. CLAUDE.md, marketing_consent'ten AYRI alan).
-  if (recipientProfile?.email_notifications_enabled === false) {
-    return jsonResponse({ ok: true, sent: false, reason: 'recipient_opted_out' });
-  }
   const inviterName = inviterProfile?.display_name || inviterProfile?.first_name || 'Bir kullanıcı';
   const recipientName = recipientProfile?.display_name || recipientProfile?.first_name || undefined;
 
-  const brevoRes = await sendBrevoEmail(BREVO_API_KEY, {
-    to: { email: recipientEmail, name: recipientName },
-    // İsim, gövdenin aksine escapeHtml'e değil sanitizeForSubject'e tabi —
-    // konu satırı HTML render edilmediğinden escape değil, kontrol
-    // karakteri/uzunluk sınırlaması gerekiyor (bkz. _shared/email.ts).
-    subject: `Kelimeki — ${sanitizeForSubject(inviterName)} sana arkadaşlık isteği gönderdi`,
-    htmlContent: buildHtml(inviterName, recipientName),
-  });
+  // İşlemsel-ama-tercih-edilebilir bildirim — alıcı bunu Hesap Ayarları'ndan
+  // kapatmış olabilir (bkz. CLAUDE.md, marketing_consent'ten AYRI alan).
+  //
+  // ⚠ Bu tercih YALNIZCA e-postayı kapatıyor. Eskiden burada `return` vardı;
+  // push eklendiğinde o `return` iki tercihi tek tercihe indirirdi — "e-postayı
+  // kapat, bildirim açık kalsın" diyen kullanıcı hiçbir şey almazdı.
+  // (Aynı hata `notify-deadline-warnings`'te GERÇEKTEN yaşandı, 30 Ağustos
+  // 2026'da bulundu; bkz. `_shared/push.ts` → `sendPushToUser`.)
+  const emailAcik = recipientProfile?.email_notifications_enabled !== false;
 
-  if (!brevoRes.ok) {
-    const detail = await brevoRes.text();
-    console.error('[notify-friend-request] Brevo hatası:', brevoRes.status, detail);
-    return jsonResponse({ ok: true, sent: false, reason: 'brevo_error' });
+  let sent = false;
+  let emailReason: string | undefined;
+  if (!recipientEmail) {
+    console.error('[notify-friend-request] Alıcının e-postası bulunamadı:', friendId);
+    emailReason = 'no_email';
+  } else if (!emailAcik) emailReason = 'recipient_opted_out';
+  else {
+    const brevoRes = await sendBrevoEmail(BREVO_API_KEY, {
+      to: { email: recipientEmail, name: recipientName },
+      // İsim, gövdenin aksine escapeHtml'e değil sanitizeForSubject'e tabi —
+      // konu satırı HTML render edilmediğinden escape değil, kontrol
+      // karakteri/uzunluk sınırlaması gerekiyor (bkz. _shared/email.ts).
+      subject: `Kelimeki — ${sanitizeForSubject(inviterName)} sana arkadaşlık isteği gönderdi`,
+      htmlContent: buildHtml(inviterName, recipientName),
+    });
+    if (brevoRes.ok) sent = true;
+    else {
+      const detail = await brevoRes.text();
+      console.error('[notify-friend-request] Brevo hatası:', brevoRes.status, detail);
+      emailReason = 'brevo_error';
+    }
   }
 
-  return jsonResponse({ ok: true, sent: true });
+  // Push İKİNCİ kanal ve e-postadan SONRA — sıra bilinçli: `sendPushToUser`
+  // ne fırlatır ne de e-postanın sonucunu etkiler.
+  const pushed = await sendPushToUser(serviceClient, friendId, {
+    title: 'Yeni arkadaşlık isteği',
+    body: `${inviterName} seni Kelimeki'de arkadaş olarak eklemek istiyor.`,
+  });
+
+  return jsonResponse({ ok: true, sent, pushed, ...(emailReason ? { reason: emailReason } : {}) });
 });
