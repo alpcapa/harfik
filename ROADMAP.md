@@ -66,17 +66,21 @@ sunucu tarafında olduğu için sürüm beklemiyor.
 
 ### Faz 1 — bekleyen paket · **1 sürüm** · ✅ DALDA TAMAM, yayın bekliyor
 
-Beş maddenin beşi de `claude/kelimeki-phase-1-remaining-*` dalında bitti;
+Altı maddenin altısı da `claude/kelimeki-phase-1-remaining-*` dalında bitti;
 kalan tek iş **merge + sürüm turu** (kullanıcı "şimdi gönder" diyene kadar
 PR açılmıyor). Kayıtları taşındı, burada yalnızca paketin envanteri kaldı:
 
-| # | İş | Kaydı |
-|---|---|---|
-| 1 | Hamle rozeti dolgusu `3/6` → `1.5/3` (1,22 → 0,98 hücre) | Parça 167 · `docs/decisions/components.md` → `Board` |
-| 2 | Rozet puntosu: **web porta getirildi** (sabit 11px + sans) | Parça 169 · aynı `Board` maddesi |
-| 3 | Yaş/cinsiyet satırı geri geldi (#370'in revert'ü) | Parça 166 |
-| 4 | `drainRealIo` flake'i: üç kopya tek kaynağa, tek `pump()` → dilimli | Parça 168 |
-| 5 | Doküman borcu: bayat "bekleyen deploy" uyarısı silindi + Play kapalı test notu | Parça 168 · `mobile/docs/build-and-distribution-log.md` |
+| # | İş | Kullanıcıya görünür mü | Kaydı |
+|---|---|---|---|
+| 1 | Hamle rozeti dolgusu `3/6` → `1.5/3` (1,22 → 0,98 hücre) | ✅ kapalı testte BİLDİRİLDİ | Parça 167 · `docs/decisions/components.md` → `Board` |
+| 2 | Rozet puntosu: **web porta getirildi** (sabit 11px + sans) | ✅ (web'de) | Parça 169 · aynı `Board` maddesi |
+| 3 | Alt şerit Android'de ortaya kümeleniyordu (`Wrap` genişliği doldurmuyor) | ✅ kapalı testte BİLDİRİLDİ | Parça 170 |
+| 4 | Yaş/cinsiyet satırı geri geldi (#370'in revert'ü) | ✅ istenen özellik | Parça 166 |
+| 5 | `drainRealIo` flake'i: üç kopya tek kaynağa, tek `pump()` → dilimli | ✖ yalnız CI | Parça 168 |
+| 6 | Doküman borcu: bayat "bekleyen deploy" uyarısı silindi + Play kapalı test notu | ✖ | Parça 168 · `mobile/docs/build-and-distribution-log.md` |
+
+**Üçü kapalı testten gelen gerçek şikayet** (1, 3 ve 4'ün isteği) — paketin
+bekletilmesinin bedeli doğrudan bu üç kişinin beklemesi.
 
 **Sunucuda yapılacak iş YOK:** `get_profile_age_gender` canlıda ve
 migration dosyası `main`'de duruyor (29 Ağustos'ta `pg_proc`'tan doğrulandı:
