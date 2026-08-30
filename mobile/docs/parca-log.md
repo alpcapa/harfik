@@ -81,10 +81,13 @@
        `app_version_parity_test` ayrışmayı yakalar). In-App Update'in
        anlamlı olabilmesi için mağazadaki paketin sahadakinden YENİ olması
        gerekiyor; `versionCode`u zaten Actions koşu numarası veriyor.
-     - ⚠ **Doğrulanamayan tek şey `.apk`/`.aab` derlemesi** — bu ortamda
-       Android SDK yok. Yeni eklentinin KGP uyarı listesini altıya çıkarıp
-       çıkarmadığı da ancak CI'ın Android log'unda görülür (o notu
-       `mobile/CLAUDE.md`'deki KGP maddesine düştüm).
+     - **`.apk`/`.aab` derlemesi bu ortamda doğrulanamadı** (Android SDK
+       yok) — **CI cevapladı (PR #371, hepsi yeşil):** `bundleRelease`
+       geçti, imzalı `.aab` üretildi (62,9 MB) ve parmak izi beklenen
+       upload anahtarıyla eşleşti. **KGP uyarı listesi BEŞTE KALDI**
+       (`firebase_analytics, firebase_core, image_picker_android,
+       share_plus, shared_preferences_android`) — `in_app_update` KGP
+       uygulamıyor, borç büyümedi.
 
    - ✅ **Parça 170 — alt şerit Android'de ortaya kümeleniyordu: `Wrap`
      genişliği DOLDURMUYOR (30 Ağustos 2026, kullanıcı cihazda bildirdi):**

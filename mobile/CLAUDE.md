@@ -264,13 +264,16 @@ değil). Kırılma ANLAMSAL; onu yalnızca `dart analyze` görür.
 ```bash
 SC=<scratchpad>              # oturuma özel; her yeni oturumda TEKRAR gerekir
 cd $SC && curl -sS -L -o f.tar.xz \
-  https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.47.1-stable.tar.xz
+  https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.47.2-stable.tar.xz
 tar xf f.tar.xz && export PATH=$SC/flutter/bin:$PATH
 flutter --disable-analytics
 cd mobile/app && flutter pub get && dart analyze lib/ test/ && flutter test
 ```
 
-⚠ **Sürüm CI'ınkiyle AYNI olmalı, "bir Flutter" yetmez.** Önce 3.27.1
+⚠ **Sürüm CI'ınkiyle AYNI olmalı, "bir Flutter" yetmez.** (30 Ağustos
+2026'da CI **3.47.2**'ye geçmişti; o gün yerelde 3.47.1 kullanıldı ve
+sonuçlar CI ile örtüştü, ama yama farkı bir garanti değil — koşu log'undaki
+önbellek anahtarından oku.) Önce 3.27.1
 denendi ve `pub get` ÇÖZÜLMEDİ: `flutter_native_splash >=2.4.5` `path
 ^1.9.1` istiyor, o Flutter'ın `flutter_test`i ise `path 1.9.0`a sabitliyor.
 CI'ın sürümü koşu log'unda yazılı (`flutter-linux-stable-<sürüm>-x64` önbellek
@@ -1200,11 +1203,12 @@ silinip kendi tarihli parça notuna taşınır.
     **`firebase_analytics`** de KGP uyguluyor. Derleme yine geçti (`.aab`
     üretildi ve imzası doğrulandı), ama borç büyüdü — Flutter yükseltmesi
     artık üç değil BEŞ eklentinin changelog'una bakmayı gerektiriyor.
-  - ⚠ **30 Ağustos 2026'da `in_app_update` eklendi (Parça 171) — ALTINCI
-    OLUP OLMADIĞI HENÜZ BİLİNMİYOR.** Bu ortamda Android SDK yok, yani
-    `flutter build apk` koşulamadı; uyarı listesi ancak CI'ın Android işinin
-    log'unda görülür. **Bir sonraki CI koşusunda o log'a bak** ve liste
-    altıya çıktıysa bu satırı güncelle.
+  - ✅ **30 Ağustos 2026'da `in_app_update` eklendi (Parça 171) ve liste
+    BEŞTE KALDI** — CI log'undan okundu (PR #371, `bundleRelease`):
+    *"…apply Kotlin Gradle Plugin (KGP): firebase_analytics, firebase_core,
+    image_picker_android, share_plus, shared_preferences_android"*.
+    Yani `in_app_update` KGP uygulamıyor, borç büyümedi. Yeni bir eklenti
+    eklerken bu kontrolü tekrarla: cevap yalnızca Android işinin log'unda.
 - ~~Bağlantı durumu göstergesi (`useOnlineStatus` portu)~~ — **YAPILDI**
   (14 Ağustos 2026): karar mantığı Parça 96'da (`util/online_status.dart` +
   `connectivity_plus`), Board alt şeridindeki görsel "Çevrimdışı" rozeti
