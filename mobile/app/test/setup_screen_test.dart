@@ -40,6 +40,8 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'support/fake_online_gateway.dart';
 import 'support/test_fonts.dart';
+import 'package:kelimeki/src/data/analytics.dart';
+import 'support/fake_analytics.dart';
 import 'support/test_view.dart';
 import 'package:kelimeki/src/util/online_status.dart';
 
@@ -727,6 +729,10 @@ void main() {
   testWidgets(
       'footer: "Paylaş" mevcut handleShare\'i (?ref=arkadas) ÇAĞIRIR — '
       'yeni bir paylaşım yolu yazılmadı', (tester) async {
+    // GA4 `invite_link_shared` {source: setup_footer} — Faz 3.
+    final fakeAnalytics = FakeAnalytics();
+    analytics.configure(fakeAnalytics);
+    addTearDown(analytics.reset);
     await setPhoneViewSize(tester, const Size(420, 950));
     String? sharedText;
     String? sharedUrl;
@@ -760,6 +766,8 @@ void main() {
 
     expect(sharedText, 'Hemen ücretsiz dene!');
     expect(sharedUrl, 'https://kelimeki.com/?ref=arkadas');
+    expect(fakeAnalytics.names, ['invite_link_shared']);
+    expect(fakeAnalytics.events.single.$2, {'source': 'setup_footer'});
   });
 
   testWidgets(

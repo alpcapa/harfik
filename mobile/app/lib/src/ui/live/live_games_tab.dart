@@ -39,7 +39,7 @@ import '../setup/recent_games_section.dart';
 import '../friends/friends_modal.dart' show showFriendInfoDialog, kFriendActionFailed;
 import 'friend_suggest_modal.dart';
 import 'live_game_create_form.dart';
-import 'online_game_screen.dart';
+import 'open_online_game.dart';
 import '../tokens.dart';
 import '../loading_note.dart';
 import '../game/neo_box.dart';
@@ -321,30 +321,9 @@ class _LiveGamesTabState extends State<LiveGamesTab>
   /// tazelenir (oyunda oynanan hamle "Devam Edenler"deki sıra etiketini
   /// değiştirmiş olabilir — Realtime da tetikler ama dönüş anı garanti).
   Future<void> _openGame(OnlineGame game) async {
-    final repo = services.onlineGames;
-    final user = services.auth.user;
-    if (repo == null || user == null) return;
-    final words = await services.dictionary;
-    if (!mounted) return;
-    await Navigator.of(context).push(MaterialPageRoute<void>(
-      settings: const RouteSettings(name: 'online-game'),
-      builder: (_) => OnlineGameScreen(
-        game: game,
-        myUserId: user.id,
-        onlineGames: repo,
-        words: words,
-        meanings: services.meanings,
-        auth: services.auth,
-        stats: services.stats,
-        games: services.games,
-        feedback: services.feedback,
-        friends: services.friends,
-        chat: services.chat,
-        storage: services.storage,
-        leagueRewards: services.leagueRewards,
-        onlineStatus: services.onlineStatus,
-      ),
-    ));
+    // Ekran kurulumu Faz 3'te `open_online_game.dart`a çıkarıldı — bildirime
+    // dokunma kapısı da aynı fonksiyonu çağırıyor, kurulum tek yerde.
+    await openOnlineGameScreen(context, services: services, game: game);
     if (mounted) unawaited(_reload());
     // ⚠ ROZET burada TAZELENMİYOR ve bu bilinçli. 28 Ağustos 2026'da rozet
     // bir `onGameClosed` callback'iyle tam bu noktaya bağlanmıştı; Sürüm B

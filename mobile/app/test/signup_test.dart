@@ -8,12 +8,14 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kelimeki/src/data/analytics.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/data/profile_fields.dart';
 import 'package:kelimeki/src/ui/auth/auth_modal.dart';
 
 import 'support/test_fonts.dart';
+import 'support/fake_analytics.dart';
 import 'support/test_view.dart';
 
 void main() {
@@ -81,6 +83,23 @@ void main() {
     await tester.pump();
     expect(find.text('KAYIT'), findsOneWidget); // KModal başlığı
   }
+
+  /// GA4 hunisinin ÜST ucu: kayıt formunun görülmesi (Faz 3).
+  testWidgets('analytics: "Kayıt ol"a geçiş signup_started loglar; '
+      'geri dönüp tekrar geçmek yeniden loglar', (tester) async {
+    final fake = FakeAnalytics();
+    analytics.configure(fake);
+    addTearDown(analytics.reset);
+    await pumpSignup(tester, checker: (_) async => true);
+    expect(fake.names, ['signup_started']);
+    // login'e dön → tekrar signup: her form GÖRÜLMESİ ayrı sayılır (huni
+    // tekil kullanıcıyı GA4 tarafında kendisi ayrıştırır).
+    await tester.tap(find.textContaining('Giriş yap', findRichText: true));
+    await tester.pump();
+    await tester.tap(find.textContaining('Kayıt ol', findRichText: true));
+    await tester.pump();
+    expect(fake.names, ['signup_started', 'signup_started']);
+  });
 
   Finder fieldByLabel(String label) => find.descendant(
         of: find.ancestor(

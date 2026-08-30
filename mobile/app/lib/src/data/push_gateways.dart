@@ -8,6 +8,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'push_repo.dart';
+import 'push_taps.dart';
 
 /// `AuthorizationStatus` → bizim üç durumumuz.
 ///
@@ -41,6 +42,32 @@ class FirebasePushMessaging implements PushMessaging {
   @override
   Future<PushPermission> requestPermission() async =>
       izinDurumu((await _fm.requestPermission()).authorizationStatus);
+}
+
+/// Bildirime dokunma akışının gerçek ucu (Faz 3) — bkz. push_taps.dart.
+///
+/// FCM'in "notification" mesajlarında sistem tepsisindeki bildirime
+/// dokunmak iki yoldan gelir ve İKİSİ AYRI API: uygulama arka plandaysa
+/// `onMessageOpenedApp` akışı, kapalıysa `getInitialMessage` (tek seferlik).
+/// `friend_invite_inbox.dart`ın AppLinks'te öğrendiği ders burada da
+/// geçerli: soğuk başlangıç ayrı bir yol, akışa güvenip atlanamaz.
+class FirebasePushTapSource implements PushTapSource {
+  final FirebaseMessaging _fm;
+  FirebasePushTapSource([FirebaseMessaging? fm])
+      : _fm = fm ?? FirebaseMessaging.instance;
+
+  @override
+  Stream<Uri> get taps => FirebaseMessaging.onMessageOpenedApp
+      .map((m) => pushMessageLink(m.data))
+      .where((u) => u != null)
+      .cast<Uri>();
+
+  @override
+  Future<Uri?> initialTap() async {
+    final m = await _fm.getInitialMessage();
+    if (m == null) return null;
+    return pushMessageLink(m.data);
+  }
 }
 
 class SupabasePushTokenStore implements PushTokenStore {

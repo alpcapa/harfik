@@ -32,6 +32,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'push_repo_test.dart' show FakeMessaging, FakeStore;
+import 'package:kelimeki/src/data/analytics.dart';
+import 'support/fake_analytics.dart';
 import 'support/fake_online_gateway.dart';
 import 'support/test_fonts.dart';
 import 'support/test_view.dart';
@@ -781,7 +783,13 @@ void main() {
 
     testWidgets('2 oyunculu: tekli seçim + doğrudan gönderim + sentTo ekranı',
         (tester) async {
+      // GA4 hunisi (Faz 3): form açılışı → oyun kuruluşu. Terk noktası
+      // ölçümünün iki ucu; parametreler oyunun ŞEKLİNİ taşır.
+      final fakeAnalytics = FakeAnalytics();
+      analytics.configure(fakeAnalytics);
+      addTearDown(analytics.reset);
       final h = await pumpForm(tester);
+      expect(fakeAnalytics.names, ['live_game_form_opened']);
 
       // Seçimsiz gönderim pasif — hiçbir şey olmaz.
       await tester.tap(find.text('DAVET GÖNDER'));
@@ -801,6 +809,10 @@ void main() {
         {'type': 'human', 'user_id': 'me'},
         {'type': 'human', 'user_id': 'f2'},
       ]);
+      expect(fakeAnalytics.names,
+          ['live_game_form_opened', 'live_game_created']);
+      expect(fakeAnalytics.events.last.$2,
+          {'player_count': 2, 'with_ai': 0});
       expect(find.text('Davetiniz gönderilmiştir.'), findsOneWidget);
       expect(find.textContaining('Esiner yanıt verince'), findsOneWidget);
       await tester.tap(find.text('TAMAM'));

@@ -14,6 +14,7 @@
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show trLower, trUpper;
 
+import '../../data/analytics.dart';
 import '../../data/auth_service.dart';
 import '../../data/chat_api.dart';
 import '../../data/feedback_api.dart';
@@ -96,6 +97,10 @@ class _LiveGameCreateFormState extends State<LiveGameCreateForm> {
   @override
   void initState() {
     super.initState();
+    // GA4 `live_game_form_opened` → `live_game_created` hunisi: formu açıp
+    // oyun kuramadan bırakanlar bugünkü şemada GÖRÜNMÜYOR (game_starts
+    // yalnız kurulanı sayar) — terk noktası ilk kez ölçülür oluyor.
+    analytics.log('live_game_form_opened');
     _rankScores = RankScores(widget.stats)..addListener(_onRankScores);
     _lastUserId = widget.auth.user?.id;
     widget.auth.addListener(_onAuthEvent);
@@ -185,6 +190,10 @@ class _LiveGameCreateFormState extends State<LiveGameCreateForm> {
         if (withAiLastSlot) const NewGameSlot.ai(),
       ];
       await widget.onlineGames.create(_playerCount, slots);
+      analytics.log('live_game_created', {
+        'player_count': _playerCount,
+        'with_ai': withAiLastSlot ? 1 : 0, // GA4 parametresi bool almaz
+      });
       if (!mounted) return;
       final friends = _friends ?? const <FriendRow>[];
       setState(() => _sentTo = (

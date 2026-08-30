@@ -20,6 +20,67 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 174 — Faz 3: bildirime dokununca doğru yere gitme +
+     Analytics'in ilk altı olayı (30 Ağustos 2026; YENİ dosyalar
+     `data/push_taps.dart`, `data/game_link_inbox.dart`,
+     `data/analytics.dart`, `data/analytics_gateway.dart`,
+     `ui/live/open_online_game.dart`, `test/support/fake_analytics.dart`,
+     `test/game_link_routing_test.dart`):**
+     - **İşe başlarken ÖLÇÜLDÜ: ROADMAP madde 1'in platform yarısı zaten
+       bitmişti.** Manifest'in iki intent filtresi (App Links + custom
+       şema), Info.plist URL şeması, `parseDeepLink`in `KOnlineGameLink`
+       dalı ve `buildOnlineGameLink` yerli yerindeydi (Parça 87/158'in
+       birikimi). "Üç platform yapılandırması aynı anda" korkusu bayattı —
+       eksik olan yalnızca YÖNLENDİRMEYDİ. Ders: bir ROADMAP maddesine
+       başlamadan önce maddenin YAŞINI ölç; bu repo hızlı bayatlatıyor.
+     - **Yönlendirme üç dallı** (`_HomeGate._oyunLinkiniIsle`):
+       (a) oyun AKTİF → `popUntil(isFirst)` + Canlı tahta doğrudan;
+       (b) davet beklemede / listede yok / liste yüklenemedi →
+       `liveTabRequests` sayacı → Setup Arkadaşınla'ya geçer (davetse
+       LiveGamesTab kendi kuralıyla "Oyun Davetleri"ni açar — o kural
+       zaten testliydi, yeniden yazılmadı);
+       (c) girişsiz → link TAKE EDİLMEDEN bekler, auth dinleyicisi giriş
+       gelince yeniden dener. Intro açıkken de bekletilir (tek çıkış
+       "HEMEN OYNA" kararı bir link tarafından delinmez).
+     - **`_openGame`'in 28 Ağustos kehaneti doğru çıktı:** rozet
+       tazelemesi o gün "ikinci kapı callback'i çağırmayı unutur" diye
+       `didPopNext`e alınmıştı — ikinci kapı geldi ve rozet için TEK satır
+       yazmak gerekmedi. Ekran kurulumu `open_online_game.dart`a çıkarıldı;
+       iki kapı tek fonksiyon.
+     - **`GameLinkInbox` BİLEREK kalıcı değil** (FriendInviteInbox'un
+       aksine): bildirime dokunmak anlık niyet, üç gün sonra açılan
+       uygulamada bayat tahta itilmez. Üst üste dokunuşta SONUNCUSU
+       kazanır; `take()` oku-ve-temizle.
+     - **Analytics:** global `analytics` (errorReporter deseninin ikinci
+       müşterisi — altı olay yerine parametre zinciri açmamak için) +
+       `FirebaseAnalyticsLogger`. İki değişmez: fire-and-forget (asla
+       fırlatmaz) ve yapılandırılmamışken no-op. Olaylar:
+       `intro_slide_viewed{index}` (ilk slayt initState'ten —
+       `onPageChanged` 0'ı hiç görmez!), `signup_started` (iki giriş yolu:
+       startInSignup + sekme geçişi), `signup_completed` (e-posta
+       doğrulaması açık/kapalı iki dal da başarı), `live_game_form_opened`,
+       `live_game_created{player_count,with_ai}` (GA4 bool almaz → 0/1),
+       `invite_link_shared{source}` (paylaşım SAYFASININ açılması —
+       "gönderildi" share_plus'ta güvenilir değil, öyle adlandırılmadı).
+     - **Doğrulama:** 652/652 test (639 → 652: analytics birimi 4, deep
+       link/inbox birimi 5, yönlendirme widget 3, olay assert'leri mevcut
+       testlere). Negatif eş: `_HomeGate`teki inbox dinleyicisi sökülünce
+       yönlendirme testlerinden İKİSİ düşüyor (ölçüldü). Bir test
+       düzeltmesi ders oldu: "bekleyen davet → sekme" testinin ilk assert'i
+       ürünle çelişiyordu — bekleyen davet varken Setup ZATEN otomatik
+       geçiyor; test, kullanıcıyı elle YZ sekmesine döndürüp linkin sekmeyi
+       GERİ getirdiğini ölçecek şekilde güçlendirildi.
+     - **Doğrulama SINIRI:** FCM dokunuşu ve GA4 akışı cihaz ister; testler
+       aynı `handleUri` kapısını doğrudan besliyor. Cihaz kontrolleri
+       `testing-bildirimler.md` §3c — Play imzalı 1.0.3 derlemesi şart
+       (In-App Update'le aynı sınıf: yan yüklenmiş .apk'da FCM dokunuşu
+       çalışır ama App Links doğrulaması geçmez; GA4 DebugView için
+       `adb shell setprop debug.firebase.analytics.app`).
+     - **Sunucuya DOKUNULMADI:** `data.link` Faz 2'den beri gidiyordu.
+       `notify-game-invite`'ın "istemci okumuyor" yorumu bayatladı ama
+       yorum düzeltmesi için Edge Function deploy'u yapılmaz — ilk gerçek
+       değişiklikte güncellenecek.
+
    - ✅ **Parça 173 — devam eden oyun kartlarının metinleri sadeleşti
      (30 Ağustos 2026, kullanıcı isteği; kozmetik, davranış AYNI):**
      `SENİN HAMLEN BEKLENİYOR` → **`SIRA SENDE!`**, `RAKİBİN HAMLESİ
