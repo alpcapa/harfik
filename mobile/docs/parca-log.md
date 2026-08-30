@@ -91,6 +91,23 @@
          Mono'da YOK; kullanılsaydı tarayıcı ve Flutter ayrı yedek
          fontlara düşüp FARKLI daireler çizerdi — `RelationIcons.tsx`in
          "web ve port AYNI vektör" kuralının sessizce kırılması olurdu.
+     - **Beşinci geçiş — iki işaretin GÖRÜNEN boşluğu eşitlendi**
+       (kullanıcı: *"noktayı da okla yazı arasındaki boşluk kadar yap"*;
+       istek iki türlü okunabildiğinden ölçümlerle birlikte SORULDU,
+       "boşluğu eşitle" seçildi). Ölçüm: ok 31,7 px uzaktaydı, nokta
+       yalnızca 8,7 → düzeltmeden sonra 31,0 ↔ 31,7 (fark 0,67 px).
+       - ⚠ **Dolgular bilerek eşit DEĞİL (ok 25, nokta 29):** eşitlenen şey
+         kutu değil MÜREKKEP boşluğu; `>` glifinin solunda ~4 px yan boşluk
+         var, çizilmiş yuvarlağın hiç yok.
+       - ⚠ **AYNI TURDA web↔port ayrışması bulundu:** okun boşluğu portta
+         dizedeki İKİ BOŞLUK KARAKTERİNDEN geliyordu (21 px'te ~25 px),
+         web'de ise yalnızca `ml-1.5` (6 px) — iki ikiz **dört kat** farklı
+         boşluk çiziyordu ve hiçbir test görmüyordu. Ancak port ekran
+         görüntüsü piksel piksel ölçülünce çıktı.
+       - **Ders:** bir ölçüyü DİZENİN İÇİNE gömmek (boşluk karakteri,
+         `\u00a0`, tire) onu ikiz dosyada görünmez kılar. Ölçü açık bir
+         sabit olmalı — burada `kTurnMarkGap`/`kTurnDotGap` ↔
+         `ml-[25px]`/`ml-[29px]`.
        - **Regresyon kapısı:** ok ve nokta anahtarlı
          (`turn-arrow`/`turn-dot`), test ikisinin BİRBİRİNİN YERİNE
          geçtiğini doğruluyor. Anahtar ŞART: noktayı avatar

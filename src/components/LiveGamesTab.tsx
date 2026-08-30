@@ -110,7 +110,7 @@ function mySlotIndex(game: OnlineGame): number {
  */
 export function TurnArrow() {
   return (
-    <span className="relative top-[2.8px] ml-1.5 text-[21px] leading-[13px] align-baseline">
+    <span className="relative top-[2.8px] ml-[25px] text-[21px] leading-[13px] align-baseline">
       &gt;
     </span>
   );
@@ -130,13 +130,21 @@ export function TurnArrow() {
  *
  * `align-baseline` + `inline-block`: içeriği olmayan bir inline-block'un
  * taban çizgisi ALT kenarıdır, yani yuvarlak harflerin üstünde yüzmez.
- * Port ikizi: `live_games_tab.dart` → `turnDotSpan`.
+ *
+ * ⚠ **Boşluk `TurnArrow`unkinden 4 px FAZLA (29 ↔ 25) ve bu bilinçli.**
+ * Kullanıcının istediği KUTU değil GÖRÜNEN boşluğun eşitliği: `>` glifinin
+ * solunda ~4 px'lik bir yan boşluk var, çizilmiş yuvarlağın ise hiç yok —
+ * aynı dolgu verilseydi nokta yazıya 4 px daha yakın DURURDU. Fark
+ * ölçümden geldi: ekran görüntüsü taranıp iki mürekkep boşluğu eşitlenene
+ * kadar ayarlandı.
+ *
+ * Port ikizi: `live_games_tab.dart` → `turnDotSpan` / `kTurnDotGap`.
  */
 export function TurnDot() {
   return (
     <span
       aria-hidden
-      className="ml-1.5 inline-block h-[9px] w-[9px] rounded-full bg-red align-baseline"
+      className="ml-[29px] inline-block h-[9px] w-[9px] rounded-full bg-red align-baseline"
     />
   );
 }

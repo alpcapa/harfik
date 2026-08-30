@@ -742,6 +742,17 @@ class _GameRow extends StatelessWidget {
 ///   hizalıyken harflerin 8 piksel (pixelRatio 3) YUKARISINDA duruyordu.
 ///   `TextSpan` dikey kaydırmayı desteklemediğinden `WidgetSpan` +
 ///   `Transform.translate` gerekiyor; web'de karşılığı `top-[2.8px]`.
+/// Okun ve noktanın yazıdan uzaklığı — web `TurnArrow`/`TurnDot` ile ELLE
+/// senkron (`ml-[25px]` / `ml-[29px]`).
+///
+/// ⚠ **İkisi neden AYNI sayı değil?** Kullanıcının istediği şey KUTU değil
+/// GÖRÜNEN (mürekkep) boşluğun eşitliği. `>` glifinin solunda ~4 px'lik bir
+/// yan boşluk var, çizilmiş yuvarlağın ise hiç yok — aynı dolguyu verirsek
+/// nokta yazıya 4 px daha yakın DURUR. Fark ölçümden geldi, hesaptan değil:
+/// ekran görüntüsü taranıp iki mürekkep boşluğu eşitlenene kadar ayarlandı.
+const double kTurnMarkGap = 25;
+const double kTurnDotGap = 29;
+
 /// Web `TurnDot` — "SIRA RAKİPTE"nin sonundaki kırmızı yuvarlak;
 /// `turnArrowSpan`in simetriği (yeşil ok "git oyna", kırmızı nokta "bekle").
 ///
@@ -755,7 +766,7 @@ WidgetSpan turnDotSpan(Color color) => WidgetSpan(
       alignment: PlaceholderAlignment.baseline,
       baseline: TextBaseline.alphabetic,
       child: Padding(
-        padding: const EdgeInsets.only(left: 6),
+        padding: const EdgeInsets.only(left: kTurnDotGap),
         child: Container(
           // Testlerin bunu avatar çemberlerinden ayırabilmesi için.
           key: const Key('turn-dot'),
@@ -772,18 +783,26 @@ WidgetSpan turnDotSpan(Color color) => WidgetSpan(
 WidgetSpan turnArrowSpan(Color color) => WidgetSpan(
       alignment: PlaceholderAlignment.baseline,
       baseline: TextBaseline.alphabetic,
-      child: Transform.translate(
-        offset: const Offset(0, 2.67),
-        child: Text(
-          '  >',
-          key: const Key('turn-arrow'),
-          style: TextStyle(
-            fontFamily: 'SpaceMono',
-            fontSize: 21,
-            height: 13 / 21,
-            letterSpacing: 0,
-            fontWeight: FontWeight.bold,
-            color: color,
+      child: Padding(
+        // ⚠ Boşluk artık dizedeki iki boşluk karakteriyle DEĞİL, açık bir
+        // dolguyla veriliyor. Öncesinde port `'  >'` yazıyordu (21 px'te
+        // ~25 px), web ise yalnızca `ml-1.5` (6 px) — yani ikiz dosyalar
+        // SESSİZCE ayrışmıştı ve bunu ancak port ekran görüntüsü ölçülünce
+        // fark ettim. Tek sayı, iki tarafta da 25.
+        padding: const EdgeInsets.only(left: kTurnMarkGap),
+        child: Transform.translate(
+          offset: const Offset(0, 2.67),
+          child: Text(
+            '>',
+            key: const Key('turn-arrow'),
+            style: TextStyle(
+              fontFamily: 'SpaceMono',
+              fontSize: 21,
+              height: 13 / 21,
+              letterSpacing: 0,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
         ),
       ),
