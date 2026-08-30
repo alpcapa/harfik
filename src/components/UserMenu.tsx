@@ -204,23 +204,24 @@ export function UserMenu() {
           // 2026); portta sözde-eleman olmadığından orada bedeli header'ın
           // uzaması (bkz. `account_button.dart` → `TapTarget`).
           //
-          // 30 Ağustos 2026 — ÖNCEKİ ÇÖZÜM `min-w/h-[48px] -m-2` İDİ ve bir
-          // kullanıcı iPhone'da bildirdi: *"header'daki YZ kartının sağ
-          // kenarı biraz silik gözüküyor. Avatarın altına mı giriyor
-          // acaba?"* Giriyordu: negatif marj düzen kutusunu 32'ye çekiyor
-          // ama BOYANAN kutu 48 kalıyordu, yani `gap-2`'nin 8px'i düzende
-          // var, görüntüde yoktu. Ölçüldü (Chromium, 360/375/390/393/402/
-          // 414/430): avatarın boyalı kutusunun sol kenarı GameHeader'daki
-          // son skor kutusunun 0.5px'lik `outline`'ının tam üstünde
-          // başlıyor (örtüşme 0.000px) — kırpılma yok, `ring-offset-2` de
-          // hiçbir şey boyamıyor (Tailwind onu yalnızca bir CSS
-          // değişkenine derliyor). Aynı piksele düşen 0.5px'lik çizgiyi
-          // iOS'un alt-piksel rasterleştirmesi soluklaştırıyor; başka
-          // cihazlar aynı çakışmayı farklı yuvarlıyor.
-          // ⚠ Düzeltme `gap`i büyütmek DEĞİL (o sebebi kaldırmaz, telafi
-          // eder ve 360px'te 4 insanlı Canlı oyunun payını 17.4 → 9.4px'e
-          // indirirdi) — projenin kendi `.tap-expand` sınıfı. Dokunma
-          // alanı BİREBİR aynı 48×48 bölge kalıyor, yalnızca boyanmıyor.
+          // 30 Ağustos 2026 — burası `min-w/h-[48px] -m-2` idi; `.tap-expand`
+          // ile değiştirildi. ⚠ BU DEĞİŞİKLİK GÖRSEL OLARAK BİR ŞEY
+          // DÜZELTMEZ, yalnızca hijyen: projenin standart yolunu kullanır.
+          // Kayda geçsin, çünkü ters yönde bir iddiayla yazılmıştı:
+          // değişiklik bir kullanıcının iPhone'da bildirdiği "skor kutusunun
+          // sağ kenarı kesiliyor" sorununu ÇÖZMEK için yapıldı ve ÇÖZMEDİ.
+          // Ölçüldü (inline stille iki hâl yan yana, 375 ve 390px): avatar
+          // ile skor kutusu arasındaki GÖRÜNEN boşluk ikisinde de 8px,
+          // avatarın sağ kenarı ikisinde de 363/378 — yani aynı. Sebep
+          // basit: bu düğmenin arka planı ve çerçevesi YOK, o 48px'lik kutu
+          // ŞEFFAF; boyanan tek şey ortadaki 32px'lik `Avatar`. Eski hâlde
+          // de avatarın sol kenarı düzen kutusunun sol kenarındaydı.
+          // ⚠ DERS: bir düğmenin `getBoundingClientRect()`i "boyalı kutu"
+          // değildir. Görsel bir iddiayı ölçerken BOYANAN elemanı ölç
+          // (burada `Avatar`), sarmalayıcıyı değil.
+          // Sorunun gerçek sebebi HÂLÂ BİLİNMİYOR; aynı ölçümde kırpılma
+          // (`serit.scrollWidth == clientWidth`) ve sayfa taşması da
+          // elendi. Ayrıntı: docs/decisions/touch-ux-bugs.md.
           className="tap-expand rounded-full flex items-center justify-center active:scale-95 transition-transform ring-offset-2 focus:outline-none disabled:cursor-not-allowed"
         >
           {identityLoading ? (
