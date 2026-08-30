@@ -717,6 +717,20 @@ class _GameRow extends StatelessWidget {
   }
 }
 
+/// Web `participantLabelClass` (LiveGamesTab.tsx) — `participantLabel`in
+/// RENGİ. Dallar etiketin dallarıyla BİREBİR aynı sırada: ikisi tek bir
+/// karar, ayrı yerlerde ayrışmasınlar.
+///
+/// Kullanıcı isteği (30 Ağustos 2026): "Kabul etti" yeşil, "Bekliyor"
+/// kırmızı. "Reddetti"/"Davet gönderen" bilinçli olarak nötr — kırmızı
+/// burada "hâlâ cevap bekleniyor" uyarısı, "olumsuz sonuç" değil.
+Color _participantLabelColor(OnlineSlot slot, OnlineGame game) {
+  if (game.createdBy != null && slot.userId == game.createdBy) return _muted;
+  if (slot.inviteStatus == 'accepted') return _green;
+  if (slot.inviteStatus == 'declined') return _muted;
+  return _red;
+}
+
 /// Web PendingGameCard — davet/bekleme kartı: başlık + kalan süre +
 /// katılımcı listesi (+ Kabul/Reddet).
 class _PendingGameCard extends StatelessWidget {
@@ -809,11 +823,11 @@ class _PendingGameCard extends StatelessWidget {
                   ]),
                 ),
                 Text(trUpper(participantLabel(s, game)),
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontFamily: 'SpaceMono',
                         fontSize: 9,
                         letterSpacing: 0.5,
-                        color: _muted)),
+                        color: _participantLabelColor(s, game))),
               ]),
             ),
           if (hasAi)

@@ -146,6 +146,25 @@ function participantLabel(slot: HumanSlot, game: OnlineGame): string {
   return 'Bekliyor';
 }
 
+// `participantLabel`in RENGİ — dallar birebir yukarıdaki sırayla, çünkü
+// ikisi tek bir karardır: etiket değişirse rengi de aynı yerde değişsin
+// (bu projede "zincirin bir halkası" hatası tam böyle doğuyor).
+//
+// Kullanıcı isteği (30 Ağustos 2026): "Kabul etti" YEŞİL, "Bekliyor"
+// KIRMIZI — davet kartına bakan kişi tek bakışta kimin cevap verdiğini
+// görsün. "Reddetti" ve "Davet gönderen" bilinçli olarak NÖTR kalıyor:
+// buradaki kırmızı "hâlâ cevap bekleniyor" uyarısı, "olumsuz sonuç"
+// değil; ikisini aynı renge boyamak o ayrımı silerdi.
+//
+// Port ikizi: mobile/app/lib/src/ui/live/live_games_tab.dart →
+// `_participantLabelColor` (aynı dal sırası, aynı tokenler).
+function participantLabelClass(slot: HumanSlot, game: OnlineGame): string {
+  if (slot.user_id === game.created_by) return 'text-muted';
+  if (slot.invite_status === 'accepted') return 'text-green';
+  if (slot.invite_status === 'declined') return 'text-muted';
+  return 'text-red';
+}
+
 function ParticipantRow({ slot, game }: { slot: HumanSlot; game: OnlineGame }) {
   // Rütbe mührü context'ten okunuyor: bu satır listeyi tutan
   // `LiveGamesTab`'tan dört kat uzakta (GameRow/PendingSection →
@@ -159,7 +178,7 @@ function ParticipantRow({ slot, game }: { slot: HumanSlot; game: OnlineGame }) {
         <span className="min-w-0 text-xs text-text truncate">{slot.name ?? 'Oyuncu'}</span>
         {tier && <RankSeal tier={tier} size={16} className="shrink-0" />}
       </span>
-      <span className="text-[9px] font-mono uppercase tracking-[0.5px] text-muted shrink-0">
+      <span className={`text-[9px] font-mono uppercase tracking-[0.5px] shrink-0 ${participantLabelClass(slot, game)}`}>
         {participantLabel(slot, game)}
       </span>
     </div>

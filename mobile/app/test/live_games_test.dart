@@ -14,6 +14,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/ui/game/neo_box.dart';
 import 'package:kelimeki/src/ui/theme.dart';
+import 'package:kelimeki/src/ui/tokens.dart';
 import 'package:kelimeki/src/bootstrap.dart';
 import 'package:kelimeki/src/config/version_gate.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
@@ -613,6 +614,17 @@ void main() {
       expect(find.text('KABUL ETTİ'), findsOneWidget);
       expect(find.text('BEKLİYOR'), findsOneWidget);
       expect(find.text('Yapay Zeka'), findsOneWidget);
+
+      // Etiketin RENGİ (kullanıcı isteği, 30 Ağustos 2026): cevap veren
+      // yeşil, cevap bekleyen kırmızı, kurucu nötr. Web ikizi
+      // `participantLabelClass` (LiveGamesTab.tsx) ile aynı dal sırası.
+      // Negatif eş: `_participantLabelColor` kaldırılıp `_muted` sabitine
+      // dönülürse ilk iki satır düşer.
+      Color etiketRengi(String etiket) =>
+          tester.widget<Text>(find.text(etiket)).style!.color!;
+      expect(etiketRengi('KABUL ETTİ'), kGreen);
+      expect(etiketRengi('BEKLİYOR'), kRed);
+      expect(etiketRengi('DAVET GÖNDEREN'), kMuted);
 
       await tester.runAsync(() async {
         final boundary =
