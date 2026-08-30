@@ -188,8 +188,34 @@ export function GameHeader({ state, onLogoClick, exitDisabled, onPlayerClick }: 
                   // geçip kutu pasifleşince genişlik geri açılıp düzeliyordu)
                   // `outline` kullanılıyor — offset kutunun tam kenarına denk
                   // gelecek şekilde negatif verilip layout'a hiç dokunmuyor.
+                  //
+                  // 30 Ağustos 2026 — PASİF kalınlık 0.5 → 1. Bir kullanıcı
+                  // iPhone'da bildirdi: *"YZ kartının sağ kenarı kesiliyor"*.
+                  // ÖLÇÜLDÜ, kullanıcının gönderdiği gerçek ekran görüntüsünde
+                  // (1170×2532, DPR 3, CSS 390px), pasif kutunun tarama satırı:
+                  //   sol  kenar (210,100,97) → iç zemine uzaklık 272
+                  //   sağ  kenar (241,212,212) → iç zemine uzaklık  14
+                  // Yani 19 kat fark: sol çiziliyor, sağ pratikte çizilmiyor.
+                  // Aktif kutu (2px) aynı görüntüde iki yanda da dolu ve
+                  // simetrik. Sebep: 0.5 CSS px, DPR 3'te 1,5 CİHAZ pikseli;
+                  // kutu genişliği kesirli olduğundan (YZ_BOX_WIDTH 390px'te
+                  // 30,5px) iki kenar farklı alt-piksel fazına düşüyor — biri
+                  // tek piksele toplanıyor, öteki iki piksele yayılıp açık
+                  // zeminde kayboluyor. iPad 2x / masaüstü 1x-2x olduğundan
+                  // orada çıkmıyor; "sadece iPhone'da" bunun içindi.
+                  // ⚠ CHROMIUM BU HATAYI ÜRETMİYOR: `outline-width: 0.5px`i
+                  // hesaplarken 1px'e YUVARLIYOR (computed style ölçüldü,
+                  // DPR 3'te iki kenar da dolu çıktı). Bu yüzden 1 yazmak
+                  // yuvarlayan tarayıcılarda hiçbir şeyi değiştirmez —
+                  // yuvarlamayanda kesirli çizgiyi temiz 3 cihaz pikseline
+                  // çevirir. Aktif/pasif ayrımı 2 ↔ 1 olarak korunuyor.
                   background: col.tint,
-                  outline: `${active ? 2 : 0.5}px solid ${col.base}`,
+                  // ⚠ `outlineOffset` PASİFTE -0.5 KALIYOR, -1 YAPILMADI:
+                  // ölçüldü (DPR 3 Chromium, öncesi/sonrası ekran görüntüsü
+                  // farkı), -1 çerçeveyi içeri kaydırıp kutuyu her yandan
+                  // 1 CSS px daraltıyor — görünür bir değişiklik. -0.5 ile
+                  // birlikte 1px, Chromium'un ZATEN çizdiği şeyin aynısı.
+                  outline: `${active ? 2 : 1}px solid ${col.base}`,
                   outlineOffset: active ? -2 : -0.5,
                   opacity: p.surrendered ? 0.45 : 1,
                 }}
