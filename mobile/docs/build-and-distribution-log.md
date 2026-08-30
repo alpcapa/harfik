@@ -265,6 +265,40 @@ Darboğaz inceleme DEĞİL, ondan sonraki dağıtım. "Yayınlanmadı herhâlde"
 diye beklemek yanlış teşhis; doğru soru "kanal bana servis etmeye başladı
 mı" ve onun cevabı yalnızca cihazdan alınır.
 
+### ÇARE: testçi opt-in linkine TEKRAR gir (30 Ağustos 2026, ölçüldü)
+
+Yukarıdaki not sorunu tarif ediyordu ama çaresini vermiyordu. O gün ölçüldü:
+
+| Saat | Olay |
+|---|---|
+| 15:29 | `.aab` gönderildi (Submission 8, `1.0.2 (435) — d3d4702`) |
+| 15:39 | **Published** — inceleme 10 dakika |
+| ~17:30 | **SIFIRDAN kurulum hâlâ `1.0.1 (426)` verdi** (uygulama içi `Derleme 7dd56ad`) |
+| 17:35 | **Testçi opt-in linkine tekrar girildi → güncelleme ANINDA çıktı** |
+
+**Sebep kanal ya da uygunluk DEĞİL, Play İSTEMCİSİNİN önbelleği.** Sunucu
+435'i servis ediyordu; telefondaki Play Store eski listeyi tutuyordu ve iki
+saat beklemek onu tazelemedi.
+
+**Yani "biraz daha bekleyelim" YANLIŞ REÇETE.** Yeni sürüm cihaza inmiyorsa
+sırayla:
+
+1. **Testçi opt-in linkine tekrar gir**
+   (`https://play.google.com/apps/testing/com.kelimeki.kelimeki`) — bu
+   turda çözen adım buydu, saniyeler sürüyor.
+2. Play Store'un önbelleğini temizle, ürün sayfasını yeniden aç.
+3. **Internal testing kanalını kontrol et.** Play, kullanıcı birden fazla
+   kanalda kayıtlıysa `Internal > Closed > Open > Production` sırasıyla EN
+   YÜKSEK ÖNCELİKLİYİ servis eder — Internal'da duran eski bir sürüm
+   Closed'a attığın yeniyi gölgeler ve **beklemekle GEÇMEZ.** (Bu turda
+   Internal boştu, yani sebep bu değildi; ama eleme sırasında ilk bakılan
+   yer olmalı çünkü kendiliğinden düzelen tek ihtimal DEĞİL.)
+4. Cihazın Play hesabı, opt-in yapılan hesap mı?
+
+⚠ **Teşhis sırasını atlamanın bedeli var:** bu turda 1. adım denenmeden
+önce iki saat beklendi ve "dağıtım gecikmesi" varsayıldı. Gecikme
+gerçekti ama çare bekleme değildi.
+
 💡 **Sürüm adına sha yaz:** Play Console'un "Sürüm adı" alanı yalnızca
 konsolda görünüyor ve `.aab`'den otomatik `1.0.2 (435)` diye doluyor.
 Sonuna commit'i eklemek (`1.0.2 (435) — d3d4702`) submission ekranını
