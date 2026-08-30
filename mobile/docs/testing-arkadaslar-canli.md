@@ -242,12 +242,13 @@
       görünmeli (misafirken açılırsa).
 
 - [ ] **Etiket puntoları (Parça 55; metin/punto 30 Ağustos 2026'da
-      değişti).** "Devam Edenler"deki durum etiketi **"SIRA SENDE!"**
-      (yeşil) / **"SIRA RAKİPTE"** (kırmızı) web'le aynı boyda olmalı
-      (13 px); hemen altındaki kalan-süre satırı (10 px, yalnızca
-      "N saat M dakika kaldı") ondan belirgin KÜÇÜK — ikisi eşit
-      görünüyorsa regresyon. Davet kartlarının sağ üstündeki süre etiketi
-      (9 px) bu ikisinden de küçük.
+      değişti).** "Devam Edenler"deki durum etiketi **"SIRA SENDE! >"**
+      (yeşil, `>` dahil AYNI boyda) / **"SIRA RAKİPTE"** (kırmızı, `>` YOK)
+      web'le aynı boyda olmalı (13 px); hemen altındaki kalan-süre satırı
+      (9 px, "N saat M dakika kaldı (Teslim -2 puan)") ondan belirgin
+      KÜÇÜK — ikisi eşit görünüyorsa regresyon. Davet kartlarının sağ
+      üstündeki süre etiketi de 9 px, yani bu satırla EŞİT (30 Ağustos'a
+      kadar ondan büyüktü).
 
 ### Tahta (oynanış)
 

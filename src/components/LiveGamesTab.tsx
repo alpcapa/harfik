@@ -86,7 +86,12 @@ function mySlotIndex(game: OnlineGame): number {
 // da idempotent kalıyor. Öteki iki etiket (Rakip bekleniyor/Bitti/Terk
 // edildi) dokunulmadı — onlar bir SIRA bildirmiyor.
 function statusLabel(game: OnlineGame, isMyTurn?: boolean): string {
-  if (game.status === 'active') return isMyTurn ? 'SIRA SENDE!' : 'SIRA RAKİPTE';
+  // `>` yalnızca SIRA SENDE'de (kullanıcı isteği, 30 Ağustos 2026): kart
+  // dokunulabilir ama sırası sende olan tek EYLEM çağrısı bu; rakipteyken
+  // aynı işareti koymak "git oyna"yı yanlış yere davet ederdi. Etiketin
+  // İÇİNDE, ayrı bir öğe olarak değil — "aynı font büyüklüğünde" isteği
+  // böyle koşulsuz sağlanıyor.
+  if (game.status === 'active') return isMyTurn ? 'SIRA SENDE! >' : 'SIRA RAKİPTE';
   if (game.status === 'pending') return 'Rakip bekleniyor';
   if (game.status === 'finished') return 'Bitti';
   return 'Terk edildi';
@@ -109,10 +114,15 @@ function remainingTimeLabel(deadline: string | null | undefined): { text: string
   // ÇAĞIRANDA olan oyunlarda çiziliyor ve hemen üstünde "SIRA SENDE!"
   // yazıyor, yani "ne olacak" bilgisini satırın kendisi değil kart taşıyor.
   // Üç sayaç da (bu, davet iptali, Setup'ın yerel kaydı) aynı kalıba çekildi.
+  // Parantez içindeki sonuç (30 Ağustos 2026, kullanıcı isteği) — fiil
+  // metinden çıkarılınca kaybolan "süre dolunca ne olacak" bilgisini geri
+  // getiriyor, ama bu kez ceza MİKTARIYLA: 48 saat dolunca sıra sendeyken
+  // otomatik teslim olunuyor ve k-lig puanından -2 düşülüyor
+  // (`check_turn_timeout`, bkz. docs/decisions/live-game.md).
   const text =
     hours > 0
-      ? `${hours} saat ${minutes} dakika kaldı`
-      : `${minutes} dakika kaldı`;
+      ? `${hours} saat ${minutes} dakika kaldı (Teslim -2 puan)`
+      : `${minutes} dakika kaldı (Teslim -2 puan)`;
   return { text, urgent: totalMinutes < 24 * 60 };
 }
 
@@ -365,7 +375,7 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
         </span>
         {remaining && (
           <span
-            className={`text-[10px] font-mono uppercase tracking-[0.5px] ${
+            className={`text-[9px] font-mono uppercase tracking-[0.5px] ${
               remaining.urgent ? 'text-red' : 'text-muted'
             }`}
           >

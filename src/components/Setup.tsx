@@ -65,10 +65,16 @@ function remainingTime(savedAt: number, willSurrender: boolean): { text: string;
   const days = Math.floor(totalHours / 24);
   const hours = totalHours % 24;
   const minutes = totalMinutes % 60;
+  // Parantez içindeki sonuç (30 Ağustos 2026, kullanıcı isteği) —
+  // `LiveGamesTab`'ın aktif oyun sayacıyla aynı kalıp. ⚠ İki dal AYRI:
+  // `willSurrender` false iken -2 diye bir ceza YOK (henüz bir tam tur
+  // oynanmamış), o kayıt yalnızca siliniyor — oraya "Teslim -2 puan" yazmak
+  // olmayan bir cezayla korkutmak olurdu. Ayrım zaten `verb`de vardı.
+  const sonuc = willSurrender ? 'Teslim -2 puan' : 'Silinecek';
   const text =
     days > 0
-      ? `${days} gün ${hours} saat kaldı`
-      : `${hours} saat ${minutes} dakika kaldı`;
+      ? `${days} gün ${hours} saat kaldı (${sonuc})`
+      : `${hours} saat ${minutes} dakika kaldı (${sonuc})`;
   return { text, urgent: days < 1 };
 }
 
@@ -175,10 +181,10 @@ function SavedGameRow({
             ikisini yan yana görüyor. Burada koşul yok: yerel kayıt her zaman
             hesap sahibinin sırasında duruyor. */}
         <span className="text-[13px] font-mono uppercase tracking-[1px] text-green font-bold">
-          SIRA SENDE!
+          SIRA SENDE! &gt;
         </span>
         <span
-          className={`text-[10px] font-mono uppercase tracking-[0.5px] ${
+          className={`text-[9px] font-mono uppercase tracking-[0.5px] ${
             remaining.urgent ? 'text-red' : 'text-muted'
           }`}
         >

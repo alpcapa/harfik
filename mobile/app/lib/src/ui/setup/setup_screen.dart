@@ -1936,9 +1936,12 @@ class _SavedGameRow extends StatelessWidget {
     final days = totalHours ~/ 24;
     final hours = totalHours % 24;
     final minutes = totalMinutes % 60;
+    // ⚠ İki dal AYRI: `willSurrender` false iken -2 diye bir ceza YOK,
+    // o kayıt yalnızca siliniyor (gerekçe web ikizinde).
+    final sonuc = willSurrender ? 'Teslim -2 puan' : 'Silinecek';
     final text = days > 0
-        ? '$days gün $hours saat kaldı'
-        : '$hours saat $minutes dakika kaldı';
+        ? '$days gün $hours saat kaldı ($sonuc)'
+        : '$hours saat $minutes dakika kaldı ($sonuc)';
     return (text: text, urgent: days < 1);
   }
 
@@ -1993,7 +1996,7 @@ class _SavedGameRow extends StatelessWidget {
                 // BİREBİR (30 Ağustos 2026, kullanıcı isteği): biri YZ biri
                 // Canlı oyun ama ikisi de "devam eden oyun" satırı.
                 const Text(
-                  'SIRA SENDE!',
+                  'SIRA SENDE! >',
                   style: TextStyle(
                     fontFamily: 'SpaceMono',
                     fontSize: 13,
@@ -2011,7 +2014,7 @@ class _SavedGameRow extends StatelessWidget {
                   trUpper(remaining.text),
                   style: TextStyle(
                     fontFamily: 'SpaceMono',
-                    fontSize: 10,
+                    fontSize: 9,
                     letterSpacing: 0.5,
                     color: remaining.urgent ? kRed : _muted,
                   ),

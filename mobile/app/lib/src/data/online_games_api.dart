@@ -850,9 +850,11 @@ RemainingLabel? remainingTimeLabel(String? deadline, int nowMs) {
   final minutes = totalMinutes % 60;
   // ⚠ Fiil DÜŞTÜ (30 Ağustos 2026, kullanıcı isteği) — üç sayaç da yalnızca
   // "… kaldı" diyor. Gerekçe web ikizinde yazılı.
+  // Parantez içindeki sonuç (30 Ağustos 2026, kullanıcı isteği) — fiil
+  // metinden çıkarılınca kaybolan bilgiyi ceza MİKTARIYLA geri getiriyor.
   final text = hours > 0
-      ? '$hours saat $minutes dakika kaldı'
-      : '$minutes dakika kaldı';
+      ? '$hours saat $minutes dakika kaldı (Teslim -2 puan)'
+      : '$minutes dakika kaldı (Teslim -2 puan)';
   return RemainingLabel(text, totalMinutes < 24 * 60);
 }
 
@@ -882,7 +884,8 @@ RemainingLabel remainingInviteLabel(String createdAt, int nowMs) {
 String onlineStatusLabel(OnlineGame g, {bool? isMyTurn}) =>
     switch (g.status) {
       OnlineGameStatus.active =>
-        isMyTurn == true ? 'SIRA SENDE!' : 'SIRA RAKİPTE',
+        // `>` yalnızca SIRA SENDE'de — gerekçe web ikizinde.
+        isMyTurn == true ? 'SIRA SENDE! >' : 'SIRA RAKİPTE',
       OnlineGameStatus.pending => 'Rakip bekleniyor',
       OnlineGameStatus.finished => 'Bitti',
       OnlineGameStatus.abandoned => 'Terk edildi',

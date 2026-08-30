@@ -632,7 +632,7 @@ test.describe('dokunmatik jestler', () => {
       localStorage.setItem('kelimeki:game-state', payload as string);
     }, await jokerliKayit());
     await page.goto('/');
-    await page.getByRole('button', { name: /SIRA SENDE!/i }).click();
+    await page.getByRole('button', { name: /SIRA SENDE! >/i }).click();
     const quickstartHeading = page.getByRole('heading', { name: /hızlı başlangıç/i });
     if (await quickstartHeading.isVisible().catch(() => false)) {
       await page.locator('button[aria-label="Kapat"]').last().click();

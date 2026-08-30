@@ -118,17 +118,17 @@ void main() {
 
       final in30h = iso(DateTime.utc(2026, 8, 8, 18)); // 30 saat sonra
       var l = remainingTimeLabel(in30h, nowMs)!;
-      expect(l.text, '30 saat 0 dakika kaldı');
+      expect(l.text, '30 saat 0 dakika kaldı (Teslim -2 puan)');
       expect(l.urgent, isFalse);
 
       final in90m = iso(DateTime.utc(2026, 8, 7, 13, 30));
       l = remainingTimeLabel(in90m, nowMs)!;
-      expect(l.text, '1 saat 30 dakika kaldı');
+      expect(l.text, '1 saat 30 dakika kaldı (Teslim -2 puan)');
       expect(l.urgent, isTrue);
 
       final in5m = iso(DateTime.utc(2026, 8, 7, 12, 5));
       l = remainingTimeLabel(in5m, nowMs)!;
-      expect(l.text, '5 dakika kaldı');
+      expect(l.text, '5 dakika kaldı (Teslim -2 puan)');
 
       l = remainingTimeLabel(iso(DateTime.utc(2026, 8, 7, 11)), nowMs)!;
       expect(l.text, 'Süresi doldu - teslim oldu');
@@ -703,21 +703,21 @@ void main() {
         ];
       await pumpTab(tester, liveServices(userId: 'u-tab3', gateway: gw));
 
-      expect(find.text('SIRA SENDE!'), findsOneWidget);
+      expect(find.text('SIRA SENDE! >'), findsOneWidget);
       expect(find.text('SIRA RAKİPTE'), findsOneWidget);
       // Kalan süre YALNIZCA sırası bende olan satırda (web 3 Ağustos dersi).
       // Metin 30 Ağustos 2026'da yalnızca "… KALDI"ya indi (fiil düştü).
       expect(find.textContaining('KALDI'), findsOneWidget);
 
       // Punto web ile aynı (Parça 55): durum etiketi text-[13px], hemen
-      // altındaki kalan-süre text-[10px]. Bu İKİSİ web'de de farklı — biri
+      // altındaki kalan-süre text-[9px]. Bu İKİSİ web'de de farklı — biri
       // ötekine uydurulmamalı. (30 Ağustos 2026'da 11/8 → 13/10, kullanıcı
       // isteği; oran korundu.)
-      final status = tester.widget<Text>(find.text('SIRA SENDE!'));
+      final status = tester.widget<Text>(find.text('SIRA SENDE! >'));
       expect(status.style!.fontSize, 13);
       final left =
           tester.widget<Text>(find.textContaining('KALDI').first);
-      expect(left.style!.fontSize, 10);
+      expect(left.style!.fontSize, 9);
 
       // Parça 56: web'de bu kartlar ve alt sekmeler `shadow-raised` /
       // `btn-raised*` taşıyor; port hepsini düz BoxDecoration ile çiziyordu

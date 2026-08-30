@@ -704,7 +704,7 @@ class _GameRow extends StatelessWidget {
                   trUpper(remaining.text),
                   style: TextStyle(
                     fontFamily: 'SpaceMono',
-                    fontSize: 10, // web text-[10px] (30 Ağustos: 8 → 10)
+                    fontSize: 9, // web text-[9px] (30 Ağustos: 8 → 10 → 9)
                     letterSpacing: 0.5,
                     color: remaining.urgent ? _red : _muted,
                   ),

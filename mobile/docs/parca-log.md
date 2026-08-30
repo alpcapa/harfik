@@ -43,6 +43,25 @@
        hesaba gelecek -2 cezanın tek uyarısıydı. Fiil süre DOLDUĞUNDA geri
        geliyor (`Bugün teslim sayılacak` / `Bugün silinecek`) — "Bugün" tek
        başına hiçbir şey anlatmazdı ve bilgi değeri tam orada en yüksek.
+     - **İkinci geçiş (aynı gün, kullanıcı ekran görüntüsüne bakıp
+       söyledi):** süre 10 → **9 px**, sonuna parantez içinde sürenin
+       SONUCU, ve `SIRA SENDE!` yanına **`>`** — etiketin İÇİNDE, yani
+       "aynı font büyüklüğünde" isteği koşulsuz sağlanıyor. `>` yalnızca
+       sırası SENDE olan satırda; rakipteyken "git oyna"yı yanlış yere
+       davet ederdi.
+       - Parantez, bir önceki turda "kabul edilen bilgi kaybı" diye
+         yazılan şeyi geri getiriyor — fiil olarak değil ceza MİKTARIYLA:
+         `(Teslim -2 puan)`.
+       - ⚠ **Setup'ın yerel kaydında parantez İKİ DALLI:** orada -2 her
+         zaman geçerli değil (`willSurrender` false ise kayıt yalnızca
+         siliniyor) → `(Silinecek)`. Ayrım zaten `verb`de vardı, parantez
+         ona bağlandı; olmayan bir cezayla korkutmamak için.
+       - **Genişlik ÖLÇÜLDÜ:** `pumpTab` geçici olarak 320 px'e çekilip
+         takım koşturuldu — hiçbir `RenderFlex overflow` yok. (En uzun
+         hâli 420 px'te ~234 px yer kaplıyor.)
+       - **Yan etki:** davet kartının sağ üstündeki süre de 9 px, yani
+         artık bu satırla EŞİT — `testing-arkadaslar-canli.md`'nin punto
+         maddesi "ondan küçük" diyordu, düzeltildi.
      - **Ekran görüntüsü ÖNCE gösterildi** (kullanıcı istedi): mock değil,
        gerçek widget'lardan — `live_games_test` + `setup_cloud_test`in
        `RepaintBoundary` yakalamaları. Aktif oyun kartı için geçici bir
