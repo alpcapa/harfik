@@ -599,7 +599,7 @@ bulgu bir eksik değil, bir YANLIŞTI:**
 - **Temiz çıkanlar:** `TESTING.md` (bölüm 11'e kadar güncel — 15 Ağustos'taki
   "mute yalnızca popup'ı bastırır, rozet yine artar" kararı bile maddeye
   yazılmış), `mobile/TESTING.md`, `mobile/CLAUDE.md`, README'nin kelime sayısı
-  (**~63 bin**; `words.ts` gerçekte 63.900) ve k-lig rütbe/ödül tablosu.
+  (**~63 bin**; `words.ts` gerçekte 63.905) ve k-lig rütbe/ödül tablosu.
 
 **Ders:** bir doküman "eksik" olabilir (yeni dosya listeye girmemiş) ya da
 "yanlış" olabilir (kuralı hatalı anlatıyor) — ikincisi çok daha pahalı ve
