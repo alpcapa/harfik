@@ -353,7 +353,7 @@ void main() {
     }
     expect(find.text('DEVAM EDEN OYUN'), findsOneWidget);
     expect(find.textContaining('SIRA SENDE!'), findsOneWidget);
-    expect(find.textContaining('KALDI'), findsOneWidget);
+    expect(find.textContaining('SONRA SİLİNECEK'), findsOneWidget);
     // Anti-kaçış: yeni oyun formu hiç yok.
     expect(find.text('OYUNU BAŞLAT'), findsNothing);
     expect(find.text('OYUNCU SAYISI'), findsNothing);

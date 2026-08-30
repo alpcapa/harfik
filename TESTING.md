@@ -72,10 +72,11 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
 - [ ] **Sıra netliği.** Sırası sende değilken "Sıra: {isim}" bandı görünmeli;
       YZ koltuğunda ise nabız gibi atan "hamlesini hesaplıyor…" hâli.
 - [ ] **Kalan süre yalnızca sende.** "Devam Edenler" listesinde "N saat M
-      dakika kaldı (Teslim -2 puan)" **yalnızca sırası sende olan**
-      satırlarda görünmeli. "SIRA RAKİPTE" satırında görünmemeli — o süre
-      rakibe ait. Sırası sende olan satırın etiketi ayrıca bir `>` taşır
-      ("SIRA SENDE! >"); rakipteki satırda `>` OLMAMALI.
+      dk sonra teslim (-2 puan)" **yalnızca sırası sende olan** satırlarda
+      görünmeli. "SIRA RAKİPTE" satırında görünmemeli — o süre rakibe ait.
+      Sırası sende olan satırın etiketinin yanında yeşil bir ÜÇGEN (oynat
+      tuşu), rakipteki satırda ise kırmızı bir YUVARLAK olmalı; ikisi asla
+      aynı anda görünmez.
 - [ ] **Off-turn deneme.** Sıra sende değilken de taş yerleştirebilmeli,
       Board'da geçerlilik dış hattı/puan rozeti çalışmalı, "Oyna" pasif
       kalmalı. Rakip oynayınca deneme taşları rafa dönüp "Oyna" aktifleşmeli.

@@ -17,7 +17,7 @@ import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
 import { CountBadge } from './CountBadge';
 import { HelpModal } from './HelpModal';
-import { LiveGamesTab, TurnArrow } from './LiveGamesTab';
+import { LiveGamesTab, TurnTriangle } from './LiveGamesTab';
 import { LogoMark } from './LogoMark';
 import { PlayerAvatarRow, type AvatarRowPlayer } from './PlayerAvatarRow';
 import { PlayerBadge } from './PlayerBadge';
@@ -70,11 +70,11 @@ function remainingTime(savedAt: number, willSurrender: boolean): { text: string;
   // `willSurrender` false iken -2 diye bir ceza YOK (henüz bir tam tur
   // oynanmamış), o kayıt yalnızca siliniyor — oraya "Teslim -2 puan" yazmak
   // olmayan bir cezayla korkutmak olurdu. Ayrım zaten `verb`de vardı.
-  const sonuc = willSurrender ? 'Teslim -2 puan' : 'Silinecek';
+  const sonuc = willSurrender ? 'teslim (-2 puan)' : 'silinecek';
   const text =
     days > 0
-      ? `${days} gün ${hours} saat kaldı (${sonuc})`
-      : `${hours} saat ${minutes} dakika kaldı (${sonuc})`;
+      ? `${days} gün ${hours} saat sonra ${sonuc}`
+      : `${hours} saat ${minutes} dk sonra ${sonuc}`;
   return { text, urgent: days < 1 };
 }
 
@@ -182,10 +182,12 @@ function SavedGameRow({
             hesap sahibinin sırasında duruyor. */}
         <span className="text-[13px] font-mono uppercase tracking-[1px] text-green font-bold">
           SIRA SENDE!
-          <TurnArrow />
+          <TurnTriangle />
         </span>
         <span
-          className={`text-[8px] font-mono uppercase tracking-[0.5px] ${
+          /* mt-1.5 — LiveGamesTab'ın aktif oyun kartıyla aynı: süre satırı
+             durum etiketine yapışmasın (kullanıcı isteği). */
+          className={`mt-1.5 text-[8px] font-mono uppercase tracking-[0.5px] ${
             remaining.urgent ? 'text-red' : 'text-muted'
           }`}
         >

@@ -118,17 +118,17 @@ void main() {
 
       final in30h = iso(DateTime.utc(2026, 8, 8, 18)); // 30 saat sonra
       var l = remainingTimeLabel(in30h, nowMs)!;
-      expect(l.text, '30 saat 0 dakika kaldı (Teslim -2 puan)');
+      expect(l.text, '30 saat 0 dk sonra teslim (-2 puan)');
       expect(l.urgent, isFalse);
 
       final in90m = iso(DateTime.utc(2026, 8, 7, 13, 30));
       l = remainingTimeLabel(in90m, nowMs)!;
-      expect(l.text, '1 saat 30 dakika kaldı (Teslim -2 puan)');
+      expect(l.text, '1 saat 30 dk sonra teslim (-2 puan)');
       expect(l.urgent, isTrue);
 
       final in5m = iso(DateTime.utc(2026, 8, 7, 12, 5));
       l = remainingTimeLabel(in5m, nowMs)!;
-      expect(l.text, '5 dakika kaldı (Teslim -2 puan)');
+      expect(l.text, '5 dk sonra teslim (-2 puan)');
 
       l = remainingTimeLabel(iso(DateTime.utc(2026, 8, 7, 11)), nowMs)!;
       expect(l.text, 'Süresi doldu - teslim oldu');
@@ -709,11 +709,11 @@ void main() {
       // yeşil ok "git oyna" (yalnız sırası bende), kırmızı nokta "bekle"
       // (yalnız rakipte). Anahtarlı finder, noktayı avatar çemberlerinden
       // ayırt edebilmek için (30 Ağustos 2026).
-      expect(find.byKey(const Key('turn-arrow')), findsOneWidget);
+      expect(find.byKey(const Key('turn-triangle')), findsOneWidget);
       expect(find.byKey(const Key('turn-dot')), findsOneWidget);
       // Kalan süre YALNIZCA sırası bende olan satırda (web 3 Ağustos dersi).
       // Metin 30 Ağustos 2026'da yalnızca "… KALDI"ya indi (fiil düştü).
-      expect(find.textContaining('KALDI'), findsOneWidget);
+      expect(find.textContaining('SONRA TESLİM'), findsOneWidget);
 
       // Punto web ile aynı (Parça 55): durum etiketi text-[13px], hemen
       // altındaki kalan-süre text-[8px]. Bu İKİSİ web'de de farklı — biri
@@ -722,7 +722,7 @@ void main() {
       final status = tester.widget<Text>(find.textContaining('SIRA SENDE!'));
       expect(status.style!.fontSize, 13);
       final left =
-          tester.widget<Text>(find.textContaining('KALDI').first);
+          tester.widget<Text>(find.textContaining('SONRA TESLİM').first);
       expect(left.style!.fontSize, 8);
 
       // Parça 56: web'de bu kartlar ve alt sekmeler `shadow-raised` /

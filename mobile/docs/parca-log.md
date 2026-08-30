@@ -91,6 +91,27 @@
          Mono'da YOK; kullanılsaydı tarayıcı ve Flutter ayrı yedek
          fontlara düşüp FARKLI daireler çizerdi — `RelationIcons.tsx`in
          "web ve port AYNI vektör" kuralının sessizce kırılması olurdu.
+     - **Altıncı geçiş — yeşil ok yerine ÇİZİLMİŞ ÜÇGEN (oynat tuşu) +
+       yeni saat metni + saat bir satır aşağı** (kullanıcı isteği).
+       - Saat: `30 SAAT 5 DK SONRA TESLİM (-2 PUAN)`. Setup'ın yerel
+         kaydında iki dal korundu (cezasızda `… SONRA SİLİNECEK`).
+       - Durum etiketi ↔ saat arası 2 → **8 px**.
+       - **Üçgen bir GLİF DEĞİL, çizilmiş vektör** (`▶`/`►` Space Mono'da
+         yok — `TurnDot`'takiyle aynı gerekçe). **Yan faydası:** `>` harf
+         boyuna çıkmadığı için iki tur ayar gerektirmişti (21 px'e
+         büyütme + 2,67 px aşağı kaydırma); çizilmiş üçgende ölçü
+         doğrudan veriliyor, iki ayar da gereksizleşti.
+       - **Geometri TESTE BAĞLANDI:** `relation_icon_parity_test.dart`
+         artık İKİ çift taşıyor. Ayrıştırıcı kopyalanmadı —
+         `support/vector_parity.dart`ten tüketiliyor, yani geçen turda
+         yapılan çıkarma ilk müşterisini buldu. Negatif eş doğrulandı:
+         portta bir koordinat 8 → 9 yapılınca test düşüyor.
+       - ⚠ **Glif değişince boşluk telafisi de bayatladı.** 25/29 farkı
+         `>`in ~4 px yan boşluğunu telafi etmek içindi; üçgende yan boşluk
+         YOK, nokta 2,33 px fazla uzakta kalmıştı → **25/27**. Ölçüm:
+         üçgen 29,33 ↔ nokta 29,67 (fark 0,33 px). Ders: bir sayı BAŞKA
+         bir şeyin telafisiyse, telafi edilen şey değişince o sayı da
+         yeniden ölçülmeli.
      - **Beşinci geçiş — iki işaretin GÖRÜNEN boşluğu eşitlendi**
        (kullanıcı: *"noktayı da okla yazı arasındaki boşluk kadar yap"*;
        istek iki türlü okunabildiğinden ölçümlerle birlikte SORULDU,

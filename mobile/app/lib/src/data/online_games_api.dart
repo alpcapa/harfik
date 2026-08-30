@@ -853,8 +853,8 @@ RemainingLabel? remainingTimeLabel(String? deadline, int nowMs) {
   // Parantez içindeki sonuç (30 Ağustos 2026, kullanıcı isteği) — fiil
   // metinden çıkarılınca kaybolan bilgiyi ceza MİKTARIYLA geri getiriyor.
   final text = hours > 0
-      ? '$hours saat $minutes dakika kaldı (Teslim -2 puan)'
-      : '$minutes dakika kaldı (Teslim -2 puan)';
+      ? '$hours saat $minutes dk sonra teslim (-2 puan)'
+      : '$minutes dk sonra teslim (-2 puan)';
   return RemainingLabel(text, totalMinutes < 24 * 60);
 }
 

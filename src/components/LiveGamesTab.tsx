@@ -86,40 +86,44 @@ function mySlotIndex(game: OnlineGame): number {
 // da idempotent kalıyor. Öteki iki etiket (Rakip bekleniyor/Bitti/Terk
 // edildi) dokunulmadı — onlar bir SIRA bildirmiyor.
 /**
- * "SIRA SENDE!"nin yanındaki ok (30 Ağustos 2026, kullanıcı isteği).
+ * "SIRA SENDE!"nin yanındaki yeşil ÜÇGEN — oynat tuşu gibi (30 Ağustos
+ * 2026, kullanıcı isteği: *"yeşil ok yerine yeşil üçgen (play tuşu gibi)
+ * deneyelim"*).
  *
- * ⚠ **Neden 21 px, yani etiketin 13'ünden BÜYÜK?** İlk sürümde ok etiketin
- * dizesinin İÇİNDEYDİ (`'SIRA SENDE! >'`), yani puntosu birebir aynıydı —
- * ama kullanıcı *"oku yazıyla aynı büyüklüğe getir"* dedi ve haklıydı:
- * `>` Space Mono'da matematik hizasında oturan, harf boyuna ÇIKMAYAN bir
- * glif. ÖLÇÜLDÜ (ekran görüntüsü piksel taraması, pixelRatio 3): 13 px'te
- * büyük harflerin mürekkep yüksekliği 27 px, aynı puntodaki `>` yalnızca
- * 17 px. Eşitleyen punto 13 × 27/17 ≈ 21.
+ * Öncesinde bir `>` glifiydi ve iki tur ayar istemişti: Space Mono'da `>`
+ * matematik hizasında oturup harf boyuna ÇIKMADIĞINDAN 13 px'te mürekkep
+ * yüksekliği yalnızca 17/27'ydi (pixelRatio 3) — 21 px'e büyütülüp 2,67 px
+ * aşağı kaydırılmıştı. Çizilmiş üçgen o iki ayarı birden gereksiz kılıyor:
+ * ölçüsünü doğrudan veriyoruz.
  *
- * İKİ ayar daha, ikisi de ölçümden çıktı:
- * - `leading-[13px]` — satır kutusu etiketin puntosunda kalsın, yoksa
- *   21 px'lik ok satırı büyütüp kartı gereksiz yere uzatır.
- * - `top-[2.8px]` — 21'e çıkarılan `>` taban çizgisine hizalıyken harflerin
- *   8 piksel (pixelRatio 3 → 2,67 mantıksal px) YUKARISINDA duruyordu;
- *   mürekkep merkezleri örtüşene kadar aşağı kaydırıldı. Ölçüm: harfler
- *   y 516-542, ok 507-534 → düzeltmeden sonra ikisi de aynı bantta.
+ * ⚠ **Glif DEĞİL, çizilmiş vektör** — `TurnDot`'takiyle aynı gerekçe:
+ * `▶`/`►` Space Mono'da yok, kullanılsaydı tarayıcı ve Flutter ayrı yedek
+ * fontlara düşüp FARKLI üçgenler çizerdi. Geometri portla ELLE senkron ve
+ * senkronu ZORLAYAN bir test var: `relation_icon_parity_test.dart`.
  *
- * Yalnızca sırası ÇAĞIRANDA olan satırda çiziliyor — ok "git oyna" demek,
- * rakipteyken yapılacak bir şey yok. Port ikizi: `live_games_tab.dart` /
- * `setup_screen.dart` (`Text.rich` + aynı 21/13 oranı).
+ * Ölçü büyük harflerin mürekkep yüksekliğinden: 13 px puntoda 9,0 mantıksal
+ * px. Üçgen 8×9, taban çizgisine oturuyor.
  */
-export function TurnArrow() {
+export function TurnTriangle() {
   return (
-    <span className="relative top-[2.8px] ml-[25px] text-[21px] leading-[13px] align-baseline">
-      &gt;
-    </span>
+    <svg
+      width="8"
+      height="9"
+      viewBox="0 0 8 9"
+      fill="currentColor"
+      aria-hidden
+      className="ml-[25px] inline-block align-baseline text-green"
+    >
+      <path d="M0 0L8 4.5L0 9Z" />
+    </svg>
   );
 }
 
+
 /**
  * "SIRA RAKİPTE"nin sonundaki kırmızı yuvarlak (30 Ağustos 2026, kullanıcı
- * isteği) — `TurnArrow`'un simetriği: yeşil ok "git oyna", kırmızı nokta
- * "bekle".
+ * isteği) — `TurnTriangle`'ın simetriği: yeşil üçgen "git oyna", kırmızı
+ * nokta "bekle".
  *
  * ⚠ **Glif DEĞİL, çizilmiş bir kutu.** `●` (U+25CF) Space Mono'da YOK;
  * kullanılsaydı tarayıcı/Flutter yedek bir fonta düşerdi ve iki platform
@@ -131,12 +135,10 @@ export function TurnArrow() {
  * `align-baseline` + `inline-block`: içeriği olmayan bir inline-block'un
  * taban çizgisi ALT kenarıdır, yani yuvarlak harflerin üstünde yüzmez.
  *
- * ⚠ **Boşluk `TurnArrow`unkinden 4 px FAZLA (29 ↔ 25) ve bu bilinçli.**
- * Kullanıcının istediği KUTU değil GÖRÜNEN boşluğun eşitliği: `>` glifinin
- * solunda ~4 px'lik bir yan boşluk var, çizilmiş yuvarlağın ise hiç yok —
- * aynı dolgu verilseydi nokta yazıya 4 px daha yakın DURURDU. Fark
- * ölçümden geldi: ekran görüntüsü taranıp iki mürekkep boşluğu eşitlenene
- * kadar ayarlandı.
+ * ⚠ **Boşluk `TurnTriangle`ınkinden 2 px FAZLA (27 ↔ 25) ve bu bilinçli.**
+ * Eşitlenen şey kutu değil GÖRÜNEN boşluk: iki işaret farklı harflerden
+ * sonra geliyor (`SIRA SENDE!` ↔ `SIRA RAKİPTE`) ve `!` ile `E`nin sağ yan
+ * boşlukları aynı değil. Fark ÖLÇÜMDEN geliyor, hesaptan değil.
  *
  * Port ikizi: `live_games_tab.dart` → `turnDotSpan` / `kTurnDotGap`.
  */
@@ -144,7 +146,7 @@ export function TurnDot() {
   return (
     <span
       aria-hidden
-      className="ml-[29px] inline-block h-[9px] w-[9px] rounded-full bg-red align-baseline"
+      className="ml-[27px] inline-block h-[9px] w-[9px] rounded-full bg-red align-baseline"
     />
   );
 }
@@ -180,8 +182,8 @@ function remainingTimeLabel(deadline: string | null | undefined): { text: string
   // (`check_turn_timeout`, bkz. docs/decisions/live-game.md).
   const text =
     hours > 0
-      ? `${hours} saat ${minutes} dakika kaldı (Teslim -2 puan)`
-      : `${minutes} dakika kaldı (Teslim -2 puan)`;
+      ? `${hours} saat ${minutes} dk sonra teslim (-2 puan)`
+      : `${minutes} dk sonra teslim (-2 puan)`;
   return { text, urgent: totalMinutes < 24 * 60 };
 }
 
@@ -431,11 +433,13 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
           }`}
         >
           {statusLabel(game, isMyTurn)}
-          {game.status === 'active' && (isMyTurn ? <TurnArrow /> : <TurnDot />)}
+          {game.status === 'active' && (isMyTurn ? <TurnTriangle /> : <TurnDot />)}
         </span>
         {remaining && (
           <span
-            className={`text-[8px] font-mono uppercase tracking-[0.5px] ${
+            /* mt-1.5: süre satırı durum etiketine YAPIŞMASIN (kullanıcı
+               isteği) — sarmalayıcının gap-0.5'iyle birlikte 8 px. */
+            className={`mt-1.5 text-[8px] font-mono uppercase tracking-[0.5px] ${
               remaining.urgent ? 'text-red' : 'text-muted'
             }`}
           >

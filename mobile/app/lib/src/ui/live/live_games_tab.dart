@@ -694,7 +694,9 @@ class _GameRow extends StatelessWidget {
                   text: trUpper(onlineStatusLabel(game, isMyTurn: isMyTurn)),
                   children: [
                     if (game.status == OnlineGameStatus.active)
-                      isMyTurn ? turnArrowSpan(_green) : turnDotSpan(_red),
+                      isMyTurn
+                          ? turnTriangleSpan(_green)
+                          : turnDotSpan(_red),
                   ],
                 ),
                 style: TextStyle(
@@ -706,6 +708,9 @@ class _GameRow extends StatelessWidget {
                   color: isMyTurn ? _green : _red,
                 ),
               ),
+              // 8 px — web `gap-0.5` + `mt-1.5`: süre satırı durum
+              // etiketine YAPIŞMASIN (kullanıcı isteği).
+              if (remaining != null) const SizedBox(height: 8),
               if (remaining != null)
                 Text(
                   trUpper(remaining.text),
@@ -724,34 +729,70 @@ class _GameRow extends StatelessWidget {
   }
 }
 
-/// Web `TurnArrow` (LiveGamesTab.tsx) — "SIRA SENDE!"nin yanındaki ok.
+/// Üçgenin ve noktanın yazıdan uzaklığı — web `TurnTriangle`/`TurnDot` ile
+/// ELLE senkron (`ml-[25px]` / `ml-[29px]`).
 ///
-/// ⚠ **Etiketten BÜYÜK olması bilinçli.** İlk sürümde ok etiketin dizesinin
-/// içindeydi (`'SIRA SENDE! >'`), puntosu birebir aynıydı — ama kullanıcı
-/// *"oku yazıyla aynı büyüklüğe getir"* dedi ve haklıydı: `>` Space
-/// Mono'da matematik hizasında oturan, harf boyuna ÇIKMAYAN bir glif.
-/// ÖLÇÜLDÜ (ekran görüntüsü piksel taraması, pixelRatio 3): 13 px'te büyük
-/// harflerin mürekkep yüksekliği 27 px, aynı puntodaki `>` yalnızca 17 px.
-/// Eşitleyen punto 13 × 27/17 ≈ 21.
+/// ⚠ **İkisi neden AYNI sayı değil?** Eşitlenen şey KUTU değil GÖRÜNEN
+/// (mürekkep) boşluk: iki işaret farklı harflerden sonra geliyor
+/// (`SIRA SENDE!` ↔ `SIRA RAKİPTE`) ve `!` ile `E`nin sağ yan boşlukları
+/// aynı değil. Fark ÖLÇÜMDEN geliyor, hesaptan değil — ekran görüntüsü
+/// taranıp iki mürekkep boşluğu eşitlenene kadar ayarlandı.
 ///
-/// İKİ ayar daha, ikisi de ölçümden çıktı:
-/// - `height: 13/21` — satır kutusu 21 değil 13 px'te kalsın, yoksa ok
-///   satırı büyütüp kartı gereksiz yere uzatır. Saran `Text`in stilinde de
-///   `height: 1` var; ikisi birlikte satırı 13 px'e kilitliyor.
-/// - **2,67 px aşağı kaydırma** — 21'e çıkarılan `>` taban çizgisine
-///   hizalıyken harflerin 8 piksel (pixelRatio 3) YUKARISINDA duruyordu.
-///   `TextSpan` dikey kaydırmayı desteklemediğinden `WidgetSpan` +
-///   `Transform.translate` gerekiyor; web'de karşılığı `top-[2.8px]`.
-/// Okun ve noktanın yazıdan uzaklığı — web `TurnArrow`/`TurnDot` ile ELLE
-/// senkron (`ml-[25px]` / `ml-[29px]`).
-///
-/// ⚠ **İkisi neden AYNI sayı değil?** Kullanıcının istediği şey KUTU değil
-/// GÖRÜNEN (mürekkep) boşluğun eşitliği. `>` glifinin solunda ~4 px'lik bir
-/// yan boşluk var, çizilmiş yuvarlağın ise hiç yok — aynı dolguyu verirsek
-/// nokta yazıya 4 px daha yakın DURUR. Fark ölçümden geldi, hesaptan değil:
-/// ekran görüntüsü taranıp iki mürekkep boşluğu eşitlenene kadar ayarlandı.
+/// Sayılar `>` glifi zamanında 25/29'du (o glifin solundaki ~4 px yan
+/// boşluğu telafi ediyordu); üçgene geçilince yan boşluk kalktı ve nokta
+/// 2,33 px fazla uzakta kaldı, 27'ye çekildi.
 const double kTurnMarkGap = 25;
-const double kTurnDotGap = 29;
+const double kTurnDotGap = 27;
+
+/// Web `TurnTriangle` — "SIRA SENDE!"nin yanındaki yeşil üçgen (oynat tuşu).
+///
+/// Öncesinde bir `>` glifiydi ve iki tur ayar istemişti (21 px'e büyütme +
+/// 2,67 px aşağı kaydırma), çünkü Space Mono'da `>` harf boyuna ÇIKMIYOR.
+/// Çizilmiş üçgen o iki ayarı birden gereksiz kılıyor — ölçüsü doğrudan
+/// veriliyor.
+///
+/// ⚠ **Glif DEĞİL, çizilmiş vektör:** `▶`/`►` Space Mono'da yok,
+/// kullanılsaydı tarayıcı ve Flutter ayrı yedek fontlara düşüp FARKLI
+/// üçgenler çizerdi. Geometri web ikiziyle ELLE senkron ama senkronu
+/// ZORLAYAN bir test var (`relation_icon_parity_test.dart`).
+///
+/// Ölçü büyük harflerin mürekkep yüksekliğinden: 13 px puntoda 9,0 px.
+WidgetSpan turnTriangleSpan(Color color) => WidgetSpan(
+      alignment: PlaceholderAlignment.baseline,
+      baseline: TextBaseline.alphabetic,
+      child: Padding(
+        padding: const EdgeInsets.only(left: kTurnMarkGap),
+        child: SizedBox(
+          key: const Key('turn-triangle'),
+          width: 8,
+          height: 9,
+          child: CustomPaint(painter: _TurnTrianglePainter(color)),
+        ),
+      ),
+    );
+
+class _TurnTrianglePainter extends CustomPainter {
+  const _TurnTrianglePainter(this.color);
+
+  final Color color;
+
+  /// Web `<path d="M0 0L8 4.5L0 9Z" />` — üç nokta, birebir.
+  Path ucgen() => Path()
+    ..moveTo(0, 0)
+    ..lineTo(8, 4.5)
+    ..lineTo(0, 9)
+    ..close();
+
+  @override
+  void paint(Canvas canvas, Size size) => canvas.drawPath(
+      ucgen(),
+      Paint()
+        ..color = color
+        ..isAntiAlias = true);
+
+  @override
+  bool shouldRepaint(_TurnTrianglePainter old) => old.color != color;
+}
 
 /// Web `TurnDot` — "SIRA RAKİPTE"nin sonundaki kırmızı yuvarlak;
 /// `turnArrowSpan`in simetriği (yeşil ok "git oyna", kırmızı nokta "bekle").

@@ -222,8 +222,8 @@ void main() {
     // 30 Ağustos 2026: geri sayarken fiil ("teslim sayılacak"/"silinecek")
     // artık YOK, yalnızca "… KALDI" — üç sayaç da aynı kalıpta. Fiil yalnız
     // süre DOLDUĞUNDA ("Bugün …") geri geliyor.
-    expect(find.textContaining('KALDI'), findsOneWidget);
-    expect(find.textContaining('TESLİM SAYILACAK'), findsNothing);
+    expect(find.textContaining('SONRA TESLİM (-2 PUAN)'), findsOneWidget);
+    expect(find.textContaining('KALDI'), findsNothing);
     // Kurulum formu varsayılanda GİZLİ (web creatingLocal=false).
     expect(find.text('OYUNCU SAYISI'), findsNothing);
 

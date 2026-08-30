@@ -1,5 +1,10 @@
-// İlişki ikonu "istek gönderildi" (kişi + kum saati) — web SVG'si ↔ portun
-// `CustomPainter`'ı.
+// ELLE ÇİZİLMİŞ vektörlerin paritesi — web SVG'si ↔ portun `Path`i.
+//
+// Bugün İKİ çift var:
+//   1. `PersonPendingIcon` (kişi + kum saati) — `RelationIcons.tsx` ↔
+//      `relation_icons.dart`
+//   2. `TurnTriangle` (oynat üçgeni) — `LiveGamesTab.tsx` ↔
+//      `live_games_tab.dart`
 //
 // NEDEN VAR (30 Ağustos 2026): `RelationIcons.tsx`in dört ikonundan üçü
 // gerçek Material glyph'i ve port onları `Icons.*` ile çiziyor — font gömülü
@@ -13,6 +18,10 @@
 // kanonik bir çizim listesine indirger. Web'in `H/V/Z` gibi kısayolları ile
 // portun `lineTo/close`u aynı dile çevrilir, yani "aynı şekli farklı
 // komutlarla yazmak" testi düşürmez; farklı ŞEKİL düşürür.
+//
+// İkinci çift aynı gün, aynı sebeple doğdu: `▶`/`►` de Space Mono'da YOK,
+// yani oynat üçgeni de çizilmek zorundaydı. Üçüncü bir çift eklenirse
+// buraya bir `test` daha ekle — ayrıştırıcıyı KOPYALAMA.
 //
 // KAPSAM DIŞI: renk (çağırandan geliyor, `color_tokens_test`in işi) ve boy.
 import 'package:flutter_test/flutter_test.dart';
@@ -54,5 +63,25 @@ void main() {
     expect(beklenen, hasLength(25),
         reason: 'web tarafı 25 çizim vermeliydi — ikon değişti mi?');
     expect(gercek, beklenen, reason: 'kişi+kum saati geometrisi ayrışmış');
+  });
+
+  test('TurnTriangle web SVG\'siyle birebir aynı geometriyi çiziyor', () {
+    final web = _webPaths(
+        readRepoFile('src/components/LiveGamesTab.tsx'), 'TurnTriangle');
+    final port =
+        readRepoFile('mobile/app/lib/src/ui/live/live_games_tab.dart');
+
+    expect(web, hasLength(1),
+        reason: 'TurnTriangle tek bir <path> taşımalı');
+
+    final beklenen = parseSvgPath(web.single);
+    final gercek = dartPath(pick(
+        port, RegExp(r'Path ucgen\(\) =(.*?);\n', dotAll: true),
+        'ucgen gövdesi'));
+
+    // Üç kenar (iki `lineTo` + kapanış). Boşa geçme koruması.
+    expect(beklenen, hasLength(3),
+        reason: 'üçgen 3 kenar vermeliydi — şekil değişti mi?');
+    expect(gercek, beklenen, reason: 'oynat üçgeninin geometrisi ayrışmış');
   });
 }

@@ -1938,10 +1938,10 @@ class _SavedGameRow extends StatelessWidget {
     final minutes = totalMinutes % 60;
     // ⚠ İki dal AYRI: `willSurrender` false iken -2 diye bir ceza YOK,
     // o kayıt yalnızca siliniyor (gerekçe web ikizinde).
-    final sonuc = willSurrender ? 'Teslim -2 puan' : 'Silinecek';
+    final sonuc = willSurrender ? 'teslim (-2 puan)' : 'silinecek';
     final text = days > 0
-        ? '$days gün $hours saat kaldı ($sonuc)'
-        : '$hours saat $minutes dakika kaldı ($sonuc)';
+        ? '$days gün $hours saat sonra $sonuc'
+        : '$hours saat $minutes dk sonra $sonuc';
     return (text: text, urgent: days < 1);
   }
 
@@ -1997,7 +1997,8 @@ class _SavedGameRow extends StatelessWidget {
                 // Canlı oyun ama ikisi de "devam eden oyun" satırı.
                 Text.rich(
                   TextSpan(
-                      text: 'SIRA SENDE!', children: [turnArrowSpan(kGreen)]),
+                      text: 'SIRA SENDE!',
+                      children: [turnTriangleSpan(kGreen)]),
                   style: TextStyle(
                     fontFamily: 'SpaceMono',
                     fontSize: 13,
@@ -2007,7 +2008,8 @@ class _SavedGameRow extends StatelessWidget {
                     color: kGreen,
                   ),
                 ),
-                const SizedBox(height: 2),
+                // 8 px — web `gap-0.5` + `mt-1.5` (kullanıcı isteği).
+                const SizedBox(height: 8),
                 Text(
                   // trUpper ŞART — native toUpperCase 'dakika'yı noktasız I
                   // ile 'DAKIKA' yapar (test yakaladı; web'de CSS uppercase
