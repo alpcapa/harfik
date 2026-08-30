@@ -192,8 +192,28 @@ güncellendi) + trigger migration'ı
 bastırma fonksiyon gövdesinde, client rollerine grant yok. Deploy anından
 itibaren SAHADAKİ HER İSTEMCİNİN (1.0.1/1.0.2 dahil) hamlesi bildirim
 üretir; dokunuşun tahtaya götürmesi 1.0.3'ü bekler (Faz 3). Cihaz kontrol
-listesi: `mobile/docs/testing-bildirimler.md` §3d. **Gerçek kanıt sahadan
-gelecek** — bu ortamdan fonksiyon tetiklenemiyor/oyun oynanamıyor.
+listesi: `mobile/docs/testing-bildirimler.md` §3d.
+
+✅ **SAHA KANITI GELDİ (30 Ağustos 2026, aynı gün).** Kullanıcı bildirdi:
+*"bana ilk sıra sende bildirimi geldi, tıkladım app'e gitti"* — yani
+zincirin tamamı (trigger → pg_net → Edge Function → FCM → cihaz) uçtan uca
+çalışıyor. Sunucudan doğrulandı: `function_edge_logs`'ta ilk üç saatte
+**dokuz çağrı, hepsi 200** (273–2743 ms). Çağrılar dört ayrı testçinin
+(Ironman · Fb1907 · Minka · Zesiner) yedi ayrı oyununa dağılıyor; aynı
+hedefe aynı oyunda 10 dk içinde İKİNCİ çağrı YOK, yani bastırma da sahada
+çalışıyor.
+
+⚠ **Ölçüm bir ürün sorusu doğurdu (henüz karar YOK):** bastırma
+`online_game_id` başına — 20:02:54 ve 20:03:23'te aynı hedefe 29 saniye
+arayla iki çağrı gitti, çünkü İKİ FARKLI oyunda sırası geldi. Tasarım gereği
+doğru (ikisi de gerçek bir "sıra sende"), ama beş eşzamanlı oyunu olan bir
+kullanıcı bir dakikada beş bildirim alabilir. Şikayet gelirse çare kişi
+başına bir pencere (ör. "aynı kullanıcıya 2 dk içinde en çok bir bildirim,
+gövdede 'N oyunda sıran geldi'") — bugünkü tek satırlık oyun-içi bastırmadan
+farklı bir mekanizma olur.
+
+**Dokunuşun tahtaya götürmesi HÂLÂ 1.0.3'ü bekliyor** — kullanıcının
+"app'e gitti" gözlemi bugünkü doğru davranış, hata değil (§3c).
 
 **Tetikleyici istemci DEĞİL, sunucu:** `online_game_states.current`
 ilerleyince koşan trigger (`_notify_your_turn`) — `submit_move`u (insan VE
