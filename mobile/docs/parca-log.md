@@ -299,6 +299,15 @@
      - **Negatif eş kuruldu:** sıfırlama satırı kapatılınca test düşüyor.
      - **Doğrulama:** `dart analyze` temiz, **618 test** yeşil.
 
+     - ✅ **CİHAZDA DOĞRULANDI (30 Ağustos 2026, 1.0.2 / `d3d4702`):** uçak
+       modunda avatar baş harflere düştü (BEKLENEN — görsel indirilemez),
+       uçak modu kapatılınca **uygulama yeniden başlatılmadan kendiliğinden
+       geri geldi.** Düzeltme 29 Ağustos'ta yazılmıştı ama toparlanma yolu o
+       güne kadar cihazda hiç ölçülmemişti; bu tur onu kapattı.
+     - ⚠ **"Uçak modunda avatar baş harf" bir HATA DEĞİL** — aynı gün bu
+       soru tekrar soruldu. Görsel ağdan geliyor; çevrimdışında alternatifi
+       boş bir daire olurdu. Diske önbellekleme konuşuldu ve YAPILMADI:
+       bağımlılık/depolama maliyeti var, kazanç kozmetik.
    - ✅ **Parça 164 — bağlantısızken hesap adı e-postaya düşüyordu (29 Ağustos
      2026, cihaz testi 6.3'te kullanıcı uçak modunda bildirdi):** *"T2 yerine
      KE yazıyor."*
