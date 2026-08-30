@@ -1,4 +1,6 @@
-# Cihaz Testi — Push Bildirimleri ve Derin Bağlantılar (Parça 158)
+# Cihaz Testi — Push Bildirimleri, Derin Bağlantılar ve Güncelleme
+
+> (Parça 158; 30 Ağustos 2026'da Parça 171 ile "Güncelleme" bölümü eklendi.)
 
 > `mobile/TESTING.md`'den AYRI bir dosya, çünkü buradaki maddelerin
 > ÇOĞU **Play kanalından kurulmuş, imzalı bir derleme** istiyor — CI'nın
@@ -15,6 +17,7 @@
 | `kelimeki://…` derin bağlantıları | ✅ | ✅ |
 | `https://kelimeki.com/…` App Links | ❌ tarayıcıda açılır | ✅ |
 | Kayıt onayı → doğrudan girişli kalma | ❌ | ✅ |
+| **Play In-App Update (açılışta güncelleme)** | ❌ Play tanımaz | ✅ |
 
 ⚠ `.apk`'da App Links'in tarayıcıda açılması **bir hata değil**:
 `assetlinks.json` Play'in imza parmak izini taşıyor, debug derlemesi başka
@@ -240,3 +243,35 @@ göründüğü.
       tamamı normal çalışmalı — push isteğe bağlı bir katman.
 - [ ] **6.3 Uçak modunda** açılış: push kurulumu takılmamalı, Setup normal
       sürede gelmeli.
+
+## 7. Güncelleme kendiliğinden geliyor mu (Parça 171)
+
+Kullanıcı kararı (30 Ağustos 2026): *"Kimde hangi versiyon olursa olsun,
+app'i açtığında daha yeni bir sürüm varsa uyarsın ve yapsın."* Mekanizma
+Play In-App Update (Immediate akışı); sunucuda sürüm satırı tutulmuyor.
+
+⚠ **CI'ın debug `.apk`'sında BU BÖLÜMÜ HİÇ DENEME.** Yan yüklenmiş pakette
+Play uygulamayı tanımaz ve kontrol sessizce "bilinmiyor" döner — orada
+"çalışmıyor" görmek bir hata DEĞİL, beklenen davranış. Bölümün tamamı
+kapalı test kanalından kurulmuş derleme ister.
+
+**Kurulum:** mağazada DAHA YENİ bir sürüm yayınlıyken cihazdaki ESKİ sürümü
+aç (yani sürüm N kuruluyken N+1 kanala düşmüş olmalı).
+
+- [ ] **Güncelleme varken:** uygulama açılır açılmaz Play'in tam ekran
+      güncelleme penceresi KENDİLİĞİNDEN açılmalı; güncelleme uygulamadan
+      ÇIKMADAN tamamlanmalı ve uygulama yeni sürümle geri gelmeli.
+      Doğrula: Setup'ın teşhis satırındaki `Derleme <sha>` değişmiş olmalı.
+- [ ] **Güncelleme yokken:** hiçbir pencere açılmamalı, uygulama normal
+      açılmalı.
+- [ ] **Uçak modunda:** uygulama ÇÖKMEMELİ, akış sessizce atlanmalı. Sonra
+      ağı aç ve uygulamayı öne al → kontrol TEKRAR denenmeli (pencere
+      açılmalı). ⚠ Bu dal özellikle önemli: "soramadım"ı "güncel" saymak,
+      açılışta ağı olmayan kullanıcıyı sonsuza dek eski sürümde bırakırdı.
+- [ ] **Vazgeçme:** pencerede geri/iptal → uygulama normal açılmalı ve öne
+      her dönüşte pencere TEKRAR AÇILMAMALI. Bir sonraki AÇILIŞTA yeniden
+      açılması doğru davranış.
+- [ ] **Acil fren yolu (yalnızca eşik yükseltilmişse):** "Güncelleme
+      Gerekli" ekranındaki buton önce uygulama içindeki akışı denemeli;
+      Play cevap vermezse mağazayı dışarıda açmalı — hiçbir koşulda
+      butonsuz/çıkışsız bir ekran kalmamalı.

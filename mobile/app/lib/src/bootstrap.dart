@@ -22,6 +22,7 @@ import 'data/push_gateways.dart';
 import 'data/push_init.dart';
 import 'data/push_repo.dart';
 import 'data/stats_api.dart';
+import 'data/store_update.dart';
 import 'data/meaning_store.dart';
 import 'data/supabase_client.dart';
 import 'storage/app_storage.dart';
@@ -97,6 +98,12 @@ class AppServices {
   /// Push izni akışının okuduğu sistem durumu. `push` ile birlikte gelir.
   final PushMessaging? pushMessaging;
 
+  /// Play In-App Update dikişi — açılışta "daha yeni sürüm var mı" sorusu.
+  /// Widget testleri null geçer (kontrol hiç koşmaz); gerçek uygulamada
+  /// her zaman dolu, çünkü platform kararı burada DEĞİL uçta veriliyor:
+  /// Android dışında uç zaten `bilinmiyor` döner (bkz. `store_update.dart`).
+  final StoreUpdateGateway? storeUpdate;
+
   /// "Görüş Bildir" — GamesRepo'nun aksine Supabase YOKKEN de dolu
   /// (gateway'i null olur, mesajlar kuyrukta bekler — web feedbackSync'in
   /// "Supabase hiç yapılandırılmamışken de kuyrukla" davranışı); yalnızca
@@ -122,6 +129,7 @@ class AppServices {
     this.chat,
     this.push,
     this.pushMessaging,
+    this.storeUpdate,
   });
 }
 
@@ -172,6 +180,7 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
     // biri token'ı üretiyor, öteki saklıyor.
     push: pushRepo,
     pushMessaging: firebaseHazir ? FirebasePushMessaging() : null,
+    storeUpdate: const PlayStoreUpdateGateway(),
     cloudSaves:
         supabase != null
             ? CloudSaveRepo(SupabaseCloudSaveGateway(supabase),

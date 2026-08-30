@@ -402,6 +402,10 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       Yazı stili solundaki "Hamleler" ile birebir aynı olmalı (punto/
       renk/kalınlık) ve soru-işareti ikonu boş kare DEĞİL gerçek bir
       daire+soru işareti olarak çizilmeli.
+- [ ] **Güncelleme kendiliğinden geliyor mu (Parça 171)?** → maddeler
+      `mobile/docs/testing-bildirimler.md` → bölüm 7'de: Play In-App
+      Update YALNIZCA Play'den kurulmuş pakette çalışır, yani buradaki
+      (her derlemede koşulan) listeye ait değil.
 - [ ] **Şerit KENARLARA yaslı mı (Parça 170)?** "Hamleler · Mesajlaşma"
       şeridin SOL ucunda, "Nasıl Oynanır?" SAĞ ucunda durmalı — ikisi
       ortada kümelenmiş görünüyorsa `Wrap` genişliği doldurmuyor demektir.

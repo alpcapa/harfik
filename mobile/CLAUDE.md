@@ -487,7 +487,7 @@ Bütçeyi `npm run check-doc-size` ölçüyor, sınıra gelince yeni cilt açıl
 | **Web ↔ Uygulama Arasındaki Kabul Edilmiş Farklar — Parça günlüğü** (DÖRT cilt, yukarıdaki tabloya bak) | `mobile/docs/parca-log.md` + `-110-138` + `-49-109` + `-1-48` |
 | FAZ A1 — cihaz testi tur durumu | `mobile/docs/cihaz-testi-log.md` |
 | Cihaz testi — Arkadaşlar + Canlı oyun bölümleri (iki gerçek oturum ister) | `mobile/docs/testing-arkadaslar-canli.md` |
-| Cihaz testi — push bildirimleri + derin bağlantılar (çoğu Play imzalı derleme ister) | `mobile/docs/testing-bildirimler.md` |
+| Cihaz testi — push bildirimleri + derin bağlantılar + **güncelleme** (çoğu Play imzalı derleme ister) | `mobile/docs/testing-bildirimler.md` |
 
 **Yeni bir "Parça N" notu eklerken:** parça numarasını bir öncekinin devamı
 olarak ver ve **AKTİF cilde** (`mobile/docs/parca-log.md`) yaz — dondurulmuş
@@ -576,6 +576,12 @@ mobile/
       data/push_gateways.dart # yukarıdaki iki dikişin GERÇEK uçları
                              # (firebase_messaging ↔ Supabase upsert) +
                              # izinDurumu(AuthorizationStatus) eşlemesi
+      data/store_update.dart # Play In-App Update — "açılışta yeni sürüm
+                             # varsa uyar ve yaptır". Sunucuda sürüm satırı
+                             # TUTMAZ (Play'in kendisi bilir). YALNIZCA
+                             # Android VE yalnızca Play'den kurulmuş pakette
+                             # çalışır — yan yüklenmiş .apk'da sessizce
+                             # `bilinmiyor` döner (bkz. "Güncelleme" bölümü)
       data/push_init.dart    # Firebase.initializeApp sarmalayıcısı — web ve
                              # Android/iOS DIŞI platformlarda `false` döner
                              # (GitHub Pages web derlemesi açılışta ölmesin)
@@ -793,62 +799,93 @@ bir `::after` koyar. Yani bu kuralın iki yakası aynı SONUCU farklı yolla
 Ayrıntı ve ölçümler: `docs/decisions/touch-ux-bugs.md` → "İkinci tur",
 `mobile/docs/parca-log.md` → Parça 147.
 
-## Zorunlu Güncelleme — sıra yanlışsa testçiyi kilitlersin
+## Güncelleme — Play SORAR, biz satır tutmayız (30 Ağustos 2026)
 
-29 Ağustos 2026, kullanıcı fark etti: *"keşke bu versiyona force update
-koysaydık."* Mekanizma zaten vardı ama **kullanılamaz durumdaydı** ve sebebi
-iki eksikti; ikisi de o gün kapatıldı.
+Kullanıcı kararı, sözleri birebir: *"Kimde hangi versiyon olursa olsun,
+app'i açtığında daha yeni bir sürüm varsa uyarsın ve yapsın. Bu kadar
+basit."*
 
-**1. Sürüm numarası hiç artmamıştı.** Kapı (`version_gate.dart`)
-`app_config.mobile_min_supported_version` ile `env.dart`'ın `appVersion`'ını
-SEMVER olarak karşılaştırıyor — **versionCode'a bakmıyor**. Bugüne kadarki her
-derleme `1.0.0` olduğundan kapının gözünde 405 ile 424 AYNI sürüm; eşiği
-yükseltmek hiçbir şey yapmazdı. `1.0.1`'e çıkarıldı.
+**Öncesinde öyle değildi ve ÖLÇÜLDÜ ki çalışmıyordu.** Tek mekanizma
+`app_config.mobile_min_supported_version` idi: bir insanın Supabase'de bir
+satırı elle yükseltmesini bekleyen, ikili (ya tamamen engelle ya hiçbir şey
+yapma) bir kapı. 1.0.1 iki gün yayında kaldıktan sonra son 14 günün
+`game_starts` dökümü şuydu:
 
-**2. Ekranın çıkışı yoktu.** `UpdateRequiredScreen` yalnızca metindi ("lütfen
-güncelleyin") — eşiği yükselttiğimiz an kullanıcı yolu gösterilmeyen bir
-ekranda kilitlenirdi. Play butonu eklendi (`url_launcher`; `market://`
-doğrudan Play'i açar, yoksa https'e düşer). `update_required_test.dart`
-butonun varlığını ve açılamadığında ÇÖKMEDİĞİNİ kilitliyor.
+| platform | app_version | adet |
+|---|---|---|
+| android | **1.0.0** | **93** |
+| android | 1.0.1 | 2 |
 
-**KULLANIM SIRASI — bu sıra bozulursa testçiler uygulamaya giremez:**
+Yani neredeyse kimse güncellememişti, satırı yükselten de olmamıştı.
 
-1. `appVersion` + `pubspec` sürümünü artır (ikisi birlikte —
-   `app_version_parity_test` ayrışmayı yakalar)
-2. Derle, mağazaya yükle
-3. **Yeni sürümün gerçekten İNDİRİLEBİLİR olduğunu doğrula** (Play'de
-   yayınlanması ve kanala dağıtılması zaman alır)
-4. ANCAK BUNDAN SONRA `app_config.mobile_min_supported_version`'ı yükselt
+### Bugünkü model — iki katman, karıştırma
+
+| Katman | Ne zaman | Nerede |
+|---|---|---|
+| **Play In-App Update** (GÜNLÜK yol) | her açılışta otomatik | `data/store_update.dart` + `_HomeGate` |
+| `mobile_min_supported_version` (ACİL FREN) | yalnız sunucu sözleşmesi kırılınca | `config/version_gate.dart` |
+
+**Günlük yolda kimsenin bir şey hatırlaması gerekmiyor:** güncelleme olup
+olmadığını Play'in kendisi biliyor. Uygulama açılışta soruyor, varsa
+**Immediate** akışını başlatıyor (tam ekran, Play çiziyor, güncelleme
+uygulamanın İÇİNDE tamamlanıyor). Sunucuda tutulan bir sürüm numarası YOK.
+
+⚠ **Eşiği artık RUTİN olarak yükseltme.** Her sürümde `app_config`'e
+dokunmak bu modelde bir gerileme olur — o satır yalnızca "eski istemciyi bir
+sunucu değişikliği kırdı" durumunda çekilir.
+
+### ÜÇ SINIR — üçü de yapısal, gizlenmesin
+
+1. **Yalnızca ANDROID.** iOS'ta karşılığı olan bir API yok. iOS günü gelince
+   ayrı bir yol gerekir (App Store lookup + mağazaya yollama); bugün
+   YAZILMADI, çünkü iOS yayında değil ve yazılsa test edilemezdi.
+2. **Yalnızca Play'den KURULMUŞ pakette çalışır.** CI'ın debug `.apk`'sı yan
+   yüklendiğinde Play uygulamayı tanımaz ve kontrol sessizce `bilinmiyor`
+   döner. **Bu özelliğin cihaz doğrulaması ancak kapalı test kanalından
+   kurulan derlemede yapılabilir** — bunu bilmeyen `.apk`da "çalışmıyor"
+   diye saatlerce arar.
+3. **Kod hangi sürümdeyse o sürümden İTİBAREN çalışır.** In-App Update
+   1.0.2'nin içinde; sahadaki 1.0.0 kitlesi onu ancak 1.0.2'ye geçtikten
+   sonra görür. Bu, mekanizmanın 1.0.0'da olmamasının bir seferlik faturası.
+
+### 1.0.0 kitlesini bir kereye mahsus süpürmek
+
+1.0.2 yayınlanıp **indirilebilir olduğu doğrulandıktan SONRA** eşik 1.0.2'ye
+çekilir. O anda kim ne görür:
+
+| Sahadaki sürüm | Gördüğü |
+|---|---|
+| 1.0.0 | "Güncelleme Gerekli" ekranı — **butonsuz**, Play'i elle açar |
+| 1.0.1 | Aynı ekran + **buton** (buton 1.0.1'de geldi) → tek dokunuş |
+| 1.0.2+ | Buraya hiç düşmez; In-App Update zaten güncellemiştir |
+
+⚠ **1.0.0'ın butonsuz ekranı geriye dönük DÜZELTİLEMEZ** — yayınlanmış bir
+derlemenin kodu değiştirilemez. Ama ekran yine de *uyarıyor*
+(*"Kelimeki'nin bu sürümü artık desteklenmiyor…"*), yani kimseye elle mesaj
+atmak gerekmiyor; o kullanıcı Play'i kendisi açar. **Bu son kez** — 1.0.2'den
+sonra eşik bir daha yükseltilmeyecek.
+
+### Sürüm turunda hâlâ geçerli olan tek sıra kuralı
+
+1. `appVersion` (`config/env.dart`) + `pubspec` sürümünü **birlikte** artır
+   (`app_version_parity_test` ayrışmayı yakalar).
+2. Derle, mağazaya yükle.
+3. **Yeni sürümün gerçekten İNDİRİLEBİLİR olduğunu doğrula** — Play'de
+   yayınlanması ile testçinin telefonuna inmesi AYNI ŞEY DEĞİL (bkz.
+   `mobile/docs/build-and-distribution-log.md` → "Kapalı test").
+4. Acil fren gerekiyorsa ANCAK BUNDAN SONRA eşiği yükselt.
 
 ⚠ Kapı **fail-open** (ağ hatasında kilitlemez), yani asıl risk ağ değil
 SIRA: 4. adımı 3'ten önce yapmak, herkesi indirilemeyen bir güncellemeye
 yönlendirmek demek.
 
-⚠ **Eşiği yükseltmek geri alınabilir** (satırı düşür), ama o an uygulamayı
-açmış olan kullanıcı ekranı görmüş olur. Emin olmadan yükseltme.
+### Neden `UpdateRequiredScreen`'in butonu da In-App Update'e bağlı
 
-### 1.0.1 sürümünde eşik BİLEREK yükseltilmedi (29 Ağustos 2026)
-
-Mekanizma aynı gün kullanılabilir hâle geldi, ama `app_config`'teki eşik
-`0.0.0`'da BIRAKILDI — yani 1.0.1 kimseyi zorunlu güncellemeye sokmuyor.
-Bu bir unutma değil, kullanıcı kararı; gerekçesi mekanizmanın kendi
-sınırında:
-
-**Zorunlu güncelleme ekranını ESKİ sürüm çizer.** Eşiği bugün yükseltseydik
-onu görecek olan 1.0.0 kullanıcılarıydı ve o derlemedeki ekranda **buton
-yok** (buton 1.0.1'in içinde). Yayınlanmış bir derlemenin kodu geriye dönük
-değiştirilemediğinden, kapıyı ilk kez açtığın sürüm her zaman *"çıkışı
-olmayan ekranı gören"* sürüm olur. Yani mağazaya elle gitmek gerekirdi ki
-bu zaten kullanıcının bugün yaptığı şey (*"İnsanlara ben her zaman yaptığım
-gibi güncelleme var derim tek tek"*) — kapı hiçbir şey kazandırmadan
-sürtünme eklerdi.
-
-**Genel kural, yalnızca bu sürüm için değil:** zorunlu güncelleme
-mekanizmasının bir sürümü *kaçırması* yapısaldır. Eşik ancak **butonu
-taşıyan** bir sürüm sahadayken anlam kazanır — pratikte "N'yi yayınla,
-N+1'i yayınlarken eşiği N'e çek". 1.0.1 burada N; ilk gerçek kullanım
-1.0.2 ile mümkün olacak.
-
+Kapı fırladıysa güncellemek EN ÇOK orada gerekiyor. Buton önce uygulama
+içindeki akışı deniyor, olmazsa mağazayı dışarıda açıyor. **Yedek yolu
+SİLME:** o ekranı görenler tanım gereği eski sürümde ve In-App Update yan
+yüklenmiş pakette hiç çalışmıyor — yedeksiz kalırsa 1.0.0'ın hatası aynen
+tekrarlanır (çıkışsız ekran).
 
 ## Sistem Yazı Boyutu — tavan VAR, ama tavan çözüm DEĞİL
 
@@ -1163,6 +1200,11 @@ silinip kendi tarihli parça notuna taşınır.
     **`firebase_analytics`** de KGP uyguluyor. Derleme yine geçti (`.aab`
     üretildi ve imzası doğrulandı), ama borç büyüdü — Flutter yükseltmesi
     artık üç değil BEŞ eklentinin changelog'una bakmayı gerektiriyor.
+  - ⚠ **30 Ağustos 2026'da `in_app_update` eklendi (Parça 171) — ALTINCI
+    OLUP OLMADIĞI HENÜZ BİLİNMİYOR.** Bu ortamda Android SDK yok, yani
+    `flutter build apk` koşulamadı; uyarı listesi ancak CI'ın Android işinin
+    log'unda görülür. **Bir sonraki CI koşusunda o log'a bak** ve liste
+    altıya çıktıysa bu satırı güncelle.
 - ~~Bağlantı durumu göstergesi (`useOnlineStatus` portu)~~ — **YAPILDI**
   (14 Ağustos 2026): karar mantığı Parça 96'da (`util/online_status.dart` +
   `connectivity_plus`), Board alt şeridindeki görsel "Çevrimdışı" rozeti

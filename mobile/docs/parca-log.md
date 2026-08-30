@@ -20,6 +20,68 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 171 — güncelleme artık Play'in işi: In-App Update
+     (30 Ağustos 2026, kullanıcı kararı; YENİ dosya
+     `data/store_update.dart`):** *"Kimde hangi versiyon olursa olsun,
+     app'i açtığında daha yeni bir sürüm varsa uyarsın ve yapsın. Bu kadar
+     basit."*
+     - **Eski mekanizmanın çalışmadığı ÖLÇÜLDÜ, tartışılmadı.** Tek yol
+       `app_config.mobile_min_supported_version` idi: bir insanın elle
+       yükseltmesini bekleyen ikili bir kapı. 1.0.1 iki gün yayında
+       kaldıktan sonra son 14 günün `game_starts` dökümü **android 1.0.0 =
+       93, 1.0.1 = 2** idi; canlıdaki eşik ise 5 Ağustos'tan beri `0.0.0`,
+       yani HİÇ yükseltilmemişti. Mekanizma vardı ama kimseyi
+       güncellemiyordu.
+     - **Çözüm sunucuya bir alan daha eklemek DEĞİL, alanı akıştan
+       çıkarmak oldu:** Play In-App Update'te güncelleme olup olmadığını
+       Play'in kendisi biliyor. `in_app_update` 5.0.0 + Immediate akışı;
+       kontrol `_HomeGate`te (push hizalamasıyla aynı kanca: açılış +
+       `resumed`). `mobile_min_supported_version` silinmedi ama artık
+       yalnızca ACİL FREN.
+     - **API hafızadan değil KAYNAKTAN okundu** ve bir tuzak çıktı:
+       `performImmediateUpdate` yalnızca `USER_DENIED_UPDATE` ve
+       `IN_APP_UPDATE_FAILED`'i sonuca çeviriyor, **bilinmeyen
+       `PlatformException`'ları YENİDEN FIRLATIYOR** — sarmalayıcıda
+       try/catch şart, yoksa bir güncelleme kontrolü uygulamanın açılışını
+       düşürebilirdi (`push_init.dart`'ın aynı ilkesi).
+     - **`bilinmiyor` ≠ `gerekYok` ve bu ayrım özelliğin kalbi:** ağ
+       yokken/Play cevap vermezken "güncel" saymak, açılışta ağı olmayan
+       kullanıcıyı sonsuza dek eski sürümde bırakırdı — yani tam da 93
+       kişiyle yaşanan hatanın aynısı. Soru kapanmazsa öne dönüşte TEKRAR
+       soruluyor. Kullanıcı akışı reddederse soru KAPANIR (her öne dönüşte
+       tam ekran pencere açmak düşmanca olurdu); bir sonraki AÇILIŞTA
+       yeniden sorulur.
+     - **`UpdateRequiredScreen`'in butonu da bağlandı** — kapı fırladıysa
+       güncellemek en çok orada gerekiyor. Mağaza yedeği KORUNDU: o ekranı
+       görenler tanım gereği eski sürümde ve In-App Update yan yüklenmiş
+       pakette hiç çalışmıyor; yedeksiz kalsa 1.0.0'ın "çıkışsız ekran"
+       hatası aynen tekrarlanırdı.
+     - **ÜÇ SINIR, üçü de yapısal:** yalnız Android (iOS'ta karşılığı olan
+       API yok) · yalnız Play'den KURULMUŞ pakette (yan yüklenen `.apk`da
+       sessizce `bilinmiyor`) · ve kod 1.0.2'nin içinde olduğundan sahadaki
+       1.0.0 kitlesi onu ancak 1.0.2'ye geçtikten SONRA görür. Sonuncusu bir
+       seferlik: 1.0.2 indirilebilir olduğu doğrulandıktan sonra eşik bir
+       kez 1.0.2'ye çekilip o kitle süpürülecek, sonra bir daha
+       yükseltilmeyecek.
+     - **Regresyon: 11 test** (`test/store_update_test.dart`) — karar
+       tablosunun dört dalı, `UpdateRequiredScreen`in üç dalı ve
+       **KABLOLAMA**: kancanın gerçekten açılışta koştuğu, kapanmış sorunun
+       öne dönüşte tekrar SORULMADIĞI, kapanmamış sorunun tekrar
+       SORULDUĞU. Kablolama testi bilinçli: bu projede "her açılışta
+       koşuyor" sanılan bir çağrının aslında tek bir sekmede olduğu bir kez
+       yaşandı (Parça 159).
+     - **İKİ negatif eş kuruldu:** (a) açılış kancası silinince kablolama
+       testleri düşüyor; (b) `bilinmiyor` "kapandı" sayılınca tekrar-deneme
+       testi düşüyor.
+     - **Doğrulama:** `dart analyze` temiz · **633 widget testi** yeşil
+       (622 → 633) · `flutter build web --release` GEÇTİ (bu projede web
+       derlemesinin sessizce kırılması bilinen bir sınıf; `in_app_update`
+       Android eklentisi olduğu için özellikle bakıldı).
+     - ⚠ **Doğrulanamayan tek şey `.apk`/`.aab` derlemesi** — bu ortamda
+       Android SDK yok. Yeni eklentinin KGP uyarı listesini altıya çıkarıp
+       çıkarmadığı da ancak CI'ın Android log'unda görülür (o notu
+       `mobile/CLAUDE.md`'deki KGP maddesine düştüm).
+
    - ✅ **Parça 170 — alt şerit Android'de ortaya kümeleniyordu: `Wrap`
      genişliği DOLDURMUYOR (30 Ağustos 2026, kullanıcı cihazda bildirdi):**
      *"Hamleler, Mesajlaşma satırı Android'de ortaya kümelenmiş, iPhone'da

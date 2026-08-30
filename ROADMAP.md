@@ -78,9 +78,16 @@ PR açılmıyor). Kayıtları taşındı, burada yalnızca paketin envanteri kal
 | 4 | Yaş/cinsiyet satırı geri geldi (#370'in revert'ü) | ✅ istenen özellik | Parça 166 |
 | 5 | `drainRealIo` flake'i: üç kopya tek kaynağa, tek `pump()` → dilimli | ✖ yalnız CI | Parça 168 |
 | 6 | Doküman borcu: bayat "bekleyen deploy" uyarısı silindi + Play kapalı test notu | ✖ | Parça 168 · `mobile/docs/build-and-distribution-log.md` |
+| 7 | **Play In-App Update** — açılışta yeni sürüm varsa uyar ve yaptır | ✅ **bundan sonraki HER sürümü etkiler** | Parça 171 · `mobile/CLAUDE.md` → "Güncelleme" |
 
 **Üçü kapalı testten gelen gerçek şikayet** (1, 3 ve 4'ün isteği) — paketin
 bekletilmesinin bedeli doğrudan bu üç kişinin beklemesi.
+
+⚠ **7. madde bu paketi özel kılıyor:** In-App Update kodu 1.0.2'nin İÇİNDE,
+yani sahadaki 1.0.0 kitlesi (ölçüldü: 93'e 2) onu ancak 1.0.2'ye geçtikten
+sonra görür. 1.0.2 yayınlanıp **indirilebilir olduğu doğrulandıktan sonra**
+eşik bir KEZ 1.0.2'ye çekilip o kitle süpürülür; ondan sonra eşik bir daha
+yükseltilmez. Ayrıntı: `mobile/CLAUDE.md` → "Güncelleme — Play SORAR".
 
 **Sunucuda yapılacak iş YOK:** `get_profile_age_gender` canlıda ve
 migration dosyası `main`'de duruyor (29 Ağustos'ta `pg_proc`'tan doğrulandı:

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../bootstrap.dart';
 import '../config/version_gate.dart';
 import '../data/error_reporter.dart';
+import '../data/store_update.dart';
 import '../storage/app_storage.dart';
 import 'auth/reset_password_modal.dart';
 import 'intro/intro_screen.dart';
@@ -130,7 +131,7 @@ class KelimekiApp extends StatelessWidget {
         ),
       ),
       home: services.versionGate == VersionGateStatus.updateRequired
-          ? const UpdateRequiredScreen()
+          ? UpdateRequiredScreen(storeUpdate: services.storeUpdate)
           : _HomeGate(services: services),
     );
   }
@@ -197,9 +198,38 @@ class _HomeGateState extends State<_HomeGate> with WidgetsBindingObserver {
     ));
   }
 
+  /// Bu açılışta "daha yeni sürüm var mı" sorusu bir SONUCA vardı mı.
+  /// `false` kalırsa (ağ yoktu, Play cevap vermedi) öne dönüşte tekrar
+  /// sorulur — bir kez susup bir daha hiç sormamak, tam da bu özelliğin
+  /// çözdüğü hatanın aynısı olurdu.
+  bool _guncellemeSorusuKapandi = false;
+  bool _guncellemeSorusuSuruyor = false;
+
+  /// Play'e sorar, gerekiyorsa Immediate güncelleme akışını başlatır.
+  ///
+  /// Kullanıcı isteği (30 Ağustos 2026): *"Kimde hangi versiyon olursa
+  /// olsun, app'i açtığında daha yeni bir sürüm varsa uyarsın ve yapsın."*
+  /// Gerekçe ve sınırlar: `data/store_update.dart`.
+  ///
+  /// ⚠ **Beklenmez.** Bir güncelleme kontrolü ekran geçişini geciktiremez;
+  /// uç zaten hiçbir koşulda fırlatmıyor.
+  void _guncellemeKontrol() {
+    final gateway = widget.services.storeUpdate;
+    if (gateway == null) return; // widget testleri / depolamasız önizleme
+    if (_guncellemeSorusuKapandi || _guncellemeSorusuSuruyor) return;
+    _guncellemeSorusuSuruyor = true;
+    unawaited(magazaGuncellemesiniCalistir(gateway).then((kapandi) {
+      _guncellemeSorusuSuruyor = false;
+      _guncellemeSorusuKapandi = kapandi;
+    }));
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _pushHizala();
+    if (state == AppLifecycleState.resumed) {
+      _pushHizala();
+      _guncellemeKontrol();
+    }
   }
 
   @override
@@ -216,6 +246,7 @@ class _HomeGateState extends State<_HomeGate> with WidgetsBindingObserver {
     // Oturum değişimi (giriş/çıkış/hesap değiştirme) + ilk açılış.
     widget.services.auth.addListener(_pushHizala);
     _pushHizala();
+    _guncellemeKontrol();
     final storage = widget.services.storage;
     if (storage == null) {
       _showIntro = false;
