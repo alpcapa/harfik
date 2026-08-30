@@ -20,6 +20,7 @@ import '../../data/stats_api.dart';
 import '../auth/k_avatar.dart';
 import '../friends/friends_modal.dart'
     show confirmFriendAction, showFriendInfoDialog;
+import '../friends/relation_icons.dart';
 import '../game/modal_shell.dart';
 import '../rank/league_rank.dart';
 import '../rank/rank_header_seal.dart';
@@ -145,9 +146,8 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
     });
   }
 
-  /// Web PlayerScoreCard simge davranışı: yeşil how_to_reg = arkadaşsınız
-  /// (dokun → çıkar onayı); mavi person_add = değilsiniz (duruma göre ekle /
-  /// kabul et / iptal). DÖRT dal da önce onay diyaloğu açar.
+  /// Web PlayerScoreCard davranışı: DÖRT dal da önce bir onay diyaloğu
+  /// açar, hiçbiri anında iş yapmaz. Hangi dal hangi ikon: `_relationGlyph`.
   Future<void> _onRelationTap() async {
     final friends = widget.friends;
     if (friends == null) return;
@@ -216,33 +216,46 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
     }
   }
 
+  /// Web `friendIconFor` (PlayerScoreCard.tsx) — isim yanındaki ilişki
+  /// simgesi. DÖRT dal, `_onRelationTap`in dört dalıyla birebir.
+  ///
+  /// ⚠ **BULUNAN HATA (30 Ağustos 2026, kullanıcı bildirdi):** burası (web
+  /// ikizi gibi) İKİ dala ayrılmıştı — `accepted` ve "diğer her şey" — yani
+  /// istek gönderilmiş bir kişinin kartında "arkadaş ekle" ikonu çıkıyordu;
+  /// aynı kişi "Ara & Ekle" listesinde kum saatiyle görünürken. Onay
+  /// diyaloğu baştan beri dördünü ayırıyordu, yalnızca ikon geride kalmıştı.
+  /// Ders: bir DURUM birden çok yüzeyde gösteriliyorsa yüzeylerin dal
+  /// SAYILARI da eşit olmalı.
+  ///
+  /// `accepted` dalı `friends_modal`dan BİLEREK ayrılıyor (yeşil
+  /// `how_to_reg`, kırmızı `person_remove` değil) — 11 Ağustos 2026
+  /// kullanıcı kararı: listede ikon bir AKSİYON sütununda durur, burada
+  /// ismin yanında durup kimliğin parçası gibi okunur; "adam-" orada bir
+  /// uyarı gibi görünüyordu. Dokunuş yine çıkarma onayını açıyor, yani
+  /// "ikon ne yapacağını söyler" kuralı onay diyaloğuyla korunuyor. Aynı
+  /// glyph listede "gelen isteği kabul et" (mavi) demek — renk ayrımı bu
+  /// yüzden zorunlu, ikisini aynı renge çekme.
+  /// (Yeşil, tailwind `green` token'ı: #16A34A. Web'de İKİ ayrı yeşil
+  /// olduğu notu hâlâ geçerli — `Board.tsx`'in hardcoded #1FA05C'si başka
+  /// bir yer; bkz. mobile/CLAUDE.md Parça 42.)
+  Widget _relationGlyph() => switch (_relation) {
+        FriendRelation.accepted =>
+          const Icon(Icons.how_to_reg, size: 20, color: kGreen),
+        FriendRelation.pendingOutgoing =>
+          const PersonPendingIcon(color: kMuted),
+        FriendRelation.pendingIncoming =>
+          const Icon(Icons.how_to_reg, size: 20, color: kAccent),
+        null => const Icon(Icons.person_add_alt_1, size: 20, color: kAccent),
+      };
+
   Widget? _relationIcon() {
     if (widget.friends == null || !_relationLoaded) return null;
-    final accepted = _relation == FriendRelation.accepted;
     return GestureDetector(
       onTap: _onRelationTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.only(left: 6),
-        child: Icon(
-          // Arkadaş durumu burada yeşil `how_to_reg` (kişi+onay) — listelerin
-          // kırmızı `person_remove`'u DEĞİL. Kullanıcı kararı (11 Ağustos
-          // 2026) ve bilinçli bir istisna: listede ikon bir AKSİYON
-          // sütununda durur, burada ismin hemen yanında durup kimliğin
-          // parçası gibi okunur; "adam-" orada bir uyarı gibi görünüyordu.
-          // Dokunuş yine çıkarma onayını açıyor, yani "ikon ne yapacağını
-          // söyler" kuralı onay diyaloğuyla korunuyor. Aynı glyph listede
-          // "gelen isteği kabul et" (mavi) demek — renk ayrımı bu yüzden
-          // zorunlu, ikisini aynı renge çekme.
-          // (Yeşil, tailwind `green` token'ı: #16A34A. Web'de İKİ ayrı yeşil
-          // olduğu notu hâlâ geçerli — `Board.tsx`'in hardcoded #1FA05C'si
-          // başka bir yer; bkz. mobile/CLAUDE.md Parça 42.)
-          accepted ? Icons.how_to_reg : Icons.person_add_alt_1,
-          size: 20,
-          color: accepted
-              ? kGreen // tailwind green
-              : kAccent,
-        ),
+        child: _relationGlyph(),
       ),
     );
   }

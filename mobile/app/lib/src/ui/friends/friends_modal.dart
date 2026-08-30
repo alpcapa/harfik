@@ -45,6 +45,7 @@ import '../loading_note.dart';
 import '../form_input.dart';
 import '../../util/share_board.dart' show shareOriginFrom;
 import 'friend_moderation_sheet.dart';
+import 'relation_icons.dart';
 import '../text_scale.dart';
 
 const Color _text = kText;
@@ -567,8 +568,7 @@ class _FriendsModalState extends State<FriendsModal> {
                     _modMuted.containsKey(f.friendId)))
               _moderationIconButton(f),
             _relationIconButton(
-              icon: Icons.person_remove,
-              color: _red,
+              icon: const Icon(Icons.person_remove, size: 20, color: _red),
               label: '${f.name} — arkadaşlıktan çıkar',
               busy: _busyId == f.friendId,
               onTap: () => _confirmThenRemoveFriend(f),
@@ -701,7 +701,9 @@ class _FriendsModalState extends State<FriendsModal> {
   /// onay değil kırmızı `person_remove`. Flutter fontu gömülü taşıdığından
   /// `Icons.*` doğrudan kullanılıyor; web aynı glyph'leri bu fonttan
   /// çıkarılmış SVG path'leriyle çiziyor, yani iki platform BENZER değil
-  /// AYNI vektörü gösteriyor.
+  /// AYNI vektörü gösteriyor. TEK istisna `PersonPendingIcon` ("istek
+  /// gönderildi"): Material'da kişi+kum saati diye bir glyph olmadığından
+  /// elle çizildi, bkz. `relation_icons.dart`.
   ///
   /// Dört dalın DÖRDÜ de önce bir onay diyaloğu açar, hiçbiri anında iş
   /// yapmaz. `accepted` dalı pratikte ULAŞILAMAZ (bu satır yalnızca
@@ -710,36 +712,31 @@ class _FriendsModalState extends State<FriendsModal> {
   /// atlanınca arkadaşa "ekle" ikonu gösterilirdi. "Arkadaşlarım" sekmesi
   /// bu satırı kullanmaz, kendi çıkarma butonu var.
   Widget _candidateRow(FriendCandidate u) {
-    final (IconData ikon, Color renk, String etiket, VoidCallback aksiyon) =
+    final (Widget ikon, String etiket, VoidCallback aksiyon) =
         switch (u.relation) {
       FriendRelation.accepted => (
-          Icons.person_remove,
-          _red,
+          const Icon(Icons.person_remove, size: 20, color: _red),
           'Arkadaşlıktan çıkar',
           () => _confirmThenRemoveCandidate(u),
         ),
       FriendRelation.pendingOutgoing => (
-          Icons.hourglass_top,
-          _muted,
+          const PersonPendingIcon(color: _muted),
           'İstek gönderildi — iptal et',
           () => _confirmThenCancel(u),
         ),
       FriendRelation.pendingIncoming => (
-          Icons.how_to_reg,
-          _accent,
+          const Icon(Icons.how_to_reg, size: 20, color: _accent),
           'Arkadaşlık isteğini kabul et',
           () => _confirmThenAdd(u),
         ),
       null => (
-          Icons.person_add_alt_1,
-          _accent,
+          const Icon(Icons.person_add_alt_1, size: 20, color: _accent),
           'Arkadaş ekle',
           () => _confirmThenAdd(u),
         ),
     };
     final Widget action = _relationIconButton(
       icon: ikon,
-      color: renk,
       label: '${u.name} — $etiket',
       busy: _busyId == u.id,
       onTap: aksiyon,
@@ -825,9 +822,11 @@ class _FriendsModalState extends State<FriendsModal> {
     );
   }
 
+  /// ⚠ `icon` bir `IconData` DEĞİL `Widget` — çünkü ilişki ikonlarından biri
+  /// (`PersonPendingIcon`, "istek gönderildi") Material glyph'i değil, elle
+  /// çizilmiş bir `CustomPaint`. Renk/boy o yüzden çağıranda veriliyor.
   Widget _relationIconButton({
-    required IconData icon,
-    required Color color,
+    required Widget icon,
     required String label,
     required bool busy,
     VoidCallback? onTap,
@@ -844,7 +843,7 @@ class _FriendsModalState extends State<FriendsModal> {
           child: Center(
             child: Opacity(
               opacity: busy ? 0.4 : 1,
-              child: Icon(icon, size: 20, color: color),
+              child: icon,
             ),
           ),
         ),

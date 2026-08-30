@@ -181,18 +181,13 @@ yukarıda.) Merge etmeden cihazda görmek gerekiyorsa tek yol dalda bir
 
 ### Merge sonrası dal hijyeni (bugünün ikinci hatası)
 
-`main` squash merge kullanıyor. Merge edilmiş bir dala yeni commit
-eklemeye devam etmek, aynı işi İKİ kez var eder ve bir sonraki merge'de
-çakışma üretir. 15 Ağustos'ta bunun bedeli yalnızca çakışma da olmadı:
-`AdminDashboard.tsx` "auto-merging" dedi ama 126 satırlık bir bloğu
-**iki kez** yazdı; `tsc` yakaladı (`TS2393`/`TS2451`).
-
-**28 Ağustos 2026'dan beri bu kural MEKANİK olarak zorlanıyor:** kullanıcı
-GitHub'da "Automatically delete head branches" ayarını açtı, yani merge
-edilen dal sunucuda kendiliğinden siliniyor. Artık disipline değil ayara
-bağlı — ama tuzağı da beraberinde geliyor: **silinmiş bir dala push etmek
-onu DİRİLTİR** ve aynı işi ikinci kez var eder. Merge'den sonra o dala bir
-daha dokunma.
+Merge edilmiş bir dala commit eklemeye devam etmek aynı işi İKİ kez var
+eder; `main` squash merge kullandığından bir sonraki merge'de çakışma
+üretir — ve çakışmayı derleyiciye güvenerek çözemezsin, tekrarlanan JSX'i
+hiçbir şey yakalamaz (`npm run lint` + mükerrer bildirim taraması şart).
+28 Ağustos 2026'dan beri GitHub merge edilen dalı kendiliğinden siliyor;
+tuzağı da beraberinde geliyor: **silinmiş bir dala push etmek onu
+DİRİLTİR.** Vaka kaydı: `mobile/docs/deploy-verification.md`.
 
 **Her merge'den SONRA yeni bir dal aç:**
 `git fetch origin main && git checkout -B <YENİ-dal> origin/main`
@@ -204,24 +199,6 @@ tekrarlanan JSX'i hiçbir şey yakalamaz. `npm run lint` + mükerrer
 bildirim/kullanım taraması (`grep -c` ile her yeni bileşen "1 bildirim +
 1 kullanım" mı) şart.
 
-### "Koşu yok" demeden ÖNCE — filtre neyi eliyor? (26 Ağustos 2026)
-
-O gün bir merge'den hemen sonra `actions_list`'e **`status: completed`**
-filtresiyle bakılıp *"merge sha'sı için tek bir koşu yok"* denildi ve
-buradan **yanlış bir kural uyduruldu** ("MCP token'ı Actions'ı hiç
-tetiklemiyor"). Gerçek: koşu VARDI, o an `in_progress`'ti; filtre onu doğru
-şekilde eliyordu. Kullanıcı ekran görüntüsüyle gösterdi.
-
-**Kural:** bir koşunun yokluğunu iddia etmeden önce `queued` ve
-`in_progress`'i de sor — ya da hiç filtre verme. Ve tetiklenme gecikmeli
-olabilir: aynı gün bir `pull_request` koşusu push'tan ~20 dakika sonra
-başladı, yani "iki dakika sonra baktım, yoktu" hiçbir şey kanıtlamaz.
-
-**Asıl ders bu dosyanın kendisiyle ilgili:** bir gözlemden kural
-ÇIKARIRKEN, gözlemin kendisinin bir filtreden geçip geçmediğine bak.
-Buraya yazılan yanlış bir kural, hiç yazılmamış olmasından daha zararlı —
-sonraki oturum onu ölçüm sanır.
-
 ### PR'da CI koşmazsa
 
 MCP ile açılan PR'larda GitHub `pull_request` iş akışını tetiklemeyebiliyor
@@ -231,21 +208,10 @@ merge etmeden önce native derlemeyi doğrulamak için Actions → Run workflow
 DEĞİŞTİRMEZ). Yeni bir platform eklentisi eklenmediyse bu adım atlanabilir,
 ama atlandığı commit'te bunu açıkça söyle.
 
-**PR #267'de CI koştu ve İLK denemede Android'i düşürdü — kaydı önemli:**
-`--dart-define=BUILD_TIME=${{ ... }}` TIRNAKSIZDI ve değer boşluk taşıyor
-(`15.08 11:58`); kabuk onu ikiye bölüp ikinci parçayı hedef dosya sandı
-(`Target file "11:58" not found.`, 32 saniyede düştü). **Yerelde
-görünmüyordu:** `flutter test` bu define'ları hiç kullanmıyor ve ben
-YAML'ı yalnızca PyYAML ile ayrıştırıp "adım var" diye doğrulamıştım —
-derleme komutunu koşmamıştım. Düzeltme sekiz satırda argümanı tırnağa
-almak; **negatif eş yerelde kuruldu** (`flutter build web` ile önce hata
-birebir üretildi, sonra tırnaklı hâlin derlendiği VE iki sabitin de
-`main.dart.js`'e gömüldüğü ölçüldü — `buildLabel` çalışma anında
-hesaplandığından birleşik dize aranmaz, iki sabit ayrı ayrı aranır).
-**Ders: bir workflow adımının YAML'ı geçerli olması, ürettiği KABUK
-SATIRININ doğru olduğunu kanıtlamaz** — değeri boşluk/özel karakter
-taşıyabilen her `--dart-define`/argüman tırnaklanmalı ve mümkünse o
-komut yerelde bir kez gerçekten koşturulmalı.
+Bu adımın 15 Ağustos 2026'da nasıl kırıldığı (boşluk taşıyan bir
+`--dart-define` tırnaksız kaldı, `flutter test` bunu göremez) ve
+*"koşu yok"* demeden önce hangi filtrenin neyi elediği:
+`mobile/docs/deploy-verification.md`.
 
 ## Flutter SDK bu ortama İNDİRİLEBİLİR — Dart'ı körlemesine yazma (26 Ağustos 2026)
 
@@ -491,6 +457,7 @@ Bütçeyi `npm run check-doc-size` ölçüyor, sınıra gelince yeni cilt açıl
 | FAZ A1 — cihaz testi tur durumu | `mobile/docs/cihaz-testi-log.md` |
 | Cihaz testi — Arkadaşlar + Canlı oyun bölümleri (iki gerçek oturum ister) | `mobile/docs/testing-arkadaslar-canli.md` |
 | Cihaz testi — push bildirimleri + derin bağlantılar + **güncelleme** (çoğu Play imzalı derleme ister) | `mobile/docs/testing-bildirimler.md` |
+| Deploy doğrulaması — tarihli post-mortem'ler (dal hijyeni, "koşu yok" filtresi, PR #267, sınıf 2 risk kütüğü) | `mobile/docs/deploy-verification.md` |
 
 **Yeni bir "Parça N" notu eklerken:** parça numarasını bir öncekinin devamı
 olarak ver ve **AKTİF cilde** (`mobile/docs/parca-log.md`) yaz — dondurulmuş
@@ -688,7 +655,16 @@ mobile/
       ui/friends/            # friends_modal (3 sekme + davet paylaşımı +
                              # paylaşılan onay/sonuç diyalogları) +
                              # friend_moderation_sheet (satırdaki 🚫/🚩
-                             # ikonundan açılan GERİ ALMA paneli)
+                             # ikonundan açılan GERİ ALMA paneli) +
+                             # relation_icons.dart — ilişki ikonlarının
+                             # dördünden ÜÇÜ gerçek Material glyph'i
+                             # (Icons.* ile çizilir, senkron sorunu yok);
+                             # bu dosyada YALNIZCA "bekliyor" var: kişi +
+                             # küçük kum saati, Material'da karşılığı
+                             # olmadığından ELLE çizildi. Web
+                             # RelationIcons.tsx ile elle senkron ama
+                             # senkronu ZORLAYAN bir test var
+                             # (relation_icon_parity_test.dart)
       ui/live/               # Canlı oyun: live_games_tab (3 alt sekme +
                              # kartlar), live_game_create_form,
                              # friend_suggest_modal (kabul sonrası öneri),
@@ -707,6 +683,12 @@ mobile/
                              # yalnızca galeri) — enjekte edilebilir PickAvatarFn
     android/ ios/            # flutter create çıktısı + elle değişiklikler (aşağı bkz.)
     test/                    # util, controller (golden replay!), widget duman testleri
+      support/vector_parity.dart # web SVG path'i ↔ portun Path()..lineTo
+                             # zinciri: ikisini kanonik çizim listesine
+                             # indiren ORTAK ayrıştırıcı. İki parite testi
+                             # kullanıyor (icon_parity, relation_icon_parity)
+                             # — üçüncü bir elle-senkron vektör çifti
+                             # eklenirse kopyalama, buradan tüket
       support/real_io.dart   # `drainRealIo` — GERÇEK sqflite/prefs I/O'suna
                              # gerçek zaman payı tanır. Gerçek depoyla çizen
                              # HER ekran testi bunu kullanmak ZORUNDA, yoksa
@@ -959,48 +941,15 @@ zoom'lar — kutular da birlikte büyür, sınıf 2 hiç doğmaz. Yani buraya
 web'den kopyalanacak bir yapı yok, yalnızca ilkesi var (web'in `CARD_HEADER`
 düzeltmesi, 23 Ağustos 2026: kırpılacak EN SON şey kimden geldiğidir).
 
-### Sınıf 2 risk kütüğü — taranmış, ÖLÇÜLMEMİŞ (28 Ağustos 2026)
+### Sınıf 2 risk kütüğü
 
 Kullanıcı sordu: *"Bir de başka sessiz sıkışma olan yerler var mı?"* İki
-yöntemle arandı; ikisinin de sınırı yazılı, çünkü "temiz çıktı" ile "sorun
-yok" aynı şey değil.
-
-**1. Dinamik tarama (takımın tamamı, iki ölçekte).** Her karede tüm
-`RenderParagraph`ların genişliği dökülüp 1,0 ile 1,3 karşılaştırıldı.
-901 ortak metinden 35'i daraldı, ama bunların çoğu ZARARSIZ: sarabilen bir
-metin daralınca yalnızca uzar, bilgi kaybolmaz. Zarar ölçütü daralma değil
-**kırpılma** (`didExceedMaxLines || maxLines != null || !softWrap`). O
-süzgeçten geçen: **tek bir yer** — `game_history_modal.dart:1150`, oyun
-geçmişi satırındaki oyuncu adı, **101,9 → 88,8 px (-13,1)**; sebebi yanındaki
-`TESLİM OLDU` rozetinin metin olması. Bilgi sıfırlanmıyor, ~2 karakter
-kırpılıyor.
-
-⚠ **Bu taramanın KÖRLÜĞÜ ölçüldü ve önemli:** kullanıcının bildirdiği asıl
-hata (arkadaşlık isteği satırı) düzeltme KAPATILIP tekrar koşturulduğunda
-bile listede ÇIKMADI — çünkü mevcut testler o satırı 420 px genişlikte ve
-kısa bir adla ("Esiner") çiziyor, yani sıkışma o veriyle hiç doğmuyor.
-Tarama yalnızca testlerin GERÇEKTEN çizdiği ekranı ve veriyi görür. Dar
-ekran + uzun ad gibi uç veriyi ancak ona özel bir test yakalar
-(`text_scale_test.dart` tam bunu yapıyor: 360 px + "Esiner Yıldırım").
-
-**2. Yapısal tarama.** `lib/src/ui` altındaki 24 `TextOverflow.ellipsis`
-sitesi, "kırpılabilir metin + onu ezebilecek METİN kardeş" desenine göre
-tarandı. Beş aday çıktı — **hiçbiri ölçülmedi**, yalnızca desen eşleşmesi:
-
-| Yer | Ezen kardeş |
-|---|---|
-| `setup_screen.dart:1977` | `SENİN HAMLEN BEKLENİYOR` (11 px, tracking 1 — en uzun etiket) |
-| `live_games_tab.dart:683` | sağdaki durum etiketi (`onlineStatusLabel`) |
-| `game_over_modal.dart:234` | `(TESLİM)` |
-| `game_history_modal.dart:1150` | `TESLİM OLDU` — **ölçülen tek vaka** |
-| `recent_games_section.dart:285` | skor metni |
-
-Beşi de aynı ailenin üyesi: satırdaki tek esnek öğe bir isim/başlık, kardeşi
-ise ölçekle büyüyen bir metin. **1,3 tavanında beklenen zarar "birkaç
-karakter kırpılması" düzeyinde** — arkadaşlık satırındaki gibi sıfıra inen
-bir vaka değil; bu yüzden bugün düzeltilmedi. Tavan yükseltilirse ya da
-biri cihazda şikayet konusu olursa çözüm aynı: `buyukOlcek(context)` ile
-satırı ikiye böl.
+yöntemle (dinamik tarama + yapısal tarama) arandı; ölçülen tek vaka
+`game_history_modal.dart`, beş yapısal aday daha var ve hiçbiri ölçülmedi.
+⚠ Taramanın körlüğü de ölçüldü: kullanıcının bildirdiği ASIL hata bile
+listede çıkmadı, çünkü tarama yalnızca testlerin gerçekten çizdiği ekranı
+ve veriyi görür. Envanter ve ölçümler:
+`mobile/docs/deploy-verification.md` → "Sınıf 2 risk kütüğü".
 
 ## `KModal`'ın gövdesi ZATEN kaydırılabilir — içine ikincisini koyma
 

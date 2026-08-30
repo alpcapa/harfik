@@ -20,6 +20,60 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 172 — ilişki ikonu ailesi tamamlandı + skor kartındaki
+     dört-dal hatası (30 Ağustos 2026, kullanıcı bildirdi; YENİ dosyalar
+     `ui/friends/relation_icons.dart`, `test/relation_icon_parity_test.dart`,
+     `test/support/vector_parity.dart`):** iki ayrı iş, ikisi de aynı
+     bildirimden çıktı.
+     - **(a) GERÇEK HATA — aynı durum iki yüzeyde farklı görünüyordu.**
+       Kullanıcının sözleri: *"Arkadaşlık daveti beklemede olan kişinin
+       skor kartına girince isminin yanında arkadaş ekle işareti çıkıyor.
+       Halbuki aynı kişiye Arkadaşlar → Ara & Ekle bölümünden bakınca
+       yanında kum saati çıkıyor. Bu hata."* Skor kartı (web'de de portta
+       da) ikonu İKİ dala ayırıyordu — `accepted` ↔ "diğer her şey" — oysa
+       AYNI dosyadaki onay diyaloğu baştan beri dördünü ayırıyordu: kart
+       "ekle" diyor, dokununca "İsteği İptal Et" çıkıyordu. Artık
+       `_relationGlyph` (port) / `friendIconFor` (web) dört dalı da
+       karşılıyor. **Ders:** bir DURUM birden çok yüzeyde gösteriliyorsa
+       yüzeylerin dal SAYILARI da eşit olmalı; dört dallı bir metinle iki
+       dallı bir ikon aynı ekranda yan yana durabiliyorsa eşleşmeyi
+       zorlayan bir şey yok demektir.
+     - **(b) İkon ailesi.** Kullanıcı isteği: *"Kum saatini de diğer
+       ikonlar gibi adamın yanında (+, - ve check gibi) küçük kum saati
+       veya saat yapsak diğerleriyle bütünlük olacak."* Dördün üçü
+       kişi+rozetken (`+`/`−`/`✓`) dördüncüsü kişisiz, tek başına duran
+       büyük bir `Icons.hourglass_top`tu.
+     - **Material'da karşılığı YOK, yani bu dosyanın kuralı burada
+       uygulanamıyor.** Öteki üç ikon gerçek glyph olduğundan port onları
+       `Icons.*` ile çiziyor ve iki platform AYNI vektörü gösteriyor;
+       "kişi + kum saati" diye bir glyph olmadığı için bu ilk ELLE çizilen
+       ilişki ikonu oldu. `hourglass_top`u rozet kutusuna küçültmek çare
+       DEĞİLDİ: glyph'in çizgileri ~1 birim, yarıya inince 20 px'lik ikonda
+       0,42 px kalıyor. Saat de denendi ve elendi (halka + iki ibre o
+       boyutta çok inceliyor; kum saatinin dolu üçgenleri okunuyor) —
+       kullanıcıya iki seçenek render edilip gösterildi, kum saatini seçti.
+     - **Sapma bilinçli olarak minimum:** kişi gövdesi
+       `person_add_alt_1`in AYNISI (artı çıkarılmış, tek koordinat
+       oynatılmadan), elle çizilen tek şey rozet ve o da artının durduğu
+       kutuda (x 15→23, y 6,98→15).
+     - **Elle senkron bir kopya, senkronu zorlayan bir şey olmadan
+       bayatlar** — `OzellikIkonlari` çiftindeki mekanizma ikinci kez
+       kuruldu. Ayrıştırıcılar KOPYALANMADI, `icon_parity_test.dart`ten
+       `test/support/vector_parity.dart`e çıkarıldı ve iki test de oradan
+       tüketiyor (eski test taşımadan sonra yeşil kaldı). Üçüncü bir
+       elle-senkron vektör çifti eklenirse aynı yerden beslenmeli.
+     - **Doğrulama:** 638/638 test yeşil, `dart analyze` temiz (tek `info`
+       önceden vardı, `tap_target_test.dart:206`), `tsc --noEmit` temiz,
+       web derlemesi geçti. **İki negatif eş de ölçüldü:** (1) portta tek
+       bir koordinat 16,4 → 16,5 yapılınca parite testi düşüyor; (2) skor
+       kartı iki dala döndürülünce `ilişki simgesi` testlerinden İKİSİ
+       birden düşüyor (ikisi de kontrol edildi — ilk sürüm yalnızca renge
+       baktığı için `pending_incoming`i kaçırıyordu, glyph de ölçülecek
+       şekilde sıkılaştırıldı).
+     - **Doğrulama sınırı:** web tarafında Canlı/arkadaşlık akışları iki
+       gerçek oturum gerektirdiğinden otomatik test edilemiyor; ikonun
+       web'de göründüğü `main`'e merge sonrası gözle doğrulanacak.
+
    - ✅ **Parça 171 — güncelleme artık Play'in işi: In-App Update
      (30 Ağustos 2026, kullanıcı kararı; YENİ dosya
      `data/store_update.dart`):** *"Kimde hangi versiyon olursa olsun,

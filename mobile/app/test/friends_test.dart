@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/data/chat_api.dart';
 import 'package:kelimeki/src/ui/theme.dart';
+import 'package:kelimeki/src/ui/tokens.dart';
 import 'package:kelimeki/src/data/friend_invite_inbox.dart';
 import 'package:kelimeki/src/data/friends_api.dart';
 import 'package:kelimeki/src/data/stats_api.dart';
@@ -22,6 +23,7 @@ import 'package:kelimeki/src/util/offline_notice.dart' show isNetworkError;
 import 'package:kelimeki/src/ui/auth/account_button.dart';
 import 'package:kelimeki/src/ui/auth/k_avatar.dart';
 import 'package:kelimeki/src/ui/friends/friends_modal.dart';
+import 'package:kelimeki/src/ui/friends/relation_icons.dart';
 import 'package:kelimeki/src/ui/score/player_score_card_modal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -361,7 +363,7 @@ void main() {
       await tester.tap(find.text('TAMAM'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
-      expect(find.byIcon(Icons.hourglass_top), findsOneWidget); // patchRelation
+      expect(find.byType(PersonPendingIcon), findsOneWidget); // patchRelation
       // DİKKAT: testWidgets içinde `await Future.delayed(...)` fake-async
       // bölgesinde ASILIR (timer pump'sız çözülmez) — bildirim fake'te
       // senkron kaydedildiğinden doğrudan kontrol yeterli.
@@ -842,6 +844,61 @@ void main() {
       // Simge artık "ekle"ye döner.
       expect(find.byIcon(Icons.person_add_alt_1), findsOneWidget);
     });
+
+    // ⚠ REGRESYON (30 Ağustos 2026, kullanıcı bildirdi): *"Arkadaşlık daveti
+    // beklemede olan kişinin skor kartına girince isminin yanında arkadaş
+    // ekle işareti çıkıyor. Halbuki aynı kişiye Arkadaşlar → Ara & Ekle
+    // bölümünden bakınca yanında kum saati çıkıyor."*
+    //
+    // Kök sebep: skor kartı İKİ dala ayrılmıştı (`accepted` ↔ diğer her
+    // şey), oysa onay diyaloğu baştan beri DÖRDÜNÜ ayırıyordu — kart "ekle"
+    // diyor, dokununca "İsteği İptal Et" çıkıyordu. Bu test dört dalın
+    // dördünü de çiviliyor; ikiye dönülürse ilk iki `expect` düşer.
+    //
+    // `glyph` null ise beklenen ikon elle çizilmiş `PersonPendingIcon`;
+    // doluysa o Material glyph'i O RENKTE çizilmiş olmalı. Glyph'i de
+    // ölçmek şart: "bana istek geldi" ile "ilişki yok" AYNI rengi (accent)
+    // kullanıyor, yalnızca renge bakan bir test ikisini ayırt edemezdi.
+    for (final (String ad, Map<String, Object?>? satir, IconData? glyph,
+            Color renk)
+        in <(String, Map<String, Object?>?, IconData?, Color)>[
+      ('istek gönderdim', {'user_id': 'me', 'status': 'pending'}, null,
+          kMuted),
+      ('bana istek geldi', {'user_id': 'u9', 'status': 'pending'},
+          Icons.how_to_reg, kAccent),
+      ('arkadaşız', {'user_id': 'me', 'status': 'accepted'}, Icons.how_to_reg,
+          kGreen),
+      ('ilişki yok', null, Icons.person_add_alt_1, kAccent),
+    ]) {
+      testWidgets('PlayerScoreCard ilişki simgesi — $ad', (tester) async {
+        await setPhoneViewSize(tester, const Size(420, 900));
+        final gw = FakeFriendsGateway()..relation = satir;
+        await tester.pumpWidget(MaterialApp(
+          theme: kelimekiTheme(),
+          home: Scaffold(
+            body: PlayerScoreCardModal(
+              stats: StatsRepo(_NullStatsGateway()),
+              userId: 'u9',
+              name: 'Bobola',
+              friends: FriendsRepo(gw),
+            ),
+          ),
+        ));
+        await tester.pump();
+        await tester.pump();
+
+        if (glyph == null) {
+          final ikon =
+              tester.widget<PersonPendingIcon>(find.byType(PersonPendingIcon));
+          expect(ikon.color, renk);
+          // "Ekle" ikonu ASLA aynı anda çizilmemeli — hatanın kendisi buydu.
+          expect(find.byIcon(Icons.person_add_alt_1), findsNothing);
+        } else {
+          expect(find.byType(PersonPendingIcon), findsNothing);
+          expect(tester.widget<Icon>(find.byIcon(glyph)).color, renk);
+        }
+      });
+    }
 
     testWidgets(
         'regresyon (9 Ağustos 2026): PlayerScoreCard\'ta arkadaş isteği '
