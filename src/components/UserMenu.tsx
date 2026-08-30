@@ -196,15 +196,32 @@ export function UserMenu() {
           // (`inline-flex`, taban çizgisi metnin kendi taban çizgisi) 32px
           // kalıyor — `<img>`in taban çizgisi ise ALT KENARI olduğundan
           // strut'ın tüm iniş payı (7px) altına ekleniyor.
-          // `min-w/h-[48px] -m-2`: avatar 32px çizilmeye devam ediyor ama
-          // DOKUNMA kutusu Material asgarisi olan 48'e çıkıyor; negatif
-          // marj dış kutuyu 32'ye geri çektiğinden düzen (header yüksekliği,
-          // `gap-2` aralığı) bir piksel bile oynamıyor. Kullanıcı aynı
-          // kusuru mobil uygulamada bildirdi (*"Avatar'da tıklamada sorun
-          // var, yine üstüne tıklaman lazım biraz"*, 24 Ağustos 2026);
-          // portta negatif marj olmadığından orada bedeli header'ın
+          // `tap-expand`: avatar 32px çizilir, DOKUNMA kutusu Material
+          // asgarisi olan 48'e bir `::after` sözde-elemanla çıkar — düzen
+          // (header yüksekliği, `gap-2` aralığı) hiç etkilenmez. Kullanıcı
+          // bu hedefi mobil uygulamada istemişti (*"Avatar'da tıklamada
+          // sorun var, yine üstüne tıklaman lazım biraz"*, 24 Ağustos
+          // 2026); portta sözde-eleman olmadığından orada bedeli header'ın
           // uzaması (bkz. `account_button.dart` → `TapTarget`).
-          className="rounded-full flex items-center justify-center min-w-[48px] min-h-[48px] -m-2 active:scale-95 transition-transform ring-offset-2 focus:outline-none disabled:cursor-not-allowed"
+          //
+          // 30 Ağustos 2026 — ÖNCEKİ ÇÖZÜM `min-w/h-[48px] -m-2` İDİ ve bir
+          // kullanıcı iPhone'da bildirdi: *"header'daki YZ kartının sağ
+          // kenarı biraz silik gözüküyor. Avatarın altına mı giriyor
+          // acaba?"* Giriyordu: negatif marj düzen kutusunu 32'ye çekiyor
+          // ama BOYANAN kutu 48 kalıyordu, yani `gap-2`'nin 8px'i düzende
+          // var, görüntüde yoktu. Ölçüldü (Chromium, 360/375/390/393/402/
+          // 414/430): avatarın boyalı kutusunun sol kenarı GameHeader'daki
+          // son skor kutusunun 0.5px'lik `outline`'ının tam üstünde
+          // başlıyor (örtüşme 0.000px) — kırpılma yok, `ring-offset-2` de
+          // hiçbir şey boyamıyor (Tailwind onu yalnızca bir CSS
+          // değişkenine derliyor). Aynı piksele düşen 0.5px'lik çizgiyi
+          // iOS'un alt-piksel rasterleştirmesi soluklaştırıyor; başka
+          // cihazlar aynı çakışmayı farklı yuvarlıyor.
+          // ⚠ Düzeltme `gap`i büyütmek DEĞİL (o sebebi kaldırmaz, telafi
+          // eder ve 360px'te 4 insanlı Canlı oyunun payını 17.4 → 9.4px'e
+          // indirirdi) — projenin kendi `.tap-expand` sınıfı. Dokunma
+          // alanı BİREBİR aynı 48×48 bölge kalıyor, yalnızca boyanmıyor.
+          className="tap-expand rounded-full flex items-center justify-center active:scale-95 transition-transform ring-offset-2 focus:outline-none disabled:cursor-not-allowed"
         >
           {identityLoading ? (
             <span className="w-8 h-8 rounded-full bg-panel border border-border flex items-center justify-center text-muted text-[10px] font-mono">

@@ -291,6 +291,70 @@ dolgunun içinde.)
 (`theme_test.dart` ölçüyor); 48'lik bir kutu alanı bozardı. Aynı eylem
 klavyeden de erişilebilir ve yanlış dokunuşun bedeli sıfır.
 
+### Web'de ÖTEKİ yol (`min-w/h-[48px] -m-2`) komşuyu boyar — 30 Ağustos 2026
+
+Yukarıdaki "web'de telafiye gerek yok" cümlesi doğru ama o gün web'de TEK
+uygulanmamış yer kalmıştı: `UserMenu`'nün avatar düğmesi. Orada hedef
+`.tap-expand` ile değil `min-w-[48px] min-h-[48px] -m-2` ile büyütülmüştü
+(17 Ağustos 2026, `.tap-expand` sınıfı daha yokken). İkisi dokunma alanı
+bakımından denk, **boyama bakımından değil**: negatif marj yalnızca DÜZEN
+kutusunu 32'ye geri çeker, BOYANAN kutu 48 kalır. Yani `gap-2`'nin 8 px'i
+düzende var, görüntüde yok.
+
+Bir kullanıcı bunu iPhone'da yakaladı: *"header'daki YZ kartının sağ kenarı
+biraz silik gözüküyor. Avatarın altına mı giriyor acaba? Web'de, Ipad'de,
+mobile app'de düzgün duruyor, sadece iphone'da gördüm."*
+
+**Ölçüldü** (Chromium, 360/375/390/393/402/414/430 px): avatarın boyalı
+kutusunun sol kenarı `GameHeader`'daki son skor kutusunun 0.5 px'lik
+`outline`'ının **tam üstünde** başlıyor — örtüşme yedi genişlikte de
+`0.000` px. Kırpılma yok (`tasma = 0`), `ring-offset-2` de hiçbir şey
+boyamıyor (Tailwind onu yalnızca bir CSS değişkenine derliyor). Aynı piksele
+düşen 0.5 px'lik çizgiyi iOS'un alt-piksel rasterleştirmesi soluklaştırıyor;
+öteki cihazlar aynı çakışmayı farklı yuvarladığı için orada görünmüyor.
+
+⚠ **Düzeltme `gap`i büyütmek DEĞİLDİ.** İlk önerilen `gap-2` → `gap-4`
+sebebi kaldırmıyor, telafi ediyordu ve bedeli ölçüldü: şerit içerik boyutlu
+olduğundan (`musait_gap2 == musait_gap4` — 360 px'te 75, 390 px'te 82)
+`gap-4` şeridi daraltmıyor SOLA itiyor, ve 360 px'te 4 insan oyunculu Canlı
+oyunun payını 17.4 → 9.4 px'e indiriyordu. `-my-2 -mr-2` de elendi: hedefi
+40 px'e düşürüp iOS'un 44 px asgarisinin altına inerdi, yani 24 Ağustos'ta
+kayda geçen *"Avatar'da tıklamada sorun var"* şikayetini geri getirirdi.
+
+Düzeltme `.tap-expand`. Düzen kutusu ikisinde de 32 px olduğundan hiçbir şey
+kıpırdamıyor; dokunma alanı BİREBİR aynı 48×48 bölge kalıyor, yalnızca
+boyanmıyor. Sola taşan 8 px'in altındaki kutu zaten tıklanabilir değil
+(`GameHeader.tsx` — YZ kutuları `div`, yalnızca insan oyuncu kutuları
+`button`), yani hit-test'te de bir değişiklik yok.
+
+**Düzeltmeden önce/sonra, aynı sayfada ölçüldü** (360 ve 390 px, iki
+genişlikte de birebir aynı):
+
+| | Eski (`min-w/h + -m-2`) | Yeni (`.tap-expand`) |
+|---|---|---|
+| Düzen kutusu | 32 px | 32 px |
+| Skor kutusuyla arasındaki BOYALI boşluk | **0 px** | **8 px** |
+| Header yüksekliği | 52 px | 52 px |
+| Dokunma kutusu | 48×48 (elemanın kendisi) | 48×48 (`::after`) |
+
+**Doğrulama sınırı — İKİ tane:** (1) iOS'un alt-piksel rasterleştirmesi bu
+ortamda üretilemiyor, yani ölçülen şey çakışmanın VARLIĞI, soluklaşmanın
+kendisi değil; "çakışma kalktı" kanıtlanabilir, "iPhone'da silik görüntü
+kalktı" ancak `main`'e girdikten sonra cihazda doğrulanabilir. (2) Bu
+düzeltmenin KALICI bir regresyon testi YOK ve yazılamıyor: `UserMenu`
+Supabase yapılandırılmamışken hiç render edilmiyor (`if (!configured)
+return null`), yani test ortamında header'da o düğme bulunmuyor — yukarıdaki
+ölçüm gerçek sınıf dizesini taşıyan bir dublör enjekte edilerek yapıldı.
+Sınıf geri alınırsa hiçbir test düşmez; koruma yalnızca `UserMenu.tsx`'teki
+yorum ve bu kayıt.
+
+**Ders:** dokunma hedefini büyütmenin web'deki iki yolu düzen açısından denk,
+BOYAMA açısından değil. Yeni bir hedef büyütürken `.tap-expand` kullan;
+`min-w/h + negatif marj` deseni komşusuna 8 px binen görünmez bir kutu
+bırakır. **Flutter portu etkilenmedi** — orada `TapTarget` kutuyu gerçekten
+büyütüp çağıranın dolgusundan kıstığı için boyanan-kutu/düzen-kutusu ayrımı
+hiç doğmuyor.
+
 ### Raf taşı: ölü alanı hedefe DEVRET
 
 "Harfi yakalamak zor" şikayeti bir parite eksiği değildi — **web'de de

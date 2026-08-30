@@ -42,9 +42,23 @@ export const EXTRA_WORDS = {
       'Hanımefendi, soylu kadın.',
     ],
   },
+  // `pilav` GTS'te ZATEN VAR ve anlamlarına DOKUNULMADI; bu ayrı bir
+  // madde (İran mutfağının kendi adı), onun yazım varyantı değil.
+  çilav: {
+    pos: 'a.',
+    meanings: ['İran usulü pirinç pilavı.'],
+  },
   evsel: {
     pos: 'sf.',
     meanings: ['Evle ilgili.'],
+  },
+  // Türediği `kolza` GTS'te ZATEN VAR ve anlamlarına DOKUNULMADI —
+  // `kanola` o bitkinin ıslah edilmiş biçiminin adı, ayrı bir madde.
+  kanola: {
+    pos: 'a.',
+    meanings: [
+      'Turpgiller familyasından, sarı çiçekli kolza bitkisinin zararlı asitlerden arındırılarak ıslah edilmesiyle elde edilen yağ bitkisi.',
+    ],
   },
   // `lapislazuli` (bitişik, tek madde) GTS'te ZATEN VAR ve anlamlarına
   // DOKUNULMADI; bu madde onun ilk sözcüğü olan Latince `lapis` ("taş").
@@ -80,6 +94,27 @@ export const EXTRA_WORDS = {
     pos: null,
     meanings: [
       "Afrika'nın kuzeydoğusundan geçerek Akdeniz'e dökülen, dünyanın en uzun nehirlerinden biri.",
+    ],
+  },
+  refil: {
+    pos: 'a.',
+    meanings: [
+      'Biten bir ürünün yerine takılan yedek dolum veya yedek parça.',
+      'Bir kabı yeniden doldurma, tekrar doldurma.',
+    ],
+  },
+  // ⚠ `su` (u ile) ile KARIŞTIRMA — o GTS'te zaten var, bambaşka bir
+  // kelime ve anlamlarına dokunulmadı. Türkçede u/ü ayrımı iki ayrı
+  // sözcük demektir; bu proje aynı sınıf bir hatayı bir kez "ıs"/"is"
+  // maddesinde yaşadı (bkz. aşağıdaki not ve docs/decisions/dictionary.md).
+  sü: {
+    pos: 'a.',
+    meanings: ['Eski Türkçede asker, ordu, askerî birlik.'],
+  },
+  tarot: {
+    pos: 'a.',
+    meanings: [
+      'Geleceği öğrenmek veya rehberlik almak amacıyla kullanılan 78 kartlık özel deste.',
     ],
   },
   tikli: {

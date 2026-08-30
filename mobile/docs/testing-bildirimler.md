@@ -260,7 +260,29 @@ her istemcinin hamlesi bildirim üretir; yalnızca DOKUNUNCA tahtaya gitme
 - [ ] **Rakip hamle yapınca** (sen uygulamada DEĞİLKEN): **"Sıra sende!"** /
       *"{isim} hamlesini yaptı — {n} kişilik oyunda sıra sende."*
 - [ ] **YZ'li Canlı oyunda YZ oynayınca da** gelmeli (isim "Yapay Zeka") —
-      tetikleyici `submit_move`un YZ dalını da görüyor.
+      tetikleyici `submit_move`un YZ dalını da görüyor. ⚠ **YALNIZCA 4
+      KİŞİLİKTE denenebilir:** `create_online_game` 2 kişilik Canlı oyunda
+      YZ'ye HİÇ izin vermiyor ve 4 kişilikte YZ'yi yalnızca son koltuğa
+      koyuyor (`20260727122207_online_game_ai_slot_rule.sql`). Yani YZ
+      oynayınca sıra HER ZAMAN 1. koltuğa geçer — az önce hamle yapan kişiye
+      değil. Bildirimi o kişi bekleyecek, sen değil.
+      **YZ pratikte ANINDA oynuyor** — ölçüldü (üretim, 29 gerçek YZ
+      hamlesi): en hızlı 3,3 sn, ortalama 91 sn, en yavaş 42 dk; 10 dakikayı
+      aşan yalnızca 1, 48 saati aşan 0. Yani bu maddeyi denerken YZ'yi
+      beklemek gerekmiyor.
+      ⚠ **Ama YZ turu yapısal olarak bir İSTEMCİ tarafından tetikleniyor**
+      (`play-ai-turn`, `20260728172716_ai_turn_trigger.sql`) — sunucuda cron
+      ya da trigger YOK. Pratikte hızlı olmasının sebebi tetikleyicinin
+      hamleyi yapan kişinin kendi oturumu olması; o da zaten o an ekranın
+      başında. Tek 42 dakikalık örnek bunun istisnası (hamleyi yapan
+      uygulamayı hemen kapatmış olmalı).
+      ⚠ **ÖLÇÜT TUZAĞI — "YZ hamlesi" `player_user_id is null` DEĞİLDİR.**
+      O alan `auth.uid()`'den geliyor ve sunucu bağlamındaki her hamlede
+      (zaman aşımı teslimleri dahil) null oluyor: YZ'si HİÇ olmayan
+      oyunlarda 68 tane null hamle ölçüldü. Doğru ölçüt hamlenin
+      `player_index`'inin YZ koltuğuna denk gelmesi. 30 Ağustos 2026'da bu
+      karıştırıldı ve "YZ günlerce bekliyor" diye yanlış bir sonuca
+      varıldı — kullanıcı düzeltti.
 - [ ] **Bastırma:** hızlı gidip gelen oyunda (ikiniz de başındayken art arda
       hamle) bildirim GELMEMELİ — hedefin son 10 dk içinde hamlesi varsa
       sunucu http çağrısını hiç yapmıyor. 10+ dk bekleyip rakip oynayınca

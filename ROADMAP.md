@@ -192,8 +192,28 @@ güncellendi) + trigger migration'ı
 bastırma fonksiyon gövdesinde, client rollerine grant yok. Deploy anından
 itibaren SAHADAKİ HER İSTEMCİNİN (1.0.1/1.0.2 dahil) hamlesi bildirim
 üretir; dokunuşun tahtaya götürmesi 1.0.3'ü bekler (Faz 3). Cihaz kontrol
-listesi: `mobile/docs/testing-bildirimler.md` §3d. **Gerçek kanıt sahadan
-gelecek** — bu ortamdan fonksiyon tetiklenemiyor/oyun oynanamıyor.
+listesi: `mobile/docs/testing-bildirimler.md` §3d.
+
+✅ **SAHA KANITI GELDİ (30 Ağustos 2026, aynı gün).** Kullanıcı bildirdi:
+*"bana ilk sıra sende bildirimi geldi, tıkladım app'e gitti"* — yani
+zincirin tamamı (trigger → pg_net → Edge Function → FCM → cihaz) uçtan uca
+çalışıyor. Sunucudan doğrulandı: `function_edge_logs`'ta ilk üç saatte
+**dokuz çağrı, hepsi 200** (273–2743 ms). Çağrılar dört ayrı testçinin
+(Ironman · Fb1907 · Minka · Zesiner) yedi ayrı oyununa dağılıyor; aynı
+hedefe aynı oyunda 10 dk içinde İKİNCİ çağrı YOK, yani bastırma da sahada
+çalışıyor.
+
+⚠ **Ölçüm bir ürün sorusu doğurdu (henüz karar YOK):** bastırma
+`online_game_id` başına — 20:02:54 ve 20:03:23'te aynı hedefe 29 saniye
+arayla iki çağrı gitti, çünkü İKİ FARKLI oyunda sırası geldi. Tasarım gereği
+doğru (ikisi de gerçek bir "sıra sende"), ama beş eşzamanlı oyunu olan bir
+kullanıcı bir dakikada beş bildirim alabilir. Şikayet gelirse çare kişi
+başına bir pencere (ör. "aynı kullanıcıya 2 dk içinde en çok bir bildirim,
+gövdede 'N oyunda sıran geldi'") — bugünkü tek satırlık oyun-içi bastırmadan
+farklı bir mekanizma olur.
+
+**Dokunuşun tahtaya götürmesi HÂLÂ 1.0.3'ü bekliyor** — kullanıcının
+"app'e gitti" gözlemi bugünkü doğru davranış, hata değil (§3c).
 
 **Tetikleyici istemci DEĞİL, sunucu:** `online_game_states.current`
 ilerleyince koşan trigger (`_notify_your_turn`) — `submit_move`u (insan VE
@@ -317,15 +337,11 @@ kanalında **yayına alındı** (bkz. aşağıda madde 3).
 > yeterliyken JEST yolu kaybediyor olabilir. A2'nin ilk beş düzeltmesi
 > gerçekti ve yine de kullanıcının asıl şikayetini çözmedi.
 
-**Sürüm B'de KALANLAR:** madde 1 (deep link — mağaza blokeri) ve madde 13
-(push + Analytics). İkisi tek pakette gitmek zorunda, çünkü 13'ün 5. adımı
-("bildirime dokununca doğru oyunu aç") zaten 1'e bağlı.
-
-Ayrıca **`notify-deadline-warnings`'te düzeltilmiş bir yazım hatası deploy
-EDİLMEDİ** ("taktirde" → "takdirde"): repoda düzeltildi, canlıya
-gönderilmedi — push işi zaten bu fonksiyona dokunacak, tek deploy'da
-gitsin. O deploy yapılırken **`verify_jwt: false` AÇIKÇA geçilmeli**
-(araç parametre verilmezse `true` varsayıp mevcut değeri sessizce ezer).
+**Sürüm B'nin iki kalanı da KAPANDI (30 Ağustos 2026):** madde 13'ün dört
+bildirimi canlıda (Faz 2 + 4), "bildirime dokununca doğru oyunu aç" kodu
+main'de (Faz 3 — 1.0.3'le sahaya çıkar). Burada duran *"'taktirde' düzeltmesi
+deploy edilmedi"* notu da bayattı ve silindi: düzeltme 29 Ağustos'ta v11'de
+canlıdan doğrulanmıştı (bkz. #13'teki ✅ satırı), bugün canlıda v12 var.
 
 ### 1.5 Sürüm B'ye binecek sözlük eklemeleri (28 Ağustos 2026)
 
@@ -798,6 +814,13 @@ desen kurdu — mağaza görselleri de aynı yoldan üretilmeli, yoksa vitrin il
 
 
 ## 1. `kelimeki://` deep link kanalı — **MAĞAZA BLOKERİ**
+
+*⚠ BU MADDE FİİLEN KAPANDI (30 Ağustos 2026, Faz 3'te ölçüldü) — aşağısı
+tarihçe.* Üç akış da çalışıyor (kayıt onayı 28 Ağustos'ta https'e geçti,
+şifre sıfırlama `kelimeki://reset`, arkadaş daveti App Links + inbox) ve
+Faz 3 dördüncüyü ekledi (bildirim → oyun). Açık kalan TEK parça iOS
+Associated Domains — o, iOS'un kendi bloğunda (Apple Developer üyeliği)
+bekliyor, bu maddenin değil.
 
 *FAZ B'nin parçası — sıradaki yeri: madde 0 → 0.B/3.*
 

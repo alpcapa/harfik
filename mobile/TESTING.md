@@ -73,7 +73,7 @@ sözleşmesi — tek taraflı bakmak bir hatayı gizleyebilir.
       Logo ve yazı tipleri (Space Grotesk/Mono, taşlarda Nunito) doğru —
       sistem yazı tipine düşmüş görünmemeli.
 - [ ] **Sözlük yükleniyor.** "Oyunu Başlat" başlangıçta "HAZIRLANIYOR…"
-      gösterip birkaç saniye içinde etkinleşmeli (63.890 kelime asset'ten
+      gösterip birkaç saniye içinde etkinleşmeli (63.905 kelime asset'ten
       bir isolate'te okunuyor).
 - [ ] **Sürüm kapısı.** Uygulama açılıyorsa `app_config
       .mobile_min_supported_version` kontrolü geçmiş demektir. (Kapıyı

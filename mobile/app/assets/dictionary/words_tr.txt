@@ -12986,6 +12986,7 @@ cüzzamlı
 çikolatasız
 çikolatasızlık
 çil
+çilav
 çile
 çileci
 çilecilik
@@ -30459,6 +30460,7 @@ kanmamazlık
 kanmazlık
 kannadaca
 kano
+kanola
 kanon
 kanotiye
 kanser
@@ -47113,6 +47115,7 @@ refetme
 refetmek
 refik
 refika
+refil
 refleks
 reflektör
 reflü
@@ -52324,6 +52327,7 @@ suzeni
 suzidil
 suzidilara
 suzinak
+sü
 sübek
 sübekli
 süblime
@@ -54868,6 +54872,7 @@ tarla
 tarlakoz
 tarlamsı
 tarlatan
+tarot
 tarpan
 tarsin
 tarsus
