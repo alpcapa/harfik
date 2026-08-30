@@ -83,6 +83,18 @@
          yazılan `const WidgetSpan kTurnArrowSpan` oku SİYAH çizerdi;
          renk parametreye çevrildi (`turnArrowSpan(Color)`). Bunu
          derleyici de test de yakalamazdı — ekran görüntüsü yakaladı.
+     - **Dördüncü geçiş — "SIRA RAKİPTE"nin sonuna kırmızı yuvarlak
+       (`TurnDot` / `turnDotSpan`):** okun simetriği; yeşil ok "git oyna",
+       kırmızı nokta "bekle". Çap 9 px = büyük harflerin mürekkep boyu
+       (ölçüldü: harfler y 711-737, nokta y 712-738).
+       - ⚠ **`●` (U+25CF) KULLANILMADI, kutu çizildi.** O glif Space
+         Mono'da YOK; kullanılsaydı tarayıcı ve Flutter ayrı yedek
+         fontlara düşüp FARKLI daireler çizerdi — `RelationIcons.tsx`in
+         "web ve port AYNI vektör" kuralının sessizce kırılması olurdu.
+       - **Regresyon kapısı:** ok ve nokta anahtarlı
+         (`turn-arrow`/`turn-dot`), test ikisinin BİRBİRİNİN YERİNE
+         geçtiğini doğruluyor. Anahtar ŞART: noktayı avatar
+         çemberlerinden ayırt etmenin başka yolu yok.
        - **Ders (bu repoda tekrarlayan sınıf):** "aynı font boyutu" ile
          "aynı görünen boyut" AYNI ŞEY DEĞİL. Bir glifin görsel boyu
          punto değil MÜREKKEP yüksekliğidir; kullanıcı ikincisini görür.

@@ -704,7 +704,13 @@ void main() {
       await pumpTab(tester, liveServices(userId: 'u-tab3', gateway: gw));
 
       expect(find.textContaining('SIRA SENDE!'), findsOneWidget);
-      expect(find.text('SIRA RAKİPTE'), findsOneWidget);
+      expect(find.textContaining('SIRA RAKİPTE'), findsOneWidget);
+      // Ok ve nokta BİRBİRİNİN yerine geçiyor, ikisi bir arada değil:
+      // yeşil ok "git oyna" (yalnız sırası bende), kırmızı nokta "bekle"
+      // (yalnız rakipte). Anahtarlı finder, noktayı avatar çemberlerinden
+      // ayırt edebilmek için (30 Ağustos 2026).
+      expect(find.byKey(const Key('turn-arrow')), findsOneWidget);
+      expect(find.byKey(const Key('turn-dot')), findsOneWidget);
       // Kalan süre YALNIZCA sırası bende olan satırda (web 3 Ağustos dersi).
       // Metin 30 Ağustos 2026'da yalnızca "… KALDI"ya indi (fiil düştü).
       expect(find.textContaining('KALDI'), findsOneWidget);

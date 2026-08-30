@@ -693,8 +693,8 @@ class _GameRow extends StatelessWidget {
                 TextSpan(
                   text: trUpper(onlineStatusLabel(game, isMyTurn: isMyTurn)),
                   children: [
-                    if (game.status == OnlineGameStatus.active && isMyTurn)
-                      turnArrowSpan(_green),
+                    if (game.status == OnlineGameStatus.active)
+                      isMyTurn ? turnArrowSpan(_green) : turnDotSpan(_red),
                   ],
                 ),
                 style: TextStyle(
@@ -742,6 +742,30 @@ class _GameRow extends StatelessWidget {
 ///   hizalıyken harflerin 8 piksel (pixelRatio 3) YUKARISINDA duruyordu.
 ///   `TextSpan` dikey kaydırmayı desteklemediğinden `WidgetSpan` +
 ///   `Transform.translate` gerekiyor; web'de karşılığı `top-[2.8px]`.
+/// Web `TurnDot` — "SIRA RAKİPTE"nin sonundaki kırmızı yuvarlak;
+/// `turnArrowSpan`in simetriği (yeşil ok "git oyna", kırmızı nokta "bekle").
+///
+/// ⚠ **Glif DEĞİL, çizilmiş bir kutu.** `●` (U+25CF) Space Mono'da YOK;
+/// kullanılsaydı iki platform ayrı yedek fonta düşüp farklı daire çizerdi.
+/// Ölçü ölçümden: 13 px puntoda büyük harflerin mürekkep yüksekliği 9,0
+/// mantıksal px, yuvarlak da 9 — taban çizgisine oturunca harf bandını tam
+/// dolduruyor. `PlaceholderAlignment.baseline` + metin taşımayan bir kutu =
+/// taban çizgisi ALT kenar, yani nokta harflerin üstünde yüzmez.
+WidgetSpan turnDotSpan(Color color) => WidgetSpan(
+      alignment: PlaceholderAlignment.baseline,
+      baseline: TextBaseline.alphabetic,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 6),
+        child: Container(
+          // Testlerin bunu avatar çemberlerinden ayırabilmesi için.
+          key: const Key('turn-dot'),
+          width: 9,
+          height: 9,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+      ),
+    );
+
 /// ⚠ Renk PARAMETRE, mirasla GELMEZ: `WidgetSpan`in çocuğu bir widget'tır ve
 /// saran `TextSpan`in stilini görmez (`DefaultTextStyle`den okur). Sabit bir
 /// `const` span yazılsaydı ok siyah çıkardı — ölçmeden fark edilmezdi.
@@ -752,6 +776,7 @@ WidgetSpan turnArrowSpan(Color color) => WidgetSpan(
         offset: const Offset(0, 2.67),
         child: Text(
           '  >',
+          key: const Key('turn-arrow'),
           style: TextStyle(
             fontFamily: 'SpaceMono',
             fontSize: 21,

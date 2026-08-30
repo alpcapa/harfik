@@ -247,7 +247,9 @@
       web'le aynı boyda olmalı (13 px). Ok, HARFLERLE aynı boyda ve aynı
       hizada görünmeli — puntosu 21 (harflerinkinden büyük!) çünkü `>`
       Space Mono'da harf boyuna çıkmayan bir glif; küçük ya da yukarı
-      kaçmış görünüyorsa regresyon. Hemen altındaki kalan-süre satırı
+      kaçmış görünüyorsa regresyon. "SIRA RAKİPTE"nin sonunda ise kırmızı
+      bir yuvarlak olmalı (çap 9 px = harf boyu, taban çizgisine oturur).
+      İkisi ASLA aynı anda görünmez — biri "git oyna", öteki "bekle". Hemen altındaki kalan-süre satırı
       (8 px, "N saat M dakika kaldı (Teslim -2 puan)") ondan belirgin
       KÜÇÜK — ikisi eşit görünüyorsa regresyon. Davet kartlarının sağ
       üstündeki süre etiketi 9 px, yani bu satırdan bir tık BÜYÜK.

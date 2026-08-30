@@ -116,6 +116,31 @@ export function TurnArrow() {
   );
 }
 
+/**
+ * "SIRA RAKİPTE"nin sonundaki kırmızı yuvarlak (30 Ağustos 2026, kullanıcı
+ * isteği) — `TurnArrow`'un simetriği: yeşil ok "git oyna", kırmızı nokta
+ * "bekle".
+ *
+ * ⚠ **Glif DEĞİL, çizilmiş bir kutu.** `●` (U+25CF) Space Mono'da YOK;
+ * kullanılsaydı tarayıcı/Flutter yedek bir fonta düşerdi ve iki platform
+ * farklı bir daire çizerdi — bu dosyanın "web ve port AYNI vektör" kuralının
+ * sessizce kırılması olurdu. Kutu ölçüsü ölçümden: büyük harflerin mürekkep
+ * yüksekliği 13 px puntoda 9,0 mantıksal px (pixelRatio 3'te 27), yuvarlak
+ * da 9 — taban çizgisine oturduğunda tam harf bandını dolduruyor.
+ *
+ * `align-baseline` + `inline-block`: içeriği olmayan bir inline-block'un
+ * taban çizgisi ALT kenarıdır, yani yuvarlak harflerin üstünde yüzmez.
+ * Port ikizi: `live_games_tab.dart` → `turnDotSpan`.
+ */
+export function TurnDot() {
+  return (
+    <span
+      aria-hidden
+      className="ml-1.5 inline-block h-[9px] w-[9px] rounded-full bg-red align-baseline"
+    />
+  );
+}
+
 function statusLabel(game: OnlineGame, isMyTurn?: boolean): string {
   if (game.status === 'active') return isMyTurn ? 'SIRA SENDE!' : 'SIRA RAKİPTE';
   if (game.status === 'pending') return 'Rakip bekleniyor';
@@ -398,7 +423,7 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
           }`}
         >
           {statusLabel(game, isMyTurn)}
-          {game.status === 'active' && isMyTurn && <TurnArrow />}
+          {game.status === 'active' && (isMyTurn ? <TurnArrow /> : <TurnDot />)}
         </span>
         {remaining && (
           <span
