@@ -1928,6 +1928,8 @@ class _SavedGameRow extends StatelessWidget {
     final ms = savedAtMs +
         abandonTimeout.inMilliseconds -
         DateTime.now().millisecondsSinceEpoch;
+    // ⚠ Fiil (`verb`) YALNIZCA süre dolduğunda görünüyor — 30 Ağustos 2026,
+    // kullanıcı isteği; gerekçe web ikizinde (Setup.tsx `remainingTime`).
     if (ms <= 0) return (text: 'Bugün $verb', urgent: true);
     final totalMinutes = (ms / (60 * 1000)).ceil();
     final totalHours = totalMinutes ~/ 60;
@@ -1935,8 +1937,8 @@ class _SavedGameRow extends StatelessWidget {
     final hours = totalHours % 24;
     final minutes = totalMinutes % 60;
     final text = days > 0
-        ? '$days gün $hours saat sonra $verb'
-        : '$hours saat $minutes dakika sonra $verb';
+        ? '$days gün $hours saat kaldı'
+        : '$hours saat $minutes dakika kaldı';
     return (text: text, urgent: days < 1);
   }
 
@@ -1987,11 +1989,14 @@ class _SavedGameRow extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                // Metin ve punto `live_games_tab`ın aktif oyun kartıyla
+                // BİREBİR (30 Ağustos 2026, kullanıcı isteği): biri YZ biri
+                // Canlı oyun ama ikisi de "devam eden oyun" satırı.
                 const Text(
-                  'SENİN HAMLEN BEKLENİYOR',
+                  'SIRA SENDE!',
                   style: TextStyle(
                     fontFamily: 'SpaceMono',
-                    fontSize: 11,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1,
                     color: kGreen,
@@ -1999,13 +2004,14 @@ class _SavedGameRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  // trUpper ŞART — native toUpperCase 'silinecek'i noktasız
-                  // I ile 'SILINECEK' yapar (test yakaladı; web'de CSS
-                  // uppercase tr locale ile doğruydu).
+                  // trUpper ŞART — native toUpperCase 'dakika'yı noktasız I
+                  // ile 'DAKIKA' yapar (test yakaladı; web'de CSS uppercase
+                  // tr locale ile doğruydu). Süre dolunca metne geri gelen
+                  // 'silinecek' de aynı tuzağı taşıyor.
                   trUpper(remaining.text),
                   style: TextStyle(
                     fontFamily: 'SpaceMono',
-                    fontSize: 8,
+                    fontSize: 10,
                     letterSpacing: 0.5,
                     color: remaining.urgent ? kRed : _muted,
                   ),

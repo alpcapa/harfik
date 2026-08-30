@@ -20,6 +20,42 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 173 — devam eden oyun kartlarının metinleri sadeleşti
+     (30 Ağustos 2026, kullanıcı isteği; kozmetik, davranış AYNI):**
+     `SENİN HAMLEN BEKLENİYOR` → **`SIRA SENDE!`**, `RAKİBİN HAMLESİ
+     BEKLENİYOR` → **`SIRA RAKİPTE`**; punto 11 → 13, altındaki kalan-süre
+     8 → 10.
+     - **Kutu BÜYÜMEDİ** (kullanıcı "kutu biraz büyüyebilir" demişti):
+       `SIRA RAKİPTE` 12 karakter, eskisi 11 px'te bile daha genişti.
+     - **Etiketler artık KAYNAKTA büyük harfle.** Çağıran `trUpper`dan
+       geçiriyor, yani idempotent; web tarafında CSS `uppercase`in Türkçe
+       i→İ duyarlılığına güvenilmesin diye iki taraf aynı dizeyi taşıyor.
+     - **ÜÇ sayaç da tek kalıba indi: yalnızca "N gün M saat kaldı".**
+       Öncesi: `sonra teslim sayılacak` (48 sa) · `sonra iptal edilecek`
+       (davet, 7 gün) · `sonra silinecek`/`sonra teslim sayılacak`
+       (Setup'ın yerel YZ kaydı, 7 gün). **Üçüncüsünü kullanıcı
+       listelememişti** ("başka yerde varsa söyle") — ayrıca bildirildi ve
+       aynı hizaya çekildi, çünkü ikisi de "devam eden oyun" satırı ve
+       kullanıcı ikisini yan yana görüyor. Setup'ın hardcoded etiketi de
+       `SIRA SENDE!` oldu.
+     - **Kabul edilen bilgi kaybı, açıkça bildirildi:** fiil sürenin
+       sonunda NE olacağını söylüyordu; Setup'taki `teslim sayılacak`
+       hesaba gelecek -2 cezanın tek uyarısıydı. Fiil süre DOLDUĞUNDA geri
+       geliyor (`Bugün teslim sayılacak` / `Bugün silinecek`) — "Bugün" tek
+       başına hiçbir şey anlatmazdı ve bilgi değeri tam orada en yüksek.
+     - **Ekran görüntüsü ÖNCE gösterildi** (kullanıcı istedi): mock değil,
+       gerçek widget'lardan — `live_games_test` + `setup_cloud_test`in
+       `RepaintBoundary` yakalamaları. Aktif oyun kartı için geçici bir
+       yakalama eklenip koşuldu ve geri alındı.
+     - **Doğrulama:** 638/638 test yeşil, `dart analyze` temiz (tek `info`
+       önceden vardı), `tsc --noEmit` temiz, web derlemesi geçti. Eski
+       dizeleri bekleyen 11 assertion güncellendi (`live_games_test`,
+       `setup_screen_test`, `setup_cloud_test`, `tests/smoke.spec.ts`) —
+       yani metin değişikliğinin kapısı ZATEN vardı ve çalıştı.
+     - **Elle koşulan listeler de güncellendi:** `TESTING.md` (iki madde),
+       `mobile/docs/testing-arkadaslar-canli.md` (punto maddesi) — orada
+       eski dizeler kontrol ölçütü olarak yazılıydı.
+
    - ✅ **Parça 172 — ilişki ikonu ailesi tamamlandı + skor kartındaki
      dört-dal hatası (30 Ağustos 2026, kullanıcı bildirdi; YENİ dosyalar
      `ui/friends/relation_icons.dart`, `test/relation_icon_parity_test.dart`,

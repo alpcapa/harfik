@@ -53,6 +53,12 @@ import type { LocalGameSave, OnlineGame } from '../lib/database.types';
 function remainingTime(savedAt: number, willSurrender: boolean): { text: string; urgent: boolean } {
   const verb = willSurrender ? 'teslim sayılacak' : 'silinecek';
   const ms = savedAt + ABANDON_TIMEOUT_MS - Date.now();
+  // ⚠ Fiil (`verb`) YALNIZCA süre DOLDUĞUNDA görünüyor artık. 30 Ağustos
+  // 2026'da kullanıcı üç sayacın da yalnızca "… kaldı" demesini istedi
+  // (LiveGamesTab'ın iki sayacıyla aynı kalıp). Geri sayarken kartın kendisi
+  // zaten "devam eden oyun" diyor; ama süre dolmuş bir satırda "Bugün"
+  // tek başına hiçbir şey anlatmayacağından o dalda fiil KALDI — ve tam
+  // orada bilgi değeri en yüksek (silinme ↔ teslim cezası ayrımı).
   if (ms <= 0) return { text: `Bugün ${verb}`, urgent: true };
   const totalMinutes = Math.ceil(ms / (60 * 1000));
   const totalHours = Math.floor(totalMinutes / 60);
@@ -61,8 +67,8 @@ function remainingTime(savedAt: number, willSurrender: boolean): { text: string;
   const minutes = totalMinutes % 60;
   const text =
     days > 0
-      ? `${days} gün ${hours} saat sonra ${verb}`
-      : `${hours} saat ${minutes} dakika sonra ${verb}`;
+      ? `${days} gün ${hours} saat kaldı`
+      : `${hours} saat ${minutes} dakika kaldı`;
   return { text, urgent: days < 1 };
 }
 
@@ -163,11 +169,16 @@ function SavedGameRow({
         <span className="text-[9px] font-mono text-muted truncate">{subtitle}</span>
       </span>
       <span className="flex flex-col items-end gap-0.5 shrink-0">
-        <span className="text-[11px] font-mono uppercase tracking-[1px] text-green font-bold">
-          Senin Hamlen Bekleniyor
+        {/* Metin ve punto `LiveGamesTab`'ın aktif oyun kartıyla BİREBİR
+            (30 Ağustos 2026, kullanıcı isteği) — bu kart YZ oyunu, orası
+            Canlı oyun, ama ikisi de "devam eden oyun" satırı ve kullanıcı
+            ikisini yan yana görüyor. Burada koşul yok: yerel kayıt her zaman
+            hesap sahibinin sırasında duruyor. */}
+        <span className="text-[13px] font-mono uppercase tracking-[1px] text-green font-bold">
+          SIRA SENDE!
         </span>
         <span
-          className={`text-[8px] font-mono uppercase tracking-[0.5px] ${
+          className={`text-[10px] font-mono uppercase tracking-[0.5px] ${
             remaining.urgent ? 'text-red' : 'text-muted'
           }`}
         >

@@ -693,7 +693,7 @@ class _GameRow extends StatelessWidget {
                 trUpper(onlineStatusLabel(game, isMyTurn: isMyTurn)),
                 style: TextStyle(
                   fontFamily: 'SpaceMono',
-                  fontSize: 11, // web text-[11px]
+                  fontSize: 13, // web text-[13px] (30 Ağustos 2026: 11 → 13)
                   letterSpacing: 1,
                   fontWeight: FontWeight.bold,
                   color: isMyTurn ? _green : _red,
@@ -704,7 +704,7 @@ class _GameRow extends StatelessWidget {
                   trUpper(remaining.text),
                   style: TextStyle(
                     fontFamily: 'SpaceMono',
-                    fontSize: 8,
+                    fontSize: 10, // web text-[10px] (30 Ağustos: 8 → 10)
                     letterSpacing: 0.5,
                     color: remaining.urgent ? _red : _muted,
                   ),

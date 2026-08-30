@@ -78,8 +78,15 @@ function mySlotIndex(game: OnlineGame): number {
   return game.slots.findIndex((s) => s.type === 'human' && s.relation === 'self');
 }
 
+// ⚠ Aktif oyunun iki etiketi KAYNAKTA BÜYÜK HARFLE yazılı (30 Ağustos 2026,
+// kullanıcı isteği: *"'Senin hamlen bekleniyor' → 'SIRA SENDE!', 'Rakibin
+// hamlesi bekleniyor' → 'SIRA RAKİPTE'"*). CSS `uppercase` zaten uyguluyor
+// ama Türkçe i→İ dönüşümü tarayıcının `lang` duyarlılığına kalıyor;
+// kaynağın kendisi büyükse o belirsizlik hiç doğmuyor ve portun `trUpper`ı
+// da idempotent kalıyor. Öteki iki etiket (Rakip bekleniyor/Bitti/Terk
+// edildi) dokunulmadı — onlar bir SIRA bildirmiyor.
 function statusLabel(game: OnlineGame, isMyTurn?: boolean): string {
-  if (game.status === 'active') return isMyTurn ? 'Senin Hamlen Bekleniyor' : 'Rakibin hamlesi bekleniyor';
+  if (game.status === 'active') return isMyTurn ? 'SIRA SENDE!' : 'SIRA RAKİPTE';
   if (game.status === 'pending') return 'Rakip bekleniyor';
   if (game.status === 'finished') return 'Bitti';
   return 'Terk edildi';
@@ -97,10 +104,15 @@ function remainingTimeLabel(deadline: string | null | undefined): { text: string
   const totalMinutes = Math.ceil(ms / (60 * 1000));
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
+  // ⚠ "… sonra teslim sayılacak" → "… kaldı" (30 Ağustos 2026, kullanıcı
+  // isteği). Fiil BİLİNÇLİ olarak düştü: sayaç zaten yalnızca SIRASI
+  // ÇAĞIRANDA olan oyunlarda çiziliyor ve hemen üstünde "SIRA SENDE!"
+  // yazıyor, yani "ne olacak" bilgisini satırın kendisi değil kart taşıyor.
+  // Üç sayaç da (bu, davet iptali, Setup'ın yerel kaydı) aynı kalıba çekildi.
   const text =
     hours > 0
-      ? `${hours} saat ${minutes} dakika sonra teslim sayılacak`
-      : `${minutes} dakika sonra teslim sayılacak`;
+      ? `${hours} saat ${minutes} dakika kaldı`
+      : `${minutes} dakika kaldı`;
   return { text, urgent: totalMinutes < 24 * 60 };
 }
 
@@ -123,13 +135,15 @@ function remainingInviteDays(createdAt: string): { text: string; urgent: boolean
   const days = Math.floor(totalHours / 24);
   const hours = totalHours % 24;
   const minutes = totalMinutes % 60;
-  // "... kaldı" yerine "... sonra iptal edilecek" — `remainingTimeLabel`
-  // ("... sonra teslim sayılacak") ve Setup'taki `SavedGameRow` ("... sonra
-  // silinecek") ile aynı kalıp: süre + o sürenin sonunda NE olacağı.
+  // Üç sayaç da aynı kalıpta: yalnızca SÜRE + "kaldı" (30 Ağustos 2026,
+  // kullanıcı isteği). Öncesinde her biri kendi fiilini taşıyordu ("sonra
+  // iptal edilecek" / "sonra teslim sayılacak" / "sonra silinecek") — süre +
+  // o sürenin sonunda NE olacağı. Fiiller düştü; kartın kendisi (davet mi,
+  // sıra mı, kayıt mı) zaten hangi sürenin işlediğini söylüyor.
   const text =
     days > 0
-      ? `${days} gün ${hours} saat sonra iptal edilecek`
-      : `${hours} saat ${minutes} dakika sonra iptal edilecek`;
+      ? `${days} gün ${hours} saat kaldı`
+      : `${hours} saat ${minutes} dakika kaldı`;
   return { text, urgent: days < 1 };
 }
 
@@ -334,8 +348,12 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
         </span>
       </span>
       <span className="flex flex-col items-end gap-0.5 shrink-0">
+        {/* 11 → 13 px (30 Ağustos 2026, kullanıcı isteği: "fontu biraz
+            büyütelim, kutu biraz büyüyebilir"). Kutu aslında BÜYÜMÜYOR:
+            yeni etiketler kısa ("SIRA RAKİPTE" 12 karakter) — eskisi
+            ("Rakibin hamlesi bekleniyor") 11 px'te bile daha genişti. */}
         <span
-          className={`text-[11px] font-mono uppercase tracking-[1px] ${
+          className={`text-[13px] font-mono uppercase tracking-[1px] ${
             game.status === 'active'
               ? isMyTurn
                 ? 'text-green font-bold'
@@ -347,7 +365,7 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
         </span>
         {remaining && (
           <span
-            className={`text-[8px] font-mono uppercase tracking-[0.5px] ${
+            className={`text-[10px] font-mono uppercase tracking-[0.5px] ${
               remaining.urgent ? 'text-red' : 'text-muted'
             }`}
           >

@@ -848,9 +848,11 @@ RemainingLabel? remainingTimeLabel(String? deadline, int nowMs) {
   final totalMinutes = (ms / 60000).ceil();
   final hours = totalMinutes ~/ 60;
   final minutes = totalMinutes % 60;
+  // ⚠ Fiil DÜŞTÜ (30 Ağustos 2026, kullanıcı isteği) — üç sayaç da yalnızca
+  // "… kaldı" diyor. Gerekçe web ikizinde yazılı.
   final text = hours > 0
-      ? '$hours saat $minutes dakika sonra teslim sayılacak'
-      : '$minutes dakika sonra teslim sayılacak';
+      ? '$hours saat $minutes dakika kaldı'
+      : '$minutes dakika kaldı';
   return RemainingLabel(text, totalMinutes < 24 * 60);
 }
 
@@ -866,17 +868,21 @@ RemainingLabel remainingInviteLabel(String createdAt, int nowMs) {
   final hours = totalHours % 24;
   final minutes = totalMinutes % 60;
   final text = days > 0
-      ? '$days gün $hours saat sonra iptal edilecek'
-      : '$hours saat $minutes dakika sonra iptal edilecek';
+      ? '$days gün $hours saat kaldı'
+      : '$hours saat $minutes dakika kaldı';
   return RemainingLabel(text, days < 1);
 }
 
 /// Web `statusLabel`.
+///
+/// ⚠ Aktif oyunun iki etiketi KAYNAKTA BÜYÜK HARFLE (30 Ağustos 2026,
+/// kullanıcı isteği). Çağıran zaten `trUpper`dan geçiriyor — idempotent;
+/// web tarafında ise CSS `uppercase`in Türkçe i→İ duyarlılığına
+/// güvenilmesin diye böyle yazıldı, iki taraf aynı dizeyi taşısın.
 String onlineStatusLabel(OnlineGame g, {bool? isMyTurn}) =>
     switch (g.status) {
-      OnlineGameStatus.active => isMyTurn == true
-          ? 'Senin Hamlen Bekleniyor'
-          : 'Rakibin hamlesi bekleniyor',
+      OnlineGameStatus.active =>
+        isMyTurn == true ? 'SIRA SENDE!' : 'SIRA RAKİPTE',
       OnlineGameStatus.pending => 'Rakip bekleniyor',
       OnlineGameStatus.finished => 'Bitti',
       OnlineGameStatus.abandoned => 'Terk edildi',

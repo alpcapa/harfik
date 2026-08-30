@@ -241,12 +241,13 @@
       Ziyaretçi Kaynağı) bu linkten gelen bir ziyaret "arkadas" kaynağıyla
       görünmeli (misafirken açılırsa).
 
-- [ ] **Etiket puntoları (Parça 55).** "Devam Edenler"deki durum etiketi
-      ("SENİN HAMLEN BEKLENİYOR"/"RAKİBİN HAMLESİ BEKLENİYOR") web'le aynı
-      boyda olmalı; hemen altındaki kalan-süre satırı ondan belirgin KÜÇÜK
-      (web'de de öyle — ikisi eşit görünüyorsa regresyon). Davet
-      kartlarının sağ üstündeki süre etiketi ise bu ikisinin arasında bir
-      boyda.
+- [ ] **Etiket puntoları (Parça 55; metin/punto 30 Ağustos 2026'da
+      değişti).** "Devam Edenler"deki durum etiketi **"SIRA SENDE!"**
+      (yeşil) / **"SIRA RAKİPTE"** (kırmızı) web'le aynı boyda olmalı
+      (13 px); hemen altındaki kalan-süre satırı (10 px, yalnızca
+      "N saat M dakika kaldı") ondan belirgin KÜÇÜK — ikisi eşit
+      görünüyorsa regresyon. Davet kartlarının sağ üstündeki süre etiketi
+      (9 px) bu ikisinden de küçük.
 
 ### Tahta (oynanış)
 

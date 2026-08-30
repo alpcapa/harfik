@@ -217,10 +217,13 @@ void main() {
 
     expect(find.text('+ YENİ YAPAY ZEKA OYUNU AÇ'), findsOneWidget);
     expect(find.text('DEVAM EDEN OYUNLAR'), findsOneWidget);
-    expect(find.text('SENİN HAMLEN BEKLENİYOR'), findsOneWidget);
+    expect(find.text('SIRA SENDE!'), findsOneWidget);
     expect(find.text('Sıra: Ironman'), findsOneWidget);
-    // Girişli + turnCount>=2 → web remainingTime "teslim sayılacak" dili.
-    expect(find.textContaining('TESLİM SAYILACAK'), findsOneWidget);
+    // 30 Ağustos 2026: geri sayarken fiil ("teslim sayılacak"/"silinecek")
+    // artık YOK, yalnızca "… KALDI" — üç sayaç da aynı kalıpta. Fiil yalnız
+    // süre DOLDUĞUNDA ("Bugün …") geri geliyor.
+    expect(find.textContaining('KALDI'), findsOneWidget);
+    expect(find.textContaining('TESLİM SAYILACAK'), findsNothing);
     // Kurulum formu varsayılanda GİZLİ (web creatingLocal=false).
     expect(find.text('OYUNCU SAYISI'), findsNothing);
 
@@ -332,7 +335,7 @@ void main() {
     // "Son Oynananlar"ın içeriği (Son Oynadıklarım başlığı) HENÜZ yok.
     expect(find.text('DEVAM EDENLER'), findsOneWidget);
     expect(find.text('SON OYNANANLAR'), findsOneWidget);
-    expect(find.text('SENİN HAMLEN BEKLENİYOR'), findsOneWidget);
+    expect(find.text('SIRA SENDE!'), findsOneWidget);
     expect(find.text('SON OYNADIKLARIM'), findsNothing);
 
     // "Son Oynananlar"a geç — biten oyunun kartı gelir, devam eden oyunun
@@ -340,12 +343,12 @@ void main() {
     await tester.tap(find.text('SON OYNANANLAR'));
     await tester.pumpAndSettle();
     expect(find.text('SON OYNADIKLARIM'), findsOneWidget);
-    expect(find.text('SENİN HAMLEN BEKLENİYOR'), findsNothing);
+    expect(find.text('SIRA SENDE!'), findsNothing);
 
     // Geri dön.
     await tester.tap(find.text('DEVAM EDENLER'));
     await tester.pumpAndSettle();
-    expect(find.text('SENİN HAMLEN BEKLENİYOR'), findsOneWidget);
+    expect(find.text('SIRA SENDE!'), findsOneWidget);
     expect(find.text('SON OYNADIKLARIM'), findsNothing);
 
     // "Arkadaşınla"ya geçip geri dönmek "Devam Edenler"e sıfırlamalı (web
@@ -358,7 +361,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('YAPAY ZEKA İLE'));
     await tester.pumpAndSettle();
-    expect(find.text('SENİN HAMLEN BEKLENİYOR'), findsOneWidget);
+    expect(find.text('SIRA SENDE!'), findsOneWidget);
     expect(find.text('SON OYNADIKLARIM'), findsNothing);
     await drainRealIo(tester);
   });
@@ -369,7 +372,7 @@ void main() {
     final seeded = await seedSave(gw, 'save-1');
     await pumpSetup(tester, gw);
 
-    await tester.tap(find.text('SENİN HAMLEN BEKLENİYOR'));
+    await tester.tap(find.text('SIRA SENDE!'));
     await tester.pumpAndSettle();
     // Oyun ekranı açıldı — kaldığı yerden (aynı tur sayısı).
     expect(find.text('OYNA'), findsOneWidget);
@@ -386,7 +389,7 @@ void main() {
     // Geri dön (logo dokunuşu → pop) → liste tazelenir, satır hâlâ tek.
     await tester.tap(find.byType(LogoMark));
     await tester.pumpAndSettle();
-    expect(find.text('SENİN HAMLEN BEKLENİYOR'), findsOneWidget);
+    expect(find.text('SIRA SENDE!'), findsOneWidget);
   });
 
   testWidgets('satırdan devam: aynada DAHA YENİ state varsa oyun ONUNLA '
@@ -399,7 +402,7 @@ void main() {
     final cloud = FresherStateRepo(gw, fresher);
     await pumpSetup(tester, gw, cloud: cloud);
 
-    await tester.tap(find.text('SENİN HAMLEN BEKLENİYOR'));
+    await tester.tap(find.text('SIRA SENDE!'));
     await tester.pumpAndSettle();
     expect(find.text('OYNA'), findsOneWidget);
     expect(cloud.calls, 1, reason: 'oyun açılmadan ÖNCE ayna sorulmalı');
