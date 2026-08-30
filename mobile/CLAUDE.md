@@ -887,8 +887,25 @@ erişilebilirlik açısından savunulamazdı).
    yalnızca "İstekler" bölündü. Eşik: `buyukOlcek(context)`.
 4. **İki grubu `spaceBetween` ile yan yana koyan bir şerit `Row` DEĞİL
    `Wrap` olmalı** — iki grup da `shrink-0` olduğunda `Row` sığmadığı anda
-   taşar. Tahtanın alt şeridi böyle düzeldi; tek satıra sığdığı sürece
-   davranış `Row` ile birebir aynı.
+   taşar. Tahtanın alt şeridi böyle düzeldi.
+   ⚠ **AMA `Wrap`'e GENİŞLİĞİ AYRICA ZORLA** (`width: double.infinity`).
+   Bu madde 28 Ağustos'tan 30 Ağustos 2026'ya kadar *"tek satıra sığdığı
+   sürece davranış `Row` ile birebir aynı"* diyordu ve **YANLIŞTI**;
+   bedelini bir kullanıcı cihazda ödedi (*"Hamleler, Mesajlaşma satırı
+   Android'de ortaya kümelenmiş, iPhone'da kenarlara yaslı"*). Fark ana
+   eksende KİMİN GENİŞLİĞİ DOLDURDUĞU: `Row` varsayılan
+   `mainAxisSize.max` ile gelen genişliği kaplar, `Wrap` ise gevşek kısıt
+   altında içeriğine küçülür — küçülen kutuda dağıtılacak boşluk
+   kalmadığından `spaceBetween` sessizce no-op olur ve saran `Column`un
+   `center` hizası kümeyi ortaya alır. Ölçüldü (390 px): şerit
+   `38,4..351,6` yerine `10,0..380,0` olmalıydı.
+   **Genel kural:** bir düzen widget'ını başkasıyla değiştirmek
+   (`Row`↔`Wrap`, `Column`↔`Wrap`, `Flex`↔`Stack`) "sığdığı sürece aynı"
+   DEĞİLDİR; ana eksendeki boyutlanma davranışı da değişir, ve bu fark
+   yalnızca **konum** ölçen bir testle görülür — `tap_target_test` kutu
+   BOYUTU ölçtüğü için hiç kıpırdamamıştı, o sessizlik "değişmedi" diye
+   okunmuştu. Kapı: `test/text_scale_test.dart` → *"tahta alt şeridi
+   ŞERİDİ DOLDURUR"* (iki farklı genişlikte ölçüyor).
 5. ⚠ **Takımı 1,3'te koşturmak CI KAPISI OLARAK KULLANILAMAZ** (denendi):
    31 test düşüyor ve çoğu gerçek hata değil — bu projede birçok test web
    paritesini piksel piksel ölçüyor, ölçek değişince o ölçümler tanım

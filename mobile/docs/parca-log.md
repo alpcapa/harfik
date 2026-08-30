@@ -20,6 +20,56 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 170 — alt şerit Android'de ortaya kümeleniyordu: `Wrap`
+     genişliği DOLDURMUYOR (30 Ağustos 2026, kullanıcı cihazda bildirdi):**
+     *"Hamleler, Mesajlaşma satırı Android'de ortaya kümelenmiş, iPhone'da
+     kenarlara yaslı."* İki ekran görüntüsü AYNI oyunun iki istemcisiydi —
+     Android = Flutter paketi, iPhone = web; yani doğrudan bir parite farkı.
+     - **Web doğru taraftı** (`Board.tsx`: `flex justify-between w-full`),
+       port ayrışmıştı — "önce web'de bu nasıl yapılmış?" kuralı ilk adımda
+       cevabı verdi.
+     - **Kök sebep Parça 161'in `Row` → `Wrap` dönüşümü.** `Row`
+       (varsayılan `mainAxisSize.max`) gelen genişliği DOLDURUR; `Wrap`
+       gevşek kısıt altında içeriğine KÜÇÜLÜR
+       (`constraints.constrain(...)` doğal genişliği döndürür). Küçülen
+       kutuda dağıtılacak boşluk kalmadığından `spaceBetween` sessizce
+       no-op olur ve saran `Column`un varsayılan `center` hizası kümeyi
+       ortaya alır.
+     - **ÖLÇÜLDÜ** (gerçek `BoardWidget`, bu ortama indirilen Flutter
+       3.47.1 ile): şerit 360/390/430 px'te hep **313,3 px**'te donuyordu —
+       390'da `38,4..351,6` (kenar boşluğu 10 yerine 38,4). Düzeltmeden
+       sonra `10,0..380,0`, yani tam dolu.
+     - **Düzeltme:** `_footer`ın `Padding`i `Container(width:
+       double.infinity, padding: …)` oldu. `Container` ikisini birden
+       yaptığından fazladan sarmalayıcı katman YOK — `SizedBox` ile
+       denendi, tüm `Wrap` bloğunu bir seviye içeri kaydırıp 160 satırlık
+       biçimlendirme gürültüsü üretiyordu.
+     - **Parça 161'in taşma düzeltmesi KORUNDU:** 320 px'te şerit hâlâ iki
+       satıra iniyor (ölçüldü: sol grup y=335,5, sağ grup y=383,5 — düzeltme
+       öncesiyle aynı).
+     - ⚠ **İLK YAZDIĞIM TEST YANLIŞ İDDİA TAŞIYORDU ve ölçüm düzeltti:**
+       "kümelenince iki grup birbirine yapışır" varsaymıştım; oysa gruplar
+       arası boşluk kümelenmiş hâlde de 124,7 px. Test bu yüzden GEÇİYORDU —
+       yani negatif eş kurulmasaydı hiçbir şey korumayan bir test commit
+       edilecekti. Kümelenmenin gerçek imzası boşluğun küçük olması değil
+       **genişlikten BAĞIMSIZ** olması: 360/390/430'da hep 124,7; düzeltmeden
+       sonra 151,4 / 181,4 / 221,4. Test artık İKİ genişlikte ölçüyor.
+     - **Regresyon:** `test/text_scale_test.dart` → *"tahta alt şeridi
+       ŞERİDİ DOLDURUR (kümelenmez)"*. **Negatif eş kuruldu:** düzeltme
+       geri alınınca test gerçekten düşüyor (*"sağ kenara yaslı değil
+       (23,4 px içeride)"*).
+     - **Neden hiçbir mevcut test yakalamadı:** `text_scale_test`'in taşma
+       testi yalnızca taşma/görünürlük soruyor (kümelenme ikisini de
+       ihlal etmiyor), `tap_target_test` ise kutu BOYUTU ölçüyor, KONUM
+       değil. Parça 161'de *"golden dikdörtgenler kıpırdamadı"* denip
+       sessizlik kanıt sayılmıştı — o cümle bugün düzeltildi (`mobile/
+       CLAUDE.md` → "Sistem Yazı Boyutu" kural 4 + o parçanın notu).
+     - **Doğrulama bu kez CI'a bırakılmadı** (Flutter SDK indirildi,
+       `mobile/CLAUDE.md` → "Flutter SDK bu ortama İNDİRİLEBİLİR"):
+       `dart analyze` temiz, **622 widget testi** + `kelimeki_core`
+       **6.841 kontrol** yeşil.
+     - Web DEĞİŞMEDİ (zaten doğru) — bu tek taraflı bir port düzeltmesi.
+
    - ✅ **Parça 169 — hamle rozetinin punto ayrışması kapandı: WEB porta
      geldi (29 Ağustos 2026, kullanıcı kararı; web + port aynı PR):**
      - **Karar yönü önemliydi.** Parça 167'de kullanıcı puntoyu KÜÇÜLTEN
@@ -310,9 +360,13 @@
           yerden: `MaterialApp.builder` → `withClampedTextScaling`.
        2. `board_widget.dart` alt şeridi `Row` → **`Wrap`**. Tavandan sonra
           KALAN TEK taşma noktasıydı (8,3-14 px). İki grup da `shrink-0`
-          (web'de de öyle), yani `Row` sığmadığı anda taşıyor. `Wrap` tek
-          satıra sığdığı sürece `Row`la birebir aynı davranıyor —
-          `tap_target_test`in golden dikdörtgenleri hiç kıpırdamadı.
+          (web'de de öyle), yani `Row` sığmadığı anda taşıyor.
+          ⚠ **Buradaki *"`Wrap` tek satıra sığdığı sürece `Row`la birebir
+          aynı davranıyor — `tap_target_test`in golden dikdörtgenleri hiç
+          kıpırdamadı"* cümlesi YANLIŞTI ve iki gün sonra sahada patladı
+          (bkz. Parça 170).** `Wrap` genişliği doldurmaz, küçülür; testin
+          sessiz kalması da kanıt değildi (o test kutu BOYUTU ölçüyor,
+          KONUM değil).
        3. `friends_modal.dart` "İstekler" satırı büyük ölçekte **ikiye
           bölünüyor** (üstte avatar+isim, altta KABUL ET/REDDET).
           **Yalnızca bu liste:** "Arkadaşlarım"/"Ara & Ekle" satırlarının

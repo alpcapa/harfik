@@ -402,6 +402,13 @@ Bu bölüm anahtarsız da koşulabilir; sunucuyla ilgisi yok.
       Yazı stili solundaki "Hamleler" ile birebir aynı olmalı (punto/
       renk/kalınlık) ve soru-işareti ikonu boş kare DEĞİL gerçek bir
       daire+soru işareti olarak çizilmeli.
+- [ ] **Şerit KENARLARA yaslı mı (Parça 170)?** "Hamleler · Mesajlaşma"
+      şeridin SOL ucunda, "Nasıl Oynanır?" SAĞ ucunda durmalı — ikisi
+      ortada kümelenmiş görünüyorsa `Wrap` genişliği doldurmuyor demektir.
+      **Web ile yan yana koyarak bak** (aynı oyunu tarayıcıda aç): hata tam
+      da böyle bulundu, 30 Ağustos 2026'da bir kullanıcı Android paketiyle
+      iPhone'daki web'i karşılaştırıp bildirdi. Widget testi bunu artık
+      koruyor, ama gerçek cihazın genişliği testinkinden farklı olabilir.
 - [ ] **Sürükle-bırak.** Raftan tahtaya, tahtada taşıma, tahtadan rafa geri
       alma. Hayalet taş parmağın ÜSTÜNDE görünmeli (30px kaldırma).
       **Sürükleme AKICI olmalı — hafif titreme/takılma bir REGRESYONDUR**
