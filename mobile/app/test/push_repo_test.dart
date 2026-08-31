@@ -40,7 +40,7 @@ class FakeMessaging implements PushMessaging {
 }
 
 class FakeStore implements PushTokenStore {
-  final yazilanlar = <Map<String, String>>[];
+  final yazilanlar = <Map<String, String?>>[];
   final silinenler = <String>[];
   bool upsertFirlatsin = false;
 
@@ -49,17 +49,28 @@ class FakeStore implements PushTokenStore {
     required String token,
     required String userId,
     required String platform,
+    String? appVersion,
   }) async {
     if (upsertFirlatsin) throw StateError('ağ yok');
-    yazilanlar.add({'token': token, 'userId': userId, 'platform': platform});
+    yazilanlar.add({
+      'token': token,
+      'userId': userId,
+      'platform': platform,
+      if (appVersion != null) 'appVersion': appVersion,
+    });
   }
 
   @override
   Future<void> remove(String token) async => silinenler.add(token);
 }
 
-PushRepo repo(FakeMessaging m, FakeStore s, {String? platform = 'android'}) =>
-    PushRepo(messaging: m, store: s, platformKaynagi: () => platform);
+PushRepo repo(FakeMessaging m, FakeStore s,
+        {String? platform = 'android', String? appVersion}) =>
+    PushRepo(
+        messaging: m,
+        store: s,
+        platformKaynagi: () => platform,
+        appVersion: appVersion);
 
 void main() {
   test('kaydet: token + kullanıcı + platform doğru yazılır', () async {
@@ -69,6 +80,42 @@ void main() {
     expect(s.yazilanlar, [
       {'token': 'tok-1', 'userId': 'kisi-1', 'platform': 'android'}
     ]);
+  });
+
+  // ── Sürüm damgası (ROADMAP #12, 31 Ağustos 2026) ────────────────────────
+  // "Kaç KİŞİ hangi sürümde" sorusunu cevaplayan tek alan bu. Sessizce
+  // düşmesi mümkün ve fark edilmesi ZOR: bildirimler çalışmaya devam eder,
+  // yalnızca tablodaki sürüm sonsuza kadar null kalır — yani bir gün
+  // "neden herkes bilinmiyor?" diye bakana kadar hiçbir belirti vermez.
+  test('kaydet: appVersion verilmişse damga yazılır', () async {
+    final m = FakeMessaging();
+    final s = FakeStore();
+    await repo(m, s, appVersion: '9.9.9').kaydet('kisi-1');
+    expect(s.yazilanlar.single['appVersion'], '9.9.9');
+  });
+
+  test('kaydet: appVersion YOKSA alan hiç gönderilmez (null kalır)', () async {
+    // Web/test derlemesi sürüm damgası taşımıyor. Boş dizgi ya da 'bilinmiyor'
+    // GÖNDERMEK yanlış olurdu: sunucudaki `coalesce(app_version,'bilinmiyor')`
+    // zaten null'ı öyle gösteriyor, istemcinin ikinci bir "bilinmiyor" değeri
+    // uydurması dökümde iki ayrı satır üretirdi.
+    final m = FakeMessaging();
+    final s = FakeStore();
+    await repo(m, s).kaydet('kisi-1');
+    expect(s.yazilanlar.single.containsKey('appVersion'), isFalse);
+  });
+
+  test('token YENİLENİNCE de damga taşınır', () async {
+    // Yenileme dalı ayrı bir upsert çağrısı — ilkini damgalayıp bunu
+    // unutmak, cihazın sürümünün token döndüğü anda null'a düşmesi demekti.
+    final m = FakeMessaging();
+    final s = FakeStore();
+    await repo(m, s, appVersion: '9.9.9').kaydet('kisi-1');
+    m.refreshCtl.add('tok-2');
+    await Future<void>.delayed(Duration.zero);
+    expect(s.yazilanlar.length, 2);
+    expect(s.yazilanlar.last['token'], 'tok-2');
+    expect(s.yazilanlar.last['appVersion'], '9.9.9');
   });
 
   test('DESTEKLENMEYEN platformda FCM\'e HİÇ dokunulmaz', () async {

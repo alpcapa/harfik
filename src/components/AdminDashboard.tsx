@@ -16,6 +16,7 @@ import {
   fetchAdminSourceFunnel,
   fetchAdminDeviceBreakdown,
   fetchAdminAppVersionBreakdown,
+  fetchAdminPushVersionBreakdown,
   fetchAdminClientErrors,
   fetchAdminFeedback,
   fetchSupportInboxUnseenCount,
@@ -43,6 +44,7 @@ import type {
   AdminActivationStats,
   AdminSourceFunnelRow,
   AdminAppVersionRow,
+  AdminPushVersionRow,
   AdminDeviceBreakdownRow,
   AdminActivityGranularity,
   AdminFeedbackRow,
@@ -372,6 +374,30 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
         satırlarında cihaz sayılamıyor. Web'in sürümü yok ve bu doğru — orada aynı anda tek bir
         canlı derleme var, sürüm yerine <b>—</b> yazılır. Kapsam yalnızca YZ oyunları: yalnız
         Canlı oynayan biri burada hiç görünmez.
+      </>
+    ),
+  },
+  'kurulu-surum': {
+    title: 'Kurulu Sürümler — Kişi',
+    body: (
+      <>
+        Son N günde <b>uygulamayı AÇAN kaç KİŞİ hangi sürümde</b>. Kaynak{' '}
+        <code>push_tokens</code>: satır hesaba bağlı ve token her açılışta yeniden
+        hizalanıyor, yani <b>oyun oynanması gerekmiyor</b>.
+        <br />
+        <b>"Sürüm Dağılımı" tablosunun kopyası değil</b> — o tablo <code>game_starts</code>tan
+        beslendiği için OYUN AÇILIŞI sayar, yalnızca YZ oyunlarını görür ve app satırlarında
+        kişi sayamaz. İkisi farklı soru cevaplıyor; "kaç kişi yeni sürümde?" sorusunun cevabı
+        BURASI.
+        <br />
+        <b>Kapsam:</b> yalnızca giriş yapmış <i>ve</i> bildirim izni vermiş kişiler. İzin
+        vermeyen burada hiç görünmez — bu dürüst bir sınır ve zaten "kaça bildirim gidiyor"
+        kapsamının aynısı. <b>Kişi</b> ile <b>cihaz</b> farklı olabilir: bir kişinin birden
+        çok telefonu olabilir.
+        <br />
+        Sürüm damgası <b>31 Ağustos 2026'da doğdu</b> ve geriye dönük doldurulamaz: bir cihaz
+        1.0.4 ya da sonrasıyla açılana kadar <b>—</b> görünür. Yani ilk günlerde "—" çoğunluk
+        olacak; bu bir arıza değil.
       </>
     ),
   },
@@ -1332,6 +1358,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   const [sourceFunnel, setSourceFunnel] = useState<AdminSourceFunnelRow[] | null>(null);
   const [deviceBreakdown, setDeviceBreakdown] = useState<AdminDeviceBreakdownRow[] | null>(null);
   const [appVersions, setAppVersions] = useState<AdminAppVersionRow[] | null>(null);
+  const [pushVersions, setPushVersions] = useState<AdminPushVersionRow[] | null>(null);
   const [friendActivity, setFriendActivity] = useState<AdminFriendActivityPoint[] | null>(null);
   const [activePlayers, setActivePlayers] = useState<AdminActivePlayersPoint[] | null>(null);
   const [retention, setRetention] = useState<AdminRetentionCell[] | null>(null);
@@ -1489,6 +1516,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
       fetchAdminSourceFunnel(days).then(setSourceFunnel),
       fetchAdminDeviceBreakdown(days).then(setDeviceBreakdown),
       fetchAdminAppVersionBreakdown(days).then(setAppVersions),
+      fetchAdminPushVersionBreakdown(days).then(setPushVersions),
       fetchAdminFriendActivitySeries(userPeriod, userGranularity).then(setFriendActivity),
       fetchAdminActivePlayersSeries(userPeriod, userGranularity).then(setActivePlayers),
     ]).catch((e) => setError(String(e)));
@@ -2406,6 +2434,36 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                       }
                       csvBaseName="kelimeki-surum"
                       infoHint={<InfoHint id="surum-dagilimi" onOpen={setHint} />}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <span className={sectionTitleCls}>
+                      Kurulu Sürümler — Kişi (Son {userPeriod} {PERIOD_UNIT_LABEL[userGranularity]})
+                    </span>
+                    {/* ⚠ ÜSTTEKİ TABLONUN KOPYASI DEĞİL — farklı soru, farklı
+                        kapsam (bkz. AdminPushVersionRow). "Sürüm Dağılımı"
+                        `game_starts`tan besleniyor ve OYUN AÇILIŞI sayıyor
+                        (app satırlarında kişi sayılamıyor: port `anon_id`
+                        göndermiyor). Bu tablo `push_tokens`tan besleniyor ve
+                        KİŞİ sayıyor — token her uygulama açılışında
+                        hizalandığından oyun oynanması gerekmiyor.
+                        Bedeli kapsam: yalnızca giriş yapmış VE bildirim izni
+                        vermiş kişiler görünür. */}
+                    <GuestBreakdownTable
+                      columnLabel="İstemci"
+                      valueLabel="Kişi"
+                      emptyLabel="Bu aralıkta uygulamayı açan yok."
+                      rows={pushVersions?.map((r) => ({ ...r, visitors: r.kisi })) ?? null}
+                      getKey={(row) => `${row.platform}|${row.app_version}`}
+                      // `app_version` kolonu 31 Ağustos 2026'da doğdu ve
+                      // GERİYE DÖNÜK DOLDURULAMAZ: bir cihaz 1.0.4+ ile
+                      // açılana kadar "—" kalır. Kolonun doğum tarihi, eksik
+                      // veri değil.
+                      getLabel={(row) =>
+                        `${row.platform} · ${row.app_version === 'bilinmiyor' ? '—' : row.app_version}`
+                      }
+                      csvBaseName="kelimeki-kurulu-surum"
+                      infoHint={<InfoHint id="kurulu-surum" onOpen={setHint} />}
                     />
                   </div>
                   {/* "Platform" ve "Ana Ekrana Ekleme" tabloları 15 Ağustos 2026'da

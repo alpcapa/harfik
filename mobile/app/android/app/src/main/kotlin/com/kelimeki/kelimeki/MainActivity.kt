@@ -5,11 +5,45 @@ import android.app.NotificationManager
 import android.os.Build
 import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         createNotificationChannel()
+    }
+
+    /**
+     * Bildirim panelini temizleyen kanal (ROADMAP #15, 31 Ağustos 2026).
+     *
+     * NEDEN VAR: bir kullanıcı uygulama simgesindeki rozetin 9'da takılı
+     * kaldığını bildirdi. Rozet uygulamanın kendi sayacı DEĞİL — Samsung
+     * One UI onu panelde HÂLÂ DURAN bildirimlerden türetiyor; bildirime
+     * dokunmak yalnızca O bildirimi kapatıyor. Uygulama öne geldiğinde
+     * Dart tarafı (`_HomeGate.didChangeAppLifecycleState`) burayı çağırıyor.
+     *
+     * ⚠ Kanal adı ve metot adı Dart tarafıyla (`data/notification_shade.dart`)
+     * BİREBİR aynı olmak zorunda. Uyuşmazlık SESSİZ bir arıza: Dart
+     * `MissingPluginException`ı yutuyor, yani rozet temizlenmez ve hiçbir
+     * hata görünmez. `notification_shade_parity_test.dart` bunu zorluyor —
+     * bildirim KANALI kimliğinde (`kelimeki_oyun`) öğrenilen dersin aynısı.
+     *
+     * `cancelAll()` yalnızca BU uygulamanın bildirimlerini kaldırır; başka
+     * uygulamalara dokunamaz (Android izin vermez).
+     */
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "kelimeki/bildirimler")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "hepsiniTemizle" -> {
+                        getSystemService(NotificationManager::class.java)?.cancelAll()
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
     }
 
     /**
