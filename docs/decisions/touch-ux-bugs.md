@@ -291,6 +291,69 @@ dolgunun içinde.)
 (`theme_test.dart` ölçüyor); 48'lik bir kutu alanı bozardı. Aynı eylem
 klavyeden de erişilebilir ve yanlış dokunuşun bedeli sıfır.
 
+### ⚠ `.tap-expand` KONUM KURALI KATMANLI OLMAK ZORUNDA — 31 Ağustos 2026
+
+Bir kullanıcı bildirdi: *"Girişsiz oyun açılış uyarısı X kaymış. Bunun gibi
+başka var mı kontrol et."* ✕ sağ üst köşe yerine kartın SOL ÜSTÜNDE
+duruyordu ve metni aşağı itiyordu.
+
+**Sebep bir CSS kaynak-sırası çakışması.** `.tap-expand` `position:
+relative` tanımlıyor (sözde-elemanın çapası). Kural KATMANSIZ yazılmıştı;
+Tailwind'in `.absolute` utility'siyle **aynı specificity'de** (ikisi de tek
+class = 0,1,0) ve derlenmiş CSS'te **ondan sonra** geldiğinden onu
+eziyordu. Sonuç: `absolute top-3 right-3 … tap-expand` taşıyan her ✕
+`relative` olup normal akışa giriyordu.
+
+**Ölçüldü** (derlenmiş CSS + canlı, 390 px):
+
+| | Önce | Sonra |
+|---|---|---|
+| `getComputedStyle(x).position` | **`relative`** | `absolute` |
+| ✕'in kart sağ kenarından uzaklığı | **317 px** | **13 px** |
+| Görsel kutu | 28×28 | 28×28 |
+| Dokunma hedefi (`::after`) | 48×48 | 48×48 |
+| Metnin kart üstünden uzaklığı | 69 px | 25 px |
+
+Derlenmiş CSS ofsetleri: `.absolute` **10737**, `.tap-expand` **32746** →
+sonra gelen kazanıyor.
+
+**DÜZELTME:** konum kuralı `@layer components` içine alındı. Tailwind
+components katmanını utilities'ten ÖNCE yayınladığından `absolute` artık
+kazanıyor; konum utility'si OLMAYAN çağıranlar `relative` almaya devam
+ediyor. `::after` kuralları katman dışında kalabilir — hiçbir utility ile
+çakışmıyorlar. (`:where()` ile specificity düşürmek de işe yarardı ama
+seçilmedi: desteklenmeyen bir tarayıcıda seçici tümüyle geçersiz sayılıp
+kural DÜŞER ve hedefler sessizce bozulurdu; katman yaklaşımının böyle bir
+riski yok.)
+
+**KAPSAM — altı yer birden bozuktu ve hepsi bu tek değişiklikle düzeldi:**
+`Setup` (Giriş uyarısı), `RankInfoModal`, `FriendsModal`,
+`PlayerScoreCard`, `RewardBanner`, `OnlineGameScreen`. Altısı da birebir
+aynı sınıf dizesini taşıyor.
+
+**Kullanıcının "başka var mı" sorusu tarandı** — `index.css`'teki KATMANSIZ
+her özel sınıf, tanımladığı özellik için bir Tailwind utility'siyle aynı
+elemanda kullanılıyor mu diye kontrol edildi. Çakışma toplamı: **6, hepsi
+bu vaka.** `reward-*` sınıfları (`opacity`/`animation`) hiçbir yerde
+`opacity-*`/`animate-*` utility'siyle birlikte kullanılmıyor;
+`input,textarea,select { font-size }` kuralı ise bilinçli ve zaten
+`!important` (iOS zoom bug'ı).
+
+**REGRESYON TESTİ:** `tests/smoke.spec.ts` → *"`.tap-expand` konumu utility
+ile ÇAKIŞMIYOR"*. Hem konumu hem 48×48 hedefi ölçüyor (sınıfı tamamen
+kaldırarak "düzeltmek" ikinci iddiaya takılır). Negatif eş doğrulandı:
+kural katmandan çıkarılınca test `Received: "relative"` ile düşüyor.
+
+**DERS:** özel bir sınıf, bir Tailwind utility'sinin kontrol ettiği bir
+özelliği (position, opacity, display, font-size…) tanımlıyorsa **katmansız
+bırakma** — aynı specificity'de sırf sonra geldiği için utility'yi sessizce
+ezer. Bu kod tabanı aynı sınıf hatayı bir kez de ters yönde yaşadı
+(`input` element selector'ı `.text-sm` class'ını ezemedi, `!important`
+gerekti — bkz. kök `CLAUDE.md` → "Form Input'ları").
+
+**Flutter portu ETKİLENMİYOR** — orada CSS cascade diye bir şey yok,
+`TapTarget` kutuyu doğrudan büyütüyor.
+
 ### `UserMenu` de `.tap-expand`e geçti — 30 Ağustos 2026
 
 Web'de `.tap-expand` kullanmayan son yer `UserMenu`'nün avatar düğmesiydi;

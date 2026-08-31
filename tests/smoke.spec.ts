@@ -1131,6 +1131,59 @@ test('"Buradan başla" balonu boş tahtada ev karesinin yanında; taş KALDIRILI
   await expect(balon).toHaveCount(0);
 });
 
+test('`.tap-expand` konumu utility ile ÇAKIŞMIYOR — modal ✕ sağ üst köşede kalıyor', async ({
+  page,
+}) => {
+  // NEDEN VAR (31 Ağustos 2026, bir kullanıcı "Giriş uyarısı"nda bildirdi:
+  // *"Girişsiz oyun açılış uyarısı X kaymış"*): `.tap-expand` `position:
+  // relative` tanımlıyordu ve KATMANSIZ yazıldığı için Tailwind'in
+  // `.absolute` utility'siyle AYNI specificity'de (0,1,0) olup derlenmiş
+  // CSS'te ondan SONRA geliyordu — yani onu EZİYORDU. `absolute top-3
+  // right-3 ... tap-expand` taşıyan ✕'ler `relative` olup akışa giriyor ve
+  // kartın SOL ÜSTÜNE düşüyordu (ölçüldü: sağ kenardan 317 px, olması
+  // gereken ~13 px). Aynı sınıf dizesini taşıyan ALTI yer birden bozuktu:
+  // Setup (bu test), RankInfoModal, FriendsModal, PlayerScoreCard,
+  // RewardBanner, OnlineGameScreen — beşi Supabase gerektirdiğinden burada
+  // yalnızca Setup'takine bakılıyor, ama sebep TEK ve ortak: index.css'teki
+  // kural artık `@layer components` içinde (utilities'ten ÖNCE yayınlanır).
+  //
+  // ⚠ İDDİA HEM KONUM HEM HEDEF: sınıf tamamen kaldırılarak "düzeltilirse"
+  // konum testi geçer ama dokunma hedefi 28×28'e düşer — ikisi birlikte
+  // ölçülüyor.
+  await donenKullanici(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByText('OYUNU BAŞLAT').click();
+  const kart = page.getByLabel('Giriş uyarısı');
+  await expect(kart).toBeVisible();
+
+  const olcum = await kart.evaluate((k) => {
+    const x = k.querySelector('[aria-label="Kapat"]') as HTMLElement;
+    const rk = k.getBoundingClientRect();
+    const rx = x.getBoundingClientRect();
+    const after = getComputedStyle(x, '::after');
+    return {
+      pozisyon: getComputedStyle(x).position,
+      sagdan: rk.right - rx.right,
+      ustten: rx.top - rk.top,
+      gorselW: rx.width,
+      gorselH: rx.height,
+      hedefW: parseFloat(after.width),
+      hedefH: parseFloat(after.height),
+    };
+  });
+
+  // Konum: `absolute` kazanmalı ve ✕ SAĞ üst köşede olmalı.
+  expect(olcum.pozisyon).toBe('absolute');
+  expect(olcum.sagdan).toBeLessThan(20);
+  expect(olcum.ustten).toBeLessThan(20);
+  // Görsel kutu küçük KALDI, dokunma hedefi 48×48.
+  expect(olcum.gorselW).toBeCloseTo(28, 1);
+  expect(olcum.gorselH).toBeCloseTo(28, 1);
+  expect(olcum.hedefW).toBe(48);
+  expect(olcum.hedefH).toBe(48);
+});
+
 test('dokunma hedefleri: modal ✕ görsel kutusunun dışından da kapanır, raf taşı hedefi taşın kendisinden büyük', async ({
   page,
 }) => {

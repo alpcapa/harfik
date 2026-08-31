@@ -123,8 +123,23 @@ select {
    içeride olduğundan emin ol — dışarı taşan kısım kırpılırsa dokunuş almaz.
    (Bugünkü tek `overflow-hidden` kapsayıcı `Modal.tsx`in kartı; oradaki ✕
    20 px dolgunun içinde.) */
-.tap-expand {
-  position: relative;
+/* ⚠ KONUM KURALI `@layer components` İÇİNDE OLMAK ZORUNDA. Katmansız
+   yazıldığında Tailwind'in `.absolute` utility'siyle AYNI specificity'de
+   (0,1,0) olup derlenmiş CSS'te ondan SONRA geldiğinden onu eziyordu:
+   `absolute top-3 right-3 ... tap-expand` taşıyan modal ✕'leri `relative`
+   olup akışa giriyor ve kartın SOL ÜSTÜNE düşüyordu (31 Ağustos 2026, bir
+   kullanıcı "Giriş uyarısı"nda bildirdi; ölçüldü: computed `position:
+   relative`, ✕ sağ kenardan 317px, olması gereken ~12px — ve aynı sınıf
+   dizesini taşıyan ALTI yer birden bozuktu). Components katmanı
+   utilities'ten ÖNCE yayınlandığından artık `absolute` kazanıyor; konum
+   utility'si OLMAYAN çağıranlar ise `relative` almaya devam ediyor.
+   `::after` kuralları katman dışında kalabilir — onlar hiçbir utility ile
+   çakışmıyor. */
+@layer components {
+  .tap-expand,
+  .tap-expand-y {
+    position: relative;
+  }
 }
 
 /* Yalnızca DİKEY genişleten varyant — oyun kartındaki 13 px'lik ikonlar
@@ -141,9 +156,6 @@ select {
    (`icon_tap_rescue.dart`). İki platform aynı SONUCU farklı yolla üretiyor:
    DOM'da bir sözde-eleman yeter, Flutter'da hit-test kutuyla sınırlı
    olduğundan orada dokunuş kartın yakalayıcısından YÖNLENDİRİLİYOR. */
-.tap-expand-y {
-  position: relative;
-}
 .tap-expand-y::after {
   content: '';
   position: absolute;
