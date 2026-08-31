@@ -73,8 +73,8 @@ her şey o pencerenin içinde ya da yanında duruyor.
 
 | Kova | Ne | Durum |
 |---|---|---|
-| **Sayaç** | 12 tester × 14 gün · Android developer verification | ⏳ işliyor, aksiyon yok |
-| **Console (elle)** | Data deletion formunda "uygulama içi yol VAR" seçimi · kategori (Oyunlar → Kelime) · iletişim e-postası · web sitesi | ⬜ kullanıcıda |
+| **Sayaç** | 12 tester × 14 gün | ⏳ işliyor, aksiyon yok · *Android developer verification* ✅ **BİTTİ** (Console'dan doğrulandı 31 Ağustos: `com.kelimeki.kelimeki` Registered, 3 anahtar, Identity dolu) |
+| **Console (elle)** | — | ✅ **KAPANDI** (bu satır 31 Ağustos'a kadar bayat kaldı; ayrıntı aşağıda) |
 | **1.0.4'e binecek kod** | Faz 6 istemci yarısı (rozet sıfırlama + sürüm damgası) · Faz 7 (iki çökme) | ✅ **1.0.4 ile çıktı** (31 Ağustos 2026) |
 | **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); kalanlar bekliyor |
 | **Karar verilmiş, yapılmamış** | #3 davetlilere hatırlatma (gönderilebilir) · #8 Paylaşma (iPad popover) | ⬜ |
@@ -82,6 +82,22 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #10 hata hız sınırı · #11 platform filtresi · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor |
 | **Yapıldı** | #6 taranabilir `/nasil-oynanir/` sayfası | ✅ 31 Ağustos 2026 |
 | **iOS/APNs** | Apple Developer üyeliğine bloke; iş "APNs anahtarını yükle + Push capability" kadar | 🔒 |
+
+⚠ **"Console (elle)" satırı 31 Ağustos'a kadar BAYAT kaldı** — dört maddesi
+de aslında 25-26 Ağustos'ta bitmişti ve bu tablo onları hâlâ "kullanıcıda"
+gösteriyordu. Kullanıcı akşam "formları şimdi güncelleyelim" dediğinde
+yapılacak iş olmadığı anlaşıldı. Tek tek:
+
+| Satırın dediği | Gerçek |
+|---|---|
+| Data deletion → "uygulama içi yol VAR" seçimi | **Böyle bir form alanı YOK.** Silme sorusunun cevabı `Evet → kelimeki.com/hesap-silme/` ve öyle kalıyor; Play'in uygulama içi şartı bir form alanı değil, uygulamanın KENDİSİNDE aranan politika şartı — 372'de karşılandı. `marketing/play-store/console-formlari.md` §3.8 bunu 26 Ağustos'ta "ENGEL KALKTI, beyanda değişen bir şey YOK" diye kapatmıştı |
+| Kategori (Oyunlar → Kelime) | ✅ Games → Word, 25 Ağustos |
+| İletişim e-postası | ✅ `destek@kelimeki.com` |
+| Web sitesi | ✅ `https://kelimeki.com` |
+
+**Ders:** bir işin kaydı İKİ yerde durursa (burada özet tablo, orada cevap
+kâğıdı) biri kapanırken öteki kapanmıyor. Bu tablo bir İNDEKS — bir kova
+kapandığında kaynağı `console-formlari.md`'dir, karar oradan okunur.
 
 ### 🚀 1.0.4 SÜRÜM TURU — 31 Ağustos 2026
 
