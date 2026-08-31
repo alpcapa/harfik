@@ -79,7 +79,8 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **Cihazda denenmemiş** | §3c bildirime dokunma → tahta · GA4 DebugView | ⏳ 1.0.3 sahada, fırsat bekliyor |
 | **Karar verilmiş, yapılmamış** | #3 davetlilere hatırlatma (gönderilebilir) · #8 Paylaşma (iPad popover) | ⬜ |
 | **Ertelendi** | #2 zorunlu güncelleme — In-App Update yerini aldı, eşik yalnızca acil fren | — |
-| **İsteğe bağlı** | #5 k-lig grafiği · #6 `/nasil-oynanir` · #9 admin filtre · #10 hata hız sınırı · #11 platform filtresi · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor |
+| **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #10 hata hız sınırı · #11 platform filtresi · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor |
+| **Yapıldı** | #6 taranabilir `/nasil-oynanir/` sayfası | ✅ 31 Ağustos 2026 |
 | **iOS/APNs** | Apple Developer üyeliğine bloke; iş "APNs anahtarını yükle + Push capability" kadar | 🔒 |
 
 ⚠ **1.0.4 için acil bir durum YOK** (kullanıcı kararı, 31 Ağustos 2026):
@@ -1151,7 +1152,47 @@ AYNI PR'da.
 
 ---
 
-## 6. Taranabilir `/nasil-oynanir` sayfası — **İSTEĞE BAĞLI**
+## 6. Taranabilir `/nasil-oynanir` sayfası — ✅ **YAPILDI** (31 Ağustos 2026)
+
+Sayfa canlı: **`/nasil-oynanir/`**, derleme zamanında üretilen statik HTML
+(35 KB, **sıfır `<script>`**, ~7,9 KB okunabilir metin). Kendi
+`title`/`description`/`canonical`'ı var, `sitemap.xml`e girdi.
+
+**İçerik KOPYALANMADI, İTHAL EDİLDİ.** `HelpModal.tsx` artık `QuickStart` ve
+`DetailedRules`'ü dışa açıyor; sayfa onları tüketiyor. Böylece üç taraf
+(pencere · statik sayfa · Dart parite testi) tek kaynaktan besleniyor.
+`QuickStart`ın `onDetailedClick`'i opsiyonel oldu: pencerede adım değiştiren
+bir buton, statik sayfada aynı sayfadaki bölüme giden bir çapa — JS'siz bir
+sayfada buton ölü bir öğe olurdu.
+
+**Öksüz sayfa sorunu çözüldü:** karşılama katmanındaki "Nasıl oynanır?"
+bölümünün sonuna GERÇEK bir `<a href="/nasil-oynanir/">` kondu. Footer'daki
+hukuki bağlantılar `<button>` (SPA penceresi açıyorlar), yani sitemap dışında
+bir keşif yolu yoktu; bu bağlantı onu kapatıyor.
+
+**Mekanizma paylaşıldı, kopyalanmadı:** `src/legal/render.tsx`in dizisi
+`LEGAL_PAGES` → **`STATIC_PAGES`** oldu ve yeni sayfa oraya girdi. Dizin ve
+eklenti adları (`src/legal/`, `scripts/legal-plugin.js`) KASTEN yeniden
+adlandırılmadı — `vite.config.ts`, `.d.ts` ve duman testlerindeki atıflar
+kırılırdı; dizi adı gerçeği söylüyor.
+
+⚠ **BİR HATA YAPILDI VE YAKALANDI — kayda değer.** `HelpModal.tsx`e eklenen
+uyarı yorumunda parite testinin regex'i ÖRNEK OLARAK yazıldı; tarama yorum/kod
+ayrımı yapmadığından o örnek GERÇEK bir başlık gibi sayıldı ve
+`help_text_parity_test.dart` düştü (beklenen `…`, gelen dosyanın ilk satırı).
+Yani dosyaya "bu kalıbı taşıma" diye yazılan uyarının kendisi kalıbı taşıdı.
+Yorum yeniden yazıldı ve dosyaya bu ders de eklendi.
+
+**Testler (44, önce 40) ve negatif eşleri:** sayfa `DetailedRules` yerine
+kopya metin taşısa 2 test düşüyor; katmandaki bağlantı çapaya çevrilse 1 test
+düşüyor. Kaynak karşılaştırması pencereyle DEĞİL `HelpModal.tsx` ile yapılıyor
+(pencereye ulaşmak giriş ya da başlamış oyun ister — kırılgan olurdu; Dart
+tarafı da aynı sebeple kaynak tarıyor). Başlıklar ekranda `uppercase`
+çizildiğinden karşılaştırma `toLocaleUpperCase('tr')` ile normalleştirildi.
+
+---
+
+### Aşağısı yapılmadan önceki hâli (tarihçe)
 
 *Aşağıdaki üç gizli bağ ve statik üretim deseni 0.B3'teki (zorunlu)
 gizlilik sayfası için de birebir geçerli — hangisi önce yapılırsa

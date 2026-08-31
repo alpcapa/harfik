@@ -56,7 +56,7 @@ export function kelimekiLegalPages() {
         const url = (req.url ?? '').split('?')[0];
         const mod = await loadModule().catch(() => null);
         if (!mod) return next();
-        const sayfa = mod.LEGAL_PAGES.find(
+        const sayfa = mod.STATIC_PAGES.find(
           (s) => url === s.yol || url === s.yol.slice(0, -1),
         );
         if (!sayfa) return next();
@@ -75,7 +75,7 @@ export function kelimekiLegalPages() {
         this.error('assets/index-*.css bulunamadı — hukuki sayfalar stilsiz kalırdı.');
       }
       const mod = await loadModule();
-      for (const sayfa of mod.LEGAL_PAGES) {
+      for (const sayfa of mod.STATIC_PAGES) {
         this.emitFile({
           type: 'asset',
           fileName: sayfa.dosya,

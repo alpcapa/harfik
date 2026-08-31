@@ -587,6 +587,19 @@ export function Landing() {
                   izgara={['.....', '.bbb.', '.bAb.', '.bbb.', '.....']}
                 />
               </ol>
+              {/* ⚠ GERÇEK bir `<a href>` — bu satırın asıl işi tarayıcı
+                  DEĞİL, TARAYICI ROBOTU. `/nasil-oynanir/` yalnızca
+                  `sitemap.xml`de dursaydı öksüz bir sayfa olurdu; katmandan
+                  verilen bu bağlantı onu keşfedilebilir kılıyor.
+                  Footer'daki hukuki bağlantıların `<button>` olmasının
+                  sebebi ayrı (SPA penceresi açıyorlar, bkz. aşağıdaki not) —
+                  burası öyle değil, hedefi statik bir sayfa. */}
+              <a
+                href="/nasil-oynanir/"
+                className="self-start mt-1 font-mono text-[11px] text-accent underline-offset-2 hover:underline"
+              >
+                Kuralların tamamı →
+              </a>
             </Bolum>
 
             {/* ── Özellikler ───────────────────────────────────────────── */}

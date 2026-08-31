@@ -997,6 +997,96 @@ for (const { yol, baslik } of HUKUKI_SAYFALAR) {
   });
 }
 
+// ── /nasil-oynanir/ — taranabilir kurallar sayfası (31 Ağustos 2026) ───────
+// NEDEN VAR (ROADMAP #6): Google AI Mode 17 Ağustos 2026'da Kelimeki'yi
+// "kelime bulucu ve sözlük platformu" diye TAMAMEN UYDURDU. Sebep ölçülmüştü:
+// oyunu anlatan tek zengin içerik `HelpModal` ve o YALNIZCA pencere açılınca
+// render oluyordu — taranabilir HTML'de hiç yoktu.
+//
+// ⚠ Bu testlerin konusu "sayfa açılıyor mu" DEĞİL, **JS'siz okunabiliyor mu**.
+// Client-render bu işi görmezdi: Googlebot JS çalıştırıyor ama AI/LLM
+// crawler'ları çalıştırmıyor, yani sorunu DOĞURAN tarafı ıskalardı.
+test('/nasil-oynanir/ JS OLMADAN okunabilir ve kendi meta\'sını taşır', async ({ page }) => {
+  await page.goto('/nasil-oynanir/');
+
+  await expect(page.getByRole('heading', { level: 1, name: 'Nasıl Oynanır' })).toBeVisible();
+  // Statik olmanın kanıtı: uygulama kabuğu HİÇ yok.
+  await expect(page.locator('#root')).toHaveCount(0);
+  await expect(page.locator('#karsilama')).toHaveCount(0);
+
+  // Kendi meta'sı — yoksa SPA'nın genel meta'sını miras alır ve kazancın
+  // yarısı giderdi (ROADMAP #6'nın üçüncü "gizli bağ"ı).
+  await expect(page).toHaveTitle(/Nasıl Oynanır/);
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+    'content',
+    /nasıl oynanır/i,
+  );
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    'href',
+    'https://kelimeki.com/nasil-oynanir/',
+  );
+});
+
+test('/nasil-oynanir/ kurallar metnini GERÇEKTEN taşıyor (boş kabuk değil)', async ({ page }) => {
+  await page.goto('/nasil-oynanir/');
+  const metin = (await page.locator('main').innerText()).replace(/\s+/g, ' ');
+
+  // Sayfanın var olma sebebi bu kelimeler: oyunu ne yapan şeyler bunlar.
+  // Biri kaybolursa sayfa açılıyor ama İŞİNİ görmüyor demektir.
+  for (const anahtar of ['bölge vergisi', 'Bingo', 'Joker', 'TDK']) {
+    expect(metin.toLowerCase()).toContain(anahtar.toLowerCase());
+  }
+  // Kabaca bir hacim eşiği — "başlık var, gövde boş" hâlini yakalar.
+  expect(metin.length).toBeGreaterThan(3000);
+});
+
+test('/nasil-oynanir/ içeriği HelpModal.tsx ile AYNI KAYNAKTAN — kopya değil', async ({
+  page,
+}) => {
+  // İki kopya bu projenin en sık tekrarlayan hata sınıfı; burada üçüncü bir
+  // taraf daha var: `mobile/app/test/help_text_parity_test.dart` DA
+  // `HelpModal.tsx`i tarıyor. İçerik oradan çıkarsa hem bu sayfa hem o mobil
+  // test sessizce ayrışır.
+  //
+  // ⚠ Karşılaştırma pencereyle DEĞİL KAYNAK DOSYAYLA yapılıyor. Pencereye
+  // ulaşmak giriş ya da başlamış bir oyun ister (link `UserMenu`de ve tahtanın
+  // alt şeridinde); o kurulum bu testin konusunu — "sayfa metni HelpModal'dan
+  // mı geliyor" — daha zayıf değil daha kırılgan kanıtlardı. Dart tarafındaki
+  // parite testi de aynı sebeple kaynak taraması yapıyor.
+  const kaynak = readFileSync('src/components/HelpModal.tsx', 'utf8');
+  const basliklar = [...kaynak.matchAll(/<Section title="([^"]+)"/g)].map((m) => m[1]);
+  expect(basliklar.length).toBeGreaterThan(3);
+
+  await page.goto('/nasil-oynanir/');
+  // ⚠ Başlıklar ekranda `uppercase` ile çiziliyor ve `innerText` DÖNÜŞMÜŞ
+  // metni veriyor — kaynaktaki "Bölge Vergisi" ile ekrandaki "BÖLGE VERGİSİ"
+  // ham hâlde eşleşmez. Karşılaştırma bu yüzden normalleştirilmiş:
+  // Türkçe locale ile büyütülüp (i→İ, ı→I) boşluklar teklenmiş.
+  const norm = (t: string) => t.replace(/\s+/g, ' ').trim().toLocaleUpperCase('tr');
+  const sayfaBasliklari = (await page.locator('main h3').allInnerTexts()).map(norm);
+  for (const b of basliklar) {
+    expect(sayfaBasliklari).toContain(norm(b));
+  }
+
+  // "Hızlı Başlangıç" maddeleri de sayfada olmalı — `QuickStart` ithal
+  // edilmezse başlıklar yine tutar ama özet kaybolurdu.
+  const metin = await page.locator('main').innerText();
+  const ilkMadde = /<QuickItem icon="[^"]+">\s*([^<{]{10,40})/.exec(kaynak)?.[1]?.trim();
+  expect(ilkMadde, 'HelpModal.tsx\'te <QuickItem> bulunamadı').toBeTruthy();
+  expect(metin.replace(/\s+/g, ' ')).toContain(ilkMadde!.replace(/\s+/g, ' '));
+});
+
+test('katmandaki "Kuralların tamamı" GERÇEK bir bağlantı — robot izleyebilsin', async ({
+  page,
+}) => {
+  // Öksüz sayfa sorunu: yalnızca sitemap'te duran bir URL zayıf keşfedilir.
+  // Footer'daki hukuki bağlantılar `<button>` (SPA penceresi açıyorlar), bu
+  // ise gerçek bir `<a href>` olmak ZORUNDA.
+  await page.goto('/');
+  const link = page.locator('a[href="/nasil-oynanir/"]');
+  await expect(link).toBeVisible();
+});
+
 test('hukuki metin TEK KAYNAKTAN geliyor — sayfa ile pencere aynı bölümleri taşıyor', async ({
   page,
 }) => {

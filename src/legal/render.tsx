@@ -1,6 +1,12 @@
-// Hukuki sayfaların STATİK HTML üreticisi — Node'da koşar, tarayıcıya hiç
-// gitmez (`src/landing/render.tsx` ile aynı desen: `renderToStaticMarkup`,
+// SPA DIŞINDAKİ STATİK sayfaların HTML üreticisi — Node'da koşar, tarayıcıya
+// hiç gitmez (`src/landing/render.tsx` ile aynı desen: `renderToStaticMarkup`,
 // esbuild ile paketlenip Vite eklentisinden import ediliyor).
+//
+// ⚠ Dosya `src/legal/` altında ve eklenti `legal-plugin.js` — ADLARI TARİHSEL.
+// 31 Ağustos 2026'da buraya hukuki OLMAYAN bir sayfa eklendi
+// (`/nasil-oynanir/`); dizin/dosya adları KASTEN yeniden adlandırılmadı,
+// çünkü `vite.config.ts`, `.d.ts` ve duman testlerindeki atıflar kırılırdı.
+// Dizi adı (`STATIC_PAGES`) gerçeği söylüyor.
 //
 // NEDEN VAR: Play'in Data safety formu doğrudan açılan bir gizlilik politikası
 // URL'i istiyor ve o form kapalı test kanalındaki uygulamalar için de zorunlu.
@@ -14,6 +20,13 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { LogoMark } from '../components/LogoMark';
 import { PrivacyBody, TermsBody, Section, P, SILME_SURESI_GUN } from './LegalContent';
+// ⚠ İÇERİK KOPYALANMIYOR, İTHAL EDİLİYOR. Kurallar metninin TEK kaynağı
+// `HelpModal.tsx` ve bu bir tercih değil zorunluluk:
+// `mobile/app/test/help_text_parity_test.dart` O DOSYAYI doğrudan okuyup
+// `<Section title="…">` / `<QuickItem icon="…">` kalıplarını tarıyor. İkinci
+// bir kopya yazmak hem o testi anlamsızlaştırır hem de bu projenin en sık
+// tekrarlayan hata sınıfını (iki kopya sessizce ayrışır) geri getirir.
+import { QuickStart, DetailedRules } from '../components/HelpModal';
 
 const SITE = 'https://kelimeki.com';
 
@@ -90,6 +103,42 @@ function HesapSilmeBody() {
   );
 }
 
+function NasilOynanirBody() {
+  return (
+    <div className="flex flex-col gap-5">
+      <P>
+        Kelimeki, 13×13'lük bir tahtada <strong>köşe bölgeleriyle</strong> oynanan Türkçe bir
+        kelime oyunudur. Klasik kelime oyunlarından ayrıldığı yer şu: tahtada dağınık bonus
+        kareleri yoktur; her oyuncu kendi köşesinden başlar ve bölgesini tahtanın ortasına
+        doğru <strong>genişletir</strong>. Aşağısı önce kısa bir özet, ardından kuralların
+        tamamıdır.
+      </P>
+
+      <Section title="Hızlı Başlangıç">
+        {/* İçerik `HelpModal.tsx`ten İTHAL — bkz. dosya başındaki uyarı.
+            `onDetailedClick` verilmiyor: statik sayfada JS yok, bileşen o
+            durumda butonu değil aşağıdaki bölüme giden bir çapa üretiyor. */}
+        <QuickStart />
+      </Section>
+
+      <div id="detayli-kurallar" className="flex flex-col gap-5 scroll-mt-4">
+        <DetailedRules />
+      </div>
+
+      <Section title="Oynamaya Başla">
+        <P>
+          Kurallar kulağa karmaşık geliyorsa merak etme — oyun ilk hamlede kendini anlatıyor.{' '}
+          <a href="/" className="text-accent font-mono hover:underline">
+            Kelimeki'yi aç
+          </a>{' '}
+          ve Yapay Zeka'ya karşı tek başına ya da arkadaşınla dene; kayıt olmadan da
+          oynayabilirsin.
+        </P>
+      </Section>
+    </div>
+  );
+}
+
 interface Sayfa {
   /** `dist` içindeki dosya yolu. */
   dosya: string;
@@ -100,7 +149,7 @@ interface Sayfa {
   govde: () => React.ReactNode;
 }
 
-export const LEGAL_PAGES: Sayfa[] = [
+export const STATIC_PAGES: Sayfa[] = [
   {
     dosya: 'gizlilik/index.html',
     yol: '/gizlilik/',
@@ -124,6 +173,22 @@ export const LEGAL_PAGES: Sayfa[] = [
       'Kelimeki hesabınızın ve kişisel verilerinizin kalıcı olarak silinmesini nasıl talep edeceğinizi açıklar.',
     govde: () => <HesapSilmeBody />,
   },
+  {
+    // NEDEN VAR (ROADMAP #6): Google AI Mode 17 Ağustos 2026'da Kelimeki'yi
+    // "kelime bulucu ve sözlük platformu" diye TAMAMEN UYDURDU. Sebep ölçüldü:
+    // oyunu gerçekten anlatan tek zengin içerik `HelpModal` ve o YALNIZCA
+    // pencere açılınca render oluyor — taranabilir HTML'de hiç yoktu.
+    //
+    // ⚠ CLIENT-RENDER YETMEZDİ: Googlebot JS çalıştırıyor ama AI/LLM
+    // crawler'ları çalıştırmıyor, yani sorunu DOĞURAN tarafı tam olarak
+    // ıskalardı. Bu yüzden derleme zamanı statik üretim.
+    dosya: 'nasil-oynanir/index.html',
+    yol: '/nasil-oynanir/',
+    baslik: 'Nasıl Oynanır',
+    aciklama:
+      'Kelimeki nasıl oynanır: 13×13 tahtada köşe bölgeleriyle oynanan Türkçe kelime oyununun kuralları — bölge genişletme, bölge vergisi, bonus bölgesi, joker ve puanlama.',
+    govde: () => <NasilOynanirBody />,
+  },
 ];
 
 function Kabuk({ sayfa }: { sayfa: Sayfa }) {
@@ -140,7 +205,7 @@ function Kabuk({ sayfa }: { sayfa: Sayfa }) {
 
       <footer className="flex flex-col items-center gap-3 pb-2">
         <nav className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[10px] font-mono text-muted">
-          {LEGAL_PAGES.filter((s) => s.yol !== sayfa.yol).map((s) => (
+          {STATIC_PAGES.filter((s) => s.yol !== sayfa.yol).map((s) => (
             <a key={s.yol} href={s.yol} className="hover:underline active:opacity-70">
               {s.baslik}
             </a>
