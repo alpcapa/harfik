@@ -884,11 +884,30 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   );
   // Sırası kendisinde olan oyunlar ("Senin Hamlen Bekleniyor") listenin en
   // üstünde — dikkat gerektiren oyunlar her zaman ilk bakışta görünsün diye.
-  // Array.prototype.sort kararlı (stable) olduğundan aynı gruptaki oyunlar
-  // arasında `games`'in geldiği sıra (en son güncellenen önce) korunur.
+  // İKİNCİ ölçüt: son oynanan üstte.
+  //
+  // ⚠ 31 Ağustos 2026 — burada eskiden ikinci ölçüt YOKTU; yorum, kararlı
+  // sort sayesinde `games`'in geldiği sıranın "en son güncellenen önce"
+  // olduğunu VARSAYIYORDU. Yanlıştı: `list_my_online_games` RPC'si
+  // `order by og.created_at desc` ile dönüyor, yani oyunun KURULMA sırası.
+  // Sonuç, kullanıcının bildirdiği davranıştı — az önce oynadığın oyun
+  // listede yerinde kalıyordu (*"son oynanan her zaman en üstte olacak"*).
+  //
+  // Ölçüt olarak `turn_deadline` kullanılıyor: `submit_move` her hamlede onu
+  // `now() + 48 saat` yapıyor, dolayısıyla deadline'ı geç olan = son
+  // oynanan. Ek bir sorgu/alan gerekmiyor, `deadlines` zaten yüklü. Null
+  // (henüz kurulmamış state) EN SONA düşer.
+  const sonHamle = (g: OnlineGame) => {
+    const d = deadlines[g.id];
+    return d ? new Date(d).getTime() : 0;
+  };
   const active = (games ?? [])
     .filter((g) => g.status === 'active')
-    .sort((a, b) => Number(turns[b.id] === mySlotIndex(b)) - Number(turns[a.id] === mySlotIndex(a)));
+    .sort((a, b) => {
+      const benimSiram = Number(turns[b.id] === mySlotIndex(b)) - Number(turns[a.id] === mySlotIndex(a));
+      if (benimSiram !== 0) return benimSiram;
+      return sonHamle(b) - sonHamle(a);
+    });
   const waiting = (games ?? []).filter((g) => g.my_role === 'creator' && g.status === 'pending');
   // Daveti kabul ettin ama oyun (4 kişilikte diğer davetliler henüz
   // kabul etmediğinden) hâlâ 'pending' — `invites`/`active`/`waiting`

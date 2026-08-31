@@ -1131,6 +1131,65 @@ test('"Buradan başla" balonu boş tahtada ev karesinin yanında; taş KALDIRILI
   await expect(balon).toHaveCount(0);
 });
 
+test('hiç başlamamış oyun İZ BIRAKMAZ, başlamış oyun kaydedilir', async ({ page }) => {
+  // NEDEN VAR (31 Ağustos 2026, bir kullanıcı bildirdi: *"oyundayken hiç
+  // hamle yapmadan giriş yaparsan YZ oyunlar 1 gösteriyor ve oyun orada
+  // bekliyor"*): autosave, henüz BAŞLAMAMIŞ bir oyunu (turnCount<2) da
+  // yazıyordu ve onu silmek TEK bir çıkış yoluna (`handleLogoClick`)
+  // bırakılmıştı. Başka her çıkış — yeniden yükleme, sekme/uygulama
+  // kapatma, giriş yapıp farklı gezinme — hayalet bir "Devam Eden Oyun"
+  // bırakıyordu. Üretim verisinde ölçüldü: 83 `local_game_saves` kaydının
+  // 5'i turnCount<2, 5 ayrı kullanıcıda, en eskisi 31 Temmuz.
+  //
+  // ⚠ İKİ İDDİA BİRLİKTE: yalnızca "iz bırakmaz" iddiası olsaydı, kaydı
+  // tamamen kapatan bir "düzeltme" de testi geçerdi — ikinci yarı gerçek
+  // bir oyunun HÂLÂ kaydedildiğini kilitliyor.
+  //
+  // Bulut yolu (girişli kullanıcı, `local_game_saves`) burada test
+  // EDİLEMİYOR (Supabase yok), ama koruma iki dalın da ÖNÜNDEKİ tek bir
+  // `turnCount < 2` kapısı — misafir yolu onu birebir aynı şekilde geçiyor.
+  await donenKullanici(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByText('OYUNU BAŞLAT').click();
+  const devam = page.getByLabel('Giriş uyarısı').getByRole('button', { name: 'Oyna', exact: true });
+  if (await devam.isVisible().catch(() => false)) await devam.click();
+  const quickstart = page.getByRole('heading', { name: /hızlı başlangıç/i });
+  if (await quickstart.isVisible().catch(() => false)) {
+    await page.locator('button[aria-label="Kapat"]').last().click();
+  }
+  await expect(page.getByRole('main').getByRole('button', { name: 'Pas Geç' })).toBeEnabled();
+
+  const kayit = () =>
+    page.evaluate(() => {
+      const raw = localStorage.getItem('kelimeki:game-state');
+      return raw ? (JSON.parse(raw).state?.turnCount ?? null) : null;
+    });
+
+  // ── 1) Hiç hamle yokken HİÇBİR ŞEY yazılmamalı ──────────────────────────
+  expect(await kayit()).toBeNull();
+
+  // Çıkış butonuna BASMADAN sayfayı yenile (sekme kapatmanın eşdeğeri) —
+  // hatanın ortaya çıktığı yol tam olarak buydu.
+  await page.reload();
+  await expect(page.getByText('OYUNU BAŞLAT')).toBeVisible();
+  expect(await kayit()).toBeNull();
+  await expect(page.getByText(/Devam Eden/i)).toHaveCount(0);
+
+  // ── 2) Gerçekten başlamış oyun HÂLÂ kaydedilir ──────────────────────────
+  await page.getByText('OYUNU BAŞLAT').click();
+  const devam2 = page.getByLabel('Giriş uyarısı').getByRole('button', { name: 'Oyna', exact: true });
+  if (await devam2.isVisible().catch(() => false)) await devam2.click();
+  await expect(page.getByRole('main').getByRole('button', { name: 'Pas Geç' })).toBeEnabled();
+  await page.getByRole('main').getByRole('button', { name: 'Pas Geç' }).click();
+  await page.getByLabel('Pas geçme onayı').getByRole('button', { name: 'Pas Geç' }).click();
+  // Pas + YZ'nin cevabı = turnCount 2 ("gerçekten başladı" eşiği).
+  await expect.poll(kayit, { timeout: 20_000 }).toBeGreaterThanOrEqual(2);
+
+  await page.reload();
+  await expect(page.getByText(/Devam Eden/i).first()).toBeVisible();
+});
+
 test('`.tap-expand` konumu utility ile ÇAKIŞMIYOR — modal ✕ sağ üst köşede kalıyor', async ({
   page,
 }) => {

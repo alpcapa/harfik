@@ -1,5 +1,40 @@
 # Canlı Oyun (Faz 2 → 3.6) — Karar Kaydı
 
+## Bekleyen oyun sıralaması: sıra sende → son oynanan (31 Ağustos 2026)
+
+Kullanıcı isteği: *"Bekleyen oyunlar sıralamada son oynanan her zaman en
+üstte olacak. (Tabi 'sıra sende' varsa onlardan sonra)"*
+
+**Öncesinde ikinci ölçüt YOKTU.** Web'deki `LiveGamesTab` yalnızca "sıra
+bende" ölçütüyle sıralıyor ve geri kalanı `games`'in geliş sırasına
+bırakıyordu; koddaki yorum bu sıranın *"en son güncellenen önce"* olduğunu
+VARSAYIYORDU. Yanlıştı — `list_my_online_games` RPC'si
+`order by og.created_at desc` ile dönüyor, yani oyunun **kurulma** sırası.
+Sonuç: az önce oynadığın oyun listede yerinde kalıyordu.
+
+**Ölçüt olarak `turn_deadline` seçildi.** `submit_move` her hamlede onu
+`now() + 48 saat` yapıyor, dolayısıyla **deadline'ı geç olan = son oynanan**.
+İstemcide zaten yüklü (`deadlines`), yani ek sorgu/alan/migration YOK ve
+RPC'ye dokunulmadı. Null (state henüz kurulmamış) en sona düşer.
+
+**İki yüzey birden düzeltildi** — port `activeBucket`'ı (`online_games_api.dart`)
+aynı kusuru taşıyordu, yorumu bile *"web'in kararlı sort'u"* diyordu:
+
+| | Web | Port |
+|---|---|---|
+| Dosya | `LiveGamesTab.tsx` | `data/online_games_api.dart` |
+| Kararlılık | JS `Array.sort` kararlı | Dart `List.sort` KARARLI DEĞİL → indeks tie-break |
+
+Portta `deadlines` **opsiyonel adlandırılmış parametre** (varsayılan `const {}`)
+— verilmezse eski davranış (geliş sırası) aynen korunuyor, böylece
+`myTurnCount` gibi deadline'a ihtiyacı olmayan çağıranlar değişmedi.
+
+**Dart testi:** `live_games_test.dart` → *"activeBucket: aynı grupta SON
+OYNANAN üstte (turn_deadline)"*. Dört oyunla iki grubu birden ölçüyor
+(`['c','b','a','d']`) ve deadline verilmediğinde eski sıranın korunduğunu da
+kilitliyor. Yerelde koşuldu: **653 test geçti**, `dart analyze` temiz.
+
+
 > **Bölünme notu (25 Ağustos 2026):** Bu dosya, `docs/decisions/live-game-and-friends.md`nin
 > üç parçaya ayrılmış hâlinin biri. Ayrım `npm run check-doc-size`in uyarı bandına
 > girilmesiyle zorunlu oldu (156 KB / 200 KB — kural: *"uyarı bandındaki dosyayı bir
