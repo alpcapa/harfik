@@ -1241,6 +1241,18 @@ silinmez.**
 - [ ] Gizlilik Politikası (web modal + `/gizlilik/` sayfası + mobil port) 5.
       bölümde ~20 saat hatırlatma / 48 saat silme cümlesini taşıyor ve üç
       yüzeyde de aynı.
+- [ ] **6. bölüm anonim kodun DÖRT durumunu sayıyor** (31 Ağustos 2026'da
+      dördüncüsü eklendi: YZ oyununu BİTİRME, yalnızca girişsizken). Üç
+      yüzeyde de aynı ve "Son güncelleme" tarihi ÜÇÜNDE de **31 Ağustos
+      2026** olmalı — portun tarihi web'inkinden geri kalırsa
+      `legal_text_test.dart` zaten düşer, ama statik sayfa derlemeden
+      geliyor: `/gizlilik/` sayfasını da elle aç ve tarihi gör.
+- [ ] **Girişliyken bitirdiğin bir YZ oyununda anonim kod GİTMEMELİ.** Metin
+      bunu açıkça söylüyor ("Girişliyken … anonim kod ORAYA HİÇ YAZILMAZ").
+      Sunucu iki katmanda zorluyor (trigger + CHECK), yani bu kontrol
+      metnin doğruluğunu değil, davranışın metinle uyuştuğunu sınıyor:
+      girişli bir oyunu bitir → `game_finishes` satırında `user_id` dolu,
+      `anon_id` NULL olmalı.
 
 ## 19. Alt şerit dokunma hedefleri (24 Ağustos 2026)
 

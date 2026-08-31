@@ -14,36 +14,6 @@ maddeleri, burası İKİ platformu birden ilgilendiren ve bilinçli olarak
 ertelenmiş ürün fikirleri. Bir madde yapılınca buradan silinip ilgili
 bölümün kendi tarihli notuna taşınır.
 
-- **`game_finishes.anon_id` — misafir bitişlerinde BENZERSİZ CİHAZ sayılamıyor
-  (28 Ağustos 2026, kullanıcı sordu: *"Bitirenler kaç unique kişi? Ya da hepsi
-  farklı kişi mi?"* → "Evet işlere ekle"):** Kaynak hunisinde Instagram satırı
-  bugün **1522 gelen / 9 üye / 117 başlayan / 41 biten** (dördü de canlı
-  veritabanında doğrulandı; oran 41÷117 = **%35.0**). Ama "başlayan" tarafında
-  `starters` (benzersiz cihaz) VAR — 117 oyunu **64 cihaz** açmış, üstelik
-  bunların İKİSİ tek başına 47 oyun başlatmış — bitmiş tarafta karşılığı YOK.
-  Yani "41 bitiş kaç kişiden geldi" sorusunun bugünkü dürüst cevabı
-  **2 ile 41 arası, bilinmiyor**; kampanya kararını doğrudan etkileyen bir
-  körlük.
-  - **Sebep bir eksiklik DEĞİL, yazılı bir gizlilik kararı**
-    (`20260822043039_game_finishes_utm_source.sql`): `game_finishes` `user_id`
-    TAŞIYOR, yanına anonim cihaz kodunu koymak `PrivacyModal` §6'daki *"anonim
-    cihaz kodunuz hesabınızla ASLA eşleştirilmez"* taahhüdünü bozardı.
-    `game_starts`'ta `anon_id` bulunabilmesinin sebebi tam tersi: o tablo hesap
-    kimliği hiç taşımıyor, yalnızca `is_guest` bayrağı var.
-  - **Taahhüdü bozmadan çözüm:** `anon_id` eklenir ama **YALNIZCA `user_id`
-    null iken yazılır** — ikisi aynı satırda hiçbir zaman bulunmadığından
-    cihaz↔hesap eşlemesi doğmaz, taahhüt aynen ayakta kalır. Huninin misafir
-    kolonları zaten `user_id is null` filtreliyor, yani ölçü tam da o satırlar
-    için üretilir. Kısıt SQL'de zorlanmalı (`check (anon_id is null or user_id
-    is null)`), yorumla değil.
-  - ⚠ **GERİYE DÖNÜK DOLDURULAMAZ** — `utm_source`'un kendisi, `games.platform`
-    ve `game_starts.utm_source` ile aynı sınıf. Bir sonraki reklam
-    harcamasından ÖNCE girmezse o kampanya da körde ölçülür.
-  - Dokunulacak yerler: migration + `admin_source_funnel` (yeni `finishers`
-    sütunu) + `AdminSourceFunnelRow`/CSV + `SourceFunnelTable`'ın "Biten"
-    yüzdesinin tabanı (`finishers/starters` gerçek cihaz-bazlı tamamlanma
-    oranı olur) + `PrivacyModal` kontrolü + `database.types.ts`.
-
 - **Hayalet taş tahtayla birlikte küçülmeli (24 Ağustos 2026, ölçüldü —
   ertelendi):** Sürüklenen taşın hayaleti SABİT 46 px (`App.tsx`'te
   `width/height: 46` + `scale(1.1)` = 50,6 px; portta `_buildGhost`'ta aynı
@@ -131,6 +101,12 @@ bölümün kendi tarihli notuna taşınır.
 - **Taranabilir `/nasil-oynanir` sayfası** — ✅ yapıldı 31 Ağustos 2026
   (#386), build-time statik üretim; içerik `HelpModal`'dan İTHAL ediliyor,
   kopyalanmıyor. Kaydı: `ROADMAP.md` madde 6.
+- **`game_finishes.anon_id`** — ✅ yapıldı 31 Ağustos 2026. Huniye "Bitiren
+  Cihaz" (`finishers`) eklendi; `anon_id` YALNIZCA `user_id` null iken
+  yazılıyor (trigger + CHECK), yani gizlilik taahhüdü ayakta. Kaydı:
+  `docs/decisions/admin-panel.md` → "Bitiren Cihaz".
+  ⚠ Geriye dönük doldurulamayan kolonların listesi hâlâ geçerli: bir sonraki
+  ölçüm boşluğu da reklam harcamasından ÖNCE kapatılmalı.
 
 
 ## ✅ KAPANDI — Tahta çiziminin önbelleğe alınması (26 Ağustos 2026)

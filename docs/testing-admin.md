@@ -120,6 +120,27 @@ gerekenler.
 - [ ] **Devam eden oyuna DÖNMEK bir başlangıç DEĞİL.** Yarım bırakılmış bir
       oyunu "Devam Eden Oyun" satırından sürdür → "Başlayan" ARTMAMALI.
       Artıyorsa aynı oyun her oturum dönüşünde tekrar sayılıyor demektir.
+- [ ] **"Biten" yüzdesi artık CİHAZ oranı (31 Ağustos 2026).** MİSAFİRKEN bir
+      YZ oyununu BİTİR → `%` modunda "Biten" hücresi `bitiren cihaz /
+      başlatan cihaz` göstermeli. Aynı cihazda ikinci bir oyunu daha bitir →
+      sayı modunda "Biten" 2 olmalı ama yüzde DEĞİŞMEMELİ (cihaz hâlâ 1).
+      Yüzde de artıyorsa oran yine oyun adedinden hesaplanıyor demektir.
+- [ ] ⚠ **"Biten" dolu ama yüzdesi "—" ise bu DOĞRU davranış, hata değil.**
+      Cihaz kodu bitmiş tarafa 31 Ağustos 2026'da eklendi ve geriye dönük
+      doldurulamaz; o tarihten önceki bitişlerde cihaz bilgisi YOK. "0%"
+      yazmak "hiçbir cihaz bitirmedi" derdi. Aynısı mobil uygulamadan gelen
+      satırlar için de geçerli (port damgalamıyor, o satırlar zaten
+      "bilinmiyor" kaynağında). İkisi de 0 ise oran gerçekten 0'dır ve
+      "0.0%" yazar.
+- [ ] **CSV'de "Bitiren Cihaz" sütunu var** ve ham sayı veriyor; "Biten Oyun"
+      sütunundan küçük ya da ona eşit olmalı (büyükse bir şey yanlıştır).
+- [ ] **GİZLİLİK — girişliyken bitirilen oyunda cihaz kodu YAZILMAMALI.**
+      Giriş yapıp bir YZ oyunu bitir → `game_finishes` satırında `user_id`
+      dolu, `anon_id` NULL olmalı. Sunucu bunu iki katmanda zorluyor (BEFORE
+      INSERT trigger sessizce NULL'a çeker, CHECK kısıtı da değişmezi
+      kanıtlar), yani bu kontrol istemcinin yanlış davranışını değil
+      taahhüdün ayakta olduğunu sınıyor. Gizlilik metninin 6. bölümü tam
+      olarak bunu söylüyor.
 
 - [ ] **Tablo yükleniyor ve zaman filtresine bağlı.** Admin Paneli → Büyüme →
       Kullanıcı: "Kaynak Hunisi (Son N …)" başlığı üstteki granülerlik/periyot

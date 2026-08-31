@@ -350,8 +350,19 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
         Yüzde modunda <b>Üye</b> = üye / gelen. <b>Başlayan</b> = başlatan benzersiz CİHAZ /
         gelen; <b>Gelen</b> ile aynı anonim koddan sayıldığı için bu, tablodaki tek cihaz-bazlı
         dönüşüm oranı — <b>Üye</b> oranı ise ayrı bir kaynaktan (kayıt damgası) gelir.{' '}
-        <b>Biten</b> yüzdesinin tabanı "Gelen" DEĞİL <b>o satırın "Başlayan"ı</b> — yani
-        tamamlanma oranı. Taban 0 ise oran hesaplanmaz, "—" gösterilir.
+        <b>Biten</b> yüzdesi de 31 Ağustos 2026'dan beri CİHAZ üzerinden: <b>bitiren
+        benzersiz cihaz / başlatan benzersiz cihaz</b>, yani "başlayanların kaçı bitirdi"
+        (tamamlanma oranı). Oyun ADEDİ üzerinden hesaplanan eski oran tek bir cihazın açtığı
+        onlarca oyunla çarpılabiliyordu — ölçüldü: 117 oyunun 64 cihazdan geldiği bir
+        pencerede İKİ cihaz tek başına 47 oyun başlatmıştı. Taban 0 ise oran hesaplanmaz,
+        "—" gösterilir.
+        <br />
+        <br />
+        <b>"Biten" var ama yüzdesi "—" ise bu bir hata değil:</b> cihaz kodu bitmiş tarafa 31
+        Ağustos 2026'da eklendi ve <b>geriye dönük doldurulamaz</b>, ayrıca mobil uygulama
+        henüz damgalamıyor. O satırlarda oyun sayılır, cihaz sayılmaz — "0%" yazmak "hiçbir
+        cihaz bitirmedi" derdi, oysa gerçek "cihaz bilgisi yok". CSV'deki <b>Bitiren Cihaz</b>
+        sütunu ham sayıyı verir.
         <br />
         <br />
         <b>Direkt</b> = web'e <code>?ref=</code> olmadan geliş. <b>Bilinmiyor</b> = kaynak
@@ -855,10 +866,20 @@ function SourceFunnelTable({
       starters: acc.starters + row.starters,
       signups: acc.signups + row.signups,
       finishes: acc.finishes + row.finishes,
+      finishers: acc.finishers + row.finishers,
       member_games: acc.member_games + row.member_games,
       players: acc.players + row.players,
     }),
-    { visitors: 0, starts: 0, starters: 0, signups: 0, finishes: 0, member_games: 0, players: 0 },
+    {
+      visitors: 0,
+      starts: 0,
+      starters: 0,
+      signups: 0,
+      finishes: 0,
+      finishers: 0,
+      member_games: 0,
+      players: 0,
+    },
   );
 
   function handleExportCsv() {
@@ -871,6 +892,7 @@ function SourceFunnelTable({
         'Başlayan Oyun',
         'Başlatan Cihaz',
         'Biten Oyun',
+        'Bitiren Cihaz',
         'Üye Oyunu',
         'Oynayan Üye',
       ],
@@ -882,6 +904,7 @@ function SourceFunnelTable({
           row.starts,
           row.starters,
           row.finishes,
+          row.finishers,
           row.member_games,
           row.players,
         ]),
@@ -892,6 +915,7 @@ function SourceFunnelTable({
           total.starts,
           total.starters,
           total.finishes,
+          total.finishers,
           total.member_games,
           total.players,
         ],
@@ -928,6 +952,26 @@ function SourceFunnelTable({
     if (!asPercent) return String(value);
     if (base <= 0) return '—';
     return pct(percentOf, base);
+  }
+
+  /**
+   * "Biten" sütunu — 31 Ağustos 2026'dan beri oranı CİHAZ üzerinden:
+   * `finishers / starters`, yani "başlatan cihazların kaçı bitirdi".
+   *
+   * ⚠ Neden ayrı bir fonksiyon: `conversionCell` taban 0 olunca "—" diyor,
+   * ama burada İKİNCİ bir "bilinmiyor" hâli var. `anon_id` kolonu YENİ ve
+   * geriye dönük doldurulamaz; eski bitişlerde (ve damgalamayan istemcide —
+   * bugün Flutter portu) `finishers` 0 kalır. Orada `0%` yazmak "hiçbir cihaz
+   * bitirmedi" DER, oysa gerçek "cihaz bilgisi yok"tur — tam da bu tablonun
+   * "sıfıra bölmek yerine bilinmediğini söyle" kuralının kapsamı. Bu yüzden
+   * biten VAR ama bitiren cihaz YOKSA "—" gösteriliyor; ikisi de 0 ise oran
+   * gerçekten 0'dır ve öyle yazılır.
+   */
+  function completionCell(finishes: number, starters: number, finishers: number): string {
+    if (!asPercent) return String(finishes);
+    if (starters <= 0) return '—';
+    if (finishes > 0 && finishers === 0) return '—';
+    return pct(finishers, starters);
   }
 
   return (
@@ -980,7 +1024,7 @@ function SourceFunnelTable({
                   {conversionCell(row.starts, row.visitors, row.starters)}
                 </td>
                 <td className="py-1.5 text-muted whitespace-nowrap text-center">
-                  {conversionCell(row.finishes, row.starts, row.finishes)}
+                  {completionCell(row.finishes, row.starters, row.finishers)}
                 </td>
               </tr>
             ))}
@@ -996,7 +1040,7 @@ function SourceFunnelTable({
                 {conversionCell(total.starts, total.visitors, total.starters)}
               </td>
               <td className="py-1.5 text-text font-bold whitespace-nowrap text-center">
-                {conversionCell(total.finishes, total.starts, total.finishes)}
+                {completionCell(total.finishes, total.starters, total.finishers)}
               </td>
             </tr>
           </tbody>
