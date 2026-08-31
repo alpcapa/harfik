@@ -133,6 +133,9 @@ Deno.serve(async (req: Request) => {
       if (await sendPushToUser(supabase, row.friend_id, {
         title: 'Bekleyen arkadaşlık isteğin var',
         body: `${inviterName} tarafından gönderilen davete henüz cevap vermedin.`,
+        // İlk isteğin bildirimiyle AYNI etiket (`notify-friend-request`) —
+        // hatırlatma onun yerine geçmeli, yanına eklenmemeli.
+        tag: `arkadas:${row.user_id}`,
       }) > 0) pushed += 1;
     } catch (err) {
       console.error('[notify-friend-request-reminders] satır hatası:', row.user_id, row.friend_id, err);

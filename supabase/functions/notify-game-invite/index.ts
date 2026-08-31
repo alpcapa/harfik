@@ -147,15 +147,15 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Push İKİNCİ kanal ve e-postadan SONRA. `link` bugün istemci tarafından
-    // OKUNMUYOR (yönlendirme Faz 3'ün işi) ama sunucu tarafı zaten bunun için
-    // tasarlandı; şimdi göndermek bedava ve Faz 3 geldiğinde bu bildirimler
-    // geriye dönük çalışır hâle gelir. Biçim `util/deep_link.dart` →
+    // Push İKİNCİ kanal ve e-postadan SONRA. `link`i 1.0.3+ istemciler
+    // okuyup oyunu doğrudan açıyor (Faz 3); daha eski sürümlerde dokunuş
+    // yalnızca uygulamayı açar. Biçim `util/deep_link.dart` →
     // `buildOnlineGameLink` ile ELLE senkron.
     if (await sendPushToUser(serviceClient, invite.invitee_id, {
       title: 'Canlı oyun daveti',
       body: `${inviterName} seni ${game.player_count} kişilik bir oyuna davet etti.`,
       link: `kelimeki://oyun/${gameId}`,
+      tag: `davet:${gameId}`,
     }) > 0) pushedCount += 1;
   }
 

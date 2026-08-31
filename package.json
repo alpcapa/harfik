@@ -25,6 +25,7 @@
     "verify-error-reporting": "node scripts/run-verify-error-reporting.mjs",
     "verify-live-games-load": "node scripts/run-verify-live-games-load.mjs",
     "verify-remaining-tiles": "esbuild scripts/verify-remaining-tiles.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-remaining-tiles.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-remaining-tiles.mjs",
+    "verify-push-payload": "esbuild scripts/verify-push-payload.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-push-payload.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-push-payload.mjs",
     "generate-demo-board-dart": "esbuild scripts/generate-demo-board-dart.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/generate-demo-board-dart.mjs --log-level=error && node node_modules/.cache/kelimeki/generate-demo-board-dart.mjs",
     "generate-reel": "node scripts/reel/build.mjs",
     "generate-fb-cover": "node scripts/kapak/build.mjs",

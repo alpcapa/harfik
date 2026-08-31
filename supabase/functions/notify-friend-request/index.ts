@@ -154,6 +154,10 @@ Deno.serve(async (req: Request) => {
   const pushed = await sendPushToUser(serviceClient, friendId, {
     title: 'Yeni arkadaşlık isteği',
     body: `${inviterName} seni Kelimeki'de arkadaş olarak eklemek istiyor.`,
+    // Önek GÖNDEREN'in kimliğiyle: 3 gün sonraki hatırlatıcı (
+    // `notify-friend-request-reminders`) AYNI etiketi kullanıyor, yani
+    // hatırlatma bu bildirimin yerine geçiyor — ikisi aynı işi anlatıyor.
+    tag: `arkadas:${userData.user.id}`,
   });
 
   return jsonResponse({ ok: true, sent, pushed, ...(emailReason ? { reason: emailReason } : {}) });

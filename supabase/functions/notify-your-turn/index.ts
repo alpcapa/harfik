@@ -109,6 +109,10 @@ Deno.serve(async (req: Request) => {
     title: 'Sıra sende!',
     body: `${actorName} hamlesini yaptı — ${game.player_count} kişilik oyunda sıra sende.`,
     link: `kelimeki://oyun/${gameId}`,
+    // Aynı oyunun yeni "sıra sende"si eskisinin YERİNE geçsin (bkz.
+    // `_shared/push.ts` → `PushMessage.tag`). Bu bildirim hamle
+    // sıklığında geldiğinden birikmeye en açık olan bu.
+    tag: `sira:${gameId}`,
   });
 
   return jsonResponse({ ok: true, pushed });
