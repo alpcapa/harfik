@@ -7,7 +7,7 @@ publish_to: none
 # Sürüm ayrıca lib/src/config/env.dart'taki appVersion sabitinde tutulur
 # (mobile_min_supported_version karşılaştırması için) — release'te ikisi
 # BİRLİKTE artırılmalı, bkz. mobile/CLAUDE.md "Sürüm disiplini".
-version: 1.0.3+1
+version: 1.0.4+1
 
 environment:
   sdk: ^3.4.0
