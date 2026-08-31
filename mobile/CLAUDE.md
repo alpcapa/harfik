@@ -59,12 +59,9 @@ Commit'ten önce, sırayla:
 
 Kullanıcı isteği (15 Ağustos 2026): *"bu yaşanan deploy sorunlarını kalıcı
 olarak çözecek bir sistem geliştir"*. O gün aynı hata İKİ KEZ tekrarlandı:
-düzeltme yazıldı, testler yeşildi, kullanıcı cihazda **bayat bir derlemeyi**
-test edip "düzelmemiş" dedi. Kod doğruydu; sitede yoktu.
-
-**Kural bu projede ZATEN vardı** (Parça 19: *"bir 'deploy oldu mu?' kontrolü
-teşhisin parçasıdır"*) ve yine atlandı. Bu yüzden çözüm bir kural DEĞİL, bir
-MEKANİZMA: derleme kimliği artık ürünün İÇİNDE.
+kod doğruydu, sitede yoktu. Kural zaten vardı ve yine atlandı — bu yüzden
+çözüm bir kural DEĞİL, bir MEKANİZMA: derleme kimliği ürünün İÇİNDE.
+Vaka kaydı: `mobile/docs/deploy-verification.md`.
 
 ### Nerede ne yayınlanır
 
@@ -77,16 +74,14 @@ MEKANİZMA: derleme kimliği artık ürünün İÇİNDE.
 **Feature dalındaki bir commit sitede ASLA görünmez.** Bir PR açmak da
 yetmez (workflow PR'da bilerek yayınlamıyor).
 
-⚠ **AMA `mobile-latest` RELEASE'İ İÇİN BU GEÇERLİ DEĞİL (29 Ağustos 2026'da
-fark edildi):** yükleme adımının koşulu `github.event_name != 'pull_request'`,
-yani bir DALA push da yayınlıyor — yalnızca PR koşuları hariç tutulmuş. O gün
-merge'den sonra iki koşu yedi saniye arayla başladı (#419 dal, #420 `main`) ve
-APK'yı hangisinin yazdığı belirlenemedi. İkisi aynı işi taşıdığından zarar
-olmadı, ama **dalda çalışırken `mobile-latest`in `main`'in derlemesi olduğunu
-VARSAYMA** — kurulan derlemenin sha'sını her zaman Setup'ın teşhis satırından
-oku. Üçüncü satır tersine bir tuzak:
-sunucu değişikliği anında canlıdır, yani istemci düzeltmesi henüz yokken
-sunucu davranışı değişmiş olabilir.
+⚠ **AMA `mobile-latest` RELEASE'İ İÇİN BU GEÇERLİ DEĞİL:** yükleme adımının
+koşulu `github.event_name != 'pull_request'`, yani bir DALA push da
+yayınlıyor — yalnızca PR koşuları hariç. **Dalda çalışırken
+`mobile-latest`in `main`'in derlemesi olduğunu VARSAYMA**; kurulan
+derlemenin sha'sını Setup'ın teşhis satırından oku. Tablonun üçüncü satırı
+tersine bir tuzak: sunucu değişikliği anında canlıdır, yani istemci
+düzeltmesi henüz yokken sunucu davranışı değişmiş olabilir.
+(29 Ağustos 2026 vakası: `mobile/docs/deploy-verification.md`.)
 
 ### Derleme kimliği — ekran görüntüsü sorunun cevabını taşır
 
@@ -101,19 +96,15 @@ sunucu davranışı değişmiş olabilir.
 iste ya da ekran görüntüsünden oku.** Eşleşmiyorsa tartışılacak bir hata
 yok — deploy bekleniyor demektir.
 
-⚠ **TERSİ GEÇERLİ DEĞİL — "sürüm doğru" ≠ "özellik içinde" (26 Ağustos
-2026'da yaşandı):** Kullanıcı balonu Vercel preview'da gördü, github.io'da
-göremedi ve *"sürüm doğru"* dedi. Doğruydu da: teşhis satırı `main`'in son
-sha'sını gösteriyordu. Ama balon o an yalnızca bir PR dalındaydı ve
-github.io **yalnızca `main`'e push'ta** yayınlanıyor — yani sha "güncel"
-olduğu hâlde özellik içinde değildi.
+⚠ **TERSİ GEÇERLİ DEĞİL — "sürüm doğru" ≠ "özellik içinde".** Teşhis satırı
+`main`'in son sha'sını gösterirken özellik yalnızca bir PR dalında olabilir;
+github.io **yalnızca `main`'e push'ta** yayınlanır.
 
 ⚠ **ÜÇÜNCÜ tuzak — Play kapalı testinde "Published" ≠ testçinin
-telefonunda (29 Ağustos 2026, iki kez zaman kaybettirdi):** Console sürümü
-yayınlanmış gösterirken cihazdaki paket saatlerce bir öncekiydi. Yani
-yukarıdaki iki tuzağın (bayat derleme · yanlış dal) yanına bir üçüncüsü
-geliyor ve üçünün de tek enstrümanı aynı: **önce `Derleme <sha>` satırını
-oku.** Ayrıntı, `versionCode` ↔ koşu numarası eşlemesi ve ne yapılacağı:
+telefonunda.** Console yayınlanmış gösterirken cihazdaki paket saatlerce bir
+önceki olabiliyor. Üç tuzağın da (bayat derleme · yanlış dal · Play gecikmesi)
+tek enstrümanı aynı: **önce `Derleme <sha>` satırını oku.** Ayrıntı ve
+`versionCode` ↔ koşu numarası eşlemesi:
 `mobile/docs/build-and-distribution-log.md` → "Kapalı test: Published ≠
 testçinin telefonunda".
 
@@ -378,7 +369,12 @@ Tüm uygulamayı boot etmeye çalışma (sözlük/Supabase açılışta asılı 
 yalnızca şüpheli widget'ı render eden bir harness derle; harness'i ve
 `build/webprobe`'u iş bitince sil.
 
-## Parça Bitirme Kontrol Listesi (ZORUNLU — her parçanın son adımı)
+## Üst Düzey Kararlar
+
+⚠ Bu bölümün başlığı 24 Ağustos 2026'daki doküman bölmesinde yanlışlıkla
+"Parça Bitirme Kontrol Listesi" olmuştu — yani dosyada aynı başlık İKİ kez
+vardı ve gerçek ad kayıptı. Kök `CLAUDE.md` buraya *"Üst Düzey Kararlar" #4*
+diye atıf yapıyor; atıf 31 Ağustos 2026'ya kadar KIRIKTI.
 
 0. **Cihazda doğrulanması gereken bir şey eklediysen `mobile/TESTING.md`'ye
    yaz.** `flutter test` veri katmanını SAHTE uçlarla sınıyor — "testler
@@ -457,7 +453,8 @@ Bütçeyi `npm run check-doc-size` ölçüyor, sınıra gelince yeni cilt açıl
 | FAZ A1 — cihaz testi tur durumu | `mobile/docs/cihaz-testi-log.md` |
 | Cihaz testi — Arkadaşlar + Canlı oyun bölümleri (iki gerçek oturum ister) | `mobile/docs/testing-arkadaslar-canli.md` |
 | Cihaz testi — push bildirimleri + derin bağlantılar + **güncelleme** (çoğu Play imzalı derleme ister) | `mobile/docs/testing-bildirimler.md` |
-| Deploy doğrulaması — tarihli post-mortem'ler (dal hijyeni, "koşu yok" filtresi, PR #267, sınıf 2 risk kütüğü) | `mobile/docs/deploy-verification.md` |
+| Deploy doğrulaması — tarihli post-mortem'ler (dal hijyeni, "koşu yok" filtresi, PR #267, sınıf 2 risk kütüğü) **+ 31 Ağustos 2026'da buradan taşınan gerekçeler: 15/29 Ağustos deploy vakaları, güncelleme modelinin 1.0.1 ölçümü ve 1.0.0 süpürmesi, yazı boyutu envanteri** | `mobile/docs/deploy-verification.md` |
+| Sonraya bırakılan mobil işler (karar verildi, henüz yapılmadı — KGP uyarısı, iOS borçları) | `mobile/docs/sonraya-birakilanlar.md` |
 
 **Yeni bir "Parça N" notu eklerken:** parça numarasını bir öncekinin devamı
 olarak ver ve **AKTİF cilde** (`mobile/docs/parca-log.md`) yaz — dondurulmuş
@@ -826,18 +823,12 @@ Kullanıcı kararı, sözleri birebir: *"Kimde hangi versiyon olursa olsun,
 app'i açtığında daha yeni bir sürüm varsa uyarsın ve yapsın. Bu kadar
 basit."*
 
-**Öncesinde öyle değildi ve ÖLÇÜLDÜ ki çalışmıyordu.** Tek mekanizma
-`app_config.mobile_min_supported_version` idi: bir insanın Supabase'de bir
-satırı elle yükseltmesini bekleyen, ikili (ya tamamen engelle ya hiçbir şey
-yapma) bir kapı. 1.0.1 iki gün yayında kaldıktan sonra son 14 günün
-`game_starts` dökümü şuydu:
-
-| platform | app_version | adet |
-|---|---|---|
-| android | **1.0.0** | **93** |
-| android | 1.0.1 | 2 |
-
-Yani neredeyse kimse güncellememişti, satırı yükselten de olmamıştı.
+**Öncesinde tek mekanizma `app_config.mobile_min_supported_version` idi** —
+bir insanın Supabase'de bir satırı elle yükseltmesini bekleyen, ikili (ya
+tamamen engelle ya hiçbir şey yapma) bir kapı. Sahada ölçüldü ki
+çalışmıyordu (1.0.1 iki gün yayındayken kitlenin neredeyse tamamı hâlâ
+1.0.0'daydı); rakamlar ve o günün kararı:
+`mobile/docs/deploy-verification.md` → "Güncelleme modeli".
 
 ### Bugünkü model — iki katman, karıştırma
 
@@ -869,22 +860,11 @@ sunucu değişikliği kırdı" durumunda çekilir.
    1.0.2'nin içinde; sahadaki 1.0.0 kitlesi onu ancak 1.0.2'ye geçtikten
    sonra görür. Bu, mekanizmanın 1.0.0'da olmamasının bir seferlik faturası.
 
-### 1.0.0 kitlesini bir kereye mahsus süpürmek
+### 1.0.0 kitlesini bir kereye mahsus süpürmek — YAPILDI
 
-1.0.2 yayınlanıp **indirilebilir olduğu doğrulandıktan SONRA** eşik 1.0.2'ye
-çekilir. O anda kim ne görür:
-
-| Sahadaki sürüm | Gördüğü |
-|---|---|
-| 1.0.0 | "Güncelleme Gerekli" ekranı — **butonsuz**, Play'i elle açar |
-| 1.0.1 | Aynı ekran + **buton** (buton 1.0.1'de geldi) → tek dokunuş |
-| 1.0.2+ | Buraya hiç düşmez; In-App Update zaten güncellemiştir |
-
-⚠ **1.0.0'ın butonsuz ekranı geriye dönük DÜZELTİLEMEZ** — yayınlanmış bir
-derlemenin kodu değiştirilemez. Ama ekran yine de *uyarıyor*
-(*"Kelimeki'nin bu sürümü artık desteklenmiyor…"*), yani kimseye elle mesaj
-atmak gerekmiyor; o kullanıcı Play'i kendisi açar. **Bu son kez** — 1.0.2'den
-sonra eşik bir daha yükseltilmeyecek.
+Eşik 1.0.2'ye çekildi ve bu **son kez**; bir daha yükseltilmeyecek. Kimin ne
+gördüğü, 1.0.0'ın butonsuz ekranının neden geriye dönük düzeltilemediği:
+`mobile/docs/deploy-verification.md` → "Güncelleme modeli".
 
 ### Sürüm turunda hâlâ geçerli olan tek sıra kuralı
 
@@ -910,11 +890,7 @@ tekrarlanır (çıkışsız ekran).
 
 ## Sistem Yazı Boyutu — tavan VAR, ama tavan çözüm DEĞİL
 
-28 Ağustos 2026, kullanıcı cihazda bildirdi: *"Görmediği için telefon
-fontlarını büyütenlerde ciddi sorunlar çıkıyor. Mesela, arkadaşlık davetinde
-davetin kimden geldiği görünmüyor. Bunun dışında başka yerler de patlıyor."*
-
-Android/iOS yazı boyutunu %200'e kadar büyütebiliyor ve bu **yalnızca metni**
+Sistem yazı boyutu %200'e kadar büyüyebiliyor ve bu **yalnızca metni**
 büyütüyor — kutu, ikon, dolgu sabit kalıyor. **İKİ AYRI hata sınıfı** doğuyor
 ve tek bir çözüm ikisini birden kapatmıyor:
 
@@ -924,11 +900,10 @@ ve tek bir çözüm ikisini birden kapatmıyor:
 | Hata basılır mı | evet | **hayır** |
 | Çözümü | `kMaxTextScale` tavanı | satırı İKİYE BÖLMEK |
 
-**ÖLÇÜLDÜ** (takımın tamamı, `platformDispatcher.textScaleFactorTestValue`
-enjekte edilerek): taşma sayısı ölçek 1,0'da **0** · 1,3'te **10** · 1,6'da
-**27** · 2,0'da **73** (9 ayrı nokta, en büyüğü 392 px). Yani hasar 1,3'ten
-sonra patlıyor — tavan oraya kondu (kullanıcı kararı; 1,0'a kilitlemek
-erişilebilirlik açısından savunulamazdı).
+**Tavan 1,3** (kullanıcı kararı). Ölçüldü: taşma sayısı ölçek 1,0'da 0 ·
+1,3'te 10 · 2,0'da 73 — hasar 1,3'ten sonra patlıyor. 1,0'a kilitlemek
+erişilebilirlik açısından savunulamazdı. Tam envanter:
+`mobile/docs/deploy-verification.md` → "Sistem yazı boyutu".
 
 **Kurallar:**
 
@@ -978,6 +953,14 @@ web'den kopyalanacak bir yapı yok, yalnızca ilkesi var (web'in `CARD_HEADER`
 düzeltmesi, 23 Ağustos 2026: kırpılacak EN SON şey kimden geldiğidir).
 
 ### Sınıf 2 risk kütüğü
+
+Ölçülen tek vaka `game_history_modal.dart`; beş yapısal aday daha var ve
+hiçbiri ölçülmedi. ⚠ Taramanın körlüğü de ölçüldü: kullanıcının bildirdiği
+ASIL hata bile listede çıkmamıştı, çünkü tarama yalnızca testlerin gerçekten
+çizdiği ekranı ve veriyi görür. Envanter ve ölçümler:
+`mobile/docs/deploy-verification.md` → "Sınıf 2 risk kütüğü".
+
+## Sınıf 2 risk kütüğü
 
 Kullanıcı sordu: *"Bir de başka sessiz sıkışma olan yerler var mı?"* İki
 yöntemle (dinamik tarama + yapısal tarama) arandı; ölçülen tek vaka
@@ -1162,67 +1145,6 @@ bağlı değil.)
 
 ## Sonraya Bırakılan İşler (mobil)
 
-Kök `CLAUDE.md`'nin "Web'de Yapılacak İşler" listesinin mobil karşılığı —
-kararı verilmiş ama henüz yapılmamış işler. Bir madde uygulanınca buradan
-silinip kendi tarihli parça notuna taşınır.
-
-- ~~Sistem fontu büyütülünce düzen patlıyor~~ — **YAPILDI** (28 Ağustos
-  2026, Parça 161): yazı ölçeği `kMaxTextScale`=1,3 ile sınırlandı
-  (`ui/text_scale.dart` + `MaterialApp.builder`), tahtanın alt şeridi
-  `Row`→`Wrap` oldu, arkadaşlık isteği satırı büyük ölçekte ikiye bölünüyor.
-  Ölçüldü: ölçek 1,3'te taşma **10 → 0**; istek satırındaki isim 1,3'te
-  53,2 → 121,4 px, 2,0'da 0,0 → 187,0 px. Kural ve tuzaklar aşağıda
-  ("Sistem Yazı Boyutu"), envanter Parça 161'de.
-
-- **KGP uyarısı — ileride derlemeyi KIRACAK (23 Ağustos 2026'da `.aab`
-  log'unda ölçüldü, bugün yalnızca uyarı):** `image_picker_android`,
-  `share_plus` ve `shared_preferences_android` Kotlin Gradle Plugin'i
-  kendileri uyguluyor; Flutter'ın uyarısı birebir *"Future versions of
-  Flutter will fail to build if your app uses plugins that apply KGP"*.
-  Bugün acil DEĞİL (derleme geçiyor) ve bu eklentiler bizim değil —
-  çözümü kendi sürümlerini Built-in Kotlin'e geçmiş sürümlere yükseltmek.
-  Flutter yükseltmesi yapılırken ÖNCE bunların changelog'una bak;
-  aksi halde yükseltme günü derleme sebebi anlaşılmayan bir şekilde kırılır.
-  - ⚠ **28 Ağustos 2026'da liste ÜÇTEN BEŞE çıktı** (PR #360, Parça 158 —
-    CI log'unda okundu): push/Analytics ile gelen **`firebase_core`** ve
-    **`firebase_analytics`** de KGP uyguluyor. Derleme yine geçti (`.aab`
-    üretildi ve imzası doğrulandı), ama borç büyüdü — Flutter yükseltmesi
-    artık üç değil BEŞ eklentinin changelog'una bakmayı gerektiriyor.
-  - ✅ **30 Ağustos 2026'da `in_app_update` eklendi (Parça 171) ve liste
-    BEŞTE KALDI** — CI log'undan okundu (PR #371, `bundleRelease`):
-    *"…apply Kotlin Gradle Plugin (KGP): firebase_analytics, firebase_core,
-    image_picker_android, share_plus, shared_preferences_android"*.
-    Yani `in_app_update` KGP uygulamıyor, borç büyümedi. Yeni bir eklenti
-    eklerken bu kontrolü tekrarla: cevap yalnızca Android işinin log'unda.
-- ~~Bağlantı durumu göstergesi (`useOnlineStatus` portu)~~ — **YAPILDI**
-  (14 Ağustos 2026): karar mantığı Parça 96'da (`util/online_status.dart` +
-  `connectivity_plus`), Board alt şeridindeki görsel "Çevrimdışı" rozeti
-  Parça 97'de.
-- ~~Kayıt onayı maili kaydın GELDİĞİ kanala dönmeli~~ — **YAPILDI**
-  (28 Ağustos 2026, Parça 158): `AuthService.signUp` artık
-  `emailRedirectTo: authRedirectUri` geçiyor (`config/env.dart`), web
-  istemcisi DEĞİŞMEDİ. Değer bilerek **`https://kelimeki.com/auth`** — custom
-  şema (`kelimeki://auth`) ile başlandı ve aynı gün https'e çevrildi:
-  uygulamanın kurulu OLMADIĞI bir tarayıcıda (insanlar postalarını sıklıkla
-  masaüstünden okur) custom şema `ERR_UNKNOWN_URL_SCHEME` çıkmazı veriyordu,
-  yani onay linki BOZUK görünüyordu. Gerekçenin tamamı `env.dart`'ın
-  başlığında.
-  - **Dashboard el işi:** Redirect URLs listesinde `https://kelimeki.com/**`
-    ZATEN var (davet linkleri için), yani ek bir kayıt gerekmedi —
-    `kelimeki://reset`in aksine.
-  - **Doğrulama sınırı DEĞİŞMEDİ, yalnızca yer değiştirdi:** App Links
-    doğrulaması YALNIZCA Play imzalı derlemede geçer, CI'nın debug-imzalı
-    `.apk`'sında geçmez. Yani `.apk`da görülecek olan güvenli yedek yoldur
-    (link tarayıcıda açılır, kullanıcı elle giriş yapar = bugünkü davranış);
-    "uygulama açılıyor + doğrudan girişli kalıyor" yarısı ancak kapalı test
-    kanalından kurulan derlemede doğrulanabilir (`mobile/TESTING.md` 9.16).
-  - **`signup_channel` ile KARIŞTIRMA:** o alan 'direct'/'form' ayrımını
-    (hangi FORMDAN gelindiği) tutuyor; buradaki "kanal" platform.
-  - **Eski davranış bir HATA değildi, kayda geçsin:** T3'ün onay linki
-    sunucuda gerçekten işliyordu (`email_confirmed_at` linke basılan an) ve
-    tarayıcıdaki başka bir oturuma DOKUNMUYORDU — link kimseyi giriş
-    yaptırmıyor, yalnızca o origin'de zaten duran oturum görünüyordu.
-    PKCE'nin verifier'ı öteki origin'de olduğundan takas yapılamıyor; bu aynı
-    zamanda güvenlik açısından doğru taraf (aksi halde bir kullanıcının onay
-    linki başka bir hesabın açık oturumunu sessizce ezerdi).
-
+Karar verilmiş ama henüz yapılmamış mobil işler (KGP uyarısı, iOS borçları,
+ölçülmemiş riskler): **`mobile/docs/sonraya-birakilanlar.md`**. Bir madde
+uygulanınca oradan silinip kendi tarihli parça notuna taşınır.
