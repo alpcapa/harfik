@@ -43,6 +43,21 @@ bir `<a href="/nasil-oynanir/">` kondu — footer'daki hukuki bağlantıların
 `<button>` olması (SPA penceresi açıyorlar) tam da bu boşluğu yaratıyordu.
 Duman testi o bağlantının `<a>` kalmasını zorluyor.
 
+**Bağlantı YENİ SEKMEDE açılıyor** (31 Ağustos 2026). İlk hâli aynı sekmede
+geziniyordu ve bunun savunması "iç bağlantıda `target="_blank"` kullanıcıyı
+şaşırtır, geri tuşunu işlevsizleştirir" idi. Kullanıcı kararı bunu tersine
+çevirdi ve gerekçesi daha güçlü: *"ilk defa gelen kişiyi başka yere
+göndermek yanlış"* — karşılama katmanı bir içerik sayfası değil, ilk
+ziyaretçinin DÖNÜŞÜM sayfası; oradan çıkarmanın bedeli sekme sürprizinden
+ağır. Genel kural hâlâ geçerli, bu bilinçli bir istisna.
+
+**Robot tarafı etkilenmiyor** — `target`, `href`in izlenmesini değiştirmiyor;
+öksüzlük çözümü aynen duruyor. Duman testi artık attribute'a değil DAVRANIŞA
+bakıyor: bağlantıya tıklanınca gerçekten yeni bir sekme açılıyor mu, o sekme
+`/nasil-oynanir/`e mi düşüyor ve **katman açık mı kalıyor** (asıl gerekçe bu).
+`aria-label` yeni sekmeyi duyuruyor ve görünen metni de içeriyor (WCAG
+"Label in Name").
+
 ⚠ **Yapılırken bir hata yapıldı ve testler yakaladı — tekrarlanmasın.**
 `HelpModal.tsx`e eklenen uyarı yorumunda parite testinin regex'i ÖRNEK
 OLARAK yazıldı. Tarama yorum/kod ayrımı yapmıyor: örnek, GERÇEK bir başlık
