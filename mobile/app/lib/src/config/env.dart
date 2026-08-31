@@ -85,7 +85,7 @@ const String authRedirectUri = 'https://kelimeki.com/auth';
 /// `app_config.mobile_min_supported_version` eşiğiyle karşılaştırılır;
 /// package_info_plus eklentisine bilinçli olarak bağımlılık alınmadı
 /// (tek sabit için platform eklentisi gereksiz).
-const String appVersion = '1.0.2';
+const String appVersion = '1.0.3';
 
 /// Bu derlemenin GİT COMMIT'i (kısa sha) — CI `--dart-define=BUILD_SHA=...`
 /// ile veriyor, yerelde boş kalır ve arayüzde `yerel` yazar.

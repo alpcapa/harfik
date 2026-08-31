@@ -64,6 +64,48 @@ Yani maddeleri "konu"ya göre değil **paketlenebilirliğe** göre grupladım.
 Sonuç: kalan HER ŞEY **iki sürüm turuna** sığıyor — bildirim işinin yarısı
 sunucu tarafında olduğu için sürüm beklemiyor.
 
+### 🚀 1.0.3 SÜRÜM TURU — BAŞLADI (31 Ağustos 2026)
+
+`appVersion` (`config/env.dart`) ve `pubspec.yaml` **birlikte** 1.0.2 → 1.0.3
+yapıldı (`app_version_parity_test` ayrışmayı yakalıyor). `+N` build numarası
+bağlayıcı değil — CI onu `--build-number=${{ github.run_number }}` ile eziyor.
+
+**Bu sürümün taşıdıkları** (hepsi `main`'de):
+
+| Konu | Kayıt |
+|---|---|
+| Faz 3 — bildirime dokununca tahtayı açma + Firebase Analytics | ROADMAP Faz 3 · `mobile/docs/testing-bildirimler.md` §3c |
+| Kart/ikon cilası (SIRA SENDE üçgeni, kırmızı nokta, süre metni) + `PersonPendingIcon` | ROADMAP "Faz dışı" |
+| Sözlük: `lapis`, `mö`, `banu`, `banü` (madde 1.5) + `çilav`, `kanola`, `refil`, `sü`, `tarot` | `docs/decisions/dictionary.md` |
+| Skor kutusu çerçevesi: kırpılan sağ kenar (`outlineOffset` = −genişlik) | `docs/decisions/components.md` → `GameHeader` |
+| Pasif çerçeve kalınlığı 0.5 → 1 (web ile hizalı) | aynı madde |
+| Bekleyen oyun sıralaması: sıra sende → son oynanan | `docs/decisions/live-game.md` |
+
+**Sözlük hazır:** `words_tr.txt` 63.905 kelime, dokuz yeni maddenin hepsi
+asset'te doğrulandı; `meanings.db` de yeniden üretilmişti.
+
+**SIRA KURALI** (`mobile/CLAUDE.md` → "Güncelleme"), atlanamaz:
+
+1. ✅ `appVersion` + `pubspec` birlikte artırıldı.
+2. ⏳ Derle, Play'e yükle.
+3. ⏳ **Yeni sürümün gerçekten İNDİRİLEBİLİR olduğunu doğrula** — Play'de
+   "Published" ile testçinin telefonuna inmesi AYNI ŞEY DEĞİL.
+4. ⏳ Acil fren gerekiyorsa ANCAK BUNDAN SONRA eşiği yükselt.
+
+⚠ Kapı **fail-open**, yani asıl risk ağ değil SIRA: 4'ü 3'ten önce yapmak
+herkesi indirilemeyen bir güncellemeye yönlendirmek demek.
+
+⚠ **Eşiği bu turda RUTİN olarak yükseltme.** In-App Update 1.0.2'den beri
+devrede; `app_config.mobile_min_supported_version` yalnızca "eski istemciyi
+bir sunucu değişikliği kırdı" durumunda çekilir. (1.0.0 kitlesini süpürmek
+için bir kereye mahsus 1.0.2'ye çekme kararı ayrı — bkz. aşağıdaki 7. madde.)
+
+**Sürüm çıktıktan sonra cihazda koşulacaklar:** `mobile/docs/testing-bildirimler.md`
+§3c (bildirime dokunma → tahta), §3d (sıra sende — sunucu tarafı zaten
+doğrulandı), GA4 DebugView olayları, ve **ilk gerçek In-App Update testi**
+(yalnızca Play'den kurulmuş pakette çalışır, yan yüklenmiş `.apk`da sessizce
+`bilinmiyor` döner).
+
 ### Faz 1 — bekleyen paket · **1 sürüm** · ✅ DALDA TAMAM, yayın bekliyor
 
 Altı maddenin altısı da `claude/kelimeki-phase-1-remaining-*` dalında bitti;
@@ -343,7 +385,12 @@ main'de (Faz 3 — 1.0.3'le sahaya çıkar). Burada duran *"'taktirde' düzeltme
 deploy edilmedi"* notu da bayattı ve silindi: düzeltme 29 Ağustos'ta v11'de
 canlıdan doğrulanmıştı (bkz. #13'teki ✅ satırı), bugün canlıda v12 var.
 
-### 1.5 Sürüm B'ye binecek sözlük eklemeleri (28 Ağustos 2026)
+### 1.5 Sürüm B'ye binecek sözlük eklemeleri · ✅ **KAPANDI** (31 Ağustos 2026)
+
+**Dördü de eklendi ve 1.0.3'e biniyor** (`lapis`, `mö`, `banu`, `banü`);
+`words_tr.txt`'de varlıkları doğrulandı. 31 Ağustos'ta beş madde daha
+eklendi: `çilav`, `kanola`, `refil`, `sü`, `tarot` — toplam 63.905 kelime.
+Aşağıdaki inceleme kaydı olduğu gibi duruyor.
 
 Kullanıcı üç kelime verdi (*"acil değil, yeni sürüm işlerine dahil et"*).
 Sözlük app paketinin içinde olduğundan bunlar **bir sonraki mobil sürüme
