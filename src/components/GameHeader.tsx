@@ -210,13 +210,19 @@ export function GameHeader({ state, onLogoClick, exitDisabled, onPlayerClick }: 
                   // yuvarlamayanda kesirli çizgiyi temiz 3 cihaz pikseline
                   // çevirir. Aktif/pasif ayrımı 2 ↔ 1 olarak korunuyor.
                   background: col.tint,
-                  // ⚠ `outlineOffset` PASİFTE -0.5 KALIYOR, -1 YAPILMADI:
-                  // ölçüldü (DPR 3 Chromium, öncesi/sonrası ekran görüntüsü
-                  // farkı), -1 çerçeveyi içeri kaydırıp kutuyu her yandan
-                  // 1 CSS px daraltıyor — görünür bir değişiklik. -0.5 ile
-                  // birlikte 1px, Chromium'un ZATEN çizdiği şeyin aynısı.
+                  // ⚠ `outlineOffset` = −genişlik OLMAK ZORUNDA (aktif de
+                  // öyle). Aksi halde çerçevenin bir kısmı kutunun DIŞINA
+                  // taşar ve ŞERİT ONU KIRPAR: `overflow-x-auto` taşıyan
+                  // kaydırma şeridinin sağ kenarı, son kutunun sağ kenarıyla
+                  // TAM OLARAK çakışıyor (ölçüldü: `serit.right - son.right
+                  // === 0`). 30 Ağustos 2026'da pasifte offset -0.5'te
+                  // bırakılınca 1px'lik çerçevenin yarısı dışarı taştı ve
+                  // son kutunun sağ kenarı DÜZ KISMI BOYUNCA tamamen
+                  // kayboldu — yalnızca yuvarlak köşelerde göründü (eğri
+                  // içeri kıvrıldığı için). Dikey profil ölçüldü (DPR 3):
+                  // köşelerde sağ 4px, düz kısımda 0px; sol her satırda 3px.
                   outline: `${active ? 2 : 1}px solid ${col.base}`,
-                  outlineOffset: active ? -2 : -0.5,
+                  outlineOffset: active ? -2 : -1,
                   opacity: p.surrendered ? 0.45 : 1,
                 }}
               >

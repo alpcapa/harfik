@@ -336,15 +336,20 @@ Yani değişiklik **görsel olarak bir no-op**. Hijyen olarak yerinde
 hiçbir şey boyamıyor (Tailwind onu yalnızca bir CSS değişkenine derliyor).
 
 **SORUN SONRADAN BULUNDU — bu bölümdeki teorilerin hiçbiri değildi.**
-Kullanıcı gerçek bir ekran görüntüsü gönderdi (fotoğraf değil) ve piksel
-taraması cevabı verdi: pasif skor kutusunun `outline: 0.5px` çerçevesi,
-iPhone'un DPR 3'ünde 1,5 cihaz pikseli oluyor ve kesirli kutu genişliği
-yüzünden iki dikey kenar farklı alt-piksel fazına düşüyor — biri canlı
-çiziliyor (iç zemine uzaklık 272), öteki kayboluyor (uzaklık 14). Düzeltme
-`GameHeader`'da pasif kalınlığın 1 px'e çıkarılması. Ölçümler, Chromium'un
-neden bu hatayı üretemediği (0.5px'i 1px'e yuvarlıyor) ve `outlineOffset`in
-neden -0.5'te bırakıldığı: `docs/decisions/components.md` → `GameHeader`
+Kullanıcı gerçek bir ekran görüntüsü gönderdi ve piksel taraması cevabı
+verdi — ama **doğru cevaba ancak ÜÇÜNCÜ turda** ulaşıldı. Gerçek sebep:
+skor şeridi `overflow-x-auto` taşıyor, şeridin sağ kenarı son kutunun sağ
+kenarıyla tam çakışıyor, ve `outline` kutunun dışına taştığı için orada
+KIRPILIYOR. (`outline: 0.5px` + `offset: -0.5px` teoride tam içeride, ama
+tarayıcılar genişliği 1px'e yuvarlayıp offset'i yuvarlamıyor.) Düzeltme
+`outlineOffset` = −genişlik. Ölçümler, dikey profil tablosu ve "tek satır
+taramanın neden yanılttığı": `docs/decisions/components.md` → `GameHeader`
 maddesi.
+
+⚠ **Aradaki turda "alt-piksel fazı" teorisiyle bir düzeltme daha
+gönderildi** (`outline` 0.5 → 1) ve o, offset düzeltilmediği için taşan
+kısmı BÜYÜTEREK durumu kötüleştirdi. Bir hipotezle gönderim yapmadan önce
+mekanizmayı ölçerek doğrula.
 
 **ÜÇ DERS:**
 
