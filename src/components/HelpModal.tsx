@@ -92,7 +92,25 @@ const QuickItem = ({ icon, children }: { icon: string; children: React.ReactNode
   </div>
 );
 
-function QuickStart({ onDetailedClick }: { onDetailedClick: () => void }) {
+/**
+ * ⚠ **İÇERİK BURADAN ÇIKMAZ.** `mobile/app/test/help_text_parity_test.dart`
+ * BU DOSYAYI doğrudan okuyup `Section` ve `QuickItem` etiketlerinin başlık/
+ * ikon özniteliklerini regex'le tarıyor — metni başka bir dosyaya taşımak o
+ * testi düşürür, üstelik web'e dokunduğun için bakmayacağın MOBİL tarafta.
+ *
+ * ⚠⚠ VE BU YORUMDA O KALIBI ÖRNEK OLARAK YAZMA. 31 Ağustos 2026'da tam bu
+ * yapıldı: yorumun içindeki örnek, taramaya GERÇEK bir başlık gibi girdi ve
+ * Dart parite testi düştü (beklenen "…", gelen dosyanın ilk satırı). Tarama
+ * yorum/kod ayrımı yapmıyor — bu dosyada o iki öznitelik adı yalnızca
+ * GERÇEK içerikte geçmeli.
+ * Statik `/nasil-oynanir/` sayfası (`src/legal/render.tsx`) bu yüzden içeriği
+ * KOPYALAMIYOR, bu bileşenleri İTHAL ediyor.
+ *
+ * `onDetailedClick` OPSİYONEL: pencerede adım değiştiren bir buton, statik
+ * sayfada ise aynı sayfadaki bölüme giden bir çapa bağlantısı olur — statik
+ * sayfada JS hiç çalışmadığından buton ölü bir öğe olurdu.
+ */
+export function QuickStart({ onDetailedClick }: { onDetailedClick?: () => void }) {
   return (
     <div className="flex flex-col gap-2">
       <QuickItem icon="🎯">
@@ -128,17 +146,26 @@ function QuickStart({ onDetailedClick }: { onDetailedClick: () => void }) {
         Harf kutunu bitirir ve torbada başka taş kalmazsa oyun biter. Art arda 2 tur pas
         geçilince de oyun biter.
       </QuickItem>
-      <button
-        onClick={onDetailedClick}
-        className="self-start mt-1 flex items-center min-h-[48px] font-mono text-[10px] uppercase tracking-[1px] text-accent active:opacity-70 transition-opacity"
-      >
-        Detaylı Kurallar →
-      </button>
+      {onDetailedClick ? (
+        <button
+          onClick={onDetailedClick}
+          className="self-start mt-1 flex items-center min-h-[48px] font-mono text-[10px] uppercase tracking-[1px] text-accent active:opacity-70 transition-opacity"
+        >
+          Detaylı Kurallar →
+        </button>
+      ) : (
+        <a
+          href="#detayli-kurallar"
+          className="self-start mt-1 flex items-center min-h-[48px] font-mono text-[10px] uppercase tracking-[1px] text-accent active:opacity-70 transition-opacity"
+        >
+          Detaylı Kurallar →
+        </a>
+      )}
     </div>
   );
 }
 
-function DetailedRules() {
+export function DetailedRules() {
   return (
     <div className="flex flex-col gap-5">
       <Section title="Nasıl Oynanır?">

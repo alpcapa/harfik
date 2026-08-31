@@ -332,8 +332,10 @@ src/
                 # `App` ve iki route sayfası buradan da LAZY yükleniyor: /davet ve /game
                 # oyunun tamamını ve sözlüğü indirmesin diye (2026 → 885 KB, ölçüldü)
   landing/      # karşılama katmanı — derleme zamanında statik HTML (bkz. "Karşılama Katmanı")
-  legal/        # hukuki metinlerin TEK KAYNAĞI + /gizlilik/ · /kullanim-kosullari/ ·
-                # /hesap-silme/ statik sayfa üreticisi (bkz. "Hukuki Statik Sayfalar")
+  legal/        # SPA DIŞINDAKİ statik sayfaların üreticisi (`STATIC_PAGES`):
+                # /gizlilik/ · /kullanim-kosullari/ · /hesap-silme/ + /nasil-oynanir/
+                # ⚠ Dizin adı TARİHSEL — sonuncusu hukuki DEĞİL, SEO sayfası
+                # (ROADMAP #6). İçeriğini KOPYALAMIYOR, HelpModal'dan İTHAL ediyor.
     Landing.tsx     # sayfanın tamamı; SUNUCUDA render edilir (hook/olay/tarayıcı globali YOK)
     LandingLogo.tsx # logoyu üç kez çizmek için SVG sprite (path verisi LogoMark'tan)
     OzellikIkonlari.tsx # "Neler var" altı özellik ikonu (Material DEĞİL — ilkel şekiller; portun ozellik_ikonlari.dart'ıyla ELLE senkron, `icon_parity_test.dart` ile testli)

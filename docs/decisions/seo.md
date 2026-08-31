@@ -16,3 +16,40 @@
 3. GSC → **Sitemaps** raporunda mevcut `sitemap.xml` girdisini yeniden gönder (resubmit) — dosyanın kendisi zaten sabit URL'de olduğundan ayrıca "yüklemek" gerekmez, Google onu zaten periyodik çekiyor; resubmit yalnızca bu çekimi hemen tetikler.
 4. Marka karışıklığı (ör. Google AI Overview'ın "kelimeki"yi başka bir uygulamayla — "Kelimelik" gibi — karıştırması) reindex ile alakasız, ayrı ve daha yavaş çözülen bir marka-tanınırlık sorunu (daha fazla organik arama/backlink zamanla düzeltir) — "Dizine Eklenmesini İste" bunu çözmez.
 
+## `/nasil-oynanir/` — taranabilir kurallar sayfası (31 Ağustos 2026)
+
+**Tetikleyici somut bir olaydı, genel bir "SEO iyileştirmesi" değil.** 17
+Ağustos 2026'da Google AI Mode, Kelimeki'yi *"kelime bulucu ve sözlük
+platformu"* diye TAMAMEN uydurdu (üç ekran görüntüsüyle kaydedildi). Sebep:
+oyunu gerçekten anlatan tek zengin içerik `HelpModal`'daydı ve o YALNIZCA
+pencere açılınca render oluyordu — taranabilir HTML'de hiç yoktu. Makineler
+boşluğu kendileri doldurdu.
+
+⚠ **CLIENT-RENDER BU İŞİ GÖRMEZDİ ve bu maddenin can alıcı noktası bu.**
+Googlebot JS çalıştırıyor, ama **AI/LLM crawler'ları çalıştırmıyor** — yani
+sorunu DOĞURAN tarafı tam olarak ıskalardı. Sayfa bu yüzden derleme
+zamanında üretiliyor (`scripts/legal-plugin.js` → `STATIC_PAGES`), tıpkı
+`/gizlilik/` ailesi gibi: 35 KB HTML, **sıfır `<script>`**, ~7,9 KB metin.
+
+**İçerik tek kaynakta.** `HelpModal.tsx` `QuickStart` ve `DetailedRules`'ü
+dışa açıyor; sayfa onları ithal ediyor. Kopya yazmak iki şeyi birden
+bozardı: (a) bu projenin en sık hata sınıfı olan "iki kopya sessizce
+ayrışır", (b) `mobile/app/test/help_text_parity_test.dart` O DOSYAYI
+tarıyor, yani mobil parite de yalanlanırdı.
+
+**Öksüz sayfa sorunu.** Yalnızca `sitemap.xml`de duran bir URL zayıf
+keşfedilir. Karşılama katmanındaki "Nasıl oynanır?" bölümünün sonuna GERÇEK
+bir `<a href="/nasil-oynanir/">` kondu — footer'daki hukuki bağlantıların
+`<button>` olması (SPA penceresi açıyorlar) tam da bu boşluğu yaratıyordu.
+Duman testi o bağlantının `<a>` kalmasını zorluyor.
+
+⚠ **Yapılırken bir hata yapıldı ve testler yakaladı — tekrarlanmasın.**
+`HelpModal.tsx`e eklenen uyarı yorumunda parite testinin regex'i ÖRNEK
+OLARAK yazıldı. Tarama yorum/kod ayrımı yapmıyor: örnek, GERÇEK bir başlık
+gibi sayıldı ve Dart parite testi düştü. Yani "bu kalıbı taşıma" diyen
+uyarının kendisi kalıbı taşıdı. **Kaynak taraması yapan bir testin
+konusunda, o test neyi arıyorsa onu yorumda örneklemekten kaçın.**
+
+**Kalan SEO borcu:** footer'daki hukuki bağlantılar hâlâ `<button>` — o üç
+sayfa yalnızca sitemap üzerinden keşfediliyor. Bu maddede bilerek
+dokunulmadı (SPA penceresini açma davranışı ayrı bir karar).
