@@ -593,9 +593,23 @@ export function Landing() {
                   verilen bu bağlantı onu keşfedilebilir kılıyor.
                   Footer'daki hukuki bağlantıların `<button>` olmasının
                   sebebi ayrı (SPA penceresi açıyorlar, bkz. aşağıdaki not) —
-                  burası öyle değil, hedefi statik bir sayfa. */}
+                  burası öyle değil, hedefi statik bir sayfa.
+
+                  ⚠ `target="_blank"` BİLEREK (31 Ağustos 2026, kullanıcı
+                  kararı: "ilk defa gelen kişiyi başka yere göndermek
+                  yanlış"). İç bağlantılarda yeni sekme normalde kaçınılan
+                  bir kalıp — geri tuşunu işlevsizleştiriyor — ama bu sayfa
+                  KARŞILAMA katmanı, yani ilk ziyaretçinin dönüşüm sayfası:
+                  onu buradan çıkarmanın bedeli sekme sürprizinden ağır.
+                  Robot tarafı ETKİLENMİYOR: Googlebot `href`i `target`tan
+                  bağımsız izliyor, yani öksüzlük çözümü aynen duruyor.
+                  `aria-label` yeni sekmeyi duyuruyor (görünen metni de
+                  içeriyor — WCAG "Label in Name"). */}
               <a
                 href="/nasil-oynanir/"
+                target="_blank"
+                rel="noopener"
+                aria-label="Kuralların tamamı (yeni sekmede açılır)"
                 className="self-start mt-1 font-mono text-[11px] text-accent underline-offset-2 hover:underline"
               >
                 Kuralların tamamı →

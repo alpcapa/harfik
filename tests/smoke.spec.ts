@@ -1128,6 +1128,24 @@ test('katmandaki "Kuralların tamamı" GERÇEK bir bağlantı — robot izleyebi
   await page.goto('/');
   const link = page.locator('a[href="/nasil-oynanir/"]');
   await expect(link).toBeVisible();
+
+  // Yeni sekmede açılmalı: katman ilk ziyaretçinin DÖNÜŞÜM sayfası, onu
+  // buradan çıkarmıyoruz (31 Ağustos 2026 kullanıcı kararı). `href` yerinde
+  // durduğu için robot tarafı bundan etkilenmiyor — yukarıdaki iddia geçerli.
+  await expect(link).toHaveAttribute('target', '_blank');
+  await expect(link).toHaveAttribute('rel', /noopener/);
+
+  // Gerçekten yeni bir sekme açılıyor mu — attribute'a değil DAVRANIŞA bak.
+  const [yeniSekme] = await Promise.all([
+    page.context().waitForEvent('page'),
+    link.click(),
+  ]);
+  await yeniSekme.waitForLoadState();
+  expect(new URL(yeniSekme.url()).pathname).toBe('/nasil-oynanir/');
+  await expect(yeniSekme.getByRole('heading', { level: 1, name: 'Nasıl Oynanır' })).toBeVisible();
+  // Katman AÇIK kalmalı — asıl gerekçe bu.
+  expect(new URL(page.url()).pathname).toBe('/');
+  await yeniSekme.close();
 });
 
 test('hukuki metin TEK KAYNAKTAN geliyor — sayfa ile pencere aynı bölümleri taşıyor', async ({
