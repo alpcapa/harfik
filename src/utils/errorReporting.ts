@@ -44,8 +44,23 @@ export type ClientErrorKind = 'uncaught' | 'promise' | 'boundary' | 'manual';
 const MAX_MESSAGE = 500;
 const MAX_STACK = 4000;
 
-/** Sayfa oturumu başına toplam rapor tavanı (çökme döngüsü koruması). */
-const MAX_PER_SESSION = 10;
+/**
+ * Çökme döngüsü koruması: son `WINDOW_MS` içinde en fazla `MAX_PER_WINDOW`
+ * kayıt, ve aynı imza pencere başına BİR kez.
+ *
+ * ⚠ PENCERE, SÜREÇ ÖMRÜ DEĞİL (31 Ağustos 2026, ROADMAP #10). Önceki hâl
+ * "oturum başına 10"du ve sayaç/imza kümesi hiç temizlenmiyordu. Web'de
+ * bedeli yoktu — bir sayfa yenilemesi ikisini de sıfırlıyor. **App süreci
+ * ise günlerce yaşıyor:** 10 FARKLI hatadan sonra o cihaz kalıcı olarak
+ * susuyor ve tekrar eden bir hata süreç başına yalnızca BİR kez sayılıyordu.
+ * Panelin "kaç cihaz" ölçütü bundan etkilenmiyordu (o zaten cihaz başına
+ * tekil sayar) ama "kaç kez" olduğundan küçük geliyordu.
+ *
+ * Sayılar İKİ İSTEMCİDE AYNI olmak zorunda — `error_rate_limit_parity_test`
+ * ikisini de kaynaktan okuyup karşılaştırıyor.
+ */
+const MAX_PER_WINDOW = 10;
+const WINDOW_MS = 60 * 60 * 1000;
 
 /**
  * Kaydın gideceği yer. Varsayılanı Supabase; testler (ve yalnızca testler)
@@ -61,10 +76,38 @@ export function __setClientErrorSinkForTests(sink: ClientErrorSink | null): void
   hedef = sink;
 }
 
-const gonderilenImzalar = new Set<string>();
-let toplamGonderilen = 0;
+/** Pencere içinde gönderilmiş kayıtların zaman damgaları. */
+const gonderimZamanlari: number[] = [];
+/** İmza → o imzanın en son gönderildiği an. */
+const imzaZamanlari = new Map<string, number>();
 /** Raporlama SIRASINDA doğan bir hata yeni bir rapor tetiklemesin. */
 let raporlaniyor = false;
+
+/** Saat — testler dışında her zaman `Date.now`. */
+let saat: () => number = () => Date.now();
+
+/** Yalnızca testler için — saati değiştirir. Üretim kodu ÇAĞIRMAZ. */
+export function __setClockForTests(fn: (() => number) | null): void {
+  saat = fn ?? (() => Date.now());
+}
+
+/**
+ * Pencerenin dışına düşen kayıtları/imzaları unutur.
+ *
+ * ⚠ GELECEKTEKİ damga da düşer (`t > simdi`). Kaynak duvar saati ve cihazın
+ * saati geriye alınabilir (elle ayar, NTP düzeltmesi); o durumda `simdi - t`
+ * negatif olur ve girdi normalde HİÇ eskimezdi — yani düzeltmenin bedeli
+ * tam da bu maddenin kapatmaya çalıştığı körlük olurdu.
+ */
+function pencereyiKaydir(simdi: number): void {
+  const gecerli = (t: number) => t <= simdi && simdi - t < WINDOW_MS;
+  for (let i = gonderimZamanlari.length - 1; i >= 0; i--) {
+    if (!gecerli(gonderimZamanlari[i]!)) gonderimZamanlari.splice(i, 1);
+  }
+  for (const [imza, t] of imzaZamanlari) {
+    if (!gecerli(t)) imzaZamanlari.delete(imza);
+  }
+}
 
 /**
  * `/davet/<token>` HAM YAZILAMAZ — o token bir yetenek (capability), hata
@@ -159,7 +202,9 @@ export function reportClientError(
     // kaydı tam da sessizce düşürürdü.
     if (kind !== 'manual' && isNetworkError(err)) return;
     if (raporlaniyor) return;
-    if (toplamGonderilen >= MAX_PER_SESSION) return;
+    const simdi = saat();
+    pencereyiKaydir(simdi);
+    if (gonderimZamanlari.length >= MAX_PER_WINDOW) return;
 
     const { message, stack } = mesajdan(err);
     // Bize ait olmayan koddan doğan hata — aynı gerekçeyle YALNIZCA otomatik
@@ -170,9 +215,9 @@ export function reportClientError(
     // İmza mesajın BAŞINDAN türetiliyor: aynı hatanın farklı satır/sütun
     // numaralarıyla gelen kopyaları tek kayda inmeli.
     const imza = `${kind}|${tamMesaj.slice(0, 120)}`;
-    if (gonderilenImzalar.has(imza)) return;
-    gonderilenImzalar.add(imza);
-    toplamGonderilen += 1;
+    if (imzaZamanlari.has(imza)) return;
+    imzaZamanlari.set(imza, simdi);
+    gonderimZamanlari.push(simdi);
 
     raporlaniyor = true;
     const kayit = {
@@ -227,8 +272,9 @@ export function installGlobalErrorReporting(): void {
 
 /** Yalnızca testler için — sayaçları sıfırlar. */
 export function __resetErrorReportingForTests(): void {
-  gonderilenImzalar.clear();
-  toplamGonderilen = 0;
+  imzaZamanlari.clear();
+  gonderimZamanlari.length = 0;
   raporlaniyor = false;
   hedef = null;
+  saat = () => Date.now();
 }

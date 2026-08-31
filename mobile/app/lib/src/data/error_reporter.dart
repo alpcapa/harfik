@@ -28,8 +28,20 @@ import '../util/platform.dart';
 const int _maxMessage = 500;
 const int _maxStack = 4000;
 
-/// Uygulama oturumu başına toplam rapor tavanı (çökme döngüsü koruması).
-const int _maxPerSession = 10;
+/// Çökme döngüsü koruması: son [_windowMs] içinde en fazla [_maxPerWindow]
+/// kayıt, ve aynı imza pencere başına BİR kez.
+///
+/// ⚠ PENCERE, SÜREÇ ÖMRÜ DEĞİL (31 Ağustos 2026, ROADMAP #10). Önceki hâl
+/// "oturum başına 10"du ve sayaç/imza kümesi hiç temizlenmiyordu. Webde bir
+/// sayfa yenilemesi ikisini de sıfırladığı için orada bedeli yoktu;
+/// **app süreci ise günlerce yaşıyor** — 10 FARKLI hatadan sonra cihaz
+/// kalıcı olarak susuyor ve tekrar eden bir hata süreç başına yalnızca BİR
+/// kez sayılıyordu. Yani bu maddenin asıl adresi TAM OLARAK portun kendisi.
+///
+/// Sayılar web `errorReporting.ts` ile AYNI olmak zorunda —
+/// `error_rate_limit_parity_test` ikisini de kaynaktan okuyup karşılaştırıyor.
+const int _maxPerWindow = 10;
+const int _windowMs = 60 * 60 * 1000;
 
 /// Hata türleri — web `ClientErrorKind` ile BİREBİR aynı dizeler; admin
 /// panelindeki `errorKindLabel` bunları okuyor. Portta `boundary` karşılığı
@@ -117,17 +129,43 @@ class ErrorReporter {
 
   ClientErrorSink? _sink;
   Future<String>? _anonId;
-  final Set<String> _gonderilen = <String>{};
-  int _toplam = 0;
+
+  /// Pencere içinde gönderilmiş kayıtların zaman damgaları (ms).
+  final List<int> _gonderimZamanlari = <int>[];
+
+  /// İmza → o imzanın en son gönderildiği an (ms).
+  final Map<String, int> _imzaZamanlari = <String, int>{};
+
   bool _raporlaniyor = false;
+
+  /// Saat — testler dışında her zaman `DateTime.now` (portun `GamesRepo`'daki
+  /// `DateTime Function()? now` deseninin aynısı).
+  DateTime Function() _now = DateTime.now;
+
+  /// Pencerenin dışına düşen kayıtları/imzaları unutur.
+  ///
+  /// ⚠ GELECEKTEKİ damga da düşer (`t > simdi`). Kaynak duvar saati; cihazın
+  /// saati geriye alınabilir (elle ayar, NTP düzeltmesi) ve o durumda
+  /// `simdi - t` negatif olur, yani girdi normalde HİÇ eskimezdi — düzeltmenin
+  /// bedeli tam da bu maddenin kapatmaya çalıştığı körlük olurdu.
+  void _pencereyiKaydir(int simdi) {
+    bool gecerli(int t) => t <= simdi && simdi - t < _windowMs;
+    _gonderimZamanlari.removeWhere((t) => !gecerli(t));
+    _imzaZamanlari.removeWhere((_, t) => !gecerli(t));
+  }
 
   /// Supabase ve anonim kimlik hazır olunca `bootstrap` çağırır. Bundan
   /// ÖNCE gelen raporlar sessizce düşer — bilinçli: açılışın ilk
   /// milisaniyelerini kuyruklamak için ayrı bir depo açmak, telemetrinin
   /// kendisini bir açılış riski hâline getirirdi.
-  void configure({required ClientErrorSink? sink, required Future<String>? anonId}) {
+  void configure({
+    required ClientErrorSink? sink,
+    required Future<String>? anonId,
+    DateTime Function()? now,
+  }) {
     _sink = sink;
     _anonId = anonId;
+    if (now != null) _now = now;
     // Hiç rapor gelmezse bu future hiç `await` EDİLMEZ; depo açılamayıp
     // reddederse "unhandled async error" olur ve — ironik biçimde — zone
     // yakalayıcısını tetikleyip telemetrinin kendisini bir hata kaynağına
@@ -160,7 +198,9 @@ class ErrorReporter {
       // yazılamamış olmasıdır.
       if (kind != ClientErrorKind.manual && isNetworkError(error)) return;
       if (_raporlaniyor) return;
-      if (_toplam >= _maxPerSession) return;
+      final simdi = _now().millisecondsSinceEpoch;
+      _pencereyiKaydir(simdi);
+      if (_gonderimZamanlari.length >= _maxPerWindow) return;
 
       var mesaj = error.toString();
       if (context != null) mesaj = '[$context] $mesaj';
@@ -169,9 +209,9 @@ class ErrorReporter {
       // İmza mesajın BAŞINDAN türetiliyor: aynı hatanın farklı satır
       // numaralarıyla gelen kopyaları tek kayda inmeli.
       final imza = '$kind|${mesaj.length > 120 ? mesaj.substring(0, 120) : mesaj}';
-      if (_gonderilen.contains(imza)) return;
-      _gonderilen.add(imza);
-      _toplam += 1;
+      if (_imzaZamanlari.containsKey(imza)) return;
+      _imzaZamanlari[imza] = simdi;
+      _gonderimZamanlari.add(simdi);
 
       _raporlaniyor = true;
       var yigin = stack?.toString();
@@ -221,8 +261,9 @@ class ErrorReporter {
     route = kRootRouteName;
     _sink = null;
     _anonId = null;
-    _gonderilen.clear();
-    _toplam = 0;
+    _gonderimZamanlari.clear();
+    _imzaZamanlari.clear();
     _raporlaniyor = false;
+    _now = DateTime.now;
   }
 }

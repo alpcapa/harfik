@@ -24,6 +24,7 @@ import {
   isThirdPartyError,
   __setClientErrorSinkForTests,
   __resetErrorReportingForTests,
+  __setClockForTests,
 } from '../src/utils/errorReporting';
 
 let failures = 0;
@@ -38,9 +39,23 @@ function check(name: string, cond: boolean, detail = ''): void {
 
 type Kayit = Record<string, unknown>;
 
+/**
+ * Hız sınırı ZAMAN penceresine bağlı olduğundan saat sahte: testler `saatMs`i
+ * elle ilerletiyor. Gerçek `Date.now` ile "1 saat sonra" sınanamazdı.
+ *
+ * ⚠ `__resetErrorReportingForTests` saati de gerçeğine döndürüyor — sahte
+ * saat ondan SONRA kurulmalı.
+ */
+let saatMs = 1_000_000;
+
+/** Üretim kaynağındaki `WINDOW_MS` ile aynı olmak zorunda. */
+const PENCERE_MS = 60 * 60 * 1000;
+
 function kur(opts: { fail?: boolean } = {}) {
   const sent: Kayit[] = [];
   __resetErrorReportingForTests();
+  saatMs = 1_000_000;
+  __setClockForTests(() => saatMs);
   __setClientErrorSinkForTests(async (r) => {
     sent.push(r);
     if (opts.fail) throw new Error('hedef patladı');
@@ -98,24 +113,60 @@ async function main() {
     check('yol maskelenmiş gider', r.route === '/game/:id', String(r.route));
   }
 
-  // 4) Tekrar bastırma.
+  // 4) Tekrar bastırma — PENCERE İÇİNDE.
   {
     const sent = kur();
     reportClientError(new Error('aynı hata'));
     await bekle();
     reportClientError(new Error('aynı hata'));
     await bekle();
-    check('aynı imza İKİNCİ kez gönderilmez', sent.length === 1, `sent=${sent.length}`);
+    check('aynı imza pencere içinde İKİNCİ kez gönderilmez', sent.length === 1, `sent=${sent.length}`);
+
+    // Pencere kayınca imza da düşer. Süreç ömrüne bağlı eski hâlde bu kayıt
+    // ASLA gelmezdi — günlerce yaşayan app sürecinde tekrar eden bir hata
+    // yalnızca BİR kez sayılıyordu (ROADMAP #10).
+    saatMs += PENCERE_MS;
+    reportClientError(new Error('aynı hata'));
+    await bekle();
+    check('aynı imza pencere GEÇİNCE yeniden gönderilir', sent.length === 2, `sent=${sent.length}`);
   }
 
-  // 5) Hız sınırı — çökme döngüsü koruması.
+  // 5) Hız sınırı — çökme döngüsü koruması. Tavan KORUNUYOR, yalnızca
+  // penceresi süreç ömründen zamana taşındı.
   {
     const sent = kur();
     for (let i = 0; i < 25; i++) {
       reportClientError(new Error(`hata ${i}`));
       await bekle();
     }
-    check('oturum başına en fazla 10 kayıt', sent.length === 10, `sent=${sent.length}`);
+    check('pencere başına en fazla 10 kayıt', sent.length === 10, `sent=${sent.length}`);
+
+    // Pencere DOLMADAN açılmaz: çökme döngüsü koruması gevşemiş olmamalı.
+    saatMs += PENCERE_MS - 1;
+    reportClientError(new Error('pencere dolmadan'));
+    await bekle();
+    check('pencere dolmadan tavan açılmaz', sent.length === 10, `sent=${sent.length}`);
+
+    // Pencere kayınca yeniden açılır — maddenin kendisi bu.
+    saatMs += 1;
+    reportClientError(new Error('pencere kaydıktan sonra'));
+    await bekle();
+    check('pencere kayınca sayaç düşer', sent.length === 11, `sent=${sent.length}`);
+  }
+
+  // 5b) Cihaz saati GERİYE alınırsa körlük kalıcı olmamalı — damgalar
+  // "gelecekte" kalır ve normalde hiç eskimezdi.
+  {
+    const sent = kur();
+    for (let i = 0; i < 10; i++) {
+      reportClientError(new Error(`hata ${i}`));
+      await bekle();
+    }
+    check('saat testi: tavan doldu', sent.length === 10, `sent=${sent.length}`);
+    saatMs -= 5 * PENCERE_MS;
+    reportClientError(new Error('saat geriye alındı'));
+    await bekle();
+    check('saat geriye alınınca kalıcı körlük olmaz', sent.length === 11, `sent=${sent.length}`);
   }
 
   // 6) NE KAYDEDİLMEZ — beklenen durumlar.

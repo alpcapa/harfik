@@ -174,9 +174,11 @@ yok, bu eksik veri değil).
 
 1. **Fire-and-forget** — asla `await` edilmez, ASLA fırlatmaz.
 2. **Tekrar bastırma + hız sınırı** — imza `${kind}|mesajın ilk 120
-   karakteri`, oturum başına en fazla **10** kayıt. Bir çökme döngüsü aksi
-   halde binlerce satır yazar (`ErrorBoundary`'nin kendi yorumunda o döngü
-   zaten tanımlı: bozuk kayıt → her reload'da aynı hata).
+   karakteri`, **son 1 saatte** en fazla **10** kayıt ve aynı imza pencere
+   başına bir kez. Bir çökme döngüsü aksi halde binlerce satır yazar
+   (`ErrorBoundary`'nin kendi yorumunda o döngü zaten tanımlı: bozuk kayıt →
+   her reload'da aynı hata). ⚠ Pencere 31 Ağustos 2026'ya kadar SÜREÇ ÖMRÜYDÜ
+   — aşağıdaki tarihli nota bak.
 3. **Derleme kimliği** her kayda eklenir (`window.__KELIMEKI_BUILD__` /
    `buildSha`) — "Deploy Doğrulaması" bölümünün tamamı zaten bu soruyu
    çözmek için var; telemetri onu bedavaya alır. Panelde bu, "düzeltme
@@ -190,8 +192,8 @@ yok, bu eksik veri değil).
 | Modül | `src/utils/errorReporting.ts` | `mobile/app/lib/src/data/error_reporter.dart` |
 | Otomatik yakalama | `window.onerror` + `unhandledrejection` (`boot.tsx`) | `FlutterError.onError` + `runZonedGuarded` (`main.dart`) |
 | Render/çökme | `ErrorBoundary.componentDidCatch` → `kind:'boundary'` | `FlutterError.onError` → aynı `kind` |
-| Yol (`route`) | `normalizeRoute(location.pathname)` | sabit `'app'` — portta pathname yok, ekran adı taşımak yerine yığına bakılır |
-| Sınama | `npm run verify-error-reporting` (20 kontrol, CI'da) | `test/error_reporter_test.dart` (8 test) |
+| Yol (`route`) | `normalizeRoute(location.pathname)` | `ErrorReporterRouteObserver` — rota adı `RouteSettings`ten; adsız rota kök (`'app'`) sayılır (23 Ağustos 2026'ya kadar SABİT `'app'`ti) |
+| Sınama | `npm run verify-error-reporting` (35 kontrol, CI'da) | `test/error_reporter_test.dart` (12 test) + `error_rate_limit_parity_test.dart` |
 
 **Portta İKİ yakalayıcı da şart ve farklı şeyleri görüyor:**
 `FlutterError.onError` widget ağacındaki (build/layout/paint) hataları,
@@ -260,3 +262,45 @@ yanlış kılardı.
   Dart yığını okunması zor. Source map yüklemek ayrı bir iş; bugün
   `message` + `route` + `build` üçlüsü teşhis için yeterli kabul edildi.
 
+## Hız sınırı süreç ömründen ZAMAN penceresine taşındı (31 Ağustos 2026)
+
+ROADMAP #10. Sınır `MAX_PER_SESSION = 10` + hiç temizlenmeyen bir imza
+kümesiydi. **Webde bunun bedeli yoktu** — bir sayfa yenilemesi ikisini de
+sıfırlıyor. Bedeli olan yer PORTTU: app süreci günlerce yaşıyor, yani
+
+- 10 FARKLI hatadan sonra o cihaz kalıcı olarak susuyordu,
+- tekrar eden bir hata süreç başına yalnızca BİR kez sayılıyordu.
+
+Panelin "kaç cihaz" ölçütü bundan etkilenmiyordu (o zaten cihaz başına
+tekil sayar); bozulan "kaç kez"di, yani bir hatanın YAYGINLIĞI olduğundan
+küçük görünüyordu. Maddenin 23 Ağustos'ta bilinçli ertelenme gerekçesi de
+buydu — mağaza kapısında duran bir şey değildi.
+
+**Neden şimdi:** 1.0.4'ün yarısı (#383) telemetriden bulunan iki çökmeydi,
+biri 11 cihazda. Yani gerçek hataları bulan alet bu ve tester sayısı
+artarken mobilde eksik ölçüyordu.
+
+**Yapılan:** tavan (10) korundu, penceresi son 1 saate taşındı. `int` sayaç
+→ zaman damgası listesi, `Set` imza kümesi → imza→zaman haritası; her
+raporda pencerenin dışına düşenler unutuluyor.
+
+**Kaynak DUVAR saati, monotonik değil** — uygulama askıya alınıp saatler
+sonra devam edebiliyor ve tek derdimiz "cihaz kalıcı susmasın". Bedeli: saat
+geriye alınabiliyor (elle ayar, NTP). Eskime koşulu yalnızca
+`simdi - t < PENCERE` olsaydı damgalar "gelecekte" kalıp HİÇ eskimezdi —
+düzeltmenin bedeli tam da kapatmaya çalıştığı körlük olurdu. Koşula
+`t <= simdi` eklendi.
+
+**Parite:** ROADMAP'in tuzak listesi bunu adıyla istiyordu ("biri değişip
+öteki kalırsa web ile app farklı davranır").
+`mobile/app/test/error_rate_limit_parity_test.dart` iki üretim kaynağını VE
+iki testteki pencere kopyasını — **dört yer** — karşılaştırıyor; sayı
+testlerde de tekrarlandığı için üretim değişip testler kalırsa testler
+yanlış bir şeyi doğrulamaya devam ederdi.
+
+**Negatif eş ölçüldü:** `pencereyiKaydir` çağrısı kaldırılınca üç kontrol,
+`t <= simdi` kaldırılınca bir kontrol GERÇEKTEN düşüyor.
+
+⚠ **Saf istemci kodu — sürüm turu bekliyor (1.0.5).** Sunucuda değişen bir
+şey yok, yani bu düzeltme merge edilse bile sahadaki cihazlarda ancak yeni
+paketle görünür.
