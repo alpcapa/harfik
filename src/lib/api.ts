@@ -46,6 +46,7 @@ import type {
   AdminRetentionCell,
   AdminUserActivityPoint,
   BoardSnapshotTile,
+  ClientPlatform,
   FeedbackSource,
   FriendRelation,
   FriendRow,
@@ -2201,9 +2202,19 @@ export async function fetchAdminActivationStats(): Promise<AdminActivationStats 
  * İstemci hata telemetrisinin gruplanmış dökümü (yalnızca admin — Hatalar
  * sekmesi, ROADMAP #3). Ayrıntılı sözleşme: `AdminClientErrorRow`.
  */
-export async function fetchAdminClientErrors(days = 7): Promise<AdminClientErrorRow[]> {
+export async function fetchAdminClientErrors(
+  days = 7,
+  platform: ClientPlatform | null = null,
+): Promise<AdminClientErrorRow[]> {
   if (!supabase) return [];
-  const { data, error } = await supabase.rpc('admin_client_errors', { p_days: days });
+  // Platform elemesi SUNUCUDA (ROADMAP #11): satırlar (kind, message) ile
+  // gruplandığından ve `platforms` bir `string_agg` olduğundan, burada
+  // elemek `occurrences`/`devices` sayılarını öteki platformları da içerdiği
+  // hâlde bırakırdı — panelin bütün değeri o iki sayı.
+  const { data, error } = await supabase.rpc('admin_client_errors', {
+    p_days: days,
+    p_platform: platform,
+  });
   if (error) {
     // Admin panelindeki .catch(setError) zinciri buna güveniyor — hatayı
     // yutup boş dizi dönmek gerçek bir RPC/izin hatasını gizlerdi.

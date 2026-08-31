@@ -304,3 +304,38 @@ yanlış bir şeyi doğrulamaya devam ederdi.
 ⚠ **Saf istemci kodu — sürüm turu bekliyor (1.0.5).** Sunucuda değişen bir
 şey yok, yani bu düzeltme merge edilse bile sahadaki cihazlarda ancak yeni
 paketle görünür.
+
+## Hata panelinde platform filtresi (31 Ağustos 2026)
+
+ROADMAP #11. Maddenin karar kuralı *"panelde ilk kez ios/android satırları
+görünüp web ile karışmaya başladığı gün"*du; canlı sayım o günün geldiğini
+söyledi: **web 17 · android 16 · app-web 1** kayıt.
+
+**Eleme SUNUCUDA (`admin_client_errors(p_days, p_platform)`), istemcide
+DEĞİL.** ROADMAP ikisini de seçenek bırakmıştı ("satır sayısı düşükken
+istemci tarafı filtre de yeterli"), ama fonksiyonun şekli seçimi belirliyor:
+satırlar `(kind, message)` ile gruplanıyor ve `platforms` bir `string_agg`.
+Yani iki platformda da görülen bir hata TEK satırdır ve
+`occurrences`/`devices` ikisinin TOPLAMIDIR. İstemcide "platforms 'android'
+içeriyor mu" diye elemek o satırı gösterir ama sayıları web'i de içerdiği
+hâlde bırakır — panelin bütün değeri o iki sayı olduğundan sessiz bir yanlış
+olurdu.
+
+**Varsayım değil, ölçüm:** canlıda böyle bir satır gerçekten var —
+`manual [online_games_repo.load] AuthApiException…`, android+app-web'de
+2 kez / 2 cihaz, yalnız android'de **1 / 1**. Elle test listesindeki
+(`docs/testing-admin.md` §9.12) kontrol tam bu davranışı sınıyor: tek
+platform seçilince Kez/Cihaz DÜŞMELİ; aynı kalıyorsa eleme istemciye
+kaymıştır.
+
+**Migration tuzağı uygulandı:** parametre eklemek `create or replace` ile
+olmaz — eski `(integer)` imzası yerinde kalır ve tek argümanlı çağrı iki
+imzaya birden uyup `function is not unique` (42725) verir
+(`fix_withdraw_report_wrong_overload`). drop + create + grant'ler elle;
+canlıda `pg_proc`ta tek imza kaldığı doğrulandı.
+
+**Kapsam sınırı:** `p_platform` yalnızca eşitlik eliyor. Platformu NULL olan
+satırlar (yayınlanmayan masaüstü hedefleri) ve listede olmayan bir platform
+değeri yalnızca "Tüm Platformlar" görünümünde okunur — `client_errors`
+üzerinde kısıt BİLEREK yok (öngörülmemiş bir değer yüzünden bir hata
+raporunu kör etmemek için). Filtre bir kolaylık, tek görüntüleme yolu değil.

@@ -79,7 +79,7 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); kalanlar bekliyor |
 | **Karar verilmiş, yapılmamış** | #3 davetlilere hatırlatma (gönderilebilir) · #8 Paylaşma (iPad popover) | ⬜ |
 | **Ertelendi** | #2 zorunlu güncelleme — In-App Update yerini aldı, eşik yalnızca acil fren | — |
-| **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #11 platform filtresi · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor · **#10 hata hız sınırı ✅ YAPILDI** (31 Ağustos 2026) |
+| **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor · **#10 hata hız sınırı ✅** ve **#11 platform filtresi ✅ YAPILDI** (31 Ağustos 2026) |
 | **Yapıldı** | #6 taranabilir `/nasil-oynanir/` sayfası | ✅ 31 Ağustos 2026 |
 | **iOS/APNs** | Apple Developer üyeliğine bloke; iş "APNs anahtarını yükle + Push capability" kadar | 🔒 |
 
@@ -1372,7 +1372,49 @@ penceresini doğru yere koymak.
 
 ---
 
-## 11. Hata panelinde platform filtresi — **İSTEĞE BAĞLI, app çıkınca**
+## 11. Hata panelinde platform filtresi — ✅ **YAPILDI** (31 Ağustos 2026)
+
+**Tetikleyici geldi ve ÖLÇÜLDÜ.** Maddenin karar kuralı *"panelde ilk kez
+ios/android satırları görünüp web ile karışmaya başladığı gün"*du. Canlı
+`client_errors` sayımı: **web 17 · android 16 · app-web 1** kayıt. Karışma
+başlamış.
+
+**Sunucu tarafı seçildi (`p_platform`), istemci tarafı filtre DEĞİL** —
+madde ikisini de seçenek bırakmıştı, ama fonksiyonun şekli seçimi
+belirliyor: satırlar `(kind, message)` ile gruplanıyor ve `platforms` bir
+`string_agg`, yani iki platformda da görülen bir hata TEK satır ve
+`occurrences`/`devices` İKİSİNİN TOPLAMI. İstemcide "platforms 'android'
+içeriyor mu" diye elemek o satırı gösterir ama sayıları web'i de içerdiği
+hâlde bırakırdı — panelin bütün değeri o iki sayı olduğundan bu SESSİZ bir
+yanlış olurdu. **Varsayım değil, ölçüm:** canlıda böyle bir satır gerçekten
+var (`[online_games_repo.load] AuthApiException…` — android+app-web'de
+2 kez/2 cihaz, yalnız android'de **1/1**).
+
+**Migration:** `20260831213500_admin_client_errors_platform_filter`. Kayıtlı
+tuzak uygulandı — parametre eklemek `create or replace` ile OLMAZ: eski
+`(integer)` imzası yerinde kalır, tek argümanlı çağrı iki imzaya birden uyup
+`function is not unique` (42725) verir (`fix_withdraw_report_wrong_overload`).
+Önce drop, sonra create, grant'ler elle. **Canlıda doğrulandı:**
+`pg_proc`ta TEK imza (`admin_client_errors(integer,text)`), yetkiler
+`authenticated`+`service_role`, `public`/`anon` YOK; admin kapısı da çalışıyor
+(admin olmayan çağrı `Yetkisiz erişim.` veriyor). Fonksiyonel ölçüm (admin
+kimliğiyle, 90 gün): Tümü 10 satır · android 5 · web 5 · ios 0.
+
+**Kapsam sınırı (bilinçli):** `p_platform` yalnızca EŞİTLİK eliyor, yani
+platformu NULL olan satırlar bir platform seçiliyken görünmez — "Tüm
+Platformlar"da `?` olarak duruyor. `client_errors.platform` üzerinde kısıt
+BİLEREK yok (öngörülmemiş bir değer yüzünden bir hata raporunu kör etmemek
+için), o yüzden listede olmayan bir platform da yalnızca "Tümü" görünümünde
+okunur. Filtre bir kolaylık, tek görüntüleme yolu değil.
+
+**CSV kendiliğinden uyumlu:** dışa aktarma `clientErrors` state'ini
+okuduğundan filtre uygulanmış hâli iniyor ("CSV ekranda görüneni indirir").
+
+**#10'un kaçırdığı iki bayat metin de bu turda düzeltildi:** `?` popup'ı ve
+`docs/testing-admin.md` hâlâ "oturum başına en fazla 10 kayıt" diyordu.
+
+### Aşağısı yapılmadan önceki hâli (tarihçe)
+
 
 **Model: Sonnet 5, efor `low`.**
 

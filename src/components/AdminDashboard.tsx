@@ -50,6 +50,7 @@ import type {
   AdminFeedbackRow,
   AdminChatReportRow,
   AdminClientErrorRow,
+  ClientPlatform,
 } from '../lib/database.types';
 import { PlayerScoreCard } from './PlayerScoreCard';
 import { MemberMessageModal } from './MemberMessageModal';
@@ -541,7 +542,13 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
         <br />
         Beklenen durumlar (çevrimdışılık, sunucunun kendi reddi) <b>bilerek kaydedilmez</b> —
         buradaki her satır "birinin bakması gereken bir şey" olmalı. Yol (route) kimliklerden
-        arındırılır (<code>/game/:id</code>), oturum başına en fazla 10 kayıt gönderilir.
+        arındırılır (<code>/game/:id</code>), bir istemciden <b>saatte</b> en fazla 10 kayıt
+        gönderilir.
+        <br />
+        <br />
+        <b>Platform filtresi sayıları da daraltır:</b> eleme gruplamadan ÖNCE yapıldığı için
+        "Android" seçiliyken <b>Kez</b> ve <b>Cihaz</b> yalnızca Android'i sayar. CSV ekranda
+        görüneni indirir.
       </>
     ),
   },
@@ -1397,6 +1404,18 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
    * bakılması gereken ne var" ve gruplama zaten zamanı düzleştiriyor.
    */
   const [errorDays, setErrorDays] = useState(7);
+  /**
+   * "Hatalar" platform filtresi (ROADMAP #11) — `'hepsi'` = filtre yok.
+   *
+   * Eleme SUNUCUDA yapılıyor, burada değil: satırlar (kind, message) ile
+   * gruplanıyor ve `platforms` bir `string_agg`, yani iki platformda da
+   * görülen bir hata TEK satır ve `occurrences`/`devices` ikisinin toplamı.
+   * İstemcide elemek o satırı gösterir ama sayıları öteki platformu da
+   * içerdiği hâlde bırakırdı. ÖLÇÜLDÜ (31 Ağustos 2026, canlı veri): böyle
+   * bir satır GERÇEKTEN var — android+app-web'de 2 kez/2 cihaz, yalnız
+   * android'de 1/1.
+   */
+  const [errorPlatform, setErrorPlatform] = useState<ClientPlatform | 'hepsi'>('hepsi');
   const [expandedErrorKey, setExpandedErrorKey] = useState<string | null>(null);
   const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
   const [transcriptGameId, setTranscriptGameId] = useState<string | null>(null);
@@ -1425,10 +1444,10 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   // "Hatalar" sekmesinin kendisi bir rozet taşımadığından (bekleyen İŞ değil,
   // gözlem), admin oraya ancak bir sebep varsa girer ve o zaman veri hazır olur.
   useEffect(() => {
-    fetchAdminClientErrors(errorDays)
+    fetchAdminClientErrors(errorDays, errorPlatform === 'hepsi' ? null : errorPlatform)
       .then(setClientErrors)
       .catch((e) => setError(String(e)));
-  }, [errorDays]);
+  }, [errorDays, errorPlatform]);
 
   useEffect(() => {
     fetchAdminMembers()
@@ -2075,16 +2094,36 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
               kaybolmasın) kaydırma kabının DIŞINDA. */}
           {tab === 'errors' && (
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <AdminSelect
-                value={String(errorDays)}
-                onChange={(v) => setErrorDays(Number(v))}
-                options={[
-                  { value: '1', label: 'Son 24 Saat' },
-                  { value: '7', label: 'Son 7 Gün' },
-                  { value: '30', label: 'Son 30 Gün' },
-                  { value: '90', label: 'Son 90 Gün' },
-                ]}
-              />
+              <div className="flex items-center gap-2 flex-wrap">
+                <AdminSelect
+                  value={String(errorDays)}
+                  onChange={(v) => setErrorDays(Number(v))}
+                  options={[
+                    { value: '1', label: 'Son 24 Saat' },
+                    { value: '7', label: 'Son 7 Gün' },
+                    { value: '30', label: 'Son 30 Gün' },
+                    { value: '90', label: 'Son 90 Gün' },
+                  ]}
+                />
+                {/* Platform seçenekleri `ClientPlatform`in dört değeri —
+                    `games.platform` kısıtıyla aynı sözleşme. `client_errors`
+                    kolonunda KISIT YOK (bilerek: öngörülmemiş bir değer
+                    yüzünden bir hata raporunu kör etmemek için), yani
+                    listede olmayan bir platform yalnızca "Tüm Platformlar"
+                    görünümünde okunur — orada `platforms` sütununda yazılı
+                    olur. Filtre bir kolaylık, tek görüntüleme yolu değil. */}
+                <AdminSelect
+                  value={errorPlatform}
+                  onChange={(v) => setErrorPlatform(v as ClientPlatform | 'hepsi')}
+                  options={[
+                    { value: 'hepsi', label: 'Tüm Platformlar' },
+                    { value: 'web', label: 'Web' },
+                    { value: 'ios', label: 'iOS' },
+                    { value: 'android', label: 'Android' },
+                    { value: 'app-web', label: 'App (web)' },
+                  ]}
+                />
+              </div>
               <div className="flex items-center gap-2 shrink-0">
                 {clientErrors && clientErrors.length > 0 && (
                   <button type="button" onClick={exportClientErrorsCsv} className={csvLinkCls}>
