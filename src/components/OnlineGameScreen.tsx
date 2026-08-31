@@ -1660,7 +1660,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
 
       {newMessagePopup && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
-          <div className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none relative">
+          <div className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] px-6 pb-6 pt-12 flex flex-col gap-4 outline-none relative">
             <button
               onClick={() => closeMessagePopup()}
               aria-label="Kapat"
