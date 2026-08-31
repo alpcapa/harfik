@@ -177,8 +177,8 @@ src/
 │   └── profileFields.ts # cinsiyet seçenekleri, GG/AA/YYYY ↔ ISO tarih dönüşümü (AuthModal ve AccountSettingsModal ortak)
 ├── legal/            # SPA dışındaki statik sayfaların üreticisi — /gizlilik/, /kullanim-kosullari/,
 │                    # /hesap-silme/ (hukuki) + /nasil-oynanir/ (SEO; içeriği HelpModal'dan ithal).
-│                    # paths.ts sayfa yollarının tek kaynağı: hem sayfa tipini hem service worker'ın
-│                    # gezinme fallback muafiyet listesini besler
+│                    # Sayfa yollarının tek kaynağı scripts/static-pages.js: hem sayfa tipini
+│                    # hem service worker'ın gezinme fallback muafiyet listesini besler
 ├── landing/
 │   ├── Landing.tsx     # karşılama katmanının tamamı (derleme/dev zamanında statik HTML'e render edilip index.html'e gömülür) — SUNUCUDA render edilir, hook/olay/tarayıcı globali YOK
 │   ├── LandingLogo.tsx # logoyu üç kez çizmek için SVG sprite'ı (path verisi LogoMark'tan; üç ham kopya gzip'te 10 KB yiyordu)

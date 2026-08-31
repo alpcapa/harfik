@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { kelimekiLanding } from './scripts/landing-plugin.js';
 import { kelimekiLegalPages } from './scripts/legal-plugin.js';
-import { staticPageDenylist } from './src/legal/paths';
+import { staticPageDenylist } from './scripts/static-pages.js';
 
 /**
  * Bu derlemenin kimliği — Vercel `VERCEL_GIT_COMMIT_SHA`'yı her derlemede

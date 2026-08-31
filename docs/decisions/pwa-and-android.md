@@ -50,25 +50,43 @@ fallback'iydi — SW davranışı değil. **Ders: bir SW ölçümünde önce
 değildir.**
 
 **Düzeltme — kural değil MEKANİZMA.** Liste artık elle tutulmuyor:
-`src/legal/paths.ts` tek kaynak. `STATIC_PAGE_PATHS` hem `Sayfa.yol`un
-birleşim tipini (`render.tsx`) hem `staticPageDenylist()`i (`vite.config.ts`)
-besliyor. Yeni bir sayfa listeye girmeden `render.tsx` DERLENMİYOR ve
-denylist kendiliğinden büyüyor. Negatif eş koşuldu: beşinci bir sayfa
-`paths.ts`e eklenmeden tanımlanınca `tsc` TS2322 ile düşüyor
+`scripts/static-pages.js` tek kaynak. `STATIC_PAGE_PATHS` hem `Sayfa.yol`un
+birleşim tipini (`render.tsx`) hem `staticPageDenylist()`i
+(`vite.config.ts`) besliyor. Yeni bir sayfa listeye girmeden `render.tsx`
+DERLENMİYOR ve denylist kendiliğinden büyüyor. Negatif eş: beşinci bir
+sayfa listeye eklenmeden tanımlanınca `tsc` TS2322 ile düşüyor
 (`Type '"/sahte/"' is not assignable to ...`). Üretilen `dist/sw.js`te
 denylist artık dört desen taşıyor.
 
-⚠ `tsconfig.node.json`un `include`ına `src/legal/paths.ts` eklendi —
-`vite.config.ts` ayrı bir composite proje ve o dosyayı aksi halde import
-edemiyor (TS6307). Bu yüzden `paths.ts` React/JSX ya da başka bir
-bağımlılık TAŞIMAMALI.
+⚠ **İLK DENEME CI'da DÜŞTÜ — kaydı burada.** Dosya önce `src/legal/paths.ts`
+olarak konup `tsconfig.node.json`un `include`ına eklendi (`vite.config.ts`
+ayrı bir composite proje ve onu aksi halde import edemiyor: TS6307). Ama o
+zaman dosya İKİ composite projeye birden girdi — `tsconfig.json` zaten
+`src`i kapsıyor — ve temiz bir checkout'ta:
 
-**Bunun beklenmedik bir yan etkisi oldu ve ilk commit'e sızdı:** proje
-`composite`, yani `tsc` `.js`/`.d.ts` ÜRETİYOR ve `outDir` yoktu — çıktı
-kaynağın yanına düşüyor. Kökte bu zaten böyleydi (`vite.config.js` ve
-`vite.config.d.ts` .gitignore'a TEK TEK yazılmış), ama `paths.ts` projeye
-katılınca emit `src/`in İÇİNE de düştü ve `git add -A` onları aldı.
-Projeye dosya eklendikçe .gitignore'a satır eklemek sürdürülebilir değil:
-`outDir: "node_modules/.cache/tsc-node"` verildi, artık hiçbir emit kaynak
-ağacına düşmüyor. Eski iki .gitignore satırı bayat derlemelerden kalanlar
-için bırakıldı.
+    error TS6305: Output file '.../tsc-node/src/legal/paths.d.ts' has not
+    been built from source file 'src/legal/paths.ts'.
+
+**Yerelde GÖRÜNMÜYORDU** çünkü önceki bir derlemeden kalan `.d.ts` duruyordu.
+Düşen adım `npm run build` değil `npm run lint`: `tsc --noEmit` referans
+projeleri İNŞA ETMEZ, yani `.d.ts` hiç oluşmaz. `tsc -b` ise onu ürettiği
+için build iki hâlde de geçiyordu — reprodüksiyonu ilk denemede tam bu
+yüzden ıskaladım.
+
+**Çözüm repo'nun kendi kalıbı:** `scripts/` altındaki Vite eklentileri
+(`landing-plugin`, `legal-plugin`) düz `.js` + elle yazılmış `.d.ts` olarak
+duruyor ve hiçbir TS programının parçası değil. Tek kaynak da oraya taşındı
+(`scripts/static-pages.js` + `.d.ts`). `render.tsx` yalnızca TİPİ import
+ediyor (`import { type StaticPagePath }`), yani çalışma zamanında bağ yok.
+
+⚠ **Ölçüm sırasında ikinci bir tuzak bulundu:** `npm run build` =
+`tsc -b && vite build` ve `tsc -b` KÖKE `vite.config.js` üretiyor
+(composite, `outDir` yok). Vite ise config ararken `.js`i `.ts`ten ÖNCE
+deniyor — yani `vite build` çoğu zaman `vite.config.ts`i değil `tsc`nin
+ürettiği JS'i yüklüyor. Dosya `.gitignore`da olduğundan `git stash` da
+temizlemiyor ve dallar arası geçişte BAYAT kalıyor; bir ölçüm bu yüzden
+yanlış hata verdi. Yerelde dal değiştirip derleme davranışı ölçerken
+`vite.config.js`/`.d.ts` ve `node_modules/.cache` ELLE silinmeli.
+
+**Ölçüm yöntemi (tekrarlanabilir):** önbelleği sil → `npm run lint`.
+Bozuk hâlde TS6305, düzeltilmiş hâlde temiz — ikisi de koşuldu.
