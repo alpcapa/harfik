@@ -28,6 +28,8 @@ import { PrivacyBody, TermsBody, Section, P, SILME_SURESI_GUN } from './LegalCon
 // tekrarlayan hata sınıfını (iki kopya sessizce ayrışır) geri getirir.
 import { QuickStart, DetailedRules } from '../components/HelpModal';
 
+import { type StaticPagePath } from '../../scripts/static-pages.js';
+
 const SITE = 'https://kelimeki.com';
 
 /** Metin içindeki "Görüş Bildir formu" — pencerede buton, burada bağlantı. */
@@ -142,8 +144,15 @@ function NasilOynanirBody() {
 interface Sayfa {
   /** `dist` içindeki dosya yolu. */
   dosya: string;
-  /** Sondaki eğik çizgiyle birlikte adres. */
-  yol: string;
+  /**
+   * Sondaki eğik çizgiyle birlikte adres.
+   *
+   * ⚠ Tip BİLEREK `string` değil: yeni bir sayfa `scripts/static-pages.js`e eklenmeden
+   * burası derlenmez. O dosya aynı zamanda service worker'ın
+   * `navigateFallbackDenylist`ini besliyor ve 31 Ağustos 2026'da elle
+   * senkronu bir kez kaçırıldı (bkz. o dosyanın başlığı).
+   */
+  yol: StaticPagePath;
   baslik: string;
   aciklama: string;
   govde: () => React.ReactNode;

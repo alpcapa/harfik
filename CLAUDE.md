@@ -336,6 +336,10 @@ src/
                 # /gizlilik/ · /kullanim-kosullari/ · /hesap-silme/ + /nasil-oynanir/
                 # ⚠ Dizin adı TARİHSEL — sonuncusu hukuki DEĞİL, SEO sayfası
                 # (ROADMAP #6). İçeriğini KOPYALAMIYOR, HelpModal'dan İTHAL ediyor.
+                # ⚠ Sayfa YOLLARININ tek kaynağı burada DEĞİL, scripts/static-pages.js'te
+                # (`Sayfa.yol`un tipi + service worker denylist'i oradan türer; yeni
+                # sayfa oraya girmeden derleme geçmez). src/ altında olamaz: dosya iki
+                # composite projeye birden girip TS6305 veriyor — bkz. pwa-and-android.md
     Landing.tsx     # sayfanın tamamı; SUNUCUDA render edilir (hook/olay/tarayıcı globali YOK)
     LandingLogo.tsx # logoyu üç kez çizmek için SVG sprite (path verisi LogoMark'tan)
     OzellikIkonlari.tsx # "Neler var" altı özellik ikonu (Material DEĞİL — ilkel şekiller; portun ozellik_ikonlari.dart'ıyla ELLE senkron, `icon_parity_test.dart` ile testli)
