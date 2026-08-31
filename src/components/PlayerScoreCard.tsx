@@ -452,7 +452,7 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
               aria-modal="true"
               aria-label="Arkadaşlık durumu"
               tabIndex={-1}
-              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none relative"
+              className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] px-6 pb-6 pt-12 flex flex-col gap-4 outline-none relative"
             >
               <button
                 onClick={() => setFriendResultMsg(null)}
@@ -461,7 +461,7 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
               >
                 ✕
               </button>
-              <p className="text-sm text-text font-sans leading-relaxed pr-6">{friendResultMsg}</p>
+              <p className="text-sm text-text font-sans leading-relaxed">{friendResultMsg}</p>
               <button
                 onClick={() => setFriendResultMsg(null)}
                 className="btn-raised py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"

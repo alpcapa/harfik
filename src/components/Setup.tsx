@@ -586,7 +586,7 @@ export function Setup({
           aria-modal="true"
           aria-label="Giriş uyarısı"
           tabIndex={-1}
-          className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none relative"
+          className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] px-6 pb-6 pt-12 flex flex-col gap-4 outline-none relative"
         >
           <button
             onClick={closeWarningPopup}
@@ -595,7 +595,14 @@ export function Setup({
           >
             ✕
           </button>
-          <p className="text-sm text-text font-sans leading-relaxed pr-6">
+          {/* ⚠ Üst dolgu `pt-12` (24 değil 48): ✕ mutlak konumlu ve kartın
+              SAĞ ÜST köşesini kaplıyor, metin onun ALTINDAN başlamalı.
+              Alternatif olarak metne sağ dolgu vermek denendi ve ÖLÇÜLDÜ:
+              `pr-8` cümleyi 2 satırdan 3 satıra çıkarıp kartı 153 → 176px
+              yapıyor ve ilk satırın sağında 38px'lik boşluk bırakıyordu.
+              Bu yol 2 satırı koruyor. Metnin `pr`'ı bilerek YOK — ✕ ile
+              artık aynı hizada değil. */}
+          <p className="text-sm text-text font-sans leading-relaxed">
             Oyunların istatistikleri, k-lig ve arkadaşınla canlı oyun için lütfen giriş yapın.
           </p>
           <div className="flex gap-2 mt-1">

@@ -326,6 +326,28 @@ seçilmedi: desteklenmeyen bir tarayıcıda seçici tümüyle geçersiz sayılı
 kural DÜŞER ve hedefler sessizce bozulurdu; katman yaklaşımının böyle bir
 riski yok.)
 
+**İKİNCİ TUR — ✕ köşeye oturunca içerikle ÇAKIŞTI.** Kullanıcı düzeltmeyi
+görüp *"Olmuş ama yazıyla arasında hiç boşluk yok"* dedi. Doğal sonuç: ✕
+akıştayken metnin yanında değildi, köşeye oturunca yanına geldi. Ölçüldü
+(390 px): ✕'in sol kenarı 333, metnin ilk satırının sağ ucu 323.7 →
+**9,3 px** ve dikeyde **14 px örtüşme**. Metnin `pr-6`'sı (24 px) ✕'in
+kapladığı 41 px'i karşılamıyordu.
+
+⚠ **Yatay boşluk açmak YANLIŞ çözümdü, ölçüldü:** `pr-8` cümleyi 2 satırdan
+**3 satıra** çıkarıp kartı 153,5 → 176,3 px yapıyor VE ilk satırın sağında
+38 px'lik ragged bir boşluk bırakıyordu. Doğru çözüm metni ✕'in ALTINDAN
+başlatmak: kart `p-6` → `px-6 pb-6 pt-12` (üst dolgu 24 → 48), paragrafın
+artık gereksiz `pr-6`'sı kaldırıldı. Sonuç: örtüşme **0**, ✕ ile metin arası
+**10 px**, satır sayısı **2** (korundu), kart 177,5 px.
+
+**Aynı desendeki DÖRT kart birden düzeltildi** (hepsi birebir aynı kart
+sınıfı + mutlak ✕): `Setup` (Giriş uyarısı), `FriendsModal`,
+`PlayerScoreCard`, `OnlineGameScreen` (mesaj penceresi — orada ilk çocuk bir
+paragraf değil avatar+isim satırı; uzun bir takma ad ✕'in altına girerdi).
+`RankInfoModal` ve `RewardBanner` DIŞARIDA bırakıldı, bilinçli: onlar
+280 px'lik `text-center` kartlar, içerik `mx-auto` 88 px'lik mühür ve
+ortalanmış başlıklar — köşeye ulaşmıyorlar.
+
 **KAPSAM — altı yer birden bozuktu ve hepsi bu tek değişiklikle düzeldi:**
 `Setup` (Giriş uyarısı), `RankInfoModal`, `FriendsModal`,
 `PlayerScoreCard`, `RewardBanner`, `OnlineGameScreen`. Altısı da birebir
