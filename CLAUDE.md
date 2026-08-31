@@ -336,6 +336,9 @@ src/
                 # /gizlilik/ · /kullanim-kosullari/ · /hesap-silme/ + /nasil-oynanir/
                 # ⚠ Dizin adı TARİHSEL — sonuncusu hukuki DEĞİL, SEO sayfası
                 # (ROADMAP #6). İçeriğini KOPYALAMIYOR, HelpModal'dan İTHAL ediyor.
+    paths.ts        # ⚠ statik sayfa yollarının TEK KAYNAĞI. `Sayfa.yol`un tipini
+                    # ve service worker'ın navigateFallbackDenylist'ini (vite.config.ts)
+                    # birlikte besler — yeni sayfa buraya girmeden derleme geçmez
     Landing.tsx     # sayfanın tamamı; SUNUCUDA render edilir (hook/olay/tarayıcı globali YOK)
     LandingLogo.tsx # logoyu üç kez çizmek için SVG sprite (path verisi LogoMark'tan)
     OzellikIkonlari.tsx # "Neler var" altı özellik ikonu (Material DEĞİL — ilkel şekiller; portun ozellik_ikonlari.dart'ıyla ELLE senkron, `icon_parity_test.dart` ile testli)

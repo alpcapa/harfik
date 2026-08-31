@@ -5,7 +5,14 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
-    "strict": true
+    "strict": true,
+    // Bu proje `composite`, yani tsc `.js`/`.d.ts` ÜRETİR. outDir olmadan
+    // çıktı kaynağın YANINA düşüyor: kökte vite.config.js/.d.ts (ikisi de
+    // tek tek .gitignore'a yazılmıştı) ve 31 Ağustos 2026'da projeye
+    // src/legal/paths.ts katılınca src/'in içine de. Artık tüm emit
+    // node_modules altına gidiyor — kaynak ağacı temiz kalıyor ve yeni bir
+    // dosya eklendiğinde .gitignore'a satır eklemek GEREKMİYOR.
+    "outDir": "node_modules/.cache/tsc-node"
   },
-  "include": ["vite.config.ts"]
+  "include": ["vite.config.ts", "src/legal/paths.ts"]
 }

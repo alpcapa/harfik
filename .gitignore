@@ -33,6 +33,8 @@ dist-ssr
 
 # TypeScript build artifacts
 *.tsbuildinfo
+# tsconfig.node.json artık node_modules/.cache/tsc-node'a emit ediyor;
+# aşağıdaki iki satır eski derlemelerden kalan dosyalar için duruyor.
 vite.config.js
 vite.config.d.ts
 

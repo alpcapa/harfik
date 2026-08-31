@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { kelimekiLanding } from './scripts/landing-plugin.js';
 import { kelimekiLegalPages } from './scripts/legal-plugin.js';
+import { staticPageDenylist } from './src/legal/paths';
 
 /**
  * Bu derlemenin kimliği — Vercel `VERCEL_GIT_COMMIT_SHA`'yı her derlemede
@@ -52,14 +53,21 @@ export default defineConfig({
     VitePWA({
       registerType: 'prompt',
       injectRegister: false,
-      // Hukuki sayfalar SPA DEĞİL, statik HTML (bkz. scripts/legal-plugin.js).
-      // Service worker'ın `navigateFallback`i ("index.html") olmadan bu
-      // yolları da uygulama kabuğuna çeviriyordu — ÖLÇÜLDÜ: eğik çizgili
-      // `/gizlilik/` precache rotasına takılıp doğru geliyordu ama eğik
-      // çizgisiz `/gizlilik` SPA kabuğunu döndürüyordu. Play'in Data safety
-      // formuna verilecek adres tam da bu; yanlış sayfa dönmesi kabul edilemez.
+      // Statik sayfalar SPA DEĞİL, derleme zamanı HTML (bkz.
+      // scripts/legal-plugin.js). Service worker'ın `navigateFallback`i
+      // ("index.html") olmadan bu yolları da uygulama kabuğuna çeviriyordu —
+      // ÖLÇÜLDÜ: eğik çizgili `/gizlilik/` precache rotasına takılıp doğru
+      // geliyordu ama eğik çizgisiz `/gizlilik` SPA kabuğunu döndürüyordu.
+      // Play'in Data safety formuna verilecek adres tam da bu; yanlış sayfa
+      // dönmesi kabul edilemez.
+      //
+      // ⚠ Liste ELLE YAZILMIYOR (31 Ağustos 2026): `/nasil-oynanir/`
+      // eklenirken buranın güncellenmesi unutuldu ve aynı hata dördüncü
+      // sayfada tekrarlandı. Artık `src/legal/paths.ts`ten türüyor; o dosya
+      // `Sayfa.yol`un tipini de verdiğinden yeni bir sayfa listeye
+      // girmeden derleme geçmiyor.
       workbox: {
-        navigateFallbackDenylist: [/^\/gizlilik/, /^\/kullanim-kosullari/, /^\/hesap-silme/],
+        navigateFallbackDenylist: staticPageDenylist(),
       },
       includeAssets: [
         'favicon.svg',
