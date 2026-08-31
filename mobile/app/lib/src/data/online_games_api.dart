@@ -800,18 +800,40 @@ List<OnlineGame> inviteBucket(List<OnlineGame> games) => [
           g
     ];
 
-/// Aktif oyunlar — sırası çağıranda olanlar üstte (web'in kararlı sort'u).
-List<OnlineGame> activeBucket(List<OnlineGame> games, Map<String, int> turns) {
+/// Aktif oyunlar — sırası çağıranda olanlar üstte, sonra SON OYNANAN üstte
+/// (web'in `LiveGamesTab`'ıyla birebir aynı ölçütler).
+///
+/// ⚠ 31 Ağustos 2026 — ikinci ölçüt (`deadlines`) EKLENDİ. Öncesinde yalnızca
+/// "sıra bende" vardı ve geri kalan sıra `games`'in geldiği sıraya
+/// bırakılmıştı; o sıra `list_my_online_games` RPC'sinde
+/// `order by og.created_at desc`, yani oyunun KURULMA sırası — son oynanan
+/// oyun listede yerinde kalıyordu (kullanıcı web'de bildirdi).
+/// Ölçüt `turn_deadline`: `submit_move` her hamlede onu `now() + 48 saat`
+/// yapıyor, dolayısıyla deadline'ı geç olan = son oynanan.
+List<OnlineGame> activeBucket(
+  List<OnlineGame> games,
+  Map<String, int> turns, {
+  Map<String, String?> deadlines = const {},
+}) {
   final active = [
     for (final g in games)
       if (g.status == OnlineGameStatus.active) g
   ];
   int myTurn(OnlineGame g) => turns[g.id] == g.mySlotIndex ? 1 : 0;
+  int sonHamle(OnlineGame g) {
+    final d = deadlines[g.id];
+    if (d == null) return 0;
+    return DateTime.tryParse(d)?.millisecondsSinceEpoch ?? 0;
+  }
+
   // Dart List.sort kararlı DEĞİL (core sözleşmeleri) — indeks tie-break.
+  // Deadline yoksa/eşitse eski davranış (geliş sırası) aynen korunur.
   final indexed = active.asMap().entries.toList()
     ..sort((a, b) {
       final d = myTurn(b.value) - myTurn(a.value);
-      return d != 0 ? d : a.key - b.key;
+      if (d != 0) return d;
+      final t = sonHamle(b.value).compareTo(sonHamle(a.value));
+      return t != 0 ? t : a.key - b.key;
     });
   return [for (final e in indexed) e.value];
 }

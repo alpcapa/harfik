@@ -1,5 +1,41 @@
 # Admin Paneli — Karar Kaydı
 
+## Üyeler tablosunun başlık satırı sabit (31 Ağustos 2026)
+
+Kullanıcı isteği: *"Admin/Üyeler başlık satırı sabitlenecek"* — 18 kolonlu ve
+uzun bir listede kaydırırken hangi kolonun ne olduğu kayboluyordu.
+`STICKY_NAME_CELL`'in (21 Ağustos, yatay) dikey karşılığı.
+
+⚠ **NAİF `sticky top-0` ÇALIŞMIYOR ve bu ÖLÇÜLDÜ.** Tablo `overflow-x-auto`
+bir kabın içindeydi; `overflow-x: auto` verilen bir elemanda **`overflow-y` de
+`auto`ya hesaplanır** (harness'te doğrulandı: `computed overflowY === 'auto'`),
+yani iç kap kendi başına bir kaydırma bağlamı oluyor — ama yüksekliği
+sınırsız olduğundan hiç kaymıyor ve başlık modalın gövdesiyle birlikte yukarı
+kayıp gidiyordu. Ölçüm: modal 600 px kaydırılınca başlığın `top`u **−538**.
+
+**Çözüm:** kap `overflow-x-auto` → `overflow-auto max-h-[60vh]`, yani tablo
+kendi dikey kaydırıcısı oluyor ve `sticky top-0` ona göre çözülüyor.
+Doğrulandı (GERÇEK derlenmiş CSS'le kurulan bir harness'te, 900 px aşağı +
+500 px sağa kaydırılarak): başlığın `top`u = kabın `top`u **ve** isim
+kolonunun `left`i = kabın `left`i — iki eksen birlikte çalışıyor.
+
+**Z-SIRASI ÜÇ KATMANLI**, aksi halde yana kaydırırken başlığın ismi öteki
+başlıkların altında kalır:
+
+| Katman | z-index |
+|---|---|
+| Gövdedeki sabit isim hücresi (`STICKY_NAME_CELL`) | `z-[1]` |
+| Başlık hücreleri (`STICKY_HEAD_CELL`) | `z-[2]` |
+| İkisi birden sabit olan BAŞLIK İSİM hücresi (`STICKY_HEAD_NAME_CELL`) | `z-[3]` |
+
+**Opak zemin ŞART** (`bg-panel`) — sabit hücre altındakilerin üstünde durur,
+saydam kalırsa kayan metin içinden geçer. Aynı gerekçe `STICKY_NAME_CELL`
+notunda da yazılı.
+
+**Portta karşılığı YOK** — admin paneli bilinçli olarak web'de kalıyor
+(`mobile/CLAUDE.md`, Üst Düzey Kararlar #3).
+
+
 > docs/decisions/'e taşındı (context split, 24 Ağustos 2026). Admin panelinin tüm sekmeleri (Üyeler/Oyunlar/Büyüme/Geri Bildirim/Hatalar), rozet zinciri, kaynak hunisi, retention/aktivasyon panelleri burada.
 
 ## Admin Paneli

@@ -1204,6 +1204,31 @@ const STICKY_NAME_CELL =
   'sticky left-0 z-[1] bg-panel max-w-[150px] truncate shadow-[1px_0_0_0_#DCE2EA]';
 
 /**
+ * Üyeler tablosunun BAŞLIK SATIRI dikeyde sabit (31 Ağustos 2026, kullanıcı
+ * isteği: *"Admin/Üyeler başlık satırı sabitlenecek"*). Uzun listede
+ * kaydırırken hangi kolonun ne olduğu kayboluyordu — `STICKY_NAME_CELL`'in
+ * yatay karşılığı.
+ *
+ * ⚠ BU YALNIZCA TABLONUN KABI KENDİ DİKEY KAYDIRICISI OLDUĞUNDA ÇALIŞIR ve
+ * bu ÖLÇÜLDÜ. Kap eskiden sadece `overflow-x-auto` idi; naif bir
+ * `sticky top-0` HİÇ yapışmıyordu, çünkü `overflow-x: auto` verilen bir
+ * elemanda `overflow-y` de `auto`ya hesaplanır (harness'te doğrulandı:
+ * `computed overflowY === 'auto'`) — yani iç kap kendi başına bir kaydırma
+ * bağlamı oluyor, ama yüksekliği sınırsız olduğundan hiç kaymıyor ve
+ * başlık modalın gövdesiyle birlikte yukarı kayıp gidiyordu (ölçüldü:
+ * modal 600px kaydırılınca başlığın `top`u −538). Kaba yükseklik sınırı +
+ * `overflow-y` verilince başlık kabın üstüne yapışıyor (ölçüldü: başlığın
+ * `top`u = kabın `top`u).
+ *
+ * Z-SIRASI ÜÇ KATMANLI: gövdedeki sabit isim hücresi `z-[1]`, başlık
+ * hücreleri `z-[2]`, ikisi birden sabit olan BAŞLIK İSİM hücresi `z-[3]` —
+ * aksi halde yana kaydırırken başlığın ismi diğer başlıkların altında
+ * kalırdı.
+ */
+const STICKY_HEAD_CELL = 'sticky top-0 z-[2] bg-panel';
+const STICKY_HEAD_NAME_CELL = `${STICKY_NAME_CELL} sticky top-0 z-[3]`;
+
+/**
  * Geri Bildirim ve Şikayetler kartlarının başlığı — İKİ SATIR, tek satır DEĞİL
  * (23 Ağustos 2026, kullanıcı bildirdi: *"Görüş bildirim'de gelen mesajlarda
  * gönderenin ismi görünmüyor. Onu tam açık görmek lazım her durumda."*).
@@ -1546,7 +1571,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     return (
       <th
         onClick={() => toggleSort(sortKeyFor)}
-        className={`py-2 pr-3 font-bold cursor-pointer select-none hover:text-text transition-colors ${className ?? ''}`}
+        className={`py-2 pr-3 font-bold cursor-pointer select-none hover:text-text transition-colors ${STICKY_HEAD_CELL} ${className ?? ''}`}
       >
         <span className="inline-flex items-center gap-1">
           {label}
@@ -2068,11 +2093,11 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                   Aramayla eşleşen üye yok.
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-auto max-h-[60vh]">
                   <table className="w-full text-[11px] font-mono border-collapse">
                     <thead>
                       <tr className="text-left text-muted border-b border-border">
-                        <SortHeader label="İsim" sortKeyFor="name" className={STICKY_NAME_CELL} />
+                        <SortHeader label="İsim" sortKeyFor="name" className={STICKY_HEAD_NAME_CELL} />
                         <SortHeader label="Nickname" sortKeyFor="nickname" />
                         <SortHeader label="E-posta" sortKeyFor="email" />
                         {/* Kayıt formunun geri kalanı + izinler (21 Ağustos
@@ -2081,21 +2106,21 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
                             sıralama ölçütü olarak anlamlı değiller ve yedi
                             yeni sıralama anahtarı başlığı gürültüye
                             boğardı. */}
-                        <th className="py-2 pr-3 text-left font-normal">Cinsiyet</th>
-                        <th className="py-2 pr-3 text-left font-normal">Doğum</th>
-                        <th className="py-2 pr-3 text-left font-normal">Fotoğraf</th>
-                        <th className="py-2 pr-3 text-left font-normal">Koşullar</th>
-                        <th className="py-2 pr-3 text-left font-normal">Pazarlama</th>
-                        <th className="py-2 pr-3 text-left font-normal">Pazarlama Tarihi</th>
-                        <th className="py-2 pr-3 text-left font-normal">E-posta Bildirimi</th>
+                        <th className={`py-2 pr-3 text-left font-normal ${STICKY_HEAD_CELL}`}>Cinsiyet</th>
+                        <th className={`py-2 pr-3 text-left font-normal ${STICKY_HEAD_CELL}`}>Doğum</th>
+                        <th className={`py-2 pr-3 text-left font-normal ${STICKY_HEAD_CELL}`}>Fotoğraf</th>
+                        <th className={`py-2 pr-3 text-left font-normal ${STICKY_HEAD_CELL}`}>Koşullar</th>
+                        <th className={`py-2 pr-3 text-left font-normal ${STICKY_HEAD_CELL}`}>Pazarlama</th>
+                        <th className={`py-2 pr-3 text-left font-normal ${STICKY_HEAD_CELL}`}>Pazarlama Tarihi</th>
+                        <th className={`py-2 pr-3 text-left font-normal ${STICKY_HEAD_CELL}`}>E-posta Bildirimi</th>
                         <SortHeader label="Kanal" sortKeyFor="signup_channel" />
-                        <th className="py-2 pr-3 text-left font-normal">Kaynak</th>
-                        <th className="py-2 pr-3 text-left font-normal">Davet Eden</th>
+                        <th className={`py-2 pr-3 text-left font-normal ${STICKY_HEAD_CELL}`}>Kaynak</th>
+                        <th className={`py-2 pr-3 text-left font-normal ${STICKY_HEAD_CELL}`}>Davet Eden</th>
                         <SortHeader label="Katılma" sortKeyFor="created_at" />
                         <SortHeader label="Son Giriş" sortKeyFor="last_sign_in_at" />
                         <SortHeader label="Rol" sortKeyFor="is_admin" />
-                        <th className="py-2 pl-3 text-left font-normal">Durum</th>
-                        <th className="py-2 pl-3 text-left font-normal"></th>
+                        <th className={`py-2 pl-3 text-left font-normal ${STICKY_HEAD_CELL}`}>Durum</th>
+                        <th className={`py-2 pl-3 text-left font-normal ${STICKY_HEAD_CELL}`}></th>
                       </tr>
                     </thead>
                     <tbody>

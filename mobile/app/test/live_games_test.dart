@@ -98,6 +98,29 @@ void main() {
       expect(myTurnCount(games, turns), 2);
     });
 
+    test('activeBucket: aynı grupta SON OYNANAN üstte (turn_deadline)', () {
+      // `turn_deadline` her hamlede `now() + 48 saat` olur → geç deadline =
+      // son oynanan. Web'deki `LiveGamesTab` ile aynı ölçüt.
+      final games = [
+        for (final id in ['a', 'b', 'c', 'd'])
+          game(gameRow(id: id, myId: 'me', status: 'active')),
+      ];
+      final turns = {'a': 0, 'b': 1, 'c': 1, 'd': 0};
+      final deadlines = <String, String?>{
+        'a': '2026-09-01T10:00:00Z', // sıra rakipte, EN YENİ
+        'b': '2026-09-01T08:00:00Z', // sıra bende, eski
+        'c': '2026-09-01T09:00:00Z', // sıra bende, YENİ
+        'd': '2026-09-01T07:00:00Z', // sıra rakipte, en eski
+      };
+      // Önce "sıra bende" grubu (c, b — c daha yeni), sonra ötekiler (a, d).
+      expect(
+          [for (final g in activeBucket(games, turns, deadlines: deadlines)) g.id],
+          ['c', 'b', 'a', 'd']);
+      // Deadline verilmezse ESKİ davranış (geliş sırası) korunur.
+      expect([for (final g in activeBucket(games, turns)) g.id],
+          ['b', 'c', 'a', 'd']);
+    });
+
     test('acceptedWaitingBucket: kabul ettim ama oyun hâlâ pending', () {
       final games = [
         game(gameRow(

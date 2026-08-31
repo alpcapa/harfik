@@ -386,7 +386,7 @@ class _LiveGamesTabState extends State<LiveGamesTab>
     final turns = snap?.turns ?? const <String, int>{};
     final deadlines = snap?.deadlines ?? const <String, String?>{};
     final invites = inviteBucket(games);
-    final active = activeBucket(games, turns);
+    final active = activeBucket(games, turns, deadlines: deadlines);
     final waiting = waitingBucket(games);
     final acceptedWaiting = acceptedWaitingBucket(games);
     // Kartlarda gösterilecek katılımcıların rütbe puanı — `ensure` yalnızca
