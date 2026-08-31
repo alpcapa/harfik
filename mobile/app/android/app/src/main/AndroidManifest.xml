@@ -77,6 +77,21 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- ⚠ FLUTTER'IN KENDİ DERİN BAĞLANTI YOLU KAPALI (31 Ağustos
+                 2026). Açıkken motor, gelen linkin YOLUNU Navigator'a "rota"
+                 olarak gönderiyor; uygulamada adlandırılmış rota HİÇ
+                 olmadığından Flutter `onUnknownRoute!` deyip çöküyordu —
+                 `client_errors`ta 26–29 Ağustos arasında 11 ayrı cihazda
+                 ölçüldü (`Null check operator used on a null value`).
+                 Linkleri zaten `app_links` yakalıyor (game_link_inbox /
+                 friend_invite_inbox + supabase_flutter'ın auth dönüşü), yani
+                 bu bayrağı kapatmakla KAYBEDİLEN bir yol yok: motorun o yolu
+                 bugüne kadar yalnızca çökme üretti.
+                 İkinci katman Dart tarafında (`ui/app.dart` → onUnknownRoute),
+                 çünkü bu bayrak yalnızca Android'i kapatıyor. -->
+            <meta-data
+                android:name="flutter_deeplinking_enabled"
+                android:value="false"/>
             <!-- App Links: e-posta/paylaşım linkleri (kelimeki.com) kurulu
                  uygulamayı açsın. autoVerify sitenin
                  /.well-known/assetlinks.json yayınlamasını gerektiriyor;

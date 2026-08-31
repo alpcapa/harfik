@@ -1116,15 +1116,25 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                                                     as _RackSource)
                                                                 .index
                                                             : null,
-                                                        onTilePointerDown: (i, e) =>
-                                                            _beginTileDrag(
-                                                                _RackSource(
-                                                                    i,
-                                                                    state
-                                                                        .players[
-                                                                            _rackIndex]
-                                                                        .rack[i]),
-                                                                e),
+                                                        onTilePointerDown: (i, e) {
+                                                          // ⚠ SINIR KONTROLÜ — YARIŞ, süs
+                                                          // DEĞİL. 26 Ağustos 2026'da sahada
+                                                          // çöktü: `RangeError (length):
+                                                          // Not in inclusive range 0..5: 6`
+                                                          // (`client_errors`, route=game).
+                                                          // `RackWidget` dokunma kutularını
+                                                          // ÇİZİLDİĞİ ANDAKİ raf uzunluğuna
+                                                          // göre kuruyor; parmak indiğinde raf
+                                                          // kısalmışsa (taş tahtaya geçmiş)
+                                                          // `rack[i]` sınır dışına düşüyor.
+                                                          final rack = state
+                                                              .players[_rackIndex].rack;
+                                                          if (i < 0 || i >= rack.length) {
+                                                            return;
+                                                          }
+                                                          _beginTileDrag(
+                                                              _RackSource(i, rack[i]), e);
+                                                        },
                                                         onTilePointerMove:
                                                             _moveTileDrag,
                                                         onTilePointerUp: _endTileDrag,

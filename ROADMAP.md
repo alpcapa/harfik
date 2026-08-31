@@ -387,6 +387,69 @@ görür ama yalnızca YZ oyunlarını ve OYUN AÇILIŞI sayar; "Kurulu Sürümle
 (`push_tokens`) KİŞİ sayar ve oyun beklemez ama yalnızca giriş yapmış +
 bildirim izni vermiş kişileri görür.
 
+### Faz 7 — telemetriden çıkan iki çökme · **KOD TAMAM** (31 Ağustos 2026)
+
+Kullanıcı isteği: *"Admin Hatalar bölümündeki loglara bakıp önemli bir
+şeyler var mı kontrol et."* 30 günde 31 kayıt vardı; ikisi gerçek hataydı.
+⚠ İkisi de İSTEMCİ değişikliği → sıradaki toplu sürümle çıkar; sürüm yine
+yükseltilmedi.
+
+**1. Derin bağlantı çökmesi — 11 CİHAZ.** `boundary /
+Null check operator used on a null value`, 26–29 Ağustos, dört ayrı
+derleme. Yığın izi mekanizmayı tek başına söylüyordu:
+`_onUnknownRoute ← pushNamed ← didPushRouteInformation`. Bir linke
+dokunulunca platform uygulamaya ROTA gönderiyor, Flutter onu `pushNamed`le
+açmaya çalışıyor, tanımadığı için `widget.onUnknownRoute!` diyor — o alan
+BOŞTU.
+
+⚠ **"Düzelmişti" DEĞİLDİ.** Kayıtların hepsi `1.0.0` etiketliydi ve son
+olay 29 Ağustos'taydı, ama bu bir düzeltmenin sonucu değil: `onUnknownRoute`
+kodda HİÇ olmadı (`git log -S` boş döndü) ve 29 Ağustos'ta konuyla ilgili
+bir commit yok. 26–29 Ağustos, cihaz testinin derin bağlantı turuydu; olay
+görülmeyi bıraktı, yol açık kaldı. **Ve risk şimdi ARTIYOR:** App Link
+doğrulaması yalnızca Play'den kurulan derlemede geçiyor (manifest'in kendi
+notu) ve Play dağıtımı 30 Ağustos'ta başladı — yani
+`https://kelimeki.com/davet/...` linkine dokunup uygulamayı açabilecek
+kitle yeni oluştu. Şifre sıfırlama (`kelimeki://reset`) de aynı kapıdan
+geçiyor.
+
+İKİ KATMAN, biri diğerinin yerini tutmuyor:
+`AndroidManifest.xml → flutter_deeplinking_enabled=false` (motor rotayı HİÇ
+göndermez — asıl kapatma, testle kilitli) + `ui/app.dart → onUnknownRoute`
+(bir şey yine de gönderirse çökme yerine sessizlik; iOS'u ve gelecekteki
+intent-filter'ları da kapsıyor). Rotayı "açmak" bilinçli olarak
+YAPILMADI: linkleri `app_links` yakalıyor, ikinci bir yönlendirme kaynağı
+onunla yarışırdı.
+
+**2. Rafta sınır dışı erişim.** `RangeError (length): Not in inclusive
+range 0..5: 6`, 26 Ağustos, route=game. `RackWidget` dokunma kutularını
+ÇİZİLDİĞİ ANDAKİ raf uzunluğuna göre kuruyor; parmak indiğinde raf
+kısalmışsa `rack[i]` sınır dışına düşüyor.
+
+⚠ **Aynı desen `online_game_screen.dart`ta da vardı** (CLAUDE.md'nin ikiz
+dosya kuralı) ve orada risk DAHA YÜKSEK: yerel oyunda rafı yalnızca sen
+kısaltırsın, Canlı oyunda sunucudan gelen realtime güncelleme parmağın
+altında kısaltabilir. Üçüncü bir örnek `_handleConfirmSwap`taydı
+(`swapSelection` indeksleri) — orada eksik harfle göndermek yanlış olurdu,
+o yüzden filtrelemek yerine gönderim İPTAL ediliyor.
+
+**Testler negatif eşleriyle:** `unknown_route_test` gerçek
+`flutter/navigation` kanalından besliyor (düzeltme kaldırılınca Flutter'ın
+kendi *"Unfortunately, onUnknownRoute was not set"* mesajıyla düşüyor);
+`rack_index_race_test` sahada çöken GERÇEK closure'ı ağaçtan alıp sınır
+dışı indeksle çağırıyor (kaldırılınca `RangeError` ile düşüyor); manifest
+bayrağı `true` yapılınca da ayrı bir kontrol düşüyor. Yarışı zamanlamayla
+üretmek BİLEREK denenmedi — widget testinde raf kısaldıktan sonra o kutu
+zaten çizilmiyor, taklit kırılgan ve yalancı bir test olurdu.
+
+**Aksiyon alınmayanlar (kayıt için):** oturum/JWT ailesi (10 olay — `JWT
+issued at future` ×6 cihaz saati ileri, `permission denied for function
+list_my_online_games` ×2, `JWT expired`, `Refresh Token Not Found`). Grant
+canlıdan kontrol edildi ve DOĞRU (`authenticated` var, `anon` yok) — yani
+eksik yetki değil, geçersiz oturumla çağrı. Hata değil, kötü mesaj; bir gün
+"oturumun düşmüş" metnine çevrilebilir. `Error invoking postMessage` (7
+olay) Instagram'ın uygulama içi tarayıcısından, bizim kodumuz değil.
+
 ### Sonra / bloke
 
 **#8** (FAZ A1 Bölüm 6 — Paylaşma, iPad popover), **#11** (hata panelinde

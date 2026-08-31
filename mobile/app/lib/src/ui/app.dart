@@ -41,6 +41,50 @@ class KelimekiApp extends StatelessWidget {
       // kullanıyor, yoksa üründe değişen bir tema testlerde eski hâliyle
       // render edilip sapma görünmez kalıyor.
       theme: kelimekiTheme(),
+      // ⚠ DIŞARIDAN GELEN ROTA UYGULAMAYI ÇÖKERTMESİN (31 Ağustos 2026).
+      //
+      // SAHA KAYDI: `client_errors`ta 26–29 Ağustos arasında **11 ayrı
+      // cihazda** `Null check operator used on a null value` çöktü. Yığın izi
+      // mekanizmayı tek başına anlatıyordu:
+      //
+      //   _WidgetsAppState._onUnknownRoute      ← burada patlıyor
+      //   NavigatorState.pushNamed
+      //   _WidgetsAppState.didPushRouteInformation
+      //
+      // Bir derin bağlantıya dokunulunca platform uygulamaya ROTA BİLGİSİ
+      // gönderiyor; Flutter onu `pushNamed` ile açmaya çalışıyor, tanımadığı
+      // için `widget.onUnknownRoute!` diyor — ve o alan BOŞTU, yani `null!`.
+      //
+      // ⚠ BU, UYGULAMANIN DERİN BAĞLANTI YOLU DEĞİL. Linkleri `app_links`
+      // yakalıyor (`game_link_inbox` / `friend_invite_inbox`, ayrıca
+      // supabase_flutter'ın kendi auth dönüşü). Flutter'ın Navigator yolu
+      // bizde HİÇ kullanılmıyor — yani doğru davranış rotayı açmak değil,
+      // SESSİZCE YOK SAYMAK. Rotayı burada "açmaya" kalkmak ikinci bir
+      // yönlendirme kaynağı yaratır ve app_links ile yarışırdı.
+      //
+      // İKİ KATMAN, çünkü biri diğerinin yerini tutmuyor:
+      //   1. `AndroidManifest.xml` → `flutter_deeplinking_enabled=false`:
+      //      motor rota bilgisini HİÇ göndermez (asıl kapatma).
+      //   2. Burası: bir şey yine de gönderirse (sürüm değişikliği, iOS,
+      //      ileride eklenecek bir intent-filter) çökme yerine sessizlik.
+      // Testi `test/unknown_route_test.dart` — gerçek `flutter/navigation`
+      // kanalından besliyor, yani düzeltme kaldırılırsa GERÇEKTEN düşüyor.
+      onUnknownRoute: (settings) => PageRouteBuilder<void>(
+        settings: settings,
+        // Saydam + sıfır süre: kullanıcı bir kare bile boş ekran görmesin.
+        opaque: false,
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+        pageBuilder: (context, _, __) {
+          // İlk karede kendini kapatır. `pageBuilder` içinde pop etmek
+          // güvenli değil (henüz push tamamlanmadı), bu yüzden kare sonrası.
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final nav = Navigator.maybeOf(context);
+            if (nav != null && nav.canPop()) nav.pop();
+          });
+          return const SizedBox.shrink();
+        },
+      ),
       // Şifre sıfırlama kapısı — web App.tsx'in `if (passwordRecovery)`
       // erken dönüşünün eşleniği. builder Navigator'ı SARDIĞINDAN kapı
       // hangi rota açık olursa olsun (Setup, oyun, açık bir dialog) en

@@ -548,6 +548,9 @@ mobile/
                              # izinDurumu(AuthorizationStatus) eşlemesi +
                              # FirebasePushTapSource (bildirime dokunma —
                              # onMessageOpenedApp + getInitialMessage)
+      # ⚠ Linkleri YALNIZCA app_links yakalar; Flutter'ın kendi rota yolu
+      #   KAPALI (manifest + onUnknownRoute — 11 cihazda çöküyordu, ROADMAP
+      #   Faz 7). İkinci bir yönlendirme kaynağı EKLEME.
       data/notification_shade.dart # panelde DURAN bildirimleri temizler
                              # (ROADMAP #15) — MethodChannel
                              # `kelimeki/bildirimler`, Kotlin ucu
