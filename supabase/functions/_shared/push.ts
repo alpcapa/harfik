@@ -203,7 +203,7 @@ async function getAccessToken(sa: ServiceAccount): Promise<string | null> {
 export async function sendPushToUser(
   db: PushDb,
   userId: string,
-  msg: { title: string; body: string; link?: string },
+  msg: PushMessage,
 ): Promise<number> {
   try {
     if (!pushConfigured()) return 0;
@@ -239,6 +239,78 @@ export async function sendPushToUser(
   }
 }
 
+/** Bir bildirimin içeriği — `sendPush`/`sendPushToUser` ortak yükü. */
+export interface PushMessage {
+  title: string;
+  body: string;
+  /** Dokununca açılacak derin bağlantı (`kelimeki://oyun/<id>`). */
+  link?: string;
+  /**
+   * ÇAKIŞTIRMA ANAHTARI — aynı `tag` ile gelen yeni bildirim, panelde
+   * duran eskisinin YERİNE geçer (Android `notification.tag`, iOS
+   * `apns-collapse-id`).
+   *
+   * **Neden var (31 Ağustos 2026, kullanıcı bildirdi):** uygulama
+   * simgesinde 9 sayısı takılı kalmıştı. Samsung One UI o rakamı
+   * uygulamanın panelde HÂLÂ DURAN bildirimlerinden türetiyor; etiket
+   * olmadığı için aynı oyunun her "sıra sende"si ayrı bir satır açıyor ve
+   * sayı birikiyordu. Etiketle rozet artık "kaç ayrı iş bekliyor"u
+   * gösteriyor.
+   *
+   * ⚠ **TÜR ÖNEKİ ZORUNLU.** Etiket alanı düz bir isim alanı: önek
+   * olmadan `<oyunId>` etiketli bir davet ile aynı oyunun "sıra sende"si
+   * birbirini siler. Kullanımdaki önekler (hepsi `_shared/push.ts`
+   * dışında, çağıranlarda):
+   *   `sira:<online_game_id>`       — notify-your-turn
+   *   `davet:<online_game_id>`      — notify-game-invite
+   *   `sure:<online_game_id>`       — notify-deadline-warnings (canlı)
+   *   `sure-yerel:<save_id>`        — notify-deadline-warnings (YZ oyunu)
+   *   `arkadas:<gonderen_user_id>`  — notify-friend-request + hatırlatıcısı
+   * Son satır bilinçli: hatırlatma, ilk isteğin bildiriminin YERİNE
+   * geçmeli — ikisi aynı işi anlatıyor.
+   *
+   * Verilmezse davranış eskisi gibi: her bildirim ayrı satır.
+   */
+  tag?: string;
+}
+
+/**
+ * FCM v1 `message` gövdesini kurar — SAF, ağ/kimlik YOK.
+ *
+ * `sendPush`ten ayrı, çünkü bu ortamdan Deno indirilemiyor (proxy 403) ve
+ * gövdenin şekli tam da sessizce yanlış olabilecek yer: `tag` yanlış
+ * seviyeye yazılırsa FCM 400 döndürmez, alanı sessizce yok sayar ve hata
+ * ancak "rozet hâlâ birikiyor" olarak, haftalar sonra görünür. Testi
+ * `npm run verify-push-payload`.
+ */
+export function buildFcmMessage(
+  params: { token: string } & PushMessage,
+): Record<string, unknown> {
+  return {
+    token: params.token,
+    notification: { title: params.title, body: params.body },
+    // `data` yükü uygulamanın dokunma yönlendirmesi için; FCM tüm
+    // değerleri STRING istiyor.
+    ...(params.link ? { data: { link: params.link } } : {}),
+    android: {
+      priority: 'high',
+      notification: {
+        // Android 8+ kanal kimliği — uygulama tarafındaki kanalla
+        // AYNI olmalı, yoksa bildirim varsayılan kanala düşer ve
+        // kullanıcının kanal ayarları işlemez.
+        channel_id: 'kelimeki_oyun',
+        ...(params.tag ? { tag: params.tag } : {}),
+      },
+    },
+    // iOS henüz CANLI DEĞİL (APNs anahtarı Firebase'e yüklenmedi), ama
+    // başlık şimdiden doğru: `apns-collapse-id` Android'in `tag`inin
+    // birebir karşılığı ve o gün geldiğinde ayrıca bir iş çıkmasın diye
+    // burada duruyor. Yükü (`payload`) BİLEREK vermiyoruz — üstteki
+    // `notification` varken FCM aps gövdesini kendisi üretiyor.
+    ...(params.tag ? { apns: { headers: { 'apns-collapse-id': params.tag } } } : {}),
+  };
+}
+
 /**
  * Tek bir cihaza bildirim gönderir.
  *
@@ -247,12 +319,9 @@ export async function sendPushToUser(
  * `buildOnlineGameLink` ile ELLE senkron; orada tanınmayan bir biçim
  * gönderilirse uygulama linki sessizce yok sayar.
  */
-export async function sendPush(params: {
-  token: string;
-  title: string;
-  body: string;
-  link?: string;
-}): Promise<PushResult> {
+export async function sendPush(
+  params: { token: string } & PushMessage,
+): Promise<PushResult> {
   const sa = readServiceAccount();
   if (!sa) return { ok: false, unregistered: false };
 
@@ -268,24 +337,7 @@ export async function sendPush(params: {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          message: {
-            token: params.token,
-            notification: { title: params.title, body: params.body },
-            // `data` yükü uygulamanın dokunma yönlendirmesi için; FCM tüm
-            // değerleri STRING istiyor.
-            ...(params.link ? { data: { link: params.link } } : {}),
-            android: {
-              priority: 'high',
-              notification: {
-                // Android 8+ kanal kimliği — uygulama tarafındaki kanalla
-                // AYNI olmalı, yoksa bildirim varsayılan kanala düşer ve
-                // kullanıcının kanal ayarları işlemez.
-                channel_id: 'kelimeki_oyun',
-              },
-            },
-          },
-        }),
+        body: JSON.stringify({ message: buildFcmMessage(params) }),
       },
     );
 

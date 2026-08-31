@@ -185,6 +185,7 @@ Deno.serve(async (req: Request) => {
       await sendPushToUser(supabase, currentSlot.user_id as string, {
         title: 'Oyun Süresi Doluyor!',
         body: deadlinePushBody(creatorName, game.player_count as number),
+        tag: `sure:${row.online_game_id}`,
       });
     } catch (err) {
       console.error('[notify-deadline-warnings] online satır hatası:', row.online_game_id, err);
@@ -243,6 +244,11 @@ Deno.serve(async (req: Request) => {
       await sendPushToUser(supabase, row.user_id as string, {
         title: 'Oyun Süresi Doluyor!',
         body: deadlinePushBody(ownerName, row.player_count as number),
+        // Ayrı önek: YZ oyunlarının id'si `local_game_saves`ten, canlı
+        // oyunlarınki `online_games`ten geliyor — iki ayrı tabloda aynı
+        // uuid çıkması olası değil ama etiket alanı düz bir isim alanı ve
+        // buna GÜVENİLMEZ.
+        tag: `sure-yerel:${row.id}`,
       });
     } catch (err) {
       console.error('[notify-deadline-warnings] local satır hatası:', row.id, err);

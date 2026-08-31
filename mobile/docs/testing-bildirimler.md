@@ -291,6 +291,37 @@ her istemcinin hamlesi bildirim üretir; yalnızca DOKUNUNCA tahtaya gitme
       bildirim düşüyorsa bu ciddi bir regresyon, hemen bildir.
 - [ ] Oyun BİTİREN hamlede kimseye "sıra sende" gitmez (GameOver ayrı iş).
 
+## 3e. Bildirim ÇAKIŞTIRMA + simge rozeti (31 Ağustos 2026 — SUNUCU; her sürümde)
+
+Bir kullanıcı uygulama simgesinde **9** rozetinin takılı kaldığını bildirdi.
+Rozet uygulamanın kendi sayacı DEĞİL: Samsung One UI onu panelde **hâlâ
+duran** bildirimlerden türetiyor. Etiket olmadığı için aynı oyunun her "sıra
+sende"si panelde ayrı bir satır açıyor ve sayı birikiyordu. Sunucu artık
+`android.notification.tag` (+ iOS `apns-collapse-id`) gönderiyor —
+`_shared/push.ts` → `PushMessage.tag`, önek şeması orada.
+
+⚠ Bu düzeltme rozeti SIFIRLAMAZ, **birikmesini durdurur**. Uygulama öne
+gelince paneli temizleyen bir kod HÂLÂ YOK (`flutter_local_notifications`
+bağımlılığı yok, `firebase_messaging` `cancelAll()` sunmuyor) — o iş 1.0.4'e
+bırakıldı. Yani bu bölümde "rozet 0 oldu" ARAMA; aranan şey rozetin
+**bekleyen ayrı iş sayısını** göstermesi.
+
+- [ ] **Aynı oyunda üst üste iki "sıra sende"** (rakip oynasın, 10+ dk bekle,
+      tekrar oynasın — §3d'deki bastırma yüzünden bekleme şart): panelde
+      **TEK** satır olmalı, metni sonuncusunun metni. İki ayrı satır
+      görüyorsan etiket gitmiyor demektir.
+- [ ] **İKİ FARKLI oyunda** sıra sana gelsin: panelde **İKİ** ayrı satır
+      olmalı (etiket oyun id'siyle önekli, birbirini silmemeli).
+- [ ] **Aynı oyunun "davet"i ile "sıra sende"si birbirini SİLMEMELİ** —
+      önekler ayrı (`davet:` ↔ `sira:`). 4 kişilik bir oyun kurup daveti
+      kabul ettir, sonra sıranın o kişiye gelmesini sağla: iki satır.
+- [ ] **Arkadaşlık isteği + 3 gün sonraki hatırlatıcısı** AYNI satıra
+      düşmeli (ikisi de `arkadas:<gönderen>`), yani hatırlatma eskisinin
+      yerine geçmeli. (3 gün beklemek gerekiyor — fırsat çıkarsa bak.)
+- [ ] **Panelden bildirimleri süpür** → simgedeki rozet kaybolmalı. Bu,
+      rozetin gerçekten panelden türediğinin kanıtı; kaybolmuyorsa
+      teşhis yanlış demektir, bildir.
+
 ## 4. Kayıt onayı ve şifre sıfırlama (derin bağlantı kanalı)
 
 `authRedirectUri` = `https://kelimeki.com/auth` (App Link),

@@ -285,10 +285,58 @@ linkiyle aynı geriye-dönük kazanım).
 **Neden Faz 3'ten SONRAYDI:** bildirime dokunma yönlendirmesi olmadan "sıra
 sende" kullanıcıyı oyuna götüremezdi; Faz 3 kodu artık main'de.
 
+### Faz 5 — bildirim çakıştırma (etiket) · ✅ **CANLIDA** (31 Ağustos 2026) · sunucu, sürüm gerektirmedi
+
+Kullanıcı bildirdi: uygulama simgesindeki rozet **9**'da takılı kalıyor,
+bildirime dokunup uygulamaya girmek onu sıfırlamıyor. Teşhis iki parçalı ve
+ikisi de koddan doğrulandı:
+
+1. **Rozet uygulamanın sayacı DEĞİL.** Samsung One UI onu, uygulamanın
+   panelde HÂLÂ DURAN bildirimlerinden türetiyor. Dokunmak yalnızca O
+   bildirimi kapatıyor (9 → 8); kalanları temizleyen bir kod yok —
+   `mobile/app/pubspec.yaml`'da `flutter_local_notifications` yok ve
+   `firebase_messaging` `cancelAll()` sunmuyor.
+2. **Neden 9'a tırmandı:** FCM yükünde `android.notification.tag` yoktu,
+   yani aynı oyunun her "sıra sende"si panelde YENİ bir satır açıyordu.
+
+Bu faz 2'yi çözüyor: `_shared/push.ts` artık `PushMessage.tag` taşıyor →
+`android.notification.tag` + iOS `apns-collapse-id` (iOS henüz canlı değil,
+başlık o gün için hazır duruyor). **Tür öneki ZORUNLU**, çünkü etiket alanı
+düz bir isim alanı — `sira:` · `davet:` · `sure:` · `sure-yerel:` ·
+`arkadas:`. Son önek bilinçli olarak PAYLAŞILIYOR: arkadaşlık isteği ile 3
+gün sonraki hatırlatıcısı aynı işi anlattığından hatırlatma eskisinin yerine
+geçiyor.
+
+**Deploy:** beş fonksiyon (`notify-your-turn`, `notify-game-invite`,
+`notify-friend-request`, `notify-friend-request-reminders`,
+`notify-deadline-warnings`) — `verify_jwt` değerleri deploy ÖNCESİ okundu ve
+SONRASI doğrulandı, hiçbiri değişmedi. Sürümden bağımsız: sahadaki 1.0.0
+dahil herkeste çalışır.
+
+**Testi:** `npm run verify-push-payload` (22 kontrol) — yükün ŞEKLİNİ
+doğruluyor, çünkü `tag` yanlış seviyeye yazılırsa FCM 400 DÖNDÜRMEZ, alanı
+sessizce yok sayar; hata ancak "rozet hâlâ birikiyor" olarak haftalar sonra
+görünürdü. İki negatif eş koşuldu: etiketi kaldırınca 2 kontrol, yanlış
+seviyeye yazınca 1 kontrol GERÇEKTEN düşüyor. (`_shared/push_test.ts`
+Deno istiyor ve bu ortamdan Deno indirilemiyor — proxy 403; bu betik onun
+Node'da koşabilen tamamlayıcısı.)
+
+⚠ **1'i ÇÖZMÜYOR — rozet hâlâ kendiliğinden sıfırlanmıyor.** Bu iş 1.0.4'e
+kaldı: uygulama öne gelince paneli temizlemek. Gerekli olan yeni bir
+bağımlılık (`flutter_local_notifications` → `cancelAll()`) ya da küçük bir
+MethodChannel; yani DERLEME ister, 1.0.3'ün `.aab`'si yüklenirken
+yakalanamazdı. Cihaz listesi: `mobile/docs/testing-bildirimler.md` §3e —
+orada "rozet 0 oldu" ARANMIYOR, aranan şey rozetin bekleyen AYRI İŞ
+sayısını göstermesi.
+
 ### Sonra / bloke
 
 **#8** (FAZ A1 Bölüm 6 — Paylaşma, iPad popover), **#11** (hata panelinde
 platform filtresi), **#12** (sürüm dağılımı kapsamı — izleme).
+**#15 — 1.0.4: uygulama öne gelince bildirim panelini temizle** (simge
+rozeti gerçekten sıfırlansın; Faz 5 birikmeyi durdurdu ama sıfırlamayı
+DEĞİL — `flutter_local_notifications` → `cancelAll()` ya da MethodChannel,
+DERLEME ister).
 **iOS/APNs** Apple Developer üyeliğine takılı; tasarım bilerek FCM üzerinden
 yazıldığı için iOS günü gelince kalan iş "APNs anahtarını Firebase'e yükle +
 Push capability ekle" — ikinci bir gönderici YAZILMAYACAK.
