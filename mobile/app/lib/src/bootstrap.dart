@@ -7,6 +7,7 @@ import 'package:flutter/services.dart' show AssetBundle;
 import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'config/env.dart' show appVersion;
 import 'config/version_gate.dart';
 import 'data/analytics.dart';
 import 'data/analytics_gateway.dart';
@@ -188,6 +189,10 @@ Future<AppServices> bootstrap(AssetBundle bundle) async {
       ? PushRepo(
           messaging: FirebasePushMessaging(),
           store: SupabasePushTokenStore(supabase),
+          // "Kaç KİŞİ hangi sürümde" — ROADMAP #12. Token satırı her
+          // açılışta hizalandığından bu damga, oyun oynanmasını beklemeden
+          // güncel kalıyor (gerekçe: PushRepo.appVersion).
+          appVersion: appVersion,
         )
       : null;
   if (pushRepo != null) auth.registerBeforeSignOut(pushRepo.temizle);

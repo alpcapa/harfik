@@ -79,6 +79,7 @@ class SupabasePushTokenStore implements PushTokenStore {
     required String token,
     required String userId,
     required String platform,
+    String? appVersion,
   }) async {
     // ⚠ TABLOYA DOĞRUDAN UPSERT ETME — RLS devri SESSİZCE reddediyor
     // (29 Ağustos 2026, gerçek cihaz testi adım 2.5'te bulundu).
@@ -101,9 +102,17 @@ class SupabasePushTokenStore implements PushTokenStore {
     // alıyor, yani istemci token'ı başkasının üstüne yazamaz. [userId]
     // parametresi imzada duruyor çünkü çağıran taraf (PushRepo) hangi hesap
     // için hizaladığını hâlâ biliyor olmalı; sunucuya geçmiyor.
+    // ⚠ `p_app_version` fonksiyonda VARSAYILANLI (null) — yani bu parametreyi
+    // hiç göndermeyen sahadaki 1.0.0-1.0.3 istemcileri aynı fonksiyona
+    // çözülmeye devam ediyor (migration'da kanıtlandı: 2 argümanlı çağrı
+    // 42883/42725 DEĞİL, fonksiyonun kendi 'Oturum gerekli.' hatasını
+    // veriyor). Eski 2 parametreli sürüm DÜŞÜRÜLDÜ, üstüne yazılmadı —
+    // yan yana dursalardı 2 argümanlı çağrı ikisine birden uyup
+    // "function is not unique" (42725) verirdi.
     await client.rpc('register_push_token', params: {
       'p_token': token,
       'p_platform': platform,
+      'p_app_version': appVersion,
     });
   }
 

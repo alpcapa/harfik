@@ -300,10 +300,9 @@ sende"si panelde ayrı bir satır açıyor ve sayı birikiyordu. Sunucu artık
 `android.notification.tag` (+ iOS `apns-collapse-id`) gönderiyor —
 `_shared/push.ts` → `PushMessage.tag`, önek şeması orada.
 
-⚠ Bu düzeltme rozeti SIFIRLAMAZ, **birikmesini durdurur**. Uygulama öne
-gelince paneli temizleyen bir kod HÂLÂ YOK (`flutter_local_notifications`
-bağımlılığı yok, `firebase_messaging` `cancelAll()` sunmuyor) — o iş 1.0.4'e
-bırakıldı. Yani bu bölümde "rozet 0 oldu" ARAMA; aranan şey rozetin
+⚠ **BU BÖLÜM SUNUCU TARAFINI ölçüyor — rozeti SIFIRLAMIYOR, birikmesini
+durduruyor.** Sıfırlama ayrı bir iş ve DERLEME istiyor; kodu hazır ama
+sahaya çıkmadı → §3f. Yani burada "rozet 0 oldu" ARAMA; aranan şey rozetin
 **bekleyen ayrı iş sayısını** göstermesi.
 
 - [ ] **Aynı oyunda üst üste iki "sıra sende"** (rakip oynasın, 10+ dk bekle,
@@ -321,6 +320,44 @@ bırakıldı. Yani bu bölümde "rozet 0 oldu" ARAMA; aranan şey rozetin
 - [ ] **Panelden bildirimleri süpür** → simgedeki rozet kaybolmalı. Bu,
       rozetin gerçekten panelden türediğinin kanıtı; kaybolmuyorsa
       teşhis yanlış demektir, bildir.
+
+## 3f. Rozet SIFIRLAMA + sürüm damgası (31 Ağustos 2026 — SÜRÜM İSTER, henüz çıkmadı)
+
+⚠ **Bu bölüm 1.0.3'te KOŞULAMAZ.** İkisi de istemci değişikliği ve sürüm
+bilerek yükseltilmedi (kullanıcı kararı: işler toplu çıkacak). Buradaki
+maddeler yalnızca bu kodu taşıyan ilk derlemede anlamlı — Kurulum ekranındaki
+teşhis satırındaki sha'yı ÖNCE kontrol et, `c1c0437` görüyorsan bu bölümü
+ATLA.
+
+**Rozet sıfırlama (#15).** Uygulama öne geldiğinde ve soğuk başlangıçta
+panel temizleniyor (`MainActivity` → `cancelAll()`, MethodChannel
+`kelimeki/bildirimler`).
+
+- [ ] Birkaç bildirim biriktir (panelde 2-3 satır, simgede rozet). Uygulamayı
+      **arka plandan öne al** → panel BOŞALMALI, rozet kaybolmalı.
+- [ ] Uygulamayı tamamen KAPAT, bildirim gelsin, sonra **simgeden** aç →
+      yine boşalmalı. (Bu ayrı bir yol: soğuk başlangıçta yaşam döngüsü
+      olayı HİÇ tetiklenmez, kanca `initState`te.)
+- [ ] **Bildirime DOKUNARAK aç** → hem panel boşalmalı HEM DE doğru oyunun
+      tahtası açılmalı. ⚠ Asıl regresyon riski burada: temizleme, dokunuşun
+      taşıdığı derin bağlantıyı bozmamalı (bağlantı açılış intent'inden
+      geliyor, panelden değil — ama bunu cihazda görmek gerekiyor).
+- [ ] **Başka uygulamaların bildirimleri DURMALI.** `cancelAll()` yalnızca
+      kendi bildirimlerimizi kaldırır; WhatsApp/e-posta bildirimleri
+      kaybolduysa ciddi bir hata var, hemen bildir.
+
+**Sürüm damgası (#12).** Token her açılışta hizalanırken `app_version`
+yazılıyor.
+
+- [ ] Uygulamayı aç (bildirim izni VERİLMİŞ olmalı) → admin panelinde
+      **Büyüme > Kullanıcı > "Kurulu Sürümler — Kişi"** tablosunda kendi
+      cihazın yeni sürümle görünmeli.
+- [ ] Aynı tabloda **"—" satırı** da olacak: damga 31 Ağustos'ta doğdu ve
+      geriye dönük doldurulamıyor, yani henüz güncellememiş herkes orada.
+      Bu bir arıza DEĞİL.
+- [ ] **Regresyon:** bildirim izni VERMEYEN bir hesapla giriş yap → bu
+      tabloda hiç görünmemeli (kapsam bilerek dar), ama bildirimlerin
+      çalıştığı başka bir hesapta hiçbir şey bozulmamalı.
 
 ## 4. Kayıt onayı ve şifre sıfırlama (derin bağlantı kanalı)
 

@@ -329,14 +329,70 @@ yakalanamazdı. Cihaz listesi: `mobile/docs/testing-bildirimler.md` §3e —
 orada "rozet 0 oldu" ARANMIYOR, aranan şey rozetin bekleyen AYRI İŞ
 sayısını göstermesi.
 
+### Faz 6 — rozet sıfırlama (#15) + "kaç kişi hangi sürümde" (#12) · **KOD TAMAM** (31 Ağustos 2026)
+
+⚠ **SÜRÜM ÇIKARILMADI.** Kullanıcı kararı (31 Ağustos 2026): *"Yap ama henüz
+yeni versiyon çıkarmıyoruz. Tüm işlerle (bundan sonraki) toplu çıkartırız."*
+Yani `pubspec.yaml`/`env.dart` sürümü BİLEREK 1.0.3'te bırakıldı; bunları
+taşıyacak derleme sonraki toplu sürüm olacak. Sunucu yarısı ise merge'den
+bağımsız CANLI (migration + RPC anında uygulandı).
+
+**#15 — rozet gerçekten sıfırlansın.** Faz 5 birikmeyi durdurdu ama
+sıfırlamayı değil: panelde duran bildirimler orada kalıyordu. Artık uygulama
+öne geldiğinde (`_HomeGate.didChangeAppLifecycleState`) **ve soğuk
+başlangıçta** (`initState` — bildirime dokunup açmak bu yoldan gelir ve
+yaşam döngüsü orada HİÇ tetiklenmez) panel temizleniyor.
+
+*Eklenti DEĞİL, MethodChannel:* `firebase_messaging` "hepsini temizle"
+sunmuyor; standart yol `flutter_local_notifications` olurdu ama tek
+ihtiyacımız `cancelAll()` ve o paket karşılığında kendi başlatma çağrısını +
+bildirim ikonu yapılandırmasını + bir bağımlılığı getirirdi. Depo zaten
+Kotlin'e iniyor (`MainActivity` bildirim KANALINI elle yaratıyor) ve o
+deseni bir parite testiyle koruyor. iOS bilerek YOK: rozet orada
+`aps.badge`den gelir, sunucu onu hiç göndermiyor — yani sıfırlanacak rozet
+de yok; APNs günü `AppDelegate.swift`e aynı kanal adıyla bir işleyici
+eklemek yeterli, Dart tarafı değişmez.
+
+**#12 — "kaç kişi yenide?"** Kullanıcı 1.0.3 duyurusundan sonra sordu ve
+cevaplanamadı; sebep ölçüldü: `app_version` damgası yalnızca `game_starts`
+ve `client_errors`ta vardı. Yani sürüm ancak biri YZ'li YEREL oyun açınca ya
+da HATA alınca görünüyordu — yalnız Canlı oynayan hiç görünmüyordu — ve port
+`anon_id` göndermediğinden orada KİŞİ de sayılamıyordu (eldeki tek şey "kaç
+OYUN açıldı"). Çözüm `push_tokens.app_version`: satır `user_id` ile anahtarlı
+ve token her açılışta hizalanıyor, yani oyun oynanması gerekmiyor.
+
+| Yüzey | Durum |
+|---|---|
+| `push_tokens.app_version` + `register_push_token`ın 3. parametresi | ✅ CANLI |
+| `admin_push_version_breakdown` RPC'si | ✅ CANLI |
+| Admin paneli → Büyüme > Kullanıcı → **"Kurulu Sürümler — Kişi"** | ✅ web'e merge ile |
+| Dart: `PushRepo.appVersion` → RPC | kod tamam, DERLEME bekliyor |
+
+⚠ **Eski 2 parametreli `register_push_token` DÜŞÜRÜLDÜ, üstüne yazılmadı.**
+`p_app_version`in varsayılanı olsa bile iki fonksiyon yan yana dursaydı 2
+argümanlı bir çağrı ikisine birden uyup **"function is not unique" (42725)**
+verirdi — yani "geriye dönük uyumluluk için eskisini bırakalım" refleksi
+burada TAM TERSİ sonuç verirdi. Sahadaki 1.0.0–1.0.3'ün hâlâ çözüldüğü
+canlıda kanıtlandı: 2 argümanlı çağrı 42883/42725 değil, fonksiyonun kendi
+`P0001 / Oturum gerekli.` hatasını veriyor.
+
+⚠ **Damga GERİYE DÖNÜK DOLDURULAMAZ** (`games.platform`/`game_starts.app_version`
+ile aynı sınıf): bir cihaz yeni sürümle açılana kadar `bilinmiyor` kalır.
+Yani panelde ilk günlerde "—" ÇOĞUNLUK olacak; bu kolonun doğum tarihi,
+arıza değil.
+
+**Kapsam farkı bilinçli — iki tablo YAN YANA duruyor, biri diğerinin
+kopyası değil:** "Sürüm Dağılımı" (`game_starts`) misafir dahil herkesi
+görür ama yalnızca YZ oyunlarını ve OYUN AÇILIŞI sayar; "Kurulu Sürümler"
+(`push_tokens`) KİŞİ sayar ve oyun beklemez ama yalnızca giriş yapmış +
+bildirim izni vermiş kişileri görür.
+
 ### Sonra / bloke
 
 **#8** (FAZ A1 Bölüm 6 — Paylaşma, iPad popover), **#11** (hata panelinde
 platform filtresi), **#12** (sürüm dağılımı kapsamı — izleme).
-**#15 — 1.0.4: uygulama öne gelince bildirim panelini temizle** (simge
-rozeti gerçekten sıfırlansın; Faz 5 birikmeyi durdurdu ama sıfırlamayı
-DEĞİL — `flutter_local_notifications` → `cancelAll()` ya da MethodChannel,
-DERLEME ister).
+**#15 — uygulama öne gelince bildirim panelini temizle** → ✅ **KOD TAMAM**
+(31 Ağustos 2026), sıradaki mobil sürümle çıkar. Ayrıntı aşağıda "Faz 6".
 **iOS/APNs** Apple Developer üyeliğine takılı; tasarım bilerek FCM üzerinden
 yazıldığı için iOS günü gelince kalan iş "APNs anahtarını Firebase'e yükle +
 Push capability ekle" — ikinci bir gönderici YAZILMAYACAK.

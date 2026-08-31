@@ -58,6 +58,7 @@ class FakeStore implements PushTokenStore {
     required String token,
     required String userId,
     required String platform,
+    String? appVersion,
   }) async =>
       yazilanlar.add('$token/$userId');
 

@@ -548,6 +548,15 @@ mobile/
                              # izinDurumu(AuthorizationStatus) eşlemesi +
                              # FirebasePushTapSource (bildirime dokunma —
                              # onMessageOpenedApp + getInitialMessage)
+      data/notification_shade.dart # panelde DURAN bildirimleri temizler
+                             # (ROADMAP #15) — MethodChannel
+                             # `kelimeki/bildirimler`, Kotlin ucu
+                             # MainActivity'de. ⚠ Kanal/metot adı iki dilde
+                             # ELLE yazılı: uyuşmazlık SESSİZ arıza (Dart
+                             # MissingPluginException'ı yutuyor) →
+                             # notification_shade_parity_test bunu zorluyor.
+                             # iOS BİLEREK yok: rozet orada aps.badge'den
+                             # gelir, sunucu onu hiç göndermiyor.
       data/push_taps.dart    # bildirime DOKUNMA dikişi (Faz 3):
                              # PushTapSource arayüzü + pushMessageLink
                              # (data.link → Uri, saf). PushMessaging'e

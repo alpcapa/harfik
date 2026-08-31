@@ -35,6 +35,7 @@ import type {
   AdminGameScope,
   AdminGameSourceType,
   AdminAppVersionRow,
+  AdminPushVersionRow,
   AdminClientErrorRow,
   AdminSourceFunnelRow,
   AdminDeviceBreakdownRow,
@@ -2278,6 +2279,29 @@ export async function fetchAdminAppVersionBreakdown(days = 30): Promise<AdminApp
     throw new Error(error.message);
   }
   return (data as AdminAppVersionRow[]) ?? [];
+}
+
+/**
+ * Son `days` günde uygulamayı AÇAN kişilerin sürüm dökümü (yalnızca admin —
+ * Büyüme > Kullanıcı).
+ *
+ * `fetchAdminAppVersionBreakdown`in YERİNE geçmiyor, YANINA geliyor; ikisi
+ * farklı soru cevaplıyor ve kapsamları da farklı:
+ *   · o     → "hangi sürümden kaç OYUN açıldı" (misafir dahil, izin
+ *              gerekmez, ama yalnızca YEREL oyunlar)
+ *   · bu    → "hangi sürümde kaç KİŞİ var" (giriş + bildirim izni gerekir,
+ *              ama oyun oynamak gerekmez)
+ *
+ * Pencere `push_tokens.updated_at`e bakıyor; token her açılışta
+ * hizalandığından bu fiilen "son N günde uygulamayı açan kişi" demek.
+ */
+export async function fetchAdminPushVersionBreakdown(days = 30): Promise<AdminPushVersionRow[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc('admin_push_version_breakdown', { p_days: days });
+  if (error) {
+    throw new Error(error.message);
+  }
+  return (data as AdminPushVersionRow[]) ?? [];
 }
 
 /**

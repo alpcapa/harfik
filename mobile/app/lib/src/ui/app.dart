@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../bootstrap.dart';
 import '../config/version_gate.dart';
 import '../data/error_reporter.dart';
+import '../data/notification_shade.dart';
 import '../data/online_games_api.dart';
 import '../data/store_update.dart';
 import '../storage/app_storage.dart';
@@ -168,6 +169,32 @@ class _HomeGateState extends State<_HomeGate> with WidgetsBindingObserver {
   /// değişimini (giriş/çıkış/hesap değiştirme) burada yakalıyoruz.
   String? _sonPushUserId;
 
+  /// Bildirim panelini temizleyen uç. Testte sahtesi verilebilsin diye alan.
+  final NotificationShade _bildirimPaneli = const PlatformNotificationShade();
+
+  /// Panelde biriken bildirimleri, uygulama öne geldiğinde kaldırır.
+  ///
+  /// **NEDEN BURADA (ROADMAP #15, 31 Ağustos 2026):** kullanıcı simgedeki
+  /// rozetin 9'da takılı kaldığını bildirdi. Rozet uygulamanın sayacı DEĞİL;
+  /// Samsung One UI onu panelde HÂLÂ DURAN bildirimlerden türetiyor ve
+  /// bildirime dokunmak yalnızca O bildirimi kapatıyor. Sunucu tarafındaki
+  /// çakıştırma etiketi (`_shared/push.ts` → `PushMessage.tag`) birikmeyi
+  /// durdurdu ama SIFIRLAMAYI değil — sıfırlama bu.
+  ///
+  /// `_pushHizala` ile AYNI kancaya bağlı ve gerekçesi de aynı: kullanıcı
+  /// bildirimleri uygulamanın DIŞINDA (gölgelikte) okuyup siliyor olabilir,
+  /// dolayısıyla tek güvenilir an öne dönüş.
+  ///
+  /// ⚠ Bildirime DOKUNARAK açılan soğuk başlangıcı BOZMAZ: dokunuşun
+  /// taşıdığı derin bağlantı FCM'e açılış intent'inden geliyor
+  /// (`getInitialMessage`), panelden değil. Paneli temizlemek o veriyi
+  /// etkilemez.
+  ///
+  /// Fırlatmaz ve beklenmez — `PlatformNotificationShade` kendi hatasını
+  /// yutuyor; burada `unawaited`, bir kanal çağrısı ekran geçişini
+  /// geciktirmesin diye.
+  void _bildirimleriTemizle() => unawaited(_bildirimPaneli.temizle());
+
   /// Token durumunu sistem izniyle hizalar.
   ///
   /// **NEDEN BURADA (28 Ağustos 2026, cihaz testinde bulundu):** bu çağrı
@@ -288,6 +315,7 @@ class _HomeGateState extends State<_HomeGate> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _pushHizala();
+      _bildirimleriTemizle();
       _guncellemeKontrol();
     }
   }
@@ -311,6 +339,11 @@ class _HomeGateState extends State<_HomeGate> with WidgetsBindingObserver {
     widget.services.auth.addListener(_oyunLinkiniIsle);
     widget.services.gameLinks?.addListener(_oyunLinkiniIsle);
     _pushHizala();
+    // Soğuk başlangıç: uygulama KAPALIYKEN gelen bildirimler panelde durur ve
+    // `didChangeAppLifecycleState` bu yolda HİÇ tetiklenmez (süreç zaten yeni
+    // doğdu). Yalnızca yaşam döngüsüne bağlansaydı, uygulamayı kapatıp açan
+    // kullanıcıda rozet olduğu gibi kalırdı.
+    _bildirimleriTemizle();
     _guncellemeKontrol();
     // ⚠ `_oyunLinkiniIsle` BURADA çağrılmıyor: `_showIntro` hâlâ null
     // (karar verilmedi) ve işleyici bilerek bekletirdi. Çağrı, kararın

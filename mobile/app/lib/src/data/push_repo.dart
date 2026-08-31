@@ -53,6 +53,7 @@ abstract class PushTokenStore {
     required String token,
     required String userId,
     required String platform,
+    String? appVersion,
   });
   Future<void> remove(String token);
 }
@@ -63,6 +64,21 @@ class PushRepo {
 
   /// Test edilebilirlik: gerçek platform yerine sabit bir değer verilebilir.
   final String? Function() platformKaynagi;
+
+  /// Bu derlemenin sürümü — `push_tokens.app_version`e yazılır.
+  ///
+  /// **NEDEN VAR (ROADMAP #12, 31 Ağustos 2026):** kullanıcı 1.0.3
+  /// duyurusundan sonra "kaç kişi yenide?" diye sordu ve cevaplanamadı.
+  /// Sürüm damgası yalnızca `game_starts` ve `client_errors`ta vardı, yani
+  /// sürümü ancak biri YZ'li YEREL oyun açtığında ya da HATA aldığında
+  /// görüyorduk — üstelik port `anon_id` göndermediğinden orada KİŞİ de
+  /// sayılamıyordu. Token satırı `user_id` ile anahtarlı ve
+  /// `pushTokenlariHizala` her açılışta koştuğundan burası "kaç KİŞİ hangi
+  /// sürümde" sorusunu, oyun oynanmasını beklemeden cevaplayabiliyor.
+  ///
+  /// Enjekte edilebilir, çünkü testte `env.dart`ın sabitine bağlanmak sürüm
+  /// her yükseldiğinde testi kırardı.
+  final String? appVersion;
 
   StreamSubscription<String>? _refreshSub;
 
@@ -75,6 +91,7 @@ class PushRepo {
     required this.messaging,
     required this.store,
     String? Function()? platformKaynagi,
+    this.appVersion,
   }) : platformKaynagi = platformKaynagi ?? (() => currentPlatform);
 
   /// Bu cihaz token kaydedebilir mi (Android/iOS mü)?
@@ -126,7 +143,11 @@ class PushRepo {
       if (platform == null) return; // web/masaüstü: kaydedilecek bir şey yok
       final token = await messaging.token();
       if (token == null || token.isEmpty) return;
-      await store.upsert(token: token, userId: userId, platform: platform);
+      await store.upsert(
+          token: token,
+          userId: userId,
+          platform: platform,
+          appVersion: appVersion);
       _sonToken = token;
       _refreshSub ??= messaging.onTokenRefresh().listen(
         (yeni) async {
@@ -134,7 +155,11 @@ class PushRepo {
           // yükleme, FCM'in kendi kararı). Yakalanmazsa satır ESKİ token'la
           // kalır ve bildirimler sessizce gitmez.
           try {
-            await store.upsert(token: yeni, userId: userId, platform: platform);
+            await store.upsert(
+                token: yeni,
+                userId: userId,
+                platform: platform,
+                appVersion: appVersion);
             // ⚠ ESKİ satır da silinmeli. Birincil anahtar TOKEN olduğundan
             // yeni token YENİ bir satır açar; eskisi kalırsa aynı cihaz
             // tabloda iki kez görünür ve her bildirim iki kez gönderilmeye

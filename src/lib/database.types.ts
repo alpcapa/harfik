@@ -837,6 +837,38 @@ export interface AdminAppVersionRow {
 }
 
 /**
+ * admin_push_version_breakdown RPC çıktısındaki tek satır (Büyüme >
+ * Kullanıcı) — "hangi sürümde kaç KİŞİ var".
+ *
+ * NEDEN AYRI BİR TABLO (ROADMAP #12, 31 Ağustos 2026): kullanıcı 1.0.3
+ * duyurusundan sonra "kaç kişi yenide?" diye sordu ve yukarıdaki
+ * `AdminAppVersionRow` bunu CEVAPLAYAMIYOR — o `game_starts`tan besleniyor,
+ * yani (a) yalnızca YEREL oyunları görüyor, (b) `devices` app tarafında 0
+ * kaldığından KİŞİ değil AÇILIŞ sayıyor.
+ *
+ * Bu tablo `push_tokens`tan besleniyor: satır `user_id` ile anahtarlı ve her
+ * uygulama açılışında hizalanıyor, yani oyun oynanması gerekmiyor.
+ *
+ * ⚠ KAPSAM: yalnızca giriş yapmış VE bildirim izni vermiş kişiler. İzin
+ * vermeyen bu tabloda hiç görünmez — dürüst bir sınır, ve zaten "kaça
+ * bildirim gidiyor" kapsamının aynısı.
+ *
+ * ⚠ `app_version` kolonu 31 Ağustos 2026'da doğdu ve GERİYE DÖNÜK
+ * DOLDURULAMAZ: bir cihaz 1.0.4+ ile açılana kadar `bilinmiyor` kalır.
+ */
+export interface AdminPushVersionRow {
+  /** `android` / `ios` / `bilinmiyor`. */
+  platform: string;
+  /** Mobil sürüm; 1.0.4 öncesi hizalanmış satırlarda `bilinmiyor`. */
+  app_version: string;
+  /** Benzersiz kişi (`count(distinct user_id)`). */
+  kisi: number;
+  /** Token satırı sayısı — bir kişinin birden çok cihazı olabilir. */
+  cihaz: number;
+  last_seen: string;
+}
+
+/**
  * admin_guest_device_breakdown RPC çıktısındaki tek satır (Büyüme >
  * Kullanıcı) — son N gün içinde bir cihaz tipinden (`getDeviceType`, bkz.
  * `src/utils/visitTracking.ts`) kaç benzersiz misafir ziyaretçi geldiğini
