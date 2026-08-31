@@ -203,25 +203,7 @@ export function UserMenu() {
           // sorun var, yine üstüne tıklaman lazım biraz"*, 24 Ağustos
           // 2026); portta sözde-eleman olmadığından orada bedeli header'ın
           // uzaması (bkz. `account_button.dart` → `TapTarget`).
-          //
-          // 30 Ağustos 2026 — burası `min-w/h-[48px] -m-2` idi; `.tap-expand`
-          // ile değiştirildi. ⚠ BU DEĞİŞİKLİK GÖRSEL OLARAK BİR ŞEY
-          // DÜZELTMEZ, yalnızca hijyen: projenin standart yolunu kullanır.
-          // Kayda geçsin, çünkü ters yönde bir iddiayla yazılmıştı:
-          // değişiklik bir kullanıcının iPhone'da bildirdiği "skor kutusunun
-          // sağ kenarı kesiliyor" sorununu ÇÖZMEK için yapıldı ve ÇÖZMEDİ.
-          // Ölçüldü (inline stille iki hâl yan yana, 375 ve 390px): avatar
-          // ile skor kutusu arasındaki GÖRÜNEN boşluk ikisinde de 8px,
-          // avatarın sağ kenarı ikisinde de 363/378 — yani aynı. Sebep
-          // basit: bu düğmenin arka planı ve çerçevesi YOK, o 48px'lik kutu
-          // ŞEFFAF; boyanan tek şey ortadaki 32px'lik `Avatar`. Eski hâlde
-          // de avatarın sol kenarı düzen kutusunun sol kenarındaydı.
-          // ⚠ DERS: bir düğmenin `getBoundingClientRect()`i "boyalı kutu"
-          // değildir. Görsel bir iddiayı ölçerken BOYANAN elemanı ölç
-          // (burada `Avatar`), sarmalayıcıyı değil.
-          // Sorunun gerçek sebebi HÂLÂ BİLİNMİYOR; aynı ölçümde kırpılma
-          // (`serit.scrollWidth == clientWidth`) ve sayfa taşması da
-          // elendi. Ayrıntı: docs/decisions/touch-ux-bugs.md.
+
           className="tap-expand rounded-full flex items-center justify-center active:scale-95 transition-transform ring-offset-2 focus:outline-none disabled:cursor-not-allowed"
         >
           {identityLoading ? (

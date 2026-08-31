@@ -291,72 +291,28 @@ dolgunun içinde.)
 (`theme_test.dart` ölçüyor); 48'lik bir kutu alanı bozardı. Aynı eylem
 klavyeden de erişilebilir ve yanlış dokunuşun bedeli sıfır.
 
-### YANLIŞ TEŞHİS VAKASI — `UserMenu`'nün 48px'lik kutusu, 30 Ağustos 2026
+### `UserMenu` de `.tap-expand`e geçti — 30 Ağustos 2026
 
-⚠ **Bu bölüm önce bir düzeltme kaydı olarak yazıldı, sonra YANLIŞ olduğu
-anlaşıldı ve kullanıcı düzeltti. Olduğu gibi duruyor, çünkü asıl değeri
-dersinde.**
+Web'de `.tap-expand` kullanmayan son yer `UserMenu`'nün avatar düğmesiydi;
+hedef orada `min-w-[48px] min-h-[48px] -m-2` ile büyütülmüştü (17 Ağustos
+2026, sınıf daha yokken). İkisi denk — dokunma alanı da düzen kutusu da
+aynı — ama artık projenin tek deseni kullanılıyor.
 
-**Ne bildirildi:** bir kullanıcı iPhone'da (masaüstüne eklenmiş PWA)
-*"header'daki YZ kartının sağ kenarı biraz silik gözüküyor. Avatarın altına
-mı giriyor acaba? Web'de, Ipad'de, mobile app'de düzgün duruyor, sadece
-iphone'da gördüm."* dedi. Sonradan netleştirdi: kastettiği **sağ kenarın
-KESİLMESİ**.
+⚠ **Görsel bir düzeltme DEĞİLDİ.** Bu değişiklik, bir kullanıcının
+iPhone'da bildirdiği "skor kutusunun sağ kenarı kesiliyor" sorununu çözmek
+için yapıldı ve çözmedi; gerçek sebep şeridin `outline`ı kırpmasıydı
+(`docs/decisions/components.md` → `GameHeader`). Ölçüldü: avatar ile skor
+kutusu arasındaki görünen boşluk iki hâlde de 8 px, avatarın konumu aynı —
+çünkü o düğmenin arka planı/çerçevesi yok, 48 px'lik kutu şeffaf.
 
-**Ne yapıldı:** `UserMenu`'nün avatar düğmesindeki `min-w-[48px]
-min-h-[48px] -m-2` deseni `.tap-expand`e çevrildi; gerekçe olarak
-"negatif marj düzen kutusunu 32'ye çeker ama BOYANAN kutu 48 kalır, yani
-`gap-2`'nin 8px'i görüntüde yok" denildi ve "boyalı boşluk 0 → 8px"
-ölçümü sunuldu.
-
-**Neden yanlıştı:** o düğmenin **arka planı ve çerçevesi yok** — 48px'lik
-kutu ŞEFFAF, boyanan tek şey ortadaki 32px'lik `Avatar`. Eski hâlde de
-avatar o kutunun ortasında olduğundan sol kenarı düzen kutusunun sol
-kenarındaydı. Yani görünen boşluk her iki hâlde de 8px. Sunulan "boyalı
-boşluk" sayısı aslında düğmenin `getBoundingClientRect()`iydi: **görünmez
-bir sınırlayıcı kutu.**
-
-**Doğru ölçüm** (inline stille iki hâl yan yana kuruldu — Tailwind'e
-güvenilmedi, çünkü sınıf koddan kaldırılınca JIT onu artık üretmiyor ve
-ilk düzeltme denemesi tam bu yüzden geçersiz veri verdi):
-
-| | Eski (`min-w/h + -m-2`) | Yeni (`.tap-expand`) |
-|---|---|---|
-| Düğmenin (görünmez) kutusu | 48 px | 32 px |
-| **Avatar ↔ skor kutusu GÖRÜNEN boşluk** | **8 px** | **8 px** |
-| Avatarın sağ kenarı (390 / 375 px) | 378 / 363 | 378 / 363 |
-| İçeriğin sağ sınırı | 378 / 363 | 378 / 363 |
-
-Yani değişiklik **görsel olarak bir no-op**. Hijyen olarak yerinde
-(projenin standart yolu), ama bildirilen sorunu ÇÖZMEDİ.
-
-**Aynı ölçümde elenenler** (375 ve 390 px, yerel 2 kişilik oyun):
-`serit.scrollWidth == serit.clientWidth` → şerit kırpmıyor;
-`document.scrollWidth == innerWidth` → sayfa taşmıyor. `ring-offset-2` de
-hiçbir şey boyamıyor (Tailwind onu yalnızca bir CSS değişkenine derliyor).
-
-**SORUN SONRADAN BULUNDU — bu bölümdeki teorilerin hiçbiri değildi.**
-Kullanıcı gerçek bir ekran görüntüsü gönderdi (fotoğraf değil) ve piksel
-taraması cevabı verdi: pasif skor kutusunun `outline: 0.5px` çerçevesi,
-iPhone'un DPR 3'ünde 1,5 cihaz pikseli oluyor ve kesirli kutu genişliği
-yüzünden iki dikey kenar farklı alt-piksel fazına düşüyor — biri canlı
-çiziliyor (iç zemine uzaklık 272), öteki kayboluyor (uzaklık 14). Düzeltme
-`GameHeader`'da pasif kalınlığın 1 px'e çıkarılması. Ölçümler, Chromium'un
-neden bu hatayı üretemediği (0.5px'i 1px'e yuvarlıyor) ve `outlineOffset`in
-neden -0.5'te bırakıldığı: `docs/decisions/components.md` → `GameHeader`
-maddesi.
-
-**ÜÇ DERS:**
+**O turdan kalan ÜÇ ders** (üçü de bu vakada ayrı ayrı hataya yol açtı):
 
 1. **Bir sarmalayıcının `getBoundingClientRect()`i "boyalı kutu" değildir.**
-   Görsel bir iddiayı ölçerken BOYANAN elemanı ölç (burada `Avatar`),
-   onu saran düğmeyi değil. Arka planı/çerçevesi olmayan bir kutu ölçümde
-   vardır, ekranda yoktur.
-2. **Bildirilen semptomu kendi teorine çevirme.** Kullanıcı "kesiliyor"
-   dedi, ben "boyama çakışması" diye okudum ve ölçümlerimi o teoriyi
-   doğrulayacak şekilde kurdum. Semptomun kendisini (kesik mi, soluk mu)
-   önce netleştir.
-3. **Kaldırdığın bir Tailwind sınıfıyla ESKİ hâli test edemezsin** — JIT
+   Görsel bir iddiayı ölçerken BOYANAN elemanı ölç, onu saran kutuyu değil.
+2. **Bir kenarı TEK SATIR örnekleyerek ölçme.** Bu vakada y=108 taranmış, o
+   satır tesadüfen yuvarlak bir köşeye denk gelmiş ve kenar "var" görünüp
+   yanlış sonuca götürmüştü. Kenarın tamamını tara (dikey profil).
+3. **Kaldırdığın bir Tailwind sınıfıyla eski hâli test edemezsin** — JIT
    onu artık üretmiyor. Öncesi/sonrası karşılaştırmasını inline stille kur.
 
 ### Raf taşı: ölü alanı hedefe DEVRET
