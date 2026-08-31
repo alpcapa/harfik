@@ -75,17 +75,37 @@ her şey o pencerenin içinde ya da yanında duruyor.
 |---|---|---|
 | **Sayaç** | 12 tester × 14 gün · Android developer verification | ⏳ işliyor, aksiyon yok |
 | **Console (elle)** | Data deletion formunda "uygulama içi yol VAR" seçimi · kategori (Oyunlar → Kelime) · iletişim e-postası · web sitesi | ⬜ kullanıcıda |
-| **1.0.4'e binecek kod** | Faz 6 istemci yarısı (rozet sıfırlama + sürüm damgası) · Faz 7 (iki çökme) | ✅ `main`'de, sürüm bekliyor |
-| **Cihazda denenmemiş** | §3c bildirime dokunma → tahta · GA4 DebugView | ⏳ 1.0.3 sahada, fırsat bekliyor |
+| **1.0.4'e binecek kod** | Faz 6 istemci yarısı (rozet sıfırlama + sürüm damgası) · Faz 7 (iki çökme) | ✅ **1.0.4 ile çıktı** (31 Ağustos 2026) |
+| **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); kalanlar bekliyor |
 | **Karar verilmiş, yapılmamış** | #3 davetlilere hatırlatma (gönderilebilir) · #8 Paylaşma (iPad popover) | ⬜ |
 | **Ertelendi** | #2 zorunlu güncelleme — In-App Update yerini aldı, eşik yalnızca acil fren | — |
 | **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #10 hata hız sınırı · #11 platform filtresi · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor |
 | **Yapıldı** | #6 taranabilir `/nasil-oynanir/` sayfası | ✅ 31 Ağustos 2026 |
 | **iOS/APNs** | Apple Developer üyeliğine bloke; iş "APNs anahtarını yükle + Push capability" kadar | 🔒 |
 
-⚠ **1.0.4 için acil bir durum YOK** (kullanıcı kararı, 31 Ağustos 2026):
-*"Tüm işlerle (bundan sonraki) toplu çıkartırız."* Sürüm numarası bilerek
-1.0.3'te bırakıldı.
+### 🚀 1.0.4 SÜRÜM TURU — 31 Ağustos 2026
+
+`appVersion` (`config/env.dart`) ve `pubspec.yaml` **birlikte** 1.0.3 → 1.0.4
+yapıldı (`app_version_parity_test` ayrışmayı yakalıyor). `+N` build numarası
+bağlayıcı değil — CI onu `--build-number=${{ github.run_number }}` ile eziyor.
+
+Gün içinde "acil bir durum yok, toplu çıkarırız" denmişti; aynı gün akşam
+toplu çıkarma kararı verildi. Sürümün taşıdığı İKİ PR var, ikisi de zaten
+`main`'deydi ve yalnızca sürüm numarası bekliyordu:
+
+| PR | Ne | Neden sürüm gerekiyordu |
+|---|---|---|
+| **#382** | Bildirim panelini temizleme (rozet gerçekten sıfırlansın, ROADMAP #15) + push token'a `app_version` damgası (#12) | Panel temizliği bir MethodChannel (`kelimeki/bildirimler` → `cancelAll()`); sürüm damgasını da İSTEMCİ yolluyor — kolon 31 Ağustos'ta canlıya alınmıştı ama 1.0.4'e kadar boş kalıyordu |
+| **#383** | Telemetriden çıkan iki çökme: derin bağlantı rotası (11 cihaz) + rafta sınır dışı erişim | İkisi de saf istemci kodu |
+
+Toplam 14 dosya, +572/−20 (`mobile/app/` altında).
+
+⚠ **Çakıştırma etiketi (#381) bu sürümde DEĞİL** — o sunucu tarafıydı ve
+uygulandığı gün canlıya girdi. Bildirimlerin panelde BİRİKMESİNİ o durdurdu;
+duran sayıyı SIFIRLAYAN yarı ise bu sürümde. İkisini karıştırma.
+
+⚠ **Sahaya çıkış Play'in kendi takvimine bağlı** — merge + CI derlemesi
+paketi üretir, mağazaya yüklemek ve incelemeden geçmek ayrı adım.
 
 ### 🚀 1.0.3 SÜRÜM TURU — ✅ **TAMAMLANDI** (31 Ağustos 2026)
 
@@ -138,15 +158,23 @@ gönderildi, testçiler indirdi.
 Immediate akışı Play'den kurulmuş gerçek pakette uçtan uca çalışıyor; bu
 madde artık "yazıldı ama denenmedi" değil.
 
-⏳ **Cihazda HÂLÂ denenmemiş tek parça §3c** (bildirime dokununca tahtanın
-açılması) — bir "sıra sende" bildirimi beklendiğinde bakılacak. §3d'nin
-sunucu tarafı zaten doğrulanmıştı.
+✅ **§3c'nin çekirdeği 31 Ağustos akşamı cihazda doğrulandı** (1.0.3):
+bir oyun bildirimine hem uygulama arka plandayken hem de TAMAMEN KAPALIYKEN
+dokunuldu, ikisinde de Canlı tahta doğrudan açıldı. Soğuk başlangıç ayrı bir
+API yolu (`getInitialMessage`) olduğu için asıl kıymetli olan o. Davete özgü
+dallar (davet beklemedeyken → Arkadaşınla sekmesi), girişsiz derin bağlantı
+ve GA4 DebugView hâlâ açık — kayıt: `mobile/docs/testing-bildirimler.md` §3c.
 
-⚠ **`mobile-latest` prerelease'i artık 1.0.3'ü TAŞIMIYOR.** O release her
-mobil derlemede üzerine yazılıyor; 31 Ağustos'taki merge'ler versionName'i
-1.0.3'te bırakıp versionCode'u artırdı. **Play'e o paketleri yükleme** —
-versionCode arttığı için herkes gereksiz bir güncelleme uyarısı alır.
-1.0.3 için yüklenen tek paket koşu #449'unki.
+⚠ **`mobile-latest` prerelease'i hangi sürümü taşıyor — HER SÜRÜM TURUNDA
+YENİDEN SOR.** O release her mobil derlemede üzerine yazılıyor. 1.0.3
+döneminde bu bir TUZAKTI: sonraki merge'ler versionName'i 1.0.3'te bırakıp
+versionCode'u artırdığı için oradan Play'e yükleme yapmak herkese gereksiz
+güncelleme uyarısı gönderecekti (1.0.3 için yüklenen tek paket koşu
+#449'unki). **1.0.4'te durum tersine döndü:** sürüm numarası bu turda
+artırıldığından, 1.0.4 merge'inden SONRA üretilen paket Play'e yüklenecek
+olandır. Kural şu: paketi yüklemeden önce versionName'in beklediğin sürüm
+olduğunu doğrula; "mobile-latest her zaman güvenli/güvensiz" diye sabit bir
+cevap YOK.
 
 ### Faz 1 — bekleyen paket · ✅ **SAHADA** (1.0.3 ile, 31 Ağustos 2026)
 
